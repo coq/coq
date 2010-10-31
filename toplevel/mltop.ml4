@@ -235,7 +235,7 @@ let add_known_module mname =
 let module_is_known mname =
   Stringset.mem (String.capitalize mname) !known_loaded_modules
 
-let load_object mname fname=
+let load_ml_object mname fname=
   dir_ml_load fname;
   add_known_module mname
 
@@ -257,7 +257,7 @@ let unfreeze_ml_modules x =
        if not (module_is_known mname) then
          if has_dynlink then
            let fname = file_of_name mname in
-           load_object mname fname
+           load_ml_object mname fname
          else
 	   errorlabstrm "Mltop.unfreeze_ml_modules"
              (str"Loading of ML object file forbidden in a native Coq.");
@@ -282,7 +282,7 @@ let cache_ml_module_object (_,{mnames=mnames}) =
 	   try
 	     if_verbose
 	       msg (str"[Loading ML file " ++ str fname ++ str" ...");
-             load_object mname fname;
+             load_ml_object mname fname;
              if_verbose msgnl (str" done]");
              add_loaded_module mname
            with e ->

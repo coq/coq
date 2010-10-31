@@ -49,7 +49,7 @@ val add_rec_path : unix_path:string -> coq_root:Names.dir_path -> unit
 (** List of modules linked to the toplevel *)
 val add_known_module : string -> unit
 val module_is_known : string -> bool
-val load_object : string -> string -> unit
+val load_ml_object : string -> string -> unit
 
 (** Summary of Declared ML Modules *)
 val get_loaded_modules : unit -> string list

@@ -143,8 +143,9 @@ let apply_dyn_fun deflt f lobj =
     Failure "local to_apply_dyn_fun" ->
       if not (!relax_flag || Hashtbl.mem missing_tab tag) then
         begin
-          Pp.warning ("Cannot find library functions for an object with tag "
-                      ^ tag ^ " (a plugin may be missing)");
+          Pp.msg_warning
+	    (Pp.str ("Cannot find library functions for an object with tag "
+                      ^ tag ^ " (a plugin may be missing)"));
           Hashtbl.add missing_tab tag ()
         end;
       deflt
