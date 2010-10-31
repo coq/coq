@@ -185,7 +185,7 @@ doc/faq/html/index.html: doc/faq/FAQ.v.html
 
 ### Standard library (browsable html format)
 
-ifeq ($(QUICK),1)
+ifdef QUICK
 doc/stdlib/html/genindex.html:
 else
 doc/stdlib/html/genindex.html: | $(COQDOC) $(THEORIESVO) $(PLUGINSVO)
