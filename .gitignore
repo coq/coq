@@ -39,6 +39,7 @@
 revision
 TAGS
 .DS_Store
+.pc
 bin/
 _build
 plugins/*/*_mod.ml
