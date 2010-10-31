@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open GText
-open Ideutils
 type action =
   | Insert of string * int * int (* content*pos*length *)
   | Delete of string * int * int (* content*pos*length *)

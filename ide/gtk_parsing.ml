@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Ideutils
-
 
 let underscore = Glib.Utf8.to_unichar "_" ~pos:(ref 0)
 let arobase = Glib.Utf8.to_unichar "@" ~pos:(ref 0)
