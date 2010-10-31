@@ -174,14 +174,6 @@ let save id const do_guard (locality,kind) hook =
   definition_message id;
   hook l r
 
-let save_hook = ref ignore
-let set_save_hook f = save_hook := f
-
-let save_named opacity =
-  let id,(const,do_guard,persistence,hook) = Pfedit.cook_proof !save_hook in
-  let const = { const with const_entry_opaque = opacity } in
-  save id const do_guard persistence hook
-
 let default_thm_id = id_of_string "Unnamed_thm"
 
 let compute_proof_name locality = function
@@ -229,21 +221,28 @@ let save_remaining_recthms (local,kind) body opaq i (id,(t_i,(_,imps))) =
           let kn = declare_constant id (DefinitionEntry const, k) in
           (Global,ConstRef kn,imps)
 
-(* 4.2| General support for goals *)
+let save_hook = ref ignore
+let set_save_hook f = save_hook := f
+
+let get_proof opacity =
+  let id,(const,do_guard,persistence,hook) = Pfedit.cook_proof !save_hook in
+  id,{const with const_entry_opaque = opacity},do_guard,persistence,hook
+
+let save_named opacity =
+  let id,const,do_guard,persistence,hook = get_proof opacity in
+  save id const do_guard persistence hook
 
 let check_anonymity id save_ident =
-  if atompart_of_id id <> "Unnamed_thm" then
+  if atompart_of_id id <> string_of_id (default_thm_id) then
     error "This command can only be used for unnamed theorem."
 
 let save_anonymous opacity save_ident =
-  let id,(const,do_guard,persistence,hook) = Pfedit.cook_proof !save_hook in
-  let const = { const with const_entry_opaque = opacity } in
+  let id,const,do_guard,persistence,hook = get_proof opacity in
   check_anonymity id save_ident;
   save save_ident const do_guard persistence hook
 
 let save_anonymous_with_strength kind opacity save_ident =
-  let id,(const,do_guard,_,hook) = Pfedit.cook_proof !save_hook in
-  let const = { const with const_entry_opaque = opacity } in
+  let id,const,do_guard,_,hook = get_proof opacity in
   check_anonymity id save_ident;
   (* we consider that non opaque behaves as local for discharge *)
   save save_ident const do_guard (Global, Proof kind) hook
