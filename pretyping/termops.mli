@@ -91,6 +91,7 @@ val iter_constr_with_full_binders :
 (**********************************************************************)
 
 val strip_head_cast : constr -> constr
+val drop_extra_implicit_args : constr -> constr
 
 (** occur checks *)
 exception Occur
@@ -107,6 +108,7 @@ val free_rels : constr -> Intset.t
 val dependent : constr -> constr -> bool
 val dependent_no_evar : constr -> constr -> bool
 val collect_metas : constr -> int list
+val collect_vars : constr -> Idset.t (** for visible vars only *)
 val occur_term : constr -> constr -> bool (** Synonymous
  of dependent 
    Substitution of metavariables *)

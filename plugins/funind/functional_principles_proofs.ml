@@ -1450,7 +1450,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 				    Eauto.eauto_with_bases
 				      false
 				      (true,5)
-				      [Lazy.force refl_equal]
+				      [Evd.empty,Lazy.force refl_equal]
 				      [Auto.Hint_db.empty empty_transparent_state false]
 				  )
 			   )

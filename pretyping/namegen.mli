@@ -39,6 +39,9 @@ val it_mkLambda_or_LetIn_name : env -> constr -> rel_context -> constr
 (*********************************************************************
    Fresh names *)
 
+(** Avoid clashing with a name satisfying some predicate *)
+val next_ident_away_from : identifier -> (identifier -> bool) -> identifier
+
 (** Avoid clashing with a name of the given list *)
 val next_ident_away : identifier -> identifier list -> identifier
 

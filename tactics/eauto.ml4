@@ -68,6 +68,7 @@ let rec prolog l n gl =
   (tclFIRST (List.map (fun t -> (tclTHEN t prol)) (one_step l gl))) gl
 
 let prolog_tac l n gl =
+  let l = List.map (prepare_hint (pf_env gl)) l in
   let n =
     match n with
       |  ArgArg n -> n
@@ -78,7 +79,7 @@ let prolog_tac l n gl =
     errorlabstrm "Prolog.prolog" (str "Prolog failed.")
 
 TACTIC EXTEND prolog
-| [ "prolog" "[" constr_list(l) "]" int_or_var(n) ] -> [ prolog_tac l n ]
+| [ "prolog" "[" open_constr_list(l) "]" int_or_var(n) ] -> [ prolog_tac l n ]
 END
 
 open Auto
@@ -345,19 +346,20 @@ ARGUMENT EXTEND hintbases
 | [ ] -> [ Some [] ]
 END
 
-let pr_constr_coma_sequence prc _ _ = prlist_with_sep pr_comma prc
+let pr_constr_coma_sequence prc _ _ =
+  prlist_with_sep pr_comma (fun (_,c) -> prc c)
 
 ARGUMENT EXTEND constr_coma_sequence
-  TYPED AS constr_list
+  TYPED AS open_constr_list
   PRINTED BY pr_constr_coma_sequence
-| [ constr(c) "," constr_coma_sequence(l) ] -> [ c::l ]
-| [ constr(c) ] -> [ [c] ]
+| [ open_constr(c) "," constr_coma_sequence(l) ] -> [ c::l ]
+| [ open_constr(c) ] -> [ [c] ]
 END
 
-let pr_auto_using prc _prlc _prt = Pptactic.pr_auto_using prc
+let pr_auto_using prc _prlc _prt = Pptactic.pr_auto_using (fun (_,c) -> prc c)
 
 ARGUMENT EXTEND auto_using
-  TYPED AS constr_list
+  TYPED AS open_constr_list
   PRINTED BY pr_auto_using
 | [ "using" constr_coma_sequence(l) ] -> [ l ]
 | [ ] -> [ [] ]

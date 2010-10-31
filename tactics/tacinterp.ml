@@ -1351,6 +1351,10 @@ let interp_open_constr_list =
   interp_constr_in_compound_list (fun x -> x) (fun x -> x)
     (interp_open_constr None)
 
+let interp_auto_lemmas ist env sigma lems =
+  let local_sigma, lems = interp_open_constr_list ist env sigma lems in
+  List.map (fun lem -> (local_sigma,lem)) lems
+
 (* Interprets a type expression *)
 let pf_interp_type ist gl =
   interp_type ist (pf_env gl) (project gl)
@@ -2289,19 +2293,20 @@ and interp_atomic ist gl tac =
 
   (* Automation tactics *)
   | TacTrivial (lems,l) ->
-      Auto.h_trivial (interp_constr_list ist env sigma lems)
+      Auto.h_trivial
+	(interp_auto_lemmas ist env sigma lems)
 	(Option.map (List.map (interp_hint_base ist)) l)
   | TacAuto (n,lems,l) ->
       Auto.h_auto (Option.map (interp_int_or_var ist) n)
-      (interp_constr_list ist env sigma lems)
-      (Option.map (List.map (interp_hint_base ist)) l)
+	(interp_auto_lemmas ist env sigma lems)
+	(Option.map (List.map (interp_hint_base ist)) l)
   | TacAutoTDB n -> Dhyp.h_auto_tdb n
   | TacDestructHyp (b,id) -> Dhyp.h_destructHyp b (interp_hyp ist gl id)
   | TacDestructConcl -> Dhyp.h_destructConcl
   | TacSuperAuto (n,l,b1,b2) -> Auto.h_superauto n l b1 b2
   | TacDAuto (n,p,lems) ->
       Auto.h_dauto (Option.map (interp_int_or_var ist) n,p)
-      (interp_constr_list ist env sigma lems)
+      (interp_auto_lemmas ist env sigma lems)
 
   (* Derived basic tactics *)
   | TacSimpleInductionDestruct (isrec,h) ->

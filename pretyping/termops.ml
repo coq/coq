@@ -262,6 +262,14 @@ let rec strip_head_cast c = match kind_of_term c with
   | Cast (c,_,_) -> strip_head_cast c
   | _ -> c
 
+let rec drop_extra_implicit_args c = match kind_of_term c with
+  (* Removed trailing extra implicit arguments, what improves compatibility
+     for constants with recently added maximal implicit arguments *)
+  | App (f,args) when isEvar (array_last args) ->
+      drop_extra_implicit_args
+	(mkApp (f,fst (array_chop (Array.length args - 1) args)))
+  | _ -> c
+
 (* Get the last arg of an application *)
 let last_arg c = match kind_of_term c with
   | App (f,cl) -> array_last cl
@@ -525,6 +533,14 @@ let collect_metas c =
       | _       -> fold_constr collrec acc c
   in
   List.rev (collrec [] c)
+
+(* collects all vars; warning: this is only visible vars, not dependencies in
+   all section variables; for the latter, use global_vars_set *)
+let collect_vars c =
+  let rec aux vars c = match kind_of_term c with
+  | Var id -> Idset.add id vars
+  | _ -> fold_constr aux vars c in
+  aux Idset.empty c
 
 (* Tests whether [m] is a subterm of [t]:
    [m] is appropriately lifted through abstractions of [t] *)

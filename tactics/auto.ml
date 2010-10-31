@@ -569,17 +569,43 @@ type hints_entry =
   | HintsDestructEntry of identifier * int * (bool,unit) location *
       (patvar list * constr_pattern) * glob_tactic_expr
 
-let rec drop_extra_args c = match kind_of_term c with
-  (* Removed trailing extra implicit arguments, what improves compatibility
-     for constants with recently added maximal implicit arguments *)
-  | App (f,args) when isEvar (array_last args) ->
-      drop_extra_args (mkApp (f,fst (array_chop (Array.length args - 1) args)))
-  | _ -> c
+let h = id_of_string "H"
+
+exception Found of constr * types
+
+let prepare_hint env (sigma,c) =
+  let sigma = Typeclasses.resolve_typeclasses ~fail:false env sigma in
+  (* We re-abstract over uninstantiated evars.
+     It is actually a bit stupid to generalize over evars since the first
+     thing make_resolves will do is to re-instantiate the products *)
+  let c = drop_extra_implicit_args (Evarutil.nf_evar sigma c) in
+  let vars = ref (collect_vars c) in
+  let subst = ref [] in
+  let rec find_next_evar c = match kind_of_term c with
+    | Evar (evk,args as ev) ->
+      (* We skip the test whether args is the identity or not *)
+      let t = Evarutil.nf_evar sigma (existential_type sigma ev) in
+      let t = List.fold_right (fun (e,id) c -> replace_term e id c) !subst t in
+      if free_rels t <> Intset.empty then
+	error "Hints with holes dependent on a bound variable not supported.";
+      if occur_existential t then
+	(* Not clever enough to construct dependency graph of evars *)
+	error "Not clever enough to deal with evars dependent in other evars.";
+      raise (Found (c,t))
+    | _ -> iter_constr find_next_evar c in
+  let rec iter c =
+    try find_next_evar c; c
+    with Found (evar,t) ->
+      let id = next_ident_away_from h (fun id -> Idset.mem id !vars) in
+      vars := Idset.add id !vars;
+      subst := (evar,mkVar id)::!subst;
+      mkNamedLambda id t (iter (replace_term evar (mkVar id) c)) in
+  iter c
 
 let interp_hints h =
   let f c =
     let evd,c = Constrintern.interp_open_constr Evd.empty (Global.env()) c in
-    let c = drop_extra_args c in
+    let c = prepare_hint (Global.env()) (evd,c) in
     Evarutil.check_evars (Global.env()) Evd.empty evd c;
     c in
   let fr r =
@@ -785,19 +811,19 @@ let unify_resolve_gen = function
 
 (* Util *)
 
-let expand_constructor_hints lems =
-  list_map_append (fun lem ->
+let expand_constructor_hints env lems =
+  list_map_append (fun (sigma,lem) ->
     match kind_of_term lem with
     | Ind ind ->
 	list_tabulate (fun i -> mkConstruct (ind,i+1)) (nconstructors ind)
     | _ ->
-	[lem]) lems
+	[prepare_hint env (sigma,lem)]) lems
 
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
 
 let add_hint_lemmas eapply lems hint_db gl =
-  let lems = expand_constructor_hints lems in
+  let lems = expand_constructor_hints (pf_env gl) lems in
   let hintlist' =
     list_map_append (pf_apply make_resolves gl (eapply,true,false) None) lems in
   Hint_db.add_list hintlist' hint_db
@@ -958,7 +984,7 @@ let gen_trivial lems = function
   | Some l -> trivial lems l
 
 let h_trivial lems l =
-  Refiner.abstract_tactic (TacTrivial (lems,l))
+  Refiner.abstract_tactic (TacTrivial (List.map snd lems,l))
     (gen_trivial lems l)
 
 (**************************************************************************)
@@ -1088,7 +1114,7 @@ let gen_auto n lems dbnames =
 let inj_or_var = Option.map (fun n -> ArgArg n)
 
 let h_auto n lems l =
-  Refiner.abstract_tactic (TacAuto (inj_or_var n,lems,l))
+  Refiner.abstract_tactic (TacAuto (inj_or_var n,List.map snd lems,l))
     (gen_auto n lems l)
 
 (**************************************************************************)
@@ -1117,7 +1143,7 @@ let dauto (n,p) lems =
 let default_dauto = dauto (None,None) []
 
 let h_dauto (n,p) lems =
-  Refiner.abstract_tactic (TacDAuto (inj_or_var n,p,lems))
+  Refiner.abstract_tactic (TacDAuto (inj_or_var n,p,List.map snd lems))
     (dauto (n,p) lems)
 
 (***************************************)

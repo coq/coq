@@ -1005,7 +1005,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 		      Eauto.eauto_with_bases
 			false
 			(true,5)
-			[delayed_force refl_equal]
+			[Evd.empty,delayed_force refl_equal]
 			[Auto.Hint_db.empty empty_transparent_state false]
 		      ]
 		    )

@@ -96,6 +96,8 @@ val interp_hints : hints_expr -> hints_entry
 
 val add_hints : locality_flag -> hint_db_name list -> hints_entry -> unit
 
+val prepare_hint : env -> open_constr -> constr
+
 val print_searchtable : unit -> unit
 
 val print_applicable_hint : unit -> unit
@@ -112,7 +114,7 @@ val print_hint_db : Hint_db.t -> unit
 
 val make_exact_entry : evar_map -> int option -> constr * constr -> hint_entry
 
-(** [make_apply_entry (eapply,verbose) pri (c,cty)].
+(** [make_apply_entry (eapply,hnf,verbose) pri (c,cty)].
    [eapply] is true if this hint will be used only with EApply;
    [hnf] should be true if we should expand the head of cty before searching for
    products;
@@ -163,7 +165,7 @@ val set_extern_subst_tactic :
    Useful to take the current goal hypotheses as hints;
    Boolean tells if lemmas with evars are allowed *)
 
-val make_local_hint_db : bool -> constr list -> goal sigma -> hint_db
+val make_local_hint_db : bool -> open_constr list -> goal sigma -> hint_db
 
 val priority : ('a * pri_auto_tactic) list -> ('a * pri_auto_tactic) list
 
@@ -185,48 +187,48 @@ val conclPattern : constr -> constr_pattern option -> Tacexpr.glob_tactic_expr -
 
 (** The Auto tactic *)
 
-val auto : int -> constr list -> hint_db_name list -> tactic
+val auto : int -> open_constr list -> hint_db_name list -> tactic
 
 (** Auto with more delta. *)
 
-val new_auto : int -> constr list -> hint_db_name list -> tactic
+val new_auto : int -> open_constr list -> hint_db_name list -> tactic
 
 (** auto with default search depth and with the hint database "core" *)
 val default_auto : tactic
 
 (** auto with all hint databases except the "v62" compatibility database *)
-val full_auto : int -> constr list -> tactic
+val full_auto : int -> open_constr list -> tactic
 
 (** auto with all hint databases except the "v62" compatibility database
    and doing delta *)
-val new_full_auto : int -> constr list -> tactic
+val new_full_auto : int -> open_constr list -> tactic
 
 (** auto with default search depth and with all hint databases
    except the "v62" compatibility database *)
 val default_full_auto : tactic
 
 (** The generic form of auto (second arg [None] means all bases) *)
-val gen_auto : int option -> constr list -> hint_db_name list option -> tactic
+val gen_auto : int option -> open_constr list -> hint_db_name list option -> tactic
 
 (** The hidden version of auto *)
-val h_auto   : int option -> constr list -> hint_db_name list option -> tactic
+val h_auto   : int option -> open_constr list -> hint_db_name list option -> tactic
 
 (** Trivial *)
-val trivial : constr list -> hint_db_name list -> tactic
-val gen_trivial : constr list -> hint_db_name list option -> tactic
-val full_trivial : constr list -> tactic
-val h_trivial : constr list -> hint_db_name list option -> tactic
+val trivial : open_constr list -> hint_db_name list -> tactic
+val gen_trivial : open_constr list -> hint_db_name list option -> tactic
+val full_trivial : open_constr list -> tactic
+val h_trivial : open_constr list -> hint_db_name list option -> tactic
 
 val pr_autotactic : auto_tactic -> Pp.std_ppcmds
 
 (** {6 The following is not yet up to date -- Papageno. } *)
 
 (** DAuto *)
-val dauto : int option * int option -> constr list -> tactic
+val dauto : int option * int option -> open_constr list -> tactic
 val default_search_decomp : int ref
 val default_dauto : tactic
 
-val h_dauto : int option * int option -> constr list -> tactic
+val h_dauto : int option * int option -> open_constr list -> tactic
 
 (** SuperAuto *)
 

@@ -16,3 +16,11 @@ Goal G unit Q -> F (Q tt).
   intro.
   auto.
 Qed.
+
+(* Test implicit arguments in "using" clause *)
+
+Goal forall n:nat, nat * nat.
+auto using (pair O).
+Undo.
+eauto using (pair O).
+Qed.
