@@ -1497,7 +1497,7 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
   let evd' = Typeclasses.resolve_typeclasses ~fail:false env evd' in
   let cl' = {cl with evd = evd'} in
   let cl' = Clenvtac.clenv_pose_dependent_evars true cl' in
-  let nf c = Evarutil.nf_evar ( cl'.evd) (Clenv.clenv_nf_meta cl' c) in
+  let nf c = Evarutil.nf_evar cl'.evd (Clenv.clenv_nf_meta cl' c) in
   let c1 = if l2r then nf c' else nf c1
   and c2 = if l2r then nf c2 else nf c'
   and car = nf car and rel = nf rel in

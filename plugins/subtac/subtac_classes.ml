@@ -28,7 +28,7 @@ module SPretyping = Subtac_pretyping.Pretyping
 
 let interp_constr_evars_gen evdref env ?(impls=[]) kind c =
   SPretyping.understand_tcc_evars evdref env kind
-    (intern_gen (kind=IsType) ~impls ( !evdref) env c)
+    (intern_gen (kind=IsType) ~impls !evdref env c)
 
 let interp_casted_constr_evars evdref env ?(impls=[]) c typ =
   interp_constr_evars_gen evdref env ~impls (OfType (Some typ)) c

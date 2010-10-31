@@ -137,8 +137,8 @@ module Default = struct
 	      (evd',{ uj_val = j.uj_val; uj_type = t })
 	| _ ->
       	    let t,p =
-	      lookup_path_to_fun_from env ( evd) j.uj_type in
-	      (evd,apply_coercion env ( evd) p j t)
+	      lookup_path_to_fun_from env evd j.uj_type in
+	      (evd,apply_coercion env evd p j t)
 
   let inh_app_fun env evd j =
     try inh_app_fun env evd j
@@ -148,15 +148,15 @@ module Default = struct
 
   let inh_tosort_force loc env evd j =
     try
-      let t,p = lookup_path_to_sort_from env ( evd) j.uj_type in
-      let j1 = apply_coercion env ( evd) p j t in
-      let j2 = on_judgment_type (whd_evar ( evd)) j1 in
+      let t,p = lookup_path_to_sort_from env evd j.uj_type in
+      let j1 = apply_coercion env evd p j t in
+      let j2 = on_judgment_type (whd_evar evd) j1 in
         (evd,type_judgment env j2)
     with Not_found ->
-      error_not_a_type_loc loc env ( evd) j
+      error_not_a_type_loc loc env evd j
 
   let inh_coerce_to_sort loc env evd j =
-    let typ = whd_betadeltaiota env ( evd) j.uj_type in
+    let typ = whd_betadeltaiota env evd j.uj_type in
       match kind_of_term typ with
 	| Sort s -> (evd,{ utj_val = j.uj_val; utj_type = s })
 	| Evar ev when not (is_defined_evar evd ev) ->

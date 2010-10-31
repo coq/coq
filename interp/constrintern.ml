@@ -1515,7 +1515,7 @@ let interp_constr_evars_impls ?evdref ?(fail_evar=true) env ?(impls=[]) c =
   interp_constr_evars_gen_impls ?evdref ~fail_evar env (OfType None) ~impls c
 
 let interp_constr_evars_gen evdref env ?(impls=[]) kind c =
-  let c = intern_gen (kind=IsType) ~impls ( !evdref) env c in
+  let c = intern_gen (kind=IsType) ~impls !evdref env c in
     Default.understand_tcc_evars evdref env kind c
 
 let interp_casted_constr_evars evdref env ?(impls=[]) c typ =

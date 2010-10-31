@@ -408,10 +408,10 @@ module Coercion = struct
     else
     let v', t' =
       try
-	let t2,t1,p = lookup_path_between env ( evd) (t,c1) in
+	let t2,t1,p = lookup_path_between env evd (t,c1) in
 	  match v with
 	      Some v ->
-		let j = apply_coercion env ( evd) p
+		let j = apply_coercion env evd p
 		  {uj_val = v; uj_type = t} t2 in
 		  Some j.uj_val, j.uj_type
 	    | None -> None, t
@@ -427,8 +427,8 @@ module Coercion = struct
     try inh_coerce_to_fail env evd rigidonly v t c1
     with NoCoercion ->
     match
-      kind_of_term (whd_betadeltaiota env ( evd) t),
-      kind_of_term (whd_betadeltaiota env ( evd) c1)
+      kind_of_term (whd_betadeltaiota env evd t),
+      kind_of_term (whd_betadeltaiota env evd c1)
     with
     | Prod (name,t1,t2), Prod (_,u1,u2) ->
         (* Conversion did not work, we may succeed with a coercion. *)
