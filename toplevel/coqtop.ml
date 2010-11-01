@@ -293,7 +293,11 @@ let parse_args arglist =
 
     | "-filteropts" :: rem -> filter_opts := true; parse rem
 
-    | s :: rem -> s :: (parse rem)
+    | s :: rem ->
+      if !filter_opts then
+       s :: (parse rem)
+      else
+       (prerr_endline ("Don't know what to do with " ^ s); usage ())
   in
   try
     parse arglist
@@ -314,7 +318,6 @@ let init arglist =
       let foreign_args = parse_args arglist in
       if !filter_opts then
         (print_string (String.concat "\n" foreign_args); exit 0);
-      (* no else. ignore additional options. makes life easier *)
       if !ide_slave then begin
         Flags.make_silent true;
         Pfedit.set_undo (Some 5000);
