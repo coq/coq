@@ -70,26 +70,16 @@ Module Type Parity (Import Z : ZAxiomsMiniSig').
  Axiom odd_spec : forall n, odd n = true <-> Odd n.
 End Parity.
 
-(** For the power function, we just add to NZPow an addition spec *)
-
-Module Type ZPowSpecNeg (Import Z : ZAxiomsMiniSig')(Import P : Pow' Z).
- Axiom pow_neg : forall a b, b<0 -> a^b == 0.
-End ZPowSpecNeg.
-
-(** Same for the sqrt function. *)
-
-Module Type ZSqrtSpecNeg (Import Z : ZAxiomsMiniSig')(Import P : Sqrt' Z).
- Axiom sqrt_neg : forall a, a<0 -> √a == 0.
-End ZSqrtSpecNeg.
+(** For the power and sqrt functions, the NZ axiomatizations are enough. *)
 
 (** Let's group everything *)
 
 Module Type ZAxiomsSig :=
   ZAxiomsMiniSig <+ HasCompare <+ HasAbs <+ HasSgn <+ Parity
-   <+ NZPow.NZPow <+ ZPowSpecNeg <+ NZSqrt.NZSqrt <+ ZSqrtSpecNeg.
+   <+ NZPow.NZPow <+ NZSqrt.NZSqrt.
 Module Type ZAxiomsSig' :=
   ZAxiomsMiniSig' <+ HasCompare <+ HasAbs <+ HasSgn <+ Parity
-   <+ NZPow.NZPow' <+ ZPowSpecNeg <+ NZSqrt.NZSqrt' <+ ZSqrtSpecNeg.
+   <+ NZPow.NZPow' <+ NZSqrt.NZSqrt'.
 
 
 (** Division is left apart, since many different flavours are available *)

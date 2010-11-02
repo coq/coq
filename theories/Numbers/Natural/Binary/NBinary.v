@@ -163,14 +163,18 @@ Definition odd_spec := Nodd_spec.
 
 (** Power *)
 
+Program Instance pow_wd : Proper (eq==>eq==>eq) Npow.
 Definition pow_0_r := Npow_0_r.
 Definition pow_succ_r n p (H:0 <= p) := Npow_succ_r n p.
-Program Instance pow_wd : Proper (eq==>eq==>eq) Npow.
+Lemma pow_neg_r : forall a b, b<0 -> a^b = 0.
+Proof. destruct b; discriminate. Qed.
 
 (** Sqrt *)
 
 Program Instance sqrt_wd : Proper (eq==>eq) Nsqrt.
 Definition sqrt_spec n (H:0<=n) := Nsqrt_spec n.
+Lemma sqrt_neg : forall a, a<0 -> Nsqrt a = 0.
+Proof. destruct a; discriminate. Qed.
 
 (** The instantiation of operations.
     Placing them at the very end avoids having indirections in above lemmas. *)

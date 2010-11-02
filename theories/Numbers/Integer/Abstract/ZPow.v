@@ -18,49 +18,6 @@ Module Type ZPowProp
 
  Include NZPowProp A A B.
 
-(** Many results are directly the same as in NZPow, hence
-    the Include above. We extend nonetheless a few of them,
-    and add some results concerning negative first arg.
-*)
-
-Lemma pow_mul_l' : forall a b c, (a*b)^c == a^c * b^c.
-Proof.
- intros a b c. destruct (le_gt_cases 0 c). now apply pow_mul_l.
- rewrite !pow_neg by trivial. now nzsimpl.
-Qed.
-
-Lemma pow_nonneg : forall a b, 0<=a -> 0<=a^b.
-Proof.
- intros a b Ha. destruct (le_gt_cases 0 b).
- now apply pow_nonneg_nonneg.
- rewrite !pow_neg by trivial. order.
-Qed.
-
-Lemma pow_le_mono_l' : forall a b c, 0<=a<=b -> a^c <= b^c.
-Proof.
- intros a b c. destruct (le_gt_cases 0 c). now apply pow_le_mono_l.
- rewrite !pow_neg by trivial. order.
-Qed.
-
-(** NB: since 0^0 > 0^1, the following result isn't valid with a=0 *)
-
-Lemma pow_le_mono_r' : forall a b c, 0<a -> b<=c -> a^b <= a^c.
-Proof.
- intros a b c. destruct (le_gt_cases 0 b).
- intros. apply pow_le_mono_r; try split; trivial.
- rewrite !pow_neg by trivial.
- intros. apply pow_nonneg. order.
-Qed.
-
-Lemma pow_le_mono' : forall a b c d, 0<a<=c -> b<=d ->
- a^b <= c^d.
-Proof.
- intros a b c d. destruct (le_gt_cases 0 b).
- intros. apply pow_le_mono. trivial. split; trivial.
- rewrite !pow_neg by trivial.
- intros. apply pow_nonneg. intuition order.
-Qed.
-
 (** Parity of power *)
 
 Lemma even_pow : forall a b, 0<b -> even (a^b) = even a.
@@ -86,7 +43,7 @@ Proof.
  rewrite 2 pow_2_r.
  now rewrite mul_opp_opp.
  assert (2*c < 0) by (apply mul_pos_neg; order').
- now rewrite !pow_neg.
+ now rewrite !pow_neg_r.
 Qed.
 
 Lemma pow_opp_odd : forall a b, Odd b -> (-a)^b == -(a^b).
@@ -98,7 +55,7 @@ Proof.
  rewrite pow_opp_even by (now exists c).
  apply mul_opp_l.
  apply double_above in GT. rewrite mul_0_r in GT.
- rewrite !pow_neg by trivial. now rewrite opp_0.
+ rewrite !pow_neg_r by trivial. now rewrite opp_0.
 Qed.
 
 Lemma pow_even_abs : forall a b, Even b -> a^b == (abs a)^b.
@@ -126,7 +83,7 @@ Proof.
  assert (b~=0) by
   (contradict H; now rewrite H, <-odd_spec, <-negb_even_odd, even_0).
  order.
- now rewrite pow_neg.
+ now rewrite pow_neg_r.
  rewrite abs_neq by order.
  rewrite pow_opp_odd; trivial.
  now rewrite mul_opp_opp, mul_1_l.

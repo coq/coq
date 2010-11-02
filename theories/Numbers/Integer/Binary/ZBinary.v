@@ -39,7 +39,7 @@ Proof.
  rewrite <- Pplus_one_succ_r. apply Piter_op_succ. apply Zmult_assoc.
 Qed.
 
-Lemma Zpow_neg : forall a b, b<0 -> Zpow a b = 0.
+Lemma Zpow_neg_r : forall a b, b<0 -> Zpow a b = 0.
 Proof.
  now destruct b.
 Qed.
@@ -171,7 +171,7 @@ Program Instance pow_wd : Proper (eq==>eq==>eq) Zpow.
 
 Definition pow_0_r := Zpow_0_r.
 Definition pow_succ_r := Zpow_succ_r.
-Definition pow_neg := Zpow_neg.
+Definition pow_neg_r := Zpow_neg_r.
 Definition pow := Zpow.
 
 (** Sqrt *)

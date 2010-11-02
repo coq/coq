@@ -25,6 +25,7 @@ Module Type Sqrt' (A : Typ) := Sqrt A <+ SqrtNotation A.
 Module Type NZSqrtSpec (Import A : NZOrdAxiomsSig')(Import B : Sqrt' A).
  Declare Instance sqrt_wd : Proper (eq==>eq) sqrt.
  Axiom sqrt_spec : forall a, 0<=a -> √a * √a <= a < S (√a) * S (√a).
+ Axiom sqrt_neg : forall a, a<0 -> √a == 0.
 End NZSqrtSpec.
 
 Module Type NZSqrt (A : NZOrdAxiomsSig) := Sqrt A <+ NZSqrtSpec A.
@@ -39,10 +40,10 @@ Module Type NZSqrtProp
 
 (** First, sqrt is non-negative *)
 
-Lemma sqrt_spec_nonneg : forall a b, 0<=a ->
+Lemma sqrt_spec_nonneg : forall a b,
  b*b <= a < S b * S b -> 0 <= b.
 Proof.
- intros a b Ha (LE,LT).
+ intros a b (LE,LT).
  destruct (le_gt_cases 0 b) as [Hb|Hb]; trivial. exfalso.
  assert (S b * S b < b * b).
   rewrite mul_succ_l, <- (add_0_r (b*b)).
@@ -52,18 +53,21 @@ Proof.
  order.
 Qed.
 
-Lemma sqrt_nonneg : forall a, 0<=a -> 0<=√a.
+Lemma sqrt_nonneg : forall a, 0<=√a.
 Proof.
- intros. now apply (sqrt_spec_nonneg a), sqrt_spec.
+ intros. destruct (lt_ge_cases a 0) as [Ha|Ha].
+ now rewrite (sqrt_neg _ Ha).
+ now apply (sqrt_spec_nonneg a), sqrt_spec.
 Qed.
 
 (** The spec of sqrt indeed determines it *)
 
-Lemma sqrt_unique : forall a b, 0<=a -> b*b<=a<(S b)*(S b) -> √a == b.
+Lemma sqrt_unique : forall a b, b*b <= a < S b * S b -> √a == b.
 Proof.
- intros a b Ha (LEb,LTb).
- assert (0<=b) by (apply (sqrt_spec_nonneg a); try split; trivial).
- assert (0<=√a) by now apply sqrt_nonneg.
+ intros a b (LEb,LTb).
+ assert (Ha : 0<=a) by (transitivity (b*b); trivial using square_nonneg).
+ assert (Hb : 0<=b) by (apply (sqrt_spec_nonneg a); now split).
+ assert (Ha': 0<=√a) by now apply sqrt_nonneg.
  destruct (sqrt_spec a Ha) as (LEa,LTa).
  assert (b <= √a).
   apply lt_succ_r, square_lt_simpl_nonneg; [|order].
@@ -80,16 +84,17 @@ Lemma sqrt_square : forall a, 0<=a -> √(a*a) == a.
 Proof.
  intros a Ha.
  apply sqrt_unique.
- apply square_nonneg.
  split. order.
  apply mul_lt_mono_nonneg; trivial using lt_succ_diag_r.
 Qed.
 
 (** Sqrt is a monotone function (but not a strict one) *)
 
-Lemma sqrt_le_mono : forall a b, 0<=a<=b -> √a <= √b.
+Lemma sqrt_le_mono : forall a b, a <= b -> √a <= √b.
 Proof.
- intros a b (Ha,Hab).
+ intros a b Hab.
+ destruct (lt_ge_cases a 0) as [Ha|Ha].
+ rewrite (sqrt_neg _ Ha). apply sqrt_nonneg.
  assert (Hb : 0 <= b) by order.
  destruct (sqrt_spec a Ha) as (LE,_).
  destruct (sqrt_spec b Hb) as (_,LT).
@@ -100,9 +105,12 @@ Qed.
 
 (** No reverse result for <=, consider for instance √2 <= √1 *)
 
-Lemma sqrt_lt_cancel : forall a b, 0<=a -> 0<=b -> √a < √b -> a < b.
+Lemma sqrt_lt_cancel : forall a b, √a < √b -> a < b.
 Proof.
- intros a b Ha Hb H.
+ intros a b H.
+ destruct (lt_ge_cases b 0) as [Hb|Hb].
+ rewrite (sqrt_neg b Hb) in H; generalize (sqrt_nonneg a); order.
+ destruct (lt_ge_cases a 0) as [Ha|Ha]; [order|].
  destruct (sqrt_spec a Ha) as (_,LT).
  destruct (sqrt_spec b Hb) as (LE,_).
  apply le_succ_l in H.
@@ -119,7 +127,7 @@ Lemma sqrt_le_square : forall a b, 0<=a -> 0<=b -> (b*b<=a <-> b <= √a).
 Proof.
  intros a b Ha Hb. split; intros H.
  rewrite <- (sqrt_square b); trivial.
- apply sqrt_le_mono. split. apply square_nonneg. trivial.
+ now apply sqrt_le_mono.
  destruct (sqrt_spec a Ha) as (LE,LT).
  transitivity (√a * √a); trivial.
  now apply mul_le_mono_nonneg.
@@ -133,8 +141,7 @@ Proof.
  destruct (sqrt_spec a Ha) as (LE,_).
  apply square_lt_simpl_nonneg; try order.
  rewrite <- (sqrt_square b Hb) in H.
- apply sqrt_lt_cancel; trivial.
- apply square_nonneg.
+ now apply sqrt_lt_cancel.
 Qed.
 
 (** Sqrt and basic constants *)
@@ -151,7 +158,7 @@ Qed.
 
 Lemma sqrt_2 : √2 == 1.
 Proof.
- apply sqrt_unique. order'. nzsimpl. split. order'.
+ apply sqrt_unique. nzsimpl. split. order'.
  apply lt_succ_r, lt_le_incl, lt_succ_r. nzsimpl'; order.
 Qed.
 
@@ -178,11 +185,15 @@ Qed.
 (** Due to rounding error, we don't have the usual √(a*b) = √a*√b
     but only lower and upper bounds. *)
 
-Lemma sqrt_mul_below : forall a b, 0<=a -> 0<=b -> √a * √b <= √(a*b).
+Lemma sqrt_mul_below : forall a b, √a * √b <= √(a*b).
 Proof.
- intros a b Ha Hb.
- assert (Ha':=sqrt_nonneg _ Ha).
- assert (Hb':=sqrt_nonneg _ Hb).
+ intros a b.
+ destruct (lt_ge_cases a 0) as [Ha|Ha].
+ rewrite (sqrt_neg a Ha). nzsimpl. apply sqrt_nonneg.
+ destruct (lt_ge_cases b 0) as [Hb|Hb].
+ rewrite (sqrt_neg b Hb). nzsimpl. apply sqrt_nonneg.
+ assert (Ha':=sqrt_nonneg a).
+ assert (Hb':=sqrt_nonneg b).
  apply sqrt_le_square; try now apply mul_nonneg_nonneg.
  rewrite mul_shuffle1.
  apply mul_le_mono_nonneg; try now apply mul_nonneg_nonneg.
@@ -190,8 +201,7 @@ Proof.
   now apply sqrt_spec.
 Qed.
 
-Lemma sqrt_mul_above : forall a b, 0<=a -> 0<=b ->
- √(a*b) < S (√a) * S (√b).
+Lemma sqrt_mul_above : forall a b, 0<=a -> 0<=b -> √(a*b) < S (√a) * S (√b).
 Proof.
  intros a b Ha Hb.
  apply sqrt_lt_square.
@@ -211,11 +221,19 @@ Qed.
 
 (** Sqrt and addition *)
 
-Lemma sqrt_add_le : forall a b, 0<=a -> 0<=b -> √(a+b) <= √a + √b.
+Lemma sqrt_add_le : forall a b, √(a+b) <= √a + √b.
 Proof.
- intros a b Ha Hb.
- assert (Ha':=sqrt_nonneg _ Ha).
- assert (Hb':=sqrt_nonneg _ Hb).
+ assert (AUX : forall a b, a<0 -> √(a+b) <= √a + √b).
+  intros a b Ha. rewrite (sqrt_neg a Ha). nzsimpl.
+  apply sqrt_le_mono.
+  rewrite <- (add_0_l b) at 2.
+  apply add_le_mono_r; order.
+ intros a b.
+ destruct (lt_ge_cases a 0) as [Ha|Ha]. now apply AUX.
+ destruct (lt_ge_cases b 0) as [Hb|Hb].
+  rewrite (add_comm a), (add_comm (√a)); now apply AUX.
+ assert (Ha':=sqrt_nonneg a).
+ assert (Hb':=sqrt_nonneg b).
  rewrite <- lt_succ_r.
  apply sqrt_lt_square.
   now apply add_nonneg_nonneg.
@@ -241,8 +259,8 @@ Qed.
 Lemma add_sqrt_le : forall a b, 0<=a -> 0<=b -> √a + √b <= √(2*(a+b)).
 Proof.
  intros a b Ha Hb.
- assert (Ha':=sqrt_nonneg _ Ha).
- assert (Hb':=sqrt_nonneg _ Hb).
+ assert (Ha':=sqrt_nonneg a).
+ assert (Hb':=sqrt_nonneg b).
  apply sqrt_le_square.
   apply mul_nonneg_nonneg. order'. now apply add_nonneg_nonneg.
   now apply add_nonneg_nonneg.

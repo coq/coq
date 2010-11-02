@@ -746,7 +746,7 @@ Module Make (W0:CyclicType) <: NType.
  Theorem spec_sqrt: forall x, [sqrt x] = Zsqrt [x].
  Proof.
   intros x.
-  symmetry. apply Z.sqrt_unique. apply spec_pos.
+  symmetry. apply Z.sqrt_unique.
   rewrite <- ! Zpower_2. apply spec_sqrt_aux.
  Qed.
 

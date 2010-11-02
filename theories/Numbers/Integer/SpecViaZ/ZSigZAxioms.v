@@ -261,7 +261,7 @@ Proof.
  simpl. unfold Zpower_pos; simpl. ring.
 Qed.
 
-Lemma pow_neg : forall a b, b<0 -> a^b == 0.
+Lemma pow_neg_r : forall a b, b<0 -> a^b == 0.
 Proof.
  intros a b. zify. intros Hb.
  destruct [b]; reflexivity || discriminate.

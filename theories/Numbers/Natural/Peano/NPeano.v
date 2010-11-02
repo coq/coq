@@ -369,10 +369,12 @@ Definition odd_spec := odd_spec.
 Program Instance pow_wd : Proper (eq==>eq==>eq) pow.
 Definition pow_0_r := pow_0_r.
 Definition pow_succ_r := pow_succ_r.
+Lemma pow_neg_r : forall a b, b<0 -> a^b = 0. inversion 1. Qed.
 Definition pow := pow.
 
-Definition sqrt_spec a (Ha:0<=a) := sqrt_spec a.
 Program Instance sqrt_wd : Proper (eq==>eq) sqrt.
+Definition sqrt_spec a (Ha:0<=a) := sqrt_spec a.
+Lemma sqrt_neg : forall a, a<0 -> sqrt a = 0. inversion 1. Qed.
 Definition sqrt := sqrt.
 
 Definition div := div.

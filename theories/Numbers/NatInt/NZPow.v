@@ -26,7 +26,12 @@ Module Type NZPowSpec (Import A : NZOrdAxiomsSig')(Import B : Pow' A).
  Declare Instance pow_wd : Proper (eq==>eq==>eq) pow.
  Axiom pow_0_r : forall a, a^0 == 1.
  Axiom pow_succ_r : forall a b, 0<=b -> a^(succ b) == a * a^b.
+ Axiom pow_neg_r : forall a b, b<0 -> a^b == 0.
 End NZPowSpec.
+
+(** The above [pow_neg_r] specification is useless (and trivially
+   provable) for N. Having it here allows to already derive
+   some slightly more general statements. *)
 
 Module Type NZPow (A : NZOrdAxiomsSig) := Pow A <+ NZPowSpec A.
 Module Type NZPow' (A : NZOrdAxiomsSig) := Pow' A <+ NZPowSpec A.
@@ -83,10 +88,13 @@ Proof.
  now apply add_nonneg_nonneg.
 Qed.
 
-Lemma pow_mul_l : forall a b c, 0<=c ->
+Lemma pow_mul_l : forall a b c,
   (a*b)^c == a^c * b^c.
 Proof.
- intros a b c Hc. apply le_ind with (4:=Hc). solve_predicate_wd.
+ intros a b c.
+ destruct (lt_ge_cases c 0) as [Hc|Hc].
+ rewrite !(pow_neg_r _ _ Hc). now nzsimpl.
+ apply le_ind with (4:=Hc). solve_predicate_wd.
  now nzsimpl.
  clear c Hc. intros c Hc IH.
  nzsimpl; trivial.
@@ -106,9 +114,12 @@ Qed.
 
 (** Positivity *)
 
-Lemma pow_nonneg_nonneg : forall a b, 0<=a -> 0<=b -> 0<=a^b.
+Lemma pow_nonneg : forall a b, 0<=a -> 0<=a^b.
 Proof.
- intros a b Ha Hb. apply le_ind with (4:=Hb). solve_predicate_wd.
+ intros a b Ha.
+ destruct (lt_ge_cases b 0) as [Hb|Hb].
+ now rewrite !(pow_neg_r _ _ Hb).
+ apply le_ind with (4:=Hb). solve_predicate_wd.
  nzsimpl; order'.
  clear b Hb. intros b Hb IH.
  nzsimpl; trivial. now apply mul_nonneg_nonneg.
@@ -131,23 +142,28 @@ Proof.
  clear c Hc. intros c Hc IH (Ha,H).
  nzsimpl; try order.
  apply mul_lt_mono_nonneg; trivial.
- apply pow_nonneg_nonneg; try order.
+ apply pow_nonneg; try order.
  apply IH. now split.
 Qed.
 
-Lemma pow_le_mono_l : forall a b c, 0<=c -> 0<=a<=b -> a^c <= b^c.
+Lemma pow_le_mono_l : forall a b c, 0<=a<=b -> a^c <= b^c.
 Proof.
- intros a b c Hc (Ha,H).
- apply lt_eq_cases in Hc; destruct Hc as [Hc|Hc]; [|rewrite <- Hc].
+ intros a b c (Ha,H).
+ destruct (lt_trichotomy c 0) as [Hc|[Hc|Hc]].
+ rewrite !(pow_neg_r _ _ Hc); now nzsimpl.
+ rewrite Hc; now nzsimpl.
  apply lt_eq_cases in H. destruct H as [H|H]; [|now rewrite <- H].
  apply lt_le_incl, pow_lt_mono_l; now try split.
- now nzsimpl.
 Qed.
 
-Lemma pow_gt_1 : forall a b, 1<a -> 0<b -> 1<a^b.
+Lemma pow_gt_1 : forall a b, 1<a -> (0<b <-> 1<a^b).
 Proof.
- intros a b Ha Hb. rewrite <- (pow_1_l b) by order.
+ intros a b Ha. split; intros Hb.
+ rewrite <- (pow_1_l b) by order.
  apply pow_lt_mono_l; try split; order'.
+ destruct (lt_trichotomy b 0) as [H|[H|H]]; trivial.
+ rewrite pow_neg_r in Hb; order'.
+ rewrite H, pow_0_r in Hb. order.
 Qed.
 
 Lemma pow_lt_mono_r : forall a b c, 1<a -> 0<=b<c -> a^b < a^c.
@@ -165,9 +181,11 @@ Qed.
 
 (** NB: since 0^0 > 0^1, the following result isn't valid with a=0 *)
 
-Lemma pow_le_mono_r : forall a b c, 0<a -> 0<=b<=c -> a^b <= a^c.
+Lemma pow_le_mono_r : forall a b c, 0<a -> b<=c -> a^b <= a^c.
 Proof.
- intros a b c Ha (Hb,H).
+ intros a b c Ha H.
+ destruct (lt_ge_cases b 0) as [Hb|Hb].
+ rewrite (pow_neg_r _ _ Hb). apply pow_nonneg; order.
  apply le_succ_l in Ha; rewrite <- one_succ in Ha.
  apply lt_eq_cases in Ha; destruct Ha as [Ha|Ha]; [|rewrite <- Ha].
  apply lt_eq_cases in H; destruct H as [H|H]; [|now rewrite <- H].
@@ -175,7 +193,7 @@ Proof.
  nzsimpl; order.
 Qed.
 
-Lemma pow_le_mono : forall a b c d, 0<a<=c -> 0<=b<=d ->
+Lemma pow_le_mono : forall a b c d, 0<a<=c -> b<=d ->
  a^b <= c^d.
 Proof.
  intros. transitivity (a^d).
@@ -237,7 +255,7 @@ Lemma pow_le_mono_l_iff : forall a b c, 0<=a -> 0<=b -> 0<c ->
 Proof.
  intros a b c Ha Hb Hc.
  split; intro LE.
- apply pow_le_mono_l; try split; trivial. order.
+ apply pow_le_mono_l; try split; trivial.
  destruct (le_gt_cases a b) as [LE'|GT]; trivial.
  assert (b^c < a^c) by (apply pow_lt_mono_l; try split; trivial).
  order.
@@ -299,10 +317,10 @@ Proof.
  apply add_le_mono.
  rewrite <- add_0_r at 1. apply add_le_mono_l.
   apply mul_nonneg_nonneg; trivial.
-  apply pow_nonneg_nonneg; trivial.
+  apply pow_nonneg; trivial.
  rewrite <- add_0_l at 1. apply add_le_mono_r.
   apply mul_nonneg_nonneg; trivial.
-  apply pow_nonneg_nonneg; trivial.
+  apply pow_nonneg; trivial.
  apply mul_le_mono_nonneg_l; trivial.
  now apply add_nonneg_nonneg.
 Qed.
@@ -343,7 +361,7 @@ Proof.
  assert (EQ' : 2^c == 2^(P c) * 2) by (rewrite <- EQ at 1; nzsimpl'; order).
  rewrite EQ', <- !mul_assoc.
  apply mul_le_mono_nonneg_l.
- apply pow_nonneg_nonneg; order'.
+ apply pow_nonneg; order'.
  destruct (le_gt_cases a b).
  apply aux; try split; order'.
  rewrite (add_comm a), (add_comm (a^c)), (add_comm (a*a^c)).

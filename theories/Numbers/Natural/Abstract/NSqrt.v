@@ -22,17 +22,17 @@ Module NSqrtProp (Import A : NAxiomsSig')(Import B : NSubProp A).
 Lemma sqrt_spec' : forall a, √a*√a <= a < S (√a) * S (√a).
 Proof. wrap sqrt_spec. Qed.
 
-Lemma sqrt_unique : forall a b, b*b<=a<(S b)*(S b) -> √a == b.
-Proof. wrap sqrt_unique. Qed.
+Definition sqrt_unique : forall a b, b*b<=a<(S b)*(S b) -> √a == b
+ := sqrt_unique.
 
 Lemma sqrt_square : forall a, √(a*a) == a.
 Proof. wrap sqrt_square. Qed.
 
-Lemma sqrt_le_mono : forall a b, a<=b -> √a <= √b.
-Proof. wrap sqrt_le_mono. Qed.
+Definition sqrt_le_mono : forall a b, a<=b -> √a <= √b
+ := sqrt_le_mono.
 
-Lemma sqrt_lt_cancel : forall a b, √a < √b -> a < b.
-Proof. wrap sqrt_lt_cancel. Qed.
+Definition sqrt_lt_cancel : forall a b, √a < √b -> a < b
+ := sqrt_lt_cancel.
 
 Lemma sqrt_le_square : forall a b, b*b<=a <-> b <= √a.
 Proof. wrap sqrt_le_square. Qed.
@@ -44,19 +44,20 @@ Definition sqrt_0 := sqrt_0.
 Definition sqrt_1 := sqrt_1.
 Definition sqrt_2 := sqrt_2.
 
-Definition sqrt_lt_lin : forall a, 1<a -> √a<a := sqrt_lt_lin.
+Definition sqrt_lt_lin : forall a, 1<a -> √a<a
+ := sqrt_lt_lin.
 
-Lemma sqrt_le_lin : forall a, 0<=a -> √a<=a.
+Lemma sqrt_le_lin : forall a, √a<=a.
 Proof. wrap sqrt_le_lin. Qed.
 
-Lemma sqrt_mul_below : forall a b, √a * √b <= √(a*b).
-Proof. wrap sqrt_mul_below. Qed.
+Definition sqrt_mul_below : forall a b, √a * √b <= √(a*b)
+ := sqrt_mul_below.
 
 Lemma sqrt_mul_above : forall a b, √(a*b) < S (√a) * S (√b).
 Proof. wrap sqrt_mul_above. Qed.
 
-Lemma sqrt_add_le : forall a b, √(a+b) <= √a + √b.
-Proof. wrap sqrt_add_le. Qed.
+Definition sqrt_add_le : forall a b, √(a+b) <= √a + √b
+ := sqrt_add_le.
 
 Lemma add_sqrt_le : forall a b, √a + √b <= √(2*(a+b)).
 Proof. wrap add_sqrt_le. Qed.

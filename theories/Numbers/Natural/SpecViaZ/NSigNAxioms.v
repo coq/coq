@@ -204,6 +204,12 @@ Proof.
  simpl. unfold Zpower_pos; simpl. ring.
 Qed.
 
+Lemma pow_neg_r : forall a b, b<0 -> a^b == 0.
+Proof.
+ intros a b. zify. intro Hb. exfalso.
+ generalize (spec_pos b); omega.
+Qed.
+
 Lemma pow_pow_N : forall a b, a^b == pow_N a (to_N b).
 Proof.
  intros. zify. f_equal.
@@ -228,6 +234,12 @@ Lemma sqrt_spec : forall n, 0<=n ->
  (sqrt n)*(sqrt n) <= n /\ n < (succ (sqrt n))*(succ (sqrt n)).
 Proof.
  intros n. zify. apply Zsqrt_spec.
+Qed.
+
+Lemma sqrt_neg : forall n, n<0 -> sqrt n == 0.
+Proof.
+ intros n. zify. intro H. exfalso.
+ generalize (spec_pos n); omega.
 Qed.
 
 (** Even / Odd *)
