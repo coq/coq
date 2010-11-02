@@ -204,19 +204,40 @@ let print_modtype r =
 
 let dump_universes s =
   let output = open_out s in
-  let output_constraint kind left right =
-    let kind = match kind with
-      | `Lt -> "<"
-      | `Le -> "<="
-      | `Eq -> "="
-    in Printf.fprintf output "%s %s %s ;\n" left kind right
+  let output_constraint, close =
+    if Filename.check_suffix s ".dot" || Filename.check_suffix s ".gv" then begin
+      (* the lazy unit is to handle errors while printing the first line *)
+      let init = lazy (Printf.fprintf output "digraph universes {\n") in
+      begin fun kind left right ->
+        let () = Lazy.force init in
+        match kind with
+          | `Lt ->
+            Printf.fprintf output "  \"%s\" -> \"%s\" [style=bold];\n" right left
+          | `Le ->
+            Printf.fprintf output "  \"%s\" -> \"%s\" [style=solid];\n" right left
+          | `Eq ->
+            Printf.fprintf output "  \"%s\" -> \"%s\" [style=solid];\n" left right;
+            Printf.fprintf output "  \"%s\" -> \"%s\" [style=solid];\n" right left
+      end, begin fun () ->
+        if Lazy.lazy_is_val init then Printf.fprintf output "}\n";
+        close_out output
+      end
+    end else begin
+      begin fun kind left right ->
+        let kind = match kind with
+          | `Lt -> "<"
+          | `Le -> "<="
+          | `Eq -> "="
+        in Printf.fprintf output "%s %s %s ;\n" left kind right
+      end, (fun () -> close_out output)
+    end
   in
   try
     Univ.dump_universes output_constraint (Global.universes ());
-    close_out output;
+    close ();
     msgnl (str ("Universes written to file \""^s^"\"."))
   with
-      e -> close_out output; raise e
+      e -> close (); raise e
 
 (*********************)
 (* "Locate" commands *)
