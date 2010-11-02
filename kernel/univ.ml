@@ -600,19 +600,10 @@ let dump_universes output g =
   let dump_arc _ = function
     | Canonical {univ=u; lt=lt; le=le} ->
 	let u_str = string_of_univ_level u in
-	  List.iter
-	    (fun v ->
-	       Printf.fprintf output "%s < %s ;\n" u_str
-		 (string_of_univ_level v))
-	    lt;
-	  List.iter
-	    (fun v ->
-	       Printf.fprintf output "%s <= %s ;\n" u_str
-		 (string_of_univ_level v))
-	    le
+	List.iter (fun v -> output `Lt u_str (string_of_univ_level v)) lt;
+	List.iter (fun v -> output `Le u_str (string_of_univ_level v)) le
     | Equiv (u,v) ->
-	Printf.fprintf output "%s = %s ;\n"
-	  (string_of_univ_level u) (string_of_univ_level v)
+      output `Eq (string_of_univ_level u) (string_of_univ_level v)
   in
     UniverseLMap.iter dump_arc g
 

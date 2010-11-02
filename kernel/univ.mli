@@ -85,6 +85,8 @@ val pr_constraints : constraints -> Pp.std_ppcmds
 
 (** {6 Dumping to a file } *)
 
-val dump_universes : out_channel -> universes -> unit
+val dump_universes :
+  ([> `Lt | `Le | `Eq ] -> string -> string -> unit) ->
+  universes -> unit
 
 val hcons1_univ : universe -> universe

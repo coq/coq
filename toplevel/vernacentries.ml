@@ -204,8 +204,15 @@ let print_modtype r =
 
 let dump_universes s =
   let output = open_out s in
+  let output_constraint kind left right =
+    let kind = match kind with
+      | `Lt -> "<"
+      | `Le -> "<="
+      | `Eq -> "="
+    in Printf.fprintf output "%s %s %s ;\n" left kind right
+  in
   try
-    Univ.dump_universes output (Global.universes ());
+    Univ.dump_universes output_constraint (Global.universes ());
     close_out output;
     msgnl (str ("Universes written to file \""^s^"\"."))
   with
