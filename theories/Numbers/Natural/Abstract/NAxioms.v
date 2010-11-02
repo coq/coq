@@ -8,7 +8,7 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Export NZAxioms NZPow NZSqrt NZDiv.
+Require Export NZAxioms NZPow NZSqrt NZLog NZDiv.
 
 (** From [NZ], we obtain natural numbers just by stating that [pred 0] == 0 *)
 
@@ -32,8 +32,6 @@ Module Type Parity (Import N : NAxiomsMiniSig').
  Axiom odd_spec : forall n, odd n = true <-> Odd n.
 End Parity.
 
-(** For Power and Sqrt functions : NZPow and NZSqrt are enough *)
-
 (** Division Function : we reuse NZDiv.DivMod and NZDiv.NZDivCommon,
     and add to that a N-specific constraint. *)
 
@@ -41,15 +39,16 @@ Module Type NDivSpecific (Import N : NAxiomsMiniSig')(Import DM : DivMod' N).
  Axiom mod_upper_bound : forall a b, b ~= 0 -> a mod b < b.
 End NDivSpecific.
 
+(** For pow sqrt log2, the NZ axiomatizations are enough. *)
 
 (** We now group everything together. *)
 
 Module Type NAxiomsSig := NAxiomsMiniSig <+ HasCompare <+ Parity
-  <+ NZPow.NZPow <+ NZSqrt.NZSqrt
+  <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2
   <+ DivMod <+ NZDivCommon <+ NDivSpecific.
 
 Module Type NAxiomsSig' := NAxiomsMiniSig' <+ HasCompare <+ Parity
-  <+ NZPow.NZPow' <+ NZSqrt.NZSqrt'
+  <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2
   <+ DivMod' <+ NZDivCommon <+ NDivSpecific.
 
 

@@ -6,11 +6,17 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Export NAxioms.
-Require Import NMaxMin NParity NPow NSqrt NLog NDiv.
+(** Base-2 Logarithm Properties *)
 
-(** This functor summarizes all known facts about N. *)
+Require Import NAxioms NSub NPow NParity NZLog.
 
-Module Type NProp (N:NAxiomsSig) :=
- NMaxMinProp N <+ NParityProp N <+ NPowProp N <+ NSqrtProp N
-  <+ NLog2Prop N <+ NDivProp N.
+Module Type NLog2Prop
+ (A : NAxiomsSig)
+ (B : NSubProp A)
+ (C : NParityProp A B)
+ (D : NPowProp A B C).
+
+ (** For the moment we simply reuse NZ properties *)
+
+ Include NZLog2Prop A A A B D.NZPowP.
+End NLog2Prop.

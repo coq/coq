@@ -62,18 +62,7 @@ Program Instance lt_wd : Proper (eq==>eq==>iff) Nlt.
 
 Definition lt_eq_cases := Nle_lteq.
 Definition lt_irrefl := Nlt_irrefl.
-
-Theorem lt_succ_r : forall n m, n < (Nsucc m) <-> n <= m.
-Proof.
-intros n m; unfold Nlt, Nle; destruct n as [| p]; destruct m as [| q]; simpl;
-split; intro H; try reflexivity; try discriminate.
-destruct p; simpl; intros; discriminate. exfalso; now apply H.
-apply -> Pcompare_p_Sq in H. destruct H as [H | H].
-now rewrite H. now rewrite H, Pcompare_refl.
-apply <- Pcompare_p_Sq. case_eq ((p ?= q)%positive Eq); intro H1.
-right; now apply Pcompare_Eq_eq. now left. exfalso; now apply H.
-Qed.
-
+Definition lt_succ_r := Nlt_succ_r.
 Definition eqb_eq := Neqb_eq.
 
 Definition compare_spec := Ncompare_spec.
@@ -169,6 +158,12 @@ Definition pow_succ_r n p (H:0 <= p) := Npow_succ_r n p.
 Lemma pow_neg_r : forall a b, b<0 -> a^b = 0.
 Proof. destruct b; discriminate. Qed.
 
+(** Log2 *)
+
+Program Instance log2_wd : Proper (eq==>eq) Nlog2.
+Definition log2_spec := Nlog2_spec.
+Definition log2_nonpos := Nlog2_nonpos.
+
 (** Sqrt *)
 
 Program Instance sqrt_wd : Proper (eq==>eq) Nsqrt.
@@ -202,6 +197,7 @@ Definition pow := Npow.
 Definition even := Neven.
 Definition odd := Nodd.
 Definition sqrt := Nsqrt.
+Definition log2 := Nlog2.
 
 Include NProp
  <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.

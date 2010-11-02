@@ -13,8 +13,6 @@ Require Import Omega.
 Require Import Zcomplements.
 Open Local Scope Z_scope.
 
-Infix "^" := Zpower : Z_scope.
-
 (** * Definition of powers over [Z]*)
 
 (** [Zpower_nat z n] is the n-th power of [z] when [n] is an unary

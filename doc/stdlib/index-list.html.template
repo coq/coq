@@ -183,6 +183,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/ZArith/Zpow_def.v
     theories/ZArith/Zpower.v
     theories/ZArith/Zdiv.v
+    theories/ZArith/Zlog_def.v
     theories/ZArith/Zlogarithm.v
     (theories/ZArith/ZArith.v)
     theories/ZArith/Zgcd_alt.v
@@ -238,6 +239,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/NatInt/NZProperties.v
     theories/Numbers/NatInt/NZPow.v
     theories/Numbers/NatInt/NZSqrt.v
+    theories/Numbers/NatInt/NZLog.v
     </dd>
     </dt>
 
@@ -281,6 +283,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Natural/Abstract/NParity.v
     theories/Numbers/Natural/Abstract/NPow.v
     theories/Numbers/Natural/Abstract/NSqrt.v
+    theories/Numbers/Natural/Abstract/NLog.v
     theories/Numbers/Natural/Abstract/NProperties.v
     theories/Numbers/Natural/Binary/NBinary.v
     theories/Numbers/Natural/Peano/NPeano.v

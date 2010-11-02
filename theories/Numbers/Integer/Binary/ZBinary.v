@@ -9,40 +9,12 @@
 (************************************************************************)
 
 
-Require Import ZAxioms ZProperties.
-Require Import BinInt Zcompare Zorder ZArith_dec Zbool Zeven Zsqrt_def.
+Require Import ZAxioms ZProperties BinInt Zcompare Zorder ZArith_dec
+ Zbool Zeven Zsqrt_def Zpow_def Zlog_def.
 
 Local Open Scope Z_scope.
 
-(** An alternative Zpow *)
-
-(** The Zpow is extensionnaly equal to Zpower in ZArith, but not
-    convertible with it. This Zpow uses a logarithmic number of
-    multiplications instead of a linear one. We should try someday to
-    replace Zpower with this Zpow.
-*)
-
-Definition Zpow n m :=
-  match m with
-    | Z0 => 1
-    | Zpos p => Piter_op Zmult p n
-    | Zneg p => 0
-  end.
-
-Lemma Zpow_0_r : forall n, Zpow n 0 = 1.
-Proof. reflexivity. Qed.
-
-Lemma Zpow_succ_r : forall a b, 0<=b -> Zpow a (Zsucc b) = a * Zpow a b.
-Proof.
- intros a [|b|b] Hb; [ | |now elim Hb]; simpl.
- now rewrite Zmult_1_r.
- rewrite <- Pplus_one_succ_r. apply Piter_op_succ. apply Zmult_assoc.
-Qed.
-
-Lemma Zpow_neg_r : forall a b, b<0 -> Zpow a b = 0.
-Proof.
- now destruct b.
-Qed.
+(** Bi-directional induction for Z. *)
 
 Theorem Z_bi_induction :
   forall A : Z -> Prop, Proper (eq ==> iff) A ->
@@ -167,12 +139,12 @@ Definition odd := Zodd_bool.
 
 (** Power *)
 
-Program Instance pow_wd : Proper (eq==>eq==>eq) Zpow.
+Program Instance pow_wd : Proper (eq==>eq==>eq) Zpower.
 
-Definition pow_0_r := Zpow_0_r.
-Definition pow_succ_r := Zpow_succ_r.
-Definition pow_neg_r := Zpow_neg_r.
-Definition pow := Zpow.
+Definition pow_0_r := Zpower_0_r.
+Definition pow_succ_r := Zpower_succ_r.
+Definition pow_neg_r := Zpower_neg_r.
+Definition pow := Zpower.
 
 (** Sqrt *)
 
@@ -184,6 +156,14 @@ Program Instance sqrt_wd : Proper (eq==>eq) Zsqrt.
 Definition sqrt_spec := Zsqrt_spec.
 Definition sqrt_neg := Zsqrt_neg.
 Definition sqrt := Zsqrt.
+
+(** Log2 *)
+
+Program Instance log2_wd : Proper (eq==>eq) Zlog2.
+
+Definition log2_spec := Zlog2_spec.
+Definition log2_nonpos := Zlog2_nonpos.
+Definition log2 := Zlog2.
 
 (** We define [eq] only here to avoid refering to this [eq] above. *)
 

@@ -10,10 +10,13 @@
 
 Require Export ZArith_base.
 
+(** Extra definitions *)
+
+Require Export Zpow_def Zsqrt_def Zlog_def.
+
 (** Extra modules using [Omega] or [Ring]. *)
 
 Require Export Zcomplements.
-Require Export Zsqrt_def.
 Require Export Zpower.
 Require Export Zdiv.
 Require Export Zlogarithm.

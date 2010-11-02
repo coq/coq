@@ -1151,7 +1151,7 @@ Module Make (W0:CyclicType) <: NType.
  rewrite Zmult_comm in H0. auto with zarith.
  Qed.
 
- Lemma spec_log2 : forall x, [x]<>0 ->
+ Lemma spec_log2_pos : forall x, [x]<>0 ->
    2^[log2 x] <= [x] < 2^([log2 x]+1).
  Proof.
  intros x H. rewrite log2_fold.
@@ -1176,6 +1176,15 @@ Module Make (W0:CyclicType) <: NType.
  rewrite ZnZ.spec_zdigits.
  rewrite pow2_pos_minus_1 by (red; auto).
  apply ZnZ.spec_head0; auto with zarith.
+ Qed.
+
+ Lemma spec_log2 : forall x, [log2 x] = Zlog2 [x].
+ Proof.
+  intros. destruct (Z_lt_ge_dec 0 [x]).
+  symmetry. apply Z.log2_unique. apply spec_pos.
+  apply spec_log2_pos. intro EQ; rewrite EQ in *; auto with zarith.
+  rewrite spec_log2_0. rewrite Z.log2_nonpos; auto with zarith.
+  generalize (spec_pos x); auto with zarith.
  Qed.
 
  Lemma log2_digits_head0 : forall x, 0 < [x] ->
@@ -1311,7 +1320,7 @@ Module Make (W0:CyclicType) <: NType.
  (* [x] <> 0 *)
  apply spec_unsafe_shiftl_aux with ([log2 x] + 1); auto with zarith.
  generalize (spec_pos (log2 x)); auto with zarith.
- destruct (spec_log2 x); auto with zarith.
+ destruct (spec_log2_pos x); auto with zarith.
  rewrite log2_digits_head0; auto with zarith.
  generalize (spec_pos x); auto with zarith.
  Qed.

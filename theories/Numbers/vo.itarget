@@ -49,6 +49,7 @@ NatInt/NZDomain.vo
 NatInt/NZDiv.vo
 NatInt/NZPow.vo
 NatInt/NZSqrt.vo
+NatInt/NZLog.vo
 Natural/Abstract/NAddOrder.vo
 Natural/Abstract/NAdd.vo
 Natural/Abstract/NAxioms.vo
@@ -65,6 +66,7 @@ Natural/Abstract/NMaxMin.vo
 Natural/Abstract/NParity.vo
 Natural/Abstract/NPow.vo
 Natural/Abstract/NSqrt.vo
+Natural/Abstract/NLog.vo
 Natural/BigN/BigN.vo
 Natural/BigN/Nbasic.vo
 Natural/BigN/NMake_gen.vo

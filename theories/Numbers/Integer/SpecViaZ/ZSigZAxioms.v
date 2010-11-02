@@ -20,7 +20,7 @@ Hint Rewrite
  spec_0 spec_1 spec_2 spec_add spec_sub spec_pred spec_succ
  spec_mul spec_opp spec_of_Z spec_div spec_modulo spec_sqrt
  spec_compare spec_eq_bool spec_max spec_min spec_abs spec_sgn
- spec_pow spec_even spec_odd
+ spec_pow spec_log2 spec_even spec_odd
  : zsimpl.
 
 Ltac zsimpl := autorewrite with zsimpl.
@@ -291,6 +291,21 @@ Qed.
 Lemma sqrt_neg : forall n, n<0 -> sqrt n == 0.
 Proof.
  intros n. zify. apply Zsqrt_neg.
+Qed.
+
+(** Log2 *)
+
+Program Instance log2_wd : Proper (eq==>eq) log2.
+
+Lemma log2_spec : forall n, 0<n ->
+ 2^(log2 n) <= n /\ n < 2^(succ (log2 n)).
+Proof.
+ intros n. zify. apply Zlog2_spec.
+Qed.
+
+Lemma log2_nonpos : forall n, n<=0 -> log2 n == 0.
+Proof.
+ intros n. zify. apply Zlog2_nonpos.
 Qed.
 
 (** Even / Odd *)

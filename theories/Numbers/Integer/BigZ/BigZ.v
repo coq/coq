@@ -63,10 +63,13 @@ Arguments Scope BigZ.eq_bool [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.pow_pos [bigZ_scope positive_scope].
 Arguments Scope BigZ.pow_N [bigZ_scope N_scope].
 Arguments Scope BigZ.pow [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.log2 [bigZ_scope].
 Arguments Scope BigZ.sqrt [bigZ_scope].
 Arguments Scope BigZ.div_eucl [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.modulo [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.gcd [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.even [bigZ_scope].
+Arguments Scope BigZ.odd [bigZ_scope].
 
 Local Notation "0" := BigZ.zero : bigZ_scope.
 Local Notation "1" := BigZ.one : bigZ_scope.

@@ -61,10 +61,13 @@ Arguments Scope BigN.eq_bool [bigN_scope bigN_scope].
 Arguments Scope BigN.pow_pos [bigN_scope positive_scope].
 Arguments Scope BigN.pow_N [bigN_scope N_scope].
 Arguments Scope BigN.pow [bigN_scope bigN_scope].
+Arguments Scope BigN.log2 [bigN_scope].
 Arguments Scope BigN.sqrt [bigN_scope].
 Arguments Scope BigN.div_eucl [bigN_scope bigN_scope].
 Arguments Scope BigN.modulo [bigN_scope bigN_scope].
 Arguments Scope BigN.gcd [bigN_scope bigN_scope].
+Arguments Scope BigN.even [bigN_scope].
+Arguments Scope BigN.odd [bigN_scope].
 
 Local Notation "0" := BigN.zero : bigN_scope. (* temporary notation *)
 Local Notation "1" := BigN.one : bigN_scope. (* temporary notation *)

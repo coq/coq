@@ -16,7 +16,8 @@ Module NTypeIsNAxioms (Import N : NType').
 Hint Rewrite
  spec_0 spec_1 spec_2 spec_succ spec_add spec_mul spec_pred spec_sub
  spec_div spec_modulo spec_gcd spec_compare spec_eq_bool spec_sqrt
- spec_max spec_min spec_pow_pos spec_pow_N spec_pow spec_even spec_odd
+ spec_log2 spec_max spec_min spec_pow_pos spec_pow_N spec_pow
+ spec_even spec_odd
  : nsimpl.
 Ltac nsimpl := autorewrite with nsimpl.
 Ltac ncongruence := unfold eq, to_N; repeat red; intros; nsimpl; congruence.
@@ -240,6 +241,22 @@ Lemma sqrt_neg : forall n, n<0 -> sqrt n == 0.
 Proof.
  intros n. zify. intro H. exfalso.
  generalize (spec_pos n); omega.
+Qed.
+
+(** Log2 *)
+
+Program Instance log2_wd : Proper (eq==>eq) log2.
+
+Lemma log2_spec : forall n, 0<n ->
+ 2^(log2 n) <= n /\ n < 2^(succ (log2 n)).
+Proof.
+ intros n. zify. change (Zlog2 [n]+1)%Z with (Zsucc (Zlog2 [n])).
+ apply Zlog2_spec.
+Qed.
+
+Lemma log2_nonpos : forall n, n<=0 -> log2 n == 0.
+Proof.
+ intros n. zify. apply Zlog2_nonpos.
 Qed.
 
 (** Even / Odd *)

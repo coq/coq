@@ -12,7 +12,7 @@ Require Import Bool NAxioms NSub NParity NZPow.
 
 (** Derived properties of power, specialized on natural numbers *)
 
-Module NPowProp
+Module Type NPowProp
  (Import A : NAxiomsSig')
  (Import B : NSubProp A)
  (Import C : NParityProp A B).

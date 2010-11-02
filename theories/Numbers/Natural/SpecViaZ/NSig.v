@@ -78,8 +78,7 @@ Module Type NType.
  Parameter spec_pow_N: forall x n, [pow_N x n] = [x] ^ Z_of_N n.
  Parameter spec_pow: forall x n, [pow x n] = [x] ^ [n].
  Parameter spec_sqrt: forall x, [sqrt x] = Zsqrt [x].
- Parameter spec_log2_0: forall x, [x] = 0 -> [log2 x] = 0.
- Parameter spec_log2: forall x, [x]<>0 -> 2^[log2 x] <= [x] < 2^([log2 x]+1).
+ Parameter spec_log2: forall x, [log2 x] = Zlog2 [x].
  Parameter spec_div_eucl: forall x y,
   let (q,r) := div_eucl x y in ([q], [r]) = Zdiv_eucl [x] [y].
  Parameter spec_div: forall x y, [div x y] = [x] / [y].

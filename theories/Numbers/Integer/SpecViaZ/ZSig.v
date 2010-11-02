@@ -51,6 +51,7 @@ Module Type ZType.
  Parameter pow_N : t -> N -> t.
  Parameter pow : t -> t -> t.
  Parameter sqrt : t -> t.
+ Parameter log2 : t -> t.
  Parameter div_eucl : t -> t -> t * t.
  Parameter div : t -> t -> t.
  Parameter modulo : t -> t -> t.
@@ -79,6 +80,7 @@ Module Type ZType.
  Parameter spec_pow_N: forall x n, [pow_N x n] = [x] ^ Z_of_N n.
  Parameter spec_pow: forall x n, [pow x n] = [x] ^ [n].
  Parameter spec_sqrt: forall x, [sqrt x] = Zsqrt [x].
+ Parameter spec_log2: forall x, [log2 x] = Zlog2 [x].
  Parameter spec_div_eucl: forall x y,
    let (q,r) := div_eucl x y in ([q], [r]) = Zdiv_eucl [x] [y].
  Parameter spec_div: forall x y, [div x y] = [x] / [y].

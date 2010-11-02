@@ -442,15 +442,13 @@ Proof.
 Qed.
 
 Theorem Ncompare_n_Sm :
-  forall n m : N, Ncompare n (Nsucc m) = Lt <-> Ncompare n m = Lt \/ n = m.
+  forall n m : N, (n ?= Nsucc m) = Lt <-> (n ?= m) = Lt \/ n = m.
 Proof.
-intros n m; split; destruct n as [| p]; destruct m as [| q]; simpl; auto.
-destruct p; simpl; intros; discriminate.
-pose proof (Pcompare_p_Sq p q) as (?,_).
-assert (p = q <-> Npos p = Npos q); [split; congruence | tauto].
-intros H; destruct H; discriminate.
-pose proof (Pcompare_p_Sq p q) as (_,?);
-assert (p = q <-> Npos p = Npos q); [split; congruence | tauto].
+intros [|p] [|q]; simpl; split; intros H; auto.
+destruct p; discriminate.
+destruct H; discriminate.
+apply Pcompare_p_Sq in H; destruct H; subst; auto.
+apply Pcompare_p_Sq; destruct H; [left|right]; congruence.
 Qed.
 
 Lemma Nle_lteq : forall x y, x <= y <-> x < y \/ x=y.
@@ -460,9 +458,17 @@ generalize (Ncompare_eq_correct x y).
 destruct (x ?= y); intuition; discriminate.
 Qed.
 
+Lemma Nlt_succ_r : forall n m,  n < Nsucc m <-> n<=m.
+Proof.
+intros n m.
+eapply iff_trans. apply Ncompare_n_Sm. apply iff_sym, Nle_lteq.
+Qed.
+
 Lemma Nle_trans : forall n m p, n<=m -> m<=p -> n<=p.
 Proof.
- intros n m p. rewrite 3 Nle_lteq. intros [H|H] [H'|H']; subst; auto.
+ intros n m p H H'.
+ apply Nle_lteq. apply Nle_lteq in H. apply Nle_lteq in H'.
+ destruct H, H'; subst; auto.
  left; now apply Nlt_trans with m.
 Qed.
 
@@ -470,8 +476,10 @@ Lemma Nle_succ_l : forall n m, Nsucc n <= m <-> n < m.
 Proof.
  intros.
  unfold Nle, Nlt.
- rewrite <- 2 (Ncompare_antisym m), 2 CompOpp_iff, Ncompare_n_Sm, <- (Nle_lteq m n).
- unfold Nle. simpl. destruct (m ?= n); split; auto; now destruct 1.
+ rewrite <- 2 (Ncompare_antisym m).
+ generalize (Nlt_succ_r m n). unfold Nle,Nlt.
+ destruct Ncompare, Ncompare; simpl; intros (U,V);
+  intuition; now try discriminate V.
 Qed.
 
 Lemma Ncompare_spec : forall x y, CompSpec eq Nlt x y (Ncompare x y).
@@ -512,7 +520,7 @@ Qed.
 Lemma Nmult_le_mono_l : forall n m p, m<=p -> n*m<=n*p.
 Proof.
  intros [|n] m p. intros _ H. discriminate.
- rewrite 2 Nle_lteq. intros [H|H]; [left|right].
+ intros. apply Nle_lteq. apply Nle_lteq in H. destruct H; [left|right].
  now apply Nmult_lt_mono_l.
  congruence.
 Qed.

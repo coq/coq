@@ -12,4 +12,4 @@ Require Export ZAxioms ZMaxMin ZSgnAbs ZParity ZPow.
 
 Module Type ZProp (Z:ZAxiomsSig) :=
  ZMaxMinProp Z <+ ZSgnAbsProp Z <+ ZParityProp Z <+ ZPowProp Z
- <+ NZSqrt.NZSqrtProp Z Z.
+ <+ NZSqrt.NZSqrtProp Z Z <+ NZLog.NZLog2Prop Z Z Z.
