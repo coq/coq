@@ -1,7 +1,11 @@
 Changes from V8.3 to V8.4
 =========================
 
-New proof engine
+- New proof engine
+- When the output file of "Print Universes" ends in ".dot" or ".gv",
+  the universe graph is printed in the DOT language, and can be
+  processed by Graphviz tools.
+
 
 Changes from V8.2 to V8.3
 =========================

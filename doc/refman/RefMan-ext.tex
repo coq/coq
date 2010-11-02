@@ -1757,6 +1757,14 @@ The constraints on the internal level of the occurrences of {\Type}
 {\tt Print Universes.}
 \end{quote}
 
+This command also accepts an optional output filename:
+\begin{quote}
+\tt Print Universes {\str}.
+\end{quote}
+If {\str} ends in \texttt{.dot} or \texttt{.gv}, the constraints are
+printed in the DOT language, and can be processed by Graphviz
+tools. The format is unspecified if {\str} doesn't end in
+\texttt{.dot} or \texttt{.gv}.
 
 %%% Local Variables: 
 %%% mode: latex
