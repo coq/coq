@@ -448,7 +448,6 @@ Definition log2_spec := log2_spec.
 Definition log2_nonpos := log2_nonpos.
 Definition log2 := log2.
 
-Program Instance sqrt_wd : Proper (eq==>eq) sqrt.
 Definition sqrt_spec a (Ha:0<=a) := sqrt_spec a.
 Lemma sqrt_neg : forall a, a<0 -> sqrt a = 0. inversion 1. Qed.
 Definition sqrt := sqrt.

@@ -165,7 +165,6 @@ Definition log2_nonpos := Nlog2_nonpos.
 
 (** Sqrt *)
 
-Program Instance sqrt_wd : Proper (eq==>eq) Nsqrt.
 Definition sqrt_spec n (H:0<=n) := Nsqrt_spec n.
 Lemma sqrt_neg : forall a, a<0 -> Nsqrt a = 0.
 Proof. destruct a; discriminate. Qed.

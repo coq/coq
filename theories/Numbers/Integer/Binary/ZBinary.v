@@ -151,8 +151,6 @@ Definition pow := Zpower.
 (** NB : we use a new Zsqrt defined in Zsqrt_def, the previous
    module Zsqrt.v is now Zsqrt_compat.v *)
 
-Program Instance sqrt_wd : Proper (eq==>eq) Zsqrt.
-
 Definition sqrt_spec := Zsqrt_spec.
 Definition sqrt_neg := Zsqrt_neg.
 Definition sqrt := Zsqrt.

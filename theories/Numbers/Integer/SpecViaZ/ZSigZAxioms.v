@@ -280,8 +280,6 @@ Qed.
 
 (** Sqrt *)
 
-Program Instance sqrt_wd : Proper (eq==>eq) sqrt.
-
 Lemma sqrt_spec : forall n, 0<=n ->
  (sqrt n)*(sqrt n) <= n /\ n < (succ (sqrt n))*(succ (sqrt n)).
 Proof.

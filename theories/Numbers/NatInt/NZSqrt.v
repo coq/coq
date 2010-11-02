@@ -23,7 +23,6 @@ End SqrtNotation.
 Module Type Sqrt' (A : Typ) := Sqrt A <+ SqrtNotation A.
 
 Module Type NZSqrtSpec (Import A : NZOrdAxiomsSig')(Import B : Sqrt' A).
- Declare Instance sqrt_wd : Proper (eq==>eq) sqrt.
  Axiom sqrt_spec : forall a, 0<=a -> √a * √a <= a < S (√a) * S (√a).
  Axiom sqrt_neg : forall a, a<0 -> √a == 0.
 End NZSqrtSpec.
@@ -76,6 +75,17 @@ Proof.
   apply lt_succ_r, square_lt_simpl_nonneg; [|order].
   now apply lt_le_incl, lt_succ_r.
  order.
+Qed.
+
+(** Hence sqrt is a morphism *)
+
+Instance sqrt_wd : Proper (eq==>eq) sqrt.
+Proof.
+ intros x x' Hx.
+ destruct (lt_ge_cases x 0) as [H|H].
+ rewrite 2 sqrt_neg; trivial. reflexivity.
+ now rewrite <- Hx.
+ apply sqrt_unique. rewrite Hx in *. now apply sqrt_spec.
 Qed.
 
 (** An alternate specification *)
