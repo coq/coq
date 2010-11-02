@@ -23,7 +23,7 @@ exception Non_closed_number
 open Libnames
 open Rawterm
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
-let positive_module = ["Coq";"NArith";"BinPos"]
+let positive_module = ["Coq";"PArith";"BinPos"]
 let make_path dir id = Libnames.make_path (make_dir dir) (id_of_string id)
 
 let positive_path = make_path positive_module "positive"

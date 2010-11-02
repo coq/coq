@@ -7,6 +7,7 @@ Structures/vo.otarget
 Init/vo.otarget
 Lists/vo.otarget
 Logic/vo.otarget
+PArith/vo.otarget
 NArith/vo.otarget
 Numbers/vo.otarget
 Program/vo.otarget

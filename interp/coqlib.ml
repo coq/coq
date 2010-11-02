@@ -91,10 +91,12 @@ let logic_constant dir s = gen_constant "Coqlib" ("Logic"::dir) s
 let arith_dir = ["Coq";"Arith"]
 let arith_modules = [arith_dir]
 
+let parith_dir = ["Coq";"PArith"]
+
 let narith_dir = ["Coq";"NArith"]
 
 let zarith_dir = ["Coq";"ZArith"]
-let zarith_base_modules = [narith_dir;zarith_dir]
+let zarith_base_modules = [parith_dir;narith_dir;zarith_dir]
 
 let init_dir = ["Coq";"Init"]
 let init_modules = [

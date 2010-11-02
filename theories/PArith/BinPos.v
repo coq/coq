@@ -1253,8 +1253,3 @@ Proof.
   intros; generalize (Pcompare_Gt_Lt _ _ H); auto.
   intros; destruct (Pcompare_Lt_Lt _ _ H); auto; subst; auto.
 Qed.
-
-
-
-
-

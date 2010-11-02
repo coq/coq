@@ -77,6 +77,7 @@ let theories_dirs_map = [
     "theories/Relations", "Relations" ;
     "theories/Numbers", "Numbers" ;
     "theories/QArith", "QArith" ;
+    "theories/PArith", "PArith" ;
     "theories/NArith", "NArith" ;
     "theories/ZArith", "ZArith" ;
     "theories/Arith", "Arith" ;

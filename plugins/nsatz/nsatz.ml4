@@ -189,9 +189,9 @@ let z0 = lazy (gen_constant "CC" ["ZArith";"BinInt"] "Z0")
 let zpos = lazy (gen_constant "CC" ["ZArith";"BinInt"] "Zpos")
 let zneg = lazy(gen_constant "CC" ["ZArith";"BinInt"] "Zneg")
 
-let pxI = lazy(gen_constant "CC" ["NArith";"BinPos"] "xI")
-let pxO = lazy(gen_constant "CC" ["NArith";"BinPos"] "xO")
-let pxH = lazy(gen_constant "CC" ["NArith";"BinPos"] "xH")
+let pxI = lazy(gen_constant "CC" ["PArith";"BinPos"] "xI")
+let pxO = lazy(gen_constant "CC" ["PArith";"BinPos"] "xO")
+let pxH = lazy(gen_constant "CC" ["PArith";"BinPos"] "xH")
 
 let nN0 = lazy (gen_constant "CC" ["NArith";"BinNat"] "N0")
 let nNpos = lazy(gen_constant "CC" ["NArith";"BinNat"] "Npos")

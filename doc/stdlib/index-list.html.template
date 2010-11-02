@@ -130,22 +130,31 @@ through the <tt>Require Import</tt> command.</p>
     theories/Arith/Factorial.v
     theories/Arith/Wf_nat.v
   </dd>
-    
-  <dt> <b>NArith</b>:
+
+  <dt> <b>PArith</b>:
     Binary positive integers
   </dt>
+  <dd>
+    theories/PArith/BinPos.v
+    theories/PArith/Pnat.v
+    theories/PArith/POrderedType.v
+    theories/PArith/Pminmax.v
+    theories/PArith/Psqrt.v
+    (theories/PArith/PArith.v)
+  </dd>
+
+  <dt> <b>NArith</b>:
+    Binary natural numbers
+  </dt>
   <dd> 
-    theories/NArith/BinPos.v
     theories/NArith/BinNat.v
-    (theories/NArith/NArith.v)
-    theories/NArith/Pnat.v
     theories/NArith/Nnat.v
     theories/NArith/Ndigits.v
     theories/NArith/Ndist.v
     theories/NArith/Ndec.v
     theories/NArith/Ndiv_def.v
-    theories/NArith/POrderedType.v
-    theories/NArith/Pminmax.v
+    theories/NArith/Nsqrt_def.v
+    (theories/NArith/NArith.v)
   </dd>
 
   <dt> <b>ZArith</b>:
@@ -169,7 +178,8 @@ through the <tt>Require Import</tt> command.</p>
     theories/ZArith/Zhints.v
     (theories/ZArith/ZArith_base.v)
     theories/ZArith/Zcomplements.v
-    theories/ZArith/Zsqrt.v
+    theories/ZArith/Zsqrt_def.v
+    theories/ZArith/Zsqrt_compat.v
     theories/ZArith/Zpow_def.v
     theories/ZArith/Zpower.v
     theories/ZArith/Zdiv.v
@@ -226,6 +236,8 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/NatInt/NZOrder.v
     theories/Numbers/NatInt/NZDomain.v
     theories/Numbers/NatInt/NZProperties.v
+    theories/Numbers/NatInt/NZPow.v
+    theories/Numbers/NatInt/NZSqrt.v
     </dd>
     </dt>
 
@@ -265,8 +277,11 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Natural/Abstract/NStrongRec.v
     theories/Numbers/Natural/Abstract/NSub.v
     theories/Numbers/Natural/Abstract/NDiv.v
+    theories/Numbers/Natural/Abstract/NMaxMin.v
+    theories/Numbers/Natural/Abstract/NParity.v
+    theories/Numbers/Natural/Abstract/NPow.v
+    theories/Numbers/Natural/Abstract/NSqrt.v
     theories/Numbers/Natural/Abstract/NProperties.v
-    theories/Numbers/Natural/Abstract/NMinMax.v
     theories/Numbers/Natural/Binary/NBinary.v
     theories/Numbers/Natural/Peano/NPeano.v
     theories/Numbers/Natural/SpecViaZ/NSig.v
@@ -288,12 +303,14 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Integer/Abstract/ZLt.v
     theories/Numbers/Integer/Abstract/ZMul.v
     theories/Numbers/Integer/Abstract/ZMulOrder.v
+    theories/Numbers/Integer/Abstract/ZSgnAbs.v
+    theories/Numbers/Integer/Abstract/ZMaxMin.v
+    theories/Numbers/Integer/Abstract/ZParity.v
+    theories/Numbers/Integer/Abstract/ZPow.v
+    theories/Numbers/Integer/Abstract/ZProperties.v
     theories/Numbers/Integer/Abstract/ZDivEucl.v
     theories/Numbers/Integer/Abstract/ZDivFloor.v
     theories/Numbers/Integer/Abstract/ZDivTrunc.v
-    theories/Numbers/Integer/Abstract/ZProperties.v
-    theories/Numbers/Integer/Abstract/ZSgnAbs.v
-    theories/Numbers/Integer/Abstract/ZMinMax.v
     theories/Numbers/Integer/Binary/ZBinary.v
     theories/Numbers/Integer/NatPairs/ZNatPairs.v
     theories/Numbers/Integer/SpecViaZ/ZSig.v
