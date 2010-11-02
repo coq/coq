@@ -18,7 +18,6 @@ End Log2.
 
 Module Type NZLog2Spec (A : NZOrdAxiomsSig')(B : Pow' A)(C : Log2 A).
  Import A B C.
- Declare Instance log2_wd : Proper (eq==>eq) log2.
  Axiom log2_spec : forall a, 0<a -> 2^(log2 a) <= a < 2^(S (log2 a)).
  Axiom log2_nonpos : forall a, a<=0 -> log2 a == 0.
 End NZLog2Spec.
@@ -72,6 +71,17 @@ Proof.
   apply lt_succ_r, (pow_lt_mono_r_iff 2); try order'.
   now apply le_le_succ_r.
  order.
+Qed.
+
+(** Hence log2 is a morphism. *)
+
+Instance log2_wd : Proper (eq==>eq) log2.
+Proof.
+ intros x x' Hx.
+ destruct (le_gt_cases x 0).
+ rewrite 2 log2_nonpos; trivial. reflexivity. now rewrite <- Hx.
+ apply log2_unique. apply log2_nonneg.
+ rewrite Hx in *. now apply log2_spec.
 Qed.
 
 (** An alternate specification *)

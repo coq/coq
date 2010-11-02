@@ -245,8 +245,6 @@ Qed.
 
 (** Log2 *)
 
-Program Instance log2_wd : Proper (eq==>eq) log2.
-
 Lemma log2_spec : forall n, 0<n ->
  2^(log2 n) <= n /\ n < 2^(succ (log2 n)).
 Proof.

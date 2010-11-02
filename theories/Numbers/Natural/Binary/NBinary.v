@@ -160,7 +160,6 @@ Proof. destruct b; discriminate. Qed.
 
 (** Log2 *)
 
-Program Instance log2_wd : Proper (eq==>eq) Nlog2.
 Definition log2_spec := Nlog2_spec.
 Definition log2_nonpos := Nlog2_nonpos.
 

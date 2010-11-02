@@ -159,8 +159,6 @@ Definition sqrt := Zsqrt.
 
 (** Log2 *)
 
-Program Instance log2_wd : Proper (eq==>eq) Zlog2.
-
 Definition log2_spec := Zlog2_spec.
 Definition log2_nonpos := Zlog2_nonpos.
 Definition log2 := Zlog2.
