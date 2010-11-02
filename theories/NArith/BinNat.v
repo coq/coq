@@ -460,6 +460,20 @@ generalize (Ncompare_eq_correct x y).
 destruct (x ?= y); intuition; discriminate.
 Qed.
 
+Lemma Nle_trans : forall n m p, n<=m -> m<=p -> n<=p.
+Proof.
+ intros n m p. rewrite 3 Nle_lteq. intros [H|H] [H'|H']; subst; auto.
+ left; now apply Nlt_trans with m.
+Qed.
+
+Lemma Nle_succ_l : forall n m, Nsucc n <= m <-> n < m.
+Proof.
+ intros.
+ unfold Nle, Nlt.
+ rewrite <- 2 (Ncompare_antisym m), 2 CompOpp_iff, Ncompare_n_Sm, <- (Nle_lteq m n).
+ unfold Nle. simpl. destruct (m ?= n); split; auto; now destruct 1.
+Qed.
+
 Lemma Ncompare_spec : forall x y, CompSpec eq Nlt x y (Ncompare x y).
 Proof.
 intros.
@@ -471,7 +485,8 @@ Qed.
 (** Order and operations *)
 
 (** NB : Many more results will come from NBinary, the Number instantiation.
-    The next lemma is useful for proving the correctness of the division.
+    The next lemmas are useful for proving the correctness of
+    advanced functions.
 *)
 
 Lemma Nplus_lt_cancel_l : forall n m p, p+n < p+m -> n<m.
@@ -484,6 +499,22 @@ Proof.
  red in H. simpl in H.
  elim (Plt_not_plus_l _ _ H).
  now apply (Pplus_lt_mono_l p).
+Qed.
+
+Lemma Nmult_lt_mono_l : forall n m p, N0<n -> m<p -> n*m<n*p.
+Proof.
+ intros [|n] m p. discriminate. intros _.
+ destruct m, p; try discriminate. auto.
+ simpl.
+ apply Pmult_lt_mono_l.
+Qed.
+
+Lemma Nmult_le_mono_l : forall n m p, m<=p -> n*m<=n*p.
+Proof.
+ intros [|n] m p. intros _ H. discriminate.
+ rewrite 2 Nle_lteq. intros [H|H]; [left|right].
+ now apply Nmult_lt_mono_l.
+ congruence.
 Qed.
 
 (** 0 is the least natural number *)
@@ -499,8 +530,8 @@ Definition Ndiv2 (n:N) :=
   match n with
   | N0 => N0
   | Npos 1 => N0
-  | Npos (xO p) => Npos p
-  | Npos (xI p) => Npos p
+  | Npos (p~0) => Npos p
+  | Npos (p~1) => Npos p
   end.
 
 Lemma Ndouble_div2 : forall n:N, Ndiv2 (Ndouble n) = n.
@@ -543,6 +574,55 @@ Proof.
  intros n p; destruct p; simpl.
  now rewrite Nmult_1_r.
  apply Piter_op_succ. apply Nmult_assoc.
+Qed.
+
+(** Base-2 logarithm *)
+
+Fixpoint Plog2_N (p:positive) : N :=
+ match p with
+  | p~0 => Nsucc (Plog2_N p)
+  | p~1 => Nsucc (Plog2_N p)
+  | 1 => N0
+ end%positive.
+
+Definition Nlog2 n :=
+ match n with
+  | N0 => N0
+  | Npos p => Plog2_N p
+ end.
+
+Lemma Plog2_N_spec : forall p,
+ (Npos 2)^(Plog2_N p) <= Npos p < (Npos 2)^(Nsucc (Plog2_N p)).
+Proof.
+ induction p; simpl; try rewrite 2 Npow_succ_r.
+ (* p~1 *)
+ change (Npos p~1) with (Nsucc (Npos 2 * Npos p)).
+ split; destruct IHp as [LE LT].
+ apply Nle_trans with (Npos 2 * Npos p).
+ now apply Nmult_le_mono_l.
+ apply Nle_lteq. left.
+ apply Ncompare_n_Sm. now right.
+ apply Nle_succ_l. apply Nle_succ_l in LT.
+ change (Nsucc (Nsucc (Npos 2 * Npos p))) with (Npos 2 * (Nsucc (Npos p))).
+ now apply Nmult_le_mono_l.
+ (* p~0 *)
+ change (Npos p~0) with (Npos 2 * Npos p).
+ split; destruct IHp.
+ now apply Nmult_le_mono_l.
+ now apply Nmult_lt_mono_l.
+ (* 1 *)
+ now split.
+Qed.
+
+Lemma Nlog2_spec : forall n, N0 < n ->
+ (Npos 2)^(Nlog2 n) <= n < (Npos 2)^(Nsucc (Nlog2 n)).
+Proof.
+ intros [|n] Hn. discriminate. apply Plog2_N_spec.
+Qed.
+
+Lemma Nlog2_nonpos : forall n, n<=N0 -> Nlog2 n = N0.
+Proof.
+ intros [|n] Hn. reflexivity. now destruct Hn.
 Qed.
 
 (** Parity *)
