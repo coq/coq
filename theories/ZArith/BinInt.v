@@ -1115,6 +1115,16 @@ Notation "x <= y < z" := (x <= y /\ y < z) : Z_scope.
 Notation "x < y < z" := (x < y /\ y < z) : Z_scope.
 Notation "x < y <= z" := (x < y /\ y <= z) : Z_scope.
 
+Lemma Zpos_lt : forall p q, Zlt (Zpos p) (Zpos q) <-> Plt p q.
+Proof.
+ intros. apply iff_refl.
+Qed.
+
+Lemma Zpos_le : forall p q, Zle (Zpos p) (Zpos q) <-> Ple p q.
+Proof.
+ intros. apply iff_refl.
+Qed.
+
 (**********************************************************************)
 (** * Minimum and maximum *)
 

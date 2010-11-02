@@ -227,6 +227,13 @@ rewrite nat_of_P_compare_morphism.
 apply <- nat_compare_eq_iff; auto.
 Qed.
 
+(** Stating this bidirectionally lets us reason equationally with it: *)
+
+Lemma nat_of_P_inj_iff : forall p q, nat_of_P p = nat_of_P q <-> p = q.
+Proof.
+ split; intro. now apply nat_of_P_inj. now subst.
+Qed.
+
 (** [nat_of_P] is a morphism from [positive] to [nat] for [lt] (expressed
     from [compare] on [positive])
 
@@ -238,6 +245,22 @@ Lemma nat_of_P_lt_Lt_compare_complement_morphism :
 Proof.
  intros. rewrite nat_of_P_compare_morphism.
  apply -> nat_compare_lt; auto.
+Qed.
+
+(** Again, stating this bidirectionally lets us reason equationally with it: *)
+
+Lemma Plt_lt : forall p q, Plt p q <-> lt (nat_of_P p) (nat_of_P q).
+Proof.
+ intros. unfold Plt. rewrite nat_of_P_compare_morphism.
+ apply iff_sym, nat_compare_lt.
+Qed.
+
+(** And the same for Ple *)
+
+Lemma Ple_le : forall p q, Ple p q <-> le (nat_of_P p) (nat_of_P q).
+Proof.
+ intros. unfold Ple. rewrite nat_of_P_compare_morphism.
+ apply iff_sym, nat_compare_le.
 Qed.
 
 (** [nat_of_P] is a morphism from [positive] to [nat] for [gt] (expressed

@@ -100,6 +100,13 @@ rewrite Zabs_Zmult.
 reflexivity.
 Qed.
 
+Lemma Qabs_Qminus x y: Qabs (x - y) = Qabs (y - x).
+Proof.
+ unfold Qminus, Qopp. simpl.
+ rewrite Pmult_comm, <- Zabs_Zopp.
+ do 2 f_equal. ring.
+Qed.
+
 Lemma Qle_Qabs : forall a, a <= Qabs a.
 Proof.
 intros a.
@@ -121,4 +128,32 @@ setoid_replace (Qabs x) with (Qabs (x-y+y)).
 apply Qabs_triangle.
 apply Qabs_wd.
 ring.
+Qed.
+
+Lemma Qabs_Qle_condition x y: Qabs x <= y <-> -y <= x <= y.
+Proof.
+ split.
+  split.
+   rewrite <- (Qopp_opp x).
+   apply Qopp_le_compat.
+   apply Qle_trans with (Qabs (-x)).
+   apply Qle_Qabs.
+   now rewrite Qabs_opp.
+  apply Qle_trans with (Qabs x); auto using Qle_Qabs.
+ intros (H,H').
+ apply Qabs_case; trivial.
+ intros. rewrite <- (Qopp_opp y). now apply Qopp_le_compat.
+Qed.
+
+Lemma Qabs_diff_Qle_condition x y r: Qabs (x - y) <= r <-> x - r <= y <= x + r.
+Proof.
+ intros. unfold Qminus.
+ rewrite Qabs_Qle_condition.
+ rewrite <- (Qplus_le_l (-r) (x+-y) (y+r)).
+ rewrite <- (Qplus_le_l (x+-y) r (y-r)).
+ setoid_replace (-r + (y + r)) with y by ring.
+ setoid_replace (r + (y - r)) with y by ring.
+ setoid_replace (x + - y + (y + r)) with (x + r) by ring.
+ setoid_replace (x + - y + (y - r)) with (x - r) by ring.
+ intuition.
 Qed.

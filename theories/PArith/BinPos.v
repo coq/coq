@@ -1025,6 +1025,11 @@ Proof.
   destruct ((p ?= q) Eq); intuition; discriminate.
 Qed.
 
+Lemma Ple_refl : forall p, Ple p p.
+Proof.
+ intros. unfold Ple. rewrite Pcompare_refl_id. discriminate.
+Qed.
+
 (** Strict order and operations *)
 
 Lemma Pplus_lt_mono_l : forall p q r, q<r <-> p+q < p+r.
@@ -1069,7 +1074,6 @@ Proof.
  intros p q H. elim (Plt_irrefl p).
  apply Plt_trans with (p+q); auto using Plt_plus_r.
 Qed.
-
 
 (**********************************************************************)
 (** Properties of subtraction on binary positive numbers *)

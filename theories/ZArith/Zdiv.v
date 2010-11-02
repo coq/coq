@@ -875,3 +875,29 @@ Implicit Arguments Zdiv_eucl_extended.
            a mod (-b) = a mod b
      And: |r| < |b| and sgn(r) = sgn(a)  (notice the a here instead of b).
 *)
+
+(** * Division and modulo in Z agree with same in nat: *)
+
+Require Import NPeano.
+
+Lemma div_Zdiv (n m: nat): m <> O ->
+  Z_of_nat (n / m) = Z_of_nat n / Z_of_nat m.
+Proof.
+ intros.
+ apply (Zdiv_unique _ _ _ (Z_of_nat (n mod m)%nat)).
+  split. auto with zarith.
+  now apply inj_lt, Nat.mod_upper_bound.
+ rewrite <- inj_mult, <- inj_plus.
+ now apply inj_eq, Nat.div_mod.
+Qed.
+
+Lemma mod_Zmod (n m: nat): m <> O ->
+  Z_of_nat (n mod m)%nat = (Z_of_nat n mod Z_of_nat m).
+Proof.
+ intros.
+ apply (Zmod_unique _ _ (Z_of_nat n / Z_of_nat m)).
+  split. auto with zarith.
+  now apply inj_lt, Nat.mod_upper_bound.
+ rewrite <- div_Zdiv, <- inj_mult, <- inj_plus by trivial.
+ now apply inj_eq, Nat.div_mod.
+Qed.

@@ -137,3 +137,14 @@ apply Zle_antisym.
  auto with *.
 symmetry in H; auto with *.
 Qed.
+
+Lemma Zdiv_Qdiv (n m: Z): (n / m)%Z = Qfloor (n / m).
+Proof.
+ unfold Qfloor. intros. simpl.
+ destruct m as [?|?|p]; simpl.
+  now rewrite Zdiv_0_r, Zmult_0_r.
+  now rewrite Zmult_1_r.
+ rewrite <- Zopp_eq_mult_neg_1.
+ rewrite <- (Zopp_involutive (Zpos p)).
+ now rewrite Zdiv_opp_opp.
+Qed.
