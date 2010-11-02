@@ -141,7 +141,7 @@ Qed.
   see Psqrt/Zsqrt/Nsqrt...
 
   We search the square root of n = k + p^2 + (q - r)
-  with q = 2p and 0<=r<=q. We starts with p=q=r=0, hence
+  with q = 2p and 0<=r<=q. We start with p=q=r=0, hence
   looking for the square root of n = k. Then we progressively
   decrease k and r. When k = S k' and r=0, it means we can use (S p)
   as new sqrt candidate, since (S k')+p^2+2p = k'+(S p)^2.
@@ -194,12 +194,84 @@ Proof.
 Qed.
 
 Lemma sqrt_spec : forall n,
- let s := sqrt n in s*s <= n < S s * S s.
+ (sqrt n)*(sqrt n) <= n < S (sqrt n) * S (sqrt n).
 Proof.
  intros.
+ set (s:=sqrt n).
  replace n with (n + 0*0 + (0-0)).
  apply sqrt_iter_spec; auto.
  simpl. now rewrite <- 2 plus_n_O.
+Qed.
+
+
+(** Base-2 logarithm *)
+
+(** We search the log2 of n = k + 2^p + (q - r)
+  with q = 2^p - 1 and 0<=r<=q. We start with p=q=r=0, hence
+  looking for the log2 of n = k+1. Then we progressively
+  decrease k and r. When k = S k' and r=0, it means we can use (S p)
+  as new sqrt candidate, since (S k')+2^p+(2^p-1) = k'+2^(S p).
+  When k reaches 0, we have found the biggest power 2^p
+  contained in n, hence the log2 of n is p.
+*)
+
+Fixpoint log2_iter k p q r :=
+  match k with
+    | O => p
+    | S k' => match r with
+                | O => let q' := S (q+q) in
+                       log2_iter k' (S p) q' q'
+                | S r' => log2_iter k' p q r'
+              end
+  end.
+
+Definition log2 n := log2_iter (pred n) 0 0 0.
+
+Lemma log2_iter_spec : forall k p q r,
+ S q = 2^p -> r<=q ->
+ let s := log2_iter k p q r in
+ 2^s <= k + 2^p + (q - r) < 2^(S s).
+Proof.
+ induction k.
+ (* k = 0 *)
+ simpl; intros p q r Hq Hr.
+ split.
+ apply le_plus_l.
+ apply plus_lt_compat_l. rewrite <- Hq.
+ apply le_lt_trans with q.
+ apply le_minus.
+ rewrite <- plus_n_O. auto with arith.
+ (* k = S k' *)
+ destruct r.
+ (* r = 0 *)
+ intros Hq _.
+ replace (S k + 2^p + (q-0)) with (k + 2^(S p) + (S (q+q) - S (q+q))).
+ apply IHk.
+ simpl. rewrite <- Hq. now rewrite <- plus_n_O, <- plus_n_Sm.
+ auto with arith.
+ rewrite minus_diag, <- minus_n_O, <- plus_n_O. simpl.
+ rewrite plus_n_Sm, Hq. now rewrite  <- plus_n_O, plus_assoc.
+ (* r = S r' *)
+ intros Hq Hr.
+ replace (S k + 2^p + (q-S r)) with (k + 2^p + (q - r)).
+ apply IHk; auto with arith.
+ simpl. rewrite plus_n_Sm. f_equal. rewrite minus_Sn_m; auto.
+Qed.
+
+Lemma log2_spec : forall n, 0<n ->
+ 2^(log2 n) <= n < 2^(S (log2 n)).
+Proof.
+ intros.
+ set (s:=log2 n).
+ replace n with (pred n + 2^0 + (0-0)).
+ apply log2_iter_spec; auto.
+ simpl. rewrite <- plus_n_Sm, <- !plus_n_O.
+ symmetry. now apply S_pred with 0.
+Qed.
+
+Lemma log2_nonpos : forall n, n<=0 -> log2 n = 0.
+Proof.
+ inversion 1; now subst.
 Qed.
 
 
