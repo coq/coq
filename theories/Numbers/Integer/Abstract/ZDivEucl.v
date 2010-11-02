@@ -49,7 +49,7 @@ Module ZDivProp (Import Z : ZDivSig')(Import ZP : ZProp Z).
   apply mod_always_pos.
   Qed.
  End ZD.
- Module Import NZDivP := NZDivProp Z ZP ZD.
+ Module Import NZDivP := Nop <+ NZDivProp Z ZD ZP.
 
 (** Another formulation of the main equation *)
 

@@ -23,7 +23,7 @@ Module NDivProp (Import N : NAxiomsSig')(Import NP : NSubProp N).
   Lemma mod_bound : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.
   Proof. split. apply le_0_l. apply mod_upper_bound. order. Qed.
  End ND.
- Module Import NZDivP := NZDivProp N NP ND.
+ Module Import NZDivP := Nop <+ NZDivProp N ND NP.
 
  Ltac auto' := try rewrite <- neq_0_lt_0; auto using le_0_l.
 

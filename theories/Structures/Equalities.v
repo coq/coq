@@ -11,6 +11,12 @@ Require Export RelationClasses.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+(** Structure with nothing inside.
+    Used to force a module type T into a module via Nop <+ T. (HACK!) *)
+
+Module Type Nop.
+End Nop.
+
 (** * Structure with just a base type [t] *)
 
 Module Type Typ.

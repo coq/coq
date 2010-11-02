@@ -10,9 +10,13 @@
 
 Require Import Bool ZAxioms ZMulOrder ZParity ZSgnAbs NZPow.
 
-Module ZPowProp (Import Z : ZAxiomsSig')(Import ZM : ZMulOrderProp Z)
- (Import ZP : ZParityProp Z ZM)(Import ZS : ZSgnAbsProp Z ZM).
- Include NZPowProp Z ZM Z.
+Module Type ZPowProp
+ (Import A : ZAxiomsSig')
+ (Import B : ZMulOrderProp A)
+ (Import C : ZParityProp A B)
+ (Import D : ZSgnAbsProp A B).
+
+ Include NZPowProp A A B.
 
 (** Many results are directly the same as in NZPow, hence
     the Include above. We extend nonetheless a few of them,

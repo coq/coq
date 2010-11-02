@@ -10,9 +10,9 @@
 
 Require Import NAxioms NSub NZSqrt.
 
-Module NSqrtProp (Import N : NAxiomsSig')(Import NS : NSubProp N).
+Module NSqrtProp (Import A : NAxiomsSig')(Import B : NSubProp A).
 
- Module Import NZSqrtP := NZSqrtProp N N NS.
+ Module Import NZSqrtP := Nop <+ NZSqrtProp A A B.
 
  Ltac auto' := trivial; try rewrite <- neq_0_lt_0; auto using le_0_l.
  Ltac wrap l := intros; apply l; auto'.

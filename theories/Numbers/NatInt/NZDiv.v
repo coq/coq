@@ -12,18 +12,18 @@ Require Import NZAxioms NZMulOrder.
 
 (** The first signatures will be common to all divisions over NZ, N and Z *)
 
-Module Type DivMod (Import T:Typ).
+Module Type DivMod (Import A : Typ).
  Parameters Inline div modulo : t -> t -> t.
 End DivMod.
 
-Module Type DivModNotation (T:Typ)(Import NZ:DivMod T).
+Module Type DivModNotation (A : Typ)(Import B : DivMod A).
  Infix "/" := div.
  Infix "mod" := modulo (at level 40, no associativity).
 End DivModNotation.
 
-Module Type DivMod' (T:Typ) := DivMod T <+ DivModNotation T.
+Module Type DivMod' (A : Typ) := DivMod A <+ DivModNotation A.
 
-Module Type NZDivCommon (Import NZ : NZAxiomsSig')(Import DM : DivMod' NZ).
+Module Type NZDivCommon (Import A : NZAxiomsSig')(Import B : DivMod' A).
  Declare Instance div_wd : Proper (eq==>eq==>eq) div.
  Declare Instance mod_wd : Proper (eq==>eq==>eq) modulo.
  Axiom div_mod : forall a b, b ~= 0 -> a == b*(a/b) + (a mod b).
@@ -36,19 +36,19 @@ End NZDivCommon.
     NB: This axiom would also be true for N and Z, but redundant.
 *)
 
-Module Type NZDivSpecific (Import NZ : NZOrdAxiomsSig')(Import DM : DivMod' NZ).
+Module Type NZDivSpecific (Import A : NZOrdAxiomsSig')(Import B : DivMod' A).
  Axiom mod_bound : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.
 End NZDivSpecific.
 
-Module Type NZDiv (NZ:NZOrdAxiomsSig)
- := DivMod NZ <+ NZDivCommon NZ <+ NZDivSpecific NZ.
+Module Type NZDiv (A : NZOrdAxiomsSig)
+ := DivMod A <+ NZDivCommon A <+ NZDivSpecific A.
 
-Module Type NZDiv' (NZ:NZOrdAxiomsSig) := NZDiv NZ <+ DivModNotation NZ.
+Module Type NZDiv' (A : NZOrdAxiomsSig) := NZDiv A <+ DivModNotation A.
 
-Module NZDivProp
- (Import NZ : NZOrdAxiomsSig')
- (Import NZP : NZMulOrderProp NZ)
- (Import NZD : NZDiv' NZ).
+Module Type NZDivProp
+ (Import A : NZOrdAxiomsSig')
+ (Import B : NZDiv' A)
+ (Import C : NZMulOrderProp A).
 
 (** Uniqueness theorems *)
 

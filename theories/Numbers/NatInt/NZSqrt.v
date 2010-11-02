@@ -12,30 +12,30 @@ Require Import NZAxioms NZMulOrder.
 
 (** Interface of a sqrt function, then its specification on naturals *)
 
-Module Type Sqrt (Import T:Typ).
+Module Type Sqrt (Import A : Typ).
  Parameters Inline sqrt : t -> t.
 End Sqrt.
 
-Module Type SqrtNotation (T:Typ)(Import NZ:Sqrt T).
+Module Type SqrtNotation (A : Typ)(Import B : Sqrt A).
  Notation "√ x" := (sqrt x) (at level 25).
 End SqrtNotation.
 
-Module Type Sqrt' (T:Typ) := Sqrt T <+ SqrtNotation T.
+Module Type Sqrt' (A : Typ) := Sqrt A <+ SqrtNotation A.
 
-Module Type NZSqrtSpec (Import NZ : NZOrdAxiomsSig')(Import P : Sqrt' NZ).
+Module Type NZSqrtSpec (Import A : NZOrdAxiomsSig')(Import B : Sqrt' A).
  Declare Instance sqrt_wd : Proper (eq==>eq) sqrt.
  Axiom sqrt_spec : forall a, 0<=a -> √a * √a <= a < S (√a) * S (√a).
 End NZSqrtSpec.
 
-Module Type NZSqrt (NZ:NZOrdAxiomsSig) := Sqrt NZ <+ NZSqrtSpec NZ.
-Module Type NZSqrt' (NZ:NZOrdAxiomsSig) := Sqrt' NZ <+ NZSqrtSpec NZ.
+Module Type NZSqrt (A : NZOrdAxiomsSig) := Sqrt A <+ NZSqrtSpec A.
+Module Type NZSqrt' (A : NZOrdAxiomsSig) := Sqrt' A <+ NZSqrtSpec A.
 
 (** Derived properties of power *)
 
-Module NZSqrtProp
- (Import NZ : NZOrdAxiomsSig')
- (Import NZP' : NZSqrt' NZ)
- (Import NZP : NZMulOrderProp NZ).
+Module Type NZSqrtProp
+ (Import A : NZOrdAxiomsSig')
+ (Import B : NZSqrt' A)
+ (Import C : NZMulOrderProp A).
 
 (** First, sqrt is non-negative *)
 

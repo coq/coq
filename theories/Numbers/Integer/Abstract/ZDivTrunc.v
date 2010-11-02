@@ -42,7 +42,7 @@ Module ZDivProp (Import Z : ZDivSig')(Import ZP : ZProp Z).
 
 (** We benefit from what already exists for NZ *)
 
- Module Import NZDivP := NZDivProp Z ZP Z.
+ Module Import NZDivP := Nop <+ NZDivProp Z Z ZP.
 
 Ltac pos_or_neg a :=
  let LT := fresh "LT" in

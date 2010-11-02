@@ -12,31 +12,31 @@ Require Import NZAxioms NZMulOrder.
 
 (** Interface of a power function, then its specification on naturals *)
 
-Module Type Pow (Import T:Typ).
+Module Type Pow (Import A : Typ).
  Parameters Inline pow : t -> t -> t.
 End Pow.
 
-Module Type PowNotation (T:Typ)(Import NZ:Pow T).
+Module Type PowNotation (A : Typ)(Import B : Pow A).
  Infix "^" := pow.
 End PowNotation.
 
-Module Type Pow' (T:Typ) := Pow T <+ PowNotation T.
+Module Type Pow' (A : Typ) := Pow A <+ PowNotation A.
 
-Module Type NZPowSpec (Import NZ : NZOrdAxiomsSig')(Import P : Pow' NZ).
+Module Type NZPowSpec (Import A : NZOrdAxiomsSig')(Import B : Pow' A).
  Declare Instance pow_wd : Proper (eq==>eq==>eq) pow.
  Axiom pow_0_r : forall a, a^0 == 1.
  Axiom pow_succ_r : forall a b, 0<=b -> a^(succ b) == a * a^b.
 End NZPowSpec.
 
-Module Type NZPow (NZ:NZOrdAxiomsSig) := Pow NZ <+ NZPowSpec NZ.
-Module Type NZPow' (NZ:NZOrdAxiomsSig) := Pow' NZ <+ NZPowSpec NZ.
+Module Type NZPow (A : NZOrdAxiomsSig) := Pow A <+ NZPowSpec A.
+Module Type NZPow' (A : NZOrdAxiomsSig) := Pow' A <+ NZPowSpec A.
 
 (** Derived properties of power *)
 
-Module NZPowProp
- (Import NZ : NZOrdAxiomsSig')
- (Import NZP : NZMulOrderProp NZ)
- (Import NZP' : NZPow' NZ).
+Module Type NZPowProp
+ (Import A : NZOrdAxiomsSig')
+ (Import B : NZPow' A)
+ (Import C : NZMulOrderProp A).
 
 Hint Rewrite pow_0_r pow_succ_r : nz.
 

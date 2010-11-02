@@ -13,12 +13,14 @@ Require Import Bool NAxioms NSub NParity NZPow.
 (** Derived properties of power, specialized on natural numbers *)
 
 Module NPowProp
- (Import N : NAxiomsSig')(Import NS : NSubProp N)(Import NP : NParityProp N NS).
+ (Import A : NAxiomsSig')
+ (Import B : NSubProp A)
+ (Import C : NParityProp A B).
 
- Module Import NZPowP := NZPowProp N NS N.
+ Module Import NZPowP := Nop <+ NZPowProp A A B.
 
- Ltac auto' := trivial; try rewrite <- neq_0_lt_0; auto using le_0_l.
- Ltac wrap l := intros; apply l; auto'.
+Ltac auto' := trivial; try rewrite <- neq_0_lt_0; auto using le_0_l.
+Ltac wrap l := intros; apply l; auto'.
 
 Lemma pow_succ_r' : forall a b, a^(S b) == a * a^b.
 Proof. wrap pow_succ_r. Qed.

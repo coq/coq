@@ -50,7 +50,7 @@ Module ZDivProp (Import Z : ZDivSig')(Import ZP : ZProp Z).
   Lemma mod_bound : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.
   Proof. intros. now apply mod_pos_bound. Qed.
  End ZD.
- Module Import NZDivP := NZDivProp Z ZP ZD.
+ Module Import NZDivP := Nop <+ NZDivProp Z ZD ZP.
 
 (** Another formulation of the main equation *)
 
