@@ -18,22 +18,16 @@
     - [Log_nearest]: [y= (Log_nearest x) iff 2^(y-1/2) < x <= 2^(y+1/2)]
       i.e. [Log_nearest x] is the integer nearest from [Log x] *)
 
-Require Import ZArith_base.
-Require Import Omega.
-Require Import Zcomplements.
-Require Import Zpower.
-Open Local Scope Z_scope.
+Require Import ZArith_base Omega Zcomplements Zlog_def Zpower.
+Local Open Scope Z_scope.
 
 Section Log_pos. (* Log of positive integers *)
 
   (** First we build [log_inf] and [log_sup] *)
 
-  Fixpoint log_inf (p:positive) : Z :=
-    match p with
-      | xH => 0	(* 1 *)
-      | xO q => Zsucc (log_inf q)	(* 2n *)
-      | xI q => Zsucc (log_inf q)	(* 2n+1 *)
-    end.
+  (** [log_inf] is exactly the same as the new [Plog2_Z] *)
+
+  Definition log_inf : positive -> Z := Eval red in Plog2_Z.
 
   Fixpoint log_sup (p:positive) : Z :=
     match p with
@@ -43,6 +37,9 @@ Section Log_pos. (* Log of positive integers *)
     end.
 
   Hint Unfold log_inf log_sup.
+
+  Lemma Zlog2_log_inf : forall p, Zlog2 (Zpos p) = log_inf p.
+  Proof. reflexivity. Qed.
 
   (** Then we give the specifications of [log_inf] and [log_sup]
     and prove their validity *)

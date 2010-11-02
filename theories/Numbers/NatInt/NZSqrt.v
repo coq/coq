@@ -78,14 +78,42 @@ Proof.
  order.
 Qed.
 
+(** An alternate specification *)
+
+Lemma sqrt_spec_alt : forall a, 0<=a -> exists r,
+ a == √a * √a + r /\ 0 <= r <= 2*√a.
+Proof.
+ intros a Ha.
+ destruct (sqrt_spec _ Ha) as (LE,LT).
+ destruct (le_exists_sub _ _ LE) as (r & Hr & Hr').
+ exists r.
+ split. now rewrite add_comm.
+ split. trivial.
+ apply (add_le_mono_r _ _ (√a * √a)).
+ rewrite <- Hr, add_comm.
+ generalize LT. nzsimpl'. now rewrite lt_succ_r, add_assoc.
+Qed.
+
+Lemma sqrt_unique' : forall a b c, 0<=c<=2*b ->
+ a == b*b + c -> sqrt a == b.
+Proof.
+ intros a b c (Hc,H) EQ.
+ apply sqrt_unique.
+ rewrite EQ.
+ split.
+ rewrite <- add_0_r at 1. now apply add_le_mono_l.
+ nzsimpl. apply lt_succ_r.
+ rewrite <- add_assoc. apply add_le_mono_l.
+ generalize H; now nzsimpl'.
+Qed.
+
 (** Sqrt is exact on squares *)
 
 Lemma sqrt_square : forall a, 0<=a -> √(a*a) == a.
 Proof.
  intros a Ha.
- apply sqrt_unique.
- split. order.
- apply mul_lt_mono_nonneg; trivial using lt_succ_diag_r.
+ apply sqrt_unique' with 0.
+ split. order. apply mul_nonneg_nonneg; order'. now nzsimpl.
 Qed.
 
 (** Sqrt is a monotone function (but not a strict one) *)
@@ -158,8 +186,7 @@ Qed.
 
 Lemma sqrt_2 : √2 == 1.
 Proof.
- apply sqrt_unique. nzsimpl. split. order'.
- apply lt_succ_r, lt_le_incl, lt_succ_r. nzsimpl'; order.
+ apply sqrt_unique' with 1. nzsimpl; split; order'. now nzsimpl'.
 Qed.
 
 Lemma sqrt_lt_lin : forall a, 1<a -> √a<a.

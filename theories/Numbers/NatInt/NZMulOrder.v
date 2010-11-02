@@ -351,4 +351,18 @@ Proof.
  apply crossmul_le_addsquare; order.
 Qed.
 
+Lemma quadmul_le_squareadd : forall a b, 0<=a -> 0<=b ->
+ 2*2*a*b <= (a+b)*(a+b).
+Proof.
+ intros.
+ nzsimpl'.
+ rewrite !mul_add_distr_l, !mul_add_distr_r.
+ rewrite (add_comm _ (b*b)), add_assoc.
+ apply add_le_mono_r.
+ rewrite (add_shuffle0 (a*a)), (mul_comm b a).
+ apply add_le_mono_r.
+ rewrite (mul_comm a b) at 1.
+ now apply crossmul_le_addsquare.
+Qed.
+
 End NZMulOrderProp.

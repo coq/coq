@@ -12,8 +12,6 @@ Local Open Scope Z_scope.
 
 (** Definition of Zlog2 *)
 
-(** TODO: this is equal to Zlogarithm.log_inf *)
-
 Fixpoint Plog2_Z (p:positive) : Z :=
   match p with
     | 1 => Z0
@@ -30,16 +28,6 @@ Definition Zlog2 z :=
 Lemma Plog2_Z_nonneg : forall p, 0 <= Plog2_Z p.
 Proof.
  induction p; simpl; auto with zarith.
-Qed.
-
-(** TODO : to move ... *)
-
-Lemma Zle_succ_l : forall n m, Zsucc n <= m <-> n < m.
-Proof.
- intros. split; intros H.
- rewrite (Zsucc_pred m). apply Zle_lt_succ, Zsucc_le_reg.
- now rewrite <- Zsucc_pred.
- now apply Zlt_le_succ.
 Qed.
 
 Lemma Plog2_Z_spec : forall p,

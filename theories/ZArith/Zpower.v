@@ -44,8 +44,8 @@ Proof.
 Qed.
 
 (** Using the theorem [Zpower_pos_nat] and the lemma [Zpower_nat_is_exp] we
-   deduce that the function [[n:positive](Zpower_pos z n)] is a morphism
-   for [add : positive->positive] and [Zmult : Z->Z] *)
+   deduce that the function [(Zpower_pos z)] is a morphism
+   for [Pplus : positive->positive] and [Zmult : Z->Z] *)
 
 Lemma Zpower_pos_is_exp :
   forall (n m:positive) (z:Z),
@@ -77,11 +77,8 @@ Section Powers_of_2.
   (** * Powers of 2 *)
 
   (** For the powers of two, that will be widely used, a more direct
-      calculus is possible. We will also prove some properties such
-      as [(x:positive) x < 2^x] that are true for all integers bigger
-      than 2 but more difficult to prove and useless. *)
-
-  (** [shift n m] computes [2^n * m], or [m] shifted by [n] positions *)
+      calculus is possible. [shift n m] computes [2^n * m], i.e.
+      [m] shifted by [n] positions *)
 
   Definition shift_nat (n:nat) (z:positive) := iter_nat n positive xO z.
   Definition shift_pos (n z:positive) := iter_pos n positive xO z.
@@ -97,32 +94,30 @@ Section Powers_of_2.
 
   Lemma two_power_nat_S :
     forall n:nat, two_power_nat (S n) = 2 * two_power_nat n.
-  Proof.
-    intro; simpl in |- *; apply refl_equal.
-  Qed.
+  Proof. reflexivity. Qed.
 
   Lemma shift_nat_plus :
     forall (n m:nat) (x:positive),
       shift_nat (n + m) x = shift_nat n (shift_nat m x).
   Proof.
-    intros; unfold shift_nat in |- *; apply iter_nat_plus.
+    intros; apply iter_nat_plus.
   Qed.
 
   Theorem shift_nat_correct :
     forall (n:nat) (x:positive), Zpos (shift_nat n x) = Zpower_nat 2 n * Zpos x.
   Proof.
-    unfold shift_nat in |- *; simple induction n;
-      [ simpl in |- *; trivial with zarith
-	| intros; replace (Zpower_nat 2 (S n0)) with (2 * Zpower_nat 2 n0);
-	  [ rewrite <- Zmult_assoc; rewrite <- (H x); simpl in |- *; reflexivity
-	    | auto with zarith ] ].
+    unfold shift_nat; induction n.
+    trivial.
+    intros x. simpl.
+    change (Zpower_nat 2 (S n)) with (2 * Zpower_nat 2 n).
+    now rewrite <- Zmult_assoc, <- IHn.
   Qed.
 
   Theorem two_power_nat_correct :
     forall n:nat, two_power_nat n = Zpower_nat 2 n.
   Proof.
     intro n.
-    unfold two_power_nat in |- *.
+    unfold two_power_nat.
     rewrite (shift_nat_correct n).
     omega.
   Qed.
@@ -131,17 +126,14 @@ Section Powers_of_2.
   Lemma shift_pos_nat :
     forall p x:positive, shift_pos p x = shift_nat (nat_of_P p) x.
   Proof.
-    unfold shift_pos in |- *.
-    unfold shift_nat in |- *.
-    intros; apply iter_nat_of_P.
+    unfold shift_pos, shift_nat. intros. apply iter_nat_of_P.
   Qed.
 
   Lemma two_power_pos_nat :
     forall p:positive, two_power_pos p = two_power_nat (nat_of_P p).
   Proof.
-    intro; unfold two_power_pos in |- *; unfold two_power_nat in |- *.
-    apply f_equal with (f := Zpos).
-    apply shift_pos_nat.
+    intro. unfold two_power_pos, two_power_nat.
+    f_equal. apply shift_pos_nat.
   Qed.
 
   (** Then we deduce that [two_power_pos] is also correct *)
@@ -170,11 +162,7 @@ Section Powers_of_2.
     forall x y:positive,
       two_power_pos (x + y) = two_power_pos x * two_power_pos y.
   Proof.
-    intros.
-    rewrite (two_power_pos_correct (x + y)).
-    rewrite (two_power_pos_correct x).
-    rewrite (two_power_pos_correct y).
-    apply Zpower_pos_is_exp.
+    intros. rewrite 3 two_power_pos_correct. apply Zpower_pos_is_exp.
   Qed.
 
   (** The exponentiation [z -> 2^z] for [z] a signed integer.
@@ -190,65 +178,34 @@ Section Powers_of_2.
       | Zneg y => 0
     end.
 
+  Lemma two_p_correct : forall x, two_p x = 2^x.
+  Proof.
+   intros [|p|p]; trivial. apply two_power_pos_correct.
+  Qed.
+
   Theorem two_p_is_exp :
-    forall x y:Z, 0 <= x -> 0 <= y -> two_p (x + y) = two_p x * two_p y.
+    forall x y, 0 <= x -> 0 <= y -> two_p (x + y) = two_p x * two_p y.
   Proof.
-    simple induction x;
-      [ simple induction y; simpl in |- *; auto with zarith
-	| simple induction y;
-	  [ unfold two_p in |- *; rewrite (Zmult_comm (two_power_pos p) 1);
-	    rewrite (Zmult_1_l (two_power_pos p)); auto with zarith
-	    | unfold Zplus in |- *; unfold two_p in |- *; intros;
-	      apply two_power_pos_is_exp
-	    | intros; unfold Zle in H0; unfold Zcompare in H0;
-	      absurd (Datatypes.Gt = Datatypes.Gt); trivial with zarith ]
-	| simple induction y;
-	  [ simpl in |- *; auto with zarith
-	    | intros; unfold Zle in H; unfold Zcompare in H;
-	      absurd (Datatypes.Gt = Datatypes.Gt); trivial with zarith
-	    | intros; unfold Zle in H; unfold Zcompare in H;
-	      absurd (Datatypes.Gt = Datatypes.Gt); trivial with zarith ] ].
+   intros. rewrite 3 two_p_correct. apply Z.pow_add_r; auto with zarith.
   Qed.
 
-  Lemma two_p_gt_ZERO : forall x:Z, 0 <= x -> two_p x > 0.
+  Lemma two_p_gt_ZERO : forall x, 0 <= x -> two_p x > 0.
   Proof.
-    simple induction x; intros;
-      [ simpl in |- *; omega
-	| simpl in |- *; unfold two_power_pos in |- *; apply Zorder.Zgt_pos_0
-	| absurd (0 <= Zneg p);
-	  [ simpl in |- *; unfold Zle in |- *; unfold Zcompare in |- *;
-	    do 2 unfold not in |- *; auto with zarith
-	    | assumption ] ].
+   intros. rewrite two_p_correct. now apply Zlt_gt, Z.pow_pos_nonneg.
   Qed.
 
-  Lemma two_p_S : forall x:Z, 0 <= x -> two_p (Zsucc x) = 2 * two_p x.
+  Lemma two_p_S : forall x, 0 <= x -> two_p (Zsucc x) = 2 * two_p x.
   Proof.
-    intros; unfold Zsucc in |- *.
-    rewrite (two_p_is_exp x 1 H (Zorder.Zle_0_pos 1)).
-    apply Zmult_comm.
+   intros. rewrite 2 two_p_correct. now apply Z.pow_succ_r.
   Qed.
 
-  Lemma two_p_pred : forall x:Z, 0 <= x -> two_p (Zpred x) < two_p x.
+  Lemma two_p_pred : forall x, 0 <= x -> two_p (Zpred x) < two_p x.
   Proof.
-    intros; apply natlike_ind with (P := fun x:Z => two_p (Zpred x) < two_p x);
-      [ simpl in |- *; unfold Zlt in |- *; auto with zarith
-	| intros; elim (Zle_lt_or_eq 0 x0 H0);
-	  [ intros;
-	    replace (two_p (Zpred (Zsucc x0))) with (two_p (Zsucc (Zpred x0)));
-	      [ rewrite (two_p_S (Zpred x0));
-		[ rewrite (two_p_S x0); [ omega | assumption ]
-		  | apply Zorder.Zlt_0_le_0_pred; assumption ]
-		| rewrite <- (Zsucc_pred x0); rewrite <- (Zpred_succ x0);
-		  trivial with zarith ]
-	    | intro Hx0; rewrite <- Hx0; simpl in |- *; unfold Zlt in |- *;
-	      auto with zarith ]
-	| assumption ].
+   intros. rewrite 2 two_p_correct.
+   apply Z.pow_lt_mono_r; auto with zarith.
   Qed.
 
-  Lemma Zlt_lt_double : forall x y:Z, 0 <= x < y -> x < 2 * y.
-    intros; omega. Qed.
-
-  End Powers_of_2.
+End Powers_of_2.
 
 Hint Resolve two_p_gt_ZERO: zarith.
 Hint Immediate two_p_pred two_p_S: zarith.

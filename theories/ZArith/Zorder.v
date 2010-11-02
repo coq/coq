@@ -449,6 +449,14 @@ Proof.
   split; [apply Zlt_succ_le | apply Zle_lt_succ].
 Qed.
 
+Lemma Zle_succ_l : forall n m, Zsucc n <= m <-> n < m.
+Proof.
+ intros. split; intros H.
+ rewrite (Zsucc_pred m). apply Zle_lt_succ, Zsucc_le_reg.
+ now rewrite <- Zsucc_pred.
+ now apply Zlt_le_succ.
+Qed.
+
 (** Weakening order *)
 
 Lemma Zle_succ : forall n:Z, n <= Zsucc n.

@@ -50,8 +50,8 @@ Qed.
 Ltac order_pos :=
 ((apply add_pos_pos || apply add_nonneg_nonneg ||
   apply mul_pos_pos || apply mul_nonneg_nonneg ||
-  apply pow_nonneg || apply log2_nonneg ||
-  apply (le_le_succ_r 0));
+  apply pow_nonneg || apply pow_pos_nonneg ||
+  apply log2_nonneg || apply (le_le_succ_r 0));
  order_pos) (* in case of success of an apply, we recurse *)
 || order'.  (* otherwise *)
 
@@ -74,14 +74,42 @@ Proof.
  order.
 Qed.
 
+(** An alternate specification *)
+
+Lemma log2_spec_alt : forall a, 0<a -> exists r,
+ a == 2^(log2 a) + r /\ 0 <= r < 2^(log2 a).
+Proof.
+ intros a Ha.
+ destruct (log2_spec _ Ha) as (LE,LT).
+ destruct (le_exists_sub _ _ LE) as (r & Hr & Hr').
+ exists r.
+ split. now rewrite add_comm.
+ split. trivial.
+ apply (add_lt_mono_r _ _ (2^log2 a)).
+ rewrite <- Hr. generalize LT.
+ rewrite pow_succ_r by order_pos.
+ rewrite two_succ at 1. now nzsimpl.
+Qed.
+
+Lemma log2_unique' : forall a b c, 0<=b -> 0<=c<2^b ->
+ a == 2^b + c -> log2 a == b.
+Proof.
+ intros a b c Hb (Hc,H) EQ.
+ apply log2_unique. trivial.
+ rewrite EQ.
+ split.
+ rewrite <- add_0_r at 1. now apply add_le_mono_l.
+ rewrite pow_succ_r by order.
+ rewrite two_succ at 2. nzsimpl. now apply add_lt_mono_l.
+Qed.
+
 (** log2 is exact on powers of 2 *)
 
 Lemma log2_pow2 : forall a, 0<=a -> log2 (2^a) == a.
 Proof.
  intros a Ha.
- apply log2_unique; trivial.
- split. order. apply pow_lt_mono_r. order'. split; trivial.
-  apply lt_succ_diag_r.
+ apply log2_unique' with 0; trivial.
+ split; order_pos. now nzsimpl.
 Qed.
 
 (** log2 and basic constants *)
@@ -256,20 +284,6 @@ Qed.
 
 (** The sum of two log2 is less than twice the log2 of the sum.
     This can almost be seen as a convexity inequality. *)
-
-Lemma quadmul_le_squareadd : forall a b, 0<=a -> 0<=b ->
- 2*2*a*b <= (a+b)*(a+b).
-Proof.
- intros.
- nzsimpl'.
- rewrite !mul_add_distr_l, !mul_add_distr_r.
- rewrite (add_comm _ (b*b)), add_assoc.
- apply add_le_mono_r.
- rewrite (add_shuffle0 (a*a)), (mul_comm b a).
- apply add_le_mono_r.
- rewrite (mul_comm a b) at 1.
- now apply crossmul_le_addsquare.
-Qed.
 
 Lemma add_log2_lt : forall a b, 0<a -> 0<b ->
  log2 a + log2 b < 2 * log2 (a+b).

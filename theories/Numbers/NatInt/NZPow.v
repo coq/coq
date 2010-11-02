@@ -166,9 +166,11 @@ Proof.
  rewrite H, pow_0_r in Hb. order.
 Qed.
 
-Lemma pow_lt_mono_r : forall a b c, 1<a -> 0<=b<c -> a^b < a^c.
+Lemma pow_lt_mono_r : forall a b c, 1<a -> 0<=c -> b<c -> a^b < a^c.
 Proof.
- intros a b c Ha (Hb,H).
+ intros a b c Ha Hc H.
+ destruct (lt_ge_cases b 0) as [Hb|Hb].
+ rewrite pow_neg_r by trivial. apply pow_pos_nonneg; order'.
  assert (H' : b<=c) by order.
  destruct (le_exists_sub _ _ H') as (d & EQ & Hd).
  rewrite EQ, pow_add_r; trivial. rewrite <- (mul_1_l (a^b)) at 1.
@@ -189,7 +191,7 @@ Proof.
  apply le_succ_l in Ha; rewrite <- one_succ in Ha.
  apply lt_eq_cases in Ha; destruct Ha as [Ha|Ha]; [|rewrite <- Ha].
  apply lt_eq_cases in H; destruct H as [H|H]; [|now rewrite <- H].
- apply lt_le_incl, pow_lt_mono_r; now try split.
+ apply lt_le_incl, pow_lt_mono_r; order.
  nzsimpl; order.
 Qed.
 
@@ -261,25 +263,25 @@ Proof.
  order.
 Qed.
 
-Lemma pow_lt_mono_r_iff : forall a b c, 1<a -> 0<=b -> 0<=c ->
+Lemma pow_lt_mono_r_iff : forall a b c, 1<a -> 0<=c ->
   (b<c <-> a^b < a^c).
 Proof.
- intros a b c Ha Hb Hc.
+ intros a b c Ha Hc.
  split; intro LT.
- apply pow_lt_mono_r; try split; trivial.
+ now apply pow_lt_mono_r.
  destruct (le_gt_cases c b) as [LE|GT]; trivial.
- assert (a^c <= a^b) by (apply pow_le_mono_r; try split; order').
+ assert (a^c <= a^b) by (apply pow_le_mono_r; order').
  order.
 Qed.
 
-Lemma pow_le_mono_r_iff : forall a b c, 1<a -> 0<=b -> 0<=c ->
+Lemma pow_le_mono_r_iff : forall a b c, 1<a -> 0<=c ->
   (b<=c <-> a^b <= a^c).
 Proof.
- intros a b c Ha Hb Hc.
+ intros a b c Ha Hc.
  split; intro LE.
- apply pow_le_mono_r; try split; trivial. order'.
+ apply pow_le_mono_r; order'.
  destruct (le_gt_cases b c) as [LE'|GT]; trivial.
- assert (a^c < a^b) by (apply pow_lt_mono_r; try split; order').
+ assert (a^c < a^b) by (apply pow_lt_mono_r; order').
  order.
 Qed.
 
