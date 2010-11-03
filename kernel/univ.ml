@@ -381,9 +381,9 @@ let merge_disc g u v =
 (* Universe inconsistency: error raised when trying to enforce a relation
    that would create a cycle in the graph of universes. *)
 
-type order_request = Lt | Le | Eq
+type constraint_type = Lt | Le | Eq
 
-exception UniverseInconsistency of order_request * universe * universe
+exception UniverseInconsistency of constraint_type * universe * universe
 
 let error_inconsistency o u v = raise (UniverseInconsistency (o,Atom u,Atom v))
 
@@ -447,14 +447,12 @@ let merge_universes sp u1 u2 =
 
 (* Constraints and sets of consrtaints. *)
 
-type constraint_type = Lt | Leq | Eq
-
 type univ_constraint = universe_level * constraint_type * universe_level
 
 let enforce_constraint cst g =
   match cst with
     | (u,Lt,v) -> enforce_univ_lt u v g
-    | (u,Leq,v) -> enforce_univ_leq u v g
+    | (u,Le,v) -> enforce_univ_leq u v g
     | (u,Eq,v) -> enforce_univ_eq u v g
 
 
@@ -470,7 +468,7 @@ type constraint_function =
     universe -> universe -> constraints -> constraints
 
 let constraint_add_leq v u c =
-  if v = Set then c else Constraint.add (v,Leq,u) c
+  if v = Set then c else Constraint.add (v,Le,u) c
 
 let enforce_geq u v c =
   match u, v with
@@ -589,7 +587,7 @@ let pr_constraints c =
   Constraint.fold (fun (u1,op,u2) pp_std ->
 		     let op_str = match op with
 		       | Lt -> " < "
-		       | Leq -> " <= "
+		       | Le -> " <= "
 		       | Eq -> " = "
 		     in pp_std ++  pr_uni_level u1 ++ str op_str ++
 			  pr_uni_level u2 ++ fnl () )  c (str "")
@@ -600,10 +598,10 @@ let dump_universes output g =
   let dump_arc _ = function
     | Canonical {univ=u; lt=lt; le=le} ->
 	let u_str = string_of_univ_level u in
-	List.iter (fun v -> output `Lt u_str (string_of_univ_level v)) lt;
-	List.iter (fun v -> output `Le u_str (string_of_univ_level v)) le
+	List.iter (fun v -> output Lt u_str (string_of_univ_level v)) lt;
+	List.iter (fun v -> output Le u_str (string_of_univ_level v)) le
     | Equiv (u,v) ->
-      output `Eq (string_of_univ_level u) (string_of_univ_level v)
+      output Eq (string_of_univ_level u) (string_of_univ_level v)
   in
     UniverseLMap.iter dump_arc g
 

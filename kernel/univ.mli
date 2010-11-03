@@ -57,9 +57,9 @@ val enforce_eq : constraint_function
   universes graph. It raises the exception [UniverseInconsistency] if the
   constraints are not satisfiable. *)
 
-type order_request = Lt | Le | Eq
+type constraint_type = Lt | Le | Eq
 
-exception UniverseInconsistency of order_request * universe * universe
+exception UniverseInconsistency of constraint_type * universe * universe
 
 val merge_constraints : constraints -> universes -> universes
 
@@ -86,7 +86,7 @@ val pr_constraints : constraints -> Pp.std_ppcmds
 (** {6 Dumping to a file } *)
 
 val dump_universes :
-  ([> `Lt | `Le | `Eq ] -> string -> string -> unit) ->
+  (constraint_type -> string -> string -> unit) ->
   universes -> unit
 
 val hcons1_univ : universe -> universe
