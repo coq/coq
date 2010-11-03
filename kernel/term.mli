@@ -368,10 +368,6 @@ val mkNamedLambda_or_LetIn : named_declaration -> constr -> constr
 
 (** {6 Other term constructors. } *)
 
-val abs_implicit : constr -> constr
-val lambda_implicit : constr -> constr
-val lambda_implicit_lift : int -> constr -> constr
-
 (** [applist (f,args)] and its variants work as [mkApp] *)
 
 val applist : constr * constr list -> constr

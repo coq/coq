@@ -354,6 +354,11 @@ if nmr = 0 then 0 else
           | _ -> k)
   in find 0 (n-1) (lpar,List.rev hyps)
 
+let lambda_implicit_lift n a =
+  let implicit_sort = mkType (make_univ (make_dirpath [id_of_string "implicit"], 0)) in
+  let lambda_implicit a = mkLambda (Anonymous, implicit_sort, a) in
+  iterate lambda_implicit n (lift n a)
+
 (* This removes global parameters of the inductive types in lc (for
    nested inductive types only ) *)
 let abstract_mind_lc env ntyps npars lc =

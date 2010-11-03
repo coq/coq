@@ -973,17 +973,9 @@ let mkFix = mkFix
 *)
 let mkCoFix = mkCoFix
 
-(* Construct an implicit *)
-let implicit_sort = Type (make_univ(make_dirpath[id_of_string"implicit"],0))
-let mkImplicit = mkSort implicit_sort
-
 (***************************)
 (* Other term constructors *)
 (***************************)
-
-let abs_implicit c = mkLambda (Anonymous, mkImplicit, c)
-let lambda_implicit a = mkLambda (Name(id_of_string"y"), mkImplicit, a)
-let lambda_implicit_lift n a = iterate lambda_implicit n (lift n a)
 
 (* prodn n [xn:Tn;..;x1:T1;Gamma] b = (x1:T1)..(xn:Tn)b *)
 let prodn n env b =
