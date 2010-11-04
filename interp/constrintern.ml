@@ -264,6 +264,9 @@ let set_var_scope loc id istermvar (_,_,scopt,scopes) ntnvars =
   try
     let idscopes,typ = List.assoc id ntnvars in
     if !idscopes <> None &
+      (* scopes have no effect on the interpretation of identifiers, hence
+         we can tolerate having a variable occurring several times in
+         different scopes: *) typ <> NtnInternTypeIdent &
       make_current_scope (Option.get !idscopes)
       <> make_current_scope (scopt,scopes) then
 	error_inconsistent_scope loc id
