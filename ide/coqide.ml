@@ -3092,9 +3092,10 @@ let process_argv argv =
     (output_string stderr "coqtop choked on one of your option"; exit 1)
 
 let start () =
-  sup_args := String.concat " " (List.tl (Array.to_list Sys.argv));
-  let files = process_argv (Array.to_list Sys.argv) in
-    ignore_break ();
+  let argl = Array.to_list Sys.argv in
+  let files = process_argv argl in
+  sup_args := String.concat " " (List.filter (fun x -> not (List.mem x files)) (List.tl argl));
+  ignore_break ();
     GtkMain.Rc.add_default_file (lib_ide_file ".coqide-gtk2rc");
     (try
 	 GtkMain.Rc.add_default_file (Filename.concat System.home ".coqide-gtk2rc");
