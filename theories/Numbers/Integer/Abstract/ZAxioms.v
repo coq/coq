@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Export NZAxioms.
-Require Import NZPow NZSqrt NZLog.
+Require Import NZPow NZSqrt NZLog NZGcd.
 
 (** We obtain integers by postulating that successor of predecessor
     is identity. *)
@@ -70,16 +70,16 @@ Module Type Parity (Import Z : ZAxiomsMiniSig').
  Axiom odd_spec : forall n, odd n = true <-> Odd n.
 End Parity.
 
-(** For pow sqrt log2, the NZ axiomatizations are enough. *)
+(** For pow sqrt log2 gcd, the NZ axiomatizations are enough. *)
 
 (** Let's group everything *)
 
 Module Type ZAxiomsSig :=
   ZAxiomsMiniSig <+ HasCompare <+ HasAbs <+ HasSgn <+ Parity
-   <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2.
+   <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2 <+ NZGcd.NZGcd.
 Module Type ZAxiomsSig' :=
   ZAxiomsMiniSig' <+ HasCompare <+ HasAbs <+ HasSgn <+ Parity
-   <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2.
+   <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2 <+ NZGcd.NZGcd'.
 
 
 (** Division is left apart, since many different flavours are available *)

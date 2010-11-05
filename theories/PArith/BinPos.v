@@ -1047,11 +1047,18 @@ Proof.
  rewrite (Pplus_comm p), (Pplus_comm q). now apply Pplus_lt_mono_l.
 Qed.
 
-Lemma Pmult_lt_mono_l : forall p q r, q<r -> p*q < p*r.
+Lemma Pmult_lt_mono_l : forall p q r, q<r <-> p*q < p*r.
 Proof.
- induction p using Prect; auto.
- intros q r H. rewrite 2 Pmult_Sn_m.
- apply Pplus_lt_mono; auto.
+ assert (IMPL : forall p q r, q<r -> p*q < p*r).
+  induction p using Prect; auto.
+  intros q r H. rewrite 2 Pmult_Sn_m.
+  apply Pplus_lt_mono; auto.
+ split; auto.
+ intros H.
+ destruct (Pcompare_spec q r) as [EQ|LT|GT]; trivial.
+ rewrite EQ in H. elim (Plt_irrefl _ H).
+ apply (IMPL p) in GT.
+ elim (Plt_irrefl (p*q)). eapply Plt_trans; eauto.
 Qed.
 
 Lemma Pmult_lt_mono : forall p q r s, p<q -> r<s -> p*r < q*s.
@@ -1216,6 +1223,43 @@ Proof.
   unfold Pminus; rewrite U; simpl; auto.
 Qed.
 
+Lemma Pplus_minus_eq : forall p q, p+q-q = p.
+Proof.
+ intros. apply Pplus_reg_l with q.
+ rewrite Pplus_minus.
+ apply Pplus_comm.
+ now rewrite ZC4, Pplus_comm, Plt_plus_r.
+Qed.
+
+Lemma Pmult_minus_distr_l : forall p q r, r<q -> p*(q-r) = p*q-p*r.
+Proof.
+ intros p q r H.
+ apply Pplus_reg_l with (p*r).
+ rewrite <- Pmult_plus_distr_l.
+ rewrite Pplus_minus.
+ symmetry. apply Pplus_minus.
+ apply (Pmult_lt_mono_l p) in H.
+ now rewrite ZC4, H.
+ now rewrite ZC4, H.
+Qed.
+
+Lemma Pminus_decr : forall n m, m<n -> n-m < n.
+Proof.
+ intros n m LT.
+ apply Pplus_lt_mono_l with m.
+ rewrite Pplus_minus.
+ rewrite Pplus_comm.
+ apply Plt_plus_r.
+ now rewrite ZC4, LT.
+Qed.
+
+Lemma Pminus_xI_xI : forall n m, m<n -> n~1 - m~1 = (n-m)~0.
+Proof.
+ intros. unfold Pminus. simpl.
+ destruct (Pminus_mask_Gt n m) as (p & -> & _); trivial.
+ now rewrite ZC4, H.
+Qed.
+
 (** When x<y, the substraction of x by y returns 1 *)
 
 Lemma Pminus_mask_Lt : forall p q:positive, p<q -> Pminus_mask p q = IsNeg.
@@ -1249,7 +1293,7 @@ Fixpoint Psize (p:positive) : nat :=
     | p~0 => S (Psize p)
   end.
 
-Lemma Psize_monotone : forall p q, (p?=q) Eq = Lt -> (Psize p <= Psize q)%nat.
+Lemma Psize_monotone : forall p q, p<q -> (Psize p <= Psize q)%nat.
 Proof.
   assert (le0 : forall n, (0<=n)%nat) by (induction n; auto).
   assert (leS : forall n m, (n<=m -> S n <= S m)%nat) by (induction 1; auto).

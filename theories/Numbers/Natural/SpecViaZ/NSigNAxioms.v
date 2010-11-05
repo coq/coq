@@ -299,6 +299,42 @@ destruct (Z_mod_lt [a] [b]); auto.
 generalize (spec_pos b); auto with zarith.
 Qed.
 
+(** Gcd *)
+
+Definition divide n m := exists p, n*p == m.
+Local Notation "( x | y )" := (divide x y) (at level 0).
+
+Lemma spec_divide : forall n m, (n|m) <-> Zdivide' [n] [m].
+Proof.
+ intros n m. split.
+ intros (p,H). exists [p]. revert H; now zify.
+ intros (z,H). exists (of_N (Zabs_N z)). zify.
+ rewrite spec_of_N, Z_of_N_abs.
+ rewrite <- (Zabs_eq [n]) by apply spec_pos.
+ rewrite <- Zabs_Zmult, H.
+ apply Zabs_eq, spec_pos.
+Qed.
+
+Lemma gcd_divide_l : forall n m, (gcd n m | n).
+Proof.
+ intros n m. apply spec_divide. zify. apply Zgcd_divide_l.
+Qed.
+
+Lemma gcd_divide_r : forall n m, (gcd n m | m).
+Proof.
+ intros n m. apply spec_divide. zify. apply Zgcd_divide_r.
+Qed.
+
+Lemma gcd_greatest : forall n m p, (p|n) -> (p|m) -> (p|gcd n m).
+Proof.
+ intros n m p. rewrite !spec_divide. zify. apply Zgcd_greatest.
+Qed.
+
+Lemma gcd_nonneg : forall n m, 0 <= gcd n m.
+Proof.
+ intros. zify. apply Zgcd_nonneg.
+Qed.
+
 (** Recursion *)
 
 Definition recursion (A : Type) (a : A) (f : N.t -> A -> A) (n : N.t) :=

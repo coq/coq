@@ -20,7 +20,7 @@ Hint Rewrite
  spec_0 spec_1 spec_2 spec_add spec_sub spec_pred spec_succ
  spec_mul spec_opp spec_of_Z spec_div spec_modulo spec_sqrt
  spec_compare spec_eq_bool spec_max spec_min spec_abs spec_sgn
- spec_pow spec_log2 spec_even spec_odd
+ spec_pow spec_log2 spec_even spec_odd spec_gcd
  : zsimpl.
 
 Ltac zsimpl := autorewrite with zsimpl.
@@ -347,6 +347,38 @@ Theorem mod_neg_bound :
  forall a b, b < 0 -> b < modulo a b /\ modulo a b <= 0.
 Proof.
 intros a b. zify. intros. apply Z_mod_neg; auto with zarith.
+Qed.
+
+(** Gcd *)
+
+Definition divide n m := exists p, n*p == m.
+Local Notation "( x | y )" := (divide x y) (at level 0).
+
+Lemma spec_divide : forall n m, (n|m) <-> Zdivide' [n] [m].
+Proof.
+ intros n m. split.
+ intros (p,H). exists [p]. revert H; now zify.
+ intros (z,H). exists (of_Z z). now zify.
+Qed.
+
+Lemma gcd_divide_l : forall n m, (gcd n m | n).
+Proof.
+ intros n m. apply spec_divide. zify. apply Zgcd_divide_l.
+Qed.
+
+Lemma gcd_divide_r : forall n m, (gcd n m | m).
+Proof.
+ intros n m. apply spec_divide. zify. apply Zgcd_divide_r.
+Qed.
+
+Lemma gcd_greatest : forall n m p, (p|n) -> (p|m) -> (p|gcd n m).
+Proof.
+ intros n m p. rewrite !spec_divide. zify. apply Zgcd_greatest.
+Qed.
+
+Lemma gcd_nonneg : forall n m, 0 <= gcd n m.
+Proof.
+ intros. zify. apply Zgcd_nonneg.
 Qed.
 
 End ZTypeIsZAxioms.

@@ -8,7 +8,7 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Import BinPos Ndiv_def Nsqrt_def.
+Require Import BinPos Ndiv_def Nsqrt_def Ngcd_def.
 Require Export BinNat.
 Require Import NAxioms NProperties.
 
@@ -169,6 +169,14 @@ Definition sqrt_spec n (H:0<=n) := Nsqrt_spec n.
 Lemma sqrt_neg : forall a, a<0 -> Nsqrt a = 0.
 Proof. destruct a; discriminate. Qed.
 
+(** Gcd *)
+
+Definition gcd_divide_l := Ngcd_divide_l.
+Definition gcd_divide_r := Ngcd_divide_r.
+Definition gcd_greatest := Ngcd_greatest.
+Lemma gcd_nonneg : forall a b, 0 <= Ngcd a b.
+Proof. intros. now destruct (Ngcd a b). Qed.
+
 (** The instantiation of operations.
     Placing them at the very end avoids having indirections in above lemmas. *)
 
@@ -196,6 +204,8 @@ Definition even := Neven.
 Definition odd := Nodd.
 Definition sqrt := Nsqrt.
 Definition log2 := Nlog2.
+Definition divide := Ndivide.
+Definition gcd := Ngcd.
 
 Include NProp
  <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.

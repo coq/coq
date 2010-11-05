@@ -10,7 +10,7 @@
 
 
 Require Import ZAxioms ZProperties BinInt Zcompare Zorder ZArith_dec
- Zbool Zeven Zsqrt_def Zpow_def Zlog_def.
+ Zbool Zeven Zsqrt_def Zpow_def Zlog_def Zgcd_def.
 
 Local Open Scope Z_scope.
 
@@ -160,6 +160,15 @@ Definition sqrt := Zsqrt.
 Definition log2_spec := Zlog2_spec.
 Definition log2_nonpos := Zlog2_nonpos.
 Definition log2 := Zlog2.
+
+(** Gcd *)
+
+Definition gcd_divide_l := Zgcd_divide_l.
+Definition gcd_divide_r := Zgcd_divide_r.
+Definition gcd_greatest := Zgcd_greatest.
+Definition gcd_nonneg := Zgcd_nonneg.
+Definition divide := Zdivide'.
+Definition gcd := Zgcd.
 
 (** We define [eq] only here to avoid refering to this [eq] above. *)
 

@@ -13,6 +13,7 @@ Require Export BinNat.
 Require Export Nnat.
 Require Export Ndiv_def.
 Require Export Nsqrt_def.
+Require Export Ngcd_def.
 Require Export Ndigits.
 Require Export NArithRing.
 Require NBinary.

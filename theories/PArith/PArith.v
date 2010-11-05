@@ -8,8 +8,4 @@
 
 (** Library for positive natural numbers *)
 
-Require Export BinPos.
-Require Export Pnat.
-Require Export Pminmax.
-Require Export Psqrt.
-Require Export POrderedType.
+Require Export BinPos Pnat Pminmax Psqrt Pgcd POrderedType.

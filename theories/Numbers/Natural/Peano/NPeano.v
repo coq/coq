@@ -9,7 +9,8 @@
 (************************************************************************)
 
 Require Import
- Bool Peano Peano_dec Compare_dec Plus Minus Le Lt EqNat NAxioms NProperties.
+ Bool Peano Peano_dec Compare_dec Plus Mult Minus Le Lt EqNat
+ NAxioms NProperties.
 
 (** Functions not already defined *)
 
@@ -274,6 +275,63 @@ Proof.
  inversion 1; now subst.
 Qed.
 
+(** * Gcd *)
+
+(** We use Euclid algorithm, which is normally not structural,
+    but Coq is now clever enough to accept this (behind modulo
+    there is a subtraction, which now preserve being a subterm)
+*)
+
+Fixpoint gcd a b :=
+  match a with
+   | O => b
+   | S a' => gcd (b mod (S a')) (S a')
+  end.
+
+Definition divide x y := exists z, x*z=y.
+Notation "( x | y )" := (divide x y) (at level 0) : nat_scope.
+
+Lemma gcd_divide : forall a b, (gcd a b | a) /\ (gcd a b | b).
+Proof.
+ fix 1.
+ intros [|a] b; simpl.
+ split.
+  exists 0; now rewrite <- mult_n_O.
+  exists 1; now rewrite <- mult_n_Sm, <- mult_n_O.
+ fold (b mod (S a)).
+ destruct (gcd_divide (b mod (S a)) (S a)) as (H,H').
+ set (a':=S a) in *.
+ split; auto.
+ rewrite (div_mod b a') at 2 by discriminate.
+ destruct H as (u,Hu), H' as (v,Hv).
+ exists ((b/a')*v + u).
+ rewrite mult_plus_distr_l.
+ now rewrite (mult_comm _ v), mult_assoc, Hv, Hu.
+Qed.
+
+Lemma gcd_divide_l : forall a b, (gcd a b | a).
+Proof.
+ intros. apply gcd_divide.
+Qed.
+
+Lemma gcd_divide_r : forall a b, (gcd a b | b).
+Proof.
+ intros. apply gcd_divide.
+Qed.
+
+Lemma gcd_greatest : forall a b c, (c|a) -> (c|b) -> (c|gcd a b).
+Proof.
+ fix 1.
+ intros [|a] b; simpl; auto.
+ fold (b mod (S a)).
+ intros c H H'. apply gcd_greatest; auto.
+ set (a':=S a) in *.
+ rewrite (div_mod b a') in H' by discriminate.
+ destruct H as (u,Hu), H' as (v,Hv).
+ exists (v - u * (b/a')).
+ now rewrite mult_minus_distr_l, mult_assoc, Hu, Hv, minus_plus.
+Qed.
+
 
 (** * Implementation of [NAxiomsSig] by [nat] *)
 
@@ -458,6 +516,14 @@ Program Instance div_wd : Proper (eq==>eq==>eq) div.
 Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
 Definition div_mod := div_mod.
 Definition mod_upper_bound := mod_upper_bound.
+
+Definition divide := divide.
+Definition gcd := gcd.
+Definition gcd_divide_l := gcd_divide_l.
+Definition gcd_divide_r := gcd_divide_r.
+Definition gcd_greatest := gcd_greatest.
+Lemma gcd_nonneg : forall a b, 0<=gcd a b.
+Proof. intros. apply le_O_n. Qed.
 
 (** Generic Properties *)
 

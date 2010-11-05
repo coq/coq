@@ -3,4 +3,5 @@ Pnat.vo
 POrderedType.vo
 Pminmax.vo
 Psqrt.vo
+Pgcd.vo
 PArith.vo

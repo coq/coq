@@ -8,7 +8,7 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Export NZAxioms NZPow NZSqrt NZLog NZDiv.
+Require Export NZAxioms NZPow NZSqrt NZLog NZDiv NZGcd.
 
 (** From [NZ], we obtain natural numbers just by stating that [pred 0] == 0 *)
 
@@ -39,16 +39,16 @@ Module Type NDivSpecific (Import N : NAxiomsMiniSig')(Import DM : DivMod' N).
  Axiom mod_upper_bound : forall a b, b ~= 0 -> a mod b < b.
 End NDivSpecific.
 
-(** For pow sqrt log2, the NZ axiomatizations are enough. *)
+(** For gcd pow sqrt log2, the NZ axiomatizations are enough. *)
 
 (** We now group everything together. *)
 
 Module Type NAxiomsSig := NAxiomsMiniSig <+ HasCompare <+ Parity
-  <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2
+  <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2 <+ NZGcd.NZGcd
   <+ DivMod <+ NZDivCommon <+ NDivSpecific.
 
 Module Type NAxiomsSig' := NAxiomsMiniSig' <+ HasCompare <+ Parity
-  <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2
+  <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2 <+ NZGcd.NZGcd'
   <+ DivMod' <+ NZDivCommon <+ NDivSpecific.
 
 

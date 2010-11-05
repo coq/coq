@@ -9,7 +9,7 @@
 (** Normalisation functions for rational numbers. *)
 
 Require Export QArith_base.
-Require Import Znumtheory.
+Require Import Zgcd_def Znumtheory.
 
 (** First, a function that (tries to) build a positive back from a Z. *)
 
@@ -41,23 +41,16 @@ Definition Qred (q:Q) :=
 Lemma Qred_correct : forall q, (Qred q) == q.
 Proof.
   unfold Qred, Qeq; intros (n,d); simpl.
-  generalize (Zggcd_gcd n ('d)) (Zgcd_is_pos n ('d))
-    (Zgcd_is_gcd n ('d)) (Zggcd_correct_divisors n ('d)).
+  generalize (Zggcd_gcd n ('d)) (Zgcd_nonneg n ('d))
+    (Zggcd_correct_divisors n ('d)).
   destruct (Zggcd n (Zpos d)) as (g,(nn,dd)); simpl.
   Open Scope Z_scope.
-  intuition.
-  rewrite <- H in H0,H1; clear H.
-  rewrite H3; rewrite H4.
-  assert (0 <> g).
-  intro; subst g; discriminate.
-
-  assert (0 < dd).
-  apply Zmult_gt_0_lt_0_reg_r with g.
-  omega.
-  rewrite Zmult_comm.
-  rewrite <- H4; compute; auto.
-  rewrite Z2P_correct; auto.
-  ring.
+  intros Hg LE (Hn,Hd). rewrite Hd, Hn.
+  rewrite <- Hg in LE; clear Hg.
+  assert (0 <> g) by (intro; subst; discriminate).
+  rewrite Z2P_correct. ring.
+  apply Zmult_gt_0_lt_0_reg_r with g; auto with zarith.
+  now rewrite Zmult_comm, <- Hd.
   Close Scope Z_scope.
 Qed.
 
@@ -67,10 +60,10 @@ Proof.
   unfold Qred, Qeq in *; simpl in *.
   Open Scope Z_scope.
   generalize (Zggcd_gcd a ('b)) (Zgcd_is_gcd a ('b))
-    (Zgcd_is_pos a ('b)) (Zggcd_correct_divisors a ('b)).
+    (Zgcd_nonneg a ('b)) (Zggcd_correct_divisors a ('b)).
   destruct (Zggcd a (Zpos b)) as (g,(aa,bb)).
   generalize (Zggcd_gcd c ('d)) (Zgcd_is_gcd c ('d))
-    (Zgcd_is_pos c ('d)) (Zggcd_correct_divisors c ('d)).
+    (Zgcd_nonneg c ('d)) (Zggcd_correct_divisors c ('d)).
   destruct (Zggcd c (Zpos d)) as (g',(cc,dd)).
   simpl.
   intro H; rewrite <- H; clear H.
@@ -78,10 +71,9 @@ Proof.
   intro H; rewrite <- H; clear H.
   intros Hg1 Hg2 (Hg3,Hg4).
   intros.
-  assert (g <> 0).
-  intro; subst g; discriminate.
-  assert (g' <> 0).
-  intro; subst g'; discriminate.
+  assert (g <> 0) by (intro; subst g; discriminate).
+  assert (g' <> 0) by (intro; subst g'; discriminate).
+
   elim (rel_prime_cross_prod aa bb cc dd).
   congruence.
   unfold rel_prime in |- *.
