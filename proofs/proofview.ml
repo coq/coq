@@ -395,11 +395,12 @@ let rec tclGOALBINDU s k =
 open Pretype_errors
 let rec catchable_exception = function
   | Loc.Exc_located(_,e) -> catchable_exception e
-  | Util.UserError _ | Type_errors.TypeError _ 
+  | Util.UserError _
+  | Type_errors.TypeError _ | PretypeError (_,_,TypingError _)
   | Indrec.RecursionSchemeError _
-  | Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)
+  | Nametab.GlobalizationError _ | PretypeError (_,_,VarNotFound _)
   (* unification errors *)
-  | PretypeError(_,(CannotUnify _|CannotUnifyLocal _|CannotGeneralize _
+  | PretypeError(_,_,(CannotUnify _|CannotUnifyLocal _|CannotGeneralize _
 		   |NoOccurrenceFound _|CannotUnifyBindingType _|NotClean _
 		   |CannotFindWellTypedAbstraction _
 		   |UnsolvableImplicit _)) -> true

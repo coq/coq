@@ -844,7 +844,7 @@ let w_unify_to_subterm env ?(flags=default_unify_flags) (op,cl) evd =
   in
   try matchrec cl
   with ex when precatchable_exception ex ->
-    raise (PretypeError (env,NoOccurrenceFound (op, None)))
+    raise (PretypeError (env,evd,NoOccurrenceFound (op, None)))
 
 (* Tries to find all instances of term [cl] in term [op].
    Unifies [cl] to every subterm of [op] and return all the matches.
@@ -906,7 +906,7 @@ let w_unify_to_subterm_all env ?(flags=default_unify_flags) (op,cl) evd =
   in
   let res = matchrec cl [] in
   if res = [] then
-    raise (PretypeError (env,NoOccurrenceFound (op, None)))
+    raise (PretypeError (env,evd,NoOccurrenceFound (op, None)))
   else
     res
 
@@ -922,7 +922,7 @@ let w_unify_to_subterm_list env flags allow_K hdmeta oplist t evd =
           try
 	    (* This is up to delta for subterms w/o metas ... *)
 	    w_unify_to_subterm env ~flags (strip_outer_cast op,t) evd
-	  with PretypeError (env,NoOccurrenceFound _) when allow_K -> (evd,op)
+	  with PretypeError (env,_,NoOccurrenceFound _) when allow_K -> (evd,op)
         in
 	  if not allow_K && (* ensure we found a different instance *)
 	    List.exists (fun op -> eq_constr op cl) l
@@ -932,7 +932,7 @@ let w_unify_to_subterm_list env flags allow_K hdmeta oplist t evd =
 	(evd,op::l)
       else
 	(* This is not up to delta ... *)
-	raise (PretypeError (env,NoOccurrenceFound (op, None))))
+	raise (PretypeError (env,evd,NoOccurrenceFound (op, None))))
     oplist
     (evd,[])
 
@@ -996,13 +996,13 @@ let w_unify allow_K env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
 	    with ex when precatchable_exception ex ->
 	      try
 		w_unify2 env flags allow_K cv_pb ty1 ty2 evd
-	      with PretypeError (env,NoOccurrenceFound _) as e -> raise e)
+	      with PretypeError (env,_,NoOccurrenceFound _) as e -> raise e)
 
       (* Second order case *)
       | (Meta _, true, _, _ | _, _, Meta _, true) ->
 	  (try
 	      w_unify2 env flags allow_K cv_pb ty1 ty2 evd
-	    with PretypeError (env,NoOccurrenceFound _) as e -> raise e
+	    with PretypeError (env,_,NoOccurrenceFound _) as e -> raise e
 	      | ex when precatchable_exception ex ->
 		  try
 		    w_typed_unify env cv_pb flags ty1 ty2 evd

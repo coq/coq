@@ -103,9 +103,9 @@ let rec process_vernac_interp_error = function
 	  mt() in
       wrap_vernac_error (str "Universe inconsistency" ++ msg ++ str ".")
   | TypeError(ctx,te) ->
-      wrap_vernac_error (Himsg.explain_type_error ctx te)
-  | PretypeError(ctx,te) ->
-      wrap_vernac_error (Himsg.explain_pretype_error ctx te)
+      wrap_vernac_error (Himsg.explain_type_error ctx Evd.empty te)
+  | PretypeError(ctx,sigma,te) ->
+      wrap_vernac_error (Himsg.explain_pretype_error ctx sigma te)
   | Typeclasses_errors.TypeClassError(env, te) ->
       wrap_vernac_error (Himsg.explain_typeclass_error env te)
   | InductiveError e ->

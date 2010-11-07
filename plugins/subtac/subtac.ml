@@ -218,7 +218,7 @@ let subtac (loc, command) =
 
   | Type_errors.TypeError (env, exn) as e -> raise e
 
-  | Pretype_errors.PretypeError (env, exn) as e -> raise e
+  | Pretype_errors.PretypeError (env, _, exn) as e -> raise e
 
   | (Loc.Exc_located (loc, Proof_type.LtacLocated (_,e')) |
      Loc.Exc_located (loc, e') as e) -> raise e

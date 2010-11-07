@@ -1064,8 +1064,8 @@ let vernac_check_may_eval redexp glopt rc =
     try
       Evarutil.check_evars env sigma sigma' c;
       Typeops.typing env c
-    with P.PretypeError (_,P.UnsolvableImplicit _)
-      | Compat.Loc.Exc_located (_,P.PretypeError (_,P.UnsolvableImplicit _)) ->
+    with P.PretypeError (_,_,P.UnsolvableImplicit _)
+      | Compat.Loc.Exc_located (_,P.PretypeError (_,_,P.UnsolvableImplicit _)) ->
       Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c) in
   match redexp with
     | None ->

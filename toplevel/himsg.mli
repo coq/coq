@@ -19,9 +19,9 @@ open Logic
 
 (** This module provides functions to explain the type errors. *)
 
-val explain_type_error : env -> type_error -> std_ppcmds
+val explain_type_error : env -> Evd.evar_map -> type_error -> std_ppcmds
 
-val explain_pretype_error : env -> pretype_error -> std_ppcmds
+val explain_pretype_error : env -> Evd.evar_map -> pretype_error -> std_ppcmds
 
 val explain_inductive_error : inductive_error -> std_ppcmds
 

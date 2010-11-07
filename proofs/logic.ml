@@ -48,13 +48,13 @@ open Pretype_errors
 let rec catchable_exception = function
   | Loc.Exc_located(_,e) -> catchable_exception e
   | LtacLocated(_,e) -> catchable_exception e
-  | Util.UserError _ | TypeError _
+  | Util.UserError _ | TypeError _ | PretypeError (_,_,TypingError _)
   | RefinerError _ | Indrec.RecursionSchemeError _
-  | Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)
+  | Nametab.GlobalizationError _ | PretypeError (_,_,VarNotFound _)
   (* reduction errors *)
   | Tacred.ReductionTacticError _ 
   (* unification errors *)
-  | PretypeError(_,(CannotUnify _|CannotUnifyLocal _|CannotGeneralize _
+  | PretypeError(_,_,(CannotUnify _|CannotUnifyLocal _|CannotGeneralize _
 		   |NoOccurrenceFound _|CannotUnifyBindingType _|NotClean _
 		   |CannotFindWellTypedAbstraction _|OccurCheck _
 		   |UnsolvableImplicit _)) -> true

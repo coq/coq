@@ -1532,7 +1532,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
     with RewriteFailure ->
       let {l2r=l2r; c1=x; c2=y} = hypinfo in
 	raise (Pretype_errors.PretypeError
-		  (pf_env gl,
+		  (pf_env gl,project gl,
 		  Pretype_errors.NoOccurrenceFound ((if l2r then x else y), cl)))
 
 let general_s_rewrite_clause x =

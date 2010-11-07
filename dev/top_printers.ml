@@ -57,7 +57,7 @@ let ppsconstr x = ppconstr (Declarations.force x)
 let ppconstr_univ x = Constrextern.with_universes ppconstr x
 let pprawconstr = (fun x -> pp(pr_lrawconstr x))
 let pppattern = (fun x -> pp(pr_constr_pattern x))
-let pptype = (fun x -> pp(pr_ltype x))
+let pptype = (fun x -> try pp(pr_ltype x) with e -> pp (str (Printexc.to_string e)))
 
 let ppfconstr c = ppconstr (Closure.term_of_fconstr c)
 

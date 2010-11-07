@@ -787,9 +787,9 @@ let simplest_elim c = default_elim false (c,NoBindings)
 
 let clenv_fchain_in id elim_flags mv elimclause hypclause =
   try clenv_fchain ~allow_K:false ~flags:elim_flags mv elimclause hypclause
-  with PretypeError (env,NoOccurrenceFound (op,_)) ->
+  with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
     (* Set the hypothesis name in the message *)
-    raise (PretypeError (env,NoOccurrenceFound (op,Some id)))
+    raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
 
 let elimination_in_clause_scheme with_evars id i elimclause indclause gl =
   let indmv = destMeta (nth_arg i elimclause.templval.rebus) in

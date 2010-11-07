@@ -134,10 +134,10 @@ let general_elim_clause with_evars cls rew elim =
              an extra condition *)
 	  tclNOTSAMEGOAL (rewrite_elim with_evars rew elim ~allow_K:false)
       | Some id -> rewrite_elim_in with_evars id rew elim)
-  with Pretype_errors.PretypeError (env,
-				   (Pretype_errors.NoOccurrenceFound (c', _))) ->
+  with Pretype_errors.PretypeError (env,evd,
+				    Pretype_errors.NoOccurrenceFound (c', _)) ->
     raise (Pretype_errors.PretypeError
-	      (env, (Pretype_errors.NoOccurrenceFound (c', cls))))
+	      (env,evd,Pretype_errors.NoOccurrenceFound (c', cls)))
 
 let general_elim_clause with_evars tac cls sigma c t l l2r elim gl =
   let all, firstonly, tac =

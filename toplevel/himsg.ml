@@ -50,7 +50,8 @@ let explain_unbound_var env v =
   let var = pr_id v in
   str "No such section variable or assumption: " ++ var ++ str "."
 
-let explain_not_type env j =
+let explain_not_type env sigma j =
+  let j = j_nf_evar sigma j in
   let pe = pr_ne_context_of (str "In environment") env in
   let pc,pt = pr_ljudge_env env j in
   pe ++ str "The term" ++ brk(1,1) ++ pc ++ spc () ++
@@ -109,7 +110,8 @@ let explain_elim_arity env ind sorts c pj okinds =
     str "in the inductive type" ++ spc () ++ quote pi ++ str ":") ++
   fnl () ++ msg
 
-let explain_case_not_inductive env cj =
+let explain_case_not_inductive env sigma cj =
+  let cj = j_nf_evar sigma cj in
   let env = make_all_name_different env in
   let pc = pr_lconstr_env env cj.uj_val in
   let pct = pr_lconstr_env env cj.uj_type in
@@ -121,7 +123,8 @@ let explain_case_not_inductive env cj =
 	  str "has type" ++ brk(1,1) ++ pct ++ spc () ++
 	  str "which is not a (co-)inductive type."
 
-let explain_number_branches env cj expn =
+let explain_number_branches env sigma cj expn =
+  let cj = j_nf_evar sigma cj in
   let env = make_all_name_different env in
   let pc = pr_lconstr_env env cj.uj_val in
   let pct = pr_lconstr_env env cj.uj_type in
@@ -129,11 +132,13 @@ let explain_number_branches env cj expn =
   str "of type" ++ brk(1,1) ++ pct ++ spc () ++
   str "expects " ++  int expn ++ str " branches."
 
-let explain_ill_formed_branch env c i actty expty =
+let explain_ill_formed_branch env sigma c i actty expty =
+  let simp t = Reduction.nf_betaiota (nf_evar sigma t) in
+  let c = nf_evar sigma c in
   let env = make_all_name_different env in
   let pc = pr_lconstr_env env c in
-  let pa = pr_lconstr_env env actty in
-  let pe = pr_lconstr_env env expty in
+  let pa = pr_lconstr_env env (simp actty) in
+  let pe = pr_lconstr_env env (simp expty) in
   str "In pattern-matching on term" ++ brk(1,1) ++ pc ++
   spc () ++ str "the " ++ nth (i+1) ++ str " branch has type" ++
   brk(1,1) ++ pa ++ spc () ++
@@ -148,7 +153,9 @@ let explain_generalization env (name,var) j =
   str "it has type" ++ spc () ++ pt ++
   spc () ++ str "which should be Set, Prop or Type."
 
-let explain_actual_type env j pt =
+let explain_actual_type env sigma j pt =
+  let j = j_nf_evar sigma j in
+  let pt = nf_evar sigma pt in
   let pe = pr_ne_context_of (str "In environment") env in
   let (pc,pct) = pr_ljudge_env env j in
   let pt = pr_lconstr_env env pt in
@@ -157,7 +164,11 @@ let explain_actual_type env j pt =
   str "has type" ++ brk(1,1) ++ pct ++ brk(1,1) ++
   str "while it is expected to have type" ++ brk(1,1) ++ pt ++ str "."
 
-let explain_cant_apply_bad_type env (n,exptyp,actualtyp) rator randl =
+let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
+  let randl = jv_nf_betaiotaevar sigma randl in
+  let exptyp = nf_evar sigma exptyp in
+  let actualtyp = Reductionops.nf_betaiota sigma actualtyp in
+  let rator = j_nf_evar sigma rator in
   let env = make_all_name_different env in
   let nargs = Array.length randl in
 (*  let pe = pr_ne_context_of (str "in environment") env in*)
@@ -179,7 +190,9 @@ let explain_cant_apply_bad_type env (n,exptyp,actualtyp) rator randl =
   str "which should be coercible to" ++ brk(1,1) ++
   pr_lconstr_env env exptyp ++ str "."
 
-let explain_cant_apply_not_functional env rator randl =
+let explain_cant_apply_not_functional env sigma rator randl =
+  let randl = jv_nf_evar sigma randl in
+  let rator = j_nf_evar sigma rator in
   let env = make_all_name_different env in
   let nargs = Array.length randl in
 (*  let pe = pr_ne_context_of (str "in environment") env in*)
@@ -198,13 +211,16 @@ let explain_cant_apply_not_functional env rator randl =
   str "cannot be applied to the " ++ str (plural nargs "term") ++ fnl () ++
   str " " ++ v 0 appl
 
-let explain_unexpected_type env actual_type expected_type =
+let explain_unexpected_type env sigma actual_type expected_type =
+  let actual_type = nf_evar sigma actual_type in
+  let expected_type = nf_evar sigma expected_type in
   let pract = pr_lconstr_env env actual_type in
   let prexp = pr_lconstr_env env expected_type in
   str "Found type" ++ spc () ++ pract ++ spc () ++
   str "where" ++ spc () ++ prexp ++ str " was expected."
 
-let explain_not_product env c =
+let explain_not_product env sigma c =
+  let c = nf_evar sigma c in
   let pr = pr_lconstr_env env c in
   str "The type of this term is a product" ++ spc () ++
   str "while it is expected to be" ++
@@ -293,7 +309,9 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
 	str"Recursive definition is:" ++ spc () ++ pvd ++ str "."
     with _ -> mt ())
 
-let explain_ill_typed_rec_body env i names vdefj vargs =
+let explain_ill_typed_rec_body env sigma i names vdefj vargs =
+  let vdefj = jv_nf_evar sigma vdefj in
+  let vargs = Array.map (nf_evar sigma) vargs in
   let env = make_all_name_different env in
   let pvd,pvdt = pr_ljudge_env env (vdefj.(i)) in
   let pv = pr_lconstr_env env vargs.(i) in
@@ -303,12 +321,14 @@ let explain_ill_typed_rec_body env i names vdefj vargs =
   str "has type" ++ spc () ++ pvdt ++ spc () ++
   str "while it should be" ++ spc () ++ pv ++ str "."
 
-let explain_cant_find_case_type env c =
+let explain_cant_find_case_type env sigma c =
+  let c = nf_evar sigma c in
   let env = make_all_name_different env in
   let pe = pr_lconstr_env env c in
   str "Cannot infer type of pattern-matching on" ++ ws 1 ++ pe ++ str "."
 
-let explain_occur_check env ev rhs =
+let explain_occur_check env sigma ev rhs =
+  let rhs = nf_evar sigma rhs in
   let env = make_all_name_different env in
   let id = Evd.string_of_existential ev in
   let pt = pr_lconstr_env env rhs in
@@ -352,7 +372,8 @@ let explain_hole_kind env evi = function
   | MatchingVar _ ->
       assert false
 
-let explain_not_clean env ev t k =
+let explain_not_clean env sigma ev t k =
+  let t = nf_evar sigma t in
   let env = make_all_name_different env in
   let id = Evd.string_of_existential ev in
   let var = pr_lconstr_env env t in
@@ -399,13 +420,15 @@ let explain_wrong_case_info env ind ci =
     str "was given to a pattern-matching expression on the inductive type" ++
     spc () ++ pc ++ str "."
 
-let explain_cannot_unify env m n =
+let explain_cannot_unify env sigma m n =
+  let m = nf_evar sigma m in
+  let n = nf_evar sigma n in
   let pm = pr_lconstr_env env m in
   let pn = pr_lconstr_env env n in
   str "Impossible to unify" ++ brk(1,1) ++ pm ++ spc () ++
   str "with" ++ brk(1,1) ++ pn ++ str "."
 
-let explain_cannot_unify_local env m n subn =
+let explain_cannot_unify_local env sigma m n subn =
   let pm = pr_lconstr_env env m in
   let pn = pr_lconstr_env env n in
   let psubn = pr_lconstr_env env subn in
@@ -447,7 +470,7 @@ let explain_non_linear_unification env m t =
   strbrk " which would require to abstract twice on " ++
   pr_lconstr_env env t ++ str "."
 
-let explain_type_error env err =
+let explain_type_error env sigma err =
   let env = make_all_name_different env in
   match err with
   | UnboundRel n ->
@@ -455,7 +478,7 @@ let explain_type_error env err =
   | UnboundVar v ->
       explain_unbound_var env v
   | NotAType j ->
-      explain_not_type env j
+      explain_not_type env sigma j
   | BadAssumption c ->
       explain_bad_assumption env c
   | ReferenceVariables id ->
@@ -463,38 +486,39 @@ let explain_type_error env err =
   | ElimArity (ind, aritylst, c, pj, okinds) ->
       explain_elim_arity env ind aritylst c pj okinds
   | CaseNotInductive cj ->
-      explain_case_not_inductive env cj
+      explain_case_not_inductive env sigma cj
   | NumberBranches (cj, n) ->
-      explain_number_branches env cj n
+      explain_number_branches env sigma cj n
   | IllFormedBranch (c, i, actty, expty) ->
-      explain_ill_formed_branch env c i actty expty
+      explain_ill_formed_branch env sigma c i actty expty
   | Generalization (nvar, c) ->
       explain_generalization env nvar c
   | ActualType (j, pt) ->
-      explain_actual_type env j pt
+      explain_actual_type env sigma j pt
   | CantApplyBadType (t, rator, randl) ->
-      explain_cant_apply_bad_type env t rator randl
+      explain_cant_apply_bad_type env sigma t rator randl
   | CantApplyNonFunctional (rator, randl) ->
-      explain_cant_apply_not_functional env rator randl
+      explain_cant_apply_not_functional env sigma rator randl
   | IllFormedRecBody (err, lna, i, fixenv, vdefj) ->
       explain_ill_formed_rec_body env err lna i fixenv vdefj
   | IllTypedRecBody (i, lna, vdefj, vargs) ->
-     explain_ill_typed_rec_body env i lna vdefj vargs
+     explain_ill_typed_rec_body env sigma i lna vdefj vargs
   | WrongCaseInfo (ind,ci) ->
       explain_wrong_case_info env ind ci
 
-let explain_pretype_error env err =
+let explain_pretype_error env sigma err =
+  let env = env_nf_evar sigma env in
   let env = make_all_name_different env in
   match err with
-  | CantFindCaseType c -> explain_cant_find_case_type env c
-  | OccurCheck (n,c) -> explain_occur_check env n c
-  | NotClean (n,c,k) -> explain_not_clean env n c k
+  | CantFindCaseType c -> explain_cant_find_case_type env sigma c
+  | OccurCheck (n,c) -> explain_occur_check env sigma n c
+  | NotClean (n,c,k) -> explain_not_clean env sigma n c k
   | UnsolvableImplicit (evi,k,exp) -> explain_unsolvable_implicit env evi k exp
   | VarNotFound id -> explain_var_not_found env id
-  | UnexpectedType (actual,expect) -> explain_unexpected_type env actual expect
-  | NotProduct c -> explain_not_product env c
-  | CannotUnify (m,n) -> explain_cannot_unify env m n
-  | CannotUnifyLocal (m,n,sn) -> explain_cannot_unify_local env m n sn
+  | UnexpectedType (actual,expect) -> explain_unexpected_type env sigma actual expect
+  | NotProduct c -> explain_not_product env sigma c
+  | CannotUnify (m,n) -> explain_cannot_unify env sigma m n
+  | CannotUnifyLocal (m,n,sn) -> explain_cannot_unify_local env sigma m n sn
   | CannotGeneralize ty -> explain_refiner_cannot_generalize env ty
   | NoOccurrenceFound (c, id) -> explain_no_occurrence_found env c id
   | CannotUnifyBindingType (m,n) -> explain_cannot_unify_binding_type env m n
@@ -502,6 +526,7 @@ let explain_pretype_error env err =
       explain_cannot_find_well_typed_abstraction env p l
   | AbstractionOverMeta (m,n) -> explain_abstraction_over_meta env m n
   | NonLinearUnification (m,c) -> explain_non_linear_unification env m c
+  | TypingError t -> explain_type_error env sigma t
 
 (* Typeclass errors *)
 
@@ -809,7 +834,7 @@ let explain_reduction_tactic_error = function
   | Tacred.InvalidAbstraction (env,c,(env',e)) ->
       str "The abstracted term" ++ spc () ++ pr_lconstr_env_at_top env c ++
       spc () ++ str "is not well typed." ++ fnl () ++
-      explain_type_error env' e
+      explain_type_error env' Evd.empty e
 
 let explain_ltac_call_trace (nrep,last,trace,loc) =
   let calls =
