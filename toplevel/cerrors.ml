@@ -81,6 +81,10 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       msg
   | EvaluatedError (msg,Some reraise) ->
       msg ++ explain_exn_default_aux anomaly_string report_fn reraise
+  | Ploc.Exc(loc,exc) -> 
+      hov 0 ((if loc = dummy_loc then (mt ())
+               else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
+               ++ explain_exn_default_aux anomaly_string report_fn exc)
   | reraise ->
       hov 0 (anomaly_string () ++ str "Uncaught exception " ++
 	       str (Printexc.to_string reraise) ++ report_fn ())
