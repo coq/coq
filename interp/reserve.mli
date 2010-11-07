@@ -9,7 +9,8 @@
 open Util
 open Names
 open Rawterm
+open Topconstr
 
-val declare_reserved_type : identifier located -> rawconstr -> unit
-val find_reserved_type : identifier -> rawconstr
+val declare_reserved_type : identifier located -> aconstr -> unit
+val find_reserved_type : identifier -> aconstr
 val anonymize_if_reserved : name -> rawconstr -> rawconstr

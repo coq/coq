@@ -201,9 +201,8 @@ let explain_cant_apply_not_functional env rator randl =
 let explain_unexpected_type env actual_type expected_type =
   let pract = pr_lconstr_env env actual_type in
   let prexp = pr_lconstr_env env expected_type in
-  str "This type is" ++ spc () ++ pract ++ spc () ++
-  str "but is expected to be" ++
-  spc () ++ prexp ++ str "."
+  str "Found type" ++ spc () ++ pract ++ spc () ++
+  str "where" ++ spc () ++ prexp ++ str " was expected."
 
 let explain_not_product env c =
   let pr = pr_lconstr_env env c in

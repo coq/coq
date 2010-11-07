@@ -315,7 +315,7 @@ let check_capture loc ty = function
 let locate_if_isevar loc na = function
   | RHole _ ->
       (try match na with
-	| Name id ->  Reserve.find_reserved_type id
+	| Name id -> rawconstr_of_aconstr loc (Reserve.find_reserved_type id)
 	| Anonymous -> raise Not_found
       with Not_found -> RHole (loc, Evd.BinderType na))
   | x -> x

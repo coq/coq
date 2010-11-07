@@ -797,8 +797,9 @@ let vernac_declare_implicits local r = function
 let vernac_reserve bl =
   let sb_decl = (fun (idl,c) ->
     let t = Constrintern.interp_type Evd.empty (Global.env()) c in
-      let t = Detyping.detype false [] [] t in
-        List.iter (fun id -> Reserve.declare_reserved_type id t) idl)
+    let t = Detyping.detype false [] [] t in
+    let t = aconstr_of_rawconstr [] [] t in
+    List.iter (fun id -> Reserve.declare_reserved_type id t) idl)
   in List.iter sb_decl bl
 
 let vernac_generalizable = Implicit_quantifiers.declare_generalizable
