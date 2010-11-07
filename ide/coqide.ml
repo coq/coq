@@ -3085,8 +3085,10 @@ let process_argv argv =
     let continue,filtered = filter_coq_opts (List.tl argv) in
     if not continue then
       (List.iter Pervasives.prerr_endline filtered; exit 0);
-    if List.exists (fun arg -> String.get arg 0 == '-') filtered then
-      (output_string stderr "illegal coqide option\n"; exit 1);
+    let opts = List.filter (fun arg -> String.get arg 0 == '-') filtered in
+    if opts <> [] then
+      (output_string stderr ("Illegal option: "^List.hd opts^"\n");
+       exit 1);
     filtered
   with _ ->
     (output_string stderr "coqtop choked on one of your option"; exit 1)
@@ -3095,6 +3097,7 @@ let start () =
   let argl = Array.to_list Sys.argv in
   let files = process_argv argl in
   sup_args := String.concat " " (List.filter (fun x -> not (List.mem x files)) (List.tl argl));
+  check_connection !sup_args;
   ignore_break ();
     GtkMain.Rc.add_default_file (lib_ide_file ".coqide-gtk2rc");
     (try

@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Ideutils
 open GText
 type action =
   | Insert of string * int * int (* content*pos*length *)

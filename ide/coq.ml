@@ -83,22 +83,43 @@ let version () =
     (if Mltop.is_native then "native" else "bytecode")
     (if Coq_config.best="opt" then "native" else "bytecode")
 
-let filter_coq_opts argv =
+let rec read_all_lines in_chan =
+  try
+    let arg = input_line in_chan in
+    arg::(read_all_lines in_chan)
+  with End_of_file -> []
+
+let coqtop_path () =
   let prog = Sys.executable_name in
   let dir = Filename.dirname prog in
+  if Filename.check_suffix prog ".byte" then dir^"/coqtop.byte"
+  else dir^"/coqtop.opt"
+
+let filter_coq_opts argv =
   let argstr = String.concat " " argv in
-  let oc,ic,ec = Unix.open_process_full (dir^"/coqtop.opt -filteropts "^argstr) (Unix.environment ()) in
-  let rec read_all_lines in_chan =
-    try
-      let arg = input_line in_chan in
-        arg::(read_all_lines in_chan)
-    with End_of_file -> [] in
+  let oc,ic,ec = Unix.open_process_full (coqtop_path () ^" -filteropts "^argstr) (Unix.environment ()) in
   let filtered_argv = read_all_lines oc in
   let message = read_all_lines ec in
   match Unix.close_process_full (oc,ic,ec) with
     | Unix.WEXITED 0 -> true,filtered_argv
     | Unix.WEXITED 2 -> false,filtered_argv
     | _ -> false,message
+
+exception Coqtop_output of string list
+
+let check_connection args =
+  try
+    let ic = Unix.open_process_in (coqtop_path () ^ " -batch "^args) in
+    let lines = read_all_lines ic in
+    match (Unix.close_process_in ic) with
+    | Unix.WEXITED 0 -> prerr_endline "coqtop seems ok"
+    | _ -> raise (Coqtop_output lines)
+  with End_of_file ->
+    Pervasives.prerr_endline "Cannot start connection with coqtop";
+    | Coqtop_output lines ->
+      Pervasives.prerr_endline "Connection with coqtop failed:";
+      List.iter Pervasives.prerr_endline lines;
+      exit 1
 
 let eval_call coqtop (c:'a Ide_blob.call) =
   Safe_marshal.send coqtop.cin c;
@@ -119,11 +140,9 @@ let toplvl_ctr = ref 0
 let toplvl_ctr_mtx = Mutex.create ()
 
 let spawn_coqtop sup_args =
-  let prog = Sys.executable_name in
-  let dir = Filename.dirname prog in
   Mutex.lock toplvl_ctr_mtx;
   try 
-    let oc,ic = Unix.open_process (dir^"/coqtop.opt -ideslave "^sup_args) in
+    let oc,ic = Unix.open_process (coqtop_path ()^" -ideslave "^sup_args) in
     incr toplvl_ctr;
     Mutex.unlock toplvl_ctr_mtx;
     { cin = ic; cout = oc ; sup_args = sup_args ; version = 0 }
