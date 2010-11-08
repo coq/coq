@@ -251,27 +251,31 @@ let break () =
     end
 
 let do_if_not_computing text f x =
-  if Mutex.try_lock coq_computing then
-    let threaded_task () =
-      prerr_endline "Getting lock";
-      try
-        f x;
-        prerr_endline "Releasing lock";
-        Mutex.unlock coq_computing;
-      with e ->
-        prerr_endline "Releasing lock (on error)";
-        Mutex.unlock coq_computing;
-        raise e
-    in
-      prerr_endline ("Launching thread " ^ text);
-      ignore (Glib.Timeout.add ~ms:300 ~callback:
-                  (fun () -> if Mutex.try_lock coq_computing
-                             then (Mutex.unlock coq_computing; false)
-                             else (pbar#pulse (); true)));
-      ignore (Thread.create threaded_task ())
-  else
-    prerr_endline
-      "Discarded order (computations are ongoing)"
+  let threaded_task () =
+    (* Beware: mutexes must be locked and unlocked in the same thread
+       on at least FreeBSD (see bug #2431) *)
+    if Mutex.try_lock coq_computing then
+      begin
+        prerr_endline "Getting lock";
+        try
+          f x;
+          prerr_endline "Releasing lock";
+          Mutex.unlock coq_computing;
+        with e ->
+          prerr_endline "Releasing lock (on error)";
+          Mutex.unlock coq_computing;
+          raise e
+      end
+    else
+      prerr_endline
+        "Discarded order (computations are ongoing)"
+  in
+  prerr_endline ("Launching thread " ^ text);
+  ignore (Glib.Timeout.add ~ms:300 ~callback:
+            (fun () -> if Mutex.try_lock coq_computing
+              then (Mutex.unlock coq_computing; false)
+              else (pbar#pulse (); true)));
+  ignore (Thread.create threaded_task ())
 
 (* XXX - 1 appel *)
 let kill_input_view i =
