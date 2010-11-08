@@ -50,7 +50,11 @@ let mkLambda_string s t c = mkLambda (Name (id_of_string s), t, c)
 (* Christine Paulin, 1996 *)
 
 let mis_make_case_com dep env sigma ind (mib,mip as specif) kind =
-  let lnamespar = mib.mind_params_ctxt in
+  let lnamespar = List.map
+    (fun (n, c, t) -> (n, c, Termops.refresh_universes t))
+    mib.mind_params_ctxt
+  in
+
   if not (List.mem kind (elim_sorts specif)) then
     raise
       (RecursionSchemeError
