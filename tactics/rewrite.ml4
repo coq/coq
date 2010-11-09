@@ -596,13 +596,13 @@ let make_leibniz_proof c ty r =
 	let prf =
 	  mkApp (Lazy.force coq_f_equal,
 		[| r.rew_car; ty;
-		   mkLambda (Anonymous, r.rew_car, c (mkRel 1));
+		   mkLambda (Anonymous, r.rew_car, c);
 		   r.rew_from; r.rew_to; prf |])
 	in RewPrf (rel, prf)
     | RewCast k -> r.rew_prf
   in
     { r with rew_car = ty; 
-      rew_from = c r.rew_from; rew_to = c r.rew_to; rew_prf = prf }
+      rew_from = subst1 r.rew_from c; rew_to = subst1 r.rew_to c; rew_prf = prf }
 
 open Elimschemes
 
@@ -772,21 +772,21 @@ let subterm all flags (s : strategy) : strategy =
 	  let c' = s env sigma c cty cstr' evars in
 	    (match c' with
 	    | Some (Some r) ->
-		Some (Some (make_leibniz_proof (fun x -> mkCase (ci, p, x, brs)) ty r))
+		Some (Some (make_leibniz_proof (mkCase (ci, lift 1 p, mkRel 1, Array.map (lift 1) brs)) ty r))
 	    | x ->
 		if array_for_all ((=) 0) ci.ci_cstr_nargs then
 		  let cstr = Some (mkApp (Lazy.force coq_eq, [| ty |])) in
 		  let found, brs' = Array.fold_left (fun (found, acc) br ->
-		    if found <> None then (found, fun x -> br :: acc x)
+		    if found <> None then (found, fun x -> lift 1 br :: acc x)
 		    else
 		      match s env sigma br ty cstr evars with
-		      | Some (Some r) -> (Some r, fun x -> x :: acc x)
-		      | _ -> (None, fun x -> br :: acc x))
+		      | Some (Some r) -> (Some r, fun x -> mkRel 1 :: acc x)
+		      | _ -> (None, fun x -> lift 1 br :: acc x))
 		    (None, fun x -> []) brs
 		  in
 		    match found with
 		    | Some r ->
-			let ctxc x = mkCase (ci, p, c, Array.of_list (List.rev (brs' x))) in
+			let ctxc = mkCase (ci, lift 1 p, lift 1 c, Array.of_list (List.rev (brs' x))) in
 			  Some (Some (make_leibniz_proof ctxc ty r))
 		    | None -> x
 		else
