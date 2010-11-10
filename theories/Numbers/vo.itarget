@@ -71,6 +71,7 @@ Natural/Abstract/NPow.vo
 Natural/Abstract/NSqrt.vo
 Natural/Abstract/NLog.vo
 Natural/Abstract/NGcd.vo
+Natural/Abstract/NLcm.vo
 Natural/BigN/BigN.vo
 Natural/BigN/Nbasic.vo
 Natural/BigN/NMake_gen.vo
