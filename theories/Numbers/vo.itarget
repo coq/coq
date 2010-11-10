@@ -23,7 +23,6 @@ Integer/Abstract/ZLt.vo
 Integer/Abstract/ZMulOrder.vo
 Integer/Abstract/ZMul.vo
 Integer/Abstract/ZSgnAbs.vo
-Integer/Abstract/ZProperties.vo
 Integer/Abstract/ZDivFloor.vo
 Integer/Abstract/ZDivTrunc.vo
 Integer/Abstract/ZDivEucl.vo
@@ -31,6 +30,8 @@ Integer/Abstract/ZMaxMin.vo
 Integer/Abstract/ZParity.vo
 Integer/Abstract/ZPow.vo
 Integer/Abstract/ZGcd.vo
+Integer/Abstract/ZLcm.vo
+Integer/Abstract/ZProperties.vo
 Integer/BigZ/BigZ.vo
 Integer/BigZ/ZMake.vo
 Integer/Binary/ZBinary.vo

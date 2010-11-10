@@ -10,10 +10,10 @@
 
 Require Import ZAxioms ZMulOrder ZSgnAbs NZGcd.
 
-Module ZGcdProp
+Module Type ZGcdProp
  (Import A : ZAxiomsSig')
  (Import B : ZMulOrderProp A)
- (Import D : ZSgnAbsProp A B).
+ (Import C : ZSgnAbsProp A B).
 
  Include NZGcdProp A A B.
 
@@ -268,8 +268,6 @@ Proof.
  rewrite <- gcd_mul_mono_l_nonneg, Hq, Hr; order.
  symmetry in G. apply gcd_eq_0 in G. destruct G as (Hn',_); order.
 Qed.
-
-(** TODO : relation between gcd and division and modulo *)
 
 (** TODO : more about rel_prime (i.e. gcd == 1), about prime ... *)
 

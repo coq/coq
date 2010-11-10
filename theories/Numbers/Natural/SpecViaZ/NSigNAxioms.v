@@ -292,11 +292,10 @@ Proof.
 intros a b. zify. intros. apply Z_div_mod_eq_full; auto.
 Qed.
 
-Theorem mod_upper_bound : forall a b, ~b==0 -> modulo a b < b.
+Theorem mod_bound_pos : forall a b, 0<=a -> 0<b ->
+ 0 <= modulo a b /\ modulo a b < b.
 Proof.
-intros a b. zify. intros.
-destruct (Z_mod_lt [a] [b]); auto.
-generalize (spec_pos b); auto with zarith.
+intros a b. zify. apply Z.mod_bound_pos.
 Qed.
 
 (** Gcd *)

@@ -6,28 +6,31 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Properties of Euclidean Division *)
-
 Require Import NAxioms NSub NZDiv.
 
-Module NDivProp (Import N : NAxiomsSig')(Import NP : NSubProp N).
+(** Properties of Euclidean Division *)
+
+Module Type NDivProp (Import N : NAxiomsSig')(Import NP : NSubProp N).
 
 (** We benefit from what already exists for NZ *)
+Module Import NZDivP := Nop <+ NZDivProp N N NP.
 
- Module ND <: NZDiv N.
-  Definition div := div.
-  Definition modulo := modulo.
-  Definition div_wd := div_wd.
-  Definition mod_wd := mod_wd.
-  Definition div_mod := div_mod.
-  Lemma mod_bound : forall a b, 0<=a -> 0<b -> 0 <= a mod b < b.
-  Proof. split. apply le_0_l. apply mod_upper_bound. order. Qed.
- End ND.
- Module Import NZDivP := Nop <+ NZDivProp N ND NP.
-
- Ltac auto' := try rewrite <- neq_0_lt_0; auto using le_0_l.
+Ltac auto' := try rewrite <- neq_0_lt_0; auto using le_0_l.
 
 (** Let's now state again theorems, but without useless hypothesis. *)
+
+Lemma mod_upper_bound : forall a b, b ~= 0 -> a mod b < b.
+Proof. intros. apply mod_bound_pos; auto'. Qed.
+
+(** Another formulation of the main equation *)
+
+Lemma mod_eq :
+ forall a b, b~=0 -> a mod b == a - b*(a/b).
+Proof.
+intros.
+symmetry. apply add_sub_eq_l. symmetry.
+now apply div_mod.
+Qed.
 
 (** Uniqueness theorems *)
 

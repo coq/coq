@@ -13,7 +13,7 @@ Require Import BinNat.
 Require Import Setoid.
 Require Import Ring_theory.
 Require Import Ring_polynom.
-Require Import Ndiv_def ZOdiv_def.
+Require Import Ndiv_def Zdiv_def.
 Import List.
 
 Set Implicit Arguments.
@@ -630,10 +630,10 @@ Qed.
 
  Variable zphi : Z -> R.
 
- Lemma Ztriv_div_th : div_theory req Zplus Zmult zphi ZOdiv_eucl.
+ Lemma Ztriv_div_th : div_theory req Zplus Zmult zphi Zquotrem.
  Proof.
   constructor.
-  intros; generalize (ZOdiv_eucl_correct a b); case ZOdiv_eucl; intros; subst.
+  intros; generalize (Zquotrem_eq a b); case Zquotrem; intros; subst.
   rewrite Zmult_comm; rsimpl.
  Qed.
 

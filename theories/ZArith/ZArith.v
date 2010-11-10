@@ -12,7 +12,7 @@ Require Export ZArith_base.
 
 (** Extra definitions *)
 
-Require Export Zpow_def Zsqrt_def Zlog_def Zgcd_def.
+Require Export Zpow_def Zsqrt_def Zlog_def Zgcd_def Zdiv_def.
 
 (** Extra modules using [Omega] or [Ring]. *)
 
@@ -22,7 +22,3 @@ Require Export Zdiv.
 Require Export Zlogarithm.
 
 Export ZArithRing.
-
-(** Final Z module, cumulating ZBinary.Z and Zdiv.Z *)
-
-Module Z := Zdiv.Z.

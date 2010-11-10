@@ -6,13 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import ZArith Nnat ZAxioms ZDivFloor ZSig.
+Require Import ZArith Nnat ZAxioms ZSig.
 
-(** * The interface [ZSig.ZType] implies the interface [ZAxiomsSig]
-
-    It also provides [sgn], [abs], [div], [mod]
-*)
-
+(** * The interface [ZSig.ZType] implies the interface [ZAxiomsSig] *)
 
 Module ZTypeIsZAxioms (Import Z : ZType').
 
@@ -20,7 +16,8 @@ Hint Rewrite
  spec_0 spec_1 spec_2 spec_add spec_sub spec_pred spec_succ
  spec_mul spec_opp spec_of_Z spec_div spec_modulo spec_sqrt
  spec_compare spec_eq_bool spec_max spec_min spec_abs spec_sgn
- spec_pow spec_log2 spec_even spec_odd spec_gcd
+ spec_pow spec_log2 spec_even spec_odd spec_gcd spec_quot
+ spec_remainder
  : zsimpl.
 
 Ltac zsimpl := autorewrite with zsimpl.
@@ -349,6 +346,36 @@ Proof.
 intros a b. zify. intros. apply Z_mod_neg; auto with zarith.
 Qed.
 
+Definition mod_bound_pos :
+ forall a b, 0<=a -> 0<b -> 0 <= modulo a b /\ modulo a b < b :=
+ fun a b _ H => mod_pos_bound a b H.
+
+(** Quot / Rem *)
+
+Program Instance quot_wd : Proper (eq==>eq==>eq) quot.
+Program Instance rem_wd : Proper (eq==>eq==>eq) remainder.
+
+Theorem quot_rem : forall a b, ~b==0 -> a == b*(quot a b) + (remainder a b).
+Proof.
+intros a b _. zify. apply Z_quot_rem_eq.
+Qed.
+
+Theorem rem_bound_pos :
+ forall a b, 0<=a -> 0<b -> 0 <= remainder a b /\ remainder a b < b.
+Proof.
+intros a b. zify. intros. now apply Zrem_bound.
+Qed.
+
+Theorem rem_opp_l : forall a b, ~b==0 -> remainder (-a) b == -(remainder a b).
+Proof.
+intros a b _. zify. apply Zrem_opp_l.
+Qed.
+
+Theorem rem_opp_r : forall a b, ~b==0 -> remainder a (-b) == remainder a b.
+Proof.
+intros a b _. zify. apply Zrem_opp_r.
+Qed.
+
 (** Gcd *)
 
 Definition divide n m := exists p, n*p == m.
@@ -384,5 +411,5 @@ Qed.
 End ZTypeIsZAxioms.
 
 Module ZType_ZAxioms (Z : ZType)
- <: ZAxiomsSig <: ZDivSig <: HasCompare Z <: HasEqBool Z <: HasMinMax Z
+ <: ZAxiomsSig <: HasCompare Z <: HasEqBool Z <: HasMinMax Z
  := Z <+ ZTypeIsZAxioms.

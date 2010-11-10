@@ -184,7 +184,10 @@ through the <tt>Require Import</tt> command.</p>
     theories/ZArith/Zsqrt_compat.v
     theories/ZArith/Zpow_def.v
     theories/ZArith/Zpower.v
+    theories/ZArith/Zdiv_def.v
     theories/ZArith/Zdiv.v
+    theories/ZArith/Zquot.v
+    theories/ZArith/Zeuclid.v
     theories/ZArith/Zlog_def.v
     theories/ZArith/Zlogarithm.v
     (theories/ZArith/ZArith.v)
@@ -193,8 +196,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/ZArith/Zwf.v
     theories/ZArith/Znumtheory.v
     theories/ZArith/Int.v
-    theories/ZArith/ZOdiv_def.v
-    theories/ZArith/ZOdiv.v
     theories/ZArith/Zpow_facts.v
     theories/ZArith/Zdigits.v
   </dd>
@@ -289,6 +290,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Natural/Abstract/NSqrt.v
     theories/Numbers/Natural/Abstract/NLog.v
     theories/Numbers/Natural/Abstract/NGcd.v
+    theories/Numbers/Natural/Abstract/NLcm.v
     theories/Numbers/Natural/Abstract/NProperties.v
     theories/Numbers/Natural/Binary/NBinary.v
     theories/Numbers/Natural/Peano/NPeano.v
@@ -316,6 +318,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Numbers/Integer/Abstract/ZParity.v
     theories/Numbers/Integer/Abstract/ZPow.v
     theories/Numbers/Integer/Abstract/ZGcd.v
+    theories/Numbers/Integer/Abstract/ZLcm.v
     theories/Numbers/Integer/Abstract/ZProperties.v
     theories/Numbers/Integer/Abstract/ZDivEucl.v
     theories/Numbers/Integer/Abstract/ZDivFloor.v

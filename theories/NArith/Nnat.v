@@ -16,8 +16,6 @@ Require Import BinPos.
 Require Import BinNat.
 Require Import BinInt.
 Require Import Pnat.
-Require Import Zmax.
-Require Import Zmin.
 Require Import Znat.
 
 (** Translation from [N] to [nat] and back. *)

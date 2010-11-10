@@ -127,9 +127,9 @@ Proof.
  now rewrite <- mult_n_O, minus_diag, <- !plus_n_O in U.
 Qed.
 
-Lemma mod_upper_bound : forall x y, y<>0 -> x mod y < y.
+Lemma mod_bound_pos : forall x y, 0<=x -> 0<y -> 0 <= x mod y < y.
 Proof.
- intros x y Hy.
+ intros x y Hx Hy. split. auto with arith.
  destruct y; [ now elim Hy | clear Hy ].
  unfold modulo.
  apply le_n_S, le_minus.
@@ -515,7 +515,7 @@ Definition modulo := modulo.
 Program Instance div_wd : Proper (eq==>eq==>eq) div.
 Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
 Definition div_mod := div_mod.
-Definition mod_upper_bound := mod_upper_bound.
+Definition mod_bound_pos := mod_bound_pos.
 
 Definition divide := divide.
 Definition gcd := gcd.

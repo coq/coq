@@ -10,7 +10,7 @@
 
 
 Require Import ZAxioms ZProperties BinInt Zcompare Zorder ZArith_dec
- Zbool Zeven Zsqrt_def Zpow_def Zlog_def Zgcd_def.
+ Zbool Zeven Zsqrt_def Zpow_def Zlog_def Zgcd_def Zdiv_def.
 
 Local Open Scope Z_scope.
 
@@ -170,6 +170,27 @@ Definition gcd_nonneg := Zgcd_nonneg.
 Definition divide := Zdivide'.
 Definition gcd := Zgcd.
 
+(** Div / Mod / Quot / Rem *)
+
+Program Instance div_wd : Proper (eq==>eq==>eq) Zdiv.
+Program Instance mod_wd : Proper (eq==>eq==>eq) Zmod.
+Program Instance quot_wd : Proper (eq==>eq==>eq) Zquot.
+Program Instance rem_wd : Proper (eq==>eq==>eq) Zrem.
+
+Definition div_mod := Z_div_mod_eq_full.
+Definition mod_pos_bound := Zmod_pos_bound.
+Definition mod_neg_bound := Zmod_neg_bound.
+Definition mod_bound_pos := fun a b (_:0<=a) => Zmod_pos_bound a b.
+Definition div := Zdiv.
+Definition modulo := Zmod.
+
+Definition quot_rem := fun a b (_:b<>0) => Z_quot_rem_eq a b.
+Definition rem_bound_pos := Zrem_bound.
+Definition rem_opp_l := fun a b (_:b<>0) => Zrem_opp_l a b.
+Definition rem_opp_r := fun a b (_:b<>0) => Zrem_opp_r a b.
+Definition quot := Zquot.
+Definition remainder := Zrem.
+
 (** We define [eq] only here to avoid refering to this [eq] above. *)
 
 Definition eq := (@eq Z).
@@ -212,18 +233,3 @@ exact Zadd_opp_r.
 Qed.
 
 Add Ring ZR : Zring.*)
-
-
-
-(*
-Theorem eq_equiv_e : forall x y : Z, E x y <-> e x y.
-Proof.
-intros x y; unfold E, e, Zeq_bool; split; intro H.
-rewrite H; now rewrite Zcompare_refl.
-rewrite eq_true_unfold_pos in H.
-assert (H1 : (x ?= y) = Eq).
-case_eq (x ?= y); intro H1; rewrite H1 in H; simpl in H;
-[reflexivity | discriminate H | discriminate H].
-now apply Zcompare_Eq_eq.
-Qed.
-*)

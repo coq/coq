@@ -55,6 +55,8 @@ Module Type ZType.
  Parameter div_eucl : t -> t -> t * t.
  Parameter div : t -> t -> t.
  Parameter modulo : t -> t -> t.
+ Parameter quot : t -> t -> t.
+ Parameter remainder : t -> t -> t.
  Parameter gcd : t -> t -> t.
  Parameter sgn : t -> t.
  Parameter abs : t -> t.
@@ -85,6 +87,8 @@ Module Type ZType.
    let (q,r) := div_eucl x y in ([q], [r]) = Zdiv_eucl [x] [y].
  Parameter spec_div: forall x y, [div x y] = [x] / [y].
  Parameter spec_modulo: forall x y, [modulo x y] = [x] mod [y].
+ Parameter spec_quot: forall x y, [quot x y] = [x] ÷ [y].
+ Parameter spec_remainder: forall x y, [remainder x y] = [x] rem [y].
  Parameter spec_gcd: forall a b, [gcd a b] = Zgcd [a] [b].
  Parameter spec_sgn : forall x, [sgn x] = Zsgn [x].
  Parameter spec_abs : forall x, [abs x] = Zabs [x].

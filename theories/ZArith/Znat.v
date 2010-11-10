@@ -16,7 +16,7 @@ Require Import Zcompare.
 Require Import Zorder.
 Require Import Decidable.
 Require Import Peano_dec.
-Require Import Min Max Zmin Zmax.
+Require Import Min Max.
 Require Export Compare_dec.
 
 Open Local Scope Z_scope.
@@ -76,96 +76,62 @@ Qed.
 
 (** Injection and order relations: *)
 
-(** One way ... *)
-
-Theorem inj_le : forall n m:nat, (n <= m)%nat -> Z_of_nat n <= Z_of_nat m.
+Theorem inj_compare : forall n m:nat,
+ (Z_of_nat n ?= Z_of_nat m) = nat_compare n m.
 Proof.
-  intros x y; intros H; elim H;
-    [ unfold Zle in |- *; elim (Zcompare_Eq_iff_eq (Z_of_nat x) (Z_of_nat x));
-      intros H1 H2; rewrite H2; [ discriminate | trivial with arith ]
-      | intros m H1 H2; apply Zle_trans with (Z_of_nat m);
-	[ assumption | rewrite inj_S; apply Zle_succ ] ].
-Qed.
-
-Theorem inj_lt : forall n m:nat, (n < m)%nat -> Z_of_nat n < Z_of_nat m.
-Proof.
-  intros x y H; apply Zgt_lt; apply Zle_succ_gt; rewrite <- inj_S; apply inj_le;
-    exact H.
-Qed.
-
-Theorem inj_ge : forall n m:nat, (n >= m)%nat -> Z_of_nat n >= Z_of_nat m.
-Proof.
-  intros x y H; apply Zle_ge; apply inj_le; apply H.
-Qed.
-
-Theorem inj_gt : forall n m:nat, (n > m)%nat -> Z_of_nat n > Z_of_nat m.
-Proof.
-  intros x y H; apply Zlt_gt; apply inj_lt; exact H.
-Qed.
-
-(** The other way ... *)
-
-Theorem inj_le_rev : forall n m:nat, Z_of_nat n <= Z_of_nat m -> (n <= m)%nat.
-Proof.
-  intros x y H.
-  destruct (le_lt_dec x y) as [H0|H0]; auto.
-  exfalso.
-  assert (H1:=inj_lt _ _ H0).
-  red in H; red in H1.
-  rewrite <- Zcompare_antisym in H; rewrite H1 in H; auto.
-Qed.
-
-Theorem inj_lt_rev : forall n m:nat, Z_of_nat n < Z_of_nat m -> (n < m)%nat.
-Proof.
-  intros x y H.
-  destruct (le_lt_dec y x) as [H0|H0]; auto.
-  exfalso.
-  assert (H1:=inj_le _ _ H0).
-  red in H; red in H1.
-  rewrite <- Zcompare_antisym in H1; rewrite H in H1; auto.
-Qed.
-
-Theorem inj_ge_rev : forall n m:nat, Z_of_nat n >= Z_of_nat m -> (n >= m)%nat.
-Proof.
-  intros x y H.
-  destruct (le_lt_dec y x) as [H0|H0]; auto.
-  exfalso.
-  assert (H1:=inj_gt _ _ H0).
-  red in H; red in H1.
-  rewrite <- Zcompare_antisym in H; rewrite H1 in H; auto.
-Qed.
-
-Theorem inj_gt_rev : forall n m:nat, Z_of_nat n > Z_of_nat m -> (n > m)%nat.
-Proof.
-  intros x y H.
-  destruct (le_lt_dec x y) as [H0|H0]; auto.
-  exfalso.
-  assert (H1:=inj_ge _ _ H0).
-  red in H; red in H1.
-  rewrite <- Zcompare_antisym in H1; rewrite H in H1; auto.
+ induction n; destruct m; trivial.
+ rewrite 2 inj_S, Zcompare_succ_compat. now simpl.
 Qed.
 
 (* Both ways ... *)
 
 Theorem inj_le_iff : forall n m:nat, (n<=m)%nat <-> Z_of_nat n <= Z_of_nat m.
 Proof.
- split; [apply inj_le | apply inj_le_rev].
+ intros. unfold Zle. rewrite inj_compare. apply nat_compare_le.
 Qed.
 
 Theorem inj_lt_iff : forall n m:nat, (n<m)%nat <-> Z_of_nat n < Z_of_nat m.
 Proof.
- split; [apply inj_lt | apply inj_lt_rev].
+ intros. unfold Zlt. rewrite inj_compare. apply nat_compare_lt.
 Qed.
 
 Theorem inj_ge_iff : forall n m:nat, (n>=m)%nat <-> Z_of_nat n >= Z_of_nat m.
 Proof.
- split; [apply inj_ge | apply inj_ge_rev].
+ intros. unfold Zge. rewrite inj_compare. apply nat_compare_ge.
 Qed.
 
 Theorem inj_gt_iff : forall n m:nat, (n>m)%nat <-> Z_of_nat n > Z_of_nat m.
 Proof.
- split; [apply inj_gt | apply inj_gt_rev].
+ intros. unfold Zgt. rewrite inj_compare. apply nat_compare_gt.
 Qed.
+
+(** One way ... *)
+
+Theorem inj_le : forall n m:nat, (n <= m)%nat -> Z_of_nat n <= Z_of_nat m.
+Proof. apply inj_le_iff. Qed.
+
+Theorem inj_lt : forall n m:nat, (n < m)%nat -> Z_of_nat n < Z_of_nat m.
+Proof. apply inj_lt_iff. Qed.
+
+Theorem inj_ge : forall n m:nat, (n >= m)%nat -> Z_of_nat n >= Z_of_nat m.
+Proof. apply inj_ge_iff. Qed.
+
+Theorem inj_gt : forall n m:nat, (n > m)%nat -> Z_of_nat n > Z_of_nat m.
+Proof. apply inj_gt_iff. Qed.
+
+(** The other way ... *)
+
+Theorem inj_le_rev : forall n m:nat, Z_of_nat n <= Z_of_nat m -> (n <= m)%nat.
+Proof. apply inj_le_iff. Qed.
+
+Theorem inj_lt_rev : forall n m:nat, Z_of_nat n < Z_of_nat m -> (n < m)%nat.
+Proof. apply inj_lt_iff. Qed.
+
+Theorem inj_ge_rev : forall n m:nat, Z_of_nat n >= Z_of_nat m -> (n >= m)%nat.
+Proof. apply inj_ge_iff. Qed.
+
+Theorem inj_gt_rev : forall n m:nat, Z_of_nat n > Z_of_nat m -> (n > m)%nat.
+Proof. apply inj_gt_iff. Qed.
 
 (** Injection and usual operations *)
 
@@ -208,38 +174,38 @@ Theorem inj_minus : forall n m:nat,
  Z_of_nat (minus n m) = Zmax 0 (Z_of_nat n - Z_of_nat m).
 Proof.
  intros.
- rewrite Zmax_comm.
  unfold Zmax.
  destruct (le_lt_dec m n) as [H|H].
 
- rewrite (inj_minus1 _ _ H).
- assert (H':=Zle_minus_le_0 _ _ (inj_le _ _ H)).
- unfold Zle in H'.
- rewrite <- Zcompare_antisym in H'.
- destruct Zcompare; simpl in *; intuition.
+ rewrite inj_minus1; trivial.
+ apply inj_le, Zle_minus_le_0 in H. revert H. unfold Zle.
+ case Zcompare_spec; intuition.
 
- rewrite (inj_minus2 _ _ H).
- assert (H':=Zplus_lt_compat_r _ _ (- Z_of_nat m) (inj_lt _ _ H)).
- rewrite Zplus_opp_r in H'.
- unfold Zminus; rewrite H'; auto.
+ rewrite inj_minus2; trivial.
+ apply inj_lt, Zlt_gt in H.
+ apply (Zplus_gt_compat_r _ _ (- Z_of_nat m)) in H.
+ rewrite Zplus_opp_r in H.
+ unfold Zminus. rewrite H; auto.
 Qed.
 
 Theorem inj_min : forall n m:nat,
   Z_of_nat (min n m) = Zmin (Z_of_nat n) (Z_of_nat m).
 Proof.
- induction n; destruct m; try (compute; auto; fail).
- simpl min.
- do 3 rewrite inj_S.
- rewrite <- Zsucc_min_distr; f_equal; auto.
+ intros n m. unfold Zmin. rewrite inj_compare.
+ case nat_compare_spec; intros; f_equal.
+ subst. apply min_idempotent.
+ apply min_l. auto with arith.
+ apply min_r. auto with arith.
 Qed.
 
 Theorem inj_max : forall n m:nat,
   Z_of_nat (max n m) = Zmax (Z_of_nat n) (Z_of_nat m).
 Proof.
- induction n; destruct m; try (compute; auto; fail).
- simpl max.
- do 3 rewrite inj_S.
- rewrite <- Zsucc_max_distr; f_equal; auto.
+ intros n m. unfold Zmax. rewrite inj_compare.
+ case nat_compare_spec; intros; f_equal.
+ subst. apply max_idempotent.
+ apply max_r. auto with arith.
+ apply max_l. auto with arith.
 Qed.
 
 (** Composition of injections **)

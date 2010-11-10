@@ -8,7 +8,7 @@
 (*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
 (************************************************************************)
 
-Require Import ZArith.
+Require Import ZArith Zquot.
 Require Import BigNumPrelude.
 Require Import NSig.
 Require Import ZSig.
@@ -451,6 +451,44 @@ Module Make (N:NType) <: ZType.
  intros x y; generalize (spec_div_eucl x y); unfold modulo, Zmod.
  case div_eucl; case Zdiv_eucl; simpl; auto.
  intros q r q11 r1 H; injection H; auto.
+ Qed.
+
+ Definition quot x y :=
+  match x, y with
+  | Pos nx, Pos ny => Pos (N.div nx ny)
+  | Pos nx, Neg ny => Neg (N.div nx ny)
+  | Neg nx, Pos ny => Neg (N.div nx ny)
+  | Neg nx, Neg ny => Pos (N.div nx ny)
+  end.
+
+ Definition remainder x y :=
+  if eq_bool y zero then x
+  else
+    match x, y with
+      | Pos nx, Pos ny => Pos (N.modulo nx ny)
+      | Pos nx, Neg ny => Pos (N.modulo nx ny)
+      | Neg nx, Pos ny => Neg (N.modulo nx ny)
+      | Neg nx, Neg ny => Neg (N.modulo nx ny)
+    end.
+
+ Lemma spec_quot : forall x y, to_Z (quot x y) = (to_Z x) ÷ (to_Z y).
+ Proof.
+  intros [x|x] [y|y]; simpl; symmetry;
+   rewrite N.spec_div, ?Zquot_opp_r, ?Zquot_opp_l, ?Zopp_involutive;
+   rewrite Zquot_Zdiv_pos; trivial using N.spec_pos.
+ Qed.
+
+ Lemma spec_remainder : forall x y,
+   to_Z (remainder x y) = (to_Z x) rem (to_Z y).
+ Proof.
+  intros x y. unfold remainder. rewrite spec_eq_bool, spec_0.
+  assert (Hy := Zeq_bool_if (to_Z y) 0). destruct Zeq_bool.
+  now rewrite Hy, Zrem_0_r.
+  destruct x as [x|x], y as [y|y]; simpl in *; symmetry;
+   rewrite N.spec_modulo, ?Zrem_opp_r, ?Zrem_opp_l, ?Zopp_involutive;
+   try rewrite Z.eq_opp_l, Z.opp_0 in Hy;
+   rewrite Zrem_Zmod_pos; generalize (N.spec_pos x) (N.spec_pos y);
+   z_order.
  Qed.
 
  Definition gcd x y :=

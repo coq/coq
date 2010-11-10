@@ -39,17 +39,17 @@ Module Type NDivSpecific (Import N : NAxiomsMiniSig')(Import DM : DivMod' N).
  Axiom mod_upper_bound : forall a b, b ~= 0 -> a mod b < b.
 End NDivSpecific.
 
-(** For gcd pow sqrt log2, the NZ axiomatizations are enough. *)
+(** For div mod gcd pow sqrt log2, the NZ axiomatizations are enough. *)
 
 (** We now group everything together. *)
 
 Module Type NAxiomsSig := NAxiomsMiniSig <+ HasCompare <+ Parity
   <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2 <+ NZGcd.NZGcd
-  <+ DivMod <+ NZDivCommon <+ NDivSpecific.
+  <+ NZDiv.NZDiv.
 
 Module Type NAxiomsSig' := NAxiomsMiniSig' <+ HasCompare <+ Parity
   <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2 <+ NZGcd.NZGcd'
-  <+ DivMod' <+ NZDivCommon <+ NDivSpecific.
+  <+ NZDiv.NZDiv'.
 
 
 (** It could also be interesting to have a constructive recursor function. *)

@@ -141,7 +141,8 @@ Program Instance div_wd : Proper (eq==>eq==>eq) Ndiv.
 Program Instance mod_wd : Proper (eq==>eq==>eq) Nmod.
 
 Definition div_mod := fun x y (_:y<>0) => Ndiv_mod_eq x y.
-Definition mod_upper_bound := Nmod_lt.
+Definition mod_bound_pos : forall a b, 0<=a -> 0<b -> 0<= a mod b < b.
+Proof. split. now destruct (a mod b). apply Nmod_lt. now destruct b. Qed.
 
 (** Odd and Even *)
 

@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Export NZAxioms.
-Require Import NZPow NZSqrt NZLog NZGcd.
+Require Import NZPow NZSqrt NZLog NZGcd NZDiv.
 
 (** We obtain integers by postulating that successor of predecessor
     is identity. *)
@@ -70,16 +70,56 @@ Module Type Parity (Import Z : ZAxiomsMiniSig').
  Axiom odd_spec : forall n, odd n = true <-> Odd n.
 End Parity.
 
+(** Divisions *)
+
+(** First, the usual Coq convention of Truncated-Toward-Bottom
+    (a.k.a Floor). We simply extend the NZ signature. *)
+
+Module Type ZDivSpecific (Import A:ZAxiomsMiniSig')(Import B : DivMod' A).
+ Axiom mod_pos_bound : forall a b, 0 < b -> 0 <= a mod b < b.
+ Axiom mod_neg_bound : forall a b, b < 0 -> b < a mod b <= 0.
+End ZDivSpecific.
+
+Module Type ZDiv (Z:ZAxiomsMiniSig) := NZDiv.NZDiv Z <+ ZDivSpecific Z.
+Module Type ZDiv' (Z:ZAxiomsMiniSig) := NZDiv.NZDiv' Z <+ ZDivSpecific Z.
+
+(** Then, the Truncated-Toward-Zero convention.
+    For not colliding with Floor operations, we use different names
+*)
+
+Module Type QuotRem (Import A : Typ).
+ Parameters Inline quot remainder : t -> t -> t.
+End QuotRem.
+
+Module Type QuotRemNotation (A : Typ)(Import B : QuotRem A).
+ Infix "÷" := quot (at level 40, left associativity).
+ Infix "rem" := remainder (at level 40, no associativity).
+End QuotRemNotation.
+
+Module Type QuotRem' (A : Typ) := QuotRem A <+ QuotRemNotation A.
+
+Module Type QuotRemSpec (Import A : ZAxiomsMiniSig')(Import B : QuotRem' A).
+ Declare Instance quot_wd : Proper (eq==>eq==>eq) quot.
+ Declare Instance rem_wd : Proper (eq==>eq==>eq) remainder.
+ Axiom quot_rem : forall a b, b ~= 0 -> a == b*(a÷b) + (a rem b).
+ Axiom rem_bound_pos : forall a b, 0<=a -> 0<b -> 0 <= a rem b < b.
+ Axiom rem_opp_l : forall a b, b ~= 0 -> (-a) rem b == - (a rem b).
+ Axiom rem_opp_r : forall a b, b ~= 0 -> a rem (-b) == a rem b.
+End QuotRemSpec.
+
+Module Type ZQuot (Z:ZAxiomsMiniSig) := QuotRem Z <+ QuotRemSpec Z.
+Module Type ZQuot' (Z:ZAxiomsMiniSig) := QuotRem' Z <+ QuotRemSpec Z.
+
 (** For pow sqrt log2 gcd, the NZ axiomatizations are enough. *)
 
 (** Let's group everything *)
 
 Module Type ZAxiomsSig :=
   ZAxiomsMiniSig <+ HasCompare <+ HasAbs <+ HasSgn <+ Parity
-   <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2 <+ NZGcd.NZGcd.
+   <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2 <+ NZGcd.NZGcd
+   <+ ZDiv <+ ZQuot.
+
 Module Type ZAxiomsSig' :=
   ZAxiomsMiniSig' <+ HasCompare <+ HasAbs <+ HasSgn <+ Parity
-   <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2 <+ NZGcd.NZGcd'.
-
-
-(** Division is left apart, since many different flavours are available *)
+   <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2 <+ NZGcd.NZGcd'
+   <+ ZDiv' <+ ZQuot'.

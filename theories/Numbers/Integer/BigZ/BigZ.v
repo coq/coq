@@ -19,17 +19,14 @@ Require Import ZProperties ZDivFloor ZSig ZSigZAxioms ZMake.
     - [ZMake.Make BigN] provides the operations and basic specs w.r.t. ZArith
     - [ZTypeIsZAxioms] shows (mainly) that these operations implement
       the interface [ZAxioms]
-    - [ZPropSig] adds all generic properties derived from [ZAxioms]
-    - [ZDivPropFunct] provides generic properties of [div] and [mod]
-      ("Floor" variant)
+    - [ZProp] adds all generic properties derived from [ZAxioms]
     - [MinMax*Properties] provides properties of [min] and [max]
 
 *)
 
 
 Module BigZ <: ZType <: OrderedTypeFull <: TotalOrder :=
- ZMake.Make BigN <+ ZTypeIsZAxioms
- <+ !ZProp <+ !ZDivProp <+ HasEqBool2Dec
+ ZMake.Make BigN <+ ZTypeIsZAxioms <+ !ZProp <+ HasEqBool2Dec
  <+ !MinMaxLogicalProperties <+ !MinMaxDecProperties.
 
 (** Notations about [BigZ] *)
@@ -67,6 +64,8 @@ Arguments Scope BigZ.log2 [bigZ_scope].
 Arguments Scope BigZ.sqrt [bigZ_scope].
 Arguments Scope BigZ.div_eucl [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.modulo [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.quot [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.remainder [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.gcd [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.even [bigZ_scope].
 Arguments Scope BigZ.odd [bigZ_scope].
@@ -92,7 +91,9 @@ Notation "x < y <= z" := (x<y /\ y<=z)%bigZ : bigZ_scope.
 Notation "x <= y < z" := (x<=y /\ y<z)%bigZ : bigZ_scope.
 Notation "x <= y <= z" := (x<=y /\ y<=z)%bigZ : bigZ_scope.
 Notation "[ i ]" := (BigZ.to_Z i) : bigZ_scope.
-Infix "mod" := BigZ.modulo (at level 40, no associativity) : bigN_scope.
+Infix "mod" := BigZ.modulo (at level 40, no associativity) : bigZ_scope.
+Infix "rem" := BigZ.remainder (at level 40, no associativity) : bigZ_scope.
+Infix "÷" := BigZ.quot (at level 40, left associativity) : bigZ_scope.
 
 Local Open Scope bigZ_scope.
 

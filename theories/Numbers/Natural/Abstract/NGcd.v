@@ -10,7 +10,7 @@
 
 Require Import NAxioms NSub NZGcd.
 
-Module NGcdProp
+Module Type NGcdProp
  (Import A : NAxiomsSig')
  (Import B : NSubProp A).
 

@@ -11,8 +11,8 @@
 Require Import Arith_base.
 Require Import BinPos.
 Require Import BinInt.
+Require Import Zcompare.
 Require Import Zorder.
-Require Import Zmax.
 Require Import Znat.
 Require Import ZArith_dec.
 
@@ -149,6 +149,26 @@ Proof.
   apply Zplus_le_0_compat; auto.
 Qed.
 
+Lemma Zabs_nat_compare :
+ forall x y, 0<=x -> 0<=y -> nat_compare (Zabs_nat x) (Zabs_nat y) = (x?=y).
+Proof.
+ intros. rewrite <- inj_compare, 2 inj_Zabs_nat, 2 Zabs_eq; trivial.
+Qed.
+
+Lemma Zabs_nat_le :
+  forall n m:Z, 0 <= n <= m -> (Zabs_nat n <= Zabs_nat m)%nat.
+Proof.
+ intros n m (H,H'). apply nat_compare_le. rewrite Zabs_nat_compare; trivial.
+ apply Zle_trans with n; auto.
+Qed.
+
+Lemma Zabs_nat_lt :
+  forall n m:Z, 0 <= n < m -> (Zabs_nat n < Zabs_nat m)%nat.
+Proof.
+  intros n m (H,H'). apply nat_compare_lt. rewrite Zabs_nat_compare; trivial.
+  apply Zlt_le_weak; apply Zle_lt_trans with n; auto.
+Qed.
+
 Lemma Zabs_nat_Zminus:
  forall x y, 0 <= x <= y ->  Zabs_nat (y - x) = (Zabs_nat y - Zabs_nat x)%nat.
 Proof.
@@ -156,24 +176,8 @@ Proof.
   assert (0 <= y) by (apply Zle_trans with x; auto).
   assert (0 <= y-x) by (apply Zle_minus_le_0; auto).
   apply inj_eq_rev.
-  rewrite inj_minus; repeat rewrite inj_Zabs_nat, Zabs_eq; auto.
-  rewrite Zmax_right; auto.
-Qed.
-
-Lemma Zabs_nat_le :
-  forall n m:Z, 0 <= n <= m -> (Zabs_nat n <= Zabs_nat m)%nat.
-Proof.
-  intros n m (H,H'); apply inj_le_rev.
-  repeat rewrite inj_Zabs_nat, Zabs_eq; auto.
-  apply Zle_trans with n; auto.
-Qed.
-
-Lemma Zabs_nat_lt :
-  forall n m:Z, 0 <= n < m -> (Zabs_nat n < Zabs_nat m)%nat.
-Proof.
-  intros n m (H,H'); apply inj_lt_rev.
-  repeat rewrite inj_Zabs_nat, Zabs_eq; auto.
-  apply Zlt_le_weak; apply Zle_lt_trans with n; auto.
+  rewrite inj_minus1. rewrite !inj_Zabs_nat, !Zabs_eq; auto.
+  apply Zabs_nat_le. now split.
 Qed.
 
 (** * Some results about the sign function. *)
