@@ -77,7 +77,7 @@ let error_with_incorrect l =
 
 let error_a_generative_module_expected l =
   error ("The module " ^ string_of_label l ^ " is not generative. Only " ^
-         "component of generative modules can be changed using the \"with\" " ^
+         "components of generative modules can be changed using the \"with\" " ^
          "construct.")
 
 let error_local_context lo = 
