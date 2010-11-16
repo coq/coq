@@ -663,16 +663,16 @@ let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
     | ETConstrList (typ',[]) ->
         Slist1 (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'))
     | ETConstrList (typ',tkl) ->
-        Slist1sep
-          (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'),
-	   make_sep_rules tkl)
+        slist1sep
+          (symbol_of_constr_prod_entry_key assoc from forpat (ETConstr typ'))
+          (make_sep_rules tkl)
     | ETBinderList (false,[]) ->
         Slist1
 	  (symbol_of_constr_prod_entry_key assoc from forpat (ETBinder false))
     | ETBinderList (false,tkl) ->
-        Slist1sep
-	  (symbol_of_constr_prod_entry_key assoc from forpat (ETBinder false),
-	   make_sep_rules tkl)
+        slist1sep
+          (symbol_of_constr_prod_entry_key assoc from forpat (ETBinder false))
+          (make_sep_rules tkl)
 
     | _ ->
     match interp_constr_prod_entry_key assoc from forpat typ with
@@ -686,16 +686,16 @@ let rec symbol_of_constr_prod_entry_key assoc from forpat typ =
 let rec symbol_of_prod_entry_key = function
   | Alist1 s -> Slist1 (symbol_of_prod_entry_key s)
   | Alist1sep (s,sep) ->
-      Slist1sep (symbol_of_prod_entry_key s, gram_token_of_string sep)
+      slist1sep (symbol_of_prod_entry_key s) (gram_token_of_string sep)
   | Alist0 s -> Slist0 (symbol_of_prod_entry_key s)
   | Alist0sep (s,sep) ->
-      Slist0sep (symbol_of_prod_entry_key s, gram_token_of_string sep)
+      slist0sep (symbol_of_prod_entry_key s) (gram_token_of_string sep)
   | Aopt s -> Sopt (symbol_of_prod_entry_key s)
   | Amodifiers s ->
        Gram.srules'
         [([], Gram.action (fun _loc -> []));
          ([gram_token_of_string "(";
-           Slist1sep ((symbol_of_prod_entry_key s), gram_token_of_string ",");
+           slist1sep (symbol_of_prod_entry_key s) (gram_token_of_string ",");
            gram_token_of_string ")"],
 	   Gram.action (fun _ l _ _loc -> l))]
   | Aself -> Sself
