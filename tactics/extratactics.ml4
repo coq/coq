@@ -629,3 +629,11 @@ TACTIC EXTEND constr_eq
 | [ "constr_eq" constr(x) constr(y) ] -> [ 
     if eq_constr x y then tclIDTAC else tclFAIL 0 (str "Not equal") ]
 END
+
+TACTIC EXTEND is_evar
+| [ "is_evar" constr(x) ] ->
+    [ match kind_of_term x with
+        | Evar _ -> tclIDTAC
+        | _ -> tclFAIL 0 (str "Not an evar")
+    ]
+END
