@@ -65,3 +65,15 @@ let unloc = M.unloc
 let join_loc = M.join_loc
 type token = M.token
 type lexer = M.lexer
+
+IFDEF CAMLP5_6_00 THEN
+
+let slist0sep x y = Gramext.Slist0sep (x, y, false)
+let slist1sep x y = Gramext.Slist1sep (x, y, false)
+
+ELSE
+
+let slist0sep x y = Gramext.Slist0sep (x, y)
+let slist1sep x y = Gramext.Slist1sep (x, y)
+
+END
