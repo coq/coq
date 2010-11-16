@@ -461,7 +461,7 @@ Module Make (N:NType) <: ZType.
   | Neg nx, Neg ny => Pos (N.div nx ny)
   end.
 
- Definition remainder x y :=
+ Definition rem x y :=
   if eq_bool y zero then x
   else
     match x, y with
@@ -478,10 +478,10 @@ Module Make (N:NType) <: ZType.
    rewrite Zquot_Zdiv_pos; trivial using N.spec_pos.
  Qed.
 
- Lemma spec_remainder : forall x y,
-   to_Z (remainder x y) = (to_Z x) rem (to_Z y).
+ Lemma spec_rem : forall x y,
+   to_Z (rem x y) = Zrem (to_Z x) (to_Z y).
  Proof.
-  intros x y. unfold remainder. rewrite spec_eq_bool, spec_0.
+  intros x y. unfold rem. rewrite spec_eq_bool, spec_0.
   assert (Hy := Zeq_bool_if (to_Z y) 0). destruct Zeq_bool.
   now rewrite Hy, Zrem_0_r.
   destruct x as [x|x], y as [y|y]; simpl in *; symmetry;

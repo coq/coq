@@ -88,19 +88,19 @@ Module Type ZDiv' (Z:ZAxiomsMiniSig) := NZDiv.NZDiv' Z <+ ZDivSpecific Z.
 *)
 
 Module Type QuotRem (Import A : Typ).
- Parameters Inline quot remainder : t -> t -> t.
+ Parameters Inline quot rem : t -> t -> t.
 End QuotRem.
 
 Module Type QuotRemNotation (A : Typ)(Import B : QuotRem A).
  Infix "÷" := quot (at level 40, left associativity).
- Infix "rem" := remainder (at level 40, no associativity).
+ Infix "rem" := rem (at level 40, no associativity).
 End QuotRemNotation.
 
 Module Type QuotRem' (A : Typ) := QuotRem A <+ QuotRemNotation A.
 
 Module Type QuotRemSpec (Import A : ZAxiomsMiniSig')(Import B : QuotRem' A).
  Declare Instance quot_wd : Proper (eq==>eq==>eq) quot.
- Declare Instance rem_wd : Proper (eq==>eq==>eq) remainder.
+ Declare Instance rem_wd : Proper (eq==>eq==>eq) B.rem.
  Axiom quot_rem : forall a b, b ~= 0 -> a == b*(a÷b) + (a rem b).
  Axiom rem_bound_pos : forall a b, 0<=a -> 0<b -> 0 <= a rem b < b.
  Axiom rem_opp_l : forall a b, b ~= 0 -> (-a) rem b == - (a rem b).

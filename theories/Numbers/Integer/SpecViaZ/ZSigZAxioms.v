@@ -16,8 +16,7 @@ Hint Rewrite
  spec_0 spec_1 spec_2 spec_add spec_sub spec_pred spec_succ
  spec_mul spec_opp spec_of_Z spec_div spec_modulo spec_sqrt
  spec_compare spec_eq_bool spec_max spec_min spec_abs spec_sgn
- spec_pow spec_log2 spec_even spec_odd spec_gcd spec_quot
- spec_remainder
+ spec_pow spec_log2 spec_even spec_odd spec_gcd spec_quot spec_rem
  : zsimpl.
 
 Ltac zsimpl := autorewrite with zsimpl.
@@ -353,25 +352,25 @@ Definition mod_bound_pos :
 (** Quot / Rem *)
 
 Program Instance quot_wd : Proper (eq==>eq==>eq) quot.
-Program Instance rem_wd : Proper (eq==>eq==>eq) remainder.
+Program Instance rem_wd : Proper (eq==>eq==>eq) rem.
 
-Theorem quot_rem : forall a b, ~b==0 -> a == b*(quot a b) + (remainder a b).
+Theorem quot_rem : forall a b, ~b==0 -> a == b*(quot a b) + rem a b.
 Proof.
 intros a b _. zify. apply Z_quot_rem_eq.
 Qed.
 
 Theorem rem_bound_pos :
- forall a b, 0<=a -> 0<b -> 0 <= remainder a b /\ remainder a b < b.
+ forall a b, 0<=a -> 0<b -> 0 <= rem a b /\ rem a b < b.
 Proof.
 intros a b. zify. intros. now apply Zrem_bound.
 Qed.
 
-Theorem rem_opp_l : forall a b, ~b==0 -> remainder (-a) b == -(remainder a b).
+Theorem rem_opp_l : forall a b, ~b==0 -> rem (-a) b == -(rem a b).
 Proof.
 intros a b _. zify. apply Zrem_opp_l.
 Qed.
 
-Theorem rem_opp_r : forall a b, ~b==0 -> remainder a (-b) == remainder a b.
+Theorem rem_opp_r : forall a b, ~b==0 -> rem a (-b) == rem a b.
 Proof.
 intros a b _. zify. apply Zrem_opp_r.
 Qed.

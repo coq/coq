@@ -65,7 +65,7 @@ Arguments Scope BigZ.sqrt [bigZ_scope].
 Arguments Scope BigZ.div_eucl [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.modulo [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.quot [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.remainder [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.rem [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.gcd [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.even [bigZ_scope].
 Arguments Scope BigZ.odd [bigZ_scope].
@@ -92,7 +92,6 @@ Notation "x <= y < z" := (x<=y /\ y<z)%bigZ : bigZ_scope.
 Notation "x <= y <= z" := (x<=y /\ y<=z)%bigZ : bigZ_scope.
 Notation "[ i ]" := (BigZ.to_Z i) : bigZ_scope.
 Infix "mod" := BigZ.modulo (at level 40, no associativity) : bigZ_scope.
-Infix "rem" := BigZ.remainder (at level 40, no associativity) : bigZ_scope.
 Infix "÷" := BigZ.quot (at level 40, left associativity) : bigZ_scope.
 
 Local Open Scope bigZ_scope.

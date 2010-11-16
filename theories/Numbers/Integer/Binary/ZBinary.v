@@ -189,7 +189,7 @@ Definition rem_bound_pos := Zrem_bound.
 Definition rem_opp_l := fun a b (_:b<>0) => Zrem_opp_l a b.
 Definition rem_opp_r := fun a b (_:b<>0) => Zrem_opp_r a b.
 Definition quot := Zquot.
-Definition remainder := Zrem.
+Definition rem := Zrem.
 
 (** We define [eq] only here to avoid refering to this [eq] above. *)
 

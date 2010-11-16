@@ -126,18 +126,7 @@ Definition Zquot a b := fst (Zquotrem a b).
 Definition Zrem a b := snd (Zquotrem a b).
 
 Infix "÷" := Zquot (at level 40, left associativity) : Z_scope.
-Infix "rem" := Zrem (at level 40, no associativity) : Z_scope.
-
-
-
-(** * Euclid *)
-
-(** In this last convention, the remainder is always non-negative *)
-
-Definition Zeuclid_mod a b := Zmod a (Zabs b).
-Definition Zeuclid_div a b := (Zsgn b) * (Zdiv a (Zabs b)).
-
-
+(** No infix notation for rem, otherwise it becomes a keyword *)
 
 (** * Correctness proofs *)
 
@@ -280,13 +269,13 @@ Proof.
  now rewrite Zopp_plus_distr, Zopp_mult_distr_r.
 Qed.
 
-Lemma Z_quot_rem_eq : forall a b, a = b*(a÷b) + a rem b.
+Lemma Z_quot_rem_eq : forall a b, a = b*(a÷b) + Zrem a b.
 Proof.
  intros a b. rewrite Zmult_comm. generalize (Zquotrem_eq a b).
  unfold Zquot, Zrem. now destruct Zquotrem.
 Qed.
 
-Lemma Zrem_bound : forall a b, 0<=a -> 0<b -> 0 <= a rem b < b.
+Lemma Zrem_bound : forall a b, 0<=a -> 0<b -> 0 <= Zrem a b < b.
 Proof.
  intros a [|b|b] Ha Hb; discriminate Hb || clear Hb.
  destruct a as [|a|a]; (now destruct Ha) || clear Ha.
@@ -297,13 +286,13 @@ Proof.
  destruct r; red; simpl; trivial.
 Qed.
 
-Lemma Zrem_opp_l : forall a b, (-a) rem b = - (a rem b).
+Lemma Zrem_opp_l : forall a b, Zrem (-a) b = - (Zrem a b).
 Proof.
  intros [|a|a] [|b|b]; trivial; unfold Zrem;
   simpl; destruct Pdiv_eucl; simpl; try rewrite Zopp_involutive; trivial.
 Qed.
 
-Lemma Zrem_opp_r : forall a b, a rem (-b) = a rem b.
+Lemma Zrem_opp_r : forall a b, Zrem a (-b) = Zrem a b.
 Proof.
  intros [|a|a] [|b|b]; trivial; unfold Zrem; simpl;
   destruct Pdiv_eucl; simpl; try rewrite Zopp_involutive; trivial.

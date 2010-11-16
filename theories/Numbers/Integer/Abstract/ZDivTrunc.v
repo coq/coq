@@ -35,7 +35,7 @@ Module Type ZQuotProp
 
  Module Quot2Div <: NZDiv A.
   Definition div := quot.
-  Definition modulo := remainder.
+  Definition modulo := A.rem.
   Definition div_wd := quot_wd.
   Definition mod_wd := rem_wd.
   Definition div_mod := quot_rem.
