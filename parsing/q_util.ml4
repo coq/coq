@@ -82,7 +82,7 @@ let modifiers e =
 <:expr<  Gramext.srules
     [([], Gramext.action(fun _loc -> []));
      ([Gramext.Stoken ("", "(");
-       Gramext.Slist1sep ($e$, Gramext.Stoken ("", ","));
+       Compat.slist1sep $e$ (Gramext.Stoken ("", ","));
        Gramext.Stoken ("", ")")],
       Gramext.action (fun _ l _ _loc -> l))]
  >>
@@ -96,14 +96,14 @@ let rec interp_entry_name loc s sep =
                    String.sub s (l-9) 9 = "_list_sep" then
     let t, g = interp_entry_name loc (String.sub s 3 (l-12)) "" in
     let sep = <:expr< Gramext.Stoken("",$str:sep$) >> in
-    List1ArgType t, <:expr< Gramext.Slist1sep $g$ $sep$ >>
+    List1ArgType t, <:expr< Compat.slist1sep $g$ $sep$ >>
   else if l > 5 & String.sub s (l-5) 5 = "_list" then
     let t, g = interp_entry_name loc (String.sub s 0 (l-5)) "" in
     List0ArgType t, <:expr< Gramext.Slist0 $g$ >>
   else if l > 9 & String.sub s (l-9) 9 = "_list_sep" then
     let t, g = interp_entry_name loc (String.sub s 0 (l-9)) "" in
     let sep = <:expr< Gramext.Stoken("",$str:sep$) >> in
-    List0ArgType t, <:expr< Gramext.Slist0sep $g$ $sep$ >>
+    List0ArgType t, <:expr< Compat.slist0sep $g$ $sep$ >>
   else if l > 4 & String.sub s (l-4) 4 = "_opt" then
     let t, g = interp_entry_name loc (String.sub s 0 (l-4)) "" in
     OptArgType t, <:expr< Gramext.Sopt $g$ >>
