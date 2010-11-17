@@ -54,7 +54,7 @@ test_output() {
         tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`
 	$command $f 2>&1 | grep -v "Welcome to Coq" | grep -v "Skipping rcfile loading" > $tmpoutput
         foutput=`dirname $f`/`basename $f .v`.out
-        diff $tmpoutput $foutput >& /dev/null
+        diff $tmpoutput $foutput > /dev/null 2>&1
 	if [ $? = 0 ]; then 
 	    echo "Ok"
 	    nbtestsok=`expr $nbtestsok + 1`
