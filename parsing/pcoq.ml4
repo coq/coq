@@ -728,9 +728,9 @@ let rec symbol_of_production assoc from forpat typ =
     | ETConstrList (typ',[]) ->
         Gramext.Slist1 (symbol_of_production assoc from forpat (ETConstr typ'))
     | ETConstrList (typ',tkl) ->
-        Gramext.Slist1sep
-          (symbol_of_production assoc from forpat (ETConstr typ'),
-           Gramext.srules
+        Compat.slist1sep
+          (symbol_of_production assoc from forpat (ETConstr typ'))
+          (Gramext.srules
              [List.map (fun x -> Gramext.Stoken x) tkl,
               List.fold_right (fun _ v -> Gramext.action (fun _ -> v)) tkl
                 (Gramext.action (fun loc -> ()))])
