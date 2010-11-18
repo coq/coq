@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import BinPos BinNat BinInt Zbool Zcompare Zorder Zabs Nnat Ndiv_def.
+Require Import BinPos BinNat BinInt Zbool Zcompare Zorder Zabs Znat Ndiv_def.
 Local Open Scope Z_scope.
 
 (** * Definitions of divisions for binary integers *)

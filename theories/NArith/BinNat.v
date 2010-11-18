@@ -152,6 +152,20 @@ Definition Nmax (n n' : N) := match Ncompare n n' with
  | Gt => n
  end.
 
+(** Translation from [N] to [nat] and back. *)
+
+Definition nat_of_N (a:N) :=
+  match a with
+  | N0 => O
+  | Npos p => nat_of_P p
+  end.
+
+Definition N_of_nat (n:nat) :=
+  match n with
+  | O => N0
+  | S n' => Npos (P_of_succ_nat n')
+  end.
+
 (** Decidability of equality. *)
 
 Definition N_eq_dec : forall n m : N, { n = m } + { n <> m }.
@@ -229,7 +243,7 @@ Qed.
 
 Theorem Npred_succ : forall n : N, Npred (Nsucc n) = n.
 Proof.
-destruct n as [| p]; simpl. reflexivity.
+intros [| p]; simpl. reflexivity.
 case_eq (Psucc p); try (intros q H; rewrite <- H; now rewrite Ppred_succ).
 intro H; false_hyp H Psucc_not_one.
 Qed.
@@ -249,7 +263,7 @@ Qed.
 Theorem Nplus_comm : forall n m:N, n + m = m + n.
 Proof.
 intros.
-destruct n; destruct m; simpl in |- *; try reflexivity.
+destruct n; destruct m; simpl; try reflexivity.
 rewrite Pplus_comm; reflexivity.
 Qed.
 
@@ -259,51 +273,49 @@ intros.
 destruct n; try reflexivity.
 destruct m; try reflexivity.
 destruct p; try reflexivity.
-simpl in |- *; rewrite Pplus_assoc; reflexivity.
+simpl; rewrite Pplus_assoc; reflexivity.
 Qed.
 
 Theorem Nplus_succ : forall n m:N, Nsucc n + m = Nsucc (n + m).
 Proof.
-destruct n; destruct m.
-  simpl in |- *; reflexivity.
-  unfold Nsucc, Nplus in |- *; rewrite <- Pplus_one_succ_l; reflexivity.
-  simpl in |- *; reflexivity.
-  simpl in |- *; rewrite Pplus_succ_permute_l; reflexivity.
+destruct n, m.
+  simpl; reflexivity.
+  unfold Nsucc, Nplus; rewrite <- Pplus_one_succ_l; reflexivity.
+  simpl; reflexivity.
+  simpl; rewrite Pplus_succ_permute_l; reflexivity.
 Qed.
 
 Theorem Nsucc_0 : forall n : N, Nsucc n <> N0.
 Proof.
-intro n; elim n; simpl Nsucc; intros; discriminate.
+now destruct n.
 Qed.
 
 Theorem Nsucc_inj : forall n m:N, Nsucc n = Nsucc m -> n = m.
 Proof.
-destruct n; destruct m; simpl in |- *; intro H; reflexivity || injection H;
- clear H; intro H.
-  symmetry  in H; contradiction Psucc_not_one with p.
-  contradiction Psucc_not_one with p.
-  rewrite Psucc_inj with (1 := H); reflexivity.
+intros [|p] [|q] H; simpl in *; trivial; injection H; clear H; intro H.
+  now elim (Psucc_not_one q).
+  now elim (Psucc_not_one p).
+  apply Psucc_inj in H. now f_equal.
 Qed.
 
 Theorem Nplus_reg_l : forall n m p:N, n + m = n + p -> m = p.
 Proof.
-intro n; pattern n in |- *; apply Nind; clear n; simpl in |- *.
+ induction n using Nind.
   trivial.
-  intros n IHn m p H0; do 2 rewrite Nplus_succ in H0.
-  apply IHn; apply Nsucc_inj; assumption.
+  intros m p H; rewrite 2 Nplus_succ in H.
+  apply Nsucc_inj in H. now apply IHn.
 Qed.
 
 (** Properties of subtraction. *)
 
 Lemma Nminus_N0_Nle : forall n n' : N, n - n' = N0 <-> n <= n'.
 Proof.
-destruct n as [| p]; destruct n' as [| q]; unfold Nle; simpl;
-split; intro H; try discriminate; try reflexivity.
+intros [| p] [| q]; unfold Nle; simpl;
+split; intro H; try easy.
 now elim H.
-intro H1; apply Pminus_mask_Gt in H1. destruct H1 as [h [H1 _]].
-rewrite H1 in H; discriminate.
-case_eq (Pcompare p q Eq); intro H1; rewrite H1 in H; try now elim H.
-assert (H2 : p = q); [now apply Pcompare_Eq_eq |]. now rewrite H2, Pminus_mask_diag.
+contradict H. now destruct (Pminus_mask_Gt _ _ H) as (h & -> & _).
+destruct (Pcompare_spec p q); try now elim H.
+subst. now rewrite Pminus_mask_diag.
 now rewrite Pminus_mask_Lt.
 Qed.
 
@@ -314,10 +326,15 @@ Qed.
 
 Theorem Nminus_succ_r : forall n m : N, n - (Nsucc m) = Npred (n - m).
 Proof.
-destruct n as [| p]; destruct m as [| q]; try reflexivity.
+intros [|p] [|q]; trivial.
 now destruct p.
 simpl. rewrite Pminus_mask_succ_r, Pminus_mask_carry_spec.
-now destruct (Pminus_mask p q) as [| r |]; [| destruct r |].
+now destruct (Pminus_mask p q) as [|[r|r|]|].
+Qed.
+
+Theorem Npred_minus : forall n, Npred n = Nminus n (Npos 1).
+Proof.
+ intros [|[p|p|]]; trivial.
 Qed.
 
 (** Properties of multiplication *)
@@ -334,21 +351,17 @@ Qed.
 
 Theorem Nmult_Sn_m : forall n m : N, (Nsucc n) * m = m + n * m.
 Proof.
-destruct n as [| n]; destruct m as [| m]; simpl; auto.
-rewrite Pmult_Sn_m; reflexivity.
+intros [|n] [|m]; simpl; trivial. now rewrite Pmult_Sn_m.
 Qed.
 
 Theorem Nmult_1_r : forall n:N, n * Npos 1%positive = n.
 Proof.
-destruct n; simpl in |- *; try reflexivity.
-rewrite Pmult_1_r; reflexivity.
+intros [|n]; simpl; trivial. now rewrite Pmult_1_r.
 Qed.
 
 Theorem Nmult_comm : forall n m:N, n * m = m * n.
 Proof.
-intros.
-destruct n; destruct m; simpl in |- *; try reflexivity.
-rewrite Pmult_comm; reflexivity.
+intros [|n] [|m]; simpl; trivial. now rewrite Pmult_comm.
 Qed.
 
 Theorem Nmult_assoc : forall n m p:N, n * (m * p) = n * m * p.
@@ -357,7 +370,7 @@ intros.
 destruct n; try reflexivity.
 destruct m; try reflexivity.
 destruct p; try reflexivity.
-simpl in |- *; rewrite Pmult_assoc; reflexivity.
+simpl; rewrite Pmult_assoc; reflexivity.
 Qed.
 
 Theorem Nmult_plus_distr_r : forall n m p:N, (n + m) * p = n * p + m * p.
@@ -365,7 +378,7 @@ Proof.
 intros.
 destruct n; try reflexivity.
 destruct m; destruct p; try reflexivity.
-simpl in |- *; rewrite Pmult_plus_distr_r; reflexivity.
+simpl; rewrite Pmult_plus_distr_r; reflexivity.
 Qed.
 
 Theorem Nmult_plus_distr_l : forall n m p:N, p * (n + m) = p * n + p * m.
@@ -400,7 +413,7 @@ Qed.
 
 Theorem Ncompare_Eq_eq : forall n m:N, (n ?= m) = Eq -> n = m.
 Proof.
-destruct n as [| n]; destruct m as [| m]; simpl in |- *; intro H;
+destruct n as [| n]; destruct m as [| m]; simpl; intro H;
  reflexivity || (try discriminate H).
   rewrite (Pcompare_Eq_eq n m H); reflexivity.
 Qed.
@@ -509,22 +522,6 @@ Proof.
  now apply (Pplus_lt_mono_l p).
 Qed.
 
-Lemma Nmult_lt_mono_l : forall n m p, N0<n -> m<p -> n*m<n*p.
-Proof.
- intros [|n] m p. discriminate. intros _.
- destruct m, p; try discriminate. auto.
- simpl.
- apply Pmult_lt_mono_l.
-Qed.
-
-Lemma Nmult_le_mono_l : forall n m p, m<=p -> n*m<=n*p.
-Proof.
- intros [|n] m p. intros _ H. discriminate.
- intros. apply Nle_lteq. apply Nle_lteq in H. destruct H; [left|right].
- now apply Nmult_lt_mono_l.
- congruence.
-Qed.
-
 (** 0 is the least natural number *)
 
 Theorem Ncompare_0 : forall n : N, Ncompare n N0 <> Lt.
@@ -567,9 +564,10 @@ Qed.
 (** Power *)
 
 Definition Npow n p :=
-  match p with
-    | N0 => Npos 1
-    | Npos p => Piter_op Nmult p n
+  match p, n with
+    | N0, _ => Npos 1
+    | _, N0 => N0
+    | Npos p, Npos q => Npos (Ppow q p)
   end.
 
 Infix "^" := Npow : N_scope.
@@ -579,53 +577,32 @@ Proof. reflexivity. Qed.
 
 Lemma Npow_succ_r : forall n p, n^(Nsucc p) = n * n^p.
 Proof.
- intros n p; destruct p; simpl.
- now rewrite Nmult_1_r.
- apply Piter_op_succ. apply Nmult_assoc.
+ intros [|q] [|p]; simpl; trivial; f_equal.
+ apply Ppow_succ_r.
 Qed.
 
 (** Base-2 logarithm *)
 
-Fixpoint Plog2_N (p:positive) : N :=
- match p with
-  | p~0 => Nsucc (Plog2_N p)
-  | p~1 => Nsucc (Plog2_N p)
-  | 1 => N0
- end%positive.
-
 Definition Nlog2 n :=
  match n with
-  | N0 => N0
-  | Npos p => Plog2_N p
+   | N0 => N0
+   | Npos 1 => N0
+   | Npos (p~0) => Npos (Psize_pos p)
+   | Npos (p~1) => Npos (Psize_pos p)
  end.
-
-Lemma Plog2_N_spec : forall p,
- (Npos 2)^(Plog2_N p) <= Npos p < (Npos 2)^(Nsucc (Plog2_N p)).
-Proof.
- induction p; simpl; try rewrite 2 Npow_succ_r.
- (* p~1 *)
- change (Npos p~1) with (Nsucc (Npos 2 * Npos p)).
- split; destruct IHp as [LE LT].
- apply Nle_trans with (Npos 2 * Npos p).
- now apply Nmult_le_mono_l.
- apply Nle_lteq. left.
- apply Ncompare_n_Sm. now right.
- apply Nle_succ_l. apply Nle_succ_l in LT.
- change (Nsucc (Nsucc (Npos 2 * Npos p))) with (Npos 2 * (Nsucc (Npos p))).
- now apply Nmult_le_mono_l.
- (* p~0 *)
- change (Npos p~0) with (Npos 2 * Npos p).
- split; destruct IHp.
- now apply Nmult_le_mono_l.
- now apply Nmult_lt_mono_l.
- (* 1 *)
- now split.
-Qed.
 
 Lemma Nlog2_spec : forall n, N0 < n ->
  (Npos 2)^(Nlog2 n) <= n < (Npos 2)^(Nsucc (Nlog2 n)).
 Proof.
- intros [|n] Hn. discriminate. apply Plog2_N_spec.
+ intros [|[p|p|]] H; discriminate H || clear H; simpl; split.
+ eapply Nle_trans with (Npos (p~0)).
+ apply Psize_pos_le.
+ apply Nle_lteq; left. exact (Pcompare_p_Sp (p~0)).
+ apply Psize_pos_gt.
+ apply Psize_pos_le.
+ apply Psize_pos_gt.
+ discriminate.
+ reflexivity.
 Qed.
 
 Lemma Nlog2_nonpos : forall n, n<=N0 -> Nlog2 n = N0.
@@ -643,8 +620,8 @@ Definition Neven n :=
   end.
 Definition Nodd n := negb (Neven n).
 
-Local Notation "1" := (Npos xH) : N_scope.
-Local Notation "2" := (Npos (xO xH)) : N_scope.
+Local Notation "1" := (Npos 1) : N_scope.
+Local Notation "2" := (Npos 2) : N_scope.
 
 Lemma Neven_spec : forall n, Neven n = true <-> exists m, n=2*m.
 Proof.

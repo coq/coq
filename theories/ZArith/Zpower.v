@@ -55,7 +55,7 @@ Proof.
   rewrite (Zpower_pos_nat z n).
   rewrite (Zpower_pos_nat z m).
   rewrite (Zpower_pos_nat z (n + m)).
-  rewrite (nat_of_P_plus_morphism n m).
+  rewrite (Pplus_plus n m).
   apply Zpower_nat_is_exp.
 Qed.
 

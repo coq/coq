@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import BinInt Zmisc Ring_theory.
+Require Import BinInt BinNat Ring_theory.
 
 Local Open Scope Z_scope.
 
@@ -49,23 +49,38 @@ Proof.
  induction p; simpl; intros; rewrite ?IHp, ?Zmult_assoc; trivial.
 Qed.
 
+Lemma Zpower_Ppow : forall p q, (Zpos p)^(Zpos q) = Zpos (p^q).
+Proof.
+ intros. unfold Ppow, Zpower, Zpower_pos.
+ symmetry. now apply iter_pos_swap_gen.
+Qed.
+
+Lemma Zpower_Npow : forall n m,
+ (Z_of_N n)^(Z_of_N m) = Z_of_N (n^m).
+Proof.
+ intros [|n] [|m]; simpl; trivial.
+ unfold Zpower_pos. generalize 1. induction m; simpl; trivial.
+ apply Zpower_Ppow.
+Qed.
+
 (** An alternative Zpower *)
 
-(** This Zpower_opt is extensionnaly equal to Zpower in ZArith,
-    but not convertible with it, and quicker : the number of
-    multiplications is logarithmic instead of linear.
-
-    TODO: We should try someday to replace Zpower with this Zpower_opt.
+(** This Zpower_alt is extensionnaly equal to Zpower in ZArith,
+    but not convertible with it. The number of
+    multiplications is logarithmic instead of linear, but
+    these multiplications are bigger. Experimentally, it seems
+    that Zpower_alt is slightly quicker than Zpower on average,
+    but can be quite slower on powers of 2.
 *)
 
-Definition Zpower_opt n m :=
+Definition Zpower_alt n m :=
   match m with
     | Z0 => 1
     | Zpos p => Piter_op Zmult p n
     | Zneg p => 0
   end.
 
-Infix "^^" := Zpower_opt (at level 30, right associativity) : Z_scope.
+Infix "^^" := Zpower_alt (at level 30, right associativity) : Z_scope.
 
 Lemma iter_pos_mult_acc : forall f,
  (forall x y:Z, (f x)*y = f (x*y)) ->
@@ -92,7 +107,7 @@ Qed.
 Lemma Zpower_equiv : forall a b, a^^b = a^b.
 Proof.
  intros a [|p|p]; trivial.
- unfold Zpower_opt, Zpower, Zpower_pos.
+ unfold Zpower_alt, Zpower, Zpower_pos.
  revert a.
  induction p; simpl; intros.
  f_equal.
@@ -105,17 +120,22 @@ Proof.
  now rewrite Zmult_1_r.
 Qed.
 
-Lemma Zpower_opt_0_r : forall n, n^^0 = 1.
+Lemma Zpower_alt_0_r : forall n, n^^0 = 1.
 Proof. reflexivity. Qed.
 
-Lemma Zpower_opt_succ_r : forall a b, 0<=b -> a^^(Zsucc b) = a * a^^b.
+Lemma Zpower_alt_succ_r : forall a b, 0<=b -> a^^(Zsucc b) = a * a^^b.
 Proof.
  intros a [|b|b] Hb; [ | |now elim Hb]; simpl.
  now rewrite Zmult_1_r.
  rewrite <- Pplus_one_succ_r. apply Piter_op_succ. apply Zmult_assoc.
 Qed.
 
-Lemma Zpower_opt_neg_r : forall a b, b<0 -> a^^b = 0.
+Lemma Zpower_alt_neg_r : forall a b, b<0 -> a^^b = 0.
 Proof.
  now destruct b.
+Qed.
+
+Lemma Zpower_alt_Ppow : forall p q, (Zpos p)^^(Zpos q) = Zpos (p^q).
+Proof.
+ intros. now rewrite Zpower_equiv, Zpower_Ppow.
 Qed.

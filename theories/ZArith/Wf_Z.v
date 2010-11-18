@@ -37,8 +37,8 @@ Lemma Z_of_nat_complete :
 Proof.
   intro x; destruct x; intros;
     [ exists 0%nat; auto with arith
-      | specialize (ZL4 p); intros Hp; elim Hp; intros; exists (S x); intros;
-	simpl in |- *; specialize (nat_of_P_o_P_of_succ_nat_eq_succ x);
+      | specialize (nat_of_P_is_S p); intros Hp; elim Hp; intros; exists (S x); intros;
+	simpl in |- *; specialize (nat_of_P_of_succ_nat x);
 	  intro Hx0; rewrite <- H0 in Hx0; apply f_equal with (f := Zpos);
 	    apply nat_of_P_inj; auto with arith
       | absurd (0 <= Zneg p);
@@ -47,7 +47,7 @@ Proof.
 	  | assumption ] ].
 Qed.
 
-Lemma ZL4_inf : forall y:positive, {h : nat | nat_of_P y = S h}.
+Lemma nat_of_P_is_S_inf : forall y:positive, {h : nat | nat_of_P y = S h}.
 Proof.
   intro y; induction y as [p H| p H1| ];
     [ elim H; intros x H1; exists (S x + S x)%nat; unfold nat_of_P in |- *;
@@ -59,13 +59,15 @@ Proof.
       | exists 0%nat; auto with arith ].
 Qed.
 
+Notation ZL4_inf := nat_of_P_is_S_inf (only parsing).
+
 Lemma Z_of_nat_complete_inf :
  forall x:Z, 0 <= x -> {n : nat | x = Z_of_nat n}.
 Proof.
   intro x; destruct x; intros;
     [ exists 0%nat; auto with arith
-      | specialize (ZL4_inf p); intros Hp; elim Hp; intros x0 H0; exists (S x0);
-	intros; simpl in |- *; specialize (nat_of_P_o_P_of_succ_nat_eq_succ x0);
+      | specialize (nat_of_P_is_S_inf p); intros Hp; elim Hp; intros x0 H0; exists (S x0);
+	intros; simpl in |- *; specialize (nat_of_P_of_succ_nat x0);
 	  intro Hx0; rewrite <- H0 in Hx0; apply f_equal with (f := Zpos);
 	    apply nat_of_P_inj; auto with arith
       | absurd (0 <= Zneg p);
@@ -127,20 +129,18 @@ Section Efficient_Rec.
 
   Let R_wf : well_founded R.
   Proof.
-    set
-      (f :=
-	fun z =>
+    set (f z :=
 	  match z with
 	    | Zpos p => nat_of_P p
 	    | Z0 => 0%nat
 	    | Zneg _ => 0%nat
-	  end) in *.
+	  end).
     apply well_founded_lt_compat with f.
-    unfold R, f in |- *; clear f R.
-    intros x y; case x; intros; elim H; clear H.
-    case y; intros; apply lt_O_nat_of_P || inversion H0.
-    case y; intros; apply nat_of_P_lt_Lt_compare_morphism || inversion H0; auto.
-    intros; elim H; auto.
+    unfold R, f; clear f R.
+    intros [|x|x] [|y|y] (H,H');
+     try (now elim H); try (discriminate H').
+    apply nat_of_P_pos.
+    now apply Plt_lt.
   Qed.
 
   Lemma natlike_rec2 :

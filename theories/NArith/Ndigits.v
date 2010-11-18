@@ -6,300 +6,534 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Bool Setoid Bvector BinPos BinNat.
+Require Import Bool Morphisms Setoid Bvector BinPos BinNat Wf_nat
+ Pnat Nnat Ndiv_def.
+
+Local Open Scope positive_scope.
 
 (** Operation over bits of a [N] number. *)
 
+(** Logical [or] *)
+
+Fixpoint Por (p q : positive) : positive :=
+  match p, q with
+    | 1, q~0 => q~1
+    | 1, _ => q
+    | p~0, 1 => p~1
+    | _, 1 => p
+    | p~0, q~0 => (Por p q)~0
+    | p~0, q~1 => (Por p q)~1
+    | p~1, q~0 => (Por p q)~1
+    | p~1, q~1 => (Por p q)~1
+  end.
+
+Definition Nor n m :=
+ match n, m with
+   | N0, _ => m
+   | _, N0 => n
+   | Npos p, Npos q => Npos (Por p q)
+ end.
+
+(** Logical [and] *)
+
+Fixpoint Pand (p q : positive) : N :=
+  match p, q with
+    | 1, q~0 => N0
+    | 1, _ => Npos 1
+    | p~0, 1 => N0
+    | _, 1 => Npos 1
+    | p~0, q~0 => Ndouble (Pand p q)
+    | p~0, q~1 => Ndouble (Pand p q)
+    | p~1, q~0 => Ndouble (Pand p q)
+    | p~1, q~1 => Ndouble_plus_one (Pand p q)
+  end.
+
+Definition Nand n m :=
+ match n, m with
+  | N0, _ => N0
+  | _, N0 => N0
+  | Npos p, Npos q => Pand p q
+ end.
+
+(** Logical [diff] *)
+
+Fixpoint Pdiff (p q:positive) : N :=
+  match p, q with
+    | 1, q~0 => Npos 1
+    | 1, _ => N0
+    | _~0, 1 => Npos p
+    | p~1, 1 => Npos (p~0)
+    | p~0, q~0 => Ndouble (Pdiff p q)
+    | p~0, q~1 => Ndouble (Pdiff p q)
+    | p~1, q~1 => Ndouble (Pdiff p q)
+    | p~1, q~0 => Ndouble_plus_one (Pdiff p q)
+  end.
+
+Fixpoint Ndiff n m :=
+ match n, m with
+  | N0, _ => N0
+  | _, N0 => n
+  | Npos p, Npos q => Pdiff p q
+ end.
+
 (** [xor] *)
 
-Fixpoint Pxor (p1 p2:positive) : N :=
-  match p1, p2 with
-  | xH, xH => N0
-  | xH, xO p2 => Npos (xI p2)
-  | xH, xI p2 => Npos (xO p2)
-  | xO p1, xH => Npos (xI p1)
-  | xO p1, xO p2 => Ndouble (Pxor p1 p2)
-  | xO p1, xI p2 => Ndouble_plus_one (Pxor p1 p2)
-  | xI p1, xH => Npos (xO p1)
-  | xI p1, xO p2 => Ndouble_plus_one (Pxor p1 p2)
-  | xI p1, xI p2 => Ndouble (Pxor p1 p2)
+Fixpoint Pxor (p q:positive) : N :=
+  match p, q with
+    | 1, 1 => N0
+    | 1, q~0 => Npos (q~1)
+    | 1, q~1 => Npos (q~0)
+    | p~0, 1 => Npos (p~1)
+    | p~0, q~0 => Ndouble (Pxor p q)
+    | p~0, q~1 => Ndouble_plus_one (Pxor p q)
+    | p~1, 1 => Npos (p~0)
+    | p~1, q~0 => Ndouble_plus_one (Pxor p q)
+    | p~1, q~1 => Ndouble (Pxor p q)
   end.
 
-Definition Nxor (n n':N) :=
-  match n, n' with
-  | N0, _ => n'
-  | _, N0 => n
-  | Npos p, Npos p' => Pxor p p'
+Definition Nxor (n m:N) :=
+  match n, m with
+    | N0, _ => m
+    | _, N0 => n
+    | Npos p, Npos q => Pxor p q
   end.
 
-Lemma Nxor_neutral_left : forall n:N, Nxor N0 n = n.
-Proof.
-  trivial.
-Qed.
+(** For proving properties of these operations, we will use
+  an equivalence with functional streams of bit, cf [eqf] below *)
 
-Lemma Nxor_neutral_right : forall n:N, Nxor n N0 = n.
-Proof.
-  destruct n; trivial.
-Qed.
+(** Shift *)
 
-Lemma Nxor_comm : forall n n':N, Nxor n n' = Nxor n' n.
-Proof.
-  destruct n; destruct n'; simpl; auto.
-  generalize p0; clear p0; induction p as [p Hrecp| p Hrecp| ]; simpl;
-   auto.
-  destruct p0; trivial; rewrite Hrecp; trivial.
-  destruct p0; trivial; rewrite Hrecp; trivial.
-  destruct p0 as [p| p| ]; simpl; auto.
-Qed.
+Definition Nshiftl_nat (a:N)(n:nat) := iter_nat n _ Ndouble a.
 
-Lemma Nxor_nilpotent : forall n:N, Nxor n n = N0.
-Proof.
-  destruct n; trivial.
-  simpl. induction p as [p IHp| p IHp| ]; trivial.
-  simpl. rewrite IHp; reflexivity.
-  simpl. rewrite IHp; reflexivity.
-Qed.
+Definition Nshiftr_nat (a:N)(n:nat) := iter_nat n _ Ndiv2 a.
+
+Definition Nshiftr a n :=
+  match n with
+    | N0 => a
+    | Npos p => iter_pos p _ Ndiv2 a
+  end.
+
+Definition Nshiftl a n :=
+  match a, n with
+    | _, N0 => a
+    | N0, _ => a
+    | Npos p, Npos q => Npos (iter_pos q _ xO p)
+  end.
 
 (** Checking whether a particular bit is set on not *)
 
 Fixpoint Pbit (p:positive) : nat -> bool :=
   match p with
-  | xH => fun n:nat => match n with
-                       | O => true
-                       | S _ => false
-                       end
-  | xO p =>
-      fun n:nat => match n with
-                   | O => false
-                   | S n' => Pbit p n'
-                   end
-  | xI p => fun n:nat => match n with
-                         | O => true
-                         | S n' => Pbit p n'
-                         end
+    | 1 => fun n => match n with
+                      | O => true
+                      | S _ => false
+                    end
+    | p~0 => fun n => match n with
+                        | O => false
+                        | S n' => Pbit p n'
+                      end
+    | p~1 => fun n => match n with
+                        | O => true
+                        | S n' => Pbit p n'
+                      end
   end.
 
 Definition Nbit (a:N) :=
   match a with
-  | N0 => fun _ => false
-  | Npos p => Pbit p
+    | N0 => fun _ => false
+    | Npos p => Pbit p
   end.
 
-(** Auxiliary results about streams of bits *)
+(** Same, but with index in N *)
+
+Fixpoint Ptestbit p n :=
+  match p, n with
+    | p~0, N0 => false
+    | _, N0 => true
+    | 1, _ => false
+    | p~0, _ => Ptestbit p (Npred n)
+    | p~1, _ => Ptestbit p (Npred n)
+  end.
+
+Definition Ntestbit a n :=
+  match a with
+    | N0 => false
+    | Npos p => Ptestbit p n
+  end.
+
+Local Close Scope positive_scope.
+Local Open Scope N_scope.
+
+(** Equivalence of Pbit and Ptestbit *)
+
+Lemma Ptestbit_Pbit :
+ forall p n, Ptestbit p (N_of_nat n) = Pbit p n.
+Proof.
+ induction p as [p IH|p IH| ]; intros n; simpl.
+ rewrite <- N_of_pred, IH; destruct n; trivial.
+ rewrite <- N_of_pred, IH; destruct n; trivial.
+ destruct n; trivial.
+Qed.
+
+Lemma Ntestbit_Nbit : forall a n, Ntestbit a (N_of_nat n) = Nbit a n.
+Proof.
+ destruct a. trivial. apply Ptestbit_Pbit.
+Qed.
+
+Lemma Pbit_Ptestbit :
+ forall p n, Pbit p (nat_of_N n) = Ptestbit p n.
+Proof.
+ intros; now rewrite <- Ptestbit_Pbit, N_of_nat_of_N.
+Qed.
+
+Lemma Nbit_Ntestbit :
+ forall a n, Nbit a (nat_of_N n) = Ntestbit a n.
+Proof.
+ destruct a. trivial. apply Pbit_Ptestbit.
+Qed.
+
+(** Equivalence of shifts, N and nat versions *)
+
+Lemma Nshiftr_nat_equiv :
+ forall a n, Nshiftr_nat a (nat_of_N n) = Nshiftr a n.
+Proof.
+ intros a [|n]; simpl; unfold Nshiftr_nat.
+ trivial.
+ symmetry. apply iter_nat_of_P.
+Qed.
+
+Lemma Nshiftr_equiv_nat :
+ forall a n, Nshiftr a (N_of_nat n) = Nshiftr_nat a n.
+Proof.
+ intros. now rewrite <- Nshiftr_nat_equiv, nat_of_N_of_nat.
+Qed.
+
+Lemma Nshiftl_nat_equiv :
+ forall a n, Nshiftl_nat a (nat_of_N n) = Nshiftl a n.
+Proof.
+ intros [|a] [|n]; simpl; unfold Nshiftl_nat; trivial.
+ apply iter_nat_invariant; intros; now subst.
+ rewrite <- iter_nat_of_P. symmetry. now apply iter_pos_swap_gen.
+Qed.
+
+Lemma Nshiftl_equiv_nat :
+ forall a n, Nshiftl a (N_of_nat n) = Nshiftl_nat a n.
+Proof.
+ intros. now rewrite <- Nshiftl_nat_equiv, nat_of_N_of_nat.
+Qed.
+
+(** Correctness proofs for shifts *)
+
+Lemma Nshiftl_mult_pow : forall a n, Nshiftl a n = a * 2^n.
+Proof.
+ intros [|a] [|n]; simpl; trivial.
+ now rewrite Pmult_1_r.
+ f_equal.
+ set (f x := Pmult x a).
+ rewrite Pmult_comm. fold (f (2^n))%positive.
+ change a with (f xH).
+ unfold Ppow. symmetry. now apply iter_pos_swap_gen.
+Qed.
+
+(*
+Lemma Nshiftr_div_pow : forall a n, Nshiftr a n = a / 2^n.
+*)
+
+(** Equality over functional streams of bits *)
 
 Definition eqf (f g:nat -> bool) := forall n:nat, f n = g n.
 
-Lemma eqf_sym : forall f f':nat -> bool, eqf f f' -> eqf f' f.
+Instance eqf_equiv : Equivalence eqf.
 Proof.
-  unfold eqf. intros. rewrite H. reflexivity.
+ split; congruence.
 Qed.
 
-Lemma eqf_refl : forall f:nat -> bool, eqf f f.
+Local Infix "==" := eqf (at level 70, no associativity).
+
+(** If two numbers produce the same stream of bits, they are equal. *)
+
+Local Notation Step H := (fun n => H (S n)).
+
+Lemma Pbit_faithful_0 : forall p, ~(Pbit p == (fun _ => false)).
 Proof.
-  unfold eqf. trivial.
+ induction p as [p IHp|p IHp| ]; intros H; try discriminate (H O).
+  apply (IHp (Step H)).
 Qed.
 
-Lemma eqf_trans :
- forall f f' f'':nat -> bool, eqf f f' -> eqf f' f'' -> eqf f f''.
+Lemma Pbit_faithful : forall p p', Pbit p == Pbit p' -> p = p'.
 Proof.
-  unfold eqf. intros. rewrite H. exact (H0 n).
+ induction p as [p IHp|p IHp| ]; intros [p'|p'|] H; trivial;
+  try discriminate (H O).
+ f_equal. apply (IHp _ (Step H)).
+ destruct (Pbit_faithful_0 _ (Step H)).
+ f_equal. apply (IHp _ (Step H)).
+ symmetry in H. destruct (Pbit_faithful_0 _ (Step H)).
 Qed.
 
+Lemma Nbit_faithful : forall n n', Nbit n == Nbit n' -> n = n'.
+Proof.
+ intros [|p] [|p'] H; trivial.
+ symmetry in H. destruct (Pbit_faithful_0 _ H).
+ destruct (Pbit_faithful_0 _ H).
+ f_equal. apply Pbit_faithful, H.
+Qed.
+
+Lemma Nbit_faithful_iff : forall n n', Nbit n == Nbit n' <-> n = n'.
+Proof.
+ split. apply Nbit_faithful. intros; now subst.
+Qed.
+
+
+(** Bit operations for functional streams of bits *)
+
+Definition orf (f g:nat -> bool) (n:nat) := (f n) || (g n).
+Definition andf (f g:nat -> bool) (n:nat) := (f n) && (g n).
+Definition difff (f g:nat -> bool) (n:nat) := (f n) && negb (g n).
 Definition xorf (f g:nat -> bool) (n:nat) := xorb (f n) (g n).
 
-Lemma xorf_eq :
- forall f f', eqf (xorf f f') (fun n => false) -> eqf f f'.
+Instance eqf_orf : Proper (eqf==>eqf==>eqf) orf.
 Proof.
-  unfold eqf, xorf. intros. apply xorb_eq, H.
+  unfold orf. congruence.
 Qed.
 
-Lemma xorf_assoc :
- forall f f' f'',
-   eqf (xorf (xorf f f') f'') (xorf f (xorf f' f'')).
+Instance eqf_andf : Proper (eqf==>eqf==>eqf) andf.
 Proof.
-  unfold eqf, xorf. intros. apply xorb_assoc.
+  unfold andf. congruence.
 Qed.
 
-Lemma eqf_xorf :
- forall f f' f'' f''',
-   eqf f f' -> eqf f'' f''' -> eqf (xorf f f'') (xorf f' f''').
+Instance eqf_difff : Proper (eqf==>eqf==>eqf) difff.
 Proof.
-  unfold eqf, xorf. intros. rewrite H. rewrite H0. reflexivity.
+  unfold difff. congruence.
 Qed.
 
-(** End of auxilliary results *)
-
-(** This part is aimed at proving that if two numbers produce
-  the same stream of bits, then they are equal. *)
-
-Lemma Nbit_faithful_1 : forall a:N, eqf (Nbit N0) (Nbit a) -> N0 = a.
+Instance eqf_xorf : Proper (eqf==>eqf==>eqf) xorf.
 Proof.
-  destruct a. trivial.
-  induction p as [p IHp| p IHp| ]; intro H.
-  absurd (N0 = Npos p). discriminate.
-  exact (IHp (fun n => H (S n))).
-  absurd (N0 = Npos p). discriminate.
-  exact (IHp (fun n => H (S n))).
-  absurd (false = true). discriminate.
-  exact (H 0).
+  unfold xorf. congruence.
 Qed.
 
-Lemma Nbit_faithful_2 :
- forall a:N, eqf (Nbit (Npos 1)) (Nbit a) -> Npos 1 = a.
+(** We now describe the semantics of [Nxor] and other bitwise
+  operations in terms of bit streams. *)
+
+Lemma Pxor_semantics : forall p p',
+ Nbit (Pxor p p') == xorf (Pbit p) (Pbit p').
 Proof.
-  destruct a. intros. absurd (true = false). discriminate.
-  exact (H 0).
-  destruct p. intro H. absurd (N0 = Npos p). discriminate.
-  exact (Nbit_faithful_1 (Npos p) (fun n:nat => H (S n))).
-  intros. absurd (true = false). discriminate.
-  exact (H 0).
-  trivial.
+ induction p as [p IHp|p IHp|]; intros [p'|p'|] [|n]; trivial; simpl;
+  (specialize (IHp p'); destruct Pxor; trivial; apply (IHp n)) ||
+  (unfold xorf; now rewrite ?xorb_false_l, ?xorb_false_r).
 Qed.
 
-Lemma Nbit_faithful_3 :
- forall (a:N) (p:positive),
-   (forall p':positive, eqf (Nbit (Npos p)) (Nbit (Npos p')) -> p = p') ->
-   eqf (Nbit (Npos (xO p))) (Nbit a) -> Npos (xO p) = a.
+Lemma Nxor_semantics : forall a a',
+ Nbit (Nxor a a') == xorf (Nbit a) (Nbit a').
 Proof.
-  destruct a; intros. cut (eqf (Nbit N0) (Nbit (Npos (xO p)))).
-  intro. rewrite (Nbit_faithful_1 (Npos (xO p)) H1). reflexivity.
-  unfold eqf. intro. unfold eqf in H0. rewrite H0. reflexivity.
-  destruct p. discriminate (H0 O).
-  rewrite (H p (fun n => H0 (S n))). reflexivity.
-  discriminate (H0 0).
+ intros [|p] [|p'] n; simpl; unfold xorf; trivial.
+ now rewrite xorb_false_l.
+ now rewrite xorb_false_r.
+ apply Pxor_semantics.
 Qed.
 
-Lemma Nbit_faithful_4 :
- forall (a:N) (p:positive),
-   (forall p':positive, eqf (Nbit (Npos p)) (Nbit (Npos p')) -> p = p') ->
-   eqf (Nbit (Npos (xI p))) (Nbit a) -> Npos (xI p) = a.
+Lemma Por_semantics : forall p p',
+ Pbit (Por p p') == orf (Pbit p) (Pbit p').
 Proof.
-  destruct a; intros. cut (eqf (Nbit N0) (Nbit (Npos (xI p)))).
-  intro. rewrite (Nbit_faithful_1 (Npos (xI p)) H1). reflexivity.
-  intro. rewrite H0. reflexivity.
-  destruct p. rewrite (H p (fun n:nat => H0 (S n))). reflexivity.
-  discriminate (H0 0).
-  cut (eqf (Nbit (Npos 1)) (Nbit (Npos (xI p0)))).
-  intro. discriminate (Nbit_faithful_1 (Npos p0) (fun n:nat => H1 (S n))).
-  intro. rewrite H0. reflexivity.
+ induction p as [p IHp|p IHp|]; intros [p'|p'|] [|n]; trivial;
+  unfold orf; apply (IHp p' n) || now rewrite orb_false_r.
 Qed.
 
-Lemma Nbit_faithful : forall a a':N, eqf (Nbit a) (Nbit a') -> a = a'.
+Lemma Nor_semantics : forall a a',
+ Nbit (Nor a a') == orf (Nbit a) (Nbit a').
 Proof.
-  destruct a. exact Nbit_faithful_1.
-  induction p. intros a' H. apply Nbit_faithful_4. intros.
-  assert (Npos p = Npos p') by exact (IHp (Npos p') H0).
-  inversion H1. reflexivity.
-  assumption.
-  intros. apply Nbit_faithful_3. intros.
-  assert (Npos p = Npos p') by exact (IHp (Npos p') H0).
-  inversion H1. reflexivity.
-  assumption.
-  exact Nbit_faithful_2.
+ intros [|p] [|p'] n; simpl; unfold orf; trivial.
+ now rewrite orb_false_r.
+ apply Por_semantics.
 Qed.
 
-(** We now describe the semantics of [Nxor] in terms of bit streams. *)
-
-Lemma Nxor_sem_1 : forall a':N, Nbit (Nxor N0 a') 0 = Nbit a' 0.
+Lemma Pand_semantics : forall p p',
+ Nbit (Pand p p') == andf (Pbit p) (Pbit p').
 Proof.
-  trivial.
+ induction p as [p IHp|p IHp|]; intros [p'|p'|] [|n]; trivial; simpl;
+  (specialize (IHp p'); destruct Pand; trivial; apply (IHp n)) ||
+  (unfold andf; now rewrite andb_false_r).
 Qed.
 
-Lemma Nxor_sem_2 :
- forall a':N, Nbit (Nxor (Npos 1) a') 0 = negb (Nbit a' 0).
+Lemma Nand_semantics : forall a a',
+ Nbit (Nand a a') == andf (Nbit a) (Nbit a').
 Proof.
-  intro. destruct a'. trivial.
-  destruct p; trivial.
+ intros [|p] [|p'] n; simpl; unfold andf; trivial.
+ now rewrite andb_false_r.
+ apply Pand_semantics.
 Qed.
 
-Lemma Nxor_sem_3 :
- forall (p:positive) (a':N),
-   Nbit (Nxor (Npos (xO p)) a') 0 = Nbit a' 0.
+Lemma Pdiff_semantics : forall p p',
+ Nbit (Pdiff p p') == difff (Pbit p) (Pbit p').
 Proof.
-  intros. destruct a'. trivial.
-  simpl. destruct p0; trivial.
-  destruct (Pxor p p0); trivial.
-  destruct (Pxor p p0); trivial.
+ induction p as [p IHp|p IHp|]; intros [p'|p'|] [|n]; trivial; simpl;
+  (specialize (IHp p'); destruct Pdiff; trivial; apply (IHp n)) ||
+  (unfold difff; simpl; now rewrite andb_true_r).
 Qed.
 
-Lemma Nxor_sem_4 :
- forall (p:positive) (a':N),
-   Nbit (Nxor (Npos (xI p)) a') 0 = negb (Nbit a' 0).
+Lemma Ndiff_semantics : forall a a',
+ Nbit (Ndiff a a') == difff (Nbit a) (Nbit a').
 Proof.
-  intros. destruct a'. trivial.
-  simpl. destruct p0; trivial.
-  destruct (Pxor p p0); trivial.
-  destruct (Pxor p p0); trivial.
+ intros [|p] [|p'] n; simpl; unfold difff; trivial.
+ simpl. now rewrite andb_true_r.
+ apply Pdiff_semantics.
 Qed.
 
-Lemma Nxor_sem_5 :
- forall a a':N, Nbit (Nxor a a') 0 = xorf (Nbit a) (Nbit a') 0.
+Hint Rewrite Nxor_semantics Nor_semantics
+ Nand_semantics Ndiff_semantics : bitwise_semantics.
+
+Ltac bitwise_semantics :=
+ apply Nbit_faithful; autorewrite with bitwise_semantics;
+ intro n; unfold xorf, orf, andf, difff.
+
+(** Now, we can easily deduce properties of [Nxor] and others
+    from properties of [xorb] and others. *)
+
+Lemma Nxor_eq : forall a a', Nxor a a' = 0 -> a = a'.
 Proof.
-  destruct a; intro. change (Nbit a' 0 = xorb false (Nbit a' 0)). rewrite false_xorb. trivial.
-  destruct p. apply Nxor_sem_4.
-  change (Nbit (Nxor (Npos (xO p)) a') 0 = xorb false (Nbit a' 0)).
-  rewrite false_xorb. apply Nxor_sem_3. apply Nxor_sem_2.
+ intros a a' H. bitwise_semantics. apply xorb_eq.
+ rewrite <- Nbit_faithful_iff, Nxor_semantics in H. apply H.
 Qed.
 
-Lemma Nxor_sem_6 :
- forall n:nat,
-   (forall a a':N, Nbit (Nxor a a') n = xorf (Nbit a) (Nbit a') n) ->
-   forall a a':N,
-     Nbit (Nxor a a') (S n) = xorf (Nbit a) (Nbit a') (S n).
+Lemma Nxor_nilpotent : forall a, Nxor a a = 0.
 Proof.
-  intros.
-(* pose proof (fun p1 p2 => H (Npos p1) (Npos p2)) as H'. clear H. rename H' into H.*)
-  generalize (fun p1 p2 => H (Npos p1) (Npos p2)); clear H; intro H.
-  unfold xorf in *.
-  destruct a as [|p]. simpl Nbit; rewrite false_xorb. reflexivity.
-  destruct a' as [|p0].
-  simpl Nbit; rewrite xorb_false. reflexivity.
-  destruct p. destruct p0; simpl Nbit in *.
-  rewrite <- H; simpl; case (Pxor p p0); trivial.
-  rewrite <- H; simpl; case (Pxor p p0); trivial.
-  rewrite xorb_false. reflexivity.
-  destruct p0; simpl Nbit in *.
-  rewrite <- H; simpl; case (Pxor p p0); trivial.
-  rewrite <- H; simpl; case (Pxor p p0); trivial.
-  rewrite xorb_false. reflexivity.
-  simpl Nbit. rewrite false_xorb. destruct p0; trivial.
+ intros. bitwise_semantics. apply xorb_nilpotent.
 Qed.
 
-Lemma Nxor_semantics :
- forall a a':N, eqf (Nbit (Nxor a a')) (xorf (Nbit a) (Nbit a')).
+Lemma Nxor_0_l : forall n, Nxor 0 n = n.
 Proof.
-  unfold eqf. intros; generalize a, a'. induction n.
-  apply Nxor_sem_5. apply Nxor_sem_6; assumption.
+ trivial.
 Qed.
+Notation Nxor_neutral_left := Nxor_0_l (only parsing).
 
-(** Consequences:
-       - only equal numbers lead to a null xor
-       - xor is associative
-*)
-
-Lemma Nxor_eq : forall a a':N, Nxor a a' = N0 -> a = a'.
+Lemma Nxor_0_r : forall n, Nxor n 0 = n.
 Proof.
-  intros. apply Nbit_faithful, xorf_eq. apply eqf_trans with (f' := Nbit (Nxor a a')).
-  apply eqf_sym, Nxor_semantics.
-  rewrite H. unfold eqf. trivial.
+ destruct n; trivial.
+Qed.
+Notation Nxor_neutral_right := Nxor_0_r (only parsing).
+
+Lemma Nxor_comm : forall a a', Nxor a a' = Nxor a' a.
+Proof.
+ intros. bitwise_semantics. apply xorb_comm.
 Qed.
 
 Lemma Nxor_assoc :
- forall a a' a'':N, Nxor (Nxor a a') a'' = Nxor a (Nxor a' a'').
+ forall a a' a'', Nxor (Nxor a a') a'' = Nxor a (Nxor a' a'').
 Proof.
-  intros. apply Nbit_faithful.
-  apply eqf_trans with (xorf (xorf (Nbit a) (Nbit a')) (Nbit a'')).
-  apply eqf_trans with (xorf (Nbit (Nxor a a')) (Nbit a'')).
-  apply Nxor_semantics.
-  apply eqf_xorf. apply Nxor_semantics.
-  apply eqf_refl.
-  apply eqf_trans with (xorf (Nbit a) (xorf (Nbit a') (Nbit a''))).
-  apply xorf_assoc.
-  apply eqf_trans with (xorf (Nbit a) (Nbit (Nxor a' a''))).
-  apply eqf_xorf. apply eqf_refl.
-  apply eqf_sym, Nxor_semantics.
-  apply eqf_sym, Nxor_semantics.
+ intros. bitwise_semantics. apply xorb_assoc.
 Qed.
+
+Lemma Nor_0_l : forall n, Nor 0 n = n.
+Proof.
+ trivial.
+Qed.
+
+Lemma Nor_0_r : forall n, Nor n 0 = n.
+Proof.
+ destruct n; trivial.
+Qed.
+
+Lemma Nor_comm : forall a a', Nor a a' = Nor a' a.
+Proof.
+ intros. bitwise_semantics. apply orb_comm.
+Qed.
+
+Lemma Nor_assoc :
+ forall a a' a'', Nor a (Nor a' a'') = Nor (Nor a a') a''.
+Proof.
+ intros. bitwise_semantics. apply orb_assoc.
+Qed.
+
+Lemma Nor_diag : forall a, Nor a a = a.
+Proof.
+ intros. bitwise_semantics. apply orb_diag.
+Qed.
+
+Lemma Nand_0_l : forall n, Nand 0 n = 0.
+Proof.
+ trivial.
+Qed.
+
+Lemma Nand_0_r : forall n, Nand n 0 = 0.
+Proof.
+ destruct n; trivial.
+Qed.
+
+Lemma Nand_comm : forall a a', Nand a a' = Nand a' a.
+Proof.
+ intros. bitwise_semantics. apply andb_comm.
+Qed.
+
+Lemma Nand_assoc :
+ forall a a' a'', Nand a (Nand a' a'') = Nand (Nand a a') a''.
+Proof.
+ intros. bitwise_semantics. apply andb_assoc.
+Qed.
+
+Lemma Nand_diag : forall a, Nand a a = a.
+Proof.
+ intros. bitwise_semantics. apply andb_diag.
+Qed.
+
+Lemma Ndiff_0_l : forall n, Ndiff 0 n = 0.
+Proof.
+ trivial.
+Qed.
+
+Lemma Ndiff_0_r : forall n, Ndiff n 0 = n.
+Proof.
+ destruct n; trivial.
+Qed.
+
+Lemma Ndiff_diag : forall a, Ndiff a a = 0.
+Proof.
+ intros. bitwise_semantics. apply andb_negb_r.
+Qed.
+
+Lemma Nor_and_distr_l : forall a b c,
+ Nor (Nand a b) c = Nand (Nor a c) (Nor b c).
+Proof.
+ intros. bitwise_semantics. apply orb_andb_distrib_l.
+Qed.
+
+Lemma Nor_and_distr_r : forall a b c,
+ Nor a (Nand b c) = Nand (Nor a b) (Nor a c).
+Proof.
+ intros. bitwise_semantics. apply orb_andb_distrib_r.
+Qed.
+
+Lemma Nand_or_distr_l : forall a b c,
+ Nand (Nor a b) c = Nor (Nand a c) (Nand b c).
+Proof.
+ intros. bitwise_semantics. apply andb_orb_distrib_l.
+Qed.
+
+Lemma Nand_or_distr_r : forall a b c,
+ Nand a (Nor b c) = Nor (Nand a b) (Nand a c).
+Proof.
+ intros. bitwise_semantics. apply andb_orb_distrib_r.
+Qed.
+
+Lemma Ndiff_diff_l : forall a b c,
+ Ndiff (Ndiff a b) c = Ndiff a (Nor b c).
+Proof.
+ intros. bitwise_semantics. now rewrite negb_orb, andb_assoc.
+Qed.
+
+Lemma Nor_diff_and : forall a b,
+ Nor (Ndiff a b) (Nand a b) = a.
+Proof.
+ intros. bitwise_semantics.
+ now rewrite <- andb_orb_distrib_r, orb_comm, orb_negb_r, andb_true_r.
+Qed.
+
+Lemma Nand_diff : forall a b,
+ Nand (Ndiff a b) b = 0.
+Proof.
+ intros. bitwise_semantics.
+ now rewrite <-andb_assoc, (andb_comm (negb _)), andb_negb_r, andb_false_r.
+Qed.
+
+Local Close Scope N_scope.
 
 (** Checking whether a number is odd, i.e.
    if its lower bit is set. *)
@@ -307,7 +541,7 @@ Qed.
 Definition Nbit0 (n:N) :=
   match n with
   | N0 => false
-  | Npos (xO _) => false
+  | Npos (_~0) => false
   | _ => true
   end.
 
@@ -358,7 +592,7 @@ Qed.
 Lemma Nxor_bit0 :
  forall a a':N, Nbit0 (Nxor a a') = xorb (Nbit0 a) (Nbit0 a').
 Proof.
-  intros. rewrite <- Nbit0_correct, (Nxor_semantics a a' 0).
+  intros. rewrite <- Nbit0_correct, (Nxor_semantics a a' O).
   unfold xorf. rewrite Nbit0_correct, Nbit0_correct. reflexivity.
 Qed.
 
@@ -554,7 +788,7 @@ Qed.
 (** Number of digits in a number *)
 
 Definition Nsize (n:N) : nat := match n with
-  | N0 => 0%nat
+  | N0 => O
   | Npos p => Psize p
  end.
 
@@ -719,18 +953,40 @@ induction n; simpl in *; intros; destruct p; auto with arith.
 inversion H; inversion H1.
 Qed.
 
-(** Xor is the same in the two worlds. *)
+(** Binary bitwise operations are the same in the two worlds. *)
 
 Lemma Nxor_BVxor : forall n (bv bv' : Bvector n),
   Bv2N _ (BVxor _ bv bv') = Nxor (Bv2N _ bv) (Bv2N _ bv').
 Proof.
-induction n.
-intros.
+induction n; intros bv bv'.
 rewrite (V0_eq _ bv), (V0_eq _ bv'); simpl; auto.
-intros.
 rewrite (VSn_eq _ _ bv), (VSn_eq _ _ bv'); simpl; auto.
 rewrite IHn.
-destruct (Vhead bool n bv); destruct (Vhead bool n bv');
- destruct (Bv2N n (Vtail bool n bv)); destruct (Bv2N n (Vtail bool n bv')); simpl; auto.
+destruct (Vhead bool n bv), (Vhead bool n bv'),
+ (Bv2N n (Vtail bool n bv)), (Bv2N n (Vtail bool n bv'));
+ simpl; auto.
 Qed.
 
+Lemma Nor_BVor : forall n (bv bv' : Bvector n),
+  Bv2N _ (BVor _ bv bv') = Nor (Bv2N _ bv) (Bv2N _ bv').
+Proof.
+induction n; intros bv bv'.
+rewrite (V0_eq _ bv), (V0_eq _ bv'); simpl; auto.
+rewrite (VSn_eq _ _ bv), (VSn_eq _ _ bv'); simpl; auto.
+rewrite IHn.
+destruct (Vhead bool n bv), (Vhead bool n bv'),
+ (Bv2N n (Vtail bool n bv)), (Bv2N n (Vtail bool n bv'));
+ simpl; auto.
+Qed.
+
+Lemma Nand_BVand : forall n (bv bv' : Bvector n),
+  Bv2N _ (BVand _ bv bv') = Nand (Bv2N _ bv) (Bv2N _ bv').
+Proof.
+induction n; intros bv bv'.
+rewrite (V0_eq _ bv), (V0_eq _ bv'); simpl; auto.
+rewrite (VSn_eq _ _ bv), (VSn_eq _ _ bv'); simpl; auto.
+rewrite IHn.
+destruct (Vhead bool n bv), (Vhead bool n bv'),
+ (Bv2N n (Vtail bool n bv)), (Bv2N n (Vtail bool n bv'));
+ simpl; auto.
+Qed.

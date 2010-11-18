@@ -125,7 +125,7 @@ Qed.
 Theorem Zabs_nat_Z_of_nat: forall n, Zabs_nat (Z_of_nat n) = n.
 Proof.
   destruct n; simpl; auto.
-  apply nat_of_P_o_P_of_succ_nat_eq_succ.
+  apply nat_of_P_of_succ_nat.
 Qed.
 
 Lemma Zabs_nat_mult: forall n m:Z, Zabs_nat (n*m) = (Zabs_nat n * Zabs_nat m)%nat.

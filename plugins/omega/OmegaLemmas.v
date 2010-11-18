@@ -298,3 +298,10 @@ Definition fast_Zred_factor5 (x y : Z) (P : Z -> Prop)
 
 Definition fast_Zred_factor6 (x : Z) (P : Z -> Prop)
   (H : P (x + 0)) := eq_ind_r P H (Zred_factor6 x).
+
+Theorem intro_Z :
+  forall n:nat,  exists y : Z, Z_of_nat n = y /\ 0 <= y * 1 + 0.
+Proof.
+  intros n; exists (Z_of_nat n); split; trivial.
+  rewrite Zmult_1_r, Zplus_0_r. apply Zle_0_nat.
+Qed.

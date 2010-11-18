@@ -1274,7 +1274,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  apply Qred_complete; apply spec_power_pos; auto.
  induction p using Pind.
  simpl; ring.
- rewrite nat_of_P_succ_morphism; simpl Qcpower.
+ rewrite Psucc_S; simpl Qcpower.
  rewrite <- IHp; clear IHp.
  unfold Qcmult, Q2Qc.
  apply Qc_decomp; intros _ _; unfold this.

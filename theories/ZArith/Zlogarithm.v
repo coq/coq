@@ -7,9 +7,12 @@
 (************************************************************************)
 
 (**********************************************************************)
+
 (** The integer logarithms with base 2.
 
-    There are three logarithms,
+    NOTA: This file is deprecated, please use Zlog2 defined in Zlog_def.
+
+    There are three logarithms defined here,
     depending on the rounding of the real 2-based logarithm:
     - [Log_inf]: [y = (Log_inf x) iff 2^y <= x < 2^(y+1)]
       i.e. [Log_inf x] is the biggest integer that is smaller than [Log x]
@@ -25,9 +28,12 @@ Section Log_pos. (* Log of positive integers *)
 
   (** First we build [log_inf] and [log_sup] *)
 
-  (** [log_inf] is exactly the same as the new [Plog2_Z] *)
-
-  Definition log_inf : positive -> Z := Eval red in Plog2_Z.
+  Fixpoint log_inf (p:positive) : Z :=
+    match p with
+      | xH => 0 (* 1 *)
+      | xO q => Zsucc (log_inf q)       (* 2n *)
+      | xI q => Zsucc (log_inf q)       (* 2n+1 *)
+    end.
 
   Fixpoint log_sup (p:positive) : Z :=
     match p with
@@ -38,8 +44,15 @@ Section Log_pos. (* Log of positive integers *)
 
   Hint Unfold log_inf log_sup.
 
+  Lemma Psize_log_inf : forall p, Zpos (Psize_pos p) = Zsucc (log_inf p).
+  Proof.
+   induction p; simpl; now rewrite ?Zpos_succ_morphism, ?IHp.
+  Qed.
+
   Lemma Zlog2_log_inf : forall p, Zlog2 (Zpos p) = log_inf p.
-  Proof. reflexivity. Qed.
+  Proof.
+   unfold Zlog2. destruct p; simpl; trivial; apply Psize_log_inf.
+  Qed.
 
   Lemma Zlog2_up_log_sup : forall p, Z.log2_up (Zpos p) = log_sup p.
   Proof.

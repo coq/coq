@@ -67,7 +67,7 @@ Lemma RZSORaddon :
   SORaddon R0 R1 Rplus Rmult Rminus Ropp  (@eq R)  Rle (* ring elements *)
   0%Z 1%Z Zplus Zmult Zminus Zopp (* coefficients *)
   Zeq_bool Zle_bool
-  IZR Nnat.nat_of_N pow.
+  IZR nat_of_N pow.
 Proof.
   constructor.
   constructor ; intros ; try reflexivity.
@@ -94,7 +94,7 @@ Definition INZ (n:N) : R :=
     | Npos p => IZR (Zpos p)
   end.
 
-Definition Reval_expr := eval_pexpr  Rplus Rmult Rminus Ropp IZR Nnat.nat_of_N pow.
+Definition Reval_expr := eval_pexpr  Rplus Rmult Rminus Ropp IZR nat_of_N pow.
 
 
 Definition Reval_op2 (o:Op2) : R -> R -> Prop :=
@@ -112,7 +112,7 @@ Definition Reval_formula (e: PolEnv R) (ff : Formula Z) :=
   let (lhs,o,rhs) := ff in Reval_op2 o (Reval_expr e lhs) (Reval_expr e rhs).
 
 Definition Reval_formula' :=
-  eval_formula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt IZR Nnat.nat_of_N pow.
+  eval_formula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt IZR nat_of_N pow.
 
 Lemma Reval_formula_compat : forall env f, Reval_formula env f <-> Reval_formula' env f.
 Proof.

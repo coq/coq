@@ -142,12 +142,12 @@ Definition check (lpe:list PEZ) (qe:PEZ) (certif: list (list PEZ) * list PEZ) :=
 Definition PhiR : list R -> PolZ -> R :=
   (Pphi 0 ring_plus ring_mult (gen_phiZ 0 1 ring_plus ring_mult ring_opp)).
 
-Definition pow (r : R) (n : nat) := pow_N 1 ring_mult r (Nnat.N_of_nat n).
+Definition pow (r : R) (n : nat) := pow_N 1 ring_mult r (N_of_nat n).
 
 Definition PEevalR : list R -> PEZ -> R :=
    PEeval 0 ring_plus ring_mult ring_sub ring_opp 
     (gen_phiZ 0 1 ring_plus ring_mult ring_opp)
-         Nnat.nat_of_N pow.
+         nat_of_N pow.
 
 Lemma P0Z_correct : forall l, PhiR l P0Z = 0.
 Proof. trivial. Qed.
@@ -177,8 +177,8 @@ Proof.
 Qed.
 
 Lemma R_power_theory
-     : power_theory 1 ring_mult ring_eq Nnat.nat_of_N pow.
-apply mkpow_th. unfold pow. intros. rewrite Nnat.N_of_nat_of_N. ring. Qed. 
+     : power_theory 1 ring_mult ring_eq nat_of_N pow.
+apply mkpow_th. unfold pow. intros. rewrite Nnat.N_of_nat_of_N. ring. Qed.
 
 Lemma norm_correct :
   forall (l : list R) (pe : PEZ), PEevalR l pe == PhiR l (norm pe).
@@ -288,7 +288,7 @@ Fixpoint interpret3 t fv {struct t}: R :=
   | (PEopp t1) =>
        let v1  := interpret3 t1 fv in (ring_opp v1)
   | (PEpow t1 t2) =>
-       let v1  := interpret3 t1 fv in pow v1 (Nnat.nat_of_N t2)
+       let v1  := interpret3 t1 fv in pow v1 (nat_of_N t2)
   | (PEc t1) => (IZR1 t1)
   | (PEX n) => List.nth (pred (nat_of_P n)) fv 0
   end.
@@ -484,7 +484,7 @@ Ltac nsatz_domain_generic radicalmax info lparam lvar tacsimpl Rd :=
           tacsimpl;
           repeat (split;[assumption|idtac]); exact I
         | simpl in Hg2; tacsimpl; 
-          apply Rdomain_pow with (interpret3 _ Rd c fv) (Nnat.nat_of_N r); auto with domain;
+          apply Rdomain_pow with (interpret3 _ Rd c fv) (nat_of_N r); auto with domain;
           tacsimpl; apply domain_axiom_one_zero 
           || (simpl) || idtac "could not prove discrimination result"
         ]

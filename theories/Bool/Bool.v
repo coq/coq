@@ -257,6 +257,11 @@ Proof.
   intros. apply orb_false_iff; trivial.
 Qed.
 
+Lemma orb_diag : forall b, b || b = b.
+Proof.
+ destr_bool.
+Qed.
+
 (** [true] is a zero for [orb] *)
 
 Lemma orb_true_r : forall b:bool, b || true = true.
@@ -361,6 +366,11 @@ Qed.
 
 Notation andb_b_false := andb_false_r (only parsing).
 Notation andb_false_b := andb_false_l (only parsing).
+
+Lemma andb_diag : forall b, b && b = b.
+Proof.
+ destr_bool.
+Qed.
 
 (** [true] is neutral for [andb] *)
 

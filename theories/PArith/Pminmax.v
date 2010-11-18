@@ -83,7 +83,7 @@ Lemma succ_max_distr :
 Proof.
  intros. symmetry. apply max_monotone.
  intros x x'. unfold Ple.
- rewrite 2 nat_of_P_compare_morphism, 2 nat_of_P_succ_morphism.
+ rewrite 2 Pcompare_nat_compare, 2 Psucc_S.
  simpl; auto.
 Qed.
 
@@ -91,7 +91,7 @@ Lemma succ_min_distr : forall n m, Psucc (Pmin n m) = Pmin (Psucc n) (Psucc m).
 Proof.
  intros. symmetry. apply min_monotone.
  intros x x'. unfold Ple.
- rewrite 2 nat_of_P_compare_morphism, 2 nat_of_P_succ_morphism.
+ rewrite 2 Pcompare_nat_compare, 2 Psucc_S.
  simpl; auto.
 Qed.
 
@@ -99,7 +99,7 @@ Lemma plus_max_distr_l : forall n m p, Pmax (p + n) (p + m) = p + Pmax n m.
 Proof.
  intros. apply max_monotone.
  intros x x'. unfold Ple.
- rewrite 2 nat_of_P_compare_morphism, 2 nat_of_P_plus_morphism.
+ rewrite 2 Pcompare_nat_compare, 2 Pplus_plus.
  rewrite <- 2 Compare_dec.nat_compare_le. auto with arith.
 Qed.
 
@@ -113,7 +113,7 @@ Lemma plus_min_distr_l : forall n m p, Pmin (p + n) (p + m) = p + Pmin n m.
 Proof.
  intros. apply min_monotone.
  intros x x'. unfold Ple.
- rewrite 2 nat_of_P_compare_morphism, 2 nat_of_P_plus_morphism.
+ rewrite 2 Pcompare_nat_compare, 2 Pplus_plus.
  rewrite <- 2 Compare_dec.nat_compare_le. auto with arith.
 Qed.
 
