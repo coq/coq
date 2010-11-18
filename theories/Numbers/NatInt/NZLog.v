@@ -335,7 +335,7 @@ Lemma log2_succ_or : forall a,
  log2 (S a) == S (log2 a) \/ log2 (S a) == log2 a.
 Proof.
  intros.
- destruct (le_gt_cases (log2 (S a)) (log2 a)).
+ destruct (le_gt_cases (log2 (S a)) (log2 a)) as [H|H].
  right. generalize (log2_le_mono _ _ (le_succ_diag_r a)); order.
  left. apply le_succ_l in H. generalize (log2_succ_le a); order.
 Qed.

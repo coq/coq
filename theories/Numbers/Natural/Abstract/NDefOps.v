@@ -492,14 +492,5 @@ eapply le_trans; [ | eapply half_upper_bound ].
 apply mul_le_mono_l; auto.
 Qed.
 
-(** Later:
-
-Theorem log_mul : forall n m, 0 < n -> 0 < m ->
- log (n*m) == log n + log m.
-
-Theorem log_pow2 : forall n, log (2^^n) = n.
-
-*)
-
 End NdefOpsProp.
 

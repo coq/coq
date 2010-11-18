@@ -56,10 +56,20 @@ Definition sqrt_mul_below : forall a b, √a * √b <= √(a*b)
 Lemma sqrt_mul_above : forall a b, √(a*b) < S (√a) * S (√b).
 Proof. wrap sqrt_mul_above. Qed.
 
+Lemma sqrt_succ_le : forall a, √(S a) <= S (√a).
+Proof. wrap sqrt_succ_le. Qed.
+
+Lemma sqrt_succ_or : forall a, √(S a) == S (√a) \/ √(S a) == √a.
+Proof. wrap sqrt_succ_or. Qed.
+
 Definition sqrt_add_le : forall a b, √(a+b) <= √a + √b
  := sqrt_add_le.
 
 Lemma add_sqrt_le : forall a b, √a + √b <= √(2*(a+b)).
 Proof. wrap add_sqrt_le. Qed.
+
+(** For the moment, we include stuff about [sqrt_up] with patching them. *)
+
+Include NZSqrtUpProp A A B NZSqrtP.
 
 End NSqrtProp.
