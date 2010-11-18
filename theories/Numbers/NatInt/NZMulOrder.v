@@ -302,6 +302,20 @@ rewrite two_succ. nzsimpl. now rewrite le_succ_l.
 order'.
 Qed.
 
+Lemma add_le_mul : forall a b, 1<a -> 1<b -> a+b <= a*b.
+Proof.
+ assert (AUX : forall a b, 0<a -> 0<b -> (S a)+(S b) <= (S a)*(S b)).
+  intros a b Ha Hb.
+  nzsimpl. rewrite <- succ_le_mono. apply le_succ_l.
+  rewrite <- add_assoc, <- (add_0_l (a+b)), (add_comm b).
+  apply add_lt_mono_r.
+  now apply mul_pos_pos.
+ intros a b Ha Hb.
+ assert (Ha' := lt_succ_pred 1 a Ha).
+ assert (Hb' := lt_succ_pred 1 b Hb).
+ rewrite <- Ha', <- Hb'. apply AUX; rewrite succ_lt_mono, <- one_succ; order.
+Qed.
+
 (** A few results about squares *)
 
 Lemma square_nonneg : forall a, 0 <= a * a.

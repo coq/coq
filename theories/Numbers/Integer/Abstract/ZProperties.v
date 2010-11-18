@@ -7,11 +7,12 @@
 (************************************************************************)
 
 Require Export ZAxioms ZMaxMin ZSgnAbs ZParity ZPow ZDivTrunc ZDivFloor
- ZGcd ZLcm.
+ ZGcd ZLcm NZLog NZSqrt.
 
 (** This functor summarizes all known facts about Z. *)
 
 Module Type ZProp (Z:ZAxiomsSig) :=
  ZMaxMinProp Z <+ ZSgnAbsProp Z <+ ZParityProp Z <+ ZPowProp Z
- <+ NZSqrt.NZSqrtProp Z Z <+ NZLog.NZLog2Prop Z Z Z
+ <+ NZSqrtProp Z Z
+ <+ NZLog2Prop Z Z Z <+ NZLog2UpProp Z Z Z
  <+ ZDivProp Z <+ ZQuotProp Z <+ ZGcdProp Z <+ ZLcmProp Z.

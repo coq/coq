@@ -41,6 +41,17 @@ Section Log_pos. (* Log of positive integers *)
   Lemma Zlog2_log_inf : forall p, Zlog2 (Zpos p) = log_inf p.
   Proof. reflexivity. Qed.
 
+  Lemma Zlog2_up_log_sup : forall p, Z.log2_up (Zpos p) = log_sup p.
+  Proof.
+   induction p; simpl.
+   change (Zpos p~1) with (2*(Zpos p)+1).
+   rewrite Z.log2_up_succ_double, Zlog2_log_inf; try easy.
+   unfold Zsucc. now rewrite !(Zplus_comm _ 1), Zplus_assoc.
+   change (Zpos p~0) with (2*Zpos p).
+   now rewrite Z.log2_up_double, IHp.
+   reflexivity.
+  Qed.
+
   (** Then we give the specifications of [log_inf] and [log_sup]
     and prove their validity *)
 
