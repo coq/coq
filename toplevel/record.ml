@@ -58,13 +58,16 @@ let typecheck_params_and_fields id t ps nots fs =
   let env0 = Global.env () in
   let evars = ref Evd.empty in
   let _ = 
-    let error (loc, name) = 
-      if name = Anonymous then 
-	user_err_loc (loc, "record", str "Record parameters must be named")
+    let error bk (loc, name) = 
+      match bk with
+      | Default _ ->
+	  if name = Anonymous then 
+	    user_err_loc (loc, "record", str "Record parameters must be named")
+      | _ -> ()
     in
       List.iter 
-	(function LocalRawDef (b, _) -> error b
-	   | LocalRawAssum (ls, _, ce) -> List.iter error ls) ps
+	(function LocalRawDef (b, _) -> error default_binder_kind b
+	   | LocalRawAssum (ls, bk, ce) -> List.iter (error bk) ls) ps
   in 
   let (env1,newps), imps = interp_context_evars evars env0 ps in
   let fullarity = it_mkProd_or_LetIn (Option.cata (fun x -> x) (Termops.new_Type ()) t) newps in
