@@ -227,13 +227,3 @@ let expl_anti loc e = <:expr< $anti:e$ >>
 ELSE
 let expl_anti _loc e = e (* FIXME: understand someday if we can do better *)
 END
-
-(** Compatibility with Camlp5 6.x *)
-
-IFDEF CAMLP5_6_00 THEN
-let slist0sep x y = Gramext.Slist0sep (x, y, false)
-let slist1sep x y = Gramext.Slist1sep (x, y, false)
-ELSE
-let slist0sep x y = Gramext.Slist0sep (x, y)
-let slist1sep x y = Gramext.Slist1sep (x, y)
-END

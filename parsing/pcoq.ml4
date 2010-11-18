@@ -35,6 +35,16 @@ ELSE
 open G
 END
 
+(** Compatibility with Camlp5 6.x *)
+
+IFDEF CAMLP5_6_00 THEN
+let slist0sep x y = Slist0sep (x, y, false)
+let slist1sep x y = Slist1sep (x, y, false)
+ELSE
+let slist0sep x y = Slist0sep (x, y)
+let slist1sep x y = Slist1sep (x, y)
+END
+
 let gram_token_of_token tok =
 IFDEF CAMLP5 THEN
  Stoken (Tok.to_pattern tok)
