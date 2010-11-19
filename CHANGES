@@ -2,13 +2,38 @@ Changes from V8.3 to V8.4
 =========================
 
 - New proof engine
-- When the output file of "Print Universes" ends in ".dot" or ".gv",
-  the universe graph is printed in the DOT language, and can be
-  processed by Graphviz tools.
 
 Vernacular commands
 
 - In SearchAbout, the [ ] delimiters are now optional.
+- When the output file of "Print Universes" ends in ".dot" or ".gv",
+  the universe graph is printed in the DOT language, and can be
+  processed by Graphviz tools.
+
+Libraries
+
+- Creation of PArith, a subdirectory containing files about the positive type,
+  such as BinPos or Pnat.
+- Extension of the abstract part of Numbers, which now provide axiomatizations
+  and results about many more functions, such as pow, gcd, lcm, sqrt, log2.
+  Implementations of these functions in nat N BigN Z BigZ. See in particular
+  Npeano for new functions about nat.
+- Important revision of NArith and ZArith. In particular some definitions
+  or lemmas may have moved. The alternative division (Trunc convention
+  instead of Floor) is now named Zquot (noted √∑) and Zrem by analogy
+  with Haskell. TODO: say more later.
+- When creating BigN, the macro-generated part NMake_gen is much smaller,
+  improvements of the generic part NMake.
+
+Internal infrastructure
+
+- Experimental support added for camlp4 (the one provided alongside ocaml),
+  simply pass option -usecamlp4 to ./configure. By default camlp5 is used.
+- Revised build system: no more stages in Makefile thanks to some recursive
+  aspect of recent gnu make, use of vo.itarget files containing .v to compile
+  for both make and ocamlbuild, etc.
+- Support of cross-compilation via mingw toward Windows, contact P. Letouzey
+  for more informations.
 
 Changes from V8.2 to V8.3
 =========================
@@ -615,7 +640,7 @@ Tactics
   source of rare incompatibilities].
 - New syntax "rename a into b, c into d" for "rename a into b; rename c into d"
 - New tactics "dependent induction/destruction H [ generalizing id_1 .. id_n ]"
-  to do induction-inversion on instantiated inductive families ‡ la BasicElim.
+  to do induction-inversion on instantiated inductive families √† la BasicElim.
 - Tactics "apply" and "apply in" now able to reason modulo unfolding of 
   constants (possible source of incompatibility in situations where apply 
   may fail, e.g. as argument of a try or a repeat and in a ltac function);
@@ -1742,7 +1767,7 @@ Language: new "let-in" construction
 
 - New construction for local definitions (let-in) with syntax [x:=u]t (*)(+)
 
-- Local definitions allowed in Record (a.k.a. record ‡ la Randy Pollack)
+- Local definitions allowed in Record (a.k.a. record √† la Randy Pollack)
 
 
 Language: long names
@@ -1828,7 +1853,7 @@ New tactics
   restrictions in the reference manual)
 
 - New tactic ROmega: an experimental alternative (based on reflexion) to Omega
-  [by P. CrÈgut]
+  [by P. Cr√©gut]
 
 - New tactic language Ltac (see reference manual) (+)
 
@@ -2037,7 +2062,7 @@ Extraction
 ----------
 
 - New algorithm for extraction able to deal with "Type" (+)
-  (by J.-C. Filli‚tre and P. Letouzey)
+  (by J.-C. Filli√¢tre and P. Letouzey)
 
 
 Standard library
@@ -2064,7 +2089,7 @@ New user contributions
 
 - Basic notions of graph theory [GRAPHS-BASICS] (Jean Duprat, Lyon)
 
-- A library for floating-point numbers [Float] (Laurent ThÈry, Sylvie Boldo,
+- A library for floating-point numbers [Float] (Laurent Th√©ry, Sylvie Boldo,
   Sophia-Antipolis)
 
 - Formalisation of CTL and TCTL temporal logic [CtlTctl] (Carlos
@@ -2077,14 +2102,14 @@ New user contributions
   (Christine Paulin, Emmanuel Freund, Orsay)
 
 - Semantics of a subset of the C language [MiniC] 
-  (Eduardo GimÈnez, Emmanuel Ledinot, Suresnes) 
+  (Eduardo Gim√©nez, Emmanuel Ledinot, Suresnes) 
 
 - Correctness proofs of the following imperative algorithms:
-  Bresenham line drawing algorithm [Bresenham], MarchÈ's minimal edition
-  distance algorithm [Diff] (Jean-Christophe Filli‚tre, Orsay)
+  Bresenham line drawing algorithm [Bresenham], March√©'s minimal edition
+  distance algorithm [Diff] (Jean-Christophe Filli√¢tre, Orsay)
 
 - Correctness proofs of Buchberger's algorithm [Buchberger] and RSA
-  cryptographic algorithm [Rsa] (Laurent ThÈry, Sophia-Antipolis)
+  cryptographic algorithm [Rsa] (Laurent Th√©ry, Sophia-Antipolis)
 
 - Correctness proof of Stalmarck tautology checker algorithm
-  [Stalmarck] (Laurent ThÈry, Pierre Letouzey, Sophia-Antipolis)
+  [Stalmarck] (Laurent Th√©ry, Pierre Letouzey, Sophia-Antipolis)
