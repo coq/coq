@@ -676,18 +676,11 @@ GEXTEND Gram
 	  VernacSearch (SearchPattern c, l)
       | IDENT "SearchRewrite"; c = constr_pattern; l = in_or_out_modules ->
 	  VernacSearch (SearchRewrite c, l)
-      | IDENT "SearchAbout";
-	  sl = [ "[";
-	         l = LIST1 [
-		   b = positive_search_mark; s = ne_string; sc = OPT scope
-		   -> b, SearchString (s,sc)
-		 | b = positive_search_mark; p = constr_pattern
-		   -> b, SearchSubPattern p
-		 ]; "]" -> l
-   	       | p = constr_pattern -> [true,SearchSubPattern p]
-   	       | s = ne_string; sc = OPT scope -> [true,SearchString (s,sc)] ];
-	  l = in_or_out_modules ->
-	  VernacSearch (SearchAbout sl, l)
+      | IDENT "SearchAbout"; s = searchabout_query; l = searchabout_queries ->
+	  let (sl,m) = l in VernacSearch (SearchAbout (s::sl), m)
+      (* compatibility format of SearchAbout, with "[ ... ]" *)
+      | IDENT "SearchAbout"; "["; sl = LIST1 searchabout_query; "]";
+	  l = in_or_out_modules -> VernacSearch (SearchAbout sl, l)
 
       | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = ne_string ->
 	  VernacAddMLPath (false, dir)
@@ -795,9 +788,12 @@ GEXTEND Gram
   as_dirpath:
     [ [ d = OPT [ "as"; d = dirpath -> d ] -> d ] ]
   ;
-  in_or_out_modules:
+  ne_in_or_out_modules:
     [ [ IDENT "inside"; l = LIST1 global -> SearchInside l
-      | IDENT "outside"; l = LIST1 global -> SearchOutside l
+      | IDENT "outside"; l = LIST1 global -> SearchOutside l ] ]
+  ;
+  in_or_out_modules:
+    [ [ m = ne_in_or_out_modules -> m
       | -> SearchOutside [] ] ]
   ;
   comment:
@@ -810,6 +806,20 @@ GEXTEND Gram
   ;
   scope:
     [ [ "%"; key = IDENT -> key ] ]
+  ;
+  searchabout_query:
+    [ [ b = positive_search_mark; s = ne_string; sc = OPT scope ->
+            (b, SearchString (s,sc))
+      | b = positive_search_mark; p = constr_pattern ->
+            (b, SearchSubPattern p)
+      ] ]
+  ;
+  searchabout_queries:
+    [ [ m = ne_in_or_out_modules -> ([],m)
+      | s = searchabout_query; l = searchabout_queries ->
+        let (sl,m) = l in (s::sl,m)
+      | -> ([],SearchOutside [])
+      ] ]
   ;
 END;
 

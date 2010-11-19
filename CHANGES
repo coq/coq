@@ -6,6 +6,9 @@ Changes from V8.3 to V8.4
   the universe graph is printed in the DOT language, and can be
   processed by Graphviz tools.
 
+Vernacular commands
+
+- In SearchAbout, the [ ] delimiters are now optional.
 
 Changes from V8.2 to V8.3
 =========================
