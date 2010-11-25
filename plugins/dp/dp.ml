@@ -719,7 +719,7 @@ and tr_formula tv bv env f =
     | _, [a;b] when c = Lazy.force coq_iff ->
 	Iff (tr_formula tv bv env a, tr_formula tv bv env b)
     | Prod (n, a, b), _ ->
-	if is_imp_term f then
+        if is_Prop (Typing.type_of env Evd.empty a) then
 	  Imp (tr_formula tv bv env a, tr_formula tv bv env b)
 	else
 	  let id, t, bv, env, b = quantifiers n a b tv bv env in
