@@ -989,6 +989,15 @@ Assumptions} (see Section~\ref{PrintAssumptions}). Admitted subgoals
 have names of the form {\ident}\texttt{\_admitted} possibly followed
 by a number.
 
+\subsection{\tt constr\_eq \term$_1$ \term$_2$
+\tacindex{constr\_eq}
+\label{constreq}}
+
+This tactic applies to any goal. It checks whether its arguments are
+equal modulo alpha conversion and casts.
+
+\ErrMsg \errindex{Not equal}
+
 \subsection{\tt is\_evar \term
 \tacindex{is\_evar}
 \label{isevar}}
