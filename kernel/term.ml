@@ -182,7 +182,7 @@ let comp_term t1 t2 =
     | Meta m1, Meta m2 -> m1 == m2
     | Var id1, Var id2 -> id1 == id2
     | Sort s1, Sort s2 -> s1 == s2
-    | Cast (c1,_,t1), Cast (c2,_,t2) -> c1 == c2 & t1 == t2
+    | Cast (c1,k1,t1), Cast (c2,k2,t2) -> c1 == c2 & k1 == k2 & t1 == t2 
     | Prod (n1,t1,c1), Prod (n2,t2,c2) -> n1 == n2 & t1 == t2 & c1 == c2
     | Lambda (n1,t1,c1), Lambda (n2,t2,c2) -> n1 == n2 & t1 == t2 & c1 == c2
     | LetIn (n1,b1,t1,c1), LetIn (n2,b2,t2,c2) ->
@@ -257,8 +257,10 @@ end = struct
 
   let find_rec hash key bucket = 
     let rec aux = function
-      | Empty -> add hash key; key
-      | Cons (k, _, rest) -> if comp_term key k then k else aux rest
+      | Empty -> 
+	add hash key; key
+      | Cons (k, h, rest) -> 
+	if hash == h && comp_term key k then k else aux rest
     in
     aux bucket
 
@@ -266,16 +268,17 @@ end = struct
     let odata = !table_data in
     match odata.(hash mod (Array.length odata)) with
       |	Empty -> add hash key; key
-      | Cons (k1, _, rest1) ->
-	if comp_term key k1 then k1 else
+      | Cons (k1, h1, rest1) ->
+	if hash == h1 && comp_term key k1 then k1 else
 	  match rest1 with
             | Empty -> add hash key; key
-	    | Cons (k2, _, rest2) ->
-              if comp_term key k2 then k2 else
+	    | Cons (k2, h2, rest2) ->
+              if hash == h2 && comp_term key k2 then k2 else
 		match rest2 with
 		  | Empty -> add hash key; key 
-		  | Cons (k3, _, rest3) ->
-		    if comp_term key k3 then k3 else find_rec hash key rest3
+		  | Cons (k3, h3, rest3) ->
+		    if hash == h2 && comp_term key k3 then k3 
+		    else find_rec hash key rest3
 
 end		      
 
