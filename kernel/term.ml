@@ -174,7 +174,7 @@ let array_eqeq t1 t2 =
   Array.length t1 = Array.length t2 && 
   let rec aux i = 
     (i = Array.length t1) || (t1.(i) == t2.(i) && aux (i + 1))
-  in aux 0
+  in aux 0 
 
 let comp_term t1 t2 =
   match t1, t2 with
@@ -297,16 +297,15 @@ let combinesmall x y = beta * x + y
    representation for [constr] using [hash_consing_functions] on
    leaves. *)
 let hcons_term (sh_sort,sh_con,sh_kn,sh_na,sh_id) =
-  let accu = ref 0 in 
 
   let rec hash_term_array t = 
-    accu := 0;
+    let accu = ref 0 in 
     for i = 0 to Array.length t - 1 do 
       let x, h = sh_rec t.(i) in 
       accu := combine !accu h; 
       t.(i) <- x
     done;
-    (t, !accu)
+    (t, !accu) 
 
   and hash_term t =
     match t with
