@@ -718,3 +718,28 @@ TACTIC EXTEND is_evar
         | _ -> tclFAIL 0 (str "Not an evar")
     ]
 END
+
+let rec has_evar x =
+  match kind_of_term x with
+    | Evar _ -> true
+    | Rel _ | Var _ | Meta _ | Sort _ | Const _ | Ind _ | Construct _ ->
+      false
+    | Cast (t1, _, t2) | Prod (_, t1, t2) | Lambda (_, t1, t2) ->
+      has_evar t1 || has_evar t2
+    | LetIn (_, t1, t2, t3) ->
+      has_evar t1 || has_evar t2 || has_evar t3
+    | App (t1, ts) ->
+      has_evar t1 || has_evar_array ts
+    | Case (_, t1, t2, ts) ->
+      has_evar t1 || has_evar t2 || has_evar_array ts
+    | Fix ((_, tr)) | CoFix ((_, tr)) ->
+      has_evar_prec tr
+and has_evar_array x =
+  array_exists has_evar x
+and has_evar_prec (_, ts1, ts2) =
+  array_exists has_evar ts1 || array_exists has_evar ts2
+
+TACTIC EXTEND has_evar
+| [ "has_evar" constr(x) ] ->
+    [ if has_evar x then tclIDTAC else tclFAIL 0 (str "No evars") ]
+END
