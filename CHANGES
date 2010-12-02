@@ -3,6 +3,10 @@ Changes from V8.3 to V8.4
 
 - New proof engine
 
+Tactics
+
+- New tactics constr_eq, is_evar and has_evar.
+
 Vernacular commands
 
 - In SearchAbout, the [ ] delimiters are now optional.
