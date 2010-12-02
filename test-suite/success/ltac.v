@@ -298,3 +298,7 @@ evar(foo:nat).
 let evval := eval compute in foo in not_eq evval 1.
 let evval := eval compute in foo in not_eq 1 evval.
 Abort.
+
+(* Check that this returns an error and not an anomaly (see r13667) *)
+
+Fail Local Tactic Notation "myintro" := intro.

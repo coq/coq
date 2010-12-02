@@ -529,8 +529,7 @@ type 'a value =
 
 let eval_call c = 
   let filter_compat_exn = function
-    | Vernac.DuringCommandInterp (loc,inner)
-    | Vernacexpr.DuringSyntaxChecking (loc,inner) -> inner
+    | Vernac.DuringCommandInterp (loc,inner) -> inner
     | Vernacexpr.Quit -> raise Vernacexpr.Quit
     | e -> e
   in
