@@ -481,12 +481,17 @@ let current_status () =
     path ^ ", proving " ^ (Names.string_of_id (Pfedit.get_current_proof_name ()))
   with _ -> path
 
+let orig_stdout = ref stdout
+
 let init_stdout,read_stdout =
   let out_buff = Buffer.create 100 in
   let out_ft = Format.formatter_of_buffer out_buff in
   let deep_out_ft = Format.formatter_of_buffer out_buff in
   let _ = Pp_control.set_gp deep_out_ft Pp_control.deep_gp in
   (fun () ->
+     flush_all ();
+     orig_stdout := Unix.out_channel_of_descr (Unix.dup Unix.stdout);
+     Unix.dup2 Unix.stderr Unix.stdout;
      Pp_control.std_ft := out_ft;
      Pp_control.err_ft := out_ft;
      Pp_control.deep_ft := deep_out_ft;
@@ -578,7 +583,7 @@ let loop () =
     while true do
       let q = (Safe_marshal.receive: in_channel -> 'a call) stdin in
       let r = eval_call q in
-      Safe_marshal.send stdout r
+      Safe_marshal.send !orig_stdout r
     done
   with
     | Vernacexpr.Quit -> exit 0
