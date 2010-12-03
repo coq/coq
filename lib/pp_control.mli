@@ -23,15 +23,6 @@ val get_gp : Format.formatter -> pp_global_params
 
 (** {6 Output functions of pretty-printing. } *)
 
-type 'a pp_formatter_params = {
-  fp_output : out_channel;
-  fp_output_function : string -> int -> int -> unit;
-  fp_flush_function : unit -> unit }
-
-val std_fp : (int*string) pp_formatter_params
-val err_fp : (int*string) pp_formatter_params
-
-val with_fp : 'a pp_formatter_params -> Format.formatter
 val with_output_to : out_channel -> Format.formatter
 
 val std_ft : Format.formatter ref

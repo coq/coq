@@ -47,40 +47,18 @@ let get_gp ft =
     max_depth = Format.pp_get_max_boxes ft ();
     ellipsis = Format.pp_get_ellipsis_text ft () }
 
-
-(* Output functions of pretty-printing *)
-
-type 'a pp_formatter_params = {
-  fp_output : out_channel ;
-  fp_output_function : string -> int -> int -> unit ;
-  fp_flush_function : unit -> unit }
-
-(* Output functions for stdout and stderr *)
-
-let std_fp = {
-  fp_output = stdout ;
-  fp_output_function = output stdout;
-  fp_flush_function = (fun () -> flush stdout) }
-
-let err_fp = {
-  fp_output = stderr ;
-  fp_output_function = output stderr;
-  fp_flush_function = (fun () -> flush stderr) }
-
 (* with_fp : 'a pp_formatter_params -> Format.formatter
  * returns of formatter for given formatter functions *)
 
-let with_fp fp =
-  let ft = Format.make_formatter fp.fp_output_function fp.fp_flush_function in
-  Format.pp_set_formatter_out_channel ft fp.fp_output;
+let with_fp chan out_function flush_function =
+  let ft = Format.make_formatter out_function flush_function in
+  Format.pp_set_formatter_out_channel ft chan;
   ft
 
 (* Output on a channel ch *)
 
 let with_output_to ch =
-  let ft = with_fp { fp_output = ch ;
-      	             fp_output_function = (output ch) ;
-	             fp_flush_function = (fun () -> flush ch) } in
+  let ft = with_fp ch (output ch) (fun () -> flush ch) in
   set_gp ft deep_gp;
   ft
 
