@@ -107,3 +107,19 @@ Context {A:Set}.
 Definition h (a:A) := a.
 End C.
 Check h 0.
+
+(* Check implicit arguments in arity of inductive types. The three
+   following examples used to fail before r13671 *)
+
+Inductive I {A} (a:A) : forall {n:nat}, Prop :=
+ | C : I a (n:=0).
+
+Inductive I2 (x:=0) : Prop :=
+ | C2 {p:nat} : p = 0 -> I2.
+Check C2 eq_refl.
+
+Inductive I3 {A} (x:=0) (a:A) : forall {n:nat}, Prop :=
+ | C3 : I3 a (n:=0).
+
+Inductive I3 {A} (x:=0) (a:A) : forall {n:nat}, Prop :=
+ | C2 {p} : I2 a (n:=p).
