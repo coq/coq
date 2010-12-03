@@ -241,7 +241,7 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
   let env_ar_params = push_rel_context ctx_params env_ar in
 
   (* Compute interpretation metadatas *)
-  let indimpls = List.map (fun (_, impls) -> userimpls @ lift_implicits (List.length userimpls) impls) arities in
+  let indimpls = List.map (fun (_, impls) -> userimpls @ lift_implicits (rel_context_nhyps ctx_params) impls) arities in
   let arities = List.map fst arities in
   let impls = compute_internalization_env env0 (Inductive params) indnames fullarities indimpls in
   let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
@@ -275,7 +275,7 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
     mind_entry_lc = ctypes
   }) indl arities constructors in
   let impls =
-    let len = List.length ctx_params in
+    let len = rel_context_nhyps ctx_params in
       List.map2 (fun indimpls (_,_,cimpls) ->
 	indimpls, List.map (fun impls ->
 	  userimpls @ (lift_implicits len impls)) cimpls) indimpls constructors
