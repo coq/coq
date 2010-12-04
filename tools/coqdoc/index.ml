@@ -235,23 +235,45 @@ let type_name = function
 
 let prepare_entry s = function
   | Notation ->
-      (* Notations have conventially the form section.:sc:x_++_'x'_x *)
+      (* We decode the encoding done in Dumpglob.cook_notation of coqtop *)
+      (* Encoded notations have the form section:sc:x_'++'_x where: *)
+      (* - the section, if any, ends with a "." *)
+      (* - the scope can be empty *)
+      (* - tokens are separated with "_" *)
+      (* - non-terminal symbols are conventionally represented by "x" *)
+      (* - terminals are enclosed within simple quotes *)
+      (* - existing simple quotes (that necessarily are parts of terminals) *)
+      (*   are doubled *)
+      (*   (as a consequence, when a terminal contains "_" or "x", these *)
+      (*   necessarily appear enclosed within non-doubled simple quotes) *)
+      (*   Example: "x ' %x _% y %'x %'_' z" is encoded as *)
+      (*     "x_''''_'%x'_'_%'_x_'%''x'_'%''_'''_x" *)
       let err () = eprintf "Invalid notation in globalization file\n"; exit 1 in
       let h = try String.index_from s 0 ':' with _ -> err () in
       let i = try String.index_from s (h+1) ':' with _ -> err () in
       let sc = String.sub s (h+1) (i-h-1) in
-      let ntn = String.make (String.length s) ' ' in
+      let ntn = String.make (String.length s - i) ' ' in
       let k = ref 0 in
       let j = ref (i+1) in
       let quoted = ref false in
-      while !j <> String.length s do
-	if s.[!j] = '_' && not !quoted then ntn.[!k] <- ' ' else
-	if s.[!j] = 'x' && not !quoted then ntn.[!k] <- '_' else
-	if s.[!j] = '\'' then
-	  if s.[!j+1] = 'x' && s.[!j+1] = '\'' then (ntn.[!k] <- 'x'; j:=!j+2)
-	  else (quoted := not !quoted; ntn.[!k] <- '\'')
-	else ntn.[!k] <- s.[!j];
-	incr j; incr k
+      let l = String.length s - 1 in
+      while !j <= l do
+	if not !quoted then begin
+	  (match s.[!j] with
+	  | '_' -> ntn.[!k] <- ' '; incr k
+	  | 'x' -> ntn.[!k] <- '_'; incr k
+	  | '\'' -> quoted := true
+	  | _ -> assert false)
+	end
+	else
+	  if s.[!j] = '\'' then begin
+	    if (!j = l || s.[!j+1] <> '\'') then quoted := false
+	    else (ntn.[!k] <- s.[!j]; incr k; incr j)
+	  end else begin
+	    ntn.[!k] <- s.[!j];
+	    incr k
+	  end;
+	incr j
       done;
       let ntn = String.sub ntn 0 !k in
       if sc = "" then ntn else ntn ^ " (" ^ sc ^ ")"

@@ -315,7 +315,6 @@ let def_token =
   | "Class"
   | "SubClass"
   | "Example"
-  | "Local"
   | "Fixpoint"
   | "Boxed"
   | "CoFixpoint"
@@ -450,6 +449,12 @@ rule coq_bol = parse
       { begin_show (); coq_bol lexbuf }
   | space* end_show
       { end_show (); coq_bol lexbuf }
+  | space* ("Local"|"Global")
+      {
+	in_proof := None;
+	let s = lexeme lexbuf in
+	output_indented_keyword s lexbuf;
+	coq_bol lexbuf }
   | space* gallina_kw_to_hide
       { let s = lexeme lexbuf in
 	  if !Cdglobals.light && section_or_end s then
