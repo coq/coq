@@ -95,14 +95,14 @@ let coqtop_path () =
   if Filename.check_suffix prog ".byte" then dir^"/coqtop.byte"
   else dir^"/coqtop.opt"
 
-let filter_coq_opts argv =
-  let argstr = String.concat " " argv in
+let filter_coq_opts args =
+  let argstr = String.concat " " (List.map Filename.quote args) in
   let oc,ic,ec = Unix.open_process_full (coqtop_path () ^" -filteropts "^argstr) (Unix.environment ()) in
-  let filtered_argv = read_all_lines oc in
+  let filtered_args = read_all_lines oc in
   let message = read_all_lines ec in
   match Unix.close_process_full (oc,ic,ec) with
-    | Unix.WEXITED 0 -> true,filtered_argv
-    | Unix.WEXITED 2 -> false,filtered_argv
+    | Unix.WEXITED 0 -> true,filtered_args
+    | Unix.WEXITED 2 -> false,filtered_args
     | _ -> false,message
 
 exception Coqtop_output of string list

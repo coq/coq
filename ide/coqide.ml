@@ -3096,7 +3096,8 @@ let process_argv argv =
 let start () =
   let argl = Array.to_list Sys.argv in
   let files = process_argv argl in
-  sup_args := String.concat " " (List.filter (fun x -> not (List.mem x files)) (List.tl argl));
+  let args = List.filter (fun x -> not (List.mem x files)) (List.tl argl) in
+  sup_args := String.concat " " (List.map Filename.quote args);
   check_connection !sup_args;
   ignore_break ();
     GtkMain.Rc.add_default_file (lib_ide_file ".coqide-gtk2rc");
