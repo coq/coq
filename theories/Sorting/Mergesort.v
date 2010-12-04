@@ -61,6 +61,7 @@ Fixpoint merge l1 l2 :=
 
     For instance, here is how [6;2;3;1;5] is sorted:
 
+<<
        operation             stack                list
        iter_merge            []                   [6;2;3;1;5]
     =  append_list_to_stack  [ + [6]]             [2;3;1;5]
@@ -77,7 +78,7 @@ Fixpoint merge l1 l2 :=
     =  append_list_to_stack  [[1;2;3;6];; + [5]]  []
     -> merge_stack           [[1;2;3;6];;[5]]
     =                                             [1;2;3;5;6]
-
+>>
     The complexity of the algorithm is n*log n, since there are
     2^(p-1) mergings to do of length 2, 2^(p-2) of length 4, ..., 2^0
     of length 2^p for a list of length 2^p. The algorithm does not need
