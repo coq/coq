@@ -59,3 +59,10 @@ Check (fun x:nat*nat => match x with R x y => (x,y) end).
 Local Notation "[ a  # ; ..  # ; b ]" := (a + .. (b + 0) ..).   
 Check [ 0 ].
 Check [ 0 # ; 1 ].
+
+(* Check well-scoping of alpha-renaming of private binders *)
+(* see bug #2248 (thanks to Marc Lasson) *)
+
+Notation "{ q , r | P }" := (fun (p:nat*nat), let (q, r) := p in P).
+Check (fun p, {q,r| q + r = p}).
+
