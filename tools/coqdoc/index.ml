@@ -216,7 +216,7 @@ let type_name = function
   | Library ->
       let ln = !lib_name in
         if ln <> "" then String.lowercase ln else "library"
-  | Module -> "moduleid"
+  | Module -> "module"
   | Definition -> "definition"
   | Inductive -> "inductive"
   | Constructor -> "constructor"

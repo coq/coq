@@ -83,7 +83,7 @@
 \newcommand{\coqdocnotation}[1]{\coqdockw{#1}}
 \newcommand{\coqdocsection}[1]{\coqdoccst{#1}}
 \newcommand{\coqdocaxiom}[1]{\coqdocax{#1}}
-\newcommand{\coqdocmoduleid}[1]{\coqdocmod{#1}}
+\newcommand{\coqdocmodule}[1]{\coqdocmod{#1}}
 
 % Environment encompassing code fragments
 % !!! CAUTION: This environment may have empty contents
@@ -107,9 +107,6 @@
 % Empty lines (in code only)
 \newcommand{\coqdocemptyline}{\vskip 0.4em plus 0.1em minus 0.1em}
 
-% macro for typesetting the title of a module implementation
-\newcommand{\coqdocmodule}[1]{\chapter{Module #1}\markboth{Module #1}{}
-}
 \usepackage{ifpdf}
 \ifpdf
   \RequirePackage{hyperref}
