@@ -174,15 +174,38 @@ let dump_libref loc dp ty =
 		  (fst (Util.unloc loc)) (Names.string_of_dirpath dp) ty)
 
 let cook_notation df sc =
+  (* We encode notations so that they are space-free and still human-readable *)
+  (* - all spaces are replaced by _                                           *)
+  (* - all _ denoting a non-terminal symbol are replaced by x                 *)
+  (* - all terminal tokens are surrounded by single quotes, including '_'     *)
+  (*   which already denotes terminal _                                       *)
+  (* - all single quotes in terminal tokens are doubled                       *)
+  (* - characters < 32 are represented by '^A, '^B, '^C, etc                  *)
+  (* The output is decoded in function Index.prepare_entry of coqdoc          *)
   let ntn = String.make (String.length df * 3) '_' in
   let j = ref 0 in
-  let quoted = ref false in
-  for i = 0 to String.length df - 1 do
-    if df.[i] = '\'' then quoted := not !quoted;
-    if df.[i] = ' ' then (ntn.[!j] <- '_'; incr j) else
-    if df.[i] = '_' && not !quoted then (ntn.[!j] <- 'x'; incr j) else
-    if df.[i] = 'x' && not !quoted then (String.blit "'x'" 0 ntn !j 3; j := !j + 3) else
-    (ntn.[!j] <- df.[i]; incr j)
+  let l = String.length df - 1 in
+  let i = ref 0 in
+  while !i <= l do
+    assert (df.[!i] <> ' ');
+    if df.[!i] = '_' && (!i = l || df.[!i+1] = ' ') then
+      (* Next token is a non-terminal *)
+      (ntn.[!j] <- 'x'; incr j; incr i)
+    else begin
+      (* Next token is a terminal *)
+      ntn.[!j] <- '\''; incr j;
+      while !i <= l && df.[!i] <> ' ' do
+	if df.[!i] < ' ' then
+	  let c = char_of_int (int_of_char 'A' + int_of_char df.[!i] - 1) in
+	  (String.blit ("'^" ^ String.make 1 c) 0 ntn !j 3; j := !j+3; incr i)
+	else begin
+	  if df.[!i] = '\'' then (ntn.[!j] <- '\''; incr j);
+	  ntn.[!j] <- df.[!i]; incr j; incr i
+	end
+      done;
+      ntn.[!j] <- '\''; incr j
+    end;
+    if !i <= l then (ntn.[!j] <- '_'; incr j; incr i)
   done;
   let df = String.sub ntn 0 !j in
   match sc with Some sc -> ":" ^ sc ^ ":" ^ df | _ -> "::" ^ df
