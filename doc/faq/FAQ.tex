@@ -97,6 +97,7 @@
 \def\symmetryin{{\tt symmetryin}}
 \def\instantiate{{\tt instantiate}}
 \def\inversion{{\tt inversion}}
+\def\specialize{{\tt specialize}}
 \def\Defined{{\tt Defined}}
 \def\Qed{{\tt Qed}}
 \def\pattern{{\tt pattern}}
@@ -866,6 +867,16 @@ the context using the {\intro} tactic. If there are several
 variables you can use the {\intros} tactic. A good habit is to
 provide names for these variables: {\Coq} will do it anyway, but such
 automatic naming decreases legibility and robustness.
+
+
+\Question{My goal contains an universally quantified statement, how can I use it?}
+
+If the universally quantified assumption matches the goal you can
+use the {\apply} tactic. If it is an equation you can use the
+{\rewrite} tactic. Otherwise you can use the {\specialize} tactic
+to instantiate the quantified variables with terms. The variant
+{\tt assert(Ht := H t)} makes a copy of assumption {\tt H} before
+instantiating it.
 
 
 \Question{My goal is an existential, how can I prove it?}
