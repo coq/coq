@@ -74,11 +74,11 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
       let outerl = (ldots_var,inner)::(if swap then [x,RVar(loc,y)] else []) in
       subst_rawvars outerl it
   | ALambda (na,ty,c) ->
-      let e,na = name_fold_map g e na in RLambda (loc,na,f e ty,f e c)
+      let e',na = name_fold_map g e na in RLambda (loc,na,f e ty,f e' c)
   | AProd (na,ty,c) ->
-      let e,na = name_fold_map g e na in RProd (loc,na,f e ty,f e c)
+      let e',na = name_fold_map g e na in RProd (loc,na,f e ty,f e' c)
   | ALetIn (na,b,c) ->
-      let e,na = name_fold_map g e na in RLetIn (loc,na,f e b,f e c)
+      let e',na = name_fold_map g e na in RLetIn (loc,na,f e b,f e' c)
   | ACases (rtntypopt,tml,eqnl) ->
       let e',tml' = List.fold_right (fun (tm,(na,t)) (e',tml') ->
 	let e',t' = match t with
@@ -96,12 +96,12 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
 	(loc,idl,patl,f e rhs)) eqnl in
       RCases (loc,option_map (f e') rtntypopt,tml',eqnl')
   | ALetTuple (nal,(na,po),b,c) ->
-      let e,nal = list_fold_map (name_fold_map g) e nal in 
-      let e,na = name_fold_map g e na in
-      RLetTuple (loc,nal,(na,option_map (f e) po),f e b,f e c)
+      let e',nal = list_fold_map (name_fold_map g) e nal in 
+      let e'',na = name_fold_map g e na in
+      RLetTuple (loc,nal,(na,option_map (f e'') po),f e b,f e' c)
   | AIf (c,(na,po),b1,b2) ->
-      let e,na = name_fold_map g e na in
-      RIf (loc,f e c,(na,option_map (f e) po),f e b1,f e b2)
+      let e',na = name_fold_map g e na in
+      RIf (loc,f e c,(na,option_map (f e') po),f e b1,f e b2)
   | ACast (c,k) -> RCast (loc,f e c, 
 			  match k with 
 			    | CastConv (k,t) -> CastConv (k,f e t)
