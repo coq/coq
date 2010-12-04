@@ -285,7 +285,7 @@ module Latex = struct
       printf "\\coqdocindent{%2.2fem}\n" space
 
   let module_ref m s =
-    printf "\\moduleid{%s}{%s}" m (escaped s)
+    printf "\\coqdocmodule{%s}{%s}" m (escaped s)
 
   let ident_ref m fid typ s =
     let id = if fid <> "" then (m ^ "." ^ fid) else m in
