@@ -23,6 +23,8 @@ open Libnames
 
 module Gram : Grammar.S with type te = Compat.token
 
+val entry_print : 'a Gram.Entry.e -> unit
+
 (**********************************************************************)
 (* The parser of Coq is built from three kinds of rule declarations:
    - dynamic rules declared at the evaluation of Coq files (using
