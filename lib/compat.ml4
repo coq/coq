@@ -128,7 +128,11 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
   let action = Gramext.action
   let entry_create = Entry.create
   let entry_parse = Entry.parse
+IFDEF CAMLP5_6_02_1 THEN
+  let entry_print x = Entry.print !Pp_control.std_ft x
+ELSE
   let entry_print = Entry.print
+END
   let srules' = Gramext.srules
   let parse_tokens_after_filter = Entry.parse_token
 end
@@ -158,7 +162,7 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
   let action = Action.mk
   let entry_create = Entry.mk
   let entry_parse e s = parse e (*FIXME*)Loc.ghost s
-  let entry_print x = Entry.print Format.std_formatter x
+  let entry_print x = Entry.print !Pp_control.std_ft x
   let srules' = srules (entry_create "dummy")
 end
 
