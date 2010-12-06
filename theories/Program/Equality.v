@@ -320,19 +320,35 @@ Hint Unfold solution_left solution_right deletion simplification_heq
    constructor forms). Compare with the lemma 16 of the paper.
    We don't have a [noCycle] procedure yet. *)
 
+Ltac block_equality :=
+  match goal with
+    | |- forall x : ?t = ?u, @?P x => change (forall x : block (t = u), P x) ; cbv beta
+    | |- _ => idtac
+  end.
+
+Ltac revert_blocking_until id := 
+  on_last_hyp ltac:(fun id' =>
+    match id' with
+      | id => idtac
+      | _ => revert id' ; block_equality ; revert_until id
+    end).
+
 Ltac simplify_one_dep_elim_term c :=
   match c with
     | @JMeq _ _ _ _ -> _ => refine (simplification_heq _ _ _ _ _)
     | ?t = ?t -> _ => intros _ || refine (simplification_K _ t _ _)
-    | eq (existT _ _ _) (existT _ _ _) -> _ =>
+    | eq (existT _ ?p _) (existT _ ?q _) -> _ =>
       refine (simplification_existT2 _ _ _ _ _ _ _) ||
-        refine (simplification_existT1 _ _ _ _ _ _ _ _)
+        match goal with
+          | H : p = q |- _ => intro
+          | _ => refine (simplification_existT1 _ _ _ _ _ _ _ _)
+        end
     | ?x = ?y -> _ => (* variables case *)
       (let hyp := fresh in intros hyp ;
-        move hyp before x ; revert_until hyp ; generalize dependent x ;
+        move hyp before x ; revert_blocking_until hyp ; generalize dependent x ;
           refine (solution_left _ _ _ _)(*  ; intros until 0 *)) ||
       (let hyp := fresh in intros hyp ;
-        move hyp before y ; revert_until hyp ; generalize dependent y ;
+        move hyp before y ; revert_blocking_until hyp ; generalize dependent y ;
           refine (solution_right _ _ _ _)(*  ; intros until 0 *))
     | ?f ?x = ?g ?y -> _ => let H := fresh in progress (intros H ; injection H ; clear H)
     | ?t = ?u -> _ => let hyp := fresh in
