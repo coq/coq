@@ -10,7 +10,7 @@
 
 
 Require Import ZAxioms ZProperties BinInt Zcompare Zorder ZArith_dec
- Zbool Zeven Zsqrt_def Zpow_def Zlog_def Zgcd_def Zdiv_def.
+ Zbool Zeven Zsqrt_def Zpow_def Zlog_def Zgcd_def Zdiv_def Zdigits_def.
 
 Local Open Scope Z_scope.
 
@@ -190,6 +190,28 @@ Definition rem_opp_l := fun a b (_:b<>0) => Zrem_opp_l a b.
 Definition rem_opp_r := fun a b (_:b<>0) => Zrem_opp_r a b.
 Definition quot := Zquot.
 Definition rem := Zrem.
+
+(** Bitwise operations *)
+
+Definition testbit_spec := Ztestbit_spec.
+Definition testbit_neg_r := Ztestbit_neg_r.
+Definition shiftr_spec := Zshiftr_spec.
+Definition shiftl_spec_low := Zshiftl_spec_low.
+Definition shiftl_spec_high := Zshiftl_spec_high.
+Definition land_spec := Zand_spec.
+Definition lor_spec := Zor_spec.
+Definition ldiff_spec := Zdiff_spec.
+Definition lxor_spec := Zxor_spec.
+Definition div2_spec := Zdiv2'_spec.
+
+Definition testbit := Ztestbit.
+Definition shiftl := Zshiftl.
+Definition shiftr := Zshiftr.
+Definition land := Zand.
+Definition lor := Zor.
+Definition ldiff := Zdiff.
+Definition lxor := Zxor.
+Definition div2 := Zdiv2'.
 
 (** We define [eq] only here to avoid refering to this [eq] above. *)
 

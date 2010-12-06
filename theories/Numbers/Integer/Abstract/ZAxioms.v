@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Export NZAxioms.
-Require Import NZPow NZSqrt NZLog NZGcd NZDiv.
+Require Import Bool NZParity NZPow NZSqrt NZLog NZGcd NZDiv NZBits.
 
 (** We obtain integers by postulating that successor of predecessor
     is identity. *)
@@ -38,8 +38,15 @@ Module Type IsOpp (Import Z : NZAxiomsSig')(Import O : Opp' Z).
  Axiom opp_succ : forall n, - (S n) == P (- n).
 End IsOpp.
 
+Module Type OppCstNotation (Import A : NZAxiomsSig)(Import B : Opp A).
+ Notation "- 1" := (opp one).
+ Notation "- 2" := (opp two).
+End OppCstNotation.
+
 Module Type ZAxiomsMiniSig := NZOrdAxiomsSig <+ ZAxiom <+ Opp <+ IsOpp.
-Module Type ZAxiomsMiniSig' := NZOrdAxiomsSig' <+ ZAxiom <+ Opp' <+ IsOpp.
+Module Type ZAxiomsMiniSig' := NZOrdAxiomsSig' <+ ZAxiom <+ Opp' <+ IsOpp
+ <+ OppCstNotation.
+
 
 (** Other functions and their specifications *)
 
@@ -57,18 +64,8 @@ Module Type HasSgn (Import Z : ZAxiomsMiniSig').
  Parameter Inline sgn : t -> t.
  Axiom sgn_null : forall n, n==0 -> sgn n == 0.
  Axiom sgn_pos : forall n, 0<n -> sgn n == 1.
- Axiom sgn_neg : forall n, n<0 -> sgn n == -(1).
+ Axiom sgn_neg : forall n, n<0 -> sgn n == -1.
 End HasSgn.
-
-(** Parity functions *)
-
-Module Type Parity (Import Z : ZAxiomsMiniSig').
- Parameter Inline even odd : t -> bool.
- Definition Even n := exists m, n == 2*m.
- Definition Odd n := exists m, n == 2*m+1.
- Axiom even_spec : forall n, even n = true <-> Even n.
- Axiom odd_spec : forall n, odd n = true <-> Odd n.
-End Parity.
 
 (** Divisions *)
 
@@ -110,16 +107,18 @@ End QuotRemSpec.
 Module Type ZQuot (Z:ZAxiomsMiniSig) := QuotRem Z <+ QuotRemSpec Z.
 Module Type ZQuot' (Z:ZAxiomsMiniSig) := QuotRem' Z <+ QuotRemSpec Z.
 
-(** For pow sqrt log2 gcd, the NZ axiomatizations are enough. *)
+(** For all other functions, the NZ axiomatizations are enough. *)
 
 (** Let's group everything *)
 
 Module Type ZAxiomsSig :=
-  ZAxiomsMiniSig <+ HasCompare <+ HasAbs <+ HasSgn <+ Parity
+  ZAxiomsMiniSig <+ HasCompare <+ HasEqBool <+ HasAbs <+ HasSgn
+   <+ NZParity.NZParity
    <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2 <+ NZGcd.NZGcd
-   <+ ZDiv <+ ZQuot.
+   <+ ZDiv <+ ZQuot <+ NZBits.NZBits.
 
 Module Type ZAxiomsSig' :=
-  ZAxiomsMiniSig' <+ HasCompare <+ HasAbs <+ HasSgn <+ Parity
+  ZAxiomsMiniSig' <+ HasCompare <+ HasEqBool <+ HasAbs <+ HasSgn
+   <+ NZParity.NZParity
    <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2 <+ NZGcd.NZGcd'
-   <+ ZDiv' <+ ZQuot'.
+   <+ ZDiv' <+ ZQuot' <+ NZBits.NZBits'.

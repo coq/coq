@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import ZArith Nnat ZAxioms ZSig.
+Require Import Bool ZArith Nnat ZAxioms ZSig.
 
 (** * The interface [ZSig.ZType] implies the interface [ZAxiomsSig] *)
 
@@ -17,6 +17,8 @@ Hint Rewrite
  spec_mul spec_opp spec_of_Z spec_div spec_modulo spec_sqrt
  spec_compare spec_eq_bool spec_max spec_min spec_abs spec_sgn
  spec_pow spec_log2 spec_even spec_odd spec_gcd spec_quot spec_rem
+ spec_testbit spec_shiftl spec_shiftr
+ spec_land spec_lor spec_ldiff spec_lxor spec_div2
  : zsimpl.
 
 Ltac zsimpl := autorewrite with zsimpl.
@@ -405,6 +407,71 @@ Qed.
 Lemma gcd_nonneg : forall n m, 0 <= gcd n m.
 Proof.
  intros. zify. apply Zgcd_nonneg.
+Qed.
+
+(** Bitwise operations *)
+
+Lemma testbit_spec : forall a n, 0<=n ->
+  exists l, exists h, (0<=l /\ l<2^n) /\
+    a == l + ((if testbit a n then 1 else 0) + 2*h)*2^n.
+Proof.
+ intros a n. zify. intros H.
+ destruct (Ztestbit_spec [a] [n] H) as (l & h & Hl & EQ).
+ exists (of_Z l), (of_Z h).
+ destruct Ztestbit; zify; now split.
+Qed.
+
+Lemma testbit_neg_r : forall a n, n<0 -> testbit a n = false.
+Proof.
+ intros a n. zify. apply Ztestbit_neg_r.
+Qed.
+
+Lemma shiftr_spec : forall a n m, 0<=m ->
+ testbit (shiftr a n) m = testbit a (m+n).
+Proof.
+ intros a n m. zify. apply Zshiftr_spec.
+Qed.
+
+Lemma shiftl_spec_high : forall a n m, 0<=m -> n<=m ->
+ testbit (shiftl a n) m = testbit a (m-n).
+Proof.
+ intros a n m. zify. intros Hn H.
+ now apply Zshiftl_spec_high.
+Qed.
+
+Lemma shiftl_spec_low : forall a n m, m<n ->
+ testbit (shiftl a n) m = false.
+Proof.
+ intros a n m. zify. intros H. now apply Zshiftl_spec_low.
+Qed.
+
+Lemma land_spec : forall a b n,
+ testbit (land a b) n = testbit a n && testbit b n.
+Proof.
+ intros a n m. zify. now apply Zand_spec.
+Qed.
+
+Lemma lor_spec : forall a b n,
+ testbit (lor a b) n = testbit a n || testbit b n.
+Proof.
+ intros a n m. zify. now apply Zor_spec.
+Qed.
+
+Lemma ldiff_spec : forall a b n,
+ testbit (ldiff a b) n = testbit a n && negb (testbit b n).
+Proof.
+ intros a n m. zify. now apply Zdiff_spec.
+Qed.
+
+Lemma lxor_spec : forall a b n,
+ testbit (lxor a b) n = xorb (testbit a n) (testbit b n).
+Proof.
+ intros a n m. zify. now apply Zxor_spec.
+Qed.
+
+Lemma div2_spec : forall a, div2 a == shiftr a 1.
+Proof.
+ intros a. zify. now apply Zdiv2'_spec.
 Qed.
 
 End ZTypeIsZAxioms.

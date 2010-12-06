@@ -356,7 +356,7 @@ Proof. intros a b. zero_or_not b. intros; rewrite Z.div_opp_r_nz; auto. Qed.
 
 (** Cancellations. *)
 
-Lemma Zdiv_mult_cancel_r : forall a b c:Z,
+Lemma  Zdiv_mult_cancel_r : forall a b c:Z,
  c <> 0 -> (a*c)/(b*c) = a/b.
 Proof. intros. zero_or_not b. apply Z.div_mul_cancel_r; auto. Qed.
 
@@ -519,6 +519,33 @@ Lemma Zmod_divides : forall a b, b<>0 ->
 Proof.
  intros. rewrite Z.mod_divide; trivial.
  split; intros (c,Hc); exists c; auto.
+Qed.
+
+(** Particular case : dividing by 2 is related with parity *)
+
+Lemma Zdiv2'_div : forall a, Zdiv2' a = a/2.
+Proof.
+ apply Z.div2_div.
+Qed.
+
+Lemma Zmod_odd : forall a, a mod 2 = if Zodd_bool a then 1 else 0.
+Proof.
+ intros a. now rewrite <- Z.bit0_odd, <- Z.bit0_mod.
+Qed.
+
+Lemma Zmod_even : forall a, a mod 2 = if Zeven_bool a then 0 else 1.
+Proof.
+ intros a. rewrite Zmod_odd, Zodd_even_bool. now destruct Zeven_bool.
+Qed.
+
+Lemma Zodd_mod : forall a, Zodd_bool a = Zeq_bool (a mod 2) 1.
+Proof.
+ intros a. rewrite Zmod_odd. now destruct Zodd_bool.
+Qed.
+
+Lemma Zeven_mod : forall a, Zeven_bool a = Zeq_bool (a mod 2) 0.
+Proof.
+ intros a. rewrite Zmod_even. now destruct Zeven_bool.
 Qed.
 
 (** * Compatibility *)

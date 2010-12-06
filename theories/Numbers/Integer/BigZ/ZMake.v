@@ -546,4 +546,182 @@ Module Make (N:NType) <: ZType.
   destruct (N.to_Z n) as [|p|p]; now try destruct p.
  Qed.
 
+ Definition norm_pos z :=
+   match z with
+     | Pos _ => z
+     | Neg n => if N.eq_bool n N.zero then Pos n else z
+   end.
+
+ Definition testbit a n :=
+   match norm_pos n, norm_pos a with
+     | Pos p, Pos a => N.testbit a p
+     | Pos p, Neg a => negb (N.testbit (N.pred a) p)
+     | Neg p, _ => false
+   end.
+
+ Definition shiftl a n :=
+   match norm_pos a, n with
+     | Pos a, Pos n => Pos (N.shiftl a n)
+     | Pos a, Neg n => Pos (N.shiftr a n)
+     | Neg a, Pos n => Neg (N.shiftl a n)
+     | Neg a, Neg n => Neg (N.succ (N.shiftr (N.pred a) n))
+   end.
+
+ Definition shiftr a n := shiftl a (opp n).
+
+ Definition lor a b :=
+   match norm_pos a, norm_pos b with
+     | Pos a, Pos b => Pos (N.lor a b)
+     | Neg a, Pos b => Neg (N.succ (N.ldiff (N.pred a) b))
+     | Pos a, Neg b => Neg (N.succ (N.ldiff (N.pred b) a))
+     | Neg a, Neg b => Neg (N.succ (N.land (N.pred a) (N.pred b)))
+   end.
+
+ Definition land a b :=
+   match norm_pos a, norm_pos b with
+     | Pos a, Pos b => Pos (N.land a b)
+     | Neg a, Pos b => Pos (N.ldiff b (N.pred a))
+     | Pos a, Neg b => Pos (N.ldiff a (N.pred b))
+     | Neg a, Neg b => Neg (N.succ (N.lor (N.pred a) (N.pred b)))
+   end.
+
+ Definition ldiff a b :=
+   match norm_pos a, norm_pos b with
+     | Pos a, Pos b => Pos (N.ldiff a b)
+     | Neg a, Pos b => Neg (N.succ (N.lor (N.pred a) b))
+     | Pos a, Neg b => Pos (N.land a (N.pred b))
+     | Neg a, Neg b => Pos (N.ldiff (N.pred b) (N.pred a))
+   end.
+
+ Definition lxor a b :=
+   match norm_pos a, norm_pos b with
+     | Pos a, Pos b => Pos (N.lxor a b)
+     | Neg a, Pos b => Neg (N.succ (N.lxor (N.pred a) b))
+     | Pos a, Neg b => Neg (N.succ (N.lxor a (N.pred b)))
+     | Neg a, Neg b => Pos (N.lxor (N.pred a) (N.pred b))
+   end.
+
+ Definition div2 x := shiftr x one.
+
+ Lemma Zlnot_alt1 : forall x, -(x+1) = Z.lnot x.
+ Proof.
+  unfold Z.lnot, Zpred; auto with zarith.
+ Qed.
+
+ Lemma Zlnot_alt2 : forall x, Z.lnot (x-1) = -x.
+ Proof.
+  unfold Z.lnot, Zpred; auto with zarith.
+ Qed.
+
+ Lemma Zlnot_alt3 : forall x, Z.lnot (-x) = x-1.
+ Proof.
+  unfold Z.lnot, Zpred; auto with zarith.
+ Qed.
+
+ Lemma spec_norm_pos : forall x, to_Z (norm_pos x) = to_Z x.
+ Proof.
+  intros [x|x]; simpl; trivial.
+  rewrite N.spec_eq_bool, N.spec_0.
+  assert (H := Zeq_bool_if (N.to_Z x) 0).
+  destruct Zeq_bool; simpl; auto with zarith.
+ Qed.
+
+ Lemma spec_norm_pos_pos : forall x y, norm_pos x = Neg y ->
+  0 < N.to_Z y.
+ Proof.
+  intros [x|x] y; simpl; try easy.
+  rewrite N.spec_eq_bool, N.spec_0.
+  assert (H := Zeq_bool_if (N.to_Z x) 0).
+  destruct Zeq_bool; simpl; try easy.
+  inversion 1; subst. generalize (N.spec_pos y); auto with zarith.
+ Qed.
+
+ Ltac destr_norm_pos x :=
+  rewrite <- (spec_norm_pos x);
+  let H := fresh in
+  let x' := fresh x in
+  assert (H := spec_norm_pos_pos x);
+  destruct (norm_pos x) as [x'|x'];
+   specialize (H x' (eq_refl _)) || clear H.
+
+ Lemma spec_testbit: forall x p, testbit x p = Ztestbit (to_Z x) (to_Z p).
+ Proof.
+  intros x p. unfold testbit.
+  destr_norm_pos p; simpl. destr_norm_pos x; simpl.
+  apply N.spec_testbit.
+  rewrite N.spec_testbit, N.spec_pred, Zmax_r by auto with zarith.
+  symmetry. apply Z.bits_opp. apply N.spec_pos.
+  symmetry. apply Ztestbit_neg_r; auto with zarith.
+ Qed.
+
+ Lemma spec_shiftl: forall x p, to_Z (shiftl x p) = Zshiftl (to_Z x) (to_Z p).
+ Proof.
+  intros x p. unfold shiftl.
+  destr_norm_pos x; destruct p as [p|p]; simpl;
+   assert (Hp := N.spec_pos p).
+  apply N.spec_shiftl.
+  rewrite Z.shiftl_opp_r. apply N.spec_shiftr.
+  rewrite !N.spec_shiftl.
+  rewrite !Z.shiftl_mul_pow2 by apply N.spec_pos.
+  apply Zopp_mult_distr_l.
+  rewrite Z.shiftl_opp_r, N.spec_succ, N.spec_shiftr, N.spec_pred, Zmax_r
+   by auto with zarith.
+  now rewrite Zlnot_alt1, Z.lnot_shiftr, Zlnot_alt2.
+ Qed.
+
+ Lemma spec_shiftr: forall x p, to_Z (shiftr x p) = Zshiftr (to_Z x) (to_Z p).
+ Proof.
+  intros. unfold shiftr. rewrite spec_shiftl, spec_opp.
+  apply Z.shiftl_opp_r.
+ Qed.
+
+ Lemma spec_land: forall x y, to_Z (land x y) = Zand (to_Z x) (to_Z y).
+ Proof.
+  intros x y. unfold land.
+  destr_norm_pos x; destr_norm_pos y; simpl;
+   rewrite ?N.spec_succ, ?N.spec_land, ?N.spec_ldiff, ?N.spec_lor,
+    ?N.spec_pred, ?Zmax_r, ?Zlnot_alt1; auto with zarith.
+  now rewrite Z.ldiff_land, Zlnot_alt2.
+  now rewrite Z.ldiff_land, Z.land_comm, Zlnot_alt2.
+  now rewrite Z.lnot_lor, !Zlnot_alt2.
+ Qed.
+
+ Lemma spec_lor: forall x y, to_Z (lor x y) = Zor (to_Z x) (to_Z y).
+ Proof.
+  intros x y. unfold lor.
+  destr_norm_pos x; destr_norm_pos y; simpl;
+   rewrite ?N.spec_succ, ?N.spec_land, ?N.spec_ldiff, ?N.spec_lor,
+    ?N.spec_pred, ?Zmax_r, ?Zlnot_alt1; auto with zarith.
+  now rewrite Z.lnot_ldiff, Z.lor_comm, Zlnot_alt2.
+  now rewrite Z.lnot_ldiff, Zlnot_alt2.
+  now rewrite Z.lnot_land, !Zlnot_alt2.
+ Qed.
+
+ Lemma spec_ldiff: forall x y, to_Z (ldiff x y) = Zdiff (to_Z x) (to_Z y).
+ Proof.
+  intros x y. unfold ldiff.
+  destr_norm_pos x; destr_norm_pos y; simpl;
+   rewrite ?N.spec_succ, ?N.spec_land, ?N.spec_ldiff, ?N.spec_lor,
+    ?N.spec_pred, ?Zmax_r, ?Zlnot_alt1; auto with zarith.
+  now rewrite Z.ldiff_land, Zlnot_alt3.
+  now rewrite Z.lnot_lor, Z.ldiff_land, <- Zlnot_alt2.
+  now rewrite 2 Z.ldiff_land, Zlnot_alt2, Z.land_comm, Zlnot_alt3.
+ Qed.
+
+ Lemma spec_lxor: forall x y, to_Z (lxor x y) = Zxor (to_Z x) (to_Z y).
+ Proof.
+  intros x y. unfold lxor.
+  destr_norm_pos x; destr_norm_pos y; simpl;
+   rewrite ?N.spec_succ, ?N.spec_lxor, ?N.spec_pred, ?Zmax_r, ?Zlnot_alt1;
+   auto with zarith.
+  now rewrite !Z.lnot_lxor_r, Zlnot_alt2.
+  now rewrite !Z.lnot_lxor_l, Zlnot_alt2.
+  now rewrite <- Z.lxor_lnot_lnot, !Zlnot_alt2.
+ Qed.
+
+ Lemma spec_div2: forall x, to_Z (div2 x) = Zdiv2' (to_Z x).
+ Proof.
+  intros x. unfold div2. now rewrite spec_shiftr, Zdiv2'_spec, spec_1.
+ Qed.
+
 End Make.

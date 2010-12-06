@@ -711,12 +711,12 @@ pr
    (Pantimon : forall n m z z' r, n <= m -> P m z z' r -> P n z z' r)
    (f : forall n, dom_t n -> dom_t n -> res)
    (Pf: forall n x y, P n (ZnZ.to_Z x) (ZnZ.to_Z y) (f n x y)),
-   forall x y, P (level y) [x] [y] (same_level f x y).
+   forall x y, P (level x) [x] [y] (same_level f x y).
  Proof.
  intros res P Pantimon f Pf.
  set (f' := fun n x y => (n, f n x y)).
  set (P' := fun z z' r => P (fst r) z z' (snd r)).
- assert (FST : forall x y, level y <= fst (same_level f' x y))
+ assert (FST : forall x y, level x <= fst (same_level f' x y))
   by (destruct x, y; simpl; omega with * ).
  assert (SND : forall x y, same_level f x y = snd (same_level f' x y))
   by (destruct x, y; reflexivity).

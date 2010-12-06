@@ -31,6 +31,7 @@ Integer/Abstract/ZParity.vo
 Integer/Abstract/ZPow.vo
 Integer/Abstract/ZGcd.vo
 Integer/Abstract/ZLcm.vo
+Integer/Abstract/ZBits.vo
 Integer/Abstract/ZProperties.vo
 Integer/BigZ/BigZ.vo
 Integer/BigZ/ZMake.vo
@@ -48,11 +49,13 @@ NatInt/NZMul.vo
 NatInt/NZOrder.vo
 NatInt/NZProperties.vo
 NatInt/NZDomain.vo
+NatInt/NZParity.vo
 NatInt/NZDiv.vo
 NatInt/NZPow.vo
 NatInt/NZSqrt.vo
 NatInt/NZLog.vo
 NatInt/NZGcd.vo
+NatInt/NZBits.vo
 Natural/Abstract/NAddOrder.vo
 Natural/Abstract/NAdd.vo
 Natural/Abstract/NAxioms.vo
@@ -72,6 +75,7 @@ Natural/Abstract/NSqrt.vo
 Natural/Abstract/NLog.vo
 Natural/Abstract/NGcd.vo
 Natural/Abstract/NLcm.vo
+Natural/Abstract/NBits.vo
 Natural/BigN/BigN.vo
 Natural/BigN/Nbasic.vo
 Natural/BigN/NMake_gen.vo

@@ -7,7 +7,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import ZArith Nnat NAxioms NDiv NSig.
+Require Import ZArith Nnat Ndigits NAxioms NDiv NSig.
 
 (** * The interface [NSig.NType] implies the interface [NAxiomsSig] *)
 
@@ -17,7 +17,8 @@ Hint Rewrite
  spec_0 spec_1 spec_2 spec_succ spec_add spec_mul spec_pred spec_sub
  spec_div spec_modulo spec_gcd spec_compare spec_eq_bool spec_sqrt
  spec_log2 spec_max spec_min spec_pow_pos spec_pow_N spec_pow
- spec_even spec_odd
+ spec_even spec_odd spec_testbit spec_shiftl spec_shiftr
+ spec_land spec_lor spec_ldiff spec_lxor spec_div2 spec_of_N
  : nsimpl.
 Ltac nsimpl := autorewrite with nsimpl.
 Ltac ncongruence := unfold eq, to_N; repeat red; intros; nsimpl; congruence.
@@ -219,7 +220,7 @@ Qed.
 
 Lemma pow_N_pow : forall a b, pow_N a b == a^(of_N b).
 Proof.
- intros. zify. f_equal. symmetry. apply spec_of_N.
+ intros. now zify.
 Qed.
 
 Lemma pow_pos_N : forall a p, pow_pos a p == pow_N a (Npos p).
@@ -266,7 +267,7 @@ Proof.
  rewrite Zeven_bool_iff, Zeven_ex_iff.
  split; intros (m,Hm).
  exists (of_N (Zabs_N m)).
- zify. rewrite spec_of_N, Z_of_N_abs, Zabs_eq; auto.
+ zify. rewrite Z_of_N_abs, Zabs_eq; trivial.
  generalize (spec_pos n); auto with zarith.
  exists [m]. revert Hm. now zify.
 Qed.
@@ -277,7 +278,7 @@ Proof.
  rewrite Zodd_bool_iff, Zodd_ex_iff.
  split; intros (m,Hm).
  exists (of_N (Zabs_N m)).
- zify. rewrite spec_of_N, Z_of_N_abs, Zabs_eq; auto.
+ zify. rewrite Z_of_N_abs, Zabs_eq; trivial.
  generalize (spec_pos n); auto with zarith.
  exists [m]. revert Hm. now zify.
 Qed.
@@ -308,7 +309,7 @@ Proof.
  intros n m. split.
  intros (p,H). exists [p]. revert H; now zify.
  intros (z,H). exists (of_N (Zabs_N z)). zify.
- rewrite spec_of_N, Z_of_N_abs.
+ rewrite Z_of_N_abs.
  rewrite <- (Zabs_eq [n]) by apply spec_pos.
  rewrite <- Zabs_Zmult, H.
  apply Zabs_eq, spec_pos.
@@ -332,6 +333,82 @@ Qed.
 Lemma gcd_nonneg : forall n m, 0 <= gcd n m.
 Proof.
  intros. zify. apply Zgcd_nonneg.
+Qed.
+
+(** Bitwise operations *)
+
+Lemma testbit_spec : forall a n, 0<=n ->
+  exists l, exists h, (0<=l /\ l<2^n) /\
+    a == l + ((if testbit a n then 1 else 0) + 2*h)*2^n.
+Proof.
+ intros a n _. zify.
+ assert (Ha := spec_pos a).
+ assert (Hn := spec_pos n).
+ destruct (Ntestbit_spec (Zabs_N [a]) (Zabs_N [n])) as (l & h & (_,Hl) & EQ).
+ exists (of_N l), (of_N h).
+ zify.
+ apply Z_of_N_lt in Hl.
+ apply Z_of_N_eq in EQ.
+ revert Hl EQ.
+ rewrite <- Ztestbit_of_N.
+ rewrite Z_of_N_plus, Z_of_N_mult, <- !Zpower_Npow, Z_of_N_plus,
+  Z_of_N_mult, !Z_of_N_abs, !Zabs_eq by trivial.
+ simpl (Z_of_N 2).
+ repeat split; trivial using Z_of_N_le_0.
+ destruct Ztestbit; now zify.
+Qed.
+
+Lemma testbit_neg_r : forall a n, n<0 -> testbit a n = false.
+Proof.
+ intros a n. zify. apply Ztestbit_neg_r.
+Qed.
+
+Lemma shiftr_spec : forall a n m, 0<=m ->
+ testbit (shiftr a n) m = testbit a (m+n).
+Proof.
+ intros a n m. zify. apply Zshiftr_spec.
+Qed.
+
+Lemma shiftl_spec_high : forall a n m, 0<=m -> n<=m ->
+ testbit (shiftl a n) m = testbit a (m-n).
+Proof.
+ intros a n m. zify. intros Hn H. rewrite Zmax_r by auto with zarith.
+ now apply Zshiftl_spec_high.
+Qed.
+
+Lemma shiftl_spec_low : forall a n m, m<n ->
+ testbit (shiftl a n) m = false.
+Proof.
+ intros a n m. zify. intros H. now apply Zshiftl_spec_low.
+Qed.
+
+Lemma land_spec : forall a b n,
+ testbit (land a b) n = testbit a n && testbit b n.
+Proof.
+ intros a n m. zify. now apply Zand_spec.
+Qed.
+
+Lemma lor_spec : forall a b n,
+ testbit (lor a b) n = testbit a n || testbit b n.
+Proof.
+ intros a n m. zify. now apply Zor_spec.
+Qed.
+
+Lemma ldiff_spec : forall a b n,
+ testbit (ldiff a b) n = testbit a n && negb (testbit b n).
+Proof.
+ intros a n m. zify. now apply Zdiff_spec.
+Qed.
+
+Lemma lxor_spec : forall a b n,
+ testbit (lxor a b) n = xorb (testbit a n) (testbit b n).
+Proof.
+ intros a n m. zify. now apply Zxor_spec.
+Qed.
+
+Lemma div2_spec : forall a, div2 a == shiftr a 1.
+Proof.
+ intros a. zify. now apply Zdiv2'_spec.
 Qed.
 
 (** Recursion *)

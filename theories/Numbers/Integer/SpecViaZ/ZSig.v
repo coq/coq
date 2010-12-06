@@ -62,6 +62,14 @@ Module Type ZType.
  Parameter abs : t -> t.
  Parameter even : t -> bool.
  Parameter odd : t -> bool.
+ Parameter testbit : t -> t -> bool.
+ Parameter shiftr : t -> t -> t.
+ Parameter shiftl : t -> t -> t.
+ Parameter land : t -> t -> t.
+ Parameter lor : t -> t -> t.
+ Parameter ldiff : t -> t -> t.
+ Parameter lxor : t -> t -> t.
+ Parameter div2 : t -> t.
 
  Parameter spec_compare: forall x y, compare x y = Zcompare [x] [y].
  Parameter spec_eq_bool: forall x y, eq_bool x y = Zeq_bool [x] [y].
@@ -94,6 +102,14 @@ Module Type ZType.
  Parameter spec_abs : forall x, [abs x] = Zabs [x].
  Parameter spec_even : forall x, even x = Zeven_bool [x].
  Parameter spec_odd : forall x, odd x = Zodd_bool [x].
+ Parameter spec_testbit: forall x p, testbit x p = Ztestbit [x] [p].
+ Parameter spec_shiftr: forall x p, [shiftr x p] = Zshiftr [x] [p].
+ Parameter spec_shiftl: forall x p, [shiftl x p] = Zshiftl [x] [p].
+ Parameter spec_land: forall x y, [land x y] = Zand [x] [y].
+ Parameter spec_lor: forall x y, [lor x y] = Zor [x] [y].
+ Parameter spec_ldiff: forall x y, [ldiff x y] = Zdiff [x] [y].
+ Parameter spec_lxor: forall x y, [lxor x y] = Zxor [x] [y].
+ Parameter spec_div2: forall x, [div2 x] = Zdiv2' [x].
 
 End ZType.
 

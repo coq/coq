@@ -219,6 +219,10 @@ Lemma div_div : forall a b c, b~=0 -> c~=0 ->
  (a/b)/c == a/(b*c).
 Proof. intros. apply div_div; auto'. Qed.
 
+Lemma mod_mul_r : forall a b c, b~=0 -> c~=0 ->
+ a mod (b*c) == a mod b + b*((a/b) mod c).
+Proof. intros. apply mod_mul_r; auto'. Qed.
+
 (** A last inequality: *)
 
 Theorem div_mul_le:

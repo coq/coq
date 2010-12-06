@@ -54,6 +54,14 @@ Proof.
  rewrite EQ. now nzsimpl.
 Qed.
 
+Lemma pow_0_l' : forall a, a~=0 -> 0^a == 0.
+Proof.
+ intros a Ha.
+ destruct (lt_trichotomy a 0) as [LT|[EQ|GT]]; try order.
+ now rewrite pow_neg_r.
+ now apply pow_0_l.
+Qed.
+
 Lemma pow_1_r : forall a, a^1 == a.
 Proof.
  intros. now nzsimpl'.
@@ -74,6 +82,36 @@ Proof.
 Qed.
 
 Hint Rewrite pow_2_r : nz.
+
+(** Power and nullity *)
+
+Lemma pow_eq_0 : forall a b, 0<=b -> a^b == 0 -> a == 0.
+Proof.
+ intros a b Hb. apply le_ind with (4:=Hb).
+ solve_predicate_wd.
+ rewrite pow_0_r. order'.
+ clear b Hb. intros b Hb IH.
+ rewrite pow_succ_r by trivial.
+ intros H. apply eq_mul_0 in H. destruct H; trivial.
+ now apply IH.
+Qed.
+
+Lemma pow_nonzero : forall a b, a~=0 -> 0<=b -> a^b ~= 0.
+Proof.
+ intros a b Ha Hb. contradict Ha. now apply pow_eq_0 with b.
+Qed.
+
+Lemma pow_eq_0_iff : forall a b, a^b == 0 <-> b<0 \/ (0<b /\ a==0).
+Proof.
+ intros a b. split.
+ intros H.
+ destruct (lt_trichotomy b 0) as [Hb|[Hb|Hb]].
+ now left.
+ rewrite Hb, pow_0_r in H; order'.
+ right. split; trivial. apply pow_eq_0 with b; order.
+ intros [Hb|[Hb Ha]]. now rewrite pow_neg_r.
+ rewrite Ha. apply pow_0_l'. order.
+Qed.
 
 (** Power and addition, multiplication *)
 

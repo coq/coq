@@ -9,7 +9,7 @@
 (************************************************************************)
 
 Require Import
- Bool Peano Peano_dec Compare_dec Plus Mult Minus Le Lt EqNat
+ Bool Peano Peano_dec Compare_dec Plus Mult Minus Le Lt EqNat Div2 Wf_nat
  NAxioms NProperties.
 
 (** Functions not already defined *)
@@ -67,6 +67,21 @@ Proof.
   intros (m,H). destruct m. discriminate. exists m.
    simpl in H. rewrite <- plus_n_Sm in H. inversion H. simpl.
    now rewrite <- !plus_n_Sm, <- !plus_n_O.
+Qed.
+
+Lemma Even_equiv : forall n, Even n <-> Even.even n.
+Proof.
+ split. intros (p,->). apply Even.even_mult_l. do 3 constructor.
+ intros H. destruct (even_2n n H) as (p,->).
+ exists p. unfold double. simpl. now rewrite <- plus_n_O.
+Qed.
+
+Lemma Odd_equiv : forall n, Odd n <-> Even.odd n.
+Proof.
+ split. intros (p,->). rewrite <- plus_n_Sm, <- plus_n_O.
+ apply Even.odd_S. apply Even.even_mult_l. do 3 constructor.
+ intros H. destruct (odd_S2n n H) as (p,->).
+ exists p. unfold double. simpl. now rewrite <- plus_n_Sm, <- !plus_n_O.
 Qed.
 
 (* A linear, tail-recursive, division for nat.
@@ -332,6 +347,191 @@ Proof.
  now rewrite mult_minus_distr_l, mult_assoc, Hu, Hv, minus_plus.
 Qed.
 
+(** * Bitwise operations *)
+
+(** We provide here some bitwise operations for unary numbers.
+  Some might be really naive, they are just there for fullfiling
+  the same interface as other for natural representations. As
+  soon as binary representations such as NArith are available,
+  it is clearly better to convert to/from them and use their ops.
+*)
+
+Fixpoint testbit a n :=
+ match n with
+   | O => odd a
+   | S n => testbit (div2 a) n
+ end.
+
+Definition shiftl a n := iter_nat n _ double a.
+Definition shiftr a n := iter_nat n _ div2 a.
+
+Fixpoint bitwise (op:bool->bool->bool) n a b :=
+ match n with
+  | O => O
+  | S n' =>
+    (if op (odd a) (odd b) then 1 else 0) +
+    2*(bitwise op n' (div2 a) (div2 b))
+ end.
+
+Definition land a b := bitwise andb a a b.
+Definition lor a b := bitwise orb (max a b) a b.
+Definition ldiff a b := bitwise (fun b b' => b && negb b') a a b.
+Definition lxor a b := bitwise xorb (max a b) a b.
+
+Lemma double_twice : forall n, double n = 2*n.
+Proof.
+ simpl; intros. now rewrite <- plus_n_O.
+Qed.
+
+Lemma testbit_0_l : forall n, testbit 0 n = false.
+Proof.
+ now induction n.
+Qed.
+
+Lemma testbit_spec : forall a n,
+ exists l, exists h, 0<=l<2^n /\
+  a = l + ((if testbit a n then 1 else 0) + 2*h)*2^n.
+Proof.
+ intros a n. revert a. induction n; intros a; simpl testbit.
+ exists 0. exists (div2 a).
+ split. simpl.  unfold lt. now split.
+ case_eq (odd a); intros EQ; simpl.
+ rewrite mult_1_r, <- plus_n_O.
+  now apply odd_double, Odd_equiv, odd_spec.
+ rewrite mult_1_r, <- plus_n_O. apply even_double.
+  destruct (Even.even_or_odd a) as [H|H]; trivial.
+  apply Odd_equiv, odd_spec in H. rewrite H in EQ; discriminate.
+ destruct (IHn (div2 a)) as (l & h & (_,H) & EQ).
+ destruct (Even.even_or_odd a) as [EV|OD].
+ exists (double l). exists h.
+ split. split. apply le_O_n.
+ unfold double; simpl. rewrite <- plus_n_O. now apply plus_lt_compat.
+ pattern a at 1. rewrite (even_double a EV).
+ pattern (div2 a) at 1. rewrite EQ.
+ rewrite !double_twice, mult_plus_distr_l. f_equal.
+ rewrite mult_assoc, (mult_comm 2), <- mult_assoc. f_equal.
+ exists (S (double l)). exists h.
+ split. split. apply le_O_n.
+ red. red in H.
+ unfold double; simpl. rewrite <- plus_n_O, plus_n_Sm, <- plus_Sn_m.
+ now apply plus_le_compat.
+ rewrite plus_Sn_m.
+ pattern a at 1. rewrite (odd_double a OD). f_equal.
+ pattern (div2 a) at 1. rewrite EQ.
+ rewrite !double_twice, mult_plus_distr_l. f_equal.
+ rewrite mult_assoc, (mult_comm 2), <- mult_assoc. f_equal.
+Qed.
+
+Lemma shiftr_spec : forall a n m,
+ testbit (shiftr a n) m = testbit a (m+n).
+Proof.
+ induction n; intros m. trivial.
+ now rewrite <- plus_n_O.
+ now rewrite <- plus_n_Sm, <- plus_Sn_m, <- IHn.
+Qed.
+
+Lemma shiftl_spec_high : forall a n m, n<=m ->
+ testbit (shiftl a n) m = testbit a (m-n).
+Proof.
+ induction n; intros m H. trivial.
+ now rewrite <- minus_n_O.
+ destruct m. inversion H.
+ simpl. apply le_S_n in H.
+ change (shiftl a (S n)) with (double (shiftl a n)).
+ rewrite double_twice, div2_double. now apply IHn.
+Qed.
+
+Lemma shiftl_spec_low : forall a n m, m<n ->
+ testbit (shiftl a n) m = false.
+Proof.
+ induction n; intros m H. inversion H.
+ change (shiftl a (S n)) with (double (shiftl a n)).
+ destruct m; simpl.
+ unfold odd. apply negb_false_iff.
+ apply even_spec. exists (shiftl a n). apply double_twice.
+ rewrite double_twice, div2_double. apply IHn.
+ now apply lt_S_n.
+Qed.
+
+Lemma div2_bitwise : forall op n a b,
+ div2 (bitwise op (S n) a b) = bitwise op n (div2 a) (div2 b).
+Proof.
+ intros. unfold bitwise; fold bitwise.
+ destruct (op (odd a) (odd b)).
+ now rewrite div2_double_plus_one.
+ now rewrite plus_O_n, div2_double.
+Qed.
+
+Lemma odd_bitwise : forall op n a b,
+ odd (bitwise op (S n) a b) = op (odd a) (odd b).
+Proof.
+ intros. unfold bitwise; fold bitwise.
+ destruct (op (odd a) (odd b)).
+ apply odd_spec. rewrite plus_comm. eexists; eauto.
+ unfold odd. apply negb_false_iff. apply even_spec.
+ rewrite plus_O_n; eexists; eauto.
+Qed.
+
+Lemma div2_decr : forall a n, a <= S n -> div2 a <= n.
+Proof.
+ destruct a; intros. apply le_0_n.
+ apply le_trans with a.
+ apply lt_n_Sm_le, lt_div2, lt_0_Sn. now apply le_S_n.
+Qed.
+
+Lemma testbit_bitwise_1 : forall op, (forall b, op false b = false) ->
+ forall n m a b, a<=n ->
+ testbit (bitwise op n a b) m = op (testbit a m) (testbit b m).
+Proof.
+ intros op Hop.
+ induction n; intros m a b Ha.
+ simpl. inversion Ha; subst. now rewrite testbit_0_l.
+ destruct m.
+ apply odd_bitwise.
+ unfold testbit; fold testbit. rewrite div2_bitwise.
+ apply IHn; now apply div2_decr.
+Qed.
+
+Lemma testbit_bitwise_2 : forall op, op false false = false ->
+ forall n m a b, a<=n -> b<=n ->
+ testbit (bitwise op n a b) m = op (testbit a m) (testbit b m).
+Proof.
+ intros op Hop.
+ induction n; intros m a b Ha Hb.
+ simpl. inversion Ha; inversion Hb; subst. now rewrite testbit_0_l.
+ destruct m.
+ apply odd_bitwise.
+ unfold testbit; fold testbit. rewrite div2_bitwise.
+ apply IHn; now apply div2_decr.
+Qed.
+
+Lemma land_spec : forall a b n,
+ testbit (land a b) n = testbit a n && testbit b n.
+Proof.
+ intros. unfold land. apply testbit_bitwise_1; trivial.
+Qed.
+
+Lemma ldiff_spec : forall a b n,
+ testbit (ldiff a b) n = testbit a n && negb (testbit b n).
+Proof.
+ intros. unfold ldiff. apply testbit_bitwise_1; trivial.
+Qed.
+
+Lemma lor_spec : forall a b n,
+ testbit (lor a b) n = testbit a n || testbit b n.
+Proof.
+ intros. unfold lor. apply testbit_bitwise_2. trivial.
+ destruct (le_ge_dec a b). now rewrite max_r. now rewrite max_l.
+ destruct (le_ge_dec a b). now rewrite max_r. now rewrite max_l.
+Qed.
+
+Lemma lxor_spec : forall a b n,
+ testbit (lxor a b) n = xorb (testbit a n) (testbit b n).
+Proof.
+ intros. unfold lxor. apply testbit_bitwise_2. trivial.
+ destruct (le_ge_dec a b). now rewrite max_r. now rewrite max_l.
+ destruct (le_ge_dec a b). now rewrite max_r. now rewrite max_l.
+Qed.
 
 (** * Implementation of [NAxiomsSig] by [nat] *)
 
@@ -524,6 +724,27 @@ Definition gcd_divide_r := gcd_divide_r.
 Definition gcd_greatest := gcd_greatest.
 Lemma gcd_nonneg : forall a b, 0<=gcd a b.
 Proof. intros. apply le_O_n. Qed.
+
+Definition testbit := testbit.
+Definition shiftl := shiftl.
+Definition shiftr := shiftr.
+Definition lxor := lxor.
+Definition land := land.
+Definition lor := lor.
+Definition ldiff := ldiff.
+Definition div2 := div2.
+
+Definition testbit_spec a n (_:0<=n) := testbit_spec a n.
+Lemma testbit_neg_r a n (H:n<0) : testbit a n = false.
+Proof. inversion H. Qed.
+Definition shiftl_spec_low := shiftl_spec_low.
+Definition shiftl_spec_high a n m (_:0<=m) := shiftl_spec_high a n m.
+Definition shiftr_spec a n m (_:0<=m) := shiftr_spec a n m.
+Definition lxor_spec := lxor_spec.
+Definition land_spec := land_spec.
+Definition lor_spec := lor_spec.
+Definition ldiff_spec := ldiff_spec.
+Definition div2_spec a : div2 a = shiftr a 1 := eq_refl _.
 
 (** Generic Properties *)
 

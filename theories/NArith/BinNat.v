@@ -27,6 +27,13 @@ Arguments Scope Npos [positive_scope].
 
 Local Open Scope N_scope.
 
+(** Some local ad-hoc notation, since no interpretation of numerical
+  constants is available yet. *)
+
+Local Notation "0" := N0 : N_scope.
+Local Notation "1" := (Npos 1) : N_scope.
+Local Notation "2" := (Npos 2) : N_scope.
+
 Definition Ndiscr : forall n:N, { p:positive | n = Npos p } + { n = N0 }.
 Proof.
  destruct n; auto.
@@ -37,42 +44,59 @@ Defined.
 
 Definition Ndouble_plus_one x :=
   match x with
-  | N0 => Npos 1
-  | Npos p => Npos (xI p)
+  | 0 => Npos 1
+  | Npos p => Npos p~1
   end.
 
 (** Operation x -> 2*x *)
 
 Definition Ndouble n :=
   match n with
-  | N0 => N0
-  | Npos p => Npos (xO p)
+  | 0 => 0
+  | Npos p => Npos p~0
   end.
 
 (** Successor *)
 
 Definition Nsucc n :=
   match n with
-  | N0 => Npos 1
+  | 0 => Npos 1
   | Npos p => Npos (Psucc p)
   end.
 
 (** Predecessor *)
 
 Definition Npred (n : N) := match n with
-| N0 => N0
+| 0 => 0
 | Npos p => match p with
-  | xH => N0
+  | xH => 0
   | _ => Npos (Ppred p)
   end
 end.
+
+(** The successor of a N can be seen as a positive *)
+
+Definition Nsucc_pos (n : N) : positive :=
+ match n with
+   | N0 => 1%positive
+   | Npos p => Psucc p
+ end.
+
+(** Similarly, the predecessor of a positive, seen as a N *)
+
+Definition Ppred_N (p:positive) : N :=
+ match p with
+   | 1 => N0
+   | p~1 => Npos (p~0)
+   | p~0 => Npos (Pdouble_minus_one p)
+ end%positive.
 
 (** Addition *)
 
 Definition Nplus n m :=
   match n, m with
-  | N0, _ => m
-  | _, N0 => n
+  | 0, _ => m
+  | _, 0 => n
   | Npos p, Npos q => Npos (p + q)
   end.
 
@@ -82,12 +106,12 @@ Infix "+" := Nplus : N_scope.
 
 Definition Nminus (n m : N) :=
 match n, m with
-| N0, _ => N0
-| n, N0 => n
+| 0, _ => 0
+| n, 0 => n
 | Npos n', Npos m' =>
   match Pminus_mask n' m' with
   | IsPos p => Npos p
-  | _ => N0
+  | _ => 0
   end
 end.
 
@@ -97,8 +121,8 @@ Infix "-" := Nminus : N_scope.
 
 Definition Nmult n m :=
   match n, m with
-  | N0, _ => N0
-  | _, N0 => N0
+  | 0, _ => 0
+  | _, 0 => 0
   | Npos p, Npos q => Npos (p * q)
   end.
 
@@ -108,7 +132,7 @@ Infix "*" := Nmult : N_scope.
 
 Definition Neqb n m :=
  match n, m with
-  | N0, N0 => true
+  | 0, 0 => true
   | Npos n, Npos m => Peqb n m
   | _,_ => false
  end.
@@ -117,9 +141,9 @@ Definition Neqb n m :=
 
 Definition Ncompare n m :=
   match n, m with
-  | N0, N0 => Eq
-  | N0, Npos m' => Lt
-  | Npos n', N0 => Gt
+  | 0, 0 => Eq
+  | 0, Npos m' => Lt
+  | Npos n', 0 => Gt
   | Npos n', Npos m' => (n' ?= m')%positive Eq
   end.
 
@@ -162,7 +186,7 @@ Definition nat_of_N (a:N) :=
 
 Definition N_of_nat (n:nat) :=
   match n with
-  | O => N0
+  | O => 0
   | S n' => Npos (P_of_succ_nat n')
   end.
 
@@ -178,43 +202,43 @@ Defined.
 
 Lemma N_ind_double :
  forall (a:N) (P:N -> Prop),
-   P N0 ->
+   P 0 ->
    (forall a, P a -> P (Ndouble a)) ->
    (forall a, P a -> P (Ndouble_plus_one a)) -> P a.
 Proof.
-  intros; elim a. trivial.
-  simple induction p. intros.
-  apply (H1 (Npos p0)); trivial.
-  intros; apply (H0 (Npos p0)); trivial.
-  intros; apply (H1 N0); assumption.
+ intros a P P0 P2 PS2. destruct a as [|p]. trivial.
+ induction p as [p IHp|p IHp| ].
+ now apply (PS2 (Npos p)).
+ now apply (P2 (Npos p)).
+ now apply (PS2 0).
 Qed.
 
 Lemma N_rec_double :
  forall (a:N) (P:N -> Set),
-   P N0 ->
+   P 0 ->
    (forall a, P a -> P (Ndouble a)) ->
    (forall a, P a -> P (Ndouble_plus_one a)) -> P a.
 Proof.
-  intros; elim a. trivial.
-  simple induction p. intros.
-  apply (H1 (Npos p0)); trivial.
-  intros; apply (H0 (Npos p0)); trivial.
-  intros; apply (H1 N0); assumption.
+ intros a P P0 P2 PS2. destruct a as [|p]. trivial.
+ induction p as [p IHp|p IHp| ].
+ now apply (PS2 (Npos p)).
+ now apply (P2 (Npos p)).
+ now apply (PS2 0).
 Qed.
 
 (** Peano induction on binary natural numbers *)
 
 Definition Nrect
-  (P : N -> Type) (a : P N0)
+  (P : N -> Type) (a : P 0)
     (f : forall n : N, P n -> P (Nsucc n)) (n : N) : P n :=
 let f' (p : positive) (x : P (Npos p)) := f (Npos p) x in
 let P' (p : positive) := P (Npos p) in
 match n return (P n) with
-| N0 => a
-| Npos p => Prect P' (f N0 a) f' p
+| 0 => a
+| Npos p => Prect P' (f 0 a) f' p
 end.
 
-Theorem Nrect_base : forall P a f, Nrect P a f N0 = a.
+Theorem Nrect_base : forall P a f, Nrect P a f 0 = a.
 Proof.
 intros P a f; simpl; reflexivity.
 Qed.
@@ -229,7 +253,7 @@ Definition Nind (P : N -> Prop) := Nrect P.
 
 Definition Nrec (P : N -> Set) := Nrect P.
 
-Theorem Nrec_base : forall P a f, Nrec P a f N0 = a.
+Theorem Nrec_base : forall P a f, Nrec P a f 0 = a.
 Proof.
 intros P a f; unfold Nrec; apply Nrect_base.
 Qed.
@@ -248,14 +272,43 @@ case_eq (Psucc p); try (intros q H; rewrite <- H; now rewrite Ppred_succ).
 intro H; false_hyp H Psucc_not_one.
 Qed.
 
+Theorem Npred_minus : forall n, Npred n = Nminus n (Npos 1).
+Proof.
+ intros [|[p|p|]]; trivial.
+Qed.
+
+Lemma Nsucc_pred : forall n, n<>0 -> Nsucc (Npred n) = n.
+Proof.
+ intros [|n] H; (now destruct H) || clear H.
+ rewrite Npred_minus. simpl. destruct n; simpl; trivial.
+ f_equal; apply Psucc_o_double_minus_one_eq_xO.
+Qed.
+
+(** Properties of mixed successor and predecessor. *)
+
+Lemma Ppred_N_spec : forall p, Ppred_N p = Npred (Npos p).
+Proof.
+ now destruct p.
+Qed.
+
+Lemma Nsucc_pos_spec : forall n, Npos (Nsucc_pos n) = Nsucc n.
+Proof.
+ now destruct n.
+Qed.
+
+Lemma Ppred_Nsucc : forall n, Ppred_N (Nsucc_pos n) = n.
+Proof.
+ intros. now rewrite Ppred_N_spec, Nsucc_pos_spec, Npred_succ.
+Qed.
+
 (** Properties of addition *)
 
-Theorem Nplus_0_l : forall n:N, N0 + n = n.
+Theorem Nplus_0_l : forall n:N, 0 + n = n.
 Proof.
 reflexivity.
 Qed.
 
-Theorem Nplus_0_r : forall n:N, n + N0 = n.
+Theorem Nplus_0_r : forall n:N, n + 0 = n.
 Proof.
 destruct n; reflexivity.
 Qed.
@@ -285,7 +338,7 @@ destruct n, m.
   simpl; rewrite Pplus_succ_permute_l; reflexivity.
 Qed.
 
-Theorem Nsucc_0 : forall n : N, Nsucc n <> N0.
+Theorem Nsucc_0 : forall n : N, Nsucc n <> 0.
 Proof.
 now destruct n.
 Qed.
@@ -308,7 +361,7 @@ Qed.
 
 (** Properties of subtraction. *)
 
-Lemma Nminus_N0_Nle : forall n n' : N, n - n' = N0 <-> n <= n'.
+Lemma Nminus_N0_Nle : forall n n' : N, n - n' = 0 <-> n <= n'.
 Proof.
 intros [| p] [| q]; unfold Nle; simpl;
 split; intro H; try easy.
@@ -319,7 +372,7 @@ subst. now rewrite Pminus_mask_diag.
 now rewrite Pminus_mask_Lt.
 Qed.
 
-Theorem Nminus_0_r : forall n : N, n - N0 = n.
+Theorem Nminus_0_r : forall n : N, n - 0 = n.
 Proof.
 now destruct n.
 Qed.
@@ -332,14 +385,9 @@ simpl. rewrite Pminus_mask_succ_r, Pminus_mask_carry_spec.
 now destruct (Pminus_mask p q) as [|[r|r|]|].
 Qed.
 
-Theorem Npred_minus : forall n, Npred n = Nminus n (Npos 1).
-Proof.
- intros [|[p|p|]]; trivial.
-Qed.
-
 (** Properties of multiplication *)
 
-Theorem Nmult_0_l : forall n:N, N0 * n = N0.
+Theorem Nmult_0_l : forall n:N, 0 * n = 0.
 Proof.
 reflexivity.
 Qed.
@@ -386,7 +434,7 @@ Proof.
 intros. rewrite ! (Nmult_comm p); apply Nmult_plus_distr_r.
 Qed.
 
-Theorem Nmult_reg_r : forall n m p:N, p <> N0 -> n * p = m * p -> n = m.
+Theorem Nmult_reg_r : forall n m p:N, p <> 0 -> n * p = m * p -> n = m.
 Proof.
 destruct p; intros Hp H.
 contradiction Hp; reflexivity.
@@ -404,6 +452,11 @@ intros. apply (Peqb_eq n m). congruence.
 Qed.
 
 (** Properties of comparison *)
+
+Lemma Nle_0 : forall n, 0<=n.
+Proof.
+ now destruct n.
+Qed.
 
 Lemma Ncompare_refl : forall n, (n ?= n) = Eq.
 Proof.
@@ -524,7 +577,7 @@ Qed.
 
 (** 0 is the least natural number *)
 
-Theorem Ncompare_0 : forall n : N, Ncompare n N0 <> Lt.
+Theorem Ncompare_0 : forall n : N, Ncompare n 0 <> Lt.
 Proof.
 destruct n; discriminate.
 Qed.
@@ -533,8 +586,8 @@ Qed.
 
 Definition Ndiv2 (n:N) :=
   match n with
-  | N0 => N0
-  | Npos 1 => N0
+  | 0 => 0
+  | Npos 1 => 0
   | Npos (p~0) => Npos p
   | Npos (p~1) => Npos p
   end.
@@ -565,14 +618,14 @@ Qed.
 
 Definition Npow n p :=
   match p, n with
-    | N0, _ => Npos 1
-    | _, N0 => N0
+    | 0, _ => Npos 1
+    | _, 0 => 0
     | Npos p, Npos q => Npos (Ppow q p)
   end.
 
 Infix "^" := Npow : N_scope.
 
-Lemma Npow_0_r : forall n, n ^ N0 = Npos 1.
+Lemma Npow_0_r : forall n, n ^ 0 = Npos 1.
 Proof. reflexivity. Qed.
 
 Lemma Npow_succ_r : forall n p, n^(Nsucc p) = n * n^p.
@@ -585,13 +638,13 @@ Qed.
 
 Definition Nlog2 n :=
  match n with
-   | N0 => N0
-   | Npos 1 => N0
+   | 0 => 0
+   | Npos 1 => 0
    | Npos (p~0) => Npos (Psize_pos p)
    | Npos (p~1) => Npos (Psize_pos p)
  end.
 
-Lemma Nlog2_spec : forall n, N0 < n ->
+Lemma Nlog2_spec : forall n, 0 < n ->
  (Npos 2)^(Nlog2 n) <= n < (Npos 2)^(Nsucc (Nlog2 n)).
 Proof.
  intros [|[p|p|]] H; discriminate H || clear H; simpl; split.
@@ -605,7 +658,7 @@ Proof.
  reflexivity.
 Qed.
 
-Lemma Nlog2_nonpos : forall n, n<=N0 -> Nlog2 n = N0.
+Lemma Nlog2_nonpos : forall n, n<=0 -> Nlog2 n = 0.
 Proof.
  intros [|n] Hn. reflexivity. now destruct Hn.
 Qed.
@@ -614,19 +667,16 @@ Qed.
 
 Definition Neven n :=
   match n with
-    | N0 => true
+    | 0 => true
     | Npos (xO _) => true
     | _ => false
   end.
 Definition Nodd n := negb (Neven n).
 
-Local Notation "1" := (Npos 1) : N_scope.
-Local Notation "2" := (Npos 2) : N_scope.
-
 Lemma Neven_spec : forall n, Neven n = true <-> exists m, n=2*m.
 Proof.
  destruct n.
- split. now exists N0.
+ split. now exists 0.
  trivial.
  destruct p; simpl; split; trivial; try discriminate.
  intros (m,H). now destruct m.
@@ -642,5 +692,5 @@ Proof.
  destruct p; simpl; split; trivial; try discriminate.
  exists (Npos p). reflexivity.
  intros (m,H). now destruct m.
- exists N0. reflexivity.
+ exists 0. reflexivity.
 Qed.

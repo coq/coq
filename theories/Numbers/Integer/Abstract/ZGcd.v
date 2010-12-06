@@ -51,7 +51,7 @@ Proof.
  now apply divide_abs_l.
 Qed.
 
-Lemma divide_1_r : forall n, (n | 1) -> n==1 \/ n==-(1).
+Lemma divide_1_r : forall n, (n | 1) -> n==1 \/ n==-1.
 Proof.
  intros n (m,Hm). now apply eq_mul_1 with m.
 Qed.

@@ -30,7 +30,7 @@ Qed.
 
 Lemma odd_pow : forall a b, 0<b -> odd (a^b) = odd a.
 Proof.
- intros. now rewrite <- !negb_even_odd, even_pow.
+ intros. now rewrite <- !negb_even, even_pow.
 Qed.
 
 (** Properties of power of negative numbers *)
@@ -80,8 +80,7 @@ Proof.
  rewrite <- EQ'. nzsimpl.
  destruct (le_gt_cases 0 b).
  apply pow_0_l.
- assert (b~=0) by
-  (contradict H; now rewrite H, <-odd_spec, <-negb_even_odd, even_0).
+ assert (b~=0) by (contradict H; now rewrite H, <-odd_spec, odd_0).
  order.
  now rewrite pow_neg_r.
  rewrite abs_neq by order.
@@ -95,14 +94,31 @@ Proof.
  destruct (sgn_spec a) as [(LT,EQ)|[(EQ',EQ)|(LT,EQ)]]; rewrite EQ.
  apply sgn_pos. apply pow_pos_nonneg; trivial.
  rewrite <- EQ'. rewrite pow_0_l. apply sgn_0.
- assert (b~=0) by
-  (contradict H; now rewrite H, <-odd_spec, <-negb_even_odd, even_0).
+ assert (b~=0) by (contradict H; now rewrite H, <-odd_spec, odd_0).
  order.
  apply sgn_neg.
  rewrite <- (opp_involutive a). rewrite pow_opp_odd by trivial.
  apply opp_neg_pos.
  apply pow_pos_nonneg; trivial.
  now apply opp_pos_neg.
+Qed.
+
+Lemma abs_pow : forall a b, abs (a^b) == (abs a)^b.
+Proof.
+ intros a b.
+ destruct (Even_or_Odd b).
+ rewrite pow_even_abs by trivial.
+ apply abs_eq, pow_nonneg, abs_nonneg.
+ rewrite pow_odd_abs_sgn by trivial.
+ rewrite abs_mul.
+ destruct (lt_trichotomy 0 a) as [Ha|[Ha|Ha]].
+ rewrite (sgn_pos a), (abs_eq 1), mul_1_l by order'.
+ apply abs_eq, pow_nonneg, abs_nonneg.
+ rewrite <- Ha, sgn_0, abs_0, mul_0_l.
+ symmetry. apply pow_0_l'. intro Hb. rewrite Hb in H.
+ apply (Even_Odd_False 0); trivial. exists 0; now nzsimpl.
+ rewrite (sgn_neg a), abs_opp, (abs_eq 1), mul_1_l by order'.
+ apply abs_eq, pow_nonneg, abs_nonneg.
 Qed.
 
 End ZPowProp.

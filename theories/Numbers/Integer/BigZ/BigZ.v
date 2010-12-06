@@ -67,8 +67,21 @@ Arguments Scope BigZ.modulo [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.quot [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.rem [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.gcd [bigZ_scope bigZ_scope].
+Arguments Scope BigZ.lcm [bigZ_scope bigZ_scope].
 Arguments Scope BigZ.even [bigZ_scope].
 Arguments Scope BigZ.odd [bigZ_scope].
+Arguments Scope BigN.testbit [bigZ_scope bigZ_scope].
+Arguments Scope BigN.shiftl [bigZ_scope bigZ_scope].
+Arguments Scope BigN.shiftr [bigZ_scope bigZ_scope].
+Arguments Scope BigN.lor [bigZ_scope bigZ_scope].
+Arguments Scope BigN.land [bigZ_scope bigZ_scope].
+Arguments Scope BigN.ldiff [bigZ_scope bigZ_scope].
+Arguments Scope BigN.lxor [bigZ_scope bigZ_scope].
+Arguments Scope BigN.setbit [bigZ_scope bigZ_scope].
+Arguments Scope BigN.clearbit [bigZ_scope bigZ_scope].
+Arguments Scope BigN.lnot [bigZ_scope].
+Arguments Scope BigN.div2 [bigZ_scope].
+Arguments Scope BigN.ones [bigZ_scope].
 
 Local Notation "0" := BigZ.zero : bigZ_scope.
 Local Notation "1" := BigZ.one : bigZ_scope.

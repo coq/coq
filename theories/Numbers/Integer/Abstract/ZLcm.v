@@ -43,6 +43,43 @@ Proof.
  apply quot_rem. order.
 Qed.
 
+(** We can use the sign rule to have an relation between divisions. *)
+
+Lemma quot_div : forall a b, b~=0 ->
+ a÷b == (sgn a)*(sgn b)*(abs a / abs b).
+Proof.
+ assert (AUX : forall a b, 0<b -> a÷b == (sgn a)*(sgn b)*(abs a / abs b)).
+  intros a b Hb. rewrite (sgn_pos b), (abs_eq b), mul_1_r by order.
+  destruct (lt_trichotomy 0 a) as [Ha|[Ha|Ha]].
+  rewrite sgn_pos, abs_eq, mul_1_l, quot_div_nonneg; order.
+  rewrite <- Ha, abs_0, sgn_0, quot_0_l, div_0_l, mul_0_l; order.
+  rewrite sgn_neg, abs_neq, mul_opp_l, mul_1_l, eq_opp_r, <-quot_opp_l
+    by order.
+   apply quot_div_nonneg; trivial. apply opp_nonneg_nonpos; order.
+ (* main *)
+ intros a b Hb.
+ apply neg_pos_cases in Hb. destruct Hb as [Hb|Hb]; [|now apply AUX].
+ rewrite <- (opp_involutive b) at 1. rewrite quot_opp_r.
+ rewrite AUX, abs_opp, sgn_opp, mul_opp_r, mul_opp_l, opp_involutive.
+ reflexivity.
+ now apply opp_pos_neg.
+ rewrite eq_opp_l, opp_0; order.
+Qed.
+
+Lemma rem_mod : forall a b, b~=0 ->
+ a rem b == (sgn a) * ((abs a) mod (abs b)).
+Proof.
+ intros a b Hb.
+ rewrite <- rem_abs_r by trivial.
+ assert (Hb' := proj2 (abs_pos b) Hb).
+ destruct (lt_trichotomy 0 a) as [Ha|[Ha|Ha]].
+ rewrite (abs_eq a), sgn_pos, mul_1_l, rem_mod_nonneg; order.
+ rewrite <- Ha, abs_0, sgn_0, mod_0_l, rem_0_l, mul_0_l; order.
+ rewrite sgn_neg, (abs_neq a), mul_opp_l, mul_1_l, eq_opp_r, <-rem_opp_l
+    by order.
+  apply rem_mod_nonneg; trivial. apply opp_nonneg_nonpos; order.
+Qed.
+
 (** Modulo and remainder are null at the same place,
     and this correspond to the divisibility relation. *)
 

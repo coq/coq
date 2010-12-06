@@ -13,7 +13,7 @@ Require Export Arith_base.
 Require Import BinPos BinInt BinNat Zcompare Zorder.
 Require Import Decidable Peano_dec Min Max Compare_dec.
 
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
 Definition neq (x y:nat) := x <> y.
 
@@ -340,4 +340,52 @@ Lemma Z_of_N_max : forall n m, Z_of_N (Nmax n m) = Zmax (Z_of_N n) (Z_of_N m).
 Proof.
  intros. unfold Zmax, Nmax. rewrite Z_of_N_compare.
  case Ncompare_spec; intros; subst; trivial.
+Qed.
+
+(** Results about the [Zabs_N] function, converting from Z to N *)
+
+Lemma Zabs_of_N : forall n, Zabs_N (Z_of_N n) = n.
+Proof.
+ now destruct n.
+Qed.
+
+Lemma Zabs_N_succ_abs : forall n,
+ Zabs_N (Zsucc (Zabs n)) = Nsucc (Zabs_N n).
+Proof.
+ intros [ |n|n]; simpl; trivial; now rewrite Pplus_one_succ_r.
+Qed.
+
+Lemma Zabs_N_succ : forall n, 0<=n ->
+ Zabs_N (Zsucc n) = Nsucc (Zabs_N n).
+Proof.
+ intros n Hn. rewrite <- Zabs_N_succ_abs. repeat f_equal.
+ symmetry; now apply Zabs_eq.
+Qed.
+
+Lemma Zabs_N_plus_abs : forall n m,
+ Zabs_N (Zabs n + Zabs m) = (Zabs_N n + Zabs_N m)%N.
+Proof.
+ intros [ |n|n] [ |m|m]; simpl; trivial.
+Qed.
+
+Lemma Zabs_N_plus : forall n m, 0<=n -> 0<=m ->
+ Zabs_N (n + m) = (Zabs_N n + Zabs_N m)%N.
+Proof.
+ intros n m Hn Hm.
+ rewrite <- Zabs_N_plus_abs; repeat f_equal;
+  symmetry; now apply Zabs_eq.
+Qed.
+
+Lemma Zabs_N_mult_abs : forall n m,
+ Zabs_N (Zabs n * Zabs m) = (Zabs_N n * Zabs_N m)%N.
+Proof.
+ intros [ |n|n] [ |m|m]; simpl; trivial.
+Qed.
+
+Lemma Zabs_N_mult : forall n m, 0<=n -> 0<=m ->
+ Zabs_N (n * m) = (Zabs_N n * Zabs_N m)%N.
+Proof.
+ intros n m Hn Hm.
+ rewrite <- Zabs_N_mult_abs; repeat f_equal;
+  symmetry; now apply Zabs_eq.
 Qed.

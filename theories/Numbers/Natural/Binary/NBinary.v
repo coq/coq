@@ -8,7 +8,7 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Import BinPos Ndiv_def Nsqrt_def Ngcd_def.
+Require Import BinPos Ndiv_def Nsqrt_def Ngcd_def Ndigits.
 Require Export BinNat.
 Require Import NAxioms NProperties.
 
@@ -178,6 +178,20 @@ Definition gcd_greatest := Ngcd_greatest.
 Lemma gcd_nonneg : forall a b, 0 <= Ngcd a b.
 Proof. intros. now destruct (Ngcd a b). Qed.
 
+(** Bitwise Operations *)
+
+Definition testbit_spec a n (_:0<=n) := Ntestbit_spec a n.
+Lemma testbit_neg_r a n (H:n<0) : Ntestbit a n = false.
+Proof. now destruct n. Qed.
+Definition shiftl_spec_low := Nshiftl_spec_low.
+Definition shiftl_spec_high a n m (_:0<=m) := Nshiftl_spec_high a n m.
+Definition shiftr_spec a n m (_:0<=m) := Nshiftr_spec a n m.
+Definition lxor_spec := Nxor_spec.
+Definition land_spec := Nand_spec.
+Definition lor_spec := Nor_spec.
+Definition ldiff_spec := Ndiff_spec.
+Definition div2_spec a : Ndiv2 a = Nshiftr a 1 := eq_refl _.
+
 (** The instantiation of operations.
     Placing them at the very end avoids having indirections in above lemmas. *)
 
@@ -207,6 +221,14 @@ Definition sqrt := Nsqrt.
 Definition log2 := Nlog2.
 Definition divide := Ndivide.
 Definition gcd := Ngcd.
+Definition testbit := Ntestbit.
+Definition shiftl := Nshiftl.
+Definition shiftr := Nshiftr.
+Definition lxor := Nxor.
+Definition land := Nand.
+Definition lor := Nor.
+Definition ldiff := Ndiff.
+Definition div2 := Ndiv2.
 
 Include NProp
  <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.

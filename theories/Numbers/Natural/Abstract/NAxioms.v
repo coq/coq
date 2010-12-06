@@ -8,7 +8,7 @@
 (*                      Evgeny Makarov, INRIA, 2007                     *)
 (************************************************************************)
 
-Require Export NZAxioms NZPow NZSqrt NZLog NZDiv NZGcd.
+Require Export Bool NZAxioms NZParity NZPow NZSqrt NZLog NZDiv NZGcd NZBits.
 
 (** From [NZ], we obtain natural numbers just by stating that [pred 0] == 0 *)
 
@@ -19,18 +19,7 @@ End NAxiom.
 Module Type NAxiomsMiniSig := NZOrdAxiomsSig <+ NAxiom.
 Module Type NAxiomsMiniSig' := NZOrdAxiomsSig' <+ NAxiom.
 
-
 (** Let's now add some more functions and their specification *)
-
-(** Parity functions *)
-
-Module Type Parity (Import N : NAxiomsMiniSig').
- Parameter Inline even odd : t -> bool.
- Definition Even n := exists m, n == 2*m.
- Definition Odd n := exists m, n == 2*m+1.
- Axiom even_spec : forall n, even n = true <-> Even n.
- Axiom odd_spec : forall n, odd n = true <-> Odd n.
-End Parity.
 
 (** Division Function : we reuse NZDiv.DivMod and NZDiv.NZDivCommon,
     and add to that a N-specific constraint. *)
@@ -39,17 +28,17 @@ Module Type NDivSpecific (Import N : NAxiomsMiniSig')(Import DM : DivMod' N).
  Axiom mod_upper_bound : forall a b, b ~= 0 -> a mod b < b.
 End NDivSpecific.
 
-(** For div mod gcd pow sqrt log2, the NZ axiomatizations are enough. *)
+(** For all other functions, the NZ axiomatizations are enough. *)
 
 (** We now group everything together. *)
 
-Module Type NAxiomsSig := NAxiomsMiniSig <+ HasCompare <+ Parity
-  <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2 <+ NZGcd.NZGcd
-  <+ NZDiv.NZDiv.
+Module Type NAxiomsSig := NAxiomsMiniSig <+ HasCompare <+ HasEqBool
+  <+ NZParity.NZParity <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2
+  <+ NZGcd.NZGcd <+ NZDiv.NZDiv <+ NZBits.NZBits.
 
-Module Type NAxiomsSig' := NAxiomsMiniSig' <+ HasCompare <+ Parity
-  <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2 <+ NZGcd.NZGcd'
-  <+ NZDiv.NZDiv'.
+Module Type NAxiomsSig' := NAxiomsMiniSig' <+ HasCompare <+ HasEqBool
+  <+ NZParity.NZParity <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2
+  <+ NZGcd.NZGcd' <+ NZDiv.NZDiv' <+ NZBits.NZBits'.
 
 
 (** It could also be interesting to have a constructive recursor function. *)

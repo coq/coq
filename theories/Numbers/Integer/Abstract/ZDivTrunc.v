@@ -584,8 +584,7 @@ destruct (le_0_mul _ _ Hab) as [(Ha,Hb)|(Ha,Hb)];
  setoid_replace b with 0 by order. rewrite rem_0_l by order. nzsimpl; order.
 Qed.
 
-
-(** Conversely, the following result needs less restrictions here. *)
+(** Conversely, the following results need less restrictions here. *)
 
 Lemma quot_quot : forall a b c, b~=0 -> c~=0 ->
  (a÷b)÷c == a÷(b*c).
@@ -603,6 +602,18 @@ assert (Aux2 : forall a b c, 0<=a -> b~=0 -> c~=0 -> (a÷b)÷c == a÷(b*c)).
 intros. pos_or_neg a. apply Aux2; order.
 apply opp_inj. rewrite <- 3 quot_opp_l; try order. apply Aux2; order.
 rewrite <- neq_mul_0. tauto.
+Qed.
+
+Lemma mod_mul_r : forall a b c, b~=0 -> c~=0 ->
+ a rem (b*c) == a rem b + b*((a÷b) rem c).
+Proof.
+ intros a b c Hb Hc.
+ apply add_cancel_l with (b*c*(a÷(b*c))).
+ rewrite <- quot_rem by (apply neq_mul_0; split; order).
+ rewrite <- quot_quot by trivial.
+ rewrite add_assoc, add_shuffle0, <- mul_assoc, <- mul_add_distr_l.
+ rewrite <- quot_rem by order.
+ apply quot_rem; order.
 Qed.
 
 (** A last inequality: *)

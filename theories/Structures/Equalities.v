@@ -7,6 +7,7 @@
 (***********************************************************************)
 
 Require Export RelationClasses.
+Require Import Bool Morphisms Setoid.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -165,6 +166,18 @@ Module Dec2Bool (E:DecidableType) <: BooleanDecidableType
 Module Bool2Dec (E:BooleanEqualityType) <: BooleanDecidableType
  := E <+ HasEqBool2Dec.
 
+(** In a BooleanEqualityType, [eqb] is compatible with [eq] *)
+
+Module BoolEqualityFacts (Import E : BooleanEqualityType).
+
+Instance eqb_compat : Proper (E.eq ==> E.eq ==> Logic.eq) eqb.
+Proof.
+intros x x' Exx' y y' Eyy'.
+apply eq_true_iff_eq.
+now rewrite 2 eqb_eq, Exx', Eyy'.
+Qed.
+
+End BoolEqualityFacts.
 
 
 (** * UsualDecidableType

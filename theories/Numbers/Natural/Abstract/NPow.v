@@ -50,10 +50,21 @@ Proof. wrap pow_mul_l. Qed.
 Lemma pow_mul_r : forall a b c, a^(b*c) == (a^b)^c.
 Proof. wrap pow_mul_r. Qed.
 
-(** Positivity *)
+(** Power and nullity *)
 
-Lemma pow_nonzero : forall a b, a~=0 -> a^b~=0.
-Proof. intros. rewrite neq_0_lt_0. wrap pow_pos_nonneg. Qed.
+Lemma pow_eq_0 : forall a b, b~=0 -> a^b == 0 -> a == 0.
+Proof. intros. apply (pow_eq_0 a b); trivial. auto'. Qed.
+
+Lemma pow_nonzero : forall a b, a~=0 -> a^b ~= 0.
+Proof. wrap pow_nonzero. Qed.
+
+Lemma pow_eq_0_iff : forall a b, a^b == 0 <-> b~=0 /\ a==0.
+Proof.
+ intros a b. split.
+ rewrite pow_eq_0_iff. intros [H |[H H']].
+  generalize (le_0_l b); order. split; order.
+ intros (Hb,Ha). rewrite Ha. now apply pow_0_l'.
+Qed.
 
 (** Monotonicity *)
 
@@ -143,7 +154,7 @@ Qed.
 
 Lemma odd_pow : forall a b, b~=0 -> odd (a^b) = odd a.
 Proof.
- intros. now rewrite <- !negb_even_odd, even_pow.
+ intros. now rewrite <- !negb_even, even_pow.
 Qed.
 
 End NPowProp.

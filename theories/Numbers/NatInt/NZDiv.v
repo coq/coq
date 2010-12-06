@@ -506,6 +506,18 @@ Proof.
  apply div_mod; order.
 Qed.
 
+Lemma mod_mul_r : forall a b c, 0<=a -> 0<b -> 0<c ->
+ a mod (b*c) == a mod b + b*((a/b) mod c).
+Proof.
+ intros a b c Ha Hb Hc.
+ apply add_cancel_l with (b*c*(a/(b*c))).
+ rewrite <- div_mod by (apply neq_mul_0; split; order).
+ rewrite <- div_div by trivial.
+ rewrite add_assoc, add_shuffle0, <- mul_assoc, <- mul_add_distr_l.
+ rewrite <- div_mod by order.
+ apply div_mod; order.
+Qed.
+
 (** A last inequality: *)
 
 Theorem div_mul_le:

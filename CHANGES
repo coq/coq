@@ -26,8 +26,11 @@ Libraries
   or lemmas may have moved. The alternative division (Trunc convention
   instead of Floor) is now named Zquot (noted ÷) and Zrem by analogy
   with Haskell. TODO: say more later.
-- When creating BigN, the macro-generated part NMake_gen is much smaller,
-  improvements of the generic part NMake.
+- When creating BigN, the macro-generated part NMake_gen is much smaller.
+  The generic part NMake has been reworked and improved. Some changes
+  may introduce incompatibilities. In particular, the order of the arguments
+  for BigN.shiftl and BigN.shiftr is now reversed: the number to shift now
+  comes first. By default, the power function now takes two BigN.
 
 Internal infrastructure
 

@@ -301,7 +301,7 @@ Proof.
   cut (forall a'':N, Nxor (Npos p) a' = a'' -> Nbit a'' k = false).
   intros. apply H1. reflexivity.
   intro a''. case a''. intro. reflexivity.
-  intros. rewrite <- H1. rewrite (Nxor_semantics (Npos p) a' k). unfold xorf in |- *.
+  intros. rewrite <- H1. rewrite (Nxor_semantics (Npos p) a' k).
   rewrite
    (Nplength_zeros (Npos p) (Pplength p)
       (refl_equal (Nplength (Npos p))) k H0).

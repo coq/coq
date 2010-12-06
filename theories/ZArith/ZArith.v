@@ -12,7 +12,8 @@ Require Export ZArith_base.
 
 (** Extra definitions *)
 
-Require Export Zpow_def Zsqrt_def Zlog_def Zgcd_def Zdiv_def.
+Require Export
+ Zpow_def Zsqrt_def Zlog_def Zgcd_def Zdiv_def Zdigits_def.
 
 (** Extra modules using [Omega] or [Ring]. *)
 

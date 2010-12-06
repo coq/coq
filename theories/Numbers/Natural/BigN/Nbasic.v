@@ -565,7 +565,7 @@ Axiom spec_same_level_dep :
    (Pantimon : forall n m z z' r, (n <= m)%nat -> P m z z' r -> P n z z' r)
    (f : forall n, dom_t n -> dom_t n -> res)
    (Pf: forall n x y, P n (ZnZ.to_Z x) (ZnZ.to_Z y) (f n x y)),
-   forall x y, P (level y) [x] [y] (same_level f x y).
+   forall x y, P (level x) [x] [y] (same_level f x y).
 
 (** [mk_t_S] : building a number of the next level *)
 

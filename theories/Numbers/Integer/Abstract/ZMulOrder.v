@@ -13,8 +13,6 @@ Require Export ZAddOrder.
 Module Type ZMulOrderProp (Import Z : ZAxiomsMiniSig').
 Include ZAddOrderProp Z.
 
-Local Notation "- 1" := (-(1)).
-
 Theorem mul_lt_mono_nonpos :
   forall n m p q, m <= 0 -> n < m -> q <= 0 -> p < q ->  m * q < n * p.
 Proof.
@@ -135,18 +133,18 @@ now apply lt_1_l with (- m).
 assumption.
 Qed.
 
-Theorem lt_mul_n1_neg : forall n m, 1 < n -> m < 0 -> n * m < -1.
+Theorem lt_mul_m1_neg : forall n m, 1 < n -> m < 0 -> n * m < -1.
 Proof.
 intros n m H1 H2. apply -> (mul_lt_mono_neg_r m) in H1.
-rewrite mul_1_l in H1. now apply lt_n1_r with m.
+rewrite mul_1_l in H1. now apply lt_m1_r with m.
 assumption.
 Qed.
 
-Theorem lt_mul_n1_pos : forall n m, n < -1 -> 0 < m -> n * m < -1.
+Theorem lt_mul_m1_pos : forall n m, n < -1 -> 0 < m -> n * m < -1.
 Proof.
 intros n m H1 H2. apply -> (mul_lt_mono_pos_r m) in H1.
 rewrite mul_opp_l, mul_1_l in H1.
-apply <- opp_neg_pos in H2. now apply lt_n1_r with (- m).
+apply <- opp_neg_pos in H2. now apply lt_m1_r with (- m).
 assumption.
 Qed.
 
@@ -154,18 +152,18 @@ Theorem lt_1_mul_l : forall n m, 1 < n ->
  n * m < -1 \/ n * m == 0 \/ 1 < n * m.
 Proof.
 intros n m H; destruct (lt_trichotomy m 0) as [H1 | [H1 | H1]].
-left. now apply lt_mul_n1_neg.
+left. now apply lt_mul_m1_neg.
 right; left; now rewrite H1, mul_0_r.
 right; right; now apply lt_1_mul_pos.
 Qed.
 
-Theorem lt_n1_mul_r : forall n m, n < -1 ->
+Theorem lt_m1_mul_r : forall n m, n < -1 ->
  n * m < -1 \/ n * m == 0 \/ 1 < n * m.
 Proof.
 intros n m H; destruct (lt_trichotomy m 0) as [H1 | [H1 | H1]].
 right; right. now apply lt_1_mul_neg.
 right; left; now rewrite H1, mul_0_r.
-left. now apply lt_mul_n1_pos.
+left. now apply lt_mul_m1_pos.
 Qed.
 
 Theorem eq_mul_1 : forall n m, n * m == 1 -> n == 1 \/ n == -1.

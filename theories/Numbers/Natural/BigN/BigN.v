@@ -12,7 +12,7 @@
 
 Require Export Int31.
 Require Import CyclicAxioms Cyclic31 Ring31 NSig NSigNAxioms NMake
-  NProperties NDiv GenericMinMax.
+  NProperties GenericMinMax.
 
 (** The following [BigN] module regroups both the operations and
     all the abstract properties:
@@ -21,8 +21,7 @@ Require Import CyclicAxioms Cyclic31 Ring31 NSig NSigNAxioms NMake
        w.r.t. ZArith
     - [NTypeIsNAxioms] shows (mainly) that these operations implement
       the interface [NAxioms]
-    - [NPropSig] adds all generic properties derived from [NAxioms]
-    - [NDivPropFunct] provides generic properties of [div] and [mod].
+    - [NProp] adds all generic properties derived from [NAxioms]
     - [MinMax*Properties] provides properties of [min] and [max].
 
 *)
@@ -43,6 +42,7 @@ Bind Scope bigN_scope with BigN.t.
 Bind Scope bigN_scope with BigN.t'.
 (* Bind Scope has no retroactive effect, let's declare scopes by hand. *)
 Arguments Scope BigN.to_Z [bigN_scope].
+Arguments Scope BigN.to_N [bigN_scope].
 Arguments Scope BigN.succ [bigN_scope].
 Arguments Scope BigN.pred [bigN_scope].
 Arguments Scope BigN.square [bigN_scope].
@@ -66,8 +66,21 @@ Arguments Scope BigN.sqrt [bigN_scope].
 Arguments Scope BigN.div_eucl [bigN_scope bigN_scope].
 Arguments Scope BigN.modulo [bigN_scope bigN_scope].
 Arguments Scope BigN.gcd [bigN_scope bigN_scope].
+Arguments Scope BigN.lcm [bigN_scope bigN_scope].
 Arguments Scope BigN.even [bigN_scope].
 Arguments Scope BigN.odd [bigN_scope].
+Arguments Scope BigN.testbit [bigN_scope bigN_scope].
+Arguments Scope BigN.shiftl [bigN_scope bigN_scope].
+Arguments Scope BigN.shiftr [bigN_scope bigN_scope].
+Arguments Scope BigN.lor [bigN_scope bigN_scope].
+Arguments Scope BigN.land [bigN_scope bigN_scope].
+Arguments Scope BigN.ldiff [bigN_scope bigN_scope].
+Arguments Scope BigN.lxor [bigN_scope bigN_scope].
+Arguments Scope BigN.setbit [bigN_scope bigN_scope].
+Arguments Scope BigN.clearbit [bigN_scope bigN_scope].
+Arguments Scope BigN.lnot [bigN_scope bigN_scope].
+Arguments Scope BigN.div2 [bigN_scope].
+Arguments Scope BigN.ones [bigN_scope].
 
 Local Notation "0" := BigN.zero : bigN_scope. (* temporary notation *)
 Local Notation "1" := BigN.one : bigN_scope. (* temporary notation *)

@@ -16,7 +16,7 @@
     representation. The representation-dependent (and macro-generated) part
     is now in [NMake_gen]. *)
 
-Require Import Bool BigNumPrelude ZArith Nnat CyclicAxioms DoubleType
+Require Import Bool BigNumPrelude ZArith Nnat Ndigits CyclicAxioms DoubleType
   Nbasic Wf_nat StreamMemo NSig NMake_gen.
 
 Module Make (W0:CyclicType) <: NType.
@@ -972,6 +972,44 @@ Module Make (W0:CyclicType) <: NType.
  intros; apply spec_gcd_gt; auto with zarith.
  Qed.
 
+ (** * Parity test *)
+
+ Definition even : t -> bool := Eval red_t in
+   iter_t (fun n x => ZnZ.is_even x).
+
+ Definition odd x := negb (even x).
+
+ Lemma even_fold : even = iter_t (fun n x => ZnZ.is_even x).
+ Proof. red_t; reflexivity. Qed.
+
+ Theorem spec_even_aux: forall x,
+   if even x then [x] mod 2 = 0 else [x] mod 2 = 1.
+ Proof.
+ intros x. rewrite even_fold. destr_t x as (n,x).
+ exact (ZnZ.spec_is_even x).
+ Qed.
+
+ Theorem spec_even: forall x, even x = Zeven_bool [x].
+ Proof.
+ intros x. assert (H := spec_even_aux x). symmetry.
+ rewrite (Z_div_mod_eq_full [x] 2); auto with zarith.
+ destruct (even x); rewrite H, ?Zplus_0_r.
+ rewrite Zeven_bool_iff. apply Zeven_2p.
+ apply not_true_is_false. rewrite Zeven_bool_iff.
+ apply Zodd_not_Zeven. apply Zodd_2p_plus_1.
+ Qed.
+
+ Theorem spec_odd: forall x, odd x = Zodd_bool [x].
+ Proof.
+ intros x. unfold odd.
+ assert (H := spec_even_aux x). symmetry.
+ rewrite (Z_div_mod_eq_full [x] 2); auto with zarith.
+ destruct (even x); rewrite H, ?Zplus_0_r; simpl negb.
+ apply not_true_is_false. rewrite Zodd_bool_iff.
+ apply Zeven_not_Zodd. apply Zeven_2p.
+ apply Zodd_bool_iff. apply Zodd_2p_plus_1.
+ Qed.
+
  (** * Conversion *)
 
  Definition pheight p :=
@@ -1212,7 +1250,7 @@ Module Make (W0:CyclicType) <: NType.
    let sub_c := ZnZ.sub_c in
    let add_mul_div := ZnZ.add_mul_div in
    let zzero := ZnZ.zero in
-   fun p x => match sub_c zdigits p with
+   fun x p => match sub_c zdigits p with
    | C0 d => reduce n (add_mul_div d zzero x)
    | C1 _ => zero
    end).
@@ -1236,13 +1274,13 @@ Module Make (W0:CyclicType) <: NType.
    rewrite Zpower_0_r; ring.
  Qed.
 
- Theorem spec_shiftr: forall n x,
-  [shiftr n x] = [x] / 2 ^ [n].
+ Theorem spec_shiftr_pow2 : forall x n,
+  [shiftr x n] = [x] / 2 ^ [n].
  Proof.
   intros x y. rewrite shiftr_fold. apply spec_same_level. clear x y.
-  intros n p x. simpl.
-  assert (Hx := ZnZ.spec_to_Z p).
-  assert (Hy := ZnZ.spec_to_Z x).
+  intros n x p. simpl.
+  assert (Hx := ZnZ.spec_to_Z x).
+  assert (Hy := ZnZ.spec_to_Z p).
   generalize (ZnZ.spec_sub_c (ZnZ.zdigits (dom_op n)) p).
   case ZnZ.sub_c; intros d H; unfold interp_carry in *; simpl.
   (** Subtraction without underflow : [ p <= digits ] *)
@@ -1264,6 +1302,12 @@ Module Make (W0:CyclicType) <: NType.
   generalize (ZnZ.spec_to_Z d); auto with zarith.
  Qed.
 
+ Lemma spec_shiftr: forall x p, [shiftr x p] = Zshiftr [x] [p].
+ Proof.
+  intros.
+  now rewrite spec_shiftr_pow2, Z.shiftr_div_pow2 by apply spec_pos.
+ Qed.
+
  (** * Left shift *)
 
  (** First an unsafe version, working correctly only if
@@ -1273,7 +1317,7 @@ Module Make (W0:CyclicType) <: NType.
    let op := dom_op n in
    let add_mul_div := ZnZ.add_mul_div in
    let zero := ZnZ.zero in
-   fun p x => reduce n (add_mul_div p x zero)).
+   fun x p => reduce n (add_mul_div p x zero)).
 
  Definition unsafe_shiftl : t -> t -> t := Eval red_t in
    same_level unsafe_shiftln.
@@ -1281,20 +1325,20 @@ Module Make (W0:CyclicType) <: NType.
  Lemma unsafe_shiftl_fold : unsafe_shiftl = same_level unsafe_shiftln.
  Proof. red_t; reflexivity. Qed.
 
- Theorem spec_unsafe_shiftl_aux : forall p x K,
+ Theorem spec_unsafe_shiftl_aux : forall x p K,
   0 <= K ->
   [x] < 2^K ->
   [p] + K <= Zpos (digits x) ->
-  [unsafe_shiftl p x] = [x] * 2 ^ [p].
+  [unsafe_shiftl x p] = [x] * 2 ^ [p].
  Proof.
- intros p x.
+ intros x p.
  rewrite unsafe_shiftl_fold. rewrite digits_level.
  apply spec_same_level_dep.
  intros n m z z' r LE H K HK H1 H2. apply (H K); auto.
   transitivity (Zpos (ZnZ.digits (dom_op n))); auto.
   apply digits_dom_op_incr; auto.
- clear p x.
- intros n p x K HK Hx Hp. simpl. rewrite spec_reduce.
+ clear x p.
+ intros n x p K HK Hx Hp. simpl. rewrite spec_reduce.
  destruct (ZnZ.spec_to_Z x).
  destruct (ZnZ.spec_to_Z p).
  rewrite ZnZ.spec_add_mul_div by (omega with *).
@@ -1308,8 +1352,8 @@ Module Make (W0:CyclicType) <: NType.
  apply Zpower_le_monotone2; auto with zarith.
  Qed.
 
- Theorem spec_unsafe_shiftl: forall p x,
-  [p] <= [head0 x] -> [unsafe_shiftl p x] = [x] * 2 ^ [p].
+ Theorem spec_unsafe_shiftl: forall x p,
+  [p] <= [head0 x] -> [unsafe_shiftl x p] = [x] * 2 ^ [p].
  Proof.
  intros.
  destruct (Z_eq_dec [x] 0) as [EQ|NEQ].
@@ -1436,19 +1480,19 @@ Module Make (W0:CyclicType) <: NType.
  (** Finally we iterate [double_size] enough before [unsafe_shiftl]
      in order to get a fully correct [shiftl]. *)
 
- Definition shiftl_aux_body cont n x :=
-   match compare n (head0 x)  with
-      Gt => cont n (double_size x)
-   |  _ => unsafe_shiftl n x
+ Definition shiftl_aux_body cont x n :=
+   match compare n (head0 x) with
+      Gt => cont (double_size x) n
+   |  _ => unsafe_shiftl x n
    end.
 
- Theorem spec_shiftl_aux_body: forall n p x cont,
+ Theorem spec_shiftl_aux_body: forall n x p cont,
        2^ Zpos p  <=  [head0 x]  ->
       (forall x, 2 ^ (Zpos p + 1) <= [head0 x]->
-         [cont n x] = [x] * 2 ^ [n]) ->
-      [shiftl_aux_body cont n x] = [x] * 2 ^ [n].
+         [cont x n] = [x] * 2 ^ [n]) ->
+      [shiftl_aux_body cont x n] = [x] * 2 ^ [n].
  Proof.
- intros n p x cont H1 H2; unfold shiftl_aux_body.
+ intros n x p cont H1 H2; unfold shiftl_aux_body.
  rewrite spec_compare; case Zcompare_spec; intros H.
   apply spec_unsafe_shiftl; auto with zarith.
   apply spec_unsafe_shiftl; auto with zarith.
@@ -1459,22 +1503,22 @@ Module Make (W0:CyclicType) <: NType.
  rewrite Zpower_1_r; apply Zmult_le_compat_l; auto with zarith.
  Qed.
 
- Fixpoint shiftl_aux p cont n x :=
+ Fixpoint shiftl_aux p cont x n :=
    shiftl_aux_body
-       (fun n x => match p with
-        | xH => cont n x
-        | xO p => shiftl_aux p (shiftl_aux p cont) n x
-        | xI p => shiftl_aux p (shiftl_aux p cont) n x
-        end) n x.
+       (fun x n => match p with
+        | xH => cont x n
+        | xO p => shiftl_aux p (shiftl_aux p cont) x n
+        | xI p => shiftl_aux p (shiftl_aux p cont) x n
+        end) x n.
 
- Theorem spec_shiftl_aux: forall p q n x cont,
+ Theorem spec_shiftl_aux: forall p q x n cont,
     2 ^ (Zpos q) <= [head0 x] ->
       (forall x, 2 ^ (Zpos p + Zpos q) <= [head0 x] ->
-         [cont n x] = [x] * 2 ^ [n]) ->
-      [shiftl_aux p cont n x] = [x] * 2 ^ [n].
+         [cont x n] = [x] * 2 ^ [n]) ->
+      [shiftl_aux p cont x n] = [x] * 2 ^ [n].
  Proof.
  intros p; elim p; unfold shiftl_aux; fold shiftl_aux; clear p.
- intros p Hrec q n x cont H1 H2.
+ intros p Hrec q x n cont H1 H2.
  apply spec_shiftl_aux_body with (q); auto.
  intros x1 H3; apply Hrec with (q + 1)%positive; auto.
  intros x2 H4; apply Hrec with (p + q + 1)%positive; auto.
@@ -1501,15 +1545,15 @@ Module Make (W0:CyclicType) <: NType.
  rewrite Zplus_comm; auto.
  Qed.
 
- Definition shiftl n x :=
+ Definition shiftl x n :=
   shiftl_aux_body
    (shiftl_aux_body
-    (shiftl_aux (digits n) unsafe_shiftl)) n x.
+    (shiftl_aux (digits n) unsafe_shiftl)) x n.
 
- Theorem spec_shiftl: forall n x,
-   [shiftl n x] = [x] * 2 ^ [n].
+ Theorem spec_shiftl_pow2 : forall x n,
+   [shiftl x n] = [x] * 2 ^ [n].
  Proof.
- intros n x; unfold shiftl, shiftl_aux_body.
+ intros x n; unfold shiftl, shiftl_aux_body.
  rewrite spec_compare; case Zcompare_spec; intros H.
   apply spec_unsafe_shiftl; auto with zarith.
   apply spec_unsafe_shiftl; auto with zarith.
@@ -1531,42 +1575,64 @@ Module Make (W0:CyclicType) <: NType.
  apply Zpower_le_monotone2; auto with zarith.
  Qed.
 
- (** * Parity test *)
-
- Definition even : t -> bool := Eval red_t in
-   iter_t (fun n x => ZnZ.is_even x).
-
- Definition odd x := negb (even x).
-
- Lemma even_fold : even = iter_t (fun n x => ZnZ.is_even x).
- Proof. red_t; reflexivity. Qed.
-
- Theorem spec_even_aux: forall x,
-   if even x then [x] mod 2 = 0 else [x] mod 2 = 1.
+ Lemma spec_shiftl: forall x p, [shiftl x p] = Zshiftl [x] [p].
  Proof.
- intros x. rewrite even_fold. destr_t x as (n,x).
- exact (ZnZ.spec_is_even x).
+  intros.
+  now rewrite spec_shiftl_pow2, Z.shiftl_mul_pow2 by apply spec_pos.
  Qed.
 
- Theorem spec_even: forall x, even x = Zeven_bool [x].
+ (** Other bitwise operations *)
+
+ Definition testbit x n := odd (shiftr x n).
+
+ Lemma spec_testbit: forall x p, testbit x p = Ztestbit [x] [p].
  Proof.
- intros x. assert (H := spec_even_aux x). symmetry.
- rewrite (Z_div_mod_eq_full [x] 2); auto with zarith.
- destruct (even x); rewrite H, ?Zplus_0_r.
- rewrite Zeven_bool_iff. apply Zeven_2p.
- apply not_true_is_false. rewrite Zeven_bool_iff.
- apply Zodd_not_Zeven. apply Zodd_2p_plus_1.
+  intros. unfold testbit. symmetry.
+  rewrite spec_odd, spec_shiftr. apply Z.testbit_odd.
  Qed.
 
- Theorem spec_odd: forall x, odd x = Zodd_bool [x].
+ Definition div2 x := shiftr x one.
+
+ Lemma spec_div2: forall x, [div2 x] = Zdiv2' [x].
  Proof.
- intros x. unfold odd.
- assert (H := spec_even_aux x). symmetry.
- rewrite (Z_div_mod_eq_full [x] 2); auto with zarith.
- destruct (even x); rewrite H, ?Zplus_0_r; simpl negb.
- apply not_true_is_false. rewrite Zodd_bool_iff.
- apply Zeven_not_Zodd. apply Zeven_2p.
- apply Zodd_bool_iff. apply Zodd_2p_plus_1.
+  intros. unfold div2. symmetry.
+  rewrite spec_shiftr, spec_1. apply Zdiv2'_spec.
+ Qed.
+
+ (** TODO : provide efficient versions instead of just converting
+   from/to N (see with Laurent) *)
+
+ Definition lor x y := of_N (Nor (to_N x) (to_N y)).
+ Definition land x y := of_N (Nand (to_N x) (to_N y)).
+ Definition ldiff x y := of_N (Ndiff (to_N x) (to_N y)).
+ Definition lxor x y := of_N (Nxor (to_N x) (to_N y)).
+
+ Lemma spec_land: forall x y, [land x y] = Zand [x] [y].
+ Proof.
+  intros x y. unfold land. rewrite spec_of_N. unfold to_N.
+  generalize (spec_pos x), (spec_pos y).
+  destruct [x], [y]; trivial; (now destruct 1) || (now destruct 2).
+ Qed.
+
+ Lemma spec_lor: forall x y, [lor x y] = Zor [x] [y].
+ Proof.
+  intros x y. unfold lor. rewrite spec_of_N. unfold to_N.
+  generalize (spec_pos x), (spec_pos y).
+  destruct [x], [y]; trivial; (now destruct 1) || (now destruct 2).
+ Qed.
+
+ Lemma spec_ldiff: forall x y, [ldiff x y] = Zdiff [x] [y].
+ Proof.
+  intros x y. unfold ldiff. rewrite spec_of_N. unfold to_N.
+  generalize (spec_pos x), (spec_pos y).
+  destruct [x], [y]; trivial; (now destruct 1) || (now destruct 2).
+ Qed.
+
+ Lemma spec_lxor: forall x y, [lxor x y] = Zxor [x] [y].
+ Proof.
+  intros x y. unfold lxor. rewrite spec_of_N. unfold to_N.
+  generalize (spec_pos x), (spec_pos y).
+  destruct [x], [y]; trivial; (now destruct 1) || (now destruct 2).
  Qed.
 
 End Make.

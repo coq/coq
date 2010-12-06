@@ -255,6 +255,15 @@ Definition Pdiv2 (z:positive) :=
 
 Infix "/" := Pdiv2 : positive_scope.
 
+(** Division by 2 rounded up *)
+
+Definition Pdiv2_up p :=
+ match p with
+   | 1 => 1
+   | p~0 => p
+   | p~1 => Psucc p
+ end.
+
 (** Number of digits in a positive number *)
 
 Fixpoint Psize (p:positive) : nat :=
@@ -1290,6 +1299,17 @@ Lemma Plt_not_plus_l : forall p q, ~ p+q < p.
 Proof.
  intros p q H. elim (Plt_irrefl p).
  apply Plt_trans with (p+q); auto using Plt_plus_r.
+Qed.
+
+Lemma Ppow_gt_1 : forall n p, 1<n -> 1<n^p.
+Proof.
+ intros n p Hn.
+ induction p using Pind.
+ now rewrite Ppow_1_r.
+ rewrite Ppow_succ_r.
+ apply Plt_trans with (n*1).
+ now rewrite Pmult_1_r.
+ now apply Pmult_lt_mono_l.
 Qed.
 
 (**********************************************************************)

@@ -37,12 +37,12 @@ Module Type ZDecAxiomsSig' := ZAxiomsMiniSig' <+ HasCompare.
 Module Type GenericSgn (Import Z : ZDecAxiomsSig')
                        (Import ZP : ZMulOrderProp Z) <: HasSgn Z.
  Definition sgn n :=
-  match compare 0 n with Eq => 0 | Lt => 1 | Gt => -(1) end.
+  match compare 0 n with Eq => 0 | Lt => 1 | Gt => -1 end.
  Lemma sgn_null : forall n, n==0 -> sgn n == 0.
  Proof. unfold sgn; intros. destruct (compare_spec 0 n); order. Qed.
  Lemma sgn_pos : forall n, 0<n -> sgn n == 1.
  Proof. unfold sgn; intros. destruct (compare_spec 0 n); order. Qed.
- Lemma sgn_neg : forall n, n<0 -> sgn n == -(1).
+ Lemma sgn_neg : forall n, n<0 -> sgn n == -1.
  Proof. unfold sgn; intros. destruct (compare_spec 0 n); order. Qed.
 End GenericSgn.
 
@@ -168,6 +168,28 @@ Proof.
  rewrite EQn, EQ, opp_inj_wd, eq_opp_l, or_comm. apply abs_eq_or_opp.
 Qed.
 
+Lemma abs_lt : forall a b, abs a < b <-> -b < a < b.
+Proof.
+ intros a b.
+ destruct (abs_spec a) as [[LE EQ]|[LT EQ]]; rewrite EQ; clear EQ.
+ split; try split; try destruct 1; try order.
+ apply lt_le_trans with 0; trivial. apply opp_neg_pos; order.
+ rewrite opp_lt_mono, opp_involutive.
+ split; try split; try destruct 1; try order.
+ apply lt_le_trans with 0; trivial. apply opp_nonpos_nonneg; order.
+Qed.
+
+Lemma abs_le : forall a b, abs a <= b <-> -b <= a <= b.
+Proof.
+ intros a b.
+ destruct (abs_spec a) as [[LE EQ]|[LT EQ]]; rewrite EQ; clear EQ.
+ split; try split; try destruct 1; try order.
+ apply le_trans with 0; trivial. apply opp_nonpos_nonneg; order.
+ rewrite opp_le_mono, opp_involutive.
+ split; try split; try destruct 1; try order.
+ apply le_trans with 0. order. apply opp_nonpos_nonneg; order.
+Qed.
+
 (** Triangular inequality *)
 
 Lemma abs_triangle : forall n m, abs (n + m) <= abs n + abs m.
@@ -234,7 +256,7 @@ Qed.
 Lemma sgn_spec : forall n,
   0 < n /\ sgn n == 1 \/
   0 == n /\ sgn n == 0 \/
-  0 > n /\ sgn n == -(1).
+  0 > n /\ sgn n == -1.
 Proof.
  intros n.
  destruct_sgn n; [left|right;left|right;right]; auto with relations.
@@ -249,7 +271,7 @@ Lemma sgn_pos_iff : forall n, sgn n == 1 <-> 0<n.
 Proof.
  split; try apply sgn_pos. destruct_sgn n; auto.
  intros. elim (lt_neq 0 1); auto. apply lt_0_1.
- intros. elim (lt_neq (-(1)) 1); auto.
+ intros. elim (lt_neq (-1) 1); auto.
  apply lt_trans with 0. rewrite opp_neg_pos. apply lt_0_1. apply lt_0_1.
 Qed.
 
@@ -257,16 +279,16 @@ Lemma sgn_null_iff : forall n, sgn n == 0 <-> n==0.
 Proof.
  split; try apply sgn_null. destruct_sgn n; auto with relations.
  intros. elim (lt_neq 0 1); auto with relations. apply lt_0_1.
- intros. elim (lt_neq (-(1)) 0); auto.
+ intros. elim (lt_neq (-1) 0); auto.
  rewrite opp_neg_pos. apply lt_0_1.
 Qed.
 
-Lemma sgn_neg_iff : forall n, sgn n == -(1) <-> n<0.
+Lemma sgn_neg_iff : forall n, sgn n == -1 <-> n<0.
 Proof.
  split; try apply sgn_neg. destruct_sgn n; auto with relations.
- intros. elim (lt_neq (-(1)) 1); auto with relations.
+ intros. elim (lt_neq (-1) 1); auto with relations.
  apply lt_trans with 0. rewrite opp_neg_pos. apply lt_0_1. apply lt_0_1.
- intros. elim (lt_neq (-(1)) 0); auto with relations.
+ intros. elim (lt_neq (-1) 0); auto with relations.
  rewrite opp_neg_pos. apply lt_0_1.
 Qed.
 

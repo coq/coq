@@ -471,6 +471,56 @@ Proof.
  rewrite Z.rem_divide; trivial. split; intros (c,Hc); exists c; auto.
 Qed.
 
+(** Particular case : dividing by 2 is related with parity *)
+
+Lemma Zdiv2_odd_eq : forall a,
+ a = 2 * Zdiv2 a + if Zodd_bool a then Zsgn a else 0.
+Proof.
+ destruct a as [ |p|p]; try destruct p; trivial.
+Qed.
+
+Lemma Zdiv2_odd_remainder : forall a,
+ Remainder a 2 (if Zodd_bool a then Zsgn a else 0).
+Proof.
+ intros [ |p|p]. simpl.
+ left. simpl. auto with zarith.
+ left. destruct p; simpl; auto with zarith.
+ right. destruct p; simpl; split; now auto with zarith.
+Qed.
+
+Lemma Zdiv2_quot : forall a, Zdiv2 a = a÷2.
+Proof.
+ intros.
+ apply Zquot_unique_full with (if Zodd_bool a then Zsgn a else 0).
+ apply Zdiv2_odd_remainder.
+ apply Zdiv2_odd_eq.
+Qed.
+
+Lemma Zrem_odd : forall a, Zrem a 2 = if Zodd_bool a then Zsgn a else 0.
+Proof.
+ intros. symmetry.
+ apply Zrem_unique_full with (Zdiv2 a).
+ apply Zdiv2_odd_remainder.
+ apply Zdiv2_odd_eq.
+Qed.
+
+Lemma Zrem_even : forall a, Zrem a 2 = if Zeven_bool a then 0 else Zsgn a.
+Proof.
+ intros a. rewrite Zrem_odd, Zodd_even_bool. now destruct Zeven_bool.
+Qed.
+
+Lemma Zeven_rem : forall a, Zeven_bool a = Zeq_bool (Zrem a 2) 0.
+Proof.
+ intros a. rewrite Zrem_even.
+ destruct a as [ |p|p]; trivial; now destruct p.
+Qed.
+
+Lemma Zodd_rem : forall a, Zodd_bool a = negb (Zeq_bool (Zrem a 2) 0).
+Proof.
+ intros a. rewrite Zrem_odd.
+ destruct a as [ |p|p]; trivial; now destruct p.
+Qed.
+
 (** * Interaction with "historic" Zdiv *)
 
 (** They agree at least on positive numbers: *)

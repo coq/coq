@@ -555,6 +555,21 @@ Proof.
   destr_bool.
 Qed.
 
+Lemma negb_xorb_l : forall b b', negb (xorb b b') = xorb (negb b) b'.
+Proof.
+ destruct b,b'; trivial.
+Qed.
+
+Lemma negb_xorb_r : forall b b', negb (xorb b b') = xorb b (negb b').
+Proof.
+ destruct b,b'; trivial.
+Qed.
+
+Lemma xorb_negb_negb : forall b b', xorb (negb b) (negb b') = xorb b b'.
+Proof.
+ destruct b,b'; trivial.
+Qed.
+
 (** Lemmas about the [b = true] embedding of [bool] to [Prop] *)
 
 Lemma eq_iff_eq_true : forall b1 b2, b1 = b2 <-> (b1 = true <-> b2 = true).
