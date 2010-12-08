@@ -2365,8 +2365,8 @@ let abstract_args gl generalize_vars dep id defined f args =
   in 
   let f', args' = decompose_indapp f args in
   let parvars = ids_of_constr ~all:true Idset.empty f' in
+  let seen = ref parvars in
   let dogen, f', args' =
-    let seen = ref parvars in
     let find i x = not (isVar x) || 
       let v = destVar x in
 	if is_defined_variable env v || Idset.mem v !seen then true
@@ -2379,8 +2379,8 @@ let abstract_args gl generalize_vars dep id defined f args =
 	    true, mkApp (f', before), after
   in
     if dogen then
-      let arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars, env = 
-	Array.fold_left aux (pf_type_of gl f',[],env,f',[],[],[],parvars,Idset.empty,env) args'
+      let arity, ctx, ctxenv, c', args, eqs, refls, nogen, vars, env =
+	Array.fold_left aux (pf_type_of gl f',[],env,f',[],[],[],!seen,Idset.empty,env) args'
       in
       let args, refls = List.rev args, List.rev refls in
       let vars = 

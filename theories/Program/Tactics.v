@@ -308,11 +308,14 @@ Ltac program_simplify :=
   subst*; autoinjections ; try discriminates ;
     try (solve [ red ; intros ; destruct_conjs ; autoinjections ; discriminates ]).
 
-Ltac program_solve_wf :=
+(** We only try to solve proposition goals automatically. *)
+
+Ltac program_solve :=
   match goal with
-    |- well_founded _ => auto with *
+    | |- well_founded _ => auto with *
+    | |- ?T => match type of T with Prop => auto end
   end.
 
-Ltac program_simpl := program_simplify ; auto; try program_solve_wf.
+Ltac program_simpl := program_simplify ; try program_solve.
 
 Obligation Tactic := program_simpl.
