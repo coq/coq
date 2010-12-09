@@ -241,7 +241,7 @@ GEXTEND Gram
   def_body:
     [ [ bl = binders; ":="; red = reduce; c = lconstr ->
       (match c with
-          CCast(_,c, Rawterm.CastConv (k,t)) -> DefineBody (bl, red, c, Some t)
+          CCast(_,c, Rawterm.CastConv (Term.DEFAULTcast,t)) -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None))
     | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
 	DefineBody (bl, red, c, Some t)
