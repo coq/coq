@@ -719,9 +719,9 @@ Module Make (N:NType) <: ZType.
   now rewrite <- Z.lxor_lnot_lnot, !Zlnot_alt2.
  Qed.
 
- Lemma spec_div2: forall x, to_Z (div2 x) = Zdiv2' (to_Z x).
+ Lemma spec_div2: forall x, to_Z (div2 x) = Zdiv2 (to_Z x).
  Proof.
-  intros x. unfold div2. now rewrite spec_shiftr, Zdiv2'_spec, spec_1.
+  intros x. unfold div2. now rewrite spec_shiftr, Zdiv2_spec, spec_1.
  Qed.
 
 End Make.

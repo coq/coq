@@ -170,17 +170,26 @@ Proof.
 Qed.
 
 (******************************************************************)
-(** * Definition of [Zdiv2] and properties wrt [Zeven] and [Zodd] *)
+(** * Definition of [Zquot2], [Zdiv2] and properties wrt [Zeven]
+  and [Zodd] *)
 
-(** [Zdiv2] is defined on all [Z], but notice that for odd negative
-  integers we have [n = 2*(Zdiv2 n)-1], hence it does not
-  correspond to the usual Coq division [Zdiv], for which we would
-  have here [n = 2*(n/2)+1]. Since [Zdiv2] performs rounding
-  toward zero, it is rather a particular case of the alternative
-  division [Zquot].
-*)
+(** [Zdiv2] performs rounding toward bottom, it is hence a particular
+   case of [Zdiv], and for all relative number [n] we have:
+   [n = 2 * Zdiv2 n + if Zodd_bool n then 1 else 0].  *)
 
-Definition Zdiv2 (z:Z) :=
+Definition Zdiv2 z :=
+ match z with
+   | 0 => 0
+   | Zpos 1 => 0
+   | Zpos p => Zpos (Pdiv2 p)
+   | Zneg p => Zneg (Pdiv2_up p)
+ end.
+
+(** [Zquot2] performs rounding toward zero, it is hence a particular
+   case of [Zquot], and for all relative number [n] we have:
+   [n = 2 * Zdiv2 n + if Zodd_bool n then Zsgn n else 0].  *)
+
+Definition Zquot2 (z:Z) :=
   match z with
     | 0 => 0
     | Zpos 1 => 0
@@ -189,19 +198,12 @@ Definition Zdiv2 (z:Z) :=
     | Zneg p => Zneg (Pdiv2 p)
   end.
 
-(** We also provide an alternative [Zdiv2'] performing round toward
-  bottom, and hence corresponding to [Zdiv]. *)
+(** NB: [Zquot2] used to be named [Zdiv2] in Coq <= 8.3 *)
 
-Definition Zdiv2' a :=
- match a with
-   | 0 => 0
-   | Zpos 1 => 0
-   | Zpos p => Zpos (Pdiv2 p)
-   | Zneg p => Zneg (Pdiv2_up p)
- end.
+(** Properties of [Zdiv2] *)
 
-Lemma Zdiv2'_odd : forall a,
- a = 2*(Zdiv2' a) + if Zodd_bool a then 1 else 0.
+Lemma Zdiv2_odd_eqn : forall n,
+ n = 2*(Zdiv2 n) + if Zodd_bool n then 1 else 0.
 Proof.
  intros [ |[p|p| ]|[p|p|  ]]; simpl; trivial.
  f_equal. now rewrite xO_succ_permute, <-Ppred_minus, Ppred_succ.
@@ -209,50 +211,56 @@ Qed.
 
 Lemma Zeven_div2 : forall n:Z, Zeven n -> n = 2 * Zdiv2 n.
 Proof.
-  intro x; destruct x.
-  auto with arith.
-  destruct p; auto with arith.
-  intros. absurd (Zeven (Zpos (xI p))); red; auto with arith.
-  intros. absurd (Zeven 1); red; auto with arith.
-  destruct p; auto with arith.
-  intros. absurd (Zeven (Zneg (xI p))); red; auto with arith.
-  intros. absurd (Zeven (-1)); red; auto with arith.
+ intros n Hn. apply Zeven_bool_iff in Hn.
+ pattern n at 1.
+ now rewrite (Zdiv2_odd_eqn n), Zodd_even_bool, Hn, Zplus_0_r.
 Qed.
 
-Lemma Zodd_div2 : forall n:Z, n >= 0 -> Zodd n -> n = 2 * Zdiv2 n + 1.
+Lemma Zodd_div2 : forall n:Z, Zodd n -> n = 2 * Zdiv2 n + 1.
 Proof.
-  intro x; destruct x.
-  intros. absurd (Zodd 0); red; auto with arith.
-  destruct p; auto with arith.
-  intros. absurd (Zodd (Zpos (xO p))); red; auto with arith.
-  intros. absurd (Zneg p >= 0); red; auto with arith.
+ intros n Hn. apply Zodd_bool_iff in Hn.
+ pattern n at 1. now rewrite (Zdiv2_odd_eqn n), Hn.
 Qed.
 
-Lemma Zodd_div2_neg :
-  forall n:Z, n <= 0 -> Zodd n -> n = 2 * Zdiv2 n - 1.
+(** Properties of [Zquot2] *)
+
+Lemma Zquot2_odd_eqn : forall n,
+ n = 2*(Zquot2 n) + if Zodd_bool n then Zsgn n else 0.
 Proof.
-  intro x; destruct x.
-  intros. absurd (Zodd 0); red; auto with arith.
-  intros. absurd (Zneg p >= 0); red; auto with arith.
-  destruct p; auto with arith.
-  intros. absurd (Zodd (Zneg (xO p))); red; auto with arith.
+ intros [ |[p|p| ]|[p|p|  ]]; simpl; trivial.
 Qed.
+
+Lemma Zeven_quot2 : forall n:Z, Zeven n -> n = 2 * Zquot2 n.
+Proof.
+ intros n Hn. apply Zeven_bool_iff in Hn.
+ pattern n at 1.
+ now rewrite (Zquot2_odd_eqn n), Zodd_even_bool, Hn, Zplus_0_r.
+Qed.
+
+Lemma Zodd_quot2 : forall n:Z, n >= 0 -> Zodd n -> n = 2 * Zquot2 n + 1.
+Proof.
+ intros n Hn Hn'. apply Zodd_bool_iff in Hn'.
+ pattern n at 1. rewrite (Zquot2_odd_eqn n), Hn'. f_equal.
+ destruct n; (now destruct Hn) || easy.
+Qed.
+
+Lemma Zodd_quot2_neg :
+  forall n:Z, n <= 0 -> Zodd n -> n = 2 * Zquot2 n - 1.
+Proof.
+ intros n Hn Hn'. apply Zodd_bool_iff in Hn'.
+ pattern n at 1. rewrite (Zquot2_odd_eqn n), Hn'. unfold Zminus. f_equal.
+ destruct n; (now destruct Hn) || easy.
+Qed.
+
+(** More properties of parity *)
 
 Lemma Z_modulo_2 :
   forall n:Z, {y : Z | n = 2 * y} + {y : Z | n = 2 * y + 1}.
 Proof.
-  intros x.
-  elim (Zeven_odd_dec x); intro.
-  left. split with (Zdiv2 x). exact (Zeven_div2 x a).
-  right. generalize b; clear b; case x.
-  intro b; inversion b.
-  intro p; split with (Zdiv2 (Zpos p)). apply (Zodd_div2 (Zpos p)); trivial.
-  unfold Zge, Zcompare; simpl; discriminate.
-  intro p; split with (Zdiv2 (Zpred (Zneg p))).
-  pattern (Zneg p) at 1; rewrite (Zsucc_pred (Zneg p)).
-  pattern (Zpred (Zneg p)) at 1; rewrite (Zeven_div2 (Zpred (Zneg p))).
-  reflexivity.
-  apply Zeven_pred; assumption.
+ intros n.
+ destruct (Zeven_odd_dec n) as [Hn|Hn].
+ left. exists (Zdiv2 n). exact (Zeven_div2 n Hn).
+ right. exists (Zdiv2 n). exact (Zodd_div2 n Hn).
 Qed.
 
 Lemma Zsplit2 :
@@ -260,17 +268,12 @@ Lemma Zsplit2 :
     {p : Z * Z |
       let (x1, x2) := p in n = x1 + x2 /\ (x1 = x2 \/ x2 = x1 + 1)}.
 Proof.
-  intros x.
-  elim (Z_modulo_2 x); intros [y Hy]; rewrite Zmult_comm in Hy;
-    rewrite <- Zplus_diag_eq_mult_2 in Hy.
-  exists (y, y); split.
-  assumption.
-  left; reflexivity.
-  exists (y, (y + 1)%Z); split.
-  rewrite Zplus_assoc; assumption.
-  right; reflexivity.
+ intros n.
+ destruct (Z_modulo_2 n) as [(y,Hy)|(y,Hy)];
+  rewrite Zmult_comm, <- Zplus_diag_eq_mult_2 in Hy.
+ exists (y, y). split. assumption. now left.
+ exists (y, y + 1). split. now rewrite Zplus_assoc. now right.
 Qed.
-
 
 Theorem Zeven_ex: forall n, Zeven n -> exists m, n = 2 * m.
 Proof.
@@ -279,16 +282,7 @@ Qed.
 
 Theorem Zodd_ex: forall n, Zodd n -> exists m, n = 2 * m + 1.
 Proof.
-  destruct n; intros.
-  inversion H.
-  exists (Zdiv2 (Zpos p)).
-  apply Zodd_div2; simpl; auto; compute; inversion 1.
-  exists (Zdiv2 (Zneg p) - 1).
-  unfold Zminus.
-  rewrite Zmult_plus_distr_r.
-  rewrite <- Zplus_assoc.
-  assert (Zneg p <= 0) by (compute; inversion 1).
-  exact (Zodd_div2_neg _ H0 H).
+  intro n; exists (Zdiv2 n); apply Zodd_div2; auto.
 Qed.
 
 Theorem Zeven_2p: forall p, Zeven (2 * p).
@@ -315,58 +309,50 @@ Qed.
 Theorem Zeven_plus_Zodd: forall a b,
  Zeven a -> Zodd b -> Zodd (a + b).
 Proof.
-  intros a b H1 H2; case Zeven_ex with (1 := H1); intros x H3; try rewrite H3; auto.
-  case Zodd_ex with (1 := H2); intros y H4; try rewrite H4; auto.
-  replace (2 * x + (2 * y + 1)) with (2 * (x + y) + 1); try apply Zodd_2p_plus_1; auto with zarith.
-  rewrite Zmult_plus_distr_r, Zplus_assoc; auto.
+  intros a b Ha Hb.
+  destruct (Zeven_ex a) as (x,->), (Zodd_ex b) as (y,->); trivial.
+  rewrite Zplus_assoc, <- Zmult_plus_distr_r.
+  apply Zodd_2p_plus_1.
 Qed.
 
 Theorem Zeven_plus_Zeven: forall a b,
  Zeven a -> Zeven b -> Zeven (a + b).
 Proof.
-  intros a b H1 H2; case Zeven_ex with (1 := H1); intros x H3; try rewrite H3; auto.
-  case Zeven_ex with (1 := H2); intros y H4; try rewrite H4; auto.
-  replace (2 * x + 2 * y) with (2 * (x + y)); try apply Zeven_2p; auto with zarith.
-  apply Zmult_plus_distr_r; auto.
+  intros a b Ha Hb.
+  destruct (Zeven_ex a) as (x,->), (Zeven_ex b) as (y,->); trivial.
+  rewrite <- Zmult_plus_distr_r.
+  apply Zeven_2p.
 Qed.
 
 Theorem Zodd_plus_Zeven: forall a b,
  Zodd a -> Zeven b -> Zodd (a + b).
 Proof.
-  intros a b H1 H2; rewrite Zplus_comm; apply Zeven_plus_Zodd; auto.
+  intros a b Ha Hb; rewrite Zplus_comm; apply Zeven_plus_Zodd; auto.
 Qed.
 
 Theorem Zodd_plus_Zodd: forall a b,
  Zodd a -> Zodd b -> Zeven (a + b).
 Proof.
-  intros a b H1 H2; case Zodd_ex with (1 := H1); intros x H3; try rewrite H3; auto.
-  case Zodd_ex with (1 := H2); intros y H4; try rewrite H4; auto.
-  replace ((2 * x + 1) + (2 * y + 1)) with (2 * (x + y + 1)); try apply Zeven_2p; auto.
-  (* ring part *)
-  do 2 rewrite Zmult_plus_distr_r; auto.
-  repeat rewrite <- Zplus_assoc; f_equal.
-  rewrite (Zplus_comm 1).
-  repeat rewrite <- Zplus_assoc; auto.
+  intros a b Ha Hb.
+  destruct (Zodd_ex a) as (x,->), (Zodd_ex b) as (y,->); trivial.
+  rewrite <- Zplus_assoc, (Zplus_comm 1), <- Zplus_assoc.
+  change (1+1) with (2*1). rewrite <- 2 Zmult_plus_distr_r.
+  apply Zeven_2p.
 Qed.
 
 Theorem Zeven_mult_Zeven_l: forall a b,
  Zeven a -> Zeven (a * b).
 Proof.
-  intros a b H1; case Zeven_ex with (1 := H1); intros x H3; try rewrite H3; auto.
-  replace (2 * x * b) with (2 * (x * b)); try apply Zeven_2p; auto with zarith.
-  (* ring part *)
-  apply Zmult_assoc.
+  intros a b Ha.
+  destruct (Zeven_ex a) as (x,->); trivial.
+  rewrite <- Zmult_assoc.
+  apply Zeven_2p.
 Qed.
 
 Theorem Zeven_mult_Zeven_r: forall a b,
  Zeven b -> Zeven (a * b).
 Proof.
-  intros a b H1; case Zeven_ex with (1 := H1); intros x H3; try rewrite H3; auto.
-  replace (a * (2 * x)) with (2 * (x * a)); try apply Zeven_2p; auto.
-  (* ring part *)
-  rewrite (Zmult_comm x a).
-  do 2 rewrite Zmult_assoc.
-  rewrite (Zmult_comm 2 a); auto.
+  intros a b Hb. rewrite Zmult_comm. now apply Zeven_mult_Zeven_l.
 Qed.
 
 Hint Rewrite Zmult_plus_distr_r Zmult_plus_distr_l
@@ -375,14 +361,11 @@ Hint Rewrite Zmult_plus_distr_r Zmult_plus_distr_l
 Theorem Zodd_mult_Zodd: forall a b,
  Zodd a -> Zodd b -> Zodd (a * b).
 Proof.
-  intros a b H1 H2; case Zodd_ex with (1 := H1); intros x H3; try rewrite H3; auto.
-  case Zodd_ex with (1 := H2); intros y H4; try rewrite H4; auto.
-  replace ((2 * x + 1) * (2 * y + 1)) with (2 * (2 * x * y + x + y) + 1); try apply Zodd_2p_plus_1; auto.
-  (* ring part *)
-  autorewrite with Zexpand; f_equal.
-  repeat rewrite <- Zplus_assoc; f_equal.
-  repeat rewrite <- Zmult_assoc; f_equal.
-  repeat rewrite Zmult_assoc; f_equal; apply Zmult_comm.
+  intros a b Ha Hb.
+  destruct (Zodd_ex a) as (x,->), (Zodd_ex b) as (y,->); trivial.
+  rewrite Zmult_plus_distr_l, Zmult_1_l.
+  rewrite <- Zmult_assoc, Zplus_assoc, <- Zmult_plus_distr_r.
+  apply Zodd_2p_plus_1.
 Qed.
 
 (* for compatibility *)

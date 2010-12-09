@@ -99,7 +99,7 @@ Module Type NType.
  Parameter spec_lor: forall x y, [lor x y] = Zor [x] [y].
  Parameter spec_ldiff: forall x y, [ldiff x y] = Zdiff [x] [y].
  Parameter spec_lxor: forall x y, [lxor x y] = Zxor [x] [y].
- Parameter spec_div2: forall x, [div2 x] = Zdiv2' [x].
+ Parameter spec_div2: forall x, [div2 x] = Zdiv2 [x].
 
 End NType.
 

@@ -219,7 +219,7 @@ Section Z_BRIC_A_BRAC.
     destruct (Zeven.Zeven_odd_dec z); intros.
     rewrite <- Zeven.Zeven_div2; auto.
 
-    generalize (Zeven.Zodd_div2 z H z0); omega.
+    generalize (Zeven.Zodd_div2 z z0); omega.
   Qed.
 
   Lemma Z_to_two_compl_Sn_z :

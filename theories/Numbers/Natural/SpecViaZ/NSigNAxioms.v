@@ -408,7 +408,7 @@ Qed.
 
 Lemma div2_spec : forall a, div2 a == shiftr a 1.
 Proof.
- intros a. zify. now apply Zdiv2'_spec.
+ intros a. zify. now apply Zdiv2_spec.
 Qed.
 
 (** Recursion *)

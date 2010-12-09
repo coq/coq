@@ -1593,10 +1593,10 @@ Module Make (W0:CyclicType) <: NType.
 
  Definition div2 x := shiftr x one.
 
- Lemma spec_div2: forall x, [div2 x] = Zdiv2' [x].
+ Lemma spec_div2: forall x, [div2 x] = Zdiv2 [x].
  Proof.
   intros. unfold div2. symmetry.
-  rewrite spec_shiftr, spec_1. apply Zdiv2'_spec.
+  rewrite spec_shiftr, spec_1. apply Zdiv2_spec.
  Qed.
 
  (** TODO : provide efficient versions instead of just converting

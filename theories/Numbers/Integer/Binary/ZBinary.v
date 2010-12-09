@@ -202,7 +202,7 @@ Definition land_spec := Zand_spec.
 Definition lor_spec := Zor_spec.
 Definition ldiff_spec := Zdiff_spec.
 Definition lxor_spec := Zxor_spec.
-Definition div2_spec := Zdiv2'_spec.
+Definition div2_spec := Zdiv2_spec.
 
 Definition testbit := Ztestbit.
 Definition shiftl := Zshiftl.
@@ -211,7 +211,7 @@ Definition land := Zand.
 Definition lor := Zor.
 Definition ldiff := Zdiff.
 Definition lxor := Zxor.
-Definition div2 := Zdiv2'.
+Definition div2 := Zdiv2.
 
 (** We define [eq] only here to avoid refering to this [eq] above. *)
 

@@ -25,7 +25,9 @@ Libraries
 - Important revision of NArith and ZArith. In particular some definitions
   or lemmas may have moved. The alternative division (Trunc convention
   instead of Floor) is now named Zquot (noted ÷) and Zrem by analogy
-  with Haskell. TODO: say more later.
+  with Haskell. In Zeven, the behavior of Zdiv2 on negative numbers has been
+  changed to be consistent with Zdiv, while the old behavior now corresponds
+  to function Zquot2. TODO: say more later.
 - When creating BigN, the macro-generated part NMake_gen is much smaller.
   The generic part NMake has been reworked and improved. Some changes
   may introduce incompatibilities. In particular, the order of the arguments

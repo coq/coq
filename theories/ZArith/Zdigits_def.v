@@ -41,15 +41,15 @@ Definition Ztestbit a n :=
 
    For fulfilling the two's complement convention, shifting to
    the right a negative number should correspond to a division
-   by 2 with rounding toward bottom, hence the use of [Zdiv2']
-   instead of [Zdiv2].
+   by 2 with rounding toward bottom, hence the use of [Zdiv2]
+   instead of [Zquot2].
 *)
 
 Definition Zshiftl a n :=
  match n with
    | 0 => a
    | Zpos p => iter_pos p _ (Zmult 2) a
-   | Zneg p => iter_pos p _ Zdiv2' a
+   | Zneg p => iter_pos p _ Zdiv2 a
  end.
 
 Definition Zshiftr a n := Zshiftl a (-n).
@@ -98,7 +98,7 @@ Definition Zxor a b :=
 
 (** Proofs of specifications *)
 
-Lemma Zdiv2'_spec : forall a, Zdiv2' a = Zshiftr a 1.
+Lemma Zdiv2_spec : forall a, Zdiv2 a = Zshiftr a 1.
 Proof.
  reflexivity.
 Qed.
@@ -115,8 +115,8 @@ Proof.
  intros a [ |n|n] Hn; (now destruct Hn) || clear Hn.
  (* n = 0 *)
  simpl Ztestbit.
- exists 0. exists (Zdiv2' a). repeat split. easy.
- now rewrite Zplus_0_l, Zmult_1_r, Zplus_comm, <- Zdiv2'_odd.
+ exists 0. exists (Zdiv2 a). repeat split. easy.
+ now rewrite Zplus_0_l, Zmult_1_r, Zplus_comm, <- Zdiv2_odd_eqn.
  (* n > 0 *)
  destruct a.
  (* ... a = 0 *)
@@ -211,12 +211,12 @@ Proof.
  destruct p; simpl; trivial.
 Qed.
 
-Lemma Z_of_N_div2' : forall n, Z_of_N (Ndiv2 n) = Zdiv2' (Z_of_N n).
+Lemma Z_of_N_div2 : forall n, Z_of_N (Ndiv2 n) = Zdiv2 (Z_of_N n).
 Proof.
  intros [|p]; trivial. now destruct p.
 Qed.
 
-Lemma Z_of_N_div2 : forall n, Z_of_N (Ndiv2 n) = Zdiv2 (Z_of_N n).
+Lemma Z_of_N_quot2 : forall n, Z_of_N (Ndiv2 n) = Zquot2 (Z_of_N n).
 Proof.
  intros [|p]; trivial. now destruct p.
 Qed.
@@ -263,12 +263,12 @@ Proof.
  now rewrite Zplus_0_r.
  destruct a as [ |a|a].
  (* a = 0 *)
- replace (iter_pos n _ Zdiv2' 0) with 0
+ replace (iter_pos n _ Zdiv2 0) with 0
   by (apply iter_pos_invariant; intros; subst; trivial).
  now rewrite 2 Ztestbit_0_l.
  (* a > 0 *)
  rewrite <- (Z_of_N_pos a) at 1.
- rewrite <- (iter_pos_swap_gen _ _ _ Ndiv2) by exact Z_of_N_div2'.
+ rewrite <- (iter_pos_swap_gen _ _ _ Ndiv2) by exact Z_of_N_div2.
  rewrite Ztestbit_Zpos, Ztestbit_of_N'; trivial.
  rewrite Zabs_N_plus; try easy. simpl Zabs_N.
  exact (Nshiftr_spec (Npos a) (Npos n) (Zabs_N m)).

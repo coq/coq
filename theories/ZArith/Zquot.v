@@ -473,13 +473,7 @@ Qed.
 
 (** Particular case : dividing by 2 is related with parity *)
 
-Lemma Zdiv2_odd_eq : forall a,
- a = 2 * Zdiv2 a + if Zodd_bool a then Zsgn a else 0.
-Proof.
- destruct a as [ |p|p]; try destruct p; trivial.
-Qed.
-
-Lemma Zdiv2_odd_remainder : forall a,
+Lemma Zquot2_odd_remainder : forall a,
  Remainder a 2 (if Zodd_bool a then Zsgn a else 0).
 Proof.
  intros [ |p|p]. simpl.
@@ -488,20 +482,20 @@ Proof.
  right. destruct p; simpl; split; now auto with zarith.
 Qed.
 
-Lemma Zdiv2_quot : forall a, Zdiv2 a = a÷2.
+Lemma Zquot2_quot : forall a, Zquot2 a = a÷2.
 Proof.
  intros.
  apply Zquot_unique_full with (if Zodd_bool a then Zsgn a else 0).
- apply Zdiv2_odd_remainder.
- apply Zdiv2_odd_eq.
+ apply Zquot2_odd_remainder.
+ apply Zquot2_odd_eqn.
 Qed.
 
 Lemma Zrem_odd : forall a, Zrem a 2 = if Zodd_bool a then Zsgn a else 0.
 Proof.
  intros. symmetry.
- apply Zrem_unique_full with (Zdiv2 a).
- apply Zdiv2_odd_remainder.
- apply Zdiv2_odd_eq.
+ apply Zrem_unique_full with (Zquot2 a).
+ apply Zquot2_odd_remainder.
+ apply Zquot2_odd_eqn.
 Qed.
 
 Lemma Zrem_even : forall a, Zrem a 2 = if Zeven_bool a then 0 else Zsgn a.

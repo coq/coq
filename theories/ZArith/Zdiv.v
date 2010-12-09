@@ -523,7 +523,7 @@ Qed.
 
 (** Particular case : dividing by 2 is related with parity *)
 
-Lemma Zdiv2'_div : forall a, Zdiv2' a = a/2.
+Lemma Zdiv2_div : forall a, Zdiv2 a = a/2.
 Proof.
  apply Z.div2_div.
 Qed.
