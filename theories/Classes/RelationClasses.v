@@ -7,7 +7,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** *  Typeclass-based relations, tactics and standard instances
+(** * Typeclass-based relations, tactics and standard instances
 
    This is the basic theory needed to formalize morphisms and setoids.
 

@@ -11,9 +11,11 @@ Unset Boxed Definitions.
 
 Declare ML Module "z_syntax_plugin".
 
+(**********************************************************************)
 (** * Binary positive numbers *)
+(**********************************************************************)
 
-(** Original development by Pierre Crégut, CNET, Lannion, France *)
+(** Initial development by Pierre Crégut, CNET, Lannion, France *)
 
 Inductive positive : Set :=
 | xI : positive -> positive
@@ -49,10 +51,10 @@ Local Open Scope positive_scope.
 
 Local Notation "1" := xH (at level 7).
 
-
+(**********************************************************************)
 (** * Operations over positive numbers *)
 
-(** Successor *)
+(** ** Successor *)
 
 Fixpoint Psucc (x:positive) : positive :=
   match x with
@@ -61,7 +63,7 @@ Fixpoint Psucc (x:positive) : positive :=
     | 1 => 1~0
   end.
 
-(** Addition *)
+(** ** Addition *)
 
 Set Boxed Definitions.
 
@@ -112,7 +114,7 @@ Proof.
  rewrite H. apply IHp.
 Qed.
 
-(** From binary positive numbers to Peano natural numbers *)
+(** ** From binary positive numbers to Peano natural numbers *)
 
 Definition Pmult_nat : positive -> nat -> nat :=
  Eval unfold Piter_op in (* for compatibility *)
@@ -120,7 +122,7 @@ Definition Pmult_nat : positive -> nat -> nat :=
 
 Definition nat_of_P (x:positive) := Pmult_nat x (S O).
 
-(** From Peano natural numbers to binary positive numbers *)
+(** ** From Peano natural numbers to binary positive numbers *)
 
 Fixpoint P_of_succ_nat (n:nat) : positive :=
   match n with
@@ -128,7 +130,7 @@ Fixpoint P_of_succ_nat (n:nat) : positive :=
     | S x => Psucc (P_of_succ_nat x)
   end.
 
-(** Operation x -> 2*x-1 *)
+(** ** Operation x -> 2*x-1 *)
 
 Fixpoint Pdouble_minus_one (x:positive) : positive :=
   match x with
@@ -137,7 +139,7 @@ Fixpoint Pdouble_minus_one (x:positive) : positive :=
     | 1 => 1
   end.
 
-(** Predecessor *)
+(** ** Predecessor *)
 
 Definition Ppred (x:positive) :=
   match x with
@@ -146,14 +148,14 @@ Definition Ppred (x:positive) :=
     | 1 => 1
   end.
 
-(** An auxiliary type for subtraction *)
+(** ** An auxiliary type for subtraction *)
 
 Inductive positive_mask : Set :=
 | IsNul : positive_mask
 | IsPos : positive -> positive_mask
 | IsNeg : positive_mask.
 
-(** Operation x -> 2*x+1 *)
+(** ** Operation x -> 2*x+1 *)
 
 Definition Pdouble_plus_one_mask (x:positive_mask) :=
   match x with
@@ -162,7 +164,7 @@ Definition Pdouble_plus_one_mask (x:positive_mask) :=
     | IsPos p => IsPos p~1
   end.
 
-(** Operation x -> 2*x *)
+(** ** Operation x -> 2*x *)
 
 Definition Pdouble_mask (x:positive_mask) :=
   match x with
@@ -171,7 +173,7 @@ Definition Pdouble_mask (x:positive_mask) :=
     | IsPos p => IsPos p~0
   end.
 
-(** Operation x -> 2*x-2 *)
+(** ** Operation x -> 2*x-2 *)
 
 Definition Pdouble_minus_two (x:positive) :=
   match x with
@@ -180,7 +182,7 @@ Definition Pdouble_minus_two (x:positive) :=
     | 1 => IsNul
   end.
 
-(** Subtraction of binary positive numbers into a positive numbers mask *)
+(** ** Subtraction of binary positive numbers into a positive numbers mask *)
 
 Fixpoint Pminus_mask (x y:positive) {struct y} : positive_mask :=
   match x, y with
@@ -205,7 +207,7 @@ with Pminus_mask_carry (x y:positive) {struct y} : positive_mask :=
     | 1, _ => IsNeg
   end.
 
-(** Subtraction of binary positive numbers x and y, returns 1 if x<=y *)
+(** ** Subtraction of binary positive numbers x and y, returns 1 if x<=y *)
 
 Definition Pminus (x y:positive) :=
   match Pminus_mask x y with
@@ -215,7 +217,7 @@ Definition Pminus (x y:positive) :=
 
 Infix "-" := Pminus : positive_scope.
 
-(** Multiplication on binary positive numbers *)
+(** ** Multiplication on binary positive numbers *)
 
 Fixpoint Pmult (x y:positive) : positive :=
   match x with
@@ -226,7 +228,7 @@ Fixpoint Pmult (x y:positive) : positive :=
 
 Infix "*" := Pmult : positive_scope.
 
-(** Iteration over a positive number *)
+(** ** Iteration over a positive number *)
 
 Fixpoint iter_pos (n:positive) (A:Type) (f:A -> A) (x:A) : A :=
   match n with
@@ -235,7 +237,7 @@ Fixpoint iter_pos (n:positive) (A:Type) (f:A -> A) (x:A) : A :=
     | xI n' => f (iter_pos n' A f (iter_pos n' A f x))
   end.
 
-(** Power *)
+(** ** Power *)
 
 Definition Ppow (x y:positive) := iter_pos y _ (Pmult x) 1.
 
@@ -244,7 +246,7 @@ Definition Ppow (x y:positive) := iter_pos y _ (Pmult x) 1.
 
 Infix "^" := Ppow : positive_scope.
 
-(** Division by 2 rounded below but for 1 *)
+(** ** Division by 2 rounded below but for 1 *)
 
 Definition Pdiv2 (z:positive) :=
   match z with
@@ -264,7 +266,7 @@ Definition Pdiv2_up p :=
    | p~1 => Psucc p
  end.
 
-(** Number of digits in a positive number *)
+(** ** Number of digits in a positive number *)
 
 Fixpoint Psize (p:positive) : nat :=
   match p with
@@ -282,7 +284,7 @@ Fixpoint Psize_pos (p:positive) : positive :=
     | p~0 => Psucc (Psize_pos p)
   end.
 
-(** Comparison on binary positive numbers *)
+(** ** Comparison on binary positive numbers *)
 
 Fixpoint Pcompare (x y:positive) (r:comparison) {struct y} : comparison :=
   match x, y with
@@ -325,7 +327,7 @@ Definition Pmax (p p' : positive) := match Pcompare p p' Eq with
  | Gt => p
  end.
 
-(** Boolean equality *)
+(** ** Boolean equality *)
 
 Fixpoint Peqb (x y : positive) {struct y} : bool :=
  match x, y with
@@ -335,10 +337,10 @@ Fixpoint Peqb (x y : positive) {struct y} : bool :=
  | _, _ => false
  end.
 
-
+(**********************************************************************)
 (** * Properties of operations over positive numbers *)
 
-(** Decidability of equality on binary positive numbers *)
+(** ** Decidability of equality on binary positive numbers *)
 
 Lemma positive_eq_dec : forall x y: positive, {x = y} + {x <> y}.
 Proof.
@@ -353,9 +355,9 @@ Qed.
 (* end hide *)
 
 (**********************************************************************)
-(** Properties of successor on binary positive numbers *)
+(** * Properties of successor on binary positive numbers *)
 
-(** Specification of [xI] in term of [Psucc] and [xO] *)
+(** ** Specification of [xI] in term of [Psucc] and [xO] *)
 
 Lemma xI_succ_xO : forall p:positive, p~1 = Psucc p~0.
 Proof.
@@ -367,7 +369,7 @@ Proof.
   destruct p; discriminate.
 Qed.
 
-(** Successor and double *)
+(** ** Successor and double *)
 
 Lemma Psucc_o_double_minus_one_eq_xO :
   forall p:positive, Psucc (Pdouble_minus_one p) = p~0.
@@ -393,7 +395,7 @@ Proof.
   destruct p; discriminate.
 Qed.
 
-(** Successor and predecessor *)
+(** ** Successor and predecessor *)
 
 Lemma Psucc_not_one : forall p:positive, Psucc p <> 1.
 Proof.
@@ -414,7 +416,7 @@ Qed.
 
 Ltac destr_eq H := discriminate H || (try (injection H; clear H; intro H)).
 
-(** Injectivity of successor *)
+(** ** Injectivity of successor *)
 
 Lemma Psucc_inj : forall p q:positive, Psucc p = Psucc q -> p = q.
 Proof.
@@ -424,9 +426,9 @@ Proof.
 Qed.
 
 (**********************************************************************)
-(** Properties of addition on binary positive numbers *)
+(** * Properties of addition on binary positive numbers *)
 
-(** Specification of [Psucc] in term of [Pplus] *)
+(** ** Specification of [Psucc] in term of [Pplus] *)
 
 Lemma Pplus_one_succ_r : forall p:positive, Psucc p = p + 1.
 Proof.
@@ -438,7 +440,7 @@ Proof.
   destruct p; reflexivity.
 Qed.
 
-(** Specification of [Pplus_carry] *)
+(** ** Specification of [Pplus_carry] *)
 
 Theorem Pplus_carry_spec :
   forall p q:positive, Pplus_carry p q = Psucc (p + q).
@@ -446,7 +448,7 @@ Proof.
   induction p; destruct q; simpl; f_equal; auto.
 Qed.
 
-(** Commutativity *)
+(** ** Commutativity *)
 
 Theorem Pplus_comm : forall p q:positive, p + q = q + p.
 Proof.
@@ -454,7 +456,7 @@ Proof.
   rewrite 2 Pplus_carry_spec; f_equal; auto.
 Qed.
 
-(** Permutation of [Pplus] and [Psucc] *)
+(** ** Permutation of [Pplus] and [Psucc] *)
 
 Theorem Pplus_succ_permute_r :
   forall p q:positive, p + Psucc q = Psucc (p + q).
@@ -477,7 +479,7 @@ Proof.
   destruct (Psucc_pred q); [ elim H; assumption | assumption ].
 Qed.
 
-(** No neutral for addition on strictly positive numbers *)
+(** ** No neutral for addition on strictly positive numbers *)
 
 Lemma Pplus_no_neutral : forall p q:positive, q + p <> p.
 Proof.
@@ -492,7 +494,7 @@ Proof.
   apply Psucc_inj; rewrite <- Pplus_carry_spec; assumption.
 Qed.
 
-(** Simplification *)
+(** ** Simplification *)
 
 Lemma Pplus_carry_plus :
   forall p q r s:positive, Pplus_carry p r = Pplus_carry q s -> p + r = q + s.
@@ -532,7 +534,7 @@ Proof.
   rewrite (Pplus_comm r), (Pplus_comm q); apply Pplus_carry_plus; assumption.
 Qed.
 
-(** Addition on positive is associative *)
+(** ** Addition on positive is associative *)
 
 Theorem Pplus_assoc : forall p q r:positive, p + (q + r) = p + q + r.
 Proof.
@@ -546,7 +548,7 @@ Proof.
   intros p r; rewrite <- 2 Pplus_one_succ_l, Pplus_succ_permute_l; auto.
 Qed.
 
-(** Commutation of addition with the double of a positive number *)
+(** ** Commutation of addition with the double of a positive number *)
 
 Lemma Pplus_xO : forall m n : positive, (m + n)~0 = m~0 + n~0.
 Proof.
@@ -571,7 +573,7 @@ Proof.
   rewrite <- Psucc_o_double_minus_one_eq_xO, Pplus_one_succ_l; reflexivity.
 Qed.
 
-(** Misc *)
+(** ** Miscellaneous *)
 
 Lemma Pplus_diag : forall p:positive, p + p = p~0.
 Proof.
@@ -580,8 +582,8 @@ Proof.
 Qed.
 
 (**********************************************************************)
-(** Peano induction and recursion on binary positive positive numbers *)
-(** (a nice proof from Conor McBride, see "The view from the left")   *)
+(** * Peano induction and recursion on binary positive positive numbers *)
+(** * (a nice proof from Conor McBride, see "The view from the left")   *)
 
 Inductive PeanoView : positive -> Type :=
 | PeanoOne : PeanoView 1
@@ -664,11 +666,11 @@ Qed.
 
 Definition Prec (P:positive->Set) := Prect P.
 
-(** Peano induction *)
+(** ** Peano induction *)
 
 Definition Pind (P:positive->Prop) := Prect P.
 
-(** Peano case analysis *)
+(** ** Peano case analysis *)
 
 Theorem Pcase :
   forall P:positive -> Prop,
@@ -678,16 +680,16 @@ Proof.
 Qed.
 
 (**********************************************************************)
-(** Properties of multiplication on binary positive numbers *)
+(** * Properties of multiplication on binary positive numbers *)
 
-(** One is right neutral for multiplication *)
+(** ** One is right neutral for multiplication *)
 
 Lemma Pmult_1_r : forall p:positive, p * 1 = p.
 Proof.
   induction p; simpl; f_equal; auto.
 Qed.
 
-(** Successor and multiplication *)
+(** ** Successor and multiplication *)
 
 Lemma Pmult_Sn_m : forall n m : positive, (Psucc n) * m = m + n * m.
 Proof.
@@ -697,7 +699,7 @@ Proof.
   symmetry; apply Pplus_diag.
 Qed.
 
-(** Right reduction properties for multiplication *)
+(** ** Right reduction properties for multiplication *)
 
 Lemma Pmult_xO_permute_r : forall p q:positive, p * q~0 = (p * q)~0.
 Proof.
@@ -710,7 +712,7 @@ Proof.
   rewrite IHp, 2 Pplus_assoc, (Pplus_comm p); reflexivity.
 Qed.
 
-(** Commutativity of multiplication *)
+(** ** Commutativity of multiplication *)
 
 Theorem Pmult_comm : forall p q:positive, p * q = q * p.
 Proof.
@@ -718,7 +720,7 @@ Proof.
    auto using Pmult_xI_permute_r, Pmult_xO_permute_r, Pmult_1_r.
 Qed.
 
-(** Distributivity of multiplication over addition *)
+(** ** Distributivity of multiplication over addition *)
 
 Theorem Pmult_plus_distr_l :
   forall p q r:positive, p * (q + r) = p * q + p * r.
@@ -739,7 +741,7 @@ Proof.
   intros p q r; do 3 rewrite Pmult_comm with (q:=r); apply Pmult_plus_distr_l.
 Qed.
 
-(** Associativity of multiplication *)
+(** ** Associativity of multiplication *)
 
 Theorem Pmult_assoc : forall p q r:positive, p * (q * r) = p * q * r.
 Proof.
@@ -749,7 +751,7 @@ Proof.
   reflexivity.
 Qed.
 
-(** Parity properties of multiplication *)
+(** ** Parity properties of multiplication *)
 
 Lemma Pmult_xI_mult_xO_discr : forall p q r:positive, p~1 * r <> q~0 * r.
 Proof.
@@ -763,7 +765,7 @@ Proof.
   rewrite Pmult_xO_permute_r; injection; assumption.
 Qed.
 
-(** Simplification properties of multiplication *)
+(** ** Simplification properties of multiplication *)
 
 Theorem Pmult_reg_r : forall p q r:positive, p * r = q * r -> p = q.
 Proof.
@@ -787,14 +789,14 @@ Proof.
   rewrite (Pmult_comm p), (Pmult_comm q); assumption.
 Qed.
 
-(** Inversion of multiplication *)
+(** ** Inversion of multiplication *)
 
 Lemma Pmult_1_inversion_l : forall p q:positive, p * q = 1 -> p = 1.
 Proof.
   intros [p|p| ] [q|q| ] H; destr_eq H; auto.
 Qed.
 
-(** Square *)
+(** ** Square *)
 
 Lemma Psquare_xO : forall p, p~0 * p~0 = (p*p)~0~0.
 Proof.
@@ -807,7 +809,7 @@ Proof.
  rewrite Pplus_assoc, Pplus_diag. simpl. now rewrite Pplus_comm.
 Qed.
 
-(** Properties of [iter_pos] *)
+(** ** Properties of [iter_pos] *)
 
 Lemma iter_pos_swap_gen : forall A B (f:A->B)(g:A->A)(h:B->B),
  (forall a, f (g a) = h (f a)) -> forall p a,
@@ -850,7 +852,7 @@ Proof.
  intros A f Inv H x H0. apply IHp, IHp; trivial.
 Qed.
 
-(** Properties of power *)
+(** ** Properties of power *)
 
 Lemma Ppow_1_r : forall p, p^1 = p.
 Proof.
@@ -863,7 +865,7 @@ Proof.
 Qed.
 
 (*********************************************************************)
-(** Properties of boolean equality *)
+(** * Properties of boolean equality *)
 
 Theorem Peqb_refl : forall x:positive, Peqb x x = true.
 Proof.
@@ -886,7 +888,7 @@ Qed.
 
 
 (**********************************************************************)
-(** Properties of comparison on binary positive numbers *)
+(** * Properties of comparison on binary positive numbers *)
 
 Theorem Pcompare_refl : forall p:positive, (p ?= p) Eq = Eq.
   induction p; auto.
@@ -1027,7 +1029,7 @@ Proof.
   apply ZC1; auto.
 Qed.
 
-(** Comparison and the successor *)
+(** ** Comparison and the successor *)
 
 Lemma Pcompare_p_Sp : forall p : positive, (p ?= Psucc p) Eq = Lt.
 Proof.
@@ -1083,14 +1085,14 @@ Proof.
  now destruct m.
 Qed.
 
-(** 1 is the least positive number *)
+(** ** 1 is the least positive number *)
 
 Lemma Pcompare_1 : forall p, ~ (p ?= 1) Eq = Lt.
 Proof.
   destruct p; discriminate.
 Qed.
 
-(** Properties of the order on positive numbers *)
+(** ** Properties of the order on positive numbers *)
 
 Lemma Plt_1 : forall p, ~ p < 1.
 Proof.
@@ -1185,7 +1187,7 @@ Proof.
  eapply iff_trans; [eapply Psucc_lt_compat|eapply Plt_succ_r].
 Qed.
 
-(** Comparison and addition *)
+(** ** Comparison and addition *)
 
 Lemma Pplus_compare_mono_l : forall p q r, (p+q ?= p+r) Eq = (q ?= r) Eq.
 Proof.
@@ -1199,7 +1201,7 @@ Proof.
  intros. rewrite 2 (Pplus_comm _ p). apply Pplus_compare_mono_l.
 Qed.
 
-(** Order and addition *)
+(** ** Order and addition *)
 
 Lemma Pplus_lt_mono_l : forall p q r, q<r <-> p+q < p+r.
 Proof.
@@ -1235,7 +1237,7 @@ Proof.
  now apply Pplus_le_mono_r.
 Qed.
 
-(** Comparison and multiplication *)
+(** ** Comparison and multiplication *)
 
 Lemma Pmult_compare_mono_l : forall p q r, (p*q ?= p*r) Eq = (q ?= r) Eq.
 Proof.
@@ -1251,7 +1253,7 @@ Proof.
  intros. rewrite 2 (Pmult_comm _ p). apply Pmult_compare_mono_l.
 Qed.
 
-(** Order and multiplication *)
+(** ** Order and multiplication *)
 
 Lemma Pmult_lt_mono_l : forall p q r, q<r <-> p*q < p*r.
 Proof.
@@ -1313,7 +1315,7 @@ Proof.
 Qed.
 
 (**********************************************************************)
-(** Properties of subtraction on binary positive numbers *)
+(** * Properties of subtraction on binary positive numbers *)
 
 Lemma Ppred_minus : forall p, Ppred p = Pminus p 1.
 Proof.
@@ -1407,7 +1409,7 @@ Proof.
   destruct p; simpl; auto; discriminate.
 Qed.
 
-(** Properties of subtraction valid only for x>y *)
+(** ** Properties of subtraction valid only for x>y *)
 
 Lemma Pminus_mask_Gt :
   forall p q:positive,
@@ -1578,7 +1580,7 @@ Proof.
  intros; unfold Pminus; rewrite Pminus_mask_diag; auto.
 Qed.
 
-(** Results concerning [Psize] and [Psize_pos] *)
+(** ** Results concerning [Psize] and [Psize_pos] *)
 
 Lemma Psize_monotone : forall p q, p<q -> (Psize p <= Psize q)%nat.
 Proof.

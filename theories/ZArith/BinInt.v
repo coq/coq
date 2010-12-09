@@ -8,16 +8,14 @@
 (************************************************************************)
 
 (***********************************************************)
-(** Binary Integers (Pierre Crégut, CNET, Lannion, France) *)
+(** * Binary Integers *)
+(** Initial author: Pierre Crégut, CNET, Lannion, France *)
 (***********************************************************)
 
 Require Export BinPos Pnat.
 Require Import BinNat Plus Mult.
 
 Unset Boxed Definitions.
-
-(*****************************)
-(** * Binary integer numbers *)
 
 Inductive Z : Set :=
   | Z0 : Z
@@ -30,6 +28,9 @@ Delimit Scope Z_scope with Z.
 Bind Scope Z_scope with Z.
 Arguments Scope Zpos [positive_scope].
 Arguments Scope Zneg [positive_scope].
+
+(*************************************)
+(** * Basic operations *)
 
 (** ** Subtraction of positive into Z *)
 
@@ -216,9 +217,7 @@ Qed.
 (**********************************************************************)
 (** * Misc properties about binary integer operations *)
 
-
 (**********************************************************************)
-
 (** ** Properties of opposite on binary integer numbers *)
 
 Theorem Zopp_0 : Zopp Z0 = Z0.
@@ -265,21 +264,21 @@ Qed.
 (**********************************************************************)
 (** * Properties of the addition on integers *)
 
-(** ** zero is left neutral for addition *)
+(** ** Zero is left neutral for addition *)
 
 Theorem Zplus_0_l : forall n:Z, Z0 + n = n.
 Proof.
   intro x; destruct x; reflexivity.
 Qed.
 
-(** *** zero is right neutral for addition *)
+(** ** Zero is right neutral for addition *)
 
 Theorem Zplus_0_r : forall n:Z, n + Z0 = n.
 Proof.
   intro x; destruct x; reflexivity.
 Qed.
 
-(** ** addition is commutative *)
+(** ** Addition is commutative *)
 
 Theorem Zplus_comm : forall n m:Z, n + m = m + n.
 Proof.
@@ -290,7 +289,7 @@ Proof.
   rewrite Pplus_comm; reflexivity.
 Qed.
 
-(** ** opposite distributes over addition *)
+(** ** Opposite distributes over addition *)
 
 Theorem Zopp_plus_distr : forall n m:Z, - (n + m) = - n + - m.
 Proof.
@@ -304,7 +303,7 @@ Proof.
 intro; unfold Zsucc; now rewrite Zopp_plus_distr.
 Qed.
 
-(** ** opposite is inverse for addition *)
+(** ** Opposite is inverse for addition *)
 
 Theorem Zplus_opp_r : forall n:Z, n + - n = Z0.
 Proof.
@@ -321,7 +320,7 @@ Qed.
 
 Hint Local Resolve Zplus_0_l Zplus_0_r.
 
-(** ** addition is associative *)
+(** ** Addition is associative *)
 
 Lemma weak_assoc :
   forall (p q:positive) (n:Z), Zpos p + (Zpos q + n) = Zpos p + Zpos q + n.
@@ -384,7 +383,7 @@ Proof.
     rewrite (Zplus_comm p n); trivial with arith.
 Qed.
 
-(** ** addition simplifies *)
+(** ** Addition simplifies *)
 
 Theorem Zplus_reg_l : forall n m p:Z, n + m = n + p -> m = p.
   intros n m p H; cut (- n + (n + m) = - n + (n + p));
@@ -393,7 +392,7 @@ Theorem Zplus_reg_l : forall n m p:Z, n + m = n + p -> m = p.
       | rewrite H; trivial with arith ].
 Qed.
 
-(** ** addition and successor permutes *)
+(** ** Addition and successor permutes *)
 
 Lemma Zplus_succ_l : forall n m:Z, Zsucc n + m = Zsucc (n + m).
 Proof.

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 (*********************************************************************)
-(** ** List permutations as a composition of adjacent transpositions *)
+(** * List permutations as a composition of adjacent transpositions  *)
 (*********************************************************************)
 
 (* Adapted in May 2006 by Jean-Marc Notin from initial contents by
