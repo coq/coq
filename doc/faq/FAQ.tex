@@ -133,7 +133,7 @@
 
 %%%%%%% Coq pour les nuls %%%%%%%
 
-\title{Coq Version 8.1 for the Clueless\\
+\title{Coq Version 8.3 for the Clueless\\
   \large(\protect\ref{lastquestion}
   \ Hints)
 }
@@ -165,7 +165,7 @@ proofs in \Coq. Since we are singularly short-minded, we wrote the
 answers we found on bits of papers to have them at hand whenever the
 situation occurs again. This is pretty much the result of that: a
 collection of tips one can refer to when proofs become intricate. Yes,
-this means we won't take the blame for the shortcomings of this
+it means we won't take the blame for the shortcomings of this
 FAQ. But if you want to contribute and send in your own question and
 answers, feel free to write to us\ldots
 
@@ -1508,7 +1508,7 @@ apply the elimination scheme using the \verb=using= option of
 
 The short answer : You should use {\texttt le\_lt\_dec n p} instead.\\
 
-That's right, you can't.
+The long answer: That's right, you can't.
 If you type for instance the following ``definition'':
 \begin{coq_eval}
 Reset Initial.
@@ -1626,7 +1626,7 @@ certified programs which need to compare natural numbers, and is not
 designed to compare quickly two numbers.
 
 Nevertheless, the \emph{extraction} of \texttt{le\_lt\_dec} towards 
-\emph{Ocaml} or \emph{Haskell}, is a reasonable program for comparing two
+\emph{OCaml} or \emph{Haskell}, is a reasonable program for comparing two
 natural numbers in Peano form in linear time.
 
 It is also possible to keep your boolean function as a decision procedure,
@@ -1889,13 +1889,15 @@ because ``$^2$'' is an iso-latin character. If you really want this kind of nota
 
 \Question{Why ``no associativity'' and  ``left associativity'' at the same level does not work?}
 
-Because we relie on camlp4 for syntactical analysis and camlp4 does not really implement no associativity. By default, non associative operators are defined as right associative.
+Because we relie on Camlp4 for syntactical analysis and Camlp4 does not really
+implement no associativity. By default, non associative operators are defined
+as right associative.
 
 
 
 \Question{How can I know the associativity associated with a level?}
 
-You can do ``Print Grammar constr'', and decode the output from camlp4, good luck !
+You can do ``Print Grammar constr'', and decode the output from Camlp4, good luck !
 
 \section{Modules}
 
@@ -1990,13 +1992,81 @@ todo
 \Question{How can I define static and dynamic code?}
 \fi
 
-\section{Tactics written in Ocaml}
+\section{Tactics written in OCaml}
 
 \Question{Can you show me an example of a tactic written in OCaml?}
 
-You have some examples of tactics written in Ocaml in the ``plugins'' directory of {\Coq} sources. 
+Have a look at the skeleton ``Hello World'' tactic from the next question. 
+You also have some examples of tactics written in OCaml in the ``plugins'' directory of {\Coq} sources. 
 
+\Question{Is there a skeleton of OCaml tactic I can reuse somewhere?}
 
+The following steps describe how to write a simplistic ``Hello world'' OCaml
+tactic. This takes the form of a dynamically loadable OCaml module, which will
+be invoked from the Coq toplevel.
+\begin{enumerate}
+\item In the \verb+plugins+ directory of the Coq source location, create a
+directory \verb+hello+. Proceed to create a grammar and OCaml file, respectively
+\verb+plugins/hello/g_hello.ml4+ and \verb+plugins/hello/coq_hello.ml+,
+containing:
+  \begin{itemize}
+  \item in \verb+g_hello.ml4+:
+\begin{verbatim}
+(*i camlp4deps: "parsing/grammar.cma" i*)
+TACTIC EXTEND Hello
+| [ "hello" ] -> [ Coq_hello.printHello ]
+END
+\end{verbatim}
+  \item in \verb+coq_hello.ml+:
+\begin{verbatim}
+let printHello gl =
+Tacticals.tclIDTAC_MESSAGE (Pp.str "Hello world") gl
+  \end{verbatim}
+  \end{itemize}
+\item Create a file \verb+plugins/hello/hello_plugin.mllib+, containing the
+names of the OCaml modules bundled in the dynamic library:
+\begin{verbatim}
+Coq_hello
+G_hello
+\end{verbatim}
+\item Append the following lines in \verb+plugins/plugins{byte,opt}.itarget+:
+\begin{itemize}
+  \item in \verb+pluginsopt.itarget+:
+\begin{verbatim}
+hello/hello_plugin.cmxa
+\end{verbatim}
+  \item in \verb+pluginsbyte.itarget+:
+\begin{verbatim}
+hello/hello_plugin.cma
+\end{verbatim}
+\end{itemize}
+\item In the root directory of the Coq source location, modify the file
+\verb+Makefile.common+:
+  \begin{itemize}
+  \item add \verb+hello+ to the \verb+SRCDIR+ definition (second argument of the
+  \verb+addprefix+ function);
+  \item in the section ``Object and Source files'', add \verb+HELLOCMA:=plugins/hello/hello_plugin.cma+;
+  \item add \verb+$(HELLOCMA)+ to the \verb+PLUGINSCMA+ definition.
+  \end{itemize}
+\item Modify the file \verb+Makefile.build+, adding in section ``3) plugins'' the
+line:
+\begin{verbatim}
+hello: $(HELLOCMA)
+\end{verbatim}
+\item From the command line, run \verb+make hello+, then \verb+make plugins/hello/hello_plugin.cmxs+.
+\end{enumerate}
+The call to the tactic \verb+hello+ from a Coq script has to be preceded by
+\verb+Declare ML Module "hello_plugin"+, which will load the dynamic object
+\verb+hello_plugin.cmxs+. For instance:
+\begin{verbatim}
+Declare ML Module "hello_plugin".
+Variable A:Prop.
+Goal A-> A.
+Proof.
+hello.
+auto.
+Qed.
+\end{verbatim}
 
 
 \section{Case studies}
