@@ -261,26 +261,32 @@ CONTROL and the SHIFT keys, and type the hexadecimal code of the
 symbol required, for example \verb|2200| for the $\forall$ symbol.
 A list of symbol codes is available at \url{http://www.unicode.org}. 
 
-This method obviously doesn't scale, that's why the preferred alternative is to
-use an Input Method Editor. On POSIX systems (Linux distros, BSD variants and
-MacOS X), you can use \texttt{uim} version 1.6 or later which provides a \LaTeX{}-style
-input method.
+This method obviously doesn't scale, that's why the preferred
+alternative is to use an Input Method Editor. On POSIX systems (Linux
+distributions, BSD variants and MacOS X), you can use \texttt{uim} to
+support \LaTeX{}-style edition and, if using X Windows, you can also use
+the XCompose method (XIM). How to use \texttt{uim} is documented below.
 
-To configure \texttt{uim}, execute \texttt{uim-pref-gtk} as your regular user.
-In the "Global Settings" group set the default Input Method to "ELatin" (don't
-forget to tick the checkbox "Specify default IM"). In the "ELatin" group set the
-layout to "TeX", and remember the content of the "[ELatin] on" field (by default
-"<Control>\"). You can now execute CoqIDE with the following commands (assuming
-you use a Bourne-style shell):
+If you have \texttt{uim} 1.5.x, first manually copy the files located
+in directory {\tt ide/uim} of the Coq source distribution to the
+{\tt uim} directory of input methods which typically is {\tt
+  /usr/share/uim}. Execute {\tt uim-module-manager -{-}register
+  coqide}. Then, execute \texttt{uim-pref-gtk} as regular user and set
+the default Input Method to "CoqIDE" in the "Global Settings" group
+(don't forget to tick the checkbox "Specify default IM"; you may also
+have to first edit the set of "Enabled input method" to add CoqIDE to
+the set). You can now execute CoqIDE with the following commands
+(assuming you use a Bourne-style shell):
 
 \begin{verbatim}
 $ export GTK_IM_MODULE=uim
 $ coqide
 \end{verbatim}
 
-Activate the ELatin Input Method with Ctrl-\textbackslash, then type the
-sequence "\verb=\Gamma=". You will see the sequence being
-replaced by $\Gamma$ as soon as you type the second "a".
+If you then type the sequence "\verb=\Gamma=", you will see the sequence being
+replaced by $\Gamma$ as soon as you  type the second "a".
+
+If you have \texttt{uim} 1.6.x, the \LaTeX{} input method is built-in. You just have to execute \texttt{uim-pref-gtk} and choose "ELatin" as default Input Method in the "Global Settings". Then, in the "ELatin" group set the layout to "TeX", and remember the content of the "[ELatin] on" field (by default "<Control>$\backslash$"). Proceed then as above.
 
 \subsection[Character encoding for saved files]{Character encoding for saved files\label{sec:coqidecharencoding}}
 
