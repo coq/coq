@@ -1,9 +1,11 @@
 Changes from V8.3 to V8.3pl1
 ============================
 
-Notations bug fixes
+Notations and implicit arguments bug fixes
 
 - #2448 (alpha-renaming problems with notations internally using binders)
+- fixing combined use of non-implicit and explictly-declared implicit arguments
+  in inductive arities
 - restored support for using some ident with different scopes in notations
 
 Ltac and tactics bug fixes
