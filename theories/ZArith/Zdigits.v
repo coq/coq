@@ -45,17 +45,17 @@ Section VALUE_OF_BOOLEAN_VECTORS.
     exact 0%Z.
 
     inversion H0.
-    exact (bit_value a + 2 * H H2)%Z.
+    exact (bit_value h + 2 * H H2)%Z.
   Defined.
 
   Lemma two_compl_value : forall n:nat, Bvector (S n) -> Z.
   Proof.
     simple induction n; intros.
     inversion H.
-    exact (- bit_value a)%Z.
+    exact (- bit_value h)%Z.
 
     inversion H0.
-    exact (bit_value a + 2 * H H2)%Z.
+    exact (bit_value h + 2 * H H2)%Z.
   Defined.
 
 End VALUE_OF_BOOLEAN_VECTORS.
@@ -134,7 +134,7 @@ Section Z_BRIC_A_BRAC.
 
   Lemma binary_value_Sn :
     forall (n:nat) (b:bool) (bv:Bvector n),
-      binary_value (S n) (Vcons bool b n bv) =
+      binary_value (S n) ( b :: bv) =
       (bit_value b + 2 * binary_value n bv)%Z.
   Proof.
     intros; auto.

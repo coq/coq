@@ -133,7 +133,7 @@ Section sequence.
     clear -Hi2pn.
     intros m.
     induction n.
-    rewrite plus_0_r.
+    rewrite<- plus_n_O.
     ring_simplify (sum m + (/ 2) ^ m - (/ 2) ^ m).
     split ; apply Rle_refl.
     rewrite <- plus_n_Sm.

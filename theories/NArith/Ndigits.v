@@ -710,7 +710,8 @@ Lemma Nneg_bit0 :
    Nbit0 (Nxor a a') = true -> Nbit0 a = negb (Nbit0 a').
 Proof.
   intros.
-  rewrite <- true_xorb, <- H, Nxor_bit0, xorb_assoc, xorb_nilpotent, xorb_false.
+  rewrite <- true_xorb, <- H, Nxor_bit0, xorb_assoc, 
+    xorb_nilpotent, xorb_false.
   reflexivity.
 Qed.
 
@@ -733,7 +734,8 @@ Lemma Nsame_bit0 :
 Proof.
   intros. rewrite <- (xorb_false (Nbit0 a)).
   assert (H0: Nbit0 (Npos (xO p)) = false) by reflexivity.
-  rewrite <- H0, <- H, Nxor_bit0, <- xorb_assoc, xorb_nilpotent, false_xorb. reflexivity.
+  rewrite <- H0, <- H, Nxor_bit0, <- xorb_assoc, xorb_nilpotent, false_xorb.
+    reflexivity.
 Qed.
 
 (** a lexicographic order on bits, starting from the lowest bit *)
@@ -840,8 +842,8 @@ Lemma Nless_trans :
    Nless a a' = true -> Nless a' a'' = true -> Nless a a'' = true.
 Proof.
   induction a as [|a IHa|a IHa] using N_ind_double; intros a' a'' H H0.
-    destruct (Nless N0 a'') as []_eqn:Heqb. trivial.
-     rewrite (N0_less_2 a'' Heqb), (Nless_z a') in H0. discriminate H0.
+    case_eq (Nless N0 a'') ; intros Heqn. trivial.
+     rewrite (N0_less_2 a'' Heqn), (Nless_z a') in H0. discriminate H0.
     induction a' as [|a' _|a' _] using N_ind_double.
       rewrite (Nless_z (Ndouble a)) in H. discriminate H.
       rewrite (Nless_def_1 a a') in H.
@@ -868,10 +870,10 @@ Lemma Nless_total :
  forall a a', {Nless a a' = true} + {Nless a' a = true} + {a = a'}.
 Proof.
   induction a using N_rec_double; intro a'.
-    destruct (Nless N0 a') as []_eqn:Heqb. left. left. auto.
+    case_eq (Nless N0 a') ; intros Heqb. left. left. auto.
      right. rewrite (N0_less_2 a' Heqb). reflexivity.
     induction a' as [|a' _|a' _] using N_rec_double.
-      destruct (Nless N0 (Ndouble a)) as []_eqn:Heqb. left. right. auto.
+      case_eq (Nless N0 (Ndouble a)) ; intros Heqb. left. right. auto.
        right. exact (N0_less_2 _  Heqb).
       rewrite 2!Nless_def_1. destruct (IHa a') as [ | ->].
         left. assumption.
@@ -910,9 +912,9 @@ Definition N2Bv (n:N) : Bvector (Nsize n) :=
 
 Fixpoint Bv2N (n:nat)(bv:Bvector n) : N :=
   match bv with
-    | Vnil => N0
-    | Vcons false n bv => Ndouble (Bv2N n bv)
-    | Vcons true n bv => Ndouble_plus_one (Bv2N n bv)
+    | Vector.nil => N0
+    | Vector.cons false n bv => Ndouble (Bv2N n bv)
+    | Vector.cons true n bv => Ndouble_plus_one (Bv2N n bv)
   end.
 
 Lemma Bv2N_N2Bv : forall n, Bv2N _ (N2Bv n) = n.
@@ -928,13 +930,12 @@ Qed.
 
 Lemma Bv2N_Nsize : forall n (bv:Bvector n), Nsize (Bv2N n bv) <= n.
 Proof.
-induction n; intros.
-rewrite (V0_eq _ bv); simpl; auto.
-rewrite (VSn_eq _ _ bv); simpl.
-specialize IHn with (Vtail _ _ bv).
-destruct (Vhead _ _ bv);
- destruct (Bv2N n (Vtail bool n bv));
-  simpl; auto with arith.
+induction bv; intros.
+auto.
+simpl.
+destruct h;
+ destruct (Bv2N n bv);
+ simpl ; auto with arith.
 Qed.
 
 (** In the previous lemma, we can only replace the inequality by
@@ -944,15 +945,10 @@ Lemma Bv2N_Nsize_1 : forall n (bv:Bvector (S n)),
   Bsign _ bv = true <->
   Nsize (Bv2N _ bv) = (S n).
 Proof.
-induction n; intro.
-rewrite (VSn_eq _ _ bv); simpl.
-rewrite (V0_eq _ (Vtail _ _ bv)); simpl.
-destruct (Vhead _ _ bv); simpl; intuition; try discriminate.
-rewrite (VSn_eq _ _ bv); simpl.
-generalize (IHn (Vtail _ _ bv)); clear IHn.
-destruct (Vhead _ _ bv);
- destruct (Bv2N (S n) (Vtail bool (S n) bv));
-  simpl; intuition; try discriminate.
+apply Vector.rectS ; intros ; simpl.
+destruct a ; compute ; split ; intros x ; now inversion x.
+ destruct a, (Bv2N (S n) v) ;
+  simpl ;intuition ; try discriminate.
 Qed.
 
 (** To state nonetheless a second result about composition of
@@ -982,7 +978,7 @@ Qed.
    [a] plus some zeros. *)
 
 Lemma N2Bv_N2Bv_gen_above : forall (a:N)(k:nat),
- N2Bv_gen (Nsize a + k) a = Vextend _ _ _ (N2Bv a) (Bvect_false k).
+ N2Bv_gen (Nsize a + k) a = Vector.append (N2Bv a) (Bvect_false k).
 Proof.
 destruct a; simpl.
 destruct k; simpl; auto.
@@ -994,13 +990,13 @@ Qed.
 Lemma N2Bv_Bv2N : forall n (bv:Bvector n),
    N2Bv_gen n (Bv2N n bv) = bv.
 Proof.
-induction n; intros.
-rewrite (V0_eq _ bv); simpl; auto.
-rewrite (VSn_eq _ _ bv); simpl.
-generalize (IHn (Vtail _ _ bv)); clear IHn.
+induction bv; intros.
+auto.
+simpl.
+generalize IHbv; clear IHbv.
 unfold Bcons.
-destruct (Bv2N _ (Vtail _ _ bv));
- destruct (Vhead _ _ bv); intro H; rewrite <- H; simpl; trivial;
+destruct (Bv2N _ bv);
+ destruct h; intro H; rewrite <- H; simpl; trivial;
   induction n; simpl; auto.
 Qed.
 
@@ -1009,31 +1005,25 @@ Qed.
 Lemma Nbit0_Blow : forall n, forall (bv:Bvector (S n)),
   Nbit0 (Bv2N _ bv) = Blow _ bv.
 Proof.
+apply Vector.caseS.
 intros.
 unfold Blow.
-rewrite (VSn_eq _ _ bv) at 1.
 simpl.
-destruct (Bv2N n (Vtail bool n bv)); simpl;
- destruct (Vhead bool n bv); auto.
+destruct (Bv2N n t); simpl;
+ destruct h; auto.
 Qed.
 
-Definition Bnth (n:nat)(bv:Bvector n)(p:nat) : p<n -> bool.
-Proof.
- induction bv in p |- *.
- intros.
- exfalso; inversion H.
- intros.
- destruct p.
- exact a.
- apply (IHbv p); auto with arith.
-Defined.
+Notation Bnth := (@Vector.nth_order bool).
 
 Lemma Bnth_Nbit : forall n (bv:Bvector n) p (H:p<n),
-  Bnth _ bv p H = Nbit (Bv2N _ bv) p.
+  Bnth bv H = Nbit (Bv2N _ bv) p.
 Proof.
 induction bv; intros.
 inversion H.
-destruct p; simpl; destruct (Bv2N n bv); destruct a; simpl in *; auto.
+destruct p ; simpl.
+  destruct (Bv2N n bv); destruct h; simpl in *; auto.
+  specialize IHbv with p (lt_S_n _ _ H).
+    simpl in * ; destruct (Bv2N n bv); destruct h; simpl in *; auto.
 Qed.
 
 Lemma Nbit_Nsize : forall n p, Nsize n <= p -> Nbit n p = false.
@@ -1045,12 +1035,12 @@ inversion H.
 inversion H.
 Qed.
 
-Lemma Nbit_Bth: forall n p (H:p < Nsize n), Nbit n p = Bnth _ (N2Bv n) p H.
+Lemma Nbit_Bth: forall n p (H:p < Nsize n), Nbit n p = Bnth (N2Bv n) H.
 Proof.
 destruct n as [|n].
 inversion H.
-induction n; simpl in *; intros; destruct p; auto with arith.
-inversion H; inversion H1.
+induction n ; destruct p ; unfold Vector.nth_order in *; simpl in * ; auto.
+intros H ; destruct (lt_n_O _ (lt_S_n _ _ H)).
 Qed.
 
 (** Binary bitwise operations are the same in the two worlds. *)
@@ -1058,35 +1048,17 @@ Qed.
 Lemma Nxor_BVxor : forall n (bv bv' : Bvector n),
   Bv2N _ (BVxor _ bv bv') = Nxor (Bv2N _ bv) (Bv2N _ bv').
 Proof.
-induction n; intros bv bv'.
-rewrite (V0_eq _ bv), (V0_eq _ bv'); simpl; auto.
-rewrite (VSn_eq _ _ bv), (VSn_eq _ _ bv'); simpl; auto.
-rewrite IHn.
-destruct (Vhead bool n bv), (Vhead bool n bv'),
- (Bv2N n (Vtail bool n bv)), (Bv2N n (Vtail bool n bv'));
- simpl; auto.
-Qed.
-
-Lemma Nor_BVor : forall n (bv bv' : Bvector n),
-  Bv2N _ (BVor _ bv bv') = Nor (Bv2N _ bv) (Bv2N _ bv').
-Proof.
-induction n; intros bv bv'.
-rewrite (V0_eq _ bv), (V0_eq _ bv'); simpl; auto.
-rewrite (VSn_eq _ _ bv), (VSn_eq _ _ bv'); simpl; auto.
-rewrite IHn.
-destruct (Vhead bool n bv), (Vhead bool n bv'),
- (Bv2N n (Vtail bool n bv)), (Bv2N n (Vtail bool n bv'));
- simpl; auto.
+apply Vector.rect2 ; intros.
+now simpl.
+simpl.
+destruct a, b, (Bv2N n v1), (Bv2N n v2); simpl in *; rewrite H ; now simpl.
 Qed.
 
 Lemma Nand_BVand : forall n (bv bv' : Bvector n),
   Bv2N _ (BVand _ bv bv') = Nand (Bv2N _ bv) (Bv2N _ bv').
 Proof.
-induction n; intros bv bv'.
-rewrite (V0_eq _ bv), (V0_eq _ bv'); simpl; auto.
-rewrite (VSn_eq _ _ bv), (VSn_eq _ _ bv'); simpl; auto.
-rewrite IHn.
-destruct (Vhead bool n bv), (Vhead bool n bv'),
- (Bv2N n (Vtail bool n bv)), (Bv2N n (Vtail bool n bv'));
+refine (Vector.rect2 _ _ _); simpl; intros; auto.
+rewrite H.
+destruct a, b, (Bv2N n v1), (Bv2N n v2);
  simpl; auto.
 Qed.

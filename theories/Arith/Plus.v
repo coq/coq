@@ -24,17 +24,10 @@ Open Local Scope nat_scope.
 
 Implicit Types m n p q : nat.
 
-(** * Zero is neutral *)
-
-Lemma plus_0_l : forall n, 0 + n = n.
-Proof.
-  reflexivity.
-Qed.
-
-Lemma plus_0_r : forall n, n + 0 = n.
-Proof.
-  intro; symmetry  in |- *; apply plus_n_O.
-Qed.
+(** * Zero is neutral 
+Deprecated : Already in Init/Peano.v *)
+Definition plus_0_l n := eq_sym (plus_O_n n).
+Definition plus_0_r n := eq_sym (plus_n_O n).
 
 (** * Commutativity *)
 
@@ -47,14 +40,8 @@ Hint Immediate plus_comm: arith v62.
 
 (** * Associativity *)
 
-Lemma plus_Snm_nSm : forall n m, S n + m = n + S m.
-Proof.
-  intros.
-  simpl in |- *.
-  rewrite (plus_comm n m).
-  rewrite (plus_comm n (S m)).
-  trivial with arith.
-Qed.
+Definition plus_Snm_nSm : forall n m, S n + m = n + S m:=
+ plus_n_Sm.
 
 Lemma plus_assoc : forall n m p, n + (m + p) = n + m + p.
 Proof.

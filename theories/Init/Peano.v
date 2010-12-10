@@ -50,13 +50,7 @@ Qed.
 
 (** Injectivity of successor *)
 
-Theorem eq_add_S : forall n m:nat, S n = S m -> n = m.
-Proof.
-  intros n m Sn_eq_Sm.
-  replace (n=m) with (pred (S n) = pred (S m)) by auto using pred_Sn.
-  rewrite Sn_eq_Sm; trivial.
-Qed.
-
+Definition eq_add_S n m (H: S n = S m): n = m := f_equal pred H.
 Hint Immediate eq_add_S: core.
 
 Theorem not_eq_S : forall n m:nat, n <> m -> S n <> S m.

@@ -1692,7 +1692,7 @@ Section Int31_Specs.
  unfold head031, recl.
  change On with (phi_inv (Z_of_nat (31-size))).
  replace (head031_alt size x) with
-   (head031_alt size x + (31 - size))%nat by (apply plus_0_r; auto).
+   (head031_alt size x + (31 - size))%nat by auto.
  assert (size <= 31)%nat by auto with arith.
 
  revert x H; induction size; intros.
@@ -1800,7 +1800,7 @@ Section Int31_Specs.
  unfold tail031, recr.
  change On with (phi_inv (Z_of_nat (31-size))).
  replace (tail031_alt size x) with
-   (tail031_alt size x + (31 - size))%nat by (apply plus_0_r; auto).
+   (tail031_alt size x + (31 - size))%nat by auto.
  assert (size <= 31)%nat by auto with arith.
 
  revert x H; induction size; intros.

@@ -6,6 +6,7 @@ MSets/vo.otarget
 Structures/vo.otarget
 Init/vo.otarget
 Lists/vo.otarget
+Vectors/vo.otarget
 Logic/vo.otarget
 PArith/vo.otarget
 NArith/vo.otarget

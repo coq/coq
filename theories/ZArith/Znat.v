@@ -194,7 +194,7 @@ Proof.
 Qed.
 
 (** For compatibility *)
-Definition Zpos_eq_Z_of_nat_o_nat_of_P p := eq_sym (Z_of_nat_of_P p).
+Definition Zpos_eq_Z_of_nat_o_nat_of_P p := eq_sym _ _ _ (Z_of_nat_of_P p).
 
 (******************************************************************)
 (** Properties of the injection from N into Z *)

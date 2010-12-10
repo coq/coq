@@ -73,6 +73,7 @@ let theories_dirs_map = [
     "theories/Sets", "Sets" ;
     "theories/Structures", "Structures" ;
     "theories/Lists", "Lists" ;
+    "theories/Vectors", "Vectors" ;
     "theories/Wellfounded", "Wellfounded" ;
     "theories/Relations", "Relations" ;
     "theories/Numbers", "Numbers" ;
