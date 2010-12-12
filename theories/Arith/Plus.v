@@ -1,4 +1,4 @@
-(************************************************************************)
+ (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
@@ -26,7 +26,7 @@ Implicit Types m n p q : nat.
 
 (** * Zero is neutral 
 Deprecated : Already in Init/Peano.v *)
-Definition plus_0_l n := eq_sym (plus_O_n n).
+Notation plus_0_l := plus_O_n (only parsing).
 Definition plus_0_r n := eq_sym (plus_n_O n).
 
 (** * Commutativity *)
