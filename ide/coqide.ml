@@ -286,15 +286,59 @@ let kill_input_view i =
     v.proof_view#destroy ();
     v.message_view#destroy ();
     session_notebook#remove_page i
+
+let warning msg =
+  GToolbox.message_box ~title:"Warning"
+    ~icon:(let img = GMisc.image () in
+	     img#set_stock `DIALOG_WARNING;
+	     img#set_icon_size `DIALOG;
+	     img#coerce)
+    msg
+
 (*
 (* XXX - beaucoups d'appels, a garder *)
 let get_current_view =
   focused_session
  *)
 let remove_current_view_page () =
-  let c = session_notebook#current_page in
-    kill_input_view c
-
+  let do_remove () =
+    let c = session_notebook#current_page in
+      kill_input_view c
+  in
+  let current = session_notebook#current_term in
+    if current.script#buffer#modified then
+      match GToolbox.question_box ~title:"Close"
+              ~buttons:["Save Buffer and Close";
+                        "Close without Saving";
+                        "Don't Close"]
+              ~default:0
+              ~icon:(let img = GMisc.image () in
+                       img#set_stock `DIALOG_WARNING;
+                       img#set_icon_size `DIALOG;
+                       img#coerce)
+              "This buffer has unsaved modifications"
+      with
+        | 1 ->
+            begin match current.analyzed_view#filename with
+              | None ->
+                  begin match select_file_for_save ~title:"Save file" () with
+                    | None -> ()
+                    | Some f ->
+                        if current.analyzed_view#save_as f then begin
+                          flash_info ("File " ^ f ^ " saved") ;
+                          do_remove ()
+                        end else
+                          warning  ("Save Failed (check if " ^ f ^ " is writable)")
+                  end
+              | Some f ->
+                  if current.analyzed_view#save f then begin
+                    flash_info ("File " ^ f ^ " saved") ;
+                    do_remove ()
+                  end else
+                    warning  ("Save Failed (check if " ^ f ^ " is writable)")
+            end
+        | 2 -> do_remove ()
+        | _ -> ()
 
 (* Reset this to None on page change ! *)
 let (last_completion:(string*int*int*bool) option ref) = ref None
@@ -386,14 +430,6 @@ let activate_input i =
   (session_notebook#get_nth_term i).analyzed_view#activate ();
   set_active_view i;
   prerr_endline "exiting activate_input"
-
-let warning msg =
-  GToolbox.message_box ~title:"Warning"
-    ~icon:(let img = GMisc.image () in
-	     img#set_stock `DIALOG_WARNING;
-	     img#set_icon_size `DIALOG;
-	     img#coerce)
-    msg
 
 let apply_tag (buffer:GText.buffer) orig off_conv from upto sort =
   let conv_and_apply start stop tag =
