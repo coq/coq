@@ -45,23 +45,26 @@ let _ = Auto.auto_init := (fun () ->
 
 exception Found of evar_map
 
+(** Invariant: function p only manipulates undefined evars *)
+
 let evars_to_goals p evm =
   let goals, evm' =
-    Evd.fold
+    Evd.fold_undefined
       (fun ev evi (gls, evm') ->
-	if evi.evar_body = Evar_empty then
-	  let evi', goal = p evm ev evi in
-	    if goal then
-	      ((ev,Goal.V82.build ev) :: gls, Evd.add evm' ev evi')
-	    else (gls, Evd.add evm' ev evi')
-	else (gls, Evd.add evm' ev evi))
+	let evi', goal = p evm ev evi in
+	let gls' = if goal then (ev,Goal.V82.build ev) :: gls else gls in
+	(gls', Evd.add evm' ev evi'))
       evm ([], Evd.empty)
   in
-    if goals = [] then None
-    else
-      let goals = List.rev goals in
-      let evm' = evars_reset_evd evm' evm in
-	Some (goals, evm')
+  if goals = [] then None
+  else
+    let goals = List.rev goals in
+    (** old defined evars of [evm] + new undefined ones of [evm'] *)
+    let evm' =
+      Evd.fold_undefined (fun ev evi evm -> Evd.add evm ev evi) evm' evm
+    in
+    let evm' = evars_reset_evd evm' evm in
+    Some (goals, evm')
 
 (** Typeclasses instance search tactic / eauto *)
 
@@ -537,26 +540,26 @@ let is_optional p comp evd =
 
 let resolve_all_evars debug m env p oevd do_split fail =
   let split = if do_split then split_evars oevd else [Intset.empty] in
+  (* Invariant: this p (and hence the above p) will only be applied
+     to undefined evars *)
   let p = if do_split then
-    fun comp evd ev evi -> 
-      if evi.evar_body = Evar_empty then
-	(try let oevi = Evd.find oevd ev in
-	       if Typeclasses.is_resolvable oevi then
-		 Typeclasses.mark_unresolvable evi, (Intset.mem ev comp &&
-							p evd ev evi)
-	       else evi, false
-	  with Not_found ->
-	    Typeclasses.mark_unresolvable evi, p evd ev evi)
-      else evi, false
-    else fun _ evd ev evi -> 
-      if evi.evar_body = Evar_empty then
-	try let oevi = Evd.find oevd ev in
-	      if Typeclasses.is_resolvable oevi then
-		Typeclasses.mark_unresolvable evi, p evd ev evi
-	      else evi, false
-	with Not_found ->
-	  Typeclasses.mark_unresolvable evi, p evd ev evi
-      else evi, false
+    fun comp evd ev evi ->
+      assert (evi.evar_body = Evar_empty);
+      (try let oevi = Evd.find oevd ev in
+	   if Typeclasses.is_resolvable oevi then
+	     Typeclasses.mark_unresolvable evi, (Intset.mem ev comp &&
+						   p evd ev evi)
+	   else evi, false
+       with Not_found ->
+	 Typeclasses.mark_unresolvable evi, p evd ev evi)
+    else fun _ evd ev evi ->
+      assert (evi.evar_body = Evar_empty);
+      try let oevi = Evd.find oevd ev in
+	  if Typeclasses.is_resolvable oevi then
+	    Typeclasses.mark_unresolvable evi, p evd ev evi
+	  else evi, false
+      with Not_found ->
+	Typeclasses.mark_unresolvable evi, p evd ev evi
   in
   let rec aux p evd =
     let evd' = resolve_all_evars_once debug m p evd in
