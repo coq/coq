@@ -62,9 +62,6 @@ let my_print_rec_info env t =
 (* 	   str " and tycon "++ my_print_tycon env tycon ++ *)
 (* 	   str " in environment: " ++ my_print_env env); *)
 
-let merge_evms x y =
-  Evd.fold (fun ev evi evm -> Evd.add evm ev evi) x y
-
 let interp env isevars c tycon =
   let j = pretype tycon env isevars ([],[]) c in
   let _ = isevars := Evarutil.nf_evar_map !isevars in
