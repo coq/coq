@@ -24,6 +24,8 @@ val lexer : Compat.lexer
 
 module Gram : Grammar.S with type te = Compat.token
 
+val entry_print : 'a Gram.Entry.e -> unit
+
 (* The superclass of all grammar entries *)
 type grammar_object
 
