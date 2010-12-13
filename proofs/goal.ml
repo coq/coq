@@ -156,15 +156,11 @@ module Refinable = struct
 
 
   (* a pessimistic (i.e : there won't be many positive answers) filter
-     over evar_maps *)
-  let evar_map_filter f evm =
-    Evd.fold (fun ev evi r -> 
-		if f ev evi then 
-		  Evd.add r ev evi 
-		else 
-		  r
-	     ) 
-      evm 
+     over evar_maps, acting only on undefined evars *)
+  let evar_map_filter_undefined f evm =
+    Evd.fold_undefined
+      (fun ev evi r -> if f ev evi then Evd.add r ev evi else r)
+      evm
       Evd.empty
 
   (* Union, sorted in decreasing order, of two lists of evars in decreasing order. *)
@@ -201,11 +197,9 @@ module Refinable = struct
     (* [delta_evars] holds the evars that have been introduced by this
        refinement (but not immediatly solved) *)
     (* spiwack: this is the hackish part, don't know how to do any better though. *)
-    let delta_evars = evar_map_filter (fun ev evi ->
-					 evi.Evd.evar_body = Evd.Evar_empty &&
-                                         not (Evd.mem init_defs ev)
-				      )
-                                     post_defs
+    let delta_evars = evar_map_filter_undefined
+      (fun ev _ -> not (Evd.mem init_defs ev))
+      post_defs
     in
     (* [delta_evars] in the shape of a list of [evar]-s*)
     let delta_list = List.map fst (Evd.to_list delta_evars) in
