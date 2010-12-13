@@ -159,6 +159,11 @@ module Gram =
       errorlabstrm "Pcoq.delete_rule" (str "GDELETE_RULE forbidden.")
   end
 
+IFDEF CAMLP5_6_02_1 THEN
+let entry_print x = Gram.Entry.print !Pp_control.std_ft x
+ELSE
+let entry_print = Gram.Entry.print
+END
 
 let camlp4_verbosity silent f x =
   let a = !Gramext.warning_verbose in

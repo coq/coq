@@ -100,33 +100,33 @@ let add_tactic_notation (n,prods,e) =
 let print_grammar = function
   | "constr" | "operconstr" | "binder_constr" ->
       msgnl (str "Entry constr is");
-      Gram.Entry.print Pcoq.Constr.constr;
+      entry_print Pcoq.Constr.constr;
       msgnl (str "and lconstr is");
-      Gram.Entry.print Pcoq.Constr.lconstr;
+      entry_print Pcoq.Constr.lconstr;
       msgnl (str "where binder_constr is");
-      Gram.Entry.print Pcoq.Constr.binder_constr;
+      entry_print Pcoq.Constr.binder_constr;
       msgnl (str "and operconstr is");
-      Gram.Entry.print Pcoq.Constr.operconstr;
+      entry_print Pcoq.Constr.operconstr;
   | "pattern" ->
-      Gram.Entry.print Pcoq.Constr.pattern
+      entry_print Pcoq.Constr.pattern
   | "tactic" -> 
       msgnl (str "Entry tactic_expr is");
-      Gram.Entry.print Pcoq.Tactic.tactic_expr;
+      entry_print Pcoq.Tactic.tactic_expr;
       msgnl (str "Entry binder_tactic is");
-      Gram.Entry.print Pcoq.Tactic.binder_tactic;
+      entry_print Pcoq.Tactic.binder_tactic;
       msgnl (str "Entry simple_tactic is");
-      Gram.Entry.print Pcoq.Tactic.simple_tactic;
+      entry_print Pcoq.Tactic.simple_tactic;
   | "vernac" -> 
       msgnl (str "Entry vernac is");
-      Gram.Entry.print Pcoq.Vernac_.vernac;
+      entry_print Pcoq.Vernac_.vernac;
       msgnl (str "Entry command is");
-      Gram.Entry.print Pcoq.Vernac_.command;
+      entry_print Pcoq.Vernac_.command;
       msgnl (str "Entry syntax is");
-      Gram.Entry.print Pcoq.Vernac_.syntax;
+      entry_print Pcoq.Vernac_.syntax;
       msgnl (str "Entry gallina is");
-      Gram.Entry.print Pcoq.Vernac_.gallina;
+      entry_print Pcoq.Vernac_.gallina;
       msgnl (str "Entry gallina_ext is");
-      Gram.Entry.print Pcoq.Vernac_.gallina_ext;
+      entry_print Pcoq.Vernac_.gallina_ext;
   | _ -> error "Unknown or unprintable grammar entry."
 
 (**********************************************************************)
