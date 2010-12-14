@@ -68,6 +68,8 @@ object('self)
   method get_start_of_input : GText.iter
   method go_to_insert : unit
   method indent_current_line : unit
+  method go_to_next_occ_of_cur_word : unit
+  method go_to_prev_occ_of_cur_word : unit
   method insert_command : string -> string -> unit
   method tactic_wizard : string list -> unit
   method insert_message : string -> unit
@@ -754,6 +756,32 @@ object(self)
       end
 
 
+  method go_to_next_occ_of_cur_word =
+    let cv = session_notebook#current_term in
+    let av = cv.analyzed_view in
+    let b = (cv.script)#buffer in
+    let start = find_word_start (av#get_insert) in
+    let stop = find_word_end start in
+    let text = b#get_text ~start ~stop () in
+    match stop#forward_search text with
+      | None -> ()
+      | Some(start, _) ->
+        (b#place_cursor start;
+         self#recenter_insert)
+          
+  method go_to_prev_occ_of_cur_word =
+    let cv = session_notebook#current_term in
+    let av = cv.analyzed_view in
+    let b = (cv.script)#buffer in
+    let start = find_word_start (av#get_insert) in
+    let stop = find_word_end start in
+    let text = b#get_text ~start ~stop () in
+    match start#backward_search text with
+      | None -> ()
+      | Some(start, _) ->
+        (b#place_cursor start;
+         self#recenter_insert)
+	  
   val mutable full_goal_done = true
 
   method show_goals_full =
@@ -2307,6 +2335,18 @@ let main files =
                                                  toggle_proof_visibility sess.script#buffer
                                                    sess.analyzed_view#get_insert)
                                     `MISSING_IMAGE;
+                                  add_to_menu_toolbar "_Previous"
+                                    ~tooltip:"Previous occurrence"
+                                    ~key:GdkKeysyms._less
+                                    ~callback:(do_or_activate (fun a ->
+                                            a#go_to_prev_occ_of_cur_word))
+                                    `GO_BACK;
+                                  add_to_menu_toolbar "_Next"
+                                    ~tooltip:"Next occurrence"
+                                    ~key:GdkKeysyms._greater
+                                    ~callback:(do_or_activate (fun a ->
+                                            a#go_to_next_occ_of_cur_word))
+                                    `GO_FORWARD;
 
 				  (* Tactics Menu *)
 				  let tactics_menu =  factory#add_submenu "_Try Tactics" in
