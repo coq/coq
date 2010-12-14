@@ -554,6 +554,7 @@ object(self)
   val mutable last_modification_time = 0.
   val mutable last_auto_save_time = 0.
   val mutable detached_views = []
+  val mutable find_forward_instead_of_backward = false
 
   val mutable auto_complete_on = !current.auto_complete
   val hidden_proofs = Hashtbl.create 32
@@ -1985,43 +1986,29 @@ let main files =
 
                         in
 			*)
-			  (*
-			    let find_backwards_check =
-			    GButton.check_button
+			let find_backwards_check =
+			  GButton.check_button
 			    ~label:"search backwards"
-			    ~active:false
+			    ~active:!search_backward
 			    ~packing: (find_box#attach ~left:1 ~top:3)
 			    ()
-			    in
-			  *)
+			in
 			let close_find_button =
 			  GButton.button
 			    ~label:"Close"
-			    ~packing: (find_box#attach ~left:2 ~top:0)
-			    ()
-			in
-			let replace_button =
-			  GButton.button
-			    ~label:"Replace"
-			    ~packing: (find_box#attach ~left:2 ~top:1)
+			    ~packing: (find_box#attach ~left:2 ~top:2)
 			    ()
 			in
 			let replace_find_button =
 			  GButton.button
 			    ~label:"Replace and find"
-			    ~packing: (find_box#attach ~left:2 ~top:2)
+			    ~packing: (find_box#attach ~left:2 ~top:1)
 			    ()
 			in
 			let find_again_button =
 			  GButton.button
 			    ~label:"_Find again"
-			    ~packing: (find_box#attach ~left:2 ~top:3)
-			    ()
-			in
-			let find_again_backward_button =
-			  GButton.button
-			    ~label:"Find _backward"
-			    ~packing: (find_box#attach ~left:2 ~top:4)
+			    ~packing: (find_box#attach ~left:2 ~top:0)
 			    ()
 			in
 			let last_find () =
@@ -2086,17 +2073,17 @@ let main files =
 			  to_do_on_page_switch :=
 			    (fun i -> if find_w#misc#visible then close_find())::
 			      !to_do_on_page_switch;
-			  let find_again_forward () =
-			    search_backward := false;
+			  let find_again () =
 			    let (v,b,start,_) = last_find () in
-			    let start = start#forward_chars 1 in
+			    let start =
+			      if !search_backward
+			      then start#backward_chars 1
+			      else start#forward_chars 1
+			    in
 			      find_from v b start find_entry#text
 			  in
-			  let find_again_backward () =
-			    search_backward := true;
-			    let (v,b,start,_) = last_find () in
-			    let start = start#backward_chars 1 in
-			      find_from v b start find_entry#text
+			  let click_on_backward () =
+			    search_backward := not !search_backward
 			  in
 			  let key_find ev =
 			    let s = GdkEvent.Key.state ev and k = GdkEvent.Key.keyval ev in
@@ -2107,28 +2094,31 @@ let main files =
 				    v#coerce#misc#grab_focus();
 				    true
 				end
-			      else if k = GdkKeysyms._Return then
+			      else if k = GdkKeysyms._Escape then
 				begin
 				  close_find();
 				  true
 				end
-			      else if List.mem `CONTROL s && k = GdkKeysyms._f then
+			      else if k = GdkKeysyms._Return ||
+				  List.mem `CONTROL s && k = GdkKeysyms._f then
 				begin
-				  find_again_forward ();
+				  find_again ();
 				  true
 				end
 			      else if List.mem `CONTROL s && k = GdkKeysyms._b then
 				begin
-				  find_again_backward ();
+				  find_backwards_check#set_active (not !search_backward);
 				  true
 				end
 			      else false (* to let default callback execute *)
 			  in
 			  let find_f ~backward () =
+			    let save_dir = !search_backward in
 			    search_backward := backward;
 			    find_w#show ();
 			    find_w#present ();
-			    find_entry#misc#grab_focus ()
+			    find_entry#misc#grab_focus ();
+			    search_backward := save_dir
 			  in
 			  let _ = edit_f#add_item "_Find in buffer"
 			    ~key:GdkKeysyms._F
@@ -2138,12 +2128,11 @@ let main files =
 			    ~key:GdkKeysyms._B
 			    ~callback:(find_f ~backward:true)
 			  in
-			  let _ = close_find_button#connect#clicked ~callback:close_find in
-			  let _ = replace_button#connect#clicked ~callback:do_replace in
-			  let _ = replace_find_button#connect#clicked ~callback:do_replace_find in
-			  let _ = find_again_button#connect#clicked ~callback:find_again_forward in
-			  let _ = find_again_backward_button#connect#clicked ~callback:find_again_backward in
-			  let _ = find_entry#connect#changed ~callback:do_find in
+			  let _ = find_again_button#connect#clicked find_again in
+			  let _ = close_find_button#connect#clicked close_find in
+			  let _ = replace_find_button#connect#clicked do_replace_find in
+			  let _ = find_backwards_check#connect#clicked click_on_backward in
+			  let _ = find_entry#connect#changed do_find in
 			  let _ = find_entry#event#connect#key_press ~callback:key_find in
 			  let _ = find_w#event#connect#delete ~callback:(fun _ -> find_w#misc#hide(); true) in
 			    (*
