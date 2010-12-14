@@ -247,4 +247,6 @@ let goals coqtop =
 
 let make_cases coqtop s = eval_call coqtop (Ide_blob.make_cases s)
 
+let contents coqtop = eval_call coqtop (Ide_blob.contents)
+
 let current_status coqtop = eval_call coqtop Ide_blob.current_status

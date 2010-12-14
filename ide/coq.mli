@@ -57,6 +57,8 @@ val is_in_loadpath : coqtop -> string -> bool Ide_blob.value
 
 val make_cases : coqtop -> string -> string list list Ide_blob.value
 
+val contents : coqtop -> Lib.library_segment Ide_blob.value
+
 (* Message to display in lower status bar. *)
 
 val current_status : coqtop -> string Ide_blob.value

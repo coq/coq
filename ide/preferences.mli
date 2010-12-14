@@ -55,6 +55,15 @@ type pref =
       mutable lax_syntax : bool;
       mutable vertical_tabs : bool;
       mutable opposite_tabs : bool;
+(*
+ *    for indentation
+ *)
+      mutable indent_module_factor : int;
+      mutable indent_section_factor : int;
+      mutable indent_saw_factor : int;
+      mutable indent_was_factor : int;
+      mutable indent_was_alinea : int;
+      mutable indent_tactic_was_mode : bool;
     }
 
 val save_pref : unit -> unit
