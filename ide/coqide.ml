@@ -231,8 +231,9 @@ let break () =
     end
 
 let do_if_not_computing text f x =
-  if Mutex.try_lock coq_computing then
-    let threaded_task () =
+  let threaded_task () =
+    if Mutex.try_lock coq_computing then
+    begin
       prerr_endline "Getting lock";
       List.iter
         (fun elt -> try f elt with
@@ -247,6 +248,10 @@ let do_if_not_computing text f x =
         x;
       prerr_endline "Releasing lock";
       Mutex.unlock coq_computing;
+    end
+    else
+      prerr_endline
+        "Discarded order (computations are ongoing)"
     in
     prerr_endline ("Launching thread " ^ text);
     ignore (Glib.Timeout.add ~ms:300 ~callback:
@@ -254,9 +259,6 @@ let do_if_not_computing text f x =
                then (Mutex.unlock coq_computing; false)
                else (pbar#pulse (); true)));
     ignore (Thread.create threaded_task ())
-    else
-      prerr_endline
-        "Discarded order (computations are ongoing)"
 
 let warning msg =
   GToolbox.message_box ~title:"Warning"
