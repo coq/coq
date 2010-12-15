@@ -344,17 +344,9 @@ let hints_tac hints =
       | [] -> fk ()
     in aux 1 tacs }
 
-let evars_of_term c =
-  let rec evrec acc c =
-    match kind_of_term c with
-    | Evar (n, _) -> Intset.add n acc
-    | _ -> fold_constr evrec acc c
-  in evrec Intset.empty c
-
 let dependent only_classes evd oev concl =
-  let concl_evars = Intset.union (evars_of_term concl)
-    (Option.cata Intset.singleton Intset.empty oev)
-  in not (Intset.is_empty concl_evars) 
+  if oev <> None then true
+  else not (Intset.is_empty (Evarutil.evars_of_term concl))
 
 let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk =
   let rec aux s (acc : autogoal list list) fk = function
@@ -477,67 +469,64 @@ let rec merge_deps deps = function
 	merge_deps (Intset.union deps hd) tl
       else hd :: merge_deps deps tl
 
-let evars_of_evi evi =
-  Intset.union (evars_of_term evi.evar_concl)
+let evars_of_evi evi evm =
+  Intset.filter (is_undefined evm)
     (Intset.union
-	(match evi.evar_body with
-	| Evar_empty -> Intset.empty
-	| Evar_defined b -> evars_of_term b)
-	(Evarutil.evars_of_named_context (evar_filtered_context evi)))
+       (Evarutil.evars_of_term evi.evar_concl)
+       (Evarutil.evars_of_named_context (evar_filtered_context evi)))
 
-let deps_of_constraints cstrs deps =
-  List.fold_right (fun (_, _, x, y) deps -> 
-    let evs = Intset.union (evars_of_term x) (evars_of_term y) in
-      merge_deps evs deps)
+let deps_of_constraints cstrs deps evm =
+  List.fold_right (fun (_, _, x, y) deps ->
+    let evs =
+      Intset.filter (is_defined evm)
+	(Intset.union (Evarutil.evars_of_term x) (Evarutil.evars_of_term y))
+    in merge_deps evs deps)
     cstrs deps
-      
+
 let evar_dependencies evm =
-  Evd.fold 
+  Evd.fold_undefined
     (fun ev evi acc ->
-      merge_deps (Intset.union (Intset.singleton ev) 
-		     (evars_of_evi evi)) acc)
+      merge_deps (Intset.add ev (evars_of_evi evi evm)) acc)
     evm []
+
+(** [split_evars] returns groups of undefined evars according to dependencies *)
 
 let split_evars evm =
   let _, cstrs = extract_all_conv_pbs evm in
   let evmdeps = evar_dependencies evm in
-  let deps = deps_of_constraints cstrs evmdeps in
+  let deps = deps_of_constraints cstrs evmdeps evm in
     List.sort Intset.compare deps
 
 let select_evars evs evm =
-  Evd.fold (fun ev evi acc ->
-    if Intset.mem ev evs then Evd.add acc ev evi else acc)
-    evm Evd.empty
-
-let is_inference_forced p ev evd =
   try
-    let evi = Evd.find evd ev in
-      if evi.evar_body = Evar_empty then
-	if Typeclasses.is_resolvable evi
-	  && snd (p ev evi)
-	then
-	  let (loc, k) = evar_source ev evd in
-	    match k with
-	    | ImplicitArg (_, _, b) -> b
-	    | QuestionMark _ -> false
-	    | _ -> true
-	else true
-      else false
-  with Not_found -> true
+    Intset.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evm ev))
+      evs Evd.empty
+  with Not_found -> assert false
 
-let is_optional p comp evd =
-  Intset.fold (fun ev acc ->
-    acc && not (is_inference_forced p ev evd))
-    comp true
+let is_inference_forced p evd ev =
+  try
+    let evi = Evd.find_undefined evd ev in
+    if Typeclasses.is_resolvable evi && snd (p ev evi)
+    then
+      let (loc, k) = evar_source ev evd in
+      match k with
+	| ImplicitArg (_, _, b) -> b
+	| QuestionMark _ -> false
+	| _ -> true
+    else true
+  with Not_found -> assert false
+
+let is_mandatory p comp evd =
+  Intset.exists (is_inference_forced p evd) comp
 
 let resolve_all_evars debug m env p oevd do_split fail =
   let split = if do_split then split_evars oevd else [Intset.empty] in
   (* Invariant: this p (and hence the above p) will only be applied
-     to undefined evars *)
+     to undefined evars, and return undefined evar_info *)
   let p = if do_split then
     fun comp evd ev evi ->
       assert (evi.evar_body = Evar_empty);
-      (try let oevi = Evd.find oevd ev in
+      (try let oevi = Evd.find_undefined oevd ev in
 	   if Typeclasses.is_resolvable oevi then
 	     Typeclasses.mark_unresolvable evi, (Intset.mem ev comp &&
 						   p evd ev evi)
@@ -546,7 +535,7 @@ let resolve_all_evars debug m env p oevd do_split fail =
 	 Typeclasses.mark_unresolvable evi, p evd ev evi)
     else fun _ evd ev evi ->
       assert (evi.evar_body = Evar_empty);
-      try let oevi = Evd.find oevd ev in
+      try let oevi = Evd.find_undefined oevd ev in
 	  if Typeclasses.is_resolvable oevi then
 	    Typeclasses.mark_unresolvable evi, p evd ev evi
 	  else evi, false
@@ -564,11 +553,11 @@ let resolve_all_evars debug m env p oevd do_split fail =
 	let res = try aux (p comp) evd with Not_found -> None in
 	  match res with
 	  | None -> 
-	      if fail && (not do_split || not (is_optional (p comp evd) comp evd)) then
+	      if fail && (not do_split || is_mandatory (p comp evd) comp evd) then
 		(* Unable to satisfy the constraints. *)		
-		let evd = Evarutil.nf_evars evd in
+		let evd = Evarutil.nf_evars_undefined evd in
 		let evm = if do_split then select_evars comp evd else evd in
-		let _, ev = Evd.fold
+		let _, ev = Evd.fold_undefined
 		  (fun ev evi (b,acc) ->
 		    (* focus on one instance if only one was searched for *)
 		    if class_of_constr evi.evar_concl <> None then

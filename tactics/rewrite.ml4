@@ -914,18 +914,20 @@ let apply_strategy (s : strategy) env sigma concl cstr evars =
 	Some (Some (res.rew_prf, (res.rew_car, res.rew_from, res.rew_to)))
 
 let split_evars_once sigma evd =
-  Evd.fold (fun ev evi deps ->
+  Evd.fold_undefined (fun ev evi deps ->
     if Intset.mem ev deps then
-      Intset.union (Class_tactics.evars_of_evi evi) deps
+      Intset.union (Class_tactics.evars_of_evi evi evd) deps
     else deps) evd sigma
 
 let existentials_of_evd evd =
-  Evd.fold (fun ev evi acc -> Intset.add ev acc) evd Intset.empty
+  Evd.fold_undefined (fun ev _ acc -> Intset.add ev acc) evd Intset.empty
 
 let evd_of_existentials evd exs =
-  Intset.fold (fun i acc ->
-    let evi = Evd.find evd i in
-      Evd.add acc i evi) exs Evd.empty
+  Intset.fold
+    (fun ev acc ->
+      try Evd.add acc ev (Evd.find_undefined evd ev)
+      with Not_found -> acc)
+    exs Evd.empty
 
 let split_evars sigma evd =
   let rec aux deps =
