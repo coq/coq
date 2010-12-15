@@ -337,15 +337,7 @@ let evar_clenv_unique_resolver = clenv_unique_resolver
 (******************************************************************)
 
 let connect_clenv gls clenv =
-  let evd = Evd.fold begin fun ev evi acc -> 
-                        if evi.evar_body = Evar_empty then
-			  acc
-			else
-			  Evd.add acc ev evi
-                  end
-                  clenv.evd gls.sigma
-  in
-  let evd = evars_reset_evd evd clenv.evd in
+  let evd = evars_reset_evd gls.sigma clenv.evd in
   { clenv with
     evd = evd ;
     env = Goal.V82.env evd (sig_it gls) }
