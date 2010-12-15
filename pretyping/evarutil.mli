@@ -150,6 +150,7 @@ val tj_nf_evar :
 
 val nf_evar_info : evar_map -> evar_info -> evar_info
 val nf_evars : evar_map -> evar_map
+val nf_evars_undefined : evar_map -> evar_map
 
 val nf_named_context_evar : evar_map -> named_context -> named_context
 val nf_rel_context_evar : evar_map -> rel_context -> rel_context

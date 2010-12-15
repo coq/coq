@@ -110,6 +110,7 @@ module EvarInfoMap = struct
     ExistentialMap.fold (fun evk evi l -> (evk,evi)::l) undef []
 
   let undefined_evars (def,undef) = (ExistentialMap.empty,undef)
+  let defined_evars (def,undef) = (def,ExistentialMap.empty)
 
   let find (def,undef) k =
     try ExistentialMap.find k def
@@ -350,6 +351,7 @@ module EvarMap = struct
   let to_list (sigma,_) = EvarInfoMap.to_list sigma
   let undefined_list (sigma,_) = EvarInfoMap.undefined_list sigma
   let undefined_evars (sigma,sm) = (EvarInfoMap.undefined_evars sigma, sm)
+  let defined_evars (sigma,sm) = (EvarInfoMap.defined_evars sigma, sm)
   let fold (sigma,_) = EvarInfoMap.fold sigma
   let fold_undefined (sigma,_) = EvarInfoMap.fold_undefined sigma
   let define (sigma,sm) k v = (EvarInfoMap.define sigma k v, sm)
@@ -485,6 +487,7 @@ let mem d e = EvarMap.mem d.evars e
 let to_list d = EvarMap.to_list d.evars
 let undefined_list d = EvarMap.undefined_list d.evars
 let undefined_evars d = { d with evars=EvarMap.undefined_evars d.evars }
+let defined_evars d = { d with evars=EvarMap.defined_evars d.evars }
 (* spiwack: not clear what folding over an evar_map, for now we shall
     simply fold over the inner evar_map. *)
 let fold f d a = EvarMap.fold d.evars f a

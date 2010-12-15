@@ -182,6 +182,7 @@ val evars_reset_evd  : evar_map ->  evar_map -> evar_map
                    for moving to evarutils *)
 val is_undefined_evar :  evar_map -> constr -> bool
 val undefined_evars : evar_map -> evar_map
+val defined_evars : evar_map -> evar_map
 (* [fold_undefined f m] iterates ("folds") function [f] over the undefined
     evars (that is, whose value is [Evar_empty]) of map [m].
     It optimizes the call of {!Evd.fold} to [f] and [undefined_evars m] *)

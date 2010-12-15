@@ -74,6 +74,9 @@ val is_implicit_arg : hole_kind -> bool
 
 val instance_constructor : typeclass -> constr list -> constr * types
 
+(** Resolvability.
+    Only undefined evars could be marked or checked for resolvability. *)
+
 val is_resolvable : evar_info -> bool
 val mark_unresolvable : evar_info -> evar_info
 val mark_unresolvables : evar_map -> evar_map

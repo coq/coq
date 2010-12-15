@@ -54,17 +54,9 @@ let evars_to_goals p evm =
 	let evi', goal = p evm ev evi in
 	let gls' = if goal then (ev,Goal.V82.build ev) :: gls else gls in
 	(gls', Evd.add evm' ev evi'))
-      evm ([], Evd.empty)
+      evm ([], Evd.defined_evars evm)
   in
-  if goals = [] then None
-  else
-    let goals = List.rev goals in
-    (** old defined evars of [evm] + new undefined ones of [evm'] *)
-    let evm' =
-      Evd.fold_undefined (fun ev evi evm -> Evd.add evm ev evi) evm' evm
-    in
-    let evm' = evars_reset_evd evm' evm in
-    Some (goals, evm')
+  if goals = [] then None else Some (List.rev goals, evm')
 
 (** Typeclasses instance search tactic / eauto *)
 

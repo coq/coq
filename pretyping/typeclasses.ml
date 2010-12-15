@@ -339,22 +339,30 @@ let is_implicit_arg k =
    This is essentially a hack to mark which evars correspond to
    goals and do not need to be resolved when we have nested [resolve_all_evars]
    calls (e.g. when doing apply in an External hint in typeclass_instances).
-   Would be solved by having real evars-as-goals. *)
+   Would be solved by having real evars-as-goals.
+
+   Nota: we will only check the resolvability status of undefined evars.
+ *)
 
 let resolvable = Store.field ()
 open Store.Field
 
 let is_resolvable evi =
+  assert (evi.evar_body = Evar_empty);
   Option.default true (resolvable.get evi.evar_extra)
 
-let mark_unresolvable evi =
+let mark_unresolvable_undef evi =
   let t = resolvable.set false evi.evar_extra in
   { evi with evar_extra = t }
 
+let mark_unresolvable evi =
+  assert (evi.evar_body = Evar_empty);
+  mark_unresolvable_undef evi
+
 let mark_unresolvables sigma =
-  Evd.fold (fun ev evi evs ->
-    Evd.add evs ev (mark_unresolvable evi))
-    sigma Evd.empty
+  Evd.fold_undefined (fun ev evi evs ->
+    Evd.add evs ev (mark_unresolvable_undef evi))
+    sigma (Evd.defined_evars sigma)
 
 let has_typeclasses evd =
   Evd.fold_undefined (fun ev evi has -> has ||
