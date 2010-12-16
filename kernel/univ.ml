@@ -116,15 +116,16 @@ let terminal u = {univ=u; lt=[]; le=[]}
 
 (* A universe_level is either an alias for another one, or a canonical one,
    for which we know the universes that are above *)
+
 type univ_entry =
     Canonical of canonical_arc
-  | Equiv of universe_level * universe_level
+  | Equiv of universe_level
 
 
 type universes = univ_entry UniverseLMap.t
 
 let enter_equiv_arc u v g =
-  UniverseLMap.add u (Equiv(u,v)) g
+  UniverseLMap.add u (Equiv v) g
 
 let enter_arc ca g =
   UniverseLMap.add ca.univ (Canonical ca) g
@@ -174,33 +175,12 @@ let repr g u =
 	  (str"Universe " ++ pr_uni_level u ++ str" undefined")
     in
     match a with
-      | Equiv(_,v) -> repr_rec v
+      | Equiv v -> repr_rec v
       | Canonical arc -> arc
   in
   repr_rec u
 
 let can g = List.map (repr g)
-
-(* transitive closure : we follow the Less links *)
-
-(* collect : canonical_arc -> canonical_arc list * canonical_arc list *)
-(* collect u = (V,W) iff V={v canonical | u<v} W={w canonical | u<=w}-V *)
-(* i.e. collect does the transitive upward closure of what is known about u *)
-let collect g arcu =
-  let rec coll_rec lt le = function
-    | [],[] -> (lt, list_subtractq le lt)
-    | arcv::lt', le' ->
-	if List.memq arcv lt then
-	  coll_rec lt le (lt',le')
-	else
-          coll_rec (arcv::lt) le ((can g (arcv.lt@arcv.le))@lt',le')
-    | [], arcw::le' ->
-	if (List.memq arcw lt) or (List.memq arcw le) then
-	  coll_rec lt le ([],le')
-	else
-          coll_rec lt (arcw::le) (can g arcw.lt, (can g arcw.le)@le')
-  in
-  coll_rec [] [] ([],[arcu])
 
 (* reprleq : canonical_arc -> canonical_arc list *)
 (* All canonical arcv such that arcu<=arcv with arcv#arcu *)
@@ -253,20 +233,50 @@ let between g u arcv =
 
 type order = EQ | LT | LE | NLE
 
-(* compare : universe_level -> universe_level -> order *)
+(** [compare_neq] : is [arcv] in the transitive upward closure of [arcu] ?
+
+  We try to avoid visiting unneeded parts of this transitive closure,
+  by stopping as soon as [arcv] is encountered. During the recursive
+  traversal, [lt_done] and [le_done] are universes we have already
+  visited, they do not contain [arcv]. The 3rd arg is
+  [(lt_todo,le_todo)], two lists of universes not yet considered,
+  known to be above [arcu], strictly or not.
+
+  We use depth-first search, but the presence of [arcv] in [new_lt]
+  is checked as soon as possible : this seems to be slightly faster
+  on a test.
+*)
+
+let compare_neq g arcu arcv =
+  let rec cmp lt_done le_done = function
+  | [],[] -> NLE
+  | arc::lt_todo, le_todo ->
+    if List.memq arc lt_done then
+      cmp lt_done le_done (lt_todo,le_todo)
+    else
+      let lt_new = can g (arc.lt@arc.le) in
+      if List.memq arcv lt_new then LT
+      else cmp (arc::lt_done) le_done (lt_new@lt_todo,le_todo)
+  | [], arc::le_todo ->
+    if arc == arcv then LE
+    (* No need to continue inspecting universes above arc:
+       if arcv is strictly above arc, then we would have a cycle *)
+    else
+      if (List.memq arc lt_done) || (List.memq arc le_done) then
+	cmp lt_done le_done ([],le_todo)
+      else
+	let lt_new = can g arc.lt in
+	if List.memq arcv lt_new then LT
+	else
+	  let le_new = can g arc.le in
+	  cmp lt_done (arc::le_done) (lt_new, le_new@le_todo)
+  in
+  cmp [] [] ([],[arcu])
+
 let compare g u v =
   let arcu = repr g u
   and arcv = repr g v in
-  if arcu==arcv then
-    EQ
-  else
-    let (lt,leq) = collect g arcu in
-    if List.memq arcv lt then
-      LT
-    else if List.memq arcv leq then
-      LE
-    else
-      NLE
+  if arcu == arcv then EQ else compare_neq g arcu arcv
 
 (* Invariants : compare(u,v) = EQ <=> compare(v,u) = EQ
                 compare(u,v) = LT or LE => compare(v,u) = NLE
@@ -299,9 +309,6 @@ let rec check_eq g u v =
         compare_list (compare_eq g) ule vle &&
         compare_list (compare_eq g) ult vlt
     | _ -> anomaly "check_eq" (* not complete! (Atom(u) = Max([u],[]) *)
-
-let check_eq g u v =
-  check_eq g u v
 
 let compare_greater g strict u v =
   let g = declare_univ u g in
@@ -430,21 +437,6 @@ let enforce_univ_lt u v g =
            | NLE -> setlt g u v
            | _ -> error_inconsistency Lt u v)
 
-(*
-let enforce_univ_relation g = function
-  | Equiv (u,v) -> enforce_univ_eq u v g
-  | Canonical {univ=u; lt=lt; le=le} ->
-      let g' = List.fold_right (enforce_univ_lt u) lt g in
-      List.fold_right (enforce_univ_leq u) le g'
-*)
-
-(* Merging 2 universe graphs *)
-(*
-let merge_universes sp u1 u2 =
-  UniverseLMap.fold (fun _ a g -> enforce_univ_relation g a) u1 u2
-*)
-
-
 (* Constraints and sets of consrtaints. *)
 
 type univ_constraint = universe_level * constraint_type * universe_level
@@ -567,21 +559,21 @@ let no_upper_constraints u cst =
 (* Pretty-printing *)
 
 let pr_arc = function
-  | Canonical {univ=u; lt=[]; le=[]} ->
+  | _, Canonical {univ=u; lt=[]; le=[]} ->
       mt ()
-  | Canonical {univ=u; lt=lt; le=le} ->
+  | _, Canonical {univ=u; lt=lt; le=le} ->
       pr_uni_level u ++ str " " ++
       v 0
         (prlist_with_sep pr_spc (fun v -> str "< " ++ pr_uni_level v) lt ++
 	 (if lt <> [] & le <> [] then spc () else mt()) ++
          prlist_with_sep pr_spc (fun v -> str "<= " ++ pr_uni_level v) le) ++
       fnl ()
-  | Equiv (u,v) ->
+  | u, Equiv v ->
       pr_uni_level u  ++ str " = " ++ pr_uni_level v ++ fnl ()
 
 let pr_universes g =
-  let graph = UniverseLMap.fold (fun k a l -> (k,a)::l) g [] in
-  prlist (function (_,a) -> pr_arc a) graph
+  let graph = UniverseLMap.fold (fun u a l -> (u,a)::l) g [] in
+  prlist pr_arc graph
 
 let pr_constraints c =
   Constraint.fold (fun (u1,op,u2) pp_std ->
@@ -595,12 +587,12 @@ let pr_constraints c =
 (* Dumping constraints to a file *)
 
 let dump_universes output g =
-  let dump_arc _ = function
+  let dump_arc u = function
     | Canonical {univ=u; lt=lt; le=le} ->
 	let u_str = string_of_univ_level u in
 	List.iter (fun v -> output Lt u_str (string_of_univ_level v)) lt;
 	List.iter (fun v -> output Le u_str (string_of_univ_level v)) le
-    | Equiv (u,v) ->
+    | Equiv v ->
       output Eq (string_of_univ_level u) (string_of_univ_level v)
   in
     UniverseLMap.iter dump_arc g
