@@ -109,7 +109,7 @@ Proof.
 Qed.
 
 Lemma Ztestbit_spec : forall a n, 0<=n ->
-  exists l, exists h, 0<=l<2^n /\
+  exists l h, 0<=l<2^n /\
     a = l + ((if Ztestbit a n then 1 else 0) + 2*h)*2^n.
 Proof.
  intros a [ |n|n] Hn; (now destruct Hn) || clear Hn.

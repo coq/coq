@@ -59,7 +59,7 @@ Module NZDomainProp (Import NZ:NZDomainSig').
 
 (** We prove that any points in NZ have a common descendant by [succ] *)
 
-Definition common_descendant n m := exists k, exists l, (S^k) n == (S^l) m.
+Definition common_descendant n m := exists k l, (S^k) n == (S^l) m.
 
 Instance common_descendant_wd : Proper (eq==>eq==>iff) common_descendant.
 Proof.

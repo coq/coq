@@ -72,7 +72,7 @@ Qed.
 (** On natural numbers, we should use a particular form
   for the Bezout identity, since we don't have full subtraction. *)
 
-Definition Bezout n m p := exists a, exists b, a*n == p + b*m.
+Definition Bezout n m p := exists a b, a*n == p + b*m.
 
 Instance Bezout_wd : Proper (eq==>eq==>eq==>iff) Bezout.
 Proof.
@@ -188,7 +188,7 @@ Proof.
 Qed.
 
 Lemma divide_mul_split : forall n m p, n ~= 0 -> (n | m * p) ->
- exists q, exists r, n == q*r /\ (q | m) /\ (r | p).
+ exists q r, n == q*r /\ (q | m) /\ (r | p).
 Proof.
  intros n m p Hn H.
  assert (G := gcd_nonneg n m).

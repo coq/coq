@@ -1652,7 +1652,7 @@ Qed.
 
 Theorem Forall2_app_inv_r : forall A B (R:A->B->Prop) l1' l2' l,
   Forall2 R l (l1' ++ l2') ->
-  exists l1, exists l2, Forall2 R l1 l1' /\ Forall2 R l2 l2' /\ l = l1 ++ l2.
+  exists l1 l2, Forall2 R l1 l1' /\ Forall2 R l2 l2' /\ l = l1 ++ l2.
 Proof.
   induction l1'; intros.
     exists [], l; auto.

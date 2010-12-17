@@ -42,7 +42,7 @@ Module Type NZBitsSpec
  (Import A : NZOrdAxiomsSig')(Import B : Pow' A)(Import C : Bits' A).
 
  Axiom testbit_spec : forall a n, 0<=n ->
-  exists l, exists h, 0<=l<2^n /\
+  exists l h, 0<=l<2^n /\
     a == l + ((if a.[n] then 1 else 0) + 2*h)*2^n.
  Axiom testbit_neg_r : forall a n, n<0 -> a.[n] = false.
 

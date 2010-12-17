@@ -257,7 +257,7 @@ Qed.
 
 Lemma mapi_inv : forall m x b (f : key -> elt -> elt'),
  MapsTo x b (mapi f m) ->
- exists a, exists y, E.eq y x /\ b = f y a /\ MapsTo x a m.
+ exists a y, E.eq y x /\ b = f y a /\ MapsTo x a m.
 Proof.
 intros; case_eq (find x m); intros.
 exists e.

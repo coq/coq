@@ -141,7 +141,7 @@ Proof.
  rewrite <- add_opp_r, <- mul_opp_l. apply gcd_add_mult_diag_r.
 Qed.
 
-Definition Bezout n m p := exists a, exists b, a*n + b*m == p.
+Definition Bezout n m p := exists a b, a*n + b*m == p.
 
 Instance Bezout_wd : Proper (eq==>eq==>eq==>iff) Bezout.
 Proof.
@@ -250,7 +250,7 @@ Proof.
 Qed.
 
 Lemma divide_mul_split : forall n m p, n ~= 0 -> (n | m * p) ->
- exists q, exists r, n == q*r /\ (q | m) /\ (r | p).
+ exists q r, n == q*r /\ (q | m) /\ (r | p).
 Proof.
  intros n m p Hn H.
  assert (G := gcd_nonneg n m).

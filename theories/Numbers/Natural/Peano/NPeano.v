@@ -404,7 +404,7 @@ Proof.
 Qed.
 
 Lemma testbit_spec : forall a n,
- exists l, exists h, 0<=l<2^n /\
+ exists l h, 0<=l<2^n /\
   a = l + ((if testbit a n then 1 else 0) + 2*h)*2^n.
 Proof.
  intros a n. revert a. induction n; intros a; simpl testbit.
