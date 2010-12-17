@@ -101,13 +101,13 @@ Fixpoint divmod x y q u :=
 
 Definition div x y :=
   match y with
-    | 0 => 0
+    | 0 => y
     | S y' => fst (divmod x y' 0 y')
   end.
 
 Definition modulo x y :=
   match y with
-    | 0 => 0
+    | 0 => y
     | S y' => y' - snd (divmod x y' 0 y')
   end.
 
