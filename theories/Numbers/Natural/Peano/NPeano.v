@@ -219,59 +219,74 @@ Proof.
  simpl. now rewrite <- 2 plus_n_O.
 Qed.
 
+(** A linear tail-recursive base-2 logarithm
 
-(** Base-2 logarithm *)
+  In [log2_iter], we maintain the logarithm [p] of the counter [q],
+  while [r] is the distance between [q] and the next power of 2,
+  more precisely [q + S r = 2^(S p)] and [r<2^p]. At each
+  recursive call, [q] goes up while [r] goes down. When [r]
+  is 0, we know that [q] has almost reached a power of 2,
+  and we increase [p] at the next call, while resetting [r]
+  to [q].
 
-(** We search the log2 of n = k + 2^p + (q - r)
-  with q = 2^p - 1 and 0<=r<=q. We start with p=q=r=0, hence
-  looking for the log2 of n = k+1. Then we progressively
-  decrease k and r. When k = S k' and r=0, it means we can use (S p)
-  as new sqrt candidate, since (S k')+2^p+(2^p-1) = k'+2^(S p).
-  When k reaches 0, we have found the biggest power 2^p
-  contained in n, hence the log2 of n is p.
+  Graphically (numbers are [q], stars are [r]) :
+
+<<
+                    10
+                  9
+                8
+              7   *
+            6       *
+          5           ...
+        4
+      3   *
+    2       *
+  1   *       *
+0   *   *       *
+>>
+
+  We stop when [k], the global downward counter reaches 0.
+  At that moment, [q] is the number we're considering (since
+  [k+q] is invariant), and [p] its logarithm.
 *)
 
 Fixpoint log2_iter k p q r :=
   match k with
     | O => p
     | S k' => match r with
-                | O => let q' := S (q+q) in
-                       log2_iter k' (S p) q' q'
-                | S r' => log2_iter k' p q r'
+                | O => log2_iter k' (S p) (S q) q
+                | S r' => log2_iter k' p (S q) r'
               end
   end.
 
-Definition log2 n := log2_iter (pred n) 0 0 0.
+Definition log2 n := log2_iter (pred n) 0 1 0.
 
 Lemma log2_iter_spec : forall k p q r,
- S q = 2^p -> r<=q ->
+ 2^(S p) = q + S r -> r < 2^p ->
  let s := log2_iter k p q r in
- 2^s <= k + 2^p + (q - r) < 2^(S s).
+ 2^s <= k + q < 2^(S s).
 Proof.
  induction k.
  (* k = 0 *)
- simpl; intros p q r Hq Hr.
+ intros p q r EQ LT. simpl log2_iter. cbv zeta.
  split.
- apply le_plus_l.
- apply plus_lt_compat_l. rewrite <- Hq.
- apply le_lt_trans with q.
- apply le_minus.
- rewrite <- plus_n_O. auto with arith.
+ rewrite plus_O_n.
+ apply plus_le_reg_l with (2^p).
+ simpl pow in EQ. rewrite <- plus_n_O in EQ. rewrite EQ.
+ rewrite plus_comm. apply plus_le_compat_r. now apply lt_le_S.
+ rewrite EQ, plus_comm. apply plus_lt_compat_l. apply lt_0_Sn.
  (* k = S k' *)
- destruct r.
+ intros p q r EQ LT. destruct r.
  (* r = 0 *)
- intros Hq _.
- replace (S k + 2^p + (q-0)) with (k + 2^(S p) + (S (q+q) - S (q+q))).
- apply IHk.
- simpl. rewrite <- Hq. now rewrite <- plus_n_O, <- plus_n_Sm.
- auto with arith.
- rewrite minus_diag, <- minus_n_O, <- plus_n_O. simpl.
- rewrite plus_n_Sm, Hq. now rewrite  <- plus_n_O, plus_assoc.
+ rewrite <- plus_n_Sm, <- plus_n_O in EQ.
+ rewrite plus_Sn_m, plus_n_Sm. apply IHk.
+ rewrite <- EQ. remember (S p) as p'; simpl. now rewrite <- plus_n_O.
+ unfold lt. now rewrite EQ.
  (* r = S r' *)
- intros Hq Hr.
- replace (S k + 2^p + (q-S r)) with (k + 2^p + (q - r)).
- apply IHk; auto with arith.
- simpl. rewrite plus_n_Sm. f_equal. rewrite minus_Sn_m; auto.
+ rewrite plus_Sn_m, plus_n_Sm. apply IHk.
+ now rewrite plus_Sn_m, plus_n_Sm.
+ unfold lt.
+ now apply lt_le_weak.
 Qed.
 
 Lemma log2_spec : forall n, 0<n ->
@@ -279,9 +294,9 @@ Lemma log2_spec : forall n, 0<n ->
 Proof.
  intros.
  set (s:=log2 n).
- replace n with (pred n + 2^0 + (0-0)).
+ replace n with (pred n + 1).
  apply log2_iter_spec; auto.
- simpl. rewrite <- plus_n_Sm, <- !plus_n_O.
+ rewrite <- plus_n_Sm, <- plus_n_O.
  symmetry. now apply S_pred with 0.
 Qed.
 
@@ -294,7 +309,7 @@ Qed.
 
 (** We use Euclid algorithm, which is normally not structural,
     but Coq is now clever enough to accept this (behind modulo
-    there is a subtraction, which now preserve being a subterm)
+    there is a subtraction, which now preserves being a subterm)
 *)
 
 Fixpoint gcd a b :=
