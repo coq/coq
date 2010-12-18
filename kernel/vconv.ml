@@ -219,12 +219,12 @@ and conv_eq_vect vt1 vt2 cu =
 
 let vconv pb env t1 t2 =
   let cu =
-    try conv_eq pb t1 t2 Constraint.empty
+    try conv_eq pb t1 t2 empty_constraint
     with NotConvertible ->
       infos := create_clos_infos betaiotazeta env;
       let v1 = val_of_constr env t1 in
       let v2 = val_of_constr env t2 in
-      let cu = conv_val pb (nb_rel env) v1 v2 Constraint.empty in
+      let cu = conv_val pb (nb_rel env) v1 v2 empty_constraint in
       cu
   in cu
 

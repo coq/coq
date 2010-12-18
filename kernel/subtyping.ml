@@ -69,7 +69,7 @@ let make_label_map mp list =
 
 let check_conv_error error cst f env a1 a2 =
   try
-    Constraint.union cst (f env a1 a2)
+    union_constraints cst (f env a1 a2)
   with
       NotConvertible -> error ()
 
@@ -369,7 +369,7 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
 	      if equiv then
 		let subst2 = 
 		  add_mp mtb2.typ_mp mtb1.typ_mp mtb1.typ_delta subst2 in
-		Univ.Constraint.union 
+		Univ.union_constraints 
 		  (check_signatures cst env
 		     mtb1.typ_mp list1 mtb2.typ_mp list2 subst1 subst2
 		  mtb1.typ_delta mtb2.typ_delta) 
@@ -413,7 +413,7 @@ and check_modtypes cst env mtb1 mtb2 subst1 subst2 equiv =
 let check_subtypes env sup super =
   let env = add_module 
 		(module_body_of_type sup.typ_mp sup) env in
-  check_modtypes Constraint.empty env 
+  check_modtypes empty_constraint env 
     (strengthen env sup sup.typ_mp) super empty_subst 
     (map_mp super.typ_mp sup.typ_mp sup.typ_delta) false
 

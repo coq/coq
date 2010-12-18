@@ -402,7 +402,7 @@ let is_constrained is u =
     let _ =
       merge_constraints
         (enforce_geq u (super u')
-          (enforce_geq u' is Constraint.empty))
+          (enforce_geq u' is empty_constraint))
         initial_universes in
     false
   with UniverseInconsistency _ -> true

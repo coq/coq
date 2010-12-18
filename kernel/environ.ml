@@ -202,7 +202,7 @@ let set_universes g env =
       { env.env_stratification with env_universes = g } }
 
 let add_constraints c env =
-  if c == Constraint.empty then
+  if c == empty_constraint then
     env
   else
     let s = env.env_stratification in

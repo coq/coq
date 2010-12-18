@@ -98,7 +98,7 @@ let named_type id env =
 
 (* Universe constraints *)
 let add_constraints c env =
-  if c == Constraint.empty then
+  if c == empty_constraint then
     env
   else
     let s = env.env_stratification in

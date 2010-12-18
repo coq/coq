@@ -21,8 +21,8 @@ let refresh_arity ar =
       Sort (Type u) when not (Univ.is_univ_variable u) ->
         let u' = Univ.fresh_local_univ() in
         mkArity (ctxt,Type u'),
-        Univ.enforce_geq u' u Univ.Constraint.empty
-    | _ -> ar, Univ.Constraint.empty
+        Univ.enforce_geq u' u Univ.empty_constraint
+    | _ -> ar, Univ.empty_constraint
 
 let check_constant_declaration env kn cb =
   Flags.if_verbose msgnl (str "  checking cst: " ++ prcon kn);
@@ -247,12 +247,12 @@ and check_module env mp mb =
 	    {typ_mp=mp;
 	     typ_expr=sign;
 	     typ_expr_alg=None;
-	     typ_constraints=Univ.Constraint.empty;
+	     typ_constraints=Univ.empty_constraint;
 	     typ_delta = mb.mod_delta;}
 	    {typ_mp=mp;
 	     typ_expr=mb.mod_type;
 	     typ_expr_alg=None;
-	     typ_constraints=Univ.Constraint.empty;
+	     typ_constraints=Univ.empty_constraint;
 	     typ_delta = mb.mod_delta;};
 	  
 and check_structure_field env mp lab res = function

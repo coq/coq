@@ -42,9 +42,10 @@ val initial_universes : universes
 
 (** {6 Constraints. } *)
 
-module Constraint : Set.S
+type constraints
 
-type constraints = Constraint.t
+val empty_constraint : constraints
+val union_constraints : constraints -> constraints -> constraints
 
 type constraint_function = universe -> universe -> constraints -> constraints
 

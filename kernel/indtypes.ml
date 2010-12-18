@@ -160,7 +160,7 @@ let inductive_levels arities inds =
    arity or type constructor; we do not to recompute universes constraints *)
 
 let constraint_list_union =
-  List.fold_left Constraint.union Constraint.empty
+  List.fold_left union_constraints empty_constraint
 
 let infer_constructor_packet env_ar_par params lc =
   (* type-check the constructors *)
@@ -197,7 +197,7 @@ let typecheck_inductive env mie =
 	    full_arity is used as argument or subject to cast, an
 	    upper universe will be generated *)
 	 let full_arity = it_mkProd_or_LetIn arity.utj_val params in
-	 let cst = Constraint.union cst cst2 in
+	 let cst = union_constraints cst cst2 in
 	 let id = ind.mind_entry_typename in
 	 let env_ar' =
            push_rel (Name id, None, full_arity)
@@ -226,7 +226,7 @@ let typecheck_inductive env mie =
 	   infer_constructor_packet env_ar_par params ind.mind_entry_lc in
 	 let consnames = ind.mind_entry_consnames in
 	 let ind' = (arity_data,consnames,info,lc',cstrs_univ) in
-	 (ind'::inds, Constraint.union cst cst'))
+	 (ind'::inds, union_constraints cst cst'))
       mie.mind_entry_inds
       arity_list
       ([],cst) in

@@ -294,7 +294,7 @@ let is_correct_arity env c pj ind specif params =
           let univ =
             try conv env a1 a1'
             with NotConvertible -> raise (LocalArity None) in
-          srec (push_rel (na1,None,a1) env) t ar' (Constraint.union u univ)
+          srec (push_rel (na1,None,a1) env) t ar' (union_constraints u univ)
       | Prod (_,a1,a2), [] -> (* whnf of t was not needed here! *)
           let ksort = match kind_of_term (whd_betadeltaiota env a2) with
             | Sort s -> family_of_sort s
@@ -304,13 +304,13 @@ let is_correct_arity env c pj ind specif params =
             try conv env a1 dep_ind
             with NotConvertible -> raise (LocalArity None) in
 	  check_allowed_sort ksort specif;
-	  Constraint.union u univ
+	  union_constraints u univ
       | _, (_,Some _,_ as d)::ar' ->
 	  srec (push_rel d env) (lift 1 pt') ar' u
       | _ ->
 	  raise (LocalArity None)
   in
-  try srec env pj.uj_type (List.rev arsign) Constraint.empty
+  try srec env pj.uj_type (List.rev arsign) empty_constraint
   with LocalArity kinds ->
     error_elim_arity env ind (elim_sorts specif) c pj kinds
 

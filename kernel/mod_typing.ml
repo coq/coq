@@ -88,8 +88,8 @@ and check_with_aux_def env sign with_decl mp equiv =
 			let typ = Typeops.type_of_constant_type env' cb.const_type in
 			let cst2 = Reduction.conv_leq env' j.uj_type typ in
 			let cst =
-			  Constraint.union
-			    (Constraint.union cb.const_constraints cst1)
+			  union_constraints
+			    (union_constraints cb.const_constraints cst1)
 			    cst2 in
 			let body = Some (Declarations.from_val j.uj_val) in
 			let cb' = {cb with
@@ -100,7 +100,7 @@ and check_with_aux_def env sign with_decl mp equiv =
 			  SEBstruct(before@((l,SFBconst(cb'))::after)),cb',cst
 		    | Some b ->
 			let cst1 = Reduction.conv env' c (Declarations.force b) in
-			let cst = Constraint.union cb.const_constraints cst1 in
+			let cst = union_constraints cb.const_constraints cst1 in
 			let body = Some (Declarations.from_val c) in
 			let cb' = {cb with
 				     const_body = body;
@@ -165,7 +165,7 @@ and check_with_aux_mod env sign with_decl mp equiv =
 		match old.mod_expr with
 		    None ->
 		      begin
-			try Constraint.union
+			try union_constraints
 			  (check_subtypes env' mtb_mp1 
 			     (module_type_of_module env' None old))
 			  old.mod_constraints
@@ -212,7 +212,7 @@ and check_with_aux_mod env sign with_decl mp equiv =
 		      let mpnew = rebuild_mp mp' (List.map label_of_id idl) in
 			check_modpath_equiv env' mpnew mp;
 			  SEBstruct(before@(l,spec)::after)
-			    ,equiv,Constraint.empty
+			    ,equiv,empty_constraint
 		  | _ ->
 		      error_a_generative_module_expected l
               end
@@ -240,14 +240,14 @@ and translate_module env mp inl me =
 	let sign,alg1,resolver,cst2 =
 	  match me.mod_entry_type with
 	    | None ->
-		sign,None,resolver,Constraint.empty
+		sign,None,resolver,empty_constraint
 	    | Some mte ->
 		let mtb = translate_module_type env mp inl mte in
                 let cst = check_subtypes env
 		  {typ_mp = mp;
 		   typ_expr = sign;
 		   typ_expr_alg = None;
-		   typ_constraints = Constraint.empty;
+		   typ_constraints = empty_constraint;
 		   typ_delta = resolver;}
 		  mtb
 		in
@@ -257,7 +257,7 @@ and translate_module env mp inl me =
 	    mod_type = sign;
 	    mod_expr = Some alg_implem;
 	    mod_type_alg = alg1;
-	    mod_constraints = Univ.Constraint.union cst1 cst2;
+	    mod_constraints = Univ.union_constraints cst1 cst2;
 	    mod_delta = resolver;
 	    mod_retroknowledge = []} 
 	    (* spiwack: not so sure about that. It may
@@ -270,7 +270,7 @@ and translate_struct_module_entry env mp inl mse  = match mse with
   | MSEident mp1 ->
       let mb = lookup_module mp1 env in 
       let mb' = strengthen_and_subst_mb mb mp env false in
-	mb'.mod_type, SEBident mp1, mb'.mod_delta,Univ.Constraint.empty
+	mb'.mod_type, SEBident mp1, mb'.mod_delta,Univ.empty_constraint
   | MSEfunctor (arg_id, arg_e, body_expr) ->
       let mtb = translate_module_type env (MPbound arg_id) inl arg_e in
       let env' = add_module (module_body_of_type (MPbound arg_id) mtb) 
@@ -278,7 +278,7 @@ and translate_struct_module_entry env mp inl mse  = match mse with
       let sign,alg,resolver,cst =
 	translate_struct_module_entry env' mp inl body_expr in
       SEBfunctor (arg_id, mtb, sign),SEBfunctor (arg_id, mtb, alg),resolver,
-      Univ.Constraint.union cst mtb.typ_constraints
+      Univ.union_constraints cst mtb.typ_constraints
   | MSEapply (fexpr,mexpr) ->
       let sign,alg,resolver,cst1 =
 	translate_struct_module_entry env mp inl fexpr
@@ -300,24 +300,24 @@ and translate_struct_module_entry env mp inl mse  = match mse with
       let subst = map_mbid farg_id mp1 mp_delta in
 	(subst_struct_expr subst fbody_b),SEBapply(alg,SEBident mp1,cst),
       (subst_codom_delta_resolver subst resolver),
-      Univ.Constraint.union cst1 cst
+      Univ.union_constraints cst1 cst
   | MSEwith(mte, with_decl) ->
       let sign,alg,resolve,cst1 = translate_struct_module_entry env mp inl mte in
       let sign,alg,resolve,cst2 = check_with env sign with_decl (Some alg) mp resolve in
-	sign,Option.get alg,resolve,Univ.Constraint.union cst1 cst2
+	sign,Option.get alg,resolve,Univ.union_constraints cst1 cst2
 	  
 and translate_struct_type_entry env inl mse = match mse with
   | MSEident mp1 ->
       let mtb = lookup_modtype mp1 env in 
 	mtb.typ_expr,
-      Some (SEBident mp1),mtb.typ_delta,mp1,Univ.Constraint.empty
+      Some (SEBident mp1),mtb.typ_delta,mp1,Univ.empty_constraint
   | MSEfunctor (arg_id, arg_e, body_expr) ->
       let mtb = translate_module_type env (MPbound arg_id) inl arg_e in
       let env' = add_module (module_body_of_type (MPbound arg_id) mtb) env  in
       let sign,alg,resolve,mp_from,cst =
 	translate_struct_type_entry env' inl body_expr in
 	SEBfunctor (arg_id, mtb, sign),None,resolve,mp_from,
-      Univ.Constraint.union cst mtb.typ_constraints
+      Univ.union_constraints cst mtb.typ_constraints
   | MSEapply (fexpr,mexpr) ->
       let sign,alg,resolve,mp_from,cst1 =
 	translate_struct_type_entry env inl fexpr
@@ -338,12 +338,12 @@ and translate_struct_type_entry env inl mse = match mse with
       in
       let subst = map_mbid farg_id mp1 mp_delta in
 	(subst_struct_expr subst fbody_b),None,
-      (subst_codom_delta_resolver subst resolve),mp_from,Univ.Constraint.union cst1 cst2
+      (subst_codom_delta_resolver subst resolve),mp_from,Univ.union_constraints cst1 cst2
   | MSEwith(mte, with_decl) ->
       let sign,alg,resolve,mp_from,cst = translate_struct_type_entry env inl mte in
       let sign,alg,resolve,cst1 = 
 	check_with env sign with_decl alg mp_from resolve in
-	sign,alg,resolve,mp_from,Univ.Constraint.union cst cst1    
+	sign,alg,resolve,mp_from,Univ.union_constraints cst cst1    
 
 and translate_module_type env mp inl mte =
 	let sign,alg,resolve,mp_from,cst = translate_struct_type_entry env inl mte in
@@ -360,7 +360,7 @@ let rec translate_struct_include_module_entry env mp inl mse  = match mse with
       let mb = lookup_module mp1 env in 
       let mb' = strengthen_and_subst_mb mb mp env true in
       let mb_typ = clean_bounded_mod_expr mb'.mod_type in 
-	mb_typ, mb'.mod_delta,Univ.Constraint.empty
+	mb_typ, mb'.mod_delta,Univ.empty_constraint
   | MSEapply (fexpr,mexpr) ->
       let sign,resolver,cst1 =
 	translate_struct_include_module_entry env mp inl fexpr in
@@ -381,7 +381,7 @@ let rec translate_struct_include_module_entry env mp inl mse  = match mse with
       let subst = map_mbid farg_id mp1 mp_delta in
 	(subst_struct_expr subst fbody_b),
       (subst_codom_delta_resolver subst resolver),
-      Univ.Constraint.union cst1 cst
+      Univ.union_constraints cst1 cst
   | _ -> error ("You cannot Include a high-order structure.")
   
 
@@ -445,11 +445,11 @@ let rec struct_expr_constraints cst = function
 
   | SEBapply (meb1,meb2,cst1) ->
       struct_expr_constraints
-	(struct_expr_constraints (Univ.Constraint.union cst1 cst) meb1)
+	(struct_expr_constraints (Univ.union_constraints cst1 cst) meb1)
 	meb2
   | SEBwith(meb,With_definition_body(_,cb))->
       struct_expr_constraints
-        (Univ.Constraint.union cb.const_constraints cst) meb
+        (Univ.union_constraints cb.const_constraints cst) meb
   | SEBwith(meb,With_module_body(_,_))->
       struct_expr_constraints  cst meb	
 		
@@ -465,11 +465,11 @@ and module_constraints cst mb =
     | Some meb -> struct_expr_constraints cst meb in
   let cst = 
       struct_expr_constraints cst mb.mod_type in
-  Univ.Constraint.union mb.mod_constraints cst
+  Univ.union_constraints mb.mod_constraints cst
 
 and modtype_constraints cst mtb =
-  struct_expr_constraints  (Univ.Constraint.union mtb.typ_constraints cst) mtb.typ_expr
+  struct_expr_constraints  (Univ.union_constraints mtb.typ_constraints cst) mtb.typ_expr
 
 
-let struct_expr_constraints = struct_expr_constraints Univ.Constraint.empty
-let module_constraints = module_constraints Univ.Constraint.empty
+let struct_expr_constraints = struct_expr_constraints Univ.empty_constraint
+let module_constraints = module_constraints Univ.empty_constraint

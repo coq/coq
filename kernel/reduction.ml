@@ -197,9 +197,9 @@ let sort_cmp pb s0 s1 cuniv =
     | (_, _) -> raise NotConvertible
 
 
-let conv_sort env s0 s1 = sort_cmp CONV s0 s1 Constraint.empty
+let conv_sort env s0 s1 = sort_cmp CONV s0 s1 empty_constraint
 
-let conv_sort_leq env s0 s1 = sort_cmp CUMUL s0 s1 Constraint.empty
+let conv_sort_leq env s0 s1 = sort_cmp CUMUL s0 s1 empty_constraint
 
 let rec no_arg_available = function
   | [] -> true
@@ -426,10 +426,10 @@ and convert_vect infos lft1 lft2 v1 v2 cuniv =
 
 let clos_fconv trans cv_pb evars env t1 t2 =
   let infos = trans, create_clos_infos ~evars betaiotazeta env in
-  ccnv cv_pb infos ELID ELID (inject t1) (inject t2) Constraint.empty
+  ccnv cv_pb infos ELID ELID (inject t1) (inject t2) empty_constraint
 
 let trans_fconv reds cv_pb evars env t1 t2 =
-  if eq_constr t1 t2 then Constraint.empty
+  if eq_constr t1 t2 then empty_constraint
   else clos_fconv reds cv_pb evars env t1 t2
 
 let trans_conv_cmp conv reds = trans_fconv reds conv (fun _->None)
@@ -448,8 +448,8 @@ let conv_leq_vecti ?(evars=fun _->None) env v1 v2 =
       let c' =
         try conv_leq ~evars env t1 t2
         with NotConvertible -> raise (NotConvertibleVect i) in
-      Constraint.union c c')
-    Constraint.empty
+      union_constraints c c')
+    empty_constraint
     v1
     v2
 

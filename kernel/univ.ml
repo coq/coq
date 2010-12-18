@@ -447,7 +447,6 @@ let enforce_constraint cst g =
     | (u,Le,v) -> enforce_univ_leq u v g
     | (u,Eq,v) -> enforce_univ_eq u v g
 
-
 module Constraint = Set.Make(
   struct
     type t = univ_constraint
@@ -455,6 +454,9 @@ module Constraint = Set.Make(
   end)
 
 type constraints = Constraint.t
+
+let empty_constraint = Constraint.empty
+let union_constraints = Constraint.union
 
 type constraint_function =
     universe -> universe -> constraints -> constraints
