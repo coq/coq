@@ -130,12 +130,6 @@ let enter_equiv_arc u v g =
 let enter_arc ca g =
   UniverseLMap.add ca.univ (Canonical ca) g
 
-let declare_univ u g =
-  if not (UniverseLMap.mem u g) then
-    enter_arc (terminal u) g
-  else
-    g
-
 (* The lower predicative level of the hierarchy that contains (impredicative)
    Prop and singleton inductive types *)
 let type0m_univ = Max ([],[])
@@ -167,6 +161,7 @@ let initial_universes = UniverseLMap.empty
 
 (* repr : universes -> universe_level -> canonical_arc *)
 (* canonical representative : we follow the Equiv links *)
+
 let repr g u =
   let rec repr_rec u =
     let a =
@@ -181,6 +176,20 @@ let repr g u =
   repr_rec u
 
 let can g = List.map (repr g)
+
+(* [safe_repr] also search for the canonical representative, but
+   if the graph doesn't contain the searched universe, we add it. *)
+
+let safe_repr g u =
+  let rec safe_repr_rec u =
+    match UniverseLMap.find u g with
+      | Equiv v -> safe_repr_rec v
+      | Canonical arc -> arc
+  in
+  try g, safe_repr_rec u
+  with Not_found ->
+    let can = terminal u in
+    enter_arc can g, can
 
 (* reprleq : canonical_arc -> canonical_arc list *)
 (* All canonical arcv such that arcu<=arcv with arcv#arcu *)
@@ -201,7 +210,7 @@ let reprleq g arcu =
 (* between u v = {w|u<=w<=v, w canonical}          *)
 (* between is the most costly operation *)
 
-let between g u arcv =
+let between g arcu arcv =
   (* good are all w | u <= w <= v  *)
   (* bad are all w | u <= w ~<= v *)
     (* find good and bad nodes in {w | u <= w} *)
@@ -222,7 +231,7 @@ let between g u arcv =
 	else
 	  good, arcu::bad, b    (* b or false *)
   in
-  let good,_,_ = explore ([arcv],[],false) (repr g u) in
+  let good,_,_ = explore ([arcv],[],false) arcu in
     good
 
 (* We assume  compare(u,v) = LE with v canonical (see compare below).
@@ -273,9 +282,7 @@ let compare_neq g arcu arcv =
   in
   cmp [] [] ([],[arcu])
 
-let compare g u v =
-  let arcu = repr g u
-  and arcv = repr g v in
+let compare g arcu arcv =
   if arcu == arcv then EQ else compare_neq g arcu arcv
 
 (* Invariants : compare(u,v) = EQ <=> compare(v,u) = EQ
@@ -287,11 +294,12 @@ let compare g u v =
    Adding u>v is consistent iff compare(v,u) = NLE
     and then it is redundant iff compare(u,v) = LT *)
 
-let compare_eq g u v =
-  let g = declare_univ u g in
-  let g = declare_univ v g in
-  repr g u == repr g v
+(** * Universe checks [check_eq] and [check_geq], used in coqchk *)
 
+let compare_eq g u v =
+  let g, arcu = safe_repr g u in
+  let _, arcv = safe_repr g v in
+  arcu == arcv
 
 type check_function = universes -> universe -> universe -> bool
 
@@ -311,10 +319,10 @@ let rec check_eq g u v =
     | _ -> anomaly "check_eq" (* not complete! (Atom(u) = Max([u],[]) *)
 
 let compare_greater g strict u v =
-  let g = declare_univ u g in
-  let g = declare_univ v g in
-  if not strict && compare_eq g v Set then true else
-  match compare g v u with
+  let g, arcu = safe_repr g u in
+  let g, arcv = safe_repr g v in
+  if not strict && arcv == snd (safe_repr g Set) then true else
+  match compare g arcv arcu with
     | (EQ|LE) -> not strict
     | LT -> true
     | NLE -> false
@@ -324,44 +332,50 @@ let compare_greater g strict u v =
   ppnl(str (if b then if strict then ">" else ">=" else "NOT >="));
   b
 *)
-let rec check_greater g strict u v =
+let check_geq g u v =
   match u, v with
-    | Atom ul, Atom vl -> compare_greater g strict ul vl
+    | Atom ul, Atom vl -> compare_greater g false ul vl
     | Atom ul, Max(le,lt) ->
-        List.for_all (fun vl -> compare_greater g strict ul vl) le &&
+        List.for_all (fun vl -> compare_greater g false ul vl) le &&
         List.for_all (fun vl -> compare_greater g true ul vl) lt
     | _ -> anomaly "check_greater"
 
-let check_geq g = check_greater g false
+(** Enforcing new constraints : [setlt], [setleq], [merge], [merge_disc] *)
 
 (* setlt : universe_level -> universe_level -> unit *)
 (* forces u > v *)
-let setlt g u v =
-  let arcu = repr g u in
-  enter_arc {arcu with lt=v::arcu.lt} g
+(* this is normally an update of u in g rather than a creation. *)
+let setlt g arcu arcv =
+  let arcu' = {arcu with lt=arcv.univ::arcu.lt} in
+  enter_arc arcu' g, arcu'
 
 (* checks that non-redundant *)
-let setlt_if g u v = match compare g u v with
-  | LT -> g
-  | _ -> setlt g u v
+let setlt_if (g,arcu) v =
+  let arcv = repr g v in
+  match compare g arcu arcv with
+  | LT -> g, arcu
+  | _ -> setlt g arcu arcv
 
 (* setleq : universe_level -> universe_level -> unit *)
 (* forces u >= v *)
-let setleq g u v =
-  let arcu = repr g u in
-  enter_arc {arcu with le=v::arcu.le} g
+(* this is normally an update of u in g rather than a creation. *)
+let setleq g arcu arcv =
+  let arcu' = {arcu with le=arcv.univ::arcu.le} in
+  enter_arc arcu' g, arcu'
 
 
 (* checks that non-redundant *)
-let setleq_if g u v = match compare g u v with
-  | NLE -> setleq g u v
-  | _ -> g
+let setleq_if (g,arcu) v =
+  let arcv = repr g v in
+  match compare g arcu arcv with
+  | NLE -> setleq g arcu arcv
+  | _ -> g, arcu
 
 (* merge : universe_level -> universe_level -> unit *)
 (* we assume  compare(u,v) = LE *)
 (* merge u v  forces u ~ v with repr u as canonical repr *)
-let merge g u v =
-  match between g u (repr g v) with
+let merge g arcu arcv =
+  match between g arcu arcv with
     | arcu::v -> (* arcu is chosen as canonical and all others (v) are *)
                  (* redirected to it *)
 	let redirect (g,w,w') arcv =
@@ -369,21 +383,21 @@ let merge g u v =
  	  (g',list_unionq arcv.lt w,arcv.le@w')
 	in
 	let (g',w,w') = List.fold_left redirect (g,[],[]) v in
-	let g'' = List.fold_left (fun g -> setlt_if g arcu.univ) g' w in
-	let g''' = List.fold_left (fun g -> setleq_if g arcu.univ) g'' w' in
-	g'''
+	let g_arcu = (g',arcu) in
+	let g_arcu = List.fold_left setlt_if g_arcu w in
+	let g_arcu = List.fold_left setleq_if g_arcu w' in
+	fst g_arcu
     | [] -> anomaly "Univ.between"
 
 (* merge_disc : universe_level -> universe_level -> unit *)
 (* we assume  compare(u,v) = compare(v,u) = NLE *)
 (* merge_disc u v  forces u ~ v with repr u as canonical repr *)
-let merge_disc g u v =
-  let arcu = repr g u in
-  let arcv = repr g v in
+let merge_disc g arcu arcv =
   let g' = enter_equiv_arc arcv.univ arcu.univ g in
-  let g'' = List.fold_left (fun g -> setlt_if g arcu.univ) g' arcv.lt in
-  let g''' = List.fold_left (fun g -> setleq_if g arcu.univ) g'' arcv.le in
-  g'''
+  let g_arcu = (g',arcu) in
+  let g_arcu = List.fold_left setlt_if g_arcu arcv.lt in
+  let g_arcu = List.fold_left setleq_if g_arcu arcv.le in
+  fst g_arcu
 
 (* Universe inconsistency: error raised when trying to enforce a relation
    that would create a cycle in the graph of universes. *)
@@ -397,44 +411,44 @@ let error_inconsistency o u v = raise (UniverseInconsistency (o,Atom u,Atom v))
 (* enforce_univ_leq : universe_level -> universe_level -> unit *)
 (* enforce_univ_leq u v will force u<=v if possible, will fail otherwise *)
 let enforce_univ_leq u v g =
-  let g = declare_univ u g in
-  let g = declare_univ v g in
-  match compare g u v with
+  let g,arcu = safe_repr g u in
+  let g,arcv = safe_repr g v in
+  match compare g arcu arcv with
     | NLE ->
-	(match compare g v u with
+	(match compare g arcv arcu with
            | LT -> error_inconsistency Le u v
-           | LE -> merge g v u
-           | NLE -> setleq g u v
+           | LE -> merge g arcv arcu
+           | NLE -> fst (setleq g arcu arcv)
            | EQ -> anomaly "Univ.compare")
     | _ -> g
 
 (* enforc_univ_eq : universe_level -> universe_level -> unit *)
 (* enforc_univ_eq u v will force u=v if possible, will fail otherwise *)
 let enforce_univ_eq u v g =
-  let g = declare_univ u g in
-  let g = declare_univ v g in
-  match compare g u v with
+  let g,arcu = safe_repr g u in
+  let g,arcv = safe_repr g v in
+  match compare g arcu arcv with
     | EQ -> g
     | LT -> error_inconsistency Eq u v
-    | LE -> merge g u v
+    | LE -> merge g arcu arcv
     | NLE ->
-	(match compare g v u with
+	(match compare g arcv arcu with
            | LT -> error_inconsistency Eq u v
-           | LE -> merge g v u
-           | NLE -> merge_disc g u v
+           | LE -> merge g arcv arcu
+           | NLE -> merge_disc g arcu arcv
            | EQ -> anomaly "Univ.compare")
 
 (* enforce_univ_lt u v will force u<v if possible, will fail otherwise *)
 let enforce_univ_lt u v g =
-  let g = declare_univ u g in
-  let g = declare_univ v g in
-  match compare g u v with
+  let g,arcu = safe_repr g u in
+  let g,arcv = safe_repr g v in
+  match compare g arcu arcv with
     | LT -> g
-    | LE -> setlt g u v
+    | LE -> fst (setlt g arcu arcv)
     | EQ -> error_inconsistency Lt u v
     | NLE ->
-	(match compare g v u with
-           | NLE -> setlt g u v
+	(match compare g arcv arcu with
+           | NLE -> fst (setlt g arcu arcv)
            | _ -> error_inconsistency Lt u v)
 
 (* Constraints and sets of consrtaints. *)
