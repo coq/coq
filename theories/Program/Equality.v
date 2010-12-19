@@ -320,17 +320,17 @@ Hint Unfold solution_left solution_right deletion simplification_heq
    constructor forms). Compare with the lemma 16 of the paper.
    We don't have a [noCycle] procedure yet. *)
 
-Ltac block_equality :=
-  match goal with
-    | |- forall x : ?t = ?u, @?P x => change (forall x : block (t = u), P x) ; cbv beta
-    | |- _ => idtac
+Ltac block_equality id :=
+  match type of id with
+    | @eq ?A ?t ?u => change (block (@eq A t u)) in id
+    | _ => idtac
   end.
 
 Ltac revert_blocking_until id := 
-  on_last_hyp ltac:(fun id' =>
+  Tactics.on_last_hyp ltac:(fun id' =>
     match id' with
       | id => idtac
-      | _ => revert id' ; block_equality ; revert_until id
+      | _ => block_equality id' ; revert id' ; revert_blocking_until id
     end).
 
 Ltac simplify_one_dep_elim_term c :=
