@@ -1601,7 +1601,7 @@ let prepare_predicate_from_arsign_tycon loc tomatchs sign arsign c =
  * tycon to make the predicate if it is not closed.
  *)
 
-let prepare_predicate loc typing_fun evdref env tomatchs sign tycon pred =
+let prepare_predicate loc typing_fun sigma env tomatchs sign tycon pred =
   let arsign = extract_arity_signature env tomatchs sign in
   let names = List.rev (List.map (List.map pi1) arsign) in
   let preds =
@@ -1614,32 +1614,31 @@ let prepare_predicate loc typing_fun evdref env tomatchs sign tycon pred =
         let pred1 =
           prepare_predicate_from_arsign_tycon loc tomatchs sign arsign t in
 	(* Second strategy: we build an "inversion" predicate *)
-	let sigma2,pred2 = build_inversion_problem loc env !evdref tomatchs t in
-	[!evdref, KnownDep, pred1; sigma2, DepUnknown, pred2]
-    | None, Some (None, t) ->
-	(* Only one strategy: we build an "inversion" predicate *)
-	let sigma,pred = build_inversion_problem loc env !evdref tomatchs t in
-	[sigma, DepUnknown, pred]
-    | None,  _ ->
-	(* No type constaints: we use two strategies *)
-	let t = mkExistential env ~src:(loc, CasesType) evdref in
-	(* First strategy: we build an inversion problem *)
-	let sigma1,pred1 = build_inversion_problem loc env !evdref tomatchs t in
+	let sigma2,pred2 = build_inversion_problem loc env sigma tomatchs t in
+	[sigma, KnownDep, pred1; sigma2, DepUnknown, pred2]
+    | None, _ ->
+	(* No dependent type constraint, or no constraints at all: *)
+	(* we use two strategies *)
+        let sigma,t = match tycon with
+	| Some (None, t) -> sigma,t
+	| _ -> new_evar sigma env ~src:(loc, CasesType) (new_Type ()) in
+        (* First strategy: we build an "inversion" predicate *)
+	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
 	(* Second strategy: we directly use the evar as a non dependent pred *)
         let pred2 = lift (List.length names) t in
-	[sigma1, DepUnknown, pred1; !evdref, KnownNotDep, pred2]
+	[sigma1, DepUnknown, pred1; sigma, KnownNotDep, pred2]
     (* Some type annotation *)
     | Some rtntyp, _ ->
       (* We extract the signature of the arity *)
       let env = List.fold_right push_rels arsign env in
+      let evdref = ref sigma in
       let predcclj = typing_fun (mk_tycon (new_Type ())) env evdref rtntyp in
-      Option.iter (fun tycon ->
+      let sigma = Option.cata (fun tycon ->
           let tycon = lift_tycon_type (List.length arsign) tycon in
-	  evdref :=
-            Coercion.inh_conv_coerces_to loc env !evdref predcclj.uj_val tycon)
-        tycon;
-      let predccl = (j_nf_evar !evdref predcclj).uj_val in
-      [!evdref, KnownDep, predccl]
+          Coercion.inh_conv_coerces_to loc env !evdref predcclj.uj_val tycon)
+        !evdref tycon in
+      let predccl = (j_nf_evar sigma predcclj).uj_val in
+      [sigma, KnownDep, predccl]
   in
   List.map
     (fun (sigma,dep,pred) ->
@@ -1663,7 +1662,7 @@ let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, e
      with the type of arguments to match; if none is provided, we
      build alternative possible predicates *)
   let sign = List.map snd tomatchl in
-  let preds = prepare_predicate loc typing_fun evdref env tomatchs sign tycon predopt in
+  let preds = prepare_predicate loc typing_fun !evdref env tomatchs sign tycon predopt in
 
   let compile_for_one_predicate (sigma,nal,pred) =
     (* We push the initial terms to match and push their alias to rhs' envs *)

@@ -506,3 +506,10 @@ Definition test (s:step E E) :=
     | Step nil _ (cons E nil) _ Plus l l' => true
     | _ => false
   end.
+
+(* Testing regression of bug 2454 ("get" used not be type-checkable when
+   defined with its type constraint) *)
+
+Inductive K : nat -> Type := KC : forall (p q:nat), K p.
+
+Definition get : K O -> nat := fun x => match x with KC p q => q end.
