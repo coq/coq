@@ -507,7 +507,7 @@ val noccur_between : int -> int -> constr -> bool
 
 (* Checking function for terms containing existential- or
    meta-variables.  The function [noccur_with_meta] does not consider
-   meta-variables applied to some terms (intented to be its local
+   meta-variables applied to some terms (intended to be its local
    context) (for existential variables, it is necessarily the case) *)
 val noccur_with_meta : int -> int -> constr -> bool
 
