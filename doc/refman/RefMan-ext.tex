@@ -1622,7 +1622,7 @@ the generalized variables. Inside implicit generalization
 delimiters, free variables in the current context are automatically
 quantified using a product or a lambda abstraction to generate a closed
 term. In the following statement for example, the variables \texttt{n}
-and \texttt{m} are autamatically generalized and become explicit
+and \texttt{m} are automatically generalized and become explicit
 arguments of the lemma as we are using \verb|`( )|:
 
 \begin{coq_example}
@@ -1638,7 +1638,7 @@ generalizations when mistyping identifiers. There are three variants of
 the command:
 
 \begin{quote}
-{\tt Generalizable (All|No) Variable(s)? ({\ident$_1$ \ident$_n$})?.}
+{\tt (Global)? Generalizable (All|No) Variable(s)? ({\ident$_1$ \ident$_n$})?.}
 \end{quote}
 
 \begin{Variants}
