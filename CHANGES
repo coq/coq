@@ -1,9 +1,10 @@
 Changes from V8.3 to V8.3pl1
 ============================
 
-Notations and implicit arguments bug fixes
+Type inference, notations and implicit arguments bug fixes
 
 - #2448 (alpha-renaming problems with notations internally using binders)
+- #2454 (pattern-matching sometimes not supporting type casts)
 - fixing combined use of non-implicit and explictly-declared implicit arguments
   in inductive arities
 - restored support for using some ident with different scopes in notations
@@ -12,25 +13,21 @@ Ltac and tactics bug fixes
 
 - #2414 (rewrite in not looking for eq_ind in the right module)
 - #2433 (new "is_evar"/"has_evar" to restore support for matching evars in Ltac)
+- #2453 (dependent destruction)
+- loop in dependent destruction
 - new "constr_eq" tactic for restoring support for term equality test in Ltac
 - setoid rewrite under cases and abstraction fixed
 
 Coqdoc and documentation bugs
 
-- #2445 (correct support for "'" character in coqdoc links to notations)
-- #2441 (coqdoc bug in Mergesort.v)
 - #2418 (wrong URLs in documentation)
+- #2441 (coqdoc bug in Mergesort.v)
+- #2445 (correct support for "'" character in coqdoc links to notations)
 - fixed wrong use of "moduleid" instead of "module" in coqdoc html indexes
-
-Miscellaneous bug fixes
-
-- #2412 (anomaly Ploc.Exc when using Ltac Debug)
-- #2427 (Module Functor claims Signature does not match)
-- #2434 (anomaly DuringSyntaxChecking with Local/Global prefixes)
+- fixing parsing of Multiplication and Division signs (unicode 0xD7 and 0xF7)
 
 Compilation
 
-- #2431 (compliance of CoqIDE use of mutexes with FreeBSD)
 - #2432 (support for compilation with camlp5 6.02.0)
 - support for compilation with ocaml >= 3.09.3 restored
 
@@ -41,6 +38,16 @@ Extraction
   avoid containing "__", since the extraction make various use of
   this sub-string, leading to potential name clashes. This was
   already so in V8.3, but not announced, as mentionned by #2421.
+
+Miscellaneous bug fixes
+
+- #2412 (anomaly Ploc.Exc when using Ltac Debug)
+- #2419 (redundant opp_compare removed)
+- #2427 (Module Functor claims Signature does not match)
+- #2431 (compliance of CoqIDE use of mutexes with FreeBSD)
+- #2434 (anomaly DuringSyntaxChecking with Local/Global prefixes)
+- a few improvements in efficiency
+
 
 Changes from V8.2 to V8.3
 =========================
