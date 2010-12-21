@@ -34,6 +34,14 @@ Compilation
 - #2432 (support for compilation with camlp5 6.02.0)
 - support for compilation with ocaml >= 3.09.3 restored
 
+Extraction
+
+- #2413 (prevent type-unsafe optimisations of pattern matching)
+- Identifiers of a development aimed to be extracted should
+  avoid containing "__", since the extraction make various use of
+  this sub-string, leading to potential name clashes. This was
+  already so in V8.3, but not announced, as mentionned by #2421.
+
 Changes from V8.2 to V8.3
 =========================
 
