@@ -60,6 +60,7 @@ val var2var' : ml_type -> ml_type
 type abbrev_map = global_reference -> ml_type option
 
 val type_expand : abbrev_map -> ml_type -> ml_type
+val type_simpl : ml_type -> ml_type
 val type_to_sign : abbrev_map -> ml_type -> sign
 val type_to_signature : abbrev_map -> ml_type -> signature
 val type_expunge : abbrev_map -> ml_type -> ml_type
@@ -113,8 +114,8 @@ val optimize_fix : ml_ast -> ml_ast
 val inline : global_reference -> ml_ast -> bool
 
 exception Impossible
-val check_function_branch : ml_branch -> ml_ast
-val check_constant_branch : ml_branch -> ml_ast
+val branch_as_fun : ml_type list -> ml_branch -> ml_ast
+val branch_as_cst : ml_branch -> ml_ast
 
 (* Classification of signatures *)
 

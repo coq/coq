@@ -216,17 +216,17 @@ let rec pp_expr par env args =
         when kn = ind_ascii && check_extract_ascii () & is_list_cons l ->
 	assert (args=[]);
 	pp_char l
-    | MLcons (Coinductive,r,[]) ->
+    | MLcons ({c_kind = Coinductive},r,[]) ->
 	assert (args=[]);
 	pp_par par (str "lazy " ++ pp_global Cons r)
-    | MLcons (Coinductive,r,args') ->
+    | MLcons ({c_kind = Coinductive},r,args') ->
 	assert (args=[]);
 	let tuple = pp_tuple (pp_expr true env []) args' in
 	pp_par par (str "lazy (" ++ pp_global Cons r ++ spc() ++ tuple ++str ")")
     | MLcons (_,r,[]) ->
 	assert (args=[]);
 	pp_global Cons r
-    | MLcons (Record projs, r, args') ->
+    | MLcons ({c_kind = Record projs}, r, args') ->
 	assert (args=[]);
 	pp_record_pat (projs, List.map (pp_expr true env []) args')
     | MLcons (_,r,[arg1;arg2]) when is_infix r ->
@@ -248,14 +248,14 @@ let rec pp_expr par env args =
 	hov 2 (str (find_custom_match pv) ++ fnl () ++
 		 prvect (fun tr -> pp_expr true env [] (mkfun tr) ++ fnl ()) pv
 	       ++ pp_expr true env [] t)
-    | MLcase ((i,factors), t, pv) ->
-	let expr = if i = Coinductive then
+    | MLcase (info, t, pv) ->
+	let expr = if info.m_kind = Coinductive then
 	  (str "Lazy.force" ++ spc () ++ pp_expr true env [] t)
 	else
 	  (pp_expr false env [] t)
 	in
 	(try
-	   let projs = find_projections i in
+	   let projs = find_projections info.m_kind in
 	   let (_, ids, c) = pv.(0) in
 	   let n = List.length ids in
 	   match c with
@@ -275,7 +275,7 @@ let rec pp_expr par env args =
 	     | _ -> raise NoRecord
 	 with NoRecord ->
 	   if Array.length pv = 1 then
-	     let s1,s2 = pp_one_pat env i pv.(0) in
+	     let s1,s2 = pp_one_pat env info pv.(0) in
 	     apply
 	       (hv 0
 		  (pp_par par'
@@ -289,7 +289,7 @@ let rec pp_expr par env args =
 		  (try pp_ifthenelse par' env expr pv
 		   with Not_found ->
 		     v 0 (str "match " ++ expr ++ str " with" ++ fnl () ++
-			  str "  | " ++ pp_pat env (i,factors) pv))))
+			  str "  | " ++ pp_pat env info pv))))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' i (Array.of_list (List.rev ids'),defs) args
@@ -322,11 +322,11 @@ and pp_ifthenelse par env expr pv = match pv with
 	           hov 2 (pp_expr (expr_needs_par els) env [] els)))
   | _ -> raise Not_found
 
-and pp_one_pat env i (r,ids,t) =
+and pp_one_pat env info (r,ids,t) =
   let ids,env' = push_vars (List.rev_map id_of_mlid ids) env in
   let expr = pp_expr (expr_needs_par t) env' [] t in
   try
-    let projs = find_projections i in
+    let projs = find_projections info.m_kind in
     pp_record_pat (projs, List.rev_map pr_id ids), expr
   with NoRecord ->
     (match List.rev ids with
@@ -338,36 +338,42 @@ and pp_one_pat env i (r,ids,t) =
 	   ++ pp_boxed_tuple pr_id ids),
     expr
 
-and pp_pat env (info,factors) pv =
-  let factor_br, factor_l = try match factors with
-    | BranchFun (i::_ as l) -> check_function_branch pv.(i), l
-    | BranchCst (i::_ as l) -> ast_pop (check_constant_branch pv.(i)), l
-    | _ -> MLdummy, []
-  with Impossible -> MLdummy, []
+and pp_pat env info pv =
+  let factor_br, factor_set = try match info.m_same with
+    | BranchFun ints ->
+        let i = Intset.choose ints in
+        branch_as_fun info.m_typs pv.(i), ints
+    | BranchCst ints ->
+        let i = Intset.choose ints in
+	ast_pop (branch_as_cst pv.(i)), ints
+    | BranchNone -> MLdummy, Intset.empty
+  with _ -> MLdummy, Intset.empty
   in
-  let par = expr_needs_par factor_br in
   let last = Array.length pv - 1 in
   prvecti
-    (fun i x -> if List.mem i factor_l then mt () else
+    (fun i x -> if Intset.mem i factor_set then mt () else
        let s1,s2 = pp_one_pat env info x in
        hov 2 (s1 ++ str " ->" ++ spc () ++ s2) ++
-       if i = last && factor_l = [] then mt () else
+       if i = last && Intset.is_empty factor_set then mt () else
        fnl () ++ str "  | ") pv
   ++
-  if factor_l = [] then mt () else match factors with
+  if Intset.is_empty factor_set then mt () else
+  let par = expr_needs_par factor_br in
+  match info.m_same with
     | BranchFun _ ->
-	let ids, env' = push_vars [anonymous_name] env in
-	hov 2 (pr_id (List.hd ids) ++ str " ->" ++ spc () ++
-	       pp_expr par env' [] factor_br)
+        let ids, env' = push_vars [anonymous_name] env in
+        hov 2 (pr_id (List.hd ids) ++ str " ->" ++ spc () ++
+		 pp_expr par env' [] factor_br)
     | BranchCst _ ->
-	hov 2 (str "_ ->" ++ spc () ++ pp_expr par env [] factor_br)
+        hov 2 (str "_ ->" ++ spc () ++ pp_expr par env [] factor_br)
     | BranchNone -> mt ()
 
 and pp_function env t =
   let bl,t' = collect_lams t in
   let bl,env' = push_vars (List.map id_of_mlid bl) env in
   match t' with
-    | MLcase(i,MLrel 1,pv) when fst i=Standard && not (is_custom_match pv) ->
+    | MLcase(i,MLrel 1,pv) when
+	i.m_kind = Standard && not (is_custom_match pv) ->
 	if not (ast_occurs 1 (MLcase(i,MLdummy,pv))) then
 	  pr_binding (List.rev (List.tl bl)) ++
        	  str " = function" ++ fnl () ++
@@ -517,7 +523,7 @@ let pp_ind co kn ind =
 (*s Pretty-printing of a declaration. *)
 
 let pp_mind kn i =
-  match i.ind_info with
+  match i.ind_kind with
     | Singleton -> pp_singleton kn i.ind_packets.(0)
     | Coinductive -> pp_ind true kn i
     | Record projs ->
