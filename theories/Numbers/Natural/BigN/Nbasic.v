@@ -260,13 +260,6 @@ Section ReduceRec.
 
 End ReduceRec.
 
-Definition opp_compare cmp :=
-  match cmp with
-  | Lt => Gt
-  | Eq => Eq
-  | Gt => Lt
-  end.
-
 Section CompareRec.
 
  Variable wm w : Type.
@@ -447,7 +440,7 @@ End AddS.
   | Lt => y < x
   | Gt => y > x
   end ->
-  match opp_compare u with
+  match CompOpp u with
   | Eq => x = y
   | Lt => x < y
   | Gt => x > y

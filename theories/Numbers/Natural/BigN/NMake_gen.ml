@@ -1299,7 +1299,7 @@ let _ =
   pr "   (iter _";
   for i = 0 to size do
     pr "      compare_%i" i;
-    pr "      (fun n x y => opp_compare (comparen_%i (S n) y x))" i;
+    pr "      (fun n x y => CompOpp (comparen_%i (S n) y x))" i;
     pr "      (fun n => comparen_%i (S n))" i;
   done;
   pr "      comparenm).";
@@ -1339,9 +1339,9 @@ let _ =
 
   pp " Let spec_opp_compare: forall c (u v: Z),";
   pp "  match c with Eq => u = v | Lt => u < v | Gt => u > v end ->";
-  pp "  match opp_compare c with Eq => v = u | Lt => v < u | Gt => v > u end.";
+  pp "  match CompOpp c with Eq => v = u | Lt => v < u | Gt => v > u end.";
   pp " Proof.";
-  pp " intros c u v; case c; unfold opp_compare; auto with zarith.";
+  pp " intros c u v; case c; unfold CompOpp; auto with zarith.";
   pp " Qed.";
   pp "";
 
@@ -1362,7 +1362,7 @@ let _ =
   pp "                      end)";
   for i = 0 to size do
     pp "      compare_%i" i;
-    pp "      (fun n x y => opp_compare (comparen_%i (S n) y x))" i;
+    pp "      (fun n x y => CompOpp (comparen_%i (S n) y x))" i;
     pp "      (fun n => comparen_%i (S n)) _ _ _" i;
   done;
   pp "      comparenm _).";
