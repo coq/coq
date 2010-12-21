@@ -29,7 +29,7 @@ open Table
 open Mlutil
 (*i*)
 
-exception I of inductive_info
+exception I of inductive_kind
 
 (* A set of all fixpoint functions currently being extracted *)
 let current_fixpoints = ref ([] : constant list)
@@ -368,7 +368,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
     in
 
     add_ind kn mib
-      {ind_info = Standard;
+      {ind_kind = Standard;
        ind_nparams = npar;
        ind_packets = packets;
        ind_equiv = equiv
@@ -453,7 +453,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	Record field_glob
       with (I info) -> info
     in
-    let i = {ind_info = ind_info;
+    let i = {ind_kind = ind_info;
 	     ind_nparams = npar;
 	     ind_packets = packets;
 	     ind_equiv = equiv }
@@ -711,9 +711,15 @@ and extract_cons_app env mle mlt (((kn,i) as ip,j) as cp) args =
   let magic1 = needs_magic (type_cons, type_recomp (metas, a)) in
   let magic2 = needs_magic (a, mlt) in
   let head mla =
-    if mi.ind_info = Singleton then
+    if mi.ind_kind = Singleton then
       put_magic_if magic1 (List.hd mla) (* assert (List.length mla = 1) *)
-    else put_magic_if magic1 (MLcons (mi.ind_info, ConstructRef cp, mla))
+    else
+      let typeargs = match snd (type_decomp type_cons) with
+	| Tglob (_,l) -> List.map type_simpl l
+	| _ -> assert false
+      in
+      let info = {c_kind = mi.ind_kind; c_typs = typeargs} in
+      put_magic_if magic1 (MLcons (info, ConstructRef cp, mla))
   in
   (* Different situations depending of the number of arguments: *)
   if la < params_nb then
@@ -779,7 +785,7 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
 	let e' = handle_exn r (List.length s) (fun _ -> Anonymous) e in
 	(r, List.rev ids, e')
       in
-      if mi.ind_info = Singleton then
+      if mi.ind_kind = Singleton then
 	begin
 	  (* Informative singleton case: *)
 	  (* [match c with C i -> t] becomes [let i = c' in t'] *)
@@ -790,7 +796,9 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
 	end
       else
 	(* Standard case: we apply [extract_branch]. *)
-	MLcase ((mi.ind_info,BranchNone), a, Array.init br_size extract_branch)
+	let typs = List.map type_simpl (Array.to_list metas) in
+	let info = { m_kind = mi.ind_kind; m_typs = typs; m_same = BranchNone }
+	in MLcase (info, a, Array.init br_size extract_branch)
 
 (*s Extraction of a (co)-fixpoint. *)
 

@@ -421,7 +421,8 @@ let flag_of_int n =
       opt_lin_beta = kth_digit n 10 }
 
 (* For the moment, we allow by default everything except :
-   - the type-unsafe optimization [opt_case_idg]
+   - the type-unsafe optimization [opt_case_idg], which anyway
+     cannot be activated currently (cf [Mlutil.branch_as_fun])
    - the linear let and beta reduction [opt_lin_let] and [opt_lin_beta]
      (may lead to complexity blow-up, subsumed by finer reductions
       when inlining recursors).

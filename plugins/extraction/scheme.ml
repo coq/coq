@@ -87,7 +87,7 @@ let rec pp_expr env args =
 		    ++ spc () ++ hov 0 (pp_expr env' [] a2)))))
     | MLglob r ->
 	apply (pp_global Term r)
-    | MLcons (i,r,args') ->
+    | MLcons (info,r,args') ->
 	assert (args=[]);
 	let st =
 	  str "`" ++
@@ -95,7 +95,7 @@ let rec pp_expr env args =
 		 (if args' = [] then mt () else spc ()) ++
 		 prlist_with_sep spc (pp_cons_args env) args')
 	in
-	if i = Coinductive then paren (str "delay " ++ st) else st
+	if info.c_kind = Coinductive then paren (str "delay " ++ st) else st
     | MLcase (_,t,pv) when is_custom_match pv ->
 	let mkfun (_,ids,e) =
 	  if ids <> [] then named_lams (List.rev ids) e
@@ -104,9 +104,9 @@ let rec pp_expr env args =
 	hov 2 (str (find_custom_match pv) ++ fnl () ++
 		 prvect (fun tr -> pp_expr env [] (mkfun tr) ++ fnl ()) pv
 	       ++ pp_expr env [] t)
-     | MLcase ((i,_),t, pv) ->
+     | MLcase (info,t, pv) ->
 	let e =
-	  if i <> Coinductive then pp_expr env [] t
+	  if info.m_kind <> Coinductive then pp_expr env [] t
 	  else paren (str "force" ++ spc () ++ pp_expr env [] t)
 	in
 	apply (v 3 (paren (str "match " ++ e ++ fnl () ++ pp_pat env pv)))
@@ -123,7 +123,7 @@ let rec pp_expr env args =
     | MLaxiom -> paren (str "error \"AXIOM TO BE REALIZED\"")
 
 and pp_cons_args env = function
-  | MLcons (i,r,args) when i<>Coinductive ->
+  | MLcons (info,r,args) when info.c_kind<>Coinductive ->
       paren (pp_global Cons r ++
 	     (if args = [] then mt () else spc ()) ++
 	     prlist_with_sep spc (pp_cons_args env) args)

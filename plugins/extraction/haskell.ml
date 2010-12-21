@@ -156,10 +156,10 @@ let rec pp_expr par env args =
 	hov 2 (str (find_custom_match pv) ++ fnl () ++
 		 prvect (fun tr -> pp_expr true env [] (mkfun tr) ++ fnl ()) pv
 	       ++ pp_expr true env [] t)
-    | MLcase ((_,factors),t, pv) ->
+    | MLcase (info,t, pv) ->
       	apply (pp_par par'
 		 (v 0 (str "case " ++ pp_expr false env [] t ++ str " of" ++
-		       fnl () ++ str "  " ++ pp_pat env factors pv)))
+		       fnl () ++ str "  " ++ pp_pat env info pv)))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' i (Array.of_list (List.rev ids'),defs) args
@@ -172,7 +172,7 @@ let rec pp_expr par env args =
 	pp_apply (str "unsafeCoerce") par (pp_expr true env [] a :: args)
     | MLaxiom -> pp_par par (str "Prelude.error \"AXIOM TO BE REALIZED\"")
 
-and pp_pat env factors pv =
+and pp_pat env info pv =
   let pp_one_pat (name,ids,t) =
     let ids,env' = push_vars (List.rev_map id_of_mlid ids) env in
     let par = expr_needs_par t in
@@ -184,27 +184,32 @@ and pp_pat env factors pv =
 			 (fun () -> (spc ())) pr_id (List.rev ids))) ++
 	   str " ->" ++ spc () ++ pp_expr par env' [] t)
   in
-  let factor_br, factor_l = try match factors with
-    | BranchFun (i::_ as l) -> check_function_branch pv.(i), l
-    | BranchCst (i::_ as l) -> ast_pop (check_constant_branch pv.(i)), l
-    | _ -> MLdummy, []
-  with Impossible -> MLdummy, []
+  let factor_br, factor_set = try match info.m_same with
+    | BranchFun ints ->
+        let i = Intset.choose ints in
+	branch_as_fun info.m_typs pv.(i), ints
+    | BranchCst ints ->
+        let i = Intset.choose ints in
+        ast_pop (branch_as_cst pv.(i)), ints
+    | BranchNone -> MLdummy, Intset.empty
+  with _ -> MLdummy, Intset.empty
   in
-  let par = expr_needs_par factor_br in
   let last = Array.length pv - 1 in
   prvecti
-    (fun i x -> if List.mem i factor_l then mt () else
+    (fun i x -> if Intset.mem i factor_set then mt () else
        (pp_one_pat pv.(i) ++
-       if i = last && factor_l = [] then mt () else
+       if i = last && Intset.is_empty factor_set then mt () else
        fnl () ++ str "  ")) pv
   ++
-  if factor_l = [] then mt () else match factors with
+  if Intset.is_empty factor_set then mt () else
+  let par = expr_needs_par factor_br in
+  match info.m_same with
     | BranchFun _ ->
-	let ids, env' = push_vars [anonymous_name] env in
-	pr_id (List.hd ids) ++ str " ->" ++ spc () ++
-	pp_expr par env' [] factor_br
+        let ids, env' = push_vars [anonymous_name] env in
+        pr_id (List.hd ids) ++ str " ->" ++ spc () ++
+	  pp_expr par env' [] factor_br
     | BranchCst _ ->
-	str "_ ->" ++ spc () ++ pp_expr par env [] factor_br
+        str "_ ->" ++ spc () ++ pp_expr par env [] factor_br
     | BranchNone -> mt ()
 
 (*s names of the functions ([ids]) are already pushed in [env],
@@ -286,7 +291,7 @@ let rec pp_ind first kn i ind =
 let pp_string_parameters ids = prlist (fun id -> str id ++ str " ")
 
 let pp_decl = function
-  | Dind (kn,i) when i.ind_info = Singleton ->
+  | Dind (kn,i) when i.ind_kind = Singleton ->
       pp_singleton (mind_of_kn kn) i.ind_packets.(0) ++ fnl ()
   | Dind (kn,i) -> hov 0 (pp_ind true (mind_of_kn kn) 0 i)
   | Dtype (r, l, t) ->

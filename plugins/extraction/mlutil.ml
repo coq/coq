@@ -291,6 +291,8 @@ let type_expand env t =
     | a -> a
   in if Table.type_expand () then expand t else t
 
+let type_simpl = type_expand (fun _ -> None)
+
 (*s Generating a signature from a ML type. *)
 
 let type_to_sign env t = match type_expand env t with
@@ -665,12 +667,23 @@ let rec ast_glob_subst s t = match t with
 
 (*S Auxiliary functions used in simplification of ML cases. *)
 
-(*s [check_function_branch (r,l,c)] checks if branch [c] can be seen
-  as a function [f] applied to [MLcons(r,l)]. For that it transforms
-  any [MLcons(r,l)] in [MLrel 1] and raises [Impossible] if any
-  variable in [l] occurs outside such a [MLcons] *)
+(* Factorisation of some match branches into a common "x -> f x"
+   branch may break types sometimes. Example: [type 'x a = A].
+   Then [let id = function A -> A] has type ['x a -> 'y a],
+   which is incompatible with the type of [let id x = x].
+   We now check that the type arguments of the inductive are
+   preserved by our transformation.
 
-let check_function_branch (r,l,c) =
+   TODO: this verification should be done someday modulo
+   expansion of type definitions.
+*)
+
+(*s [branch_as_function b typs (r,l,c)] tries to see branch [c]
+  as a function [f] applied to [MLcons(r,l)]. For that it transforms
+  any [MLcons(r,l)] in [MLrel 1] and raises [Impossible]
+  if any variable in [l] occurs outside such a [MLcons] *)
+
+let branch_as_fun typs (r,l,c) =
   let nargs = List.length l in
   let rec genrec n = function
     | MLrel i as c ->
@@ -678,21 +691,31 @@ let check_function_branch (r,l,c) =
 	if i'<1 then c
 	else if i'>nargs then MLrel (i-nargs+1)
 	else raise Impossible
-    | MLcons(_,r',args) when r=r' && (test_eta_args_lift n nargs args) ->
+    | MLcons(i,r',args) when
+	r=r' && (test_eta_args_lift n nargs args) && typs = i.c_typs ->
 	MLrel (n+1)
     | a -> ast_map_lift genrec n a
   in genrec 0 c
 
-(*s [check_constant_branch (r,l,c)] checks if branch [c] is independent
-   from the pattern [MLcons(r,l)]. For that is raises [Impossible] if any
-   variable in [l] occurs in [c], and otherwise returns [c] lifted to
-   appear like a function with one arg (for uniformity with the
-   branch-as-function optimization) *)
+(*s [branch_as_cst (r,l,c)] tries to see branch [c] as a constant
+   independent from the pattern [MLcons(r,l)]. For that is raises [Impossible]
+   if any variable in [l] occurs in [c], and otherwise returns [c] lifted to
+   appear like a function with one arg (for uniformity with [branch_as_fun]).
+   NB: [MLcons(r,l)] might occur nonetheless in [c], but only when [l] is
+   empty, i.e. when [r] is a constant constructor
+*)
 
-let check_constant_branch (_,l,c) =
+let branch_as_cst (_,l,c) =
   let n = List.length l in
   if ast_occurs_itvl 1 n c then raise Impossible;
   ast_lift (1-n) c
+
+(* A branch [MLcons(r,l)->c] can be seen at the same time as a function
+   branch and a constant branch, either because:
+   - [MLcons(r,l)] doesn't occur in [c]. For example : "A -> B"
+   - this constructor is constant (i.e. [l] is empty). For example "A -> A"
+   When searching for the best factorisation below, we'll try both.
+*)
 
 (* The following structure allows to record which element occurred
    at what position, and then finally return the most frequent
@@ -702,61 +725,39 @@ let census_add, census_max, census_clean =
   let h = Hashtbl.create 13 in
   let clear () = Hashtbl.clear h in
   let add e i =
-    let l = try Hashtbl.find h e with Not_found -> [] in
-    Hashtbl.replace h e (i::l)
+    let s = try Hashtbl.find h e with Not_found -> Intset.empty in
+    Hashtbl.replace h e (Intset.add i s)
   in
   let max e0 =
-    let len = ref 0 and lst = ref [] and elm = ref e0 in
+    let len = ref 0 and lst = ref Intset.empty and elm = ref e0 in
     Hashtbl.iter
-      (fun e l ->
-	 let n = List.length l in
-	 if n > !len then begin len := n; lst := l; elm := e end)
+      (fun e s ->
+	 let n = Intset.cardinal s in
+	 if n > !len then begin len := n; lst := s; elm := e end)
       h;
     (!elm,!lst)
   in
   (add,max,clear)
 
-(* Given an abstraction function [abstr] (one of [check_*_branch]),
-   return the longest possible list of branches that have the
-   same abstraction, along with this abstraction. *)
+(* [factor_branches] return the longest possible list of branches
+   that have the same factorization, either as a function or as a
+   constant.
+*)
 
-let factor_branches abstr br =
+let factor_branches o typs br =
   census_clean ();
   for i = 0 to Array.length br - 1 do
-    try census_add (abstr br.(i)) i with Impossible -> ()
+    if o.opt_case_idr then
+      (try census_add (branch_as_fun typs br.(i)) i with Impossible -> ());
+    if o.opt_case_cst then
+      (try census_add (branch_as_cst br.(i)) i with Impossible -> ());
   done;
-  let br_factor, br_list = census_max MLdummy in
-  if br_list = [] then None
-  else if Array.length br >= 2 && List.length br_list < 2 then None
-  else Some (br_factor, br_list)
-
-(*s [check_generalizable_case] checks if all branches can be seen as the
-  same function [f] applied to the term matched. It is a generalized version
-  of both the identity case optimization and the constant case optimisation
-  ([f] can be a constant function) *)
-
-(* The optimisation [factor_branches check_function_branch] breaks types
-   in some special case. Example: [type 'x a = A].
-   Then [let f = function A -> A] has type ['x a -> 'y a],
-   which is incompatible with the type of [let f x = x].
-   We check first that there isn't such phantom variable in the inductive type
-   we're considering. *)
-
-let check_optim_id br =
-  let (kn,i) =
-    match br.(0) with (ConstructRef (c,_),_,_) -> c | _ -> assert false
-  in
-  let ip = (snd (lookup_ind kn)).ind_packets.(i) in
-  match ip.ip_optim_id_ok with
-    | Some ok -> ok
-    | None ->
-	let tvars =
-	  intset_union_map_array (intset_union_map_list type_listvar)
-	    ip.ip_types
-	in
-	let ok = (Intset.cardinal tvars = List.length ip.ip_vars) in
-	ip.ip_optim_id_ok <- Some ok;
-	ok
+  let br_factor, br_set = census_max MLdummy in
+  census_clean ();
+  let n = Intset.cardinal br_set in
+  if n = 0 then None
+  else if Array.length br >= 2 && n < 2 then None
+  else Some (br_factor, br_set)
 
 (*s If all branches are functions, try to permut the case and the functions. *)
 
@@ -897,26 +898,14 @@ and simpl_case o i br e =
     if n <> 0 then
       simpl o (named_lams ids (MLcase (i,ast_lift n e, br)))
     else
-      (* Does a term [f] exist such that many branches are [(f e)] ? *)
-      let opt1 =
-	if o.opt_case_idr && (o.opt_case_idg || check_optim_id br) then
-	  factor_branches check_function_branch br
-	else None
-      in
-      (* Detect common constant branches. Often a particular case of
-	 branch-as-function optim, but not always (e.g. A->A|B->A) *)
-      let opt2 =
-	if opt1 = None && o.opt_case_cst then
-	  factor_branches check_constant_branch br
-	else opt1
-      in
-      match opt2 with
-	| Some (f,ints) when List.length ints = Array.length br ->
-	    (* if all branches have been factorized, we remove the match *)
+      (* Can we merge several branches as the same constant or function ? *)
+      match factor_branches o i.m_typs br with
+	| Some (f,ints) when Intset.cardinal ints = Array.length br ->
+	    (* If all branches have been factorized, we remove the match *)
 	    simpl o (MLletin (Tmp anonymous_name, e, f))
 	| Some (f,ints) ->
-	    let ci = if ast_occurs 1 f then BranchFun ints else BranchCst ints
-	    in MLcase ((fst i,ci), e, br)
+	  let same = if ast_occurs 1 f then BranchFun ints else BranchCst ints
+	  in MLcase ({i with m_same=same}, e, br)
 	| None -> MLcase (i, e, br)
 
 (*S Local prop elimination. *)

@@ -53,7 +53,7 @@ type ml_schema = int * ml_type
 
 (*s ML inductive types. *)
 
-type inductive_info =
+type inductive_kind =
   | Singleton
   | Coinductive
   | Standard
@@ -85,7 +85,7 @@ type equiv =
   | RenEquiv of string
 
 type ml_ind = {
-  ind_info : inductive_info;
+  ind_kind : inductive_kind;
   ind_nparams : int;
   ind_packets : ml_ind_packet array;
   ind_equiv : equiv
@@ -98,12 +98,27 @@ type ml_ident =
   | Id of identifier
   | Tmp of identifier
 
-(* list of branches to merge in a common pattern *)
+(** We now store some typing information on constructors
+    and cases to avoid type-unsafe optimisations.
+    For cases, we also store the set of branches to merge
+    in a common pattern, either "_ -> c" or "x -> f x"
+*)
 
-type case_info =
+type constructor_info = {
+  c_kind : inductive_kind;
+  c_typs : ml_type list;
+}
+
+type branch_same =
   | BranchNone
-  | BranchFun of int list
-  | BranchCst of int list
+  | BranchFun of Intset.t
+  | BranchCst of Intset.t
+
+type match_info = {
+  m_kind : inductive_kind;
+  m_typs : ml_type list;
+  m_same : branch_same
+}
 
 type ml_branch = global_reference * ml_ident list * ml_ast
 
@@ -113,8 +128,8 @@ and ml_ast =
   | MLlam    of ml_ident * ml_ast
   | MLletin  of ml_ident * ml_ast * ml_ast
   | MLglob   of global_reference
-  | MLcons   of inductive_info * global_reference * ml_ast list
-  | MLcase   of (inductive_info*case_info) * ml_ast * ml_branch array
+  | MLcons   of constructor_info * global_reference * ml_ast list
+  | MLcase   of match_info * ml_ast * ml_branch array
   | MLfix    of int * identifier array * ml_ast array
   | MLexn    of string
   | MLdummy
