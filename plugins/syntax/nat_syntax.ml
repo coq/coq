@@ -14,7 +14,7 @@ open Pp
 open Util
 open Names
 open Coqlib
-open Rawterm
+open Glob_term
 open Libnames
 open Bigint
 open Coqlib

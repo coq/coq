@@ -13,7 +13,7 @@ open Proof_type
 open Tacmach
 open Genarg
 open Tacexpr
-open Rawterm
+open Glob_term
 open Evd
 open Clenv
 open Termops

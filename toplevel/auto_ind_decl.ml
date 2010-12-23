@@ -512,13 +512,13 @@ let compute_bl_tact bl_scheme_key ind lnamesparrec nparrec gsig =
       tclTHENSEQ [ intros_using fresh_first_intros;
                      intro_using freshn ;
                      new_induct false [ (Tacexpr.ElimOnConstr ((mkVar freshn),
-                                        Rawterm.NoBindings))]
+                                        Glob_term.NoBindings))]
                                 None
                                 (None,None)
 		                None;
                      intro_using freshm;
                      new_destruct false [ (Tacexpr.ElimOnConstr ((mkVar freshm),
-                                    Rawterm.NoBindings))]
+                                    Glob_term.NoBindings))]
                                 None
                                 (None,None)
 		                None;
@@ -539,7 +539,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                            in
                             avoid := fresht::(!avoid);
                             (new_destruct false [Tacexpr.ElimOnConstr
-                                      ((mkVar freshz,Rawterm.NoBindings))]
+                                      ((mkVar freshz,Glob_term.NoBindings))]
                                   None
                                   (None, Some (dl,Genarg.IntroOrAndPattern [[
                                     dl,Genarg.IntroIdentifier fresht;
@@ -650,13 +650,13 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec gsig =
       tclTHENSEQ [ intros_using fresh_first_intros;
                      intro_using freshn ;
                      new_induct false [Tacexpr.ElimOnConstr
-                                    ((mkVar freshn),Rawterm.NoBindings)]
+                                    ((mkVar freshn),Glob_term.NoBindings)]
                                 None
                                 (None,None)
 		                None;
                      intro_using freshm;
                      new_destruct false [Tacexpr.ElimOnConstr
-                                    ((mkVar freshm),Rawterm.NoBindings)]
+                                    ((mkVar freshm),Glob_term.NoBindings)]
                                 None
                                 (None,None)
 		                None;
@@ -665,7 +665,7 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec gsig =
                      tclTRY (
                       tclORELSE reflexivity (Equality.discr_tac false None)
                      );
-                     Equality.inj [] false (mkVar freshz,Rawterm.NoBindings);
+                     Equality.inj [] false (mkVar freshz,Glob_term.NoBindings);
 		     intros; simpl_in_concl;
                      Auto.default_auto;
                      tclREPEAT (
@@ -810,7 +810,7 @@ let compute_dec_tact ind lnamesparrec nparrec gsig =
 	)
 	  (tclTHEN
 	    (new_destruct false [Tacexpr.ElimOnConstr
-              (eqbnm,Rawterm.NoBindings)]
+              (eqbnm,Glob_term.NoBindings)]
               None
               (None,None)
 	      None)
@@ -820,7 +820,7 @@ let compute_dec_tact ind lnamesparrec nparrec gsig =
           avoid := freshH2::(!avoid);
 	  tclTHENS (
 	    new_destruct false [Tacexpr.ElimOnConstr
-                                    ((mkVar freshH),Rawterm.NoBindings)]
+                                    ((mkVar freshH),Glob_term.NoBindings)]
                                 None
                                 (None,Some (dl,Genarg.IntroOrAndPattern [
                                     [dl,Genarg.IntroAnonymous];
@@ -851,7 +851,7 @@ let compute_dec_tact ind lnamesparrec nparrec gsig =
 	                      all_occurrences false
                               (List.hd !avoid)
                               ((mkVar (List.hd (List.tl !avoid))),
-                                Rawterm.NoBindings
+                                Glob_term.NoBindings
                               )
                               true;
               Equality.discr_tac false None

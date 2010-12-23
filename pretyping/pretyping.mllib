@@ -12,7 +12,7 @@ Term_dnet
 Recordops
 Evarconv
 Typing
-Rawterm
+Glob_term
 Pattern
 Matching
 Tacred

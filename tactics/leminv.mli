@@ -1,7 +1,7 @@
 open Util
 open Names
 open Term
-open Rawterm
+open Glob_term
 open Proof_type
 open Topconstr
 

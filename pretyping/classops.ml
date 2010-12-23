@@ -17,7 +17,7 @@ open Libobject
 open Library
 open Term
 open Termops
-open Rawterm
+open Glob_term
 open Decl_kinds
 open Mod_subst
 

@@ -27,7 +27,7 @@ let cprop =
 ;;
 
 let whd_betadeltaiotacprop env _evar_map ty =
- let module R = Rawterm in
+ let module R = Glob_term in
  let module C = Closure in
  let module CR = C.RedFlags in
  (*** CProp is made Opaque ***)

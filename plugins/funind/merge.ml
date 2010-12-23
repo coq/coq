@@ -20,7 +20,7 @@ open Term
 open Termops
 open Declarations
 open Environ
-open Rawterm
+open Glob_term
 open Rawtermops
 
 (** {1 Utilities}  *)

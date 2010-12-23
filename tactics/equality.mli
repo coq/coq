@@ -21,7 +21,7 @@ open Tacticals
 open Tactics
 open Tacexpr
 open Termops
-open Rawterm
+open Glob_term
 open Genarg
 open Ind_tables
 (*i*)

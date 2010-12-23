@@ -20,7 +20,7 @@ exception Non_closed_number
 (**********************************************************************)
 
 open Libnames
-open Rawterm
+open Glob_term
 open Bigint
 
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))

@@ -14,7 +14,7 @@ open Evd
 open Environ
 open Nametab
 open Mod_subst
-open Rawterm
+open Glob_term
 open Topconstr
 open Util
 open Libnames
@@ -42,7 +42,7 @@ val generalizable_vars_of_glob_constr : ?bound:Idset.t -> ?allowed:Idset.t ->
 
 val make_fresh : Names.Idset.t -> Environ.env -> identifier -> identifier
 
-val implicits_of_rawterm : ?with_products:bool -> Rawterm.glob_constr -> (Topconstr.explicitation * (bool * bool * bool)) list
+val implicits_of_rawterm : ?with_products:bool -> Glob_term.glob_constr -> (Topconstr.explicitation * (bool * bool * bool)) list
 
 val combine_params_freevar :
   Names.Idset.t -> (global_reference * bool) option * (Names.name * Term.constr option * Term.types) ->

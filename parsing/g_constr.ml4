@@ -10,7 +10,7 @@ open Pp
 open Pcoq
 open Constr
 open Prim
-open Rawterm
+open Glob_term
 open Term
 open Names
 open Libnames
@@ -33,7 +33,7 @@ let mk_cast = function
 
 let binders_of_lidents l =
   List.map (fun (loc, id) ->
-    LocalRawAssum ([loc, Name id], Default Rawterm.Explicit,
+    LocalRawAssum ([loc, Name id], Default Glob_term.Explicit,
 		  CHole (loc, Some (Evd.BinderType (Name id))))) l
 
 let mk_fixb (id,bl,ann,body,(loc,tyc)) =

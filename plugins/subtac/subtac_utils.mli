@@ -6,7 +6,7 @@ open Pp
 open Evd
 open Decl_kinds
 open Topconstr
-open Rawterm
+open Glob_term
 open Util
 open Evarutil
 open Names

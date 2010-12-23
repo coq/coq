@@ -73,7 +73,7 @@ module Refinable : sig
       context of a term, the remaining evars are registered to the handle.
       It is the main component of the toplevel refine tactic.*)
   val constr_of_raw : 
-    handle -> bool -> bool -> Rawterm.glob_constr -> Term.constr sensitive
+    handle -> bool -> bool -> Glob_term.glob_constr -> Term.constr sensitive
 
 end
 

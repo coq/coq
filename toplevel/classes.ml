@@ -21,7 +21,7 @@ open Typeclasses_errors
 open Typeclasses
 open Libnames
 open Constrintern
-open Rawterm
+open Glob_term
 open Topconstr
 (*i*)
 

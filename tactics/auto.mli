@@ -30,7 +30,7 @@ type auto_tactic =
   | Unfold_nth of evaluable_global_reference          (** Hint Unfold *)
   | Extern     of Tacexpr.glob_tactic_expr   (** Hint Extern *)
 
-open Rawterm
+open Glob_term
 
 type pri_auto_tactic = {
   pri   : int;            (** A number between 0 and 4, 4 = lower priority *)

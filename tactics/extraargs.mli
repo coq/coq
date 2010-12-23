@@ -12,7 +12,7 @@ open Names
 open Proof_type
 open Topconstr
 open Termops
-open Rawterm
+open Glob_term
 
 val rawwit_orient : bool raw_abstract_argument_type
 val wit_orient : bool typed_abstract_argument_type
@@ -22,12 +22,12 @@ val pr_orient : bool -> Pp.std_ppcmds
 val occurrences : (int list or_var) Pcoq.Gram.entry
 val rawwit_occurrences : (int list or_var) raw_abstract_argument_type
 val wit_occurrences : (int list) typed_abstract_argument_type
-val pr_occurrences : int list Rawterm.or_var -> Pp.std_ppcmds
+val pr_occurrences : int list Glob_term.or_var -> Pp.std_ppcmds
 
 val rawwit_raw : constr_expr raw_abstract_argument_type
 val wit_raw : (Tacinterp.interp_sign * glob_constr) typed_abstract_argument_type
 val raw : constr_expr Pcoq.Gram.entry
-val pr_raw : (Tacinterp.interp_sign * Rawterm.glob_constr) -> Pp.std_ppcmds
+val pr_raw : (Tacinterp.interp_sign * Glob_term.glob_constr) -> Pp.std_ppcmds
 
 type 'id gen_place= ('id * hyp_location_flag,unit) location
 

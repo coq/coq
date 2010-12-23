@@ -125,7 +125,7 @@ let intern_id,unintern_id =
 
 let mk_then = tclTHENLIST
 
-let exists_tac c = constructor_tac false (Some 1) 1 (Rawterm.ImplicitBindings [c])
+let exists_tac c = constructor_tac false (Some 1) 1 (Glob_term.ImplicitBindings [c])
 
 let generalize_tac t = generalize_time (generalize t)
 let elim t = elim_time (simplest_elim t)

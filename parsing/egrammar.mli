@@ -14,7 +14,7 @@ open Pcoq
 open Extend
 open Vernacexpr
 open Ppextend
-open Rawterm
+open Glob_term
 open Genarg
 open Mod_subst
 

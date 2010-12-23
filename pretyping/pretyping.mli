@@ -17,7 +17,7 @@ open Sign
 open Term
 open Environ
 open Evd
-open Rawterm
+open Glob_term
 open Evarutil
 
 (** An auxiliary function for searching for fixpoint guard indexes *)

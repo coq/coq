@@ -1401,7 +1401,7 @@ let check_evars env initial_sigma sigma c =
       | _ -> iter_constr proc_rec c
   in proc_rec c
 
-open Rawterm
+open Glob_term
 
 (* Operations on value/type constraints *)
 

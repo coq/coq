@@ -32,7 +32,7 @@ open Equality
 open Typing
 open Pattern
 open Matching
-open Rawterm
+open Glob_term
 open Genarg
 open Tacexpr
 

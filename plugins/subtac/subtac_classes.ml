@@ -10,7 +10,7 @@ open Pretyping
 open Evd
 open Environ
 open Term
-open Rawterm
+open Glob_term
 open Topconstr
 open Names
 open Libnames

@@ -21,7 +21,7 @@ open Refiner
 open Tacmach
 open Clenv
 open Clenvtac
-open Rawterm
+open Glob_term
 open Pattern
 open Matching
 open Genarg

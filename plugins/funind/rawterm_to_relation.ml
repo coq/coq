@@ -2,7 +2,7 @@ open Printer
 open Pp
 open Names
 open Term
-open Rawterm
+open Glob_term
 open Libnames
 open Indfun_common
 open Util
@@ -701,7 +701,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
     | GDynamic _ -> error "Not handled GDynamic"
 and build_entry_lc_from_case env funname make_discr
     (el:tomatch_tuples)
-    (brl:Rawterm.cases_clauses) avoid :
+    (brl:Glob_term.cases_clauses) avoid :
     glob_constr build_entry_return =
   match el with
     | [] -> assert false (* this case correspond to match <nothing> with .... !*)
@@ -1162,7 +1162,7 @@ and compute_cst_params_from_app acc (params,rtl) =
 	compute_cst_params_from_app (param::acc) (params',rtl')
     | _  -> List.rev acc
 
-let compute_params_name relnames (args : (Names.name * Rawterm.glob_constr * bool) list array) csts =
+let compute_params_name relnames (args : (Names.name * Glob_term.glob_constr * bool) list array) csts =
   let rels_params =
     Array.mapi
       (fun i args ->
@@ -1233,7 +1233,7 @@ let do_build_inductive
   let resa = Array.map (build_entry_lc env  funnames_as_set []) rta in
   let env_with_graphs =
     let rel_arity i funargs =  (* Reduilding arities (with parameters) *)
-      let rel_first_args :(Names.name * Rawterm.glob_constr * bool ) list  =
+      let rel_first_args :(Names.name * Glob_term.glob_constr * bool ) list  =
 	funargs
       in
       List.fold_right
@@ -1299,7 +1299,7 @@ let do_build_inductive
     rel_constructors
   in
   let rel_arity i funargs =  (* Reduilding arities (with parameters) *)
-    let rel_first_args :(Names.name * Rawterm.glob_constr * bool ) list  =
+    let rel_first_args :(Names.name * Glob_term.glob_constr * bool ) list  =
       (snd (list_chop nrel_params funargs))
     in
     List.fold_right

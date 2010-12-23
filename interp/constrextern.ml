@@ -21,7 +21,7 @@ open Environ
 open Libnames
 open Impargs
 open Topconstr
-open Rawterm
+open Glob_term
 open Pattern
 open Nametab
 open Notation
@@ -743,7 +743,7 @@ and extern_eqn inctx scopes vars (loc,ids,pl,c) =
 and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
-      let loc = Rawterm.loc_of_glob_constr t in
+      let loc = Glob_term.loc_of_glob_constr t in
       try
 	(* Adjusts to the number of arguments expected by the notation *)
 	let (t,args,argsscopes,argsimpls) = match t,n with

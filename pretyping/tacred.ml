@@ -20,7 +20,7 @@ open Environ
 open Closure
 open Reductionops
 open Cbv
-open Rawterm
+open Glob_term
 open Pattern
 open Matching
 

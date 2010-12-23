@@ -4,7 +4,7 @@ open Term
 open Pp
 open Indfun_common
 open Libnames
-open Rawterm
+open Glob_term
 open Declarations
 
 val do_generate_principle :  
@@ -16,7 +16,7 @@ val do_generate_principle :
 val functional_induction :  
   bool ->
   Term.constr ->
-  (Term.constr * Term.constr Rawterm.bindings) option ->
+  (Term.constr * Term.constr Glob_term.bindings) option ->
   Genarg.intro_pattern_expr Util.located option ->
   Proof_type.goal Tacmach.sigma -> Proof_type.goal list Evd.sigma
 

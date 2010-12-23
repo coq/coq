@@ -19,7 +19,7 @@ open Pattern
 open Genarg
 open Tacexpr
 open Termops
-open Rawterm
+open Glob_term
 
 (** Tacticals i.e. functions from tactics to tactics. *)
 

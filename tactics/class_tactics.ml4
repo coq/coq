@@ -25,7 +25,7 @@ open Tactics
 open Pattern
 open Clenv
 open Auto
-open Rawterm
+open Glob_term
 open Hiddentac
 open Typeclasses
 open Typeclasses_errors

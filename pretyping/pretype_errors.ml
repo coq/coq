@@ -15,7 +15,7 @@ open Termops
 open Namegen
 open Environ
 open Type_errors
-open Rawterm
+open Glob_term
 open Inductiveops
 
 type pretype_error =

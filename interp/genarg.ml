@@ -11,7 +11,7 @@ open Util
 open Names
 open Nameops
 open Nametab
-open Rawterm
+open Glob_term
 open Topconstr
 open Term
 open Evd

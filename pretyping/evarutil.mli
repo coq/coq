@@ -8,7 +8,7 @@
 
 open Util
 open Names
-open Rawterm
+open Glob_term
 open Term
 open Sign
 open Evd

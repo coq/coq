@@ -8,7 +8,7 @@
 
 (*i camlp4deps: "tools/compat5b.cmo" i*)
 
-open Rawterm
+open Glob_term
 open Term
 open Names
 open Pattern
@@ -23,7 +23,7 @@ let dloc = <:expr< Util.dummy_loc >>
 
 let apply_ref f l =
   <:expr<
-    Rawterm.GApp ($dloc$, Rawterm.GRef ($dloc$, Lazy.force $f$), $mlexpr_of_list (fun x -> x) l$)
+    Glob_term.GApp ($dloc$, Glob_term.GRef ($dloc$, Lazy.force $f$), $mlexpr_of_list (fun x -> x) l$)
   >>
 
 EXTEND
@@ -49,19 +49,19 @@ EXTEND
   constr:
     [ "200" RIGHTA
       [ LIDENT "forall"; id = ident; ":"; c1 = constr; ","; c2 = constr ->
-        <:expr< Rawterm.GProd ($dloc$,Name $id$,Rawterm.Explicit,$c1$,$c2$) >>
+        <:expr< Glob_term.GProd ($dloc$,Name $id$,Glob_term.Explicit,$c1$,$c2$) >>
       | "fun"; id = ident; ":"; c1 = constr; "=>"; c2 = constr ->
-        <:expr< Rawterm.GLambda ($dloc$,Name $id$,Rawterm.Explicit,$c1$,$c2$) >>
+        <:expr< Glob_term.GLambda ($dloc$,Name $id$,Glob_term.Explicit,$c1$,$c2$) >>
       | "let"; id = ident; ":="; c1 = constr; "in"; c2 = constr ->
-        <:expr< Rawterm.RLetin ($dloc$,Name $id$,$c1$,$c2$) >>
+        <:expr< Glob_term.RLetin ($dloc$,Name $id$,$c1$,$c2$) >>
       (* fix todo *)
       ]
     | "100" RIGHTA
       [ c1 = constr; ":"; c2 = SELF ->
-        <:expr< Rawterm.GCast($dloc$,$c1$,DEFAULTcast,$c2$) >> ]
+        <:expr< Glob_term.GCast($dloc$,$c1$,DEFAULTcast,$c2$) >> ]
     | "90" RIGHTA
       [ c1 = constr; "->"; c2 = SELF ->
-        <:expr< Rawterm.GProd ($dloc$,Anonymous,Rawterm.Explicit,$c1$,$c2$) >> ]
+        <:expr< Glob_term.GProd ($dloc$,Anonymous,Glob_term.Explicit,$c1$,$c2$) >> ]
     | "75" RIGHTA
       [ "~"; c = constr ->
         apply_ref <:expr< coq_not_ref >> [c] ]
@@ -71,15 +71,15 @@ EXTEND
     | "10" LEFTA
       [ f = constr; args = LIST1 NEXT ->
         let args = mlexpr_of_list (fun x -> x) args in
-        <:expr< Rawterm.GApp ($dloc$,$f$,$args$) >> ]
+        <:expr< Glob_term.GApp ($dloc$,$f$,$args$) >> ]
     | "0"
-      [ s = sort -> <:expr< Rawterm.GSort ($dloc$,s) >>
-      | id = ident -> <:expr< Rawterm.GVar ($dloc$,$id$) >>
-      | "_" -> <:expr< Rawterm.GHole ($dloc$, QuestionMark (Define False)) >>
-      | "?"; id = ident -> <:expr< Rawterm.GPatVar($dloc$,(False,$id$)) >>
+      [ s = sort -> <:expr< Glob_term.GSort ($dloc$,s) >>
+      | id = ident -> <:expr< Glob_term.GVar ($dloc$,$id$) >>
+      | "_" -> <:expr< Glob_term.GHole ($dloc$, QuestionMark (Define False)) >>
+      | "?"; id = ident -> <:expr< Glob_term.GPatVar($dloc$,(False,$id$)) >>
       | "{"; c1 = constr; "}"; "+"; "{"; c2 = constr; "}" ->
           apply_ref <:expr< coq_sumbool_ref >> [c1;c2]
-      | "%"; e = string -> <:expr< Rawterm.GRef ($dloc$,Lazy.force $lid:e$) >>
+      | "%"; e = string -> <:expr< Glob_term.GRef ($dloc$,Lazy.force $lid:e$) >>
       | c = match_constr -> c
       | "("; c = constr LEVEL "200"; ")" -> c ] ]
   ;
@@ -87,7 +87,7 @@ EXTEND
     [ [ "match"; c = constr LEVEL "100"; (ty,nal) = match_type;
         "with"; OPT"|"; br = LIST0 eqn SEP "|"; "end" ->
           let br = mlexpr_of_list (fun x -> x) br in
-     <:expr< Rawterm.GCases ($dloc$,$ty$,[($c$,$nal$)],$br$) >>
+     <:expr< Glob_term.GCases ($dloc$,$ty$,[($c$,$nal$)],$br$) >>
     ] ]
   ;
   match_type:
@@ -108,13 +108,13 @@ EXTEND
     [ [ "%"; e = string; lip = LIST0 patvar ->
         let lp = mlexpr_of_list (fun (_,x) -> x) lip in
         let lid = List.flatten (List.map fst lip) in
-        lid, <:expr< Rawterm.PatCstr ($dloc$,$lid:e$,$lp$,Anonymous) >>
+        lid, <:expr< Glob_term.PatCstr ($dloc$,$lid:e$,$lp$,Anonymous) >>
       | p = patvar -> p
       | "("; p = pattern; ")" -> p ] ]
   ;
   patvar:
-    [ [ "_" -> [], <:expr< Rawterm.PatVar ($dloc$,Anonymous) >>
-      | id = ident -> [id], <:expr< Rawterm.PatVar ($dloc$,Name $id$) >>
+    [ [ "_" -> [], <:expr< Glob_term.PatVar ($dloc$,Anonymous) >>
+      | id = ident -> [id], <:expr< Glob_term.PatVar ($dloc$,Name $id$) >>
     ] ]
   ;
   END;;

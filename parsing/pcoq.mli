@@ -8,7 +8,7 @@
 
 open Util
 open Names
-open Rawterm
+open Glob_term
 open Extend
 open Vernacexpr
 open Genarg
@@ -209,7 +209,7 @@ module Module :
 
 module Tactic :
   sig
-    open Rawterm
+    open Glob_term
     val open_constr : open_constr_expr Gram.entry
     val casted_open_constr : open_constr_expr Gram.entry
     val constr_with_bindings : constr_expr with_bindings Gram.entry

@@ -11,7 +11,7 @@ open Names
 open Nameops
 open Term
 open Pattern
-open Rawterm
+open Glob_term
 open Libnames
 open Nametab
 

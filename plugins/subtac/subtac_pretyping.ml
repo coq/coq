@@ -24,7 +24,7 @@ open List
 open Recordops
 open Evarutil
 open Pretype_errors
-open Rawterm
+open Glob_term
 open Evarconv
 open Pattern
 
@@ -81,9 +81,9 @@ let find_with_index x l =
 
 open Vernacexpr
 
-let coqintern_constr evd env : Topconstr.constr_expr -> Rawterm.glob_constr = 
+let coqintern_constr evd env : Topconstr.constr_expr -> Glob_term.glob_constr = 
   Constrintern.intern_constr evd env
-let coqintern_type evd env : Topconstr.constr_expr -> Rawterm.glob_constr = 
+let coqintern_type evd env : Topconstr.constr_expr -> Glob_term.glob_constr = 
   Constrintern.intern_type evd env
 
 let env_with_binders env isevars l =

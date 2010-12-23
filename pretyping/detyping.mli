@@ -11,7 +11,7 @@ open Names
 open Term
 open Sign
 open Environ
-open Rawterm
+open Glob_term
 open Termops
 open Mod_subst
 

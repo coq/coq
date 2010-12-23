@@ -23,17 +23,17 @@ open Hiddentac
 
 let pr_binding prc  =
   function
-    | loc, Rawterm.NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ Pp.cut () ++ prc c)
-    | loc, Rawterm.AnonHyp n, c -> hov 1 (int n ++ str " := " ++ Pp.cut () ++ prc c)
+    | loc, Glob_term.NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ Pp.cut () ++ prc c)
+    | loc, Glob_term.AnonHyp n, c -> hov 1 (int n ++ str " := " ++ Pp.cut () ++ prc c)
 
 let pr_bindings prc prlc = function
-  | Rawterm.ImplicitBindings l ->
+  | Glob_term.ImplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
       Util.prlist_with_sep spc prc l
-  | Rawterm.ExplicitBindings l ->
+  | Glob_term.ExplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
         Util.prlist_with_sep spc (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
-  | Rawterm.NoBindings -> mt ()
+  | Glob_term.NoBindings -> mt ()
 
 
 let pr_with_bindings prc prlc (c,bl) =
@@ -312,7 +312,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 		 | None -> (id::pre_args,pre_tac)
 		 | Some b ->
 		     (pre_args,
-		      tclTHEN (h_reduce (Rawterm.Unfold([Rawterm.all_occurrences_expr,EvalVarRef id])) allHyps) pre_tac
+		      tclTHEN (h_reduce (Glob_term.Unfold([Glob_term.all_occurrences_expr,EvalVarRef id])) allHyps) pre_tac
 		     )
 
 	     else (pre_args,pre_tac)
@@ -394,10 +394,10 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	    observe_tac "unfolding" pre_tac;
 	    (* $zeta$ normalizing of the conclusion *)
 	    h_reduce
-	      (Rawterm.Cbv
-		 { Rawterm.all_flags with
-		     Rawterm.rDelta = false ;
-		     Rawterm.rConst = []
+	      (Glob_term.Cbv
+		 { Glob_term.all_flags with
+		     Glob_term.rDelta = false ;
+		     Glob_term.rConst = []
 		 }
 	      )
 	      onConcl;
@@ -423,7 +423,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
-	     (dummy_loc,Rawterm.NamedHyp id,p)::bindings,id::avoid
+	     (dummy_loc,Glob_term.NamedHyp id,p)::bindings,id::avoid
 	  )
 	  ([],pf_ids_of_hyps g)
 	  princ_infos.params
@@ -433,12 +433,12 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.rev (fst  (List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
-	     (dummy_loc,Rawterm.NamedHyp id,(nf_zeta p))::bindings,id::avoid)
+	     (dummy_loc,Glob_term.NamedHyp id,(nf_zeta p))::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates
 	  (lemmas)))
       in
-      Rawterm.ExplicitBindings (params_bindings@lemmas_bindings)
+      Glob_term.ExplicitBindings (params_bindings@lemmas_bindings)
     in
     tclTHENSEQ
       [ observe_tac "intro args_names" (tclMAP h_intro args_names);
@@ -516,15 +516,15 @@ and intros_with_rewrite_aux : tactic =
 		      Tauto.tauto g
 		  | Case(_,_,v,_) ->
 		      tclTHENSEQ[
-			h_case false (v,Rawterm.NoBindings);
+			h_case false (v,Glob_term.NoBindings);
 			intros_with_rewrite
 		      ] g
 		  | LetIn _ ->
 		      tclTHENSEQ[
 			h_reduce
-			  (Rawterm.Cbv
-			     {Rawterm.all_flags
-			      with Rawterm.rDelta = false;
+			  (Glob_term.Cbv
+			     {Glob_term.all_flags
+			      with Glob_term.rDelta = false;
 			     })
 			  onConcl
 			;
@@ -537,9 +537,9 @@ and intros_with_rewrite_aux : tactic =
 	  | LetIn _ ->
 	      tclTHENSEQ[
 		h_reduce
-		  (Rawterm.Cbv
-		     {Rawterm.all_flags
-		      with Rawterm.rDelta = false;
+		  (Glob_term.Cbv
+		     {Glob_term.all_flags
+		      with Glob_term.rDelta = false;
 		     })
 		  onConcl
 		;
@@ -553,7 +553,7 @@ let rec reflexivity_with_destruct_cases g =
       match kind_of_term (snd (destApp (pf_concl g))).(2) with
 	| Case(_,_,v,_) ->
 	    tclTHENSEQ[
-	      h_case false (v,Rawterm.NoBindings);
+	      h_case false (v,Glob_term.NoBindings);
 	      intros;
 	      observe_tac "reflexivity_with_destruct_cases" reflexivity_with_destruct_cases
 	    ]
@@ -676,9 +676,9 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	  Equality.rewriteLR (mkConst eq_lemma);
 	  (* Don't forget to $\zeta$ normlize the term since the principles have been $\zeta$-normalized *)
 	  h_reduce
-	    (Rawterm.Cbv
-	       {Rawterm.all_flags
-		with Rawterm.rDelta = false;
+	    (Glob_term.Cbv
+	       {Glob_term.all_flags
+		with Glob_term.rDelta = false;
 	       })
 	    onConcl
 	  ;
@@ -723,7 +723,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	(h_generalize [mkApp(applist(graph_principle,params),Array.map (fun c -> applist(c,params)) lemmas)]);
 	h_intro graph_principle_id;
 	observe_tac "" (tclTHEN_i
-	  (observe_tac "elim" ((elim false (mkVar hres,Rawterm.NoBindings) (Some (mkVar graph_principle_id,Rawterm.NoBindings)))))
+	  (observe_tac "elim" ((elim false (mkVar hres,Glob_term.NoBindings) (Some (mkVar graph_principle_id,Glob_term.NoBindings)))))
 	  (fun i g -> observe_tac "prove_branche" (prove_branche i) g ))
       ]
       g
@@ -774,7 +774,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	       (fun entry ->
 		  (entry.Entries.const_entry_body, Option.get entry.Entries.const_entry_type )
 	       )
-	       (make_scheme (array_map_to_list (fun const -> const,Rawterm.RType None) funs))
+	       (make_scheme (array_map_to_list (fun const -> const,Glob_term.RType None) funs))
 	    )
     in
     let proving_tac =
@@ -945,7 +945,7 @@ let functional_inversion kn hid fconst f_correct : tactic =
 	    h_generalize [applist(f_correct,(Array.to_list f_args)@[res;mkVar hid])];
 	    thin [hid];
 	    h_intro hid;
-	    Inv.inv FullInversion None (Rawterm.NamedHyp hid);
+	    Inv.inv FullInversion None (Glob_term.NamedHyp hid);
 	    (fun g ->
 	       let new_ids = List.filter (fun id -> not (Idset.mem id old_ids)) (pf_ids_of_hyps g) in
 	       tclMAP (revert_graph kn pre_tac)  (hid::new_ids)  g

@@ -14,7 +14,7 @@ open Tacmach
 open Decl_expr
 open Decl_mode
 open Pretyping.Default
-open Rawterm
+open Glob_term
 open Term
 open Pp
 open Compat
@@ -343,13 +343,13 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
       raw_app(dummy_loc,rind,rparams@rparams_rec@dum_args) in
   let pat_vars,aliases,patt = interp_pattern env pat in
   let inject = function
-      Thesis (Plain) -> Rawterm.GSort(dummy_loc,RProp Null)
+      Thesis (Plain) -> Glob_term.GSort(dummy_loc,RProp Null)
     | Thesis (For rec_occ) ->
 	if not (List.mem rec_occ pat_vars) then
 	  errorlabstrm "suppose it is"
 	    (str "Variable " ++ Nameops.pr_id rec_occ ++
 	       str " does not occur in pattern.");
-	Rawterm.GSort(dummy_loc,RProp Null)
+	Glob_term.GSort(dummy_loc,RProp Null)
     | This (c,_) -> c in
   let term1 = glob_constr_of_hyps inject hyps raw_prop in
   let loc_ids,npatt =

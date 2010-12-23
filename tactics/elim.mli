@@ -30,5 +30,5 @@ val h_decompose       : inductive list -> constr -> tactic
 val h_decompose_or    : constr -> tactic
 val h_decompose_and   : constr -> tactic
 
-val double_ind : Rawterm.quantified_hypothesis -> Rawterm.quantified_hypothesis -> tactic
-val h_double_induction : Rawterm.quantified_hypothesis -> Rawterm.quantified_hypothesis->tactic
+val double_ind : Glob_term.quantified_hypothesis -> Glob_term.quantified_hypothesis -> tactic
+val h_double_induction : Glob_term.quantified_hypothesis -> Glob_term.quantified_hypothesis->tactic

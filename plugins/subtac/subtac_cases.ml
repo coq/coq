@@ -20,7 +20,7 @@ open Sign
 open Reductionops
 open Typeops
 open Type_errors
-open Rawterm
+open Glob_term
 open Retyping
 open Pretype_errors
 open Evarutil

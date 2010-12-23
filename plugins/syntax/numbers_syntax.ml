@@ -10,7 +10,7 @@
 
 open Bigint
 open Libnames
-open Rawterm
+open Glob_term
 
 (*** Constants for locating int31 / bigN / bigZ / bigQ constructors ***)
 

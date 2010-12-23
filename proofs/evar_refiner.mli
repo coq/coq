@@ -12,7 +12,7 @@ open Environ
 open Evd
 open Refiner
 open Pretyping
-open Rawterm
+open Glob_term
 
 (** Refinement of existential variables. *)
 

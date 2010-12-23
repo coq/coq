@@ -10,7 +10,7 @@ open Term
 open Proof_type
 open Tacmach
 
-open Rawterm
+open Glob_term
 open Refiner
 open Genarg
 open Tacexpr

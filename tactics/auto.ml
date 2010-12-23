@@ -25,7 +25,7 @@ open Matching
 open Tacmach
 open Proof_type
 open Pfedit
-open Rawterm
+open Glob_term
 open Evar_refiner
 open Tacred
 open Tactics

@@ -10,7 +10,7 @@ open Pp
 open Util
 open Names
 open Libnames
-open Rawterm
+open Glob_term
 open Term
 open Mod_subst
 

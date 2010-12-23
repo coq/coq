@@ -22,7 +22,7 @@ open Logic
 open Reduction
 open Reductionops
 open Tacmach
-open Rawterm
+open Glob_term
 open Pattern
 open Tacexpr
 open Clenv

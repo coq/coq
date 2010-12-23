@@ -6,7 +6,7 @@ open Libobject
 open Pattern
 open Matching
 open Pp
-open Rawterm
+open Glob_term
 open Sign
 open Tacred
 open Util

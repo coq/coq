@@ -14,7 +14,7 @@ open Environ
 open Evd
 open Evarutil
 open Mod_subst
-open Rawterm
+open Glob_term
 open Unification
 
 (** {6 The Type of Constructions clausale environments.} *)

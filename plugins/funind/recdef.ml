@@ -33,7 +33,7 @@ open Proof_type
 open Vernacinterp
 open Pfedit
 open Topconstr
-open Rawterm
+open Glob_term
 open Pretyping
 open Pretyping.Default
 open Safe_typing

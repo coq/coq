@@ -116,7 +116,7 @@ open Term
 open Environ
 open Reduction
 open Proof_type
-open Rawterm
+open Glob_term
 open Tacmach
 open Refiner
 open Tactics

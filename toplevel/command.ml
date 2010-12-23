@@ -319,7 +319,7 @@ let extract_params indl =
 let extract_inductive indl =
   List.map (fun ((_,indname),_,ar,lc) -> {
     ind_name = indname;
-    ind_arity = Option.cata (fun x -> x) (CSort (dummy_loc, Rawterm.RType None)) ar;
+    ind_arity = Option.cata (fun x -> x) (CSort (dummy_loc, Glob_term.RType None)) ar;
     ind_lc = List.map (fun (_,((_,id),t)) -> (id,t)) lc
   }) indl
 

@@ -24,7 +24,7 @@ open List
 open Recordops
 open Evarutil
 open Pretype_errors
-open Rawterm
+open Glob_term
 open Evarconv
 open Pattern
 open Pretyping

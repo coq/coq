@@ -79,7 +79,7 @@ open Cbv
 open Classops
 open Clenv
 open Clenvtac
-open Rawterm
+open Glob_term
 open Coercion
 open Coercion.Default
 open Recordops

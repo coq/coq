@@ -134,7 +134,7 @@ type option_ref_value =
   | StringRefValue of string
   | QualidRefValue of reference
 
-type sort_expr = Rawterm.rawsort
+type sort_expr = Glob_term.rawsort
 
 type definition_expr =
   | ProveBody of local_binder list * constr_expr

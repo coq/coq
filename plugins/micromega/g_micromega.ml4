@@ -19,7 +19,7 @@
 open Quote
 open Ring
 open Mutils
-open Rawterm
+open Glob_term
 open Util
 
 let out_arg = function

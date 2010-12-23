@@ -15,7 +15,7 @@ open Term
 open Util
 open Tacexpr
 (* open Decl_expr *)
-open Rawterm
+open Glob_term
 open Genarg
 open Nametab
 open Pattern

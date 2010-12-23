@@ -12,7 +12,7 @@ open Term
 open Evd
 open Environ
 open Inductiveops
-open Rawterm
+open Glob_term
 open Evarutil
 
 (** {5 Compilation of pattern-matching } *)

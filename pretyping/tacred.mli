@@ -12,7 +12,7 @@ open Environ
 open Evd
 open Reductionops
 open Closure
-open Rawterm
+open Glob_term
 open Termops
 open Pattern
 

@@ -202,7 +202,7 @@ let rename_hyp l       = with_check (rename_hyp_no_check l)
 
 open Pp
 open Tacexpr
-open Rawterm
+open Glob_term
 
 let db_pr_goal sigma g =
   let env = Goal.V82.env sigma g in

@@ -24,7 +24,7 @@ open Libnames
 open Evd
 open Pfedit
 open Tacred
-open Rawterm
+open Glob_term
 open Tacmach
 open Proof_type
 open Logic

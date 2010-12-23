@@ -9,7 +9,7 @@
 open Util
 open Names
 open Topconstr
-open Rawterm
+open Glob_term
 open Nametab
 open Libnames
 

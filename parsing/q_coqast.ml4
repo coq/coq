@@ -72,12 +72,12 @@ let mlexpr_of_or_metaid f = function
   | Tacexpr.MetaId (_,id) -> <:expr< Tacexpr.AI $anti loc id$ >>
 
 let mlexpr_of_quantified_hypothesis = function
-  | Rawterm.AnonHyp n -> <:expr< Rawterm.AnonHyp $mlexpr_of_int n$ >>
-  | Rawterm.NamedHyp id ->  <:expr< Rawterm.NamedHyp $mlexpr_of_ident id$ >>
+  | Glob_term.AnonHyp n -> <:expr< Glob_term.AnonHyp $mlexpr_of_int n$ >>
+  | Glob_term.NamedHyp id ->  <:expr< Glob_term.NamedHyp $mlexpr_of_ident id$ >>
 
 let mlexpr_of_or_var f = function
-  | Rawterm.ArgArg x -> <:expr< Rawterm.ArgArg $f x$ >>
-  | Rawterm.ArgVar id -> <:expr< Rawterm.ArgVar $mlexpr_of_located mlexpr_of_ident id$ >>
+  | Glob_term.ArgArg x -> <:expr< Glob_term.ArgArg $f x$ >>
+  | Glob_term.ArgVar id -> <:expr< Glob_term.ArgVar $mlexpr_of_located mlexpr_of_ident id$ >>
 
 let mlexpr_of_hyp = mlexpr_of_or_metaid (mlexpr_of_located mlexpr_of_ident)
 
@@ -102,17 +102,17 @@ let mlexpr_of_clause cl =
            Tacexpr.concl_occs= $mlexpr_of_occs cl.Tacexpr.concl_occs$} >>
 
 let mlexpr_of_red_flags {
-  Rawterm.rBeta = bb;
-  Rawterm.rIota = bi;
-  Rawterm.rZeta = bz;
-  Rawterm.rDelta = bd;
-  Rawterm.rConst = l
+  Glob_term.rBeta = bb;
+  Glob_term.rIota = bi;
+  Glob_term.rZeta = bz;
+  Glob_term.rDelta = bd;
+  Glob_term.rConst = l
 } = <:expr< {
-  Rawterm.rBeta = $mlexpr_of_bool bb$;
-  Rawterm.rIota = $mlexpr_of_bool bi$;
-  Rawterm.rZeta = $mlexpr_of_bool bz$;
-  Rawterm.rDelta = $mlexpr_of_bool bd$;
-  Rawterm.rConst = $mlexpr_of_list (mlexpr_of_by_notation mlexpr_of_reference) l$
+  Glob_term.rBeta = $mlexpr_of_bool bb$;
+  Glob_term.rIota = $mlexpr_of_bool bi$;
+  Glob_term.rZeta = $mlexpr_of_bool bz$;
+  Glob_term.rDelta = $mlexpr_of_bool bd$;
+  Glob_term.rConst = $mlexpr_of_list (mlexpr_of_by_notation mlexpr_of_reference) l$
 } >>
 
 let mlexpr_of_explicitation = function
@@ -120,8 +120,8 @@ let mlexpr_of_explicitation = function
   | Topconstr.ExplByPos (n,_id) -> <:expr< Topconstr.ExplByPos $mlexpr_of_int n$ >>
 
 let mlexpr_of_binding_kind = function
-  | Rawterm.Implicit -> <:expr< Rawterm.Implicit >>
-  | Rawterm.Explicit -> <:expr< Rawterm.Explicit >>
+  | Glob_term.Implicit -> <:expr< Glob_term.Implicit >>
+  | Glob_term.Explicit -> <:expr< Glob_term.Explicit >>
 
 let mlexpr_of_binder_kind = function
   | Topconstr.Default b -> <:expr< Topconstr.Default $mlexpr_of_binding_kind b$ >>
@@ -158,25 +158,25 @@ let mlexpr_of_occ_constr =
   mlexpr_of_occurrences mlexpr_of_constr
 
 let mlexpr_of_red_expr = function
-  | Rawterm.Red b -> <:expr< Rawterm.Red $mlexpr_of_bool b$ >>
-  | Rawterm.Hnf -> <:expr< Rawterm.Hnf >>
-  | Rawterm.Simpl o -> <:expr< Rawterm.Simpl $mlexpr_of_option mlexpr_of_occ_constr o$ >>
-  | Rawterm.Cbv f ->
-      <:expr< Rawterm.Cbv $mlexpr_of_red_flags f$ >>
-  | Rawterm.Lazy f ->
-      <:expr< Rawterm.Lazy $mlexpr_of_red_flags f$ >>
-  | Rawterm.Unfold l ->
+  | Glob_term.Red b -> <:expr< Glob_term.Red $mlexpr_of_bool b$ >>
+  | Glob_term.Hnf -> <:expr< Glob_term.Hnf >>
+  | Glob_term.Simpl o -> <:expr< Glob_term.Simpl $mlexpr_of_option mlexpr_of_occ_constr o$ >>
+  | Glob_term.Cbv f ->
+      <:expr< Glob_term.Cbv $mlexpr_of_red_flags f$ >>
+  | Glob_term.Lazy f ->
+      <:expr< Glob_term.Lazy $mlexpr_of_red_flags f$ >>
+  | Glob_term.Unfold l ->
       let f1 = mlexpr_of_by_notation mlexpr_of_reference in
       let f = mlexpr_of_list (mlexpr_of_occurrences f1) in
-      <:expr< Rawterm.Unfold $f l$ >>
-  | Rawterm.Fold l ->
-      <:expr< Rawterm.Fold $mlexpr_of_list mlexpr_of_constr l$ >>
-  | Rawterm.Pattern l ->
+      <:expr< Glob_term.Unfold $f l$ >>
+  | Glob_term.Fold l ->
+      <:expr< Glob_term.Fold $mlexpr_of_list mlexpr_of_constr l$ >>
+  | Glob_term.Pattern l ->
       let f = mlexpr_of_list mlexpr_of_occ_constr in
-      <:expr< Rawterm.Pattern $f l$ >>
-  | Rawterm.CbvVm -> <:expr< Rawterm.CbvVm >>
-  | Rawterm.ExtraRedExpr s ->
-      <:expr< Rawterm.ExtraRedExpr $mlexpr_of_string s$ >>
+      <:expr< Glob_term.Pattern $f l$ >>
+  | Glob_term.CbvVm -> <:expr< Glob_term.CbvVm >>
+  | Glob_term.ExtraRedExpr s ->
+      <:expr< Glob_term.ExtraRedExpr $mlexpr_of_string s$ >>
 
 let rec mlexpr_of_argtype loc = function
   | Genarg.BoolArgType -> <:expr< Genarg.BoolArgType >>
@@ -206,25 +206,25 @@ let rec mlexpr_of_argtype loc = function
   | Genarg.ExtraArgType s -> <:expr< Genarg.ExtraArgType $str:s$ >>
 
 let rec mlexpr_of_may_eval f = function
-  | Rawterm.ConstrEval (r,c) ->
-      <:expr< Rawterm.ConstrEval $mlexpr_of_red_expr r$ $f c$ >>
-  | Rawterm.ConstrContext ((loc,id),c) ->
+  | Glob_term.ConstrEval (r,c) ->
+      <:expr< Glob_term.ConstrEval $mlexpr_of_red_expr r$ $f c$ >>
+  | Glob_term.ConstrContext ((loc,id),c) ->
       let id = mlexpr_of_ident id in
-      <:expr< Rawterm.ConstrContext (loc,$id$) $f c$ >>
-  | Rawterm.ConstrTypeOf c ->
-      <:expr< Rawterm.ConstrTypeOf $mlexpr_of_constr c$ >>
-  | Rawterm.ConstrTerm c ->
-      <:expr< Rawterm.ConstrTerm $mlexpr_of_constr c$ >>
+      <:expr< Glob_term.ConstrContext (loc,$id$) $f c$ >>
+  | Glob_term.ConstrTypeOf c ->
+      <:expr< Glob_term.ConstrTypeOf $mlexpr_of_constr c$ >>
+  | Glob_term.ConstrTerm c ->
+      <:expr< Glob_term.ConstrTerm $mlexpr_of_constr c$ >>
 
 let mlexpr_of_binding_kind = function
-  | Rawterm.ExplicitBindings l ->
+  | Glob_term.ExplicitBindings l ->
       let l = mlexpr_of_list (mlexpr_of_triple mlexpr_of_loc mlexpr_of_quantified_hypothesis mlexpr_of_constr) l in
-      <:expr< Rawterm.ExplicitBindings $l$ >>
-  | Rawterm.ImplicitBindings l ->
+      <:expr< Glob_term.ExplicitBindings $l$ >>
+  | Glob_term.ImplicitBindings l ->
       let l = mlexpr_of_list mlexpr_of_constr l in
-      <:expr< Rawterm.ImplicitBindings $l$ >>
-  | Rawterm.NoBindings ->
-       <:expr< Rawterm.NoBindings >>
+      <:expr< Glob_term.ImplicitBindings $l$ >>
+  | Glob_term.NoBindings ->
+       <:expr< Glob_term.NoBindings >>
 
 let mlexpr_of_binding = mlexpr_of_pair mlexpr_of_binding_kind mlexpr_of_constr
 
@@ -473,7 +473,7 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
 and mlexpr_of_tactic_arg = function
   | Tacexpr.MetaIdArg (loc,true,id) -> anti loc id
   | Tacexpr.MetaIdArg (loc,false,id) ->
-      <:expr< Tacexpr.ConstrMayEval (Rawterm.ConstrTerm $anti loc id$) >>
+      <:expr< Tacexpr.ConstrMayEval (Glob_term.ConstrTerm $anti loc id$) >>
   | Tacexpr.TacCall (loc,t,tl) ->
       <:expr< Tacexpr.TacCall $dloc$ $mlexpr_of_reference t$ $mlexpr_of_list mlexpr_of_tactic_arg tl$>>
   | Tacexpr.Tacexp t ->

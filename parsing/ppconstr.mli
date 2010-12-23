@@ -11,7 +11,7 @@ open Environ
 open Term
 open Libnames
 open Pcoq
-open Rawterm
+open Glob_term
 open Topconstr
 open Names
 open Util

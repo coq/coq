@@ -9,7 +9,7 @@
 open Pp
 open Util
 open Topconstr
-open Rawterm
+open Glob_term
 open Tacexpr
 open Vernacexpr
 open Pcoq

@@ -25,7 +25,7 @@ open Tactics
 open Pattern
 open Clenv
 open Auto
-open Rawterm
+open Glob_term
 open Hiddentac
 
 let eauto_unif_flags = { auto_unif_flags with Unification.modulo_delta = full_transparent_state }

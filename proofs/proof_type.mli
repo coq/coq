@@ -13,7 +13,7 @@ open Libnames
 open Term
 open Util
 open Tacexpr
-open Rawterm
+open Glob_term
 open Genarg
 open Nametab
 open Pattern

@@ -15,7 +15,7 @@ open Term
 open Nametab
 open Libnames
 open Summary
-open Rawterm
+open Glob_term
 open Topconstr
 open Ppextend
 (*i*)

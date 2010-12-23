@@ -12,7 +12,7 @@ open Unify
 open Rules
 open Util
 open Term
-open Rawterm
+open Glob_term
 open Tacmach
 open Tactics
 open Tacticals
@@ -179,12 +179,12 @@ let right_instance_tac inst continue seq=
 	[tclTHENLIST
 	   [introf;
 	    (fun gls->
-	       split (Rawterm.ImplicitBindings
+	       split (Glob_term.ImplicitBindings
 			[mkVar (Tacmach.pf_nth_hyp_id gls 1)]) gls);
 	    tclSOLVE [wrap 0 true continue (deepen seq)]];
 	 tclTRY assumption]
     | Real ((0,t),_) ->
-	(tclTHEN (split (Rawterm.ImplicitBindings [t]))
+	(tclTHEN (split (Glob_term.ImplicitBindings [t]))
 	   (tclSOLVE [wrap 0 true continue (deepen seq)]))
     | Real ((m,t),_) ->
 	tclFAIL 0 (Pp.str "not implemented ... yet")

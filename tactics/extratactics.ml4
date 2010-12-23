@@ -15,7 +15,7 @@ open Extraargs
 open Mod_subst
 open Names
 open Tacexpr
-open Rawterm
+open Glob_term
 open Tactics
 open Util
 open Evd
@@ -324,11 +324,11 @@ VERNAC COMMAND EXTEND DeriveInversionClear
   -> [ add_inversion_lemma_exn na c s false inv_clear_tac ]
 
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ]
-  -> [ add_inversion_lemma_exn na c (Rawterm.RProp Term.Null) false inv_clear_tac ]
+  -> [ add_inversion_lemma_exn na c (Glob_term.RProp Term.Null) false inv_clear_tac ]
 END
 
 open Term
-open Rawterm
+open Glob_term
 
 VERNAC COMMAND EXTEND DeriveInversion
 | [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort(s) ]
@@ -395,7 +395,7 @@ END
 open Tactics
 open Tactics
 open Libnames
-open Rawterm
+open Glob_term
 open Summary
 open Libobject
 open Lib

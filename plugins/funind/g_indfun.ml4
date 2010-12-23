@@ -19,17 +19,17 @@ open Tacticals
 open Constr
 
 let pr_binding prc = function
-  | loc, Rawterm.NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ cut () ++ prc c)
-  | loc, Rawterm.AnonHyp n, c -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
+  | loc, Glob_term.NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ cut () ++ prc c)
+  | loc, Glob_term.AnonHyp n, c -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
 
 let pr_bindings prc prlc = function
-  | Rawterm.ImplicitBindings l ->
+  | Glob_term.ImplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
       Util.prlist_with_sep spc prc l
-  | Rawterm.ExplicitBindings l ->
+  | Glob_term.ExplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
         Util.prlist_with_sep spc (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
-  | Rawterm.NoBindings -> mt ()
+  | Glob_term.NoBindings -> mt ()
 
 let pr_with_bindings prc prlc (c,bl) =
   prc c ++ hv 0 (pr_bindings prc prlc bl)

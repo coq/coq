@@ -10,7 +10,7 @@ open Pp
 open Pcoq
 open Util
 open Tacexpr
-open Rawterm
+open Glob_term
 open Genarg
 open Topconstr
 open Libnames
@@ -165,8 +165,8 @@ let mkCLambdaN_simple bl c =
 let loc_of_ne_list l = join_loc (fst (List.hd l)) (fst (list_last l))
 
 let map_int_or_var f = function
-  | Rawterm.ArgArg x -> Rawterm.ArgArg (f x)
-  | Rawterm.ArgVar _ as y -> y
+  | Glob_term.ArgArg x -> Glob_term.ArgArg (f x)
+  | Glob_term.ArgVar _ as y -> y
 
 let all_concl_occs_clause = { onhyps=Some[]; concl_occs=all_occurrences_expr }
 
@@ -204,12 +204,12 @@ GEXTEND Gram
   simple_intropattern;
 
   int_or_var:
-    [ [ n = integer  -> Rawterm.ArgArg n
-      | id = identref -> Rawterm.ArgVar id ] ]
+    [ [ n = integer  -> Glob_term.ArgArg n
+      | id = identref -> Glob_term.ArgVar id ] ]
   ;
   nat_or_var:
-    [ [ n = natural  -> Rawterm.ArgArg n
-      | id = identref -> Rawterm.ArgVar id ] ]
+    [ [ n = natural  -> Glob_term.ArgArg n
+      | id = identref -> Glob_term.ArgVar id ] ]
   ;
   (* An identifier or a quotation meta-variable *)
   id_or_meta:

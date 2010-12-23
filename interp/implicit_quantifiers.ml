@@ -16,7 +16,7 @@ open Environ
 open Nametab
 open Mod_subst
 open Util
-open Rawterm
+open Glob_term
 open Topconstr
 open Libnames
 open Typeclasses

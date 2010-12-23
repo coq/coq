@@ -349,9 +349,9 @@ let isLetIn t =
 
 let h_reduce_with_zeta =
   h_reduce
-    (Rawterm.Cbv
-       {Rawterm.all_flags
-	with Rawterm.rDelta = false;
+    (Glob_term.Cbv
+       {Glob_term.all_flags
+	with Glob_term.rDelta = false;
        })
 
 
@@ -963,7 +963,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
 	   let rec_id = pf_nth_hyp_id g 1 in
 	   tclTHENSEQ
 	     [(* observe_tac "generalize_non_dep in generate_equation_lemma" *) (generalize_non_dep rec_id);
-	      (* observe_tac "h_case" *) (h_case false (mkVar rec_id,Rawterm.NoBindings));
+	      (* observe_tac "h_case" *) (h_case false (mkVar rec_id,Glob_term.NoBindings));
 	      intros_reflexivity] g
 	)
       ]
@@ -1399,10 +1399,10 @@ let build_clause eqs =
   {
     Tacexpr.onhyps =
       Some (List.map
-	      (fun id -> (Rawterm.all_occurrences_expr, id), Termops.InHyp)
+	      (fun id -> (Glob_term.all_occurrences_expr, id), Termops.InHyp)
 	      eqs
 	   );
-    Tacexpr.concl_occs = Rawterm.no_occurrences_expr
+    Tacexpr.concl_occs = Glob_term.no_occurrences_expr
   }
 
 let rec rewrite_eqs_in_eqs eqs =

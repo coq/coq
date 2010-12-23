@@ -23,7 +23,7 @@ open Libnames
 open Genarg
 open Tacexpr
 open Nametab
-open Rawterm
+open Glob_term
 open Pattern
 open Termops
 

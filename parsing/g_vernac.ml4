@@ -241,7 +241,7 @@ GEXTEND Gram
   def_body:
     [ [ bl = binders; ":="; red = reduce; c = lconstr ->
       (match c with
-          CCast(_,c, Rawterm.CastConv (Term.DEFAULTcast,t)) -> DefineBody (bl, red, c, Some t)
+          CCast(_,c, Glob_term.CastConv (Term.DEFAULTcast,t)) -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None))
     | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
 	DefineBody (bl, red, c, Some t)
@@ -343,7 +343,7 @@ GEXTEND Gram
 	   (oc,DefExpr (id,mkCLambdaN loc l b,Some (mkCProdN loc l t)))
       | l = binders; ":="; b = lconstr -> fun id ->
          match b with
-	 | CCast(_,b, Rawterm.CastConv (_, t)) ->
+	 | CCast(_,b, Glob_term.CastConv (_, t)) ->
 	     (false,DefExpr(id,mkCLambdaN loc l b,Some (mkCProdN loc l t)))
          | _ ->
 	     (false,DefExpr(id,mkCLambdaN loc l b,None)) ] ]
@@ -543,7 +543,7 @@ GEXTEND Gram
 	  VernacContext c
 
       | IDENT "Instance"; namesup = instance_name; ":";
-	 expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
+	 expl = [ "!" -> Glob_term.Implicit | -> Glob_term.Explicit ] ; t = operconstr LEVEL "200";
 	 pri = OPT [ "|"; i = natural -> i ] ;
 	 props = [ ":="; "{"; r = record_declaration; "}" -> r |
 	     ":="; c = lconstr -> c | -> CRecord (loc, None, []) ] ->
@@ -614,7 +614,7 @@ GEXTEND Gram
 
       (* Hack! Should be in grammar_ext, but camlp4 factorize badly *)
       | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";
-	 expl = [ "!" -> Rawterm.Implicit | -> Rawterm.Explicit ] ; t = operconstr LEVEL "200";
+	 expl = [ "!" -> Glob_term.Implicit | -> Glob_term.Explicit ] ; t = operconstr LEVEL "200";
 	 pri = OPT [ "|"; i = natural -> i ] ->
 	   VernacInstance (true, not (use_non_locality ()),
 			   snd namesup, (fst namesup, expl, t),
@@ -721,7 +721,7 @@ GEXTEND Gram
     [ [ IDENT "Eval"; r = Tactic.red_expr; "in"; c = lconstr ->
           fun g -> VernacCheckMayEval (Some r, g, c)
       | IDENT "Compute"; c = lconstr ->
-	  fun g -> VernacCheckMayEval (Some Rawterm.CbvVm, g, c)
+	  fun g -> VernacCheckMayEval (Some Glob_term.CbvVm, g, c)
       | IDENT "Check"; c = lconstr ->
 	  fun g -> VernacCheckMayEval (None, g, c) ] ]
   ;

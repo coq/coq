@@ -327,8 +327,8 @@ module Coercion = struct
   let apply_pattern_coercion loc pat p =
     List.fold_left
       (fun pat (co,n) ->
-	 let f i = if i<n then Rawterm.PatVar (loc, Anonymous) else pat in
-	   Rawterm.PatCstr (loc, co, list_tabulate f (n+1), Anonymous))
+	 let f i = if i<n then Glob_term.PatVar (loc, Anonymous) else pat in
+	   Glob_term.PatCstr (loc, co, list_tabulate f (n+1), Anonymous))
       pat p
 
   (* raise Not_found if no coercion found *)

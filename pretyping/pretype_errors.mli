@@ -12,7 +12,7 @@ open Names
 open Term
 open Sign
 open Environ
-open Rawterm
+open Glob_term
 open Inductiveops
 
 (** {6 The type of errors raised by the pretyper } *)

@@ -16,7 +16,7 @@ open Term
 open Environ
 open Libnames
 open Nametab
-open Rawterm
+open Glob_term
 open Mod_subst
 
 (** {5 Maps of pattern variables} *)

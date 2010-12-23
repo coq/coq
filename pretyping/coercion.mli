@@ -13,7 +13,7 @@ open Term
 open Sign
 open Environ
 open Evarutil
-open Rawterm
+open Glob_term
 
 module type S = sig
   (** {6 Coercions. } *)

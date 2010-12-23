@@ -17,7 +17,7 @@ open Ppextend
 open Topconstr
 open Term
 open Pattern
-open Rawterm
+open Glob_term
 open Constrextern
 open Termops
 (*i*)

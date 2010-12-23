@@ -15,7 +15,7 @@ open System
 open Names
 open Term
 open Environ
-open Rawterm
+open Glob_term
 open Libnames
 open Nametab
 open Detyping

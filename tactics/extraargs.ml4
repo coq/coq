@@ -52,7 +52,7 @@ END
 
 let pr_int_list = pr_int_list_full () () ()
 
-open Rawterm
+open Glob_term
 
 let pr_occurrences _prc _prlc _prt l =
   match l with

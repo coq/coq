@@ -33,7 +33,7 @@ open Tacexpr
 open Tacticals
 open Tactics
 open Tacred
-open Rawterm
+open Glob_term
 open Coqlib
 open Vernacexpr
 open Declarations

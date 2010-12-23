@@ -14,7 +14,7 @@ open Nameops
 open Termops
 open Reductionops
 open Term
-open Rawterm
+open Glob_term
 open Sign
 open Environ
 open Pattern

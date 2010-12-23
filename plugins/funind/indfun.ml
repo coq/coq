@@ -4,7 +4,7 @@ open Term
 open Pp
 open Indfun_common
 open Libnames
-open Rawterm
+open Glob_term
 open Declarations
 
 let is_rec_info scheme_info =
@@ -63,7 +63,7 @@ let functional_induction with_clean c princl pat =
 			  errorlabstrm "" (str "Cannot find induction principle for "
 					   ++Printer.pr_lconstr (mkConst c') )
 		    in
-		    (princ,Rawterm.NoBindings, Tacmach.pf_type_of g princ)
+		    (princ,Glob_term.NoBindings, Tacmach.pf_type_of g princ)
 		| _ -> raise (UserError("",str "functional induction must be used with a function" ))
 	    end
 	| Some ((princ,binding)) ->
@@ -101,9 +101,9 @@ let functional_induction with_clean c princl pat =
 	    (Tacmach.pf_ids_of_hyps g)
 	in
 	let flag =
-	  Rawterm.Cbv
-	    {Rawterm.all_flags
-	     with Rawterm.rDelta = false;
+	  Glob_term.Cbv
+	    {Glob_term.all_flags
+	     with Glob_term.rDelta = false;
 	    }
 	in
 	Tacticals.tclTHEN
@@ -137,7 +137,7 @@ let interp_casted_constr_with_implicits sigma env impls c  =
     ~allow_patvar:false  ~ltacvars:([],[]) c
 
 (*
-   Construct a fixpoint as a Rawterm
+   Construct a fixpoint as a Glob_term
    and not as a constr
 *)
 

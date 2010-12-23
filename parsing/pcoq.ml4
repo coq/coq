@@ -13,7 +13,7 @@ open Util
 open Names
 open Extend
 open Libnames
-open Rawterm
+open Glob_term
 open Topconstr
 open Genarg
 open Tacexpr

@@ -10,7 +10,7 @@ open Pp
 open Util
 open Names
 open Pcoq
-open Rawterm
+open Glob_term
 open Topconstr
 open Libnames
 open Coqlib

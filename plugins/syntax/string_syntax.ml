@@ -13,7 +13,7 @@ open Pcoq
 open Libnames
 open Topconstr
 open Ascii_syntax
-open Rawterm
+open Glob_term
 open Coqlib
 
 exception Non_closed_string

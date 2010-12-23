@@ -93,7 +93,7 @@ type proof_pattern =
      pat_aliases: (Term.constr*Term.types) statement list;
      pat_constr: Term.constr;
      pat_typ: Term.types;
-     pat_pat: Rawterm.cases_pattern;
+     pat_pat: Glob_term.cases_pattern;
      pat_expr: Topconstr.cases_pattern_expr}
 
 type proof_instr =

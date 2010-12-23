@@ -14,7 +14,7 @@ open Sign
 open Environ
 open Libnames
 open Nametab
-open Rawterm
+open Glob_term
 open Pattern
 open Topconstr
 open Notation

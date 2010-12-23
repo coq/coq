@@ -16,7 +16,7 @@ open Proof_type
 open Refiner
 open Redexpr
 open Tacexpr
-open Rawterm
+open Glob_term
 open Pattern
 
 (** Operations for handling terms under a local typing context. *)

@@ -59,7 +59,7 @@ Namegen
 Evd
 Reductionops
 Inductiveops
-Rawterm
+Glob_term
 Detyping
 Pattern
 Topconstr

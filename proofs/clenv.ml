@@ -18,7 +18,7 @@ open Environ
 open Evd
 open Reduction
 open Reductionops
-open Rawterm
+open Glob_term
 open Pattern
 open Tacred
 open Pretype_errors

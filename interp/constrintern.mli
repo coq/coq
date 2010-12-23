@@ -12,7 +12,7 @@ open Sign
 open Evd
 open Environ
 open Libnames
-open Rawterm
+open Glob_term
 open Pattern
 open Topconstr
 open Termops
@@ -82,7 +82,7 @@ val intern_gen : bool -> evar_map -> env ->
 
 val intern_pattern : env -> cases_pattern_expr ->
   Names.identifier list *
-    ((Names.identifier * Names.identifier) list * Rawterm.cases_pattern) list
+    ((Names.identifier * Names.identifier) list * Glob_term.cases_pattern) list
 
 val intern_context : bool -> evar_map -> env -> local_binder list -> glob_binder list
 

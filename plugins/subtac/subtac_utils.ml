@@ -249,7 +249,7 @@ let build_dependent_sum l =
 		([intros;
 		  (tclTHENSEQ
 		     [constructor_tac false (Some 1) 1
-			(Rawterm.ImplicitBindings [mkVar n]);
+			(Glob_term.ImplicitBindings [mkVar n]);
 		      cont]);
 		 ])))
 	in
@@ -352,7 +352,7 @@ let destruct_ex ext ex =
       | _ -> [acc]
   in aux ex ext
 
-open Rawterm
+open Glob_term
 
 let id_of_name = function
     Name n -> n

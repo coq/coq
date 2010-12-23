@@ -26,7 +26,7 @@ open Reduction
 open Cases
 open Logic
 open Printer
-open Rawterm
+open Glob_term
 open Evd
 
 let pr_lconstr c = quote (pr_lconstr c)

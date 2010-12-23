@@ -17,7 +17,7 @@ open Tacinterp
 open Decl_expr
 open Decl_mode
 open Decl_interp
-open Rawterm
+open Glob_term
 open Names
 open Nameops
 open Declarations

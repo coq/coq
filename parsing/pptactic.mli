@@ -12,7 +12,7 @@ open Tacexpr
 open Pretyping
 open Proof_type
 open Topconstr
-open Rawterm
+open Glob_term
 open Pattern
 open Ppextend
 open Environ

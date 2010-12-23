@@ -16,7 +16,7 @@ open Closure
 open Environ
 open Libnames
 open Tactics
-open Rawterm
+open Glob_term
 open Tacticals
 open Tacexpr
 open Pcoq

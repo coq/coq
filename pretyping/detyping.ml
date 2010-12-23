@@ -16,7 +16,7 @@ open Inductive
 open Inductiveops
 open Environ
 open Sign
-open Rawterm
+open Glob_term
 open Nameops
 open Termops
 open Namegen

@@ -8,7 +8,7 @@
 
 open Util
 open Names
-open Rawterm
+open Glob_term
 open Topconstr
 
 val declare_reserved_type : identifier located -> aconstr -> unit

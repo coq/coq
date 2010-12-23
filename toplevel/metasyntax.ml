@@ -19,7 +19,7 @@ open Summary
 open Constrintern
 open Vernacexpr
 open Pcoq
-open Rawterm
+open Glob_term
 open Libnames
 open Tok
 open Lexer

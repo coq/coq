@@ -15,7 +15,7 @@ open Tacticals
 open Tactics
 open Coqlib
 open Reductionops
-open Rawterm
+open Glob_term
 
 (* Absurd *)
 

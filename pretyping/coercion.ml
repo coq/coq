@@ -73,7 +73,7 @@ module type S = sig
      pattern [pat] typed in [ind1] into a pattern typed in [ind2];
      raises [Not_found] if no coercion found *)
   val inh_pattern_coerce_to :
-    loc  -> Rawterm.cases_pattern -> inductive -> inductive -> Rawterm.cases_pattern
+    loc  -> Glob_term.cases_pattern -> inductive -> inductive -> Glob_term.cases_pattern
 end
 
 module Default = struct
@@ -99,8 +99,8 @@ module Default = struct
   let apply_pattern_coercion loc pat p =
     List.fold_left
       (fun pat (co,n) ->
-	 let f i = if i<n then Rawterm.PatVar (loc, Anonymous) else pat in
-	   Rawterm.PatCstr (loc, co, list_tabulate f (n+1), Anonymous))
+	 let f i = if i<n then Glob_term.PatVar (loc, Anonymous) else pat in
+	   Glob_term.PatCstr (loc, co, list_tabulate f (n+1), Anonymous))
       pat p
 
   (* raise Not_found if no coercion found *)

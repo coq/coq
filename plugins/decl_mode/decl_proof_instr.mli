@@ -37,20 +37,20 @@ val execute_cases :
     Term.constr list -> int -> Decl_mode.split_tree -> Proof_type.tactic
 
 val tree_of_pats : 
-  identifier * (int * int) -> (Rawterm.cases_pattern*recpath) list list ->
+  identifier * (int * int) -> (Glob_term.cases_pattern*recpath) list list ->
   split_tree
 
 val add_branch : 
-  identifier * (int * int) -> (Rawterm.cases_pattern*recpath) list list ->
+  identifier * (int * int) -> (Glob_term.cases_pattern*recpath) list list ->
   split_tree -> split_tree
 
 val append_branch :
-  identifier *(int * int) -> int -> (Rawterm.cases_pattern*recpath) list list ->
+  identifier *(int * int) -> int -> (Glob_term.cases_pattern*recpath) list list ->
   (Names.Idset.t * Decl_mode.split_tree) option ->
   (Names.Idset.t * Decl_mode.split_tree) option
 
 val append_tree :
-  identifier * (int * int) -> int -> (Rawterm.cases_pattern*recpath) list list ->
+  identifier * (int * int) -> int -> (Glob_term.cases_pattern*recpath) list list ->
   split_tree -> split_tree
 
 val build_dep_clause :   Term.types Decl_expr.statement list ->
@@ -63,7 +63,7 @@ val register_dep_subcase :
     Names.identifier * (int * int) ->
     Environ.env ->
     Decl_mode.per_info ->
-    Rawterm.cases_pattern -> Decl_mode.elim_kind -> Decl_mode.elim_kind
+    Glob_term.cases_pattern -> Decl_mode.elim_kind -> Decl_mode.elim_kind
 
 val thesis_for :     Term.constr ->
     Term.constr -> Decl_mode.per_info -> Environ.env -> Term.constr

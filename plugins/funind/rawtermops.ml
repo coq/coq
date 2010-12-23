@@ -1,5 +1,5 @@
 open Pp
-open Rawterm
+open Glob_term
 open Util
 open Names
 (* Ocaml 3.06 Map.S does not handle is_empty *)

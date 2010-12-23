@@ -1,4 +1,4 @@
-open Rawterm
+open Glob_term
 
 (* Ocaml 3.06 Map.S does not handle is_empty *)
 val idmap_is_empty : 'a Names.Idmap.t -> bool
@@ -73,8 +73,8 @@ val change_vars : Names.identifier Names.Idmap.t -> glob_constr -> glob_constr
 *)
   val alpha_pat :
     Names.Idmap.key list ->
-    Rawterm.cases_pattern ->
-    Rawterm.cases_pattern * Names.Idmap.key list *
+    Glob_term.cases_pattern ->
+    Glob_term.cases_pattern * Names.Idmap.key list *
       Names.identifier Names.Idmap.t
 
 (* [alpha_rt avoid rt] alpha convert [rt] s.t. the result repects barendregt
@@ -84,16 +84,16 @@ val alpha_rt : Names.identifier list -> glob_constr -> glob_constr
 
 (* same as alpha_rt but for case branches *)
 val alpha_br : Names.identifier list ->
-    Util.loc * Names.identifier list * Rawterm.cases_pattern list *
-    Rawterm.glob_constr ->
-    Util.loc * Names.identifier list * Rawterm.cases_pattern list *
-    Rawterm.glob_constr
+    Util.loc * Names.identifier list * Glob_term.cases_pattern list *
+    Glob_term.glob_constr ->
+    Util.loc * Names.identifier list * Glob_term.cases_pattern list *
+    Glob_term.glob_constr
 
 
 (* Reduction function *)
 val replace_var_by_term  :
   Names.identifier ->
-  Rawterm.glob_constr -> Rawterm.glob_constr -> Rawterm.glob_constr
+  Glob_term.glob_constr -> Glob_term.glob_constr -> Glob_term.glob_constr
 
 
 
@@ -120,7 +120,7 @@ val ids_of_rawterm: glob_constr -> Names.Idset.t
 (*
    removing let_in construction in a rawterm
 *)
-val zeta_normalize : Rawterm.glob_constr -> Rawterm.glob_constr
+val zeta_normalize : Glob_term.glob_constr -> Glob_term.glob_constr
 
 
 val expand_as : glob_constr -> glob_constr

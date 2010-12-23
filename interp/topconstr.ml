@@ -12,7 +12,7 @@ open Util
 open Names
 open Nameops
 open Libnames
-open Rawterm
+open Glob_term
 open Term
 open Mod_subst
 (*i*)

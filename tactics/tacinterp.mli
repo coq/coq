@@ -99,8 +99,8 @@ val intern_constr :
   glob_sign -> constr_expr -> glob_constr_and_expr
 
 val intern_constr_with_bindings :
-  glob_sign -> constr_expr * constr_expr Rawterm.bindings ->
-  glob_constr_and_expr * glob_constr_and_expr Rawterm.bindings
+  glob_sign -> constr_expr * constr_expr Glob_term.bindings ->
+  glob_constr_and_expr * glob_constr_and_expr Glob_term.bindings
 
 val intern_hyp :
   glob_sign -> identifier Util.located -> identifier Util.located
@@ -127,7 +127,7 @@ val interp_tac_gen : (identifier * value) list -> identifier list ->
 
 val interp_hyp :  interp_sign -> goal sigma -> identifier located -> identifier
 
-val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map -> glob_constr_and_expr Rawterm.bindings -> Evd.evar_map * constr Rawterm.bindings
+val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map -> glob_constr_and_expr Glob_term.bindings -> Evd.evar_map * constr Glob_term.bindings
 
 (** Initial call for interpretation *)
 val glob_tactic : raw_tactic_expr -> glob_tactic_expr

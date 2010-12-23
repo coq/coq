@@ -14,7 +14,7 @@ open Nameops
 open Namegen
 open Libnames
 open Impargs
-open Rawterm
+open Glob_term
 open Pattern
 open Pretyping
 open Cases

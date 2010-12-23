@@ -26,7 +26,7 @@ open Tactics
 open Pattern
 open Clenv
 open Auto
-open Rawterm
+open Glob_term
 open Hiddentac
 open Typeclasses
 open Typeclasses_errors
@@ -1582,7 +1582,7 @@ let setoid_transitivity c gl =
       let proof = get_transitive_proof env evm car rel in
       match c with
       | None -> eapply proof
-      | Some c -> apply_with_bindings (proof,Rawterm.ImplicitBindings [ c ]))
+      | Some c -> apply_with_bindings (proof,Glob_term.ImplicitBindings [ c ]))
     (transitivity_red true c)
 
 let setoid_symmetry_in id gl =

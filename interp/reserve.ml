@@ -46,7 +46,7 @@ let declare_reserved_type (loc,id) t =
 
 let find_reserved_type id = Idmap.find (root_of_id id) !reserve_table
 
-open Rawterm
+open Glob_term
 
 let rec unloc = function
   | GVar (_,id) -> GVar (dummy_loc,id)

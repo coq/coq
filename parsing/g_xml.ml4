@@ -11,7 +11,7 @@ open Util
 open Names
 open Term
 open Pcoq
-open Rawterm
+open Glob_term
 open Genarg
 open Tacexpr
 open Libnames

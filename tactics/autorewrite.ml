@@ -17,7 +17,7 @@ open Tactics
 open Term
 open Termops
 open Util
-open Rawterm
+open Glob_term
 open Vernacinterp
 open Tacexpr
 open Mod_subst

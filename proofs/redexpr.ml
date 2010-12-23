@@ -12,7 +12,7 @@ open Names
 open Term
 open Declarations
 open Libnames
-open Rawterm
+open Glob_term
 open Pattern
 open Reductionops
 open Tacred

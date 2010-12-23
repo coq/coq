@@ -12,7 +12,7 @@ open Term
 open Tacmach
 open Genarg
 open Tacexpr
-open Rawterm
+open Glob_term
 
 type inversion_status = Dep of constr option | NoDep
 

@@ -35,11 +35,11 @@ val list_union_eq :
 val list_add_set_eq :
   ('a -> 'a -> bool) -> 'a -> 'a list -> 'a list
 
-val chop_rlambda_n : int -> Rawterm.glob_constr ->
-  (name*Rawterm.glob_constr*bool) list * Rawterm.glob_constr
+val chop_rlambda_n : int -> Glob_term.glob_constr ->
+  (name*Glob_term.glob_constr*bool) list * Glob_term.glob_constr
 
-val chop_rprod_n : int -> Rawterm.glob_constr ->
-  (name*Rawterm.glob_constr) list * Rawterm.glob_constr
+val chop_rprod_n : int -> Glob_term.glob_constr ->
+  (name*Glob_term.glob_constr) list * Glob_term.glob_constr
 
 val def_of_const : Term.constr -> Term.constr
 val eq : Term.constr Lazy.t

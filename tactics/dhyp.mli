@@ -24,5 +24,5 @@ val h_auto_tdb : int option -> tactic
 
 val add_destructor_hint :
   Vernacexpr.locality_flag -> identifier -> (bool,unit) Tacexpr.location ->
-    Rawterm.patvar list * Pattern.constr_pattern -> int ->
+    Glob_term.patvar list * Pattern.constr_pattern -> int ->
       glob_tactic_expr -> unit

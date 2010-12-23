@@ -9,7 +9,7 @@
 open Names
 open Term
 open Proof_type
-open Rawterm
+open Glob_term
 open Genarg
 
 val absurd                      : constr -> tactic

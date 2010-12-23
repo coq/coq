@@ -11,7 +11,7 @@ open Names
 open Namegen
 open Util
 open Tacexpr
-open Rawterm
+open Glob_term
 open Topconstr
 open Genarg
 open Libnames
@@ -958,7 +958,7 @@ let strip_prod_binders_rawterm n (ty,_) =
   let rec strip_ty acc n ty =
     if n=0 then (List.rev acc, (ty,None)) else
       match ty with
-          Rawterm.GProd(loc,na,Explicit,a,b) ->
+          Glob_term.GProd(loc,na,Explicit,a,b) ->
             strip_ty (([dummy_loc,na],(a,None))::acc) (n-1) b
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty

@@ -12,7 +12,7 @@ open Bigint
 open Names
 open Nametab
 open Libnames
-open Rawterm
+open Glob_term
 open Topconstr
 open Ppextend
 

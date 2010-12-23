@@ -15,7 +15,7 @@ open Nametab
 open Util
 open Ppconstr
 open Pptactic
-open Rawterm
+open Glob_term
 open Pcoq
 open Libnames
 open Ppextend

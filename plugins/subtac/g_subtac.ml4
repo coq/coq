@@ -40,7 +40,7 @@ struct
   let subtac_withtac : Tacexpr.raw_tactic_expr option Gram.entry = gec "subtac_withtac"
 end
 
-open Rawterm
+open Glob_term
 open SubtacGram
 open Util
 open Pcoq

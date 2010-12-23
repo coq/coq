@@ -67,7 +67,7 @@ Heads
 Termops
 Namegen
 Evd
-Rawterm
+Glob_term
 Reductionops
 Inductiveops
 Retyping

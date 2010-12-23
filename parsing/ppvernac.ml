@@ -16,7 +16,7 @@ open Extend
 open Vernacexpr
 open Ppconstr
 open Pptactic
-open Rawterm
+open Glob_term
 open Genarg
 open Pcoq
 open Libnames

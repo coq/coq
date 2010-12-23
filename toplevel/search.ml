@@ -11,7 +11,7 @@ open Util
 open Names
 open Nameops
 open Term
-open Rawterm
+open Glob_term
 open Declarations
 open Libobject
 open Declare

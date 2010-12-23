@@ -12,13 +12,13 @@ open Libnames
 open Term
 open Sign
 open Environ
-open Rawterm
+open Glob_term
 open Pattern
 open Nametab
 open Termops
 open Evd
 open Proof_type
-open Rawterm
+open Glob_term
 open Tacexpr
 
 (** These are the entry points for printing terms, context, tac, ... *)

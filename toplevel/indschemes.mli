@@ -11,7 +11,7 @@ open Names
 open Term
 open Environ
 open Libnames
-open Rawterm
+open Glob_term
 open Genarg
 open Vernacexpr
 open Ind_tables

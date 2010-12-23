@@ -501,7 +501,7 @@ let get_funs_constant mp dp =
 exception No_graph_found
 exception Found_type of int
 
-let make_scheme (fas : (constant*Rawterm.rawsort) list) : Entries.definition_entry list =
+let make_scheme (fas : (constant*Glob_term.rawsort) list) : Entries.definition_entry list =
   let env = Global.env ()
   and sigma = Evd.empty in
   let funs = List.map fst fas in

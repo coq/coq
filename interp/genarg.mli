@@ -10,7 +10,7 @@ open Util
 open Names
 open Term
 open Libnames
-open Rawterm
+open Glob_term
 open Pattern
 open Topconstr
 open Term
