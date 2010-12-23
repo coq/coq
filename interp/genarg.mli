@@ -49,28 +49,29 @@ and or_and_intro_pattern_expr = (loc * intro_pattern_expr) list list
 val pr_intro_pattern : intro_pattern_expr located -> Pp.std_ppcmds
 val pr_or_and_intro_pattern : or_and_intro_pattern_expr -> Pp.std_ppcmds
 
-(** The route of a generic argument, from parsing to evaluation
+(** The route of a generic argument, from parsing to evaluation.
+In the following diagram, "object" can be tactic_expr, constr, tactic_arg, etc.
 
 {% \begin{%}verbatim{% }%}
-             parsing        in_raw                              out_raw
-   char stream ----> glob_type ----> constr_expr generic_argument --------|
-                          encapsulation                         decaps  |
-                                                                        |
-                                                                        V
-                                                                     glob_type
-                                                                        |
-                                                         globalization  |
-                                                                        V
-                                                                    glob_type
-                                                                        |
-                                                                 encaps |
-                                                                in_glob |
-                                                                        V
-                                                     glob_constr generic_argument
-                                                                        |
-        out                          in                        out_glob |
-  type <--- constr generic_argument <---- type <------ glob_type <--------|
-    |  decaps                       encaps      interp           decaps
+             parsing          in_raw                            out_raw
+   char stream ---> raw_object ---> raw_object generic_argument -------+
+                          encapsulation                          decaps|
+                                                                       |
+                                                                       V
+                                                                   raw_object
+                                                                       |
+                                                         globalization |
+                                                                       V
+                                                                   glob_object
+                                                                       |
+                                                                encaps |
+                                                               in_glob |
+                                                                       V
+                                                           glob_object generic_argument
+                                                                       |
+          out                          in                     out_glob |
+  object <--- object generic_argument <--- object <--- glob_object <---+
+    |   decaps                       encaps      interp           decaps
     |
     V
 effective use
