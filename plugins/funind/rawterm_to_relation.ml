@@ -41,7 +41,7 @@ let compose_raw_context =
 
 
 (*
-   The main part deals with building a list of raw constructor expressions
+   The main part deals with building a list of globalized constructor expressions
    from the rhs of a fixpoint equation.
 *)
 
@@ -879,7 +879,7 @@ let is_res id =
 exception Continue
 (*
    The second phase which reconstruct the real type of the constructor.
-   rebuild the raw constructors expression.
+   rebuild the globalized constructors expression.
    eliminates some meaningless equalities, applies some rewrites......
 *)
 let rec rebuild_cons env nb_args relname args crossed_types depth rt =
@@ -1266,7 +1266,7 @@ let do_build_inductive
       (function result (* (args',concl') *) ->
 	 let rt = compose_raw_context result.context result.value in
 	 let nb_args = List.length funsargs.(i) in
-	 (*  with_full_print (fun rt -> Pp.msgnl (str "raw constr " ++ pr_rawconstr rt)) rt; *)
+	 (*  with_full_print (fun rt -> Pp.msgnl (str "glob constr " ++ pr_rawconstr rt)) rt; *)
 	 fst (
 	   rebuild_cons env_with_graphs nb_args relnames.(i)
 	     []

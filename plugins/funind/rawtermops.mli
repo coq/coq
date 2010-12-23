@@ -19,9 +19,9 @@ val pattern_to_term : cases_pattern -> rawconstr
 val mkRRef : Libnames.global_reference -> rawconstr
 val mkRVar : Names.identifier -> rawconstr
 val mkRApp  : rawconstr*(rawconstr list) -> rawconstr
-val mkRLambda : Names.name*rawconstr*rawconstr -> rawconstr
-val mkRProd : Names.name*rawconstr*rawconstr -> rawconstr
-val mkRLetIn : Names.name*rawconstr*rawconstr -> rawconstr
+val mkRLambda : Names.name * rawconstr * rawconstr -> rawconstr
+val mkRProd : Names.name * rawconstr * rawconstr -> rawconstr
+val mkRLetIn : Names.name * rawconstr * rawconstr -> rawconstr
 val mkRCases : rawconstr option * tomatch_tuples * cases_clauses -> rawconstr
 val mkRSort : rawsort -> rawconstr
 val mkRHole : unit -> rawconstr (* we only build Evd.BinderType Anonymous holes *)
