@@ -855,7 +855,7 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
 	   let filter =
 	     function (id,None) -> None | (id,Some id') -> Some(id,([],mkVar id')) in
 	   let unboundvars = list_map_filter filter unboundvars in
-	   quote (pr_rawconstr_env (Global.env()) c) ++
+	   quote (pr_glob_constr_env (Global.env()) c) ++
 	     (if unboundvars <> [] or vars <> [] then
 		strbrk " (with " ++
 		  prlist_with_sep pr_comma

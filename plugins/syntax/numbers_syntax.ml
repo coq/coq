@@ -98,9 +98,9 @@ exception Non_closed
 (* parses a *non-negative* integer (from bigint.ml) into an int31
    wraps modulo 2^31 *)
 let int31_of_pos_bigint dloc n =
-  let ref_construct = RRef (dloc, int31_construct) in
-  let ref_0 = RRef (dloc, int31_0) in
-  let ref_1 = RRef (dloc, int31_1) in
+  let ref_construct = GRef (dloc, int31_construct) in
+  let ref_0 = GRef (dloc, int31_0) in
+  let ref_1 = GRef (dloc, int31_1) in
   let rec args counter n =
     if counter <= 0 then
       []
@@ -108,7 +108,7 @@ let int31_of_pos_bigint dloc n =
       let (q,r) = div2_with_rest n in
 	(if r then ref_1 else ref_0)::(args (counter-1) q)
   in
-  RApp (dloc, ref_construct, List.rev (args 31 n))
+  GApp (dloc, ref_construct, List.rev (args 31 n))
 
 let error_negative dloc =
   Util.user_err_loc (dloc, "interp_int31", Pp.str "int31 are only non-negative numbers.")
@@ -125,12 +125,12 @@ let bigint_of_int31 =
   let rec args_parsing args cur =
     match args with
       | [] -> cur
-      | (RRef (_,b))::l when b = int31_0 -> args_parsing l (mult_2 cur)
-      | (RRef (_,b))::l when b = int31_1 -> args_parsing l (add_1 (mult_2 cur))
+      | (GRef (_,b))::l when b = int31_0 -> args_parsing l (mult_2 cur)
+      | (GRef (_,b))::l when b = int31_1 -> args_parsing l (add_1 (mult_2 cur))
       | _ -> raise Non_closed
   in
   function
-  | RApp (_, RRef (_, c), args) when c=int31_construct -> args_parsing args zero
+  | GApp (_, GRef (_, c), args) when c=int31_construct -> args_parsing args zero
   | _ -> raise Non_closed
 
 let uninterp_int31 i =
@@ -143,7 +143,7 @@ let uninterp_int31 i =
 let _ = Notation.declare_numeral_interpreter int31_scope
   (int31_path, int31_module)
   interp_int31
-  ([RRef (Util.dummy_loc, int31_construct)],
+  ([GRef (Util.dummy_loc, int31_construct)],
    uninterp_int31,
    true)
 
@@ -174,24 +174,24 @@ let height bi =
 
 (* n must be a non-negative integer (from bigint.ml) *)
 let word_of_pos_bigint dloc hght n =
-  let ref_W0 = RRef (dloc, zn2z_W0) in
-  let ref_WW = RRef (dloc, zn2z_WW) in
+  let ref_W0 = GRef (dloc, zn2z_W0) in
+  let ref_WW = GRef (dloc, zn2z_WW) in
   let rec decomp hgt n =
     if is_neg_or_zero hgt then
       int31_of_pos_bigint dloc n
     else if equal n zero then
-      RApp (dloc, ref_W0, [RHole (dloc, Evd.InternalHole)])
+      GApp (dloc, ref_W0, [GHole (dloc, Evd.InternalHole)])
     else
       let (h,l) = split_at hgt n in
-      RApp (dloc, ref_WW, [RHole (dloc, Evd.InternalHole);
+      GApp (dloc, ref_WW, [GHole (dloc, Evd.InternalHole);
 			   decomp (sub_1 hgt) h;
 			   decomp (sub_1 hgt) l])
   in
   decomp hght n
 
 let bigN_of_pos_bigint dloc n =
-  let ref_constructor i = RRef (dloc, bigN_constructor i) in
-  let result h word = RApp (dloc, ref_constructor h, if less_than h n_inlined then
+  let ref_constructor i = GRef (dloc, bigN_constructor i) in
+  let result h word = GApp (dloc, ref_constructor h, if less_than h n_inlined then
 				                       [word]
 			                             else
 				                      [Nat_syntax.nat_of_int dloc (sub h n_inlined);
@@ -215,7 +215,7 @@ let interp_bigN dloc n =
 let bigint_of_word =
   let rec get_height rc =
     match rc with
-    | RApp (_,RRef(_,c), [_;lft;rght]) when c = zn2z_WW ->
+    | GApp (_,GRef(_,c), [_;lft;rght]) when c = zn2z_WW ->
 	                                  let hleft = get_height lft in
 					  let hright = get_height rght in
 					  add_1
@@ -227,8 +227,8 @@ let bigint_of_word =
   in
   let rec transform hght rc =
     match rc with
-    | RApp (_,RRef(_,c),_) when c = zn2z_W0-> zero
-    | RApp (_,RRef(_,c), [_;lft;rght]) when c=zn2z_WW-> let new_hght = sub_1 hght in
+    | GApp (_,GRef(_,c),_) when c = zn2z_W0-> zero
+    | GApp (_,GRef(_,c), [_;lft;rght]) when c=zn2z_WW-> let new_hght = sub_1 hght in
 	                                                add (mult (rank new_hght)
                                                           (transform (new_hght) lft))
 	                                            (transform (new_hght) rght)
@@ -240,8 +240,8 @@ let bigint_of_word =
 
 let bigint_of_bigN rc =
   match rc with
-  | RApp (_,_,[one_arg]) -> bigint_of_word one_arg
-  | RApp (_,_,[_;second_arg]) -> bigint_of_word second_arg
+  | GApp (_,_,[one_arg]) -> bigint_of_word one_arg
+  | GApp (_,_,[_;second_arg]) -> bigint_of_word second_arg
   | _ -> raise Non_closed
 
 let uninterp_bigN rc =
@@ -257,7 +257,7 @@ let uninterp_bigN rc =
 let bigN_list_of_constructors =
   let rec build i =
     if less_than i (add_1 n_inlined) then
-      RRef (Util.dummy_loc, bigN_constructor i)::(build (add_1 i))
+      GRef (Util.dummy_loc, bigN_constructor i)::(build (add_1 i))
     else
       []
   in
@@ -274,17 +274,17 @@ let _ = Notation.declare_numeral_interpreter bigN_scope
 
 (*** Parsing for bigZ in digital notation ***)
 let interp_bigZ dloc n =
-  let ref_pos = RRef (dloc, bigZ_pos) in
-  let ref_neg = RRef (dloc, bigZ_neg) in
+  let ref_pos = GRef (dloc, bigZ_pos) in
+  let ref_neg = GRef (dloc, bigZ_neg) in
   if is_pos_or_zero n then
-    RApp (dloc, ref_pos, [bigN_of_pos_bigint dloc n])
+    GApp (dloc, ref_pos, [bigN_of_pos_bigint dloc n])
   else
-    RApp (dloc, ref_neg, [bigN_of_pos_bigint dloc (neg n)])
+    GApp (dloc, ref_neg, [bigN_of_pos_bigint dloc (neg n)])
 
 (* pretty printing functions for bigZ *)
 let bigint_of_bigZ = function
-  | RApp (_, RRef(_,c), [one_arg]) when c = bigZ_pos -> bigint_of_bigN one_arg
-  | RApp (_, RRef(_,c), [one_arg]) when c = bigZ_neg ->
+  | GApp (_, GRef(_,c), [one_arg]) when c = bigZ_pos -> bigint_of_bigN one_arg
+  | GApp (_, GRef(_,c), [one_arg]) when c = bigZ_neg ->
       let opp_val = bigint_of_bigN one_arg in
       if equal opp_val zero then
 	raise Non_closed
@@ -303,19 +303,19 @@ let uninterp_bigZ rc =
 let _ = Notation.declare_numeral_interpreter bigZ_scope
   (bigZ_path, bigZ_module)
   interp_bigZ
-  ([RRef (Util.dummy_loc, bigZ_pos);
-    RRef (Util.dummy_loc, bigZ_neg)],
+  ([GRef (Util.dummy_loc, bigZ_pos);
+    GRef (Util.dummy_loc, bigZ_neg)],
    uninterp_bigZ,
    true)
 
 (*** Parsing for bigQ in digital notation ***)
 let interp_bigQ dloc n =
-  let ref_z = RRef (dloc, bigQ_z) in
-  RApp (dloc, ref_z, [interp_bigZ dloc n])
+  let ref_z = GRef (dloc, bigQ_z) in
+  GApp (dloc, ref_z, [interp_bigZ dloc n])
 
 let uninterp_bigQ rc =
   try match rc with
-    | RApp (_, RRef(_,c), [one_arg]) when c = bigQ_z ->
+    | GApp (_, GRef(_,c), [one_arg]) when c = bigQ_z ->
 	Some (bigint_of_bigZ one_arg)
     | _ -> None (* we don't pretty-print yet fractions *)
   with Non_closed -> None
@@ -324,5 +324,5 @@ let uninterp_bigQ rc =
 let _ = Notation.declare_numeral_interpreter bigQ_scope
   (bigQ_path, bigQ_module)
   interp_bigQ
-  ([RRef (Util.dummy_loc, bigQ_z)], uninterp_bigQ,
+  ([GRef (Util.dummy_loc, bigQ_z)], uninterp_bigQ,
    true)

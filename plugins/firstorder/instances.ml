@@ -123,9 +123,9 @@ let mk_open_instance id gl m t=
   let rec raux n t=
     if n=0 then t else
       match t with
-	  RLambda(loc,name,k,_,t0)->
+	  GLambda(loc,name,k,_,t0)->
 	    let t1=raux (n-1) t0 in
-	      RLambda(loc,name,k,RHole (dummy_loc,Evd.BinderType name),t1)
+	      GLambda(loc,name,k,GHole (dummy_loc,Evd.BinderType name),t1)
 	| _-> anomaly "can't happen" in
   let ntt=try
     Pretyping.Default.understand evmap env (raux m rawt)

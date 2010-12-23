@@ -13,4 +13,4 @@ open Topconstr
 
 val declare_reserved_type : identifier located -> aconstr -> unit
 val find_reserved_type : identifier -> aconstr
-val anonymize_if_reserved : name -> rawconstr -> rawconstr
+val anonymize_if_reserved : name -> glob_constr -> glob_constr

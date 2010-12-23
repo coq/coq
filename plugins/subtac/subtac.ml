@@ -88,7 +88,7 @@ let start_proof_and_print env isevars idopt k t hook =
   start_proof_com env isevars idopt k t hook;
   print_subgoals ()
 
-let _ = Detyping.set_detype_anonymous (fun loc n -> RVar (loc, id_of_string ("Anonymous_REL_" ^ string_of_int n)))
+let _ = Detyping.set_detype_anonymous (fun loc n -> GVar (loc, id_of_string ("Anonymous_REL_" ^ string_of_int n)))
 
 let assumption_message id =
   Flags.if_verbose message ((string_of_id id) ^ " is assumed")

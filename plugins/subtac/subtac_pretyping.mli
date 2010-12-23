@@ -13,7 +13,7 @@ module Pretyping : Pretyping.S
 val interp :
     Environ.env ->
     Evd.evar_map ref ->
-    Rawterm.rawconstr ->
+    Rawterm.glob_constr ->
     Evarutil.type_constraint -> Term.constr * Term.constr
 
 val subtac_process : ?is_type:bool -> env -> evar_map ref -> identifier -> local_binder list ->

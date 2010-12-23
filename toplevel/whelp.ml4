@@ -127,9 +127,9 @@ let uri_params f = function
 let get_discharged_hyp_names sp = List.map basename (get_discharged_hyps sp)
 
 let section_parameters = function
-  | RRef (_,(ConstructRef ((induri,_),_) | IndRef (induri,_))) ->
+  | GRef (_,(ConstructRef ((induri,_),_) | IndRef (induri,_))) ->
       get_discharged_hyp_names (path_of_global (IndRef(induri,0)))
-  | RRef (_,(ConstRef cst as ref)) ->
+  | GRef (_,(ConstRef cst as ref)) ->
       get_discharged_hyp_names (path_of_global ref)
   | _ -> []
 
@@ -141,33 +141,33 @@ let merge vl al =
 
 let rec uri_of_constr c =
   match c with
-  | RVar (_,id) -> url_id id
-  | RRef (_,ref) ->  uri_of_global ref
-  | RHole _ | REvar _ -> url_string "?"
-  | RSort (_,s) -> url_string (whelp_of_rawsort s)
+  | GVar (_,id) -> url_id id
+  | GRef (_,ref) ->  uri_of_global ref
+  | GHole _ | GEvar _ -> url_string "?"
+  | GSort (_,s) -> url_string (whelp_of_rawsort s)
   | _ -> url_paren (fun () -> match c with
-  | RApp (_,f,args) ->
+  | GApp (_,f,args) ->
       let inst,rest = merge (section_parameters f) args in
       uri_of_constr f; url_char ' '; uri_params uri_of_constr inst;
       url_list_with_sep " " uri_of_constr rest
-  | RLambda (_,na,k,ty,c) ->
+  | GLambda (_,na,k,ty,c) ->
       url_string "\\lambda "; url_of_name na; url_string ":";
       uri_of_constr ty; url_string "."; uri_of_constr c
-  | RProd (_,Anonymous,k,ty,c) ->
+  | GProd (_,Anonymous,k,ty,c) ->
       uri_of_constr ty; url_string "\\to "; uri_of_constr c
-  | RProd (_,Name id,k,ty,c) ->
+  | GProd (_,Name id,k,ty,c) ->
       url_string "\\forall "; url_id id; url_string ":";
       uri_of_constr ty; url_string "."; uri_of_constr c
-  | RLetIn (_,na,b,c) ->
+  | GLetIn (_,na,b,c) ->
       url_string "let "; url_of_name na; url_string "\\def ";
       uri_of_constr b; url_string " in "; uri_of_constr c
-  | RCast (_,c, CastConv (_,t)) ->
+  | GCast (_,c, CastConv (_,t)) ->
       uri_of_constr c; url_string ":"; uri_of_constr t
-  | RRec _ | RIf _ | RLetTuple _ | RCases _ ->
+  | GRec _ | GIf _ | GLetTuple _ | GCases _ ->
       error "Whelp does not support pattern-matching and (co-)fixpoint."
-  | RVar _ | RRef _ | RHole _ | REvar _ | RSort _ | RCast (_,_, CastCoerce) ->
+  | GVar _ | GRef _ | GHole _ | GEvar _ | GSort _ | GCast (_,_, CastCoerce) ->
       anomaly "Written w/o parenthesis"
-  | RPatVar _ | RDynamic _ ->
+  | GPatVar _ | GDynamic _ ->
       anomaly "Found constructors not supported in constr") ()
 
 let make_string f x = Buffer.reset b; f x; Buffer.contents b

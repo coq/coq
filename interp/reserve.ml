@@ -49,42 +49,42 @@ let find_reserved_type id = Idmap.find (root_of_id id) !reserve_table
 open Rawterm
 
 let rec unloc = function
-  | RVar (_,id) -> RVar (dummy_loc,id)
-  | RApp (_,g,args) -> RApp (dummy_loc,unloc g, List.map unloc args)
-  | RLambda (_,na,bk,ty,c) -> RLambda (dummy_loc,na,bk,unloc ty,unloc c)
-  | RProd (_,na,bk,ty,c) -> RProd (dummy_loc,na,bk,unloc ty,unloc c)
-  | RLetIn (_,na,b,c) -> RLetIn (dummy_loc,na,unloc b,unloc c)
-  | RCases (_,sty,rtntypopt,tml,pl) ->
-      RCases (dummy_loc,sty,
+  | GVar (_,id) -> GVar (dummy_loc,id)
+  | GApp (_,g,args) -> GApp (dummy_loc,unloc g, List.map unloc args)
+  | GLambda (_,na,bk,ty,c) -> GLambda (dummy_loc,na,bk,unloc ty,unloc c)
+  | GProd (_,na,bk,ty,c) -> GProd (dummy_loc,na,bk,unloc ty,unloc c)
+  | GLetIn (_,na,b,c) -> GLetIn (dummy_loc,na,unloc b,unloc c)
+  | GCases (_,sty,rtntypopt,tml,pl) ->
+      GCases (dummy_loc,sty,
         (Option.map unloc rtntypopt),
 	List.map (fun (tm,x) -> (unloc tm,x)) tml,
         List.map (fun (_,idl,p,c) -> (dummy_loc,idl,p,unloc c)) pl)
-  | RLetTuple (_,nal,(na,po),b,c) ->
-      RLetTuple (dummy_loc,nal,(na,Option.map unloc po),unloc b,unloc c)
-  | RIf (_,c,(na,po),b1,b2) ->
-      RIf (dummy_loc,unloc c,(na,Option.map unloc po),unloc b1,unloc b2)
-  | RRec (_,fk,idl,bl,tyl,bv) ->
-      RRec (dummy_loc,fk,idl,
+  | GLetTuple (_,nal,(na,po),b,c) ->
+      GLetTuple (dummy_loc,nal,(na,Option.map unloc po),unloc b,unloc c)
+  | GIf (_,c,(na,po),b1,b2) ->
+      GIf (dummy_loc,unloc c,(na,Option.map unloc po),unloc b1,unloc b2)
+  | GRec (_,fk,idl,bl,tyl,bv) ->
+      GRec (dummy_loc,fk,idl,
             Array.map (List.map
               (fun (na,k,obd,ty) -> (na,k,Option.map unloc obd, unloc ty)))
               bl,
             Array.map unloc tyl,
             Array.map unloc bv)
-  | RCast (_,c, CastConv (k,t)) -> RCast (dummy_loc,unloc c, CastConv (k,unloc t))
-  | RCast (_,c, CastCoerce) -> RCast (dummy_loc,unloc c, CastCoerce)
-  | RSort (_,x) -> RSort (dummy_loc,x)
-  | RHole (_,x)  -> RHole (dummy_loc,x)
-  | RRef (_,x) -> RRef (dummy_loc,x)
-  | REvar (_,x,l) -> REvar (dummy_loc,x,l)
-  | RPatVar (_,x) -> RPatVar (dummy_loc,x)
-  | RDynamic (_,x) -> RDynamic (dummy_loc,x)
+  | GCast (_,c, CastConv (k,t)) -> GCast (dummy_loc,unloc c, CastConv (k,unloc t))
+  | GCast (_,c, CastCoerce) -> GCast (dummy_loc,unloc c, CastCoerce)
+  | GSort (_,x) -> GSort (dummy_loc,x)
+  | GHole (_,x)  -> GHole (dummy_loc,x)
+  | GRef (_,x) -> GRef (dummy_loc,x)
+  | GEvar (_,x,l) -> GEvar (dummy_loc,x,l)
+  | GPatVar (_,x) -> GPatVar (dummy_loc,x)
+  | GDynamic (_,x) -> GDynamic (dummy_loc,x)
 
 let anonymize_if_reserved na t = match na with
   | Name id as na ->
       (try
 	if not !Flags.raw_print &
-	   aconstr_of_rawconstr [] [] t = find_reserved_type id
-	then RHole (dummy_loc,Evd.BinderType na)
+	   aconstr_of_glob_constr [] [] t = find_reserved_type id
+	then GHole (dummy_loc,Evd.BinderType na)
 	else t
       with Not_found -> t)
   | Anonymous -> t

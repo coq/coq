@@ -61,9 +61,9 @@ type tomatch_status =
 module type S = sig
   val compile_cases :
     loc -> case_style ->
-    (type_constraint -> env -> evar_map ref -> rawconstr -> unsafe_judgment) * evar_map ref ->
+    (type_constraint -> env -> evar_map ref -> glob_constr -> unsafe_judgment) * evar_map ref ->
     type_constraint ->
-    env -> rawconstr option * tomatch_tuples * cases_clauses ->
+    env -> glob_constr option * tomatch_tuples * cases_clauses ->
     unsafe_judgment
 end
 

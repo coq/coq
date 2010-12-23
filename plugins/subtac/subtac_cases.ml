@@ -86,7 +86,7 @@ let mkSpecialLetInJudge j (na,(deppat,nondeppat,d,t)) =
 type rhs =
     { rhs_env    : env;
       avoid_ids  : identifier list;
-      it         : rawconstr;
+      it         : glob_constr;
     }
 
 type equation =
@@ -234,7 +234,7 @@ type pattern_matching_problem =
       mat      : matrix;
       caseloc  : loc;
       casestyle: case_style;
-      typing_function: type_constraint -> env -> rawconstr -> unsafe_judgment }
+      typing_function: type_constraint -> env -> glob_constr -> unsafe_judgment }
 
 (*--------------------------------------------------------------------------*
  * A few functions to infer the inductive type from the patterns instead of *
@@ -366,10 +366,10 @@ let find_tomatch_tycon isevars env loc = function
   | None -> empty_tycon
 
 let coerce_row typing_fun isevars env pats (tomatch,(_,indopt)) =
-  let loc = Some (loc_of_rawconstr tomatch) in
+  let loc = Some (loc_of_glob_constr tomatch) in
   let tycon = find_tomatch_tycon isevars env loc indopt in
   let j = typing_fun tycon env tomatch in
-  let evd, j = Coercion.inh_coerce_to_base (loc_of_rawconstr tomatch) env !isevars j in
+  let evd, j = Coercion.inh_coerce_to_base (loc_of_glob_constr tomatch) env !isevars j in
   isevars := evd;
   let typ = nf_evar ( !isevars) j.uj_type in
   let t =
@@ -527,7 +527,7 @@ let extract_rhs pb =
 let occur_in_rhs na rhs =
   match na with
     | Anonymous -> false
-    | Name id -> occur_rawconstr id rhs.it
+    | Name id -> occur_glob_constr id rhs.it
 
 let is_dep_patt eqn = function
   | PatVar (_,name) -> occur_in_rhs name eqn.rhs
@@ -1515,7 +1515,7 @@ let mk_JMeq typ x typ' y =
   mkApp (delayed_force Subtac_utils.jmeq_ind, [| typ; x ; typ'; y |])
 let mk_JMeq_refl typ x = mkApp (delayed_force Subtac_utils.jmeq_refl, [| typ; x |])
 
-let hole = RHole (dummy_loc, Evd.QuestionMark (Evd.Define true))
+let hole = GHole (dummy_loc, Evd.QuestionMark (Evd.Define true))
 
 let constr_of_pat env isevars arsign pat avoid =
   let rec typ env (ty, realargs) pat avoid =
@@ -1604,12 +1604,12 @@ let vars_of_ctx ctx =
       match b with
 	| Some t' when kind_of_term t' = Rel 0 ->
 	    prev,
-	    (RApp (dummy_loc,
-		(RRef (dummy_loc, delayed_force refl_ref)), [hole; RVar (dummy_loc, prev)])) :: vars
+	    (GApp (dummy_loc,
+		(GRef (dummy_loc, delayed_force refl_ref)), [hole; GVar (dummy_loc, prev)])) :: vars
 	| _ ->
 	    match na with
 		Anonymous -> raise (Invalid_argument "vars_of_ctx")
-	      | Name n -> n, RVar (dummy_loc, n) :: vars)
+	      | Name n -> n, GVar (dummy_loc, n) :: vars)
       ctx (id_of_string "vars_of_ctx_error", [])
   in List.rev y
 
@@ -1741,13 +1741,13 @@ let constrs_of_pats typing_fun env isevars eqns tomatchs sign neqs arity =
 	 let branch_name = id_of_string ("branch_" ^ (string_of_int !i)) in
 	 let branch_decl = (Name branch_name, Some (lift !i bbody), (lift !i btype)) in
 	 let branch =
-	   let bref = RVar (dummy_loc, branch_name) in
+	   let bref = GVar (dummy_loc, branch_name) in
 	     match vars_of_ctx rhs_rels with
 		 [] -> bref
-	       | l -> RApp (dummy_loc, bref, l)
+	       | l -> GApp (dummy_loc, bref, l)
 	 in
 	 let branch = match ineqs with
-	     Some _ -> RApp (dummy_loc, branch, [ hole ])
+	     Some _ -> GApp (dummy_loc, branch, [ hole ])
 	   | None -> branch
 	 in
 	 incr i;

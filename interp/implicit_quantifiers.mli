@@ -37,12 +37,12 @@ val free_vars_of_binders :
 (** Returns the generalizable free ids in left-to-right
    order with the location of their first occurence *)
 
-val generalizable_vars_of_rawconstr : ?bound:Idset.t -> ?allowed:Idset.t ->
-  rawconstr -> (Names.identifier * loc) list
+val generalizable_vars_of_glob_constr : ?bound:Idset.t -> ?allowed:Idset.t ->
+  glob_constr -> (Names.identifier * loc) list
 
 val make_fresh : Names.Idset.t -> Environ.env -> identifier -> identifier
 
-val implicits_of_rawterm : ?with_products:bool -> Rawterm.rawconstr -> (Topconstr.explicitation * (bool * bool * bool)) list
+val implicits_of_rawterm : ?with_products:bool -> Rawterm.glob_constr -> (Topconstr.explicitation * (bool * bool * bool)) list
 
 val combine_params_freevar :
   Names.Idset.t -> (global_reference * bool) option * (Names.name * Term.constr option * Term.types) ->

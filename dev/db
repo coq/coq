@@ -17,7 +17,7 @@ install_printer Top_printers.ppclindex
 install_printer Top_printers.ppbigint
 
 install_printer Top_printers.pppattern
-install_printer Top_printers.pprawconstr
+install_printer Top_printers.ppglob_constr
 
 install_printer Top_printers.ppconstr
 install_printer Top_printers.ppuni

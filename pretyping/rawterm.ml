@@ -49,29 +49,29 @@ type 'a cast_type =
   | CastConv of cast_kind * 'a
   | CastCoerce (* Cast to a base type (eg, an underlying inductive type) *)
 
-type rawconstr =
-  | RRef of (loc * global_reference)
-  | RVar of (loc * identifier)
-  | REvar of loc * existential_key * rawconstr list option
-  | RPatVar of loc * (bool * patvar) (* Used for patterns only *)
-  | RApp of loc * rawconstr * rawconstr list
-  | RLambda of loc * name * binding_kind * rawconstr * rawconstr
-  | RProd of loc * name * binding_kind * rawconstr * rawconstr
-  | RLetIn of loc * name * rawconstr * rawconstr
-  | RCases of loc * case_style * rawconstr option * tomatch_tuples * cases_clauses
-  | RLetTuple of loc * name list * (name * rawconstr option) *
-      rawconstr * rawconstr
-  | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
-  | RRec of loc * fix_kind * identifier array * rawdecl list array *
-      rawconstr array * rawconstr array
-  | RSort of loc * rawsort
-  | RHole of (loc * hole_kind)
-  | RCast of loc * rawconstr * rawconstr cast_type
-  | RDynamic of loc * Dyn.t
+type glob_constr =
+  | GRef of (loc * global_reference)
+  | GVar of (loc * identifier)
+  | GEvar of loc * existential_key * glob_constr list option
+  | GPatVar of loc * (bool * patvar) (* Used for patterns only *)
+  | GApp of loc * glob_constr * glob_constr list
+  | GLambda of loc * name * binding_kind * glob_constr * glob_constr
+  | GProd of loc * name * binding_kind * glob_constr * glob_constr
+  | GLetIn of loc * name * glob_constr * glob_constr
+  | GCases of loc * case_style * glob_constr option * tomatch_tuples * cases_clauses
+  | GLetTuple of loc * name list * (name * glob_constr option) *
+      glob_constr * glob_constr
+  | GIf of loc * glob_constr * (name * glob_constr option) * glob_constr * glob_constr
+  | GRec of loc * fix_kind * identifier array * glob_decl list array *
+      glob_constr array * glob_constr array
+  | GSort of loc * rawsort
+  | GHole of (loc * hole_kind)
+  | GCast of loc * glob_constr * glob_constr cast_type
+  | GDynamic of loc * Dyn.t
 
-and rawdecl = name * binding_kind * rawconstr option * rawconstr
+and glob_decl = name * binding_kind * glob_constr option * glob_constr
 
-and fix_recursion_order = RStructRec | RWfRec of rawconstr | RMeasureRec of rawconstr * rawconstr option
+and fix_recursion_order = RStructRec | RWfRec of glob_constr | RMeasureRec of glob_constr * glob_constr option
 
 and fix_kind =
   | RFix of ((int option * fix_recursion_order) array * int)
@@ -80,11 +80,11 @@ and fix_kind =
 and predicate_pattern =
     name * (loc * inductive * int * name list) option
 
-and tomatch_tuple = (rawconstr * predicate_pattern)
+and tomatch_tuple = (glob_constr * predicate_pattern)
 
 and tomatch_tuples = tomatch_tuple list
 
-and cases_clause = (loc * identifier list * cases_pattern list * rawconstr)
+and cases_clause = (loc * identifier list * cases_pattern list * glob_constr)
 
 and cases_clauses = cases_clause list
 
@@ -93,55 +93,55 @@ let cases_predicate_names tml =
     | (tm,(na,None)) -> [na]
     | (tm,(na,Some (_,_,_,nal))) -> na::nal) tml)
 
-let map_rawdecl_left_to_right f (na,k,obd,ty) = 
+let map_glob_decl_left_to_right f (na,k,obd,ty) = 
   let comp1 = Option.map f obd in
   let comp2 = f ty in
   (na,k,comp1,comp2)
 
-let map_rawconstr_left_to_right f = function
-  | RApp (loc,g,args) -> 
+let map_glob_constr_left_to_right f = function
+  | GApp (loc,g,args) -> 
       let comp1 = f g in 
       let comp2 = Util.list_map_left f args in 
-      RApp (loc,comp1,comp2)
-  | RLambda (loc,na,bk,ty,c) -> 
+      GApp (loc,comp1,comp2)
+  | GLambda (loc,na,bk,ty,c) -> 
       let comp1 = f ty in 
       let comp2 = f c in 
-      RLambda (loc,na,bk,comp1,comp2)
-  | RProd (loc,na,bk,ty,c) -> 
+      GLambda (loc,na,bk,comp1,comp2)
+  | GProd (loc,na,bk,ty,c) -> 
       let comp1 = f ty in 
       let comp2 = f c in 
-      RProd (loc,na,bk,comp1,comp2)
-  | RLetIn (loc,na,b,c) -> 
+      GProd (loc,na,bk,comp1,comp2)
+  | GLetIn (loc,na,b,c) -> 
       let comp1 = f b in 
       let comp2 = f c in 
-      RLetIn (loc,na,comp1,comp2)
-  | RCases (loc,sty,rtntypopt,tml,pl) ->
+      GLetIn (loc,na,comp1,comp2)
+  | GCases (loc,sty,rtntypopt,tml,pl) ->
       let comp1 = Option.map f rtntypopt in 
       let comp2 = Util.list_map_left (fun (tm,x) -> (f tm,x)) tml in
       let comp3 = Util.list_map_left (fun (loc,idl,p,c) -> (loc,idl,p,f c)) pl in
-      RCases (loc,sty,comp1,comp2,comp3)
-  | RLetTuple (loc,nal,(na,po),b,c) ->
+      GCases (loc,sty,comp1,comp2,comp3)
+  | GLetTuple (loc,nal,(na,po),b,c) ->
       let comp1 = Option.map f po in
       let comp2 = f b in
       let comp3 = f c in 
-      RLetTuple (loc,nal,(na,comp1),comp2,comp3)
-  | RIf (loc,c,(na,po),b1,b2) ->
+      GLetTuple (loc,nal,(na,comp1),comp2,comp3)
+  | GIf (loc,c,(na,po),b1,b2) ->
       let comp1 = Option.map f po in
       let comp2 = f b1 in
       let comp3 = f b2 in
-      RIf (loc,f c,(na,comp1),comp2,comp3)
-  | RRec (loc,fk,idl,bl,tyl,bv) ->
-      let comp1 = Array.map (Util.list_map_left (map_rawdecl_left_to_right f)) bl in
+      GIf (loc,f c,(na,comp1),comp2,comp3)
+  | GRec (loc,fk,idl,bl,tyl,bv) ->
+      let comp1 = Array.map (Util.list_map_left (map_glob_decl_left_to_right f)) bl in
       let comp2 = Array.map f tyl in
       let comp3 = Array.map f bv in
-      RRec (loc,fk,idl,comp1,comp2,comp3)
-  | RCast (loc,c,k) -> 
+      GRec (loc,fk,idl,comp1,comp2,comp3)
+  | GCast (loc,c,k) -> 
       let comp1 = f c in
       let comp2 = match k with CastConv (k,t) -> CastConv (k, f t) | x -> x in
-      RCast (loc,comp1,comp2)
-  | (RVar _ | RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) as x -> x
+      GCast (loc,comp1,comp2)
+  | (GVar _ | GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GDynamic _) as x -> x
 
-let map_rawconstr = map_rawconstr_left_to_right
+let map_glob_constr = map_glob_constr_left_to_right
 
 (*
 let name_app f e = function
@@ -154,54 +154,54 @@ let fold_ident g idl e =
       (fun id (idl,e) -> let id,e = g id e in (id::idl,e)) idl ([],e)
   in (Array.of_list idl,e)
 
-let map_rawconstr_with_binders_loc loc g f e = function
-  | RVar (_,id) -> RVar (loc,id)
-  | RApp (_,a,args) -> RApp (loc,f e a, List.map (f e) args)
-  | RLambda (_,na,ty,c) ->
-      let na,e = name_app g e na in RLambda (loc,na,f e ty,f e c)
-  | RProd (_,na,ty,c) ->
-      let na,e = name_app g e na in RProd (loc,na,f e ty,f e c)
-  | RLetIn (_,na,b,c) ->
-      let na,e = name_app g e na in RLetIn (loc,na,f e b,f e c)
-  | RCases (_,tyopt,tml,pl) ->
+let map_glob_constr_with_binders_loc loc g f e = function
+  | GVar (_,id) -> GVar (loc,id)
+  | GApp (_,a,args) -> GApp (loc,f e a, List.map (f e) args)
+  | GLambda (_,na,ty,c) ->
+      let na,e = name_app g e na in GLambda (loc,na,f e ty,f e c)
+  | GProd (_,na,ty,c) ->
+      let na,e = name_app g e na in GProd (loc,na,f e ty,f e c)
+  | GLetIn (_,na,b,c) ->
+      let na,e = name_app g e na in GLetIn (loc,na,f e b,f e c)
+  | GCases (_,tyopt,tml,pl) ->
       (* We don't modify pattern variable since we don't traverse patterns *)
       let g' id e = snd (g id e) in
       let h (_,idl,p,c) = (loc,idl,p,f (List.fold_right g' idl e) c) in
-      RCases
+      GCases
 	(loc,Option.map (f e) tyopt,List.map (f e) tml, List.map h pl)
-  | RRec (_,fk,idl,tyl,bv) ->
+  | GRec (_,fk,idl,tyl,bv) ->
       let idl',e' = fold_ident g idl e in
-      RRec (loc,fk,idl',Array.map (f e) tyl,Array.map (f e') bv)
-  | RCast (_,c,t) -> RCast (loc,f e c,f e t)
-  | RSort (_,x) -> RSort (loc,x)
-  | RHole (_,x)  -> RHole (loc,x)
-  | RRef (_,x) -> RRef (loc,x)
-  | REvar (_,x,l) -> REvar (loc,x,l)
-  | RPatVar (_,x) -> RPatVar (loc,x)
-  | RDynamic (_,x) -> RDynamic (loc,x)
+      GRec (loc,fk,idl',Array.map (f e) tyl,Array.map (f e') bv)
+  | GCast (_,c,t) -> GCast (loc,f e c,f e t)
+  | GSort (_,x) -> GSort (loc,x)
+  | GHole (_,x)  -> GHole (loc,x)
+  | GRef (_,x) -> GRef (loc,x)
+  | GEvar (_,x,l) -> GEvar (loc,x,l)
+  | GPatVar (_,x) -> GPatVar (loc,x)
+  | GDynamic (_,x) -> GDynamic (loc,x)
 *)
 
-let fold_rawconstr f acc =
+let fold_glob_constr f acc =
   let rec fold acc = function
-  | RVar _ -> acc
-  | RApp (_,c,args) -> List.fold_left fold (fold acc c) args
-  | RLambda (_,_,_,b,c) | RProd (_,_,_,b,c) | RLetIn (_,_,b,c) ->
+  | GVar _ -> acc
+  | GApp (_,c,args) -> List.fold_left fold (fold acc c) args
+  | GLambda (_,_,_,b,c) | GProd (_,_,_,b,c) | GLetIn (_,_,b,c) ->
       fold (fold acc b) c
-  | RCases (_,_,rtntypopt,tml,pl) ->
+  | GCases (_,_,rtntypopt,tml,pl) ->
       List.fold_left fold_pattern
 	(List.fold_left fold (Option.fold_left fold acc rtntypopt) (List.map fst tml))
 	pl
-    | RLetTuple (_,_,rtntyp,b,c) ->
+    | GLetTuple (_,_,rtntyp,b,c) ->
 	fold (fold (fold_return_type acc rtntyp) b) c
-    | RIf (_,c,rtntyp,b1,b2) ->
+    | GIf (_,c,rtntyp,b1,b2) ->
 	fold (fold (fold (fold_return_type acc rtntyp) c) b1) b2
-    | RRec (_,_,_,bl,tyl,bv) ->
+    | GRec (_,_,_,bl,tyl,bv) ->
 	let acc = Array.fold_left
 	  (List.fold_left (fun acc (na,k,bbd,bty) ->
 	    fold (Option.fold_left fold acc bbd) bty)) acc bl in
 	Array.fold_left fold (Array.fold_left fold acc tyl) bv
-    | RCast (_,c,k) -> fold (match k with CastConv (_, t) -> fold acc t | CastCoerce -> acc) c
-    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> acc
+    | GCast (_,c,k) -> fold (match k with CastConv (_, t) -> fold acc t | CastCoerce -> acc) c
+    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GDynamic _) -> acc
 
   and fold_pattern acc (_,idl,p,c) = fold acc c
 
@@ -209,25 +209,25 @@ let fold_rawconstr f acc =
 
   in fold acc
 
-let iter_rawconstr f = fold_rawconstr (fun () -> f) ()
+let iter_glob_constr f = fold_glob_constr (fun () -> f) ()
 
-let occur_rawconstr id =
+let occur_glob_constr id =
   let rec occur = function
-    | RVar (loc,id') -> id = id'
-    | RApp (loc,f,args) -> (occur f) or (List.exists occur args)
-    | RLambda (loc,na,bk,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
-    | RProd (loc,na,bk,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
-    | RLetIn (loc,na,b,c) -> (occur b) or ((na <> Name id) & (occur c))
-    | RCases (loc,sty,rtntypopt,tml,pl) ->
+    | GVar (loc,id') -> id = id'
+    | GApp (loc,f,args) -> (occur f) or (List.exists occur args)
+    | GLambda (loc,na,bk,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
+    | GProd (loc,na,bk,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
+    | GLetIn (loc,na,b,c) -> (occur b) or ((na <> Name id) & (occur c))
+    | GCases (loc,sty,rtntypopt,tml,pl) ->
 	(occur_option rtntypopt)
         or (List.exists (fun (tm,_) -> occur tm) tml)
 	or (List.exists occur_pattern pl)
-    | RLetTuple (loc,nal,rtntyp,b,c) ->
+    | GLetTuple (loc,nal,rtntyp,b,c) ->
 	occur_return_type rtntyp id
         or (occur b) or (not (List.mem (Name id) nal) & (occur c))
-    | RIf (loc,c,rtntyp,b1,b2) ->
+    | GIf (loc,c,rtntyp,b1,b2) ->
 	occur_return_type rtntyp id or (occur c) or (occur b1) or (occur b2)
-    | RRec (loc,fk,idl,bl,tyl,bv) ->
+    | GRec (loc,fk,idl,bl,tyl,bv) ->
         not (array_for_all4 (fun fid bl ty bd ->
           let rec occur_fix = function
               [] -> not (occur ty) && (fid=id or not(occur bd))
@@ -239,8 +239,8 @@ let occur_rawconstr id =
                 (na=Name id or not(occur_fix bl)) in
           occur_fix bl)
           idl bl tyl bv)
-    | RCast (loc,c,k) -> (occur c) or (match k with CastConv (_, t) -> occur t | CastCoerce -> false)
-    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> false
+    | GCast (loc,c,k) -> (occur c) or (match k with CastConv (_, t) -> occur t | CastCoerce -> false)
+    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GDynamic _) -> false
 
   and occur_pattern (loc,idl,p,c) = not (List.mem id idl) & (occur c)
 
@@ -256,29 +256,29 @@ let add_name_to_ids set na =
     | Anonymous -> set
     | Name id -> Idset.add id set
 
-let free_rawvars  =
+let free_glob_vars  =
   let rec vars bounded vs = function
-    | RVar (loc,id') -> if Idset.mem id' bounded then vs else Idset.add id' vs
-    | RApp (loc,f,args) -> List.fold_left (vars bounded) vs (f::args)
-    | RLambda (loc,na,_,ty,c) | RProd (loc,na,_,ty,c) | RLetIn (loc,na,ty,c) ->
+    | GVar (loc,id') -> if Idset.mem id' bounded then vs else Idset.add id' vs
+    | GApp (loc,f,args) -> List.fold_left (vars bounded) vs (f::args)
+    | GLambda (loc,na,_,ty,c) | GProd (loc,na,_,ty,c) | GLetIn (loc,na,ty,c) ->
 	let vs' = vars bounded vs ty in
 	let bounded' = add_name_to_ids bounded na in
        vars bounded' vs' c
-    | RCases (loc,sty,rtntypopt,tml,pl) ->
+    | GCases (loc,sty,rtntypopt,tml,pl) ->
 	let vs1 = vars_option bounded vs rtntypopt in
 	let vs2 = List.fold_left (fun vs (tm,_) -> vars bounded vs tm) vs1 tml in
 	List.fold_left (vars_pattern bounded) vs2 pl
-    | RLetTuple (loc,nal,rtntyp,b,c) ->
+    | GLetTuple (loc,nal,rtntyp,b,c) ->
 	let vs1 = vars_return_type bounded vs rtntyp in
 	let vs2 = vars bounded vs1 b in
 	let bounded' = List.fold_left add_name_to_ids bounded nal in
 	vars bounded' vs2 c
-    | RIf (loc,c,rtntyp,b1,b2) ->
+    | GIf (loc,c,rtntyp,b1,b2) ->
 	let vs1 = vars_return_type bounded vs rtntyp in
 	let vs2 = vars bounded vs1 c in
 	let vs3 = vars bounded vs2 b1 in
 	vars bounded vs3 b2
-    | RRec (loc,fk,idl,bl,tyl,bv) ->
+    | GRec (loc,fk,idl,bl,tyl,bv) ->
 	let bounded' = Array.fold_right Idset.add idl bounded in
 	let vars_fix i vs fid =
 	  let vs1,bounded1 =
@@ -296,9 +296,9 @@ let free_rawvars  =
 	  vars bounded1 vs2 bv.(i)
 	in
 	array_fold_left_i vars_fix vs idl
-    | RCast (loc,c,k) -> let v = vars bounded vs c in
+    | GCast (loc,c,k) -> let v = vars bounded vs c in
 	(match k with CastConv (_,t) -> vars bounded v t | _ -> v)
-    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> vs
+    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GDynamic _) -> vs
 
   and vars_pattern bounded vs (loc,idl,p,c) =
     let bounded' = List.fold_right Idset.add idl bounded  in
@@ -315,51 +315,51 @@ let free_rawvars  =
     Idset.elements vs
 
 
-let loc_of_rawconstr = function
-  | RRef (loc,_) -> loc
-  | RVar (loc,_) -> loc
-  | REvar (loc,_,_) -> loc
-  | RPatVar (loc,_) -> loc
-  | RApp (loc,_,_) -> loc
-  | RLambda (loc,_,_,_,_) -> loc
-  | RProd (loc,_,_,_,_) -> loc
-  | RLetIn (loc,_,_,_) -> loc
-  | RCases (loc,_,_,_,_) -> loc
-  | RLetTuple (loc,_,_,_,_) -> loc
-  | RIf (loc,_,_,_,_) -> loc
-  | RRec (loc,_,_,_,_,_) -> loc
-  | RSort (loc,_) -> loc
-  | RHole (loc,_) -> loc
-  | RCast (loc,_,_) -> loc
-  | RDynamic (loc,_) -> loc
+let loc_of_glob_constr = function
+  | GRef (loc,_) -> loc
+  | GVar (loc,_) -> loc
+  | GEvar (loc,_,_) -> loc
+  | GPatVar (loc,_) -> loc
+  | GApp (loc,_,_) -> loc
+  | GLambda (loc,_,_,_,_) -> loc
+  | GProd (loc,_,_,_,_) -> loc
+  | GLetIn (loc,_,_,_) -> loc
+  | GCases (loc,_,_,_,_) -> loc
+  | GLetTuple (loc,_,_,_,_) -> loc
+  | GIf (loc,_,_,_,_) -> loc
+  | GRec (loc,_,_,_,_,_) -> loc
+  | GSort (loc,_) -> loc
+  | GHole (loc,_) -> loc
+  | GCast (loc,_,_) -> loc
+  | GDynamic (loc,_) -> loc
 
 (**********************************************************************)
-(* Conversion from rawconstr to cases pattern, if possible            *)
+(* Conversion from glob_constr to cases pattern, if possible            *)
 
-let rec cases_pattern_of_rawconstr na = function
-  | RVar (loc,id) when na<>Anonymous ->
+let rec cases_pattern_of_glob_constr na = function
+  | GVar (loc,id) when na<>Anonymous ->
       (* Unable to manage the presence of both an alias and a variable *)
       raise Not_found
-  | RVar (loc,id) -> PatVar (loc,Name id)
-  | RHole (loc,_) -> PatVar (loc,na)
-  | RRef (loc,ConstructRef cstr) ->
+  | GVar (loc,id) -> PatVar (loc,Name id)
+  | GHole (loc,_) -> PatVar (loc,na)
+  | GRef (loc,ConstructRef cstr) ->
       PatCstr (loc,cstr,[],na)
-  | RApp (loc,RRef (_,ConstructRef cstr),l) ->
-      PatCstr (loc,cstr,List.map (cases_pattern_of_rawconstr Anonymous) l,na)
+  | GApp (loc,GRef (_,ConstructRef cstr),l) ->
+      PatCstr (loc,cstr,List.map (cases_pattern_of_glob_constr Anonymous) l,na)
   | _ -> raise Not_found
 
-(* Turn a closed cases pattern into a rawconstr *)
-let rec rawconstr_of_closed_cases_pattern_aux = function
+(* Turn a closed cases pattern into a glob_constr *)
+let rec glob_constr_of_closed_cases_pattern_aux = function
   | PatCstr (loc,cstr,[],Anonymous) ->
-      RRef (loc,ConstructRef cstr)
+      GRef (loc,ConstructRef cstr)
   | PatCstr (loc,cstr,l,Anonymous) ->
-      let ref = RRef (loc,ConstructRef cstr) in
-      RApp (loc,ref, List.map rawconstr_of_closed_cases_pattern_aux l)
+      let ref = GRef (loc,ConstructRef cstr) in
+      GApp (loc,ref, List.map glob_constr_of_closed_cases_pattern_aux l)
   | _ -> raise Not_found
 
-let rawconstr_of_closed_cases_pattern = function
+let glob_constr_of_closed_cases_pattern = function
   | PatCstr (loc,cstr,l,na) ->
-      na,rawconstr_of_closed_cases_pattern_aux (PatCstr (loc,cstr,l,Anonymous))
+      na,glob_constr_of_closed_cases_pattern_aux (PatCstr (loc,cstr,l,Anonymous))
   | _ ->
       raise Not_found
 

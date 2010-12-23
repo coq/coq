@@ -262,8 +262,8 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg =
 
 (* Globalized tactics *)
 and glob_tactic_expr =
-    (rawconstr_and_expr,
-     rawconstr_and_expr * constr_pattern,
+    (glob_constr_and_expr,
+     glob_constr_and_expr * constr_pattern,
      evaluable_global_reference and_short_name or_var,
      inductive or_var,
      ltac_constant located or_var,
@@ -307,8 +307,8 @@ type raw_red_expr =
     (constr_expr, reference or_by_notation, constr_expr) red_expr_gen
 
 type glob_atomic_tactic_expr =
-    (rawconstr_and_expr,
-     rawconstr_and_expr * constr_pattern,
+    (glob_constr_and_expr,
+     glob_constr_and_expr * constr_pattern,
      evaluable_global_reference and_short_name or_var,
      inductive or_var,
      ltac_constant located or_var,
@@ -317,8 +317,8 @@ type glob_atomic_tactic_expr =
      glevel) gen_atomic_tactic_expr
 
 type glob_tactic_arg =
-    (rawconstr_and_expr,
-     rawconstr_and_expr * constr_pattern,
+    (glob_constr_and_expr,
+     glob_constr_and_expr * constr_pattern,
      evaluable_global_reference and_short_name or_var,
      inductive or_var,
      ltac_constant located or_var,
@@ -329,7 +329,7 @@ type glob_tactic_arg =
 type glob_generic_argument = glevel generic_argument
 
 type glob_red_expr =
-    (rawconstr_and_expr, evaluable_global_reference or_var, constr_pattern)
+    (glob_constr_and_expr, evaluable_global_reference or_var, constr_pattern)
     red_expr_gen
 
 type typed_generic_argument = tlevel generic_argument

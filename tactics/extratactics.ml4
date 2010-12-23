@@ -540,12 +540,12 @@ let subst_var_with_hole occ tid t =
   let occref = if occ > 0 then ref occ else Termops.error_invalid_occurrence [occ] in
   let locref = ref 0 in
   let rec substrec = function
-    | RVar (_,id) as x -> 
+    | GVar (_,id) as x -> 
         if id = tid 
         then (decr occref; if !occref = 0 then x
-                           else (incr locref; RHole (make_loc (!locref,0),Evd.QuestionMark(Evd.Define true))))
+                           else (incr locref; GHole (make_loc (!locref,0),Evd.QuestionMark(Evd.Define true))))
         else x
-    | c -> map_rawconstr_left_to_right substrec c in
+    | c -> map_glob_constr_left_to_right substrec c in
   let t' = substrec t
   in
   if !occref > 0 then Termops.error_invalid_occurrence [occ] else t'
@@ -554,10 +554,10 @@ let subst_hole_with_term occ tc t =
   let locref = ref 0 in
   let occref = ref occ in
   let rec substrec = function
-    | RHole (_,Evd.QuestionMark(Evd.Define true)) -> 
+    | GHole (_,Evd.QuestionMark(Evd.Define true)) -> 
         decr occref; if !occref = 0 then tc
-                     else (incr locref; RHole (make_loc (!locref,0),Evd.QuestionMark(Evd.Define true)))
-    | c -> map_rawconstr_left_to_right substrec c
+                     else (incr locref; GHole (make_loc (!locref,0),Evd.QuestionMark(Evd.Define true)))
+    | c -> map_glob_constr_left_to_right substrec c
   in
   substrec t
 

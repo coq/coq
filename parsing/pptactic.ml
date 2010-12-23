@@ -39,8 +39,8 @@ type 'a raw_extra_genarg_printer =
     'a -> std_ppcmds
 
 type 'a glob_extra_genarg_printer =
-    (rawconstr_and_expr -> std_ppcmds) ->
-    (rawconstr_and_expr -> std_ppcmds) ->
+    (glob_constr_and_expr -> std_ppcmds) ->
+    (glob_constr_and_expr -> std_ppcmds) ->
     (tolerability -> glob_tactic_expr -> std_ppcmds) ->
     'a -> std_ppcmds
 
@@ -958,7 +958,7 @@ let strip_prod_binders_rawterm n (ty,_) =
   let rec strip_ty acc n ty =
     if n=0 then (List.rev acc, (ty,None)) else
       match ty with
-          Rawterm.RProd(loc,na,Explicit,a,b) ->
+          Rawterm.GProd(loc,na,Explicit,a,b) ->
             strip_ty (([dummy_loc,na],(a,None))::acc) (n-1) b
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
@@ -995,13 +995,13 @@ and pr_raw_tactic_level env n (t:raw_tactic_expr) =
 let pr_and_constr_expr pr (c,_) = pr c
 
 let pr_pat_and_constr_expr b (c,_) =
-  pr_and_constr_expr ((if b then pr_lrawconstr_env else pr_rawconstr_env)
+  pr_and_constr_expr ((if b then pr_lglob_constr_env else pr_glob_constr_env)
     (Global.env())) c
 
 let rec glob_printers =
     (pr_glob_tactic_level,
-     (fun env -> pr_and_constr_expr (pr_rawconstr_env env)),
-     (fun env -> pr_and_constr_expr (pr_lrawconstr_env env)),
+     (fun env -> pr_and_constr_expr (pr_glob_constr_env env)),
+     (fun env -> pr_and_constr_expr (pr_lglob_constr_env env)),
      pr_pat_and_constr_expr,
      (fun env -> pr_or_var (pr_and_short_name (pr_evaluable_reference_env env))),
      (fun env -> pr_or_var (pr_inductive env)),

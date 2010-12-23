@@ -17,18 +17,18 @@ open Mod_subst
 (** Topconstr: definitions of [aconstr] et [constr_expr] *)
 
 (** {6 aconstr } *)
-(** This is the subtype of rawconstr allowed in syntactic extensions 
+(** This is the subtype of glob_constr allowed in syntactic extensions 
    No location since intended to be substituted at any place of a text 
    Complex expressions such as fixpoints and cofixpoints are excluded, 
    non global expressions such as existential variables also *)
 
 type aconstr =
-  (** Part common to [rawconstr] and [cases_pattern] *)
+  (** Part common to [glob_constr] and [cases_pattern] *)
   | ARef of global_reference
   | AVar of identifier
   | AApp of aconstr * aconstr list
   | AList of identifier * identifier * aconstr * aconstr * bool
-  (** Part only in [rawconstr] *)
+  (** Part only in [glob_constr] *)
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
   | ABinderList of identifier * identifier * aconstr * aconstr
@@ -67,35 +67,35 @@ type notation_var_internalization_type =
 type interpretation =
     (identifier * (subscopes * notation_var_instance_type)) list * aconstr
 
-(** Translate a rawconstr into a notation given the list of variables
+(** Translate a glob_constr into a notation given the list of variables
     bound by the notation; also interpret recursive patterns           *)
 
-val aconstr_of_rawconstr :
+val aconstr_of_glob_constr :
   (identifier * notation_var_internalization_type) list ->
-  (identifier * identifier) list -> rawconstr -> aconstr
+  (identifier * identifier) list -> glob_constr -> aconstr
 
 (** Name of the special identifier used to encode recursive notations  *)
 val ldots_var : identifier
 
-(** Equality of rawconstr (warning: only partially implemented) *)
-val eq_rawconstr : rawconstr -> rawconstr -> bool
+(** Equality of glob_constr (warning: only partially implemented) *)
+val eq_glob_constr : glob_constr -> glob_constr -> bool
 
-(** Re-interpret a notation as a rawconstr, taking care of binders     *)
+(** Re-interpret a notation as a glob_constr, taking care of binders     *)
 
-val rawconstr_of_aconstr_with_binders : loc ->
+val glob_constr_of_aconstr_with_binders : loc ->
   ('a -> name -> 'a * name) ->
-  ('a -> aconstr -> rawconstr) -> 'a -> aconstr -> rawconstr
+  ('a -> aconstr -> glob_constr) -> 'a -> aconstr -> glob_constr
 
-val rawconstr_of_aconstr : loc -> aconstr -> rawconstr
+val glob_constr_of_aconstr : loc -> aconstr -> glob_constr
 
-(** [match_aconstr] matches a rawconstr against a notation interpretation;
+(** [match_aconstr] matches a glob_constr against a notation interpretation;
     raise [No_match] if the matching fails   *)
 
 exception No_match
 
-val match_aconstr : rawconstr -> interpretation ->
-      (rawconstr * subscopes) list * (rawconstr list * subscopes) list *
-      (rawdecl list * subscopes) list
+val match_aconstr : glob_constr -> interpretation ->
+      (glob_constr * subscopes) list * (glob_constr list * subscopes) list *
+      (glob_decl list * subscopes) list
 
 val match_aconstr_cases_pattern :  cases_pattern -> interpretation ->
       (cases_pattern * subscopes) list * (cases_pattern list * subscopes) list

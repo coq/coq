@@ -103,11 +103,11 @@ val head_of_constr_reference : Term.constr -> global_reference
 
 val pattern_of_constr : Evd.evar_map -> constr -> named_context * constr_pattern
 
-(** [pattern_of_rawconstr l c] translates a term [c] with metavariables into
+(** [pattern_of_glob_constr l c] translates a term [c] with metavariables into
    a pattern; variables bound in [l] are replaced by the pattern to which they
     are bound *)
 
-val pattern_of_rawconstr : rawconstr ->
+val pattern_of_glob_constr : glob_constr ->
       patvar list * constr_pattern
 
 val instantiate_pattern :

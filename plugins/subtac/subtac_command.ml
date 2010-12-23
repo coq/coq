@@ -84,16 +84,16 @@ let interp_constr_judgment isevars env c =
     { uj_val = evar_nf isevars j.uj_val; uj_type = evar_nf isevars j.uj_type }
 
 let locate_if_isevar loc na = function
-  | RHole _ ->
+  | GHole _ ->
       (try match na with
-	| Name id -> rawconstr_of_aconstr loc (Reserve.find_reserved_type id)
+	| Name id -> glob_constr_of_aconstr loc (Reserve.find_reserved_type id)
 	| Anonymous -> raise Not_found
-      with Not_found -> RHole (loc, Evd.BinderType na))
+      with Not_found -> GHole (loc, Evd.BinderType na))
   | x -> x
 
 let interp_binder sigma env na t =
   let t = Constrintern.intern_gen true ( !sigma) env t in
-    SPretyping.understand_tcc_evars sigma env IsType (locate_if_isevar (loc_of_rawconstr t) na t)
+    SPretyping.understand_tcc_evars sigma env IsType (locate_if_isevar (loc_of_glob_constr t) na t)
 
 let interp_context_evars evdref env params =
   let bl = Constrintern.intern_context false !evdref env params in
@@ -102,7 +102,7 @@ let interp_context_evars evdref env params =
       (fun (env,params,n,impls) (na, k, b, t) ->
 	match b with
 	    None ->
-	      let t' = locate_if_isevar (loc_of_rawconstr t) na t in
+	      let t' = locate_if_isevar (loc_of_glob_constr t) na t in
 	      let t = SPretyping.understand_tcc_evars evdref env IsType t' in
 	      let d = (na,None,t) in
 	      let impls =

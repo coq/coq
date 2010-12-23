@@ -69,11 +69,11 @@ module Refinable : sig
       The [check_type] argument asks whether the term should have the same
       type as the conclusion. [resolve_classes] is a flag on pretyping functions
       which, if set to true, calls the typeclass resolver.
-      The principal argument is a [rawconstr] which is then pretyped in the
+      The principal argument is a [glob_constr] which is then pretyped in the
       context of a term, the remaining evars are registered to the handle.
       It is the main component of the toplevel refine tactic.*)
   val constr_of_raw : 
-    handle -> bool -> bool -> Rawterm.rawconstr -> Term.constr sensitive
+    handle -> bool -> bool -> Rawterm.glob_constr -> Term.constr sensitive
 
 end
 

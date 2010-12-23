@@ -51,11 +51,11 @@ let loc_of_or_by_notation f = function
   | AN c -> f c
   | ByNotation (loc,s,_) -> loc
 
-type rawconstr_and_expr = rawconstr * constr_expr option
+type glob_constr_and_expr = glob_constr * constr_expr option
 type open_constr_expr = unit * constr_expr
-type open_rawconstr = unit * rawconstr_and_expr
+type open_glob_constr = unit * glob_constr_and_expr
 
-type rawconstr_pattern_and_expr = rawconstr_and_expr * Pattern.constr_pattern
+type glob_constr_pattern_and_expr = glob_constr_and_expr * Pattern.constr_pattern
 
 type 'a with_ebindings = 'a * open_constr bindings
 

@@ -21,7 +21,7 @@ open Compat
 
 (* INTERN *)
 
-let raw_app (loc,hd,args) = if args =[] then hd else RApp(loc,hd,args)
+let raw_app (loc,hd,args) = if args =[] then hd else GApp(loc,hd,args)
 
 let intern_justification_items globs =
   Option.map (List.map (intern_constr globs))
@@ -184,16 +184,16 @@ let interp_constr_or_thesis check_sort sigma env = function
 let abstract_one_hyp inject h raw =
   match h with
       Hvar (loc,(id,None)) ->
-	RProd (dummy_loc,Name id, Explicit, RHole (loc,Evd.BinderType (Name id)), raw)
+	GProd (dummy_loc,Name id, Explicit, GHole (loc,Evd.BinderType (Name id)), raw)
     | Hvar (loc,(id,Some typ)) ->
-	RProd (dummy_loc,Name id, Explicit, fst typ, raw)
+	GProd (dummy_loc,Name id, Explicit, fst typ, raw)
     | Hprop st ->
-	RProd (dummy_loc,st.st_label, Explicit, inject st.st_it, raw)
+	GProd (dummy_loc,st.st_label, Explicit, inject st.st_it, raw)
 
-let rawconstr_of_hyps inject hyps head =
+let glob_constr_of_hyps inject hyps head =
   List.fold_right (abstract_one_hyp inject) hyps head
 
-let raw_prop = RSort (dummy_loc,RProp Null)
+let raw_prop = GSort (dummy_loc,RProp Null)
 
 let rec match_hyps blend names constr = function
     [] -> [],substl names constr
@@ -211,7 +211,7 @@ let rec match_hyps blend names constr = function
 	qhyp::rhyps,head
 
 let interp_hyps_gen inject blend sigma env hyps head =
-  let constr=understand sigma env (rawconstr_of_hyps inject hyps head) in
+  let constr=understand sigma env (glob_constr_of_hyps inject hyps head) in
     match_hyps blend [] constr hyps
 
 let interp_hyps sigma env hyps = fst (interp_hyps_gen fst (fun x _ -> x) sigma env hyps raw_prop)
@@ -236,32 +236,32 @@ let rec raw_of_pat =
   function
       PatVar (loc,Anonymous) -> anomaly "Anonymous pattern variable"
     | PatVar (loc,Name id) ->
-	  RVar (loc,id)
+	  GVar (loc,id)
     | PatCstr(loc,((ind,_) as cstr),lpat,_) ->
 	let mind= fst (Global.lookup_inductive ind) in
 	let rec add_params n q =
 	  if n<=0 then q else
-	    add_params (pred n) (RHole(dummy_loc,
+	    add_params (pred n) (GHole(dummy_loc,
 				       Evd.TomatchTypeParameter(ind,n))::q) in
 	    let args = List.map raw_of_pat lpat in
-	      raw_app(loc,RRef(dummy_loc,Libnames.ConstructRef cstr),
+	      raw_app(loc,GRef(dummy_loc,Libnames.ConstructRef cstr),
 		   add_params mind.Declarations.mind_nparams args)
 
 let prod_one_hyp = function
     (loc,(id,None)) ->
       (fun raw ->
-	 RProd (dummy_loc,Name id, Explicit,
-		RHole (loc,Evd.BinderType (Name id)), raw))
+	 GProd (dummy_loc,Name id, Explicit,
+		GHole (loc,Evd.BinderType (Name id)), raw))
   | (loc,(id,Some typ)) ->
       (fun raw ->
-	 RProd (dummy_loc,Name id, Explicit, fst typ, raw))
+	 GProd (dummy_loc,Name id, Explicit, fst typ, raw))
 
 let prod_one_id (loc,id) raw =
-  RProd (dummy_loc,Name id, Explicit,
-	 RHole (loc,Evd.BinderType (Name id)), raw)
+  GProd (dummy_loc,Name id, Explicit,
+	 GHole (loc,Evd.BinderType (Name id)), raw)
 
 let let_in_one_alias (id,pat) raw =
-  RLetIn (dummy_loc,Name id, raw_of_pat pat, raw)
+  GLetIn (dummy_loc,Name id, raw_of_pat pat, raw)
 
 let rec bind_primary_aliases map pat =
   match pat with
@@ -331,34 +331,34 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
 	     (if expected = 0 then str "none" else int expected) ++ spc () ++
 	     str "expected.") in
   let app_ind =
-    let rind = RRef (dummy_loc,Libnames.IndRef pinfo.per_ind) in
+    let rind = GRef (dummy_loc,Libnames.IndRef pinfo.per_ind) in
     let rparams = List.map detype_ground pinfo.per_params in
     let rparams_rec =
       List.map
 	(fun (loc,(id,_)) ->
-	   RVar (loc,id)) params in
+	   GVar (loc,id)) params in
     let dum_args=
-      list_tabulate (fun _ -> RHole (dummy_loc,Evd.QuestionMark (Evd.Define false)))
+      list_tabulate (fun _ -> GHole (dummy_loc,Evd.QuestionMark (Evd.Define false)))
 	oib.Declarations.mind_nrealargs in
       raw_app(dummy_loc,rind,rparams@rparams_rec@dum_args) in
   let pat_vars,aliases,patt = interp_pattern env pat in
   let inject = function
-      Thesis (Plain) -> Rawterm.RSort(dummy_loc,RProp Null)
+      Thesis (Plain) -> Rawterm.GSort(dummy_loc,RProp Null)
     | Thesis (For rec_occ) ->
 	if not (List.mem rec_occ pat_vars) then
 	  errorlabstrm "suppose it is"
 	    (str "Variable " ++ Nameops.pr_id rec_occ ++
 	       str " does not occur in pattern.");
-	Rawterm.RSort(dummy_loc,RProp Null)
+	Rawterm.GSort(dummy_loc,RProp Null)
     | This (c,_) -> c in
-  let term1 = rawconstr_of_hyps inject hyps raw_prop in
+  let term1 = glob_constr_of_hyps inject hyps raw_prop in
   let loc_ids,npatt =
     let rids=ref ([],pat_vars) in
     let npatt= deanonymize rids patt in
       List.rev (fst !rids),npatt in
   let term2 =
-    RLetIn(dummy_loc,Anonymous,
-	   RCast(dummy_loc,raw_of_pat npatt,
+    GLetIn(dummy_loc,Anonymous,
+	   GCast(dummy_loc,raw_of_pat npatt,
 		 CastConv (DEFAULTcast,app_ind)),term1) in
   let term3=List.fold_right let_in_one_alias aliases term2 in
   let term4=List.fold_right prod_one_id loc_ids term3 in
@@ -413,17 +413,17 @@ let interp_casee sigma env = function
 let abstract_one_arg = function
     (loc,(id,None)) ->
       (fun raw ->
-	 RLambda (dummy_loc,Name id, Explicit,
-		RHole (loc,Evd.BinderType (Name id)), raw))
+	 GLambda (dummy_loc,Name id, Explicit,
+		GHole (loc,Evd.BinderType (Name id)), raw))
   | (loc,(id,Some typ)) ->
       (fun raw ->
-	 RLambda (dummy_loc,Name id, Explicit, fst typ, raw))
+	 GLambda (dummy_loc,Name id, Explicit, fst typ, raw))
 
-let rawconstr_of_fun args body =
+let glob_constr_of_fun args body =
   List.fold_right abstract_one_arg args (fst body)
 
 let interp_fun sigma env args body =
-  let constr=understand sigma env (rawconstr_of_fun args body) in
+  let constr=understand sigma env (glob_constr_of_fun args body) in
     match_args destLambda [] constr args
 
 let rec interp_bare_proof_instr info (sigma:Evd.evar_map) (env:Environ.env) = function

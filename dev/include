@@ -14,7 +14,7 @@
 #install_printer  (* pp_stdcmds *) pppp;;
 
 #install_printer  (* pattern *) pppattern;;
-#install_printer  (* rawconstr *) pprawconstr;;
+#install_printer  (* glob_constr *) ppglob_constr;;
 
 #install_printer  (* constr *) ppconstr;;
 #install_printer  (* constr_substituted *) ppsconstr;; 

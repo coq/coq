@@ -54,11 +54,11 @@ val pr_type                : types -> std_ppcmds
 val pr_ljudge_env          : env -> unsafe_judgment -> std_ppcmds * std_ppcmds
 val pr_ljudge              : unsafe_judgment -> std_ppcmds * std_ppcmds
 
-val pr_lrawconstr_env      : env -> rawconstr -> std_ppcmds
-val pr_lrawconstr          : rawconstr -> std_ppcmds
+val pr_lglob_constr_env      : env -> glob_constr -> std_ppcmds
+val pr_lglob_constr          : glob_constr -> std_ppcmds
 
-val pr_rawconstr_env       : env -> rawconstr -> std_ppcmds
-val pr_rawconstr           : rawconstr -> std_ppcmds
+val pr_glob_constr_env       : env -> glob_constr -> std_ppcmds
+val pr_glob_constr           : glob_constr -> std_ppcmds
 
 val pr_lconstr_pattern_env : env -> constr_pattern -> std_ppcmds
 val pr_lconstr_pattern     : constr_pattern -> std_ppcmds

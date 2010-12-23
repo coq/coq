@@ -48,7 +48,7 @@ type typing_constraint = OfType of types option | IsType
 type var_map = (identifier * constr_under_binders) list
 type unbound_ltac_var_map = (identifier * identifier option) list
 type ltac_var_map = var_map * unbound_ltac_var_map
-type rawconstr_ltac_closure = ltac_var_map * rawconstr
+type glob_constr_ltac_closure = ltac_var_map * glob_constr
 
 (************************************************************************)
 (* This concerns Cases *)
@@ -86,7 +86,7 @@ let search_guard loc env possible_indexes fixdefs =
 	 user_err_loc (loc,"search_guard", Pp.str errmsg)
      with Found indexes -> indexes)
 
-(* To embed constr in rawconstr *)
+(* To embed constr in glob_constr *)
 let ((constr_in : constr -> Dyn.t),
      (constr_out : Dyn.t -> constr)) = Dyn.create "constr"
 
@@ -109,19 +109,19 @@ sig
   (* Allow references to syntaxically inexistent variables (i.e., if applied on an inductive) *)
   val allow_anonymous_refs : bool ref
 
-  (* Generic call to the interpreter from rawconstr to open_constr, leaving
+  (* Generic call to the interpreter from glob_constr to open_constr, leaving
      unresolved holes as evars and returning the typing contexts of
      these evars. Work as [understand_gen] for the rest. *)
 
   val understand_tcc : ?resolve_classes:bool ->
-    evar_map -> env -> ?expected_type:types -> rawconstr -> open_constr
+    evar_map -> env -> ?expected_type:types -> glob_constr -> open_constr
 
   val understand_tcc_evars : ?fail_evar:bool -> ?resolve_classes:bool ->
-    evar_map ref -> env -> typing_constraint -> rawconstr -> constr
+    evar_map ref -> env -> typing_constraint -> glob_constr -> constr
 
   (* More general entry point with evars from ltac *)
 
-  (* Generic call to the interpreter from rawconstr to constr, failing
+  (* Generic call to the interpreter from glob_constr to constr, failing
      unresolved holes in the rawterm cannot be instantiated.
 
      In [understand_ltac expand_evars sigma env ltac_env constraint c],
@@ -134,29 +134,29 @@ sig
 
   val understand_ltac :
     bool -> evar_map -> env -> ltac_var_map ->
-    typing_constraint -> rawconstr -> evar_map * constr
+    typing_constraint -> glob_constr -> evar_map * constr
 
-  (* Standard call to get a constr from a rawconstr, resolving implicit args *)
+  (* Standard call to get a constr from a glob_constr, resolving implicit args *)
 
   val understand : evar_map -> env -> ?expected_type:Term.types ->
-    rawconstr -> constr
+    glob_constr -> constr
 
-  (* Idem but the rawconstr is intended to be a type *)
+  (* Idem but the glob_constr is intended to be a type *)
 
-  val understand_type : evar_map -> env -> rawconstr -> constr
+  val understand_type : evar_map -> env -> glob_constr -> constr
 
   (* A generalization of the two previous case *)
 
   val understand_gen : typing_constraint -> evar_map -> env ->
-    rawconstr -> constr
+    glob_constr -> constr
 
   (* Idem but returns the judgment of the understood term *)
 
-  val understand_judgment : evar_map -> env -> rawconstr -> unsafe_judgment
+  val understand_judgment : evar_map -> env -> glob_constr -> unsafe_judgment
 
   (* Idem but do not fail on unresolved evars *)
 
-  val understand_judgment_tcc : evar_map ref -> env -> rawconstr -> unsafe_judgment
+  val understand_judgment_tcc : evar_map ref -> env -> glob_constr -> unsafe_judgment
 
   (*i*)
   (* Internal of Pretyping...
@@ -164,15 +164,15 @@ sig
    *)
   val pretype :
     type_constraint -> env -> evar_map ref ->
-    ltac_var_map -> rawconstr -> unsafe_judgment
+    ltac_var_map -> glob_constr -> unsafe_judgment
 
   val pretype_type :
     val_constraint -> env -> evar_map ref ->
-    ltac_var_map -> rawconstr -> unsafe_type_judgment
+    ltac_var_map -> glob_constr -> unsafe_type_judgment
 
   val pretype_gen :
     bool -> bool -> bool -> evar_map ref -> env ->
-    ltac_var_map -> typing_constraint -> rawconstr -> constr
+    ltac_var_map -> typing_constraint -> glob_constr -> constr
 
     (*i*)
 end
@@ -302,17 +302,17 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   (* in environment [env], with existential variables [evdref] and *)
   (* the type constraint tycon *)
   let rec pretype (tycon : type_constraint) env evdref lvar = function
-    | RRef (loc,ref) ->
+    | GRef (loc,ref) ->
 	inh_conv_coerce_to_tycon loc env evdref
 	  (pretype_ref evdref env ref)
 	  tycon
 
-    | RVar (loc, id) ->
+    | GVar (loc, id) ->
 	inh_conv_coerce_to_tycon loc env evdref
 	  (pretype_id loc env !evdref lvar id)
 	  tycon
 
-    | REvar (loc, evk, instopt) ->
+    | GEvar (loc, evk, instopt) ->
 	(* Ne faudrait-il pas s'assurer que hyps est bien un
 	   sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
 	let hyps = evar_filtered_context (Evd.find !evdref evk) in
@@ -323,7 +323,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	let j = (Retyping.get_judgment_of env !evdref c) in
 	  inh_conv_coerce_to_tycon loc env evdref j tycon
 
-    | RPatVar (loc,(someta,n)) ->
+    | GPatVar (loc,(someta,n)) ->
 	let ty =
           match tycon with
             | Some (None, ty) -> ty
@@ -332,7 +332,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
         let k = MatchingVar (someta,n) in
 	{ uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
 
-    | RHole (loc,k) ->
+    | GHole (loc,k) ->
 	let ty =
           match tycon with
             | Some (None, ty) -> ty
@@ -340,7 +340,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		e_new_evar evdref env ~src:(loc,InternalHole) (new_Type ()) in
 	  { uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
 
-    | RRec (loc,fixkind,names,bl,lar,vdef) ->
+    | GRec (loc,fixkind,names,bl,lar,vdef) ->
 	let rec type_bl env ctxt = function
             [] -> ctxt
           | (na,bk,None,ty)::bl ->
@@ -403,16 +403,16 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	      make_judge (mkCoFix cofix) ftys.(i) in
 	inh_conv_coerce_to_tycon loc env evdref fixj tycon
 
-    | RSort (loc,s) ->
+    | GSort (loc,s) ->
 	inh_conv_coerce_to_tycon loc env evdref (pretype_sort s) tycon
 
-    | RApp (loc,f,args) ->
+    | GApp (loc,f,args) ->
 	let fj = pretype empty_tycon env evdref lvar f in
- 	let floc = loc_of_rawconstr f in
+ 	let floc = loc_of_glob_constr f in
 	let rec apply_rec env n resj = function
 	  | [] -> resj
 	  | c::rest ->
-	      let argloc = loc_of_rawconstr c in
+	      let argloc = loc_of_glob_constr c in
 	      let resj = evd_comb1 (Coercion.inh_app_fun env) evdref resj in
               let resty = whd_betadeltaiota env !evdref resj.uj_type in
       		match kind_of_term resty with
@@ -446,7 +446,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  | _ -> resj in
 	inh_conv_coerce_to_tycon loc env evdref resj tycon
 
-    | RLambda(loc,name,bk,c1,c2)      ->
+    | GLambda(loc,name,bk,c1,c2)      ->
 	let (name',dom,rng) = evd_comb1 (split_tycon loc env) evdref tycon in
 	let dom_valcon = valcon_of_tycon dom in
 	let j = pretype_type dom_valcon env evdref lvar c1 in
@@ -454,7 +454,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	let j' = pretype rng (push_rel var env) evdref lvar c2 in
 	  judge_of_abstraction env (orelse_name name name') j j'
 
-    | RProd(loc,name,bk,c1,c2)        ->
+    | GProd(loc,name,bk,c1,c2)        ->
 	let j = pretype_type empty_valcon env evdref lvar c1 in
 	let j' =
 	  if name = Anonymous then
@@ -470,10 +470,10 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  with TypeError _ as e -> Loc.raise loc e in
 	  inh_conv_coerce_to_tycon loc env evdref resj tycon
 
-    | RLetIn(loc,name,c1,c2)      ->
+    | GLetIn(loc,name,c1,c2)      ->
 	let j =
 	  match c1 with
-	  | RCast (loc, c, CastConv (DEFAULTcast, t)) ->
+	  | GCast (loc, c, CastConv (DEFAULTcast, t)) ->
 	      let tj = pretype_type empty_valcon env evdref lvar t in
 		pretype (mk_tycon tj.utj_val) env evdref lvar c
 	  | _ -> pretype empty_tycon env evdref lvar c1
@@ -485,12 +485,12 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  { uj_val = mkLetIn (name, j.uj_val, t, j'.uj_val) ;
 	    uj_type = subst1 j.uj_val j'.uj_type }
 
-    | RLetTuple (loc,nal,(na,po),c,d) ->
+    | GLetTuple (loc,nal,(na,po),c,d) ->
 	let cj = pretype empty_tycon env evdref lvar c in
 	let (IndType (indf,realargs)) =
 	  try find_rectype env !evdref cj.uj_type
 	  with Not_found ->
-	    let cloc = loc_of_rawconstr c in
+	    let cloc = loc_of_glob_constr c in
 	      error_case_not_inductive_loc cloc env !evdref cj
 	in
 	let cstrs = get_constructors env indf in
@@ -551,12 +551,12 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		     in
 		       { uj_val = v; uj_type = ccl })
 
-    | RIf (loc,c,(na,po),b1,b2) ->
+    | GIf (loc,c,(na,po),b1,b2) ->
 	let cj = pretype empty_tycon env evdref lvar c in
 	let (IndType (indf,realargs)) =
 	  try find_rectype env !evdref cj.uj_type
 	  with Not_found ->
-	    let cloc = loc_of_rawconstr c in
+	    let cloc = loc_of_glob_constr c in
 	      error_case_not_inductive_loc cloc env !evdref cj in
 	let cstrs = get_constructors env indf in
 	  if Array.length cstrs <> 2 then
@@ -619,12 +619,12 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  in
 	    { uj_val = v; uj_type = p }
 
-    | RCases (loc,sty,po,tml,eqns) ->
+    | GCases (loc,sty,po,tml,eqns) ->
 	Cases.compile_cases loc sty
 	  ((fun vtyc env evdref -> pretype vtyc env evdref lvar),evdref)
 	  tycon env (* loc *) (po,tml,eqns)
 
-    | RCast (loc,c,k) ->
+    | GCast (loc,c,k) ->
 	let cj =
 	  match k with
 	      CastCoerce ->
@@ -643,7 +643,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		  { uj_val = v; uj_type = tval }
 	in inh_conv_coerce_to_tycon loc env evdref cj tycon
 
-    | RDynamic (loc,d) ->
+    | GDynamic (loc,d) ->
 	if (Dyn.tag d) = "constr" then
 	  let c = constr_out d in
 	  let j = (Retyping.get_judgment_of env !evdref c) in
@@ -654,7 +654,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 
   (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
   and pretype_type valcon env evdref lvar = function
-    | RHole loc ->
+    | GHole loc ->
 	(match valcon with
 	   | Some v ->
                let s =
@@ -674,7 +674,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		   utj_type = s})
     | c ->
 	let j = pretype empty_tycon env evdref lvar c in
-	let loc = loc_of_rawconstr c in
+	let loc = loc_of_glob_constr c in
 	let tj = evd_comb1 (Coercion.inh_coerce_to_sort loc env) evdref j in
 	  match valcon with
 	    | None -> tj
@@ -682,7 +682,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		if e_cumul env evdref v tj.utj_val then tj
 		else
 		  error_unexpected_type_loc
-                    (loc_of_rawconstr c) env !evdref tj.utj_val v
+                    (loc_of_glob_constr c) env !evdref tj.utj_val v
 
   let pretype_gen expand_evar fail_evar resolve_classes evdref env lvar kind c =
     let c' = match kind with

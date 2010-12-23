@@ -30,8 +30,8 @@ type 'a raw_extra_genarg_printer =
     'a -> std_ppcmds
 
 type 'a glob_extra_genarg_printer =
-    (rawconstr_and_expr -> std_ppcmds) ->
-    (rawconstr_and_expr -> std_ppcmds) ->
+    (glob_constr_and_expr -> std_ppcmds) ->
+    (glob_constr_and_expr -> std_ppcmds) ->
     (tolerability -> glob_tactic_expr -> std_ppcmds) ->
     'a -> std_ppcmds
 
@@ -70,9 +70,9 @@ val pr_raw_extend:
     string -> raw_generic_argument list -> std_ppcmds
 
 val pr_glob_extend:
-  (rawconstr_and_expr -> std_ppcmds) -> (rawconstr_and_expr -> std_ppcmds) ->
+  (glob_constr_and_expr -> std_ppcmds) -> (glob_constr_and_expr -> std_ppcmds) ->
   (tolerability -> glob_tactic_expr -> std_ppcmds) ->
-  (rawconstr_pattern_and_expr -> std_ppcmds) -> int ->
+  (glob_constr_pattern_and_expr -> std_ppcmds) -> int ->
     string -> glob_generic_argument list -> std_ppcmds
 
 val pr_extend :

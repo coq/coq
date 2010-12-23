@@ -18,7 +18,7 @@ open Topconstr
 open Termops
 open Pretyping
 
-(** Translation from front abstract syntax of term to untyped terms (rawconstr) *)
+(** Translation from front abstract syntax of term to untyped terms (glob_constr) *)
 
 (** The translation performs:
 
@@ -68,23 +68,23 @@ type manual_implicits = (explicitation * (bool * bool * bool)) list
 
 type ltac_sign = identifier list * unbound_ltac_var_map
 
-type raw_binder = (name * binding_kind * rawconstr option * rawconstr)
+type glob_binder = (name * binding_kind * glob_constr option * glob_constr)
 
 (** {6 Internalization performs interpretation of global names and notations } *)
 
-val intern_constr : evar_map -> env -> constr_expr -> rawconstr
+val intern_constr : evar_map -> env -> constr_expr -> glob_constr
 
-val intern_type : evar_map -> env -> constr_expr -> rawconstr
+val intern_type : evar_map -> env -> constr_expr -> glob_constr
 
 val intern_gen : bool -> evar_map -> env ->
   ?impls:internalization_env -> ?allow_patvar:bool -> ?ltacvars:ltac_sign ->
-  constr_expr -> rawconstr
+  constr_expr -> glob_constr
 
 val intern_pattern : env -> cases_pattern_expr ->
   Names.identifier list *
     ((Names.identifier * Names.identifier) list * Rawterm.cases_pattern) list
 
-val intern_context : bool -> evar_map -> env -> local_binder list -> raw_binder list
+val intern_context : bool -> evar_map -> env -> local_binder list -> glob_binder list
 
 (** {6 Composing internalization with pretyping } *)
 
@@ -142,7 +142,7 @@ val intern_constr_pattern :
 val intern_reference : reference -> global_reference
 
 (** Expands abbreviations (syndef); raise an error if not existing *)
-val interp_reference : ltac_sign -> reference -> rawconstr
+val interp_reference : ltac_sign -> reference -> glob_constr
 
 (** Interpret binders *)
 
@@ -152,8 +152,8 @@ val interp_binder_evars : evar_map ref -> env -> name -> constr_expr -> types
 
 (** Interpret contexts: returns extended env and context *)
 
-val interp_context_gen : (env -> rawconstr -> types) ->
-  (env -> rawconstr -> unsafe_judgment) ->
+val interp_context_gen : (env -> glob_constr -> types) ->
+  (env -> glob_constr -> unsafe_judgment) ->
   ?global_level:bool ->
   evar_map -> env -> local_binder list -> (env * rel_context) * manual_implicits
   

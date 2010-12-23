@@ -76,8 +76,8 @@ let chop_rlambda_n  =
       then List.rev acc,rt
       else
 	match rt with
-	  | Rawterm.RLambda(_,name,k,t,b) -> chop_lambda_n ((name,t,false)::acc) (n-1) b
-	  | Rawterm.RLetIn(_,name,v,b) -> chop_lambda_n ((name,v,true)::acc) (n-1) b
+	  | Rawterm.GLambda(_,name,k,t,b) -> chop_lambda_n ((name,t,false)::acc) (n-1) b
+	  | Rawterm.GLetIn(_,name,v,b) -> chop_lambda_n ((name,v,true)::acc) (n-1) b
 	  | _ ->
 	      raise (Util.UserError("chop_rlambda_n",
 				    str "chop_rlambda_n: Not enough Lambdas"))
@@ -90,7 +90,7 @@ let chop_rprod_n  =
       then List.rev acc,rt
       else
 	match rt with
-	  | Rawterm.RProd(_,name,k,t,b) -> chop_prod_n ((name,t)::acc) (n-1) b
+	  | Rawterm.GProd(_,name,k,t,b) -> chop_prod_n ((name,t)::acc) (n-1) b
 	  | _ -> raise (Util.UserError("chop_rprod_n",str "chop_rprod_n: Not enough products"))
   in
   chop_prod_n []

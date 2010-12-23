@@ -248,48 +248,48 @@ let mkPLambda na b = PLambda(na,PMeta None,b)
 let rev_it_mkPLambda = List.fold_right mkPLambda
 
 let rec pat_of_raw metas vars = function
-  | RVar (_,id) ->
+  | GVar (_,id) ->
       (try PRel (list_index (Name id) vars)
        with Not_found -> PVar id)
-  | RPatVar (_,(false,n)) ->
+  | GPatVar (_,(false,n)) ->
       metas := n::!metas; PMeta (Some n)
-  | RRef (_,gr) ->
+  | GRef (_,gr) ->
       PRef (canonical_gr gr)
   (* Hack pour ne pas réécrire une interprétation complète des patterns*)
-  | RApp (_, RPatVar (_,(true,n)), cl) ->
+  | GApp (_, GPatVar (_,(true,n)), cl) ->
       metas := n::!metas; PSoApp (n, List.map (pat_of_raw metas vars) cl)
-  | RApp (_,c,cl) ->
+  | GApp (_,c,cl) ->
       PApp (pat_of_raw metas vars c,
 	    Array.of_list (List.map (pat_of_raw metas vars) cl))
-  | RLambda (_,na,bk,c1,c2) ->
+  | GLambda (_,na,bk,c1,c2) ->
       name_iter (fun n -> metas := n::!metas) na;
       PLambda (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
-  | RProd (_,na,bk,c1,c2) ->
+  | GProd (_,na,bk,c1,c2) ->
       name_iter (fun n -> metas := n::!metas) na;
       PProd (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
-  | RLetIn (_,na,c1,c2) ->
+  | GLetIn (_,na,c1,c2) ->
       name_iter (fun n -> metas := n::!metas) na;
       PLetIn (na, pat_of_raw metas vars c1,
 	       pat_of_raw metas (na::vars) c2)
-  | RSort (_,s) ->
+  | GSort (_,s) ->
       PSort s
-  | RHole _ ->
+  | GHole _ ->
       PMeta None
-  | RCast (_,c,_) ->
+  | GCast (_,c,_) ->
       Flags.if_verbose
         Pp.warning "Cast not taken into account in constr pattern";
       pat_of_raw metas vars c
-  | RIf (_,c,(_,None),b1,b2) ->
+  | GIf (_,c,(_,None),b1,b2) ->
       PIf (pat_of_raw metas vars c,
            pat_of_raw metas vars b1,pat_of_raw metas vars b2)
-  | RLetTuple (loc,nal,(_,None),b,c) ->
-      let mkRLambda c na = RLambda (loc,na,Explicit,RHole (loc,Evd.InternalHole),c) in
+  | GLetTuple (loc,nal,(_,None),b,c) ->
+      let mkRLambda c na = GLambda (loc,na,Explicit,GHole (loc,Evd.InternalHole),c) in
       let c = List.fold_left mkRLambda c nal in
       PCase ((LetStyle,[|1|],None,None),PMeta None,pat_of_raw metas vars b,
              [|pat_of_raw metas vars c|])
-  | RCases (loc,sty,p,[c,(na,indnames)],brs) ->
+  | GCases (loc,sty,p,[c,(na,indnames)],brs) ->
       let pred,ind_nargs, ind = match p,indnames with
 	| Some p, Some (_,ind,n,nal) ->
 	    rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas vars p)),
@@ -307,34 +307,34 @@ let rec pat_of_raw metas vars = function
              pat_of_raw metas vars c, brs)
 
   | r ->
-      let loc = loc_of_rawconstr r in
-      user_err_loc (loc,"pattern_of_rawconstr", Pp.str"Non supported pattern.")
+      let loc = loc_of_glob_constr r in
+      user_err_loc (loc,"pattern_of_glob_constr", Pp.str"Non supported pattern.")
 
 and pat_of_raw_branch loc metas vars ind brs i =
   let bri = List.filter
     (function
         (_,_,[PatCstr(_,c,lv,Anonymous)],_) -> snd c = i+1
       | (loc,_,_,_) ->
-          user_err_loc (loc,"pattern_of_rawconstr",
+          user_err_loc (loc,"pattern_of_glob_constr",
                         Pp.str "Non supported pattern.")) brs in
   match bri with
     | [(_,_,[PatCstr(_,(indsp,_),lv,_)],br)] ->
 	if ind <> None & ind <> Some indsp then
-          user_err_loc (loc,"pattern_of_rawconstr",
+          user_err_loc (loc,"pattern_of_glob_constr",
             Pp.str "All constructors must be in the same inductive type.");
         let lna =
           List.map
             (function PatVar(_,na) -> na
               | PatCstr(loc,_,_,_) ->
-                  user_err_loc (loc,"pattern_of_rawconstr",
+                  user_err_loc (loc,"pattern_of_glob_constr",
                                 Pp.str "Non supported pattern.")) lv in
         let vars' = List.rev lna @ vars in
 	List.length lv, rev_it_mkPLambda lna (pat_of_raw metas vars' br)
-    | _ -> user_err_loc (loc,"pattern_of_rawconstr",
+    | _ -> user_err_loc (loc,"pattern_of_glob_constr",
                          str "No unique branch for " ++ int (i+1) ++
                          str"-th constructor.")
 
-let pattern_of_rawconstr c =
+let pattern_of_glob_constr c =
   let metas = ref [] in
   let p = pat_of_raw metas [] c in	
   (!metas,p)

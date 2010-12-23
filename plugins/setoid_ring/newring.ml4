@@ -141,7 +141,7 @@ let closed_term_ast l =
   let l = List.map (fun gr -> ArgArg(dummy_loc,gr)) l in
   TacFun([Some(id_of_string"t")],
   TacAtom(dummy_loc,TacExtend(dummy_loc,"closed_term",
-  [Genarg.in_gen Genarg.globwit_constr (RVar(dummy_loc,id_of_string"t"),None);
+  [Genarg.in_gen Genarg.globwit_constr (GVar(dummy_loc,id_of_string"t"),None);
    Genarg.in_gen (Genarg.wit_list1 Genarg.globwit_ref) l])))
 (*
 let _ = add_tacdef false ((dummy_loc,id_of_string"ring_closed_term"

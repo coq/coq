@@ -17,7 +17,7 @@ open Rawterm
 (** Refinement of existential variables. *)
 
 val w_refine : evar * evar_info ->
-  rawconstr_ltac_closure -> evar_map -> evar_map
+  glob_constr_ltac_closure -> evar_map -> evar_map
 
 val instantiate_pf_com :
   Evd.evar -> Topconstr.constr_expr -> Evd.evar_map -> Evd.evar_map

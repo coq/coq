@@ -56,7 +56,7 @@ let ppconstrdb x = pp(Flags.with_option rawdebug Termops.print_constr x)
 let ppterm = ppconstr
 let ppsconstr x = ppconstr (Declarations.force x)
 let ppconstr_univ x = Constrextern.with_universes ppconstr x
-let pprawconstr = (fun x -> pp(pr_lrawconstr x))
+let ppglob_constr = (fun x -> pp(pr_lglob_constr x))
 let pppattern = (fun x -> pp(pr_constr_pattern x))
 let pptype = (fun x -> try pp(pr_ltype x) with e -> pp (str (Printexc.to_string e)))
 

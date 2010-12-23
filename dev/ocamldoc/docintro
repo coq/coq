@@ -30,7 +30,7 @@ describes the Coq library, which is made of two parts:
 
 describes the translation from Coq context-dependent
 front abstract syntax of terms {v constr_expr v} to and from the
-context-free, untyped, globalized form of constructions {v rawconstr v}.}
+context-free, untyped, globalized form of constructions {v glob_constr v}.}
 {- Parsers and printers : parsing
 
 describes the implementation of the Coq parsers and printers.}

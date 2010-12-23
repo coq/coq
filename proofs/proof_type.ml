@@ -94,7 +94,7 @@ type ltac_call_kind =
   | LtacNameCall of ltac_constant
   | LtacAtomCall of glob_atomic_tactic_expr * atomic_tactic_expr option ref
   | LtacVarCall of identifier * glob_tactic_expr
-  | LtacConstrInterp of rawconstr *
+  | LtacConstrInterp of glob_constr *
       (extended_patvar_map * (identifier * identifier option) list)
 
 type ltac_trace = (int * loc * ltac_call_kind) list

@@ -136,33 +136,33 @@ let add_name_to_ids set na =
   | Anonymous -> set
   | Name id -> Idset.add id set
 
-let generalizable_vars_of_rawconstr ?(bound=Idset.empty) ?(allowed=Idset.empty) =
+let generalizable_vars_of_glob_constr ?(bound=Idset.empty) ?(allowed=Idset.empty) =
   let rec vars bound vs = function
-    | RVar (loc,id) ->
+    | GVar (loc,id) ->
 	if is_freevar bound (Global.env ()) id then
 	  if List.mem_assoc id vs then vs
 	  else (id, loc) :: vs
 	else vs
-    | RApp (loc,f,args) -> List.fold_left (vars bound) vs (f::args)
-    | RLambda (loc,na,_,ty,c) | RProd (loc,na,_,ty,c) | RLetIn (loc,na,ty,c) ->
+    | GApp (loc,f,args) -> List.fold_left (vars bound) vs (f::args)
+    | GLambda (loc,na,_,ty,c) | GProd (loc,na,_,ty,c) | GLetIn (loc,na,ty,c) ->
 	let vs' = vars bound vs ty in
 	let bound' = add_name_to_ids bound na in
 	vars bound' vs' c
-    | RCases (loc,sty,rtntypopt,tml,pl) ->
+    | GCases (loc,sty,rtntypopt,tml,pl) ->
 	let vs1 = vars_option bound vs rtntypopt in
 	let vs2 = List.fold_left (fun vs (tm,_) -> vars bound vs tm) vs1 tml in
 	List.fold_left (vars_pattern bound) vs2 pl
-    | RLetTuple (loc,nal,rtntyp,b,c) ->
+    | GLetTuple (loc,nal,rtntyp,b,c) ->
 	let vs1 = vars_return_type bound vs rtntyp in
 	let vs2 = vars bound vs1 b in
 	let bound' = List.fold_left add_name_to_ids bound nal in
 	vars bound' vs2 c
-    | RIf (loc,c,rtntyp,b1,b2) ->
+    | GIf (loc,c,rtntyp,b1,b2) ->
 	let vs1 = vars_return_type bound vs rtntyp in
 	let vs2 = vars bound vs1 c in
 	let vs3 = vars bound vs2 b1 in
 	vars bound vs3 b2
-    | RRec (loc,fk,idl,bl,tyl,bv) ->
+    | GRec (loc,fk,idl,bl,tyl,bv) ->
 	let bound' = Array.fold_right Idset.add idl bound in
 	let vars_fix i vs fid =
 	  let vs1,bound1 =
@@ -180,9 +180,9 @@ let generalizable_vars_of_rawconstr ?(bound=Idset.empty) ?(allowed=Idset.empty) 
 	  vars bound1 vs2 bv.(i)
 	in
 	array_fold_left_i vars_fix vs idl
-    | RCast (loc,c,k) -> let v = vars bound vs c in
+    | GCast (loc,c,k) -> let v = vars bound vs c in
 	(match k with CastConv (_,t) -> vars bound v t | _ -> v)
-    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> vs
+    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GDynamic _) -> vs
 
   and vars_pattern bound vs (loc,idl,p,c) =
     let bound' = List.fold_right Idset.add idl bound  in
@@ -307,14 +307,14 @@ let implicits_of_rawterm ?(with_products=true) l =
 	else rest
     in
       match c with
-      | RProd (loc, na, bk, t, b) ->
+      | GProd (loc, na, bk, t, b) ->
 	  if with_products then abs loc na bk t b
 	  else 
 	    (if bk = Implicit then
 	       msg_warning (str "Ignoring implicit status of product binder " ++ 
 			      pr_name na ++ str " and following binders");
 	     [])
-      | RLambda (loc, na, bk, t, b) -> abs loc na bk t b
-      | RLetIn (loc, na, t, b) -> aux i b
+      | GLambda (loc, na, bk, t, b) -> abs loc na bk t b
+      | GLetIn (loc, na, t, b) -> aux i b
       | _ -> []
   in aux 1 l

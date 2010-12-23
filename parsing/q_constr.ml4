@@ -23,14 +23,14 @@ let dloc = <:expr< Util.dummy_loc >>
 
 let apply_ref f l =
   <:expr<
-    Rawterm.RApp ($dloc$, Rawterm.RRef ($dloc$, Lazy.force $f$), $mlexpr_of_list (fun x -> x) l$)
+    Rawterm.GApp ($dloc$, Rawterm.GRef ($dloc$, Lazy.force $f$), $mlexpr_of_list (fun x -> x) l$)
   >>
 
 EXTEND
   GLOBAL: expr;
   expr:
     [ [ "PATTERN"; "["; c = constr; "]" ->
-      <:expr< snd (Pattern.pattern_of_rawconstr $c$) >> ] ]
+      <:expr< snd (Pattern.pattern_of_glob_constr $c$) >> ] ]
   ;
   sort:
     [ [ "Set"  -> RProp Pos
@@ -49,19 +49,19 @@ EXTEND
   constr:
     [ "200" RIGHTA
       [ LIDENT "forall"; id = ident; ":"; c1 = constr; ","; c2 = constr ->
-        <:expr< Rawterm.RProd ($dloc$,Name $id$,Rawterm.Explicit,$c1$,$c2$) >>
+        <:expr< Rawterm.GProd ($dloc$,Name $id$,Rawterm.Explicit,$c1$,$c2$) >>
       | "fun"; id = ident; ":"; c1 = constr; "=>"; c2 = constr ->
-        <:expr< Rawterm.RLambda ($dloc$,Name $id$,Rawterm.Explicit,$c1$,$c2$) >>
+        <:expr< Rawterm.GLambda ($dloc$,Name $id$,Rawterm.Explicit,$c1$,$c2$) >>
       | "let"; id = ident; ":="; c1 = constr; "in"; c2 = constr ->
         <:expr< Rawterm.RLetin ($dloc$,Name $id$,$c1$,$c2$) >>
       (* fix todo *)
       ]
     | "100" RIGHTA
       [ c1 = constr; ":"; c2 = SELF ->
-        <:expr< Rawterm.RCast($dloc$,$c1$,DEFAULTcast,$c2$) >> ]
+        <:expr< Rawterm.GCast($dloc$,$c1$,DEFAULTcast,$c2$) >> ]
     | "90" RIGHTA
       [ c1 = constr; "->"; c2 = SELF ->
-        <:expr< Rawterm.RProd ($dloc$,Anonymous,Rawterm.Explicit,$c1$,$c2$) >> ]
+        <:expr< Rawterm.GProd ($dloc$,Anonymous,Rawterm.Explicit,$c1$,$c2$) >> ]
     | "75" RIGHTA
       [ "~"; c = constr ->
         apply_ref <:expr< coq_not_ref >> [c] ]
@@ -71,15 +71,15 @@ EXTEND
     | "10" LEFTA
       [ f = constr; args = LIST1 NEXT ->
         let args = mlexpr_of_list (fun x -> x) args in
-        <:expr< Rawterm.RApp ($dloc$,$f$,$args$) >> ]
+        <:expr< Rawterm.GApp ($dloc$,$f$,$args$) >> ]
     | "0"
-      [ s = sort -> <:expr< Rawterm.RSort ($dloc$,s) >>
-      | id = ident -> <:expr< Rawterm.RVar ($dloc$,$id$) >>
-      | "_" -> <:expr< Rawterm.RHole ($dloc$, QuestionMark (Define False)) >>
-      | "?"; id = ident -> <:expr< Rawterm.RPatVar($dloc$,(False,$id$)) >>
+      [ s = sort -> <:expr< Rawterm.GSort ($dloc$,s) >>
+      | id = ident -> <:expr< Rawterm.GVar ($dloc$,$id$) >>
+      | "_" -> <:expr< Rawterm.GHole ($dloc$, QuestionMark (Define False)) >>
+      | "?"; id = ident -> <:expr< Rawterm.GPatVar($dloc$,(False,$id$)) >>
       | "{"; c1 = constr; "}"; "+"; "{"; c2 = constr; "}" ->
           apply_ref <:expr< coq_sumbool_ref >> [c1;c2]
-      | "%"; e = string -> <:expr< Rawterm.RRef ($dloc$,Lazy.force $lid:e$) >>
+      | "%"; e = string -> <:expr< Rawterm.GRef ($dloc$,Lazy.force $lid:e$) >>
       | c = match_constr -> c
       | "("; c = constr LEVEL "200"; ")" -> c ] ]
   ;
@@ -87,7 +87,7 @@ EXTEND
     [ [ "match"; c = constr LEVEL "100"; (ty,nal) = match_type;
         "with"; OPT"|"; br = LIST0 eqn SEP "|"; "end" ->
           let br = mlexpr_of_list (fun x -> x) br in
-     <:expr< Rawterm.RCases ($dloc$,$ty$,[($c$,$nal$)],$br$) >>
+     <:expr< Rawterm.GCases ($dloc$,$ty$,[($c$,$nal$)],$br$) >>
     ] ]
   ;
   match_type:

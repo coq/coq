@@ -65,10 +65,10 @@ type required_module = full_path * string list
 type cases_pattern_status = bool (** true = use prim token in patterns *)
 
 type 'a prim_token_interpreter =
-    loc -> 'a -> rawconstr
+    loc -> 'a -> glob_constr
 
 type 'a prim_token_uninterpreter =
-    rawconstr list * (rawconstr -> 'a option) * cases_pattern_status
+    glob_constr list * (glob_constr -> 'a option) * cases_pattern_status
 
 val declare_numeral_interpreter : scope_name -> required_module ->
   bigint prim_token_interpreter -> bigint prim_token_uninterpreter -> unit
@@ -80,7 +80,7 @@ val declare_string_interpreter : scope_name -> required_module ->
    given scope context*)
 
 val interp_prim_token : loc -> prim_token -> local_scopes ->
-  rawconstr * (notation_location * scope_name option)
+  glob_constr * (notation_location * scope_name option)
 val interp_prim_token_cases_pattern : loc -> prim_token -> name ->
   local_scopes -> cases_pattern * (notation_location * scope_name option)
 
@@ -88,7 +88,7 @@ val interp_prim_token_cases_pattern : loc -> prim_token -> name ->
    raise [No_match] if no such token *)
 
 val uninterp_prim_token :
-  rawconstr -> scope_name * prim_token
+  glob_constr -> scope_name * prim_token
 val uninterp_prim_token_cases_pattern :
   cases_pattern -> name * scope_name * prim_token
 
@@ -112,7 +112,7 @@ val interp_notation : loc -> notation -> local_scopes ->
       interpretation * (notation_location * scope_name option)
 
 (** Return the possible notations for a given term *)
-val uninterp_notations : rawconstr ->
+val uninterp_notations : glob_constr ->
       (interp_rule * interpretation * int option) list
 val uninterp_cases_pattern_notations : cases_pattern ->
       (interp_rule * interpretation * int option) list
@@ -160,12 +160,12 @@ val make_notation_key : symbol list -> notation
 val decompose_notation_key : notation -> symbol list
 
 (** Prints scopes (expects a pure aconstr printer) *)
-val pr_scope : (rawconstr -> std_ppcmds) -> scope_name -> std_ppcmds
-val pr_scopes : (rawconstr -> std_ppcmds) -> std_ppcmds
-val locate_notation : (rawconstr -> std_ppcmds) -> notation ->
+val pr_scope : (glob_constr -> std_ppcmds) -> scope_name -> std_ppcmds
+val pr_scopes : (glob_constr -> std_ppcmds) -> std_ppcmds
+val locate_notation : (glob_constr -> std_ppcmds) -> notation ->
       scope_name option -> std_ppcmds
 
-val pr_visibility: (rawconstr -> std_ppcmds) -> scope_name option -> std_ppcmds
+val pr_visibility: (glob_constr -> std_ppcmds) -> scope_name option -> std_ppcmds
 
 (** {6 Printing rules for notations} *)
 

@@ -23,14 +23,14 @@ type binder_type =
   | Prod of name
   | LetIn of name
 
-type raw_context = (binder_type*rawconstr) list
+type glob_context = (binder_type*glob_constr) list
 
 (*
-   compose_raw_context [(bt_1,n_1,t_1);......] rt returns
+   compose_glob_context [(bt_1,n_1,t_1);......] rt returns
    b_1(n_1,t_1,.....,bn(n_k,t_k,rt)) where the b_i's are the
    binders corresponding to the bt_i's
 *)
-let compose_raw_context =
+let compose_glob_context =
   let compose_binder  (bt,t) acc =
     match bt with
       | Lambda n -> mkRLambda(n,t,acc)
@@ -47,7 +47,7 @@ let compose_raw_context =
 
 type 'a build_entry_pre_return =
     {
-      context : raw_context;  (* the binding context of the result *)
+      context : glob_context;  (* the binding context of the result *)
       value : 'a; (* The value *)
     }
 
@@ -159,7 +159,7 @@ let apply_args ctxt body args =
       | _,[] -> (* No more args *)
 	  (ctxt,body)
       | [],_ -> (* no more fun *)
-	  let f,args' = raw_decompose_app body in
+	  let f,args' = glob_decompose_app body in
 	  (ctxt,mkRApp(f,args'@args))
       | (Lambda Anonymous,t)::ctxt',arg::args' ->
 	  do_apply avoid ctxt' body args'
@@ -215,8 +215,8 @@ let combine_app f args =
 let combine_lam n t b =
   {
     context = [];
-    value = mkRLambda(n, compose_raw_context t.context t.value,
-		      compose_raw_context b.context b.value )
+    value = mkRLambda(n, compose_glob_context t.context t.value,
+		      compose_glob_context b.context b.value )
   }
 
 
@@ -319,15 +319,15 @@ let build_constructors_of_type ind' argl =
 		let pat_as_term =
 		  mkRApp(mkRRef (ConstructRef(ind',i+1)),argl)
 		in
-		cases_pattern_of_rawconstr Anonymous pat_as_term
+		cases_pattern_of_glob_constr Anonymous pat_as_term
 	     )
     ind.Declarations.mind_consnames
 
 (* [find_type_of] very naive attempts to discover the type of an if or a letin *)
 let rec find_type_of nb b =
-  let f,_ = raw_decompose_app b in
+  let f,_ = glob_decompose_app b in
   match f with
-    | RRef(_,ref) ->
+    | GRef(_,ref) ->
 	begin
 	  let ind_type  =
 	    match ref with
@@ -350,8 +350,8 @@ let rec find_type_of nb b =
 	  then raise (Invalid_argument "find_type_of : not a valid inductive");
 	  ind_type
 	end
-    | RCast(_,b,_) -> find_type_of nb b
-    | RApp _ -> assert false (* we have decomposed any application via raw_decompose_app *)
+    | GCast(_,b,_) -> find_type_of nb b
+    | GApp _ -> assert false (* we have decomposed any application via glob_decompose_app *)
     | _ -> raise (Invalid_argument "not a ref")
 
 
@@ -472,7 +472,7 @@ let rec pattern_to_term_and_type env typ  = function
    and concatenate them (informally, each branch of a match produces a new constructor)
    \end{itemize}
 
-   WARNING: The terms constructed here are only USING the rawconstr syntax but are highly bad formed.
+   WARNING: The terms constructed here are only USING the glob_constr syntax but are highly bad formed.
    We must wait to have complete all the current calculi to set the recursive calls.
    At this point, each term [f t1 ... tn]  (where f appears in [funnames]) is replaced by
    a pseudo term [forall res, res t1 ... tn, res]. A reconstruction phase is done later.
@@ -481,15 +481,15 @@ let rec pattern_to_term_and_type env typ  = function
 *)
 
 
-let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
-  observe (str " Entering : " ++ Printer.pr_rawconstr rt);
+let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
+  observe (str " Entering : " ++ Printer.pr_glob_constr rt);
   match rt with
-    | RRef _ | RVar _ | REvar _ | RPatVar _     | RSort _  | RHole _  ->
+    | GRef _ | GVar _ | GEvar _ | GPatVar _     | GSort _  | GHole _  ->
 	(* do nothing (except changing type of course) *)
 	mk_result [] rt avoid
-    | RApp(_,_,_) ->
-	let f,args = raw_decompose_app rt in
-	let args_res : (rawconstr list) build_entry_return =
+    | GApp(_,_,_) ->
+	let f,args = glob_decompose_app rt in
+	let args_res : (glob_constr list) build_entry_return =
 	  List.fold_right (* create the arguments lists of constructors and combine them *)
 	    (fun arg ctxt_argsl ->
 	       let arg_res = build_entry_lc env funnames ctxt_argsl.to_avoid arg in
@@ -500,19 +500,19 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 	in
 	begin
 	  match f with
-	    | RLambda _  -> 
+	    | GLambda _  -> 
 		let rec aux t l = 
 		  match l with 
 		    | [] -> t
 		    | u::l -> 
 			match t with 
-			  | RLambda(loc,na,_,nat,b) -> 
-			      RLetIn(dummy_loc,na,u,aux b l)
+			  | GLambda(loc,na,_,nat,b) -> 
+			      GLetIn(dummy_loc,na,u,aux b l)
 			  | _ -> 
-			      RApp(dummy_loc,t,l)
+			      GApp(dummy_loc,t,l)
 		in
 		build_entry_lc env funnames avoid (aux f args)
-	    | RVar(_,id) when Idset.mem id funnames ->
+	    | GVar(_,id) when Idset.mem id funnames ->
 		(* if we have [f t1 ... tn] with [f]$\in$[fnames]
 		   then we create a fresh variable [res],
 		   add [res] and its "value" (i.e. [res v1 ... vn]) to each
@@ -538,7 +538,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 		    args_res.result
 		in
 		{ result = new_result; to_avoid = new_avoid }
-	    | RVar _ | REvar _ | RPatVar _ | RHole _ | RSort _ | RRef _ ->
+	    | GVar _ | GEvar _ | GPatVar _ | GHole _ | GSort _ | GRef _ ->
 		(* if have [g t1 ... tn] with [g] not appearing in [funnames]
 		   then
 		   foreach [ctxt,v1 ... vn] in [args_res] we return
@@ -552,8 +552,8 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 			 {args_res with value = mkRApp(f,args_res.value)})
 		      args_res.result
 		}
-	    | RApp _ -> assert false (* we have collected all the app in [raw_decompose_app] *)
-       	    | RLetIn(_,n,t,b) ->
+	    | GApp _ -> assert false (* we have collected all the app in [glob_decompose_app] *)
+       	    | GLetIn(_,n,t,b) ->
 		(* if we have [(let x := v in b) t1 ... tn] ,
 		   we discard our work and compute the list of constructor for
 		   [let x = v in (b t1 ... tn)] up to alpha conversion
@@ -567,7 +567,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 			let new_b =
 			  replace_var_by_term
 			    id
-			    (RVar(dummy_loc,id))
+			    (GVar(dummy_loc,id))
 			    b
 			in
 			(Name new_id,new_b,new_avoid)
@@ -578,26 +578,26 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 		  funnames
 		  avoid
 		  (mkRLetIn(new_n,t,mkRApp(new_b,args)))
-	    | RCases _  | RIf _ | RLetTuple _ ->
+	    | GCases _  | GIf _ | GLetTuple _ ->
 		(* we have [(match e1, ...., en with ..... end) t1 tn]
 		   we first compute the result from the case and
 		   then combine each of them with each of args one
 		*)
 		let f_res = build_entry_lc env funnames args_res.to_avoid f in
 		combine_results combine_app f_res  args_res
-	    | RDynamic _ ->error "Not handled RDynamic"
-	    | RCast(_,b,_) ->
+	    | GDynamic _ ->error "Not handled GDynamic"
+	    | GCast(_,b,_) ->
 		(* for an applied cast we just trash the cast part
 		   and restart the work.
 
 		   WARNING: We need to restart since [b] itself should be an application term
 		*)
 		build_entry_lc env funnames avoid (mkRApp(b,args))
-	    | RRec _ -> error "Not handled RRec"
-	    | RProd _ -> error "Cannot apply a type"
+	    | GRec _ -> error "Not handled GRec"
+	    | GProd _ -> error "Cannot apply a type"
 	end (* end of the application treatement *)
 
-    | RLambda(_,n,_,t,b) ->
+    | GLambda(_,n,_,t,b) ->
 	(* we first compute the list of constructor
 	   corresponding to the body of the function,
 	   then the one corresponding to the type
@@ -612,7 +612,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 	let new_env = raw_push_named (new_n,None,t) env in
 	let b_res = build_entry_lc new_env funnames avoid b in
 	combine_results (combine_lam new_n) t_res b_res
-    | RProd(_,n,_,t,b) ->
+    | GProd(_,n,_,t,b) ->
 	(* we first compute the list of constructor
 	   corresponding to the body of the function,
 	   then the one corresponding to the type
@@ -622,7 +622,7 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 	let new_env = raw_push_named (n,None,t) env in
 	let b_res = build_entry_lc new_env funnames avoid b in
 	combine_results (combine_prod n) t_res b_res
-    | RLetIn(_,n,v,b) ->
+    | GLetIn(_,n,v,b) ->
 	(* we first compute the list of constructor
 	   corresponding to the body of the function,
 	   then the one corresponding to the value [t]
@@ -638,21 +638,21 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 	in
 	let b_res = build_entry_lc new_env funnames avoid b in
 	combine_results (combine_letin n) v_res b_res
-    | RCases(_,_,_,el,brl) ->
+    | GCases(_,_,_,el,brl) ->
 	(* we create the discrimination function
 	   and treat the case itself
 	*)
 	let make_discr = make_discr_match brl in
 	build_entry_lc_from_case env funnames make_discr el brl avoid
-    | RIf(_,b,(na,e_option),lhs,rhs) ->
+    | GIf(_,b,(na,e_option),lhs,rhs) ->
 	let b_as_constr = Pretyping.Default.understand Evd.empty env b in
 	let b_typ = Typing.type_of env Evd.empty b_as_constr in
 	let (ind,_) =
 	  try Inductiveops.find_inductive env Evd.empty b_typ
 	  with Not_found ->
 	    errorlabstrm "" (str "Cannot find the inductive associated to " ++
-			       Printer.pr_rawconstr b ++ str " in " ++
-			       Printer.pr_rawconstr rt ++ str ". try again with a cast")
+			       Printer.pr_glob_constr b ++ str " in " ++
+			       Printer.pr_glob_constr rt ++ str ". try again with a cast")
 	in
 	let case_pats = build_constructors_of_type ind [] in
 	assert (Array.length case_pats = 2);
@@ -665,11 +665,11 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 	let match_expr =
 	  mkRCases(None,[(b,(Anonymous,None))],brl)
 	in
-	(* 		Pp.msgnl (str "new case := " ++ Printer.pr_rawconstr match_expr); *)
+	(* 		Pp.msgnl (str "new case := " ++ Printer.pr_glob_constr match_expr); *)
 	build_entry_lc env funnames avoid match_expr
-    | RLetTuple(_,nal,_,b,e) ->
+    | GLetTuple(_,nal,_,b,e) ->
 	begin
-	  let nal_as_rawconstr =
+	  let nal_as_glob_constr =
 	    List.map
 	      (function
 		   Name id -> mkRVar id
@@ -683,10 +683,10 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 	    try Inductiveops.find_inductive env Evd.empty b_typ
 	    with Not_found ->
 	      errorlabstrm "" (str "Cannot find the inductive associated to " ++
-				 Printer.pr_rawconstr b ++ str " in " ++
-				 Printer.pr_rawconstr rt ++ str ". try again with a cast")
+				 Printer.pr_glob_constr b ++ str " in " ++
+				 Printer.pr_glob_constr rt ++ str ". try again with a cast")
 	  in
-	  let case_pats = build_constructors_of_type ind nal_as_rawconstr in
+	  let case_pats = build_constructors_of_type ind nal_as_glob_constr in
 	  assert (Array.length case_pats = 1);
 	  let br =
 	    (dummy_loc,[],[case_pats.(0)],e)
@@ -695,14 +695,14 @@ let rec build_entry_lc env funnames avoid rt  : rawconstr build_entry_return =
 	  build_entry_lc env funnames avoid match_expr
 
 	end
-    | RRec _ -> error "Not handled RRec"
-    | RCast(_,b,_) ->
+    | GRec _ -> error "Not handled GRec"
+    | GCast(_,b,_) ->
 	build_entry_lc env funnames  avoid b
-    | RDynamic _ -> error "Not handled RDynamic"
+    | GDynamic _ -> error "Not handled GDynamic"
 and build_entry_lc_from_case env funname make_discr
     (el:tomatch_tuples)
     (brl:Rawterm.cases_clauses) avoid :
-    rawconstr build_entry_return =
+    glob_constr build_entry_return =
   match el with
     | [] -> assert false (* this case correspond to match <nothing> with .... !*)
     | el ->
@@ -762,7 +762,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 	   (will be used in the following recursive calls)
 	*)
 	let new_env = List.fold_right2 add_pat_variables patl types env in
-	let not_those_patterns : (identifier list -> rawconstr -> rawconstr) list =
+	let not_those_patterns : (identifier list -> glob_constr -> glob_constr) list =
 	  List.map2
 	    (fun pat typ ->
 	       fun avoid pat'_as_term ->
@@ -780,7 +780,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 			in
 			mkRProd (Name id,raw_typ_of_id,acc))
 		     pat_ids
-		     (raw_make_neq pat'_as_term (pattern_to_term renamed_pat))
+		     (glob_make_neq pat'_as_term (pattern_to_term renamed_pat))
 	    )
 	    patl
 	    types
@@ -835,7 +835,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 		      else acc
 		   )
 		   idl
-		   [(Prod Anonymous,raw_make_eq ~typ pat_as_term e)]
+		   [(Prod Anonymous,glob_make_eq ~typ pat_as_term e)]
 	      )
 	      patl
 	      matched_expr.value
@@ -883,18 +883,18 @@ exception Continue
    eliminates some meaningless equalities, applies some rewrites......
 *)
 let rec rebuild_cons env nb_args relname args crossed_types depth rt =
-  observe (str "rebuilding : " ++ pr_rawconstr rt);
+  observe (str "rebuilding : " ++ pr_glob_constr rt);
 
   match rt with
-    | RProd(_,n,k,t,b) ->
+    | GProd(_,n,k,t,b) ->
 	let not_free_in_t id = not (is_free_in id t) in
 	let new_crossed_types = t::crossed_types in
 	begin
 	  match t with
-	    | RApp(_,(RVar(_,res_id) as res_rt),args') when is_res res_id ->
+	    | GApp(_,(GVar(_,res_id) as res_rt),args') when is_res res_id ->
 		begin
 		  match args' with
-		    | (RVar(_,this_relname))::args' ->
+		    | (GVar(_,this_relname))::args' ->
 			(*i The next call to mk_rel_id is
 			  valid since we are constructing the graph
 			  Ensures by: obvious
@@ -916,12 +916,12 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    | _ -> (* the first args is the name of the function! *)
 			assert false
 		end
-	    | RApp(loc1,RRef(loc2,eq_as_ref),[ty;RVar(loc3,id);rt])
+	    | GApp(loc1,GRef(loc2,eq_as_ref),[ty;GVar(loc3,id);rt])
 		when  eq_as_ref = Lazy.force Coqlib.coq_eq_ref  && n = Anonymous
 		  ->
 		begin
 		  try
-		    observe (str "computing new type for eq : " ++ pr_rawconstr rt);
+		    observe (str "computing new type for eq : " ++ pr_glob_constr rt);
 		    let t' =
 		      try Pretyping.Default.understand Evd.empty env t with _ -> raise Continue
 		    in
@@ -953,8 +953,8 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		      ((Util.list_chop nparam args'))
 		    in
 		    let rt_typ =
-		       RApp(Util.dummy_loc,
-			    RRef (Util.dummy_loc,Libnames.IndRef ind),
+		       GApp(Util.dummy_loc,
+			    GRef (Util.dummy_loc,Libnames.IndRef ind),
 			    (List.map
 			      (fun p -> Detyping.detype false []
 				 (Termops.names_of_rel_context env)
@@ -964,9 +964,9 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 					 (mkRHole ()))))
 		    in
 		    let eq' =
-		      RApp(loc1,RRef(loc2,jmeq),[ty;RVar(loc3,id);rt_typ;rt])
+		      GApp(loc1,GRef(loc2,jmeq),[ty;GVar(loc3,id);rt_typ;rt])
 		    in
-		    observe (str "computing new type for jmeq : " ++ pr_rawconstr eq');
+		    observe (str "computing new type for jmeq : " ++ pr_glob_constr eq');
 		    let eq'_as_constr = Pretyping.Default.understand Evd.empty env eq' in
 		    observe (str " computing new type for jmeq : done") ;
 		    let new_args =
@@ -1033,7 +1033,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		     else new_b, Idset.add id id_to_exclude
 		  *)
 	    | _ ->
-		observe (str "computing new type for prod : " ++ pr_rawconstr rt);
+		observe (str "computing new type for prod : " ++ pr_glob_constr rt);
 		let t' = Pretyping.Default.understand Evd.empty env t in
 		let new_env = Environ.push_rel (n,None,t') env in
 		let new_b,id_to_exclude =
@@ -1048,11 +1048,11 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			(Idset.filter not_free_in_t id_to_exclude)
 		  | _ -> mkRProd(n,t,new_b),Idset.filter not_free_in_t id_to_exclude
 	end
-    | RLambda(_,n,k,t,b) ->
+    | GLambda(_,n,k,t,b) ->
 	begin
 	  let not_free_in_t id = not (is_free_in id t) in
 	  let new_crossed_types = t :: crossed_types in
-	  observe (str "computing new type for lambda : " ++ pr_rawconstr rt);
+	  observe (str "computing new type for lambda : " ++ pr_glob_constr rt);
 	  let t' = Pretyping.Default.understand Evd.empty env t in
 	  match n with
 	    | Name id ->
@@ -1067,12 +1067,12 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		then
 		  new_b, Idset.remove id (Idset.filter not_free_in_t id_to_exclude)
 		else
-		  RProd(dummy_loc,n,k,t,new_b),Idset.filter not_free_in_t id_to_exclude
+		  GProd(dummy_loc,n,k,t,new_b),Idset.filter not_free_in_t id_to_exclude
 	    | _ -> anomaly "Should not have an anonymous function here"
 		(* We have renamed all the anonymous functions during alpha_renaming phase *)
 
 	end
-    | RLetIn(_,n,t,b) ->
+    | GLetIn(_,n,t,b) ->
 	begin
 	  let not_free_in_t id = not (is_free_in id t) in
 	  let t' = Pretyping.Default.understand Evd.empty env t in
@@ -1086,10 +1086,10 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 	  match n with
 	    | Name id when Idset.mem id id_to_exclude && depth >= nb_args  ->
 		new_b,Idset.remove id (Idset.filter not_free_in_t id_to_exclude)
-	    | _ -> RLetIn(dummy_loc,n,t,new_b),
+	    | _ -> GLetIn(dummy_loc,n,t,new_b),
 		Idset.filter not_free_in_t id_to_exclude
 	end
-    | RLetTuple(_,nal,(na,rto),t,b) ->
+    | GLetTuple(_,nal,(na,rto),t,b) ->
 	assert (rto=None);
 	begin
 	  let not_free_in_t id = not (is_free_in id t) in
@@ -1112,7 +1112,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 (* 	    | Name id when Idset.mem id id_to_exclude ->  *)
 (* 		new_b,Idset.remove id (Idset.filter not_free_in_t id_to_exclude) *)
 (* 	    | _ -> *)
-	  RLetTuple(dummy_loc,nal,(na,None),t,new_b),
+	  GLetTuple(dummy_loc,nal,(na,None),t,new_b),
 		Idset.filter not_free_in_t (Idset.union id_to_exclude id_to_exclude')
 
 	end
@@ -1122,12 +1122,12 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 
 (* debuging wrapper *)
 let rebuild_cons env nb_args relname args crossed_types rt =
-(*   observennl  (str "rebuild_cons : rt := "++ pr_rawconstr rt ++  *)
+(*   observennl  (str "rebuild_cons : rt := "++ pr_glob_constr rt ++  *)
 (* 		 str "nb_args := " ++ str (string_of_int nb_args)); *)
   let res =
     rebuild_cons env nb_args relname args crossed_types 0 rt
   in
-(*   observe (str " leads to "++ pr_rawconstr (fst res)); *)
+(*   observe (str " leads to "++ pr_glob_constr (fst res)); *)
   res
 
 
@@ -1139,30 +1139,30 @@ let rebuild_cons env nb_args relname args crossed_types rt =
    TODO: Find a valid way to deal with implicit arguments here!
 *)
 let rec compute_cst_params relnames params = function
-  | RRef _ | RVar _ | REvar _ | RPatVar _ -> params
-  | RApp(_,RVar(_,relname'),rtl) when Idset.mem relname' relnames ->
+  | GRef _ | GVar _ | GEvar _ | GPatVar _ -> params
+  | GApp(_,GVar(_,relname'),rtl) when Idset.mem relname' relnames ->
       compute_cst_params_from_app [] (params,rtl)
-  | RApp(_,f,args) ->
+  | GApp(_,f,args) ->
       List.fold_left (compute_cst_params relnames) params (f::args)
-  | RLambda(_,_,_,t,b) | RProd(_,_,_,t,b) | RLetIn(_,_,t,b) | RLetTuple(_,_,_,t,b) ->
+  | GLambda(_,_,_,t,b) | GProd(_,_,_,t,b) | GLetIn(_,_,t,b) | GLetTuple(_,_,_,t,b) ->
       let t_params = compute_cst_params relnames params t in
       compute_cst_params relnames t_params b
-  | RCases _ ->
+  | GCases _ ->
       params  (* If there is still cases at this point they can only be
 		 discriminitation ones *)
-  | RSort _ -> params
-  | RHole _ -> params
-  | RIf _ | RRec _ | RCast _ | RDynamic _  ->
+  | GSort _ -> params
+  | GHole _ -> params
+  | GIf _ | GRec _ | GCast _ | GDynamic _  ->
       raise (UserError("compute_cst_params", str "Not handled case"))
 and compute_cst_params_from_app acc (params,rtl) =
   match params,rtl with
     | _::_,[] -> assert false (* the rel has at least nargs + 1 arguments ! *)
-    | ((Name id,_,is_defined) as param)::params',(RVar(_,id'))::rtl'
+    | ((Name id,_,is_defined) as param)::params',(GVar(_,id'))::rtl'
 	when id_ord id id' == 0 && not is_defined ->
 	compute_cst_params_from_app (param::acc) (params',rtl')
     | _  -> List.rev acc
 
-let compute_params_name relnames (args : (Names.name * Rawterm.rawconstr * bool) list array) csts =
+let compute_params_name relnames (args : (Names.name * Rawterm.glob_constr * bool) list array) csts =
   let rels_params =
     Array.mapi
       (fun i args ->
@@ -1181,7 +1181,7 @@ let compute_params_name relnames (args : (Names.name * Rawterm.rawconstr * bool)
 	   if array_for_all
 	     (fun l ->
 		let (n',nt',is_defined') = List.nth l i in
-		n = n' && Topconstr.eq_rawconstr nt nt' && is_defined = is_defined')
+		n = n' && Topconstr.eq_glob_constr nt nt' && is_defined = is_defined')
 	     rels_params
 	   then
 	     l := param::!l
@@ -1204,11 +1204,11 @@ let rec rebuild_return_type rt =
 
 
 let do_build_inductive
-    funnames (funsargs: (Names.name * rawconstr * bool) list list)
+    funnames (funsargs: (Names.name * glob_constr * bool) list list)
     returned_types
-    (rtl:rawconstr list) =
+    (rtl:glob_constr list) =
   let _time1 = System.get_time () in
-(*   Pp.msgnl (prlist_with_sep fnl Printer.pr_rawconstr rtl); *)
+(*   Pp.msgnl (prlist_with_sep fnl Printer.pr_glob_constr rtl); *)
   let funnames_as_set = List.fold_right Idset.add funnames Idset.empty in
   let funnames = Array.of_list funnames in
   let funsargs = Array.of_list funsargs in
@@ -1233,19 +1233,19 @@ let do_build_inductive
   let resa = Array.map (build_entry_lc env  funnames_as_set []) rta in
   let env_with_graphs =
     let rel_arity i funargs =  (* Reduilding arities (with parameters) *)
-      let rel_first_args :(Names.name * Rawterm.rawconstr * bool ) list  =
+      let rel_first_args :(Names.name * Rawterm.glob_constr * bool ) list  =
 	funargs
       in
       List.fold_right
 	(fun (n,t,is_defined) acc ->
 	   if is_defined
 	   then
-	     Topconstr.CLetIn(dummy_loc,(dummy_loc, n),Constrextern.extern_rawconstr Idset.empty t,
+	     Topconstr.CLetIn(dummy_loc,(dummy_loc, n),Constrextern.extern_glob_constr Idset.empty t,
 			      acc)
 	   else
 	     Topconstr.CProdN
 	       (dummy_loc,
-		[[(dummy_loc,n)],Topconstr.default_binder_kind,Constrextern.extern_rawconstr Idset.empty t],
+		[[(dummy_loc,n)],Topconstr.default_binder_kind,Constrextern.extern_glob_constr Idset.empty t],
 		acc
 	       )
 	)
@@ -1264,9 +1264,9 @@ let do_build_inductive
   let constr i res =
     List.map
       (function result (* (args',concl') *) ->
-	 let rt = compose_raw_context result.context result.value in
+	 let rt = compose_glob_context result.context result.value in
 	 let nb_args = List.length funsargs.(i) in
-	 (*  with_full_print (fun rt -> Pp.msgnl (str "glob constr " ++ pr_rawconstr rt)) rt; *)
+	 (*  with_full_print (fun rt -> Pp.msgnl (str "glob constr " ++ pr_glob_constr rt)) rt; *)
 	 fst (
 	   rebuild_cons env_with_graphs nb_args relnames.(i)
 	     []
@@ -1285,7 +1285,7 @@ let do_build_inductive
       i*)
     id_of_string ((string_of_id (mk_rel_id funnames.(i)))^"_"^(string_of_int !next_constructor_id))
   in
-  let rel_constructors i rt : (identifier*rawconstr) list =
+  let rel_constructors i rt : (identifier*glob_constr) list =
     next_constructor_id := (-1);
     List.map (fun constr -> (mk_constructor_id i),constr) (constr i rt)
   in
@@ -1299,19 +1299,19 @@ let do_build_inductive
     rel_constructors
   in
   let rel_arity i funargs =  (* Reduilding arities (with parameters) *)
-    let rel_first_args :(Names.name * Rawterm.rawconstr * bool ) list  =
+    let rel_first_args :(Names.name * Rawterm.glob_constr * bool ) list  =
       (snd (list_chop nrel_params funargs))
     in
     List.fold_right
       (fun (n,t,is_defined) acc ->
 	 if is_defined
 	 then
-	   Topconstr.CLetIn(dummy_loc,(dummy_loc, n),Constrextern.extern_rawconstr Idset.empty t,
+	   Topconstr.CLetIn(dummy_loc,(dummy_loc, n),Constrextern.extern_glob_constr Idset.empty t,
 			    acc)
 	 else
 	   Topconstr.CProdN
 	   (dummy_loc,
-	   [[(dummy_loc,n)],Topconstr.default_binder_kind,Constrextern.extern_rawconstr Idset.empty t],
+	   [[(dummy_loc,n)],Topconstr.default_binder_kind,Constrextern.extern_glob_constr Idset.empty t],
 	    acc
 	   )
       )
@@ -1328,10 +1328,10 @@ let do_build_inductive
       (fun (n,t,is_defined) ->
 	 if is_defined
 	 then
-	   Topconstr.LocalRawDef((dummy_loc,n), Constrextern.extern_rawconstr Idset.empty t)
+	   Topconstr.LocalRawDef((dummy_loc,n), Constrextern.extern_glob_constr Idset.empty t)
 	 else
 	 Topconstr.LocalRawAssum
-	   ([(dummy_loc,n)], Topconstr.default_binder_kind, Constrextern.extern_rawconstr Idset.empty t)
+	   ([(dummy_loc,n)], Topconstr.default_binder_kind, Constrextern.extern_glob_constr Idset.empty t)
       )
       rels_params
   in
@@ -1341,7 +1341,7 @@ let do_build_inductive
 	 false,((dummy_loc,id),
 		Flags.with_option
 		  Flags.raw_print
-		  (Constrextern.extern_rawtype Idset.empty) ((* zeta_normalize *) t)
+		  (Constrextern.extern_glob_type Idset.empty) ((* zeta_normalize *) t)
 	       )
       ))
       (rel_constructors)

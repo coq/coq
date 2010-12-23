@@ -86,15 +86,15 @@ let pr_ljudge_env env j =
 
 let pr_ljudge j = pr_ljudge_env (Global.env()) j
 
-let pr_lrawconstr_env env c =
-  pr_lconstr_expr (extern_rawconstr (Termops.vars_of_env env) c)
-let pr_rawconstr_env env c =
-  pr_constr_expr (extern_rawconstr (Termops.vars_of_env env) c)
+let pr_lglob_constr_env env c =
+  pr_lconstr_expr (extern_glob_constr (Termops.vars_of_env env) c)
+let pr_glob_constr_env env c =
+  pr_constr_expr (extern_glob_constr (Termops.vars_of_env env) c)
 
-let pr_lrawconstr c =
-  pr_lconstr_expr (extern_rawconstr Idset.empty c)
-let pr_rawconstr c =
-  pr_constr_expr (extern_rawconstr Idset.empty c)
+let pr_lglob_constr c =
+  pr_lconstr_expr (extern_glob_constr Idset.empty c)
+let pr_glob_constr c =
+  pr_constr_expr (extern_glob_constr Idset.empty c)
 
 let pr_cases_pattern t =
   pr_cases_pattern_expr (extern_cases_pattern Idset.empty t)
@@ -128,7 +128,7 @@ let pr_evaluable_reference ref =
   pr_global (Tacred.global_of_evaluable_reference ref)
 
 (*let pr_rawterm t =
-  pr_lconstr (Constrextern.extern_rawconstr Idset.empty t)*)
+  pr_lconstr (Constrextern.extern_glob_constr Idset.empty t)*)
 
 (*open Pattern
 

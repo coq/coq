@@ -37,8 +37,8 @@ open Lazy
 let interp_string dloc s =
   let le = String.length s in
   let rec aux n =
-     if n = le then RRef (dloc, force glob_EmptyString) else
-     RApp (dloc,RRef (dloc, force glob_String),
+     if n = le then GRef (dloc, force glob_EmptyString) else
+     GApp (dloc,GRef (dloc, force glob_String),
        [interp_ascii dloc (int_of_char s.[n]); aux (n+1)])
   in aux 0
 
@@ -46,11 +46,11 @@ let uninterp_string r =
   try
     let b = Buffer.create 16 in
     let rec aux = function
-    | RApp (_,RRef (_,k),[a;s]) when k = force glob_String ->
+    | GApp (_,GRef (_,k),[a;s]) when k = force glob_String ->
 	(match uninterp_ascii a with
 	  | Some c -> Buffer.add_char b (Char.chr c); aux s
 	  | _ -> raise Non_closed_string)
-    | RRef (_,z) when z = force glob_EmptyString ->
+    | GRef (_,z) when z = force glob_EmptyString ->
 	Some (Buffer.contents b)
     | _ ->
 	raise Non_closed_string
@@ -62,6 +62,6 @@ let _ =
   Notation.declare_string_interpreter "string_scope"
     (string_path,["Coq";"Strings";"String"])
     interp_string
-    ([RRef (dummy_loc,static_glob_String);
-      RRef (dummy_loc,static_glob_EmptyString)],
+    ([GRef (dummy_loc,static_glob_String);
+      GRef (dummy_loc,static_glob_EmptyString)],
      uninterp_string, true)

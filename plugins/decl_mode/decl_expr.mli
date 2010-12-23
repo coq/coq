@@ -83,8 +83,8 @@ type raw_proof_instr =
      raw_tactic_expr) gen_proof_instr
 
 type glob_proof_instr =
-    ((identifier*(Genarg.rawconstr_and_expr option)) located,
-     Genarg.rawconstr_and_expr,
+    ((identifier*(Genarg.glob_constr_and_expr option)) located,
+     Genarg.glob_constr_and_expr,
      Topconstr.cases_pattern_expr,
      Tacexpr.glob_tactic_expr) gen_proof_instr
 

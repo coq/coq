@@ -46,7 +46,7 @@ type var_internalization_data =
 type internalization_env =
     (identifier * var_internalization_data) list
 
-type raw_binder = (name * binding_kind * rawconstr option * rawconstr)
+type glob_binder = (name * binding_kind * glob_constr option * glob_constr)
 
 let interning_grammar = ref false
 
@@ -295,12 +295,12 @@ let reset_tmp_scope (ids,unb,tmp_scope,scopes) =
 
 let rec it_mkRProd env body =
   match env with
-      (na, bk, _, t) :: tl -> it_mkRProd tl (RProd (dummy_loc, na, bk, t, body))
+      (na, bk, _, t) :: tl -> it_mkRProd tl (GProd (dummy_loc, na, bk, t, body))
     | [] -> body
 
 let rec it_mkRLambda env body =
   match env with
-      (na, bk, _, t) :: tl -> it_mkRLambda tl (RLambda (dummy_loc, na, bk, t, body))
+      (na, bk, _, t) :: tl -> it_mkRLambda tl (GLambda (dummy_loc, na, bk, t, body))
     | [] -> body
 
 (**********************************************************************)
@@ -313,11 +313,11 @@ let check_capture loc ty = function
       ()
 
 let locate_if_isevar loc na = function
-  | RHole _ ->
+  | GHole _ ->
       (try match na with
-	| Name id -> rawconstr_of_aconstr loc (Reserve.find_reserved_type id)
+	| Name id -> glob_constr_of_aconstr loc (Reserve.find_reserved_type id)
 	| Anonymous -> raise Not_found
-      with Not_found -> RHole (loc, Evd.BinderType na))
+      with Not_found -> GHole (loc, Evd.BinderType na))
   | x -> x
 
 let check_hidden_implicit_parameters id (_,_,_,impls) =
@@ -350,9 +350,9 @@ let intern_generalized_binder ?(global_level=false) intern_type lvar
 	Implicit_quantifiers.combine_params_freevar ty
   in
   let ty' = intern_type (ids,true,tmpsc,sc) ty in
-  let fvs = Implicit_quantifiers.generalizable_vars_of_rawconstr ~bound:ids ~allowed:ids' ty' in
+  let fvs = Implicit_quantifiers.generalizable_vars_of_glob_constr ~bound:ids ~allowed:ids' ty' in
   let env' = List.fold_left (fun env (x, l) -> push_name_env ~global_level lvar env (l, Name x)) env fvs in
-  let bl = List.map (fun (id, loc) -> (Name id, b, None, RHole (loc, Evd.BinderType (Name id)))) fvs in
+  let bl = List.map (fun (id, loc) -> (Name id, b, None, GHole (loc, Evd.BinderType (Name id)))) fvs in
   let na = match na with
     | Anonymous ->
 	if global_level then na
@@ -383,11 +383,11 @@ let intern_local_binder_aux ?(global_level=false) intern intern_type lvar (env,b
 	    env, b @ bl)
   | LocalRawDef((loc,na as locna),def) ->
       (push_name_env lvar env locna,
-      (na,Explicit,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
+      (na,Explicit,Some(intern env def),GHole(loc,Evd.BinderType na))::bl)
 
 let intern_generalization intern (ids,unb,tmp_scope,scopes as env) lvar loc bk ak c =
   let c = intern (ids,true,tmp_scope,scopes) c in
-  let fvs = Implicit_quantifiers.generalizable_vars_of_rawconstr ~bound:ids c in
+  let fvs = Implicit_quantifiers.generalizable_vars_of_glob_constr ~bound:ids c in
   let env', c' =
     let abs =
       let pi =
@@ -399,10 +399,10 @@ let intern_generalization intern (ids,unb,tmp_scope,scopes as env) lvar loc bk a
       in
 	if pi then
 	  (fun (id, loc') acc ->
-	    RProd (join_loc loc' loc, Name id, bk, RHole (loc', Evd.BinderType (Name id)), acc))
+	    GProd (join_loc loc' loc, Name id, bk, GHole (loc', Evd.BinderType (Name id)), acc))
 	else
 	  (fun (id, loc') acc ->
-	    RLambda (join_loc loc' loc, Name id, bk, RHole (loc', Evd.BinderType (Name id)), acc))
+	    GLambda (join_loc loc' loc, Name id, bk, GHole (loc', Evd.BinderType (Name id)), acc))
     in
       List.fold_right (fun (id, loc as lid) (env, acc) ->
 	let env' = push_name_env lvar env (loc, Name id) in
@@ -426,7 +426,7 @@ let iterate_binder intern lvar (env,bl) = function
 	    env, b @ bl)
   | LocalRawDef((loc,na as locna),def) ->
       (push_name_env lvar env locna,
-      (na,Explicit,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
+      (na,Explicit,Some(intern env def),GHole(loc,Evd.BinderType na))::bl)
 
 (**********************************************************************)
 (* Syntax extensions                                                  *)
@@ -460,10 +460,10 @@ let traverse_binder (terms,_,_ as subst)
     (renaming',env), Name id'
 
 let rec subst_iterator y t = function
-  | RVar (_,id) as x -> if id = y then t else x
-  | x -> map_rawconstr (subst_iterator y t) x
+  | GVar (_,id) as x -> if id = y then t else x
+  | x -> map_glob_constr (subst_iterator y t) x
 
-let subst_aconstr_in_rawconstr loc intern lvar subst infos c =
+let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
   let (terms,termlists,binders) = subst in
   let rec aux (terms,binderopt as subst') (renaming,(ids,unb,_,scopes as env)) c =
     let subinfos = renaming,(ids,unb,None,scopes) in
@@ -477,10 +477,10 @@ let subst_aconstr_in_rawconstr loc intern lvar subst infos c =
 	  intern (ids,unb,scopt,subscopes@scopes) a
 	with Not_found ->
 	try
-	  RVar (loc,List.assoc id renaming)
+	  GVar (loc,List.assoc id renaming)
 	with Not_found ->
 	  (* Happens for local notation joint with inductive/fixpoint defs *)
-	  RVar (loc,id)
+	  GVar (loc,id)
       end
     | AList (x,_,iter,terminator,lassoc) ->
       (try
@@ -497,7 +497,7 @@ let subst_aconstr_in_rawconstr loc intern lvar subst infos c =
       let na =
         try snd (coerce_to_name (fst (List.assoc id terms)))
         with Not_found -> na in
-      RHole (loc,Evd.BinderType na)
+      GHole (loc,Evd.BinderType na)
     | ABinderList (x,_,iter,terminator) ->
       (try
         (* All elements of the list are in scopes (scopt,subscopes) *)
@@ -512,12 +512,12 @@ let subst_aconstr_in_rawconstr loc intern lvar subst infos c =
           anomaly "Inconsistent substitution of recursive notation")
     | AProd (Name id, AHole _, c') when option_mem_assoc id binderopt ->
 	let (na,bk,_,t) = snd (Option.get binderopt) in
-	RProd (loc,na,bk,t,aux subst' infos c')
+	GProd (loc,na,bk,t,aux subst' infos c')
     | ALambda (Name id,AHole _,c') when option_mem_assoc id binderopt ->
 	let (na,bk,_,t) = snd (Option.get binderopt) in
-	RLambda (loc,na,bk,t,aux subst' infos c')
+	GLambda (loc,na,bk,t,aux subst' infos c')
     | t ->
-      rawconstr_of_aconstr_with_binders loc (traverse_binder subst)
+      glob_constr_of_aconstr_with_binders loc (traverse_binder subst)
 	(aux subst') subinfos t
   in aux (terms,None) infos c
 
@@ -538,7 +538,7 @@ let intern_notation intern (_,_,tmp_scope,scopes as env) lvar loc ntn fullargs =
   let terms = make_subst ids args in
   let termlists = make_subst idsl argslist in
   let binders = make_subst idsbl bll in
-  subst_aconstr_in_rawconstr loc intern lvar
+  subst_aconstr_in_glob_constr loc intern lvar
     (terms,termlists,binders) ([],env) c
 
 (**********************************************************************)
@@ -558,20 +558,20 @@ let intern_var (ids,_,_,_ as genv) (ltacvars,namedctxvars,ntnvars,impls) loc id 
       (fun id -> CRef (Ident (loc,id)), Some (loc,ExplByName id)) expl_impls in
     let tys = string_of_ty ty in
     Dumpglob.dump_reference loc "<>" (string_of_id id) tys;
-    RVar (loc,id), make_implicits_list impls, argsc, expl_impls
+    GVar (loc,id), make_implicits_list impls, argsc, expl_impls
   with Not_found ->
   (* Is [id] bound in current term or is an ltac var bound to constr *)
   if Idset.mem id ids or List.mem id ltacvars
   then
-    RVar (loc,id), [], [], []
+    GVar (loc,id), [], [], []
   (* Is [id] a notation variable *)
   else if List.mem_assoc id ntnvars
   then
-    (set_var_scope loc id true genv ntnvars; RVar (loc,id), [], [], [])
+    (set_var_scope loc id true genv ntnvars; GVar (loc,id), [], [], [])
   (* Is [id] the special variable for recursive notations *)
   else if ntnvars <> [] && id = ldots_var
   then
-    RVar (loc,id), [], [], []
+    GVar (loc,id), [], [], []
   else
   (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
   try
@@ -589,14 +589,14 @@ let intern_var (ids,_,_,_ as genv) (ltacvars,namedctxvars,ntnvars,impls) loc id 
 	let impls = implicits_of_global ref in
 	let scopes = find_arguments_scope ref in
 	Dumpglob.dump_reference loc "<>" (string_of_qualid (Decls.variable_secpath id)) "var";
-	RRef (loc, ref), impls, scopes, []
+	GRef (loc, ref), impls, scopes, []
       with _ ->
 	(* [id] a goal variable *)
-	RVar (loc,id), [], [], []
+	GVar (loc,id), [], [], []
 
 let find_appl_head_data = function
-  | RRef (_,ref) as x -> x,implicits_of_global ref,find_arguments_scope ref,[]
-  | RApp (_,RRef (_,ref),l) as x
+  | GRef (_,ref) as x -> x,implicits_of_global ref,find_arguments_scope ref,[]
+  | GApp (_,GRef (_,ref),l) as x
       when l <> [] & Flags.version_strictly_greater Flags.V8_2 ->
       let n = List.length l in
       x,List.map (drop_first_implicits n) (implicits_of_global ref),
@@ -629,7 +629,7 @@ let intern_reference ref =
 let intern_qualid loc qid intern env lvar args =
   match intern_extended_global_of_qualid (loc,qid) with
   | TrueGlobal ref ->
-      RRef (loc, ref), args
+      GRef (loc, ref), args
   | SynDef sp ->
       let (ids,c) = Syntax_def.search_syntactic_definition sp in
       let nids = List.length ids in
@@ -637,12 +637,12 @@ let intern_qualid loc qid intern env lvar args =
       let args1,args2 = list_chop nids args in
       check_no_explicitation args1;
       let subst = make_subst ids (List.map fst args1) in
-      subst_aconstr_in_rawconstr loc intern lvar (subst,[],[]) ([],env) c, args2
+      subst_aconstr_in_glob_constr loc intern lvar (subst,[],[]) ([],env) c, args2
 
 (* Rule out section vars since these should have been found by intern_var *)
 let intern_non_secvar_qualid loc qid intern env lvar args =
   match intern_qualid loc qid intern env lvar args with
-    | RRef (loc, VarRef id),_ -> error_global_not_found_loc loc qid
+    | GRef (loc, VarRef id),_ -> error_global_not_found_loc loc qid
     | r -> r
 
 let intern_applied_reference intern (_, unb, _, _ as env) lvar args = function
@@ -659,7 +659,7 @@ let intern_applied_reference intern (_, unb, _, _ as env) lvar args = function
       with e ->
 	(* Extra allowance for non globalizing functions *)
 	if !interning_grammar || unb then
-	  (RVar (loc,id), [], [], []),args
+	  (GVar (loc,id), [], [], []),args
 	else raise e
 
 let interp_reference vars r =
@@ -1046,7 +1046,7 @@ let merge_impargs l args =
 
 let check_projection isproj nargs r =
   match (r,isproj) with
-  | RRef (loc, ref), Some _ ->
+  | GRef (loc, ref), Some _ ->
       (try
 	let n = Recordops.find_projection_nparams ref + 1 in
 	if nargs <> n then
@@ -1054,15 +1054,15 @@ let check_projection isproj nargs r =
       with Not_found ->
 	user_err_loc
 	(loc,"",pr_global_env Idset.empty ref ++ str " is not a registered projection."))
-  | _, Some _ -> user_err_loc (loc_of_rawconstr r, "", str "Not a projection.")
+  | _, Some _ -> user_err_loc (loc_of_glob_constr r, "", str "Not a projection.")
   | _, None -> ()
 
 let get_implicit_name n imps =
   Some (Impargs.name_of_implicit (List.nth imps (n-1)))
 
 let set_hole_implicit i b = function
-  | RRef (loc,r) | RApp (_,RRef (loc,r),_) -> (loc,Evd.ImplicitArg (r,i,b))
-  | RVar (loc,id) -> (loc,Evd.ImplicitArg (VarRef id,i,b))
+  | GRef (loc,r) | GApp (_,GRef (loc,r),_) -> (loc,Evd.ImplicitArg (r,i,b))
+  | GVar (loc,id) -> (loc,Evd.ImplicitArg (VarRef id,i,b))
   | _ -> anomaly "Only refs have implicits"
 
 let exists_implicit_name id =
@@ -1112,7 +1112,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	  intern_applied_reference intern env lvar [] ref in
 	(match intern_impargs c env imp subscopes l with
           | [] -> c
-          | l -> RApp (constr_loc x, c, l))
+          | l -> GApp (constr_loc x, c, l))
     | CFix (loc, (locid,iddef), dl) ->
         let lf = List.map (fun ((_, id),_,_,_,_) -> id) dl in
         let dl = Array.of_list dl in
@@ -1144,7 +1144,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	     ((n, ro), List.rev rbl,
              intern_type (ids',unb,tmp_scope,scopes) ty,
              intern (ids'',unb,None,scopes) bd)) dl in
-	RRec (loc,RFix
+	GRec (loc,RFix
 	      (Array.map (fun (ro,_,_,_) -> ro) idl,n),
               Array.of_list lf,
               Array.map (fun (_,bl,_,_) -> bl) idl,
@@ -1166,13 +1166,13 @@ let internalize sigma globalenv env allow_patvar lvar c =
             (List.rev rbl,
              intern_type (ids',unb,tmp_scope,scopes) ty,
              intern (ids'',unb,None,scopes) bd)) dl in
-	RRec (loc,RCoFix n,
+	GRec (loc,RCoFix n,
               Array.of_list lf,
               Array.map (fun (bl,_,_) -> bl) idl,
               Array.map (fun (_,ty,_) -> ty) idl,
               Array.map (fun (_,_,bd) -> bd) idl)
     | CArrow (loc,c1,c2) ->
-        RProd (loc, Anonymous, Explicit, intern_type env c1, intern_type env c2)
+        GProd (loc, Anonymous, Explicit, intern_type env c1, intern_type env c2)
     | CProdN (loc,[],c2) ->
         intern_type env c2
     | CProdN (loc,(nal,bk,ty)::bll,c2) ->
@@ -1182,7 +1182,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
     | CLambdaN (loc,(nal,bk,ty)::bll,c2) ->
 	iterate_lam loc (reset_tmp_scope env) bk ty (CLambdaN (loc, bll, c2)) nal
     | CLetIn (loc,na,c1,c2) ->
-	RLetIn (loc, snd na, intern (reset_tmp_scope env) c1,
+	GLetIn (loc, snd na, intern (reset_tmp_scope env) c1,
           intern (push_name_env lvar env na) c2)
     | CNotation (loc,"- _",([CPrim (_,Numeral p)],[],[]))
 	when Bigint.is_strictly_pos p ->
@@ -1201,8 +1201,8 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	  let args = List.map (fun a -> (a,None)) args in
 	  intern_applied_reference intern env lvar args ref in
 	check_projection isproj (List.length args) f;
-	(* Rem: RApp(_,f,[]) stands for @f *)
-	RApp (loc, f, intern_args env args_scopes (List.map fst args))
+	(* Rem: GApp(_,f,[]) stands for @f *)
+	GApp (loc, f, intern_args env args_scopes (List.map fst args))
     | CApp (loc, (isproj,f), args) ->
         let isproj,f,args = match f with
           (* Compact notations like "t.(f args') args" *)
@@ -1221,8 +1221,8 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	check_projection isproj (List.length args) c;
 	(match c with
           (* Now compact "(f args') args" *)
-	  | RApp (loc', f', args') -> RApp (join_loc loc' loc, f',args'@args)
-	  | _ -> RApp (loc, c, args))
+	  | GApp (loc', f', args') -> GApp (join_loc loc' loc, f',args'@args)
+	  | _ -> GApp (loc, c, args))
     | CRecord (loc, _, fs) ->
 	let cargs =
 	  sort_fields true loc fs
@@ -1244,14 +1244,14 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	  tms ([],env) in
         let rtnpo = Option.map (intern_type env') rtnpo in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
-	RCases (loc, sty, rtnpo, tms, List.flatten eqns')
+	GCases (loc, sty, rtnpo, tms, List.flatten eqns')
     | CLetTuple (loc, nal, (na,po), b, c) ->
 	let env' = reset_tmp_scope env in
         let ((b',(na',_)),ids) = intern_case_item env' (b,(na,None)) in
         let p' = Option.map (fun p ->
           let env'' = List.fold_left (push_name_env lvar) env ids in
 	  intern_type env'' p) po in
-        RLetTuple (loc, List.map snd nal, (na', p'), b',
+        GLetTuple (loc, List.map snd nal, (na', p'), b',
                    intern (List.fold_left (push_name_env lvar) env nal) c)
     | CIf (loc, c, (na,po), b1, b2) ->
 	let env' = reset_tmp_scope env in
@@ -1259,23 +1259,23 @@ let internalize sigma globalenv env allow_patvar lvar c =
         let p' = Option.map (fun p ->
           let env'' = List.fold_left (push_name_env lvar) env ids in
 	  intern_type env'' p) po in
-        RIf (loc, c', (na', p'), intern env b1, intern env b2)
+        GIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole (loc, k) ->
-	RHole (loc, match k with Some k -> k | None -> Evd.QuestionMark (Evd.Define true))
+	GHole (loc, match k with Some k -> k | None -> Evd.QuestionMark (Evd.Define true))
     | CPatVar (loc, n) when allow_patvar ->
-	RPatVar (loc, n)
+	GPatVar (loc, n)
     | CPatVar (loc, _) ->
 	raise (InternalizationError (loc,IllegalMetavariable))
     | CEvar (loc, n, l) ->
-	REvar (loc, n, Option.map (List.map (intern env)) l)
+	GEvar (loc, n, Option.map (List.map (intern env)) l)
     | CSort (loc, s) ->
-	RSort(loc,s)
+	GSort(loc,s)
     | CCast (loc, c1, CastConv (k, c2)) ->
-	RCast (loc,intern env c1, CastConv (k, intern_type env c2))
+	GCast (loc,intern env c1, CastConv (k, intern_type env c2))
     | CCast (loc, c1, CastCoerce) ->
-	RCast (loc,intern env c1, CastCoerce)
+	GCast (loc,intern env c1, CastCoerce)
 
-    | CDynamic (loc,d) -> RDynamic (loc,d)
+    | CDynamic (loc,d) -> GDynamic (loc,d)
 
   and intern_type env = intern (set_type_scope env)
 
@@ -1318,17 +1318,17 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	let tids = List.fold_right Idset.add tids Idset.empty in
 	let t = intern_type (tids,unb,None,scopes) t in
 	let loc,ind,l = match t with
-	    | RRef (loc,IndRef ind) -> (loc,ind,[])
-	    | RApp (loc,RRef (_,IndRef ind),l) -> (loc,ind,l)
-	    | _ -> error_bad_inductive_type (loc_of_rawconstr t) in
+	    | GRef (loc,IndRef ind) -> (loc,ind,[])
+	    | GApp (loc,GRef (_,IndRef ind),l) -> (loc,ind,l)
+	    | _ -> error_bad_inductive_type (loc_of_glob_constr t) in
 	let nparams, nrealargs = inductive_nargs globalenv ind in
 	let nindargs = nparams + nrealargs in
 	if List.length l <> nindargs then
 	  error_wrong_numarg_inductive_loc loc globalenv ind nindargs;
 	let nal = List.map (function
-	  | RHole (loc,_) -> loc,Anonymous
-	  | RVar (loc,id) -> loc,Name id
-	  | c -> user_err_loc (loc_of_rawconstr c,"",str "Not a name.")) l in
+	  | GHole (loc,_) -> loc,Anonymous
+	  | GVar (loc,id) -> loc,Name id
+	  | c -> user_err_loc (loc_of_glob_constr c,"",str "Not a name.")) l in
 	let parnal,realnal = list_chop nparams nal in
 	if List.exists (fun (_,na) -> na <> Anonymous) parnal then
 	  error_inductive_parameter_not_implicit loc;
@@ -1336,8 +1336,8 @@ let internalize sigma globalenv env allow_patvar lvar c =
     | None ->
 	[], None in
     let na = match tm', na with
-      | RVar (loc,id), None when Idset.mem id vars -> loc,Name id
-      | RRef (loc, VarRef id), None -> loc,Name id
+      | GVar (loc,id), None when Idset.mem id vars -> loc,Name id
+      | GRef (loc, VarRef id), None -> loc,Name id
       | _, None -> dummy_loc,Anonymous
       | _, Some (loc,na) -> loc,na in
     (tm',(snd na,typ)), na::ids
@@ -1348,7 +1348,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	if nal <> [] then check_capture loc1 ty na;
 	let body = default (push_name_env lvar env locna) bk nal in
 	let ty = locate_if_isevar loc1 na (intern_type env ty) in
-	  RProd (join_loc loc1 loc2, na, bk, ty, body)
+	  GProd (join_loc loc1 loc2, na, bk, ty, body)
     | [] -> intern_type env body
     in
       match bk with
@@ -1364,7 +1364,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	  if nal <> [] then check_capture loc1 ty na;
 	  let body = default (push_name_env lvar env locna) bk nal in
 	  let ty = locate_if_isevar loc1 na (intern_type env ty) in
-	    RLambda (join_loc loc1 loc2, na, bk, ty, body)
+	    GLambda (join_loc loc1 loc2, na, bk, ty, body)
       | [] -> intern env body
     in match bk with
       | Default b -> default env b nal
@@ -1391,7 +1391,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
             (* with implicit arguments if maximal insertion is set *)
 	    []
 	  else
-	    RHole (set_hole_implicit (n,get_implicit_name n l) (force_inference_of imp) c) ::
+	    GHole (set_hole_implicit (n,get_implicit_name n l) (force_inference_of imp) c) ::
 	      aux (n+1) impl' subscopes' eargs rargs
 	  end
       | (imp::impl', a::rargs') ->
@@ -1423,7 +1423,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	  explain_internalization_error e)
 
 (**************************************************************************)
-(* Functions to translate constr_expr into rawconstr                       *)
+(* Functions to translate constr_expr into glob_constr                       *)
 (**************************************************************************)
 
 let extract_ids env =
@@ -1477,18 +1477,18 @@ let interp_open_constr sigma env c =
 let interp_open_constr_patvar sigma env c =
   let raw = intern_gen false sigma env c ~allow_patvar:true in
   let sigma = ref (Evd.create_evar_defs sigma) in
-  let evars = ref (Gmap.empty : (identifier,rawconstr) Gmap.t) in
+  let evars = ref (Gmap.empty : (identifier,glob_constr) Gmap.t) in
   let rec patvar_to_evar r = match r with
-    | RPatVar (loc,(_,id)) ->
+    | GPatVar (loc,(_,id)) ->
 	( try Gmap.find id !evars
 	  with Not_found ->
 	    let ev = Evarutil.e_new_evar sigma env (Termops.new_Type()) in
 	    let ev = Evarutil.e_new_evar sigma env ev in
-	    let rev = REvar (loc,(fst (Term.destEvar ev)),None) (*TODO*) in
+	    let rev = GEvar (loc,(fst (Term.destEvar ev)),None) (*TODO*) in
 	    evars := Gmap.add id rev !evars;
 	    rev
 	)
-    | _ -> map_rawconstr patvar_to_evar r in
+    | _ -> map_glob_constr patvar_to_evar r in
   let raw = patvar_to_evar raw in
   Default.understand_tcc !sigma env raw
 
@@ -1531,7 +1531,7 @@ type ltac_sign = identifier list * unbound_ltac_var_map
 
 let intern_constr_pattern sigma env ?(as_type=false) ?(ltacvars=([],[])) c =
   let c = intern_gen as_type ~allow_patvar:true ~ltacvars sigma env c in
-  pattern_of_rawconstr c
+  pattern_of_glob_constr c
 
 let interp_aconstr ?(impls=[]) vars recvars a =
   let env = Global.env () in
@@ -1540,7 +1540,7 @@ let interp_aconstr ?(impls=[]) vars recvars a =
   let c = internalize Evd.empty (Global.env()) (extract_ids env, false, None, [])
     false (([],[]),Environ.named_context env,vl,impls) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
-  let a = aconstr_of_rawconstr vars recvars c in
+  let a = aconstr_of_glob_constr vars recvars c in
   (* Splits variables into those that are binding, bound, or both *)
   (* binding and bound *)
   let out_scope = function None -> None,[] | Some (a,l) -> a,l in
@@ -1552,12 +1552,12 @@ let interp_aconstr ?(impls=[]) vars recvars a =
 
 let interp_binder sigma env na t =
   let t = intern_gen true sigma env t in
-  let t' = locate_if_isevar (loc_of_rawconstr t) na t in
+  let t' = locate_if_isevar (loc_of_glob_constr t) na t in
   Default.understand_type sigma env t'
 
 let interp_binder_evars evdref env na t =
   let t = intern_gen true !evdref env t in
-  let t' = locate_if_isevar (loc_of_rawconstr t) na t in
+  let t' = locate_if_isevar (loc_of_glob_constr t) na t in
   Default.understand_tcc_evars evdref env IsType t'
 
 open Environ
@@ -1580,7 +1580,7 @@ let interp_rawcontext_gen understand_type understand_judgment env bl =
       (fun (env,params,n,impls) (na, k, b, t) ->
 	match b with
 	    None ->
-	      let t' = locate_if_isevar (loc_of_rawconstr t) na t in
+	      let t' = locate_if_isevar (loc_of_glob_constr t) na t in
 	      let t = understand_type env t' in
 	      let d = (na,None,t) in
 	      let impls =

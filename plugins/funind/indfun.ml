@@ -125,12 +125,12 @@ let functional_induction with_clean c princl pat =
     Dumpglob.continue ();
     res
 
-let rec abstract_rawconstr c = function
+let rec abstract_glob_constr c = function
   | [] -> c
-  | Topconstr.LocalRawDef (x,b)::bl -> Topconstr.mkLetInC(x,b,abstract_rawconstr c bl)
+  | Topconstr.LocalRawDef (x,b)::bl -> Topconstr.mkLetInC(x,b,abstract_glob_constr c bl)
   | Topconstr.LocalRawAssum (idl,k,t)::bl ->
       List.fold_right (fun x b -> Topconstr.mkLambdaC([x],k,t,b)) idl
-        (abstract_rawconstr c bl)
+        (abstract_glob_constr c bl)
 
 let interp_casted_constr_with_implicits sigma env impls c  =
   Constrintern.intern_gen false sigma env ~impls
@@ -161,7 +161,7 @@ let build_newrecursive
       try
 	List.map
 	  (fun (_,bl,_,def)  ->
-             let def = abstract_rawconstr def bl in
+             let def = abstract_glob_constr def bl in
              interp_casted_constr_with_implicits
 	       sigma rec_sign rec_impls def
 	  )
@@ -188,15 +188,15 @@ let rec is_rec names =
   let names = List.fold_right Idset.add names Idset.empty in
   let check_id id names =  Idset.mem id names in
   let rec lookup names = function
-    | RVar(_,id) -> check_id id names
-    | RRef _ | REvar _ | RPatVar _ | RSort _ |  RHole _ | RDynamic _ -> false
-    | RCast(_,b,_) -> lookup names b
-    | RRec _ -> error "RRec not handled"
-    | RIf(_,b,_,lhs,rhs) ->
+    | GVar(_,id) -> check_id id names
+    | GRef _ | GEvar _ | GPatVar _ | GSort _ |  GHole _ | GDynamic _ -> false
+    | GCast(_,b,_) -> lookup names b
+    | GRec _ -> error "GRec not handled"
+    | GIf(_,b,_,lhs,rhs) ->
 	(lookup names b) || (lookup names lhs) || (lookup names rhs)
-    | RLetIn(_,na,t,b) | RLambda(_,na,_,t,b) | RProd(_,na,_,t,b)  ->
+    | GLetIn(_,na,t,b) | GLambda(_,na,_,t,b) | GProd(_,na,_,t,b)  ->
 	lookup names t || lookup (Nameops.name_fold Idset.remove na names) b
-    | RLetTuple(_,nal,_,t,b) -> lookup names t ||
+    | GLetTuple(_,nal,_,t,b) -> lookup names t ||
 	lookup
 	  (List.fold_left
 	     (fun acc na -> Nameops.name_fold Idset.remove na acc)
@@ -204,8 +204,8 @@ let rec is_rec names =
 	     nal
 	  )
 	  b
-    | RApp(_,f,args) -> List.exists (lookup names) (f::args)
-    | RCases(_,_,_,el,brl) ->
+    | GApp(_,f,args) -> List.exists (lookup names) (f::args)
+    | GCases(_,_,_,el,brl) ->
 	List.exists (fun (e,_) -> lookup names e) el ||
 	  List.exists (lookup_br names) brl
   and lookup_br names (_,idl,_,rt) =
@@ -222,7 +222,7 @@ let rec local_binders_length = function
 
 let prepare_body ((name,_,args,types,_),_) rt =
   let n = local_binders_length args in
-(*   Pp.msgnl (str "nb lambda to chop : " ++ str (string_of_int n) ++ fnl () ++Printer.pr_rawconstr rt); *)
+(*   Pp.msgnl (str "nb lambda to chop : " ++ str (string_of_int n) ++ fnl () ++Printer.pr_glob_constr rt); *)
   let fun_args,rt' = chop_rlambda_n n rt in
   (fun_args,rt')
 

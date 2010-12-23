@@ -290,7 +290,7 @@ let applyDestructor cls discard dd gls =
       match cl, dd.d_code with
         | Some id, (Some x, tac) ->
 	    let arg =
-              ConstrMayEval(ConstrTerm (RRef(dummy_loc,VarRef id),None)) in
+              ConstrMayEval(ConstrTerm (GRef(dummy_loc,VarRef id),None)) in
             TacLetIn (false, [(dummy_loc, x), arg], tac)
         | None, (None, tac) -> tac
         | _, (Some _,_) -> error "Destructor expects an hypothesis."

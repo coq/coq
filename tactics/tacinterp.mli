@@ -96,11 +96,11 @@ val intern_tactic :
   glob_sign -> raw_tactic_expr -> glob_tactic_expr
 
 val intern_constr :
-  glob_sign -> constr_expr -> rawconstr_and_expr
+  glob_sign -> constr_expr -> glob_constr_and_expr
 
 val intern_constr_with_bindings :
   glob_sign -> constr_expr * constr_expr Rawterm.bindings ->
-  rawconstr_and_expr * rawconstr_and_expr Rawterm.bindings
+  glob_constr_and_expr * glob_constr_and_expr Rawterm.bindings
 
 val intern_hyp :
   glob_sign -> identifier Util.located -> identifier Util.located
@@ -108,8 +108,8 @@ val intern_hyp :
 val subst_genarg :
   substitution -> glob_generic_argument -> glob_generic_argument
 
-val subst_rawconstr_and_expr :
-  substitution -> rawconstr_and_expr -> rawconstr_and_expr
+val subst_glob_constr_and_expr :
+  substitution -> glob_constr_and_expr -> glob_constr_and_expr
 
 (** Interprets any expression *)
 val val_interp : interp_sign -> goal sigma -> glob_tactic_expr -> value
@@ -127,7 +127,7 @@ val interp_tac_gen : (identifier * value) list -> identifier list ->
 
 val interp_hyp :  interp_sign -> goal sigma -> identifier located -> identifier
 
-val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map -> rawconstr_and_expr Rawterm.bindings -> Evd.evar_map * constr Rawterm.bindings
+val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map -> glob_constr_and_expr Rawterm.bindings -> Evd.evar_map * constr Rawterm.bindings
 
 (** Initial call for interpretation *)
 val glob_tactic : raw_tactic_expr -> glob_tactic_expr

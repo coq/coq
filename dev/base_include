@@ -171,7 +171,7 @@ let parse_constr = Pcoq.parse_string Pcoq.Constr.constr;;
 let parse_tac    = Pcoq.parse_string Pcoq.Tactic.tactic;;
 let parse_vernac = Pcoq.parse_string Pcoq.Vernac_.vernac;;
 
-(* build a term of type rawconstr without type-checking or resolution of 
+(* build a term of type glob_constr without type-checking or resolution of 
    implicit syntax *)
 
 let e s =

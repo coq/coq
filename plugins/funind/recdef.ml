@@ -1107,22 +1107,22 @@ let (value_f:constr list -> global_reference -> constr) =
       )
     in
     let fun_body =
-      RCases
+      GCases
 	(d0,RegularStyle,None,
-	 [RApp(d0, RRef(d0,fterm), List.rev_map (fun x_id -> RVar(d0, x_id)) rev_x_id_l),
+	 [GApp(d0, GRef(d0,fterm), List.rev_map (fun x_id -> GVar(d0, x_id)) rev_x_id_l),
 	  (Anonymous,None)],
 	 [d0, [v_id], [PatCstr(d0,(ind_of_ref
 				     (delayed_force coq_sig_ref),1),
 			       [PatVar(d0, Name v_id);
 				PatVar(d0, Anonymous)],
 			       Anonymous)],
-	  RVar(d0,v_id)])
+	  GVar(d0,v_id)])
     in
     let value =
       List.fold_left2
 	(fun acc x_id a ->
-	   RLambda
-      	     (d0, Name x_id, Explicit, RDynamic(d0, constr_in a),
+	   GLambda
+      	     (d0, Name x_id, Explicit, GDynamic(d0, constr_in a),
 	      acc
 	     )
 	)

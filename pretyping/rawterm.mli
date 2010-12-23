@@ -50,29 +50,29 @@ type 'a cast_type =
   | CastConv of cast_kind * 'a
   | CastCoerce (** Cast to a base type (eg, an underlying inductive type) *)
 
-type rawconstr =
-  | RRef of (loc * global_reference)
-  | RVar of (loc * identifier)
-  | REvar of loc * existential_key * rawconstr list option
-  | RPatVar of loc * (bool * patvar) (** Used for patterns only *)
-  | RApp of loc * rawconstr * rawconstr list
-  | RLambda of loc * name * binding_kind *  rawconstr * rawconstr
-  | RProd of loc * name * binding_kind * rawconstr * rawconstr
-  | RLetIn of loc * name * rawconstr * rawconstr
-  | RCases of loc * case_style * rawconstr option * tomatch_tuples * cases_clauses
-  | RLetTuple of loc * name list * (name * rawconstr option) *
-      rawconstr * rawconstr
-  | RIf of loc * rawconstr * (name * rawconstr option) * rawconstr * rawconstr
-  | RRec of loc * fix_kind * identifier array * rawdecl list array *
-      rawconstr array * rawconstr array
-  | RSort of loc * rawsort
-  | RHole of (loc * Evd.hole_kind)
-  | RCast of loc * rawconstr * rawconstr cast_type
-  | RDynamic of loc * Dyn.t
+type glob_constr =
+  | GRef of (loc * global_reference)
+  | GVar of (loc * identifier)
+  | GEvar of loc * existential_key * glob_constr list option
+  | GPatVar of loc * (bool * patvar) (** Used for patterns only *)
+  | GApp of loc * glob_constr * glob_constr list
+  | GLambda of loc * name * binding_kind *  glob_constr * glob_constr
+  | GProd of loc * name * binding_kind * glob_constr * glob_constr
+  | GLetIn of loc * name * glob_constr * glob_constr
+  | GCases of loc * case_style * glob_constr option * tomatch_tuples * cases_clauses
+  | GLetTuple of loc * name list * (name * glob_constr option) *
+      glob_constr * glob_constr
+  | GIf of loc * glob_constr * (name * glob_constr option) * glob_constr * glob_constr
+  | GRec of loc * fix_kind * identifier array * glob_decl list array *
+      glob_constr array * glob_constr array
+  | GSort of loc * rawsort
+  | GHole of (loc * Evd.hole_kind)
+  | GCast of loc * glob_constr * glob_constr cast_type
+  | GDynamic of loc * Dyn.t
 
-and rawdecl = name * binding_kind * rawconstr option * rawconstr
+and glob_decl = name * binding_kind * glob_constr option * glob_constr
 
-and fix_recursion_order = RStructRec | RWfRec of rawconstr | RMeasureRec of rawconstr * rawconstr option
+and fix_recursion_order = RStructRec | RWfRec of glob_constr | RMeasureRec of glob_constr * glob_constr option
 
 and fix_kind =
   | RFix of ((int option * fix_recursion_order) array * int)
@@ -81,42 +81,42 @@ and fix_kind =
 and predicate_pattern =
     name * (loc * inductive * int * name list) option
 
-and tomatch_tuple = (rawconstr * predicate_pattern)
+and tomatch_tuple = (glob_constr * predicate_pattern)
 
 and tomatch_tuples = tomatch_tuple list
 
-and cases_clause = (loc * identifier list * cases_pattern list * rawconstr)
+and cases_clause = (loc * identifier list * cases_pattern list * glob_constr)
 
 and cases_clauses = cases_clause list
 
 val cases_predicate_names : tomatch_tuples -> name list
 
-val map_rawconstr : (rawconstr -> rawconstr) -> rawconstr -> rawconstr
+val map_glob_constr : (glob_constr -> glob_constr) -> glob_constr -> glob_constr
 
 (* Ensure traversal from left to right *)
-val map_rawconstr_left_to_right :
-  (rawconstr -> rawconstr) -> rawconstr -> rawconstr
+val map_glob_constr_left_to_right :
+  (glob_constr -> glob_constr) -> glob_constr -> glob_constr
 
 (*
-val map_rawconstr_with_binders_loc : loc ->
+val map_glob_constr_with_binders_loc : loc ->
   (identifier -> 'a -> identifier * 'a) ->
-  ('a -> rawconstr -> rawconstr) -> 'a -> rawconstr -> rawconstr
+  ('a -> glob_constr -> glob_constr) -> 'a -> glob_constr -> glob_constr
 *)
 
-val fold_rawconstr : ('a -> rawconstr -> 'a) -> 'a -> rawconstr -> 'a
-val iter_rawconstr : (rawconstr -> unit) -> rawconstr -> unit
-val occur_rawconstr : identifier -> rawconstr -> bool
-val free_rawvars : rawconstr -> identifier list
-val loc_of_rawconstr : rawconstr -> loc
+val fold_glob_constr : ('a -> glob_constr -> 'a) -> 'a -> glob_constr -> 'a
+val iter_glob_constr : (glob_constr -> unit) -> glob_constr -> unit
+val occur_glob_constr : identifier -> glob_constr -> bool
+val free_glob_vars : glob_constr -> identifier list
+val loc_of_glob_constr : glob_constr -> loc
 
-(** Conversion from rawconstr to cases pattern, if possible
+(** Conversion from glob_constr to cases pattern, if possible
     
     Take the current alias as parameter, 
     @raise Not_found if translation is impossible *)
 
-val cases_pattern_of_rawconstr : name -> rawconstr -> cases_pattern
+val cases_pattern_of_glob_constr : name -> glob_constr -> cases_pattern
 
-val rawconstr_of_closed_cases_pattern : cases_pattern -> name * rawconstr
+val glob_constr_of_closed_cases_pattern : cases_pattern -> name * glob_constr
 
 (** {6 Reduction expressions} *)
 

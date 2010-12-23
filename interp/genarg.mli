@@ -27,12 +27,12 @@ val loc_of_or_by_notation : ('a -> loc) -> 'a or_by_notation -> loc
 (** In globalize tactics, we need to keep the initial [constr_expr] to recompute
    in the environment by the effective calls to Intro, Inversion, etc 
    The [constr_expr] field is [None] in TacDef though *)
-type rawconstr_and_expr = rawconstr * constr_expr option
+type glob_constr_and_expr = glob_constr * constr_expr option
 
 type open_constr_expr = unit * constr_expr
-type open_rawconstr = unit * rawconstr_and_expr
+type open_glob_constr = unit * glob_constr_and_expr
 
-type rawconstr_pattern_and_expr = rawconstr_and_expr * constr_pattern
+type glob_constr_pattern_and_expr = glob_constr_and_expr * constr_pattern
 
 type 'a with_ebindings = 'a * open_constr bindings
 
@@ -53,11 +53,11 @@ val pr_or_and_intro_pattern : or_and_intro_pattern_expr -> Pp.std_ppcmds
 
 {% \begin{%}verbatim{% }%}
              parsing        in_raw                              out_raw
-   char stream ----> rawtype ----> constr_expr generic_argument --------|
+   char stream ----> glob_type ----> constr_expr generic_argument --------|
                           encapsulation                         decaps  |
                                                                         |
                                                                         V
-                                                                     rawtype
+                                                                     glob_type
                                                                         |
                                                          globalization  |
                                                                         V
@@ -66,10 +66,10 @@ val pr_or_and_intro_pattern : or_and_intro_pattern_expr -> Pp.std_ppcmds
                                                                  encaps |
                                                                 in_glob |
                                                                         V
-                                                     rawconstr generic_argument
+                                                     glob_constr generic_argument
                                                                         |
         out                          in                        out_glob |
-  type <--- constr generic_argument <---- type <------ rawtype <--------|
+  type <--- constr generic_argument <---- type <------ glob_type <--------|
     |  decaps                       encaps      interp           decaps
     |
     V
@@ -78,7 +78,7 @@ effective use
 
 To distinguish between the uninterpreted (raw), globalized and
 interpreted worlds, we annotate the type [generic_argument] by a
-phantom argument which is either [constr_expr], [rawconstr] or
+phantom argument which is either [constr_expr], [glob_constr] or
 [constr].
 
 Transformation for each type :
@@ -175,35 +175,35 @@ val globwit_sort : (rawsort,glevel) abstract_argument_type
 val wit_sort : (sorts,tlevel) abstract_argument_type
 
 val rawwit_constr : (constr_expr,rlevel) abstract_argument_type
-val globwit_constr : (rawconstr_and_expr,glevel) abstract_argument_type
+val globwit_constr : (glob_constr_and_expr,glevel) abstract_argument_type
 val wit_constr : (constr,tlevel) abstract_argument_type
 
 val rawwit_constr_may_eval : ((constr_expr,reference or_by_notation,constr_expr) may_eval,rlevel) abstract_argument_type
-val globwit_constr_may_eval : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var,rawconstr_pattern_and_expr) may_eval,glevel) abstract_argument_type
+val globwit_constr_may_eval : ((glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) may_eval,glevel) abstract_argument_type
 val wit_constr_may_eval : (constr,tlevel) abstract_argument_type
 
 val rawwit_open_constr_gen : bool -> (open_constr_expr,rlevel) abstract_argument_type
-val globwit_open_constr_gen : bool -> (open_rawconstr,glevel) abstract_argument_type
+val globwit_open_constr_gen : bool -> (open_glob_constr,glevel) abstract_argument_type
 val wit_open_constr_gen : bool -> (open_constr,tlevel) abstract_argument_type
 
 val rawwit_open_constr : (open_constr_expr,rlevel) abstract_argument_type
-val globwit_open_constr : (open_rawconstr,glevel) abstract_argument_type
+val globwit_open_constr : (open_glob_constr,glevel) abstract_argument_type
 val wit_open_constr : (open_constr,tlevel) abstract_argument_type
 
 val rawwit_casted_open_constr : (open_constr_expr,rlevel) abstract_argument_type
-val globwit_casted_open_constr : (open_rawconstr,glevel) abstract_argument_type
+val globwit_casted_open_constr : (open_glob_constr,glevel) abstract_argument_type
 val wit_casted_open_constr : (open_constr,tlevel) abstract_argument_type
 
 val rawwit_constr_with_bindings : (constr_expr with_bindings,rlevel) abstract_argument_type
-val globwit_constr_with_bindings : (rawconstr_and_expr with_bindings,glevel) abstract_argument_type
+val globwit_constr_with_bindings : (glob_constr_and_expr with_bindings,glevel) abstract_argument_type
 val wit_constr_with_bindings : (constr with_bindings sigma,tlevel) abstract_argument_type
 
 val rawwit_bindings : (constr_expr bindings,rlevel) abstract_argument_type
-val globwit_bindings : (rawconstr_and_expr bindings,glevel) abstract_argument_type
+val globwit_bindings : (glob_constr_and_expr bindings,glevel) abstract_argument_type
 val wit_bindings : (constr bindings sigma,tlevel) abstract_argument_type
 
 val rawwit_red_expr : ((constr_expr,reference or_by_notation,constr_expr) red_expr_gen,rlevel) abstract_argument_type
-val globwit_red_expr : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var,rawconstr_pattern_and_expr) red_expr_gen,glevel) abstract_argument_type
+val globwit_red_expr : ((glob_constr_and_expr,evaluable_global_reference and_short_name or_var,glob_constr_pattern_and_expr) red_expr_gen,glevel) abstract_argument_type
 val wit_red_expr : ((constr,evaluable_global_reference,constr_pattern) red_expr_gen,tlevel) abstract_argument_type
 
 val wit_list0 :

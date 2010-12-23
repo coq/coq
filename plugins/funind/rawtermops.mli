@@ -7,60 +7,60 @@ val idmap_is_empty : 'a Names.Idmap.t -> bool
 (* [get_pattern_id pat] returns a list of all the variable appearing in [pat] *)
 val get_pattern_id : cases_pattern -> Names.identifier list
 
-(* [pattern_to_term pat] returns a rawconstr corresponding to [pat].
+(* [pattern_to_term pat] returns a glob_constr corresponding to [pat].
    [pat] must not contain occurences of anonymous pattern
 *)
-val pattern_to_term : cases_pattern -> rawconstr
+val pattern_to_term : cases_pattern -> glob_constr
 
 (*
-   Some basic functions to rebuild rawconstr
+   Some basic functions to rebuild glob_constr
    In each of them the location is Util.dummy_loc
 *)
-val mkRRef : Libnames.global_reference -> rawconstr
-val mkRVar : Names.identifier -> rawconstr
-val mkRApp  : rawconstr*(rawconstr list) -> rawconstr
-val mkRLambda : Names.name * rawconstr * rawconstr -> rawconstr
-val mkRProd : Names.name * rawconstr * rawconstr -> rawconstr
-val mkRLetIn : Names.name * rawconstr * rawconstr -> rawconstr
-val mkRCases : rawconstr option * tomatch_tuples * cases_clauses -> rawconstr
-val mkRSort : rawsort -> rawconstr
-val mkRHole : unit -> rawconstr (* we only build Evd.BinderType Anonymous holes *)
-val mkRCast : rawconstr* rawconstr -> rawconstr
+val mkRRef : Libnames.global_reference -> glob_constr
+val mkRVar : Names.identifier -> glob_constr
+val mkRApp  : glob_constr*(glob_constr list) -> glob_constr
+val mkRLambda : Names.name * glob_constr * glob_constr -> glob_constr
+val mkRProd : Names.name * glob_constr * glob_constr -> glob_constr
+val mkRLetIn : Names.name * glob_constr * glob_constr -> glob_constr
+val mkRCases : glob_constr option * tomatch_tuples * cases_clauses -> glob_constr
+val mkRSort : rawsort -> glob_constr
+val mkRHole : unit -> glob_constr (* we only build Evd.BinderType Anonymous holes *)
+val mkRCast : glob_constr* glob_constr -> glob_constr
 (*
-  Some basic functions to decompose rawconstrs
+  Some basic functions to decompose glob_constrs
   These are analogous to the ones constrs
 *)
-val raw_decompose_prod : rawconstr -> (Names.name*rawconstr) list * rawconstr
-val raw_decompose_prod_or_letin :
-  rawconstr -> (Names.name*rawconstr option*rawconstr option) list * rawconstr
-val raw_decompose_prod_n : int -> rawconstr -> (Names.name*rawconstr) list * rawconstr
-val raw_decompose_prod_or_letin_n : int -> rawconstr ->
-  (Names.name*rawconstr option*rawconstr option) list * rawconstr
-val raw_compose_prod : rawconstr -> (Names.name*rawconstr) list  ->  rawconstr
-val raw_compose_prod_or_letin: rawconstr ->
-  (Names.name*rawconstr option*rawconstr option) list  ->  rawconstr
-val raw_decompose_app : rawconstr -> rawconstr*(rawconstr list)
+val glob_decompose_prod : glob_constr -> (Names.name*glob_constr) list * glob_constr
+val glob_decompose_prod_or_letin :
+  glob_constr -> (Names.name*glob_constr option*glob_constr option) list * glob_constr
+val glob_decompose_prod_n : int -> glob_constr -> (Names.name*glob_constr) list * glob_constr
+val glob_decompose_prod_or_letin_n : int -> glob_constr ->
+  (Names.name*glob_constr option*glob_constr option) list * glob_constr
+val glob_compose_prod : glob_constr -> (Names.name*glob_constr) list  ->  glob_constr
+val glob_compose_prod_or_letin: glob_constr ->
+  (Names.name*glob_constr option*glob_constr option) list  ->  glob_constr
+val glob_decompose_app : glob_constr -> glob_constr*(glob_constr list)
 
 
-(* [raw_make_eq t1 t2] build the rawconstr corresponding to [t2 = t1] *)
-val  raw_make_eq : ?typ:rawconstr -> rawconstr -> rawconstr -> rawconstr
-(* [raw_make_neq t1 t2] build the rawconstr corresponding to [t1 <> t2] *)
-val  raw_make_neq : rawconstr -> rawconstr -> rawconstr
-(* [raw_make_or P1 P2] build the rawconstr corresponding to [P1 \/ P2] *)
-val  raw_make_or : rawconstr -> rawconstr -> rawconstr
+(* [glob_make_eq t1 t2] build the glob_constr corresponding to [t2 = t1] *)
+val  glob_make_eq : ?typ:glob_constr -> glob_constr -> glob_constr -> glob_constr
+(* [glob_make_neq t1 t2] build the glob_constr corresponding to [t1 <> t2] *)
+val  glob_make_neq : glob_constr -> glob_constr -> glob_constr
+(* [glob_make_or P1 P2] build the glob_constr corresponding to [P1 \/ P2] *)
+val  glob_make_or : glob_constr -> glob_constr -> glob_constr
 
-(* [raw_make_or_list [P1;...;Pn]] build the rawconstr corresponding
+(* [glob_make_or_list [P1;...;Pn]] build the glob_constr corresponding
    to [P1 \/ ( .... \/ Pn)]
 *)
-val  raw_make_or_list : rawconstr list -> rawconstr
+val  glob_make_or_list : glob_constr list -> glob_constr
 
 
 (* alpha_conversion functions *)
 
 
 
-(* Replace the var mapped in the rawconstr/context *)
-val change_vars : Names.identifier Names.Idmap.t -> rawconstr -> rawconstr
+(* Replace the var mapped in the glob_constr/context *)
+val change_vars : Names.identifier Names.Idmap.t -> glob_constr -> glob_constr
 
 
 
@@ -80,27 +80,27 @@ val change_vars : Names.identifier Names.Idmap.t -> rawconstr -> rawconstr
 (* [alpha_rt avoid rt] alpha convert [rt] s.t. the result repects barendregt
    conventions and  does not share bound variables with avoid
 *)
-val alpha_rt : Names.identifier list -> rawconstr -> rawconstr
+val alpha_rt : Names.identifier list -> glob_constr -> glob_constr
 
 (* same as alpha_rt but for case branches *)
 val alpha_br : Names.identifier list ->
     Util.loc * Names.identifier list * Rawterm.cases_pattern list *
-    Rawterm.rawconstr ->
+    Rawterm.glob_constr ->
     Util.loc * Names.identifier list * Rawterm.cases_pattern list *
-    Rawterm.rawconstr
+    Rawterm.glob_constr
 
 
 (* Reduction function *)
 val replace_var_by_term  :
   Names.identifier ->
-  Rawterm.rawconstr -> Rawterm.rawconstr -> Rawterm.rawconstr
+  Rawterm.glob_constr -> Rawterm.glob_constr -> Rawterm.glob_constr
 
 
 
 (*
    [is_free_in id rt] checks if [id] is a free variable in [rt]
 *)
-val is_free_in : Names.identifier -> rawconstr -> bool
+val is_free_in : Names.identifier -> glob_constr -> bool
 
 
 val are_unifiable : cases_pattern -> cases_pattern -> bool
@@ -115,12 +115,12 @@ val eq_cases_pattern : cases_pattern -> cases_pattern -> bool
 val   ids_of_pat : cases_pattern -> Names.Idset.t
 
 (* TODO: finish this function (Fix not treated) *)
-val ids_of_rawterm: rawconstr -> Names.Idset.t
+val ids_of_rawterm: glob_constr -> Names.Idset.t
 
 (*
    removing let_in construction in a rawterm
 *)
-val zeta_normalize : Rawterm.rawconstr -> Rawterm.rawconstr
+val zeta_normalize : Rawterm.glob_constr -> Rawterm.glob_constr
 
 
-val expand_as : rawconstr -> rawconstr
+val expand_as : glob_constr -> glob_constr

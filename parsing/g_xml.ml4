@@ -135,37 +135,37 @@ let compute_branches_lengths ind =
 let compute_inductive_nargs ind =
   Inductiveops.inductive_nargs (Global.env()) ind
 
-(* Interpreting constr as a rawconstr *)
+(* Interpreting constr as a glob_constr *)
 
 let rec interp_xml_constr = function
   | XmlTag (loc,"REL",al,[]) ->
-      RVar (loc, get_xml_ident al)
+      GVar (loc, get_xml_ident al)
   | XmlTag (loc,"VAR",al,[]) ->
       error "XML parser: unable to interp free variables"
   | XmlTag (loc,"LAMBDA",al,(_::_ as xl)) ->
       let body,decls = list_sep_last xl in
       let ctx = List.map interp_xml_decl decls in
-      List.fold_right (fun (na,t) b -> RLambda (loc, na, Explicit, t, b))
+      List.fold_right (fun (na,t) b -> GLambda (loc, na, Explicit, t, b))
 	ctx (interp_xml_target body)
   | XmlTag (loc,"PROD",al,(_::_ as xl)) ->
       let body,decls = list_sep_last xl in
       let ctx = List.map interp_xml_decl decls in
-      List.fold_right (fun (na,t) b -> RProd (loc, na, Explicit, t, b))
+      List.fold_right (fun (na,t) b -> GProd (loc, na, Explicit, t, b))
 	ctx (interp_xml_target body)
   | XmlTag (loc,"LETIN",al,(_::_ as xl)) ->
       let body,defs = list_sep_last xl in
       let ctx = List.map interp_xml_def defs in
-      List.fold_right (fun (na,t) b -> RLetIn (loc, na, t, b))
+      List.fold_right (fun (na,t) b -> GLetIn (loc, na, t, b))
         ctx (interp_xml_target body)
   | XmlTag (loc,"APPLY",_,x::xl) ->
-      RApp (loc, interp_xml_constr x, List.map interp_xml_constr xl)
+      GApp (loc, interp_xml_constr x, List.map interp_xml_constr xl)
   | XmlTag (loc,"instantiate",_,
       (XmlTag (_,("CONST"|"MUTIND"|"MUTCONSTRUCT"),_,_) as x)::xl) ->
-      RApp (loc, interp_xml_constr x, List.map interp_xml_arg xl)
+      GApp (loc, interp_xml_constr x, List.map interp_xml_arg xl)
   | XmlTag (loc,"META",al,xl) ->
-      REvar (loc, get_xml_no al, Some (List.map interp_xml_substitution xl))
+      GEvar (loc, get_xml_no al, Some (List.map interp_xml_substitution xl))
   | XmlTag (loc,"CONST",al,[]) ->
-      RRef (loc, ConstRef (get_xml_constant al))
+      GRef (loc, ConstRef (get_xml_constant al))
   | XmlTag (loc,"MUTCASE",al,x::y::yl) ->
       let ind = get_xml_inductive al in
       let p = interp_xml_patternsType x in
@@ -175,23 +175,23 @@ let rec interp_xml_constr = function
       let mat = simple_cases_matrix_of_branches ind brns brs in
       let nparams,n = compute_inductive_nargs ind in
       let nal,rtn = return_type_of_predicate ind nparams n p in
-      RCases (loc,RegularStyle,rtn,[tm,nal],mat)
+      GCases (loc,RegularStyle,rtn,[tm,nal],mat)
   | XmlTag (loc,"MUTIND",al,[]) ->
-      RRef (loc, IndRef (get_xml_inductive al))
+      GRef (loc, IndRef (get_xml_inductive al))
   | XmlTag (loc,"MUTCONSTRUCT",al,[]) ->
-      RRef (loc, ConstructRef (get_xml_constructor al))
+      GRef (loc, ConstructRef (get_xml_constructor al))
   | XmlTag (loc,"FIX",al,xl) ->
       let li,lnct = List.split (List.map interp_xml_FixFunction xl) in
       let ln,lc,lt = list_split3 lnct in
       let lctx = List.map (fun _ -> []) ln in
-      RRec (loc, RFix (Array.of_list li, get_xml_noFun al), Array.of_list ln, Array.of_list lctx, Array.of_list lc, Array.of_list lt)
+      GRec (loc, RFix (Array.of_list li, get_xml_noFun al), Array.of_list ln, Array.of_list lctx, Array.of_list lc, Array.of_list lt)
   | XmlTag (loc,"COFIX",al,xl) ->
       let ln,lc,lt = list_split3 (List.map interp_xml_CoFixFunction xl) in
-      RRec (loc, RCoFix (get_xml_noFun al), Array.of_list ln, [||], Array.of_list lc, Array.of_list lt)
+      GRec (loc, RCoFix (get_xml_noFun al), Array.of_list ln, [||], Array.of_list lc, Array.of_list lt)
   | XmlTag (loc,"CAST",al,[x1;x2]) ->
-      RCast (loc, interp_xml_term x1, CastConv (DEFAULTcast, interp_xml_type x2))
+      GCast (loc, interp_xml_term x1, CastConv (DEFAULTcast, interp_xml_type x2))
   | XmlTag (loc,"SORT",al,[]) ->
-      RSort (loc, get_xml_sort al)
+      GSort (loc, get_xml_sort al)
   | XmlTag (loc,s,_,_) ->
       user_err_loc (loc,"", str "Unexpected tag " ++ str s ++ str ".")
 

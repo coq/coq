@@ -66,9 +66,9 @@ let error_needs_inversion env x t =
 module type S = sig
   val compile_cases :
     loc -> case_style ->
-    (type_constraint -> env -> evar_map ref -> rawconstr -> unsafe_judgment) * evar_map ref ->
+    (type_constraint -> env -> evar_map ref -> glob_constr -> unsafe_judgment) * evar_map ref ->
     type_constraint ->
-    env -> rawconstr option * tomatch_tuples * cases_clauses ->
+    env -> glob_constr option * tomatch_tuples * cases_clauses ->
     unsafe_judgment
 end
 
@@ -348,7 +348,7 @@ let find_tomatch_tycon evdref env loc = function
       empty_tycon,None
 
 let coerce_row typing_fun evdref env pats (tomatch,(_,indopt)) =
-  let loc = Some (loc_of_rawconstr tomatch) in
+  let loc = Some (loc_of_glob_constr tomatch) in
   let tycon,realnames = find_tomatch_tycon evdref env loc indopt in
   let j = typing_fun tycon env evdref tomatch in
   let typ = nf_evar !evdref j.uj_type in
@@ -1228,7 +1228,7 @@ let matx_of_eqns env tomatchl eqns =
     let initial_rhs = rhs in
     let rhs =
       { rhs_env = env;
-        rhs_vars = free_rawvars initial_rhs;
+        rhs_vars = free_glob_vars initial_rhs;
 	avoid_ids = ids@(ids_of_named_context (named_context env));
 	it = Some initial_rhs } in
     { patterns = initial_lpat;

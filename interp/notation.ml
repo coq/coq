@@ -197,9 +197,9 @@ let make_gr = function
       ConstructRef((mind_of_kn(canonical_mind kn),i),j)
   | VarRef id ->  VarRef id
 
-let rawconstr_key = function
-  | RApp (_,RRef (_,ref),_) -> RefKey (make_gr ref)
-  | RRef (_,ref) -> RefKey (make_gr ref)
+let glob_constr_key = function
+  | GApp (_,GRef (_,ref),_) -> RefKey (make_gr ref)
+  | GRef (_,ref) -> RefKey (make_gr ref)
   | _ -> Oth
 
 let cases_pattern_key = function
@@ -219,15 +219,15 @@ let aconstr_key = function (* Rem: AApp(ARef ref,[]) stands for @ref *)
 type required_module = full_path * string list
 
 type 'a prim_token_interpreter =
-    loc -> 'a -> rawconstr
+    loc -> 'a -> glob_constr
 
 type cases_pattern_status = bool (* true = use prim token in patterns *)
 
 type 'a prim_token_uninterpreter =
-    rawconstr list * (rawconstr -> 'a option) * cases_pattern_status
+    glob_constr list * (glob_constr -> 'a option) * cases_pattern_status
 
 type internal_prim_token_interpreter =
-    loc -> prim_token -> required_module * (unit -> rawconstr)
+    loc -> prim_token -> required_module * (unit -> glob_constr)
 
 let prim_token_interpreter_tab =
   (Hashtbl.create 7 : (scope_name, internal_prim_token_interpreter) Hashtbl.t)
@@ -244,7 +244,7 @@ let declare_prim_token_interpreter sc interp (patl,uninterp,b) =
   declare_scope sc;
   add_prim_token_interpreter sc interp;
   List.iter (fun pat ->
-      Hashtbl.add prim_token_key_table (rawconstr_key pat) (sc,uninterp,b))
+      Hashtbl.add prim_token_key_table (glob_constr_key pat) (sc,uninterp,b))
     patl
 
 let mkNumeral n = Numeral n
@@ -350,7 +350,7 @@ let find_prim_token g loc p sc =
   (* Try for a user-defined numerical notation *)
   try
     let (_,c),df = find_notation (notation_of_prim_token p) sc in
-    g (rawconstr_of_aconstr loc c),df
+    g (glob_constr_of_aconstr loc c),df
   with Not_found ->
   (* Try for a primitive numerical notation *)
   let (spdir,interp) = Hashtbl.find prim_token_interpreter_tab sc loc p in
@@ -370,7 +370,7 @@ let interp_prim_token =
   interp_prim_token_gen (fun x -> x)
 
 let interp_prim_token_cases_pattern loc p name =
-  interp_prim_token_gen (cases_pattern_of_rawconstr name) loc p
+  interp_prim_token_gen (cases_pattern_of_glob_constr name) loc p
 
 let rec interp_notation loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in
@@ -380,7 +380,7 @@ let rec interp_notation loc ntn local_scopes =
     (loc,"",str ("Unknown interpretation for notation \""^ntn^"\"."))
 
 let uninterp_notations c =
-  Gmapl.find (rawconstr_key c) !notations_key_table
+  Gmapl.find (glob_constr_key c) !notations_key_table
 
 let uninterp_cases_pattern_notations c =
   Gmapl.find (cases_pattern_key c) !notations_key_table
@@ -392,7 +392,7 @@ let availability_of_notation (ntn_scope,ntn) scopes =
 
 let uninterp_prim_token c =
   try
-    let (sc,numpr,_) = Hashtbl.find prim_token_key_table (rawconstr_key c) in
+    let (sc,numpr,_) = Hashtbl.find prim_token_key_table (glob_constr_key c) in
     match numpr c with
       | None -> raise No_match
       | Some n -> (sc,n)
@@ -403,7 +403,7 @@ let uninterp_prim_token_cases_pattern c =
     let k = cases_pattern_key c in
     let (sc,numpr,b) = Hashtbl.find prim_token_key_table k in
     if not b then raise No_match;
-    let na,c = rawconstr_of_closed_cases_pattern c in
+    let na,c = glob_constr_of_closed_cases_pattern c in
     match numpr c with
       | None -> raise No_match
       | Some n -> (na,sc,n)
@@ -581,11 +581,11 @@ let pr_scope_classes sc =
     hov 0 (str ("Bound to class"^(if List.tl l=[] then "" else "es")) ++
       spc() ++ prlist_with_sep spc pr_class l) ++ fnl()
 
-let pr_notation_info prraw ntn c =
+let pr_notation_info prglob ntn c =
   str "\"" ++ str ntn ++ str "\" := " ++
-  prraw (rawconstr_of_aconstr dummy_loc c)
+  prglob (glob_constr_of_aconstr dummy_loc c)
 
-let pr_named_scope prraw scope sc =
+let pr_named_scope prglob scope sc =
  (if scope = default_scope then
    match Gmap.fold (fun _ _ x -> x+1) sc.notations 0 with
      | 0 -> str "No lonely notation"
@@ -596,14 +596,14 @@ let pr_named_scope prraw scope sc =
   ++ pr_scope_classes scope
   ++ Gmap.fold
        (fun ntn ((_,r),(_,df)) strm ->
-	 pr_notation_info prraw df r ++ fnl () ++ strm)
+	 pr_notation_info prglob df r ++ fnl () ++ strm)
        sc.notations (mt ())
 
-let pr_scope prraw scope = pr_named_scope prraw scope (find_scope scope)
+let pr_scope prglob scope = pr_named_scope prglob scope (find_scope scope)
 
-let pr_scopes prraw =
+let pr_scopes prglob =
  Gmap.fold
-   (fun scope sc strm -> pr_named_scope prraw scope sc ++ fnl () ++ strm)
+   (fun scope sc strm -> pr_named_scope prglob scope sc ++ fnl () ++ strm)
    !scope_map (mt ())
 
 let rec find_default ntn = function
@@ -670,7 +670,7 @@ let interp_notation_as_global_reference loc test ntn sc =
       | [] -> error_notation_not_reference loc ntn
       | _ -> error_ambiguous_notation loc ntn
 
-let locate_notation prraw ntn scope =
+let locate_notation prglob ntn scope =
   let ntns = factorize_entries (browse_notation false ntn !scope_map) in
   let scopes = Option.fold_right push_scope scope !scope_stack in
   if ntns = [] then
@@ -683,7 +683,7 @@ let locate_notation prraw ntn scope =
       prlist
 	(fun (sc,r,(_,df)) ->
 	  hov 0 (
-	    pr_notation_info prraw df r ++ tbrk (1,2) ++
+	    pr_notation_info prglob df r ++ tbrk (1,2) ++
 	    (if sc = default_scope then mt () else (str ": " ++ str sc)) ++
 	    tbrk (1,2) ++
 	    (if Some sc = scope then str "(default interpretation)" else mt ())
@@ -719,10 +719,10 @@ let collect_notations stack =
 	    (all',ntn::knownntn))
     ([],[]) stack)
 
-let pr_visible_in_scope prraw (scope,ntns) =
+let pr_visible_in_scope prglob (scope,ntns) =
   let strm =
     List.fold_right
-      (fun (df,r) strm -> pr_notation_info prraw df r ++ fnl () ++ strm)
+      (fun (df,r) strm -> pr_notation_info prglob df r ++ fnl () ++ strm)
       ntns (mt ()) in
   (if scope = default_scope then
      str "Lonely notation" ++ (if List.length ntns <> 1 then str "s" else mt())
@@ -730,14 +730,14 @@ let pr_visible_in_scope prraw (scope,ntns) =
      str "Visible in scope " ++ str scope)
   ++ fnl () ++ strm
 
-let pr_scope_stack prraw stack =
+let pr_scope_stack prglob stack =
   List.fold_left
-    (fun strm scntns -> strm ++ pr_visible_in_scope prraw scntns ++ fnl ())
+    (fun strm scntns -> strm ++ pr_visible_in_scope prglob scntns ++ fnl ())
     (mt ()) (collect_notations stack)
 
-let pr_visibility prraw = function
-  | Some scope -> pr_scope_stack prraw (push_scope scope !scope_stack)
-  | None -> pr_scope_stack prraw !scope_stack
+let pr_visibility prglob = function
+  | Some scope -> pr_scope_stack prglob (push_scope scope !scope_stack)
+  | None -> pr_scope_stack prglob !scope_stack
 
 (**********************************************************************)
 (* Mapping notations to concrete syntax *)

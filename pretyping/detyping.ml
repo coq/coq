@@ -275,30 +275,30 @@ let is_nondep_branch c n =
 let extract_nondep_branches test c b n =
   let rec strip n r = if n=0 then r else
     match r with
-      | RLambda (_,_,_,_,t) -> strip (n-1) t
-      | RLetIn (_,_,_,t) -> strip (n-1) t
+      | GLambda (_,_,_,_,t) -> strip (n-1) t
+      | GLetIn (_,_,_,t) -> strip (n-1) t
       | _ -> assert false in
   if test c n then Some (strip n b) else None
 
 let it_destRLambda_or_LetIn_names n c =
   let rec aux n nal c =
     if n=0 then (List.rev nal,c) else match c with
-      | RLambda (_,na,_,_,c) -> aux (n-1) (na::nal) c
-      | RLetIn (_,na,_,c) -> aux (n-1) (na::nal) c
+      | GLambda (_,na,_,_,c) -> aux (n-1) (na::nal) c
+      | GLetIn (_,na,_,c) -> aux (n-1) (na::nal) c
       | _ ->
           (* eta-expansion *)
 	  let rec next l =
 	    let x = next_ident_away (id_of_string "x") l in
-	    (* Not efficient but unusual and no function to get free rawvars *)
-(* 	    if occur_rawconstr x c then next (x::l) else x in *)
+	    (* Not efficient but unusual and no function to get free glob_vars *)
+(* 	    if occur_glob_constr x c then next (x::l) else x in *)
 	    x
 	  in
-	  let x = next (free_rawvars c) in
-	  let a = RVar (dl,x) in
+	  let x = next (free_glob_vars c) in
+	  let a = GVar (dl,x) in
 	  aux (n-1) (Name x :: nal)
             (match c with
-              | RApp (loc,p,l) -> RApp (loc,c,l@[a])
-              | _ -> (RApp (dl,c,[a])))
+              | GApp (loc,p,l) -> GApp (loc,c,l@[a])
+              | _ -> (GApp (dl,c,[a])))
   in aux n [] c
 
 let detype_case computable detype detype_eqns testdep avoid data p c bl =
@@ -315,7 +315,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
         | Some p ->
             let nl,typ = it_destRLambda_or_LetIn_names k p in
 	    let n,typ = match typ with
-              | RLambda (_,x,_,t,c) -> x, c
+              | GLambda (_,x,_,t,c) -> x, c
 	      | _ -> Anonymous, typ in
 	    let aliastyp =
 	      if List.for_all ((=) Anonymous) nl then None
@@ -341,20 +341,20 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
   | LetStyle when aliastyp = None ->
       let bl' = Array.map detype bl in
       let (nal,d) = it_destRLambda_or_LetIn_names consnargsl.(0) bl'.(0) in
-      RLetTuple (dl,nal,(alias,pred),tomatch,d)
+      GLetTuple (dl,nal,(alias,pred),tomatch,d)
   | IfStyle when aliastyp = None ->
       let bl' = Array.map detype bl in
       let nondepbrs =
 	array_map3 (extract_nondep_branches testdep) bl bl' consnargsl in
       if array_for_all ((<>) None) nondepbrs then
-	RIf (dl,tomatch,(alias,pred),
+	GIf (dl,tomatch,(alias,pred),
              Option.get nondepbrs.(0),Option.get nondepbrs.(1))
       else
 	let eqnl = detype_eqns constructs consnargsl bl in
-	RCases (dl,tag,pred,[tomatch,(alias,aliastyp)],eqnl)
+	GCases (dl,tag,pred,[tomatch,(alias,aliastyp)],eqnl)
   | _ ->
       let eqnl = detype_eqns constructs consnargsl bl in
-      RCases (dl,tag,pred,[tomatch,(alias,aliastyp)],eqnl)
+      GCases (dl,tag,pred,[tomatch,(alias,aliastyp)],eqnl)
 
 let detype_sort = function
   | Prop c -> RProp c
@@ -372,36 +372,36 @@ let rec detype (isgoal:bool) avoid env t =
   match kind_of_term (collapse_appl t) with
     | Rel n ->
       (try match lookup_name_of_rel n env with
-	 | Name id   -> RVar (dl, id)
+	 | Name id   -> GVar (dl, id)
 	 | Anonymous -> !detype_anonymous dl n
        with Not_found ->
 	 let s = "_UNBOUND_REL_"^(string_of_int n)
-	 in RVar (dl, id_of_string s))
+	 in GVar (dl, id_of_string s))
     | Meta n ->
 	(* Meta in constr are not user-parsable and are mapped to Evar *)
-	REvar (dl, n, None)
+	GEvar (dl, n, None)
     | Var id ->
 	(try
-	  let _ = Global.lookup_named id in RRef (dl, VarRef id)
+	  let _ = Global.lookup_named id in GRef (dl, VarRef id)
 	 with _ ->
-	  RVar (dl, id))
-    | Sort s -> RSort (dl,detype_sort s)
+	  GVar (dl, id))
+    | Sort s -> GSort (dl,detype_sort s)
     | Cast (c1,k,c2) ->
-	RCast(dl,detype isgoal avoid env c1, CastConv (k, detype isgoal avoid env c2))
+	GCast(dl,detype isgoal avoid env c1, CastConv (k, detype isgoal avoid env c2))
     | Prod (na,ty,c) -> detype_binder isgoal BProd avoid env na ty c
     | Lambda (na,ty,c) -> detype_binder isgoal BLambda avoid env na ty c
     | LetIn (na,b,_,c) -> detype_binder isgoal BLetIn avoid env na b c
     | App (f,args) ->
-	RApp (dl,detype isgoal avoid env f,
+	GApp (dl,detype isgoal avoid env f,
               array_map_to_list (detype isgoal avoid env) args)
-    | Const sp -> RRef (dl, ConstRef sp)
+    | Const sp -> GRef (dl, ConstRef sp)
     | Evar (ev,cl) ->
-        REvar (dl, ev,
+        GEvar (dl, ev,
                Some (List.map (detype isgoal avoid env) (Array.to_list cl)))
     | Ind ind_sp ->
-	RRef (dl, IndRef ind_sp)
+	GRef (dl, IndRef ind_sp)
     | Construct cstr_sp ->
-	RRef (dl, ConstructRef cstr_sp)
+	GRef (dl, ConstructRef cstr_sp)
     | Case (ci,p,c,bl) ->
 	let comp = computable p (ci.ci_pp_info.ind_nargs) in
 	detype_case comp (detype isgoal avoid env)
@@ -424,7 +424,7 @@ and detype_fix isgoal avoid env (vn,_ as nvn) (names,tys,bodies) =
   let v = array_map3
     (fun c t i -> share_names isgoal (i+1) [] def_avoid def_env c (lift n t))
     bodies tys vn in
-  RRec(dl,RFix (Array.map (fun i -> Some i, RStructRec) (fst nvn), snd nvn),Array.of_list (List.rev lfi),
+  GRec(dl,RFix (Array.map (fun i -> Some i, RStructRec) (fst nvn), snd nvn),Array.of_list (List.rev lfi),
        Array.map (fun (bl,_,_) -> bl) v,
        Array.map (fun (_,_,ty) -> ty) v,
        Array.map (fun (_,bd,_) -> bd) v)
@@ -440,7 +440,7 @@ and detype_cofix isgoal avoid env n (names,tys,bodies) =
   let v = array_map2
     (fun c t -> share_names isgoal 0 [] def_avoid def_env c (lift ntys t))
     bodies tys in
-  RRec(dl,RCoFix n,Array.of_list (List.rev lfi),
+  GRec(dl,RCoFix n,Array.of_list (List.rev lfi),
        Array.map (fun (bl,_,_) -> bl) v,
        Array.map (fun (_,_,ty) -> ty) v,
        Array.map (fun (_,bd,_) -> bd) v)
@@ -535,9 +535,9 @@ and detype_binder isgoal bk avoid env na ty c =
     else compute_displayed_name_in flag avoid na c in
   let r =  detype isgoal avoid' (add_name na' env) c in
   match bk with
-  | BProd -> RProd (dl, na',Explicit,detype false avoid env ty, r)
-  | BLambda -> RLambda (dl, na',Explicit,detype false avoid env ty, r)
-  | BLetIn -> RLetIn (dl, na',detype false avoid env ty, r)
+  | BProd -> GProd (dl, na',Explicit,detype false avoid env ty, r)
+  | BLambda -> GLambda (dl, na',Explicit,detype false avoid env ty, r)
+  | BLetIn -> GLetIn (dl, na',detype false avoid env ty, r)
 
 let rec detype_rel_context where avoid env sign =
   let where = Option.map (fun c -> it_mkLambda_or_LetIn c sign) where in
@@ -569,42 +569,42 @@ let rec subst_cases_pattern subst pat =
 	if kn' == kn && cpl' == cpl then pat else
 	  PatCstr (loc,((kn',i),j),cpl',n)
 
-let rec subst_rawconstr subst raw =
+let rec subst_glob_constr subst raw =
   match raw with
-  | RRef (loc,ref) ->
+  | GRef (loc,ref) ->
       let ref',t = subst_global subst ref in
 	if ref' == ref then raw else
          detype false [] [] t
 
-  | RVar _ -> raw
-  | REvar _ -> raw
-  | RPatVar _ -> raw
+  | GVar _ -> raw
+  | GEvar _ -> raw
+  | GPatVar _ -> raw
 
-  | RApp (loc,r,rl) ->
-      let r' = subst_rawconstr subst r
-      and rl' = list_smartmap (subst_rawconstr subst) rl in
+  | GApp (loc,r,rl) ->
+      let r' = subst_glob_constr subst r
+      and rl' = list_smartmap (subst_glob_constr subst) rl in
 	if r' == r && rl' == rl then raw else
-	  RApp(loc,r',rl')
+	  GApp(loc,r',rl')
 
-  | RLambda (loc,n,bk,r1,r2) ->
-      let r1' = subst_rawconstr subst r1 and r2' = subst_rawconstr subst r2 in
+  | GLambda (loc,n,bk,r1,r2) ->
+      let r1' = subst_glob_constr subst r1 and r2' = subst_glob_constr subst r2 in
 	if r1' == r1 && r2' == r2 then raw else
-	  RLambda (loc,n,bk,r1',r2')
+	  GLambda (loc,n,bk,r1',r2')
 
-  | RProd (loc,n,bk,r1,r2) ->
-      let r1' = subst_rawconstr subst r1 and r2' = subst_rawconstr subst r2 in
+  | GProd (loc,n,bk,r1,r2) ->
+      let r1' = subst_glob_constr subst r1 and r2' = subst_glob_constr subst r2 in
 	if r1' == r1 && r2' == r2 then raw else
-	  RProd (loc,n,bk,r1',r2')
+	  GProd (loc,n,bk,r1',r2')
 
-  | RLetIn (loc,n,r1,r2) ->
-      let r1' = subst_rawconstr subst r1 and r2' = subst_rawconstr subst r2 in
+  | GLetIn (loc,n,r1,r2) ->
+      let r1' = subst_glob_constr subst r1 and r2' = subst_glob_constr subst r2 in
 	if r1' == r1 && r2' == r2 then raw else
-	  RLetIn (loc,n,r1',r2')
+	  GLetIn (loc,n,r1',r2')
 
-  | RCases (loc,sty,rtno,rl,branches) ->
-      let rtno' = Option.smartmap (subst_rawconstr subst) rtno
+  | GCases (loc,sty,rtno,rl,branches) ->
+      let rtno' = Option.smartmap (subst_glob_constr subst) rtno
       and rl' = list_smartmap (fun (a,x as y) ->
-        let a' = subst_rawconstr subst a in
+        let a' = subst_glob_constr subst a in
         let (n,topt) = x in
         let topt' = Option.smartmap
           (fun (loc,(sp,i),x,y as t) ->
@@ -615,61 +615,61 @@ let rec subst_rawconstr subst raw =
 			(fun (loc,idl,cpl,r as branch) ->
 			   let cpl' =
 			     list_smartmap (subst_cases_pattern subst) cpl
-			   and r' = subst_rawconstr subst r in
+			   and r' = subst_glob_constr subst r in
 			     if cpl' == cpl && r' == r then branch else
 			       (loc,idl,cpl',r'))
 			branches
       in
 	if rtno' == rtno && rl' == rl && branches' == branches then raw else
-	  RCases (loc,sty,rtno',rl',branches')
+	  GCases (loc,sty,rtno',rl',branches')
 
-  | RLetTuple (loc,nal,(na,po),b,c) ->
-      let po' = Option.smartmap (subst_rawconstr subst) po
-      and b' = subst_rawconstr subst b
-      and c' = subst_rawconstr subst c in
+  | GLetTuple (loc,nal,(na,po),b,c) ->
+      let po' = Option.smartmap (subst_glob_constr subst) po
+      and b' = subst_glob_constr subst b
+      and c' = subst_glob_constr subst c in
 	if po' == po && b' == b && c' == c then raw else
-          RLetTuple (loc,nal,(na,po'),b',c')
+          GLetTuple (loc,nal,(na,po'),b',c')
 
-  | RIf (loc,c,(na,po),b1,b2) ->
-      let po' = Option.smartmap (subst_rawconstr subst) po
-      and b1' = subst_rawconstr subst b1
-      and b2' = subst_rawconstr subst b2
-      and c' = subst_rawconstr subst c in
+  | GIf (loc,c,(na,po),b1,b2) ->
+      let po' = Option.smartmap (subst_glob_constr subst) po
+      and b1' = subst_glob_constr subst b1
+      and b2' = subst_glob_constr subst b2
+      and c' = subst_glob_constr subst c in
 	if c' == c & po' == po && b1' == b1 && b2' == b2 then raw else
-          RIf (loc,c',(na,po'),b1',b2')
+          GIf (loc,c',(na,po'),b1',b2')
 
-  | RRec (loc,fix,ida,bl,ra1,ra2) ->
-      let ra1' = array_smartmap (subst_rawconstr subst) ra1
-      and ra2' = array_smartmap (subst_rawconstr subst) ra2 in
+  | GRec (loc,fix,ida,bl,ra1,ra2) ->
+      let ra1' = array_smartmap (subst_glob_constr subst) ra1
+      and ra2' = array_smartmap (subst_glob_constr subst) ra2 in
       let bl' = array_smartmap
         (list_smartmap (fun (na,k,obd,ty as dcl) ->
-          let ty' = subst_rawconstr subst ty in
-          let obd' = Option.smartmap (subst_rawconstr subst) obd in
+          let ty' = subst_glob_constr subst ty in
+          let obd' = Option.smartmap (subst_glob_constr subst) obd in
           if ty'==ty & obd'==obd then dcl else (na,k,obd',ty')))
         bl in
 	if ra1' == ra1 && ra2' == ra2 && bl'==bl then raw else
-	  RRec (loc,fix,ida,bl',ra1',ra2')
+	  GRec (loc,fix,ida,bl',ra1',ra2')
 
-  | RSort _ -> raw
+  | GSort _ -> raw
 
-  | RHole (loc,ImplicitArg (ref,i,b)) ->
+  | GHole (loc,ImplicitArg (ref,i,b)) ->
       let ref',_ = subst_global subst ref in
 	if ref' == ref then raw else
-	  RHole (loc,InternalHole)
-  | RHole (loc, (BinderType _ | QuestionMark _ | CasesType | InternalHole |
+	  GHole (loc,InternalHole)
+  | GHole (loc, (BinderType _ | QuestionMark _ | CasesType | InternalHole |
       TomatchTypeParameter _ | GoalEvar | ImpossibleCase | MatchingVar _)) ->
       raw
 
-  | RCast (loc,r1,k) ->
+  | GCast (loc,r1,k) ->
       (match k with
 	   CastConv (k,r2) ->
-	     let r1' = subst_rawconstr subst r1 and r2' = subst_rawconstr subst r2 in
+	     let r1' = subst_glob_constr subst r1 and r2' = subst_glob_constr subst r2 in
 	       if r1' == r1 && r2' == r2 then raw else
-		 RCast (loc,r1', CastConv (k,r2'))
+		 GCast (loc,r1', CastConv (k,r2'))
 	 | CastCoerce ->
-	     let r1' = subst_rawconstr subst r1 in
-	       if r1' == r1 then raw else RCast (loc,r1',k))
-  | RDynamic _ -> raw
+	     let r1' = subst_glob_constr subst r1 in
+	       if r1' == r1 then raw else GCast (loc,r1',k))
+  | GDynamic _ -> raw
 
 (* Utilities to transform kernel cases to simple pattern-matching problem *)
 

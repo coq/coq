@@ -42,13 +42,13 @@ let glob_xO = ConstructRef path_of_xO
 let glob_xH = ConstructRef path_of_xH
 
 let pos_of_bignat dloc x =
-  let ref_xI = RRef (dloc, glob_xI) in
-  let ref_xH = RRef (dloc, glob_xH) in
-  let ref_xO = RRef (dloc, glob_xO) in
+  let ref_xI = GRef (dloc, glob_xI) in
+  let ref_xH = GRef (dloc, glob_xH) in
+  let ref_xO = GRef (dloc, glob_xO) in
   let rec pos_of x =
     match div2_with_rest x with
-      | (q,false) -> RApp (dloc, ref_xO,[pos_of q])
-      | (q,true) when q <> zero -> RApp (dloc,ref_xI,[pos_of q])
+      | (q,false) -> GApp (dloc, ref_xO,[pos_of q])
+      | (q,true) when q <> zero -> GApp (dloc,ref_xI,[pos_of q])
       | (q,true) -> ref_xH
   in
   pos_of x
@@ -66,9 +66,9 @@ let interp_positive dloc n =
 (**********************************************************************)
 
 let rec bignat_of_pos = function
-  | RApp (_, RRef (_,b),[a]) when b = glob_xO -> mult_2(bignat_of_pos a)
-  | RApp (_, RRef (_,b),[a]) when b = glob_xI -> add_1(mult_2(bignat_of_pos a))
-  | RRef (_, a) when a = glob_xH -> Bigint.one
+  | GApp (_, GRef (_,b),[a]) when b = glob_xO -> mult_2(bignat_of_pos a)
+  | GApp (_, GRef (_,b),[a]) when b = glob_xI -> add_1(mult_2(bignat_of_pos a))
+  | GRef (_, a) when a = glob_xH -> Bigint.one
   | _ -> raise Non_closed_number
 
 let uninterp_positive p =
@@ -84,9 +84,9 @@ let uninterp_positive p =
 let _ = Notation.declare_numeral_interpreter "positive_scope"
   (positive_path,positive_module)
   interp_positive
-  ([RRef (dummy_loc, glob_xI);
-    RRef (dummy_loc, glob_xO);
-    RRef (dummy_loc, glob_xH)],
+  ([GRef (dummy_loc, glob_xI);
+    GRef (dummy_loc, glob_xO);
+    GRef (dummy_loc, glob_xH)],
    uninterp_positive,
    true)
 
@@ -106,9 +106,9 @@ let n_path = make_path binnat_module "N"
 
 let n_of_binnat dloc pos_or_neg n =
   if n <> zero then
-    RApp(dloc, RRef (dloc,glob_Npos), [pos_of_bignat dloc n])
+    GApp(dloc, GRef (dloc,glob_Npos), [pos_of_bignat dloc n])
   else
-    RRef (dloc, glob_N0)
+    GRef (dloc, glob_N0)
 
 let error_negative dloc =
   user_err_loc (dloc, "interp_N", str "No negative numbers in type \"N\".")
@@ -122,8 +122,8 @@ let n_of_int dloc n =
 (**********************************************************************)
 
 let bignat_of_n = function
-  | RApp (_, RRef (_,b),[a]) when b = glob_Npos -> bignat_of_pos a
-  | RRef (_, a) when a = glob_N0 -> Bigint.zero
+  | GApp (_, GRef (_,b),[a]) when b = glob_Npos -> bignat_of_pos a
+  | GRef (_, a) when a = glob_N0 -> Bigint.zero
   | _ -> raise Non_closed_number
 
 let uninterp_n p =
@@ -136,8 +136,8 @@ let uninterp_n p =
 let _ = Notation.declare_numeral_interpreter "N_scope"
   (n_path,binnat_module)
   n_of_int
-  ([RRef (dummy_loc, glob_N0);
-    RRef (dummy_loc, glob_Npos)],
+  ([GRef (dummy_loc, glob_N0);
+    GRef (dummy_loc, glob_Npos)],
   uninterp_n,
   true)
 
@@ -160,18 +160,18 @@ let z_of_int dloc n =
   if n <> zero then
     let sgn, n =
       if is_pos_or_zero n then glob_POS, n else glob_NEG, Bigint.neg n in
-    RApp(dloc, RRef (dloc,sgn), [pos_of_bignat dloc n])
+    GApp(dloc, GRef (dloc,sgn), [pos_of_bignat dloc n])
   else
-    RRef (dloc, glob_ZERO)
+    GRef (dloc, glob_ZERO)
 
 (**********************************************************************)
 (* Printing Z via scopes                                              *)
 (**********************************************************************)
 
 let bigint_of_z = function
-  | RApp (_, RRef (_,b),[a]) when b = glob_POS -> bignat_of_pos a
-  | RApp (_, RRef (_,b),[a]) when b = glob_NEG -> Bigint.neg (bignat_of_pos a)
-  | RRef (_, a) when a = glob_ZERO -> Bigint.zero
+  | GApp (_, GRef (_,b),[a]) when b = glob_POS -> bignat_of_pos a
+  | GApp (_, GRef (_,b),[a]) when b = glob_NEG -> Bigint.neg (bignat_of_pos a)
+  | GRef (_, a) when a = glob_ZERO -> Bigint.zero
   | _ -> raise Non_closed_number
 
 let uninterp_z p =
@@ -185,8 +185,8 @@ let uninterp_z p =
 let _ = Notation.declare_numeral_interpreter "Z_scope"
   (z_path,binint_module)
   z_of_int
-  ([RRef (dummy_loc, glob_ZERO);
-    RRef (dummy_loc, glob_POS);
-    RRef (dummy_loc, glob_NEG)],
+  ([GRef (dummy_loc, glob_ZERO);
+    GRef (dummy_loc, glob_POS);
+    GRef (dummy_loc, glob_NEG)],
   uninterp_z,
   true)

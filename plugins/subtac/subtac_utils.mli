@@ -74,7 +74,7 @@ val my_print_context : env -> std_ppcmds
 val my_print_rel_context : env -> rel_context -> std_ppcmds
 val my_print_named_context : env -> std_ppcmds
 val my_print_env : env -> std_ppcmds
-val my_print_rawconstr : env -> rawconstr -> std_ppcmds
+val my_print_glob_constr : env -> glob_constr -> std_ppcmds
 val my_print_tycon_type : env -> type_constraint_type -> std_ppcmds
 
 

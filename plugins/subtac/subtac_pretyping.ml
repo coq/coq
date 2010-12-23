@@ -58,7 +58,7 @@ let my_print_rec_info env t =
   str "Wf proof: " ++ my_print_constr env t.wf_proof ++ spc () ++
   str "Abbreviated Type: " ++ my_print_constr env t.f_type ++ spc () ++
   str "Full type: " ++ my_print_constr env t.f_fulltype
-(*   trace (str "pretype for " ++ (my_print_rawconstr env c) ++ *)
+(*   trace (str "pretype for " ++ (my_print_glob_constr env c) ++ *)
 (* 	   str " and tycon "++ my_print_tycon env tycon ++ *)
 (* 	   str " in environment: " ++ my_print_env env); *)
 
@@ -81,9 +81,9 @@ let find_with_index x l =
 
 open Vernacexpr
 
-let coqintern_constr evd env : Topconstr.constr_expr -> Rawterm.rawconstr = 
+let coqintern_constr evd env : Topconstr.constr_expr -> Rawterm.glob_constr = 
   Constrintern.intern_constr evd env
-let coqintern_type evd env : Topconstr.constr_expr -> Rawterm.rawconstr = 
+let coqintern_type evd env : Topconstr.constr_expr -> Rawterm.glob_constr = 
   Constrintern.intern_type evd env
 
 let env_with_binders env isevars l =

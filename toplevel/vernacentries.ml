@@ -798,7 +798,7 @@ let vernac_reserve bl =
   let sb_decl = (fun (idl,c) ->
     let t = Constrintern.interp_type Evd.empty (Global.env()) c in
     let t = Detyping.detype false [] [] t in
-    let t = aconstr_of_rawconstr [] [] t in
+    let t = aconstr_of_glob_constr [] [] t in
     List.iter (fun id -> Reserve.declare_reserved_type id t) idl)
   in List.iter sb_decl bl
 
@@ -1121,11 +1121,11 @@ let vernac_print = function
   | PrintRewriteHintDbName s -> Autorewrite.print_rewrite_hintdb s
   | PrintHintDb -> Auto.print_searchtable ()
   | PrintScopes ->
-      pp (Notation.pr_scopes (Constrextern.without_symbols pr_lrawconstr))
+      pp (Notation.pr_scopes (Constrextern.without_symbols pr_lglob_constr))
   | PrintScope s ->
-      pp (Notation.pr_scope (Constrextern.without_symbols pr_lrawconstr) s)
+      pp (Notation.pr_scope (Constrextern.without_symbols pr_lglob_constr) s)
   | PrintVisibility s ->
-      pp (Notation.pr_visibility (Constrextern.without_symbols pr_lrawconstr) s)
+      pp (Notation.pr_visibility (Constrextern.without_symbols pr_lglob_constr) s)
   | PrintAbout qid -> msg (print_about qid)
   | PrintImplicit qid -> msg (print_impargs qid)
 (*spiwack: prints all the axioms and section variables used by a term *)
@@ -1187,7 +1187,7 @@ let vernac_locate = function
   | LocateTerm (Genarg.ByNotation (_,ntn,sc)) ->
       ppnl
         (Notation.locate_notation
-          (Constrextern.without_symbols pr_lrawconstr) ntn sc)
+          (Constrextern.without_symbols pr_lglob_constr) ntn sc)
   | LocateLibrary qid -> print_located_library qid
   | LocateModule qid -> print_located_module qid
   | LocateTactic qid -> print_located_tactic qid

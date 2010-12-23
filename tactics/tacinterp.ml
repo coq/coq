@@ -371,12 +371,12 @@ let intern_ltac_variable ist = function
 
 let intern_constr_reference strict ist = function
   | Ident (_,id) as r when not strict & find_hyp id ist ->
-      RVar (dloc,id), Some (CRef r)
+      GVar (dloc,id), Some (CRef r)
   | Ident (_,id) as r when find_ctxvar id ist ->
-      RVar (dloc,id), if strict then None else Some (CRef r)
+      GVar (dloc,id), if strict then None else Some (CRef r)
   | r ->
       let loc,_ as lqid = qualid_of_reference r in
-      RRef (loc,locate_global_with_alias lqid), if strict then None else Some (CRef r)
+      GRef (loc,locate_global_with_alias lqid), if strict then None else Some (CRef r)
 
 let intern_move_location ist = function
   | MoveAfter id -> MoveAfter (intern_hyp_or_metaid ist id)
@@ -502,7 +502,7 @@ let intern_induction_arg ist = function
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
 	match intern_constr ist (CRef (Ident (dloc,id))) with
-	| RVar (loc,id),_ -> ElimOnIdent (loc,id)
+	| GVar (loc,id),_ -> ElimOnIdent (loc,id)
 	| c -> ElimOnConstr (c,NoBindings)
       else
 	ElimOnIdent (loc,id)
@@ -555,7 +555,7 @@ let intern_typed_pattern ist p =
   let dummy_pat = PRel 0 in
   (* we cannot ensure in non strict mode that the pattern is closed *)
   (* keeping a constr_expr copy is too complicated and we want anyway to *)
-  (* type it, so we remember the pattern as a rawconstr only *)
+  (* type it, so we remember the pattern as a glob_constr only *)
   (intern_constr_gen true false ist p,dummy_pat)
 
 let intern_typed_pattern_with_occurrences ist (l,p) =
@@ -870,7 +870,7 @@ and intern_tacarg strict ist = function
       let id = id_of_string s in
       if find_ltacvar id ist then
 	if istac then Reference (ArgVar (adjust_loc loc,id))
-	else ConstrMayEval (ConstrTerm (RVar (adjust_loc loc,id), None))
+	else ConstrMayEval (ConstrTerm (GVar (adjust_loc loc,id), None))
       else error_syntactic_metavariables_not_allowed loc
   | TacCall (loc,f,[]) -> intern_isolated_tactic_reference strict ist f
   | TacCall (loc,f,l) ->
@@ -1332,7 +1332,7 @@ let constr_list_of_VList env = function
 let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
   let try_expand_ltac_var sigma x =
     try match dest_fun x with
-    | RVar (_,id), _ ->	
+    | GVar (_,id), _ ->	
         sigma,
         List.map inj_fun (constr_list_of_VList env (List.assoc id ist.lfun))
     | _ ->
@@ -1417,7 +1417,7 @@ let interp_may_eval f ist gl = function
 	f ist gl c
      with e ->
        debugging_exception_step ist false e (fun () ->
-         str"interpretation of term " ++ pr_rawconstr_env (pf_env gl) (fst c));
+         str"interpretation of term " ++ pr_glob_constr_env (pf_env gl) (fst c));
        raise e
 
 (* Interprets a constr expression possibly to first evaluate *)
@@ -1553,11 +1553,11 @@ let interp_open_constr_with_bindings ist env sigma (c,bl) =
 
 let loc_of_bindings = function
 | NoBindings -> dummy_loc
-| ImplicitBindings l -> loc_of_rawconstr (fst (list_last l))
+| ImplicitBindings l -> loc_of_glob_constr (fst (list_last l))
 | ExplicitBindings l -> pi1 (list_last l)
 
 let interp_open_constr_with_bindings_loc ist env sigma ((c,_),bl as cb) =
-  let loc1 = loc_of_rawconstr c in
+  let loc1 = loc_of_glob_constr c in
   let loc2 = loc_of_bindings bl in
   let loc = if loc2 = dummy_loc then loc1 else join_loc loc1 loc2 in
   let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
@@ -1594,7 +1594,7 @@ let interp_induction_arg ist gl sigma arg =
 	if Tactics.is_quantified_hypothesis id gl then
           sigma, ElimOnIdent (loc,id)
 	else
-          let c = (RVar (loc,id),Some (CRef (Ident (loc,id)))) in
+          let c = (GVar (loc,id),Some (CRef (Ident (loc,id)))) in
           let c = interp_constr ist env sigma c in
           sigma, ElimOnConstr (c,NoBindings)
 
@@ -2068,7 +2068,7 @@ and interp_genarg ist gl x =
       in_gen wit_sort
         (destSort
 	  (pf_interp_constr ist gl
-	    (RSort (dloc,out_gen globwit_sort x), None)))
+	    (GSort (dloc,out_gen globwit_sort x), None)))
   | ConstrArgType ->
       in_gen wit_constr (pf_interp_constr ist gl (out_gen globwit_constr x))
   | ConstrMayEvalArgType ->
@@ -2539,22 +2539,22 @@ let subst_quantified_hypothesis _ x = x
 
 let subst_declared_or_quantified_hypothesis _ x = x
 
-let subst_rawconstr_and_expr subst (c,e) =
+let subst_glob_constr_and_expr subst (c,e) =
   assert (e=None); (* e<>None only for toplevel tactics *)
-  (Detyping.subst_rawconstr subst c,None)
+  (Detyping.subst_glob_constr subst c,None)
 
-let subst_rawconstr = subst_rawconstr_and_expr (* shortening *)
+let subst_glob_constr = subst_glob_constr_and_expr (* shortening *)
 
 let subst_binding subst (loc,b,c) =
-  (loc,subst_quantified_hypothesis subst b,subst_rawconstr subst c)
+  (loc,subst_quantified_hypothesis subst b,subst_glob_constr subst c)
 
 let subst_bindings subst = function
   | NoBindings -> NoBindings
-  | ImplicitBindings l -> ImplicitBindings (List.map (subst_rawconstr subst) l)
+  | ImplicitBindings l -> ImplicitBindings (List.map (subst_glob_constr subst) l)
   | ExplicitBindings l -> ExplicitBindings (List.map (subst_binding subst) l)
 
 let subst_raw_with_bindings subst (c,bl) =
-  (subst_rawconstr subst c, subst_bindings subst bl)
+  (subst_glob_constr subst c, subst_bindings subst bl)
 
 let subst_induction_arg subst = function
   | ElimOnConstr c -> ElimOnConstr (subst_raw_with_bindings subst c)
@@ -2598,17 +2598,17 @@ let subst_unfold subst (l,e) =
 let subst_flag subst red =
   { red with rConst = List.map (subst_evaluable subst) red.rConst }
 
-let subst_constr_with_occurrences subst (l,c) = (l,subst_rawconstr subst c)
+let subst_constr_with_occurrences subst (l,c) = (l,subst_glob_constr subst c)
 
-let subst_rawconstr_or_pattern subst (c,p) =
-  (subst_rawconstr subst c,subst_pattern subst p)
+let subst_glob_constr_or_pattern subst (c,p) =
+  (subst_glob_constr subst c,subst_pattern subst p)
 
 let subst_pattern_with_occurrences subst (l,p) =
-  (l,subst_rawconstr_or_pattern subst p)
+  (l,subst_glob_constr_or_pattern subst p)
 
 let subst_redexp subst = function
   | Unfold l -> Unfold (List.map (subst_unfold subst) l)
-  | Fold l -> Fold (List.map (subst_rawconstr subst) l)
+  | Fold l -> Fold (List.map (subst_glob_constr subst) l)
   | Cbv f -> Cbv (subst_flag subst f)
   | Lazy f -> Lazy (subst_flag subst f)
   | Pattern l -> Pattern (List.map (subst_constr_with_occurrences subst) l)
@@ -2616,14 +2616,14 @@ let subst_redexp subst = function
   | (Red _ | Hnf | ExtraRedExpr _ | CbvVm as r) -> r
 
 let subst_raw_may_eval subst = function
-  | ConstrEval (r,c) -> ConstrEval (subst_redexp subst r,subst_rawconstr subst c)
-  | ConstrContext (locid,c) -> ConstrContext (locid,subst_rawconstr subst c)
-  | ConstrTypeOf c -> ConstrTypeOf (subst_rawconstr subst c)
-  | ConstrTerm c -> ConstrTerm (subst_rawconstr subst c)
+  | ConstrEval (r,c) -> ConstrEval (subst_redexp subst r,subst_glob_constr subst c)
+  | ConstrContext (locid,c) -> ConstrContext (locid,subst_glob_constr subst c)
+  | ConstrTypeOf c -> ConstrTypeOf (subst_glob_constr subst c)
+  | ConstrTerm c -> ConstrTerm (subst_glob_constr subst c)
 
 let subst_match_pattern subst = function
-  | Subterm (b,ido,pc) -> Subterm (b,ido,(subst_rawconstr_or_pattern subst pc))
-  | Term pc -> Term (subst_rawconstr_or_pattern subst pc)
+  | Subterm (b,ido,pc) -> Subterm (b,ido,(subst_glob_constr_or_pattern subst pc))
+  | Term pc -> Term (subst_glob_constr_or_pattern subst pc)
 
 let rec subst_match_goal_hyps subst = function
   | Hyp (locs,mp) :: tl ->
@@ -2638,39 +2638,39 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Basic tactics *)
   | TacIntroPattern _ | TacIntrosUntil _ | TacIntroMove _ as x -> x
   | TacAssumption as x -> x
-  | TacExact c -> TacExact (subst_rawconstr subst c)
-  | TacExactNoCheck c -> TacExactNoCheck (subst_rawconstr subst c)
-  | TacVmCastNoCheck c -> TacVmCastNoCheck (subst_rawconstr subst c)
+  | TacExact c -> TacExact (subst_glob_constr subst c)
+  | TacExactNoCheck c -> TacExactNoCheck (subst_glob_constr subst c)
+  | TacVmCastNoCheck c -> TacVmCastNoCheck (subst_glob_constr subst c)
   | TacApply (a,ev,cb,cl) ->
       TacApply (a,ev,List.map (subst_raw_with_bindings subst) cb,cl)
   | TacElim (ev,cb,cbo) ->
       TacElim (ev,subst_raw_with_bindings subst cb,
                Option.map (subst_raw_with_bindings subst) cbo)
-  | TacElimType c -> TacElimType (subst_rawconstr subst c)
+  | TacElimType c -> TacElimType (subst_glob_constr subst c)
   | TacCase (ev,cb) -> TacCase (ev,subst_raw_with_bindings subst cb)
-  | TacCaseType c -> TacCaseType (subst_rawconstr subst c)
+  | TacCaseType c -> TacCaseType (subst_glob_constr subst c)
   | TacFix (idopt,n) as x -> x
   | TacMutualFix (b,id,n,l) ->
-      TacMutualFix(b,id,n,List.map (fun (id,n,c) -> (id,n,subst_rawconstr subst c)) l)
+      TacMutualFix(b,id,n,List.map (fun (id,n,c) -> (id,n,subst_glob_constr subst c)) l)
   | TacCofix idopt as x -> x
   | TacMutualCofix (b,id,l) ->
-      TacMutualCofix (b,id, List.map (fun (id,c) -> (id,subst_rawconstr subst c)) l)
-  | TacCut c -> TacCut (subst_rawconstr subst c)
+      TacMutualCofix (b,id, List.map (fun (id,c) -> (id,subst_glob_constr subst c)) l)
+  | TacCut c -> TacCut (subst_glob_constr subst c)
   | TacAssert (b,na,c) ->
-      TacAssert (Option.map (subst_tactic subst) b,na,subst_rawconstr subst c)
+      TacAssert (Option.map (subst_tactic subst) b,na,subst_glob_constr subst c)
   | TacGeneralize cl ->
       TacGeneralize (List.map (on_fst (subst_constr_with_occurrences subst))cl)
-  | TacGeneralizeDep c -> TacGeneralizeDep (subst_rawconstr subst c)
-  | TacLetTac (id,c,clp,b) -> TacLetTac (id,subst_rawconstr subst c,clp,b)
+  | TacGeneralizeDep c -> TacGeneralizeDep (subst_glob_constr subst c)
+  | TacLetTac (id,c,clp,b) -> TacLetTac (id,subst_glob_constr subst c,clp,b)
 
   (* Automation tactics *)
-  | TacTrivial (lems,l) -> TacTrivial (List.map (subst_rawconstr subst) lems,l)
-  | TacAuto (n,lems,l) -> TacAuto (n,List.map (subst_rawconstr subst) lems,l)
+  | TacTrivial (lems,l) -> TacTrivial (List.map (subst_glob_constr subst) lems,l)
+  | TacAuto (n,lems,l) -> TacAuto (n,List.map (subst_glob_constr subst) lems,l)
   | TacAutoTDB n -> TacAutoTDB n
   | TacDestructHyp (b,id) -> TacDestructHyp(b,id)
   | TacDestructConcl -> TacDestructConcl
   | TacSuperAuto (n,l,b1,b2) -> TacSuperAuto (n,l,b1,b2)
-  | TacDAuto (n,p,lems) -> TacDAuto (n,p,List.map (subst_rawconstr subst) lems)
+  | TacDAuto (n,p,lems) -> TacDAuto (n,p,List.map (subst_glob_constr subst) lems)
 
   (* Derived basic tactics *)
   | TacSimpleInductionDestruct (isrec,h) as x -> x
@@ -2679,13 +2679,13 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
 	List.map (subst_induction_arg subst) lc,
         Option.map (subst_raw_with_bindings subst) cbo, ids) l, cls))
   | TacDoubleInduction (h1,h2) as x -> x
-  | TacDecomposeAnd c -> TacDecomposeAnd (subst_rawconstr subst c)
-  | TacDecomposeOr c -> TacDecomposeOr (subst_rawconstr subst c)
+  | TacDecomposeAnd c -> TacDecomposeAnd (subst_glob_constr subst c)
+  | TacDecomposeOr c -> TacDecomposeOr (subst_glob_constr subst c)
   | TacDecompose (l,c) ->
       let l = List.map (subst_or_var (subst_inductive subst)) l in
-      TacDecompose (l,subst_rawconstr subst c)
+      TacDecompose (l,subst_glob_constr subst c)
   | TacSpecialize (n,l) -> TacSpecialize (n,subst_raw_with_bindings subst l)
-  | TacLApply c -> TacLApply (subst_rawconstr subst c)
+  | TacLApply c -> TacLApply (subst_glob_constr subst c)
 
   (* Context management *)
   | TacClear _ as x -> x
@@ -2704,12 +2704,12 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Conversion *)
   | TacReduce (r,cl) -> TacReduce (subst_redexp subst r, cl)
   | TacChange (op,c,cl) ->
-      TacChange (Option.map (subst_rawconstr_or_pattern subst) op,
-        subst_rawconstr subst c, cl)
+      TacChange (Option.map (subst_glob_constr_or_pattern subst) op,
+        subst_glob_constr subst c, cl)
 
   (* Equivalence relations *)
   | TacReflexivity | TacSymmetry _ as x -> x
-  | TacTransitivity c -> TacTransitivity (Option.map (subst_rawconstr subst) c)
+  | TacTransitivity c -> TacTransitivity (Option.map (subst_glob_constr subst) c)
 
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
@@ -2718,10 +2718,10 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
 			      b,m,subst_raw_with_bindings subst c) l,
 		 cl,Option.map (subst_tactic subst) by)
   | TacInversion (DepInversion (k,c,l),hyp) ->
-     TacInversion (DepInversion (k,Option.map (subst_rawconstr subst) c,l),hyp)
+     TacInversion (DepInversion (k,Option.map (subst_glob_constr subst) c,l),hyp)
   | TacInversion (NonDepInversion _,_) as x -> x
   | TacInversion (InversionUsing (c,cl),hyp) ->
-      TacInversion (InversionUsing (subst_rawconstr subst c,cl),hyp)
+      TacInversion (InversionUsing (subst_glob_constr subst c,cl),hyp)
 
   (* For extensions *)
   | TacExtend (_loc,opn,l) ->
@@ -2808,7 +2808,7 @@ and subst_genarg subst (x:glob_generic_argument) =
   | SortArgType ->
       in_gen globwit_sort (out_gen globwit_sort x)
   | ConstrArgType ->
-      in_gen globwit_constr (subst_rawconstr subst (out_gen globwit_constr x))
+      in_gen globwit_constr (subst_glob_constr subst (out_gen globwit_constr x))
   | ConstrMayEvalArgType ->
       in_gen globwit_constr_may_eval (subst_raw_may_eval subst (out_gen globwit_constr_may_eval x))
   | QuantHypArgType ->
@@ -2819,7 +2819,7 @@ and subst_genarg subst (x:glob_generic_argument) =
       in_gen globwit_red_expr (subst_redexp subst (out_gen globwit_red_expr x))
   | OpenConstrArgType b ->
       in_gen (globwit_open_constr_gen b)
-        ((),subst_rawconstr subst (snd (out_gen (globwit_open_constr_gen b) x)))
+        ((),subst_glob_constr subst (snd (out_gen (globwit_open_constr_gen b) x)))
   | ConstrWithBindingsArgType ->
       in_gen globwit_constr_with_bindings
         (subst_raw_with_bindings subst (out_gen globwit_constr_with_bindings x))
