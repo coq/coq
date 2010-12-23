@@ -16,12 +16,7 @@ Qed.
 
 Lemma lem2 : forall x y : T, {x = y} + {x <> y}.
 intros x y.
- decide equality x y.
-Qed.
-
-Lemma lem3 : forall x y : T, {x = y} + {x <> y}.
-intros x y.
- decide equality y x.
+ decide equality.
 Qed.
 
 Lemma lem4 : forall x y : T, {x = y} + {x <> y}.
