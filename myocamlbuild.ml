@@ -169,6 +169,7 @@ let coqmktop = "scripts/coqmktop"
 type links = Both | Best | BestInPlace | Ide
 
 let all_binaries =
+ (if w32 then [ "mkwinapp", "tools/mkwinapp", Best ] else []) @
  [ "coqtop", coqtop, Both;
    "coqide", coqide, Ide;
    "coqmktop", coqmktop, Both;
@@ -386,7 +387,12 @@ let extra_rules () = begin
     let depsb = "coq_config.cmo" :: core_cma in
     let depideo = if is_ide then [ide_cmxa] else [] in
     let depideb = if is_ide then [ide_cma] else [] in
-    let w32ideflag = (*if is_ide then [A"-ccopt";A"\"-link -mwindows\""] else*) [] in
+    let w32ideflag =
+      (* Uncomment the following line to make coqide a console-free win32 app.
+         For the moment we don't, some issue remain to be investigated.
+         In the meantime, coqide can be made console-free a posteriori via
+         the mkwinapp tool. *)
+      (*if is_ide then [A"-ccopt";A"\"-link -Wl,-subsystem,windows\""] else*) [] in
     let w32flag =
       if not w32 then N
       else S ([A"-camlbin";A w32bin;A "-ccopt";P w32ico]@w32ideflag)
