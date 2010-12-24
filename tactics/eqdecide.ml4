@@ -160,8 +160,7 @@ let decideGralEquality g =
 
 let decideEqualityGoal = tclTHEN intros decideGralEquality
 
-let decideEquality c1 c2 g =
-  let rectype = (pf_type_of g c1) in
+let decideEquality rectype g =
   let decide  = mkGenDecideEqGoal rectype g in
   (tclTHENS (cut decide) [default_auto;decideEqualityGoal]) g
 
@@ -175,7 +174,7 @@ let compare c1 c2 g =
             [(tclTHEN  intro
              (tclTHEN (onLastHyp simplest_case)
                        clear_last));
-             decideEquality c1 c2]) g
+             decideEquality (pf_type_of g c1)]) g
 
 
 (* User syntax *)
