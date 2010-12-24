@@ -1134,17 +1134,17 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	     let n, ro, ((ids',_,_,_),rbl) =
 	       match order with
 	       | CStructRec ->
-		   intern_ro_arg (fun _ -> RStructRec)
+		   intern_ro_arg (fun _ -> GStructRec)
 	       | CWfRec c ->
-		   intern_ro_arg (fun f -> RWfRec (f c))
+		   intern_ro_arg (fun f -> GWfRec (f c))
 	       | CMeasureRec (m,r) ->
-		   intern_ro_arg (fun f -> RMeasureRec (f m, Option.map f r))
+		   intern_ro_arg (fun f -> GMeasureRec (f m, Option.map f r))
 	     in
 	     let ids'' = List.fold_right Idset.add lf ids' in
 	     ((n, ro), List.rev rbl,
              intern_type (ids',unb,tmp_scope,scopes) ty,
              intern (ids'',unb,None,scopes) bd)) dl in
-	GRec (loc,RFix
+	GRec (loc,GFix
 	      (Array.map (fun (ro,_,_,_) -> ro) idl,n),
               Array.of_list lf,
               Array.map (fun (_,bl,_,_) -> bl) idl,
@@ -1166,7 +1166,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
             (List.rev rbl,
              intern_type (ids',unb,tmp_scope,scopes) ty,
              intern (ids'',unb,None,scopes) bd)) dl in
-	GRec (loc,RCoFix n,
+	GRec (loc,GCoFix n,
               Array.of_list lf,
               Array.map (fun (bl,_,_) -> bl) idl,
               Array.map (fun (_,ty,_) -> ty) idl,
@@ -1504,7 +1504,7 @@ let interp_constr_evars_gen_impls ?evdref ?(fail_evar=true)
   in
   let istype = kind = IsType in
   let c = intern_gen istype ~impls !evdref env c in
-  let imps = Implicit_quantifiers.implicits_of_rawterm ~with_products:istype c in
+  let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:istype c in
     Default.understand_tcc_evars ~fail_evar evdref env kind c, imps
 
 let interp_casted_constr_evars_impls ?evdref ?(fail_evar=true)

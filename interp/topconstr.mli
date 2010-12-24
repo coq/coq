@@ -41,7 +41,7 @@ type aconstr =
   | ARec of fix_kind * identifier array *
       (name * aconstr option * aconstr) list array * aconstr array *
       aconstr array
-  | ASort of rawsort
+  | ASort of glob_sort
   | AHole of Evd.hole_kind
   | APatVar of patvar
   | ACast of aconstr * aconstr cast_type
@@ -158,7 +158,7 @@ type constr_expr =
   | CHole of loc * Evd.hole_kind option
   | CPatVar of loc * (bool * patvar)
   | CEvar of loc * existential_key * constr_expr list option
-  | CSort of loc * rawsort
+  | CSort of loc * glob_sort
   | CCast of loc * constr_expr * constr_expr cast_type
   | CNotation of loc * notation * constr_notation_substitution
   | CGeneralization of loc * binding_kind * abstraction_kind option * constr_expr

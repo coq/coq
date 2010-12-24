@@ -196,22 +196,22 @@ let feed_history arg = function
 
 (* This is for non exhaustive error message *)
 
-let rec rawpattern_of_partial_history args2 = function
+let rec glob_pattern_of_partial_history args2 = function
   | Continuation (n, args1, h) ->
       let args3 = make_anonymous_patvars (n - (List.length args2)) in
-      build_rawpattern (List.rev_append args1 (args2@args3)) h
+      build_glob_pattern (List.rev_append args1 (args2@args3)) h
   | Result pl -> pl
 
-and build_rawpattern args = function
+and build_glob_pattern args = function
   | Top -> args
   | MakeAlias (AliasLeaf, rh) ->
       assert (args = []);
-      rawpattern_of_partial_history [PatVar (dummy_loc, Anonymous)] rh
+      glob_pattern_of_partial_history [PatVar (dummy_loc, Anonymous)] rh
   | MakeAlias (AliasConstructor pci, rh) ->
-      rawpattern_of_partial_history
+      glob_pattern_of_partial_history
 	[PatCstr (dummy_loc, pci, args, Anonymous)] rh
 
-let complete_history = rawpattern_of_partial_history []
+let complete_history = glob_pattern_of_partial_history []
 
 (* This is to build glued pattern-matching history and alias bodies *)
 

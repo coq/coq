@@ -470,7 +470,7 @@ Just testing ...
 #use "include.ml";;
 open Quote;;
 
-let r = raw_constr_of_string;;
+let r = glob_constr_of_string;;
 
 let ivs = {
   normal_lhs_rhs =

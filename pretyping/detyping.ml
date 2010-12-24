@@ -357,8 +357,8 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
       GCases (dl,tag,pred,[tomatch,(alias,aliastyp)],eqnl)
 
 let detype_sort = function
-  | Prop c -> RProp c
-  | Type u -> RType (Some u)
+  | Prop c -> GProp c
+  | Type u -> GType (Some u)
 
 type binder_kind = BProd | BLambda | BLetIn
 
@@ -424,7 +424,7 @@ and detype_fix isgoal avoid env (vn,_ as nvn) (names,tys,bodies) =
   let v = array_map3
     (fun c t i -> share_names isgoal (i+1) [] def_avoid def_env c (lift n t))
     bodies tys vn in
-  GRec(dl,RFix (Array.map (fun i -> Some i, RStructRec) (fst nvn), snd nvn),Array.of_list (List.rev lfi),
+  GRec(dl,GFix (Array.map (fun i -> Some i, GStructRec) (fst nvn), snd nvn),Array.of_list (List.rev lfi),
        Array.map (fun (bl,_,_) -> bl) v,
        Array.map (fun (_,_,ty) -> ty) v,
        Array.map (fun (_,bd,_) -> bd) v)
@@ -440,7 +440,7 @@ and detype_cofix isgoal avoid env n (names,tys,bodies) =
   let v = array_map2
     (fun c t -> share_names isgoal 0 [] def_avoid def_env c (lift ntys t))
     bodies tys in
-  GRec(dl,RCoFix n,Array.of_list (List.rev lfi),
+  GRec(dl,GCoFix n,Array.of_list (List.rev lfi),
        Array.map (fun (bl,_,_) -> bl) v,
        Array.map (fun (_,_,ty) -> ty) v,
        Array.map (fun (_,bd,_) -> bd) v)

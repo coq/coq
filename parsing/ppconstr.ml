@@ -108,10 +108,10 @@ let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
 
 let pr_universe = Univ.pr_uni
 
-let pr_rawsort = function
-  | RProp Term.Null -> str "Prop"
-  | RProp Term.Pos -> str "Set"
-  | RType u -> hov 0 (str "Type" ++ pr_opt (pr_in_comment pr_universe) u)
+let pr_glob_sort = function
+  | GProp Term.Null -> str "Prop"
+  | GProp Term.Pos -> str "Set"
+  | GType u -> hov 0 (str "Type" ++ pr_opt (pr_in_comment pr_universe) u)
 
 let pr_id = pr_id
 let pr_name = pr_name
@@ -515,7 +515,7 @@ let pr pr sep inherited a =
   | CHole _ -> str "_", latom
   | CEvar (_,n,l) -> pr_evar (pr mt) n l, latom
   | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
-  | CSort (_,s) -> pr_rawsort s, latom
+  | CSort (_,s) -> pr_glob_sort s, latom
   | CCast (_,a,CastConv (k,b)) ->
       let s = match k with VMcast -> "<:" | DEFAULTcast -> ":" in
       hv 0 (pr mt (lcast,L) a ++ cut () ++ str s ++ pr mt (-lcast,E) b),

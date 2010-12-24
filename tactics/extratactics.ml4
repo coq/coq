@@ -324,7 +324,7 @@ VERNAC COMMAND EXTEND DeriveInversionClear
   -> [ add_inversion_lemma_exn na c s false inv_clear_tac ]
 
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ]
-  -> [ add_inversion_lemma_exn na c (Glob_term.RProp Term.Null) false inv_clear_tac ]
+  -> [ add_inversion_lemma_exn na c (Glob_term.GProp Term.Null) false inv_clear_tac ]
 END
 
 open Term
@@ -335,7 +335,7 @@ VERNAC COMMAND EXTEND DeriveInversion
   -> [ add_inversion_lemma_exn na c s false inv_tac ]
 
 | [ "Derive" "Inversion" ident(na) "with" constr(c) ]
-  -> [ add_inversion_lemma_exn na c (RProp Null) false inv_tac ]
+  -> [ add_inversion_lemma_exn na c (GProp Null) false inv_tac ]
 
 | [ "Derive" "Inversion" ident(na) hyp(id) ]
   -> [ inversion_lemma_from_goal 1 na id Term.prop_sort false inv_tac ]

@@ -307,7 +307,7 @@ let pr_onescheme (idop,schem) =
     ) ++
     hov 0 ((if dep then str"Induction for" else str"Minimality for")
     ++ spc() ++ pr_smart_global ind) ++ spc() ++
-    hov 0 (str"Sort" ++ spc() ++ pr_rawsort s)
+    hov 0 (str"Sort" ++ spc() ++ pr_glob_sort s)
   | CaseScheme (dep,ind,s) ->
     (match idop with
       | Some id -> hov 0 (pr_lident id ++ str" :=") ++ spc()
@@ -315,7 +315,7 @@ let pr_onescheme (idop,schem) =
     ) ++
     hov 0 ((if dep then str"Elimination for" else str"Case for")
     ++ spc() ++ pr_smart_global ind) ++ spc() ++
-    hov 0 (str"Sort" ++ spc() ++ pr_rawsort s)
+    hov 0 (str"Sort" ++ spc() ++ pr_glob_sort s)
   | EqualityScheme ind ->
     (match idop with
       | Some id -> hov 0 (pr_lident id ++ str" :=") ++ spc()
@@ -673,7 +673,7 @@ let rec pr_vernac = function
 (* 	str"Class" ++ spc () ++ pr_lident id ++ *)
 (* (\* 	  prlist_with_sep (spc) (pr_lident_constr (spc() ++ str ":" ++ spc())) par ++  *\) *)
 (* 	  pr_and_type_binders_arg par ++ *)
-(* 	  (match ar with Some ar -> spc () ++ str":" ++ spc() ++ pr_rawsort (snd ar) | None -> mt()) ++ *)
+(* 	  (match ar with Some ar -> spc () ++ str":" ++ spc() ++ pr_glob_sort (snd ar) | None -> mt()) ++ *)
 (* 	  spc () ++ str":=" ++ spc () ++ *)
 (* 	  prlist_with_sep (fun () -> str";" ++ spc())  *)
 (* 	  (fun (lid,oc,c) -> pr_lident_constr ((if oc then str" :>" else str" :") ++ spc()) (lid,c)) props ) *)

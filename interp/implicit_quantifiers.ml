@@ -293,7 +293,7 @@ let implicit_application env ?(allow_partial=true) f ty =
 	    CAppExpl (loc, (None, id), args), avoid
 	in c, avoid
 
-let implicits_of_rawterm ?(with_products=true) l =
+let implicits_of_glob_constr ?(with_products=true) l =
   let rec aux i c =
     let abs loc na bk t b =
       let rest = aux (succ i) b in

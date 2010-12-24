@@ -176,7 +176,7 @@ type interp_rule =
   | NotationRule of scope_name option * notation
   | SynDefRule of kernel_name
 
-(* We define keys for rawterm and aconstr to split the syntax entries
+(* We define keys for glob_constr and aconstr to split the syntax entries
    according to the key of the pattern (adapted from Chet Murthy by HH) *)
 
 type key =

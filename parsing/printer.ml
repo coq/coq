@@ -109,7 +109,7 @@ let pr_lconstr_pattern t =
 let pr_constr_pattern t =
   pr_constr_pattern_expr (extern_constr_pattern Termops.empty_names_context t)
 
-let pr_sort s = pr_rawsort (extern_sort s)
+let pr_sort s = pr_glob_sort (extern_sort s)
 
 let _ = Termops.set_print_constr pr_lconstr_env
 
@@ -127,7 +127,7 @@ let pr_constructor env cstr = pr_lconstr_env env (mkConstruct cstr)
 let pr_evaluable_reference ref =
   pr_global (Tacred.global_of_evaluable_reference ref)
 
-(*let pr_rawterm t =
+(*let pr_glob_constr t =
   pr_lconstr (Constrextern.extern_glob_constr Idset.empty t)*)
 
 (*open Pattern

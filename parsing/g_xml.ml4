@@ -95,9 +95,9 @@ let inductive_of_cdata a = match global_of_cdata a with
 let ltacref_of_cdata (loc,a) = (loc,locate_tactic (uri_of_data a))
 
 let sort_of_cdata (loc,a) = match a with
-  | "Prop" -> RProp Null
-  | "Set" -> RProp Pos
-  | "Type" -> RType None
+  | "Prop" -> GProp Null
+  | "Set" -> GProp Pos
+  | "Type" -> GType None
   | _ -> user_err_loc (loc,"",str "sort expected.")
 
 let get_xml_sort al = sort_of_cdata (get_xml_attr "value" al)
@@ -184,10 +184,10 @@ let rec interp_xml_constr = function
       let li,lnct = List.split (List.map interp_xml_FixFunction xl) in
       let ln,lc,lt = list_split3 lnct in
       let lctx = List.map (fun _ -> []) ln in
-      GRec (loc, RFix (Array.of_list li, get_xml_noFun al), Array.of_list ln, Array.of_list lctx, Array.of_list lc, Array.of_list lt)
+      GRec (loc, GFix (Array.of_list li, get_xml_noFun al), Array.of_list ln, Array.of_list lctx, Array.of_list lc, Array.of_list lt)
   | XmlTag (loc,"COFIX",al,xl) ->
       let ln,lc,lt = list_split3 (List.map interp_xml_CoFixFunction xl) in
-      GRec (loc, RCoFix (get_xml_noFun al), Array.of_list ln, [||], Array.of_list lc, Array.of_list lt)
+      GRec (loc, GCoFix (get_xml_noFun al), Array.of_list ln, [||], Array.of_list lc, Array.of_list lt)
   | XmlTag (loc,"CAST",al,[x1;x2]) ->
       GCast (loc, interp_xml_term x1, CastConv (DEFAULTcast, interp_xml_type x2))
   | XmlTag (loc,"SORT",al,[]) ->
@@ -229,15 +229,15 @@ and interp_xml_recursionOrder x =
   let (locs, s) = get_xml_attr "type" al in
     match s with
 	"Structural" ->
-	  (match l with [] -> RStructRec
+	  (match l with [] -> GStructRec
 	     | _ -> error_expect_no_argument loc)
       | "WellFounded" ->
 	  (match l with
-	       [c] -> RWfRec (interp_xml_type c)
+	       [c] -> GWfRec (interp_xml_type c)
 	     | _ -> error_expect_one_argument loc)
       | "Measure" ->
 	  (match l with
-	       [m;r] -> RMeasureRec (interp_xml_type m, Some (interp_xml_type r))
+	       [m;r] -> GMeasureRec (interp_xml_type m, Some (interp_xml_type r))
 	     | _ -> error_expect_two_arguments loc)
       | _ ->
           user_err_loc (locs,"",str "Invalid recursion order.")
@@ -249,7 +249,7 @@ and interp_xml_FixFunction x =
 	interp_xml_recursionOrder x1),
        (get_xml_name al, interp_xml_type x2, interp_xml_body x3))
   | (loc,al,[x1;x2]) ->
-      ((Some (nmtoken (get_xml_attr "recIndex" al)), RStructRec),
+      ((Some (nmtoken (get_xml_attr "recIndex" al)), GStructRec),
        (get_xml_name al, interp_xml_type x1, interp_xml_body x2))
   | (loc,_,_) ->
       error_expect_one_argument loc

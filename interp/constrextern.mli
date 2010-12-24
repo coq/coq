@@ -21,7 +21,7 @@ open Notation
 
 val check_same_type : constr_expr -> constr_expr -> unit
 
-(** Translation of pattern, cases pattern, rawterm and term into syntax
+(** Translation of pattern, cases pattern, glob_constr and term into syntax
    trees for printing *)
 
 val extern_cases_pattern : Idset.t -> cases_pattern -> cases_pattern_expr
@@ -36,7 +36,7 @@ val extern_constr : bool -> env -> constr -> constr_expr
 val extern_constr_in_scope : bool -> scope_name -> env -> constr -> constr_expr
 val extern_reference : loc -> Idset.t -> global_reference -> reference
 val extern_type : bool -> env -> types -> constr_expr
-val extern_sort : sorts -> rawsort
+val extern_sort : sorts -> glob_sort
 val extern_rel_context : constr option -> env ->
   rel_context -> local_binder list
 

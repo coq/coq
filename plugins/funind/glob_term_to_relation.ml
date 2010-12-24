@@ -1200,7 +1200,7 @@ let rec rebuild_return_type rt =
 	Topconstr.CArrow(loc,t,rebuild_return_type t')
     | Topconstr.CLetIn(loc,na,t,t') ->
 	Topconstr.CLetIn(loc,na,t,rebuild_return_type t')
-    | _ -> Topconstr.CArrow(dummy_loc,rt,Topconstr.CSort(dummy_loc,RType None))
+    | _ -> Topconstr.CArrow(dummy_loc,rt,Topconstr.CSort(dummy_loc,GType None))
 
 
 let do_build_inductive

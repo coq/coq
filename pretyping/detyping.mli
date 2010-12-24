@@ -34,7 +34,7 @@ val detype_case :
   identifier list -> inductive * case_style * int * int array * int ->
     'a option -> 'a -> 'a array -> glob_constr
 
-val detype_sort : sorts -> rawsort
+val detype_sort : sorts -> glob_sort
 
 val detype_rel_context : constr option -> identifier list -> names_context ->
   rel_context -> glob_decl list

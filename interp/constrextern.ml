@@ -487,7 +487,7 @@ let rec flatten_application = function
   | a -> a
 
 (**********************************************************************)
-(* mapping rawterms to numerals (in presence of coercions, choose the *)
+(* mapping glob_constr to numerals (in presence of coercions, choose the *)
 (* one with no delimiter if possible)                                 *)
 
 let extern_possible_prim_token scopes r =
@@ -507,12 +507,12 @@ let extern_optimal_prim_token scopes r r' =
   | _ -> raise No_match
 
 (**********************************************************************)
-(* mapping rawterms to constr_expr                                    *)
+(* mapping glob_constr to constr_expr                                    *)
 
-let extern_rawsort = function
-  | RProp _ as s -> s
-  | RType (Some _) as s when !print_universes -> s
-  | RType _ -> RType None
+let extern_glob_sort = function
+  | GProp _ as s -> s
+  | GType (Some _) as s when !print_universes -> s
+  | GType _ -> GType None
 
 let rec extern inctx scopes vars r =
   let r' = remove_coercions inctx r in
@@ -646,7 +646,7 @@ let rec extern inctx scopes vars r =
   | GRec (loc,fk,idv,blv,tyv,bv) ->
       let vars' = Array.fold_right Idset.add idv vars in
       (match fk with
-	 | RFix (nv,n) ->
+	 | GFix (nv,n) ->
 	     let listdecl =
 	       Array.mapi (fun i fi ->
                  let (bl,ty,def) = blv.(i), tyv.(i), bv.(i) in
@@ -663,7 +663,7 @@ let rec extern inctx scopes vars r =
                   extern false scopes vars1 def)) idv
 	     in
 	     CFix (loc,(loc,idv.(n)),Array.to_list listdecl)
-	 | RCoFix n ->
+	 | GCoFix n ->
 	     let listdecl =
                Array.mapi (fun i fi ->
                  let (ids,bl) = extern_local_binder scopes vars blv.(i) in
@@ -674,7 +674,7 @@ let rec extern inctx scopes vars r =
 	     in
 	     CCoFix (loc,(loc,idv.(n)),Array.to_list listdecl))
 
-  | GSort (loc,s) -> CSort (loc,extern_rawsort s)
+  | GSort (loc,s) -> CSort (loc,extern_glob_sort s)
 
   | GHole (loc,e) -> CHole (loc, Some e)
 
@@ -809,9 +809,9 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 	  No_match -> extern_symbol allscopes vars t rules
 
 and extern_recursion_order scopes vars = function
-    RStructRec -> CStructRec
-  | RWfRec c -> CWfRec (extern true scopes vars c)
-  | RMeasureRec (m,r) -> CMeasureRec (extern true scopes vars m,
+    GStructRec -> CStructRec
+  | GWfRec c -> CWfRec (extern true scopes vars c)
+  | GMeasureRec (m,r) -> CMeasureRec (extern true scopes vars m,
 				     Option.map (extern true scopes vars) r)
 
 
@@ -843,15 +843,15 @@ let extern_type at_top env t =
   let r = Detyping.detype at_top avoid (names_of_rel_context env) t in
   extern_glob_type (vars_of_env env) r
 
-let extern_sort s = extern_rawsort (detype_sort s)
+let extern_sort s = extern_glob_sort (detype_sort s)
 
 (******************************************************************)
 (* Main translation function from pattern -> constr_expr *)
 
-let rec raw_of_pat env = function
+let rec glob_of_pat env = function
   | PRef ref -> GRef (loc,ref)
   | PVar id -> GVar (loc,id)
-  | PEvar (n,l) -> GEvar (loc,n,Some (array_map_to_list (raw_of_pat env) l))
+  | PEvar (n,l) -> GEvar (loc,n,Some (array_map_to_list (glob_of_pat env) l))
   | PRel n ->
       let id = try match lookup_name_of_rel n env with
 	| Name id   -> id
@@ -862,26 +862,26 @@ let rec raw_of_pat env = function
   | PMeta None -> GHole (loc,Evd.InternalHole)
   | PMeta (Some n) -> GPatVar (loc,(false,n))
   | PApp (f,args) ->
-      GApp (loc,raw_of_pat env f,array_map_to_list (raw_of_pat env) args)
+      GApp (loc,glob_of_pat env f,array_map_to_list (glob_of_pat env) args)
   | PSoApp (n,args) ->
       GApp (loc,GPatVar (loc,(true,n)),
-        List.map (raw_of_pat env) args)
+        List.map (glob_of_pat env) args)
   | PProd (na,t,c) ->
-      GProd (loc,na,Explicit,raw_of_pat env t,raw_of_pat (na::env) c)
+      GProd (loc,na,Explicit,glob_of_pat env t,glob_of_pat (na::env) c)
   | PLetIn (na,t,c) ->
-      GLetIn (loc,na,raw_of_pat env t, raw_of_pat (na::env) c)
+      GLetIn (loc,na,glob_of_pat env t, glob_of_pat (na::env) c)
   | PLambda (na,t,c) ->
-      GLambda (loc,na,Explicit,raw_of_pat env t, raw_of_pat (na::env) c)
+      GLambda (loc,na,Explicit,glob_of_pat env t, glob_of_pat (na::env) c)
   | PIf (c,b1,b2) ->
-      GIf (loc, raw_of_pat env c, (Anonymous,None),
-           raw_of_pat env b1, raw_of_pat env b2)
+      GIf (loc, glob_of_pat env c, (Anonymous,None),
+           glob_of_pat env b1, glob_of_pat env b2)
   | PCase ((LetStyle,[|n|],ind,None),PMeta None,tm,[|b|]) ->
-      let nal,b = it_destRLambda_or_LetIn_names n (raw_of_pat env b) in
-      GLetTuple (loc,nal,(Anonymous,None),raw_of_pat env tm,b)
+      let nal,b = it_destRLambda_or_LetIn_names n (glob_of_pat env b) in
+      GLetTuple (loc,nal,(Anonymous,None),glob_of_pat env tm,b)
   | PCase (_,PMeta None,tm,[||]) ->
-      GCases (loc,RegularStyle,None,[raw_of_pat env tm,(Anonymous,None)],[])
+      GCases (loc,RegularStyle,None,[glob_of_pat env tm,(Anonymous,None)],[])
   | PCase ((_,cstr_nargs,indo,ind_nargs),p,tm,bv) ->
-      let brs = Array.to_list (Array.map (raw_of_pat env) bv) in
+      let brs = Array.to_list (Array.map (glob_of_pat env) bv) in
       let brns = Array.to_list cstr_nargs in
         (* ind is None only if no branch and no return type *)
       let ind = Option.get indo in
@@ -890,14 +890,14 @@ let rec raw_of_pat env = function
 	if p = PMeta None then (Anonymous,None),None
 	else
 	  let nparams,n = Option.get ind_nargs in
-	  return_type_of_predicate ind nparams n (raw_of_pat env p) in
-      GCases (loc,RegularStyle,rtn,[raw_of_pat env tm,indnames],mat)
+	  return_type_of_predicate ind nparams n (glob_of_pat env p) in
+      GCases (loc,RegularStyle,rtn,[glob_of_pat env tm,indnames],mat)
   | PFix f -> Detyping.detype false [] env (mkFix f)
   | PCoFix c -> Detyping.detype false [] env (mkCoFix c)
   | PSort s -> GSort (loc,s)
 
 let extern_constr_pattern env pat =
-  extern true (None,[]) Idset.empty (raw_of_pat env pat)
+  extern true (None,[]) Idset.empty (glob_of_pat env pat)
 
 let extern_rel_context where env sign =
   let a = detype_rel_context where [] (names_of_rel_context env) sign in

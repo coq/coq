@@ -171,8 +171,8 @@ val rawwit_quant_hyp : (quantified_hypothesis,rlevel) abstract_argument_type
 val globwit_quant_hyp : (quantified_hypothesis,glevel) abstract_argument_type
 val wit_quant_hyp : (quantified_hypothesis,tlevel) abstract_argument_type
 
-val rawwit_sort : (rawsort,rlevel) abstract_argument_type
-val globwit_sort : (rawsort,glevel) abstract_argument_type
+val rawwit_sort : (glob_sort,rlevel) abstract_argument_type
+val globwit_sort : (glob_sort,glevel) abstract_argument_type
 val wit_sort : (sorts,tlevel) abstract_argument_type
 
 val rawwit_constr : (constr_expr,rlevel) abstract_argument_type

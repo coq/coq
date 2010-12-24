@@ -123,6 +123,6 @@ val error_unexpected_type_loc :
 val error_not_product_loc :
   loc -> env -> Evd.evar_map -> constr -> 'b
 
-(** {6 Error in conversion from AST to rawterms } *)
+(** {6 Error in conversion from AST to glob_constr } *)
 
 val error_var_not_found_loc : loc -> identifier -> 'b

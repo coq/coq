@@ -27,7 +27,7 @@ type split_flag = bool     (* true = exists           false = split *)
 type hidden_flag = bool    (* true = internal use     false = user-level *)
 type letin_flag = bool     (* true = use local def    false = use Leibniz *)
 
-type raw_red_flag =
+type glob_red_flag =
   | FBeta
   | FIota
   | FZeta

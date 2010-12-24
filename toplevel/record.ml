@@ -30,7 +30,7 @@ open Topconstr
 
 let interp_evars evdref env impls k typ =
   let typ' = intern_gen true ~impls !evdref env typ in
-  let imps = Implicit_quantifiers.implicits_of_rawterm typ' in
+  let imps = Implicit_quantifiers.implicits_of_glob_constr typ' in
     imps, Pretyping.Default.understand_tcc_evars evdref env k typ'
 
 let interp_fields_evars evars env nots l =

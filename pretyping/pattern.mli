@@ -70,7 +70,7 @@ type constr_pattern =
   | PLambda of name * constr_pattern * constr_pattern
   | PProd of name * constr_pattern * constr_pattern
   | PLetIn of name * constr_pattern * constr_pattern
-  | PSort of rawsort
+  | PSort of glob_sort
   | PMeta of patvar option
   | PIf of constr_pattern * constr_pattern * constr_pattern
   | PCase of (case_style * int array * inductive option * (int * int) option)

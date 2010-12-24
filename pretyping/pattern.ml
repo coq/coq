@@ -36,7 +36,7 @@ type constr_pattern =
   | PLambda of name * constr_pattern * constr_pattern
   | PProd of name * constr_pattern * constr_pattern
   | PLetIn of name * constr_pattern * constr_pattern
-  | PSort of rawsort
+  | PSort of glob_sort
   | PMeta of patvar option
   | PIf of constr_pattern * constr_pattern * constr_pattern
   | PCase of (case_style * int array * inductive option * (int * int) option)
@@ -92,8 +92,8 @@ let pattern_of_constr sigma t =
     | Rel n  -> PRel n
     | Meta n -> PMeta (Some (id_of_string ("META" ^ string_of_int n)))
     | Var id -> PVar id
-    | Sort (Prop c) -> PSort (RProp c)
-    | Sort (Type _) -> PSort (RType None)
+    | Sort (Prop c) -> PSort (GProp c)
+    | Sort (Type _) -> PSort (GType None)
     | Cast (c,_,_)      -> pattern_of_constr c
     | LetIn (na,c,_,b) -> PLetIn (na,pattern_of_constr c,pattern_of_constr b)
     | Prod (na,c,b)   -> PProd (na,pattern_of_constr c,pattern_of_constr b)
@@ -300,7 +300,7 @@ let rec pat_of_raw metas vars = function
 	  | (_,_,[PatCstr(_,(ind,_),_,_)],_)::_ -> Some ind
 	  | _ -> None in
       let cbrs =
-	Array.init (List.length brs) (pat_of_raw_branch loc metas vars ind brs)
+	Array.init (List.length brs) (pat_of_glob_branch loc metas vars ind brs)
       in
       let cstr_nargs,brs = (Array.map fst cbrs, Array.map snd cbrs) in
       PCase ((sty,cstr_nargs,ind,ind_nargs), pred,
@@ -310,7 +310,7 @@ let rec pat_of_raw metas vars = function
       let loc = loc_of_glob_constr r in
       user_err_loc (loc,"pattern_of_glob_constr", Pp.str"Non supported pattern.")
 
-and pat_of_raw_branch loc metas vars ind brs i =
+and pat_of_glob_branch loc metas vars ind brs i =
   let bri = List.filter
     (function
         (_,_,[PatCstr(_,c,lv,Anonymous)],_) -> snd c = i+1

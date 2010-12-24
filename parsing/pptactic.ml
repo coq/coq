@@ -140,7 +140,7 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
   | IdentArgType b -> if_pattern_ident b pr_id (out_gen rawwit_ident x)
   | VarArgType -> pr_located pr_id (out_gen rawwit_var x)
   | RefArgType -> prref (out_gen rawwit_ref x)
-  | SortArgType -> pr_rawsort (out_gen rawwit_sort x)
+  | SortArgType -> pr_glob_sort (out_gen rawwit_sort x)
   | ConstrArgType -> prc (out_gen rawwit_constr x)
   | ConstrMayEvalArgType ->
       pr_may_eval prc prlc (pr_or_by_notation prref) prpat
@@ -183,7 +183,7 @@ let rec pr_glob_generic prc prlc prtac prpat x =
   | IdentArgType b -> if_pattern_ident b pr_id (out_gen globwit_ident x)
   | VarArgType -> pr_located pr_id (out_gen globwit_var x)
   | RefArgType -> pr_or_var (pr_located pr_global) (out_gen globwit_ref x)
-  | SortArgType -> pr_rawsort (out_gen globwit_sort x)
+  | SortArgType -> pr_glob_sort (out_gen globwit_sort x)
   | ConstrArgType -> prc (out_gen globwit_constr x)
   | ConstrMayEvalArgType ->
       pr_may_eval prc prlc
@@ -954,7 +954,7 @@ and pr_tacarg = function
 
 in (pr_tac, pr_match_rule)
 
-let strip_prod_binders_rawterm n (ty,_) =
+let strip_prod_binders_glob_constr n (ty,_) =
   let rec strip_ty acc n ty =
     if n=0 then (List.rev acc, (ty,None)) else
       match ty with
@@ -1008,7 +1008,7 @@ let rec glob_printers =
      pr_ltac_or_var (pr_located pr_ltac_constant),
      pr_lident,
      pr_glob_extend,
-     strip_prod_binders_rawterm)
+     strip_prod_binders_glob_constr)
 
 and pr_glob_tactic_level env n (t:glob_tactic_expr) =
   fst (make_pr_tac glob_printers env) n t

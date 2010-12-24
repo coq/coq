@@ -30,7 +30,7 @@ let cases_pattern_loc = function
 
 type patvar = identifier
 
-type rawsort = RProp of Term.contents | RType of Univ.universe option
+type glob_sort = GProp of Term.contents | GType of Univ.universe option
 
 type binding_kind = Lib.binding_kind = Explicit | Implicit
 
@@ -64,18 +64,18 @@ type glob_constr =
   | GIf of loc * glob_constr * (name * glob_constr option) * glob_constr * glob_constr
   | GRec of loc * fix_kind * identifier array * glob_decl list array *
       glob_constr array * glob_constr array
-  | GSort of loc * rawsort
+  | GSort of loc * glob_sort
   | GHole of (loc * hole_kind)
   | GCast of loc * glob_constr * glob_constr cast_type
   | GDynamic of loc * Dyn.t
 
 and glob_decl = name * binding_kind * glob_constr option * glob_constr
 
-and fix_recursion_order = RStructRec | RWfRec of glob_constr | RMeasureRec of glob_constr * glob_constr option
+and fix_recursion_order = GStructRec | GWfRec of glob_constr | GMeasureRec of glob_constr * glob_constr option
 
 and fix_kind =
-  | RFix of ((int option * fix_recursion_order) array * int)
-  | RCoFix of int
+  | GFix of ((int option * fix_recursion_order) array * int)
+  | GCoFix of int
 
 and predicate_pattern =
     name * (loc * inductive * int * name list) option
@@ -366,7 +366,7 @@ let glob_constr_of_closed_cases_pattern = function
 (**********************************************************************)
 (* Reduction expressions                                              *)
 
-type 'a raw_red_flag = {
+type 'a glob_red_flag = {
   rBeta : bool;
   rIota : bool;
   rZeta : bool;
@@ -392,8 +392,8 @@ type ('a,'b,'c) red_expr_gen =
   | Red of bool
   | Hnf
   | Simpl of 'c with_occurrences option
-  | Cbv of 'b raw_red_flag
-  | Lazy of 'b raw_red_flag
+  | Cbv of 'b glob_red_flag
+  | Lazy of 'b glob_red_flag
   | Unfold of 'b with_occurrences list
   | Fold of 'a list
   | Pattern of 'a with_occurrences list

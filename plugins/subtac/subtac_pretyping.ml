@@ -114,14 +114,14 @@ let subtac_process ?(is_type=false) env isevars id bl c tycon =
       | Some t ->
 	  let t = Topconstr.prod_constr_expr t bl in
 	  let t = coqintern_type !isevars env t in
-	  let imps = Implicit_quantifiers.implicits_of_rawterm t in
+	  let imps = Implicit_quantifiers.implicits_of_glob_constr t in
 	  let coqt, ttyp = interp env isevars t empty_tycon in
 	    mk_tycon coqt, Some imps
   in
   let c = coqintern_constr !isevars env c in
   let imps = match imps with 
     | Some i -> i
-    | None -> Implicit_quantifiers.implicits_of_rawterm ~with_products:is_type c
+    | None -> Implicit_quantifiers.implicits_of_glob_constr ~with_products:is_type c
   in
   let coqc, ctyp = interp env isevars c tycon in
   let evm = non_instanciated_map env isevars !isevars in

@@ -35,7 +35,7 @@ val declare_rewriting_schemes : inductive -> unit
 (** Mutual Minimality/Induction scheme *)
 
 val do_mutual_induction_scheme :
-  (identifier located * bool * inductive * rawsort) list -> unit
+  (identifier located * bool * inductive * glob_sort) list -> unit
 
 (** Main calls to interpret the Scheme command *)
 

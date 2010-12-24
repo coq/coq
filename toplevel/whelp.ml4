@@ -91,10 +91,10 @@ let uri_of_repr_kn ref (mp,dir,l) =
 let url_paren f l = url_char '('; f l; url_char ')'
 let url_bracket f l = url_char '['; f l; url_char ']'
 
-let whelp_of_rawsort = function
-  | RProp Null -> "Prop"
-  | RProp Pos -> "Set"
-  | RType _ -> "Type"
+let whelp_of_glob_sort = function
+  | GProp Null -> "Prop"
+  | GProp Pos -> "Set"
+  | GType _ -> "Type"
 
 let uri_int n = Buffer.add_string b (string_of_int n)
 
@@ -144,7 +144,7 @@ let rec uri_of_constr c =
   | GVar (_,id) -> url_id id
   | GRef (_,ref) ->  uri_of_global ref
   | GHole _ | GEvar _ -> url_string "?"
-  | GSort (_,s) -> url_string (whelp_of_rawsort s)
+  | GSort (_,s) -> url_string (whelp_of_glob_sort s)
   | _ -> url_paren (fun () -> match c with
   | GApp (_,f,args) ->
       let inst,rest = merge (section_parameters f) args in

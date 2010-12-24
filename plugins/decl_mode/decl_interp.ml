@@ -193,7 +193,7 @@ let abstract_one_hyp inject h raw =
 let glob_constr_of_hyps inject hyps head =
   List.fold_right (abstract_one_hyp inject) hyps head
 
-let raw_prop = GSort (dummy_loc,RProp Null)
+let glob_prop = GSort (dummy_loc,GProp Null)
 
 let rec match_hyps blend names constr = function
     [] -> [],substl names constr
@@ -214,7 +214,7 @@ let interp_hyps_gen inject blend sigma env hyps head =
   let constr=understand sigma env (glob_constr_of_hyps inject hyps head) in
     match_hyps blend [] constr hyps
 
-let interp_hyps sigma env hyps = fst (interp_hyps_gen fst (fun x _ -> x) sigma env hyps raw_prop)
+let interp_hyps sigma env hyps = fst (interp_hyps_gen fst (fun x _ -> x) sigma env hyps glob_prop)
 
 let dummy_prefix= id_of_string "__"
 
@@ -232,7 +232,7 @@ let rec deanonymize ids =
     | PatCstr(loc,cstr,lpat,nam) ->
 	PatCstr(loc,cstr,List.map (deanonymize ids) lpat,nam)
 
-let rec raw_of_pat =
+let rec glob_of_pat =
   function
       PatVar (loc,Anonymous) -> anomaly "Anonymous pattern variable"
     | PatVar (loc,Name id) ->
@@ -243,7 +243,7 @@ let rec raw_of_pat =
 	  if n<=0 then q else
 	    add_params (pred n) (GHole(dummy_loc,
 				       Evd.TomatchTypeParameter(ind,n))::q) in
-	    let args = List.map raw_of_pat lpat in
+	    let args = List.map glob_of_pat lpat in
 	      raw_app(loc,GRef(dummy_loc,Libnames.ConstructRef cstr),
 		   add_params mind.Declarations.mind_nparams args)
 
@@ -261,7 +261,7 @@ let prod_one_id (loc,id) raw =
 	 GHole (loc,Evd.BinderType (Name id)), raw)
 
 let let_in_one_alias (id,pat) raw =
-  GLetIn (dummy_loc,Name id, raw_of_pat pat, raw)
+  GLetIn (dummy_loc,Name id, glob_of_pat pat, raw)
 
 let rec bind_primary_aliases map pat =
   match pat with
@@ -343,22 +343,22 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
       raw_app(dummy_loc,rind,rparams@rparams_rec@dum_args) in
   let pat_vars,aliases,patt = interp_pattern env pat in
   let inject = function
-      Thesis (Plain) -> Glob_term.GSort(dummy_loc,RProp Null)
+      Thesis (Plain) -> Glob_term.GSort(dummy_loc,GProp Null)
     | Thesis (For rec_occ) ->
 	if not (List.mem rec_occ pat_vars) then
 	  errorlabstrm "suppose it is"
 	    (str "Variable " ++ Nameops.pr_id rec_occ ++
 	       str " does not occur in pattern.");
-	Glob_term.GSort(dummy_loc,RProp Null)
+	Glob_term.GSort(dummy_loc,GProp Null)
     | This (c,_) -> c in
-  let term1 = glob_constr_of_hyps inject hyps raw_prop in
+  let term1 = glob_constr_of_hyps inject hyps glob_prop in
   let loc_ids,npatt =
     let rids=ref ([],pat_vars) in
     let npatt= deanonymize rids patt in
       List.rev (fst !rids),npatt in
   let term2 =
     GLetIn(dummy_loc,Anonymous,
-	   GCast(dummy_loc,raw_of_pat npatt,
+	   GCast(dummy_loc,glob_of_pat npatt,
 		 CastConv (DEFAULTcast,app_ind)),term1) in
   let term3=List.fold_right let_in_one_alias aliases term2 in
   let term4=List.fold_right prod_one_id loc_ids term3 in

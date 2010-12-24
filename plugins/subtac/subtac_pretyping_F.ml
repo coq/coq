@@ -160,8 +160,8 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
       make_judge c (Retyping.get_type_of env Evd.empty c)
 
   let pretype_sort = function
-    | RProp c -> judge_of_prop_contents c
-    | RType _ -> judge_of_new_Type ()
+    | GProp c -> judge_of_prop_contents c
+    | GType _ -> judge_of_new_Type ()
 
   let split_tycon_lam loc env evd tycon =
     let rec real_split evd c =
@@ -216,7 +216,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  inh_conv_coerce_to_tycon loc env evdref j tycon
 
     | GPatVar (loc,(someta,n)) ->
-	anomaly "Found a pattern variable in a rawterm to type"
+	anomaly "Found a pattern variable in a glob_constr to type"
 
     | GHole (loc,k) ->
 	let ty =
@@ -257,7 +257,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  in
 	    push_rec_types (names,marked_ftys,[||]) env
 	in
-	let fixi = match fixkind with RFix (vn, i) -> i | RCoFix i -> i in
+	let fixi = match fixkind with GFix (vn, i) -> i | GCoFix i -> i in
 	let vdefj =
 	  array_map2_i
 	    (fun i ctxt def ->
@@ -284,7 +284,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	let ftys = Array.map (nf_evar !evdref) ftys in
 	let fdefs = Array.map (fun x -> nf_evar !evdref (j_val x)) vdefj in
 	let fixj = match fixkind with
-	  | RFix (vn,i) ->
+	  | GFix (vn,i) ->
 	      (* First, let's find the guard indexes. *)
 	      (* If recursive argument was not given by user, we try all args.
 	         An earlier approach was to look only for inductive arguments,
@@ -300,7 +300,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	      let fixdecls = (names,ftys,fdefs) in
 	      let indexes = search_guard loc env possible_indexes fixdecls in
 	      make_judge (mkFix ((indexes,i),fixdecls)) ftys.(i)
-	  | RCoFix i ->
+	  | GCoFix i ->
 	      let cofix = (i,(names,ftys,fdefs)) in
 	      (try check_cofix env cofix with e -> Loc.raise loc e);
 	      make_judge (mkCoFix cofix) ftys.(i) in

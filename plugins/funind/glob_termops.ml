@@ -586,28 +586,28 @@ let id_of_name = function
   | Names.Name x -> x
 
 (* TODO: finish Rec caes *)
-let ids_of_rawterm c =
-  let rec ids_of_rawterm acc c =
+let ids_of_glob_constr c =
+  let rec ids_of_glob_constr acc c =
     let idof = id_of_name in
     match c with
       | GVar (_,id) -> id::acc
       | GApp (loc,g,args) ->
-          ids_of_rawterm [] g @ List.flatten (List.map (ids_of_rawterm []) args) @ acc
-      | GLambda (loc,na,k,ty,c) -> idof na :: ids_of_rawterm [] ty @ ids_of_rawterm [] c @ acc
-      | GProd (loc,na,k,ty,c) -> idof na :: ids_of_rawterm [] ty @ ids_of_rawterm [] c @ acc
-      | GLetIn (loc,na,b,c) -> idof na :: ids_of_rawterm [] b @ ids_of_rawterm [] c @ acc
-      | GCast (loc,c,CastConv(k,t)) -> ids_of_rawterm [] c @ ids_of_rawterm [] t @ acc
-      | GCast (loc,c,CastCoerce) -> ids_of_rawterm [] c @ acc
-      | GIf (loc,c,(na,po),b1,b2) -> ids_of_rawterm [] c @ ids_of_rawterm [] b1 @ ids_of_rawterm [] b2 @ acc
+          ids_of_glob_constr [] g @ List.flatten (List.map (ids_of_glob_constr []) args) @ acc
+      | GLambda (loc,na,k,ty,c) -> idof na :: ids_of_glob_constr [] ty @ ids_of_glob_constr [] c @ acc
+      | GProd (loc,na,k,ty,c) -> idof na :: ids_of_glob_constr [] ty @ ids_of_glob_constr [] c @ acc
+      | GLetIn (loc,na,b,c) -> idof na :: ids_of_glob_constr [] b @ ids_of_glob_constr [] c @ acc
+      | GCast (loc,c,CastConv(k,t)) -> ids_of_glob_constr [] c @ ids_of_glob_constr [] t @ acc
+      | GCast (loc,c,CastCoerce) -> ids_of_glob_constr [] c @ acc
+      | GIf (loc,c,(na,po),b1,b2) -> ids_of_glob_constr [] c @ ids_of_glob_constr [] b1 @ ids_of_glob_constr [] b2 @ acc
       | GLetTuple (_,nal,(na,po),b,c) ->
-          List.map idof nal @ ids_of_rawterm [] b @ ids_of_rawterm [] c @ acc
+          List.map idof nal @ ids_of_glob_constr [] b @ ids_of_glob_constr [] c @ acc
       | GCases (loc,sty,rtntypopt,tml,brchl) ->
-	  List.flatten (List.map (fun (_,idl,patl,c) -> idl @ ids_of_rawterm [] c) brchl)
+	  List.flatten (List.map (fun (_,idl,patl,c) -> idl @ ids_of_glob_constr [] c) brchl)
       | GRec _ -> failwith "Fix inside a constructor branch"
       | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GDynamic _) -> []
   in
   (* build the set *)
-  List.fold_left (fun acc x -> Idset.add x acc) Idset.empty (ids_of_rawterm [] c)
+  List.fold_left (fun acc x -> Idset.add x acc) Idset.empty (ids_of_glob_constr [] c)
 
 
 

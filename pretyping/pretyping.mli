@@ -53,7 +53,7 @@ sig
   (** More general entry point with evars from ltac *)
 
   (** Generic call to the interpreter from glob_constr to constr, failing
-     unresolved holes in the rawterm cannot be instantiated.
+     unresolved holes in the glob_constr cannot be instantiated.
 
      In [understand_ltac expand_evars sigma env ltac_env constraint c],
 
@@ -114,6 +114,6 @@ module Default : S
 val constr_in : constr -> Dyn.t
 val constr_out : Dyn.t -> constr
 
-val interp_sort : rawsort -> sorts
-val interp_elimination_sort : rawsort -> sorts_family
+val interp_sort : glob_sort -> sorts
+val interp_elimination_sort : glob_sort -> sorts_family
 

@@ -44,7 +44,7 @@ type aconstr =
   | ARec of fix_kind * identifier array *
       (name * aconstr option * aconstr) list array * aconstr array *
       aconstr array
-  | ASort of rawsort
+  | ASort of glob_sort
   | AHole of Evd.hole_kind
   | APatVar of patvar
   | ACast of aconstr * aconstr cast_type
@@ -552,8 +552,8 @@ let bind_binder (sigma,sigmalist,sigmabinders) x bl =
 
 let match_fix_kind fk1 fk2 =
   match (fk1,fk2) with
-  | RCoFix n1, RCoFix n2 -> n1 = n2
-  | RFix (nl1,n1), RFix (nl2,n2) ->
+  | GCoFix n1, GCoFix n2 -> n1 = n2
+  | GFix (nl1,n1), GFix (nl2,n2) ->
       n1 = n2 &&
       array_for_all2 (fun (n1,_) (n2,_) -> n2 = None || n1 = n2) nl1 nl2
   | _ -> false
@@ -843,7 +843,7 @@ type constr_expr =
   | CHole of loc * Evd.hole_kind option
   | CPatVar of loc * (bool * patvar)
   | CEvar of loc * existential_key * constr_expr list option
-  | CSort of loc * rawsort
+  | CSort of loc * glob_sort
   | CCast of loc * constr_expr * constr_expr cast_type
   | CNotation of loc * notation * constr_notation_substitution
   | CGeneralization of loc * binding_kind * abstraction_kind option * constr_expr

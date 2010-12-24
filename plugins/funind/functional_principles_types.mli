@@ -27,8 +27,8 @@ val compute_new_princ_type_from_rel : constr array -> sorts array ->
 
 exception No_graph_found
 
-val make_scheme : (constant*Glob_term.rawsort) list -> Entries.definition_entry list
+val make_scheme : (constant*Glob_term.glob_sort) list -> Entries.definition_entry list
 
-val build_scheme : (identifier*Libnames.reference*Glob_term.rawsort) list ->  unit
-val build_case_scheme : (identifier*Libnames.reference*Glob_term.rawsort)  ->  unit
+val build_scheme : (identifier*Libnames.reference*Glob_term.glob_sort) list ->  unit
+val build_case_scheme : (identifier*Libnames.reference*Glob_term.glob_sort)  ->  unit
 

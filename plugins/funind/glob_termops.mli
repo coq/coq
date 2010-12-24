@@ -23,7 +23,7 @@ val mkRLambda : Names.name * glob_constr * glob_constr -> glob_constr
 val mkRProd : Names.name * glob_constr * glob_constr -> glob_constr
 val mkRLetIn : Names.name * glob_constr * glob_constr -> glob_constr
 val mkRCases : glob_constr option * tomatch_tuples * cases_clauses -> glob_constr
-val mkRSort : rawsort -> glob_constr
+val mkRSort : glob_sort -> glob_constr
 val mkRHole : unit -> glob_constr (* we only build Evd.BinderType Anonymous holes *)
 val mkRCast : glob_constr* glob_constr -> glob_constr
 (*
@@ -115,10 +115,10 @@ val eq_cases_pattern : cases_pattern -> cases_pattern -> bool
 val   ids_of_pat : cases_pattern -> Names.Idset.t
 
 (* TODO: finish this function (Fix not treated) *)
-val ids_of_rawterm: glob_constr -> Names.Idset.t
+val ids_of_glob_constr: glob_constr -> Names.Idset.t
 
 (*
-   removing let_in construction in a rawterm
+   removing let_in construction in a glob_constr
 *)
 val zeta_normalize : Glob_term.glob_constr -> Glob_term.glob_constr
 

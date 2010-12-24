@@ -56,7 +56,7 @@ val pr_may_eval :
   ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
   ('c -> std_ppcmds) -> ('a,'b,'c) may_eval -> std_ppcmds
 
-val pr_rawsort : rawsort -> std_ppcmds
+val pr_glob_sort : glob_sort -> std_ppcmds
 
 val pr_binders : local_binder list -> std_ppcmds
 val pr_constr_pattern_expr : constr_pattern_expr -> std_ppcmds
@@ -84,7 +84,7 @@ val default_term_pr : term_pr
     for instance if we want to build a printer which prints "Prop" as "Omega"
     instead we can proceed as follows:
     let my_modular_constr_pr pr s p = function
-      | CSort (_,RProp Null) -> str "Omega"
+      | CSort (_,GProp Null) -> str "Omega"
       | t -> modular_constr_pr pr s p t
     Which has the same type. We can turn a modular printer into a printer by
     taking its fixpoint. *)

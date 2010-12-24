@@ -33,9 +33,9 @@ EXTEND
       <:expr< snd (Pattern.pattern_of_glob_constr $c$) >> ] ]
   ;
   sort:
-    [ [ "Set"  -> RProp Pos
-      | "Prop" -> RProp Null
-      | "Type" -> RType None ] ]
+    [ [ "Set"  -> GProp Pos
+      | "Prop" -> GProp Null
+      | "Type" -> GType None ] ]
   ;
   ident:
     [ [ s = string -> <:expr< Names.id_of_string $str:s$ >> ] ]

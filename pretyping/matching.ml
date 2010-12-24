@@ -173,9 +173,9 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 
       | PRel n1, Rel n2 when n1 = n2 -> subst
 
-      | PSort (RProp c1), Sort (Prop c2) when c1 = c2 -> subst
+      | PSort (GProp c1), Sort (Prop c2) when c1 = c2 -> subst
 
-      | PSort (RType _), Sort (Type _) -> subst
+      | PSort (GType _), Sort (Type _) -> subst
 
       | PApp (p, [||]), _ -> sorec stk subst p t
 

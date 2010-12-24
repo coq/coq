@@ -133,9 +133,9 @@ GEXTEND Gram
     [ [ c = lconstr -> c ] ]
   ;
   sort:
-    [ [ "Set"  -> RProp Pos
-      | "Prop" -> RProp Null
-      | "Type" -> RType None ] ]
+    [ [ "Set"  -> GProp Pos
+      | "Prop" -> GProp Null
+      | "Type" -> GType None ] ]
   ;
   lconstr:
     [ [ c = operconstr LEVEL "200" -> c ] ]

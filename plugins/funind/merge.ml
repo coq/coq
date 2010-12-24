@@ -381,11 +381,11 @@ let build_raw_params prms_decl avoid =
   let _ = prNamedRConstr "RAWDUMMY" dummy_glob_constr in
   let res,_ = glob_decompose_prod dummy_glob_constr in
   let comblist = List.combine prms_decl res in
-  comblist, res , (avoid @ (Idset.elements (ids_of_rawterm dummy_glob_constr)))
+  comblist, res , (avoid @ (Idset.elements (ids_of_glob_constr dummy_glob_constr)))
 *)
 
 let ids_of_rawlist avoid rawl =
-    List.fold_left Idset.union avoid (List.map ids_of_rawterm rawl)
+    List.fold_left Idset.union avoid (List.map ids_of_glob_constr rawl)
 
 
 
@@ -463,7 +463,7 @@ let shift_linked_params mib1 mib2 (lnk1:linked_var array) (lnk2:linked_var array
       ([],[],[],[]) arity_ctxt in
 (*  let arity_ctxt2 =
     build_raw_params oib2.mind_arity_ctxt
-      (Idset.elements (ids_of_rawterm oib1.mind_arity_ctxt)) in*)
+      (Idset.elements (ids_of_glob_constr oib1.mind_arity_ctxt)) in*)
   let recprms1,otherprms1,args1,funresprms1 = bldprms (List.rev oib1.mind_arity_ctxt) mlnk1 in
   let _ = prstr "\n\n\n" in
   let recprms2,otherprms2,args2,funresprms2 = bldprms (List.rev oib2.mind_arity_ctxt) mlnk2 in
@@ -756,7 +756,7 @@ let merge_constructor_id id1 id2 shift:identifier =
 
 
 (** [merge_constructors lnk shift avoid] merges the two list of
-    constructor [(name*type)]. These are translated to rawterms
+    constructor [(name*type)]. These are translated to glob_constr
     first, each of them having distinct var names. *)
 let rec merge_constructors (shift:merge_infos) (avoid:Idset.t)
     (typcstr1:(identifier * glob_constr) list)
@@ -816,7 +816,7 @@ let rec merge_mutual_inductive_body
   merge_inductive_body shift Idset.empty mib1.mind_packets.(0) mib2.mind_packets.(0)
 
 
-let rawterm_to_constr_expr x = (* build a constr_expr from a glob_constr *)
+let glob_constr_to_constr_expr x = (* build a constr_expr from a glob_constr *)
   Flags.with_option Flags.raw_print (Constrextern.extern_glob_type Idset.empty) x
 
 let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
@@ -827,7 +827,7 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
         let _ = prstr "param :" in
         let _ = prNamedRConstr (string_of_name nme) tp in
         let _ = prstr "  ;  " in
-        let typ = rawterm_to_constr_expr tp in
+        let typ = glob_constr_to_constr_expr tp in
         LocalRawAssum ([(dummy_loc,nme)], Topconstr.default_binder_kind, typ) :: acc)
       [] params in
   let concl = Constrextern.extern_constr false (Global.env()) concl in
@@ -844,18 +844,18 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
 
 
 
-(** [rawterm_list_to_inductive_expr ident rawlist] returns the
+(** [glob_constr_list_to_inductive_expr ident rawlist] returns the
     induct_expr corresponding to the the list of constructor types
     [rawlist], named ident.
     FIXME: params et cstr_expr (arity) *)
-let rawterm_list_to_inductive_expr prms1 prms2 mib1 mib2 shift
+let glob_constr_list_to_inductive_expr prms1 prms2 mib1 mib2 shift
     (rawlist:(identifier * glob_constr) list) =
   let lident = dummy_loc, shift.ident in
   let bindlist , cstr_expr = (* params , arities *)
     merge_rec_params_and_arity prms1 prms2 shift mkSet in
   let lcstor_expr : (bool * (lident * constr_expr)) list  =
     List.map (* zeta_normalize t ? *)
-      (fun (id,t) -> false, ((dummy_loc,id),rawterm_to_constr_expr t))
+      (fun (id,t) -> false, ((dummy_loc,id),glob_constr_to_constr_expr t))
       rawlist in
   lident , bindlist , Some cstr_expr , lcstor_expr
 
@@ -901,7 +901,7 @@ let merge_inductive (ind1: inductive) (ind2: inductive)
       recprms1=prms1;
       recprms1=prms1;
     } in *)
-  let indexpr = rawterm_list_to_inductive_expr prms1 prms2 mib1 mib2 shift_prm rawlist in
+  let indexpr = glob_constr_list_to_inductive_expr prms1 prms2 mib1 mib2 shift_prm rawlist in
   (* Declare inductive *)
   let indl,_,_ = Command.extract_mutual_inductive_declaration_components [(indexpr,[])] in
   let mie,impls = Command.interp_mutual_inductive indl [] true (* means: not coinductive *) in
