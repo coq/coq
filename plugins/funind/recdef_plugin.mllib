@@ -1,7 +1,7 @@
 Indfun_common
-Rawtermops
+Glob_termops
 Recdef
-Rawterm_to_relation
+Glob_term_to_relation
 Functional_principles_proofs
 Functional_principles_types
 Invfun

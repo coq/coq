@@ -300,7 +300,7 @@ let generate_principle  on_error
   let funs_types =  List.map (function ((_,_,_,types,_),_) -> types) fix_rec_l in
   try
     (* We then register the Inductive graphs of the functions  *)
-    Rawterm_to_relation.build_inductive names funs_args funs_types recdefs;
+    Glob_term_to_relation.build_inductive names funs_args funs_types recdefs;
     if do_built
     then
       begin

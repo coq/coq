@@ -21,7 +21,7 @@ open Termops
 open Declarations
 open Environ
 open Glob_term
-open Rawtermops
+open Glob_termops
 
 (** {1 Utilities}  *)
 

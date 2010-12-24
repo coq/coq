@@ -6,7 +6,7 @@ open Glob_term
 open Libnames
 open Indfun_common
 open Util
-open Rawtermops
+open Glob_termops
 
 let observe strm =
   if do_observe ()
