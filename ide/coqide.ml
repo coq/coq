@@ -3202,7 +3202,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 							      "\nCoq is developed by the Coq Development Team\
        \n(INRIA - CNRS - University Paris 11 and partners)\
        \nWeb site: " ^ Coq_config.wwwcoq ^
-       "\nFeature wish or bug report: http://logical.saclay.inria.fr/coq-bugs\
+       "\nFeature wish or bug report: http://coq.inria.fr/bugs\
        \n\
        \nCredits for CoqIDE, the Integrated Development Environment for Coq:\
        \n\
