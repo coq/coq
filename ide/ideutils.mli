@@ -34,6 +34,7 @@ val is_char_start : char -> bool
 val lib_ide_file : string -> string
 val my_stat : string -> Unix.stats option
 
+val safe_prerr_endline : string -> unit
 val prerr_endline : string -> unit
 val prerr_string : string -> unit
 val print_id : 'a -> unit

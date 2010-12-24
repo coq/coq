@@ -31,12 +31,16 @@ let set_location = ref  (function s -> failwith "not ready")
 
 let pbar = GRange.progress_bar ~pulse_step:0.2 ()
 
+(* On a Win32 application with no console, writing to stderr raise
+   a Sys_error "bad file descriptor" *)
+let safe_prerr_endline msg = try prerr_endline msg with _ -> ()
+
 let debug = Flags.debug
 
 let prerr_endline s =
-  if !debug then (prerr_endline s;flush stderr)
+  if !debug then try (prerr_endline s;flush stderr) with _ -> ()
 let prerr_string s =
-  if !debug then (prerr_string s;flush stderr)
+  if !debug then try (prerr_string s;flush stderr) with _ -> ()
 
 let lib_ide_file f =
   let coqlib = Envars.coqlib () in

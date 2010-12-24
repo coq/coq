@@ -200,7 +200,7 @@ let signals_to_crash = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup;
 
 let crash_save i =
   (*  ignore (Unix.sigprocmask Unix.SIG_BLOCK signals_to_crash);*)
-  Pervasives.prerr_endline "Trying to save all buffers in .crashcoqide files";
+  safe_prerr_endline "Trying to save all buffers in .crashcoqide files";
   let count = ref 0 in
     List.iter
       (function {script=view; analyzed_view = av } ->
@@ -212,12 +212,12 @@ let crash_save i =
 	  in
 	    try
 	      if try_export filename (view#buffer#get_text ()) then
-		Pervasives.prerr_endline ("Saved "^filename)
-	      else Pervasives.prerr_endline ("Could not save "^filename)
-	    with _ -> Pervasives.prerr_endline ("Could not save "^filename))
+		safe_prerr_endline ("Saved "^filename)
+	      else safe_prerr_endline ("Could not save "^filename)
+	    with _ -> safe_prerr_endline ("Could not save "^filename))
       )
       session_notebook#pages;
-    Pervasives.prerr_endline "Done. Please report.";
+    safe_prerr_endline "Done. Please report.";
     if i <> 127 then exit i
 
 let ignore_break () =
@@ -3332,10 +3332,10 @@ let start () =
       try
 	GtkThread.main ()
       with
-	| Sys.Break -> prerr_endline "Interrupted." ; flush stderr
+	| Sys.Break -> prerr_endline "Interrupted."
 	| e ->
-	    Pervasives.prerr_endline ("CoqIde unexpected error:" ^ (Printexc.to_string e));
-	    flush stderr;
+	    safe_prerr_endline ("CoqIde unexpected error:" ^ (Printexc.to_string e));
+	    flush_all ();
 	    crash_save 127
     done
 
