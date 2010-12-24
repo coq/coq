@@ -1,32 +1,26 @@
 How to debug universes?
 
-1. There is a command Dump Universes in Coq toplevel
+1. There is a command Print Universes in Coq toplevel
 
-   Dump Universes.
+   Print Universes.
      prints the graph of universes in the form of constraints
 
-   Dump Universes "file".
+   Print Universes "file".
      produces the "file" containing universe constraints in the form
        univ1 # univ2 ;
      where # can be either > >= or =
-     
-   The file produced by the latter command can be transformed using
-   the script univdot to dot format.
-   For example
 
-   univdot file | dot -Tps > file.ps
-
-   produces a graph of universes in ps format. 
-   > arrows are red, >= blue, and = black.
+   If "file" ends with .gv or .dot, the resulting file will be in
+   dot format.
 
 
    *) for dot see http://www.research.att.com/sw/tools/graphviz/
 
 
 2. There is a printing option
-  
-   Termast.print_universes : bool ref
 
-   which, when set (in ocaml after Drop), makes all pretty-printed
-   Type's annotated with the name of the universe.
+   {Set,Unset} Printing Universes.
+
+   which, when set, makes all pretty-printed Type's annotated with the
+   name of the universe.
 

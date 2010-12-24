@@ -635,9 +635,6 @@ GEXTEND Gram
       | IDENT "Declare"; IDENT "ML"; IDENT "Module"; l = LIST1 ne_string ->
 	  VernacDeclareMLModule (use_locality (), l)
 
-      | IDENT "Dump"; IDENT "Universes"; fopt = OPT ne_string ->
-	  error "This command is deprecated, use Print Universes"
-
       | IDENT "Locate"; l = locatable -> VernacLocate l
 
       (* Managing load paths *)

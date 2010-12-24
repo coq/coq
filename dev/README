@@ -41,7 +41,6 @@ go in directory and call "make"
 Other development tools (directory tools)
 -----------------------
 
-univdot: produces a graph of CIC universes
 Makefile.dir: makefile dedicated to intensive work in a given directory
 Makefile.subdir: makefile dedicated to intensive work in a given subdirectory
 Makefile.devel: utilities to automatically launch coq in various states

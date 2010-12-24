@@ -878,7 +878,7 @@ let rec pr_vernac = function
 	| PrintHintDb -> str"Print Hint *"
 	| PrintHintDbName s -> str"Print HintDb" ++ spc() ++ str s
 	| PrintRewriteHintDbName s -> str"Print Rewrite HintDb" ++ spc() ++ str s
-	| PrintUniverses fopt -> str"Dump Universes" ++ pr_opt str fopt
+	| PrintUniverses fopt -> str"Print Universes" ++ pr_opt str fopt
 	| PrintName qid -> str"Print" ++ spc()  ++ pr_smart_global qid
 	| PrintModuleType qid -> str"Print Module Type" ++ spc() ++ pr_reference qid
 	| PrintModule qid -> str"Print Module" ++ spc() ++ pr_reference qid
