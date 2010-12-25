@@ -129,24 +129,22 @@ let make_prod_item = function
 let make_rule loc (prods,act) =
   <:expr< ($mlexpr_of_list make_prod_item prods$,$make_act loc act prods$) >>
 
-let declare_tactic_argument loc s typ pr f g h rawtyppr globtyppr cl =
-  let rawtyp, rawpr = match rawtyppr with
-    | None -> typ,pr
-    | Some (t,p) -> t,p in
-  let globtyp, globpr = match globtyppr with
-    | None -> typ,pr
-    | Some (t,p) -> t,p in
+let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
+  let rawtyp, rawpr, globtyp, globpr = match typ with
+    | `Uniform typ -> typ, pr, typ, pr
+    | `Specialized (a, b, c, d) -> a, b, c, d
+  in
   let glob = match g with
     | None ->
 	<:expr< fun e x ->
-          out_gen $make_globwit loc typ$
+          out_gen $make_globwit loc rawtyp$
             (Tacinterp.intern_genarg e
                (Genarg.in_gen $make_rawwit loc rawtyp$ x)) >>
     | Some f -> <:expr< $lid:f$>> in
   let interp = match f with
     | None ->
 	<:expr< fun ist gl x ->
-          out_gen $make_wit loc typ$
+          out_gen $make_wit loc globtyp$
             (Tacinterp.interp_genarg ist gl
                (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
     | Some f -> <:expr< $lid:f$>> in
@@ -218,26 +216,32 @@ EXTEND
   GLOBAL: str_item;
   str_item:
     [ [ "ARGUMENT"; "EXTEND"; s = entry_name;
-        "TYPED"; "AS"; typ = argtype;
-        "PRINTED"; "BY"; pr = LIDENT;
-        f = OPT [ "INTERPRETED"; "BY"; f = LIDENT -> f ];
-        g = OPT [ "GLOBALIZED"; "BY"; f = LIDENT -> f ];
-        h = OPT [ "SUBSTITUTED"; "BY"; f = LIDENT -> f ];
-        rawtyppr =
-        (* Necessary if the globalized type is different from the final type *)
-          OPT [ "RAW_TYPED"; "AS"; t = argtype;
-                "RAW_PRINTED"; "BY"; pr = LIDENT -> (t,pr) ];
-        globtyppr =
-          OPT [ "GLOB_TYPED"; "AS"; t = argtype;
-                "GLOB_PRINTED"; "BY"; pr = LIDENT -> (t,pr) ];
+        header = argextend_header;
         OPT "|"; l = LIST1 argrule SEP "|";
         "END" ->
-         declare_tactic_argument loc s typ pr f g h rawtyppr globtyppr l
+         declare_tactic_argument loc s header l
       | "VERNAC"; "ARGUMENT"; "EXTEND"; s = entry_name;
         pr = OPT ["PRINTED"; "BY"; pr = LIDENT -> pr];
         OPT "|"; l = LIST1 argrule SEP "|";
         "END" ->
          declare_vernac_argument loc s pr l ] ]
+  ;
+  argextend_header:
+    [ [ "TYPED"; "AS"; typ = argtype;
+        "PRINTED"; "BY"; pr = LIDENT;
+        f = OPT [ "INTERPRETED"; "BY"; f = LIDENT -> f ];
+        g = OPT [ "GLOBALIZED"; "BY"; f = LIDENT -> f ];
+        h = OPT [ "SUBSTITUTED"; "BY"; f = LIDENT -> f ] ->
+        (`Uniform typ, pr, f, g, h)
+      | "PRINTED"; "BY"; pr = LIDENT;
+        f = OPT [ "INTERPRETED"; "BY"; f = LIDENT -> f ];
+        g = OPT [ "GLOBALIZED"; "BY"; f = LIDENT -> f ];
+        h = OPT [ "SUBSTITUTED"; "BY"; f = LIDENT -> f ];
+        "RAW_TYPED"; "AS"; rawtyp = argtype;
+        "RAW_PRINTED"; "BY"; rawpr = LIDENT;
+        "GLOB_TYPED"; "AS"; globtyp = argtype;
+        "GLOB_PRINTED"; "BY"; globpr = LIDENT ->
+        (`Specialized (rawtyp, rawpr, globtyp, globpr), pr, f, g, h) ] ]
   ;
   argtype:
     [ "2"

@@ -40,7 +40,6 @@ let pr_int_list_full _prc _prlc _prt l =
   in aux l
 
 ARGUMENT EXTEND int_nelist
-  TYPED AS int list
   PRINTED BY pr_int_list_full
   RAW_TYPED AS int list
   RAW_PRINTED BY pr_int_list_full
@@ -82,7 +81,6 @@ type occurrences_or_var = int list or_var
 type occurrences = int list
 
 ARGUMENT EXTEND occurrences
-  TYPED AS occurrences
   PRINTED BY pr_int_list_full
 
   INTERPRETED BY interp_occs
@@ -113,7 +111,6 @@ let glob_raw = Tacinterp.intern_constr
 let subst_raw = Tacinterp.subst_glob_constr_and_expr
 
 ARGUMENT EXTEND raw
-    TYPED AS glob_constr
     PRINTED BY pr_rawc
 
      INTERPRETED BY interp_raw
@@ -157,7 +154,6 @@ let interp_place ist gl = function
 let subst_place subst pl = pl
 
 ARGUMENT EXTEND hloc
-    TYPED AS place
     PRINTED BY pr_place
     INTERPRETED BY interp_place
     GLOBALIZED BY intern_place
@@ -227,7 +223,6 @@ let pr_var_list _ _ _ = pr_var_list_gen (fun (_,id) -> Ppconstr.pr_id id)
 
 
 ARGUMENT EXTEND comma_var_lne
-  TYPED AS var list
   PRINTED BY pr_var_list_typed
   RAW_TYPED AS var list
   RAW_PRINTED BY pr_var_list
@@ -238,7 +233,6 @@ ARGUMENT EXTEND comma_var_lne
 END
 
 ARGUMENT EXTEND comma_var_l
-  TYPED AS var list
   PRINTED BY pr_var_list_typed
   RAW_TYPED AS var list
   RAW_PRINTED BY pr_var_list
@@ -260,7 +254,6 @@ END
 
 
 ARGUMENT EXTEND in_arg_hyp
-  TYPED AS var list option * bool
   PRINTED BY pr_in_arg_hyp_typed
   RAW_TYPED AS var list option * bool
   RAW_PRINTED BY pr_in_arg_hyp

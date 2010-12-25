@@ -109,7 +109,6 @@ let pr_firstorder_using_glob _ _ _ = prlist_with_sep pr_comma (pr_or_var (pr_loc
 let pr_firstorder_using_typed _ _ _ = prlist_with_sep pr_comma pr_global
 
 ARGUMENT EXTEND firstorder_using
-  TYPED AS reference_list
   PRINTED BY pr_firstorder_using_typed
   RAW_TYPED AS reference_list
   RAW_PRINTED BY pr_firstorder_using_raw
