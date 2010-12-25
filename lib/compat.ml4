@@ -189,11 +189,10 @@ END
 (** Fix a quotation difference in [str_item] *)
 
 let declare_str_items loc l =
-  let l' = <:str_item< open Pcoq >> :: <:str_item< open Extrawit >> :: l in
 IFDEF CAMLP5 THEN
-  MLast.StDcl (loc,l') (* correspond to <:str_item< declare $list:l'$ end >> *)
+  MLast.StDcl (loc,l) (* correspond to <:str_item< declare $list:l'$ end >> *)
 ELSE
-  Ast.stSem_of_list l'
+  Ast.stSem_of_list l
 END
 
 (** Quotation difference for match clauses *)

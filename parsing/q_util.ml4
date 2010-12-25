@@ -52,19 +52,18 @@ let mlexpr_of_option f = function
   | Some e -> <:expr< Some $f e$ >>
 
 open Vernacexpr
-open Pcoq
 open Genarg
 
 let rec mlexpr_of_prod_entry_key = function
-  | Alist1 s -> <:expr< Alist1 $mlexpr_of_prod_entry_key s$ >>
-  | Alist1sep (s,sep) -> <:expr< Alist1sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
-  | Alist0 s -> <:expr< Alist0 $mlexpr_of_prod_entry_key s$ >>
-  | Alist0sep (s,sep) -> <:expr< Alist0sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
-  | Aopt s -> <:expr< Aopt $mlexpr_of_prod_entry_key s$ >>
-  | Amodifiers s -> <:expr< Amodifiers $mlexpr_of_prod_entry_key s$ >>
-  | Aself -> <:expr< Aself >>
-  | Anext -> <:expr< Anext >>
-  | Atactic n -> <:expr< Atactic $mlexpr_of_int n$ >>
-  | Agram s -> Util.anomaly "Agram not supported"
-  | Aentry ("",s) -> <:expr< Agram (Gram.Entry.obj $lid:s$) >>
-  | Aentry (u,s) -> <:expr< Aentry $str:u$ $str:s$ >>
+  | Pcoq.Alist1 s -> <:expr< Pcoq.Alist1 $mlexpr_of_prod_entry_key s$ >>
+  | Pcoq.Alist1sep (s,sep) -> <:expr< Pcoq.Alist1sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
+  | Pcoq.Alist0 s -> <:expr< Pcoq.Alist0 $mlexpr_of_prod_entry_key s$ >>
+  | Pcoq.Alist0sep (s,sep) -> <:expr< Pcoq.Alist0sep $mlexpr_of_prod_entry_key s$ $str:sep$ >>
+  | Pcoq.Aopt s -> <:expr< Pcoq.Aopt $mlexpr_of_prod_entry_key s$ >>
+  | Pcoq.Amodifiers s -> <:expr< Pcoq.Amodifiers $mlexpr_of_prod_entry_key s$ >>
+  | Pcoq.Aself -> <:expr< Pcoq.Aself >>
+  | Pcoq.Anext -> <:expr< Pcoq.Anext >>
+  | Pcoq.Atactic n -> <:expr< Pcoq.Atactic $mlexpr_of_int n$ >>
+  | Pcoq.Agram s -> Util.anomaly "Agram not supported"
+  | Pcoq.Aentry ("",s) -> <:expr< Pcoq.Agram (Pcoq.Gram.Entry.obj $lid:s$) >>
+  | Pcoq.Aentry (u,s) -> <:expr< Pcoq.Aentry $str:u$ $str:s$ >>

@@ -40,7 +40,12 @@ let rec make_rawwit loc = function
   | OptArgType t -> <:expr< Genarg.wit_opt $make_rawwit loc t$ >>
   | PairArgType (t1,t2) ->
       <:expr< Genarg.wit_pair $make_rawwit loc t1$ $make_rawwit loc t2$ >>
-  | ExtraArgType s -> <:expr< $lid:"rawwit_"^s$ >>
+  | ExtraArgType s ->
+    <:expr<
+      let module WIT = struct
+        open Extrawit;
+        value wit = $lid:"rawwit_"^s$;
+      end in WIT.wit >>
 
 let rec make_globwit loc = function
   | BoolArgType -> <:expr< Genarg.globwit_bool >>
@@ -65,7 +70,12 @@ let rec make_globwit loc = function
   | OptArgType t -> <:expr< Genarg.wit_opt $make_globwit loc t$ >>
   | PairArgType (t1,t2) ->
       <:expr< Genarg.wit_pair $make_globwit loc t1$ $make_globwit loc t2$ >>
-  | ExtraArgType s -> <:expr< $lid:"globwit_"^s$ >>
+  | ExtraArgType s ->
+    <:expr<
+      let module WIT = struct
+        open Extrawit;
+        value wit = $lid:"globwit_"^s$;
+      end in WIT.wit >>
 
 let rec make_wit loc = function
   | BoolArgType -> <:expr< Genarg.wit_bool >>
@@ -90,24 +100,29 @@ let rec make_wit loc = function
   | OptArgType t -> <:expr< Genarg.wit_opt $make_wit loc t$ >>
   | PairArgType (t1,t2) ->
       <:expr< Genarg.wit_pair $make_wit loc t1$ $make_wit loc t2$ >>
-  | ExtraArgType s -> <:expr< $lid:"wit_"^s$ >>
+  | ExtraArgType s ->
+    <:expr<
+      let module WIT = struct
+        open Extrawit;
+        value wit = $lid:"wit_"^s$;
+      end in WIT.wit >>
 
 let make_act loc act pil =
   let rec make = function
-    | [] -> <:expr< Gram.action (fun loc -> ($act$ : 'a)) >>
+    | [] -> <:expr< Pcoq.Gram.action (fun loc -> ($act$ : 'a)) >>
     | GramNonTerminal (_,t,_,Some p) :: tl ->
 	let p = Names.string_of_id p in
 	<:expr<
-          Gram.action
+          Pcoq.Gram.action
             (fun $lid:p$ ->
                let _ = Genarg.in_gen $make_rawwit loc t$ $lid:p$ in $make tl$)
         >>
     | (GramTerminal _ | GramNonTerminal (_,_,_,None)) :: tl ->
-	<:expr< Gram.action (fun _ -> $make tl$) >> in
+	<:expr< Pcoq.Gram.action (fun _ -> $make tl$) >> in
   make (List.rev pil)
 
 let make_prod_item = function
-  | GramTerminal s -> <:expr< gram_token_of_string $str:s$ >>
+  | GramTerminal s -> <:expr< Pcoq.gram_token_of_string $str:s$ >>
   | GramNonTerminal (_,_,g,_) ->
       <:expr< Pcoq.symbol_of_prod_entry_key $mlexpr_of_prod_entry_key g$ >>
 
