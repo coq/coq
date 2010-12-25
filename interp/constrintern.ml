@@ -293,14 +293,14 @@ let set_type_scope (ids,unb,tmp_scope,scopes) =
 let reset_tmp_scope (ids,unb,tmp_scope,scopes) =
   (ids,unb,None,scopes)
 
-let rec it_mkRProd env body =
+let rec it_mkGProd env body =
   match env with
-      (na, bk, _, t) :: tl -> it_mkRProd tl (GProd (dummy_loc, na, bk, t, body))
+      (na, bk, _, t) :: tl -> it_mkGProd tl (GProd (dummy_loc, na, bk, t, body))
     | [] -> body
 
-let rec it_mkRLambda env body =
+let rec it_mkGLambda env body =
   match env with
-      (na, bk, _, t) :: tl -> it_mkRLambda tl (GLambda (dummy_loc, na, bk, t, body))
+      (na, bk, _, t) :: tl -> it_mkGLambda tl (GLambda (dummy_loc, na, bk, t, body))
     | [] -> body
 
 (**********************************************************************)
@@ -1356,7 +1356,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	| Generalized (b,b',t) ->
 	    let env, ibind = intern_generalized_binder intern_type lvar env [] (List.hd nal) b b' t ty in
 	    let body = intern_type env body in
-	      it_mkRProd ibind body
+	      it_mkGProd ibind body
 
   and iterate_lam loc2 env bk ty body nal =
     let rec default env bk = function
@@ -1371,7 +1371,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
       | Generalized (b, b', t) ->
 	  let env, ibind = intern_generalized_binder intern_type lvar env [] (List.hd nal) b b' t ty in
 	  let body = intern env body in
-	    it_mkRLambda ibind body
+	    it_mkGLambda ibind body
 
   and intern_impargs c env l subscopes args =
     let l = select_impargs_size (List.length args) l in

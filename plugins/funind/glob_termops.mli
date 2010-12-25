@@ -16,16 +16,16 @@ val pattern_to_term : cases_pattern -> glob_constr
    Some basic functions to rebuild glob_constr
    In each of them the location is Util.dummy_loc
 *)
-val mkRRef : Libnames.global_reference -> glob_constr
-val mkRVar : Names.identifier -> glob_constr
-val mkRApp  : glob_constr*(glob_constr list) -> glob_constr
-val mkRLambda : Names.name * glob_constr * glob_constr -> glob_constr
-val mkRProd : Names.name * glob_constr * glob_constr -> glob_constr
-val mkRLetIn : Names.name * glob_constr * glob_constr -> glob_constr
-val mkRCases : glob_constr option * tomatch_tuples * cases_clauses -> glob_constr
-val mkRSort : glob_sort -> glob_constr
-val mkRHole : unit -> glob_constr (* we only build Evd.BinderType Anonymous holes *)
-val mkRCast : glob_constr* glob_constr -> glob_constr
+val mkGRef : Libnames.global_reference -> glob_constr
+val mkGVar : Names.identifier -> glob_constr
+val mkGApp  : glob_constr*(glob_constr list) -> glob_constr
+val mkGLambda : Names.name * glob_constr * glob_constr -> glob_constr
+val mkGProd : Names.name * glob_constr * glob_constr -> glob_constr
+val mkGLetIn : Names.name * glob_constr * glob_constr -> glob_constr
+val mkGCases : glob_constr option * tomatch_tuples * cases_clauses -> glob_constr
+val mkGSort : glob_sort -> glob_constr
+val mkGHole : unit -> glob_constr (* we only build Evd.BinderType Anonymous holes *)
+val mkGCast : glob_constr* glob_constr -> glob_constr
 (*
   Some basic functions to decompose glob_constrs
   These are analogous to the ones constrs

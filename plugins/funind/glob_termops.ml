@@ -9,16 +9,16 @@ let idmap_is_empty m = m = Idmap.empty
    Some basic functions to rebuild glob_constr
    In each of them the location is Util.dummy_loc
 *)
-let mkRRef ref = GRef(dummy_loc,ref)
-let mkRVar id = GVar(dummy_loc,id)
-let mkRApp(rt,rtl) = GApp(dummy_loc,rt,rtl)
-let mkRLambda(n,t,b) = GLambda(dummy_loc,n,Explicit,t,b)
-let mkRProd(n,t,b) = GProd(dummy_loc,n,Explicit,t,b)
-let mkRLetIn(n,t,b) = GLetIn(dummy_loc,n,t,b)
-let mkRCases(rto,l,brl) = GCases(dummy_loc,Term.RegularStyle,rto,l,brl)
-let mkRSort s = GSort(dummy_loc,s)
-let mkRHole () = GHole(dummy_loc,Evd.BinderType Anonymous)
-let mkRCast(b,t) = GCast(dummy_loc,b,CastConv (Term.DEFAULTcast,t))
+let mkGRef ref = GRef(dummy_loc,ref)
+let mkGVar id = GVar(dummy_loc,id)
+let mkGApp(rt,rtl) = GApp(dummy_loc,rt,rtl)
+let mkGLambda(n,t,b) = GLambda(dummy_loc,n,Explicit,t,b)
+let mkGProd(n,t,b) = GProd(dummy_loc,n,Explicit,t,b)
+let mkGLetIn(n,t,b) = GLetIn(dummy_loc,n,t,b)
+let mkGCases(rto,l,brl) = GCases(dummy_loc,Term.RegularStyle,rto,l,brl)
+let mkGSort s = GSort(dummy_loc,s)
+let mkGHole () = GHole(dummy_loc,Evd.BinderType Anonymous)
+let mkGCast(b,t) = GCast(dummy_loc,b,CastConv (Term.DEFAULTcast,t))
 
 (*
   Some basic functions to decompose glob_constrs
@@ -43,14 +43,14 @@ let glob_decompose_prod_or_letin =
   glob_decompose_prod []
 
 let glob_compose_prod =
-  List.fold_left (fun b (n,t) -> mkRProd(n,t,b))
+  List.fold_left (fun b (n,t) -> mkGProd(n,t,b))
 
 let glob_compose_prod_or_letin =
   List.fold_left (
       fun concl decl ->
 	match decl with
-	  | (n,None,Some t) -> mkRProd(n,t,concl)
-	  | (n,Some bdy,None) -> mkRLetIn(n,bdy,concl)
+	  | (n,None,Some t) -> mkGProd(n,t,concl)
+	  | (n,Some bdy,None) -> mkGLetIn(n,bdy,concl)
 	  | _ -> assert false)
 
 let glob_decompose_prod_n n =
@@ -93,15 +93,15 @@ let glob_decompose_app =
 
 
 (* [glob_make_eq t1 t2] build the glob_constr corresponding to [t2 = t1] *)
-let glob_make_eq ?(typ= mkRHole ()) t1 t2  =
-  mkRApp(mkRRef (Lazy.force Coqlib.coq_eq_ref),[typ;t2;t1])
+let glob_make_eq ?(typ= mkGHole ()) t1 t2  =
+  mkGApp(mkGRef (Lazy.force Coqlib.coq_eq_ref),[typ;t2;t1])
 
 (* [glob_make_neq t1 t2] build the glob_constr corresponding to [t1 <> t2] *)
 let glob_make_neq t1 t2 =
-  mkRApp(mkRRef (Lazy.force Coqlib.coq_not_ref),[glob_make_eq t1 t2])
+  mkGApp(mkGRef (Lazy.force Coqlib.coq_not_ref),[glob_make_eq t1 t2])
 
 (* [glob_make_or P1 P2] build the glob_constr corresponding to [P1 \/ P2] *)
-let glob_make_or t1 t2 = mkRApp (mkRRef(Lazy.force Coqlib.coq_or_ref),[t1;t2])
+let glob_make_or t1 t2 = mkGApp (mkGRef(Lazy.force Coqlib.coq_or_ref),[t1;t2])
 
 (* [glob_make_or_list [P1;...;Pn]] build the glob_constr corresponding
    to [P1 \/ ( .... \/ Pn)]
@@ -425,7 +425,7 @@ let is_free_in id =
 let rec pattern_to_term  = function
   | PatVar(loc,Anonymous) -> assert false
   | PatVar(loc,Name id) ->
-	mkRVar id
+	mkGVar id
   | PatCstr(loc,constr,patternl,_) ->
       let cst_narg =
 	Inductiveops.mis_constructor_nargs_env
@@ -436,13 +436,13 @@ let rec pattern_to_term  = function
 	Array.to_list
 	  (Array.init
 	     (cst_narg - List.length patternl)
-	     (fun _ -> mkRHole ())
+	     (fun _ -> mkGHole ())
 	  )
       in
       let patl_as_term =
 	List.map pattern_to_term patternl
       in
-      mkRApp(mkRRef(Libnames.ConstructRef constr),
+      mkGApp(mkGRef(Libnames.ConstructRef constr),
 	     implicit_args@patl_as_term
 	    )
 

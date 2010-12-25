@@ -33,9 +33,9 @@ type glob_context = (binder_type*glob_constr) list
 let compose_glob_context =
   let compose_binder  (bt,t) acc =
     match bt with
-      | Lambda n -> mkRLambda(n,t,acc)
-      | Prod n -> mkRProd(n,t,acc)
-      | LetIn n -> mkRLetIn(n,t,acc)
+      | Lambda n -> mkGLambda(n,t,acc)
+      | Prod n -> mkGProd(n,t,acc)
+      | LetIn n -> mkGLetIn(n,t,acc)
   in
   List.fold_right compose_binder
 
@@ -160,7 +160,7 @@ let apply_args ctxt body args =
 	  (ctxt,body)
       | [],_ -> (* no more fun *)
 	  let f,args' = glob_decompose_app body in
-	  (ctxt,mkRApp(f,args'@args))
+	  (ctxt,mkGApp(f,args'@args))
       | (Lambda Anonymous,t)::ctxt',arg::args' ->
 	  do_apply avoid ctxt' body args'
       | (Lambda (Name id),t)::ctxt',arg::args' ->
@@ -215,7 +215,7 @@ let combine_app f args =
 let combine_lam n t b =
   {
     context = [];
-    value = mkRLambda(n, compose_glob_context t.context t.value,
+    value = mkGLambda(n, compose_glob_context t.context t.value,
 		      compose_glob_context b.context b.value )
   }
 
@@ -269,8 +269,8 @@ let make_discr_match_brl i =
   list_map_i
     (fun j (_,idl,patl,_) ->
        if j=i
-       then (dummy_loc,idl,patl, mkRRef (Lazy.force coq_True_ref))
-       else (dummy_loc,idl,patl, mkRRef (Lazy.force coq_False_ref))
+       then (dummy_loc,idl,patl, mkGRef (Lazy.force coq_True_ref))
+       else (dummy_loc,idl,patl, mkGRef (Lazy.force coq_False_ref))
     )
     0
 (*
@@ -281,7 +281,7 @@ let make_discr_match_brl i =
 *)
 let make_discr_match brl =
   fun el i ->
-  mkRCases(None,
+  mkGCases(None,
 	   make_discr_match_el el,
 	   make_discr_match_brl i brl)
 
@@ -312,12 +312,12 @@ let build_constructors_of_type ind' argl =
 		  if argl = []
 		  then
  		    Array.to_list
-		      (Array.init (cst_narg - npar) (fun _ -> mkRHole ())
+		      (Array.init (cst_narg - npar) (fun _ -> mkGHole ())
 		      )
 		  else argl
 		in
 		let pat_as_term =
-		  mkRApp(mkRRef (ConstructRef(ind',i+1)),argl)
+		  mkGApp(mkGRef (ConstructRef(ind',i+1)),argl)
 		in
 		cases_pattern_of_glob_constr Anonymous pat_as_term
 	     )
@@ -419,7 +419,7 @@ let add_pat_variables pat typ env : Environ.env =
 let rec pattern_to_term_and_type env typ  = function
   | PatVar(loc,Anonymous) -> assert false
   | PatVar(loc,Name id) ->
-	mkRVar id
+	mkGVar id
   | PatCstr(loc,constr,patternl,_) ->
       let cst_narg =
 	Inductiveops.mis_constructor_nargs_env
@@ -445,7 +445,7 @@ let rec pattern_to_term_and_type env typ  = function
       let patl_as_term =
 	List.map2 (pattern_to_term_and_type env)  (List.rev cs_args_types)  patternl
       in
-      mkRApp(mkRRef(ConstructRef constr),
+      mkGApp(mkGRef(ConstructRef constr),
 	     implicit_args@patl_as_term
 	    )
 
@@ -525,13 +525,13 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		let res_raw_type = Detyping.detype false [] (Termops.names_of_rel_context env) rt_typ in
 		let res = fresh_id args_res.to_avoid "res" in
 		let new_avoid = res::args_res.to_avoid in
-		let res_rt = mkRVar res in
+		let res_rt = mkGVar res in
 		let new_result =
 		  List.map
 		    (fun arg_res ->
 		       let new_hyps =
 			 [Prod (Name res),res_raw_type;
-			  Prod Anonymous,mkRApp(res_rt,(mkRVar id)::arg_res.value)]
+			  Prod Anonymous,mkGApp(res_rt,(mkGVar id)::arg_res.value)]
 		       in
 		       {context =  arg_res.context@new_hyps; value = res_rt }
 		    )
@@ -549,7 +549,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		    result =
 		    List.map
 		      (fun args_res ->
-			 {args_res with value = mkRApp(f,args_res.value)})
+			 {args_res with value = mkGApp(f,args_res.value)})
 		      args_res.result
 		}
 	    | GApp _ -> assert false (* we have collected all the app in [glob_decompose_app] *)
@@ -577,7 +577,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		  env
 		  funnames
 		  avoid
-		  (mkRLetIn(new_n,t,mkRApp(new_b,args)))
+		  (mkGLetIn(new_n,t,mkGApp(new_b,args)))
 	    | GCases _  | GIf _ | GLetTuple _ ->
 		(* we have [(match e1, ...., en with ..... end) t1 tn]
 		   we first compute the result from the case and
@@ -592,7 +592,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 
 		   WARNING: We need to restart since [b] itself should be an application term
 		*)
-		build_entry_lc env funnames avoid (mkRApp(b,args))
+		build_entry_lc env funnames avoid (mkGApp(b,args))
 	    | GRec _ -> error "Not handled GRec"
 	    | GProd _ -> error "Cannot apply a type"
 	end (* end of the application treatement *)
@@ -663,7 +663,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	    [lhs;rhs]
 	in
 	let match_expr =
-	  mkRCases(None,[(b,(Anonymous,None))],brl)
+	  mkGCases(None,[(b,(Anonymous,None))],brl)
 	in
 	(* 		Pp.msgnl (str "new case := " ++ Printer.pr_glob_constr match_expr); *)
 	build_entry_lc env funnames avoid match_expr
@@ -672,8 +672,8 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	  let nal_as_glob_constr =
 	    List.map
 	      (function
-		   Name id -> mkRVar id
-		 | Anonymous -> mkRHole ()
+		   Name id -> mkGVar id
+		 | Anonymous -> mkGHole ()
 	      )
 	      nal
 	  in
@@ -691,7 +691,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	  let br =
 	    (dummy_loc,[],[case_pats.(0)],e)
 	  in
-	  let match_expr = mkRCases(None,[b,(Anonymous,None)],[br]) in
+	  let match_expr = mkGCases(None,[b,(Anonymous,None)],[br]) in
 	  build_entry_lc env funnames avoid match_expr
 
 	end
@@ -778,7 +778,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
 			  Detyping.detype false []
 			    (Termops.names_of_rel_context env_with_pat_ids) typ_of_id
 			in
-			mkRProd (Name id,raw_typ_of_id,acc))
+			mkGProd (Name id,raw_typ_of_id,acc))
 		     pat_ids
 		     (glob_make_neq pat'_as_term (pattern_to_term renamed_pat))
 	    )
@@ -901,7 +901,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			  i*)
 
 			let new_t =
-			  mkRApp(mkRVar(mk_rel_id this_relname),args'@[res_rt])
+			  mkGApp(mkGVar(mk_rel_id this_relname),args'@[res_rt])
 			in
 			let t' = Pretyping.Default.understand Evd.empty env new_t in
 			let new_env = Environ.push_rel (n,None,t') env in
@@ -911,7 +911,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			    args new_crossed_types
 			    (depth + 1) b
 			in
-			mkRProd(n,new_t,new_b),
+			mkGProd(n,new_t,new_b),
 			Idset.filter not_free_in_t id_to_exclude
 		    | _ -> (* the first args is the name of the function! *)
 			assert false
@@ -942,7 +942,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			new_args new_crossed_types
 			(depth + 1) subst_b
 		    in
-		    mkRProd(n,t,new_b),id_to_exclude
+		    mkGProd(n,t,new_b),id_to_exclude
 		  with Continue ->
 		    let jmeq = Libnames.IndRef (destInd (jmeq ())) in
 		    let ty' = Pretyping.Default.understand Evd.empty env ty in
@@ -961,7 +961,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 				 p) params)@(Array.to_list
 				      (Array.make
 					 (List.length args' - nparam)
-					 (mkRHole ()))))
+					 (mkGHole ()))))
 		    in
 		    let eq' =
 		      GApp(loc1,GRef(loc2,jmeq),[ty;GVar(loc3,id);rt_typ;rt])
@@ -1025,11 +1025,11 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 			new_args new_crossed_types
 			(depth + 1) subst_b
 		    in
-		    mkRProd(n,eq',new_b),id_to_exclude
+		    mkGProd(n,eq',new_b),id_to_exclude
 		end
 		  (* J.F:. keep this comment  it explain how to remove some meaningless equalities
 		     if keep_eq then
-		     mkRProd(n,t,new_b),id_to_exclude
+		     mkGProd(n,t,new_b),id_to_exclude
 		     else new_b, Idset.add id id_to_exclude
 		  *)
 	    | _ ->
@@ -1046,7 +1046,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		  | Name id when Idset.mem id id_to_exclude && depth >= nb_args ->
 		      new_b,Idset.remove id
 			(Idset.filter not_free_in_t id_to_exclude)
-		  | _ -> mkRProd(n,t,new_b),Idset.filter not_free_in_t id_to_exclude
+		  | _ -> mkGProd(n,t,new_b),Idset.filter not_free_in_t id_to_exclude
 	end
     | GLambda(_,n,k,t,b) ->
 	begin
@@ -1060,7 +1060,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		let new_b,id_to_exclude =
 		  rebuild_cons new_env
 		    nb_args relname
-		    (args@[mkRVar id])new_crossed_types
+		    (args@[mkGVar id])new_crossed_types
 		    (depth + 1 ) b
 		in
 		if Idset.mem id id_to_exclude && depth >= nb_args
@@ -1117,7 +1117,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 
 	end
 
-    | _ -> mkRApp(mkRVar  relname,args@[rt]),Idset.empty
+    | _ -> mkGApp(mkGVar  relname,args@[rt]),Idset.empty
 
 
 (* debuging wrapper *)

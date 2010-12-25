@@ -285,8 +285,8 @@ let rec pat_of_raw metas vars = function
       PIf (pat_of_raw metas vars c,
            pat_of_raw metas vars b1,pat_of_raw metas vars b2)
   | GLetTuple (loc,nal,(_,None),b,c) ->
-      let mkRLambda c na = GLambda (loc,na,Explicit,GHole (loc,Evd.InternalHole),c) in
-      let c = List.fold_left mkRLambda c nal in
+      let mkGLambda c na = GLambda (loc,na,Explicit,GHole (loc,Evd.InternalHole),c) in
+      let c = List.fold_left mkGLambda c nal in
       PCase ((LetStyle,[|1|],None,None),PMeta None,pat_of_raw metas vars b,
              [|pat_of_raw metas vars c|])
   | GCases (loc,sty,p,[c,(na,indnames)],brs) ->
