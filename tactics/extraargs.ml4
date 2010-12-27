@@ -101,21 +101,20 @@ let pr_occurrences = pr_occurrences () () ()
 
 let pr_gen prc _prlc _prtac c = prc c
 
-let pr_rawc _prc _prlc _prtac (_,raw) = Printer.pr_glob_constr raw
-let pr_raw = pr_rawc () () ()
+let pr_globc _prc _prlc _prtac (_,glob) = Printer.pr_glob_constr glob
 
-let interp_raw ist gl (t,_) = (ist,t)
+let interp_glob ist gl (t,_) = (ist,t)
 
-let glob_raw = Tacinterp.intern_constr
+let glob_glob = Tacinterp.intern_constr
 
-let subst_raw = Tacinterp.subst_glob_constr_and_expr
+let subst_glob = Tacinterp.subst_glob_constr_and_expr
 
-ARGUMENT EXTEND raw
-    PRINTED BY pr_rawc
+ARGUMENT EXTEND glob
+    PRINTED BY pr_globc
 
-     INTERPRETED BY interp_raw
-     GLOBALIZED BY glob_raw
-     SUBSTITUTED BY subst_raw
+     INTERPRETED BY interp_glob
+     GLOBALIZED BY glob_glob
+     SUBSTITUTED BY subst_glob
 
      RAW_TYPED AS constr_expr
      RAW_PRINTED BY pr_gen

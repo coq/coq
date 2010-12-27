@@ -383,7 +383,7 @@ open Tacexpr
 open Tacticals
 
 TACTIC EXTEND instantiate
-  [ "instantiate" "(" integer(i) ":=" raw(c) ")" hloc(hl) ] ->
+  [ "instantiate" "(" integer(i) ":=" glob(c) ")" hloc(hl) ] ->
     [instantiate i c hl  ]
 | [ "instantiate" ] -> [ tclNORMEVAR ]
 END

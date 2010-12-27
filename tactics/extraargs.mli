@@ -24,10 +24,9 @@ val rawwit_occurrences : (int list or_var) raw_abstract_argument_type
 val wit_occurrences : (int list) typed_abstract_argument_type
 val pr_occurrences : int list Glob_term.or_var -> Pp.std_ppcmds
 
-val rawwit_raw : constr_expr raw_abstract_argument_type
-val wit_raw : (Tacinterp.interp_sign * glob_constr) typed_abstract_argument_type
-val raw : constr_expr Pcoq.Gram.entry
-val pr_raw : (Tacinterp.interp_sign * Glob_term.glob_constr) -> Pp.std_ppcmds
+val rawwit_glob : constr_expr raw_abstract_argument_type
+val wit_glob : (Tacinterp.interp_sign * glob_constr) typed_abstract_argument_type
+val glob : constr_expr Pcoq.Gram.entry
 
 type 'id gen_place= ('id * hyp_location_flag,unit) location
 
