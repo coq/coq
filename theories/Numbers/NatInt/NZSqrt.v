@@ -13,7 +13,7 @@ Require Import NZAxioms NZMulOrder.
 (** Interface of a sqrt function, then its specification on naturals *)
 
 Module Type Sqrt (Import A : Typ).
- Parameters Inline sqrt : t -> t.
+ Parameter Inline sqrt : t -> t.
 End Sqrt.
 
 Module Type SqrtNotation (A : Typ)(Import B : Sqrt A).
@@ -460,7 +460,7 @@ Qed.
 Lemma sqrt_up_square : forall a, 0<=a -> √°(a²) == a.
 Proof.
  intros a Ha.
- apply le_lteq in Ha. destruct Ha as [Ha|Ha].
+ le_elim Ha.
  rewrite sqrt_up_eqn by (now apply mul_pos_pos).
  rewrite sqrt_pred_square; trivial. apply (lt_succ_pred 0); trivial.
  rewrite sqrt_up_eqn0; trivial. rewrite <- Ha. now nzsimpl.
@@ -516,7 +516,7 @@ Lemma sqrt_sqrt_up_spec : forall a, 0<=a -> (√a)² <= a <= (√°a)².
 Proof.
  intros a H. split.
  now apply sqrt_spec.
- rewrite le_lteq in H. destruct H as [H|H].
+ le_elim H.
  now apply sqrt_up_spec.
  now rewrite <-H, sqrt_up_0, mul_0_l.
 Qed.
@@ -596,7 +596,7 @@ Qed.
 Lemma sqrt_up_le_lin : forall a, 0<=a -> √°a<=a.
 Proof.
  intros a Ha.
- apply le_lteq in Ha. destruct Ha as [Ha|Ha].
+ le_elim Ha.
  rewrite sqrt_up_eqn; trivial. apply le_succ_l.
  apply le_lt_trans with (P a). apply sqrt_le_lin.
  now rewrite <- lt_succ_r, (lt_succ_pred 0).
@@ -670,7 +670,7 @@ Lemma sqrt_up_eq_succ_iff_square : forall a, 0<=a ->
 Proof.
  intros a Ha. split.
  intros EQ.
- apply le_lteq in Ha. destruct Ha as [Ha|Ha].
+ le_elim Ha.
  exists (√°a). split. apply sqrt_up_nonneg.
  generalize (proj2 (sqrt_up_spec a Ha)).
  assert (Ha' : 0 < S a) by (apply lt_succ_r; order').
@@ -710,8 +710,8 @@ Qed.
 Lemma add_sqrt_up_le : forall a b, 0<=a -> 0<=b -> √°a + √°b <= S √°(2*(a+b)).
 Proof.
  intros a b Ha Hb.
- apply le_lteq in Ha; destruct Ha as [Ha|Ha].
- apply le_lteq in Hb; destruct Hb as [Hb|Hb].
+ le_elim Ha.
+ le_elim Hb.
  rewrite 3 sqrt_up_eqn; trivial.
  nzsimpl. rewrite <- 2 succ_le_mono.
  etransitivity; [eapply add_sqrt_le|].

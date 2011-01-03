@@ -24,17 +24,16 @@ Qed.
 
 Theorem mul_lt_mono_pos_l : forall p n m, 0 < p -> (n < m <-> p * n < p * m).
 Proof.
-nzord_induct p.
-intros n m H; false_hyp H lt_irrefl.
-intros p H IH n m H1. nzsimpl.
-le_elim H. assert (LR : forall n m, n < m -> p * n + n < p * m + m).
-intros n1 m1 H2. apply add_lt_mono; [now apply -> IH | assumption].
-split; [apply LR |]. intro H2. apply -> lt_dne; intro H3.
-apply <- le_ngt in H3. le_elim H3.
-apply lt_asymm in H2. apply H2. now apply LR.
-rewrite H3 in H2; false_hyp H2 lt_irrefl.
-rewrite <- H; now nzsimpl.
-intros p H1 _ n m H2. destruct (lt_asymm _ _ H1 H2).
+intros p n m Hp. revert n m. apply lt_ind with (4:=Hp). solve_proper.
+intros. now nzsimpl.
+clear p Hp. intros p Hp IH n m. nzsimpl.
+assert (LR : forall n m, n < m -> p * n + n < p * m + m)
+ by (intros n1 m1 H; apply add_lt_mono; trivial; now rewrite <- IH).
+split; intros H.
+now apply LR.
+destruct (lt_trichotomy n m) as [LT|[EQ|GT]]; trivial.
+rewrite EQ in H. order.
+apply LR in GT. order.
 Qed.
 
 Theorem mul_lt_mono_pos_r : forall p n m, 0 < p -> (n < m <-> n * p < m * p).
@@ -46,19 +45,19 @@ Qed.
 Theorem mul_lt_mono_neg_l : forall p n m, p < 0 -> (n < m <-> p * m < p * n).
 Proof.
 nzord_induct p.
-intros n m H; false_hyp H lt_irrefl.
-intros p H1 _ n m H2. apply lt_succ_l in H2. apply <- nle_gt in H2.
-false_hyp H1 H2.
-intros p H IH n m H1. apply <- le_succ_l in H.
-le_elim H. assert (LR : forall n m, n < m -> p * m < p * n).
-intros n1 m1 H2. apply (le_lt_add_lt n1 m1).
-now apply lt_le_incl. rewrite <- 2 mul_succ_l. now apply -> IH.
-split; [apply LR |]. intro H2. apply -> lt_dne; intro H3.
-apply <- le_ngt in H3. le_elim H3.
-apply lt_asymm in H2. apply H2. now apply LR.
-rewrite H3 in H2; false_hyp H2 lt_irrefl.
-rewrite (mul_lt_pred p (S p)) by reflexivity.
-rewrite H; do 2 rewrite mul_0_l; now do 2 rewrite add_0_l.
+order.
+intros p Hp _ n m Hp'. apply lt_succ_l in Hp'. order.
+intros p Hp IH n m _. apply le_succ_l in Hp.
+le_elim Hp.
+assert (LR : forall n m, n < m -> p * m < p * n).
+ intros n1 m1 H. apply (le_lt_add_lt n1 m1).
+ now apply lt_le_incl. rewrite <- 2 mul_succ_l. now rewrite <- IH.
+split; intros H.
+now apply LR.
+destruct (lt_trichotomy n m) as [LT|[EQ|GT]]; trivial.
+rewrite EQ in H. order.
+apply LR in GT. order.
+rewrite (mul_lt_pred p (S p)), Hp; now nzsimpl.
 Qed.
 
 Theorem mul_lt_mono_neg_r : forall p n m, p < 0 -> (n < m <-> m * p < n * p).
@@ -70,7 +69,7 @@ Qed.
 Theorem mul_le_mono_nonneg_l : forall n m p, 0 <= p -> n <= m -> p * n <= p * m.
 Proof.
 intros n m p H1 H2. le_elim H1.
-le_elim H2. apply lt_le_incl. now apply -> mul_lt_mono_pos_l.
+le_elim H2. apply lt_le_incl. now apply mul_lt_mono_pos_l.
 apply eq_le_incl; now rewrite H2.
 apply eq_le_incl; rewrite <- H1; now do 2 rewrite mul_0_l.
 Qed.
@@ -78,7 +77,7 @@ Qed.
 Theorem mul_le_mono_nonpos_l : forall n m p, p <= 0 -> n <= m -> p * m <= p * n.
 Proof.
 intros n m p H1 H2. le_elim H1.
-le_elim H2. apply lt_le_incl. now apply -> mul_lt_mono_neg_l.
+le_elim H2. apply lt_le_incl. now apply mul_lt_mono_neg_l.
 apply eq_le_incl; now rewrite H2.
 apply eq_le_incl; rewrite H1; now do 2 rewrite mul_0_l.
 Qed.
@@ -97,20 +96,13 @@ Qed.
 
 Theorem mul_cancel_l : forall n m p, p ~= 0 -> (p * n == p * m <-> n == m).
 Proof.
-intros n m p H; split; intro H1.
-destruct (lt_trichotomy p 0) as [H2 | [H2 | H2]].
-apply -> eq_dne; intro H3. apply -> lt_gt_cases in H3. destruct H3 as [H3 | H3].
-assert (H4 : p * m < p * n); [now apply -> mul_lt_mono_neg_l |].
-rewrite H1 in H4; false_hyp H4 lt_irrefl.
-assert (H4 : p * n < p * m); [now apply -> mul_lt_mono_neg_l |].
-rewrite H1 in H4; false_hyp H4 lt_irrefl.
-false_hyp H2 H.
-apply -> eq_dne; intro H3. apply -> lt_gt_cases in H3. destruct H3 as [H3 | H3].
-assert (H4 : p * n < p * m) by (now apply -> mul_lt_mono_pos_l).
-rewrite H1 in H4; false_hyp H4 lt_irrefl.
-assert (H4 : p * m < p * n) by (now apply -> mul_lt_mono_pos_l).
-rewrite H1 in H4; false_hyp H4 lt_irrefl.
-now rewrite H1.
+intros n m p Hp; split; intro H; [|now apply mul_wd].
+apply lt_gt_cases in Hp; destruct Hp as [Hp|Hp];
+ destruct (lt_trichotomy n m) as [LT|[EQ|GT]]; trivial.
+apply (mul_lt_mono_neg_l p) in LT; order.
+apply (mul_lt_mono_neg_l p) in GT; order.
+apply (mul_lt_mono_pos_l p) in LT; order.
+apply (mul_lt_mono_pos_l p) in GT; order.
 Qed.
 
 Theorem mul_cancel_r : forall n m p, p ~= 0 -> (n * p == m * p <-> n == m).
@@ -181,17 +173,17 @@ Qed.
 
 Theorem mul_pos_pos : forall n m, 0 < n -> 0 < m -> 0 < n * m.
 Proof.
-intros n m H1 H2. rewrite <- (mul_0_l m). now apply -> mul_lt_mono_pos_r.
+intros n m H1 H2. rewrite <- (mul_0_l m). now apply mul_lt_mono_pos_r.
 Qed.
 
 Theorem mul_neg_neg : forall n m, n < 0 -> m < 0 -> 0 < n * m.
 Proof.
-intros n m H1 H2. rewrite <- (mul_0_l m). now apply -> mul_lt_mono_neg_r.
+intros n m H1 H2. rewrite <- (mul_0_l m). now apply mul_lt_mono_neg_r.
 Qed.
 
 Theorem mul_pos_neg : forall n m, 0 < n -> m < 0 -> n * m < 0.
 Proof.
-intros n m H1 H2. rewrite <- (mul_0_l m). now apply -> mul_lt_mono_neg_r.
+intros n m H1 H2. rewrite <- (mul_0_l m). now apply mul_lt_mono_neg_r.
 Qed.
 
 Theorem mul_neg_pos : forall n m, n < 0 -> 0 < m -> n * m < 0.
@@ -206,7 +198,7 @@ Qed.
 
 Theorem lt_1_mul_pos : forall n m, 1 < n -> 0 < m -> 1 < n * m.
 Proof.
-intros n m H1 H2. apply -> (mul_lt_mono_pos_r m) in H1.
+intros n m H1 H2. apply (mul_lt_mono_pos_r m) in H1.
 rewrite mul_1_l in H1. now apply lt_1_l with m.
 assumption.
 Qed.
@@ -227,7 +219,7 @@ Qed.
 Theorem neq_mul_0 : forall n m, n ~= 0 /\ m ~= 0 <-> n * m ~= 0.
 Proof.
 intros n m; split; intro H.
-intro H1; apply -> eq_mul_0 in H1. tauto.
+intro H1; apply eq_mul_0 in H1. tauto.
 split; intro H1; rewrite H1 in H;
 (rewrite mul_0_l in H || rewrite mul_0_r in H); now apply H.
 Qed.
@@ -239,13 +231,13 @@ Qed.
 
 Theorem eq_mul_0_l : forall n m, n * m == 0 -> m ~= 0 -> n == 0.
 Proof.
-intros n m H1 H2. apply -> eq_mul_0 in H1. destruct H1 as [H1 | H1].
+intros n m H1 H2. apply eq_mul_0 in H1. destruct H1 as [H1 | H1].
 assumption. false_hyp H1 H2.
 Qed.
 
 Theorem eq_mul_0_r : forall n m, n * m == 0 -> n ~= 0 -> m == 0.
 Proof.
-intros n m H1 H2; apply -> eq_mul_0 in H1. destruct H1 as [H1 | H1].
+intros n m H1 H2; apply eq_mul_0 in H1. destruct H1 as [H1 | H1].
 false_hyp H1 H2. assumption.
 Qed.
 
@@ -281,18 +273,16 @@ Theorem square_lt_simpl_nonneg : forall n m, 0 <= m -> n * n < m * m -> n < m.
 Proof.
 intros n m H1 H2. destruct (lt_ge_cases n 0).
 now apply lt_le_trans with 0.
-destruct (lt_ge_cases n m).
-assumption. assert (F : m * m <= n * n) by now apply square_le_mono_nonneg.
-apply -> le_ngt in F. false_hyp H2 F.
+destruct (lt_ge_cases n m) as [LT|LE]; trivial.
+apply square_le_mono_nonneg in LE; order.
 Qed.
 
 Theorem square_le_simpl_nonneg : forall n m, 0 <= m -> n * n <= m * m -> n <= m.
 Proof.
 intros n m H1 H2. destruct (lt_ge_cases n 0).
 apply lt_le_incl; now apply lt_le_trans with 0.
-destruct (le_gt_cases n m).
-assumption. assert (F : m * m < n * n) by now apply square_lt_mono_nonneg.
-apply -> lt_nge in F. false_hyp H2 F.
+destruct (le_gt_cases n m) as [LE|LT]; trivial.
+apply square_lt_mono_nonneg in LT; order.
 Qed.
 
 Theorem mul_2_mono_l : forall n m, n < m -> 1 + 2 * n < 2 * m.

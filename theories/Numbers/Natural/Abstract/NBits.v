@@ -303,7 +303,7 @@ Qed.
 Lemma bits_inj : forall a b, testbit a === testbit b -> a == b.
 Proof.
  intros a. pattern a.
- apply strong_right_induction with 0;[solve_predicate_wd|clear a|apply le_0_l].
+ apply strong_right_induction with 0;[solve_proper|clear a|apply le_0_l].
  intros a _ IH b H.
  destruct (eq_0_gt_0_cases a) as [EQ|LT].
  rewrite EQ in H |- *. symmetry. apply bits_inj_0.
@@ -342,7 +342,7 @@ Proof.
   exists 0. intros m. rewrite bits_0, H0; trivial. apply le_0_l.
   intros k IH f Hf Hk.
   destruct (IH (fun m => f (S m))) as (n, Hn).
-  solve_predicate_wd.
+  solve_proper.
   intros m Hm. apply Hk. now rewrite <- succ_le_mono.
   exists (f 0 + 2*n). intros m.
   destruct (zero_or_succ m) as [Hm|(m', Hm)]; rewrite Hm.

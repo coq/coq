@@ -107,3 +107,33 @@ Program Instance all_inverse_impl_morphism {A : Type} :
     unfold pointwise_relation, all in *.
     intuition ; specialize (H x0) ; intuition.
   Qed.
+
+(** Equivalent points are simultaneously accessible or not *)
+
+Instance Acc_pt_morphism {A:Type}(E R : A->A->Prop)
+ `(Equivalence _ E) `(Proper _ (E==>E==>iff) R) :
+ Proper (E==>iff) (Acc R).
+Proof.
+ apply proper_sym_impl_iff; auto with *.
+ intros x y EQ WF. apply Acc_intro; intros z Hz.
+ rewrite <- EQ in Hz. now apply Acc_inv with x.
+Qed.
+
+(** Equivalent relations have the same accessible points *)
+
+Instance Acc_rel_morphism {A:Type} :
+ Proper (@relation_equivalence A ==> Logic.eq ==> iff) (@Acc A).
+Proof.
+ apply proper_sym_impl_iff_2. red; now symmetry. red; now symmetry.
+ intros R R' EQ a a' Ha WF. subst a'.
+ induction WF as [x _ WF']. constructor.
+ intros y Ryx. now apply WF', EQ.
+Qed.
+
+(** Equivalent relations are simultaneously well-founded or not *)
+
+Instance well_founded_morphism {A : Type} :
+ Proper (@relation_equivalence A ==> iff) (@well_founded A).
+Proof.
+ unfold well_founded. solve_proper.
+Qed.

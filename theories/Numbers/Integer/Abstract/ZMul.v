@@ -39,7 +39,7 @@ Qed.
 
 Theorem mul_opp_l : forall n m, (- n) * m == - (n * m).
 Proof.
-intros n m. apply -> add_move_0_r.
+intros n m. apply add_move_0_r.
 now rewrite <- mul_add_distr_r, add_opp_diag_l, mul_0_l.
 Qed.
 

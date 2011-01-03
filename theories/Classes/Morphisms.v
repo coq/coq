@@ -81,6 +81,21 @@ Export ProperNotations.
 
 Open Local Scope signature_scope.
 
+(** [solve_proper] try to solve the goal [Proper (?==> ... ==>?) f]
+    by repeated introductions and setoid rewrites. It should work
+    fine when [f] is a combination of already known morphisms and
+    quantifiers. *)
+
+Ltac solve_respectful t :=
+ match goal with
+   | |- respectful _ _ _ _ =>
+     let H := fresh "H" in
+     intros ? ? H; solve_respectful ltac:(setoid_rewrite H; t)
+   | _ => t; reflexivity
+ end.
+
+Ltac solve_proper := unfold Proper; solve_respectful ltac:(idtac).
+
 (** Dependent pointwise lifting of a relation on the range. *)
 
 Definition forall_relation {A : Type} {B : A -> Type} (sig : Π a : A, relation (B a)) : relation (Π x : A, B x) :=

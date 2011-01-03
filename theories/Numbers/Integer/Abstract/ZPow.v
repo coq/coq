@@ -22,7 +22,7 @@ Module Type ZPowProp
 
 Lemma even_pow : forall a b, 0<b -> even (a^b) = even a.
 Proof.
- intros a b Hb. apply lt_ind with (4:=Hb). solve_predicate_wd.
+ intros a b Hb. apply lt_ind with (4:=Hb). solve_proper.
  now nzsimpl.
  clear b Hb. intros b Hb IH. nzsimpl; [|order].
  rewrite even_mul, IH. now destruct (even a).

@@ -13,7 +13,7 @@ Require Export Ring.
 
 Notation "s #1" := (fst s) (at level 9, format "s '#1'") : pair_scope.
 Notation "s #2" := (snd s) (at level 9, format "s '#2'") : pair_scope.
-Open Local Scope pair_scope.
+Local Open Scope pair_scope.
 
 Module ZPairsAxiomsMod (Import N : NAxiomsMiniSig) <: ZAxiomsMiniSig.
  Module Import NProp.
@@ -173,8 +173,8 @@ rewrite (A_wd (n, m) (0, p)) by (rewrite add_0_l; now rewrite add_comm).
 apply H2.
 rewrite (A_wd (n, m) (p, 0)) by now rewrite add_0_r. apply H1.
 induct p. assumption. intros p IH.
-apply -> (A_wd (0, p) (1, N.succ p)) in IH; [| now rewrite add_0_l, add_1_l].
-rewrite one_succ in IH. now apply <- AS.
+apply (A_wd (0, p) (1, N.succ p)) in IH; [| now rewrite add_0_l, add_1_l].
+rewrite one_succ in IH. now apply AS.
 induct p. assumption. intros p IH.
 replace 0 with (snd (p, 0)); [| reflexivity].
 replace (N.succ p) with (N.succ (fst (p, 0))); [| reflexivity]. now apply -> AS.

@@ -163,12 +163,12 @@ Proof.
  assert (aux : forall n, 0<=n -> forall m, 0<=m -> Bezout n m (gcd n m)).
   intros n Hn; pattern n.
   apply strong_right_induction with (z:=0); trivial.
-  unfold Bezout. solve_predicate_wd.
+  unfold Bezout. solve_proper.
   clear n Hn. intros n Hn IHn.
   apply le_lteq in Hn; destruct Hn as [Hn|Hn].
   intros m Hm; pattern m.
   apply strong_right_induction with (z:=0); trivial.
-  unfold Bezout. solve_predicate_wd.
+  unfold Bezout. solve_proper.
   clear m Hm. intros m Hm IHm.
   destruct (lt_trichotomy n m) as [LT|[EQ|LT]].
   (* n < m *)

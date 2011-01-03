@@ -134,7 +134,7 @@ Qed.
 Lemma BS : forall n : Z, 0 <= n -> n < wB - 1 -> B n -> B (n + 1).
 Proof.
 intros n H1 H2 H3.
-unfold B in *. apply -> AS in H3.
+unfold B in *. apply AS in H3.
 setoid_replace (ZnZ.of_Z (n + 1)) with (S (ZnZ.of_Z n)). assumption.
 zify.
 rewrite 2 ZnZ.of_Z_correct; auto with zarith.

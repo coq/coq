@@ -68,12 +68,12 @@ Qed.
 
 Theorem lt_lt_pred : forall n m, n < m -> P n < m.
 Proof.
-intros; apply <- lt_pred_le; now apply lt_le_incl.
+intros; apply lt_pred_le; now apply lt_le_incl.
 Qed.
 
 Theorem le_le_pred : forall n m, n <= m -> P n <= m.
 Proof.
-intros; apply lt_le_incl; now apply <- lt_pred_le.
+intros; apply lt_le_incl; now apply lt_pred_le.
 Qed.
 
 Theorem lt_pred_lt : forall n m, n < P m -> n < m.
@@ -83,7 +83,7 @@ Qed.
 
 Theorem le_pred_lt : forall n m, n <= P m -> n <= m.
 Proof.
-intros; apply lt_le_incl; now apply <- lt_le_pred.
+intros; apply lt_le_incl; now apply lt_le_pred.
 Qed.
 
 Theorem pred_lt_mono : forall n m, n < m <-> P n < P m.
@@ -123,9 +123,9 @@ Qed.
 
 Theorem lt_m1_r : forall n m, n < m -> m < 0 -> n < -1.
 Proof.
-intros n m H1 H2. apply -> lt_le_pred in H2.
+intros n m H1 H2. apply lt_le_pred in H2.
 setoid_replace (P 0) with (-1) in H2. now apply lt_le_trans with m.
-apply <- eq_opp_r. now rewrite one_succ, opp_pred, opp_0.
+apply eq_opp_r. now rewrite one_succ, opp_pred, opp_0.
 Qed.
 
 End ZOrderProp.

@@ -22,9 +22,9 @@ intros n m; induct n.
 nzsimpl; intuition.
 intros n IH. nzsimpl.
 setoid_replace (S (n + m) == 0) with False by
- (apply -> neg_false; apply neq_succ_0).
+ (apply neg_false; apply neq_succ_0).
 setoid_replace (S n == 0) with False by
- (apply -> neg_false; apply neq_succ_0). tauto.
+ (apply neg_false; apply neq_succ_0). tauto.
 Qed.
 
 Theorem eq_add_succ :
@@ -47,11 +47,11 @@ Theorem eq_add_1 : forall n m,
 Proof.
 intros n m. rewrite one_succ. intro H.
 assert (H1 : exists p, n + m == S p) by now exists 0.
-apply -> eq_add_succ in H1. destruct H1 as [[n' H1] | [m' H1]].
+apply eq_add_succ in H1. destruct H1 as [[n' H1] | [m' H1]].
 left. rewrite H1 in H; rewrite add_succ_l in H; apply succ_inj in H.
-apply -> eq_add_0 in H. destruct H as [H2 H3]; rewrite H2 in H1; now split.
+apply eq_add_0 in H. destruct H as [H2 H3]; rewrite H2 in H1; now split.
 right. rewrite H1 in H; rewrite add_succ_r in H; apply succ_inj in H.
-apply -> eq_add_0 in H. destruct H as [H2 H3]; rewrite H3 in H1; now split.
+apply eq_add_0 in H. destruct H as [H2 H3]; rewrite H3 in H1; now split.
 Qed.
 
 Theorem succ_add_discr : forall n m, m ~= S (n + m).

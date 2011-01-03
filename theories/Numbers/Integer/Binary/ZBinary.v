@@ -23,7 +23,7 @@ Proof.
 intros A A_wd A0 AS n; apply Zind; clear n.
 assumption.
 intros; rewrite <- Zsucc_succ'. now apply -> AS.
-intros n H. rewrite <- Zpred_pred'. rewrite Zsucc_pred in H. now apply <- AS.
+intros n H. rewrite <- Zpred_pred'. rewrite Zsucc_pred in H. now apply AS.
 Qed.
 
 (** * Implementation of [ZAxiomsMiniSig] by [BinInt.Z] *)

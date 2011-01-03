@@ -53,7 +53,7 @@ Qed.
 Theorem lt_0_mul' : forall n m, n * m > 0 <-> n > 0 /\ m > 0.
 Proof.
 intros n m; split; [intro H | intros [H1 H2]].
-apply -> lt_0_mul in H. destruct H as [[H1 H2] | [H1 H2]]. now split.
+apply lt_0_mul in H. destruct H as [[H1 H2] | [H1 H2]]. now split.
  false_hyp H1 nlt_0_r.
 now apply mul_pos_pos.
 Qed.
@@ -65,11 +65,11 @@ Proof.
 intros n m.
 split; [| intros [H1 H2]; now rewrite H1, H2, mul_1_l].
 intro H; destruct (lt_trichotomy n 1) as [H1 | [H1 | H1]].
-apply -> lt_1_r in H1. rewrite H1, mul_0_l in H. order'.
+apply lt_1_r in H1. rewrite H1, mul_0_l in H. order'.
 rewrite H1, mul_1_l in H; now split.
 destruct (eq_0_gt_0_cases m) as [H2 | H2].
 rewrite H2, mul_0_r in H. order'.
-apply -> (mul_lt_mono_pos_r m) in H1; [| assumption]. rewrite mul_1_l in H1.
+apply (mul_lt_mono_pos_r m) in H1; [| assumption]. rewrite mul_1_l in H1.
 assert (H3 : 1 < n * m) by now apply (lt_1_l m).
 rewrite H in H3; false_hyp H3 lt_irrefl.
 Qed.

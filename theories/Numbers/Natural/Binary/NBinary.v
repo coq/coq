@@ -77,7 +77,7 @@ Theorem min_r : forall n m, m <= n -> Nmin n m = m.
 Proof.
 unfold Nmin, Nle; intros n m H.
 case_eq (n ?= m); intro H1; try reflexivity.
-now apply -> Ncompare_eq_correct.
+now apply Ncompare_eq_correct.
 rewrite <- Ncompare_antisym, H1 in H; elim H; auto.
 Qed.
 
@@ -85,7 +85,7 @@ Theorem max_l : forall n m, m <= n -> Nmax n m = n.
 Proof.
 unfold Nmax, Nle; intros n m H.
 case_eq (n ?= m); intro H1; try reflexivity.
-symmetry; now apply -> Ncompare_eq_correct.
+symmetry; now apply Ncompare_eq_correct.
 rewrite <- Ncompare_antisym, H1 in H; elim H; auto.
 Qed.
 

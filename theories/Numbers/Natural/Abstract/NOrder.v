@@ -17,7 +17,7 @@ Include NAddProp N.
 
 Theorem lt_wf_0 : well_founded lt.
 Proof.
-setoid_replace lt with (fun n m => 0 <= n /\ n < m).
+setoid_replace lt with (fun n m => 0 <= n < m).
 apply lt_wf.
 intros x y; split.
 intro H; split; [apply le_0_l | assumption]. now intros [_ H].
@@ -27,12 +27,12 @@ Defined.
 
 Theorem nlt_0_r : forall n, ~ n < 0.
 Proof.
-intro n; apply -> le_ngt. apply le_0_l.
+intro n; apply le_ngt. apply le_0_l.
 Qed.
 
 Theorem nle_succ_0 : forall n, ~ (S n <= 0).
 Proof.
-intros n H; apply -> le_succ_l in H; false_hyp H nlt_0_r.
+intros n H; apply le_succ_l in H; false_hyp H nlt_0_r.
 Qed.
 
 Theorem le_0_r : forall n, n <= 0 <-> n == 0.
@@ -118,9 +118,9 @@ Proof.
 intros Base Step; induct n.
 intros; apply Base.
 intros n IH m H. elim H using le_ind.
-solve_predicate_wd.
+solve_proper.
 apply Step; [| apply IH]; now apply eq_le_incl.
-intros k H1 H2. apply -> le_succ_l in H1. apply lt_le_incl in H1. auto.
+intros k H1 H2. apply le_succ_l in H1. apply lt_le_incl in H1. auto.
 Qed.
 
 Theorem lt_ind_rel :
@@ -132,7 +132,7 @@ intros Base Step; induct n.
 intros m H. apply lt_exists_pred in H; destruct H as [m' [H _]].
 rewrite H; apply Base.
 intros n IH m H. elim H using lt_ind.
-solve_predicate_wd.
+solve_proper.
 apply Step; [| apply IH]; now apply lt_succ_diag_r.
 intros k H1 H2. apply lt_succ_l in H1. auto.
 Qed.
@@ -176,7 +176,7 @@ Theorem lt_le_pred : forall n m, n < m -> n <= P m.
 Proof.
 intro n; cases m.
 intro H; false_hyp H nlt_0_r.
-intros m IH. rewrite pred_succ; now apply -> lt_succ_r.
+intros m IH. rewrite pred_succ; now apply lt_succ_r.
 Qed.
 
 Theorem lt_pred_le : forall n m, P n < m -> n <= m.
@@ -184,7 +184,7 @@ Theorem lt_pred_le : forall n m, P n < m -> n <= m.
 Proof.
 intros n m; cases n.
 rewrite pred_0; intro H; now apply lt_le_incl.
-intros n IH. rewrite pred_succ in IH. now apply <- le_succ_l.
+intros n IH. rewrite pred_succ in IH. now apply le_succ_l.
 Qed.
 
 Theorem lt_pred_lt : forall n m, n < P m -> n < m.
@@ -201,7 +201,7 @@ Theorem pred_le_mono : forall n m, n <= m -> P n <= P m.
  (* Converse is false for n == 1, m == 0 *)
 Proof.
 intros n m H; elim H using le_ind_rel.
-solve_relation_wd.
+solve_proper.
 intro; rewrite pred_0; apply le_0_l.
 intros p q H1 _; now do 2 rewrite pred_succ.
 Qed.
@@ -209,12 +209,12 @@ Qed.
 Theorem pred_lt_mono : forall n m, n ~= 0 -> (n < m <-> P n < P m).
 Proof.
 intros n m H1; split; intro H2.
-assert (m ~= 0). apply <- neq_0_lt_0. now apply lt_lt_0 with n.
+assert (m ~= 0). apply neq_0_lt_0. now apply lt_lt_0 with n.
 now rewrite <- (succ_pred n) in H2; rewrite <- (succ_pred m) in H2 ;
-[apply <- succ_lt_mono | | |].
-assert (m ~= 0). apply <- neq_0_lt_0. apply lt_lt_0 with (P n).
+[apply succ_lt_mono | | |].
+assert (m ~= 0). apply neq_0_lt_0. apply lt_lt_0 with (P n).
 apply lt_le_trans with (P m). assumption. apply le_pred_l.
-apply -> succ_lt_mono in H2. now do 2 rewrite succ_pred in H2.
+apply succ_lt_mono in H2. now do 2 rewrite succ_pred in H2.
 Qed.
 
 Theorem lt_succ_lt_pred : forall n m, S n < m <-> n < P m.
@@ -225,13 +225,13 @@ Qed.
 Theorem le_succ_le_pred : forall n m, S n <= m -> n <= P m.
  (* Converse is false for n == m == 0 *)
 Proof.
-intros n m H. apply lt_le_pred. now apply -> le_succ_l.
+intros n m H. apply lt_le_pred. now apply le_succ_l.
 Qed.
 
 Theorem lt_pred_lt_succ : forall n m, P n < m -> n < S m.
  (* Converse is false for n == m == 0 *)
 Proof.
-intros n m H. apply <- lt_succ_r. now apply lt_pred_le.
+intros n m H. apply lt_succ_r. now apply lt_pred_le.
 Qed.
 
 Theorem le_pred_le_succ : forall n m, P n <= m <-> n <= S m.

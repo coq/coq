@@ -347,7 +347,7 @@ Qed.
 Lemma div_pow2_bits : forall a n m, 0<=n -> 0<=m -> (a/2^n).[m] = a.[m+n].
 Proof.
  intros a n m Hn. revert a m. apply le_ind with (4:=Hn).
- solve_predicate_wd.
+ solve_proper.
  intros a m Hm. now nzsimpl.
  clear n Hn. intros n Hn IH a m Hm. nzsimpl; trivial.
  rewrite <- div_div by order_pos.
@@ -360,7 +360,7 @@ Proof.
  destruct (le_gt_cases 0 n) as [Hn|Hn].
  now rewrite <- div2_bits, mul_comm, div_mul by order'.
  rewrite (testbit_neg_r a n Hn).
- apply le_succ_l, le_lteq in Hn. destruct Hn as [Hn|Hn].
+ apply le_succ_l in Hn. le_elim Hn.
  now rewrite testbit_neg_r.
  now rewrite Hn, bit0_odd, odd_mul, odd_2.
 Qed.
@@ -373,7 +373,7 @@ Qed.
 Lemma mul_pow2_bits_add : forall a n m, 0<=n -> (a*2^n).[n+m] = a.[m].
 Proof.
  intros a n m Hn. revert a m. apply le_ind with (4:=Hn).
- solve_predicate_wd.
+ solve_proper.
  intros a m. now nzsimpl.
  clear n Hn. intros n Hn IH a m. nzsimpl; trivial.
  rewrite mul_assoc, (mul_comm _ 2), <- mul_assoc.
@@ -403,11 +403,11 @@ Lemma mod_pow2_bits_high : forall a n m, 0<=n<=m ->
 Proof.
  intros a n m (Hn,H).
  destruct (mod_pos_bound a (2^n)) as [LE LT]. order_pos.
- apply le_lteq in LE; destruct LE as [LT'|EQ].
+ le_elim LE.
  apply bits_above_log2; try order.
  apply lt_le_trans with n; trivial.
  apply log2_lt_pow2; trivial.
- now rewrite <-EQ, bits_0.
+ now rewrite <- LE, bits_0.
 Qed.
 
 Lemma mod_pow2_bits_low : forall a n m, m<n ->
@@ -463,7 +463,7 @@ Proof.
  assert (AUX : forall n, 0<=n -> forall a b,
                 0<=a<2^n -> testbit a === testbit b -> a == b).
   intros n Hn. apply le_ind with (4:=Hn).
-  solve_predicate_wd.
+  solve_proper.
   intros a b Ha H. rewrite pow_0_r, one_succ, lt_succ_r in Ha.
   assert (Ha' : a == 0) by (destruct Ha; order).
   rewrite Ha' in *.
@@ -553,10 +553,10 @@ Proof.
   exists 0. intros m Hm. now rewrite bits_0, H0.
   clear k LE. intros k LE IH f Hf Hk.
   destruct (IH (fun m => f (S m))) as (n, Hn).
-  solve_predicate_wd.
+  solve_proper.
   intros m Hm. apply Hk. now rewrite <- succ_le_mono.
   exists (f 0 + 2*n). intros m Hm.
-  apply le_lteq in Hm. destruct Hm as [Hm|Hm].
+  le_elim Hm.
   rewrite <- (succ_pred m), Hn, <- div2_bits.
   rewrite mul_comm, div_add, b2z_div2, add_0_l; trivial. order'.
   now rewrite <- lt_succ_r, succ_pred.
@@ -743,10 +743,8 @@ Qed.
 
 Lemma shiftr_eq_0 : forall a n, 0<=a -> log2 a < n -> a >> n == 0.
 Proof.
- intros a n Ha H.
- apply shiftr_eq_0_iff.
- apply le_lteq in Ha. destruct Ha as [Ha|Ha].
- right. now split. now left.
+ intros a n Ha H. apply shiftr_eq_0_iff.
+ le_elim Ha. right. now split. now left.
 Qed.
 
 (** Properties of [div2]. *)
@@ -1304,7 +1302,7 @@ Qed.
 
 Lemma ones_spec_high : forall n m, 0<=n<=m -> (ones n).[m] = false.
 Proof.
- intros n m (Hn,H). apply le_lteq in Hn. destruct Hn as [Hn|Hn].
+ intros n m (Hn,H). le_elim Hn.
  apply bits_above_log2; rewrite ones_equiv.
  rewrite <-lt_succ_r, succ_pred; order_pos.
  rewrite log2_pred_pow2; trivial. now rewrite <-le_succ_l, succ_pred.
@@ -1576,7 +1574,7 @@ Lemma log2_lor : forall a b, 0<=a -> 0<=b ->
 Proof.
  assert (AUX : forall a b, 0<=a -> a<=b -> log2 (lor a b) == log2 b).
   intros a b Ha H.
-  apply le_lteq in Ha; destruct Ha as [Ha|Ha]; [|now rewrite <- Ha, lor_0_l].
+  le_elim Ha; [|now rewrite <- Ha, lor_0_l].
   apply log2_bits_unique.
   now rewrite lor_spec, bit_log2, orb_true_r by order.
   intros m Hm. assert (H' := log2_le_mono _ _ H).
@@ -1594,12 +1592,12 @@ Lemma log2_land : forall a b, 0<=a -> 0<=b ->
 Proof.
  assert (AUX : forall a b, 0<=a -> a<=b -> log2 (land a b) <= log2 a).
   intros a b Ha Hb.
-  apply le_ngt. intros H'.
-  assert (LE : 0 <= land a b) by (apply land_nonneg; now left).
-  apply le_lteq in LE. destruct LE as [LT|EQ].
-  generalize (bit_log2 (land a b) LT).
+  apply le_ngt. intros LT.
+  assert (H : 0 <= land a b) by (apply land_nonneg; now left).
+  le_elim H.
+  generalize (bit_log2 (land a b) H).
   now rewrite land_spec, bits_above_log2.
-  rewrite <- EQ in H'. apply log2_lt_cancel in H'; order.
+  rewrite <- H in LT. apply log2_lt_cancel in LT; order.
  (* main *)
  intros a b Ha Hb.
  destruct (le_ge_cases a b) as [H|H].
@@ -1612,13 +1610,13 @@ Lemma log2_lxor : forall a b, 0<=a -> 0<=b ->
 Proof.
  assert (AUX : forall a b, 0<=a -> a<=b -> log2 (lxor a b) <= log2 b).
   intros a b Ha Hb.
-  apply le_ngt. intros H'.
-  assert (LE : 0 <= lxor a b) by (apply lxor_nonneg; split; order).
-  apply le_lteq in LE. destruct LE as [LT|EQ].
-  generalize (bit_log2 (lxor a b) LT).
+  apply le_ngt. intros LT.
+  assert (H : 0 <= lxor a b) by (apply lxor_nonneg; split; order).
+  le_elim H.
+  generalize (bit_log2 (lxor a b) H).
   rewrite lxor_spec, 2 bits_above_log2; try order. discriminate.
   apply le_lt_trans with (log2 b); trivial. now apply log2_le_mono.
-  rewrite <- EQ in H'. apply log2_lt_cancel in H'; order.
+  rewrite <- H in LT. apply log2_lt_cancel in LT; order.
  (* main *)
  intros a b Ha Hb.
  destruct (le_ge_cases a b) as [H|H].
@@ -1679,13 +1677,12 @@ Lemma add_carry_bits_aux : forall n, 0<=n ->
    a+b+c0 == lxor3 a b c /\ c/2 == lnextcarry a b c /\ c.[0] = c0.
 Proof.
  intros n Hn. apply le_ind with (4:=Hn).
- solve_predicate_wd.
+ solve_proper.
  (* base *)
  intros a b c0. rewrite !pow_0_r, !one_succ, !lt_succ_r, <- !one_succ.
  intros (Ha1,Ha2) (Hb1,Hb2).
- apply le_lteq in Ha1; apply le_lteq in Hb1.
- rewrite <- le_succ_l, succ_m1 in Ha1, Hb1.
- destruct Ha1 as [Ha1|Ha1]; destruct Hb1 as [Hb1|Hb1].
+ le_elim Ha1; rewrite <- ?le_succ_l, ?succ_m1 in Ha1;
+  le_elim Hb1; rewrite <- ?le_succ_l, ?succ_m1 in Hb1.
  (* base, a = 0, b = 0 *)
  exists c0.
  rewrite (le_antisymm _ _ Ha2 Ha1), (le_antisymm _ _ Hb2 Hb1).
@@ -1727,7 +1724,7 @@ Proof.
  exists (c0 + 2*c). repeat split.
  (* step, add *)
  bitwise.
- apply le_lteq in Hm. destruct Hm as [Hm|Hm].
+ le_elim Hm.
  rewrite <- (succ_pred m), lt_succ_r in Hm.
  rewrite <- (succ_pred m), <- !div2_bits, <- 2 lxor_spec by trivial.
  apply testbit_wd; try easy.
@@ -1737,7 +1734,7 @@ Proof.
  (* step, carry *)
  rewrite add_b2z_double_div2.
  bitwise.
- apply le_lteq in Hm. destruct Hm as [Hm|Hm].
+ le_elim Hm.
  rewrite <- (succ_pred m), lt_succ_r in Hm.
  rewrite <- (succ_pred m), <- !div2_bits, IH2 by trivial.
  autorewrite with bitwise. now rewrite add_b2z_double_div2.
@@ -1801,7 +1798,7 @@ Proof.
  intros EQ. rewrite EQ, lor_0_l in H.
  apply bits_inj'. intros n Hn. rewrite bits_0.
  apply le_ind with (4:=Hn).
- solve_predicate_wd.
+ solve_proper.
  trivial.
  clear n Hn. intros n Hn IH.
  rewrite <- div2_bits, H; trivial.
@@ -1828,7 +1825,7 @@ Proof.
  assert (AUX : forall n, 0<=n ->
           forall a b, 0 <= a < 2^n -> 0<=b -> ldiff a b == 0 -> a <= b).
  intros n Hn. apply le_ind with (4:=Hn); clear n Hn.
- solve_predicate_wd.
+ solve_proper.
  intros a b Ha Hb _. rewrite pow_0_r, one_succ, lt_succ_r in Ha.
  setoid_replace a with 0 by (destruct Ha; order'); trivial.
  intros n Hn IH a b (Ha,Ha') Hb H.

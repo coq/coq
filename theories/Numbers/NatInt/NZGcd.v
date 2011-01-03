@@ -13,7 +13,7 @@ Require Import NZAxioms NZMulOrder.
 (** Interface of a gcd function, then its specification on naturals *)
 
 Module Type Gcd (Import A : Typ).
- Parameters Inline gcd : t -> t -> t.
+ Parameter Inline gcd : t -> t -> t.
 End Gcd.
 
 Module Type NZGcdSpec (A : NZOrdAxiomsSig')(B : Gcd A).
@@ -71,12 +71,12 @@ Lemma eq_mul_1_nonneg : forall n m,
  0<=n -> n*m == 1 -> n==1 /\ m==1.
 Proof.
  intros n m Hn H.
- apply le_lteq in Hn. destruct Hn as [Hn|Hn].
+ le_elim Hn.
  destruct (lt_ge_cases m 0) as [Hm|Hm].
  generalize (mul_pos_neg n m Hn Hm). order'.
- apply le_lteq in Hm. destruct Hm as [Hm|Hm].
+ le_elim Hm.
  apply le_succ_l in Hn. rewrite <- one_succ in Hn.
- apply le_lteq in Hn. destruct Hn as [Hn|Hn].
+ le_elim Hn.
  generalize (lt_1_mul_pos n m Hn Hm). order.
  rewrite <- Hn, mul_1_l in H. now split.
  rewrite <- Hm, mul_0_r in H. order'.
@@ -108,7 +108,7 @@ Lemma divide_antisym_nonneg : forall n m,
  0<=n -> 0<=m -> (n | m) -> (m | n) -> n == m.
 Proof.
  intros n m Hn Hm (q,Hq) (r,Hr).
- apply le_lteq in Hn. destruct Hn as [Hn|Hn].
+ le_elim Hn.
  destruct (lt_ge_cases q 0) as [Hq'|Hq'].
  generalize (mul_pos_neg n q Hn Hq'). order.
  rewrite <- Hq, <- mul_assoc in Hr.
@@ -175,7 +175,7 @@ Proof.
  rewrite <- Hq.
  destruct (lt_ge_cases q 0) as [Hq'|Hq'].
  generalize (mul_pos_neg n q Hn Hq'). order.
- apply le_lteq in Hq'. destruct Hq' as [Hq'|Hq'].
+ le_elim Hq'.
  rewrite <- (mul_1_r n) at 1. apply mul_le_mono_pos_l; trivial.
  now rewrite one_succ, le_succ_l.
  rewrite <- Hq', mul_0_r in Hq. order.
@@ -219,8 +219,8 @@ Lemma gcd_unique_alt : forall n m p, 0<=p ->
 Proof.
  intros n m p Hp H.
  apply gcd_unique; trivial.
- apply -> H. apply divide_refl.
- apply -> H. apply divide_refl.
+ apply H. apply divide_refl.
+ apply H. apply divide_refl.
  intros. apply H. now split.
 Qed.
 

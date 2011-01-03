@@ -313,8 +313,8 @@ Lemma lcm_unique_alt : forall n m p, 0<=p ->
 Proof.
  intros n m p Hp H.
  apply lcm_unique; trivial.
- apply -> H. apply divide_refl.
- apply -> H. apply divide_refl.
+ apply H, divide_refl.
+ apply H, divide_refl.
  intros. apply H. now split.
 Qed.
 

@@ -35,7 +35,7 @@ Qed.
 Theorem sub_gt : forall n m, n > m -> n - m ~= 0.
 Proof.
 intros n m H; elim H using lt_ind_rel; clear n m H.
-solve_relation_wd.
+solve_proper.
 intro; rewrite sub_0_r; apply neq_succ_0.
 intros; now rewrite sub_succ.
 Qed.
@@ -45,8 +45,8 @@ Proof.
 intros n m p; induct p.
 intro; now do 2 rewrite sub_0_r.
 intros p IH H. do 2 rewrite sub_succ_r.
-rewrite <- IH by (apply lt_le_incl; now apply -> le_succ_l).
-rewrite add_pred_r by (apply sub_gt; now apply -> le_succ_l).
+rewrite <- IH by (apply lt_le_incl; now apply le_succ_l).
+rewrite add_pred_r by (apply sub_gt; now apply le_succ_l).
 reflexivity.
 Qed.
 
@@ -242,10 +242,10 @@ intros n IH. destruct (le_gt_cases m n) as [H | H].
 rewrite sub_succ_l by assumption. do 2 rewrite mul_succ_l.
 rewrite (add_comm ((n - m) * p) p), (add_comm (n * p) p).
 rewrite <- (add_sub_assoc p (n * p) (m * p)) by now apply mul_le_mono_r.
-now apply <- add_cancel_l.
-assert (H1 : S n <= m); [now apply <- le_succ_l |].
-setoid_replace (S n - m) with 0 by now apply <- sub_0_le.
-setoid_replace ((S n * p) - m * p) with 0 by (apply <- sub_0_le; now apply mul_le_mono_r).
+now apply add_cancel_l.
+assert (H1 : S n <= m); [now apply le_succ_l |].
+setoid_replace (S n - m) with 0 by now apply sub_0_le.
+setoid_replace ((S n * p) - m * p) with 0 by (apply sub_0_le; now apply mul_le_mono_r).
 apply mul_0_l.
 Qed.
 

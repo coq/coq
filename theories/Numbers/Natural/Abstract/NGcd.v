@@ -97,11 +97,11 @@ Lemma gcd_bezout_pos_pos : forall n, 0<n -> forall m, 0<m ->
 Proof.
  intros n Hn. rewrite <- le_succ_l, <- one_succ in Hn.
  pattern n. apply strong_right_induction with (z:=1); trivial.
- unfold Bezout. solve_predicate_wd.
+ unfold Bezout. solve_proper.
  clear n Hn. intros n Hn IHn.
  intros m Hm. rewrite <- le_succ_l, <- one_succ in Hm.
  pattern m. apply strong_right_induction with (z:=1); trivial.
- unfold Bezout. solve_predicate_wd.
+ unfold Bezout. solve_proper.
  clear m Hm. intros m Hm IHm.
  destruct (lt_trichotomy n m) as [LT|[EQ|LT]].
  (* n < m *)
@@ -191,8 +191,7 @@ Lemma divide_mul_split : forall n m p, n ~= 0 -> (n | m * p) ->
  exists q r, n == q*r /\ (q | m) /\ (r | p).
 Proof.
  intros n m p Hn H.
- assert (G := gcd_nonneg n m).
- apply le_lteq in G; destruct G as [G|G].
+ assert (G := gcd_nonneg n m). le_elim G.
  destruct (gcd_divide_l n m) as (q,Hq).
  exists (gcd n m). exists q.
  split. easy.

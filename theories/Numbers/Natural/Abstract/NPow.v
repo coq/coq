@@ -146,7 +146,7 @@ Proof. wrap pow_add_upper. Qed.
 Lemma even_pow : forall a b, b~=0 -> even (a^b) = even a.
 Proof.
  intros a b Hb. rewrite neq_0_lt_0 in Hb.
- apply lt_ind with (4:=Hb). solve_predicate_wd.
+ apply lt_ind with (4:=Hb). solve_proper.
  now nzsimpl.
  clear b Hb. intros b Hb IH.
  rewrite pow_succ_r', even_mul, IH. now destruct (even a).

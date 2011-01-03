@@ -13,7 +13,7 @@ Require Import NZAxioms NZMulOrder NZPow.
 (** Interface of a log2 function, then its specification on naturals *)
 
 Module Type Log2 (Import A : Typ).
- Parameters Inline log2 : t -> t.
+ Parameter Inline log2 : t -> t.
 End Log2.
 
 Module Type NZLog2Spec (A : NZOrdAxiomsSig')(B : Pow' A)(C : Log2 A).
@@ -155,8 +155,7 @@ Lemma log2_pos : forall a, 1<a -> 0 < log2 a.
 Proof.
  intros a Ha.
  assert (Ha' : 0 < a) by order'.
- assert (H := log2_nonneg a). apply le_lteq in H.
-  destruct H; trivial.
+ assert (H := log2_nonneg a). le_elim H; trivial.
  generalize (log2_spec a Ha'). rewrite <- H in *. nzsimpl; try order.
  intros (_,H'). rewrite two_succ in H'. apply lt_succ_r in H'; order.
 Qed.
@@ -168,7 +167,7 @@ Proof.
  intros a. split; intros H.
  destruct (le_gt_cases a 1) as [Ha|Ha]; trivial.
  generalize (log2_pos a Ha); order.
- apply le_lteq in H; destruct H.
+ le_elim H.
  apply log2_nonpos. apply lt_succ_r. now rewrite <- one_succ.
  rewrite H. apply log2_1.
 Qed.
@@ -246,7 +245,7 @@ Qed.
 Lemma log2_le_lin : forall a, 0<=a -> log2 a <= a.
 Proof.
  intros a Ha.
- apply le_lteq in Ha; destruct Ha as [Ha|Ha].
+ le_elim Ha.
  now apply lt_le_incl, log2_lt_lin.
  rewrite <- Ha, log2_nonpos; order.
 Qed.
@@ -269,8 +268,8 @@ Lemma log2_mul_above : forall a b, 0<=a -> 0<=b ->
  log2 (a*b) <= log2 a + log2 b + 1.
 Proof.
  intros a b Ha Hb.
- apply le_lteq in Ha. destruct Ha as [Ha|Ha].
- apply le_lteq in Hb. destruct Hb as [Hb|Hb].
+ le_elim Ha.
+ le_elim Hb.
  apply lt_succ_r.
  rewrite add_1_r, <- add_succ_r, <- add_succ_l.
  apply log2_lt_pow2; try order_pos.
@@ -432,11 +431,11 @@ Proof.
   apply log2_le_mono. rewrite <- (add_0_r a) at 1. apply add_le_mono; order.
  assert (H' : log2 b <= log2 (a+b)).
   apply log2_le_mono. rewrite <- (add_0_l b) at 1. apply add_le_mono; order.
- apply le_lteq in H. destruct H as [H|H].
+ le_elim H.
  apply lt_le_trans with (log2 (a+b) + log2 b).
   now apply add_lt_mono_r. now apply add_le_mono_l.
  rewrite <- H at 1. apply add_lt_mono_l.
- apply le_lteq in H'. destruct H' as [H'|H']. trivial.
+ le_elim H'; trivial.
  symmetry in H. apply log2_same in H; try order_pos.
  symmetry in H'. apply log2_same in H'; try order_pos.
  revert H H'. nzsimpl'. rewrite <- add_lt_mono_l, <- add_lt_mono_r; order.
@@ -534,7 +533,7 @@ Qed.
 Lemma log2_up_pow2 : forall a, 0<=a -> log2_up (2^a) == a.
 Proof.
  intros a Ha.
- apply le_lteq in Ha. destruct Ha as [Ha|Ha].
+ le_elim Ha.
  apply log2_up_unique; trivial.
  split; try order.
  apply pow_lt_mono_r; try order'.
@@ -586,7 +585,7 @@ Lemma log2_log2_up_spec : forall a, 0<a ->
 Proof.
  intros a H. split.
  now apply log2_spec.
- rewrite <-le_succ_l, <-one_succ, le_lteq in H. destruct H as [H|H].
+ rewrite <-le_succ_l, <-one_succ in H. le_elim H.
  now apply log2_up_spec.
  now rewrite <-H, log2_up_1, pow_0_r.
 Qed.
@@ -693,7 +692,7 @@ Qed.
 Lemma log2_up_le_lin : forall a, 0<=a -> log2_up a <= a.
 Proof.
  intros a Ha.
- apply le_lteq in Ha; destruct Ha as [Ha|Ha].
+ le_elim Ha.
  now apply lt_le_incl, log2_up_lt_lin.
  rewrite <- Ha, log2_up_nonpos; order.
 Qed.
@@ -709,8 +708,8 @@ Proof.
  intros a b Ha Hb.
  assert (Ha':=log2_up_nonneg a).
  assert (Hb':=log2_up_nonneg b).
- apply le_lteq in Ha. destruct Ha as [Ha|Ha].
- apply le_lteq in Hb. destruct Hb as [Hb|Hb].
+ le_elim Ha.
+ le_elim Hb.
  apply log2_up_le_pow2; try order_pos.
  rewrite pow_add_r; trivial.
  apply mul_le_mono_nonneg; try apply log2_log2_up_spec; order'.
@@ -722,8 +721,8 @@ Lemma log2_up_mul_below : forall a b, 0<a -> 0<b ->
  log2_up a + log2_up b <= S (log2_up (a*b)).
 Proof.
  intros a b Ha Hb.
- rewrite <-le_succ_l, <-one_succ, le_lteq in Ha. destruct Ha as [Ha|Ha].
- rewrite <-le_succ_l, <-one_succ, le_lteq in Hb. destruct Hb as [Hb|Hb].
+ rewrite <-le_succ_l, <-one_succ in Ha. le_elim Ha.
+ rewrite <-le_succ_l, <-one_succ in Hb. le_elim Hb.
  assert (Ha' : 0 < log2_up a) by (apply log2_up_pos; trivial).
  assert (Hb' : 0 < log2_up b) by (apply log2_up_pos; trivial).
  rewrite <- (lt_succ_pred 0 (log2_up a)); trivial.
@@ -752,7 +751,7 @@ Lemma log2_up_mul_pow2 : forall a b, 0<a -> 0<=b ->
  log2_up (a*2^b) == b + log2_up a.
 Proof.
  intros a b Ha Hb.
- rewrite <- le_succ_l, <- one_succ, le_lteq in Ha. destruct Ha as [Ha|Ha].
+ rewrite <- le_succ_l, <- one_succ in Ha; le_elim Ha.
  apply log2_up_unique. apply add_nonneg_pos; trivial. now apply log2_up_pos.
  split.
  assert (EQ := lt_succ_pred 0 _ (log2_up_pos _ Ha)).
@@ -876,11 +875,11 @@ Proof.
   apply log2_up_le_mono. rewrite <- (add_0_r a) at 1. apply add_le_mono; order.
  assert (H' : log2_up b <= log2_up (a+b)).
   apply log2_up_le_mono. rewrite <- (add_0_l b) at 1. apply add_le_mono; order.
- apply le_lteq in H. destruct H as [H|H].
+ le_elim H.
  apply lt_le_trans with (log2_up (a+b) + log2_up b).
   now apply add_lt_mono_r. now apply add_le_mono_l.
  rewrite <- H at 1. apply add_lt_mono_l.
- apply le_lteq in H'. destruct H' as [H'|H']. trivial.
+ le_elim H'. trivial.
  symmetry in H. apply log2_up_same in H; try order_pos.
  symmetry in H'. apply log2_up_same in H'; try order_pos.
  revert H H'. nzsimpl'. rewrite <- add_lt_mono_l, <- add_lt_mono_r; order.

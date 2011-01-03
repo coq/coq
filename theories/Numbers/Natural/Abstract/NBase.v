@@ -41,7 +41,7 @@ nzinduct n.
 now apply eq_le_incl.
 intro n; split.
 apply le_le_succ_r.
-intro H; apply -> le_succ_r in H; destruct H as [H | H].
+intro H; apply le_succ_r in H; destruct H as [H | H].
 assumption.
 symmetry in H; false_hyp H neq_succ_0.
 Qed.
@@ -179,7 +179,7 @@ Ltac double_induct n m :=
   try intros until n;
   try intros until m;
   pattern n, m; apply double_induction; clear n m;
-  [solve_relation_wd | | | ].
+  [solve_proper | | | ].
 
 End NBaseProp.
 

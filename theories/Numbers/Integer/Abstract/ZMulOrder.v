@@ -94,7 +94,7 @@ Notation le_0_square := square_nonneg (only parsing).
 
 Theorem nlt_square_0 : forall n, ~ n * n < 0.
 Proof.
-intros n H. apply -> lt_nge in H. apply H. apply square_nonneg.
+intros n H. apply lt_nge in H. apply H. apply square_nonneg.
 Qed.
 
 Theorem square_lt_mono_nonpos : forall n m, n <= 0 -> m < n -> n * n < m * m.
@@ -109,42 +109,38 @@ Qed.
 
 Theorem square_lt_simpl_nonpos : forall n m, m <= 0 -> n * n < m * m -> m < n.
 Proof.
-intros n m H1 H2. destruct (le_gt_cases n 0).
-destruct (lt_ge_cases m n).
-assumption. assert (F : m * m <= n * n) by now apply square_le_mono_nonpos.
-apply -> le_ngt in F. false_hyp H2 F.
-now apply le_lt_trans with 0.
+intros n m H1 H2. destruct (le_gt_cases n 0); [|order].
+destruct (lt_ge_cases m n) as [LE|GT]; trivial.
+apply square_le_mono_nonpos in GT; order.
 Qed.
 
 Theorem square_le_simpl_nonpos : forall n m, m <= 0 -> n * n <= m * m -> m <= n.
 Proof.
-intros n m H1 H2. destruct (le_gt_cases n 0).
-destruct (le_gt_cases m n).
-assumption. assert (F : m * m < n * n) by now apply square_lt_mono_nonpos.
-apply -> lt_nge in F. false_hyp H2 F.
-apply lt_le_incl; now apply le_lt_trans with 0.
+intros n m H1 H2. destruct (le_gt_cases n 0); [|order].
+destruct (le_gt_cases m n) as [LE|GT]; trivial.
+apply square_lt_mono_nonpos in GT; order.
 Qed.
 
 Theorem lt_1_mul_neg : forall n m, n < -1 -> m < 0 -> 1 < n * m.
 Proof.
-intros n m H1 H2. apply -> (mul_lt_mono_neg_r m) in H1.
-apply <- opp_pos_neg in H2. rewrite mul_opp_l, mul_1_l in H1.
+intros n m H1 H2. apply (mul_lt_mono_neg_r m) in H1.
+apply opp_pos_neg in H2. rewrite mul_opp_l, mul_1_l in H1.
 now apply lt_1_l with (- m).
 assumption.
 Qed.
 
 Theorem lt_mul_m1_neg : forall n m, 1 < n -> m < 0 -> n * m < -1.
 Proof.
-intros n m H1 H2. apply -> (mul_lt_mono_neg_r m) in H1.
+intros n m H1 H2. apply (mul_lt_mono_neg_r m) in H1.
 rewrite mul_1_l in H1. now apply lt_m1_r with m.
 assumption.
 Qed.
 
 Theorem lt_mul_m1_pos : forall n m, n < -1 -> 0 < m -> n * m < -1.
 Proof.
-intros n m H1 H2. apply -> (mul_lt_mono_pos_r m) in H1.
+intros n m H1 H2. apply (mul_lt_mono_pos_r m) in H1.
 rewrite mul_opp_l, mul_1_l in H1.
-apply <- opp_neg_pos in H2. now apply lt_m1_r with (- m).
+apply opp_neg_pos in H2. now apply lt_m1_r with (- m).
 assumption.
 Qed.
 

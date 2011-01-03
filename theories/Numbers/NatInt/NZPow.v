@@ -69,7 +69,7 @@ Qed.
 
 Lemma pow_1_l : forall a, 0<=a -> 1^a == 1.
 Proof.
- apply le_ind; intros. solve_predicate_wd.
+ apply le_ind; intros. solve_proper.
  now nzsimpl.
  now nzsimpl.
 Qed.
@@ -88,7 +88,7 @@ Hint Rewrite pow_2_r : nz.
 Lemma pow_eq_0 : forall a b, 0<=b -> a^b == 0 -> a == 0.
 Proof.
  intros a b Hb. apply le_ind with (4:=Hb).
- solve_predicate_wd.
+ solve_proper.
  rewrite pow_0_r. order'.
  clear b Hb. intros b Hb IH.
  rewrite pow_succ_r by trivial.
@@ -118,7 +118,7 @@ Qed.
 Lemma pow_add_r : forall a b c, 0<=b -> 0<=c ->
   a^(b+c) == a^b * a^c.
 Proof.
- intros a b c Hb. apply le_ind with (4:=Hb). solve_predicate_wd.
+ intros a b c Hb. apply le_ind with (4:=Hb). solve_proper.
  now nzsimpl.
  clear b Hb. intros b Hb IH Hc.
  nzsimpl; trivial.
@@ -132,7 +132,7 @@ Proof.
  intros a b c.
  destruct (lt_ge_cases c 0) as [Hc|Hc].
  rewrite !(pow_neg_r _ _ Hc). now nzsimpl.
- apply le_ind with (4:=Hc). solve_predicate_wd.
+ apply le_ind with (4:=Hc). solve_proper.
  now nzsimpl.
  clear c Hc. intros c Hc IH.
  nzsimpl; trivial.
@@ -142,7 +142,7 @@ Qed.
 Lemma pow_mul_r : forall a b c, 0<=b -> 0<=c ->
   a^(b*c) == (a^b)^c.
 Proof.
- intros a b c Hb. apply le_ind with (4:=Hb). solve_predicate_wd.
+ intros a b c Hb. apply le_ind with (4:=Hb). solve_proper.
  intros. now nzsimpl.
  clear b Hb. intros b Hb IH Hc.
  nzsimpl; trivial.
@@ -157,7 +157,7 @@ Proof.
  intros a b Ha.
  destruct (lt_ge_cases b 0) as [Hb|Hb].
  now rewrite !(pow_neg_r _ _ Hb).
- apply le_ind with (4:=Hb). solve_predicate_wd.
+ apply le_ind with (4:=Hb). solve_proper.
  nzsimpl; order'.
  clear b Hb. intros b Hb IH.
  nzsimpl; trivial. now apply mul_nonneg_nonneg.
@@ -165,7 +165,7 @@ Qed.
 
 Lemma pow_pos_nonneg : forall a b, 0<a -> 0<=b -> 0<a^b.
 Proof.
- intros a b Ha Hb. apply le_ind with (4:=Hb). solve_predicate_wd.
+ intros a b Ha Hb. apply le_ind with (4:=Hb). solve_proper.
  nzsimpl; order'.
  clear b Hb. intros b Hb IH.
  nzsimpl; trivial. now apply mul_pos_pos.
@@ -175,7 +175,7 @@ Qed.
 
 Lemma pow_lt_mono_l : forall a b c, 0<c -> 0<=a<b -> a^c < b^c.
 Proof.
- intros a b c Hc. apply lt_ind with (4:=Hc). solve_predicate_wd.
+ intros a b c Hc. apply lt_ind with (4:=Hc). solve_proper.
  intros (Ha,H). nzsimpl; trivial; order.
  clear c Hc. intros c Hc IH (Ha,H).
  nzsimpl; try order.
@@ -327,7 +327,7 @@ Qed.
 
 Lemma pow_gt_lin_r : forall a b, 1<a -> 0<=b -> b < a^b.
 Proof.
- intros a b Ha Hb. apply le_ind with (4:=Hb). solve_predicate_wd.
+ intros a b Ha Hb. apply le_ind with (4:=Hb). solve_proper.
  nzsimpl. order'.
  clear b Hb. intros b Hb IH. nzsimpl; trivial.
  rewrite <- !le_succ_l in *. rewrite <- two_succ in Ha.
@@ -347,7 +347,7 @@ Qed.
 Lemma pow_add_lower : forall a b c, 0<=a -> 0<=b -> 0<c ->
   a^c + b^c <= (a+b)^c.
 Proof.
- intros a b c Ha Hb Hc. apply lt_ind with (4:=Hc). solve_predicate_wd.
+ intros a b c Ha Hb Hc. apply lt_ind with (4:=Hc). solve_proper.
  nzsimpl; order.
  clear c Hc. intros c Hc IH.
  assert (0<=c) by order'.
@@ -387,7 +387,7 @@ Proof.
   apply mul_le_mono_nonneg_l; trivial.
   apply pow_le_mono_l; try split; order.
  (* end *)
- intros a b c Ha Hb Hc. apply lt_ind with (4:=Hc). solve_predicate_wd.
+ intros a b c Ha Hb Hc. apply lt_ind with (4:=Hc). solve_proper.
  nzsimpl; order.
  clear c Hc. intros c Hc IH.
  assert (0<=c) by order.

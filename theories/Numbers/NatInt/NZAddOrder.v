@@ -28,7 +28,7 @@ Theorem add_lt_mono : forall n m p q, n < m -> p < q -> n + p < m + q.
 Proof.
 intros n m p q H1 H2.
 apply lt_trans with (m + p);
-[now apply -> add_lt_mono_r | now apply -> add_lt_mono_l].
+[now apply add_lt_mono_r | now apply add_lt_mono_l].
 Qed.
 
 Theorem add_le_mono_l : forall n m p, n <= m <-> p + n <= p + m.
@@ -46,21 +46,21 @@ Theorem add_le_mono : forall n m p q, n <= m -> p <= q -> n + p <= m + q.
 Proof.
 intros n m p q H1 H2.
 apply le_trans with (m + p);
-[now apply -> add_le_mono_r | now apply -> add_le_mono_l].
+[now apply add_le_mono_r | now apply add_le_mono_l].
 Qed.
 
 Theorem add_lt_le_mono : forall n m p q, n < m -> p <= q -> n + p < m + q.
 Proof.
 intros n m p q H1 H2.
 apply lt_le_trans with (m + p);
-[now apply -> add_lt_mono_r | now apply -> add_le_mono_l].
+[now apply add_lt_mono_r | now apply add_le_mono_l].
 Qed.
 
 Theorem add_le_lt_mono : forall n m p q, n <= m -> p < q -> n + p < m + q.
 Proof.
 intros n m p q H1 H2.
 apply le_lt_trans with (m + p);
-[now apply -> add_le_mono_r | now apply -> add_lt_mono_l].
+[now apply add_le_mono_r | now apply add_lt_mono_l].
 Qed.
 
 Theorem add_pos_pos : forall n m, 0 < n -> 0 < m -> 0 < n + m.
@@ -154,7 +154,7 @@ Qed.
 
 Lemma le_exists_sub : forall n m, n<=m -> exists p, m == p+n /\ 0<=p.
 Proof.
- intros n m H. apply le_ind with (4:=H). solve_predicate_wd.
+ intros n m H. apply le_ind with (4:=H). solve_proper.
  exists 0; nzsimpl; split; order.
  clear m H. intros m H (p & EQ & LE). exists (S p).
   split. nzsimpl. now apply succ_wd. now apply le_le_succ_r.

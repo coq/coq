@@ -48,7 +48,7 @@ Theorem succ_inj_wd : forall n1 n2, S n1 == S n2 <-> n1 == n2.
 Proof.
 intros; split.
 apply succ_inj.
-apply succ_wd.
+intros. now apply succ_wd.
 Qed.
 
 Theorem succ_inj_wd_neg : forall n m, S n ~= S m <-> n ~= m.
@@ -61,7 +61,7 @@ left-inverse to the successor at this point *)
 
 Section CentralInduction.
 
-Variable A : predicate t.
+Variable A : t -> Prop.
 Hypothesis A_wd : Proper (eq==>iff) A.
 
 Theorem central_induction :
@@ -70,7 +70,7 @@ Theorem central_induction :
       forall n, A n.
 Proof.
 intros z Base Step; revert Base; pattern z; apply bi_induction.
-solve_predicate_wd.
+solve_proper.
 intro; now apply bi_induction.
 intro; pose proof (Step n); tauto.
 Qed.
