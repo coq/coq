@@ -34,7 +34,7 @@ Theorem add_opp_r : forall n m, n + (- m) == n - m.
 Proof.
 nzinduct m.
 now nzsimpl.
-intro m. rewrite opp_succ, sub_succ_r, add_pred_r; now rewrite pred_inj_wd.
+intro m. rewrite opp_succ, sub_succ_r, add_pred_r. now rewrite pred_inj_wd.
 Qed.
 
 Theorem sub_0_l : forall n, 0 - n == - n.
@@ -96,7 +96,7 @@ Theorem opp_involutive : forall n, - (- n) == n.
 Proof.
 nzinduct n.
 now nzsimpl.
-intro n. rewrite opp_succ, opp_pred; now rewrite succ_inj_wd.
+intro n. rewrite opp_succ, opp_pred. now rewrite succ_inj_wd.
 Qed.
 
 Theorem opp_add_distr : forall n m, - (n + m) == - n + (- m).
@@ -120,7 +120,7 @@ Qed.
 
 Theorem opp_inj_wd : forall n m, - n == - m <-> n == m.
 Proof.
-intros n m; split; [apply opp_inj | apply opp_wd].
+intros n m; split; [apply opp_inj | intros; now f_equiv].
 Qed.
 
 Theorem eq_opp_l : forall n m, - n == m <-> n == - m.

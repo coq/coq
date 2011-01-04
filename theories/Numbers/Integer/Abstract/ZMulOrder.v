@@ -174,7 +174,7 @@ le_elim Hn; split; intros m H.
 destruct (lt_1_mul_l n m) as [|[|]]; order'.
 rewrite mul_opp_l, eq_opp_l in H. destruct (lt_1_mul_l n m) as [|[|]]; order'.
 now left.
-intros; right; symmetry; now apply opp_wd.
+intros; right. now f_equiv.
 Qed.
 
 Theorem lt_mul_diag_l : forall n m, n < 0 -> (1 < m <-> n * m < n).

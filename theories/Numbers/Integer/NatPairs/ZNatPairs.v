@@ -131,15 +131,14 @@ Qed.
 
 Instance sub_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) Z.sub.
 Proof.
-intros n1 m1 H1 n2 m2 H2. rewrite 2 sub_add_opp.
-apply add_wd, opp_wd; auto.
+intros n1 m1 H1 n2 m2 H2. rewrite 2 sub_add_opp. now do 2 f_equiv.
 Qed.
 
 Lemma mul_comm : forall n m, n*m == m*n.
 Proof.
 intros (n1,n2) (m1,m2); compute.
 rewrite (add_comm (m1*n2)%N).
-apply N.add_wd; apply N.add_wd; apply mul_comm.
+do 2 f_equiv; apply mul_comm.
 Qed.
 
 Instance mul_wd : Proper (Z.eq ==> Z.eq ==> Z.eq) Z.mul.

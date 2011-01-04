@@ -39,8 +39,7 @@ Proof.
  intros a b c Hb H.
  apply div_unique with 0.
  generalize (pow_nonzero b c Hb) (le_0_l (b^c)); order'.
- nzsimpl. rewrite <- pow_mul_l. apply pow_wd. now apply div_exact.
- reflexivity.
+ nzsimpl. rewrite <- pow_mul_l. f_equiv. now apply div_exact.
 Qed.
 
 (** An injection from bits [true] and [false] to numbers 1 and 0.
@@ -309,8 +308,8 @@ Proof.
  rewrite EQ in H |- *. symmetry. apply bits_inj_0.
  intros n. now rewrite <- H, bits_0.
  rewrite (div_mod a 2), (div_mod b 2) by order'.
- apply add_wd; [ | now rewrite <- 2 bit0_mod, H].
- apply mul_wd. reflexivity.
+ f_equiv; [ | now rewrite <- 2 bit0_mod, H].
+ f_equiv.
  apply IH; trivial using le_0_l.
  apply div_lt; order'.
  intro n. rewrite 2 div2_bits. apply H.
@@ -697,14 +696,10 @@ Proof.
 Qed.
 
 Instance setbit_wd : Proper (eq==>eq==>eq) setbit.
-Proof.
- intros a a' Ha n n' Hn. unfold setbit. now rewrite Ha, Hn.
-Qed.
+Proof. unfold setbit. solve_proper. Qed.
 
 Instance clearbit_wd : Proper (eq==>eq==>eq) clearbit.
-Proof.
- intros a a' Ha n n' Hn. unfold clearbit. now rewrite Ha, Hn.
-Qed.
+Proof. unfold clearbit. solve_proper. Qed.
 
 Lemma pow2_bits_true : forall n, (2^n).[n] = true.
 Proof.
@@ -853,10 +848,10 @@ Definition ones n := P (1 << n).
 Definition lnot a n := lxor a (ones n).
 
 Instance ones_wd : Proper (eq==>eq) ones.
-Proof. intros a a' Ha; unfold ones; now rewrite Ha. Qed.
+Proof. unfold ones. solve_proper. Qed.
 
 Instance lnot_wd : Proper (eq==>eq==>eq) lnot.
-Proof. intros a a' Ha n n' Hn; unfold lnot; now rewrite Ha, Hn. Qed.
+Proof. unfold lnot. solve_proper. Qed.
 
 Lemma ones_equiv : forall n, ones n == P (2^n).
 Proof.
@@ -1225,7 +1220,7 @@ Proof.
  rewrite <- add3_bits_div2.
  rewrite (add_comm ((a/2)+_)).
  rewrite <- div_add by order'.
- apply div_wd; try easy.
+ f_equiv.
  rewrite <- !div2_div, mul_comm, mul_add_distr_l.
  rewrite (div2_odd a), <- bit0_odd at 1. fold (b2n a.[0]).
  rewrite (div2_odd b), <- bit0_odd at 1. fold (b2n b.[0]).
@@ -1273,7 +1268,7 @@ Proof.
  destruct (zero_or_succ m) as [EQ|[m' EQ]]; rewrite EQ; clear EQ.
  now rewrite add_b2n_double_bit0, add3_bit0, b2n_bit0.
  rewrite <- !div2_bits, <- 2 lxor_spec.
- apply testbit_wd; try easy.
+ f_equiv.
  rewrite add_b2n_double_div2, <- IH1. apply add_carry_div2.
  (* - carry *)
  rewrite add_b2n_double_div2.

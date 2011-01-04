@@ -33,12 +33,12 @@ Proof. unfold Odd. solve_proper. Qed.
 
 Instance even_wd : Proper (eq==>Logic.eq) even.
 Proof.
- intros x x' EQ. rewrite eq_iff_eq_true, 2 even_spec. now apply Even_wd.
+ intros x x' EQ. rewrite eq_iff_eq_true, 2 even_spec. now f_equiv.
 Qed.
 
 Instance odd_wd : Proper (eq==>Logic.eq) odd.
 Proof.
- intros x x' EQ. rewrite eq_iff_eq_true, 2 odd_spec. now apply Odd_wd.
+ intros x x' EQ. rewrite eq_iff_eq_true, 2 odd_spec. now f_equiv.
 Qed.
 
 (** Evenness and oddity are dual notions *)
@@ -141,7 +141,7 @@ Lemma Odd_succ : forall n, Odd (S n) <-> Even n.
 Proof.
  split; intros (m,H).
  exists m. apply succ_inj. now rewrite add_1_r in H.
- exists m. rewrite add_1_r. now apply succ_wd.
+ exists m. rewrite add_1_r. now f_equiv.
 Qed.
 
 Lemma odd_succ : forall n, odd (S n) = even n.

@@ -13,6 +13,8 @@ and proves its properties *)
 
 Require Export NSub.
 
+Ltac f_equiv' := repeat progress (f_equiv; try intros ? ? ?; auto).
+
 Module NStrongRecProp (Import N : NAxiomsRecSig').
 Include NSubProp N.
 
@@ -49,30 +51,18 @@ Proof.
 reflexivity.
 Qed.
 
-(** We need a result similar to [f_equal], but for setoid equalities. *)
-Lemma f_equiv : forall f g x y,
- (N.eq==>Aeq)%signature f g -> N.eq x y -> Aeq (f x) (g y).
-Proof.
-auto.
-Qed.
-
 Instance strong_rec0_wd :
  Proper (Aeq ==> ((N.eq ==> Aeq) ==> N.eq ==> Aeq) ==> N.eq ==> N.eq ==> Aeq)
   strong_rec0.
 Proof.
-unfold strong_rec0.
-repeat red; intros.
-apply f_equiv; auto.
-apply recursion_wd; try red; auto.
+unfold strong_rec0; f_equiv'.
 Qed.
 
 Instance strong_rec_wd :
  Proper (Aeq ==> ((N.eq ==> Aeq) ==> N.eq ==> Aeq) ==> N.eq ==> Aeq) strong_rec.
 Proof.
 intros a a' Eaa' f f' Eff' n n' Enn'.
-rewrite !strong_rec_alt.
-apply strong_rec0_wd; auto.
-now rewrite Enn'.
+rewrite !strong_rec_alt; f_equiv'.
 Qed.
 
 Section FixPoint.
@@ -90,18 +80,16 @@ Lemma strong_rec0_succ : forall a n m,
  Aeq (strong_rec0 a f (S n) m) (f (strong_rec0 a f n) m).
 Proof.
 intros. unfold strong_rec0.
-apply f_equiv; auto with *.
-rewrite recursion_succ; try (repeat red; auto with *; fail).
-apply f_wd.
-apply recursion_wd; try red; auto with *.
+f_equiv.
+rewrite recursion_succ; f_equiv'.
+reflexivity.
 Qed.
 
 Lemma strong_rec_0 : forall a,
  Aeq (strong_rec a f 0) (f (fun _ => a) 0).
 Proof.
-intros. rewrite strong_rec_alt, strong_rec0_succ.
-apply f_wd; auto with *.
-red; intros; rewrite strong_rec0_0; auto with *.
+intros. rewrite strong_rec_alt, strong_rec0_succ; f_equiv'.
+rewrite strong_rec0_0. reflexivity.
 Qed.
 
 (* We need an assumption saying that for every n, the step function (f h n)
@@ -156,7 +144,7 @@ intros.
 transitivity (f (fun n => strong_rec0 a f (S n) n) n).
 rewrite strong_rec_alt.
 apply strong_rec0_fixpoint.
-apply f_wd; auto with *.
+f_equiv.
 intros x x' Hx; rewrite strong_rec_alt, Hx; auto with *.
 Qed.
 

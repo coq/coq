@@ -48,7 +48,7 @@ Theorem succ_inj_wd : forall n1 n2, S n1 == S n2 <-> n1 == n2.
 Proof.
 intros; split.
 apply succ_inj.
-intros. now apply succ_wd.
+intros. now f_equiv.
 Qed.
 
 Theorem succ_inj_wd_neg : forall n m, S n ~= S m <-> n ~= m.

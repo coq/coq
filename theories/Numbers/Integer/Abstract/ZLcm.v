@@ -149,7 +149,7 @@ Proof.
  apply mod_divide, div_exact in H; try order.
  rewrite <- H.
  rewrite <- gcd_mul_mono_l_nonneg; try order.
- apply gcd_wd; symmetry; apply div_exact; try order;
+ f_equiv; symmetry; apply div_exact; try order;
   apply mod_divide; trivial; try order.
 Qed.
 
@@ -211,9 +211,7 @@ Qed.
 Definition lcm a b := abs (a*(b/gcd a b)).
 
 Instance lcm_wd : Proper (eq==>eq==>eq) lcm.
-Proof.
- unfold lcm. intros x x' Hx y y' Hy. now rewrite Hx, Hy.
-Qed.
+Proof. unfold lcm. solve_proper. Qed.
 
 Lemma lcm_equiv1 : forall a b, gcd a b ~= 0 ->
   a * (b / gcd a b) == (a*b)/gcd a b.
@@ -270,7 +268,7 @@ Proof.
  exists b'.
  rewrite <- mul_assoc, Hb'.
  rewrite (proj2 (div_exact c g NEQ)).
- rewrite <- Ha', mul_assoc. apply mul_wd; try easy.
+ rewrite <- Ha', mul_assoc. f_equiv.
  apply div_exact; trivial.
  apply mod_divide; trivial.
  apply mod_divide; trivial. transitivity a; trivial.
@@ -423,7 +421,7 @@ Proof.
   nzsimpl. rewrite lcm_0_l. now nzsimpl.
  unfold lcm.
  rewrite gcd_mul_mono_l.
- rewrite !abs_mul, mul_assoc. apply mul_wd; try easy.
+ rewrite !abs_mul, mul_assoc. f_equiv.
  rewrite <- (abs_sgn p) at 1. rewrite <- mul_assoc.
  rewrite div_mul_cancel_l; trivial.
  rewrite divide_div_mul_exact; trivial. rewrite abs_mul.

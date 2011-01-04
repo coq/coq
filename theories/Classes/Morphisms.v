@@ -96,6 +96,27 @@ Ltac solve_respectful t :=
 
 Ltac solve_proper := unfold Proper; solve_respectful ltac:(idtac).
 
+(** [f_equiv] is a clone of [f_equal] that handles setoid equivalences.
+    For example, if we know that [f] is a morphism for [E1==>E2==>E],
+    then the goal [E (f x y) (f x' y')] will be transformed by [f_equiv]
+    into the subgoals [E1 x x'] and [E2 y y'].
+*)
+
+Ltac f_equiv :=
+ match goal with
+  | |- ?R (?f ?x) (?f' _) =>
+    let T := type of x in
+    let Rx := fresh "R" in
+    evar (Rx : relation T);
+    let H := fresh in
+    assert (H : (Rx==>R)%signature f f');
+    unfold Rx in *; clear Rx; [ f_equiv | apply H; clear H; try reflexivity ]
+  | |- ?R ?f ?f' =>
+    try reflexivity;
+    change (Proper R f); eauto with typeclass_instances; fail
+  | _ => idtac
+ end.
+
 (** Dependent pointwise lifting of a relation on the range. *)
 
 Definition forall_relation {A : Type} {B : A -> Type} (sig : Π a : A, relation (B a)) : relation (Π x : A, B x) :=

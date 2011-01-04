@@ -166,14 +166,14 @@ Proof.
  apply lt_succ_r. rewrite sub_1_r, succ_pred. now apply lt_0_sub.
  apply le_succ_l. rewrite sub_1_r, succ_pred. apply le_sub_le_add_r.
  rewrite <- (add_0_r (2^n)) at 1. now apply add_le_mono_l.
- rewrite <- add_sub_swap, sub_1_r. apply pred_wd.
+ rewrite <- add_sub_swap, sub_1_r. f_equiv.
  apply opp_inj. rewrite opp_add_distr, opp_sub_distr.
  rewrite (add_comm _ l), <- add_assoc.
  rewrite EQ at 1. apply add_cancel_l.
  rewrite <- opp_add_distr.
  rewrite <- (mul_1_l (2^n)) at 2. rewrite <- mul_add_distr_r.
  rewrite <- mul_opp_l.
- apply mul_wd; try reflexivity.
+ f_equiv.
  rewrite !opp_add_distr.
  rewrite <- mul_opp_r.
  rewrite opp_sub_distr, opp_involutive.
@@ -471,8 +471,8 @@ Proof.
    intros m. now rewrite <- H, bits_0.
   clear n Hn. intros n Hn IH a b (Ha,Ha') H.
   rewrite (div_mod a 2), (div_mod b 2) by order'.
-  apply add_wd; [ | now rewrite <- 2 bit0_mod, H].
-  apply mul_wd. reflexivity.
+  f_equiv; [ | now rewrite <- 2 bit0_mod, H].
+  f_equiv.
   apply IH.
   split. apply div_pos; order'.
   apply div_lt_upper_bound. order'. now rewrite <- pow_succ_r.
@@ -543,7 +543,7 @@ Proof.
   exists 0. intros m Hm. rewrite bits_0, Hk by order.
   symmetry; rewrite <- H0. apply Hk; order.
   revert f Hf Hk. apply le_ind with (4:=LE).
-  (* compat : solve_predicat_wd fails here *)
+  (* compat : solve_proper fails here *)
   apply proper_sym_impl_iff. exact eq_sym.
   clear k LE. intros k k' Hk IH f Hf H. apply IH; trivial.
   now setoid_rewrite Hk.
@@ -967,14 +967,10 @@ Proof.
 Qed.
 
 Instance setbit_wd : Proper (eq==>eq==>eq) setbit.
-Proof.
- intros a a' Ha n n' Hn. unfold setbit. now rewrite Ha, Hn.
-Qed.
+Proof. unfold setbit. solve_proper. Qed.
 
 Instance clearbit_wd : Proper (eq==>eq==>eq) clearbit.
-Proof.
- intros a a' Ha n n' Hn. unfold clearbit. now rewrite Ha, Hn.
-Qed.
+Proof. unfold clearbit. solve_proper. Qed.
 
 Lemma pow2_bits_true : forall n, 0<=n -> (2^n).[n] = true.
 Proof.
@@ -1113,7 +1109,7 @@ Qed.
 Definition lnot a := P (-a).
 
 Instance lnot_wd : Proper (eq==>eq) lnot.
-Proof. intros a a' Ha; unfold lnot; now rewrite Ha. Qed.
+Proof. unfold lnot. solve_proper. Qed.
 
 Lemma lnot_spec : forall a n, 0<=n -> (lnot a).[n] = negb a.[n].
 Proof.
@@ -1251,14 +1247,14 @@ Qed.
 Definition ones n := P (1<<n).
 
 Instance ones_wd : Proper (eq==>eq) ones.
-Proof. intros a a' Ha; unfold ones; now rewrite Ha. Qed.
+Proof. unfold ones. solve_proper. Qed.
 
 Lemma ones_equiv : forall n, ones n == P (2^n).
 Proof.
  intros. unfold ones.
  destruct (le_gt_cases 0 n).
  now rewrite shiftl_mul_pow2, mul_1_l.
- apply pred_wd. rewrite pow_neg_r; trivial.
+ f_equiv. rewrite pow_neg_r; trivial.
  rewrite <- shiftr_opp_r. apply shiftr_eq_0_iff. right; split.
  order'. rewrite log2_1. now apply opp_pos_neg.
 Qed.
@@ -1658,7 +1654,7 @@ Proof.
  rewrite <- add3_bits_div2.
  rewrite (add_comm ((a/2)+_)).
  rewrite <- div_add by order'.
- apply div_wd; try easy.
+ f_equiv.
  rewrite <- !div2_div, mul_comm, mul_add_distr_l.
  rewrite (div2_odd a), <- bit0_odd at 1.
  rewrite (div2_odd b), <- bit0_odd at 1.
@@ -1727,7 +1723,7 @@ Proof.
  le_elim Hm.
  rewrite <- (succ_pred m), lt_succ_r in Hm.
  rewrite <- (succ_pred m), <- !div2_bits, <- 2 lxor_spec by trivial.
- apply testbit_wd; try easy.
+ f_equiv.
  rewrite add_b2z_double_div2, <- IH1. apply add_carry_div2.
  rewrite <- Hm.
  now rewrite add_b2z_double_bit0, add3_bit0, b2z_bit0.

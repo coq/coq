@@ -96,7 +96,7 @@ Qed.
 
 Theorem mul_cancel_l : forall n m p, p ~= 0 -> (p * n == p * m <-> n == m).
 Proof.
-intros n m p Hp; split; intro H; [|now apply mul_wd].
+intros n m p Hp; split; intro H; [|now f_equiv].
 apply lt_gt_cases in Hp; destruct Hp as [Hp|Hp];
  destruct (lt_trichotomy n m) as [LT|[EQ|GT]]; trivial.
 apply (mul_lt_mono_neg_l p) in LT; order.

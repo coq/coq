@@ -23,11 +23,8 @@ Definition natural_isomorphism : N1.t -> N2.t :=
 Instance natural_isomorphism_wd : Proper (N1.eq ==> N2.eq) natural_isomorphism.
 Proof.
 unfold natural_isomorphism.
-intros n m Eqxy.
-apply N1.recursion_wd.
-reflexivity.
-intros _ _ _ y' y'' H. now apply N2.succ_wd.
-assumption.
+repeat red; intros. f_equiv; trivial.
+repeat red; intros. now f_equiv.
 Qed.
 
 Theorem natural_isomorphism_0 : natural_isomorphism N1.zero == N2.zero.
@@ -40,7 +37,7 @@ Theorem natural_isomorphism_succ :
 Proof.
 unfold natural_isomorphism.
 intro n. rewrite N1.recursion_succ; auto with *.
-repeat red; intros. apply N2.succ_wd; auto.
+repeat red; intros. now f_equiv.
 Qed.
 
 Theorem hom_nat_iso : homomorphism natural_isomorphism.

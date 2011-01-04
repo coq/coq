@@ -24,7 +24,7 @@ Qed.
 
 Theorem pred_inj_wd : forall n1 n2, P n1 == P n2 <-> n1 == n2.
 Proof.
-intros n1 n2; split; [apply pred_inj | apply pred_wd].
+intros n1 n2; split; [apply pred_inj | intros; now f_equiv].
 Qed.
 
 Lemma succ_m1 : S (-1) == 0.

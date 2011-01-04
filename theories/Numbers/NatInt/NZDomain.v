@@ -85,7 +85,7 @@ intros n n' Hn. rewrite Hn; auto with *.
 reflexivity.
 split; intros (p & q & H).
 exists p; exists (Datatypes.S q). rewrite <- iter_alt; simpl.
- apply succ_wd; auto.
+ now f_equiv.
 exists (Datatypes.S p); exists q. rewrite iter_alt; auto.
 Qed.
 
@@ -373,14 +373,14 @@ Lemma ofnat_add_l : forall n m, [n]+m == (S^n) m.
 Proof.
  induction n; intros.
  apply add_0_l.
- rewrite ofnat_succ, add_succ_l. simpl; apply succ_wd; auto.
+ rewrite ofnat_succ, add_succ_l. simpl. now f_equiv.
 Qed.
 
 Lemma ofnat_add : forall n m, [n+m] == [n]+[m].
 Proof.
  intros. rewrite ofnat_add_l.
  induction n; simpl. reflexivity.
- rewrite ofnat_succ. now apply succ_wd.
+ rewrite ofnat_succ. now f_equiv.
 Qed.
 
 Lemma ofnat_mul : forall n m, [n*m] == [n]*[m].
@@ -389,14 +389,14 @@ Proof.
  symmetry. apply mul_0_l.
  rewrite plus_comm.
  rewrite ofnat_succ, ofnat_add, mul_succ_l.
- now apply add_wd.
+ now f_equiv.
 Qed.
 
 Lemma ofnat_sub_r : forall n m, n-[m] == (P^m) n.
 Proof.
  induction m; simpl; intros.
  rewrite ofnat_zero. apply sub_0_r.
- rewrite ofnat_succ, sub_succ_r. now apply pred_wd.
+ rewrite ofnat_succ, sub_succ_r. now f_equiv.
 Qed.
 
 Lemma ofnat_sub : forall n m, m<=n -> [n-m] == [n]-[m].

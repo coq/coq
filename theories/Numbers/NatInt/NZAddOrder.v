@@ -157,7 +157,7 @@ Proof.
  intros n m H. apply le_ind with (4:=H). solve_proper.
  exists 0; nzsimpl; split; order.
  clear m H. intros m H (p & EQ & LE). exists (S p).
-  split. nzsimpl. now apply succ_wd. now apply le_le_succ_r.
+  split. nzsimpl. now f_equiv. now apply le_le_succ_r.
 Qed.
 
 (** For the moment, it doesn't seem possible to relate

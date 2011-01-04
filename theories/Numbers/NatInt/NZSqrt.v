@@ -323,7 +323,7 @@ Proof.
  intros (b & Hb & H).
  rewrite H. rewrite sqrt_square; try order.
  symmetry.
- rewrite <- (lt_succ_pred 0 b Hb). apply succ_wd.
+ rewrite <- (lt_succ_pred 0 b Hb). f_equiv.
  rewrite <- (lt_succ_pred 0 b²) in H. apply succ_inj in H.
  now rewrite H, sqrt_pred_square.
  now apply mul_pos_pos.
@@ -450,7 +450,7 @@ Proof.
   by (apply le_lt_trans with (P b)²; trivial using square_nonneg).
  rewrite sqrt_up_eqn; trivial.
  assert (Hb' := lt_succ_pred 0 b Hb).
- rewrite <- Hb'. apply succ_wd. apply sqrt_unique.
+ rewrite <- Hb'. f_equiv. apply sqrt_unique.
  rewrite <- le_succ_l, <- lt_succ_r, Hb'.
  rewrite (lt_succ_pred 0 a Ha). now split.
 Qed.
