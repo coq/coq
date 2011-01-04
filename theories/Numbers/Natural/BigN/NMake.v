@@ -64,7 +64,7 @@ Module Make (W0:CyclicType) <: NType.
  Proof.
  intros.
  change (Zpos (ZnZ.digits (dom_op n)) <= Zpos (ZnZ.digits (dom_op m))).
- rewrite !digits_dom_op, !Pshiftl_Zpower.
+ rewrite !digits_dom_op, !Pshiftl_nat_Zpower.
  apply Zmult_le_compat_l; auto with zarith.
  apply Zpower_le_monotone2; auto with zarith.
  Qed.
@@ -1050,7 +1050,7 @@ Module Make (W0:CyclicType) <: NType.
  unfold base.
  apply Zlt_le_trans with (1 := pheight_correct x).
  apply Zpower_le_monotone2; auto with zarith.
- rewrite (digits_dom_op (_ _)), Pshiftl_Zpower. auto with zarith.
+ rewrite (digits_dom_op (_ _)), Pshiftl_nat_Zpower. auto with zarith.
  Qed.
 
  Definition of_N (x:N) : t :=
@@ -1392,7 +1392,7 @@ Module Make (W0:CyclicType) <: NType.
    forall x, Zpos (digits (double_size x)) = 2 * (Zpos (digits x)).
  Proof.
  intros x. rewrite ! digits_level, double_size_level.
- rewrite 2 digits_dom_op, 2 Pshiftl_Zpower,
+ rewrite 2 digits_dom_op, 2 Pshiftl_nat_Zpower,
          inj_S, Zpower_Zsucc; auto with zarith.
  ring.
  Qed.

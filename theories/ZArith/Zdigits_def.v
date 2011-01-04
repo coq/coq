@@ -418,3 +418,19 @@ Proof.
  now rewrite Nxor_spec, negb_xorb_l.
  now rewrite Nxor_spec, xorb_negb_negb.
 Qed.
+
+(** An additionnal proof concerning [Pshiftl_nat], used in BigN *)
+
+Lemma Pshiftl_nat_Zpower : forall n p,
+  Zpos (Pshiftl_nat p n) = Zpos p * 2 ^ Z_of_nat n.
+Proof.
+ intros.
+ rewrite Zmult_comm.
+ induction n. simpl; auto.
+ transitivity (2 * (2 ^ Z_of_nat n * Zpos p)).
+ rewrite <- IHn. auto.
+ rewrite Zmult_assoc.
+ rewrite inj_S.
+ rewrite <- Zpower_succ_r; auto with zarith.
+ apply Zle_0_nat.
+Qed.

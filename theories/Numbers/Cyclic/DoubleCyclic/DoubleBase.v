@@ -10,11 +10,13 @@
 
 Set Implicit Arguments.
 
-Require Import ZArith.
+Require Import ZArith Ndigits.
 Require Import BigNumPrelude.
 Require Import DoubleType.
 
 Local Open Scope Z_scope.
+
+Local Infix "<<" := Pshiftl_nat (at level 30).
 
 Section DoubleBase.
  Variable w : Type.
@@ -68,13 +70,7 @@ Section DoubleBase.
      end
   end.
 
- Fixpoint double_digits (n:nat) : positive :=
-  match n with
-  | O => w_digits
-  | S n => xO (double_digits n)
-  end.
-
- Definition double_wB n := base (double_digits n).
+ Definition double_wB n := base (w_digits << n).
 
  Fixpoint double_to_Z (n:nat) : word w n -> Z :=
   match n return word w n -> Z with
@@ -291,11 +287,10 @@ Section DoubleBase.
   Lemma double_wB_wwB : forall n, double_wB n * double_wB n = double_wB (S n).
   Proof.
    intros n;unfold double_wB;simpl.
-   unfold base;rewrite (Zpos_xO (double_digits n)).
-   replace  (2 * Zpos (double_digits n)) with
-     (Zpos (double_digits n) + Zpos (double_digits n)).
+   unfold base. rewrite Pshiftl_nat_S, (Zpos_xO (_ << _)).
+   replace  (2 * Zpos (w_digits << n)) with
+     (Zpos (w_digits << n) + Zpos (w_digits << n)) by ring.
    symmetry; apply Zpower_exp;intro;discriminate.
-   ring.
   Qed.
 
   Lemma double_wB_pos:
@@ -309,7 +304,7 @@ Section DoubleBase.
   Proof.
   clear spec_w_0 spec_w_1 spec_w_Bm1 w_0 w_1 w_Bm1.
   intros n; elim n; clear n; auto.
-    unfold double_wB, double_digits; auto with zarith.
+    unfold double_wB, "<<"; auto with zarith.
   intros n H1; rewrite <- double_wB_wwB.
   apply Zle_trans with (wB * 1).
     rewrite Zmult_1_r; apply Zle_refl.

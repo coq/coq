@@ -8,7 +8,7 @@
 (*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
 (************************************************************************)
 
-Require Import ZArith.
+Require Import ZArith Ndigits.
 Require Import BigNumPrelude.
 Require Import Max.
 Require Import DoubleType.
@@ -358,8 +358,8 @@ Section CompareRec.
  intros n (H0, H); split; auto.
  apply Zlt_le_trans with (1:= H).
  unfold double_wB, DoubleBase.double_wB; simpl.
- rewrite base_xO.
- set (u := base (double_digits wm_base n)).
+ rewrite Pshiftl_nat_S, base_xO.
+ set (u := base (Pshiftl_nat wm_base n)).
  assert (0 < u).
   unfold u, base; auto with zarith.
  replace (u^2) with (u * u); simpl; auto with zarith.
@@ -480,30 +480,6 @@ End AddS.
 
  End SimplOp.
 
-(** TODO : to migrate in NArith *)
-
- Notation Pshiftl := DoubleBase.double_digits.
-
- Lemma Pshiftl_plus : forall n m p,
-  Pshiftl p (m + n) = Pshiftl (Pshiftl p n) m.
- Proof.
- induction m; simpl; congruence.
- Qed.
-
- Lemma Pshiftl_Zpower : forall n d,
-  Zpos (Pshiftl d n) = (Zpos d * 2 ^ Z_of_nat n)%Z.
- Proof.
- intros.
- rewrite Zmult_comm.
- induction n. simpl; auto.
- transitivity (2 * (2 ^ Z_of_nat n * Zpos d))%Z.
- rewrite <- IHn. auto.
- rewrite Zmult_assoc.
- rewrite <- Zpower_Zsucc, inj_S; auto with zarith.
- Qed.
-
-(** END TODO *)
-
 (** Abstract vision of a datatype of arbitrary-large numbers.
     Concrete operations can be derived from these generic
     fonctions, in particular from [iter_t] and [same_level].
@@ -518,7 +494,7 @@ Declare Instance dom_op n : ZnZ.Ops (dom_t n).
 Declare Instance dom_spec n : ZnZ.Specs (dom_op n).
 
 Axiom digits_dom_op : forall n,
-  ZnZ.digits (dom_op n) = Pshiftl (ZnZ.digits (dom_op 0)) n.
+  ZnZ.digits (dom_op n) = Pshiftl_nat (ZnZ.digits (dom_op 0)) n.
 
 (** The type [t] of arbitrary-large numbers, with abstract constructor [mk_t]
     and destructor [destr_t] and iterator [iter_t] *)

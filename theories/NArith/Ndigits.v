@@ -347,6 +347,31 @@ Proof.
  apply nat_compare_lt. now rewrite <- nat_of_Ncompare.
 Qed.
 
+(** A left shift for positive numbers (used in BigN) *)
+
+Definition Pshiftl_nat (p:positive)(n:nat) := iter_nat n _ xO p.
+
+Lemma Pshiftl_nat_0 : forall p, Pshiftl_nat p 0 = p.
+Proof. reflexivity. Qed.
+
+Lemma Pshiftl_nat_S :
+ forall p n, Pshiftl_nat p (S n) = xO (Pshiftl_nat p n).
+Proof. reflexivity. Qed.
+
+Lemma Pshiftl_nat_N :
+ forall p n, Npos (Pshiftl_nat p n) = Nshiftl_nat (Npos p) n.
+Proof.
+ unfold Pshiftl_nat, Nshiftl_nat.
+ induction n; simpl; auto. now rewrite <- IHn.
+Qed.
+
+Lemma Pshiftl_nat_plus : forall n m p,
+  Pshiftl_nat p (m + n) = Pshiftl_nat (Pshiftl_nat p n) m.
+Proof.
+ induction m; simpl; intros. reflexivity.
+ rewrite 2 Pshiftl_nat_S. now f_equal.
+Qed.
+
 (** Semantics of bitwise operations *)
 
 Lemma Pxor_semantics : forall p p' n,

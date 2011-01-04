@@ -1044,7 +1044,6 @@ Section DoubleDivGt.
    assert (H2:= @spec_double_divn1 w w_digits w_zdigits w_0 w_WW w_head0 w_add_mul_div
     w_div21 w_compare w_sub w_to_Z spec_to_Z spec_w_zdigits spec_w_0 spec_w_WW spec_head0
     spec_add_mul_div spec_div21 spec_compare spec_sub 1 (WW ah al) bl Hpos).
-   unfold double_to_Z,double_wB,double_digits in H2.
    destruct (double_divn1 w_zdigits w_0 w_WW w_head0 w_add_mul_div w_div21
               w_compare w_sub 1
              (WW ah al) bl).
