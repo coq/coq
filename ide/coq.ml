@@ -122,8 +122,9 @@ let check_connection args =
       exit 1
 
 let eval_call coqtop (c:'a Ide_blob.call) =
-  Safe_marshal.send coqtop.cin c;
-  (Safe_marshal.receive: in_channel -> 'a Ide_blob.value) coqtop.cout
+  Marshal.to_channel coqtop.cin c [];
+  flush coqtop.cin;
+  (Marshal.from_channel: in_channel -> 'a Ide_blob.value) coqtop.cout
 
 let is_in_loadpath coqtop s = eval_call coqtop (Ide_blob.is_in_loadpath s)
  
@@ -143,6 +144,8 @@ let spawn_coqtop sup_args =
   Mutex.lock toplvl_ctr_mtx;
   try 
     let oc,ic = Unix.open_process (coqtop_path ()^" -ideslave "^sup_args) in
+    set_binary_mode_out ic true;
+    set_binary_mode_in oc true;
     incr toplvl_ctr;
     Mutex.unlock toplvl_ctr_mtx;
     { cin = ic; cout = oc ; sup_args = sup_args ; version = 0 }

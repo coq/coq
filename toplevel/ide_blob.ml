@@ -495,6 +495,8 @@ let init_stdout,read_stdout =
      Pp_control.std_ft := out_ft;
      Pp_control.err_ft := out_ft;
      Pp_control.deep_ft := deep_out_ft;
+     set_binary_mode_out !orig_stdout true;
+     set_binary_mode_in stdin true;
   ),
   (fun () -> Format.pp_print_flush out_ft ();
              let r = Buffer.contents out_buff in
@@ -588,9 +590,10 @@ let contents : Lib.library_segment call =
 let loop () =
   try
     while true do
-      let q = (Safe_marshal.receive: in_channel -> 'a call) stdin in
+      let q = (Marshal.from_channel: in_channel -> 'a call) stdin in
       let r = eval_call q in
-      Safe_marshal.send !orig_stdout r
+      Marshal.to_channel !orig_stdout r [];
+      flush !orig_stdout
     done
   with
     | Vernacexpr.Quit -> exit 0
