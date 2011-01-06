@@ -43,6 +43,4 @@ val current_goals : goals call
 
 val read_stdout : string call
 
-val contents : Lib.library_segment call
-
 val loop : unit -> unit

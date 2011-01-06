@@ -31,7 +31,7 @@ object('self)
   val message_view : GText.view
   val proof_buffer : GText.buffer
   val proof_view : GText.view
-  val cmd_stack : (ide_info * Indent.interp_node) Stack.t
+  val cmd_stack : ide_info Stack.t
   val mutable is_active : bool
   val mutable read_only : bool
   val mutable filename : string option
@@ -67,8 +67,7 @@ object('self)
   method get_insert : GText.iter
   method get_start_of_input : GText.iter
   method go_to_insert : unit
-  method indent_current_line_using_previous_line : unit
-  method indent_current_line_using_levels : unit
+  method indent_current_line : unit
   method go_to_next_occ_of_cur_word : unit
   method go_to_prev_occ_of_cur_word : unit
   method insert_command : string -> string -> unit
@@ -540,12 +539,6 @@ let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
 
 let sup_args = ref ""
 
-let current_interp_node stk =
-    try
-      let (_, pno) = Stack.top stk in
-      pno
-    with Stack.Empty -> Indent.first_interp_node
-
 class analyzed_view (_script:Undo.undoable_view) (_pv:GText.view) (_mv:GText.view) _cs _ct =
 object(self)
   val input_view = _script
@@ -564,7 +557,6 @@ object(self)
   val mutable last_auto_save_time = 0.
   val mutable detached_views = []
   val mutable find_forward_instead_of_backward = false
-  val mutable tab_one_tap = false
 
   val mutable auto_complete_on = !current.auto_complete
   val hidden_proofs = Hashtbl.create 32
@@ -734,7 +726,7 @@ object(self)
               `INSERT)
 
 
-  method indent_current_line_using_previous_line =
+  method indent_current_line =
     let get_nb_space it =
       let it = it#copy in
       let nb_sep = ref 0 in
@@ -763,45 +755,6 @@ object(self)
                 (String.make previous_line_spaces ' ')
       end
 
-
-  method indent_current_line_using_levels =
-    let get_nb_space it =
-      let it = it#copy in
-      let nb_sep = ref 0 in
-      let continue = ref true in
-      while !continue do
-        if it#char = space then begin
-          incr nb_sep;
-          if not it#nocopy#forward_char then continue := false;
-        end else continue := false
-      done;
-      !nb_sep
-    in
-    let current_line_start = self#get_insert#set_line_offset 0 in
-    let current_line_spaces = get_nb_space current_line_start in
-    if input_buffer#delete_interactive
-      ~start:current_line_start
-      ~stop:(current_line_start#forward_chars current_line_spaces)
-      ()
-    then
-      let current_line_start = self#get_insert#set_line_offset 0 in
-      let levels = Indent.compute_nesting (current_interp_node cmd_stack) in
-      let common_shift =
-	!current.indent_module_factor * levels.Indent.module_levels +
-          !current.indent_section_factor * levels.Indent.section_levels
-      in
-      let additionnal_shift =
-            if !current.indent_tactic_was_mode
-            then !current.indent_was_factor * levels.Indent.tactic_levels +
-	         if levels.Indent.tactic_alinea
-                 then 0
-                 else !current.indent_was_alinea
-            else !current.indent_saw_factor * levels.Indent.subgoal_levels
-      in
-      let shifting = common_shift + additionnal_shift in
-      input_buffer#insert
-        ~iter:current_line_start
-        (String.make shifting ' ')
 
   method go_to_next_occ_of_cur_word =
     let cv = session_notebook#current_term in
@@ -973,13 +926,7 @@ object(self)
            end;
          let ide_payload = { start = `MARK (b#create_mark start);
                              stop = `MARK (b#create_mark stop); } in
-         let (interp_node, e_msg_opt) = Indent.compute_interp_node
-                (Coq.goals mycoqtop)
-	     (current_interp_node cmd_stack)
-             (Coq.contents mycoqtop)
-         in
-         Stack.push (ide_payload, interp_node) cmd_stack;
-(*         (match e_msg_opt with Some(s) -> flash_info s | _ -> ());*)
+         Stack.push ide_payload cmd_stack;
          if display_goals then self#show_goals;
          remove_tag (start,stop) in
     begin
@@ -1007,13 +954,7 @@ object(self)
                input_buffer#place_cursor ~where:stop;
              let ide_payload = { start = `MARK (input_buffer#create_mark start);
                                  stop = `MARK (input_buffer#create_mark stop); } in
-             let (interp_node, e_msg_opt) = Indent.compute_interp_node
-                (Coq.goals mycoqtop)
-	         (current_interp_node cmd_stack)
-                 (Coq.contents mycoqtop)
-             in
-             Stack.push (ide_payload, interp_node) cmd_stack;
-(*         (match e_msg_opt with Some(s) -> flash_info s | _ -> ());*)
+             Stack.push ide_payload cmd_stack;
              self#show_goals;
       (*Auto insert save on success...
        try (match Coq.get_current_goals () with
@@ -1087,7 +1028,7 @@ object(self)
   method reset_initial =
     sync (fun _ ->
             Stack.iter
-              (function (inf, _) ->
+              (function inf ->
                  let start = input_buffer#get_iter_at_mark inf.start in
                  let stop = input_buffer#get_iter_at_mark inf.stop in
                    input_buffer#move_mark ~where:start (`NAME "start_of_input");
@@ -1108,11 +1049,11 @@ object(self)
     (* pop Coq commands until we reach iterator [i] *)
     let rec n_step n =
       if Stack.is_empty cmd_stack then n else
-        let (ide_ri, ide_ii) = Stack.pop cmd_stack in
+        let ide_ri = Stack.pop cmd_stack in
         if i#compare (input_buffer#get_iter_at_mark ide_ri.stop) < 0 then
           n_step (succ n)
         else
-          (Stack.push (ide_ri, ide_ii) cmd_stack; n)
+          (Stack.push ide_ri cmd_stack; n)
     in
     begin
       try
@@ -1124,8 +1065,7 @@ object(self)
               sync (fun _ ->
                       let start =
                         if Stack.is_empty cmd_stack then input_buffer#start_iter
-                        else input_buffer#get_iter_at_mark
-                                 (fst (Stack.top cmd_stack)).stop in
+                        else input_buffer#get_iter_at_mark (Stack.top cmd_stack).stop in
                       prerr_endline "Removing (long) processed tag...";
                       input_buffer#remove_tag
                         Tags.Script.processed
@@ -1162,7 +1102,7 @@ object(self)
     if Mutex.try_lock coq_may_stop then
       (push_info "Undoing last step...";
        (try
-          let (ide_ri, _) = Stack.pop cmd_stack in
+          let ide_ri = Stack.pop cmd_stack in
           let start = input_buffer#get_iter_at_mark ide_ri.start in
           let update_input () =
             prerr_endline "Removing processed tag...";
@@ -1206,8 +1146,6 @@ object(self)
               ("progress "^p^".\n") (p^".\n")) l)
 
   method active_keypress_handler k =
-    (if GdkEvent.Key.keyval k <> GdkKeysyms._Tab
-     then tab_one_tap <- false);
     let state = GdkEvent.Key.state k in
       begin
         match  state with
@@ -1230,12 +1168,7 @@ object(self)
           | l ->
               if GdkEvent.Key.keyval k = GdkKeysyms._Tab then begin
                 prerr_endline "active_kp_handler for Tab";
-                begin
-                  tab_one_tap <- not tab_one_tap;
-                  if tab_one_tap
-                  then self#indent_current_line_using_levels
-                  else self#indent_current_line_using_previous_line
-                end;
+                self#indent_current_line;
                 true
               end else false
       end

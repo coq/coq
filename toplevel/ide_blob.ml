@@ -514,7 +514,6 @@ let explain_exn e =
   in
   toploc,(Cerrors.explain_exn exc)
 
-let contents () = Lib.contents_after None
 
 (**
  * Wrappers around Coq calls. We use phantom types and GADT to protect ourselves
@@ -530,7 +529,6 @@ type 'a call =
   | Cur_goals
   | Cur_status
   | Cases of string
-  | Contents
 
 type 'a value =
   | Good of 'a
@@ -550,9 +548,7 @@ let eval_call c =
               | Read_stdout -> Obj.magic (read_stdout ())
               | Cur_goals -> Obj.magic (current_goals ())
               | Cur_status -> Obj.magic (current_status ())
-              | Cases s -> Obj.magic (make_cases s)
-              | Contents -> Obj.magic (contents ())
-              )
+              | Cases s -> Obj.magic (make_cases s))
   with e ->
     let (l,pp) = explain_exn (filter_compat_exn e) in
     (* force evaluation of format stream *)
@@ -581,9 +577,6 @@ let current_status : string call =
 
 let make_cases s : string list list call =
   Cases s
-
-let contents : Lib.library_segment call =
-  Contents
 
 (* End of wrappers *)
 

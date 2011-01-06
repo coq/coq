@@ -96,15 +96,6 @@ type pref =
       mutable lax_syntax : bool;
       mutable vertical_tabs : bool;
       mutable opposite_tabs : bool;
-(*
-      for indentation in proof mode
-*)
-      mutable indent_module_factor : int;
-      mutable indent_section_factor : int;
-      mutable indent_saw_factor : int;
-      mutable indent_was_factor : int;
-      mutable indent_was_alinea : int;
-      mutable indent_tactic_was_mode : bool;
 }
 
 let use_default_doc_url = "(automatic)"
@@ -161,13 +152,6 @@ let (current:pref ref) =
     lax_syntax = true;
     vertical_tabs = false;
     opposite_tabs = false;
-
-    indent_module_factor = 1;
-    indent_section_factor = 1;
-    indent_saw_factor = 1;
-    indent_was_factor = 3;
-    indent_was_alinea = 1;
-    indent_tactic_was_mode = false;
   }
 
 
@@ -235,14 +219,6 @@ let save_pref () =
     add "lax_syntax" [string_of_bool p.lax_syntax] ++
     add "vertical_tabs" [string_of_bool p.vertical_tabs] ++
     add "opposite_tabs" [string_of_bool p.opposite_tabs] ++
-
-    add "indent_module_factor" [string_of_int p.indent_module_factor] ++
-    add "indent_section_factor" [string_of_int p.indent_section_factor] ++
-    add "indent_saw_factor" [string_of_int p.indent_saw_factor] ++
-    add "indent_was_factor" [string_of_int p.indent_was_factor] ++
-    add "indent_was_alinea" [string_of_int p.indent_was_alinea] ++
-    add "indent_tactic_was_mode"
-         [string_of_bool p.indent_tactic_was_mode] ++
     Config_lexer.print_file pref_file
   with _ -> prerr_endline "Could not save preferences."
 
@@ -311,13 +287,6 @@ let load_pref () =
     set_bool "lax_syntax" (fun v -> np.lax_syntax <- v);
     set_bool "vertical_tabs" (fun v -> np.vertical_tabs <- v);
     set_bool "opposite_tabs" (fun v -> np.opposite_tabs <- v);
-    set_int "indent_module_factor" (fun v -> np.indent_module_factor <- v);
-    set_int "indent_section_factor" (fun v -> np.indent_section_factor <- v);
-    set_int "indent_saw_factor" (fun v -> np.indent_saw_factor <- v);
-    set_int "indent_was_factor" (fun v -> np.indent_was_factor <- v);
-    set_int "indent_was_alinea" (fun v -> np.indent_was_alinea <- v);
-    set_bool "indent_tactic_was_mode"
-        (fun v -> np.indent_tactic_was_mode <- v);
     current := np;
 (*
     Format.printf "in load_pref: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
@@ -600,53 +569,6 @@ let configure ?(apply=(fun () -> ())) () =
       "Contextual menus on goal" !current.contextual_menus_on_goal
   in
 
-  let indent_module_factor =
-    string
-      ~f:(fun s -> let i = try int_of_string s with _ -> 1 in
-                   !current.indent_module_factor <- i)
-      "Modules depth dependent shifting for indentation"
-      (string_of_int !current.indent_module_factor)
-  in
-
-  let indent_section_factor =
-    string
-      ~f:(fun s -> let i = try int_of_string s with _ -> 1 in
-                   !current.indent_section_factor <- i)
-      "Sections depth dependent shifting for indentation"
-      (string_of_int !current.indent_section_factor)
-  in
-
-  let indent_saw_factor =
-    string
-      ~f:(fun s -> let i = try int_of_string s with _ -> 1 in
-                   !current.indent_saw_factor <- i)
-      "Shifting factor in \"saw mode\" (remaining subgoals dependent)"
-      (string_of_int !current.indent_saw_factor)
-  in
-
-  let indent_was_factor =
-    string
-      ~f:(fun s -> let i = try int_of_string s with _ -> 3 in
-                   !current.indent_was_factor <- i)
-      "Shifting factor in \"was mode\" (proof depth dependent)"
-      (string_of_int !current.indent_was_factor)
-  in
-
-  let indent_was_alinea =
-    string
-      ~f:(fun s -> let i = try int_of_string s with _ -> 1 in
-                   !current.indent_was_alinea <- i)
-      "Constant shift for stagnant subgoals (was mode)"
-      (string_of_int !current.indent_was_alinea)
-  in
-
-  let indent_tactic_was_mode =
-    bool
-      ~f:(fun s -> !current.indent_tactic_was_mode <- s)
-      "tactic mode : indentation in \"was mode\" instead of \"saw mode\""
-      !current.indent_tactic_was_mode
-  in
-
   let misc = [contextual_menus_on_goal;auto_complete;stop_before;lax_syntax;
               vertical_tabs;opposite_tabs] in
 
@@ -672,12 +594,7 @@ let configure ?(apply=(fun () -> ())) () =
 	     [automatic_tactics]);
      Section("Shortcuts",
 	     [modifiers_valid; modifier_for_tactics;
-	      modifier_for_templates; modifier_for_display;
-              modifier_for_navigation]);
-     Section("Indentation",
-             [indent_module_factor; indent_section_factor;
-              indent_saw_factor; indent_was_factor; indent_was_alinea;
-              indent_tactic_was_mode]);
+	      modifier_for_templates; modifier_for_display; modifier_for_navigation]);
      Section("Misc",
 	     misc)]
   in
