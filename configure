@@ -588,7 +588,6 @@ case $ARCH in
 	   *) OS="Sun OS $OS"
 	      OSDEPLIBS="-cclib -lunix"
         esac;;
-  alpha) OSDEPLIBS="-cclib -lunix";;
   win32) OS="Win32" 
 	 OSDEPLIBS="-cclib -lunix"
 	 cflags="-mno-cygwin $cflags";;
