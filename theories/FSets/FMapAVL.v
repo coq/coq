@@ -78,9 +78,9 @@ Definition empty := Leaf.
 
 Definition is_empty m := match m with Leaf => true | _ => false end.
 
-(** * Appartness *)
+(** * Membership *)
 
-(** The [mem] function is deciding appartness. It exploits the [bst] property
+(** The [mem] function is deciding membership. It exploits the [bst] property
     to achieve logarithmic complexity. *)
 
 Fixpoint mem x m : bool :=
@@ -705,7 +705,7 @@ Proof.
  destruct m; simpl; intros; try discriminate; red; intuition_in.
 Qed.
 
-(** * Appartness *)
+(** * Membership *)
 
 Lemma mem_1 : forall m x, bst m -> In x m -> mem x m = true.
 Proof.

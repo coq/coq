@@ -82,9 +82,9 @@ Definition empty := Leaf.
 Definition is_empty s :=
   match s with Leaf => true | _ => false end.
 
-(** ** Appartness *)
+(** ** Membership *)
 
-(** The [mem] function is deciding appartness. It exploits the
+(** The [mem] function is deciding membership. It exploits the
     binary search tree invariant to achieve logarithmic complexity. *)
 
 Fixpoint mem x s :=
@@ -792,7 +792,7 @@ Proof.
  split; auto. try discriminate. intro H; elim (H x); auto.
 Qed.
 
-(** * Appartness *)
+(** * Membership *)
 
 Lemma mem_spec : forall s x `{Ok s}, mem x s = true <-> InT x s.
 Proof.
