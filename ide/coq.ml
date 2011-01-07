@@ -97,7 +97,7 @@ let coqtop_path () =
 
 let filter_coq_opts args =
   let argstr = String.concat " " (List.map Filename.quote args) in
-  let oc,ic,ec = Unix.open_process_full (coqtop_path () ^" -filteropts "^argstr) (Unix.environment ()) in
+  let oc,ic,ec = Unix.open_process_full (coqtop_path () ^" -nois -filteropts "^argstr) (Unix.environment ()) in
   let filtered_args = read_all_lines oc in
   let message = read_all_lines ec in
   match Unix.close_process_full (oc,ic,ec) with
