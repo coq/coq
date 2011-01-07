@@ -163,15 +163,18 @@ let pp_decl = function
   | Dind _ -> mt ()
   | Dtype _ -> mt ()
   | Dfix (rv, defs,_) ->
-      let ppv = Array.map (pp_global Term) rv in
-      prvect_with_sep fnl
-	(fun (pi,ti) ->
-	   hov 2
-	     (paren (str "define " ++ pi ++ spc () ++
-		     (pp_expr (empty_env ()) [] ti))
-	      ++ fnl ()))
-	(array_map2 (fun p b -> (p,b)) ppv defs) ++
-      fnl ()
+      let names = Array.map
+	(fun r -> if is_inline_custom r then mt () else pp_global Term r) rv
+      in
+      prvecti
+	(fun i r ->
+	  if is_inline_custom r then mt ()
+	  else
+	    hov 2
+	      (paren (str "define " ++ names.(i) ++ spc () ++
+			(pp_expr (empty_env ()) [] defs.(i)))
+	       ++ fnl ()) ++ fnl ())
+	rv
   | Dterm (r, a, _) ->
       if is_inline_custom r then mt ()
       else
