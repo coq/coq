@@ -21,11 +21,11 @@ open Nametab
 
 (**  The kind of patterns that occurs in "match ... with ... end"
 
-     locs here refers to the ident's location, not whole pat the last
-     argument of PatCstr is a possible alias ident for the pattern *)
+     locs here refers to the ident's location, not whole pat *)
 type cases_pattern =
   | PatVar of loc * name
-  | PatCstr of loc * constructor * cases_pattern list * name
+  | PatCstr of loc * constructor * cases_pattern list * name 
+      (** [PatCstr(p,C,l,x)] = "|'C' 'l' as 'x'" *)
 
 val cases_pattern_loc : cases_pattern -> loc
 
@@ -60,6 +60,9 @@ type glob_constr =
   | GProd of loc * name * binding_kind * glob_constr * glob_constr
   | GLetIn of loc * name * glob_constr * glob_constr
   | GCases of loc * case_style * glob_constr option * tomatch_tuples * cases_clauses
+      (** [GCases(l,style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in 
+	  [MatchStyle]) *)
+
   | GLetTuple of loc * name list * (name * glob_constr option) *
       glob_constr * glob_constr
   | GIf of loc * glob_constr * (name * glob_constr option) * glob_constr * glob_constr
@@ -80,12 +83,15 @@ and fix_kind =
 
 and predicate_pattern =
     name * (loc * inductive * int * name list) option
+      (** [(na,id)] = "as 'na' in 'id'" where if [id] is [Some(l,I,k,args)], [k]
+	  is the number of parameter of [I]. *)
 
 and tomatch_tuple = (glob_constr * predicate_pattern)
 
 and tomatch_tuples = tomatch_tuple list
 
 and cases_clause = (loc * identifier list * cases_pattern list * glob_constr)
+(** [(p,il,cl,t)] = "|'cl' as 'il' => 't'" *)
 
 and cases_clauses = cases_clause list
 
@@ -113,7 +119,6 @@ val loc_of_glob_constr : glob_constr -> loc
     
     Take the current alias as parameter, 
     @raise Not_found if translation is impossible *)
-
 val cases_pattern_of_glob_constr : name -> glob_constr -> cases_pattern
 
 val glob_constr_of_closed_cases_pattern : cases_pattern -> name * glob_constr

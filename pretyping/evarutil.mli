@@ -15,10 +15,9 @@ open Evd
 open Environ
 open Reductionops
 
-(** {6 This modules provides useful functions for unification modulo evars } *)
+(** {5 This modules provides useful functions for unification modulo evars } *)
 
-(**********************************************************
-   Metas *)
+(** {6 Metas} *)
 
 (** [new_meta] is a generator of unique meta variables *)
 val new_meta : unit -> metavariable
@@ -27,8 +26,7 @@ val mk_new_meta : unit -> constr
 (** [new_untyped_evar] is a generator of unique evar keys *)
 val new_untyped_evar : unit -> existential_key
 
-(**********************************************************
-   Creating a fresh evar given their type and context *)
+(** {6 Creating a fresh evar given their type and context} *)
 val new_evar :
   evar_map -> env -> ?src:loc * hole_kind -> ?filter:bool list -> types -> evar_map * constr
 
@@ -47,8 +45,7 @@ val new_evar_instance :
 
 val make_pure_subst : evar_info -> constr array -> (identifier * constr) list
 
-(**********************************************************
-   Instantiate evars *)
+(** {6 Instantiate evars} *)
 
 (** [evar_define choose env ev c] try to instantiate [ev] with [c] (typed in [env]),
    possibly solving related unification problems, possibly leaving open
@@ -56,8 +53,7 @@ val make_pure_subst : evar_info -> constr array -> (identifier * constr) list
    true); fails if the instance is not valid for the given [ev] *)
 val evar_define : ?choose:bool -> env -> existential -> constr -> evar_map -> evar_map
 
-(**********************************************************
-   Evars/Metas switching... *)
+(** {6 Evars/Metas switching...} *)
 
 (** [evars_to_metas] generates new metavariables for each non dependent
    existential and performs the replacement in the given constr; it also
@@ -66,10 +62,9 @@ val evars_to_metas : evar_map -> open_constr -> (evar_map * constr)
 
 val non_instantiated : evar_map -> (evar * evar_info) list
 
-(**********************************************************
-   Unification utils *)
+(** {6 Unification utils} *)
 
-(** [head_evar c} returns the head evar of [c] if any *)
+(** [head_evar c] returns the head evar of [c] if any *)
 exception NoHeadEvar
 val head_evar : constr -> existential_key (** may raise NoHeadEvar *)
 
@@ -105,8 +100,7 @@ val evars_of_term : constr -> Intset.t
 val evars_of_named_context : named_context -> Intset.t
 val evars_of_evar_info : evar_info -> Intset.t
 
-(**********************************************************
-   Value/Type constraints *)
+(** {6 Value/Type constraints} *)
 
 val judge_of_new_Type : unit -> unsafe_judgment
 
@@ -166,16 +160,14 @@ val flush_and_check_evars :  evar_map -> constr -> constr
    their representative that is most ancient in the context *)
 val expand_vars_in_term : env -> constr -> constr
 
-(********************************************************************
-   debug pretty-printer: *)
+(** {6 debug pretty-printer:} *)
 
 val pr_tycon_type : env -> type_constraint_type -> Pp.std_ppcmds
 val pr_tycon : env -> type_constraint -> Pp.std_ppcmds
 
 
-(********************************************************************
-   Removing hyps in evars'context;                                   
-   raise OccurHypInSimpleClause if the removal breaks dependencies   *)
+(** {6 Removing hyps in evars'context}
+raise OccurHypInSimpleClause if the removal breaks dependencies *)
 
 type clear_dependency_error =
 | OccurHypInSimpleClause of identifier option
@@ -183,14 +175,14 @@ type clear_dependency_error =
 
 exception ClearDependencyError of identifier * clear_dependency_error
 
-(* spiwack: marks an evar that has been "defined" by clear. 
+(* spiwack: marks an evar that has been "defined" by clear.
     used by [Goal] and (indirectly) [Proofview] to handle the clear tactic gracefully*)
 val cleared : bool Store.Field.t
 
 val clear_hyps_in_evi : evar_map ref -> named_context_val -> types ->
   identifier list -> named_context_val * types
 
-val push_rel_context_to_named_context : Environ.env -> types -> 
+val push_rel_context_to_named_context : Environ.env -> types ->
   named_context_val * types * constr list
 
 val generalize_evar_over_rels : evar_map -> existential -> types * constr list
