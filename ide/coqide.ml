@@ -3162,38 +3162,3 @@ let process_argv argv =
     filtered
   with _ ->
     (output_string stderr "coqtop choked on one of your option"; exit 1)
-
-let start () =
-  let argl = Array.to_list Sys.argv in
-  let files = process_argv argl in
-  let args = List.filter (fun x -> not (List.mem x files)) (List.tl argl) in
-  sup_args := String.concat " " (List.map Filename.quote args);
-  check_connection !sup_args;
-  ignore_break ();
-    GtkMain.Rc.add_default_file (lib_ide_file ".coqide-gtk2rc");
-    (try
-	 GtkMain.Rc.add_default_file (Filename.concat System.home ".coqide-gtk2rc");
-     with Not_found -> ());
-    ignore (GtkMain.Main.init ());
-    GtkData.AccelGroup.set_default_mod_mask
-      (Some [`CONTROL;`SHIFT;`MOD1;`MOD3;`MOD4]);
-    ignore (
-	     Glib.Message.set_log_handler ~domain:"Gtk" ~levels:[`ERROR;`FLAG_FATAL;
-								 `WARNING;`CRITICAL]
-	       (fun ~level msg ->
-		  if level land Glib.Message.log_level `WARNING <> 0
-		  then Pp.warning msg
-		  else failwith ("Coqide internal error: " ^ msg)));
-    main files;
-    if !Coq_config.with_geoproof then ignore (Thread.create check_for_geoproof_input ());
-    while true do
-      try
-	GtkThread.main ()
-      with
-	| Sys.Break -> prerr_endline "Interrupted." ; flush stderr
-	| e ->
-	    Pervasives.prerr_endline ("CoqIde unexpected error:" ^ (Printexc.to_string e));
-	    flush stderr;
-	    crash_save 127
-    done
-

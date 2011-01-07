@@ -71,6 +71,8 @@ usage () {
     printf "\tSpecifies whether or not to use dynamic loading of native code\n"
     echo "-coqide (opt|byte|no)"
     printf "\tSpecifies whether or not to compile Coqide\n"
+    echo "-nomacintegration"
+    printf "\tSpecifies to not try to build coqide mac integration\n"
     echo "-browser <command>"
     printf "\tUse <command> to open URL %%s\n"
     echo "-with-doc (yes|no)"
@@ -136,6 +138,7 @@ lablgtkdir_spec=no
 coqdocdir_spec=no
 arch_spec=no
 coqide_spec=no
+nomacintegration_spec=no
 browser_spec=no
 wwwcoq_spec=no
 with_geoproof=false
@@ -221,6 +224,8 @@ while : ; do
 			  *) COQIDE=no
 		      esac
 		      shift;;
+    -nomacintegration) nomacintegration_spec=yes
+		      shift;;
     -browser|--browser) browser_spec=yes
 		      BROWSER=$2
 		      shift;;
@@ -289,16 +294,16 @@ case $arch_spec in
 	ARCH="win32"
     else
 	# If not, we determine the architecture
-	if test -x /bin/arch ; then
+	if test -x /bin/uname ; then
+ 	    ARCH=`/bin/uname -s`
+ 	elif test -x /usr/bin/uname ; then
+ 	    ARCH=`/usr/bin/uname -s`
+ 	elif test -x /bin/arch ; then
  	    ARCH=`/bin/arch`
  	elif test -x /usr/bin/arch ; then
  	    ARCH=`/usr/bin/arch`
  	elif test -x /usr/ucb/arch ; then
  	    ARCH=`/usr/ucb/arch`
- 	elif test -x /bin/uname ; then
- 	    ARCH=`/bin/uname -s`
- 	elif test -x /usr/bin/uname ; then
- 	    ARCH=`/usr/bin/uname -s`
 	else
 	    echo "I can not automatically find the name of your architecture."
 	    printf "%s"\
@@ -370,6 +375,7 @@ fi
 if [ "$browser_spec" = "no" ]; then
     case $ARCH in
         win32) BROWSER='C:\PROGRA~1\INTERN~1\IEXPLORE %s' ;;
+	Darwin) BROWSER='open %s' ;;
         *) BROWSER='firefox -remote "OpenURL(%s,new-tab)" || firefox %s &' ;;
     esac
 fi
@@ -471,7 +477,7 @@ else
     HASNATDYNLINK=false
 fi
 
-case $HASNATDYNLINK,`uname -s`,`uname -r`,$CAMLVERSION in
+case $HASNATDYNLINK,$ARCH,`uname -r`,$CAMLVERSION in
     true,Darwin,9.*,3.11.*)  # ocaml 3.11.0 dynlink on MacOS 10.5 is buggy
         NATDYNLINKFLAG=os5fixme;;
     #Possibly a problem on 10.6.0/10.6.1/10.6.2
@@ -634,9 +640,20 @@ else
     elif [ ! -f "${CAMLLIB}/threads/threads.cmxa" ]; then 
 	echo "LablGtk2 found, no native threads: bytecode CoqIde will be available."
 	COQIDE=byte
-    else 
-	echo "LablGtk2 found, native threads: native CoqIde will be available."
+    else
+        echo "LablGtk2 found, native threads: native CoqIde will be available."
 	COQIDE=opt
+        if [ "$nomacintegration_spec" = "no" ] && pkg-config --exists ige-mac-integration;
+            then 
+            cflags=$cflags" `pkg-config --cflags ige-mac-integration`"
+            MACIGEFLAGS='-ccopt "`pkg-config --libs ige-mac-integration`"'
+            MACIGEFILE=ide/macjokes.o
+            MACIGEP4=-DMacInt
+            else
+            MACIGEFLAGS=""
+            MACIGEFILE=""
+            MACIGEP4=""
+            fi
     fi
 fi
 
@@ -657,9 +674,14 @@ case $ARCH in
     win32)
 	# true -> strip : it exists under cygwin !
 	STRIPCOMMAND="strip";; 
+    Darwin) if [ "$HASNATDYNLINK" = "true" ]
+	then
+	  STRIPCOMMAND="true"
+	else
+	  STRIPCOMMAND="strip"
+	fi;;
     *)
-    if [ "$coq_profile_flag" = "-p" ] || [ "$coq_debug_flag" = "-g" ] ||
-       [ "`uname -s`" = "Darwin" -a "$HASNATDYNLINK" = "true" ]
+    if [ "$coq_profile_flag" = "-p" ] || [ "$coq_debug_flag" = "-g" ]
     then
 	STRIPCOMMAND="true"
     else
@@ -805,7 +827,7 @@ esac
 
 # Determine if we enable -custom by default (Windows and MacOS)
 CUSTOM_OS=no
-if [ "$ARCH" = "win32" ] || [ "`uname -s`" = "Darwin" ]; then
+if [ "$ARCH" = "win32" ] || [ "$ARCH" = "Darwin" ]; then
     CUSTOM_OS=yes
 fi
 
@@ -858,6 +880,9 @@ echo "  Native dynamic link support       : $HASNATDYNLINK"
 fi
 if test "$COQIDE" != "no"; then
 echo "  Lablgtk2 library in               : $LABLGTKLIB"
+fi
+if test "$MACIGEFILE" != ""; then
+echo "  Mac OS integration is on"
 fi
 if test "$with_doc" = "all"; then
 echo "  Documentation                     : All"
@@ -1088,6 +1113,9 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|RANLIBEXEC|$ranlib_exec|" \
     -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
     -e "s|COQIDEOPT|$COQIDE|" \
+    -e "s|MACIGEFLAGS|$MACIGEFLAGS|" \
+    -e "s|MACIGEFILE|$MACIGEFILE|" \
+    -e "s|MACIGEP4|$MACIGEP4|" \
     -e "s|CHECKEDOUTSOURCETREE|$checkedout|" \
     -e "s|WITHDOCOPT|$with_doc|" \
     -e "s|HASNATIVEDYNLINK|$NATDYNLINKFLAG|" \

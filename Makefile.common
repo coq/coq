@@ -220,7 +220,7 @@ LINKCMX:=$(CONFIG:.cmo=.cmx) $(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cma=.cmxa)
 IDECMA:=ide/ide.cma
 
 LINKIDE:=$(LINKCMO) $(IDECMA) ide/coqide_main.ml
-LINKIDEOPT:=$(LINKCMX) $(IDECMA:.cma=.cmxa) ide/coqide_main.ml
+LINKIDEOPT:=$(IDEOPTDEPS) $(LINKCMX) $(IDECMA:.cma=.cmxa) ide/coqide_main_opt.ml
 
 # modules known by the toplevel of Coq
 

@@ -309,12 +309,14 @@ coqide-files: $(IDEFILES)
 
 $(COQIDEOPT): $(LINKIDEOPT) $(LIBCOQRUN) $(COQTOPOPT)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa threads.cmxa lablgtk.cmxa gtkThread.cmx dynlink.cmxa str.cmxa $(CAMLP4MOD).cmxa $(LIBCOQRUN) $(LINKIDEOPT)
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) $(IDEOPTFLAGS) -o $@ unix.cmxa threads.cmxa lablgtk.cmxa\
+		 gtkThread.cmx dynlink.cmxa str.cmxa $(CAMLP4MOD).cmxa $(LIBCOQRUN) $(LINKIDEOPT)
 	$(STRIP) $@
 
 $(COQIDEBYTE): $(LINKIDE) $(LIBCOQRUN) $(COQTOPBYTE)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma gtkThread.cmo dynlink.cma str.cma $(CAMLP4MOD).cma $(COQRUNBYTEFLAGS) $(LIBCOQRUN) $(LINKIDE)
+	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma gtkThread.cmo\
+		dynlink.cma str.cma $(CAMLP4MOD).cma $(COQRUNBYTEFLAGS) $(LIBCOQRUN) $(LINKIDE)
 
 $(COQIDE):
 	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)
@@ -693,6 +695,15 @@ toplevel/mltop.ml: toplevel/mltop.ml4 config/Makefile # no camlp4deps here
 toplevel/mltop.optml: toplevel/mltop.ml4 config/Makefile # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'
 	$(HIDE)$(CAMLP4O) $(PR_O) $(CAMLP4USE) $(NATDYNLINKDEF) -impl $< -o $@
+
+ide/coqide_main.ml: ide/coqide_main.ml4
+	$(SHOW)'CAMLP4O   $<'
+	$(HIDE)$(CAMLP4O) $(CAMLP4USE) -impl $< -o $@
+
+ide/coqide_main_opt.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
+	$(SHOW)'CAMLP4O   $<'
+	$(HIDE)$(CAMLP4O) $(CAMLP4USE) $(IDEOPTP4) -impl $< -o $@
+
 
 # pretty printing of the revision number when compiling a checked out
 # source tree

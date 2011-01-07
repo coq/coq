@@ -10,5 +10,10 @@
    command line, initialize the load path, load the input
    state, load the files given on the command line, load the ressource file,
    produce the output state if any, and finally will launch the interface. *)
-
-val start : unit -> unit
+val sup_args : string ref
+val do_load : string -> unit
+val process_argv : string list -> string list
+val crash_save : int -> unit
+val ignore_break : unit -> unit
+val check_for_geoproof_input : unit -> unit
+val main : string list -> unit
