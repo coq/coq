@@ -221,3 +221,8 @@ with universal_completeness_stoup (Gamma:context)(A:formula){struct A}
           (ProofForallL x t (subst_formula (remove_assoc _ x rho) A)
           (eq_rect _ (fun D => Gamma'' ; D |- C) p _ (subst_commute _ _ _ _)))))
   end.
+
+
+(* A simple example that raised an uncaught exception at some point *)
+
+Fail Check fun x => @eq_refl x <: true = true.
