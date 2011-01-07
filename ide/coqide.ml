@@ -1564,12 +1564,13 @@ let choose_save session =
 
 let do_print session =
   let av = session.analyzed_view in
-    if session.filename = ""
-    then flash_info "Cannot print: this buffer has no name"
-    else begin
+    match av#filename with
+      |None ->  flash_info "Cannot print: this buffer has no name"
+      |Some f_name ->  begin
       let cmd =
-        "cd " ^ Filename.quote (Filename.dirname session.filename) ^ "; " ^
-        !current.cmd_coqdoc ^ " -ps " ^ Filename.quote (Filename.basename session.filename) ^
+        "cd " ^ Filename.quote (Filename.dirname f_name) ^ "; " ^
+        !current.cmd_coqdoc ^ "--coqlib_path " ^Envars.coqlib () ^
+	  " -ps " ^ Filename.quote (Filename.basename f_name) ^
         " | " ^ !current.cmd_print
       in
       let print_window = GWindow.window ~title:"Print" ~modal:true ~position:`CENTER ~wm_class:"CoqIDE" ~wm_name: "CoqIDE"  () in
@@ -1829,7 +1830,8 @@ let main files =
             in
             let cmd =
               "cd " ^ Filename.quote (Filename.dirname f) ^ "; " ^
-              !current.cmd_coqdoc ^ " --" ^ kind ^ " -o " ^ (Filename.quote output) ^ " " ^ (Filename.quote basef)
+              !current.cmd_coqdoc ^ "--coqlib_path " ^Envars.coqlib () ^ " --" ^ kind ^ 
+		" -o " ^ (Filename.quote output) ^ " " ^ (Filename.quote basef)
             in
             let s,_ = run_command av#insert_message cmd in
             flash_info (cmd ^
