@@ -1,6 +1,10 @@
 Changes from V8.3 to V8.4
 =========================
 
+- Guard condition improvement. [t'] has now subterm property of [t] in [u] even
+  if [v] doesn't start by a constructor in [(match v with |C .. => fun t' => u
+  end) t].
+
 - New proof engine
 
 Tactics
