@@ -305,15 +305,16 @@ let pp_decl = function
 	in
 	hov 2 (str "type " ++ pp_global Type r ++ spc () ++ st) ++ fnl2 ()
   | Dfix (rv, defs, typs) ->
-      let max = Array.length rv in
-      let rec iter i =
-	if i = max then mt ()
-	else
-	  let e = pp_global Term rv.(i) in
-	  e ++ str " :: " ++ pp_type false [] typs.(i) ++ fnl ()
-	  ++ pp_function (empty_env ()) e defs.(i) ++ fnl2 ()
-	  ++ iter (i+1)
-      in iter 0
+      let names = Array.map
+	(fun r -> if is_inline_custom r then mt () else pp_global Term r) rv
+      in
+      prvecti
+	(fun i r ->
+	  if is_inline_custom r then mt ()
+	  else
+	    names.(i) ++ str " :: " ++ pp_type false [] typs.(i) ++ fnl ()
+	    ++ pp_function (empty_env ()) names.(i) defs.(i) ++ fnl2 ())
+	rv
   | Dterm (r, a, t) ->
       if is_inline_custom r then mt ()
       else
