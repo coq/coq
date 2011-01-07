@@ -245,7 +245,6 @@ scripts/tolink.ml: Makefile.build Makefile.common
 	$(HIDE)echo "let copts = \"-cclib -lcoqrun\"" > $@
 	$(HIDE)echo "let core_libs = \""$(LINKCMO)"\"" >> $@
 	$(HIDE)echo "let core_objs = \""$(OBJSMOD)"\"" >> $@
-	$(HIDE)echo "let ide = \""$(IDEMOD)"\"" >> $@
 
 # coqc
 
@@ -308,14 +307,14 @@ coqide-byte: $(COQIDEBYTE) $(COQIDE)
 coqide-opt:  $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
 coqide-files: $(IDEFILES)
 
-$(COQIDEOPT): $(COQTOPOPT) $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) ide/ide.cmxa
-	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -boot -ide -opt $(OPTFLAGS) -o $@
+$(COQIDEOPT): $(LINKIDEOPT) $(LIBCOQRUN) $(COQTOPOPT)
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa threads.cmxa lablgtk.cmxa gtkThread.cmx dynlink.cmxa str.cmxa $(CAMLP4MOD).cmxa $(LIBCOQRUN) $(LINKIDEOPT)
 	$(STRIP) $@
 
-$(COQIDEBYTE): $(COQTOPBYTE) $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) ide/ide.cma
-	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -boot -g -ide -top $(BYTEFLAGS) -o $@
+$(COQIDEBYTE): $(LINKIDE) $(LIBCOQRUN) $(COQTOPBYTE)
+	$(SHOW)'OCAMLOPT -o $@'
+	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma gtkThread.cmo dynlink.cma str.cma $(CAMLP4MOD).cma $(COQRUNBYTEFLAGS) $(LIBCOQRUN) $(LINKIDE)
 
 $(COQIDE):
 	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)

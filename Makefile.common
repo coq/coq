@@ -29,6 +29,12 @@ CHICKENOPT:=bin/coqchk.opt$(EXE)
 BESTCHICKEN:=bin/coqchk.$(BEST)$(EXE)
 CHICKEN:=bin/coqchk$(EXE)
 
+ifeq ($(CAMLP4),camlp4)
+CAMLP4MOD:=camlp4lib
+else
+CAMLP4MOD:=gramlib
+endif
+
 ifneq ($(HASNATDYNLINK),false)
   DYNLINKCMXA:=dynlink.cmxa
   NATDYNLINKDEF:=-DHasDynlink
@@ -212,6 +218,9 @@ LINKCMO:=$(CONFIG) $(CORECMA) $(STATICPLUGINS)
 LINKCMX:=$(CONFIG:.cmo=.cmx) $(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cma=.cmxa)
 
 IDECMA:=ide/ide.cma
+
+LINKIDE:=$(LINKCMO) $(IDECMA) ide/coqide_main.ml
+LINKIDEOPT:=$(LINKCMX) $(IDECMA:.cma=.cmxa) ide/coqide_main.ml
 
 # modules known by the toplevel of Coq
 

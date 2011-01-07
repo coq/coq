@@ -27,7 +27,6 @@ let split_list l = Str.split spaces l
 let copts     = split_list Tolink.copts
 let core_objs = split_list Tolink.core_objs
 let core_libs = split_list Tolink.core_libs
-let ide       = split_list Tolink.ide
 
 (* 3. Toplevel objects *)
 let camlp4topobjs =
@@ -51,12 +50,10 @@ let opt        = ref false
 let full       = ref false
 let top        = ref false
 let searchisos = ref false
-let coqide     = ref false
 let echo       = ref false
 
 let src_dirs () =
-  [ []; ["kernel";"byterun"]; [ "config" ]; [ "toplevel" ] ] @
-  if !coqide then [[ "ide" ]] else []
+  [ []; ["kernel";"byterun"]; [ "config" ]; [ "toplevel" ] ]
 
 let includes () =
   let coqlib = Envars.coqlib () in
@@ -65,8 +62,7 @@ let includes () =
       (fun d l -> "-I" :: ("\"" ^ List.fold_left Filename.concat coqlib d ^ "\"") :: l)
       (src_dirs ())
       (["-I"; "\"" ^ camlp4lib ^ "\""] @
-	 ["-I"; "\"" ^ coqlib ^ "\""] @
-	 (if !coqide then ["-thread"; "-I"; "+lablgtk2"] else []))
+	  ["-I"; "\"" ^ coqlib ^ "\""])
 
 (* Transform bytecode object file names in native object file names *)
 let native_suffix f =
@@ -92,18 +88,10 @@ let files_to_link userfiles =
     if not !opt || Coq_config.has_natdynlink then dynobjs else [] in
   let toplevel_objs =
     if !top then topobjs else if !opt then notopobjs else [] in
-  let ide_objs =
-    if !coqide then "Threads"::"Lablgtk"::"GtkThread"::ide else []
-  in
-  let ide_libs =
-    if !coqide then
-      ["threads.cma" ; "lablgtk.cma" ; "gtkThread.cmo" ; "ide/ide.cma" ]
-    else []
-  in
-  let objs = dyn_objs @ libobjs @ core_objs @ toplevel_objs @ ide_objs in
+  let objs = dyn_objs @ libobjs @ core_objs @ toplevel_objs in
   let modules = List.map module_of_file (objs @ userfiles)
   in
-  let libs = dyn_objs @ libobjs @ core_libs @ toplevel_objs @ ide_libs in
+  let libs = dyn_objs @ libobjs @ core_libs @ toplevel_objs in
   let libstolink =
     (if !opt then List.map native_suffix libs else libs) @ userfiles
   in
@@ -143,7 +131,6 @@ let usage () =
 \n  -o exec-file   Specify the name of the resulting toplevel\
 \n  -boot          Run in boot mode\
 \n  -echo          Print calls to external commands\
-\n  -ide           Build a toplevel for the Coq IDE\
 \n  -full          Link high level tactics\
 \n  -opt           Compile in native code\
 \n  -searchisos    Build a toplevel for SearchIsos\
@@ -169,8 +156,6 @@ let parse_args () =
     | "-opt" :: rem -> opt := true ; parse (op,fl) rem
     | "-full" :: rem -> full := true ; parse (op,fl) rem
     | "-top" :: rem -> top := true ; parse (op,fl) rem
-    | "-ide" :: rem ->
-        coqide := true; parse (op,fl) rem
     | "-v8" :: rem ->
 	Printf.eprintf "warning: option -v8 deprecated";
 	parse (op,fl) rem
@@ -257,8 +242,6 @@ let create_tmp_main_file modules =
     (* Start the right toplevel loop: Coq or Coq_searchisos *)
     if !searchisos then
       output_string oc "Cmd_searchisos_line.start();;\n"
-    else if !coqide then
-      output_string oc "Coqide.start();;\n"
     else
       output_string oc "Coqtop.start();;\n";
     close_out oc;
