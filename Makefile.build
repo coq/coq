@@ -337,7 +337,7 @@ install-ide-byte:
 
 install-ide-opt:
 	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQIDEBYTE) $(COQIDEOPT) $(FULLBINDIR)
+	$(INSTALLBIN) $(COQIDEOPT) $(FULLBINDIR)
 	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA) $(IDECMA:.cma=.cmxa) $(IDECMA:.cma=.a) \
 	  `cat $(IDECMA:.cma=.mllib.d) | tr ' ' '\n' | sed -n -e "/\.cmo/s/\.cmo/\.cmi/p"`
 	cd $(FULLBINDIR); ln -sf coqide.opt$(EXE) coqide$(EXE)
