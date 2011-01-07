@@ -1591,6 +1591,54 @@ let do_print session =
         print_window#misc#show ()
     end
 
+let load_file handler f =
+      let f = absolute_filename f in
+      try
+        prerr_endline "Loading file starts";
+        if not (Util.list_fold_left_i
+                  (fun i found x -> if found then found else
+                     let {analyzed_view=av} = x in
+                     (match av#filename with
+                        | None -> false
+                        | Some fn ->
+                            if same_file f fn
+                            then (session_notebook#goto_page i; true)
+                            else false))
+                  0 false session_notebook#pages)
+        then begin
+          prerr_endline "Loading: must open";
+          let b = Buffer.create 1024 in
+          prerr_endline "Loading: get raw content";
+          with_file handler f ~f:(input_channel b);
+          prerr_endline "Loading: convert content";
+          let s = do_convert (Buffer.contents b) in
+          prerr_endline "Loading: create view";
+          let session = create_session () in
+          session.tab_label#set_text (Glib.Convert.filename_to_utf8 (Filename.basename f));
+          prerr_endline "Loading: adding view";
+          let index = session_notebook#append_term session in
+          let av = session.analyzed_view in
+          prerr_endline "Loading: set filename";
+          av#set_filename (Some f);
+          prerr_endline "Loading: stats";
+          av#update_stats;
+          let input_buffer = session.script#buffer in
+          prerr_endline "Loading: fill buffer";
+          input_buffer#set_text s;
+          input_buffer#place_cursor ~where:input_buffer#start_iter;
+          prerr_endline ("Loading: switch to view "^ string_of_int index);
+          session_notebook#goto_page index;
+          prerr_endline "Loading: highlight";
+          input_buffer#set_modified false;
+          prerr_endline "Loading: clear undo";
+          session.script#clear_undo;
+          prerr_endline "Loading: success"
+        end
+      with
+        | e -> handler ("Load failed: "^(Printexc.to_string e))
+
+let do_load = load_file flash_info
+
 
 let main files =
   (* Statup preferences *)
@@ -1636,59 +1684,12 @@ let main files =
     let file_factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/File/" file_menu ~accel_group in
 
     (* File/Load Menu *)
-    let load_file handler f =
-      let f = absolute_filename f in
-      try
-        prerr_endline "Loading file starts";
-        if not (Util.list_fold_left_i
-                  (fun i found x -> if found then found else
-                     let {analyzed_view=av} = x in
-                     (match av#filename with
-                        | None -> false
-                        | Some fn ->
-                            if same_file f fn
-                            then (session_notebook#goto_page i; true)
-                            else false))
-                  0 false session_notebook#pages)
-        then begin
-          prerr_endline "Loading: must open";
-          let b = Buffer.create 1024 in
-          prerr_endline "Loading: get raw content";
-          with_file handler f ~f:(input_channel b);
-          prerr_endline "Loading: convert content";
-          let s = do_convert (Buffer.contents b) in
-          prerr_endline "Loading: create view";
-          let session = create_session () in
-          session.tab_label#set_text (Glib.Convert.filename_to_utf8 (Filename.basename f));
-          prerr_endline "Loading: adding view";
-          let index = session_notebook#append_term session in
-          let av = session.analyzed_view in
-          prerr_endline "Loading: set filename";
-          av#set_filename (Some f);
-          prerr_endline "Loading: stats";
-          av#update_stats;
-          let input_buffer = session.script#buffer in
-          prerr_endline "Loading: fill buffer";
-          input_buffer#set_text s;
-          input_buffer#place_cursor ~where:input_buffer#start_iter;
-          prerr_endline ("Loading: switch to view "^ string_of_int index);
-          session_notebook#goto_page index;
-          prerr_endline "Loading: highlight";
-          input_buffer#set_modified false;
-          prerr_endline "Loading: clear undo";
-          session.script#clear_undo;
-          prerr_endline "Loading: success"
-        end
-      with
-        | e -> handler ("Load failed: "^(Printexc.to_string e))
-    in
-    let load f = load_file flash_info f in
     let load_m = file_factory#add_item "_New"
                    ~key:GdkKeysyms._N in
     let load_f () =
       match select_file_for_save ~title:"Create file" () with
         | None -> ()
-        | Some f -> load f
+        | Some f -> do_load f
     in
     ignore (load_m#connect#activate ~callback:(load_f));
 
@@ -1697,7 +1698,7 @@ let main files =
     let load_f () =
       match select_file_for_open ~title:"Load file" () with
         | None -> ()
-        | Some f -> load f
+        | Some f -> do_load f
     in
     ignore (load_m#connect#activate ~callback:(load_f));
 
@@ -2731,7 +2732,7 @@ let cur_ct = session_notebook#current_term.toplvl in
 					  let next_error () =
 					    try
 					      let file,line,start,stop,error_msg = search_next_error () in
-                                              load file;
+					      do_load file;
                                               let v = session_notebook#current_term in
 						let av = v.analyzed_view in
 						let input_buffer = v.script#buffer in
@@ -3112,7 +3113,7 @@ let cur_ct = session_notebook#current_term.toplvl in
  							      if List.length files >=1 then
 								begin
 								  List.iter (fun f ->
-									       if Sys.file_exists f then load f else
+									       if Sys.file_exists f then do_load f else
                                                                                  let f = if Filename.check_suffix f ".v" then f else f^".v" in
 										 load_file (fun s -> print_endline s; exit 1) f)
                                                                     files;
