@@ -90,4 +90,6 @@ val dump_universes :
   (constraint_type -> string -> string -> unit) ->
   universes -> unit
 
+(** {6 Hash-consing } *)
+
 val hcons1_univ : universe -> universe

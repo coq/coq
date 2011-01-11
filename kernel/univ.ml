@@ -13,6 +13,9 @@
 
 (* Revisions by Bruno Barras, Hugo Herbelin, Pierre Letouzey *)
 
+open Pp
+open Util
+
 (* Universes are stratified by a partial ordering $\le$.
    Let $\~{}$ be the associated equivalence. We also have a strict ordering
    $<$ between equivalence classes, and we maintain that $<$ is acyclic,
@@ -24,21 +27,6 @@
    The equivalence $\~{}$ is represented by a tree structure, as in the
    union-find algorithm. The assertions $<$ and $\le$ are represented by
    adjacency lists *)
-
-open Pp
-open Util
-
-(* An algebraic universe [universe] is either a universe variable
-   [universe_level] or a formal universe known to be greater than some
-   universe variables and strictly greater than some (other) universe
-   variables
-
-   Universes variables denote universes initially present in the term
-   to type-check and non variable algebraic universes denote the
-   universes inferred while type-checking: it is either the successor
-   of a universe present in the initial term to type-check or the
-   maximum of two algebraic universes
- *)
 
 type universe_level =
   | Set
@@ -62,6 +50,18 @@ let string_of_univ_level = function
 
 module UniverseLMap =
  Map.Make (struct type t = universe_level let compare = cmp_univ_level end)
+
+(* An algebraic universe [universe] is either a universe variable
+   [universe_level] or a formal universe known to be greater than some
+   universe variables and strictly greater than some (other) universe
+   variables
+
+   Universes variables denote universes initially present in the term
+   to type-check and non variable algebraic universes denote the
+   universes inferred while type-checking: it is either the successor
+   of a universe present in the initial term to type-check or the
+   maximum of two algebraic universes
+ *)
 
 type universe =
   | Atom of universe_level
