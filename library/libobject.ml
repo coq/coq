@@ -16,7 +16,7 @@ open Mod_subst
    wants to work with restricted Coq programs that have only parts of
    the full capabilities, but may still be able to work correctly for
    limited purposes.  One example is for the graphical interface, that uses
-   such a limite coq process to do only parsing.  It loads .vo files, but
+   such a limited Coq process to do only parsing.  It loads .vo files, but
    is only interested in loading the grammar rule definitions. *)
 
 let relax_flag = ref false;;
@@ -55,7 +55,7 @@ let default_object s = {
    declare_object { (default_object "MY OBJECT") with
        cache_function = fun (sp,a) -> Mytbl.add sp a}
 
-   and the listed functions are only those which definitions accually
+   and the listed functions are only those which definitions actually
    differ from the default.
 
    This helps introducing new functions in objects.

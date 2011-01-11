@@ -15,12 +15,12 @@ open Mod_subst
    * a caching function specifying how to add the object in the current
      scope;
      If the object wishes to register its visibility in the Nametab,
-     it should do so for all possible sufixes.
+     it should do so for all possible suffixes.
 
    * a loading function, specifying what to do when the module
      containing the object is loaded;
      If the object wishes to register its visibility in the Nametab,
-     it should do so for all sufixes no shorter than the "int" argument
+     it should do so for all suffixes no shorter than the "int" argument
 
    * an opening function, specifying what to do when the module
      containing the object is opened (imported);
@@ -35,7 +35,7 @@ open Mod_subst
                   the module name must be updated
      Keep       - the object is not substitutive, but survives module
                   closing
-     Anticipate - this is for objects that have to be explicitely
+     Anticipate - this is for objects that have to be explicitly
                   managed by the [end_module] function (like Require
                   and Read markers)
 
