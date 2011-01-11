@@ -171,7 +171,7 @@ type links = Both | Best | BestInPlace | Ide
 
 let all_binaries =
  [ "coqtop", coqtop, Both;
-   "coqide", coqide, Ide;
+   "coqide", "ide/coqide_main", Ide;
    "coqmktop", coqmktop, Both;
    "coqc", "scripts/coqc", Both;
    "coqchk", "checker/main", Both;
@@ -325,14 +325,18 @@ let extra_rules () = begin
 
   flag ["compile"; "ocaml"] (S [A"-rectypes"; camlp4incl]);
   flag ["link"; "ocaml"] (S [A"-rectypes"; camlp4incl]);
-  flag ["compile"; "ocaml"; "ide"] lablgtkincl;
-  flag ["link"; "ocaml"; "ide"] lablgtkincl;
+  flag ["ocaml"; "ide"; "compile"] lablgtkincl;
+  flag ["ocaml"; "ide"; "link"] lablgtkincl;
+  flag ["ocaml"; "ide"; "link"; "byte"] (S [A"lablgtk.cma"; A"gtkThread.cmo"]);
+  flag ["ocaml"; "ide"; "link"; "native"] (S [A"lablgtk.cmxa"; A"gtkThread.cmx"]);
 
 (** C code for the VM *)
 
   dep ["compile"; "c"] c_headers;
   flag ["compile"; "c"] cflags;
-  dep ["link"; "ocaml"; "use_libcoqrun"] [libcoqrun];
+  dep ["ocaml"; "use_libcoqrun"; "compile"] [libcoqrun];
+  dep ["ocaml"; "use_libcoqrun"; "link"; "native"] [libcoqrun];
+  flag ["ocaml"; "use_libcoqrun"; "link"; "byte"] (Sh Coq_config.coqrunbyteflags);
 
   (* we need to use a different ocamlc. For now we copy the rule *)
   if w32 then
@@ -379,25 +383,19 @@ let extra_rules () = begin
 	      "let ide = \""^ide_mods^"\"\n"],
 	     tolink));
 
-(** Coqtop and coqide *)
+(** Coqtop *)
 
-  let mktop_rule f is_ide =
-    let fo = f^".native" and fb = f^".byte" in
-    let ideflag = if is_ide then A"-ide" else N in
+  let () =
+    let fo = coqtop^".native" and fb = coqtop^".byte" in
     let depsall = [coqmktop_boot;libcoqrun] in
     let depso = "coq_config.cmx" :: core_cmxa in
     let depsb = "coq_config.cmo" :: core_cma in
-    let depideo = if is_ide then [ide_cmxa] else [] in
-    let depideb = if is_ide then [ide_cma] else [] in
-    let w32ideflag = (*if is_ide then [A"-ccopt";A"\"-link -mwindows\""] else*) [] in
-    let w32flag = if not w32 then N else S ([A"-camlbin";A w32bin]@w32ideflag) in
-    if opt then rule fo ~prod:fo ~deps:(depsall@depso@depideo) ~insert:`top
-      (cmd [P coqmktop_boot;w32flag;A"-boot";A"-opt";ideflag;incl fo;A"-o";Px fo]);
-    rule fb ~prod:fb ~deps:(depsall@depsb@depideb) ~insert:`top
-      (cmd [P coqmktop_boot;w32flag;A"-boot";A"-top";ideflag;incl fb;A"-o";Px fb]);
+    let w32flag = if not w32 then N else S ([A"-camlbin";A w32bin]) in
+    if opt then rule fo ~prod:fo ~deps:(depsall@depso) ~insert:`top
+      (cmd [P coqmktop_boot;w32flag;A"-boot";A"-opt";incl fo;A"-o";Px fo]);
+    rule fb ~prod:fb ~deps:(depsall@depsb) ~insert:`top
+      (cmd [P coqmktop_boot;w32flag;A"-boot";A"-top";incl fb;A"-o";Px fb]);
   in
-  mktop_rule coqtop false;
-  mktop_rule coqide true;
 
 (** Coq files dependencies *)
 
