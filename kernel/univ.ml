@@ -28,31 +28,35 @@ open Util
    union-find algorithm. The assertions $<$ and $\le$ are represented by
    adjacency lists *)
 
-type universe_level =
-  | Set
-  | Level of Names.dir_path * int
+module UniverseLevel = struct
 
-(* A specialized comparison function: we compare the [int] part first.
-   This way, most of the time, the [dir_path] part is not considered. *)
+  type t =
+    | Set
+    | Level of Names.dir_path * int
 
-let cmp_univ_level u v = match u,v with
-  | Set, Set -> 0
-  | Set, _ -> -1
-  | _, Set -> 1
-  | Level (dp1,i1), Level (dp2,i2) ->
+  (* A specialized comparison function: we compare the [int] part
+     first (this property is used by the [check_sorted] function
+     below). This way, most of the time, the [dir_path] part is not
+     considered. *)
+
+  let compare u v = match u,v with
+    | Set, Set -> 0
+    | Set, _ -> -1
+    | _, Set -> 1
+    | Level (dp1, i1), Level (dp2, i2) ->
       if i1 < i2 then -1
       else if i1 > i2 then 1
       else compare dp1 dp2
 
-let string_of_univ_level = function
-  | Set -> "Set"
-  | Level (d,n) -> Names.string_of_dirpath d^"."^string_of_int n
+  let to_string = function
+    | Set -> "Set"
+    | Level (d,n) -> Names.string_of_dirpath d^"."^string_of_int n
+end
 
-module UniverseLMap =
- Map.Make (struct type t = universe_level let compare = cmp_univ_level end)
+module UniverseLMap = Map.Make (UniverseLevel)
 
 (* An algebraic universe [universe] is either a universe variable
-   [universe_level] or a formal universe known to be greater than some
+   [UniverseLevel.t] or a formal universe known to be greater than some
    universe variables and strictly greater than some (other) universe
    variables
 
@@ -61,15 +65,15 @@ module UniverseLMap =
    universes inferred while type-checking: it is either the successor
    of a universe present in the initial term to type-check or the
    maximum of two algebraic universes
- *)
+*)
 
 type universe =
-  | Atom of universe_level
-  | Max of universe_level list * universe_level list
+  | Atom of UniverseLevel.t
+  | Max of UniverseLevel.t list * UniverseLevel.t list
 
-let make_univ (m,n) = Atom (Level (m,n))
+let make_univ (m,n) = Atom (UniverseLevel.Level (m,n))
 
-let pr_uni_level u = str (string_of_univ_level u)
+let pr_uni_level u = str (UniverseLevel.to_string u)
 
 let pr_uni = function
   | Atom u ->
@@ -98,7 +102,7 @@ let super = function
 let sup u v =
   match u,v with
     | Atom u, Atom v ->
-	if cmp_univ_level u v = 0 then Atom u else Max ([u;v],[])
+	if UniverseLevel.compare u v = 0 then Atom u else Max ([u;v],[])
     | u, Max ([],[]) -> u
     | Max ([],[]), v -> v
     | Atom u, Max (gel,gtl) -> Max (list_add_set u gel,gtl)
@@ -110,16 +114,16 @@ let sup u v =
 
 (* Comparison on this type is pointer equality *)
 type canonical_arc =
-    { univ: universe_level; lt: universe_level list; le: universe_level list }
+    { univ: UniverseLevel.t; lt: UniverseLevel.t list; le: UniverseLevel.t list }
 
 let terminal u = {univ=u; lt=[]; le=[]}
 
-(* A universe_level is either an alias for another one, or a canonical one,
+(* A UniverseLevel.t is either an alias for another one, or a canonical one,
    for which we know the universes that are above *)
 
 type univ_entry =
     Canonical of canonical_arc
-  | Equiv of universe_level
+  | Equiv of UniverseLevel.t
 
 
 type universes = univ_entry UniverseLMap.t
@@ -139,27 +143,27 @@ let is_type0m_univ = function
   | _ -> false
 
 (* The level of predicative Set *)
-let type0_univ = Atom Set
+let type0_univ = Atom UniverseLevel.Set
 
 let is_type0_univ = function
-  | Atom Set -> true
-  | Max ([Set],[]) -> warning "Non canonical Set"; true
+  | Atom UniverseLevel.Set -> true
+  | Max ([UniverseLevel.Set], []) -> warning "Non canonical Set"; true
   | u -> false
 
 let is_univ_variable = function
-  | Atom a when a<>Set -> true
+  | Atom a when a<>UniverseLevel.Set -> true
   | _ -> false
 
 (* When typing [Prop] and [Set], there is no constraint on the level,
    hence the definition of [type1_univ], the type of [Prop] *)
 
-let type1_univ = Max ([],[Set])
+let type1_univ = Max ([], [UniverseLevel.Set])
 
 let initial_universes = UniverseLMap.empty
 
-(* Every universe_level has a unique canonical arc representative *)
+(* Every UniverseLevel.t has a unique canonical arc representative *)
 
-(* repr : universes -> universe_level -> canonical_arc *)
+(* repr : universes -> UniverseLevel.t -> canonical_arc *)
 (* canonical representative : we follow the Equiv links *)
 
 let repr g u =
@@ -206,7 +210,7 @@ let reprleq g arcu =
   searchrec [] arcu.le
 
 
-(* between : universe_level -> canonical_arc -> canonical_arc list *)
+(* between : UniverseLevel.t -> canonical_arc -> canonical_arc list *)
 (* between u v = {w|u<=w<=v, w canonical}          *)
 (* between is the most costly operation *)
 
@@ -321,7 +325,7 @@ let rec check_eq g u v =
 let compare_greater g strict u v =
   let g, arcu = safe_repr g u in
   let g, arcv = safe_repr g v in
-  if not strict && arcv == snd (safe_repr g Set) then true else
+  if not strict && arcv == snd (safe_repr g UniverseLevel.Set) then true else
   match compare g arcv arcu with
     | (EQ|LE) -> not strict
     | LT -> true
@@ -342,7 +346,7 @@ let check_geq g u v =
 
 (** Enforcing new constraints : [setlt], [setleq], [merge], [merge_disc] *)
 
-(* setlt : universe_level -> universe_level -> unit *)
+(* setlt : UniverseLevel.t -> UniverseLevel.t -> unit *)
 (* forces u > v *)
 (* this is normally an update of u in g rather than a creation. *)
 let setlt g arcu arcv =
@@ -356,7 +360,7 @@ let setlt_if (g,arcu) v =
   | LT -> g, arcu
   | _ -> setlt g arcu arcv
 
-(* setleq : universe_level -> universe_level -> unit *)
+(* setleq : UniverseLevel.t -> UniverseLevel.t -> unit *)
 (* forces u >= v *)
 (* this is normally an update of u in g rather than a creation. *)
 let setleq g arcu arcv =
@@ -371,7 +375,7 @@ let setleq_if (g,arcu) v =
   | NLE -> setleq g arcu arcv
   | _ -> g, arcu
 
-(* merge : universe_level -> universe_level -> unit *)
+(* merge : UniverseLevel.t -> UniverseLevel.t -> unit *)
 (* we assume  compare(u,v) = LE *)
 (* merge u v  forces u ~ v with repr u as canonical repr *)
 let merge g arcu arcv =
@@ -389,7 +393,7 @@ let merge g arcu arcv =
 	fst g_arcu
     | [] -> anomaly "Univ.between"
 
-(* merge_disc : universe_level -> universe_level -> unit *)
+(* merge_disc : UniverseLevel.t -> UniverseLevel.t -> unit *)
 (* we assume  compare(u,v) = compare(v,u) = NLE *)
 (* merge_disc u v  forces u ~ v with repr u as canonical repr *)
 let merge_disc g arcu arcv =
@@ -408,7 +412,7 @@ exception UniverseInconsistency of constraint_type * universe * universe
 
 let error_inconsistency o u v = raise (UniverseInconsistency (o,Atom u,Atom v))
 
-(* enforce_univ_leq : universe_level -> universe_level -> unit *)
+(* enforce_univ_leq : UniverseLevel.t -> UniverseLevel.t -> unit *)
 (* enforce_univ_leq u v will force u<=v if possible, will fail otherwise *)
 let enforce_univ_leq u v g =
   let g,arcu = safe_repr g u in
@@ -422,7 +426,7 @@ let enforce_univ_leq u v g =
            | EQ -> anomaly "Univ.compare")
     | _ -> g
 
-(* enforc_univ_eq : universe_level -> universe_level -> unit *)
+(* enforc_univ_eq : UniverseLevel.t -> UniverseLevel.t -> unit *)
 (* enforc_univ_eq u v will force u=v if possible, will fail otherwise *)
 let enforce_univ_eq u v g =
   let g,arcu = safe_repr g u in
@@ -453,7 +457,7 @@ let enforce_univ_lt u v g =
 
 (* Constraints and sets of consrtaints. *)
 
-type univ_constraint = universe_level * constraint_type * universe_level
+type univ_constraint = UniverseLevel.t * constraint_type * UniverseLevel.t
 
 let enforce_constraint cst g =
   match cst with
@@ -476,7 +480,7 @@ type constraint_function =
     universe -> universe -> constraints -> constraints
 
 let constraint_add_leq v u c =
-  if v = Set then c else Constraint.add (v,Le,u) c
+  if v = UniverseLevel.Set then c else Constraint.add (v,Le,u) c
 
 let enforce_geq u v c =
   match u, v with
@@ -497,7 +501,7 @@ let merge_constraints c g =
 (* Normalization *)
 
 module UniverseLSet =
- Set.Make (struct type t = universe_level let compare = cmp_univ_level end)
+ Set.Make (UniverseLevel)
 
 let lookup_level u g =
   try Some (UniverseLMap.find u g) with Not_found -> None
@@ -559,8 +563,8 @@ let check_sorted g sorted =
     | Equiv v -> assert (get v == repr_u)
     | Canonical {univ=u'; lt=lt; le=le} ->
       assert (u == u');
-      List.iter (fun v -> assert (cmp_univ_level repr_u (get v) <= 0)) le;
-      List.iter (fun v -> assert (cmp_univ_level repr_u (get v) < 0)) lt) g
+      List.iter (fun v -> assert (UniverseLevel.compare repr_u (get v) <= 0)) le;
+      List.iter (fun v -> assert (UniverseLevel.compare repr_u (get v) < 0)) lt) g
 
 (** [sort_universes g] builds a map from universes in [g] to natural
     numbers. It outputs a graph containing equivalence edges from each
@@ -596,11 +600,11 @@ let sort_universes orig_g =
       (fun u deg res -> if deg = 0 then u::res else res) degs []
   in
   (* [init] should contain at least [Set] *)
-  assert (List.mem Set init);
-  let make_level n = Level (mp, n) in
+  assert (List.mem UniverseLevel.Set init);
+  let make_level n = UniverseLevel.Level (mp, n) in
   let rec reduce level_map degs n level us =
     (* preconditions: [us] is the list of nodes for universe number
-       [n], supposed non-empty, and [level] is the [universe_level]
+       [n], supposed non-empty, and [level] is the [UniverseLevel.t]
        corresponding to [n] *)
     assert (us <> [] && level = make_level n);
     let edge = Equiv level in
@@ -654,7 +658,7 @@ let sort_universes orig_g =
 (* Temporary inductive type levels *)
 
 let fresh_level =
-  let n = ref 0 in fun () -> incr n; Level (Names.make_dirpath [],!n)
+  let n = ref 0 in fun () -> incr n; UniverseLevel.Level (Names.make_dirpath [],!n)
 
 let fresh_local_univ () = Atom (fresh_level ())
 
@@ -759,11 +763,11 @@ let pr_constraints c =
 let dump_universes output g =
   let dump_arc u = function
     | Canonical {univ=u; lt=lt; le=le} ->
-	let u_str = string_of_univ_level u in
-	List.iter (fun v -> output Lt u_str (string_of_univ_level v)) lt;
-	List.iter (fun v -> output Le u_str (string_of_univ_level v)) le
+	let u_str = UniverseLevel.to_string u in
+	List.iter (fun v -> output Lt u_str (UniverseLevel.to_string v)) lt;
+	List.iter (fun v -> output Le u_str (UniverseLevel.to_string v)) le
     | Equiv v ->
-      output Eq (string_of_univ_level u) (string_of_univ_level v)
+      output Eq (UniverseLevel.to_string u) (UniverseLevel.to_string v)
   in
     UniverseLMap.iter dump_arc g
 
@@ -775,8 +779,8 @@ module Huniv =
       type t = universe
       type u = Names.dir_path -> Names.dir_path
       let hash_aux hdir = function
-	| Set -> Set
-	| Level (d,n) -> Level (hdir d,n)
+	| UniverseLevel.Set -> UniverseLevel.Set
+	| UniverseLevel.Level (d,n) -> UniverseLevel.Level (hdir d,n)
       let hash_sub hdir = function
 	| Atom u -> Atom (hash_aux hdir u)
 	| Max (gel,gtl) ->
