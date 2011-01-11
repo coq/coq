@@ -755,7 +755,8 @@ GEXTEND Gram
       | IDENT "Scope"; s = IDENT -> PrintScope s
       | IDENT "Visibility"; s = OPT [x = IDENT -> x ] -> PrintVisibility s
       | IDENT "Implicit"; qid = smart_global -> PrintImplicit qid
-      | IDENT "Universes"; fopt = OPT ne_string -> PrintUniverses fopt
+      | IDENT "Universes"; fopt = OPT ne_string -> PrintUniverses (false, fopt)
+      | IDENT "Sorted"; IDENT "Universes"; fopt = OPT ne_string -> PrintUniverses (true, fopt)
       | IDENT "Assumptions"; qid = smart_global -> PrintAssumptions (false, qid)
       | IDENT "Opaque"; IDENT "Dependencies"; qid = smart_global -> PrintAssumptions (true, qid) ] ]
   ;

@@ -51,7 +51,7 @@ type printable =
   | PrintCoercions
   | PrintCoercionPaths of class_rawexpr * class_rawexpr
   | PrintCanonicalConversions
-  | PrintUniverses of string option
+  | PrintUniverses of bool * string option
   | PrintHint of reference or_by_notation
   | PrintHintGoal
   | PrintHintDbName of string

@@ -63,6 +63,8 @@ type constraint_type = Lt | Le | Eq
 exception UniverseInconsistency of constraint_type * universe * universe
 
 val merge_constraints : constraints -> universes -> universes
+val normalize_universes : universes -> universes
+val sort_universes : universes -> universes
 
 (** {6 Support for sort-polymorphic inductive types } *)
 

@@ -202,7 +202,7 @@ let print_modtype r =
   with
       Not_found -> msgnl (str"Unknown Module Type " ++ pr_qualid qid)
 
-let dump_universes s =
+let dump_universes_gen g s =
   let output = open_out s in
   let output_constraint, close =
     if Filename.check_suffix s ".dot" || Filename.check_suffix s ".gv" then begin
@@ -232,11 +232,16 @@ let dump_universes s =
     end
   in
   try
-    Univ.dump_universes output_constraint (Global.universes ());
+    Univ.dump_universes output_constraint g;
     close ();
     msgnl (str ("Universes written to file \""^s^"\"."))
   with
       e -> close (); raise e
+
+let dump_universes sorted s =
+  let g = Global.universes () in
+  let g = if sorted then Univ.sort_universes g else g in
+  dump_universes_gen g s
 
 (*********************)
 (* "Locate" commands *)
@@ -1112,8 +1117,11 @@ let vernac_print = function
   | PrintCoercionPaths (cls,clt) ->
       ppnl (Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt))
   | PrintCanonicalConversions -> ppnl (Prettyp.print_canonical_projections ())
-  | PrintUniverses None -> pp (Univ.pr_universes (Global.universes ()))
-  | PrintUniverses (Some s) -> dump_universes s
+  | PrintUniverses (b, None) ->
+    let univ = Global.universes () in
+    let univ = if b then Univ.sort_universes univ else univ in
+    pp (Univ.pr_universes univ)
+  | PrintUniverses (b, Some s) -> dump_universes b s
   | PrintHint r -> Auto.print_hint_ref (smart_global r)
   | PrintHintGoal -> Auto.print_applicable_hint ()
   | PrintHintDbName s -> Auto.print_hint_db_by_name s
