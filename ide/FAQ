@@ -49,21 +49,15 @@ R5)-First solution : type "<CONTROL><SHIFT>2200" to enter a forall in the script
 	Further symbols can be bound on higher Fxx keys or on even on other keys you
 	do not need .
 
-Q6) How to build a custom CoqIde with user ml code?
-R6) Use 
-	coqmktop -ide -byte m1.cmo...mi.cmo
-    or 
-	coqmktop -ide -opt m1.cmx...mi.cmx
-
-Q7) How to customize the shortcuts for menus?
-R7) Two solutions are offered:
+Q6) How to customize the shortcuts for menus?
+R6) Two solutions are offered:
   - Edit $HOME/.coqide.keys by hand or
   - Add "gtk-can-change-accels = 1" in your .coqide-gtk2rc file. Then
     from CoqIde, you may select a menu entry and press the desired 
     shortcut. 
 
-Q8) What encoding should I use? What is this \x{iiii} in my file?
-R8) The encoding option is related to the way files are saved. 
+Q7) What encoding should I use? What is this \x{iiii} in my file?
+R7) The encoding option is related to the way files are saved.
  Keep it as UTF-8 until it becomes important for you to exchange files 
  with non UTF-8 aware applications.
  If you choose something else than UTF-8, then missing characters will 
