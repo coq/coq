@@ -216,8 +216,7 @@ let dump_universes s =
           | Univ.Le ->
             Printf.fprintf output "  \"%s\" -> \"%s\" [style=solid];\n" right left
           | Univ.Eq ->
-            Printf.fprintf output "  \"%s\" -> \"%s\" [style=solid];\n" left right;
-            Printf.fprintf output "  \"%s\" -> \"%s\" [style=solid];\n" right left
+            Printf.fprintf output "  \"%s\" -> \"%s\" [style=dashed];\n" left right
       end, begin fun () ->
         if Lazy.lazy_is_val init then Printf.fprintf output "}\n";
         close_out output
