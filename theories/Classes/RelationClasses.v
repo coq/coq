@@ -141,9 +141,9 @@ Program Instance impl_Transitive : Transitive impl.
 
 (** Logical equivalence. *)
 
-Program Instance iff_Reflexive : Reflexive iff.
-Program Instance iff_Symmetric : Symmetric iff.
-Program Instance iff_Transitive : Transitive iff.
+Instance iff_Reflexive : Reflexive iff := iff_refl.
+Instance iff_Symmetric : Symmetric iff := iff_sym.
+Instance iff_Transitive : Transitive iff := iff_trans.
 
 (** Leibniz equality. *)
 
@@ -313,6 +313,7 @@ Notation "∙⊥∙" := false_predicate : predicate_scope.
 (** Predicate equivalence is an equivalence, and predicate implication defines a preorder. *)
 
 Program Instance predicate_equivalence_equivalence : Equivalence (@predicate_equivalence l).
+
   Next Obligation.
     induction l ; firstorder.
   Qed.

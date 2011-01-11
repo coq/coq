@@ -315,19 +315,19 @@ let hints_tac hints =
 	    (fun () -> (* if !typeclasses_debug then msgnl (str"backtracked after " ++ pp); *)
 	    aux (succ i) tl)
 	  in
-	  let sgls = None in
-	  (*   evars_to_goals (fun evm ev evi -> *)
-	  (*   if Typeclasses.is_resolvable evi &&  *)
-	  (*     (not info.only_classes || Typeclasses.is_class_evar evm evi) then *)
-	  (*     Typeclasses.mark_unresolvable evi, true *)
-	  (*   else evi, false) s *)
-	  (* in *)
-	  let nbgls, newgls, s' =
+	  let sgls = 
+	    evars_to_goals (fun evm ev evi ->
+	    if Typeclasses.is_resolvable evi &&
+	      (not info.only_classes || Typeclasses.is_class_evar evm evi) then
+	      Typeclasses.mark_unresolvable evi, true
+	    else evi, false) s
+	  in
+	  let newgls, s' =
 	    let gls' = List.map (fun g -> (None, g)) gls in
 	    match sgls with
-	    | None -> List.length gls', gls', s
+	    | None -> gls', s
 	    | Some (evgls, s') ->
-		(List.length gls', gls' @ List.map (fun (ev, x) -> (Some ev, x)) evgls, s')
+		(gls' @ List.map (fun (ev, x) -> (Some ev, x)) evgls, s')
 	  in
 	  let gls' = list_map_i (fun j (evar, g) -> 
 	    let info = 
@@ -633,9 +633,26 @@ ARGUMENT EXTEND depth TYPED AS int option PRINTED BY pr_depth
 | [ int_or_var_opt(v) ] -> [ match v with Some (ArgArg i) -> Some i | _ -> None ]
 END
 
+(* true = All transparent, false = Opaque if possible *)
+let set_typeclasses_debug d = (:=) typeclasses_debug d;
+  Typeclasses.solve_instanciations_problem := solve_inst d true default_eauto_depth
+    
+let get_typeclasses_debug () = !typeclasses_debug
+  
+open Goptions
+
+let set_typeclasses_debug =
+  declare_bool_option
+    { optsync  = true;
+      optname  = "debug output for typeclasses proof search";
+      optkey   = ["Typeclasses";"Debug"];
+      optread  = get_typeclasses_debug;
+      optwrite = set_typeclasses_debug; }
+
+
 VERNAC COMMAND EXTEND Typeclasses_Settings
  | [ "Typeclasses" "eauto" ":=" debug(d) search_mode(s) depth(depth) ] -> [
-     typeclasses_debug := d;
+     set_typeclasses_debug d;
      let mode = match s with Some t -> t | None -> true in
      let depth = match depth with Some i -> i | None -> default_eauto_depth in
        Typeclasses.solve_instanciations_problem :=
@@ -648,7 +665,7 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state) dbs gl 
     let dbs = list_map_filter (fun db -> try Some (Auto.searchtable_map db) with _ -> None) dbs in
     let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
       eauto ~only_classes ~st dbs gl
-   with Not_found -> tclFAIL 0 (str" typeclasses eauto failed") gl
+   with Not_found -> tclFAIL 0 (str" typeclasses eauto failed on: " ++ Printer.pr_goal gl) gl
  
 TACTIC EXTEND typeclasses_eauto
 | [ "typeclasses" "eauto" "with" ne_preident_list(l) ] -> [ typeclasses_eauto l ]
