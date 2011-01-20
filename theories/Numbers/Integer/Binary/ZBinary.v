@@ -193,7 +193,11 @@ Definition rem := Zrem.
 
 (** Bitwise operations *)
 
-Definition testbit_spec := Ztestbit_spec.
+Program Instance testbit_wd : Proper (eq==>eq==>Logic.eq) Ztestbit.
+Definition testbit_odd_0 := Ztestbit_odd_0.
+Definition testbit_even_0 := Ztestbit_even_0.
+Definition testbit_odd_succ := Ztestbit_odd_succ.
+Definition testbit_even_succ := Ztestbit_even_succ.
 Definition testbit_neg_r := Ztestbit_neg_r.
 Definition shiftr_spec := Zshiftr_spec.
 Definition shiftl_spec_low := Zshiftl_spec_low.

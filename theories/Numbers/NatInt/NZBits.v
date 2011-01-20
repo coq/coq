@@ -24,26 +24,14 @@ End BitsNotation.
 
 Module Type Bits' (A:Typ) := Bits A <+ BitsNotation A.
 
-(** For specifying [testbit], we do not rely on division and modulo,
-  since such a specification won't be easy to prove for particular
-  implementations: advanced properties of / and mod won't be
-  available at that moment. Instead, we decompose the number in
-  low and high part, with the considered bit in the middle.
-
-  Interestingly, this specification also holds for negative numbers,
-  (with a positive low part and a negative high part), and this will
-  correspond to a two's complement representation.
-
-  Moreover, we arbitrary choose false as result of [testbit] at
-  negative bit indexes (if they exist).
-*)
-
 Module Type NZBitsSpec
- (Import A : NZOrdAxiomsSig')(Import B : Pow' A)(Import C : Bits' A).
+ (Import A : NZOrdAxiomsSig')(Import B : Bits' A).
 
- Axiom testbit_spec : forall a n, 0<=n ->
-  exists l h, 0<=l<2^n /\
-    a == l + ((if a.[n] then 1 else 0) + 2*h)*2^n.
+ Declare Instance testbit_wd : Proper (eq==>eq==>Logic.eq) testbit.
+ Axiom testbit_odd_0 : forall a, (2*a+1).[0] = true.
+ Axiom testbit_even_0 : forall a, (2*a).[0] = false.
+ Axiom testbit_odd_succ : forall a n, 0<=n -> (2*a+1).[S n] = a.[n].
+ Axiom testbit_even_succ : forall a n, 0<=n -> (2*a).[S n] = a.[n].
  Axiom testbit_neg_r : forall a n, n<0 -> a.[n] = false.
 
  Axiom shiftr_spec : forall a n m, 0<=m -> (a >> n).[m] = a.[m+n].
@@ -58,8 +46,8 @@ Module Type NZBitsSpec
 
 End NZBitsSpec.
 
-Module Type NZBits (A:NZOrdAxiomsSig)(B:Pow A) := Bits A <+ NZBitsSpec A B.
-Module Type NZBits' (A:NZOrdAxiomsSig)(B:Pow A) := Bits' A <+ NZBitsSpec A B.
+Module Type NZBits (A:NZOrdAxiomsSig) := Bits A <+ NZBitsSpec A.
+Module Type NZBits' (A:NZOrdAxiomsSig) := Bits' A <+ NZBitsSpec A.
 
 (** In the functor of properties will also be defined:
    - [setbit : t -> t -> t ] defined as [lor a (1<<n)].

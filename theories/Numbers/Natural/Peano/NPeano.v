@@ -403,38 +403,27 @@ Proof.
  now induction n.
 Qed.
 
-Lemma testbit_spec : forall a n,
- exists l h, 0<=l<2^n /\
-  a = l + ((if testbit a n then 1 else 0) + 2*h)*2^n.
+Lemma testbit_odd_0 a : testbit (2*a+1) 0 = true.
 Proof.
- intros a n. revert a. induction n; intros a; simpl testbit.
- exists 0. exists (div2 a).
- split. simpl.  unfold lt. now split.
- case_eq (odd a); intros EQ; simpl.
- rewrite mult_1_r, <- plus_n_O.
-  now apply odd_double, Odd_equiv, odd_spec.
- rewrite mult_1_r, <- plus_n_O. apply even_double.
-  destruct (Even.even_or_odd a) as [H|H]; trivial.
-  apply Odd_equiv, odd_spec in H. rewrite H in EQ; discriminate.
- destruct (IHn (div2 a)) as (l & h & (_,H) & EQ).
- destruct (Even.even_or_odd a) as [EV|OD].
- exists (double l). exists h.
- split. split. apply le_O_n.
- unfold double; simpl. rewrite <- plus_n_O. now apply plus_lt_compat.
- pattern a at 1. rewrite (even_double a EV).
- pattern (div2 a) at 1. rewrite EQ.
- rewrite !double_twice, mult_plus_distr_l. f_equal.
- rewrite mult_assoc, (mult_comm 2), <- mult_assoc. f_equal.
- exists (S (double l)). exists h.
- split. split. apply le_O_n.
- red. red in H.
- unfold double; simpl. rewrite <- plus_n_O, plus_n_Sm, <- plus_Sn_m.
- now apply plus_le_compat.
- rewrite plus_Sn_m.
- pattern a at 1. rewrite (odd_double a OD). f_equal.
- pattern (div2 a) at 1. rewrite EQ.
- rewrite !double_twice, mult_plus_distr_l. f_equal.
- rewrite mult_assoc, (mult_comm 2), <- mult_assoc. f_equal.
+ unfold testbit. rewrite odd_spec. now exists a.
+Qed.
+
+Lemma testbit_even_0 a : testbit (2*a) 0 = false.
+Proof.
+ unfold testbit, odd. rewrite (proj2 (even_spec _)); trivial.
+ now exists a.
+Qed.
+
+Lemma testbit_odd_succ a n : testbit (2*a+1) (S n) = testbit a n.
+Proof.
+ unfold testbit; fold testbit.
+ rewrite <- plus_n_Sm, <- plus_n_O. f_equal.
+ apply div2_double_plus_one.
+Qed.
+
+Lemma testbit_even_succ a n : testbit (2*a) (S n) = testbit a n.
+Proof.
+ unfold testbit; fold testbit. f_equal. apply div2_double.
 Qed.
 
 Lemma shiftr_spec : forall a n m,
@@ -749,7 +738,11 @@ Definition lor := lor.
 Definition ldiff := ldiff.
 Definition div2 := div2.
 
-Definition testbit_spec a n (_:0<=n) := testbit_spec a n.
+Program Instance testbit_wd : Proper (eq==>eq==>Logic.eq) testbit.
+Definition testbit_odd_0 := testbit_odd_0.
+Definition testbit_even_0 := testbit_even_0.
+Definition testbit_odd_succ a n (_:0<=n) := testbit_odd_succ a n.
+Definition testbit_even_succ a n (_:0<=n) := testbit_even_succ a n.
 Lemma testbit_neg_r a n (H:n<0) : testbit a n = false.
 Proof. inversion H. Qed.
 Definition shiftl_spec_low := shiftl_spec_low.

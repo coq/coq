@@ -180,7 +180,11 @@ Proof. intros. now destruct (Ngcd a b). Qed.
 
 (** Bitwise Operations *)
 
-Definition testbit_spec a n (_:0<=n) := Ntestbit_spec a n.
+Program Instance testbit_wd : Proper (eq==>eq==>Logic.eq) Ntestbit.
+Definition testbit_odd_0 := Ntestbit_odd_0.
+Definition testbit_even_0 := Ntestbit_even_0.
+Definition testbit_odd_succ a n (_:0<=n) := Ntestbit_odd_succ a n.
+Definition testbit_even_succ a n (_:0<=n) := Ntestbit_even_succ a n.
 Lemma testbit_neg_r a n (H:n<0) : Ntestbit a n = false.
 Proof. now destruct n. Qed.
 Definition shiftl_spec_low := Nshiftl_spec_low.

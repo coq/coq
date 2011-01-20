@@ -411,14 +411,28 @@ Qed.
 
 (** Bitwise operations *)
 
-Lemma testbit_spec : forall a n, 0<=n ->
-  exists l h, (0<=l /\ l<2^n) /\
-    a == l + ((if testbit a n then 1 else 0) + 2*h)*2^n.
+Program Instance testbit_wd : Proper (eq==>eq==>Logic.eq) testbit.
+
+Lemma testbit_odd_0 : forall a, testbit (2*a+1) 0 = true.
 Proof.
- intros a n. zify. intros H.
- destruct (Ztestbit_spec [a] [n] H) as (l & h & Hl & EQ).
- exists (of_Z l), (of_Z h).
- destruct Ztestbit; zify; now split.
+ intros. zify. apply Ztestbit_odd_0.
+Qed.
+
+Lemma testbit_even_0 : forall a, testbit (2*a) 0 = false.
+Proof.
+ intros. zify. apply Ztestbit_even_0.
+Qed.
+
+Lemma testbit_odd_succ : forall a n, 0<=n ->
+ testbit (2*a+1) (succ n) = testbit a n.
+Proof.
+ intros a n. zify. apply Ztestbit_odd_succ.
+Qed.
+
+Lemma testbit_even_succ : forall a n, 0<=n ->
+ testbit (2*a) (succ n) = testbit a n.
+Proof.
+ intros a n. zify. apply Ztestbit_even_succ.
 Qed.
 
 Lemma testbit_neg_r : forall a n, n<0 -> testbit a n = false.

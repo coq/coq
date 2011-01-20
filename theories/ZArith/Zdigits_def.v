@@ -96,74 +96,6 @@ Definition Zxor a b :=
    | Zneg a, Zneg b => Z_of_N (Nxor (Ppred_N a) (Ppred_N b))
  end.
 
-(** Proofs of specifications *)
-
-Lemma Zdiv2_spec : forall a, Zdiv2 a = Zshiftr a 1.
-Proof.
- reflexivity.
-Qed.
-
-Lemma Ztestbit_neg_r : forall a n, n<0 -> Ztestbit a n = false.
-Proof.
- now destruct n.
-Qed.
-
-Lemma Ztestbit_spec : forall a n, 0<=n ->
-  exists l h, 0<=l<2^n /\
-    a = l + ((if Ztestbit a n then 1 else 0) + 2*h)*2^n.
-Proof.
- intros a [ |n|n] Hn; (now destruct Hn) || clear Hn.
- (* n = 0 *)
- simpl Ztestbit.
- exists 0. exists (Zdiv2 a). repeat split. easy.
- now rewrite Zplus_0_l, Zmult_1_r, Zplus_comm, <- Zdiv2_odd_eqn.
- (* n > 0 *)
- destruct a.
- (* ... a = 0 *)
- exists 0. exists 0. repeat split; try easy. now rewrite Zpower_Ppow.
- (* ... a > 0 *)
- simpl Ztestbit.
- destruct (Ntestbit_spec (Npos p) (Npos n)) as (l & h & (_,Hl) & EQ).
- exists (Z_of_N l). exists (Z_of_N h).
- simpl Npow in *; simpl Ntestbit in *. rewrite Zpower_Ppow.
- repeat split.
- apply Z_of_N_le_0.
- rewrite <-Z_of_N_pos. now apply Z_of_N_lt.
- rewrite <-Z_of_N_pos, EQ.
- rewrite Z_of_N_plus, Z_of_N_mult. f_equal. f_equal.
- destruct Ptestbit; now rewrite Z_of_N_plus, Z_of_N_mult.
- (* ... a < 0 *)
- simpl Ztestbit.
- destruct (Ntestbit_spec (Ppred_N p) (Npos n)) as (l & h & (_,Hl) & EQ).
- exists (2^Zpos n - (Z_of_N l) - 1). exists (-Z_of_N h - 1).
- simpl Npow in *. rewrite Zpower_Ppow.
- repeat split.
- apply Zle_minus_le_0.
- change 1 with (Zsucc 0). apply Zle_succ_l.
- apply Zlt_plus_swap. simpl. rewrite <-Z_of_N_pos. now apply Z_of_N_lt.
- apply Zlt_plus_swap. unfold Zminus. rewrite Zopp_involutive.
- fold (Zsucc (Zpos (2^n))). apply Zlt_succ_r.
- apply Zle_plus_swap. unfold Zminus. rewrite Zopp_involutive.
- rewrite <- (Zplus_0_r (Zpos (2^n))) at 1. apply Zplus_le_compat_l.
- apply Z_of_N_le_0.
- apply Zopp_inj. unfold Zminus.
- rewrite Zopp_neg, !Zopp_plus_distr, !Zopp_involutive.
- rewrite Zopp_mult_distr_l, Zopp_plus_distr, Zopp_mult_distr_r,
-  Zopp_plus_distr, !Zopp_involutive.
- rewrite Ppred_N_spec in EQ at 1.
- apply (f_equal Nsucc) in EQ. rewrite Nsucc_pred in EQ by easy.
- rewrite <-Z_of_N_pos, EQ.
- rewrite Z_of_N_succ, Z_of_N_plus, Z_of_N_mult, Z_of_N_pos. unfold Zsucc.
- rewrite <- (Zplus_assoc _ 1), (Zplus_comm 1), Zplus_assoc. f_equal.
- rewrite (Zplus_comm (- _)), <- Zplus_assoc. f_equal.
- change (- Zpos (2^n)) with ((-1)*(Zpos (2^n))). rewrite <- Zmult_plus_distr_l.
- f_equal.
- rewrite Z_of_N_plus, Z_of_N_mult.
- rewrite Zmult_plus_distr_r, Zmult_1_r, (Zplus_comm _ 2), !Zplus_assoc.
- rewrite (Zplus_comm _ 2), Zplus_assoc. change (2+-1) with 1.
- f_equal.
- now destruct Ntestbit.
-Qed.
 
 (** Conversions between [Ztestbit] and [Ntestbit] *)
 
@@ -198,9 +130,51 @@ Proof.
  now rewrite Zodd_bool_pred, <- Zodd_even_bool.
 Qed.
 
+(** Proofs of specifications *)
+
+Lemma Zdiv2_spec : forall a, Zdiv2 a = Zshiftr a 1.
+Proof.
+ reflexivity.
+Qed.
+
 Lemma Ztestbit_0_l : forall n, Ztestbit 0 n = false.
 Proof.
  now destruct n.
+Qed.
+
+Lemma Ztestbit_neg_r : forall a n, n<0 -> Ztestbit a n = false.
+Proof.
+ now destruct n.
+Qed.
+
+Lemma Ztestbit_odd_0 a : Ztestbit (2*a+1) 0 = true.
+Proof.
+ now destruct a as [|a|[a|a|]].
+Qed.
+
+Lemma Ztestbit_even_0 a : Ztestbit (2*a) 0 = false.
+Proof.
+ now destruct a.
+Qed.
+
+Lemma Ztestbit_odd_succ a n : 0<=n ->
+ Ztestbit (2*a+1) (Zsucc n) = Ztestbit a n.
+Proof.
+ destruct n as [|n|n]; (now destruct 1) || intros _.
+ destruct a as [|[a|a|]|[a|a|]]; simpl; trivial. now destruct a.
+ unfold Ztestbit. rewrite <- Zpos_succ_morphism.
+ destruct a as [|a|[a|a|]]; simpl; trivial;
+  rewrite ?Ppred_succ; now destruct n.
+Qed.
+
+Lemma Ztestbit_even_succ a n : 0<=n ->
+ Ztestbit (2*a) (Zsucc n) = Ztestbit a n.
+Proof.
+ destruct n as [|n|n]; (now destruct 1) || intros _.
+ destruct a as [|[a|a|]|[a|a|]]; simpl; trivial. now destruct a.
+ unfold Ztestbit. rewrite <- Zpos_succ_morphism.
+ destruct a as [|a|[a|a|]]; simpl; trivial;
+  rewrite ?Ppred_succ; now destruct n.
 Qed.
 
 Lemma Ppred_div2_up : forall p,

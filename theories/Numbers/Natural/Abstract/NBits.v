@@ -48,17 +48,67 @@ Qed.
 Definition b2n (b:bool) := if b then 1 else 0.
 Local Coercion b2n : bool >-> t.
 
+Lemma exists_div2 a : exists a' (b:bool), a == 2*a' + b.
+Proof.
+ elim (Even_or_Odd a); [intros (a',H)| intros (a',H)].
+ exists a'. exists false. now nzsimpl.
+ exists a'. exists true. now simpl.
+Qed.
+
+(** We can compact [testbit_odd_0] [testbit_even_0]
+    [testbit_even_succ] [testbit_odd_succ] in only two lemmas. *)
+
+Lemma testbit_0_r a (b:bool) : testbit (2*a+b) 0 = b.
+Proof.
+ destruct b; simpl; rewrite ?add_0_r.
+ apply testbit_odd_0.
+ apply testbit_even_0.
+Qed.
+
+Lemma testbit_succ_r a (b:bool) n :
+ testbit (2*a+b) (succ n) = testbit a n.
+Proof.
+ destruct b; simpl; rewrite ?add_0_r.
+ apply testbit_odd_succ, le_0_l.
+ apply testbit_even_succ, le_0_l.
+Qed.
+
 (** Alternative caracterisations of [testbit] *)
 
-Lemma testbit_spec' : forall a n, a.[n] == (a / 2^n) mod 2.
+(** This concise equation could have been taken as specification
+   for testbit in the interface, but it would have been hard to
+   implement with little initial knowledge about div and mod *)
+
+Lemma testbit_spec' a n : a.[n] == (a / 2^n) mod 2.
 Proof.
- intros a n.
- destruct (testbit_spec a n) as (l & h & (_,H) & EQ).
- apply le_0_l.
- fold (b2n a.[n]) in EQ.
- apply mod_unique with h. destruct a.[n]; order'.
- symmetry. apply div_unique with l; trivial.
- now rewrite add_comm, mul_comm, (add_comm (2*h)).
+ revert a. induct n.
+ intros a. nzsimpl.
+ destruct (exists_div2 a) as (a' & b & H). rewrite H at 1.
+ rewrite testbit_0_r. apply mod_unique with a'; trivial.
+ destruct b; order'.
+ intros n IH a.
+ destruct (exists_div2 a) as (a' & b & H). rewrite H at 1.
+ rewrite testbit_succ_r, IH. f_equiv.
+ rewrite pow_succ_r', <- div_div by order_nz. f_equiv.
+ apply div_unique with b; trivial.
+ destruct b; order'.
+Qed.
+
+(** This caracterisation that uses only basic operations and
+   power was initially taken as specification for testbit.
+   We describe [a] as having a low part and a high part, with
+   the corresponding bit in the middle. This caracterisation
+   is moderatly complex to implement, but also moderately
+   usable... *)
+
+Lemma testbit_spec a n :
+  exists l h, 0<=l<2^n /\ a == l + (a.[n] + 2*h)*2^n.
+Proof.
+ exists (a mod 2^n). exists (a / 2^n / 2). split.
+ split; [apply le_0_l | apply mod_upper_bound; order_nz].
+ rewrite add_comm, mul_comm, (add_comm a.[n]).
+ rewrite (div_mod a (2^n)) at 1 by order_nz. do 2 f_equiv.
+ rewrite testbit_spec'. apply div_mod. order'.
 Qed.
 
 Lemma testbit_true : forall a n,
@@ -80,13 +130,6 @@ Lemma testbit_eqb : forall a n,
 Proof.
  intros a n.
  apply eq_true_iff_eq. now rewrite testbit_true, eqb_eq.
-Qed.
-
-(** testbit is hence a morphism *)
-
-Instance testbit_wd : Proper (eq==>eq==>Logic.eq) testbit.
-Proof.
- intros a a' Ha n n' Hn. now rewrite 2 testbit_eqb, Ha, Hn.
 Qed.
 
 (** Results about the injection [b2n] *)
@@ -119,7 +162,7 @@ Proof.
  intros a0. rewrite <- (add_b2n_double_bit0 a0 0) at 2. now nzsimpl.
 Qed.
 
-(** The initial specification of testbit is complete *)
+(** The specification of testbit by low and high parts is complete *)
 
 Lemma testbit_unique : forall a n (a0:bool) l h,
  l<2^n -> a == l + (a0 + 2*h)*2^n -> a.[n] = a0.
@@ -140,9 +183,12 @@ Qed.
 
 (** Various ways to refer to the lowest bit of a number *)
 
-Lemma bit0_mod : forall a, a.[0] == a mod 2.
+Lemma bit0_odd : forall a, a.[0] = odd a.
 Proof.
- intros a. rewrite testbit_spec'. now nzsimpl.
+ intros. symmetry.
+ destruct (exists_div2 a) as (a' & b & EQ).
+ rewrite EQ, testbit_0_r, add_comm, odd_add_mul_2.
+ destruct b; simpl; apply odd_1 || apply odd_0.
 Qed.
 
 Lemma bit0_eqb : forall a, a.[0] = eqb (a mod 2) 1.
@@ -150,12 +196,9 @@ Proof.
  intros a. rewrite testbit_eqb. now nzsimpl.
 Qed.
 
-Lemma bit0_odd : forall a, a.[0] = odd a.
+Lemma bit0_mod : forall a, a.[0] == a mod 2.
 Proof.
- intros. rewrite bit0_eqb.
- apply eq_true_iff_eq. rewrite eqb_eq, odd_spec. split.
- intros H. exists (a/2). rewrite <- H. apply div_mod. order'.
- intros (b,H). rewrite H, add_comm, mul_comm, mod_add, mod_small; order'.
+ intros a. rewrite testbit_spec'. now nzsimpl.
 Qed.
 
 (** Hence testing a bit is equivalent to shifting and testing parity *)

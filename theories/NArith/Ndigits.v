@@ -192,59 +192,30 @@ Proof.
  destruct a. trivial. apply Pbit_Ptestbit.
 Qed.
 
-(** Correctness proof for [Ntestbit].
+(** Correctness proofs for [Ntestbit]. *)
 
-    Ideally, we would say that (Ntestbit a n) is (a/2^n) mod 2
-    but that requires results about division we don't have yet.
-    Instead, we use a longer but simplier specification, and
-    obtain the nice equation later as a derived property.
-*)
-
-Lemma Nsuccdouble_bounds : forall n p, n<p -> 1+2*n<2*p.
+Lemma Ntestbit_odd_0 a : Ntestbit (2*a+1) 0 = true.
 Proof.
- intros [|n] [|p] H; try easy.
- change (n<p)%positive in H. apply Ple_succ_l in H.
- change (n~1 < p~0)%positive. apply Ple_succ_l. exact H.
+ now destruct a.
 Qed.
 
-Lemma Ntestbit_spec : forall a n,
-  exists l h, 0<=l<2^n /\
-    a = l + ((if Ntestbit a n then 1 else 0) + 2*h)*2^n.
+Lemma Ntestbit_even_0 a : Ntestbit (2*a) 0 = false.
 Proof.
- intros [|a] n.
- exists 0. exists 0. simpl; repeat split; now destruct n.
- revert n. induction a as [a IH|a IH| ]; destruct n.
- (* a~1, n=0 *)
- exists 0. exists (Npos a). simpl. repeat split; now rewrite ?Pmult_1_r.
- (* a~1 n>0 *)
- destruct (IH (Npred (Npos p))) as (l & h & (_,H) & EQ). clear IH.
- exists (1+2*l). exists h.
- set (b := if Ntestbit (Npos a) (Npred (Npos p)) then 1 else 0) in EQ.
- change (if Ntestbit _ _ then 1 else 0) with b.
- rewrite <- (Nsucc_pred (Npos p)), Npow_succ_r by discriminate.
- set (p' := Npred (Npos p)) in *.
- split. split. apply Nle_0. now apply Nsuccdouble_bounds.
- change (Npos a~1) with (1+2*(Npos a)). rewrite EQ.
- rewrite <-Nplus_assoc. f_equal.
- rewrite Nmult_plus_distr_l. f_equal.
- now rewrite !Nmult_assoc, (Nmult_comm 2).
- (* a~0 n=0 *)
- exists 0. exists (Npos a). simpl. repeat split; now rewrite ?Pmult_1_r.
- (* a~0 n>0 *)
- destruct (IH (Npred (Npos p))) as (l & h & (_,H) & EQ). clear IH.
- exists (2*l). exists h.
- set (b := if Ntestbit (Npos a) (Npred (Npos p)) then 1 else 0) in EQ.
- change (if Ntestbit _ _ then 1 else 0) with b.
- rewrite <- (Nsucc_pred (Npos p)), !Npow_succ_r by discriminate.
- set (p' := Npred (Npos p)) in *.
- split. split. apply Nle_0. now destruct l, (2^p').
- change (Npos a~0) with (2*(Npos a)). rewrite EQ.
- rewrite Nmult_plus_distr_l. f_equal.
- now rewrite !Nmult_assoc, (Nmult_comm 2).
- (* 1 n=0 *)
- exists 0. exists 0. simpl. now repeat split.
- (* 1 n>0 *)
- exists 1. exists 0. simpl. repeat split. easy. now apply Ppow_gt_1.
+ now destruct a.
+Qed.
+
+Lemma Ntestbit_odd_succ a n :
+ Ntestbit (2*a+1) (Nsucc n) = Ntestbit a n.
+Proof.
+ destruct a. simpl. now destruct n.
+ simpl. rewrite Npred_succ. now destruct n.
+Qed.
+
+Lemma Ntestbit_even_succ a n :
+ Ntestbit (2*a) (Nsucc n) = Ntestbit a n.
+Proof.
+ destruct a. trivial.
+ simpl. rewrite Npred_succ. now destruct n.
 Qed.
 
 (** Equivalence of shifts, N and nat versions *)
