@@ -252,24 +252,28 @@ let pp_singleton kn packet =
 		     pr_id packet.ip_consnames.(0)))
 
 let pp_one_ind ip pl cv =
-  let pl = rename_tvars keywords pl in
-  let pp_constructor (r,l) =
-    (pp_global Cons r ++
-     match l with
-       | [] -> (mt ())
-       | _  -> (str " " ++
-      	       	prlist_with_sep
-		  (fun () -> (str " ")) (pp_type true pl) l))
-  in
-  str (if Array.length cv = 0 then "type " else "data ") ++
-  pp_global Type (IndRef ip) ++ str " " ++
-  prlist_with_sep (fun () -> str " ") pr_lower_id pl ++
-  (if pl = [] then mt () else str " ") ++
-  if Array.length cv = 0 then str "= () -- empty inductive"
+  let indref = IndRef ip in
+  if is_custom indref then
+    mt ()
   else
-    (v 0 (str "= " ++
-	  prvect_with_sep (fun () -> fnl () ++ str "| ") pp_constructor
-	    (Array.mapi (fun i c -> ConstructRef (ip,i+1),c) cv)))
+    let pl = rename_tvars keywords pl in
+    let pp_constructor (r,l) =
+      (pp_global Cons r ++
+       match l with
+         | [] -> (mt ())
+         | _  -> (str " " ++
+                        prlist_with_sep
+                  (fun () -> (str " ")) (pp_type true pl) l))
+    in
+    str (if Array.length cv = 0 then "type " else "data ") ++
+    pp_global Type indref ++ str " " ++
+    prlist_with_sep (fun () -> str " ") pr_lower_id pl ++
+    (if pl = [] then mt () else str " ") ++
+    if Array.length cv = 0 then str "= () -- empty inductive"
+    else
+      (v 0 (str "= " ++
+          prvect_with_sep (fun () -> fnl () ++ str "| ") pp_constructor
+            (Array.mapi (fun i c -> ConstructRef (ip,i+1),c) cv)))
 
 let rec pp_ind first kn i ind =
   if i >= Array.length ind.ind_packets then

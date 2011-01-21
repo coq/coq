@@ -457,12 +457,16 @@ let pp_logical_ind packet =
   fnl ()
 
 let pp_singleton kn packet =
-  let name = pp_global Type (IndRef (mind_of_kn kn,0)) in
-  let l = rename_tvars keywords packet.ip_vars in
-  hov 2 (str "type " ++ pp_parameters l ++ name ++ str " =" ++ spc () ++
-	 pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
-	 pp_comment (str "singleton inductive, whose constructor was " ++
-		     pr_id packet.ip_consnames.(0)))
+  let indref = IndRef (mind_of_kn kn, 0) in
+  if is_custom indref then
+    mt ()
+  else
+    let name = pp_global Type indref in
+    let l = rename_tvars keywords packet.ip_vars in
+    hov 2 (str "type " ++ pp_parameters l ++ name ++ str " =" ++ spc () ++
+	     pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
+	     pp_comment (str "singleton inductive, whose constructor was " ++
+		           pr_id packet.ip_consnames.(0)))
 
 let pp_record kn projs ip_equiv packet =
   let name = pp_global Type (IndRef (mind_of_kn kn,0)) in
