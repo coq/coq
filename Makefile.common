@@ -321,6 +321,7 @@ PLUGINSVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
 
 ALLVO:= $(THEORIESVO) $(PLUGINSVO)
 VFILES:= $(ALLVO:.vo=.v)
+ALLSTDLIB := test-suite/misc/universes/all_stdlib
 
 # convert a (stdlib) filename into a module name:
 # remove .vo, replace theories and plugins by Coq, and replace slashes by dots

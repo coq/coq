@@ -194,6 +194,7 @@ docclean:
 
 archclean: clean-ide optclean voclean
 	rm -rf _build myocamlbuild_config.ml
+	rm -f $(ALLSTDLIB).*
 
 optclean:
 	rm -f $(COQTOPEXE) $(COQMKTOP) $(COQC) $(CHICKEN) $(COQDEPBOOT)

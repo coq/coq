@@ -354,7 +354,7 @@ $(addsuffix .log,$(wildcard modules/*.v)): %.v.log: modules/Nat.vo modules/plik.
 # Miscellaneous tests
 #######################################################################
 
-misc: misc/xml.log misc/deps-order.log
+misc: misc/xml.log misc/deps-order.log misc/universes.log
 
 # Test xml compilation
 xml: misc/xml.log
@@ -399,4 +399,24 @@ misc/deps-order.log:
 	    echo "    misc/deps-order...Error! (unexpected order)"; \
 	  fi; \
 	  rm $$tmpoutput; \
+	} > "$@"
+
+# Sort universes for the whole standard library
+EXPECTED_UNIVERSES := 3
+universes: misc/universes.log
+misc/universes.log:
+	@echo "TEST      misc/universes"
+	$(HIDE){ \
+	  $(bincoqc) -I misc/universes misc/universes/all_stdlib 2>&1; \
+	  $(bincoqc) -I misc/universes misc/universes/universes 2>&1; \
+	  mv universes.txt misc/universes; \
+	  N=`awk '{print $$3}' misc/universes/universes.txt | sort -u | wc -l`; \
+	  times; \
+	  if [ "$$N" -eq $(EXPECTED_UNIVERSES) ]; then \
+	    echo $(log_success); \
+	    echo "    misc/universes...Ok ($(EXPECTED_UNIVERSES) universes)"; \
+	  else \
+	    echo $(log_failure); \
+	    echo "    misc/universes...Error! ($$N/$(EXPECTED_UNIVERSES) universes)"; \
+	  fi; \
 	} > "$@"

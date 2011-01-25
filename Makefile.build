@@ -369,11 +369,16 @@ validate:: $(BESTCHICKEN) $(ALLVO)
 	$(SHOW)'COQCHK <theories & plugins>'
 	$(HIDE)$(BESTCHICKEN) -boot $(VALIDOPTS) $(ALLMODS)
 
+.PHONY: $(ALLSTDLIB).v
+$(ALLSTDLIB).v:
+	$(SHOW)'MAKE $(notdir $@)'
+	$(HIDE)echo "Require $(ALLMODS)." > $@
+
 MAKE_TSOPTS=-C test-suite -s BEST=$(BEST) VERBOSE=$(VERBOSE)
 
 check:: validate test-suite
 
-test-suite: world
+test-suite: world $(ALLSTDLIB).v
 	$(MAKE) $(MAKE_TSOPTS) clean
 	$(MAKE) $(MAKE_TSOPTS) all
 	$(HIDE)if grep -F 'Error!' test-suite/summary.log ; then false; fi
