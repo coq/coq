@@ -36,7 +36,7 @@ let check_unicity s l =
 
 let make_clause (_,pt,e) =
   (make_patt pt,
-   Some (make_when (MLast.loc_of_expr e) pt),
+   vala (Some (make_when (MLast.loc_of_expr e) pt)),
    make_let e pt)
 
 let make_fun_clauses loc s l =

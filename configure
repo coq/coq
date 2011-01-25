@@ -531,11 +531,6 @@ if [ "$usecamlp5" = "yes" ]; then
     fi
 
     camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
-    if [ "`$camlp4oexec -pmode 2>&1`" != "transitional" ]; then
-	echo "Error: $camlp4oexec not found, or not in transitional mode!"
-	echo "Configuration script failed!"
-	exit 1
-    fi
     case `$camlp4oexec -v 2>&1` in
 	*4.0*|*5.00*)
 	    echo "Camlp5 version < 5.01 not supported."

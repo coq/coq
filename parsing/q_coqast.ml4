@@ -506,7 +506,7 @@ let rec patt_of_expr e =
   match e with
     | ExAcc (_, e1, e2) -> PaAcc (loc, patt_of_expr e1, patt_of_expr e2)
     | ExApp (_, e1, e2) -> PaApp (loc, patt_of_expr e1, patt_of_expr e2)
-    | ExLid (_, "loc") -> PaAny loc
+    | ExLid (_, x) when x = vala "loc" -> PaAny loc
     | ExLid (_, s) -> PaLid (loc, s)
     | ExUid (_, s) -> PaUid (loc, s)
     | ExStr (_, s) -> PaStr (loc, s)

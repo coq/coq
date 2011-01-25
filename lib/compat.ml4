@@ -185,12 +185,22 @@ let maybe_curry f = f
 let maybe_uncurry f = f
 END
 
+(** Compatibility with camlp5 strict mode *)
+IFDEF CAMLP5 THEN
+  IFDEF STRICT THEN
+    let vala x = Ploc.VaVal x
+  ELSE
+    let vala x = x
+  END
+ELSE
+  let vala x = x
+END
 
 (** Fix a quotation difference in [str_item] *)
 
 let declare_str_items loc l =
 IFDEF CAMLP5 THEN
-  MLast.StDcl (loc,l) (* correspond to <:str_item< declare $list:l'$ end >> *)
+  MLast.StDcl (loc, vala l) (* correspond to <:str_item< declare $list:l'$ end >> *)
 ELSE
   Ast.stSem_of_list l
 END
@@ -198,13 +208,13 @@ END
 (** Quotation difference for match clauses *)
 
 let default_patt loc =
-  (<:patt< _ >>, None, <:expr< failwith "Extension: cannot occur" >>)
+  (<:patt< _ >>, vala None, <:expr< failwith "Extension: cannot occur" >>)
 
 IFDEF CAMLP5 THEN
 
 let make_fun loc cl =
   let l = cl @ [default_patt loc] in
-  MLast.ExFun (loc,l)  (* correspond to <:expr< fun [ $list:l$ ] >> *)
+  MLast.ExFun (loc, vala l)  (* correspond to <:expr< fun [ $list:l$ ] >> *)
 
 ELSE
 
