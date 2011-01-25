@@ -552,19 +552,85 @@ let normalize_universes g =
   UniverseLMap.mapi canonicalize g
 
 (** [check_sorted g sorted]: [g] being a universe graph, [sorted]
-    being a map to [Equiv Type.n] (with [n] being a natural number),
-    checks that all constraints in [g] are satisfied in [sorted]. *)
+    being a map to levels, checks that all constraints in [g] are
+    satisfied in [sorted]. *)
 let check_sorted g sorted =
-  let get u = match UniverseLMap.find u sorted with
-    | Equiv x -> x
-    | Canonical _ -> assert false
-  in
-  UniverseLMap.iter (fun u arc -> let repr_u = get u in match arc with
-    | Equiv v -> assert (get v == repr_u)
+  let get u = try UniverseLMap.find u sorted with
+    | Not_found -> assert false
+  in UniverseLMap.iter (fun u arc -> let lu = get u in match arc with
+    | Equiv v -> assert (lu = get v)
     | Canonical {univ=u'; lt=lt; le=le} ->
       assert (u == u');
-      List.iter (fun v -> assert (UniverseLevel.compare repr_u (get v) <= 0)) le;
-      List.iter (fun v -> assert (UniverseLevel.compare repr_u (get v) < 0)) lt) g
+      List.iter (fun v -> assert (lu <= get v)) le;
+      List.iter (fun v -> assert (lu < get v)) lt) g
+
+(**
+  Bellman-Ford algorithm with a few customizations:
+    - [weight(eq|le) = 0], [weight(lt) = -1]
+    - a [le] edge is initially added from [bottom] to all other
+      vertices, and [bottom] is used as the source vertex
+*)
+let bellman_ford bottom g =
+  assert (lookup_level bottom g = None);
+  let ( << ) a b = match a, b with
+    | _, None -> true
+    | None, _ -> false
+    | Some x, Some y -> x < y
+  and ( ++ ) a y = match a with
+    | None -> None
+    | Some x -> Some (x-y)
+  and push u x m = match x with
+    | None -> m
+    | Some y -> UniverseLMap.add u y m
+  in
+  let relax u v uv distances =
+    let x = lookup_level u distances ++ uv in
+    if x << lookup_level v distances then push v x distances
+    else distances
+  in
+  let init = UniverseLMap.add bottom 0 UniverseLMap.empty in
+  let vertices = UniverseLMap.fold (fun u arc res ->
+    let res = UniverseLSet.add u res in
+    match arc with
+      | Equiv e -> UniverseLSet.add e res
+      | Canonical {univ=univ; lt=lt; le=le} ->
+        assert (u == univ);
+        let add res v = UniverseLSet.add v res in
+        let res = List.fold_left add res le in
+        let res = List.fold_left add res lt in
+        res) g UniverseLSet.empty
+  in
+  let g =
+    let node = Canonical {
+      univ = bottom;
+      lt = [];
+      le = UniverseLSet.elements vertices
+    } in UniverseLMap.add bottom node g
+  in
+  let rec iter count accu =
+    if count <= 0 then
+      accu
+    else
+      let accu = UniverseLMap.fold (fun u arc res -> match arc with
+        | Equiv e -> relax e u 0 (relax u e 0 res)
+        | Canonical {univ=univ; lt=lt; le=le} ->
+          assert (u == univ);
+          let res = List.fold_left (fun res v -> relax u v 0 res) res le in
+          let res = List.fold_left (fun res v -> relax u v 1 res) res lt in
+          res) g accu
+      in iter (count-1) accu
+  in
+  let distances = iter (UniverseLSet.cardinal vertices) init in
+  let () = UniverseLMap.iter (fun u arc ->
+    let lu = lookup_level u distances in match arc with
+      | Equiv v ->
+        let lv = lookup_level v distances in
+        assert (not (lu << lv) && not (lv << lu))
+      | Canonical {univ=univ; lt=lt; le=le} ->
+        assert (u == univ);
+        List.iter (fun v -> assert (not (lu ++ 0 << lookup_level v distances))) le;
+        List.iter (fun v -> assert (not (lu ++ 1 << lookup_level v distances))) lt) g
+  in distances
 
 (** [sort_universes g] builds a map from universes in [g] to natural
     numbers. It outputs a graph containing equivalence edges from each
@@ -574,83 +640,60 @@ let check_sorted g sorted =
     necessarily minimal. Note: the result is unspecified if the input
     graph already contains [Type.n] nodes (calling a module Type is
     probably a bad idea anyway). *)
-let sort_universes orig_g =
-  (* basically a topological sort with grouping, le and lt nodes are
-     treated the same way *)
+let sort_universes orig =
   let mp = Names.make_dirpath [Names.id_of_string "Type"] in
-  let g = normalize_universes orig_g in
-  let degs = (* map from canonical nodes to incoming degrees *)
-    UniverseLMap.fold
-      (fun u arc res -> match arc with
-        | Equiv _ -> res
-        | Canonical {univ=_; lt=lt; le=le} ->
-          let res =
-            try let _ = UniverseLMap.find u res in res
-            with Not_found -> UniverseLMap.add u 0 res
-          in
-          let cumul res u =
-            let x = try UniverseLMap.find u res with Not_found -> 0 in
-            UniverseLMap.add u (x+1) res
-          in
-          List.fold_left cumul (List.fold_left cumul res lt) le)
-      g UniverseLMap.empty
-  in
-  let init = (* canonical nodes with zero incoming edges *)
-    UniverseLMap.fold
-      (fun u deg res -> if deg = 0 then u::res else res) degs []
-  in
-  (* [init] should contain at least [Set] *)
-  assert (List.mem UniverseLevel.Set init);
-  let make_level n = UniverseLevel.Level (mp, n) in
-  let rec reduce level_map degs n level us =
-    (* preconditions: [us] is the list of nodes for universe number
-       [n], supposed non-empty, and [level] is the [UniverseLevel.t]
-       corresponding to [n] *)
-    assert (us <> [] && level = make_level n);
-    let edge = Equiv level in
-    let visit (level_map, degs, next) u =
-      let level_map = UniverseLMap.add u edge level_map in
-      match lookup_level u g with
-        | None -> level_map, degs, next
-        | Some (Equiv _) -> assert false
-        | Some (Canonical {univ=_; lt=lt; le=le}) ->
-          (* virtually remove [u] from the graph, decrement incoming
-             edge counts in [degs], and collect nodes for the next
-             level (i.e. nodes for which the edge count reached
-             zero) *)
-          let cumul (degs, next) u =
-            let x = UniverseLMap.find u degs - 1 in
-            assert (x >= 0);
-            let degs = UniverseLMap.add u x degs in
-            if x = 0 then degs, u::next else degs, next
-          in
-          let z = List.fold_left cumul (degs, next) lt in
-          let degs, next = List.fold_left cumul z le in
-          level_map, degs, next
+  let rec make_level accu g i =
+    let type0 = UniverseLevel.Level (mp, i) in
+    let distances = bellman_ford type0 g in
+    let accu, continue = UniverseLMap.fold (fun u x (accu, continue) ->
+      let continue = continue || x < 0 in
+      let accu =
+        if x = 0 && u != type0 then UniverseLMap.add u i accu
+        else accu
+      in accu, continue) distances (accu, false)
     in
-    let level_map, degs, next =
-      List.fold_left visit (level_map, degs, []) us
+    let filter x = not (UniverseLMap.mem x accu) in
+    let push g u =
+      if UniverseLMap.mem u g then g else UniverseLMap.add u (Equiv u) g
     in
-    if next = [] then
-      let () = UniverseLMap.iter (fun _ x -> assert (x = 0)) degs in
-      level_map
-    else
-      (* we create [next_level] here to keep physical equality of all
-         [Type.n]s *)
-      let next_level = make_level (n+1) in
-      let level_map = UniverseLMap.add level
-        (Canonical {univ=level; lt=[next_level]; le=[]}) level_map
-      in
-      reduce level_map degs (n+1) next_level next
+    let g = UniverseLMap.fold (fun u arc res -> match arc with
+      | Equiv v as x ->
+        begin match filter u, filter v with
+          | true, true -> UniverseLMap.add u x res
+          | true, false -> push res u
+          | false, true -> push res v
+          | false, false -> res
+        end
+      | Canonical {univ=v; lt=lt; le=le} ->
+        assert (u == v);
+        if filter u then
+          let lt = List.filter filter lt in
+          let le = List.filter filter le in
+          UniverseLMap.add u (Canonical {univ=u; lt=lt; le=le}) res
+        else
+          let res = List.fold_left (fun g u -> if filter u then push g u else g) res lt in
+          let res = List.fold_left (fun g u -> if filter u then push g u else g) res le in
+          res) g UniverseLMap.empty
+    in
+    if continue then make_level accu g (i+1) else i, accu
   in
-  let level_map = reduce UniverseLMap.empty degs 0 (make_level 0) init in
-  let level_map = UniverseLMap.fold (fun u arc res -> match arc with
-    | Equiv v -> UniverseLMap.add u (UniverseLMap.find v res) res
-    | Canonical _ -> res) g level_map
-  in
+  let max, levels = make_level UniverseLMap.empty orig 0 in
   (* defensively check that the result makes sense *)
-  check_sorted orig_g level_map;
-  level_map
+  check_sorted orig levels;
+  let types = Array.init (max+1) (fun x -> UniverseLevel.Level (mp, x)) in
+  let g = UniverseLMap.map (fun x -> Equiv types.(x)) levels in
+  let g =
+    let rec aux i g =
+      if i < max then
+        let u = types.(i) in
+        let g = UniverseLMap.add u (Canonical {
+          univ = u;
+          le = [];
+          lt = [types.(i+1)]
+        }) g in aux (i+1) g
+      else g
+    in aux 0 g
+  in g
 
 (**********************************************************************)
 (* Tools for sort-polymorphic inductive types                         *)
