@@ -491,11 +491,6 @@ if [ "$camlp5dir" != "" ]; then
 	exit 1
     fi
     camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
-    if [ `$camlp4oexec -pmode 2>&1` = "strict" ]; then 
-	echo "Error: Camlp5 found, but in strict mode!"
-	echo "Please compile Camlp5 in transitional mode."
-	exit 1
-    fi
 else
     case $CAMLTAG in
         OCAML31*)
@@ -510,11 +505,6 @@ else
             fi
             CAMLP4=camlp5
             camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
-            if [ `$camlp4oexec -pmode 2>&1` = "strict" ]; then
-	        echo "Error: Camlp5 found, but in strict mode!"
-	        echo "Please compile Camlp5 in transitional mode."
-	        exit 1
-            fi
             ;;
         *)
             CAMLP4=camlp4

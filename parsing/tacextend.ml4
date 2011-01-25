@@ -55,7 +55,7 @@ let rec make_let e = function
 let add_clause s (pt,e) l =
   let p = make_patt pt in
   let w = Some (make_when (MLast.loc_of_expr e) pt) in
-  (p, w, make_let e pt)::l
+  (p, <:vala< w >>, make_let e pt)::l
 
 let rec extract_signature = function
   | [] -> []
@@ -72,7 +72,8 @@ let check_unicity s l =
 let make_clauses s l =
   check_unicity s l;
   let default =
-    (<:patt< _ >>,None,<:expr< failwith "Tactic extension: cannot occur" >>) in
+    (<:patt< _ >>,<:vala<None>>,
+     <:expr< failwith "Tactic extension: cannot occur" >>) in
   List.fold_right (add_clause s) l [default]
 
 let rec make_args = function
