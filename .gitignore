@@ -73,6 +73,8 @@ toplevel/mltop.byteml
 coqdoc.sty
 ide/index_urls.txt
 doc/faq/html/
+doc/refman/csdp.cache
+doc/refman/trace
 doc/refman/Reference-Manual.pdf
 doc/refman/Reference-Manual.ps
 doc/refman/cover.html
