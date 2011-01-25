@@ -53,10 +53,14 @@ states/initial.coq
 coqdoc.sty
 test-suite/lia.cache
 test-suite/trace
+test-suite/misc/universes/all_stdlib.v
+test-suite/misc/universes/universes.txt
 
 # documentation
 
 doc/faq/html/
+doc/refman/csdp.cache
+doc/refman/trace
 doc/refman/Reference-Manual.pdf
 doc/refman/Reference-Manual.ps
 doc/refman/cover.html
@@ -157,6 +161,8 @@ tools/coq_makefile.ml
 tools/coq_tex.ml
 toplevel/mltop.ml
 toplevel/whelp.ml
+ide/coqide_main.ml
+ide/coqide_main_opt.ml
 
 # other auto-generated files
 
