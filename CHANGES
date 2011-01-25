@@ -1,3 +1,19 @@
+Changes from V8.3pl1 to V8.3pl2
+===============================
+
+Coqdoc and documentation bugs
+
+- #2470 (use "membership" instead of "appartness")
+
+Extraction
+
+- #2482 (Extract Inductive on singleton inductives)
+
+Miscellaneous bug fixes
+
+- #2487 (compilation with camlp5 in strict mode)
+
+
 Changes from V8.3 to V8.3pl1
 ============================
 
