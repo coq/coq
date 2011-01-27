@@ -214,8 +214,7 @@ let invert_name labs l na0 env sigma ref = function
 	  | EvalRel _ | EvalEvar _ -> None
 	  | EvalVar id' -> Some (EvalVar id)
 	  | EvalConst kn ->
-	      let (mp,dp,_) = repr_con kn in
-	      Some (EvalConst (make_con mp dp (label_of_id id))) in
+	      Some (EvalConst (con_with_label kn (label_of_id id))) in
 	match refi with
 	  | None -> None
 	  | Some ref ->
@@ -468,7 +467,6 @@ let reduce_mind_case_use_function func env sigma mia =
     | CoFix (bodynum,(names,_,_) as cofix) ->
 	let build_cofix_name =
 	  if isConst func then
-	    let (mp,dp,_) = repr_con (destConst func) in
             let minargs = List.length mia.mcargs in
 	    fun i ->
 	      if i = bodynum then Some (minargs,func)
@@ -479,7 +477,8 @@ let reduce_mind_case_use_function func env sigma mia =
 		       mutual inductive, try to reuse the global name if
 		       the block was indeed initially built as a global
 		       definition *)
-		    let kn = make_con mp dp (label_of_id id) in
+		    let kn = con_with_label (destConst func) (label_of_id id)
+		    in
 		    try match constant_opt_value env kn with
 		      | None -> None
                           (* TODO: check kn is correct *)

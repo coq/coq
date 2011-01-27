@@ -143,6 +143,7 @@ val user_con : constant -> kernel_name
 val canonical_con : constant -> kernel_name
 val repr_con : constant -> module_path * dir_path * label
 val eq_constant : constant -> constant -> bool
+val con_with_label : constant -> label -> constant
 
 val string_of_con : constant -> string
 val con_label : constant -> label
