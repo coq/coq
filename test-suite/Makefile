@@ -404,7 +404,7 @@ misc/deps-order.log:
 # Sort universes for the whole standard library
 EXPECTED_UNIVERSES := 3
 universes: misc/universes.log
-misc/universes.log:
+misc/universes.log: misc/universes/all_stdlib.v
 	@echo "TEST      misc/universes"
 	$(HIDE){ \
 	  $(bincoqc) -I misc/universes misc/universes/all_stdlib 2>&1; \
@@ -420,3 +420,6 @@ misc/universes.log:
 	    echo "    misc/universes...Error! ($$N/$(EXPECTED_UNIVERSES) universes)"; \
 	  fi; \
 	} > "$@"
+
+misc/universes/all_stdlib.v:
+	cd .. && $(MAKE) test-suite/$@
