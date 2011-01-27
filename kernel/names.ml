@@ -223,7 +223,7 @@ type constructor = inductive * int
 
 let constant_of_kn kn = (kn,kn)
 let constant_of_kn_equiv kn1 kn2 = (kn1,kn2)
-let make_con mp dir l = ((mp,dir,l),(mp,dir,l))
+let make_con mp dir l = constant_of_kn (mp,dir,l)
 let make_con_equiv mp1 mp2 dir l = ((mp1,dir,l),(mp2,dir,l))
 let canonical_con con = snd con
 let user_con con = fst con
@@ -234,6 +234,10 @@ let pr_con con = pr_kn (fst con)
 let debug_pr_con con = str "("++ pr_kn (fst con) ++ str ","++ pr_kn (snd con)++ str ")"
 let eq_constant (_,kn1) (_,kn2) = kn1=kn2
 let debug_string_of_con con =  string_of_kn (fst con)^"'"^string_of_kn (snd con)
+
+let con_with_label ((mp1,dp1,l1),(mp2,dp2,l2) as con) lbl =
+  if lbl = l1 && lbl = l2 then con
+  else ((mp1,dp1,lbl),(mp2,dp2,lbl))
 
 let con_modpath con = modpath (fst con)
 
