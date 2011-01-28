@@ -215,7 +215,7 @@ let nf_evar_context isevars ctx =
   List.map (fun (n, b, t) ->
     (n, Option.map (Evarutil.nf_evar isevars) b, Evarutil.nf_evar isevars t)) ctx
 
-let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
+let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
   Coqlib.check_required_library ["Coq";"Program";"Wf"];
   let sigma = Evd.empty in
   let isevars = ref (Evd.create_evar_defs sigma) in
@@ -327,8 +327,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation boxed =
 	let ce =
 	  { const_entry_body = Evarutil.nf_evar !isevars body;
 	    const_entry_type = Some ty;
-	    const_entry_opaque = false;
-	    const_entry_boxed = false} 
+	    const_entry_opaque = false }
 	in 
 	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
 	let gr = ConstRef c in
@@ -417,7 +416,7 @@ let out_def = function
   | Some def -> def
   | None -> error "Program Fixpoint needs defined bodies."
 
-let interp_recursive fixkind l boxed =
+let interp_recursive fixkind l =
   let env = Global.env() in
   let fixl, ntnl = List.split l in
   let kind = fixkind <> IsCoFixpoint in
@@ -506,7 +505,7 @@ let out_n = function
     Some n -> n
   | None -> raise Not_found
 
-let build_recursive l b =
+let build_recursive l =
   let g = List.map (fun ((_,wf,_,_,_),_) -> wf) l in
     match g, l with
 	[(n, CWfRec r)], [(((_,id),_,bl,typ,def),ntn)] ->
@@ -514,24 +513,24 @@ let build_recursive l b =
 		    (match n with Some n -> mkIdentC (snd n) | None ->
 		      errorlabstrm "Subtac_command.build_recursive"
 			(str "Recursive argument required for well-founded fixpoints"))
-		    ntn false)
+		    ntn)
 
       | [(n, CMeasureRec (m, r))], [(((_,id),_,bl,typ,def),ntn)] ->
 	  ignore(build_wellfounded (id, n, bl, typ, out_def def) (Option.default (CRef lt_ref) r)
-		    m ntn false)
+		    m ntn)
 
       | _, _ when List.for_all (fun (n, ro) -> ro = CStructRec) g ->
 	  let fixl = List.map (fun (((_,id),(n,ro),bl,typ,def),ntn) ->
 	    ({Command.fix_name = id; Command.fix_binders = bl; Command.fix_annot = n;
 	      Command.fix_body = def; Command.fix_type = typ},ntn)) l
-	  in interp_recursive (IsFixpoint g) fixl b
+	  in interp_recursive (IsFixpoint g) fixl
       | _, _ ->
 	  errorlabstrm "Subtac_command.build_recursive"
 	    (str "Well-founded fixpoints not allowed in mutually recursive blocks")
 
-let build_corecursive l b =
+let build_corecursive l =
   let fixl = List.map (fun (((_,id),bl,typ,def),ntn) ->
     ({Command.fix_name = id; Command.fix_binders = bl; Command.fix_annot = None;
       Command.fix_body = def; Command.fix_type = typ},ntn))
     l in
-  interp_recursive IsCoFixpoint fixl b
+  interp_recursive IsCoFixpoint fixl

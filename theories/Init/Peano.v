@@ -26,7 +26,6 @@
 Require Import Notations.
 Require Import Datatypes.
 Require Import Logic.
-Unset Boxed Definitions.
 
 Open Scope nat_scope.
 

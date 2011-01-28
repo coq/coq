@@ -13,7 +13,7 @@ Open Local Scope nat_scope.
 
 (** Factorial *)
 
-Boxed Fixpoint fact (n:nat) : nat :=
+Fixpoint fact (n:nat) : nat :=
   match n with
     | O => 1
     | S n => S n * fact n

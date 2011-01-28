@@ -94,11 +94,11 @@ let infer_declaration env dcl =
       let (j,cst) = infer env c.const_entry_body in
       let (typ,cst) = constrain_type env j cst c.const_entry_type in
       Some (Declarations.from_val j.uj_val), typ, cst,
-        c.const_entry_opaque, c.const_entry_boxed, false
+        c.const_entry_opaque, false
   | ParameterEntry (t,nl) ->
       let (j,cst) = infer env t in
       None, NonPolymorphicType (Typeops.assumption_of_judgment env j), cst,
-        false, false, nl
+        false, nl
 
 let global_vars_set_constant_type env = function
   | NonPolymorphicType t -> global_vars_set env t
@@ -108,7 +108,7 @@ let global_vars_set_constant_type env = function
 	  (fun t c -> Idset.union (global_vars_set env t) c))
       ctx ~init:Idset.empty
 
-let build_constant_declaration env kn (body,typ,cst,op,boxed,inline) =
+let build_constant_declaration env kn (body,typ,cst,op,inline) =
   let ids =
     match body with
     | None -> global_vars_set_constant_type env typ
@@ -117,7 +117,7 @@ let build_constant_declaration env kn (body,typ,cst,op,boxed,inline) =
 	  (global_vars_set env (Declarations.force b))
 	  (global_vars_set_constant_type env typ)
   in
-  let tps = Cemitcodes.from_val (compile_constant_body env body op boxed) in
+  let tps = Cemitcodes.from_val (compile_constant_body env body op) in
   let hyps = keep_hyps env ids in
     { const_hyps = hyps;
       const_body = body;

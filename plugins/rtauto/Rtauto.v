@@ -10,7 +10,6 @@
 Require Export List.
 Require Export Bintree.
 Require Import Bool.
-Unset Boxed Definitions.
 
 Declare ML Module "rtauto_plugin".
 

@@ -15,8 +15,6 @@
 Require Export BinPos Pnat.
 Require Import BinNat Plus Mult.
 
-Unset Boxed Definitions.
-
 Inductive Z : Set :=
   | Z0 : Z
   | Zpos : positive -> Z
@@ -1002,13 +1000,13 @@ Qed.
 (**********************************************************************)
 (** * Minimum and maximum *)
 
-Unboxed Definition Zmax (n m:Z) :=
+Definition Zmax (n m:Z) :=
   match n ?= m with
     | Eq | Gt => n
     | Lt => m
   end.
 
-Unboxed Definition Zmin (n m:Z) :=
+Definition Zmin (n m:Z) :=
   match n ?= m with
     | Eq | Lt => n
     | Gt => m

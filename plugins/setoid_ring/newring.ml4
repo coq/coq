@@ -159,8 +159,7 @@ let decl_constant na c =
   mkConst(declare_constant (id_of_string na) (DefinitionEntry
     { const_entry_body = c;
       const_entry_type = None;
-      const_entry_opaque = true;
-      const_entry_boxed = true},
+      const_entry_opaque = true },
     IsProof Lemma))
 
 (* Calling a global tactic *)

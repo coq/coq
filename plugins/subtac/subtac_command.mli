@@ -51,10 +51,10 @@ val build_wellfounded :
            Names.identifier * 'a * Topconstr.local_binder list *
            Topconstr.constr_expr * Topconstr.constr_expr ->
            Topconstr.constr_expr ->
-           Topconstr.constr_expr -> 'b -> 'c -> Subtac_obligations.progress
+           Topconstr.constr_expr -> 'b -> Subtac_obligations.progress
 
 val build_recursive :
-  (fixpoint_expr * decl_notation list) list -> bool -> unit
+  (fixpoint_expr * decl_notation list) list -> unit
 
 val build_corecursive :
-  (cofixpoint_expr * decl_notation list) list -> bool -> unit
+  (cofixpoint_expr * decl_notation list) list -> unit

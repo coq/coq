@@ -328,7 +328,7 @@ let start_proof_and_print k l hook =
   print_subgoals ();
   if !pcoq <> None then (Option.get !pcoq).start_proof ()
 
-let vernac_definition (local,boxed,k) (loc,id as lid) def hook =
+let vernac_definition (local,k) (loc,id as lid) def hook =
   if local = Local then Dumpglob.dump_definition lid true "var"
   else Dumpglob.dump_definition lid false "def";
   (match def with
@@ -342,7 +342,7 @@ let vernac_definition (local,boxed,k) (loc,id as lid) def hook =
           | Some r ->
 	      let (evc,env)= get_current_context () in
  		Some (interp_redexp env evc r) in
-	let ce,imps = interp_definition boxed bl red_option c typ_opt in
+	let ce,imps = interp_definition bl red_option c typ_opt in
 	declare_definition id (local,k) ce imps hook)
 
 let vernac_start_proof kind l lettop hook =
@@ -433,15 +433,15 @@ let vernac_inductive finite infer indl =
     let indl = List.map unpack indl in
     do_mutual_inductive indl (recursivity_flag_of_kind finite)
 
-let vernac_fixpoint l b =
+let vernac_fixpoint l =
   if Dumpglob.dump () then
     List.iter (fun ((lid, _, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  do_fixpoint l b
+  do_fixpoint l
 
-let vernac_cofixpoint l b =
+let vernac_cofixpoint l =
   if Dumpglob.dump () then
     List.iter (fun ((lid, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
-  do_cofixpoint l b
+  do_cofixpoint l
 
 let vernac_scheme = Indschemes.do_scheme
 
@@ -943,14 +943,6 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
-      optname  = "use of boxed definitions";
-      optkey   = ["Boxed";"Definitions"];
-      optread  = Flags.boxed_definitions;
-      optwrite = (fun b -> Flags.set_boxed_definitions b) }
-
-let _ =
-  declare_bool_option
-    { optsync  = true;
       optname  = "use of boxed values";
       optkey   = ["Boxed";"Values"];
       optread  = (fun _ -> not (Vm.transp_values ()));
@@ -1338,8 +1330,8 @@ let interp c = match c with
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption stre l nl
   | VernacInductive (finite,infer,l) -> vernac_inductive finite infer l
-  | VernacFixpoint (l,b) -> vernac_fixpoint l b
-  | VernacCoFixpoint (l,b) -> vernac_cofixpoint l b
+  | VernacFixpoint l -> vernac_fixpoint l
+  | VernacCoFixpoint l -> vernac_cofixpoint l
   | VernacScheme l -> vernac_scheme l
   | VernacCombinedScheme (id, l) -> vernac_combined_scheme id l
 

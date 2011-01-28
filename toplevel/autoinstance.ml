@@ -179,8 +179,9 @@ let declare_record_instance gr ctx params =
   let ident = make_instance_ident gr in
   let def = it_mkLambda_or_LetIn (applistc (constr_of_global gr) params) ctx in
   let def = deep_refresh_universes def in
-  let ce = { const_entry_body=def; const_entry_type=None;
-	     const_entry_opaque=false; const_entry_boxed=false } in
+  let ce = { const_entry_body=def;
+	     const_entry_type=None;
+	     const_entry_opaque=false } in
   let cst = Declare.declare_constant ident
     (DefinitionEntry ce,Decl_kinds.IsDefinition Decl_kinds.StructureComponent) in
   new_instance_message ident (Typeops.type_of_constant (Global.env()) cst) def
@@ -193,8 +194,9 @@ let declare_class_instance gr ctx params =
   let def = deep_refresh_universes def in
   let typ = deep_refresh_universes typ in
   let ce = Entries.DefinitionEntry
-    {  const_entry_type=Some typ; const_entry_body=def;
-       const_entry_opaque=false; const_entry_boxed=false } in
+    {  const_entry_type=Some typ;
+       const_entry_body=def;
+       const_entry_opaque=false } in
   try
   let cst = Declare.declare_constant ident
     (ce,Decl_kinds.IsDefinition Decl_kinds.Instance) in

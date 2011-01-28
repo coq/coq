@@ -128,12 +128,10 @@ let set_compat_version = function
 (*s options for the virtual machine *)
 
 let boxed_val = ref false
-let boxed_def = ref false
 let use_vm = ref false
 
 let set_vm_opt () =
   Vm.set_transp_values (not !boxed_val);
-  Flags.set_boxed_definitions !boxed_def;
   Vconv.set_use_vm !use_vm
 
 (*s Parsing of the command line.

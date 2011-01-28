@@ -14,7 +14,7 @@ Require Export ZArith_base.
 Require Import NArith.
 Require Import Eqdep_dec.
 
-Unboxed Definition Neq (n m:N) :=
+Definition Neq (n m:N) :=
   match (n ?= m)%N with
   | Datatypes.Eq => true
   | _ => false

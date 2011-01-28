@@ -7,8 +7,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Unset Boxed Definitions.
-
 Declare ML Module "z_syntax_plugin".
 
 (**********************************************************************)
@@ -65,8 +63,6 @@ Fixpoint Psucc (x:positive) : positive :=
 
 (** ** Addition *)
 
-Set Boxed Definitions.
-
 Fixpoint Pplus (x y:positive) : positive :=
   match x, y with
     | p~1, q~1 => (Pplus_carry p q)~0
@@ -92,8 +88,6 @@ with Pplus_carry (x y:positive) : positive :=
     | 1, q~0 => (Psucc q)~0
     | 1, 1 => 1~1
   end.
-
-Unset Boxed Definitions.
 
 Infix "+" := Pplus : positive_scope.
 

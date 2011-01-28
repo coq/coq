@@ -141,12 +141,12 @@ let subtac (loc, command) =
 	    (fun _ _ -> ())
       | DefineBody (bl, _, c, tycon) ->
 	  ignore(Subtac_pretyping.subtac_proof defkind hook env isevars id bl c tycon))
-  | VernacFixpoint (l, b) ->
+  | VernacFixpoint l ->
       List.iter (fun ((lid, _, _, _, _), _) ->
 	check_fresh lid;
 	Dumpglob.dump_definition lid false "fix") l;
       let _ = trace (str "Building fixpoint") in
-	ignore(Subtac_command.build_recursive l b)
+	ignore(Subtac_command.build_recursive l)
 
   | VernacStartTheoremProof (thkind, [Some id, (bl,t,guard)], lettop, hook) ->
       if guard <> None then 
@@ -171,10 +171,10 @@ let subtac (loc, command) =
 	error "Declare Instance not supported here.";
       ignore(Subtac_classes.new_instance ~global:glob sup is props pri)
 
-  | VernacCoFixpoint (l, b) ->
+  | VernacCoFixpoint l ->
       if Dumpglob.dump () then
 	List.iter (fun ((lid, _, _, _), _) -> Dumpglob.dump_definition lid false "cofix") l;
-      ignore(Subtac_command.build_corecursive l b)
+      ignore(Subtac_command.build_corecursive l)
 
   (*| VernacEndProof e ->
     subtac_end_proof e*)

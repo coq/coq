@@ -57,8 +57,7 @@ type mutual_inductive_entry = {
 type definition_entry = {
   const_entry_body   : constr;
   const_entry_type   : types option;
-  const_entry_opaque : bool;
-  const_entry_boxed  : bool}
+  const_entry_opaque : bool }
 
 (* type and the inlining flag *)
 type parameter_entry = types * bool

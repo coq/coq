@@ -13,7 +13,6 @@ Require Import Zcompare.
 Require Import ZArith_dec.
 Require Import Sumbool.
 
-Unset Boxed Definitions.
 Open Local Scope Z_scope.
 
 (** * Boolean operations from decidability of order *)

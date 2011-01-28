@@ -13,7 +13,7 @@ Require Import SeqSeries.
 Require Import Ranalysis1.
 Open Local Scope R_scope.
 
-Boxed Fixpoint Dichotomy_lb (x y:R) (P:R -> bool) (N:nat) {struct N} : R :=
+Fixpoint Dichotomy_lb (x y:R) (P:R -> bool) (N:nat) {struct N} : R :=
   match N with
     | O => x
     | S n =>

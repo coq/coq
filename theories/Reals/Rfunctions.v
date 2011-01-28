@@ -659,7 +659,7 @@ Definition decimal_exp (r:R) (z:Z) : R := (r * 10 ^Z z).
 (** * Sum of n first naturals  *)
 (*******************************)
 (*********)
-Boxed Fixpoint sum_nat_f_O (f:nat -> nat) (n:nat) : nat :=
+Fixpoint sum_nat_f_O (f:nat -> nat) (n:nat) : nat :=
   match n with
     | O => f 0%nat
     | S n' => (sum_nat_f_O f n' + f (S n'))%nat

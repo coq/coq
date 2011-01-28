@@ -13,8 +13,6 @@ Require Import Wf_nat.
 Require Export ZArith.
 Require Export DoubleType.
 
-Unset Boxed Definitions.
-
 (** * 31-bit integers *)
 
 (** This file contains basic definitions of a 31-bit integer

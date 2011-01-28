@@ -29,7 +29,7 @@ let build_table l =
 
 let is_keyword =
   build_table
-    [ "AddPath"; "Axiom"; "Abort"; "Boxed"; "Chapter"; "Check"; "Coercion"; "CoFixpoint";
+    [ "AddPath"; "Axiom"; "Abort"; "Chapter"; "Check"; "Coercion"; "CoFixpoint";
       "CoInductive"; "Corollary"; "Defined"; "Definition"; "End"; "Eval"; "Example";
       "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Goal"; "Hint";
       "Hypothesis"; "Hypotheses";
@@ -41,8 +41,7 @@ let is_keyword =
       "Induction"; "for"; "Sort"; "Section"; "Show"; "Structure"; "Syntactic"; "Syntax"; "Tactic"; "Theorem";
       "Set"; "Types"; "Undo"; "Unset"; "Variable"; "Variables"; "Context";
       "Notation"; "Reserved Notation"; "Tactic Notation";
-      "Delimit"; "Bind"; "Open"; "Scope";
-      "Boxed"; "Unboxed"; "Inline";
+      "Delimit"; "Bind"; "Open"; "Scope"; "Inline";
       "Implicit Arguments"; "Add"; "Strict";
       "Typeclasses"; "Instance"; "Global Instance"; "Class"; "Instantiation";
       "subgoal";

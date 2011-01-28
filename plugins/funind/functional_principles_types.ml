@@ -382,9 +382,7 @@ let generate_functional_principle
 	let ce =
 	  { const_entry_body = value;
 	    const_entry_type = None;
-	    const_entry_opaque = false;
-	    const_entry_boxed = Flags.boxed_definitions()
-	  }
+	    const_entry_opaque = false }
 	in
 	ignore(
 	  Declare.declare_constant

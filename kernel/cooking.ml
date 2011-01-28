@@ -137,5 +137,4 @@ let cook_constant env r =
 	let j = make_judge (force (Option.get body)) typ in
 	Typeops.make_polymorphic_if_constant_for_ind env j
   in
-  let boxed = Cemitcodes.is_boxed cb.const_body_code in
-  (body, typ, cb.const_constraints, cb.const_opaque, boxed,false)
+  (body, typ, cb.const_constraints, cb.const_opaque, false)

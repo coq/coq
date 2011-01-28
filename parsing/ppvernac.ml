@@ -607,7 +607,7 @@ let rec pr_vernac = function
       (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
 
 
-  | VernacFixpoint (recs,b) ->
+  | VernacFixpoint recs ->
       let pr_onerec = function
         | ((loc,id),ro,bl,type_,def),ntn ->
             let annot = pr_guard_annot bl ro in
@@ -616,19 +616,17 @@ let rec pr_vernac = function
             ++ pr_opt (fun def -> str" :=" ++ brk(1,2) ++ pr_lconstr def) def ++
 	    prlist (pr_decl_notation pr_constr) ntn
       in
-      let start = if b then "Boxed Fixpoint" else "Fixpoint" in
-      hov 0 (str start ++ spc() ++
+      hov 0 (str "Fixpoint" ++ spc() ++
         prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onerec recs)
 
-  | VernacCoFixpoint (corecs,b) ->
+  | VernacCoFixpoint corecs ->
       let pr_onecorec (((loc,id),bl,c,def),ntn) =
         pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
         spc() ++ pr_lconstr_expr c ++
         pr_opt (fun def -> str" :=" ++ brk(1,2) ++ pr_lconstr def) def ++
 	prlist (pr_decl_notation pr_constr) ntn
       in
-      let start = if b then "Boxed CoFixpoint" else "CoFixpoint" in
-      hov 0 (str start ++ spc() ++
+      hov 0 (str "CoFixpoint" ++ spc() ++
       prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onecorec corecs)
   | VernacScheme l ->
       hov 2 (str"Scheme" ++ spc() ++

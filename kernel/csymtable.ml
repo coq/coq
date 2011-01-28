@@ -125,10 +125,9 @@ let rec slot_for_getglobal env kn =
   with NotEvaluated ->
     let pos =
       match Cemitcodes.force cb.const_body_code with
-      | BCdefined(boxed,(code,pl,fv)) ->
+      | BCdefined(code,pl,fv) ->
 	let v = eval_to_patch env (code,pl,fv) in
-  	if boxed then set_global_boxed kn v
-	else set_global v
+	set_global v
     | BCallias kn' -> slot_for_getglobal env kn'
     | BCconstant -> set_global (val_of_constant kn) in
     rk := Some pos;

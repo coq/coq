@@ -15,8 +15,6 @@ type locality =
   | Local
   | Global
 
-type boxed_flag = bool
-
 type theorem_kind =
   | Theorem
   | Lemma
@@ -52,7 +50,7 @@ type assumption_object_kind = Definitional | Logical | Conjectural
 *)
 type assumption_kind = locality * assumption_object_kind
 
-type definition_kind = locality * boxed_flag * definition_object_kind
+type definition_kind = locality * definition_object_kind
 
 (** Kinds used in proofs *)
 
@@ -74,7 +72,7 @@ type logical_kind =
 val logical_kind_of_goal_kind : goal_object_kind -> logical_kind
 val string_of_theorem_kind : theorem_kind -> string
 val string_of_definition_kind :
-  locality * boxed_flag * definition_object_kind -> string
+  locality * definition_object_kind -> string
 
 (** About locality *)
 

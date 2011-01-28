@@ -25,7 +25,7 @@ Section sequence.
   Variable Un : nat -> R.
 
 (*********)
-  Boxed Fixpoint Rmax_N (N:nat) : R :=
+  Fixpoint Rmax_N (N:nat) : R :=
     match N with
       | O => Un 0
       | S n => Rmax (Un (S n)) (Rmax_N n)

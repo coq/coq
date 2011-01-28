@@ -15,7 +15,7 @@ Require Import Eqdep_dec.
 
 Open Local Scope nat_scope.
 
-Unboxed Fixpoint nateq (n m:nat) {struct m} : bool :=
+Fixpoint nateq (n m:nat) {struct m} : bool :=
   match n, m with
   | O, O => true
   | S n', S m' => nateq n' m'

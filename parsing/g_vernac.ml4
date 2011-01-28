@@ -152,10 +152,6 @@ GEXTEND Gram
       | stre = assumptions_token; nl = inline; bl = assum_list ->
 	  test_plurial_form bl;
 	  VernacAssumption (stre, nl, bl)
-      | IDENT "Boxed";"Definition";id = identref; b = def_body ->
-	  VernacDefinition ((Global,true,Definition), id, b, no_hook)
-      | IDENT "Unboxed";"Definition";id = identref; b = def_body ->
-	  VernacDefinition ((Global,false,Definition), id, b, no_hook)
       | (f,d) = def_token; id = identref; b = def_body ->
           VernacDefinition (d, id, b, f)
       (* Gallina inductive declarations *)
@@ -164,14 +160,10 @@ GEXTEND Gram
 	  let (k,f) = f in
 	  let indl=List.map (fun ((a,b,c,d),e) -> ((a,b,c,k,d),e)) indl in
           VernacInductive (f,false,indl)
-      | IDENT "Boxed";"Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
-          VernacFixpoint (recs,true)
-      | IDENT "Unboxed";"Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
-          VernacFixpoint (recs,false)
-       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
-          VernacFixpoint (recs,Flags.boxed_definitions())
+      | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
+          VernacFixpoint recs
       | "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
-          VernacCoFixpoint (corecs,false)
+          VernacCoFixpoint corecs
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l
       | IDENT "Combined"; IDENT "Scheme"; id = identref; IDENT "from";
 	l = LIST1 identref SEP "," -> VernacCombinedScheme (id, l) ] ]
@@ -201,13 +193,13 @@ GEXTEND Gram
   ;
   def_token:
     [ [ "Definition" ->
-	no_hook, (Global, Flags.boxed_definitions(), Definition)
+	no_hook, (Global, Definition)
       | IDENT "Let" ->
-	no_hook, (Local, Flags.boxed_definitions(), Definition)
+	no_hook, (Local, Definition)
       | IDENT "Example" ->
-	no_hook, (Global, Flags.boxed_definitions(), Example)
+	no_hook, (Global, Example)
       | IDENT "SubClass"  ->
-          Class.add_subclass_hook, (use_locality_exp (), false, SubClass) ] ]
+          Class.add_subclass_hook, (use_locality_exp (), SubClass) ] ]
   ;
   assumption_token:
     [ [ "Hypothesis" -> (Local, Logical)
@@ -510,16 +502,16 @@ GEXTEND Gram
           d = def_body ->
           let s = coerce_reference_to_id qid in
 	  VernacDefinition
-	    ((Global,false,CanonicalStructure),(dummy_loc,s),d,
+	    ((Global,CanonicalStructure),(dummy_loc,s),d,
 	     (fun _ -> Recordops.declare_canonical_structure))
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
-	  VernacDefinition ((use_locality_exp (),false,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
+	  VernacDefinition ((use_locality_exp (),Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
       | IDENT "Coercion"; IDENT "Local"; qid = global; d = def_body ->
            let s = coerce_reference_to_id qid in
-	  VernacDefinition ((enforce_locality_exp true,false,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
+	  VernacDefinition ((enforce_locality_exp true,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identref;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr ->
 	   VernacIdentityCoercion (enforce_locality_exp true, f, s, t)

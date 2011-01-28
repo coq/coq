@@ -22,7 +22,7 @@ type to_patch = emitcodes * (patch list) * fv
 val subst_to_patch : Mod_subst.substitution -> to_patch -> to_patch
 
 type body_code =
-  | BCdefined of bool*to_patch
+  | BCdefined of to_patch
   | BCallias of constant
   | BCconstant
 
@@ -32,8 +32,6 @@ type to_patch_substituted
 val from_val : body_code -> to_patch_substituted
 
 val force : to_patch_substituted -> body_code
-
-val is_boxed : to_patch_substituted -> bool
 
 val subst_to_patch_subst : Mod_subst.substitution -> to_patch_substituted -> to_patch_substituted
 

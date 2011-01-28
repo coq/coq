@@ -9,8 +9,6 @@
 Require Export List.
 Require Export BinPos.
 
-Unset Boxed Definitions.
-
 Open Scope positive_scope.
 
 Ltac clean := try (simpl; congruence).

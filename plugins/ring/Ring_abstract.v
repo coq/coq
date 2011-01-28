@@ -10,8 +10,6 @@ Require Import LegacyRing_theory.
 Require Import Quote.
 Require Import Ring_normalize.
 
-Unset Boxed Definitions.
-
 Section abstract_semi_rings.
 
 Inductive aspolynomial : Type :=

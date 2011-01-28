@@ -201,8 +201,7 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
 		  let cie = {
 		    const_entry_body = proj;
                     const_entry_type = Some projtyp;
-                    const_entry_opaque = false;
-		    const_entry_boxed = Flags.boxed_definitions() } in
+                    const_entry_opaque = false } in
 		  let k = (DefinitionEntry cie,IsDefinition kind) in
 		  let kn = declare_constant ~internal:KernelSilent fid k in
 		  Flags.if_verbose message (string_of_id fid ^" is defined");
@@ -311,8 +310,7 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 	let class_entry =
 	  { const_entry_body = class_body;
 	    const_entry_type = class_type;
-	    const_entry_opaque = false;
-	    const_entry_boxed = false }
+	    const_entry_opaque = false }
 	in
 	let cst = Declare.declare_constant (snd id)
 	  (DefinitionEntry class_entry, IsDefinition Definition)
@@ -323,8 +321,7 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 	let proj_entry =
 	  { const_entry_body = proj_body;
 	    const_entry_type = Some proj_type;
-	    const_entry_opaque = false;
-	    const_entry_boxed = false }
+	    const_entry_opaque = false }
 	in
 	let proj_cst = Declare.declare_constant proj_name
 	  (DefinitionEntry proj_entry, IsDefinition Definition)

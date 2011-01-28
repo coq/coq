@@ -265,11 +265,11 @@ let close_proof () =
     let id = get_current_proof_name () in
     let p = give_me_the_proof () in
     let proofs_and_types = Proof.return p in
-    let entries = List.map (fun (c,t) -> { Entries.const_entry_body = c ;
-                                    					   const_entry_type  = Some t;
-									   const_entry_opaque = true ;
-									   const_entry_boxed = false } )
-                                         proofs_and_types 
+    let entries = List.map
+      (fun (c,t) -> { Entries.const_entry_body = c ;
+                      const_entry_type  = Some t;
+		      const_entry_opaque = true })
+      proofs_and_types
     in
     let { compute_guard=cg ; strength=str ; hook=hook } =
       Idmap.find id !proof_info

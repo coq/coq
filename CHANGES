@@ -17,6 +17,8 @@ Vernacular commands
 - When the output file of "Print Universes" ends in ".dot" or ".gv",
   the universe graph is printed in the DOT language, and can be
   processed by Graphviz tools.
+- The undocumented and obsolete option "Set/Unset Boxed Definitions" has
+  been removed, as well as syntaxes like "Boxed Fixpoint foo".
 
 Libraries
 

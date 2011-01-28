@@ -31,7 +31,7 @@ val set_declare_assumptions_hook : (types -> unit) -> unit
 (** {6 Definitions/Let} *)
 
 val interp_definition :
-  boxed_flag -> local_binder list -> red_expr option -> constr_expr ->
+  local_binder list -> red_expr option -> constr_expr ->
   constr_expr option -> definition_entry * manual_implicits
 
 val declare_definition : identifier -> locality * definition_object_kind ->
@@ -127,26 +127,24 @@ val interp_cofixpoint :
 (** Registering fixpoints and cofixpoints in the environment *)
 
 val declare_fixpoint :
-  bool ->
   recursive_preentry * (name list * manual_implicits * int option) list -> 
   lemma_possible_guards -> decl_notation list -> unit
 
 val declare_cofixpoint :
-  bool ->
   recursive_preentry * (name list * manual_implicits * int option) list ->
     decl_notation list -> unit
 
 (** Entry points for the vernacular commands Fixpoint and CoFixpoint *)
 
 val do_fixpoint :
-  (fixpoint_expr * decl_notation list) list -> bool -> unit
+  (fixpoint_expr * decl_notation list) list -> unit
 
 val do_cofixpoint :
-  (cofixpoint_expr * decl_notation list) list -> bool -> unit
+  (cofixpoint_expr * decl_notation list) list -> unit
 
 (** Utils *)
 
 val check_mutuality : Environ.env -> bool -> (identifier * types) list -> unit
 
-val declare_fix : bool -> definition_object_kind -> identifier ->
+val declare_fix : definition_object_kind -> identifier ->
   constr -> types -> Impargs.manual_explicitation list -> global_reference

@@ -1345,8 +1345,7 @@ let declare_projection n instance_id r =
   let cst =
     { const_entry_body = term;
       const_entry_type = Some typ;
-      const_entry_opaque = false;
-      const_entry_boxed = false }
+      const_entry_opaque = false }
   in
     ignore(Declare.declare_constant n (Entries.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
 

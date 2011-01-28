@@ -714,18 +714,13 @@ let compile env c =
   Format.print_flush();  *)
   init_code,!fun_code, Array.of_list fv
 
-let compile_constant_body env body opaque boxed =
+let compile_constant_body env body opaque =
   if opaque then BCconstant
   else match body with
   | None -> BCconstant
   | Some sb ->
       let body = Declarations.force sb in
-      if boxed then
-	let res = compile env body in
-	let to_patch = to_memory res in
-	BCdefined(true, to_patch)
-      else
-	match kind_of_term body with
+      match kind_of_term body with
 	| Const kn' ->
 	    (* we use the canonical name of the constant*)
 	    let con= constant_of_kn (canonical_con kn') in
@@ -733,7 +728,7 @@ let compile_constant_body env body opaque boxed =
 	| _ ->
 	    let res = compile env body in
 	    let to_patch = to_memory res in
-	    BCdefined (false, to_patch)
+	    BCdefined to_patch
 
 
 (* spiwack: additional function which allow different part of compilation of the

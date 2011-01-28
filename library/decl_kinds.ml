@@ -15,8 +15,6 @@ type locality =
   | Local
   | Global
 
-type boxed_flag = bool
-
 type theorem_kind =
   | Theorem
   | Lemma
@@ -52,7 +50,7 @@ type assumption_object_kind = Definitional | Logical | Conjectural
 *)
 type assumption_kind = locality * assumption_object_kind
 
-type definition_kind = locality * boxed_flag * definition_object_kind
+type definition_kind = locality * definition_object_kind
 
 (* Kinds used in proofs *)
 
@@ -84,12 +82,12 @@ let string_of_theorem_kind = function
   | Proposition -> "Proposition"
   | Corollary -> "Corollary"
 
-let string_of_definition_kind (l,boxed,d) =
-  match (l,d) with
+let string_of_definition_kind def =
+  match def with
   | Local, Coercion -> "Coercion Local"
   | Global, Coercion -> "Coercion"
   | Local, Definition -> "Let"
-  | Global, Definition -> if boxed then "Boxed Definition" else "Definition"
+  | Global, Definition -> "Definition"
   | Local, SubClass -> "Local SubClass"
   | Global, SubClass -> "SubClass"
   | Global, CanonicalStructure -> "Canonical Structure"

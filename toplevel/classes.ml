@@ -108,8 +108,7 @@ let declare_instance_constant k pri global imps ?hook id term termtype =
     let entry =
       { const_entry_body   = term;
 	const_entry_type   = Some termtype;
-	const_entry_opaque = false;
-	const_entry_boxed  = false }
+	const_entry_opaque = false }
     in DefinitionEntry entry, kind
   in
   let kn = Declare.declare_constant id cdecl in

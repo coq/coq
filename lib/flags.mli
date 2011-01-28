@@ -65,11 +65,6 @@ val print_hyps_limit : unit -> int option
 val add_unsafe : string -> unit
 val is_unsafe : string -> bool
 
-(** Options for the virtual machine *)
-
-val set_boxed_definitions : bool -> unit
-val boxed_definitions : unit -> bool
-
 (** Options for external tools *)
 
 (** Returns string format for default browser to use from Coq or CoqIDE *)

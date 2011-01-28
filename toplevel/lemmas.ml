@@ -216,8 +216,7 @@ let save_remaining_recthms (local,kind) body opaq i (id,(t_i,(_,imps))) =
           let const =
             { const_entry_body = body_i;
               const_entry_type = Some t_i;
-              const_entry_opaque = opaq;
-              const_entry_boxed = false (* copy of what cook_proof does *)} in
+              const_entry_opaque = opaq } in
           let kn = declare_constant id (DefinitionEntry const, k) in
           (Global,ConstRef kn,imps)
 

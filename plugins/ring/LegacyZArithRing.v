@@ -13,7 +13,7 @@ Require Export ZArith_base.
 Require Import Eqdep_dec.
 Require Import LegacyRing.
 
-Unboxed Definition Zeq (x y:Z) :=
+Definition Zeq (x y:Z) :=
   match (x ?= y)%Z with
   | Datatypes.Eq => true
   | _ => false

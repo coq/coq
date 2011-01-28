@@ -105,8 +105,7 @@ let define id internal c t =
     (DefinitionEntry
       { const_entry_body = c;
         const_entry_type = t;
-        const_entry_opaque = false;
-	const_entry_boxed = Flags.boxed_definitions() },
+        const_entry_opaque = false },
       Decl_kinds.IsDefinition Scheme) in
   definition_message id;
   kn
