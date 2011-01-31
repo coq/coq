@@ -603,7 +603,7 @@ let admit_obligations n =
 	match x.obl_body with
 	| None ->
             let x = subst_deps_obl obls x in
-	    let kn = Declare.declare_constant x.obl_name (ParameterEntry (x.obl_type,false), 
+	    let kn = Declare.declare_constant x.obl_name (ParameterEntry (x.obl_type,None),
 							 IsAssumption Conjectural) 
 	    in
 	      assumption_message x.obl_name;

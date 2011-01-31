@@ -262,11 +262,9 @@ let add_constant dir l decl senv =
   in
   let senv' = add_constraints cb.const_constraints senv in
   let env'' = Environ.add_constant kn cb senv'.env in
-  let resolver = 
-    if cb.const_inline then
-      add_inline_delta_resolver kn senv'.modinfo.resolver
-    else
-      senv'.modinfo.resolver
+  let resolver = match cb.const_inline with
+    | None -> senv'.modinfo.resolver
+    | Some lev -> add_inline_delta_resolver kn lev senv'.modinfo.resolver
   in
     kn, { old = senv'.old;
 	  env = env'';
@@ -492,8 +490,9 @@ let end_module l restype senv =
      | SEBfunctor(mbid,mtb,str) ->
 	 let cst_sub = check_subtypes senv.env mb mtb in
 	 let senv = add_constraints cst_sub senv in
-	 let mpsup_delta = if not inl then mb.typ_delta else
-	   complete_inline_delta_resolver senv.env mp_sup mbid mtb mb.typ_delta in
+	 let mpsup_delta =
+	   inline_delta_resolver senv.env inl mp_sup mbid mtb mb.typ_delta
+	 in
 	 let subst = map_mbid mbid mp_sup mpsup_delta in
 	 let resolver = subst_codom_delta_resolver subst resolver in
 	   (compute_sign 

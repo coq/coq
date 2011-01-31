@@ -364,31 +364,28 @@ let module_type_of_module env mp mb =
 	 typ_constraints = mb.mod_constraints;
 	 typ_delta = mb.mod_delta}
 
-let complete_inline_delta_resolver env mp mbid mtb delta =
-  let constants = inline_of_delta mtb.typ_delta in
+let inline_delta_resolver env inl mp mbid mtb delta =
+  let constants = inline_of_delta inl mtb.typ_delta in
   let rec make_inline delta = function
     | [] -> delta
-    | kn::r -> 
+    | (lev,kn)::r ->
 	let kn = replace_mp_in_kn (MPbound mbid) mp kn in
 	let con = constant_of_kn kn in
 	let con' = constant_of_delta delta con in
-	  try
-	    let constant = lookup_constant con' env in
-	      if (not constant.Declarations.const_opaque) then
-		let constr = Option.map Declarations.force 
-		  constant.Declarations.const_body in
-		  if constr = None then 
-		    (make_inline delta r)
-		  else
-		    add_inline_constr_delta_resolver con (Option.get constr)
-		      (make_inline delta r)
-	      else
-		(make_inline delta r)
-	  with 
-	      Not_found -> error_no_such_label_sub (con_label con) 
-		(string_of_mp (con_modpath con))
+	try
+	  let constant = lookup_constant con' env in
+	  let l = make_inline delta r in
+	  if constant.Declarations.const_opaque then l
+	  else match constant.Declarations.const_body with
+	    | None -> l
+	    | Some body ->
+	      let constr = Declarations.force body in
+	      add_inline_constr_delta_resolver con lev constr l
+	with Not_found ->
+	  error_no_such_label_sub (con_label con)
+	    (string_of_mp (con_modpath con))
   in
-    make_inline delta constants
+  make_inline delta constants
 
 let rec strengthen_and_subst_mod
     mb subst env mp_from mp_to env resolver =

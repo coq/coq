@@ -18,9 +18,11 @@ open Util
 open Names
 open Term
 
+(* For Inline, the int is an inlining level, and the constr (if present)
+   is the term into which we should inline *)
 
 type delta_hint =
-    Inline of constr option
+    Inline of int * constr option
   | Equiv of kernel_name
   | Prefix_equiv of module_path
 
@@ -63,11 +65,11 @@ let add_mp mp1 mp2 resolve =
 let map_mbid mbid mp resolve = add_mbid mbid mp resolve empty_subst
 let map_mp mp1 mp2 resolve = add_mp mp1 mp2 resolve empty_subst
 
-let add_inline_delta_resolver con =
-  Deltamap.add (KN(user_con con)) (Inline None)
-    
-let add_inline_constr_delta_resolver con cstr =
-  Deltamap.add (KN(user_con con)) (Inline (Some cstr))
+let add_inline_delta_resolver con lev =
+  Deltamap.add (KN(user_con con)) (Inline (lev,None))
+
+let add_inline_constr_delta_resolver con lev cstr =
+  Deltamap.add (KN(user_con con)) (Inline (lev, Some cstr))
 
 let add_constant_delta_resolver con =
   Deltamap.add (KN(user_con con)) (Equiv (canonical_con con))
@@ -131,15 +133,15 @@ let rec find_prefix resolve mp =
     with
 	Not_found -> mp
 
-exception Change_equiv_to_inline of constr
+exception Change_equiv_to_inline of (int * constr)
 
 let solve_delta_kn resolve kn =
   try 
       match Deltamap.find (KN kn) resolve with
 	| Equiv kn1 -> kn1
-	| Inline (Some c) -> 
-	    raise (Change_equiv_to_inline c)
-	| Inline None -> raise Inline_kn
+	| Inline (lev, Some c) ->
+	    raise (Change_equiv_to_inline (lev,c))
+	| Inline (_, None) -> raise Inline_kn
 	| _ -> anomaly 
 	    "mod_subst: bad association in delta_resolver"
   with
@@ -199,13 +201,16 @@ let mind_of_delta2 resolve mind =
 	_ -> mind
 	  
 
-let inline_of_delta resolver = 
-  let extract key hint l =
-    match key,hint with 
-      |KN kn, Inline _ -> kn::l
-      | _,_ -> l
-  in
-    Deltamap.fold extract resolver []
+let inline_of_delta inline resolver =
+  match inline with
+    | None -> []
+    | Some inl_lev ->
+      let extract key hint l =
+	match key,hint with
+	  |KN kn, Inline (lev,_) -> if lev <= inl_lev then (lev,kn)::l else l
+	  | _,_ -> l
+      in
+      Deltamap.fold extract resolver []
 
 exception Not_inline
   
@@ -213,14 +218,12 @@ let constant_of_delta_with_inline resolve con =
   let kn1,kn2 = canonical_con con,user_con con in
     try
       match Deltamap.find (KN kn2) resolve with 
-	| Inline None -> None
-	| Inline (Some const) -> Some const
+	| Inline (_,o) -> o
 	| _ -> raise Not_inline
     with
 	Not_found | Not_inline -> 
 	  try match Deltamap.find (KN kn1) resolve with 
-	    | Inline None -> None
-	    | Inline (Some const) -> Some const
+	    | Inline (_,o) -> o
 	    | _ -> raise Not_inline
 	  with
 	      Not_found | Not_inline -> None
@@ -575,12 +578,12 @@ let subst_codom_delta_resolver subst resolver =
 	  (try
 	     Deltamap.add key (Equiv (subst_kn_delta subst kn)) resolver
 	   with
-	       Change_equiv_to_inline c ->
-		 Deltamap.add key (Inline (Some c)) resolver)
-      | Inline None ->
+	       Change_equiv_to_inline (lev,c) ->
+		 Deltamap.add key (Inline (lev,Some c)) resolver)
+      | Inline (_,None) ->
 	  Deltamap.add key hint resolver
-      | Inline (Some t) ->
-	  Deltamap.add key (Inline (Some (subst_mps subst t))) resolver
+      | Inline (lev,Some t) ->
+	  Deltamap.add key (Inline (lev,Some (subst_mps subst t))) resolver
   in
     Deltamap.fold apply_subst resolver empty_delta_resolver
 
@@ -597,14 +600,14 @@ let subst_dom_codom_delta_resolver subst resolver =
 	    (try
 	       Deltamap.add key (Equiv (subst_kn_delta subst kn)) resolver
 	     with
-		 Change_equiv_to_inline c ->
-		   Deltamap.add key (Inline (Some c)) resolver)
-      | (KN kn),Inline None ->
+		 Change_equiv_to_inline (lev,c) ->
+		   Deltamap.add key (Inline (lev,Some c)) resolver)
+      | (KN kn),Inline (_,None) ->
 	  let key = KN (subst_kn subst kn) in
 	    Deltamap.add key hint resolver
-      | (KN kn),Inline (Some t) ->
+      | (KN kn),Inline (lev,Some t) ->
 	  let key = KN (subst_kn subst kn) in
-	  Deltamap.add key (Inline (Some (subst_mps subst t))) resolver
+	  Deltamap.add key (Inline (lev,Some (subst_mps subst t))) resolver
       | _,_ -> anomaly "Mod_subst: Bad association in resolver" 
   in
     Deltamap.fold apply_subst resolver empty_delta_resolver
@@ -625,8 +628,8 @@ let update_delta_resolver resolver1 resolver2 =
 		   Equiv (solve_delta_kn resolver2 kn)
 		 in Deltamap.add key new_hint res
 	       with
-		   Change_equiv_to_inline c ->
-		     Deltamap.add key (Inline (Some c)) res)
+		   Change_equiv_to_inline (lev,c) ->
+		     Deltamap.add key (Inline (lev,Some c)) res)
 	  | _ -> Deltamap.add key hint res
       with Not_found ->
 	Deltamap.add key hint res

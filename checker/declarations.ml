@@ -553,6 +553,8 @@ let val_cstr_subst = val_substituted val_constr
 
 let subst_constr_subst = subst_substituted
 
+type inline = int option (* inlining level, None for no inlining *)
+
 type constant_body = {
     const_hyps : section_context; (* New: younger hyp at top *)
     const_body : constr_substituted option;
@@ -561,7 +563,7 @@ type constant_body = {
    (* const_type_code : Cemitcodes.to_patch; *)
     const_constraints : Univ.constraints;
     const_opaque : bool;
-    const_inline : bool}
+    const_inline : inline }
 
 let val_cb = val_tuple ~name:"constant_body"
   [|val_nctxt;

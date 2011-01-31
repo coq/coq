@@ -124,3 +124,9 @@ let camlbin = ref Coq_config.camlbin
 let camlp4bin_spec = ref false
 let camlp4bin = ref Coq_config.camlp4bin
 
+(* Level of inlining during a functor application *)
+
+let default_inline_level = 100
+let inline_level = ref default_inline_level
+let set_inline_level = (:=) inline_level
+let get_inline_level () = !inline_level

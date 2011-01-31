@@ -55,7 +55,9 @@ type definition_entry = {
   const_entry_type   : types option;
   const_entry_opaque : bool }
 
-type parameter_entry = types * bool  (*inline flag*)
+type inline = int option (* inlining level, None for no inlining *)
+
+type parameter_entry = types * inline
 
 type constant_entry =
   | DefinitionEntry of definition_entry

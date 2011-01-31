@@ -84,3 +84,8 @@ val camlbin_spec : bool ref
 val camlbin : string ref
 val camlp4bin_spec : bool ref
 val camlp4bin : string ref
+
+(** Level of inlining during a functor application *)
+val set_inline_level : int -> unit
+val get_inline_level : unit -> int
+val default_inline_level : int

@@ -1410,7 +1410,7 @@ let add_morphism_infer glob m n =
   let instance = build_morphism_signature m in
     if Lib.is_modtype () then
       let cst = Declare.declare_constant ~internal:Declare.KernelSilent instance_id
-				(Entries.ParameterEntry (instance,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
+				(Entries.ParameterEntry (instance,None), Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
 	add_instance (Typeclasses.new_instance (Lazy.force proper_class) None glob (ConstRef cst));
 	declare_projection n instance_id (ConstRef cst)

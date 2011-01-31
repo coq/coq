@@ -78,7 +78,7 @@ let modtab_objects =
 let openmod_info =
   ref ((MPfile(initial_dir),[],None,[])
 	 : module_path *  mod_bound_id list *
-           (module_struct_entry * bool) option * module_type_body list)
+           (module_struct_entry * inline) option * module_type_body list)
 
 (* The library_cache here is needed to avoid recalculations of
    substituted modules object during "reloading" of libraries *)
@@ -425,24 +425,20 @@ let rec get_objs_modtype_application env = function
     Modops.error_application_to_not_path mexpr
 | _ -> error "Application of a non-functor."
 
-let rec compute_subst env mbids sign mp_l inline =
+let rec compute_subst env mbids sign mp_l inl =
   match mbids,mp_l with
     | _,[] -> mbids,empty_subst
     | [],r -> error "Application of a functor with too few arguments."
     | mbid::mbids,mp::mp_l ->
 	let farg_id, farg_b, fbody_b = Modops.destr_functor env sign in
 	let mb = Environ.lookup_module mp env in
-	let mbid_left,subst = compute_subst env mbids fbody_b mp_l inline in
-	match discr_resolver mb with
-	  | None ->
-	      mbid_left,join (map_mbid mbid mp empty_delta_resolver) subst
+	let mbid_left,subst = compute_subst env mbids fbody_b mp_l inl in
+	let resolver = match discr_resolver mb with
+	  | None -> empty_delta_resolver
 	  | Some mp_delta ->
-	      let mp_delta =
-		if not inline then mp_delta else
-		  Modops.complete_inline_delta_resolver env mp
-		    farg_id farg_b mp_delta
-	      in
-	      mbid_left,join (map_mbid mbid mp mp_delta) subst
+	      Modops.inline_delta_resolver env inl mp farg_id farg_b mp_delta
+	in
+	mbid_left,join (map_mbid mbid mp resolver) subst
 
 let rec get_modtype_substobjs env mp_from inline = function
     MSEident ln -> 
@@ -748,15 +744,16 @@ let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
 
   let funct f m = funct_entry arg_entries (f (Global.env ()) m) in
   let env = Global.env() in
+  let default_inl = Some (Flags.get_inline_level ()) in (* PLTODO *)
   let mty_entry_o, subs, inl_res = match res with
     | Topconstr.Enforce (mty,inl) -> Some (funct interp_modtype mty), [], inl
     | Topconstr.Check mtys ->
-	None, build_subtypes interp_modtype mmp arg_entries mtys, true
+	None, build_subtypes interp_modtype mmp arg_entries mtys, default_inl
   in
  
   (*let subs = List.map (Mod_typing.translate_module_type env mmp) mty_sub_l in  *)
   let mexpr_entry_o, inl_expr = match mexpr_o with
-    | None -> None, true
+    | None -> None, default_inl
     | Some (mexpr, inl) -> Some (funct interp_modexpr mexpr), inl
   in
   let entry =
@@ -775,7 +772,8 @@ let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
   (* and declare the module as a whole *)
   Summary.unfreeze_summaries fs;
   let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
-  let mp_env,resolver = Global.add_module id entry (inl_expr&&inl_res) in
+  let inl = if inl_expr = None then None else inl_res in (*PLTODO *)
+  let mp_env,resolver = Global.add_module id entry inl in
 
   if mp_env <> mp then anomaly "Kernel and Library names do not match";
 
@@ -853,8 +851,8 @@ let rec include_subst env mb mbids sign inline =
     | mbid::mbids ->
 	let farg_id, farg_b, fbody_b = Modops.destr_functor env sign in
 	let subst = include_subst env mb mbids fbody_b inline in
-	let mp_delta = if not inline then mb.mod_delta else
-	  Modops.complete_inline_delta_resolver env mb.mod_mp
+	let mp_delta =
+	  Modops.inline_delta_resolver env inline mb.mod_mp
 	    farg_id farg_b mb.mod_delta
 	in
 	join (map_mbid mbid mb.mod_mp mp_delta) subst

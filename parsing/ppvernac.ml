@@ -227,8 +227,8 @@ let rec pr_module_ast pr_c = function
       pr_module_ast pr_c me1 ++ spc() ++
       hov 1 (str"(" ++ pr_module_ast pr_c me2 ++ str")")
 
-let pr_module_ast_inl pr_c (mast,b) =
-  (if b then mt () else str "!") ++ pr_module_ast pr_c mast
+let pr_module_ast_inl pr_c (mast,o) =
+  (if o=None then str "!" else mt ()) ++ pr_module_ast pr_c mast
 
 let pr_of_module_type prc = function
   | Enforce mty -> str ":" ++ pr_module_ast_inl prc mty

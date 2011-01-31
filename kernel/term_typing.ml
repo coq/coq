@@ -94,7 +94,7 @@ let infer_declaration env dcl =
       let (j,cst) = infer env c.const_entry_body in
       let (typ,cst) = constrain_type env j cst c.const_entry_type in
       Some (Declarations.from_val j.uj_val), typ, cst,
-        c.const_entry_opaque, false
+        c.const_entry_opaque, None
   | ParameterEntry (t,nl) ->
       let (j,cst) = infer env t in
       None, NonPolymorphicType (Typeops.assumption_of_judgment env j), cst,

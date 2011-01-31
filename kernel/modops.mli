@@ -39,8 +39,8 @@ val check_modpath_equiv : env -> module_path -> module_path -> unit
 
 val strengthen : env -> module_type_body -> module_path -> module_type_body
 
-val complete_inline_delta_resolver :
-  env -> module_path -> mod_bound_id -> module_type_body ->
+val inline_delta_resolver :
+  env -> inline -> module_path -> mod_bound_id -> module_type_body ->
   delta_resolver -> delta_resolver
 
 val strengthen_and_subst_mb : module_body -> module_path -> env -> bool 

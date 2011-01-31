@@ -196,6 +196,8 @@ type scheme =
   | CaseScheme of bool * reference or_by_notation * sort_expr
   | EqualityScheme of reference or_by_notation
 
+type inline = int option (* inlining level, none for no inlining *)
+
 type vernac_expr =
   (* Control *)
   | VernacList of located_vernac_expr list
@@ -226,7 +228,7 @@ type vernac_expr =
         bool * declaration_hook
   | VernacEndProof of proof_end
   | VernacExactProof of constr_expr
-  | VernacAssumption of assumption_kind * bool * simple_binder with_coercion list
+  | VernacAssumption of assumption_kind * inline * simple_binder with_coercion list
   | VernacInductive of inductive_flag * infer_flag * (inductive_expr * decl_notation list) list
   | VernacFixpoint of (fixpoint_expr * decl_notation list) list
   | VernacCoFixpoint of (cofixpoint_expr * decl_notation list) list

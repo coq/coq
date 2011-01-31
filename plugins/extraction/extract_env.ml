@@ -153,7 +153,8 @@ let rec seb2mse = function
 
 let expand_seb env mp seb =
   let seb,_,_,_ =
-    Mod_typing.translate_struct_module_entry env mp true (seb2mse seb)
+    let inl = Some (Flags.get_inline_level()) in
+    Mod_typing.translate_struct_module_entry env mp inl (seb2mse seb)
   in seb
 
 (** When possible, we use the nicer, shorter, algebraic type structures

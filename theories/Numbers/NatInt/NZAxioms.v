@@ -18,7 +18,7 @@ Require Export Equalities Orders NumPrelude GenericMinMax.
 *)
 
 Module Type ZeroSuccPred (Import T:Typ).
- Parameter Inline zero : t.
+ Parameter Inline(20) zero : t.
  Parameters Inline succ pred : t -> t.
 End ZeroSuccPred.
 
@@ -47,7 +47,7 @@ End IsNZDomain.
 *)
 
 Module Type OneTwo (Import T:Typ).
- Parameter Inline one two : t.
+ Parameter Inline(20) one two : t.
 End OneTwo.
 
 Module Type OneTwoNotation (T:Typ)(Import NZ:OneTwo T).

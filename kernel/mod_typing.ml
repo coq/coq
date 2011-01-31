@@ -294,11 +294,11 @@ and translate_struct_module_entry env mp inl mse  = match mse with
 	      (* place for nondep_supertype *) in
       let cst = check_subtypes env mtb farg_b in
       let mp_delta = discr_resolver env mtb in
-      let mp_delta = if not inl then mp_delta else
-	complete_inline_delta_resolver env mp1 farg_id farg_b mp_delta
+      let mp_delta = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta
       in
-      let subst = map_mbid farg_id mp1 mp_delta in
-	(subst_struct_expr subst fbody_b),SEBapply(alg,SEBident mp1,cst),
+      let subst = map_mbid farg_id mp1 mp_delta
+      in
+      (subst_struct_expr subst fbody_b),SEBapply(alg,SEBident mp1,cst),
       (subst_codom_delta_resolver subst resolver),
       Univ.union_constraints cst1 cst
   | MSEwith(mte, with_decl) ->
@@ -333,12 +333,13 @@ and translate_struct_type_entry env inl mse = match mse with
 	      (* place for nondep_supertype *) in
       let cst2 = check_subtypes env mtb farg_b in
       let mp_delta = discr_resolver env mtb in
-      let mp_delta = if not inl then mp_delta else
-	complete_inline_delta_resolver env mp1 farg_id farg_b mp_delta
+      let mp_delta = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta
       in
-      let subst = map_mbid farg_id mp1 mp_delta in
-	(subst_struct_expr subst fbody_b),None,
-      (subst_codom_delta_resolver subst resolve),mp_from,Univ.union_constraints cst1 cst2
+      let subst = map_mbid farg_id mp1 mp_delta
+      in
+      (subst_struct_expr subst fbody_b),None,
+      (subst_codom_delta_resolver subst resolve),mp_from,
+      Univ.union_constraints cst1 cst2
   | MSEwith(mte, with_decl) ->
       let sign,alg,resolve,mp_from,cst = translate_struct_type_entry env inl mte in
       let sign,alg,resolve,cst1 = 
@@ -375,11 +376,11 @@ let rec translate_struct_include_module_entry env mp inl mse  = match mse with
 	      (* place for nondep_supertype *) in
       let cst = check_subtypes env mtb farg_b in
       let mp_delta =  discr_resolver env mtb in
-      let mp_delta = if not inl then mp_delta else
-	complete_inline_delta_resolver env mp1 farg_id farg_b mp_delta
+      let mp_delta = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta
       in
-      let subst = map_mbid farg_id mp1 mp_delta in
-	(subst_struct_expr subst fbody_b),
+      let subst = map_mbid farg_id mp1 mp_delta
+      in
+      (subst_struct_expr subst fbody_b),
       (subst_codom_delta_resolver subst resolver),
       Univ.union_constraints cst1 cst
   | _ -> error ("You cannot Include a high-order structure.")

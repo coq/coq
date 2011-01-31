@@ -37,13 +37,13 @@ val declare_module :
   (env -> 'modast -> module_struct_entry) ->
   (env -> 'modast -> module_struct_entry * bool) ->
   identifier ->
-  (identifier located list * ('modast * bool)) list ->
-  ('modast * bool) Topconstr.module_signature ->
-  ('modast * bool) list -> module_path
+  (identifier located list * ('modast * inline)) list ->
+  ('modast * inline) Topconstr.module_signature ->
+  ('modast * inline) list -> module_path
 
 val start_module : (env -> 'modast -> module_struct_entry) ->
-  bool option -> identifier -> (identifier located list * ('modast * bool)) list ->
-  ('modast * bool) Topconstr.module_signature -> module_path
+  bool option -> identifier -> (identifier located list * ('modast * inline)) list ->
+  ('modast * inline) Topconstr.module_signature -> module_path
 
 val end_module : unit -> module_path
 
@@ -53,12 +53,12 @@ val end_module : unit -> module_path
 
 val declare_modtype : (env -> 'modast -> module_struct_entry) ->
   (env -> 'modast -> module_struct_entry * bool) ->
-  identifier -> (identifier located list * ('modast * bool)) list ->
-  ('modast * bool) list -> ('modast * bool) list -> module_path
+  identifier -> (identifier located list * ('modast * inline)) list ->
+  ('modast * inline) list -> ('modast * inline) list -> module_path
 
 val start_modtype : (env -> 'modast -> module_struct_entry) ->
-  identifier -> (identifier located list * ('modast * bool)) list ->
-  ('modast * bool) list -> module_path
+  identifier -> (identifier located list * ('modast * inline)) list ->
+  ('modast * inline) list -> module_path
 
 val end_modtype : unit -> module_path
 
@@ -103,7 +103,7 @@ val import_module : bool -> module_path -> unit
 (** Include  *)
 
 val declare_include : (env -> 'struct_expr -> module_struct_entry * bool) ->
-  ('struct_expr * bool) list -> unit
+  ('struct_expr * inline) list -> unit
 
 (** {6 ... } *)
 (** [iter_all_segments] iterate over all segments, the modules'
@@ -120,5 +120,5 @@ val debug_print_modtab : unit -> Pp.std_ppcmds
 
 (** For translator *)
 val process_module_bindings : module_ident list ->
-  (mod_bound_id * (module_struct_entry * bool)) list -> unit
+  (mod_bound_id * (module_struct_entry * inline)) list -> unit
 

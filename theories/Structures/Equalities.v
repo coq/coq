@@ -21,13 +21,13 @@ End Nop.
 (** * Structure with just a base type [t] *)
 
 Module Type Typ.
-  Parameter Inline t : Type.
+  Parameter Inline(10) t : Type.
 End Typ.
 
 (** * Structure with an equality relation [eq] *)
 
 Module Type HasEq (Import T:Typ).
-  Parameter Inline eq : t -> t -> Prop.
+  Parameter Inline(30) eq : t -> t -> Prop.
 End HasEq.
 
 Module Type Eq := Typ <+ HasEq.

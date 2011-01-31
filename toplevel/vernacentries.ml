@@ -941,6 +941,16 @@ let _ =
       optwrite = (fun b -> Vconv.set_use_vm b) }
 
 let _ =
+  declare_int_option
+    { optsync  = true;
+      optname  = "level of inling duging functor application";
+      optkey   = ["Inline";"Level"];
+      optread  = (fun () -> Some (Flags.get_inline_level ()));
+      optwrite = (fun o ->
+	           let lev = Option.default Flags.default_inline_level o in
+	           Flags.set_inline_level lev) }
+
+let _ =
   declare_bool_option
     { optsync  = true;
       optname  = "use of boxed values";

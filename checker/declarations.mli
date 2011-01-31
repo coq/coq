@@ -29,6 +29,8 @@ type constr_substituted
 val force_constr : constr_substituted -> constr
 val from_val : constr -> constr_substituted
 
+type inline = int option (* inlining level, None for no inlining *)
+
 type constant_body = {
     const_hyps : section_context; (* New: younger hyp at top *)
     const_body : constr_substituted option;
@@ -36,7 +38,7 @@ type constant_body = {
     const_body_code : to_patch_substituted;
     const_constraints : Univ.constraints;
     const_opaque : bool;
-    const_inline : bool}
+    const_inline : inline }
 
 (* Mutual inductives *)
 

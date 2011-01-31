@@ -179,7 +179,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	in
 	Evarutil.check_evars env Evd.empty !evars termtype;
 	let cst = Declare.declare_constant ~internal:Declare.KernelSilent id
-	  (Entries.ParameterEntry (termtype,false), Decl_kinds.IsAssumption Decl_kinds.Logical)
+	  (Entries.ParameterEntry (termtype,None), Decl_kinds.IsAssumption Decl_kinds.Logical)
 	in instance_hook k None false imps ?hook (ConstRef cst); id
       end
     else
@@ -286,7 +286,7 @@ let context ?(hook=fun _ -> ()) l =
   let fn (id, _, t) =
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
       let cst = Declare.declare_constant ~internal:Declare.KernelSilent id
-	(ParameterEntry (t,false), IsAssumption Logical)
+	(ParameterEntry (t,None), IsAssumption Logical)
       in
 	match class_of_constr t with
 	| Some tc ->
@@ -299,7 +299,7 @@ let context ?(hook=fun _ -> ()) l =
 	   match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls
       in
 	Command.declare_assumption false (Local (* global *), Definitional) t
-	  [] impl (* implicit *) false (* inline *) (dummy_loc, id);
+	  [] impl (* implicit *) None (* inline *) (dummy_loc, id);
 	match class_of_constr t with
 	| None -> ()
 	| Some tc -> hook (VarRef id))

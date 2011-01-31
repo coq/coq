@@ -215,7 +215,9 @@ GEXTEND Gram
       | IDENT "Parameters" -> (Global, Definitional) ] ]
   ;
   inline:
-    [ ["Inline" -> true |  -> false] ]
+    [ [ IDENT "Inline"; "("; i = INT; ")" -> Some (int_of_string i)
+      | IDENT "Inline" -> Some (Flags.get_inline_level())
+      | -> None] ]
   ;
   finite_token:
     [ [ "Inductive" -> (Inductive_kw,Finite)
@@ -443,12 +445,14 @@ GEXTEND Gram
       | -> [] ] ]
   ;
   module_expr_inl:
-    [ [ "!"; me = module_expr -> (me,false)
-      | me = module_expr -> (me,true) ] ]
+    [ [ "!"; me = module_expr -> (me,None)
+      | "<"; i = INT; ">"; me = module_expr -> (me,Some (int_of_string i))
+      | me = module_expr -> (me,Some (Flags.get_inline_level())) ] ]
   ;
   module_type_inl:
-    [ [ "!"; me = module_type -> (me,false)
-      | me = module_type -> (me,true) ] ]
+    [ [ "!"; me = module_type -> (me,None)
+      | "<"; i = INT; ">"; me = module_type -> (me,Some (int_of_string i))
+      | me = module_type -> (me,Some (Flags.get_inline_level())) ] ]
   ;
   (* Module binder  *)
   module_binder:
