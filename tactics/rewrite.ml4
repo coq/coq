@@ -916,7 +916,7 @@ let apply_strategy (s : strategy) env sigma concl cstr evars =
 let split_evars_once sigma evd =
   Evd.fold_undefined (fun ev evi deps ->
     if Intset.mem ev deps then
-      Intset.union (Class_tactics.evars_of_evi evi evd) deps
+      Intset.union (Evarutil.undefined_evars_of_evar_info evd evi) deps
     else deps) evd sigma
 
 let existentials_of_evd evd =

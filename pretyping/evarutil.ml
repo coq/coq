@@ -1359,6 +1359,9 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
   with e when precatchable_exception e ->
     (evd,false)
 
+(** The following functions return the set of evars immediately
+    contained in the object, including defined evars *)
+
 let evars_of_term c =
   let rec evrec acc c =
     match kind_of_term c with
@@ -1381,6 +1384,39 @@ let evars_of_evar_info evi =
 	| Evar_empty -> Intset.empty
 	| Evar_defined b -> evars_of_term b)
 	(evars_of_named_context (named_context_of_val evi.evar_hyps)))
+
+(** The following functions return the set of undefined evars
+    contained in the object, the defined evars being traversed.
+    This is roughly a combination of the previous functions and
+    [nf_evar]. *)
+
+let undefined_evars_of_term evd t =
+  let rec evrec acc c =
+    match kind_of_term c with
+      | Evar (n, _) -> (* TODO: should we look in the constr array ?? *)
+	(try match (Evd.find evd n).evar_body with
+	  | Evar_empty -> Intset.add n acc
+	  | Evar_defined c -> evrec acc c
+	 with Not_found -> anomaly "undefined_evars_of_term: evar not found")
+      | _ -> fold_constr evrec acc c
+  in
+  evrec Intset.empty t
+
+let undefined_evars_of_named_context evd nc =
+  List.fold_right (fun (_, b, t) s ->
+    Option.fold_left (fun s t ->
+      Intset.union s (undefined_evars_of_term evd t))
+      (Intset.union s (undefined_evars_of_term evd t)) b)
+    nc Intset.empty
+
+let undefined_evars_of_evar_info evd evi =
+  Intset.union (undefined_evars_of_term evd evi.evar_concl)
+    (Intset.union
+       (match evi.evar_body with
+	 | Evar_empty -> Intset.empty
+	 | Evar_defined b -> undefined_evars_of_term evd b)
+       (undefined_evars_of_named_context evd
+	  (named_context_of_val evi.evar_hyps)))
 
 (* [check_evars] fails if some unresolved evar remains *)
 

@@ -469,24 +469,18 @@ let rec merge_deps deps = function
 	merge_deps (Intset.union deps hd) tl
       else hd :: merge_deps deps tl
 
-let evars_of_evi evi evm =
-  Intset.filter (is_undefined evm)
-    (Intset.union
-       (Evarutil.evars_of_term evi.evar_concl)
-       (Evarutil.evars_of_named_context (evar_filtered_context evi)))
-
 let deps_of_constraints cstrs deps evm =
   List.fold_right (fun (_, _, x, y) deps ->
-    let evs =
-      Intset.filter (is_defined evm)
-	(Intset.union (Evarutil.evars_of_term x) (Evarutil.evars_of_term y))
-    in merge_deps evs deps)
+    let evx = Evarutil.undefined_evars_of_term evm x
+    and evy = Evarutil.undefined_evars_of_term evm y
+    in merge_deps (Intset.union evx evy) deps)
     cstrs deps
 
 let evar_dependencies evm =
   Evd.fold_undefined
     (fun ev evi acc ->
-      merge_deps (Intset.add ev (evars_of_evi evi evm)) acc)
+      merge_deps
+	(Intset.add ev (Evarutil.undefined_evars_of_evar_info evm evi)) acc)
     evm []
 
 (** [split_evars] returns groups of undefined evars according to dependencies *)

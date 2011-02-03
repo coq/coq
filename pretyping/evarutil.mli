@@ -96,9 +96,21 @@ val is_unification_pattern : env * int -> constr -> constr array ->
   constr -> bool
 val solve_pattern_eqn : env -> constr list -> constr -> constr
 
+(** The following functions return the set of evars immediately
+    contained in the object, including defined evars *)
+
 val evars_of_term : constr -> Intset.t
 val evars_of_named_context : named_context -> Intset.t
 val evars_of_evar_info : evar_info -> Intset.t
+
+(** The following functions return the set of undefined evars
+    contained in the object, the defined evars being traversed.
+    This is roughly a combination of the previous functions and
+    [nf_evar]. *)
+
+val undefined_evars_of_term : evar_map -> constr -> Intset.t
+val undefined_evars_of_named_context : evar_map -> named_context -> Intset.t
+val undefined_evars_of_evar_info : evar_map -> evar_info -> Intset.t
 
 (** {6 Value/Type constraints} *)
 
