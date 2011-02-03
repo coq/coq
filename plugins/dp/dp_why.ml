@@ -181,6 +181,5 @@ let print_query fmt (decls,concl) =
 let output_file f q =
   let c = open_out f in
   let fmt = formatter_of_out_channel c in
-  fprintf fmt "include \"real.why\"@.";
   fprintf fmt "@[%a@]@." print_query q;
   close_out c
