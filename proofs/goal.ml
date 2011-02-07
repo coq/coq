@@ -22,6 +22,8 @@ type goal = {
 (* spiwack: I don't deal with the tags, yet. It is a worthy discussion
    whether we do want some tags displayed besides the goal or not. *)
 
+let pr_goal {content = e} = Pp.int e
+
 (* access primitive *)
 (* invariant : [e] must exist in [em] *)
 let content evars { content = e } = Evd.find evars e
@@ -130,7 +132,7 @@ module Refinable = struct
     let (e,_) = Term.destEvar ev in
     handle := e::!handle;
     ev
-
+      
   (* [with_type c typ] constrains term [c] to have type [typ].  *)
   let with_type t typ env rdefs _ _ = 
     (* spiwack: this function assumes that no evars can be created during
@@ -171,6 +173,22 @@ module Refinable = struct
     | a::l1 , b::l2 when a=b -> a::(fusion l1 l2)
     | _ , b::l2 -> b::(fusion l1 l2)
 
+  let update_handle handle init_defs post_defs =
+    (* [delta_evars] holds the evars that have been introduced by this
+       refinement (but not immediatly solved) *)
+    (* spiwack: this is the hackish part, don't know how to do any better though. *)
+    let delta_evars = evar_map_filter_undefined
+      (fun ev _ -> not (Evd.mem init_defs ev))
+      post_defs
+    in
+    (* [delta_evars] in the shape of a list of [evar]-s*)
+    let delta_list = List.map fst (Evd.to_list delta_evars) in
+    (* The variables in [myevars] are supposed to be stored
+       in decreasing order. Breaking this invariant might cause
+       many things to go wrong. *)
+    handle := fusion delta_list !handle;
+    delta_evars
+
   (* [constr_of_raw] is a pretyping function. The [check_type] argument
       asks whether the term should have the same type as the conclusion.
       [resolve_classes] is a flag on pretyping functions which, if set to true,
@@ -192,23 +210,15 @@ module Refinable = struct
     let open_constr = 
       Pretyping.Default.understand_tcc_evars ~resolve_classes rdefs env tycon rawc
     in
-    (* [!rdefs] contains the evar_map outputed by  [understand_...] *)
-    let post_defs = !rdefs in
-    (* [delta_evars] holds the evars that have been introduced by this
-       refinement (but not immediatly solved) *)
-    (* spiwack: this is the hackish part, don't know how to do any better though. *)
-    let delta_evars = evar_map_filter_undefined
-      (fun ev _ -> not (Evd.mem init_defs ev))
-      post_defs
-    in
-    (* [delta_evars] in the shape of a list of [evar]-s*)
-    let delta_list = List.map fst (Evd.to_list delta_evars) in
-    (* The variables in [myevars] are supposed to be stored
-       in decreasing order. Breaking this invariant might cause
-       many things to go wrong. *)
-    handle := fusion delta_list !handle ; 
-    open_constr 
-
+      ignore(update_handle handle init_defs !rdefs);
+      open_constr 
+  
+  let constr_of_open_constr handle check_type (evars, c) env rdefs gl info =
+    let delta = update_handle handle !rdefs evars in
+      rdefs := Evd.fold (fun ev evi evd -> Evd.add evd ev evi) delta !rdefs;
+      if check_type then with_type c (Evd.evar_concl (content !rdefs gl)) env rdefs gl info
+      else c
+ 
 end
 
 (* [refine t] takes a refinable term and use it as a partial proof for current

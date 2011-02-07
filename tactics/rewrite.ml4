@@ -145,6 +145,10 @@ let new_cstr_evar (goal,cstr) env t =
   let cstr', t = Evarutil.new_evar cstr env t in
     (goal, cstr'), t
 
+let new_goal_evar (goal,cstr) env t =
+  let goal', t = Evarutil.new_evar goal env t in
+    (goal', cstr), t
+
 let build_signature evars env m (cstrs : (types * types option) option list)
     (finalcstr : (types * types option) option) =
   let new_evar evars env t =
@@ -316,6 +320,7 @@ let unify_eqn env sigma hypinfo t =
 	      clenv_unify allowK ~flags:rewrite2_unif_flags CONV left t cl
 	  in
 	  let env' = Clenvtac.clenv_pose_dependent_evars true env' in
+(* 	  let env' = Clenv.clenv_pose_metas_as_evars env' (Evd.undefined_metas env'.evd) in *)
 	  let evd' = Typeclasses.resolve_typeclasses ~fail:true env'.env env'.evd in
 	  let env' = { env' with evd = evd' } in
 	  let nf c = Evarutil.nf_evar evd' (Clenv.clenv_nf_meta env' c) in
@@ -516,25 +521,26 @@ let apply_constraint env sigma car rel prf cstr res =
 
 let eq_env x y = x == y
 
+let goalevars evars = fst evars
+let cstrevars evars = snd evars
+
 let apply_rule hypinfo loccs : strategy =
   let (nowhere_except_in,occs) = loccs in
   let is_occ occ =
     if nowhere_except_in then List.mem occ occs else not (List.mem occ occs) in
   let occ = ref 0 in
     fun env sigma t ty cstr evars ->
-      if not (eq_env !hypinfo.cl.env env) then hypinfo := refresh_hypinfo env sigma !hypinfo;
-      let unif = unify_eqn env sigma hypinfo t in
+      if not (eq_env !hypinfo.cl.env env) then hypinfo := refresh_hypinfo env (goalevars evars) !hypinfo;
+      let unif = unify_eqn env (goalevars evars) hypinfo t in
 	if unif <> None then incr occ;
 	match unif with
 	| Some (env', (prf, (car, rel, c1, c2))) when is_occ !occ ->
 	    begin
 	      if eq_constr t c2 then Some None
 	      else
-		let goalevars = Evd.evar_merge (fst evars)
-		  (Evd.undefined_evars env'.evd)
-		in
 		let res = { rew_car = ty; rew_from = c1;
-			    rew_to = c2; rew_prf = RewPrf (rel, prf); rew_evars = goalevars, snd evars }
+			    rew_to = c2; rew_prf = RewPrf (rel, prf); 
+			    rew_evars = env'.evd, cstrevars evars }
 		in Some (Some (apply_constraint env sigma car rel prf cstr res))
 	    end
 	| _ -> None
@@ -904,14 +910,13 @@ let rewrite_with {it = c; sigma = evm} left2right loccs : strategy =
 let apply_strategy (s : strategy) env sigma concl cstr evars =
   let res =
     s env sigma concl (Typing.type_of env sigma concl)
-      (Option.map snd cstr) !evars
+      (Option.map snd cstr) evars
   in
     match res with
     | None -> None
     | Some None -> Some None
     | Some (Some res) ->
-	evars := res.rew_evars;
-	Some (Some (res.rew_prf, (res.rew_car, res.rew_from, res.rew_to)))
+	Some (Some (res.rew_prf, res.rew_evars, res.rew_car, res.rew_from, res.rew_to))
 
 let split_evars_once sigma evd =
   Evd.fold_undefined (fun ev evi deps ->
@@ -939,7 +944,8 @@ let split_evars sigma evd =
 
 let merge_evars (goal,cstr) = Evd.merge goal cstr
 let solve_constraints env evars =
-  Typeclasses.resolve_typeclasses env ~split:false ~fail:true (merge_evars evars)
+  Typeclasses.resolve_typeclasses env ~split:false ~fail:true
+    (merge_evars evars)
 
 let nf_zeta =
   Reductionops.clos_norm_flags (Closure.RedFlags.mkflags [Closure.RedFlags.fZETA])
@@ -950,12 +956,9 @@ let map_rewprf f = function
 
 exception RewriteFailure
 
-let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
-  let concl, is_hyp =
-    match clause with
-	Some id -> pf_get_hyp_typ gl id, Some id
-      | None -> pf_concl gl, None
-  in
+type result = (evar_map * constr option * types) option option
+
+let cl_rewrite_clause_aux ?(abs=None) strat env sigma concl is_hyp : result =
   let cstr =
     let sort = mkProp in
     let impl = Lazy.force impl in
@@ -963,79 +966,218 @@ let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
       | None -> (sort, inverse sort impl)
       | Some _ -> (sort, impl)
   in
-  let sigma = project gl in
-  let evars = ref (Evd.create_evar_defs sigma, Evd.empty) in
-  let env = pf_env gl in
+  let evars = (create_evar_defs sigma, Evd.empty) in
   let eq = apply_strategy strat env sigma concl (Some cstr) evars in
     match eq with
-    | Some (Some (p, (car, oldt, newt))) ->
-	(try
-	    let cstrevars = !evars in
-	    let evars = solve_constraints env cstrevars in
-	    let p = map_rewprf 
-	      (fun p -> nf_zeta env evars (Evarutil.nf_evar evars p)) 
-	      p 
-	    in
-	    let newt = Evarutil.nf_evar evars newt in
-	    let abs = Option.map (fun (x, y) ->
-	      Evarutil.nf_evar evars x, Evarutil.nf_evar evars y) abs in
-	    let undef = split_evars (fst cstrevars) evars in
-	    let rewtac =
-	      match is_hyp with
-	      | Some id ->
-		  (match p with
-		  | RewPrf (rel, p) ->
-		      let term =
-			match abs with
-			| None -> p
-			| Some (t, ty) ->
-			    mkApp (mkLambda (Name (id_of_string "lemma"), ty, p), [| t |])
-		      in
-			cut_replacing id newt
-			  (Tacmach.refine_no_check (mkApp (term, [| mkVar id |])))
-		  | RewCast c ->
-		      change_in_hyp None newt (id, InHypTypeOnly))
-		    
-	      | None ->
-		  (match p with
-		  | RewPrf (rel, p) ->
-		      (match abs with
-		      | None ->
-			  let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
-			    tclTHENLAST
-			      (Tacmach.internal_cut_no_check false name newt)
-			      (tclTHEN (Tactics.revert [name]) (Tacmach.refine_no_check p))
-		      | Some (t, ty) ->
-			  Tacmach.refine_no_check
-			    (mkApp (mkLambda (Name (id_of_string "newt"), newt,
-					     mkLambda (Name (id_of_string "lemma"), ty,
-						      mkApp (p, [| mkRel 2 |]))),
-				   [| mkMeta goal_meta; t |])))
-		  | RewCast c -> 
-		      change_in_concl None newt)
-	    in
-	    let evartac =
-	      if not (Evd.is_empty undef) then
-		Refiner.tclEVARS evars
-	      else tclIDTAC
-	    in tclTHENLIST [evartac; rewtac] gl
-	  with
-	  | Loc.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
-	  | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
-	      Refiner.tclFAIL_lazy 0
-		(lazy (str"setoid rewrite failed: unable to satisfy the rewriting constraints."
-			++ fnl () ++ Himsg.explain_typeclass_error env e)) gl)
-    | Some None ->
-	tclFAIL 0 (str"setoid rewrite failed: no progress made") gl
+    | Some (Some (p, evars, car, oldt, newt)) ->
+	let evars' = solve_constraints env evars in
+	let p = map_rewprf (fun p -> nf_zeta env evars' (Evarutil.nf_evar evars' p)) p in
+	let newt = Evarutil.nf_evar evars' newt in
+	let abs = Option.map (fun (x, y) ->
+				Evarutil.nf_evar evars' x, Evarutil.nf_evar evars' y) abs in
+	let evars = (* Keep only original evars (potentially instantiated) and goal evars,
+		       the rest has been defined and substituted already. *)
+	  let cstrs = cstrevars evars in
+	  Evd.fold
+	    (fun ev evi acc ->
+	       if not (Evd.mem cstrs ev) then
+		 Evd.add acc ev evi
+	       else acc)
+	    evars' Evd.empty
+	in
+	let res =
+	  match is_hyp with
+	  | Some id ->
+	      (match p with
+	       | RewPrf (rel, p) ->
+		   let term =
+		     match abs with
+		     | None -> p
+		     | Some (t, ty) ->
+			 mkApp (mkLambda (Name (id_of_string "lemma"), ty, p), [| t |])
+		   in
+		     Some (evars, Some (mkApp (term, [| mkVar id |])), newt)
+	       | RewCast c ->
+		   Some (evars, None, newt))
+		
+	  | None ->
+	      (match p with
+	       | RewPrf (rel, p) ->
+		   (match abs with
+		    | None ->
+(* 			let undef, evar = Evarutil.new_evar undef env newt in *)
+(* 			  Some (undef, Some (mkApp (p, [| evar |])), newt) *)
+			Some (evars, Some p, newt)
+		    | Some (t, ty) ->
+			(* 			let undef, evar = Evarutil.new_evar undef env newt in *)
+			(* 			let proof = subst1 t p in *)
+			let proof = mkApp (mkLambda (Name (id_of_string "lemma"), ty, p),
+					   [| t |])
+			in
+			  Some (evars, Some proof, newt))
+	       | RewCast c -> Some (evars, None, newt))
+	in Some res
+    | Some None -> Some None
+    | None -> None
+		   
+let rewrite_refine (evd,c) = 
+  Tacmach.refine c
+
+let cl_rewrite_clause_tac ?abs strat meta clause gl =
+  let evartac evd = Refiner.tclEVARS evd in
+  let treat res =
+    match res with
     | None -> raise RewriteFailure
+    | Some None ->
+	tclFAIL 0 (str"setoid rewrite failed: no progress made")
+    | Some (Some (undef, p, newt)) ->
+	let tac = 
+	  match clause, p with
+	  | Some id, Some p ->
+	      cut_replacing id newt (Tacmach.refine p)
+	  | Some id, None -> 
+	      change_in_hyp None newt (id, InHypTypeOnly)
+	  | None, Some p ->
+	      let name = next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
+		tclTHENLAST
+		  (Tacmach.internal_cut_no_check false name newt)
+		  (tclTHEN (Tactics.revert [name]) (Tacmach.refine p))
+	  | None, None -> change_in_concl None newt
+	in tclTHEN (evartac undef) tac
+  in
+  let tac =
+    try
+      let concl, is_hyp =
+	match clause with
+	| Some id -> pf_get_hyp_typ gl id, Some id
+	| None -> pf_concl gl, None
+      in
+      let res = cl_rewrite_clause_aux ?abs strat (pf_env gl) (project gl) concl is_hyp in
+	treat res
+    with
+    | Loc.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
+    | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
+	Refiner.tclFAIL_lazy 0
+	  (lazy (str"setoid rewrite failed: unable to satisfy the rewriting constraints."
+		 ++ fnl () ++ Himsg.explain_typeclass_error env e))
+  in tac gl
+
+open Goal
+open Environ
+
+let bind_gl_info f =
+  bind concl (fun c -> bind env (fun v -> bind defs (fun ev -> f c v ev))) 
+
+let fail l s =
+  raise (Refiner.FailError (l, lazy s))
+
+let new_refine c : Goal.subgoals Goal.sensitive =
+  let refable = Goal.Refinable.make
+    (fun handle -> Goal.Refinable.constr_of_open_constr handle true c) 
+  in Goal.bind refable Goal.refine
+
+let assert_replacing id newt tac = 
+  let sens = bind_gl_info 
+    (fun concl env sigma ->
+       let nc' = 
+	 Environ.fold_named_context
+	   (fun _ (n, b, t as decl) nc' ->
+	      if n = id then (n, b, newt) :: nc'
+	      else decl :: nc')
+	   env ~init:[]
+       in
+       let reft = Refinable.make 
+	 (fun h -> 
+	    Goal.bind (Refinable.mkEvar h
+			 (Environ.reset_with_named_context (val_of_named_context nc') env) concl)
+	      (fun ev -> 
+		 Goal.bind (Refinable.mkEvar h env newt)
+		   (fun ev' ->
+		      let inst = 
+			fold_named_context
+			  (fun _ (n, b, t) inst ->
+			     if n = id then ev' :: inst
+			     else if b = None then mkVar n :: inst else inst)
+			  env ~init:[]
+		      in
+		      let (e, args) = destEvar ev in
+			Goal.return (mkEvar (e, Array.of_list inst)))))
+       in Goal.bind reft Goal.refine)
+  in Proofview.tclTHEN (Proofview.tclSENSITIVE sens) 
+       (Proofview.tclFOCUS 2 2 tac)
+
+let cl_rewrite_clause_newtac ?abs strat clause =
+  let treat (res, is_hyp) = 
+    match res with
+    | None -> raise RewriteFailure
+    | Some None ->
+	fail 0 (str"setoid rewrite failed: no progress made")
+    | Some (Some res) ->
+	match is_hyp, res with
+	| Some id, (undef, Some p, newt) ->
+	    assert_replacing id newt (Proofview.tclSENSITIVE (new_refine (undef, p)))
+	| Some id, (undef, None, newt) -> 
+	    Proofview.tclSENSITIVE (Goal.convert_hyp false (id, None, newt))
+	| None, (undef, Some p, newt) ->
+	    let refable = Goal.Refinable.make
+	      (fun handle -> 
+		 Goal.bind env
+		   (fun env -> Goal.bind (Refinable.mkEvar handle env newt)
+		      (fun ev ->
+			 Goal.Refinable.constr_of_open_constr handle true 
+			   (undef, mkApp (p, [| ev |])))))
+	    in
+	      Proofview.tclSENSITIVE (Goal.bind refable Goal.refine)
+	| None, (undef, None, newt) ->
+	    Proofview.tclSENSITIVE (Goal.convert_concl false newt)
+  in
+  let info =
+    bind_gl_info
+      (fun concl env sigma ->
+	 let ty, is_hyp =
+	   match clause with
+	   | Some id -> Environ.named_type id env, Some id
+	   | None -> concl, None
+	 in
+	 let res = 
+	   try cl_rewrite_clause_aux ?abs strat env sigma ty is_hyp 
+	   with
+	   | Loc.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
+	   | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
+	       fail 0 (str"setoid rewrite failed: unable to satisfy the rewriting constraints."
+		       ++ fnl () ++ Himsg.explain_typeclass_error env e)
+	 in return (res, is_hyp))
+  in Proofview.tclGOALBINDU info (fun i -> treat i)
+  
+let cl_rewrite_clause_new_strat ?abs strat clause =
+  init_setoid ();
+    try cl_rewrite_clause_newtac ?abs strat clause
+    with RewriteFailure ->
+      fail 0 (str"setoid rewrite failed: strategy failed")
+
+let cl_rewrite_clause_newtac' l left2right occs clause =
+  Proof_global.run_tactic 
+    (Proofview.tclFOCUS 1 1 
+       (Proofview.tclGOALBINDU
+	  (bind_gl_info (fun concl env sigma ->
+			   let evdref = ref sigma in
+			   let c, _ = Constrintern.interp_constr_evars_impls ~evdref env (fst l) in
+			     return {it = (c, NoBindings) ; sigma = !evdref}))
+	  (fun l' -> cl_rewrite_clause_new_strat (rewrite_with l' left2right occs) clause)))
+
+(* let cl_rewrite_clause_newtac' l left2right occs clause = *)
+(*   Proof_global.run_tactic  *)
+(*     (Proofview.tclFOCUS 1 1  *)
+(*        (cl_rewrite_clause_new_strat (rewrite_with l left2right occs) clause)); *)
+(*   tclIDTAC *)
 
 let cl_rewrite_clause_strat strat clause gl =
-  init_setoid ();
-  let meta = Evarutil.new_meta() in
-  let gl = { gl with sigma = Typeclasses.mark_unresolvables gl.sigma } in
-    try cl_rewrite_clause_aux strat meta clause gl
-    with RewriteFailure ->
-      tclFAIL 0 (str"setoid rewrite failed: strategy failed") gl
+    init_setoid ();
+    let meta = Evarutil.new_meta() in
+    let gl = { gl with sigma = Typeclasses.mark_unresolvables gl.sigma } in
+     try cl_rewrite_clause_tac strat (mkMeta meta) clause gl
+      with RewriteFailure ->
+        tclFAIL 0 (str"setoid rewrite failed: strategy failed") gl
 
 let cl_rewrite_clause l left2right occs clause gl =
   cl_rewrite_clause_strat (rewrite_with l left2right occs) clause gl
@@ -1153,6 +1295,33 @@ TACTIC EXTEND setoid_rewrite
  | [ "setoid_rewrite" orient(o) constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ)] ->
       [ cl_rewrite_clause c o (occurrences_of occ) (Some id)]
 END
+
+let occurrences_of l = (true,[])
+
+VERNAC COMMAND EXTEND GenRew
+| [ "rew" orient(o) constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ) ] ->
+    [ cl_rewrite_clause_newtac' c o (occurrences_of occ) (Some (snd id)) ]
+| [ "rew" orient(o) constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id) ] ->
+    [ cl_rewrite_clause_newtac' c o (occurrences_of occ) (Some (snd id)) ]
+| [ "rew" orient(o) constr_with_bindings(c) "in" hyp(id) ] ->
+    [ cl_rewrite_clause_newtac' c o all_occurrences (Some (snd id)) ]
+| [ "rew" orient(o) constr_with_bindings(c) "at" occurrences(occ) ] ->
+    [ cl_rewrite_clause_newtac' c o (occurrences_of occ) None ]
+| [ "rew" orient(o) constr_with_bindings(c) ] -> [ cl_rewrite_clause_newtac' c o all_occurrences None ]
+END
+
+(* TACTIC EXTEND GenRew *)
+(* | [ "rew" orient(o) constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ) ] ->  *)
+(*     [ cl_rewrite_clause_newtac' c o (occurrences_of occ) (Some id) ] *)
+(* | [ "rew" orient(o) constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id) ] -> *)
+(*     [ cl_rewrite_clause_newtac' c o (occurrences_of occ) (Some id) ] *)
+(* | [ "rew" orient(o) constr_with_bindings(c) "in" hyp(id) ] ->  *)
+(*     [ cl_rewrite_clause_newtac' c o all_occurrences (Some id) ] *)
+(* | [ "rew" orient(o) constr_with_bindings(c) "at" occurrences(occ) ] ->  *)
+(*     [ cl_rewrite_clause_newtac' c o (occurrences_of occ) None ] *)
+(* | [ "rew" orient(o) constr_with_bindings(c) ] ->  *)
+(*     [ cl_rewrite_clause_newtac' c o all_occurrences None ] *)
+(* END *)
 
 (* let solve_obligation lemma =  *)
 (*   tclTHEN (Tacinterp.interp (Tacexpr.TacAtom (dummy_loc, Tacexpr.TacAnyConstructor None))) *)
@@ -1529,7 +1698,7 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
       tclWEAK_PROGRESS 
 	(tclTHEN
             (Refiner.tclEVARS hypinfo.cl.evd)
-            (cl_rewrite_clause_aux ~abs:hypinfo.abs strat meta cl)) gl
+            (cl_rewrite_clause_tac ~abs:hypinfo.abs strat (mkMeta meta) cl)) gl
     with RewriteFailure ->
       let {l2r=l2r; c1=x; c2=y} = hypinfo in
 	raise (Pretype_errors.PretypeError

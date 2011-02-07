@@ -114,6 +114,7 @@ let pp_transparent_state s = pp (pr_transparent_state s)
 let ppmetas metas = pp(pr_metaset metas)
 let ppevm evd = pp(pr_evar_map evd)
 let ppclenv clenv = pp(pr_clenv clenv)
+let ppgoalgoal gl = pp(Goal.pr_goal gl)
 (* spiwack: deactivated until a replacement is found
 let ppgoal g = pp(db_pr_goal g)
 let pppftreestate p = pp(print_pftreestate p)

@@ -15,6 +15,9 @@ type goal
     sort of communication pipes. But I find it heavy. *)
 val build : Evd.evar -> goal 
 
+(* Debugging help *)
+val pr_goal : goal -> Pp.std_ppcmds
+
 (* [advance sigma g] returns [Some g'] if [g'] is undefined and 
     is the current avatar of [g] (for instance [g] was changed by [clear]
     into [g']). It returns [None] if [g] has been (partially) solved. *)
@@ -74,6 +77,13 @@ module Refinable : sig
       It is the main component of the toplevel refine tactic.*)
   val constr_of_raw : 
     handle -> bool -> bool -> Glob_term.glob_constr -> Term.constr sensitive
+
+  (* [constr_of_open_constr h check_type] transforms an open constr into a 
+     goal-sensitive constr, adding the undefined variables to the set of subgoals.
+     If [check_type] is true, the term is coerced to the conclusion of the goal.
+     It allows to do refinement with already-built terms with holes.
+  *)
+  val constr_of_open_constr : handle -> bool -> Evd.open_constr -> Term.constr sensitive
 
 end
 
