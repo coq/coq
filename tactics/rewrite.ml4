@@ -298,7 +298,7 @@ let refresh_hypinfo env sigma hypinfo =
       match c with
 	| Some c ->
 	    (* Refresh the clausenv to not get the same meta twice in the goal. *)
-	    decompose_applied_relation env cl.evd c l2r;
+	    decompose_applied_relation env sigma c l2r;
 	| _ -> hypinfo
   else hypinfo
 
@@ -307,6 +307,7 @@ let unify_eqn env sigma hypinfo t =
   else try
     let {cl=cl; prf=prf; car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} = !hypinfo in
     let left = if l2r then c1 else c2 in
+    let cl = { cl with evd = evars_reset_evd sigma cl.evd } in
     let env', prf, c1, c2, car, rel =
       match abs with
       | Some (absprf, absprfty) ->
@@ -332,7 +333,7 @@ let unify_eqn env sigma hypinfo t =
 	  in
 	    if convertible env env'.evd ty1 ty2 then (
 	      if occur_meta prf then
-		hypinfo := refresh_hypinfo env sigma !hypinfo;
+		hypinfo := refresh_hypinfo env env'.evd !hypinfo;
 	      env', prf, c1, c2, car, rel)
 	    else raise Reduction.NotConvertible
     in
@@ -546,10 +547,9 @@ let apply_rule hypinfo loccs : strategy =
 	| _ -> None
 
 let apply_lemma (evm,c) left2right loccs : strategy =
-  fun env sigma ->
-    let evars = Evd.merge sigma evm in
-    let hypinfo = ref (decompose_applied_relation env evars c left2right) in
-      apply_rule hypinfo loccs env sigma
+  fun env sigma t ty cstr evars ->
+    let hypinfo = ref (decompose_applied_relation env (goalevars evars) c left2right) in
+      apply_rule hypinfo loccs env sigma t ty cstr evars
 
 let make_leibniz_proof c ty r =
   let prf = 
@@ -902,10 +902,10 @@ let rewrite_strat flags occs hyp =
   in aux ()
 
 let rewrite_with {it = c; sigma = evm} left2right loccs : strategy =
-  fun env sigma ->
-    let evars = Evd.merge sigma evm in
-    let hypinfo = ref (decompose_applied_relation env evars c left2right) in
-      rewrite_strat default_flags loccs hypinfo env sigma
+  fun env sigma t ty cstr evars ->
+    let gevars = Evd.merge evm (goalevars evars) in
+    let hypinfo = ref (decompose_applied_relation env gevars c left2right) in
+      rewrite_strat default_flags loccs hypinfo env sigma t ty cstr (gevars, cstrevars evars)
 
 let apply_strategy (s : strategy) env sigma concl cstr evars =
   let res =
@@ -917,30 +917,6 @@ let apply_strategy (s : strategy) env sigma concl cstr evars =
     | Some None -> Some None
     | Some (Some res) ->
 	Some (Some (res.rew_prf, res.rew_evars, res.rew_car, res.rew_from, res.rew_to))
-
-let split_evars_once sigma evd =
-  Evd.fold_undefined (fun ev evi deps ->
-    if Intset.mem ev deps then
-      Intset.union (Evarutil.undefined_evars_of_evar_info evd evi) deps
-    else deps) evd sigma
-
-let existentials_of_evd evd =
-  Evd.fold_undefined (fun ev _ acc -> Intset.add ev acc) evd Intset.empty
-
-let evd_of_existentials evd exs =
-  Intset.fold
-    (fun ev acc ->
-      try Evd.add acc ev (Evd.find_undefined evd ev)
-      with Not_found -> acc)
-    exs Evd.empty
-
-let split_evars sigma evd =
-  let rec aux deps =
-    let deps' = split_evars_once deps evd in
-      if Intset.equal deps' deps then
-	evd_of_existentials evd deps
-      else aux deps'
-  in aux (existentials_of_evd sigma)
 
 let merge_evars (goal,cstr) = Evd.merge goal cstr
 let solve_constraints env evars =

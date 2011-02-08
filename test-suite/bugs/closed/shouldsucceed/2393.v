@@ -11,6 +11,3 @@ Program Fixpoint idType (t : T) (n := sizeOf t) (b : vect n) {measure n} : T
     := match t with
        | MkT => MkT
        end.
-
-Require Import Wf_nat.
-Solve Obligations using auto with arith.

@@ -120,6 +120,3 @@ Check C2 eq_refl.
 
 Inductive I3 {A} (x:=0) (a:A) : forall {n:nat}, Prop :=
  | C3 : I3 a (n:=0).
-
-Inductive I3 {A} (x:=0) (a:A) : forall {n:nat}, Prop :=
- | C2 {p} : I2 a (n:=p).
