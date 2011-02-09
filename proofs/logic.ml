@@ -337,7 +337,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	  let (gl,ev,sigma) = mk_goal hyps conclty in
 	  gl::goalacc, conclty, sigma, ev
 
-    | Cast (t,_, ty) ->
+    | Cast (t,k, ty) ->
 	check_typability env sigma ty;
 	check_conv_leq_goal env sigma trm ty conclty;
 	let res = mk_refgoals sigma goal goalacc ty t in
