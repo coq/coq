@@ -101,12 +101,12 @@ let interp_definition boxed bl red_option c ctypopt =
 let declare_global_definition ident ce local k imps =
   let kn = declare_constant ident (DefinitionEntry ce,IsDefinition k) in
   let gr = ConstRef kn in
-    maybe_declare_manual_implicits false gr imps;
-    if local = Local && Flags.is_verbose() then
-      msg_warning (pr_id ident ++ str" is declared as a global definition");
-    definition_message ident;
-    Autoinstance.search_declaration (ConstRef kn);
-    gr
+  maybe_declare_manual_implicits false gr imps;
+  if local = Local && Flags.is_verbose() then
+    msg_warning (pr_id ident ++ str" is declared as a global definition");
+  definition_message ident;
+  Autoinstance.search_declaration (ConstRef kn);
+  gr
 
 let declare_definition_hook = ref ignore
 let set_declare_definition_hook = (:=) declare_definition_hook
@@ -127,8 +127,8 @@ let declare_definition ident (local,k) ce imps hook =
         VarRef ident
     | (Global|Local) ->
         declare_global_definition ident ce local k imps in
-  hook local r
-
+  hook local r 
+  
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
 let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) =

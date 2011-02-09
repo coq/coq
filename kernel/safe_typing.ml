@@ -242,19 +242,18 @@ let add_constant dir l decl senv =
     else
       senv'.modinfo.resolver
   in
-    kn, { old = senv'.old;
-	  env = env'';
-	  modinfo = {senv'.modinfo with
-		       resolver = resolver};
-	  labset = Labset.add l senv'.labset;
-	  revstruct = (l,SFBconst cb)::senv'.revstruct;
-          univ = senv'.univ;
-          engagement = senv'.engagement;
-	  imports = senv'.imports;
-	  loads = senv'.loads;
-	  local_retroknowledge = lr
-	}
-
+  kn, { old = senv'.old;
+	env = env'';
+	modinfo = {senv'.modinfo with
+		   resolver = resolver};
+	labset = Labset.add l senv'.labset;
+	revstruct = (l,SFBconst cb)::senv'.revstruct;
+        univ = senv'.univ;
+        engagement = senv'.engagement;
+	imports = senv'.imports;
+	loads = senv'.loads;
+	local_retroknowledge = lr
+      }
 
 (* Insertion of inductive types. *)
 

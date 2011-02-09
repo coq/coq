@@ -340,7 +340,15 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
     | Cast (t,_, ty) ->
 	check_typability env sigma ty;
 	check_conv_leq_goal env sigma trm ty conclty;
-	mk_refgoals sigma goal goalacc ty t
+	let res = mk_refgoals sigma goal goalacc ty t in
+	(** we keep the casts (in particular VMcast) except
+	    when they are annotating metas *)
+	if isMeta t then begin
+	  assert (k <> VMcast);
+	  res
+	end else
+	  let (gls,cty,sigma,trm) = res in
+	  (gls,cty,sigma,mkCast(trm,k,ty))
 
     | App (f,l) ->
 	let (acc',hdty,sigma,applicand) =

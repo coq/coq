@@ -142,7 +142,7 @@ let comp_term t1 t2 =
   | Meta m1, Meta m2 -> m1 == m2
   | Var id1, Var id2 -> id1 == id2
   | Sort s1, Sort s2 -> s1 == s2
-  | Cast (c1,_,t1), Cast (c2,_,t2) -> c1 == c2 & t1 == t2
+  | Cast (c1,k1,t1), Cast (c2,k2,t2) -> c1 == c2 & k1 == k2 & t1 == t2
   | Prod (n1,t1,c1), Prod (n2,t2,c2) -> n1 == n2 & t1 == t2 & c1 == c2
   | Lambda (n1,t1,c1), Lambda (n2,t2,c2) -> n1 == n2 & t1 == t2 & c1 == c2
   | LetIn (n1,b1,t1,c1), LetIn (n2,b2,t2,c2) ->
@@ -213,6 +213,182 @@ module Hconstr =
 
 let hcons_term (hsorts,hcon,hkn,hname,hident) =
   Hashcons.recursive_hcons Hconstr.f (hsorts,hcon,hkn,hname,hident)
+(* The following module is a specialized version of [Hashtbl] that is
+   a better space saver. Actually, [Hashcons] instanciates [Hashtbl.t]
+   with [constr] used both as a key and as an image.  Thus, in each
+   cell of the internal bucketlist, there are two representations of
+   the same value. In this implementation, there is only one. 
+
+   Besides, the responsibility of computing the hash function is now 
+   given to the caller, which makes possible the interleaving of the 
+   hash key computation and the hash-consing. *)
+module H : sig
+  (* [may_add_and_get key constr] uses [key] to look for [constr] 
+     in the hash table [H]. If [constr] is [H], returns the 
+     specific representation that is stored in [H]. Otherwise, 
+     [constr] is stored in [H] and will be used as the canonical 
+     representation of this value in the future. *)
+  val may_add_and_get : int -> constr -> constr
+end = struct
+  type bucketlist = Empty | Cons of constr * int * bucketlist
+
+  let initial_size = 19991
+  let table_data = ref (Array.make initial_size Empty)
+  let table_size = ref 0
+    
+  let resize () =
+    let odata = !table_data in
+    let osize = Array.length odata in
+    let nsize = min (2 * osize + 1) Sys.max_array_length in
+    if nsize <> osize then begin
+      let ndata = Array.create nsize Empty in
+      let rec insert_bucket = function
+	| Empty -> ()
+	| Cons (key, hash, rest) ->
+          let nidx = hash mod nsize in
+          ndata.(nidx) <- Cons (key, hash, ndata.(nidx));
+          insert_bucket rest
+      in
+      for i = 0 to osize - 1 do insert_bucket odata.(i) done;
+      table_data := ndata
+    end
+
+  let add hash key =
+    let odata = !table_data in
+    let osize = Array.length odata in
+    let i = hash mod osize in
+    odata.(i) <- Cons (key, hash, odata.(i));
+    incr table_size;
+    if !table_size > osize lsl 1 then resize ()    
+
+  let find_rec hash key bucket = 
+    let rec aux = function
+      | Empty -> add hash key; key
+      | Cons (k, _, rest) -> if comp_term key k then k else aux rest
+    in
+    aux bucket
+
+  let may_add_and_get hash key =
+    let odata = !table_data in
+    match odata.(hash mod (Array.length odata)) with
+      |	Empty -> add hash key; key
+      | Cons (k1, _, rest1) ->
+	if comp_term key k1 then k1 else
+	  match rest1 with
+            | Empty -> add hash key; key
+	    | Cons (k2, _, rest2) ->
+              if comp_term key k2 then k2 else
+		match rest2 with
+		  | Empty -> add hash key; key 
+		  | Cons (k3, _, rest3) ->
+		    if comp_term key k3 then k3 else find_rec hash key rest3
+
+end		      
+
+(* These are helper functions to combine the hash keys in a similar
+   way as [Hashtbl.hash] does. The constants [alpha] and [beta] must
+   be prime numbers. There were chosen empirically. Notice that the
+   problem of hashing trees is hard and there are plenty of study on
+   this topic. Therefore, there must be room for improvement here. *)
+let ghash = Hashtbl.hash
+let alpha = 65599
+let beta  = 7
+let combine2 x y     = x * alpha + y
+let combine3 x y z   = combine2 x (combine2 y z)
+let combine4 x y z t = combine2 x (combine3 y z t)
+let combine          = combine2
+let combinesmall x y = beta * x + y
+
+(* [hcons_term hash_consing_functions constr] computes an hash-consed
+   representation for [constr] using [hash_consing_functions] on
+   leaves. *)
+let hcons_term (sh_sort,sh_con,sh_kn,sh_na,sh_id) =
+
+  let rec hash_term_array t = 
+    let accu = ref 0 in 
+    for i = 0 to Array.length t - 1 do 
+      let x, h = sh_rec t.(i) in 
+      accu := combine !accu h; 
+      t.(i) <- x
+    done;
+    (t, !accu) 
+
+  and hash_term t =
+    match t with
+      | Var i -> 
+	(Var (sh_id i), combinesmall 1 (ghash i))
+      | Sort s -> 
+	(Sort (sh_sort s), combinesmall 2 (ghash s))
+      | Cast (c, k, t) -> 
+	let c, hc = sh_rec c in
+	let t, ht = sh_rec t in 
+	(Cast (c, k, t), combinesmall 3 (combine3 hc (ghash k) ht))
+      | Prod (na,t,c) -> 
+	let t, ht = sh_rec t
+	and c, hc = sh_rec c in
+	(Prod (sh_na na, t, c), combinesmall 4 (combine3 (ghash na) ht hc))
+      | Lambda (na,t,c) -> 
+	let t, ht = sh_rec t 
+	and c, hc = sh_rec c in
+	(Lambda (sh_na na, t, c), combinesmall 5 (combine3 (ghash na) ht hc))
+      | LetIn (na,b,t,c) -> 
+	let b, hb = sh_rec b in
+	let t, ht = sh_rec t in 
+	let c, hc = sh_rec c in
+	(LetIn (sh_na na, b, t, c), combinesmall 6 (combine4 (ghash na) hb ht hc))
+      | App (c,l) -> 
+	let c, hc = sh_rec c in
+	let l, hl = hash_term_array l in
+	(App (c, l), combinesmall 7 (combine hl hc))
+      | Evar (e,l) -> 
+	let l, hl = hash_term_array l in
+	(Evar (e, l), combinesmall 8 (combine (ghash e) hl))
+      | Const c -> 
+	(Const (sh_con c), combinesmall 9 (ghash c))
+      | Ind (kn,i) -> 
+	(Ind (sh_kn kn, i), combinesmall 9 (combine (ghash kn) i))
+      | Construct ((kn,i),j) -> 
+	(Construct ((sh_kn kn, i), j), combinesmall 10 (combine3 (ghash kn) i j))
+      | Case (ci,p,c,bl) -> (* TO DO: extract ind_kn *)
+	let p, hp = sh_rec p 
+	and c, hc = sh_rec c in
+	let bl, hbl = hash_term_array  bl in
+	let hbl = combine (combine hc hp) hbl in
+	(Case (ci, p, c, bl), combinesmall 11 hbl)
+      | Fix (ln,(lna,tl,bl)) ->
+	let bl, hbl = hash_term_array  bl in
+	let tl, htl = hash_term_array  tl in
+	let h = combine hbl htl in
+	Array.iteri (fun i x -> lna.(i) <- sh_na x) lna;
+	(Fix (ln,(lna, tl, bl)),
+	 combinesmall 13 (combine (ghash lna) h))
+      | CoFix(ln,(lna,tl,bl)) ->
+	let bl, hbl = hash_term_array bl in
+	let tl, htl = hash_term_array tl in
+	let h = combine hbl htl in
+	Array.iteri (fun i x -> lna.(i) <- sh_na x) lna;
+	(CoFix (ln, (lna, tl, bl)),
+	 combinesmall 14 (combine (ghash lna) h))
+      | Meta n ->
+	(Meta n, combinesmall 15 n)
+      | Rel n ->
+  	(Rel n, combinesmall 16 n)
+      | NativeInt n -> (NativeInt n, combinesmall 17 (Native.Uint31.to_int n))
+      | NativeArr (c,l) ->
+ 	let c, hc = sh_rec c in	
+        let l, hl = hash_term_array l in
+	(NativeArr (c,l), combinesmall 18 (combine hc hl))
+  
+  and sh_rec t = 
+    let (y, h) = hash_term t in
+    (* [h] must be positive. *)
+    let h = h land 0x3FFFFFFF in
+    (H.may_add_and_get h y, h)
+
+  in
+  fun t -> fst (sh_rec t)
+
+
 
 (* Constructs a DeBrujin index with number n *)
 let rels =

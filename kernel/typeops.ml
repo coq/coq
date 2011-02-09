@@ -427,8 +427,8 @@ let type_of_apply renv env f tf args targs =
     match kind_of_term (whd_betadeltaiota env !typ) with
     | Prod(_,c1,c2) ->
 	begin try 
-	  let c = conv_leq env ta c1 in
-	  renv.rc <- Constraint.union renv.rc c;
+	  let c = conv_leq env ta c1 in 
+	  renv.rc <- Constraint.union renv.rc c; 
 	  typ := subst1 args.(n) c2
 	with NotConvertible -> 
 	  let funj = make_judge f tf in
@@ -621,7 +621,7 @@ let infer env constr =
   let renv = empty_renv () in
   let t = execute renv env constr in
   let _ = merge_constraints renv.rc (universes env) in
-  make_judge constr t,  renv.rc
+  make_judge constr t,  renv.rc 
 
 let infer_type env constr =
   let renv = empty_renv () in

@@ -146,7 +146,8 @@ let build_constant_declaration1 env kn (body,typ,cst,boxed,inline_code,inline) =
 (*s Global and local constant declaration. *)
 
 let translate_constant env kn ce =
-  build_constant_declaration1 env kn (infer_declaration1 env ce)
+  let i = infer_declaration1 env ce in
+  build_constant_declaration1 env kn i 
 
 let translate_recipe env kn r =
   build_constant_declaration1 env kn (Cooking.cook_constant1 env r)

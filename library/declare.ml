@@ -174,9 +174,15 @@ let declare_constant_common id dhyps (cd,kind) =
   c
 
 let declare_constant ?(internal = UserVerbose) id (cd,kind) =
+  let t0 = Sys.time () in
   let cd = hcons_constant_declaration cd in
+  let t1 = Sys.time () in
   let kn = declare_constant_common id [] (ConstantEntry cd,kind) in
+  let t2 = Sys.time () in
   !xml_declare_constant (internal,kn);
+  let t3 = Sys.time () in
+  Printf.eprintf "decl_const : hcons %.5f\n"
+    (t1-.t0);
   kn
 
 (** Declaration of inductive blocks *)
