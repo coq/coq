@@ -269,14 +269,6 @@ end.
 
 End ITERATORS.
 
-Implicit Arguments rectS.
-Implicit Arguments rect2.
-Implicit Arguments fold_left.
-Implicit Arguments fold_right.
-Implicit Arguments map.
-Implicit Arguments fold_left2.
-
-
 Section SCANNING.
 Inductive Forall {A} (P: A -> Prop): forall {n} (v: t A n), Prop :=
  |Forall_nil: Forall P []

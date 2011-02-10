@@ -7,6 +7,11 @@ Changes from V8.3 to V8.4
 
 - New proof engine
 
+- Maximal implicit arguments can now be set locally by { }. The registration
+  traverses fixpoints and lambdas. Because there is conversion in types, maximal
+  implicit arguments aren't taken into account in partial applications. Use eta
+  expansion.
+
 Tactics
 
 - New tactics constr_eq, is_evar and has_evar.

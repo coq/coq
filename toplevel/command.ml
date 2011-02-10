@@ -68,13 +68,14 @@ let interp_definition bl red_option c ctypopt =
   let env = Global.env() in
   let evdref = ref Evd.empty in
   let impls, ((env_bl, ctx), imps1) = interp_context_evars evdref env bl in
+  let nb_args = List.length ctx in
   let imps,ce =
     match ctypopt with
       None ->
 	let c, imps2 = interp_constr_evars_impls ~impls ~evdref ~fail_evar:false env_bl c in
 	let body = nf_evar !evdref (it_mkLambda_or_LetIn c ctx) in
 	check_evars env Evd.empty !evdref body;
-	imps1@imps2,
+	imps1@(Impargs.lift_implicits nb_args imps2),
 	{ const_entry_body = body;
 	  const_entry_type = None;
           const_entry_opaque = false }
@@ -85,7 +86,7 @@ let interp_definition bl red_option c ctypopt =
 	let typ = nf_evar !evdref (it_mkProd_or_LetIn ty ctx) in
 	check_evars env Evd.empty !evdref body;
 	check_evars env Evd.empty !evdref typ;
-	imps1@imps2,
+	imps1@(Impargs.lift_implicits nb_args imps2),
 	{ const_entry_body = body;
 	  const_entry_type = Some typ;
           const_entry_opaque = false }

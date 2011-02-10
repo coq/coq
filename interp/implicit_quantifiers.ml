@@ -294,27 +294,31 @@ let implicit_application env ?(allow_partial=true) f ty =
 	in c, avoid
 
 let implicits_of_glob_constr ?(with_products=true) l =
-  let rec aux i c =
-    let abs loc na bk t b =
-      let rest = aux (succ i) b in
-	if bk = Implicit then
+  let add_impl i na bk l =
+ 	if bk = Implicit then
 	  let name =
 	    match na with
 	    | Name id -> Some id
 	    | Anonymous -> None
 	  in
-	    (ExplByPos (i, name), (true, true, true)) :: rest
-	else rest
+	    (ExplByPos (i, name), (true, true, true)) :: l
+	else l in
+  let rec aux i c =
+    let abs na bk b =
+      add_impl i na bk (aux (succ i) b)
     in
       match c with
       | GProd (loc, na, bk, t, b) ->
-	  if with_products then abs loc na bk t b
+	  if with_products then abs na bk b
 	  else 
 	    (if bk = Implicit then
 	       msg_warning (str "Ignoring implicit status of product binder " ++ 
 			      pr_name na ++ str " and following binders");
 	     [])
-      | GLambda (loc, na, bk, t, b) -> abs loc na bk t b
+      | GLambda (loc, na, bk, t, b) -> abs na bk b
       | GLetIn (loc, na, t, b) -> aux i b
+      | GRec (_, fix_kind, nas, args, tys, bds) ->
+       let nb = match fix_kind with |GFix (_, n) -> n | GCoFix n -> n in
+       list_fold_left_i (fun i l (na,bk,_,_) -> add_impl i na bk l) i (aux (List.length args.(nb) + i) bds.(nb)) args.(nb)
       | _ -> []
   in aux 1 l
