@@ -225,6 +225,9 @@ type hypinfo = {
   abs : (constr * types) option;
 }
 
+let goalevars evars = fst evars
+let cstrevars evars = snd evars
+
 let evd_convertible env evd x y =
   try ignore(Evarconv.the_conv_x env x y evd); true
   with _ -> false
@@ -450,7 +453,7 @@ type rewrite_result_info = {
 
 type rewrite_result = rewrite_result_info option
 
-type strategy = Environ.env -> evar_map -> constr -> types ->
+type strategy = Environ.env -> identifier list -> constr -> types ->
   constr option -> evars -> rewrite_result option
 
 let get_rew_prf r = match r.rew_prf with
@@ -459,7 +462,7 @@ let get_rew_prf r = match r.rew_prf with
       mkCast (mkApp (Coqlib.build_coq_eq_refl (), [| r.rew_car; r.rew_from |]),
 	     c, mkApp (Coqlib.build_coq_eq (), [| r.rew_car; r.rew_from; r.rew_to |]))
 
-let resolve_subrelation env sigma car rel prf rel' res =
+let resolve_subrelation env avoid car rel prf rel' res =
   if eq_constr rel rel' then res
   else
 (*   try let evd' = Evarconv.the_conv_x env rel rel' res.rew_evars in *)
@@ -472,14 +475,14 @@ let resolve_subrelation env sigma car rel prf rel' res =
 	rew_prf = RewPrf (rel', appsub);
 	rew_evars = evars }
 
-let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars =
+let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' cstr evars =
   let evars, morph_instance, proj, sigargs, m', args, args' =
     let first = try (array_find args' (fun i b -> b <> None)) 
       with Not_found -> raise (Invalid_argument "resolve_morphism") in
     let morphargs, morphobjs = array_chop first args in
     let morphargs', morphobjs' = array_chop first args' in
     let appm = mkApp(m, morphargs) in
-    let appmtype = Typing.type_of env sigma appm in
+    let appmtype = Typing.type_of env (goalevars evars) appm in
     let cstrs = List.map (Option.map (fun r -> r.rew_car, get_rew_rel r.rew_prf)) (Array.to_list morphobjs') in
       (* Desired signature *)
     let evars, appmtype', signature, sigargs = 
@@ -520,22 +523,19 @@ let resolve_morphism env sigma oldt m ?(fnewt=fun x -> x) args args' cstr evars 
 	[ a, Some r ] -> evars, proof, a, r, oldt, fnewt newt
       | _ -> assert(false)
 
-let apply_constraint env sigma car rel prf cstr res =
+let apply_constraint env avoid car rel prf cstr res =
   match cstr with
   | None -> res
-  | Some r -> resolve_subrelation env sigma car rel prf r res
+  | Some r -> resolve_subrelation env avoid car rel prf r res
 
 let eq_env x y = x == y
-
-let goalevars evars = fst evars
-let cstrevars evars = snd evars
 
 let apply_rule hypinfo loccs : strategy =
   let (nowhere_except_in,occs) = loccs in
   let is_occ occ =
     if nowhere_except_in then List.mem occ occs else not (List.mem occ occs) in
   let occ = ref 0 in
-    fun env sigma t ty cstr evars ->
+    fun env avoid t ty cstr evars ->
       if not (eq_env !hypinfo.cl.env env) then hypinfo := refresh_hypinfo env (goalevars evars) !hypinfo;
       let unif = unify_eqn env (goalevars evars) hypinfo t in
 	if unif <> None then incr occ;
@@ -547,14 +547,14 @@ let apply_rule hypinfo loccs : strategy =
 		let res = { rew_car = ty; rew_from = c1;
 			    rew_to = c2; rew_prf = RewPrf (rel, prf); 
 			    rew_evars = env'.evd, cstrevars evars }
-		in Some (Some (apply_constraint env sigma car rel prf cstr res))
+		in Some (Some (apply_constraint env avoid car rel prf cstr res))
 	    end
 	| _ -> None
 
 let apply_lemma (evm,c) left2right loccs : strategy =
-  fun env sigma t ty cstr evars ->
+  fun env avoid t ty cstr evars ->
     let hypinfo = ref (decompose_applied_relation env (goalevars evars) None c left2right) in
-      apply_rule hypinfo loccs env sigma t ty cstr evars
+      apply_rule hypinfo loccs env avoid t ty cstr evars
 
 let make_leibniz_proof c ty r =
   let prf = 
@@ -628,7 +628,7 @@ let unfold_match env sigma sk app =
   | _ -> app
     
 let subterm all flags (s : strategy) : strategy =
-  let rec aux env sigma t ty cstr evars =
+  let rec aux env avoid t ty cstr evars =
     let cstr' = Option.map (fun c -> (ty, Some c)) cstr in
       match kind_of_term t with
       | App (m, args) ->
@@ -638,7 +638,7 @@ let subterm all flags (s : strategy) : strategy =
 		(fun (acc, evars, progress) arg ->
 		  if progress <> None && not all then (None :: acc, evars, progress)
 		  else
-		    let res = s env sigma arg (Typing.type_of env sigma arg) None evars in
+		    let res = s env avoid arg (Typing.type_of env (goalevars evars) arg) None evars in
 		      match res with
 		      | Some None -> (None :: acc, evars, if progress = None then Some false else progress)
 		      | Some (Some r) -> (Some r :: acc, r.rew_evars, Some true)
@@ -650,7 +650,7 @@ let subterm all flags (s : strategy) : strategy =
 	      | Some false -> Some None
 	      | Some true ->
 		  let args' = Array.of_list (List.rev args') in
-		  let evars', prf, car, rel, c1, c2 = resolve_morphism env sigma t m args args' cstr' evars' in
+		  let evars', prf, car, rel, c1, c2 = resolve_morphism env avoid t m args args' cstr' evars' in
 		  let res = { rew_car = ty; rew_from = c1;
 			      rew_to = c2; rew_prf = RewPrf (rel, prf);
 			      rew_evars = evars' } 
@@ -659,14 +659,14 @@ let subterm all flags (s : strategy) : strategy =
 	  in
 	    if flags.on_morphisms then
 	      let evarsref = ref (snd evars) in
-	      let mty = Typing.type_of env sigma m in
+	      let mty = Typing.type_of env (goalevars evars) m in
 	      let cstr', m, mty, argsl, args = 
 		let argsl = Array.to_list args in
-		  match lift_cstr env sigma evarsref argsl m mty None with
+		  match lift_cstr env (goalevars evars) evarsref argsl m mty None with
 		  | Some (cstr', m, mty, args) -> Some cstr', m, mty, args, Array.of_list args
 		  | None -> None, m, mty, argsl, args
 	      in
-	      let m' = s env sigma m mty cstr' (fst evars, !evarsref) in
+	      let m' = s env avoid m mty cstr' (fst evars, !evarsref) in
 		match m' with
 		| None -> rewrite_args None (* Standard path, try rewrite on arguments *)
 		| Some None -> rewrite_args (Some false)
@@ -686,14 +686,14 @@ let subterm all flags (s : strategy) : strategy =
 		    in 
 		      match prf with
 		      | RewPrf (rel, prf) ->
-			  Some (Some (apply_constraint env sigma res.rew_car rel prf cstr res))
+			  Some (Some (apply_constraint env avoid res.rew_car rel prf cstr res))
 		      | _ -> Some (Some res)
 	    else rewrite_args None
 	      
       | Prod (n, x, b) when noccurn 1 b ->
 	  let b = subst1 mkProp b in
-	  let tx = Typing.type_of env sigma x and tb = Typing.type_of env sigma b in
-	  let res = aux env sigma (mkApp (arrow_morphism tx tb, [| x; b |])) ty cstr evars in
+	  let tx = Typing.type_of env (goalevars evars) x and tb = Typing.type_of env (goalevars evars) b in
+	  let res = aux env avoid (mkApp (arrow_morphism tx tb, [| x; b |])) ty cstr evars in
 	    (match res with
 	    | Some (Some r) -> Some (Some { r with rew_to = unfold_impl r.rew_to })
 	    | _ -> res)
@@ -714,20 +714,21 @@ let subterm all flags (s : strategy) : strategy =
 
       | Prod (n, dom, codom) when eq_constr ty mkProp ->
 	  let lam = mkLambda (n, dom, codom) in
-	  let res = aux env sigma (mkApp (Lazy.force coq_all, [| dom; lam |])) ty cstr evars in
+	  let res = aux env avoid (mkApp (Lazy.force coq_all, [| dom; lam |])) ty cstr evars in
 	    (match res with
 	    | Some (Some r) -> Some (Some { r with rew_to = unfold_all r.rew_to })
 	    | _ -> res)
 
       | Lambda (n, t, b) when flags.under_lambdas ->
-	  let env' = Environ.push_rel (n, None, t) env in
-	  let b' = s env' sigma b (Typing.type_of env' sigma b) (unlift_cstr env sigma cstr) evars in
+	  let n' = name_app (fun id -> Tactics.fresh_id_in_env avoid id env) n in
+	  let env' = Environ.push_rel (n', None, t) env in
+	  let b' = s env' avoid b (Typing.type_of env' (goalevars evars) b) (unlift_cstr env (goalevars evars) cstr) evars in
 	    (match b' with
 	    | Some (Some r) ->
 		let prf = match r.rew_prf with
 		  | RewPrf (rel, prf) ->
-		      let rel = pointwise_or_dep_relation n t r.rew_car rel in
-		      let prf = mkLambda (n, t, prf) in
+		      let rel = pointwise_or_dep_relation n' t r.rew_car rel in
+		      let prf = mkLambda (n', t, prf) in
 			RewPrf (rel, prf)
 		  | x -> x
 		in
@@ -739,9 +740,9 @@ let subterm all flags (s : strategy) : strategy =
 	    | _ -> b')
 
       | Case (ci, p, c, brs) ->
-	  let cty = Typing.type_of env sigma c in
+	  let cty = Typing.type_of env (goalevars evars) c in
 	  let cstr' = Some (mkApp (Lazy.force coq_eq, [| cty |])) in
-	  let c' = s env sigma c cty cstr' evars in
+	  let c' = s env avoid c cty cstr' evars in
 	    (match c' with
 	    | Some (Some r) ->
 		Some (Some (make_leibniz_proof (mkCase (ci, lift 1 p, mkRel 1, Array.map (lift 1) brs)) ty r))
@@ -751,7 +752,7 @@ let subterm all flags (s : strategy) : strategy =
 		  let found, brs' = Array.fold_left (fun (found, acc) br ->
 		    if found <> None then (found, fun x -> lift 1 br :: acc x)
 		    else
-		      match s env sigma br ty cstr evars with
+		      match s env avoid br ty cstr evars with
 		      | Some (Some r) -> (Some r, fun x -> mkRel 1 :: acc x)
 		      | _ -> (None, fun x -> lift 1 br :: acc x))
 		    (None, fun x -> []) brs
@@ -762,12 +763,12 @@ let subterm all flags (s : strategy) : strategy =
 			  Some (Some (make_leibniz_proof ctxc ty r))
 		    | None -> x
 		else
-		  match try Some (fold_match env sigma t) with Not_found -> None with
+		  match try Some (fold_match env (goalevars evars) t) with Not_found -> None with
 		  | None -> x
 		  | Some (cst, _, t') ->
-		      match aux env sigma t' ty cstr evars with
+		      match aux env avoid t' ty cstr evars with
 		      | Some (Some prf) -> Some (Some { prf with
-			  rew_from = t; rew_to = unfold_match env sigma cst prf.rew_to })
+			  rew_from = t; rew_to = unfold_match env (goalevars evars) cst prf.rew_to })
 		      | x' -> x)
 
       | _ -> if all then Some None else None
@@ -779,8 +780,8 @@ let one_subterm = subterm false default_flags
 (** Requires transitivity of the rewrite step, if not a reduction.
     Not tail-recursive. *)
 
-let transitivity env sigma (res : rewrite_result_info) (next : strategy) : rewrite_result option =
-  match next env sigma res.rew_to res.rew_car (get_rew_rel res.rew_prf) res.rew_evars with
+let transitivity env avoid (res : rewrite_result_info) (next : strategy) : rewrite_result option =
+  match next env avoid res.rew_to res.rew_car (get_rew_rel res.rew_prf) res.rew_evars with
   | None -> None
   | Some None -> Some (Some res)
   | Some (Some res') ->
@@ -807,13 +808,13 @@ module Strategies =
   struct
 
     let fail : strategy =
-      fun env sigma t ty cstr evars -> None
+      fun env avoid t ty cstr evars -> None
 
     let id : strategy =
-      fun env sigma t ty cstr evars -> Some None
+      fun env avoid t ty cstr evars -> Some None
 
     let refl : strategy =
-      fun env sigma t ty cstr evars ->
+      fun env avoid t ty cstr evars ->
 	let evars, rel = match cstr with
 	  | None -> new_cstr_evar evars env (mk_relation ty)
 	  | Some r -> evars, r
@@ -826,23 +827,23 @@ module Strategies =
 		       rew_prf = RewPrf (rel, proof); rew_evars = evars })
 
     let progress (s : strategy) : strategy =
-      fun env sigma t ty cstr evars ->
-	match s env sigma t ty cstr evars with
+      fun env avoid t ty cstr evars ->
+	match s env avoid t ty cstr evars with
 	| None -> None
 	| Some None -> None
 	| r -> r
 
     let seq fst snd : strategy =
-      fun env sigma t ty cstr evars ->
-	match fst env sigma t ty cstr evars with
+      fun env avoid t ty cstr evars ->
+	match fst env avoid t ty cstr evars with
 	| None -> None
-	| Some None -> snd env sigma t ty cstr evars
-	| Some (Some res) -> transitivity env sigma res snd
+	| Some None -> snd env avoid t ty cstr evars
+	| Some (Some res) -> transitivity env avoid res snd
 
     let choice fst snd : strategy =
-      fun env sigma t ty cstr evars ->
-	match fst env sigma t ty cstr evars with
-	| None -> snd env sigma t ty cstr evars
+      fun env avoid t ty cstr evars ->
+	match fst env avoid t ty cstr evars with
+	| None -> snd env avoid t ty cstr evars
 	| res -> res
 
     let try_ str : strategy = choice str id
@@ -880,15 +881,15 @@ module Strategies =
 	lemmas (List.map (fun hint -> (inj_open (hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r)) rules)
 
     let hints (db : string) : strategy =
-      fun env sigma t ty cstr evars ->
+      fun env avoid t ty cstr evars ->
       let rules = Autorewrite.find_matches db t in
 	lemmas (List.map (fun hint -> (inj_open (hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r)) rules)
-	    env sigma t ty cstr evars
+	    env avoid t ty cstr evars
 
     let reduce (r : Redexpr.red_expr) : strategy =
       let rfn, ckind = Redexpr.reduction_of_red_expr r in
-	fun env sigma t ty cstr evars ->
-	  let t' = rfn env sigma t in
+	fun env avoid t ty cstr evars ->
+	  let t' = rfn env (goalevars evars) t in
 	    if eq_constr t' t then
 	      Some None
 	    else
@@ -906,15 +907,21 @@ let rewrite_strat flags occs hyp =
     Strategies.choice app (subterm true flags (fun env -> aux () env))
   in aux ()
 
+let get_hypinfo_ids {c = opt} =
+  match opt with
+  | None -> []
+  | Some (is, gc) -> List.map fst is.lfun @ is.avoid_ids
+
 let rewrite_with c left2right loccs : strategy =
-  fun env sigma t ty cstr evars ->
+  fun env avoid t ty cstr evars ->
     let gevars = goalevars evars in
     let hypinfo = ref (decompose_applied_relation_expr env gevars c left2right) in
-      rewrite_strat default_flags loccs hypinfo env sigma t ty cstr (gevars, cstrevars evars)
+    let avoid = get_hypinfo_ids !hypinfo @ avoid in
+      rewrite_strat default_flags loccs hypinfo env avoid t ty cstr (gevars, cstrevars evars)
 
-let apply_strategy (s : strategy) env sigma concl cstr evars =
+let apply_strategy (s : strategy) env avoid concl cstr evars =
   let res =
-    s env sigma concl (Typing.type_of env sigma concl)
+    s env avoid concl (Typing.type_of env (goalevars evars) concl)
       (Option.map snd cstr) evars
   in
     match res with
@@ -939,7 +946,7 @@ exception RewriteFailure
 
 type result = (evar_map * constr option * types) option option
 
-let cl_rewrite_clause_aux ?(abs=None) strat env sigma concl is_hyp : result =
+let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : result =
   let cstr =
     let sort = mkProp in
     let impl = Lazy.force impl in
@@ -948,7 +955,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env sigma concl is_hyp : result =
       | Some _ -> (sort, impl)
   in
   let evars = (create_evar_defs sigma, Evd.empty) in
-  let eq = apply_strategy strat env sigma concl (Some cstr) evars in
+  let eq = apply_strategy strat env avoid concl (Some cstr) evars in
     match eq with
     | Some (Some (p, evars, car, oldt, newt)) ->
 	let evars' = solve_constraints env evars in
@@ -1033,7 +1040,7 @@ let cl_rewrite_clause_tac ?abs strat meta clause gl =
 	| Some id -> pf_get_hyp_typ gl id, Some id
 	| None -> pf_concl gl, None
       in
-      let res = cl_rewrite_clause_aux ?abs strat (pf_env gl) (project gl) concl is_hyp in
+      let res = cl_rewrite_clause_aux ?abs strat (pf_env gl) [] (project gl) concl is_hyp in
 	treat res
     with
     | Loc.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
@@ -1121,7 +1128,7 @@ let cl_rewrite_clause_newtac ?abs strat clause =
 	   | None -> concl, None
 	 in
 	 let res = 
-	   try cl_rewrite_clause_aux ?abs strat env sigma ty is_hyp 
+	   try cl_rewrite_clause_aux ?abs strat env [] sigma ty is_hyp 
 	   with
 	   | Loc.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
 	   | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
@@ -1186,9 +1193,9 @@ let interp_strategy ist gl c = c
 let glob_strategy ist l = l
 let subst_strategy evm l = l
 
-let apply_constr_expr c l2r occs = fun env sigma ->
-  let evd, c = Constrintern.interp_open_constr sigma env c in
-    apply_lemma (evd, (c, NoBindings)) l2r occs env sigma
+let apply_constr_expr c l2r occs = fun env avoid t ty cstr evars ->
+  let evd, c = Constrintern.interp_open_constr (goalevars evars) env c in
+    apply_lemma (evd, (c, NoBindings)) l2r occs env avoid t ty cstr (evd, cstrevars evars)
 
 let interp_constr_list env sigma =
   List.map (fun c -> 
@@ -1230,26 +1237,37 @@ ARGUMENT EXTEND rewstrategy TYPED AS strategy
   | [ "choice" rewstrategy(h) rewstrategy(h') ] -> [ Strategies.choice h h' ]
   | [ "old_hints" preident(h) ] -> [ Strategies.old_hints h ]
   | [ "hints" preident(h) ] -> [ Strategies.hints h ]
-  | [ "terms" constr_list(h) ] -> [ fun env sigma -> 
-      Strategies.lemmas (interp_constr_list env sigma h) env sigma ]
-  | [ "eval" red_expr(r) ] -> [ fun env sigma -> 
-      Strategies.reduce (Tacinterp.interp_redexp env sigma r) env sigma ]
+  | [ "terms" constr_list(h) ] -> [ fun env avoid t ty cstr evars -> 
+      Strategies.lemmas (interp_constr_list env (goalevars evars) h) env avoid t ty cstr evars ]
+  | [ "eval" red_expr(r) ] -> [ fun env avoid t ty cstr evars -> 
+      Strategies.reduce (Tacinterp.interp_redexp env (goalevars evars) r) env avoid t ty cstr evars ]
 END
 
 type constr_expr_with_bindings = constr_expr with_bindings
-type glob_constr_with_bindings = interp_sign * glob_constr_and_expr with_bindings
+type glob_constr_with_bindings = glob_constr_and_expr with_bindings
+type glob_constr_with_bindings_sign = interp_sign * glob_constr_and_expr with_bindings
 
-let pr_glob_constr_with_bindings _ _ _ s = Pp.str "<constr_expr_with_bindings>"
+let pr_glob_constr_with_bindings_sign _ _ _ (ge : glob_constr_with_bindings_sign) = Printer.pr_glob_constr (fst (fst (snd ge)))
+let pr_glob_constr_with_bindings _ _ _ (ge : glob_constr_with_bindings) = Printer.pr_glob_constr (fst (fst ge))
+let pr_constr_expr_with_bindings prc _ _ (ge : constr_expr_with_bindings) = prc (fst ge)
 let interp_glob_constr_with_bindings ist gl c = (ist, c)
 let glob_glob_constr_with_bindings ist l = Tacinterp.intern_constr_with_bindings ist l
 let subst_glob_constr_with_bindings s c = subst_glob_with_bindings s c
 
 
-ARGUMENT EXTEND glob_constr_with_bindings TYPED AS glob_constr_with_bindings
-    PRINTED BY pr_glob_constr_with_bindings
+ARGUMENT EXTEND glob_constr_with_bindings 
+    PRINTED BY pr_glob_constr_with_bindings_sign
+
     INTERPRETED BY interp_glob_constr_with_bindings
     GLOBALIZED BY glob_glob_constr_with_bindings
     SUBSTITUTED BY subst_glob_constr_with_bindings
+
+    RAW_TYPED AS constr_expr_with_bindings
+    RAW_PRINTED BY pr_constr_expr_with_bindings
+
+    GLOB_TYPED AS glob_constr_with_bindings
+    GLOB_PRINTED BY pr_glob_constr_with_bindings
+   
    [ constr_with_bindings(bl) ] -> [ bl ]
 END
 
