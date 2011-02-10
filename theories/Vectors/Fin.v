@@ -22,43 +22,43 @@ Inductive t : nat -> Set :=
 |FS : forall {n}, t n -> t (S n).
 
 Section SCHEMES.
-Definition case0 {P} (p: t 0): P p :=
+Definition case0 P (p: t 0): P p :=
   match p as p' in t n return
     match n as n' return t n' -> Type
   with |0 => fun f0 => P f0 |S _ => fun _ => @ID end p'
   with |F1 _ => @id |FS _ _ => @id end.
 
-Definition caseS (P: forall n, t (S n) -> Type)
-  (P1: forall n, P n F1) (PS : forall n (p: t n), P n (FS p))
-  n (p: t (S n)): P n p :=
+Definition caseS (P: forall {n}, t (S n) -> Type)
+  (P1: forall n, @P n F1) (PS : forall {n} (p: t n), P (FS p))
+  {n} (p: t (S n)): P p :=
   match p as p0 in t n0
   return match n0 as nn return t nn -> Type with
-    |0 => fun _ => @ID |S n' => fun p' => P n' p'
+    |0 => fun _ => @ID |S n' => fun p' => P p'
   end p0 with
   |F1 k => P1 k
-  |FS k pp => PS k pp
+  |FS k pp => PS pp
   end.
 
-Definition rectS (P: forall n, t (S n) -> Type)
-  (P1: forall n, P n F1) (PS : forall n (p: t (S n)), P n p -> P (S n) (FS p)):
-  forall n (p: t (S n)), P n p :=
-fix rectS_fix n (p: t (S n)): P n p:=
+Definition rectS (P: forall {n}, t (S n) -> Type)
+  (P1: forall n, @P n F1) (PS : forall {n} (p: t (S n)), P p -> P (FS p)):
+  forall {n} (p: t (S n)), P p :=
+fix rectS_fix {n} (p: t (S n)): P p:=
   match p as p0 in t n0
   return match n0 as nn return t nn -> Type with
-    |0 => fun _ => @ID |S n' => fun p' => P n' p'
+    |0 => fun _ => @ID |S n' => fun p' => P p'
   end p0 with
   |F1 k => P1 k
-  |FS 0 pp => @case0 (fun f => P 0 (FS f)) pp
-  |FS (S k) pp => PS k pp (rectS_fix k pp)
+  |FS 0 pp => case0 (fun f => P (FS f)) pp
+  |FS (S k) pp => PS pp (rectS_fix pp)
   end.
 
 Definition rect2 (P: forall {n} (a b: t n), Type)
-  (H0: forall n, P F1 F1)
-  (H1: forall n (f: t n), P F1 (FS f))
-  (H2: forall n (f: t n), P (FS f) F1)
-  (HS: forall n (f g : t n), P f g -> P (FS f) (FS g)):
-    forall n (a b: t n), P a b :=
-fix rect2_fix n (a: t n): forall (b: t n), P a b :=
+  (H0: forall n, @P (S n) F1 F1)
+  (H1: forall {n} (f: t n), P F1 (FS f))
+  (H2: forall {n} (f: t n), P (FS f) F1)
+  (HS: forall {n} (f g : t n), P f g -> P (FS f) (FS g)):
+    forall {n} (a b: t n), P a b :=
+fix rect2_fix {n} (a: t n): forall (b: t n), P a b :=
 match a with
   |F1 m => fun (b: t (S m)) => match b as b' in t n'
                    return match n' as n0
@@ -67,7 +67,7 @@ match a with
                             |S n0 => fun b0 => P F1 b0
                           end b' with
                      |F1 m' => H0 m'
-                     |FS m' b' => H1 m' b'
+                     |FS m' b' => H1 b'
                    end
   |FS m a' => fun (b: t (S m)) => match b as b' in t n'
                       return match n' as n0
@@ -76,8 +76,8 @@ match a with
                                |S n0 => fun b0 =>
                                  forall (a0: t n0), P (FS a0) b0
                              end b' with
-                         |F1 m' => fun aa => H2 m' aa
-                         |FS m' b' => fun aa => HS m' aa b' (rect2_fix m' aa b')
+                         |F1 m' => fun aa => H2 aa
+                         |FS m' b' => fun aa => HS aa b' (rect2_fix aa b')
                        end a'
 end.
 End SCHEMES.

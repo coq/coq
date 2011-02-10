@@ -54,17 +54,17 @@ Definition rectS {A} (P:forall {n}, t A (S n) -> Type)
  end.
 
 (** An induction scheme for 2 vectors of same length *)
-Definition rect2 {A B} (P:forall n, t A n -> t B n -> Type)
-  (bas : P 0 [] []) (rect : forall n v1 v2, P n v1 v2 ->
-    forall a b, P (S n) (a :: v1) (b :: v2)) :=
+Definition rect2 {A B} (P:forall {n}, t A n -> t B n -> Type)
+  (bas : P [] []) (rect : forall {n v1 v2}, P v1 v2 ->
+    forall a b, P (a :: v1) (b :: v2)) :=
 fix rect2_fix {n} (v1:t A n):
-  forall v2 : t B n, P n v1 v2 :=
+  forall v2 : t B n, P v1 v2 :=
 match v1 as v1' in t _ n1
-  return forall v2 : t B n1, P n1 v1' v2 with
+  return forall v2 : t B n1, P v1' v2 with
   |[] => fun v2 =>
      match v2 as v2' in t _ n2
        return match n2 as n2' return t B n2' -> Type with
-         |0 => fun v2 => P 0 [] v2 |S _ => fun _ => @ID end v2' with
+         |0 => fun v2 => P [] v2 |S _ => fun _ => @ID end v2' with
        |[] => bas
        |_ :: _ => @id
      end
@@ -74,11 +74,11 @@ match v1 as v1' in t _ n1
         return t B n2' -> Type with
         |0 => fun _ => @ID
         |S n' => fun v2 => forall t1' : t A n',
-          P (S n') (h1 :: t1') v2
+          P (h1 :: t1') v2
         end v2' with
       |[] => @id
       |h2 :: t2 => fun t1' =>
-        rect _ t1' t2 (rect2_fix t1' t2) h1 h2
+        rect (rect2_fix t1' t2) h1 h2
     end t1
 end.
 
@@ -90,17 +90,17 @@ end.
 
 (** A vector of length [S _] is [cons] *)
 Definition caseS {A} (P : forall n, t A (S n) -> Type)
-  (H : forall h n t, P _ (h :: t)) n v : P n v :=
+  (H : forall h {n} t, @P n (h :: t)) {n} v : P n v :=
 match v with
   |[] => @id (* Why needed ? *)
-  |h :: t => H h _ t
+  |h :: t => H h t
 end.
 End SCHEMES.
 
 Section BASES.
 (** The first element of a non empty vector *)
 Definition hd {A} {n} (v:t A (S n)) := Eval cbv delta beta in
-(caseS (fun n v => A) (fun h n t => h) n v).
+(caseS (fun n v => A) (fun h n t => h) v).
 
 (** The last element of an non empty vector *)
 Definition last {A} {n} (v : t A (S n)) := Eval cbv delta in
@@ -119,9 +119,9 @@ Computational behavior of this function should be the same as
 ocaml function. *)
 Fixpoint nth {A} {m} (v' : t A m) (p : Fin.t m) {struct p} : A :=
 match p in Fin.t m' return t A m' -> A with
- |Fin.F1 q => fun v => caseS (fun n v' => A) (fun h n t => h) q v
+ |Fin.F1 q => fun v => caseS (fun n v' => A) (fun h n t => h) v
  |Fin.FS q p' => fun v => (caseS (fun n v' => Fin.t n -> A)
-   (fun h n t p0 => nth t p0) q v) p'
+   (fun h n t p0 => nth t p0) v) p'
 end v'.
 
 (** An equivalent definition of [nth]. *)
@@ -131,9 +131,9 @@ Definition nth_order {A} {n} (v: t A n) {p} (H: p < n) :=
 (** Put [a] at the p{^ th} place of [v] *)
 Fixpoint replace {A n} (v : t A n) (p: Fin.t n) (a : A) {struct p}: t A n :=
   match p in Fin.t j return t A j -> t A j with
-  |Fin.F1 k => fun v': t A (S k) => caseS (fun n _ => t A (S n)) (fun h _ t => a :: t) _ v'
+  |Fin.F1 k => fun v': t A (S k) => caseS (fun n _ => t A (S n)) (fun h _ t => a :: t) v'
   |Fin.FS k p' => fun v': t A (S k) =>
-    (caseS (fun n _ => Fin.t n -> t A (S n)) (fun h _ t p2 => h :: (replace t p2 a)) _ v') p'
+    (caseS (fun n _ => Fin.t n -> t A (S n)) (fun h _ t p2 => h :: (replace t p2 a)) v') p'
   end v.
 
 (** Version of replace with [lt] *)
@@ -142,7 +142,7 @@ replace v (Fin.of_nat_lt H).
 
 (** Remove the first element of a non empty vector *)
 Definition tl {A} {n} (v:t A (S n)) := Eval cbv delta beta in
-(caseS (fun n v => t A n) (fun h n t => t) n v).
+(caseS (fun n v => t A n) (fun h n t => t) v).
 
 (** Remove last element of a non-empty vector *)
 Definition shiftout {A} {n:nat} (v:t A (S n)) : t A n :=
@@ -226,7 +226,7 @@ Definition map {A} {B} (f : A -> B) : forall {n} (v:t A n), t B n :=
   end.
 
 (** map2 g [x1 .. xn] [y1 .. yn] = [(g x1 y1) .. (g xn yn)] *)
-Definition map2 {A B C}{n} (g:A -> B -> C) (v1:t A n) (v2:t B n)
+Definition map2 {A B C} (g:A -> B -> C) {n} (v1:t A n) (v2:t B n)
   : t C n :=
 Eval cbv delta beta in rect2 (fun n _ _ => t C n) (nil C)
   (fun _ _ _ H a b => (g a b) :: H) v1 v2.

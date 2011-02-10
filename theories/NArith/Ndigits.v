@@ -1053,7 +1053,7 @@ Qed.
 Lemma Nand_BVand : forall n (bv bv' : Bvector n),
   Bv2N _ (BVand _ bv bv') = Nand (Bv2N _ bv) (Bv2N _ bv').
 Proof.
-refine (Vector.rect2 _ _ _); simpl; intros; auto.
+refine (@Vector.rect2 _ _ _ _ _); simpl; intros; auto.
 rewrite H.
 destruct a, b, (Bv2N n v1), (Bv2N n v2);
  simpl; auto.
