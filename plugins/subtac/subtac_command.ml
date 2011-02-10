@@ -52,7 +52,7 @@ let evar_nf isevars c =
   Evarutil.nf_evar !isevars c
 
 let interp_gen kind isevars env
-               ?(impls=[]) ?(allow_patvar=false) ?(ltacvars=([],[]))
+               ?(impls=Constrintern.empty_internalization_env) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
   let c' = Constrintern.intern_gen (kind=IsType) ~impls ~allow_patvar ~ltacvars ( !isevars) env c in
   let c' = SPretyping.understand_tcc_evars isevars env kind c' in
@@ -61,13 +61,13 @@ let interp_gen kind isevars env
 let interp_constr isevars env c =
   interp_gen (OfType None) isevars env c
 
-let interp_type_evars isevars env ?(impls=[]) c =
+let interp_type_evars isevars env ?(impls=Constrintern.empty_internalization_env) c =
   interp_gen IsType isevars env ~impls c
 
-let interp_casted_constr isevars env ?(impls=[]) c typ =
+let interp_casted_constr isevars env ?(impls=Constrintern.empty_internalization_env) c typ =
   interp_gen (OfType (Some typ)) isevars env ~impls c
 
-let interp_casted_constr_evars isevars env ?(impls=[]) c typ =
+let interp_casted_constr_evars isevars env ?(impls=Constrintern.empty_internalization_env) c typ =
   interp_gen (OfType (Some typ)) isevars env ~impls c
 
 let interp_open_constr isevars env c =
@@ -300,11 +300,11 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
       Constrintern.compute_internalization_data env
 	Constrintern.Recursive full_arity impls 
     in
-    let newimpls = [(recname, (r, l, impls @ 
-      [Some (id_of_string "recproof", Impargs.Manual, (true, false))], 
-			      scopes @ [None]))] in
-    interp_casted_constr isevars ~impls:newimpls
-      (push_rel_context ctx env) body (lift 1 top_arity)
+    let newimpls = Idmap.singleton recname
+      (r, l, impls @ [(Some (id_of_string "recproof", Impargs.Manual, (true, false)))],
+       scopes @ [None]) in
+      interp_casted_constr isevars ~impls:newimpls
+	(push_rel_context ctx env) body (lift 1 top_arity)
   in
   let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
   let prop = mkLambda (Name argname, argtyp, top_arity_let) in

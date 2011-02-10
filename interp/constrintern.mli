@@ -40,6 +40,7 @@ type var_internalization_type =
   | Inductive of identifier list (* list of params *)
   | Recursive
   | Method
+  | Definition
 
 type var_internalization_data =
     var_internalization_type *
@@ -52,8 +53,7 @@ type var_internalization_data =
     scope_name option list (** subscopes of the args of the variable *)
 
 (** A map of free variables to their implicit arguments and scopes *)
-type internalization_env =
-    (identifier * var_internalization_data) list
+type internalization_env = var_internalization_data Idmap.t
 
 val empty_internalization_env : internalization_env
 

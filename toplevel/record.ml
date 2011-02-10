@@ -41,12 +41,12 @@ let interp_fields_evars evars env nots l =
       let impls =
 	match i with
 	| Anonymous -> impls
-	| Name id -> (id, compute_internalization_data env Constrintern.Method t' impl) :: impls
+	| Name id -> Idmap.add id (compute_internalization_data env Constrintern.Method t' impl) impls
       in
       let d = (i,b',t') in
       List.iter (Metasyntax.set_notation_for_interpretation impls) no;
       (push_rel d env, impl :: uimpls, d::params, impls))
-    (env, [], [], []) nots l
+    (env, [], [], empty_internalization_env) nots l
 
 let binder_of_decl = function
   | Vernacexpr.AssumExpr(n,t) -> (n,None,t)

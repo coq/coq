@@ -34,8 +34,8 @@ Section SCHEMES.
 
 (** An induction scheme for non-empty vectors *)
 Definition rectS {A} (P:forall {n}, t A (S n) -> Type)
- (bas: forall a: A, P 0 (a :: []))
- (rect: forall a {n} (v: t A (S n)), P n v -> P (S n) (a :: v)) :=
+ (bas: forall a: A, P (a :: []))
+ (rect: forall a {n} (v: t A (S n)), P v -> P (a :: v)) :=
  fix rectS_fix {n} (v: t A (S n)) : P n v :=
  match v with
  |nil => @id

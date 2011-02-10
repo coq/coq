@@ -1410,7 +1410,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let equation_id = add_suffix function_name "_equation" in
   let functional_id =  add_suffix function_name "_F" in
   let term_id = add_suffix function_name "_terminate" in
-  let functional_ref = declare_fun functional_id (IsDefinition Definition) res in
+  let functional_ref = declare_fun functional_id (IsDefinition Decl_kinds.Definition) res in
   let env_with_pre_rec_args = push_rel_context(List.map (function (x,t) -> (x,None,t)) pre_rec_args) env in  
   let relation =
     interp_constr

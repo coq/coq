@@ -53,10 +53,10 @@ fix rectS_fix n (p: t (S n)): P n p:=
   end.
 
 Definition rect2 (P: forall {n} (a b: t n), Type)
-  (H0: forall n, P (S n) F1 F1)
-  (H1: forall n (f: t n), P (S n) F1 (FS f))
-  (H2: forall n (f: t n), P (S n) (FS f) F1)
-  (HS: forall n (f g : t n), P n f g -> P (S n) (FS f) (FS g)):
+  (H0: forall n, P F1 F1)
+  (H1: forall n (f: t n), P F1 (FS f))
+  (H2: forall n (f: t n), P (FS f) F1)
+  (HS: forall n (f g : t n), P f g -> P (FS f) (FS g)):
     forall n (a b: t n), P n a b :=
 fix rect2_fix n (a: t n): forall (b: t n), P n a b :=
 match a with
@@ -64,7 +64,7 @@ match a with
                    return match n' as n0
                           return t n0 -> Type with
                             |0 => fun _ => @ID
-                            |S n0 => fun b0 => P (S n0) F1 b0
+                            |S n0 => fun b0 => P _ F1 b0
                           end b' with
                      |F1 m' => H0 m'
                      |FS m' b' => H1 m' b'
@@ -74,7 +74,7 @@ match a with
                              return t n0 -> Type with
                                |0 => fun _ => @ID
                                |S n0 => fun b0 =>
-                                 forall (a0: t n0), P (S n0) (FS a0) b0
+                                 forall (a0: t n0), P _ (FS a0) b0
                              end b' with
                          |F1 m' => fun aa => H2 m' aa
                          |FS m' b' => fun aa => HS m' aa b' (rect2_fix m' aa b')
