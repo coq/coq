@@ -1242,7 +1242,7 @@ type glob_constr_with_bindings = interp_sign * glob_constr_and_expr with_binding
 let pr_glob_constr_with_bindings _ _ _ s = Pp.str "<constr_expr_with_bindings>"
 let interp_glob_constr_with_bindings ist gl c = (ist, c)
 let glob_glob_constr_with_bindings ist l = Tacinterp.intern_constr_with_bindings ist l
-let subst_glob_constr_with_bindings evm l = l
+let subst_glob_constr_with_bindings s c = subst_glob_with_bindings s c
 
 
 ARGUMENT EXTEND glob_constr_with_bindings TYPED AS glob_constr_with_bindings

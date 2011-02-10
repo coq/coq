@@ -111,6 +111,9 @@ val subst_genarg :
 val subst_glob_constr_and_expr :
   substitution -> glob_constr_and_expr -> glob_constr_and_expr
 
+val subst_glob_with_bindings :
+  substitution -> glob_constr_and_expr Glob_term.with_bindings -> glob_constr_and_expr Glob_term.with_bindings
+
 (** Interprets any expression *)
 val val_interp : interp_sign -> goal sigma -> glob_tactic_expr -> value
 

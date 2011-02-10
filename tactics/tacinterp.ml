@@ -2553,11 +2553,11 @@ let subst_bindings subst = function
   | ImplicitBindings l -> ImplicitBindings (List.map (subst_glob_constr subst) l)
   | ExplicitBindings l -> ExplicitBindings (List.map (subst_binding subst) l)
 
-let subst_raw_with_bindings subst (c,bl) =
+let subst_glob_with_bindings subst (c,bl) =
   (subst_glob_constr subst c, subst_bindings subst bl)
 
 let subst_induction_arg subst = function
-  | ElimOnConstr c -> ElimOnConstr (subst_raw_with_bindings subst c)
+  | ElimOnConstr c -> ElimOnConstr (subst_glob_with_bindings subst c)
   | ElimOnAnonHyp n as x -> x
   | ElimOnIdent id as x -> x
 
@@ -2642,12 +2642,12 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacExactNoCheck c -> TacExactNoCheck (subst_glob_constr subst c)
   | TacVmCastNoCheck c -> TacVmCastNoCheck (subst_glob_constr subst c)
   | TacApply (a,ev,cb,cl) ->
-      TacApply (a,ev,List.map (subst_raw_with_bindings subst) cb,cl)
+      TacApply (a,ev,List.map (subst_glob_with_bindings subst) cb,cl)
   | TacElim (ev,cb,cbo) ->
-      TacElim (ev,subst_raw_with_bindings subst cb,
-               Option.map (subst_raw_with_bindings subst) cbo)
+      TacElim (ev,subst_glob_with_bindings subst cb,
+               Option.map (subst_glob_with_bindings subst) cbo)
   | TacElimType c -> TacElimType (subst_glob_constr subst c)
-  | TacCase (ev,cb) -> TacCase (ev,subst_raw_with_bindings subst cb)
+  | TacCase (ev,cb) -> TacCase (ev,subst_glob_with_bindings subst cb)
   | TacCaseType c -> TacCaseType (subst_glob_constr subst c)
   | TacFix (idopt,n) as x -> x
   | TacMutualFix (b,id,n,l) ->
@@ -2677,14 +2677,14 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacInductionDestruct (isrec,ev,(l,cls)) ->
       TacInductionDestruct (isrec,ev,(List.map (fun (lc,cbo,ids) ->
 	List.map (subst_induction_arg subst) lc,
-        Option.map (subst_raw_with_bindings subst) cbo, ids) l, cls))
+        Option.map (subst_glob_with_bindings subst) cbo, ids) l, cls))
   | TacDoubleInduction (h1,h2) as x -> x
   | TacDecomposeAnd c -> TacDecomposeAnd (subst_glob_constr subst c)
   | TacDecomposeOr c -> TacDecomposeOr (subst_glob_constr subst c)
   | TacDecompose (l,c) ->
       let l = List.map (subst_or_var (subst_inductive subst)) l in
       TacDecompose (l,subst_glob_constr subst c)
-  | TacSpecialize (n,l) -> TacSpecialize (n,subst_raw_with_bindings subst l)
+  | TacSpecialize (n,l) -> TacSpecialize (n,subst_glob_with_bindings subst l)
   | TacLApply c -> TacLApply (subst_glob_constr subst c)
 
   (* Context management *)
@@ -2715,7 +2715,7 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacRewrite (ev,l,cl,by) ->
       TacRewrite (ev,
 		  List.map (fun (b,m,c) ->
-			      b,m,subst_raw_with_bindings subst c) l,
+			      b,m,subst_glob_with_bindings subst c) l,
 		 cl,Option.map (subst_tactic subst) by)
   | TacInversion (DepInversion (k,c,l),hyp) ->
      TacInversion (DepInversion (k,Option.map (subst_glob_constr subst) c,l),hyp)
@@ -2822,7 +2822,7 @@ and subst_genarg subst (x:glob_generic_argument) =
         ((),subst_glob_constr subst (snd (out_gen (globwit_open_constr_gen b) x)))
   | ConstrWithBindingsArgType ->
       in_gen globwit_constr_with_bindings
-        (subst_raw_with_bindings subst (out_gen globwit_constr_with_bindings x))
+        (subst_glob_with_bindings subst (out_gen globwit_constr_with_bindings x))
   | BindingsArgType ->
       in_gen globwit_bindings
         (subst_bindings subst (out_gen globwit_bindings x))
