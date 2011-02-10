@@ -70,3 +70,9 @@ val get_stack : Proof.proof -> stack_info list
 val get_top_stack : Proof.proof -> stack_info list
 
 val get_last:  Environ.env -> identifier
+
+val focus : Proof.proof -> unit
+
+val unfocus : Proof.proof -> unit
+
+val maximal_unfocus : Proof.proof -> unit

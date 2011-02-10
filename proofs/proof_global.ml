@@ -281,6 +281,21 @@ let close_proof () =
     | Proof.HasUnresolvedEvar ->
 	Util.error "Attempt to save a proof with existential variables still non-instantiated"
 
+
+(**********************************************************)
+(*                                                                                                  *)
+(*                              Utility functions                                          *)
+(*                                                                                                  *)
+(**********************************************************)
+
+let maximal_unfocus k p =
+  begin try while Proof.no_focused_goal p do
+    Proof.unfocus k p
+  done
+  with Util.UserError _ -> (* arnaud: attention à ça si je fini par me décider à mettre une vrai erreur pour Proof.unfocus *)
+    ()
+  end
+
 module V82 = struct
   let get_current_initial_conclusions () =
     let p = give_me_the_proof () in

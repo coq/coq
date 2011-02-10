@@ -66,7 +66,7 @@ type command_mode =
   | Mode_none
 
 let mode_of_pftreestate pts =
-  (* spiwack: it was "top_goal_..." but this should be fine *)
+  (* spiwack: it used to be "top_goal_..." but this should be fine *)
   let { it = goals ; sigma = sigma } = Proof.V82.subgoals pts in
   let goal = List.hd goals in
     if info.get (Goal.V82.extra sigma goal) = None then
@@ -96,10 +96,25 @@ let get_stack pts =
   let info = get_info sigma (List.hd goals) in
   info.pm_stack
 
+
+let proof_focus = Proof.new_focus_kind ()
+let proof_cond = Proof.no_cond proof_focus
+
+let focus p =
+  let inf = get_stack p in
+  Proof.focus proof_cond inf 1 p
+
+let unfocus = Proof.unfocus proof_focus
+
+let maximal_unfocus = Proof_global.maximal_unfocus proof_focus
+
 let get_top_stack pts =
-  let { it = gl ; sigma = sigma } = Proof.V82.top_goal pts in
-  let info = get_info sigma gl in
-  info.pm_stack
+  try
+    Proof.get_at_focus proof_focus pts
+  with Proof.NoSuchFocus ->
+    let { it = gl ; sigma = sigma } = Proof.V82.top_goal pts in
+    let info = get_info sigma gl in
+    info.pm_stack
 
 let get_last env =
   try

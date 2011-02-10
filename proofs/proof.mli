@@ -64,32 +64,44 @@ val add_undo : (unit -> unit) -> proof -> unit
 
 (*** Focusing actions ***)
 
-(* [focus_kind] is the type used by focusing and unfocusing
+(* ['a focus_kind] is the type used by focusing and unfocusing
     commands to synchronise. Focusing and unfocusing commands use
-    a particular focus_kind, and if they don't match, the unfocusing command
-    will fail. *)
-type focus_kind
-val new_focus_kind : unit -> focus_kind
+    a particular ['a focus_kind], and if they don't match, the unfocusing command
+    will fail.
+    When focusing with an ['a focus_kind], an information of type ['a] is
+    stored at the focusing point. An example use is the "induction" tactic
+    of the declarative mode where sub-tactics must be aware of the current
+    induction argument. *)
+type 'a focus_kind
+val new_focus_kind : unit -> 'a focus_kind
 
 (* To be authorized to unfocus one must meet the condition prescribed by
-    the action which focused.*)
-type focus_condition 
+    the action which focused.
+    Conditions always carry a focus kind, and inherit their type parameter
+    from it.*)
+type 'a focus_condition 
 (* [no_cond] only checks that the unfocusing command uses the right
     [focus_kind]. *)
-val no_cond : focus_kind -> focus_condition
+val no_cond : 'a focus_kind -> 'a focus_condition
 (* [done_cond] checks that the unfocusing command uses the right [focus_kind]
     and that the focused proofview is complete. *)
-val done_cond : focus_kind -> focus_condition
+val done_cond : 'a focus_kind -> 'a focus_condition
 
 (* focus command (focuses on the [i]th subgoal) *)
-(* there could also, easily be a focus-on-a-range tactic, is there 
+(* spiwack: there could also, easily be a focus-on-a-range tactic, is there 
    a need for it? *)
-val focus : focus_condition -> int -> proof -> unit
+val focus : 'a focus_condition -> 'a -> int -> proof -> unit
 
 exception FullyUnfocused
 (* Unfocusing command.
    Raises [FullyUnfocused] if the proof is not focused. *)
-val unfocus : focus_kind -> proof -> unit
+val unfocus : 'a focus_kind -> proof -> unit
+
+(* [get_at_focus k] gets the information stored at the closest focus point
+    of kind [k].
+    Raises [NoSuchFocus] if there is no focus point of kind [k]. *)
+exception NoSuchFocus
+val get_at_focus : 'a focus_kind -> proof -> 'a
 
 (* returns [true] if there is no goal under focus. *)
 val no_focused_goal : proof -> bool

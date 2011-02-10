@@ -72,17 +72,27 @@ val suspend : unit -> unit
 val resume_last : unit -> unit
 
 val resume : Names.identifier -> unit
-(** @raise NoSuchProof if it doesn't find *)
+(** @raise NoSuchProof if it doesn't find one. *)
 
-(* Runs a tactic on the current proof. Raises [NoCurrentProof] is there is 
+(** Runs a tactic on the current proof. Raises [NoCurrentProof] is there is 
    no current proof. *)
 val run_tactic : unit Proofview.tactic -> unit
 
-(* Sets the tactic to be used when a tactic line is closed with [...] *)
+(** Sets the tactic to be used when a tactic line is closed with [...] *)
 val set_endline_tactic : unit Proofview.tactic -> unit
 
-(* Appends the endline tactic of the current proof to a tactic. *)
+(** Appends the endline tactic of the current proof to a tactic. *)
 val with_end_tac : unit Proofview.tactic -> unit Proofview.tactic
+
+(**********************************************************)
+(*                                                                                                  *)
+(*                              Utility functions                                          *)
+(*                                                                                                  *)
+(**********************************************************)
+
+(** [maximal_unfocus k p] unfocuses [p] until [p] has at least a
+    focused goal or that the last focus isn't of kind [k]. *)
+val maximal_unfocus : 'a Proof.focus_kind -> Proof.proof -> unit
 
 module V82 : sig
   val get_current_initial_conclusions : unit -> Names.identifier *(Term.types list * Decl_kinds.goal_kind * Tacexpr.declaration_hook)

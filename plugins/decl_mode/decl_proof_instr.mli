@@ -109,5 +109,3 @@ val init_tree:
      (int option * Declarations.recarg Rtree.t) array ->
      (Names.Idset.t * Decl_mode.split_tree) option) ->
     Decl_mode.split_tree
-
-val set_refine : (Evd.open_constr -> Proof_type.tactic) -> unit

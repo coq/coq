@@ -111,17 +111,15 @@ let assert_postpone id t =
 
 (* start a proof *)
 
-let proof_focus = Proof.new_focus_kind ()
-let proof_cond = Proof.no_cond proof_focus
 
 let start_proof_tac gls=
   let info={pm_stack=[]} in
   tcl_change_info info gls
 
 let go_to_proof_mode () =
-  Pfedit.by start_proof_tac  ;
+  Pfedit.by start_proof_tac;
   let p = Proof_global.give_me_the_proof () in
-  Proof.focus proof_cond 1 p
+  Decl_mode.focus p
 
 (* closing gaps *)
 
@@ -154,12 +152,14 @@ let mark_rule_as_done = function
 
 (* post-instruction focus management *)
 
+(* spiwack: This used to fail if there was no focusing command
+   above, but I don't think it ever happened. I hope it doesn't mess
+   things up*)
 let goto_current_focus pts = 
-  Proof.unfocus proof_focus pts
+  Decl_mode.maximal_unfocus pts
 
 let goto_current_focus_or_top pts =
-  try goto_current_focus pts
-  with Util.UserError _ -> ()
+  goto_current_focus pts
 
 (* return *)
 
@@ -172,6 +172,7 @@ let close_tactic_mode pts =
       goto_current_focus pts2
 
 let return_from_tactic_mode () =
+  (* arnaud: la commande return ne fonctionne pas *)
   Util.anomaly "Todo: Decl_proof_instr.return_from_tactic_mode"
 
 (* end proof/claim *)
@@ -180,7 +181,12 @@ let close_block bt pts =
     if Proof.no_focused_goal pts then
       goto_current_focus pts
     else
-      let stack =get_stack pts in
+      let stack =
+	if Proof.is_done pts then
+	  get_top_stack pts
+	else
+	  get_stack pts 
+      in
       match bt,stack with
 	B_claim, Claim::_ | B_focus, Focus_claim::_ | B_proof, [] ->
 	  (goto_current_focus pts)
@@ -197,7 +203,7 @@ let close_block bt pts =
 	      | ET_Induction ->  error "\"end induction\" expected."
 	  end
       | _,_ -> anomaly "Lonely suppose on stack."
-  
+
 
 (* utility for suppose / suppose it is *)
 
@@ -577,8 +583,8 @@ let instr_claim _thus st gls0 =
   let ninfo1 = {pm_stack=
       (if _thus then Focus_claim else Claim)::info.pm_stack} in
     tclTHENS (assert_postpone id st.st_it)
-      [tcl_change_info ninfo1;
-       thus_tac] gls0
+      [thus_tac;
+       tcl_change_info ninfo1] gls0
 
 (* tactics for assume *)
 
@@ -1294,12 +1300,9 @@ let understand_my_constr c gls =
   let rec frob = function GEvar _ -> GHole (dummy_loc,QuestionMark Expand) | rc ->  map_glob_constr frob rc in
     Pretyping.Default.understand_tcc (sig_sig gls) env ~expected_type:(pf_concl gls) (frob rawc)
 
-let set_refine,my_refine =
-let refine = ref (fun (_:open_constr) -> (assert false : tactic) ) in
-((fun tac -> refine:= tac),
-(fun c gls -> 
-   let oc = understand_my_constr c gls in
-     !refine oc gls))
+let my_refine c gls =
+  let oc = understand_my_constr c gls in
+  Refine.refine oc gls
 
 (* end focus/claim *)
 
@@ -1438,12 +1441,16 @@ let rec postprocess pts instr =
     | Pcut _ | Psuffices _ | Passume _ | Plet _ | Pconsider (_,_) | Pcast (_,_)
     | Pgiven _ | Ptake _ | Pdefine (_,_,_) | Prew (_,_) -> ()
     | Pclaim _ | Pfocus _ | Psuppose _ | Pcase _ | Pper _
-    | Pescape -> Proof.focus proof_cond 1 pts
+    | Pescape -> Decl_mode.focus pts
     | Pend (B_elim ET_Induction) ->
   	begin
 	  let pfterm = List.hd (Proof.partial_proof pts) in
 	  let { it = gls ; sigma = sigma } = Proof.V82.subgoals pts in
-	  let env =  Goal.V82.env sigma (List.hd gls) in
+	  let env =  try
+		       Goal.V82.env sigma (List.hd gls)
+	             with Failure "hd" ->
+		       Global.env ()
+	  in
 	    try
 	      Inductiveops.control_only_guard env pfterm;
 	      goto_current_focus_or_top pts
@@ -1469,7 +1476,10 @@ let do_instr raw_instr pts =
 	interp_proof_instr (get_its_info gl) sigma env glob_instr in
       Pfedit.by (tclTHEN (eval_instr instr) clean_tmp)
     else () end;
-  postprocess pts raw_instr.instr
+  postprocess pts raw_instr.instr;
+  (* spiwack: this should restore a compatible semantics with
+     v8.3 where we never stayed focused on 0 goal. *)
+  Decl_mode.maximal_unfocus pts
 
 let proof_instr raw_instr =
   let p = Proof_global.give_me_the_proof () in

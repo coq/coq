@@ -31,14 +31,26 @@
 
 open Term
 
-type focus_kind = int
-type focus_condition = focus_kind -> Proofview.proofview -> bool
+type _focus_kind = int
+type 'a focus_kind = _focus_kind
+type focus_info = Obj.t
+type _focus_condition = 
+    (_focus_kind -> Proofview.proofview -> bool) *
+    (_focus_kind -> focus_info -> focus_info)
+type 'a focus_condition = _focus_condition
 
 let next_kind = ref 0
 let new_focus_kind () =
   let r = !next_kind in
   incr next_kind;
   r
+
+(* Auxiliary function to define conditions:
+   [check kind1 kind2 inf] returns [inf] if [kind1] and [kind2] match.
+   Otherwise it raises [CheckNext] *)
+exception CheckNext
+let check kind1 kind2 inf =
+  if kind1=kind2 then inf else raise CheckNext
 
 (* To be authorized to unfocus one must meet the condition prescribed by
     the action which focused.*)
@@ -47,9 +59,11 @@ let new_focus_kind () =
 (* [no_cond] only checks that the unfocusing command uses the right
     [focus_kind]. *)
 let no_cond k0 k _ = k0 = k
+let no_cond k = no_cond k , check k
 (* [done_cond] checks that the unfocusing command uses the right [focus_kind]
     and that the focused proofview is complete. *)
 let done_cond k0 k p = k0 = k && Proofview.finished p
+let done_cond k = done_cond k , check k
 
 
 (* Subpart of the type of proofs. It contains the parts of the proof which
@@ -58,9 +72,9 @@ type proof_state = {
   (* Current focused proofview *)
   proofview: Proofview.proofview;
   (* History of the focusings, provides information on how
-     to unfocus the proof.
+     to unfocus the proof and the extra information stored while focusing.
      The list is empty when the proof is fully unfocused. *)
-  focus_stack: (focus_condition*Proofview.focus_context) list;
+  focus_stack: (_focus_condition*focus_info*Proofview.focus_context) list;
   (* Extra information which can be freely used to create new behaviours. *)
   intel: Store.t
 }
@@ -94,7 +108,7 @@ let start goals =
   }
 
 let rec unroll_focus pv = function
-  | (_,ctx)::stk -> unroll_focus (Proofview.unfocus ctx pv) stk
+  | (_,_,ctx)::stk -> unroll_focus (Proofview.unfocus ctx pv) stk
   | [] -> pv
 
 (* spiwack: a proof is considered completed even if its still focused, if the focus
@@ -126,15 +140,15 @@ let return p =
      of proofs, they are not meant to be exported in the .mli ***)
 
 (* An auxiliary function to push a {!focus_context} on the focus stack. *)
-let push_focus kind context pr =
-  pr.state <- { pr.state with focus_stack = (kind,context)::pr.state.focus_stack }
+let push_focus cond inf context pr =
+  pr.state <- { pr.state with focus_stack = (cond,inf,context)::pr.state.focus_stack }
 
 exception FullyUnfocused
 
 (* An auxiliary function to read the kind of the next focusing step *)
 let cond_of_focus pr =
   match pr.state.focus_stack with
-  | (cond,_)::_ -> cond
+  | (cond,_,_)::_ -> cond
   | _ -> raise FullyUnfocused
 
 (* An auxiliary function to pop and read the last {!Proofview.focus_context} 
@@ -159,16 +173,16 @@ let pop_undo pr =
 
 
 (* This function focuses the proof [pr] between indices [i] and [j] *)
-let _focus cond i j pr =
+let _focus cond inf i j pr =
   let (focused,context) = Proofview.focus i j pr.state.proofview in
-  push_focus cond context pr;
+  push_focus cond inf context pr;
   pr.state <- { pr.state with proofview = focused }
 
 (* This function unfocuses the proof [pr], it raises [FullyUnfocused],
    if the proof is already fully unfocused.
    This function does not care about the condition of the current focus. *)
 let _unfocus pr =
-  let (_,fc) = pop_focus pr in
+  let (_,_,fc) = pop_focus pr in
   pr.state <- { pr.state with proofview = Proofview.unfocus fc pr.state.proofview }
 
 
@@ -214,9 +228,9 @@ let add_undo effect pr =
 (* Focus command (focuses on the [i]th subgoal) *)
 (* spiwack: there could also, easily be a focus-on-a-range tactic, is there 
    a need for it? *)
-let focus cond i pr =
+let focus cond inf i pr =
   save pr;
-  _focus cond i i pr
+  _focus cond (Obj.repr inf) i i pr
 
 (* Unfocus command.
    Fails if the proof is not focused. *)
@@ -224,13 +238,28 @@ let unfocus kind pr =
   let starting_point = save_state pr in
   try
     let cond = cond_of_focus pr in
-    if cond kind pr.state.proofview then
+    if fst cond kind pr.state.proofview then
       (_unfocus pr;
        push_undo starting_point pr)
     else
       Util.error "This proof is focused, but cannot be unfocused this way"
   with FullyUnfocused -> 
     Util.error "This proof is not focused"
+
+let get_at_point kind ((_,get),inf,_) = get kind inf
+exception NoSuchFocus
+exception GetDone of Obj.t
+let get_in_focus_stack kind stack =
+  try
+    List.iter begin fun pt ->
+      try 
+	raise (GetDone (get_at_point kind pt))
+      with CheckNext -> ()
+    end stack;
+    raise NoSuchFocus
+  with GetDone x -> x
+let get_at_focus kind pr =
+  Obj.magic (get_in_focus_stack kind pr.state.focus_stack)
 
 let no_focused_goal p =
   Proofview.finished p.state.proofview

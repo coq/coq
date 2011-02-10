@@ -670,7 +670,7 @@ let pop_bullet pr =
 		   b
   | [] -> Util.anomaly "Tried to pop bullet from an empty stack"
 let push_bullet b pr =
-  Proof.focus bullet_cond 1 pr ;
+  Proof.focus bullet_cond () 1 pr ;
   set_bullets (b::get_bullets pr) pr
 
 let put_bullet p bul =
@@ -690,10 +690,7 @@ let vernac_solve n bullet tcom b =
   solve_nth n (Tacinterp.hide_interp tcom None) ~with_end_tac:b;
   (* in case a strict subtree was completed,
      go back to the top of the prooftree *)
-  begin try while Proof.no_focused_goal p do
-    Proof.unfocus command_focus p
-  done
-  with Util.UserError _ -> () end;
+  Proof_global.maximal_unfocus command_focus p;
   print_subgoals();
   if !pcoq <> None then (Option.get !pcoq).solve n
  
@@ -1252,8 +1249,8 @@ let vernac_backtrack snum pnum naborts =
 let vernac_focus gln =
   let p = Proof_global.give_me_the_proof () in
   match gln with
-    | None -> Proof.focus focus_command_cond 1 p; print_subgoals ()
-    | Some n -> Proof.focus focus_command_cond n p; print_subgoals ()
+    | None -> Proof.focus focus_command_cond () 1 p; print_subgoals ()
+    | Some n -> Proof.focus focus_command_cond () n p; print_subgoals ()
 
 
   (* Unfocuses one step in the focus stack. *)
@@ -1273,8 +1270,8 @@ let subproof_cond = Proof.done_cond subproof_kind
 let vernac_subproof gln =
   let p = Proof_global.give_me_the_proof () in
   begin match gln with
-  | None -> Proof.focus subproof_cond 1 p
-  | Some n -> Proof.focus subproof_cond n p
+  | None -> Proof.focus subproof_cond () 1 p
+  | Some n -> Proof.focus subproof_cond () n p
   end ;
   print_subgoals ()
 
