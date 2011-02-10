@@ -50,7 +50,7 @@ Definition rectS {A} (P:forall {n}, t A (S n) -> Type)
      |nil => bas a
      |_ :: _ => @id
      end
- |cons a (S nn') v => rect a nn' v (rectS_fix _ v)
+ |cons a (S nn') v => rect a _ v (rectS_fix v)
  end.
 
 (** An induction scheme for 2 vectors of same length *)
@@ -78,7 +78,7 @@ match v1 as v1' in t _ n1
         end v2' with
       |[] => @id
       |h2 :: t2 => fun t1' =>
-        rect _ t1' t2 (rect2_fix _ t1' t2) h1 h2
+        rect _ t1' t2 (rect2_fix t1' t2) h1 h2
     end t1
 end.
 
@@ -222,7 +222,7 @@ schemes *)
 Definition map {A} {B} (f : A -> B) : forall {n} (v:t A n), t B n :=
   fix map_fix {n} (v : t A n) : t B n := match v with
   | [] => []
-  | a :: v' => (f a) :: (map_fix _ v')
+  | a :: v' => (f a) :: (map_fix v')
   end.
 
 (** map2 g [x1 .. xn] [y1 .. yn] = [(g x1 y1) .. (g xn yn)] *)
@@ -244,7 +244,7 @@ Definition fold_right {A B : Type} (f : A->B->B) :=
   {struct v} : B :=
   match v with
     | [] => b
-    | a :: w => f a (fold_right_fix _ w b)
+    | a :: w => f a (fold_right_fix w b)
   end.
 
 (** fold_right2 g [x1 .. xn] [y1 .. yn] c = g x1 y1 (g x2 y2 .. (g xn yn c) .. ) *)
@@ -264,7 +264,7 @@ match v in t _ n0 return t C n0 -> A with
   |cons vh vn vt => fun w => match w in t _ n1
     return match n1 with |0 => @ID |S n => t B n -> A end with
     |[] => @id
-    |wh :: wt => fun vt' => fold_left2_fix (f a vh wh) _ vt' wt end vt
+    |wh :: wt => fun vt' => fold_left2_fix (f a vh wh) vt' wt end vt
 end.
 
 End ITERATORS.

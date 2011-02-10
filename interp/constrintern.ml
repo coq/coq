@@ -30,6 +30,7 @@ type var_internalization_type =
   | Inductive of identifier list (* list of params *)
   | Recursive
   | Method
+  | Variable
 
 type var_internalization_data =
     (* type of the "free" variable, for coqdoc, e.g. while typing the
@@ -173,7 +174,7 @@ let compute_explicitable_implicit imps = function
       let sub_impl,_ = list_chop (List.length params) imps in
       let sub_impl' = List.filter is_status_implicit sub_impl in
       List.map name_of_implicit sub_impl'
-  | Recursive | Method ->
+  | Recursive | Method | Variable ->
       (* Unable to know in advance what the implicit arguments will be *)
       []
 
@@ -311,6 +312,27 @@ let rec it_mkGLambda env body =
 
 (**********************************************************************)
 (* Utilities for binders                                              *)
+let build_impls = function
+  |Implicit -> (function
+		  |Name id ->  Some (id, Impargs.Manual, (true,true))
+		  |Anonymous -> anomaly "Anonymous implicit argument")
+  |Explicit -> fun _ -> None
+
+let impls_type_list ?(args = []) =
+  let rec aux acc = function
+    |GProd (_,na,bk,_,c) -> aux ((build_impls bk na)::acc) c
+    |_ -> (Variable,[],List.append args (List.rev acc),[])
+  in aux []
+
+let impls_term_list ?(args = []) =
+  let rec aux acc = function
+    |GLambda (_,na,bk,_,c) -> aux ((build_impls bk na)::acc) c
+    |GRec (_, fix_kind, nas, args, tys, bds) ->
+       let nb = match fix_kind with |GFix (_, n) -> n | GCoFix n -> n in
+       let acc' = List.fold_left (fun a (na, bk, _, _) -> (build_impls bk na)::a) acc args.(nb) in
+	 aux acc' bds.(nb)
+    |_ -> (Variable,[],List.append args (List.rev acc),[])
+  in aux []
 
 let check_capture loc ty = function
   | Name id when occur_var_constr_expr id ty ->
@@ -357,7 +379,9 @@ let intern_generalized_binder ?(global_level=false) intern_type lvar
   in
   let ty' = intern_type {env with ids = ids; unb = true} ty in
   let fvs = Implicit_quantifiers.generalizable_vars_of_glob_constr ~bound:ids ~allowed:ids' ty' in
-  let env' = List.fold_left (fun env (x, l) -> push_name_env ~global_level lvar env (l, Name x)) env fvs in
+  let env' = List.fold_left
+    (fun env (x, l) -> push_name_env ~global_level lvar (Variable,[],[],[])(*?*) env (l, Name x))
+    env fvs in
   let bl = List.map (fun (id, loc) -> (Name id, b, None, GHole (loc, Evd.BinderType (Name id)))) fvs in
   let na = match na with
     | Anonymous ->
@@ -371,7 +395,7 @@ let intern_generalized_binder ?(global_level=false) intern_type lvar
 	    in Implicit_quantifiers.make_fresh ids' (Global.env ()) id
 	  in Name name
     | _ -> na
-  in (push_name_env ~global_level lvar env' (loc,na)), (na,b',None,ty') :: List.rev bl
+  in (push_name_env ~global_level lvar (impls_type_list ty')(*?*) env' (loc,na)), (na,b',None,ty') :: List.rev bl
 
 let intern_local_binder_aux ?(global_level=false) intern intern_type lvar (env,bl) = function
   | LocalRawAssum(nal,bk,ty) ->
@@ -382,14 +406,15 @@ let intern_local_binder_aux ?(global_level=false) intern intern_type lvar (env,b
 	  let ty = locate_if_isevar loc na (intern_type env ty) in
 	    List.fold_left
 	     (fun (env,bl) na ->
-	       (push_name_env lvar env na,(snd na,k,None,ty)::bl))
+	       (push_name_env lvar (impls_type_list ty) env na,(snd na,k,None,ty)::bl))
 	      (env,bl) nal
       | Generalized (b,b',t) ->
 	  let env, b = intern_generalized_binder ~global_level intern_type lvar env bl (List.hd nal) b b' t ty in
 	    env, b @ bl)
   | LocalRawDef((loc,na as locna),def) ->
-      (push_name_env lvar env locna,
-      (na,Explicit,Some(intern env def),GHole(loc,Evd.BinderType na))::bl)
+      let indef = intern env def in
+      (push_name_env lvar (impls_term_list indef) env locna,
+      (na,Explicit,Some(indef),GHole(loc,Evd.BinderType na))::bl)
 
 let intern_generalization intern env lvar loc bk ak c =
   let c = intern {env with unb = true} c in
@@ -411,7 +436,7 @@ let intern_generalization intern env lvar loc bk ak c =
 	    GLambda (join_loc loc' loc, Name id, bk, GHole (loc', Evd.BinderType (Name id)), acc))
     in
       List.fold_right (fun (id, loc as lid) (env, acc) ->
-	let env' = push_name_env lvar env (loc, Name id) in
+	let env' = push_name_env lvar (Variable,[],[],[]) env (loc, Name id) in
 	  (env', abs lid acc)) fvs (env,c)
   in c'
 
@@ -425,14 +450,15 @@ let iterate_binder intern lvar (env,bl) = function
 	  let ty = intern_type env ty in
 	  let ty = locate_if_isevar loc na ty in
 	  List.fold_left
-	    (fun (env,bl) na -> (push_name_env lvar env na,(snd na,k,None,ty)::bl))
+	    (fun (env,bl) na -> (push_name_env lvar (impls_type_list ty) env na,(snd na,k,None,ty)::bl))
 	    (env,bl) nal
       | Generalized (b,b',t) ->
 	  let env, b = intern_generalized_binder intern_type lvar env bl (List.hd nal) b b' t ty in
 	    env, b @ bl)
   | LocalRawDef((loc,na as locna),def) ->
-      (push_name_env lvar env locna,
-      (na,Explicit,Some(intern env def),GHole(loc,Evd.BinderType na))::bl)
+      let indef = intern env def in
+      (push_name_env lvar (impls_term_list indef) env locna,
+      (na,Explicit,Some(indef),GHole(loc,Evd.BinderType na))::bl)
 
 (**********************************************************************)
 (* Syntax extensions                                                  *)
@@ -555,6 +581,7 @@ let string_of_ty = function
   | Inductive _ -> "ind"
   | Recursive -> "def"
   | Method -> "meth"
+  | Variable -> "var"
 
 let intern_var genv (ltacvars,ntnvars) namedctx loc id =
   let (ltacvars,unbndltacvars) = ltacvars in
@@ -1121,8 +1148,8 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	let (c,imp,subscopes,l),_ =
 	  intern_applied_reference intern env (Environ.named_context globalenv) lvar [] ref in
 	(match intern_impargs c env imp subscopes l with
-          | [] -> c
-          | l -> GApp (constr_loc x, c, l))
+           | [] -> c
+           | l -> GApp (constr_loc x, c, l))
     | CFix (loc, (locid,iddef), dl) ->
         let lf = List.map (fun ((_, id),_,_,_,_) -> id) dl in
         let dl = Array.of_list dl in
@@ -1131,13 +1158,13 @@ let internalize sigma globalenv env allow_patvar lvar c =
           with Not_found ->
 	    raise (InternalizationError (locid,UnboundFixName (false,iddef)))
 	in
-        let idl = Array.map
-          (fun (id,(n,order),bl,ty,bd) ->
+	let idl_temp = Array.map
+          (fun (id,(n,order),bl,ty,_) ->
 	     let intern_ro_arg f =
 	       let before, after = split_at_annot bl n in
 	       let (env',rbefore) =
 		 List.fold_left intern_local_binder (env,[]) before in
-	       let ro = f (intern {env with ids = env'.ids}) in
+	       let ro = f (intern env') in
 	       let n' = Option.map (fun _ -> List.length rbefore) n in
 		 n', ro, List.fold_left intern_local_binder (env',rbefore) after
 	     in
@@ -1150,10 +1177,14 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	       | CMeasureRec (m,r) ->
 		   intern_ro_arg (fun f -> GMeasureRec (f m, Option.map f r))
 	     in
-	     let ids'' = List.fold_right Idset.add lf env'.ids in
-	     ((n, ro), List.rev rbl,
-             intern_type {env with ids = env'.ids} ty,
-             intern {env with ids = ids''; tmp_scope = None} bd)) dl in
+	       ((n, ro), List.rev rbl, intern_type env' ty, env')) dl in
+        let idl = array_map2 (fun (_,_,_,_,bd) (a,b,c,env') ->
+	     let env'' = list_fold_left_i (fun i en name -> 
+					     let (_,bli,tyi,_) = idl_temp.(i) in
+					     let fix_args = (List.map (fun (na, bk, _, _) -> (build_impls bk na)) bli) in
+					       push_name_env lvar (impls_type_list ~args:fix_args tyi)
+					    en (dummy_loc, Name name)) 0 env' lf in
+             (a,b,c,intern {env'' with tmp_scope = None} bd)) dl idl_temp in
 	GRec (loc,GFix
 	      (Array.map (fun (ro,_,_,_) -> ro) idl,n),
               Array.of_list lf,
@@ -1168,14 +1199,19 @@ let internalize sigma globalenv env allow_patvar lvar c =
           with Not_found ->
 	    raise (InternalizationError (locid,UnboundFixName (true,iddef)))
 	in
-        let idl = Array.map
-          (fun (id,bl,ty,bd) ->
+        let idl_tmp = Array.map
+          (fun (id,bl,ty,_) ->
             let (env',rbl) =
               List.fold_left intern_local_binder (env,[]) bl in
-	    let ids'' = List.fold_right Idset.add lf env'.ids in
             (List.rev rbl,
-             intern_type {env with ids = env'.ids} ty,
-             intern {env with ids = ids''; tmp_scope = None} bd)) dl in
+             intern_type env' ty,env')) dl in
+	let idl = array_map2 (fun (_,_,_,bd) (b,c,env') ->
+	     let env'' = list_fold_left_i (fun i en name ->
+					     let (bli,tyi,_) = idl_tmp.(i) in
+					     let cofix_args =  List.map (fun (na, bk, _, _) -> (build_impls bk na)) bli in
+	       push_name_env lvar (impls_type_list ~args:cofix_args tyi)
+					    en (dummy_loc, Name name)) 0 env' lf in
+             (b,c,intern {env'' with tmp_scope = None} bd)) dl idl_tmp in
 	GRec (loc,GCoFix n,
               Array.of_list lf,
               Array.map (fun (bl,_,_) -> bl) idl,
@@ -1192,8 +1228,9 @@ let internalize sigma globalenv env allow_patvar lvar c =
     | CLambdaN (loc,(nal,bk,ty)::bll,c2) ->
 	iterate_lam loc (reset_tmp_scope env) bk ty (CLambdaN (loc, bll, c2)) nal
     | CLetIn (loc,na,c1,c2) ->
-	GLetIn (loc, snd na, intern (reset_tmp_scope env) c1,
-          intern (push_name_env lvar env na) c2)
+	let inc1 = intern (reset_tmp_scope env) c1 in
+	GLetIn (loc, snd na, inc1,
+          intern (push_name_env lvar (impls_term_list inc1) env na) c2)
     | CNotation (loc,"- _",([CPrim (_,Numeral p)],[],[]))
 	when Bigint.is_strictly_pos p ->
 	intern env (CPrim (loc,Numeral (Bigint.neg p)))
@@ -1251,7 +1288,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
         let tms,env' = List.fold_right
           (fun citm (inds,env) ->
 	    let (tm,ind),nal = intern_case_item env citm in
-	    (tm,ind)::inds,List.fold_left (push_name_env lvar) env nal)
+	    (tm,ind)::inds,List.fold_left (push_name_env lvar (Variable,[],[],[])) env nal)
 	  tms ([],env) in
         let rtnpo = Option.map (intern_type env') rtnpo in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
@@ -1260,15 +1297,15 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	let env' = reset_tmp_scope env in
         let ((b',(na',_)),ids) = intern_case_item env' (b,(na,None)) in
         let p' = Option.map (fun p ->
-          let env'' = List.fold_left (push_name_env lvar) env ids in
+          let env'' = List.fold_left (push_name_env lvar (Variable,[],[],[])) env ids in
 	  intern_type env'' p) po in
         GLetTuple (loc, List.map snd nal, (na', p'), b',
-                   intern (List.fold_left (push_name_env lvar) env nal) c)
+                   intern (List.fold_left (push_name_env lvar (Variable,[],[],[])) env nal) c)
     | CIf (loc, c, (na,po), b1, b2) ->
 	let env' = reset_tmp_scope env in
         let ((c',(na',_)),ids) = intern_case_item env' (c,(na,None)) in
         let p' = Option.map (fun p ->
-          let env'' = List.fold_left (push_name_env lvar) env ids in
+          let env'' = List.fold_left (push_name_env lvar (Variable,[],[],[])) env ids in
 	  intern_type env'' p) po in
         GIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole (loc, k) ->
@@ -1357,8 +1394,8 @@ let internalize sigma globalenv env allow_patvar lvar c =
     let rec default env bk = function
     | (loc1,na as locna)::nal ->
 	if nal <> [] then check_capture loc1 ty na;
-	let body = default (push_name_env lvar env locna) bk nal in
 	let ty = locate_if_isevar loc1 na (intern_type env ty) in
+	let body = default (push_name_env lvar (impls_type_list ty) env locna) bk nal in
 	  GProd (join_loc loc1 loc2, na, bk, ty, body)
     | [] -> intern_type env body
     in
@@ -1373,8 +1410,8 @@ let internalize sigma globalenv env allow_patvar lvar c =
     let rec default env bk = function
       | (loc1,na as locna)::nal ->
 	  if nal <> [] then check_capture loc1 ty na;
-	  let body = default (push_name_env lvar env locna) bk nal in
 	  let ty = locate_if_isevar loc1 na (intern_type env ty) in
+	  let body = default (push_name_env lvar (impls_type_list ty) env locna) bk nal in
 	    GLambda (join_loc loc1 loc2, na, bk, ty, body)
       | [] -> intern env body
     in match bk with
@@ -1615,10 +1652,10 @@ let interp_context_gen understand_type understand_judgment ?(global_level=false)
     interp_rawcontext_gen understand_type understand_judgment env bl
 
 let interp_context ?(global_level=false) sigma env params =
-  interp_context_gen (Default.understand_type sigma) 
+  interp_context_gen (Default.understand_type sigma)
     (Default.understand_judgment sigma) ~global_level sigma env params
 
 let interp_context_evars ?(global_level=false) evdref env params =
   interp_context_gen (fun env t -> Default.understand_tcc_evars evdref env IsType t)
     (Default.understand_judgment_tcc evdref) ~global_level !evdref env params
-    
+

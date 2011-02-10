@@ -40,7 +40,7 @@ type var_internalization_type =
   | Inductive of identifier list (* list of params *)
   | Recursive
   | Method
-  | Definition
+  | Variable
 
 type var_internalization_data =
     var_internalization_type *
