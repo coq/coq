@@ -490,7 +490,7 @@ Qed.
 
 End Permut_map.
 
-Require Import Permutation TheoryList.
+Require Import Permutation.
 
 Section Permut_permut.
 

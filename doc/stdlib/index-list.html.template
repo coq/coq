@@ -414,7 +414,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Lists/SetoidList.v
     theories/Lists/Streams.v
     theories/Lists/StreamMemo.v
-    theories/Lists/TheoryList.v
     theories/Lists/ListTactics.v
   </dd>
 

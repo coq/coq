@@ -167,7 +167,7 @@ let declare_beq_scheme_with l kn =
   try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen UserVerbose l kn
 
 let try_declare_beq_scheme kn =
-  (* TODO: handle Fix, see e.g. TheoryList.In_spec, eventually handle
+  (* TODO: handle Fix, eventually handle
       proof-irrelevance; improve decidability by depending on decidability
       for the parameters rather than on the bl and lb properties *)
   try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen KernelVerbose [] kn
