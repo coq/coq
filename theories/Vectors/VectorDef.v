@@ -36,21 +36,21 @@ Section SCHEMES.
 Definition rectS {A} (P:forall {n}, t A (S n) -> Type)
  (bas: forall a: A, P (a :: []))
  (rect: forall a {n} (v: t A (S n)), P v -> P (a :: v)) :=
- fix rectS_fix {n} (v: t A (S n)) : P n v :=
+ fix rectS_fix {n} (v: t A (S n)) : P v :=
  match v with
  |nil => @id
  |cons a 0 v =>
      match v as vnn in t _ nn
        return
          match nn as nnn return t A nnn -> Type with
-         |0 => fun vm => P 0 (a :: vm)
+         |0 => fun vm => P (a :: vm)
          |S _ => fun _ => ID
          end vnn
      with
      |nil => bas a
      |_ :: _ => @id
      end
- |cons a (S nn') v => rect a _ v (rectS_fix v)
+ |cons a (S nn') v => rect a v (rectS_fix v)
  end.
 
 (** An induction scheme for 2 vectors of same length *)
@@ -104,7 +104,7 @@ Definition hd {A} {n} (v:t A (S n)) := Eval cbv delta beta in
 
 (** The last element of an non empty vector *)
 Definition last {A} {n} (v : t A (S n)) := Eval cbv delta in
-(rectS (fun _ _ => A) (fun a => a) (fun _ _ _ H => H) _ v).
+(rectS (fun _ _ => A) (fun a => a) (fun _ _ _ H => H) v).
 
 (** Build a vector of n{^ th} [a] *)
 Fixpoint const {A} (a:A) (n:nat) :=
@@ -147,7 +147,7 @@ Definition tl {A} {n} (v:t A (S n)) := Eval cbv delta beta in
 (** Remove last element of a non-empty vector *)
 Definition shiftout {A} {n:nat} (v:t A (S n)) : t A n :=
 Eval cbv delta beta in (rectS (fun n _ => t A n) (fun a => [])
-  (fun h _ _ H => h :: H) _ v).
+  (fun h _ _ H => h :: H) v).
 
 (** Add an element at the end of a vector *)
 Fixpoint shiftin {A} {n:nat} (a : A) (v:t A n) : t A (S n) :=
@@ -159,7 +159,7 @@ end.
 (** Copy last element of a vector *)
 Definition shiftrepeat {A} {n} (v:t A (S n)) : t A (S (S n)) :=
 Eval cbv delta beta in (rectS (fun n _ => t A (S (S n)))
-  (fun h =>  h :: h :: []) (fun h _ _ H => h :: H) _ v).
+  (fun h =>  h :: h :: []) (fun h _ _ H => h :: H) v).
 
 (** Remove [p] last elements of a vector *)
 Lemma trunc : forall {A} {n} (p:nat), n > p -> t A n
@@ -229,13 +229,13 @@ Definition map {A} {B} (f : A -> B) : forall {n} (v:t A n), t B n :=
 Definition map2 {A B C}{n} (g:A -> B -> C) (v1:t A n) (v2:t B n)
   : t C n :=
 Eval cbv delta beta in rect2 (fun n _ _ => t C n) (nil C)
-  (fun _ _ _ H a b => (g a b) :: H) _ v1 v2.
+  (fun _ _ _ H a b => (g a b) :: H) v1 v2.
 
 (** fold_left f b [x1 .. xn] = f .. (f (f b x1) x2) .. xn *)
 Definition fold_left {A B:Type} (f:B->A->B): forall (b:B) {n} (v:t A n), B :=
-  fix fold_left_fix (b:B) n (v : t A n) : B := match v with
+  fix fold_left_fix (b:B) {n} (v : t A n) : B := match v with
     | [] => b
-    | a :: w => (fold_left_fix (f b a) _ w)
+    | a :: w => (fold_left_fix (f b a) w)
   end.
 
 (** fold_right f [x1 .. xn] b = f x1 (f x2 .. (f xn b) .. ) *)
@@ -251,7 +251,7 @@ Definition fold_right {A B : Type} (f : A->B->B) :=
 Definition fold_right2 {A B C} (g:A -> B -> C -> C) {n} (v:t A n)
   (w : t B n) (c:C) : C :=
 Eval cbv delta beta in rect2 (fun _ _ _ => C) c
-  (fun _ _ _ H a b => g a b H) _ v w.
+  (fun _ _ _ H a b => g a b H) v w.
 
 (** fold_left2 f b [x1 .. xn] [y1 .. yn] = g .. (g (g a x1 y1) x2 y2) .. xn yn *)
 Definition fold_left2 {A B C: Type} (f : A -> B -> C -> A) :=

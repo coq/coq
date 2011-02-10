@@ -33,7 +33,7 @@ let interp_evars evdref env impls k typ =
   let imps = Implicit_quantifiers.implicits_of_glob_constr typ' in
     imps, Pretyping.Default.understand_tcc_evars evdref env k typ'
 
-let interp_fields_evars evars env nots l =
+let interp_fields_evars evars env impls_env nots l =
   List.fold_left2
     (fun (env, uimpls, params, impls) no ((loc, i), b, t) ->
       let impl, t' = interp_evars evars env impls Pretyping.IsType t in
@@ -46,7 +46,7 @@ let interp_fields_evars evars env nots l =
       let d = (i,b',t') in
       List.iter (Metasyntax.set_notation_for_interpretation impls) no;
       (push_rel d env, impl :: uimpls, d::params, impls))
-    (env, [], [], empty_internalization_env) nots l
+    (env, [], [], impls_env) nots l
 
 let binder_of_decl = function
   | Vernacexpr.AssumExpr(n,t) -> (n,None,t)
@@ -69,11 +69,11 @@ let typecheck_params_and_fields id t ps nots fs =
 	(function LocalRawDef (b, _) -> error default_binder_kind b
 	   | LocalRawAssum (ls, bk, ce) -> List.iter (error bk) ls) ps
   in 
-  let (env1,newps), imps = interp_context_evars evars env0 ps in
+  let impls_env, ((env1,newps), imps) = interp_context_evars evars env0 ps in
   let fullarity = it_mkProd_or_LetIn (Option.cata (fun x -> x) (Termops.new_Type ()) t) newps in
   let env_ar = push_rel_context newps (push_rel (Name id,None,fullarity) env0) in
   let env2,impls,newfs,data =
-    interp_fields_evars evars env_ar nots (binders_of_decls fs)
+    interp_fields_evars evars env_ar impls_env nots (binders_of_decls fs)
   in
   let evars = Evarconv.consider_remaining_unif_problems env_ar !evars in
   let evars = Typeclasses.resolve_typeclasses env_ar evars in

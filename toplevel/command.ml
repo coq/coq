@@ -67,11 +67,11 @@ let red_constant_entry n ce = function
 let interp_definition bl red_option c ctypopt =
   let env = Global.env() in
   let evdref = ref Evd.empty in
-  let (env_bl, ctx), imps1 = interp_context_evars evdref env bl in
+  let impls, ((env_bl, ctx), imps1) = interp_context_evars evdref env bl in
   let imps,ce =
     match ctypopt with
       None ->
-	let c, imps2 = interp_constr_evars_impls ~evdref ~fail_evar:false env_bl c in
+	let c, imps2 = interp_constr_evars_impls ~impls ~evdref ~fail_evar:false env_bl c in
 	let body = nf_evar !evdref (it_mkLambda_or_LetIn c ctx) in
 	check_evars env Evd.empty !evdref body;
 	imps1@imps2,
@@ -79,8 +79,8 @@ let interp_definition bl red_option c ctypopt =
 	  const_entry_type = None;
           const_entry_opaque = false }
     | Some ctyp ->
-	let ty, impls = interp_type_evars_impls ~evdref ~fail_evar:false env_bl ctyp in
-	let c, imps2 = interp_casted_constr_evars_impls ~evdref ~fail_evar:false env_bl c ty in
+	let ty, impsty = interp_type_evars_impls ~impls ~evdref ~fail_evar:false env_bl ctyp in
+	let c, imps2 = interp_casted_constr_evars_impls ~impls ~evdref ~fail_evar:false env_bl c ty in
 	let body = nf_evar !evdref (it_mkLambda_or_LetIn c ctx) in
 	let typ = nf_evar !evdref (it_mkProd_or_LetIn ty ctx) in
 	check_evars env Evd.empty !evdref body;
@@ -221,7 +221,7 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
   check_all_names_different indl;
   let env0 = Global.env() in
   let evdref = ref Evd.empty in
-  let (env_params, ctx_params), userimpls =
+  let _, ((env_params, ctx_params), userimpls) =
     interp_context_evars evdref env0 paramsl
   in
   let indnames = List.map (fun ind -> ind.ind_name) indl in
@@ -451,8 +451,8 @@ type structured_fixpoint_expr = {
 
 let interp_fix_context evdref env isfix fix =
   let before, after = if isfix then split_at_annot fix.fix_binders fix.fix_annot else [], fix.fix_binders in
-  let (env', ctx), imps = interp_context_evars evdref env before in
-  let (env'', ctx'), imps' = interp_context_evars evdref env' after in
+  let impl_env, ((env', ctx), imps) = interp_context_evars evdref env before in
+  let _, ((env'', ctx'), imps') = interp_context_evars ~impl_env evdref env' after in
   let annot = Option.map (fun _ -> List.length (assums_of_rel_context ctx)) fix.fix_annot in
     ((env'', ctx' @ ctx), imps @ imps', annot)
       

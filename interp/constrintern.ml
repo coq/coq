@@ -1617,12 +1617,12 @@ let my_intern_constr sigma env lvar acc c =
 
 let my_intern_type sigma env lvar acc c = my_intern_constr sigma env lvar (set_type_scope acc) c
 
-let intern_context global_level sigma env params =
+let intern_context global_level sigma env impl_env params =
   let lvar = (([],[]), []) in
-    snd (List.fold_left
+  let lenv, bl = List.fold_left
 	    (intern_local_binder_aux ~global_level (my_intern_constr sigma env lvar) (my_intern_type sigma env lvar) lvar)
 	    ({ids = extract_ids env; unb = false;
-	      tmp_scope = None; scopes = []; impls = empty_internalization_env}, []) params)
+	      tmp_scope = None; scopes = []; impls = impl_env}, []) params in (lenv.impls, bl)
 
 let interp_rawcontext_gen understand_type understand_judgment env bl =
   let (env, par, _, impls) =
@@ -1647,15 +1647,15 @@ let interp_rawcontext_gen understand_type understand_judgment env bl =
       (env,[],1,[]) (List.rev bl)
   in (env, par), impls
 
-let interp_context_gen understand_type understand_judgment ?(global_level=false) sigma env params =
-  let bl = intern_context global_level sigma env params in
-    interp_rawcontext_gen understand_type understand_judgment env bl
+let interp_context_gen understand_type understand_judgment ?(global_level=false) ?(impl_env=empty_internalization_env) sigma env params =
+  let int_env,bl = intern_context global_level sigma env impl_env params in
+    int_env, interp_rawcontext_gen understand_type understand_judgment env bl
 
-let interp_context ?(global_level=false) sigma env params =
+let interp_context ?(global_level=false) ?(impl_env=empty_internalization_env) sigma env params =
   interp_context_gen (Default.understand_type sigma)
-    (Default.understand_judgment sigma) ~global_level sigma env params
+    (Default.understand_judgment sigma) ~global_level ~impl_env sigma env params
 
-let interp_context_evars ?(global_level=false) evdref env params =
+let interp_context_evars ?(global_level=false) ?(impl_env=empty_internalization_env) evdref env params =
   interp_context_gen (fun env t -> Default.understand_tcc_evars evdref env IsType t)
-    (Default.understand_judgment_tcc evdref) ~global_level !evdref env params
+    (Default.understand_judgment_tcc evdref) ~global_level ~impl_env !evdref env params
 

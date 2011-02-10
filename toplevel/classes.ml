@@ -136,8 +136,8 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
   in
   let tclass = if generalize then CGeneralization (dummy_loc, Implicit, Some AbsPi, tclass) else tclass in
   let k, cty, ctx', ctx, len, imps, subst =
-    let (env', ctx), imps = interp_context_evars evars env ctx in
-    let c', imps' = interp_type_evars_impls ~evdref:evars ~fail_evar:false env' tclass in
+    let impls, ((env', ctx), imps) = interp_context_evars evars env ctx in
+    let c', imps' = interp_type_evars_impls ~impls ~evdref:evars ~fail_evar:false env' tclass in
     let len = List.length ctx in
     let imps = imps @ Impargs.lift_implicits len imps' in
     let ctx', c = decompose_prod_assum c' in
@@ -276,7 +276,7 @@ let named_of_rel_context l =
 let context ?(hook=fun _ -> ()) l =
   let env = Global.env() in
   let evars = ref Evd.empty in
-  let (env', fullctx), impls = interp_context_evars evars env l in
+  let _, ((env', fullctx), impls) = interp_context_evars evars env l in
   let fullctx = Evarutil.nf_rel_context_evar !evars fullctx in
   let ce t = Evarutil.check_evars env Evd.empty !evars t in
   List.iter (fun (n, b, t) -> Option.iter ce b; ce t) fullctx;

@@ -34,9 +34,9 @@ let interp_casted_constr_evars evdref env ?(impls=Constrintern.empty_internaliza
   interp_constr_evars_gen evdref env ~impls (OfType (Some typ)) c
 
 let interp_context_evars evdref env params =
-  Constrintern.interp_context_gen
+  let impls_env, bl = Constrintern.interp_context_gen
     (fun env t -> SPretyping.understand_tcc_evars evdref env IsType t)
-    (SPretyping.understand_judgment_tcc evdref) !evdref env params
+    (SPretyping.understand_judgment_tcc evdref) !evdref env params in bl
 
 let type_ctx_instance evars env ctx inst subst =
   let rec aux (subst, instctx) l = function

@@ -96,7 +96,7 @@ let interp_binder sigma env na t =
     SPretyping.understand_tcc_evars sigma env IsType (locate_if_isevar (loc_of_glob_constr t) na t)
 
 let interp_context_evars evdref env params =
-  let bl = Constrintern.intern_context false !evdref env params in
+  let int_env, bl = Constrintern.intern_context false !evdref env Constrintern.empty_internalization_env params in
   let (env, par, _, impls) =
     List.fold_left
       (fun (env,params,n,impls) (na, k, b, t) ->

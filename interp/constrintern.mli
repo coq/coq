@@ -82,7 +82,7 @@ val intern_pattern : env -> cases_pattern_expr ->
   Names.identifier list *
     ((Names.identifier * Names.identifier) list * Glob_term.cases_pattern) list
 
-val intern_context : bool -> evar_map -> env -> local_binder list -> glob_binder list
+val intern_context : bool -> evar_map -> env -> internalization_env -> local_binder list -> internalization_env * glob_binder list
 
 (** {6 Composing internalization with pretyping } *)
 
@@ -152,14 +152,14 @@ val interp_binder_evars : evar_map ref -> env -> name -> constr_expr -> types
 
 val interp_context_gen : (env -> glob_constr -> types) ->
   (env -> glob_constr -> unsafe_judgment) ->
-  ?global_level:bool ->
-  evar_map -> env -> local_binder list -> (env * rel_context) * Impargs.manual_implicits
+  ?global_level:bool -> ?impl_env:internalization_env ->
+  evar_map -> env -> local_binder list -> internalization_env * ((env * rel_context) * Impargs.manual_implicits)
   
-val interp_context : ?global_level:bool ->
-  evar_map -> env -> local_binder list -> (env * rel_context) * Impargs.manual_implicits
+val interp_context : ?global_level:bool -> ?impl_env:internalization_env ->
+  evar_map -> env -> local_binder list -> internalization_env * ((env * rel_context) * Impargs.manual_implicits)
 
-val interp_context_evars : ?global_level:bool ->
-  evar_map ref -> env -> local_binder list -> (env * rel_context) * Impargs.manual_implicits
+val interp_context_evars : ?global_level:bool -> ?impl_env:internalization_env ->
+  evar_map ref -> env -> local_binder list -> internalization_env * ((env * rel_context) * Impargs.manual_implicits)
 
 (** Locating references of constructions, possibly via a syntactic definition 
    (these functions do not modify the glob file) *)

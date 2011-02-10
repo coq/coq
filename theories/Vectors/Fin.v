@@ -57,14 +57,14 @@ Definition rect2 (P: forall {n} (a b: t n), Type)
   (H1: forall n (f: t n), P F1 (FS f))
   (H2: forall n (f: t n), P (FS f) F1)
   (HS: forall n (f g : t n), P f g -> P (FS f) (FS g)):
-    forall n (a b: t n), P n a b :=
-fix rect2_fix n (a: t n): forall (b: t n), P n a b :=
+    forall n (a b: t n), P a b :=
+fix rect2_fix n (a: t n): forall (b: t n), P a b :=
 match a with
   |F1 m => fun (b: t (S m)) => match b as b' in t n'
                    return match n' as n0
                           return t n0 -> Type with
                             |0 => fun _ => @ID
-                            |S n0 => fun b0 => P _ F1 b0
+                            |S n0 => fun b0 => P F1 b0
                           end b' with
                      |F1 m' => H0 m'
                      |FS m' b' => H1 m' b'
@@ -74,7 +74,7 @@ match a with
                              return t n0 -> Type with
                                |0 => fun _ => @ID
                                |S n0 => fun b0 =>
-                                 forall (a0: t n0), P _ (FS a0) b0
+                                 forall (a0: t n0), P (FS a0) b0
                              end b' with
                          |F1 m' => fun aa => H2 m' aa
                          |FS m' b' => fun aa => HS m' aa b' (rect2_fix m' aa b')
