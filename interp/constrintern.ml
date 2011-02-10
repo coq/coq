@@ -1451,8 +1451,6 @@ let intern_pattern env patt =
 	user_err_loc (loc,"internalize",explain_internalization_error e)
 
 
-type manual_implicits = (explicitation * (bool * bool * bool)) list
-
 (*********************************************************************)
 (* Functions to parse and interpret constructions *)
 

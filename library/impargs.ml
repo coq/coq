@@ -588,6 +588,8 @@ let declare_mib_implicits kn =
 (* Declare manual implicits *)
 type manual_explicitation = Topconstr.explicitation * (bool * bool * bool)
 
+type manual_implicits = manual_explicitation list
+
 let compute_implicits_with_manual env typ enriching l =
   let _,autoimpls = compute_auto_implicits env !implicit_args enriching typ in
   set_manual_implicits env !implicit_args enriching autoimpls l

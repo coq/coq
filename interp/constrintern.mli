@@ -64,8 +64,6 @@ val compute_internalization_env : env -> var_internalization_type ->
   identifier list -> types list -> Impargs.manual_explicitation list list ->
   internalization_env
 
-type manual_implicits = (explicitation * (bool * bool * bool)) list
-
 type ltac_sign = identifier list * unbound_ltac_var_map
 
 type glob_binder = (name * binding_kind * glob_constr option * glob_constr)
@@ -112,15 +110,15 @@ val interp_casted_constr : evar_map -> env -> ?impls:internalization_env ->
 (** Accepting evars and giving back the manual implicits in addition. *)
 
 val interp_casted_constr_evars_impls : ?evdref:(evar_map ref) -> ?fail_evar:bool -> env ->
-  ?impls:internalization_env -> constr_expr -> types -> constr * manual_implicits
+  ?impls:internalization_env -> constr_expr -> types -> constr * Impargs.manual_implicits
 
 val interp_type_evars_impls : ?evdref:(evar_map ref) -> ?fail_evar:bool ->
   env -> ?impls:internalization_env ->
-  constr_expr -> types * manual_implicits
+  constr_expr -> types * Impargs.manual_implicits
 
 val interp_constr_evars_impls : ?evdref:(evar_map ref) -> ?fail_evar:bool ->
   env -> ?impls:internalization_env ->
-  constr_expr -> constr * manual_implicits
+  constr_expr -> constr * Impargs.manual_implicits
 
 val interp_casted_constr_evars : evar_map ref -> env ->
   ?impls:internalization_env -> constr_expr -> types -> constr
@@ -155,13 +153,13 @@ val interp_binder_evars : evar_map ref -> env -> name -> constr_expr -> types
 val interp_context_gen : (env -> glob_constr -> types) ->
   (env -> glob_constr -> unsafe_judgment) ->
   ?global_level:bool ->
-  evar_map -> env -> local_binder list -> (env * rel_context) * manual_implicits
+  evar_map -> env -> local_binder list -> (env * rel_context) * Impargs.manual_implicits
   
 val interp_context : ?global_level:bool ->
-  evar_map -> env -> local_binder list -> (env * rel_context) * manual_implicits
+  evar_map -> env -> local_binder list -> (env * rel_context) * Impargs.manual_implicits
 
 val interp_context_evars : ?global_level:bool ->
-  evar_map ref -> env -> local_binder list -> (env * rel_context) * manual_implicits
+  evar_map ref -> env -> local_binder list -> (env * rel_context) * Impargs.manual_implicits
 
 (** Locating references of constructions, possibly via a syntactic definition 
    (these functions do not modify the glob file) *)
