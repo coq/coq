@@ -234,8 +234,9 @@ Definition lor := Nor.
 Definition ldiff := Ndiff.
 Definition div2 := Ndiv2.
 
-Include NProp
- <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
+Include NProp [scope abstract_scope to N_scope]
+ <+ UsualMinMaxLogicalProperties [scope abstract_scope to N_scope]
+ <+ UsualMinMaxDecProperties [scope abstract_scope to N_scope].
 
 End N.
 

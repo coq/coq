@@ -90,6 +90,7 @@ Coercion
 Unification
 Cases
 Pretyping
+Declaremods
 
 Tok
 Lexer

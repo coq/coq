@@ -44,11 +44,11 @@ val interp_assumption :
 
 val declare_assumption : coercion_flag -> assumption_kind -> types ->
   Impargs.manual_implicits ->
-  bool (** implicit *) -> inline -> variable located -> unit
+  bool (** implicit *) -> Entries.inline -> variable located -> unit
 
 val declare_assumptions : variable located list ->
   coercion_flag -> assumption_kind -> types -> Impargs.manual_implicits ->
-  bool -> inline -> unit
+  bool -> Entries.inline -> unit
 
 (** {6 Inductive and coinductive types} *)
 

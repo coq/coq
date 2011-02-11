@@ -223,8 +223,9 @@ Definition eq := (@eq Z).
 
 (** Now the generic properties. *)
 
-Include ZProp
- <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
+Include ZProp [scope abstract_scope to Z_scope]
+ <+ UsualMinMaxLogicalProperties [scope abstract_scope to Z_scope]
+ <+ UsualMinMaxDecProperties [scope abstract_scope to Z_scope].
 
 End Z.
 

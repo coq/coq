@@ -17,6 +17,33 @@ open Lib
 (** This modules provides official functions to declare modules and
   module types *)
 
+(** Rigid / flexible signature *)
+
+type 'a module_signature =
+  | Enforce of 'a (** ... : T *)
+  | Check of 'a list (** ... <: T1 <: T2, possibly empty *)
+
+(** Should we adapt a few scopes during functor application ? *)
+
+type scope_subst = (string * string) list
+
+val subst_scope : string -> string
+
+(** Which inline annotations should we honor, either None or the ones
+   whose level is less or equal to the given integer *)
+
+type inline =
+  | NoInline
+  | DefaultInline
+  | InlineAt of int
+
+(** The type of annotations for functor applications *)
+
+type funct_app_annot =
+  { ann_inline : inline;
+    ann_scope_subst : scope_subst }
+
+type 'a annotated = ('a * funct_app_annot)
 
 (** {6 Modules } *)
 
@@ -37,13 +64,14 @@ val declare_module :
   (env -> 'modast -> module_struct_entry) ->
   (env -> 'modast -> module_struct_entry * bool) ->
   identifier ->
-  (identifier located list * ('modast * inline)) list ->
-  ('modast * inline) Topconstr.module_signature ->
-  ('modast * inline) list -> module_path
+  (identifier located list * ('modast annotated)) list ->
+  ('modast annotated) module_signature ->
+  ('modast annotated) list -> module_path
 
 val start_module : (env -> 'modast -> module_struct_entry) ->
-  bool option -> identifier -> (identifier located list * ('modast * inline)) list ->
-  ('modast * inline) Topconstr.module_signature -> module_path
+  bool option -> identifier ->
+  (identifier located list * ('modast annotated)) list ->
+  ('modast annotated) module_signature -> module_path
 
 val end_module : unit -> module_path
 
@@ -53,12 +81,15 @@ val end_module : unit -> module_path
 
 val declare_modtype : (env -> 'modast -> module_struct_entry) ->
   (env -> 'modast -> module_struct_entry * bool) ->
-  identifier -> (identifier located list * ('modast * inline)) list ->
-  ('modast * inline) list -> ('modast * inline) list -> module_path
+  identifier ->
+  (identifier located list * ('modast annotated)) list ->
+  ('modast annotated) list ->
+  ('modast annotated) list ->
+  module_path
 
 val start_modtype : (env -> 'modast -> module_struct_entry) ->
-  identifier -> (identifier located list * ('modast * inline)) list ->
-  ('modast * inline) list -> module_path
+  identifier -> (identifier located list * ('modast annotated)) list ->
+  ('modast annotated) list -> module_path
 
 val end_modtype : unit -> module_path
 
@@ -103,7 +134,7 @@ val import_module : bool -> module_path -> unit
 (** Include  *)
 
 val declare_include : (env -> 'struct_expr -> module_struct_entry * bool) ->
-  ('struct_expr * inline) list -> unit
+  ('struct_expr annotated) list -> unit
 
 (** {6 ... } *)
 (** [iter_all_segments] iterate over all segments, the modules'
@@ -120,5 +151,4 @@ val debug_print_modtab : unit -> Pp.std_ppcmds
 
 (** For translator *)
 val process_module_bindings : module_ident list ->
-  (mod_bound_id * (module_struct_entry * inline)) list -> unit
-
+  (mod_bound_id * (module_struct_entry annotated)) list -> unit

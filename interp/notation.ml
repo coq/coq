@@ -435,7 +435,8 @@ open Classops
 
 let class_scope_map = ref (Gmap.empty : (cl_typ,scope_name) Gmap.t)
 
-let _ = Gmap.add CL_SORT "type_scope" Gmap.empty
+let _ =
+  class_scope_map := Gmap.add CL_SORT "type_scope" Gmap.empty
 
 let declare_class_scope sc cl =
   class_scope_map := Gmap.add cl sc !class_scope_map
@@ -479,7 +480,9 @@ let cache_arguments_scope o =
   load_arguments_scope 1 o
 
 let subst_arguments_scope (subst,(req,r,scl)) =
-  (ArgsScopeNoDischarge,fst (subst_global subst r),scl)
+  let r' = fst (subst_global subst r) in
+  let scl' = list_smartmap (Option.smartmap Declaremods.subst_scope) scl in
+  (ArgsScopeNoDischarge,r',scl')
 
 let discharge_arguments_scope (_,(req,r,l)) =
   if req = ArgsScopeNoDischarge or (isVarRef r & Lib.is_in_section r) then None
@@ -526,6 +529,7 @@ let find_arguments_scope r =
 let declare_ref_arguments_scope ref =
   let t = Global.type_of_global ref in
   declare_arguments_scope_gen ArgsScopeAuto ref (compute_arguments_scope t)
+
 
 (********************************)
 (* Encoding notations as string *)

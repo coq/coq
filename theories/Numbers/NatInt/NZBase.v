@@ -12,6 +12,11 @@ Require Import NZAxioms.
 
 Module Type NZBaseProp (Import NZ : NZDomainSig').
 
+(** An artificial scope meant to be substituted later *)
+
+Delimit Scope abstract_scope with abstract.
+Bind Scope abstract_scope with t.
+
 Include BackportEq NZ NZ. (** eq_refl, eq_sym, eq_trans *)
 
 Lemma eq_sym_iff : forall x y, x==y <-> y==x.

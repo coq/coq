@@ -23,6 +23,7 @@ open Decl_kinds
 open Genarg
 open Ppextend
 open Goptions
+open Declaremods
 
 open Prim
 open Constr
@@ -444,15 +445,33 @@ GEXTEND Gram
     [ [ ":="; mexpr = module_expr_inl; l = LIST0 ext_module_expr -> (mexpr::l)
       | -> [] ] ]
   ;
+  functor_app_annot:
+    [ [ IDENT "inline"; "at"; IDENT "level"; i = INT ->
+        [InlineAt (int_of_string i)], []
+      | IDENT "no"; IDENT "inline" -> [NoInline], []
+      | IDENT "scope"; sc1 = IDENT; IDENT "to"; sc2 = IDENT -> [], [sc1,sc2]
+      ] ]
+  ;
+  functor_app_annots:
+    [ [ "["; l = LIST1 functor_app_annot SEP ","; "]" ->
+        let inl,scs = List.split l in
+	let inl = match List.concat inl with
+	  | [] -> DefaultInline
+	  | [inl] -> inl
+	  | _ -> error "Functor application with redundant inline annotations"
+	in { ann_inline = inl; ann_scope_subst = List.concat scs }
+      | -> { ann_inline = DefaultInline; ann_scope_subst = [] }
+      ] ]
+  ;
   module_expr_inl:
-    [ [ "!"; me = module_expr -> (me,None)
-      | "<"; i = INT; ">"; me = module_expr -> (me,Some (int_of_string i))
-      | me = module_expr -> (me,Some (Flags.get_inline_level())) ] ]
+    [ [ "!"; me = module_expr ->
+        (me, { ann_inline = NoInline; ann_scope_subst = []})
+      | me = module_expr; a = functor_app_annots -> (me,a) ] ]
   ;
   module_type_inl:
-    [ [ "!"; me = module_type -> (me,None)
-      | "<"; i = INT; ">"; me = module_type -> (me,Some (int_of_string i))
-      | me = module_type -> (me,Some (Flags.get_inline_level())) ] ]
+    [ [ "!"; me = module_type ->
+        (me, { ann_inline = NoInline; ann_scope_subst = []})
+      | me = module_type; a = functor_app_annots -> (me,a) ] ]
   ;
   (* Module binder  *)
   module_binder:

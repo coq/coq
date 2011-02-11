@@ -264,17 +264,6 @@ type module_ast =
   | CMapply of module_ast * module_ast
   | CMwith of module_ast * with_declaration_ast
 
-(* Which inline annotations should we honor, either None or the ones
-   whose level is less or equal to the given integer *)
-
-type inline = int option
-
-type module_ast_inl = module_ast * inline
-
-type 'a module_signature =
-  | Enforce of 'a (** ... : T *)
-  | Check of 'a list (** ... <: T1 <: T2, possibly empty *)
-
 val ntn_loc :
   Util.loc -> constr_notation_substitution -> string -> (int * int) list
 val patntn_loc :

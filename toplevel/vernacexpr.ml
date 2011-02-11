@@ -15,6 +15,7 @@ open Genarg
 open Topconstr
 open Decl_kinds
 open Ppextend
+open Declaremods
 
 (* Toplevel control exceptions *)
 exception Drop
@@ -168,6 +169,7 @@ type inductive_expr =
 type one_inductive_expr =
   lident * local_binder list * constr_expr option * constructor_expr list
 
+type module_ast_inl = module_ast annotated
 type module_binder = bool option * lident list * module_ast_inl
 
 type grammar_tactic_prod_item_expr =

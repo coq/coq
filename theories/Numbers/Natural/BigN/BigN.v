@@ -26,62 +26,23 @@ Require Import CyclicAxioms Cyclic31 Ring31 NSig NSigNAxioms NMake
 
 *)
 
-Module BigN <: NType <: OrderedTypeFull <: TotalOrder :=
- NMake.Make Int31Cyclic <+ NTypeIsNAxioms
- <+ !NProp <+ HasEqBool2Dec
- <+ !MinMaxLogicalProperties <+ !MinMaxDecProperties.
+Delimit Scope bigN_scope with bigN.
 
+Module BigN <: NType <: OrderedTypeFull <: TotalOrder :=
+ NMake.Make Int31Cyclic [scope abstract_scope to bigN_scope]
+ <+ NTypeIsNAxioms [scope abstract_scope to bigN_scope]
+ <+ NProp [no inline, scope abstract_scope to bigN_scope]
+ <+ HasEqBool2Dec [no inline, scope abstract_scope to bigN_scope]
+ <+ MinMaxLogicalProperties [no inline, scope abstract_scope to bigN_scope]
+ <+ MinMaxDecProperties [no inline, scope abstract_scope to bigN_scope].
 
 (** Notations about [BigN] *)
 
+Local Open Scope bigN_scope.
+
 Notation bigN := BigN.t.
-
-Delimit Scope bigN_scope with bigN.
-Bind Scope bigN_scope with bigN.
-Bind Scope bigN_scope with BigN.t.
-Bind Scope bigN_scope with BigN.t'.
-(* Bind Scope has no retroactive effect, let's declare scopes by hand. *)
-Arguments Scope BigN.to_Z [bigN_scope].
-Arguments Scope BigN.to_N [bigN_scope].
-Arguments Scope BigN.succ [bigN_scope].
-Arguments Scope BigN.pred [bigN_scope].
-Arguments Scope BigN.square [bigN_scope].
-Arguments Scope BigN.add [bigN_scope bigN_scope].
-Arguments Scope BigN.sub [bigN_scope bigN_scope].
-Arguments Scope BigN.mul [bigN_scope bigN_scope].
-Arguments Scope BigN.div [bigN_scope bigN_scope].
-Arguments Scope BigN.eq [bigN_scope bigN_scope].
-Arguments Scope BigN.lt [bigN_scope bigN_scope].
-Arguments Scope BigN.le [bigN_scope bigN_scope].
-Arguments Scope BigN.eq [bigN_scope bigN_scope].
-Arguments Scope BigN.compare [bigN_scope bigN_scope].
-Arguments Scope BigN.min [bigN_scope bigN_scope].
-Arguments Scope BigN.max [bigN_scope bigN_scope].
-Arguments Scope BigN.eq_bool [bigN_scope bigN_scope].
-Arguments Scope BigN.pow_pos [bigN_scope positive_scope].
-Arguments Scope BigN.pow_N [bigN_scope N_scope].
-Arguments Scope BigN.pow [bigN_scope bigN_scope].
-Arguments Scope BigN.log2 [bigN_scope].
-Arguments Scope BigN.sqrt [bigN_scope].
-Arguments Scope BigN.div_eucl [bigN_scope bigN_scope].
-Arguments Scope BigN.modulo [bigN_scope bigN_scope].
-Arguments Scope BigN.gcd [bigN_scope bigN_scope].
-Arguments Scope BigN.lcm [bigN_scope bigN_scope].
-Arguments Scope BigN.even [bigN_scope].
-Arguments Scope BigN.odd [bigN_scope].
-Arguments Scope BigN.testbit [bigN_scope bigN_scope].
-Arguments Scope BigN.shiftl [bigN_scope bigN_scope].
-Arguments Scope BigN.shiftr [bigN_scope bigN_scope].
-Arguments Scope BigN.lor [bigN_scope bigN_scope].
-Arguments Scope BigN.land [bigN_scope bigN_scope].
-Arguments Scope BigN.ldiff [bigN_scope bigN_scope].
-Arguments Scope BigN.lxor [bigN_scope bigN_scope].
-Arguments Scope BigN.setbit [bigN_scope bigN_scope].
-Arguments Scope BigN.clearbit [bigN_scope bigN_scope].
-Arguments Scope BigN.lnot [bigN_scope bigN_scope].
-Arguments Scope BigN.div2 [bigN_scope].
-Arguments Scope BigN.ones [bigN_scope].
-
+Bind Scope bigN_scope with bigN BigN.t BigN.t'.
+Arguments Scope BigN.N0 [int31_scope].
 Local Notation "0" := BigN.zero : bigN_scope. (* temporary notation *)
 Local Notation "1" := BigN.one : bigN_scope. (* temporary notation *)
 Local Notation "2" := BigN.two : bigN_scope. (* temporary notation *)
@@ -92,19 +53,17 @@ Infix "/" := BigN.div : bigN_scope.
 Infix "^" := BigN.pow : bigN_scope.
 Infix "?=" := BigN.compare : bigN_scope.
 Infix "==" := BigN.eq (at level 70, no associativity) : bigN_scope.
-Notation "x != y" := (~x==y)%bigN (at level 70, no associativity) : bigN_scope.
+Notation "x != y" := (~x==y) (at level 70, no associativity) : bigN_scope.
 Infix "<" := BigN.lt : bigN_scope.
 Infix "<=" := BigN.le : bigN_scope.
-Notation "x > y" := (BigN.lt y x)(only parsing) : bigN_scope.
-Notation "x >= y" := (BigN.le y x)(only parsing) : bigN_scope.
-Notation "x < y < z" := (x<y /\ y<z)%bigN : bigN_scope.
-Notation "x < y <= z" := (x<y /\ y<=z)%bigN : bigN_scope.
-Notation "x <= y < z" := (x<=y /\ y<z)%bigN : bigN_scope.
-Notation "x <= y <= z" := (x<=y /\ y<=z)%bigN : bigN_scope.
+Notation "x > y" := (y < x) (only parsing) : bigN_scope.
+Notation "x >= y" := (y <= x) (only parsing) : bigN_scope.
+Notation "x < y < z" := (x<y /\ y<z) : bigN_scope.
+Notation "x < y <= z" := (x<y /\ y<=z) : bigN_scope.
+Notation "x <= y < z" := (x<=y /\ y<z) : bigN_scope.
+Notation "x <= y <= z" := (x<=y /\ y<=z) : bigN_scope.
 Notation "[ i ]" := (BigN.to_Z i) : bigN_scope.
 Infix "mod" := BigN.modulo (at level 40, no associativity) : bigN_scope.
-
-Local Open Scope bigN_scope.
 
 (** Example of reasoning about [BigN] *)
 

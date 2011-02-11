@@ -24,65 +24,24 @@ Require Import ZProperties ZDivFloor ZSig ZSigZAxioms ZMake.
 
 *)
 
+Delimit Scope bigZ_scope with bigZ.
 
 Module BigZ <: ZType <: OrderedTypeFull <: TotalOrder :=
- ZMake.Make BigN <+ ZTypeIsZAxioms <+ !ZProp <+ HasEqBool2Dec
- <+ !MinMaxLogicalProperties <+ !MinMaxDecProperties.
+ ZMake.Make BigN [scope abstract_scope to bigZ_scope]
+ <+ ZTypeIsZAxioms [scope abstract_scope to bigZ_scope]
+ <+ ZProp [no inline, scope abstract_scope to bigZ_scope]
+ <+ HasEqBool2Dec [no inline, scope abstract_scope to bigZ_scope]
+ <+ MinMaxLogicalProperties [no inline, scope abstract_scope to bigZ_scope]
+ <+ MinMaxDecProperties [no inline, scope abstract_scope to bigZ_scope].
 
 (** Notations about [BigZ] *)
 
-Notation bigZ := BigZ.t.
+Local Open Scope bigZ_scope.
 
-Delimit Scope bigZ_scope with bigZ.
-Bind Scope bigZ_scope with bigZ.
-Bind Scope bigZ_scope with BigZ.t.
-Bind Scope bigZ_scope with BigZ.t_.
-(* Bind Scope has no retroactive effect, let's declare scopes by hand. *)
+Notation bigZ := BigZ.t.
+Bind Scope bigZ_scope with bigZ BigZ.t BigZ.t_.
 Arguments Scope BigZ.Pos [bigN_scope].
 Arguments Scope BigZ.Neg [bigN_scope].
-Arguments Scope BigZ.to_Z [bigZ_scope].
-Arguments Scope BigZ.succ [bigZ_scope].
-Arguments Scope BigZ.pred [bigZ_scope].
-Arguments Scope BigZ.opp [bigZ_scope].
-Arguments Scope BigZ.square [bigZ_scope].
-Arguments Scope BigZ.add [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.sub [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.mul [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.div [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.eq [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.lt [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.le [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.eq [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.compare [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.min [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.max [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.eq_bool [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.pow_pos [bigZ_scope positive_scope].
-Arguments Scope BigZ.pow_N [bigZ_scope N_scope].
-Arguments Scope BigZ.pow [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.log2 [bigZ_scope].
-Arguments Scope BigZ.sqrt [bigZ_scope].
-Arguments Scope BigZ.div_eucl [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.modulo [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.quot [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.rem [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.gcd [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.lcm [bigZ_scope bigZ_scope].
-Arguments Scope BigZ.even [bigZ_scope].
-Arguments Scope BigZ.odd [bigZ_scope].
-Arguments Scope BigN.testbit [bigZ_scope bigZ_scope].
-Arguments Scope BigN.shiftl [bigZ_scope bigZ_scope].
-Arguments Scope BigN.shiftr [bigZ_scope bigZ_scope].
-Arguments Scope BigN.lor [bigZ_scope bigZ_scope].
-Arguments Scope BigN.land [bigZ_scope bigZ_scope].
-Arguments Scope BigN.ldiff [bigZ_scope bigZ_scope].
-Arguments Scope BigN.lxor [bigZ_scope bigZ_scope].
-Arguments Scope BigN.setbit [bigZ_scope bigZ_scope].
-Arguments Scope BigN.clearbit [bigZ_scope bigZ_scope].
-Arguments Scope BigN.lnot [bigZ_scope].
-Arguments Scope BigN.div2 [bigZ_scope].
-Arguments Scope BigN.ones [bigZ_scope].
-
 Local Notation "0" := BigZ.zero : bigZ_scope.
 Local Notation "1" := BigZ.one : bigZ_scope.
 Local Notation "2" := BigZ.two : bigZ_scope.
@@ -94,20 +53,18 @@ Infix "/" := BigZ.div : bigZ_scope.
 Infix "^" := BigZ.pow : bigZ_scope.
 Infix "?=" := BigZ.compare : bigZ_scope.
 Infix "==" := BigZ.eq (at level 70, no associativity) : bigZ_scope.
-Notation "x != y" := (~x==y)%bigZ (at level 70, no associativity) : bigZ_scope.
+Notation "x != y" := (~x==y) (at level 70, no associativity) : bigZ_scope.
 Infix "<" := BigZ.lt : bigZ_scope.
 Infix "<=" := BigZ.le : bigZ_scope.
-Notation "x > y" := (BigZ.lt y x)(only parsing) : bigZ_scope.
-Notation "x >= y" := (BigZ.le y x)(only parsing) : bigZ_scope.
-Notation "x < y < z" := (x<y /\ y<z)%bigZ : bigZ_scope.
-Notation "x < y <= z" := (x<y /\ y<=z)%bigZ : bigZ_scope.
-Notation "x <= y < z" := (x<=y /\ y<z)%bigZ : bigZ_scope.
-Notation "x <= y <= z" := (x<=y /\ y<=z)%bigZ : bigZ_scope.
+Notation "x > y" := (y < x) (only parsing) : bigZ_scope.
+Notation "x >= y" := (y <= x) (only parsing) : bigZ_scope.
+Notation "x < y < z" := (x<y /\ y<z) : bigZ_scope.
+Notation "x < y <= z" := (x<y /\ y<=z) : bigZ_scope.
+Notation "x <= y < z" := (x<=y /\ y<z) : bigZ_scope.
+Notation "x <= y <= z" := (x<=y /\ y<=z) : bigZ_scope.
 Notation "[ i ]" := (BigZ.to_Z i) : bigZ_scope.
 Infix "mod" := BigZ.modulo (at level 40, no associativity) : bigZ_scope.
 Infix "÷" := BigZ.quot (at level 40, left associativity) : bigZ_scope.
-
-Local Open Scope bigZ_scope.
 
 (** Some additional results about [BigZ] *)
 

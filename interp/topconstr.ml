@@ -1218,17 +1218,6 @@ type module_ast =
   | CMapply of module_ast * module_ast
   | CMwith of module_ast * with_declaration_ast
 
-(* Which inline annotations should we honor, either None or the ones
-   whose level is less or equal to the given integer *)
-
-type inline = int option
-
-type module_ast_inl = module_ast * inline
-
-type 'a module_signature =
-  | Enforce of 'a (* ... : T *)
-  | Check of 'a list (* ... <: T1 <: T2, possibly empty *)
-
 (* Returns the ranges of locs of the notation that are not occupied by args  *)
 (* and which are then occupied by proper symbols of the notation (or spaces) *)
 

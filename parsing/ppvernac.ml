@@ -24,6 +24,7 @@ open Ppextend
 open Topconstr
 open Decl_kinds
 open Tacinterp
+open Declaremods
 
 let pr_spc_lconstr = pr_sep_com spc pr_lconstr_expr
 
@@ -227,8 +228,21 @@ let rec pr_module_ast pr_c = function
       pr_module_ast pr_c me1 ++ spc() ++
       hov 1 (str"(" ++ pr_module_ast pr_c me2 ++ str")")
 
-let pr_module_ast_inl pr_c (mast,o) =
-  (if o=None then str "!" else mt ()) ++ pr_module_ast pr_c mast
+let pr_annot { ann_inline = ann; ann_scope_subst = scl } =
+  let sep () = if scl=[] then mt () else str "," in
+  if ann = DefaultInline && scl = [] then mt ()
+  else
+    str " [" ++
+    (match ann with
+      | DefaultInline -> mt ()
+      | NoInline -> str "no inline" ++ sep ()
+      | InlineAt i -> str "inline at level " ++ int i ++ sep ()) ++
+    prlist_with_sep (fun () -> str ", ")
+      (fun (sc1,sc2) -> str ("scope "^sc1^" to "^sc2)) scl ++
+    str "]"
+
+let pr_module_ast_inl pr_c (mast,ann) =
+  pr_module_ast pr_c mast ++ pr_annot ann
 
 let pr_of_module_type prc = function
   | Enforce mty -> str ":" ++ pr_module_ast_inl prc mty

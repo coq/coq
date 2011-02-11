@@ -32,6 +32,7 @@ open Pretyping
 open Redexpr
 open Syntax_def
 open Lemmas
+open Declaremods
 
 (* Pcoq hooks *)
 

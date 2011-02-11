@@ -29,6 +29,8 @@ Module Make (N:NType) <: ZType.
 
  Definition t := t_.
 
+ Bind Scope abstract_scope with t t_.
+
  Definition zero := Pos N.zero.
  Definition one  := Pos N.one.
  Definition two := Pos N.two.

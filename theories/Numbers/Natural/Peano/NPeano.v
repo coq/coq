@@ -756,8 +756,9 @@ Definition div2_spec a : div2 a = shiftr a 1 := eq_refl _.
 
 (** Generic Properties *)
 
-Include NProp
- <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
+Include NProp [scope abstract_scope to nat_scope]
+ <+ UsualMinMaxLogicalProperties [scope abstract_scope to nat_scope]
+ <+ UsualMinMaxDecProperties [scope abstract_scope to nat_scope].
 
 End Nat.
 
