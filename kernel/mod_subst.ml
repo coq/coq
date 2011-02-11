@@ -22,20 +22,29 @@ open Term
    is the term into which we should inline *)
 
 type delta_hint =
-    Inline of int * constr option
+  | Inline of int * constr option
   | Equiv of kernel_name
-  | Prefix_equiv of module_path
 
-type delta_key = 
-    KN of kernel_name
-  | MP of module_path
+(* NB: earlier constructor Prefix_equiv of module_path
+   is now stored in a separate table, see Deltamap.t below *)
 
-module Deltamap =  Map.Make(struct 
-			      type t = delta_key
-			      let compare = Pervasives.compare
-			    end)
+module Deltamap = struct
+  type t = module_path MPmap.t * delta_hint KNmap.t
+  let empty = MPmap.empty, KNmap.empty
+  let add_kn kn hint (mm,km) = (mm,KNmap.add kn hint km)
+  let add_mp mp mp' (mm,km) = (MPmap.add mp mp' mm, km)
+  let remove_mp mp (mm,km) = (MPmap.remove mp mm, km)
+  let find_kn kn map = KNmap.find kn (snd map)
+  let find_mp mp map = MPmap.find mp (fst map)
+  let mem_mp mp map = MPmap.mem mp (fst map)
+  let mem_kn kn map = KNmap.mem kn (snd map)
+  let fold_kn f (mm,km) i = KNmap.fold f km i
+  let fold fmp fkn (mm,km) i =
+    MPmap.fold fmp mm (KNmap.fold fkn km i)
+  let join map1 map2 = fold add_mp add_kn map1 map2
+end
 
-type delta_resolver = delta_hint Deltamap.t
+type delta_resolver = Deltamap.t
 
 let empty_delta_resolver = Deltamap.empty
 
@@ -53,7 +62,7 @@ module Umap = Map.Make(struct
 		       end)
 
 type substitution = (module_path * delta_resolver) Umap.t
-    
+
 let empty_subst = Umap.empty
 
 let add_mbid mbid mp resolve =
@@ -66,233 +75,161 @@ let map_mbid mbid mp resolve = add_mbid mbid mp resolve empty_subst
 let map_mp mp1 mp2 resolve = add_mp mp1 mp2 resolve empty_subst
 
 let add_inline_delta_resolver con lev =
-  Deltamap.add (KN(user_con con)) (Inline (lev,None))
+  Deltamap.add_kn (user_con con) (Inline (lev,None))
 
 let add_inline_constr_delta_resolver con lev cstr =
-  Deltamap.add (KN(user_con con)) (Inline (lev, Some cstr))
+  Deltamap.add_kn (user_con con) (Inline (lev, Some cstr))
 
 let add_constant_delta_resolver con =
-  Deltamap.add (KN(user_con con)) (Equiv (canonical_con con))
+  Deltamap.add_kn (user_con con) (Equiv (canonical_con con))
 
 let add_mind_delta_resolver mind =
-  Deltamap.add (KN(user_mind mind)) (Equiv (canonical_mind mind))
+  Deltamap.add_kn (user_mind mind) (Equiv (canonical_mind mind))
 
-let add_mp_delta_resolver mp1 mp2 = 
-  Deltamap.add (MP mp1) (Prefix_equiv mp2)
+let add_mp_delta_resolver mp1 mp2 =
+  Deltamap.add_mp mp1 mp2
 
-let mp_in_delta mp = 
-  Deltamap.mem (MP mp) 
+let mp_in_delta mp =
+  Deltamap.mem_mp mp
 
-let con_in_delta con resolver = 
-try 
-  match Deltamap.find (KN(user_con con)) resolver with
-  | Inline _  | Prefix_equiv _ -> false
-  | Equiv _ -> true
-with
- Not_found -> false
+let kn_in_delta kn resolver =
+  try
+    match Deltamap.find_kn kn resolver with
+      | Equiv _ -> true
+      | Inline _ -> false
+  with Not_found -> false
 
-let mind_in_delta mind resolver = 
-try 
-  match Deltamap.find (KN(user_mind mind)) resolver with
-  | Inline _  | Prefix_equiv _ -> false
-  | Equiv _ -> true
-with
- Not_found -> false
+let con_in_delta con resolver = kn_in_delta (user_con con) resolver
+let mind_in_delta mind resolver = kn_in_delta (user_mind mind) resolver
 
 let delta_of_mp resolve mp =
-  try 
-    match Deltamap.find (MP mp) resolve with
-      | Prefix_equiv mp1 -> mp1
-      | _ -> anomaly "mod_subst: bad association in delta_resolver"
-  with
-      Not_found -> mp
+ try Deltamap.find_mp mp resolve with Not_found -> mp
 
 let remove_mp_delta_resolver resolver mp =
-    Deltamap.remove (MP mp) resolver
+  Deltamap.remove_mp mp resolver
 
-exception Inline_kn
-
-let rec find_prefix resolve mp = 
+let rec find_prefix resolve mp =
   let rec sub_mp = function
-    | MPdot(mp,l) as mp_sup -> 
-	(try 
-	   match Deltamap.find (MP mp_sup) resolve with
-	     | Prefix_equiv mp1 -> mp1
-	     | _ -> anomaly 
-		 "mod_subst: bad association in delta_resolver"
-	 with
-	     Not_found -> MPdot(sub_mp mp,l))
-    | p -> 
-	match Deltamap.find (MP p) resolve with
-	  | Prefix_equiv mp1 -> mp1
-	  | _ -> anomaly 
-		 "mod_subst: bad association in delta_resolver"	
+    | MPdot(mp,l) as mp_sup ->
+	(try Deltamap.find_mp mp_sup resolve
+	 with Not_found -> MPdot(sub_mp mp,l))
+    | p -> Deltamap.find_mp p resolve
   in
-    try 
-      sub_mp mp
-    with
-	Not_found -> mp
+  try sub_mp mp with Not_found -> mp
 
 exception Change_equiv_to_inline of (int * constr)
 
 let solve_delta_kn resolve kn =
-  try 
-      match Deltamap.find (KN kn) resolve with
-	| Equiv kn1 -> kn1
-	| Inline (lev, Some c) ->
-	    raise (Change_equiv_to_inline (lev,c))
-	| Inline (_, None) -> raise Inline_kn
-	| _ -> anomaly 
-	    "mod_subst: bad association in delta_resolver"
-  with
-      Not_found | Inline_kn -> 
-	let mp,dir,l = repr_kn kn in
-	let new_mp = find_prefix resolve mp in
-	  if mp == new_mp then 
-	    kn
-	  else
-	    make_kn new_mp dir l
-	      
+  try
+    match Deltamap.find_kn kn resolve with
+      | Equiv kn1 -> kn1
+      | Inline (lev, Some c) ->	raise (Change_equiv_to_inline (lev,c))
+      | Inline (_, None) -> raise Not_found
+  with Not_found ->
+    let mp,dir,l = repr_kn kn in
+    let new_mp = find_prefix resolve mp in
+    if mp == new_mp then
+      kn
+    else
+      make_kn new_mp dir l
+
+let gen_of_delta resolve x kn fix_can =
+  try
+    let new_kn = solve_delta_kn resolve kn in
+    if kn == new_kn then x else fix_can new_kn
+  with _ -> x
 
 let constant_of_delta resolve con =
   let kn = user_con con in
-    try 
-      let new_kn = solve_delta_kn resolve kn in
-	if kn == new_kn then
-	  con
-	else
-	  constant_of_kn_equiv kn new_kn
-    with 
-	_ -> con 
-	
+  gen_of_delta resolve con kn (constant_of_kn_equiv kn)
+
 let constant_of_delta2 resolve con =
-  let kn = canonical_con con in
-  let kn1 = user_con con in
-    try 
-      let new_kn = solve_delta_kn resolve kn in
-	if kn == new_kn then
-	  con
-	else
-	  constant_of_kn_equiv kn1 new_kn
-    with 
-	_ -> con
+  let kn, kn' = canonical_con con, user_con con in
+  gen_of_delta resolve con kn (constant_of_kn_equiv kn')
 
 let mind_of_delta resolve mind =
   let kn = user_mind mind in
-    try
-      let new_kn = solve_delta_kn resolve kn in
-	if kn == new_kn then
-	  mind
-	else
-	  mind_of_kn_equiv kn new_kn
-    with 
-	_ -> mind 
+  gen_of_delta resolve mind kn (mind_of_kn_equiv kn)
 
 let mind_of_delta2 resolve mind =
-  let kn = canonical_mind mind in
-  let kn1 = user_mind mind in
-    try
-      let new_kn = solve_delta_kn resolve kn in
-	if kn == new_kn then
-	  mind
-	else
-	  mind_of_kn_equiv kn1 new_kn
-    with 
-	_ -> mind
-	  
+  let kn, kn' = canonical_mind mind, user_mind mind in
+  gen_of_delta resolve mind kn (mind_of_kn_equiv kn')
 
 let inline_of_delta inline resolver =
   match inline with
     | None -> []
     | Some inl_lev ->
-      let extract key hint l =
-	match key,hint with
-	  |KN kn, Inline (lev,_) -> if lev <= inl_lev then (lev,kn)::l else l
-	  | _,_ -> l
+      let extract kn hint l =
+	match hint with
+	  | Inline (lev,_) -> if lev <= inl_lev then (lev,kn)::l else l
+	  | _ -> l
       in
-      Deltamap.fold extract resolver []
+      Deltamap.fold_kn extract resolver []
 
-exception Not_inline
-  
+let find_inline_of_delta kn resolve =
+  match Deltamap.find_kn kn resolve with
+    | Inline (_,o) -> o
+    | _ -> raise Not_found
+
 let constant_of_delta_with_inline resolve con =
   let kn1,kn2 = canonical_con con,user_con con in
-    try
-      match Deltamap.find (KN kn2) resolve with 
-	| Inline (_,o) -> o
-	| _ -> raise Not_inline
-    with
-	Not_found | Not_inline -> 
-	  try match Deltamap.find (KN kn1) resolve with 
-	    | Inline (_,o) -> o
-	    | _ -> raise Not_inline
-	  with
-	      Not_found | Not_inline -> None
-
-let string_of_key = function
-      | KN kn -> string_of_kn kn
-      | MP mp -> string_of_mp mp
+  try find_inline_of_delta kn2 resolve
+  with Not_found ->
+    try find_inline_of_delta kn1 resolve
+    with Not_found -> None
 
 let string_of_hint = function
-      | Inline _ -> "inline"
-      | Equiv kn -> string_of_kn kn
-      | Prefix_equiv mp -> string_of_mp mp
+  | Inline _ -> "inline"
+  | Equiv kn -> string_of_kn kn
 
 let debug_string_of_delta resolve =
-  let to_string key hint s = 
-    s^", "^(string_of_key key)^"=>"^(string_of_hint hint)
-  in 
-    Deltamap.fold to_string resolve ""  
-      
-let list_contents sub = 
+  let kn_to_string kn hint s =
+    s^", "^(string_of_kn kn)^"=>"^(string_of_hint hint)
+  in
+  let mp_to_string mp mp' s =
+    s^", "^(string_of_mp mp)^"=>"^(string_of_mp mp')
+  in
+  Deltamap.fold mp_to_string kn_to_string resolve ""
+
+let list_contents sub =
   let one_pair uid (mp,reso) l =
     (string_of_subst_domain uid, string_of_mp mp,debug_string_of_delta reso)::l
   in
     Umap.fold one_pair sub []
-      
+
 let debug_string_of_subst sub =
   let l = List.map (fun (s1,s2,s3) -> s1^"|->"^s2^"["^s3^"]")
     (list_contents sub) in
     "{" ^ String.concat "; " l ^ "}"
-      
-let debug_pr_delta resolve = 
+
+let debug_pr_delta resolve =
   str (debug_string_of_delta resolve)
 
 let debug_pr_subst sub =
   let l = list_contents sub in
   let f (s1,s2,s3) = hov 2 (str s1 ++ spc () ++ str "|-> " ++ str s2 ++
-			      spc () ++ str "[" ++ str s3 ++ str "]") 
+			      spc () ++ str "[" ++ str s3 ++ str "]")
   in
     str "{" ++ hov 2 (prlist_with_sep pr_comma f l) ++ str "}"
-      
-      
+
 let subst_mp0 sub mp = (* 's like subst *)
  let rec aux mp =
   match mp with
-    | MPfile sid -> 
-        let mp',resolve = Umap.find (MPI (MPfile sid)) sub in
-         mp',resolve
+    | MPfile sid -> Umap.find (MPI (MPfile sid)) sub
     | MPbound bid ->
 	begin
-	  try
-            let mp',resolve = Umap.find (MBI bid) sub in
-              mp',resolve
-	  with Not_found ->
-	    let mp',resolve = Umap.find (MPI mp) sub in
-              mp',resolve
+	  try Umap.find (MBI bid) sub
+	  with Not_found -> Umap.find (MPI mp) sub
 	end
     | MPdot (mp1,l) as mp2 ->
 	begin
-	  try
-	    let mp',resolve = Umap.find (MPI mp2) sub in
-              mp',resolve
+	  try Umap.find (MPI mp2) sub
 	  with Not_found ->
 	    let mp1',resolve = aux mp1 in
-	      MPdot (mp1',l),resolve
+	    MPdot (mp1',l),resolve
 	end
  in
-  try
-    Some (aux mp)
-  with Not_found -> None
+ try Some (aux mp) with Not_found -> None
 
 let subst_mp sub mp =
  match subst_mp0 sub mp with
@@ -428,8 +365,6 @@ let subst_evaluable_reference subst = function
   | EvalVarRef id -> EvalVarRef id
   | EvalConstRef kn -> EvalConstRef (fst (subst_con subst kn))
 
-
-
 let rec map_kn f f' c =
   let func = map_kn f f' in
     match kind_of_term c with
@@ -524,117 +459,76 @@ let rec mp_in_mp mp mp1 =
     | _ when mp1 = mp -> true
     | MPdot (mp2,l) -> mp_in_mp mp mp2
     | _ -> false
-	
-let mp_in_key mp key = 
-  match key with
-    | MP mp1 -> 
-	mp_in_mp mp mp1
-    | KN kn -> 
-	let mp1,dir,l = repr_kn kn in
-	  mp_in_mp mp mp1
-	    
+
 let subset_prefixed_by mp resolver =
-  let prefixmp key hint resolv =
-    match hint with 
-      | Inline _ -> resolv
-      | _ ->
-	  if mp_in_key mp key then
-	    Deltamap.add key hint resolv
-	  else 
-	    resolv
+  let mp_prefix mkey mequ rslv =
+    if mp_in_mp mp mkey then Deltamap.add_mp mkey mequ rslv else rslv
   in
-    Deltamap.fold prefixmp resolver empty_delta_resolver
+  let kn_prefix kn hint rslv =
+    match hint with
+      | Inline _ -> rslv
+      | Equiv _ ->
+	if mp_in_mp mp (modpath kn) then Deltamap.add_kn kn hint rslv else rslv
+  in
+  Deltamap.fold mp_prefix kn_prefix resolver empty_delta_resolver
 
 let subst_dom_delta_resolver subst resolver =
-  let apply_subst key hint resolver =
-    match key with
-	(MP mp) ->
-	  Deltamap.add (MP (subst_mp subst mp)) hint resolver
-      | (KN kn) ->
-	  Deltamap.add (KN (subst_kn subst kn)) hint resolver
+  let mp_apply_subst mkey mequ rslv =
+    Deltamap.add_mp (subst_mp subst mkey) mequ rslv
   in
-    Deltamap.fold apply_subst resolver empty_delta_resolver
+  let kn_apply_subst kkey hint rslv =
+    Deltamap.add_kn (subst_kn subst kkey) hint rslv
+  in
+  Deltamap.fold mp_apply_subst kn_apply_subst resolver empty_delta_resolver
 
-let subst_mp_delta sub mp key=
+let subst_mp_delta sub mp mkey =
  match subst_mp0 sub mp with
     None -> empty_delta_resolver,mp
-  | Some (mp',resolve) -> 
+  | Some (mp',resolve) ->
       let mp1 = find_prefix resolve mp' in
       let resolve1 = subset_prefixed_by mp1 resolve in
-	match key with
-	    MP mpk ->
-	      (subst_dom_delta_resolver 
-		 (map_mp mp1 mpk empty_delta_resolver) resolve1),mp1
-	  | _ -> anomaly "Mod_subst: Bad association in resolver" 
+      (subst_dom_delta_resolver
+	 (map_mp mp1 mkey empty_delta_resolver) resolve1),mp1
 
-let subst_codom_delta_resolver subst resolver =
-  let apply_subst key hint resolver =
-    match hint with
-	Prefix_equiv mp ->
-	  let derived_resolve,mpnew = subst_mp_delta subst mp key in
-	    Deltamap.fold Deltamap.add derived_resolve
-	      (Deltamap.add key (Prefix_equiv mpnew) resolver)
-      | (Equiv kn) ->
-	  (try
-	     Deltamap.add key (Equiv (subst_kn_delta subst kn)) resolver
-	   with
-	       Change_equiv_to_inline (lev,c) ->
-		 Deltamap.add key (Inline (lev,Some c)) resolver)
-      | Inline (_,None) ->
-	  Deltamap.add key hint resolver
-      | Inline (lev,Some t) ->
-	  Deltamap.add key (Inline (lev,Some (subst_mps subst t))) resolver
+let gen_subst_delta_resolver dom subst resolver =
+  let mp_apply_subst mkey mequ rslv =
+    let mkey' = if dom then subst_mp subst mkey else mkey in
+    let rslv',mequ' = subst_mp_delta subst mequ mkey in
+    Deltamap.join rslv' (Deltamap.add_mp mkey' mequ' rslv)
   in
-    Deltamap.fold apply_subst resolver empty_delta_resolver
+  let kn_apply_subst kkey hint rslv =
+    let kkey' = if dom then subst_kn subst kkey else kkey in
+    let hint' = match hint with
+      | Equiv kequ ->
+	  (try Equiv (subst_kn_delta subst kequ)
+	   with Change_equiv_to_inline (lev,c) -> Inline (lev,Some c))
+      | Inline (lev,Some t) -> Inline (lev,Some (subst_mps subst t))
+      | Inline (_,None) -> hint
+    in
+    Deltamap.add_kn kkey' hint' rslv
+  in
+  Deltamap.fold mp_apply_subst kn_apply_subst resolver empty_delta_resolver
 
-let subst_dom_codom_delta_resolver subst resolver =
-  let apply_subst key hint resolver =
-    match key,hint with
-	(MP mp1),Prefix_equiv mp ->
-	  let key = MP (subst_mp subst mp1) in
-	  let derived_resolve,mpnew = subst_mp_delta subst mp key in
-	    Deltamap.fold Deltamap.add derived_resolve
-	      (Deltamap.add key (Prefix_equiv mpnew) resolver)
-      | (KN kn1),(Equiv kn) ->
-	  let key = KN (subst_kn subst kn1) in
-	    (try
-	       Deltamap.add key (Equiv (subst_kn_delta subst kn)) resolver
-	     with
-		 Change_equiv_to_inline (lev,c) ->
-		   Deltamap.add key (Inline (lev,Some c)) resolver)
-      | (KN kn),Inline (_,None) ->
-	  let key = KN (subst_kn subst kn) in
-	    Deltamap.add key hint resolver
-      | (KN kn),Inline (lev,Some t) ->
-	  let key = KN (subst_kn subst kn) in
-	  Deltamap.add key (Inline (lev,Some (subst_mps subst t))) resolver
-      | _,_ -> anomaly "Mod_subst: Bad association in resolver" 
-  in
-    Deltamap.fold apply_subst resolver empty_delta_resolver
+let subst_codom_delta_resolver = gen_subst_delta_resolver false
+let subst_dom_codom_delta_resolver = gen_subst_delta_resolver true
 
 let update_delta_resolver resolver1 resolver2 =
- let apply_res key hint res = 
-      try
-	if Deltamap.mem key resolver2 then
-	  res else
-	match hint with
-	    Prefix_equiv mp ->
-	      let new_hint =
-		Prefix_equiv (find_prefix resolver2 mp)
-	      in Deltamap.add key new_hint res
-	  | Equiv kn ->
-	      (try 
-		 let new_hint =
-		   Equiv (solve_delta_kn resolver2 kn)
-		 in Deltamap.add key new_hint res
-	       with
-		   Change_equiv_to_inline (lev,c) ->
-		     Deltamap.add key (Inline (lev,Some c)) res)
-	  | _ -> Deltamap.add key hint res
-      with Not_found ->
-	Deltamap.add key hint res
-    in
-      Deltamap.fold apply_res resolver1 empty_delta_resolver
+  let mp_apply_rslv mkey mequ rslv =
+    if Deltamap.mem_mp mkey resolver2 then rslv
+    else Deltamap.add_mp mkey (find_prefix resolver2 mequ) rslv
+  in
+  let kn_apply_rslv kkey hint rslv =
+    if Deltamap.mem_kn kkey resolver2 then rslv
+    else
+      let hint' = match hint with
+	| Equiv kequ ->
+	  (try Equiv (solve_delta_kn resolver2 kequ)
+	   with Change_equiv_to_inline (lev,c) -> Inline (lev, Some c))
+	| _ -> hint
+      in
+      Deltamap.add_kn kkey hint' rslv
+  in
+  Deltamap.fold mp_apply_rslv kn_apply_rslv resolver1 empty_delta_resolver
 
 let add_delta_resolver resolver1 resolver2 =
   if resolver1 == resolver2 then
@@ -642,8 +536,7 @@ let add_delta_resolver resolver1 resolver2 =
   else if resolver2 = empty_delta_resolver then
     resolver1
   else
-    Deltamap.fold Deltamap.add (update_delta_resolver resolver1 resolver2)
-      resolver2
+    Deltamap.join (update_delta_resolver resolver1 resolver2) resolver2
 
 let substition_prefixed_by k mp subst =
   let prefixmp key (mp_to,reso) sub =
