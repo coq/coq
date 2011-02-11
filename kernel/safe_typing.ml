@@ -112,17 +112,6 @@ type safe_environment =
       loads : (module_path * module_body) list;
       local_retroknowledge : Retroknowledge.action list}
 
-(*
-  { old = senv.old;
-    env = ;
-    modinfo = senv.modinfo;
-    labset = ;
-    revsign = ;
-    imports = senv.imports ;
-    loads = senv.loads }
-*)
-
-
 (* a small hack to avoid variants and an unused case in all functions *)
 let rec empty_environment =
   { old = empty_environment;
@@ -144,16 +133,45 @@ let rec empty_environment =
 let env_of_safe_env senv = senv.env
 let env_of_senv = env_of_safe_env
 
-
-
-
-
-
-
 let add_constraints cst senv =
-  {senv with
+  { senv with
     env = Environ.add_constraints cst senv.env;
     univ = Univ.union_constraints cst senv.univ }
+
+let constraints_of_sfb = function
+  | SFBconst cb -> cb.const_constraints
+  | SFBmind mib -> mib.mind_constraints
+  | SFBmodtype mtb -> mtb.typ_constraints
+  | SFBmodule mb -> mb.mod_constraints
+
+(* A generic function for adding a new field in a same environment.
+   It also performs the corresponding [add_constraints]. *)
+
+type generic_name =
+  | C of constant
+  | I of mutual_inductive
+  | MT of module_path
+  | M
+
+let add_field ((l,sfb) as field) gn senv =
+  let senv = add_constraints (constraints_of_sfb sfb) senv in
+  let env' = match sfb, gn with
+    | SFBconst cb, C con -> Environ.add_constant con cb senv.env
+    | SFBmind mib, I mind -> Environ.add_mind mind mib senv.env
+    | SFBmodtype mtb, MT mp -> Environ.add_modtype mp mtb senv.env
+    | SFBmodule mb, M -> Modops.add_module mb senv.env
+    | _ -> assert false
+  in
+  { senv with
+    env = env';
+    labset = Labset.add l senv.labset;
+    revstruct = field :: senv.revstruct }
+
+(* Applying a certain function to the resolver of a safe environment *)
+
+let update_resolver f senv =
+  let mi = senv.modinfo in
+  { senv with modinfo = { mi with resolver = f mi.resolver }}
 
 
 (*spiwack: functions for safe retroknowledge *)
@@ -180,8 +198,9 @@ let register senv field value by_clause =
   (* todo : value closed, by_clause safe, by_clause of the proper type*)
   (* spiwack : updates the safe_env with the information that the register
      action has to be performed (again) when the environement is imported *)
-  {senv with env = Environ.register senv.env field value;
-             local_retroknowledge =
+  {senv with
+    env = Environ.register senv.env field value;
+    local_retroknowledge =
       Retroknowledge.RKRegister (field,value)::senv.local_retroknowledge
   }
 
@@ -260,24 +279,12 @@ let add_constant dir l decl senv =
 	  let cb = translate_recipe senv.env kn r in
 	    if dir = empty_dirpath then hcons_constant_body cb else cb
   in
-  let senv' = add_constraints cb.const_constraints senv in
-  let env'' = Environ.add_constant kn cb senv'.env in
-  let resolver = match cb.const_inline with
-    | None -> senv'.modinfo.resolver
-    | Some lev -> add_inline_delta_resolver kn lev senv'.modinfo.resolver
+  let senv' = add_field (l,SFBconst cb) (C kn) senv in
+  let senv'' = match cb.const_inline with
+    | None -> senv'
+    | Some lev -> update_resolver (add_inline_delta_resolver kn lev) senv'
   in
-    kn, { old = senv'.old;
-	  env = env'';
-	  modinfo = {senv'.modinfo with
-		       resolver = resolver};
-	  labset = Labset.add l senv'.labset;
-	  revstruct = (l,SFBconst cb)::senv'.revstruct;
-          univ = senv'.univ;
-          engagement = senv'.engagement;
-	  imports = senv'.imports;
-	  loads = senv'.loads ;
-	  local_retroknowledge = senv'.local_retroknowledge }
-
+  kn, senv''
 
 (* Insertion of inductive types. *)
 
@@ -294,18 +301,8 @@ let add_mind dir l mie senv =
        all labels *)
   let kn = make_mind senv.modinfo.modpath dir l in
   let mib = translate_mind senv.env kn mie in
-  let senv' = add_constraints mib.mind_constraints senv in
-  let env'' = Environ.add_mind kn mib senv'.env in
-  kn, { old = senv'.old;
-	env = env'';
-	modinfo = senv'.modinfo;
-	labset = Labset.add l senv'.labset;  (* TODO: the same as above *)
-	revstruct = (l,SFBmind mib)::senv'.revstruct;
-        univ = senv'.univ;
-        engagement = senv'.engagement;
-	imports = senv'.imports;
-	loads = senv'.loads;
-        local_retroknowledge = senv'.local_retroknowledge }
+  let senv' = add_field (l,SFBmind mib) (I kn) senv in
+  kn, senv'
 
 (* Insertion of module types *)
 
@@ -313,25 +310,13 @@ let add_modtype l mte inl senv =
   check_label l senv.labset;
   let mp = MPdot(senv.modinfo.modpath, l) in
   let mtb = translate_module_type senv.env mp inl mte  in
-  let senv' = add_constraints mtb.typ_constraints senv in
-   let env'' = Environ.add_modtype mp mtb senv'.env in
-    mp, { old = senv'.old;
-	  env = env'';
-	  modinfo = senv'.modinfo;
-	  labset = Labset.add l senv'.labset;
-	  revstruct = (l,SFBmodtype mtb)::senv'.revstruct;
-          univ = senv'.univ;
-          engagement = senv'.engagement;
-	  imports = senv'.imports;
-	  loads = senv'.loads;
-          local_retroknowledge = senv'.local_retroknowledge }
-
+  let senv' = add_field (l,SFBmodtype mtb) (MT mp) senv in
+  mp, senv'
 
 (* full_add_module adds module with universes and constraints *)
 let full_add_module mb senv =
   let senv = add_constraints mb.mod_constraints senv in
-  let env = Modops.add_module mb senv.env in
-    {senv with env = env}
+  { senv with env = Modops.add_module mb senv.env }
 
 (* Insertion of modules *)
 
@@ -339,26 +324,13 @@ let add_module l me inl senv =
   check_label l senv.labset;
   let mp = MPdot(senv.modinfo.modpath, l) in
   let mb = translate_module senv.env mp inl me in
-  let senv' = full_add_module mb senv  in
-  let modinfo = match mb.mod_type with
-      SEBstruct _ -> 
-	{ senv'.modinfo with
-	    resolver = 
-	    add_delta_resolver mb.mod_delta senv'.modinfo.resolver}
-    | _ -> senv'.modinfo
+  let senv' = add_field (l,SFBmodule mb) M senv in
+  let senv'' = match mb.mod_type with
+    | SEBstruct _ -> update_resolver (add_delta_resolver mb.mod_delta) senv'
+    | _ -> senv'
   in
-    mp,mb.mod_delta,
-  { old = senv'.old;
-    env = senv'.env;
-    modinfo = modinfo;
-    labset = Labset.add l senv'.labset;
-    revstruct = (l,SFBmodule mb)::senv'.revstruct;
-    univ = senv'.univ;
-    engagement = senv'.engagement;
-    imports = senv'.imports;
-    loads = senv'.loads;
-    local_retroknowledge = senv'.local_retroknowledge }
-    
+  mp,mb.mod_delta,senv''
+
 (* Interactive modules *)
 
 let start_module l senv =
@@ -464,7 +436,7 @@ let end_module l restype senv =
 		  engagement = senv'.engagement;
 		  imports = senv'.imports;
 		  loads = senv'.loads@oldsenv.loads;
-		  local_retroknowledge = 
+		  local_retroknowledge =
 	senv'.local_retroknowledge@oldsenv.local_retroknowledge }
 
 
@@ -503,86 +475,37 @@ let end_module l restype senv =
 				      typ_expr = SEBstruct (List.rev senv.revstruct);
 				      typ_expr_alg = None;
 				      typ_constraints = empty_constraint;
-				      typ_delta = senv.modinfo.resolver} resolver senv in
+				      typ_delta = senv.modinfo.resolver} resolver senv
+   in
    let str = match sign with
      | SEBstruct(str_l) -> str_l
      | _ -> error ("You cannot Include a high-order structure.")
    in
-   let senv =
-     {senv 
-      with modinfo = 
-	 {senv.modinfo
-	  with resolver =
-	     add_delta_resolver resolver senv.modinfo.resolver}}
+   let senv = update_resolver (add_delta_resolver resolver) senv
    in
-   let add senv (l,elem)  =
+   let add senv ((l,elem) as field) =
      check_label l senv.labset;
-     match elem with
-       | SFBconst cb ->
+     let new_name = match elem with
+       | SFBconst _ ->
 	   let kn = make_kn mp_sup empty_dirpath l in
 	   let con = constant_of_kn_equiv kn
-	     (canonical_con 
+	     (canonical_con
 		(constant_of_delta resolver (constant_of_kn kn)))
 	   in
-	   let senv' = add_constraints cb.const_constraints senv in
-	   let env'' = Environ.add_constant con cb senv'.env in
-	     { old = senv'.old;
-	       env = env'';
-	       modinfo = senv'.modinfo;
-	       labset = Labset.add l senv'.labset;
-	       revstruct = (l,SFBconst cb)::senv'.revstruct;
-               univ = senv'.univ;
-               engagement = senv'.engagement;
-	       imports = senv'.imports;
-	       loads = senv'.loads ;
-	       local_retroknowledge = senv'.local_retroknowledge }
-       | SFBmind mib ->
+	   C con
+       | SFBmind _ ->
 	   let kn = make_kn mp_sup empty_dirpath l in
 	   let mind = mind_of_kn_equiv kn
-	     (canonical_mind 
+	     (canonical_mind
 		(mind_of_delta resolver (mind_of_kn kn)))
 	   in
-	   let senv' = add_constraints mib.mind_constraints senv in
-	   let env'' = Environ.add_mind mind mib senv'.env in
-	     { old = senv'.old;
-	       env = env'';
-	       modinfo = senv'.modinfo;
-	       labset = Labset.add l senv'.labset;
-	       revstruct = (l,SFBmind mib)::senv'.revstruct;
-               univ = senv'.univ;
-               engagement = senv'.engagement;
-	       imports = senv'.imports;
-	       loads = senv'.loads;
-               local_retroknowledge = senv'.local_retroknowledge }
-
-       | SFBmodule mb ->
-	   let senv' = full_add_module mb senv in
-	     { old = senv'.old;
-	       env = senv'.env;
-	       modinfo = senv'.modinfo;
-	       labset = Labset.add l senv'.labset;
-	       revstruct = (l,SFBmodule mb)::senv'.revstruct;
-	       univ = senv'.univ;
-	       engagement = senv'.engagement;
-	       imports = senv'.imports;
-	       loads = senv'.loads;
-	       local_retroknowledge = senv'.local_retroknowledge }
-       | SFBmodtype mtb ->
-	   let senv' = add_constraints mtb.typ_constraints senv in
-	   let mp = MPdot(senv.modinfo.modpath, l) in
-	   let env' = Environ.add_modtype mp mtb senv'.env in
-	     { old = senv.old;
-	       env = env';
-	       modinfo = senv'.modinfo;
-	       labset = Labset.add l senv.labset;
-	       revstruct = (l,SFBmodtype mtb)::senv'.revstruct;
-               univ = senv'.univ;
-               engagement = senv'.engagement;
-	       imports = senv'.imports;
-	       loads = senv'.loads;
-               local_retroknowledge = senv'.local_retroknowledge }
+	   I mind
+       | SFBmodule _ -> M
+       | SFBmodtype _ -> MT (MPdot(senv.modinfo.modpath, l))
+     in
+     add_field field new_name senv
    in
-     resolver,(List.fold_left add senv str)
+   resolver,(List.fold_left add senv str)
 
 (* Adding parameters to modules or module types *)
 
