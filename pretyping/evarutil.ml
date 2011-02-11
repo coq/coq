@@ -1365,10 +1365,10 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
 let evars_of_term c =
   let rec evrec acc c =
     match kind_of_term c with
-    | Evar (n, _) -> Intset.add n acc
+    | Evar (n, l) -> Intset.add n (Array.fold_left evrec acc l)
     | _ -> fold_constr evrec acc c
   in
-    evrec Intset.empty c
+  evrec Intset.empty c
 
 let evars_of_named_context nc =
   List.fold_right (fun (_, b, t) s ->
@@ -1393,7 +1393,8 @@ let evars_of_evar_info evi =
 let undefined_evars_of_term evd t =
   let rec evrec acc c =
     match kind_of_term c with
-      | Evar (n, _) -> (* TODO: should we look in the constr array ?? *)
+      | Evar (n, l) ->
+	let acc = Array.fold_left evrec acc l in
 	(try match (Evd.find evd n).evar_body with
 	  | Evar_empty -> Intset.add n acc
 	  | Evar_defined c -> evrec acc c
