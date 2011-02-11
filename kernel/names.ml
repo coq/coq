@@ -48,7 +48,15 @@ module IdOrdered =
   end
 
 module Idset = Set.Make(IdOrdered)
-module Idmap = Map.Make(IdOrdered)
+module Idmap =
+struct
+  include Map.Make(IdOrdered)
+  exception Finded
+  let exists f m =
+    try iter (fun a b -> if f a b then raise Finded) m ; false
+    with |Finded -> true
+  let singleton k v = add k v empty
+end
 module Idpred = Predicate.Make(IdOrdered)
 
 (* Names *)

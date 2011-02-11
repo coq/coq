@@ -20,8 +20,11 @@ val id_ord : identifier -> identifier -> int
 (** Identifiers sets and maps *)
 module Idset  : Set.S with type elt = identifier
 module Idpred : Predicate.S with type elt = identifier
-module Idmap  : Map.S with type key = identifier
-
+module Idmap  : sig
+  include Map.S with type key = identifier
+  val exists : (identifier -> 'a -> bool) -> 'a t -> bool
+  val singleton : key -> 'a -> 'a t
+end
 (** {6 Directory paths = section names paths } *)
 type module_ident = identifier
 module ModIdmap : Map.S with type key = module_ident
