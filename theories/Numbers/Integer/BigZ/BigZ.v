@@ -26,13 +26,17 @@ Require Import ZProperties ZDivFloor ZSig ZSigZAxioms ZMake.
 
 Delimit Scope bigZ_scope with bigZ.
 
-Module BigZ <: ZType <: OrderedTypeFull <: TotalOrder :=
- ZMake.Make BigN [scope abstract_scope to bigZ_scope]
- <+ ZTypeIsZAxioms [scope abstract_scope to bigZ_scope]
- <+ ZProp [no inline, scope abstract_scope to bigZ_scope]
- <+ HasEqBool2Dec [no inline, scope abstract_scope to bigZ_scope]
- <+ MinMaxLogicalProperties [no inline, scope abstract_scope to bigZ_scope]
- <+ MinMaxDecProperties [no inline, scope abstract_scope to bigZ_scope].
+Module BigZ <: ZType <: OrderedTypeFull <: TotalOrder.
+ Include ZMake.Make BigN [scope abstract_scope to bigZ_scope].
+ Bind Scope bigZ_scope with t t_.
+ Include ZTypeIsZAxioms
+ <+ ZProp [no inline]
+ <+ HasEqBool2Dec [no inline]
+ <+ MinMaxLogicalProperties [no inline]
+ <+ MinMaxDecProperties [no inline].
+End BigZ.
+
+(** For precision concerning the above scope handling, see comment in BigN *)
 
 (** Notations about [BigZ] *)
 

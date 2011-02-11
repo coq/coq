@@ -28,13 +28,23 @@ Require Import CyclicAxioms Cyclic31 Ring31 NSig NSigNAxioms NMake
 
 Delimit Scope bigN_scope with bigN.
 
-Module BigN <: NType <: OrderedTypeFull <: TotalOrder :=
- NMake.Make Int31Cyclic [scope abstract_scope to bigN_scope]
- <+ NTypeIsNAxioms [scope abstract_scope to bigN_scope]
- <+ NProp [no inline, scope abstract_scope to bigN_scope]
- <+ HasEqBool2Dec [no inline, scope abstract_scope to bigN_scope]
- <+ MinMaxLogicalProperties [no inline, scope abstract_scope to bigN_scope]
- <+ MinMaxDecProperties [no inline, scope abstract_scope to bigN_scope].
+Module BigN <: NType <: OrderedTypeFull <: TotalOrder.
+ Include NMake.Make Int31Cyclic [scope abstract_scope to bigN_scope].
+ Bind Scope bigN_scope with t t'.
+ Include NTypeIsNAxioms
+  <+ NProp [no inline]
+  <+ HasEqBool2Dec [no inline]
+  <+ MinMaxLogicalProperties [no inline]
+  <+ MinMaxDecProperties [no inline].
+End BigN.
+
+(** Nota concerning scopes : for the first Include, we cannot bind
+    the scope bigN_scope to a type that doesn't exists yet.
+    We hence need to explicitely declare the scope substitution.
+    For the next Include, the abstract type t (in scope abstract_scope)
+    gets substituted to concrete BigN.t (in scope bigN_scope),
+    and the corresponding argument scope are fixed automatically.
+*)
 
 (** Notations about [BigN] *)
 

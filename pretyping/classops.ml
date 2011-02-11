@@ -132,9 +132,9 @@ let coercion_info coe = Gmap.find coe !coercion_tab
 
 let coercion_exists coe = Gmap.mem coe !coercion_tab
 
-(* find_class_type : env -> evar_map -> constr -> cl_typ * int *)
+(* find_class_type : evar_map -> constr -> cl_typ * constr list *)
 
-let find_class_type env sigma t =
+let find_class_type sigma t =
   let t', args = Reductionops.whd_betaiotazeta_stack sigma t in
   match kind_of_term t' with
     | Var id -> CL_SECVAR id, args
@@ -152,7 +152,7 @@ let subst_cl_typ subst ct = match ct with
   | CL_CONST kn ->
       let kn',t = subst_con subst kn in
 	if kn' == kn then ct else
-         fst (find_class_type (Global.env()) Evd.empty t)
+         fst (find_class_type Evd.empty t)
   | CL_IND (kn,i) ->
       let kn' = subst_ind subst kn in
 	if kn' == kn then ct else
@@ -167,12 +167,12 @@ let subst_coe_typ subst t = fst (subst_global subst t)
 let class_of env sigma t =
   let (t, n1, i, args) =
     try
-      let (cl,args) = find_class_type env sigma t in
+      let (cl,args) = find_class_type sigma t in
       let (i, { cl_param = n1 } ) = class_info cl in
       (t, n1, i, args)
     with Not_found ->
       let t = Tacred.hnf_constr env sigma t in
-      let (cl, args) = find_class_type env sigma t in
+      let (cl, args) = find_class_type sigma t in
       let (i, { cl_param = n1 } ) = class_info cl in
       (t, n1, i, args)
   in
@@ -180,7 +180,7 @@ let class_of env sigma t =
 
 let inductive_class_of ind = fst (class_info (CL_IND ind))
 
-let class_args_of env sigma c = snd (find_class_type env sigma c)
+let class_args_of env sigma c = snd (find_class_type sigma c)
 
 let string_of_class = function
   | CL_FUN -> "Funclass"
@@ -209,14 +209,14 @@ let lookup_path_to_sort_from_class s =
 
 let apply_on_class_of env sigma t cont =
   try
-    let (cl,args) = find_class_type env sigma t in
+    let (cl,args) = find_class_type sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
     if List.length args <> n1 then raise Not_found;
     t, cont i
   with Not_found ->
     (* Is it worth to be more incremental on the delta steps? *)
     let t = Tacred.hnf_constr env sigma t in
-    let (cl, args) = find_class_type env sigma t in
+    let (cl, args) = find_class_type sigma t in
     let (i, { cl_param = n1 } ) = class_info cl in
     if List.length args <> n1 then raise Not_found;
     t, cont i

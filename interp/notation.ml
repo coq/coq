@@ -444,26 +444,38 @@ let declare_class_scope sc cl =
 let find_class_scope cl =
   Gmap.find cl !class_scope_map
 
-let find_class t =
-  let t, _ = decompose_app (Reductionops.whd_betaiotazeta Evd.empty t) in
-  match kind_of_term t with
-    | Var id -> CL_SECVAR id
-    | Const sp -> CL_CONST sp
-    | Ind ind_sp -> CL_IND ind_sp
-    | Prod (_,_,_) -> CL_FUN
-    | Sort _ -> CL_SORT
-    |  _ -> raise Not_found
+let find_class_scope_opt = function
+  | None -> None
+  | Some cl -> try Some (find_class_scope cl) with Not_found -> None
+
+let find_class t = fst (find_class_type Evd.empty t)
 
 (**********************************************************************)
 (* Special scopes associated to arguments of a global reference *)
 
-let rec compute_arguments_scope t =
+let rec compute_arguments_classes t =
   match kind_of_term (Reductionops.whd_betaiotazeta Evd.empty t) with
     | Prod (_,t,u) ->
-	let sc =
-	  try Some (find_class_scope (find_class t)) with Not_found -> None in
-	sc :: compute_arguments_scope u
+	let cl = try Some (find_class t) with Not_found -> None in
+	cl :: compute_arguments_classes u
     | _ -> []
+
+let compute_arguments_scope_full t =
+  let cls = compute_arguments_classes t in
+  let scs = List.map find_class_scope_opt cls in
+  scs, cls
+
+let compute_arguments_scope t = fst (compute_arguments_scope_full t)
+
+(** When merging scope list, we give priority to the first one (computed
+    by substitution), using the second one (user given or earlier automatic)
+    as fallback *)
+
+let rec merge_scope sc1 sc2 = match sc1, sc2 with
+  | [], _ -> sc2
+  | _, [] -> sc1
+  | Some sc :: sc1, _ :: sc2 -> Some sc :: merge_scope sc1 sc2
+  | None :: sc1, sco :: sc2 -> sco :: merge_scope sc1 sc2
 
 let arguments_scope = ref Refmap.empty
 
@@ -472,36 +484,39 @@ type arguments_scope_discharge_request =
   | ArgsScopeManual
   | ArgsScopeNoDischarge
 
-let load_arguments_scope _ (_,(_,r,scl)) =
+let load_arguments_scope _ (_,(_,r,scl,cls)) =
   List.iter (Option.iter check_scope) scl;
-  arguments_scope := Refmap.add r scl !arguments_scope
+  arguments_scope := Refmap.add r (scl,cls) !arguments_scope
 
 let cache_arguments_scope o =
   load_arguments_scope 1 o
 
-let subst_arguments_scope (subst,(req,r,scl)) =
+let subst_arguments_scope (subst,(req,r,scl,cls)) =
   let r' = fst (subst_global subst r) in
-  let scl' = list_smartmap (Option.smartmap Declaremods.subst_scope) scl in
-  (ArgsScopeNoDischarge,r',scl')
+  let cls' = list_smartmap (Option.smartmap (subst_cl_typ subst)) cls in
+  let scl' = merge_scope (List.map find_class_scope_opt cls') scl in
+  let scl'' = List.map (Option.map Declaremods.subst_scope) scl' in
+  (ArgsScopeNoDischarge,r',scl'',cls')
 
-let discharge_arguments_scope (_,(req,r,l)) =
+let discharge_arguments_scope (_,(req,r,l,_)) =
   if req = ArgsScopeNoDischarge or (isVarRef r & Lib.is_in_section r) then None
-  else Some (req,Lib.discharge_global r,l)
+  else Some (req,Lib.discharge_global r,l,[])
 
-let classify_arguments_scope (req,_,_ as obj) =
+let classify_arguments_scope (req,_,_,_ as obj) =
   if req = ArgsScopeNoDischarge then Dispose else Substitute obj
 
-let rebuild_arguments_scope (req,r,l) =
+let rebuild_arguments_scope (req,r,l,_) =
   match req with
     | ArgsScopeNoDischarge -> assert false
     | ArgsScopeAuto ->
-	(req,r,compute_arguments_scope (Global.type_of_global r))
+        let scs,cls = compute_arguments_scope_full (Global.type_of_global r) in
+	(req,r,scs,cls)
     | ArgsScopeManual ->
 	(* Add to the manually given scopes the one found automatically
            for the extra parameters of the section *)
-	let l' = compute_arguments_scope (Global.type_of_global r) in
+	let l',cls = compute_arguments_scope_full (Global.type_of_global r) in
 	let l1,_ = list_chop (List.length l' - List.length l) l' in
-	(req,r,l1@l)
+	(req,r,l1@l,cls)
 
 let inArgumentsScope =
   declare_object {(default_object "ARGUMENTS-SCOPE") with
@@ -514,21 +529,21 @@ let inArgumentsScope =
 
 let is_local local ref = local || isVarRef ref && Lib.is_in_section ref
 
-let declare_arguments_scope_gen req r scl =
-  Lib.add_anonymous_leaf (inArgumentsScope (req,r,scl))
+let declare_arguments_scope_gen req r (scl,cls) =
+  Lib.add_anonymous_leaf (inArgumentsScope (req,r,scl,cls))
 
 let declare_arguments_scope local ref scl =
   let req =
     if is_local local ref then ArgsScopeNoDischarge else ArgsScopeManual in
-  declare_arguments_scope_gen req ref scl
+  declare_arguments_scope_gen req ref (scl,[])
 
 let find_arguments_scope r =
-  try Refmap.find r !arguments_scope
+  try fst (Refmap.find r !arguments_scope)
   with Not_found -> []
 
 let declare_ref_arguments_scope ref =
   let t = Global.type_of_global ref in
-  declare_arguments_scope_gen ArgsScopeAuto ref (compute_arguments_scope t)
+  declare_arguments_scope_gen ArgsScopeAuto ref (compute_arguments_scope_full t)
 
 
 (********************************)
