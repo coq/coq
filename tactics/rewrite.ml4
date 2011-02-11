@@ -966,12 +966,8 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
 	let evars = (* Keep only original evars (potentially instantiated) and goal evars,
 		       the rest has been defined and substituted already. *)
 	  let cstrs = cstrevars evars in
-	  Evd.fold
-	    (fun ev evi acc ->
-	       if not (Evd.mem cstrs ev) then
-		 Evd.add acc ev evi
-	       else acc)
-	    evars' Evd.empty
+	    (* cstrs is small *)
+	    Evd.fold (fun ev evi acc -> Evd.remove acc ev) cstrs evars'
 	in
 	let res =
 	  match is_hyp with
@@ -992,16 +988,9 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
 	      (match p with
 	       | RewPrf (rel, p) ->
 		   (match abs with
-		    | None ->
-(* 			let undef, evar = Evarutil.new_evar undef env newt in *)
-(* 			  Some (undef, Some (mkApp (p, [| evar |])), newt) *)
-			Some (evars, Some p, newt)
+		    | None -> Some (evars, Some p, newt)
 		    | Some (t, ty) ->
-			(* 			let undef, evar = Evarutil.new_evar undef env newt in *)
-			(* 			let proof = subst1 t p in *)
-			let proof = mkApp (mkLambda (Name (id_of_string "lemma"), ty, p),
-					   [| t |])
-			in
+			let proof = mkApp (mkLambda (Name (id_of_string "lemma"), ty, p), [| t |]) in
 			  Some (evars, Some proof, newt))
 	       | RewCast c -> Some (evars, None, newt))
 	in Some res
