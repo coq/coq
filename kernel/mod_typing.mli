@@ -13,20 +13,32 @@ open Mod_subst
 open Names
 
 
-val translate_module : env -> module_path -> inline -> module_entry
-  -> module_body
+val translate_module :
+  env -> module_path -> inline -> module_entry -> module_body
 
-val translate_module_type : env -> module_path -> inline -> module_struct_entry ->
-  module_type_body
+val translate_module_type :
+  env -> module_path -> inline -> module_struct_entry -> module_type_body
 
-val translate_struct_module_entry : env -> module_path -> inline -> module_struct_entry ->
-  struct_expr_body * struct_expr_body * delta_resolver * Univ.constraints
+val translate_struct_module_entry :
+  env -> module_path -> inline -> module_struct_entry ->
+  struct_expr_body (* Signature *)
+  * struct_expr_body option  (* Algebraic expr, in fact never None *)
+  * delta_resolver
+  * Univ.constraints
 
-val translate_struct_type_entry : env -> inline -> module_struct_entry ->
-  struct_expr_body * struct_expr_body option * delta_resolver * module_path * Univ.constraints
+val translate_struct_type_entry :
+  env -> inline -> module_struct_entry ->
+  struct_expr_body
+  * struct_expr_body option
+  * delta_resolver
+  * Univ.constraints
 
-val translate_struct_include_module_entry : env -> module_path -> inline ->
-  module_struct_entry -> struct_expr_body * delta_resolver * Univ.constraints
+val translate_struct_include_module_entry :
+  env -> module_path -> inline -> module_struct_entry ->
+  struct_expr_body
+  * struct_expr_body option (* Algebraic expr, always None *)
+  * delta_resolver
+  * Univ.constraints
 
 val add_modtype_constraints : env -> module_type_body -> env
 

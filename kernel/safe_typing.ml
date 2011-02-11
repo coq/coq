@@ -444,8 +444,8 @@ let end_module l restype senv =
  let add_include me is_module inl senv =
    let sign,cst,resolver =
      if is_module then
-       let sign,resolver,cst =  
-	 translate_struct_include_module_entry senv.env 
+       let sign,_,resolver,cst =
+	 translate_struct_include_module_entry senv.env
 	   senv.modinfo.modpath inl me in
 	 sign,cst,resolver
      else

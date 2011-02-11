@@ -29,6 +29,12 @@ let path_of_mexpr = function
   | MSEident mp -> mp
   | _ -> raise Not_path
 
+let rec mp_from_mexpr = function
+  | MSEident mp -> mp
+  | MSEapply (expr,_) -> mp_from_mexpr expr
+  | MSEfunctor (_,_,expr) -> mp_from_mexpr expr
+  | MSEwith (expr,_) -> mp_from_mexpr expr
+
 let rec list_split_assoc k rev_before = function
   | [] -> raise Not_found
   | (k',b)::after when k=k' -> rev_before,b,after
@@ -255,7 +261,7 @@ and translate_module env mp inl me =
 	in
 	  { mod_mp = mp;
 	    mod_type = sign;
-	    mod_expr = Some alg_implem;
+	    mod_expr = alg_implem;
 	    mod_type_alg = alg1;
 	    mod_constraints = Univ.union_constraints cst1 cst2;
 	    mod_delta = resolver;
@@ -265,126 +271,92 @@ and translate_module env mp inl me =
 	       If it does, I don't really know how to
 	       fix the bug.*)
 
+and translate_apply env inl ftrans mexpr mkalg =
+  let sign,alg,resolver,cst1 = ftrans in
+  let farg_id, farg_b, fbody_b = destr_functor env sign in
+  let mp1 =
+    try path_of_mexpr mexpr
+    with Not_path -> error_application_to_not_path mexpr
+  in
+  let mtb = module_type_of_module env None (lookup_module mp1 env) in
+  let cst2 = check_subtypes env mtb farg_b in
+  let mp_delta = discr_resolver env mtb in
+  let mp_delta = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta in
+  let subst = map_mbid farg_id mp1 mp_delta
+  in
+  subst_struct_expr subst fbody_b,
+  mkalg alg mp1 cst2,
+  subst_codom_delta_resolver subst resolver,
+  Univ.union_constraints cst1 cst2
 
-and translate_struct_module_entry env mp inl mse  = match mse with
+and translate_functor env inl arg_id arg_e trans mkalg =
+  let mtb = translate_module_type env (MPbound arg_id) inl arg_e in
+  let env' = add_module (module_body_of_type (MPbound arg_id) mtb) env in
+  let sign,alg,resolver,cst = trans env'
+  in
+  SEBfunctor (arg_id, mtb, sign),
+  mkalg alg arg_id mtb,
+  resolver,
+  Univ.union_constraints cst mtb.typ_constraints
+
+and translate_struct_module_entry env mp inl = function
   | MSEident mp1 ->
-      let mb = lookup_module mp1 env in 
+      let mb = lookup_module mp1 env in
       let mb' = strengthen_and_subst_mb mb mp env false in
-	mb'.mod_type, SEBident mp1, mb'.mod_delta,Univ.empty_constraint
+      mb'.mod_type, Some (SEBident mp1), mb'.mod_delta,Univ.empty_constraint
   | MSEfunctor (arg_id, arg_e, body_expr) ->
-      let mtb = translate_module_type env (MPbound arg_id) inl arg_e in
-      let env' = add_module (module_body_of_type (MPbound arg_id) mtb) 
-	env in
-      let sign,alg,resolver,cst =
-	translate_struct_module_entry env' mp inl body_expr in
-      SEBfunctor (arg_id, mtb, sign),SEBfunctor (arg_id, mtb, alg),resolver,
-      Univ.union_constraints cst mtb.typ_constraints
+      let trans env' = translate_struct_module_entry env' mp inl body_expr in
+      let mkalg a id m = Option.map (fun a -> SEBfunctor (id,m,a)) a in
+      translate_functor env inl arg_id arg_e trans mkalg
   | MSEapply (fexpr,mexpr) ->
-      let sign,alg,resolver,cst1 =
-	translate_struct_module_entry env mp inl fexpr
-      in
-      let farg_id, farg_b, fbody_b = destr_functor env sign in
-      let mtb,mp1 = 
-	try
-	  let mp1 = path_of_mexpr mexpr in
-	      let mtb = module_type_of_module env None (lookup_module mp1 env) in
-		mtb,mp1
-	with
-	  | Not_path -> error_application_to_not_path mexpr
-	      (* place for nondep_supertype *) in
-      let cst = check_subtypes env mtb farg_b in
-      let mp_delta = discr_resolver env mtb in
-      let mp_delta = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta
-      in
-      let subst = map_mbid farg_id mp1 mp_delta
-      in
-      (subst_struct_expr subst fbody_b),SEBapply(alg,SEBident mp1,cst),
-      (subst_codom_delta_resolver subst resolver),
-      Univ.union_constraints cst1 cst
+      let trans = translate_struct_module_entry env mp inl fexpr in
+      let mkalg a mp c = Option.map (fun a -> SEBapply(a,SEBident mp,c)) a in
+      translate_apply env inl trans mexpr mkalg
   | MSEwith(mte, with_decl) ->
-      let sign,alg,resolve,cst1 = translate_struct_module_entry env mp inl mte in
-      let sign,alg,resolve,cst2 = check_with env sign with_decl (Some alg) mp resolve in
-	sign,Option.get alg,resolve,Univ.union_constraints cst1 cst2
-	  
-and translate_struct_type_entry env inl mse = match mse with
+      let sign,alg,resolve,cst1 =
+	translate_struct_module_entry env mp inl mte in
+      let sign,alg,resolve,cst2 =
+	check_with env sign with_decl alg mp resolve in
+      sign,alg,resolve,Univ.union_constraints cst1 cst2
+
+and translate_struct_type_entry env inl = function
   | MSEident mp1 ->
-      let mtb = lookup_modtype mp1 env in 
-	mtb.typ_expr,
-      Some (SEBident mp1),mtb.typ_delta,mp1,Univ.empty_constraint
+      let mtb = lookup_modtype mp1 env in
+      mtb.typ_expr,Some (SEBident mp1),mtb.typ_delta,Univ.empty_constraint
   | MSEfunctor (arg_id, arg_e, body_expr) ->
-      let mtb = translate_module_type env (MPbound arg_id) inl arg_e in
-      let env' = add_module (module_body_of_type (MPbound arg_id) mtb) env  in
-      let sign,alg,resolve,mp_from,cst =
-	translate_struct_type_entry env' inl body_expr in
-	SEBfunctor (arg_id, mtb, sign),None,resolve,mp_from,
-      Univ.union_constraints cst mtb.typ_constraints
+      let trans env' = translate_struct_type_entry env' inl body_expr in
+      translate_functor env inl arg_id arg_e trans (fun _ _ _ -> None)
   | MSEapply (fexpr,mexpr) ->
-      let sign,alg,resolve,mp_from,cst1 =
-	translate_struct_type_entry env inl fexpr
-      in
-      let farg_id, farg_b, fbody_b = destr_functor env sign in
-      let mtb,mp1 = 
-	try
-	  let mp1 = path_of_mexpr mexpr in
-	  let mtb = module_type_of_module env None (lookup_module mp1 env) in
-	    mtb,mp1
-	with
-	  | Not_path -> error_application_to_not_path mexpr
-	      (* place for nondep_supertype *) in
-      let cst2 = check_subtypes env mtb farg_b in
-      let mp_delta = discr_resolver env mtb in
-      let mp_delta = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta
-      in
-      let subst = map_mbid farg_id mp1 mp_delta
-      in
-      (subst_struct_expr subst fbody_b),None,
-      (subst_codom_delta_resolver subst resolve),mp_from,
-      Univ.union_constraints cst1 cst2
+      let trans = translate_struct_type_entry env inl fexpr in
+      translate_apply env inl trans mexpr (fun _ _ _ -> None)
   | MSEwith(mte, with_decl) ->
-      let sign,alg,resolve,mp_from,cst = translate_struct_type_entry env inl mte in
-      let sign,alg,resolve,cst1 = 
-	check_with env sign with_decl alg mp_from resolve in
-	sign,alg,resolve,mp_from,Univ.union_constraints cst cst1    
+      let sign,alg,resolve,cst1 = translate_struct_type_entry env inl mte in
+      let sign,alg,resolve,cst2 =
+	check_with env sign with_decl alg (mp_from_mexpr mte) resolve
+      in
+      sign,alg,resolve,Univ.union_constraints cst1 cst2
 
 and translate_module_type env mp inl mte =
-	let sign,alg,resolve,mp_from,cst = translate_struct_type_entry env inl mte in
-	let mtb = subst_modtype_and_resolver
-	  {typ_mp = mp_from;
-	   typ_expr = sign;
-	   typ_expr_alg = None;
-	   typ_constraints = cst;
-	   typ_delta = resolve} mp env
-	in {mtb with typ_expr_alg = alg}
+  let mp_from = mp_from_mexpr mte in
+  let sign,alg,resolve,cst = translate_struct_type_entry env inl mte in
+  let mtb = subst_modtype_and_resolver
+    {typ_mp = mp_from;
+     typ_expr = sign;
+     typ_expr_alg = None;
+     typ_constraints = cst;
+     typ_delta = resolve} mp env
+  in {mtb with typ_expr_alg = alg}
 
-let rec translate_struct_include_module_entry env mp inl mse  = match mse with
+let rec translate_struct_include_module_entry env mp inl = function
   | MSEident mp1 ->
-      let mb = lookup_module mp1 env in 
+      let mb = lookup_module mp1 env in
       let mb' = strengthen_and_subst_mb mb mp env true in
-      let mb_typ = clean_bounded_mod_expr mb'.mod_type in 
-	mb_typ, mb'.mod_delta,Univ.empty_constraint
+      let mb_typ = clean_bounded_mod_expr mb'.mod_type in
+      mb_typ,None,mb'.mod_delta,Univ.empty_constraint
   | MSEapply (fexpr,mexpr) ->
-      let sign,resolver,cst1 =
-	translate_struct_include_module_entry env mp inl fexpr in
-      let farg_id, farg_b, fbody_b = destr_functor env sign in
-      let mtb,mp1 = 
-	try
-	  let mp1 = path_of_mexpr mexpr in
-	      let mtb = module_type_of_module env None (lookup_module mp1 env) in
-		mtb,mp1
-	with
-	  | Not_path -> error_application_to_not_path mexpr
-	      (* place for nondep_supertype *) in
-      let cst = check_subtypes env mtb farg_b in
-      let mp_delta =  discr_resolver env mtb in
-      let mp_delta = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta
-      in
-      let subst = map_mbid farg_id mp1 mp_delta
-      in
-      (subst_struct_expr subst fbody_b),
-      (subst_codom_delta_resolver subst resolver),
-      Univ.union_constraints cst1 cst
+      let ftrans = translate_struct_include_module_entry env mp inl fexpr in
+      translate_apply env inl ftrans mexpr (fun _ _ _ -> None)
   | _ -> error ("You cannot Include a high-order structure.")
-  
 
 let rec add_struct_expr_constraints env = function
   | SEBident _ -> env
