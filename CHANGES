@@ -15,6 +15,7 @@ Changes from V8.3 to V8.4
 Tactics
 
 - New tactics constr_eq, is_evar and has_evar.
+- Remove the two-argument variant of "decide equality".
 
 Vernacular commands
 
@@ -22,6 +23,7 @@ Vernacular commands
 - When the output file of "Print Universes" ends in ".dot" or ".gv",
   the universe graph is printed in the DOT language, and can be
   processed by Graphviz tools.
+- New command "Print Sorted Universes".
 - The undocumented and obsolete option "Set/Unset Boxed Definitions" has
   been removed, as well as syntaxes like "Boxed Fixpoint foo".
 
@@ -59,6 +61,7 @@ Libraries
   All old names change: functions' name become the CaML one and for example
   Vcons become Vector.cons. You can use notations by importing
   Vector.VectorNotations.
+- Removal of TheoryList. Requiring List instead should work most of the time.
 
 Internal infrastructure
 

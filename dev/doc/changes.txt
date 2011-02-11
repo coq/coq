@@ -20,6 +20,21 @@ glob_tactic_expr, instead of glob_tactic_expr * tactic. Only the first
 component is kept, the second one can be obtained via
 Tacinterp.eval_tactic.
 
+** ARGUMENT EXTEND **
+
+It is now forbidden to use TYPED simultaneously with {RAW,GLOB}_TYPED
+in ARGUMENT EXTEND statements.
+
+** Renaming of rawconstr to glob_constr **
+
+The "rawconstr" type has been renamed to "glob_constr" for
+consistency. The "raw" in everything related to former rawconstr has
+been changed to "glob". For more details about the rationale and
+scripts to migrate code using Coq's internals, see commits 13743,
+13744, 13755, 13756, 13757, 13758, 13761 (by glondu, end of December
+2010) in Subversion repository. Contribs have been fixed too, and
+commit messages there might also be helpful for migrating.
+
 =========================================
 = CHANGES BETWEEN COQ V8.2 AND COQ V8.3 =
 =========================================
