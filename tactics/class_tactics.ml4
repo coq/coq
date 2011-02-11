@@ -45,7 +45,9 @@ let _ = Auto.auto_init := (fun () ->
 
 exception Found of evar_map
 
-(** Invariant: function p only manipulates undefined evars *)
+(** We transform the evars that are concerned by this resolution
+    (according to predicate p) into goals.
+    Invariant: function p only manipulates undefined evars *)
 
 let evars_to_goals p evm =
   let goals, evm' =
@@ -454,11 +456,6 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl =
 let _ =
   Typeclasses.solve_instanciation_problem := (fun x y z -> resolve_one_typeclass x ~sigma:y z)
 
-let has_undefined p oevd evd =
-  Evd.fold_undefined (fun ev evi has -> has ||
-    snd (p oevd ev evi))
-    evd false
-
 (** We compute dependencies via a union-find algorithm.
     Beware of the imperative effects on the partition structure,
     it should not be shared, but only used locally. *)
@@ -487,10 +484,13 @@ let split_evars evm =
   deps_of_constraints (snd (extract_all_conv_pbs evm)) evm p;
   Intpart.partition p
 
-let select_evars evs evm =
+(** [evars_in_comp] filters an [evar_map], keeping only evars
+    that belongs to a certain component *)
+
+let evars_in_comp comp evm =
   try
     Intset.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evm ev))
-      evs Evd.empty
+      comp Evd.empty
   with Not_found -> assert false
 
 let is_inference_forced p evd ev =
@@ -509,65 +509,81 @@ let is_inference_forced p evd ev =
 let is_mandatory p comp evd =
   Intset.exists (is_inference_forced p evd) comp
 
+(** In case of unsatisfiable constraints, build a nice error message *)
+
+let error_unresolvable env comp do_split evd =
+  let evd = Evarutil.nf_evars_undefined evd in
+  let evm = if do_split then evars_in_comp comp evd else evd in
+  let _, ev = Evd.fold_undefined
+    (fun ev evi (b,acc) ->
+      (* focus on one instance if only one was searched for *)
+      if class_of_constr evi.evar_concl <> None then
+	if not b (* || do_split *) then
+	  true, Some ev
+	else b, None
+      else b, acc) evm (false, None)
+  in
+  Typeclasses_errors.unsatisfiable_constraints
+    (Evarutil.nf_env_evar evm env) evm ev
+
+(** Check if an evar is concerned by the current resolution attempt,
+    (and in particular is in the current component), and also update
+    its evar_info.
+    Invariant : this should only be applied to undefined evars,
+    and return undefined evar_info *)
+
+let select_and_update_evars p oevd in_comp evd ev evi =
+  assert (evi.evar_body = Evar_empty);
+  try
+    let oevi = Evd.find_undefined oevd ev in
+    if Typeclasses.is_resolvable oevi then
+      Typeclasses.mark_unresolvable evi,
+      (in_comp ev && p evd ev evi)
+    else evi, false
+  with Not_found ->
+    Typeclasses.mark_unresolvable evi, p evd ev evi
+
+(** Do we still have unresolved evars that should be resolved ? *)
+
+let has_undefined p oevd evd =
+  Evd.fold_undefined (fun ev evi has -> has ||
+    snd (p oevd ev evi))
+    evd false
+
+(** If [do_split] is [true], we try to separate the problem in
+    several components and then solve them separately *)
+
+exception Unresolved
+
 let resolve_all_evars debug m env p oevd do_split fail =
   let split = if do_split then split_evars oevd else [Intset.empty] in
-  (* Invariant: this p (and hence the above p) will only be applied
-     to undefined evars, and return undefined evar_info *)
-  let p = if do_split then
-    fun comp evd ev evi ->
-      assert (evi.evar_body = Evar_empty);
-      (try let oevi = Evd.find_undefined oevd ev in
-	   if Typeclasses.is_resolvable oevi then
-	     Typeclasses.mark_unresolvable evi, (Intset.mem ev comp &&
-						   p evd ev evi)
-	   else evi, false
-       with Not_found ->
-	 Typeclasses.mark_unresolvable evi, p evd ev evi)
-    else fun _ evd ev evi ->
-      assert (evi.evar_body = Evar_empty);
-      try let oevi = Evd.find_undefined oevd ev in
-	  if Typeclasses.is_resolvable oevi then
-	    Typeclasses.mark_unresolvable evi, p evd ev evi
-	  else evi, false
-      with Not_found ->
-	Typeclasses.mark_unresolvable evi, p evd ev evi
-  in
-  let rec aux p evd =
-    let evd' = resolve_all_evars_once debug m p evd in
-      if has_undefined p oevd evd' then None
-      else Some evd'
+  let in_comp comp ev = if do_split then Intset.mem ev comp else true
   in
   let rec docomp evd = function
     | [] -> evd
     | comp :: comps ->
-	let res = try aux (p comp) evd with Not_found -> None in
-	  match res with
-	  | None -> 
-	      if fail && (not do_split || is_mandatory (p comp evd) comp evd) then
-		(* Unable to satisfy the constraints. *)		
-		let evd = Evarutil.nf_evars_undefined evd in
-		let evm = if do_split then select_evars comp evd else evd in
-		let _, ev = Evd.fold_undefined
-		  (fun ev evi (b,acc) ->
-		    (* focus on one instance if only one was searched for *)
-		    if class_of_constr evi.evar_concl <> None then
-		      if not b (* || do_split *) then
-			true, Some ev
-		      else b, None
-		    else b, acc) evm (false, None)
-		in
-		  Typeclasses_errors.unsatisfiable_constraints (Evarutil.nf_env_evar evm env) evm ev
-	      else (* Best effort: do nothing *) oevd
-	  | Some evd' -> docomp evd' comps
+      let p = select_and_update_evars p oevd (in_comp comp) in
+      try
+	 let evd' = resolve_all_evars_once debug m p evd in
+	 if has_undefined p oevd evd' then raise Unresolved;
+	 docomp evd' comps
+      with Unresolved | Not_found ->
+	if fail && (not do_split || is_mandatory (p evd) comp evd)
+	then (* Unable to satisfy the constraints. *)
+	  error_unresolvable env comp do_split evd
+	else (* Best effort: do nothing *) oevd
   in docomp oevd split
 
-let resolve_typeclass_evars d p env evd onlyargs split fail =
-  let pred =
-    if onlyargs then
-      (fun evd ev evi -> Typeclasses.is_implicit_arg (snd (Evd.evar_source ev evd)) &&
-	Typeclasses.is_class_evar evd evi)
-    else (fun evd ev evi -> Typeclasses.is_class_evar evd evi)
-  in resolve_all_evars d p env pred evd split fail
+let initial_select_evars onlyargs =
+  if onlyargs then
+    (fun evd ev evi ->
+      Typeclasses.is_implicit_arg (snd (Evd.evar_source ev evd))
+      && Typeclasses.is_class_evar evd evi)
+  else
+    (fun evd ev evi -> Typeclasses.is_class_evar evd evi)
+
+let resolve_typeclass_evars debug m env evd onlyargs split fail =
+ resolve_all_evars debug m env (initial_select_evars onlyargs) evd split fail
 
 let solve_inst debug mode depth env evd onlyargs split fail =
   resolve_typeclass_evars debug (mode, depth) env evd onlyargs split fail
