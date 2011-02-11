@@ -60,9 +60,6 @@ let evars_to_goals p evm =
 
 (** Typeclasses instance search tactic / eauto *)
 
-let intersects s t =
-  Intset.exists (fun el -> Intset.mem el t) s
-
 open Auto
 
 let e_give_exact flags c gl = 
@@ -462,34 +459,33 @@ let has_undefined p oevd evd =
     snd (p oevd ev evi))
     evd false
 
-let rec merge_deps deps = function
-  | [] -> [deps]
-  | hd :: tl ->
-      if intersects deps hd then
-	merge_deps (Intset.union deps hd) tl
-      else hd :: merge_deps deps tl
+(** We compute dependencies via a union-find algorithm.
+    Beware of the imperative effects on the partition structure,
+    it should not be shared, but only used locally. *)
 
-let deps_of_constraints cstrs deps evm =
-  List.fold_right (fun (_, _, x, y) deps ->
-    let evx = Evarutil.undefined_evars_of_term evm x
-    and evy = Evarutil.undefined_evars_of_term evm y
-    in merge_deps (Intset.union evx evy) deps)
-    cstrs deps
+module Intpart = Unionfind.Make(Intset)(Intmap)
 
-let evar_dependencies evm =
+let deps_of_constraints cstrs evm p =
+  List.iter (fun (_, _, x, y) ->
+    let evx = Evarutil.undefined_evars_of_term evm x in
+    let evy = Evarutil.undefined_evars_of_term evm y in
+    Intpart.union_set (Intset.union evx evy) p)
+    cstrs
+
+let evar_dependencies evm p =
   Evd.fold_undefined
-    (fun ev evi acc ->
-      merge_deps
-	(Intset.add ev (Evarutil.undefined_evars_of_evar_info evm evi)) acc)
-    evm []
+    (fun ev evi _ ->
+      let evars = Intset.add ev (Evarutil.undefined_evars_of_evar_info evm evi)
+      in Intpart.union_set evars p)
+    evm ()
 
 (** [split_evars] returns groups of undefined evars according to dependencies *)
 
 let split_evars evm =
-  let _, cstrs = extract_all_conv_pbs evm in
-  let evmdeps = evar_dependencies evm in
-  let deps = deps_of_constraints cstrs evmdeps evm in
-    List.sort Intset.compare deps
+  let p = Intpart.create () in
+  evar_dependencies evm p;
+  deps_of_constraints (snd (extract_all_conv_pbs evm)) evm p;
+  Intpart.partition p
 
 let select_evars evs evm =
   try
