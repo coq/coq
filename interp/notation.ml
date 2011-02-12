@@ -493,7 +493,9 @@ let cache_arguments_scope o =
 
 let subst_arguments_scope (subst,(req,r,scl,cls)) =
   let r' = fst (subst_global subst r) in
-  let cls' = list_smartmap (Option.smartmap (subst_cl_typ subst)) cls in
+  let subst_cl cl =
+    try Option.smartmap (subst_cl_typ subst) cl with Not_found -> None in
+  let cls' = list_smartmap subst_cl cls in
   let scl' = merge_scope (List.map find_class_scope_opt cls') scl in
   let scl'' = List.map (Option.map Declaremods.subst_scope) scl' in
   (ArgsScopeNoDischarge,r',scl'',cls')
