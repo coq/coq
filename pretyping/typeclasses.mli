@@ -52,6 +52,7 @@ val add_inductive_class : inductive -> unit
 
 val new_instance : typeclass -> int option -> bool -> global_reference -> instance
 val add_instance : instance -> unit
+val remove_instance : instance -> unit
 
 val class_info : global_reference -> typeclass (** raises a UserError if not a class *)
 
@@ -89,8 +90,10 @@ val resolve_one_typeclass : env -> evar_map -> types -> open_constr
 val register_set_typeclass_transparency : (evaluable_global_reference -> bool -> unit) -> unit
 val set_typeclass_transparency : evaluable_global_reference -> bool -> unit
 
-val register_add_instance_hint : (global_reference -> int option -> unit) -> unit
-val add_instance_hint : global_reference -> int option -> unit
+val register_add_instance_hint : (global_reference -> bool (* local? *) -> int option -> unit) -> unit
+val register_remove_instance_hint : (global_reference -> unit) -> unit
+val add_instance_hint : global_reference -> bool -> int option -> unit
+val remove_instance_hint : global_reference -> unit
 
 val solve_instanciations_problem : (env -> evar_map -> bool -> bool -> bool -> evar_map) ref
 val solve_instanciation_problem : (env -> evar_map -> types -> open_constr) ref

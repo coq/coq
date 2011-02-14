@@ -149,6 +149,10 @@ val list_map4 :
 val list_filter_i :
   (int -> 'a -> bool) -> 'a list -> 'a list
 
+(** [list_smartfilter f [a1...an] = List.filter f [a1...an]] but if for all i
+   [f ai = true], then [list_smartfilter f l==l] *)
+val list_smartfilter : ('a -> bool) -> 'a list -> 'a list
+
 (** [list_index] returns the 1st index of an element in a list (counting from 1) *)
 val list_index : 'a -> 'a list -> int
 

@@ -562,7 +562,7 @@ GEXTEND Gram
 	 pri = OPT [ "|"; i = natural -> i ] ;
 	 props = [ ":="; "{"; r = record_declaration; "}" -> r |
 	     ":="; c = lconstr -> c | -> CRecord (loc, None, []) ] ->
-	   VernacInstance (false, not (use_non_locality ()),
+	   VernacInstance (false, not (use_section_locality ()),
 			   snd namesup, (fst namesup, expl, t), props, pri)
 
       | IDENT "Existing"; IDENT "Instance"; is = global -> 
@@ -631,7 +631,7 @@ GEXTEND Gram
       | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";
 	 expl = [ "!" -> Glob_term.Implicit | -> Glob_term.Explicit ] ; t = operconstr LEVEL "200";
 	 pri = OPT [ "|"; i = natural -> i ] ->
-	   VernacInstance (true, not (use_non_locality ()),
+	   VernacInstance (true, not (use_section_locality ()),
 			   snd namesup, (fst namesup, expl, t),
 			   CRecord (loc, None, []), pri)
 

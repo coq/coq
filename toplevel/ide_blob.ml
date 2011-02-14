@@ -117,6 +117,7 @@ let rec attribute_of_vernac_command = function
   (* Commands *)
   | VernacDeclareTacticDefinition _ -> []
   | VernacCreateHintDb _ -> []
+  | VernacRemoveHints _ -> []
   | VernacHints _ -> []
   | VernacSyntacticDefinition _ -> []
   | VernacDeclareImplicits _ -> []

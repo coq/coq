@@ -35,6 +35,7 @@ open Glob_term
 type pri_auto_tactic = {
   pri   : int;            (** A number between 0 and 4, 4 = lower priority *)
   pat   : constr_pattern option; (** A pattern for the concl of the Goal *)
+  name  : global_reference option; (** A potential name to refer to the hint *) 
   code  : auto_tactic;    (** the tactic to apply when the concl matches pat *)
 }
 
@@ -56,6 +57,8 @@ module Hint_db :
     val map_auto : global_reference * constr -> t -> pri_auto_tactic list
     val add_one : hint_entry -> t -> t
     val add_list : (hint_entry) list -> t -> t
+    val remove_one : global_reference -> t -> t
+    val remove_list : global_reference list -> t -> t
     val iter : (global_reference option -> stored_data list -> unit) -> t -> unit
 
     val use_dn : t -> bool
@@ -70,8 +73,8 @@ type hint_db_name = string
 type hint_db = Hint_db.t
 
 type hints_entry =
-  | HintsResolveEntry of (int option * bool * constr) list
-  | HintsImmediateEntry of constr list
+  | HintsResolveEntry of (int option * bool * global_reference option * constr) list
+  | HintsImmediateEntry of (global_reference option * constr) list
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference list * bool
   | HintsExternEntry of
@@ -89,6 +92,8 @@ val searchtable_add : (hint_db_name * hint_db) -> unit
    and patterns. *)
 
 val create_hint_db : bool -> hint_db_name -> transparent_state -> bool -> unit
+
+val remove_hints : bool -> hint_db_name list -> global_reference list -> unit
 
 val current_db_names : unit -> hint_db_name list
 
@@ -112,7 +117,7 @@ val print_hint_db : Hint_db.t -> unit
    [c] is the term given as an exact proof to solve the goal;
    [ctyp] is the type of [c]. *)
 
-val make_exact_entry : evar_map -> int option -> constr * constr -> hint_entry
+val make_exact_entry : evar_map -> int option -> ?name:global_reference -> constr * constr -> hint_entry
 
 (** [make_apply_entry (eapply,hnf,verbose) pri (c,cty)].
    [eapply] is true if this hint will be used only with EApply;
@@ -122,8 +127,8 @@ val make_exact_entry : evar_map -> int option -> constr * constr -> hint_entry
    [cty] is the type of [c]. *)
 
 val make_apply_entry :
-  env -> evar_map -> bool * bool * bool -> int option -> constr * constr
-      -> hint_entry
+  env -> evar_map -> bool * bool * bool -> int option -> ?name:global_reference -> 
+  constr * constr -> hint_entry
 
 (** A constr which is Hint'ed will be:
    - (1) used as an Exact, if it does not start with a product
@@ -133,8 +138,8 @@ val make_apply_entry :
          has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> bool * bool * bool -> int option -> constr ->
-      hint_entry list
+  env -> evar_map -> bool * bool * bool -> int option -> ?name:global_reference -> 
+  constr -> hint_entry list
 
 (** [make_resolve_hyp hname htyp].
    used to add an hypothesis to the local hint database;

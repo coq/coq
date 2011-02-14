@@ -1342,7 +1342,7 @@ let declare_an_instance n s args =
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance binders instance fields =
-  new_instance binders instance (CRecord (dummy_loc,None,fields)) ~generalize:false None
+  new_instance binders instance (CRecord (dummy_loc,None,fields)) ~global:true ~generalize:false None
 
 let declare_instance_refl binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"

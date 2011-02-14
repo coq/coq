@@ -782,6 +782,9 @@ let vernac_declare_tactic_definition (local,x,def) =
 let vernac_create_hintdb local id b =
   Auto.create_hint_db local id full_transparent_state b
 
+let vernac_remove_hints local dbs ids =
+  Auto.remove_hints local dbs (List.map Smartlocate.global_with_alias ids)
+
 let vernac_hints local lb h =
   Auto.add_hints local lb (Auto.interp_hints h)
 
@@ -1396,6 +1399,7 @@ let interp c = match c with
   (* Commands *)
   | VernacDeclareTacticDefinition def -> vernac_declare_tactic_definition def
   | VernacCreateHintDb (local,dbname,b) -> vernac_create_hintdb local dbname b
+  | VernacRemoveHints (local,dbnames,ids) -> vernac_remove_hints local dbnames ids
   | VernacHints (local,dbnames,hints) -> vernac_hints local dbnames hints
   | VernacSyntacticDefinition (id,c,l,b) ->vernac_syntactic_definition id c l b
   | VernacDeclareImplicits (local,qid,l) ->vernac_declare_implicits local qid l

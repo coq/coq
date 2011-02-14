@@ -302,6 +302,7 @@ type vernac_expr =
   | VernacDeclareTacticDefinition of
       (locality_flag * rec_flag * (reference * bool * raw_tactic_expr) list)
   | VernacCreateHintDb of locality_flag * string * bool
+  | VernacRemoveHints of locality_flag * string list * reference list
   | VernacHints of locality_flag * string list * hints_expr
   | VernacSyntacticDefinition of identifier located * (identifier list * constr_expr) *
       locality_flag * onlyparsing_flag

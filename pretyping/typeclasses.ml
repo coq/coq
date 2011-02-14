@@ -22,10 +22,15 @@ open Libobject
 (*i*)
 
 
-let add_instance_hint_ref = ref (fun id pri -> assert false)
+let add_instance_hint_ref = ref (fun id local pri -> assert false)
 let register_add_instance_hint =
   (:=) add_instance_hint_ref
 let add_instance_hint id = !add_instance_hint_ref id
+
+let remove_instance_hint_ref = ref (fun id -> assert false)
+let register_remove_instance_hint =
+  (:=) remove_instance_hint_ref
+let remove_instance_hint id = !remove_instance_hint_ref id
 
 let set_typeclass_transparency_ref = ref (fun id pri -> assert false)
 let register_set_typeclass_transparency =
@@ -212,50 +217,77 @@ let add_class cl =
  * instances persistent object
  *)
 
-let load_instance (_,inst) = 
+type instance_action = 
+  | AddInstance
+  | RemoveInstance
+
+let load_instance inst = 
   let insts = 
     try Gmap.find inst.is_class !instances 
     with Not_found -> Gmap.empty in
   let insts = Gmap.add inst.is_impl inst insts in
   instances := Gmap.add inst.is_class insts !instances
 
-let cache_instance = load_instance
+let remove_instance inst =
+  let insts = 
+    try Gmap.find inst.is_class !instances 
+    with Not_found -> assert false in
+  let insts = Gmap.remove inst.is_impl insts in
+  instances := Gmap.add inst.is_class insts !instances
 
-let subst_instance (subst,inst) = 
+let cache_instance (_, (action, i)) =
+  match action with 
+  | AddInstance -> load_instance i
+  | RemoveInstance -> remove_instance i      
+
+let subst_instance (subst, (action, inst)) = action,
   { inst with 
       is_class = fst (subst_global subst inst.is_class);
       is_impl = fst (subst_global subst inst.is_impl) }
 
-let discharge_instance (_,inst) =
+let discharge_instance (_, (action, inst)) =
   if inst.is_global <= 0 then None
-  else Some 
+  else Some (action,
     { inst with 
       is_global = pred inst.is_global;
       is_class = Lib.discharge_global inst.is_class;
-      is_impl = Lib.discharge_global inst.is_impl }
+      is_impl = Lib.discharge_global inst.is_impl })
     
-let rebuild_instance inst =
-  add_instance_hint inst.is_impl inst.is_pri;
-  inst
 
-let classify_instance inst =
-  if inst.is_global = -1 then Dispose
-  else Substitute inst
+let is_local i = i.is_global = -1
+
+let rebuild_instance (action, inst) =
+  if action = AddInstance then
+    add_instance_hint inst.is_impl (is_local inst) inst.is_pri;
+  (action, inst)
+
+let classify_instance (action, inst) =
+  if is_local inst then Dispose
+  else Substitute (action, inst)
+
+let load_instance (_, (action, inst) as ai) =
+  cache_instance ai;
+  if action = AddInstance then
+    add_instance_hint inst.is_impl (is_local inst) inst.is_pri
 
 let instance_input =
   declare_object
     { (default_object "type classes instances state") with
       cache_function = cache_instance;
-      load_function = (fun _ -> load_instance);
-      open_function = (fun _ -> load_instance);
+      load_function = (fun _ x -> cache_instance x);
+      open_function = (fun _ x -> cache_instance x);
       classify_function = classify_instance;
       discharge_function = discharge_instance;
       rebuild_function = rebuild_instance;
       subst_function = subst_instance }
 
 let add_instance i =
-  Lib.add_anonymous_leaf (instance_input i);
-  add_instance_hint i.is_impl i.is_pri
+  Lib.add_anonymous_leaf (instance_input (AddInstance, i));
+  add_instance_hint i.is_impl (is_local i) i.is_pri
+
+let remove_instance i =
+  Lib.add_anonymous_leaf (instance_input (RemoveInstance, i));
+  remove_instance_hint i.is_impl
 
 open Declarations
 

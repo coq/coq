@@ -488,6 +488,15 @@ let list_map4 f l1 l2 l3 l4 =
   in
   map (l1,l2,l3,l4)
 
+let rec list_smartfilter f l = match l with
+    [] -> l
+  | h::tl ->
+      let tl' = list_smartfilter f tl in
+	if f h then
+	  if tl' == tl then l
+	  else h :: tl'
+	else tl'
+	  
 let list_index x =
   let rec index_x n = function
     | y::l -> if x = y then n else index_x (succ n) l

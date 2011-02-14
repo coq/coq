@@ -187,6 +187,17 @@ END
 
 open Autorewrite
 
+let pr_orient _prc _prlc _prt = function
+  | true -> Pp.mt ()
+  | false -> Pp.str " <-"
+
+let pr_orient_string _prc _prlc _prt (orient, s) =
+  pr_orient _prc _prlc _prt orient ++ Pp.spc () ++ Pp.str s
+
+ARGUMENT EXTEND orient_string TYPED AS (bool * string) PRINTED BY pr_orient_string
+| [ orient(r) preident(i) ] -> [ r, i ]
+END
+
 TACTIC EXTEND autorewrite
 | [ "autorewrite" "with" ne_preident_list(l) in_arg_hyp(cl) ] ->
     [ auto_multi_rewrite  l (glob_in_arg_hyp_to_clause  cl) ]
@@ -275,7 +286,7 @@ let project_hint pri l2r c =
   let c = Reductionops.whd_beta Evd.empty (mkApp (c,Termops.extended_rel_vect 0 sign)) in
   let c = it_mkLambda_or_LetIn
     (mkApp (p,[|mkArrow a (lift 1 b);mkArrow b (lift 1 a);c|])) sign in
-  (pri,true,c)
+  (pri,true,None,c)
 
 let add_hints_iff l2r lc n bl =
   Auto.add_hints true bl

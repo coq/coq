@@ -85,6 +85,8 @@ GEXTEND Gram
       | IDENT "Create"; IDENT "HintDb" ;
 	  id = IDENT ; b = [ "discriminated" -> true | -> false ] ->
 	    VernacCreateHintDb (use_module_locality (), id, b)
+      | IDENT "Remove"; IDENT "Hints"; ids = LIST1 global; dbnames = opt_hintbases ->
+	  VernacRemoveHints (use_module_locality (), dbnames, ids)
       | IDENT "Hint"; local = obsolete_locality; h = hint;
 	  dbnames = opt_hintbases ->
 	  VernacHints (enforce_module_locality local,dbnames, h)

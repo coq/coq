@@ -36,11 +36,11 @@ let set_typeclass_transparency c b =
     
 let _ =
   Typeclasses.register_add_instance_hint
-    (fun inst pri ->
+    (fun inst local pri ->
       Flags.silently (fun () ->
-	Auto.add_hints false [typeclasses_db]
+	Auto.add_hints local [typeclasses_db]
 	  (Auto.HintsResolveEntry
-	      [pri, false, constr_of_global inst])) ());
+	     [pri, false, Some inst, constr_of_global inst])) ());
   Typeclasses.register_set_typeclass_transparency set_typeclass_transparency
     
 let declare_class g =
@@ -180,7 +180,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	Evarutil.check_evars env Evd.empty !evars termtype;
 	let cst = Declare.declare_constant ~internal:Declare.KernelSilent id
 	  (Entries.ParameterEntry (termtype,None), Decl_kinds.IsAssumption Decl_kinds.Logical)
-	in instance_hook k None false imps ?hook (ConstRef cst); id
+	in instance_hook k None global imps ?hook (ConstRef cst); id
       end
     else
       begin
