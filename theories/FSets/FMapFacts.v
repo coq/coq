@@ -759,7 +759,8 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Notation eqk := (@eq_key elt).
 
   Instance eqk_equiv : Equivalence eqk.
-
+  Proof. unfold eq_key; split; eauto. Qed.
+  
   Instance eqke_equiv : Equivalence eqke.
   Proof.
    unfold eq_key_elt; split; repeat red; firstorder.

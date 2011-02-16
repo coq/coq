@@ -315,12 +315,14 @@ Module KeyOrderedType(O:OrderedType).
   Hint Resolve ltk_trans ltk_not_eqk ltk_not_eqke.
   Hint Immediate eqk_sym eqke_sym.
 
-  Global Instance eqk_equiv : Equivalence eqk. 
+  Global Instance eqk_equiv : Equivalence eqk.
+  Proof. constructor; eauto. Qed.
 
   Global Instance eqke_equiv : Equivalence eqke.
   Proof. split; eauto. Qed.
 
   Global Instance ltk_strorder : StrictOrder ltk.
+  Proof. constructor; eauto. intros x; apply (irreflexivity (x:=fst x)). Qed.
 
   Global Instance ltk_compat : Proper (eqk==>eqk==>iff) ltk.
   Proof.
