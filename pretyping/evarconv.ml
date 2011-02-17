@@ -25,11 +25,11 @@ type flex_kind_of_term =
   | MaybeFlexible of constr
   | Flexible of existential
 
-let flex_kind_of_term c l =
+let flex_kind_of_term ts c l =
   match kind_of_term c with
-    | Const _ -> MaybeFlexible c
+    | Const n when is_transparent_constant ts n -> MaybeFlexible c
     | Rel n -> MaybeFlexible c
-    | Var id -> MaybeFlexible c
+    | Var id when is_transparent_variable ts id -> MaybeFlexible c
     | Lambda _ when l<>[] -> MaybeFlexible c
     | LetIn _  -> MaybeFlexible c
     | Evar ev -> Flexible ev
@@ -157,16 +157,15 @@ let ise_array2 evd f v1 v2 =
   if lv1 = Array.length v2 then allrec evd (pred lv1)
   else (evd,false)
 
-let rec evar_conv_x env evd pbty term1 term2 =
-  let sigma =  evd in
-  let term1 = whd_head_evar sigma term1 in
-  let term2 = whd_head_evar sigma term2 in
+let rec evar_conv_x ts env evd pbty term1 term2 =
+  let term1 = whd_head_evar evd term1 in
+  let term2 = whd_head_evar evd term2 in
   (* Maybe convertible but since reducing can erase evars which [evar_apprec]
      could have found, we do it only if the terms are free of evar.
      Note: incomplete heuristic... *)
   let ground_test =
     if is_ground_term evd term1 && is_ground_term evd term2 then
-      if is_fconv pbty env evd term1 term2 then
+      if is_trans_fconv pbty ts env evd term1 term2 then
         Some true
       else if is_ground_env evd env then Some false
       else None
@@ -179,40 +178,40 @@ let rec evar_conv_x env evd pbty term1 term2 =
         let term1 = apprec_nohdbeta env evd term1 in
         let term2 = apprec_nohdbeta env evd term2 in
         if is_undefined_evar evd term1 then
-          solve_simple_eqn evar_conv_x env evd
+          solve_simple_eqn (evar_conv_x ts) env evd
 	    (position_problem true pbty,destEvar term1,term2)
         else if is_undefined_evar evd term2 then
-          solve_simple_eqn evar_conv_x env evd
+          solve_simple_eqn (evar_conv_x ts) env evd
 	    (position_problem false pbty,destEvar term2,term1)
         else
-          evar_eqappr_x env evd pbty
+          evar_eqappr_x ts env evd pbty
             (decompose_app term1) (decompose_app term2)
 
-and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
+and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
   (* Evar must be undefined since we have flushed evars *)
-  match (flex_kind_of_term term1 l1, flex_kind_of_term term2 l2) with
+  match (flex_kind_of_term ts term1 l1, flex_kind_of_term ts term2 l2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
 	let f1 i =
 	  if List.length l1 > List.length l2 then
             let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
             ise_and i
-              [(fun i -> solve_simple_eqn evar_conv_x env i
+              [(fun i -> solve_simple_eqn (evar_conv_x ts) env i
 	        (position_problem false pbty,ev2,applist(term1,deb1)));
               (fun i -> ise_list2 i
-                  (fun i -> evar_conv_x env i CONV) rest1 l2)]
+                  (fun i -> evar_conv_x ts env i CONV) rest1 l2)]
 	  else
 	    let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
             ise_and i
-              [(fun i -> solve_simple_eqn evar_conv_x env i
+              [(fun i -> solve_simple_eqn (evar_conv_x ts) env i
 	          (position_problem true pbty,ev1,applist(term2,deb2)));
               (fun i -> ise_list2 i
-                  (fun i -> evar_conv_x env i CONV) l1 rest2)]
+                  (fun i -> evar_conv_x ts env i CONV) l1 rest2)]
 	and f2 i =
           if sp1 = sp2 then
             ise_and i
             [(fun i -> ise_list2 i
-                  (fun i -> evar_conv_x env i CONV) l1 l2);
-             (fun i -> solve_refl evar_conv_x env i sp1 al1 al2,
+                  (fun i -> evar_conv_x ts env i CONV) l1 l2);
+             (fun i -> solve_refl (evar_conv_x ts) env i sp1 al1 al2,
                   true)]
           else (i,false)
 	in
@@ -228,7 +227,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	    (* Preserve generality (except that CCI has no eta-conversion) *)
 	    let t2 = nf_evar evd (applist appr2) in
 	    let t2 = solve_pattern_eqn env l1 t2 in
-	    solve_simple_eqn evar_conv_x env evd
+	    solve_simple_eqn (evar_conv_x ts) env evd
 	      (position_problem true pbty,ev1,t2)
 	  else if
             List.length l1 <= List.length l2
@@ -240,13 +239,13 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
             ise_and i
               (* First compare extra args for better failure message *)
               [(fun i -> ise_list2 i
-                  (fun i -> evar_conv_x env i CONV) l1 rest2);
-               (fun i -> evar_conv_x env i pbty term1 (applist(term2,deb2)))]
+                  (fun i -> evar_conv_x ts env i CONV) l1 rest2);
+               (fun i -> evar_conv_x ts env i pbty term1 (applist(term2,deb2)))]
           else (i,false)
 	and f2 i =
 	  match eval_flexible_term env flex2 with
 	    | Some v2 ->
-		evar_eqappr_x env i pbty appr1 (evar_apprec env i l2 v2)
+		evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
 	    | None -> (i,false)
 	in
 	ise_try evd [f1; f2]
@@ -261,7 +260,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	    (* Preserve generality (except that CCI has no eta-conversion) *)
 	    let t1 = nf_evar evd (applist appr1) in
 	    let t1 = solve_pattern_eqn env l2 t1 in
-	    solve_simple_eqn evar_conv_x env evd
+	    solve_simple_eqn (evar_conv_x ts) env evd
 	      (position_problem false pbty,ev2,t1)
 	  else if
        	    List.length l2 <= List.length l1
@@ -272,13 +271,13 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
             ise_and i
             (* First compare extra args for better failure message *)
               [(fun i -> ise_list2 i
-                  (fun i -> evar_conv_x env i CONV) rest1 l2);
-               (fun i -> evar_conv_x env i pbty (applist(term1,deb1)) term2)]
+                  (fun i -> evar_conv_x ts env i CONV) rest1 l2);
+               (fun i -> evar_conv_x ts env i pbty (applist(term1,deb1)) term2)]
           else (i,false)
 	and f2 i =
 	  match eval_flexible_term env flex1 with
 	    | Some v1 ->
-		evar_eqappr_x env i pbty (evar_apprec env i l1 v1) appr2
+		evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
 	    | None -> (i,false)
 	in
 	ise_try evd [f1; f2]
@@ -286,11 +285,11 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
     | MaybeFlexible flex1, MaybeFlexible flex2 ->
 	let f1 i =
 	  if flex1 = flex2 then
-	    ise_list2 i (fun i -> evar_conv_x env i CONV) l1 l2
+	    ise_list2 i (fun i -> evar_conv_x ts env i CONV) l1 l2
 	  else
 	     (i,false)
 	and f2 i =
-	  (try conv_record env i
+	  (try conv_record ts env i
              (try check_conv_record appr1 appr2
 	      with Not_found -> check_conv_record appr2 appr1)
            with Not_found -> (i,false))
@@ -303,20 +302,20 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  then
 	    match eval_flexible_term env flex1 with
 	    | Some v1 ->
-		evar_eqappr_x env i pbty (evar_apprec env i l1 v1) appr2
+		evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
 	    | None ->
 		match eval_flexible_term env flex2 with
 		| Some v2 ->
-		    evar_eqappr_x env i pbty appr1 (evar_apprec env i l2 v2)
+		    evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
 		| None -> (i,false)
 	  else
 	    match eval_flexible_term env flex2 with
 	    | Some v2 ->
-		evar_eqappr_x env i pbty appr1 (evar_apprec env i l2 v2)
+		evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
 	    | None ->
 		match eval_flexible_term env flex1 with
 		| Some v1 ->
-		    evar_eqappr_x env i pbty (evar_apprec env i l1 v1) appr2
+		    evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
 		| None -> (i,false)
 	in
 	ise_try evd [f1; f2; f3]
@@ -329,7 +328,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	let env' = push_rel (na,None,c) env in
         let appr1 = evar_apprec env' evd [] c'1 in
 	let appr2 = (lift 1 term2, List.map (lift 1) l2 @ [mkRel 1]) in
-	evar_eqappr_x env' evd CONV appr1 appr2
+	evar_eqappr_x ts env' evd CONV appr1 appr2
 
     | (Flexible _ | MaybeFlexible _), Rigid c2 when isLambda c2 ->
 	assert (l2 = []);
@@ -338,7 +337,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	let env' = push_rel (na,None,c) env in
 	let appr1 = (lift 1 term1, List.map (lift 1) l1 @ [mkRel 1]) in
         let appr2 = evar_apprec env' evd [] c'2 in
-	evar_eqappr_x env' evd CONV appr1 appr2
+	evar_eqappr_x ts env' evd CONV appr1 appr2
 
     | Flexible ev1, Rigid _ ->
 	if
@@ -349,7 +348,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  (* Preserve generality (except that CCI has no eta-conversion) *)
 	  let t2 = nf_evar evd (applist appr2) in
 	  let t2 = solve_pattern_eqn env l1 t2 in
-	  solve_simple_eqn evar_conv_x env evd
+	  solve_simple_eqn (evar_conv_x ts) env evd
 	    (position_problem true pbty,ev1,t2)
 	else
 	  (* Postpone the use of an heuristic *)
@@ -365,7 +364,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  (* Preserve generality (except that CCI has no eta-conversion) *)
 	  let t1 = nf_evar evd (applist appr1) in
 	  let t1 = solve_pattern_eqn env l2 t1 in
-	  solve_simple_eqn evar_conv_x env evd
+	  solve_simple_eqn (evar_conv_x ts) env evd
 	    (position_problem false pbty,ev2,t1)
 	else
 	  (* Postpone the use of an heuristic *)
@@ -374,116 +373,116 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 
     | MaybeFlexible flex1, Rigid _ ->
 	let f3 i =
-	  (try conv_record env i (check_conv_record appr1 appr2)
+	  (try conv_record ts env i (check_conv_record appr1 appr2)
            with Not_found -> (i,false))
 	and f4 i =
 	  match eval_flexible_term env flex1 with
 	    | Some v1 ->
- 		evar_eqappr_x env i pbty (evar_apprec env i l1 v1) appr2
+ 		evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
 	    | None -> (i,false)
 	in
 	ise_try evd [f3; f4]
 
     | Rigid _ , MaybeFlexible flex2 ->
 	let f3 i =
-	  (try conv_record env i (check_conv_record appr2 appr1)
+	  (try conv_record ts env i (check_conv_record appr2 appr1)
            with Not_found -> (i,false))
 	and f4 i =
 	  match eval_flexible_term env flex2 with
 	    | Some v2 ->
- 		evar_eqappr_x env i pbty appr1 (evar_apprec env i l2 v2)
+ 		evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
 	    | None -> (i,false)
 	in
 	ise_try evd [f3; f4]
 
     | Rigid c1, Rigid c2 -> match kind_of_term c1, kind_of_term c2 with
 
-	| Cast (c1,_,_), _ -> evar_eqappr_x env evd pbty (c1,l1) appr2
+	| Cast (c1,_,_), _ -> evar_eqappr_x ts env evd pbty (c1,l1) appr2
 
-	| _, Cast (c2,_,_) -> evar_eqappr_x env evd pbty appr1 (c2,l2)
+	| _, Cast (c2,_,_) -> evar_eqappr_x ts env evd pbty appr1 (c2,l2)
 
 	| Sort s1, Sort s2 when l1=[] & l2=[] ->
-            (evd,base_sort_cmp pbty s1 s2)
+	    (evd, base_sort_cmp pbty s1 s2)
 
 	| Lambda (na,c1,c'1), Lambda (_,c2,c'2) ->
 	    assert (l1=[] & l2=[]);
             ise_and evd
-              [(fun i -> evar_conv_x env i CONV c1 c2);
+              [(fun i -> evar_conv_x ts env i CONV c1 c2);
                (fun i ->
                  let c = nf_evar i c1 in
-                 evar_conv_x (push_rel (na,None,c) env) i CONV c'1 c'2)]
+                 evar_conv_x ts (push_rel (na,None,c) env) i CONV c'1 c'2)]
 
 	| LetIn (na,b1,t1,c'1), LetIn (_,b2,_,c'2) ->
 	    let f1 i =
               ise_and i
-                [(fun i -> evar_conv_x env i CONV b1 b2);
+                [(fun i -> evar_conv_x ts env i CONV b1 b2);
                  (fun i ->
                    let b = nf_evar i b1 in
 	           let t = nf_evar i t1 in
-                   evar_conv_x (push_rel (na,Some b,t) env) i pbty c'1 c'2);
+                   evar_conv_x ts (push_rel (na,Some b,t) env) i pbty c'1 c'2);
                  (fun i -> ise_list2 i
-                     (fun i -> evar_conv_x env i CONV) l1 l2)]
+                     (fun i -> evar_conv_x ts env i CONV) l1 l2)]
 	    and f2 i =
               let appr1 = evar_apprec env i l1 (subst1 b1 c'1)
               and appr2 = evar_apprec env i l2 (subst1 b2 c'2)
-	      in evar_eqappr_x env i pbty appr1 appr2
+	      in evar_eqappr_x ts env i pbty appr1 appr2
 	    in
 	    ise_try evd [f1; f2]
 
 	| LetIn (_,b1,_,c'1), _ ->(* On fait commuter les args avec le Let *)
 	     let appr1 = evar_apprec env evd l1 (subst1 b1 c'1)
-             in evar_eqappr_x env evd pbty appr1 appr2
+             in evar_eqappr_x ts env evd pbty appr1 appr2
 
 	| _, LetIn (_,b2,_,c'2) ->
 	    let appr2 = evar_apprec env evd l2 (subst1 b2 c'2)
-            in evar_eqappr_x env evd pbty appr1 appr2
+            in evar_eqappr_x ts env evd pbty appr1 appr2
 
 	| Prod (n,c1,c'1), Prod (_,c2,c'2) when l1=[] & l2=[] ->
             ise_and evd
-              [(fun i -> evar_conv_x env i CONV c1 c2);
+              [(fun i -> evar_conv_x ts env i CONV c1 c2);
                (fun i ->
  	         let c = nf_evar i c1 in
-	         evar_conv_x (push_rel (n,None,c) env) i pbty c'1 c'2)]
+	         evar_conv_x ts (push_rel (n,None,c) env) i pbty c'1 c'2)]
 
 	| Ind sp1, Ind sp2 ->
 	    if eq_ind sp1 sp2 then
-              ise_list2 evd (fun i -> evar_conv_x env i CONV) l1 l2
+              ise_list2 evd (fun i -> evar_conv_x ts env i CONV) l1 l2
             else (evd, false)
 
 	| Construct sp1, Construct sp2 ->
 	    if eq_constructor sp1 sp2 then
-              ise_list2 evd (fun i -> evar_conv_x env i CONV) l1 l2
+              ise_list2 evd (fun i -> evar_conv_x ts env i CONV) l1 l2
             else (evd, false)
 
 	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
             ise_and evd
-              [(fun i -> evar_conv_x env i CONV p1 p2);
-               (fun i -> evar_conv_x env i CONV c1 c2);
+              [(fun i -> evar_conv_x ts env i CONV p1 p2);
+               (fun i -> evar_conv_x ts env i CONV c1 c2);
 	       (fun i -> ise_array2 i
-                   (fun i -> evar_conv_x env i CONV) cl1 cl2);
-               (fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) l1 l2)]
+                   (fun i -> evar_conv_x ts env i CONV) cl1 cl2);
+               (fun i -> ise_list2 i (fun i -> evar_conv_x ts env i CONV) l1 l2)]
 
 	| Fix (li1,(_,tys1,bds1 as recdef1)), Fix (li2,(_,tys2,bds2)) ->
             if li1=li2 then
               ise_and evd
                 [(fun i -> ise_array2 i
-                    (fun i -> evar_conv_x env i CONV) tys1 tys2);
+                    (fun i -> evar_conv_x ts env i CONV) tys1 tys2);
                  (fun i -> ise_array2 i
-		     (fun i -> evar_conv_x (push_rec_types recdef1 env) i CONV)
+		     (fun i -> evar_conv_x ts (push_rec_types recdef1 env) i CONV)
 		     bds1 bds2);
 	         (fun i -> ise_list2 i
-                     (fun i -> evar_conv_x env i CONV) l1 l2)]
+                     (fun i -> evar_conv_x ts env i CONV) l1 l2)]
 	    else (evd,false)
 	| CoFix (i1,(_,tys1,bds1 as recdef1)), CoFix (i2,(_,tys2,bds2)) ->
             if i1=i2  then
               ise_and evd
                 [(fun i -> ise_array2 i
-                    (fun i -> evar_conv_x env i CONV) tys1 tys2);
+                    (fun i -> evar_conv_x ts env i CONV) tys1 tys2);
                  (fun i -> ise_array2 i
-		     (fun i -> evar_conv_x (push_rec_types recdef1 env) i CONV)
+		     (fun i -> evar_conv_x ts (push_rec_types recdef1 env) i CONV)
 		     bds1 bds2);
                  (fun i -> ise_list2 i
-                     (fun i -> evar_conv_x env i CONV) l1 l2)]
+                     (fun i -> evar_conv_x ts env i CONV) l1 l2)]
             else (evd,false)
 
 	(* Eta-expansion *)
@@ -493,7 +492,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	    let env' = push_rel (na,None,c) env in
             let appr1 = evar_apprec env' evd [] c'1 in
 	    let appr2 = (lift 1 c2, List.map (lift 1) l2 @ [mkRel 1]) in
-	    evar_eqappr_x env' evd CONV appr1 appr2
+	    evar_eqappr_x ts env' evd CONV appr1 appr2
 
 	| _, Lambda (na,c2,c'2) ->
 	    assert (l2 = []);
@@ -501,7 +500,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	    let env' = push_rel (na,None,c) env in
 	    let appr1 = (lift 1 c1, List.map (lift 1) l1 @ [mkRel 1]) in
             let appr2 = evar_apprec env' evd [] c'2 in
-	    evar_eqappr_x env' evd CONV appr1 appr2
+	    evar_eqappr_x ts env' evd CONV appr1 appr2
 
 	| (Meta _ | Ind _ | Construct _ | Sort _ | Prod _), _ -> (evd,false)
 	| _, (Meta _ | Ind _ | Construct _ | Sort _ | Prod _) -> (evd,false)
@@ -512,7 +511,7 @@ and evar_eqappr_x env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	| (Rel _ | Var _ | Const _ | Evar _), _ -> assert false
 	| _, (Rel _ | Var _ | Const _ | Evar _) -> assert false
 
-and conv_record env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
+and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
   let (evd',ks,_) =
     List.fold_left
       (fun (i,ks,m) b ->
@@ -525,29 +524,29 @@ and conv_record env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
   ise_and evd'
     [(fun i ->
        ise_list2 i
-         (fun i x1 x -> evar_conv_x env i CONV x1 (substl ks x))
+         (fun i x1 x -> evar_conv_x trs env i CONV x1 (substl ks x))
          params1 params);
     (fun i ->
       ise_list2 i
-        (fun i u1 u -> evar_conv_x env i CONV u1 (substl ks u))
+        (fun i u1 u -> evar_conv_x trs env i CONV u1 (substl ks u))
         us2 us);
-    (fun i -> evar_conv_x env i CONV c1 (applist (c,(List.rev ks))));
-    (fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) ts ts1)]
+    (fun i -> evar_conv_x trs env i CONV c1 (applist (c,(List.rev ks))));
+    (fun i -> ise_list2 i (fun i -> evar_conv_x trs env i CONV) ts ts1)]
 
 (* We assume here |l1| <= |l2| *)
 
-let first_order_unification env evd (ev1,l1) (term2,l2) =
+let first_order_unification ts env evd (ev1,l1) (term2,l2) =
   let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
   ise_and evd
     (* First compare extra args for better failure message *)
-    [(fun i -> ise_list2 i (fun i -> evar_conv_x env i CONV) rest2 l1);
+    [(fun i -> ise_list2 i (fun i -> evar_conv_x ts env i CONV) rest2 l1);
     (fun i ->
       (* Then instantiate evar unless already done by unifying args *)
       let t2 = applist(term2,deb2) in
       if is_defined_evar i ev1 then
-	evar_conv_x env i CONV t2 (mkEvar ev1)
+	evar_conv_x ts env i CONV t2 (mkEvar ev1)
       else
-	solve_simple_eqn ~choose:true evar_conv_x env i (None,ev1,t2))]
+	solve_simple_eqn ~choose:true (evar_conv_x ts) env i (None,ev1,t2))]
 
 let choose_less_dependent_instance evk evd term args =
   let evi = Evd.find_undefined evd evk in
@@ -556,7 +555,7 @@ let choose_less_dependent_instance evk evd term args =
   if subst' = [] then error "Too complex unification problem." else
   Evd.define evk (mkVar (fst (List.hd subst'))) evd
 
-let apply_conversion_problem_heuristic env evd pbty t1 t2 =
+let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   let t1 = apprec_nohdbeta env evd (whd_head_evar evd t1) in
   let t2 = apprec_nohdbeta env evd (whd_head_evar evd t2) in
   let (term1,l1 as appr1) = decompose_app t1 in
@@ -574,19 +573,19 @@ let apply_conversion_problem_heuristic env evd pbty t1 t2 =
       choose_less_dependent_instance evk2 evd term1 args2, true
   | Evar ev1,_ when List.length l1 <= List.length l2 ->
       (* On "?n t1 .. tn = u u1 .. u(n+p)", try first-order unification *)
-      first_order_unification env evd (ev1,l1) appr2
+      first_order_unification ts env evd (ev1,l1) appr2
   | _,Evar ev2 when List.length l2 <= List.length l1 ->
       (* On "u u1 .. u(n+p) = ?n t1 .. tn", try first-order unification *)
-      first_order_unification env evd (ev2,l2) appr1
+      first_order_unification ts env evd (ev2,l2) appr1
   | _ ->
       (* Some head evar have been instantiated, or unknown kind of problem *)
-      evar_conv_x env evd pbty t1 t2
+      evar_conv_x ts env evd pbty t1 t2
 
-let consider_remaining_unif_problems env evd =
+let consider_remaining_unif_problems ?(ts=full_transparent_state) env evd =
   let (evd,pbs) = extract_all_conv_pbs evd in
   let heuristic_solved_evd = List.fold_left
     (fun evd (pbty,env,t1,t2) ->
-      let evd', b = apply_conversion_problem_heuristic env evd pbty t1 t2 in
+      let evd', b = apply_conversion_problem_heuristic ts env evd pbty t1 t2 in
 	if b then evd' else Pretype_errors.error_cannot_unify env evd (t1, t2))
     evd pbs in
     Evd.fold_undefined (fun ev ev_info evd' -> match ev_info.evar_source with
@@ -596,22 +595,22 @@ let consider_remaining_unif_problems env evd =
 
 (* Main entry points *)
 
-let the_conv_x     env t1 t2 evd =
-  match evar_conv_x env evd CONV  t1 t2 with
+let the_conv_x ?(ts=full_transparent_state) env t1 t2 evd =
+  match evar_conv_x ts env evd CONV  t1 t2 with
       (evd',true) -> evd'
     | _ -> raise Reduction.NotConvertible
 
-let the_conv_x_leq env t1 t2 evd =
-  match evar_conv_x env evd CUMUL t1 t2 with
+let the_conv_x_leq ?(ts=full_transparent_state) env t1 t2 evd =
+  match evar_conv_x ts env evd CUMUL t1 t2 with
       (evd', true) -> evd'
     | _ -> raise Reduction.NotConvertible
 
-let e_conv env evd t1 t2 =
-  match evar_conv_x env !evd CONV t1 t2 with
+let e_conv ?(ts=full_transparent_state) env evd t1 t2 =
+  match evar_conv_x ts env !evd CONV t1 t2 with
       (evd',true) -> evd := evd'; true
     | _ -> false
 
-let e_cumul env evd t1 t2 =
-  match evar_conv_x env !evd CUMUL t1 t2 with
+let e_cumul ?(ts=full_transparent_state) env evd t1 t2 =
+  match evar_conv_x ts env !evd CUMUL t1 t2 with
       (evd',true) -> evd := evd'; true
     | _ -> false

@@ -46,6 +46,7 @@ Local Open Scope Int_scope.
 Local Open Scope lazy_bool_scope.
 
 Definition elt := X.t.
+Hint Transparent elt.
 
 (** ** Trees
 

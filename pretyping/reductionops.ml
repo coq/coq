@@ -605,8 +605,8 @@ let is_conv env sigma = test_conversion Reduction.conv env sigma
 let is_conv_leq env sigma = test_conversion Reduction.conv_leq env sigma
 let is_fconv = function | CONV -> is_conv | CUMUL -> is_conv_leq
 
-let test_trans_conversion f reds env sigma x y =
-  try let _ = f reds env (nf_evar sigma x) (nf_evar sigma y) in true
+let test_trans_conversion (f:?evars:'a->'b) reds env sigma x y =
+  try let _ = f ~evars:(safe_evar_value sigma) reds env x y in true
   with NotConvertible -> false
     | Anomaly _ -> error "Conversion test raised an anomaly"
 

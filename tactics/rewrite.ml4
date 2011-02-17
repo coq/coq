@@ -1029,7 +1029,9 @@ let cl_rewrite_clause_tac ?abs strat meta clause gl =
 	| Some id -> pf_get_hyp_typ gl id, Some id
 	| None -> pf_concl gl, None
       in
-      let res = cl_rewrite_clause_aux ?abs strat (pf_env gl) [] (project gl) concl is_hyp in
+      let sigma = project gl in
+      let concl = Evarutil.nf_evar sigma concl in 
+      let res = cl_rewrite_clause_aux ?abs strat (pf_env gl) [] sigma concl is_hyp in
 	treat res
     with
     | Loc.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
@@ -1683,7 +1685,10 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
 
 let get_hyp gl evars (c,l) clause l2r =
   let hi = decompose_applied_relation (pf_env gl) evars None (c,l) l2r in
-  let but = match clause with Some id -> pf_get_hyp_typ gl id | None -> pf_concl gl in
+  let but = match clause with
+    | Some id -> pf_get_hyp_typ gl id 
+    | None -> Evarutil.nf_evar evars (pf_concl gl)
+  in
     unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl
 
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
@@ -1702,8 +1707,8 @@ let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
     try
       tclWEAK_PROGRESS 
 	(tclTHEN
-            (Refiner.tclEVARS hypinfo.cl.evd)
-            (cl_rewrite_clause_tac ~abs:hypinfo.abs strat (mkMeta meta) cl)) gl
+           (Refiner.tclEVARS hypinfo.cl.evd)
+	   (cl_rewrite_clause_tac ~abs:hypinfo.abs strat (mkMeta meta) cl)) gl
     with RewriteFailure ->
       let {l2r=l2r; c1=x; c2=y} = hypinfo in
 	raise (Pretype_errors.PretypeError

@@ -52,6 +52,9 @@ type transparent_state = Idpred.t * Cpred.t
 let all_opaque = (Idpred.empty, Cpred.empty)
 let all_transparent = (Idpred.full, Cpred.full)
 
+let is_transparent_variable (ids, _) id = Idpred.mem id ids
+let is_transparent_constant (_, csts) cst = Cpred.mem cst csts
+
 module type RedFlagsSig = sig
   type reds
   type red_kind

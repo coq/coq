@@ -162,6 +162,8 @@ val is_evar : evar_map -> evar -> bool
 val is_defined : evar_map -> evar -> bool
 val is_undefined : evar_map -> evar -> bool
 
+val add_constraints : evar_map -> Univ.constraints -> evar_map
+
 (** {6 ... } *)
 (** [existential_value sigma ev] raises [NotInstantiatedEvar] if [ev] has
     no body and [Not_found] if it does not exist in [sigma] *)
@@ -248,8 +250,8 @@ val subst_defined_metas : metabinding list -> constr -> constr option
 val new_sort_variable : evar_map -> sorts * evar_map
 val is_sort_variable : evar_map -> sorts -> bool
 val whd_sort_variable : evar_map -> constr -> constr
-val set_leq_sort_variable : evar_map -> sorts -> sorts -> evar_map
-val define_sort_variable : evar_map -> sorts -> sorts -> evar_map
+val set_leq_sort : evar_map -> sorts -> sorts -> evar_map
+val set_eq_sort : evar_map -> sorts -> sorts -> evar_map
 
 (********************************************************************
    constr with holes *)
@@ -275,7 +277,6 @@ type unsolvability_explanation = SeveralInstancesFound of int
 
 val pr_evar_info : evar_info -> Pp.std_ppcmds
 val pr_evar_map : evar_map -> Pp.std_ppcmds
-val pr_sort_constraints : evar_map -> Pp.std_ppcmds
 val pr_metaset : Metaset.t -> Pp.std_ppcmds
 
 

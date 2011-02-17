@@ -637,8 +637,8 @@ let order_metas metas =
 
 (* Solve an equation ?n[x1=u1..xn=un] = t where ?n is an evar *)
 
-let solve_simple_evar_eqn env evd ev rhs =
-  let evd,b = solve_simple_eqn Evarconv.evar_conv_x env evd (None,ev,rhs) in
+let solve_simple_evar_eqn ts env evd ev rhs =
+  let evd,b = solve_simple_eqn (Evarconv.evar_conv_x ts) env evd (None,ev,rhs) in
   if not b then error_cannot_unify env evd (mkEvar ev,rhs);
   Evarconv.consider_remaining_unif_problems env evd
 
@@ -669,12 +669,12 @@ let w_merge env with_types flags (evd,metas,evars) =
 		w_merge_rec evd' metas evars eqns
 	      else
 		let evd', rhs'' = pose_all_metas_as_evars env evd rhs' in
-		w_merge_rec (solve_simple_evar_eqn env evd' ev rhs'')
+		w_merge_rec (solve_simple_evar_eqn flags.modulo_delta env evd' ev rhs'')
 		  metas evars' eqns
 
           | _ ->
 	    let evd', rhs'' = pose_all_metas_as_evars env evd rhs' in
-	      w_merge_rec (solve_simple_evar_eqn env evd' ev rhs'')
+	      w_merge_rec (solve_simple_evar_eqn flags.modulo_delta env evd' ev rhs'')
 		metas evars' eqns
 	end
     | [] ->

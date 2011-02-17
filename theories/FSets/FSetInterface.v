@@ -251,6 +251,7 @@ Module Type WSfun (E : DecidableType).
 
   End Spec.
 
+  Hint Transparent elt.
   Hint Resolve mem_1 equal_1 subset_1 empty_1
     is_empty_1 choose_1 choose_2 add_1 add_2 remove_1
     remove_2 singleton_2 union_1 union_2 union_3

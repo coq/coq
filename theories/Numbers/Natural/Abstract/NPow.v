@@ -96,7 +96,7 @@ Definition pow_lt_mono : forall a b c d, 0<a<c -> 0<b<d ->
 (** Injectivity *)
 
 Lemma pow_inj_l : forall a b c, c~=0 -> a^c == b^c -> a == b.
-Proof. intros; eapply pow_inj_l; eauto; auto'. auto'. Qed.
+Proof. intros; eapply pow_inj_l; eauto; auto'. Qed.
 
 Lemma pow_inj_r : forall a b c, 1<a -> a^b == a^c -> b == c.
 Proof. intros; eapply pow_inj_r; eauto; auto'. Qed.

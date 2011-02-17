@@ -307,24 +307,24 @@ let hints_tac hints =
     in
     let tacs = List.sort compare tacs in
     let rec aux i = function
-      | (_, pp, b, {it = gls; sigma = s}) :: tl ->
+      | (_, pp, b, {it = gls; sigma = s'}) :: tl ->
 	  if !typeclasses_debug then msgnl (pr_depth (i :: info.auto_depth) ++ str": " ++ Lazy.force pp
 					       ++ str" on" ++ spc () ++ pr_ev s gl);
 	  let fk =
 	    (fun () -> (* if !typeclasses_debug then msgnl (str"backtracked after " ++ pp); *)
 	    aux (succ i) tl)
 	  in
-	  let sgls = 
+	  let sgls =
 	    evars_to_goals (fun evm ev evi ->
-	    if Typeclasses.is_resolvable evi &&
-	      (not info.only_classes || Typeclasses.is_class_evar evm evi) then
-	      Typeclasses.mark_unresolvable evi, true
-	    else evi, false) s
+			      if Typeclasses.is_resolvable evi &&
+				(not info.only_classes || Typeclasses.is_class_evar evm evi)
+			      then Typeclasses.mark_unresolvable evi, true
+			      else evi, false) s'
 	  in
 	  let newgls, s' =
 	    let gls' = List.map (fun g -> (None, g)) gls in
 	    match sgls with
-	    | None -> gls', s
+	    | None -> gls', s'
 	    | Some (evgls, s') ->
 		(gls' @ List.map (fun (ev, x) -> (Some ev, x)) evgls, s')
 	  in
@@ -333,7 +333,7 @@ let hints_tac hints =
 	      { info with auto_depth = j :: i :: info.auto_depth; auto_last_tac = pp;
 		is_evar = evar;
 		hints = 
-		  if b && Goal.V82.hyps s g <> Goal.V82.hyps s gl
+		  if b && Goal.V82.hyps s' g <> Goal.V82.hyps s' gl
 		  then make_autogoal_hints info.only_classes
 		    ~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s'}
 		  else info.hints }
@@ -443,19 +443,6 @@ let resolve_all_evars_once debug (mode, depth) p evd =
   let db = searchtable_map typeclasses_db in
     real_eauto (Hint_db.transparent_state db) [db] p evd
 
-let resolve_one_typeclass env ?(sigma=Evd.empty) gl =
-  let (gl,t,sigma) = 
-    Goal.V82.mk_goal sigma (Environ.named_context_val env) gl Store.empty in
-  let gls = { it = gl ; sigma = sigma } in
-  let hints = searchtable_map typeclasses_db in
-  let gls' =  eauto ~st:(Hint_db.transparent_state hints) [hints] gls in
-  let evd = sig_sig gls' in
-  let term = Evarutil.nf_evar evd t in
-  evd, term
-
-let _ =
-  Typeclasses.solve_instanciation_problem := (fun x y z -> resolve_one_typeclass x ~sigma:y z)
-
 (** We compute dependencies via a union-find algorithm.
     Beware of the imperative effects on the partition structure,
     it should not be shared, but only used locally. *)
@@ -475,6 +462,19 @@ let evar_dependencies evm p =
       let evars = Intset.add ev (Evarutil.undefined_evars_of_evar_info evm evi)
       in Intpart.union_set evars p)
     evm ()
+
+let resolve_one_typeclass env ?(sigma=Evd.empty) gl =
+  let (gl,t,sigma) = 
+    Goal.V82.mk_goal sigma (Environ.named_context_val env) gl Store.empty in
+  let gls = { it = gl ; sigma = sigma } in
+  let hints = searchtable_map typeclasses_db in
+  let gls' = eauto ~st:(Hint_db.transparent_state hints) [hints] gls in
+  let evd = sig_sig gls' in
+  let term = Evarutil.nf_evar evd t in
+  evd, term
+
+let _ =
+  Typeclasses.solve_instanciation_problem := (fun x y z -> resolve_one_typeclass x ~sigma:y z)
 
 (** [split_evars] returns groups of undefined evars according to dependencies *)
 

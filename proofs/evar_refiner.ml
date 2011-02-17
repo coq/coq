@@ -30,7 +30,7 @@ let define_and_solve_constraints evk c evd =
     let (evd,pbs) = extract_changed_conv_pbs evd (depends_on_evar evk) in
     fst (List.fold_left
       (fun (evd,b as p) (pbty,env,t1,t2) ->
-	if b then Evarconv.evar_conv_x env evd pbty t1 t2 else p) (evd,true)
+	if b then Evarconv.evar_conv_x full_transparent_state env evd pbty t1 t2 else p) (evd,true)
       pbs)
   with e when Pretype_errors.precatchable_exception e ->
     error "Instance does not satisfy constraints."

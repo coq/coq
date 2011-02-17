@@ -30,6 +30,9 @@ type transparent_state = Idpred.t * Cpred.t
 val all_opaque      : transparent_state
 val all_transparent : transparent_state
 
+val is_transparent_variable : transparent_state -> variable -> bool
+val is_transparent_constant : transparent_state -> constant -> bool
+
 (* Sets of reduction kinds. *)
 module type RedFlagsSig = sig
   type reds

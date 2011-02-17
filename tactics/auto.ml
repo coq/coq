@@ -880,9 +880,10 @@ let add_hint_lemmas eapply lems hint_db gl =
 
 let make_local_hint_db eapply lems gl =
   let sign = pf_hyps gl in
+  let ts = Hint_db.transparent_state (searchtable_map "core") in
   let hintlist = list_map_append (pf_apply make_resolve_hyp gl) sign in
   add_hint_lemmas eapply lems
-    (Hint_db.add_list hintlist (Hint_db.empty empty_transparent_state false)) gl
+    (Hint_db.add_list hintlist (Hint_db.empty ts false)) gl
 
 (* Serait-ce possible de compiler d'abord la tactique puis de faire la
    substitution sans passer par bdize dont l'objectif est de préparer un
