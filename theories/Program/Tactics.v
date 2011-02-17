@@ -306,11 +306,16 @@ simpl in |- *; intros ; destruct_all_rec_calls ; repeat (destruct_conjs; simpl p
   subst*; autoinjections ; try discriminates ;
     try (solve [ red ; intros ; destruct_conjs ; autoinjections ; discriminates ]).
 
+(** Restrict automation to propositional obligations. *)
+
 Ltac program_solve_wf :=
   match goal with
-    |- well_founded _ => auto with *
+    | |- well_founded _ => auto with *
+    | |- ?T => match type of T with Prop => auto end
   end.
 
-Ltac program_simpl := program_simplify ; auto; try program_solve_wf.
+Create HintDb program discriminated.
+
+Ltac program_simpl := program_simplify ; try typeclasses eauto with program ; try program_solve_wf.
 
 Obligation Tactic := program_simpl.
