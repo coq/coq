@@ -144,15 +144,14 @@ Section mult.
 Goal forall x, (fold _ _ (fun x => ab A x) (add A x) = anat _ (fold _ _ (ab nat) (add _ x))). 
 Proof. intros.
   setoid_rewrite fold_lemma. 
-  change (fold A A (λ x0 : A, ab A x0) x = anat A (fold A nat (ab nat) x)).
+  change (fold A A (fun x0 : A, ab A x0) x = anat A (fold A nat (ab nat) x)).
 Abort.
 
 End mult.
 
-(** Current semantics for rewriting with typeclass constraints in the lemma
-   fixes the instance at the first unification. Using @ to make them metavariables 
-   allow different instances to be used. [at] can be used to select the instance
-   too. *)
+(** Current semantics for rewriting with typeclass constraints in the lemma 
+   does not fix the instance at the first unification, use [at], or simply rewrite for 
+   this semantics. *)
 
 Require Import Arith.
 
@@ -161,8 +160,8 @@ Instance: Foo nat. admit. Defined.
 Instance: Foo bool. admit. Defined.
 
 Goal forall (x : nat) (y : bool), beq_nat (foo_neg x) 0 = foo_neg y.
-Proof. intros. setoid_rewrite <- foo_prf. change (beq_nat x 0 = foo_neg y). Abort.
+Proof. intros. setoid_rewrite <- foo_prf. change (beq_nat x 0 = y). Abort.
 
 Goal forall (x : nat) (y : bool), beq_nat (foo_neg x) 0 = foo_neg y.
-Proof. intros. setoid_rewrite <- @foo_prf. change (beq_nat x 0 = y). Abort.
+Proof. intros. setoid_rewrite <- @foo_prf at 1. change (beq_nat x 0 = foo_neg y). Abort.
 
