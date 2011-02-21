@@ -55,13 +55,13 @@ Check (cons 3 (cons 2 nil)).
 
 Require Import Bvector.
 
-Print vector.
+Print Vector.t.
 
-Check (Vnil nat).
+Check (Vector.nil nat).
 
-Check (fun (A:Set)(a:A)=> Vcons _ a _ (Vnil _)).
+Check (fun (A:Set)(a:A)=> Vector.cons _ a _ (Vector.nil _)).
 
-Check (Vcons _ 5 _ (Vcons _ 3 _ (Vnil _))).
+Check (Vector.cons _ 5 _ (Vector.cons _ 3 _ (Vector.nil _))).
 
 
 
@@ -315,16 +315,16 @@ Proof.
 Qed.
 
 Definition Vtail_total
-   (A : Set) (n : nat) (v : vector A n) : vector A (pred n):=
-match v in (vector _ n0) return (vector A (pred n0)) with
-| Vnil => Vnil A
-| Vcons _ n0 v0 => v0
+   (A : Set) (n : nat) (v : Vector.t A n) : Vector.t A (pred n):=
+match v in (Vector.t _ n0) return (Vector.t A (pred n0)) with
+| Vector.nil => Vector.nil A
+| Vector.cons _ n0 v0 => v0
 end.
 
-Definition Vtail' (A:Set)(n:nat)(v:vector A n) : vector A (pred n).
+Definition Vtail' (A:Set)(n:nat)(v:Vector.t A n) : Vector.t A (pred n).
  case v.
  simpl.
- exact (Vnil A).
+ exact (Vector.nil A).
  simpl.
  auto.
 Defined.
@@ -543,7 +543,7 @@ Inductive ex_Set  (P : Set -> Prop) : Type :=
 Inductive comes_from_the_left (P Q:Prop): P \/ Q -> Prop :=
   c1 : forall p, comes_from_the_left P Q (or_introl (A:=P) Q p).
 
-Goal (comes_from_the_left _ _ (or_introl  True I)).
+Goal (comes_from_the_left _ _ (or_introl True I)).
 split.
 Qed.
 
@@ -966,37 +966,37 @@ let rec div_aux x y =
            | Right -> div_aux (minus x y) y)
 *)
 
-Lemma vector0_is_vnil : forall (A:Set)(v:vector A 0), v = Vnil A.
+Lemma vector0_is_vnil : forall (A:Set)(v:Vector.t A 0), v = Vector.nil A.
 Proof.
  intros A v;inversion v.
 Abort.
 
 (*
- Lemma vector0_is_vnil_aux : forall (A:Set)(n:nat)(v:vector A n),
+ Lemma Vector.t0_is_vnil_aux : forall (A:Set)(n:nat)(v:Vector.t A n),
                                   n= 0 -> v = Vnil A.
 
 Toplevel input, characters 40281-40287
-> Lemma vector0_is_vnil_aux : forall (A:Set)(n:nat)(v:vector A n),                                    n= 0 -> v = Vnil A.
+> Lemma Vector.t0_is_vnil_aux : forall (A:Set)(n:nat)(v:Vector.t A n),                                    n= 0 -> v = Vnil A.
 >                                                                                                                 ^^^^^^
 Error: In environment
 A : Set
 n : nat
-v : vector A n
+v : Vector.t A n
 e : n = 0
-The term "Vnil A" has type "vector A 0" while it is expected to have type
- "vector A n"
+The term "Vnil A" has type "Vector.t A 0" while it is expected to have type
+ "Vector.t A n"
 *)
  Require Import JMeq.
 
-Lemma vector0_is_vnil_aux : forall (A:Set)(n:nat)(v:vector A n),
-                                  n= 0 -> JMeq v (Vnil A).
+Lemma vector0_is_vnil_aux : forall (A:Set)(n:nat)(v:Vector.t A n),
+                                  n= 0 -> JMeq v (Vector.nil A).
 Proof.
  destruct v.
  auto.
  intro; discriminate.
 Qed.
 
-Lemma vector0_is_vnil : forall (A:Set)(v:vector A 0), v = Vnil A.
+Lemma vector0_is_vnil : forall (A:Set)(v:Vector.t A 0), v = Vector.nil A.
 Proof.
  intros a v;apply JMeq_eq.
  apply vector0_is_vnil_aux.
@@ -1004,56 +1004,56 @@ Proof.
 Qed.
 
 
-Implicit Arguments Vcons [A n].
-Implicit Arguments Vnil [A].
-Implicit Arguments Vhead [A n].
-Implicit Arguments Vtail [A n].
+Implicit Arguments Vector.cons [A n].
+Implicit Arguments Vector.nil [A].
+Implicit Arguments Vector.hd [A n].
+Implicit Arguments Vector.tl [A n].
 
-Definition Vid : forall (A : Type)(n:nat), vector A n -> vector A n.
+Definition Vid : forall (A : Type)(n:nat), Vector.t A n -> Vector.t A n.
 Proof.
  destruct n; intro v.
- exact Vnil.
- exact (Vcons  (Vhead v) (Vtail v)).
+ exact Vector.nil.
+ exact (Vector.cons  (Vector.hd v) (Vector.tl v)).
 Defined.
 
-Eval simpl in (fun (A:Set)(v:vector A 0) => (Vid _ _ v)).
+Eval simpl in (fun (A:Set)(v:Vector.t A 0) => (Vid _ _ v)).
 
-Eval simpl in (fun (A:Set)(v:vector A 0) => v).
+Eval simpl in (fun (A:Set)(v:Vector.t A 0) => v).
 
 
 
-Lemma Vid_eq : forall (n:nat) (A:Type)(v:vector A n), v=(Vid _ n v).
+Lemma Vid_eq : forall (n:nat) (A:Type)(v:Vector.t A n), v=(Vid _ n v).
 Proof.
  destruct v.
  reflexivity.
  reflexivity.
 Defined.
 
-Theorem zero_nil : forall A (v:vector A 0), v = Vnil.
+Theorem zero_nil : forall A (v:Vector.t A 0), v = Vector.nil.
 Proof.
  intros.
- change (Vnil (A:=A)) with (Vid _ 0 v).
+ change (Vector.nil (A:=A)) with (Vid _ 0 v).
  apply Vid_eq.
 Defined.
 
 
 Theorem decomp :
-  forall (A : Set) (n : nat) (v : vector A (S n)),
-  v = Vcons (Vhead v) (Vtail v).
+  forall (A : Set) (n : nat) (v : Vector.t A (S n)),
+  v = Vector.cons (Vector.hd v) (Vector.tl v).
 Proof.
  intros.
- change (Vcons (Vhead v) (Vtail v)) with (Vid _  (S n) v).
+ change (Vector.cons (Vector.hd v) (Vector.tl v)) with (Vid _  (S n) v).
  apply Vid_eq.
 Defined.
 
 
 
 Definition vector_double_rect :
-    forall (A:Set) (P: forall (n:nat),(vector A n)->(vector A n) -> Type),
-        P 0 Vnil Vnil ->
-        (forall n (v1 v2 : vector A n) a b, P n v1 v2 ->
-             P (S n) (Vcons a v1) (Vcons  b v2)) ->
-        forall n (v1 v2 : vector A n), P n v1 v2.
+    forall (A:Set) (P: forall (n:nat),(Vector.t A n)->(Vector.t A n) -> Type),
+        P 0 Vector.nil Vector.nil ->
+        (forall n (v1 v2 : Vector.t A n) a b, P n v1 v2 ->
+             P (S n) (Vector.cons a v1) (Vector.cons  b v2)) ->
+        forall n (v1 v2 : Vector.t A n), P n v1 v2.
  induction n.
  intros; rewrite (zero_nil _ v1); rewrite (zero_nil _ v2).
  auto.
@@ -1063,24 +1063,24 @@ Defined.
 
 Require Import Bool.
 
-Definition bitwise_or n v1 v2 : vector bool n :=
-   vector_double_rect bool  (fun n v1 v2 => vector bool n)
-                        Vnil
-                        (fun n v1 v2 a b r => Vcons (orb a b) r) n v1 v2.
+Definition bitwise_or n v1 v2 : Vector.t bool n :=
+   vector_double_rect bool  (fun n v1 v2 => Vector.t bool n)
+                        Vector.nil
+                        (fun n v1 v2 a b r => Vector.cons (orb a b) r) n v1 v2.
 
 
-Fixpoint vector_nth (A:Set)(n:nat)(p:nat)(v:vector A p){struct v}
+Fixpoint vector_nth (A:Set)(n:nat)(p:nat)(v:Vector.t A p){struct v}
                   : option A :=
   match n,v  with
-    _   , Vnil => None
-  | 0   , Vcons b  _ _ => Some b
-  | S n', Vcons _  p' v' => vector_nth A n'  p' v'
+    _   , Vector.nil => None
+  | 0   , Vector.cons b  _ _ => Some b
+  | S n', Vector.cons _  p' v' => vector_nth A n'  p' v'
   end.
 
 Implicit Arguments vector_nth [A p].
 
 
-Lemma nth_bitwise : forall (n:nat) (v1 v2: vector bool n) i  a b,
+Lemma nth_bitwise : forall (n:nat) (v1 v2: Vector.t bool n) i  a b,
       vector_nth i v1 = Some a ->
       vector_nth i v2 = Some b ->
       vector_nth i (bitwise_or _ v1 v2) = Some (orb a b).

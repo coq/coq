@@ -17,17 +17,26 @@ Argument A is implicit
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
 
 For eq: Argument A is implicit and maximally inserted
-For eq_refl: Argument A is implicit
+For eq_refl, when applied to no arguments:
+  Arguments A, x are implicit and maximally inserted
+For eq_refl, when applied to 1 argument:
+  Argument A is implicit
 For eq: Argument scopes are [type_scope _ _]
 For eq_refl: Argument scopes are [type_scope _]
 eq_refl : forall (A : Type) (x : A), x = x
 
-Argument A is implicit
+When applied to no arguments:
+  Arguments A, x are implicit and maximally inserted
+When applied to 1 argument:
+  Argument A is implicit
 Argument scopes are [type_scope _]
 Expands to: Constructor Coq.Init.Logic.eq_refl
 eq_refl : forall (A : Type) (x : A), x = x
 
-Argument A is implicit
+When applied to no arguments:
+  Arguments A, x are implicit and maximally inserted
+When applied to 1 argument:
+  Argument A is implicit
 plus = 
 fix plus (n m : nat) : nat := match n with
                               | 0 => m
@@ -43,7 +52,6 @@ plus is transparent
 Expands to: Constant Coq.Init.Peano.plus
 plus : nat -> nat -> nat
 
-No implicit arguments
 plus_n_O : forall n : nat, n = n + 0
 
 Argument scope is [nat_scope]

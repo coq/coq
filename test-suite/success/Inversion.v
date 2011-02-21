@@ -73,15 +73,15 @@ Require Import Bvector.
 
 Inductive I : nat -> Set :=
   | C1 : I 1
-  | C2 : forall k i : nat, vector (I i) k -> I i.
+  | C2 : forall k i : nat, Vector.t (I i) k -> I i.
 
-Inductive SI : forall k : nat, I k -> vector nat k -> nat -> Prop :=
+Inductive SI : forall k : nat, I k -> Vector.t nat k -> nat -> Prop :=
     SC2 :
-      forall (k i vf : nat) (v : vector (I i) k) (xi : vector nat i),
+      forall (k i vf : nat) (v : Vector.t (I i) k) (xi : Vector.t nat i),
       SI (C2 v) xi vf.
 
 Theorem SUnique :
- forall (k : nat) (f : I k) (c : vector nat k) v v',
+ forall (k : nat) (f : I k) (c : Vector.t nat k) v v',
  SI f c v -> SI f c v' -> v = v'.
 Proof.
 induction 1.
