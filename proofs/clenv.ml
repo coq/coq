@@ -245,28 +245,19 @@ let dependent_closure clenv mvs =
       mvs acc in
   aux mvs mvs
 
-let duplicated_metas c =
-  let rec collrec (one,more as acc) c =
-    match kind_of_term c with
-    | Meta mv -> if List.mem mv one then (one,mv::more) else (mv::one,more)
-    | _       -> fold_constr collrec acc c
-  in
-  snd (collrec ([],[]) c)
-
 let clenv_dependent_gen hyps_only ?(iter=true) clenv =
   let all_undefined = undefined_metas clenv.evd in
   let deps_in_concl = (mk_freelisted (clenv_type clenv)).freemetas in
   let deps_in_hyps = dependent_in_type_of_metas clenv all_undefined in
-  let non_linear = duplicated_metas (clenv_value clenv) in
   let deps_in_concl =
     if hyps_only && iter then dependent_closure clenv deps_in_concl
     else deps_in_concl in
   List.filter
     (fun mv ->
-      Metaset.mem mv deps_in_hyps &&
-	not (hyps_only && Metaset.mem mv deps_in_concl)
-      || not hyps_only && Metaset.mem mv deps_in_concl
-      || List.mem mv non_linear)
+      if hyps_only then
+	Metaset.mem mv deps_in_hyps && not (Metaset.mem mv deps_in_concl)
+      else
+	Metaset.mem mv deps_in_hyps || Metaset.mem mv deps_in_concl)
     all_undefined
 
 let clenv_missing ce = clenv_dependent_gen true ce

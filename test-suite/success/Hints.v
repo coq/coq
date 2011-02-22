@@ -51,8 +51,6 @@ Axiom a : forall n, n=0 <-> n<=0.
 Hint Resolve -> a.
 Goal forall n, n=0 -> n<=0.
 auto.
-
-Print Hints
 Qed.
 
 
