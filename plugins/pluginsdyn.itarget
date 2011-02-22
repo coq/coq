@@ -13,6 +13,7 @@ xml/xml_plugin.cmxs
 subtac/subtac_plugin.cmxs
 ring/ring_plugin.cmxs
 cc/cc_plugin.cmxs
+ncring/ncring_plugin.cmxs
 nsatz/nsatz_plugin.cmxs
 funind/recdef_plugin.cmxs
 syntax/ascii_syntax_plugin.cmxs

@@ -14,6 +14,7 @@ Require Import Znumtheory.
 Require Import Zdiv_def.
 Require Export Morphisms Setoid Bool.
 Require Import ZArith.
+Open Scope Z_scope.
 Require Import Algebra_syntax.
 Require Import Ring_polynom.
 Require Export Cring.
@@ -212,14 +213,18 @@ Variable R: Type.
 Variable Rr: Cring R.
 Existing Instance Rr.
 
+Goal forall x y z:R, 3%Z * x * (2%Z * y * z) == 6%Z * (x * y) * z.
+cring.
+Qed.
+
 (* reification: 0,7s
 sinon, le reste de la tactique donne le même temps que ring 
 *)
-Goal forall x y z  t u :R, (x + y + z + t + u)^13%N == (u + t + z + y + x) ^13%N.
+Goal forall x y z  t u :R, (x + y + z + t + u)^13 == (u + t + z + y + x) ^13.
 Time cring. (*Finished transaction in 0. secs (0.410938u,0.s)*)
 Qed.
 (*
-Goal forall x y z  t u :R, (x + y + z + t + u)^16%N == (u + t + z + y + x) ^16%N.
+Goal forall x y z  t u :R, (x + y + z + t + u)^16 == (u + t + z + y + x) ^16.
 Time cring.(*Finished transaction in 1. secs (0.968852u,0.001s)*)
 Qed.
 *)
@@ -237,6 +242,10 @@ Time ring.(*Finished transaction in 1. secs (0.914861u,0.s)*)
 Qed.
 *)
 
+Goal forall x y z:R, 6*x^2 + y  == y + 3*2*x^2 + 0 .
+cring.
+Qed.
+
 (*
 Goal forall x y z:R, x + y  == y + x + 0 .
 cring.
@@ -246,7 +255,7 @@ Goal forall x y z:R, x * y * z == x * (y * z).
 cring.
 Qed.
 
-Goal forall x y z:R, 3%Z * x * (2%Z * y * z) == 6%Z * (x * y) * z.
+Goal forall x y z:R, 3 * x * (2%Z * y * z) == 6 * (x * y) * z.
 cring.
 Qed.
 
