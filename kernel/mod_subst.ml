@@ -282,8 +282,6 @@ let subst_ind sub mind =
       | Canonical -> mind_of_delta2 resolve mind'
   with No_subst -> mind
 
-let subst_mind0 sub mind = Some (subst_ind sub mind)
-
 let subst_con sub con =
   let kn1,kn2 = user_con con,canonical_con con in
   let mp1,dir,l = repr_kn kn1 in
@@ -300,8 +298,6 @@ let subst_con sub con =
 	  | Canonical -> dup (constant_of_delta2 resolve con')
   with No_subst -> dup con
 
-let subst_con0 sub con = Some (snd (subst_con sub con))
-
 (* Here the semantics is completely unclear.
    What does "Hint Unfold t" means when "t" is a parameter?
    Does the user mean "Unfold X.t" or does she mean "Unfold y"
@@ -314,24 +310,19 @@ let subst_evaluable_reference subst = function
 let rec map_kn f f' c =
   let func = map_kn f f' in
     match kind_of_term c with
-      | Const kn ->
-	  (match f' kn with
-	       None -> c
-	     | Some const ->const)
+      | Const kn -> f' kn
       | Ind (kn,i) ->
-         (match f kn with
-             None -> c
-           | Some kn' ->
-	      mkInd (kn',i))
+	  let kn' = f kn in
+	  if kn'==kn then c else mkInd (kn',i)
       | Construct ((kn,i),j) ->
-         (match f kn with
-             None -> c
-           | Some kn' ->
-	       mkConstruct ((kn',i),j))
+	  let kn' = f kn in
+	  if kn'==kn then c else mkConstruct ((kn',i),j)
       | Case (ci,p,ct,l) ->
 	  let ci_ind =
             let (kn,i) = ci.ci_ind in
-              (match f kn with None -> ci.ci_ind | Some kn' -> kn',i ) in
+	    let kn' = f kn in
+	    if kn'==kn then ci.ci_ind else kn',i
+	  in
 	  let p' = func p in
 	  let ct' = func ct in
 	  let l' = array_smartmap func l in
@@ -383,7 +374,7 @@ let rec map_kn f f' c =
       | _ -> c
 
 let subst_mps sub =
-  map_kn (subst_mind0 sub) (subst_con0 sub)
+  map_kn (subst_ind sub) (fun con -> snd (subst_con sub con))
 
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with
