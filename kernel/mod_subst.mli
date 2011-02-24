@@ -68,6 +68,8 @@ val mind_in_delta : mutual_inductive -> delta_resolver -> bool
 
 val empty_subst : substitution
 
+val is_empty_subst : substitution -> bool
+
 (** add_* add [arg2/arg1]\{arg3\} to the substitution with no 
    sequential composition  *)
 val add_mbid :

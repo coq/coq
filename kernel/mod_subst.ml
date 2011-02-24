@@ -57,6 +57,7 @@ module MBImap = Map.Make
 module Umap = struct
   type 'a t = 'a MPmap.t * 'a MBImap.t
   let empty = MPmap.empty, MBImap.empty
+  let is_empty (m1,m2) = MPmap.is_empty m1 && MBImap.is_empty m2
   let add_mbi mbi x (m1,m2) = (m1,MBImap.add mbi x m2)
   let add_mp mp x (m1,m2) = (MPmap.add mp x m1, m2)
   let find_mp mp map = MPmap.find mp (fst map)
@@ -72,6 +73,8 @@ end
 type substitution = (module_path * delta_resolver) Umap.t
 
 let empty_subst = Umap.empty
+
+let is_empty_subst = Umap.is_empty
 
 let add_mbid mbid mp resolve = Umap.add_mbi mbid (mp,resolve)
 let add_mp mp1 mp2 resolve = Umap.add_mp mp1 (mp2,resolve)
@@ -282,21 +285,25 @@ let subst_ind sub mind =
       | Canonical -> mind_of_delta2 resolve mind'
   with No_subst -> mind
 
-let subst_con sub con =
+let subst_con0 sub con =
   let kn1,kn2 = user_con con,canonical_con con in
   let mp1,dir,l = repr_kn kn1 in
   let mp2,_,_ = repr_kn kn2 in
   let rebuild_con mp1 mp2 = make_con_equiv mp1 mp2 dir l in
   let dup con = con, mkConst con in
-  try
-    let side,con',resolve = gen_subst_mp rebuild_con sub mp1 mp2 in
-    match constant_of_delta_with_inline resolve con' with
-      | Some t -> con', t
-      | None ->
-	match side with
-	  | User -> dup (constant_of_delta resolve con')
-	  | Canonical -> dup (constant_of_delta2 resolve con')
-  with No_subst -> dup con
+  let side,con',resolve = gen_subst_mp rebuild_con sub mp1 mp2 in
+  match constant_of_delta_with_inline resolve con' with
+    | Some t -> con', t
+    | None ->
+      let con'' = match side with
+	| User -> constant_of_delta resolve con'
+	| Canonical -> constant_of_delta2 resolve con'
+      in
+      if con'' == con then raise No_subst else dup con''
+
+let subst_con sub con =
+  try subst_con0 sub con
+  with No_subst -> con, mkConst con
 
 (* Here the semantics is completely unclear.
    What does "Hint Unfold t" means when "t" is a parameter?
@@ -310,7 +317,7 @@ let subst_evaluable_reference subst = function
 let rec map_kn f f' c =
   let func = map_kn f f' in
     match kind_of_term c with
-      | Const kn -> f' kn
+      | Const kn -> (try snd (f' kn) with No_subst -> c)
       | Ind (kn,i) ->
 	  let kn' = f kn in
 	  if kn'==kn then c else mkInd (kn',i)
@@ -373,8 +380,9 @@ let rec map_kn f f' c =
 	    else mkCoFix (ln,(lna,tl',bl'))
       | _ -> c
 
-let subst_mps sub =
-  map_kn (subst_ind sub) (fun con -> snd (subst_con sub con))
+let subst_mps sub c =
+  if is_empty_subst sub then c
+  else map_kn (subst_ind sub) (subst_con0 sub) c
 
 let rec replace_mp_in_mp mpfrom mpto mp =
   match mp with

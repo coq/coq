@@ -210,7 +210,7 @@ type mutual_inductive_body = {
   }
 
 let subst_arity sub arity =
-  if sub = empty_subst then arity
+  if is_empty_subst sub then arity
   else match arity with
     | NonPolymorphicType s -> NonPolymorphicType (subst_mps sub s)
     | PolymorphicArity (ctx,s) -> PolymorphicArity (subst_rel_context sub ctx,s)
