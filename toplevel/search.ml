@@ -197,7 +197,8 @@ let filter_by_module_from_list = function
   | l, outside -> filter_by_module l (not outside)
 
 let filter_subproof gr _ _ =
-  not (string_string_contains (name_of_reference gr) "_subproof")
+  not (string_string_contains (name_of_reference gr) "_subproof") &&
+  not (string_string_contains (name_of_reference gr) "_admitted")
 
 let (&&&&&) f g x y z = f x y z && g x y z
 
