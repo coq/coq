@@ -101,9 +101,12 @@ let rec pp_expr env args =
 	  if ids <> [] then named_lams (List.rev ids) e
 	  else dummy_lams (ast_lift 1 e) 1
 	in
-	hov 2 (str (find_custom_match pv) ++ fnl () ++
+	apply
+	  (paren
+	     (hov 2
+		(str (find_custom_match pv) ++ fnl () ++
 		 prvect (fun tr -> pp_expr env [] (mkfun tr) ++ fnl ()) pv
-	       ++ pp_expr env [] t)
+		 ++ pp_expr env [] t)))
      | MLcase (info,t, pv) ->
 	let e =
 	  if info.m_kind <> Coinductive then pp_expr env [] t
