@@ -206,10 +206,10 @@ and pp_pat env info pv =
   match info.m_same with
     | BranchFun _ ->
         let ids, env' = push_vars [anonymous_name] env in
-        pr_id (List.hd ids) ++ str " ->" ++ spc () ++
-	  pp_expr par env' [] factor_br
+        hov 2 (pr_id (List.hd ids) ++ str " ->" ++ spc () ++
+	       pp_expr par env' [] factor_br)
     | BranchCst _ ->
-        str "_ ->" ++ spc () ++ pp_expr par env [] factor_br
+        hov 2 (str "_ ->" ++ spc () ++ pp_expr par env [] factor_br)
     | BranchNone -> mt ()
 
 (*s names of the functions ([ids]) are already pushed in [env],
