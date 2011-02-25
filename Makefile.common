@@ -171,7 +171,6 @@ MICROMEGACMA:=plugins/micromega/micromega_plugin.cma
 QUOTECMA:=plugins/quote/quote_plugin.cma
 RINGCMA:=plugins/ring/ring_plugin.cma
 NEWRINGCMA:=plugins/setoid_ring/newring_plugin.cma
-NCRINGCMA:=plugins/setoid_ring/ncring_plugin.cma
 NSATZCMA:=plugins/nsatz/nsatz_plugin.cma
 DPCMA:=plugins/dp/dp_plugin.cma
 FIELDCMA:=plugins/field/field_plugin.cma
@@ -193,7 +192,7 @@ OTHERSYNTAXCMA:=$(addprefix plugins/syntax/, \
 DECLMODECMA:=plugins/decl_mode/decl_mode_plugin.cma
 
 PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) $(DECLMODECMA) \
-        $(QUOTECMA) $(RINGCMA) $(NEWRINGCMA) $(NCRINGCMA)$(DPCMA) $(FIELDCMA) \
+        $(QUOTECMA) $(RINGCMA) $(NEWRINGCMA) $(DPCMA) $(FIELDCMA) \
         $(FOURIERCMA) $(EXTRACTIONCMA) $(XMLCMA) \
         $(CCCMA)  $(FOCMA) $(SUBTACCMA) $(RTAUTOCMA) \
         $(FUNINDCMA) $(NSATZCMA) $(NATSYNTAXCMA) $(OTHERSYNTAXCMA)
@@ -306,7 +305,6 @@ QUOTEVO:=$(call cat_vo_itarget, plugins/quote)
 RINGVO:=$(call cat_vo_itarget, plugins/ring)
 FIELDVO:=$(call cat_vo_itarget, plugins/field)
 NEWRINGVO:=$(call cat_vo_itarget, plugins/setoid_ring)
-NCRINGVO:=$(call cat_vo_itarget, plugins/setoid_ring)
 NSATZVO:=$(call cat_vo_itarget, plugins/nsatz)
 FOURIERVO:=$(call cat_vo_itarget, plugins/fourier)
 FUNINDVO:=$(call cat_vo_itarget, plugins/funind)
@@ -318,7 +316,7 @@ CCVO:=
 
 PLUGINSVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
 	    $(XMLVO) $(FOURIERVO) $(CCVO) $(FUNINDVO) \
-	    $(RTAUTOVO) $(NEWRINGVO) $(NCRINGVO)$(DPVO) $(QUOTEVO) \
+	    $(RTAUTOVO) $(NEWRINGVO) $(DPVO) $(QUOTEVO) \
             $(NSATZVO) $(EXTRACTIONVO)
 
 ALLVO:= $(THEORIESVO) $(PLUGINSVO)

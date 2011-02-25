@@ -11,7 +11,6 @@
 Require Import Setoid.
 Require Import BinPos.
 Require Import BinNat.
-Require Export ZArith.
 Require Export Morphisms Setoid Bool.
 Require Import Algebra_syntax.
 Require Import Ring_theory.
@@ -57,13 +56,8 @@ Instance opposite_cring`{R:Type}`{Rr:Cring R} : Opposite R :=
   {opposite x := cring_opp x}.
 Instance equality_cring `{R:Type}`{Rr:Cring R} : Equality :=
   {equality x y := cring_eq x y}.
-Definition ZN(x:Z):=
-  match x with
-    Z0 => N0
-    |Zpos p | Zneg p => Npos p
-end.
 Instance power_cring {R:Type}{Rr:Cring R} : Power:=
-  {power x y := @Ring_theory.pow_N _ cring1 cring_mult x (ZN y)}.
+  {power x y := @Ring_theory.pow_N _ cring1 cring_mult x y}.
 
 Existing Instance cring_setoid.
 Existing Instance cring_plus_comp.
