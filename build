@@ -5,6 +5,8 @@ OCAMLBUILD=ocamlbuild
 CFG=config/coq_config.ml
 MYCFG=myocamlbuild_config.ml
 
+export CAML_LD_LIBRARY_PATH=`pwd`/_build/kernel/byterun
+
 check_config() {
  [ -f $CFG ] || (echo "please run ./configure first"; exit 1)
  [ -L $MYCFG ] || ln -sf $CFG $MYCFG
