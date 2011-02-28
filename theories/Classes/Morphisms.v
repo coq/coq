@@ -117,6 +117,10 @@ Ltac f_equiv :=
   | _ => idtac
  end.
 
+(** [forall_def] reifies the dependent product as a definition. *)
+
+Definition forall_def {A : Type} (B : A -> Type) : Type := forall x : A, B x.
+
 (** Dependent pointwise lifting of a relation on the range. *)
 
 Definition forall_relation {A : Type} {B : A -> Type} (sig : Π a : A, relation (B a)) : relation (Π x : A, B x) :=
