@@ -87,6 +87,22 @@ let _ =
       optread  = get_proofs_transparency;
       optwrite = set_proofs_transparency; }
 
+(* true = hide obligations *)
+let hide_obligations = ref false
+
+let set_hide_obligations = (:=) hide_obligations
+let get_hide_obligations () = !hide_obligations
+
+open Goptions
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optname  = "Hidding of Program obligations";
+      optkey   = ["Hide";"Obligations"];
+      optread  = get_hide_obligations;
+      optwrite = set_hide_obligations; }
+
 let evar_of_obligation o = make_evar (Global.named_context_val ()) o.obl_type
 
 let get_obligation_body expand obl =
@@ -97,18 +113,54 @@ let get_obligation_body expand obl =
       | _ -> c
     else c
 
+let obl_substitution expand obls deps =
+  Intset.fold
+    (fun x acc ->
+       let xobl = obls.(x) in
+       let oblb =
+	 try get_obligation_body expand xobl
+	 with _ -> assert(false)
+       in (xobl.obl_name, (xobl.obl_type, oblb)) :: acc)
+    deps []
+
 let subst_deps expand obls deps t =
-  let subst =
-    Intset.fold
-      (fun x acc ->
-	let xobl = obls.(x) in
-	let oblb =
-	  try get_obligation_body expand xobl
-	  with _ -> assert(false)
-	in (xobl.obl_name, oblb) :: acc)
-      deps []
-  in(*  Termops.it_mkNamedProd_or_LetIn t subst *)
-    Term.replace_vars subst t
+  let subst = obl_substitution expand obls deps in
+    Term.replace_vars (List.map (fun (n, (_, b)) -> n, b) subst) t
+
+let rec prod_app t n =
+  match kind_of_term (strip_outer_cast t) with
+    | Prod (_,_,b) -> subst1 n b
+    | LetIn (_, b, t, b') -> prod_app (subst1 b b') n
+    | _ ->
+	errorlabstrm "prod_app"
+	  (str"Needed a product, but didn't find one" ++ fnl ())
+
+
+(* prod_appvect T [| a1 ; ... ; an |] -> (T a1 ... an) *)
+let prod_applist t nL = List.fold_left prod_app t nL
+
+let replace_appvars subst =
+  let rec aux c = 
+    let f, l = decompose_app c in
+      if isVar f then
+	try
+	  let c' = List.map (map_constr aux) l in
+	  let (t, b) = List.assoc (destVar f) subst in
+	    mkApp (delayed_force hide_obligation, 
+		   [| prod_applist t c'; applistc b c' |])
+	with Not_found -> map_constr aux c
+      else map_constr aux c
+  in map_constr aux
+       
+let subst_prog expand obls ints prg =
+  let subst = obl_substitution expand obls ints in
+    if get_hide_obligations () then
+      (replace_appvars subst prg.prg_body,
+       replace_appvars subst (Termops.refresh_universes prg.prg_type))
+    else 
+      let subst' = List.map (fun (n, (_, b)) -> n, b) subst in
+	(Term.replace_vars subst' prg.prg_body,
+	 Term.replace_vars subst' (Termops.refresh_universes prg.prg_type))
 
 let subst_deps_obl obls obl =
   let t' = subst_deps true obls obl.obl_deps obl.obl_type in
@@ -175,15 +227,10 @@ let rec intset_to = function
 let subst_body expand prg =
   let obls, _ = prg.prg_obligations in
   let ints = intset_to (pred (Array.length obls)) in
-    subst_deps expand obls ints prg.prg_body,
-  subst_deps expand obls ints (Termops.refresh_universes prg.prg_type)
+    subst_prog expand obls ints prg
 
 let declare_definition prg =
   let body, typ = subst_body true prg in
-    (try trace (str "Declaring: " ++ Ppconstr.pr_id prg.prg_name ++ spc () ++
-		  my_print_constr (Global.env()) body ++ str " : " ++
-		  my_print_constr (Global.env()) prg.prg_type);
-     with _ -> ());
   let (local, kind) = prg.prg_kind in
   let ce =
     { const_entry_body = body;

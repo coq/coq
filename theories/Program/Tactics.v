@@ -319,3 +319,5 @@ Create HintDb program discriminated.
 Ltac program_simpl := program_simplify ; try typeclasses eauto with program ; try program_solve_wf.
 
 Obligation Tactic := program_simpl.
+
+Definition obligation (A : Type) {a : A} := a.

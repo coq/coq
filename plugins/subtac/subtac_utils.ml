@@ -57,6 +57,8 @@ let fix_proto_ref () =
   | ConstRef c -> c
   | _ -> assert false
 
+let hide_obligation = init_constant tactics_module "obligation"
+
 let eq_ind = init_constant ["Init"; "Logic"] "eq"
 let eq_rec = init_constant ["Init"; "Logic"] "eq_rec"
 let eq_rect = init_constant ["Init"; "Logic"] "eq_rect"

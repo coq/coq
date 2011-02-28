@@ -37,6 +37,8 @@ val sig_ : coq_sigma_data delayed
 val fix_proto : constr delayed
 val fix_proto_ref : unit -> constant
 
+val hide_obligation : constr delayed
+
 val eq_ind : constr delayed
 val eq_rec : constr delayed
 val eq_rect : constr delayed
