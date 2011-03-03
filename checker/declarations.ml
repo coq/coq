@@ -29,186 +29,164 @@ type constant_type =
 let val_cst_type =
   val_sum "constant_type" 0 [|[|val_constr|];[|val_rctxt;val_pol_arity|]|]
 
-
-type substitution_domain =
-  | MBI of mod_bound_id
-  | MPI of module_path
-
-let val_subst_dom =
-  val_sum "substitution_domain" 0 [|[|val_uid|];[|val_mp|]|]
-
-module Umap = Map.Make(struct
-			 type t = substitution_domain
-			 let compare = Pervasives.compare
-		       end)
-
+(** Substitutions, code imported from kernel/mod_subst *)
 
 type delta_hint =
-    Inline of constr option
+  | Inline of int * constr option
   | Equiv of kernel_name
-  | Prefix_equiv of module_path
 
-type delta_key = 
-    KN of kernel_name
-  | MP of module_path
 
-module Deltamap =  Map.Make(struct 
-			      type t = delta_key
-			      let compare = Pervasives.compare
-			    end)
+module Deltamap = struct
+  type t = module_path MPmap.t * delta_hint KNmap.t
+  let empty = MPmap.empty, KNmap.empty
+  let add_kn kn hint (mm,km) = (mm,KNmap.add kn hint km)
+  let add_mp mp mp' (mm,km) = (MPmap.add mp mp' mm, km)
+  let remove_mp mp (mm,km) = (MPmap.remove mp mm, km)
+  let find_mp mp map = MPmap.find mp (fst map)
+  let find_kn kn map = KNmap.find kn (snd map)
+  let mem_mp mp map = MPmap.mem mp (fst map)
+  let mem_kn kn map = KNmap.mem kn (snd map)
+  let fold_kn f map i = KNmap.fold f (snd map) i
+  let fold fmp fkn (mm,km) i =
+    MPmap.fold fmp mm (KNmap.fold fkn km i)
+  let join map1 map2 = fold add_mp add_kn map1 map2
+end
 
-type delta_resolver = delta_hint Deltamap.t
+type delta_resolver = Deltamap.t
 
 let empty_delta_resolver = Deltamap.empty
+
+module MBImap = Map.Make
+  (struct
+    type t = mod_bound_id
+    let compare = Pervasives.compare
+   end)
+
+module Umap = struct
+  type 'a t = 'a MPmap.t * 'a MBImap.t
+  let empty = MPmap.empty, MBImap.empty
+  let is_empty (m1,m2) = MPmap.is_empty m1 && MBImap.is_empty m2
+  let add_mbi mbi x (m1,m2) = (m1,MBImap.add mbi x m2)
+  let add_mp mp x (m1,m2) = (MPmap.add mp x m1, m2)
+  let find_mp mp map = MPmap.find mp (fst map)
+  let find_mbi mbi map = MBImap.find mbi (snd map)
+  let mem_mp mp map = MPmap.mem mp (fst map)
+  let mem_mbi mbi map = MBImap.mem mbi (snd map)
+  let iter_mbi f map = MBImap.iter f (snd map)
+  let fold fmp fmbi (m1,m2) i =
+    MPmap.fold fmp m1 (MBImap.fold fmbi m2 i)
+  let join map1 map2 = fold add_mp add_mbi map1 map2
+end
 
 type substitution = (module_path * delta_resolver) Umap.t
 type 'a subst_fun = substitution -> 'a -> 'a
 
-let val_res_dom =
-  val_sum "delta_key" 0 [|[|val_kn|];[|val_mp|]|]
-
-let val_res =
-  val_map ~name:"delta_resolver"
-    val_res_dom  
-    (val_sum "delta_hint" 0 [|[|val_opt val_constr|];[|val_kn|];[|val_mp|]|])
-
-let val_subst =
-  val_map ~name:"substitution"
-    val_subst_dom (val_tuple ~name:"substition range" [|val_mp;val_res|])
-
 let empty_subst = Umap.empty
 
-let add_mbid mbid mp =
-  Umap.add (MBI mbid) (mp,empty_delta_resolver)
-let add_mp mp1 mp2  =
-  Umap.add (MPI mp1) (mp2,empty_delta_resolver)
+let is_empty_subst = Umap.is_empty
+
+let val_delta_hint =
+  val_sum "delta_hint" 0
+    [|[|val_int; val_opt val_constr|];[|val_kn|]|]
+
+let val_res =
+  val_tuple ~name:"delta_resolver"
+    [|val_map ~name:"delta_resolver" val_mp val_mp;
+      val_map ~name:"delta_resolver" val_kn val_delta_hint|]
+
+let val_mp_res = val_tuple [|val_mp;val_res|]
+
+let val_subst =
+  val_tuple ~name:"substitution"
+    [|val_map ~name:"substitution" val_mp val_mp_res;
+      val_map ~name:"substitution" val_uid val_mp_res|]
+
+let add_mbid mbid mp = Umap.add_mbi mbid (mp,empty_delta_resolver)
+let add_mp mp1 mp2 = Umap.add_mp mp1 (mp2,empty_delta_resolver)
 
 let map_mbid mbid mp = add_mbid mbid mp empty_subst
 let map_mp mp1 mp2 = add_mp mp1 mp2 empty_subst
 
-let mp_in_delta mp = 
-  Deltamap.mem (MP mp) 
+let mp_in_delta mp =
+  Deltamap.mem_mp mp
 
-exception Inline_kn
-
-let rec find_prefix resolve mp = 
+let rec find_prefix resolve mp =
   let rec sub_mp = function
-    | MPdot(mp,l) as mp_sup -> 
-	(try 
-	   match Deltamap.find (MP mp_sup) resolve with
-	     | Prefix_equiv mp1 -> mp1
-	     | _ -> anomaly 
-		 "mod_subst: bad association in delta_resolver"
-	 with
-	     Not_found -> MPdot(sub_mp mp,l))
-    | p -> 
-	match Deltamap.find (MP p) resolve with
-	  | Prefix_equiv mp1 -> mp1
-	  | _ -> anomaly 
-		 "mod_subst: bad association in delta_resolver"	
+    | MPdot(mp,l) as mp_sup ->
+	(try Deltamap.find_mp mp_sup resolve
+	 with Not_found -> MPdot(sub_mp mp,l))
+    | p -> Deltamap.find_mp p resolve
   in
-    try 
-      sub_mp mp
-    with
-	Not_found -> mp
-	  
+  try sub_mp mp with Not_found -> mp
+
+(** Nota: the following function is slightly different in mod_subst
+    PL: Is it on purpose ? *)
+
 let solve_delta_kn resolve kn =
-  try 
-      match Deltamap.find (KN kn) resolve with
-	| Equiv kn1 -> kn1
-	| Inline _ -> raise Inline_kn
-	| _ -> anomaly 
-	    "mod_subst: bad association in delta_resolver"
-  with
-      Not_found | Inline_kn -> 
-	let mp,dir,l = repr_kn kn in
-	let new_mp = find_prefix resolve mp in
-	  if mp == new_mp then 
-	    kn
-	  else
-	    make_kn new_mp dir l
-	      
+  try
+    match Deltamap.find_kn kn resolve with
+      | Equiv kn1 -> kn1
+      | Inline _ -> raise Not_found
+  with Not_found ->
+    let mp,dir,l = repr_kn kn in
+    let new_mp = find_prefix resolve mp in
+    if mp == new_mp then
+      kn
+    else
+      make_kn new_mp dir l
+
+let gen_of_delta resolve x kn fix_can =
+  try
+    let new_kn = solve_delta_kn resolve kn in
+    if kn == new_kn then x else fix_can new_kn
+  with _ -> x
 
 let constant_of_delta resolve con =
   let kn = user_con con in
-  let new_kn = solve_delta_kn resolve kn in
-    if kn == new_kn then
-      con
-    else
-      constant_of_kn_equiv kn new_kn
-	
+  gen_of_delta resolve con kn (constant_of_kn_equiv kn)
+
 let constant_of_delta2 resolve con =
-  let kn = canonical_con con in
-  let kn1 = user_con con in
-  let new_kn = solve_delta_kn resolve kn in
-    if kn == new_kn then
-      con
-    else
-      constant_of_kn_equiv kn1 new_kn
+  let kn, kn' = canonical_con con, user_con con in
+  gen_of_delta resolve con kn (constant_of_kn_equiv kn')
 
 let mind_of_delta resolve mind =
   let kn = user_mind mind in
-  let new_kn = solve_delta_kn resolve kn in
-    if kn == new_kn then
-      mind
-    else
-      mind_of_kn_equiv kn new_kn
-	
-let mind_of_delta2 resolve mind =
-  let kn = canonical_mind mind in
-  let kn1 = user_mind mind in
-  let new_kn = solve_delta_kn resolve kn in
-    if kn == new_kn then
-      mind
-    else
-      mind_of_kn_equiv kn1 new_kn
+  gen_of_delta resolve mind kn (mind_of_kn_equiv kn)
 
-exception Not_inline
-  
+let mind_of_delta2 resolve mind =
+  let kn, kn' = canonical_mind mind, user_mind mind in
+  gen_of_delta resolve mind kn (mind_of_kn_equiv kn')
+
+let find_inline_of_delta kn resolve =
+  match Deltamap.find_kn kn resolve with
+    | Inline (_,o) -> o
+    | _ -> raise Not_found
+
 let constant_of_delta_with_inline resolve con =
   let kn1,kn2 = canonical_con con,user_con con in
-    try
-      match Deltamap.find (KN kn2) resolve with 
-	| Inline None -> None
-	| Inline (Some const) -> Some const
-	| _ -> raise Not_inline
-    with
-	Not_found | Not_inline -> 
-	  try match Deltamap.find (KN kn1) resolve with 
-	    | Inline None -> None
-	    | Inline (Some const) -> Some const
-	    | _ -> raise Not_inline
-	  with
-	      Not_found | Not_inline -> None
+  try find_inline_of_delta kn2 resolve
+  with Not_found ->
+    try find_inline_of_delta kn1 resolve
+    with Not_found -> None
 
 let subst_mp0 sub mp = (* 's like subst *)
  let rec aux mp =
   match mp with
-    | MPfile sid -> 
-        let mp',resolve = Umap.find (MPI (MPfile sid)) sub in
-         mp',resolve
+    | MPfile sid -> Umap.find_mp mp sub
     | MPbound bid ->
 	begin
-	  try
-            let mp',resolve = Umap.find (MBI bid) sub in
-              mp',resolve
-	  with Not_found ->
-	    let mp',resolve = Umap.find (MPI mp) sub in
-              mp',resolve
+	  try Umap.find_mbi bid sub
+	  with Not_found -> Umap.find_mp mp sub
 	end
     | MPdot (mp1,l) as mp2 ->
 	begin
-	  try
-	    let mp',resolve = Umap.find (MPI mp2) sub in
-              mp',resolve
+	  try Umap.find_mp mp2 sub
 	  with Not_found ->
 	    let mp1',resolve = aux mp1 in
-	      MPdot (mp1',l),resolve
+	    MPdot (mp1',l),resolve
 	end
  in
-  try
-    Some (aux mp)
-  with Not_found -> None
+ try Some (aux mp) with Not_found -> None
 
 let subst_mp sub mp =
  match subst_mp0 sub mp with
@@ -235,100 +213,58 @@ type sideconstantsubst =
   | User
   | Canonical
 
-let subst_ind sub mind =
-  let kn1,kn2 = user_mind mind,canonical_mind mind in
-  let mp1,dir,l = repr_kn kn1 in
-  let mp2,_,_ = repr_kn kn2 in
-    try 
-      let side,mind',resolve =   
-        match subst_mp0 sub mp1,subst_mp0 sub mp2 with
-	    None,None ->raise No_subst
-	  | Some (mp',resolve),None -> User,(make_mind_equiv mp' mp2 dir l), resolve
-	  | None, Some(mp',resolve)-> Canonical,(make_mind_equiv mp1 mp' dir l), resolve
-	  | Some(mp1',resolve1),Some(mp2',resolve2)->Canonical,
-	      (make_mind_equiv mp1' mp2' dir l), resolve2 
-      in
-	match side with
-	  |User ->
-	     let mind = mind_of_delta resolve mind' in
-	       mind
-	  |Canonical ->
-	     let mind = mind_of_delta2 resolve mind' in
-	       mind
-    with 
-	No_subst -> mind
 
-let subst_mind0 sub mind =
-  let kn1,kn2 = user_mind mind,canonical_mind mind in
+let gen_subst_mp f sub mp1 mp2 =
+  match subst_mp0 sub mp1, subst_mp0 sub mp2 with
+    | None, None -> raise No_subst
+    | Some (mp',resolve), None -> User, (f mp' mp2), resolve
+    | None, Some (mp',resolve) -> Canonical, (f mp1 mp'), resolve
+    | Some (mp1',_), Some (mp2',resolve2) -> Canonical, (f mp1' mp2'), resolve2
+
+let subst_ind sub mind =
+  let kn1,kn2 = user_mind mind, canonical_mind mind in
   let mp1,dir,l = repr_kn kn1 in
   let mp2,_,_ = repr_kn kn2 in
-    try 
-      let side,mind',resolve =   
-        match subst_mp0 sub mp1,subst_mp0 sub mp2 with
-	    None,None ->raise No_subst
-	  | Some (mp',resolve),None -> User,(make_mind_equiv mp' mp2 dir l), resolve
-	  | None, Some(mp',resolve)-> Canonical,(make_mind_equiv mp1 mp' dir l), resolve
-	  | Some(mp1',resolve1),Some(mp2',resolve2)->Canonical,
-	      (make_mind_equiv mp1' mp2' dir l), resolve2
-      in
-	match side with
-	  |User ->
-	     let mind = mind_of_delta resolve mind' in
-	       Some mind
-	  |Canonical ->
-	     let mind = mind_of_delta2 resolve mind' in
-	       Some mind
-    with 
-	No_subst -> Some mind
+  let rebuild_mind mp1 mp2 = make_mind_equiv mp1 mp2 dir l in
+  try
+    let side,mind',resolve = gen_subst_mp rebuild_mind sub mp1 mp2 in
+    match side with
+      | User -> mind_of_delta resolve mind'
+      | Canonical -> mind_of_delta2 resolve mind'
+  with No_subst -> mind
 
 let subst_con0 sub con =
   let kn1,kn2 = user_con con,canonical_con con in
   let mp1,dir,l = repr_kn kn1 in
   let mp2,_,_ = repr_kn kn2 in
-    try  
-      let side,con',resolve =   
-	match subst_mp0 sub mp1,subst_mp0 sub mp2 with
-	    None,None ->raise No_subst
-	  | Some (mp',resolve),None -> User,(make_con_equiv mp' mp2 dir l), resolve
-	  | None, Some(mp',resolve)-> Canonical,(make_con_equiv mp1 mp' dir l), resolve
-	  | Some(mp1',resolve1),Some(mp2',resolve2)->Canonical,
-	      (make_con_equiv mp1' mp2' dir l), resolve2 
+  let rebuild_con mp1 mp2 = make_con_equiv mp1 mp2 dir l in
+  let dup con = con, Const con in
+  let side,con',resolve = gen_subst_mp rebuild_con sub mp1 mp2 in
+  match constant_of_delta_with_inline resolve con' with
+    | Some t -> con', t
+    | None ->
+      let con'' = match side with
+	| User -> constant_of_delta resolve con'
+	| Canonical -> constant_of_delta2 resolve con'
       in
-	match constant_of_delta_with_inline resolve con' with
-	    None ->begin
-	      match side with
-	      |User ->
-	      let con = constant_of_delta resolve con' in
-		Some (Const con)
-	      |Canonical ->
-		  let con = constant_of_delta2 resolve con' in
-		Some (Const con)
-	    end
-	  | t ->  t
-    with No_subst -> Some (Const con)
-
+      if con'' == con then raise No_subst else dup con''
 
 let rec map_kn f f' c =
   let func = map_kn f f' in
     match c with
-      | Const kn ->
-	  (match f' kn with
-	       None -> c
-	     | Some const ->const)
+      | Const kn -> (try snd (f' kn) with No_subst -> c)
       | Ind (kn,i) ->
-         (match f kn with
-             None -> c
-           | Some kn' ->
-	      Ind (kn',i))
+	  let kn' = f kn in
+	  if kn'==kn then c else Ind (kn',i)
       | Construct ((kn,i),j) ->
-         (match f kn with
-             None -> c
-           | Some kn' ->
-	       Construct ((kn',i),j))
+	  let kn' = f kn in
+	  if kn'==kn then c else Construct ((kn',i),j)
       | Case (ci,p,ct,l) ->
 	  let ci_ind =
             let (kn,i) = ci.ci_ind in
-              (match f kn with None -> ci.ci_ind | Some kn' -> kn',i ) in
+	    let kn' = f kn in
+	    if kn'==kn then ci.ci_ind else kn',i
+	  in
 	  let p' = func p in
 	  let ct' = func ct in
 	  let l' = array_smartmap func l in
@@ -379,8 +315,9 @@ let rec map_kn f f' c =
 	    else CoFix (ln,(lna,tl',bl'))
       | _ -> c
 
-let subst_mps sub =
-  map_kn (subst_mind0 sub) (subst_con0 sub)
+let subst_mps sub c =
+  if is_empty_subst sub then c
+  else map_kn (subst_ind sub) (subst_con0 sub) c
 
 
 type 'a lazy_subst =
@@ -410,125 +347,113 @@ let rec mp_in_mp mp mp1 =
     | _ when mp1 = mp -> true
     | MPdot (mp2,l) -> mp_in_mp mp mp2
     | _ -> false
-	
-let mp_in_key mp key = 
-  match key with
-    | MP mp1 -> 
-	mp_in_mp mp mp1
-    | KN kn -> 
-	let mp1,dir,l = repr_kn kn in
-	  mp_in_mp mp mp1
-  
+
 let subset_prefixed_by mp resolver =
-  let prefixmp key hint resolv =
-    if mp_in_key mp key then
-      Deltamap.add key hint resolv
-    else 
-      resolv
+  let mp_prefix mkey mequ rslv =
+    if mp_in_mp mp mkey then Deltamap.add_mp mkey mequ rslv else rslv
   in
-    Deltamap.fold prefixmp resolver empty_delta_resolver
+  let kn_prefix kn hint rslv =
+    match hint with
+      | Inline _ -> rslv
+      | Equiv _ ->
+	if mp_in_mp mp (modpath kn) then Deltamap.add_kn kn hint rslv else rslv
+  in
+  Deltamap.fold mp_prefix kn_prefix resolver empty_delta_resolver
 
 let subst_dom_delta_resolver subst resolver =
-  let apply_subst key hint resolver =
-    match key with
-	(MP mp) ->
-	  Deltamap.add (MP (subst_mp subst mp)) hint resolver
-      | (KN kn) ->
-	  Deltamap.add (KN (subst_kn subst kn)) hint resolver
+  let mp_apply_subst mkey mequ rslv =
+    Deltamap.add_mp (subst_mp subst mkey) mequ rslv
   in
-    Deltamap.fold apply_subst resolver empty_delta_resolver
+  let kn_apply_subst kkey hint rslv =
+    Deltamap.add_kn (subst_kn subst kkey) hint rslv
+  in
+  Deltamap.fold mp_apply_subst kn_apply_subst resolver empty_delta_resolver
 
-let subst_mp_delta sub mp key=
+let subst_mp_delta sub mp mkey =
  match subst_mp0 sub mp with
     None -> empty_delta_resolver,mp
-  | Some (mp',resolve) -> 
+  | Some (mp',resolve) ->
       let mp1 = find_prefix resolve mp' in
       let resolve1 = subset_prefixed_by mp1 resolve in
-	match key with
-	    MP mpk ->
-	      (subst_dom_delta_resolver 
-		 (map_mp mp1 mpk) resolve1),mp1
-	  | _ -> anomaly "Mod_subst: Bad association in resolver" 
+      (subst_dom_delta_resolver
+	 (map_mp mp1 mkey) resolve1),mp1
 
-let subst_codom_delta_resolver subst resolver =
-  let apply_subst key hint resolver =
-    match hint with
-	Prefix_equiv mp ->
-	  let derived_resolve,mpnew = subst_mp_delta subst mp key in
-	    Deltamap.fold Deltamap.add derived_resolve
-	      (Deltamap.add key (Prefix_equiv mpnew) resolver)
-      | (Equiv kn) ->
-	  Deltamap.add key (Equiv (subst_kn_delta subst kn)) resolver
-      | Inline None ->
-	  Deltamap.add key hint resolver
-      | Inline (Some t) ->
-	  Deltamap.add key (Inline (Some (subst_mps subst t))) resolver
+let gen_subst_delta_resolver dom subst resolver =
+  let mp_apply_subst mkey mequ rslv =
+    let mkey' = if dom then subst_mp subst mkey else mkey in
+    let rslv',mequ' = subst_mp_delta subst mequ mkey in
+    Deltamap.join rslv' (Deltamap.add_mp mkey' mequ' rslv)
   in
-    Deltamap.fold apply_subst resolver empty_delta_resolver
-
-let subst_dom_codom_delta_resolver subst resolver =
-  subst_dom_delta_resolver subst
-    (subst_codom_delta_resolver subst resolver)
-    
-let update_delta_resolver resolver1 resolver2 =
- let apply_res key hint res = 
-      try
-	match hint with
-	    Prefix_equiv mp ->
-	      let new_hint =
-		Prefix_equiv (find_prefix resolver2 mp)
-	      in Deltamap.add key new_hint res
-	  | Equiv kn ->
-	      let new_hint =
-		Equiv (solve_delta_kn resolver2 kn)
-	      in Deltamap.add key new_hint res
-	  | _ -> Deltamap.add key hint res
-      with Not_found ->
-	Deltamap.add key hint res
+  let kn_apply_subst kkey hint rslv =
+    let kkey' = if dom then subst_kn subst kkey else kkey in
+    let hint' = match hint with
+      | Equiv kequ -> Equiv (subst_kn_delta subst kequ)
+      | Inline (lev,Some t) -> Inline (lev,Some (subst_mps subst t))
+      | Inline (_,None) -> hint
     in
-      Deltamap.fold apply_res resolver1 empty_delta_resolver
+    Deltamap.add_kn kkey' hint' rslv
+  in
+  Deltamap.fold mp_apply_subst kn_apply_subst resolver empty_delta_resolver
+
+let subst_codom_delta_resolver = gen_subst_delta_resolver false
+let subst_dom_codom_delta_resolver = gen_subst_delta_resolver true
+
+let update_delta_resolver resolver1 resolver2 =
+  let mp_apply_rslv mkey mequ rslv =
+    if Deltamap.mem_mp mkey resolver2 then rslv
+    else Deltamap.add_mp mkey (find_prefix resolver2 mequ) rslv
+  in
+  let kn_apply_rslv kkey hint rslv =
+    if Deltamap.mem_kn kkey resolver2 then rslv
+    else
+      let hint' = match hint with
+	| Equiv kequ -> Equiv (solve_delta_kn resolver2 kequ)
+	| _ -> hint
+      in
+      Deltamap.add_kn kkey hint' rslv
+  in
+  Deltamap.fold mp_apply_rslv kn_apply_rslv resolver1 empty_delta_resolver
 
 let add_delta_resolver resolver1 resolver2 =
   if resolver1 == resolver2 then
     resolver2
+  else if resolver2 = empty_delta_resolver then
+    resolver1
   else
-    Deltamap.fold Deltamap.add (update_delta_resolver resolver1 resolver2)
-      resolver2
+    Deltamap.join (update_delta_resolver resolver1 resolver2) resolver2
 
 let substition_prefixed_by k mp subst =
-  let prefixmp key (mp_to,reso) sub =
-    match key with 
-      | MPI mpk ->
-	  if mp_in_mp mp mpk && mp <> mpk then
-	    let new_key = replace_mp_in_mp mp k mpk in
-	      Umap.add (MPI new_key) (mp_to,reso) sub
-	  else 
-	    sub
-      |  _ -> sub
+  let mp_prefixmp kmp (mp_to,reso) sub =
+    if mp_in_mp mp kmp && mp <> kmp then
+      let new_key = replace_mp_in_mp mp k kmp in
+      Umap.add_mp new_key (mp_to,reso) sub
+    else sub
   in
-    Umap.fold prefixmp subst empty_subst
+  let mbi_prefixmp mbi _ sub = sub
+  in
+  Umap.fold mp_prefixmp mbi_prefixmp subst empty_subst
 
-let join (subst1 : substitution) (subst2 : substitution) =
-  let apply_subst key (mp,resolve) res =
+let join subst1 subst2 =
+  let apply_subst mpk add (mp,resolve) res =
     let mp',resolve' =
       match subst_mp0 subst2 mp with
-	  None -> mp, None
-	| Some (mp',resolve') ->  mp'
-	    ,Some resolve' in
-    let resolve'' : delta_resolver =
+	| None -> mp, None
+	| Some (mp',resolve') ->  mp', Some resolve' in
+    let resolve'' =
       match resolve' with
-          Some res -> 
-	    add_delta_resolver 
+        | Some res ->
+	    add_delta_resolver
 	      (subst_dom_codom_delta_resolver subst2 resolve) res
-	| None -> 
+	| None ->
 	    subst_codom_delta_resolver subst2 resolve
     in
-    let k = match key with MBI mp -> MPbound mp | MPI mp -> mp in
-    let prefixed_subst = substition_prefixed_by k mp subst2 in
-      Umap.fold Umap.add prefixed_subst 
-	(Umap.add key (mp',resolve'') res) in
-  let subst = Umap.fold apply_subst subst1 empty_subst in
-    (Umap.fold Umap.add subst2 subst) 
+    let prefixed_subst = substition_prefixed_by mpk mp' subst2 in
+    Umap.join prefixed_subst (add (mp',resolve'') res)
+  in
+  let mp_apply_subst mp = apply_subst mp (Umap.add_mp mp) in
+  let mbi_apply_subst mbi = apply_subst (MPbound mbi) (Umap.add_mbi mbi) in
+  let subst = Umap.fold mp_apply_subst mbi_apply_subst subst1 empty_subst in
+  Umap.join subst2 subst
 
 let force fsubst r =
   match !r with
@@ -572,7 +497,7 @@ let val_cb = val_tuple ~name:"constant_body"
     no_val;
     val_cstrs;
     val_bool;
-    val_bool |]
+    val_opt val_int |]
 
 
 let subst_rel_declaration sub (id,copt,t as x) =
