@@ -73,6 +73,10 @@ Internal infrastructure
 - Support of cross-compilation via mingw toward Windows, contact P. Letouzey
   for more informations.
 
+Extraction
+
+- The pretty-printer for Haskell now produces layout-independant code
+
 Changes from V8.2 to V8.3
 =========================
 

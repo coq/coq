@@ -104,7 +104,7 @@ let rec pp_type par vl t =
 
 let expr_needs_par = function
   | MLlam _  -> true
-  | MLcase _ -> true
+  | MLcase _ -> false (* now that we use the case ... of { ... } syntax *)
   | _        -> false
 
 
@@ -127,14 +127,14 @@ let rec pp_expr par env args =
 	let pp_id = pr_id (List.hd i)
 	and pp_a1 = pp_expr false env [] a1
 	and pp_a2 = pp_expr (not par && expr_needs_par a2) env' [] a2 in
-	hv 0
-	  (apply
-	     (pp_par par'
-		(hv 0
-		   (hov 5
-		      (str "let" ++ spc () ++ pp_id ++ str " = " ++ pp_a1) ++
-		    spc () ++ str "in") ++
-		 spc () ++ hov 0 pp_a2)))
+	let pp_def =
+	  str "let {" ++ cut () ++
+	  hov 1 (pp_id ++ str " = " ++ pp_a1 ++ str "}")
+	in
+	apply
+	  (pp_par par'
+	     (hv 0 (hv 0 (hv 1 pp_def ++ spc () ++ str "in") ++
+		    spc () ++ hov 0 pp_a2)))
     | MLglob r ->
 	apply (pp_global Term r)
     | MLcons (_,r,[]) ->
@@ -159,8 +159,8 @@ let rec pp_expr par env args =
 		 ++ pp_expr true env [] t)))
     | MLcase (info,t, pv) ->
       	apply (pp_par par'
-		 (v 0 (str "case " ++ pp_expr false env [] t ++ str " of" ++
-		       fnl () ++ str "  " ++ pp_pat env info pv)))
+		 (v 0 (str "case " ++ pp_expr false env [] t ++ str " of {" ++
+		       fnl () ++ pp_pat env info pv)))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' i (Array.of_list (List.rev ids'),defs) args
@@ -177,12 +177,11 @@ and pp_pat env info pv =
   let pp_one_pat (name,ids,t) =
     let ids,env' = push_vars (List.rev_map id_of_mlid ids) env in
     let par = expr_needs_par t in
-    hov 2 (pp_global Cons name ++
+    hov 2 (str " " ++ pp_global Cons name ++
 	   (match ids with
 	      | [] -> mt ()
 	      | _  -> (str " " ++
-		       prlist_with_sep
-			 (fun () -> (spc ())) pr_id (List.rev ids))) ++
+		       prlist_with_sep spc pr_id (List.rev ids))) ++
 	   str " ->" ++ spc () ++ pp_expr par env' [] t)
   in
   let factor_br, factor_set = try match info.m_same with
@@ -199,18 +198,18 @@ and pp_pat env info pv =
   prvecti
     (fun i x -> if Intset.mem i factor_set then mt () else
        (pp_one_pat pv.(i) ++
-       if i = last && Intset.is_empty factor_set then mt () else
-       fnl () ++ str "  ")) pv
+       if i = last && Intset.is_empty factor_set then str "}" else
+	 (str ";" ++ fnl ()))) pv
   ++
   if Intset.is_empty factor_set then mt () else
   let par = expr_needs_par factor_br in
   match info.m_same with
     | BranchFun _ ->
         let ids, env' = push_vars [anonymous_name] env in
-        hov 2 (pr_id (List.hd ids) ++ str " ->" ++ spc () ++
-	       pp_expr par env' [] factor_br)
+        hov 2 (str " " ++ pr_id (List.hd ids) ++ str " ->" ++ spc () ++
+	       pp_expr par env' [] factor_br ++ str "}")
     | BranchCst _ ->
-        hov 2 (str "_ ->" ++ spc () ++ pp_expr par env [] factor_br)
+        hov 2 (str " _ ->" ++ spc () ++ pp_expr par env [] factor_br ++ str "}")
     | BranchNone -> mt ()
 
 (*s names of the functions ([ids]) are already pushed in [env],
@@ -219,12 +218,12 @@ and pp_pat env info pv =
 and pp_fix par env i (ids,bl) args =
   pp_par par
     (v 0
-       (v 2 (str "let" ++ fnl () ++
-	     prvect_with_sep fnl
+       (v 1 (str "let {" ++ fnl () ++
+	     prvect_with_sep (fun () -> str ";" ++ fnl ())
 	       (fun (fi,ti) -> pp_function env (pr_id fi) ti)
-	       (array_map2 (fun a b -> a,b) ids bl)) ++
-	fnl () ++
-	hov 2 (str "in " ++ pp_apply (pr_id ids.(i)) false args)))
+	       (array_map2 (fun a b -> a,b) ids bl) ++
+	     str "}") ++
+        fnl () ++ str "in " ++ pp_apply (pr_id ids.(i)) false args))
 
 and pp_function env f t =
   let bl,t' = collect_lams t in
@@ -263,12 +262,12 @@ let pp_one_ind ip pl cv =
 		  (fun () -> (str " ")) (pp_type true pl) l))
   in
   str (if Array.length cv = 0 then "type " else "data ") ++
-  pp_global Type (IndRef ip) ++ str " " ++
-  prlist_with_sep (fun () -> str " ") pr_lower_id pl ++
-  (if pl = [] then mt () else str " ") ++
-  if Array.length cv = 0 then str "= () -- empty inductive"
+  pp_global Type (IndRef ip) ++
+  prlist_strict (fun id -> str " " ++ pr_lower_id id) pl ++ str " =" ++
+  if Array.length cv = 0 then str " () -- empty inductive"
   else
-    (v 0 (str "= " ++
+    (fnl () ++ str " " ++
+     v 0 (str "  " ++
 	  prvect_with_sep (fun () -> fnl () ++ str "| ") pp_constructor
 	    (Array.mapi (fun i c -> ConstructRef (ip,i+1),c) cv)))
 

@@ -41,6 +41,13 @@ let pr_binding = function
   | [] -> mt ()
   | l  -> str " " ++ prlist_with_sep (fun () -> str " ") pr_id l
 
+(** By default, in module Format, you can do horizontal placing of blocks
+    even if they include newlines, as long as the number of chars in the
+    blocks are less that a line length. To avoid this awkward situation,
+    we attach a big virtual size to [fnl] newlines. *)
+
+let fnl () = stras (1000000,"") ++ fnl ()
+
 let fnl2 () = fnl () ++ fnl ()
 
 let space_if = function true -> str " " | false -> mt ()

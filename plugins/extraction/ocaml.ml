@@ -292,7 +292,7 @@ let rec pp_expr par env args =
 		  (try pp_ifthenelse par' env expr pv
 		   with Not_found ->
 		     v 0 (str "match " ++ expr ++ str " with" ++ fnl () ++
-			  str "  | " ++ pp_pat env info pv))))
+			  pp_pat env info pv))))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' i (Array.of_list (List.rev ids'),defs) args
@@ -356,19 +356,19 @@ and pp_pat env info pv =
   prvecti
     (fun i x -> if Intset.mem i factor_set then mt () else
        let s1,s2 = pp_one_pat env info x in
-       hov 2 (s1 ++ str " ->" ++ spc () ++ s2) ++
-       if i = last && Intset.is_empty factor_set then mt () else
-       fnl () ++ str "  | ") pv
+       hv 2 (hov 4 (str "| " ++ s1 ++ str " ->") ++ spc () ++ hov 2 s2) ++
+       if i = last && Intset.is_empty factor_set then mt () else fnl ())
+    pv
   ++
   if Intset.is_empty factor_set then mt () else
   let par = expr_needs_par factor_br in
   match info.m_same with
     | BranchFun _ ->
         let ids, env' = push_vars [anonymous_name] env in
-        hov 2 (pr_id (List.hd ids) ++ str " ->" ++ spc () ++
-		 pp_expr par env' [] factor_br)
+        hv 2 (str "| " ++ pr_id (List.hd ids) ++ str " ->" ++ spc () ++
+		 hov 2 (pp_expr par env' [] factor_br))
     | BranchCst _ ->
-        hov 2 (str "_ ->" ++ spc () ++ pp_expr par env [] factor_br)
+        hv 2 (str "| _ ->" ++ spc () ++ hov 2 (pp_expr par env [] factor_br))
     | BranchNone -> mt ()
 
 and pp_function env t =
@@ -380,11 +380,11 @@ and pp_function env t =
 	if not (ast_occurs 1 (MLcase(i,MLdummy,pv))) then
 	  pr_binding (List.rev (List.tl bl)) ++
        	  str " = function" ++ fnl () ++
-	  v 0 (str "  | " ++ pp_pat env' i pv)
+	  v 0 (pp_pat env' i pv)
 	else
           pr_binding (List.rev bl) ++
           str " = match " ++ pr_id (List.hd bl) ++ str " with" ++ fnl () ++
-	  v 0 (str "  | " ++ pp_pat env' i pv)
+	  v 0 (pp_pat env' i pv)
     | _ ->
           pr_binding (List.rev bl) ++
 	  str " =" ++ fnl () ++ str "  " ++
@@ -440,7 +440,7 @@ let pp_one_ind prefix ip_equiv pl name cnames ctyps =
   let pl = rename_tvars keywords pl in
   let pp_constructor i typs =
     (if i=0 then mt () else fnl ()) ++
-    hov 5 (str "  | " ++ cnames.(i) ++
+    hov 3 (str "| " ++ cnames.(i) ++
 	   (if typs = [] then mt () else str " of ") ++
 	   prlist_with_sep
 	    (fun () -> spc () ++ str "* ") (pp_type true pl) typs)
