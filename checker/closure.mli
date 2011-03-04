@@ -120,6 +120,7 @@ type stack_member =
 and stack = stack_member list
 
 val append_stack : fconstr array -> stack -> stack
+val eta_expand_stack : stack -> stack
 
 (* To lazy reduce a constr, create a [clos_infos] with
    [create_clos_infos], inject the term to reduce with [inject]; then use

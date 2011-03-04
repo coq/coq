@@ -651,6 +651,12 @@ let rec get_args n tys f e stk =
           get_args (n-na) etys f (subs_cons(l,e)) s
     | _ -> (Inr {norm=Cstr;term=FLambda(n,tys,f,e)}, stk)
 
+(* Eta expansion: add a reference to implicit surrounding lambda at end of stack *)
+let rec eta_expand_stack = function
+  | (Zapp _ | Zfix _ | Zcase _ | Zshift _ | Zupdate _ as e) :: s ->
+      e :: eta_expand_stack s
+  | [] ->
+      [Zshift 1; Zapp [|{norm=Norm; term= FRel 1}|]]
 
 (* Iota reduction: extract the arguments to be passed to the Case
    branches *)

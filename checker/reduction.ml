@@ -268,20 +268,10 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
 		    | None -> raise NotConvertible) in
           eqappr univ cv_pb infos app1 app2)
 
-    (* only one constant, defined var or defined rel *)
-    | (FFlex fl1, _)      ->
-        (match unfold_reference infos fl1 with
-           | Some def1 ->
-	       eqappr univ cv_pb infos (lft1, whd_stack infos def1 v1) appr2
-           | None -> raise NotConvertible)
-    | (_, FFlex fl2)      ->
-        (match unfold_reference infos fl2 with
-           | Some def2 ->
-	       eqappr univ cv_pb infos appr1 (lft2, whd_stack infos def2 v2)
-           | None -> raise NotConvertible)
-
     (* other constructors *)
     | (FLambda _, FLambda _) ->
+        (* Inconsistency: we tolerate that v1, v2 contain shift and update but
+           we throw them away *)
         assert (is_empty_stack v1 && is_empty_stack v2);
         let (_,ty1,bd1) = destFLambda mk_clos hd1 in
         let (_,ty2,bd2) = destFLambda mk_clos hd2 in
@@ -293,6 +283,32 @@ and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
 	(* Luo's system *)
         ccnv univ CONV infos el1 el2 c1 c'1;
         ccnv univ cv_pb infos (el_lift el1) (el_lift el2) c2 c'2
+
+    (* Eta-expansion on the fly *)
+    | (FLambda _, _) ->
+        if v1 <> [] then
+          anomaly "conversion was given unreduced term (FLambda)";
+        let (_,_ty1,bd1) = destFLambda mk_clos hd1 in
+        eqappr univ CONV infos
+          (el_lift lft1,(bd1,[])) (el_lift lft2,(hd2,eta_expand_stack v2))
+    | (_, FLambda _) ->
+        if v2 <> [] then
+          anomaly "conversion was given unreduced term (FLambda)";
+        let (_,_ty2,bd2) = destFLambda mk_clos hd2 in
+        eqappr univ CONV infos
+          (el_lift lft1,(hd1,eta_expand_stack v1)) (el_lift lft2,(bd2,[]))
+
+    (* only one constant, defined var or defined rel *)
+    | (FFlex fl1, _)      ->
+        (match unfold_reference infos fl1 with
+           | Some def1 ->
+	       eqappr univ cv_pb infos (lft1, whd_stack infos def1 v1) appr2
+           | None -> raise NotConvertible)
+    | (_, FFlex fl2)      ->
+        (match unfold_reference infos fl2 with
+           | Some def2 ->
+	       eqappr univ cv_pb infos appr1 (lft2, whd_stack infos def2 v2)
+           | None -> raise NotConvertible)
 
     (* Inductive types:  MutInd MutConstruct Fix Cofix *)
 
