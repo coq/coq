@@ -170,7 +170,7 @@ val set_extern_subst_tactic :
    Useful to take the current goal hypotheses as hints;
    Boolean tells if lemmas with evars are allowed *)
 
-val make_local_hint_db : bool -> open_constr list -> goal sigma -> hint_db
+val make_local_hint_db : ?ts:transparent_state -> bool -> open_constr list -> goal sigma -> hint_db
 
 val priority : ('a * pri_auto_tactic) list -> ('a * pri_auto_tactic) list
 

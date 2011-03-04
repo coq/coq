@@ -291,7 +291,7 @@ let e_breadth_search debug n db_list local_db gl =
   with Not_found -> error "eauto: breadth first search failed."
 
 let e_search_auto debug (in_depth,p) lems db_list gl =
-  let local_db = make_local_hint_db true lems gl in
+  let local_db = make_local_hint_db ~ts:full_transparent_state true lems gl in
   if in_depth then
     e_depth_search debug p db_list local_db gl
   else

@@ -464,14 +464,18 @@ let evar_dependencies evm p =
     evm ()
 
 let resolve_one_typeclass env ?(sigma=Evd.empty) gl =
+  let nc, gl, subst = Evarutil.push_rel_context_to_named_context env gl in
   let (gl,t,sigma) = 
-    Goal.V82.mk_goal sigma (Environ.named_context_val env) gl Store.empty in
+    Goal.V82.mk_goal sigma nc gl Store.empty in
   let gls = { it = gl ; sigma = sigma } in
   let hints = searchtable_map typeclasses_db in
-  let gls' = eauto ~st:(Hint_db.transparent_state hints) [hints] gls in
+  let gls' =  eauto ~st:(Hint_db.transparent_state hints) [hints] gls in
   let evd = sig_sig gls' in
-  let term = Evarutil.nf_evar evd t in
-  evd, term
+  let t' = let (ev, inst) = destEvar t in
+    mkEvar (ev, Array.of_list subst)
+  in
+  let term = Evarutil.nf_evar evd t' in
+    evd, term
 
 let _ =
   Typeclasses.solve_instanciation_problem := (fun x y z -> resolve_one_typeclass x ~sigma:y z)

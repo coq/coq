@@ -1112,11 +1112,14 @@ let rec intros_clearing = function
 (* Modifying/Adding an hypothesis  *)
 
 let specialize mopt (c,lbind) g =
-  let term =
-    if lbind = NoBindings then c
+  let tac, term =
+    if lbind = NoBindings then 
+      let evd = Typeclasses.resolve_typeclasses (pf_env g) (project g) in
+	tclEVARS evd, nf_evar evd c
     else
       let clause = make_clenv_binding g (c,pf_type_of g c) lbind in
-      let clause = clenv_unify_meta_types clause in
+      let flags = { default_unify_flags with resolve_evars = true } in
+      let clause = clenv_unify_meta_types ~flags clause in
       let (thd,tstack) = whd_stack clause.evd (clenv_value clause) in
       let nargs = List.length tstack in
       let tstack = match mopt with
@@ -1133,16 +1136,18 @@ let specialize mopt (c,lbind) g =
 	errorlabstrm "" (str "Cannot infer an instance for " ++
           pr_name (meta_name clause.evd (List.hd (collect_metas term))) ++
 	  str ".");
-      term
+       tclEVARS clause.evd, term
   in
   match kind_of_term (fst(decompose_app (snd(decompose_lam_assum c)))) with
        | Var id when List.mem id (pf_ids_of_hyps g) ->
-	     tclTHENFIRST
+	   tclTHEN tac
+	     (tclTHENFIRST
 	       (fun g -> internal_cut_replace id (pf_type_of g term) g)
-	       (exact_no_check term) g
-       | _ -> tclTHENLAST
-                 (fun g -> cut (pf_type_of g term) g)
-                 (exact_no_check term) g
+	       (exact_no_check term)) g
+       | _ -> tclTHEN tac
+	   (tclTHENLAST
+              (fun g -> cut (pf_type_of g term) g)
+              (exact_no_check term)) g
 
 (* Keeping only a few hypotheses *)
 

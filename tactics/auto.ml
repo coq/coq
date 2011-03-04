@@ -878,9 +878,12 @@ let add_hint_lemmas eapply lems hint_db gl =
     list_map_append (pf_apply make_resolves gl (eapply,true,false) None) lems in
   Hint_db.add_list hintlist' hint_db
 
-let make_local_hint_db eapply lems gl =
+let make_local_hint_db ?ts eapply lems gl =
   let sign = pf_hyps gl in
-  let ts = Hint_db.transparent_state (searchtable_map "core") in
+  let ts = match ts with
+    | None -> Hint_db.transparent_state (searchtable_map "core") 
+    | Some ts -> ts
+  in
   let hintlist = list_map_append (pf_apply make_resolve_hyp gl) sign in
   add_hint_lemmas eapply lems
     (Hint_db.add_list hintlist (Hint_db.empty ts false)) gl
