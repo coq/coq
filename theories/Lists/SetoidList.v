@@ -80,6 +80,10 @@ Qed.
 Definition inclA l l' := forall x, InA x l -> InA x l'.
 Definition equivlistA l l' := forall x, InA x l <-> InA x l'.
 
+Lemma incl_nil l : inclA nil l.
+Proof. intro. intros. inversion H. Qed.
+Hint Resolve incl_nil : list.
+
 (** lists with same elements modulo [eqA] at the same place *)
 
 Inductive eqlistA : list A -> list A -> Prop :=

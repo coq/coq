@@ -137,32 +137,26 @@ Proof.
   intros; apply Permutation_app; auto.
 Qed.
 
+Lemma Permutation_cons_append : forall (l : list A) x,
+  Permutation (x :: l) (l ++ x :: nil).
+Proof. induction l; intros; auto. simpl. rewrite <- IHl; auto. Qed.
+Local Hint Resolve Permutation_cons_append.
+
 Theorem Permutation_app_comm : forall (l l' : list A),
   Permutation (l ++ l') (l' ++ l).
 Proof.
   induction l as [|x l]; simpl; intro l'.
-  rewrite app_nil_r; trivial.
-  induction l' as [|y l']; simpl.
-  rewrite app_nil_r; trivial.
-  transitivity (x :: y :: l' ++ l).
-  constructor; rewrite app_comm_cons; apply IHl.
-  transitivity (y :: x :: l' ++ l); constructor.
-  transitivity (x :: l ++ l'); auto.
+  rewrite app_nil_r; trivial. rewrite IHl. 
+  rewrite app_comm_cons, Permutation_cons_append. 
+  now rewrite <- app_assoc. 
 Qed.
+Local Hint Resolve Permutation_app_comm.
 
 Theorem Permutation_cons_app : forall (l l1 l2:list A) a,
   Permutation l (l1 ++ l2) -> Permutation (a :: l) (l1 ++ a :: l2).
-Proof.
-  intros l l1; revert l.
-  induction l1.
-  simpl.
-  intros; apply perm_skip; auto.
-  simpl; intros.
-  transitivity (a0::a::l1++l2).
-  apply perm_skip; auto.
-  transitivity (a::a0::l1++l2).
-  apply perm_swap; auto.
-  apply perm_skip; auto.
+Proof. intros l l1 l2 a H. rewrite H.
+  rewrite app_comm_cons, Permutation_cons_append. 
+  now rewrite <- app_assoc. 
 Qed.
 Local Hint Resolve Permutation_cons_app.
 
@@ -171,19 +165,20 @@ Theorem Permutation_middle : forall (l1 l2:list A) a,
 Proof.
   auto.
 Qed.
+Local Hint Resolve Permutation_middle.
 
 Theorem Permutation_rev : forall (l : list A), Permutation l (rev l).
 Proof.
-  induction l as [| x l]; simpl; trivial.
-  apply Permutation_trans with (l' := [x] ++ rev l).
-  simpl; auto.
-  apply Permutation_app_comm.
+  induction l as [| x l]; simpl; trivial. now rewrite IHl at 1. 
 Qed.
+
+Add Parametric Morphism : (@rev A)
+  with signature @Permutation A ==> @Permutation A as Permutation_rev'.
+Proof. intros. now do 2 rewrite <- Permutation_rev. Qed.
 
 Theorem Permutation_length : forall (l l' : list A), Permutation l l' -> length l = length l'.
 Proof.
-  intros l l' Hperm; induction Hperm; simpl; auto.
-  apply trans_eq with (y:= (length l')); trivial.
+  intros l l' Hperm; induction Hperm; simpl; auto. now transitivity (length l').
 Qed.
 
 Theorem Permutation_ind_bis :
@@ -209,6 +204,12 @@ Ltac break_list l x l' H :=
   destruct l as [|x l']; simpl in *;
   injection H; intros; subst; clear H.
 
+Theorem Permutation_nil_app_cons : forall (l l' : list A) (x : A), ~ Permutation nil (l++x::l').
+Proof.
+  intros l l' x HF. 
+  apply Permutation_nil in HF. destruct l; discriminate.
+Qed.
+
 Theorem Permutation_app_inv : forall (l1 l2 l3 l4:list A) a,
   Permutation (l1++a::l2) (l3++a::l4) -> Permutation (l1++l2) (l3 ++ l4).
 Proof.
@@ -222,32 +223,27 @@ Proof.
   (* skip *)
   intros x l l' H IH; intros.
   break_list l1 b l1' H0; break_list l3 c l3' H1.
-  auto.
-  apply perm_trans with (l3'++c::l4); auto.
-  apply perm_trans with (l1'++a::l2); auto using Permutation_cons_app.
-  apply perm_skip.
-  apply (IH a l1' l2 l3' l4); auto.
+  auto. 
+  now rewrite H. 
+  now rewrite <- H. 
+  now rewrite (IH a _ _ _ _ eq_refl eq_refl).
   (* contradict *)
   intros x y l l' Hp IH; intros.
   break_list l1 b l1' H; break_list l3 c l3' H0.
   auto.
   break_list l3' b l3'' H.
-  auto.
-  apply perm_trans with (c::l3''++b::l4); auto.
+  auto. 
+  rewrite <- Permutation_middle in Hp. now rewrite Hp. 
   break_list l1' c l1'' H1.
-  auto.
-  apply perm_trans with (b::l1''++c::l2); auto.
+  auto. 
+  rewrite <- Permutation_middle in Hp. now rewrite Hp. 
   break_list l3' d l3'' H; break_list l1' e l1'' H1.
   auto.
-  apply perm_trans with (e::a::l1''++l2); auto.
-  apply perm_trans with (e::l1''++a::l2); auto.
-  apply perm_trans with (d::a::l3''++l4); auto.
-  apply perm_trans with (d::l3''++a::l4); auto.
-  apply perm_trans with (e::d::l1''++l2); auto.
-  apply perm_skip; apply perm_skip.
-  apply (IH a l1'' l2 l3'' l4); auto.
+  rewrite <- Permutation_middle in Hp. rewrite perm_swap. auto. 
+  rewrite perm_swap, Permutation_middle. auto.
+  now rewrite perm_swap, (IH a _ _ _ _ eq_refl eq_refl).
   (*trans*)
-  intros.
+  intros. 
   destruct (In_split a l') as (l'1,(l'2,H6)).
   apply (Permutation_in a H).
   subst l.
