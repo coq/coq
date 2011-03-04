@@ -208,7 +208,7 @@ let rec ccnv univ cv_pb infos lft1 lft2 term1 term2 =
 and eqappr univ cv_pb infos (lft1,st1) (lft2,st2) =
   Util.check_for_interrupt ();
   (* First head reduce both terms *)
-  let rec  whd_both (t1,stk1) (t2,stk2) =
+  let rec whd_both (t1,stk1) (t2,stk2) =
     let st1' = whd_stack infos t1 stk1 in
     let st2' = whd_stack infos t2 stk2 in
     (* Now, whd_stack on term2 might have modified st1 (due to sharing),

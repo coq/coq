@@ -610,15 +610,15 @@ let strip_update_shift_app head stk =
 
 let get_nth_arg head n stk =
   assert (head.norm <> Red);
-  let rec strip_rec rstk h depth n = function
+  let rec strip_rec rstk h n = function
     | Zshift(k) as e :: s ->
-        strip_rec (e::rstk) (lift_fconstr k h) (depth+k) n s
+        strip_rec (e::rstk) (lift_fconstr k h) n s
     | Zapp args::s' ->
         let q = Array.length args in
         if n >= q
         then
           strip_rec (Zapp args::rstk)
-            {norm=h.norm;term=FApp(h,args)} depth (n-q) s'
+            {norm=h.norm;term=FApp(h,args)} (n-q) s'
         else
           let bef = Array.sub args 0 n in
           let aft = Array.sub args (n+1) (q-n-1) in
@@ -626,9 +626,9 @@ let get_nth_arg head n stk =
             List.rev (if n = 0 then rstk else (Zapp bef :: rstk)) in
           (Some (stk', args.(n)), append_stack aft s')
     | Zupdate(m)::s ->
-        strip_rec rstk (update m (h.norm,h.term)) depth n s
+        strip_rec rstk (update m (h.norm,h.term)) n s
     | s -> (None, List.rev rstk @ s) in
-  strip_rec [] head 0 n stk
+  strip_rec [] head n stk
 
 (* Beta reduction: look for an applied argument in the stack.
    Since the encountered update marks are removed, h must be a whnf *)
