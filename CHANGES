@@ -30,9 +30,9 @@ Vernacular commands
 Module System
 
 - The inlining done during application of functors can now be controlled
-  more precisely. In addition to the "!F G" syntax preventing any inlining,
-  we can now use a priority level to select parameters to inline :
-  "<30>F X" means "only inline in F the parameters whose levels are <= 30".
+  more precisely, by the annotations (no inline) or (inline at level XX).
+  With the latter annotation, only functor parameters whose levels
+  are lower or equal than XX will be inlined.
   The level of a parameter can be fixed by "Parameter Inline(30) foo".
   When levels aren't given, the default value is 100. One can also use
   the flag "Set Inline Level ..." to set a level. TODO: DOC!
