@@ -49,11 +49,12 @@ let environment_until dir_opt =
     | [] when dir_opt = None -> [current_toplevel (), toplevel_env ()]
     | [] -> []
     | d :: l ->
-	match (Global.lookup_module (MPfile d)).mod_expr with
-	  | Some meb ->
-	      if dir_opt = Some d then [MPfile d, meb]
-	      else (MPfile d, meb) :: (parse l)
-	  | _ -> assert false
+      let mb = Global.lookup_module (MPfile d) in
+      (* If -dont-load-proof has been used, mod_expr is None,
+         we try with mod_type *)
+      let meb = Option.default mb.mod_type mb.mod_expr in
+      if dir_opt = Some d then [MPfile d, meb]
+      else (MPfile d, meb) :: (parse l)
   in parse (Library.loaded_libraries ())
 
 
