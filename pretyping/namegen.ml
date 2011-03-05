@@ -205,6 +205,17 @@ let next_name_away_with_default default na avoid =
   let id = match na with Name id -> id | Anonymous -> id_of_string default in
   next_ident_away id avoid
 
+let reserved_type_name = ref (fun t -> Anonymous)
+let set_reserved_typed_name f = reserved_type_name := f
+
+let next_name_away_with_default_using_types default na avoid t =
+  let id = match na with
+    | Name id -> id
+    | Anonymous -> match !reserved_type_name t with
+	| Name id -> id
+	| Anonymous -> id_of_string default in
+  next_ident_away id avoid
+
 let next_name_away = next_name_away_with_default "H"
 
 let make_all_name_different env =

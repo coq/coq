@@ -804,7 +804,7 @@ let vernac_reserve bl =
     let t = Constrintern.interp_type Evd.empty (Global.env()) c in
     let t = Detyping.detype false [] [] t in
     let t = aconstr_of_glob_constr [] [] t in
-    List.iter (fun id -> Reserve.declare_reserved_type id t) idl)
+    Reserve.declare_reserved_type idl t)
   in List.iter sb_decl bl
 
 let vernac_generalizable = Implicit_quantifiers.declare_generalizable

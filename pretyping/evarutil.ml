@@ -1537,7 +1537,8 @@ let define_pure_evar_as_lambda env evd evk =
   | Evar ev' -> let evd,typ = define_evar_as_product evd ev' in evd,destProd typ
   | _ -> error_not_product_loc dummy_loc env evd typ in
   let avoid = ids_of_named_context (evar_context evi) in
-  let id = next_name_away_with_default "x" na avoid in
+  let id =
+    next_name_away_with_default_using_types "x" na avoid (whd_evar evd dom) in
   let newenv = push_named (id, None, dom) evenv in
   let filter = true::evar_filter evi in
   let src = evar_source evk evd1 in

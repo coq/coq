@@ -59,6 +59,11 @@ val next_name_away  : name -> identifier list -> identifier (** default is "H" *
 val next_name_away_with_default : string -> name -> identifier list ->
   identifier
 
+val next_name_away_with_default_using_types : string -> name ->
+  identifier list -> types -> identifier
+
+val set_reserved_typed_name : (types -> name) -> unit
+
 (*********************************************************************
    Making name distinct for displaying *)
 

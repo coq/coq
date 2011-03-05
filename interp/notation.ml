@@ -187,30 +187,20 @@ type key =
 let notations_key_table = ref Gmapl.empty
 let prim_token_key_table = Hashtbl.create 7
 
-
-let make_gr = function
-  | ConstRef con ->
-      ConstRef(constant_of_kn(canonical_con con))
-  | IndRef (kn,i) ->
-      IndRef(mind_of_kn(canonical_mind kn),i)
-  | ConstructRef ((kn,i),j )->
-      ConstructRef((mind_of_kn(canonical_mind kn),i),j)
-  | VarRef id ->  VarRef id
-
 let glob_constr_key = function
-  | GApp (_,GRef (_,ref),_) -> RefKey (make_gr ref)
-  | GRef (_,ref) -> RefKey (make_gr ref)
+  | GApp (_,GRef (_,ref),_) -> RefKey (canonical_gr ref)
+  | GRef (_,ref) -> RefKey (canonical_gr ref)
   | _ -> Oth
 
 let cases_pattern_key = function
-  | PatCstr (_,ref,_,_) -> RefKey (make_gr (ConstructRef ref))
+  | PatCstr (_,ref,_,_) -> RefKey (canonical_gr (ConstructRef ref))
   | _ -> Oth
 
 let aconstr_key = function (* Rem: AApp(ARef ref,[]) stands for @ref *)
-  | AApp (ARef ref,args) -> RefKey(make_gr ref), Some (List.length args)
+  | AApp (ARef ref,args) -> RefKey(canonical_gr ref), Some (List.length args)
   | AList (_,_,AApp (ARef ref,args),_,_)
-  | ABinderList (_,_,AApp (ARef ref,args),_) -> RefKey (make_gr ref), Some (List.length args)
-  | ARef ref -> RefKey(make_gr ref), None
+  | ABinderList (_,_,AApp (ARef ref,args),_) -> RefKey (canonical_gr ref), Some (List.length args)
+  | ARef ref -> RefKey(canonical_gr ref), None
   | _ -> Oth, None
 
 (**********************************************************************)

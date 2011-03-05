@@ -27,8 +27,7 @@ let isConstructRef = function ConstructRef _ -> true | _ -> false
 
 let eq_gr gr1 gr2 =
   match gr1,gr2 with 
-      ConstRef con1, ConstRef con2 ->
-	eq_constant con1 con2
+    | ConstRef con1, ConstRef con2 -> eq_constant con1 con2
     | IndRef kn1,IndRef kn2 -> eq_ind kn1 kn2
     | ConstructRef kn1,ConstructRef kn2 -> eq_constructor kn1 kn2
     | _,_ -> gr1=gr2
@@ -56,13 +55,10 @@ let subst_global subst ref = match ref with
 	if c'==c then ref,t else ConstructRef c', t
 
 let canonical_gr = function
-  | ConstRef con -> 
-      ConstRef(constant_of_kn(canonical_con con))
-  | IndRef (kn,i) ->
-      IndRef(mind_of_kn(canonical_mind kn),i)
-  | ConstructRef ((kn,i),j )->
-	  ConstructRef((mind_of_kn(canonical_mind kn),i),j)
-  | VarRef id ->  VarRef id
+  | ConstRef con -> ConstRef(constant_of_kn(canonical_con con))
+  | IndRef (kn,i) -> IndRef(mind_of_kn(canonical_mind kn),i)
+  | ConstructRef ((kn,i),j )-> ConstructRef((mind_of_kn(canonical_mind kn),i),j)
+  | VarRef id -> VarRef id
 
 let global_of_constr c = match kind_of_term c with
   | Const sp -> ConstRef sp

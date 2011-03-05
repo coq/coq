@@ -16,23 +16,43 @@ open Summary
 open Libobject
 open Lib
 open Topconstr
+open Libnames
+
+type key =
+  | RefKey of global_reference
+  | Oth
 
 let reserve_table = ref Idmap.empty
+let reserve_revtable = ref Gmapl.empty
+
+let aconstr_key = function (* Rem: AApp(ARef ref,[]) stands for @ref *)
+  | AApp (ARef ref,args) -> RefKey(canonical_gr ref), Some (List.length args)
+  | AList (_,_,AApp (ARef ref,args),_,_)
+  | ABinderList (_,_,AApp (ARef ref,args),_) -> RefKey (canonical_gr ref), Some (List.length args)
+  | ARef ref -> RefKey(canonical_gr ref), None
+  | _ -> Oth, None
 
 let cache_reserved_type (_,(id,t)) =
-  reserve_table := Idmap.add id t !reserve_table
+  let key = fst (aconstr_key t) in
+  reserve_table := Idmap.add id t !reserve_table;
+  reserve_revtable := Gmapl.add key (t,id) !reserve_revtable
 
 let in_reserved =
   declare_object {(default_object "RESERVED-TYPE") with
     cache_function = cache_reserved_type }
 
+let freeze_reserved () = (!reserve_table,!reserve_revtable)
+let unfreeze_reserved (r,rr) = reserve_table := r; reserve_revtable := rr
+let init_reserved () =
+  reserve_table := Idmap.empty; reserve_revtable := Gmapl.empty
+
 let _ =
   Summary.declare_summary "reserved-type"
-    { Summary.freeze_function = (fun () -> !reserve_table);
-      Summary.unfreeze_function = (fun r -> reserve_table := r);
-      Summary.init_function = (fun () -> reserve_table := Idmap.empty) }
+    { Summary.freeze_function = freeze_reserved;
+      Summary.unfreeze_function = unfreeze_reserved;
+      Summary.init_function = init_reserved }
 
-let declare_reserved_type (loc,id) t =
+let declare_reserved_type_binding (loc,id) t =
   if id <> root_of_id id then
     user_err_loc(loc,"declare_reserved_type",
     (pr_id id ++ str
@@ -44,40 +64,28 @@ let declare_reserved_type (loc,id) t =
   with Not_found -> () end;
   add_anonymous_leaf (in_reserved (id,t))
 
+let declare_reserved_type idl t =
+  List.iter (fun id -> declare_reserved_type_binding id t) (List.rev idl)
+
 let find_reserved_type id = Idmap.find (root_of_id id) !reserve_table
 
-open Glob_term
+let constr_key c =
+  try RefKey (canonical_gr (global_of_constr (fst (Term.decompose_app c))))
+  with Not_found -> Oth
 
-let rec unloc = function
-  | GVar (_,id) -> GVar (dummy_loc,id)
-  | GApp (_,g,args) -> GApp (dummy_loc,unloc g, List.map unloc args)
-  | GLambda (_,na,bk,ty,c) -> GLambda (dummy_loc,na,bk,unloc ty,unloc c)
-  | GProd (_,na,bk,ty,c) -> GProd (dummy_loc,na,bk,unloc ty,unloc c)
-  | GLetIn (_,na,b,c) -> GLetIn (dummy_loc,na,unloc b,unloc c)
-  | GCases (_,sty,rtntypopt,tml,pl) ->
-      GCases (dummy_loc,sty,
-        (Option.map unloc rtntypopt),
-	List.map (fun (tm,x) -> (unloc tm,x)) tml,
-        List.map (fun (_,idl,p,c) -> (dummy_loc,idl,p,unloc c)) pl)
-  | GLetTuple (_,nal,(na,po),b,c) ->
-      GLetTuple (dummy_loc,nal,(na,Option.map unloc po),unloc b,unloc c)
-  | GIf (_,c,(na,po),b1,b2) ->
-      GIf (dummy_loc,unloc c,(na,Option.map unloc po),unloc b1,unloc b2)
-  | GRec (_,fk,idl,bl,tyl,bv) ->
-      GRec (dummy_loc,fk,idl,
-            Array.map (List.map
-              (fun (na,k,obd,ty) -> (na,k,Option.map unloc obd, unloc ty)))
-              bl,
-            Array.map unloc tyl,
-            Array.map unloc bv)
-  | GCast (_,c, CastConv (k,t)) -> GCast (dummy_loc,unloc c, CastConv (k,unloc t))
-  | GCast (_,c, CastCoerce) -> GCast (dummy_loc,unloc c, CastCoerce)
-  | GSort (_,x) -> GSort (dummy_loc,x)
-  | GHole (_,x)  -> GHole (dummy_loc,x)
-  | GRef (_,x) -> GRef (dummy_loc,x)
-  | GEvar (_,x,l) -> GEvar (dummy_loc,x,l)
-  | GPatVar (_,x) -> GPatVar (dummy_loc,x)
-  | GDynamic (_,x) -> GDynamic (dummy_loc,x)
+let revert_reserved_type t =
+  try
+    let l = Gmapl.find (constr_key t) !reserve_revtable in
+    let t = Detyping.detype false [] [] t in
+    list_try_find
+      (fun (pat,id) ->
+	try let _ = match_aconstr t ([],pat) in Name id
+	with No_match -> failwith "") l
+  with Not_found | Failure _ -> Anonymous
+
+let _ = Namegen.set_reserved_typed_name revert_reserved_type
+
+open Glob_term
 
 let anonymize_if_reserved na t = match na with
   | Name id as na ->
