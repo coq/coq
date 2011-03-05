@@ -759,8 +759,8 @@ let sig_clausal_form env sigma sort_of_ty siglen ty dflt =
       with
 	| Some w ->
             let w_type = type_of env sigma w in
-            if Evarconv.e_conv env evdref w_type a then
-              applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
+            if Evarconv.e_cumul env evdref w_type a then
+              applist(exist_term,[w_type;p_i_minus_1;w;tuple_tail])
             else
               error "Cannot solve a unification problem."
 	| None -> anomaly "Not enough components to build the dependent tuple"
