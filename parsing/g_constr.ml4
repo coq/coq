@@ -213,7 +213,7 @@ GEXTEND Gram
   binder_constr:
     [ [ forall; bl = open_binders; ","; c = operconstr LEVEL "200" ->
           mkCProdN loc bl c
-      | lambda; bl = open_binders; [ "=>" | "," ]; c = operconstr LEVEL "200" ->
+      | lambda; bl = open_binders; "=>"; c = operconstr LEVEL "200" ->
           mkCLambdaN loc bl c
       | "let"; id=name; bl = binders; ty = type_cstr; ":=";
         c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->
