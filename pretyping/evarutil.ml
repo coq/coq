@@ -1532,10 +1532,13 @@ let split_tycon loc env evd tycon =
     let t = whd_betadeltaiota env evd c in
       match kind_of_term t with
 	| Prod (na,dom,rng) -> evd, (na, dom, rng)
-	| Evar ev when not (Evd.is_defined_evar evd ev) ->
+	| Evar ev (* ev is undefined because of whd_betadeltaiota *) ->
 	    let (evd',prod) = define_evar_as_product evd ev in
 	    let (_,dom,rng) = destProd prod in
 	      evd',(Anonymous, dom, rng)
+	| App (c,args) when isEvar c ->
+	    let (evd',lam) = define_evar_as_lambda evd (destEvar c) in
+	    real_split evd' (mkApp (lam,args))
 	| _ -> error_not_product_loc loc env evd c
   in
     match tycon with
