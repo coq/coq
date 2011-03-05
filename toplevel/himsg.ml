@@ -154,8 +154,8 @@ let explain_generalization env (name,var) j =
   spc () ++ str "which should be Set, Prop or Type."
 
 let explain_actual_type env sigma j pt =
-  let j = j_nf_evar sigma j in
-  let pt = nf_evar sigma pt in
+  let j = j_nf_betaiotaevar sigma j in
+  let pt = nf_betaiota sigma pt in
   let pe = pr_ne_context_of (str "In environment") env in
   let (pc,pct) = pr_ljudge_env env j in
   let pt = pr_lconstr_env env pt in
@@ -507,7 +507,7 @@ let explain_type_error env sigma err =
       explain_wrong_case_info env ind ci
 
 let explain_pretype_error env sigma err =
-  let env = env_nf_evar sigma env in
+  let env = env_nf_betaiotaevar sigma env in
   let env = make_all_name_different env in
   match err with
   | CantFindCaseType c -> explain_cant_find_case_type env sigma c

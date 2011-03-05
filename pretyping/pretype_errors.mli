@@ -51,6 +51,9 @@ val jv_nf_evar : Evd.evar_map -> unsafe_judgment array -> unsafe_judgment array
 val tj_nf_evar : Evd.evar_map -> unsafe_type_judgment -> unsafe_type_judgment
 
 val env_nf_evar : Evd.evar_map -> env -> env
+val env_nf_betaiotaevar : Evd.evar_map -> env -> env
+
+val j_nf_betaiotaevar : Evd.evar_map -> unsafe_judgment -> unsafe_judgment
 val jv_nf_betaiotaevar :
   Evd.evar_map -> unsafe_judgment array -> unsafe_judgment array
 

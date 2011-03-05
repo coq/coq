@@ -63,16 +63,13 @@ let tj_nf_evar sigma {utj_val=v;utj_type=t} =
   {utj_val=nf_evar sigma v;utj_type=t}
 
 let env_nf_evar sigma env =
-  let sign = named_context_val env in
-  let ctxt = rel_context env in
-  let env0 = reset_with_named_context sign env in
-  Sign.fold_rel_context
-    (fun (na,b,ty) e ->
-      push_rel
-        (na, Option.map (nf_evar sigma) b, nf_evar sigma ty)
-        e)
-    ctxt
-    ~init:env0
+  process_rel_context
+    (fun d e -> push_rel (map_rel_declaration (nf_evar sigma) d) e) env
+
+let env_nf_betaiotaevar sigma env =
+  process_rel_context
+    (fun d e ->
+      push_rel (map_rel_declaration (Reductionops.nf_betaiota sigma) d) e) env
 
 (* This simplify the typing context of Cases clauses *)
 (* hope it does not disturb other typing contexts *)
