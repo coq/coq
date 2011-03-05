@@ -1479,35 +1479,81 @@ let empty_valcon = None
 (* Builds a value constraint *)
 let mk_valcon c = Some c
 
-(* Refining an evar to a product or a sort *)
+(* Refining an evar to a product
 
-(* Declaring any type to be in the sort Type shouldn't be harmful since
-   cumulativity now includes Prop and Set in Type...
-   It is, but that's not too bad *)
-let define_evar_as_abstraction abs evd (ev,args) =
-  let evi = Evd.find_undefined evd ev in
+   I.e., solve x1..xq |- ?e:T(x1..xq) with e:=Πy:?dom[x1..xq].?rng[x1..xq,y]
+   where x1..xq |- ?dom:Type and x1..xq,y |- ?rng:Type
+
+   Note: Declaring any type to be in the sort Type shouldn't be harmful
+   since cumulativity now includes Prop and Set in Type...
+   It is, but that's not too bad
+
+   To do: should we check that T is Type and instantiate it by a sort
+   if an evar?
+*)
+
+let idx = id_of_string "x"
+
+let define_pure_evar_as_product evd evk =
+  let evi = Evd.find_undefined evd evk in
   let evenv = evar_unfiltered_env evi in
-  let (evd1,dom) = new_evar evd evenv (new_Type()) ~filter:(evar_filter evi) in
-  let nvar =
-    next_ident_away (id_of_string "x")
-      (ids_of_named_context (evar_context evi)) in
-  let newenv = push_named (nvar, None, dom) evenv in
-  let (evd2,rng) =
-    new_evar evd1 newenv ~src:(evar_source ev evd1) (new_Type())
-      ~filter:(true::evar_filter evi) in
-  let prod = abs (Name nvar, dom, subst_var nvar rng) in
-  let evd3 = Evd.define ev prod evd2 in
-  let evdom = fst (destEvar dom), args in
-  let evrng =
-    fst (destEvar rng), array_cons (mkRel 1) (Array.map (lift 1) args) in
-  let prod' = abs (Name nvar, mkEvar evdom, mkEvar evrng) in
-    (evd3,prod')
+  let id = next_ident_away idx (ids_of_named_context (evar_context evi)) in
+  let evd1,dom = new_evar evd evenv (new_Type()) ~filter:(evar_filter evi) in
+  let evd2,rng =
+    let newenv = push_named (id, None, dom) evenv in
+    let src = evar_source evk evd1 in
+    let filter = true::evar_filter evi in
+    new_evar evd1 newenv ~src (new_Type()) ~filter in
+  let prod = mkProd (Name id, dom, subst_var id rng) in
+  let evd3 = Evd.define evk prod evd2 in
+  evd3,prod
 
-let define_evar_as_product evd (ev,args) =
-  define_evar_as_abstraction (fun t -> mkProd t) evd (ev,args)
+(* Refine an applied evar to a product and returns its instantiation *)
 
-let define_evar_as_lambda evd (ev,args) =
-  define_evar_as_abstraction (fun t -> mkLambda t) evd (ev,args)
+let define_evar_as_product evd (evk,args) =
+  let evd,prod = define_pure_evar_as_product evd evk in
+  (* Quick way to compute the instantiation of evk with args *)
+  let na,dom,rng = destProd prod in
+  let evdom = mkEvar (fst (destEvar dom), args) in
+  let evrngargs = array_cons (mkRel 1) (Array.map (lift 1) args) in
+  let evrng =  mkEvar (fst (destEvar rng), evrngargs) in
+  evd,mkProd (na, evdom, evrng)
+
+(* Refine an evar with an abstraction
+
+   I.e., solve x1..xq |- ?e:T(x1..xq) with e:=λy:A.?e'[x1..xq,y] where:
+   - either T(x1..xq) = πy:A(x1..xq).B(x1..xq,y)
+     or T(x1..xq) = ?d[x1..xq] and we define ?d := πy:?A.?B
+        with x1..xq |- ?A:Type and x1..xq,y |- ?B:Type
+   - x1..xq,y:A |- ?e':B
+*)
+
+let define_pure_evar_as_lambda env evd evk =
+  let evi = Evd.find_undefined evd evk in
+  let evenv = evar_unfiltered_env evi in
+  let typ = whd_betadeltaiota env evd (evar_concl evi) in
+  let evd1,(na,dom,rng) = match kind_of_term typ with
+  | Prod (na,dom,rng) -> (evd,(na,dom,rng))
+  | Evar ev' -> let evd,typ = define_evar_as_product evd ev' in evd,destProd typ
+  | _ -> error_not_product_loc dummy_loc env evd typ in
+  let avoid = ids_of_named_context (evar_context evi) in
+  let id = next_name_away_with_default "x" na avoid in
+  let newenv = push_named (id, None, dom) evenv in
+  let filter = true::evar_filter evi in
+  let src = evar_source evk evd1 in
+  let evd2,body = new_evar evd1 newenv ~src rng ~filter in
+  let lam = mkLambda (Name id, dom, subst_var id body) in
+  Evd.define evk lam evd2, lam
+
+let define_evar_as_lambda env evd (evk,args) =
+  let evd,lam = define_pure_evar_as_lambda env evd evk in
+  (* Quick way to compute the instantiation of evk with args *)
+  let na,dom,body = destLambda lam in
+  let evbodyargs = array_cons (mkRel 1) (Array.map (lift 1) args) in
+  let evbody = mkEvar (fst (destEvar body), evbodyargs) in
+  evd,mkLambda (na, dom, evbody)
+
+(* Refining an evar to a sort *)
 
 let define_evar_as_sort evd (ev,args) =
   let s = new_Type () in
@@ -1537,7 +1583,7 @@ let split_tycon loc env evd tycon =
 	    let (_,dom,rng) = destProd prod in
 	      evd',(Anonymous, dom, rng)
 	| App (c,args) when isEvar c ->
-	    let (evd',lam) = define_evar_as_lambda evd (destEvar c) in
+	    let (evd',lam) = define_evar_as_lambda env evd (destEvar c) in
 	    real_split evd' (mkApp (lam,args))
 	| _ -> error_not_product_loc loc env evd c
   in

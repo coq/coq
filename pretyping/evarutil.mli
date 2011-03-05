@@ -87,7 +87,7 @@ val solve_simple_eqn :
 val check_evars : env -> evar_map -> evar_map -> constr -> unit
 
 val define_evar_as_product : evar_map -> existential -> evar_map * types
-val define_evar_as_lambda : evar_map -> existential -> evar_map * types
+val define_evar_as_lambda : env -> evar_map -> existential -> evar_map * types
 val define_evar_as_sort : evar_map -> existential -> evar_map * sorts
 
 val is_unification_pattern_evar : env -> existential -> constr list ->

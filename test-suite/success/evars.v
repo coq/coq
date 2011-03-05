@@ -254,3 +254,7 @@ Proof.
  (* error message with V8.3 :
     Impossible to unify "?18" with "fun g : nat -> nat => ?6 = g". *)
 Abort.
+
+(* Regression test *)
+
+Definition fo : option nat -> nat := option_rec _ (fun a => 0) 0.

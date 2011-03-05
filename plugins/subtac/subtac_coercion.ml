@@ -202,7 +202,7 @@ module Coercion = struct
 				 | Lambda (n, t, t') -> c, t'
 				     (*| Prod (n, t, t') -> t'*)
 				 | Evar (k, args) ->
-				     let (evs, t) = Evarutil.define_evar_as_lambda !isevars (k,args) in
+				     let (evs, t) = Evarutil.define_evar_as_lambda env !isevars (k,args) in
 				       isevars := evs;
 				       let (n, dom, rng) = destLambda t in
 				       let (domk, args) = destEvar dom in
