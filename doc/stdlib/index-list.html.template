@@ -492,13 +492,13 @@ through the <tt>Require Import</tt> command.</p>
     theories/FSets/FMapFullAVL.v
   </dd>
 
-<!--  <dt> <b>Strings</b>
+  <dt> <b>Strings</b>
     Implementation of string as list of ascii characters
   </dt>
   <dd>
     theories/Strings/Ascii.v
     theories/Strings/String.v
-  </dd> -->
+  </dd>
     
   <dt> <b>Reals</b>:
     Formalization of real numbers
