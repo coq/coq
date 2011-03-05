@@ -180,7 +180,10 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
     assert (Array.length mib2.mind_packets = 1);
     assert (Array.length mib1.mind_packets.(0).mind_user_lc = 1);
     assert (Array.length mib2.mind_packets.(0).mind_user_lc = 1);
-    check (fun mib -> names_prod_letin mib.mind_packets.(0).mind_user_lc.(0));
+    check (fun mib ->
+      let nparamdecls = List.length mib.mind_params_ctxt in
+      let names = names_prod_letin (mib.mind_packets.(0).mind_user_lc.(0)) in
+      snd (list_chop nparamdecls names));
   end;
   (* we first check simple things *)
   let cst =
