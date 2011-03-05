@@ -14,8 +14,17 @@ open Libnames
 open Names
 open Topconstr
 
+(** Module internalization errors *)
+
+type module_internalization_error =
+  | NotAModuleNorModtype of string
+  | IncorrectWithInModule
+  | IncorrectModuleApplication
+
+exception ModuleInternalizationError of module_internalization_error
+
 (** Module expressions and module types are interpreted relatively to
-   eventual functor or funsig arguments. *)
+   possible functor or functor signature arguments. *)
 
 val interp_modtype : env -> module_ast -> module_struct_entry
 

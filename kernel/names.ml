@@ -107,6 +107,7 @@ let label_of_mbid (_,s,_) = s
 
 let mk_label l = l
 let string_of_label = string_of_id
+let pr_label l = str (string_of_label l)
 
 let id_of_label l = l
 let label_of_id id = id

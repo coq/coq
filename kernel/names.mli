@@ -47,6 +47,7 @@ type label
 
 val mk_label : string -> label
 val string_of_label : label -> string
+val pr_label : label -> Pp.std_ppcmds
 
 val label_of_id : identifier -> label
 val id_of_label : label -> identifier

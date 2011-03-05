@@ -367,7 +367,7 @@ let end_module l restype senv =
       | STRUCT params -> params, (List.length params > 0)
   in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
-  if not (empty_context senv.env) then error_local_context None;
+  if not (empty_context senv.env) then error_non_empty_local_context None;
   let functorize_struct tb =
     List.fold_left
       (fun mtb (arg_id,arg_b) ->
@@ -574,7 +574,7 @@ let end_modtype l senv =
       | SIG params -> params
   in
   if l <> modinfo.label then error_incompatible_labels l modinfo.label;
-  if not (empty_context senv.env) then error_local_context None;
+  if not (empty_context senv.env) then error_non_empty_local_context None;
   let auto_tb =
      SEBstruct (List.rev senv.revstruct)
   in

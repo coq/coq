@@ -155,7 +155,7 @@ let explain_generalization env (name,var) j =
 
 let explain_actual_type env sigma j pt =
   let j = j_nf_betaiotaevar sigma j in
-  let pt = nf_betaiota sigma pt in
+  let pt = Reductionops.nf_betaiota sigma pt in
   let pe = pr_ne_context_of (str "In environment") env in
   let (pc,pct) = pr_ljudge_env env j in
   let pt = pr_lconstr_env env pt in
@@ -527,6 +527,154 @@ let explain_pretype_error env sigma err =
   | AbstractionOverMeta (m,n) -> explain_abstraction_over_meta env m n
   | NonLinearUnification (m,c) -> explain_non_linear_unification env m c
   | TypingError t -> explain_type_error env sigma t
+
+(* Module errors *)
+
+open Modops
+
+let explain_not_match_error = function
+  | InductiveFieldExpected _ ->
+    strbrk "an inductive definition is expected"
+  | DefinitionFieldExpected ->
+    strbrk "a definition is expected"
+  | ModuleFieldExpected ->
+    strbrk "a module is expected"
+  | ModuleTypeFieldExpected ->
+    strbrk "a module type is expected"
+  | NotConvertibleInductiveField id | NotConvertibleConstructorField id ->
+    str "types given to " ++ str (string_of_id id) ++ str " differ"
+  | NotConvertibleBodyField ->
+    str "the body of definitions differs"
+  | NotConvertibleTypeField ->
+    str "types differ"
+  | NotSameConstructorNamesField ->
+    str "constructor names differ"
+  | NotSameInductiveNameInBlockField ->
+    str "inductive types names differ"
+  | FiniteInductiveFieldExpected isfinite ->
+    str "type is expected to be " ++
+    str (if isfinite then "coinductive" else "inductive")
+  | InductiveNumbersFieldExpected n ->
+    str "number of inductive types differs"
+  | InductiveParamsNumberField n ->
+    str "inductive type has not the right number of parameters"
+  | RecordFieldExpected isrecord ->
+    str "type is expected " ++ str (if isrecord then "" else "not ") ++
+    str "to be a record"
+  | RecordProjectionsExpected nal ->
+    (if List.length nal >= 2 then str "expected projection names are "
+     else str "expected projection name is ") ++
+    pr_enum (function Name id -> str (string_of_id id) | _ -> str "_") nal
+  | NotEqualInductiveAliases ->
+    str "Aliases to inductive types do not match"
+  | NoTypeConstraintExpected ->
+    strbrk "a definition whose type is constrained can only be subtype of a definition whose type is itself constrained"
+
+let explain_signature_mismatch l spec why =
+  str "Signature components for label " ++ str (string_of_label l) ++
+  str " do not match:" ++ spc () ++ explain_not_match_error why ++ str "."
+
+let explain_label_already_declared l =
+  str ("The label "^string_of_label l^" is already declared.")
+
+let explain_application_to_not_path _ =
+  str "Application to not path."
+
+let explain_not_a_functor mtb =
+  str "Application of not a functor."
+
+let explain_incompatible_module_types mexpr1 mexpr2 =
+  str "Incompatible module types."
+
+let explain_not_equal_module_paths mp1 mp2 =
+  str "Non equal modules."
+
+let explain_no_such_label l =
+  str "No such label " ++ str (string_of_label l) ++ str "."
+
+let explain_incompatible_labels l l' =
+  str "Opening and closing labels are not the same: " ++
+  str (string_of_label l) ++ str " <> " ++ str (string_of_label l') ++ str "!"
+
+let explain_signature_expected mtb =
+  str "Signature expected."
+
+let explain_no_module_to_end () =
+  str "No open module to end."
+
+let explain_no_module_type_to_end () =
+  str "No open module type to end."
+
+let explain_not_a_module s =
+  quote (str s) ++ str " is not a module."
+
+let explain_not_a_module_type s =
+  quote (str s) ++ str " is not a module type."
+
+let explain_not_a_constant l =
+  quote (pr_label l) ++ str " is not a constant."
+
+let explain_incorrect_label_constraint l =
+  str "Incorrect constraint for label " ++
+  quote (pr_label l) ++ str "."
+
+let explain_generative_module_expected l =
+  str "The module " ++ str (string_of_label l) ++
+  strbrk " is not generative. Only components of generative modules can be changed using the \"with\" construct."
+
+let explain_non_empty_local_context = function
+  | None -> str "The local context is not empty."
+  | Some l ->
+      str "The local context of the component " ++
+      str (string_of_label l) ++ str " is not empty."
+
+let explain_label_missing l s =
+  str "The field " ++ str (string_of_label l) ++ str " is missing in "
+  ++ str s ++ str "."
+
+let explain_module_error env sigma = function
+  | SignatureMismatch (l,spec,err) -> explain_signature_mismatch l spec err
+  | LabelAlreadyDeclared l -> explain_label_already_declared l
+  | ApplicationToNotPath mexpr -> explain_application_to_not_path mexpr
+  | NotAFunctor mtb -> explain_not_a_functor mtb
+  | IncompatibleModuleTypes (m1,m2) -> explain_incompatible_module_types m1 m2
+  | NotEqualModulePaths (mp1,mp2) -> explain_not_equal_module_paths mp1 mp2
+  | NoSuchLabel l -> explain_no_such_label l
+  | IncompatibleLabels (l1,l2) -> explain_incompatible_labels l1 l2
+  | SignatureExpected mtb -> explain_signature_expected mtb
+  | NoModuleToEnd -> explain_no_module_to_end ()
+  | NoModuleTypeToEnd -> explain_no_module_type_to_end ()
+  | NotAModule s -> explain_not_a_module s
+  | NotAModuleType s -> explain_not_a_module_type s
+  | NotAConstant l -> explain_not_a_constant l
+  | IncorrectWithConstraint l -> explain_incorrect_label_constraint l
+  | GenerativeModuleExpected l -> explain_generative_module_expected l
+  | NonEmptyLocalContect lopt -> explain_non_empty_local_context lopt
+  | LabelMissing (l,s) -> explain_label_missing l s
+
+(* Module internalization errors *)
+
+(*
+let explain_declaration_not_path _ =
+  str "Declaration is not a path."
+
+*)
+
+let explain_not_module_nor_modtype s =
+  quote (str s) ++ str " is not a module or module type."
+
+let explain_incorrect_with_in_module () =
+  str "The syntax \"with\" is not allowed for modules."
+
+let explain_incorrect_module_application () =
+  str "Module application to a module type."
+
+open Modintern
+
+let explain_module_internalization_error = function
+  | NotAModuleNorModtype s -> explain_not_module_nor_modtype s
+  | IncorrectWithInModule -> explain_incorrect_with_in_module ()
+  | IncorrectModuleApplication -> explain_incorrect_module_application ()
 
 (* Typeclass errors *)
 

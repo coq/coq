@@ -72,27 +72,41 @@ type signature_mismatch_error =
   | NotEqualInductiveAliases
   | NoTypeConstraintExpected
 
+type module_typing_error =
+  | SignatureMismatch of label * structure_field_body * signature_mismatch_error
+  | LabelAlreadyDeclared of label
+  | ApplicationToNotPath of module_struct_entry
+  | NotAFunctor of struct_expr_body
+  | IncompatibleModuleTypes of module_type_body * module_type_body
+  | NotEqualModulePaths of module_path * module_path
+  | NoSuchLabel of label
+  | IncompatibleLabels of label * label
+  | SignatureExpected of struct_expr_body
+  | NoModuleToEnd
+  | NoModuleTypeToEnd
+  | NotAModule of string
+  | NotAModuleType of string
+  | NotAConstant of label
+  | IncorrectWithConstraint of label
+  | GenerativeModuleExpected of label
+  | NonEmptyLocalContect of label option
+  | LabelMissing of label * string
+
+exception ModuleTypingError of module_typing_error
+
 val error_existing_label : label -> 'a
 
-val error_declaration_not_path : module_struct_entry -> 'a
-
 val error_application_to_not_path : module_struct_entry -> 'a
-
-val error_not_a_functor :  module_struct_entry -> 'a
 
 val error_incompatible_modtypes :
   module_type_body -> module_type_body -> 'a
 
-val error_not_equal : module_path -> module_path -> 'a
-
-val error_not_match :
+val error_signature_mismatch :
   label -> structure_field_body -> signature_mismatch_error -> 'a
 
 val error_incompatible_labels : label -> label -> 'a
 
 val error_no_such_label : label -> 'a
-
-val error_result_must_be_signature : unit -> 'a
 
 val error_signature_expected : struct_expr_body -> 'a
 
@@ -100,25 +114,14 @@ val error_no_module_to_end : unit -> 'a
 
 val error_no_modtype_to_end : unit -> 'a
 
-val error_not_a_modtype_loc : loc -> string -> 'a
-
-val error_not_a_module_loc : loc -> string -> 'a
-
-val error_not_a_module_or_modtype_loc : loc -> string -> 'a
-
 val error_not_a_module : string -> 'a
 
 val error_not_a_constant : label -> 'a
 
-val error_with_incorrect : label -> 'a
+val error_incorrect_with_constraint : label -> 'a
 
-val error_a_generative_module_expected : label -> 'a
+val error_generative_module_expected : label -> 'a
 
-val error_local_context : label option -> 'a
+val error_non_empty_local_context : label option -> 'a
 
 val error_no_such_label_sub : label->string->'a
-
-val error_with_in_module : unit -> 'a
-
-val error_application_to_module_type : unit -> 'a
-

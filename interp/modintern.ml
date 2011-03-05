@@ -14,6 +14,54 @@ open Libnames
 open Topconstr
 open Constrintern
 
+type module_internalization_error =
+  | NotAModuleNorModtype of string
+  | IncorrectWithInModule
+  | IncorrectModuleApplication
+
+exception ModuleInternalizationError of module_internalization_error
+
+(*
+val error_declaration_not_path : module_struct_entry -> 'a
+
+val error_not_a_functor :  module_struct_entry -> 'a
+
+val error_not_equal : module_path -> module_path -> 'a
+
+val error_result_must_be_signature : unit -> 'a
+
+oval error_not_a_modtype_loc : loc -> string -> 'a
+
+val error_not_a_module_loc : loc -> string -> 'a
+
+val error_not_a_module_or_modtype_loc : loc -> string -> 'a
+
+val error_with_in_module : unit -> 'a
+
+val error_application_to_module_type : unit -> 'a
+*)
+
+let error_result_must_be_signature () =
+  error "The result module type must be a signature."
+
+let error_not_a_modtype_loc loc s =
+  Compat.Loc.raise loc (Modops.ModuleTypingError (Modops.NotAModuleType s))
+
+let error_not_a_module_loc loc s =
+  Compat.Loc.raise loc (Modops.ModuleTypingError (Modops.NotAModule s))
+
+let error_not_a_module_nor_modtype_loc loc s =
+  Compat.Loc.raise loc (ModuleInternalizationError (NotAModuleNorModtype s))
+
+let error_incorrect_with_in_module () =
+  raise (ModuleInternalizationError IncorrectWithInModule)
+
+let error_application_to_module_type () =
+  raise (ModuleInternalizationError IncorrectModuleApplication)
+
+
+
+
 let rec make_mp mp = function
     [] -> mp
   | h::tl -> make_mp (MPdot(mp, label_of_id h)) tl
@@ -68,7 +116,7 @@ let lookup_module (loc,qid) =
     let mp = Nametab.locate_module qid in
       Dumpglob.dump_modref loc mp "modtype"; mp
   with
-    | Not_found -> Modops.error_not_a_module_loc loc (string_of_qualid qid)
+    | Not_found -> error_not_a_module_loc loc (string_of_qualid qid)
 
 let lookup_modtype (loc,qid) =
   try
@@ -76,7 +124,7 @@ let lookup_modtype (loc,qid) =
       Dumpglob.dump_modref loc mp "mod"; mp
   with
     | Not_found ->
-	Modops.error_not_a_modtype_loc loc (string_of_qualid qid)
+	error_not_a_modtype_loc loc (string_of_qualid qid)
 
 let lookup_module_or_modtype (loc,qid) =
   try
@@ -86,7 +134,7 @@ let lookup_module_or_modtype (loc,qid) =
     let mp = Nametab.locate_modtype qid in
     Dumpglob.dump_modref loc mp "mod"; (mp,false)
   with Not_found ->
-    Modops.error_not_a_module_or_modtype_loc loc (string_of_qualid qid)
+    error_not_a_module_nor_modtype_loc loc (string_of_qualid qid)
 
 let transl_with_decl env = function
   | CWith_Module ((_,fqid),qid) ->
@@ -101,7 +149,7 @@ let rec interp_modexpr env = function
       let me1 = interp_modexpr env me1 in
       let me2 = interp_modexpr env me2 in
 	MSEapply(me1,me2)
-  | CMwith _ -> Modops.error_with_in_module ()
+  | CMwith _ -> error_incorrect_with_in_module ()
 
 
 let rec interp_modtype env = function
@@ -123,10 +171,10 @@ let rec interp_modexpr_or_modtype env = function
   | CMapply (me1,me2) ->
       let me1,ismod1 = interp_modexpr_or_modtype env me1 in
       let me2,ismod2 = interp_modexpr_or_modtype env me2 in
-      if not ismod2 then Modops.error_application_to_module_type ();
+      if not ismod2 then error_application_to_module_type ();
       (MSEapply (me1,me2), ismod1)
   | CMwith (me,decl) ->
       let me,ismod = interp_modexpr_or_modtype env me in
       let decl = transl_with_decl env decl in
-      if ismod then Modops.error_with_in_module ();
+      if ismod then error_incorrect_with_in_module ();
       (MSEwith(me,decl), ismod)

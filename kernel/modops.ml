@@ -25,19 +25,6 @@ open Environ
 open Entries
 open Mod_subst
 
-let error_existing_label l = 
-  error ("The label "^string_of_label l^" is already declared.")
-
-let error_declaration_not_path _ = error "Declaration is not a path."
-
-let error_application_to_not_path _ = error "Application to not path."
-
-let error_not_a_functor _ = error "Application of not a functor."
-
-let error_incompatible_modtypes _ _ = error "Incompatible module types."
-
-let error_not_equal _ _ = error "Non equal modules."
-
 type signature_mismatch_error =
   | InductiveFieldExpected of mutual_inductive_body
   | DefinitionFieldExpected
@@ -57,104 +44,83 @@ type signature_mismatch_error =
   | NotEqualInductiveAliases
   | NoTypeConstraintExpected
 
-let explain_not_match_error = function
-  | InductiveFieldExpected _ ->
-    strbrk "an inductive definition is expected"
-  | DefinitionFieldExpected ->
-    strbrk "a definition is expected"
-  | ModuleFieldExpected ->
-    strbrk "a module is expected"
-  | ModuleTypeFieldExpected ->
-    strbrk "a module type is expected"
-  | NotConvertibleInductiveField id | NotConvertibleConstructorField id ->
-    str "types given to " ++ str (string_of_id id) ++ str " differ"
-  | NotConvertibleBodyField ->
-    str "the body of definitions differs"
-  | NotConvertibleTypeField ->
-    str "types differ"
-  | NotSameConstructorNamesField ->
-    str "constructor names differ"
-  | NotSameInductiveNameInBlockField ->
-    str "inductive types names differ"
-  | FiniteInductiveFieldExpected isfinite ->
-    str "type is expected to be " ++
-    str (if isfinite then "coinductive" else "inductive")
-  | InductiveNumbersFieldExpected n ->
-    str "number of inductive types differs"
-  | InductiveParamsNumberField n ->
-    str "inductive type has not the right number of parameters"
-  | RecordFieldExpected isrecord ->
-    str "type is expected " ++ str (if isrecord then "" else "not ") ++
-    str "to be a record"
-  | RecordProjectionsExpected nal ->
-    (if List.length nal >= 2 then str "expected projection names are "
-     else str "expected projection name is ") ++
-    pr_enum (function Name id -> str (string_of_id id) | _ -> str "_") nal
-  | NotEqualInductiveAliases ->
-    str "Aliases to inductive types do not match"
-  | NoTypeConstraintExpected ->
-    strbrk "a definition whose type is constrained can only be subtype of a definition whose type is itself constrained"
+type module_typing_error =
+  | SignatureMismatch of label * structure_field_body * signature_mismatch_error
+  | LabelAlreadyDeclared of label
+  | ApplicationToNotPath of module_struct_entry
+  | NotAFunctor of struct_expr_body
+  | IncompatibleModuleTypes of module_type_body * module_type_body
+  | NotEqualModulePaths of module_path * module_path
+  | NoSuchLabel of label
+  | IncompatibleLabels of label * label
+  | SignatureExpected of struct_expr_body
+  | NoModuleToEnd
+  | NoModuleTypeToEnd
+  | NotAModule of string
+  | NotAModuleType of string
+  | NotAConstant of label
+  | IncorrectWithConstraint of label
+  | GenerativeModuleExpected of label
+  | NonEmptyLocalContect of label option
+  | LabelMissing of label * string
 
-let error_not_match l _ why =
-  errorlabstrm ""
-    (str "Signature components for label " ++ str (string_of_label l) ++
-     str " do not match:" ++ spc () ++ explain_not_match_error why ++ str ".")
+exception ModuleTypingError of module_typing_error
 
-let error_no_such_label l = error ("No such label "^string_of_label l^".")
+let error_existing_label l =
+  raise (ModuleTypingError (LabelAlreadyDeclared l))
 
-let error_incompatible_labels l l' = 
-  error ("Opening and closing labels are not the same: "
-	 ^string_of_label l^" <> "^string_of_label l'^" !")
+let error_application_to_not_path mexpr =
+  raise (ModuleTypingError (ApplicationToNotPath mexpr))
 
-let error_result_must_be_signature () = 
-  error "The result module type must be a signature."
+let error_not_a_functor mtb =
+  raise (ModuleTypingError (NotAFunctor mtb))
+
+let error_incompatible_modtypes mexpr1 mexpr2 =
+  raise (ModuleTypingError (IncompatibleModuleTypes (mexpr1,mexpr2)))
+
+let error_not_equal_modpaths mp1 mp2 =
+  raise (ModuleTypingError (NotEqualModulePaths (mp1,mp2)))
+
+let error_signature_mismatch l spec why =
+  raise (ModuleTypingError (SignatureMismatch (l,spec,why)))
+
+let error_no_such_label l =
+  raise (ModuleTypingError (NoSuchLabel l))
+
+let error_incompatible_labels l l' =
+  raise (ModuleTypingError (IncompatibleLabels (l,l')))
 
 let error_signature_expected mtb =
-  error "Signature expected."
+  raise (ModuleTypingError (SignatureExpected mtb))
 
-let error_no_module_to_end _ = 
-  error "No open module to end."
+let error_no_module_to_end _ =
+  raise (ModuleTypingError NoModuleToEnd)
 
 let error_no_modtype_to_end _ =
-  error "No open module type to end."
+  raise (ModuleTypingError NoModuleTypeToEnd)
 
-let error_not_a_modtype_loc loc s = 
-  user_err_loc (loc,"",str ("\""^s^"\" is not a module type."))
+let error_not_a_modtype s =
+  raise (ModuleTypingError (NotAModuleType s))
 
-let error_not_a_module_loc loc s = 
-  user_err_loc (loc,"",str ("\""^s^"\" is not a module."))
+let error_not_a_module s =
+  raise (ModuleTypingError (NotAModule s))
 
-let error_not_a_module_or_modtype_loc loc s =
-  user_err_loc (loc,"",str ("\""^s^"\" is not a module or module type."))
+let error_not_a_constant l =
+  raise (ModuleTypingError (NotAConstant l))
 
-let error_not_a_module s = error_not_a_module_loc dummy_loc s
+let error_incorrect_with_constraint l =
+  raise (ModuleTypingError (IncorrectWithConstraint l))
 
-let error_not_a_constant l = 
-  error ("\""^(string_of_label l)^"\" is not a constant.")
+let error_generative_module_expected l =
+  raise (ModuleTypingError (GenerativeModuleExpected l))
 
-let error_with_incorrect l =
-  error ("Incorrect constraint for label \""^(string_of_label l)^"\".")
-
-let error_a_generative_module_expected l =
-  error ("The module " ^ string_of_label l ^ " is not generative. Only " ^
-         "components of generative modules can be changed using the \"with\" " ^
-         "construct.")
-
-let error_local_context lo = 
-  match lo with
-      None -> 
-	error ("The local context is not empty.")
-    | (Some l) ->
-	error ("The local context of the component "^
-	       (string_of_label l)^" is not empty.")
-
+let error_non_empty_local_context lo =
+  raise (ModuleTypingError (NonEmptyLocalContect lo))
 
 let error_no_such_label_sub l l1 =
-  error ("The field "^(string_of_label l)^" is missing in "^l1^".")
+  raise (ModuleTypingError (LabelMissing (l,l1)))
 
-let error_with_in_module _ = error "The syntax \"with\" is not allowed for modules."
-
-let error_application_to_module_type _ = error "Module application to a module type."
+(************************)
 
 let destr_functor env mtb =
   match mtb with
@@ -181,7 +147,7 @@ let check_modpath_equiv env mp1 mp2 =
     let mb2=lookup_module mp2 env in
       if (delta_of_mp mb1.mod_delta mp1)=(delta_of_mp mb2.mod_delta mp2)
       then ()
-      else error_not_equal mp1 mp2
+      else error_not_equal_modpaths mp1 mp2
 	
 let rec subst_with_body sub = function
   | With_module_body(id,mp) ->

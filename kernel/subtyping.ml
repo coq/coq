@@ -78,7 +78,7 @@ let check_conv_error error why cst f env a1 a2 =
 let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2= 
   let kn1 = make_mind mp1 empty_dirpath l in
   let kn2 = make_mind mp2 empty_dirpath l in
-  let error why = error_not_match l spec2 why in
+  let error why = error_signature_mismatch l spec2 why in
   let check_conv why cst f = check_conv_error error why cst f in
   let mib1 =
     match info1 with
@@ -201,7 +201,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
 
     
 let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 = 
-  let error why = error_not_match l spec2 why in
+  let error why = error_signature_mismatch l spec2 why in
   let check_conv cst f = check_conv_error error cst f in
   let check_type cst env t1 t2 =
 
@@ -353,13 +353,13 @@ and check_signatures cst env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2=
 	      match info1 with
 		| Module msb -> check_modules cst env msb msb2 
 		    subst1 subst2
-		| _ -> error_not_match l spec2 ModuleFieldExpected
+		| _ -> error_signature_mismatch l spec2 ModuleFieldExpected
 	    end
 	| SFBmodtype mtb2 ->
 	    let mtb1 =
 	      match info1 with
 		| Modtype mtb -> mtb
-		| _ -> error_not_match l spec2 ModuleTypeFieldExpected
+		| _ -> error_signature_mismatch l spec2 ModuleTypeFieldExpected
 	    in
 	    let env = add_module (module_body_of_type mtb2.typ_mp mtb2)
 	      (add_module (module_body_of_type mtb1.typ_mp mtb1) env) in

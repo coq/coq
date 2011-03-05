@@ -132,12 +132,12 @@ and check_with_aux_def env sign with_decl mp equiv =
 						    mod_type_alg = None}) in
 			  SEBstruct(before@((l,new_spec)::after)),cb,cst
                     | Some msb ->
-			error_a_generative_module_expected l
+			error_generative_module_expected l
 		end
 	  | _ -> anomaly "Modtyping:incorrect use of with"
     with
 	Not_found -> error_no_such_label l
-      | Reduction.NotConvertible -> error_with_incorrect l
+      | Reduction.NotConvertible -> error_incorrect_with_constraint l
 
 and check_with_aux_mod env sign with_decl mp equiv = 
   let sig_b = match sign with 
@@ -175,12 +175,12 @@ and check_with_aux_mod env sign with_decl mp equiv =
 			  (check_subtypes env' mtb_mp1 
 			     (module_type_of_module env' None old))
 			  old.mod_constraints
-			with Failure _ -> error_with_incorrect (label_of_id id)
+			with Failure _ -> error_incorrect_with_constraint (label_of_id id)
 		      end
 		  | Some (SEBident(mp')) ->
 		      check_modpath_equiv env' mp1 mp';
 		      old.mod_constraints
-		  | _ ->  error_a_generative_module_expected l
+		  | _ ->  error_generative_module_expected l
 	      in
 	      let new_mb = strengthen_and_subst_mb mb_mp1
 		(MPdot(mp,l)) env false in
@@ -220,12 +220,12 @@ and check_with_aux_mod env sign with_decl mp equiv =
 			  SEBstruct(before@(l,spec)::after)
 			    ,equiv,empty_constraint
 		  | _ ->
-		      error_a_generative_module_expected l
+		      error_generative_module_expected l
               end
 	  | _ -> anomaly "Modtyping:incorrect use of with"
     with
 	Not_found -> error_no_such_label l
-      | Reduction.NotConvertible -> error_with_incorrect l
+      | Reduction.NotConvertible -> error_incorrect_with_constraint l
 
 and translate_module env mp inl me =
   match me.mod_entry_expr, me.mod_entry_type with
