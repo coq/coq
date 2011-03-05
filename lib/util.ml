@@ -1000,6 +1000,15 @@ let array_fold_left2_i f a v1 v2 =
   if Array.length v2 <> lv1 then invalid_arg "array_fold_left2";
   fold a 0
 
+let array_fold_left3 f a v1 v2 v3 =
+  let lv1 = Array.length v1 in
+  let rec fold a n =
+    if n >= lv1 then a else fold (f a v1.(n) v2.(n) v3.(n)) (succ n)
+  in
+  if Array.length v2 <> lv1 || Array.length v3 <> lv1 then
+    invalid_arg "array_fold_left2";
+  fold a 0
+
 let array_fold_left_from n f a v =
   let rec fold a n =
     if n >= Array.length v then a else fold (f a v.(n)) (succ n)

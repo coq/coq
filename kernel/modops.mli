@@ -51,6 +51,27 @@ val subst_modtype_and_resolver : module_type_body -> module_path -> env ->
 
 val clean_bounded_mod_expr : struct_expr_body -> struct_expr_body
 
+(** Errors *)
+
+type signature_mismatch_error =
+  | InductiveFieldExpected of mutual_inductive_body
+  | DefinitionFieldExpected
+  | ModuleFieldExpected
+  | ModuleTypeFieldExpected
+  | NotConvertibleInductiveField of identifier
+  | NotConvertibleConstructorField of identifier
+  | NotConvertibleBodyField
+  | NotConvertibleTypeField
+  | NotSameConstructorNamesField
+  | NotSameInductiveNameInBlockField
+  | FiniteInductiveFieldExpected of bool
+  | InductiveNumbersFieldExpected of int
+  | InductiveParamsNumberField of int
+  | RecordFieldExpected of bool
+  | RecordProjectionsExpected of name list
+  | NotEqualInductiveAliases
+  | NoTypeConstraintExpected
+
 val error_existing_label : label -> 'a
 
 val error_declaration_not_path : module_struct_entry -> 'a
@@ -64,7 +85,8 @@ val error_incompatible_modtypes :
 
 val error_not_equal : module_path -> module_path -> 'a
 
-val error_not_match : label -> structure_field_body -> 'a
+val error_not_match :
+  label -> structure_field_body -> signature_mismatch_error -> 'a
 
 val error_incompatible_labels : label -> label -> 'a
 

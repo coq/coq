@@ -38,7 +38,67 @@ let error_incompatible_modtypes _ _ = error "Incompatible module types."
 
 let error_not_equal _ _ = error "Non equal modules."
 
-let error_not_match l _ = error ("Signature components for label "^string_of_label l^" do not match.")
+type signature_mismatch_error =
+  | InductiveFieldExpected of mutual_inductive_body
+  | DefinitionFieldExpected
+  | ModuleFieldExpected
+  | ModuleTypeFieldExpected
+  | NotConvertibleInductiveField of identifier
+  | NotConvertibleConstructorField of identifier
+  | NotConvertibleBodyField
+  | NotConvertibleTypeField
+  | NotSameConstructorNamesField
+  | NotSameInductiveNameInBlockField
+  | FiniteInductiveFieldExpected of bool
+  | InductiveNumbersFieldExpected of int
+  | InductiveParamsNumberField of int
+  | RecordFieldExpected of bool
+  | RecordProjectionsExpected of name list
+  | NotEqualInductiveAliases
+  | NoTypeConstraintExpected
+
+let explain_not_match_error = function
+  | InductiveFieldExpected _ ->
+    strbrk "an inductive definition is expected"
+  | DefinitionFieldExpected ->
+    strbrk "a definition is expected"
+  | ModuleFieldExpected ->
+    strbrk "a module is expected"
+  | ModuleTypeFieldExpected ->
+    strbrk "a module type is expected"
+  | NotConvertibleInductiveField id | NotConvertibleConstructorField id ->
+    str "types given to " ++ str (string_of_id id) ++ str " differ"
+  | NotConvertibleBodyField ->
+    str "the body of definitions differs"
+  | NotConvertibleTypeField ->
+    str "types differ"
+  | NotSameConstructorNamesField ->
+    str "constructor names differ"
+  | NotSameInductiveNameInBlockField ->
+    str "inductive types names differ"
+  | FiniteInductiveFieldExpected isfinite ->
+    str "type is expected to be " ++
+    str (if isfinite then "coinductive" else "inductive")
+  | InductiveNumbersFieldExpected n ->
+    str "number of inductive types differs"
+  | InductiveParamsNumberField n ->
+    str "inductive type has not the right number of parameters"
+  | RecordFieldExpected isrecord ->
+    str "type is expected " ++ str (if isrecord then "" else "not ") ++
+    str "to be a record"
+  | RecordProjectionsExpected nal ->
+    (if List.length nal >= 2 then str "expected projection names are "
+     else str "expected projection name is ") ++
+    pr_enum (function Name id -> str (string_of_id id) | _ -> str "_") nal
+  | NotEqualInductiveAliases ->
+    str "Aliases to inductive types do not match"
+  | NoTypeConstraintExpected ->
+    strbrk "a definition whose type is constrained can only be subtype of a definition whose type is itself constrained"
+
+let error_not_match l _ why =
+  errorlabstrm ""
+    (str "Signature components for label " ++ str (string_of_label l) ++
+     str " do not match:" ++ spc () ++ explain_not_match_error why ++ str ".")
 
 let error_no_such_label l = error ("No such label "^string_of_label l^".")
 

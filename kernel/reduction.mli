@@ -76,5 +76,7 @@ val hnf_prod_applist : env -> types -> constr list -> types
 val dest_prod       : env -> types -> rel_context * types
 val dest_prod_assum : env -> types -> rel_context * types
 
-val dest_arity : env -> types -> arity
+exception NotArity
+
+val dest_arity : env -> types -> arity (* raise NotArity if not an arity *)
 val is_arity   : env -> types -> bool

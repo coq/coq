@@ -67,26 +67,26 @@ let make_label_map mp list =
   in
     List.fold_right add_one list Labmap.empty
 
-let check_conv_error error cst f env a1 a2 =
+let check_conv_error error why cst f env a1 a2 =
   try
     union_constraints cst (f env a1 a2)
   with
-      NotConvertible -> error ()
+      NotConvertible -> error why
 
 (* for now we do not allow reorderings *)
 
 let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2= 
   let kn1 = make_mind mp1 empty_dirpath l in
   let kn2 = make_mind mp2 empty_dirpath l in
-  let error () = error_not_match l spec2 in
-  let check_conv cst f = check_conv_error error cst f in
+  let error why = error_not_match l spec2 why in
+  let check_conv why cst f = check_conv_error error why cst f in
   let mib1 =
     match info1 with
       | IndType ((_,0), mib) -> subst_mind subst1 mib
-      | _ -> error ()
+      | _ -> error (InductiveFieldExpected mib2)
   in
   let mib2 =  subst_mind subst2 mib2 in
-  let check_inductive_type cst env t1 t2 =
+  let check_inductive_type cst name env t1 t2 =
 
     (* Due to sort-polymorphism in inductive types, the conclusions of
        t1 and t2, if in Type, are generated as the least upper bounds
@@ -115,40 +115,43 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
     let s1,s2 =
       match s1, s2 with
       | Type _, Type _ -> (* shortcut here *) prop_sort, prop_sort
-      | (Prop _, Type _) | (Type _,Prop _) -> error ()
+      | (Prop _, Type _) | (Type _,Prop _) ->
+	error (NotConvertibleInductiveField name)
       | _ -> (s1, s2) in
-    check_conv cst conv_leq env (mkArity (ctx1,s1)) (mkArity (ctx2,s2))
+    check_conv (NotConvertibleInductiveField name)
+      cst conv_leq env (mkArity (ctx1,s1)) (mkArity (ctx2,s2))
   in
 
   let check_packet cst p1 p2 =
-    let check f = if f p1 <> f p2 then error () in
-      check (fun p -> p.mind_consnames);
-      check (fun p -> p.mind_typename);
+    let check f why = if f p1 <> f p2 then error why in
+      check (fun p -> p.mind_consnames) NotSameConstructorNamesField;
+      check (fun p -> p.mind_typename) NotSameInductiveNameInBlockField;
       (* nf_lc later *)
       (* nf_arity later *)
       (* user_lc ignored *)
       (* user_arity ignored *)
-      check (fun p -> p.mind_nrealargs);
+      check (fun p -> p.mind_nrealargs) (NotConvertibleInductiveField p2.mind_typename); (* How can it fail since the type of inductive are checked below? [HH] *)
       (* kelim ignored *)
       (* listrec ignored *)
       (* finite done *)
       (* nparams done *)
       (* params_ctxt done because part of the inductive types *)
       (* Don't check the sort of the type if polymorphic *)
-      let cst = check_inductive_type cst env (type_of_inductive env (mib1,p1)) (type_of_inductive env (mib2,p2))
+      let cst = check_inductive_type cst p2.mind_typename env (type_of_inductive env (mib1,p1)) (type_of_inductive env (mib2,p2))
       in
 	cst
   in
   let check_cons_types i cst p1 p2 =
-    array_fold_left2
-      (fun cst t1 t2 -> check_conv cst conv env t1 t2)
+    array_fold_left3
+      (fun cst id t1 t2 -> check_conv (NotConvertibleConstructorField id) cst conv env t1 t2)
       cst
+      p2.mind_consnames
       (arities_of_specif kn1 (mib1,p1))
       (arities_of_specif kn1 (mib2,p2))
   in
-  let check f = if f mib1 <> f mib2 then error () in
-  check (fun mib -> mib.mind_finite);
-  check (fun mib -> mib.mind_ntypes);
+  let check f why = if f mib1 <> f mib2 then error (why (f mib2)) in
+  check (fun mib -> mib.mind_finite) (fun x -> FiniteInductiveFieldExpected x);
+  check (fun mib -> mib.mind_ntypes) (fun x -> InductiveNumbersFieldExpected x);
   assert (mib1.mind_hyps=[] && mib2.mind_hyps=[]);
   assert (Array.length mib1.mind_packets >= 1
 	    && Array.length mib2.mind_packets >= 1);
@@ -158,17 +161,17 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   (* at the time of checking the inductive arities in check_packet. *)
   (* Notice that we don't expect the local definitions to match: only *)
   (* the inductive types and constructors types have to be convertible *)
-  check (fun mib -> mib.mind_nparams);
+  check (fun mib -> mib.mind_nparams) (fun x -> InductiveParamsNumberField x);
 
   begin  
   match mind_of_delta reso2 kn2  with
       | kn2' when kn2=kn2' -> ()
       | kn2' -> 
 	  if not (eq_mind (mind_of_delta reso1 kn1) (subst_ind subst2 kn2')) then 
-	    error ()
+	    error NotEqualInductiveAliases
   end;
   (* we check that records and their field names are preserved. *)
-  check (fun mib -> mib.mind_record);
+  check (fun mib -> mib.mind_record) (fun x -> RecordFieldExpected x);
   if mib1.mind_record then begin
     let rec names_prod_letin t = match kind_of_term t with
       | Prod(n,_,t) -> n::(names_prod_letin t)
@@ -183,7 +186,8 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
     check (fun mib ->
       let nparamdecls = List.length mib.mind_params_ctxt in
       let names = names_prod_letin (mib.mind_packets.(0).mind_user_lc.(0)) in
-      snd (list_chop nparamdecls names));
+      snd (list_chop nparamdecls names))
+      (fun x -> RecordProjectionsExpected x);
   end;
   (* we first check simple things *)
   let cst =
@@ -197,7 +201,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
 
     
 let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 = 
-  let error () = error_not_match l spec2 in
+  let error why = error_not_match l spec2 why in
   let check_conv cst f = check_conv_error error cst f in
   let check_type cst env t1 t2 =
 
@@ -237,13 +241,14 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
                  constraints of the form "univ <= max(...)" are not
                  expressible in the system of algebraic universes: we fail
                  (the user has to use an explicit type in the interface *)
-                error ()
-          with UserError _ (* "not an arity" *) ->
-            error () end
-        | _ -> t1,t2
+                error NoTypeConstraintExpected
+          with NotArity ->
+            error NotConvertibleTypeField end
+        | _ ->
+	  t1,t2
       else
         (t1,t2) in
-    check_conv cst conv_leq env t1 t2
+    check_conv NotConvertibleTypeField cst conv_leq env t1 t2
   in
 
   match info1 with
@@ -284,7 +289,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 			end
 		  | None -> mkConst con
 		in
-		  check_conv cst conv env c1 c2
+		  check_conv NotConvertibleBodyField cst conv env c1 c2
 	else
 	  match cb2.const_body with
             | None -> cst
@@ -294,7 +299,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 		  | Some lc1 -> Declarations.force lc1
 		  | None -> mkConst con
 		in
-		  check_conv cst conv env c1 c2
+		  check_conv NotConvertibleBodyField cst conv env c1 c2
       in
 	cst
    | IndType ((kn,i),mind1) ->
@@ -304,10 +309,10 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
        "inductive type and give a definition to map the old name to the new " ^
        "name."));
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
-      if cb2.const_body <> None then error () ;
+      if cb2.const_body <> None then error DefinitionFieldExpected;
       let arity1 = type_of_inductive env (mind1,mind1.mind_packets.(i)) in
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
-       check_conv cst conv_leq env arity1 typ2
+       check_conv NotConvertibleTypeField cst conv_leq env arity1 typ2
    | IndConstr (((kn,i),j) as cstr,mind1) ->
       ignore (Util.error (
        "The kernel does not recognize yet that a parameter can be " ^
@@ -315,11 +320,11 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
        "constructor and give a definition to map the old name to the new " ^
        "name."));
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
-      if cb2.const_body <> None then error () ;
+      if cb2.const_body <> None then error DefinitionFieldExpected;
       let ty1 = type_of_constructor cstr (mind1,mind1.mind_packets.(i)) in
       let ty2 = Typeops.type_of_constant_type env cb2.const_type in
-       check_conv cst conv env ty1 ty2
-   | _ -> error ()
+       check_conv NotConvertibleTypeField cst conv env ty1 ty2
+   | _ -> error DefinitionFieldExpected
 
 let rec check_modules cst env msb1 msb2 subst1 subst2 =
   let mty1 = module_type_of_module env None msb1 in
@@ -348,13 +353,13 @@ and check_signatures cst env mp1 sig1 mp2 sig2 subst1 subst2 reso1 reso2=
 	      match info1 with
 		| Module msb -> check_modules cst env msb msb2 
 		    subst1 subst2
-		| _ -> error_not_match l spec2
+		| _ -> error_not_match l spec2 ModuleFieldExpected
 	    end
 	| SFBmodtype mtb2 ->
 	    let mtb1 =
 	      match info1 with
 		| Modtype mtb -> mtb
-		| _ -> error_not_match l spec2
+		| _ -> error_not_match l spec2 ModuleTypeFieldExpected
 	    in
 	    let env = add_module (module_body_of_type mtb2.typ_mp mtb2)
 	      (add_module (module_body_of_type mtb1.typ_mp mtb1) env) in

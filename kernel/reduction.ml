@@ -534,15 +534,17 @@ let dest_prod_assum env =
   in
   prodec_rec env empty_rel_context
 
+exception NotArity
+
 let dest_arity env c =
   let l, c = dest_prod_assum env c in
   match kind_of_term c with
     | Sort s -> l,s
-    | _ -> error "not an arity"
+    | _ -> raise NotArity
 
 let is_arity env c =
   try
     let _ = dest_arity env c in
     true
-  with UserError _ -> false
+  with NotArity -> false
 

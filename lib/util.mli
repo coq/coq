@@ -259,6 +259,8 @@ val array_fold_right2 :
   ('a -> 'b -> 'c -> 'c) -> 'a array -> 'b array -> 'c -> 'c
 val array_fold_left2 :
   ('a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
+val array_fold_left3 :
+  ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b array -> 'c array -> 'd array -> 'a
 val array_fold_left2_i :
   (int -> 'a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
 val array_fold_left_from : int -> ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
