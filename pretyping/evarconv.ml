@@ -382,7 +382,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
         let appr2 = evar_apprec env' evd [] c'2 in
 	evar_eqappr_x ts env' evd CONV appr1 appr2
 
-    | Flexible ev1, (Rigid _ | PseudoRigid _ as c2) ->
+    | Flexible ev1, (Rigid _ | PseudoRigid _) ->
 	if
 	  is_unification_pattern_evar env ev1 l1 (applist appr2) &
 	  not (occur_evar (fst ev1) (applist appr2))
@@ -393,15 +393,11 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  let t2 = solve_pattern_eqn env l1 t2 in
 	  solve_simple_eqn (evar_conv_x ts) env evd
 	    (position_problem true pbty,ev1,t2)
-	else if is_rigid c2 & l1 <> [] then
-	  let (evd',c1) = define_evar_as_lambda env evd ev1 in
-	  evar_eqappr_x ts env evd' pbty
-	    (decompose_app (beta_applist (c1,l1))) appr2
 	else
 	  (* Postpone the use of an heuristic *)
 	  Success (add_conv_pb (pbty,env,applist appr1,applist appr2) evd)
 
-    | (Rigid _ | PseudoRigid _ as c1), Flexible ev2 ->
+    | (Rigid _ | PseudoRigid _), Flexible ev2 ->
 	if
 	  is_unification_pattern_evar env ev2 l2 (applist appr1) &
 	  not (occur_evar (fst ev2) (applist appr1))
@@ -412,10 +408,6 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  let t1 = solve_pattern_eqn env l2 t1 in
 	  solve_simple_eqn (evar_conv_x ts) env evd
 	    (position_problem false pbty,ev2,t1)
-	else if is_rigid c1 & l2 <> [] then
-	  let (evd',c2) = define_evar_as_lambda env evd ev2 in
-	  evar_eqappr_x ts env evd' pbty appr1
-	    (decompose_app (beta_applist (c2,l2)))
 	else
 	  (* Postpone the use of an heuristic *)
 	  Success (add_conv_pb (pbty,env,applist appr1,applist appr2) evd)
