@@ -295,10 +295,10 @@ let reset_needed, add_needed, add_needed_mp, found_needed, is_needed =
      Refset'.mem r !needed || MPset.mem (modpath_of_r r) !needed_mps))
 
 let declared_refs = function
-  | Dind (kn,_) -> [|IndRef (mind_of_kn kn,0)|]
-  | Dtype (r,_,_) -> [|r|]
-  | Dterm (r,_,_) -> [|r|]
-  | Dfix (rv,_,_) -> rv
+  | Dind (kn,_) -> [IndRef (mind_of_kn kn,0)]
+  | Dtype (r,_,_) -> [r]
+  | Dterm (r,_,_) -> [r]
+  | Dfix (rv,_,_) -> Array.to_list rv
 
 (* Computes the dependencies of a declaration, except in case
    of custom extraction. *)
@@ -314,7 +314,6 @@ let compute_deps_decl = function
       if not (is_custom r) then
 	ast_iter_references add_needed add_needed add_needed u
   | Dfix _ as d ->
-      (* Todo Later : avoid dependencies when Extract Constant *)
       decl_iter_references add_needed add_needed add_needed d
 
 let compute_deps_spec = function
@@ -328,13 +327,21 @@ let compute_deps_spec = function
 
 let rec depcheck_se = function
   | [] -> []
-  | ((l,SEdecl d) as t)::se ->
-      let se' = depcheck_se se in
-      let rv = declared_refs d in
-      if not (array_exists is_needed rv) then
-	(Array.iter remove_info_axiom rv; se')
-      else
-	(Array.iter found_needed rv; compute_deps_decl d; t::se')
+  | ((l,SEdecl d) as t) :: se ->
+    let se' = depcheck_se se in
+    let refs = declared_refs d in
+    let refs' = List.filter is_needed refs in
+    if refs' = [] then
+      (List.iter remove_info_axiom refs; se')
+    else begin
+      List.iter found_needed refs';
+      (* Hack to avoid extracting unused part of a Dfix *)
+      match d with
+	| Dfix (rv,trms,tys) when (List.for_all is_custom refs') ->
+	  let trms' =  Array.create (Array.length rv) (MLexn "UNUSED") in
+	  ((l,SEdecl (Dfix (rv,trms',tys))) :: se')
+	| _ -> (compute_deps_decl d; t::se')
+    end
   | t :: se ->
     let se' = depcheck_se se in
     se_iter compute_deps_decl compute_deps_spec t;

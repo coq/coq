@@ -413,17 +413,24 @@ let pp_Dfix (rv,c,t) =
   let names = Array.map
     (fun r -> if is_inline_custom r then mt () else pp_global Term r) rv
   in
-  let rec pp sep letand i =
-    if i >= Array.length rv then mt ()
-    else if is_inline_custom rv.(i) then pp sep letand (i+1)
+  let rec pp init i =
+    if i >= Array.length rv then
+      (if init then failwith "empty phrase" else mt ())
     else
-      let def =
-	if is_custom rv.(i) then str " = " ++ str (find_custom rv.(i))
-	else pp_function (empty_env ()) c.(i)
+      let void = is_inline_custom rv.(i) ||
+	(not (is_custom rv.(i)) && c.(i) = MLexn "UNUSED")
       in
-      sep () ++ pp_val names.(i) t.(i) ++
-      str letand ++ names.(i) ++ def ++ pp fnl2 "and " (i+1)
-  in pp mt "let rec " 0
+      if void then pp init (i+1)
+      else
+	let def =
+	  if is_custom rv.(i) then str " = " ++ str (find_custom rv.(i))
+	  else pp_function (empty_env ()) c.(i)
+	in
+	(if init then mt () else fnl2 ()) ++
+	pp_val names.(i) t.(i) ++
+	str (if init then "let rec " else "and ") ++ names.(i) ++ def ++
+	pp false (i+1)
+  in pp true 0
 
 (*s Pretty-printing of inductive types declaration. *)
 
