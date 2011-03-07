@@ -638,11 +638,9 @@ let order_metas metas =
 (* Solve an equation ?n[x1=u1..xn=un] = t where ?n is an evar *)
 
 let solve_simple_evar_eqn ts env evd ev rhs =
-  match solve_simple_eqn (Evarconv.evar_conv_x ts) env evd (None,ev,rhs) with
-  | UnifFailure (evd,reason) ->
-      error_cannot_unify env evd ~reason (mkEvar ev,rhs);
-  | Success evd ->
-      Evarconv.consider_remaining_unif_problems env evd
+  let evd,b = solve_simple_eqn (Evarconv.evar_conv_x ts) env evd (None,ev,rhs) in
+  if not b then error_cannot_unify env evd (mkEvar ev,rhs);
+  Evarconv.consider_remaining_unif_problems env evd
 
 (* [w_merge env sigma b metas evars] merges common instances in metas
    or in evars, possibly generating new unification problems; if [b]

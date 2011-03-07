@@ -19,7 +19,6 @@ open Recordops
 open Evarutil
 open Libnames
 open Evd
-open Pretype_errors
 
 type flex_kind_of_term =
   | Rigid of constr
@@ -129,42 +128,39 @@ let rec ise_try evd = function
     [] -> assert false
   | [f] -> f evd
   | f1::l ->
-      match f1 evd with
-      | Success _ as x -> x
-      | UnifFailure _ -> ise_try evd l
+      let (evd',b) = f1 evd in
+      if b then (evd',b) else ise_try evd l
 
 let ise_and evd l =
   let rec ise_and i = function
       [] -> assert false
     | [f] -> f i
     | f1::l ->
-        match f1 i with
-	| Success i' -> ise_and i' l
-	| UnifFailure _ as x -> x in
+        let (i',b) = f1 i in
+        if b then  ise_and i' l else (evd,false) in
   ise_and evd l
 
 let ise_list2 evd f l1 l2 =
   let rec ise_list2 i l1 l2 =
     match l1,l2 with
-        [], [] -> Success i
+        [], [] -> (i, true)
       | [x], [y] -> f i x y
       | x::l1, y::l2 ->
-          (match f i x y with
-	  | Success i' -> ise_list2 i' l1 l2
-	  | UnifFailure _ as x -> x)
-      | _ -> UnifFailure (evd, NotSameArgSize) in
+          let (i',b) = f i x y in
+          if b then ise_list2 i' l1 l2 else (evd,false)
+      | _ -> (evd, false) in
   ise_list2 evd l1 l2
 
 let ise_array2 evd f v1 v2 =
   let rec allrec i = function
-    | -1 -> Success i
+    | -1 -> (i,true)
     | n ->
-        match f i v1.(n) v2.(n) with
-	| Success i' -> allrec i' (n-1)
-	| UnifFailure _ as x -> x in
+        let (i',b) = f i v1.(n) v2.(n) in
+        if b then allrec i' (n-1) else (evd,false)
+  in
   let lv1 = Array.length v1 in
   if lv1 = Array.length v2 then allrec evd (pred lv1)
-  else UnifFailure (evd,NotSameArgSize)
+  else (evd,false)
 
 let rec evar_conv_x ts env evd pbty term1 term2 =
   let term1 = whd_head_evar evd term1 in
@@ -180,8 +176,7 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
       else None
     else None in
   match ground_test with
-    | Some true -> Success evd
-    | Some false -> UnifFailure (evd,ConversionFailed (env,term1,term2))
+      Some b -> (evd,b)
     | None ->
 	(* Until pattern-unification is used consistently, use nohdbeta to not
 	   destroy beta-redexes that can be used for 1st-order unification *)
@@ -222,12 +217,9 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
             ise_and i
             [(fun i -> ise_list2 i
                   (fun i -> evar_conv_x ts env i CONV) l1 l2);
-             (fun i ->
-	       Success (solve_refl
-                  (fun env i pbty a1 a2 ->
-		    is_success (evar_conv_x ts env i pbty a1 a2))
-	          env i sp1 al1 al2))]
-          else UnifFailure (i,NotSameHead)
+             (fun i -> solve_refl (evar_conv_x ts) env i sp1 al1 al2,
+                  true)]
+          else (i,false)
 	in
 	ise_try evd [f1; f2]
 
@@ -255,12 +247,12 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
               [(fun i -> ise_list2 i
                   (fun i -> evar_conv_x ts env i CONV) l1 rest2);
                (fun i -> evar_conv_x ts env i pbty term1 (applist(term2,deb2)))]
-          else UnifFailure (i,NotSameArgSize)
+          else (i,false)
 	and f2 i =
 	  match eval_flexible_term env flex2 with
 	    | Some v2 ->
 		evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
-	    | None -> UnifFailure (i,NotSameHead)
+	    | None -> (i,false)
 	in
 	ise_try evd [f1; f2]
 
@@ -287,12 +279,12 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
               [(fun i -> ise_list2 i
                   (fun i -> evar_conv_x ts env i CONV) rest1 l2);
                (fun i -> evar_conv_x ts env i pbty (applist(term1,deb1)) term2)]
-          else UnifFailure (i,NotSameArgSize)
+          else (i,false)
 	and f2 i =
 	  match eval_flexible_term env flex1 with
 	    | Some v1 ->
 		evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
-	    | None -> UnifFailure (i,NotSameHead)
+	    | None -> (i,false)
 	in
 	ise_try evd [f1; f2]
 
@@ -319,12 +311,12 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  if flex1 = flex2 then
 	    ise_list2 i (fun i -> evar_conv_x ts env i CONV) l1 l2
 	  else
-	     UnifFailure (i,NotSameHead)
+	     (i,false)
 	and f2 i =
 	  (try conv_record ts env i
              (try check_conv_record appr1 appr2
 	      with Not_found -> check_conv_record appr2 appr1)
-           with Not_found -> UnifFailure (i,NoCanonicalStructure))
+           with Not_found -> (i,false))
 	and f3 i =
           (* heuristic: unfold second argument first, exception made
              if the first argument is a beta-redex (expand a constant
@@ -339,7 +331,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 		match eval_flexible_term env flex2 with
 		| Some v2 ->
 		    evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
-		| None -> UnifFailure (i,NotSameHead)
+		| None -> (i,false)
 	  else
 	    match eval_flexible_term env flex2 with
 	    | Some v2 ->
@@ -348,7 +340,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 		match eval_flexible_term env flex1 with
 		| Some v1 ->
 		    evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
-		| None -> UnifFailure (i,NotSameHead)
+		| None -> (i,false)
 	in
 	ise_try evd [f1; f2; f3]
       end
@@ -395,7 +387,8 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	    (position_problem true pbty,ev1,t2)
 	else
 	  (* Postpone the use of an heuristic *)
-	  Success (add_conv_pb (pbty,env,applist appr1,applist appr2) evd)
+	  add_conv_pb (pbty,env,applist appr1,applist appr2) evd,
+	  true
 
     | (Rigid _ | PseudoRigid _), Flexible ev2 ->
 	if
@@ -410,29 +403,30 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	    (position_problem false pbty,ev2,t1)
 	else
 	  (* Postpone the use of an heuristic *)
-	  Success (add_conv_pb (pbty,env,applist appr1,applist appr2) evd)
+	  add_conv_pb (pbty,env,applist appr1,applist appr2) evd,
+	  true
 
     | MaybeFlexible flex1, (Rigid _ | PseudoRigid _) ->
 	let f3 i =
 	  (try conv_record ts env i (check_conv_record appr1 appr2)
-           with Not_found -> UnifFailure (i,NoCanonicalStructure))
+           with Not_found -> (i,false))
 	and f4 i =
 	  match eval_flexible_term env flex1 with
 	    | Some v1 ->
  		evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
-	    | None -> UnifFailure (i,NotSameHead)
+	    | None -> (i,false)
 	in
 	ise_try evd [f3; f4]
 
     | (Rigid _ | PseudoRigid _), MaybeFlexible flex2 ->
 	let f3 i =
 	  (try conv_record ts env i (check_conv_record appr2 appr1)
-           with Not_found -> UnifFailure (i,NoCanonicalStructure))
+           with Not_found -> (i,false))
 	and f4 i =
 	  match eval_flexible_term env flex2 with
 	    | Some v2 ->
  		evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
-	    | None -> UnifFailure (i,NotSameHead)
+	    | None -> (i,false)
 	in
 	ise_try evd [f3; f4]
 
@@ -440,8 +434,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
         match kind_of_term c1, kind_of_term c2 with
 
 	| Sort s1, Sort s2 when l1=[] & l2=[] ->
-            if base_sort_cmp pbty s1 s2 then Success evd
-	    else UnifFailure (evd,NotSameHead)
+	    (evd, base_sort_cmp pbty s1 s2)
 
 	| Prod (n,c1,c'1), Prod (_,c2,c'2) when l1=[] & l2=[] ->
             ise_and evd
@@ -453,12 +446,12 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	| Ind sp1, Ind sp2 ->
 	    if eq_ind sp1 sp2 then
               ise_list2 evd (fun i -> evar_conv_x ts env i CONV) l1 l2
-            else UnifFailure (evd,NotSameHead)
+            else (evd, false)
 
 	| Construct sp1, Construct sp2 ->
 	    if eq_constructor sp1 sp2 then
               ise_list2 evd (fun i -> evar_conv_x ts env i CONV) l1 l2
-            else UnifFailure (evd,NotSameHead)
+            else (evd, false)
 
 	| CoFix (i1,(_,tys1,bds1 as recdef1)), CoFix (i2,(_,tys2,bds2)) ->
             if i1=i2  then
@@ -470,12 +463,10 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 		     bds1 bds2);
                  (fun i -> ise_list2 i
                      (fun i -> evar_conv_x ts env i CONV) l1 l2)]
-            else UnifFailure (evd,NotSameHead)
+            else (evd,false)
 
-	| (Ind _ | Construct _ | Sort _ | Prod _ | CoFix _), _ ->
-	    UnifFailure (evd,NotSameHead)
-	| _, (Ind _ | Construct _ | Sort _ | Prod _ | CoFix _) ->
-	    UnifFailure (evd,NotSameHead)
+	| (Ind _ | Construct _ | Sort _ | Prod _ | CoFix _), _ -> (evd,false)
+	| _, (Ind _ | Construct _ | Sort _ | Prod _ | CoFix _) -> (evd,false)
 
 	| (App _ | Meta _ | Cast _ | Case _ | Fix _), _ -> assert false
 	| (LetIn _ | Rel _ | Var _ | Const _ | Evar _), _ -> assert false
@@ -504,10 +495,10 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 		     bds1 bds2);
 	         (fun i -> ise_list2 i
                      (fun i -> evar_conv_x ts env i CONV) l1 l2)]
-	    else UnifFailure (evd,NotSameHead)
+	    else (evd,false)
 
 	| (Meta _ | Case _ | Fix _ | CoFix _),
-	  (Meta _ | Case _ | Fix _ | CoFix _) -> UnifFailure (evd,NotSameHead)
+	  (Meta _ | Case _ | Fix _ | CoFix _) -> (evd,false)
 
 	| (App _ | Ind _ | Construct _ | Sort _ | Prod _), _ -> assert false
 	| _, (App _ | Ind _ | Construct _ | Sort _ | Prod _) -> assert false
@@ -520,9 +511,9 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 
       end
 
-    | PseudoRigid _, Rigid _ -> UnifFailure (evd,NotSameHead)
+    | PseudoRigid _, Rigid _ ->  (evd,false)
 
-    | Rigid _, PseudoRigid _ -> UnifFailure (evd,NotSameHead)
+    | Rigid _, PseudoRigid _ ->  (evd,false)
 
 and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
   let (evd',ks,_) =
@@ -578,12 +569,12 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       & array_for_all (fun a -> a = term2 or isEvar a) args1 ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
-      Success (choose_less_dependent_instance evk1 evd term2 args1)
+      choose_less_dependent_instance evk1 evd term2 args1, true
   | (Rel _|Var _), Evar (evk2,args2) when l1 = [] & l2 = []
       & array_for_all (fun a -> a = term1 or isEvar a) args2 ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
-      Success (choose_less_dependent_instance evk2 evd term1 args2)
+      choose_less_dependent_instance evk2 evd term1 args2, true
   | Evar ev1,_ when List.length l1 <= List.length l2 ->
       (* On "?n t1 .. tn = u u1 .. u(n+p)", try first-order unification *)
       first_order_unification ts env evd (ev1,l1) appr2
@@ -598,10 +589,8 @@ let consider_remaining_unif_problems ?(ts=full_transparent_state) env evd =
   let (evd,pbs) = extract_all_conv_pbs evd in
   let heuristic_solved_evd = List.fold_left
     (fun evd (pbty,env,t1,t2) ->
-      match apply_conversion_problem_heuristic ts env evd pbty t1 t2 with
-      | Success evd' -> evd'
-      | UnifFailure (evd,reason) ->
-	  Pretype_errors.error_cannot_unify env evd ~reason (t1, t2))
+      let evd', b = apply_conversion_problem_heuristic ts env evd pbty t1 t2 in
+	if b then evd' else Pretype_errors.error_cannot_unify env evd (t1, t2))
     evd pbs in
     Evd.fold_undefined (fun ev ev_info evd' -> match ev_info.evar_source with
 			  |_,ImpossibleCase -> 
@@ -610,24 +599,22 @@ let consider_remaining_unif_problems ?(ts=full_transparent_state) env evd =
 
 (* Main entry points *)
 
-exception NotUnifiable of evar_map * unification_error
-
 let the_conv_x ?(ts=full_transparent_state) env t1 t2 evd =
   match evar_conv_x ts env evd CONV  t1 t2 with
-  | Success evd' -> evd'
-  | UnifFailure (evd',e) -> raise (NotUnifiable (evd',e))
+      (evd',true) -> evd'
+    | _ -> raise Reduction.NotConvertible
 
 let the_conv_x_leq ?(ts=full_transparent_state) env t1 t2 evd =
   match evar_conv_x ts env evd CUMUL t1 t2 with
-  | Success evd' -> evd'
-  | UnifFailure (evd',e) -> raise (NotUnifiable (evd',e))
+      (evd', true) -> evd'
+    | _ -> raise Reduction.NotConvertible
 
 let e_conv ?(ts=full_transparent_state) env evd t1 t2 =
   match evar_conv_x ts env !evd CONV t1 t2 with
-  | Success evd' -> evd := evd'; true
-  | _ -> false
+      (evd',true) -> evd := evd'; true
+    | _ -> false
 
 let e_cumul ?(ts=full_transparent_state) env evd t1 t2 =
   match evar_conv_x ts env !evd CUMUL t1 t2 with
-  | Success evd' -> evd := evd'; true
-  | _ -> false
+      (evd',true) -> evd := evd'; true
+    | _ -> false

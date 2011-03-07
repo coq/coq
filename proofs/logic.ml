@@ -55,9 +55,8 @@ let rec catchable_exception = function
   | Tacred.ReductionTacticError _ 
   (* unification errors *)
   | PretypeError(_,_,(CannotUnify _|CannotUnifyLocal _|CannotGeneralize _
-		   |NoOccurrenceFound _|CannotUnifyBindingType _
-		   |ActualTypeNotCoercible _|UnifOccurCheck _
-		   |CannotFindWellTypedAbstraction _
+		   |NoOccurrenceFound _|CannotUnifyBindingType _|NotClean _
+		   |CannotFindWellTypedAbstraction _|OccurCheck _
 		   |UnsolvableImplicit _)) -> true
   | Typeclasses_errors.TypeClassError
       (_, Typeclasses_errors.UnsatisfiableConstraints _) -> true

@@ -13,9 +13,7 @@ open Environ
 open Reductionops
 open Evd
 
-exception NotUnifiable of evar_map * Pretype_errors.unification_error
-
-(** returns exception NotUnifiable with best known evar_map if not unifiable *)
+(** returns exception Reduction.NotConvertible if not unifiable *)
 val the_conv_x     : ?ts:transparent_state -> env -> constr -> constr -> evar_map -> evar_map
 val the_conv_x_leq : ?ts:transparent_state -> env -> constr -> constr -> evar_map -> evar_map
 
@@ -27,11 +25,11 @@ val e_cumul : ?ts:transparent_state -> env -> evar_map ref -> constr -> constr -
 (**/**)
 (* For debugging *)
 val evar_conv_x : transparent_state ->
-  env -> evar_map -> conv_pb -> constr -> constr -> Evarutil.unification_result
+  env -> evar_map -> conv_pb -> constr -> constr -> evar_map * bool
 val evar_eqappr_x : transparent_state ->
   env -> evar_map ->
     conv_pb -> constr * constr list -> constr * constr list ->
-      Evarutil.unification_result
+      evar_map * bool
 (**/**)
 
 val consider_remaining_unif_problems : ?ts:transparent_state -> env -> evar_map -> evar_map

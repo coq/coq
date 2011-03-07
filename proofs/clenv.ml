@@ -431,8 +431,7 @@ let clenv_unify_binding_type clenv c t u =
       let evd,c = w_coerce_to_type (cl_env clenv) clenv.evd c t u in
       TypeProcessed, { clenv with evd = evd }, c
     with 
-      | PretypeError (_,_,ActualTypeNotCoercible (_,_,NotClean _)) as e ->
-	  raise e
+      | PretypeError (_,_,NotClean _) as e -> raise e
       | e when precatchable_exception e ->
 	  TypeNotProcessed, clenv, c
 

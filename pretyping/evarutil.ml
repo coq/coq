@@ -584,9 +584,6 @@ let clear_hyps_in_evi evdref hyps concl ids =
   in
   (nhyps,nconcl)
 
-(***************)
-(* Unification *)
-
 (* Inverting constructors in instances (common when inferring type of match) *)
 
 let find_projectable_constructor env evd cstr k args cstr_subst =
@@ -948,7 +945,7 @@ let solve_refl conv_algo env evd evk argsv1 argsv2 =
   (* Filter and restrict if needed *)
   let evd,evk,args =
     restrict_upon_filter evd evi evk
-      (fun (a1,a2) -> conv_algo env evd Reduction.CONV a1 a2)
+      (fun (a1,a2) -> snd (conv_algo env evd Reduction.CONV a1 a2))
       (List.combine (Array.to_list argsv1) (Array.to_list argsv2)) in
   (* Leave a unification problem *)
   let args1,args2 = List.split args in
@@ -979,17 +976,9 @@ let solve_refl conv_algo env evd evk argsv1 argsv2 =
  *                Σ; Γ, y1..yk |- φ(u1..un) = c /\ x1..xn |- φ(x1..xn)
  *)
 
-type unification_result =
-  | Success of evar_map
-  | UnifFailure of evar_map * unification_error
-
-let is_success = function Success _ -> true | UnifFailure _ -> false
-
 exception NotInvertibleUsingOurAlgorithm of constr
 exception NotEnoughInformationToProgress
 exception OccurCheckIn of evar_map * constr
-exception MetaOccurInBodyInternal
-exception InstanceNotSameTypeInternal
 
 let rec invert_definition choose env evd (evk,argsv as ev) rhs =
   let aliases = make_alias_map env in
@@ -1104,7 +1093,7 @@ and occur_existential evm c =
 and evar_define ?(choose=false) env (evk,argsv as ev) rhs evd =
   try
     let (evd',body) = invert_definition choose env evd ev rhs in
-    if occur_meta body then raise MetaOccurInBodyInternal;
+    if occur_meta body then error "Meta cannot occur in evar body.";
     (* invert_definition may have instantiate some evars of rhs with evk *)
     (* so we recheck acyclicity *)
     if occur_evar evk body then raise (OccurCheckIn (evd',body));
@@ -1130,17 +1119,18 @@ and evar_define ?(choose=false) env (evk,argsv as ev) rhs evd =
   with
     | NotEnoughInformationToProgress ->
 	postpone_evar_term env evd ev rhs
-    | NotInvertibleUsingOurAlgorithm _ | MetaOccurInBodyInternal as e ->
-        raise e
+    | NotInvertibleUsingOurAlgorithm t ->
+	error_not_clean env evd evk t (evar_source evk evd)
     | OccurCheckIn (evd,rhs) ->
 	(* last chance: rhs actually reduces to ev *)
 	let c = whd_betadeltaiota env evd rhs in
 	match kind_of_term c with
 	| Evar (evk',argsv2) when evk = evk' ->
-	    solve_refl (fun env sigma pb c c' -> is_fconv pb env sigma c c')
+	    solve_refl
+	      (fun env sigma pb c c' -> (evd,is_fconv pb env sigma c c'))
 	      env evd evk argsv argsv2
 	| _ ->
-	    raise (OccurCheckIn (evd,rhs))
+	    error_occur_check env evd evk rhs
 
 (*-------------------*)
 (* Auxiliary functions for the conversion algorithms modulo evars
@@ -1317,10 +1307,10 @@ let check_instance_type conv_algo env evd ev1 t2 =
     if isEvar typ2 then (* Don't want to commit too early too *) evd
     else
       let typ1 = existential_type evd ev1 in
-      match conv_algo env evd Reduction.CUMUL typ2 typ1 with
-      | Success evd -> evd
-      | UnifFailure _ ->
-	  raise InstanceNotSameTypeInternal
+      let evd,b = conv_algo env evd Reduction.CUMUL typ2 typ1 in
+      if b then evd else
+	user_err_loc (fst (evar_source (fst ev1) evd),"",
+	  str "Unable to find a well-typed instantiation")
 
 (* Tries to solve problem t1 = t2.
  * Precondition: t1 is an uninstantiated evar
@@ -1334,9 +1324,7 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
     let evd = match kind_of_term t2 with
       | Evar (evk2,args2 as ev2) ->
 	  if evk1 = evk2 then
-	    solve_refl
-	      (fun env evd pbty a b -> is_success (conv_algo env evd pbty a b))
-	      env evd evk1 args1 args2
+	    solve_refl conv_algo env evd evk1 args1 args2
 	  else
 	    if pbty = None
 	    then solve_evar_evar evar_define env evd ev1 ev2
@@ -1365,20 +1353,11 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
     in
     let (evd,pbs) = extract_changed_conv_pbs evd status_changed in
       List.fold_left
-	(fun p (pbty,env,t1,t2) ->
-	  match p with
-	  | Success evd -> conv_algo env evd pbty t1 t2
-	  | UnifFailure _ as x -> x) (Success evd)
+	(fun (evd,b as p) (pbty,env,t1,t2) ->
+	  if b then conv_algo env evd pbty t1 t2 else p) (evd,true)
 	pbs
-  with
-    | NotInvertibleUsingOurAlgorithm t ->
-        UnifFailure (evd,NotClean (evk1,t))
-    | OccurCheckIn (evd,rhs) ->
-        UnifFailure (evd,OccurCheck (evk1,rhs))
-    | MetaOccurInBodyInternal ->
-        UnifFailure (evd,MetaOccurInBody evk1)
-    | InstanceNotSameTypeInternal ->
-        UnifFailure (evd,InstanceNotSameType evk1)
+  with e when precatchable_exception e ->
+    (evd,false)
 
 (** The following functions return the set of evars immediately
     contained in the object, including defined evars *)
