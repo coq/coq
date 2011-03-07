@@ -63,6 +63,12 @@ VERNAC COMMAND EXTEND Extraction
   -> [ full_extraction (Some f) l ]
 END
 
+VERNAC COMMAND EXTEND SeparateExtraction
+(* Same, with content splitted in several files *)
+| [ "Separate" "Extraction" ne_global_list(l) ]
+  -> [ separate_extraction l ]
+END
+
 (* Modular extraction (one Coq library = one ML module) *)
 VERNAC COMMAND EXTEND ExtractionLibrary
 | [ "Extraction" "Library" ident(m) ]

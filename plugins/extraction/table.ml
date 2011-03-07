@@ -175,12 +175,22 @@ let add_info_axiom r = info_axioms := Refset'.add r !info_axioms
 let remove_info_axiom r = info_axioms := Refset'.remove r !info_axioms
 let add_log_axiom r = log_axioms := Refset'.add r !log_axioms
 
-(*s Extraction mode: modular or monolithic *)
+(*s Extraction modes: modular or monolithic, library or minimal ?
+
+Nota:
+ - Recursive Extraction : monolithic, minimal
+ - Separate Extraction : modular, minimal
+ - Extraction Library : modular, library
+*)
 
 let modular_ref = ref false
+let library_ref = ref false
 
 let set_modular b = modular_ref := b
 let modular () = !modular_ref
+
+let set_library b = library_ref := b
+let library () = !library_ref
 
 (*s Printing. *)
 

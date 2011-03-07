@@ -26,7 +26,7 @@ let rec msid_of_mt = function
 (*s Apply some functions upon all [ml_decl] and [ml_spec] found in a
    [ml_structure]. *)
 
-let struct_iter do_decl do_spec s =
+let se_iter do_decl do_spec =
   let rec mt_iter = function
     | MTident _ -> ()
     | MTfunsig (_,mt,mt') -> mt_iter mt; mt_iter mt'
@@ -56,7 +56,10 @@ let struct_iter do_decl do_spec s =
     | MEapply (me,me') -> me_iter me; me_iter me'
     | MEstruct (msid, sel) -> List.iter se_iter sel
   in
-  List.iter (function (_,sel) -> List.iter se_iter sel) s
+  se_iter
+
+let struct_iter do_decl do_spec s =
+  List.iter (function (_,sel) -> List.iter (se_iter do_decl do_spec) sel) s
 
 (*s Apply some fonctions upon all references in [ml_type], [ml_ast],
   [ml_decl], [ml_spec] and [ml_structure]. *)
@@ -234,7 +237,7 @@ let rec optim_se top to_appear s = function
       let a = normalize (ast_glob_subst !s a) in
       let i = inline r a in
       if i then s := Refmap'.add r a !s;
-      if top && i && not (modular ()) && not (List.mem r to_appear)
+      if top && i && not (library ()) && not (List.mem r to_appear)
       then optim_se top to_appear s lse
       else
 	let d = match optimize_fix a with
@@ -252,7 +255,7 @@ let rec optim_se top to_appear s = function
 	then s := Refmap'.add rv.(i) (dfix_to_mlfix rv av i) !s
 	else all := false
       done;
-      if !all && top && not (modular ())
+      if !all && top && not (library ())
 	&& (array_for_all (fun r -> not (List.mem r to_appear)) rv)
       then optim_se top to_appear s lse
       else (l,SEdecl (Dfix (rv, av, tv))) :: (optim_se top to_appear s lse)
@@ -269,7 +272,8 @@ and optim_me to_appear s = function
   | MEfunctor (mbid,mt,me) -> MEfunctor (mbid,mt, optim_me to_appear s me)
 
 (* After these optimisations, some dependencies may not be needed anymore.
-   For monolithic extraction, we recompute a minimal set of dependencies. *)
+   For non-library extraction, we recompute a minimal set of dependencies
+   for first-level objects *)
 
 exception NoDepCheck
 
@@ -279,12 +283,16 @@ let base_r = function
   | ConstructRef ((kn,_),_) -> IndRef (kn,0)
   | _ -> assert false
 
-let reset_needed, add_needed, found_needed, is_needed =
-  let needed = ref Refset'.empty in
-  ((fun l -> needed := Refset'.empty),
+let reset_needed, add_needed, add_needed_mp, found_needed, is_needed =
+  let needed = ref Refset'.empty
+  and needed_mps = ref MPset.empty in
+  ((fun l -> needed := Refset'.empty; needed_mps := MPset.empty),
    (fun r -> needed := Refset'.add (base_r r) !needed),
+   (fun mp -> needed_mps := MPset.add mp !needed_mps),
    (fun r -> needed := Refset'.remove (base_r r) !needed),
-   (fun r -> Refset'.mem (base_r r) !needed))
+   (fun r ->
+     let r = base_r r in
+     Refset'.mem r !needed || MPset.mem (modpath_of_r r) !needed_mps))
 
 let declared_refs = function
   | Dind (kn,_) -> [|IndRef (mind_of_kn kn,0)|]
@@ -309,6 +317,15 @@ let compute_deps_decl = function
       (* Todo Later : avoid dependencies when Extract Constant *)
       decl_iter_references add_needed add_needed add_needed d
 
+let compute_deps_spec = function
+  | Sind (kn,ind) ->
+      (* Todo Later : avoid dependencies when Extract Inductive *)
+      ind_iter_references add_needed add_needed add_needed (mind_of_kn kn) ind
+  | Stype (r,ids,t) ->
+      if not (is_custom r) then Option.iter (type_iter_references add_needed) t
+  | Sval (r,t) ->
+      type_iter_references add_needed t
+
 let rec depcheck_se = function
   | [] -> []
   | ((l,SEdecl d) as t)::se ->
@@ -318,7 +335,10 @@ let rec depcheck_se = function
 	(Array.iter remove_info_axiom rv; se')
       else
 	(Array.iter found_needed rv; compute_deps_decl d; t::se')
-  | _ -> raise NoDepCheck
+  | t :: se ->
+    let se' = depcheck_se se in
+    se_iter compute_deps_decl compute_deps_spec t;
+    t :: se'
 
 let rec depcheck_struct = function
   | [] -> []
@@ -341,13 +361,15 @@ let check_implicits = function
 let optimize_struct to_appear struc =
   let subst = ref (Refmap'.empty : ml_ast Refmap'.t) in
   let opt_struc =
-    List.map (fun (mp,lse) -> (mp, optim_se true to_appear subst lse)) struc
+    List.map (fun (mp,lse) -> (mp, optim_se true (fst to_appear) subst lse))
+      struc
   in
   let opt_struc = List.filter (fun (_,lse) -> lse<>[]) opt_struc in
   ignore (struct_ast_search check_implicits opt_struc);
-  try
-    if modular () then raise NoDepCheck;
+  if library () then opt_struc
+  else begin
     reset_needed ();
-    List.iter add_needed to_appear;
+    List.iter add_needed (fst to_appear);
+    List.iter add_needed_mp (snd to_appear);
     depcheck_struct opt_struc
-  with NoDepCheck -> opt_struc
+  end

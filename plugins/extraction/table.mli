@@ -115,10 +115,19 @@ val optims :  unit -> opt_flag
 type lang = Ocaml | Haskell | Scheme
 val lang : unit -> lang
 
-(*s Extraction mode: modular or monolithic *)
+(*s Extraction modes: modular or monolithic, library or minimal ?
+
+Nota:
+ - Recursive Extraction : monolithic, minimal
+ - Separate Extraction : modular, minimal
+ - Extraction Library : modular, library
+*)
 
 val set_modular : bool -> unit
 val modular : unit -> bool
+
+val set_library : bool -> unit
+val library : unit -> bool
 
 (*s Table for custom inlining *)
 
