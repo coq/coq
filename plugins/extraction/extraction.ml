@@ -904,16 +904,24 @@ let extract_fixpoint env vkn (fi,ti,ci) =
 let extract_constant env kn cb =
   let r = ConstRef kn in
   let typ = Typeops.type_of_constant_type env cb.const_type in
+  let warn_info_none () =
+    if not (is_custom r) then begin
+      add_info_axiom r;
+      if not !Flags.load_proofs && cb.const_opaque then add_opaque_ko r
+    end
+  in
+  let warn_info_some () = if cb.const_opaque then add_opaque_ok r
+  in
   match cb.const_body with
-    | None -> (* A logical axiom is risky, an informative one is fatal. *)
+    | None ->
         (match flag_of_type env typ with
 	   | (Info,TypeScheme) ->
-	       if not (is_custom r) then add_info_axiom r;
+	       warn_info_none ();
 	       let n = type_scheme_nb_args env typ in
 	       let ids = iterate (fun l -> anonymous_name::l) n [] in
 	       Dtype (r, ids, Taxiom)
            | (Info,Default) ->
-	       if not (is_custom r) then add_info_axiom r;
+	       warn_info_none ();
 	       let t = snd (record_constant_type env kn (Some typ)) in
 	       Dterm (r, MLaxiom, type_expunge env t)
            | (Logic,TypeScheme) ->
@@ -925,9 +933,11 @@ let extract_constant env kn cb =
 	   | (Logic, Default) -> Dterm (r, MLdummy, Tdummy Kother)
 	   | (Logic, TypeScheme) -> Dtype (r, [], Tdummy Ktype)
 	   | (Info, Default) ->
+	       warn_info_some ();
 	       let e,t = extract_std_constant env kn (force body) typ in
 	       Dterm (r,e,t)
 	   | (Info, TypeScheme) ->
+	       warn_info_some ();
 	       let s,vl = type_sign_vl env typ in
                let db = db_from_sign s in
                let t = extract_type_scheme env db (force body) (List.length s)

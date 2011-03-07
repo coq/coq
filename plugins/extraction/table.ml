@@ -175,6 +175,15 @@ let add_info_axiom r = info_axioms := Refset'.add r !info_axioms
 let remove_info_axiom r = info_axioms := Refset'.remove r !info_axioms
 let add_log_axiom r = log_axioms := Refset'.add r !log_axioms
 
+let opaques_ok = ref Refset'.empty
+let opaques_ko = ref Refset'.empty
+let init_opaques () = opaques_ok := Refset'.empty; opaques_ko := Refset'.empty
+let add_opaque_ok r = opaques_ok := Refset'.add r !opaques_ok
+let add_opaque_ko r = opaques_ko := Refset'.add r !opaques_ko
+let remove_opaque r =
+  opaques_ok := Refset'.remove r !opaques_ok;
+  opaques_ko := Refset'.remove r !opaques_ko
+
 (*s Extraction modes: modular or monolithic, library or minimal ?
 
 Nota:
@@ -255,6 +264,22 @@ let warning_axioms () =
        spc () ++ str "may lead to incorrect or non-terminating ML terms." ++
        fnl ())
   end
+
+let warning_opaques () =
+  let opaques_ok = Refset'.elements !opaques_ok in
+  if opaques_ok = [] then ()
+  else msg_warning
+    (str "Extraction is accessing the body of the following opaque constants:"
+     ++ hov 1 (spc () ++ prlist_with_sep spc safe_pr_global opaques_ok)
+     ++ str "." ++ fnl ()
+     ++ str "Be careful if using option -dont-load-proofs later." ++ fnl ());
+  let opaques_ko = Refset'.elements !opaques_ko in
+  if opaques_ko = [] then ()
+  else msg_warning
+    (str "Extraction cannot access the body of the following opaque constants:"
+     ++ hov 1 (spc () ++ prlist_with_sep spc safe_pr_global opaques_ko)
+     ++ fnl () ++ str "due to option -dont-load-proofs. "
+     ++ str "These constants are treated as axioms." ++ fnl ())
 
 let warning_both_mod_and_cst q mp r =
  msg_warning
@@ -778,4 +803,4 @@ let extract_inductive r s l optstr =
 
 let reset_tables () =
   init_terms (); init_types (); init_inductives (); init_recursors ();
-  init_projs (); init_axioms (); reset_modfile ()
+  init_projs (); init_axioms (); init_opaques (); reset_modfile ()

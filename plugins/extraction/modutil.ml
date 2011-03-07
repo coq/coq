@@ -332,7 +332,9 @@ let rec depcheck_se = function
     let refs = declared_refs d in
     let refs' = List.filter is_needed refs in
     if refs' = [] then
-      (List.iter remove_info_axiom refs; se')
+      (List.iter remove_info_axiom refs;
+       List.iter remove_opaque refs;
+       se')
     else begin
       List.iter found_needed refs';
       (* Hack to avoid extracting unused part of a Dfix *)

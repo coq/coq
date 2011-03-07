@@ -513,6 +513,7 @@ let full_extr f (refs,mps) =
   init false false;
   List.iter (fun mp -> if is_modfile mp then error_MPfile_as_mod mp true) mps;
   let struc = optimize_struct (refs,mps) (mono_environment refs mps) in
+  warning_opaques ();
   warning_axioms ();
   print_structure_to_file (mono_filename f) false struc;
   reset ()
@@ -526,6 +527,7 @@ let separate_extraction lr =
   init true false;
   let refs,mps = locate_ref lr in
   let struc = optimize_struct (refs,mps) (mono_environment refs mps) in
+  warning_opaques ();
   warning_axioms ();
   let print = function
     | (MPfile dir as mp, sel) as e ->
@@ -544,6 +546,7 @@ let simple_extraction r = match locate_ref [r] with
       init false false;
       let struc = optimize_struct ([r],[]) (mono_environment [r] []) in
       let d = get_decl_in_structure r struc in
+      warning_opaques ();
       warning_axioms ();
       if is_custom r then msgnl (str "(** User defined extraction *)");
       print_one_decl struc (modpath_of_r r) d;
@@ -570,6 +573,7 @@ let extraction_library is_rec m =
   in
   let struc = List.fold_left select [] l in
   let struc = optimize_struct ([],[]) struc in
+  warning_opaques ();
   warning_axioms ();
   let print = function
     | (MPfile dir as mp, sel) as e ->

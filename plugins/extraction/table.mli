@@ -19,6 +19,7 @@ val safe_basename_of_global : global_reference -> identifier
 (*s Warning and Error messages. *)
 
 val warning_axioms : unit -> unit
+val warning_opaques : unit -> unit
 val warning_both_mod_and_cst :
  qualid -> module_path -> global_reference -> unit
 val warning_id : string -> unit
@@ -82,6 +83,10 @@ val projection_arity : global_reference -> int
 val add_info_axiom : global_reference -> unit
 val remove_info_axiom : global_reference -> unit
 val add_log_axiom : global_reference -> unit
+
+val add_opaque_ok : global_reference -> unit
+val add_opaque_ko : global_reference -> unit
+val remove_opaque : global_reference -> unit
 
 val reset_tables : unit -> unit
 
