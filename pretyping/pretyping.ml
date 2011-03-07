@@ -640,7 +640,8 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 			try 
 			  ignore (Reduction.vm_conv Reduction.CUMUL env cty tval); cj
 			with Reduction.NotConvertible -> 
-			  error_actual_type_loc loc env !evdref cj tval 
+			  error_actual_type_loc loc env !evdref cj tval
+			    (ConversionFailed (env,cty,tval))
 		      end
 		  | _ -> inh_conv_coerce_to_tycon loc env evdref cj (mk_tycon tval)
 		in

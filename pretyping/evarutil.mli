@@ -74,13 +74,20 @@ val whd_head_evar :  evar_map -> constr -> constr
 val is_ground_term :  evar_map -> constr -> bool
 val is_ground_env  :  evar_map -> env -> bool
 val solve_refl :
-  (env ->  evar_map -> conv_pb -> constr -> constr -> evar_map * bool)
+  (env ->  evar_map -> conv_pb -> constr -> constr -> bool)
   -> env ->  evar_map -> existential_key -> constr array -> constr array ->
     evar_map
+
+type unification_result =
+  | Success of evar_map
+  | UnifFailure of evar_map * Pretype_errors.unification_error
+
+val is_success : unification_result -> bool
+
 val solve_simple_eqn :
-  (env ->  evar_map -> conv_pb -> constr -> constr -> evar_map * bool)
+  (env ->  evar_map -> conv_pb -> constr -> constr -> unification_result)
   -> ?choose:bool -> env ->  evar_map -> bool option * existential * constr ->
-    evar_map * bool
+    unification_result
 
 (** [check_evars env initial_sigma extended_sigma c] fails if some
    new unresolved evar remains in [c] *)

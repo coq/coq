@@ -120,6 +120,7 @@ let pr_global_env = pr_global_env
 let pr_global = pr_global_env Idset.empty
 
 let pr_constant env cst = pr_global_env (Termops.vars_of_env env) (ConstRef cst)
+let pr_existential_key evk = str (string_of_existential evk)
 let pr_existential env ev = pr_lconstr_env env (mkEvar ev)
 let pr_inductive env ind = pr_lconstr_env env (mkInd ind)
 let pr_constructor env cstr = pr_lconstr_env env (mkConstruct cstr)

@@ -153,16 +153,46 @@ let explain_generalization env (name,var) j =
   str "it has type" ++ spc () ++ pt ++
   spc () ++ str "which should be Set, Prop or Type."
 
-let explain_actual_type env sigma j pt =
+let explain_unification_error env p1 p2 = function
+  | None -> mt()
+  | Some e ->
+    match e with
+    | OccurCheck (evk,rhs) ->
+        spc () ++ str "(cannot define " ++ quote (pr_existential_key evk) ++
+	strbrk " with term " ++ pr_lconstr_env env rhs ++
+        strbrk "that would depend on itself)"
+    | NotClean (evk,c) ->
+        spc () ++ str "(cannot instantiate " ++ quote (pr_existential_key evk)
+        ++ strbrk " because " ++ pr_lconstr_env env c ++
+	strbrk " is out of scope)"
+    | NotSameArgSize | NotSameHead | NoCanonicalStructure ->
+        (* Error speaks from itself *) mt ()
+    | ConversionFailed (env,t1,t2) ->
+        if t1 <> p1 || t2 <> p2 then
+          spc () ++ str "(cannot unify " ++ pr_lconstr_env env t1 ++
+	  strbrk " and " ++ pr_lconstr_env env t2 ++ str ")"
+	else mt ()
+    | MetaOccurInBody evk ->
+        spc () ++ str "(instance for " ++ quote (pr_existential_key evk) ++
+	strbrk " refers to a metavariable - please report your example)"
+    | InstanceNotSameType evk ->
+        spc () ++ str "(unable to find a well-typed instantiation for " ++
+	quote (pr_existential_key evk) ++ str ")"
+
+
+let explain_actual_type env sigma j t reason =
   let j = j_nf_betaiotaevar sigma j in
-  let pt = Reductionops.nf_betaiota sigma pt in
+  let t = Reductionops.nf_betaiota sigma t in
   let pe = pr_ne_context_of (str "In environment") env in
   let (pc,pct) = pr_ljudge_env env j in
-  let pt = pr_lconstr_env env pt in
+  let pt = pr_lconstr_env env t in
+  let ppreason = explain_unification_error env j.uj_type t reason in
   pe ++
+  hov 0 (
   str "The term" ++ brk(1,1) ++ pc ++ spc () ++
-  str "has type" ++ brk(1,1) ++ pct ++ brk(1,1) ++
-  str "while it is expected to have type" ++ brk(1,1) ++ pt ++ str "."
+  str "has type" ++ brk(1,1) ++ pct ++ spc () ++
+  str "while it is expected to have type" ++ brk(1,1) ++ pt ++
+  ppreason ++ str ".")
 
 let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
   let randl = jv_nf_betaiotaevar sigma randl in
@@ -420,13 +450,14 @@ let explain_wrong_case_info env ind ci =
     str "was given to a pattern-matching expression on the inductive type" ++
     spc () ++ pc ++ str "."
 
-let explain_cannot_unify env sigma m n =
+let explain_cannot_unify env sigma m n e =
   let m = nf_evar sigma m in
   let n = nf_evar sigma n in
   let pm = pr_lconstr_env env m in
   let pn = pr_lconstr_env env n in
+  let ppreason = explain_unification_error env m n e in
   str "Impossible to unify" ++ brk(1,1) ++ pm ++ spc () ++
-  str "with" ++ brk(1,1) ++ pn ++ str "."
+  str "with" ++ brk(1,1) ++ pn ++ ppreason ++ str "."
 
 let explain_cannot_unify_local env sigma m n subn =
   let pm = pr_lconstr_env env m in
@@ -494,7 +525,7 @@ let explain_type_error env sigma err =
   | Generalization (nvar, c) ->
       explain_generalization env nvar c
   | ActualType (j, pt) ->
-      explain_actual_type env sigma j pt
+      explain_actual_type env sigma j pt None
   | CantApplyBadType (t, rator, randl) ->
       explain_cant_apply_bad_type env sigma t rator randl
   | CantApplyNonFunctional (rator, randl) ->
@@ -511,13 +542,13 @@ let explain_pretype_error env sigma err =
   let env = make_all_name_different env in
   match err with
   | CantFindCaseType c -> explain_cant_find_case_type env sigma c
-  | OccurCheck (n,c) -> explain_occur_check env sigma n c
-  | NotClean (n,c,k) -> explain_not_clean env sigma n c k
+  | ActualTypeNotCoercible (j,t,e) -> explain_actual_type env sigma j t (Some e)
+  | UnifOccurCheck (ev,rhs) -> explain_occur_check env sigma ev rhs
   | UnsolvableImplicit (evi,k,exp) -> explain_unsolvable_implicit env evi k exp
   | VarNotFound id -> explain_var_not_found env id
   | UnexpectedType (actual,expect) -> explain_unexpected_type env sigma actual expect
   | NotProduct c -> explain_not_product env sigma c
-  | CannotUnify (m,n) -> explain_cannot_unify env sigma m n
+  | CannotUnify (m,n,e) -> explain_cannot_unify env sigma m n e
   | CannotUnifyLocal (m,n,sn) -> explain_cannot_unify_local env sigma m n sn
   | CannotGeneralize ty -> explain_refiner_cannot_generalize env ty
   | NoOccurrenceFound (c, id) -> explain_no_occurrence_found env c id

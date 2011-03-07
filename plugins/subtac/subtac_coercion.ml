@@ -112,7 +112,7 @@ module Coercion = struct
 	try
 	  isevars := the_conv_x_leq env x y !isevars;
 	  None
-	with Reduction.NotConvertible -> coerce' env x y
+	with NotUnifiable _ -> coerce' env x y
     and coerce' env x y : (Term.constr -> Term.constr) option =
       let subco () = subset_coerce env isevars x y in
       let dest_prod c =
@@ -129,12 +129,12 @@ module Coercion = struct
 		let (n, eqT), restT = dest_prod typ in
 		let (n', eqT'), restT' = dest_prod typ' in
 		aux (hdx :: tele) (subst1 hdx restT) (subst1 hdy restT') (succ i) co
-	      with Reduction.NotConvertible ->
+	      with NotUnifiable _ ->
 		let (n, eqT), restT = dest_prod typ in
 		let (n', eqT'), restT' = dest_prod typ' in
 		let _ =
 		  try isevars := the_conv_x_leq env eqT eqT' !isevars
-		  with Reduction.NotConvertible -> raise NoSubtacCoercion
+		  with NotUnifiable _ -> raise NoSubtacCoercion
 		in
 		(* Disallow equalities on arities *)
 		if Reduction.is_arity env eqT then raise NoSubtacCoercion;
@@ -323,6 +323,7 @@ module Coercion = struct
 
   (* appliquer le chemin de coercions de patterns p *)
   exception NoCoercion
+  exception NoCoercionNoUnifier of evar_map * unification_error
 
   let apply_pattern_coercion loc pat p =
     List.fold_left
@@ -418,12 +419,12 @@ module Coercion = struct
       with Not_found -> raise NoCoercion
     in
       try (the_conv_x_leq env t' c1 evd, v')
-      with Reduction.NotConvertible -> raise NoCoercion
+      with NotUnifiable _ -> raise NoCoercion
 
 
   let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
     try (the_conv_x_leq env t c1 evd, v)
-    with Reduction.NotConvertible ->
+    with NotUnifiable (best_failed_evd,e) ->
     try inh_coerce_to_fail env evd rigidonly v t c1
     with NoCoercion ->
     match
@@ -447,7 +448,7 @@ module Coercion = struct
         let t2 = Termops.subst_term v1 t2 in
 	let (evd'',v2') = inh_conv_coerce_to_fail loc env1 evd' rigidonly v2 t2 u2 in
 	(evd'', Option.map (fun v2' -> mkLambda (name, u1, v2')) v2')
-    | _ -> raise NoCoercion
+    | _ -> raise (NoCoercionNoUnifier (best_failed_evd,e))
 
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
   let inh_conv_coerce_to_gen rigidonly loc env evd cj ((n, t) as _tycon) =
@@ -458,12 +459,12 @@ module Coercion = struct
 	      inh_conv_coerce_to_fail loc env evd rigidonly
 		(Some (nf_evar evd cj.uj_val))
 		(nf_evar evd cj.uj_type) (nf_evar evd t)
-	    with NoCoercion ->
+	    with NoCoercionNoUnifier (best_failed_evd,e) ->
 	      let sigma =  evd in
 		try
 		  coerce_itf loc env evd (Some cj.uj_val) cj.uj_type t
 		with NoSubtacCoercion ->
-		  error_actual_type_loc loc env sigma cj t
+		  error_actual_type_loc loc env sigma cj t e
 	  in
 	  let val' = match val' with Some v -> v | None -> assert(false) in
 	    (evd',{ uj_val = val'; uj_type = t })
@@ -490,7 +491,7 @@ module Coercion = struct
 	  in
 	    try
 	      fst (try inh_conv_coerce_to_fail loc env' isevars false None t t'
-		   with NoCoercion ->
+		   with NoCoercionNoUnifier _ ->
 		     coerce_itf loc env' isevars None t t')
 	    with NoSubtacCoercion ->
 	      error_cannot_coerce env' isevars (t, t'))

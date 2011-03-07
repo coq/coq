@@ -79,6 +79,7 @@ end
 module Default = struct
   (* Typing operations dealing with coercions *)
   exception NoCoercion
+  exception NoCoercionNoUnifier of evar_map * unification_error
 
   (* Here, funj is a coercion therefore already typed in global context *)
   let apply_coercion_args env argl funj =
@@ -186,11 +187,11 @@ module Default = struct
       with Not_found -> raise NoCoercion
     in
       try (the_conv_x_leq env t' c1 evd, v')
-      with Reduction.NotConvertible -> raise NoCoercion
+      with NotUnifiable _ -> raise NoCoercion
 
   let rec inh_conv_coerce_to_fail loc env evd rigidonly v t c1 =
     try (the_conv_x_leq env t c1 evd, v)
-    with Reduction.NotConvertible ->
+    with NotUnifiable (best_failed_evd,e) ->
     try inh_coerce_to_fail env evd rigidonly v t c1
     with NoCoercion ->
     match
@@ -218,7 +219,7 @@ module Default = struct
 	  | Some v2 -> Retyping.get_type_of env1 evd' v2 in
 	let (evd'',v2') = inh_conv_coerce_to_fail loc env1 evd' rigidonly v2 t2 u2 in
 	(evd'', Option.map (fun v2' -> mkLambda (name, u1, v2')) v2')
-    | _ -> raise NoCoercion
+    | _ -> raise (NoCoercionNoUnifier (best_failed_evd,e))
 
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
   let inh_conv_coerce_to_gen rigidonly loc env evd cj (n, t) =
@@ -227,12 +228,12 @@ module Default = struct
 	  let (evd', val') =
 	    try
 	      inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
-	    with NoCoercion ->
+	    with NoCoercionNoUnifier (best_failed_evd,e) ->
 	      let evd = saturate_evd env evd in
 		try
 		  inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
-		with NoCoercion ->
-		  error_actual_type_loc loc env evd cj t
+		with NoCoercionNoUnifier _ ->
+		  error_actual_type_loc loc env best_failed_evd cj t e
 	  in
 	  let val' = match val' with Some v -> v | None -> assert(false) in
 	    (evd',{ uj_val = val'; uj_type = t })

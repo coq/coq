@@ -1576,7 +1576,7 @@ let constr_of_pat env isevars arsign pat avoid =
 		    in
 		    let neq = eq_id avoid id in
 		      (Name neq, Some (mkRel 0), eq_t) :: sign, 2, neq :: avoid
-		  with Reduction.NotConvertible -> sign, 1, avoid
+		  with NotUnifiable _ -> sign, 1, avoid
 		in
 		  (* Mark the equality as a hole *)
 		  pat', sign, lift i app, lift i apptype, realargs, n + i, avoid

@@ -401,7 +401,8 @@ let rec catchable_exception = function
   | Nametab.GlobalizationError _ | PretypeError (_,_,VarNotFound _)
   (* unification errors *)
   | PretypeError(_,_,(CannotUnify _|CannotUnifyLocal _|CannotGeneralize _
-		   |NoOccurrenceFound _|CannotUnifyBindingType _|NotClean _
+		   |NoOccurrenceFound _|CannotUnifyBindingType _
+		   |ActualTypeNotCoercible _
 		   |CannotFindWellTypedAbstraction _
 		   |UnsolvableImplicit _)) -> true
   | Typeclasses_errors.TypeClassError 
