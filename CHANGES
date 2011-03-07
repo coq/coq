@@ -76,6 +76,11 @@ Internal infrastructure
 Extraction
 
 - The pretty-printer for Haskell now produces layout-independant code
+- A new command "Separate Extraction cst1 cst2 ..." that mixes a
+  minimal extracted environment a la "Recursive Extraction" and the
+  production of several files (one per coq source) a la "Extraction Library".
+  DOC TODO.
+
 
 Changes from V8.2 to V8.3
 =========================
