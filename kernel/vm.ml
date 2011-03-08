@@ -536,6 +536,7 @@ let branch_of_switch k sw =
   Array.map eval_branch sw.sw_annot.rtbl
 
 
+
 (* Evaluation *)
 
 let rec whd_stack v stk =
@@ -586,6 +587,55 @@ let rec force_whd v stk =
   | res -> res
 
 
+let rec eta_stack a stk v =
+  match stk with
+  | [] -> apply_vstack a [|v|]
+  | Zapp args :: stk -> eta_stack (apply_arguments a args) stk v
+  | Zfix(f,args) :: stk ->
+      let a,stk = 
+	match stk with
+	| Zapp args' :: stk ->
+	    push_ra stop;
+	    push_arguments args';
+	    push_val a;
+	    push_arguments args;
+	    let a =
+	      interprete (fun_code f) (Obj.magic f) (Obj.magic f)
+		(nargs args+ nargs args') in
+	    a, stk
+	| _ -> 
+	    push_ra stop;
+	    push_val a;
+	    push_arguments args;
+	    let a =
+	      interprete (fun_code f) (Obj.magic f) (Obj.magic f)
+		(nargs args) in
+	    a, stk in
+      eta_stack a stk v
+  | Zswitch sw :: stk ->
+      eta_stack (apply_switch sw a) stk v
+
+let eta_whd k whd =
+  let v = val_of_rel k in
+  match whd with
+  | Vsort _ | Vprod _ | Vconstr_const _ | Vconstr_block _ -> assert false
+  | Vfun f -> body_of_vfun k f
+  | Vfix(f, None) -> 
+      push_ra stop;
+      push_val v;
+      interprete (fun_code f) (Obj.magic f) (Obj.magic f) 0
+  | Vfix(f, Some args) ->
+      push_ra stop;
+      push_val v;
+      push_arguments args;
+      interprete (fun_code f) (Obj.magic f) (Obj.magic f) (nargs args) 
+  | Vcofix(_,to_up,_) ->
+      push_ra stop;
+      push_val v;
+      interprete (fun_code to_up) (Obj.magic to_up) (Obj.magic to_up) 0
+  | Vatom_stk(a,stk) ->
+      eta_stack (val_of_atom a) stk v 
 
 
-
+      
+      

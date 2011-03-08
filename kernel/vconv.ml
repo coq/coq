@@ -74,6 +74,8 @@ and conv_whd pb k whd1 whd2 cu =
       else raise NotConvertible
   | Vatom_stk(a1,stk1), Vatom_stk(a2,stk2) ->
       conv_atom pb k a1 stk1 a2 stk2 cu
+  | Vfun _, _ | _, Vfun _ ->
+      conv_val CONV (k+1) (eta_whd k whd1) (eta_whd k whd2) cu
   | _, Vatom_stk(Aiddef(_,v),stk) ->
       conv_whd pb k whd1 (force_whd v stk) cu
   | Vatom_stk(Aiddef(_,v),stk), _ ->

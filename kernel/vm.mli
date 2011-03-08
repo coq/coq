@@ -117,4 +117,5 @@ val branch_of_switch : int -> vswitch -> (int * values) array
 val whd_stack : values -> stack -> whd
 val force_whd : values -> stack -> whd
 
+val eta_whd : int -> whd -> values
 
