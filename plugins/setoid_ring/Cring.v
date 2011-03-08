@@ -11,6 +11,7 @@
 Require Import Setoid.
 Require Import BinPos.
 Require Import BinNat.
+Require Export ZArith.
 Require Export Morphisms Setoid Bool.
 Require Import Algebra_syntax.
 Require Import Ring_theory.
@@ -56,8 +57,13 @@ Instance opposite_cring`{R:Type}`{Rr:Cring R} : Opposite R :=
   {opposite x := cring_opp x}.
 Instance equality_cring `{R:Type}`{Rr:Cring R} : Equality :=
   {equality x y := cring_eq x y}.
+Definition ZN(x:Z):=
+  match x with
+    Z0 => N0
+    |Zpos p | Zneg p => Npos p
+end.
 Instance power_cring {R:Type}{Rr:Cring R} : Power:=
-  {power x y := @Ring_theory.pow_N _ cring1 cring_mult x y}.
+  {power x y := @Ring_theory.pow_N _ cring1 cring_mult x (ZN y)}.
 
 Existing Instance cring_setoid.
 Existing Instance cring_plus_comp.
@@ -87,28 +93,24 @@ Instance bracket_cring {C R:Type}`{Cr:Cring C} `{Rr:Cring R}
   {bracket x := cring_morphism_fun x}.
 
 (* Tactics for crings *)
-Axiom eta: forall (A B:Type) (f:A->B), (fun x:A => f x) = f.
-Axiom eta2: forall (A B C:Type) (f:A->B->C), (fun (x:A)(y:B) => f x y) = f.
-
-Ltac etarefl := try apply eta; try apply eta2; try reflexivity.
 
 Lemma cring_syntax1:forall (A:Type)(Ar:Cring A), (@cring_eq _ Ar) = equality.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl ; reflexivity. Qed.
 Lemma cring_syntax2:forall (A:Type)(Ar:Cring A), (@cring_plus _ Ar) = addition.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 Lemma cring_syntax3:forall (A:Type)(Ar:Cring A), (@cring_mult _ Ar) = multiplication.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 Lemma cring_syntax4:forall (A:Type)(Ar:Cring A), (@cring_sub _ Ar) = subtraction.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 Lemma cring_syntax5:forall (A:Type)(Ar:Cring A), (@cring_opp _ Ar) = opposite.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 Lemma cring_syntax6:forall (A:Type)(Ar:Cring A), (@cring0 _ Ar) = zero.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 Lemma cring_syntax7:forall (A:Type)(Ar:Cring A), (@cring1 _ Ar) = one.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 Lemma cring_syntax8:forall (A:Type)(Ar:Cring A)(B:Type)(Br:Cring B)
   (pM:@Cring_morphism A B Ar Br), (@cring_morphism_fun _ _ _ _ pM) = bracket.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 
 Ltac set_cring_notations :=
   repeat (rewrite cring_syntax1);

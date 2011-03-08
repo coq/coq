@@ -85,28 +85,24 @@ Instance bracket_ring (C R:Type)`{Cr:Ring C} `{Rr:Ring R}
   {bracket x := ring_morphism_fun x}.
 
 (* Tactics for rings *)
-Axiom eta: forall (A B:Type) (f:A->B), (fun x:A => f x) = f.
-Axiom eta2: forall (A B C:Type) (f:A->B->C), (fun (x:A)(y:B) => f x y) = f.
-
-Ltac etarefl := try apply eta; try apply eta2; try reflexivity.
 
 Lemma ring_syntax1:forall (A:Type)(Ar:Ring A), (@ring_eq _ Ar) = equality.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 Lemma ring_syntax2:forall (A:Type)(Ar:Ring A), (@ring_plus _ Ar) = addition.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 Lemma ring_syntax3:forall (A:Type)(Ar:Ring A), (@ring_mult _ Ar) = multiplication.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 Lemma ring_syntax4:forall (A:Type)(Ar:Ring A), (@ring_sub _ Ar) = subtraction.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 Lemma ring_syntax5:forall (A:Type)(Ar:Ring A), (@ring_opp _ Ar) = opposite.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 Lemma ring_syntax6:forall (A:Type)(Ar:Ring A), (@ring0 _ Ar) = zero.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 Lemma ring_syntax7:forall (A:Type)(Ar:Ring A), (@ring1 _ Ar) = one.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 Lemma ring_syntax8:forall (A:Type)(Ar:Ring A)(B:Type)(Br:Ring B)
   (pM:@Ring_morphism A B Ar Br), (@ring_morphism_fun _ _ _ _ pM) = bracket.
-intros. symmetry. simpl; etarefl. Qed.
+intros. symmetry. simpl; reflexivity. Qed.
 
 Ltac set_ring_notations :=
   repeat (rewrite ring_syntax1);

@@ -13,6 +13,7 @@ Require Import BinList.
 Require Import Znumtheory.
 Require Export Morphisms Setoid Bool.
 Require Import ZArith.
+Open Scope Z_scope.
 Require Import Algebra_syntax.
 Require Export Ring2.
 Require Import Ring2_polynom.
@@ -174,11 +175,11 @@ Goal forall x y z:R, x * y * z == x * (y * z).
 ring2.
 Qed.
 
-Goal forall x y z:R, [3%Z]* x *([2%Z]* y * z) == [6%Z] * (x * y) * z.
+Goal forall x y z:R, [3]* x *([2]* y * z) == [6] * (x * y) * z.
 ring2.
 Qed.
 
-Goal forall x y z:R, 3%Z * x * (2%Z * y * z) == 6%Z * (x * y) * z.
+Goal forall x y z:R, 3 * x * (2 * y * z) == 6 * (x * y) * z.
 ring2.
 Qed.
 
