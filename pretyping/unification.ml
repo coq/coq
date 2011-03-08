@@ -127,7 +127,7 @@ let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst) =
 	  else error_cannot_unify_local env sigma (mkApp (f, l),c,c)
     | Evar ev ->
 	let sigma,c = pose_all_metas_as_evars env sigma c in
-	sigma,metasubst,(ev,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
+	sigma,metasubst,(env,ev,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
     | _ -> assert false
 
 let push d (env,n) = (push_rel_assum d env,n+1)
@@ -251,8 +251,8 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
               (sigma,(k,lift (-nb) cM,fst (extract_instance_status pb))::metasubst,
               evarsubst)
 	    else error_cannot_unify_local curenv sigma (m,n,cM)
-	| Evar ev, _ -> sigma,metasubst,((ev,cN)::evarsubst)
-	| _, Evar ev -> sigma,metasubst,((ev,cM)::evarsubst)
+	| Evar ev, _ -> sigma,metasubst,((curenv, ev,cN)::evarsubst)
+	| _, Evar ev -> sigma,metasubst,((curenv, ev,cM)::evarsubst)
 	| Lambda (na,t1,c1), Lambda (_,t2,c2) ->
 	    unirec_rec (push (na,t1) curenvnb) topconv true
 	      (unirec_rec curenvnb topconv true substn t1 t2) c1 c2
@@ -651,30 +651,30 @@ let w_merge env with_types flags (evd,metas,evars) =
 
     (* Process evars *)
     match evars with
-    | ((evk,_ as ev),rhs)::evars' ->
+    | (curenv,(evk,_ as ev),rhs)::evars' ->
 	if Evd.is_defined evd evk then
 	  let v = Evd.existential_value evd ev in
 	  let (evd,metas',evars'') =
-	    unify_0 env evd topconv flags rhs v in
+	    unify_0 curenv evd topconv flags rhs v in
 	  w_merge_rec evd (metas'@metas) (evars''@evars') eqns
     	else begin
           let rhs' = subst_meta_instances metas rhs in
           match kind_of_term rhs with
 	  | App (f,cl) when occur_meta rhs' ->
 	      if occur_evar evk rhs' then
-                error_occur_check env evd evk rhs';
+                error_occur_check curenv evd evk rhs';
 	      if is_mimick_head f then
 		let evd' =
 		  mimick_undefined_evar evd flags f (Array.length cl) evk in
 		w_merge_rec evd' metas evars eqns
 	      else
-		let evd', rhs'' = pose_all_metas_as_evars env evd rhs' in
-		w_merge_rec (solve_simple_evar_eqn flags.modulo_delta env evd' ev rhs'')
+		let evd', rhs'' = pose_all_metas_as_evars curenv evd rhs' in
+		w_merge_rec (solve_simple_evar_eqn flags.modulo_delta curenv evd' ev rhs'')
 		  metas evars' eqns
 
           | _ ->
-	    let evd', rhs'' = pose_all_metas_as_evars env evd rhs' in
-	      w_merge_rec (solve_simple_evar_eqn flags.modulo_delta env evd' ev rhs'')
+	    let evd', rhs'' = pose_all_metas_as_evars curenv evd rhs' in
+	      w_merge_rec (solve_simple_evar_eqn flags.modulo_delta curenv evd' ev rhs'')
 		metas evars' eqns
 	end
     | [] ->
