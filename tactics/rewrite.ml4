@@ -248,6 +248,9 @@ let rec decompose_app_rel env evd t =
 	in (f'', args)
   | _ -> error "The term provided is not an applied relation."
 
+(*   let nc, c', cl = push_rel_context_to_named_context env c in *)
+(*   let env' = reset_with_named_context nc env in *)
+
 let decompose_applied_relation env sigma orig (c,l) left2right =
   let c' = c in
   let ctype = Typing.type_of env sigma c' in
@@ -354,8 +357,54 @@ let unify_eqn env sigma hypinfo t =
 	    (car, rel, c2, c1))
 	with Not_found ->
 	  (prf, (car, inverse car rel, c2, c1))
-    in Some (env', res)
+    in Some (env'.evd, res)
   with e when Class_tactics.catchable e -> None
+
+(* let unify_eqn env sigma hypinfo t = *)
+(*   if isEvar t then None *)
+(*   else try *)
+(*     let {cl=cl; prf=prf; car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=c; abs=abs} = !hypinfo in *)
+(*     let left = if l2r then c1 else c2 in *)
+(*     let evd', prf, c1, c2, car, rel = *)
+(*       match abs with *)
+(*       | Some (absprf, absprfty) -> *)
+(* 	  let env' = clenv_unify allowK ~flags:rewrite_unif_flags CONV left t cl in *)
+(* 	    env'.evd, prf, c1, c2, car, rel *)
+(*       | None -> *)
+(* 	  let cl' = Clenv.clenv_pose_metas_as_evars cl (Evd.undefined_metas cl.evd) in *)
+(* 	  let sigma = cl'.evd in *)
+(* 	  let c1 = Clenv.clenv_nf_meta cl' c1 *)
+(* 	  and c2 = Clenv.clenv_nf_meta cl' c2 *)
+(* 	  and prf = Clenv.clenv_nf_meta cl' prf *)
+(* 	  and car = Clenv.clenv_nf_meta cl' car *)
+(* 	  and rel = Clenv.clenv_nf_meta cl' rel *)
+(* 	  in *)
+(* 	  let sigma' = *)
+(* 	    try Evarconv.the_conv_x ~ts:empty_transparent_state env t c1 sigma *)
+(* 	    with Reduction.NotConvertible _ ->  *)
+(* 	      Evarconv.the_conv_x ~ts:conv_transparent_state env t c1 sigma *)
+(* 	  in *)
+(* 	  let sigma' = Evarconv.consider_remaining_unif_problems ~ts:conv_transparent_state env sigma' in *)
+(* 	  let evd' = Typeclasses.resolve_typeclasses ~fail:true env sigma' in *)
+(* 	  let nf c = Evarutil.nf_evar evd' c in *)
+(* 	  let c1 = nf c1 and c2 = nf c2 *)
+(* 	  and car = nf car and rel = nf rel *)
+(* 	  and prf' = nf prf in *)
+(* 	    if occur_meta_or_existential prf then *)
+(* 	      hypinfo := refresh_hypinfo env evd' !hypinfo; *)
+(* 	    evd', prf', c1, c2, car, rel *)
+(*     in *)
+(*     let res = *)
+(*       if l2r then (prf, (car, rel, c1, c2)) *)
+(*       else *)
+(* 	try (mkApp (get_symmetric_proof env Evd.empty car rel, *)
+(* 		   [| c1 ; c2 ; prf |]), *)
+(* 	    (car, rel, c2, c1)) *)
+(* 	with Not_found -> *)
+(* 	  (prf, (car, inverse car rel, c2, c1)) *)
+(*     in Some (evd', res) *)
+(*   with Reduction.NotConvertible -> None *)
+(*   | e when Class_tactics.catchable e -> None *)
 
 let unfold_impl t =
   match kind_of_term t with
@@ -550,13 +599,13 @@ let apply_rule hypinfo loccs : strategy =
       let unif = unify_eqn env (goalevars evars) hypinfo t in
 	if unif <> None then incr occ;
 	match unif with
-	| Some (env', (prf, (car, rel, c1, c2))) when is_occ !occ ->
+	| Some (evd', (prf, (car, rel, c1, c2))) when is_occ !occ ->
 	    begin
 	      if eq_constr t c2 then Some None
 	      else
 		let res = { rew_car = ty; rew_from = c1;
 			    rew_to = c2; rew_prf = RewPrf (rel, prf); 
-			    rew_evars = env'.evd, cstrevars evars }
+			    rew_evars = evd', cstrevars evars }
 		in Some (Some (apply_constraint env avoid car rel prf cstr res))
 	    end
 	| _ -> None
@@ -1013,9 +1062,13 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
 				Evarutil.nf_evar evars' x, Evarutil.nf_evar evars' y) abs in
 	let evars = (* Keep only original evars (potentially instantiated) and goal evars,
 		       the rest has been defined and substituted already. *)
-	  let cstrs = cstrevars evars in
+(* 	  let cstrs = cstrevars evars in *)
 	    (* cstrs is small *)
-	    Evd.fold (fun ev evi acc -> Evd.remove acc ev) cstrs evars'
+	  let gevars = goalevars evars in
+	    Evd.fold (fun ev evi acc -> 
+			if Evd.mem gevars ev then Evd.add acc ev evi
+			else acc) evars' Evd.empty
+(* 	    Evd.fold (fun ev evi acc -> Evd.remove acc ev) cstrs evars' *)
 	in
 	let res =
 	  match is_hyp with
@@ -1186,18 +1239,6 @@ let cl_rewrite_clause_newtac' l left2right occs clause =
   Proof_global.run_tactic 
     (Proofview.tclFOCUS 1 1 
        (cl_rewrite_clause_new_strat (rewrite_with l left2right occs) clause))
-       (* (Proofview.tclGOALBINDU *)
-(* 	  (bind_gl_info (fun concl env sigma -> *)
-(* 			   let evdref = ref sigma in *)
-(* 			   let c, _ = Constrintern.interp_constr_evars_impls ~evdref env (fst l) in *)
-(* 			     return {it = (c, NoBindings) ; sigma = !evdref})) *)
-(* 	  (fun l' ->  *)
-
-(* let cl_rewrite_clause_newtac' l left2right occs clause = *)
-(*   Proof_global.run_tactic  *)
-(*     (Proofview.tclFOCUS 1 1  *)
-(*        (cl_rewrite_clause_new_strat (rewrite_with l left2right occs) clause)); *)
-(*   tclIDTAC *)
 
 let cl_rewrite_clause_strat strat clause gl =
     init_setoid ();
@@ -1313,18 +1354,9 @@ ARGUMENT EXTEND rewstrategy TYPED AS strategy
   | [ "fold" constr(c) ] -> [ Strategies.fold c ]
 END
 
-
-TACTIC EXTEND class_rewrite
-| [ "clrewrite" orient(o) glob_constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some id) ]
-| [ "clrewrite" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id) ] -> [ cl_rewrite_clause c o (occurrences_of occ) (Some id) ]
-| [ "clrewrite" orient(o) glob_constr_with_bindings(c) "in" hyp(id) ] -> [ cl_rewrite_clause c o all_occurrences (Some id) ]
-| [ "clrewrite" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) ] -> [ cl_rewrite_clause c o (occurrences_of occ) None ]
-| [ "clrewrite" orient(o) glob_constr_with_bindings(c) ] -> [ cl_rewrite_clause c o all_occurrences None ]
-    END
-
-TACTIC EXTEND class_rewrite_strat
-| [ "clrewrite_strat" rewstrategy(s) "in" hyp(id) ] -> [ cl_rewrite_clause_strat s (Some id) ]
-| [ "clrewrite_strat" rewstrategy(s) ] -> [ cl_rewrite_clause_strat s None ]
+TACTIC EXTEND rewrite_strat
+| [ "rewrite_strat" rewstrategy(s) "in" hyp(id) ] -> [ cl_rewrite_clause_strat s (Some id) ]
+| [ "rewrite_strat" rewstrategy(s) ] -> [ cl_rewrite_clause_strat s None ]
 END
 
 let clsubstitute o c =
@@ -1369,22 +1401,22 @@ END
 (* | [ "rew" orient(o) glob_constr_with_bindings(c) ] -> [ cl_rewrite_clause_newtac' c o all_occurrences None ] *)
 (* END *)
 
-(* TACTIC EXTEND GenRew *)
-(* | [ "rew" orient(o) glob_constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ) ] ->  *)
-(*     [ cl_rewrite_clause_newtac' c o (occurrences_of occ) (Some id) ] *)
-(* | [ "rew" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id) ] -> *)
-(*     [ cl_rewrite_clause_newtac' c o (occurrences_of occ) (Some id) ] *)
-(* | [ "rew" orient(o) glob_constr_with_bindings(c) "in" hyp(id) ] ->  *)
-(*     [ cl_rewrite_clause_newtac' c o all_occurrences (Some id) ] *)
-(* | [ "rew" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) ] ->  *)
-(*     [ cl_rewrite_clause_newtac' c o (occurrences_of occ) None ] *)
-(* | [ "rew" orient(o) glob_constr_with_bindings(c) ] ->  *)
-(*     [ cl_rewrite_clause_newtac' c o all_occurrences None ] *)
-(* END *)
-
-(* let solve_obligation lemma =  *)
-(*   tclTHEN (Tacinterp.interp (Tacexpr.TacAtom (dummy_loc, Tacexpr.TacAnyConstructor None))) *)
-(*     (eapply_with_bindings (Constrintern.interp_constr Evd.empty (Global.env()) lemma, NoBindings)) *)
+let cl_rewrite_clause_newtac_tac c o occ cl gl =
+  cl_rewrite_clause_newtac' c o occ cl;
+  tclIDTAC gl
+  
+TACTIC EXTEND GenRew
+| [ "rew" orient(o) glob_constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ) ] ->
+    [ cl_rewrite_clause_newtac_tac c o (occurrences_of occ) (Some id) ]
+| [ "rew" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id) ] ->
+    [ cl_rewrite_clause_newtac_tac c o (occurrences_of occ) (Some id) ]
+| [ "rew" orient(o) glob_constr_with_bindings(c) "in" hyp(id) ] ->
+    [ cl_rewrite_clause_newtac_tac c o all_occurrences (Some id) ]
+| [ "rew" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) ] ->
+    [ cl_rewrite_clause_newtac_tac c o (occurrences_of occ) None ]
+| [ "rew" orient(o) glob_constr_with_bindings(c) ] ->
+    [ cl_rewrite_clause_newtac_tac c o all_occurrences None ]
+END
 
 let mkappc s l = CAppExpl (dummy_loc,(None,(Libnames.Ident (dummy_loc,id_of_string s))),l)
 
@@ -1395,62 +1427,64 @@ let declare_an_instance n s args =
 
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
-let anew_instance binders instance fields =
-  new_instance binders instance (CRecord (dummy_loc,None,fields)) ~global:true ~generalize:false None
+let anew_instance global binders instance fields =
+  new_instance binders instance (CRecord (dummy_loc,None,fields)) 
+    ~global:(not (Vernacexpr.use_section_locality ())) ~generalize:false None
 
-let declare_instance_refl binders a aeq n lemma =
+let declare_instance_refl global binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
-  in anew_instance binders instance
+  in anew_instance global binders instance
        [(Ident (dummy_loc,id_of_string "reflexivity"),lemma)]
 
-let declare_instance_sym binders a aeq n lemma =
+let declare_instance_sym global binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Symmetric") "Coq.Classes.RelationClasses.Symmetric"
-  in anew_instance binders instance
+  in anew_instance global binders instance
        [(Ident (dummy_loc,id_of_string "symmetry"),lemma)]
 
-let declare_instance_trans binders a aeq n lemma =
+let declare_instance_trans global binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Transitive") "Coq.Classes.RelationClasses.Transitive"
-  in anew_instance binders instance
+  in anew_instance global binders instance
        [(Ident (dummy_loc,id_of_string "transitivity"),lemma)]
 
 let declare_relation ?(binders=[]) a aeq n refl symm trans =
   init_setoid ();
+  let global = not (Vernacexpr.use_section_locality ()) in
   let instance = declare_instance a aeq (add_suffix n "_relation") "Coq.Classes.RelationClasses.RewriteRelation"
-  in ignore(anew_instance binders instance []);
+  in ignore(anew_instance global binders instance []);
   match (refl,symm,trans) with
       (None, None, None) -> ()
     | (Some lemma1, None, None) ->
-	ignore (declare_instance_refl binders a aeq n lemma1)
+	ignore (declare_instance_refl global binders a aeq n lemma1)
     | (None, Some lemma2, None) ->
-	ignore (declare_instance_sym binders a aeq n lemma2)
+	ignore (declare_instance_sym global binders a aeq n lemma2)
     | (None, None, Some lemma3) ->
-	ignore (declare_instance_trans binders a aeq n lemma3)
+	ignore (declare_instance_trans global binders a aeq n lemma3)
     | (Some lemma1, Some lemma2, None) ->
-	ignore (declare_instance_refl binders a aeq n lemma1);
-	ignore (declare_instance_sym binders a aeq n lemma2)
+	ignore (declare_instance_refl global binders a aeq n lemma1);
+	ignore (declare_instance_sym global binders a aeq n lemma2)
     | (Some lemma1, None, Some lemma3) ->
-	let _lemma_refl = declare_instance_refl binders a aeq n lemma1 in
-	let _lemma_trans = declare_instance_trans binders a aeq n lemma3 in
+	let _lemma_refl = declare_instance_refl global binders a aeq n lemma1 in
+	let _lemma_trans = declare_instance_trans global binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PreOrder"
 	in ignore(
-	    anew_instance binders instance
+	    anew_instance global binders instance
 	      [(Ident (dummy_loc,id_of_string "PreOrder_Reflexive"), lemma1);
 	       (Ident (dummy_loc,id_of_string "PreOrder_Transitive"),lemma3)])
     | (None, Some lemma2, Some lemma3) ->
-	let _lemma_sym = declare_instance_sym binders a aeq n lemma2 in
-	let _lemma_trans = declare_instance_trans binders a aeq n lemma3 in
+	let _lemma_sym = declare_instance_sym global binders a aeq n lemma2 in
+	let _lemma_trans = declare_instance_trans global binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PER"
 	in ignore(
-	    anew_instance binders instance
+	    anew_instance global binders instance
 	      [(Ident (dummy_loc,id_of_string "PER_Symmetric"), lemma2);
 	       (Ident (dummy_loc,id_of_string "PER_Transitive"),lemma3)])
      | (Some lemma1, Some lemma2, Some lemma3) ->
-	let _lemma_refl = declare_instance_refl binders a aeq n lemma1 in
-	let _lemma_sym = declare_instance_sym binders a aeq n lemma2 in
-	let _lemma_trans = declare_instance_trans binders a aeq n lemma3 in
+	let _lemma_refl = declare_instance_refl global binders a aeq n lemma1 in
+	let _lemma_sym = declare_instance_sym global binders a aeq n lemma2 in
+	let _lemma_trans = declare_instance_trans global binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
 	in ignore(
-	  anew_instance binders instance
+	  anew_instance global binders instance
 	    [(Ident (dummy_loc,id_of_string "Equivalence_Reflexive"), lemma1);
 	     (Ident (dummy_loc,id_of_string "Equivalence_Symmetric"), lemma2);
 	     (Ident (dummy_loc,id_of_string "Equivalence_Transitive"), lemma3)])
@@ -1620,14 +1654,14 @@ let default_morphism sign m =
   let evars, mor = resolve_one_typeclass env (merge_evars evars) morph in
     mor, proper_projection mor morph
 
-let add_setoid binders a aeq t n =
+let add_setoid global binders a aeq t n =
   init_setoid ();
-  let _lemma_refl = declare_instance_refl binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in
-  let _lemma_sym = declare_instance_sym binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
-  let _lemma_trans = declare_instance_trans binders a aeq n (mkappc "Seq_trans" [a;aeq;t]) in
+  let _lemma_refl = declare_instance_refl global binders a aeq n (mkappc "Seq_refl" [a;aeq;t]) in
+  let _lemma_sym = declare_instance_sym global binders a aeq n (mkappc "Seq_sym" [a;aeq;t]) in
+  let _lemma_trans = declare_instance_trans global binders a aeq n (mkappc "Seq_trans" [a;aeq;t]) in
   let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
   in ignore(
-    anew_instance binders instance
+    anew_instance global binders instance
       [(Ident (dummy_loc,id_of_string "Equivalence_Reflexive"), mkappc "Seq_refl" [a;aeq;t]);
        (Ident (dummy_loc,id_of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
        (Ident (dummy_loc,id_of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])])
@@ -1671,9 +1705,9 @@ let add_morphism glob binders m s n =
 
 VERNAC COMMAND EXTEND AddSetoid1
    [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
-     [ add_setoid [] a aeq t n ]
+     [ add_setoid (not (Vernacexpr.use_section_locality ())) [] a aeq t n ]
   | [ "Add" "Parametric" "Setoid" binders(binders) ":" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
-     [	add_setoid binders a aeq t n ]
+     [	add_setoid (not (Vernacexpr.use_section_locality ())) binders a aeq t n ]
   | [ "Add" "Morphism" constr(m) ":" ident(n) ] ->
       [ add_morphism_infer (not (Vernacexpr.use_section_locality ())) m n ]
   | [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ] ->
