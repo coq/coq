@@ -177,7 +177,7 @@ val existential_opt_value : evar_map -> existential -> constr option
 val subst_evar_defs_light : substitution -> evar_map -> evar_map
 
 (* spiwack: this function seems to somewhat break the abstraction. *)
-val evars_reset_evd  : evar_map ->  evar_map -> evar_map
+val evars_reset_evd  : ?with_conv_pbs:bool -> evar_map ->  evar_map -> evar_map
 
 
 (* spiwack: [is_undefined_evar] should be considered a candidate

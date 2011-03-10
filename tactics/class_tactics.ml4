@@ -85,7 +85,7 @@ let evars_to_goals p evm =
     if goals = [] then None
     else
       let goals = List.rev goals in
-      let evm' = evars_reset_evd evm' evm in
+      let evm' = evars_reset_evd ~with_conv_pbs:false evm' evm in
 	Some (goals, evm')
 
 (** Typeclasses instance search tactic / eauto *)

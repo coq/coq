@@ -305,7 +305,7 @@ let evar_clenv_unique_resolver = clenv_unique_resolver
 
 let connect_clenv gls clenv =
   { clenv with
-    evd = evars_reset_evd gls.sigma clenv.evd;
+    evd = evars_reset_evd ~with_conv_pbs:true gls.sigma clenv.evd;
     env = Global.env_of_context gls.it.evar_hyps }
 
 (* [clenv_fchain mv clenv clenv']
