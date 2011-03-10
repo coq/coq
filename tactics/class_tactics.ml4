@@ -411,7 +411,7 @@ let run_on_evars ?(only_classes=true) ?(st=full_transparent_state) p evm tac =
       let res = run_list_tac tac p goals (make_autogoals ~only_classes ~st goals evm') in
 	match get_result res with
 	| None -> raise Not_found
-	| Some (evm', fk) -> Some (evars_reset_evd evm' evm, fk)
+	| Some (evm', fk) -> Some (evars_reset_evd ~with_conv_pbs:true evm' evm, fk)
 	    
 let eauto_tac hints = 
   fix (or_tac (then_tac normevars_tac (hints_tac hints)) intro_tac)

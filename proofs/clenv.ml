@@ -328,7 +328,7 @@ let evar_clenv_unique_resolver = clenv_unique_resolver
 (******************************************************************)
 
 let connect_clenv gls clenv =
-  let evd = evars_reset_evd gls.sigma clenv.evd in
+  let evd = evars_reset_evd ~with_conv_pbs:true gls.sigma clenv.evd in
   { clenv with
     evd = evd ;
     env = Goal.V82.env evd (sig_it gls) }
