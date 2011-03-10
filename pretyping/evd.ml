@@ -414,7 +414,7 @@ let empty =  {
   metas=Metamap.empty
 }
 
-let evars_reset_evd evd d = {d with evars = evd.evars}
+let evars_reset_evd evd d = {d with evars = evd.evars; conv_pbs = evd.conv_pbs}
 let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
 let evar_source evk d = (EvarMap.find d.evars evk).evar_source
 
