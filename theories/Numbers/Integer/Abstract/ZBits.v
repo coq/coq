@@ -710,11 +710,13 @@ Proof.
  intros. now rewrite <- 2 shiftl_opp_r, shiftl_shiftl, opp_sub_distr, add_comm.
 Qed.
 
-Lemma shiftr_shiftr : forall a n m, 0<=n -> 0<=m ->
+Lemma shiftr_shiftr : forall a n m, 0<=m ->
  (a >> n) >> m == a >> (n+m).
 Proof.
- intros a n m Hn Hm.
- now rewrite !shiftr_div_pow2, pow_add_r, div_div by order_pos.
+ intros a n p Hn. bitwise.
+ rewrite 3 shiftr_spec; trivial.
+ now rewrite (add_comm n p), add_assoc.
+ now apply add_nonneg_nonneg.
 Qed.
 
 (** shifts and constants *)

@@ -550,10 +550,11 @@ Proof.
 Qed.
 
 (** With the current convention, the following result isn't always
-    true for negative divisors. For instance
-    [ 3/(-2)/(-2) = 1 <> 0 = 3 / (-2*-2) ]. *)
+    true with a negative intermediate divisor. For instance
+    [ 3/(-2)/(-2) = 1 <> 0 = 3 / (-2*-2) ] and
+    [ 3/(-2)/2 = -1 <> 0 = 3 / (-2*2) ]. *)
 
-Lemma div_div : forall a b c, 0<b -> 0<c ->
+Lemma div_div : forall a b c, 0<b -> c~=0 ->
  (a/b)/c == a/(b*c).
 Proof.
  intros a b c Hb Hc.
@@ -575,12 +576,11 @@ Proof.
  apply div_mod; order.
 Qed.
 
-(** Similarly, the following result doesn't always hold for negative
-    [b] and [c]. For instance [3 mod (-2*-2)) = 3] while
-    [3 mod (-2) + (-2)*((3/-2) mod -2) = -1].
-*)
+(** Similarly, the following result doesn't always hold when [b<0].
+    For instance [3 mod (-2*-2)) = 3] while
+    [3 mod (-2) + (-2)*((3/-2) mod -2) = -1]. *)
 
-Lemma mod_mul_r : forall a b c, 0<b -> 0<c ->
+Lemma mod_mul_r : forall a b c, 0<b -> c~=0 ->
  a mod (b*c) == a mod b + b*((a/b) mod c).
 Proof.
  intros a b c Hb Hc.
