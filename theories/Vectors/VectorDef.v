@@ -17,7 +17,7 @@ Names should be "caml name in list.ml" if exists and order of arguments
 have to be the same. complain if you see mistakes ... *)
 
 Require Import Arith_base.
-Require Fin.
+Require Vectors.Fin.
 Open Local Scope nat_scope.
 
 (**
@@ -33,14 +33,19 @@ Local Notation "h :: t" := (cons _ h _ t) (at level 60, right associativity).
 Section SCHEMES.
 
 (** An induction scheme for non-empty vectors *)
+
 Definition rectS {A} (P:forall {n}, t A (S n) -> Type)
  (bas: forall a: A, P (a :: []))
  (rect: forall a {n} (v: t A (S n)), P v -> P (a :: v)) :=
  fix rectS_fix {n} (v: t A (S n)) : P v :=
- match v with
+ match v in t _  n' return match n' return t _ n' -> Type with
+                                    | 0 => fun _ => ID
+                                    | S n => fun v => P v
+                                  end v
+ with
  |nil => @id
  |cons a 0 v =>
-     match v as vnn in t _ nn
+   match v as vnn in t _ nn
        return
          match nn as nnn return t A nnn -> Type with
          |0 => fun vm => P (a :: vm)
@@ -84,14 +89,15 @@ end.
 
 (** A vector of length [0] is [nil] *)
 Definition case0 {A} (P:t A 0 -> Type) (H:P (nil A)) v:P v :=
-match v with
+match v as v0 in t _ n return match n return t _ n -> Type with 0 => fun v => P v | S n => fun v => ID end v0 with
   |[] => H
+  | _ => @id
 end.
 
 (** A vector of length [S _] is [cons] *)
 Definition caseS {A} (P : forall n, t A (S n) -> Type)
   (H : forall h {n} t, @P n (h :: t)) {n} v : P n v :=
-match v with
+match v as v0 in t _ n return match n return t _ n -> Type with 0 => fun v => ID | S n => fun v => P n v end v0 with 
   |[] => @id (* Why needed ? *)
   |h :: t => H h t
 end.
