@@ -291,7 +291,7 @@ let declare_instance_cst glob con =
   let instance = Typeops.type_of_constant (Global.env ()) con in
   let _, r = decompose_prod_assum instance in
     match class_of_constr r with
-      | Some tc -> add_instance (new_instance tc None glob (ConstRef con))
+      | Some (_, (tc, _)) -> add_instance (new_instance tc None glob (ConstRef con))
       | None -> errorlabstrm "" (Pp.strbrk "Constant does not build instances of a declared type class.")
 
 let declare_class finite def infer id idbuild paramimpls params arity fieldimpls fields
@@ -331,20 +331,20 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 	Impargs.declare_manual_implicits false (ConstRef proj_cst) [List.hd fieldimpls];
 	Classes.set_typeclass_transparency (EvalConstRef cst) false;
 	if infer then Evd.fold (fun ev evi _ -> Recordops.declare_method (ConstRef cst) ev sign) sign ();
-	cref, [Name proj_name, Some proj_cst]
+	cref, [Name proj_name, List.hd coers, Some proj_cst]
     | _ ->
 	let idarg = Namegen.next_ident_away (snd id) (Termops.ids_of_context (Global.env())) in
 	let ind = declare_structure BiFinite infer (snd id) idbuild paramimpls
 	  params (Option.cata (fun x -> x) (Termops.new_Type ()) arity) fieldimpls fields
 	  ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields) sign
 	in
-	  IndRef ind, (List.map2 (fun (id, _, _) y -> (id, y))
-			 (List.rev fields) (Recordops.lookup_projections ind))
+	  IndRef ind, (list_map3 (fun (id, _, _) b y -> (id, b, y))
+			 (List.rev fields) coers (Recordops.lookup_projections ind))
   in
   let ctx_context =
     List.map (fun (na, b, t) ->
       match Typeclasses.class_of_constr t with
-      | Some cl -> Some (cl.cl_impl, true) (*List.exists (fun (_, n) -> n = na) supnames)*)
+      | Some (_, (cl, _)) -> Some (cl.cl_impl, true) (*List.exists (fun (_, n) -> n = na) supnames)*)
       | None -> None)
       params, params
   in
@@ -355,7 +355,7 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
       cl_projs = projs }
   in
     List.iter2 (fun p sub ->
-      if sub then match snd p with Some p -> declare_instance_cst true p | None -> ())
+      if sub then match p with (_, _, Some p) -> declare_instance_cst true p | _ -> ())
       k.cl_projs coers;
   add_class k; impl
 

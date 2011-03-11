@@ -59,7 +59,7 @@ let proper_class =
 let proper_proxy_class =
   lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.ProperProxy"))))
 
-let proper_proj = lazy (mkConst (Option.get (snd (List.hd (Lazy.force proper_class).cl_projs))))
+let proper_proj = lazy (mkConst (Option.get (pi3 (List.hd (Lazy.force proper_class).cl_projs))))
 
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 
@@ -1386,20 +1386,6 @@ TACTIC EXTEND setoid_rewrite
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ)] ->
       [ cl_rewrite_clause c o (occurrences_of occ) (Some id)]
 END
-
-(* let occurrences_of l = (true,[]) *)
-
-(* VERNAC COMMAND EXTEND GenRew *)
-(* | [ "rew" orient(o) glob_constr_with_bindings(c) "in" hyp(id) "at" occurrences(occ) ] -> *)
-(*     [ cl_rewrite_clause_newtac' c o (occurrences_of occ) (Some (snd id)) ] *)
-(* | [ "rew" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id) ] -> *)
-(*     [ cl_rewrite_clause_newtac' c o (occurrences_of occ) (Some (snd id)) ] *)
-(* | [ "rew" orient(o) glob_constr_with_bindings(c) "in" hyp(id) ] -> *)
-(*     [ cl_rewrite_clause_newtac' c o all_occurrences (Some (snd id)) ] *)
-(* | [ "rew" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) ] -> *)
-(*     [ cl_rewrite_clause_newtac' c o (occurrences_of occ) None ] *)
-(* | [ "rew" orient(o) glob_constr_with_bindings(c) ] -> [ cl_rewrite_clause_newtac' c o all_occurrences None ] *)
-(* END *)
 
 let cl_rewrite_clause_newtac_tac c o occ cl gl =
   cl_rewrite_clause_newtac' c o occ cl;

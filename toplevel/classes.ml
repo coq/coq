@@ -55,7 +55,7 @@ let declare_instance glob g =
   let instance = Typing.type_of (Global.env ()) Evd.empty (constr_of_global c) in
   let _, r = decompose_prod_assum instance in
     match class_of_constr r with
-      | Some tc -> add_instance (new_instance tc None glob c)
+      | Some (_, (tc, _)) -> add_instance (new_instance tc None glob c)
       | None -> user_err_loc (loc_of_reference g, "declare_instance",
 			     Pp.str "Constant does not build instances of a declared type class.")
 
@@ -211,8 +211,10 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 			let (loc_mid, c) = List.find (fun (id', _) -> Name (snd (get_id id')) = id) rest in
 			let rest' = List.filter (fun (id', _) -> Name (snd (get_id id')) <> id) rest in
 			let (loc, mid) = get_id loc_mid in
-			  Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) 
-			    (List.assoc (Name mid) k.cl_projs);
+			  List.iter (fun (n, _, x) -> 
+				       if n = Name mid then
+					 Option.iter (fun x -> Dumpglob.add_glob loc (ConstRef x)) x)
+			    k.cl_projs;
 			  c :: props, rest'
 		      with Not_found ->
 			(CHole (Util.dummy_loc, None) :: props), rest
@@ -273,7 +275,41 @@ let named_of_rel_context l =
       l ([], [])
   in ctx
 
-let context ?(hook=fun _ -> ()) l =
+let string_of_global r =
+ string_of_qualid (Nametab.shortest_qualid_of_global Idset.empty r)
+
+let rec declare_subclasses gr (rels, (tc, args)) =
+  let projs = list_map_filter 
+    (fun (n, b, proj) ->
+       if b then Option.map (fun p -> Nameops.out_name n, mkConst p) proj
+       else None) tc.cl_projs 
+  in
+  let instapp = appvectc (constr_of_global gr)
+    (Termops.extended_rel_vect 0 rels)
+  in
+  let projargs = 
+    Array.of_list (args @ [instapp])
+  in
+  let declare_proj (n, p) =
+    let ce = {
+      const_entry_body   = it_mkLambda_or_LetIn (mkApp (p, projargs)) rels;
+      const_entry_type   = None;
+      const_entry_opaque = false }
+    in
+    let cst = Declare.declare_constant ~internal:Declare.KernelSilent 
+      (Nameops.add_suffix (Nameops.add_suffix (id_of_string (string_of_global gr)) "_") 
+	 (string_of_id n))
+      (DefinitionEntry ce, IsAssumption Logical)
+    in
+    let ty = Typeops.type_of_constant (Global.env ()) cst in
+      match class_of_constr ty with
+      | Some (rels, (tc, args) as cl) ->
+	  add_instance (Typeclasses.new_instance tc None false (ConstRef cst));
+	  declare_subclasses (ConstRef cst) cl
+      | None -> ()
+  in () (* List.iter declare_proj projs *)
+
+let context l =
   let env = Global.env() in
   let evars = ref Evd.empty in
   let _, ((env', fullctx), impls) = interp_context_evars evars env l in
@@ -289,9 +325,9 @@ let context ?(hook=fun _ -> ()) l =
 	(ParameterEntry (t,None), IsAssumption Logical)
       in
 	match class_of_constr t with
-	| Some tc ->
+	| Some (rels, (tc, args) as cl) ->
 	    add_instance (Typeclasses.new_instance tc None false (ConstRef cst));
-	    hook (ConstRef cst)
+	    declare_subclasses (ConstRef cst) cl
 	| None -> ()
     else (
       let impl = List.exists 
@@ -302,6 +338,6 @@ let context ?(hook=fun _ -> ()) l =
 	  [] impl (* implicit *) None (* inline *) (dummy_loc, id);
 	match class_of_constr t with
 	| None -> ()
-	| Some tc -> hook (VarRef id))
+	| Some tc -> declare_subclasses (VarRef id) tc)
   in List.iter fn (List.rev ctx)
 	

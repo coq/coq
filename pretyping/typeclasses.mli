@@ -34,8 +34,8 @@ type typeclass = {
 
   (** The methods implementations of the typeclass as projections. 
       Some may be undefinable due to sorting restrictions or simply undefined if 
-      no name is provided. *)
-  cl_projs : (name * constant option) list;
+      no name is provided. The boolean indicates subclasses. *)
+  cl_projs : (name * bool * constant option) list;
 }
 
 type instance
@@ -61,7 +61,7 @@ val class_info : global_reference -> typeclass (** raises a UserError if not a c
 val dest_class_app : env -> constr -> typeclass * constr list
 
 (** Just return None if not a class *)
-val class_of_constr : constr -> typeclass option
+val class_of_constr : constr -> (rel_context * (typeclass * constr list)) option
   
 val instance_impl : instance -> global_reference
 

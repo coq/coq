@@ -51,7 +51,7 @@ type typeclass = {
   cl_props : rel_context;
 
   (* The method implementaions as projections. *)
-  cl_projs : (name * constant option) list;
+  cl_projs : (name * bool * constant option) list;
 }
 module Gmap = Fmap.Make(RefOrdered)
 
@@ -117,7 +117,11 @@ let dest_class_app env c =
   let cl, args = decompose_app c in
     global_class_of_constr env cl, args
 
-let class_of_constr c = try Some (fst (dest_class_app (Global.env ()) c)) with _ -> None
+let dest_class_arity env c =
+  let rels, c = decompose_prod_assum c in
+    rels, dest_class_app env c
+
+let class_of_constr c = try Some (dest_class_arity (Global.env ()) c) with _ -> None
 
 let rec is_class_type evd c =
   match kind_of_term c with
@@ -147,7 +151,7 @@ let subst_class (subst,cl) =
   let do_subst_context (grs,ctx) =
     list_smartmap (Option.smartmap (fun (gr,b) -> do_subst_gr gr, b)) grs,
     do_subst_ctx ctx in
-  let do_subst_projs projs = list_smartmap (fun (x, y) -> (x, Option.smartmap do_subst_con y)) projs in
+  let do_subst_projs projs = list_smartmap (fun (x, y, z) -> (x, y, Option.smartmap do_subst_con z)) projs in
   { cl_impl = do_subst_gr cl.cl_impl;
     cl_context = do_subst_context cl.cl_context;
     cl_props = do_subst_ctx cl.cl_props;
@@ -179,7 +183,7 @@ let discharge_class (_,cl) =
       let newgrs = List.map (fun (_, _, t) -> 
 	match class_of_constr t with
 	| None -> None
-	| Some tc -> Some (tc.cl_impl, true))
+	| Some (_, (tc, _)) -> Some (tc.cl_impl, true))
 	ctx' 
       in
 	list_smartmap (Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b)) grs
@@ -194,7 +198,7 @@ let discharge_class (_,cl) =
     { cl_impl = cl_impl';
       cl_context = context;
       cl_props = props;
-      cl_projs = list_smartmap (fun (x, y) -> x, Option.smartmap Lib.discharge_con y) cl.cl_projs }
+      cl_projs = list_smartmap (fun (x, y, z) -> x, y, Option.smartmap Lib.discharge_con z) cl.cl_projs }
 
 let rebuild_class cl = cl
 

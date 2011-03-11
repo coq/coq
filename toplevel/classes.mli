@@ -67,8 +67,7 @@ val id_of_class : typeclass -> identifier
 
 (** Context command *)
 
-val context : ?hook:(Libnames.global_reference -> unit) ->
-  local_binder list -> unit
+val context : local_binder list -> unit
 
 (** Forward ref for refine *)
 
