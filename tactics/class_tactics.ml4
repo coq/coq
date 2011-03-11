@@ -414,7 +414,7 @@ let run_on_evars ?(only_classes=true) ?(st=full_transparent_state) p evm tac =
 	| Some (evm', fk) -> Some (evars_reset_evd ~with_conv_pbs:true evm' evm, fk)
 	    
 let eauto_tac hints = 
-  fix (or_tac (then_tac normevars_tac (hints_tac hints)) intro_tac)
+  fix (then_tac normevars_tac (or_tac (hints_tac hints) intro_tac))
   
 let eauto ?(only_classes=true) ?st hints g =
   let gl = { it = make_autogoal ~only_classes ?st None g; sigma = project g } in
@@ -493,8 +493,9 @@ let split_evars evm =
 
 let evars_in_comp comp evm =
   try
-    Intset.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evm ev))
-      comp Evd.empty
+    evars_reset_evd 
+      (Intset.fold (fun ev acc -> Evd.add acc ev (Evd.find_undefined evm ev))
+	 comp Evd.empty) evm
   with Not_found -> assert false
 
 let is_inference_forced p evd ev =
@@ -516,7 +517,7 @@ let is_mandatory p comp evd =
 (** In case of unsatisfiable constraints, build a nice error message *)
 
 let error_unresolvable env comp do_split evd =
-  let evd = Evarutil.nf_evars_undefined evd in
+  let evd = Evarutil.nf_evar_map_undefined evd in
   let evm = if do_split then evars_in_comp comp evd else evd in
   let _, ev = Evd.fold_undefined
     (fun ev evi (b,acc) ->
@@ -575,7 +576,8 @@ let resolve_all_evars debug m env p oevd do_split fail =
 	if fail && (not do_split || is_mandatory (p evd) comp evd)
 	then (* Unable to satisfy the constraints. *)
 	  error_unresolvable env comp do_split evd
-	else (* Best effort: do nothing *) oevd
+	else (* Best effort: do nothing on this component *) 
+	  docomp oevd comps
   in docomp oevd split
 
 let initial_select_evars onlyargs =

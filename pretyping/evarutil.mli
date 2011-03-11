@@ -154,15 +154,13 @@ val jv_nf_evar :
 val tj_nf_evar :
    evar_map -> unsafe_type_judgment -> unsafe_type_judgment
 
-val nf_evar_info : evar_map -> evar_info -> evar_info
-val nf_evars : evar_map -> evar_map
-val nf_evars_undefined : evar_map -> evar_map
-
 val nf_named_context_evar : evar_map -> named_context -> named_context
 val nf_rel_context_evar : evar_map -> rel_context -> rel_context
 val nf_env_evar : evar_map -> env -> env
 
+val nf_evar_info : evar_map -> evar_info -> evar_info
 val nf_evar_map : evar_map -> evar_map
+val nf_evar_map_undefined : evar_map -> evar_map
 
 (** Replacing all evars, possibly raising [Uninstantiated_evar] *)
 exception Uninstantiated_evar of existential_key

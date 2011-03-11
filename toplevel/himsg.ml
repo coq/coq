@@ -696,7 +696,7 @@ let explain_no_instance env (_,id) l =
     prlist_with_sep pr_spc (pr_lconstr_env env) l
 
 let pr_constraints printenv env evm =
-  let evm = Evarutil.nf_evars_undefined evm in
+  let evm = Evarutil.nf_evar_map_undefined evm in
   let l = Evd.to_list evm in
   let (ev, evi) = List.hd l in
     if List.for_all (fun (ev', evi') ->
@@ -706,12 +706,14 @@ let pr_constraints printenv env evm =
 	(reset_with_named_context evi.evar_hyps env) in
 	(if printenv then pe ++ fnl () else mt ()) ++
 	  prlist_with_sep (fun () -> fnl ())
-	  (fun (ev, evi) -> str(string_of_existential ev)++ str " == " ++ pr_constr evi.evar_concl) l
+	  (fun (ev, evi) -> str(string_of_existential ev) ++ 
+	     str " : " ++ pr_lconstr evi.evar_concl) l ++ fnl() ++
+	  pr_evar_map_constraints evm
     else
       pr_evar_map evm
 
 let explain_unsatisfiable_constraints env evd constr =
-  let evm = Evarutil.nf_evars evd in
+  let evm = Evarutil.nf_evar_map evd in
   let undef = Evd.undefined_evars evm in
   match constr with
   | None ->

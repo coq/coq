@@ -255,7 +255,7 @@ let gen_sort_topo l evm =
 (* register real typeclass instance given a totally defined evd *)
 let declare_instance (k:global_reference -> rel_context -> constr list -> unit)
     (cl,gen,evm:signature) =
-  let evm = Evarutil.nf_evars evm in
+  let evm = Evarutil.nf_evar_map evm in
   let gen = gen_sort_topo gen evm in
   let (evm,gen) = List.fold_right
     (fun ev (evm,gen) ->

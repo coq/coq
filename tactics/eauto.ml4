@@ -182,7 +182,7 @@ module SearchProblem = struct
   let pr_ev evs ev = Printer.pr_constr_env (Evd.evar_env ev) (Evarutil.nf_evar evs ev.Evd.evar_concl)
 
   let pr_goals gls =
-    let evars = Evarutil.nf_evars (Refiner.project gls) in
+    let evars = Evarutil.nf_evar_map (Refiner.project gls) in
       prlist (pr_ev evars) (sig_it gls)
 
   let filter_tactics glls l =

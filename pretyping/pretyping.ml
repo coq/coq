@@ -717,7 +717,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   let understand_judgment sigma env c =
     let evdref = ref (create_evar_defs sigma) in
     let j = pretype empty_tycon env evdref ([],[]) c in
-    let evd = Typeclasses.resolve_typeclasses ~onlyargs:true ~split:false
+    let evd = Typeclasses.resolve_typeclasses ~onlyargs:true ~split:true
       ~fail:true env !evdref
     in
     let evd = consider_remaining_unif_problems env evd in

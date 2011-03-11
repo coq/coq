@@ -70,6 +70,7 @@ let nf_evars_undefined evm =
     evm Evd.empty
 
 let nf_evar_map evd = Evd.evars_reset_evd (nf_evars evd) evd
+let nf_evar_map_undefined evd = Evd.evars_reset_evd (nf_evars_undefined evd) evd
 
 (**********************)
 (* Creating new metas *)
@@ -118,7 +119,7 @@ let push_duplicated_evars sigma emap c =
 (* replaces a mapping of existentials into a mapping of metas.
    Problem if an evar appears in the type of another one (pops anomaly) *)
 let evars_to_metas sigma (emap, c) =
-  let emap = nf_evars_undefined emap in
+  let emap = nf_evar_map_undefined emap in
   let sigma',emap' = push_dependent_evars sigma emap in
   let sigma',emap' = push_duplicated_evars sigma' emap' c in
   let change_exist evar =

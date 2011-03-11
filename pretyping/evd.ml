@@ -741,6 +741,10 @@ let pr_constraints pbs =
 	| Reduction.CUMUL -> "<=") ++
       spc() ++ print_constr t2) pbs)
 
+let pr_evar_map_constraints evd =
+  if evd.conv_pbs = [] then mt() 
+  else pr_constraints evd.conv_pbs++fnl()
+
 let pr_evar_map evd =
   let pp_evm =
     if evd.evars = EvarMap.empty then mt() else

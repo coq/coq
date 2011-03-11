@@ -276,6 +276,7 @@ type unsolvability_explanation = SeveralInstancesFound of int
    debug pretty-printer: *)
 
 val pr_evar_info : evar_info -> Pp.std_ppcmds
+val pr_evar_map_constraints : evar_map -> Pp.std_ppcmds
 val pr_evar_map : evar_map -> Pp.std_ppcmds
 val pr_metaset : Metaset.t -> Pp.std_ppcmds
 
