@@ -1297,7 +1297,7 @@ let status_changed lev (pbty,_,t1,t2) =
 
 (* Util *)
 
-let check_instance_type conv_algo env evd ev1 t2 =
+let check_instance_type conv_algo pbty env evd ev1 t2 =
   let t2 = nf_evar evd t2 in
   if has_undefined_evars_or_sorts evd t2 then
     (* May contain larger constraints than needed: don't want to
@@ -1309,9 +1309,9 @@ let check_instance_type conv_algo env evd ev1 t2 =
     else
       let typ1 = existential_type evd ev1 in
       let evd,b = conv_algo env evd Reduction.CUMUL typ2 typ1 in
-      if b then evd else
-	user_err_loc (fst (evar_source (fst ev1) evd),"",
-	  str "Unable to find a well-typed instantiation")
+	if b then evd else
+	  user_err_loc (fst (evar_source (fst ev1) evd),"",
+			str "Unable to find a well-typed instantiation")
 
 (* Tries to solve problem t1 = t2.
  * Precondition: t1 is an uninstantiated evar
@@ -1334,11 +1334,7 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
 	    else
 	      add_conv_pb (Reduction.CUMUL,env,t2,mkEvar ev1) evd
       | _ ->
-	  let evd =
-	    if pbty = Some false then
-	      check_instance_type conv_algo env evd ev1 t2
-	    else
-	      evd in
+	  let evd = check_instance_type conv_algo pbty env evd ev1 t2 in
 	  let evd = evar_define ~choose env ev1 t2 evd in
 	  let evi = Evd.find evd evk1 in
 	    if occur_existential evd evi.evar_concl then
@@ -1480,31 +1476,25 @@ let empty_valcon = None
 (* Builds a value constraint *)
 let mk_valcon c = Some c
 
-(* Refining an evar to a product
 
-   I.e., solve x1..xq |- ?e:T(x1..xq) with e:=Πy:?dom[x1..xq].?rng[x1..xq,y]
-   where x1..xq |- ?dom:Type and x1..xq,y |- ?rng:Type
-
-   Note: Declaring any type to be in the sort Type shouldn't be harmful
-   since cumulativity now includes Prop and Set in Type...
-   It is, but that's not too bad
-
-   To do: should we check that T is Type and instantiate it by a sort
-   if an evar?
-*)
+let new_type_evar ?src ?filter evd env =
+  let evd', s = new_sort_variable evd in
+    new_evar evd' env ?src ?filter (mkSort s)
 
 let idx = id_of_string "x"
+
+(* Refining an evar to a product *)
 
 let define_pure_evar_as_product evd evk =
   let evi = Evd.find_undefined evd evk in
   let evenv = evar_unfiltered_env evi in
   let id = next_ident_away idx (ids_of_named_context (evar_context evi)) in
-  let evd1,dom = new_evar evd evenv (new_Type()) ~filter:(evar_filter evi) in
+  let evd1,dom = new_type_evar evd evenv ~filter:(evar_filter evi) in
   let evd2,rng =
     let newenv = push_named (id, None, dom) evenv in
     let src = evar_source evk evd1 in
     let filter = true::evar_filter evi in
-    new_evar evd1 newenv ~src (new_Type()) ~filter in
+    new_type_evar evd1 newenv ~src ~filter in
   let prod = mkProd (Name id, dom, subst_var id rng) in
   let evd3 = Evd.define evk prod evd2 in
   evd3,prod
@@ -1558,13 +1548,15 @@ let define_evar_as_lambda env evd (evk,args) =
 (* Refining an evar to a sort *)
 
 let define_evar_as_sort evd (ev,args) =
-  let s = new_Type () in
-  Evd.define ev s evd, destSort s
+  let evd, s = new_sort_variable evd in
+    Evd.define ev (mkSort s) evd, s
 
 (* We don't try to guess in which sort the type should be defined, since
    any type has type Type. May cause some trouble, but not so far... *)
 
-let judge_of_new_Type () = Typeops.judge_of_type (new_univ ())
+let judge_of_new_Type evd = 
+  let evd', s = new_univ_variable evd in
+    evd', Typeops.judge_of_type s
 
 (* Propagation of constraints through application and abstraction:
    Given a type constraint on a functional term, returns the type

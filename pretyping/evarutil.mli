@@ -34,6 +34,11 @@ val new_evar :
 val e_new_evar :
   evar_map ref -> env -> ?src:loc * hole_kind -> ?filter:bool list -> types -> constr
 
+(** Create a new Type existential variable, as we keep track of 
+    them during type-checking and unification. *)
+val new_type_evar :
+  ?src:loc * hole_kind -> ?filter:bool list -> evar_map -> env -> evar_map * constr
+
 (** Create a fresh evar in a context different from its definition context:
    [new_evar_instance sign evd ty inst] creates a new evar of context
    [sign] and type [ty], [inst] is a mapping of the evar context to
@@ -114,7 +119,7 @@ val undefined_evars_of_evar_info : evar_map -> evar_info -> Intset.t
 
 (** {6 Value/Type constraints} *)
 
-val judge_of_new_Type : unit -> unsafe_judgment
+val judge_of_new_Type : evar_map -> evar_map * unsafe_judgment
 
 type type_constraint_type = (int * int) option * constr
 type type_constraint = type_constraint_type option

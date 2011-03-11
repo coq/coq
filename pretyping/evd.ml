@@ -210,8 +210,8 @@ module EvarInfoMap = struct
 end
 
 module EvarMap = struct
-  type t = EvarInfoMap.t * Univ.universes
-  let empty = EvarInfoMap.empty, Univ.initial_universes
+  type t = EvarInfoMap.t * (Univ.UniverseLSet.t * Univ.universes)
+  let empty = EvarInfoMap.empty, (Univ.UniverseLSet.empty, Univ.initial_universes)
   let add (sigma,sm) k v = (EvarInfoMap.add sigma k v, sm)
   let add_undefined (sigma,sm) k v = (EvarInfoMap.add_undefined sigma k v, sm)
   let find (sigma,_) = EvarInfoMap.find sigma
@@ -237,8 +237,8 @@ module EvarMap = struct
         EvarInfoMap.is_defined sigma2 k))
 
   let merge e e' = fold e' (fun n v sigma -> add sigma n v) e
-  let add_constraints (sigma, sm) cstrs =
-    (sigma, Univ.merge_constraints cstrs sm)
+  let add_constraints (sigma, (us, sm)) cstrs =
+    (sigma, (us, Univ.merge_constraints cstrs sm))
 end
 
 (*******************************************************************)
@@ -391,7 +391,7 @@ let subst_evar_info s evi =
       evar_body = subst_evb evi.evar_body }
 
 let subst_evar_defs_light sub evd =
-  assert (Univ.initial_universes = (snd evd.evars));
+  assert (Univ.initial_universes = (snd (snd evd.evars)));
   assert (evd.conv_pbs = []);
   { evd with
       metas = Metamap.map (map_clb (subst_mps sub)) evd.metas;
@@ -490,11 +490,16 @@ let evar_list evd c =
 (**********************************************************)
 (* Sort variables *)
 
-let new_sort_variable ({ evars = (sigma,sm) } as d)=
-  let u = Termops.new_univ() in
-    (Type u, d)
+let new_univ_variable ({ evars = (sigma,(us,sm)) } as d) =
+  let u = Termops.new_univ_level () in
+  let us' = Univ.UniverseLSet.add u us in
+    ({d with evars = (sigma, (us', sm))}, Univ.make_universe u)
+  
+let new_sort_variable d =
+  let (d', u) = new_univ_variable d in
+    (d', Type u)
 
-let is_sort_variable {evars=(_,sm)} s = match s with Type _ -> true | _ -> false 
+let is_sort_variable {evars=(_,(us,_))} s = match s with Type u -> true | _ -> false 
 let whd_sort_variable {evars=(_,sm)} t = t
 
 let univ_of_sort = function
@@ -502,26 +507,56 @@ let univ_of_sort = function
   | Prop Pos -> Univ.type0_univ
   | Prop Null -> Univ.type0m_univ
 
-let set_leq_sort d s1 s2 =
-  if s1 = s2 then d
+let is_eq_sort s1 s2 =
+  if s1 = s2 then None
   else 
     let u1 = univ_of_sort s1 and u2 = univ_of_sort s2 in
+      if u1 = u2 then None
+      else Some (u1, u2)
+
+let is_univ_var_or_set u =   
+  Univ.is_univ_variable u || u = Univ.type0_univ
+
+let set_leq_sort ({evars = (sigma, (us, sm))} as d) s1 s2 =
+  match is_eq_sort s1 s2 with
+  | None -> d
+  | Some (u1, u2) ->
       match s1, s2 with
       | Prop c, Prop c' -> 
 	  if c = Null && c' = Pos then d
 	  else (raise (Univ.UniverseInconsistency (Univ.Le, u1, u2)))
-      | _, _ ->
-	  add_constraints d (Univ.enforce_geq u2 u1 Univ.empty_constraint)
+     | Type u, Prop c -> 
+	  if c = Pos then 
+	    add_constraints d (Univ.enforce_geq Univ.type0_univ u Univ.empty_constraint)
+	  else raise (Univ.UniverseInconsistency (Univ.Le, u1, u2))
+      | _, Type u ->
+	  if is_univ_var_or_set u then
+	    add_constraints d (Univ.enforce_geq u2 u1 Univ.empty_constraint)
+	  else raise (Univ.UniverseInconsistency (Univ.Le, u1, u2))
 
-let set_eq_sort d s1 s2 =
-  if s1 = s2 then d
-  else
-    let u1, u2 = univ_of_sort s1, univ_of_sort s2 in
+let is_univ_level_var us u =
+  match Univ.universe_level u with
+  | Some u -> Univ.UniverseLSet.mem u us
+  | None -> false
+
+let set_eq_sort ({evars = (sigma, (us, sm))} as d) s1 s2 =
+  match is_eq_sort s1 s2 with
+  | None -> d
+  | Some (u1, u2) ->
       match s1, s2 with
-      | Prop c, Prop c' -> raise (Univ.UniverseInconsistency (Univ.Eq, u1, u2))
-      | _, _ ->
+      | Prop c, Type u when is_univ_level_var us u ->
 	  add_constraints d (Univ.enforce_eq u1 u2 Univ.empty_constraint)
-
+      | Type u, Prop c when is_univ_level_var us u ->
+	  add_constraints d (Univ.enforce_eq u1 u2 Univ.empty_constraint)
+      | Type u, Type v when (is_univ_level_var us u) || (is_univ_level_var us v) ->
+	  add_constraints d (Univ.enforce_eq u1 u2 Univ.empty_constraint)
+      | Prop c, Type u when is_univ_var_or_set u &&
+	  Univ.check_eq sm u1 u2 -> d
+      | Type u, Prop c when is_univ_var_or_set u && Univ.check_eq sm u1 u2 -> d
+      | Type u, Type v when is_univ_var_or_set u && is_univ_var_or_set v ->
+	  add_constraints d (Univ.enforce_eq u1 u2 Univ.empty_constraint)
+      | _, _ -> raise (Univ.UniverseInconsistency (Univ.Eq, u1, u2))
+	    
 (**********************************************************)
 (* Accessing metas *)
 
@@ -717,7 +752,7 @@ let pr_evar_info evi =
   in
   hov 2 (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]")
 
-let pr_evar_map_t (evars,univs as sigma) =
+let pr_evar_map_t (evars,(uvs,univs) as sigma) =
   let evs =
     if evars = EvarInfoMap.empty then mt ()
     else
@@ -726,11 +761,16 @@ let pr_evar_map_t (evars,univs as sigma) =
 		(fun (ev,evi) ->
 		  h 0 (str(string_of_existential ev)++str"=="++ pr_evar_info evi))
 		(EvarMap.to_list sigma))++fnl()
-  and cs =
+  and svs =
+    if Univ.UniverseLSet.is_empty uvs then mt ()
+    else str"UNIVERSE VARIABLES:"++brk(0,1)++
+      h 0 (prlist_with_sep pr_fnl 
+	     (fun u -> Univ.pr_uni_level u) (Univ.UniverseLSet.elements uvs))++fnl()
+   and cs =
     if univs = Univ.initial_universes then mt ()
     else str"UNIVERSES:"++brk(0,1)++
       h 0 (Univ.pr_universes univs)++fnl()
-  in evs ++ cs
+  in evs ++ svs ++ cs
 
 let pr_constraints pbs =
   h 0
@@ -749,8 +789,7 @@ let pr_evar_map evd =
   let pp_evm =
     if evd.evars = EvarMap.empty then mt() else
       pr_evar_map_t evd.evars++fnl() in
-  let cstrs =
-    if evd.conv_pbs = [] then mt() else
+  let cstrs = if evd.conv_pbs = [] then mt() else
     str"CONSTRAINTS:"++brk(0,1)++pr_constraints evd.conv_pbs++fnl() in
   let pp_met =
     if evd.metas = Metamap.empty then mt() else

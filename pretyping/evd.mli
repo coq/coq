@@ -247,7 +247,8 @@ val subst_defined_metas : metabinding list -> constr -> constr option
 (*********************************************************
    Sort variables *)
 
-val new_sort_variable : evar_map -> sorts * evar_map
+val new_univ_variable : evar_map -> evar_map * Univ.universe
+val new_sort_variable : evar_map -> evar_map * sorts
 val is_sort_variable : evar_map -> sorts -> bool
 val whd_sort_variable : evar_map -> constr -> constr
 val set_leq_sort : evar_map -> sorts -> sorts -> evar_map

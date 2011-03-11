@@ -26,28 +26,33 @@ type flex_kind_of_term =
   | MaybeFlexible of constr (* approx'ed as reducible but not necessarily so *)
   | Flexible of existential
 
-let flex_kind_of_term ts c l =
+let flex_kind_of_term c l =
   match kind_of_term c with
-    | Const n when is_transparent_constant ts n -> MaybeFlexible c
-    | Rel n -> MaybeFlexible c
-    | Var id when is_transparent_variable ts id -> MaybeFlexible c
+    | Rel _ | Const _ | Var _ -> MaybeFlexible c
     | Lambda _ when l<>[] -> MaybeFlexible c
     | LetIn _  -> MaybeFlexible c
     | Evar ev -> Flexible ev
     | Lambda _ | Prod _ | Sort _ | Ind _ | Construct _ | CoFix _ -> Rigid c
-    | Meta _ | Case _ | Fix _ | Const _ | Var _ -> PseudoRigid c
+    | Meta _ | Case _ | Fix _ -> PseudoRigid c
     | Cast _ | App _ -> assert false
 
 let is_rigid = function Rigid _ -> true | _ -> false
 
-let eval_flexible_term env c =
+let eval_flexible_term ts env c =
   match kind_of_term c with
-  | Const c -> constant_opt_value env c
+  | Const c -> 
+      if is_transparent_constant ts c
+      then constant_opt_value env c
+      else None
   | Rel n ->
       (try let (_,v,_) = lookup_rel n env in Option.map (lift n) v
       with Not_found -> None)
   | Var id ->
-      (try let (_,v,_) = lookup_named id env in v with Not_found -> None)
+      (try
+	 if is_transparent_variable ts id then
+	   let (_,v,_) = lookup_named id env in v 
+	 else None 
+       with Not_found -> None)
   | LetIn (_,b,_,c) -> Some (subst1 b c)
   | Lambda _ -> Some c
   | _ -> assert false
@@ -194,7 +199,7 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
 
 and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
   (* Evar must be undefined since we have flushed evars *)
-  match (flex_kind_of_term ts term1 l1, flex_kind_of_term ts term2 l2) with
+  match (flex_kind_of_term term1 l1, flex_kind_of_term term2 l2) with
 
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
 	let f1 i =
@@ -249,7 +254,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
                (fun i -> evar_conv_x ts env i pbty term1 (applist(term2,deb2)))]
           else (i,false)
 	and f2 i =
-	  match eval_flexible_term env flex2 with
+	  match eval_flexible_term ts env flex2 with
 	    | Some v2 ->
 		evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
 	    | None -> (i,false)
@@ -281,7 +286,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
                (fun i -> evar_conv_x ts env i pbty (applist(term1,deb1)) term2)]
           else (i,false)
 	and f2 i =
-	  match eval_flexible_term env flex1 with
+	  match eval_flexible_term ts env flex1 with
 	    | Some v1 ->
 		evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
 	    | None -> (i,false)
@@ -324,20 +329,20 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
              usable as a canonical projection *)
 	  if isLambda flex1 or is_open_canonical_projection i appr2
 	  then
-	    match eval_flexible_term env flex1 with
+	    match eval_flexible_term ts env flex1 with
 	    | Some v1 ->
 		evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
 	    | None ->
-		match eval_flexible_term env flex2 with
+		match eval_flexible_term ts env flex2 with
 		| Some v2 ->
 		    evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
 		| None -> (i,false)
 	  else
-	    match eval_flexible_term env flex2 with
+	    match eval_flexible_term ts env flex2 with
 	    | Some v2 ->
 		evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
 	    | None ->
-		match eval_flexible_term env flex1 with
+		match eval_flexible_term ts env flex1 with
 		| Some v1 ->
 		    evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
 		| None -> (i,false)
@@ -411,7 +416,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  (try conv_record ts env i (check_conv_record appr1 appr2)
            with Not_found -> (i,false))
 	and f4 i =
-	  match eval_flexible_term env flex1 with
+	  match eval_flexible_term ts env flex1 with
 	    | Some v1 ->
  		evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
 	    | None -> (i,false)
@@ -423,7 +428,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  (try conv_record ts env i (check_conv_record appr2 appr1)
            with Not_found -> (i,false))
 	and f4 i =
-	  match eval_flexible_term env flex2 with
+	  match eval_flexible_term ts env flex2 with
 	    | Some v2 ->
  		evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
 	    | None -> (i,false)
@@ -434,7 +439,14 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
         match kind_of_term c1, kind_of_term c2 with
 
 	| Sort s1, Sort s2 when l1=[] & l2=[] ->
-	    (evd, base_sort_cmp pbty s1 s2)
+	    (try 
+	       let evd' = 
+		 if pbty = CONV 
+		 then Evd.set_eq_sort evd s1 s2 
+		 else Evd.set_leq_sort evd s1 s2 
+	       in (evd', true)
+	     with Univ.UniverseInconsistency _ -> (evd, false)
+	     | _ -> (evd, false))
 
 	| Prod (n,c1,c'1), Prod (_,c2,c'2) when l1=[] & l2=[] ->
             ise_and evd
@@ -508,7 +520,6 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 
 	| (Lambda _ | Rel _ | Var _ | Const _ | Evar _), _ -> assert false
 	| _, (Lambda _ | Rel _ | Var _ | Const _ | Evar _) -> assert false
-
       end
 
     | PseudoRigid _, Rigid _ ->  (evd,false)

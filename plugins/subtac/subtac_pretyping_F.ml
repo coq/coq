@@ -159,9 +159,9 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     let c = constr_of_global ref in
       make_judge c (Retyping.get_type_of env Evd.empty c)
 
-  let pretype_sort = function
+  let pretype_sort evdref = function
     | GProp c -> judge_of_prop_contents c
-    | GType _ -> judge_of_new_Type ()
+    | GType _ -> evd_comb0 judge_of_new_Type evdref
 
   let split_tycon_lam loc env evd tycon =
     let rec real_split evd c =
@@ -307,7 +307,8 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	inh_conv_coerce_to_tycon loc env evdref fixj tycon
 
     | GSort (loc,s) ->
-	inh_conv_coerce_to_tycon loc env evdref (pretype_sort s) tycon
+	let s' = pretype_sort evdref s in
+	inh_conv_coerce_to_tycon loc env evdref s' tycon
 
     | GApp (loc,f,args) ->
 	let length = List.length args in

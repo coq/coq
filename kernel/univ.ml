@@ -54,6 +54,11 @@ module UniverseLevel = struct
 end
 
 module UniverseLMap = Map.Make (UniverseLevel)
+module UniverseLSet = Set.Make (UniverseLevel)
+
+type universe_level = UniverseLevel.t
+
+let compare_levels = UniverseLevel.compare
 
 (* An algebraic universe [universe] is either a universe variable
    [UniverseLevel.t] or a formal universe known to be greater than some
@@ -71,7 +76,13 @@ type universe =
   | Atom of UniverseLevel.t
   | Max of UniverseLevel.t list * UniverseLevel.t list
 
-let make_univ (m,n) = Atom (UniverseLevel.Level (m,n))
+let make_universe_level (m,n) = UniverseLevel.Level (m,n)
+let make_universe l = Atom l
+let make_univ c = Atom (make_universe_level c)
+
+let universe_level = function
+  | Atom l -> Some l
+  | Max _ -> None
 
 let pr_uni_level u = str (UniverseLevel.to_string u)
 
@@ -499,9 +510,6 @@ let merge_constraints c g =
   Constraint.fold enforce_constraint c g
 
 (* Normalization *)
-
-module UniverseLSet =
- Set.Make (UniverseLevel)
 
 let lookup_level u g =
   try Some (UniverseLMap.find u g) with Not_found -> None

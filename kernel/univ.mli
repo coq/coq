@@ -8,7 +8,10 @@
 
 (** Universes. *)
 
+type universe_level
 type universe
+
+module UniverseLSet : Set.S with type elt = universe_level
 
 (** The universes hierarchy: Type 0- = Prop <= Type 0 = Set <= Type 1 <= ... 
    Typing of universes: Type 0-, Type 0 : Type 1; Type i : Type (i+1) if i>0 *)
@@ -17,11 +20,16 @@ val type0m_univ : universe  (** image of Prop in the universes hierarchy *)
 val type0_univ : universe  (** image of Set in the universes hierarchy *)
 val type1_univ : universe  (** the universe of the type of Prop/Set *)
 
+val make_universe_level : Names.dir_path * int -> universe_level
+val make_universe : universe_level -> universe
 val make_univ : Names.dir_path * int -> universe
 
 val is_type0_univ : universe -> bool
 val is_type0m_univ : universe -> bool
 val is_univ_variable : universe -> bool
+
+val universe_level : universe -> universe_level option
+val compare_levels : universe_level -> universe_level -> int
 
 (** The type of a universe *)
 val super : universe -> universe
@@ -82,6 +90,7 @@ val no_upper_constraints : universe -> constraints -> bool
 
 (** {6 Pretty-printing of universes. } *)
 
+val pr_uni_level : universe_level -> Pp.std_ppcmds
 val pr_uni : universe -> Pp.std_ppcmds
 val pr_universes : universes -> Pp.std_ppcmds
 val pr_constraints : constraints -> Pp.std_ppcmds

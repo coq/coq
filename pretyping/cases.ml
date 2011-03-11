@@ -948,7 +948,7 @@ let specialize_predicate newtomatchs (names,(depna,_)) arsign cs tms ccl =
 let find_predicate loc env evdref p current (IndType (indf,realargs)) dep tms =
   let pred= abstract_predicate env !evdref indf current dep tms p in
   (pred, whd_betaiota !evdref
-           (applist (pred, realargs@[current])), new_Type ())
+           (applist (pred, realargs@[current])))
 
 let adjust_predicate_from_tomatch ((_,oldtyp),_,(nadep,_)) typ pb =
   match typ, oldtyp with
@@ -1164,7 +1164,7 @@ and match_current pb tomatch =
 
 	  (* We build the (elementary) case analysis *)
 	  let brvals = Array.map (fun (v,_) -> v) brs in
-	  let (pred,typ,s) =
+	  let (pred,typ) =
 	    find_predicate pb.caseloc pb.env pb.evdref
 	      pb.pred current indt (names,dep) pb.tomatch in
 	  let ci = make_case_info pb.env mind pb.casestyle in
@@ -1621,7 +1621,7 @@ let prepare_predicate loc typing_fun sigma env tomatchs sign tycon pred =
 	(* we use two strategies *)
         let sigma,t = match tycon with
 	| Some (None, t) -> sigma,t
-	| _ -> new_evar sigma env ~src:(loc, CasesType) (new_Type ()) in
+	| _ -> new_type_evar sigma env ~src:(loc, CasesType) in
         (* First strategy: we build an "inversion" predicate *)
 	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
 	(* Second strategy: we directly use the evar as a non dependent pred *)
@@ -1631,8 +1631,9 @@ let prepare_predicate loc typing_fun sigma env tomatchs sign tycon pred =
     | Some rtntyp, _ ->
       (* We extract the signature of the arity *)
       let env = List.fold_right push_rels arsign env in
+      let sigma, newt = new_sort_variable sigma in
       let evdref = ref sigma in
-      let predcclj = typing_fun (mk_tycon (new_Type ())) env evdref rtntyp in
+      let predcclj = typing_fun (mk_tycon (mkSort newt)) env evdref rtntyp in
       let sigma = Option.cata (fun tycon ->
           let tycon = lift_tycon_type (List.length arsign) tycon in
           Coercion.inh_conv_coerces_to loc env !evdref predcclj.uj_val tycon)

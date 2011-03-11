@@ -292,11 +292,14 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     let c = constr_of_global ref in
       make_judge c (Retyping.get_type_of env Evd.empty c)
 
-  let pretype_sort = function
+  let pretype_sort evdref = function
     | GProp c -> judge_of_prop_contents c
-    | GType _ -> judge_of_new_Type ()
+    | GType _ -> evd_comb0 judge_of_new_Type evdref
 
   exception Found of fixpoint
+
+  let new_type_evar evdref env loc =
+    evd_comb0 (fun evd -> Evarutil.new_type_evar evd env ~src:(loc,InternalHole)) evdref
 
   (* [pretype tycon env evdref lvar lmeta cstr] attempts to type [cstr] *)
   (* in environment [env], with existential variables [evdref] and *)
@@ -327,8 +330,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	let ty =
           match tycon with
             | Some (None, ty) -> ty
-            | None | Some _ ->
-		e_new_evar evdref env ~src:(loc,InternalHole) (new_Type ()) in
+            | None | Some _ -> new_type_evar evdref env loc in
         let k = MatchingVar (someta,n) in
 	{ uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
 
@@ -337,7 +339,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
           match tycon with
             | Some (None, ty) -> ty
             | None | Some _ ->
-		e_new_evar evdref env ~src:(loc,InternalHole) (new_Type ()) in
+		new_type_evar evdref env loc in
 	  { uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
 
     | GRec (loc,fixkind,names,bl,lar,vdef) ->
@@ -404,7 +406,8 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	inh_conv_coerce_to_tycon loc env evdref fixj tycon
 
     | GSort (loc,s) ->
-	inh_conv_coerce_to_tycon loc env evdref (pretype_sort s) tycon
+	let j = pretype_sort evdref s in
+	  inh_conv_coerce_to_tycon loc env evdref j tycon
 
     | GApp (loc,f,args) ->
 	let fj = pretype empty_tycon env evdref lvar f in
@@ -547,9 +550,8 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		     let v =
 		       let mis,_ = dest_ind_family indf in
 		       let ci = make_case_info env mis LetStyle in
-			 mkCase (ci, p, cj.uj_val,[|f|] )
-		     in
-		       { uj_val = v; uj_type = ccl })
+			 mkCase (ci, p, cj.uj_val,[|f|])
+		     in { uj_val = v; uj_type = ccl })
 
     | GIf (loc,c,(na,po),b1,b2) ->
 	let cj = pretype empty_tycon env evdref lvar c in
@@ -586,8 +588,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	    | None ->
 		let p = match tycon with
 		  | Some (None, ty) -> ty
-		  | None | Some _ ->
-                      e_new_evar evdref env ~src:(loc,InternalHole) (new_Type ())
+		  | None | Some _ -> new_type_evar evdref env loc
 		in
 		  it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
 	  let pred = nf_evar !evdref pred in
@@ -674,7 +675,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		 { utj_val = v;
 		   utj_type = s }
 	   | None ->
-	       let s = new_Type_sort () in
+	       let s = evd_comb0 new_sort_variable evdref in
 		 { utj_val = e_new_evar evdref env ~src:loc (mkSort s);
 		   utj_type = s})
     | c ->

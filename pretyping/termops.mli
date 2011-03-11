@@ -14,6 +14,7 @@ open Sign
 open Environ
 
 (** Universes *)
+val new_univ_level : unit -> Univ.universe_level
 val new_univ : unit -> Univ.universe
 val new_sort_in_family : sorts_family -> sorts
 val new_Type : unit -> types
