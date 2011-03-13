@@ -313,7 +313,7 @@ let inductive_template evdref env tmloc ind =
 	    let e = e_new_evar evdref env ~src:(hole_source n) ty' in
 	    (e::subst,e::evarl,n+1)
 	| Some b ->
-	    (b::subst,evarl,n+1))
+	    (substl subst b::subst,evarl,n+1))
       arsign ([],[],1) in
    applist (mkInd ind,List.rev evarl)
 

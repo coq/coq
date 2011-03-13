@@ -144,7 +144,7 @@ Section mult.
 Goal forall x, (fold _ _ (fun x => ab A x) (add A x) = anat _ (fold _ _ (ab nat) (add _ x))). 
 Proof. intros.
   setoid_rewrite fold_lemma. 
-  change (fold A A (fun x0 : A, ab A x0) x = anat A (fold A nat (ab nat) x)).
+  change (fold A A (fun x0 : A => ab A x0) x = anat A (fold A nat (ab nat) x)).
 Abort.
 
 End mult.

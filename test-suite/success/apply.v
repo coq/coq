@@ -326,13 +326,12 @@ exact (refl_equal 4).
 Qed.
 
 (* From 12612, descent in conjunctions is more powerful *)
-(* The following, which was failing badly in bug 1980, is now accepted
-   (even if somehow surprising) *)
+(* The following, which was failing badly in bug 1980, is now
+   properly rejected, as descend in conjunctions builds an
+   ill-formed elimination from Prop to Type. *)
 
 Goal True.
-eapply ex_intro.
-instantiate (2:=fun _ :True => True).
-instantiate (1:=I).
+Fail eapply ex_intro.
 exact I.
 Qed.
 
