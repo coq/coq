@@ -14,6 +14,7 @@ type unify_flags = {
   modulo_conv_on_closed_terms : Names.transparent_state option;
   use_metas_eagerly : bool;
   modulo_delta : Names.transparent_state;
+  modulo_delta_types : Names.transparent_state;
   resolve_evars : bool;
   use_evars_pattern_unification : bool;
   modulo_eta : bool
@@ -49,3 +50,11 @@ val w_coerce_to_type : env -> evar_map -> constr -> types -> types ->
    (exported for inv.ml) *)
 val abstract_list_all :
   env -> evar_map -> constr -> constr -> constr list -> constr
+
+
+(* For tracing *)
+
+val w_merge : env -> bool -> unify_flags -> evar_map *
+  (metavariable * constr * (instance_constraint * instance_typing_status)) list *
+  (env * types pexistential * types) list -> evar_map
+

@@ -201,7 +201,7 @@ GEXTEND Gram
     [ [ "fun" -> () ] ]
   ;
   record_declaration:
-    [ [ fs = LIST1 record_field_declaration SEP ";" -> CRecord (loc, None, fs)
+    [ [ fs = LIST0 record_field_declaration SEP ";" -> CRecord (loc, None, fs)
 (*       | c = lconstr; "with"; fs = LIST1 record_field_declaration SEP ";" -> *)
 (* 	  CRecord (loc, Some c, fs) *)
     ] ]

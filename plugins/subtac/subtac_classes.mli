@@ -33,7 +33,7 @@ val new_instance :
   ?global:bool ->
   local_binder list ->
   typeclass_constraint ->
-  constr_expr ->
+  constr_expr option ->
   ?generalize:bool ->
   int option ->
   identifier * Subtac_obligations.progress

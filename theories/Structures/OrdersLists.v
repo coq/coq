@@ -86,11 +86,11 @@ Module KeyOrderedType(Import O:OrderedType).
 
   (* eqk, eqke are equalities, ltk is a strict order *)
 
-  Global Instance eqk_equiv : Equivalence eqk.
+  Global Instance eqk_equiv : Equivalence eqk := _.
 
-  Global Instance eqke_equiv : Equivalence eqke.
+  Global Instance eqke_equiv : Equivalence eqke := _.
 
-  Global Instance ltk_strorder : StrictOrder ltk.
+  Global Instance ltk_strorder : StrictOrder ltk := _.
 
   Global Instance ltk_compat : Proper (eqk==>eqk==>iff) ltk.
   Proof. unfold eqk, ltk; auto with *. Qed.

@@ -872,7 +872,7 @@ Module MakeListOrdering (O:OrderedType).
 
  Definition eq s s' := forall x, In x s <-> In x s'.
 
- Instance eq_equiv : Equivalence eq.
+ Instance eq_equiv : Equivalence eq := _.
 
  Inductive lt_list : t -> t -> Prop :=
     | lt_nil : forall x s, lt_list nil (x :: s)

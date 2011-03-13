@@ -247,4 +247,4 @@ val superauto : int -> (identifier * constr) list -> autoArguments list -> tacti
 
 val h_superauto : int option -> reference list -> bool -> bool -> tactic
 
-val auto_init : (unit -> unit) ref
+val add_auto_init : (unit -> unit) -> unit

@@ -87,8 +87,8 @@ val resolve_typeclasses : ?onlyargs:bool -> ?split:bool -> ?fail:bool ->
   env -> evar_map -> evar_map
 val resolve_one_typeclass : env -> evar_map -> types -> open_constr
 
-val register_set_typeclass_transparency : (evaluable_global_reference -> bool -> unit) -> unit
-val set_typeclass_transparency : evaluable_global_reference -> bool -> unit
+val register_set_typeclass_transparency : (evaluable_global_reference -> bool (*local?*) -> bool -> unit) -> unit
+val set_typeclass_transparency : evaluable_global_reference -> bool -> bool -> unit
 
 val register_add_instance_hint : (global_reference -> bool (* local? *) -> int option -> unit) -> unit
 val register_remove_instance_hint : (global_reference -> unit) -> unit

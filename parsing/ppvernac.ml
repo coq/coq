@@ -699,8 +699,9 @@ let rec pr_vernac = function
 	 str"=>" ++ spc () ++
 	 (match snd instid with Name id -> pr_lident (fst instid, id) ++ spc () ++ str":" ++ spc () | Anonymous -> mt ()) ++
 	 pr_constr_expr cl ++ spc () ++
-	 spc () ++ str":=" ++ spc () ++
-	 pr_constr_expr props)
+	 (match props with
+	  | Some p -> spc () ++ str":=" ++ spc () ++ pr_constr_expr p
+	  | None -> mt()))
 
  | VernacContext l ->
      hov 1 (

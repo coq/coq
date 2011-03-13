@@ -32,10 +32,10 @@ let register_remove_instance_hint =
   (:=) remove_instance_hint_ref
 let remove_instance_hint id = !remove_instance_hint_ref id
 
-let set_typeclass_transparency_ref = ref (fun id pri -> assert false)
+let set_typeclass_transparency_ref = ref (fun id local c -> assert false)
 let register_set_typeclass_transparency =
   (:=) set_typeclass_transparency_ref
-let set_typeclass_transparency gr c = !set_typeclass_transparency_ref gr c
+let set_typeclass_transparency gr local c = !set_typeclass_transparency_ref gr local c
 
 type rels = constr list
 
@@ -200,7 +200,11 @@ let discharge_class (_,cl) =
       cl_props = props;
       cl_projs = list_smartmap (fun (x, y, z) -> x, y, Option.smartmap Lib.discharge_con z) cl.cl_projs }
 
-let rebuild_class cl = cl
+let rebuild_class cl = 
+  try 
+    let cst = Tacred.evaluable_of_global_reference (Global.env ()) cl.cl_impl in
+      set_typeclass_transparency cst false false; cl
+  with _ -> cl
 
 let class_input =
   declare_object
@@ -305,7 +309,7 @@ let add_constant_class cst =
       cl_projs = []
     }
   in add_class tc;
-    set_typeclass_transparency (EvalConstRef cst) false
+    set_typeclass_transparency (EvalConstRef cst) false false
       
 let add_inductive_class ind =
   let mind, oneind = Global.lookup_inductive ind in

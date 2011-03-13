@@ -168,6 +168,7 @@ type unify_flags = {
   modulo_conv_on_closed_terms : Names.transparent_state option;
   use_metas_eagerly : bool;
   modulo_delta : Names.transparent_state;
+  modulo_delta_types : Names.transparent_state;
   resolve_evars : bool;
   use_evars_pattern_unification : bool;
   modulo_eta : bool
@@ -177,6 +178,7 @@ let default_unify_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
   modulo_delta = full_transparent_state;
+  modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = true;
   modulo_eta = true
@@ -186,6 +188,7 @@ let default_no_delta_unify_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
   modulo_delta = empty_transparent_state;
+  modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = false;
   modulo_eta = true
@@ -574,10 +577,12 @@ let applyHead env evd n c  =
   in
   apprec n c (Typing.type_of env evd c) evd
 
-let is_mimick_head f =
+let is_mimick_head ts f =
   match kind_of_term f with
-      (Const _|Var _|Rel _|Construct _|Ind _) -> true
-    | _ -> false
+  | Const c -> not (Closure.is_transparent_constant ts c)
+  | Var id -> not (Closure.is_transparent_variable ts id)
+  | (Rel _|Construct _|Ind _) -> true
+  | _ -> false
 
 let try_to_coerce env evd c cty tycon =
   let j = make_judge c cty in
@@ -663,18 +668,18 @@ let w_merge env with_types flags (evd,metas,evars) =
 	  | App (f,cl) when occur_meta rhs' ->
 	      if occur_evar evk rhs' then
                 error_occur_check curenv evd evk rhs';
-	      if is_mimick_head f then
+	      if is_mimick_head flags.modulo_delta f then
 		let evd' =
 		  mimick_undefined_evar evd flags f (Array.length cl) evk in
 		w_merge_rec evd' metas evars eqns
 	      else
 		let evd', rhs'' = pose_all_metas_as_evars curenv evd rhs' in
-		w_merge_rec (solve_simple_evar_eqn flags.modulo_delta curenv evd' ev rhs'')
+		w_merge_rec (solve_simple_evar_eqn flags.modulo_delta_types curenv evd' ev rhs'')
 		  metas evars' eqns
 
           | _ ->
 	    let evd', rhs'' = pose_all_metas_as_evars curenv evd rhs' in
-	      w_merge_rec (solve_simple_evar_eqn flags.modulo_delta curenv evd' ev rhs'')
+	      w_merge_rec (solve_simple_evar_eqn flags.modulo_delta_types curenv evd' ev rhs'')
 		metas evars' eqns
 	end
     | [] ->

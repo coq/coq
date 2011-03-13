@@ -255,7 +255,7 @@ type vernac_expr =
       bool * (* global *)
       local_binder list * (* super *)
 	typeclass_constraint * (* instance name, class name, params *)
-	constr_expr * (* props *)
+	constr_expr option * (* props *)
 	int option (* Priority *)
 
   | VernacContext of local_binder list

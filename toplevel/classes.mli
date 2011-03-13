@@ -50,7 +50,7 @@ val new_instance :
   ?global:bool -> (** Not global by default. *)
   local_binder list ->
   typeclass_constraint ->
-  constr_expr ->
+  constr_expr option ->
   ?generalize:bool ->
   ?tac:Proof_type.tactic  ->
   ?hook:(Libnames.global_reference -> unit) ->
@@ -59,7 +59,7 @@ val new_instance :
 
 (** Setting opacity *)
 
-val set_typeclass_transparency : evaluable_global_reference -> bool -> unit
+val set_typeclass_transparency : evaluable_global_reference -> bool -> bool -> unit
 
 (** For generation on names based on classes only *)
 

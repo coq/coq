@@ -109,11 +109,12 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
   let subst = List.map (Evarutil.nf_evar sigma) subst in
   let props =
     match props with
-    | CRecord (loc, _, fs) ->
+    | Some (CRecord (loc, _, fs)) ->
 	if List.length fs > List.length k.cl_props then
 	  Classes.mismatched_props env' (List.map snd fs) k.cl_props;
 	Inl fs
-    | _ -> Inr props
+    | Some p -> Inr p
+    | None -> Inl []
   in
   let subst =
     match props with

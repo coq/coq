@@ -115,7 +115,7 @@ Ltac solve_wd2 := intros x x' Hx y y' Hy; qify; now rewrite Hx, Hy.
 Local Obligation Tactic := solve_wd2 || solve_wd1.
 
 Instance : Measure to_Q.
-Instance eq_equiv : Equivalence eq.
+Instance eq_equiv : Equivalence eq := {}.
 
 Program Instance lt_wd : Proper (eq==>eq==>iff) lt.
 Program Instance le_wd : Proper (eq==>eq==>iff) le.
@@ -141,7 +141,7 @@ Proof. intros. qify. destruct (Qcompare_spec [x] [y]); auto. Qed.
 (** Let's implement [TotalOrder] *)
 
 Definition lt_compat := lt_wd.
-Instance lt_strorder : StrictOrder lt.
+Instance lt_strorder : StrictOrder lt := {}.
 
 Lemma le_lteq : forall x y, x<=y <-> x<y \/ x==y.
 Proof. intros. qify. apply Qle_lteq. Qed.

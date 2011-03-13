@@ -105,6 +105,7 @@ let fail_quick_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = false;
   modulo_delta = empty_transparent_state;
+  modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = false;
   modulo_eta = true

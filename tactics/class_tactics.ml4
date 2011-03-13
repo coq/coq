@@ -40,8 +40,9 @@ open Compat
 let default_eauto_depth = 100
 let typeclasses_db = "typeclass_instances"
 
-let _ = Auto.auto_init := (fun () ->
-  Auto.create_hint_db false typeclasses_db full_transparent_state true)
+let _ = 
+  Auto.add_auto_init 
+    (fun () -> Auto.create_hint_db false typeclasses_db full_transparent_state true)
 
 exception Found of evar_map
 
@@ -74,6 +75,7 @@ let auto_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
   modulo_delta = var_full_transparent_state;
+  modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = true;
   modulo_eta = true
@@ -125,7 +127,9 @@ let with_prods nprods (c, clenv) f gls =
 
 let flags_of_state st =
   {auto_unif_flags with
-    modulo_conv_on_closed_terms = Some st; modulo_delta = st; modulo_eta = false}
+    modulo_conv_on_closed_terms = Some st; modulo_delta = st; 
+     modulo_delta_types = st;
+     modulo_eta = false}
 
 let rec e_trivial_fail_db db_list local_db goal =
   let tacl =
@@ -285,63 +289,117 @@ let compare (pri, _, _, res) (pri', _, _, res') =
 let or_tac (x : 'a tac) (y : 'a tac) : 'a tac =
   { skft = fun sk fk gls -> x.skft sk (fun () -> y.skft sk fk gls) gls }
 
+(* let hints_tac hints = *)
+(*   { skft = fun sk fk {it = gl,info; sigma = s} -> *)
+(*     let possible_resolve (lgls as res, pri, b, pp) = *)
+(*       (pri, pp, b, res) *)
+(*     in *)
+(*     let tacs = *)
+(*       let concl = Goal.V82.concl s gl in *)
+(*       let poss = e_possible_resolve hints info.hints concl in *)
+(*       let l = *)
+(* 	let tacgl = {it = gl; sigma = s} in *)
+(* 	Util.list_map_append (fun (tac, pri, b, pptac) -> *)
+(* 	  try [tac tacgl, pri, b, pptac] with e when catchable e -> []) *)
+(* 	  poss *)
+(*       in *)
+(* 	if l = [] && !typeclasses_debug then *)
+(* 	  msgnl (pr_depth info.auto_depth ++ str": no match for " ++ *)
+(* 		    Printer.pr_constr_env (Goal.V82.env s gl) concl ++ *)
+(* 		    spc () ++ int (List.length poss) ++ str" possibilities"); *)
+(* 	List.map possible_resolve l *)
+(*     in *)
+(*     let tacs = List.sort compare tacs in *)
+(*     let rec aux i = function *)
+(*       | (_, pp, b, {it = gls; sigma = s'}) :: tl -> *)
+(* 	  if !typeclasses_debug then msgnl (pr_depth (i :: info.auto_depth) ++ str": " ++ Lazy.force pp *)
+(* 					       ++ str" on" ++ spc () ++ pr_ev s gl); *)
+(* 	  let fk = *)
+(* 	    (fun () -> (\* if !typeclasses_debug then msgnl (str"backtracked after " ++ pp); *\) *)
+(* 	    aux (succ i) tl) *)
+(* 	  in *)
+(* 	  let sgls = *)
+(* 	    evars_to_goals (fun evm ev evi -> *)
+(* 			      if Typeclasses.is_resolvable evi && *)
+(* 				(not info.only_classes || Typeclasses.is_class_evar evm evi) *)
+(* 			      then Typeclasses.mark_unresolvable evi, true *)
+(* 			      else evi, false) s' *)
+(* 	  in *)
+(* 	  let newgls, s' = *)
+(* 	    let gls' = List.map (fun g -> (None, g)) gls in *)
+(* 	    match sgls with *)
+(* 	    | None -> gls', s' *)
+(* 	    | Some (evgls, s') -> *)
+(* 		(gls' @ List.map (fun (ev, x) -> (Some ev, x)) evgls, s') *)
+(* 	  in *)
+(* 	  let gls' = list_map_i (fun j (evar, g) ->  *)
+(* 	    let info =  *)
+(* 	      { info with auto_depth = j :: i :: info.auto_depth; auto_last_tac = pp; *)
+(* 		is_evar = evar; *)
+(* 		hints =  *)
+(* 		  if b && Goal.V82.hyps s' g <> Goal.V82.hyps s' gl *)
+(* 		  then make_autogoal_hints info.only_classes *)
+(* 		    ~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s'} *)
+(* 		  else info.hints } *)
+(* 	    in g, info) 1 newgls in *)
+(* 	  let glsv = {it = gls'; sigma = s'} in *)
+(* 	    sk glsv fk *)
+(*       | [] -> fk () *)
+(*     in aux 1 tacs } *)
+
 let hints_tac hints =
   { skft = fun sk fk {it = gl,info; sigma = s} ->
-    let possible_resolve (lgls as res, pri, b, pp) =
-      (pri, pp, b, res)
-    in
-    let tacs =
       let concl = Goal.V82.concl s gl in
+      let tacgl = {it = gl; sigma = s} in
       let poss = e_possible_resolve hints info.hints concl in
-      let l =
-	let tacgl = {it = gl; sigma = s} in
-	Util.list_map_append (fun (tac, pri, b, pptac) ->
-	  try [tac tacgl, pri, b, pptac] with e when catchable e -> [])
-	  poss
-      in
-	if l = [] && !typeclasses_debug then
-	  msgnl (pr_depth info.auto_depth ++ str": no match for " ++
-		    Printer.pr_constr_env (Goal.V82.env s gl) concl ++
-		    spc () ++ int (List.length poss) ++ str" possibilities");
-	List.map possible_resolve l
-    in
-    let tacs = List.sort compare tacs in
-    let rec aux i = function
-      | (_, pp, b, {it = gls; sigma = s'}) :: tl ->
-	  if !typeclasses_debug then msgnl (pr_depth (i :: info.auto_depth) ++ str": " ++ Lazy.force pp
-					       ++ str" on" ++ spc () ++ pr_ev s gl);
-	  let fk =
-	    (fun () -> (* if !typeclasses_debug then msgnl (str"backtracked after " ++ pp); *)
-	    aux (succ i) tl)
-	  in
-	  let sgls =
-	    evars_to_goals (fun evm ev evi ->
-			      if Typeclasses.is_resolvable evi &&
-				(not info.only_classes || Typeclasses.is_class_evar evm evi)
-			      then Typeclasses.mark_unresolvable evi, true
-			      else evi, false) s'
-	  in
-	  let newgls, s' =
-	    let gls' = List.map (fun g -> (None, g)) gls in
-	    match sgls with
-	    | None -> gls', s'
-	    | Some (evgls, s') ->
-		(gls' @ List.map (fun (ev, x) -> (Some ev, x)) evgls, s')
-	  in
-	  let gls' = list_map_i (fun j (evar, g) -> 
-	    let info = 
-	      { info with auto_depth = j :: i :: info.auto_depth; auto_last_tac = pp;
-		is_evar = evar;
-		hints = 
-		  if b && Goal.V82.hyps s' g <> Goal.V82.hyps s' gl
-		  then make_autogoal_hints info.only_classes
-		    ~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s'}
-		  else info.hints }
-	    in g, info) 1 newgls in
-	  let glsv = {it = gls'; sigma = s'} in
-	    sk glsv fk
-      | [] -> fk ()
-    in aux 1 tacs }
+      let rec aux i foundone = function
+	| (tac, _, b, pp) :: tl ->
+	    let res = try Some (tac tacgl) with e when catchable e -> None in
+	      (match res with
+	       | None -> aux (succ i) foundone tl
+	       | Some {it = gls; sigma = s'} ->
+	    	   if !typeclasses_debug then
+		     msgnl (pr_depth (i :: info.auto_depth) ++ str": " ++ Lazy.force pp
+			    ++ str" on" ++ spc () ++ pr_ev s gl);
+		   let fk =
+		     (fun () -> (* if !typeclasses_debug then msgnl (str"backtracked after " ++ pp); *)
+			aux (succ i) true tl)
+		   in
+		   let sgls =
+		     evars_to_goals
+		       (fun evm ev evi ->
+			  if Typeclasses.is_resolvable evi &&
+			    (not info.only_classes || Typeclasses.is_class_evar evm evi)
+			  then Typeclasses.mark_unresolvable evi, true
+			  else evi, false) s'
+		   in
+		   let newgls, s' =
+		     let gls' = List.map (fun g -> (None, g)) gls in
+		       match sgls with
+		       | None -> gls', s'
+		       | Some (evgls, s') ->
+			   (gls' @ List.map (fun (ev, x) -> (Some ev, x)) evgls, s')
+		   in
+		   let gls' = list_map_i
+		     (fun j (evar, g) ->
+			let info =
+			  { info with auto_depth = j :: i :: info.auto_depth; auto_last_tac = pp;
+			      is_evar = evar;
+			      hints =
+			      if b && Goal.V82.hyps s' g <> Goal.V82.hyps s' gl
+			      then make_autogoal_hints info.only_classes
+				~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s'}
+			      else info.hints }
+			in g, info) 1 newgls in
+		   let glsv = {it = gls'; sigma = s'} in
+		     sk glsv fk)
+	| [] ->
+	  if not foundone && !typeclasses_debug then
+	    msgnl (pr_depth info.auto_depth ++ str": no match for " ++
+		     Printer.pr_constr_env (Goal.V82.env s gl) concl ++
+		     spc () ++ int (List.length poss) ++ str" possibilities");
+	  fk ()
+    in aux 1 false poss }
 
 let dependent only_classes evd oev concl =
   if oev <> None then true
@@ -602,7 +660,7 @@ let set_transparency cl b =
   List.iter (fun r -> 
     let gr = Smartlocate.global_with_alias r in
     let ev = Tacred.evaluable_of_global_reference (Global.env ()) gr in
-      Classes.set_typeclass_transparency ev b) cl
+      Classes.set_typeclass_transparency ev false b) cl
 
 VERNAC COMMAND EXTEND Typeclasses_Unfold_Settings
 | [ "Typeclasses" "Transparent" reference_list(cl) ] -> [

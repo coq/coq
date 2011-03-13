@@ -515,7 +515,7 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
 
   Definition In := InA X.eq.
   Definition eq := Equal.
-  Instance eq_equiv : Equivalence eq.
+  Instance eq_equiv : Equivalence eq := _.
 
 End MakeRaw.
 

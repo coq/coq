@@ -224,6 +224,7 @@ type hypinfo = {
   c2 : constr;
   c  : (Tacinterp.interp_sign * Genarg.glob_constr_and_expr with_bindings) option;
   abs : (constr * types) option;
+  flags : Unification.unify_flags;
 }
 
 let goalevars evars = fst evars
@@ -251,7 +252,7 @@ let rec decompose_app_rel env evd t =
 (*   let nc, c', cl = push_rel_context_to_named_context env c in *)
 (*   let env' = reset_with_named_context nc env in *)
 
-let decompose_applied_relation env sigma orig (c,l) left2right =
+let decompose_applied_relation env sigma flags orig (c,l) left2right =
   let c' = c in
   let ctype = Typing.type_of env sigma c' in
   let find_rel ty =
@@ -265,7 +266,8 @@ let decompose_applied_relation env sigma orig (c,l) left2right =
       else
 	Some { cl=eqclause; prf=(Clenv.clenv_value eqclause);
 	       car=ty1; rel = equiv;
-	       l2r=left2right; c1=c1; c2=c2; c=orig; abs=None }
+	       l2r=left2right; c1=c1; c2=c2; c=orig; abs=None;
+	       flags = flags }
   in
     match find_rel ctype with
     | Some c -> c
@@ -276,29 +278,51 @@ let decompose_applied_relation env sigma orig (c,l) left2right =
 	| None -> error "The term does not end with an applied homogeneous relation."
 
 open Tacinterp
-let decompose_applied_relation_expr env sigma (is, (c,l)) left2right =
+let decompose_applied_relation_expr env sigma flags (is, (c,l)) left2right =
   let sigma, cbl = Tacinterp.interp_open_constr_with_bindings is env sigma (c,l) in
-    decompose_applied_relation env sigma (Some (is, (c,l))) cbl left2right
-  
+    decompose_applied_relation env sigma flags (Some (is, (c,l))) cbl left2right
+
+let rewrite_db = "rewrite"
+
+let conv_transparent_state = (Idpred.empty, Cpred.full)
+
+let _ = 
+  Auto.add_auto_init
+    (fun () ->
+       Auto.create_hint_db false rewrite_db conv_transparent_state true)
+
+let rewrite_transparent_state () =
+  Auto.Hint_db.transparent_state (Auto.searchtable_map rewrite_db)
+
 let rewrite_unif_flags = {
   Unification.modulo_conv_on_closed_terms = None;
   Unification.use_metas_eagerly = true;
   Unification.modulo_delta = empty_transparent_state;
+  Unification.modulo_delta_types = full_transparent_state;
   Unification.resolve_evars = true;
   Unification.use_evars_pattern_unification = true;
   Unification.modulo_eta = true
 }
 
-let conv_transparent_state = (Idpred.empty, Cpred.full)
+let rewrite2_unif_flags = 
+  {  Unification.modulo_conv_on_closed_terms = Some conv_transparent_state;
+     Unification.use_metas_eagerly = true;
+     Unification.modulo_delta = empty_transparent_state;
+     Unification.modulo_delta_types = conv_transparent_state;
+     Unification.resolve_evars = true;
+     Unification.use_evars_pattern_unification = true;
+     Unification.modulo_eta = true
+  }
 
-let rewrite2_unif_flags = {
-  Unification.modulo_conv_on_closed_terms = Some conv_transparent_state;
-  Unification.use_metas_eagerly = true;
-  Unification.modulo_delta = empty_transparent_state;
-  Unification.resolve_evars = true;
-  Unification.use_evars_pattern_unification = true;
-  Unification.modulo_eta = true
-}
+let general_rewrite_unif_flags () = 
+  let ts = rewrite_transparent_state () in
+    {  Unification.modulo_conv_on_closed_terms = Some ts;
+       Unification.use_metas_eagerly = true;
+       Unification.modulo_delta = ts;
+       Unification.modulo_delta_types = ts;
+       Unification.resolve_evars = true;
+       Unification.use_evars_pattern_unification = true;
+       Unification.modulo_eta = true }
 
 let convertible env evd x y =
   Reductionops.is_conv env evd x y
@@ -307,11 +331,11 @@ let allowK = true
 
 let refresh_hypinfo env sigma hypinfo =
   if hypinfo.abs = None then
-    let {l2r=l2r; c=c;cl=cl} = hypinfo in
+    let {l2r=l2r; c=c;cl=cl;flags=flags} = hypinfo in
       match c with
 	| Some c ->
 	    (* Refresh the clausenv to not get the same meta twice in the goal. *)
-	    decompose_applied_relation_expr env sigma c l2r;
+	    decompose_applied_relation_expr env sigma flags c l2r;
 	| _ -> hypinfo
   else hypinfo
 
@@ -327,10 +351,7 @@ let unify_eqn env sigma hypinfo t =
 	    env', prf, c1, c2, car, rel
       | None ->
 	  let env' =
-	    try clenv_unify allowK ~flags:rewrite_unif_flags CONV left t cl
-	    with Pretype_errors.PretypeError _ ->
-	      (* For Ring essentially, only when doing setoid_rewrite *)
-	      clenv_unify allowK ~flags:rewrite2_unif_flags CONV left t cl
+	    clenv_unify allowK ~flags:!hypinfo.flags CONV left t cl
 	  in
 	  let env' = Clenvtac.clenv_pose_dependent_evars true env' in
 (* 	  let env' = Clenv.clenv_pose_metas_as_evars env' (Evd.undefined_metas env'.evd) in *)
@@ -610,9 +631,9 @@ let apply_rule hypinfo loccs : strategy =
 	    end
 	| _ -> None
 
-let apply_lemma (evm,c) left2right loccs : strategy =
+let apply_lemma flags (evm,c) left2right loccs : strategy =
   fun env avoid t ty cstr evars ->
-    let hypinfo = ref (decompose_applied_relation env (goalevars evars) None c left2right) in
+    let hypinfo = ref (decompose_applied_relation env (goalevars evars) flags None c left2right) in
       apply_rule hypinfo loccs env avoid t ty cstr evars
 
 let make_leibniz_proof c ty r =
@@ -852,7 +873,7 @@ let subterm all flags (s : strategy) : strategy =
 			  rew_from = t; rew_to = unfold_match env (goalevars evars) cst prf.rew_to })
 		      | x' -> x)
 
-      | _ -> if all then Some None else None
+      | _ -> None
   in aux
 
 let all_subterms = subterm true default_flags
@@ -950,22 +971,24 @@ module Strategies =
     let outermost (s : strategy) : strategy =
       fix (fun out -> choice s (one_subterm out))
 
-    let lemmas cs : strategy =
+    let lemmas flags cs : strategy =
       List.fold_left (fun tac (l,l2r) ->
-	choice tac (apply_lemma l l2r (false,[])))
+	choice tac (apply_lemma flags l l2r (false,[])))
 	fail cs
 
     let inj_open c = (Evd.empty,c)
 
     let old_hints (db : string) : strategy =
       let rules = Autorewrite.find_rewrites db in
-	lemmas (List.map (fun hint -> (inj_open (hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r)) rules)
+	lemmas rewrite_unif_flags
+	  (List.map (fun hint -> (inj_open (hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r)) rules)
 
     let hints (db : string) : strategy =
       fun env avoid t ty cstr evars ->
       let rules = Autorewrite.find_matches db t in
-	lemmas (List.map (fun hint -> (inj_open (hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r)) rules)
-	    env avoid t ty cstr evars
+      let lemma hint = (inj_open (hint.Autorewrite.rew_lemma, NoBindings), hint.Autorewrite.rew_l2r) in
+      let lems = List.map lemma rules in
+	lemmas rewrite_unif_flags lems env avoid t ty cstr evars
 
     let reduce (r : Redexpr.red_expr) : strategy =
       let rfn, ckind = Redexpr.reduction_of_red_expr r in
@@ -1009,10 +1032,10 @@ let get_hypinfo_ids {c = opt} =
   | None -> []
   | Some (is, gc) -> List.map fst is.lfun @ is.avoid_ids
 
-let rewrite_with c left2right loccs : strategy =
+let rewrite_with flags c left2right loccs : strategy =
   fun env avoid t ty cstr evars ->
     let gevars = goalevars evars in
-    let hypinfo = ref (decompose_applied_relation_expr env gevars c left2right) in
+    let hypinfo = ref (decompose_applied_relation_expr env gevars flags c left2right) in
     let avoid = get_hypinfo_ids !hypinfo @ avoid in
       rewrite_strat default_flags loccs hypinfo env avoid t ty cstr (gevars, cstrevars evars)
 
@@ -1238,7 +1261,7 @@ let cl_rewrite_clause_new_strat ?abs strat clause =
 let cl_rewrite_clause_newtac' l left2right occs clause =
   Proof_global.run_tactic 
     (Proofview.tclFOCUS 1 1 
-       (cl_rewrite_clause_new_strat (rewrite_with l left2right occs) clause))
+       (cl_rewrite_clause_new_strat (rewrite_with rewrite_unif_flags l left2right occs) clause))
 
 let cl_rewrite_clause_strat strat clause gl =
     init_setoid ();
@@ -1249,7 +1272,7 @@ let cl_rewrite_clause_strat strat clause gl =
         tclFAIL 0 (str"setoid rewrite failed: strategy failed") gl
 
 let cl_rewrite_clause l left2right occs clause gl =
-  cl_rewrite_clause_strat (rewrite_with l left2right occs) clause gl
+  cl_rewrite_clause_strat (rewrite_with (general_rewrite_unif_flags ()) l left2right occs) clause gl
 
 open Pp
 open Pcoq
@@ -1269,7 +1292,8 @@ let occurrences_of = function
 
 let apply_constr_expr c l2r occs = fun env avoid t ty cstr evars ->
   let evd, c = Constrintern.interp_open_constr (goalevars evars) env c in
-    apply_lemma (evd, (c, NoBindings)) l2r occs env avoid t ty cstr (evd, cstrevars evars)
+    apply_lemma (general_rewrite_unif_flags ()) (evd, (c, NoBindings)) 
+      l2r occs env avoid t ty cstr (evd, cstrevars evars)
 
 let interp_constr_list env sigma =
   List.map (fun c -> 
@@ -1348,7 +1372,7 @@ ARGUMENT EXTEND rewstrategy TYPED AS strategy
   | [ "old_hints" preident(h) ] -> [ Strategies.old_hints h ]
   | [ "hints" preident(h) ] -> [ Strategies.hints h ]
   | [ "terms" constr_list(h) ] -> [ fun env avoid t ty cstr evars -> 
-      Strategies.lemmas (interp_constr_list env (goalevars evars) h) env avoid t ty cstr evars ]
+      Strategies.lemmas rewrite_unif_flags (interp_constr_list env (goalevars evars) h) env avoid t ty cstr evars ]
   | [ "eval" red_expr(r) ] -> [ fun env avoid t ty cstr evars -> 
       Strategies.reduce (Tacinterp.interp_redexp env (goalevars evars) r) env avoid t ty cstr evars ]
   | [ "fold" constr(c) ] -> [ Strategies.fold c ]
@@ -1414,7 +1438,7 @@ let declare_an_instance n s args =
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance global binders instance fields =
-  new_instance binders instance (CRecord (dummy_loc,None,fields)) 
+  new_instance binders instance (Some (CRecord (dummy_loc,None,fields)))
     ~global:(not (Vernacexpr.use_section_locality ())) ~generalize:false None
 
 let declare_instance_refl global binders a aeq n lemma =
@@ -1686,7 +1710,7 @@ let add_morphism glob binders m s n =
 	     [cHole; s; m]))
   in
   let tac = Tacinterp.interp <:tactic<add_morphism_tactic>> in
-    ignore(new_instance ~global:glob binders instance (CRecord (dummy_loc,None,[]))
+    ignore(new_instance ~global:glob binders instance (Some (CRecord (dummy_loc,None,[])))
 	      ~generalize:false ~tac ~hook:(declare_projection n instance_id) None)
 
 VERNAC COMMAND EXTEND AddSetoid1
@@ -1728,7 +1752,7 @@ let check_evar_map_of_evars_defs evd =
          check_freemetas_is_empty rebus2 freemetas2
    ) metas
 
-let unification_rewrite l2r c1 c2 cl car rel but gl =
+let unification_rewrite flags l2r c1 c2 cl car rel but gl =
   let env = pf_env gl in
   let (evd',c') =
     try
@@ -1740,7 +1764,7 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
 	Pretype_errors.PretypeError _ ->
 	  (* ~flags:(true,true) to make Ring work (since it really
              exploits conversion) *)
-	  Unification.w_unify_to_subterm ~flags:rewrite2_unif_flags
+	  Unification.w_unify_to_subterm ~flags:flags
 	    env ((if l2r then c1 else c2),but) cl.evd
   in
   let evd' = Typeclasses.resolve_typeclasses ~fail:false env evd' in
@@ -1753,15 +1777,18 @@ let unification_rewrite l2r c1 c2 cl car rel but gl =
   check_evar_map_of_evars_defs cl'.evd;
   let prf = nf (Clenv.clenv_value cl') and prfty = nf (Clenv.clenv_type cl') in
   let cl' = { cl' with templval = mk_freelisted prf ; templtyp = mk_freelisted prfty } in
-    {cl=cl'; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty)}
+    {cl=cl'; prf=(mkRel 1); car=car; rel=rel; l2r=l2r; c1=c1; c2=c2; c=None; abs=Some (prf, prfty);
+     flags = flags}
 
 let get_hyp gl evars (c,l) clause l2r =
-  let hi = decompose_applied_relation (pf_env gl) evars None (c,l) l2r in
+  let flags = rewrite2_unif_flags in
+  let hi = decompose_applied_relation (pf_env gl) evars flags None (c,l) l2r in
   let but = match clause with
     | Some id -> pf_get_hyp_typ gl id 
     | None -> Evarutil.nf_evar evars (pf_concl gl)
   in
-    unification_rewrite hi.l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl
+    { unification_rewrite flags hi.l2r hi.c1 hi.c2 hi.cl hi.car hi.rel but gl with
+	flags = rewrite_unif_flags }
 
 let general_rewrite_flags = { under_lambdas = false; on_morphisms = true }
 
@@ -1911,4 +1938,36 @@ TACTIC EXTEND fold_matches
 | [ "fold_matches" constr(c) ] -> [ fun gl -> 
   let c' = fold_matches (pf_env gl) (project gl) c in
     change (Some (snd (pattern_of_constr (project gl) c))) c' onConcl gl ]
+END
+
+TACTIC EXTEND myapply
+| [ "myapply" global(id) constr_list(l) ] -> [ 
+    fun gl -> 
+      let gr = id in
+      let _, impls = List.hd (Impargs.implicits_of_global gr) in
+      let ty = Global.type_of_global gr in
+      let env = pf_env gl in
+      let evars = ref (project gl) in
+      let app =
+	let rec aux ty impls args args' =
+	  match impls, kind_of_term ty with
+	  | Some (_, _, (_, _)) :: impls, Prod (n, t, t') ->
+	      let arg = Evarutil.e_new_evar evars env t in
+		aux (subst1 arg t') impls args (arg :: args')
+	  | None :: impls, Prod (n, t, t') ->
+	      (match args with
+	       | [] ->
+		   if dependent (mkRel 1) t' then
+		     let arg = Evarutil.e_new_evar evars env t in
+		       aux (subst1 arg t') impls args (arg :: args')
+		   else
+		     let arg = Evarutil.mk_new_meta () in
+		       evars := meta_declare (destMeta arg) t !evars;
+		       aux (subst1 arg t') impls args (arg :: args')
+	       | arg :: args -> 
+		   aux (subst1 arg t') impls args (arg :: args'))
+	  | _, _ -> mkApp (constr_of_global gr, Array.of_list (List.rev args'))
+	in aux ty impls l []
+      in
+	tclTHEN (Refiner.tclEVARS !evars) (apply app) gl ]
 END

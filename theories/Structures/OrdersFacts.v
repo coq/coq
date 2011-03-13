@@ -208,7 +208,7 @@ Module OrderedTypeRev (O:OrderedTypeFull) <: OrderedTypeFull.
 
 Definition t := O.t.
 Definition eq := O.eq.
-Instance eq_equiv : Equivalence eq.
+Program Instance eq_equiv : Equivalence eq.
 Definition eq_dec := O.eq_dec.
 
 Definition lt := flip O.lt.

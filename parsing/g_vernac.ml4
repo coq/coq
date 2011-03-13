@@ -560,8 +560,8 @@ GEXTEND Gram
       | IDENT "Instance"; namesup = instance_name; ":";
 	 expl = [ "!" -> Glob_term.Implicit | -> Glob_term.Explicit ] ; t = operconstr LEVEL "200";
 	 pri = OPT [ "|"; i = natural -> i ] ;
-	 props = [ ":="; "{"; r = record_declaration; "}" -> r |
-	     ":="; c = lconstr -> c | -> CRecord (loc, None, []) ] ->
+	 props = [ ":="; "{"; r = record_declaration; "}" -> Some r |
+	     ":="; c = lconstr -> Some c | -> None ] ->
 	   VernacInstance (false, not (use_section_locality ()),
 			   snd namesup, (fst namesup, expl, t), props, pri)
 
@@ -633,7 +633,7 @@ GEXTEND Gram
 	 pri = OPT [ "|"; i = natural -> i ] ->
 	   VernacInstance (true, not (use_section_locality ()),
 			   snd namesup, (fst namesup, expl, t),
-			   CRecord (loc, None, []), pri)
+			   None, pri)
 
       (* System directory *)
       | IDENT "Pwd" -> VernacChdir None

@@ -30,8 +30,8 @@ open Entries
 
 let typeclasses_db = "typeclass_instances"
 
-let set_typeclass_transparency c b = 
-  Auto.add_hints false [typeclasses_db] 
+let set_typeclass_transparency c local b = 
+  Auto.add_hints local [typeclasses_db] 
     (Auto.HintsTransparencyEntry ([c], b))
     
 let _ =
@@ -186,18 +186,20 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
       begin
 	let props =
 	  match props with
-	  | CRecord (loc, _, fs) ->
+	  | Some (CRecord (loc, _, fs)) ->
 	      if List.length fs > List.length k.cl_props then
 		mismatched_props env' (List.map snd fs) k.cl_props;
-	      Inl fs
-	  | _ -> Inr props
+	      Some (Inl fs)
+	  | Some t -> Some (Inr t)
+	  | None -> None
 	in
 	let subst =
 	  match props with
-	  | Inr term ->
+	  | None -> if k.cl_props = [] then Some (Inl subst) else None
+	  | Some (Inr term) ->
 	      let c = interp_casted_constr_evars evars env' term cty in
-		Inr (c, subst)
-	  | Inl props ->
+		Some (Inr (c, subst))
+	  | Some (Inl props) ->
 	      let get_id =
 		function
 		  | Ident id' -> id'
@@ -224,12 +226,14 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 		if rest <> [] then
 		  unbound_method env' k.cl_impl (get_id (fst (List.hd rest)))
 		else
-		  Inl (type_ctx_instance evars (push_rel_context ctx' env') k.cl_props props subst)
+		  Some (Inl (type_ctx_instance evars (push_rel_context ctx' env') k.cl_props props subst))
 	in	  
 	evars := Evarutil.nf_evar_map !evars;
 	let term, termtype =
 	  match subst with
-	  | Inl subst ->
+	  | None -> let termtype = it_mkProd_or_LetIn cty ctx in
+	      None, termtype
+	  | Some (Inl subst) ->
 	      let subst = List.fold_left2
 		(fun subst' s (_, b, _) -> if b = None then s :: subst' else subst')
 		[] subst (k.cl_props @ snd k.cl_context)
@@ -237,26 +241,25 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	      let app, ty_constr = instance_constructor k subst in
 	      let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
 	      let term = Termops.it_mkLambda_or_LetIn app (ctx' @ ctx) in
-		term, termtype
-	  | Inr (def, subst) ->
+		Some term, termtype
+	  | Some (Inr (def, subst)) ->
 	      let termtype = it_mkProd_or_LetIn cty ctx in
 	      let term = Termops.it_mkLambda_or_LetIn def ctx in
-		term, termtype
+		Some term, termtype
 	in
 	let termtype = Evarutil.nf_evar !evars termtype in
-	let term = Evarutil.nf_evar !evars term in
+	let term = Option.map (Evarutil.nf_evar !evars) term in
 	let evm = undefined_evars !evars in
 	Evarutil.check_evars env Evd.empty !evars termtype;
-	  if Evd.is_empty evm then
-	    declare_instance_constant k pri global imps ?hook id term termtype
+	  if Evd.is_empty evm && term <> None then
+	    declare_instance_constant k pri global imps ?hook id (Option.get term) termtype
 	  else begin
 	    evars := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env !evars;
 	    let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	      Flags.silently (fun () ->
 		Lemmas.start_proof id kind termtype (fun _ -> instance_hook k pri global imps ?hook);
-		if props <> Inl [] then 
-		  Pfedit.by (* (Refiner.tclTHEN (Refiner.tclEVARS ( !isevars)) *)
-		    (!refine_ref (evm, term))
+		if term <> None then 
+		  Pfedit.by (!refine_ref (evm, Option.get term))
 		else if Flags.is_auto_intros () then
 		  Pfedit.by (Refiner.tclDO len Tactics.intro);
 		(match tac with Some tac -> Pfedit.by tac | None -> ())) ();

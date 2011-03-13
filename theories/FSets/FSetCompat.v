@@ -264,7 +264,7 @@ Module Update_WSets
  Instance In_compat : Proper (E.eq==>Logic.eq==>iff) In.
  Proof. intros x x' Hx s s' Hs. subst. apply MF.In_eq_iff; auto. Qed.
 
- Instance eq_equiv : Equivalence eq.
+ Instance eq_equiv : Equivalence eq := _.
 
  Section Spec.
   Variable s s': t.

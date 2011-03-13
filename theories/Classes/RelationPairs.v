@@ -88,10 +88,10 @@ Section RelCompFun_Instances.
     `(Measure A B f, Irreflexive _ R) : Irreflexive (R@@f).
   Proof. firstorder. Qed.
 
-  Global Instance RelCompFun_Equivalence
+  Global Program Instance RelCompFun_Equivalence
     `(Measure A B f, Equivalence _ R) : Equivalence (R@@f).
 
-  Global Instance RelCompFun_StrictOrder
+  Global Program Instance RelCompFun_StrictOrder
     `(Measure A B f, StrictOrder _ R) : StrictOrder (R@@f).
 
 End RelCompFun_Instances.
@@ -108,7 +108,7 @@ Instance RelProd_Transitive {A B}(RA:relation A)(RB:relation B)
  `(Transitive _ RA, Transitive _ RB) : Transitive (RA*RB).
 Proof. firstorder. Qed.
 
-Instance RelProd_Equivalence {A B}(RA:relation A)(RB:relation B)
+Program Instance RelProd_Equivalence {A B}(RA:relation A)(RB:relation B)
  `(Equivalence _ RA, Equivalence _ RB) : Equivalence (RA*RB).
 
 Lemma FstRel_ProdRel {A B}(RA:relation A) :

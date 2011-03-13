@@ -700,6 +700,7 @@ let elim_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
   modulo_delta = empty_transparent_state;
+  modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = true;
   modulo_eta = true
@@ -894,7 +895,7 @@ let descend_in_conjunctions tac exit c gl =
 	    | Some (p,pt) ->
 	    tclTHENS
 	      (internal_cut id pt)
-	      [refine_no_check p;
+	      [refine p; (* Might be ill-typed due to forbidden elimination. *)
 	       tclTHEN (tac (not isrec) (mkVar id)) (thin [id])] gl) n)
 	  gl
     | None ->

@@ -173,9 +173,14 @@ module Hint_db = struct
     | Give_exact _ -> true
     | _ -> false
 
+  let is_unfold = function
+    | Unfold_nth _ -> true
+    | _ -> false
+
   let addkv gr v db =
     let k = match gr with
-      | Some gr -> if db.use_dn && is_transparent_gr db.hintdb_state gr then None else Some gr
+      | Some gr -> if db.use_dn && is_transparent_gr db.hintdb_state gr &&
+	  is_unfold v.code then None else Some gr
       | None -> None
     in
     let dnst = if db.use_dn then Some db.hintdb_state else None in
@@ -268,6 +273,9 @@ let current_db_names () =
 (**************************************************************************)
 
 let auto_init : (unit -> unit) ref = ref (fun () -> ())
+let add_auto_init f = 
+  let init = !auto_init in
+    auto_init := (fun () -> init (); f ())
 
 let init     () = searchtable := Hintdbmap.empty; !auto_init ()
 let freeze   () = !searchtable
@@ -834,6 +842,7 @@ let auto_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = false;
   modulo_delta = empty_transparent_state;
+  modulo_delta_types = full_transparent_state;
   resolve_evars = true;
   use_evars_pattern_unification = false;
   modulo_eta = true

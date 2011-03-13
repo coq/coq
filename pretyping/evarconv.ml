@@ -36,8 +36,6 @@ let flex_kind_of_term c l =
     | Meta _ | Case _ | Fix _ -> PseudoRigid c
     | Cast _ | App _ -> assert false
 
-let is_rigid = function Rigid _ -> true | _ -> false
-
 let eval_flexible_term ts env c =
   match kind_of_term c with
   | Const c -> 
@@ -200,7 +198,6 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
 and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
   (* Evar must be undefined since we have flushed evars *)
   match (flex_kind_of_term term1 l1, flex_kind_of_term term2 l2) with
-
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
 	let f1 i =
 	  if List.length l1 > List.length l2 then

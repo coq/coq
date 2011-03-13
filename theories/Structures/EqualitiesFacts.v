@@ -29,9 +29,9 @@ Module KeyDecidableType(Import D:DecidableType).
 
   (* eqk, eqke are equalities, ltk is a strict order *)
 
-  Global Instance eqk_equiv : Equivalence eqk.
+  Global Instance eqk_equiv : Equivalence eqk := _.
 
-  Global Instance eqke_equiv : Equivalence eqke.
+  Global Instance eqke_equiv : Equivalence eqke := _.
 
   (* Additionnal facts *)
 
@@ -143,7 +143,7 @@ Module PairDecidableType(D1 D2:DecidableType) <: DecidableType.
 
  Definition eq := (D1.eq * D2.eq)%signature.
 
- Instance eq_equiv : Equivalence eq.
+ Instance eq_equiv : Equivalence eq := _.
 
  Definition eq_dec : forall x y, { eq x y }+{ ~eq x y }.
  Proof.
@@ -159,7 +159,7 @@ End PairDecidableType.
 Module PairUsualDecidableType(D1 D2:UsualDecidableType) <: UsualDecidableType.
  Definition t := (D1.t * D2.t)%type.
  Definition eq := @eq t.
- Program Instance eq_equiv : Equivalence eq.
+ Instance eq_equiv : Equivalence eq := _.
  Definition eq_dec : forall x y, { eq x y }+{ ~eq x y }.
  Proof.
  intros (x1,x2) (y1,y2);
