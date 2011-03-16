@@ -106,6 +106,7 @@ Syntax_def
 Implicit_quantifiers
 Smartlocate
 Constrintern
+Modintern
 Tacexpr
 Proof_type
 Goal
