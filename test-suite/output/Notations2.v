@@ -37,7 +37,7 @@ Notation "∀  x .. y , P":= (forall x, .. (forall y, P) ..)
 
 Check (∀ n p, n+p=0).
 
-Notation "'λ'  x .. y , P":= (fun x, .. (fun y, P) ..)
+Notation "'λ'  x .. y , P":= (fun x => .. (fun y => P) ..)
   (y binder, at level 200, right associativity).
 
 Check (λ n p, n+p=0).
