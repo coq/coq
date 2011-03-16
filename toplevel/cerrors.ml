@@ -106,6 +106,10 @@ let rec process_vernac_interp_error = function
       wrap_vernac_error (Himsg.explain_typeclass_error env te)
   | InductiveError e ->
       wrap_vernac_error (Himsg.explain_inductive_error e)
+  | Modops.ModuleTypingError e ->
+      wrap_vernac_error (Himsg.explain_module_error e)
+  | Modintern.ModuleInternalizationError e ->
+      wrap_vernac_error (Himsg.explain_module_internalization_error e)
   | RecursionSchemeError e ->
       wrap_vernac_error (Himsg.explain_recursion_scheme_error e)
   | Cases.PatternMatchingError (env,e) ->

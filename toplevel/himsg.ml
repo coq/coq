@@ -632,7 +632,7 @@ let explain_label_missing l s =
   str "The field " ++ str (string_of_label l) ++ str " is missing in "
   ++ str s ++ str "."
 
-let explain_module_error env sigma = function
+let explain_module_error = function
   | SignatureMismatch (l,spec,err) -> explain_signature_mismatch l spec err
   | LabelAlreadyDeclared l -> explain_label_already_declared l
   | ApplicationToNotPath mexpr -> explain_application_to_not_path mexpr

@@ -40,3 +40,8 @@ val explain_reduction_tactic_error :
 val explain_ltac_call_trace :
   int * Proof_type.ltac_call_kind * Proof_type.ltac_trace * Util.loc ->
   std_ppcmds
+
+val explain_module_error : Modops.module_typing_error -> std_ppcmds
+
+val explain_module_internalization_error :
+  Modintern.module_internalization_error -> std_ppcmds
