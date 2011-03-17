@@ -135,7 +135,7 @@ Program Instance power_wd : Proper (eq==>Logic.eq==>eq) power.
 
 (** Let's implement [HasCompare] *)
 
-Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
+Lemma compare_spec : forall x y, CompareSpec (x==y) (x<y) (y<x) (compare x y).
 Proof. intros. qify. destruct (Qcompare_spec [x] [y]); auto. Qed.
 
 (** Let's implement [TotalOrder] *)

@@ -198,7 +198,8 @@ Proof.
    apply -> nat_compare_lt; auto.
 Qed.
 
-Lemma nat_compare_spec : forall x y, CompSpec eq lt x y (nat_compare x y).
+Lemma nat_compare_spec :
+  forall x y, CompareSpec (x=y) (x<y) (y<x) (nat_compare x y).
 Proof.
  intros.
  destruct (nat_compare x y) as [ ]_eqn; constructor.
@@ -206,7 +207,6 @@ Proof.
  apply <- nat_compare_lt; auto.
  apply <- nat_compare_gt; auto.
 Qed.
-
 
 (** Some projections of the above equivalences. *)
 

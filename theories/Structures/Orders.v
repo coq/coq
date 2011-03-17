@@ -65,9 +65,9 @@ Module Type LeIsLtEq (Import E:EqLtLe').
   Axiom le_lteq : forall x y, x<=y <-> x<y \/ x==y.
 End LeIsLtEq.
 
-Module Type HasCompare (Import E:EqLt).
+Module Type HasCompare (Import E:EqLt').
   Parameter Inline compare : t -> t -> comparison.
-  Axiom compare_spec : forall x y, CompSpec eq lt x y (compare x y).
+  Axiom compare_spec : forall x y, CompareSpec (x==y) (x<y) (y<x) (compare x y).
 End HasCompare.
 
 Module Type StrOrder := EqualityType <+ HasLt <+ IsStrOrder.

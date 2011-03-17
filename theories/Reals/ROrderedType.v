@@ -55,7 +55,7 @@ Definition Rcompare x y :=
   | inright _ => Gt
  end.
 
-Lemma Rcompare_spec : forall x y, CompSpec eq Rlt x y (Rcompare x y).
+Lemma Rcompare_spec : forall x y, CompareSpec (x=y) (x<y) (y<x) (Rcompare x y).
 Proof.
  intros. unfold Rcompare.
  destruct total_order_T as [[H|H]|H]; auto.

@@ -97,7 +97,7 @@ Proof.
  unfold "?=". intros. apply Zcompare_antisym.
 Qed.
 
-Lemma Qcompare_spec : forall x y, CompSpec Qeq Qlt x y (x ?= y).
+Lemma Qcompare_spec : forall x y, CompareSpec (x==y) (x<y) (y<x) (x ?= y).
 Proof.
  intros.
  destruct (x ?= y) as [ ]_eqn:H; constructor; auto.

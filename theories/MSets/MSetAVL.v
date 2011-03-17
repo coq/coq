@@ -1767,7 +1767,7 @@ Lemma compare_more_Cmp : forall x1 cont x2 r2 e2 l,
    Cmp (compare_more x1 cont (More x2 r2 e2)) (x1::l)
       (flatten_e (More x2 r2 e2)).
 Proof.
- simpl; intros; elim_compare x1 x2; simpl; auto.
+ simpl; intros; elim_compare x1 x2; simpl; red; auto.
 Qed.
 
 Lemma compare_cont_Cmp : forall s1 cont e2 l,

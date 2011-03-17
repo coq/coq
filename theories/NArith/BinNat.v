@@ -547,7 +547,7 @@ Proof.
   intuition; now try discriminate V.
 Qed.
 
-Lemma Ncompare_spec : forall x y, CompSpec eq Nlt x y (Ncompare x y).
+Lemma Ncompare_spec : forall x y, CompareSpec (x=y) (x<y) (y<x) (x ?= y).
 Proof.
 intros.
 destruct (Ncompare x y) as [ ]_eqn; constructor; auto.

@@ -55,7 +55,7 @@ Proof.
  intros [|x|x] [|y|y]; simpl; try easy; f_equal; apply Pcompare_antisym.
 Qed.
 
-Lemma Zcompare_spec : forall n m, CompSpec eq Zlt n m (n ?= m).
+Lemma Zcompare_spec : forall n m, CompareSpec (n=m) (n<m) (m<n) (n ?= m).
 Proof.
  intros.
  destruct (n?=m) as [ ]_eqn:H; constructor; trivial.

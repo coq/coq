@@ -232,32 +232,46 @@ Proof.
   split; intros; apply CompOpp_inj; rewrite CompOpp_involutive; auto.
 Qed.
 
-(** The [CompSpec] inductive will be used to relate a [compare] function
-    (returning a comparison answer) and some equality and order predicates.
-    Interest: [CompSpec] behave nicely with [case] and [destruct]. *)
+(** The [CompareSpec] inductive relates a [comparison] value with three
+   propositions, one for each possible case. Typically, it can be used to
+   specify a comparison function via some equality and order predicates.
+   Interest: [CompareSpec] behave nicely with [case] and [destruct]. *)
 
-Inductive CompSpec {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Prop :=
- | CompEq : eq x y -> CompSpec eq lt x y Eq
- | CompLt : lt x y -> CompSpec eq lt x y Lt
- | CompGt : lt y x -> CompSpec eq lt x y Gt.
-Hint Constructors CompSpec.
+Inductive CompareSpec (Peq Plt Pgt : Prop) : comparison -> Prop :=
+ | CompEq : Peq -> CompareSpec Peq Plt Pgt Eq
+ | CompLt : Plt -> CompareSpec Peq Plt Pgt Lt
+ | CompGt : Pgt -> CompareSpec Peq Plt Pgt Gt.
+Hint Constructors CompareSpec.
 
-(** For having clean interfaces after extraction, [CompSpec] is declared
+(** For having clean interfaces after extraction, [CompareSpec] is declared
     in Prop. For some situations, it is nonetheless useful to have a
-    version in Type. Interestingly, these two versions are equivalent.
-*)
+    version in Type. Interestingly, these two versions are equivalent. *)
 
-Inductive CompSpecT {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Type :=
- | CompEqT : eq x y -> CompSpecT eq lt x y Eq
- | CompLtT : lt x y -> CompSpecT eq lt x y Lt
- | CompGtT : lt y x -> CompSpecT eq lt x y Gt.
-Hint Constructors CompSpecT.
+Inductive CompareSpecT (Peq Plt Pgt : Prop) : comparison -> Type :=
+ | CompEqT : Peq -> CompareSpecT Peq Plt Pgt Eq
+ | CompLtT : Plt -> CompareSpecT Peq Plt Pgt Lt
+ | CompGtT : Pgt -> CompareSpecT Peq Plt Pgt Gt.
+Hint Constructors CompareSpecT.
 
-Lemma CompSpec2Type : forall A (eq lt:A->A->Prop) x y c,
- CompSpec eq lt x y c -> CompSpecT eq lt x y c.
+Lemma CompareSpec2Type : forall Peq Plt Pgt c,
+ CompareSpec Peq Plt Pgt c -> CompareSpecT Peq Plt Pgt c.
 Proof.
  destruct c; intros H; constructor; inversion_clear H; auto.
 Defined.
+
+(** As an alternate formulation, one may also directly refer to predicates
+ [eq] and [lt] for specifying a comparison, rather that fully-applied
+ propositions. This [CompSpec] is now a particular case of [CompareSpec]. *)
+
+Definition CompSpec {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Prop :=
+ CompareSpec (eq x y) (lt x y) (lt y x).
+Definition CompSpecT {A} (eq lt : A->A->Prop)(x y:A) : comparison -> Type :=
+ CompareSpecT (eq x y) (lt x y) (lt y x).
+Hint Unfold CompSpec CompSpecT.
+
+Lemma CompSpec2Type : forall A (eq lt:A->A->Prop) x y c,
+ CompSpec eq lt x y c -> CompSpecT eq lt x y c.
+Proof. intros. apply CompareSpec2Type; assumption. Qed.
 
 (** Identity *)
 

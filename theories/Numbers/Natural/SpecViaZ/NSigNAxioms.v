@@ -126,7 +126,7 @@ Qed.
 
 (** Order *)
 
-Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
+Lemma compare_spec : forall x y, CompareSpec (x==y) (x<y) (y<x) (compare x y).
 Proof.
  intros. zify. destruct (Zcompare_spec [x] [y]); auto.
 Qed.

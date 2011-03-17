@@ -1015,7 +1015,7 @@ Proof.
   symmetry; apply Pcompare_antisym.
 Qed.
 
-Lemma Pcompare_spec : forall p q, CompSpec eq Plt p q ((p ?= q) Eq).
+Lemma Pcompare_spec : forall p q, CompareSpec (p=q) (p<q) (q<p) ((p ?= q) Eq).
 Proof.
   intros. destruct ((p ?= q) Eq) as [ ]_eqn; constructor.
   apply Pcompare_Eq_eq; auto.
