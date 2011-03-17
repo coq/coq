@@ -26,6 +26,7 @@ Vernacular commands
 - New command "Print Sorted Universes".
 - The undocumented and obsolete option "Set/Unset Boxed Definitions" has
   been removed, as well as syntaxes like "Boxed Fixpoint foo".
+- A new option "Set Default Timeout n / Unset Default Timeout".
 
 Module System
 

@@ -933,6 +933,21 @@ the command has not terminated after the time specified by the integer
 (time expressed in seconds), then it is interrupted and an error message
 is displayed.
 
+\subsection[\tt Set Default Timeout \textrm{\textsl{int}}.]{\tt Set
+  Default Timeout \textrm{\textsl{int}}.\comindex{Set Default Timeout}}
+
+After using this command, all subsequent commands behave as if they
+were passed to a {\tt Timeout} command. Commands already starting by
+a {\tt Timeout} are unaffected.
+
+\subsection[\tt Unset Default Timeout.]{\tt Unset Default Timeout.\comindex{Unset Default Timeout}}
+
+This command turns off the use of a defaut timeout.
+
+\subsection[\tt Test Default Timeout.]{\tt Test Default Timeout.\comindex{Test Default Timeout}}
+
+This command displays whether some default timeout has be set or not.
+
 \section{Controlling display}
 
 \subsection[\tt Set Silent.]{\tt Set Silent.\comindex{Set Silent}

@@ -51,7 +51,50 @@ let real_error = function
   | Error_in_file (_, _, e) -> e
   | e -> e
 
+(** Timeout handling *)
+
+(** A global default timeout, controled by option "Set Default Timeout n".
+    Use "Unset Default Timeout" to deactivate it (or set it to 0). *)
+
+let default_timeout = ref None
+
+let _ =
+  Goptions.declare_int_option
+    { Goptions.optsync  = true;
+      Goptions.optname  = "the default timeout";
+      Goptions.optkey   = ["Default";"Timeout"];
+      Goptions.optread  = (fun () -> !default_timeout);
+      Goptions.optwrite = ((:=) default_timeout) }
+
+(** When interpreting a command, the current timeout is initially
+    the default one, but may be modified locally by a Timeout command. *)
+
+let current_timeout = ref None
+
+(** Installing and de-installing a timer.
+    Note: according to ocaml documentation, Unix.alarm isn't available
+    for native win32. *)
+
 let timeout_handler _ = raise Timeout
+
+let set_timeout n =
+  let psh =
+    Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
+  ignore (Unix.alarm n);
+  Some psh
+
+let default_set_timeout () =
+  match !current_timeout with
+    | Some n -> set_timeout n
+    | None -> None
+
+let restore_timeout = function
+  | None -> ()
+  | Some psh ->
+    (* stop alarm *)
+    ignore(Unix.alarm 0);
+    (* restore handler *)
+    Sys.set_signal Sys.sigalrm psh
 
 (* Opening and closing a channel. Open it twice when verbose: the first
    channel is used to read the commands, and the second one to print them.
@@ -184,25 +227,21 @@ let rec vernac_com interpfun (loc,com) =
 
     | VernacTimeout(n,v) ->
 	if not !just_parsing then begin
-	  let psh =
-	    Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
-	  ignore (Unix.alarm n);
-	  let stop() =
-	    (* stop alarm *)
-	    ignore(Unix.alarm 0);
-	    (* restore handler *)
-	    Sys.set_signal Sys.sigalrm psh in
-	  try interp v; stop()
-	  with e -> stop(); raise e
+	  current_timeout := Some n;
+	  interp v
 	end
 
     | v ->
         if not !just_parsing then
-          States.with_heavy_rollback interpfun
-            Cerrors.process_vernac_interp_error v
-
+	  let psh = default_set_timeout () in
+	  try
+            States.with_heavy_rollback interpfun
+              Cerrors.process_vernac_interp_error v;
+	    restore_timeout psh
+	  with e -> restore_timeout psh; raise e
   in
     try
+      current_timeout := !default_timeout;
       if do_beautify () then pr_new_syntax loc (Some com);
       interp com
     with e ->
