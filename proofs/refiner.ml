@@ -332,6 +332,27 @@ let tclDO n t =
   in
   dorec n
 
+(* Fails if a tactic hasn't finished after a certain amount of time *)
+
+exception TacTimeout
+
+let tclTIMEOUT n t g =
+  let timeout_handler _ = raise TacTimeout in
+  let psh = Sys.signal Sys.sigalrm (Sys.Signal_handle timeout_handler) in
+  ignore (Unix.alarm n);
+  let restore_timeout () =
+    ignore (Unix.alarm 0);
+    Sys.set_signal Sys.sigalrm psh
+  in
+  try
+    let res = t g in
+    restore_timeout ();
+    res
+  with
+    | TacTimeout | Loc.Exc_located(_,TacTimeout) ->
+      restore_timeout ();
+      errorlabstrm "Refiner.tclTIMEOUT" (str"Timeout!")
+    | e -> restore_timeout (); raise e
 
 (* Beware: call by need of CAML, g is needed *)
 let rec tclREPEAT t g =

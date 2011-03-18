@@ -57,6 +57,7 @@ GEXTEND Gram
     | "3" RIGHTA
       [ IDENT "try"; ta = tactic_expr -> TacTry ta
       | IDENT "do"; n = int_or_var; ta = tactic_expr -> TacDo (n,ta)
+      | IDENT "timeout"; n = int_or_var; ta = tactic_expr -> TacTimeout (n,ta)
       | IDENT "repeat"; ta = tactic_expr -> TacRepeat ta
       | IDENT "progress"; ta = tactic_expr -> TacProgress ta
 (*To do: put Abstract in Refiner*)

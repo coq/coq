@@ -59,6 +59,7 @@ let tclAT_LEAST_ONCE = Refiner.tclAT_LEAST_ONCE
 let tclFAIL          = Refiner.tclFAIL
 let tclFAIL_lazy     = Refiner.tclFAIL_lazy
 let tclDO            = Refiner.tclDO
+let tclTIMEOUT       = Refiner.tclTIMEOUT
 let tclWEAK_PROGRESS = Refiner.tclWEAK_PROGRESS
 let tclPROGRESS      = Refiner.tclPROGRESS
 let tclNOTSAMEGOAL   = Refiner.tclNOTSAMEGOAL

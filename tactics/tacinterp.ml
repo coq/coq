@@ -842,6 +842,8 @@ and intern_tactic_seq ist = function
       lfun', TacThens (t, List.map (intern_tactic ist') tl)
   | TacDo (n,tac) ->
       ist.ltacvars, TacDo (intern_or_var ist n,intern_tactic ist tac)
+  | TacTimeout (n,tac) ->
+      ist.ltacvars, TacTimeout (intern_or_var ist n,intern_tactic ist tac)
   | TacTry tac -> ist.ltacvars, TacTry (intern_tactic ist tac)
   | TacInfo tac -> ist.ltacvars, TacInfo (intern_tactic ist tac)
   | TacRepeat tac -> ist.ltacvars, TacRepeat (intern_tactic ist tac)
@@ -1810,6 +1812,7 @@ and eval_tactic ist = function
 	(Array.map (interp_tactic ist) tf) (interp_tactic ist t) (Array.map (interp_tactic ist) tl)
   | TacThens (t1,tl) -> tclTHENS (interp_tactic ist t1) (List.map (interp_tactic ist) tl)
   | TacDo (n,tac) -> tclDO (interp_int_or_var ist n) (interp_tactic ist tac)
+  | TacTimeout (n,tac) -> tclTIMEOUT (interp_int_or_var ist n) (interp_tactic ist tac)
   | TacTry tac -> tclTRY (interp_tactic ist tac)
   | TacInfo tac ->
       let t = (interp_tactic ist tac) in
@@ -2749,6 +2752,7 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
   | TacThens (t,tl) ->
       TacThens (subst_tactic subst t, List.map (subst_tactic subst) tl)
   | TacDo (n,tac) -> TacDo (n,subst_tactic subst tac)
+  | TacTimeout (n,tac) -> TacTimeout (n,subst_tactic subst tac)
   | TacTry tac -> TacTry (subst_tactic subst tac)
   | TacInfo tac -> TacInfo (subst_tactic subst tac)
   | TacRepeat tac -> TacRepeat (subst_tactic subst tac)

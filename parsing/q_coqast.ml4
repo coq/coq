@@ -428,6 +428,8 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
       <:expr< Tacexpr.TacOrelse $mlexpr_of_tactic t1$ $mlexpr_of_tactic t2$ >>
   | Tacexpr.TacDo (n,t) ->
       <:expr< Tacexpr.TacDo $mlexpr_of_or_var mlexpr_of_int n$ $mlexpr_of_tactic t$ >>
+  | Tacexpr.TacTimeout (n,t) ->
+      <:expr< Tacexpr.TacTimeout $mlexpr_of_or_var mlexpr_of_int n$ $mlexpr_of_tactic t$ >>
   | Tacexpr.TacRepeat t ->
       <:expr< Tacexpr.TacRepeat $mlexpr_of_tactic t$ >>
   | Tacexpr.TacProgress t ->
