@@ -69,7 +69,13 @@ TIMECMD=	# is "'time -p'" to get compilation time of .v
 # For instance:
 # TIME="%C (%U user, %S sys, %e total, %M maxres)"
 
-COQOPTS=$(COQ_XML) $(VM)
+# Since library files aren't meant to contain queries like Print Assumptions
+# nor extractions, it is safe (and quite quicker) to compile them with
+# -dont-load-proofs
+
+LOADPROOFS=-dont-load-proofs
+
+COQOPTS=$(COQ_XML) $(VM) $(LOADPROOFS)
 BOOTCOQTOP:=$(TIMECMD) $(BESTCOQTOP) -boot $(COQOPTS)
 
 # The SHOW and HIDE variables control whether make will echo complete commands 
