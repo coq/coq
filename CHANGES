@@ -12,6 +12,7 @@ Extraction
 Miscellaneous bug fixes
 
 - #2487 (compilation with camlp5 in strict mode)
+- A new option "Set Default Timeout n / Unset Default Timeout" (#2283,#2460).
 
 
 Changes from V8.3 to V8.3pl1
