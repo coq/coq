@@ -157,6 +157,7 @@ val get_ref_table :
 val set_int_option_value_gen    : bool option -> option_name -> int option -> unit
 val set_bool_option_value_gen   : bool option -> option_name -> bool   -> unit
 val set_string_option_value_gen : bool option -> option_name -> string -> unit
+val unset_option_value_gen : bool option -> option_name -> unit
 
 val set_int_option_value    : option_name -> int option -> unit
 val set_bool_option_value   : option_name -> bool   -> unit

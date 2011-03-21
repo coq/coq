@@ -1013,9 +1013,7 @@ let vernac_set_option locality key = function
   | BoolValue b -> set_bool_option_value_gen locality key b
 
 let vernac_unset_option locality key =
-  try set_bool_option_value_gen locality key false
-  with _ ->
-  set_int_option_value_gen locality key None
+  unset_option_value_gen locality key
 
 let vernac_add_option key lv =
   let f = function

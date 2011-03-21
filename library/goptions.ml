@@ -305,19 +305,37 @@ let set_option_value locality check_and_cast key v =
 
 let bad_type_error () = error "Bad type of value for this option."
 
-let set_int_option_value_gen locality = set_option_value  locality
-  (fun v -> function
-     | (IntValue _) -> IntValue v
-     | _ -> bad_type_error ())
+let check_int_value v = function
+  | IntValue _ -> IntValue v
+  | _ -> bad_type_error ()
+
+let check_bool_value v = function
+  | BoolValue _ -> BoolValue v
+  | _ -> bad_type_error ()
+
+let check_string_value v = function
+  | StringValue _ -> StringValue v
+  | _ -> bad_type_error ()
+
+let check_unset_value v = function
+  | BoolValue _ -> BoolValue false
+  | IntValue _ -> IntValue None
+  | _ -> bad_type_error ()
+
+(* Nota: For compatibility reasons, some errors are treated as
+   warning. This allows a script to refer to an option that doesn't
+   exist anymore *)
+
+let set_int_option_value_gen locality =
+  set_option_value locality check_int_value
 let set_bool_option_value_gen locality key v =
-  try set_option_value locality (fun v -> function
-     | (BoolValue _) -> BoolValue v
-     | _ -> bad_type_error ()) key v
+  try set_option_value locality check_bool_value key v
   with UserError (_,s) -> Flags.if_verbose msg_warning s
-let set_string_option_value_gen locality = set_option_value locality
- (fun v -> function
-    | (StringValue _) -> StringValue v
-    | _ -> bad_type_error ())
+let set_string_option_value_gen locality =
+  set_option_value locality check_string_value
+let unset_option_value_gen locality key =
+  try set_option_value locality check_unset_value key ()
+  with UserError (_,s) -> Flags.if_verbose msg_warning s
 
 let set_int_option_value = set_int_option_value_gen None
 let set_bool_option_value = set_bool_option_value_gen None
