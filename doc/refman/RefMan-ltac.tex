@@ -100,6 +100,7 @@ is understood as
 & | & {\tt progress} {\tacexprpref}\\
 & | & {\tt repeat} {\tacexprpref}\\
 & | & {\tt try} {\tacexprpref}\\
+& | & {\tt timeout} {\it (}{\naturalnumber} {\it |} {\ident}{\it )} {\tacexprpref}\\
 & | & {\tacexprinf} \\
 \\
 {\tacexprinf} & ::= &
@@ -442,6 +443,28 @@ This is a combination of the previous variants.
 \end{Variants}
 
 \ErrMsg \errindex{Tactic Failure {\it message} (level $n$)}.
+
+\subsubsection[Timeout]{Timeout\tacindex{timeout}
+\index{Tacticals!timeout@{\tt timeout}}}
+
+We can force a tactic to stop if it has not finished after a certain
+amount of time:
+\begin{quote}
+{\tt timeout} {\num} {\tacexpr}
+\end{quote}
+{\tacexpr} is evaluated to $v$. $v$ must be a tactic value. $v$ is
+normally applied, except that it is interrupted after ${\num}$ seconds
+if it is still running. In this case the outcome is a failure.
+
+Warning: For the moment, {\tt timeout} is based on elapsed time in
+seconds, which is very
+machine-dependent: a script that works on a quick machine may fail
+on a slow one. The converse is even possible if you combine a
+{\tt timeout} with some other tacticals. This tactical is hence
+proposed only for convenience during debug or other development
+phases, we strongly advise you to not leave any {\tt timeout} in
+final scripts. Note also that this tactical isn't available on
+the native Windows port of Coq.
 
 \subsubsection[Local definitions]{Local definitions\index{Ltac!let}
 \index{Ltac!let rec}
