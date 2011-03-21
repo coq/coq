@@ -75,8 +75,9 @@ TIMECMD=	# is "'time -p'" to get compilation time of .v
 
 LOADPROOFS=-dont-load-proofs
 
-COQOPTS=$(COQ_XML) $(VM) $(LOADPROOFS)
+COQOPTS=$(COQ_XML) $(VM)
 BOOTCOQTOP:=$(TIMECMD) $(BESTCOQTOP) -boot $(COQOPTS)
+BOOTCOQC:=$(BOOTCOQTOP) $(LOADPROOFS) -compile
 
 # The SHOW and HIDE variables control whether make will echo complete commands 
 # or only abbreviated versions. 
@@ -467,7 +468,7 @@ states/initial.coq: states/MakeInitial.v $(INITVO) $(VO_TOOLS_STRICT) | states/M
 theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_STRICT) | theories/Init/%.v.d $(VO_TOOLS_ORDER_ONLY)
 	$(SHOW)'COQC -nois $<'
 	$(HIDE)rm -f theories/Init/$*.glob
-	$(HIDE)$(BOOTCOQTOP) -nois -compile theories/Init/$*
+	$(HIDE)$(BOOTCOQC) theories/Init/$* -nois
 
 theories/Numbers/Natural/BigN/NMake_gen.v: theories/Numbers/Natural/BigN/NMake_gen.ml
 	$(OCAML) $< $(TOTARGET)
@@ -848,7 +849,7 @@ plugins/%_mod.ml: plugins/%.mllib
 %.vo %.glob: %.v states/initial.coq $(INITPLUGINSBEST) $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
 	$(SHOW)'COQC      $<'
 	$(HIDE)rm -f $*.glob 
-	$(HIDE)$(BOOTCOQTOP) -compile $*
+	$(HIDE)$(BOOTCOQC) $*
 ifdef VALIDATE
 	$(SHOW)'COQCHK    $(call vo_to_mod,$@)'
 	$(HIDE)$(BESTCHICKEN) -boot -silent -norec $(call vo_to_mod,$@) \
