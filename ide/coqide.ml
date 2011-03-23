@@ -217,20 +217,12 @@ let coq_computing = Mutex.create ()
 let coq_may_stop = Mutex.create ()
 
 let break () =
-  prerr_endline "User break received:";
-  if not (Mutex.try_lock coq_computing) then
-    begin
-      prerr_endline " trying to stop computation:";
-      if Mutex.try_lock coq_may_stop then begin
-	  Util.interrupt := true;
-	  prerr_endline " interrupt flag set. Computation should stop soon...";
-	  Mutex.unlock coq_may_stop
-	end else prerr_endline " interruption refused (may not stop now)";
-    end
-  else begin
-      Mutex.unlock coq_computing;
-      prerr_endline " ignored (not computing)"
-    end
+  prerr_endline "User break received";
+  Coq.break_coqtop session_notebook#current_term.toplvl
+
+let force_reset_initial () =
+  prerr_endline "Reset Initial";
+  session_notebook#current_term.analyzed_view#reset_initial
 
 let do_if_not_computing text f x =
   let threaded_task () =
@@ -242,7 +234,8 @@ let do_if_not_computing text f x =
            | Sys_error str ->
                elt.analyzed_view#reset_initial;
                elt.analyzed_view#set_message
-                 ("unable to communicate with coqtop, restarting coqtop:\n"^str)
+                 ("Unable to communicate with coqtop, restarting coqtop.\n"^
+		  "Error was: "^str)
            | e ->
                Mutex.unlock coq_computing;
                elt.analyzed_view#set_message
@@ -537,7 +530,7 @@ let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
     buffer#apply_tag ~start:decl_start ~stop:decl_end Tags.Script.folded;
     buffer#apply_tag ~start:decl_end ~stop:prf_end Tags.Script.hidden)
 
-let sup_args = ref ""
+let sup_args = ref []
 
 class analyzed_view (_script:Undo.undoable_view) (_pv:GText.view) (_mv:GText.view) _cs _ct =
 object(self)
@@ -2317,7 +2310,7 @@ let main files =
 				    "_Start"
 				    ~tooltip:"Go to start"
 				    ~key:GdkKeysyms._Home
-				    ~callback:(do_or_activate (fun a -> a#reset_initial))
+				    ~callback:force_reset_initial
 				    `GOTO_TOP;
 				  add_to_menu_toolbar
 				    "_End"

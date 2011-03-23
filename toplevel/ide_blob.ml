@@ -582,6 +582,7 @@ let make_cases s : string list list call =
 (* End of wrappers *)
 
 let loop () =
+  Sys.catch_break true;
   try
     while true do
       let q = (Marshal.from_channel: in_channel -> 'a call) stdin in

@@ -26,17 +26,11 @@ open Ideutils
 open Compat
 
 type coqtop = {
+  mutable pid : int;
   mutable cout : in_channel ;
   mutable cin : out_channel ;
-  sup_args : string ;
+  sup_args : string list;
   mutable version : int ;
-}
-
-let dummy_coqtop = {
-  cout = stdin ;
-  cin = stdout ;
-  sup_args = "" ;
-  version = 0 ;
 }
 
 let prerr_endline s = if !debug then prerr_endline s else ()
@@ -109,7 +103,8 @@ exception Coqtop_output of string list
 
 let check_connection args =
   try
-    let ic = Unix.open_process_in (coqtop_path () ^ " -batch "^args) in
+    let args = String.concat " " ("-batch"::args) in
+    let ic = Unix.open_process_in (coqtop_path () ^ " " ^ args) in
     let lines = read_all_lines ic in
     match (Unix.close_process_in ic) with
     | Unix.WEXITED 0 -> prerr_endline "coqtop seems ok"
@@ -142,27 +137,42 @@ let toplvl_ctr_mtx = Mutex.create ()
 
 let spawn_coqtop sup_args =
   Mutex.lock toplvl_ctr_mtx;
-  try 
-    let oc,ic = Unix.open_process (coqtop_path ()^" -ideslave "^sup_args) in
-    set_binary_mode_out ic true;
-    set_binary_mode_in oc true;
+  try
+    let (in_read,in_write) = Unix.pipe () in
+    let (out_read,out_write) = Unix.pipe () in
+    let prog = coqtop_path () in
+    let args = Array.of_list (prog :: "-ideslave" :: sup_args) in
+    let pid = Unix.create_process prog args out_read in_write Unix.stderr in
+    assert (pid <> 0);
+    Unix.close out_read;
+    Unix.close in_write;
+    let ic = Unix.in_channel_of_descr in_read in
+    let oc = Unix.out_channel_of_descr out_write in
+    set_binary_mode_out oc true;
+    set_binary_mode_in ic true;
     incr toplvl_ctr;
     Mutex.unlock toplvl_ctr_mtx;
-    { cin = ic; cout = oc ; sup_args = sup_args ; version = 0 }
+    { pid = pid; cin = oc; cout = ic ; sup_args = sup_args ; version = 0 }
   with e ->
     Mutex.unlock toplvl_ctr_mtx;
     raise e
 
+let break_coqtop coqtop =
+  try Unix.kill coqtop.pid Sys.sigint
+  with _ -> prerr_endline "Error while sending Ctrl-C"
+
+let blocking_kill pid =
+  begin
+    try Unix.kill pid Sys.sigkill;
+    with _ -> prerr_endline "Kill -9 failed. Process already terminated ?"
+  end;
+  try
+    ignore (Unix.waitpid [] pid);
+    Mutex.lock toplvl_ctr_mtx; decr toplvl_ctr; Mutex.unlock toplvl_ctr_mtx
+  with _ -> prerr_endline "Error while waiting for child"
+
 let kill_coqtop coqtop =
-  let ic = coqtop.cin in
-  let oc = coqtop.cout in
-  ignore (Thread.create
-            (fun () ->
-               try 
-                 ignore (Unix.close_process (oc,ic));
-                 Mutex.lock toplvl_ctr_mtx; decr toplvl_ctr; Mutex.unlock toplvl_ctr_mtx
-               with _ -> prerr_endline "Process leak")
-            ())
+  ignore (Thread.create blocking_kill coqtop.pid)
 
 let coqtop_zombies =
   (fun () ->
@@ -176,6 +186,7 @@ let reset_coqtop coqtop =
   let ni = spawn_coqtop coqtop.sup_args in
   coqtop.cin <- ni.cin;
   coqtop.cout <- ni.cout;
+  coqtop.pid <- ni.pid
 
 module PrintOpt =
 struct

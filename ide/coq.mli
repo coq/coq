@@ -15,15 +15,15 @@ open Ide_blob
 val short_version : unit -> string
 val version : unit -> string
 val filter_coq_opts : string list -> bool * string list
-val check_connection : string -> unit
+val check_connection : string list -> unit
 
 type coqtop
 
-val dummy_coqtop : coqtop
-
-val spawn_coqtop : string -> coqtop
+val spawn_coqtop : string list -> coqtop
 
 val kill_coqtop : coqtop -> unit
+
+val break_coqtop : coqtop -> unit
 
 val coqtop_zombies : unit -> int
 

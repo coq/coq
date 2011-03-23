@@ -14,7 +14,7 @@ let () =
   let argl = Array.to_list Sys.argv in
   let files = Coqide.process_argv argl in
   let args = List.filter (fun x -> not (List.mem x files)) (List.tl argl) in
-  Coqide.sup_args := String.concat " " (List.map Filename.quote args);
+  Coqide.sup_args := List.map Filename.quote args;
   Coq.check_connection !Coqide.sup_args;
   Coqide.ignore_break ();
     GtkMain.Rc.add_default_file (Ideutils.lib_ide_file ".coqide-gtk2rc");
