@@ -142,7 +142,10 @@ module EvarInfoMap = struct
   let define (def,undef) evk body =
     let oldinfo =
       try ExistentialMap.find evk undef
-      with Not_found -> anomaly "Evd.define: cannot define undeclared evar" in
+      with Not_found -> 
+	try ExistentialMap.find evk def
+	with Not_found -> 
+	  anomaly "Evd.define: cannot define undeclared evar" in
     let newinfo =
       { oldinfo with
 	  evar_body = Evar_defined body } in
@@ -772,14 +775,25 @@ let pr_evar_map_t (evars,(uvs,univs) as sigma) =
       h 0 (Univ.pr_universes univs)++fnl()
   in evs ++ svs ++ cs
 
+let print_env_short env =
+  let pr_body = function None -> mt () | Some b -> str " := " ++ print_constr b in
+  let pr_named_decl (n, b, _) = pr_id n ++ pr_body b in
+  let pr_rel_decl (n, b, _) = pr_name n ++ pr_body b in
+  let nc = List.rev (named_context env) in
+  let rc = List.rev (rel_context env) in
+    str "[" ++ prlist_with_sep pr_spc pr_named_decl nc ++ str "]" ++ spc () ++
+    str "[" ++ prlist_with_sep pr_spc pr_rel_decl rc ++ str "]"
+
 let pr_constraints pbs =
   h 0
-    (prlist_with_sep pr_fnl (fun (pbty,_,t1,t2) ->
-      print_constr t1 ++ spc() ++
-      str (match pbty with
-	| Reduction.CONV -> "=="
-	| Reduction.CUMUL -> "<=") ++
-      spc() ++ print_constr t2) pbs)
+    (prlist_with_sep pr_fnl 
+       (fun (pbty,env,t1,t2) ->
+	  print_env_short env ++ spc () ++ str "|-" ++ spc () ++
+	    print_constr t1 ++ spc() ++
+	    str (match pbty with
+		 | Reduction.CONV -> "=="
+		 | Reduction.CUMUL -> "<=") ++
+	    spc() ++ print_constr t2) pbs)
 
 let pr_evar_map_constraints evd =
   if evd.conv_pbs = [] then mt() 

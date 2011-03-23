@@ -46,7 +46,6 @@ let class_rawexpr = Gram.entry_create "vernac:class_rawexpr"
 let thm_token = Gram.entry_create "vernac:thm_token"
 let def_body = Gram.entry_create "vernac:def_body"
 let decl_notation = Gram.entry_create "vernac:decl_notation"
-let typeclass_context = Gram.entry_create "vernac:typeclass_context"
 let record_field = Gram.entry_create "vernac:record_field"
 let of_type_with_opt_coercion = Gram.entry_create "vernac:of_type_with_opt_coercion"
 let subgoal_command = Gram.entry_create "proof_mode:subgoal_command"
@@ -139,7 +138,7 @@ let test_plurial_form_types = function
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
-    typeclass_context typeclass_constraint record_field decl_notation rec_definition;
+    typeclass_constraint record_field decl_notation rec_definition;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)
@@ -178,10 +177,6 @@ GEXTEND Gram
 	  let (recf,indf) = b in
 	    VernacInductive (indf,infer,[((oc,name),ps,s,recf,cfs),[]])
   ] ]
-  ;
-  typeclass_context:
-    [ [ "["; l=LIST1 typeclass_constraint SEP ","; "]" -> l
-    | -> [] ] ]
   ;
   thm_token:
     [ [ "Theorem" -> Theorem
