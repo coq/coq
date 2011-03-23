@@ -6,24 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Vernac
-open Vernacexpr
-open Pfedit
-open Pp
 open Util
-open Names
-open Term
-open Printer
-open Environ
-open Evarutil
-open Evd
-open Hipattern
-open Tacmach
-open Reductionops
-open Termops
-open Namegen
-open Ideutils
 open Compat
+open Pp
+open Ideutils
 
 type coqtop = {
   mutable pid : int;
@@ -69,13 +55,13 @@ let version () =
       "The Coq Proof Assistant, version %s (%s)\
        \nArchitecture %s running %s operating system\
        \nGtk version is %s\
-       \nThis is the %s version (%s is the best one for this architecture and OS)\
+       \nThis is %s (%s is the best one for this architecture and OS)\
        \n"
       ver date
       Coq_config.arch Sys.os_type
       (let x,y,z = GMain.Main.version in Printf.sprintf "%d.%d.%d" x y z)
-    (if Mltop.is_native then "native" else "bytecode")
-    (if Coq_config.best="opt" then "native" else "bytecode")
+      (Filename.basename Sys.executable_name)
+      Coq_config.best
 
 let rec read_all_lines in_chan =
   try
@@ -116,20 +102,20 @@ let check_connection args =
       List.iter Pervasives.prerr_endline lines;
       exit 1
 
-let eval_call coqtop (c:'a Ide_blob.call) =
+let eval_call coqtop (c:'a Ide_intf.call) =
   Marshal.to_channel coqtop.cin c [];
   flush coqtop.cin;
-  (Marshal.from_channel: in_channel -> 'a Ide_blob.value) coqtop.cout
+  (Marshal.from_channel: in_channel -> 'a Ide_intf.value) coqtop.cout
 
-let is_in_loadpath coqtop s = eval_call coqtop (Ide_blob.is_in_loadpath s)
+let is_in_loadpath coqtop s = eval_call coqtop (Ide_intf.is_in_loadpath s)
  
-let raw_interp coqtop s = eval_call coqtop (Ide_blob.raw_interp s)
+let raw_interp coqtop s = eval_call coqtop (Ide_intf.raw_interp s)
 
-let interp coqtop b s = eval_call coqtop (Ide_blob.interp b s)
+let interp coqtop b s = eval_call coqtop (Ide_intf.interp b s)
 
-let rewind coqtop i = eval_call coqtop (Ide_blob.rewind i)
+let rewind coqtop i = eval_call coqtop (Ide_intf.rewind i)
  
-let read_stdout coqtop = eval_call coqtop Ide_blob.read_stdout
+let read_stdout coqtop = eval_call coqtop Ide_intf.read_stdout
 
 let toplvl_ctr = ref 0
 
@@ -209,56 +195,30 @@ struct
       (fun acc cmd -> 
          let str = (if value then "Set" else "Unset") ^ " Printing " ^ cmd ^ "." in
          match raw_interp coqtop str with
-           | Ide_blob.Good () -> acc
-           | Ide_blob.Fail (l,errstr) ->  Ide_blob.Fail (l,"Could not eval \""^str^"\": "^errstr)
+           | Ide_intf.Good () -> acc
+           | Ide_intf.Fail (l,errstr) ->  Ide_intf.Fail (l,"Could not eval \""^str^"\": "^errstr)
       )
-      (Ide_blob.Good ())
+      (Ide_intf.Good ())
       opt
 
-  let enforce_hack coqtop = Hashtbl.fold (fun opt v acc ->
-                                            match set coqtop opt v with
-                                              | Ide_blob.Good () -> Ide_blob.Good ()
-                                              | Ide_blob.Fail str -> Ide_blob.Fail str)
-                              state_hack (Ide_blob.Good ())
+  let enforce_hack coqtop = Hashtbl.fold
+    (fun opt v acc ->
+      match set coqtop opt v with
+        | Ide_intf.Good () -> Ide_intf.Good ()
+        | Ide_intf.Fail str -> Ide_intf.Fail str)
+    state_hack (Ide_intf.Good ())
 end
 
-let rec is_pervasive_exn = function
-  | Out_of_memory | Stack_overflow | Sys.Break -> true
-  | Error_in_file (_,_,e) -> is_pervasive_exn e
-  | Loc.Exc_located (_,e) -> is_pervasive_exn e
-  | DuringCommandInterp (_,e) -> is_pervasive_exn e
-  | _ -> false
-
-let print_toplevel_error exc =
-  let (dloc,exc) =
-    match exc with
-      | DuringCommandInterp (loc,ie) ->
-          if loc = dummy_loc then (None,ie) else (Some loc, ie)
-      | _ -> (None, exc)
-  in
-  let (loc,exc) =
-    match exc with
-      | Loc.Exc_located (loc, ie) -> (Some loc),ie
-      | Error_in_file (s, (_,fname, loc), ie) -> None, ie
-      | _ -> dloc,exc
-  in
-  match exc with
-    | End_of_input  -> 	str "Please report: End of input",None
-    | Vernacexpr.Drop ->  str "Drop is not allowed by coqide!",None
-    | Vernacexpr.Quit -> str "Quit is not allowed by coqide! Use menus.",None
-    | _ ->
-	(try Cerrors.explain_exn exc with e ->
-	   str "Failed to explain error. This is an internal Coq error. Please report.\n"
-	   ++ str (Printexc.to_string  e)),
-	(if is_pervasive_exn exc then None else loc)
-
-let process_exn e = let s,loc= print_toplevel_error e in (msgnl s,loc)
+let process_exn = function
+  | End_of_file ->
+    "Warning: End_of_file occurred (possibly a forced restart of coqtop)", None
+  | e -> Printexc.to_string e,None
 
 let goals coqtop =
   match PrintOpt.enforce_hack coqtop with
-    | Ide_blob.Good () -> eval_call coqtop Ide_blob.current_goals
-    | Ide_blob.Fail str -> Ide_blob.Fail str
+    | Ide_intf.Good () -> eval_call coqtop Ide_intf.current_goals
+    | Ide_intf.Fail str -> Ide_intf.Fail str
 
-let make_cases coqtop s = eval_call coqtop (Ide_blob.make_cases s)
+let make_cases coqtop s = eval_call coqtop (Ide_intf.make_cases s)
 
-let current_status coqtop = eval_call coqtop Ide_blob.current_status
+let current_status coqtop = eval_call coqtop Ide_intf.current_status

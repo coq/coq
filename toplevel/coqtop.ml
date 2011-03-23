@@ -319,7 +319,7 @@ let init arglist =
       if !ide_slave then begin
         Flags.make_silent true;
         Pfedit.set_undo (Some 5000);
-        Ide_blob.init_stdout ()
+        Ide_slave.init_stdout ()
       end;
       if_verbose print_header ();
       init_load_path ();
@@ -354,7 +354,7 @@ let init_toplevel = init
 let start () =
   init_toplevel (List.tl (Array.to_list Sys.argv));
   if !ide_slave then
-    Ide_blob.loop ()
+    Ide_slave.loop ()
   else
     Toplevel.loop();
   (* Initialise and launch the Ocaml toplevel *)

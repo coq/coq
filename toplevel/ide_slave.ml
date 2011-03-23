@@ -6,13 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
-
-
-(* All this stuff should be integrated inside Coq. Several kittens died during
- * the operation. Reading this aloud will invoke the Great Cthulhu. *)
-
 open Vernacexpr
 open Names
 open Compat
@@ -102,10 +95,10 @@ let rec attribute_of_vernac_command = function
   | VernacAddMLPath _ -> []
   | VernacDeclareMLModule _ -> []
   | VernacChdir _ -> [OtherStatePreservingCommand]
-  
+
   (* State management *)
   | VernacWriteState _ -> []
-  | VernacRestoreState _ -> [] 
+  | VernacRestoreState _ -> []
 
   (* Resetting *)
   | VernacRemoveName _ -> [NavigationCommand]
@@ -113,7 +106,7 @@ let rec attribute_of_vernac_command = function
   | VernacResetInitial -> [NavigationCommand]
   | VernacBack _ -> [NavigationCommand]
   | VernacBackTo _ -> [NavigationCommand]
-  
+
   (* Commands *)
   | VernacDeclareTacticDefinition _ -> []
   | VernacCreateHintDb _ -> []
@@ -132,20 +125,20 @@ let rec attribute_of_vernac_command = function
   | VernacRemoveOption _ -> []
   | VernacAddOption _ -> []
   | VernacMemOption _ -> [QueryCommand]
-  
+
   | VernacPrintOption _ -> [QueryCommand]
   | VernacCheckMayEval _ -> [QueryCommand]
   | VernacGlobalCheck _ -> [QueryCommand]
   | VernacPrint _ -> [QueryCommand]
   | VernacSearch _ -> [QueryCommand]
   | VernacLocate _ -> [QueryCommand]
-  
+
   | VernacComments _ -> [OtherStatePreservingCommand]
   | VernacNop -> [OtherStatePreservingCommand]
-  
+
   (* Proof management *)
   | VernacGoal _ -> [GoalStartingCommand]
-  
+
   | VernacAbort _ -> [NavigationCommand]
   | VernacAbortAll -> [NavigationCommand]
   | VernacRestart -> [NavigationCommand]
@@ -154,7 +147,7 @@ let rec attribute_of_vernac_command = function
   | VernacUndo _ -> [NavigationCommand]
   | VernacUndoTo _ -> [NavigationCommand]
   | VernacBacktrack _ -> [NavigationCommand]
-  
+
   | VernacFocus _ -> [SolveCommand]
   | VernacUnfocus -> [SolveCommand]
   | VernacShow _ -> [OtherStatePreservingCommand]
@@ -165,14 +158,14 @@ let rec attribute_of_vernac_command = function
   | VernacProofMode _ -> []
   | VernacSubproof _ -> []
   | VernacEndSubproof -> []
-  
+
   (* Toplevel control *)
   | VernacToplevelControl _ -> []
-  
+
   (* Extensions *)
   | VernacExtend ("Subtac_Obligations", _) -> [GoalStartingCommand]
   | VernacExtend _ -> []
-  
+
 let is_vernac_navigation_command com =
   List.mem NavigationCommand (attribute_of_vernac_command com)
 
@@ -200,8 +193,6 @@ let is_vernac_tactic_command com =
 
 let is_vernac_proof_ending_command com =
   List.mem ProofEndingCommand (attribute_of_vernac_command com)
-
-(* End of Necronomicon exerpts *)
 
 type reset_status =
   | NoReset
@@ -346,12 +337,6 @@ let string_of_ppcmds c =
   Pp.msg_with Format.str_formatter c;
   Format.flush_str_formatter ()
 
-type 'a menu = 'a * (string * string) list
-
-type goals =
-  | Message of string
-  | Goals of ((string menu) list * string menu) list
-
 let hyp_next_tac sigma env (id,_,ast) =
   let id_s = Names.string_of_id id in
   let type_s = string_of_ppcmds (pr_ltype_env env ast) in
@@ -401,14 +386,14 @@ let concl_next_tac sigma concl =
   ])
 
 let current_goals () =
-  try 
+  try
     let pfts =
       Proof_global.give_me_the_proof ()
     in
   let { Evd.it=all_goals ; sigma=sigma } = Proof.V82.subgoals pfts in
   if all_goals = [] then
     begin
-      Message (string_of_ppcmds (
+      Ide_intf.Message (string_of_ppcmds (
         let { Evd.it = bgoals ; sigma = sigma } = Proof.V82.background_subgoals pfts in
         match bgoals with
           | [] ->
@@ -437,9 +422,10 @@ let current_goals () =
           List.rev (Environ.fold_named_context process_hyp env ~init:[]) in
         (hyps,(ccl,concl_next_tac sigma g))
       in
-      Goals (List.map process_goal all_goals)
+      Ide_intf.Goals (List.map process_goal all_goals)
     end
-  with Proof_global.NoCurrentProof -> Message "" (* quick hack to have a clean message screen *)
+  with Proof_global.NoCurrentProof ->
+    Ide_intf.Message "" (* quick hack to have a clean message screen *)
 
 let id_of_name = function
   | Names.Anonymous -> id_of_string "x"
@@ -515,77 +501,32 @@ let explain_exn e =
   in
   toploc,(Cerrors.explain_exn exc)
 
-
-(**
- * Wrappers around Coq calls. We use phantom types and GADT to protect ourselves
-  * against wild casts
-  *)
-
-type 'a call =
-  | In_loadpath of string
-  | Raw_interp of string
-  | Interp of bool * string
-  | Rewind of int
-  | Read_stdout
-  | Cur_goals
-  | Cur_status
-  | Cases of string
-
-type 'a value =
-  | Good of 'a
-  | Fail of (Util.loc option * string)
-
-let eval_call c = 
-  let filter_compat_exn = function
-    | Vernac.DuringCommandInterp (loc,inner) -> inner
+let eval_call c =
+  let rec handle_exn = function
+    | Vernac.DuringCommandInterp (loc,inner) -> handle_exn inner
+    | Vernacexpr.Drop -> None, "Drop is not allowed by coqide!"
     | Vernacexpr.Quit -> raise Vernacexpr.Quit
-    | e -> e
+    | e ->
+      let (l,pp) = explain_exn e in
+      l,string_of_ppcmds pp
   in
-  try Good (match c with
-              | In_loadpath s -> Obj.magic (is_in_loadpath s)
-              | Raw_interp s -> Obj.magic (raw_interp s)
-              | Interp (b,s) -> Obj.magic (interp b s)
-              | Rewind i -> Obj.magic (rewind i)
-              | Read_stdout -> Obj.magic (read_stdout ())
-              | Cur_goals -> Obj.magic (current_goals ())
-              | Cur_status -> Obj.magic (current_status ())
-              | Cases s -> Obj.magic (make_cases s))
-  with e ->
-    let (l,pp) = explain_exn (filter_compat_exn e) in
-    (* force evaluation of format stream *)
-    Fail (l,string_of_ppcmds pp)
-
-let is_in_loadpath s : bool call =
-  In_loadpath s
-
-let raw_interp s : unit call =
-  Raw_interp s
-
-let interp b s : int call =
-  Interp (b,s)
-
-let rewind i : int call =
-  Rewind i
-
-let read_stdout : string call =
-  Read_stdout
-
-let current_goals : goals call =
-  Cur_goals
-
-let current_status : string call =
-  Cur_status
-
-let make_cases s : string list list call =
-  Cases s
-
-(* End of wrappers *)
+  let handler = {
+    Ide_intf.is_in_loadpath = is_in_loadpath;
+    Ide_intf.raw_interp = raw_interp;
+    Ide_intf.interp = interp;
+    Ide_intf.rewind = rewind;
+    Ide_intf.read_stdout = read_stdout;
+    Ide_intf.current_goals = current_goals;
+    Ide_intf.current_status = current_status;
+    Ide_intf.make_cases = make_cases }
+  in
+  Ide_intf.abstract_eval_call handler handle_exn c
 
 let loop () =
   Sys.catch_break true;
   try
     while true do
-      let q = (Marshal.from_channel: in_channel -> 'a call) stdin in
+      let q = (Marshal.from_channel: in_channel -> 'a Ide_intf.call) stdin in
       let r = eval_call q in
       Marshal.to_channel !orig_stdout r [];
       flush !orig_stdout

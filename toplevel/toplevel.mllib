@@ -18,7 +18,8 @@ Mltop
 Vernacentries
 Whelp
 Vernac
-Ide_blob
+Ide_intf
+Ide_slave
 Toplevel
 Usage
 Coqinit

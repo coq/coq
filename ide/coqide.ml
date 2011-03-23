@@ -319,9 +319,9 @@ let setopts ct opts v =
   List.fold_left
     (fun acc o ->
        match set ct o v with
-         | Ide_blob.Good () -> acc
-         | Ide_blob.Fail lstr -> Ide_blob.Fail lstr
-    ) (Ide_blob.Good ()) opts
+         | Ide_intf.Good () -> acc
+         | Ide_intf.Fail lstr -> Ide_intf.Fail lstr
+    ) (Ide_intf.Good ()) opts
 
 (* Reset this to None on page change ! *)
 let (last_completion:(string*int*int*bool) option ref) = ref None
@@ -788,9 +788,9 @@ object(self)
           (fun _ _ -> ()) in
         try
           match Coq.goals mycoqtop with
-            | Ide_blob.Fail (l,str) ->
+            | Ide_intf.Fail (l,str) ->
                 self#set_message ("Error in coqtop :\n"^str)
-            | Ide_blob.Good goals ->
+            | Ide_intf.Good goals ->
                 Ideproof.display
                   (Ideproof.mode_tactic menu_callback)
                   proof_view goals
@@ -830,14 +830,14 @@ object(self)
       full_goal_done <- false;
       prerr_endline "Send_to_coq starting now";
       match Coq.interp mycoqtop verbosely phrase with
-        | Ide_blob.Fail (l,str) -> sync display_error (str,l); None
-        | Ide_blob.Good r ->
+        | Ide_intf.Fail (l,str) -> sync display_error (str,l); None
+        | Ide_intf.Good r ->
             match Coq.read_stdout mycoqtop with
-              | Ide_blob.Fail (_,str) ->
+              | Ide_intf.Fail (_,str) ->
                   self#set_message
                     ("interp successful but unable to fetch goal, please report bug:\n"^str);
                   None
-              | Ide_blob.Good msg ->
+              | Ide_intf.Good msg ->
                   sync display_output msg;
                   Some (true,r)
     with
@@ -1051,10 +1051,10 @@ object(self)
     begin
       try
         match Coq.rewind mycoqtop (n_step 0) with
-          | Ide_blob.Fail (l,str) ->
+          | Ide_intf.Fail (l,str) ->
               sync self#set_message
                 ("Problem while backtracking, CoqIDE and coqtop may be out of sync, you may want to restart :\n"^str)
-          | Ide_blob.Good _ ->
+          | Ide_intf.Good _ ->
               sync (fun _ ->
                       let start =
                         if Stack.is_empty cmd_stack then input_buffer#start_iter
@@ -1192,17 +1192,17 @@ object(self)
       | None -> ()
       | Some f -> let dir = Filename.dirname f in
         match Coq.is_in_loadpath mycoqtop dir with
-          | Ide_blob.Fail (_,str) ->
+          | Ide_intf.Fail (_,str) ->
               self#set_message
                 ("Could not determine lodpath, this might lead to problems:\n"^str)
-          | Ide_blob.Good true -> ()
-          | Ide_blob.Good false ->
+          | Ide_intf.Good true -> ()
+          | Ide_intf.Good false ->
               match Coq.interp mycoqtop false
                         (Printf.sprintf "Add LoadPath \"%s\". "  dir) with
-                | Ide_blob.Fail (l,str) ->
+                | Ide_intf.Fail (l,str) ->
                     self#set_message
                       ("Couln't add loadpath:\n"^str)
-                | Ide_blob.Good _ -> ()
+                | Ide_intf.Good _ -> ()
   end
 
   method electric_handler =
@@ -2260,9 +2260,9 @@ let main files =
                                        pop_info ();
                                        push_info
                                          (match Coq.current_status current.toplvl with
-                                            | Ide_blob.Fail (l,str) ->
+                                            | Ide_intf.Fail (l,str) ->
                                                 "Oops, problem while fetching coq status."
-                                            | Ide_blob.Good str -> str)
+                                            | Ide_intf.Good str -> str)
                                        )
                                     [session_notebook#current_term]
                                 in
@@ -2502,8 +2502,8 @@ let main files =
 let cur_ct = session_notebook#current_term.toplvl in
 					    try
                                               match Coq.make_cases cur_ct w with
-                                                | Ide_blob.Fail _ -> raise Not_found
-                                                | Ide_blob.Good cases ->
+                                                | Ide_intf.Fail _ -> raise Not_found
+                                                | Ide_intf.Good cases ->
                                                     let print c = function
                                                       | [x] -> Format.fprintf c "  | %s => _@\n" x
                                                       | x::l -> Format.fprintf c "  | (%s%a) => _@\n" x

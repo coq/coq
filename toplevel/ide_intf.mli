@@ -6,8 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(* $Id$ *)
-
+(** * Interface of calls to Coq by CoqIde *)
 
 type 'a menu = 'a * (string * string) list
 
@@ -15,32 +14,34 @@ type goals =
   | Message of string
   | Goals of ((string menu) list * string menu) list
 
-val reinit : unit -> unit
-
-val init_stdout : unit -> unit
-
 type 'a call
+
+val raw_interp : string -> unit call
+val interp : bool -> string -> int call
+val rewind : int -> int call
+val is_in_loadpath : string -> bool call
+val make_cases : string -> string list list call
+val current_status : string call
+val current_goals : goals call
+val read_stdout : string call
+
+(** * Coq answers to CoqIde *)
 
 type 'a value =
   | Good of 'a
   | Fail of (Util.loc option * string)
 
-val eval_call : 'a call -> 'a value
+type handler = {
+  is_in_loadpath : string -> bool;
+  raw_interp : string -> unit;
+  interp : bool -> string -> int;
+  rewind : int -> int;
+  read_stdout : unit -> string;
+  current_goals : unit -> goals;
+  current_status : unit -> string;
+  make_cases : string -> string list list;
+}
 
-val raw_interp : string -> unit call
-
-val interp : bool -> string -> int call
-
-val rewind : int -> int call
-
-val is_in_loadpath : string -> bool call
-
-val make_cases : string -> string list list call
-
-val current_status : string call
-
-val current_goals : goals call
-
-val read_stdout : string call
-
-val loop : unit -> unit
+val abstract_eval_call :
+  handler -> (exn -> Util.loc option * string) ->
+  'a call -> 'a value

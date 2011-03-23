@@ -6,12 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
-open Term
-open Environ
-open Evd
-open Ide_blob
-
 val short_version : unit -> string
 val version : unit -> string
 val filter_coq_opts : string list -> bool * string list
@@ -42,25 +36,25 @@ sig
   val existential : t
   val universes : t
 
-  val set : coqtop -> t -> bool -> unit Ide_blob.value
+  val set : coqtop -> t -> bool -> unit Ide_intf.value
 end
 
-val raw_interp : coqtop -> string -> unit Ide_blob.value
+val raw_interp : coqtop -> string -> unit Ide_intf.value
 
-val interp : coqtop -> bool -> string -> int Ide_blob.value
+val interp : coqtop -> bool -> string -> int Ide_intf.value
 
-val rewind : coqtop -> int -> int Ide_blob.value
+val rewind : coqtop -> int -> int Ide_intf.value
 
-val read_stdout : coqtop -> string Ide_blob.value
+val read_stdout : coqtop -> string Ide_intf.value
 
-val is_in_loadpath : coqtop -> string -> bool Ide_blob.value
+val is_in_loadpath : coqtop -> string -> bool Ide_intf.value
 
-val make_cases : coqtop -> string -> string list list Ide_blob.value
+val make_cases : coqtop -> string -> string list list Ide_intf.value
 
 (* Message to display in lower status bar. *)
 
-val current_status : coqtop -> string Ide_blob.value
+val current_status : coqtop -> string Ide_intf.value
 
-val goals : coqtop -> goals Ide_blob.value
+val goals : coqtop -> Ide_intf.goals Ide_intf.value
 
 val msgnl : Pp.std_ppcmds -> string

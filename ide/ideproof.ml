@@ -89,7 +89,7 @@ let mode_cesar (proof:GText.view) = function
 let display mode (view:GText.view) goals =
   view#buffer#set_text "";
   match goals with
-    | Ide_blob.Message msg ->
+    | Ide_intf.Message msg ->
         view#buffer#insert msg
-    | Ide_blob.Goals g ->
+    | Ide_intf.Goals g ->
         mode view g
