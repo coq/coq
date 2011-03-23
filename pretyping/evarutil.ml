@@ -1295,24 +1295,6 @@ let status_changed lev (pbty,_,t1,t2) =
   (try ExistentialSet.mem (head_evar t1) lev with NoHeadEvar -> false) or
   (try ExistentialSet.mem (head_evar t2) lev with NoHeadEvar -> false)
 
-(* Util *)
-
-let check_instance_type conv_algo pbty env evd ev1 t2 =
-  let t2 = nf_evar evd t2 in
-  if has_undefined_evars_or_sorts evd t2 then
-    (* May contain larger constraints than needed: don't want to
-       commit to an equal solution while only subtyping is requested *)
-    evd
-  else
-    let typ2 = Retyping.get_type_of env evd (refresh_universes t2) in
-    if isEvar typ2 then (* Don't want to commit too early too *) evd
-    else
-      let typ1 = existential_type evd ev1 in
-      let evd,b = conv_algo env evd Reduction.CUMUL typ2 typ1 in
-	if b then evd else
-	  user_err_loc (fst (evar_source (fst ev1) evd),"",
-			str "Unable to find a well-typed instantiation")
-
 (* Tries to solve problem t1 = t2.
  * Precondition: t1 is an uninstantiated evar
  * Returns an optional list of evars that were instantiated, or None
@@ -1334,19 +1316,23 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
 	    else
 	      add_conv_pb (Reduction.CUMUL,env,t2,mkEvar ev1) evd
       | _ ->
-	  let evd = check_instance_type conv_algo pbty env evd ev1 t2 in
 	  let evd = evar_define ~choose env ev1 t2 evd in
 	  let evi = Evd.find evd evk1 in
-	    if occur_existential evd evi.evar_concl then
-	      let evenv = evar_unfiltered_env evi in
-	      let evc = nf_evar evd evi.evar_concl in
-		match evi.evar_body with
-		| Evar_defined body ->
-		    let ty = nf_evar evd (Retyping.get_type_of evenv evd body) in
-		      add_conv_pb (Reduction.CUMUL,evenv,ty,evc) evd
-		| Evar_empty -> (* Resulted in a constraint *)
-		    evd
-	    else evd
+	  let evenv = evar_unfiltered_env evi in
+	  let evc = nf_evar evd evi.evar_concl in
+	    match evi.evar_body with
+	    | Evar_defined body ->
+		let ty = nf_evar evd (Retyping.get_type_of evenv evd body) in
+		  if occur_existential evd evi.evar_concl
+		    || occur_existential evd ty 
+		  then add_conv_pb (Reduction.CUMUL,evenv,ty,evc) evd
+		  else
+		    let evd,b = conv_algo evenv evd Reduction.CUMUL ty evc in
+		      if b then evd else
+			user_err_loc (fst (evar_source (fst ev1) evd),"",
+				      str "Unable to find a well-typed instantiation")
+	    | Evar_empty -> (* Resulted in a constraint *)
+		evd
     in
     let (evd,pbs) = extract_changed_conv_pbs evd status_changed in
       List.fold_left

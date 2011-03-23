@@ -310,7 +310,7 @@ let rec declare_subclasses gr (rels, (tc, args)) =
 	  add_instance (Typeclasses.new_instance tc None false (ConstRef cst));
 	  declare_subclasses (ConstRef cst) cl
       | None -> ()
-  in () (* List.iter declare_proj projs *)
+  in List.iter declare_proj projs
 
 let context l =
   let env = Global.env() in
@@ -328,9 +328,9 @@ let context l =
 	(ParameterEntry (t,None), IsAssumption Logical)
       in
 	match class_of_constr t with
-	| Some (rels, (tc, args) as cl) ->
-	    add_instance (Typeclasses.new_instance tc None false (ConstRef cst));
-	    declare_subclasses (ConstRef cst) cl
+	| Some (rels, (tc, args) as _cl) ->
+	    add_instance (Typeclasses.new_instance tc None false (ConstRef cst))
+	    (* declare_subclasses (ConstRef cst) cl *)
 	| None -> ()
     else (
       let impl = List.exists 
@@ -338,9 +338,9 @@ let context l =
 	   match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls
       in
 	Command.declare_assumption false (Local (* global *), Definitional) t
-	  [] impl (* implicit *) None (* inline *) (dummy_loc, id);
-	match class_of_constr t with
-	| None -> ()
-	| Some tc -> declare_subclasses (VarRef id) tc)
+	  [] impl (* implicit *) None (* inline *) (dummy_loc, id))
+(* 	match class_of_constr t with *)
+(* 	| None -> () *)
+(* 	| Some tc -> declare_subclasses (VarRef id) tc) *)
   in List.iter fn (List.rev ctx)
 	

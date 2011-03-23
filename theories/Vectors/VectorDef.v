@@ -38,11 +38,7 @@ Definition rectS {A} (P:forall {n}, t A (S n) -> Type)
  (bas: forall a: A, P (a :: []))
  (rect: forall a {n} (v: t A (S n)), P v -> P (a :: v)) :=
  fix rectS_fix {n} (v: t A (S n)) : P v :=
- match v in t _  n' return match n' return t _ n' -> Type with
-                                    | 0 => fun _ => ID
-                                    | S n => fun v => P v
-                                  end v
- with
+ match v with
  |nil => @id
  |cons a 0 v =>
    match v as vnn in t _ nn
@@ -67,9 +63,7 @@ fix rect2_fix {n} (v1:t A n):
 match v1 as v1' in t _ n1
   return forall v2 : t B n1, P v1' v2 with
   |[] => fun v2 =>
-     match v2 as v2' in t _ n2
-       return match n2 as n2' return t B n2' -> Type with
-         |0 => fun v2 => P [] v2 |S _ => fun _ => @ID end v2' with
+     match v2 with
        |[] => bas
        |_ :: _ => @id
      end
@@ -89,15 +83,14 @@ end.
 
 (** A vector of length [0] is [nil] *)
 Definition case0 {A} (P:t A 0 -> Type) (H:P (nil A)) v:P v :=
-match v as v0 in t _ n return match n return t _ n -> Type with 0 => fun v => P v | S n => fun v => ID end v0 with
+match v with
   |[] => H
-  | _ => @id
 end.
 
 (** A vector of length [S _] is [cons] *)
 Definition caseS {A} (P : forall n, t A (S n) -> Type)
   (H : forall h {n} t, @P n (h :: t)) {n} v : P n v :=
-match v as v0 in t _ n return match n return t _ n -> Type with 0 => fun v => ID | S n => fun v => P n v end v0 with 
+match v with
   |[] => @id (* Why needed ? *)
   |h :: t => H h t
 end.
