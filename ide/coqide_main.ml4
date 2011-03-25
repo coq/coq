@@ -16,10 +16,11 @@ let () =
   let args = List.filter (fun x -> not (List.mem x files)) (List.tl argl) in
   Coqide.sup_args := List.map Filename.quote args;
   Coq.check_connection !Coqide.sup_args;
+  Minilib.coqlib := Coq.coqlib ();
   Coqide.ignore_break ();
     GtkMain.Rc.add_default_file (Ideutils.lib_ide_file ".coqide-gtk2rc");
     (try
-	 GtkMain.Rc.add_default_file (Filename.concat System.home ".coqide-gtk2rc");
+	 GtkMain.Rc.add_default_file (Filename.concat Minilib.home ".coqide-gtk2rc");
      with Not_found -> ());
     ignore (GtkMain.Main.init ());
     initmac () ;
@@ -30,7 +31,7 @@ let () =
 								 `WARNING;`CRITICAL]
 	       (fun ~level msg ->
 		  if level land Glib.Message.log_level `WARNING <> 0
-		  then Pp.warning msg
+		  then Printf.eprintf "Warning: %s\n" msg
 		  else failwith ("Coqide internal error: " ^ msg)));
     Coqide.main files;
     if !Coq_config.with_geoproof then ignore (Thread.create Coqide.check_for_geoproof_input ());

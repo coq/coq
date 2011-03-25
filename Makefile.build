@@ -313,16 +313,16 @@ coqide-byte: $(COQIDEBYTE) $(COQIDE)
 coqide-opt:  $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
 coqide-files: $(IDEFILES)
 
-$(COQIDEOPT): $(LINKIDEOPT) $(LIBCOQRUN) $(COQTOPOPT)
+$(COQIDEOPT): $(LINKIDEOPT)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) $(IDEOPTFLAGS) -o $@ unix.cmxa threads.cmxa lablgtk.cmxa\
-		 gtkThread.cmx dynlink.cmxa str.cmxa $(CAMLP4MOD).cmxa $(LIBCOQRUN) $(LINKIDEOPT)
+		 gtkThread.cmx str.cmxa $(LINKIDEOPT)
 	$(STRIP) $@
 
-$(COQIDEBYTE): $(LINKIDE) $(LIBCOQRUN) $(COQTOPBYTE)
+$(COQIDEBYTE): $(LINKIDE)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma gtkThread.cmo\
-		dynlink.cma str.cma $(CAMLP4MOD).cma $(COQRUNBYTEFLAGS) $(LIBCOQRUN) $(LINKIDE)
+		str.cma $(COQRUNBYTEFLAGS) $(LINKIDE)
 
 $(COQIDE):
 	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)

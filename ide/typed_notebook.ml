@@ -16,14 +16,14 @@ object(self)
       (* XXX - Temporary hack to compile with archaic lablgtk *)
     ignore (super#append_page ?tab_label ?menu_label page);
     let real_pos = super#page_num page in
-    let lower,higher = Util.list_chop real_pos term_list in
+    let lower,higher = Minilib.list_chop real_pos term_list in
       term_list <- lower@[term]@higher;
       real_pos
 (* XXX - Temporary hack to compile with archaic lablgtk
   method insert_term ?(build=default_build) ?pos (term:'a) =
     let tab_label,menu_label,page = build term in
     let real_pos = super#insert_page ?tab_label ?menu_label ?pos page in
-    let lower,higher = Util.list_chop real_pos term_list in
+    let lower,higher = Minilib.list_chop real_pos term_list in
       term_list <- lower@[term]@higher;
       real_pos
  *)
@@ -32,26 +32,26 @@ object(self)
       (* XXX - Temporary hack to compile with archaic lablgtk *)
     ignore (super#prepend_page ?tab_label ?menu_label page);
     let real_pos = super#page_num page in
-    let lower,higher = Util.list_chop real_pos term_list in
+    let lower,higher = Minilib.list_chop real_pos term_list in
       term_list <- lower@[term]@higher;
       real_pos
 
   method set_term (term:'a) =
     let tab_label,menu_label,page = make_page term in
     let real_pos = super#current_page in
-      term_list <- Util.list_map_i (fun i x -> if i = real_pos then term else x) 0 term_list;
+      term_list <- Minilib.list_map_i (fun i x -> if i = real_pos then term else x) 0 term_list;
       super#set_page ?tab_label ?menu_label page
 
   method get_nth_term i =
     List.nth term_list i
 
   method term_num p =
-    Util.list_index0 p term_list
+    Minilib.list_index0 p term_list
 
   method pages = term_list
 
   method remove_page index =
-    term_list <- Util.list_filter_i (fun i x -> if i = index then kill_page x; i <> index) term_list;
+    term_list <- Minilib.list_filter_i (fun i x -> if i = index then kill_page x; i <> index) term_list;
     super#remove_page index
 
   method current_term =

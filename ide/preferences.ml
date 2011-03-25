@@ -8,11 +8,10 @@
 
 open Configwin
 open Printf
-open Util
 
-let pref_file = Filename.concat System.home ".coqiderc"
+let pref_file = Filename.concat Minilib.home ".coqiderc"
 
-let accel_file = Filename.concat System.home ".coqide.keys"
+let accel_file = Filename.concat Minilib.home ".coqide.keys"
 
 let mod_to_str (m:Gdk.Tags.modifier) =
   match m with
@@ -170,9 +169,9 @@ let save_pref () =
   with _ -> ());
   let p = !current in
   try
-    let add = Stringmap.add in
+    let add = Minilib.Stringmap.add in
     let (++) x f = f x in
-    Stringmap.empty ++
+    Minilib.Stringmap.empty ++
     add "cmd_coqc" [p.cmd_coqc] ++
     add "cmd_make" [p.cmd_make] ++
     add "cmd_coqmakefile" [p.cmd_coqmakefile] ++
@@ -228,7 +227,7 @@ let load_pref () =
   try
     let m = Config_lexer.load_file pref_file in
     let np = { p with cmd_coqc = p.cmd_coqc } in
-    let set k f = try let v = Stringmap.find k m in f v with _ -> () in
+    let set k f = try let v = Minilib.Stringmap.find k m in f v with _ -> () in
     let set_hd k f = set k (fun v -> f (List.hd v)) in
     let set_bool k f = set_hd k (fun v -> f (bool_of_string v)) in
     let set_int k f = set_hd k (fun v -> f (int_of_string v)) in
@@ -294,14 +293,6 @@ let load_pref () =
   with e ->
     prerr_endline ("Could not load preferences ("^
 		   (Printexc.to_string e)^").")
-
-let split_string_format s =
-  try
-    let i = Util.string_index_from s 0 "%s" in
-    let pre = (String.sub s 0 i) in
-    let post = String.sub s (i+2) (String.length s - i - 2) in
-    pre,post
-  with Not_found -> s,""
 
 let configure ?(apply=(fun () -> ())) () =
   let cmd_coqc =

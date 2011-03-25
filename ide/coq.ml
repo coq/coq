@@ -6,9 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Util
-open Compat
-open Pp
 open Ideutils
 
 type coqtop = {
@@ -20,18 +17,6 @@ type coqtop = {
 }
 
 let prerr_endline s = if !debug then prerr_endline s else ()
-
-let output = ref (Format.formatter_of_out_channel stdout)
-
-let msg m =
-  let b =  Buffer.create 103 in
-  Pp.msg_with (Format.formatter_of_buffer b) m;
-  Buffer.contents b
-
-let msgnl m =
-  (msg m)^"\n"
-
-let i = ref 0
 
 let get_version_date () =
   let date =
@@ -77,7 +62,8 @@ let coqtop_path () =
 
 let filter_coq_opts args =
   let argstr = String.concat " " (List.map Filename.quote args) in
-  let oc,ic,ec = Unix.open_process_full (coqtop_path () ^" -nois -filteropts "^argstr) (Unix.environment ()) in
+  let cmd = coqtop_path () ^" -nois -filteropts " ^ argstr in
+  let oc,ic,ec = Unix.open_process_full cmd (Unix.environment ()) in
   let filtered_args = read_all_lines oc in
   let message = read_all_lines ec in
   match Unix.close_process_full (oc,ic,ec) with
@@ -101,6 +87,16 @@ let check_connection args =
       Pervasives.prerr_endline "Connection with coqtop failed:";
       List.iter Pervasives.prerr_endline lines;
       exit 1
+
+(* TODO: we can probably merge check_connection () and coqlib () *)
+
+let coqlib () =
+  try
+    let ic = Unix.open_process_in (coqtop_path () ^" -where") in
+    let str = input_line ic in
+    ignore (Unix.close_process_in ic);
+    str
+  with _ -> failwith "Error while reading coqlib from coqtop"
 
 let eval_call coqtop (c:'a Ide_intf.call) =
   Marshal.to_channel coqtop.cin c [];

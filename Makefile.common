@@ -217,15 +217,11 @@ INITPLUGINSBEST:=$(if $(OPT),$(INITPLUGINSOPT),$(INITPLUGINS))
 LINKCMO:=$(CONFIG) $(CORECMA) $(STATICPLUGINS)
 LINKCMX:=$(CONFIG:.cmo=.cmx) $(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cma=.cmxa)
 
-LIBCMA:=lib/lib.cma
+IDEDEPS:=$(CONFIG) lib/flags.cmo toplevel/ide_intf.cmo
 IDECMA:=ide/ide.cma
-IDEINTF:=toplevel/ide_intf.cmo
 
-IDELIBS:=$(CONFIG) $(LIBCMA) $(IDEINTF) $(IDECMA)
-IDELIBSOPT:=$(subst .cmo,.cmx,$(IDELIBS:.cma=.cmxa))
-
-LINKIDE:=$(IDELIBS) ide/coqide_main.ml
-LINKIDEOPT:=$(IDEOPTDEPS) $(IDELIBSOPT) ide/coqide_main_opt.ml
+LINKIDE:=$(IDEDEPS) $(IDECMA) ide/coqide_main.ml
+LINKIDEOPT:=$(IDEDEPS:.cmo=.cmx) $(IDECMA:.cma=.cmxa) ide/coqide_main_opt.ml
 
 # modules known by the toplevel of Coq
 

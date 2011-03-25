@@ -11,7 +11,7 @@
   open Lexing
   open Format
   open Config_parser
-  open Util
+  open Minilib
 
   let string_buffer = Buffer.create 1024
 

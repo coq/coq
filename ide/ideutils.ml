@@ -37,8 +37,7 @@ let prerr_string s =
   if !debug then (prerr_string s;flush stderr)
 
 let lib_ide_file f =
-  let coqlib = Envars.coqlib () in
-  Filename.concat (Filename.concat coqlib "ide") f
+  Filename.concat (Filename.concat !Minilib.coqlib "ide") f
 
 let get_insert input_buffer = input_buffer#get_iter_at_mark `INSERT
 
@@ -284,7 +283,7 @@ let run_command f c =
   (Unix.close_process_full (cin,cout,cerr),  Buffer.contents result)
 
 let browse f url =
-  let com = Flags.subst_command_placeholder !current.cmd_browse url in
+  let com = Minilib.subst_command_placeholder !current.cmd_browse url in
   let s = Sys.command com in
   if s = 127 then
     f ("Could not execute\n\""^com^

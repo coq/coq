@@ -10,6 +10,7 @@ val short_version : unit -> string
 val version : unit -> string
 val filter_coq_opts : string list -> bool * string list
 val check_connection : string list -> unit
+val coqlib : unit -> string
 
 type coqtop
 
@@ -56,5 +57,3 @@ val make_cases : coqtop -> string -> string list list Ide_intf.value
 val current_status : coqtop -> string Ide_intf.value
 
 val goals : coqtop -> Ide_intf.goals Ide_intf.value
-
-val msgnl : Pp.std_ppcmds -> string

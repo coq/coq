@@ -8,7 +8,7 @@
 <tools/coq_tex.{native,byte}> : use_str
 <tools/coq_makefile.{native,byte}> : use_str
 <tools/coqdoc/main.{native,byte}> : use_str
-<ide/coqide_main.{native,byte}> : use_str, use_unix, thread, ide, use_dynlink, use_camlp4, use_libcoqrun
+<ide/coqide_main.{native,byte}> : use_str, use_unix, thread, ide
 <checker/main.{native,byte}> : use_str, use_unix, use_dynlink, use_camlp4
 <plugins/micromega/csdpcert.{native,byte}> : use_nums, use_unix
 

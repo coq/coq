@@ -112,10 +112,6 @@ let core_cma = List.map (fun s -> s^".cma") core_libs
 let core_cmxa = List.map (fun s -> s^".cmxa") core_libs
 let core_mllib = List.map (fun s -> s^".mllib") core_libs
 
-let ide_cma = "ide/ide.cma"
-let ide_cmxa = "ide/ide.cmxa"
-let ide_mllib = "ide/ide.mllib"
-
 let tolink = "scripts/tolink.ml"
 
 let c_headers_base =
@@ -371,16 +367,14 @@ let extra_rules () = begin
 
 (** Generation of tolink.ml *)
 
-  rule tolink ~deps:(ide_mllib::core_mllib) ~prod:tolink
+  rule tolink ~deps:core_mllib ~prod:tolink
     (fun _ _ ->
        let cat s = String.concat " " (string_list_of_file s) in
        let core_mods = String.concat " " (List.map cat core_mllib) in
-       let ide_mods = cat ide_mllib in
        let core_cmas = String.concat " " core_cma in
        Echo (["let copts = \"-cclib -lcoqrun\"\n";
 	      "let core_libs = \"coq_config.cmo "^core_cmas^"\"\n";
-	      "let core_objs = \"Coq_config "^core_mods^"\"\n";
-	      "let ide = \""^ide_mods^"\"\n"],
+	      "let core_objs = \"Coq_config "^core_mods^"\"\n"],
 	     tolink));
 
 (** Coqtop *)

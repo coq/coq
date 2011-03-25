@@ -9,14 +9,14 @@
 %{
 
   open Parsing
-  open Util
+  open Minilib
 
 %}
 
 %token <string> IDENT STRING
 %token EQUAL EOF
 
-%type <(string list) Util.Stringmap.t> prefs
+%type <(string list) Minilib.Stringmap.t> prefs
 %start prefs
 
 %%

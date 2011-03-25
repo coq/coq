@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Preferences
-open Vernacexpr
 open Coq
 open Coq.PrintOpt
 open Gtk_parsing
@@ -1003,7 +1002,7 @@ object(self)
         (try
            while ((stop#compare (get_current())>=0)
            && (self#process_next_phrase false false false))
-           do Util.check_for_interrupt () done
+           do () (* TODO: this looks obsolete : Util.check_for_interrupt ()*) done
          with Sys.Break ->
            prerr_endline "Interrupted during process_until_iter_or_error");
         sync (fun _ ->
@@ -1185,7 +1184,7 @@ object(self)
     act_id <- Some
                 (input_view#event#connect#key_press ~callback:self#active_keypress_handler);
     prerr_endline "CONNECTED active : ";
-    print_id (Option.get act_id);
+    print_id (match act_id with Some x -> x | None -> assert false);
     match
       filename
     with
@@ -1562,7 +1561,7 @@ let do_print session =
       |Some f_name ->  begin
       let cmd =
         "cd " ^ Filename.quote (Filename.dirname f_name) ^ "; " ^
-        !current.cmd_coqdoc ^ "--coqlib_path " ^Envars.coqlib () ^
+        !current.cmd_coqdoc ^ "--coqlib_path " ^ !Minilib.coqlib ^
 	  " -ps " ^ Filename.quote (Filename.basename f_name) ^
         " | " ^ !current.cmd_print
       in
@@ -1588,7 +1587,7 @@ let load_file handler f =
       let f = absolute_filename f in
       try
         prerr_endline "Loading file starts";
-        if not (Util.list_fold_left_i
+        if not (Minilib.list_fold_left_i
                   (fun i found x -> if found then found else
                      let {analyzed_view=av} = x in
                      (match av#filename with
@@ -1824,7 +1823,7 @@ let main files =
             in
             let cmd =
               "cd " ^ Filename.quote (Filename.dirname f) ^ "; " ^
-              !current.cmd_coqdoc ^ "--coqlib_path " ^Envars.coqlib () ^ " --" ^ kind ^ 
+              !current.cmd_coqdoc ^ "--coqlib_path " ^ !Minilib.coqlib ^ " --" ^ kind ^
 		" -o " ^ (Filename.quote output) ^ " " ^ (Filename.quote basef)
             in
             let s,_ = run_command av#insert_message cmd in
@@ -2199,7 +2198,7 @@ let main files =
 				       | None -> warning "Call to external editor available only on named files"
 				       | Some f ->
 					   save_f ();
-					   let com = Flags.subst_command_placeholder !current.cmd_editor (Filename.quote f) in
+					   let com = Minilib.subst_command_placeholder !current.cmd_editor (Filename.quote f) in
 					   let _ = run_command av#insert_message com in
 					     av#revert)
 			    in
