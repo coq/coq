@@ -23,7 +23,7 @@ val coqtop_zombies : unit -> int
 
 val reset_coqtop : coqtop -> unit
 
-val process_exn : exn -> string*(Util.loc option)
+val process_exn : exn -> Ide_intf.location * string
 
 module PrintOpt :
 sig

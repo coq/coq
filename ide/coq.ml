@@ -211,8 +211,8 @@ end
 
 let process_exn = function
   | End_of_file ->
-    "Warning: End_of_file occurred (possibly a forced restart of coqtop)", None
-  | e -> Printexc.to_string e,None
+    None, "Warning: End_of_file occurred (possibly a forced restart of coqtop)"
+  | e -> None, Printexc.to_string e
 
 let goals coqtop =
   match PrintOpt.enforce_hack coqtop with

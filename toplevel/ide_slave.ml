@@ -494,9 +494,9 @@ let explain_exn e =
   let toploc,exc =
     match e with
       | Loc.Exc_located (loc, inner) ->
-          (if loc = dummy_loc then None else Some loc),inner
-      | Error_in_file (s, (is_in_lib, fname, loc), inner) ->
-          None,inner
+	let l = if loc = dummy_loc then None else Some (Util.unloc loc) in
+	l,inner
+      | Error_in_file (s, _, inner) -> None,inner
       | _ -> None,e
   in
   toploc,(Cerrors.explain_exn exc)
@@ -505,10 +505,10 @@ let eval_call c =
   let rec handle_exn = function
     | Vernac.DuringCommandInterp (loc,inner) -> handle_exn inner
     | Vernacexpr.Drop -> None, "Drop is not allowed by coqide!"
-    | Vernacexpr.Quit -> raise Vernacexpr.Quit
+    | Vernacexpr.Quit -> None, "Quit is not allowed by coqide!"
     | e ->
       let (l,pp) = explain_exn e in
-      l,string_of_ppcmds pp
+      l, string_of_ppcmds pp
   in
   let handler = {
     Ide_intf.is_in_loadpath = is_in_loadpath;

@@ -52,9 +52,11 @@ let make_cases s : string list list call =
 
 (** * Coq answers to CoqIde *)
 
+type location = (int * int) option (* start and end of the error *)
+
 type 'a value =
   | Good of 'a
-  | Fail of (Util.loc option * string)
+  | Fail of (location * string)
 
 type handler = {
   is_in_loadpath : string -> bool;

@@ -803,7 +803,7 @@ object(self)
   method send_to_coq verbosely replace phrase show_output show_error localize =
     let display_output msg =
       self#insert_message (if show_output then msg else "") in
-    let display_error (s,loc) =
+    let display_error (loc,s) =
       if show_error then begin
         if not (Glib.Utf8.validate s) then
           flash_info "This error is so nasty that I can't even display it." 
@@ -811,7 +811,7 @@ object(self)
           self#insert_message s;
           message_view#misc#draw None;
           if localize then
-            (match Option.map Util.unloc loc with
+            (match loc with
                | None -> ()
                | Some (start,stop) ->
                    let convert_pos = byte_offset_to_char_offset phrase in
@@ -830,7 +830,7 @@ object(self)
       full_goal_done <- false;
       prerr_endline "Send_to_coq starting now";
       match Coq.interp mycoqtop verbosely phrase with
-        | Ide_intf.Fail (l,str) -> sync display_error (str,l); None
+        | Ide_intf.Fail (l,str) -> sync display_error (l,str); None
         | Ide_intf.Good r ->
             match Coq.read_stdout mycoqtop with
               | Ide_intf.Fail (_,str) ->
