@@ -2308,7 +2308,7 @@ let main files =
 				    `JUMP_TO;
 				  add_to_menu_toolbar
 				    "_Start"
-				    ~tooltip:"Go to start"
+				    ~tooltip:"Restart Coq"
 				    ~key:GdkKeysyms._Home
 				    ~callback:force_reset_initial
 				    `GOTO_TOP;
