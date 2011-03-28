@@ -9,8 +9,10 @@
 val short_version : unit -> string
 val version : unit -> string
 val filter_coq_opts : string list -> bool * string list
+(* A mock coqtop launch, checking in particular that initial.coq is found *)
 val check_connection : string list -> unit
-val coqlib : unit -> string
+(* Same, with less checks, but returning coqlib *)
+val check_coqlib : string list -> string
 
 type coqtop
 

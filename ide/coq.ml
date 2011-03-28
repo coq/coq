@@ -54,15 +54,9 @@ let rec read_all_lines in_chan =
     arg::(read_all_lines in_chan)
   with End_of_file -> []
 
-let coqtop_path () =
-  let prog = Sys.executable_name in
-  let dir = Filename.dirname prog in
-  if Filename.check_suffix prog ".byte" then dir^"/coqtop.byte"
-  else dir^"/coqtop.opt"
-
 let filter_coq_opts args =
   let argstr = String.concat " " (List.map Filename.quote args) in
-  let cmd = coqtop_path () ^" -nois -filteropts " ^ argstr in
+  let cmd = !Minilib.coqtop_path ^" -nois -filteropts " ^ argstr in
   let oc,ic,ec = Unix.open_process_full cmd (Unix.environment ()) in
   let filtered_args = read_all_lines oc in
   let message = read_all_lines ec in
@@ -75,28 +69,46 @@ exception Coqtop_output of string list
 
 let check_connection args =
   try
-    let args = String.concat " " ("-batch"::args) in
-    let ic = Unix.open_process_in (coqtop_path () ^ " " ^ args) in
+    let argstr = String.concat " " (List.map Filename.quote args) in
+    let cmd = !Minilib.coqtop_path ^ " -batch " ^ argstr in
+    let ic = Unix.open_process_in cmd in
     let lines = read_all_lines ic in
-    match (Unix.close_process_in ic) with
+    match Unix.close_process_in ic with
     | Unix.WEXITED 0 -> prerr_endline "coqtop seems ok"
     | _ -> raise (Coqtop_output lines)
-  with End_of_file ->
-    Pervasives.prerr_endline "Cannot start connection with coqtop";
+  with
+    | End_of_file ->
+      Pervasives.prerr_endline "Cannot start connection with coqtop";
+      exit 1
     | Coqtop_output lines ->
       Pervasives.prerr_endline "Connection with coqtop failed:";
       List.iter Pervasives.prerr_endline lines;
       exit 1
 
-(* TODO: we can probably merge check_connection () and coqlib () *)
+(** It is tempting to merge the following function with the previous one,
+    but check_connection fails if no initial.coq is found, while
+    check_coqlib doesn't check that. *)
 
-let coqlib () =
+let check_coqlib args =
   try
-    let ic = Unix.open_process_in (coqtop_path () ^" -where") in
-    let str = input_line ic in
-    ignore (Unix.close_process_in ic);
-    str
-  with _ -> failwith "Error while reading coqlib from coqtop"
+    let argstr = String.concat " " (List.map Filename.quote args) in
+    let cmd = !Minilib.coqtop_path ^ " " ^ argstr ^ " -where" in
+    let ic = Unix.open_process_in cmd in
+    let lines = read_all_lines ic in
+    match Unix.close_process_in ic with
+    | Unix.WEXITED 0 ->
+      (match lines with
+	| [coqlib] -> coqlib
+	| _ -> raise (Coqtop_output lines))
+    | _ -> raise (Coqtop_output lines)
+  with
+    | End_of_file ->
+      Pervasives.prerr_endline "Cannot start connection with coqtop";
+      exit 1
+    | Coqtop_output lines ->
+      Pervasives.prerr_endline "Connection with coqtop failed:";
+      List.iter Pervasives.prerr_endline lines;
+      exit 1
 
 let eval_call coqtop (c:'a Ide_intf.call) =
   Marshal.to_channel coqtop.cin c [];
@@ -117,21 +129,32 @@ let toplvl_ctr = ref 0
 
 let toplvl_ctr_mtx = Mutex.create ()
 
+(** We simulate a Unix.open_process that also returns the pid of
+    the created process. Note: this uses Unix.create_process, which
+    doesn't call bin/sh, so args shouldn't be quoted. The process
+    cannot be terminated by a Unix.close_process, but rather by a
+    kill of the pid.
+*)
+
+let open_process_pid prog args =
+  let (in_read,in_write) = Unix.pipe () in
+  let (out_read,out_write) = Unix.pipe () in
+  let pid = Unix.create_process prog args out_read in_write Unix.stderr in
+  assert (pid <> 0);
+  Unix.close out_read;
+  Unix.close in_write;
+  let ic = Unix.in_channel_of_descr in_read in
+  let oc = Unix.out_channel_of_descr out_write in
+  set_binary_mode_out oc true;
+  set_binary_mode_in ic true;
+  (pid,ic,oc)
+
 let spawn_coqtop sup_args =
   Mutex.lock toplvl_ctr_mtx;
   try
-    let (in_read,in_write) = Unix.pipe () in
-    let (out_read,out_write) = Unix.pipe () in
-    let prog = coqtop_path () in
+    let prog = !Minilib.coqtop_path in
     let args = Array.of_list (prog :: "-ideslave" :: sup_args) in
-    let pid = Unix.create_process prog args out_read in_write Unix.stderr in
-    assert (pid <> 0);
-    Unix.close out_read;
-    Unix.close in_write;
-    let ic = Unix.in_channel_of_descr in_read in
-    let oc = Unix.out_channel_of_descr out_write in
-    set_binary_mode_out oc true;
-    set_binary_mode_in ic true;
+    let (pid,ic,oc) = open_process_pid prog args in
     incr toplvl_ctr;
     Mutex.unlock toplvl_ctr_mtx;
     { pid = pid; cin = oc; cout = ic ; sup_args = sup_args ; version = 0 }

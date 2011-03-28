@@ -61,3 +61,4 @@ let subst_command_placeholder s t =
 let home = try Sys.getenv "HOME" with Not_found -> "."
 
 let coqlib = ref ""
+let coqtop_path = ref ""

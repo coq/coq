@@ -12,11 +12,12 @@ let macready () = IFDEF MacInt THEN gtk_mac_ready () ELSE ()  END
 
 let () =
   let argl = Array.to_list Sys.argv in
+  let argl = Coqide.set_coqtop_path argl in
   let files = Coqide.process_argv argl in
   let args = List.filter (fun x -> not (List.mem x files)) (List.tl argl) in
-  Coqide.sup_args := List.map Filename.quote args;
-  Coq.check_connection !Coqide.sup_args;
-  Minilib.coqlib := Coq.coqlib ();
+  Coq.check_connection args;
+  Minilib.coqlib := Coq.check_coqlib args;
+  Coqide.sup_args := args;
   Coqide.ignore_break ();
     GtkMain.Rc.add_default_file (Ideutils.lib_ide_file ".coqide-gtk2rc");
     (try

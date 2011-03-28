@@ -530,6 +530,8 @@ let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
     buffer#apply_tag ~start:decl_start ~stop:decl_end Tags.Script.folded;
     buffer#apply_tag ~start:decl_end ~stop:prf_end Tags.Script.hidden)
 
+(** The arguments that will be passed to coqtop. No quoting here, since
+    no /bin/sh when using create_process instead of open_process. *)
 let sup_args = ref []
 
 class analyzed_view (_script:Undo.undoable_view) (_pv:GText.view) (_mv:GText.view) _cs _ct =
@@ -3153,6 +3155,27 @@ let rec check_for_geoproof_input () =
   (* cb_Dr#clear does not work so i use : *)
   (* cb_Dr#set_text "Ack" *)
   done
+
+let default_coqtop_path () =
+  let prog = Sys.executable_name in
+  let dir = Filename.dirname prog in
+  if Filename.check_suffix prog ".byte" then dir^"/coqtop.byte"
+  else dir^"/coqtop.opt"
+
+let set_coqtop_path argv =
+  let coqtop = ref "" in
+  let rec filter_coqtop = function
+    | "-coqtop" :: prog :: args ->
+      if !coqtop = "" then
+	(coqtop:=prog; filter_coqtop args)
+      else
+	(output_string stderr "Error: multiple -coqtop options"; exit 1)
+    | arg::args -> arg::filter_coqtop args
+    | [] -> (if !coqtop = "" then coqtop := default_coqtop_path (); [])
+  in
+  let argv = filter_coqtop argv in
+  Minilib.coqtop_path := !coqtop;
+  argv
 
 let process_argv argv =
   try
