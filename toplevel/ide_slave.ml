@@ -551,9 +551,9 @@ let loop () =
   catch_break false;
   try while true do
       let q = (Marshal.from_channel: in_channel -> 'a Ide_intf.call) stdin in
-      Sys.catch_break true;
+      catch_break true;
       let r = eval_call q in
-      Sys.catch_break false;
+      catch_break false;
       Marshal.to_channel !orig_stdout r []; flush !orig_stdout
     done
   with e ->
