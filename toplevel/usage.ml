@@ -24,7 +24,7 @@ let print_usage_channel co command =
 \n  -R dir -as coqdir      recursively map physical dir to logical coqdir\
 \n  -R dir coqdir          (idem)\
 \n  -top coqdir            set the toplevel name to be coqdir instead of Top\
-\n  -notop    r            set the toplevel name to be the empty logical path\
+\n  -notop                 set the toplevel name to be the empty logical path\
 \n  -exclude-dir f         exclude subdirectories named f for option -R\
 \n\
 \n  -inputstate f          read state from file f.coq\

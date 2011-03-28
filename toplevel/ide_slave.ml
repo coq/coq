@@ -462,11 +462,21 @@ let make_cases s =
     | _ -> raise Not_found
 
 let current_status () =
-  let path = string_of_ppcmds (Libnames.pr_dirpath (Lib.cwd ())) in
-  let path = if path = "Top" then "Ready" else "Ready in " ^ String.sub path 4 (String.length path - 4) in
-  try
-    path ^ ", proving " ^ (Names.string_of_id (Pfedit.get_current_proof_name ()))
-  with _ -> path
+  (** We remove the initial part of the current [dir_path]
+      (usually Top in an interactive session, cf "coqtop -top"),
+      and display the other parts (opened sections and modules) *)
+  let path =
+    let l = Names.repr_dirpath (Lib.cwd ()) in
+    let l = snd (Util.list_sep_last l) in
+    if l = [] then "" else
+      (" in "^Names.string_of_dirpath (Names.make_dirpath l))
+  in
+  let proof =
+    try
+      ", proving " ^ (Names.string_of_id (Pfedit.get_current_proof_name ()))
+    with _ -> ""
+  in
+  "Ready"^path^proof
 
 let orig_stdout = ref stdout
 
@@ -489,7 +499,6 @@ let init_stdout,read_stdout =
              let r = Buffer.contents out_buff in
              Buffer.clear out_buff; r)
 
-(* XXX - duplicates toplevel/toplevel.ml. should be merged. *)
 let explain_exn e =
   let toploc,exc =
     match e with

@@ -21,8 +21,10 @@ val interp : bool -> string -> int call
 val rewind : int -> int call
 val is_in_loadpath : string -> bool call
 val make_cases : string -> string list list call
+(** The status, for instance "Ready in SomeSection, proving Foo" *)
 val current_status : string call
 val current_goals : goals call
+(** What has been displayed by coqtop recently ? *)
 val read_stdout : string call
 
 (** * Coq answers to CoqIde *)
