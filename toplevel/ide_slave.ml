@@ -531,15 +531,33 @@ let eval_call c =
   in
   Ide_intf.abstract_eval_call handler handle_exn c
 
+(** Signal handling: we ignore ^C during input and output phases,
+    but make it raise a Sys.Break during evaluation of the phrase.
+    TODO: how could we avoid dying if a ^C is received during a handle_exn ?
+*)
+
+let catch_break = function
+  | true -> Sys.catch_break true
+  | false -> Sys.set_signal Sys.sigint Sys.Signal_ignore
+
+(** Exceptions during eval_call should be converted into Ide_intf.Fail
+    messages by explain_exn above. Otherwise, we die badly, after having
+    tried to send a last message to the ide: trying to recover from errors
+    with the current protocol would most probably bring desynchronisation
+    between coqtop and ide. With marshalling, reading an answer to
+    a different request could hang the ide... *)
+
 let loop () =
-  Sys.catch_break true;
-  try
-    while true do
+  catch_break false;
+  try while true do
       let q = (Marshal.from_channel: in_channel -> 'a Ide_intf.call) stdin in
+      Sys.catch_break true;
       let r = eval_call q in
-      Marshal.to_channel !orig_stdout r [];
-      flush !orig_stdout
+      Sys.catch_break false;
+      Marshal.to_channel !orig_stdout r []; flush !orig_stdout
     done
-  with
-    | Vernacexpr.Quit -> exit 0
-    | _ -> exit 1
+  with e ->
+    let msg = Printexc.to_string e in
+    let r = Ide_intf.Fail (None, "Fatal exception in coqtop:\n" ^ msg) in
+    (try Marshal.to_channel !orig_stdout r []; flush !orig_stdout with _ -> ());
+    exit 1
