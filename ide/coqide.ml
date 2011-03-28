@@ -1002,12 +1002,9 @@ object(self)
         self#get_start_of_input
       end
     in
-    (try
-       while ((stop#compare (get_current())>=0)
-              && (self#process_next_phrase false false false))
-       do () (* TODO: this looks obsolete : Util.check_for_interrupt ()*) done
-     with Sys.Break ->
-       prerr_endline "Interrupted during process_until_iter_or_error");
+    while ((stop#compare (get_current())>=0)
+           && (self#process_next_phrase false false false))
+    do () done;
     sync (fun _ ->
       self#show_goals;
       (* Start and stop might be invalid if an eol was added at eof *)

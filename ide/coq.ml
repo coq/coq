@@ -229,8 +229,7 @@ struct
 end
 
 let process_exn = function
-  | End_of_file ->
-    None, "Warning: End_of_file occurred (possibly a forced restart of coqtop)"
+  | End_of_file -> None, "Coqtop died"
   | e -> None, Printexc.to_string e
 
 let goals coqtop =
