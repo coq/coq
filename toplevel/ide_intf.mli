@@ -17,7 +17,7 @@ type goals =
 type 'a call
 
 val raw_interp : string -> unit call
-val interp : bool -> string -> int call
+val interp : bool * string -> int call
 val rewind : int -> int call
 val is_in_loadpath : string -> bool call
 val make_cases : string -> string list list call
@@ -38,7 +38,7 @@ type 'a value =
 type handler = {
   is_in_loadpath : string -> bool;
   raw_interp : string -> unit;
-  interp : bool -> string -> int;
+  interp : bool * string -> int;
   rewind : int -> int;
   read_stdout : unit -> string;
   current_goals : unit -> goals;

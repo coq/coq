@@ -32,7 +32,7 @@ let is_in_loadpath s : bool call =
 let raw_interp s : unit call =
   Raw_interp s
 
-let interp b s : int call =
+let interp (b,s) : int call =
   Interp (b,s)
 
 let rewind i : int call =
@@ -61,7 +61,7 @@ type 'a value =
 type handler = {
   is_in_loadpath : string -> bool;
   raw_interp : string -> unit;
-  interp : bool -> string -> int;
+  interp : bool * string -> int;
   rewind : int -> int;
   read_stdout : unit -> string;
   current_goals : unit -> goals;
@@ -74,7 +74,7 @@ let abstract_eval_call handler explain_exn c =
     let res = match c with
       | In_loadpath s -> Obj.magic (handler.is_in_loadpath s)
       | Raw_interp s -> Obj.magic (handler.raw_interp s)
-      | Interp (b,s) -> Obj.magic (handler.interp b s)
+      | Interp (b,s) -> Obj.magic (handler.interp (b,s))
       | Rewind i -> Obj.magic (handler.rewind i)
       | Read_stdout -> Obj.magic (handler.read_stdout ())
       | Cur_goals -> Obj.magic (handler.current_goals ())

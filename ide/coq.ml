@@ -119,7 +119,7 @@ let is_in_loadpath coqtop s = eval_call coqtop (Ide_intf.is_in_loadpath s)
  
 let raw_interp coqtop s = eval_call coqtop (Ide_intf.raw_interp s)
 
-let interp coqtop b s = eval_call coqtop (Ide_intf.interp b s)
+let interp coqtop b s = eval_call coqtop (Ide_intf.interp (b,s))
 
 let rewind coqtop i = eval_call coqtop (Ide_intf.rewind i)
  

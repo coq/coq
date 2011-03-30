@@ -14,6 +14,15 @@ open Pp
 open Printer
 open Namegen
 
+(** Signal handling: we postpone ^C during input and output phases,
+    but make it directly raise a Sys.Break during evaluation of the request. *)
+
+let catch_break = ref false
+
+let init_signal_handler () =
+  let f _ = if !catch_break then raise Sys.Break else Util.interrupt := true in
+  Sys.set_signal Sys.sigint (Sys.Signal_handle f)
+
 let prerr_endline _ = ()
 
 let coqide_known_option table = List.mem table [
@@ -247,7 +256,7 @@ let raw_interp s =
 let user_error_loc l s =
     raise (Loc.Exc_located (l, Util.UserError ("CoqIde", s)))
 
-let interp verbosely s =
+let interp (verbosely,s) =
   prerr_endline "Starting interp...";
   prerr_endline s;
   let pa = parsable_of_string s in
@@ -511,34 +520,34 @@ let explain_exn e =
   toploc,(Cerrors.explain_exn exc)
 
 let eval_call c =
-  let rec handle_exn = function
-    | Vernac.DuringCommandInterp (loc,inner) -> handle_exn inner
-    | Vernacexpr.Drop -> None, "Drop is not allowed by coqide!"
-    | Vernacexpr.Quit -> None, "Quit is not allowed by coqide!"
-    | e ->
-      let (l,pp) = explain_exn e in
-      l, string_of_ppcmds pp
+  let rec handle_exn e =
+    catch_break := false;
+    match e with
+      | Vernac.DuringCommandInterp (loc,inner) -> handle_exn inner
+      | Vernacexpr.Drop -> None, "Drop is not allowed by coqide!"
+      | Vernacexpr.Quit -> None, "Quit is not allowed by coqide!"
+      | e ->
+	let (l,pp) = explain_exn e in
+	l, string_of_ppcmds pp
+  in
+  let interruptible f x =
+    catch_break := true;
+    Util.check_for_interrupt ();
+    let r = f x in
+    catch_break := false;
+    r
   in
   let handler = {
-    Ide_intf.is_in_loadpath = is_in_loadpath;
-    Ide_intf.raw_interp = raw_interp;
-    Ide_intf.interp = interp;
-    Ide_intf.rewind = rewind;
-    Ide_intf.read_stdout = read_stdout;
-    Ide_intf.current_goals = current_goals;
-    Ide_intf.current_status = current_status;
-    Ide_intf.make_cases = make_cases }
+    Ide_intf.is_in_loadpath = interruptible is_in_loadpath;
+    Ide_intf.raw_interp = interruptible raw_interp;
+    Ide_intf.interp = interruptible interp;
+    Ide_intf.rewind = interruptible rewind;
+    Ide_intf.read_stdout = interruptible read_stdout;
+    Ide_intf.current_goals = interruptible current_goals;
+    Ide_intf.current_status = interruptible current_status;
+    Ide_intf.make_cases = interruptible make_cases }
   in
   Ide_intf.abstract_eval_call handler handle_exn c
-
-(** Signal handling: we ignore ^C during input and output phases,
-    but make it raise a Sys.Break during evaluation of the phrase.
-    TODO: how could we avoid dying if a ^C is received during a handle_exn ?
-*)
-
-let catch_break = function
-  | true -> Sys.catch_break true
-  | false -> Sys.set_signal Sys.sigint Sys.Signal_ignore
 
 (** Exceptions during eval_call should be converted into Ide_intf.Fail
     messages by explain_exn above. Otherwise, we die badly, after having
@@ -548,12 +557,12 @@ let catch_break = function
     a different request could hang the ide... *)
 
 let loop () =
-  catch_break false;
-  try while true do
+  init_signal_handler ();
+  catch_break := false;
+  try
+    while true do
       let q = (Marshal.from_channel: in_channel -> 'a Ide_intf.call) stdin in
-      catch_break true;
       let r = eval_call q in
-      catch_break false;
       Marshal.to_channel !orig_stdout r []; flush !orig_stdout
     done
   with e ->
