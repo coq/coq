@@ -26,29 +26,14 @@ type 'a call =
   | Cur_status
   | Cases of string
 
-let is_in_loadpath s : bool call =
-  In_loadpath s
-
-let raw_interp s : unit call =
-  Raw_interp s
-
-let interp (b,s) : int call =
-  Interp (b,s)
-
-let rewind i : int call =
-  Rewind i
-
-let read_stdout : string call =
-  Read_stdout
-
-let current_goals : goals call =
-  Cur_goals
-
-let current_status : string call =
-  Cur_status
-
-let make_cases s : string list list call =
-  Cases s
+let is_in_loadpath s : bool call = In_loadpath s
+let raw_interp s : unit call = Raw_interp s
+let interp (b,s) : unit call = Interp (b,s)
+let rewind i : unit call = Rewind i
+let read_stdout : string call = Read_stdout
+let current_goals : goals call = Cur_goals
+let current_status : string call = Cur_status
+let make_cases s : string list list call = Cases s
 
 (** * Coq answers to CoqIde *)
 
@@ -61,8 +46,8 @@ type 'a value =
 type handler = {
   is_in_loadpath : string -> bool;
   raw_interp : string -> unit;
-  interp : bool * string -> int;
-  rewind : int -> int;
+  interp : bool * string -> unit;
+  rewind : int -> unit;
   read_stdout : unit -> string;
   current_goals : unit -> goals;
   current_status : unit -> string;

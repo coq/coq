@@ -44,9 +44,9 @@ end
 
 val raw_interp : coqtop -> string -> unit Ide_intf.value
 
-val interp : coqtop -> bool -> string -> int Ide_intf.value
+val interp : coqtop -> bool -> string -> unit Ide_intf.value
 
-val rewind : coqtop -> int -> int Ide_intf.value
+val rewind : coqtop -> int -> unit Ide_intf.value
 
 val read_stdout : coqtop -> string Ide_intf.value
 

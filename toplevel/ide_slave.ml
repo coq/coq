@@ -247,8 +247,7 @@ let parsable_of_string s =
 let eval_expr loc_ast =
   let rewind_info = compute_reset_info loc_ast in
   Vernac.eval_expr loc_ast;
-  Stack.push rewind_info com_stk;
-  Stack.length com_stk
+  Stack.push rewind_info com_stk
 
 let raw_interp s =
   Vernac.eval_expr (Vernac.parse_sentence (parsable_of_string s,None))
@@ -277,10 +276,9 @@ let interp (verbosely,s) =
     if not (is_vernac_goal_printing_command vernac) then
       (* Verbose if in small step forward and not a tactic *)
       Flags.make_silent (not verbosely);
-    let stack_depth = eval_expr (loc,vernac) in
+    eval_expr (loc,vernac);
     Flags.make_silent true;
     prerr_endline ("...Done with interp of : "^s);
-    stack_depth
   with Vernac.End_of_input -> assert false
 
 let rewind count =
@@ -336,8 +334,7 @@ let rewind count =
             end
           end
   in
-  do_rewind count NoReset current_proofs None;
-  Stack.length com_stk
+  do_rewind count NoReset current_proofs None
 
 let is_in_loadpath dir =
   Library.is_in_load_paths (System.physical_path_of_string dir)

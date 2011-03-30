@@ -82,7 +82,7 @@ object('self)
   method send_to_coq :
     bool -> bool -> string ->
       bool -> bool -> bool ->
-	(bool*int) option
+	bool option
   method set_message : string -> unit
   method show_goals : unit
   method show_goals_full : unit
@@ -833,7 +833,7 @@ object(self)
       prerr_endline "Send_to_coq starting now";
       match Coq.interp mycoqtop verbosely phrase with
         | Ide_intf.Fail (l,str) -> sync display_error (l,str); None
-        | Ide_intf.Good r ->
+        | Ide_intf.Good () ->
           match Coq.read_stdout mycoqtop with
             | Ide_intf.Fail (_,str) ->
               self#set_message
@@ -841,7 +841,11 @@ object(self)
               None
             | Ide_intf.Good msg ->
               sync display_output msg;
-              Some (true,r)
+	      (* TODO: restore the access to Decl_mode.get_daemon_flag, and
+		 also detect if an admit has been used. Answering "false"
+		 in these cases would trigger a particular coloring
+		 (cf. Tags.Script.unjustified) *)
+              Some true
     with
       | e ->
         sync display_error (Coq.process_exn e); None
@@ -909,7 +913,7 @@ object(self)
         input_view#set_editable true;
         pop_info ();
       end in
-    let mark_processed reset_info is_complete (start,stop) =
+    let mark_processed is_complete (start,stop) =
       let b = input_buffer in
       b#move_mark ~where:stop (`NAME "start_of_input");
       b#apply_tag
@@ -929,14 +933,14 @@ object(self)
           None -> false
         | Some (loc,phrase) ->
           (match self#send_to_coq verbosely false phrase true true true with
-            | Some (is_complete,reset_info) ->
-              sync (mark_processed reset_info is_complete) loc; true
+            | Some is_complete ->
+              sync (mark_processed is_complete) loc; true
             | None -> sync remove_tag loc; false)
     end
 
   method insert_this_phrase_on_success
     show_output show_msg localize coqphrase insertphrase =
-    let mark_processed reset_info is_complete =
+    let mark_processed is_complete =
       let stop = self#get_start_of_input in
       if stop#starts_line then
         input_buffer#insert ~iter:stop insertphrase
@@ -977,8 +981,8 @@ object(self)
 	 | _ -> ())
 	 with _ -> ()*) in
     match self#send_to_coq false false coqphrase show_output show_msg localize with
-      | Some (is_complete,reset_info) ->
-        sync (mark_processed reset_info) is_complete; true
+      | Some is_complete ->
+        sync mark_processed is_complete; true
       | None ->
         sync
           (fun _ -> self#insert_message ("Unsuccessfully tried: "^coqphrase))
@@ -1057,7 +1061,7 @@ object(self)
               ("Error while backtracking :\n" ^ str ^ "\n" ^
 	       "CoqIDE and coqtop may be out of sync," ^
 	       "you may want to use Restart.")
-          | Ide_intf.Good _ ->
+          | Ide_intf.Good () ->
             sync (fun _ ->
               let start =
                 if Stack.is_empty cmd_stack then input_buffer#start_iter
@@ -1122,7 +1126,7 @@ object(self)
             self#show_goals;
             self#clear_message
           in
-          ignore ((Coq.rewind mycoqtop 1));
+          ignore (Coq.rewind mycoqtop 1);
           sync update_input ()
         with
           | Stack.Empty -> (* flash_info "Nothing to Undo"*)()
@@ -1209,7 +1213,7 @@ object(self)
 		| Ide_intf.Fail (l,str) ->
 		  self#set_message
 		    ("Couln't add loadpath:\n"^str)
-		| Ide_intf.Good _ -> ()
+		| Ide_intf.Good () -> ()
   end
 
   method electric_handler =
