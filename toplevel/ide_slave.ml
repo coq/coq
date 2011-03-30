@@ -546,6 +546,11 @@ let eval_call c =
   in
   Ide_intf.abstract_eval_call handler handle_exn c
 
+let pr_debug s =
+  if !Flags.debug then begin
+    Printf.eprintf "[pid %d] %s\n" (Unix.getpid ()) s; flush stderr
+  end
+
 (** Exceptions during eval_call should be converted into Ide_intf.Fail
     messages by explain_exn above. Otherwise, we die badly, after having
     tried to send a last message to the ide: trying to recover from errors
@@ -559,11 +564,14 @@ let loop () =
   try
     while true do
       let q = (Marshal.from_channel: in_channel -> 'a Ide_intf.call) stdin in
+      pr_debug ("<-- " ^ Ide_intf.pr_call q);
       let r = eval_call q in
+      pr_debug ("--> " ^ Ide_intf.pr_value r);
       Marshal.to_channel !orig_stdout r []; flush !orig_stdout
     done
   with e ->
     let msg = Printexc.to_string e in
     let r = Ide_intf.Fail (None, "Fatal exception in coqtop:\n" ^ msg) in
+    pr_debug ("==> " ^ Ide_intf.pr_value r);
     (try Marshal.to_channel !orig_stdout r []; flush !orig_stdout with _ -> ());
     exit 1

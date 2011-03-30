@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** * Interface of calls to Coq by CoqIde *)
+(** * Interface of CoqIde calls to Coq *)
 
 type 'a menu = 'a * (string * string) list
 
@@ -16,16 +16,33 @@ type goals =
 
 type 'a call
 
-val raw_interp : string -> unit call
+(** Running a command. The boolean is a verbosity flag.
+    Output will be fetch later via [read_stdout]. *)
 val interp : bool * string -> unit call
+
+(** Running a command with no impact on the undo stack,
+    such as a query or a Set/Unset.
+    Output will be fetch later via [read_stdout]. *)
+val raw_interp : string -> unit call
+
+(** What messages have been displayed by coqtop recently ? *)
+val read_stdout : string call
+
+(** Backtracking by a certain number of phrases. *)
 val rewind : int -> unit call
+
+(** Is a file present somewhere in Coq's loadpath ? *)
 val is_in_loadpath : string -> bool call
+
+(** Create a "match" template for a given inductive type *)
 val make_cases : string -> string list list call
+
 (** The status, for instance "Ready in SomeSection, proving Foo" *)
 val current_status : string call
+
+(** Fetching the list of current goals *)
 val current_goals : goals call
-(** What has been displayed by coqtop recently ? *)
-val read_stdout : string call
+
 
 (** * Coq answers to CoqIde *)
 
@@ -36,11 +53,11 @@ type 'a value =
   | Fail of (location * string)
 
 type handler = {
-  is_in_loadpath : string -> bool;
-  raw_interp : string -> unit;
   interp : bool * string -> unit;
-  rewind : int -> unit;
+  raw_interp : string -> unit;
   read_stdout : unit -> string;
+  rewind : int -> unit;
+  is_in_loadpath : string -> bool;
   current_goals : unit -> goals;
   current_status : unit -> string;
   make_cases : string -> string list list;
@@ -49,3 +66,8 @@ type handler = {
 val abstract_eval_call :
   handler -> (exn -> location * string) ->
   'a call -> 'a value
+
+(** * Debug printing *)
+
+val pr_call : 'a call -> string
+val pr_value : 'a value -> string

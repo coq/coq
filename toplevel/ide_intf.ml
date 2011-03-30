@@ -26,11 +26,11 @@ type 'a call =
   | Cur_status
   | Cases of string
 
-let is_in_loadpath s : bool call = In_loadpath s
-let raw_interp s : unit call = Raw_interp s
 let interp (b,s) : unit call = Interp (b,s)
-let rewind i : unit call = Rewind i
+let raw_interp s : unit call = Raw_interp s
 let read_stdout : string call = Read_stdout
+let rewind i : unit call = Rewind i
+let is_in_loadpath s : bool call = In_loadpath s
 let current_goals : goals call = Cur_goals
 let current_status : string call = Cur_status
 let make_cases s : string list list call = Cases s
@@ -44,11 +44,11 @@ type 'a value =
   | Fail of (location * string)
 
 type handler = {
-  is_in_loadpath : string -> bool;
-  raw_interp : string -> unit;
   interp : bool * string -> unit;
-  rewind : int -> unit;
+  raw_interp : string -> unit;
   read_stdout : unit -> string;
+  rewind : int -> unit;
+  is_in_loadpath : string -> bool;
   current_goals : unit -> goals;
   current_status : unit -> string;
   make_cases : string -> string list list;
@@ -69,3 +69,19 @@ let abstract_eval_call handler explain_exn c =
   with e ->
     let (l,str) = explain_exn e in
     Fail (l,str)
+
+(** * Debug printing *)
+
+let pr_call = function
+  | In_loadpath s -> "In_loadpath["^s^"]"
+  | Raw_interp s -> "Raw_interp["^s^"]"
+  | Interp (b,s) -> "Interp["^(if b then "true" else "false")^","^s^"]"
+  | Rewind i -> "Rewind["^(string_of_int i)^"]"
+  | Read_stdout -> "Read_stdout"
+  | Cur_goals -> "Cur_goals"
+  | Cur_status -> "Cur_status"
+  | Cases s -> "Cases["^s^"]"
+
+let pr_value = function
+  | Good _ -> "Good"
+  | Fail (_,str) -> "Fail["^str^"]"
