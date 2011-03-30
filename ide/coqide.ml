@@ -7,8 +7,6 @@
 (************************************************************************)
 
 open Preferences
-open Coq
-open Coq.PrintOpt
 open Gtk_parsing
 open Ideutils
 
@@ -17,9 +15,17 @@ type ide_info = {
   stop : GText.mark;
 }
 
+(** Have we used admit or declarative mode's daimon ?
+    If yes, we color differently *)
+
+type safety = Safe | Unsafe
+
+let safety_tag = function
+  | Safe -> Tags.Script.processed
+  | Unsafe -> Tags.Script.unjustified
 
 class type analyzed_views=
-object('self)
+object
   val mutable act_id : GtkSignal.id option
   val mutable deact_id : GtkSignal.id option
   val input_buffer : GText.buffer
@@ -31,6 +37,7 @@ object('self)
   val proof_buffer : GText.buffer
   val proof_view : GText.view
   val cmd_stack : ide_info Stack.t
+  val mycoqtop : Coq.coqtop ref
   val mutable is_active : bool
   val mutable read_only : bool
   val mutable filename : string option
@@ -72,17 +79,11 @@ object('self)
   method insert_command : string -> string -> unit
   method tactic_wizard : string list -> unit
   method insert_message : string -> unit
-  method insert_this_phrase_on_success :
-    bool -> bool -> bool -> string -> string -> bool
   method process_next_phrase : bool -> bool -> bool -> bool
   method process_until_iter_or_error : GText.iter -> unit
   method process_until_end_or_error : unit
   method recenter_insert : unit
   method reset_initial : bool -> unit
-  method send_to_coq :
-    bool -> bool -> string ->
-      bool -> bool -> bool ->
-	bool option
   method set_message : string -> unit
   method show_goals : unit
   method show_goals_full : unit
@@ -100,13 +101,13 @@ type viewable_script =
      proof_view : GText.view;
      message_view : GText.view;
      analyzed_view : analyzed_views;
-     toplvl : Coq.coqtop;
+     toplvl : Coq.coqtop ref;
      command : Command_windows.command_window;
     }
 
 let kill_session s =
   s.analyzed_view#kill_detached_views ();
-  Coq.kill_coqtop s.toplvl
+  Coq.kill_coqtop !(s.toplvl)
 
 let build_session s =
   let session_paned = GPack.paned `VERTICAL () in
@@ -177,6 +178,12 @@ let update_notebook_pos () =
 
 let to_do_on_page_switch = ref []
 
+
+(** * Coqide's handling of signals *)
+
+(** We ignore Ctrl-C, and for most of the other catchable signals
+    we launch an emergency save of opened files and then exit *)
+
 let signals_to_crash = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup;
 			Sys.sigill; Sys.sigpipe; Sys.sigquit;
 			(* Sys.sigsegv; Sys.sigterm;*) Sys.sigusr2]
@@ -211,6 +218,9 @@ let ignore_break () =
     signals_to_crash;
   Sys.set_signal Sys.sigint Sys.Signal_ignore
 
+
+(** * Locks *)
+
 (* Locking machinery for Coq kernel *)
 let coq_computing = Mutex.create ()
 
@@ -219,7 +229,7 @@ let coq_may_stop = Mutex.create ()
 
 let break () =
   prerr_endline "User break received";
-  Coq.break_coqtop session_notebook#current_term.toplvl
+  Coq.break_coqtop !(session_notebook#current_term.toplvl)
 
 let force_reset_initial () =
   prerr_endline "Reset Initial";
@@ -303,22 +313,24 @@ let remove_current_view_page () =
       | 2 -> do_remove ()
       | _ -> ()
 
+module Opt = Coq.PrintOpt
 
 let print_items = [
-  ([implicit],"Display _implicit arguments",GdkKeysyms._i,false);
-  ([coercions],"Display _coercions",GdkKeysyms._c,false);
-  ([raw_matching],"Display raw _matching expressions",GdkKeysyms._m,true);
-  ([notations],"Display _notations",GdkKeysyms._n,true);
-  ([all_basic],"Display _all basic low-level contents",GdkKeysyms._a,false);
-  ([existential],"Display _existential variable instances",GdkKeysyms._e,false);
-  ([universes],"Display _universe levels",GdkKeysyms._u,false);
-  ([all_basic;existential;universes],"Display all _low-level contents",GdkKeysyms._l,false)
+  ([Opt.implicit],"Display _implicit arguments",GdkKeysyms._i,false);
+  ([Opt.coercions],"Display _coercions",GdkKeysyms._c,false);
+  ([Opt.raw_matching],"Display raw _matching expressions",GdkKeysyms._m,true);
+  ([Opt.notations],"Display _notations",GdkKeysyms._n,true);
+  ([Opt.all_basic],"Display _all basic low-level contents",GdkKeysyms._a,false);
+  ([Opt.existential],"Display _existential variable instances",GdkKeysyms._e,false);
+  ([Opt.universes],"Display _universe levels",GdkKeysyms._u,false);
+  ([Opt.all_basic;Opt.existential;Opt.universes],
+   "Display all _low-level contents",GdkKeysyms._l,false)
 ]
 
 let setopts ct opts v =
   List.fold_left
     (fun acc o ->
-      match set ct o v with
+      match Coq.PrintOpt.set ct o v with
         | Ide_intf.Good () -> acc
         | Ide_intf.Fail lstr -> Ide_intf.Fail lstr
     ) (Ide_intf.Good ()) opts
@@ -405,23 +417,21 @@ exception Found
 (* For find_phrase_starting_at *)
 exception Stop of int
 
+let tag_of_sort = function
+  | Coq_lex.Comment -> Tags.Script.comment
+  | Coq_lex.Keyword -> Tags.Script.kwd
+  | Coq_lex.Declaration -> Tags.Script.decl
+  | Coq_lex.ProofDeclaration -> Tags.Script.proof_decl
+  | Coq_lex.Qed -> Tags.Script.qed
+  | Coq_lex.String -> failwith "No tag"
+
 let apply_tag (buffer:GText.buffer) orig off_conv from upto sort =
-  let conv_and_apply start stop tag =
+  try
+    let tag = tag_of_sort sort in
     let start = orig#forward_chars (off_conv from) in
     let stop = orig#forward_chars (off_conv upto) in
     buffer#apply_tag ~start ~stop tag
-  in match sort with
-    | Coq_lex.Comment ->
-      conv_and_apply from upto Tags.Script.comment
-    | Coq_lex.Keyword ->
-      conv_and_apply from upto Tags.Script.kwd
-    | Coq_lex.Declaration ->
-      conv_and_apply from upto Tags.Script.decl
-    | Coq_lex.ProofDeclaration ->
-      conv_and_apply from upto Tags.Script.proof_decl
-    | Coq_lex.Qed ->
-      conv_and_apply from upto Tags.Script.qed
-    | Coq_lex.String -> ()
+  with _ -> ()
 
 let remove_tags (buffer:GText.buffer) from upto =
   List.iter (buffer#remove_tag ~start:from ~stop:upto)
@@ -789,7 +799,7 @@ object(self)
         else
           (fun _ _ -> ()) in
       try
-        match Coq.goals mycoqtop with
+        match Coq.current_goals !mycoqtop with
           | Ide_intf.Fail (l,str) ->
             self#set_message ("Error in coqtop :\n"^str)
           | Ide_intf.Good goals ->
@@ -802,7 +812,7 @@ object(self)
 
   method show_goals = self#show_goals_full
 
-  method send_to_coq verbosely replace phrase show_output show_error localize =
+  method private send_to_coq ct verbosely phrase show_output show_error localize =
     let display_output msg =
       self#insert_message (if show_output then msg else "") in
     let display_error (loc,s) =
@@ -831,21 +841,18 @@ object(self)
     try
       full_goal_done <- false;
       prerr_endline "Send_to_coq starting now";
-      match Coq.interp mycoqtop verbosely phrase with
+      (* It's important here to work with [ct] and not [!mycoqtop], otherwise
+         we could miss a restart of coqtop and continue sending it orders. *)
+      match Coq.interp ct verbosely phrase with
         | Ide_intf.Fail (l,str) -> sync display_error (l,str); None
         | Ide_intf.Good () ->
-          match Coq.read_stdout mycoqtop with
-            | Ide_intf.Fail (_,str) ->
-              self#set_message
-                ("interp successful but unable to fetch goal, please report bug:\n"^str);
-              None
+	  match Coq.read_stdout ct with
+            | Ide_intf.Fail (l,str) -> sync display_error (l,str); None
             | Ide_intf.Good msg ->
               sync display_output msg;
-	      (* TODO: restore the access to Decl_mode.get_daemon_flag, and
-		 also detect if an admit has been used. Answering "false"
-		 in these cases would trigger a particular coloring
-		 (cf. Tags.Script.unjustified) *)
-              Some true
+	      (** TODO: Restore someday the access to Decl_mode.get_damon_flag,
+		  and also detect the use of admit, and then return Unsafe *)
+              Some Safe
     with
       | e ->
         sync display_error (Coq.process_exn e); None
@@ -884,7 +891,7 @@ object(self)
       end else false
     else false
 
-  method process_next_phrase verbosely display_goals do_highlight =
+  method private process_next_phrase_full ct verbosely display_goals do_highlight =
     let get_next_phrase () =
       self#clear_message;
       prerr_endline "process_next_phrase starting now";
@@ -913,11 +920,10 @@ object(self)
         input_view#set_editable true;
         pop_info ();
       end in
-    let mark_processed is_complete (start,stop) =
+    let mark_processed safe (start,stop) =
       let b = input_buffer in
       b#move_mark ~where:stop (`NAME "start_of_input");
-      b#apply_tag
-        (if is_complete then Tags.Script.processed else Tags.Script.unjustified) ~start ~stop;
+      b#apply_tag (safety_tag safe) ~start ~stop;
       if (self#get_insert#compare) stop <= 0 then
         begin
           b#place_cursor ~where:stop;
@@ -932,23 +938,24 @@ object(self)
       match sync get_next_phrase () with
           None -> false
         | Some (loc,phrase) ->
-          (match self#send_to_coq verbosely false phrase true true true with
-            | Some is_complete ->
-              sync (mark_processed is_complete) loc; true
+          (match self#send_to_coq ct verbosely phrase true true true with
+            | Some safe -> sync mark_processed safe loc; true
             | None -> sync remove_tag loc; false)
     end
 
-  method insert_this_phrase_on_success
+  method process_next_phrase verbosely display_goals do_highlight =
+    self#process_next_phrase_full !mycoqtop verbosely display_goals do_highlight
+
+  method private insert_this_phrase_on_success
     show_output show_msg localize coqphrase insertphrase =
-    let mark_processed is_complete =
+    let mark_processed safe =
       let stop = self#get_start_of_input in
       if stop#starts_line then
         input_buffer#insert ~iter:stop insertphrase
       else input_buffer#insert ~iter:stop ("\n"^insertphrase);
       let start = self#get_start_of_input in
       input_buffer#move_mark ~where:stop (`NAME "start_of_input");
-      input_buffer#apply_tag
-        (if is_complete then Tags.Script.processed else Tags.Script.unjustified) ~start ~stop;
+      input_buffer#apply_tag (safety_tag safe) ~start ~stop;
       if (self#get_insert#compare) stop <= 0 then
         input_buffer#place_cursor ~where:stop;
       let ide_payload = { start = `MARK (input_buffer#create_mark start);
@@ -980,9 +987,8 @@ object(self)
 	 | None -> ())
 	 | _ -> ())
 	 with _ -> ()*) in
-    match self#send_to_coq false false coqphrase show_output show_msg localize with
-      | Some is_complete ->
-        sync mark_processed is_complete; true
+    match self#send_to_coq !mycoqtop false coqphrase show_output show_msg localize with
+      | Some safe -> sync mark_processed safe; true
       | None ->
         sync
           (fun _ -> self#insert_message ("Unsuccessfully tried: "^coqphrase))
@@ -1006,8 +1012,13 @@ object(self)
         self#get_start_of_input
       end
     in
+    (* All the [process_next_phrase] below should be done with the same [ct]
+       instead of accessing multiple time [mycoqtop]. Otherwise a restart of
+       coqtop could go unnoticed, and the new coqtop could receive strange
+       things. *)
+    let ct = !mycoqtop in
     while ((stop#compare (get_current())>=0)
-           && (self#process_next_phrase false false false))
+           && (self#process_next_phrase_full ct false false false))
     do () done;
     sync (fun _ ->
       self#show_goals;
@@ -1022,7 +1033,7 @@ object(self)
     self#process_until_iter_or_error input_buffer#end_iter
 
   method reset_initial mustlock =
-    Coq.reset_coqtop mycoqtop;
+    mycoqtop := Coq.reset_coqtop !mycoqtop;
     if mustlock then Mutex.lock coq_computing;
     sync (fun _ ->
       Stack.iter
@@ -1055,7 +1066,7 @@ object(self)
     in
     begin
       try
-        match Coq.rewind mycoqtop (n_step 0) with
+        match Coq.rewind !mycoqtop (n_step 0) with
           | Ide_intf.Fail (l,str) ->
             sync self#set_message
               ("Error while backtracking :\n" ^ str ^ "\n" ^
@@ -1126,7 +1137,7 @@ object(self)
             self#show_goals;
             self#clear_message
           in
-          ignore (Coq.rewind mycoqtop 1);
+          ignore (Coq.rewind !mycoqtop 1);
           sync update_input ()
         with
           | Stack.Empty -> (* flash_info "Nothing to Undo"*)()
@@ -1202,18 +1213,18 @@ object(self)
       | None -> ()
       | Some f ->
 	let dir = Filename.dirname f in
-	match Coq.is_in_loadpath mycoqtop dir with
+	let ct = !mycoqtop in
+	match Coq.is_in_loadpath ct dir with
 	  | Ide_intf.Fail (_,str) ->
 	    self#set_message
 	      ("Could not determine lodpath, this might lead to problems:\n"^str)
 	  | Ide_intf.Good true -> ()
 	  | Ide_intf.Good false ->
-	    match Coq.interp mycoqtop false
-              (Printf.sprintf "Add LoadPath \"%s\". "  dir) with
-		| Ide_intf.Fail (l,str) ->
-		  self#set_message
-		    ("Couln't add loadpath:\n"^str)
-		| Ide_intf.Good () -> ()
+	    let cmd = Printf.sprintf "Add LoadPath \"%s\". "  dir in
+	    match Coq.interp ct false cmd with
+	      | Ide_intf.Fail (l,str) ->
+		self#set_message ("Couln't add loadpath:\n"^str)
+	      | Ide_intf.Good () -> ()
   end
 
   method electric_handler =
@@ -1397,16 +1408,11 @@ let create_session () =
     GText.view
       ~buffer:(GText.buffer ~tag_table:Tags.Message.table ())
       ~editable:false ~wrap_mode:`WORD () in
-  let basename =
-    GMisc.label ~text:"*scratch*" () in
-  let stack =
-    Stack.create () in
-  let ct =
-    spawn_coqtop !sup_args in
-  let command =
-    new Command_windows.command_window ct in
-  let legacy_av =
-    new analyzed_view script proof message stack ct in
+  let basename = GMisc.label ~text:"*scratch*" () in
+  let stack = Stack.create () in
+  let ct = ref (Coq.spawn_coqtop !sup_args) in
+  let command = new Command_windows.command_window !ct in
+  let legacy_av = new analyzed_view script proof message stack ct in
   let _ =
     script#buffer#create_mark ~name:"start_of_input" script#buffer#start_iter in
   let _ =
@@ -1414,7 +1420,7 @@ let create_session () =
   let _ =
     GtkBase.Widget.add_events proof#as_widget [`ENTER_NOTIFY;`POINTER_MOTION] in
   let _ =
-    List.map (fun (opts,_,_,dflt) -> setopts ct opts dflt) print_items in
+    List.map (fun (opts,_,_,dflt) -> setopts !ct opts dflt) print_items in
   let _ = legacy_av#activate () in
   let _ =
     proof#event#connect#motion_notify ~callback:
@@ -2272,7 +2278,7 @@ let main files =
         ignore (f av);
         pop_info ();
         push_info
-          (match Coq.current_status current.toplvl with
+          (match Coq.current_status !(current.toplvl) with
             | Ide_intf.Fail (l,str) ->
 	      "Oops, problem while fetching coq status."
             | Ide_intf.Good str -> str)
@@ -2511,7 +2517,7 @@ let main files =
   (* Template for match *)
   let callback () =
     let w = get_current_word () in
-    let cur_ct = session_notebook#current_term.toplvl in
+    let cur_ct = !(session_notebook#current_term.toplvl) in
     try
       match Coq.make_cases cur_ct w with
         | Ide_intf.Fail _ -> raise Not_found
@@ -2668,7 +2674,7 @@ let main files =
       (fun (opts,text,key,dflt) ->
         view_factory#add_check_item ~key ~active:dflt text
           ~callback:(fun v -> do_or_activate (fun a ->
-            ignore (setopts session_notebook#current_term.toplvl opts v);
+            ignore (setopts !(session_notebook#current_term.toplvl) opts v);
             a#show_goals) ()))
       print_items
   in
@@ -3182,7 +3188,7 @@ let set_coqtop_path argv =
 
 let process_argv argv =
   try
-    let continue,filtered = filter_coq_opts (List.tl argv) in
+    let continue,filtered = Coq.filter_coq_opts (List.tl argv) in
     if not continue then
       (List.iter Pervasives.prerr_endline filtered; exit 0);
     let opts = List.filter (fun arg -> String.get arg 0 == '-') filtered in

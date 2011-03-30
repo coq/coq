@@ -8,15 +8,10 @@
 
 open Ideutils
 
-type coqtop = {
-  mutable pid : int;
-  mutable cout : in_channel ;
-  mutable cin : out_channel ;
-  sup_args : string list;
-  mutable version : int ;
-}
-
 let prerr_endline s = if !debug then prerr_endline s else ()
+
+
+(** * Version and date *)
 
 let get_version_date () =
   let date =
@@ -47,6 +42,9 @@ let version () =
       (let x,y,z = GMain.Main.version in Printf.sprintf "%d.%d.%d" x y z)
       (Filename.basename Sys.executable_name)
       Coq_config.best
+
+
+(** * Initial checks by launching test coqtop processes *)
 
 let rec read_all_lines in_chan =
   try
@@ -110,24 +108,30 @@ let check_coqlib args =
       List.iter Pervasives.prerr_endline lines;
       exit 1
 
-let eval_call coqtop (c:'a Ide_intf.call) =
-  Marshal.to_channel coqtop.cin c [];
-  flush coqtop.cin;
-  (Marshal.from_channel: in_channel -> 'a Ide_intf.value) coqtop.cout
 
-let is_in_loadpath coqtop s = eval_call coqtop (Ide_intf.is_in_loadpath s)
- 
-let raw_interp coqtop s = eval_call coqtop (Ide_intf.raw_interp s)
+(** * The structure describing a coqtop sub-process *)
 
-let interp coqtop b s = eval_call coqtop (Ide_intf.interp (b,s))
+type coqtop = {
+  pid : int; (* Unix process id *)
+  cout : in_channel ;
+  cin : out_channel ;
+  sup_args : string list;
+}
 
-let rewind coqtop i = eval_call coqtop (Ide_intf.rewind i)
- 
-let read_stdout coqtop = eval_call coqtop Ide_intf.read_stdout
+(** * Count of all active coqtops *)
 
 let toplvl_ctr = ref 0
 
 let toplvl_ctr_mtx = Mutex.create ()
+
+let coqtop_zombies () =
+  Mutex.lock toplvl_ctr_mtx;
+  let res = !toplvl_ctr in
+  Mutex.unlock toplvl_ctr_mtx;
+  res
+
+
+(** * Starting / signaling / ending a real coqtop sub-process *)
 
 (** We simulate a Unix.open_process that also returns the pid of
     the created process. Note: this uses Unix.create_process, which
@@ -157,7 +161,7 @@ let spawn_coqtop sup_args =
     let (pid,ic,oc) = open_process_pid prog args in
     incr toplvl_ctr;
     Mutex.unlock toplvl_ctr_mtx;
-    { pid = pid; cin = oc; cout = ic ; sup_args = sup_args ; version = 0 }
+    { pid = pid; cin = oc; cout = ic ; sup_args = sup_args }
   with e ->
     Mutex.unlock toplvl_ctr_mtx;
     raise e
@@ -179,19 +183,31 @@ let blocking_kill pid =
 let kill_coqtop coqtop =
   ignore (Thread.create blocking_kill coqtop.pid)
 
-let coqtop_zombies =
-  (fun () ->
-     Mutex.lock toplvl_ctr_mtx;
-     let res = !toplvl_ctr in
-     Mutex.unlock toplvl_ctr_mtx;
-     res)
-
 let reset_coqtop coqtop =
   kill_coqtop coqtop;
-  let ni = spawn_coqtop coqtop.sup_args in
-  coqtop.cin <- ni.cin;
-  coqtop.cout <- ni.cout;
-  coqtop.pid <- ni.pid
+  spawn_coqtop coqtop.sup_args
+
+let process_exn = function
+  | End_of_file -> None, "Coqtop died"
+  | e -> None, Printexc.to_string e
+
+
+(** * Calls to coqtop *)
+
+(** Cf [Ide_intf] for more details *)
+
+let eval_call coqtop (c:'a Ide_intf.call) =
+  Marshal.to_channel coqtop.cin c [];
+  flush coqtop.cin;
+  (Marshal.from_channel: in_channel -> 'a Ide_intf.value) coqtop.cout
+
+let interp coqtop b s = eval_call coqtop (Ide_intf.interp (b,s))
+let raw_interp coqtop s = eval_call coqtop (Ide_intf.raw_interp s)
+let read_stdout coqtop = eval_call coqtop Ide_intf.read_stdout
+let rewind coqtop i = eval_call coqtop (Ide_intf.rewind i)
+let is_in_loadpath coqtop s = eval_call coqtop (Ide_intf.is_in_loadpath s)
+let make_cases coqtop s = eval_call coqtop (Ide_intf.make_cases s)
+let current_status coqtop = eval_call coqtop Ide_intf.current_status
 
 module PrintOpt =
 struct
@@ -228,15 +244,8 @@ struct
     state_hack (Ide_intf.Good ())
 end
 
-let process_exn = function
-  | End_of_file -> None, "Coqtop died"
-  | e -> None, Printexc.to_string e
-
-let goals coqtop =
+let current_goals coqtop =
   match PrintOpt.enforce_hack coqtop with
     | Ide_intf.Good () -> eval_call coqtop Ide_intf.current_goals
     | Ide_intf.Fail str -> Ide_intf.Fail str
 
-let make_cases coqtop s = eval_call coqtop (Ide_intf.make_cases s)
-
-let current_status coqtop = eval_call coqtop Ide_intf.current_status
