@@ -214,14 +214,29 @@ Module ZnZ.
 
  Let wB := base digits.
 
- Definition WO h :=
+ Definition WO' (eq0:t->bool) zero h :=
   if eq0 h then W0 else WW h zero.
 
- Definition OW l :=
+ Definition WO := Eval lazy beta delta [WO'] in
+   let eq0 := ZnZ.eq0 in
+   let zero := ZnZ.zero in
+   WO' eq0 zero.
+
+ Definition OW' (eq0:t->bool) zero l :=
   if eq0 l then W0 else WW zero l.
 
- Definition WW h l :=
-  if eq0 h then OW l else WW h l.
+ Definition OW := Eval lazy beta delta [OW'] in
+   let eq0 := ZnZ.eq0 in
+   let zero := ZnZ.zero in
+   OW' eq0 zero.
+
+ Definition WW'  (eq0:t->bool) zero h l :=
+  if eq0 h then OW' eq0 zero l else WW h l.
+
+ Definition WW := Eval lazy beta delta [WW' OW'] in
+   let eq0 := ZnZ.eq0 in
+   let zero := ZnZ.zero in
+   WW' eq0 zero.
 
  Lemma spec_WO : forall h,
    zn2z_to_Z wB to_Z (WO h) = (to_Z h)*wB.
@@ -247,6 +262,7 @@ Module ZnZ.
  unfold WW; simpl; intros.
  case_eq (eq0 h); intros.
  rewrite (spec_eq0 _ H); auto.
+ fold (OW l).
  rewrite spec_OW; auto.
  simpl; auto.
  Qed.

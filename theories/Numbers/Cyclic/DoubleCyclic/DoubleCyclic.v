@@ -103,9 +103,9 @@ Section Z_2nZ.
 
  Let to_Z := zn2z_to_Z wB w_to_Z.
 
- Let w_W0 (x:t) := ZnZ.WO x.
- Let w_0W (x:t) := ZnZ.OW x.
- Let w_WW (x y:t) := ZnZ.WW x y.
+ Let w_W0 := ZnZ.WO.
+ Let w_0W := ZnZ.OW.
+ Let w_WW := ZnZ.WW.
 
  Let ww_of_pos p :=
   match w_of_pos p with
