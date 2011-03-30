@@ -78,7 +78,7 @@ object('self)
   method process_until_iter_or_error : GText.iter -> unit
   method process_until_end_or_error : unit
   method recenter_insert : unit
-  method reset_initial : unit
+  method reset_initial : bool -> unit
   method send_to_coq :
     bool -> bool -> string ->
       bool -> bool -> bool ->
@@ -223,7 +223,7 @@ let break () =
 
 let force_reset_initial () =
   prerr_endline "Reset Initial";
-  session_notebook#current_term.analyzed_view#reset_initial
+  session_notebook#current_term.analyzed_view#reset_initial true
 
 let do_if_not_computing text f x =
   let threaded_task () =
@@ -233,7 +233,7 @@ let do_if_not_computing text f x =
 	List.iter
           (fun elt -> try f elt with
             | Sys_error str ->
-              elt.analyzed_view#reset_initial;
+              elt.analyzed_view#reset_initial false;
               elt.analyzed_view#set_message
                 ("Unable to communicate with coqtop, restarting coqtop.\n"^
 		    "Error was: "^str)
@@ -593,7 +593,7 @@ object(self)
         let do_revert () = begin
           push_info "Reverting buffer";
           try
-            if is_active then self#reset_initial;
+            if is_active then self#reset_initial false;
             let b = Buffer.create 1024 in
             with_file flash_info f ~f:(input_channel b);
             let s = try_convert (Buffer.contents b) in
@@ -1017,7 +1017,9 @@ object(self)
   method process_until_end_or_error =
     self#process_until_iter_or_error input_buffer#end_iter
 
-  method reset_initial =
+  method reset_initial mustlock =
+    Coq.reset_coqtop mycoqtop;
+    if mustlock then Mutex.lock coq_computing;
     sync (fun _ ->
       Stack.iter
         (function inf ->
@@ -1032,7 +1034,7 @@ object(self)
         cmd_stack;
       Stack.clear cmd_stack;
       self#clear_message)();
-    Coq.reset_coqtop mycoqtop
+    if mustlock then Mutex.unlock coq_computing
 
   (* backtrack Coq to the phrase preceding iterator [i] *)
   method backtrack_to_no_lock i =
