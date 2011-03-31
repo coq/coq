@@ -747,16 +747,22 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
       try
 	(* Adjusts to the number of arguments expected by the notation *)
 	let (t,args,argsscopes,argsimpls) = match t,n with
-	  | GApp (_,(GRef (_,ref) as f),args), Some n
+	  | GApp (_,f,args), Some n
 	      when List.length args >= n ->
 	      let args1, args2 = list_chop n args in
-	      let subscopes =
-		try list_skipn n (find_arguments_scope ref) with _ -> [] in
-	      let impls =
-		let impls =
-		  select_impargs_size
-		    (List.length args) (implicits_of_global ref) in
-		try list_skipn n impls with _ -> [] in
+              let subscopes, impls =
+                match f with
+                | GRef (_,ref) ->
+	          let subscopes =
+		    try list_skipn n (find_arguments_scope ref) with _ -> [] in
+	          let impls =
+		    let impls =
+		      select_impargs_size
+		        (List.length args) (implicits_of_global ref) in
+		    try list_skipn n impls with _ -> [] in
+                  subscopes,impls
+                | _ ->
+                  [], [] in
 	      (if n = 0 then f else GApp (dummy_loc,f,args1)),
 	      args2, subscopes, impls
 	  | GApp (_,(GRef (_,ref) as f),args), None ->

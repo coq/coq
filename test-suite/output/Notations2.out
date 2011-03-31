@@ -25,3 +25,5 @@ let '(a, _, _) := (2, 3, 4) in a
 Defining 'let'' as keyword
 let' f (x y z : nat) (_ : bool) := x + y + z + 1 in f 0 1 2
      : bool -> nat
+λ (f : nat -> nat) (x : nat), f(x) + S(x)
+     : (nat -> nat) -> nat -> nat

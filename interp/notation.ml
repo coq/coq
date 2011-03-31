@@ -187,10 +187,14 @@ type key =
 let notations_key_table = ref Gmapl.empty
 let prim_token_key_table = Hashtbl.create 7
 
-let glob_constr_key = function
-  | GApp (_,GRef (_,ref),_) -> RefKey (canonical_gr ref)
-  | GRef (_,ref) -> RefKey (canonical_gr ref)
+let glob_prim_constr_key = function
+  | GApp (_,GRef (_,ref),_) | GRef (_,ref) -> RefKey (canonical_gr ref)
   | _ -> Oth
+
+let glob_constr_keys = function
+  | GApp (_,GRef (_,ref),_) -> [RefKey (canonical_gr ref); Oth]
+  | GRef (_,ref) -> [RefKey (canonical_gr ref)]
+  | _ -> [Oth]
 
 let cases_pattern_key = function
   | PatCstr (_,ref,_,_) -> RefKey (canonical_gr (ConstructRef ref))
@@ -201,6 +205,7 @@ let aconstr_key = function (* Rem: AApp(ARef ref,[]) stands for @ref *)
   | AList (_,_,AApp (ARef ref,args),_,_)
   | ABinderList (_,_,AApp (ARef ref,args),_) -> RefKey (canonical_gr ref), Some (List.length args)
   | ARef ref -> RefKey(canonical_gr ref), None
+  | AApp (_,args) -> Oth, Some (List.length args)
   | _ -> Oth, None
 
 (**********************************************************************)
@@ -234,7 +239,8 @@ let declare_prim_token_interpreter sc interp (patl,uninterp,b) =
   declare_scope sc;
   add_prim_token_interpreter sc interp;
   List.iter (fun pat ->
-      Hashtbl.add prim_token_key_table (glob_constr_key pat) (sc,uninterp,b))
+      Hashtbl.add prim_token_key_table
+        (glob_prim_constr_key pat) (sc,uninterp,b))
     patl
 
 let mkNumeral n = Numeral n
@@ -369,8 +375,11 @@ let rec interp_notation loc ntn local_scopes =
     user_err_loc
     (loc,"",str ("Unknown interpretation for notation \""^ntn^"\"."))
 
+let isGApp = function GApp _ -> true | _ -> false
+
 let uninterp_notations c =
-  Gmapl.find (glob_constr_key c) !notations_key_table
+  list_map_append (fun key -> Gmapl.find key !notations_key_table)
+    (glob_constr_keys c)
 
 let uninterp_cases_pattern_notations c =
   Gmapl.find (cases_pattern_key c) !notations_key_table
@@ -382,7 +391,8 @@ let availability_of_notation (ntn_scope,ntn) scopes =
 
 let uninterp_prim_token c =
   try
-    let (sc,numpr,_) = Hashtbl.find prim_token_key_table (glob_constr_key c) in
+    let (sc,numpr,_) =
+      Hashtbl.find prim_token_key_table (glob_prim_constr_key c) in
     match numpr c with
       | None -> raise No_match
       | Some n -> (sc,n)

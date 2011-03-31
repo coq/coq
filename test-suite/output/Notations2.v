@@ -55,6 +55,11 @@ Notation "'let'' f x .. y  :=  t 'in' u":=
 
 Check let' f x y z (a:bool) := x+y+z+1 in f 0 1 2.
 
+(* In practice, only the printing rule is used here *)
+(* Note: does not work for pattern *)
+Notation "f ( x )" := (f x) (at level 10, format "f ( x )").
+Check fun f x => f x + S x.
+
 (* This one is not fully satisfactory because binders in the same type
    are re-factorized and parentheses are needed even for atomic binder
 
