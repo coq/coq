@@ -310,7 +310,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 
 	| _, _ ->
 	let f1 i =
-	  if flex1 = flex2 then
+	  if eq_constr flex1 flex2 then
 	    ise_list2 i (fun i -> evar_conv_x ts env i CONV) l1 l2
 	  else
 	     (i,false)
