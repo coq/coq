@@ -197,7 +197,7 @@ let coqdep () =
     let coqlib = Envars.coqlib () in
     add_rec_dir add_coqlib_known (coqlib//"theories") ["Coq"];
     add_rec_dir add_coqlib_known (coqlib//"plugins") ["Coq"];
-    add_dir add_coqlib_known (coqlib//"user-contrib") []
+    add_rec_dir add_coqlib_known (coqlib//"user-contrib") []
   end;
   List.iter (fun (f,d) -> add_mli_known f d) !mliAccu;
   List.iter (fun (f,d) -> add_mllib_known f d) !mllibAccu;

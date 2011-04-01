@@ -425,8 +425,7 @@ let rec add_directory recur add_file phys_dir log_dir =
 	  | S_DIR when recur ->
 	      if List.mem phys_f !norecdir_list then ()
 	      else
-		let log_dir' = if log_dir = [] then ["Coq"] else log_dir@[f] in
-		add_directory recur add_file phys_f log_dir'
+		add_directory recur add_file phys_f (log_dir@[f])
 	  | S_REG -> add_file phys_dir log_dir f
 	  | _ -> ()
     done
