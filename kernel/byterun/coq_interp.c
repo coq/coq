@@ -14,6 +14,7 @@
    for fast computation of bounded (31bits) integers */
 
 #include <stdio.h>
+#include <signal.h>
 #include "coq_gc.h"
 #include "coq_instruct.h"
 #include "coq_fix_code.h"
@@ -149,6 +150,12 @@ sp is a local copy of the global variable extern_sp. */
 #define JUMPTBL_BASE_REG asm("39")
 #endif
 #endif
+
+/* For signal handling, we highjack some code from the caml runtime */
+
+extern intnat caml_signals_are_pending;
+extern intnat caml_pending_signals[];
+extern void caml_process_pending_signals(void);
 
 /* The interpreter itself */
 
@@ -407,8 +414,13 @@ value coq_interprete
 	realloc_coq_stack(Coq_stack_threshold);
 	sp = coq_sp;
       }
+      /* We also check for signals */
+      if (caml_signals_are_pending) {
+	/* If there's a Ctrl-C, we reset the vm */
+	if (caml_pending_signals[SIGINT]) { coq_sp = coq_stack_high; }
+	caml_process_pending_signals();
+      }
       Next;
-      /* Fall through CHECK_SIGNALS */
 
       Instruct(APPTERM) {
 	int nargs = *pc++;
