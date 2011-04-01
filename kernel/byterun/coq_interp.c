@@ -151,7 +151,7 @@ sp is a local copy of the global variable extern_sp. */
 #endif
 #endif
 
-/* For signal handling, we highjack some code from the caml runtime */
+/* For signal handling, we hijack some code from the caml runtime */
 
 extern intnat caml_signals_are_pending;
 extern intnat caml_pending_signals[];

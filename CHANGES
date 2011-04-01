@@ -12,6 +12,12 @@ Changes from V8.3 to V8.4
   implicit arguments aren't taken into account in partial applications. Use eta
   expansion.
 
+- Coqide now runs coqtop as separated process, making it more robust:
+  coqtop subprocess can be interrupted (TODO check Win32), or even
+  killed and relaunched (cf button "Restart Coq", ex-"Go to Start").
+
+- Vm_compute can now be interrupted via Ctrl-C.
+
 Tactics
 
 - New tactics constr_eq, is_evar and has_evar.
