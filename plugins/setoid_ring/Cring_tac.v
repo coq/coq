@@ -207,6 +207,12 @@ Ltac cring:=
           cring_gen; cring_compute
   end.
 
+(* Pierre L: these tests should be done in a section, otherwise
+   global axioms are generated. Ideally such tests should go in
+   the test-suite directory *)
+
+Section Tests.
+
 (* Tests *)
 
 Variable R: Type.
@@ -221,7 +227,7 @@ Qed.
 sinon, le reste de la tactique donne le même temps que ring 
 *)
 Goal forall x y z  t u :R, (x + y + z + t + u)^13 == (u + t + z + y + x) ^13.
-Time cring. (*Finished transaction in 0. secs (0.410938u,0.s)*)
+(*Time*) cring. (*Finished transaction in 0. secs (0.410938u,0.s)*)
 Qed.
 (*
 Goal forall x y z  t u :R, (x + y + z + t + u)^16 == (u + t + z + y + x) ^16.
@@ -264,3 +270,4 @@ cring.
 Qed.
 *)
 
+End Tests.

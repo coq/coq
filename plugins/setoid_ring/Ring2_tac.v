@@ -156,6 +156,11 @@ Lemma Zeqb_ok: forall x y : Z, Zeq_bool x y = true -> x == y.
            end
        end
    end.
+
+(* Pierre L: these tests should be done in a section, otherwise
+   global axioms are generated. Ideally such tests should go in
+   the test-suite directory *)
+Section Tests.
  
 Ltac ring2:= 
   unset_ring_notations; intros;
@@ -188,3 +193,5 @@ Qed.
 Goal forall x:R,    2%Z * (x * x) == 3%Z * x.
 Admitted.
 *)
+
+End Tests.
