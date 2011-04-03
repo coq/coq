@@ -75,6 +75,9 @@ Libraries
 
 Internal infrastructure
 
+- Opaque proofs are now loaded lazily by default. This allows to be almost as
+  fast as -dont-load-proofs, while being safer (no creation of axioms) and
+  avoiding feature restrictions (Print and Print Assumptions work ok).
 - Experimental support added for camlp4 (the one provided alongside ocaml),
   simply pass option -usecamlp4 to ./configure. By default camlp5 is used.
 - Revised build system: no more stages in Makefile thanks to some recursive
