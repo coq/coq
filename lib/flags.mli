@@ -21,7 +21,8 @@ val term_quality : bool ref
 
 val xml_export : bool ref
 
-val load_proofs : bool ref
+type load_proofs = Force | Lazy | Dont
+val load_proofs : load_proofs ref
 
 val raw_print : bool ref
 

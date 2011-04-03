@@ -33,12 +33,8 @@ sig
   type table 
   type lightened_compiled_library 
 
-  (** [load lpf get_table lcl] builds a compiled library from a
+  (** [load table lcl] builds a compiled library from a
       lightened library [lcl] by remplacing every index by its related
-      opaque terms inside the table obtained by [get_table ()].  
-      If [lpf] is unset then the table is considered empty, which 
-      implies that [get_table] is not evaluated and every index 
-      is replaced by [None] inside the compiled library. *)
-  val load : load_proof:bool -> (unit -> table) 
-    -> lightened_compiled_library -> compiled_library
+      opaque terms inside [table]. *)
+  val load : table -> lightened_compiled_library -> compiled_library
 end

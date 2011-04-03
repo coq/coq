@@ -120,9 +120,9 @@ let const_of_id id =
 let def_of_const t =
    match (Term.kind_of_term t) with
     Term.Const sp ->
-      (try (match (Global.lookup_constant sp) with
-             {Declarations.const_body=Some c} -> Declarations.force c
-	     |_ -> assert false)
+      (try (match Declarations.body_of_constant (Global.lookup_constant sp) with
+             | Some c -> Declarations.force c
+	     | _ -> assert false)
        with _ -> assert false)
     |_ -> assert false
 

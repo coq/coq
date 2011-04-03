@@ -834,7 +834,7 @@ let make_graph (f_ref:global_reference) =
       | _ -> raise (UserError ("", str "Not a function reference") )
   in
   Dumpglob.pause ();
-  (match c_body.const_body with
+  (match body_of_constant c_body with
      | None -> error "Cannot build a graph over an axiom !"
      | Some b ->
 	 let env = Global.env () in

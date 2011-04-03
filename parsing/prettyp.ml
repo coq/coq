@@ -163,10 +163,11 @@ let opacity env = function
       Some(TransparentMaybeOpacified (Conv_oracle.get_strategy(VarKey v)))
   | ConstRef cst ->
       let cb = Environ.lookup_constant cst env in
-      if cb.const_body = None then None
-      else if cb.const_opaque then Some FullyOpaque
-      else Some
-        (TransparentMaybeOpacified (Conv_oracle.get_strategy(ConstKey cst)))
+      (match cb.const_body with
+	| Undef _ -> None
+	| OpaqueDef _ -> Some FullyOpaque
+	| Def _ -> Some
+          (TransparentMaybeOpacified (Conv_oracle.get_strategy(ConstKey cst))))
   | _ -> None
 
 let print_opacity ref =
@@ -439,7 +440,7 @@ let ungeneralized_type_of_constant_type = function
 
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
-  let val_0 = cb.const_body in
+  let val_0 = body_of_constant cb in
   let typ = ungeneralized_type_of_constant_type cb.const_type in
   hov 0 (
     match val_0 with
@@ -586,22 +587,21 @@ let print_full_pure_context () =
       | "CONSTANT" ->
 	  let con = Global.constant_of_delta (constant_of_kn kn) in
 	  let cb = Global.lookup_constant con in
-	  let val_0 = cb.const_body in
 	  let typ = ungeneralized_type_of_constant_type cb.const_type in
 	  hov 0 (
-	    match val_0 with
-	    | None ->
-		str (if cb.const_opaque then "Axiom " else "Parameter ") ++
+	    match cb.const_body with
+	      | Undef _ ->
+		str "Parameter " ++
 		print_basename con ++ str " : " ++ cut () ++ pr_ltype typ
-	    | Some v ->
-		if cb.const_opaque then
-		  str "Theorem " ++ print_basename con ++ cut () ++
-		  str " : " ++ pr_ltype typ ++ str "." ++ fnl () ++
-		  str "Proof " ++ print_body val_0
-		else
-		  str "Definition " ++ print_basename con ++ cut () ++
-		  str "  : " ++ pr_ltype typ ++ cut () ++ str " := " ++
-		  print_body val_0) ++ str "." ++ fnl () ++ fnl ()
+	      | OpaqueDef lc ->
+		str "Theorem " ++ print_basename con ++ cut () ++
+		str " : " ++ pr_ltype typ ++ str "." ++ fnl () ++
+		str "Proof " ++ pr_lconstr (Declarations.force_opaque lc)
+	      | Def c ->
+		str "Definition " ++ print_basename con ++ cut () ++
+		str "  : " ++ pr_ltype typ ++ cut () ++ str " := " ++
+		pr_lconstr (Declarations.force c))
+          ++ str "." ++ fnl () ++ fnl ()
       | "INDUCTIVE" ->
 	  let mind = Global.mind_of_delta (mind_of_kn kn) in
 	  let (mib,mip) = Global.lookup_inductive (mind,0) in
@@ -686,7 +686,7 @@ let print_opaque_name qid =
   match global qid with
     | ConstRef cst ->
 	let cb = Global.lookup_constant cst in
-        if cb.const_body <> None then
+        if constant_has_body cb then
 	  print_constant_with_infos cst
         else
 	  error "Not a defined constant."

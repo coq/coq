@@ -253,21 +253,27 @@ type global_declaration =
   | ConstantEntry of constant_entry
   | GlobalRecipe of Cooking.recipe
 
-let hcons_constant_type = function
+let hcons_const_type = function
   | NonPolymorphicType t ->
       NonPolymorphicType (hcons1_constr t)
   | PolymorphicArity (ctx,s) ->
       PolymorphicArity (map_rel_context hcons1_constr ctx,s)
 
+let hcons_const_body = function
+  | Undef inl -> Undef inl
+  | Def l_constr ->
+    let constr = Declarations.force l_constr in
+    Def (Declarations.from_val (hcons1_constr constr))
+  | OpaqueDef lc ->
+    if lazy_constr_is_val lc then
+      let constr = Declarations.force_opaque lc in
+      OpaqueDef (Declarations.opaque_from_val (hcons1_constr constr))
+    else OpaqueDef lc
+
 let hcons_constant_body cb =
-  let body = match cb.const_body with
-      None -> None
-    | Some l_constr -> let constr = Declarations.force l_constr in
-	Some (Declarations.from_val (hcons1_constr constr))
-  in
-    { cb with
-	const_body = body;
-	const_type = hcons_constant_type cb.const_type }
+  { cb with
+    const_body = hcons_const_body cb.const_body;
+    const_type = hcons_const_type cb.const_type }
 
 let add_constant dir l decl senv =
   check_label l senv.labset;
@@ -280,9 +286,10 @@ let add_constant dir l decl senv =
 	    if dir = empty_dirpath then hcons_constant_body cb else cb
   in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
-  let senv'' = match cb.const_inline with
-    | None -> senv'
-    | Some lev -> update_resolver (add_inline_delta_resolver kn lev) senv'
+  let senv'' = match cb.const_body with
+    | Undef (Some lev) ->
+      update_resolver (add_inline_delta_resolver kn lev) senv'
+    | _ -> senv'
   in
   kn, senv''
 
@@ -768,15 +775,20 @@ module LightenLibrary : sig
   type table 
   type lightened_compiled_library 
   val save : compiled_library -> lightened_compiled_library * table
-  val load : load_proof:bool -> (unit -> table) 
+  val load : load_proof:Flags.load_proofs -> table Lazy.t
     -> lightened_compiled_library -> compiled_library
 end = struct
 
   (* The table is implemented as an array of [constr_substituted].
-     Thus, its keys are integers which can be easily embedded inside
-     [constr_substituted]. This way the [compiled_library] type does
-     not have to be changed. *)
+     Keys are hence integers. To avoid changing the [compiled_library]
+     type, we brutally encode integers into [lazy_constr]. This isn't
+     pretty, but shouldn't be dangerous since the produced structure
+     [lightened_compiled_library] is abstract and only meant for writing
+     to .vo via Marshal (which doesn't care about types).
+  *)
   type table = constr_substituted array
+  let key_as_lazy_constr (i:int) = (Obj.magic i : lazy_constr)
+  let key_of_lazy_constr (c:lazy_constr) = (Obj.magic c : int)
 
   (* To avoid any future misuse of the lightened library that could 
      interpret encoded keys as real [constr_substituted], we hide 
@@ -806,9 +818,9 @@ end = struct
 	    }    
     and traverse_struct struc =
       let traverse_body (l,body) = (l,match body with
-	| SFBconst ({const_opaque=true} as x) -> 
-	  SFBconst {x with const_body = on_opaque_const_body x.const_body }
-	| (SFBconst _ | SFBmind _ ) as x -> 
+	| SFBconst cb when is_opaque cb ->
+	  SFBconst {cb with const_body = on_opaque_const_body cb.const_body}
+	| (SFBconst _ | SFBmind _ ) as x ->
 	  x
 	| SFBmodule m -> 
 	  SFBmodule (traverse_module m)
@@ -837,31 +849,29 @@ end = struct
      traverse it and add an indirection between the module body 
      and its reference to a [const_body]. *)
   let save library = 
-    let ((insert    : constr_substituted -> constr_substituted), 
+    let ((insert    : constant_def -> constant_def),
 	 (get_table : unit -> table)) = 
       (* We use an integer as a key inside the table. *)
       let counter = ref (-1) in
-      (* ... but it is wrapped inside a [constr_substituted]. *)
-      let key_as_constr key = Declarations.from_val (Term.mkRel key) in
 
       (* During the traversal, the table is implemented by a list 
 	 to get constant time insertion. *)
       let opaque_definitions = ref [] in
       
       ((* Insert inside the table. *) 
-	(fun opaque_definition -> 
-	incr counter; 
-	opaque_definitions := opaque_definition :: !opaque_definitions;
-	key_as_constr !counter), 
+	(fun def ->
+	  let opaque_definition = match def with
+	    | OpaqueDef lc -> force_lazy_constr lc
+	    | _ -> assert false
+	  in
+	  incr counter;
+	  opaque_definitions := opaque_definition :: !opaque_definitions;
+	  OpaqueDef (key_as_lazy_constr !counter)),
 
        (* Get the final table representation. *)
        (fun () -> Array.of_list (List.rev !opaque_definitions)))
     in
-    let encode_const_body : constr_substituted option -> constr_substituted option = function
-      | None -> None
-      | Some ct -> Some (insert ct)
-    in
-    let lightened_library = traverse_library encode_const_body library in
+    let lightened_library = traverse_library insert library in
     (lightened_library, get_table ())
 
   (* Loading is also a traversing that decodes the embedded keys that
@@ -870,19 +880,24 @@ end = struct
      [constr_substituted]. Otherwise, we set the [const_body] field
      to [None]. 
   *)
-  let load ~load_proof (get_table : unit -> table) lightened_library = 
-    let decode_key : constr_substituted option -> constr_substituted option = 
-      if load_proof then 
-	let table = get_table () in
-	function Some cterm -> 
-	  Some (try 
-		  table.(Term.destRel (Declarations.force cterm))
-	    with _ -> 
-	      assert false
-	  )
-	  | _ -> None
-      else 
-	fun _ -> None
+  let load ~load_proof (table : table Lazy.t) lightened_library =
+    let decode_key = function
+      | Undef _ | Def _ -> assert false
+      | OpaqueDef k ->
+	  let k = key_of_lazy_constr k in
+	  let access key =
+	    try (Lazy.force table).(key)
+	    with _ -> error "Error while retrieving an opaque body"
+	  in
+	  match load_proof with
+	    | Flags.Force ->
+	      let lc = Lazy.lazy_from_val (access k) in
+	      OpaqueDef (make_lazy_constr lc)
+	    | Flags.Lazy ->
+	      let lc = lazy (access k) in
+	      OpaqueDef (make_lazy_constr lc)
+	    | Flags.Dont ->
+	      Undef None
     in
     traverse_library decode_key lightened_library
 

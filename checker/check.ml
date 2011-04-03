@@ -270,10 +270,10 @@ let with_magic_number_check f a =
 (************************************************************************)
 (* Internalise libraries *)
 
-let mk_library md f get_table digest = {
+let mk_library md f table digest = {
   library_name = md.md_name;
   library_filename = f;
-  library_compiled = Safe_typing.LightenLibrary.load ~load_proof:true get_table md.md_compiled;
+  library_compiled = Safe_typing.LightenLibrary.load table md.md_compiled;
   library_deps = md.md_deps;
   library_digest = digest }
 
@@ -287,24 +287,21 @@ let depgraph = ref LibraryMap.empty
 
 let intern_from_file (dir, f) =
   Flags.if_verbose msg (str"[intern "++str f++str" ...");
-  let (md,get_table,close,digest) =
+  let (md,table,digest) =
     try
       let ch = with_magic_number_check raw_intern_library f in
       let (md:library_disk) = System.marshal_in ch in
       let digest = System.marshal_in ch in
-      let get_table () = 
-	(System.marshal_in ch : Safe_typing.LightenLibrary.table) 
-      in
+      let table = (System.marshal_in ch : Safe_typing.LightenLibrary.table) in
+      close_in ch;
       if dir <> md.md_name then
         errorlabstrm "load_physical_library"
           (name_clash_message dir md.md_name f);
       Flags.if_verbose msgnl(str" done]");
-      md,get_table,(fun () -> close_in ch),digest
+      md,table,digest
     with e -> Flags.if_verbose msgnl(str" failed!]"); raise e in
   depgraph := LibraryMap.add md.md_name md.md_deps !depgraph;
-  let library = mk_library md f get_table digest in
-  close ();
-  library
+  mk_library md f table digest
 
 let get_deps (dir, f) =
   try LibraryMap.find dir !depgraph

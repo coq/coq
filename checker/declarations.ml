@@ -478,27 +478,67 @@ let val_cstr_subst = val_substituted val_constr
 
 let subst_constr_subst = subst_substituted
 
-type inline = int option (* inlining level, None for no inlining *)
+(** Beware! In .vo files, lazy_constr are stored as integers
+   used as indexes for a separate table. The actual lazy_constr is restored
+   later, by [Safe_typing.LightenLibrary.load]. This allows us
+   to use here a different definition of lazy_constr than coqtop:
+   since the checker will inspect all proofs parts, even opaque
+   ones, no need to use Lazy.t here *)
+
+type lazy_constr = constr_substituted
+let subst_lazy_constr = subst_substituted
+let force_lazy_constr = force_constr
+let lazy_constr_from_val c = c
+let val_lazy_constr = val_cstr_subst
+
+(** Inlining level of parameters at functor applications.
+    This is ignored by the checker. *)
+
+type inline = int option
+
+(** A constant can have no body (axiom/parameter), or a
+    transparent body, or an opaque one *)
+
+type constant_def =
+  | Undef of inline
+  | Def of constr_substituted
+  | OpaqueDef of lazy_constr
+
+let val_cst_def =
+  val_sum "constant_def" 0
+    [|[|val_opt val_int|]; [|val_cstr_subst|]; [|val_lazy_constr|]|]
+
+let subst_constant_def sub = function
+  | Undef inl -> Undef inl
+  | Def c -> Def (subst_constr_subst sub c)
+  | OpaqueDef lc -> OpaqueDef (subst_lazy_constr sub lc)
 
 type constant_body = {
     const_hyps : section_context; (* New: younger hyp at top *)
-    const_body : constr_substituted option;
+    const_body : constant_def;
     const_type : constant_type;
     const_body_code : to_patch_substituted;
-   (* const_type_code : Cemitcodes.to_patch; *)
-    const_constraints : Univ.constraints;
-    const_opaque : bool;
-    const_inline : inline }
+    const_constraints : Univ.constraints }
+
+let body_of_constant cb = match cb.const_body with
+  | Undef _ -> None
+  | Def c -> Some c
+  | OpaqueDef c -> Some c
+
+let constant_has_body cb = match cb.const_body with
+  | Undef _ -> false
+  | Def _ | OpaqueDef _ -> true
+
+let is_opaque cb = match cb.const_body with
+  | OpaqueDef _ -> true
+  | Def _ | Undef _ -> false
 
 let val_cb = val_tuple ~name:"constant_body"
   [|val_nctxt;
-    val_opt val_cstr_subst;
+    val_cst_def;
     val_cst_type;
     no_val;
-    val_cstrs;
-    val_bool;
-    val_opt val_int |]
-
+    val_cstrs|]
 
 let subst_rel_declaration sub (id,copt,t as x) =
   let copt' = Option.smartmap (subst_mps sub) copt in
@@ -662,13 +702,10 @@ let subst_arity sub = function
 (* TODO: should be changed to non-coping after Term.subst_mps *)
 let subst_const_body sub cb = {
     const_hyps = (assert (cb.const_hyps=[]); []);
-    const_body = Option.map (subst_constr_subst sub) cb.const_body;
+    const_body = subst_constant_def sub cb.const_body;
     const_type = subst_arity sub cb.const_type;
     const_body_code = (*Cemitcodes.subst_to_patch_subst sub*) cb.const_body_code;
-    (*const_type_code = Cemitcodes.subst_to_patch sub cb.const_type_code;*)
-    const_constraints = cb.const_constraints;
-    const_opaque = cb.const_opaque;
-    const_inline = cb.const_inline}
+    const_constraints = cb.const_constraints}
 
 let subst_arity sub = function
 | Monomorphic s ->

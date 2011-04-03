@@ -1205,12 +1205,14 @@ let inline_test r t =
   if not (auto_inline ()) then false
   else
     let c = match r with ConstRef c -> c | _ -> assert false in
-    let body = try (Global.lookup_constant c).const_body with _ -> None in
-    if body = None then false
-    else
-      let t1 = eta_red t in
-      let t2 = snd (collect_lams t1) in
-      not (is_fix t2) && ml_size t < 12 && is_not_strict t
+    let has_body =
+      try constant_has_body (Global.lookup_constant c)
+      with _ -> false
+    in
+    has_body &&
+      (let t1 = eta_red t in
+       let t2 = snd (collect_lams t1) in
+       not (is_fix t2) && ml_size t < 12 && is_not_strict t)
 
 let con_of_string s =
   let null = empty_dirpath in

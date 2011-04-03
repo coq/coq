@@ -77,15 +77,18 @@ type compiled_library =
 module LightenLibrary : sig
   type table 
   type lightened_compiled_library 
-  val load : load_proof:bool -> (unit -> table) 
-    -> lightened_compiled_library -> compiled_library
+  val load : table -> lightened_compiled_library -> compiled_library
 end = struct
 
   (* The table is implemented as an array of [constr_substituted].
-     Thus, its keys are integers which can be easily embedded inside
-     [constr_substituted]. This way the [compiled_library] type does
-     not have to be changed. *)
+     Keys are hence integers. To avoid changing the [compiled_library]
+     type, we brutally encode integers into [lazy_constr]. This isn't
+     pretty, but shouldn't be dangerous since the produced structure
+     [lightened_compiled_library] is abstract and only meant for writing
+     to .vo via Marshal (which doesn't care about types).
+  *)
   type table = constr_substituted array
+  let key_of_lazy_constr (c:lazy_constr) = (Obj.magic c : int)
 
   (* To avoid any future misuse of the lightened library that could 
      interpret encoded keys as real [constr_substituted], we hide 
@@ -115,8 +118,8 @@ end = struct
 	    }    
     and traverse_struct struc =
       let traverse_body (l,body) = (l,match body with
-	| SFBconst ({const_opaque=true} as x) -> 
-	  SFBconst {x with const_body = on_opaque_const_body x.const_body }
+	| (SFBconst cb) when is_opaque cb ->
+	  SFBconst {cb with const_body = on_opaque_const_body cb.const_body}
 	| (SFBconst _ | SFBmind _ ) as x -> 
 	  x
 	| SFBmodule m -> 
@@ -148,21 +151,16 @@ end = struct
      [constr_substituted]. Otherwise, we set the [const_body] field
      to [None]. 
   *)
-  let load ~load_proof (get_table : unit -> table) lightened_library = 
-    let decode_key : constr_substituted option -> constr_substituted option = 
-      if load_proof then 
-	let table = get_table () in
-	function Some cterm -> 
-	  Some (table.(
-	    try 
-	      match Declarations.force_constr cterm with
-		| Term.Rel key -> key
-		| _ -> assert false
-	    with _ -> assert false
-	  ))
-	  | _ -> None
-      else 
-	fun _ -> None
+  let load table lightened_library =
+    let decode_key = function
+      | Undef _ | Def _ -> assert false
+      | OpaqueDef k ->
+          let k = key_of_lazy_constr k in
+	  let body =
+	    try table.(k)
+	    with _ -> error "Error while retrieving an opaque body"
+	  in
+	  OpaqueDef (lazy_constr_from_val body)
     in
     traverse_library decode_key lightened_library
 

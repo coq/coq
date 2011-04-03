@@ -20,7 +20,10 @@ let unfreeze (fl,fs) =
 let (extern_state,intern_state) =
   let (raw_extern, raw_intern) =
     extern_intern Coq_config.state_magic_number ".coq" in
-  (fun s -> raw_extern s (freeze())),
+  (fun s ->
+    if !Flags.load_proofs <> Flags.Force then
+      Util.error "Write State only works with option -force-load-proofs";
+    raw_extern s (freeze())),
   (fun s ->
     unfreeze
       (with_magic_number_check (raw_intern (Library.get_load_paths ())) s);

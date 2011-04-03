@@ -95,19 +95,14 @@ and add_module mb env =
 
 
 let strengthen_const env mp_from l cb resolver = 
-  match cb.const_opaque, cb.const_body with
-  | false, Some _ -> cb
-  | true, Some _ 
-  | _, None ->
+  match cb.const_body with
+    | Def _ -> cb
+    | _ ->
       let con = make_con mp_from empty_dirpath l in
-     (* let con =  constant_of_delta resolver con in*)
-      let const = Const con in 
-      let const_subs = Some (Declarations.from_val const) in
-	{cb with 
-	   const_body = const_subs;
-	   const_opaque = false;
-	}
-	  
+      (* let con =  constant_of_delta resolver con in*)
+      let const = Const con in
+      let def = Def (Declarations.from_val const) in
+      { cb with const_body = def }
 
 let rec strengthen_mod env mp_from mp_to mb = 
   if Declarations.mp_in_delta mb.mod_mp mb.mod_delta then

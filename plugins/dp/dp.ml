@@ -468,7 +468,7 @@ and axiomatize_body env r id d = match r with
   | VarRef _ ->
       assert false
   | ConstRef c ->
-      begin match (Global.lookup_constant c).const_body with
+      begin match body_of_constant (Global.lookup_constant c) with
 	| Some b ->
 	    let b = force b in
 	    let axioms =

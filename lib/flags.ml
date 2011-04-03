@@ -29,7 +29,9 @@ let term_quality = ref false
 
 let xml_export = ref false
 
-let load_proofs = ref true
+type load_proofs = Force | Lazy | Dont
+
+let load_proofs = ref Lazy
 
 let raw_print = ref false
 

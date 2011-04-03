@@ -29,16 +29,40 @@ type constr_substituted
 val force_constr : constr_substituted -> constr
 val from_val : constr -> constr_substituted
 
-type inline = int option (* inlining level, None for no inlining *)
+(** Beware! In .vo files, lazy_constr are stored as integers
+   used as indexes for a separate table. The actual lazy_constr is restored
+   later, by [Safe_typing.LightenLibrary.load]. This allows us
+   to use here a different definition of lazy_constr than coqtop:
+   since the checker will inspect all proofs parts, even opaque
+   ones, no need to use Lazy.t here *)
+
+type lazy_constr
+val force_lazy_constr : lazy_constr -> constr
+val lazy_constr_from_val : constr_substituted -> lazy_constr
+
+(** Inlining level of parameters at functor applications.
+    This is ignored by the checker. *)
+
+type inline = int option
+
+(** A constant can have no body (axiom/parameter), or a
+    transparent body, or an opaque one *)
+
+type constant_def =
+  | Undef of inline
+  | Def of constr_substituted
+  | OpaqueDef of lazy_constr
 
 type constant_body = {
     const_hyps : section_context; (* New: younger hyp at top *)
-    const_body : constr_substituted option;
+    const_body : constant_def;
     const_type : constant_type;
     const_body_code : to_patch_substituted;
-    const_constraints : Univ.constraints;
-    const_opaque : bool;
-    const_inline : inline }
+    const_constraints : Univ.constraints }
+
+val body_of_constant : constant_body -> constr_substituted option
+val constant_has_body : constant_body -> bool
+val is_opaque : constant_body -> bool
 
 (* Mutual inductives *)
 

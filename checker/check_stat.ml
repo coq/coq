@@ -37,7 +37,7 @@ let cst_filter f csts =
     (fun c ce acc -> if f c ce then c::acc else acc)
     csts []
 
-let is_ax _ cb = cb.const_body = None
+let is_ax _ cb = not (constant_has_body cb)
 
 let pr_ax csts =
   let axs = cst_filter is_ax csts in

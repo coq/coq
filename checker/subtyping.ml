@@ -237,22 +237,26 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
     match info1 with
       | Constant cb1 ->
 	assert (cb1.const_hyps=[] && cb2.const_hyps=[]) ;
-	  (*Start by checking types*)
-	  let cb1 = subst_const_body subst1 cb1 in
-	  let cb2 = subst_const_body subst2 cb2 in
-	  let typ1 = Typeops.type_of_constant_type env cb1.const_type in
-	  let typ2 = Typeops.type_of_constant_type env cb2.const_type in
-	    check_type env typ1 typ2;
-	  let con = make_con mp1 empty_dirpath l in
-	    (match cb2 with
-               | {const_body=Some lc2;const_opaque=false} ->
-		   let c2 = force_constr lc2 in
-		   let c1 = match cb1.const_body with
-		     | Some lc1 -> force_constr lc1
-		     | None -> Const con
-		   in
-		     check_conv conv env c1 c2
-               | _ -> ())
+	let cb1 = subst_const_body subst1 cb1 in
+	let cb2 = subst_const_body subst2 cb2 in
+	(*Start by checking types*)
+	let typ1 = Typeops.type_of_constant_type env cb1.const_type in
+	let typ2 = Typeops.type_of_constant_type env cb2.const_type in
+	check_type env typ1 typ2;
+	(* Now we check the bodies *)
+	(match cb2.const_body with
+	  | Undef _ -> ()
+	  | Def lc2 ->
+	    (* Only a transparent cb1 can implement a transparent cb2.
+	       NB: cb1 might have been strengthened and appear as transparent.
+	       Anyway [check_conv] will handle that afterwards. *)
+	    (match cb1.const_body with
+	      | Undef _ | OpaqueDef _ -> error ()
+	      | Def lc1 ->
+		let c1 = force_constr lc1 in
+		let c2 = force_constr lc2 in
+		check_conv conv env c1 c2)
+	  | OpaqueDef lc2 -> ()) (* Pierre L. : this looks really strange ?! *)
       | IndType ((kn,i),mind1) ->
 	  ignore (Util.error (
 		    "The kernel does not recognize yet that a parameter can be " ^
@@ -260,7 +264,7 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
 		      "inductive type and give a definition to map the old name to the new " ^
 		      "name."));
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
-      if cb2.const_body <> None then error () ;
+      if constant_has_body cb2 then error () ;
       let arity1 = type_of_inductive env (mind1,mind1.mind_packets.(i)) in
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
        check_conv conv_leq env arity1 typ2
@@ -271,7 +275,7 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
        "constructor and give a definition to map the old name to the new " ^
        "name."));
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
-      if cb2.const_body <> None then error () ;
+      if constant_has_body cb2 then error () ;
       let ty1 = type_of_constructor cstr (mind1,mind1.mind_packets.(i)) in
       let ty2 = Typeops.type_of_constant_type env cb2.const_type in
        check_conv conv env ty1 ty2

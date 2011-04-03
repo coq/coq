@@ -290,21 +290,17 @@ and add_module mb env =
       | _ -> anomaly "Modops:the evaluation of the structure failed "
 
 let strengthen_const env mp_from l cb resolver = 
-  match cb.const_opaque, cb.const_body with
-  | false, Some _ -> cb
-  | true, Some _ 
-  | _, None ->
+  match cb.const_body with
+    | Def _ -> cb
+    | _ ->
       let con = make_con mp_from empty_dirpath l in
       let con =  constant_of_delta resolver con in
       let const = mkConst con in 
-      let const_subs = Some (Declarations.from_val const) in
-	{cb with 
-	   const_body = const_subs;
-	   const_opaque = false;
-	   const_body_code = Cemitcodes.from_val
-            (compile_constant_body env const_subs false)
-	}
-	  
+      let def = Def (Declarations.from_val const) in
+      { cb with
+	const_body = def;
+	const_body_code = Cemitcodes.from_val (compile_constant_body env def)
+      }
 
 let rec strengthen_mod env mp_from mp_to mb = 
   if mp_in_delta mb.mod_mp mb.mod_delta then
@@ -401,10 +397,9 @@ let inline_delta_resolver env inl mp mbid mtb delta =
 	try
 	  let constant = lookup_constant con' env in
 	  let l = make_inline delta r in
-	  if constant.Declarations.const_opaque then l
-	  else match constant.Declarations.const_body with
-	    | None -> l
-	    | Some body ->
+	  match constant.const_body with
+	    | Undef _ | OpaqueDef _ -> l
+	    | Def body ->
 	      let constr = Declarations.force body in
 	      add_inline_constr_delta_resolver con lev constr l
 	with Not_found ->

@@ -245,7 +245,7 @@ let rec extract_type env db j c args =
 	(match flag_of_type env typ with
 	   | (Info, TypeScheme) ->
 	       let mlt = extract_type_app env db (r, type_sign env typ) args in
-	       (match cb.const_body with
+	       (match body_of_constant cb with
 		  | None -> mlt
 		  | Some _ when is_custom r -> mlt
 		  | Some lbody ->
@@ -258,7 +258,7 @@ let rec extract_type env db j c args =
 		      (* If possible, we take [mlt], otherwise [mlt']. *)
 		      if expand env mlt = expand env mlt' then mlt else mlt')
 	   | _ -> (* only other case here: Info, Default, i.e. not an ML type *)
-	       (match cb.const_body with
+	       (match body_of_constant cb with
 		  | None -> Tunknown (* Brutal approximation ... *)
 		  | Some lbody ->
 		      (* We try to reduce. *)
@@ -478,7 +478,7 @@ and mlt_env env r = match r with
        with Not_found ->
 	 let cb = Environ.lookup_constant kn env in
 	 let typ = Typeops.type_of_constant_type env cb.const_type in
-	 match cb.const_body with
+	 match body_of_constant cb with
 	   | None -> None
 	   | Some l_body ->
 	       (match flag_of_type env typ with
@@ -904,15 +904,9 @@ let extract_fixpoint env vkn (fi,ti,ci) =
 let extract_constant env kn cb =
   let r = ConstRef kn in
   let typ = Typeops.type_of_constant_type env cb.const_type in
-  let warn_info_none () =
-    if not (is_custom r) then begin
-      add_info_axiom r;
-      if not !Flags.load_proofs && cb.const_opaque then add_opaque_ko r
-    end
-  in
-  let warn_info_some () = if cb.const_opaque then add_opaque_ok r
-  in
-  match cb.const_body with
+  let warn_info_none () = if not (is_custom r) then add_info_axiom r in
+  let warn_info_some () = if is_opaque cb then add_opaque r in
+  match body_of_constant cb with
     | None ->
         (match flag_of_type env typ with
 	   | (Info,TypeScheme) ->
@@ -951,7 +945,7 @@ let extract_constant_spec env kn cb =
     | (Logic, Default) -> Sval (r, Tdummy Kother)
     | (Info, TypeScheme) ->
 	let s,vl = type_sign_vl env typ in
-	(match cb.const_body with
+	(match body_of_constant cb with
 	  | None -> Stype (r, vl, None)
 	  | Some body ->
 	      let db = db_from_sign s in
@@ -966,7 +960,7 @@ let extract_with_type env cb =
   match flag_of_type env typ with
     | (Info, TypeScheme) ->
 	let s,vl = type_sign_vl env typ in
-	let body = Option.get cb.const_body in
+	let body = Option.get (body_of_constant cb) in
 	let db = db_from_sign s in
 	let t = extract_type_scheme env db (force body) (List.length s) in
 	Some (vl, t)

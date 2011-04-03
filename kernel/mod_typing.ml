@@ -84,40 +84,41 @@ and check_with_aux_def env sign with_decl mp equiv =
           | With_Definition ([],_) -> assert false
 	  | With_Definition ([id],c) ->
 	      let cb = match spec with
-		  SFBconst cb -> cb
+		| SFBconst cb -> cb
 		| _ -> error_not_a_constant l
 	      in
-		begin
-		  match cb.const_body with
-		    | None ->
-			let (j,cst1) = Typeops.infer env' c in
-			let typ = Typeops.type_of_constant_type env' cb.const_type in
-			let cst2 = Reduction.conv_leq env' j.uj_type typ in
-			let cst =
-			  union_constraints
-			    (union_constraints cb.const_constraints cst1)
-			    cst2 in
-			let body = Some (Declarations.from_val j.uj_val) in
-			let cb' = {cb with
-				     const_body = body;
-				     const_body_code = Cemitcodes.from_val
-                            (compile_constant_body env' body false);
-                                     const_constraints = cst} in
-			  SEBstruct(before@((l,SFBconst(cb'))::after)),cb',cst
-		    | Some b ->
-			let cst1 = Reduction.conv env' c (Declarations.force b) in
-			let cst = union_constraints cb.const_constraints cst1 in
-			let body = Some (Declarations.from_val c) in
-			let cb' = {cb with
-				     const_body = body;
-				     const_body_code = Cemitcodes.from_val
-                            (compile_constant_body env' body false);
-                                     const_constraints = cst} in
-			  SEBstruct(before@((l,SFBconst(cb'))::after)),cb',cst
-	      end
+	      let def,cst = match cb.const_body with
+		| Undef _ ->
+		    let (j,cst1) = Typeops.infer env' c in
+		    let typ = Typeops.type_of_constant_type env' cb.const_type in
+		    let cst2 = Reduction.conv_leq env' j.uj_type typ in
+		    let cst =
+		      union_constraints
+			(union_constraints cb.const_constraints cst1)
+			cst2
+		    in
+		    let def = Def (Declarations.from_val j.uj_val) in
+		    def,cst
+		| Def cs ->
+		    let cst1 = Reduction.conv env' c (Declarations.force cs) in
+		    let cst = union_constraints cb.const_constraints cst1 in
+		    let def = Def (Declarations.from_val c) in
+		    def,cst
+		| OpaqueDef _ ->
+		    (* We cannot make transparent an opaque field *)
+		    raise Reduction.NotConvertible
+	      in
+	      let cb' =
+		{ cb with
+		  const_body = def;
+		  const_body_code =
+		    Cemitcodes.from_val (compile_constant_body env' def);
+		  const_constraints = cst }
+	      in
+	      SEBstruct(before@((l,SFBconst(cb'))::after)),cb',cst
 	  | With_Definition (_::_,c) ->
 	      let old = match spec with
-		  SFBmodule msb -> msb
+		| SFBmodule msb -> msb
 		| _ -> error_not_a_module (string_of_label l)
 	      in
 		begin
@@ -136,7 +137,7 @@ and check_with_aux_def env sign with_decl mp equiv =
 		end
 	  | _ -> anomaly "Modtyping:incorrect use of with"
     with
-	Not_found -> error_no_such_label l
+      | Not_found -> error_no_such_label l
       | Reduction.NotConvertible -> error_incorrect_with_constraint l
 
 and check_with_aux_mod env sign with_decl mp equiv = 

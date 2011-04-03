@@ -714,11 +714,9 @@ let compile env c =
   Format.print_flush();  *)
   init_code,!fun_code, Array.of_list fv
 
-let compile_constant_body env body opaque =
-  if opaque then BCconstant
-  else match body with
-  | None -> BCconstant
-  | Some sb ->
+let compile_constant_body env = function
+  | Undef _ | OpaqueDef _ -> BCconstant
+  | Def sb ->
       let body = Declarations.force sb in
       match kind_of_term body with
 	| Const kn' ->

@@ -33,7 +33,7 @@ let check_constant_declaration env kn cb =
         let ty, cu = refresh_arity ty in
         let envty = add_constraints cu env' in
         let _ = infer_type envty ty in
-        (match cb.const_body with
+        (match body_of_constant cb with
           | Some bd ->
               let j = infer env' (force_constr bd) in
               conv_leq envty j ty
@@ -110,14 +110,17 @@ let check_definition_sub env cb1 cb2 =
   let typ1 = Typeops.type_of_constant_type env cb1.const_type in
   let typ2 = Typeops.type_of_constant_type env cb2.const_type in
   check_type env typ1 typ2;
-  (match cb2 with
-    | {const_body=Some lc2;const_opaque=false} ->
-	let c2 = force_constr lc2 in
-	let c1 = match cb1.const_body with
-	  | Some lc1 -> force_constr lc1
-	  | None -> assert false in
-	Reduction.conv env c1 c2
-    | _ -> ())
+  (match cb2.const_body with
+    | Undef _ -> ()
+    | Def lc2 ->
+	(match cb1.const_body with
+	  | Def lc1 ->
+	    let c1 = force_constr lc1 in
+            let c2 = force_constr lc2 in
+	    Reduction.conv env c1 c2
+	  (* Coq only places transparent cb in With_definition_body *)
+	  | _ -> assert false)
+    | _ -> ()) (* Pierre L: shouldn't this case raise an error ? *)
 
 let lookup_modtype mp env =
   try Environ.lookup_modtype mp env

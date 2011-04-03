@@ -253,55 +253,46 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
 
   match info1 with
     | Constant cb1 ->
-	assert (cb1.const_hyps=[] && cb2.const_hyps=[]) ;
-	(*Start by checking types*)
-	let cb1 = subst_const_body subst1 cb1 in
-	let cb2 = subst_const_body subst2 cb2 in
+      assert (cb1.const_hyps=[] && cb2.const_hyps=[]) ;
+      let cb1 = subst_const_body subst1 cb1 in
+      let cb2 = subst_const_body subst2 cb2 in
+      (* Start by checking types*)
       let typ1 = Typeops.type_of_constant_type env cb1.const_type in
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
       let cst = check_type cst env typ1 typ2 in
-      let con = make_con mp1 empty_dirpath l in
-      let cst =
-	if cb2.const_opaque then
-	  (* In this case we compare opaque definitions, we need to bypass
-	     the opacity and do a delta step*)
-	  match cb2.const_body with
-            | None -> cst
-            | Some lc2 ->
-		let c2 = Declarations.force lc2 in
-		let c1 = match cb1.const_body with
-		  | Some lc1 ->
-		      let c = Declarations.force lc1 in
-			begin
-			  match (kind_of_term c),(kind_of_term c2) with
-			      Const n1,Const n2 when (eq_constant n1 n2) -> c
-				(* c1 may have been strenghtened 
-				   we need to unfold it*)
-			    | Const n,_ ->
-				let cb = subst_const_body subst1
-				  (lookup_constant n env) in
-				  (match cb.const_opaque,
-				     cb.const_body with
-				       | true, Some lc1 ->
-					   Declarations.force lc1
-				       | _,_ -> c)
-			    | _ ,_-> c
-			end
-		  | None -> mkConst con
-		in
-		  check_conv NotConvertibleBodyField cst conv env c1 c2
-	else
-	  match cb2.const_body with
-            | None -> cst
-            | Some lc2 ->
-		let c2 = Declarations.force lc2 in
-		let c1 = match cb1.const_body with
-		  | Some lc1 -> Declarations.force lc1
-		  | None -> mkConst con
-		in
-		  check_conv NotConvertibleBodyField cst conv env c1 c2
-      in
-	cst
+      (* Now we check the bodies *)
+      (match cb2.const_body with
+	| Undef _ -> cst
+	| Def lc2 ->
+	  (* Only a transparent cb1 can implement a transparent cb2.
+	     NB: cb1 might have been strengthened and appear as transparent.
+	     Anyway [check_conv] will handle that afterwards. *)
+	  (match cb1.const_body with
+	    | Undef _ | OpaqueDef _ -> error NotConvertibleBodyField
+	    | Def lc1 ->
+	      let c1 = Declarations.force lc1 in
+	      let c2 = Declarations.force lc2 in
+	      check_conv NotConvertibleBodyField cst conv env c1 c2)
+	| OpaqueDef lc2 ->
+	  (* Here cb1 can be either opaque or transparent. We need to
+	     bypass the opacity and possibly do a delta step. *)
+	  (match body_of_constant cb1 with
+	    | None -> error NotConvertibleBodyField
+	    | Some lc1 ->
+	      let c1 = Declarations.force lc1 in
+	      let c2 = Declarations.force_opaque lc2 in
+	      let c1' = match (kind_of_term c1),(kind_of_term c2) with
+		| Const n1,Const n2 when (eq_constant n1 n2) -> c1
+		  (* cb1 may have been strengthened, we need to unfold it: *)
+		| Const n1,_ ->
+		  let cb1' = subst_const_body subst1 (lookup_constant n1 env)
+		  in
+		  (match cb1'.const_body with
+		    | OpaqueDef lc1' -> Declarations.force_opaque lc1'
+		    | _ -> c1)
+		| _,_ -> c1
+	      in
+	      check_conv NotConvertibleBodyField cst conv env c1' c2))
    | IndType ((kn,i),mind1) ->
        ignore (Util.error (
        "The kernel does not recognize yet that a parameter can be " ^
@@ -309,7 +300,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
        "inductive type and give a definition to map the old name to the new " ^
        "name."));
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
-      if cb2.const_body <> None then error DefinitionFieldExpected;
+      if constant_has_body cb2 then error DefinitionFieldExpected;
       let arity1 = type_of_inductive env (mind1,mind1.mind_packets.(i)) in
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
        check_conv NotConvertibleTypeField cst conv_leq env arity1 typ2
@@ -320,7 +311,7 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
        "constructor and give a definition to map the old name to the new " ^
        "name."));
       assert (mind1.mind_hyps=[] && cb2.const_hyps=[]) ;
-      if cb2.const_body <> None then error DefinitionFieldExpected;
+      if constant_has_body cb2 then error DefinitionFieldExpected;
       let ty1 = type_of_constructor cstr (mind1,mind1.mind_packets.(i)) in
       let ty2 = Typeops.type_of_constant_type env cb2.const_type in
        check_conv NotConvertibleTypeField cst conv env ty1 ty2

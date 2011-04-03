@@ -170,10 +170,10 @@ exception NotEvaluableConst of const_evaluation_result
 
 let constant_value env kn =
   let cb = lookup_constant kn env in
-  if cb.const_opaque then raise (NotEvaluableConst Opaque);
   match cb.const_body with
-    | Some l_body -> Declarations.force l_body
-    | None -> raise (NotEvaluableConst NoBody)
+    | Def l_body -> Declarations.force l_body
+    | OpaqueDef _ -> raise (NotEvaluableConst Opaque)
+    | Undef _ -> raise (NotEvaluableConst NoBody)
 
 let constant_opt_value env cst =
   try Some (constant_value env cst)
@@ -648,14 +648,14 @@ let assumptions ?(add_opaque=false) st (* t env *) =
 	(s,ContextObjectMap.add cst ctype acc)
     in
     let (s,acc) =
-      if cb.Declarations.const_body <> None
-	&& (cb.Declarations.const_opaque || not (Cpred.mem kn knst))
+      if Declarations.constant_has_body cb
+	&& (Declarations.is_opaque cb || not (Cpred.mem kn knst))
 	&& add_opaque
       then
 	do_type (Opaque kn)
       else (s,acc)
     in
-      match cb.Declarations.const_body with
+      match Declarations.body_of_constant cb with
       | None -> do_type (Axiom kn)
       | Some body -> aux (Declarations.force body) env s acc
 

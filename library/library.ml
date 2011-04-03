@@ -382,25 +382,39 @@ let try_locate_qualified_library (loc,qid) =
 (************************************************************************)
 (* Internalise libraries *)
 
-let mk_library md get_table digest = 
-  let md_compiled = 
-    LightenLibrary.load ~load_proof:!Flags.load_proofs get_table md.md_compiled
+let mk_library md table digest =
+  let md_compiled =
+    LightenLibrary.load ~load_proof:!Flags.load_proofs table md.md_compiled
   in {
     library_name     = md.md_name;
     library_compiled = md_compiled;
     library_objects  = md.md_objects;
     library_deps     = md.md_deps;
     library_imports  = md.md_imports;
-    library_digest    = digest 
+    library_digest    = digest
   }
+
+let fetch_opaque_table (f,pos,digest) =
+  try
+    let ch = System.with_magic_number_check raw_intern_library f in
+    seek_in ch pos;
+    if System.marshal_in ch <> digest then failwith "File changed!";
+    let table = (System.marshal_in ch : LightenLibrary.table) in
+    close_in ch;
+    table
+  with _ ->
+    error
+      ("The file "^f^" is inaccessible or has changed,\n" ^
+       "cannot load some opaque constant bodies in it.\n")
 
 let intern_from_file f =
   let ch = System.with_magic_number_check raw_intern_library f in
   let lmd = System.marshal_in ch in
+  let pos = pos_in ch in
   let digest = System.marshal_in ch in
-  let get_table () = (System.marshal_in ch : LightenLibrary.table) in
+  let table = lazy (fetch_opaque_table (f,pos,digest)) in
   register_library_filename lmd.md_name f;
-  let library = mk_library lmd get_table digest in
+  let library = mk_library lmd table digest in
   close_in ch;
   library
 

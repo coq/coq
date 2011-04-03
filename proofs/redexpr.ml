@@ -38,12 +38,13 @@ let set_strategy_one ref l  =
         Csymtable.set_opaque_const sp
     | ConstKey sp, _ ->
         let cb = Global.lookup_constant sp in
-        if cb.const_body <> None & cb.const_opaque then
-          errorlabstrm "set_transparent_const"
-            (str "Cannot make" ++ spc () ++
-            Nametab.pr_global_env Idset.empty (ConstRef sp) ++
-            spc () ++ str "transparent because it was declared opaque.");
-        Csymtable.set_transparent_const sp
+	(match cb.const_body with
+	  | OpaqueDef _ ->
+            errorlabstrm "set_transparent_const"
+              (str "Cannot make" ++ spc () ++
+		 Nametab.pr_global_env Idset.empty (ConstRef sp) ++
+		 spc () ++ str "transparent because it was declared opaque.");
+	  | _ -> Csymtable.set_transparent_const sp)
     | _ -> ()
 
 let cache_strategy (_,str) =

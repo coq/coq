@@ -9,9 +9,7 @@ open Pre_env
 val compile : env -> constr -> bytecodes * bytecodes * fv
                               (** init, fun, fv *)
 
-val compile_constant_body :
-    env -> constr_substituted option -> bool -> body_code
-                                 (** opaque *)
+val compile_constant_body : env -> constant_def -> body_code
 
 
 (** spiwack: this function contains the information needed to perform

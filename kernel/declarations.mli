@@ -35,19 +35,53 @@ type constr_substituted
 val from_val : constr -> constr_substituted
 val force : constr_substituted -> constr
 
-type inline = int option (* inlining level, None for no inlining *)
+(** Opaque proof terms are not loaded immediately, but are there
+    in a lazy form. Forcing this lazy may trigger some unmarshal of
+    the necessary structure. *)
+
+type lazy_constr
+
+val subst_lazy_constr : substitution -> lazy_constr -> lazy_constr
+val force_lazy_constr : lazy_constr -> constr_substituted
+val make_lazy_constr : constr_substituted Lazy.t -> lazy_constr
+val lazy_constr_is_val : lazy_constr -> bool
+
+val force_opaque : lazy_constr -> constr
+val opaque_from_val : constr -> lazy_constr
+
+(** Inlining level of parameters at functor applications.
+    None means no inlining *)
+
+type inline = int option
+
+(** A constant can have no body (axiom/parameter), or a
+    transparent body, or an opaque one *)
+
+type constant_def =
+  | Undef of inline
+  | Def of constr_substituted
+  | OpaqueDef of lazy_constr
+
+val subst_constant_def : substitution -> constant_def -> constant_def
 
 type constant_body = {
     const_hyps : section_context; (** New: younger hyp at top *)
-    const_body : constr_substituted option;
+    const_body : constant_def;
     const_type : constant_type;
     const_body_code : to_patch_substituted;
-   (* const_type_code : to_patch;*)
-    const_constraints : constraints;
-    const_opaque : bool;
-    const_inline : inline }
+    const_constraints : constraints }
 
 val subst_const_body : substitution -> constant_body -> constant_body
+
+(** Is there a actual body in const_body or const_body_opaque ? *)
+
+val constant_has_body : constant_body -> bool
+
+(** Accessing const_body_opaque or const_body *)
+
+val body_of_constant : constant_body -> constr_substituted option
+
+val is_opaque : constant_body -> bool
 
 (** {6 Representation of mutual inductive types in the kernel } *)
 

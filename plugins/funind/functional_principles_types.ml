@@ -445,7 +445,7 @@ let get_funs_constant mp dp =
   in
   function const ->
     let find_constant_body const =
-      match (Global.lookup_constant const ).const_body with
+      match body_of_constant (Global.lookup_constant const) with
 	| Some b ->
 	    let body = force b in
 	    let body = Tacred.cbv_norm_flags
@@ -579,7 +579,7 @@ let make_scheme (fas : (constant*Glob_term.glob_sort) list) : Entries.definition
     let finfos = find_Function_infos this_block_funs.(0) in
     try
       let equation =  Option.get finfos.equation_lemma in
-      (Global.lookup_constant equation).Declarations.const_opaque
+      Declarations.is_opaque (Global.lookup_constant equation)
     with Option.IsNone -> (* non recursive definition *)
       false
   in

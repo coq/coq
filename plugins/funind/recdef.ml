@@ -136,9 +136,9 @@ let message s = if Flags.is_verbose () then msgnl(str s);;
 let def_of_const t =
    match (kind_of_term t) with
     Const sp ->
-      (try (match (Global.lookup_constant sp) with
-             {const_body=Some c} -> Declarations.force c
-	     |_ -> assert false)
+      (try (match body_of_constant (Global.lookup_constant sp) with
+             | Some c -> Declarations.force c
+	     | _ -> assert false)
        with _ ->
 	 anomaly ("Cannot find definition of constant "^
 		    (string_of_id (id_of_label (con_label sp))))
@@ -939,6 +939,13 @@ let build_new_goal_type () =
   let res = build_and_l sub_gls_types in
   res
 
+let is_opaque_constant c =
+  let cb = Global.lookup_constant c in
+  match cb.Declarations.const_body with
+    | Declarations.OpaqueDef _ -> true
+    | Declarations.Undef _ -> true
+    | Declarations.Def _ -> false
+
 let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_name (gls_type,decompose_and_tac,nb_goal)   =
   (* Pp.msgnl (str "gls_type := " ++ Printer.pr_lconstr gls_type); *)
   let current_proof_name = get_current_proof_name () in
@@ -958,10 +965,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
       let na_ref = Libnames.Ident (dummy_loc,na) in
       let na_global = Nametab.global na_ref in
       match na_global with
-	  ConstRef c ->
-	    let cb = Global.lookup_constant c in
-	    if cb.Declarations.const_opaque then true
-	    else begin  match cb.const_body with None -> true | _ -> false end
+	  ConstRef c -> is_opaque_constant c
 	| _ -> anomaly "equation_lemma: not a constant"
     in
     let lemma = mkConst (Lib.make_con na) in
@@ -1339,10 +1343,7 @@ let (com_eqn : int -> identifier ->
   fun nb_arg eq_name functional_ref f_ref terminate_ref equation_lemma_type ->
     let opacity =
       match terminate_ref with
-	| ConstRef c ->
-	    let cb = Global.lookup_constant c in
-	    if cb.Declarations.const_opaque then true
-	    else begin match cb.const_body with None -> true | _ -> false end
+	| ConstRef c -> is_opaque_constant c
 	| _ -> anomaly "terminate_lemma: not a constant"
     in
     let (evmap, env) = Lemmas.get_current_context() in

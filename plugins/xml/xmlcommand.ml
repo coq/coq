@@ -527,8 +527,10 @@ let print internal glob_ref kind xml_library_root =
         Cic2acic.Variable kn,mk_variable_obj id body typ
     | Ln.ConstRef kn ->
        let id = N.id_of_label (N.con_label kn) in
-       let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
-        G.lookup_constant kn in
+       let cb = G.lookup_constant kn in
+       let val0 = D.body_of_constant cb in
+       let typ = cb.D.const_type in
+       let hyps = cb.D.const_hyps in
        let typ = Typeops.type_of_constant_type (Global.env()) typ in
         Cic2acic.Constant kn,mk_constant_obj id val0 typ variables hyps
     | Ln.IndRef (kn,_) ->

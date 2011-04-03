@@ -130,12 +130,12 @@ let check_arity env cb =
 
 let check_fix env cb i =
   match cb.const_body with
-    | None -> raise Impossible
-    | Some lbody ->
-	match kind_of_term (Declarations.force lbody) with
+    | Def lbody ->
+	(match kind_of_term (Declarations.force lbody) with
 	  | Fix ((_,j),recd) when i=j -> check_arity env cb; (true,recd)
 	  | CoFix (j,recd) when i=j -> check_arity env cb; (false,recd)
-	  | _ -> raise Impossible
+	  | _ -> raise Impossible)
+    | Undef _ | OpaqueDef _ -> raise Impossible
 
 let factor_fix env l cb msb =
   let _,recd as check = check_fix env cb 0 in

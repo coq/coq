@@ -84,8 +84,7 @@ val add_info_axiom : global_reference -> unit
 val remove_info_axiom : global_reference -> unit
 val add_log_axiom : global_reference -> unit
 
-val add_opaque_ok : global_reference -> unit
-val add_opaque_ko : global_reference -> unit
+val add_opaque : global_reference -> unit
 val remove_opaque : global_reference -> unit
 
 val reset_tables : unit -> unit
