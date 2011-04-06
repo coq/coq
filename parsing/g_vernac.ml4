@@ -560,8 +560,10 @@ GEXTEND Gram
 	   VernacInstance (false, not (use_section_locality ()),
 			   snd namesup, (fst namesup, expl, t), props, pri)
 
-      | IDENT "Existing"; IDENT "Instance"; is = global -> 
-	  VernacDeclareInstance (not (use_section_locality ()), is)
+      | IDENT "Existing"; IDENT "Instance"; id = global ->
+	  VernacDeclareInstances (not (use_section_locality ()), [id])
+      | IDENT "Existing"; IDENT "Instances"; ids = LIST1 global ->
+	  VernacDeclareInstances (not (use_section_locality ()), ids)
 
       | IDENT "Existing"; IDENT "Class"; is = global -> VernacDeclareClass is
 

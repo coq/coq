@@ -260,8 +260,8 @@ type vernac_expr =
 
   | VernacContext of local_binder list
 
-  | VernacDeclareInstance of
-      bool (* global *) * reference (* instance name *)
+  | VernacDeclareInstances of
+      bool (* global *) * reference list (* instance names *)
 
   | VernacDeclareClass of reference (* inductive or definition name *)
 

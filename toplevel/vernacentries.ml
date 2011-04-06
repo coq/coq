@@ -635,8 +635,8 @@ let vernac_instance abst glob sup inst props pri =
 let vernac_context l =
   Classes.context l
 
-let vernac_declare_instance glob id =
-  Classes.declare_instance glob id
+let vernac_declare_instances glob ids =
+  List.iter (fun (id) -> Classes.declare_instance glob id) ids
 
 let vernac_declare_class id =
   Classes.declare_class id
@@ -1368,7 +1368,7 @@ let interp c = match c with
   | VernacInstance (abst, glob, sup, inst, props, pri) ->
       vernac_instance abst glob sup inst props pri
   | VernacContext sup -> vernac_context sup
-  | VernacDeclareInstance (glob, id) -> vernac_declare_instance glob id
+  | VernacDeclareInstances (glob, ids) -> vernac_declare_instances glob ids
   | VernacDeclareClass id -> vernac_declare_class id
 
   (* Solving *)

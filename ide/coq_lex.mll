@@ -86,7 +86,7 @@ let sentence_sep = '.' [ ' ' '\r' '\n' '\t' ]
 let multiword_declaration =
   "Module" (space+ "Type")?
 | "Program" space+ ident
-| "Existing" space+ "Instance"
+| "Existing" space+ "Instance" "s"?
 | "Canonical" space+ "Structure"
 
 let locality = ("Local" space+)?

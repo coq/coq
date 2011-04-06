@@ -709,9 +709,10 @@ let rec pr_vernac = function
 	 pr_and_type_binders_arg l ++ spc () ++ str "]")
 
 
- | VernacDeclareInstance (glob, id) ->
+ | VernacDeclareInstances (glob, ids) ->
      hov 1 (pr_non_locality (not glob) ++
-	       str"Existing" ++ spc () ++ str"Instance" ++ spc () ++ pr_reference id)
+               str"Existing" ++ spc () ++ str(plural (List.length ids) "Instance") ++
+               spc () ++ prlist_with_sep spc pr_reference ids)
 
  | VernacDeclareClass id ->
      hov 1 (str"Existing" ++ spc () ++ str"Class" ++ spc () ++ pr_reference id)

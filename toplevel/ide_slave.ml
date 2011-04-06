@@ -90,7 +90,7 @@ let rec attribute_of_vernac_command = function
   (* Type classes *)
   | VernacInstance _ -> []
   | VernacContext _ -> []
-  | VernacDeclareInstance _ -> []
+  | VernacDeclareInstances _ -> []
   | VernacDeclareClass _ -> []
 
   (* Solving *)
