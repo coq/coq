@@ -344,6 +344,16 @@ val fold_named_declaration :
 val fold_rel_declaration :
   (constr -> 'a -> 'a) -> rel_declaration -> 'a -> 'a
 
+val exists_named_declaration :
+  (constr -> bool) -> named_declaration -> bool
+val exists_rel_declaration :
+  (constr -> bool) -> rel_declaration -> bool
+
+val for_all_named_declaration :
+  (constr -> bool) -> named_declaration -> bool
+val for_all_rel_declaration :
+  (constr -> bool) -> rel_declaration -> bool
+
 (** {6 Contexts of declarations referred to by de Bruijn indices } *)
 
 (** In [rel_context], more recent declaration is on top *)

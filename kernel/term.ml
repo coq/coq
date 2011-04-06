@@ -814,6 +814,12 @@ let map_rel_declaration = map_named_declaration
 let fold_named_declaration f (_, v, ty) a = f ty (Option.fold_right f v a)
 let fold_rel_declaration = fold_named_declaration
 
+let exists_named_declaration f (_, v, ty) = Option.cata f false v || f ty
+let exists_rel_declaration f (_, v, ty) = Option.cata f false v || f ty
+
+let for_all_named_declaration f (_, v, ty) = Option.cata f true v && f ty
+let for_all_rel_declaration f (_, v, ty) = Option.cata f true v && f ty
+
 (***************************************************************************)
 (*     Type of local contexts (telescopes)                                 *)
 (***************************************************************************)
@@ -969,12 +975,12 @@ let substnl laml n =
 let substl laml = substnl laml 0
 let subst1 lam = substl [lam]
 
-let substnl_decl laml k (id,bodyopt,typ) =
-  (id,Option.map (substnl laml k) bodyopt,substnl laml k typ)
+let substnl_decl laml k = map_rel_declaration (substnl laml k)
 let substl_decl laml = substnl_decl laml 0
 let subst1_decl lam = substl_decl [lam]
-let subst1_named_decl = subst1_decl
+let substnl_named laml k = map_named_declaration (substnl laml k)
 let substl_named_decl = substl_decl
+let subst1_named_decl = subst1_decl
 
 (* (thin_val sigma) removes identity substitutions from sigma *)
 

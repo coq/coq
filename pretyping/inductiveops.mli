@@ -73,11 +73,11 @@ val allowed_sorts : env -> inductive -> sorts_family list
 (** Extract information from an inductive family *)
 
 type constructor_summary = {
-  cs_cstr : constructor;
-  cs_params : constr list;
-  cs_nargs : int;
-  cs_args : rel_context;
-  cs_concl_realargs : constr array;
+  cs_cstr : constructor;    (* internal name of the constructor *)
+  cs_params : constr list;  (* parameters of the constructor in current ctx *)
+  cs_nargs : int;           (* length of arguments signature (letin included) *)
+  cs_args : rel_context;    (* signature of the arguments (letin included) *)
+  cs_concl_realargs : constr array; (* actual realargs in the concl of cstr *)
 }
 val lift_constructor : int -> constructor_summary -> constructor_summary
 val get_constructor :
