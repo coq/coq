@@ -189,7 +189,7 @@ open Declarations;;
 
 let constbody_of_string s =
   let b = Global.lookup_constant (Nametab.locate_constant (qualid_of_string s)) in
-  Option.get b.const_body;;
+  Option.get (body_of_constant b);;
 
 (* Get the current goal *)
 (*
