@@ -24,8 +24,8 @@ construction allows to define ``signatures''.
 && ~~~~\zeroone{\ident}
        \verb!{! \zeroone{\nelist{\field}{;}} \verb!}! \verb:.:\\
   & & \\
-{\field} & ::= & {\name} : {\type} [ {\tt where} {\it notation} ] \\
- & $|$ & {\name} {\typecstr} := {\term}
+{\field} & ::= & {\name} \zeroone{\binders} : {\type} [ {\tt where} {\it notation} ] \\
+ & $|$ & {\name} \zeroone{\binders} {\typecstr} := {\term}
 \end{tabular}
 \end{centerframe}
 \caption{Syntax for the definition of {\tt Record}}
@@ -37,9 +37,9 @@ construction allows to define ``signatures''.
 \smallskip
 {\tt Record} {\ident} {\params} \texttt{:} 
    {\sort} := {\ident$_0$} \verb+{+
- {\ident$_1$} \texttt{:} {\term$_1$}; 
+ {\ident$_1$} \binders$_1$ \texttt{:} {\term$_1$}; 
               \dots
-  {\ident$_n$} \texttt{:} {\term$_n$} \verb+}+.
+  {\ident$_n$} \binders$_n$ \texttt{:} {\term$_n$} \verb+}+.
 \smallskip
  
 \noindent the identifier {\ident} is the name of the defined record
@@ -47,7 +47,7 @@ and {\sort} is its type. The identifier {\ident$_0$} is the name of
 its constructor. If {\ident$_0$} is omitted, the default name {\tt
 Build\_{\ident}} is used. If {\sort} is omitted, the default sort is ``{\Type}''.
 The identifiers {\ident$_1$}, ..,
-{\ident$_n$} are the names of fields and {\term$_1$}, .., {\term$_n$}
+{\ident$_n$} are the names of fields and {\tt forall} \binders$_1${\tt ,} {\term$_1$}, ..., {\tt forall} \binders$_n${\tt ,} {\term$_n$}
 their respective types. Remark that the type of {\ident$_i$} may
 depend on the previous {\ident$_j$} (for $j<i$). Thus the order of the
 fields is important. Finally, {\params} are the parameters of the
