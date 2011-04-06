@@ -397,7 +397,7 @@ GLOBAL: proof_instr;
      | i = intro_step -> i ]]
   ;
   proof_instr :
-    [[ e=emphasis;i=bare_proof_instr -> {emph=e;instr=i}]]
+    [[ e=emphasis;i=bare_proof_instr;"." -> {emph=e;instr=i}]]
   ;
 END;;
 
