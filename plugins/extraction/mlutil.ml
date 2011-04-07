@@ -110,22 +110,17 @@ let rec type_occurs alpha t =
 
 let rec mgu = function
   | Tmeta m, Tmeta m' when m.id = m'.id -> ()
-  | Tmeta m, t when m.contents=None ->
-      if type_occurs m.id t then raise Impossible
-      else m.contents <- Some t
-  | t, Tmeta m when m.contents=None ->
-      if type_occurs m.id t then raise Impossible
-      else m.contents <- Some t
-  | Tmeta {contents=Some u}, t -> mgu (u, t)
-  | t, Tmeta {contents=Some u} -> mgu (t, u)
+  | Tmeta m, t | t, Tmeta m ->
+    (match m.contents with
+      | Some u -> mgu (u, t)
+      | None when type_occurs m.id t -> raise Impossible
+      | None -> m.contents <- Some t)
   | Tarr(a, b), Tarr(a', b') ->
       mgu (a, a'); mgu (b, b')
   | Tglob (r,l), Tglob (r',l') when r = r' ->
        List.iter mgu (List.combine l l')
-  | Tvar i, Tvar j when i = j -> ()
-  | Tvar' i, Tvar' j when i = j -> ()
   | Tdummy _, Tdummy _ -> ()
-  | Tunknown, Tunknown -> ()
+  | t, u when t = u -> () (* for Tvar, Tvar', Tunknown, Taxiom *)
   | _ -> raise Impossible
 
 let needs_magic p = try mgu p; false with Impossible -> true
