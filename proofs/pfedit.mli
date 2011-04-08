@@ -180,6 +180,6 @@ val instantiate_nth_evar_com : int -> Topconstr.constr_expr -> unit
 
 (** [build_by_tactic typ tac] returns a term of type [typ] by calling [tac] *)
 
-val build_constant_by_tactic : named_context_val -> types -> tactic ->
+val build_constant_by_tactic : identifier -> named_context_val -> types -> tactic ->
   Entries.definition_entry
 val build_by_tactic : types -> tactic -> constr
