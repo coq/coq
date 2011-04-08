@@ -202,7 +202,7 @@ module Default = struct
         (* We eta-expand (hence possibly modifying the original term!) *)
 	(* and look for a coercion c:u1->t1 s.t. fun x:u1 => v' (c x)) *)
 	(* has type forall (x:u1), u2 (with v' recursively obtained) *)
-        (* Note: we retupe the term because sort-polymorphism may have *)
+        (* Note: we retype the term because sort-polymorphism may have *)
         (* weaken its type *)
 	let name = match name with
 	  | Anonymous -> Name (id_of_string "x")
