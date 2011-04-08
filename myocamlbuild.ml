@@ -72,15 +72,14 @@ let _ = if w32 then begin
   Options.ocamlmklib := A w32ocamlmklib;
 end
 
-let _ =
-  if Coq_config.camlp4 = "camlp5" then begin
-    printf "Camlp5 is not supported by this ocamlbuild plugin\n";
-    printf "Use camlp4, or make, or both\n";
-    exit 1
-  end
+let use_camlp5 = (Coq_config.camlp4 = "camlp5")
+
+let camlp4args =
+  if use_camlp5 then [A "pa_extend.cmo";A "q_MLast.cmo";A "pa_macro.cmo"]
+  else []
 
 let ocaml = A Coq_config.ocaml
-let camlp4o = A Coq_config.camlp4o
+let camlp4o = S ((A Coq_config.camlp4o) :: camlp4args)
 let camlp4incl = S[A"-I"; A Coq_config.camlp4lib]
 let camlp4compat = Sh Coq_config.camlp4compat
 let opt = (Coq_config.best = "opt")
@@ -286,6 +285,7 @@ let extra_rules () = begin
   flag_and_dep ["p4mod"; "use_compat5"] (P "tools/compat5.cmo");
   flag_and_dep ["p4mod"; "use_compat5b"] (P "tools/compat5b.cmo");
 
+  if not use_camlp5 then begin
   let mlp_cmo s =
     let src=s^".mlp" and dst=s^".cmo" in
     rule (src^".cmo") ~dep:src ~prod:dst ~insert:`top
@@ -295,6 +295,10 @@ let extra_rules () = begin
   in
   mlp_cmo "tools/compat5";
   mlp_cmo "tools/compat5b";
+  end;
+
+  ocaml_lib ~extern:true ~dir:Coq_config.camlp4lib ~tag_name:"use_camlpX"
+    ~byte:true ~native:true (if use_camlp5 then "gramlib" else "camlp4lib");
 
 (** Special case of toplevel/mltop.ml4:
     - mltop.ml will be the old mltop.optml and be used to obtain mltop.cmx
