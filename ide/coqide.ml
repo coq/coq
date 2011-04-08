@@ -3049,9 +3049,9 @@ let main files =
     );
   let about_full_string =
     "\nCoq is developed by the Coq Development Team\
-     \n(INRIA - CNRS - University Paris 11 and partners)\
+     \n(INRIA - CNRS - LIX - LRI - PPS)\
      \nWeb site: " ^ Coq_config.wwwcoq ^
-    "\nFeature wish or bug report: http://logical.saclay.inria.fr/coq-bugs\
+    "\nFeature wish or bug report: http://coq.inria.fr/bugs/\
      \n\
      \nCredits for CoqIDE, the Integrated Development Environment for Coq:\
      \n\
