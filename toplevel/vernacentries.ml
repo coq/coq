@@ -1064,8 +1064,8 @@ let get_current_context_of_args = function
 let vernac_check_may_eval redexp glopt rc =
   let module P = Pretype_errors in
   let (sigma, env) = get_current_context_of_args glopt in
+  let sigma', c = interp_open_constr sigma env rc in
   let j =
-    let sigma', c = interp_open_constr sigma env rc in
     try
       Evarutil.check_evars env sigma sigma' c;
       Typeops.typing env c
@@ -1077,10 +1077,10 @@ let vernac_check_may_eval redexp glopt rc =
 	if !pcoq <> None then (Option.get !pcoq).print_check env j
 	else msg (print_judgment env j)
     | Some r ->
-	let redfun = fst (reduction_of_red_expr (interp_redexp env sigma r)) in
+	let redfun = fst (reduction_of_red_expr (interp_redexp env sigma' r)) in
 	if !pcoq <> None
-	then (Option.get !pcoq).print_eval redfun env sigma rc j
-	else msg (print_eval redfun env sigma rc j)
+	then (Option.get !pcoq).print_eval redfun env sigma' rc j
+	else msg (print_eval redfun env sigma' rc j)
 
 let vernac_declare_reduction locality s r =
   declare_red_expr locality s (interp_redexp (Global.env()) Evd.empty r)
