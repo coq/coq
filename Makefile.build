@@ -248,16 +248,16 @@ scripts/tolink.ml: Makefile.build Makefile.common
 
 # coqc
 
-$(COQCBYTE): $(COQCCMO)
+$(COQCBYTE): $(COQCCMO) | $(COQTOPBYTE)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ $(SYSCMA) $^ $(OSDEPLIBS)
 
-$(COQCOPT): $(COQCCMO:.cmo=.cmx)
+$(COQCOPT): $(COQCCMO:.cmo=.cmx) | $(COQTOPOPT)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ $(SYSCMXA) $^ $(OSDEPLIBS)
 	$(STRIP) $@
 
-$(COQC): $(ORDER_ONLY_SEP) $(BESTCOQC)
+$(COQC): $(ORDER_ONLY_SEP) $(BESTCOQC) 
 	cd bin; ln -sf coqc.$(BEST)$(EXE) coqc$(EXE)
 
 # target for libraries
@@ -307,13 +307,13 @@ coqide-byte: $(COQIDEBYTE) $(COQIDE)
 coqide-opt:  $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
 coqide-files: $(IDEFILES)
 
-$(COQIDEOPT): $(LINKIDEOPT)
+$(COQIDEOPT): $(LINKIDEOPT) | $(COQTOPOPT)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) $(IDEOPTFLAGS) -o $@ unix.cmxa threads.cmxa lablgtk.cmxa\
 		 gtkThread.cmx str.cmxa $(LINKIDEOPT)
 	$(STRIP) $@
 
-$(COQIDEBYTE): $(LINKIDE)
+$(COQIDEBYTE): $(LINKIDE) | $(COQTOPBYTE)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma gtkThread.cmo\
 		str.cma $(COQRUNBYTEFLAGS) $(LINKIDE)
