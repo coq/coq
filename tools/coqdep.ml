@@ -38,9 +38,9 @@ let rec warning_mult suf iter =
 let add_coqlib_known phys_dir log_dir f =
   match get_extension f [".vo"] with
     | (basename,".vo") ->
-	let name = log_dir@[basename] in
-	Hashtbl.add coqlibKnown [basename] ();
-	Hashtbl.add coqlibKnown name ()
+        let name = log_dir@[basename] in
+	let paths = suffixes name in
+        List.iter (fun f -> Hashtbl.add coqlibKnown f ()) paths
     | _ -> ()
 
 let sort () =
