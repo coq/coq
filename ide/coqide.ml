@@ -1648,6 +1648,66 @@ let load_file handler f =
 
 let do_load = load_file flash_info
 
+let saveall_f () =
+  List.iter
+    (function
+       | {script = view ; analyzed_view = av} ->
+           begin match av#filename with
+             | None -> ()
+             | Some f ->
+		 ignore (av#save f)
+           end
+    )  session_notebook#pages
+
+let forbid_quit_to_save () =
+    save_pref();
+    (if List.exists
+      (function
+        | {script=view} -> view#buffer#modified
+      )
+      session_notebook#pages then
+      match (GToolbox.question_box ~title:"Quit"
+               ~buttons:["Save Named Buffers and Quit";
+                         "Quit without Saving";
+                         "Don't Quit"]
+               ~default:0
+               ~icon:
+               (let img = GMisc.image () in
+                img#set_stock `DIALOG_WARNING;
+                img#set_icon_size `DIALOG;
+                img#coerce)
+               "There are unsaved buffers"
+      )
+      with 1 -> saveall_f () ; false
+        | 2 -> false
+        | _ -> true
+    else false)||
+      (let wait_window =
+        GWindow.window ~modal:true ~wm_class:"CoqIde" ~wm_name:"CoqIde" ~kind:`POPUP
+          ~title:"Terminating coqtops" () in
+      let _ =
+        GMisc.label ~text:"Terminating coqtops processes, please wait ..."
+          ~packing:wait_window#add () in
+      let warning_window =
+        GWindow.message_dialog ~message_type:`WARNING ~buttons:GWindow.Buttons.yes_no
+          ~message:
+	  ("Some coqtops processes are still running.\n" ^
+	     "If you quit CoqIDE right now, you may have to kill them manually.\n" ^
+	     "Do you want to wait for those processes to terminate ?") () in
+      let () = List.iter (fun _ -> session_notebook#remove_page 0) session_notebook#pages in
+      let nb_try=ref (0) in
+      let () = wait_window#show () in
+      let () = while (Coq.coqtop_zombies () <> 0)&&(!nb_try <= 50) do
+	incr nb_try;
+	Thread.delay 0.1 ;
+      done in
+	if (!nb_try = 50) then begin
+	  wait_window#misc#hide ();
+	  match warning_window#run () with
+	    | `YES -> warning_window#misc#hide (); true
+	    | `NO | `DELETE_EVENT -> false
+	end
+	else false)
 
 let main files =
   (* Statup preferences *)
@@ -1776,25 +1836,7 @@ let main files =
   (* XXX *)
   (* File/Save All Menu *)
   let saveall_m = file_factory#add_item "Sa_ve all" in
-  let saveall_f () =
-    List.iter
-      (function
-        | {script = view ; analyzed_view = av} ->
-          begin match av#filename with
-            | None -> ()
-            | Some f ->
-              ignore (av#save f)
-          end
-      )  session_notebook#pages
-  in
   (* XXX *)
-  let has_something_to_save () =
-    List.exists
-      (function
-        | {script=view} -> view#buffer#modified
-      )
-      session_notebook#pages
-  in
   ignore (saveall_m#connect#activate ~callback:saveall_f);
   (* XXX *)
   (* File/Revert Menu *)
@@ -1877,59 +1919,11 @@ let main files =
               session_notebook#current_term.analyzed_view#recenter_insert));
 
   (* File/Quit Menu *)
-  let quit_f () =
-    let kill_and_exit () =
-      let wait_window =
-        GWindow.window ~modal:true ~wm_class:"CoqIde" ~wm_name:"CoqIde" ~kind:`POPUP
-          ~title:"Terminating coqtops" () in
-      let _ =
-        GMisc.label ~text:"Terminating coqtops processes, please wait ..."
-          ~packing:wait_window#add () in
-      List.iter (fun _ -> session_notebook#remove_page 0) session_notebook#pages;
-      let callback () =
-        if Coq.coqtop_zombies () = 0 then
-          exit 0;
-        true in
-      ignore (GMain.Timeout.add ~ms:100 ~callback);
-      let warning_window =
-        GWindow.message_dialog ~message_type:`WARNING ~buttons:GWindow.Buttons.yes_no
-          ~message:
-	  ("Some coqtops processes are still running.\n" ^
-	   "If you quit CoqIDE right now, you may have to kill them manually.\n" ^
-	   "Do you want to wait for those processes to terminate ?") ()
-      in
-      let callback () =
-        wait_window#misc#hide ();
-        match warning_window#run () with
-          | `YES -> warning_window#misc#hide (); wait_window#show (); true
-          | `NO | `DELETE_EVENT -> exit 0
-      in
-      ignore (GMain.Timeout.add ~ms:5000 ~callback);
-      wait_window#show ()
-    in
-    save_pref();
-    if has_something_to_save () then
-      match (GToolbox.question_box ~title:"Quit"
-               ~buttons:["Save Named Buffers and Quit";
-                         "Quit without Saving";
-                         "Don't Quit"]
-               ~default:0
-               ~icon:
-               (let img = GMisc.image () in
-                img#set_stock `DIALOG_WARNING;
-                img#set_icon_size `DIALOG;
-                img#coerce)
-               "There are unsaved buffers"
-      )
-      with 1 -> saveall_f () ; kill_and_exit ()
-        | 2 -> kill_and_exit ()
-        | _ -> ()
-    else kill_and_exit ()
-  in
+  let quit_f () = if not (forbid_quit_to_save ()) then exit 0 in
   let _ = file_factory#add_item "_Quit" ~key:GdkKeysyms._Q
     ~callback:quit_f
   in
-  ignore (w#event#connect#delete ~callback:(fun _ -> quit_f (); true));
+    ignore (w#event#connect#delete ~callback:(fun _ -> quit_f (); true));
 
   (* Edit Menu *)
   let edit_menu = factory#add_submenu "_Edit" in

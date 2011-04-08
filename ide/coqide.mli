@@ -22,7 +22,11 @@ val process_argv : string list -> string list
 (** Prepare the widgets, load the given files in tabs *)
 val main : string list -> unit
 
-(** The function doing the actual loading of a file. *)
+(** Function to save anything and kill all coqtops
+    @return [false] if you're allowed to quit. *)
+val forbid_quit_to_save : unit -> bool
+
+(** Function to load of a file. *)
 val do_load : string -> unit
 
 (** Set coqide to ignore Ctrl-C, while launching [crash_save] and
