@@ -28,11 +28,8 @@ Implicit Arguments snd [[A] [B]].
 Implicit Arguments nil [[A]].
 Implicit Arguments cons [[A]].
 
-(** Standard notations for lists. *)
-
-Notation " [ ] " := nil : list_scope.
-Notation " [ x ] " := (cons x nil) : list_scope.
-Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) : list_scope.
+Require List.
+Export List.ListNotations.
 
 Require Import Bvector.
 

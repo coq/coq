@@ -53,9 +53,16 @@ Section Lists.
 
 End Lists.
 
-(* Keep these notations local to prevent conflicting notations *)
-Local Notation "[ ]" := nil : list_scope.
-Local Notation "[ a ; .. ; b ]" := (a :: .. (b :: []) ..) : list_scope.
+
+(** Standard notations for lists. 
+In a special module to avoid conflict. *)
+Module ListNotations.
+Notation " [ ] " := nil : list_scope.
+Notation " [ x ] " := (cons x nil) : list_scope.
+Notation " [ x ; .. ; y ] " := (cons x .. (cons y nil) ..) : list_scope.
+End ListNotations.
+
+Import ListNotations.
 
 (** ** Facts about lists *)
 
