@@ -344,8 +344,7 @@ open Decl_kinds
 
 let next = let n = ref 0 in fun () -> incr n; !n
 
-let build_constant_by_tactic sign typ tac =
-  let id = id_of_string ("temporary_proof"^string_of_int (next())) in
+let build_constant_by_tactic id sign typ tac =
   start_proof id (Global,Proof Theorem) sign typ (fun _ _ -> ());
   try
     by tac;
@@ -357,5 +356,6 @@ let build_constant_by_tactic sign typ tac =
     raise e
 
 let build_by_tactic typ tac =
+  let id = id_of_string ("temporary_proof"^string_of_int (next())) in
   let sign = Decls.clear_proofs (Global.named_context ()) in
-  (build_constant_by_tactic sign typ tac).const_entry_body
+  (build_constant_by_tactic id sign typ tac).const_entry_body
