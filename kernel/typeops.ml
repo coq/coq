@@ -313,11 +313,11 @@ let judge_of_constructor env c =
 
 (* Case. *)
 
-let check_branch_types env cj (lfj,explft) =
+let check_branch_types env ind cj (lfj,explft) =
   try conv_leq_vecti env (Array.map j_type lfj) explft
   with
       NotConvertibleVect i ->
-        error_ill_formed_branch env cj.uj_val i lfj.(i).uj_type explft.(i)
+        error_ill_formed_branch env cj.uj_val (ind,i+1) lfj.(i).uj_type explft.(i)
     | Invalid_argument _ ->
         error_number_branches env cj (Array.length explft)
 
@@ -328,7 +328,7 @@ let judge_of_case env ci pj cj lfj =
   let _ = check_case_info env (fst indspec) ci in
   let (bty,rslty,univ) =
     type_case_branches env indspec pj cj.uj_val in
-  let univ' = check_branch_types env cj (lfj,bty) in
+  let univ' = check_branch_types env (fst indspec) cj (lfj,bty) in
   ({ uj_val  = mkCase (ci, (*nf_betaiota*) pj.uj_val, cj.uj_val,
                        Array.map j_val lfj);
      uj_type = rslty },

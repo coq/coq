@@ -50,12 +50,12 @@ let e_judge_of_apply env evdref funj argjv =
   in
   apply_rec 1 funj.uj_type (Array.to_list argjv)
 
-let check_branch_types env evdref cj (lfj,explft) =
+let check_branch_types env evdref ind cj (lfj,explft) =
   if Array.length lfj <> Array.length explft then
     error_number_branches env cj (Array.length explft);
   for i = 0 to Array.length explft - 1 do
     if not (Evarconv.e_cumul env evdref lfj.(i).uj_type explft.(i)) then
-      error_ill_formed_branch env cj.uj_val i lfj.(i).uj_type explft.(i)
+      error_ill_formed_branch env cj.uj_val (ind,i+1) lfj.(i).uj_type explft.(i)
   done
 
 let e_judge_of_case env evdref ci pj cj lfj =
@@ -64,7 +64,7 @@ let e_judge_of_case env evdref ci pj cj lfj =
     with Not_found -> error_case_not_inductive env cj in
   let _ = check_case_info env (fst indspec) ci in
   let (bty,rslty,univ) = type_case_branches env indspec pj cj.uj_val in
-  check_branch_types env evdref cj (lfj,bty);
+  check_branch_types env evdref (fst indspec) cj (lfj,bty);
   { uj_val  = mkCase (ci, pj.uj_val, cj.uj_val, Array.map j_val lfj);
     uj_type = rslty }
 

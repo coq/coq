@@ -221,13 +221,6 @@ module Pretyping_F (Coercion : Coercion.S) = struct
               i lna vdefj lar
 	done
 
-  let check_branches_message loc env evdref c (explft,lft) =
-    for i = 0 to Array.length explft - 1 do
-      if not (e_cumul env evdref lft.(i) explft.(i)) then
-	let sigma = !evdref in
-	  error_ill_formed_branch_loc loc env sigma c i lft.(i) explft.(i)
-    done
-
   (* coerce to tycon if any *)
   let inh_conv_coerce_to_tycon loc env evdref j = function
     | None -> j

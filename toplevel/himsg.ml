@@ -132,16 +132,17 @@ let explain_number_branches env sigma cj expn =
   str "of type" ++ brk(1,1) ++ pct ++ spc () ++
   str "expects " ++  int expn ++ str " branches."
 
-let explain_ill_formed_branch env sigma c i actty expty =
+let explain_ill_formed_branch env sigma c ci actty expty =
   let simp t = Reduction.nf_betaiota (nf_evar sigma t) in
   let c = nf_evar sigma c in
   let env = make_all_name_different env in
   let pc = pr_lconstr_env env c in
   let pa = pr_lconstr_env env (simp actty) in
   let pe = pr_lconstr_env env (simp expty) in
-  str "In pattern-matching on term" ++ brk(1,1) ++ pc ++
-  spc () ++ str "the " ++ nth (i+1) ++ str " branch has type" ++
-  brk(1,1) ++ pa ++ spc () ++
+  strbrk "In pattern-matching on term" ++ brk(1,1) ++ pc ++
+  spc () ++ strbrk "the branch for constructor" ++ spc () ++
+  quote (pr_constructor env ci) ++
+  spc () ++ str "has type" ++ brk(1,1) ++ pa ++ spc () ++
   str "which should be" ++ brk(1,1) ++ pe ++ str "."
 
 let explain_generalization env (name,var) j =

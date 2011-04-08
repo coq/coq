@@ -48,7 +48,7 @@ type type_error =
   | CaseNotInductive of unsafe_judgment
   | WrongCaseInfo of inductive * case_info
   | NumberBranches of unsafe_judgment * int
-  | IllFormedBranch of constr * int * constr * constr
+  | IllFormedBranch of constr * constructor * constr * constr
   | Generalization of (name * types) * unsafe_judgment
   | ActualType of unsafe_judgment * types
   | CantApplyBadType of
@@ -78,7 +78,7 @@ val error_case_not_inductive : env -> unsafe_judgment -> 'a
 
 val error_number_branches : env -> unsafe_judgment -> int -> 'a
 
-val error_ill_formed_branch : env -> constr -> int -> constr -> constr -> 'a
+val error_ill_formed_branch : env -> constr -> constructor -> constr -> constr -> 'a
 
 val error_generalization : env -> name * types -> unsafe_judgment -> 'a
 

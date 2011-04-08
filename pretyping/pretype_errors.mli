@@ -74,7 +74,7 @@ val error_case_not_inductive_loc :
 
 val error_ill_formed_branch_loc :
   loc -> env -> Evd.evar_map ->
-      constr -> int -> constr -> constr -> 'b
+      constr -> constructor -> constr -> constr -> 'b
 
 val error_number_branches_loc :
   loc -> env -> Evd.evar_map ->

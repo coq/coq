@@ -48,7 +48,7 @@ type type_error =
   | CaseNotInductive of unsafe_judgment
   | WrongCaseInfo of inductive * case_info
   | NumberBranches of unsafe_judgment * int
-  | IllFormedBranch of constr * int * constr * constr
+  | IllFormedBranch of constr * constructor * constr * constr
   | Generalization of (name * types) * unsafe_judgment
   | ActualType of unsafe_judgment * types
   | CantApplyBadType of

@@ -79,11 +79,11 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
               i lna vdefj lar
 	done
 
-  let check_branches_message loc env evdref c (explft,lft) =
+  let check_branches_message loc env evdref ind c (explft,lft) =
     for i = 0 to Array.length explft - 1 do
       if not (e_cumul env evdref lft.(i) explft.(i)) then
 	let sigma =  !evdref in
-	  error_ill_formed_branch_loc loc env sigma c i lft.(i) explft.(i)
+	  error_ill_formed_branch_loc loc env sigma c (ind,i) lft.(i) explft.(i)
     done
 
   (* coerce to tycon if any *)
@@ -96,7 +96,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   (*
     let evar_type_case evdref env ct pt lft p c =
     let (mind,bty,rslty) = type_case_branches env ( evdref) ct pt p c
-    in check_branches_message evdref env (c,ct) (bty,lft); (mind,rslty)
+    in check_branches_message evdref env mind (c,ct) (bty,lft); (mind,rslty)
   *)
 
   let strip_meta id = (* For Grammar v7 compatibility *)
