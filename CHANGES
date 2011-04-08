@@ -23,7 +23,7 @@ Tactics
 - New tactics constr_eq, is_evar and has_evar.
 - Remove the two-argument variant of "decide equality".
 - New experimental tactical "timeout <n> <tac>". Since <n> is a time
-  in second for the moment, this feature should rather be avoided 
+  in second for the moment, this feature should rather be avoided
   in scripts meant to be machine-independent.
 
 Vernacular commands
@@ -85,6 +85,8 @@ Internal infrastructure
   for both make and ocamlbuild, etc.
 - Support of cross-compilation via mingw toward Windows, contact P. Letouzey
   for more informations.
+- new Makefile rules mli-doc to make html of mli in dev/doc/html and
+  full-stdlib to get a HUGE pdf with all the stdlib.
 
 Extraction
 

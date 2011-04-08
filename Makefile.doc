@@ -36,6 +36,9 @@ tutorial: \
 stdlib: \
   doc/stdlib/html/index.html doc/stdlib/Library.ps doc/stdlib/Library.pdf
 
+full-stdlib: \
+  doc/stdlib/html/index.html doc/stdlib/FullLibrary.ps doc/stdlib/FullLibrary.pdf
+
 faq: doc/faq/html/index.html doc/faq/FAQ.v.ps doc/faq/FAQ.v.pdf
 
 rectutorial: doc/RecTutorial/RecTutorial.html \
@@ -228,6 +231,34 @@ doc/stdlib/Library.pdf: $(DOCCOMMON) doc/stdlib/Library.coqdoc.tex doc/stdlib/Li
 	(cd doc/stdlib;\
 	$(PDFLATEX) -interaction=batchmode Library;\
 	../tools/show_latex_messages -no-overfull Library.log)
+
+### Standard library (full version if you're crazy enouth to try)
+
+doc/stdlib/FullLibrary.tex: doc/stdlib/Library.tex
+	sed -e 's/Library.coqdoc/FullLibrary.coqdoc/g;s/\\begin{document}/\\newcommand{\\textlambda}{\\ensuremath{\\lambda}}\\newcommand{\\textPi}{\\ensuremath{\\Pi}}\\begin{document}/' $< > $@
+
+ifdef QUICK
+doc/stdlib/FullLibrary.coqdoc.tex:
+	$(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
+            -R theories Coq $(THEORIESVO:.vo=.v) > $@
+	sed -i "" -e 's///g' $@
+else
+doc/stdlib/FullLibrary.coqdoc.tex: $(COQDOC) $(THEORIESVO)
+	$(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
+            -R theories Coq $(THEORIESVO:.vo=.v) > $@
+	sed -i "" -e 's///g' $@
+endif
+
+doc/stdlib/FullLibrary.dvi: $(DOCCOMMON) doc/stdlib/FullLibrary.coqdoc.tex doc/stdlib/FullLibrary.tex
+	(cd doc/stdlib;\
+	$(LATEX) -interaction=batchmode FullLibrary;\
+	$(LATEX) -interaction=batchmode FullLibrary > /dev/null;\
+	../tools/show_latex_messages -no-overfull FullLibrary.log)
+
+doc/stdlib/FullLibrary.pdf: $(DOCCOMMON) doc/stdlib/FullLibrary.coqdoc.tex doc/stdlib/FullLibrary.dvi
+	(cd doc/stdlib;\
+	$(PDFLATEX) -interaction=batchmode FullLibrary;\
+	../tools/show_latex_messages -no-overfull FullLibrary.log)
 
 ######################################################################
 # Tutorial on inductive types

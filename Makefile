@@ -182,9 +182,9 @@ docclean:
 	doc/*/*.hatoc doc/*/*.haux doc/*/*.hcomind doc/*/*.herrind doc/*/*.hidx doc/*/*.hind \
 	doc/*/*.htacind doc/*/*.htoc doc/*/*.v.html
 	rm -f doc/stdlib/index-list.html doc/stdlib/index-body.html \
-	  doc/stdlib/Library.coqdoc.tex doc/stdlib/library.files \
-	  doc/stdlib/library.files.ls
-	rm -f doc/*/*.ps doc/*/*.pdf 
+	  doc/stdlib/*Library.coqdoc.tex doc/stdlib/library.files \
+	  doc/stdlib/library.files.ls doc/stdlib/FullLibrary.tex
+	rm -f doc/*/*.ps doc/*/*.pdf
 	rm -rf doc/refman/html doc/stdlib/html doc/faq/html doc/tutorial/tutorial.v.html
 	rm -f doc/refman/euclid.ml doc/refman/euclid.mli
 	rm -f doc/refman/heapsort.ml doc/refman/heapsort.mli
