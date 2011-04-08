@@ -40,11 +40,6 @@ let rec print_list sep = function
 let list_iter_i f =
   let rec aux i = function [] -> () | a::l -> f i a; aux (i+1) l in aux 1
 
-let best_ocamlc =
-  if Coq_config.best = "opt" then "ocamlc.opt" else "ocamlc"
-let best_ocamlopt =
-  if Coq_config.best = "opt" then "ocamlopt.opt" else "ocamlopt"
-
 let section s =
   let l = String.length s in
   let sep = String.make (l+5) '#'
@@ -279,11 +274,19 @@ let variables defs =
     print "COQDOC:=$(COQBIN)coqdoc\n";
     print "COQMKTOP:=$(COQBIN)coqmktop\n";
     (* Caml executables and relative variables *)
-    printf "CAMLLIB:=$(shell $(CAMLBIN)%s -where)\n" best_ocamlc;
-    printf "CAMLC:=$(CAMLBIN)%s -c -rectypes\n" best_ocamlc;
-    printf "CAMLOPTC:=$(CAMLBIN)%s -c -rectypes\n" best_ocamlopt;
-    printf "CAMLLINK:=$(CAMLBIN)%s -rectypes\n" best_ocamlc;
-    printf "CAMLOPTLINK:=$(CAMLBIN)%s -rectypes\n" best_ocamlopt;
+    print "CAMLLIB:=$(shell $(CAMLBIN)ocamlc -where)\n";
+    let pp_ocamlc s =
+      printf "CAMLC:=$(CAMLBIN)ocamlc%s -c -rectypes\n" s;
+      printf "CAMLOPTC:=$(CAMLBIN)ocamlopt%s -c -rectypes\n" s;
+      printf "CAMLLINK:=$(CAMLBIN)ocamlc%s -rectypes\n" s;
+      printf "CAMLOPTLINK:=$(CAMLBIN)ocamlopt%s -rectypes\n" s;
+    in if !opt = "-opt" then begin
+	print "ifeq ($(OPT),-byte)\n";
+	pp_ocamlc "";
+	print "else\n";
+	pp_ocamlc ".opt";
+	print "endif\n";
+      end else pp_ocamlc "";
     print "GRAMMARS:=grammar.cma\n";
     print "CAMLP4EXTEND:=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
     print "CAMLP4OPTIONS:=\n";
