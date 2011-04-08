@@ -642,7 +642,7 @@ else
             then 
             cflags=$cflags" `pkg-config --cflags ige-mac-integration`"
             MACIGEFLAGS='-ccopt "`pkg-config --libs ige-mac-integration`"'
-            MACIGEFILE=ide/macjokes.o
+            MACIGEFILE=ide/ide_mac_stubs.o
             MACIGEP4=-DMacInt
             else
             MACIGEFLAGS=""

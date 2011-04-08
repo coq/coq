@@ -1,12 +1,12 @@
 IFDEF MacInt THEN
-external gtk_mac_init : (string -> unit) -> unit
+external gtk_mac_init : (string -> unit) -> (unit -> bool) -> unit
   = "caml_gtk_mac_init"
 
 external gtk_mac_ready : unit -> unit
   = "caml_gtk_mac_ready"
 END
 
-let initmac () = IFDEF MacInt THEN gtk_mac_init Coqide.do_load ELSE () END
+let initmac () = IFDEF MacInt THEN gtk_mac_init Coqide.do_load Coqide.forbid_quit_to_save ELSE () END
 
 let macready () = IFDEF MacInt THEN gtk_mac_ready () ELSE ()  END
 
