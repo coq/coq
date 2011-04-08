@@ -272,6 +272,10 @@ let make_pat_notation loc ntn (terms,termlists as subst) =
     (fun (loc,p) -> CPatPrim (loc,p))
     destPatPrim terms
 
+let mkPat loc qid l =
+  (* Normally irrelevant test with v8 syntax, but let's do it anyway *)
+  if l = [] then CPatAtom (loc,Some qid) else CPatCstr (loc,qid,l)
+
  (* Better to use extern_glob_constr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
   try
@@ -326,15 +330,9 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 	(match keyrule with
         | NotationRule (sc,ntn) -> raise No_match
         | SynDefRule kn ->
-	    let p =
-	      let qid = Qualid (loc, shortest_qualid_of_syndef vars kn) in
-	      if l = [] then
-		CPatAtom (loc,Some qid)
-	      else
-		let l =
-		  List.map (extern_cases_pattern_in_scope allscopes vars) l in
-		CPatCstr (loc,qid,l) in
-	    insert_pat_alias loc p na)
+	    let qid = Qualid (loc, shortest_qualid_of_syndef vars kn) in
+	    let l = List.map (extern_cases_pattern_in_scope allscopes vars) l in
+	    insert_pat_alias loc (mkPat loc qid l) na)
       | PatCstr (_,f,l,_), Some n when List.length l > n ->
 	  raise No_match
       | PatCstr (loc,_,_,na),_ ->
@@ -361,8 +359,13 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
 		  insert_pat_delimiters loc
 		    (make_pat_notation loc ntn (l,ll)) key)
           | SynDefRule kn ->
-	      let qid = shortest_qualid_of_syndef vars kn in
-              CPatAtom (loc,Some (Qualid (loc, qid))) in
+	      let qid = Qualid (loc, shortest_qualid_of_syndef vars kn) in
+	      let l =
+		List.map (fun (c,(scopt,scl)) ->
+                  extern_cases_pattern_in_scope (scopt,scl@scopes) vars c) 
+                  subst in
+              assert (substlist = []);
+	      mkPat loc qid l in
 	insert_pat_alias loc p na
       | PatVar (loc,Anonymous),_ -> CPatAtom (loc, None)
       | PatVar (loc,Name id),_ -> CPatAtom (loc, Some (Ident (loc,id)))

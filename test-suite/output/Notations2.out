@@ -27,3 +27,13 @@ let' f (x y z : nat) (_ : bool) := x + y + z + 1 in f 0 1 2
      : bool -> nat
 λ (f : nat -> nat) (x : nat), f(x) + S(x)
      : (nat -> nat) -> nat -> nat
+Notation plus2 n := (S (S n))
+λ n : list(nat),
+match n with
+| nil => 2
+| 0 :: _ => 2
+| list1 => 0
+| 1 :: _ :: _ => 2
+| plus2 _ :: _ => 2
+end
+     : list(nat) -> nat
