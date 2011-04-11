@@ -1322,17 +1322,21 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
 	  let evc = nf_evar evd evi.evar_concl in
 	    match evi.evar_body with
 	    | Evar_defined body ->
-		let ty = nf_evar evd (Retyping.get_type_of evenv evd body) in
-		  if occur_existential evd evi.evar_concl
-		    || occur_existential evd ty 
-		  then add_conv_pb (Reduction.CUMUL,evenv,ty,evc) evd
-		  else
-		    let evd,b = conv_algo evenv evd Reduction.CUMUL ty evc in
-		      if b then evd else
-			user_err_loc (fst (evar_source (fst ev1) evd),"",
-				      str "Unable to find a well-typed instantiation")
-	    | Evar_empty -> (* Resulted in a constraint *)
-		evd
+  	      (* FIXME: The body might be ill-typed when this is called from w_merge *)
+	      let ty = 
+		try Retyping.get_type_of evenv evd body 
+		with _ -> error "Ill-typed evar instance"
+	      in
+	      let ty = nf_evar evd ty in
+		if occur_existential evd evi.evar_concl
+		  || occur_existential evd ty 
+		then add_conv_pb (Reduction.CUMUL,evenv,ty,evc) evd
+		else
+		  let evd,b = conv_algo evenv evd Reduction.CUMUL ty evc in
+		    if b then evd else
+		      user_err_loc (fst (evar_source (fst ev1) evd),"",
+				    str "Unable to find a well-typed instantiation")
+	    | Evar_empty -> evd (* Resulted in a constraint *)
     in
     let (evd,pbs) = extract_changed_conv_pbs evd status_changed in
       List.fold_left

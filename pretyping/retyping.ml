@@ -46,8 +46,8 @@ let retype sigma =
   let rec type_of env cstr=
     match kind_of_term cstr with
     | Meta n ->
-          (try strip_outer_cast (Evd.meta_ftype sigma n).Evd.rebus
-           with Not_found -> anomaly ("type_of: unknown meta " ^ string_of_int n))
+      (try strip_outer_cast (Evd.meta_ftype sigma n).Evd.rebus
+       with Not_found -> anomaly ("type_of: unknown meta " ^ string_of_int n))
     | Rel n ->
         let (_,_,ty) = lookup_rel n env in
         lift n ty
@@ -127,10 +127,12 @@ let retype sigma =
     match kind_of_term c with
     | Ind ind ->
       let (_,mip) = lookup_mind_specif env ind in
-      Inductive.type_of_inductive_knowing_parameters env mip argtyps
+	(try Inductive.type_of_inductive_knowing_parameters env mip argtyps
+	 with Reduction.NotArity -> anomaly "type_of: Not an arity")
     | Const cst ->
       let t = constant_type env cst in
-      Typeops.type_of_constant_knowing_parameters env t argtyps
+	(try Typeops.type_of_constant_knowing_parameters env t argtyps
+	 with Reduction.NotArity -> anomaly "type_of: Not an arity")
     | Var id -> type_of_var env id
     | Construct cstr -> type_of_constructor env cstr
     | _ -> assert false
