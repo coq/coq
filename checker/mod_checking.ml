@@ -110,8 +110,11 @@ let check_definition_sub env cb1 cb2 =
   let typ1 = Typeops.type_of_constant_type env cb1.const_type in
   let typ2 = Typeops.type_of_constant_type env cb2.const_type in
   check_type env typ1 typ2;
+  (* In the spirit of subtyping.check_constant, we accept
+     any implementations of parameters and opaques terms,
+     as long as they have the right type *)
   (match cb2.const_body with
-    | Undef _ -> ()
+    | Undef _ | OpaqueDef _ -> ()
     | Def lc2 ->
 	(match cb1.const_body with
 	  | Def lc1 ->
@@ -119,8 +122,7 @@ let check_definition_sub env cb1 cb2 =
             let c2 = force_constr lc2 in
 	    Reduction.conv env c1 c2
 	  (* Coq only places transparent cb in With_definition_body *)
-	  | _ -> assert false)
-    | _ -> ()) (* Pierre L: shouldn't this case raise an error ? *)
+	  | _ -> assert false))
 
 let lookup_modtype mp env =
   try Environ.lookup_modtype mp env

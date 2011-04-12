@@ -87,8 +87,11 @@ and check_with_aux_def env sign with_decl mp equiv =
 		| SFBconst cb -> cb
 		| _ -> error_not_a_constant l
 	      in
+	      (* In the spirit of subtyping.check_constant, we accept
+                 any implementations of parameters and opaques terms,
+	         as long as they have the right type *)
 	      let def,cst = match cb.const_body with
-		| Undef _ ->
+		| Undef _ | OpaqueDef _ ->
 		    let (j,cst1) = Typeops.infer env' c in
 		    let typ = Typeops.type_of_constant_type env' cb.const_type in
 		    let cst2 = Reduction.conv_leq env' j.uj_type typ in
@@ -104,9 +107,6 @@ and check_with_aux_def env sign with_decl mp equiv =
 		    let cst = union_constraints cb.const_constraints cst1 in
 		    let def = Def (Declarations.from_val c) in
 		    def,cst
-		| OpaqueDef _ ->
-		    (* We cannot make transparent an opaque field *)
-		    raise Reduction.NotConvertible
 	      in
 	      let cb' =
 		{ cb with

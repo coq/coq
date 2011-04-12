@@ -243,20 +243,23 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
 	let typ1 = Typeops.type_of_constant_type env cb1.const_type in
 	let typ2 = Typeops.type_of_constant_type env cb2.const_type in
 	check_type env typ1 typ2;
-	(* Now we check the bodies *)
+	(* Now we check the bodies:
+	 - A transparent constant can only be implemented by a compatible
+	   transparent constant.
+         - In the signature, an opaque is handled just as a parameter:
+           anything of the right type can implement it, even if bodies differ.
+	*)
 	(match cb2.const_body with
-	  | Undef _ -> ()
+	  | Undef _ | OpaqueDef _ -> ()
 	  | Def lc2 ->
-	    (* Only a transparent cb1 can implement a transparent cb2.
-	       NB: cb1 might have been strengthened and appear as transparent.
-	       Anyway [check_conv] will handle that afterwards. *)
 	    (match cb1.const_body with
 	      | Undef _ | OpaqueDef _ -> error ()
 	      | Def lc1 ->
+	        (* NB: cb1 might have been strengthened and appear as transparent.
+	           Anyway [check_conv] will handle that afterwards. *)
 		let c1 = force_constr lc1 in
 		let c2 = force_constr lc2 in
-		check_conv conv env c1 c2)
-	  | OpaqueDef lc2 -> ()) (* Pierre L. : this looks really strange ?! *)
+		check_conv conv env c1 c2))
       | IndType ((kn,i),mind1) ->
 	  ignore (Util.error (
 		    "The kernel does not recognize yet that a parameter can be " ^

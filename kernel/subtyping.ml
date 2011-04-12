@@ -260,39 +260,23 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
       let typ1 = Typeops.type_of_constant_type env cb1.const_type in
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
       let cst = check_type cst env typ1 typ2 in
-      (* Now we check the bodies *)
+      (* Now we check the bodies:
+	 - A transparent constant can only be implemented by a compatible
+	   transparent constant.
+         - In the signature, an opaque is handled just as a parameter:
+           anything of the right type can implement it, even if bodies differ.
+      *)
       (match cb2.const_body with
-	| Undef _ -> cst
+	| Undef _ | OpaqueDef _ -> cst
 	| Def lc2 ->
-	  (* Only a transparent cb1 can implement a transparent cb2.
-	     NB: cb1 might have been strengthened and appear as transparent.
-	     Anyway [check_conv] will handle that afterwards. *)
 	  (match cb1.const_body with
 	    | Undef _ | OpaqueDef _ -> error NotConvertibleBodyField
 	    | Def lc1 ->
+	      (* NB: cb1 might have been strengthened and appear as transparent.
+		 Anyway [check_conv] will handle that afterwards. *)
 	      let c1 = Declarations.force lc1 in
 	      let c2 = Declarations.force lc2 in
-	      check_conv NotConvertibleBodyField cst conv env c1 c2)
-	| OpaqueDef lc2 ->
-	  (* Here cb1 can be either opaque or transparent. We need to
-	     bypass the opacity and possibly do a delta step. *)
-	  (match body_of_constant cb1 with
-	    | None -> error NotConvertibleBodyField
-	    | Some lc1 ->
-	      let c1 = Declarations.force lc1 in
-	      let c2 = Declarations.force_opaque lc2 in
-	      let c1' = match (kind_of_term c1),(kind_of_term c2) with
-		| Const n1,Const n2 when (eq_constant n1 n2) -> c1
-		  (* cb1 may have been strengthened, we need to unfold it: *)
-		| Const n1,_ ->
-		  let cb1' = subst_const_body subst1 (lookup_constant n1 env)
-		  in
-		  (match cb1'.const_body with
-		    | OpaqueDef lc1' -> Declarations.force_opaque lc1'
-		    | _ -> c1)
-		| _,_ -> c1
-	      in
-	      check_conv NotConvertibleBodyField cst conv env c1' c2))
+	      check_conv NotConvertibleBodyField cst conv env c1 c2))
    | IndType ((kn,i),mind1) ->
        ignore (Util.error (
        "The kernel does not recognize yet that a parameter can be " ^
