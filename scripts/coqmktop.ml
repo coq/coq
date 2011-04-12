@@ -49,7 +49,6 @@ let notopobjs = gramobjs
 let opt        = ref false
 let full       = ref false
 let top        = ref false
-let searchisos = ref false
 let echo       = ref false
 
 let src_dirs () =
@@ -133,7 +132,6 @@ let usage () =
 \n  -echo          Print calls to external commands\
 \n  -full          Link high level tactics\
 \n  -opt           Compile in native code\
-\n  -searchisos    Build a toplevel for SearchIsos\
 \n  -top           Build Coq on a OCaml toplevel (incompatible with -opt)\
 \n  -R dir         Specify recursively directories for Ocaml\
 \n";
@@ -239,11 +237,8 @@ let create_tmp_main_file modules =
     output_string oc "\"];;\n";
     (* Initializes the kind of loading *)
     output_string oc (declare_loading_string());
-    (* Start the right toplevel loop: Coq or Coq_searchisos *)
-    if !searchisos then
-      output_string oc "Cmd_searchisos_line.start();;\n"
-    else
-      output_string oc "Coqtop.start();;\n";
+    (* Start the toplevel loop *)
+    output_string oc "Coqtop.start();;\n";
     close_out oc;
     main_name
   with e ->

@@ -125,44 +125,6 @@ subdirectories. For more options type
 the sources of \Coq{} somewhere and have an environment variable named
 \texttt{COQTOP} that points to that directory.
 
-% \section{{\sf Coq\_SearchIsos}: information retrieval in a \Coq\ proofs
-% library}
-% \label{coqsearchisos}
-% \index{Coq\_SearchIsos@{\sf Coq\_SearchIsos}}
-
-% In the \Coq\ distribution, there is also a separated and independent tool,
-% called {\sf Coq\_SearchIsos}, which allows the search in accordance with {\tt
-% SearchIsos}\index{SearchIsos@{\tt SearchIsos}} (see Section~\ref{searchisos})
-% in a \Coq\ proofs library. More precisely, this program begins, once launched
-% by {\tt coqtop -searchisos}\index{coqtopsearchisos@{\tt
-% coqtop -searchisos}}, loading lightly (by using specifications functions)
-% all the \Coq\ objects files ({\tt .vo}) accessible by the {\tt LoadPath} (see
-% Section~\ref{loadpath}). Next, a prompt appears and four commands are then
-% available:
-
-% \begin{description}
-% \item [{\tt SearchIsos}]\ \\
-%   Scans the fixed context.
-% \item [{\tt Time}]\index{Time@{\tt Time}}\ \\
-%   Turns on the Time Search Display mode (see Section~\ref{time}).
-% \item [{\tt Untime}]\index{Untime@{\tt Untime}}\ \\
-%   Turns off the Time Search Display mode (see Section~\ref{time}).
-% \item [{\tt Quit}]\index{Quit@{\tt Quit}}\ \\
-%   Ends the {\tt coqtop -searchisos} session.
-% \end{description}
-
-% When running {\tt coqtop -searchisos} you can use the two options:
-
-% \begin{description}
-% \item[{\tt -opt}]\ \\
-%   Runs the native-code version of {\sf Coq\_SearchIsos}.
-
-% \item[{\tt -image} {\em file}]\ \\
-%   This option sets the binary image to be used to be {\em file}
-%   instead of the standard one. Not of general use.
-% \end{description}
-
-
 \section[Documenting \Coq\ files with coqdoc]{Documenting \Coq\ files with coqdoc\label{coqdoc}
 \index{Coqdoc@{\sf coqdoc}}}
 
