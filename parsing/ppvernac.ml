@@ -347,18 +347,20 @@ let pr_class_rawexpr = function
   | SortClass -> str"Sortclass"
   | RefClass qid -> pr_smart_global qid
 
-let pr_assumption_token many = function
-  | (Local,Logical) ->
-      str (if many then "Hypotheses" else "Hypothesis")
-  | (Local,Definitional) ->
-      str (if many then "Variables" else "Variable")
-  | (Global,Logical) ->
-      str (if many then "Axioms" else "Axiom")
-  | (Global,Definitional) ->
-      str (if many then "Parameters" else "Parameter")
-  | (Global,Conjectural) -> str"Conjecture"
-  | (Local,Conjectural) ->
-      anomaly "Don't know how to beautify a local conjecture"
+let pr_assumption_token many (l,p,k) = 
+  let s = match l, k with
+    | (Local,Logical) ->
+	str (if many then "Hypotheses" else "Hypothesis")
+    | (Local,Definitional) ->
+	str (if many then "Variables" else "Variable")
+    | (Global,Logical) ->
+	str (if many then "Axioms" else "Axiom")
+    | (Global,Definitional) ->
+	str (if many then "Parameters" else "Parameter")
+    | (Global,Conjectural) -> str"Conjecture"
+    | (Local,Conjectural) ->
+	anomaly "Don't know how to beautify a local conjecture"
+  in if p then str "Polymorphic " ++ s else s
 
 let pr_params pr_c (xl,(c,t)) =
   hov 2 (prlist_with_sep sep pr_lident xl ++ spc() ++
@@ -569,7 +571,7 @@ let rec pr_vernac = function
         | None -> mt()
         | Some cc -> str" :=" ++ spc() ++ cc))
 
-  | VernacStartTheoremProof (ki,l,_,_) ->
+  | VernacStartTheoremProof (ki,p,l,_,_) ->
       hov 1 (pr_statement (pr_thm_token ki) (List.hd l) ++
              prlist (pr_statement (spc () ++ str "with")) (List.tl l))
 
@@ -690,10 +692,11 @@ let rec pr_vernac = function
 (* 	  prlist_with_sep (fun () -> str";" ++ spc())  *)
 (* 	  (fun (lid,oc,c) -> pr_lident_constr ((if oc then str" :>" else str" :") ++ spc()) (lid,c)) props ) *)
 
- | VernacInstance (abst,glob, sup, (instid, bk, cl), props, pri) ->
+ | VernacInstance (abst,glob,poly,sup,(instid, bk, cl),props,pri) ->
      hov 1 (
        pr_non_locality (not glob) ++
        (if abst then str"Declare " else mt ()) ++
+       (if poly then str"Polymorphic " else mt ()) ++
        str"Instance" ++ spc () ++
 	 pr_and_type_binders_arg sup ++
 	 str"=>" ++ spc () ++

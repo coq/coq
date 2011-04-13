@@ -329,13 +329,13 @@ let start_proof_and_print k l hook =
   print_subgoals ();
   if !pcoq <> None then (Option.get !pcoq).start_proof ()
 
-let vernac_definition (local,k) (loc,id as lid) def hook =
+let vernac_definition (local,p,k) (loc,id as lid) def hook =
   if local = Local then Dumpglob.dump_definition lid true "var"
   else Dumpglob.dump_definition lid false "def";
   (match def with
     | ProveBody (bl,t) ->   (* local binders, typ *)
  	let hook _ _ = () in
- 	  start_proof_and_print (local,DefinitionBody Definition)
+ 	  start_proof_and_print (local,p,DefinitionBody Definition)
 	    [Some lid, (bl,t,None)] hook
     | DefineBody (bl,red_option,c,typ_opt) ->
  	let red_option = match red_option with
@@ -343,10 +343,10 @@ let vernac_definition (local,k) (loc,id as lid) def hook =
           | Some r ->
 	      let (evc,env)= get_current_context () in
  		Some (interp_redexp env evc r) in
-	let ce,imps = interp_definition bl red_option c typ_opt in
+	let ce,imps = interp_definition bl p red_option c typ_opt in
 	declare_definition id (local,k) ce imps hook)
 
-let vernac_start_proof kind l lettop hook =
+let vernac_start_proof kind p l lettop hook =
   if Dumpglob.dump () then
     List.iter (fun (id, _) ->
       match id with
@@ -356,7 +356,7 @@ let vernac_start_proof kind l lettop hook =
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
 	(str "Let declarations can only be used in proof editing mode.");
-  start_proof_and_print (Global, Proof kind) l hook
+  start_proof_and_print (Global, p, Proof kind) l hook
 
 let vernac_end_proof = function
   | Admitted -> admit ()
@@ -380,7 +380,7 @@ let vernac_assumption kind l nl=
   if Pfedit.refining () then
     errorlabstrm ""
       (str "Cannot declare an assumption while in proof editing mode.");
-  let global = fst kind = Global in
+  let global = Util.pi1 kind = Global in
     List.iter (fun (is_coe,(idl,c)) ->
       if Dumpglob.dump () then
 	List.iter (fun lid ->
@@ -628,9 +628,9 @@ let vernac_identity_coercion stre id qids qidt =
 
 (* Type classes *)
 
-let vernac_instance abst glob sup inst props pri =
+let vernac_instance abst glob poly sup inst props pri =
   Dumpglob.dump_constraint inst false "inst";
-  ignore(Classes.new_instance ~abstract:abst ~global:glob sup inst props pri)
+  ignore(Classes.new_instance ~abstract:abst ~global:glob poly sup inst props pri)
 
 let vernac_context l =
   Classes.context l
@@ -1334,7 +1334,7 @@ let interp c = match c with
 
   (* Gallina *)
   | VernacDefinition (k,lid,d,f) -> vernac_definition k lid d f
-  | VernacStartTheoremProof (k,l,top,f) -> vernac_start_proof k l top f
+  | VernacStartTheoremProof (k,p,l,top,f) -> vernac_start_proof k p l top f
   | VernacEndProof e -> vernac_end_proof e
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,nl,l) -> vernac_assumption stre l nl
@@ -1365,8 +1365,8 @@ let interp c = match c with
   | VernacIdentityCoercion (str,(_,id),s,t) -> vernac_identity_coercion str id s t
 
   (* Type classes *)
-  | VernacInstance (abst, glob, sup, inst, props, pri) ->
-      vernac_instance abst glob sup inst props pri
+  | VernacInstance (abst, glob, poly, sup, inst, props, pri) ->
+      vernac_instance abst glob poly sup inst props pri
   | VernacContext sup -> vernac_context sup
   | VernacDeclareInstances (glob, ids) -> vernac_declare_instances glob ids
   | VernacDeclareClass id -> vernac_declare_class id
@@ -1420,7 +1420,7 @@ let interp c = match c with
   | VernacNop -> ()
 
   (* Proof management *)
-  | VernacGoal t -> vernac_start_proof Theorem [None,([],t,None)] false (fun _ _->())
+  | VernacGoal t -> vernac_start_proof Theorem false [None,([],t,None)] false (fun _ _->())
   | VernacAbort id -> vernac_abort id
   | VernacAbortAll -> vernac_abort_all ()
   | VernacRestart -> vernac_restart ()

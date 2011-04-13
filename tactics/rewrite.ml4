@@ -1438,7 +1438,7 @@ let declare_an_instance n s args =
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance global binders instance fields =
-  new_instance binders instance (Some (CRecord (dummy_loc,None,fields)))
+  new_instance false binders instance (Some (CRecord (dummy_loc,None,fields)))
     ~global:(not (Vernacexpr.use_section_locality ())) ~generalize:false None
 
 let declare_instance_refl global binders a aeq n lemma =
@@ -1617,6 +1617,7 @@ let declare_projection n instance_id r =
   let cst =
     { const_entry_body = term;
       const_entry_type = Some typ;
+      const_entry_polymorphic = false;
       const_entry_opaque = false }
   in
     ignore(Declare.declare_constant n (Entries.DefinitionEntry cst, Decl_kinds.IsDefinition Decl_kinds.Definition))
@@ -1687,7 +1688,7 @@ let add_morphism_infer glob m n =
 	add_instance (Typeclasses.new_instance (Lazy.force proper_class) None glob (ConstRef cst));
 	declare_projection n instance_id (ConstRef cst)
     else
-      let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
+      let kind = Decl_kinds.Global, false, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	Flags.silently
 	  (fun () ->
 	    Lemmas.start_proof instance_id kind instance
@@ -1710,7 +1711,7 @@ let add_morphism glob binders m s n =
 	     [cHole; s; m]))
   in
   let tac = Tacinterp.interp <:tactic<add_morphism_tactic>> in
-    ignore(new_instance ~global:glob binders instance (Some (CRecord (dummy_loc,None,[])))
+    ignore(new_instance ~global:glob false binders instance (Some (CRecord (dummy_loc,None,[])))
 	      ~generalize:false ~tac ~hook:(declare_projection n instance_id) None)
 
 VERNAC COMMAND EXTEND AddSetoid1

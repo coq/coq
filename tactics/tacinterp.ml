@@ -1238,7 +1238,7 @@ let solvable_by_tactic env evi (ev,args) src =
 	Environ.named_context_of_val evi.evar_hyps =
 	Environ.named_context env ->
       let id = id_of_string "H" in
-      start_proof id (Local,Proof Lemma) evi.evar_hyps evi.evar_concl
+      start_proof id (Local,false,Proof Lemma) evi.evar_hyps evi.evar_concl
 	(fun _ _ -> ());
       begin
 	try

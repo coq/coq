@@ -156,7 +156,7 @@ let definition_message id =
   Flags.if_verbose message ((string_of_id id) ^ " is defined")
 
 
-let save with_clean id const (locality,kind) hook =
+let save with_clean id const (locality,p,kind) hook =
   let {const_entry_body = pft;
        const_entry_type = tpo;
        const_entry_opaque = opacity } = const in

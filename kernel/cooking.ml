@@ -143,6 +143,6 @@ let cook_constant env r =
 	let t = mkArity (ctx,Type s.poly_level) in
 	let typ = abstract_constant_type (expmod_constr r.d_modlist t) hyps in
 	let j = make_judge (constr_of_def body) typ in
-	Typeops.make_polymorphic_if_constant_for_ind env j
+	Typeops.make_polymorphic env j
   in
   (body, typ, cb.const_constraints)

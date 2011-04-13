@@ -223,9 +223,9 @@ type vernac_expr =
       scope_name option
 
   (* Gallina *)
-  | VernacDefinition of definition_kind * lident * definition_expr *
-      declaration_hook
-  | VernacStartTheoremProof of theorem_kind *
+  | VernacDefinition of definition_kind
+      * lident * definition_expr * declaration_hook
+  | VernacStartTheoremProof of theorem_kind * polymorphic *
       (lident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)) list *
         bool * declaration_hook
   | VernacEndProof of proof_end
@@ -253,6 +253,7 @@ type vernac_expr =
   | VernacInstance of
       bool * (* abstract instance *)
       bool * (* global *)
+      bool * (* polymorphic *)
       local_binder list * (* super *)
 	typeclass_constraint * (* instance name, class name, params *)
 	constr_expr option * (* props *)

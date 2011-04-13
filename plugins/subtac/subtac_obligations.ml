@@ -231,10 +231,11 @@ let subst_body expand prg =
 
 let declare_definition prg =
   let body, typ = subst_body true prg in
-  let (local, kind) = prg.prg_kind in
+  let (local, poly, kind) = prg.prg_kind in
   let ce =
     { const_entry_body = body;
       const_entry_type = Some typ;
+      const_entry_polymorphic = poly;
       const_entry_opaque = false }
   in
     (Command.get_declare_definition_hook ()) ce;
@@ -253,7 +254,7 @@ let declare_definition prg =
     | (Global|Local) ->
 	let c =
 	  Declare.declare_constant
-	    prg.prg_name (DefinitionEntry ce,IsDefinition (snd prg.prg_kind))
+	    prg.prg_name (DefinitionEntry ce,IsDefinition (pi3 prg.prg_kind))
 	in
 	let gr = ConstRef c in
 	  if Impargs.is_implicit_args () || prg.prg_implicits <> [] then
@@ -301,7 +302,7 @@ let declare_mutual_definition l =
   let fixkind = Option.get first.prg_fixkind in
   let arrrec, recvec = Array.of_list fixtypes, Array.of_list fixdefs in
   let fixdecls = (Array.of_list (List.map (fun x -> Name x.prg_name) l), arrrec, recvec) in
-  let (local,kind) = first.prg_kind in
+  let (local,poly,kind) = first.prg_kind in
   let fixnames = first.prg_deps in
   let kind = if fixkind <> IsCoFixpoint then Fixpoint else CoFixpoint in
   let indexes, fixdecls =
@@ -334,6 +335,7 @@ let declare_obligation prg obl body =
       let ce = 
 	{ const_entry_body = body;
 	  const_entry_type = Some ty;
+	  const_entry_polymorphic = false;
 	  const_entry_opaque = opaque }
       in
       let constant = Declare.declare_constant obl.obl_name
@@ -602,7 +604,7 @@ let show_term n =
 	      my_print_constr (Global.env ()) prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
 	    ++ my_print_constr (Global.env ()) prg.prg_body)
 
-let add_definition n ?term t ?(implicits=[]) ?(kind=Global,Definition) ?tactic
+let add_definition n ?term t ?(implicits=[]) ?(kind=Global,false,Definition) ?tactic
     ?(reduce=reduce) ?(hook=fun _ _ -> ()) obls =
   Flags.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
   let prg = init_prog_info n term t [] None [] obls implicits kind reduce hook in
@@ -620,7 +622,7 @@ let add_definition n ?term t ?(implicits=[]) ?(kind=Global,Definition) ?tactic
 	| Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
 	| _ -> res)
 
-let add_mutual_definitions l ?tactic ?(kind=Global,Definition) ?(reduce=reduce)
+let add_mutual_definitions l ?tactic ?(kind=Global,false,Definition) ?(reduce=reduce)
     ?(hook=fun _ _ -> ()) notations fixkind =
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
   let upd = List.fold_left

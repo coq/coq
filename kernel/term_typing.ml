@@ -26,14 +26,17 @@ open Type_errors
 open Indtypes
 open Typeops
 
-let constrain_type env j cst1 = function
-  | None ->
-      make_polymorphic_if_constant_for_ind env j, cst1
+let constrain_type env j cst1 poly = function
+  | None -> make_polymorphic env j, cst1
   | Some t ->
       let (tj,cst2) = infer_type env t in
       let (_,cst3) = judge_of_cast env j DEFAULTcast tj in
-      assert (t = tj.utj_val);
-      NonPolymorphicType t, union_constraints (union_constraints cst1 cst2) cst3
+	assert (t = tj.utj_val);
+	let cstrs = union_constraints (union_constraints cst1 cst2) cst3 in
+	  if poly then 
+	    make_polymorphic env { j with uj_type = tj.utj_val }, cstrs
+	  else
+	    NonPolymorphicType t, cstrs
 
 let local_constrain_type env j cst1 = function
   | None ->
@@ -92,7 +95,8 @@ let infer_declaration env dcl =
   match dcl with
   | DefinitionEntry c ->
       let (j,cst) = infer env c.const_entry_body in
-      let (typ,cst) = constrain_type env j cst c.const_entry_type in
+      let (typ,cst) = constrain_type env j cst 
+	c.const_entry_polymorphic c.const_entry_type 
       let def =
 	if c.const_entry_opaque
 	then OpaqueDef (Declarations.opaque_from_val j.uj_val)

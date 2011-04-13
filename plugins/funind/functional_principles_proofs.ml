@@ -973,7 +973,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
       Ensures by: obvious
       i*)
     (mk_equation_id f_id)
-    (Decl_kinds.Global,(Decl_kinds.Proof Decl_kinds.Theorem))
+    (Decl_kinds.Global, false, (Decl_kinds.Proof Decl_kinds.Theorem))
     lemma_type
     (fun _ _ -> ());
   Pfedit.by (prove_replacement);

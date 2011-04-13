@@ -788,7 +788,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	     Ensures by: obvious
 	     i*)
 	   (mk_correct_id f_id)
-	   (Decl_kinds.Global,(Decl_kinds.Proof Decl_kinds.Theorem))
+	   (Decl_kinds.Global,false,(Decl_kinds.Proof Decl_kinds.Theorem))
 	   (fst lemmas_types_infos.(i))
 	   (fun _ _ -> ());
 	 Pfedit.by (observe_tac ("prove correctness ("^(string_of_id f_id)^")") (proving_tac i));
@@ -840,7 +840,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	     Ensures by: obvious
 	     i*)
 	   (mk_complete_id f_id)
-	   (Decl_kinds.Global,(Decl_kinds.Proof Decl_kinds.Theorem))
+	   (Decl_kinds.Global, false, (Decl_kinds.Proof Decl_kinds.Theorem))
 	   (fst lemmas_types_infos.(i))
 	   (fun _ _ -> ());
 	 Pfedit.by (observe_tac ("prove completeness ("^(string_of_id f_id)^")") (proving_tac i));

@@ -135,25 +135,36 @@ let test_plurial_form_types = function
    "Keywords Implicit Types expect more than one type"
   | _ -> ()
 
+let polymorphic_flag = ref None
+let use_polymorphic_flag () =
+  let fl = match !polymorphic_flag with Some p -> p | None -> assert false in
+    polymorphic_flag := None; fl
+
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
     typeclass_constraint record_field decl_notation rec_definition;
 
   gallina:
+    [ [ [ "Polymorphic" -> polymorphic_flag := Some true | -> polymorphic_flag := Some false ]; 
+	g = gallina_def -> g ] ]
+  ;
+
+  gallina_def:
       (* Definition, Theorem, Variable, Axiom, ... *)
     [ [ thm = thm_token; id = identref; bl = binders; ":"; c = lconstr;
         l = LIST0
           [ "with"; id = identref; bl = binders; ":"; c = lconstr ->
             (Some id,(bl,c,None)) ] ->
-          VernacStartTheoremProof (thm,(Some id,(bl,c,None))::l, false, no_hook)
-      | stre = assumption_token; nl = inline; bl = assum_list ->
-	  VernacAssumption (stre, nl, bl)
-      | stre = assumptions_token; nl = inline; bl = assum_list ->
+          VernacStartTheoremProof (thm,use_polymorphic_flag (),(Some id,(bl,c,None))::l, false, no_hook)
+      | (g, k) = assumption_token; nl = inline; bl = assum_list ->
+	  VernacAssumption ((g, use_polymorphic_flag (), k), nl, bl)
+      | (g, k) = assumptions_token; nl = inline; bl = assum_list ->
 	  test_plurial_form bl;
-	  VernacAssumption (stre, nl, bl)
-      | (f,d) = def_token; id = identref; b = def_body ->
-          VernacDefinition (d, id, b, f)
+	  VernacAssumption ((g, use_polymorphic_flag (), k), nl, bl)
+      | (f,(g,k)) = def_token; id = identref; 
+	  b = def_body ->
+            VernacDefinition ((g,use_polymorphic_flag (),k), id, b, f)
       (* Gallina inductive declarations *)
       | f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
@@ -520,16 +531,16 @@ GEXTEND Gram
           d = def_body ->
           let s = coerce_reference_to_id qid in
 	  VernacDefinition
-	    ((Global,CanonicalStructure),(dummy_loc,s),d,
+	    ((Global,false,CanonicalStructure),(dummy_loc,s),d,
 	     (fun _ -> Recordops.declare_canonical_structure))
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
           let s = coerce_reference_to_id qid in
-	  VernacDefinition ((use_locality_exp (),Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
+	  VernacDefinition ((use_locality_exp (),false,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
       | IDENT "Coercion"; IDENT "Local"; qid = global; d = def_body ->
            let s = coerce_reference_to_id qid in
-	  VernacDefinition ((enforce_locality_exp true,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
+	  VernacDefinition ((enforce_locality_exp true,false,Coercion),(dummy_loc,s),d,Class.add_coercion_hook)
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identref;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr ->
 	   VernacIdentityCoercion (enforce_locality_exp true, f, s, t)
@@ -557,7 +568,7 @@ GEXTEND Gram
 	 pri = OPT [ "|"; i = natural -> i ] ;
 	 props = [ ":="; "{"; r = record_declaration; "}" -> Some r |
 	     ":="; c = lconstr -> Some c | -> None ] ->
-	   VernacInstance (false, not (use_section_locality ()),
+	   VernacInstance (false, not (use_section_locality ()), false,
 			   snd namesup, (fst namesup, expl, t), props, pri)
 
       | IDENT "Existing"; IDENT "Instance"; id = global ->
@@ -628,7 +639,7 @@ GEXTEND Gram
       | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";
 	 expl = [ "!" -> Glob_term.Implicit | -> Glob_term.Explicit ] ; t = operconstr LEVEL "200";
 	 pri = OPT [ "|"; i = natural -> i ] ->
-	   VernacInstance (true, not (use_section_locality ()),
+	   VernacInstance (true, not (use_section_locality ()), false,
 			   snd namesup, (fst namesup, expl, t),
 			   None, pri)
 

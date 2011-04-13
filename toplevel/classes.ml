@@ -102,12 +102,13 @@ let instance_hook k pri global imps ?hook cst =
     Typeclasses.add_instance inst;
     (match hook with Some h -> h cst | None -> ())
 
-let declare_instance_constant k pri global imps ?hook id term termtype =
+let declare_instance_constant k pri global imps ?hook poly id term termtype =
   let cdecl =
     let kind = IsDefinition Instance in
     let entry =
       { const_entry_body   = term;
 	const_entry_type   = Some termtype;
+	const_entry_polymorphic = poly;
 	const_entry_opaque = false }
     in DefinitionEntry entry, kind
   in
@@ -116,7 +117,7 @@ let declare_instance_constant k pri global imps ?hook id term termtype =
     instance_hook k pri global imps ?hook (ConstRef kn);
     id
 
-let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
+let new_instance ?(abstract=false) ?(global=false) poly ctx (instid, bk, cl) props
     ?(generalize=true)
     ?(tac:Proof_type.tactic option) ?(hook:(global_reference -> unit) option) pri =
   let env = Global.env() in
@@ -252,10 +253,10 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	let evm = undefined_evars !evars in
 	Evarutil.check_evars env Evd.empty !evars termtype;
 	  if Evd.is_empty evm && term <> None then
-	    declare_instance_constant k pri global imps ?hook id (Option.get term) termtype
+	    declare_instance_constant k pri global imps ?hook poly id (Option.get term) termtype
 	  else begin
 	    evars := Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env !evars;
-	    let kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Instance in
+	    let kind = Decl_kinds.Global, poly, Decl_kinds.DefinitionBody Decl_kinds.Instance in
 	      Flags.silently (fun () ->
 		Lemmas.start_proof id kind termtype (fun _ -> instance_hook k pri global imps ?hook);
 		if term <> None then 
@@ -297,6 +298,7 @@ let rec declare_subclasses gr (rels, (tc, args)) =
     let ce = {
       const_entry_body   = it_mkLambda_or_LetIn (mkApp (p, projargs)) rels;
       const_entry_type   = None;
+      const_entry_polymorphic = false;
       const_entry_opaque = false }
     in
     let cst = Declare.declare_constant ~internal:Declare.KernelSilent 
@@ -337,7 +339,7 @@ let context l =
 	(fun (x,_) ->
 	   match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls
       in
-	Command.declare_assumption false (Local (* global *), Definitional) t
+	Command.declare_assumption false (Local (* global *), false, Definitional) t
 	  [] impl (* implicit *) None (* inline *) (dummy_loc, id))
 (* 	match class_of_constr t with *)
 (* 	| None -> () *)

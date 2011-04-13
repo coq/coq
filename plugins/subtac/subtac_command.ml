@@ -327,6 +327,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
 	let ce =
 	  { const_entry_body = Evarutil.nf_evar !isevars body;
 	    const_entry_type = Some ty;
+	    const_entry_polymorphic = false;
 	    const_entry_opaque = false }
 	in 
 	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
