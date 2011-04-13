@@ -256,6 +256,16 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	    else error_cannot_unify_local curenv sigma (m,n,cM)
 	| Evar ev, _ -> sigma,metasubst,((curenv, ev,cN)::evarsubst)
 	| _, Evar ev -> sigma,metasubst,((curenv, ev,cM)::evarsubst)
+
+	| Sort s1, Sort s2 ->
+	    (try 
+	       let sigma' = 
+		 if cv_pb = Cumul 
+		 then Evd.set_leq_sort sigma s1 s2 
+		 else Evd.set_eq_sort sigma s1 s2 
+	       in (sigma', metasubst, evarsubst)
+	     with _ -> error_cannot_unify_local curenv sigma (m,n,cM))
+	      
 	| Lambda (na,t1,c1), Lambda (_,t2,c2) ->
 	    unirec_rec (push (na,t1) curenvnb) topconv true
 	      (unirec_rec curenvnb topconv true substn t1 t2) c1 c2
@@ -612,23 +622,18 @@ let unify_to_type env sigma flags c status u =
   let t = get_type_of env sigma c in
   let t = Tacred.hnf_constr env sigma (nf_betaiota sigma (nf_meta sigma t)) in
   let u = Tacred.hnf_constr env sigma u in
-    try
-      if status = IsSuperType then
+    if status = IsSuperType then
+      unify_0 env sigma Cumul flags u t
+    else if status = IsSubType then
+      unify_0 env sigma Cumul flags t u
+    else
+      try unify_0 env sigma Cumul flags t u
+      with e when precatchable_exception e ->
 	unify_0 env sigma Cumul flags u t
-      else if status = IsSubType then
-	unify_0 env sigma Cumul flags t u
-      else
-	try unify_0 env sigma Cumul flags t u
-	with e when precatchable_exception e ->
-	  unify_0 env sigma Cumul flags u t
-    with e when precatchable_exception e ->
-      (sigma,[],[])
 
 let unify_type env sigma flags mv status c =
   let mvty = Typing.meta_type sigma mv in
-  if occur_meta_or_existential mvty or is_arity env sigma mvty then
     unify_to_type env sigma flags c status mvty
-  else (sigma,[],[])
 
 (* Move metas that may need coercion at the end of the list of instances *)
 
