@@ -1303,6 +1303,7 @@ let status_changed lev (pbty,_,t1,t2) =
 (* Rq: uncomplete algorithm if pbty = CONV_X_LEQ ! *)
 let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1),t2) =
   try
+    assert(Evd.is_undefined evd evk1);
     let t2 = whd_betaiota evd t2 in (* includes whd_evar *)
     let evd = match kind_of_term t2 with
       | Evar (evk2,args2 as ev2) ->

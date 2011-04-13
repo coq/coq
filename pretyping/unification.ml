@@ -341,7 +341,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 		    match kind_of_term cN with App (f,l) -> (f,l) | _ -> (cN,[||]) in
 		    expand curenvnb pb b substn cM f1 l1 cN f2 l2
 
-  and reduce curenvnb pb b (sigma, _, _ as substn) cM cN =
+  and reduce curenvnb pb b (sigma, metas, evars as substn) cM cN =
     let cM' = do_reduce (fst curenvnb) sigma cM in
       if not (eq_constr cM cM') then
 	unirec_rec curenvnb pb true substn cM' cN
@@ -464,7 +464,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       unirec_rec curenvnb pb b substn c1 (applist (c,(List.rev ks)))
 
   in
-  let evd = create_evar_defs sigma in
+  let evd = sigma in
     if (if occur_meta_or_undefined_evar evd m || occur_meta_or_undefined_evar evd n then false 
       else if (match flags.modulo_conv_on_closed_terms with
       | Some flags ->
@@ -487,64 +487,64 @@ let right = false
 let pop k = if k=0 then 0 else k-1
 
 let rec unify_with_eta keptside flags env sigma k1 k2 c1 c2 =
-  (* Reason up to limited eta-expansion: ci is allowed to start with ki lam *)
-  (* Question: try whd_betadeltaiota on ci if ki>0 ? *)
+(* Reason up to limited eta-expansion: ci is allowed to start with ki lam *)
+(* Question: try whd_betadeltaiota on ci if ki>0 ? *)
   match kind_of_term c1, kind_of_term c2 with
   | (Lambda (na,t1,c1'), Lambda (_,t2,c2')) ->
-      let env' = push_rel_assum (na,t1) env in
-      let sigma,metas,evars = unify_0 env sigma topconv flags t1 t2 in
-      let side,status,(sigma,metas',evars') =
-	unify_with_eta keptside flags env' sigma (pop k1) (pop k2) c1' c2'
-      in (side,status,(sigma,metas@metas',evars@evars'))
+    let env' = push_rel_assum (na,t1) env in
+    let sigma,metas,evars = unify_0 env sigma topconv flags t1 t2 in
+    let side,status,(sigma,metas',evars') =
+      unify_with_eta keptside flags env' sigma (pop k1) (pop k2) c1' c2'
+    in (side,status,(sigma,metas@metas',evars@evars'))
   | (Lambda (na,t,c1'),_) when k2 > 0 ->
-      let env' = push_rel_assum (na,t) env in
-      let side = left in (* expansion on the right: we keep the left side *)
+    let env' = push_rel_assum (na,t) env in
+    let side = left in (* expansion on the right: we keep the left side *)
       unify_with_eta side flags env' sigma (pop k1) (k2-1)
-	c1' (mkApp (lift 1 c2,[|mkRel 1|]))
+      c1' (mkApp (lift 1 c2,[|mkRel 1|]))
   | (_,Lambda (na,t,c2')) when k1 > 0 ->
-      let env' = push_rel_assum (na,t) env in
-      let side = right in (* expansion on the left: we keep the right side *)
+    let env' = push_rel_assum (na,t) env in
+    let side = right in (* expansion on the left: we keep the right side *)
       unify_with_eta side flags env' sigma (k1-1) (pop k2)
-	(mkApp (lift 1 c1,[|mkRel 1|])) c2'
+      (mkApp (lift 1 c1,[|mkRel 1|])) c2'
   | _ ->
-      (keptside,ConvUpToEta(min k1 k2),
-       unify_0 env sigma topconv flags c1 c2)
-
+    (keptside,ConvUpToEta(min k1 k2),
+     unify_0 env sigma topconv flags c1 c2)
+    
 (* We solved problems [?n =_pb u] (i.e. [u =_(opp pb) ?n]) and [?n =_pb' u'],
    we now compute the problem on [u =? u'] and decide which of u or u' is kept
 
    Rem: the upper constraint is lost in case u <= ?n <= u' (and symmetrically
    in the case u' <= ?n <= u)
  *)
-
+    
 let merge_instances env sigma flags st1 st2 c1 c2 =
   match (opp_status st1, st2) with
   | (UserGiven, ConvUpToEta n2) ->
-      unify_with_eta left flags env sigma 0 n2 c1 c2
+    unify_with_eta left flags env sigma 0 n2 c1 c2
   | (ConvUpToEta n1, UserGiven) ->
-      unify_with_eta right flags env sigma n1 0 c1 c2
+    unify_with_eta right flags env sigma n1 0 c1 c2
   | (ConvUpToEta n1, ConvUpToEta n2) ->
-      let side = left (* arbitrary choice, but agrees with compatibility *) in
+    let side = left (* arbitrary choice, but agrees with compatibility *) in
       unify_with_eta side flags env sigma n1 n2 c1 c2
   | ((IsSubType | ConvUpToEta _ | UserGiven as oppst1),
      (IsSubType | ConvUpToEta _ | UserGiven)) ->
-      let res = unify_0 env sigma Cumul flags c2 c1 in
+    let res = unify_0 env sigma Cumul flags c2 c1 in
       if oppst1=st2 then (* arbitrary choice *) (left, st1, res)
       else if st2=IsSubType or st1=UserGiven then (left, st1, res)
       else (right, st2, res)
   | ((IsSuperType | ConvUpToEta _ | UserGiven as oppst1),
      (IsSuperType | ConvUpToEta _ | UserGiven)) ->
-      let res = unify_0 env sigma Cumul flags c1 c2 in
+    let res = unify_0 env sigma Cumul flags c1 c2 in
       if oppst1=st2 then (* arbitrary choice *) (left, st1, res)
       else if st2=IsSuperType or st1=UserGiven then (left, st1, res)
       else (right, st2, res)
   | (IsSuperType,IsSubType) ->
-      (try (left, IsSubType, unify_0 env sigma Cumul flags c2 c1)
-       with _ -> (right, IsSubType, unify_0 env sigma Cumul flags c1 c2))
+    (try (left, IsSubType, unify_0 env sigma Cumul flags c2 c1)
+     with _ -> (right, IsSubType, unify_0 env sigma Cumul flags c1 c2))
   | (IsSubType,IsSuperType) ->
-      (try (left, IsSuperType, unify_0 env sigma Cumul flags c1 c2)
-       with _ -> (right, IsSuperType, unify_0 env sigma Cumul flags c2 c1))
-
+    (try (left, IsSuperType, unify_0 env sigma Cumul flags c1 c2)
+     with _ -> (right, IsSuperType, unify_0 env sigma Cumul flags c2 c1))
+    
 (* Unification
  *
  * Procedure:
@@ -600,14 +600,14 @@ let applyHead env evd n c  =
       (evd, c)
     else
       match kind_of_term (whd_betadeltaiota env evd cty) with
-        | Prod (_,c1,c2) ->
-            let (evd',evar) =
-	      Evarutil.new_evar evd env ~src:(dummy_loc,GoalEvar) c1 in
-	    apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) evd'
-	| _ -> error "Apply_Head_Then"
+      | Prod (_,c1,c2) ->
+        let (evd',evar) =
+	  Evarutil.new_evar evd env ~src:(dummy_loc,GoalEvar) c1 in
+	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) evd'
+      | _ -> error "Apply_Head_Then"
   in
-  apprec n c (Typing.type_of env evd c) evd
-
+    apprec n c (Typing.type_of env evd c) evd
+    
 let is_mimick_head ts f =
   match kind_of_term f with
   | Const c -> not (Closure.is_transparent_constant ts c)
@@ -625,14 +625,14 @@ let try_to_coerce env evd c cty tycon =
 let w_coerce_to_type env evd c cty mvty =
   let evd,mvty = pose_all_metas_as_evars env evd mvty in
   let tycon = mk_tycon_type mvty in
-  try try_to_coerce env evd c cty tycon
-  with e when precatchable_exception e ->
+    try try_to_coerce env evd c cty tycon
+    with e when precatchable_exception e ->
     (* inh_conv_coerce_rigid_to should have reasoned modulo reduction
        but there are cases where it though it was not rigid (like in
        fst (nat,nat)) and stops while it could have seen that it is rigid *)
     let cty = Tacred.hnf_constr env evd cty in
-    try_to_coerce env evd c cty tycon
-
+      try_to_coerce env evd c cty tycon
+	  
 let w_coerce env evd mv c =
   let cty = get_type_of env evd c in
   let mvty = Typing.meta_type evd mv in
@@ -693,6 +693,7 @@ let w_merge env with_types flags (evd,metas,evars) =
 	    unify_0 curenv evd topconv flags rhs v in
 	  w_merge_rec evd (metas'@metas) (evars''@evars') eqns
     	else begin
+	  (* This can make rhs' ill-typed if metas are *)
           let rhs' = subst_meta_instances metas rhs in
           match kind_of_term rhs with
 	  | App (f,cl) when occur_meta rhs' ->
@@ -708,9 +709,9 @@ let w_merge env with_types flags (evd,metas,evars) =
 		  metas evars' eqns
 
           | _ ->
-	    let evd', rhs'' = pose_all_metas_as_evars curenv evd rhs' in
-	      w_merge_rec (solve_simple_evar_eqn flags.modulo_delta_types curenv evd' ev rhs'')
-		metas evars' eqns
+	      let evd', rhs'' = pose_all_metas_as_evars curenv evd rhs' in
+		w_merge_rec (solve_simple_evar_eqn flags.modulo_delta_types curenv evd' ev rhs'')
+		  metas evars' eqns
 	end
     | [] ->
 
@@ -726,7 +727,8 @@ let w_merge env with_types flags (evd,metas,evars) =
               (* No coercion needed: delay the unification of types *)
 	      ((evd,c),([],[])),(mv,status,c)::eqns
 	  else
-	    ((evd,c),([],[])),eqns in
+	    ((evd,c),([],[])),eqns 
+	in
 	  if meta_defined evd mv then
 	    let {rebus=c'},(status',_) = meta_fvalue evd mv in
             let (take_left,st,(evd,metas',evars')) =
@@ -739,23 +741,30 @@ let w_merge env with_types flags (evd,metas,evars) =
               w_merge_rec evd' (metas'@metas@metas'') (evars'@evars'') eqns
     	  else
 	    let evd' = meta_assign mv (c,(status,TypeProcessed)) evd in
-	      w_merge_rec evd' (metas@metas'') evars'' eqns
+	      w_merge_rec evd' (metas''@metas) evars'' eqns
     | [] ->
-
-    (* Process type eqns *)
-    match eqns with
-    | (mv,status,c)::eqns ->
-        let (evd,metas,evars) = unify_type env evd flags mv status c in
-        w_merge_rec evd metas evars eqns
-    | [] -> evd
-
+	(* Process type eqns *)
+	let rec process_eqns failures = function
+	  | (mv,status,c)::eqns ->
+              (match (try Inl (unify_type env evd flags mv status c)
+		      with e -> Inr e)
+	       with 
+	       | Inr e -> process_eqns (((mv,status,c),e)::failures) eqns
+	       | Inl (evd,metas,evars) ->
+		   w_merge_rec evd metas evars (List.map fst failures @ eqns))
+	  | [] -> 
+	      (match failures with
+	       | [] -> evd
+	       | ((mv,status,c),e)::_ -> raise e)
+	in process_eqns [] eqns
+	      
   and mimick_undefined_evar evd flags hdc nargs sp =
     let ev = Evd.find_undefined evd sp in
     let sp_env = Global.env_of_context ev.evar_hyps in
     let (evd', c) = applyHead sp_env evd nargs hdc in
     let (evd'',mc,ec) =
       unify_0 sp_env evd' Cumul flags
-        (Retyping.get_type_of sp_env evd' c) ev.evar_concl in
+        (get_type_of sp_env evd' c) ev.evar_concl in
     let evd''' = w_merge_rec evd'' mc ec [] in
     if evd' == evd'''
     then Evd.define sp c evd'''
@@ -782,13 +791,13 @@ let check_types env flags (sigma,_,_ as subst) m n =
   if isEvar_or_Meta (fst (whd_stack sigma m)) then
     unify_0_with_initial_metas subst true env Cumul
       flags
-      (Retyping.get_type_of env sigma n)
-      (Retyping.get_type_of env sigma m)
+      (get_type_of env sigma n)
+      (get_type_of env sigma m)
   else if isEvar_or_Meta (fst (whd_stack sigma n)) then
     unify_0_with_initial_metas subst true env Cumul
       flags
-      (Retyping.get_type_of env sigma m)
-      (Retyping.get_type_of env sigma n)
+      (get_type_of env sigma m)
+      (get_type_of env sigma n)
   else subst
 
 let w_unify_core_0 env with_types cv_pb flags m n evd =

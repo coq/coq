@@ -1074,7 +1074,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : resul
       | None -> (sort, inverse sort impl)
       | Some _ -> (sort, impl)
   in
-  let evars = (create_evar_defs sigma, Evd.empty) in
+  let evars = (sigma, Evd.empty) in
   let eq = apply_strategy strat env avoid concl (Some cstr) evars in
     match eq with
     | Some (Some (p, evars, car, oldt, newt)) ->

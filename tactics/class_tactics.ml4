@@ -171,7 +171,10 @@ and e_my_find_search db_list local_db hdc concl =
               tclTHEN (with_prods nprods (term,cl) (unify_e_resolve flags))
 		(e_trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> tclWEAK_PROGRESS (unfold_in_concl [all_occurrences,c])
-	  | Extern tacast -> conclPattern concl p tacast
+	  | Extern tacast -> 
+	    tclTHEN
+	      (fun gl -> Refiner.tclEVARS (mark_unresolvables (project gl)) gl)
+	      (conclPattern concl p tacast)
       in
 	match t with
 	| Extern _ -> (tac,b,true,lazy (pr_autotactic t))

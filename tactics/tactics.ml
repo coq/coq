@@ -590,7 +590,7 @@ let resolve_classes gl =
   let env = pf_env gl and evd = project gl in
     if Evd.is_empty evd then tclIDTAC gl
     else
-      let evd' = Typeclasses.resolve_typeclasses env (Evd.create_evar_defs evd) in
+      let evd' = Typeclasses.resolve_typeclasses env evd in
 	(tclTHEN (tclEVARS evd') tclNORMEVAR) gl
 
 (**************************)
@@ -2391,7 +2391,7 @@ let abstract_generalize ?(generalize_vars=true) ?(force_dep=false) id gl =
 let specialize_eqs id gl =
   let env = pf_env gl in
   let ty = pf_get_hyp_typ gl id in
-  let evars = ref (create_evar_defs (project gl)) in
+  let evars = ref (project gl) in
   let unif env evars c1 c2 = Evarconv.e_conv env evars c2 c1 in
   let rec aux in_eqs ctx acc ty =
     match kind_of_term ty with
@@ -3440,6 +3440,6 @@ let unify ?(state=full_transparent_state) x y gl =
 	modulo_conv_on_closed_terms = Some state}
     in
     let evd = w_unify false (pf_env gl) Reduction.CONV
-      ~flags x y (Evd.create_evar_defs (project gl))
+      ~flags x y (project gl)
     in tclEVARS evd gl
   with _ -> tclFAIL 0 (str"Not unifiable") gl

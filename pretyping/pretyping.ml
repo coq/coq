@@ -691,17 +691,16 @@ module Pretyping_F (Coercion : Coercion.S) = struct
       | IsType ->
 	  (pretype_type empty_valcon env evdref lvar c).utj_val 
     in
-    if resolve_classes then (
-      evdref := Typeclasses.resolve_typeclasses ~onlyargs:false
-	~split:true ~fail:fail_evar env !evdref);
-    evdref := (try consider_remaining_unif_problems env !evdref
-	       with e when not resolve_classes -> 
-		 consider_remaining_unif_problems env 
-		   (Typeclasses.resolve_typeclasses ~onlyargs:false
-		      ~split:true ~fail:fail_evar env !evdref));
-    let c = if expand_evar then nf_evar !evdref c' else c' in
-      if fail_evar then check_evars env Evd.empty !evdref c;
-      c
+      if resolve_classes then
+	evdref := (Typeclasses.resolve_typeclasses ~onlyargs:false
+		   ~split:true ~fail:fail_evar env !evdref);
+      if fail_evar then
+	(* Resolve eagerly, potentially making wrong choices *)
+	evdref := (try consider_remaining_unif_problems env !evdref
+		   with e -> !evdref);
+      let c = if expand_evar then nf_evar !evdref c' else c' in
+	if fail_evar then check_evars env Evd.empty !evdref c;
+	c
 
   (* TODO: comment faire remonter l'information si le typage a resolu des
      variables du sigma original. il faudrait que la fonction de typage
@@ -709,7 +708,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   *)
 
   let understand_judgment sigma env c =
-    let evdref = ref (create_evar_defs sigma) in
+    let evdref = ref sigma in
     let j = pretype empty_tycon env evdref ([],[]) c in
     let evd = Typeclasses.resolve_typeclasses ~onlyargs:true ~split:true
       ~fail:true env !evdref
@@ -729,7 +728,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
      extend env with some bindings *)
 
   let ise_pretype_gen expand_evar fail_evar resolve_classes sigma env lvar kind c =
-    let evdref = ref (Evd.create_evar_defs sigma) in
+    let evdref = ref sigma in
     let c = pretype_gen expand_evar fail_evar resolve_classes evdref env lvar kind c in
     !evdref, c
 

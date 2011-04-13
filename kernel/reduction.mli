@@ -78,5 +78,5 @@ val dest_prod_assum : env -> types -> rel_context * types
 
 exception NotArity
 
-val dest_arity : env -> types -> arity (* raise NotArity if not an arity *)
+val dest_arity : env -> types -> arity (* raises NotArity if not an arity *)
 val is_arity   : env -> types -> bool

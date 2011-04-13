@@ -1253,7 +1253,8 @@ let solvable_by_tactic env evi (ev,args) src =
 
 let solve_remaining_evars fail_evar use_classes env initial_sigma evd c =
   let evdref =
-    if use_classes then ref (Typeclasses.resolve_typeclasses ~fail:true env evd)
+    if use_classes then 
+      ref (Typeclasses.resolve_typeclasses ~split:true ~fail:fail_evar env evd)
     else ref evd in
   let rec proc_rec c =
     let c = Reductionops.whd_evar !evdref c in

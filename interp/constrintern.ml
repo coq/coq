@@ -1524,7 +1524,7 @@ let interp_open_constr sigma env c =
 
 let interp_open_constr_patvar sigma env c =
   let raw = intern_gen false sigma env c ~allow_patvar:true in
-  let sigma = ref (Evd.create_evar_defs sigma) in
+  let sigma = ref sigma in
   let evars = ref (Gmap.empty : (identifier,glob_constr) Gmap.t) in
   let rec patvar_to_evar r = match r with
     | GPatVar (loc,(_,id)) ->
