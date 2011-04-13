@@ -54,7 +54,7 @@ Proof.
   assumption.
   unfold Rdiv in |- *; apply Rmult_le_reg_l with 2.
   prove_sup0.
-  pattern 2 at 3 in |- *; rewrite Rmult_comm.
+  rewrite Rmult_comm.
   rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ idtac | discrR ].
   rewrite Rmult_1_r.
   rewrite double.
@@ -93,7 +93,7 @@ Proof.
   case (P ((Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2)).
   unfold Rdiv in |- *; apply Rmult_le_reg_l with 2.
   prove_sup0.
-  pattern 2 at 3 in |- *; rewrite Rmult_comm.
+  rewrite Rmult_comm.
   rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ idtac | discrR ].
   rewrite Rmult_1_r.
   rewrite double.
@@ -118,7 +118,7 @@ Proof.
   assumption.
   unfold Rdiv in |- *; apply Rmult_le_reg_l with 2.
   prove_sup0.
-  pattern 2 at 3 in |- *; rewrite Rmult_comm.
+  rewrite Rmult_comm.
   rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ rewrite Rmult_1_r | discrR ].
   rewrite double; apply Rplus_le_compat.
   assumption.
