@@ -94,6 +94,7 @@ let infer_declaration env dcl =
       let (j,cst) = infer env c.const_entry_body in
       let (typ,cst) = constrain_type env j cst 
 	c.const_entry_polymorphic c.const_entry_type 
+      in
       let def =
 	if c.const_entry_opaque
 	then OpaqueDef (Declarations.opaque_from_val j.uj_val)
