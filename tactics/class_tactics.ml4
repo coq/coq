@@ -37,8 +37,9 @@ open Libnames
 open Evd
 open Compat
 
-let default_eauto_depth = 100
 let typeclasses_db = "typeclass_instances"
+let typeclasses_debug = ref false
+let typeclasses_depth = ref None
 
 let _ = 
   Auto.add_auto_init 
@@ -201,10 +202,6 @@ let pr_ev evs ev = Printer.pr_constr_env (Goal.V82.env evs ev) (Evarutil.nf_evar
 
 let pr_depth l = prlist_with_sep (fun () -> str ".") pr_int (List.rev l)
 
-let typeclasses_debug = ref false
-
-let pr_depth l = prlist_with_sep (fun () -> str ".") pr_int (List.rev l)
-
 type autoinfo = { hints : Auto.hint_db; is_evar: existential_key option;
 		  only_classes: bool; auto_depth: int list; auto_last_tac: std_ppcmds Lazy.t}
 type autogoal = goal * autoinfo
@@ -289,64 +286,6 @@ let compare (pri, _, _, res) (pri', _, _, res') =
 let or_tac (x : 'a tac) (y : 'a tac) : 'a tac =
   { skft = fun sk fk gls -> x.skft sk (fun () -> y.skft sk fk gls) gls }
 
-(* let hints_tac hints = *)
-(*   { skft = fun sk fk {it = gl,info; sigma = s} -> *)
-(*     let possible_resolve (lgls as res, pri, b, pp) = *)
-(*       (pri, pp, b, res) *)
-(*     in *)
-(*     let tacs = *)
-(*       let concl = Goal.V82.concl s gl in *)
-(*       let poss = e_possible_resolve hints info.hints concl in *)
-(*       let l = *)
-(* 	let tacgl = {it = gl; sigma = s} in *)
-(* 	Util.list_map_append (fun (tac, pri, b, pptac) -> *)
-(* 	  try [tac tacgl, pri, b, pptac] with e when catchable e -> []) *)
-(* 	  poss *)
-(*       in *)
-(* 	if l = [] && !typeclasses_debug then *)
-(* 	  msgnl (pr_depth info.auto_depth ++ str": no match for " ++ *)
-(* 		    Printer.pr_constr_env (Goal.V82.env s gl) concl ++ *)
-(* 		    spc () ++ int (List.length poss) ++ str" possibilities"); *)
-(* 	List.map possible_resolve l *)
-(*     in *)
-(*     let tacs = List.sort compare tacs in *)
-(*     let rec aux i = function *)
-(*       | (_, pp, b, {it = gls; sigma = s'}) :: tl -> *)
-(* 	  if !typeclasses_debug then msgnl (pr_depth (i :: info.auto_depth) ++ str": " ++ Lazy.force pp *)
-(* 					       ++ str" on" ++ spc () ++ pr_ev s gl); *)
-(* 	  let fk = *)
-(* 	    (fun () -> (\* if !typeclasses_debug then msgnl (str"backtracked after " ++ pp); *\) *)
-(* 	    aux (succ i) tl) *)
-(* 	  in *)
-(* 	  let sgls = *)
-(* 	    evars_to_goals (fun evm ev evi -> *)
-(* 			      if Typeclasses.is_resolvable evi && *)
-(* 				(not info.only_classes || Typeclasses.is_class_evar evm evi) *)
-(* 			      then Typeclasses.mark_unresolvable evi, true *)
-(* 			      else evi, false) s' *)
-(* 	  in *)
-(* 	  let newgls, s' = *)
-(* 	    let gls' = List.map (fun g -> (None, g)) gls in *)
-(* 	    match sgls with *)
-(* 	    | None -> gls', s' *)
-(* 	    | Some (evgls, s') -> *)
-(* 		(gls' @ List.map (fun (ev, x) -> (Some ev, x)) evgls, s') *)
-(* 	  in *)
-(* 	  let gls' = list_map_i (fun j (evar, g) ->  *)
-(* 	    let info =  *)
-(* 	      { info with auto_depth = j :: i :: info.auto_depth; auto_last_tac = pp; *)
-(* 		is_evar = evar; *)
-(* 		hints =  *)
-(* 		  if b && Goal.V82.hyps s' g <> Goal.V82.hyps s' gl *)
-(* 		  then make_autogoal_hints info.only_classes *)
-(* 		    ~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s'} *)
-(* 		  else info.hints } *)
-(* 	    in g, info) 1 newgls in *)
-(* 	  let glsv = {it = gls'; sigma = s'} in *)
-(* 	    sk glsv fk *)
-(*       | [] -> fk () *)
-(*     in aux 1 tacs } *)
-
 let hints_tac hints =
   { skft = fun sk fk {it = gl,info; sigma = s} ->
       let concl = Goal.V82.concl s gl in
@@ -356,7 +295,7 @@ let hints_tac hints =
 	| (tac, _, b, pp) :: tl ->
 	    let res = try Some (tac tacgl) with e when catchable e -> None in
 	      (match res with
-	       | None -> aux (succ i) foundone tl
+	       | None -> aux i foundone tl
 	       | Some {it = gls; sigma = s'} ->
 	    	   if !typeclasses_debug then
 		     msgnl (pr_depth (i :: info.auto_depth) ++ str": " ++ Lazy.force pp
@@ -444,9 +383,16 @@ let run_list_tac (t : 'a tac) p goals (gl : autogoal list sigma) : run_list_res 
     gl
     (fun _ -> None)
 
+let fail_tac : atac = 
+  { skft = fun sk fk _ -> fk () }
+
 let rec fix (t : 'a tac) : 'a tac =
   then_tac t { skft = fun sk fk -> (fix t).skft sk fk }
 
+let rec fix_limit limit (t : 'a tac) : 'a tac =
+  if limit = 0 then fail_tac 
+  else then_tac t { skft = fun sk fk -> (fix_limit (pred limit) t).skft sk fk }
+    
 let make_autogoal ?(only_classes=true) ?(st=full_transparent_state) ev g =
   let hints = make_autogoal_hints only_classes ~st g in
     (g.it, { hints = hints ; is_evar = ev; 
@@ -472,19 +418,24 @@ let run_on_evars ?(only_classes=true) ?(st=full_transparent_state) p evm tac =
 	| Some (evm', fk) -> Some (evars_reset_evd ~with_conv_pbs:true evm' evm, fk)
 	    
 let eauto_tac hints = 
-  fix (then_tac normevars_tac (or_tac (hints_tac hints) intro_tac))
-  
-let eauto ?(only_classes=true) ?st hints g =
+  then_tac normevars_tac (or_tac (hints_tac hints) intro_tac)
+
+let eauto_tac ?limit hints = 
+  match limit with
+  | None -> fix (eauto_tac hints)
+  | Some limit -> fix_limit limit (eauto_tac hints)
+      
+let eauto ?(only_classes=true) ?st ?limit hints g =
   let gl = { it = make_autogoal ~only_classes ?st None g; sigma = project g } in
-    match run_tac (eauto_tac hints) gl with
+    match run_tac (eauto_tac ?limit hints) gl with
     | None -> raise Not_found
     | Some {it = goals; sigma = s} ->
 	{it = List.map fst goals; sigma = s}
 
-let real_eauto st hints p evd =
+let real_eauto st ?limit hints p evd =
   let rec aux evd fails =
     let res, fails =
-      try run_on_evars ~st p evd (eauto_tac hints), fails
+      try run_on_evars ~st p evd (eauto_tac ?limit hints), fails
       with Not_found ->
 	List.fold_right (fun fk (res, fails) ->
 	  match res with
@@ -497,9 +448,9 @@ let real_eauto st hints p evd =
       | Some (evd', fk) -> aux evd' (fk :: fails)
   in aux evd []
 
-let resolve_all_evars_once debug (mode, depth) p evd =
+let resolve_all_evars_once debug limit p evd =
   let db = searchtable_map typeclasses_db in
-    real_eauto (Hint_db.transparent_state db) [db] p evd
+    real_eauto ?limit (Hint_db.transparent_state db) [db] p evd
 
 (** We compute dependencies via a union-find algorithm.
     Beware of the imperative effects on the partition structure,
@@ -527,7 +478,7 @@ let resolve_one_typeclass env ?(sigma=Evd.empty) gl =
     Goal.V82.mk_goal sigma nc gl Store.empty in
   let gls = { it = gl ; sigma = sigma } in
   let hints = searchtable_map typeclasses_db in
-  let gls' =  eauto ~st:(Hint_db.transparent_state hints) [hints] gls in
+  let gls' = eauto ?limit:!typeclasses_depth ~st:(Hint_db.transparent_state hints) [hints] gls in
   let evd = sig_sig gls' in
   let t' = let (ev, inst) = destEvar t in
     mkEvar (ev, Array.of_list subst)
@@ -649,12 +600,44 @@ let initial_select_evars onlyargs =
 let resolve_typeclass_evars debug m env evd onlyargs split fail =
  resolve_all_evars debug m env (initial_select_evars onlyargs) evd split fail
 
-let solve_inst debug mode depth env evd onlyargs split fail =
-  resolve_typeclass_evars debug (mode, depth) env evd onlyargs split fail
+let solve_inst debug depth env evd onlyargs split fail =
+  resolve_typeclass_evars debug depth env evd onlyargs split fail
 
 let _ =
   Typeclasses.solve_instanciations_problem :=
-    solve_inst false true default_eauto_depth
+    solve_inst false !typeclasses_depth
+
+
+(** Options: depth, debug and transparency settings. *)
+
+open Goptions
+
+let set_typeclasses_debug d = (:=) typeclasses_debug d;
+  Typeclasses.solve_instanciations_problem := solve_inst d !typeclasses_depth
+    
+let get_typeclasses_debug () = !typeclasses_debug
+
+let set_typeclasses_debug =
+  declare_bool_option
+    { optsync  = true;
+      optname  = "debug output for typeclasses proof search";
+      optkey   = ["Typeclasses";"Debug"];
+      optread  = get_typeclasses_debug;
+      optwrite = set_typeclasses_debug; }
+
+
+let set_typeclasses_depth d = (:=) typeclasses_depth d;
+  Typeclasses.solve_instanciations_problem := solve_inst !typeclasses_debug !typeclasses_depth
+    
+let get_typeclasses_depth () = !typeclasses_depth
+
+let set_typeclasses_depth =
+  declare_int_option
+    { optsync  = true;
+      optname  = "depth for typeclasses proof search";
+      optkey   = ["Typeclasses";"Depth"];
+      optread  = get_typeclasses_depth;
+      optwrite = set_typeclasses_depth; }
 
 let set_transparency cl b =
   List.iter (fun r -> 
@@ -683,18 +666,6 @@ ARGUMENT EXTEND debug TYPED AS bool PRINTED BY pr_debug
 | [ ] -> [ false ]
 END
 
-let pr_mode _prc _prlc _prt m =
-  match m with
-      Some b ->
-	if b then Pp.str "depth-first" else Pp.str "breadth-fist"
-    | None -> Pp.mt()
-
-ARGUMENT EXTEND search_mode TYPED AS bool option PRINTED BY pr_mode
-| [ "dfs" ] -> [ Some true ]
-| [ "bfs" ] -> [ Some false ]
-| [] -> [ None ]
-END
-
 let pr_depth _prc _prlc _prt = function
     Some i -> Util.pr_int i
   | None -> Pp.mt()
@@ -704,29 +675,11 @@ ARGUMENT EXTEND depth TYPED AS int option PRINTED BY pr_depth
 END
 
 (* true = All transparent, false = Opaque if possible *)
-let set_typeclasses_debug d = (:=) typeclasses_debug d;
-  Typeclasses.solve_instanciations_problem := solve_inst d true default_eauto_depth
-    
-let get_typeclasses_debug () = !typeclasses_debug
-  
-open Goptions
-
-let set_typeclasses_debug =
-  declare_bool_option
-    { optsync  = true;
-      optname  = "debug output for typeclasses proof search";
-      optkey   = ["Typeclasses";"Debug"];
-      optread  = get_typeclasses_debug;
-      optwrite = set_typeclasses_debug; }
-
 
 VERNAC COMMAND EXTEND Typeclasses_Settings
- | [ "Typeclasses" "eauto" ":=" debug(d) search_mode(s) depth(depth) ] -> [
+ | [ "Typeclasses" "eauto" ":=" debug(d) depth(depth) ] -> [
      set_typeclasses_debug d;
-     let mode = match s with Some t -> t | None -> true in
-     let depth = match depth with Some i -> i | None -> default_eauto_depth in
-       Typeclasses.solve_instanciations_problem :=
-	 solve_inst d mode depth
+     set_typeclasses_depth depth
    ]
 END
 
@@ -734,7 +687,7 @@ let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state) dbs gl 
   try 
     let dbs = list_map_filter (fun db -> try Some (Auto.searchtable_map db) with _ -> None) dbs in
     let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
-      eauto ~only_classes ~st dbs gl
+      eauto ?limit:!typeclasses_depth ~only_classes ~st dbs gl
    with Not_found -> tclFAIL 0 (str" typeclasses eauto failed on: " ++ Printer.pr_goal gl) gl
  
 TACTIC EXTEND typeclasses_eauto

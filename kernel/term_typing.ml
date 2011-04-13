@@ -33,10 +33,7 @@ let constrain_type env j cst1 poly = function
       let (_,cst3) = judge_of_cast env j DEFAULTcast tj in
 	assert (t = tj.utj_val);
 	let cstrs = union_constraints (union_constraints cst1 cst2) cst3 in
-	  if poly then 
-	    make_polymorphic env { j with uj_type = tj.utj_val }, cstrs
-	  else
-	    NonPolymorphicType t, cstrs
+	  NonPolymorphicType t, cstrs
 
 let local_constrain_type env j cst1 = function
   | None ->
