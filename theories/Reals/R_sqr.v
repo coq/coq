@@ -70,7 +70,7 @@ Proof.
   rewrite Rinv_mult_distr.
   repeat rewrite Rmult_assoc.
   apply Rmult_eq_compat_l.
-  pattern x at 2 in |- *; rewrite Rmult_comm.
+  rewrite Rmult_comm. 
   repeat rewrite Rmult_assoc.
   apply Rmult_eq_compat_l.
   reflexivity.

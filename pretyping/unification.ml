@@ -316,20 +316,34 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 		  array_fold_left2 (unirec_rec curenvnb topconv true)
 		    (unirec_rec curenvnb pb true substn f1 f2) l1 l2
 		with ex when precatchable_exception ex ->
-		  try expand curenvnb pb b substn cM f1 l1 cN f2 l2
+		  try reduce curenvnb pb b substn cM cN
 		  with ex when precatchable_exception ex ->
-		    canonical_projections curenvnb pb b cM cN substn)
+		    try expand curenvnb pb b substn cM f1 l1 cN f2 l2
+		    with ex when precatchable_exception ex ->
+		      canonical_projections curenvnb pb b cM cN substn)
 
 	| _ ->
 	    try canonical_projections curenvnb pb b cM cN substn
 	    with ex when precatchable_exception ex ->
               if constr_cmp (conv_pb_of cv_pb) cM cN then substn else
-		let (f1,l1) =
-		  match kind_of_term cM with App (f,l) -> (f,l) | _ -> (cM,[||]) in
-		let (f2,l2) =
-		  match kind_of_term cN with App (f,l) -> (f,l) | _ -> (cN,[||]) in
-		  expand curenvnb pb b substn cM f1 l1 cN f2 l2
+ 		try reduce curenvnb pb b substn cM cN
+		with ex when precatchable_exception ex ->
+		  let (f1,l1) =
+		    match kind_of_term cM with App (f,l) -> (f,l) | _ -> (cM,[||]) in
+		  let (f2,l2) =
+		    match kind_of_term cN with App (f,l) -> (f,l) | _ -> (cN,[||]) in
+		    expand curenvnb pb b substn cM f1 l1 cN f2 l2
 
+  and reduce curenvnb pb b (sigma, _, _ as substn) cM cN =
+    let cM' = whd_betaiotazeta sigma cM in
+      if not (eq_constr cM cM') then
+	unirec_rec curenvnb pb true substn cM' cN
+      else
+	let cN' = whd_betaiotazeta sigma cN in
+	  if not (eq_constr cN cN') then
+	    unirec_rec curenvnb pb true substn cM cN'
+	  else error_cannot_unify (fst curenvnb) sigma (cM,cN)
+	    
   and expand (curenv,_ as curenvnb) pb b (sigma,metasubst,_ as substn) cM f1 l1 cN f2 l2 =
 
     if
@@ -633,7 +647,11 @@ let unify_to_type env sigma flags c status u =
 
 let unify_type env sigma flags mv status c =
   let mvty = Typing.meta_type sigma mv in
-    unify_to_type env sigma flags c status mvty
+  let mvty = nf_meta sigma mvty in
+    unify_to_type env sigma 
+      {flags with modulo_delta = flags.modulo_delta_types;
+	 modulo_conv_on_closed_terms = Some flags.modulo_delta_types}
+      c status mvty
 
 (* Move metas that may need coercion at the end of the list of instances *)
 
