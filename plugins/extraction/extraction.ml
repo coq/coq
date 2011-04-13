@@ -203,7 +203,7 @@ let rec extract_type env db j c args =
 	extract_type env db j d (Array.to_list args' @ args)
     | Lambda (_,_,d) ->
 	(match args with
-	   | [] -> assert false (* otherwise the lambda would be reductible. *)
+	   | [] -> assert false (* A lambda cannot be a type. *)
 	   | a :: args -> extract_type env db j (subst1 a d) args)
     | Prod (n,t,d) ->
 	assert (args = []);
@@ -243,12 +243,13 @@ let rec extract_type env db j c args =
 	let cb = lookup_constant kn env in
 	let typ = Typeops.type_of_constant_type env cb.const_type in
 	(match flag_of_type env typ with
+	   | (Logic,_) -> assert false (* Cf. logical cases above *)
 	   | (Info, TypeScheme) ->
 	       let mlt = extract_type_app env db (r, type_sign env typ) args in
-	       (match body_of_constant cb with
-		  | None -> mlt
-		  | Some _ when is_custom r -> mlt
-		  | Some lbody ->
+	       (match cb.const_body with
+		  | Undef _ | OpaqueDef _ -> mlt
+		  | Def _ when is_custom r -> mlt
+		  | Def lbody ->
 		      let newc = applist (Declarations.force lbody, args) in
 		      let mlt' = extract_type env db j newc [] in
 		      (* ML type abbreviations interact badly with Coq *)
@@ -257,10 +258,11 @@ let rec extract_type env db j c args =
 		      (* The shortest is [mlt], which use abbreviations *)
 		      (* If possible, we take [mlt], otherwise [mlt']. *)
 		      if expand env mlt = expand env mlt' then mlt else mlt')
-	   | _ -> (* only other case here: Info, Default, i.e. not an ML type *)
-	       (match body_of_constant cb with
-		  | None -> Tunknown (* Brutal approximation ... *)
-		  | Some lbody ->
+	   | (Info, Default) ->
+               (* Not an ML type, for example [(c:forall X, X->X) Type nat] *)
+	       (match cb.const_body with
+		  | Undef _  | OpaqueDef _ -> Tunknown (* Brutal approx ... *)
+		  | Def lbody ->
 		      (* We try to reduce. *)
 		      let newc = applist (Declarations.force lbody, args) in
 		      extract_type env db j newc []))
@@ -478,9 +480,9 @@ and mlt_env env r = match r with
        with Not_found ->
 	 let cb = Environ.lookup_constant kn env in
 	 let typ = Typeops.type_of_constant_type env cb.const_type in
-	 match body_of_constant cb with
-	   | None -> None
-	   | Some l_body ->
+	 match cb.const_body with
+	   | Undef _ | OpaqueDef _ -> None
+	   | Def l_body ->
 	       (match flag_of_type env typ with
 		  | Info,TypeScheme ->
 		      let body = Declarations.force l_body in
@@ -904,38 +906,45 @@ let extract_fixpoint env vkn (fi,ti,ci) =
 let extract_constant env kn cb =
   let r = ConstRef kn in
   let typ = Typeops.type_of_constant_type env cb.const_type in
-  let warn_info_none () = if not (is_custom r) then add_info_axiom r in
-  let warn_info_some () = if is_opaque cb then add_opaque r in
-  match body_of_constant cb with
-    | None ->
-        (match flag_of_type env typ with
-	   | (Info,TypeScheme) ->
-	       warn_info_none ();
-	       let n = type_scheme_nb_args env typ in
-	       let ids = iterate (fun l -> anonymous_name::l) n [] in
-	       Dtype (r, ids, Taxiom)
-           | (Info,Default) ->
-	       warn_info_none ();
-	       let t = snd (record_constant_type env kn (Some typ)) in
-	       Dterm (r, MLaxiom, type_expunge env t)
-           | (Logic,TypeScheme) ->
-	       add_log_axiom r; Dtype (r, [], Tdummy Ktype)
-	   | (Logic,Default) ->
-	       add_log_axiom r; Dterm (r, MLdummy, Tdummy Kother))
-    | Some body ->
-	(match flag_of_type env typ with
-	   | (Logic, Default) -> Dterm (r, MLdummy, Tdummy Kother)
-	   | (Logic, TypeScheme) -> Dtype (r, [], Tdummy Ktype)
-	   | (Info, Default) ->
-	       warn_info_some ();
-	       let e,t = extract_std_constant env kn (force body) typ in
-	       Dterm (r,e,t)
-	   | (Info, TypeScheme) ->
-	       warn_info_some ();
-	       let s,vl = type_sign_vl env typ in
-               let db = db_from_sign s in
-               let t = extract_type_scheme env db (force body) (List.length s)
-	       in Dtype (r, vl, t))
+  let warn_info () = if not (is_custom r) then add_info_axiom r in
+  let warn_log () = if not (constant_has_body cb) then add_log_axiom r
+  in
+  let mk_typ_ax () =
+    let n = type_scheme_nb_args env typ in
+    let ids = iterate (fun l -> anonymous_name::l) n [] in
+    Dtype (r, ids, Taxiom)
+  in
+  let mk_typ c =
+    let s,vl = type_sign_vl env typ in
+    let db = db_from_sign s in
+    let t = extract_type_scheme env db c (List.length s)
+    in Dtype (r, vl, t)
+  in
+  let mk_ax () =
+    let t = snd (record_constant_type env kn (Some typ)) in
+    Dterm (r, MLaxiom, type_expunge env t)
+  in
+  let mk_def c =
+    let e,t = extract_std_constant env kn c typ in
+    Dterm (r,e,t)
+  in
+  match flag_of_type env typ with
+    | (Logic,TypeScheme) -> warn_log (); Dtype (r, [], Tdummy Ktype)
+    | (Logic,Default) -> warn_log (); Dterm (r, MLdummy, Tdummy Kother)
+    | (Info,TypeScheme) ->
+        (match cb.const_body with
+	  | Undef _ -> warn_info (); mk_typ_ax ()
+	  | Def c -> mk_typ (force c)
+	  | OpaqueDef c ->
+	    add_opaque r;
+	    if access_opaque () then mk_typ (force_opaque c) else mk_typ_ax ())
+    | (Info,Default) ->
+        (match cb.const_body with
+	  | Undef _ -> warn_info (); mk_ax ()
+	  | Def c -> mk_def (force c)
+	  | OpaqueDef c ->
+	    add_opaque r;
+	    if access_opaque () then mk_def (force_opaque c) else mk_ax ())
 
 let extract_constant_spec env kn cb =
   let r = ConstRef kn in
@@ -945,9 +954,9 @@ let extract_constant_spec env kn cb =
     | (Logic, Default) -> Sval (r, Tdummy Kother)
     | (Info, TypeScheme) ->
 	let s,vl = type_sign_vl env typ in
-	(match body_of_constant cb with
-	  | None -> Stype (r, vl, None)
-	  | Some body ->
+	(match cb.const_body with
+	  | Undef _ | OpaqueDef _ -> Stype (r, vl, None)
+	  | Def body ->
 	      let db = db_from_sign s in
 	      let t = extract_type_scheme env db (force body) (List.length s)
 	      in Stype (r, vl, Some t))
@@ -960,9 +969,13 @@ let extract_with_type env cb =
   match flag_of_type env typ with
     | (Info, TypeScheme) ->
 	let s,vl = type_sign_vl env typ in
-	let body = Option.get (body_of_constant cb) in
 	let db = db_from_sign s in
-	let t = extract_type_scheme env db (force body) (List.length s) in
+	let c = match cb.const_body with
+	  | Def body -> force body
+	  (* A "with Definition ..." is necessarily transparent *)
+	  | Undef _ | OpaqueDef _ -> assert false
+	in
+	let t = extract_type_scheme env db c (List.length s) in
 	Some (vl, t)
     | _ -> None
 

@@ -262,16 +262,25 @@ let warning_axioms () =
   end;
   if !Flags.load_proofs = Flags.Dont && info_axioms@log_axioms <> [] then
     msg_warning
-      (str "Some of these axioms might by due to option -dont-load-proofs.")
+      (str "Some of these axioms might be due to option -dont-load-proofs.")
 
-let warning_opaques () =
+let warning_opaques accessed =
   let opaques = Refset'.elements !opaques in
   if opaques = [] then ()
-  else msg_warning
-    (str "Extraction is accessing the body of the following opaque constants:"
-     ++ hov 1 (spc () ++ prlist_with_sep spc safe_pr_global opaques)
-     ++ str "." ++ fnl ()
-     ++ str "Be careful if using option -dont-load-proofs later." ++ fnl ())
+  else
+    let lst = hov 1 (spc () ++ prlist_with_sep spc safe_pr_global opaques) in
+    if accessed then
+      msg_warning
+	(str "The extraction is currently set to bypass opacity,\n" ++
+	 str "the following opaque constant bodies have been accessed :" ++
+	 lst ++ str "." ++ fnl ())
+    else
+      msg_warning
+	(str "The extraction now honors the opacity constraints by default,\n" ++
+	 str "the following opaque constants have been extracted as axioms :" ++
+	 lst ++ str "." ++ fnl () ++
+	 str "If necessary, use \"Set Extraction AccessOpaque\" to change this."
+	 ++ fnl ())
 
 let warning_both_mod_and_cst q mp r =
  msg_warning
@@ -374,31 +383,29 @@ let info_file f =
 (* The objects defined below should survive an arbitrary time,
    so we register them to coq save/undo mechanism. *)
 
+let my_bool_option name initval =
+  let flag = ref initval in
+  let access = fun () -> !flag in
+  let _ = declare_bool_option
+    {optsync = true;
+     optname = "Extraction "^name;
+     optkey = ["Extraction"; name];
+     optread = access;
+     optwrite = (:=) flag }
+  in
+  access
+
+(*s Extraction AccessOpaque *)
+
+let access_opaque = my_bool_option "AccessOpaque" false
+
 (*s Extraction AutoInline *)
 
-let auto_inline_ref = ref false
-
-let auto_inline () = !auto_inline_ref
-
-let _ = declare_bool_option
-	  {optsync = true;
-	   optname = "Extraction AutoInline";
-	   optkey = ["Extraction"; "AutoInline"];
-	   optread = auto_inline;
-	   optwrite = (:=) auto_inline_ref}
+let auto_inline = my_bool_option "AutoInline" false
 
 (*s Extraction TypeExpand *)
 
-let type_expand_ref = ref true
-
-let type_expand () = !type_expand_ref
-
-let _ = declare_bool_option
-	  {optsync = true;
-	   optname = "Extraction TypeExpand";
-	   optkey = ["Extraction"; "TypeExpand"];
-	   optread = type_expand;
-	   optwrite = (:=) type_expand_ref}
+let type_expand = my_bool_option "TypeExpand" true
 
 (*s Extraction Optimize *)
 

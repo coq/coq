@@ -19,7 +19,7 @@ val safe_basename_of_global : global_reference -> identifier
 (*s Warning and Error messages. *)
 
 val warning_axioms : unit -> unit
-val warning_opaques : unit -> unit
+val warning_opaques : bool -> unit
 val warning_both_mod_and_cst :
  qualid -> module_path -> global_reference -> unit
 val warning_id : string -> unit
@@ -88,6 +88,10 @@ val add_opaque : global_reference -> unit
 val remove_opaque : global_reference -> unit
 
 val reset_tables : unit -> unit
+
+(*s AccessOpaque parameter *)
+
+val access_opaque : unit -> bool
 
 (*s AutoInline parameter *)
 
