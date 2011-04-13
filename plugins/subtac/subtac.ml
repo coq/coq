@@ -113,7 +113,7 @@ let dump_constraint ty ((loc, n), _, _) =
 let dump_variable lid = ()
 
 let vernac_assumption env isevars kind l nl =
-  let global = pi1 kind = Global in
+  let global = fst kind = Global in
     List.iter (fun (is_coe,(idl,c)) ->
       if Dumpglob.dump () then
 	List.iter (fun lid ->
@@ -137,8 +137,7 @@ let subtac (loc, command) =
       Dumpglob.dump_definition lid false "def";
       (match expr with
       | ProveBody (bl, t) ->
-	  start_proof_and_print env isevars (Some lid) 
-	    (pi1 defkind, pi2 defkind, DefinitionBody Definition) (bl,t)
+	  start_proof_and_print env isevars (Some lid) (Global, DefinitionBody Definition) (bl,t)
 	    (fun _ _ -> ())
       | DefineBody (bl, _, c, tycon) ->
 	  ignore(Subtac_pretyping.subtac_proof defkind hook env isevars id bl c tycon))
@@ -149,7 +148,7 @@ let subtac (loc, command) =
       let _ = trace (str "Building fixpoint") in
 	ignore(Subtac_command.build_recursive l)
 
-  | VernacStartTheoremProof (thkind, p, [Some id, (bl,t,guard)], lettop, hook) ->
+  | VernacStartTheoremProof (thkind, [Some id, (bl,t,guard)], lettop, hook) ->
       if guard <> None then 
         error "Do not support building theorems as a fixpoint.";
       Dumpglob.dump_definition id false "prf";
@@ -161,12 +160,12 @@ let subtac (loc, command) =
 	errorlabstrm "Subtac_command.StartProof"
 	  (str "Proof editing mode not supported in module types");
       check_fresh id;
-      start_proof_and_print env isevars (Some id) (Global, p, Proof thkind) (bl,t) hook
+      start_proof_and_print env isevars (Some id) (Global, Proof thkind) (bl,t) hook
 
   | VernacAssumption (stre,nl,l) ->
       vernac_assumption env isevars stre l nl
 
-  | VernacInstance (abst, glob, poly, sup, is, props, pri) ->
+  | VernacInstance (abst, glob, sup, is, props, pri) ->
       dump_constraint "inst" is;
       if abst then
 	error "Declare Instance not supported here.";

@@ -155,7 +155,7 @@ let look_for_possibly_mutual_statements = function
 
 (* Saving a goal *)
 
-let save id const do_guard (locality,poly,kind) hook =
+let save id const do_guard (locality,kind) hook =
   let const = adjust_guardness_conditions const do_guard in
   let {const_entry_body = pft;
        const_entry_type = tpo;
@@ -187,7 +187,7 @@ let compute_proof_name locality = function
   | None ->
       next_global_ident_away default_thm_id (Pfedit.get_all_proof_names ()) 
 
-let save_remaining_recthms (local,p,kind) body opaq i (id,(t_i,(_,imps))) =
+let save_remaining_recthms (local,kind) body opaq i (id,(t_i,(_,imps))) =
   match body with
   | None ->
       (match local with
@@ -216,7 +216,6 @@ let save_remaining_recthms (local,p,kind) body opaq i (id,(t_i,(_,imps))) =
           let const =
             { const_entry_body = body_i;
               const_entry_type = Some t_i;
-	      const_entry_polymorphic = p;
               const_entry_opaque = opaq } in
           let kn = declare_constant id (DefinitionEntry const, k) in
           (Global,ConstRef kn,imps)
@@ -245,7 +244,7 @@ let save_anonymous_with_strength kind opacity save_ident =
   let id,const,do_guard,_,hook = get_proof opacity in
   check_anonymity id save_ident;
   (* we consider that non opaque behaves as local for discharge *)
-  save save_ident const do_guard (Global, const.const_entry_polymorphic, Proof kind) hook
+  save save_ident const do_guard (Global, Proof kind) hook
 
 (* Starting a goal *)
 
@@ -318,7 +317,7 @@ let start_proof_com kind thms hook =
     let t', imps' = interp_type_evars_impls ~impls ~evdref env t in
     Sign.iter_rel_context (check_evars env Evd.empty !evdref) ctx;
     let ids = List.map pi1 ctx in
-      (compute_proof_name (pi1 kind) sopt,
+      (compute_proof_name (fst kind) sopt,
       (nf_evar !evdref (it_mkProd_or_LetIn t' ctx),
        (ids, imps @ lift_implicits (List.length ids) imps'),
        guard)))

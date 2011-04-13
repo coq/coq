@@ -31,7 +31,7 @@ val set_declare_assumptions_hook : (types -> unit) -> unit
 (** {6 Definitions/Let} *)
 
 val interp_definition :
-  local_binder list -> polymorphic -> red_expr option -> constr_expr ->
+  local_binder list -> red_expr option -> constr_expr ->
   constr_expr option -> definition_entry * Impargs.manual_implicits
 
 val declare_definition : identifier -> locality * definition_object_kind ->

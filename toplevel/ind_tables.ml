@@ -115,7 +115,6 @@ let define internal id c =
     (DefinitionEntry
       { const_entry_body = c;
         const_entry_type = None;
-	const_entry_polymorphic = true;
         const_entry_opaque = false },
       Decl_kinds.IsDefinition Scheme) in
   (match internal with

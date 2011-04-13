@@ -130,10 +130,10 @@ let extract_context_levels env =
   List.fold_left
     (fun l (_,b,p) -> if b=None then extract_level env p::l else l) []
 
-let make_polymorphic env {uj_val = c; uj_type = t} =
+let make_polymorphic_if_constant_for_ind env {uj_val = c; uj_type = t} =
   let params, ccl = dest_prod_assum env t in
   match kind_of_term ccl with
-  | Sort (Type u) ->
+  | Sort (Type u) when isInd (fst (decompose_app (whd_betadeltaiota env c))) ->
       let param_ccls = extract_context_levels env params in
       let s = { poly_param_levels = param_ccls; poly_level = u} in
       PolymorphicArity (params,s)

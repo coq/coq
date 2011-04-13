@@ -101,5 +101,6 @@ val type_of_constant_knowing_parameters :
   env -> constant_type -> constr array -> types
 
 (** Make a type polymorphic if an arity *)
-val make_polymorphic : env -> unsafe_judgment -> constant_type
+val make_polymorphic_if_constant_for_ind : env -> unsafe_judgment ->
+  constant_type
 

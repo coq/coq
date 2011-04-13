@@ -151,7 +151,7 @@ open Decl_kinds
 let next = let n = ref 0 in fun () -> incr n; !n
 
 let build_constant_by_tactic id sign typ tac =
-  start_proof id (Global,false,Proof Theorem) sign typ (fun _ _ -> ());
+  start_proof id (Global,Proof Theorem) sign typ (fun _ _ -> ());
   try
     by tac;
     let _,(const,_,_,_) = cook_proof (fun _ -> ()) in
