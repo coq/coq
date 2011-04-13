@@ -225,6 +225,10 @@ let oracle_order env cf1 cf2 =
       | None -> Some true
       | Some k2 -> Some (Conv_oracle.oracle_order k1 k2)
 
+let do_reduce env sigma c =
+  let (t, l) = whd_betaiota_deltazeta_for_iota_state env sigma (c, empty_stack) in
+    applist (t, list_of_stack l)
+
 let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flags m n =
   let rec unirec_rec (curenv,nb as curenvnb) pb b ((sigma,metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_head_evar sigma curm
@@ -284,9 +288,12 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	      (mkApp (lift 1 cM,[|mkRel 1|])) c2
 
 	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
-            array_fold_left2 (unirec_rec curenvnb topconv true)
-	      (unirec_rec curenvnb topconv true
-		  (unirec_rec curenvnb topconv true substn p1 p2) c1 c2) cl1 cl2
+            (try 
+	       array_fold_left2 (unirec_rec curenvnb topconv true)
+		 (unirec_rec curenvnb topconv true
+		    (unirec_rec curenvnb topconv true substn p1 p2) c1 c2) cl1 cl2
+	     with ex when precatchable_exception ex ->
+	       reduce curenvnb pb b substn cM cN)
 
 	| App (f1,l1), _ when
 	    (isMeta f1 || use_evars_pattern_unification flags && isEvar f1) &
@@ -335,11 +342,11 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 		    expand curenvnb pb b substn cM f1 l1 cN f2 l2
 
   and reduce curenvnb pb b (sigma, _, _ as substn) cM cN =
-    let cM' = whd_betaiotazeta sigma cM in
+    let cM' = do_reduce (fst curenvnb) sigma cM in
       if not (eq_constr cM cM') then
 	unirec_rec curenvnb pb true substn cM' cN
       else
-	let cN' = whd_betaiotazeta sigma cN in
+	let cN' = do_reduce (fst curenvnb) sigma cN in
 	  if not (eq_constr cN cN') then
 	    unirec_rec curenvnb pb true substn cM cN'
 	  else error_cannot_unify (fst curenvnb) sigma (cM,cN)

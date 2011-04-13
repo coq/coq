@@ -646,7 +646,7 @@ Proof.
   apply H3.
   rewrite Rminus_0_r; apply Rabs_right.
   apply Rle_ge.
-  unfold Rdiv in |- *; repeat apply Rmult_le_pos.
+  unfold Rdiv in |- *; apply Rmult_le_pos. 
   apply pow_le.
   apply Rle_trans with 1.
   left; apply Rlt_0_1.

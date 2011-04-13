@@ -354,7 +354,7 @@ let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk
 	       (fun {it=gls';sigma=s'} fk' ->
 		  let needs_backtrack = 
 		    if gls' = [] then
-		      dependent info.only_classes s' info.is_evar (Goal.V82.concl s' gl)
+ 		      dependent info.only_classes s' info.is_evar (Goal.V82.concl s gl)
 		    else true
 		  in
 		  let fk'' = if not needs_backtrack then
@@ -586,7 +586,7 @@ let resolve_all_evars debug m env p oevd do_split fail =
 	then (* Unable to satisfy the constraints. *)
 	  error_unresolvable env comp do_split evd
 	else (* Best effort: do nothing on this component *) 
-	  docomp oevd comps
+	  docomp evd comps
   in docomp oevd split
 
 let initial_select_evars onlyargs =
