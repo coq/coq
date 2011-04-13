@@ -320,7 +320,8 @@ let hints_tac hints =
 		       match sgls with
 		       | None -> gls', s'
 		       | Some (evgls, s') ->
-			   (gls' @ List.map (fun (ev, x) -> (Some ev, x)) evgls, s')
+			 (* Reorder with dependent subgoals. *)
+			 (gls' @ List.map (fun (ev, x) -> Some ev, x) evgls, s')
 		   in
 		   let gls' = list_map_i
 		     (fun j (evar, g) ->
@@ -601,7 +602,10 @@ let initial_select_evars onlyargs =
     (fun evd ev evi -> Typeclasses.is_class_evar evd evi)
 
 let resolve_typeclass_evars debug m env evd onlyargs split fail =
- resolve_all_evars debug m env (initial_select_evars onlyargs) evd split fail
+  let evd = Evarconv.consider_remaining_unif_problems
+    ~ts:(Typeclasses.classes_transparent_state ()) env evd 
+  in
+    resolve_all_evars debug m env (initial_select_evars onlyargs) evd split fail
 
 let solve_inst debug depth env evd onlyargs split fail =
   resolve_typeclass_evars debug depth env evd onlyargs split fail

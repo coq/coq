@@ -37,6 +37,10 @@ let register_set_typeclass_transparency =
   (:=) set_typeclass_transparency_ref
 let set_typeclass_transparency gr local c = !set_typeclass_transparency_ref gr local c
 
+let classes_transparent_state_ref = ref (fun () -> assert false)
+let register_classes_transparent_state = (:=) classes_transparent_state_ref
+let classes_transparent_state () = !classes_transparent_state_ref ()
+
 type rels = constr list
 
 (* This module defines type-classes *)

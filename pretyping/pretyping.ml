@@ -683,6 +683,15 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		  error_unexpected_type_loc
                     (loc_of_glob_constr c) env !evdref tj.utj_val v
 
+  let resolve_evars env evdref fail_evar resolve_classes =
+    if resolve_classes then
+      evdref := (Typeclasses.resolve_typeclasses ~onlyargs:false
+		 ~split:true ~fail:fail_evar env !evdref);
+    (* Resolve eagerly, potentially making wrong choices *)
+    evdref := (try consider_remaining_unif_problems 
+		 ~ts:(Typeclasses.classes_transparent_state ()) env !evdref
+	       with e -> if fail_evar then raise e else !evdref)
+    
   let pretype_gen expand_evar fail_evar resolve_classes evdref env lvar kind c =
     let c' = match kind with
       | OfType exptyp ->
@@ -691,13 +700,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
       | IsType ->
 	  (pretype_type empty_valcon env evdref lvar c).utj_val 
     in
-      if resolve_classes then
-	evdref := (Typeclasses.resolve_typeclasses ~onlyargs:false
-		   ~split:true ~fail:fail_evar env !evdref);
-      if fail_evar then
-	(* Resolve eagerly, potentially making wrong choices *)
-	evdref := (try consider_remaining_unif_problems env !evdref
-		   with e -> !evdref);
+      resolve_evars env evdref fail_evar resolve_classes;
       let c = if expand_evar then nf_evar !evdref c' else c' in
 	if fail_evar then check_evars env Evd.empty !evdref c;
 	c
@@ -710,18 +713,15 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   let understand_judgment sigma env c =
     let evdref = ref sigma in
     let j = pretype empty_tycon env evdref ([],[]) c in
-    let evd = Typeclasses.resolve_typeclasses ~onlyargs:true ~split:true
-      ~fail:true env !evdref
-    in
-    let evd = consider_remaining_unif_problems env evd in
-    let j = j_nf_evar evd j in
-    check_evars env sigma evd (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
-    j
+      resolve_evars env evdref true true;
+      let j = j_nf_evar !evdref j in
+	check_evars env sigma !evdref (mkCast(j.uj_val,DEFAULTcast, j.uj_type));
+	j
 
   let understand_judgment_tcc evdref env c =
     let j = pretype empty_tycon env evdref ([],[]) c in
-    evdref := Typeclasses.resolve_typeclasses ~onlyargs:true ~split:true ~fail:false env !evdref;
-    j_nf_evar !evdref j
+      resolve_evars env evdref false true;
+      j_nf_evar !evdref j
 
   (* Raw calls to the unsafe inference machine: boolean says if we must
      fail on unresolved evars; the unsafe_judgment list allows us to

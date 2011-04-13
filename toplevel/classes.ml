@@ -41,7 +41,9 @@ let _ =
 	Auto.add_hints local [typeclasses_db]
 	  (Auto.HintsResolveEntry
 	     [pri, false, Some inst, constr_of_global inst])) ());
-  Typeclasses.register_set_typeclass_transparency set_typeclass_transparency
+  Typeclasses.register_set_typeclass_transparency set_typeclass_transparency;
+  Typeclasses.register_classes_transparent_state 
+    (fun () -> Auto.Hint_db.transparent_state (Auto.searchtable_map typeclasses_db))
     
 let declare_class g =
   match global g with
