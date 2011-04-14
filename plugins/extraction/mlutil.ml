@@ -823,6 +823,23 @@ let is_atomic = function
 
 let is_imm_apply = function MLapp (MLrel 1, _) -> true | _ -> false
 
+(** Program creates a let-in named "program_branch_NN" for each branch of match.
+    Unfolding them leads to more natural code (and more dummy removal) *)
+
+let is_program_branch = function
+  | Id id ->
+    let s = string_of_id id in
+    let br = "program_branch_" in
+    let n = String.length br in
+    (try
+       ignore (int_of_string (String.sub s n (String.length s - n)));
+       String.sub s 0 n = br
+     with _ -> false)
+  | Tmp _ | Dummy -> false
+
+let expand_linear_let o id e =
+   o.opt_lin_let || is_tmp id || is_program_branch id || is_imm_apply e
+
 (*S The main simplification function. *)
 
 (* Some beta-iota reductions + simplifications. *)
@@ -839,7 +856,7 @@ let rec simpl o = function
       if
 	(is_atomic c) || (is_atomic e) ||
 	(let n = nb_occur_match e in
-	 (n = 0 || (n=1 && (is_tmp id || is_imm_apply e || o.opt_lin_let))))
+	 (n = 0 || (n=1 && expand_linear_let o id e)))
       then
 	simpl o (ast_subst c e)
       else
