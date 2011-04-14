@@ -70,9 +70,11 @@ option \verb:-q:.
 \section[Environment variables]{Environment variables\label{EnvVariables}
 \index{Environment variables}}
 
-There are three environment variables used by the \Coq\ system.
+There are four environment variables used by the \Coq\ system.
 \verb:$COQBIN: for the directory where the binaries are,
-\verb:$COQLIB: for the directory where the standard library is, and 
+\verb:$COQLIB: for the directory where the standard library is,
+\verb:$COQPATH: for a list of directories seperated by \verb|:|
+(\verb|;| on windows) to add to the load path, and
 \verb:$COQTOP: for the directory of the sources. The latter is useful
 only for developers that are writing their own tactics and are using
 \texttt{coq\_makefile} (see \ref{Makefile}). If \verb:$COQBIN: or

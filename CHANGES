@@ -18,6 +18,9 @@ Changes from V8.3 to V8.4
 
 - Vm_compute can now be interrupted via Ctrl-C.
 
+- Coq now searches directories specified in COQPATH and user-contribs before
+  the standard library.
+
 Tactics
 
 - New tactics constr_eq, is_evar and has_evar.

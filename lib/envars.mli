@@ -11,6 +11,9 @@
 
 val coqlib : unit -> string
 val coqbin : unit -> string
+(* coqpath is stored in reverse order, since that is the order it
+ * gets added to the searc path *)
+val coqpath : unit -> string list
 
 val camlbin : unit -> string
 val camlp4bin : unit -> string

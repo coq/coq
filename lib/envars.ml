@@ -35,6 +35,12 @@ let path_to_list p =
   let sep = if Sys.os_type = "Win32" then ';' else ':' in
     Util.split_string_at sep p
 
+let coqpath () =
+  try
+    let path = Sys.getenv "COQPATH" in
+      List.rev (path_to_list path)
+  with _ -> []
+
 let rec which l f =
   match l with
     | [] -> raise Not_found
