@@ -7,13 +7,20 @@ Coqdoc and documentation bugs
 
 Extraction
 
+- #2469 (fix Extract Inlined Constant for Haskell and Scheme)
+- #2476 (Fix indentation of default pattern in haskell case)
+- #2477 (Avoid printing unused mutual fix components)
+- #2478 (Add missing parenthesis around emulated pattern-match)
 - #2482 (Extract Inductive on singleton inductives)
+- #2484 (Avoid an assert failure with -dont-load-proofs)
+- Some unnecessary unsafe casts are now avoided (bug in the type checker).
+- Fix printing of haskell modular names
 
 Miscellaneous bug fixes
 
 - #2487 (compilation with camlp5 in strict mode)
 - A new option "Set Default Timeout n / Unset Default Timeout" (#2283,#2460).
-
+- vm_compute is now responsive to Ctrl-C interruption, as the rest of coqtop.
 
 Changes from V8.3 to V8.3pl1
 ============================
