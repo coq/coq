@@ -509,8 +509,10 @@ let pp_ocaml_gen k mp rls olab =
 let pp_haskell_gen k mp rls = match rls with
   | [] -> assert false
   | s::rls' ->
-      (if base_mp mp <> top_visible_mp () then s ^ "." else "") ^
-	(if upperkind k then "" else "_") ^ pseudo_qualify rls'
+    let str = pseudo_qualify rls' in
+    let str = if is_upper str && not (upperkind k) then ("_"^str) else str in
+    let prf = if base_mp mp <> top_visible_mp () then s ^ "." else "" in
+    prf ^ str
 
 (* Main name printing function for a reference *)
 
