@@ -317,10 +317,17 @@ let pp_decl = function
       in
       prvecti
 	(fun i r ->
-	  if is_inline_custom r then mt ()
+	  let void = is_inline_custom r ||
+	    (not (is_custom r) && defs.(i) = MLexn "UNUSED")
+	  in
+	  if void then mt ()
 	  else
-	    names.(i) ++ str " :: " ++ pp_type false [] typs.(i) ++ fnl ()
-	    ++ pp_function (empty_env ()) names.(i) defs.(i) ++ fnl2 ())
+	    names.(i) ++ str " :: " ++ pp_type false [] typs.(i) ++ fnl () ++
+	    (if is_custom r then
+		(names.(i) ++ str " = " ++ str (find_custom r))
+	     else
+		(pp_function (empty_env ()) names.(i) defs.(i)))
+	    ++ fnl2 ())
 	rv
   | Dterm (r, a, t) ->
       if is_inline_custom r then mt ()

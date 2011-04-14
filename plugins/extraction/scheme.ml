@@ -171,22 +171,24 @@ let pp_decl = function
       in
       prvecti
 	(fun i r ->
-	  if is_inline_custom r then mt ()
+	  let void = is_inline_custom r ||
+	    (not (is_custom r) && defs.(i) = MLexn "UNUSED")
+	  in
+	  if void then mt ()
 	  else
 	    hov 2
 	      (paren (str "define " ++ names.(i) ++ spc () ++
-			(pp_expr (empty_env ()) [] defs.(i)))
+			(if is_custom r then str (find_custom r)
+			 else pp_expr (empty_env ()) [] defs.(i)))
 	       ++ fnl ()) ++ fnl ())
 	rv
   | Dterm (r, a, _) ->
       if is_inline_custom r then mt ()
       else
-	if is_custom r then
-	  hov 2 (paren (str "define " ++ pp_global Term r ++ spc () ++
-			  str (find_custom r))) ++ fnl () ++ fnl ()
-	else
-	  hov 2 (paren (str "define " ++ pp_global Term r ++ spc () ++
-			  pp_expr (empty_env ()) [] a)) ++ fnl () ++ fnl ()
+	hov 2 (paren (str "define " ++ pp_global Term r ++ spc () ++
+			(if is_custom r then str (find_custom r)
+			 else pp_expr (empty_env ()) [] a)))
+	++ fnl2 ()
 
 let rec pp_structure_elem = function
   | (l,SEdecl d) -> pp_decl d
