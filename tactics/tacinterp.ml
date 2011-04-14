@@ -1004,7 +1004,7 @@ let try_interp_ltac_var coerce ist env (loc,id) =
 
 let interp_ltac_var coerce ist env locid =
   try try_interp_ltac_var coerce ist env locid
-  with Not_found -> anomaly "Detected as ltac var at interning time"
+  with Not_found -> anomaly ("Detected '" ^ (string_of_id (snd locid)) ^ "' as ltac var at interning time")
 
 (* Interprets an identifier which must be fresh *)
 let coerce_to_ident fresh env = function
