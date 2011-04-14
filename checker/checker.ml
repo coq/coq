@@ -103,17 +103,14 @@ let init_load_path () =
   let coqlib = Envars.coqlib () in
   let user_contrib = coqlib/"user-contrib" in
   let plugins = coqlib/"plugins" in
-  (* first user-contrib *)
-  if Sys.file_exists user_contrib then
-    add_rec_path ~unix_path:user_contrib ~coq_root:Check.default_root_prefix;
+  (* NOTE: These directories are searched from last to first *)
+  (* first standard library *)
+  add_rec_path ~unix_path:(coqlib/"theories") ~coq_root:(Names.make_dirpath[coq_root]);
   (* then plugins *)
   add_rec_path ~unix_path:plugins ~coq_root:(Names.make_dirpath [coq_root]);
-  (* then standard library *)
-(*  List.iter
-    (fun (s,alias) ->
-      add_rec_path (coqlib/s) ([alias; coq_root]))
-    theories_dirs_map;*)
-  add_rec_path ~unix_path:(coqlib/"theories") ~coq_root:(Names.make_dirpath[coq_root]);
+  (* then user-contrib *)
+  if Sys.file_exists user_contrib then
+    add_rec_path ~unix_path:user_contrib ~coq_root:Check.default_root_prefix;
   (* then current directory *)
   add_path ~unix_path:"." ~coq_root:Check.default_root_prefix;
   (* additional loadpath, given with -I -include -R options *)

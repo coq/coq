@@ -190,6 +190,7 @@ let coqdep () =
   if Array.length Sys.argv < 2 then usage ();
   parse (List.tl (Array.to_list Sys.argv));
   if not Coq_config.has_natdynlink then option_natdynlk := false;
+  (* NOTE: These directories are searched from last to first *)
   if !Flags.boot then begin
     add_rec_dir add_known "theories" ["Coq"];
     add_rec_dir add_known "plugins" ["Coq"]
