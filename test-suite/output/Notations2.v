@@ -25,6 +25,10 @@ Remove Printing Let prod.
 Check match (0,0,0) with (x,y,z) => x+y+z end.
 Check let '(a,b,c) := ((2,3),4) in a.
 
+(* Test notation for anonymous functions up to eta-expansion *)
+
+Check fun P:nat->nat->Prop => fun x:nat => ex (P x). 
+
 (* Test notations with binders *)
 
 Notation "∃  x .. y , P":=

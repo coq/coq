@@ -97,6 +97,9 @@ and cases_clauses = cases_clause list
 
 val cases_predicate_names : tomatch_tuples -> name list
 
+(* Apply one argument to a glob_constr *)
+val mkGApp : loc -> glob_constr -> glob_constr -> glob_constr
+
 val map_glob_constr : (glob_constr -> glob_constr) -> glob_constr -> glob_constr
 
 (* Ensure traversal from left to right *)

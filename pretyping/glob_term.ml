@@ -93,6 +93,11 @@ let cases_predicate_names tml =
     | (tm,(na,None)) -> [na]
     | (tm,(na,Some (_,_,_,nal))) -> na::nal) tml)
 
+let mkGApp loc p t =
+  match p with
+  | GApp (loc,f,l) -> GApp (loc,f,l@[t])
+  | _ -> GApp (loc,p,[t])
+
 let map_glob_decl_left_to_right f (na,k,obd,ty) = 
   let comp1 = Option.map f obd in
   let comp2 = f ty in

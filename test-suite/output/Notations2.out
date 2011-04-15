@@ -10,6 +10,8 @@ end
      : nat
 let '(a, _, _) := (2, 3, 4) in a
      : nat
+fun (P : nat -> nat -> Prop) (x : nat) => exists x0, P x x0
+     : (nat -> nat -> Prop) -> nat -> Prop
 ∃ n p : nat, n + p = 0
      : Prop
 ∀ n p : nat, n + p = 0
