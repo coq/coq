@@ -24,6 +24,7 @@ Miscellaneous bug fixes
 - #2487 (compilation with camlp5 in strict mode)
 - A new option "Set Default Timeout n / Unset Default Timeout" (#2283,#2460).
 - vm_compute is now responsive to Ctrl-C interruption, as the rest of coqtop.
+- In win32, the exit code of coqc should be correct now (#2524)
 
 Changes from V8.3 to V8.3pl1
 ============================
