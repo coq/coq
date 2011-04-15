@@ -398,13 +398,20 @@ let print_one_decl struc mp decl =
 (*s Extraction of a ml struct to a file. *)
 
 let formatter dry file =
-  if dry then Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ())
-  else match file with
-    | None -> !Pp_control.std_ft
-    | Some cout ->
-	let ft = Pp_control.with_output_to cout in
-	Option.iter (Format.pp_set_margin ft) (Pp_control.get_margin ());
-	ft
+  let ft =
+    if dry then Format.make_formatter (fun _ _ _ -> ()) (fun _ -> ())
+    else Pp_control.with_output_to (Option.default stdout file)
+  in
+  (* We never want to see ellipsis ... in extracted code *)
+  Format.pp_set_max_boxes ft max_int;
+  (* We reuse the width information given via "Set Printing Width" *)
+  (match Pp_control.get_margin () with
+    | None -> ()
+    | Some i ->
+      Format.pp_set_margin ft i;
+      Format.pp_set_max_indent ft (i-10));
+      (* note: max_indent should be < margin above, otherwise it's ignored *)
+  ft
 
 let print_structure_to_file (fn,si,mo) dry struc =
   let d = descr () in

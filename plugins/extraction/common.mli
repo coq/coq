@@ -14,6 +14,12 @@ open Miniml
 open Mlutil
 open Pp
 
+(** By default, in module Format, you can do horizontal placing of blocks
+    even if they include newlines, as long as the number of chars in the
+    blocks are less that a line length. To avoid this awkward situation,
+    we attach a big virtual size to [fnl] newlines. *)
+
+val fnl : unit -> std_ppcmds
 val fnl2 : unit -> std_ppcmds
 val space_if : bool -> std_ppcmds
 val sec_space_if : bool -> std_ppcmds

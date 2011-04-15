@@ -73,6 +73,10 @@ Miscellaneous bug fixes
 - a few improvements in efficiency
 
 
+Extraction
+
+- The pretty-printer for Haskell now produces layout-independant code
+
 Changes from V8.2 to V8.3
 =========================
 
