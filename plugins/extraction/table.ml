@@ -310,6 +310,12 @@ let error_module_clash mp1 mp2 =
        pr_long_mp mp2 ++ str " have the same ML name.\n" ++
        str "This is not supported yet. Please do some renaming first.")
 
+let error_no_module_expr mp =
+  err (str "The module " ++ pr_long_mp mp
+       ++ str " has no body, it probably comes from\n"
+       ++ str "some Declare Module outside any Module Type.\n"
+       ++ str "This situation is currently unsupported by the extraction.")
+
 let error_unknown_module m =
   err (str "Module" ++ spc () ++ pr_qualid m ++ spc () ++ str "not found.")
 

@@ -328,10 +328,17 @@ and extract_seb env mp all = function
   | SEBwith (_,_) -> anomaly "Not available yet"
 
 and extract_module env mp all mb =
-  (* [mb.mod_expr <> None ], since we look at modules from outside. *)
-  (* Example of module with empty [mod_expr] is X inside a Module F [X:SIG]. *)
-  { ml_mod_expr = extract_seb env mp all (Option.get mb.mod_expr);
-    ml_mod_type = extract_seb_spec env mp (my_type_of_mb mb) }
+  (* A module has an empty [mod_expr] when :
+     - it is a module variable (for instance X inside a Module F [X:SIG])
+     - it is a module assumption (Declare Module).
+     Since we look at modules from outside, we shouldn't have variables.
+     But a Declare Module at toplevel seems legal (cf #2525). For the
+     moment we don't support this situation. *)
+  match mb.mod_expr with
+    | None -> error_no_module_expr mp
+    | Some me ->
+      { ml_mod_expr = extract_seb env mp all me;
+	ml_mod_type = extract_seb_spec env mp (my_type_of_mb mb) }
 
 
 let unpack = function MEstruct (_,sel) -> sel | _ -> assert false
