@@ -547,4 +547,38 @@ let pp_module mp =
 	add_visible (Mod,s) l; s
     | _ -> pp_ocaml_gen Mod mp (List.rev ls) None
 
+(** Special hack for constants of type Ascii.ascii : if an
+    [Extract Inductive ascii => char] has been declared, then
+    the constants are directly turned into chars *)
 
+let mk_ind path s =
+  make_mind (MPfile (dirpath_of_string path)) empty_dirpath (mk_label s)
+
+let ind_ascii = mk_ind "Coq.Strings.Ascii" "ascii"
+
+let check_extract_ascii () =
+  try
+    let char_type = match lang () with
+      | Ocaml -> "char"
+      | Haskell -> "Char"
+      | _ -> raise Not_found
+    in
+    find_custom (IndRef (ind_ascii,0)) = char_type
+  with Not_found -> false
+
+let is_list_cons l =
+ List.for_all (function MLcons (_,ConstructRef(_,_),[]) -> true | _ -> false) l
+
+let is_native_char = function
+  | MLcons(_,ConstructRef ((kn,0),1),l) ->
+    kn = ind_ascii && check_extract_ascii () && is_list_cons l
+  | _ -> false
+
+let pp_native_char c =
+  let rec cumul = function
+    | [] -> 0
+    | MLcons(_,ConstructRef(_,j),[])::l -> (2-j) + 2 * (cumul l)
+    | _ -> assert false
+  in
+  let l = match c with MLcons(_,_,l) -> l | _ -> assert false in
+  str ("'"^Char.escaped (Char.chr (cumul l))^"'")

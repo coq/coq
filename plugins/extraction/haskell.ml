@@ -137,6 +137,7 @@ let rec pp_expr par env args =
 		    spc () ++ hov 0 pp_a2)))
     | MLglob r ->
 	apply (pp_global Term r)
+    | MLcons _ as c when is_native_char c -> assert (args=[]); pp_native_char c
     | MLcons (_,r,[]) ->
 	assert (args=[]); pp_global Cons r
     | MLcons (_,r,[a]) ->
