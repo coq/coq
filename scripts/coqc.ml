@@ -84,7 +84,11 @@ let compile command args files =
         Unix.create_process_env command (Array.of_list args') environment
         Unix.stdin Unix.stdout Unix.stderr
      in
-     ignore (Unix.waitpid [] pid)
+     let status = snd (Unix.waitpid [] pid) in
+     let errcode =
+       match status with Unix.WEXITED c|Unix.WSTOPPED c|Unix.WSIGNALED c -> c
+     in
+     exit errcode
   | _ ->
      Unix.execvpe command (Array.of_list args') environment
 
@@ -196,4 +200,4 @@ let main () =
       (*  List.iter (compile coqtopname args) cfiles*)
       Unix.handle_unix_error (compile coqtopname args) cfiles
 
-let _ = Printexc.print main (); exit 0
+let _ = Printexc.print main ()
