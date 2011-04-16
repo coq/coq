@@ -4,6 +4,13 @@ Changes from V8.3pl1 to V8.3pl2
 Coqdoc and documentation bugs
 
 - #2470 (use "membership" instead of "appartness")
+- #2475 (documentation of the "f binders := t" notation for record fields)
+- Documentation of module String on coq.inria.fr/stdlib
+
+Tactics
+
+- #2493 (dependent pairs injection failing because of Type cumulativity missing)
+- Reduction "simpl" sometimes failing in presence of names redefined in modules
 
 Extraction
 
@@ -22,9 +29,14 @@ Extraction
 Miscellaneous bug fixes
 
 - #2487 (compilation with camlp5 in strict mode)
-- A new option "Set Default Timeout n / Unset Default Timeout" (#2283,#2460).
-- vm_compute is now responsive to Ctrl-C interruption, as the rest of coqtop.
-- In win32, the exit code of coqc should be correct now (#2524)
+- #2283, #2460 (new option "Set Default Timeout n / Unset Default Timeout")
+- #2524 (In win32, the exit code of coqc should be correct now)
+- Now, vm_compute is responsive to Ctrl-C interruption, as the rest of coqtop
+- Fixed uncaught exception when vmcast used in Check
+- coqdep complies with the -R visibility discipline
+- Fixing printing of f when defined using "Notation f x := ..."
+- Fixing Unset for options setting integer values
+- Excluding admitted subgoals from Search/SearchAbout
 
 Changes from V8.3 to V8.3pl1
 ============================
