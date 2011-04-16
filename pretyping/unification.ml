@@ -268,7 +268,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 		 then Evd.set_leq_sort sigma s1 s2 
 		 else Evd.set_eq_sort sigma s1 s2 
 	       in (sigma', metasubst, evarsubst)
-	     with _ -> error_cannot_unify_local curenv sigma (m,n,cM))
+	     with _ -> error_cannot_unify curenv sigma (m,n))
 	      
 	| Lambda (na,t1,c1), Lambda (_,t2,c2) ->
 	    unirec_rec (push (na,t1) curenvnb) topconv true
@@ -643,14 +643,7 @@ let unify_to_type env sigma flags c status u =
   let t = get_type_of env sigma c in
   let t = Tacred.hnf_constr env sigma (nf_betaiota sigma (nf_meta sigma t)) in
   let u = Tacred.hnf_constr env sigma u in
-    if status = IsSuperType then
-      unify_0 env sigma Cumul flags u t
-    else if status = IsSubType then
-      unify_0 env sigma Cumul flags t u
-    else
-      try unify_0 env sigma Cumul flags t u
-      with e when precatchable_exception e ->
-	unify_0 env sigma Cumul flags u t
+    unify_0 env sigma Cumul flags t u
 
 let unify_type env sigma flags mv status c =
   let mvty = Typing.meta_type sigma mv in
