@@ -9,8 +9,8 @@ let test2 b =
 (** val wrong_id : 'a1 hole -> 'a2 hole **)
 
 let wrong_id = function
-  | Hole -> Hole
-  | Hole2 -> Hole2
+| Hole -> Hole
+| Hole2 -> Hole2
 (** val test3 : 'a1 option -> 'a1 option **)
 
 let test3 o =
@@ -18,35 +18,35 @@ let test3 o =
 (** val test4 : indu -> indu **)
 
 let test4 = function
-  | A m -> A (S m)
-  | x -> x
+| A m -> A (S m)
+| x -> x
 (** val test5 : indu -> indu **)
 
 let test5 = function
-  | A m -> A (S m)
-  | _ -> B
+| A m -> A (S m)
+| _ -> B
 (** val test6 : indu' -> indu' **)
 
 let test6 = function
-  | A' m -> A' (S m)
-  | E' -> B'
-  | F' -> B'
-  | _ -> C'
+| A' m -> A' (S m)
+| E' -> B'
+| F' -> B'
+| _ -> C'
 (** val test7 : indu -> nat option **)
 
 let test7 = function
-  | A m -> Some m
-  | _ -> None
+| A m -> Some m
+| _ -> None
 (** val decode_cond_mode :
     (word -> opcode option) -> (word -> 'a1 decoder_result) -> word -> ('a1
     -> opcode -> 'a2) -> 'a2 decoder_result **)
 
 let decode_cond_mode condition f w g =
   match condition w with
-    | Some oc ->
-        (match f w with
-           | DecUndefined -> DecUndefined
-           | DecUnpredictable -> DecUnpredictable
-           | DecInst i -> DecInst (g i oc)
-           | DecError m -> DecError m)
-    | None -> DecUndefined
+  | Some oc ->
+    (match f w with
+     | DecUndefined -> DecUndefined
+     | DecUnpredictable -> DecUnpredictable
+     | DecInst i -> DecInst (g i oc)
+     | DecError m -> DecError m)
+  | None -> DecUndefined
