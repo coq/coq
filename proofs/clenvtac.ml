@@ -108,6 +108,7 @@ let fail_quick_unif_flags = {
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = false;
+  modulo_betaiota = false;
   modulo_eta = true
 }
 

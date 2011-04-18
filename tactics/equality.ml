@@ -87,6 +87,7 @@ let rewrite_unif_flags = {
   Unification.modulo_delta_types = empty_transparent_state;
   Unification.resolve_evars = true;
   Unification.use_evars_pattern_unification = true;
+  Unification.modulo_betaiota = false;
   Unification.modulo_eta = true
 }
 

@@ -703,6 +703,7 @@ let elim_flags = {
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = true;
+  modulo_betaiota = false;
   modulo_eta = true
 }
 

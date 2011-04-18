@@ -17,6 +17,7 @@ type unify_flags = {
   modulo_delta_types : Names.transparent_state;
   resolve_evars : bool;
   use_evars_pattern_unification : bool;
+  modulo_betaiota : bool;
   modulo_eta : bool
 }
 

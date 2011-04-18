@@ -171,6 +171,7 @@ type unify_flags = {
   modulo_delta_types : Names.transparent_state;
   resolve_evars : bool;
   use_evars_pattern_unification : bool;
+  modulo_betaiota : bool;
   modulo_eta : bool
 }
 
@@ -181,6 +182,7 @@ let default_unify_flags = {
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = true;
+  modulo_betaiota = false;
   modulo_eta = true
 }
 
@@ -191,6 +193,7 @@ let default_no_delta_unify_flags = {
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = false;
+  modulo_betaiota = false;
   modulo_eta = true
 }
 
@@ -342,14 +345,17 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 		    expand curenvnb pb b substn cM f1 l1 cN f2 l2
 
   and reduce curenvnb pb b (sigma, metas, evars as substn) cM cN =
-    let cM' = do_reduce (fst curenvnb) sigma cM in
-      if not (eq_constr cM cM') then
-	unirec_rec curenvnb pb true substn cM' cN
-      else
-	let cN' = do_reduce (fst curenvnb) sigma cN in
-	  if not (eq_constr cN cN') then
-	    unirec_rec curenvnb pb true substn cM cN'
-	  else error_cannot_unify (fst curenvnb) sigma (cM,cN)
+    if flags.modulo_betaiota then
+      let cM' = do_reduce (fst curenvnb) sigma cM in
+	if not (eq_constr cM cM') then
+	  unirec_rec curenvnb pb true substn cM' cN
+	else
+	  let cN' = do_reduce (fst curenvnb) sigma cN in
+	    if not (eq_constr cN cN') then
+	      unirec_rec curenvnb pb true substn cM cN'
+	    else error_cannot_unify (fst curenvnb) sigma (cM,cN)
+    else
+      error_cannot_unify (fst curenvnb) sigma (cM,cN)
 	    
   and expand (curenv,_ as curenvnb) pb b (sigma,metasubst,_ as substn) cM f1 l1 cN f2 l2 =
 

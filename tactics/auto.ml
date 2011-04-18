@@ -845,6 +845,7 @@ let auto_unif_flags = {
   modulo_delta_types = full_transparent_state;
   resolve_evars = true;
   use_evars_pattern_unification = false;
+  modulo_betaiota = false;
   modulo_eta = true
 }
 
