@@ -124,7 +124,7 @@ pr
  revert n. fix IHn 1.
  do 3 (destruct n; [unfold_ops; reflexivity|]).
  simpl mk_zn2z_ops_karatsuba. simpl word in *.
- rewrite <- IHn. auto.
+ rewrite <- (IHn n). auto.
  Qed.
 
  (** * The main type [t], isomorphic with [exists n, word w0 n] *)
