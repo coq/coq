@@ -19,8 +19,6 @@ val register_automation_tac: tactic -> unit
 
 val automation_tac : tactic
 
-val daimon_subtree: Proof.proof -> Proof.proof
-
 val concl_refiner:
   Termops.meta_type_map -> constr -> Proof_type.goal sigma -> constr
 

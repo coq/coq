@@ -127,13 +127,6 @@ let daimon_tac gls =
   set_daimon_flag ();
   {it=[];sigma=sig_sig gls}
 
-let daimon _ pftree =
-  set_daimon_flag ();
-  {pftree with
-     ref=Some (Daimon,[])}
-
-let daimon_subtree =
-  fun _ -> Util.anomaly "Todo: Decl_proof_instr.daimon_subtree"
 
 (* marking closed blocks *)
 
@@ -164,16 +157,12 @@ let goto_current_focus_or_top pts =
 (* return *)
 
 let close_tactic_mode pts =
-    let pts1=
-      try goto_current_focus pts
-      with Not_found ->
-	error "\"return\" cannot be used outside of Declarative Proof Mode." in
-    let pts2 = daimon_subtree pts1 in
-      goto_current_focus pts2
+  try goto_current_focus pts
+  with Not_found ->
+    error "\"return\" cannot be used outside of Declarative Proof Mode."
 
 let return_from_tactic_mode () =
-  (* arnaud: la commande return ne fonctionne pas *)
-  Util.anomaly "Todo: Decl_proof_instr.return_from_tactic_mode"
+  close_tactic_mode (Proof_global.give_me_the_proof ())
 
 (* end proof/claim *)
 
@@ -1376,7 +1365,12 @@ let end_tac et2 gls =
 
 (* escape *)
 
-let escape_tac gls =  tcl_erase_info gls
+let escape_tac gls =
+  (* spiwack: sets an empty info stack to avoid interferences.
+     We could erase the info altogether, but that doesn't play
+     well with the Decl_mode.focus (used in post_processing). *)
+  let info={pm_stack=[]} in
+  tcl_change_info info gls
 
 (* General instruction engine *)
 
@@ -1440,8 +1434,11 @@ let rec postprocess pts instr =
       Phence i | Pthus i | Pthen i -> postprocess pts i
     | Pcut _ | Psuffices _ | Passume _ | Plet _ | Pconsider (_,_) | Pcast (_,_)
     | Pgiven _ | Ptake _ | Pdefine (_,_,_) | Prew (_,_) -> ()
-    | Pclaim _ | Pfocus _ | Psuppose _ | Pcase _ | Pper _
-    | Pescape -> Decl_mode.focus pts
+    | Pclaim _ | Pfocus _ | Psuppose _ | Pcase _ | Pper _ ->
+      Decl_mode.focus pts
+    | Pescape ->
+      Decl_mode.focus pts;
+      Proof_global.set_proof_mode "Classic"
     | Pend (B_elim ET_Induction) ->
   	begin
 	  let pfterm = List.hd (Proof.partial_proof pts) in

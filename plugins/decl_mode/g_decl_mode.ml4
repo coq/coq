@@ -74,12 +74,12 @@ let vernac_decl_proof () =
     end
 
 (* spiwack: some bureaucracy is not performed here *)
-let vernac_return () = 
+let vernac_return () =
   Decl_proof_instr.return_from_tactic_mode () ;
   Proof_global.set_proof_mode "Declarative" ;
   Vernacentries.print_subgoals ()
 
-let vernac_proof_instr instr = 
+let vernac_proof_instr instr =
   Decl_proof_instr.proof_instr instr;
   Vernacentries.print_subgoals ()
 
