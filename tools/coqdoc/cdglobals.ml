@@ -49,6 +49,22 @@ type glob_source_t =
 
 let glob_source = ref DotGlob
 
+(** A weaker analog of the function in Envars *)
+
+let guess_coqlib () =
+  let file = "states/initial.coq" in
+  if Sys.file_exists (Filename.concat Coq_config.coqlib file)
+  then Coq_config.coqlib
+  else
+    let coqbin = Filename.dirname Sys.executable_name in
+    let prefix = Filename.dirname coqbin in
+    let rpath = if Coq_config.local then [] else
+	(if Coq_config.arch = "win32" then ["lib"] else ["lib";"coq"]) in
+    let coqlib = List.fold_left Filename.concat prefix rpath in
+    if Sys.file_exists (Filename.concat coqlib file) then coqlib
+    else
+      Coq_config.coqlib
+
 let header_trailer = ref true
 let header_file = ref ""
 let header_file_spec = ref false
@@ -66,7 +82,7 @@ let page_title = ref ""
 let title = ref ""
 let externals = ref true
 let coqlib = ref Coq_config.wwwstdlib
-let coqlib_path = ref Coq_config.coqlib
+let coqlib_path = ref (guess_coqlib ())
 let raw_comments = ref false
 let parse_comments = ref false
 let plain_comments = ref false
