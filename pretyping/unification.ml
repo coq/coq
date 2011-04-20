@@ -656,7 +656,8 @@ let unify_type env sigma flags mv status c =
   let mvty = nf_meta sigma mvty in
     unify_to_type env sigma 
       {flags with modulo_delta = flags.modulo_delta_types;
-	 modulo_conv_on_closed_terms = Some flags.modulo_delta_types}
+	 modulo_conv_on_closed_terms = Some flags.modulo_delta_types;
+	 modulo_betaiota = true}
       c status mvty
 
 (* Move metas that may need coercion at the end of the list of instances *)
