@@ -1680,13 +1680,21 @@ let choose_save session =
     save_dialog#show ()
  *)
 
+(* Nota: using && here has the advantage of working both under win32 and unix.
+   If someday we want the main command to be tried even if the "cd" has failed,
+   then we should use " ; " under unix but " & " under win32 (cf. #2363).
+*)
+
+let local_cd file =
+  "cd " ^ Filename.quote (Filename.dirname file) ^ " && "
+
 let do_print session =
   let av = session.analyzed_view in
     if session.filename = ""
     then flash_info "Cannot print: this buffer has no name"
     else begin
       let cmd =
-        "cd " ^ Filename.quote (Filename.dirname session.filename) ^ "; " ^
+	local_cd session.filename ^
         !current.cmd_coqdoc ^ " -ps " ^ Filename.quote (Filename.basename session.filename) ^
         " | " ^ !current.cmd_print
       in
@@ -1956,7 +1964,7 @@ let main files =
 				  | _ -> assert false
 			    in
 			    let cmd =
-			      "cd " ^ Filename.quote (Filename.dirname f) ^ "; " ^
+			      local_cd f ^
 				!current.cmd_coqdoc ^ " --" ^ kind ^ " -o " ^ (Filename.quote output) ^ " " ^ (Filename.quote basef)
 			    in
 			    let s,_ = run_command av#insert_message cmd in
@@ -2862,7 +2870,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 						    flash_info "Cannot make: this buffer has no name"
 						| Some f ->
 						    let cmd =
-						      "cd " ^ Filename.quote (Filename.dirname f) ^ "; " ^ !current.cmd_make in
+						      local_cd f ^ !current.cmd_make in
 
 						      (*
 							save_f ();
@@ -2929,7 +2937,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 						    flash_info "Cannot make makefile: this buffer has no name"
 						| Some f ->
 						    let cmd =
-						      "cd " ^ Filename.quote (Filename.dirname f) ^ "; " ^ !current.cmd_coqmakefile in
+						      local_cd f ^ !current.cmd_coqmakefile in
 						    let s,res = run_command av#insert_message cmd in
 						      flash_info
 							(!current.cmd_coqmakefile ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
