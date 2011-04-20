@@ -1140,7 +1140,7 @@ let search = search_gen 0
 
 let default_search_depth = ref 5
 
-let delta_auto mod_delta n lems dbnames gl =
+let delta_auto ?(use_core_db=true) mod_delta n lems dbnames gl =
   let db_list =
     List.map
       (fun x ->
@@ -1148,13 +1148,13 @@ let delta_auto mod_delta n lems dbnames gl =
 	   searchtable_map x
 	 with Not_found ->
 	   error_no_such_hint_database x)
-      ("core"::dbnames)
+      (if use_core_db then "core"::dbnames else dbnames)
   in
   tclTRY (search n mod_delta db_list (make_local_hint_db false lems gl)) gl
 
-let auto = delta_auto false
+let auto ?(use_core_db=true) = delta_auto ~use_core_db false
 
-let new_auto = delta_auto true
+let new_auto ?(use_core_db=true) = delta_auto ~use_core_db true
 
 let default_auto = auto !default_search_depth [] []
 

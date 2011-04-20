@@ -192,11 +192,11 @@ val conclPattern : constr -> constr_pattern option -> Tacexpr.glob_tactic_expr -
 
 (** The Auto tactic *)
 
-val auto : int -> open_constr list -> hint_db_name list -> tactic
+val auto : ?use_core_db:bool -> int -> open_constr list -> hint_db_name list -> tactic
 
 (** Auto with more delta. *)
 
-val new_auto : int -> open_constr list -> hint_db_name list -> tactic
+val new_auto : ?use_core_db:bool -> int -> open_constr list -> hint_db_name list -> tactic
 
 (** auto with default search depth and with the hint database "core" *)
 val default_auto : tactic
