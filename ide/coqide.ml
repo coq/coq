@@ -1571,15 +1571,22 @@ let create_session () =
    save_dialog#show ()
 *)
 
+(* Nota: using && here has the advantage of working both under win32 and unix.
+   If someday we want the main command to be tried even if the "cd" has failed,
+   then we should use " ; " under unix but " & " under win32 (cf. #2363).
+*)
+
+let local_cd file =
+  "cd " ^ Filename.quote (Filename.dirname file) ^ " && "
+
 let do_print session =
   let av = session.analyzed_view in
   match av#filename with
     |None ->  flash_info "Cannot print: this buffer has no name"
     |Some f_name ->  begin
       let cmd =
-        "cd " ^ Filename.quote (Filename.dirname f_name) ^ "; " ^
-          !current.cmd_coqdoc ^ "--coqlib_path " ^ !Minilib.coqlib ^
-	  " -ps " ^ Filename.quote (Filename.basename f_name) ^
+        local_cd f_name ^
+          !current.cmd_coqdoc ^ " -ps " ^ Filename.quote (Filename.basename f_name) ^
           " | " ^ !current.cmd_print
       in
       let print_window = GWindow.window ~title:"Print" ~modal:true ~position:`CENTER ~wm_class:"CoqIDE" ~wm_name: "CoqIDE"  () in
@@ -1881,8 +1888,7 @@ let main files =
             | _ -> assert false
         in
         let cmd =
-          "cd " ^ Filename.quote (Filename.dirname f) ^ "; " ^
-            !current.cmd_coqdoc ^ "--coqlib_path " ^ !Minilib.coqlib ^ " --" ^ kind ^
+          local_cd f ^ !current.cmd_coqdoc ^ " --" ^ kind ^
 	    " -o " ^ (Filename.quote output) ^ " " ^ (Filename.quote basef)
         in
         let s,_ = run_command av#insert_message cmd in
@@ -2715,8 +2721,7 @@ let main files =
       | None ->
 	flash_info "Cannot make: this buffer has no name"
       | Some f ->
-	let cmd =
-	  "cd " ^ Filename.quote (Filename.dirname f) ^ "; " ^ !current.cmd_make in
+	let cmd = local_cd f ^ !current.cmd_make in
 
 	(*
 	  save_f ();
@@ -2782,8 +2787,7 @@ let main files =
       | None ->
 	flash_info "Cannot make makefile: this buffer has no name"
       | Some f ->
-	let cmd =
-	  "cd " ^ Filename.quote (Filename.dirname f) ^ "; " ^ !current.cmd_coqmakefile in
+	let cmd = local_cd f ^ !current.cmd_coqmakefile in
 	let s,res = run_command av#insert_message cmd in
 	flash_info
 	  (!current.cmd_coqmakefile ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
