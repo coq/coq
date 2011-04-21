@@ -19,17 +19,36 @@ let initmac () = IFDEF MacInt THEN gtk_mac_init Coqide.do_load Coqide.forbid_qui
 let macready () = IFDEF MacInt THEN gtk_mac_ready () ELSE ()  END
 
 (* On win32, we add the directory of coqide to the PATH at launch-time
-   (this used to be done in a .bat script).
-   We also provide a specific kill function.
+   (this used to be done in a .bat script). *)
+
+let set_win32_path () =
+  Unix.putenv "PATH"
+    (Filename.dirname Sys.executable_name ^ ";" ^
+      (try Sys.getenv "PATH" with _ -> ""))
+
+(* On win32, since coqide is now console-free, we re-route stdout/stderr
+   to avoid Sys_error if someone writes to them. We write to a pipe which
+   is never read (by default) or to a temp log file (when in debug mode).
 *)
+
+let reroute_stdout_stderr () =
+  let out_descr =
+    if !Ideutils.debug then
+      Unix.descr_of_out_channel (snd (Filename.open_temp_file "coqide_" ".log"))
+    else
+      snd (Unix.pipe ())
+  in
+  Unix.dup2 out_descr Unix.stdout;
+  Unix.dup2 out_descr Unix.stderr
+
+(* We also provide a specific kill function. *)
 
 IFDEF Win32 THEN
 external win32_kill : int -> unit = "win32_kill"
 let () =
-  Unix.putenv "PATH"
-    (Filename.dirname Sys.executable_name ^ ";" ^
-      (try Sys.getenv "PATH" with _ -> ""));
-  Coq.killer := win32_kill
+  Coq.killer := win32_kill;
+  set_win32_path ();
+  reroute_stdout_stderr ()
 END
 
 let () =

@@ -135,17 +135,22 @@ let coqtop_zombies () =
     doesn't call bin/sh, so args shouldn't be quoted. The process
     cannot be terminated by a Unix.close_process, but rather by a
     kill of the pid.
+
+           >--ide2top_w--[pipe]--ide2top_r-->
+    coqide                                   coqtop
+           <--top2ide_r--[pipe]--top2ide_w--<
+
 *)
 
 let open_process_pid prog args =
-  let (in_read,in_write) = Unix.pipe () in
-  let (out_read,out_write) = Unix.pipe () in
-  let pid = Unix.create_process prog args out_read in_write Unix.stderr in
+  let (ide2top_r,ide2top_w) = Unix.pipe () in
+  let (top2ide_r,top2ide_w) = Unix.pipe () in
+  let pid = Unix.create_process prog args ide2top_r top2ide_w top2ide_w in
   assert (pid <> 0);
-  Unix.close out_read;
-  Unix.close in_write;
-  let ic = Unix.in_channel_of_descr in_read in
-  let oc = Unix.out_channel_of_descr out_write in
+  Unix.close ide2top_r;
+  Unix.close top2ide_w;
+  let oc = Unix.out_channel_of_descr ide2top_w in
+  let ic = Unix.in_channel_of_descr top2ide_r in
   set_binary_mode_out oc true;
   set_binary_mode_in ic true;
   (pid,ic,oc)

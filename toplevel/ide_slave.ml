@@ -261,10 +261,6 @@ let interp (verbosely,s) =
   let pa = parsable_of_string s in
   try
     let (loc,vernac) = Vernac.parse_sentence (pa,None) in
-    (* Temporary hack to make coqide.byte work (WTF???) - now with
-     * less screen
-     *   * pollution *)
-    Pervasives.prerr_string " \r"; Pervasives.flush stderr;
     if is_vernac_debug_command vernac then
       user_error_loc loc (str "Debug mode not available within CoqIDE");
     if is_vernac_navigation_command vernac then
