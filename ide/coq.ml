@@ -51,7 +51,7 @@ let rec read_all_lines in_chan =
 
 let filter_coq_opts args =
   let argstr = String.concat " " (List.map Filename.quote args) in
-  let cmd = !Minilib.coqtop_path ^" -nois -filteropts " ^ argstr in
+  let cmd = Filename.quote !Minilib.coqtop_path ^" -nois -filteropts " ^ argstr in
   let oc,ic,ec = Unix.open_process_full cmd (Unix.environment ()) in
   let filtered_args = read_all_lines oc in
   let message = read_all_lines ec in
@@ -65,7 +65,7 @@ exception Coqtop_output of string list
 let check_connection args =
   try
     let argstr = String.concat " " (List.map Filename.quote args) in
-    let cmd = !Minilib.coqtop_path ^ " -batch " ^ argstr in
+    let cmd = Filename.quote !Minilib.coqtop_path ^ " -batch " ^ argstr in
     let ic = Unix.open_process_in cmd in
     let lines = read_all_lines ic in
     match Unix.close_process_in ic with
@@ -87,7 +87,7 @@ let check_connection args =
 let check_coqlib args =
   try
     let argstr = String.concat " " (List.map Filename.quote args) in
-    let cmd = !Minilib.coqtop_path ^ " " ^ argstr ^ " -where" in
+    let cmd = Filename.quote !Minilib.coqtop_path ^ " " ^ argstr ^ " -where" in
     let ic = Unix.open_process_in cmd in
     let lines = read_all_lines ic in
     match Unix.close_process_in ic with
