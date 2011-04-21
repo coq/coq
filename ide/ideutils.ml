@@ -329,13 +329,11 @@ let url_for_keyword =
 	let u = String.sub s (i + 1) (String.length s - i - 1) in
 	Hashtbl.add ht k u
       with _ ->
-	Printf.eprintf "Warning: Cannot parse documentation index file.\n";
-	flush stderr
+	safe_prerr_endline "Warning: Cannot parse documentation index file."
     done with End_of_file ->
       close_in cin
   with _ ->
-    Printf.eprintf "Warning: Cannot find documentation index file.\n";
-    flush stderr
+    safe_prerr_endline "Warning: Cannot find documentation index file."
   end;
   Hashtbl.find ht : string -> string)
 

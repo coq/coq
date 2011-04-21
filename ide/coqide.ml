@@ -1667,7 +1667,7 @@ let saveall_f () =
     )  session_notebook#pages
 
 let forbid_quit_to_save () =
-    save_pref();
+    begin try save_pref() with e -> flash_info "Cannot save preferences" end;
     (if List.exists
       (function
         | {script=view} -> view#buffer#modified
@@ -1718,7 +1718,11 @@ let forbid_quit_to_save () =
 
 let main files =
   (* Statup preferences *)
-  load_pref ();
+  begin
+    try load_pref ()
+    with e ->
+      flash_info ("Could not load preferences ("^Printexc.to_string e^").");
+  end;
 
   (* Main window *)
   let w = GWindow.window
@@ -2255,7 +2259,12 @@ let main files =
 
   let _ =
     edit_f#add_item "_Preferences"
-      ~callback:(fun () -> configure ~apply:update_notebook_pos (); reset_revert_timer ())
+      ~callback:(fun () ->
+	begin
+	  try configure ~apply:update_notebook_pos ()
+	  with _ -> flash_info "Cannot save preferences"
+	end;
+	reset_revert_timer ())
   in
   (*
     let save_prefs_m =

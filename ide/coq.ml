@@ -73,11 +73,11 @@ let check_connection args =
     | _ -> raise (Coqtop_output lines)
   with
     | End_of_file ->
-      Pervasives.prerr_endline "Cannot start connection with coqtop";
+      safe_prerr_endline "Cannot start connection with coqtop";
       exit 1
     | Coqtop_output lines ->
-      Pervasives.prerr_endline "Connection with coqtop failed:";
-      List.iter Pervasives.prerr_endline lines;
+      safe_prerr_endline "Connection with coqtop failed:";
+      List.iter safe_prerr_endline lines;
       exit 1
 
 (** It is tempting to merge the following function with the previous one,
@@ -98,11 +98,11 @@ let check_coqlib args =
     | _ -> raise (Coqtop_output lines)
   with
     | End_of_file ->
-      Pervasives.prerr_endline "Cannot start connection with coqtop";
+      safe_prerr_endline "Cannot start connection with coqtop";
       exit 1
     | Coqtop_output lines ->
-      Pervasives.prerr_endline "Connection with coqtop failed:";
-      List.iter Pervasives.prerr_endline lines;
+      safe_prerr_endline "Connection with coqtop failed:";
+      List.iter safe_prerr_endline lines;
       exit 1
 
 

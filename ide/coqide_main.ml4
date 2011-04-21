@@ -58,7 +58,7 @@ let () =
       try
 	GtkThread.main ()
       with
-	| Sys.Break -> Ideutils.prerr_endline "Interrupted." ; flush stderr
+	| Sys.Break -> Ideutils.prerr_endline "Interrupted."
 	| e ->
 	    Ideutils.safe_prerr_endline
 	      ("CoqIde unexpected error:" ^ (Printexc.to_string e));
