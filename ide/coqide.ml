@@ -698,7 +698,7 @@ object(self)
                 img#set_stock `DIALOG_WARNING;
                 img#set_icon_size `DIALOG;
                 img#coerce)
-               ("File "^f^"already exists")
+               ("File "^f^" already exists")
       )
       with 1 -> self#save f
         | _ -> false
