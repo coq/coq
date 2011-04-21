@@ -140,12 +140,14 @@ let coqtop_zombies () =
     coqide                                   coqtop
            <--top2ide_r--[pipe]--top2ide_w--<
 
+    Note: we use Unix.stderr in Unix.create_process to get debug
+    messages from the coqtop's Ide_slave loop.
 *)
 
 let open_process_pid prog args =
   let (ide2top_r,ide2top_w) = Unix.pipe () in
   let (top2ide_r,top2ide_w) = Unix.pipe () in
-  let pid = Unix.create_process prog args ide2top_r top2ide_w top2ide_w in
+  let pid = Unix.create_process prog args ide2top_r top2ide_w Unix.stderr in
   assert (pid <> 0);
   Unix.close ide2top_r;
   Unix.close top2ide_w;
