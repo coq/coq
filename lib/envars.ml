@@ -14,6 +14,13 @@ let coqbin () =
   then Filename.concat Coq_config.coqsrc "bin"
   else System.canonical_path_name (Filename.dirname Sys.executable_name)
 
+(* On win32, we add coqbin to the PATH at launch-time (this used to be
+   done in a .bat script). *)
+
+let _ =
+  if Coq_config.arch = "win32" then
+    Unix.putenv "PATH" (coqbin() ^ ";" ^ System.getenv_else "PATH" "")
+
 let guess_coqlib () =
   let file = "states/initial.coq" in
     if Sys.file_exists (Filename.concat Coq_config.coqlib file)

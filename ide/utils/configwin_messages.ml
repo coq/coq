@@ -30,9 +30,7 @@ let version = "1.2";;
 
 let html_config = "Configwin bindings configurator for html parameters"
 
-let home =
-  try Sys.getenv "HOME"
-  with Not_found -> ""
+let home = Minilib.home
 
 let mCapture = "Capture";;
 let mType_key = "Type key" ;;

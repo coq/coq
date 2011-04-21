@@ -58,7 +58,13 @@ let list_filter_i p =
 let subst_command_placeholder s t =
   Str.global_replace (Str.regexp_string "%s") s t
 
-let home = try Sys.getenv "HOME" with Not_found -> "."
+(* On win32, the home directory is probably not in $HOME, but in
+   some other environment variable *)
+
+let home =
+  try Sys.getenv "HOME" with Not_found ->
+    try (Sys.getenv "HOMEDRIVE")^(Sys.getenv "HOMEPATH") with Not_found ->
+      try Sys.getenv "USERPROFILE" with Not_found -> "."
 
 let coqlib = ref ""
 let coqtop_path = ref ""

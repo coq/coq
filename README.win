@@ -9,9 +9,9 @@ INSTALLATION.
     The Coq package for Windows comes with an auto-installer. It will
 install Coq binaries and libraries under any directory you specify
 (C:\Program Files\Coq is the default path). It also creates shortcuts
-in the Windows menus. Alternatively, you can launch Coq using Coq.bat
-and Coqide.bat in the installation directory (C:\Program Files\Coq by
-default).
+in the Windows menus. Alternatively, you can launch Coq using coqide.exe
+or coqtop.exe in the bin sub-directory of the installation
+(C:\Program Files\Coq\bin by default).
 
 COMPILATION.
 ============
@@ -51,5 +51,9 @@ COMPILATION.
            archive).
 
     Good luck :-)
+
+    Alternatively, it is now possible (and even recommended ...) to build
+    Windows executables of coq from Linux thanks to a mingw cross-compiler.
+    If interested, please contact us for more details.
 
     The Coq Team.

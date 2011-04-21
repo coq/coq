@@ -18,7 +18,16 @@ let initmac () = IFDEF MacInt THEN gtk_mac_init Coqide.do_load Coqide.forbid_qui
 
 let macready () = IFDEF MacInt THEN gtk_mac_ready () ELSE ()  END
 
+(* On win32, we add the directory of coqide to the PATH at launch-time
+   (this used to be done in a .bat script). *)
+
+let winpath () =
+  if Coq_config.arch = "win32" then
+    Unix.putenv "PATH" (Filename.dirname Sys.executable_name ^ ";" ^
+			  (try Sys.getenv "PATH" with _ -> ""))
+
 let () =
+  winpath ();
   let argl = Array.to_list Sys.argv in
   let argl = Coqide.set_coqtop_path argl in
   let files = Coqide.process_argv argl in
