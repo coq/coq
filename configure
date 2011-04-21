@@ -597,6 +597,10 @@ esac
 
 # lablgtk2 and CoqIDE
 
+IDEARCHFLAGS=
+IDEARCHFILE=
+IDEARCHDEF=
+
 # -byte-only should imply -coqide byte, unless the user decides otherwise
 
 if [ "$best_compiler" = "byte" -a "$coqide_spec" = "no" ]; then 
@@ -639,16 +643,17 @@ else
         echo "LablGtk2 found, native threads: native CoqIde will be available."
 	COQIDE=opt
         if [ "$nomacintegration_spec" = "no" ] && pkg-config --exists ige-mac-integration;
-            then 
+        then
             cflags=$cflags" `pkg-config --cflags ige-mac-integration`"
-            MACIGEFLAGS='-ccopt "`pkg-config --libs ige-mac-integration`"'
-            MACIGEFILE=ide/ide_mac_stubs.o
-            MACIGEP4=-DMacInt
-            else
-            MACIGEFLAGS=""
-            MACIGEFILE=""
-            MACIGEP4=""
-            fi
+	    IDEARCHFLAGS='-ccopt "`pkg-config --libs ige-mac-integration`"'
+	    IDEARCHFILE=ide/ide_mac_stubs.o
+	    IDEARCHDEF=-DMacInt
+	elif [ "$ARCH" = "win32" ];
+        then
+	    IDEARCHFLAGS=
+	    IDEARCHFILE=ide/ide_win32_stubs.o
+	    IDEARCHDEF=-DWin32
+	fi
     fi
 fi
 
@@ -876,7 +881,7 @@ fi
 if test "$COQIDE" != "no"; then
 echo "  Lablgtk2 library in               : $LABLGTKLIB"
 fi
-if test "$MACIGEFILE" != ""; then
+if test "$IDEARCHDEF" = "-DMacInt"; then
 echo "  Mac OS integration is on"
 fi
 if test "$with_doc" = "all"; then
@@ -1108,9 +1113,9 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|RANLIBEXEC|$ranlib_exec|" \
     -e "s|STRIPCOMMAND|$STRIPCOMMAND|" \
     -e "s|COQIDEOPT|$COQIDE|" \
-    -e "s|MACIGEFLAGS|$MACIGEFLAGS|" \
-    -e "s|MACIGEFILE|$MACIGEFILE|" \
-    -e "s|MACIGEP4|$MACIGEP4|" \
+    -e "s|IDEARCHFLAGS|$IDEARCHFLAGS|" \
+    -e "s|IDEARCHFILE|$IDEARCHFILE|" \
+    -e "s|IDEARCHDEF|$IDEARCHDEF|" \
     -e "s|CHECKEDOUTSOURCETREE|$checkedout|" \
     -e "s|WITHDOCOPT|$with_doc|" \
     -e "s|HASNATIVEDYNLINK|$NATDYNLINKFLAG|" \

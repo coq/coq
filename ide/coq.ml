@@ -167,9 +167,11 @@ let break_coqtop coqtop =
   try Unix.kill coqtop.pid Sys.sigint
   with _ -> prerr_endline "Error while sending Ctrl-C"
 
+let killer = ref (fun pid -> Unix.kill pid Sys.sigkill)
+
 let blocking_kill pid =
   begin
-    try Unix.kill pid Sys.sigkill;
+    try !killer pid
     with _ -> prerr_endline "Kill -9 failed. Process already terminated ?"
   end;
   try

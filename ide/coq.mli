@@ -40,6 +40,10 @@ val reset_coqtop : coqtop -> coqtop
 
 val process_exn : exn -> Ide_intf.location * string
 
+(** In win32, we'll use a different kill function than Unix.kill *)
+
+val killer : (int -> unit) ref
+
 (** * Calls to Coqtop, cf [Ide_intf] for more details *)
 
 val interp : coqtop -> bool -> string -> unit Ide_intf.value

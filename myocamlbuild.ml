@@ -288,6 +288,11 @@ let extra_rules () = begin
   flag_and_dep ["p4mod"; "use_compat5"] (P "tools/compat5.cmo");
   flag_and_dep ["p4mod"; "use_compat5b"] (P "tools/compat5b.cmo");
 
+  if w32 then begin
+    flag ["p4mod"] (A "-DWin32");
+    dep ["ocaml"; "link"; "ide"] ["ide/ide_win32_stubs.o"];
+  end;
+
   if not use_camlp5 then begin
   let mlp_cmo s =
     let src=s^".mlp" and dst=s^".cmo" in
