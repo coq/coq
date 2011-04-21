@@ -167,6 +167,7 @@ let coqmktop = "scripts/coqmktop"
 type links = Both | Best | BestInPlace | Ide
 
 let all_binaries =
+ (if w32 then [ "mkwinapp", "tools/mkwinapp", Best ] else []) @
  [ "coqtop", coqtop, Both;
    "coqide", "ide/coqide_main", Ide;
    "coqmktop", coqmktop, Both;
@@ -391,9 +392,12 @@ let extra_rules () = begin
        Cmd (S [P w32res;A "--input-format";A "rc";A "--input";P rc;
 	       A "--output-format";A "coff";A "--output"; Px o]));
 
-(** For windows, Coqide should incorporate the Coq icon *)
+(** The windows version of Coqide is now a console-free win32 app,
+    which moreover contains the Coq icon. If necessary, the mkwinapp
+    tool can be used later to restore or suppress the console of Coqide. *)
 
-  if w32 then flag ["link"; "ocaml"; "program"; "ide"] (P w32ico);
+  if w32 then flag ["link"; "ocaml"; "program"; "ide"]
+    (S [A "-ccopt"; A "-link -Wl,-subsystem,windows"; P w32ico]);
 
 (** Coqtop *)
 
