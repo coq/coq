@@ -64,8 +64,10 @@ let w32pref = "i586-mingw32msvc"
 let w32ocamlc = w32pref^"-ocamlc"
 let w32ocamlopt = w32pref^"-ocamlopt"
 let w32ocamlmklib = w32pref^"-ocamlmklib"
+let w32res = w32pref^"-windres"
 let w32lib = "/usr/"^w32pref^"/lib/"
 let w32bin = "/usr/"^w32pref^"/bin/"
+let w32ico = "ide/coq_icon.o"
 
 let _ = if w32 then begin
   Options.ocamlopt := A w32ocamlopt;
@@ -381,14 +383,28 @@ let extra_rules () = begin
 	      "let core_objs = \"Coq_config "^core_mods^"\"\n"],
 	     tolink));
 
+(** For windows, building coff object file from a .rc (for the icon) *)
+
+  if w32 then rule ".rc.o" ~deps:["%.rc";"ide/coq.ico"] ~prod:"%.o"
+    (fun env _ ->
+       let rc = env "%.rc" and o = env "%.o" in
+       Cmd (S [P w32res;A "--input-format";A "rc";A "--input";P rc;
+	       A "--output-format";A "coff";A "--output"; Px o]));
+
+(** For windows, Coqide should incorporate the Coq icon *)
+
+  if w32 then flag ["link"; "ocaml"; "program"; "ide"] (P w32ico);
+
 (** Coqtop *)
 
   let () =
     let fo = coqtop^".native" and fb = coqtop^".byte" in
-    let depsall = [coqmktop_boot;libcoqrun] in
+    let depsall = (if w32 then [w32ico] else [])@[coqmktop_boot;libcoqrun] in
     let depso = "coq_config.cmx" :: core_cmxa in
     let depsb = "coq_config.cmo" :: core_cma in
-    let w32flag = if not w32 then N else S ([A"-camlbin";A w32bin]) in
+    let w32flag =
+      if not w32 then N else S ([A"-camlbin";A w32bin;A "-ccopt";P w32ico])
+    in
     if opt then rule fo ~prod:fo ~deps:(depsall@depso) ~insert:`top
       (cmd [P coqmktop_boot;w32flag;A"-boot";A"-opt";incl fo;A"-o";Px fo]);
     rule fb ~prod:fb ~deps:(depsall@depsb) ~insert:`top
