@@ -31,10 +31,17 @@ let pbar = GRange.progress_bar ~pulse_step:0.2 ()
 
 let debug = Flags.debug
 
+(* On a Win32 application with no console, writing to stderr raise
+   a Sys_error "bad file descriptor", hence the "try" below.
+   Ideally, we should re-route message to a log file somewhere, or
+   print in the response buffer.
+*)
+
+let safe_prerr_endline s =
+  try prerr_endline s;flush stderr with _ -> ()
+
 let prerr_endline s =
-  if !debug then (prerr_endline s;flush stderr)
-let prerr_string s =
-  if !debug then (prerr_string s;flush stderr)
+  if !debug then try prerr_endline s;flush stderr with _ -> ()
 
 let lib_ide_file f =
   Filename.concat (Filename.concat !Minilib.coqlib "ide") f

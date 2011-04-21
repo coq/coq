@@ -8,9 +8,6 @@
 
 open Ideutils
 
-let prerr_endline s = if !debug then prerr_endline s else ()
-
-
 (** * Version and date *)
 
 let get_version_date () =

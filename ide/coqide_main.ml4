@@ -1,3 +1,11 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
 IFDEF MacInt THEN
 external gtk_mac_init : (string -> unit) -> (unit -> bool) -> unit
   = "caml_gtk_mac_init"
@@ -41,9 +49,9 @@ let () =
       try
 	GtkThread.main ()
       with
-	| Sys.Break -> prerr_endline "Interrupted." ; flush stderr
+	| Sys.Break -> Ideutils.prerr_endline "Interrupted." ; flush stderr
 	| e ->
-	    Pervasives.prerr_endline ("CoqIde unexpected error:" ^ (Printexc.to_string e));
-	    flush stderr;
+	    Ideutils.safe_prerr_endline
+	      ("CoqIde unexpected error:" ^ (Printexc.to_string e));
 	    Coqide.crash_save 127
     done
