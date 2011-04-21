@@ -178,7 +178,8 @@ let break_coqtop coqtop =
 
 let killer = ref (fun pid -> Unix.kill pid Sys.sigkill)
 
-let blocking_kill pid =
+let kill_coqtop coqtop =
+  let pid = coqtop.pid in
   begin
     try !killer pid
     with _ -> prerr_endline "Kill -9 failed. Process already terminated ?"
@@ -187,9 +188,6 @@ let blocking_kill pid =
     ignore (Unix.waitpid [] pid);
     Mutex.lock toplvl_ctr_mtx; decr toplvl_ctr; Mutex.unlock toplvl_ctr_mtx
   with _ -> prerr_endline "Error while waiting for child"
-
-let kill_coqtop coqtop =
-  ignore (Thread.create blocking_kill coqtop.pid)
 
 (** * Calls to coqtop *)
 
