@@ -170,6 +170,8 @@ let spawn_coqtop sup_args =
     Mutex.unlock toplvl_ctr_mtx;
     raise e
 
+let respawn_coqtop coqtop = spawn_coqtop coqtop.sup_args
+
 let break_coqtop coqtop =
   try Unix.kill coqtop.pid Sys.sigint
   with _ -> prerr_endline "Error while sending Ctrl-C"
@@ -188,15 +190,6 @@ let blocking_kill pid =
 
 let kill_coqtop coqtop =
   ignore (Thread.create blocking_kill coqtop.pid)
-
-let reset_coqtop coqtop =
-  kill_coqtop coqtop;
-  spawn_coqtop coqtop.sup_args
-
-let process_exn = function
-  | End_of_file -> None, "Coqtop died"
-  | e -> None, Printexc.to_string e
-
 
 (** * Calls to coqtop *)
 

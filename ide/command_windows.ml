@@ -115,7 +115,7 @@ object(self)
                    | Ide_intf.Good results ->
                        ("Result for command " ^ phrase ^ ":\n" ^ results))
       with e ->
-	let (_,s) = Coq.process_exn e in
+	let s = Printexc.to_string e in
 	assert (Glib.Utf8.validate s);
 	result#buffer#set_text s
     in

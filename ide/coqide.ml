@@ -79,11 +79,12 @@ object
   method insert_command : string -> string -> unit
   method tactic_wizard : string list -> unit
   method insert_message : string -> unit
-  method process_next_phrase : bool -> bool -> bool -> bool
+  method process_next_phrase : bool -> unit
   method process_until_iter_or_error : GText.iter -> unit
   method process_until_end_or_error : unit
   method recenter_insert : unit
-  method reset_initial : bool -> unit
+  method reset_initial : unit
+  method force_reset_initial : unit
   method set_message : string -> unit
   method show_goals : unit
   method show_goals_full : unit
@@ -227,9 +228,15 @@ let coq_computing = Mutex.create ()
 (* To prevent Coq from interrupting during undoing...*)
 let coq_may_stop = Mutex.create ()
 
+(* To prevent a force_reset_initial during a force_reset_initial *)
+let resetting = Mutex.create ()
+
+exception RestartCoqtop
+exception Unsuccessful
+
 let force_reset_initial () =
   prerr_endline "Reset Initial";
-  session_notebook#current_term.analyzed_view#reset_initial true
+  session_notebook#current_term.analyzed_view#force_reset_initial
 
 (* How could we interrupt nicely coqtop in win32 ?
    For the moment, we simply kill it brutally *)
@@ -246,8 +253,9 @@ let do_if_not_computing text f x =
 	prerr_endline "Getting lock";
 	List.iter
           (fun elt -> try f elt with
+            | RestartCoqtop -> elt.analyzed_view#reset_initial
             | Sys_error str ->
-              elt.analyzed_view#reset_initial false;
+              elt.analyzed_view#reset_initial;
               elt.analyzed_view#set_message
                 ("Unable to communicate with coqtop, restarting coqtop.\n"^
 		    "Error was: "^str)
@@ -607,7 +615,7 @@ object(self)
         let do_revert () = begin
           push_info "Reverting buffer";
           try
-            if is_active then self#reset_initial false;
+            if is_active then self#force_reset_initial;
             let b = Buffer.create 1024 in
             with_file flash_info f ~f:(input_channel b);
             let s = try_convert (Buffer.contents b) in
@@ -858,8 +866,9 @@ object(self)
 		  and also detect the use of admit, and then return Unsafe *)
               Some Safe
     with
-      | e ->
-        sync display_error (Coq.process_exn e); None
+      | End_of_file -> (* Coqtop has died, let's trigger a reset_initial. *)
+        raise RestartCoqtop
+      | e -> sync display_error (None, Printexc.to_string e); None
 
   method find_phrase_starting_at (start:GText.iter) =
     try
@@ -895,10 +904,10 @@ object(self)
       end else false
     else false
 
-  method private process_next_phrase_full ct verbosely display_goals do_highlight =
+  method private process_one_phrase ct verbosely display_goals do_highlight =
     let get_next_phrase () =
       self#clear_message;
-      prerr_endline "process_next_phrase starting now";
+      prerr_endline "process_one_phrase starting now";
       if do_highlight then begin
         push_info "Coq is computing";
         input_view#set_editable false;
@@ -911,12 +920,12 @@ object(self)
           end;
           None
         | Some(start,stop) ->
-          prerr_endline "process_next_phrase : to_process highlight";
+          prerr_endline "process_one_phrase : to_process highlight";
           if do_highlight then begin
             input_buffer#apply_tag Tags.Script.to_process ~start ~stop;
-            prerr_endline "process_next_phrase : to_process applied";
+            prerr_endline "process_one_phrase : to_process applied";
           end;
-          prerr_endline "process_next_phrase : getting phrase";
+          prerr_endline "process_one_phrase : getting phrase";
           Some((start,stop),start#get_slice ~stop) in
     let remove_tag (start,stop) =
       if do_highlight then begin
@@ -937,18 +946,18 @@ object(self)
                           stop = `MARK (b#create_mark stop); } in
       Stack.push ide_payload cmd_stack;
       if display_goals then self#show_goals;
-      remove_tag (start,stop) in
-    begin
-      match sync get_next_phrase () with
-          None -> false
-        | Some (loc,phrase) ->
-          (match self#send_to_coq ct verbosely phrase true true true with
-            | Some safe -> sync mark_processed safe loc; true
-            | None -> sync remove_tag loc; false)
-    end
+      remove_tag (start,stop)
+    in
+    match sync get_next_phrase () with
+      | None -> raise Unsuccessful
+      | Some (loc,phrase) ->
+        match self#send_to_coq ct verbosely phrase true true true with
+          | Some safe -> sync mark_processed safe loc
+          | None -> sync remove_tag loc; raise Unsuccessful
 
-  method process_next_phrase verbosely display_goals do_highlight =
-    self#process_next_phrase_full !mycoqtop verbosely display_goals do_highlight
+  method process_next_phrase verbosely =
+    try self#process_one_phrase !mycoqtop verbosely true true
+    with Unsuccessful -> ()
 
   method private insert_this_phrase_on_success
     show_output show_msg localize coqphrase insertphrase =
@@ -1016,44 +1025,61 @@ object(self)
         self#get_start_of_input
       end
     in
-    (* All the [process_next_phrase] below should be done with the same [ct]
+    let unlock () =
+      sync (fun _ ->
+	self#show_goals;
+	(* Start and stop might be invalid if an eol was added at eof *)
+	let start = input_buffer#get_iter start' in
+	let stop =  input_buffer#get_iter stop' in
+	input_buffer#remove_tag Tags.Script.to_process ~start ~stop;
+	input_view#set_editable true) ()
+    in
+    (* All the [process_one_phrase] below should be done with the same [ct]
        instead of accessing multiple time [mycoqtop]. Otherwise a restart of
        coqtop could go unnoticed, and the new coqtop could receive strange
        things. *)
     let ct = !mycoqtop in
-    while ((stop#compare (get_current())>=0)
-           && (self#process_next_phrase_full ct false false false))
-    do () done;
-    sync (fun _ ->
-      self#show_goals;
-      (* Start and stop might be invalid if an eol was added at eof *)
-      let start = input_buffer#get_iter start' in
-      let stop =  input_buffer#get_iter stop' in
-      input_buffer#remove_tag Tags.Script.to_process ~start ~stop;
-      input_view#set_editable true) ();
+    (try
+       while stop#compare (get_current()) >= 0
+       do self#process_one_phrase ct false false false done
+     with
+       | Unsuccessful -> ()
+       | RestartCoqtop -> unlock (); raise RestartCoqtop);
+    unlock ();
     pop_info()
 
   method process_until_end_or_error =
     self#process_until_iter_or_error input_buffer#end_iter
 
-  method reset_initial mustlock =
-    mycoqtop := Coq.reset_coqtop !mycoqtop;
-    if mustlock then Mutex.lock coq_computing;
-    sync (fun _ ->
+  method reset_initial =
+    mycoqtop := Coq.respawn_coqtop !mycoqtop;
+    sync (fun () ->
       Stack.iter
-        (function inf ->
+	(function inf ->
           let start = input_buffer#get_iter_at_mark inf.start in
           let stop = input_buffer#get_iter_at_mark inf.stop in
           input_buffer#move_mark ~where:start (`NAME "start_of_input");
           input_buffer#remove_tag Tags.Script.processed ~start ~stop;
-          input_buffer#remove_tag Tags.Script.unjustified ~start ~stop;
+	  input_buffer#remove_tag Tags.Script.unjustified ~start ~stop;
           input_buffer#delete_mark inf.start;
           input_buffer#delete_mark inf.stop;
-        )
-        cmd_stack;
+	)
+	cmd_stack;
       Stack.clear cmd_stack;
-      self#clear_message)();
-    if mustlock then Mutex.unlock coq_computing
+      self#clear_message) ()
+
+  method force_reset_initial =
+    (* Do nothing if a force_reset_initial is already ongoing *)
+    if Mutex.try_lock resetting then begin
+      Coq.kill_coqtop !mycoqtop;
+      (* If a computation is ongoing, an exception will trigger
+	 the reset_initial in do_if_not_computing, not here. *)
+      if Mutex.try_lock coq_computing then begin
+	self#reset_initial;
+	Mutex.unlock coq_computing
+      end;
+      Mutex.unlock resetting
+    end
 
   (* backtrack Coq to the phrase preceding iterator [i] *)
   method backtrack_to_no_lock i =
@@ -1234,18 +1260,16 @@ object(self)
   method electric_handler =
     input_buffer#connect#insert_text ~callback:
       (fun it x ->
-        begin try
-		if last_index then begin
-		  last_array.(0)<-x;
-		  if (last_array.(1) ^ last_array.(0) = ".\n") then raise Found
-		end else begin
-		  last_array.(1)<-x;
-		  if (last_array.(0) ^ last_array.(1) = ".\n") then raise Found
-		end
-          with Found ->
-            begin
-              ignore (self#process_next_phrase false true true)
-            end;
+        begin
+	  try
+	    if last_index then begin
+	      last_array.(0)<-x;
+	      if (last_array.(1) ^ last_array.(0) = ".\n") then raise Found
+	    end else begin
+	      last_array.(1)<-x;
+	      if (last_array.(0) ^ last_array.(1) = ".\n") then raise Found
+	    end
+          with Found -> self#process_next_phrase false
         end;
         last_index <- not last_index;)
 
@@ -2324,7 +2348,7 @@ let main files =
     "_Forward"
     ~tooltip:"Forward one command"
     ~key:GdkKeysyms._Down
-    ~callback:(do_or_activate (fun a -> a#process_next_phrase true true true ))
+    ~callback:(do_or_activate (fun a -> a#process_next_phrase true))
     `GO_DOWN;
   add_to_menu_toolbar "_Backward"
     ~tooltip:"Backward one command"
