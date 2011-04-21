@@ -67,7 +67,6 @@ object
   method backtrack_to_no_lock : GText.iter -> unit
   method clear_message : unit
   method disconnected_keypress_handler : GdkEvent.Key.t -> bool
-  method electric_handler : GtkSignal.id
   method find_phrase_starting_at :
     GText.iter -> (GText.iter * GText.iter) option
   method get_insert : GText.iter
@@ -421,10 +420,6 @@ let with_file handler name ~f =
     let ic = open_in_gen [Open_rdonly;Open_creat] 0o644 name in
     try f ic; close_in ic with e -> close_in ic; raise e
   with Sys_error s -> handler s
-
-
-(* For electric handlers *)
-exception Found
 
 (* For find_phrase_starting_at *)
 exception Stop of int
@@ -1256,22 +1251,6 @@ object(self)
 		self#set_message ("Couln't add loadpath:\n"^str)
 	      | Ide_intf.Good () -> ()
   end
-
-  method electric_handler =
-    input_buffer#connect#insert_text ~callback:
-      (fun it x ->
-        begin
-	  try
-	    if last_index then begin
-	      last_array.(0)<-x;
-	      if (last_array.(1) ^ last_array.(0) = ".\n") then raise Found
-	    end else begin
-	      last_array.(1)<-x;
-	      if (last_array.(0) ^ last_array.(1) = ".\n") then raise Found
-	    end
-          with Found -> self#process_next_phrase false
-        end;
-        last_index <- not last_index;)
 
   method private electric_paren tag =
     let oparen_code = Glib.Utf8.to_unichar "("  ~pos:(ref 0) in
