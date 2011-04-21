@@ -3163,11 +3163,21 @@ let rec check_for_geoproof_input () =
   (* cb_Dr#set_text "Ack" *)
   done
 
+(** By default, the coqtop we try to launch is exactly the current coqide
+    full name, with the last occurrence of "coqide" replaced by "coqtop".
+    This should correctly handle the ".opt", ".byte", ".exe" situations.
+    If the replacement fails, we default to "coqtop", hoping it's somewhere
+    in the path. Note that the -coqtop option to coqide allows to override
+    this default coqtop path *)
+
 let default_coqtop_path () =
   let prog = Sys.executable_name in
-  let dir = Filename.dirname prog in
-  if Filename.check_suffix prog ".byte" then dir^"/coqtop.byte"
-  else dir^"/coqtop.opt"
+  try
+    let pos = String.length prog - 6 in
+    let i = Str.search_backward (Str.regexp_string "coqide") prog pos in
+    String.blit "coqtop" 0 prog i 6;
+    prog
+  with _ -> "coqtop"
 
 let set_coqtop_path argv =
   let coqtop = ref "" in
