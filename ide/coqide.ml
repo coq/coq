@@ -946,9 +946,11 @@ object(self)
     match sync get_next_phrase () with
       | None -> raise Unsuccessful
       | Some (loc,phrase) ->
-        match self#send_to_coq ct verbosely phrase true true true with
+        try match self#send_to_coq ct verbosely phrase true true true with
           | Some safe -> sync mark_processed safe loc
           | None -> sync remove_tag loc; raise Unsuccessful
+	with
+	  | RestartCoqtop -> sync remove_tag loc; raise RestartCoqtop
 
   method process_next_phrase verbosely =
     try self#process_one_phrase !mycoqtop verbosely true true
