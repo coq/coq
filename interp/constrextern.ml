@@ -653,13 +653,13 @@ let rec extern inctx scopes vars r =
 	     let listdecl =
 	       Array.mapi (fun i fi ->
                  let (bl,ty,def) = blv.(i), tyv.(i), bv.(i) in
-                 let (ids,bl) = extern_local_binder scopes vars bl in
+                 let (assums,ids,bl) = extern_local_binder scopes vars bl in
                  let vars0 = List.fold_right (name_fold Idset.add) ids vars in
                  let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
 		 let n =
 		   match fst nv.(i) with
 		     | None -> None
-		     | Some x -> Some (dummy_loc, out_name (List.nth ids x))
+		     | Some x -> Some (dummy_loc, out_name (List.nth assums x))
 		 in
 		 let ro = extern_recursion_order scopes vars (snd nv.(i)) in
 		 ((dummy_loc, fi), (n, ro), bl, extern_typ scopes vars0 ty,
@@ -669,7 +669,7 @@ let rec extern inctx scopes vars r =
 	 | GCoFix n ->
 	     let listdecl =
                Array.mapi (fun i fi ->
-                 let (ids,bl) = extern_local_binder scopes vars blv.(i) in
+                 let (_,ids,bl) = extern_local_binder scopes vars blv.(i) in
                  let vars0 = List.fold_right (name_fold Idset.add) ids vars in
                  let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
 		 ((dummy_loc, fi),bl,extern_typ scopes vars0 tyv.(i),
@@ -719,24 +719,24 @@ and factorize_lambda inctx scopes vars aty c =
   | c -> ([],sub_extern inctx scopes vars c)
 
 and extern_local_binder scopes vars = function
-    [] -> ([],[])
+    [] -> ([],[],[])
   | (na,bk,Some bd,ty)::l ->
-      let (ids,l) =
+      let (assums,ids,l) =
         extern_local_binder scopes (name_fold Idset.add na vars) l in
-      (na::ids,
+      (assums,na::ids,
        LocalRawDef((dummy_loc,na), extern false scopes vars bd) :: l)
 
   | (na,bk,None,ty)::l ->
       let ty = extern_typ scopes vars (anonymize_if_reserved na ty) in
       (match extern_local_binder scopes (name_fold Idset.add na vars) l with
-          (ids,LocalRawAssum(nal,k,ty')::l)
+          (assums,ids,LocalRawAssum(nal,k,ty')::l)
             when same ty ty' &
               match na with Name id -> not (occur_var_constr_expr id ty')
                 | _ -> true ->
-              (na::ids,
+              (na::assums,na::ids,
                LocalRawAssum((dummy_loc,na)::nal,k,ty')::l)
-        | (ids,l) ->
-            (na::ids,
+        | (assums,ids,l) ->
+            (na::assums,na::ids,
              LocalRawAssum([(dummy_loc,na)],Default bk,ty) :: l))
 
 and extern_eqn inctx scopes vars (loc,ids,pl,c) =
@@ -800,7 +800,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
                       termlists in
 		  let bll =
 		    List.map (fun (bl,(scopt,scl)) ->
-		      snd (extern_local_binder (scopt,scl@scopes') vars bl))
+		      pi3 (extern_local_binder (scopt,scl@scopes') vars bl))
                       binders in
 	          insert_delimiters (make_notation loc ntn (l,ll,bll)) key)
           | SynDefRule kn ->
@@ -911,4 +911,4 @@ let extern_constr_pattern env pat =
 let extern_rel_context where env sign =
   let a = detype_rel_context where [] (names_of_rel_context env) sign in
   let vars = vars_of_env env in
-  snd (extern_local_binder (None,[]) vars a)
+  pi3 (extern_local_binder (None,[]) vars a)
