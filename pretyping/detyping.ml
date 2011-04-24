@@ -467,7 +467,7 @@ and share_names isgoal n l avoid env c t =
         let b = detype isgoal avoid env b in
 	let id = next_name_away na avoid in 
         let avoid = id::avoid and env = add_name (Name id) env in
-        share_names isgoal n ((Name id,Explicit,Some b,t')::l) avoid env c t
+        share_names isgoal n ((Name id,Explicit,Some b,t')::l) avoid env c (lift 1 t)
     (* Only if built with the f/n notation or w/o let-expansion in types *)
     | _, LetIn (_,b,_,t) when n > 0 ->
 	share_names isgoal n l avoid env c (subst1 b t)
