@@ -244,7 +244,7 @@ let pr_binder_among_many pr_c = function
       let c,topt = match c with
         | CCast(_,c, CastConv (_,t)) -> c, t
         | _ -> c, CHole (dummy_loc, None) in
-      hov 1 (pr_lname na ++ pr_opt_type pr_c topt ++
+      surround (pr_lname na ++ pr_opt_type pr_c topt ++
          str":=" ++ cut() ++ pr_c c)
 
 let pr_undelimited_binders sep pr_c =
