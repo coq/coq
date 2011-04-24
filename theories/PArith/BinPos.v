@@ -626,12 +626,12 @@ Proof.
   induction q as [ | p q IHq ].
   apply eq_dep_eq_positive.
   cut (1=1). pattern 1 at 1 2 5, q'. destruct q'. trivial.
-  destruct p0; intros; discriminate.
+  destruct p; intros; discriminate.
   trivial.
   apply eq_dep_eq_positive.
   cut (Psucc p=Psucc p). pattern (Psucc p) at 1 2 5, q'. destruct q'.
   intro. destruct p; discriminate.
-  intro. unfold p0 in H. apply Psucc_inj in H.
+  intro. apply Psucc_inj in H.
   generalize q'. rewrite H. intro.
   rewrite (IHq q'0).
   trivial.

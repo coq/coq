@@ -1737,6 +1737,9 @@ let unfold_all x gl =
   if xval <> None then tclTHEN (unfold_body x) (clear [x]) gl
   else tclIDTAC gl
 
+(* Either unfold and clear if defined or simply clear if not a definition *)
+let expand_hyp id = tclTHEN (tclTRY (unfold_body id)) (clear [id])
+
 (*****************************)
 (* High-level induction      *)
 (*****************************)
@@ -2829,7 +2832,9 @@ let apply_induction_with_discharge induct_tac elim indhyps destopt avoid names t
   let isrec, elim, indsign = get_eliminator elim gl in
   let names = compute_induction_names (Array.length indsign) names in
   (if isrec then tclTHENFIRSTn else tclTHENLASTn)
-    (tclTHEN (induct_tac elim) (tclTRY (thin indhyps)))
+    (tclTHEN
+       (induct_tac elim)
+       (tclMAP (fun id -> tclTRY (expand_hyp id)) (List.rev indhyps)))
     (array_map2 (induct_discharge destopt avoid tac) indsign names) gl
 
 (* Apply induction "in place" taking into account dependent

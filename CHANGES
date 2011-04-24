@@ -28,6 +28,8 @@ Tactics
 - New experimental tactical "timeout <n> <tac>". Since <n> is a time
   in second for the moment, this feature should rather be avoided
   in scripts meant to be machine-independent.
+- Fixing a bug of destruct that left local definitions in context might result in
+  some rare incompatibilities (solvable by adapting name hypotheses).
 
 Vernacular commands
 
