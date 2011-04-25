@@ -31,10 +31,12 @@ Check fun P:nat->nat->Prop => fun x:nat => ex (P x).
 
 (* Test notations with binders *)
 
-Notation "∃  x .. y , P":=
-  (ex (fun x => .. (ex (fun y => P)) ..)) (x binder, y binder, at level 200).
+Notation "∃  x .. y , P":= (ex (fun x => .. (ex (fun y => P)) ..))
+  (x binder, y binder, at level 200, right associativity).
 
 Check (∃ n p, n+p=0).
+
+Check ∃ (a:=0) (x:nat) y (b:=1) (c:=b) (d:=2) z (e:=3) (f:=4), x+y = z+d.
 
 Notation "∀  x .. y , P":= (forall x, .. (forall y, P) ..)
   (x binder, at level 200, right associativity).
@@ -57,7 +59,7 @@ Notation "'let'' f x .. y  :=  t 'in' u":=
   (f ident, x closed binder, y closed binder, at level 200,
    right associativity).
 
-Check let' f x y z (a:bool) := x+y+z+1 in f 0 1 2.
+Check let' f x y (a:=0) z (b:bool) := x+y+z+1 in f 0 1 2.
 
 (* In practice, only the printing rule is used here *)
 (* Note: does not work for pattern *)

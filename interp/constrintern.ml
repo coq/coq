@@ -491,6 +491,19 @@ let traverse_binder (terms,_,_ as subst)
     let renaming' = if id=id' then renaming else (id,id')::renaming in
     (renaming',env), Name id'
 
+let make_letins loc = List.fold_right (fun (na,b,t) c -> GLetIn (loc,na,b,c))
+
+let rec subordinate_letins letins = function
+  (* binders come in reverse order; the non-let are returned in reverse order together *)
+  (* with the subordinated let-in in writing order *)
+  | (na,_,Some b,t)::l ->
+      subordinate_letins ((na,b,t)::letins) l
+  | (na,bk,None,t)::l ->
+      let letins',rest = subordinate_letins [] l in
+      letins',((na,bk,t),letins)::rest
+  | [] ->
+      letins,[]
+
 let rec subst_iterator y t = function
   | GVar (_,id) as x -> if id = y then t else x
   | x -> map_glob_constr (subst_iterator y t) x
@@ -536,19 +549,21 @@ let subst_aconstr_in_glob_constr loc intern lvar subst infos c =
         (* All elements of the list are in scopes (scopt,subscopes) *)
 	let (bl,(scopt,subscopes)) = List.assoc x binders in
 	let env,bl = List.fold_left (iterate_binder intern lvar) (env,[]) bl in
+	let letins,bl = subordinate_letins [] bl in
         let termin = aux subst' (renaming,env) terminator in
-	List.fold_left (fun t binder ->
+	let res = List.fold_left (fun t binder ->
           subst_iterator ldots_var t
 	    (aux (terms,Some(x,binder)) subinfos iter))
-	  termin bl
+	  termin bl in
+	make_letins loc letins res
       with Not_found ->
           anomaly "Inconsistent substitution of recursive notation")
     | AProd (Name id, AHole _, c') when option_mem_assoc id binderopt ->
-	let (na,bk,_,t) = snd (Option.get binderopt) in
-	GProd (loc,na,bk,t,aux subst' infos c')
+        let (na,bk,t),letins = snd (Option.get binderopt) in
+	GProd (loc,na,bk,t,make_letins loc letins (aux subst' infos c'))
     | ALambda (Name id,AHole _,c') when option_mem_assoc id binderopt ->
-	let (na,bk,_,t) = snd (Option.get binderopt) in
-	GLambda (loc,na,bk,t,aux subst' infos c')
+        let (na,bk,t),letins = snd (Option.get binderopt) in
+	GLambda (loc,na,bk,t,make_letins loc letins (aux subst' infos c'))
     | t ->
       glob_constr_of_aconstr_with_binders loc (traverse_binder subst)
 	(aux subst') subinfos t
