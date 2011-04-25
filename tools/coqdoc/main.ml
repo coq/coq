@@ -134,7 +134,7 @@ let add_path dir name =
 
 (* turn A/B/C into A.B.C *)
 let rec name_of_path p name dirname suffix =
-  if p = dirname then String.concat "." (name::suffix)
+  if p = dirname then String.concat "." (if name = "" then suffix else (name::suffix))
   else
     let subdir = Filename.dirname dirname in
     if subdir = dirname then raise Not_found
