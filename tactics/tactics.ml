@@ -2704,8 +2704,8 @@ let guess_elim isrec hyp0 gl =
   let elimc =
     if isrec then lookup_eliminator mind s
     else
-      if true (*use_dependent_propositions_elimination () &&
-	dependent_no_evar (mkVar hyp0) (pf_concl gl)*)
+      if use_dependent_propositions_elimination () &&
+	dependent_no_evar (mkVar hyp0) (pf_concl gl)
       then
 	pf_apply build_case_analysis_scheme gl mind true s
       else
