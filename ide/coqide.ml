@@ -290,7 +290,8 @@ let remove_current_view_page () =
     session_notebook#remove_page c
   in
   let current = session_notebook#current_term in
-  if current.script#buffer#modified then
+  if not current.script#buffer#modified then do_remove ()
+  else
     match GToolbox.question_box ~title:"Close"
       ~buttons:["Save Buffer and Close";
                 "Close without Saving";
