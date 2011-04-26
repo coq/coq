@@ -136,7 +136,7 @@ open Gramtypes
          string option * gram_assoc option * production_rule list]
     and [production_rule = symbol list * action]
 
-    In [single_extend_statement, first two parameters are name and
+    In [single_extend_statement], first two parameters are name and
     assoc iff a level is created *)
 
 type ext_kind =
