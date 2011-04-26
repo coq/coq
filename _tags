@@ -26,7 +26,6 @@
 "toplevel/mltop.ml4": is_mltop
 
 "toplevel/whelp.ml4": use_grammar
-"parsing/g_vernac.ml4": use_grammar
 "tactics/extraargs.ml4": use_grammar
 "tactics/extratactics.ml4": use_grammar
 "tactics/class_tactics.ml4": use_grammar
