@@ -14,6 +14,7 @@ fun (P : nat -> nat -> Prop) (x : nat) => exists x0, P x x0
      : (nat -> nat -> Prop) -> nat -> Prop
 ∃ n p : nat, n + p = 0
      : Prop
+let a := 0 in
 ∃ x y : nat,
 let b := 1 in
 let c := b in
@@ -30,7 +31,7 @@ let d := 2 in ∃ z : nat, let e := 3 in let f := 4 in x + y = z + d
 λ A : Type, ∀ n p : A, n = p
      : Type -> Prop
 Defining 'let'' as keyword
-let' f (x y : nat) (a:=0) (z : nat) (_ : bool) := x + y + z + 1 in (f(0)) 1 2
+let' f (x y : nat) (a:=0) (z : nat) (_ : bool) := x + y + z + 1 in f 0 1 2
      : bool -> nat
 λ (f : nat -> nat) (x : nat), f(x) + S(x)
      : (nat -> nat) -> nat -> nat
