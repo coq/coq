@@ -1,35 +1,35 @@
 Changes from V8.3 to V8.4
 =========================
 
-- Guard condition improvement. [t'] has now subterm property of [t] in [u] even
-  if [v] doesn't start by a constructor in [(match v with |C .. => fun t' => u
-  end) t].
+Logic
 
-- New proof engine
+- Coq's logic now support eta-expansion. (DOC TO DO)
+- Guard condition now compatible with beta-redexes blocked by "match"
+  (i.e.  [x] inherits the subterm property of [t] in [u] even if [v]
+  doesn't start by a constructor in [(match v with C .. => fun x => u end) t]);
+  this allows for instance to use "rewrite ... in ..." and "Theorem
+  ... with ..."  without risking to accidentally break the guard condition).
+
+Specification language and notations
 
 - Maximal implicit arguments can now be set locally by { }. The registration
-  traverses fixpoints and lambdas. Because there is conversion in types, maximal
-  implicit arguments aren't taken into account in partial applications. Use eta
-  expansion.
-
-- Coqide now runs coqtop as separated process, making it more robust:
-  coqtop subprocess can be interrupted (TODO check Win32), or even
-  killed and relaunched (cf button "Restart Coq", ex-"Go to Start").
-
-- Vm_compute can now be interrupted via Ctrl-C.
-
-- Coq now searches directories specified in COQPATH and user-contribs before
-  the standard library.
+  traverses fixpoints and lambdas. Because there is conversion in types, 
+  maximal implicit arguments are not taken into account in partial
+  applications (use eta expansion instead).
+- Added support for recursive notations with binders (allows for instance
+  to write "exists x y z, P").
 
 Tactics
 
+- New proof engine supporting bullets.
 - New tactics constr_eq, is_evar and has_evar.
-- Remove the two-argument variant of "decide equality".
+- Removed the two-argument variant of "decide equality".
 - New experimental tactical "timeout <n> <tac>". Since <n> is a time
   in second for the moment, this feature should rather be avoided
   in scripts meant to be machine-independent.
-- Fixing a bug of destruct that left local definitions in context might result in
-  some rare incompatibilities (solvable by adapting name hypotheses).
+- Fixing a bug of destruct that left local definitions in context might result
+  in some rare incompatibilities (solvable by adapting name hypotheses).
+- Tactic (and Eval command) vm_compute can now be interrupted via Ctrl-C.
 
 Vernacular commands
 
@@ -101,6 +101,13 @@ Extraction
   production of several files (one per coq source) a la "Extraction Library".
   DOC TODO.
 
+Tools
+
+- Coq now searches directories specified in COQPATH and user-contribs before
+  the standard library.
+- Coqide now runs coqtop as separated process, making it more robust:
+  coqtop subprocess can be interrupted (TODO check Win32), or even
+  killed and relaunched (cf button "Restart Coq", ex-"Go to Start").
 
 Changes from V8.2 to V8.3
 =========================
