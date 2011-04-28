@@ -782,13 +782,13 @@ case $mandir_spec/$prefix_spec/$local in
 esac
 
 case $docdir_spec/$prefix_spec/$local in
-    yes/*/*) DOCDIR=$docdir; HTMLREFMANDIR=$DOCDIR/html/refman;;
-    */yes/*) DOCDIR=$prefix/share/doc/coq; HTMLREFMANDIR=$DOCDIR/html/refman;;
-    */*/true) DOCDIR=$COQTOP/doc; HTMLREFMANDIR=$DOCDIR/refman/html;;
+    yes/*/*) DOCDIR=$docdir;;
+    */yes/*) DOCDIR=$prefix/share/doc/coq;;
+    */*/true) DOCDIR=$COQTOP/doc;;
     *)  printf "Where should I install the Coq documentation [$docdir_def]? "
         read DOCDIR
 	case $DOCDIR in
-	    "") DOCDIR=$docdir_def; HTMLREFMANDIR=$DOCDIR/html/refman;;
+	    "") DOCDIR=$docdir_def;;
 	    *) true;;
 	esac;;
 esac
@@ -1002,6 +1002,7 @@ let local = $local
 let coqrunbyteflags = "$COQRUNBYTEFLAGS"
 let coqlib = "$LIBDIR"
 let coqsrc = "$COQSRC"
+let docdir = "$DOCDIR"
 let ocaml = "$ocamlexec"
 let ocamlc = "$bytecamlc"
 let ocamlopt = "$nativecamlc"
@@ -1037,7 +1038,7 @@ let browser = "$BROWSER"
 let wwwcoq = "$WWWCOQ"
 let wwwrefman = wwwcoq ^ "distrib/" ^ version ^ "/refman/"
 let wwwstdlib = wwwcoq ^ "distrib/" ^ version ^ "/stdlib/"
-let localwwwrefman = "file://$HTMLREFMANDIR/"
+let localwwwrefman = "file:/" ^ docdir ^ "html/refman"
 
 END_OF_COQ_CONFIG
 

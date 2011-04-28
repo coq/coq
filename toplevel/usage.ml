@@ -91,12 +91,16 @@ let print_usage_coqc () =
 
 let print_config () =
   if Coq_config.local then Printf.printf "LOCAL=1\n" else Printf.printf "LOCAL=0\n";
-  Printf.printf "COQLIB=%s/\n" Coq_config.coqlib;
-  Printf.printf "COQSRC=%s/\n" Coq_config.coqsrc;
-  Printf.printf "CAMLBIN=%s/\n" Coq_config.camlbin;
-  Printf.printf "CAMLLIB=%s/\n" Coq_config.camllib;
+  Printf.printf "COQLIB=%s/\n" (Envars.coqlib ());
+  (*Printf.printf "COQSRC=%s/\n" Coq_config.coqsrc;*)
+  Printf.printf "DOCDIR=%s/\n" (Envars.docdir ());
+  Printf.printf "OCAMLDEP=%s\n" Coq_config.ocamldep;
+  Printf.printf "OCAMLC=%s\n" Coq_config.ocamlc;
+  Printf.printf "OCAMLOPT=%s\n" Coq_config.ocamlopt;
+  Printf.printf "OCAMLDOC=%s\n" Coq_config.ocamldoc;
+  Printf.printf "CAMLBIN=%s/\n" (Envars.camlbin ());
+  Printf.printf "CAMLLIB=%s/\n" (Envars.camllib ());
   Printf.printf "CAMLP4=%s\n" Coq_config.camlp4;
-  Printf.printf "CAMLP4BIN=%s\n" Coq_config.camlp4bin;
-  Printf.printf "CAMLP4LIB=%s\n" Coq_config.camlp4lib
-
-
+  Printf.printf "CAMLP4BIN=%s/\n" (Envars.camlp4bin ());
+  Printf.printf "CAMLP4LIB=%s\n" (Envars.camlp4lib ());
+  Printf.printf "HASNATDYNLINK=%s\n" (if Coq_config.has_natdynlink then "true" else "false")

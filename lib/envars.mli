@@ -10,6 +10,7 @@
    as coqlib) *)
 
 val coqlib : unit -> string
+val docdir : unit -> string
 val coqbin : unit -> string
 (* coqpath is stored in reverse order, since that is the order it
  * gets added to the searc path *)

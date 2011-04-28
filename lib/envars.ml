@@ -21,22 +21,25 @@ let _ =
   if Coq_config.arch = "win32" then
     Unix.putenv "PATH" (coqbin() ^ ";" ^ System.getenv_else "PATH" "")
 
+let reldir instdir testfile oth =
+  let prefix = Filename.dirname (coqbin ()) in
+  let rpath = if Coq_config.local then [] else instdir in
+  let out = List.fold_left Filename.concat prefix rpath in
+  if Sys.file_exists (Filename.concat out testfile) then out else oth
+
 let guess_coqlib () =
   let file = "states/initial.coq" in
     if Sys.file_exists (Filename.concat Coq_config.coqlib file)
     then Coq_config.coqlib
-    else
-      let coqbin = System.canonical_path_name (Filename.dirname Sys.executable_name) in
-      let prefix = Filename.dirname coqbin in
-      let rpath = if Coq_config.local then [] else
-	  (if Coq_config.arch = "win32" then ["lib"] else ["lib";"coq"]) in
-      let coqlib = List.fold_left Filename.concat prefix rpath in
-	if Sys.file_exists (Filename.concat coqlib file) then coqlib else
-	  Util.error "cannot guess a path for Coq libraries; please use -coqlib option"
+    else reldir (if Coq_config.arch = "win32" then ["lib"] else ["lib";"coq"]) file
+      (Util.error "cannot guess a path for Coq libraries; please use -coqlib option")
 
 let coqlib () =
   if !Flags.coqlib_spec then !Flags.coqlib else
     (if !Flags.boot then Coq_config.coqsrc else guess_coqlib ())
+
+let docdir () =
+  reldir (if Coq_config.arch = "win32" then ["doc"] else ["share";"doc";"coq"]) "html" Coq_config.docdir
 
 let path_to_list p =
   let sep = if Sys.os_type = "Win32" then ';' else ':' in
@@ -84,7 +87,9 @@ let camllib () =
 let camlp4bin () =
   if !Flags.camlp4bin_spec then !Flags.camlp4bin else
     if !Flags.boot then Coq_config.camlp4bin else
-      try guess_camlp4bin () with _ -> Coq_config.camlp4bin
+      try guess_camlp4bin () with _ -> let cb = camlbin () in
+				       if Sys.file_exists (Filename.concat cb Coq_config.camlp4) then cb
+				       else Coq_config.camlp4bin
 
 let camlp4lib () =
   if !Flags.boot

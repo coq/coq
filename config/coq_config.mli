@@ -10,6 +10,7 @@ val local : bool        (* local use (no installation) *)
 
 val coqlib : string     (* where the std library is installed *)
 val coqsrc : string     (* where are the sources *)
+val docdir : string     (* where the doc is installed *)
 
 val ocaml : string      (* names of ocaml binaries *)
 val ocamlc : string
