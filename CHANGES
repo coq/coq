@@ -13,9 +13,9 @@ Logic
 Specification language and notations
 
 - Maximal implicit arguments can now be set locally by { }. The registration
-  traverses fixpoints and lambdas. Because there is conversion in types, 
+  traverses fixpoints and lambdas. Because there is conversion in types,
   maximal implicit arguments are not taken into account in partial
-  applications (use eta expansion instead).
+  applications (use eta expanded form with explicit { } instead).
 - Added support for recursive notations with binders (allows for instance
   to write "exists x y z, P").
 
@@ -109,6 +109,15 @@ Tools
   coqtop subprocess can be interrupted, or even killed and relaunched
   (cf button "Restart Coq", ex-"Go to Start"). For allowing such interrupts,
   the Windows version of coqide now requires Windows >= XP SP1.
+- coq_makefile major cleanup.
+  * mli are taken into account, ml aren't preproccessed anymore, ml4 really
+    work
+  * mlihtml generates doc of mli, install-doc install the html doc in DOCDIR
+    with the same policy as vo in COQLIB
+  * More variables are given by coqtop -config, others are defined only if the
+    users doesn't have defined them elsewhere. Consequently, generated makefile
+    should work directly on any architecture.
+  * Packager can take advantage of $(DSTROOT) introduction
 
 Changes from V8.2 to V8.3
 =========================
