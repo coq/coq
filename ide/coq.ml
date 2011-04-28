@@ -172,11 +172,12 @@ let spawn_coqtop sup_args =
 
 let respawn_coqtop coqtop = spawn_coqtop coqtop.sup_args
 
-let break_coqtop coqtop =
-  try Unix.kill coqtop.pid Sys.sigint
-  with _ -> prerr_endline "Error while sending Ctrl-C"
-
+let interrupter = ref (fun pid -> Unix.kill pid Sys.sigint)
 let killer = ref (fun pid -> Unix.kill pid Sys.sigkill)
+
+let break_coqtop coqtop =
+  try !interrupter coqtop.pid
+  with _ -> prerr_endline "Error while sending Ctrl-C"
 
 let kill_coqtop coqtop =
   let pid = coqtop.pid in

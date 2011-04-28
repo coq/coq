@@ -106,8 +106,9 @@ Tools
 - Coq now searches directories specified in COQPATH and user-contribs before
   the standard library.
 - Coqide now runs coqtop as separated process, making it more robust:
-  coqtop subprocess can be interrupted (TODO check Win32), or even
-  killed and relaunched (cf button "Restart Coq", ex-"Go to Start").
+  coqtop subprocess can be interrupted, or even killed and relaunched
+  (cf button "Restart Coq", ex-"Go to Start"). For allowing such interrupts,
+  the Windows version of coqide now requires Windows >= XP SP1.
 
 Changes from V8.2 to V8.3
 =========================

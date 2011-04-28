@@ -41,12 +41,24 @@ let reroute_stdout_stderr () =
   Unix.dup2 out_descr Unix.stdout;
   Unix.dup2 out_descr Unix.stderr
 
-(* We also provide a specific kill function. *)
+(* We also provide specific kill and interrupt functions. *)
+
+(* Since [win32_interrupt] involves some hack about the process console,
+   only one should run at the same time, we simply skip execution of
+   [win32_interrupt] if another instance is already running *)
+
+let ctrl_c_mtx = Mutex.create ()
+
+let ctrl_c_protect f i =
+  if not (Mutex.try_lock ctrl_c_mtx) then ()
+  else try f i; Mutex.unlock ctrl_c_mtx with _ -> Mutex.unlock ctrl_c_mtx
 
 IFDEF Win32 THEN
 external win32_kill : int -> unit = "win32_kill"
+external win32_interrupt : int -> unit = "win32_interrupt"
 let () =
   Coq.killer := win32_kill;
+  Coq.interrupter := ctrl_c_protect win32_interrupt;
   set_win32_path ();
   reroute_stdout_stderr ()
 END

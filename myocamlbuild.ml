@@ -401,6 +401,8 @@ let extra_rules () = begin
     which moreover contains the Coq icon. If necessary, the mkwinapp
     tool can be used later to restore or suppress the console of Coqide. *)
 
+  if w32 then dep ["link"; "ocaml"; "program"; "ide"] [w32ico];
+
   if w32 then flag ["link"; "ocaml"; "program"; "ide"]
     (S [A "-ccopt"; A "-link -Wl,-subsystem,windows"; P w32ico]);
 

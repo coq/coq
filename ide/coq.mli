@@ -41,6 +41,7 @@ val break_coqtop : coqtop -> unit
 (** In win32, we'll use a different kill function than Unix.kill *)
 
 val killer : (int -> unit) ref
+val interrupter : (int -> unit) ref
 
 (** * Calls to Coqtop, cf [Ide_intf] for more details *)
 

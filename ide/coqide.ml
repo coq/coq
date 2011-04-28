@@ -237,13 +237,9 @@ let force_reset_initial () =
   prerr_endline "Reset Initial";
   session_notebook#current_term.analyzed_view#force_reset_initial
 
-(* How could we interrupt nicely coqtop in win32 ?
-   For the moment, we simply kill it brutally *)
-let break =
-  if Sys.os_type = "Win32" then force_reset_initial
-  else fun () ->
-    prerr_endline "User break received";
-    Coq.break_coqtop !(session_notebook#current_term.toplvl)
+let break () =
+  prerr_endline "User break received";
+  Coq.break_coqtop !(session_notebook#current_term.toplvl)
 
 let do_if_not_computing text f x =
   let threaded_task () =
