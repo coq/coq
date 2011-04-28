@@ -878,15 +878,17 @@ specially and require that the notation \"{ _ }\" is already reserved."
 
 (* Remove patterns of the form "{ _ }", unless it is the "{ _ }" notation *)
 let remove_curly_brackets l =
-  let rec next = function
-    | Break _ :: l -> next l
-    | l -> l in
+  let rec skip_break acc = function
+    | Break _ as br :: l -> skip_break (br::acc) l
+    | l -> List.rev acc, l in
   let rec aux deb = function
   | [] -> []
   | Terminal "{" as t1 :: l ->
-      (match next l with
+      let br,next = skip_break [] l in
+      (match next with
         | NonTerminal _ as x :: l' as l0 ->
-            (match next l' with
+            let br',next' = skip_break [] l' in
+            (match next' with
               | Terminal "}" as t2 :: l'' as l1 ->
                   if l <> l0 or l' <> l1 then
                     warning "Skipping spaces inside curly brackets";
@@ -894,7 +896,7 @@ let remove_curly_brackets l =
                     check_curly_brackets_notation_exists ();
                     x :: aux false l''
                   end
-              | l1 -> t1 :: x :: aux false l1)
+              | l1 -> t1 :: br @ x :: br' @ aux false l1)
         | l0 -> t1 :: aux false l0)
   | x :: l -> x :: aux false l
   in aux true l
