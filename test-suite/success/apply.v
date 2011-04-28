@@ -202,6 +202,13 @@ try apply H.
 unfold ID; apply H0.
 Qed.
 
+(* Test hyp in "apply -> ... in hyp" is correctly instantiated by Ltac *)
+
+Goal (True <-> False) -> True -> False.
+intros Heq H.
+match goal with [ H : True |- _ ] => apply -> Heq in H end.
+Abort.
+
 (* Test coercion below product and on non meta-free terms in with bindings *)
 (* Cf wishes #1408 from E. Makarov *)
 

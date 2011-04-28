@@ -153,10 +153,10 @@ bapply lemma ltac:(fun H => destruct H as [H _]; apply H).
 Tactic Notation "apply" "<-" constr(lemma) :=
 bapply lemma ltac:(fun H => destruct H as [_ H]; apply H).
 
-Tactic Notation "apply" "->" constr(lemma) "in" ident(J) :=
+Tactic Notation "apply" "->" constr(lemma) "in" hyp(J) :=
 bapply lemma ltac:(fun H => destruct H as [H _]; apply H in J).
 
-Tactic Notation "apply" "<-" constr(lemma) "in" ident(J) :=
+Tactic Notation "apply" "<-" constr(lemma) "in" hyp(J) :=
 bapply lemma ltac:(fun H => destruct H as [_ H]; apply H in J).
 
 (** An experimental tactic simpler than auto that is useful for ending
