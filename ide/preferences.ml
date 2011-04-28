@@ -505,8 +505,7 @@ let configure ?(apply=(fun () -> ())) () =
       "netscape -remote \"openURL(%s)\"";
       "mozilla -remote \"openURL(%s)\"";
       "firefox -remote \"openURL(%s,new-windows)\" || firefox %s &";
-      "seamonkey -remote \"openURL(%s)\" || seamonkey %s &";
-      "open -a Safari %s &"
+      "seamonkey -remote \"openURL(%s)\" || seamonkey %s &"
     ] in
     combo
       ~help:"(%s for url)"
@@ -519,6 +518,8 @@ let configure ?(apply=(fun () -> ())) () =
   in
   let doc_url =
     let predefined = [
+      "file://"^(List.fold_left Filename.concat (Coq_config.docdir) ["html";"refman";""]);
+      Coq_config.wwwrefman;
       use_default_doc_url
     ] in
     combo
@@ -530,6 +531,7 @@ let configure ?(apply=(fun () -> ())) () =
       !current.doc_url in
   let library_url =
     let predefined = [
+      "file://"^(List.fold_left Filename.concat (Coq_config.docdir) ["html";"stdlib";""]);
       Coq_config.wwwstdlib
     ] in
     combo

@@ -298,13 +298,8 @@ let browse f url =
 
 let doc_url () =
   if !current.doc_url = use_default_doc_url || !current.doc_url = "" then
-    if Sys.file_exists
-      (String.sub Coq_config.localwwwrefman 7
-	(String.length Coq_config.localwwwrefman - 7))
-    then
-      Coq_config.localwwwrefman
-    else
-      Coq_config.wwwrefman
+    let addr = List.fold_left Filename.concat (Coq_config.docdir) ["html";"refman";"index.html"] in
+    if Sys.file_exists addr then "file://"^addr else Coq_config.wwwrefman
   else !current.doc_url
 
 let url_for_keyword =
