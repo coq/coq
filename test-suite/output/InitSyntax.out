@@ -1,5 +1,5 @@
 Inductive sig2 (A : Type) (P Q : A -> Prop) : Type :=
-    exist2 : forall x : A, P x -> Q x -> {x | P x & Q x }
+    exist2 : forall x : A, P x -> Q x -> {x | P x & Q x}
 
 For sig2: Argument A is implicit
 For exist2: Argument A is implicit
