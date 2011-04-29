@@ -282,19 +282,19 @@ let implicit () =
   let mli_rules () =
     print "%.cmi: %.mli\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "%.mli.d: %.mli\n";
-    print "\t$(CAMLBIN)$(OCAMLDEP) -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+    print "\t$(OCAMLDEP) -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let ml4_rules () =
     print "%.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "%.cmx: %.ml4\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "%.cmxs: %.ml4\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $(PP) -impl $<\n\n";
     print "%.ml4.d: %.ml4\n";
-    print "\t$(CAMLBIN)$(OCAMLDEP) -slash $(OCAMLLIBS) $(PP) -impl \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"in
+    print "\t$(OCAMLDEP) -slash $(OCAMLLIBS) $(PP) -impl \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"in
   let ml_rules () =
     print "%.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "%.cmx: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "%.cmxs: %.ml\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $<\n\n";
     print "%.ml.d: %.ml\n";
-    print "\t$(CAMLBIN)$(OCAMLDEP) -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
+    print "\t$(OCAMLDEP) -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
   and v_rule () =
     print "%.vo %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.vi: %.v\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
@@ -329,10 +329,10 @@ let variables defs =
     print "GALLINA?=$(COQBIN)gallina\n";
     print "COQDOC?=$(COQBIN)coqdoc\n";
     (* Caml executables and relative variables *)
-    print "CAMLC?=$(CAMLBIN)$(OCAMLC) -c -rectypes\n";
-    print "CAMLOPTC?=$(CAMLBIN)$(OCAMLOPT) -c -rectypes\n";
-    print "CAMLLINK?=$(CAMLBIN)$(OCAMLC) -rectypes\n";
-    print "CAMLOPTLINK?=$(CAMLBIN)$(OCAMLOPT) -rectypes\n";
+    print "CAMLC?=$(OCAMLC) -c -rectypes\n";
+    print "CAMLOPTC?=$(OCAMLOPT) -c -rectypes\n";
+    print "CAMLLINK?=$(OCAMLC) -rectypes\n";
+    print "CAMLOPTLINK?=$(OCAMLOPT) -rectypes\n";
 
     print "GRAMMARS?=grammar.cma\n";
     print "CAMLP4EXTEND?=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
@@ -472,9 +472,9 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles) other_targets inc =
     begin
       print "mlihtml: $(MLIFILES:.mli=.cmi)\n";
       print "\t mkdir $@ || rm -rf $@/*\n";
-      print "\t$(CAMLBIN)$(OCAMLDOC) -html -rectypes -d $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
+      print "\t$(OCAMLDOC) -html -rectypes -d $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
       print "all-mli.tex: $(MLIFILES:.mli=.cmi)\n";
-      print "\t$(CAMLBIN)$(OCAMLDOC) -latex -rectypes -o $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
+      print "\t$(OCAMLDOC) -latex -rectypes -o $@ -m A $(ZDEBUG) $(ZFLAGS) $(^:.cmi=.mli)\n\n";
     end;
   if !some_vfile then
     begin
