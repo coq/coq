@@ -687,13 +687,15 @@ let vernac_solve n bullet tcom b =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode.";
   let p = Proof_global.give_me_the_proof () in
-  Option.iter (put_bullet p) bullet ;
-  solve_nth n (Tacinterp.hide_interp tcom None) ~with_end_tac:b;
-  (* in case a strict subtree was completed,
-     go back to the top of the prooftree *)
-  Proof_global.maximal_unfocus command_focus p;
-  print_subgoals();
-  if !pcoq <> None then (Option.get !pcoq).solve n
+  Proof.transaction p begin fun () ->
+    Option.iter (put_bullet p) bullet ;
+    solve_nth n (Tacinterp.hide_interp tcom None) ~with_end_tac:b;
+    (* in case a strict subtree was completed,
+       go back to the top of the prooftree *)
+    Proof_global.maximal_unfocus command_focus p;
+    print_subgoals();
+    if !pcoq <> None then (Option.get !pcoq).solve n
+  end
  
 
   (* A command which should be a tactic. It has been

@@ -129,6 +129,18 @@ val with_end_tac : proof -> unit Proofview.tactic -> unit Proofview.tactic
 val run_tactic : Environ.env -> unit Proofview.tactic -> proof -> unit
 
 
+(*** Transactions ***)
+
+(* A transaction chains several commands into a single one. For instance,
+   a focusing command and a tactic. Transactions are such that if
+   any of the atomic action fails, the whole transaction fails.
+
+   During a transaction, the undo visible undo stack is constituted only
+   of the actions performed done during the transaction.
+
+   [transaction p f] can be called on an [f] using, itself, [transaction p].*)
+val transaction : proof -> (unit -> unit) -> unit
+
 (*** Compatibility layer with <=v8.2 ***)
 module V82 : sig
   val subgoals : proof -> Goal.goal list Evd.sigma

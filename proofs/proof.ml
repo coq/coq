@@ -92,6 +92,8 @@ type proof = { (* current proof_state *)
                mutable state : proof_state;
                (* The undo stack *)
                mutable undo_stack : undo_action list;
+	       (* secondary undo stacks used for transactions *)
+	       mutable transactions : undo_action list list;
 	       info : proof_info
              }
 
@@ -103,6 +105,7 @@ let start goals =
 	             focus_stack = [] ;
 	             intel = Store.empty} ;
       undo_stack = [] ;
+      transactions = [] ;
       info = { endline_tactic = Proofview.tclUNIT ();
 	            initial_conclusions = List.map snd goals }
   }
@@ -161,14 +164,17 @@ let pop_focus pr =
       raise FullyUnfocused
 
 (* Auxiliary function to push a [proof_state] onto the undo stack. *)
-let push_undo save ({ undo_stack = stack } as pr) =
-  pr.undo_stack <- save::stack
+let push_undo save pr =
+  match pr.transactions with
+  | [] -> pr.undo_stack <- save::pr.undo_stack
+  | stack::trans' -> pr.transactions <- (save::stack)::trans'
 
 (* Auxiliary function to pop and read a [save_state] from the undo stack. *)
 exception EmptyUndoStack
-let pop_undo pr = 
-  match pr.undo_stack with
-  | state::stack -> pr.undo_stack <- stack; state
+let pop_undo pr =
+  match pr.transactions , pr.undo_stack with
+  | [] , state::stack -> pr.undo_stack <- stack; state
+  | (state::stack)::trans', _ -> pr.transactions <- stack::trans'; state
   | _ -> raise EmptyUndoStack
 
 
@@ -286,7 +292,42 @@ let run_tactic env tac pr =
   with e -> 
     restore_state starting_point pr;
     raise e
-  
+
+
+(*** Transactions ***)
+
+let init_transaction pr =
+  pr.transactions <- []::pr.transactions
+
+let commit_stack pr stack =
+  let push s = push_undo s pr in
+  List.iter push (List.rev stack)
+
+(* Invariant: [commit] should be called only when a transaction
+   is open. It closes the current transaction. *)
+let commit pr =
+  match pr.transactions with
+  | stack::trans' ->
+    pr.transactions <- trans';
+    commit_stack pr stack
+  | [] -> assert false
+
+(* Invariant: [rollback] should be called only when a transaction
+   is open. It closes the current transaction. *)
+let rec rollback pr =
+  try
+    undo pr;
+    rollback pr
+  with EmptyUndoStack ->
+    match pr.transactions with
+    | []::trans' -> pr.transactions <- trans'
+    | _ -> assert false
+
+
+let transaction pr t =
+  init_transaction pr;
+  try t (); commit pr
+  with e -> rollback pr; raise e
 
 
 (*** Compatibility layer with <=v8.2 ***)
