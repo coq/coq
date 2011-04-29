@@ -21,6 +21,7 @@ type proof_mode = {
   set : unit -> unit ;
   reset : unit -> unit
 }
+
 (** Registers a new proof mode which can then be adressed by name
     in [set_default_proof_mode].
     One mode is already registered - the standard mode - named "No",

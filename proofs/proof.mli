@@ -39,7 +39,7 @@ type proof
 
 val start : (Environ.env * Term.types) list -> proof
 
-(* Returns [true] is the considered proof is completed, that is if no goal remain
+(* Returns [true] if the considered proof is completed, that is if no goal remain
     to be considered (this does not require that all evars have been solved). *)
 val is_done : proof -> bool
 
@@ -59,7 +59,11 @@ exception EmptyUndoStack
 val undo : proof -> unit
 
 (* Adds an undo effect to the undo stack. Use it with care, errors here might result
-    in inconsistent states. *)
+    in inconsistent states.
+   An undo effect is meant to undo an effect on a proof (a canonical example
+   of which is {!Proofglobal.set_proof_mode} which changes the current parser for
+   tactics). Make sure it will work even if the effects have been only partially
+   applied at the time of failure. *)
 val add_undo : (unit -> unit) -> proof -> unit
 
 (*** Focusing actions ***)
