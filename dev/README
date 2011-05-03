@@ -32,10 +32,9 @@ perf-analysis: analysis of perfs measured on the compilation of user contribs
 cic.dtd:       official dtd of the calc. of ind. constr. for im/ex-portation
 
 
-Documentation of ML interfaces using tex (directory ocamlweb-doc)
+Documentation of ML interfaces using ocamldoc (directory ocamldoc/html)
 ----------------------------------------
-
-go in directory and call "make"
+"make mli-doc" in coq root directory.
 
 
 Other development tools (directory tools)
