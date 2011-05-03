@@ -659,7 +659,7 @@ esac
 
 if test "$with_doc" = "all" 
 then
-    for cmd in "latex" "hevea" "pngtopnm" "pnmtops" ; do
+    for cmd in "latex" "hevea" ; do
 	if test ! -x "`which $cmd`"
 	then 
 	    echo "$cmd was not found; documentation will not be available"

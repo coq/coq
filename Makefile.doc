@@ -56,9 +56,6 @@ endif
 %.ps: %.dvi
 	(cd `dirname $<`; dvips -q -o `basename $@` `basename $<`)
 
-%.eps: %.png
-	pngtopnm $< | pnmtops -equalpixels -noturn -rle > $@
-
 ######################################################################
 # Macros for filtering outputs
 ######################################################################

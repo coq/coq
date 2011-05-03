@@ -1691,32 +1691,32 @@ let local_cd file =
 
 let do_print session =
   let av = session.analyzed_view in
-    if session.filename = ""
-    then flash_info "Cannot print: this buffer has no name"
-    else begin
-      let cmd =
+    match av#filename with
+      |None -> flash_info "Cannot print: this buffer has no name"
+      |Some f_name -> begin
+	  let cmd =
 	local_cd session.filename ^
-        !current.cmd_coqdoc ^ " -ps " ^ Filename.quote (Filename.basename session.filename) ^
-        " | " ^ !current.cmd_print
-      in
-      let print_window = GWindow.window ~title:"Print" ~modal:true ~position:`CENTER ~wm_class:"CoqIDE" ~wm_name: "CoqIDE"  () in
-      let vbox_print = GPack.vbox ~spacing:10 ~border_width:10 ~packing:print_window#add () in
-      let _ = GMisc.label ~justify:`LEFT ~text:"Print using the following command:" ~packing:vbox_print#add () in
-      let print_entry = GEdit.entry ~text:cmd ~editable:true ~width_chars:80 ~packing:vbox_print#add () in
-      let hbox_print = GPack.hbox ~spacing:10 ~packing:vbox_print#add () in
-      let print_cancel_button = GButton.button ~stock:`CANCEL ~label:"Cancel" ~packing:hbox_print#add () in
-      let print_button  = GButton.button ~stock:`PRINT  ~label:"Print"  ~packing:hbox_print#add () in
-      let callback_print () =
-        let cmd = print_entry#text in
-        let s,_ = run_command av#insert_message cmd in
-          flash_info (cmd ^ if s = Unix.WEXITED 0 then " succeeded" else " failed");
-          print_window#destroy ()
-      in
-        ignore (print_cancel_button#connect#clicked ~callback:print_window#destroy) ;
-        ignore (print_button#connect#clicked ~callback:callback_print);
-        print_window#misc#show ()
-    end
-
+              !current.cmd_coqdoc ^ " --coqlib_path " ^ Envars.coqlib () ^
+	      " -ps " ^ Filename.quote (Filename.basename f_name) ^
+              " | " ^ !current.cmd_print
+	  in
+	  let print_window = GWindow.window ~title:"Print" ~modal:true ~position:`CENTER ~wm_class:"CoqIDE" ~wm_name: "CoqIDE"  () in
+	  let vbox_print = GPack.vbox ~spacing:10 ~border_width:10 ~packing:print_window#add () in
+	  let _ = GMisc.label ~justify:`LEFT ~text:"Print using the following command:" ~packing:vbox_print#add () in
+	  let print_entry = GEdit.entry ~text:cmd ~editable:true ~width_chars:80 ~packing:vbox_print#add () in
+	  let hbox_print = GPack.hbox ~spacing:10 ~packing:vbox_print#add () in
+	  let print_cancel_button = GButton.button ~stock:`CANCEL ~label:"Cancel" ~packing:hbox_print#add () in
+	  let print_button  = GButton.button ~stock:`PRINT  ~label:"Print"  ~packing:hbox_print#add () in
+	  let callback_print () =
+            let cmd = print_entry#text in
+            let s,_ = run_command av#insert_message cmd in
+              flash_info (cmd ^ if s = Unix.WEXITED 0 then " succeeded" else " failed");
+              print_window#destroy ()
+	  in
+            ignore (print_cancel_button#connect#clicked ~callback:print_window#destroy) ;
+            ignore (print_button#connect#clicked ~callback:callback_print);
+            print_window#misc#show ()
+	end
 
 let main files =
   (* Statup preferences *)
@@ -1966,7 +1966,10 @@ let main files =
 			    in
 			    let cmd =
 			      local_cd f ^
-				!current.cmd_coqdoc ^ " --" ^ kind ^ " -o " ^ (Filename.quote output) ^ " " ^ (Filename.quote basef)
+				!current.cmd_coqdoc ^ " --coqlib_path " ^
+				Envars.coqlib () ^ " --" ^ kind ^
+				" -o " ^ (Filename.quote output) ^ " " ^
+				(Filename.quote basef)
 			    in
 			    let s,_ = run_command av#insert_message cmd in
 			      flash_info (cmd ^

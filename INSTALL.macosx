@@ -1,4 +1,30 @@
 INSTALLATION PROCEDURE FOR THE PRECOMPILED VERSION OF COQ SYSTEM UNDER MACOS X
 ------------------------------------------------------------------------------
 
+Here comes an bundle version of CoqIdE that you can save anywhere you want on
+your disk.
+
+Its main limitation is that double clicking and drap&drop on the application
+icon of a .v file won't open the file ! You must use Menu/Ctrl-o to open a
+file. (GTK-OSX handles it but lablgtk don't as far as I know.)
+
+An other limitation is that Sortcut aren't MacOS like ! (The question is again
+how to make "" throw CaML.)
+
+Notice that "Compile" and "File"/"Export to" menu items should work (modulo
+(pdf)latex finding).
+
+if you want to use coqide from your terminal add
+ 
+alias coqide /YOUR_INSTALL_DIRECTORY/CoqIdEv8.3.app/Contents/MacOS/startcoqide 
+
+at your ~/.profile. ("YOUR_INSTALL_DIRECTORY" is often "Applications"). Options
+such as -I/-R should work on this setting.
+
+You could also add
+/YOUR_INSTALL_DIRECTORY/CoqIdEv8.3.app/Contents/Resources/bin/ at your path to
+use coqtop/coq-tex/coq... from any terminal but CAUTION coqide of that directory
+won't work.
+
+
 See up-to-date informations on http://coq.inria.fr/download.
