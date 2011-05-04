@@ -39,8 +39,7 @@ val map_fl : ('a -> 'b) -> 'a freelisted -> 'b freelisted
     (e.g. the solution [P] to [?X u v = P u v] can be eta-expanded twice)
 *)
 
-type instance_constraint =
-    IsSuperType | IsSubType | ConvUpToEta of int | UserGiven
+type instance_constraint = IsSuperType | IsSubType | Conv
 
 (** Status of the unification of the type of an instance against the type of
      the meta it instantiates:

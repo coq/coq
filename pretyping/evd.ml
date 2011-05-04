@@ -276,8 +276,7 @@ let map_fl f cfl = { cfl with rebus=f cfl.rebus }
     (e.g. the solution [P] to [?X u v = P u v] can be eta-expanded twice)
 *)
 
-type instance_constraint =
-    IsSuperType | IsSubType | ConvUpToEta of int | UserGiven
+type instance_constraint = IsSuperType | IsSubType | Conv
 
 (* Status of the unification of the type of an instance against the type of
      the meta it instantiates:
@@ -668,7 +667,7 @@ let retract_coercible_metas evd =
   let mc,ml =
     Metamap.fold (fun n v (mc,ml) ->
       match v with
-	| Clval (na,(b,(UserGiven,CoerceToType as s)),typ) ->
+	| Clval (na,(b,(Conv,CoerceToType as s)),typ) ->
 	    (n,b.rebus,s)::mc, Metamap.add n (Cltyp (na,typ)) ml
 	| v ->
 	    mc, Metamap.add n v ml)
@@ -710,9 +709,7 @@ let pr_instance_status (sc,typ) =
   begin match sc with
   | IsSubType -> str " [or a subtype of it]"
   | IsSuperType -> str " [or a supertype of it]"
-  | ConvUpToEta 0 -> mt ()
-  | UserGiven -> mt ()
-  | ConvUpToEta n -> str" [or an eta-expansion up to " ++ int n ++ str" of it]"
+  | Conv -> mt ()
   end ++
   begin match typ with
   | CoerceToType -> str " [up to coercion]"
