@@ -537,7 +537,7 @@ let _ = declare_summary "Extraction Inline"
 (* Grammar entries. *)
 
 let extraction_inline b l =
-  let refs = List.map Nametab.global l in
+  let refs = List.map Smartlocate.global_with_alias l in
   List.iter
     (fun r -> match r with
        | ConstRef _ -> ()
@@ -618,7 +618,7 @@ let _ = declare_summary "Extraction Implicit"
 
 let extraction_implicit r l =
   check_inside_section ();
-  Lib.add_anonymous_leaf (implicit_extraction (Nametab.global r,l))
+  Lib.add_anonymous_leaf (implicit_extraction (Smartlocate.global_with_alias r,l))
 
 
 (*s Extraction Blacklist of filenames not to use while extracting *)
@@ -767,7 +767,7 @@ let _ = declare_summary "ML extractions custom match"
 
 let extract_constant_inline inline r ids s =
   check_inside_section ();
-  let g = Nametab.global r in
+  let g = Smartlocate.global_with_alias r in
   match g with
     | ConstRef kn ->
 	let env = Global.env () in
@@ -785,7 +785,7 @@ let extract_constant_inline inline r ids s =
 
 let extract_inductive r s l optstr =
   check_inside_section ();
-  let g = Nametab.global r in
+  let g = Smartlocate.global_with_alias r in
   match g with
     | IndRef ((kn,i) as ip) ->
 	let mib = Global.lookup_mind kn in

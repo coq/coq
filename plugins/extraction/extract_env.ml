@@ -506,7 +506,8 @@ let rec locate_ref = function
   | r::l ->
       let q = snd (qualid_of_reference r) in
       let mpo = try Some (Nametab.locate_module q) with Not_found -> None
-      and ro = try Some (Nametab.locate q) with Not_found -> None in
+      and ro = try Some (Smartlocate.global_with_alias r) with _ -> None
+      in
       match mpo, ro with
 	| None, None -> Nametab.error_global_not_found q
 	| None, Some r -> let refs,mps = locate_ref l in r::refs,mps
