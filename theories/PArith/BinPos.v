@@ -8,6 +8,8 @@
 (************************************************************************)
 
 Require Export BinNums.
+Require Import Eqdep_dec EqdepFacts RelationClasses Morphisms Setoid
+ Equalities GenericMinMax Le Plus.
 
 (**********************************************************************)
 (** * Binary positive numbers, operations and properties *)
@@ -33,49 +35,391 @@ Local Open Scope positive_scope.
 Local Unset Boolean Equality Schemes.
 Local Unset Case Analysis Schemes.
 
-(**********************************************************************)
+(** Every definitions and early properties about positive numbers
+    are placed in a module [Pos] for qualification purpose. *)
+
+Module Pos.
+Definition t := positive.
+Definition eq := @Logic.eq t.
+Definition eq_equiv := @eq_equivalence t.
+Include BackportEq.
+
 (** * Operations over positive numbers *)
 
 (** ** Successor *)
 
-Fixpoint Psucc (x:positive) : positive :=
+Fixpoint succ x :=
   match x with
-    | p~1 => (Psucc p)~0
+    | p~1 => (succ p)~0
     | p~0 => p~1
     | 1 => 1~0
   end.
 
 (** ** Addition *)
 
-Fixpoint Pplus (x y:positive) : positive :=
+Fixpoint add x y :=
   match x, y with
-    | p~1, q~1 => (Pplus_carry p q)~0
-    | p~1, q~0 => (Pplus p q)~1
-    | p~1, 1 => (Psucc p)~0
-    | p~0, q~1 => (Pplus p q)~1
-    | p~0, q~0 => (Pplus p q)~0
+    | p~1, q~1 => (add_carry p q)~0
+    | p~1, q~0 => (add p q)~1
+    | p~1, 1 => (succ p)~0
+    | p~0, q~1 => (add p q)~1
+    | p~0, q~0 => (add p q)~0
     | p~0, 1 => p~1
-    | 1, q~1 => (Psucc q)~0
+    | 1, q~1 => (succ q)~0
     | 1, q~0 => q~1
     | 1, 1 => 1~0
   end
 
-with Pplus_carry (x y:positive) : positive :=
+with add_carry x y :=
   match x, y with
-    | p~1, q~1 => (Pplus_carry p q)~1
-    | p~1, q~0 => (Pplus_carry p q)~0
-    | p~1, 1 => (Psucc p)~1
-    | p~0, q~1 => (Pplus_carry p q)~0
-    | p~0, q~0 => (Pplus p q)~1
-    | p~0, 1 => (Psucc p)~0
-    | 1, q~1 => (Psucc q)~1
-    | 1, q~0 => (Psucc q)~0
+    | p~1, q~1 => (add_carry p q)~1
+    | p~1, q~0 => (add_carry p q)~0
+    | p~1, 1 => (succ p)~1
+    | p~0, q~1 => (add_carry p q)~0
+    | p~0, q~0 => (add p q)~1
+    | p~0, 1 => (succ p)~0
+    | 1, q~1 => (succ q)~1
+    | 1, q~0 => (succ q)~0
     | 1, 1 => 1~1
   end.
 
-Infix "+" := Pplus : positive_scope.
+Infix "+" := add : positive_scope.
 
-Definition Piter_op {A}(op:A->A->A) :=
+(** ** Operation [x -> 2*x-1] *)
+
+Fixpoint pred_double x :=
+  match x with
+    | p~1 => p~0~1
+    | p~0 => (pred_double p)~1
+    | 1 => 1
+  end.
+
+(** ** Predecessor *)
+
+Definition pred x :=
+  match x with
+    | p~1 => p~0
+    | p~0 => pred_double p
+    | 1 => 1
+  end.
+
+(** ** An auxiliary type for subtraction *)
+
+Inductive mask : Set :=
+| IsNul : mask
+| IsPos : positive -> mask
+| IsNeg : mask.
+
+(** ** Operation [x -> 2*x+1] *)
+
+Definition succ_double_mask (x:mask) : mask :=
+  match x with
+    | IsNul => IsPos 1
+    | IsNeg => IsNeg
+    | IsPos p => IsPos p~1
+  end.
+
+(** ** Operation [x -> 2*x] *)
+
+Definition double_mask (x:mask) : mask :=
+  match x with
+    | IsNul => IsNul
+    | IsNeg => IsNeg
+    | IsPos p => IsPos p~0
+  end.
+
+(** ** Operation [x -> 2*x-2] *)
+
+Definition double_pred_mask x : mask :=
+  match x with
+    | p~1 => IsPos p~0~0
+    | p~0 => IsPos (pred_double p)~0
+    | 1 => IsNul
+  end.
+
+(** ** Predecessor with mask *)
+
+Definition pred_mask (p : mask) : mask :=
+  match p with
+    | IsPos 1 => IsNul
+    | IsPos q => IsPos (pred q)
+    | IsNul => IsNeg
+    | IsNeg => IsNeg
+  end.
+
+(** ** Subtraction, result as a mask *)
+
+Fixpoint sub_mask (x y:positive) {struct y} : mask :=
+  match x, y with
+    | p~1, q~1 => double_mask (sub_mask p q)
+    | p~1, q~0 => succ_double_mask (sub_mask p q)
+    | p~1, 1 => IsPos p~0
+    | p~0, q~1 => succ_double_mask (sub_mask_carry p q)
+    | p~0, q~0 => double_mask (sub_mask p q)
+    | p~0, 1 => IsPos (pred_double p)
+    | 1, 1 => IsNul
+    | 1, _ => IsNeg
+  end
+
+with sub_mask_carry (x y:positive) {struct y} : mask :=
+  match x, y with
+    | p~1, q~1 => succ_double_mask (sub_mask_carry p q)
+    | p~1, q~0 => double_mask (sub_mask p q)
+    | p~1, 1 => IsPos (pred_double p)
+    | p~0, q~1 => double_mask (sub_mask_carry p q)
+    | p~0, q~0 => succ_double_mask (sub_mask_carry p q)
+    | p~0, 1 => double_pred_mask p
+    | 1, _ => IsNeg
+  end.
+
+(** ** Subtraction, result as a positive, returning 1 if [x<=y] *)
+
+Definition sub x y :=
+  match sub_mask x y with
+    | IsPos z => z
+    | _ => 1
+  end.
+
+Infix "-" := sub : positive_scope.
+
+(** ** Multiplication *)
+
+Fixpoint mul x y :=
+  match x with
+    | p~1 => y + (mul p y)~0
+    | p~0 => (mul p y)~0
+    | 1 => y
+  end.
+
+Infix "*" := mul : positive_scope.
+
+(** ** Iteration over a positive number *)
+
+Fixpoint iter (n:positive) {A} (f:A -> A) (x:A) : A :=
+  match n with
+    | xH => f x
+    | xO n' => iter n' f (iter n' f x)
+    | xI n' => f (iter n' f (iter n' f x))
+  end.
+
+(** ** Power *)
+
+Definition pow (x y:positive) := iter y (mul x) 1.
+
+Infix "^" := pow : positive_scope.
+
+(** ** Division by 2 rounded below but for 1 *)
+
+Definition div2 p :=
+  match p with
+    | 1 => 1
+    | p~0 => p
+    | p~1 => p
+  end.
+
+(** Division by 2 rounded up *)
+
+Definition div2_up p :=
+ match p with
+   | 1 => 1
+   | p~0 => p
+   | p~1 => succ p
+ end.
+
+(** ** Number of digits in a positive number *)
+
+Fixpoint size_nat p : nat :=
+  match p with
+    | 1 => S O
+    | p~1 => S (size_nat p)
+    | p~0 => S (size_nat p)
+  end.
+
+(** Same, with positive output *)
+
+Fixpoint size p :=
+  match p with
+    | 1 => 1
+    | p~1 => succ (size p)
+    | p~0 => succ (size p)
+  end.
+
+(** ** Comparison on binary positive numbers *)
+
+Fixpoint compare_cont (x y:positive) (r:comparison) {struct y} : comparison :=
+  match x, y with
+    | p~1, q~1 => compare_cont p q r
+    | p~1, q~0 => compare_cont p q Gt
+    | p~1, 1 => Gt
+    | p~0, q~1 => compare_cont p q Lt
+    | p~0, q~0 => compare_cont p q r
+    | p~0, 1 => Gt
+    | 1, q~1 => Lt
+    | 1, q~0 => Lt
+    | 1, 1 => r
+  end.
+
+Definition compare x y := compare_cont x y Eq.
+
+Infix "?=" := compare (at level 70, no associativity) : positive_scope.
+
+Definition lt x y := (x ?= y) = Lt.
+Definition gt x y := (x ?= y) = Gt.
+Definition le x y := (x ?= y) <> Gt.
+Definition ge x y := (x ?= y) <> Lt.
+
+Infix "<=" := le : positive_scope.
+Infix "<" := lt : positive_scope.
+Infix ">=" := ge : positive_scope.
+Infix ">" := gt : positive_scope.
+
+Notation "x <= y <= z" := (x <= y /\ y <= z) : positive_scope.
+Notation "x <= y < z" := (x <= y /\ y < z) : positive_scope.
+Notation "x < y < z" := (x < y /\ y < z) : positive_scope.
+Notation "x < y <= z" := (x < y /\ y <= z) : positive_scope.
+
+Definition min p p' :=
+ match p ?= p' with
+ | Lt | Eq => p
+ | Gt => p'
+ end.
+
+Definition max p p' :=
+ match p ?= p' with
+ | Lt | Eq => p'
+ | Gt => p
+ end.
+
+(** ** Boolean equality and comparisons *)
+
+(** Nota: this [eqb] is not convertible with the generated [positive_beq], due
+    to a different guard argument. We keep this version for compatibility. *)
+
+Fixpoint eqb p q {struct q} :=
+  match p, q with
+    | p~1, q~1 => eqb p q
+    | p~0, q~0 => eqb p q
+    | 1, 1 => true
+    | _, _ => false
+  end.
+
+Definition leb x y :=
+ match x ?= y with Gt => false | _ => true end.
+
+Definition ltb x y :=
+ match x ?= y with Lt => true | _ => false end.
+
+Infix "=?" := leb (at level 70, no associativity) : positive_scope.
+Infix "<=?" := leb (at level 70, no associativity) : positive_scope.
+Infix "<?" := ltb (at level 70, no associativity) : positive_scope.
+
+(** ** A Square Root function for positive numbers *)
+
+(** We procede by blocks of two digits : if p is written qbb'
+    then sqrt(p) will be sqrt(q)~0 or sqrt(q)~1.
+    For deciding easily in which case we are, we store the remainder
+    (as a positive_mask, since it can be null).
+    Instead of copy-pasting the following code four times, we
+    factorize as an auxiliary function, with f and g being either
+    xO or xI depending of the initial digits.
+    NB: (sub_mask (g (f 1)) 4) is a hack, morally it's g (f 0).
+*)
+
+Definition sqrtrem_step (f g:positive->positive) p :=
+ match p with
+  | (s, IsPos r) =>
+    let s' := s~0~1 in
+    let r' := g (f r) in
+    if s' <=? r' then (s~1, sub_mask r' s')
+    else (s~0, IsPos r')
+  | (s,_)  => (s~0, sub_mask (g (f 1)) 4)
+ end.
+
+Fixpoint sqrtrem p : positive * mask :=
+ match p with
+  | 1 => (1,IsNul)
+  | 2 => (1,IsPos 1)
+  | 3 => (1,IsPos 2)
+  | p~0~0 => sqrtrem_step xO xO (sqrtrem p)
+  | p~0~1 => sqrtrem_step xO xI (sqrtrem p)
+  | p~1~0 => sqrtrem_step xI xO (sqrtrem p)
+  | p~1~1 => sqrtrem_step xI xI (sqrtrem p)
+ end.
+
+Definition sqrt p := fst (sqrtrem p).
+
+
+(** ** Greatest Common Divisor *)
+
+Definition divide p q := exists r, p*r = q.
+Notation "( p | q )" := (divide p q) (at level 0) : positive_scope.
+
+(** Instead of the Euclid algorithm, we use here the Stein binary
+   algorithm, which is faster for this representation. This algorithm
+   is almost structural, but in the last cases we do some recursive
+   calls on subtraction, hence the need for a counter.
+*)
+
+Fixpoint gcdn (n : nat) (a b : positive) : positive :=
+  match n with
+    | O => 1
+    | S n =>
+      match a,b with
+	| 1, _ => 1
+	| _, 1 => 1
+	| a~0, b~0 => (gcdn n a b)~0
+	| _  , b~0 => gcdn n a b
+	| a~0, _   => gcdn n a b
+	| a'~1, b'~1 =>
+          match a' ?= b' with
+	    | Eq => a
+	    | Lt => gcdn n (b'-a') a
+	    | Gt => gcdn n (a'-b') b
+          end
+      end
+  end.
+
+(** We'll show later that we need at most (log2(a.b)) loops *)
+
+Definition gcd (a b : positive) := gcdn (size_nat a + size_nat b)%nat a b.
+
+(** Generalized Gcd, also computing the division of a and b by the gcd *)
+
+Fixpoint ggcdn (n : nat) (a b : positive) : (positive*(positive*positive)) :=
+  match n with
+    | O => (1,(a,b))
+    | S n =>
+      match a,b with
+	| 1, _ => (1,(1,b))
+	| _, 1 => (1,(a,1))
+	| a~0, b~0 =>
+           let (g,p) := ggcdn n a b in
+           (g~0,p)
+	| _, b~0 =>
+           let '(g,(aa,bb)) := ggcdn n a b in
+           (g,(aa, bb~0))
+	| a~0, _ =>
+           let '(g,(aa,bb)) := ggcdn n a b in
+           (g,(aa~0, bb))
+	| a'~1, b'~1 =>
+           match a' ?= b' with
+	     | Eq => (a,(1,1))
+	     | Lt =>
+	        let '(g,(ba,aa)) := ggcdn n (b'-a') a in
+	        (g,(aa, aa + ba~0))
+	     | Gt =>
+		let '(g,(ab,bb)) := ggcdn n (a'-b') b in
+		(g,(bb + ab~0, bb))
+	   end
+      end
+  end.
+
+Definition ggcd (a b: positive) := ggcdn (size_nat a + size_nat b)%nat a b.
+
+
+(** ** From binary positive numbers to Peano natural numbers *)
+
+Definition iter_op {A}(op:A->A->A) :=
   fix iter (p:positive)(a:A) : A :=
   match p with
     | 1 => a
@@ -83,480 +427,261 @@ Definition Piter_op {A}(op:A->A->A) :=
     | p~1 => op a (iter p (op a a))
   end.
 
-Lemma Piter_op_succ : forall A (op:A->A->A),
- (forall x y z, op x (op y z) = op (op x y) z) ->
- forall p a,
- Piter_op op (Psucc p) a = op a (Piter_op op p a).
-Proof.
- induction p; simpl; intros; trivial.
- rewrite H. apply IHp.
-Qed.
-
-(** ** From binary positive numbers to Peano natural numbers *)
-
-Definition Pmult_nat : positive -> nat -> nat :=
- Eval unfold Piter_op in (* for compatibility *)
- Piter_op plus.
-
-Definition nat_of_P (x:positive) := Pmult_nat x (S O).
+Definition to_nat (x:positive) : nat := iter_op plus x (S O).
 
 (** ** From Peano natural numbers to binary positive numbers *)
 
-Fixpoint P_of_succ_nat (n:nat) : positive :=
+(** A version preserving positive numbers, and sending 0 to 1. *)
+
+Fixpoint of_nat (n:nat) : positive :=
+ match n with
+   | O => 1
+   | S O => 1
+   | S x => succ (of_nat x)
+ end.
+
+(* Another version that convert [n] into [n+1] *)
+
+Fixpoint of_succ_nat (n:nat) : positive :=
   match n with
     | O => 1
-    | S x => Psucc (P_of_succ_nat x)
+    | S x => succ (of_succ_nat x)
   end.
 
-(** ** Operation x -> 2*x-1 *)
-
-Fixpoint Pdouble_minus_one (x:positive) : positive :=
-  match x with
-    | p~1 => p~0~1
-    | p~0 => (Pdouble_minus_one p)~1
-    | 1 => 1
-  end.
-
-(** ** Predecessor *)
-
-Definition Ppred (x:positive) :=
-  match x with
-    | p~1 => p~0
-    | p~0 => Pdouble_minus_one p
-    | 1 => 1
-  end.
-
-(** ** An auxiliary type for subtraction *)
-
-Inductive positive_mask : Set :=
-| IsNul : positive_mask
-| IsPos : positive -> positive_mask
-| IsNeg : positive_mask.
-
-(** ** Operation x -> 2*x+1 *)
-
-Definition Pdouble_plus_one_mask (x:positive_mask) :=
-  match x with
-    | IsNul => IsPos 1
-    | IsNeg => IsNeg
-    | IsPos p => IsPos p~1
-  end.
-
-(** ** Operation x -> 2*x *)
-
-Definition Pdouble_mask (x:positive_mask) :=
-  match x with
-    | IsNul => IsNul
-    | IsNeg => IsNeg
-    | IsPos p => IsPos p~0
-  end.
-
-(** ** Operation x -> 2*x-2 *)
-
-Definition Pdouble_minus_two (x:positive) :=
-  match x with
-    | p~1 => IsPos p~0~0
-    | p~0 => IsPos (Pdouble_minus_one p)~0
-    | 1 => IsNul
-  end.
-
-(** ** Subtraction of binary positive numbers into a positive numbers mask *)
-
-Fixpoint Pminus_mask (x y:positive) {struct y} : positive_mask :=
-  match x, y with
-    | p~1, q~1 => Pdouble_mask (Pminus_mask p q)
-    | p~1, q~0 => Pdouble_plus_one_mask (Pminus_mask p q)
-    | p~1, 1 => IsPos p~0
-    | p~0, q~1 => Pdouble_plus_one_mask (Pminus_mask_carry p q)
-    | p~0, q~0 => Pdouble_mask (Pminus_mask p q)
-    | p~0, 1 => IsPos (Pdouble_minus_one p)
-    | 1, 1 => IsNul
-    | 1, _ => IsNeg
-  end
-
-with Pminus_mask_carry (x y:positive) {struct y} : positive_mask :=
-  match x, y with
-    | p~1, q~1 => Pdouble_plus_one_mask (Pminus_mask_carry p q)
-    | p~1, q~0 => Pdouble_mask (Pminus_mask p q)
-    | p~1, 1 => IsPos (Pdouble_minus_one p)
-    | p~0, q~1 => Pdouble_mask (Pminus_mask_carry p q)
-    | p~0, q~0 => Pdouble_plus_one_mask (Pminus_mask_carry p q)
-    | p~0, 1 => Pdouble_minus_two p
-    | 1, _ => IsNeg
-  end.
-
-(** ** Subtraction of binary positive numbers x and y, returns 1 if x<=y *)
-
-Definition Pminus (x y:positive) :=
-  match Pminus_mask x y with
-    | IsPos z => z
-    | _ => 1
-  end.
-
-Infix "-" := Pminus : positive_scope.
-
-(** ** Multiplication on binary positive numbers *)
-
-Fixpoint Pmult (x y:positive) : positive :=
-  match x with
-    | p~1 => y + (Pmult p y)~0
-    | p~0 => (Pmult p y)~0
-    | 1 => y
-  end.
-
-Infix "*" := Pmult : positive_scope.
-
-(** ** Iteration over a positive number *)
-
-Fixpoint iter_pos (n:positive) (A:Type) (f:A -> A) (x:A) : A :=
-  match n with
-    | xH => f x
-    | xO n' => iter_pos n' A f (iter_pos n' A f x)
-    | xI n' => f (iter_pos n' A f (iter_pos n' A f x))
-  end.
-
-(** ** Power *)
-
-Definition Ppow (x y:positive) := iter_pos y _ (Pmult x) 1.
-
-(** Another possible definition is : Piter_op Pmult y x
-    but for some reason, this is quite slower on powers of two. *)
-
-Infix "^" := Ppow : positive_scope.
-
-(** ** Division by 2 rounded below but for 1 *)
-
-Definition Pdiv2 (z:positive) :=
-  match z with
-    | 1 => 1
-    | p~0 => p
-    | p~1 => p
-  end.
-
-Infix "/" := Pdiv2 : positive_scope.
-
-(** Division by 2 rounded up *)
-
-Definition Pdiv2_up p :=
- match p with
-   | 1 => 1
-   | p~0 => p
-   | p~1 => Psucc p
- end.
-
-(** ** Number of digits in a positive number *)
-
-Fixpoint Psize (p:positive) : nat :=
-  match p with
-    | 1 => S O
-    | p~1 => S (Psize p)
-    | p~0 => S (Psize p)
-  end.
-
-(** Same, with positive output *)
-
-Fixpoint Psize_pos (p:positive) : positive :=
-  match p with
-    | 1 => 1
-    | p~1 => Psucc (Psize_pos p)
-    | p~0 => Psucc (Psize_pos p)
-  end.
-
-(** ** Comparison on binary positive numbers *)
-
-Fixpoint Pcompare (x y:positive) (r:comparison) {struct y} : comparison :=
-  match x, y with
-    | p~1, q~1 => Pcompare p q r
-    | p~1, q~0 => Pcompare p q Gt
-    | p~1, 1 => Gt
-    | p~0, q~1 => Pcompare p q Lt
-    | p~0, q~0 => Pcompare p q r
-    | p~0, 1 => Gt
-    | 1, q~1 => Lt
-    | 1, q~0 => Lt
-    | 1, 1 => r
-  end.
-
-Infix "?=" := Pcompare (at level 70, no associativity) : positive_scope.
-
-Definition Plt (x y:positive) := (Pcompare x y Eq) = Lt.
-Definition Pgt (x y:positive) := (Pcompare x y Eq) = Gt.
-Definition Ple (x y:positive) := (Pcompare x y Eq) <> Gt.
-Definition Pge (x y:positive) := (Pcompare x y Eq) <> Lt.
-
-Infix "<=" := Ple : positive_scope.
-Infix "<" := Plt : positive_scope.
-Infix ">=" := Pge : positive_scope.
-Infix ">" := Pgt : positive_scope.
-
-Notation "x <= y <= z" := (x <= y /\ y <= z) : positive_scope.
-Notation "x <= y < z" := (x <= y /\ y < z) : positive_scope.
-Notation "x < y < z" := (x < y /\ y < z) : positive_scope.
-Notation "x < y <= z" := (x < y /\ y <= z) : positive_scope.
-
-
-Definition Pmin (p p' : positive) := match Pcompare p p' Eq with
- | Lt | Eq => p
- | Gt => p'
- end.
-
-Definition Pmax (p p' : positive) := match Pcompare p p' Eq with
- | Lt | Eq => p'
- | Gt => p
- end.
-
-(** ** Boolean equality *)
-
-Fixpoint Peqb (x y : positive) {struct y} : bool :=
- match x, y with
- | 1, 1 => true
- | p~1, q~1 => Peqb p q
- | p~0, q~0 => Peqb p q
- | _, _ => false
- end.
 
 (**********************************************************************)
 (** * Properties of operations over positive numbers *)
 
 (** ** Decidability of equality on binary positive numbers *)
 
-Lemma positive_eq_dec : forall x y: positive, {x = y} + {x <> y}.
+Lemma eq_dec : forall x y:positive, {x = y} + {x <> y}.
 Proof.
   decide equality.
 Defined.
 
-(* begin hide *)
-Corollary ZL11 : forall p:positive, p = 1 \/ p <> 1.
-Proof.
-  intro; edestruct positive_eq_dec; eauto.
-Qed.
-(* end hide *)
-
 (**********************************************************************)
 (** * Properties of successor on binary positive numbers *)
 
-(** ** Specification of [xI] in term of [Psucc] and [xO] *)
+(** ** Specification of [xI] in term of [succ] and [xO] *)
 
-Lemma xI_succ_xO : forall p:positive, p~1 = Psucc p~0.
+Lemma xI_succ_xO p : p~1 = succ p~0.
 Proof.
   reflexivity.
 Qed.
 
-Lemma Psucc_discr : forall p:positive, p <> Psucc p.
+Lemma succ_discr p : p <> succ p.
 Proof.
-  destruct p; discriminate.
+  now destruct p.
 Qed.
 
 (** ** Successor and double *)
 
-Lemma Psucc_o_double_minus_one_eq_xO :
-  forall p:positive, Psucc (Pdouble_minus_one p) = p~0.
+Lemma pred_double_spec p : pred_double p = pred (p~0).
 Proof.
-  induction p; simpl; f_equal; auto.
+  reflexivity.
 Qed.
 
-Lemma Pdouble_minus_one_o_succ_eq_xI :
-  forall p:positive, Pdouble_minus_one (Psucc p) = p~1.
+Lemma succ_pred_double p : succ (pred_double p) = p~0.
 Proof.
-  induction p; simpl; f_equal; auto.
+  induction p; simpl; now f_equal.
 Qed.
 
-Lemma xO_succ_permute :
-  forall p:positive, (Psucc p)~0 = Psucc (Psucc p~0).
+Lemma pred_double_succ p : pred_double (succ p) = p~1.
 Proof.
-  induction p; simpl; auto.
+  induction p; simpl; now f_equal.
 Qed.
 
-Lemma double_moins_un_xO_discr :
-  forall p:positive, Pdouble_minus_one p <> p~0.
+Lemma double_succ p : (succ p)~0 = succ (succ p~0).
 Proof.
-  destruct p; discriminate.
+  now destruct p.
+Qed.
+
+Lemma pred_double_xO_discr p : pred_double p <> p~0.
+Proof.
+  now destruct p.
 Qed.
 
 (** ** Successor and predecessor *)
 
-Lemma Psucc_not_one : forall p:positive, Psucc p <> 1.
+Lemma succ_not_1 p : succ p <> 1.
 Proof.
-  destruct p; discriminate.
+  now destruct p.
 Qed.
 
-Lemma Ppred_succ : forall p:positive, Ppred (Psucc p) = p.
+Lemma pred_succ p : pred (succ p) = p.
 Proof.
-  intros [[p|p| ]|[p|p| ]| ]; simpl; auto.
-  f_equal; apply Pdouble_minus_one_o_succ_eq_xI.
+  destruct p; simpl; trivial. apply pred_double_succ.
 Qed.
 
-Lemma Psucc_pred : forall p:positive, p = 1 \/ Psucc (Ppred p) = p.
+Lemma succ_pred_or p : p = 1 \/ succ (pred p) = p.
 Proof.
-  induction p; simpl; auto.
-  right; apply Psucc_o_double_minus_one_eq_xO.
+  destruct p; simpl; auto.
+  right; apply succ_pred_double.
+Qed.
+
+Lemma succ_pred p : p <> 1 -> succ (pred p) = p.
+Proof.
+  destruct p; intros H; simpl; trivial.
+  apply succ_pred_double.
+  now destruct H.
 Qed.
 
 Ltac destr_eq H := discriminate H || (try (injection H; clear H; intro H)).
 
 (** ** Injectivity of successor *)
 
-Lemma Psucc_inj : forall p q:positive, Psucc p = Psucc q -> p = q.
+Lemma succ_inj p q : succ p = succ q -> p = q.
 Proof.
-  induction p; intros [q|q| ] H; simpl in *; destr_eq H; f_equal; auto.
-  elim (Psucc_not_one p); auto.
-  elim (Psucc_not_one q); auto.
+  revert q.
+  induction p; intros [q|q| ] H; simpl in H; destr_eq H; f_equal; auto.
+  elim (succ_not_1 p); auto.
+  elim (succ_not_1 q); auto.
 Qed.
 
 (**********************************************************************)
 (** * Properties of addition on binary positive numbers *)
 
-(** ** Specification of [Psucc] in term of [Pplus] *)
+(** ** Specification of [succ] in term of [add] *)
 
-Lemma Pplus_one_succ_r : forall p:positive, Psucc p = p + 1.
+Lemma add_1_r p : p + 1 = succ p.
 Proof.
-  destruct p; reflexivity.
+  now destruct p.
 Qed.
 
-Lemma Pplus_one_succ_l : forall p:positive, Psucc p = 1 + p.
+Lemma add_1_l p : 1 + p = succ p.
 Proof.
-  destruct p; reflexivity.
+  now destruct p.
 Qed.
 
-(** ** Specification of [Pplus_carry] *)
+(** ** Specification of [add_carry] *)
 
-Theorem Pplus_carry_spec :
-  forall p q:positive, Pplus_carry p q = Psucc (p + q).
+Theorem add_carry_spec p q : add_carry p q = succ (p + q).
 Proof.
-  induction p; destruct q; simpl; f_equal; auto.
+  revert q. induction p; destruct q; simpl; now f_equal.
 Qed.
 
 (** ** Commutativity *)
 
-Theorem Pplus_comm : forall p q:positive, p + q = q + p.
+Theorem add_comm p q : p + q = q + p.
 Proof.
-  induction p; destruct q; simpl; f_equal; auto.
-  rewrite 2 Pplus_carry_spec; f_equal; auto.
+  revert q. induction p; destruct q; simpl; f_equal; trivial.
+  rewrite 2 add_carry_spec; now f_equal.
 Qed.
 
-(** ** Permutation of [Pplus] and [Psucc] *)
+(** ** Permutation of [add] and [succ] *)
 
-Theorem Pplus_succ_permute_r :
-  forall p q:positive, p + Psucc q = Psucc (p + q).
+Theorem add_succ_r p q : p + succ q = succ (p + q).
 Proof.
+  revert q.
   induction p; destruct q; simpl; f_equal;
-   auto using Pplus_one_succ_r; rewrite Pplus_carry_spec; auto.
+   auto using add_1_r; rewrite add_carry_spec; auto.
 Qed.
 
-Theorem Pplus_succ_permute_l :
-  forall p q:positive, Psucc p + q = Psucc (p + q).
+Theorem add_succ_l p q : succ p + q = succ (p + q).
 Proof.
-  intros p q; rewrite Pplus_comm, (Pplus_comm p);
-    apply Pplus_succ_permute_r.
+  rewrite add_comm, (add_comm p). apply add_succ_r.
 Qed.
 
-Theorem Pplus_carry_pred_eq_plus :
-  forall p q:positive, q <> 1 -> Pplus_carry p (Ppred q) = p + q.
-Proof.
-  intros p q H; rewrite Pplus_carry_spec, <- Pplus_succ_permute_r; f_equal.
-  destruct (Psucc_pred q); [ elim H; assumption | assumption ].
-Qed.
+(** ** No neutral elements for addition *)
 
-(** ** No neutral for addition on strictly positive numbers *)
-
-Lemma Pplus_no_neutral : forall p q:positive, q + p <> p.
+Lemma add_no_neutral p q : q + p <> p.
 Proof.
+  revert q.
   induction p as [p IHp|p IHp| ]; intros [q|q| ] H;
    destr_eq H; apply (IHp q H).
 Qed.
 
-Lemma Pplus_carry_no_neutral :
-  forall p q:positive, Pplus_carry q p <> Psucc p.
-Proof.
-  intros p q H; elim (Pplus_no_neutral p q).
-  apply Psucc_inj; rewrite <- Pplus_carry_spec; assumption.
-Qed.
-
 (** ** Simplification *)
 
-Lemma Pplus_carry_plus :
-  forall p q r s:positive, Pplus_carry p r = Pplus_carry q s -> p + r = q + s.
+Lemma add_carry_add p q r s :
+  add_carry p r = add_carry q s -> p + r = q + s.
 Proof.
-  intros p q r s H; apply Psucc_inj; do 2 rewrite <- Pplus_carry_spec;
-    assumption.
+  intros H; apply succ_inj; now rewrite <- 2 add_carry_spec.
 Qed.
 
-Lemma Pplus_reg_r : forall p q r:positive, p + r = q + r -> p = q.
+Lemma add_reg_r p q r : p + r = q + r -> p = q.
 Proof.
-  intros p q r; revert p q; induction r.
-  intros [p|p| ] [q|q| ] H; simpl; destr_eq H;
-    f_equal; auto using Pplus_carry_plus;
-    contradict H; auto using Pplus_carry_no_neutral.
+  revert p q. induction r.
+  intros [p|p| ] [q|q| ] H; simpl; destr_eq H; f_equal;
+   auto using add_carry_add; contradict H;
+   rewrite add_carry_spec, <- add_succ_r; auto using add_no_neutral.
   intros [p|p| ] [q|q| ] H; simpl; destr_eq H; f_equal; auto;
-    contradict H; auto using Pplus_no_neutral.
-  intros p q H; apply Psucc_inj; do 2 rewrite Pplus_one_succ_r; assumption.
+    contradict H; auto using add_no_neutral.
+  intros p q H. apply succ_inj. now rewrite <- 2 add_1_r.
 Qed.
 
-Lemma Pplus_reg_l : forall p q r:positive, p + q = p + r -> q = r.
+Lemma add_reg_l p q r : p + q = p + r -> q = r.
 Proof.
-  intros p q r H; apply Pplus_reg_r with (r:=p).
-  rewrite (Pplus_comm r), (Pplus_comm q); assumption.
+  rewrite 2 (add_comm p). now apply add_reg_r.
 Qed.
 
-Lemma Pplus_carry_reg_r :
-  forall p q r:positive, Pplus_carry p r = Pplus_carry q r -> p = q.
+Lemma add_cancel_r p q r : p + r = q + r <-> p = q.
 Proof.
-  intros p q r H; apply Pplus_reg_r with (r:=r); apply Pplus_carry_plus;
-    assumption.
+ split. apply add_reg_r. congruence.
 Qed.
 
-Lemma Pplus_carry_reg_l :
-  forall p q r:positive, Pplus_carry p q = Pplus_carry p r -> q = r.
+Lemma add_cancel_l p q r : r + p = r + q <-> p = q.
 Proof.
-  intros p q r H; apply Pplus_reg_r with (r:=p);
-  rewrite (Pplus_comm r), (Pplus_comm q); apply Pplus_carry_plus; assumption.
+ split. apply add_reg_l. congruence.
 Qed.
 
-(** ** Addition on positive is associative *)
-
-Theorem Pplus_assoc : forall p q r:positive, p + (q + r) = p + q + r.
+Lemma add_carry_reg_r p q r :
+  add_carry p r = add_carry q r -> p = q.
 Proof.
-  induction p.
-  intros [q|q| ] [r|r| ]; simpl; f_equal; auto;
-    rewrite ?Pplus_carry_spec, ?Pplus_succ_permute_r,
-     ?Pplus_succ_permute_l, ?Pplus_one_succ_r; f_equal; auto.
-  intros [q|q| ] [r|r| ]; simpl; f_equal; auto;
-    rewrite ?Pplus_carry_spec, ?Pplus_succ_permute_r,
-     ?Pplus_succ_permute_l, ?Pplus_one_succ_r; f_equal; auto.
-  intros p r; rewrite <- 2 Pplus_one_succ_l, Pplus_succ_permute_l; auto.
+ intros H. apply add_reg_r with (r:=r); now apply add_carry_add.
 Qed.
 
-(** ** Commutation of addition with the double of a positive number *)
-
-Lemma Pplus_xO : forall m n : positive, (m + n)~0 = m~0 + n~0.
+Lemma add_carry_reg_l p q r :
+  add_carry p q = add_carry p r -> q = r.
 Proof.
-  destruct n; destruct m; simpl; auto.
+  intros H; apply add_reg_r with (r:=p);
+  rewrite (add_comm r), (add_comm q); now apply add_carry_add.
 Qed.
 
-Lemma Pplus_xI_double_minus_one :
-  forall p q:positive, (p + q)~0 = p~1 + Pdouble_minus_one q.
+(** ** Addition is associative *)
+
+Theorem add_assoc p q r : p + (q + r) = p + q + r.
 Proof.
-  intros; change (p~1) with (p~0 + 1).
-  rewrite <- Pplus_assoc, <- Pplus_one_succ_l, Psucc_o_double_minus_one_eq_xO.
-  reflexivity.
+  revert q r. induction p.
+  intros [q|q| ] [r|r| ]; simpl; f_equal; trivial;
+    rewrite ?add_carry_spec, ?add_succ_r, ?add_succ_l, ?add_1_r;
+    f_equal; trivial.
+  intros [q|q| ] [r|r| ]; simpl; f_equal; trivial;
+    rewrite ?add_carry_spec, ?add_succ_r, ?add_succ_l, ?add_1_r;
+    f_equal; trivial.
+  intros q r; rewrite 2 add_1_l, add_succ_l; auto.
 Qed.
 
-Lemma Pplus_xO_double_minus_one :
-  forall p q:positive, Pdouble_minus_one (p + q) = p~0 + Pdouble_minus_one q.
+(** ** Commutation of addition and double *)
+
+Lemma add_xO p q : (p + q)~0 = p~0 + q~0.
 Proof.
-  induction p as [p IHp| p IHp| ]; destruct q; simpl;
-  rewrite ?Pplus_carry_spec, ?Pdouble_minus_one_o_succ_eq_xI,
-    ?Pplus_xI_double_minus_one; try reflexivity.
+  now destruct p, q.
+Qed.
+
+Lemma add_xI_pred_double p q :
+  (p + q)~0 = p~1 + pred_double q.
+Proof.
+  change (p~1) with (p~0 + 1).
+  now rewrite <- add_assoc, add_1_l, succ_pred_double.
+Qed.
+
+Lemma add_xO_pred_double p q :
+  pred_double (p + q) = p~0 + pred_double q.
+Proof.
+  revert q. induction p as [p IHp| p IHp| ]; destruct q; simpl;
+   rewrite ?add_carry_spec, ?pred_double_succ, ?add_xI_pred_double;
+   try reflexivity.
   rewrite IHp; auto.
-  rewrite <- Psucc_o_double_minus_one_eq_xO, Pplus_one_succ_l; reflexivity.
+  rewrite <- succ_pred_double, <- add_1_l. reflexivity.
 Qed.
 
 (** ** Miscellaneous *)
 
-Lemma Pplus_diag : forall p:positive, p + p = p~0.
+Lemma add_diag p : p + p = p~0.
 Proof.
   induction p as [p IHp| p IHp| ]; simpl;
-   try rewrite ?Pplus_carry_spec, ?IHp; reflexivity.
+  now rewrite ?add_carry_spec, ?IHp.
 Qed.
 
 (**********************************************************************)
@@ -565,7 +690,7 @@ Qed.
 
 Inductive PeanoView : positive -> Type :=
 | PeanoOne : PeanoView 1
-| PeanoSucc : forall p, PeanoView p -> PeanoView (Psucc p).
+| PeanoSucc : forall p, PeanoView p -> PeanoView (succ p).
 
 Fixpoint peanoView_xO p (q:PeanoView p) : PeanoView (p~0) :=
   match q in PeanoView x return PeanoView (x~0) with
@@ -587,14 +712,12 @@ Fixpoint peanoView p : PeanoView p :=
   end.
 
 Definition PeanoView_iter (P:positive->Type)
-  (a:P 1) (f:forall p, P p -> P (Psucc p)) :=
+  (a:P 1) (f:forall p, P p -> P (succ p)) :=
   (fix iter p (q:PeanoView p) : P p :=
     match q in PeanoView p return P p with
       | PeanoOne => a
       | PeanoSucc _ q => f _ (iter _ q)
     end).
-
-Require Import Eqdep_dec EqdepFacts.
 
 Theorem eq_dep_eq_positive :
   forall (P:positive->Type) (p:positive) (x y:P p),
@@ -613,217 +736,239 @@ Proof.
   destruct p; intros; discriminate.
   trivial.
   apply eq_dep_eq_positive.
-  cut (Psucc p=Psucc p). pattern (Psucc p) at 1 2 5, q'. destruct q'.
+  cut (succ p=succ p). pattern (succ p) at 1 2 5, q'. destruct q'.
   intro. destruct p; discriminate.
-  intro. apply Psucc_inj in H.
+  intro. apply succ_inj in H.
   generalize q'. rewrite H. intro.
   rewrite (IHq q'0).
   trivial.
   trivial.
 Qed.
 
-Definition Prect (P:positive->Type) (a:P 1) (f:forall p, P p -> P (Psucc p))
+Definition peano_rect (P:positive->Type) (a:P 1) (f:forall p, P p -> P (succ p))
   (p:positive) :=
   PeanoView_iter P a f p (peanoView p).
 
-Theorem Prect_succ : forall (P:positive->Type) (a:P 1)
-  (f:forall p, P p -> P (Psucc p)) (p:positive),
-  Prect P a f (Psucc p) = f _ (Prect P a f p).
+Theorem peano_rect_succ : forall (P:positive->Type) (a:P 1)
+  (f:forall p, P p -> P (succ p)) (p:positive),
+  peano_rect P a f (succ p) = f _ (peano_rect P a f p).
 Proof.
   intros.
-  unfold Prect.
-  rewrite (PeanoViewUnique _ (peanoView (Psucc p)) (PeanoSucc _ (peanoView p))).
+  unfold peano_rect.
+  rewrite (PeanoViewUnique _ (peanoView (succ p)) (PeanoSucc _ (peanoView p))).
   trivial.
 Qed.
 
-Theorem Prect_base : forall (P:positive->Type) (a:P 1)
-  (f:forall p, P p -> P (Psucc p)), Prect P a f 1 = a.
+Theorem peano_rect_base : forall (P:positive->Type) (a:P 1)
+  (f:forall p, P p -> P (succ p)), peano_rect P a f 1 = a.
 Proof.
   trivial.
 Qed.
 
-Definition Prec (P:positive->Set) := Prect P.
+Definition peano_rec (P:positive->Set) := peano_rect P.
 
 (** ** Peano induction *)
 
-Definition Pind (P:positive->Prop) := Prect P.
+Definition peano_ind (P:positive->Prop) := peano_rect P.
 
 (** ** Peano case analysis *)
 
-Theorem Pcase :
+Theorem peano_case :
   forall P:positive -> Prop,
-    P 1 -> (forall n:positive, P (Psucc n)) -> forall p:positive, P p.
+    P 1 -> (forall n:positive, P (succ n)) -> forall p:positive, P p.
 Proof.
-  intros; apply Pind; auto.
+  intros; apply peano_ind; auto.
 Qed.
 
 (**********************************************************************)
 (** * Properties of multiplication on binary positive numbers *)
 
-(** ** One is right neutral for multiplication *)
+(** ** One is neutral for multiplication *)
 
-Lemma Pmult_1_r : forall p:positive, p * 1 = p.
+Lemma mul_1_l p : 1 * p = p.
 Proof.
-  induction p; simpl; f_equal; auto.
+  reflexivity.
 Qed.
 
-(** ** Successor and multiplication *)
-
-Lemma Pmult_Sn_m : forall n m : positive, (Psucc n) * m = m + n * m.
+Lemma mul_1_r p : p * 1 = p.
 Proof.
-  induction n as [n IHn | n IHn | ]; simpl; intro m.
-  rewrite IHn, Pplus_assoc, Pplus_diag, <-Pplus_xO; reflexivity.
-  reflexivity.
-  symmetry; apply Pplus_diag.
+  induction p; simpl; now f_equal.
 Qed.
 
 (** ** Right reduction properties for multiplication *)
 
-Lemma Pmult_xO_permute_r : forall p q:positive, p * q~0 = (p * q)~0.
+Lemma mul_xO_r p q : p * q~0 = (p * q)~0.
 Proof.
-  intros p q; induction p; simpl; do 2 (f_equal; auto).
+  induction p; simpl; f_equal; f_equal; trivial.
 Qed.
 
-Lemma Pmult_xI_permute_r : forall p q:positive, p * q~1 = p + (p * q)~0.
+Lemma mul_xI_r p q : p * q~1 = p + (p * q)~0.
 Proof.
-  intros p q; induction p as [p IHp|p IHp| ]; simpl; f_equal; auto.
-  rewrite IHp, 2 Pplus_assoc, (Pplus_comm p); reflexivity.
+  induction p as [p IHp|p IHp| ]; simpl; f_equal; trivial.
+  now rewrite IHp, 2 add_assoc, (add_comm p).
 Qed.
 
 (** ** Commutativity of multiplication *)
 
-Theorem Pmult_comm : forall p q:positive, p * q = q * p.
+Theorem mul_comm p q : p * q = q * p.
 Proof.
-  intros p q; induction q as [q IHq|q IHq| ]; simpl; try rewrite <- IHq;
-   auto using Pmult_xI_permute_r, Pmult_xO_permute_r, Pmult_1_r.
+  induction q as [q IHq|q IHq| ]; simpl; rewrite <- ? IHq;
+  auto using mul_xI_r, mul_xO_r, mul_1_r.
 Qed.
 
 (** ** Distributivity of multiplication over addition *)
 
-Theorem Pmult_plus_distr_l :
-  forall p q r:positive, p * (q + r) = p * q + p * r.
+Theorem mul_add_distr_l p q r :
+  p * (q + r) = p * q + p * r.
 Proof.
-  intros p q r; induction p as [p IHp|p IHp| ]; simpl.
+  induction p as [p IHp|p IHp| ]; simpl.
   rewrite IHp. set (m:=(p*q)~0). set (n:=(p*r)~0).
   change ((p*q+p*r)~0) with (m+n).
-  rewrite 2 Pplus_assoc; f_equal.
-  rewrite <- 2 Pplus_assoc; f_equal.
-  apply Pplus_comm.
+  rewrite 2 add_assoc; f_equal.
+  rewrite <- 2 add_assoc; f_equal.
+  apply add_comm.
   f_equal; auto.
   reflexivity.
 Qed.
 
-Theorem Pmult_plus_distr_r :
-  forall p q r:positive, (p + q) * r = p * r + q * r.
+Theorem mul_add_distr_r p q r :
+  (p + q) * r = p * r + q * r.
 Proof.
-  intros p q r; do 3 rewrite Pmult_comm with (q:=r); apply Pmult_plus_distr_l.
+  rewrite 3 (mul_comm _ r); apply mul_add_distr_l.
 Qed.
 
 (** ** Associativity of multiplication *)
 
-Theorem Pmult_assoc : forall p q r:positive, p * (q * r) = p * q * r.
+Theorem mul_assoc p q r : p * (q * r) = p * q * r.
 Proof.
-  induction p as [p IHp| p IHp | ]; simpl; intros q r.
-  rewrite IHp; rewrite Pmult_plus_distr_r; reflexivity.
-  rewrite IHp; reflexivity.
-  reflexivity.
+  induction p as [p IHp| p IHp | ]; simpl; rewrite ?IHp; trivial.
+  now rewrite mul_add_distr_r.
+Qed.
+
+(** ** Successor and multiplication *)
+
+Lemma mul_succ_l p q : (succ p) * q = q + p * q.
+Proof.
+  induction p as [p IHp | p IHp | ]; simpl; trivial.
+  now rewrite IHp, add_assoc, add_diag, <-add_xO.
+  symmetry; apply add_diag.
+Qed.
+
+Lemma mul_succ_r p q : p * (succ q) = p + p * q.
+Proof.
+  rewrite mul_comm, mul_succ_l. f_equal. apply mul_comm.
 Qed.
 
 (** ** Parity properties of multiplication *)
 
-Lemma Pmult_xI_mult_xO_discr : forall p q r:positive, p~1 * r <> q~0 * r.
+Lemma mul_xI_mul_xO_discr p q r : p~1 * r <> q~0 * r.
 Proof.
-  intros p q r; induction r; try discriminate.
-  rewrite 2 Pmult_xO_permute_r; intro H; destr_eq H; auto.
+  induction r; try discriminate.
+  rewrite 2 mul_xO_r; intro H; destr_eq H; auto.
 Qed.
 
-Lemma Pmult_xO_discr : forall p q:positive, p~0 * q <> q.
+Lemma mul_xO_discr p q : p~0 * q <> q.
 Proof.
-  intros p q; induction q; try discriminate.
-  rewrite Pmult_xO_permute_r; injection; assumption.
+  induction q; try discriminate.
+  rewrite mul_xO_r; injection; assumption.
 Qed.
 
 (** ** Simplification properties of multiplication *)
 
-Theorem Pmult_reg_r : forall p q r:positive, p * r = q * r -> p = q.
+Theorem mul_reg_r p q r : p * r = q * r -> p = q.
 Proof.
+  revert q r.
   induction p as [p IHp| p IHp| ]; intros [q|q| ] r H;
-    reflexivity || apply (f_equal (A:=positive)) || apply False_ind.
-  apply IHp with (r~0); simpl in *;
-    rewrite 2 Pmult_xO_permute_r; apply Pplus_reg_l with (1:=H).
-  apply Pmult_xI_mult_xO_discr with (1:=H).
-  simpl in H; rewrite Pplus_comm in H; apply Pplus_no_neutral with (1:=H).
-  symmetry in H; apply Pmult_xI_mult_xO_discr with (1:=H).
-  apply IHp with (r~0); simpl; rewrite 2 Pmult_xO_permute_r; assumption.
-  apply Pmult_xO_discr with (1:= H).
-  simpl in H; symmetry in H; rewrite Pplus_comm in H;
-    apply Pplus_no_neutral with (1:=H).
-  symmetry in H; apply Pmult_xO_discr with (1:=H).
+    reflexivity || apply f_equal || exfalso.
+  apply IHp with (r~0). simpl in *.
+    rewrite 2 mul_xO_r. apply add_reg_l with (1:=H).
+  contradict H. apply mul_xI_mul_xO_discr.
+  contradict H. simpl. rewrite add_comm. apply add_no_neutral.
+  symmetry in H. contradict H. apply mul_xI_mul_xO_discr.
+  apply IHp with (r~0). simpl. now rewrite 2 mul_xO_r.
+  contradict H. apply mul_xO_discr.
+  symmetry in H. contradict H. simpl. rewrite add_comm.
+   apply add_no_neutral.
+  symmetry in H. contradict H. apply mul_xO_discr.
 Qed.
 
-Theorem Pmult_reg_l : forall p q r:positive, r * p = r * q -> p = q.
+Theorem mul_reg_l p q r : r * p = r * q -> p = q.
 Proof.
-  intros p q r H; apply Pmult_reg_r with (r:=r).
-  rewrite (Pmult_comm p), (Pmult_comm q); assumption.
+  rewrite 2 (mul_comm r). apply mul_reg_r.
+Qed.
+
+Lemma mul_cancel_r p q r : p * r = q * r <-> p = q.
+Proof.
+ split. apply mul_reg_r. congruence.
+Qed.
+
+Lemma mul_cancel_l p q r : r * p = r * q <-> p = q.
+Proof.
+ split. apply mul_reg_l. congruence.
 Qed.
 
 (** ** Inversion of multiplication *)
 
-Lemma Pmult_1_inversion_l : forall p q:positive, p * q = 1 -> p = 1.
+Lemma mul_1_inversion_l p q : p * q = 1 -> p = 1.
 Proof.
-  intros [p|p| ] [q|q| ] H; destr_eq H; auto.
+  now destruct p, q.
+Qed.
+
+Lemma mul_1_inversion_r p q : p * q = 1 -> q = 1.
+Proof.
+  now destruct p, q.
 Qed.
 
 (** ** Square *)
 
-Lemma Psquare_xO : forall p, p~0 * p~0 = (p*p)~0~0.
+Lemma square_xO p : p~0 * p~0 = (p*p)~0~0.
 Proof.
- intros. simpl. now rewrite Pmult_comm.
+ simpl. now rewrite mul_comm.
 Qed.
 
-Lemma Psquare_xI : forall p, p~1 * p~1 = (p*p+p)~0~1.
+Lemma square_xI p : p~1 * p~1 = (p*p+p)~0~1.
 Proof.
- intros. simpl. rewrite Pmult_comm. simpl. f_equal.
- rewrite Pplus_assoc, Pplus_diag. simpl. now rewrite Pplus_comm.
+ simpl. rewrite mul_comm. simpl. f_equal.
+ rewrite add_assoc, add_diag. simpl. now rewrite add_comm.
 Qed.
 
-(** ** Properties of [iter_pos] *)
+(** ** Properties of [iter] *)
 
-Lemma iter_pos_swap_gen : forall A B (f:A->B)(g:A->A)(h:B->B),
+Lemma iter_swap_gen : forall A B (f:A->B)(g:A->A)(h:B->B),
  (forall a, f (g a) = h (f a)) -> forall p a,
- f (iter_pos p A g a) = iter_pos p B h (f a).
+ f (iter p g a) = iter p h (f a).
 Proof.
  induction p; simpl; intros; now rewrite ?H, ?IHp.
 Qed.
 
-Theorem iter_pos_swap :
+Theorem iter_swap :
   forall p (A:Type) (f:A -> A) (x:A),
-    iter_pos p A f (f x) = f (iter_pos p A f x).
+    iter p f (f x) = f (iter p f x).
 Proof.
- intros. symmetry. now apply iter_pos_swap_gen.
+ intros. symmetry. now apply iter_swap_gen.
 Qed.
 
-Theorem iter_pos_succ :
+Theorem iter_succ :
   forall p (A:Type) (f:A -> A) (x:A),
-    iter_pos (Psucc p) A f x = f (iter_pos p A f x).
+    iter (succ p) f x = f (iter p f x).
 Proof.
  induction p as [p IHp|p IHp|]; intros; simpl; trivial.
- now rewrite !IHp, iter_pos_swap.
+ now rewrite !IHp, iter_swap.
 Qed.
 
-Theorem iter_pos_plus :
+Theorem iter_add :
   forall p q (A:Type) (f:A -> A) (x:A),
-    iter_pos (p+q) A f x = iter_pos p A f (iter_pos q A f x).
+    iter (p+q) f x = iter p f (iter q f x).
 Proof.
- induction p using Pind; intros.
- now rewrite <- Pplus_one_succ_l, iter_pos_succ.
- now rewrite Pplus_succ_permute_l, !iter_pos_succ, IHp.
+ induction p using peano_ind; intros.
+ now rewrite add_1_l, iter_succ.
+ now rewrite add_succ_l, !iter_succ, IHp.
 Qed.
 
-Theorem iter_pos_invariant :
+Theorem iter_invariant :
   forall (p:positive) (A:Type) (f:A -> A) (Inv:A -> Prop),
     (forall x:A, Inv x -> Inv (f x)) ->
-    forall x:A, Inv x -> Inv (iter_pos p A f x).
+    forall x:A, Inv x -> Inv (iter p f x).
 Proof.
  induction p as [p IHp|p IHp|]; simpl; trivial.
  intros A f Inv H x H0. apply H, IHp, IHp; trivial.
@@ -832,757 +977,1229 @@ Qed.
 
 (** ** Properties of power *)
 
-Lemma Ppow_1_r : forall p, p^1 = p.
+Lemma pow_1_r p : p^1 = p.
 Proof.
- intros p. unfold Ppow. simpl. now rewrite Pmult_comm.
+ unfold pow. simpl. now rewrite mul_comm.
 Qed.
 
-Lemma Ppow_succ_r : forall p q, p^(Psucc q) = p * p^q.
+Lemma pow_succ_r p q : p^(succ q) = p * p^q.
 Proof.
- intros. unfold Ppow. now rewrite iter_pos_succ.
+ unfold pow. now rewrite iter_succ.
 Qed.
 
 (*********************************************************************)
 (** * Properties of boolean equality *)
 
-Theorem Peqb_refl : forall x:positive, Peqb x x = true.
+Theorem eqb_refl x : eqb x x = true.
 Proof.
  induction x; auto.
 Qed.
 
-Theorem Peqb_true_eq : forall x y:positive, Peqb x y = true -> x=y.
+Theorem eqb_true_eq x y : eqb x y = true -> x=y.
 Proof.
- induction x; destruct y; simpl; intros; try discriminate.
- f_equal; auto.
- f_equal; auto.
- reflexivity.
+ revert y. induction x; destruct y; simpl; intros;
+  try discriminate; f_equal; auto.
 Qed.
 
-Theorem Peqb_eq : forall x y : positive, Peqb x y = true <-> x=y.
+Theorem eqb_eq x y : eqb x y = true <-> x=y.
 Proof.
- split. apply Peqb_true_eq.
- intros; subst; apply Peqb_refl.
+ split. apply eqb_true_eq.
+ intros; subst; apply eqb_refl.
 Qed.
 
 
 (**********************************************************************)
 (** * Properties of comparison on binary positive numbers *)
 
-Theorem Pcompare_refl : forall p:positive, (p ?= p) Eq = Eq.
+(** First, we express [compare_cont] in term of [compare] *)
+
+Definition switch_Eq c c' :=
+ match c' with
+  | Eq => c
+  | Lt => Lt
+  | Gt => Gt
+ end.
+
+Lemma compare_cont_spec p q c :
+  compare_cont p q c = switch_Eq c (p ?= q).
+Proof.
+  unfold compare.
+  revert q c.
+  induction p; destruct q; simpl; trivial.
+  intros c.
+  rewrite 2 IHp. now destruct (compare_cont p q Eq).
+  intros c.
+  rewrite 2 IHp. now destruct (compare_cont p q Eq).
+Qed.
+
+(** From this general result, we now describe particular cases
+    of [compare_cont p q c = c'] :
+    - When [c=Eq], this is directly [compare]
+    - When [c<>Eq], we'll show first that [c'<>Eq]
+    - That leaves only 4 lemmas for [c] and [c'] being [Lt] or [Gt]
+*)
+
+Ltac easy' := repeat split; simpl; easy || now destruct 1.
+
+Theorem compare_cont_Eq p q c :
+ compare_cont p q c = Eq -> c = Eq.
+Proof.
+  rewrite compare_cont_spec. now destruct (p ?= q).
+Qed.
+
+Lemma compare_cont_Lt_Gt p q :
+  compare_cont p q Lt = Gt <-> p > q.
+Proof.
+  rewrite compare_cont_spec. unfold gt. destruct (p ?= q); now split.
+Qed.
+
+Lemma compare_cont_Lt_Lt p q :
+  compare_cont p q Lt = Lt <-> p <= q.
+Proof.
+  rewrite compare_cont_spec. unfold le. destruct (p ?= q); easy'.
+Qed.
+
+Lemma compare_cont_Gt_Lt p q :
+  compare_cont p q Gt = Lt <-> p < q.
+Proof.
+  rewrite compare_cont_spec. unfold lt. destruct (p ?= q); now split.
+Qed.
+
+Lemma compare_cont_Gt_Gt p q :
+  compare_cont p q Gt = Gt <-> p >= q.
+Proof.
+  rewrite compare_cont_spec. unfold ge. destruct (p ?= q); easy'.
+Qed.
+
+(** We can express recursive equations for [compare] *)
+
+Lemma compare_xO_xO p q : (p~0 ?= q~0) = (p ?= q).
+Proof. reflexivity. Qed.
+
+Lemma compare_xI_xI p q : (p~1 ?= q~1) = (p ?= q).
+Proof. reflexivity. Qed.
+
+Lemma compare_xI_xO p q :
+ (p~1 ?= q~0) = switch_Eq Gt (p ?= q).
+Proof. exact (compare_cont_spec p q Gt). Qed.
+
+Lemma compare_xO_xI p q :
+ (p~0 ?= q~1) = switch_Eq Lt (p ?= q).
+Proof. exact (compare_cont_spec p q Lt). Qed.
+
+Hint Rewrite compare_xO_xO compare_xI_xI compare_xI_xO compare_xO_xI : compare.
+
+Ltac simpl_compare := autorewrite with compare.
+Ltac simpl_compare_in H := autorewrite with compare in H.
+
+(** Comparison and equality *)
+
+Theorem compare_refl p : (p ?= p) = Eq.
+Proof.
   induction p; auto.
 Qed.
 
-(* A generalization of Pcompare_refl *)
+(* A generalization of the last property *)
 
-Theorem Pcompare_refl_id : forall (p : positive) (r : comparison), (p ?= p) r = r.
-  induction p; auto.
+Theorem compare_cont_refl p c :
+  compare_cont p p c = c.
+Proof.
+  now rewrite compare_cont_spec, compare_refl.
 Qed.
 
-Theorem Pcompare_not_Eq :
-  forall p q:positive, (p ?= q) Gt <> Eq /\ (p ?= q) Lt <> Eq.
+Theorem compare_eq p q : (p ?= q) = Eq -> p = q.
 Proof.
-  induction p as [p IHp| p IHp| ]; intros [q| q| ]; split; simpl; auto;
-    discriminate || (elim (IHp q); auto).
+  revert q. induction p; destruct q; intros H;
+   simpl; try easy; simpl_compare_in H;
+   (f_equal; now auto) || (now destruct compare).
 Qed.
 
-Theorem Pcompare_Eq_eq : forall p q:positive, (p ?= q) Eq = Eq -> p = q.
+Lemma compare_eq_iff p q : (p ?= q) = Eq <-> p = q.
 Proof.
-  induction p; intros [q| q| ] H; simpl in *; auto;
-   try discriminate H; try (f_equal; auto; fail).
-  destruct (Pcompare_not_Eq p q) as (H',_); elim H'; auto.
-  destruct (Pcompare_not_Eq p q) as (_,H'); elim H'; auto.
+  split. apply compare_eq.
+  intros; subst; apply compare_refl.
 Qed.
 
-Lemma Pcompare_eq_iff : forall p q:positive, (p ?= q) Eq = Eq <-> p = q.
+Lemma compare_lt_iff p q : (p ?= q) = Lt <-> p < q.
+Proof. reflexivity. Qed.
+
+Lemma compare_gt_iff p q : (p ?= q) = Gt <-> p > q.
+Proof. reflexivity. Qed.
+
+Lemma compare_le_iff p q : (p ?= q) <> Gt <-> p <= q.
+Proof. reflexivity. Qed.
+
+Lemma compare_ge_iff p q : (p ?= q) <> Lt <-> p >= q.
+Proof. reflexivity. Qed.
+
+Lemma compare_cont_antisym p q c :
+  CompOpp (compare_cont p q c) = compare_cont q p (CompOpp c).
 Proof.
-  split.
-  apply Pcompare_Eq_eq.
-  intros; subst; apply Pcompare_refl.
+  revert q c.
+  induction p as [p IHp|p IHp| ]; intros [q|q| ] c; simpl;
+   trivial; apply IHp.
 Qed.
 
-Lemma Pcompare_Gt_Lt :
-  forall p q:positive, (p ?= q) Gt = Lt -> (p ?= q) Eq = Lt.
+Lemma compare_antisym p q : (q ?= p) = CompOpp (p ?= q).
 Proof.
-  induction p; intros [q|q| ] H; simpl; auto; discriminate.
+  unfold compare. now rewrite compare_cont_antisym.
 Qed.
 
-Lemma Pcompare_eq_Lt :
-  forall p q : positive, (p ?= q) Eq = Lt <-> (p ?= q) Gt = Lt.
+Lemma gt_lt p q : p > q -> q < p.
 Proof.
-  intros p q; split; [| apply Pcompare_Gt_Lt].
-  revert q; induction p; intros [q|q| ] H; simpl; auto; discriminate.
+  unfold lt, gt. intros H. now rewrite compare_antisym, H.
 Qed.
 
-Lemma Pcompare_Lt_Gt :
-  forall p q:positive, (p ?= q) Lt = Gt -> (p ?= q) Eq = Gt.
+Lemma lt_gt p q : p < q -> q > p.
 Proof.
-  induction p; intros [q|q| ] H; simpl; auto; discriminate.
+  unfold lt, gt. intros H. now rewrite compare_antisym, H.
 Qed.
 
-Lemma Pcompare_eq_Gt :
-  forall p q : positive, (p ?= q) Eq = Gt <-> (p ?= q) Lt = Gt.
+Lemma gt_lt_iff p q : p > q <-> q < p.
 Proof.
-  intros p q; split; [| apply Pcompare_Lt_Gt].
-  revert q; induction p; intros [q|q| ] H; simpl; auto; discriminate.
+  split. apply gt_lt. apply lt_gt.
 Qed.
 
-Lemma Pcompare_Lt_Lt :
-  forall p q:positive, (p ?= q) Lt = Lt -> (p ?= q) Eq = Lt \/ p = q.
+Lemma ge_le p q : p >= q -> q <= p.
 Proof.
-  induction p as [p IHp| p IHp| ]; intros [q|q| ] H; simpl in *; auto;
-   destruct (IHp q H); subst; auto.
+  unfold le, ge. intros H. contradict H. now apply gt_lt.
 Qed.
 
-Lemma Pcompare_Lt_eq_Lt :
-  forall p q:positive, (p ?= q) Lt = Lt <-> (p ?= q) Eq = Lt \/ p = q.
+Lemma le_ge p q : p <= q -> q >= p.
 Proof.
-  intros p q; split; [apply Pcompare_Lt_Lt |].
-  intros [H|H]; [|subst; apply Pcompare_refl_id].
-  revert q H; induction p; intros [q|q| ] H; simpl in *;
-  auto; discriminate.
+  unfold le, ge. intros H. contradict H. now apply lt_gt.
 Qed.
 
-Lemma Pcompare_Gt_Gt :
-  forall p q:positive, (p ?= q) Gt = Gt -> (p ?= q) Eq = Gt \/ p = q.
+Lemma ge_le_iff p q : p >= q <-> q <= p.
 Proof.
-  induction p as [p IHp|p IHp| ]; intros [q|q| ] H; simpl in *; auto;
-    destruct (IHp q H); subst; auto.
+  split. apply ge_le. apply le_ge.
 Qed.
 
-Lemma Pcompare_Gt_eq_Gt :
-  forall p q:positive, (p ?= q) Gt = Gt <-> (p ?= q) Eq = Gt \/ p = q.
+Lemma le_nlt p q : p <= q <-> ~ q < p.
 Proof.
-  intros p q; split; [apply Pcompare_Gt_Gt |].
-  intros [H|H]; [|subst; apply Pcompare_refl_id].
-  revert q H; induction p; intros [q|q| ] H; simpl in *;
-  auto; discriminate.
+  now rewrite <- ge_le_iff.
 Qed.
 
-Lemma Dcompare : forall r:comparison, r = Eq \/ r = Lt \/ r = Gt.
+Lemma lt_nle p q : p < q <-> ~ q <= p.
 Proof.
-  destruct r; auto.
+ intros. unfold lt, le. rewrite compare_antisym.
+ destruct compare; split; auto; easy'.
 Qed.
 
-Ltac ElimPcompare c1 c2 :=
-  elim (Dcompare ((c1 ?= c2) Eq));
-    [ idtac | let x := fresh "H" in (intro x; case x; clear x) ].
-
-Lemma Pcompare_antisym :
-  forall (p q:positive) (r:comparison),
-    CompOpp ((p ?= q) r) = (q ?= p) (CompOpp r).
+Lemma compare_spec p q : CompareSpec (p=q) (p<q) (q<p) (p ?= q).
 Proof.
-  induction p as [p IHp|p IHp| ]; intros [q|q| ] r; simpl; auto;
-   rewrite IHp; auto.
+  destruct (p ?= q) as [ ]_eqn; constructor.
+  now apply compare_eq.
+  trivial.
+  now apply gt_lt.
 Qed.
 
-Lemma ZC1 : forall p q:positive, (p ?= q) Eq = Gt -> (q ?= p) Eq = Lt.
+Lemma le_lteq p q : p <= q <-> p < q \/ p = q.
 Proof.
-  intros p q H; change Eq with (CompOpp Eq).
-  rewrite <- Pcompare_antisym, H; reflexivity.
+  unfold le, lt. case compare_spec; split; try easy.
+  now right.
+  now left.
+  now destruct 1.
+  destruct 1. discriminate.
+  subst. unfold lt in *. now rewrite compare_refl in *.
 Qed.
 
-Lemma ZC2 : forall p q:positive, (p ?= q) Eq = Lt -> (q ?= p) Eq = Gt.
+Lemma lt_le_incl p q : p<q -> p<=q.
 Proof.
-  intros p q H; change Eq with (CompOpp Eq).
-  rewrite <- Pcompare_antisym, H; reflexivity.
+  intros. apply le_lteq. now left.
 Qed.
 
-Lemma ZC3 : forall p q:positive, (p ?= q) Eq = Eq -> (q ?= p) Eq = Eq.
+(** ** Boolean comparisons *)
+
+Lemma ltb_lt p q : (p <? q) = true <-> p < q.
 Proof.
-  intros p q H; change Eq with (CompOpp Eq).
-  rewrite <- Pcompare_antisym, H; reflexivity.
+  unfold ltb, lt. destruct compare; easy'.
 Qed.
 
-Lemma ZC4 : forall p q:positive, (p ?= q) Eq = CompOpp ((q ?= p) Eq).
+Lemma leb_le p q : (p <=? q) = true <-> p <= q.
 Proof.
-  intros; change Eq at 1 with (CompOpp Eq).
-  symmetry; apply Pcompare_antisym.
-Qed.
-
-Lemma Pcompare_spec : forall p q, CompareSpec (p=q) (p<q) (q<p) ((p ?= q) Eq).
-Proof.
-  intros. destruct ((p ?= q) Eq) as [ ]_eqn; constructor.
-  apply Pcompare_Eq_eq; auto.
-  auto.
-  apply ZC1; auto.
+  unfold leb, le. destruct compare; easy'.
 Qed.
 
 (** ** Comparison and the successor *)
 
-Lemma Pcompare_p_Sp : forall p : positive, (p ?= Psucc p) Eq = Lt.
+Lemma compare_succ_r p q :
+  switch_Eq Gt (p ?= succ q) = switch_Eq Lt (p ?= q).
 Proof.
-  induction p; simpl in *;
-    [ elim (Pcompare_eq_Lt p (Psucc p)); auto |
-      apply Pcompare_refl_id | reflexivity].
+  revert q.
+  induction p as [p IH|p IH| ]; intros [q|q| ]; simpl;
+   simpl_compare; rewrite ?IH; trivial;
+   (now destruct compare) || (now destruct p).
 Qed.
 
-Theorem Pcompare_p_Sq : forall p q : positive,
-  (p ?= Psucc q) Eq = Lt <-> (p ?= q) Eq = Lt \/ p = q.
+Lemma compare_succ_l p q :
+  switch_Eq Lt (succ p ?= q) = switch_Eq Gt (p ?= q).
 Proof.
-  intros p q; split.
-  (* -> *)
-  revert p q; induction p as [p IHp|p IHp| ]; intros [q|q| ] H; simpl in *;
-   try (left; reflexivity); try (right; reflexivity).
-  destruct (IHp q (Pcompare_Gt_Lt _ _ H)); subst; auto.
-  destruct (Pcompare_eq_Lt p q); auto.
-  destruct p; discriminate.
-  left; destruct (IHp q H);
-   [ elim (Pcompare_Lt_eq_Lt p q); auto | subst; apply Pcompare_refl_id].
-  destruct (Pcompare_Lt_Lt p q H); subst; auto.
-  destruct p; discriminate.
-  (* <- *)
-  intros [H|H]; [|subst; apply Pcompare_p_Sp].
-  revert q H; induction p; intros [q|q| ] H; simpl in *;
-   auto; try discriminate.
-  destruct (Pcompare_eq_Lt p (Psucc q)); auto.
-  apply Pcompare_Gt_Lt; auto.
-  destruct (Pcompare_Lt_Lt p q H); subst; auto using Pcompare_p_Sp.
-  destruct (Pcompare_Lt_eq_Lt p q); auto.
+  rewrite 2 (compare_antisym q). generalize (compare_succ_r q p).
+  now do 2 destruct compare.
 Qed.
 
-Lemma Pcompare_succ_succ :
- forall n m, (Psucc n ?= Psucc m) Eq = (n ?= m) Eq.
+Theorem lt_succ_r p q : p < succ q <-> p <= q.
 Proof.
- assert (AUX : forall n m, (Psucc n ?= Psucc m) Eq = (n ?= m) Eq ->
-          (Psucc n ?= m) Lt = (n ?= m) Gt).
-  intros n m IH.
-  case_eq ((n ?= m) Gt); intros H.
-  elim (proj1 (Pcompare_not_Eq n m) H).
-  apply Pcompare_Lt_eq_Lt, Pcompare_p_Sq. rewrite IH.
-   now apply Pcompare_Gt_Lt.
-  apply Pcompare_eq_Gt, ZC2, Pcompare_p_Sq. apply Pcompare_Gt_Gt in H.
-   destruct H; [left; now apply ZC1|now right].
- (* main *)
- induction n; destruct m; simpl; trivial.
- now apply AUX.
- generalize (Psucc_not_one n); destruct (Psucc n); intuition.
- change Gt with (CompOpp Lt); rewrite <- Pcompare_antisym.
- rewrite AUX, Pcompare_antisym; trivial. now rewrite ZC4, IHn, <- ZC4.
- now destruct n.
- apply Pcompare_p_Sq; destruct m; auto.
- now destruct m.
+  unfold lt, le. generalize (compare_succ_r p q).
+  do 2 destruct compare; try discriminate; now split.
+Qed.
+
+Lemma lt_succ_diag_r p : p < succ p.
+Proof.
+  rewrite lt_succ_r. apply le_lteq. now right.
+Qed.
+
+Lemma compare_succ_succ p q : (succ p ?= succ q) = (p ?= q).
+Proof.
+ revert q.
+ induction p; destruct q; simpl; simpl_compare; trivial;
+  apply compare_succ_l || apply compare_succ_r ||
+  (now destruct p) || (now destruct q).
 Qed.
 
 (** ** 1 is the least positive number *)
 
-Lemma Pcompare_1 : forall p, ~ (p ?= 1) Eq = Lt.
+Lemma le_1_l p : 1 <= p.
 Proof.
-  destruct p; discriminate.
+  now destruct p.
 Qed.
 
-(** ** Properties of the order on positive numbers *)
-
-Lemma Plt_1 : forall p, ~ p < 1.
+Lemma ge_1_r p : p >= 1.
 Proof.
- exact Pcompare_1.
+  now destruct p.
 Qed.
 
-Lemma Plt_1_succ : forall n, 1 < Psucc n.
+Lemma nlt_1_r p : ~ p < 1.
 Proof.
- intros. apply Pcompare_p_Sq. destruct n; auto.
+  exact (ge_1_r p).
 Qed.
 
-Lemma Plt_lt_succ : forall n m : positive, n < m -> n < Psucc m.
+Lemma lt_1_succ p : 1 < succ p.
 Proof.
-  unfold Plt; intros n m H; apply <- Pcompare_p_Sq; auto.
+  apply lt_succ_r, le_1_l.
 Qed.
 
-Lemma Psucc_lt_compat : forall n m, n < m <-> Psucc n < Psucc m.
+(** ** Properties of the order *)
+
+Lemma lt_lt_succ n m : n < m -> n < succ m.
 Proof.
- unfold Plt. intros. rewrite Pcompare_succ_succ. apply iff_refl.
+  intros. now apply lt_succ_r, lt_le_incl.
 Qed.
 
-Lemma Psucc_le_compat : forall n m, n <= m <-> Psucc n <= Psucc m.
+Lemma succ_lt_mono n m : n < m <-> succ n < succ m.
 Proof.
- unfold Ple. intros. rewrite Pcompare_succ_succ. apply iff_refl.
+  unfold lt. now rewrite compare_succ_succ.
 Qed.
 
-Lemma Plt_irrefl : forall p : positive, ~ p < p.
+Lemma succ_le_mono n m : n <= m <-> succ n <= succ m.
 Proof.
-  unfold Plt; intro p; rewrite Pcompare_refl; discriminate.
+  unfold le. now rewrite compare_succ_succ.
 Qed.
 
-Lemma Plt_trans : forall n m p : positive, n < m -> m < p -> n < p.
+Lemma lt_irrefl p : ~ p < p.
 Proof.
-  intros n m p; induction p using Pind; intros H H0.
-  elim (Plt_1 _ H0).
-  apply Plt_lt_succ.
-  destruct (Pcompare_p_Sq m p) as (H',_); destruct (H' H0); subst; auto.
+  unfold lt. now rewrite compare_refl.
 Qed.
 
-Theorem Plt_ind : forall (A : positive -> Prop) (n : positive),
-  A (Psucc n) ->
-    (forall m : positive, n < m -> A m -> A (Psucc m)) ->
+Lemma lt_trans n m p : n < m -> m < p -> n < p.
+Proof.
+  induction p using peano_ind; intros H H'.
+  elim (nlt_1_r _ H').
+  apply lt_lt_succ.
+  apply lt_succ_r, le_lteq in H'. destruct H' as [H'|H']; subst; auto.
+Qed.
+
+Theorem lt_ind : forall (A : positive -> Prop) (n : positive),
+  A (succ n) ->
+    (forall m : positive, n < m -> A m -> A (succ m)) ->
       forall m : positive, n < m -> A m.
 Proof.
-  intros A n AB AS m. induction m using Pind; intros H.
-  elim (Plt_1 _ H).
-  destruct (Pcompare_p_Sq n m) as (H',_); destruct (H' H); subst; auto.
+  intros A n AB AS m. induction m using peano_ind; intros H.
+  elim (nlt_1_r _ H).
+  apply lt_succ_r, le_lteq in H. destruct H as [H|H]; subst; auto.
 Qed.
 
-Lemma Ple_lteq : forall p q, p <= q <-> p < q \/ p = q.
+Instance lt_strorder : StrictOrder lt.
+Proof. split. exact lt_irrefl. exact lt_trans. Qed.
+
+Instance lt_compat : Proper (Logic.eq==>Logic.eq==>iff) lt.
+Proof. repeat red. intros. subst; auto. Qed.
+
+Lemma lt_total p q : p < q \/ p = q \/ q < p.
 Proof.
-  unfold Ple, Plt. intros.
-  generalize (Pcompare_eq_iff p q).
-  destruct ((p ?= q) Eq); intuition; discriminate.
+ case (compare_spec p q); intuition.
 Qed.
 
-Lemma Ple_refl : forall p, p <= p.
+Lemma le_refl p : p <= p.
 Proof.
- intros. unfold Ple. rewrite Pcompare_refl_id. discriminate.
+ intros. unfold le. now rewrite compare_refl.
 Qed.
 
-Lemma Ple_lt_trans : forall n m p, n <= m -> m < p -> n < p.
+Lemma le_lt_trans n m p : n <= m -> m < p -> n < p.
 Proof.
- intros n m p H H'.
- apply Ple_lteq in H. destruct H.
- now apply Plt_trans with m. now subst.
+ intros H H'. apply le_lteq in H. destruct H.
+ now apply lt_trans with m. now subst.
 Qed.
 
-Lemma Plt_le_trans : forall n m p, n < m -> m <= p -> n < p.
+Lemma lt_le_trans n m p : n < m -> m <= p -> n < p.
 Proof.
- intros n m p H H'.
- apply Ple_lteq in H'. destruct H'.
- now apply Plt_trans with m. now subst.
+ intros H H'. apply le_lteq in H'. destruct H'.
+ now apply lt_trans with m. now subst.
 Qed.
 
-Lemma Ple_trans : forall n m p, n <= m -> m <= p -> n <= p.
+Lemma le_trans n m p : n <= m -> m <= p -> n <= p.
 Proof.
- intros n m p H H'.
- apply Ple_lteq in H. destruct H.
- apply Ple_lteq; left. now apply Plt_le_trans with m.
+ intros H H'.
+ apply le_lteq in H. destruct H.
+ apply le_lteq; left. now apply lt_le_trans with m.
  now subst.
 Qed.
 
-Lemma Plt_succ_r : forall p q, p < Psucc q <-> p <= q.
+Lemma le_succ_l n m : succ n <= m <-> n < m.
 Proof.
- intros. eapply iff_trans; [eapply Pcompare_p_Sq|eapply iff_sym, Ple_lteq].
+ rewrite <- lt_succ_r. symmetry. apply succ_lt_mono.
 Qed.
 
-Lemma Ple_succ_l : forall n m, Psucc n <= m <-> n < m.
+Lemma le_antisym p q : p <= q -> q <= p -> p = q.
 Proof.
- intros. apply iff_sym.
- eapply iff_trans; [eapply Psucc_lt_compat|eapply Plt_succ_r].
+ rewrite le_lteq; destruct 1; auto.
+ rewrite le_lteq; destruct 1; auto.
+ elim (lt_irrefl p). now transitivity q.
+Qed.
+
+Instance le_preorder : PreOrder le.
+Proof. split. exact le_refl. exact le_trans. Qed.
+
+Instance le_partorder : PartialOrder Logic.eq le.
+Proof.
+ intros x y. change (x=y <-> x <= y <= x).
+ split. intros; now subst.
+ destruct 1; now apply le_antisym.
 Qed.
 
 (** ** Comparison and addition *)
 
-Lemma Pplus_compare_mono_l : forall p q r, (p+q ?= p+r) Eq = (q ?= r) Eq.
+Lemma add_compare_mono_l p q r : (p+q ?= p+r) = (q ?= r).
 Proof.
- induction p using Pind; intros q r.
- rewrite <- 2 Pplus_one_succ_l. apply Pcompare_succ_succ.
- now rewrite 2 Pplus_succ_permute_l, Pcompare_succ_succ.
+ revert p q r. induction p using peano_ind; intros q r.
+ rewrite 2 add_1_l. apply compare_succ_succ.
+ now rewrite 2 add_succ_l, compare_succ_succ.
 Qed.
 
-Lemma Pplus_compare_mono_r : forall p q r, (q+p ?= r+p) Eq = (q ?= r) Eq.
+Lemma add_compare_mono_r p q r : (q+p ?= r+p) = (q ?= r).
 Proof.
- intros. rewrite 2 (Pplus_comm _ p). apply Pplus_compare_mono_l.
+ rewrite 2 (add_comm _ p). apply add_compare_mono_l.
 Qed.
 
 (** ** Order and addition *)
 
-Lemma Pplus_lt_mono_l : forall p q r, q<r <-> p+q < p+r.
+Lemma add_lt_mono_l p q r : q<r <-> p+q < p+r.
 Proof.
- intros. unfold Plt. rewrite Pplus_compare_mono_l. apply iff_refl.
+ unfold lt. rewrite add_compare_mono_l. apply iff_refl.
 Qed.
 
-Lemma Pplus_lt_mono_r : forall p q r, q<r <-> q+p < r+p.
+Lemma add_lt_mono_r p q r : q<r <-> q+p < r+p.
 Proof.
- intros. unfold Plt. rewrite Pplus_compare_mono_r. apply iff_refl.
+ unfold lt. rewrite add_compare_mono_r. apply iff_refl.
 Qed.
 
-Lemma Pplus_lt_mono : forall p q r s, p<q -> r<s -> p+r<q+s.
+Lemma add_lt_mono p q r s : p<q -> r<s -> p+r<q+s.
 Proof.
- intros. apply Plt_trans with (p+s).
- now apply Pplus_lt_mono_l.
- now apply Pplus_lt_mono_r.
+ intros. apply lt_trans with (p+s).
+ now apply add_lt_mono_l.
+ now apply add_lt_mono_r.
 Qed.
 
-Lemma Pplus_le_mono_l : forall p q r, q<=r <-> p+q<=p+r.
+Lemma add_le_mono_l p q r : q<=r <-> p+q<=p+r.
 Proof.
- intros. unfold Ple. rewrite Pplus_compare_mono_l. apply iff_refl.
+ unfold le. rewrite add_compare_mono_l. apply iff_refl.
 Qed.
 
-Lemma Pplus_le_mono_r : forall p q r, q<=r <-> q+p<=r+p.
+Lemma add_le_mono_r p q r : q<=r <-> q+p<=r+p.
 Proof.
- intros. unfold Ple. rewrite Pplus_compare_mono_r. apply iff_refl.
+ unfold le. rewrite add_compare_mono_r. apply iff_refl.
 Qed.
 
-Lemma Pplus_le_mono : forall p q r s, p<=q -> r<=s -> p+r <= q+s.
+Lemma add_le_mono p q r s : p<=q -> r<=s -> p+r <= q+s.
 Proof.
- intros. apply Ple_trans with (p+s).
- now apply Pplus_le_mono_l.
- now apply Pplus_le_mono_r.
+ intros. apply le_trans with (p+s).
+ now apply add_le_mono_l.
+ now apply add_le_mono_r.
 Qed.
 
 (** ** Comparison and multiplication *)
 
-Lemma Pmult_compare_mono_l : forall p q r, (p*q ?= p*r) Eq = (q ?= r) Eq.
+Lemma mul_compare_mono_l p q r : (p*q ?= p*r) = (q ?= r).
 Proof.
- induction p; simpl; trivial. intros q r. specialize (IHp q r).
- case_eq ((q ?= r) Eq); intros H; rewrite H in IHp.
- apply Pcompare_Eq_eq in H. subst. apply Pcompare_refl.
- now apply Pplus_lt_mono.
- apply ZC2, Pplus_lt_mono; now apply ZC1.
+ revert q r. induction p; simpl; trivial.
+ intros q r. specialize (IHp q r).
+ destruct (compare_spec q r).
+ subst. apply compare_refl.
+ now apply add_lt_mono.
+ now apply lt_gt, add_lt_mono, gt_lt.
 Qed.
 
-Lemma Pmult_compare_mono_r : forall p q r, (q*p ?= r*p) Eq = (q ?= r) Eq.
+Lemma mul_compare_mono_r p q r : (q*p ?= r*p) = (q ?= r).
 Proof.
- intros. rewrite 2 (Pmult_comm _ p). apply Pmult_compare_mono_l.
+ rewrite 2 (mul_comm _ p). apply mul_compare_mono_l.
 Qed.
 
 (** ** Order and multiplication *)
 
-Lemma Pmult_lt_mono_l : forall p q r, q<r <-> p*q < p*r.
+Lemma mul_lt_mono_l p q r : q<r <-> p*q < p*r.
 Proof.
- intros. unfold Plt. rewrite Pmult_compare_mono_l. apply iff_refl.
+ unfold lt. rewrite mul_compare_mono_l. apply iff_refl.
 Qed.
 
-Lemma Pmult_lt_mono_r : forall p q r, q<r <-> q*p < r*p.
+Lemma mul_lt_mono_r p q r : q<r <-> q*p < r*p.
 Proof.
- intros. unfold Plt. rewrite Pmult_compare_mono_r. apply iff_refl.
+ unfold lt. rewrite mul_compare_mono_r. apply iff_refl.
 Qed.
 
-Lemma Pmult_lt_mono : forall p q r s, p<q -> r<s -> p*r < q*s.
+Lemma mul_lt_mono p q r s : p<q -> r<s -> p*r < q*s.
 Proof.
- intros. apply Plt_trans with (p*s).
- now apply Pmult_lt_mono_l.
- now apply Pmult_lt_mono_r.
+ intros. apply lt_trans with (p*s).
+ now apply mul_lt_mono_l.
+ now apply mul_lt_mono_r.
 Qed.
 
-Lemma Pmult_le_mono_l : forall p q r, q<=r <-> p*q<=p*r.
+Lemma mul_le_mono_l p q r : q<=r <-> p*q<=p*r.
 Proof.
- intros. unfold Ple. rewrite Pmult_compare_mono_l. apply iff_refl.
+ unfold le. rewrite mul_compare_mono_l. apply iff_refl.
 Qed.
 
-Lemma Pmult_le_mono_r : forall p q r, q<=r <-> q*p<=r*p.
+Lemma mul_le_mono_r p q r : q<=r <-> q*p<=r*p.
 Proof.
- intros. unfold Ple. rewrite Pmult_compare_mono_r. apply iff_refl.
+ unfold le. rewrite mul_compare_mono_r. apply iff_refl.
 Qed.
 
-Lemma Pmult_le_mono : forall p q r s, p<=q -> r<=s -> p*r <= q*s.
+Lemma mul_le_mono p q r s : p<=q -> r<=s -> p*r <= q*s.
 Proof.
- intros. apply Ple_trans with (p*s).
- now apply Pmult_le_mono_l.
- now apply Pmult_le_mono_r.
+ intros. apply le_trans with (p*s).
+ now apply mul_le_mono_l.
+ now apply mul_le_mono_r.
 Qed.
 
-Lemma Plt_plus_r : forall p q, p < p+q.
+Lemma lt_add_r p q : p < p+q.
 Proof.
- induction q using Pind.
- rewrite <- Pplus_one_succ_r. apply Pcompare_p_Sp.
- apply Plt_trans with (p+q); auto.
- apply Pplus_lt_mono_l, Pcompare_p_Sp.
+ induction q using peano_ind.
+ rewrite add_1_r. apply lt_succ_diag_r.
+ apply lt_trans with (p+q); auto.
+ apply add_lt_mono_l, lt_succ_diag_r.
 Qed.
 
-Lemma Plt_not_plus_l : forall p q, ~ p+q < p.
+Lemma lt_not_add_l p q : ~ p+q < p.
 Proof.
- intros p q H. elim (Plt_irrefl p).
- apply Plt_trans with (p+q); auto using Plt_plus_r.
+ intro H. elim (lt_irrefl p).
+ apply lt_trans with (p+q); auto using lt_add_r.
 Qed.
 
-Lemma Ppow_gt_1 : forall n p, 1<n -> 1<n^p.
+Lemma pow_gt_1 n p : 1<n -> 1<n^p.
 Proof.
- intros n p Hn.
- induction p using Pind.
- now rewrite Ppow_1_r.
- rewrite Ppow_succ_r.
- apply Plt_trans with (n*1).
- now rewrite Pmult_1_r.
- now apply Pmult_lt_mono_l.
+ intros H. induction p using peano_ind.
+ now rewrite pow_1_r.
+ rewrite pow_succ_r.
+ apply lt_trans with (n*1).
+ now rewrite mul_1_r.
+ now apply mul_lt_mono_l.
 Qed.
 
 (**********************************************************************)
 (** * Properties of subtraction on binary positive numbers *)
 
-Lemma Ppred_minus : forall p, Ppred p = Pminus p 1.
+Lemma sub_1_r p : sub p 1 = pred p.
 Proof.
-  destruct p; auto.
+  now destruct p.
 Qed.
 
-Definition Ppred_mask (p : positive_mask) :=
-match p with
-| IsPos 1 => IsNul
-| IsPos q => IsPos (Ppred q)
-| IsNul => IsNeg
-| IsNeg => IsNeg
-end.
-
-Lemma Pminus_mask_succ_r :
-  forall p q : positive, Pminus_mask p (Psucc q) = Pminus_mask_carry p q.
+Lemma pred_sub p : pred p = sub p 1.
 Proof.
-  induction p ; destruct q; simpl; f_equal; auto; destruct p; auto.
+  symmetry. apply sub_1_r.
 Qed.
 
-Theorem Pminus_mask_carry_spec :
-  forall p q : positive, Pminus_mask_carry p q = Ppred_mask (Pminus_mask p q).
+Lemma sub_mask_succ_r p q :
+  sub_mask p (succ q) = sub_mask_carry p q.
 Proof.
-  induction p as [p IHp|p IHp| ]; destruct q; simpl;
+  revert q. induction p ; destruct q; simpl; f_equal; trivial; now destruct p.
+Qed.
+
+Theorem sub_mask_carry_spec p q :
+  sub_mask_carry p q = pred_mask (sub_mask p q).
+Proof.
+  revert q. induction p as [p IHp|p IHp| ]; destruct q; simpl;
    try reflexivity; try rewrite IHp;
-   destruct (Pminus_mask p q) as [|[r|r| ]|] || destruct p; auto.
+   destruct (sub_mask p q) as [|[r|r| ]|] || destruct p; auto.
 Qed.
 
-Theorem Pminus_succ_r : forall p q : positive, p - (Psucc q) = Ppred (p - q).
+Theorem sub_succ_r p q : p - (succ q) = pred (p - q).
 Proof.
-  intros p q; unfold Pminus;
-  rewrite Pminus_mask_succ_r, Pminus_mask_carry_spec.
-  destruct (Pminus_mask p q) as [|[r|r| ]|]; auto.
+  unfold sub; rewrite sub_mask_succ_r, sub_mask_carry_spec.
+  destruct (sub_mask p q) as [|[r|r| ]|]; auto.
 Qed.
 
-Lemma double_eq_zero_inversion :
-  forall p:positive_mask, Pdouble_mask p = IsNul -> p = IsNul.
+Lemma double_eq_0_inversion (p:mask) :
+  double_mask p = IsNul -> p = IsNul.
 Proof.
-  destruct p; simpl; intros; trivial; discriminate.
+  now destruct p.
 Qed.
 
-Lemma double_plus_one_zero_discr :
-  forall p:positive_mask, Pdouble_plus_one_mask p <> IsNul.
+Lemma succ_double_0_discr (p:mask) : succ_double_mask p <> IsNul.
 Proof.
-  destruct p; discriminate.
+  now destruct p.
 Qed.
 
-Lemma double_plus_one_eq_one_inversion :
-  forall p:positive_mask, Pdouble_plus_one_mask p = IsPos 1 -> p = IsNul.
+Lemma succ_double_eq_1_inversion (p:mask) :
+  succ_double_mask p = IsPos 1 -> p = IsNul.
 Proof.
-  destruct p; simpl; intros; trivial; discriminate.
+  now destruct p.
 Qed.
 
-Lemma double_eq_one_discr :
-  forall p:positive_mask, Pdouble_mask p <> IsPos 1.
+Lemma double_eq_1_discr (p:mask) : double_mask p <> IsPos 1.
 Proof.
-  destruct p; discriminate.
+  now destruct p.
 Qed.
 
-Theorem Pminus_mask_diag : forall p:positive, Pminus_mask p p = IsNul.
+Definition mask2cmp (p:mask) : comparison :=
+ match p with
+  | IsNul => Eq
+  | IsPos _ => Gt
+  | IsNeg => Lt
+ end.
+
+Lemma sub_mask_compare p q :
+ mask2cmp (sub_mask p q) = (p ?= q).
 Proof.
-  induction p as [p IHp| p IHp| ]; simpl; try rewrite IHp; auto.
+  symmetry. revert q.
+  induction p as [p IHp| p IHp| ]; intros [q|q| ]; simpl; trivial;
+  specialize (IHp q); rewrite ?sub_mask_carry_spec;
+  destruct (sub_mask p q) as [|r|]; simpl in *;
+  try clear r; try destruct r; simpl; trivial;
+  simpl_compare; now rewrite IHp.
 Qed.
 
-Lemma Pminus_mask_carry_diag : forall p, Pminus_mask_carry p p = IsNeg.
+Theorem sub_mask_nul_iff p q : sub_mask p q = IsNul <-> p = q.
 Proof.
-  induction p as [p IHp| p IHp| ]; simpl; try rewrite IHp; auto.
+  rewrite <- compare_eq_iff, <- sub_mask_compare.
+  destruct (sub_mask p q); now split.
 Qed.
 
-Lemma Pminus_mask_IsNeg : forall p q:positive,
- Pminus_mask p q = IsNeg -> Pminus_mask_carry p q = IsNeg.
+Theorem sub_mask_diag p : sub_mask p p = IsNul.
 Proof.
-  induction p as [p IHp|p IHp| ]; intros [q|q| ] H; simpl in *; auto;
-   try discriminate; unfold Pdouble_mask, Pdouble_plus_one_mask in H;
-   specialize IHp with q.
-  destruct (Pminus_mask p q); try discriminate; rewrite IHp; auto.
-  destruct (Pminus_mask p q); simpl; auto; try discriminate.
-  destruct (Pminus_mask_carry p q); simpl; auto; try discriminate.
-  destruct (Pminus_mask p q); try discriminate; rewrite IHp; auto.
+  now apply sub_mask_nul_iff.
 Qed.
 
-Lemma ZL10 :
-  forall p q:positive,
-    Pminus_mask p q = IsPos 1 -> Pminus_mask_carry p q = IsNul.
+(** ** Properties of subtraction without underflow *)
+
+Lemma sub_mask_carry_pos p q r :
+  sub_mask p q = IsPos r ->
+  r = 1 \/ sub_mask_carry p q = IsPos (pred r).
 Proof.
-  induction p; intros [q|q| ] H; simpl in *; try discriminate.
-  elim (double_eq_one_discr _ H).
-  rewrite (double_plus_one_eq_one_inversion _ H); auto.
-  rewrite (double_plus_one_eq_one_inversion _ H); auto.
-  elim (double_eq_one_discr _ H).
-  destruct p; simpl; auto; discriminate.
+ intros H.
+ destruct (eq_dec r 1) as [EQ|NE]; [now left|right].
+ rewrite sub_mask_carry_spec, H. destruct r; trivial. now elim NE.
 Qed.
 
-(** ** Properties of subtraction valid only for x>y *)
-
-Lemma Pminus_mask_Gt :
-  forall p q:positive,
-    (p ?= q) Eq = Gt ->
-    exists h : positive,
-      Pminus_mask p q = IsPos h /\
-      q + h = p /\ (h = 1 \/ Pminus_mask_carry p q = IsPos (Ppred h)).
+Lemma sub_mask_add p q r :
+  sub_mask p q = IsPos r -> q + r = p.
 Proof.
-  induction p as [p IHp| p IHp| ]; intros [q| q| ] H; simpl in *;
-   try discriminate H.
-  (* p~1, q~1 *)
-  destruct (IHp q H) as (r & U & V & W); exists (r~0); rewrite ?U, ?V; auto.
-  repeat split; auto; right.
-  destruct (ZL11 r) as [EQ|NE]; [|destruct W as [|W]; [elim NE; auto|]].
-  rewrite ZL10; subst; auto.
-  rewrite W; simpl; destruct r; auto; elim NE; auto.
-  (* p~1, q~0 *)
-  destruct (Pcompare_Gt_Gt _ _ H) as [H'|H']; clear H; rename H' into H.
-  destruct (IHp q H) as (r & U & V & W); exists (r~1); rewrite ?U, ?V; auto.
-  exists 1; subst; rewrite Pminus_mask_diag; auto.
-  (* p~1, 1 *)
-  exists (p~0); auto.
-  (* p~0, q~1 *)
-  destruct (IHp q (Pcompare_Lt_Gt _ _ H)) as (r & U & V & W).
-  destruct (ZL11 r) as [EQ|NE]; [|destruct W as [|W]; [elim NE; auto|]].
-  exists 1; subst; rewrite ZL10, Pplus_one_succ_r; auto.
-  exists ((Ppred r)~1); rewrite W, Pplus_carry_pred_eq_plus, V; auto.
-  (* p~0, q~0 *)
-  destruct (IHp q H) as (r & U & V & W); exists (r~0); rewrite ?U, ?V; auto.
-  repeat split; auto; right.
-  destruct (ZL11 r) as [EQ|NE]; [|destruct W as [|W]; [elim NE; auto|]].
-  rewrite ZL10; subst; auto.
-  rewrite W; simpl; destruct r; auto; elim NE; auto.
-  (* p~0, 1 *)
-  exists (Pdouble_minus_one p); repeat split; destruct p; simpl; auto.
-  rewrite Psucc_o_double_minus_one_eq_xO; auto.
+ revert q r.
+ induction p as [p IHp|p IHp| ]; intros [q|q| ] r H;
+  simpl in H; try destr_eq H; try specialize (IHp q);
+  rewrite ?sub_mask_carry_spec in H.
+ (* p~1 q~1 *)
+ destruct (sub_mask p q) as [|r'|]; destr_eq H. subst r; simpl; f_equal; auto.
+ (* p~1 q~0 *)
+ assert (H' := proj1 (sub_mask_nul_iff p q)).
+ destruct (sub_mask p q) as [|r'|]; destr_eq H; subst r; simpl; f_equal; auto.
+ symmetry; auto.
+ (* p~1 1 *)
+ subst r; simpl; f_equal; auto.
+ (* p~0 q~1 *)
+ destruct (sub_mask p q) as [|[r'|r'| ]|]; destr_eq H; subst r; simpl; f_equal.
+ rewrite add_carry_spec, <- add_succ_r. auto.
+ rewrite add_carry_spec, <- add_succ_r, succ_pred_double. auto.
+ rewrite <- add_1_r. auto.
+ (* p~0 q~0 *)
+ destruct (sub_mask p q) as [|r'|]; destr_eq H; subst r; simpl; f_equal. auto.
+ (* p~0 1 *)
+ subst r; now rewrite add_1_l, succ_pred_double.
 Qed.
 
-Theorem Pplus_minus :
-  forall p q:positive, (p ?= q) Eq = Gt -> q+(p-q) = p.
+Lemma sub_mask_pos_iff p q :
+  (exists r, sub_mask p q = IsPos r) <-> p > q.
 Proof.
-  intros p q H; destruct (Pminus_mask_Gt p q H) as (r & U & V & _).
-  unfold Pminus; rewrite U; simpl; auto.
+ unfold gt. rewrite <- sub_mask_compare.
+ destruct (sub_mask p q) as [|r|]; split; try easy'. now exists r.
 Qed.
 
-Theorem Pplus_minus_lt : forall p q, q<p -> q+(p-q) = p.
+Lemma sub_mask_pos p q :
+  q < p -> exists r, sub_mask p q = IsPos r.
 Proof.
- intros p q H. apply Pplus_minus. apply ZC2, H.
+ intros. now apply sub_mask_pos_iff, lt_gt.
 Qed.
 
-Lemma Pplus_minus_eq : forall p q, p+q-q = p.
+Lemma sub_mask_pos' p q :
+  q < p -> exists r, sub_mask p q = IsPos r /\ q + r = p.
 Proof.
- intros. apply Pplus_reg_l with q.
- rewrite Pplus_minus_lt.
- apply Pplus_comm.
- rewrite Pplus_comm. apply Plt_plus_r.
+ intros H. destruct (sub_mask_pos p q H) as (r,Hr).
+ exists r. split; trivial. now apply sub_mask_add.
 Qed.
 
-Lemma Pmult_minus_distr_l : forall p q r, r<q -> p*(q-r) = p*q-p*r.
+Theorem sub_add p q : q < p -> (p-q)+q = p.
 Proof.
- intros p q r H.
- apply Pplus_reg_l with (p*r).
- rewrite <- Pmult_plus_distr_l.
- rewrite Pplus_minus_lt; trivial.
- symmetry. apply Pplus_minus_lt; trivial.
- now apply Pmult_lt_mono_l.
+  intros H; destruct (sub_mask_pos p q H) as (r,U).
+  unfold sub. rewrite U. rewrite add_comm. now apply sub_mask_add.
 Qed.
 
-Lemma Pminus_lt_mono_l :
- forall p q r, q<p -> p<r -> r-p < r-q.
+Lemma add_sub p q : (p+q)-q = p.
 Proof.
- intros p q r Hqp Hpr.
- apply (Pplus_lt_mono_l p).
- rewrite Pplus_minus_lt by trivial.
- apply Ple_lt_trans with (q+(r-q)).
- rewrite Pplus_minus_lt by (now apply Plt_trans with p).
- apply Ple_refl.
- now apply Pplus_lt_mono_r.
+ intros. apply add_reg_r with q.
+ rewrite sub_add; trivial.
+ rewrite add_comm. apply lt_add_r.
 Qed.
 
-Lemma Pminus_compare_mono_l :
- forall p q r, q<p -> r<p -> (p-q ?= p-r) Eq = (r ?= q) Eq.
+Lemma mul_sub_distr_l p q r : r<q -> p*(q-r) = p*q-p*r.
 Proof.
- intros p q r Hqp Hrp.
- case (Pcompare_spec r q); intros H. subst. apply Pcompare_refl.
- apply Pminus_lt_mono_l; trivial.
- apply ZC2, Pminus_lt_mono_l; trivial.
+ intros H.
+ apply add_reg_r with (p*r).
+ rewrite <- mul_add_distr_l.
+ rewrite sub_add; trivial.
+ symmetry. apply sub_add; trivial.
+ now apply mul_lt_mono_l.
 Qed.
 
-Lemma Pminus_compare_mono_r :
- forall p q r, p<q -> p<r -> (q-p ?= r-p) Eq = (q ?= r) Eq.
+Lemma sub_lt_mono_l p q r: q<p -> p<r -> r-p < r-q.
+Proof.
+ intros Hqp Hpr.
+ apply (add_lt_mono_r p).
+ rewrite sub_add by trivial.
+ apply le_lt_trans with ((r-q)+q).
+ rewrite sub_add by (now apply lt_trans with p).
+ apply le_refl.
+ now apply add_lt_mono_l.
+Qed.
+
+Lemma sub_compare_mono_l p q r :
+ q<p -> r<p -> (p-q ?= p-r) = (r ?= q).
+Proof.
+ intros Hqp Hrp.
+ case (compare_spec r q); intros H. subst. apply compare_refl.
+ apply sub_lt_mono_l; trivial.
+ apply lt_gt, sub_lt_mono_l; trivial.
+Qed.
+
+Lemma sub_compare_mono_r p q r :
+ p<q -> p<r -> (q-p ?= r-p) = (q ?= r).
+Proof.
+ intros. rewrite <- (add_compare_mono_r p), 2 sub_add; trivial.
+Qed.
+
+Lemma sub_lt_mono_r p q r : q<p -> r<q -> q-r < p-r.
+Proof.
+ intros. unfold lt. rewrite sub_compare_mono_r; trivial.
+ now apply lt_trans with q.
+Qed.
+
+Lemma sub_decr n m : m<n -> n-m < n.
 Proof.
  intros.
- rewrite <- (Pplus_compare_mono_l p), 2 Pplus_minus_lt; trivial.
+ apply add_lt_mono_r with m.
+ rewrite sub_add; trivial.
+ apply lt_add_r.
 Qed.
 
-Lemma Pminus_lt_mono_r :
- forall p q r, q<p -> r<q -> q-r < p-r.
+Lemma add_sub_assoc p q r : r<q -> p+(q-r) = p+q-r.
 Proof.
- intros. unfold Plt. rewrite Pminus_compare_mono_r; trivial.
- now apply Plt_trans with q.
+ intros.
+ apply add_reg_r with r.
+ rewrite <- add_assoc, !sub_add; trivial.
+ rewrite add_comm. apply lt_trans with q; trivial using lt_add_r.
 Qed.
 
-Lemma Pminus_decr : forall n m, m<n -> n-m < n.
+Lemma sub_add_distr p q r : q+r < p -> p-(q+r) = p-q-r.
 Proof.
- intros n m LT.
- apply Pplus_lt_mono_l with m.
- rewrite Pplus_minus_lt; trivial.
- rewrite Pplus_comm. apply Plt_plus_r.
-Qed.
-
-Lemma Pminus_xI_xI : forall n m, m<n -> n~1 - m~1 = (n-m)~0.
-Proof.
- intros. unfold Pminus. simpl.
- destruct (Pminus_mask_Gt n m) as (p & -> & _); trivial.
- now rewrite ZC4, H.
-Qed.
-
-Lemma Pplus_minus_assoc : forall p q r, r<q -> p+(q-r) = p+q-r.
-Proof.
- intros p q r H.
- apply Pplus_reg_l with r.
- rewrite Pplus_assoc, (Pplus_comm r), <- Pplus_assoc.
- rewrite !Pplus_minus_lt; trivial.
- rewrite Pplus_comm. apply Plt_trans with q; trivial using Plt_plus_r.
-Qed.
-
-Lemma Pminus_plus_distr : forall p q r, q+r < p -> p-(q+r) = p-q-r.
-Proof.
- intros p q r H.
+ intros.
  assert (q < p)
-  by (apply Plt_trans with (q+r); trivial using Plt_plus_r).
- apply Pplus_reg_l with (q+r).
- rewrite Pplus_minus_lt, <- Pplus_assoc, !Pplus_minus_lt; trivial.
- apply (Pplus_lt_mono_l q). rewrite Pplus_minus_lt; trivial.
+  by (apply lt_trans with (q+r); trivial using lt_add_r).
+ rewrite (add_comm q r) in *.
+ apply add_reg_r with (r+q).
+ rewrite sub_add by trivial.
+ rewrite add_assoc, !sub_add; trivial.
+ apply (add_lt_mono_r q). rewrite sub_add; trivial.
 Qed.
 
-Lemma Pminus_minus_distr : forall p q r, r<q -> q-r < p -> p-(q-r) = p+r-q.
+Lemma sub_sub_distr p q r : r<q -> q-r < p -> p-(q-r) = p+r-q.
 Proof.
- intros p q r H H'.
- apply Pplus_reg_l with (r+(q-r)).
- rewrite <- Pplus_assoc, !Pplus_minus_lt; trivial using Pplus_comm.
- rewrite Pplus_comm, <- (Pplus_minus_lt q r); trivial.
- now apply Pplus_lt_mono_l.
+ intros.
+ apply add_reg_r with ((q-r)+r).
+ rewrite add_assoc, !sub_add; trivial.
+ rewrite <- (sub_add q r); trivial.
+ now apply add_lt_mono_r.
 Qed.
 
-(** When x<y, the substraction of x by y returns 1 *)
+(** Recursive equations for [sub] *)
 
-Lemma Pminus_mask_Lt : forall p q:positive, p<q -> Pminus_mask p q = IsNeg.
+Lemma sub_xO_xO n m : m<n -> n~0 - m~0 = (n-m)~0.
 Proof.
-  unfold Plt; induction p as [p IHp|p IHp| ]; destruct q; simpl; intros;
-   try discriminate; try rewrite IHp; auto.
-  apply Pcompare_Gt_Lt; auto.
-  destruct (Pcompare_Lt_Lt _ _ H).
-  rewrite Pminus_mask_IsNeg; simpl; auto.
-  subst; rewrite Pminus_mask_carry_diag; auto.
+ intros H. unfold sub. simpl.
+ now destruct (sub_mask_pos n m H) as (p, ->).
 Qed.
 
-Lemma Pminus_Lt : forall p q:positive, p<q -> p-q = 1.
+Lemma sub_xI_xI n m : m<n -> n~1 - m~1 = (n-m)~0.
 Proof.
-  intros; unfold Plt, Pminus; rewrite Pminus_mask_Lt; auto.
+ intros H. unfold sub. simpl.
+ now destruct (sub_mask_pos n m H) as (p, ->).
 Qed.
 
-(** The substraction of x by x returns 1 *)
-
-Lemma Pminus_Eq : forall p:positive, p-p = 1.
+Lemma sub_xI_xO n m : m<n -> n~1 - m~0 = (n-m)~1.
 Proof.
- intros; unfold Pminus; rewrite Pminus_mask_diag; auto.
+ intros H. unfold sub. simpl.
+ now destruct (sub_mask_pos n m) as (p, ->).
 Qed.
 
-(** ** Results concerning [Psize] and [Psize_pos] *)
+Lemma sub_xO_xI n m : n~0 - m~1 = pred_double (n-m).
+Proof.
+ unfold sub. simpl. rewrite sub_mask_carry_spec.
+ now destruct (sub_mask n m) as [|[r|r|]|].
+Qed.
 
-Lemma Psize_monotone : forall p q, p<q -> (Psize p <= Psize q)%nat.
+(** Properties of subtraction with underflow *)
+
+Lemma sub_mask_neg_iff p q : sub_mask p q = IsNeg <-> p < q.
+Proof.
+  unfold lt. rewrite <- sub_mask_compare.
+  destruct sub_mask; now split.
+Qed.
+
+Lemma sub_mask_neg p q : p<q -> sub_mask p q = IsNeg.
+Proof.
+  apply sub_mask_neg_iff.
+Qed.
+
+Lemma sub_le p q : p<=q -> p-q = 1.
+Proof.
+  unfold le, sub. rewrite <- sub_mask_compare.
+  destruct sub_mask; easy'.
+Qed.
+
+Lemma sub_lt p q : p<q -> p-q = 1.
+Proof.
+  intros. now apply sub_le, lt_le_incl.
+Qed.
+
+Lemma sub_diag p : p-p = 1.
+Proof.
+  unfold sub. now rewrite sub_mask_diag.
+Qed.
+
+(** ** Results concerning [size] and [size_nat] *)
+
+Lemma size_nat_monotone p q : p<q -> (size_nat p <= size_nat q)%nat.
 Proof.
   assert (le0 : forall n, (0<=n)%nat) by (induction n; auto).
   assert (leS : forall n m, (n<=m -> S n <= S m)%nat) by (induction 1; auto).
-  induction p; destruct q; simpl; auto; intros; try discriminate.
-  intros; generalize (Pcompare_Gt_Lt _ _ H); auto.
-  intros; destruct (Pcompare_Lt_Lt _ _ H); auto; subst; auto.
+  revert q.
+  induction p; destruct q; simpl; intros; auto; easy || apply leS;
+   red in H; simpl_compare_in H.
+  apply IHp. red. now destruct (p?=q).
+  destruct (compare_spec p q); subst; now auto.
 Qed.
 
-Local Notation "2" := (1~0) : positive_scope.
-
-Lemma Psize_pos_gt : forall p, p < 2^(Psize_pos p).
+Lemma size_gt p : p < 2^(size p).
 Proof.
- induction p; simpl; try rewrite Ppow_succ_r; try easy.
- apply Ple_succ_l in IHp. now apply Ple_succ_l.
+ induction p; simpl; try rewrite pow_succ_r; try easy.
+ apply le_succ_l in IHp. now apply le_succ_l.
 Qed.
 
-Lemma Psize_pos_le : forall p, 2^(Psize_pos p) <= p~0.
+Lemma size_le p : 2^(size p) <= p~0.
 Proof.
- induction p; simpl; try rewrite Ppow_succ_r; try easy.
- apply Pmult_le_mono_l.
- apply Ple_lteq; left. rewrite xI_succ_xO. apply Plt_succ_r, IHp.
+ induction p; simpl; try rewrite pow_succ_r; try easy.
+ apply mul_le_mono_l.
+ apply le_lteq; left. rewrite xI_succ_xO. apply lt_succ_r, IHp.
 Qed.
+
+(** ** Properties of [min] and [max] *)
+
+(** First, the specification *)
+
+Lemma max_l : forall x y, y<=x -> max x y = x.
+Proof.
+ intros x y H. unfold max. case compare_spec; auto.
+ intros H'. apply le_nlt in H. now elim H.
+Qed.
+
+Lemma max_r : forall x y, x<=y -> max x y = y.
+Proof.
+ unfold le, max. intros x y. destruct compare; easy'.
+Qed.
+
+Lemma min_l : forall x y, x<=y -> min x y = x.
+Proof.
+ unfold le, min. intros x y. destruct compare; easy'.
+Qed.
+
+Lemma min_r : forall x y, y<=x -> min x y = y.
+Proof.
+ intros x y H. unfold min. case compare_spec; auto.
+ intros H'. apply le_nlt in H. now elim H'.
+Qed.
+
+(** We hence obtain all the generic properties of [min] and [max]. *)
+
+Include !UsualMinMaxLogicalProperties.
+Include !UsualMinMaxDecProperties.
+
+(** Minimum, maximum and constant one *)
+
+Lemma max_1_l n : max 1 n = n.
+Proof.
+ unfold max. case compare_spec; auto.
+ intros H. apply lt_nle in H. elim H. apply le_1_l.
+Qed.
+
+Lemma max_1_r n : max n 1 = n.
+Proof. rewrite max_comm. apply max_1_l. Qed.
+
+Lemma min_1_l n : min 1 n = 1.
+Proof.
+ unfold min. case compare_spec; auto.
+ intros H. apply lt_nle in H. elim H. apply le_1_l.
+Qed.
+
+Lemma min_1_r n : min n 1 = 1.
+Proof. rewrite min_comm. apply min_1_l. Qed.
+
+(** Minimum, maximum and operations (consequences of monotonicity) *)
+
+Lemma succ_max_distr n m : succ (max n m) = max (succ n) (succ m).
+Proof.
+ symmetry. apply max_monotone.
+ intros x x'. apply succ_le_mono.
+Qed.
+
+Lemma succ_min_distr n m : succ (min n m) = min (succ n) (succ m).
+Proof.
+ symmetry. apply min_monotone.
+ intros x x'. apply succ_le_mono.
+Qed.
+
+Lemma add_max_distr_l n m p : max (p + n) (p + m) = p + max n m.
+Proof.
+ apply max_monotone. intros x x'. apply add_le_mono_l.
+Qed.
+
+Lemma add_max_distr_r n m p : max (n + p) (m + p) = max n m + p.
+Proof.
+ rewrite 3 (add_comm _ p). apply add_max_distr_l.
+Qed.
+
+Lemma add_min_distr_l n m p : min (p + n) (p + m) = p + min n m.
+Proof.
+ apply min_monotone. intros x x'. apply add_le_mono_l.
+Qed.
+
+Lemma add_min_distr_r n m p : min (n + p) (m + p) = min n m + p.
+Proof.
+ rewrite 3 (add_comm _ p). apply add_min_distr_l.
+Qed.
+
+Lemma mul_max_distr_l n m p : max (p * n) (p * m) = p * max n m.
+Proof.
+ apply max_monotone. intros x x'. apply mul_le_mono_l.
+Qed.
+
+Lemma mul_max_distr_r n m p : max (n * p) (m * p) = max n m * p.
+Proof.
+ rewrite 3 (mul_comm _ p). apply mul_max_distr_l.
+Qed.
+
+Lemma mul_min_distr_l n m p : min (p * n) (p * m) = p * min n m.
+Proof.
+ apply min_monotone. intros x x'. apply mul_le_mono_l.
+Qed.
+
+Lemma mul_min_distr_r n m p : min (n * p) (m * p) = min n m * p.
+Proof.
+ rewrite 3 (mul_comm _ p). apply mul_min_distr_l.
+Qed.
+
+
+(** ** Results concerning [iter_op] *)
+
+Lemma iter_op_succ : forall A (op:A->A->A),
+ (forall x y z, op x (op y z) = op (op x y) z) ->
+ forall p a,
+ iter_op op (succ p) a = op a (iter_op op p a).
+Proof.
+ induction p; simpl; intros; trivial.
+ rewrite H. apply IHp.
+Qed.
+
+
+(** ** Correctness proofs for the square root function *)
+
+Inductive SqrtSpec : positive*mask -> positive -> Prop :=
+ | SqrtExact s x : x=s*s -> SqrtSpec (s,IsNul) x
+ | SqrtApprox s r x : x=s*s+r -> r <= s~0 -> SqrtSpec (s,IsPos r) x.
+
+Lemma sqrtrem_step_spec f g p x :
+ (f=xO \/ f=xI) -> (g=xO \/ g=xI) ->
+ SqrtSpec p x -> SqrtSpec (sqrtrem_step f g p) (g (f x)).
+Proof.
+intros Hf Hg [ s _ -> | s r _ -> Hr ].
+(* exact *)
+unfold sqrtrem_step.
+destruct Hf,Hg; subst; simpl; constructor; now rewrite ?square_xO.
+(* approx *)
+assert (Hfg : forall p q, g (f (p+q)) = p~0~0 + g (f q))
+ by (intros; destruct Hf, Hg; now subst).
+unfold sqrtrem_step, leb.
+case compare_spec; [intros EQ | intros LT | intros GT].
+(* - EQ *)
+rewrite <- EQ, sub_mask_diag. constructor.
+destruct Hg; subst g; destr_eq EQ.
+destruct Hf; subst f; destr_eq EQ.
+subst. now rewrite square_xI.
+(* - LT *)
+destruct (sub_mask_pos' _ _ LT) as (y & -> & H). constructor.
+rewrite Hfg, <- H. now rewrite square_xI, add_assoc. clear Hfg.
+rewrite <- lt_succ_r in Hr. change (r < s~1) in Hr.
+rewrite <- lt_succ_r, (add_lt_mono_l (s~0~1)), H. simpl.
+rewrite add_carry_spec, add_diag. simpl.
+destruct Hf,Hg; subst; red; simpl_compare; now rewrite Hr.
+(* - GT *)
+constructor. now rewrite Hfg, square_xO. apply lt_succ_r, GT.
+Qed.
+
+Lemma sqrtrem_spec p : SqrtSpec (sqrtrem p) p.
+Proof.
+revert p. fix 1.
+ destruct p; try destruct p; try (constructor; easy);
+  apply sqrtrem_step_spec; auto.
+Qed.
+
+Lemma sqrt_spec p :
+ let s := sqrt p in s*s <= p < (succ s)*(succ s).
+Proof.
+ simpl.
+ assert (H:=sqrtrem_spec p).
+ unfold sqrt in *. destruct sqrtrem as (s,rm); simpl.
+ inversion_clear H; subst.
+ (* exact *)
+ split. reflexivity. apply mul_lt_mono; apply lt_succ_diag_r.
+ (* approx *)
+ split.
+ apply lt_le_incl, lt_add_r.
+ rewrite <- add_1_l, mul_add_distr_r, !mul_add_distr_l, !mul_1_r, !mul_1_l.
+ rewrite add_assoc, (add_comm _ r). apply add_lt_mono_r.
+ now rewrite <- add_assoc, add_diag, add_1_l, lt_succ_r.
+Qed.
+
+(** ** Correctness proofs for the gcd function *)
+
+Lemma divide_add_cancel_l p q r : (p | r) -> (p | q + r) -> (p | q).
+Proof.
+ intros (s,Hs) (t,Ht).
+ exists (t-s).
+ rewrite mul_sub_distr_l.
+ rewrite Hs, Ht.
+ apply add_sub.
+ apply mul_lt_mono_l with p.
+ rewrite Hs, Ht, add_comm.
+ apply lt_add_r.
+Qed.
+
+Lemma divide_xO_xI p q r : (p | q~0) -> (p | r~1) -> (p | q).
+Proof.
+ intros (s,Hs) (t,Ht).
+ destruct p.
+ destruct s; try easy. rewrite mul_xO_r in Hs. destr_eq Hs. now exists s.
+ discriminate.
+ exists q; auto.
+Qed.
+
+Lemma divide_xO_xO p q : (p~0|q~0) <-> (p|q).
+Proof.
+ split; intros (r,H); simpl in *. destr_eq H. now exists r.
+ exists r; simpl; f_equal; auto.
+Qed.
+
+Lemma divide_mul_l p q r : (p|q) -> (p|q*r).
+Proof.
+ intros (s,H). exists (s*r). rewrite mul_assoc; now f_equal.
+Qed.
+
+Lemma divide_mul_r p q r : (p|r) -> (p|q*r).
+Proof.
+ rewrite mul_comm. apply divide_mul_l.
+Qed.
+
+(** The first component of ggcd is gcd *)
+
+Lemma ggcdn_gcdn : forall n a b,
+  fst (ggcdn n a b) = gcdn n a b.
+Proof.
+ induction n.
+ simpl; auto.
+ destruct a, b; simpl; auto; try case compare_spec; simpl; trivial;
+  rewrite <- IHn; destruct ggcdn as (g,(u,v)); simpl; auto.
+Qed.
+
+Lemma ggcd_gcd : forall a b, fst (ggcd a b) = gcd a b.
+Proof.
+ unfold ggcd, gcd. intros. apply ggcdn_gcdn.
+Qed.
+
+(** The other components of ggcd are indeed the correct factors. *)
+
+Ltac destr_pggcdn IHn :=
+ match goal with |- context [ ggcdn _ ?x ?y ] =>
+  generalize (IHn x y); destruct ggcdn as (g,(u,v)); simpl
+ end.
+
+Lemma ggcdn_correct_divisors : forall n a b,
+  let '(g,(aa,bb)) := ggcdn n a b in
+  a = g*aa /\ b = g*bb.
+Proof.
+ induction n.
+ simpl; auto.
+ destruct a, b; simpl; auto; try case compare_spec; try destr_pggcdn IHn.
+ (* Eq *)
+ intros ->. now rewrite mul_comm.
+ (* Lt *)
+ intros (H',H) LT; split; auto.
+ rewrite mul_add_distr_l, mul_xO_r, <- H, <- H'.
+ simpl. f_equal. symmetry.
+ rewrite add_comm. now apply sub_add.
+ (* Gt *)
+ intros (H',H) LT; split; auto.
+ rewrite mul_add_distr_l, mul_xO_r, <- H, <- H'.
+ simpl. f_equal. symmetry.
+ rewrite add_comm. now apply sub_add.
+ (* Then... *)
+ intros (H,H'); split; auto. rewrite mul_xO_r, H'; auto.
+ intros (H,H'); split; auto. rewrite mul_xO_r, H; auto.
+ intros (H,H'); split; subst; auto.
+Qed.
+
+Lemma ggcd_correct_divisors : forall a b,
+  let '(g,(aa,bb)) := ggcd a b in
+  a=g*aa /\ b=g*bb.
+Proof.
+ unfold ggcd. intros. apply ggcdn_correct_divisors.
+Qed.
+
+(** We can use this fact to prove a part of the gcd correctness *)
+
+Lemma gcd_divide_l : forall a b, (gcd a b | a).
+Proof.
+ intros a b. rewrite <- ggcd_gcd. generalize (ggcd_correct_divisors a b).
+ destruct ggcd as (g,(aa,bb)); simpl. intros (H,_). exists aa; auto.
+Qed.
+
+Lemma gcd_divide_r : forall a b, (gcd a b | b).
+Proof.
+ intros a b. rewrite <- ggcd_gcd. generalize (ggcd_correct_divisors a b).
+ destruct ggcd as (g,(aa,bb)); simpl. intros (_,H). exists bb; auto.
+Qed.
+
+(** We now prove directly that gcd is the greatest amongst common divisors *)
+
+Lemma gcdn_greatest : forall n a b, (size_nat a + size_nat b <= n)%nat ->
+ forall p, (p|a) -> (p|b) -> (p|gcdn n a b).
+Proof.
+ induction n.
+ destruct a, b; simpl; inversion 1.
+ destruct a, b; simpl; try case compare_spec; simpl; auto.
+ (* Lt *)
+ intros LT LE p Hp1 Hp2. apply IHn; clear IHn; trivial.
+ apply le_S_n in LE. eapply Le.le_trans; [|eapply LE].
+ rewrite plus_comm, <- plus_n_Sm, <- plus_Sn_m.
+ apply plus_le_compat; trivial.
+ apply size_nat_monotone, sub_decr, LT.
+ apply divide_xO_xI with a; trivial.
+ apply (divide_add_cancel_l p _ a~1); trivial.
+ now rewrite <- sub_xI_xI, sub_add.
+ (* Gt *)
+ intros LT LE p Hp1 Hp2. apply IHn; clear IHn; trivial.
+ apply le_S_n in LE. eapply Le.le_trans; [|eapply LE].
+ apply plus_le_compat; trivial.
+ apply size_nat_monotone, sub_decr, LT.
+ apply divide_xO_xI with b; trivial.
+ apply (divide_add_cancel_l p _ b~1); trivial.
+ now rewrite <- sub_xI_xI, sub_add.
+ (* a~1 b~0 *)
+ intros LE p Hp1 Hp2. apply IHn; clear IHn; trivial.
+ apply le_S_n in LE. simpl. now rewrite plus_n_Sm.
+ apply divide_xO_xI with a; trivial.
+ (* a~0 b~1 *)
+ intros LE p Hp1 Hp2. apply IHn; clear IHn; trivial.
+ simpl. now apply le_S_n.
+ apply divide_xO_xI with b; trivial.
+ (* a~0 b~0 *)
+ intros LE p Hp1 Hp2.
+ destruct p.
+ change (gcdn n a b)~0 with (2*(gcdn n a b)).
+ apply divide_mul_r.
+ apply IHn; clear IHn.
+ apply le_S_n in LE. apply le_Sn_le. now rewrite plus_n_Sm.
+ apply divide_xO_xI with p; trivial. exists 1; now rewrite mul_1_r.
+ apply divide_xO_xI with p; trivial. exists 1; now rewrite mul_1_r.
+ apply divide_xO_xO.
+ apply IHn; clear IHn.
+ apply le_S_n in LE. apply le_Sn_le. now rewrite plus_n_Sm.
+ now apply divide_xO_xO.
+ now apply divide_xO_xO.
+ exists (gcdn n a b)~0. auto.
+Qed.
+
+Lemma gcd_greatest : forall a b p, (p|a) -> (p|b) -> (p|gcd a b).
+Proof.
+ intros. apply gcdn_greatest; auto.
+Qed.
+
+(** As a consequence, the rests after division by gcd are relatively prime *)
+
+Lemma ggcd_greatest : forall a b,
+ let (aa,bb) := snd (ggcd a b) in
+ forall p, (p|aa) -> (p|bb) -> p=1.
+Proof.
+ intros. generalize (gcd_greatest a b) (ggcd_correct_divisors a b).
+ rewrite <- ggcd_gcd. destruct ggcd as (g,(aa,bb)); simpl.
+ intros H (EQa,EQb) p Hp1 Hp2; subst.
+ assert (H' : (g*p | g)).
+  apply H.
+  destruct Hp1 as (r,Hr). exists r. now rewrite <- Hr, mul_assoc.
+  destruct Hp2 as (r,Hr). exists r. now rewrite <- Hr, mul_assoc.
+ destruct H' as (q,H').
+ apply mul_1_inversion_l with q.
+ apply mul_reg_l with g. now rewrite mul_assoc, mul_1_r.
+Qed.
+
+End Pos.
+
+(** Exportation of notations *)
+
+Infix "+" := Pos.add : positive_scope.
+Infix "-" := Pos.sub : positive_scope.
+Infix "*" := Pos.mul : positive_scope.
+Infix "^" := Pos.pow : positive_scope.
+Infix "?=" := Pos.compare (at level 70, no associativity) : positive_scope.
+Infix "=?" := Pos.eqb (at level 70, no associativity) : positive_scope.
+Infix "<=?" := Pos.leb (at level 70, no associativity) : positive_scope.
+Infix "<?" := Pos.ltb (at level 70, no associativity) : positive_scope.
+Infix "<=" := Pos.le : positive_scope.
+Infix "<" := Pos.lt : positive_scope.
+Infix ">=" := Pos.ge : positive_scope.
+Infix ">" := Pos.gt : positive_scope.
+
+Notation "x <= y <= z" := (x <= y /\ y <= z) : positive_scope.
+Notation "x <= y < z" := (x <= y /\ y < z) : positive_scope.
+Notation "x < y < z" := (x < y /\ y < z) : positive_scope.
+Notation "x < y <= z" := (x < y /\ y <= z) : positive_scope.
+
+Notation "( p | q )" := (Pos.divide p q) (at level 0) : positive_scope.
 
 (** Compatibility notations *)
 
@@ -1593,3 +2210,258 @@ Notation positive_ind := positive_ind (only parsing).
 Notation xI := xI (only parsing).
 Notation xO := xO (only parsing).
 Notation xH := xH (only parsing).
+
+Notation Psucc := Pos.succ (only parsing).
+Notation Pplus := Pos.add (only parsing).
+Notation Pplus_carry := Pos.add_carry (only parsing).
+Notation Ppred := Pos.pred (only parsing).
+Notation Piter_op := Pos.iter_op (only parsing).
+Notation Piter_op_succ := Pos.iter_op_succ (only parsing).
+Notation Pmult_nat := (Pos.iter_op plus) (only parsing).
+Notation nat_of_P := Pos.to_nat (only parsing).
+Notation P_of_succ_nat := Pos.of_succ_nat (only parsing).
+Notation Pdouble_minus_one := Pos.pred_double (only parsing).
+Notation positive_mask := Pos.mask (only parsing).
+Notation IsNul := Pos.IsNul (only parsing).
+Notation IsPos := Pos.IsPos (only parsing).
+Notation IsNeg := Pos.IsNeg (only parsing).
+Notation positive_mask_rect := Pos.mask_rect (only parsing).
+Notation positive_mask_ind := Pos.mask_ind (only parsing).
+Notation positive_mask_rec := Pos.mask_rec (only parsing).
+Notation Pdouble_plus_one_mask := Pos.succ_double_mask (only parsing).
+Notation Pdouble_mask := Pos.double_mask (only parsing).
+Notation Pdouble_minus_two := Pos.double_pred_mask (only parsing).
+Notation Pminus_mask := Pos.sub_mask (only parsing).
+Notation Pminus_mask_carry := Pos.sub_mask_carry (only parsing).
+Notation Pminus := Pos.sub (only parsing).
+Notation Pmult := Pos.mul (only parsing).
+Notation iter_pos p A := (@Pos.iter p A) (only parsing).
+Notation Ppow := Pos.pow (only parsing).
+Notation Pdiv2 := Pos.div2 (only parsing).
+Notation Pdiv2_up := Pos.div2_up (only parsing).
+Notation Psize := Pos.size_nat (only parsing).
+Notation Psize_pos := Pos.size (only parsing).
+Notation Pcompare := Pos.compare_cont (only parsing).
+Notation Plt := Pos.lt (only parsing).
+Notation Pgt := Pos.gt (only parsing).
+Notation Ple := Pos.le (only parsing).
+Notation Pge := Pos.ge (only parsing).
+Notation Pmin := Pos.min (only parsing).
+Notation Pmax := Pos.max (only parsing).
+Notation Peqb := Pos.eqb (only parsing).
+Notation positive_eq_dec := Pos.eq_dec (only parsing).
+Notation xI_succ_xO := Pos.xI_succ_xO (only parsing).
+Notation Psucc_discr := Pos.succ_discr (only parsing).
+Notation Psucc_o_double_minus_one_eq_xO :=
+ Pos.succ_pred_double (only parsing).
+Notation Pdouble_minus_one_o_succ_eq_xI :=
+ Pos.pred_double_succ (only parsing).
+Notation xO_succ_permute := Pos.double_succ (only parsing).
+Notation double_moins_un_xO_discr :=
+ Pos.pred_double_xO_discr (only parsing).
+Notation Psucc_not_one := Pos.succ_not_1 (only parsing).
+Notation Ppred_succ := Pos.pred_succ (only parsing).
+Notation Psucc_pred := Pos.succ_pred_or (only parsing).
+Notation Psucc_inj := Pos.succ_inj (only parsing).
+Notation Pplus_carry_spec := Pos.add_carry_spec (only parsing).
+Notation Pplus_comm := Pos.add_comm (only parsing).
+Notation Pplus_succ_permute_r := Pos.add_succ_r (only parsing).
+Notation Pplus_succ_permute_l := Pos.add_succ_l (only parsing).
+Notation Pplus_no_neutral := Pos.add_no_neutral (only parsing).
+Notation Pplus_carry_plus := Pos.add_carry_add (only parsing).
+Notation Pplus_reg_r := Pos.add_reg_r (only parsing).
+Notation Pplus_reg_l := Pos.add_reg_l (only parsing).
+Notation Pplus_carry_reg_r := Pos.add_carry_reg_r (only parsing).
+Notation Pplus_carry_reg_l := Pos.add_carry_reg_l (only parsing).
+Notation Pplus_assoc := Pos.add_assoc (only parsing).
+Notation Pplus_xO := Pos.add_xO (only parsing).
+Notation Pplus_xI_double_minus_one := Pos.add_xI_pred_double (only parsing).
+Notation Pplus_xO_double_minus_one := Pos.add_xO_pred_double (only parsing).
+Notation Pplus_diag := Pos.add_diag (only parsing).
+Notation PeanoView := Pos.PeanoView (only parsing).
+Notation PeanoOne := Pos.PeanoOne (only parsing).
+Notation PeanoSucc := Pos.PeanoSucc (only parsing).
+Notation PeanoView_rect := Pos.PeanoView_rect (only parsing).
+Notation PeanoView_ind := Pos.PeanoView_ind (only parsing).
+Notation PeanoView_rec := Pos.PeanoView_rec (only parsing).
+Notation peanoView_xO := Pos.peanoView_xO (only parsing).
+Notation peanoView_xI := Pos.peanoView_xI (only parsing).
+Notation peanoView := Pos.peanoView (only parsing).
+Notation PeanoView_iter := Pos.PeanoView_iter (only parsing).
+Notation eq_dep_eq_positive := Pos.eq_dep_eq_positive (only parsing).
+Notation PeanoViewUnique := Pos.PeanoViewUnique (only parsing).
+Notation Prect := Pos.peano_rect (only parsing).
+Notation Prect_succ := Pos.peano_rect_succ (only parsing).
+Notation Prect_base := Pos.peano_rect_base (only parsing).
+Notation Prec := Pos.peano_rec (only parsing).
+Notation Pind := Pos.peano_ind (only parsing).
+Notation Pcase := Pos.peano_case (only parsing).
+Notation Pmult_1_r := Pos.mul_1_r (only parsing).
+Notation Pmult_Sn_m := Pos.mul_succ_l (only parsing).
+Notation Pmult_xO_permute_r := Pos.mul_xO_r (only parsing).
+Notation Pmult_xI_permute_r := Pos.mul_xI_r (only parsing).
+Notation Pmult_comm := Pos.mul_comm (only parsing).
+Notation Pmult_plus_distr_l := Pos.mul_add_distr_l (only parsing).
+Notation Pmult_plus_distr_r := Pos.mul_add_distr_r (only parsing).
+Notation Pmult_assoc := Pos.mul_assoc (only parsing).
+Notation Pmult_xI_mult_xO_discr := Pos.mul_xI_mul_xO_discr (only parsing).
+Notation Pmult_xO_discr := Pos.mul_xO_discr (only parsing).
+Notation Pmult_reg_r := Pos.mul_reg_r (only parsing).
+Notation Pmult_reg_l := Pos.mul_reg_l (only parsing).
+Notation Pmult_1_inversion_l := Pos.mul_1_inversion_l (only parsing).
+Notation Psquare_xO := Pos.square_xO (only parsing).
+Notation Psquare_xI := Pos.square_xI (only parsing).
+Notation iter_pos_swap_gen := Pos.iter_swap_gen (only parsing).
+Notation iter_pos_swap := Pos.iter_swap (only parsing).
+Notation iter_pos_succ := Pos.iter_succ (only parsing).
+Notation iter_pos_plus := Pos.iter_add (only parsing).
+Notation iter_pos_invariant := Pos.iter_invariant (only parsing).
+Notation Ppow_1_r := Pos.pow_1_r (only parsing).
+Notation Ppow_succ_r := Pos.pow_succ_r (only parsing).
+Notation Peqb_refl := Pos.eqb_refl (only parsing).
+Notation Peqb_true_eq := Pos.eqb_true_eq (only parsing).
+Notation Peqb_eq := Pos.eqb_eq (only parsing).
+Notation Pcompare_refl_id := Pos.compare_cont_refl (only parsing).
+Notation Pcompare_eq_iff := Pos.compare_eq_iff (only parsing).
+Notation Pcompare_Gt_Lt := Pos.compare_cont_Gt_Lt (only parsing).
+Notation Pcompare_eq_Lt := Pos.compare_lt_iff (only parsing).
+Notation Pcompare_Lt_Gt := Pos.compare_cont_Lt_Gt (only parsing).
+Notation Pcompare_eq_Gt := Pos.compare_gt_iff (only parsing).
+Notation Pcompare_antisym := Pos.compare_cont_antisym (only parsing).
+Notation ZC1 := Pos.gt_lt (only parsing).
+Notation ZC2 := Pos.lt_gt (only parsing).
+Notation Pcompare_spec := Pos.compare_spec (only parsing).
+Notation Pcompare_p_Sp := Pos.lt_succ_diag_r (only parsing).
+Notation Pcompare_succ_succ := Pos.compare_succ_succ (only parsing).
+Notation Pcompare_1 := Pos.nlt_1_r (only parsing).
+Notation Plt_1 := Pos.nlt_1_r (only parsing).
+Notation Plt_1_succ := Pos.lt_1_succ (only parsing).
+Notation Plt_lt_succ := Pos.lt_lt_succ (only parsing).
+Notation Plt_irrefl := Pos.lt_irrefl (only parsing).
+Notation Plt_trans := Pos.lt_trans (only parsing).
+Notation Plt_ind := Pos.lt_ind (only parsing).
+Notation Ple_lteq := Pos.le_lteq (only parsing).
+Notation Ple_refl := Pos.le_refl (only parsing).
+Notation Ple_lt_trans := Pos.le_lt_trans (only parsing).
+Notation Plt_le_trans := Pos.lt_le_trans (only parsing).
+Notation Ple_trans := Pos.le_trans (only parsing).
+Notation Plt_succ_r := Pos.lt_succ_r (only parsing).
+Notation Ple_succ_l := Pos.le_succ_l (only parsing).
+Notation Pplus_compare_mono_l := Pos.add_compare_mono_l (only parsing).
+Notation Pplus_compare_mono_r := Pos.add_compare_mono_r (only parsing).
+Notation Pplus_lt_mono_l := Pos.add_lt_mono_l (only parsing).
+Notation Pplus_lt_mono_r := Pos.add_lt_mono_r (only parsing).
+Notation Pplus_lt_mono := Pos.add_lt_mono (only parsing).
+Notation Pplus_le_mono_l := Pos.add_le_mono_l (only parsing).
+Notation Pplus_le_mono_r := Pos.add_le_mono_r (only parsing).
+Notation Pplus_le_mono := Pos.add_le_mono (only parsing).
+Notation Pmult_compare_mono_l := Pos.mul_compare_mono_l (only parsing).
+Notation Pmult_compare_mono_r := Pos.mul_compare_mono_r (only parsing).
+Notation Pmult_lt_mono_l := Pos.mul_lt_mono_l (only parsing).
+Notation Pmult_lt_mono_r := Pos.mul_lt_mono_r (only parsing).
+Notation Pmult_lt_mono := Pos.mul_lt_mono (only parsing).
+Notation Pmult_le_mono_l := Pos.mul_le_mono_l (only parsing).
+Notation Pmult_le_mono_r := Pos.mul_le_mono_r (only parsing).
+Notation Pmult_le_mono := Pos.mul_le_mono (only parsing).
+Notation Plt_plus_r := Pos.lt_add_r (only parsing).
+Notation Plt_not_plus_l := Pos.lt_not_add_l (only parsing).
+Notation Ppow_gt_1 := Pos.pow_gt_1 (only parsing).
+Notation Ppred_mask := Pos.pred_mask (only parsing).
+Notation Pminus_mask_succ_r := Pos.sub_mask_succ_r (only parsing).
+Notation Pminus_mask_carry_spec := Pos.sub_mask_carry_spec (only parsing).
+Notation Pminus_succ_r := Pos.sub_succ_r (only parsing).
+Notation double_eq_zero_inversion := Pos.succ_double_0_discr (only parsing).
+Notation double_plus_one_zero_discr := Pos.succ_double_0_discr (only parsing).
+Notation double_plus_one_eq_one_inversion :=
+ Pos.succ_double_eq_1_inversion (only parsing).
+Notation double_eq_one_discr := Pos.double_eq_1_discr (only parsing).
+Notation Pminus_mask_diag := Pos.sub_mask_diag (only parsing).
+
+Notation Pplus_minus_eq := Pos.add_sub (only parsing).
+Notation Pmult_minus_distr_l := Pos.mul_sub_distr_l (only parsing).
+Notation Pminus_lt_mono_l := Pos.sub_lt_mono_l (only parsing).
+Notation Pminus_compare_mono_l := Pos.sub_compare_mono_l (only parsing).
+Notation Pminus_compare_mono_r := Pos.sub_compare_mono_r (only parsing).
+Notation Pminus_lt_mono_r := Pos.sub_lt_mono_r (only parsing).
+Notation Pminus_decr := Pos.sub_decr (only parsing).
+Notation Pminus_xI_xI := Pos.sub_xI_xI (only parsing).
+Notation Pplus_minus_assoc := Pos.add_sub_assoc (only parsing).
+Notation Pminus_plus_distr := Pos.sub_add_distr (only parsing).
+Notation Pminus_minus_distr := Pos.sub_sub_distr (only parsing).
+Notation Pminus_mask_Lt := Pos.sub_mask_neg (only parsing).
+Notation Pminus_Lt := Pos.sub_lt (only parsing).
+Notation Pminus_Eq := Pos.sub_diag (only parsing).
+Notation Psize_monotone := Pos.size_nat_monotone (only parsing).
+Notation Psize_pos_gt := Pos.size_gt (only parsing).
+Notation Psize_pos_le := Pos.size_le (only parsing).
+
+(** More complex compatibility facts, expressed as lemmas
+    (to preserve scopes for instance) *)
+
+Lemma Pplus_one_succ_r p : Psucc p = p + 1.
+Proof (eq_sym (Pos.add_1_r p)).
+Lemma Pplus_one_succ_l p : Psucc p = 1 + p.
+Proof (eq_sym (Pos.add_1_l p)).
+Lemma Pcompare_refl p : Pcompare p p Eq = Eq.
+Proof (Pos.compare_cont_refl p Eq).
+Lemma Pcompare_Eq_eq : forall p q, Pcompare p q Eq = Eq -> p = q.
+Proof Pos.compare_eq.
+Lemma ZC4 p q : Pcompare p q Eq = CompOpp (Pcompare q p Eq).
+Proof (Pos.compare_antisym q p).
+Lemma Ppred_minus p : Ppred p = p - 1.
+Proof (eq_sym (Pos.sub_1_r p)).
+
+Lemma Pminus_mask_Gt p q :
+  p > q ->
+  exists h : positive,
+   Pminus_mask p q = IsPos h /\
+   q + h = p /\ (h = 1 \/ Pminus_mask_carry p q = IsPos (Ppred h)).
+Proof.
+ intros H. apply Pos.gt_lt in H.
+ destruct (Pos.sub_mask_pos' p q H) as (r & U & V).
+ exists r. repeat split; trivial. now apply Pos.sub_mask_carry_pos.
+Qed.
+
+Lemma Pplus_minus : forall p q, p > q -> q+(p-q) = p.
+Proof.
+ intros. rewrite Pos.add_comm. now apply Pos.sub_add, Pos.gt_lt.
+Qed.
+
+(** Discontinued results of little interest and little/zero use
+    in user contributions:
+
+    Pplus_carry_no_neutral
+    Pplus_carry_pred_eq_plus
+    Pcompare_not_Eq
+    Pcompare_Lt_Lt
+    Pcompare_Lt_eq_Lt
+    Pcompare_Gt_Gt
+    Pcompare_Gt_eq_Gt
+    Psucc_lt_compat
+    Psucc_le_compat
+    ZC3
+    Pcompare_p_Sq
+    Pminus_mask_carry_diag
+    Pminus_mask_IsNeg
+    ZL10
+    ZL11
+
+    Infix "/" := Pdiv2 : positive_scope.
+*)
+
+(** Old stuff, to remove someday *)
+
+Lemma Dcompare : forall r:comparison, r = Eq \/ r = Lt \/ r = Gt.
+Proof.
+  destruct r; auto.
+Qed.
+
+(** Incompatibilities :
+
+ - [(_ ?= _)%positive] expects no arg now, and designates [Pos.compare]
+   which is convertible but syntactically distinct to
+   [Pos.compare_cont .. .. Eq].
+
+ - [Pmult_nat] cannot be unfolded (unfold [Pos.iter_op] instead).
+
+*)

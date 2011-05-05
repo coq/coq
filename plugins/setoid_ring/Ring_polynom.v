@@ -104,12 +104,12 @@ Section MakeRingPol.
   match P, P' with
   | Pc c, Pc c' => c ?=! c'
   | Pinj j Q, Pinj j' Q' =>
-    match Pcompare j j' Eq with
+    match j ?= j' with
     | Eq => Peq Q Q'
     | _ => false
     end
   | PX P i Q, PX P' i' Q' =>
-    match Pcompare i i' Eq with
+    match i ?= i' with
     | Eq => if Peq P P' then Peq Q Q' else false
     | _ => false
     end
@@ -435,7 +435,7 @@ Section MakeRingPol.
             CFactor P c
    | Pc _, _    => (P, Pc cO)
    | Pinj j1 P1, zmon j2 M1 =>
-      match (j1 ?= j2) Eq with
+      match j1 ?= j2 with
         Eq => let (R,S) := MFactor P1 c M1 in
                  (mkPinj j1 R, mkPinj j1 S)
       | Lt => let (R,S) := MFactor P1 c (zmon (j2 - j1) M1) in
@@ -449,7 +449,7 @@ Section MakeRingPol.
              let (R2, S2) := MFactor Q1 c M2 in
                (mkPX R1 i R2, mkPX S1 i S2)
   | PX P1 i Q1, vmon j M1 =>
-      match (i ?= j) Eq with
+      match i ?= j with
         Eq => let (R1,S1) := MFactor P1 c (mkZmon xH M1) in
                  (mkPX R1 i Q1, S1)
       | Lt => let (R1,S1) := MFactor P1 c (vmon (j - i) M1) in
@@ -552,10 +552,10 @@ Section MakeRingPol.
  Proof.
   induction P;destruct P';simpl;intros;try discriminate;trivial.
   apply (morph_eq CRmorph);trivial.
-  assert (H1 := Pcompare_Eq_eq p p0); destruct ((p ?= p0)%positive Eq);
+  assert (H1 := Pos.compare_eq p p0); destruct (p ?= p0);
    try discriminate H.
   rewrite (IHP P' H); rewrite H1;trivial;rrefl.
-  assert (H1 := Pcompare_Eq_eq p p0); destruct ((p ?= p0)%positive Eq);
+  assert (H1 := Pos.compare_eq p p0); destruct (p ?= p0);
    try discriminate H.
   rewrite H1;trivial. clear H1.
   assert (H1 := IHP1 P'1);assert (H2 := IHP2 P'2);
@@ -947,8 +947,8 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
    generalize (Mcphi_ok P c (jump i l)); case CFactor.
    intros R1 Q1 HH; rewrite HH; Esimpl.
      intros j M.
-     case_eq ((i ?= j) Eq); intros He; simpl.
-       rewrite (Pcompare_Eq_eq _ _ He).
+     case_eq (i ?= j); intros He; simpl.
+       rewrite (Pos.compare_eq _ _ He).
        generalize (Hrec (c, M) (jump j l)); case (MFactor P c M);
         simpl; intros P2 Q2 H; repeat rewrite mkPinj_ok; auto.
        generalize (Hrec (c, (zmon (j -i) M)) (jump i l));
@@ -987,8 +987,8 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
      rewrite (ARadd_comm ARth); rsimpl.
      rewrite zmon_pred_ok;rsimpl.
    intros j M1.
-     case_eq ((i ?= j) Eq); intros He; simpl.
-       rewrite (Pcompare_Eq_eq _ _ He).
+     case_eq (i ?= j); intros He; simpl.
+       rewrite (Pos.compare_eq _ _ He).
        generalize (Hrec1 (c, mkZmon xH M1) l); case (MFactor P2 c (mkZmon xH M1));
         simpl; intros P3 Q3 H; repeat rewrite mkPinj_ok; auto.
        rewrite H; rewrite mkPX_ok; rsimpl.

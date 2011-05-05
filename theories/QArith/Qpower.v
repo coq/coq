@@ -136,7 +136,7 @@ Proof.
 intros a [|n|n] [|m|m] H; simpl; try ring;
 try rewrite Qpower_plus_positive;
 try apply Qinv_mult_distr; try reflexivity;
-case_eq ((n ?= m)%positive Eq); intros H0; simpl;
+case_eq ((n ?= m)%positive); intros H0; simpl;
  try rewrite Qpower_minus_positive;
  try rewrite (Pcompare_Eq_eq _ _ H0);
  try (field; try split; apply Qpower_not_0_positive);

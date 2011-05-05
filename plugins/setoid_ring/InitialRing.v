@@ -172,7 +172,7 @@ Section ZMORPHISM.
 
  Lemma gen_phiZ1_add_pos_neg : forall x y,
  gen_phiZ1
-    match (x ?= y)%positive Eq with
+    match (x ?= y)%positive with
     | Eq => Z0
     | Lt => Zneg (y - x)
     | Gt => Zpos (x - y)
@@ -180,20 +180,14 @@ Section ZMORPHISM.
  == gen_phiPOS1 x + -gen_phiPOS1 y.
  Proof.
   intros x y.
-  assert (H:= (Pcompare_Eq_eq x y)); assert (H0 := Pminus_mask_Gt x y).
-  generalize (Pminus_mask_Gt y x).
-  replace Eq with (CompOpp Eq);[intro H1;simpl|trivial].
-  rewrite <- Pcompare_antisym in H1.
-  destruct ((x ?= y)%positive Eq).
-  rewrite H;trivial. rewrite (Ropp_def Rth);rrefl.
-  destruct H1 as [h [Heq1 [Heq2 Hor]]];trivial.
-  unfold Pminus; rewrite Heq1;rewrite <- Heq2.
+  case Pos.compare_spec; intros H; simpl.
+  rewrite H. rewrite (Ropp_def Rth);rrefl.
+  rewrite <- (Pos.sub_add y x H) at 2. rewrite Pos.add_comm.
   rewrite (ARgen_phiPOS_add ARth);simpl;norm.
   rewrite (Ropp_def Rth);norm.
-  destruct H0 as [h [Heq1 [Heq2 Hor]]];trivial.
-  unfold Pminus; rewrite Heq1;rewrite <- Heq2.
+  rewrite <- (Pos.sub_add x y H) at 2.
   rewrite (ARgen_phiPOS_add ARth);simpl;norm.
-  add_push (gen_phiPOS1 h);rewrite (Ropp_def Rth); norm.
+  add_push (gen_phiPOS1 (x-y));rewrite (Ropp_def Rth); norm.
  Qed.
 
  Lemma match_compOpp : forall x (B:Type) (be bl bg:B),
@@ -207,8 +201,7 @@ Section ZMORPHISM.
   induction x;destruct y;simpl;norm.
   apply (ARgen_phiPOS_add ARth).
   apply gen_phiZ1_add_pos_neg.
-  replace Eq with (CompOpp Eq);trivial.
-  rewrite <- Pcompare_antisym;simpl.
+  rewrite Pos.compare_antisym.
   rewrite match_compOpp.
   rewrite (Radd_comm Rth).
   apply gen_phiZ1_add_pos_neg.

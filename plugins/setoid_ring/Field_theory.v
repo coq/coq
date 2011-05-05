@@ -779,7 +779,7 @@ Fixpoint isIn (e1:PExpr C)  (p1:positive)
 Proof.
   intros l e1 e2 p1 p2; generalize (PExpr_eq_semi_correct l e1 e2);
    case (PExpr_eq e1 e2); simpl; auto; intros H.
-  case_eq ((p1 ?= p2)%positive Eq);intros;simpl.
+  case_eq ((p1 ?= p2)%positive);intros;simpl.
   repeat rewrite pow_th.(rpow_pow_N);simpl. split. 2:refine (refl_equal _).
   rewrite (Pcompare_Eq_eq _ _ H0).
   rewrite H by trivial. ring [ (morph1 CRmorph)].
@@ -791,7 +791,7 @@ Proof.
   repeat rewrite pow_th.(rpow_pow_N);simpl.
   rewrite H;trivial.
    change (ZtoN
-     match (p1 ?= p1 - p2)%positive Eq with
+     match (p1 ?= p1 - p2)%positive with
      | Eq => 0
      | Lt => Zneg (p1 - p2 - p1)
      | Gt => Zpos (p1 - (p1 - p2))
@@ -1805,25 +1805,24 @@ Lemma gen_phiPOS_inj : forall x y,
   x = y.
 intros x y.
 repeat rewrite <- (same_gen Rsth Reqe ARth) in |- *.
-ElimPcompare x y; intro.
+case (Pos.compare_spec x y).
  intros.
-   apply Pcompare_Eq_eq; trivial.
- intro.
+   trivial.
+ intros.
    elim gen_phiPOS_not_0 with (y - x)%positive.
    apply add_inj_r with x.
    symmetry  in |- *.
    rewrite (ARadd_0_r Rsth ARth) in |- *.
    rewrite <- (ARgen_phiPOS_add Rsth Reqe ARth) in |- *.
    rewrite Pplus_minus in |- *; trivial.
-   change Eq with (CompOpp Eq) in |- *.
-   rewrite <- Pcompare_antisym in |- *; trivial.
-   rewrite H in |- *; trivial.
- intro.
+   now apply Pos.lt_gt.
+ intros.
    elim gen_phiPOS_not_0 with (x - y)%positive.
    apply add_inj_r with y.
    rewrite (ARadd_0_r Rsth ARth) in |- *.
    rewrite <- (ARgen_phiPOS_add Rsth Reqe ARth) in |- *.
    rewrite Pplus_minus in |- *; trivial.
+   now apply Pos.lt_gt.
 Qed.
 
 

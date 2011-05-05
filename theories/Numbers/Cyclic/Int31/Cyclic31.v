@@ -2245,7 +2245,7 @@ Section Int31_Specs.
   2: simpl; unfold Zpower_pos; simpl; auto with zarith.
   case (phi_bounded ih); case (phi_bounded il); intros H1 H2 H3 H4.
   unfold base, Zpower, Zpower_pos in H2,H4; simpl in H2,H4.
-  unfold phi2,Zpower, Zpower_pos; simpl iter_pos; auto with zarith.
+  unfold phi2,Zpower, Zpower_pos. simpl Pos.iter; auto with zarith.
  case (iter312_sqrt_correct 31 (fun _ _ j => j) ih il Tn); auto with zarith.
  change [|Tn|] with 2147483647; auto with zarith.
  intros j1 _ HH; contradict HH.

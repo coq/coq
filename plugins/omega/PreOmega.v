@@ -223,17 +223,17 @@ Ltac zify_positive_rel :=
   | H : context [ @eq positive ?a ?b ] |- _ => rewrite (Zpos_eq_iff a b) in H
   | |- context [ @eq positive ?a ?b ] =>       rewrite (Zpos_eq_iff a b)
   (* II: less than *)
-  | H : context [ (?a<?b)%positive ] |- _ => change (a<b)%positive with (Zpos a<Zpos b) in H
-  | |- context [ (?a<?b)%positive ] => change (a<b)%positive with (Zpos a<Zpos b)
+  | H : context [ (?a < ?b)%positive ] |- _ => change (a<b)%positive with (Zpos a<Zpos b) in H
+  | |- context [ (?a < ?b)%positive ] => change (a<b)%positive with (Zpos a<Zpos b)
   (* III: less or equal *)
-  | H : context [ (?a<=?b)%positive ] |- _ => change (a<=b)%positive with (Zpos a<=Zpos b) in H
-  | |- context [ (?a<=?b)%positive ] => change (a<=b)%positive with (Zpos a<=Zpos b)
+  | H : context [ (?a <= ?b)%positive ] |- _ => change (a<=b)%positive with (Zpos a<=Zpos b) in H
+  | |- context [ (?a <= ?b)%positive ] => change (a<=b)%positive with (Zpos a<=Zpos b)
   (* IV: greater than *)
-  | H : context [ (?a>?b)%positive ] |- _ => change (a>b)%positive with (Zpos a>Zpos b) in H
-  | |- context [ (?a>?b)%positive ] => change (a>b)%positive with (Zpos a>Zpos b)
+  | H : context [ (?a > ?b)%positive ] |- _ => change (a>b)%positive with (Zpos a>Zpos b) in H
+  | |- context [ (?a > ?b)%positive ] => change (a>b)%positive with (Zpos a>Zpos b)
   (* V: greater or equal *)
-  | H : context [ (?a>=?b)%positive ] |- _ => change (a>=b)%positive with (Zpos a>=Zpos b) in H
-  | |- context [ (?a>=?b)%positive ] => change (a>=b)%positive with (Zpos a>=Zpos b)
+  | H : context [ (?a >= ?b)%positive ] |- _ => change (a>=b)%positive with (Zpos a>=Zpos b) in H
+  | |- context [ (?a >= ?b)%positive ] => change (a>=b)%positive with (Zpos a>=Zpos b)
  end.
 
 Ltac zify_positive_op :=
@@ -358,25 +358,25 @@ Ltac zify_N_rel :=
   | H : context [ @eq N ?a ?b ] |- _ => rewrite (Z_of_N_eq_iff a b) in H
   | |- context [ @eq N ?a ?b ] =>       rewrite (Z_of_N_eq_iff a b)
   (* II: less than *)
-  | H : (?a<?b)%N |- _ => generalize (Z_of_N_lt _ _ H); clear H; intro H
-  | |- (?a<?b)%N => apply (Z_of_N_lt_rev a b)
-  | H : context [ (?a<?b)%N ] |- _ => rewrite (Z_of_N_lt_iff a b) in H
-  | |- context [ (?a<?b)%N ] =>       rewrite (Z_of_N_lt_iff a b)
+  | H : (?a < ?b)%N |- _ => generalize (Z_of_N_lt _ _ H); clear H; intro H
+  | |- (?a < ?b)%N => apply (Z_of_N_lt_rev a b)
+  | H : context [ (?a < ?b)%N ] |- _ => rewrite (Z_of_N_lt_iff a b) in H
+  | |- context [ (?a < ?b)%N ] =>       rewrite (Z_of_N_lt_iff a b)
   (* III: less or equal *)
-  | H : (?a<=?b)%N |- _ => generalize (Z_of_N_le _ _ H); clear H; intro H
-  | |- (?a<=?b)%N => apply (Z_of_N_le_rev a b)
-  | H : context [ (?a<=?b)%N ] |- _ => rewrite (Z_of_N_le_iff a b) in H
-  | |- context [ (?a<=?b)%N ] =>       rewrite (Z_of_N_le_iff a b)
+  | H : (?a <= ?b)%N |- _ => generalize (Z_of_N_le _ _ H); clear H; intro H
+  | |- (?a <= ?b)%N => apply (Z_of_N_le_rev a b)
+  | H : context [ (?a <= ?b)%N ] |- _ => rewrite (Z_of_N_le_iff a b) in H
+  | |- context [ (?a <= ?b)%N ] =>       rewrite (Z_of_N_le_iff a b)
   (* IV: greater than *)
-  | H : (?a>?b)%N |- _ => generalize (Z_of_N_gt _ _ H); clear H; intro H
-  | |- (?a>?b)%N => apply (Z_of_N_gt_rev a b)
-  | H : context [ (?a>?b)%N ] |- _ => rewrite (Z_of_N_gt_iff a b) in H
-  | |- context [ (?a>?b)%N ] =>       rewrite (Z_of_N_gt_iff a b)
+  | H : (?a > ?b)%N |- _ => generalize (Z_of_N_gt _ _ H); clear H; intro H
+  | |- (?a > ?b)%N => apply (Z_of_N_gt_rev a b)
+  | H : context [ (?a > ?b)%N ] |- _ => rewrite (Z_of_N_gt_iff a b) in H
+  | |- context [ (?a > ?b)%N ] =>       rewrite (Z_of_N_gt_iff a b)
   (* V: greater or equal *)
-  | H : (?a>=?b)%N |- _ => generalize (Z_of_N_ge _ _ H); clear H; intro H
-  | |- (?a>=?b)%N => apply (Z_of_N_ge_rev a b)
-  | H : context [ (?a>=?b)%N ] |- _ => rewrite (Z_of_N_ge_iff a b) in H
-  | |- context [ (?a>=?b)%N ] =>       rewrite (Z_of_N_ge_iff a b)
+  | H : (?a >= ?b)%N |- _ => generalize (Z_of_N_ge _ _ H); clear H; intro H
+  | |- (?a >= ?b)%N => apply (Z_of_N_ge_rev a b)
+  | H : context [ (?a >= ?b)%N ] |- _ => rewrite (Z_of_N_ge_iff a b) in H
+  | |- context [ (?a >= ?b)%N ] =>       rewrite (Z_of_N_ge_iff a b)
  end.
 
 Ltac zify_N_op :=

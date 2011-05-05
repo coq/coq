@@ -147,7 +147,7 @@ Ltac rsimpl := simpl;  set_ring_notations.
 
  Lemma gen_phiZ1_add_pos_neg : forall x y,
  gen_phiZ1
-    match (x ?= y)%positive Eq with
+    match (x ?= y)%positive with
     | Eq => Z0
     | Lt => Zneg (y - x)
     | Gt => Zpos (x - y)
@@ -155,12 +155,11 @@ Ltac rsimpl := simpl;  set_ring_notations.
  == gen_phiPOS1 x + -gen_phiPOS1 y.
  Proof.
   intros x y.
-  assert (H:= (Pcompare_Eq_eq x y)); assert (H0 := Pminus_mask_Gt x y).
-  generalize (Pminus_mask_Gt y x).
-  replace Eq with (CompOpp Eq);[intro H1;simpl|trivial].
-  rewrite <- Pcompare_antisym in H1.
-  destruct ((x ?= y)%positive Eq).
-  ring_rewrite H;trivial. ring_rewrite ring_opp_def;gen_reflexivity.
+  assert (H0 := Pminus_mask_Gt x y). unfold Pos.gt in H0.
+  assert (H1 := Pminus_mask_Gt y x). unfold Pos.gt in H1.
+  rewrite Pos.compare_antisym in H1.
+  destruct (Pos.compare_spec x y) as [H|H|H].
+  subst. ring_rewrite ring_opp_def;gen_reflexivity.
   destruct H1 as [h [Heq1 [Heq2 Hor]]];trivial.
   unfold Pminus; ring_rewrite Heq1;rewrite <- Heq2.
   ring_rewrite ARgen_phiPOS_add;simpl;norm.
@@ -183,7 +182,7 @@ Ltac rsimpl := simpl;  set_ring_notations.
   apply ARgen_phiPOS_add.
   apply gen_phiZ1_add_pos_neg.
   replace Eq with (CompOpp Eq);trivial.
-  rewrite <- Pcompare_antisym;simpl.
+  rewrite Pos.compare_antisym;simpl.
   ring_rewrite match_compOpp.
   ring_rewrite ring_add_comm.
   apply gen_phiZ1_add_pos_neg.

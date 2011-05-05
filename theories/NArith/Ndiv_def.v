@@ -14,7 +14,7 @@ Local Open Scope N_scope.
 Definition NPgeb (a:N)(b:positive) :=
   match a with
    | 0 => false
-   | Npos na => match Pcompare na b Eq with Lt => false | _ => true end
+   | Npos na => match Pos.compare na b with Lt => false | _ => true end
   end.
 
 Local Notation "a >=? b" := (NPgeb a b) (at level 70).
@@ -54,24 +54,22 @@ Lemma NPgeb_ge : forall a b, NPgeb a b = true -> a >= Npos b.
 Proof.
  destruct a; simpl; intros.
  discriminate.
- unfold Nge, Ncompare. now destruct Pcompare.
+ unfold Nge, Ncompare. now destruct Pos.compare.
 Qed.
 
 Lemma NPgeb_lt : forall a b, NPgeb a b = false -> a < Npos b.
 Proof.
  destruct a; simpl; intros. red; auto.
- unfold Nlt, Ncompare. now destruct Pcompare.
+ unfold Nlt, Ncompare. now destruct Pos.compare.
 Qed.
 
 Theorem NPgeb_correct: forall (a:N)(b:positive),
   if NPgeb a b then a = a - Npos b + Npos b else True.
 Proof.
   destruct a as [|a]; simpl; intros b; auto.
-  generalize (Pcompare_Eq_eq a b).
-  case_eq (Pcompare a b Eq); intros; auto.
-  rewrite H0; auto.
+  case Pos.compare_spec; intros; subst; auto.
   now rewrite Pminus_mask_diag.
-  destruct (Pminus_mask_Gt a b H) as [d [H2 [H3 _]]].
+  destruct (Pminus_mask_Gt a b (Pos.lt_gt _ _ H)) as [d [H2 [H3 _]]].
   rewrite H2. rewrite <- H3.
   simpl; f_equal; apply Pplus_comm.
 Qed.
@@ -96,7 +94,7 @@ rewrite Nplus_comm.
 generalize (NPgeb_correct (2*a+1) p). rewrite GE. intros <-.
 rewrite <- (Nmult_1_l (Npos p)). rewrite <- Nmult_plus_distr_r.
 destruct a; auto.
-red; simpl. apply Pcompare_eq_Lt; auto.
+red; simpl. apply Pcompare_Gt_Lt; auto.
 Qed.
 
 (* Proofs of specifications for these euclidean divisions. *)

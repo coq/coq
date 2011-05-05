@@ -79,7 +79,7 @@ Lemma Zcompare_Lt_trans :
 Proof.
  intros n m p; destruct n,m,p; simpl; try discriminate; trivial.
  eapply Plt_trans; eauto.
- rewrite 3 Pcompare_antisym; simpl. intros; eapply Plt_trans; eauto.
+ rewrite <- 3 Pos.compare_antisym; simpl. intros; eapply Plt_trans; eauto.
 Qed.
 
 Lemma Zcompare_Gt_trans :
@@ -96,7 +96,7 @@ Qed.
 
 Lemma Zcompare_opp : forall n m:Z, (n ?= m) = (- m ?= - n).
 Proof.
- destruct n, m; simpl; trivial; intros; now rewrite <- ZC4.
+ destruct n, m; simpl; trivial; intros; now rewrite <- Pos.compare_antisym.
 Qed.
 
 (** * Comparison first-order specification *)
@@ -134,14 +134,14 @@ Proof.
  case Pcompare_spec; intros E0; simpl; subst.
   now case Pcompare_spec.
   case Pcompare_spec; intros E1; simpl; subst; trivial.
-  now rewrite <- ZC4.
+  now rewrite <- Pos.compare_antisym.
   f_equal.
   apply Pminus_compare_mono_r; trivial.
-  rewrite <- ZC4. symmetry. now apply Plt_trans with z.
+  rewrite <- Pos.compare_antisym. symmetry. now apply Plt_trans with z.
   case Pcompare_spec; intros E1; simpl; subst; trivial.
   now rewrite E0.
   symmetry. apply CompOpp_iff. now apply Plt_trans with z.
-  rewrite <- ZC4.
+  rewrite <- Pos.compare_antisym.
   apply Pminus_compare_mono_l; trivial.
 Qed.
 

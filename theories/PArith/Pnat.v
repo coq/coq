@@ -90,14 +90,14 @@ Qed.
 (** [nat_of_P] is a morphism for comparison *)
 
 Lemma Pcompare_nat_compare : forall p q,
- (p ?= q) Eq = nat_compare (nat_of_P p) (nat_of_P q).
+ (p ?= q) = nat_compare (nat_of_P p) (nat_of_P q).
 Proof.
  induction p as [ |p IH] using Pind; intros q.
  destruct (Psucc_pred q) as [Hq|Hq]; [now subst|].
  rewrite <- Hq, Plt_1_succ, Psucc_S, nat_of_P_xH, nat_compare_S.
  symmetry. apply nat_compare_lt, nat_of_P_pos.
  destruct (Psucc_pred q) as [Hq|Hq]; [subst|].
- rewrite ZC4, Plt_1_succ, Psucc_S. simpl.
+ rewrite Pos.compare_antisym, Plt_1_succ, Psucc_S. simpl.
  symmetry. apply nat_compare_gt, nat_of_P_pos.
  now rewrite <- Hq, 2 Psucc_S, Pcompare_succ_succ, IH.
 Qed.
@@ -250,21 +250,21 @@ Notation pred_o_P_of_succ_nat_o_nat_of_P_eq_id := Ppred_of_succ_nat_of_P
  (only parsing).
 
 Definition nat_of_P_minus_morphism p q :
- (p ?= q) Eq = Gt -> nat_of_P (p - q) = nat_of_P p - nat_of_P q
+ (p ?= q) = Gt -> nat_of_P (p - q) = nat_of_P p - nat_of_P q
  := fun H => Pminus_minus p q (ZC1 _ _ H).
 
 Definition nat_of_P_lt_Lt_compare_morphism p q :
- (p ?= q) Eq = Lt -> nat_of_P p < nat_of_P q
+ (p ?= q) = Lt -> nat_of_P p < nat_of_P q
  := proj1 (Plt_lt p q).
 
 Definition nat_of_P_gt_Gt_compare_morphism p q :
- (p ?= q) Eq = Gt -> nat_of_P p > nat_of_P q
+ (p ?= q) = Gt -> nat_of_P p > nat_of_P q
  := proj1 (Pgt_gt p q).
 
 Definition nat_of_P_lt_Lt_compare_complement_morphism p q :
- nat_of_P p < nat_of_P q -> (p ?= q) Eq = Lt
+ nat_of_P p < nat_of_P q -> (p ?= q) = Lt
  := proj2 (Plt_lt p q).
 
 Definition nat_of_P_gt_Gt_compare_complement_morphism p q :
- nat_of_P p > nat_of_P q -> (p ?= q) Eq = Gt
+ nat_of_P p > nat_of_P q -> (p ?= q) = Gt
  := proj2 (Pgt_gt p q).

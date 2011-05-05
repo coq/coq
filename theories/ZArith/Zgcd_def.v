@@ -6,20 +6,20 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import BinPos BinInt Pgcd.
+Require Import BinPos BinInt.
 
 Open Local Scope Z_scope.
 
-(** * Definition of a Pgcd function for relative numbers *)
+(** * Definition of a gcd function for relative numbers *)
 
 Definition Zgcd (a b : Z) : Z :=
   match a,b with
     | Z0, _ => Zabs b
     | _, Z0 => Zabs a
-    | Zpos a, Zpos b => Zpos (Pgcd a b)
-    | Zpos a, Zneg b => Zpos (Pgcd a b)
-    | Zneg a, Zpos b => Zpos (Pgcd a b)
-    | Zneg a, Zneg b => Zpos (Pgcd a b)
+    | Zpos a, Zpos b => Zpos (Pos.gcd a b)
+    | Zpos a, Zneg b => Zpos (Pos.gcd a b)
+    | Zneg a, Zpos b => Zpos (Pos.gcd a b)
+    | Zneg a, Zneg b => Zpos (Pos.gcd a b)
   end.
 
 (** * Generalized Gcd, also computing division of a and b by gcd. *)
@@ -29,13 +29,13 @@ Definition Zggcd (a b : Z) : Z*(Z*Z) :=
     | Z0, _ => (Zabs b,(Z0, Zsgn b))
     | _, Z0 => (Zabs a,(Zsgn a, Z0))
     | Zpos a, Zpos b =>
-       let '(g,(aa,bb)) := Pggcd a b in (Zpos g, (Zpos aa, Zpos bb))
+       let '(g,(aa,bb)) := Pos.ggcd a b in (Zpos g, (Zpos aa, Zpos bb))
     | Zpos a, Zneg b =>
-       let '(g,(aa,bb)) := Pggcd a b in (Zpos g, (Zpos aa, Zneg bb))
+       let '(g,(aa,bb)) := Pos.ggcd a b in (Zpos g, (Zpos aa, Zneg bb))
     | Zneg a, Zpos b =>
-       let '(g,(aa,bb)) := Pggcd a b in (Zpos g, (Zneg aa, Zpos bb))
+       let '(g,(aa,bb)) := Pos.ggcd a b in (Zpos g, (Zneg aa, Zpos bb))
     | Zneg a, Zneg b =>
-       let '(g,(aa,bb)) := Pggcd a b in (Zpos g, (Zneg aa, Zneg bb))
+       let '(g,(aa,bb)) := Pos.ggcd a b in (Zpos g, (Zneg aa, Zneg bb))
   end.
 
 (** The first component of Zggcd is Zgcd *)
@@ -43,7 +43,7 @@ Definition Zggcd (a b : Z) : Z*(Z*Z) :=
 Lemma Zggcd_gcd : forall a b, fst (Zggcd a b) = Zgcd a b.
 Proof.
  intros [ |p|p] [ |q|q]; simpl; auto;
-  generalize (Pggcd_gcd p q); destruct Pggcd as (g,(aa,bb)); simpl; congruence.
+  generalize (Pos.ggcd_gcd p q); destruct Pos.ggcd as (g,(aa,bb)); simpl; congruence.
 Qed.
 
 (** The other components of Zggcd are indeed the correct factors. *)
@@ -53,8 +53,8 @@ Lemma Zggcd_correct_divisors : forall a b,
   a = g*aa /\ b = g*bb.
 Proof.
  intros [ |p|p] [ |q|q]; simpl; rewrite ?Pmult_1_r; auto;
-  generalize (Pggcd_correct_divisors p q);
-  destruct Pggcd as (g,(aa,bb)); simpl; destruct 1; subst; auto.
+  generalize (Pos.ggcd_correct_divisors p q);
+  destruct Pos.ggcd as (g,(aa,bb)); simpl; destruct 1; subst; auto.
 Qed.
 
 (** Divisibility. We use here a simple "exists", while the historical
@@ -102,11 +102,11 @@ Qed.
 
 Lemma Zgcd_greatest : forall a b c, (c|a) -> (c|b) -> (c|Zgcd a b).
 Proof.
- assert (D : forall p q c, (c|Zpos p) -> (c|Zpos q) -> (c|Zpos (Pgcd p q))).
+ assert (D : forall p q c, (c|Zpos p) -> (c|Zpos q) -> (c|Zpos (Pos.gcd p q))).
   intros p q [|r|r] H H'.
   apply Zdivide'_0_l in H. discriminate.
-  apply Zdivide'_Pdivide, Pgcd_greatest; now apply Zdivide'_Pdivide.
-  apply Zdivide'_Zpos_Zneg_l, Zdivide'_Pdivide, Pgcd_greatest;
+  apply Zdivide'_Pdivide, Pos.gcd_greatest; now apply Zdivide'_Pdivide.
+  apply Zdivide'_Zpos_Zneg_l, Zdivide'_Pdivide, Pos.gcd_greatest;
    now apply Zdivide'_Pdivide, Zdivide'_Zpos_Zneg_l.
  intros [ |p|p] [ |q|q]; simpl; auto; intros; try apply D; trivial;
   now apply Zdivide'_Zpos_Zneg_r.
@@ -135,5 +135,5 @@ Theorem Zggcd_opp: forall x y,
                  (g,(-aa,bb)).
 Proof.
 intros [|x|x] [|y|y]; unfold Zggcd, Zopp; auto;
- destruct (Pggcd x y) as (g,(aa,bb)); auto.
+ destruct (Pos.ggcd x y) as (g,(aa,bb)); auto.
 Qed.

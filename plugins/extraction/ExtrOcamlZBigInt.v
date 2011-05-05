@@ -36,14 +36,16 @@ Extract Inductive N => "Big.big_int"
 
 (** Efficient (but uncertified) versions for usual functions *)
 
-Extract Constant Pplus => "Big.add".
-Extract Constant Psucc => "Big.succ".
-Extract Constant Ppred => "fun n -> Big.max Big.one (Big.pred n)".
-Extract Constant Pminus => "fun n m -> Big.max Big.one (Big.sub n m)".
-Extract Constant Pmult => "Big.mult".
-Extract Constant Pmin => "Big.min".
-Extract Constant Pmax => "Big.max".
-Extract Constant Pcompare =>
+Extract Constant Pos.add => "Big.add".
+Extract Constant Pos.succ => "Big.succ".
+Extract Constant Pos.pred => "fun n -> Big.max Big.one (Big.pred n)".
+Extract Constant Pos.sub => "fun n m -> Big.max Big.one (Big.sub n m)".
+Extract Constant Pos.mul => "Big.mult".
+Extract Constant Pos.min => "Big.min".
+Extract Constant Pos.max => "Big.max".
+Extract Constant Pos.compare =>
+ "fun x y -> Big.compare_case Eq Lt Gt x y".
+Extract Constant Pos.compare_cont =>
  "fun x y c -> Big.compare_case c Lt Gt x y".
 
 Extract Constant Nplus => "Big.add".

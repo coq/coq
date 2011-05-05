@@ -109,26 +109,18 @@ Module Positive_as_OT <: UsualOrderedType.
   Definition eq_sym := @sym_eq t.
   Definition eq_trans := @trans_eq t.
 
-  Definition lt p q:= (p ?= q) Eq = Lt.
+  Definition lt := Plt.
 
-  Lemma lt_trans : forall x y z : t, lt x y -> lt y z -> lt x z.
-  Proof.
-  unfold lt; intros x y z.
-  change ((Zpos x < Zpos y)%Z -> (Zpos y < Zpos z)%Z -> (Zpos x < Zpos z)%Z).
-  omega.
-  Qed.
+  Definition lt_trans := Plt_trans.
 
   Lemma lt_not_eq : forall x y : t, lt x y -> ~ eq x y.
   Proof.
-  intros; intro.
-  rewrite H0 in H.
-  unfold lt in H.
-  rewrite Pcompare_refl in H; discriminate.
+  intros x y H. contradict H. rewrite H. apply Plt_irrefl.
   Qed.
 
   Definition compare : forall x y : t, Compare lt eq x y.
   Proof.
-  intros x y. destruct ((x ?= y) Eq) as [ | | ]_eqn.
+  intros x y. destruct (x ?= y) as [ | | ]_eqn.
   apply EQ; apply Pcompare_Eq_eq; assumption.
   apply LT; assumption.
   apply GT; apply ZC1; assumption.
@@ -322,10 +314,10 @@ Module PositiveOrderedTypeBits <: UsualOrderedType.
 
   Lemma eq_dec (x y: positive): {x = y} + {x <> y}.
   Proof.
-  intros. case_eq ((x ?= y) Eq); intros.
+  intros. case_eq (x ?= y); intros.
   left. apply Pcompare_Eq_eq; auto.
-  right. red. intro. subst y. rewrite (Pcompare_refl x) in H. discriminate.
-  right. red. intro. subst y. rewrite (Pcompare_refl x) in H. discriminate.
+  right. red. intro. subst y. rewrite (Pos.compare_refl x) in H. discriminate.
+  right. red. intro. subst y. rewrite (Pos.compare_refl x) in H. discriminate.
   Qed.
 
 End PositiveOrderedTypeBits.

@@ -207,7 +207,7 @@ Proof.
  split. now apply Zle_minus_le_0.
   apply AUX.
   destruct r as [|r|r]; try (now destruct Hr); try easy.
-  red. simpl. apply Pcompare_eq_Lt. exact Hr'.
+  red. simpl. apply Pcompare_Gt_Lt. exact Hr'.
  (* ~0 *)
  destruct Zdiv_eucl_POS as (q,r). cbv zeta.
  simpl in IHa; destruct IHa as (Hr,Hr').

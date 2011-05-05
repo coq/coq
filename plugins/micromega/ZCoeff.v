@@ -138,7 +138,7 @@ Qed.
 
 Lemma clt_morph : forall x y : Z, (x < y)%Z -> [x] < [y].
 Proof.
-unfold Zlt; intros x y H;
+intros x y H.
 do 2 rewrite (same_genZ sor.(SORsetoid) ring_ops_wd sor.(SORrt));
 destruct x; destruct y; simpl in *; try discriminate.
 apply phi_pos1_pos.
@@ -146,8 +146,8 @@ now apply clt_pos_morph.
 apply <- (Ropp_neg_pos sor); apply phi_pos1_pos.
 apply (Rlt_trans sor) with 0. apply <- (Ropp_neg_pos sor); apply phi_pos1_pos.
 apply phi_pos1_pos.
-rewrite Pcompare_antisym in H; simpl in H. apply -> (Ropp_lt_mono sor).
-now apply clt_pos_morph.
+apply -> (Ropp_lt_mono sor); apply clt_pos_morph.
+red. now rewrite Pos.compare_antisym.
 Qed.
 
 Lemma Zcleb_morph : forall x y : Z, Zle_bool x y = true -> [x] <= [y].

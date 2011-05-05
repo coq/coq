@@ -27,14 +27,14 @@ Proof.
   intros. now apply (Peqb_eq p p').
 Qed.
 
-Lemma Peqb_Pcompare : forall p p', Peqb p p' = true -> Pcompare p p' Eq = Eq.
+Lemma Peqb_Pcompare : forall p p', Peqb p p' = true -> Pos.compare p p' = Eq.
 Proof.
-  intros. now rewrite Pcompare_eq_iff, <- Peqb_eq.
+  intros. now rewrite Pos.compare_eq_iff, <- Peqb_eq.
 Qed.
 
-Lemma Pcompare_Peqb : forall p p', Pcompare p p' Eq = Eq -> Peqb p p' = true.
+Lemma Pcompare_Peqb : forall p p', Pos.compare p p' = Eq -> Peqb p p' = true.
 Proof.
-  intros; now rewrite Peqb_eq, <- Pcompare_eq_iff.
+  intros; now rewrite Peqb_eq, <- Pos.compare_eq_iff.
 Qed.
 
 Lemma Neqb_correct : forall n, Neqb n n = true.

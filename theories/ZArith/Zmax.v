@@ -83,9 +83,8 @@ Definition Zplus_max_distr_r : forall n m p:Z, Zmax (n + p) (m + p) = Zmax n m +
 
 Lemma Zpos_max : forall p q, Zpos (Pmax p q) = Zmax (Zpos p) (Zpos q).
 Proof.
- intros; unfold Zmax, Pmax; simpl; generalize (Pcompare_Eq_eq p q).
- destruct Pcompare; auto.
- intro H; rewrite H; auto.
+ intros; unfold Zmax, Pmax. simpl.
+ case Pos.compare_spec; auto; congruence.
 Qed.
 
 Lemma Zpos_max_1 : forall p, Zmax 1 (Zpos p) = Zpos p.
@@ -97,9 +96,8 @@ Qed.
 
 Lemma Zpos_minus : forall p q, Zpos (Pminus p q) = Zmax 1 (Zpos p - Zpos q).
 Proof.
-  intros; simpl. destruct (Pcompare p q Eq) as [ ]_eqn:H.
-  rewrite (Pcompare_Eq_eq _ _ H).
-  unfold Pminus; rewrite Pminus_mask_diag; reflexivity.
+  intros; simpl. case Pos.compare_spec; intros H.
+  now rewrite H, Pos.sub_diag.
   rewrite Pminus_Lt; auto.
   symmetry. apply Zpos_max_1.
 Qed.

@@ -128,7 +128,7 @@ Definition Ncompare n m :=
   | 0, 0 => Eq
   | 0, Npos m' => Lt
   | Npos n', 0 => Gt
-  | Npos n', Npos m' => (n' ?= m')%positive Eq
+  | Npos n', Npos m' => (n' ?= m')%positive
   end.
 
 Infix "?=" := Ncompare (at level 70, no associativity) : N_scope.
@@ -497,8 +497,8 @@ Proof.
 intros [|p] [|q]; simpl; split; intros H; auto.
 destruct p; discriminate.
 destruct H; discriminate.
-apply Pcompare_p_Sq in H; destruct H; subst; auto.
-apply Pcompare_p_Sq; destruct H; [left|right]; congruence.
+apply Plt_succ_r, Ple_lteq in H. destruct H; subst; auto.
+apply Plt_succ_r, Ple_lteq. destruct H; [left|right]; congruence.
 Qed.
 
 Lemma Nle_lteq : forall x y, x <= y <-> x < y \/ x=y.

@@ -69,13 +69,13 @@ Definition Zplus (x y:Z) :=
     | Zneg x', Z0 => Zneg x'
     | Zpos x', Zpos y' => Zpos (x' + y')
     | Zpos x', Zneg y' =>
-      match (x' ?= y')%positive Eq with
+      match (x' ?= y')%positive with
 	| Eq => Z0
 	| Lt => Zneg (y' - x')
 	| Gt => Zpos (x' - y')
       end
     | Zneg x', Zpos y' =>
-      match (x' ?= y')%positive Eq with
+      match (x' ?= y')%positive with
 	| Eq => Z0
 	| Lt => Zpos (y' - x')
 	| Gt => Zneg (x' - y')
@@ -132,11 +132,11 @@ Definition Zcompare (x y:Z) :=
     | Z0, Zpos y' => Lt
     | Z0, Zneg y' => Gt
     | Zpos x', Z0 => Gt
-    | Zpos x', Zpos y' => (x' ?= y')%positive Eq
+    | Zpos x', Zpos y' => (x' ?= y')%positive
     | Zpos x', Zneg y' => Gt
     | Zneg x', Z0 => Lt
     | Zneg x', Zpos y' => Lt
-    | Zneg x', Zneg y' => CompOpp ((x' ?= y')%positive Eq)
+    | Zneg x', Zneg y' => CompOpp ((x' ?= y')%positive)
   end.
 
 Infix "?=" := Zcompare (at level 70, no associativity) : Z_scope.
@@ -270,8 +270,8 @@ Theorem Zplus_comm : forall n m:Z, n + m = m + n.
 Proof.
   induction n as [|p|p]; intros [|q|q]; simpl; try reflexivity.
   rewrite Pplus_comm; reflexivity.
-  rewrite ZC4. now case Pcompare_spec.
-  rewrite ZC4; now case Pcompare_spec.
+  rewrite Pos.compare_antisym. now case Pcompare_spec.
+  rewrite Pos.compare_antisym. now case Pcompare_spec.
   rewrite Pplus_comm; reflexivity.
 Qed.
 
@@ -280,7 +280,7 @@ Qed.
 Theorem Zopp_plus_distr : forall n m:Z, - (n + m) = - n + - m.
 Proof.
   intro x; destruct x as [| p| p]; intro y; destruct y as [| q| q];
-    simpl; reflexivity || destruct ((p ?= q)%positive Eq);
+    simpl; reflexivity || destruct ((p ?= q)%positive);
       reflexivity.
 Qed.
 
@@ -319,8 +319,7 @@ Proof.
  assert (H := Plt_plus_r z x). rewrite Pplus_comm in H. apply ZC2 in H.
  now rewrite H, Pplus_minus_eq.
  (* y < z *)
- assert (Hz : (z = (z-y)+y)%positive).
-  rewrite Pplus_comm, Pplus_minus_lt; trivial.
+ assert (Hz : (z = (z-y)+y)%positive) by (now rewrite Pos.sub_add).
  pattern z at 4. rewrite Hz, Pplus_compare_mono_r.
  case Pcompare_spec; intros E1; trivial; f_equal.
  symmetry. rewrite Pplus_comm. apply Pminus_plus_distr.
@@ -627,13 +626,12 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma Zpos_minus_morphism : forall a b:positive, Pcompare a b Eq = Lt ->
+Lemma Zpos_minus_morphism : forall a b:positive, Pos.compare a b = Lt ->
   Zpos (b-a) = Zpos b - Zpos a.
 Proof.
   intros.
   simpl.
-  change Eq with (CompOpp Eq).
-  rewrite <- Pcompare_antisym.
+  rewrite Pos.compare_antisym.
   rewrite H; simpl; auto.
 Qed.
 
@@ -800,7 +798,7 @@ Lemma weak_Zmult_plus_distr_r :
 Proof.
  intros x [ |y|y] [ |z|z]; simpl; trivial; f_equal;
   apply Pmult_plus_distr_l || rewrite Pmult_compare_mono_l;
-  case_eq ((y ?= z) Eq)%positive; intros H; trivial;
+  case_eq ((y ?= z)%positive); intros H; trivial;
    rewrite Pmult_minus_distr_l; trivial; now apply ZC1.
 Qed.
 

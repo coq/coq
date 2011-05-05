@@ -8,7 +8,7 @@
 
 (** Definition of a square root function for Z. *)
 
-Require Import BinPos BinInt Psqrt.
+Require Import BinPos BinInt.
 
 Local Open Scope Z_scope.
 
@@ -16,7 +16,7 @@ Definition Zsqrtrem n :=
  match n with
   | 0 => (0, 0)
   | Zpos p =>
-    match Psqrtrem p with
+    match Pos.sqrtrem p with
      | (s, IsPos r) => (Zpos s, Zpos r)
      | (s, _) => (Zpos s, 0)
     end
@@ -26,7 +26,7 @@ Definition Zsqrtrem n :=
 Definition Zsqrt n :=
  match n with
   | 0 => 0
-  | Zpos p => Zpos (Psqrt p)
+  | Zpos p => Zpos (Pos.sqrt p)
   | Zneg _ => 0
  end.
 
@@ -34,7 +34,7 @@ Lemma Zsqrtrem_spec : forall n, 0<=n ->
  let (s,r) := Zsqrtrem n in n = s*s + r /\ 0 <= r <= 2*s.
 Proof.
  destruct n. now repeat split.
- generalize (Psqrtrem_spec p). simpl.
+ generalize (Pos.sqrtrem_spec p). simpl.
  destruct 1; simpl; subst; now repeat split.
  now destruct 1.
 Qed.
@@ -43,7 +43,7 @@ Lemma Zsqrt_spec : forall n, 0<=n ->
  let s := Zsqrt n in s*s <= n < (Zsucc s)*(Zsucc s).
 Proof.
  destruct n. now repeat split. unfold Zsqrt.
- rewrite <- Zpos_succ_morphism. intros _. apply (Psqrt_spec p).
+ rewrite <- Zpos_succ_morphism. intros _. apply (Pos.sqrt_spec p).
  now destruct 1.
 Qed.
 
@@ -55,6 +55,6 @@ Qed.
 Lemma Zsqrtrem_sqrt : forall n, fst (Zsqrtrem n) = Zsqrt n.
 Proof.
  destruct n; try reflexivity.
- unfold Zsqrtrem, Zsqrt, Psqrt.
- destruct (Psqrtrem p) as (s,r). now destruct r.
+ unfold Zsqrtrem, Zsqrt, Pos.sqrt.
+ destruct (Pos.sqrtrem p) as (s,r). now destruct r.
 Qed.

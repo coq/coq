@@ -220,10 +220,10 @@ Module MoreInt (I:Int).
       | (?x \/ ?y) => let ex := p2ep x with ey := p2ep y in constr:(EPor ex ey)
       | (~ ?x) => let ex := p2ep x in constr:(EPneg ex)
       | (eq (A:=Z) ?x ?y) => let ex := z2ez x with ey := z2ez y in constr:(EPeq ex ey)
-      | (?x<?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EPlt ex ey)
-      | (?x<=?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EPle ex ey)
-      | (?x>?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EPgt ex ey)
-      | (?x>=?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EPge ex ey)
+      | (?x < ?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EPlt ex ey)
+      | (?x <= ?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EPle ex ey)
+      | (?x > ?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EPgt ex ey)
+      | (?x >= ?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EPge ex ey)
       | ?x =>  constr:(EPraw x)
     end.
 

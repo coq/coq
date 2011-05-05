@@ -12,39 +12,15 @@ Local Open Scope positive_scope.
 
 (** * DecidableType structure for [positive] numbers *)
 
-Module Positive_as_UBE <: UsualBoolEq.
- Definition t := positive.
- Definition eq := @eq positive.
- Definition eqb := Peqb.
- Definition eqb_eq := Peqb_eq.
-End Positive_as_UBE.
-
-Module Positive_as_DT <: UsualDecidableTypeFull
- := Make_UDTF Positive_as_UBE.
+Module Positive_as_DT <: UsualDecidableTypeFull := Pos.
 
 (** Note that the last module fulfills by subtyping many other
     interfaces, such as [DecidableType] or [EqualityType]. *)
 
 
-
 (** * OrderedType structure for [positive] numbers *)
 
-Module Positive_as_OT <: OrderedTypeFull.
- Include Positive_as_DT.
- Definition lt := Plt.
- Definition le := Ple.
- Definition compare p q := Pcompare p q Eq.
-
- Instance lt_strorder : StrictOrder Plt.
- Proof. split; [ exact Plt_irrefl | exact Plt_trans ]. Qed.
-
- Instance lt_compat : Proper (Logic.eq==>Logic.eq==>iff) Plt.
- Proof. repeat red; intros; subst; auto. Qed.
-
- Definition le_lteq := Ple_lteq.
- Definition compare_spec := Pcompare_spec.
-
-End Positive_as_OT.
+Module Positive_as_OT <: OrderedTypeFull := Pos.
 
 (** Note that [Positive_as_OT] can also be seen as a [UsualOrderedType]
    and a [OrderedType] (and also as a [DecidableType]). *)
