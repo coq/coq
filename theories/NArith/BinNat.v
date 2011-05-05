@@ -80,42 +80,30 @@ Defined.
 
 (** Convenient induction principles *)
 
-Lemma binary_ind :
- forall (a:N) (P:N -> Prop),
-   P 0 ->
-   (forall a, P a -> P (double a)) ->
-   (forall a, P a -> P (succ_double a)) -> P a.
-Proof.
- intros a P P0 P2 PS2. destruct a as [|p]. trivial.
- induction p as [p IHp|p IHp| ].
- now apply (PS2 (Npos p)).
- now apply (P2 (Npos p)).
- now apply (PS2 0).
-Qed.
+Definition binary_rect (P:N -> Type) (f0 : P 0)
+  (f2 : forall n, P n -> P (double n))
+  (fS2 : forall n, P n -> P (succ_double n)) (n : N) : P n :=
+ let P' p := P (Npos p) in
+ let f2' p := f2 (Npos p) in
+ let fS2' p := fS2 (Npos p) in
+ match n with
+ | 0 => f0
+ | Npos p => positive_rect P' fS2' f2' (fS2 0 f0) p
+ end.
 
-Lemma binary_rec :
- forall (a:N) (P:N -> Set),
-   P 0 ->
-   (forall a, P a -> P (double a)) ->
-   (forall a, P a -> P (succ_double a)) -> P a.
-Proof.
- intros a P P0 P2 PS2. destruct a as [|p]. trivial.
- induction p as [p IHp|p IHp| ].
- now apply (PS2 (Npos p)).
- now apply (P2 (Npos p)).
- now apply (PS2 0).
-Qed.
+Definition binary_rec (P:N -> Set) := binary_rect P.
+Definition binary_ind (P:N -> Prop) := binary_rect P.
 
 (** Peano induction on binary natural numbers *)
 
 Definition peano_rect
-  (P : N -> Type) (a : P 0)
+  (P : N -> Type) (f0 : P 0)
     (f : forall n : N, P n -> P (succ n)) (n : N) : P n :=
-let f' (p : positive) (x : P (Npos p)) := f (Npos p) x in
-let P' (p : positive) := P (Npos p) in
-match n return (P n) with
-| 0 => a
-| Npos p => Pos.peano_rect P' (f 0 a) f' p
+let P' p := P (Npos p) in
+let f' p := f (Npos p) in
+match n with
+| 0 => f0
+| Npos p => Pos.peano_rect P' (f 0 f0) f' p
 end.
 
 Theorem peano_rect_base P a f : peano_rect P a f 0 = a.
@@ -1074,8 +1062,6 @@ Notation Nlog2 := N.log2 (only parsing).
 Notation nat_of_N := N.to_nat (only parsing).
 Notation N_of_nat := N.of_nat (only parsing).
 Notation N_eq_dec := N.eq_dec (only parsing).
-Notation N_ind_double := N.binary_ind (only parsing).
-Notation N_rec_double := N.binary_rec (only parsing).
 Notation Nrect := N.peano_rect (only parsing).
 Notation Nrect_base := N.peano_rect_base (only parsing).
 Notation Nrect_step := N.peano_rect_succ (only parsing).
@@ -1144,5 +1130,8 @@ Lemma Nmult_plus_distr_l n m p : p * (n + m) = p * n + p * m.
 Proof (N.mul_add_distr_l p n m).
 Lemma Nmult_reg_r n m p : p <> 0 -> n * p = m * p -> n = m.
 Proof (fun H => proj1 (N.mul_cancel_r n m p H)).
+
+Definition N_ind_double a P f0 f2 fS2 := N.binary_ind P f0 f2 fS2 a.
+Definition N_rec_double a P f0 f2 fS2 := N.binary_rec P f0 f2 fS2 a.
 
 (** Not kept : Ncompare_n_Sm Nplus_lt_cancel_l *)
