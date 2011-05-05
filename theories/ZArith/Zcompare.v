@@ -77,9 +77,7 @@ Qed.
 Lemma Zcompare_Lt_trans :
   forall n m p:Z, (n ?= m) = Lt -> (m ?= p) = Lt -> (n ?= p) = Lt.
 Proof.
- intros n m p; destruct n,m,p; simpl; try discriminate; trivial.
- eapply Plt_trans; eauto.
- rewrite <- 3 Pos.compare_antisym; simpl. intros; eapply Plt_trans; eauto.
+ exact Z.lt_trans.
 Qed.
 
 Lemma Zcompare_Gt_trans :
@@ -94,78 +92,38 @@ Qed.
 
 (** * Comparison and opposite *)
 
-Lemma Zcompare_opp : forall n m:Z, (n ?= m) = (- m ?= - n).
+Lemma Zcompare_opp : forall n m, (n ?= m) = (- m ?= - n).
 Proof.
- destruct n, m; simpl; trivial; intros; now rewrite <- Pos.compare_antisym.
+ symmetry. apply Z.compare_opp.
 Qed.
 
 (** * Comparison first-order specification *)
 
 Lemma Zcompare_Gt_spec :
-  forall n m:Z, (n ?= m) = Gt ->  exists h, n + - m = Zpos h.
+  forall n m, (n ?= m) = Gt ->  exists h, n + - m = Zpos h.
 Proof.
- intros [|p|p] [|q|q]; simpl; try discriminate.
- now exists q.
- now exists p.
- intros GT. exists (p-q)%positive. now rewrite GT.
- now exists (p+q)%positive.
- intros LT. apply CompOpp_iff in LT. simpl in LT.
- exists (q-p)%positive. now rewrite LT.
+ intros n m H. rewrite Z.compare_sub in H. unfold Z.sub in H.
+ destruct (n+-m) as [|p|p]; try discriminate. now exists p.
 Qed.
 
 (** * Comparison and addition *)
 
-Local Hint Resolve Pcompare_refl.
-
-Lemma weak_Zcompare_plus_compat :
-  forall (n m:Z) (p:positive), (Zpos p + n ?= Zpos p + m) = (n ?= m).
+Lemma Zcompare_plus_compat : forall n m p, (p + n ?= p + m) = (n ?= m).
 Proof.
- intros [|x|x] [|y|y] z; simpl; trivial; try apply ZC2;
-  try apply Plt_plus_r.
- case Pcompare_spec; intros E0; trivial; try apply ZC2;
-  now apply Pminus_decr.
- apply Pplus_compare_mono_l.
- case Pcompare_spec; intros E0; trivial; try apply ZC2.
-  apply Plt_trans with z. now apply Pminus_decr. apply Plt_plus_r.
- case Pcompare_spec; intros E0; trivial; try apply ZC2.
-  now apply Pminus_decr.
- case Pcompare_spec; intros E0; trivial; try apply ZC2.
-  apply Plt_trans with z. now apply Pminus_decr. apply Plt_plus_r.
- case Pcompare_spec; intros E0; simpl; subst.
-  now case Pcompare_spec.
-  case Pcompare_spec; intros E1; simpl; subst; trivial.
-  now rewrite <- Pos.compare_antisym.
-  f_equal.
-  apply Pminus_compare_mono_r; trivial.
-  rewrite <- Pos.compare_antisym. symmetry. now apply Plt_trans with z.
-  case Pcompare_spec; intros E1; simpl; subst; trivial.
-  now rewrite E0.
-  symmetry. apply CompOpp_iff. now apply Plt_trans with z.
-  rewrite <- Pos.compare_antisym.
-  apply Pminus_compare_mono_l; trivial.
-Qed.
-
-Lemma Zcompare_plus_compat : forall n m p:Z, (p + n ?= p + m) = (n ?= m).
-Proof.
- intros x y [|z|z]; trivial.
- apply weak_Zcompare_plus_compat.
- rewrite (Zcompare_opp x y), Zcompare_opp, 2 Zopp_plus_distr, Zopp_neg.
- apply weak_Zcompare_plus_compat.
+ intros. apply Z.add_compare_mono_l.
 Qed.
 
 Lemma Zplus_compare_compat :
   forall (r:comparison) (n m p q:Z),
     (n ?= m) = r -> (p ?= q) = r -> (n + p ?= m + q) = r.
 Proof.
- intros [ | | ] x y z t H H'.
- apply Zcompare_Eq_eq in H. apply Zcompare_Eq_eq in H'. subst.
-  apply Zcompare_refl.
- apply Zcompare_Lt_trans with (y+z).
- now rewrite 2 (Zplus_comm _ z), Zcompare_plus_compat.
- now rewrite Zcompare_plus_compat.
- apply Zcompare_Gt_trans with (y+z).
- now rewrite 2 (Zplus_comm _ z), Zcompare_plus_compat.
- now rewrite Zcompare_plus_compat.
+ intros r n m p q.
+ rewrite (Z.compare_sub n), (Z.compare_sub p), (Z.compare_sub (n+p)).
+ unfold Z.sub. rewrite Z.BootStrap.opp_add_distr.
+ rewrite <- Z.BootStrap.add_assoc, (Z.BootStrap.add_assoc p).
+ rewrite (Z.BootStrap.add_comm p (-m)).
+ rewrite <- Z.BootStrap.add_assoc,  (Z.BootStrap.add_assoc n).
+ destruct (n+-m), (p+-q); simpl; intros; now subst.
 Qed.
 
 Lemma Zcompare_succ_Gt : forall n:Z, (Zsucc n ?= n) = Gt.
@@ -176,17 +134,10 @@ Qed.
 
 Lemma Zcompare_Gt_not_Lt : forall n m:Z, (n ?= m) = Gt <-> (n ?= m+1) <> Lt.
 Proof.
- intros x y; split; intros H.
- (* -> *)
- destruct (Zcompare_Gt_spec _ _ H) as (h,EQ).
- replace x with (y+Zpos h) by (rewrite <- EQ; apply Zplus_minus).
- rewrite Zcompare_plus_compat. apply Plt_1.
- (* <- *)
- assert (H' := Zcompare_succ_Gt y).
- destruct (Zcompare_spec x (y+1)) as [->|LT|GT]; trivial.
-  now elim H.
-  apply Zcompare_Gt_Lt_antisym in GT.
-   apply Zcompare_Gt_trans with (y+1); trivial.
+ intros n m. rewrite 2 (Z.compare_sub n).
+ unfold Z.sub. rewrite Z.BootStrap.opp_add_distr.
+ rewrite Z.BootStrap.add_assoc.
+ destruct (n+-m) as [|[ | | ]|]; simpl; easy'.
 Qed.
 
 (** * Successor and comparison *)
@@ -316,62 +267,13 @@ Proof.
     apply Zmult_compare_compat_l; assumption.
 Qed.
 
-(*************************)
-(** * Basic properties of minimum and maximum *)
+Notation Zmin_l := Z.min_l (only parsing).
+Notation Zmin_r := Z.min_r (only parsing).
+Notation Zmax_l := Z.max_l (only parsing).
+Notation Zmax_r := Z.max_r (only parsing).
+Notation Zabs_eq := Z.abs_eq (only parsing).
+Notation Zabs_non_eq := Z.abs_neq (only parsing).
+Notation Zsgn_0 := Z.sgn_null (only parsing).
+Notation Zsgn_1 := Z.sgn_pos (only parsing).
+Notation Zsgn_m1 := Z.sgn_neg (only parsing).
 
-Lemma Zmax_l : forall x y, y<=x -> Zmax x y = x.
-Proof.
- unfold Zle, Zmax. intros x y. rewrite <- (Zcompare_antisym x y).
- destruct (x ?= y); intuition.
-Qed.
-
-Lemma Zmax_r : forall x y, x<=y -> Zmax x y = y.
-Proof.
- unfold Zle, Zmax. intros x y. generalize (Zcompare_Eq_eq x y).
- destruct (x ?= y); intuition.
-Qed.
-
-Lemma Zmin_l : forall x y, x<=y -> Zmin x y = x.
-Proof.
- unfold Zle, Zmin. intros x y. generalize (Zcompare_Eq_eq x y).
- destruct (x ?= y); intuition.
-Qed.
-
-Lemma Zmin_r : forall x y, y<=x -> Zmin x y = y.
-Proof.
- unfold Zle, Zmin. intros x y.
- rewrite <- (Zcompare_antisym x y). generalize (Zcompare_Eq_eq x y).
- destruct (x ?= y); intuition.
-Qed.
-
-
-(**************************)
-(** * Basic properties of [Zabs] *)
-
-Lemma Zabs_eq : forall n:Z, 0 <= n -> Zabs n = n.
-Proof.
- destruct n; auto. now destruct 1.
-Qed.
-
-Lemma Zabs_non_eq : forall n:Z, n <= 0 -> Zabs n = - n.
-Proof.
- destruct n; auto. now destruct 1.
-Qed.
-
-(**************************)
-(** * Basic properties of [Zsign] *)
-
-Lemma Zsgn_0 : forall x, x = 0 -> Zsgn x = 0.
-Proof.
- intros. now subst.
-Qed.
-
-Lemma Zsgn_1 : forall x, 0 < x -> Zsgn x = 1.
-Proof.
- destruct x; auto; discriminate.
-Qed.
-
-Lemma Zsgn_m1 : forall x, x < 0 -> Zsgn x = -1.
-Proof.
- destruct x; auto; discriminate.
-Qed.

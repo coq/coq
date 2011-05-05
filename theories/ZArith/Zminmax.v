@@ -6,9 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Orders BinInt Zcompare Zorder ZBinary.
+Require Import Orders BinInt Zcompare Zorder.
 
-(** THIS FILE IS DEPRECATED. Use [ZBinary.Z] instead. *)
+(** THIS FILE IS DEPRECATED. *)
 
 (*begin hide*)
 (* Compatibility with names of the old Zminmax file *)

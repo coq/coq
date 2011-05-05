@@ -876,12 +876,12 @@ Open Scope Int_scope.
 Ltac join_tac :=
  intro l; induction l as [| ll _ lx lr Hlr lh];
    [ | intros x r; induction r as [| rl Hrl rx rr _ rh]; unfold join;
-     [ | destruct (gt_le_dec lh (rh+2));
+     [ | destruct (gt_le_dec lh (rh+2)) as [GT|LE];
        [ match goal with |- context b [ bal ?a ?b ?c] =>
            replace (bal a b c)
            with (bal ll lx (join lr x (Node rl rx rr rh))); [ | auto]
          end
-       | destruct (gt_le_dec rh (lh+2));
+       | destruct (gt_le_dec rh (lh+2)) as [GT'|LE'];
          [ match goal with |- context b [ bal ?a ?b ?c] =>
              replace (bal a b c)
              with (bal (join (Node ll lx lr lh) x rl) rx rr); [ | auto]
@@ -904,7 +904,7 @@ Instance join_ok : forall l x r `(Ok l, Ok r, lt_tree x l, gt_tree x r),
  Ok (join l x r).
 Proof.
  join_tac; auto with *; inv; apply bal_ok; auto;
- clear Hrl Hlr z; intro; intros; rewrite join_spec in *.
+ clear Hrl Hlr; intro; intros; rewrite join_spec in *.
  intuition; [ setoid_replace y with x | ]; eauto.
  intuition; [ setoid_replace y with x | ]; eauto.
 Qed.

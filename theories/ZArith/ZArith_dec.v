@@ -36,16 +36,11 @@ Proof.
   intro; apply Zcompare_rect.
 Defined.
 
+Notation Z_eq_dec := Z.eq_dec (only parsing).
+
 Section decidability.
 
   Variables x y : Z.
-
-  (** * Decidability of equality on binary integers *)
-
-  Definition Z_eq_dec : {x = y} + {x <> y}.
-  Proof.
-    decide equality; apply positive_eq_dec.
-  Defined.
 
   (** * Decidability of order on binary integers *)
 

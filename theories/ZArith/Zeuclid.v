@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Morphisms BinInt Zdiv_def ZBinary ZDivEucl.
+Require Import Morphisms BinInt Zdiv_def ZDivEucl.
 Local Open Scope Z_scope.
 
 (** * Definitions of division for binary integers, Euclid convention. *)
@@ -45,8 +45,8 @@ Module ZEuclid.
 
  Lemma mod_bound_pos : forall a b, 0<=a -> 0<b -> 0 <= modulo a b < b.
  Proof.
-  intros a b _ Hb. rewrite <- (Z.abs_eq b) at 3 by z_order.
-  apply mod_always_pos. z_order.
+  intros a b _ Hb. rewrite <- (Z.abs_eq b) at 3 by Z.order.
+  apply mod_always_pos. Z.order.
  Qed.
 
  Include ZEuclidProp Z Z Z.

@@ -444,10 +444,7 @@ Proof.
     [ assumption | apply Zgt_succ ].
 Qed.
 
-Lemma Zlt_succ_r : forall n m, n < Zsucc m <-> n <= m.
-Proof.
-  split; [apply Zlt_succ_le | apply Zle_lt_succ].
-Qed.
+Notation Zlt_succ_r := Z.lt_succ_r (only parsing).
 
 Lemma Zle_succ_l : forall n m, Zsucc n <= m <-> n < m.
 Proof.

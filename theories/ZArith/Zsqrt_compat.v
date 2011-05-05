@@ -221,9 +221,9 @@ Proof.
 Qed.
 
 
-(** Equivalence between Zsqrt_plain and [Zsqrt_def.Zsqrt] *)
+(** Equivalence between Zsqrt_plain and [Z.sqrt] *)
 
-Lemma Zsqrt_equiv : forall n, Zsqrt_plain n = Zsqrt_def.Zsqrt n.
+Lemma Zsqrt_equiv : forall n, Zsqrt_plain n = Z.sqrt n.
 Proof.
  intros. destruct (Z_le_gt_dec 0 n).
  symmetry. apply Z.sqrt_unique; trivial.

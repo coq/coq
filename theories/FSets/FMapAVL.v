@@ -541,12 +541,12 @@ Ltac intuition_in := repeat progress (intuition; inv In; inv MapsTo).
 Ltac join_tac :=
  intros l; induction l as [| ll _ lx ld lr Hlr lh];
    [ | intros x d r; induction r as [| rl Hrl rx rd rr _ rh]; unfold join;
-     [ | destruct (gt_le_dec lh (rh+2));
+     [ | destruct (gt_le_dec lh (rh+2)) as [GT|LE];
        [ match goal with |- context [ bal ?u ?v ?w ?z ] =>
            replace (bal u v w z)
            with (bal ll lx ld (join lr x d (Node rl rx rd rr rh))); [ | auto]
          end
-       | destruct (gt_le_dec rh (lh+2));
+       | destruct (gt_le_dec rh (lh+2)) as [GT'|LE'];
          [ match goal with |- context [ bal ?u ?v ?w ?z ] =>
              replace (bal u v w z)
              with (bal (join (Node ll lx ld lr lh) x d rl) rx rd rr); [ | auto]
@@ -1112,7 +1112,7 @@ Lemma join_bst : forall l x d r, bst l -> bst r ->
  lt_tree x l -> gt_tree x r -> bst (join l x d r).
 Proof.
  join_tac; auto; try (simpl; auto; fail); inv bst; apply bal_bst; auto;
- clear Hrl Hlr z; intro; intros; rewrite join_in in *.
+ clear Hrl Hlr; intro; intros; rewrite join_in in *.
  intuition; [ apply MX.lt_eq with x | ]; eauto.
  intuition; [ apply MX.eq_lt with x | ]; eauto.
 Qed.

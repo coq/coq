@@ -1009,12 +1009,7 @@ Definition eval := eval_formula.
 
 Definition prod_pos_nat := prod positive nat.
 
-Definition n_of_Z (z:Z) : N :=
-  match z with
-    | Z0 => N0
-    | Zpos p => Npos p
-    | Zneg p => N0
-  end.
+Notation n_of_Z := Z.to_N (only parsing).
 
 (* Local Variables: *)
 (* coding: utf-8 *)

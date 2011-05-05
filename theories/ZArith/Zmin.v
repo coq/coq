@@ -5,9 +5,10 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-(** THIS FILE IS DEPRECATED. Use [ZBinary.Z] instead. *)
 
-Require Import BinInt Zcompare Zorder ZBinary.
+(** THIS FILE IS DEPRECATED. *)
+
+Require Import BinInt Zcompare Zorder.
 
 Open Local Scope Z_scope.
 

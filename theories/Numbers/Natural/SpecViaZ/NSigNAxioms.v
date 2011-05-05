@@ -304,7 +304,7 @@ Qed.
 Definition divide n m := exists p, n*p == m.
 Local Notation "( x | y )" := (divide x y) (at level 0).
 
-Lemma spec_divide : forall n m, (n|m) <-> Zdivide' [n] [m].
+Lemma spec_divide : forall n m, (n|m) <-> Z.divide [n] [m].
 Proof.
  intros n m. split.
  intros (p,H). exists [p]. revert H; now zify.

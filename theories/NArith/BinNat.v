@@ -27,7 +27,7 @@ Local Open Scope N_scope.
     are placed in a module [N] for qualification purpose. *)
 
 Module N
- <: NAxiomsMiniSig
+ <: NAxiomsSig
  <: UsualOrderedTypeFull
  <: UsualDecidableTypeFull
  <: TotalOrder.
@@ -38,8 +38,8 @@ Include BinNatDef.N.
 
 (** Logical predicates *)
 
-Definition eq := @Logic.eq t.
-Definition eq_equiv := @eq_equivalence t.
+Definition eq := @Logic.eq N.
+Definition eq_equiv := @eq_equivalence N.
 
 Definition lt x y := (x ?= y) = Lt.
 Definition gt x y := (x ?= y) = Gt.
@@ -143,18 +143,6 @@ Theorem peano_rec_succ P a f n :
  peano_rec P a f (succ n) = f n (peano_rec P a f n).
 Proof.
 apply peano_rect_succ.
-Qed.
-
-(** Properties of double *)
-
-Lemma double_spec n : double n = 2 * n.
-Proof.
- reflexivity.
-Qed.
-
-Lemma succ_double_spec n : succ_double n = 2 * n + 1.
-Proof.
- now destruct n.
 Qed.
 
 (** Properties of mixed successor and predecessor. *)
@@ -324,14 +312,6 @@ Qed.
 
 Module Import BootStrap.
 
-Theorem succ_inj n m : succ n = succ m -> n = m.
-Proof.
-destruct n as [|p], m as [|q]; intro H; simpl in *; trivial; destr_eq H.
- now destruct (Pos.succ_not_1 q).
- now destruct (Pos.succ_not_1 p).
- f_equal. now apply Pos.succ_inj.
-Qed.
-
 Theorem add_0_r n : n + 0 = n.
 Proof.
 now destruct n.
@@ -362,51 +342,14 @@ Proof.
  rewrite <- H1 in H. now destruct H.
 Qed.
 
-Theorem mul_1_l n : 1 * n = n.
-Proof.
-now destruct n.
-Qed.
-
 Theorem mul_comm n m : n * m = m * n.
 Proof.
 destruct n, m; simpl; trivial. f_equal. apply Pos.mul_comm.
 Qed.
 
-Theorem mul_assoc n m p : n * (m * p) = n * m * p.
-Proof.
-destruct n; try reflexivity.
-destruct m; try reflexivity.
-destruct p; try reflexivity.
-simpl. f_equal. apply Pos.mul_assoc.
-Qed.
-
-Theorem mul_add_distr_r n m p : (n + m) * p = n * p + m * p.
-Proof.
-destruct n; try reflexivity.
-destruct m, p; try reflexivity.
-simpl. f_equal. apply Pos.mul_add_distr_r.
-Qed.
-
-Theorem mul_add_distr_l n m p : n * (m + p) = n * m + n * p.
-Proof.
-rewrite !(mul_comm n); apply mul_add_distr_r.
-Qed.
-
 Lemma le_0_l n : 0<=n.
 Proof.
 now destruct n.
-Qed.
-
-Theorem lt_trans n m q : n < m -> m < q -> n < q.
-Proof.
-destruct n, m, q; try easy. eapply Pos.lt_trans; eauto.
-Qed.
-
-Lemma le_trans n m p : n<=m -> m<=p -> n<=p.
-Proof.
- rewrite 3 lt_eq_cases. intros [H|H] [H'|H']; subst;
-  (now right) || left; trivial.
- now apply lt_trans with m.
 Qed.
 
 Lemma add_lt_cancel_l n m p : p+n < p+m -> n<m.
@@ -422,6 +365,68 @@ Proof.
 Qed.
 
 End BootStrap.
+
+
+(** Properties of [double] and [succ_double] *)
+
+Lemma double_spec n : double n = 2 * n.
+Proof.
+ reflexivity.
+Qed.
+
+Lemma succ_double_spec n : succ_double n = 2 * n + 1.
+Proof.
+ now destruct n.
+Qed.
+
+Lemma double_add n m : double (n+m) = double n + double m.
+Proof.
+ now destruct n, m.
+Qed.
+
+Lemma succ_double_add n m : succ_double (n+m) = double n + succ_double m.
+Proof.
+ now destruct n, m.
+Qed.
+
+Lemma double_mul n m : double (n*m) = double n * m.
+Proof.
+ now destruct n, m.
+Qed.
+
+Lemma succ_double_mul n m :
+ succ_double n * m = double n * m + m.
+Proof.
+ destruct n; simpl; destruct m; trivial.
+ now rewrite Pos.add_comm.
+Qed.
+
+Lemma div2_double n : div2 (double n) = n.
+Proof.
+now destruct n.
+Qed.
+
+Lemma div2_succ_double n : div2 (succ_double n) = n.
+Proof.
+now destruct n.
+Qed.
+
+Lemma double_inj n m : double n = double m -> n = m.
+Proof.
+intro H. rewrite <- (div2_double n), H. apply div2_double.
+Qed.
+
+Lemma succ_double_inj n m : succ_double n = succ_double m -> n = m.
+Proof.
+intro H. rewrite <- (div2_succ_double n), H. apply div2_succ_double.
+Qed.
+
+Lemma succ_double_lt n m : n<m -> succ_double n < double m.
+Proof.
+ destruct n as [|n], m as [|m]; intros H; try easy.
+ unfold lt in *; simpl in *. now rewrite Pos.compare_xI_xO, H.
+Qed.
+
 
 (** Specification of minimum and maximum *)
 
@@ -454,29 +459,7 @@ Proof.
 now destruct n.
 Qed.
 
-(** Dividing by 2 *)
-
-Lemma div2_double n : div2 (double n) = n.
-Proof.
-now destruct n.
-Qed.
-
-Lemma div2_succ_double n : div2 (succ_double n) = n.
-Proof.
-now destruct n.
-Qed.
-
-Lemma double_inj n m : double n = double m -> n = m.
-Proof.
-intro H. rewrite <- (div2_double n), H. apply div2_double.
-Qed.
-
-Lemma succ_double_inj n m : succ_double n = succ_double m -> n = m.
-Proof.
-intro H. rewrite <- (div2_succ_double n), H. apply div2_succ_double.
-Qed.
-
-(** Speficications of power *)
+(** Specifications of power *)
 
 Lemma pow_0_r n : n ^ 0 = 1.
 Proof. reflexivity. Qed.
@@ -494,25 +477,6 @@ Qed.
 
 (** Specification of Base-2 logarithm *)
 
-Lemma log2_spec n : 0 < n ->
- 2^(log2 n) <= n < 2^(succ (log2 n)).
-Proof.
- destruct n as [|[p|p|]]; discriminate || intros _; simpl; split.
- eapply le_trans with (Npos (p~0)).
- apply Pos.size_le.
- apply lt_eq_cases; left. apply Pos.lt_succ_diag_r.
- apply Pos.size_gt.
- apply Pos.size_le.
- apply Pos.size_gt.
- discriminate.
- reflexivity.
-Qed.
-
-Lemma log2_nonpos n : n<=0 -> log2 n = 0.
-Proof.
- destruct n; intros Hn. reflexivity. now destruct Hn.
-Qed.
-
 Lemma size_log2 n : n<>0 -> size n = succ (log2 n).
 Proof.
  destruct n as [|[n|n| ]]; trivial. now destruct 1.
@@ -525,10 +489,26 @@ Qed.
 
 Lemma size_le n : 2^(size n) <= succ_double n.
 Proof.
- destruct n. discriminate.
- simpl. apply le_trans with (Npos (p~0)).
+ destruct n. discriminate. simpl.
+ change (2^Pos.size p <= Pos.succ (p~0))%positive.
+ apply Pos.lt_le_incl, Pos.lt_succ_r, Pos.size_le.
+Qed.
+
+Lemma log2_spec n : 0 < n ->
+ 2^(log2 n) <= n < 2^(succ (log2 n)).
+Proof.
+ destruct n as [|[p|p|]]; discriminate || intros _; simpl; split.
+ apply (size_le (Npos p)).
+ apply Pos.size_gt.
  apply Pos.size_le.
- apply lt_eq_cases. left. apply Pos.lt_succ_diag_r.
+ apply Pos.size_gt.
+ discriminate.
+ reflexivity.
+Qed.
+
+Lemma log2_nonpos n : n<=0 -> log2 n = 0.
+Proof.
+ destruct n; intros Hn. reflexivity. now destruct Hn.
 Qed.
 
 (** Specification of parity functions *)
@@ -563,21 +543,17 @@ Proof.
   induction a; cbv beta iota delta [pos_div_eucl]; fold pos_div_eucl; cbv zeta.
   (* a~1 *)
   destruct pos_div_eucl as (q,r).
-  assert (Npos a~1 = (double q)*b + succ_double r).
-   rewrite succ_double_spec, double_spec.
-   now rewrite add_assoc, <- mul_assoc, <- mul_add_distr_l, <- IHa.
-  case leb_spec; intros H'; trivial.
-  rewrite (succ_double_spec q), mul_add_distr_r, <- double_spec,
-   mul_1_l, <- add_assoc.
+  change (Npos a~1) with (succ_double (Npos a)).
+  rewrite IHa, succ_double_add, double_mul.
+  case leb_spec; intros H; trivial.
+  rewrite succ_double_mul, <- add_assoc. f_equal.
   now rewrite (add_comm b), sub_add.
   (* a~0 *)
   destruct pos_div_eucl as (q,r).
-  assert (Npos a~0 = (double q)*b + double r).
-   rewrite (double_spec q), (double_spec r). (* BUG: !double_spec *)
-   now rewrite <- mul_assoc, <- mul_add_distr_l, <- IHa.
-  case leb_spec; intros H'; trivial.
-  rewrite (succ_double_spec q), mul_add_distr_r, <- double_spec,
-   mul_1_l, <- add_assoc.
+  change (Npos a~0) with (double (Npos a)).
+  rewrite IHa, double_add, double_mul.
+  case leb_spec; intros H; trivial.
+  rewrite succ_double_mul, <- add_assoc. f_equal.
   now rewrite (add_comm b), sub_add.
   (* 1 *)
   now destruct b as [|[ | | ]].
@@ -600,12 +576,6 @@ Qed.
 Definition div_mod a b : b<>0 -> a = b * (a/b) + (a mod b).
 Proof.
  intros _. apply div_mod'.
-Qed.
-
-Lemma succ_double_lt n m : n<m -> succ_double n < double m.
-Proof.
- destruct n as [|n], m as [|m]; intros H; try easy.
- unfold lt in *; simpl in *. now rewrite Pos.compare_xI_xO, H.
 Qed.
 
 Theorem pos_div_eucl_remainder (a:positive) (b:N) :
@@ -898,7 +868,7 @@ Proof. reflexivity. Qed.
 Definition pred_0 : pred 0 = 0.
 Proof. reflexivity. Qed.
 
-(** Proof of morphisms, obvious since eq is Leibniz *)
+(** Proofs of morphisms, obvious since eq is Leibniz *)
 
 Local Obligation Tactic := simpl_relation.
 Program Definition succ_wd : Proper (eq==>eq) succ := _.
@@ -947,10 +917,57 @@ Qed.
 
 (** Instantiation of generic properties of natural numbers *)
 
-Include !NProp
- <+ !UsualMinMaxLogicalProperties <+ !UsualMinMaxDecProperties.
+Set Inline Level 30. (* For inlining only t eq zero one two *)
 
-(* TODO : avoir un inlining selectif : t eq zero one two *)
+Include NProp
+ <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
+
+(** Auxiliary results about right shift on positive numbers,
+    used in BinInt *)
+
+Lemma pos_pred_shiftl_low : forall p n m, m<n ->
+ testbit (Pos.pred_N (Pos.shiftl p n)) m = true.
+Proof.
+ induction n using peano_ind.
+ now destruct m.
+ intros m H. unfold Pos.shiftl.
+ destruct n as [|n]; simpl in *.
+ destruct m. now destruct p. elim (Pos.nlt_1_r _ H).
+ rewrite Pos.iter_succ. simpl.
+ set (u:=Pos.iter n xO p) in *; clearbody u.
+ destruct m as [|m]. now destruct u.
+ rewrite <- (IHn (Pos.pred_N m)).
+ rewrite <- (testbit_odd_succ _ (Pos.pred_N m)).
+ rewrite succ_pos_pred. now destruct u.
+ apply le_0_l.
+ apply succ_lt_mono. now rewrite succ_pos_pred.
+Qed.
+
+Lemma pos_pred_shiftl_high : forall p n m, n<=m ->
+ testbit (Pos.pred_N (Pos.shiftl p n)) m =
+ testbit (shiftl (Pos.pred_N p) n) m.
+Proof.
+ induction n using peano_ind; intros m H.
+ unfold shiftl. simpl. now destruct (Pos.pred_N p).
+ rewrite shiftl_succ_r.
+ destruct n as [|n].
+ destruct m as [|m]. now destruct H. now destruct p.
+ destruct m as [|m]. now destruct H.
+ rewrite <- (succ_pos_pred m).
+ rewrite double_spec, testbit_even_succ by apply le_0_l.
+ rewrite <- IHn.
+ rewrite testbit_succ_r_div2 by apply le_0_l.
+ f_equal. simpl. rewrite Pos.iter_succ.
+ now destruct (Pos.iter n xO p).
+ apply succ_le_mono. now rewrite succ_pos_pred.
+Qed.
+
+Lemma pred_div2_up p : Pos.pred_N (Pos.div2_up p) = div2 (Pos.pred_N p).
+Proof.
+ destruct p as [p|p| ]; trivial.
+ simpl. apply Pos.pred_N_succ.
+ destruct p; simpl; trivial.
+Qed.
 
 End N.
 

@@ -10,51 +10,9 @@
 
 Require Import BinPos BinInt.
 
-Local Open Scope Z_scope.
-
-Definition Zsqrtrem n :=
- match n with
-  | 0 => (0, 0)
-  | Zpos p =>
-    match Pos.sqrtrem p with
-     | (s, IsPos r) => (Zpos s, Zpos r)
-     | (s, _) => (Zpos s, 0)
-    end
-  | Zneg _ => (0,0)
- end.
-
-Definition Zsqrt n :=
- match n with
-  | 0 => 0
-  | Zpos p => Zpos (Pos.sqrt p)
-  | Zneg _ => 0
- end.
-
-Lemma Zsqrtrem_spec : forall n, 0<=n ->
- let (s,r) := Zsqrtrem n in n = s*s + r /\ 0 <= r <= 2*s.
-Proof.
- destruct n. now repeat split.
- generalize (Pos.sqrtrem_spec p). simpl.
- destruct 1; simpl; subst; now repeat split.
- now destruct 1.
-Qed.
-
-Lemma Zsqrt_spec : forall n, 0<=n ->
- let s := Zsqrt n in s*s <= n < (Zsucc s)*(Zsucc s).
-Proof.
- destruct n. now repeat split. unfold Zsqrt.
- rewrite <- Zpos_succ_morphism. intros _. apply (Pos.sqrt_spec p).
- now destruct 1.
-Qed.
-
-Lemma Zsqrt_neg : forall n, n<0 -> Zsqrt n = 0.
-Proof.
- intros. now destruct n.
-Qed.
-
-Lemma Zsqrtrem_sqrt : forall n, fst (Zsqrtrem n) = Zsqrt n.
-Proof.
- destruct n; try reflexivity.
- unfold Zsqrtrem, Zsqrt, Pos.sqrt.
- destruct (Pos.sqrtrem p) as (s,r). now destruct r.
-Qed.
+Notation Zsqrtrem := Z.sqrtrem (only parsing).
+Notation Zsqrt := Z.sqrt (only parsing).
+Notation Zsqrtrem_spec := Z.sqrtrem_spec (only parsing).
+Notation Zsqrt_spec := Z.sqrt_spec (only parsing).
+Notation Zsqrt_neg := Z.sqrt_neg (only parsing).
+Notation Zsqrtrem_sqrt := Z.sqrtrem_sqrt (only parsing).

@@ -6,9 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import BinPos BinNat Nnat ZArith_base ROmega ZArithRing Morphisms Zdiv.
-Require Export Zdiv_def.
-Require ZBinary ZDivTrunc.
+Require Import Nnat ZArith_base ROmega ZArithRing Zdiv_def Zdiv Morphisms.
 
 Local Open Scope Z_scope.
 
@@ -94,7 +92,7 @@ Proof.
   assert (0 <= Zrem a b).
    generalize (Zrem_sgn a b).
    destruct (Zle_lt_or_eq 0 a H).
-   rewrite <- Zsgn_pos in H1; rewrite H1; romega with *.
+   rewrite <- Zsgn_pos in H1; rewrite H1. romega with *.
    subst a; simpl; auto.
   generalize (Zrem_lt a b H0); romega with *.
 Qed.

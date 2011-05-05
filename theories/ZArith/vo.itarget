@@ -1,4 +1,5 @@
 auxiliary.vo
+BinIntDef.vo
 BinInt.vo
 Int.vo
 Wf_Z.vo

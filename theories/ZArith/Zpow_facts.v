@@ -181,16 +181,16 @@ Theorem Zpower_le_monotone2:
    forall a b c, 0 < a -> b <= c -> a^b <= a^c.
 Proof.
   intros a b c H H2.
-  destruct (Z_le_gt_dec 0 b).
+  destruct (Z_le_gt_dec 0 b) as [Hb|Hb].
   apply Zpower_le_monotone; auto.
   replace (a^b) with 0.
-  destruct (Z_le_gt_dec 0 c).
-  destruct (Zle_lt_or_eq _ _ z0).
+  destruct (Z_le_gt_dec 0 c) as [Hc|Hc].
+  destruct (Zle_lt_or_eq _ _ Hc) as [Hc'|Hc'].
   apply Zlt_le_weak;apply Zpower_gt_0;trivial.
-  rewrite <- H0;simpl;auto with zarith.
+  rewrite <- Hc';simpl;auto with zarith.
   replace (a^c) with 0. auto with zarith.
-  destruct c;trivial;unfold Zgt in z0;discriminate z0.
-  destruct b;trivial;unfold Zgt in z;discriminate z.
+  destruct c;trivial;unfold Zgt in Hc;discriminate Hc.
+  destruct b;trivial;unfold Zgt in Hb;discriminate Hb.
 Qed.
 
 Theorem Zmult_power: forall p q r, 0 <= r ->
@@ -225,10 +225,10 @@ Proof.
    apply Zpower_le_monotone;auto with zarith.
    apply Zpower_le_monotone3;auto with zarith.
   assert (c > 0).
-  destruct (Z_le_gt_dec 0 c);trivial.
-  destruct (Zle_lt_or_eq _ _ z0);auto with zarith.
+  destruct (Z_le_gt_dec 0 c) as [Hc|Hc];trivial.
+  destruct (Zle_lt_or_eq _ _ Hc);auto with zarith.
   rewrite <- H3 in H1;simpl in H1; exfalso;omega.
-  destruct c;try discriminate z0. simpl in H1. exfalso;omega.
+  destruct c;try discriminate Hc. simpl in H1. exfalso;omega.
   assert (H4 := Zpower_lt_monotone a c b H). exfalso;omega.
 Qed.
 

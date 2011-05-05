@@ -33,21 +33,8 @@ Definition Zodd (z:Z) :=
     | _ => False
   end.
 
-Definition Zeven_bool (z:Z) :=
-  match z with
-    | Z0 => true
-    | Zpos (xO _) => true
-    | Zneg (xO _) => true
-    | _ => false
-  end.
-
-Definition Zodd_bool (z:Z) :=
-  match z with
-    | Z0 => false
-    | Zpos (xO _) => false
-    | Zneg (xO _) => false
-    | _ => true
-  end.
+Notation Zeven_bool := Z.even (only parsing).
+Notation Zodd_bool := Z.odd (only parsing).
 
 Lemma Zeven_bool_iff : forall n, Zeven_bool n = true <-> Zeven n.
 Proof.
@@ -173,32 +160,8 @@ Qed.
 (** * Definition of [Zquot2], [Zdiv2] and properties wrt [Zeven]
   and [Zodd] *)
 
-(** [Zdiv2] performs rounding toward bottom, it is hence a particular
-   case of [Zdiv], and for all relative number [n] we have:
-   [n = 2 * Zdiv2 n + if Zodd_bool n then 1 else 0].  *)
-
-Definition Zdiv2 z :=
- match z with
-   | 0 => 0
-   | Zpos 1 => 0
-   | Zpos p => Zpos (Pdiv2 p)
-   | Zneg p => Zneg (Pdiv2_up p)
- end.
-
-(** [Zquot2] performs rounding toward zero, it is hence a particular
-   case of [Zquot], and for all relative number [n] we have:
-   [n = 2 * Zdiv2 n + if Zodd_bool n then Zsgn n else 0].  *)
-
-Definition Zquot2 (z:Z) :=
-  match z with
-    | 0 => 0
-    | Zpos 1 => 0
-    | Zpos p => Zpos (Pdiv2 p)
-    | Zneg 1 => 0
-    | Zneg p => Zneg (Pdiv2 p)
-  end.
-
-(** NB: [Zquot2] used to be named [Zdiv2] in Coq <= 8.3 *)
+Notation Zdiv2 := Z.div2 (only parsing).
+Notation Zquot2 := Z.quot2 (only parsing).
 
 (** Properties of [Zdiv2] *)
 

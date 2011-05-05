@@ -11,9 +11,9 @@
 
 (** Initial Contribution by Claude Marché and Xavier Urbain *)
 
-Require Export ZArith_base Zdiv_def.
+Require Export ZArith_base.
 Require Import Zbool Omega ZArithRing Zcomplements Setoid Morphisms.
-Require ZDivFloor.
+Require Import Zdiv_def.
 Local Open Scope Z_scope.
 
 (** The definition and initial properties are now in file [Zdiv_def] *)

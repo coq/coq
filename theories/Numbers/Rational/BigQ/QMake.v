@@ -556,11 +556,11 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  intros z n d; unfold mul_norm_Qz_Qq; nzsimpl; rewrite Zcompare_gt.
  destr_eqb; nzsimpl; intros Hz.
  qsimpl; rewrite Hz; auto.
- destruct Z_le_gt_dec; intros.
+ destruct Z_le_gt_dec as [LE|GT].
  qsimpl.
  rewrite spec_norm_denum.
  qsimpl.
- rewrite Zdiv_gcd_zero in z0; auto with zarith.
+ rewrite Zdiv_gcd_zero in GT; auto with zarith.
  rewrite H in *. rewrite Zdiv_0_l in *; discriminate.
  rewrite <- Zmult_assoc, (Zmult_comm (Z.to_Z n)), Zmult_assoc.
  rewrite Zgcd_div_swap0; try romega.

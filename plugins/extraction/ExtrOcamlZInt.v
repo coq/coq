@@ -59,20 +59,20 @@ Extract Constant N.compare =>
  "fun x y -> if x=y then Eq else if x<y then Lt else Gt".
 
 
-Extract Constant Zplus => "(+)".
-Extract Constant Zsucc => "succ".
-Extract Constant Zpred => "pred".
-Extract Constant Zminus => "(-)".
-Extract Constant Zmult => "( * )".
-Extract Constant Zopp => "(~-)".
-Extract Constant Zabs => "abs".
-Extract Constant Zmin => "min".
-Extract Constant Zmax => "max".
-Extract Constant Zcompare =>
+Extract Constant Z.add => "(+)".
+Extract Constant Z.succ => "succ".
+Extract Constant Z.pred => "pred".
+Extract Constant Z.sub => "(-)".
+Extract Constant Z.mul => "( * )".
+Extract Constant Z.opp => "(~-)".
+Extract Constant Z.abs => "abs".
+Extract Constant Z.min => "min".
+Extract Constant Z.max => "max".
+Extract Constant Z.compare =>
  "fun x y -> if x=y then Eq else if x<y then Lt else Gt".
 
-Extract Constant Z_of_N => "fun p -> p".
-Extract Constant Zabs_N => "abs".
+Extract Constant Z.of_N => "fun p -> p".
+Extract Constant Z.abs_N => "abs".
 
 (** Zdiv and Zmod are quite complex to define in terms of (/) and (mod).
     For the moment we don't even try *)

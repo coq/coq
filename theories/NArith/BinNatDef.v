@@ -8,6 +8,7 @@
 
 Require Export BinNums.
 Require Import BinPos.
+
 Local Open Scope N_scope.
 
 (**********************************************************************)

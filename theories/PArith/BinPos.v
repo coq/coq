@@ -40,8 +40,8 @@ Include BinPosDef.Pos.
 
 (** * Logical Predicates *)
 
-Definition eq := @Logic.eq t.
-Definition eq_equiv := @eq_equivalence t.
+Definition eq := @Logic.eq positive.
+Definition eq_equiv := @eq_equivalence positive.
 Include BackportEq.
 
 Definition lt x y := (x ?= y) = Lt.
@@ -525,15 +525,17 @@ Qed.
 
 (** ** Inversion of multiplication *)
 
-Lemma mul_1_inversion_l p q : p * q = 1 -> p = 1.
+Lemma mul_eq_1_l p q : p * q = 1 -> p = 1.
 Proof.
   now destruct p, q.
 Qed.
 
-Lemma mul_1_inversion_r p q : p * q = 1 -> q = 1.
+Lemma mul_eq_1_r p q : p * q = 1 -> q = 1.
 Proof.
   now destruct p, q.
 Qed.
+
+Notation mul_eq_1 := mul_eq_1_l.
 
 (** ** Square *)
 
@@ -1816,7 +1818,7 @@ Proof.
   destruct Hp1 as (r,Hr). exists r. now rewrite <- Hr, mul_assoc.
   destruct Hp2 as (r,Hr). exists r. now rewrite <- Hr, mul_assoc.
  destruct H' as (q,H').
- apply mul_1_inversion_l with q.
+ apply mul_eq_1 with q.
  apply mul_reg_l with g. now rewrite mul_assoc, mul_1_r.
 Qed.
 
@@ -1951,7 +1953,7 @@ Notation Pmult_xI_mult_xO_discr := Pos.mul_xI_mul_xO_discr (only parsing).
 Notation Pmult_xO_discr := Pos.mul_xO_discr (only parsing).
 Notation Pmult_reg_r := Pos.mul_reg_r (only parsing).
 Notation Pmult_reg_l := Pos.mul_reg_l (only parsing).
-Notation Pmult_1_inversion_l := Pos.mul_1_inversion_l (only parsing).
+Notation Pmult_1_inversion_l := Pos.mul_eq_1_l (only parsing).
 Notation Psquare_xO := Pos.square_xO (only parsing).
 Notation Psquare_xI := Pos.square_xI (only parsing).
 Notation iter_pos_swap_gen := Pos.iter_swap_gen (only parsing).

@@ -21,8 +21,8 @@ Open Local Scope Z_scope.
 (**********************************************************************)
 (** * Properties of absolute value *)
 
-Notation Zabs_eq := Zabs_eq (only parsing). (* 0 <= n -> Zabs n = n *)
-Notation Zabs_non_eq := Zabs_non_eq (only parsing). (* n <= 0 -> Zabs n = -n *)
+Notation Zabs_eq := Z.abs_eq (only parsing). (* 0 <= n -> Zabs n = n *)
+Notation Zabs_non_eq := Z.abs_neq (only parsing). (* n <= 0 -> Zabs n = -n *)
 
 Theorem Zabs_Zopp : forall n:Z, Zabs (- n) = Zabs n.
 Proof.

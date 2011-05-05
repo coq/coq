@@ -61,19 +61,19 @@ Extract Constant N.modulo =>
  "fun a b -> if Big.eq b Big.zero then Big.zero else Big.modulo a b".
 Extract Constant N.compare => "Big.compare_case Eq Lt Gt".
 
-Extract Constant Zplus => "Big.add".
-Extract Constant Zsucc => "Big.succ".
-Extract Constant Zpred => "Big.pred".
-Extract Constant Zminus => "Big.sub".
-Extract Constant Zmult => "Big.mult".
-Extract Constant Zopp => "Big.opp".
-Extract Constant Zabs => "Big.abs".
-Extract Constant Zmin => "Big.min".
-Extract Constant Zmax => "Big.max".
-Extract Constant Zcompare => "Big.compare_case Eq Lt Gt".
+Extract Constant Z.add => "Big.add".
+Extract Constant Z.succ => "Big.succ".
+Extract Constant Z.pred => "Big.pred".
+Extract Constant Z.sub => "Big.sub".
+Extract Constant Z.mul => "Big.mult".
+Extract Constant Z.opp => "Big.opp".
+Extract Constant Z.abs => "Big.abs".
+Extract Constant Z.min => "Big.min".
+Extract Constant Z.max => "Big.max".
+Extract Constant Z.compare => "Big.compare_case Eq Lt Gt".
 
-Extract Constant Z_of_N => "fun p -> p".
-Extract Constant Zabs_N => "Big.abs".
+Extract Constant Z.of_N => "fun p -> p".
+Extract Constant Z.abs_N => "Big.abs".
 
 (** Zdiv and Zmod are quite complex to define in terms of (/) and (mod).
     For the moment we don't even try *)

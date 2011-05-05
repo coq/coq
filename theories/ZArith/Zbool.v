@@ -33,29 +33,10 @@ Definition Zeven_odd_bool (x:Z) := bool_of_sumbool (Zeven_odd_dec x).
 (**********************************************************************)
 (** * Boolean comparisons of binary integers *)
 
-Definition Zle_bool (x y:Z) :=
-  match x ?= y with
-    | Gt => false
-    | _ => true
-  end.
-
-Definition Zge_bool (x y:Z) :=
-  match x ?= y with
-    | Lt => false
-    | _ => true
-  end.
-
-Definition Zlt_bool (x y:Z) :=
-  match x ?= y with
-    | Lt => true
-    | _ => false
-  end.
-
-Definition Zgt_bool (x y:Z) :=
-  match x ?= y with
-    | Gt => true
-    | _ => false
-  end.
+Notation Zle_bool := Z.leb (only parsing).
+Notation Zge_bool := Z.geb (only parsing).
+Notation Zlt_bool := Z.ltb (only parsing).
+Notation Zgt_bool := Z.gtb (only parsing).
 
 Definition Zeq_bool (x y:Z) :=
   match x ?= y with

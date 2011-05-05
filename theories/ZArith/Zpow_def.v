@@ -13,32 +13,11 @@ Local Open Scope Z_scope.
 (** [Zpower_pos z n] is the n-th power of [z] when [n] is an binary
       integer (type [positive]) and [z] a signed integer (type [Z]) *)
 
-Definition Zpower_pos (z:Z) (n:positive) :=
- iter_pos n Z (fun x:Z => z * x) 1.
-
-Definition Zpower (x y:Z) :=
-    match y with
-      | Zpos p => Zpower_pos x p
-      | Z0 => 1
-      | Zneg p => 0
-    end.
-
-Infix "^" := Zpower : Z_scope.
-
-Lemma Zpower_0_r : forall n, n^0 = 1.
-Proof. reflexivity. Qed.
-
-Lemma Zpower_succ_r : forall a b, 0<=b -> a^(Zsucc b) = a * a^b.
-Proof.
- intros a [|b|b] Hb; [ | |now elim Hb]; simpl.
- reflexivity.
- unfold Zpower_pos. now rewrite Pplus_comm, iter_pos_plus.
-Qed.
-
-Lemma Zpower_neg_r : forall a b, b<0 -> a^b = 0.
-Proof.
- now destruct b.
-Qed.
+Notation Zpower_pos := Z.pow_pos (only parsing).
+Notation Zpower := Z.pow (only parsing).
+Notation Zpower_0_r := Z.pow_0_r (only parsing).
+Notation Zpower_succ_r := Z.pow_succ_r (only parsing).
+Notation Zpower_neg_r := Z.pow_neg_r (only parsing).
 
 Lemma Zpower_theory : power_theory 1 Zmult (eq (A:=Z)) Z_of_N Zpower.
 Proof.

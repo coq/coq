@@ -13,88 +13,13 @@ Require Import Bool BinPos BinNat BinInt Znat Zeven Zpow_def
 
 Local Open Scope Z_scope.
 
-(** When accessing the bits of negative numbers, all functions
-  below will use the two's complement representation. For instance,
-  [-1] will correspond to an infinite stream of true bits. If this
-  isn't what you're looking for, you can use [Zabs] first and then
-  access the bits of the absolute value.
-*)
-
-(** [Ztestbit] : accessing the [n]-th bit of a number [a].
-    For negative [n], we arbitrarily answer [false]. *)
-
-Definition Ztestbit a n :=
- match n with
-   | 0 => Zodd_bool a
-   | Zpos p => match a with
-                 | 0 => false
-                 | Zpos a => Pos.testbit a (Npos p)
-                 | Zneg a => negb (N.testbit (Pos.pred_N a) (Npos p))
-               end
-   | Zneg _ => false
- end.
-
-(** Shifts
-
-   Nota: a shift to the right by [-n] will be a shift to the left
-   by [n], and vice-versa.
-
-   For fulfilling the two's complement convention, shifting to
-   the right a negative number should correspond to a division
-   by 2 with rounding toward bottom, hence the use of [Zdiv2]
-   instead of [Zquot2].
-*)
-
-Definition Zshiftl a n :=
- match n with
-   | 0 => a
-   | Zpos p => iter_pos p _ (Zmult 2) a
-   | Zneg p => iter_pos p _ Zdiv2 a
- end.
-
-Definition Zshiftr a n := Zshiftl a (-n).
-
-(** Bitwise operations Zor Zand Zdiff Zxor *)
-
-Definition Zor a b :=
- match a, b with
-   | 0, _ => b
-   | _, 0 => a
-   | Zpos a, Zpos b => Zpos (Pos.lor a b)
-   | Zneg a, Zpos b => Zneg (N.succ_pos (N.ldiff (Pos.pred_N a) (Npos b)))
-   | Zpos a, Zneg b => Zneg (N.succ_pos (N.ldiff (Pos.pred_N b) (Npos a)))
-   | Zneg a, Zneg b => Zneg (N.succ_pos (N.land (Pos.pred_N a) (Pos.pred_N b)))
- end.
-
-Definition Zand a b :=
- match a, b with
-   | 0, _ => 0
-   | _, 0 => 0
-   | Zpos a, Zpos b => Z_of_N (Pos.land a b)
-   | Zneg a, Zpos b => Z_of_N (N.ldiff (Npos b) (Pos.pred_N a))
-   | Zpos a, Zneg b => Z_of_N (N.ldiff (Npos a) (Pos.pred_N b))
-   | Zneg a, Zneg b => Zneg (N.succ_pos (N.lor (Pos.pred_N a) (Pos.pred_N b)))
- end.
-
-Definition Zdiff a b :=
- match a, b with
-   | 0, _ => 0
-   | _, 0 => a
-   | Zpos a, Zpos b => Z_of_N (Pos.ldiff a b)
-   | Zneg a, Zpos b => Zneg (N.succ_pos (N.lor (Pos.pred_N a) (Npos b)))
-   | Zpos a, Zneg b => Z_of_N (N.land (Npos a) (Pos.pred_N b))
-   | Zneg a, Zneg b => Z_of_N (N.ldiff (Pos.pred_N b) (Pos.pred_N a))
- end.
-
-Definition Zxor a b :=
- match a, b with
-   | 0, _ => b
-   | _, 0 => a
-   | Zpos a, Zpos b => Z_of_N (Pos.lxor a b)
-   | Zneg a, Zpos b => Zneg (N.succ_pos (N.lxor (Pos.pred_N a) (Npos b)))
-   | Zpos a, Zneg b => Zneg (N.succ_pos (N.lxor (Npos a) (Pos.pred_N b)))
-   | Zneg a, Zneg b => Z_of_N (N.lxor (Pos.pred_N a) (Pos.pred_N b))
- end.
+Notation Ztestbit := Z.testbit (only parsing).
+Notation Zshiftr := Z.shiftr (only parsing).
+Notation Zshiftl := Z.shiftl (only parsing).
+Notation Zor := Z.lor (only parsing).
+Notation Zand := Z.land (only parsing).
+Notation Zdiff := Z.ldiff (only parsing).
+Notation Zxor := Z.lxor (only parsing).
 
 
 (** Conversions between [Ztestbit] and [Ntestbit] *)

@@ -490,7 +490,7 @@ Module Make (N:NType) <: ZType.
    rewrite N.spec_modulo, ?Zrem_opp_r, ?Zrem_opp_l, ?Zopp_involutive;
    try rewrite Z.eq_opp_l, Z.opp_0 in Hy;
    rewrite Zrem_Zmod_pos; generalize (N.spec_pos x) (N.spec_pos y);
-   z_order.
+   Z.order.
  Qed.
 
  Definition gcd x y :=
