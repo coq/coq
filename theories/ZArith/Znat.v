@@ -318,7 +318,7 @@ Qed.
 
 Lemma Z_of_N_minus : forall n m, Z_of_N (n-m) = Zmax 0 (Z_of_N n - Z_of_N m).
 Proof.
- intros [|n] [|m]; simpl; trivial.
+ intros [|n] [|m]; simpl; trivial. rewrite Z.pos_sub_spec.
  case Pcompare_spec; intros H.
  subst. now rewrite Pminus_mask_diag.
  rewrite Pminus_mask_Lt; trivial.

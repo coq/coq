@@ -146,15 +146,11 @@ Ltac rsimpl := simpl;  set_cring_notations.
  Qed.
 
  Lemma gen_phiZ1_add_pos_neg : forall x y,
- gen_phiZ1
-    match (x ?= y)%positive with
-    | Eq => Z0
-    | Lt => Zneg (y - x)
-    | Gt => Zpos (x - y)
-    end
+ gen_phiZ1 (Z.pos_sub x y)
  == gen_phiPOS1 x + -gen_phiPOS1 y.
  Proof.
   intros x y.
+  rewrite Z.pos_sub_spec.
   assert (H0 := Pminus_mask_Gt x y). unfold Pgt in H0.
   assert (H1 := Pminus_mask_Gt y x). unfold Pgt in H1.
   rewrite Pos.compare_antisym in H1.
@@ -181,10 +177,8 @@ Ltac rsimpl := simpl;  set_cring_notations.
   induction x;destruct y;simpl;norm.
   apply ARgen_phiPOS_add.
   apply gen_phiZ1_add_pos_neg.
-  rewrite Pos.compare_antisym;simpl.
-  cring_rewrite match_compOpp.
-  cring_rewrite cring_add_comm.
-  apply gen_phiZ1_add_pos_neg.
+  rewrite gen_phiZ1_add_pos_neg.
+  cring_rewrite cring_add_comm. norm.
   cring_rewrite ARgen_phiPOS_add; norm.
  Qed.
 

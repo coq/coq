@@ -97,7 +97,7 @@ Qed.
 
 Lemma Zpos_minus : forall p q, Zpos (Pminus p q) = Zmax 1 (Zpos p - Zpos q).
 Proof.
-  intros; simpl. case Pos.compare_spec; intros H.
+  intros; simpl. rewrite Z.pos_sub_spec. case Pos.compare_spec; intros H.
   now rewrite H, Pos.sub_diag.
   rewrite Pminus_Lt; auto.
   symmetry. apply Zpos_max_1.

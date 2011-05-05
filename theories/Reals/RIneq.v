@@ -1717,7 +1717,8 @@ Qed.
 Lemma plus_IZR_NEG_POS :
   forall p q:positive, IZR (Zpos p + Zneg q) = IZR (Zpos p) + IZR (Zneg q).
 Proof.
-  intros p q; simpl. case Pcompare_spec; intros H; simpl.
+  intros p q; simpl. rewrite Z.pos_sub_spec.
+  case Pcompare_spec; intros H; simpl.
   subst. ring.
   rewrite Pminus_minus by trivial.
   rewrite minus_INR by (now apply lt_le_weak, Plt_lt).

@@ -51,26 +51,30 @@ Definition pred_double x :=
     | Zpos p => Zpos (Pos.pred_double p)
   end.
 
+(** ** Subtraction of positive into Z *)
+
+Fixpoint pos_sub (x y:positive) {struct y} : Z :=
+  match x, y with
+    | p~1, q~1 => double (pos_sub p q)
+    | p~1, q~0 => succ_double (pos_sub p q)
+    | p~1, 1 => Zpos p~0
+    | p~0, q~1 => pred_double (pos_sub p q)
+    | p~0, q~0 => double (pos_sub p q)
+    | p~0, 1 => Zpos (Pos.pred_double p)
+    | 1, q~1 => Zneg q~0
+    | 1, q~0 => Zneg (Pos.pred_double q)
+    | 1, 1 => Z0
+  end%positive.
+
 (** ** Addition *)
 
 Definition add x y :=
   match x, y with
     | 0, y => y
-    | Zpos x', 0 => Zpos x'
-    | Zneg x', 0 => Zneg x'
+    | x, 0 => x
     | Zpos x', Zpos y' => Zpos (x' + y')
-    | Zpos x', Zneg y' =>
-      match (x' ?= y')%positive with
-	| Eq => 0
-	| Lt => Zneg (y' - x')
-	| Gt => Zpos (x' - y')
-      end
-    | Zneg x', Zpos y' =>
-      match (x' ?= y')%positive with
-	| Eq => 0
-	| Lt => Zpos (y' - x')
-	| Gt => Zneg (x' - y')
-      end
+    | Zpos x', Zneg y' => pos_sub x' y'
+    | Zneg x', Zpos y' => pos_sub y' x'
     | Zneg x', Zneg y' => Zneg (x' + y')
   end.
 
@@ -114,47 +118,6 @@ Definition mul x y :=
   end.
 
 Infix "*" := mul : Z_scope.
-
-(** ** Subtraction of positive into Z *)
-
-Fixpoint pos_sub (x y:positive) {struct y} : Z :=
-  match x, y with
-    | p~1, q~1 => double (pos_sub p q)
-    | p~1, q~0 => succ_double (pos_sub p q)
-    | p~1, 1 => Zpos p~0
-    | p~0, q~1 => pred_double (pos_sub p q)
-    | p~0, q~0 => double (pos_sub p q)
-    | p~0, 1 => Zpos (Pos.pred_double p)
-    | 1, q~1 => Zneg q~0
-    | 1, q~0 => Zneg (Pos.pred_double q)
-    | 1, 1 => Z0
-  end%positive.
-
-(** ** Direct, easier to handle variants of successor and addition *)
-
-Definition succ' x :=
-  match x with
-    | 0 => 1
-    | Zpos x' => Zpos (Pos.succ x')
-    | Zneg x' => pos_sub 1 x'
-  end.
-
-Definition pred' x :=
-  match x with
-    | 0 => -1
-    | Zpos x' => pos_sub x' 1
-    | Zneg x' => Zneg (Pos.succ x')
-  end.
-
-Definition add' x y :=
-  match x, y with
-    | 0, y => y
-    | x, 0 => x
-    | Zpos x', Zpos y' => Zpos (x' + y')
-    | Zpos x', Zneg y' => pos_sub x' y'
-    | Zneg x', Zpos y' => pos_sub y' x'
-    | Zneg x', Zneg y' => Zneg (x' + y')
-  end.
 
 (** ** Power function *)
 

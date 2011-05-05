@@ -169,7 +169,7 @@ Lemma Zdiv2_odd_eqn : forall n,
  n = 2*(Zdiv2 n) + if Zodd_bool n then 1 else 0.
 Proof.
  intros [ |[p|p| ]|[p|p|  ]]; simpl; trivial.
- f_equal. now rewrite xO_succ_permute, <-Ppred_minus, Ppred_succ.
+ f_equal. symmetry. apply Pos.pred_double_succ.
 Qed.
 
 Lemma Zeven_div2 : forall n:Z, Zeven n -> n = 2 * Zdiv2 n.

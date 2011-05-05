@@ -557,6 +557,7 @@ Proof.
 (* POS/POS *)
   rewrite Pplus_plus; auto with real.
 (* POS/NEG *)
+  rewrite Z.pos_sub_spec.
   case Pcompare_spec; intros; simpl.
   subst; auto with real.
   rewrite Pminus_minus by trivial.
@@ -568,16 +569,17 @@ Proof.
   rewrite plus_comm, le_plus_minus_r by (now apply lt_le_weak, Plt_lt).
   reflexivity.
 (* NEG/POS *)
+  rewrite Z.pos_sub_spec.
   case Pcompare_spec; intros; simpl.
   subst; auto with real.
-  rewrite Pminus_minus by trivial.
-  rewrite (pow_RN_plus x _ (nat_of_P n1)) by auto with real.
-  rewrite plus_comm, le_plus_minus_r by (now apply lt_le_weak, Plt_lt).
-  auto with real.
   rewrite Pminus_minus by trivial.
   rewrite (pow_RN_plus x _ (nat_of_P m1)) by auto with real.
   rewrite plus_comm, le_plus_minus_r by (now apply lt_le_weak, Plt_lt).
   rewrite Rinv_mult_distr, Rinv_involutive; auto with real.
+  rewrite Pminus_minus by trivial.
+  rewrite (pow_RN_plus x _ (nat_of_P n1)) by auto with real.
+  rewrite plus_comm, le_plus_minus_r by (now apply lt_le_weak, Plt_lt).
+  auto with real.
 (* NEG/NEG *)
   rewrite Pplus_plus; auto with real.
   intros H'; rewrite pow_add; auto with real.

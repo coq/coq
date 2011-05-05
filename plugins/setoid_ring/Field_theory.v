@@ -732,6 +732,14 @@ Fixpoint isIn (e1:PExpr C)  (p1:positive)
  Notation pow_pos_plus :=  (Ring_theory.pow_pos_Pplus _ Rsth Reqe.(Rmul_ext)
                         ARth.(ARmul_comm) ARth.(ARmul_assoc)).
 
+ Lemma Z_pos_sub_gt : forall p q, (p > q)%positive ->
+  Z.pos_sub p q = Zpos (p - q).
+ Proof.
+  intros. apply Z.pos_sub_gt. now apply Pos.gt_lt.
+ Qed.
+
+ Ltac simpl_pos_sub := rewrite ?Z_pos_sub_gt in * by assumption.
+
  Lemma isIn_correct_aux : forall l e1 e2 p1 p2,
   match
       (if  PExpr_eq e1 e2 then
@@ -751,6 +759,7 @@ Fixpoint isIn (e1:PExpr C)  (p1:positive)
 Proof.
   intros l e1 e2 p1 p2; generalize (PExpr_eq_semi_correct l e1 e2);
    case (PExpr_eq e1 e2); simpl; auto; intros H.
+  rewrite Z.pos_sub_spec.
   case_eq ((p1 ?= p2)%positive);intros;simpl.
   repeat rewrite pow_th.(rpow_pow_N);simpl. split. 2:refine (refl_equal _).
   rewrite (Pcompare_Eq_eq _ _ H0).
@@ -763,22 +772,17 @@ Proof.
   rewrite <- pow_pos_plus; rewrite Pplus_minus;auto. apply ZC2;trivial.
   repeat rewrite pow_th.(rpow_pow_N);simpl.
   rewrite H;trivial.
-   change (ZtoN
-     match (p1 ?= p1 - p2)%positive with
-     | Eq => 0
-     | Lt => Zneg (p1 - p2 - p1)
-     | Gt => Zpos (p1 - (p1 - p2))
-     end) with (ZtoN (Zpos p1 - Zpos (p1 -p2))).
+   change (Z.pos_sub p1 (p1-p2)) with (Zpos p1 - Zpos (p1 -p2))%Z.
   replace (Zpos (p1 - p2)) with (Zpos p1 - Zpos p2)%Z.
   split.
   repeat rewrite Zth.(Rsub_def). rewrite (Ring_theory.Ropp_add Zsth Zeqe Zth).
-  rewrite Zplus_assoc. simpl. rewrite Pcompare_refl. simpl.
+  rewrite Zplus_assoc, Z.add_opp_diag_r. simpl.
   ring [ (morph1 CRmorph)].
  assert (Zpos p1 > 0 /\ Zpos p2 > 0)%Z. split;refine (refl_equal _).
  apply Zplus_gt_reg_l with (Zpos p2).
  rewrite Zplus_minus. change (Zpos p2 + Zpos p1 > 0 + Zpos p1)%Z.
  apply Zplus_gt_compat_r. refine (refl_equal _).
- simpl;rewrite H0;trivial.
+ simpl. now simpl_pos_sub.
 Qed.
 
 Lemma pow_pos_pow_pos : forall x p1 p2, pow_pos rmul (pow_pos rmul x p1) p2 == pow_pos rmul x (p1*p2).
@@ -808,7 +812,7 @@ destruct n.
   destruct n;simpl.
     rewrite NPEmul_correct;repeat rewrite pow_th.(rpow_pow_N);simpl.
     intros (H1,H2) (H3,H4).
-    unfold Zgt in H2, H4;simpl in H2,H4. rewrite H4 in H3;simpl in H3.
+    simpl_pos_sub. simpl in H3.
     rewrite pow_pos_mul. rewrite H1;rewrite H3.
     assert (pow_pos rmul (NPEeval l e1) (p1 - p4) * NPEeval l p3 *
         (pow_pos rmul (NPEeval l e1) p4 * NPEeval l p5) ==
@@ -818,11 +822,10 @@ destruct n.
    split. symmetry;apply ARth.(ARmul_assoc). refine (refl_equal _). trivial.
    repeat rewrite pow_th.(rpow_pow_N);simpl.
    intros (H1,H2) (H3,H4).
-   unfold Zgt in H2, H4;simpl in H2,H4. rewrite H4 in H3;simpl in H3.
-   rewrite H2 in H1;simpl in H1.
+   simpl_pos_sub. simpl in H1, H3.
    assert (Zpos p1 > Zpos p6)%Z.
      apply Zgt_trans with (Zpos p4). exact H4. exact H2.
-  unfold Zgt in H;simpl in H;rewrite H.
+  simpl_pos_sub.
   split. 2:exact H.
   rewrite pow_pos_mul. simpl;rewrite H1;rewrite H3.
   assert (pow_pos rmul (NPEeval l e1) (p1 - p4) * NPEeval l p3 *
@@ -835,12 +838,12 @@ destruct n.
   assert
      (Zpos p1 - Zpos p6 = Zpos p1 - Zpos p4 + (Zpos p4 - Zpos p6))%Z.
  change  ((Zpos p1 - Zpos p6)%Z = (Zpos p1 + (- Zpos p4) + (Zpos p4 +(- Zpos p6)))%Z).
- rewrite <- Zplus_assoc. rewrite (Zplus_assoc  (- Zpos p4)%Z).
- simpl. rewrite Pcompare_refl. simpl. reflexivity.
+ rewrite <- Zplus_assoc. rewrite (Zplus_assoc  (- Zpos p4)).
+ simpl. rewrite Z.pos_sub_diag. simpl. reflexivity.
  unfold Zminus, Zopp in H0. simpl in H0.
-  rewrite H2 in H0;rewrite H4 in H0;rewrite H in H0. inversion H0;trivial.
+  simpl_pos_sub. inversion H0; trivial.
  simpl. repeat rewrite pow_th.(rpow_pow_N).
- intros H1 (H2,H3). unfold Zgt in H3;simpl in H3. rewrite H3 in H2;rewrite H3.
+ intros H1 (H2,H3). simpl_pos_sub.
  rewrite NPEmul_correct;simpl;rewrite NPEpow_correct;simpl.
  simpl in H2. rewrite pow_th.(rpow_pow_N);simpl.
  rewrite pow_pos_mul. split. ring [H2]. exact H3.
@@ -851,8 +854,7 @@ destruct n.
  rewrite NPEmul_correct;simpl;rewrite NPEpow_correct;simpl.
  repeat rewrite pow_th.(rpow_pow_N);simpl. rewrite pow_pos_mul.
  intros (H1, H2);rewrite H1;split.
-   unfold Zgt in H2;simpl in H2;rewrite H2;rewrite H2 in H1.
-   simpl in H1;ring [H1]. trivial.
+   simpl_pos_sub. simpl in H1;ring [H1]. trivial.
  trivial.
  destruct n. trivial.
  generalize (H p1 (p0*p2)%positive);clear H;destruct (isIn e1 p1 p (p0*p2)). destruct p3.
@@ -910,8 +912,7 @@ Proof.
      repeat rewrite NPEpow_correct;simpl;
      repeat rewrite pow_th.(rpow_pow_N);simpl).
   intros (H, Hgt);split;try ring [H CRmorph.(morph1)].
-  intros (H, Hgt). unfold Zgt in Hgt;simpl in Hgt;rewrite Hgt in H.
-  simpl in H;split;try ring [H].
+  intros (H, Hgt). simpl_pos_sub. simpl in H;split;try ring [H].
   rewrite <- pow_pos_plus. rewrite Pplus_minus. reflexivity. trivial.
   simpl;intros. repeat rewrite NPEmul_correct;simpl.
   rewrite NPEpow_correct;simpl. split;ring [CRmorph.(morph1)].
