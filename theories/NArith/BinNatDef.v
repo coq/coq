@@ -351,14 +351,22 @@ Definition testbit a n :=
 
 Definition to_nat (a:N) :=
   match a with
-  | 0 => O
-  | Npos p => Pos.to_nat p
+    | 0 => O
+    | Npos p => Pos.to_nat p
   end.
 
 Definition of_nat (n:nat) :=
   match n with
-  | O => 0
-  | S n' => Npos (Pos.of_succ_nat n')
+    | O => 0
+    | S n' => Npos (Pos.of_succ_nat n')
+  end.
+
+(** Iteration of a function *)
+
+Definition iter (n:N) {A} (f:A->A) (x:A) : A :=
+  match n with
+    | 0 => x
+    | Npos p => Pos.iter p f x
   end.
 
 End N.
