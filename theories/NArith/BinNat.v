@@ -126,8 +126,9 @@ Qed.
 Theorem peano_rect_succ P a f n :
  peano_rect P a f (succ n) = f n (peano_rect P a f n).
 Proof.
-destruct n; simpl;
-[rewrite Pos.peano_rect_base | rewrite Pos.peano_rect_succ]; reflexivity.
+destruct n; simpl.
+trivial.
+now rewrite Pos.peano_rect_succ.
 Qed.
 
 Definition peano_ind (P : N -> Prop) := peano_rect P.

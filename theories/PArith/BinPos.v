@@ -302,7 +302,52 @@ Qed.
 
 (**********************************************************************)
 (** * Peano induction and recursion on binary positive positive numbers *)
-(** * (a nice proof from Conor McBride, see "The view from the left")   *)
+
+(** The Peano-like recursor function for [positive] (due to Daniel Schepler) *)
+
+Fixpoint peano_rect (P:positive->Type) (a:P 1)
+  (f: forall p:positive, P p -> P (succ p)) (p:positive) : P p :=
+let f2 := peano_rect (fun p:positive => P (p~0)) (f _ a)
+  (fun (p:positive) (x:P (p~0)) => f _ (f _ x))
+in
+match p with
+  | q~1 => f _ (f2 q)
+  | q~0 => f2 q
+  | 1 => a
+end.
+
+Theorem peano_rect_succ (P:positive->Type) (a:P 1)
+  (f:forall p, P p -> P (succ p)) (p:positive) :
+  peano_rect P a f (succ p) = f _ (peano_rect P a f p).
+Proof.
+ revert P a f. induction p; trivial.
+ intros. simpl. now rewrite IHp.
+Qed.
+
+Theorem peano_rect_base (P:positive->Type) (a:P 1)
+  (f:forall p, P p -> P (succ p)) :
+  peano_rect P a f 1 = a.
+Proof.
+  trivial.
+Qed.
+
+Definition peano_rec (P:positive->Set) := peano_rect P.
+
+(** Peano induction *)
+
+Definition peano_ind (P:positive->Prop) := peano_rect P.
+
+(** Peano case analysis *)
+
+Theorem peano_case :
+  forall P:positive -> Prop,
+    P 1 -> (forall n:positive, P (succ n)) -> forall p:positive, P p.
+Proof.
+  intros; apply peano_ind; auto.
+Qed.
+
+(** Earlier, the Peano-like recursor was built and proved in a way due to
+    Conor McBride, see "The view from the left" *)
 
 Inductive PeanoView : positive -> Type :=
 | PeanoOne : PeanoView 1
@@ -361,39 +406,14 @@ Proof.
   trivial.
 Qed.
 
-Definition peano_rect (P:positive->Type) (a:P 1) (f:forall p, P p -> P (succ p))
-  (p:positive) :=
-  PeanoView_iter P a f p (peanoView p).
-
-Theorem peano_rect_succ : forall (P:positive->Type) (a:P 1)
-  (f:forall p, P p -> P (succ p)) (p:positive),
-  peano_rect P a f (succ p) = f _ (peano_rect P a f p).
+Lemma peano_equiv (P:positive->Type) (a:P 1) (f:forall p, P p -> P (succ p)) p :
+   PeanoView_iter P a f p (peanoView p) = peano_rect P a f p.
 Proof.
-  intros.
-  unfold peano_rect.
+  revert P a f. induction p using peano_rect.
+  trivial.
+  intros; simpl. rewrite peano_rect_succ.
   rewrite (PeanoViewUnique _ (peanoView (succ p)) (PeanoSucc _ (peanoView p))).
-  trivial.
-Qed.
-
-Theorem peano_rect_base : forall (P:positive->Type) (a:P 1)
-  (f:forall p, P p -> P (succ p)), peano_rect P a f 1 = a.
-Proof.
-  trivial.
-Qed.
-
-Definition peano_rec (P:positive->Set) := peano_rect P.
-
-(** ** Peano induction *)
-
-Definition peano_ind (P:positive->Prop) := peano_rect P.
-
-(** ** Peano case analysis *)
-
-Theorem peano_case :
-  forall P:positive -> Prop,
-    P 1 -> (forall n:positive, P (succ n)) -> forall p:positive, P p.
-Proof.
-  intros; apply peano_ind; auto.
+  simpl; now f_equal.
 Qed.
 
 (**********************************************************************)
