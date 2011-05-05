@@ -16,7 +16,7 @@ Require Import Zorder.
 Require Import Znat.
 Require Import ZArith_dec.
 
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
 (**********************************************************************)
 (** * Properties of absolute value *)
@@ -115,71 +115,6 @@ Proof.
   destruct a; simpl; auto.
 Qed.
 
-(** * Results about absolute value in nat. *)
-
-Theorem inj_Zabs_nat : forall z:Z, Z_of_nat (Zabs_nat z) = Zabs z.
-Proof.
-  destruct z; simpl; auto; symmetry; apply Zpos_eq_Z_of_nat_o_nat_of_P.
-Qed.
-
-Theorem Zabs_nat_Z_of_nat: forall n, Zabs_nat (Z_of_nat n) = n.
-Proof.
-  destruct n; simpl; auto.
-  apply nat_of_P_of_succ_nat.
-Qed.
-
-Lemma Zabs_nat_mult: forall n m:Z, Zabs_nat (n*m) = (Zabs_nat n * Zabs_nat m)%nat.
-Proof.
-  intros; apply inj_eq_rev.
-  rewrite inj_mult; repeat rewrite inj_Zabs_nat; apply Zabs_Zmult.
-Qed.
-
-Lemma Zabs_nat_Zsucc:
- forall p, 0 <= p ->  Zabs_nat (Zsucc p) = S (Zabs_nat p).
-Proof.
-  intros; apply inj_eq_rev.
-  rewrite inj_S; repeat rewrite inj_Zabs_nat, Zabs_eq; auto with zarith.
-Qed.
-
-Lemma Zabs_nat_Zplus:
- forall x y, 0<=x -> 0<=y -> Zabs_nat (x+y) = (Zabs_nat x + Zabs_nat y)%nat.
-Proof.
-  intros; apply inj_eq_rev.
-  rewrite inj_plus; repeat rewrite inj_Zabs_nat, Zabs_eq; auto with zarith.
-  apply Zplus_le_0_compat; auto.
-Qed.
-
-Lemma Zabs_nat_compare :
- forall x y, 0<=x -> 0<=y -> nat_compare (Zabs_nat x) (Zabs_nat y) = (x?=y).
-Proof.
- intros. rewrite <- inj_compare, 2 inj_Zabs_nat, 2 Zabs_eq; trivial.
-Qed.
-
-Lemma Zabs_nat_le :
-  forall n m:Z, 0 <= n <= m -> (Zabs_nat n <= Zabs_nat m)%nat.
-Proof.
- intros n m (H,H'). apply nat_compare_le. rewrite Zabs_nat_compare; trivial.
- apply Zle_trans with n; auto.
-Qed.
-
-Lemma Zabs_nat_lt :
-  forall n m:Z, 0 <= n < m -> (Zabs_nat n < Zabs_nat m)%nat.
-Proof.
-  intros n m (H,H'). apply nat_compare_lt. rewrite Zabs_nat_compare; trivial.
-  apply Zlt_le_weak; apply Zle_lt_trans with n; auto.
-Qed.
-
-Lemma Zabs_nat_Zminus:
- forall x y, 0 <= x <= y ->  Zabs_nat (y - x) = (Zabs_nat y - Zabs_nat x)%nat.
-Proof.
-  intros x y (H,H').
-  assert (0 <= y) by (apply Zle_trans with x; auto).
-  assert (0 <= y-x) by (apply Zle_minus_le_0; auto).
-  apply inj_eq_rev.
-  rewrite inj_minus1. rewrite !inj_Zabs_nat, !Zabs_eq; auto.
-  apply Zabs_nat_le. now split.
-Qed.
-
 (** * Some results about the sign function. *)
 
 Lemma Zsgn_Zmult : forall a b, Zsgn (a*b) = Zsgn a * Zsgn b.
@@ -217,3 +152,26 @@ Proof.
  destruct x; now intuition.
 Qed.
 
+(** Compatibility *)
+
+Notation inj_Zabs_nat := Zabs2Nat.id_abs (only parsing).
+Notation Zabs_nat_Z_of_nat := Zabs2Nat.id (only parsing).
+Notation Zabs_nat_mult := Zabs2Nat.inj_mul (only parsing).
+Notation Zabs_nat_Zsucc := Zabs2Nat.inj_succ (only parsing).
+Notation Zabs_nat_Zplus := Zabs2Nat.inj_add (only parsing).
+Notation Zabs_nat_Zminus := (fun n m => Zabs2Nat.inj_sub m n) (only parsing).
+Notation Zabs_nat_compare := Zabs2Nat.inj_compare (only parsing).
+
+Lemma Zabs_nat_le :
+  forall n m:Z, 0 <= n <= m -> (Zabs_nat n <= Zabs_nat m)%nat.
+Proof.
+ intros n m (H,H'). apply nat_compare_le. rewrite Zabs_nat_compare; trivial.
+ apply Zle_trans with n; auto.
+Qed.
+
+Lemma Zabs_nat_lt :
+  forall n m:Z, 0 <= n < m -> (Zabs_nat n < Zabs_nat m)%nat.
+Proof.
+  intros n m (H,H'). apply nat_compare_lt. rewrite Zabs_nat_compare; trivial.
+  apply Zlt_le_weak; apply Zle_lt_trans with n; auto.
+Qed.

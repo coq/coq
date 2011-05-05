@@ -1566,20 +1566,19 @@ Qed.
 
 (** ** Results about [of_nat] and [of_succ_nat] *)
 
+Lemma of_nat_succ (n:nat) : of_succ_nat n = of_nat (S n).
+Proof.
+ induction n. trivial. simpl. f_equal. now rewrite IHn.
+Qed.
+
 Lemma pred_of_succ_nat (n:nat) : pred (of_succ_nat n) = of_nat n.
 Proof.
- induction n. trivial.
- simpl. rewrite pred_succ. rewrite <- IHn.
- destruct n. trivial.
- simpl. now rewrite pred_succ.
+ destruct n. trivial. simpl pred. rewrite pred_succ. apply of_nat_succ.
 Qed.
 
 Lemma succ_of_nat (n:nat) : n<>O -> succ (of_nat n) = of_succ_nat n.
 Proof.
- intro H.
- rewrite <- pred_of_succ_nat.
- destruct n. now destruct H.
- simpl. now rewrite pred_succ.
+ rewrite of_nat_succ. destruct n; trivial. now destruct 1.
 Qed.
 
 (** ** Correctness proofs for the square root function *)

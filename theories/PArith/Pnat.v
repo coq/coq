@@ -76,9 +76,9 @@ Qed.
 
 (** [Pos.to_nat] is a bijection between [positive] and
     non-zero [nat], with [Pos.of_nat] as reciprocal.
-    See [Nat2Pos.bij] below for the dual equation. *)
+    See [Nat2Pos.id] below for the dual equation. *)
 
-Theorem bij p : of_nat (to_nat p) = p.
+Theorem id p : of_nat (to_nat p) = p.
 Proof.
  induction p using peano_ind. trivial.
  rewrite inj_succ. rewrite <- IHp at 2.
@@ -89,7 +89,7 @@ Qed.
 
 Lemma inj p q : to_nat p = to_nat q -> p = q.
 Proof.
- intros H. now rewrite <- (bij p), <- (bij q), H.
+ intros H. now rewrite <- (id p), <- (id q), H.
 Qed.
 
 Lemma inj_iff p q : to_nat p = to_nat q <-> p = q.
@@ -143,7 +143,52 @@ Proof.
  now apply lt_le_weak, inj_lt.
 Qed.
 
-(** [Pos.to_nat] is a morphism for [Pos.iter] and [nat_iter] *)
+Theorem inj_sub_max p q :
+ to_nat (p - q) = Peano.max 1 (to_nat p - to_nat q).
+Proof.
+ destruct (ltb_spec q p).
+ rewrite <- inj_sub by trivial.
+ now destruct (is_succ (p - q)) as (m,->).
+ rewrite sub_le by trivial.
+ replace (to_nat p - to_nat q) with 0; trivial.
+ apply le_n_0_eq.
+ rewrite <- (minus_diag (to_nat p)).
+ now apply minus_le_compat_l, inj_le.
+Qed.
+
+Theorem inj_pred p : (1 < p)%positive ->
+ to_nat (pred p) = Peano.pred (to_nat p).
+Proof.
+ intros H. now rewrite <- Pos.sub_1_r, inj_sub, pred_of_minus.
+Qed.
+
+Theorem inj_pred_max p :
+ to_nat (pred p) = Peano.max 1 (Peano.pred (to_nat p)).
+Proof.
+ rewrite <- Pos.sub_1_r, pred_of_minus. apply inj_sub_max.
+Qed.
+
+(** [Pos.to_nat] and other operations *)
+
+Lemma inj_min p q :
+ to_nat (min p q) = Peano.min (to_nat p) (to_nat q).
+Proof.
+ unfold min. rewrite inj_compare.
+ case nat_compare_spec; intros H; symmetry.
+ apply Peano.min_l. now rewrite H.
+ now apply Peano.min_l, lt_le_weak.
+ now apply Peano.min_r, lt_le_weak.
+Qed.
+
+Lemma inj_max p q :
+ to_nat (max p q) = Peano.max (to_nat p) (to_nat q).
+Proof.
+ unfold max. rewrite inj_compare.
+ case nat_compare_spec; intros H; symmetry.
+ apply Peano.max_r. now rewrite H.
+ now apply Peano.max_r, lt_le_weak.
+ now apply Peano.max_l, lt_le_weak.
+Qed.
 
 Theorem inj_iter :
   forall p {A} (f:A->A) (x:A),
@@ -159,20 +204,25 @@ Module Nat2Pos.
 
 (** [Pos.of_nat] is a bijection between non-zero [nat] and
     [positive], with [Pos.to_nat] as reciprocal.
-    See [Pos2Nat.bij] above for the dual equation. *)
+    See [Pos2Nat.id] above for the dual equation. *)
 
-Theorem bij (n:nat) : n<>0 -> Pos.to_nat (Pos.of_nat n) = n.
+Theorem id (n:nat) : n<>0 -> Pos.to_nat (Pos.of_nat n) = n.
 Proof.
  induction n as [|n H]; trivial. now destruct 1.
  intros _. simpl. destruct n. trivial.
  rewrite Pos2Nat.inj_succ. f_equal. now apply H.
 Qed.
 
+Theorem id_max (n:nat) : Pos.to_nat (Pos.of_nat n) = max 1 n.
+Proof.
+ destruct n. trivial. now rewrite id.
+Qed.
+
 (** [Pos.of_nat] is hence injective for non-zero numbers *)
 
 Lemma inj (n m : nat) : n<>0 -> m<>0 -> Pos.of_nat n = Pos.of_nat m -> n = m.
 Proof.
- intros Hn Hm H. now rewrite <- (bij n), <- (bij m), H.
+ intros Hn Hm H. now rewrite <- (id n), <- (id m), H.
 Qed.
 
 Lemma inj_iff (n m : nat) : n<>0 -> m<>0 ->
@@ -186,14 +236,19 @@ Qed.
 
 Lemma inj_succ (n:nat) : n<>0 -> Pos.of_nat (S n) = Pos.succ (Pos.of_nat n).
 Proof.
-intro H. apply Pos2Nat.inj. now rewrite Pos2Nat.inj_succ, !bij.
+intro H. apply Pos2Nat.inj. now rewrite Pos2Nat.inj_succ, !id.
+Qed.
+
+Lemma inj_pred (n:nat) : Pos.of_nat (pred n) = Pos.pred (Pos.of_nat n).
+Proof.
+ destruct n as [|[|n]]; trivial. simpl. now rewrite Pos.pred_succ.
 Qed.
 
 Lemma inj_add (n m : nat) : n<>0 -> m<>0 ->
  Pos.of_nat (n+m) = (Pos.of_nat n + Pos.of_nat m)%positive.
 Proof.
 intros Hn Hm. apply Pos2Nat.inj.
-rewrite Pos2Nat.inj_add, !bij; trivial.
+rewrite Pos2Nat.inj_add, !id; trivial.
 intros H. destruct n. now destruct Hn. now simpl in H.
 Qed.
 
@@ -201,14 +256,44 @@ Lemma inj_mul (n m : nat) : n<>0 -> m<>0 ->
  Pos.of_nat (n*m) = (Pos.of_nat n * Pos.of_nat m)%positive.
 Proof.
 intros Hn Hm. apply Pos2Nat.inj.
-rewrite Pos2Nat.inj_mul, !bij; trivial.
+rewrite Pos2Nat.inj_mul, !id; trivial.
 intros H. apply mult_is_O in H. destruct H. now elim Hn. now elim Hm.
 Qed.
 
 Lemma inj_compare (n m : nat) : n<>0 -> m<>0 ->
  nat_compare n m = (Pos.of_nat n ?= Pos.of_nat m).
 Proof.
-intros Hn Hm. rewrite Pos2Nat.inj_compare, !bij; trivial.
+intros Hn Hm. rewrite Pos2Nat.inj_compare, !id; trivial.
+Qed.
+
+Lemma inj_sub (n m : nat) : m<>0 ->
+ Pos.of_nat (n-m) = (Pos.of_nat n - Pos.of_nat m)%positive.
+Proof.
+ intros Hm.
+ apply Pos2Nat.inj.
+ rewrite Pos2Nat.inj_sub_max.
+ rewrite (id m) by trivial. rewrite !id_max.
+ destruct n, m; trivial.
+Qed.
+
+Lemma inj_min (n m : nat) :
+ Pos.of_nat (min n m) = Pos.min (Pos.of_nat n) (Pos.of_nat m).
+Proof.
+ destruct n as [|n]. simpl. symmetry. apply Pos.min_l, Pos.le_1_l.
+ destruct m as [|m]. simpl. symmetry. apply Pos.min_r, Pos.le_1_l.
+ unfold Pos.min. rewrite <- inj_compare by easy.
+ case nat_compare_spec; intros H; f_equal; apply min_l || apply min_r.
+ rewrite H; auto. now apply lt_le_weak. now apply lt_le_weak.
+Qed.
+
+Lemma inj_max (n m : nat) :
+ Pos.of_nat (max n m) = Pos.max (Pos.of_nat n) (Pos.of_nat m).
+Proof.
+ destruct n as [|n]. simpl. symmetry. apply Pos.max_r, Pos.le_1_l.
+ destruct m as [|m]. simpl. symmetry. apply Pos.max_l, Pos.le_1_l.
+ unfold Pos.max. rewrite <- inj_compare by easy.
+ case nat_compare_spec; intros H; f_equal; apply max_l || apply max_r.
+ rewrite H; auto. now apply lt_le_weak. now apply lt_le_weak.
 Qed.
 
 End Nat2Pos.
@@ -222,18 +307,17 @@ Module Pos2SuccNat.
 (** Composition of [Pos.to_nat] and [Pos.of_succ_nat] is successor
     on [positive] *)
 
-Theorem bij p : Pos.of_succ_nat (Pos.to_nat p) = Pos.succ p.
+Theorem id_succ p : Pos.of_succ_nat (Pos.to_nat p) = Pos.succ p.
 Proof.
-induction p using Pos.peano_ind. trivial.
-rewrite Pos2Nat.inj_succ. simpl. now f_equal.
+rewrite Pos.of_nat_succ, <- Pos2Nat.inj_succ. apply Pos2Nat.id.
 Qed.
 
 (** Composition of [Pos.to_nat], [Pos.of_succ_nat] and [Pos.pred]
     is identity on [positive] *)
 
-Theorem bij' p : Pos.pred (Pos.of_succ_nat (Pos.to_nat p)) = p.
+Theorem pred_id p : Pos.pred (Pos.of_succ_nat (Pos.to_nat p)) = p.
 Proof.
-now rewrite bij, Pos.pred_succ.
+now rewrite id_succ, Pos.pred_succ.
 Qed.
 
 End Pos2SuccNat.
@@ -242,16 +326,21 @@ Module SuccNat2Pos.
 
 (** Composition of [Pos.of_succ_nat] and [Pos.to_nat] is successor on [nat] *)
 
-Theorem bij (n:nat) : Pos.to_nat (Pos.of_succ_nat n) = S n.
+Theorem id_succ (n:nat) : Pos.to_nat (Pos.of_succ_nat n) = S n.
 Proof.
-induction n as [|n H]; trivial; simpl; now rewrite Pos2Nat.inj_succ, H.
+rewrite Pos.of_nat_succ. now apply Nat2Pos.id.
+Qed.
+
+Theorem pred_id (n:nat) : pred (Pos.to_nat (Pos.of_succ_nat n)) = n.
+Proof.
+now rewrite id_succ.
 Qed.
 
 (** [Pos.of_succ_nat] is hence injective *)
 
 Lemma inj (n m : nat) : Pos.of_succ_nat n = Pos.of_succ_nat m -> n = m.
 Proof.
- intro H. apply (f_equal Pos.to_nat) in H. rewrite !bij in H.
+ intro H. apply (f_equal Pos.to_nat) in H. rewrite !id_succ in H.
  now injection H.
 Qed.
 
@@ -260,18 +349,25 @@ Proof.
  split. apply inj. intros; now subst.
 Qed.
 
+(** Another formulation *)
+
+Theorem inv n p : Pos.to_nat p = S n -> Pos.of_succ_nat n = p.
+Proof.
+ intros H. apply Pos2Nat.inj. now rewrite id_succ.
+Qed.
+
 (** Successor and comparison are morphisms with respect to
     [Pos.of_succ_nat] *)
 
 Lemma inj_succ n : Pos.of_succ_nat (S n) = Pos.succ (Pos.of_succ_nat n).
 Proof.
-apply Pos2Nat.inj. now rewrite Pos2Nat.inj_succ, !bij.
+apply Pos2Nat.inj. now rewrite Pos2Nat.inj_succ, !id_succ.
 Qed.
 
 Lemma inj_compare n m :
  nat_compare n m = (Pos.of_succ_nat n ?= Pos.of_succ_nat m).
 Proof.
-rewrite Pos2Nat.inj_compare, !bij; trivial.
+rewrite Pos2Nat.inj_compare, !id_succ; trivial.
 Qed.
 
 (** Other operations, for instance [Pos.add] and [plus] aren't
@@ -300,8 +396,8 @@ Notation Pge_ge := Pos2Nat.inj_ge (only parsing).
 Notation Pminus_minus := Pos2Nat.inj_sub (only parsing).
 Notation iter_nat_of_P := @Pos2Nat.inj_iter (only parsing).
 
-Notation nat_of_P_of_succ_nat := SuccNat2Pos.bij (only parsing).
-Notation P_of_succ_nat_of_P := Pos2SuccNat.bij (only parsing).
+Notation nat_of_P_of_succ_nat := SuccNat2Pos.id_succ (only parsing).
+Notation P_of_succ_nat_of_P := Pos2SuccNat.id_succ (only parsing).
 
 Notation nat_of_P_succ_morphism := Pos2Nat.inj_succ (only parsing).
 Notation nat_of_P_plus_morphism := Pos2Nat.inj_add (only parsing).
@@ -309,9 +405,9 @@ Notation nat_of_P_mult_morphism := Pos2Nat.inj_mul (only parsing).
 Notation nat_of_P_compare_morphism := Pos2Nat.inj_compare (only parsing).
 Notation lt_O_nat_of_P := Pos2Nat.is_pos (only parsing).
 Notation ZL4 := Pos2Nat.is_succ (only parsing).
-Notation nat_of_P_o_P_of_succ_nat_eq_succ := SuccNat2Pos.bij (only parsing).
-Notation P_of_succ_nat_o_nat_of_P_eq_succ := Pos2SuccNat.bij (only parsing).
-Notation pred_o_P_of_succ_nat_o_nat_of_P_eq_id := Pos2SuccNat.bij' (only parsing).
+Notation nat_of_P_o_P_of_succ_nat_eq_succ := SuccNat2Pos.id_succ (only parsing).
+Notation P_of_succ_nat_o_nat_of_P_eq_succ := Pos2SuccNat.id_succ (only parsing).
+Notation pred_o_P_of_succ_nat_o_nat_of_P_eq_id := Pos2SuccNat.pred_id (only parsing).
 
 Lemma nat_of_P_minus_morphism p q :
  Pcompare p q Eq = Gt -> Pos.to_nat (p - q) = Pos.to_nat p - Pos.to_nat q.
