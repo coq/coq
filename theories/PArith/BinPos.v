@@ -9,7 +9,7 @@
 
 Require Export BinNums.
 Require Import Eqdep_dec EqdepFacts RelationClasses Morphisms Setoid
- Equalities Orders GenericMinMax Le Plus Wf_nat.
+ Equalities Orders GenericMinMax Le Plus.
 
 Require Export BinPosDef.
 
@@ -37,10 +37,6 @@ Module Pos
 (** * Definitions of operations, now in a separate file *)
 
 Include BinPosDef.Pos.
-
-(* TODO : fix the location of iter_nat *)
-Definition shiftl_nat (p:positive)(n:nat) := iter_nat n _ xO p.
-Definition shiftr_nat (p:positive)(n:nat) := iter_nat n _ div2 p.
 
 (** * Logical Predicates *)
 
@@ -1882,7 +1878,7 @@ Notation Pminus_mask := Pos.sub_mask (only parsing).
 Notation Pminus_mask_carry := Pos.sub_mask_carry (only parsing).
 Notation Pminus := Pos.sub (only parsing).
 Notation Pmult := Pos.mul (only parsing).
-Notation iter_pos p A := (@Pos.iter p A) (only parsing).
+Notation iter_pos := @Pos.iter (only parsing).
 Notation Ppow := Pos.pow (only parsing).
 Notation Pdiv2 := Pos.div2 (only parsing).
 Notation Pdiv2_up := Pos.div2_up (only parsing).

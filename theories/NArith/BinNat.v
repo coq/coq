@@ -8,7 +8,7 @@
 
 Require Export BinNums.
 Require Import BinPos RelationClasses Morphisms Setoid
- Equalities GenericMinMax Wf_nat Bool NAxioms NProperties.
+ Equalities GenericMinMax Bool NAxioms NProperties.
 Require BinNatDef.
 
 (**********************************************************************)
@@ -35,10 +35,6 @@ Module N
 (** Definitions of operations, now in a separate file *)
 
 Include BinNatDef.N.
-
-(* TODO : fix the location of iter_nat *)
-Definition shiftl_nat (a:N)(n:nat) := iter_nat n _ double a.
-Definition shiftr_nat (a:N)(n:nat) := iter_nat n _ div2 a.
 
 (** Logical predicates *)
 

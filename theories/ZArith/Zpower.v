@@ -243,7 +243,7 @@ Section power_div_with_rest.
 	simpl in |- *;
 	  [ trivial with zarith
 	    | intro n; rewrite (two_power_nat_S n); unfold Zdiv_rest_aux at 2 in |- *;
-	      elim (iter_nat n (Z * Z * Z) Zdiv_rest_aux (x, 0, 1));
+	      elim (iter_nat n _ Zdiv_rest_aux (x, 0, 1));
 		destruct a; intros; apply f_equal with (f := fun z:Z => 2 * z);
 		  assumption ].
   Qed.
@@ -302,7 +302,7 @@ Section power_div_with_rest.
   Proof.
     intros x p.
     generalize (Zdiv_rest_correct1 x p); generalize (Zdiv_rest_correct2 x p).
-    elim (iter_pos p (Z * Z * Z) Zdiv_rest_aux (x, 0, 1)).
+    elim (iter_pos p _ Zdiv_rest_aux (x, 0, 1)).
     simple induction a.
     intros.
     elim H; intros H1 H2; clear H.

@@ -316,6 +316,9 @@ Definition lxor n m :=
 
 (** Shifts *)
 
+Definition shiftl_nat (a:N)(n:nat) := nat_iter n double a.
+Definition shiftr_nat (a:N)(n:nat) := nat_iter n div2 a.
+
 Definition shiftl a n :=
   match a with
     | 0 => 0

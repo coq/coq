@@ -261,3 +261,30 @@ Proof.
 induction n; destruct m; simpl; auto. inversion 1.
 intros. apply f_equal. apply IHn. apply le_S_n. trivial.
 Qed.
+
+(** [n]th iteration of the function [f] *)
+
+Fixpoint nat_iter (n:nat) {A} (f:A->A) (x:A) : A :=
+  match n with
+    | O => x
+    | S n' => f (nat_iter n' f x)
+  end.
+
+Theorem nat_iter_plus :
+  forall (n m:nat) {A} (f:A -> A) (x:A),
+    nat_iter (n + m) f x = nat_iter n f (nat_iter m f x).
+Proof.
+  induction n; intros; simpl; rewrite ?IHn; trivial.
+Qed.
+
+(** Preservation of invariants : if [f : A->A] preserves the invariant [Inv],
+    then the iterates of [f] also preserve it. *)
+
+Theorem nat_iter_invariant :
+  forall (n:nat) {A} (f:A -> A) (P : A -> Prop),
+    (forall x, P x -> P (f x)) ->
+    forall x, P x -> P (nat_iter n f x).
+Proof.
+  induction n; simpl; trivial.
+  intros A f P Hf x Hx. apply Hf, IHn; trivial.
+Qed.

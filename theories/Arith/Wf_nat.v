@@ -258,30 +258,6 @@ Qed.
 
 Unset Implicit Arguments.
 
-(** [n]th iteration of the function [f] *)
-
-Fixpoint iter_nat (n:nat) (A:Type) (f:A -> A) (x:A) : A :=
-  match n with
-    | O => x
-    | S n' => f (iter_nat n' A f x)
-  end.
-
-Theorem iter_nat_plus :
-  forall (n m:nat) (A:Type) (f:A -> A) (x:A),
-    iter_nat (n + m) A f x = iter_nat n A f (iter_nat m A f x).
-Proof.
-  induction n; simpl; trivial.
-  intros. now f_equal.
-Qed.
-
-(** Preservation of invariants : if [f : A->A] preserves the invariant [Inv],
-    then the iterates of [f] also preserve it. *)
-
-Theorem iter_nat_invariant :
-  forall (n:nat) (A:Type) (f:A -> A) (Inv:A -> Prop),
-    (forall x:A, Inv x -> Inv (f x)) ->
-    forall x:A, Inv x -> Inv (iter_nat n A f x).
-Proof.
-  induction n; simpl; trivial.
-  intros A f Inv Hf x Hx. apply Hf, IHn; trivial.
-Qed.
+Notation iter_nat := @nat_iter (only parsing).
+Notation iter_nat_plus := @nat_iter_plus (only parsing).
+Notation iter_nat_invariant := @nat_iter_invariant (only parsing).

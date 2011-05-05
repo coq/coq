@@ -7,7 +7,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import BinPos Le Lt Gt Plus Mult Minus Compare_dec Wf_nat.
+Require Import BinPos Le Lt Gt Plus Mult Minus Compare_dec.
 
 (** Properties of the injection from binary positive numbers
     to Peano natural numbers *)
@@ -143,11 +143,11 @@ Proof.
  now apply lt_le_weak, inj_lt.
 Qed.
 
-(** [Pos.to_nat] is a morphism for [iter_pos] and [iter_nat] *)
+(** [Pos.to_nat] is a morphism for [Pos.iter] and [nat_iter] *)
 
 Theorem inj_iter :
-  forall p (A:Type) (f:A->A) (x:A),
-    Pos.iter p f x = iter_nat (to_nat p) _ f x.
+  forall p {A} (f:A->A) (x:A),
+    Pos.iter p f x = nat_iter (to_nat p) f x.
 Proof.
  induction p using peano_ind. trivial.
  intros. rewrite inj_succ, iter_succ. simpl. now f_equal.
@@ -298,7 +298,7 @@ Notation Pgt_gt := Pos2Nat.inj_gt (only parsing).
 Notation Ple_le := Pos2Nat.inj_le (only parsing).
 Notation Pge_ge := Pos2Nat.inj_ge (only parsing).
 Notation Pminus_minus := Pos2Nat.inj_sub (only parsing).
-Notation iter_nat_of_P := Pos2Nat.inj_iter (only parsing).
+Notation iter_nat_of_P := @Pos2Nat.inj_iter (only parsing).
 
 Notation nat_of_P_of_succ_nat := SuccNat2Pos.bij (only parsing).
 Notation P_of_succ_nat_of_P := Pos2SuccNat.bij (only parsing).
