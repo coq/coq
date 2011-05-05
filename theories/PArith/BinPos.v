@@ -440,7 +440,7 @@ Fixpoint of_nat (n:nat) : positive :=
    | S x => succ (of_nat x)
  end.
 
-(* Another version that convert [n] into [n+1] *)
+(* Another version that converts [n] into [n+1] *)
 
 Fixpoint of_succ_nat (n:nat) : positive :=
   match n with
@@ -1936,6 +1936,23 @@ Proof.
  rewrite H. apply IHp.
 Qed.
 
+(** ** Results about [of_nat] and [of_succ_nat] *)
+
+Lemma pred_of_succ_nat (n:nat) : pred (of_succ_nat n) = of_nat n.
+Proof.
+ induction n. trivial.
+ simpl. rewrite pred_succ. rewrite <- IHn.
+ destruct n. trivial.
+ simpl. now rewrite pred_succ.
+Qed.
+
+Lemma succ_of_nat (n:nat) : n<>O -> succ (of_nat n) = of_succ_nat n.
+Proof.
+ intro H.
+ rewrite <- pred_of_succ_nat.
+ destruct n. now destruct H.
+ simpl. now rewrite pred_succ.
+Qed.
 
 (** ** Correctness proofs for the square root function *)
 

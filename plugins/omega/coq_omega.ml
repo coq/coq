@@ -166,6 +166,8 @@ let coq_modules =
 let init_constant = gen_constant_in_modules "Omega" init_modules
 let constant = gen_constant_in_modules "Omega" coq_modules
 
+let z_constant = gen_constant_in_modules "Omega" [["Coq";"ZArith"]]
+
 (* Zarith *)
 let coq_xH = lazy (constant "xH")
 let coq_xO = lazy (constant "xO")
@@ -188,13 +190,13 @@ let coq_inj_plus = lazy (constant "inj_plus")
 let coq_inj_mult = lazy (constant "inj_mult")
 let coq_inj_minus1 = lazy (constant "inj_minus1")
 let coq_inj_minus2 = lazy (constant "inj_minus2")
-let coq_inj_S = lazy (constant "inj_S")
-let coq_inj_le = lazy (constant "inj_le")
-let coq_inj_lt = lazy (constant "inj_lt")
-let coq_inj_ge = lazy (constant "inj_ge")
-let coq_inj_gt = lazy (constant "inj_gt")
-let coq_inj_neq = lazy (constant "inj_neq")
-let coq_inj_eq = lazy (constant "inj_eq")
+let coq_inj_S = lazy (z_constant "inj_S")
+let coq_inj_le = lazy (z_constant "inj_le")
+let coq_inj_lt = lazy (z_constant "inj_lt")
+let coq_inj_ge = lazy (z_constant "inj_ge")
+let coq_inj_gt = lazy (z_constant "inj_gt")
+let coq_inj_neq = lazy (z_constant "inj_neq")
+let coq_inj_eq = lazy (z_constant "inj_eq")
 let coq_fast_Zplus_assoc_reverse = lazy (constant "fast_Zplus_assoc_reverse")
 let coq_fast_Zplus_assoc = lazy (constant "fast_Zplus_assoc")
 let coq_fast_Zmult_assoc_reverse = lazy (constant "fast_Zmult_assoc_reverse")
