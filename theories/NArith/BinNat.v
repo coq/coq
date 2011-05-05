@@ -922,6 +922,44 @@ Set Inline Level 30. (* For inlining only t eq zero one two *)
 Include NProp
  <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
 
+(** Otherwise N stays associated with abstract_scope : (TODO FIX) *)
+Bind Scope N_scope with N.
+
+(** In generic statements, the predicates [lt] and [le] have been
+  favored, whereas [gt] and [ge] don't even exist in the abstract
+  layers. The use of [gt] and [ge] is hence not recommended. We provide
+  here the bare minimal results to related them with [lt] and [le]. *)
+
+Lemma gt_lt n m : n > m -> m < n.
+Proof.
+  unfold lt, gt. intros H. now rewrite <- compare_antisym, H.
+Qed.
+
+Lemma lt_gt n m : n < m -> m > n.
+Proof.
+  unfold lt, gt. intros H. now rewrite <- compare_antisym, H.
+Qed.
+
+Lemma gt_lt_iff n m : n > m <-> m < n.
+Proof.
+  split. apply gt_lt. apply lt_gt.
+Qed.
+
+Lemma ge_le n m : n >= m -> m <= n.
+Proof.
+  unfold le, ge. intros H. contradict H. now apply gt_lt.
+Qed.
+
+Lemma le_ge n m : n <= m -> m >= n.
+Proof.
+  unfold le, ge. intros H. contradict H. now apply lt_gt.
+Qed.
+
+Lemma ge_le_iff n m : n >= m <-> m <= n.
+Proof.
+  split. apply ge_le. apply le_ge.
+Qed.
+
 (** Auxiliary results about right shift on positive numbers,
     used in BinInt *)
 
@@ -1092,6 +1130,7 @@ Notation Nlog2_nonpos := N.log2_nonpos (only parsing).
 Notation Neven_spec := N.even_spec (only parsing).
 Notation Nodd_spec := N.odd_spec (only parsing).
 Notation Nlt_not_eq := N.lt_neq (only parsing).
+Notation Ngt_Nlt := N.gt_lt (only parsing).
 
 (** More complex compatibility facts, expressed as lemmas
     (to preserve scopes for instance) *)
@@ -1104,10 +1143,5 @@ Lemma Nmult_plus_distr_l n m p : p * (n + m) = p * n + p * m.
 Proof (N.mul_add_distr_l p n m).
 Lemma Nmult_reg_r n m p : p <> 0 -> n * p = m * p -> n = m.
 Proof (fun H => proj1 (N.mul_cancel_r n m p H)).
-
-Lemma Ngt_Nlt n m : n > m -> m < n.
-Proof.
-unfold Ngt, Nlt; intro H. now rewrite <- N.compare_antisym, H.
-Qed.
 
 (** Not kept : Ncompare_n_Sm Nplus_lt_cancel_l *)

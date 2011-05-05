@@ -1286,6 +1286,41 @@ Include ZProp
 (** Otherwise Z stays associated with abstract_scope : (TODO FIX) *)
 Bind Scope Z_scope with Z.
 
+(** In generic statements, the predicates [lt] and [le] have been
+  favored, whereas [gt] and [ge] don't even exist in the abstract
+  layers. The use of [gt] and [ge] is hence not recommended. We provide
+  here the bare minimal results to related them with [lt] and [le]. *)
+
+Lemma gt_lt n m : n > m -> m < n.
+Proof.
+  unfold lt, gt. intros H. now rewrite <- compare_antisym, H.
+Qed.
+
+Lemma lt_gt n m : n < m -> m > n.
+Proof.
+  unfold lt, gt. intros H. now rewrite <- compare_antisym, H.
+Qed.
+
+Lemma gt_lt_iff n m : n > m <-> m < n.
+Proof.
+  split. apply gt_lt. apply lt_gt.
+Qed.
+
+Lemma ge_le n m : n >= m -> m <= n.
+Proof.
+  unfold le, ge. intros H. contradict H. now apply gt_lt.
+Qed.
+
+Lemma le_ge n m : n <= m -> m >= n.
+Proof.
+  unfold le, ge. intros H. contradict H. now apply lt_gt.
+Qed.
+
+Lemma ge_le_iff n m : n >= m <-> m <= n.
+Proof.
+  split. apply ge_le. apply le_ge.
+Qed.
+
 (** TODO : to add in Numbers *)
 
 Lemma add_shuffle3 n m p : n + (m + p) = m + (n + p).
