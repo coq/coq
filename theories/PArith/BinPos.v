@@ -34,7 +34,7 @@ Module Pos
  <: UsualDecidableTypeFull
  <: TotalOrder.
 
-(** * The definitions of operations are now in a separate file *)
+(** * Definitions of operations, now in a separate file *)
 
 Include BinPosDef.Pos.
 
@@ -42,9 +42,26 @@ Include BinPosDef.Pos.
 Definition shiftl_nat (p:positive)(n:nat) := iter_nat n _ xO p.
 Definition shiftr_nat (p:positive)(n:nat) := iter_nat n _ div2 p.
 
+(** * Logical Predicates *)
+
 Definition eq := @Logic.eq t.
 Definition eq_equiv := @eq_equivalence t.
 Include BackportEq.
+
+Definition lt x y := (x ?= y) = Lt.
+Definition gt x y := (x ?= y) = Gt.
+Definition le x y := (x ?= y) <> Gt.
+Definition ge x y := (x ?= y) <> Lt.
+
+Infix "<=" := le : positive_scope.
+Infix "<" := lt : positive_scope.
+Infix ">=" := ge : positive_scope.
+Infix ">" := gt : positive_scope.
+
+Notation "x <= y <= z" := (x <= y /\ y <= z) : positive_scope.
+Notation "x <= y < z" := (x <= y /\ y < z) : positive_scope.
+Notation "x < y < z" := (x < y /\ y < z) : positive_scope.
+Notation "x < y <= z" := (x < y /\ y <= z) : positive_scope.
 
 (**********************************************************************)
 (** * Properties of operations over positive numbers *)

@@ -265,21 +265,6 @@ Definition compare x y := compare_cont x y Eq.
 
 Infix "?=" := compare (at level 70, no associativity) : positive_scope.
 
-Definition lt x y := (x ?= y) = Lt.
-Definition gt x y := (x ?= y) = Gt.
-Definition le x y := (x ?= y) <> Gt.
-Definition ge x y := (x ?= y) <> Lt.
-
-Infix "<=" := le : positive_scope.
-Infix "<" := lt : positive_scope.
-Infix ">=" := ge : positive_scope.
-Infix ">" := gt : positive_scope.
-
-Notation "x <= y <= z" := (x <= y /\ y <= z) : positive_scope.
-Notation "x <= y < z" := (x <= y /\ y < z) : positive_scope.
-Notation "x < y < z" := (x < y /\ y < z) : positive_scope.
-Notation "x < y <= z" := (x < y /\ y <= z) : positive_scope.
-
 Definition min p p' :=
  match p ?= p' with
  | Lt | Eq => p
