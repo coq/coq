@@ -12,11 +12,21 @@ Require Import Notations.
 Require Import Logic.
 Declare ML Module "nat_syntax_plugin".
 
+(********************************************************************)
+(** * Datatypes with zero and one element *)
+
+(** [Empty_set] is a datatype with no inhabitant *)
+
+Inductive Empty_set : Set :=.
 
 (** [unit] is a singleton datatype with sole inhabitant [tt] *)
 
 Inductive unit : Set :=
     tt : unit.
+
+
+(********************************************************************)
+(** * The boolean datatype *)
 
 (** [bool] is the datatype of the boolean values [true] and [false] *)
 
@@ -51,9 +61,7 @@ Definition negb (b:bool) := if b then false else true.
 Infix "||" := orb : bool_scope.
 Infix "&&" := andb : bool_scope.
 
-(*******************************)
-(** * Properties of [andb]     *)
-(*******************************)
+(** Basic properties of [andb] *)
 
 Lemma andb_prop : forall a b:bool, andb a b = true -> a = true /\ b = true.
 Proof.
@@ -102,6 +110,10 @@ Proof.
   intros P b H H0; destruct H0 in H; assumption.
 Defined.
 
+
+(********************************************************************)
+(** * Peano natural numbers *)
+
 (** [nat] is the datatype of natural numbers built from [O] and successor [S];
     note that the constructor name is the letter O.
     Numbers in [nat] can be denoted using a decimal notation;
@@ -115,21 +127,9 @@ Delimit Scope nat_scope with nat.
 Bind Scope nat_scope with nat.
 Arguments Scope S [nat_scope].
 
-(** [Empty_set] has no inhabitant *)
 
-Inductive Empty_set : Set :=.
-
-(** [identity A a] is the family of datatypes on [A] whose sole non-empty
-    member is the singleton datatype [identity A a a] whose
-    sole inhabitant is denoted [refl_identity A a] *)
-
-Inductive identity (A:Type) (a:A) : A -> Type :=
-  identity_refl : identity a a.
-Hint Resolve identity_refl: core.
-
-Implicit Arguments identity_ind [A].
-Implicit Arguments identity_rec [A].
-Implicit Arguments identity_rect [A].
+(********************************************************************)
+(** * Container datatypes *)
 
 (** [option A] is the extension of [A] with an extra element [None] *)
 
@@ -203,7 +203,40 @@ Definition prod_curry (A B C:Type) (f:A -> B -> C)
                        | pair x y => f x y
                        end.
 
-(** Comparison *)
+(** Polymorphic lists and some operations *)
+
+Inductive list (A : Type) : Type :=
+ | nil : list A
+ | cons : A -> list A -> list A.
+
+Implicit Arguments nil [A].
+Infix "::" := cons (at level 60, right associativity) : list_scope.
+Delimit Scope list_scope with list.
+Bind Scope list_scope with list.
+
+Local Open Scope list_scope.
+
+Definition length (A : Type) : list A -> nat :=
+  fix length l :=
+  match l with
+   | nil => O
+   | _ :: l' => S (length l')
+  end.
+
+(** Concatenation of two lists *)
+
+Definition app (A : Type) : list A -> list A -> list A :=
+  fix app l m :=
+  match l with
+   | nil => m
+   | a :: l1 => a :: app l1 m
+  end.
+
+Infix "++" := app (right associativity, at level 60) : list_scope.
+
+
+(********************************************************************)
+(** * The comparison datatype *)
 
 Inductive comparison : Set :=
   | Eq : comparison
@@ -273,41 +306,27 @@ Lemma CompSpec2Type : forall A (eq lt:A->A->Prop) x y c,
  CompSpec eq lt x y c -> CompSpecT eq lt x y c.
 Proof. intros. apply CompareSpec2Type; assumption. Defined.
 
-(** Identity *)
+
+(******************************************************************)
+(** * Misc Other Datatypes *)
+
+(** [identity A a] is the family of datatypes on [A] whose sole non-empty
+    member is the singleton datatype [identity A a a] whose
+    sole inhabitant is denoted [refl_identity A a] *)
+
+Inductive identity (A:Type) (a:A) : A -> Type :=
+  identity_refl : identity a a.
+Hint Resolve identity_refl: core.
+
+Implicit Arguments identity_ind [A].
+Implicit Arguments identity_rec [A].
+Implicit Arguments identity_rect [A].
+
+(** Identity type *)
 
 Definition ID := forall A:Type, A -> A.
 Definition id : ID := fun A x => x.
 
-(** Polymorphic lists and some operations *)
-
-Inductive list (A : Type) : Type :=
- | nil : list A
- | cons : A -> list A -> list A.
-
-Implicit Arguments nil [A].
-Infix "::" := cons (at level 60, right associativity) : list_scope.
-Delimit Scope list_scope with list.
-Bind Scope list_scope with list.
-
-Local Open Scope list_scope.
-
-Definition length (A : Type) : list A -> nat :=
-  fix length l :=
-  match l with
-   | nil => O
-   | _ :: l' => S (length l')
-  end.
-
-(** Concatenation of two lists *)
-
-Definition app (A : Type) : list A -> list A -> list A :=
-  fix app l m :=
-  match l with
-   | nil => m
-   | a :: l1 => a :: app l1 m
-  end.
-
-Infix "++" := app (right associativity, at level 60) : list_scope.
 
 (* begin hide *)
 
