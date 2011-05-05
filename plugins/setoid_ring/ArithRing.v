@@ -21,12 +21,12 @@ Lemma natSRth : semi_ring_theory O (S O) plus mult (@eq nat).
 
 Lemma nat_morph_N :
    semi_morph 0 1 plus mult (eq (A:=nat))
-          0%N 1%N Nplus Nmult Neq_bool nat_of_N.
+          0%N 1%N N.add N.mul N.eqb nat_of_N.
 Proof.
   constructor;trivial.
   exact nat_of_Nplus.
   exact nat_of_Nmult.
-  intros x y H;rewrite (Neq_bool_ok _ _ H);trivial.
+  intros x y H. apply N.eqb_eq in H. now subst.
 Qed.
 
 Ltac natcst t :=

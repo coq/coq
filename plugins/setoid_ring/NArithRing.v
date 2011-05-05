@@ -18,4 +18,4 @@ Ltac Ncst t :=
   | _ => constr:NotConstant
   end.
 
-Add Ring Nr : Nth (decidable Neq_bool_ok, constants [Ncst]).
+Add Ring Nr : Nth (decidable Neqb_ok, constants [Ncst]).

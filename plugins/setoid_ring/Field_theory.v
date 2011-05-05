@@ -390,52 +390,26 @@ Qed.
 
   ***************************************************************************)
 
-Fixpoint positive_eq (p1 p2 : positive) {struct p1} : bool :=
- match p1, p2 with
-   xH, xH => true
-  | xO p3, xO p4 => positive_eq p3 p4
-  | xI p3, xI p4 => positive_eq p3 p4
-  | _, _ => false
- end.
-
-Theorem positive_eq_correct:
- forall p1 p2,  if positive_eq p1 p2 then p1 = p2 else p1 <> p2.
-intros p1; elim p1;
- (try (intros p2; case p2; simpl; auto; intros; discriminate)).
-intros p3 rec p2; case p2; simpl; auto; (try (intros; discriminate)); intros p4.
-generalize (rec p4); case (positive_eq p3 p4); auto.
-intros H1; apply f_equal with ( f := xI ); auto.
-intros H1 H2; case H1; injection H2; auto.
-intros p3 rec p2; case p2; simpl; auto; (try (intros; discriminate)); intros p4.
-generalize (rec p4); case (positive_eq p3 p4); auto.
-intros H1; apply f_equal with ( f := xO ); auto.
-intros H1 H2; case H1; injection H2; auto.
+Lemma Peqb_spec x y : Bool.reflect (x=y) (Pos.eqb x y).
+Proof.
+ apply Bool.iff_reflect. symmetry. apply Pos.eqb_eq.
 Qed.
 
-Definition N_eq n1 n2 :=
-  match n1, n2 with
-  | N0, N0 => true
-  | Npos p1, Npos p2 => positive_eq p1 p2
-  | _, _ => false
-  end.
-
-Lemma N_eq_correct : forall n1 n2, if N_eq n1 n2 then n1 = n2 else n1 <> n2.
+Lemma Neqb_spec x y : Bool.reflect (x=y) (N.eqb x y).
 Proof.
-  intros [ |p1] [ |p2];simpl;trivial;try(intro H;discriminate H;fail).
-  assert (H:=positive_eq_correct p1 p2);destruct (positive_eq p1 p2);
-     [rewrite H;trivial | intro H1;injection H1;subst;apply H;trivial].
+ apply Bool.iff_reflect. symmetry. apply N.eqb_eq.
 Qed.
 
 (* equality test *)
 Fixpoint PExpr_eq (e1 e2 : PExpr C) {struct e1} : bool :=
  match e1, e2 with
    PEc c1, PEc c2 => ceqb c1 c2
-  | PEX p1, PEX p2 => positive_eq p1 p2
+  | PEX p1, PEX p2 => Pos.eqb p1 p2
   | PEadd e3 e5, PEadd e4 e6 => if PExpr_eq e3 e4 then PExpr_eq e5 e6 else false
   | PEsub e3 e5, PEsub e4 e6 => if PExpr_eq e3 e4 then PExpr_eq e5 e6 else false
   | PEmul e3 e5, PEmul e4 e6 => if PExpr_eq e3 e4 then PExpr_eq e5 e6 else false
   | PEopp e3, PEopp e4 => PExpr_eq e3 e4
-  | PEpow e3 n3, PEpow e4 n4 => if N_eq n3 n4 then PExpr_eq e3 e4 else false
+  | PEpow e3 n3, PEpow e4 n4 => if N.eqb n3 n4 then PExpr_eq e3 e4 else false
   | _, _ => false
  end.
 
@@ -460,8 +434,7 @@ intros l e1; elim e1.
 intros c1; intros e2; elim e2; simpl; (try (intros; discriminate)).
 intros c2; apply (morph_eq CRmorph).
 intros p1; intros e2; elim e2; simpl; (try (intros; discriminate)).
-intros p2; generalize (positive_eq_correct p1 p2); case (positive_eq p1 p2);
- (try (intros; discriminate)); intros H; rewrite H; auto.
+intros p2; case Peqb_spec; intros; now subst.
 intros e3 rec1 e5 rec2 e2; case e2; simpl; (try (intros; discriminate)).
 intros e4 e6; generalize (rec1 e4); case (PExpr_eq e3 e4);
  (try (intros; discriminate)); generalize (rec2 e6); case (PExpr_eq e5 e6);
@@ -478,9 +451,8 @@ intros e3 rec e2; (case e2; simpl; (try (intros; discriminate))).
 intros e4; generalize (rec e4); case (PExpr_eq e3 e4);
  (try (intros; discriminate)); auto.
 intros e3 rec n3 e2;(case e2;simpl;(try (intros;discriminate))).
-intros e4 n4;generalize (N_eq_correct n3 n4);destruct (N_eq n3 n4);
-intros;try discriminate.
-repeat rewrite  pow_th.(rpow_pow_N);rewrite H;rewrite (rec _ H0);auto.
+intros e4 n4; case Neqb_spec; try discriminate; intros EQ H; subst.
+repeat rewrite  pow_th.(rpow_pow_N). rewrite (rec _ H);auto.
 Qed.
 
 (* add *)
@@ -507,7 +479,7 @@ Definition NPEpow x n :=
   match n with
   | N0 => PEc cI
   | Npos p =>
-    if positive_eq p xH then x else
+    if Pos.eqb p xH then x else
     match x with
     | PEc c =>
       if ceqb c cI then PEc cI else if ceqb c cO then PEc cO else PEc (pow_pos cmul c p)
@@ -520,10 +492,10 @@ Theorem NPEpow_correct : forall l e n,
 Proof.
  destruct n;simpl.
  rewrite pow_th.(rpow_pow_N);simpl;auto.
- generalize (positive_eq_correct p xH).
- destruct (positive_eq p 1);intros.
- rewrite H;rewrite  pow_th.(rpow_pow_N). trivial.
- clear H;destruct e;simpl;auto.
+ fold (p =? 1)%positive.
+ case Peqb_spec; intros H; (rewrite H || clear H).
+ now rewrite  pow_th.(rpow_pow_N).
+ destruct e;simpl;auto.
  repeat apply ceqb_rect;simpl;intros;rewrite pow_th.(rpow_pow_N);simpl.
  symmetry;induction p;simpl;trivial; ring [IHp H CRmorph.(morph1)].
  symmetry; induction p;simpl;trivial;ring [IHp CRmorph.(morph0)].
@@ -539,7 +511,7 @@ Fixpoint NPEmul (x y : PExpr C) {struct x} : PExpr C :=
   |  _, PEc c =>
       if ceqb c cI then x else if ceqb c cO then PEc cO else PEmul x y
   | PEpow e1 n1, PEpow e2 n2 =>
-      if N_eq n1 n2 then NPEpow (NPEmul e1 e2) n1 else PEmul x y
+      if N.eqb n1 n2 then NPEpow (NPEmul e1 e2) n1 else PEmul x y
   | _, _ => PEmul x y
   end.
 
@@ -554,10 +526,10 @@ induction e1;destruct e2; simpl in |- *;try reflexivity;
  try (intro eq_c; rewrite eq_c in |- *); simpl in |- *; try reflexivity;
  try ring [(morph0 CRmorph) (morph1 CRmorph)].
  apply (morph_mul CRmorph).
-assert (H:=N_eq_correct n n0);destruct (N_eq n n0).
+case Neqb_spec; intros H; try rewrite <- H; clear H.
 rewrite NPEpow_correct. simpl.
 repeat rewrite pow_th.(rpow_pow_N).
-rewrite IHe1;rewrite <- H;destruct n;simpl;try ring.
+rewrite IHe1; destruct n;simpl;try ring.
 apply pow_pos_mul.
 simpl;auto.
 Qed.
@@ -783,6 +755,7 @@ Proof.
   repeat rewrite pow_th.(rpow_pow_N);simpl. split. 2:refine (refl_equal _).
   rewrite (Pcompare_Eq_eq _ _ H0).
   rewrite H by trivial. ring [ (morph1 CRmorph)].
+  fold (p2 - p1 =? 1)%positive.
   fold (NPEpow e2 (Npos (p2 - p1))).
   rewrite NPEpow_correct;simpl.
   repeat rewrite pow_th.(rpow_pow_N);simpl.
@@ -1840,12 +1813,9 @@ Qed.
 
 Lemma gen_phiN_complete : forall x y,
   gen_phiN rO rI radd rmul x == gen_phiN rO rI radd rmul y ->
-  Neq_bool x y = true.
-intros.
- replace y with x.
- unfold Neq_bool in |- *.
-   rewrite Ncompare_refl in |- *; trivial.
- apply gen_phiN_inj; trivial.
+  N.eqb x y = true.
+Proof.
+intros. now apply N.eqb_eq, gen_phiN_inj.
 Qed.
 
 End AlmostField.
