@@ -8,6 +8,7 @@
 
 (** Library for binary natural numbers *)
 
+Require Export BinNums.
 Require Export BinPos.
 Require Export BinNat.
 Require Export Nnat.

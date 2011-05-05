@@ -7,32 +7,20 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Declare ML Module "z_syntax_plugin".
+Require Export BinNums.
 
 (**********************************************************************)
-(** * Binary positive numbers *)
+(** * Binary positive numbers, operations and properties *)
 (**********************************************************************)
 
 (** Initial development by Pierre Crégut, CNET, Lannion, France *)
 
-Inductive positive : Set :=
-| xI : positive -> positive
-| xO : positive -> positive
-| xH : positive.
-
-(** Declare binding key for scope positive_scope *)
-
-Delimit Scope positive_scope with positive.
-
-(** Automatically open scope positive_scope for type positive, xO and xI *)
-
-Bind Scope positive_scope with positive.
-Arguments Scope xO [positive_scope].
-Arguments Scope xI [positive_scope].
+(** The type [positive] and its constructors [xI] and [xO] and [xH]
+    are now defined in [BinNums.v] *)
 
 (** Postfix notation for positive numbers, allowing to mimic
     the position of bits in a big-endian representation.
-    For instance, we can write 1~1~0 instead of (xO (xI xH))
+    For instance, we can write [1~1~0] instead of [(xO (xI xH))]
     for the number 6 (which is 110 in binary notation).
 *)
 
@@ -42,12 +30,8 @@ Notation "p ~ 0" := (xO p)
  (at level 7, left associativity, format "p '~' '0'") : positive_scope.
 
 Local Open Scope positive_scope.
-
-(* In the current file, [xH] cannot yet be written as [1], since the
-   interpretation of positive numerical constants is not available
-   yet. We fix this here with an ad-hoc temporary notation. *)
-
-Local Notation "1" := xH (at level 7).
+Local Unset Boolean Equality Schemes.
+Local Unset Case Analysis Schemes.
 
 (**********************************************************************)
 (** * Operations over positive numbers *)
@@ -1599,3 +1583,13 @@ Proof.
  apply Pmult_le_mono_l.
  apply Ple_lteq; left. rewrite xI_succ_xO. apply Plt_succ_r, IHp.
 Qed.
+
+(** Compatibility notations *)
+
+Notation positive := positive (only parsing).
+Notation positive_rect := positive_rect (only parsing).
+Notation positive_rec := positive_rec (only parsing).
+Notation positive_ind := positive_ind (only parsing).
+Notation xI := xI (only parsing).
+Notation xO := xO (only parsing).
+Notation xH := xH (only parsing).

@@ -36,7 +36,7 @@ let l_true_equals_true =
         [|data_constant "bool";data_constant "true"|]))
 
 let pos_constant =
-  Coqlib.gen_constant "refl_tauto" ["PArith";"BinPos"]
+  Coqlib.gen_constant "refl_tauto" ["Numbers";"BinNums"]
 
 let l_xI = lazy (pos_constant "xI")
 let l_xO = lazy (pos_constant "xO")

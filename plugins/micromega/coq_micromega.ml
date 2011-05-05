@@ -220,6 +220,8 @@ struct
       ["Coq";"Reals" ; "Rpow_def"];
       ["LRing_normalise"]]
 
+  let bin_module = [["Coq";"Numbers";"BinNums"]]
+
   let r_modules =
     [["Coq";"Reals" ; "Rdefinitions"];
      ["Coq";"Reals" ; "Rpow_def"]]
@@ -231,6 +233,7 @@ struct
 
   let init_constant = gen_constant_in_modules "ZMicromega" init_modules
   let constant = gen_constant_in_modules "ZMicromega" coq_modules
+  let bin_constant = gen_constant_in_modules "ZMicromega" bin_module
   let r_constant = gen_constant_in_modules "ZMicromega" r_modules
   (* let constant = gen_constant_in_modules "Omicron" coq_modules *)
 
@@ -249,30 +252,25 @@ struct
   let coq_S = lazy (init_constant "S")
   let coq_nat = lazy (init_constant "nat")
 
-  let coq_NO = lazy
-   (gen_constant_in_modules "N" [ ["Coq";"NArith";"BinNat" ]]  "N0")
-  let coq_Npos = lazy
-   (gen_constant_in_modules "N" [ ["Coq";"NArith"; "BinNat"]]  "Npos")
-   (* let coq_n = lazy (constant "N")*)
+  let coq_N0 = lazy (bin_constant "N0")
+  let coq_Npos = lazy (bin_constant "Npos")
 
-  let coq_pair = lazy (constant "pair")
-  let coq_None = lazy (constant "None")
-  let coq_option = lazy (constant "option")
-  let coq_positive = lazy (constant "positive")
-  let coq_xH = lazy (constant "xH")
-  let coq_xO = lazy (constant "xO")
-  let coq_xI = lazy (constant "xI")
+  let coq_pair = lazy (init_constant "pair")
+  let coq_None = lazy (init_constant "None")
+  let coq_option = lazy (init_constant "option")
 
-  let coq_N0 = lazy (constant "N0")
-  let coq_N0 = lazy (constant "Npos")
+  let coq_positive = lazy (bin_constant "positive")
+  let coq_xH = lazy (bin_constant "xH")
+  let coq_xO = lazy (bin_constant "xO")
+  let coq_xI = lazy (bin_constant "xI")
 
-  let coq_Z = lazy (constant "Z")
+  let coq_Z = lazy (bin_constant "Z")
+  let coq_ZERO = lazy (bin_constant "Z0")
+  let coq_POS = lazy (bin_constant "Zpos")
+  let coq_NEG = lazy (bin_constant "Zneg")
+
   let coq_Q = lazy (constant "Q")
   let coq_R = lazy (constant "R")
-
-  let coq_ZERO = lazy (constant  "Z0")
-  let coq_POS = lazy (constant  "Zpos")
-  let coq_NEG = lazy (constant  "Zneg")
 
   let coq_Build_Witness = lazy (constant "Build_Witness")
 
@@ -495,11 +493,6 @@ struct
     | Mc.XI p -> Term.mkApp(Lazy.force coq_xI,[| dump_index p |])
 
   let pp_index o x = Printf.fprintf o "%i" (CoqToCaml.index x)
-
-  let rec dump_n x =
-   match x with
-    | Mc.N0 -> Lazy.force coq_NO
-    | Mc.Npos p -> Term.mkApp(Lazy.force coq_Npos,[| dump_positive p |])
 
   let rec pp_n o x =  output_string o  (string_of_int (CoqToCaml.n x))
 

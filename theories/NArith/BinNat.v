@@ -6,32 +6,17 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+Require Export BinNums.
 Require Import BinPos.
 
 (**********************************************************************)
-(** Binary natural numbers *)
+(** * Binary natural numbers, operations and properties *)
+(**********************************************************************)
 
-Inductive N : Set :=
-  | N0 : N
-  | Npos : positive -> N.
-
-(** Declare binding key for scope positive_scope *)
-
-Delimit Scope N_scope with N.
-
-(** Automatically open scope positive_scope for the constructors of N *)
-
-Bind Scope N_scope with N.
-Arguments Scope Npos [positive_scope].
+(** The type [N] and its constructors [N0] and [Npos] are now
+    defined in [BinNums.v] *)
 
 Local Open Scope N_scope.
-
-(** Some local ad-hoc notation, since no interpretation of numerical
-  constants is available yet. *)
-
-Local Notation "0" := N0 : N_scope.
-Local Notation "1" := (Npos 1) : N_scope.
-Local Notation "2" := (Npos 2) : N_scope.
 
 Definition Ndiscr : forall n:N, { p:positive | n = Npos p } + { n = N0 }.
 Proof.
@@ -693,3 +678,12 @@ Proof.
  intros (m,H). now destruct m.
  exists 0. reflexivity.
 Qed.
+
+(** Compatibility notations *)
+
+Notation N := N (only parsing).
+Notation N_rect := N_rect (only parsing).
+Notation N_rec := N_rec (only parsing).
+Notation N_ind := N_ind (only parsing).
+Notation N0 := N0 (only parsing).
+Notation Npos := Npos (only parsing).

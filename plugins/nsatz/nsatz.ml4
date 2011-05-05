@@ -180,21 +180,24 @@ let ttmul = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEmul")
 let ttopp = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEopp")
 let ttpow = lazy (gen_constant "CC" ["setoid_ring";"Ring_polynom"] "PEpow")
 
-let tlist = lazy (gen_constant "CC" ["Lists";"List"] "list")
-let lnil = lazy (gen_constant "CC" ["Lists";"List"] "nil")
-let lcons = lazy (gen_constant "CC" ["Lists";"List"] "cons")
+let datatypes = ["Init";"Datatypes"]
+let binnums = ["Numbers";"BinNums"]
 
-let tz = lazy (gen_constant "CC" ["ZArith";"BinInt"] "Z")
-let z0 = lazy (gen_constant "CC" ["ZArith";"BinInt"] "Z0")
-let zpos = lazy (gen_constant "CC" ["ZArith";"BinInt"] "Zpos")
-let zneg = lazy(gen_constant "CC" ["ZArith";"BinInt"] "Zneg")
+let tlist = lazy (gen_constant "CC" datatypes "list")
+let lnil = lazy (gen_constant "CC" datatypes "nil")
+let lcons = lazy (gen_constant "CC" datatypes "cons")
 
-let pxI = lazy(gen_constant "CC" ["PArith";"BinPos"] "xI")
-let pxO = lazy(gen_constant "CC" ["PArith";"BinPos"] "xO")
-let pxH = lazy(gen_constant "CC" ["PArith";"BinPos"] "xH")
+let tz = lazy (gen_constant "CC" binnums "Z")
+let z0 = lazy (gen_constant "CC" binnums "Z0")
+let zpos = lazy (gen_constant "CC" binnums "Zpos")
+let zneg = lazy(gen_constant "CC" binnums "Zneg")
 
-let nN0 = lazy (gen_constant "CC" ["NArith";"BinNat"] "N0")
-let nNpos = lazy(gen_constant "CC" ["NArith";"BinNat"] "Npos")
+let pxI = lazy(gen_constant "CC" binnums "xI")
+let pxO = lazy(gen_constant "CC" binnums "xO")
+let pxH = lazy(gen_constant "CC" binnums "xH")
+
+let nN0 = lazy (gen_constant "CC" binnums "N0")
+let nNpos = lazy(gen_constant "CC" binnums "Npos")
 
 let mkt_app name l =  mkApp (Lazy.force name, Array.of_list l)
 

@@ -7,25 +7,19 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(***********************************************************)
-(** * Binary Integers *)
-(** Initial author: Pierre Crégut, CNET, Lannion, France *)
-(***********************************************************)
-
-Require Export BinPos Pnat.
+Require Export BinNums BinPos Pnat.
 Require Import BinNat Plus Mult.
 
-Inductive Z : Set :=
-  | Z0 : Z
-  | Zpos : positive -> Z
-  | Zneg : positive -> Z.
+(***********************************************************)
+(** * Binary Integers *)
+(***********************************************************)
 
+(** Initial author: Pierre Crégut, CNET, Lannion, France *)
 
-(** Automatically open scope positive_scope for the constructors of Z *)
-Delimit Scope Z_scope with Z.
-Bind Scope Z_scope with Z.
-Arguments Scope Zpos [positive_scope].
-Arguments Scope Zneg [positive_scope].
+(** The type [Z] and its constructors [Z0] and [Zpos] and [Zneg]
+    are now defined in [BinNums.v] *)
+
+Local Open Scope Z_scope.
 
 (*************************************)
 (** * Basic operations *)
@@ -53,8 +47,6 @@ Definition Zdouble (x:Z) :=
     | Zneg p => Zneg p~0
   end.
 
-Open Local Scope positive_scope.
-
 Fixpoint ZPminus (x y:positive) {struct y} : Z :=
   match x, y with
     | p~1, q~1 => Zdouble (ZPminus p q)
@@ -66,9 +58,7 @@ Fixpoint ZPminus (x y:positive) {struct y} : Z :=
     | 1, q~1 => Zneg q~0
     | 1, q~0 => Zneg (Pdouble_minus_one q)
     | 1, 1 => Z0
-  end.
-
-Close Local Scope positive_scope.
+  end%positive.
 
 (** ** Addition on integers *)
 
@@ -190,8 +180,6 @@ Definition Zplus' (x y:Z) :=
     | Zneg x', Zpos y' => ZPminus y' x'
     | Zneg x', Zneg y' => Zneg (x' + y')
   end.
-
-Open Local Scope Z_scope.
 
 (**********************************************************************)
 (** ** Inductive specification of Z *)
@@ -1050,3 +1038,13 @@ Definition Z_of_N (x:N) :=
     | N0 => Z0
     | Npos p => Zpos p
   end.
+
+(** Compatibility Notations *)
+
+Notation Z := Z (only parsing).
+Notation Z_rect := Z_rect (only parsing).
+Notation Z_rec := Z_rec (only parsing).
+Notation Z_ind := Z_ind (only parsing).
+Notation Z0 := Z0 (only parsing).
+Notation Zpos := Zpos (only parsing).
+Notation Zneg := Zneg (only parsing).

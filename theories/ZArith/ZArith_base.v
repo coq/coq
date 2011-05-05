@@ -10,6 +10,7 @@
     These are the basic modules, required by [Omega] and [Ring] for instance.
     The full library is [ZArith]. *)
 
+Require Export BinNums.
 Require Export BinPos.
 Require Export BinNat.
 Require Export BinInt.
