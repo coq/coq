@@ -9,7 +9,7 @@
 
 Require Export BinNums.
 Require Import Eqdep_dec EqdepFacts RelationClasses Morphisms Setoid
- Equalities GenericMinMax Le Plus.
+ Equalities Orders GenericMinMax Le Plus Wf_nat.
 
 (**********************************************************************)
 (** * Binary positive numbers, operations and properties *)
@@ -38,7 +38,11 @@ Local Unset Case Analysis Schemes.
 (** Every definitions and early properties about positive numbers
     are placed in a module [Pos] for qualification purpose. *)
 
-Module Pos.
+Module Pos
+ <: UsualOrderedTypeFull
+ <: UsualDecidableTypeFull
+ <: TotalOrder.
+
 Definition t := positive.
 Definition eq := @Logic.eq t.
 Definition eq_equiv := @eq_equivalence t.
@@ -101,6 +105,15 @@ Definition pred x :=
     | p~1 => p~0
     | p~0 => pred_double p
     | 1 => 1
+  end.
+
+(** ** The predecessor of a positive number can be seen as a [N] *)
+
+Definition pred_N x :=
+  match x with
+    | p~1 => Npos (p~0)
+    | p~0 => Npos (pred_double p)
+    | 1 => N0
   end.
 
 (** ** An auxiliary type for subtraction *)
@@ -309,7 +322,7 @@ Definition leb x y :=
 Definition ltb x y :=
  match x ?= y with Lt => true | _ => false end.
 
-Infix "=?" := leb (at level 70, no associativity) : positive_scope.
+Infix "=?" := eqb (at level 70, no associativity) : positive_scope.
 Infix "<=?" := leb (at level 70, no associativity) : positive_scope.
 Infix "<?" := ltb (at level 70, no associativity) : positive_scope.
 
@@ -318,7 +331,7 @@ Infix "<?" := ltb (at level 70, no associativity) : positive_scope.
 (** We procede by blocks of two digits : if p is written qbb'
     then sqrt(p) will be sqrt(q)~0 or sqrt(q)~1.
     For deciding easily in which case we are, we store the remainder
-    (as a positive_mask, since it can be null).
+    (as a mask, since it can be null).
     Instead of copy-pasting the following code four times, we
     factorize as an auxiliary function, with f and g being either
     xO or xI depending of the initial digits.
@@ -416,6 +429,125 @@ Fixpoint ggcdn (n : nat) (a b : positive) : (positive*(positive*positive)) :=
 
 Definition ggcd (a b: positive) := ggcdn (size_nat a + size_nat b)%nat a b.
 
+(** Local copies of the not-yet-available [N.double] and [N.succ_double] *)
+
+Definition Nsucc_double x :=
+  match x with
+  | N0 => Npos 1
+  | Npos p => Npos p~1
+  end.
+
+Definition Ndouble n :=
+  match n with
+  | N0 => N0
+  | Npos p => Npos p~0
+  end.
+
+(** Operation over bits. *)
+
+(** Logical [or] *)
+
+Fixpoint lor (p q : positive) : positive :=
+  match p, q with
+    | 1, q~0 => q~1
+    | 1, _ => q
+    | p~0, 1 => p~1
+    | _, 1 => p
+    | p~0, q~0 => (lor p q)~0
+    | p~0, q~1 => (lor p q)~1
+    | p~1, q~0 => (lor p q)~1
+    | p~1, q~1 => (lor p q)~1
+  end.
+
+(** Logical [and] *)
+
+Fixpoint land (p q : positive) : N :=
+  match p, q with
+    | 1, q~0 => N0
+    | 1, _ => Npos 1
+    | p~0, 1 => N0
+    | _, 1 => Npos 1
+    | p~0, q~0 => Ndouble (land p q)
+    | p~0, q~1 => Ndouble (land p q)
+    | p~1, q~0 => Ndouble (land p q)
+    | p~1, q~1 => Nsucc_double (land p q)
+  end.
+
+(** Logical [diff] *)
+
+Fixpoint ldiff (p q:positive) : N :=
+  match p, q with
+    | 1, q~0 => Npos 1
+    | 1, _ => N0
+    | _~0, 1 => Npos p
+    | p~1, 1 => Npos (p~0)
+    | p~0, q~0 => Ndouble (ldiff p q)
+    | p~0, q~1 => Ndouble (ldiff p q)
+    | p~1, q~1 => Ndouble (ldiff p q)
+    | p~1, q~0 => Nsucc_double (ldiff p q)
+  end.
+
+(** [xor] *)
+
+Fixpoint lxor (p q:positive) : N :=
+  match p, q with
+    | 1, 1 => N0
+    | 1, q~0 => Npos (q~1)
+    | 1, q~1 => Npos (q~0)
+    | p~0, 1 => Npos (p~1)
+    | p~0, q~0 => Ndouble (lxor p q)
+    | p~0, q~1 => Nsucc_double (lxor p q)
+    | p~1, 1 => Npos (p~0)
+    | p~1, q~0 => Nsucc_double (lxor p q)
+    | p~1, q~1 => Ndouble (lxor p q)
+  end.
+
+(** Shifts. NB: right shift of 1 stays at 1. *)
+
+Definition shiftl_nat (p:positive)(n:nat) := iter_nat n _ xO p.
+
+Definition shiftr_nat (p:positive)(n:nat) := iter_nat n _ div2 p.
+
+Definition shiftl (p:positive)(n:N) :=
+  match n with
+    | N0 => p
+    | Npos n => iter n xO p
+  end.
+
+Definition shiftr (p:positive)(n:N) :=
+  match n with
+    | N0 => p
+    | Npos n => iter n div2 p
+  end.
+
+(** Checking whether a particular bit is set or not *)
+
+Fixpoint testbit_nat (p:positive) : nat -> bool :=
+  match p with
+    | 1 => fun n => match n with
+                      | O => true
+                      | S _ => false
+                    end
+    | p~0 => fun n => match n with
+                        | O => false
+                        | S n' => testbit_nat p n'
+                      end
+    | p~1 => fun n => match n with
+                        | O => true
+                        | S n' => testbit_nat p n'
+                      end
+  end.
+
+(** Same, but with index in N *)
+
+Fixpoint testbit (p:positive)(n:N) :=
+  match p, n with
+    | p~0, N0 => false
+    | _, N0 => true
+    | 1, _ => false
+    | p~0, Npos n => testbit p (pred_N n)
+    | p~1, Npos n => testbit p (pred_N n)
+  end.
 
 (** ** From binary positive numbers to Peano natural numbers *)
 
@@ -526,8 +658,6 @@ Proof.
   now destruct H.
 Qed.
 
-Ltac destr_eq H := discriminate H || (try (injection H; clear H; intro H)).
-
 (** ** Injectivity of successor *)
 
 Lemma succ_inj p q : succ p = succ q -> p = q.
@@ -537,6 +667,14 @@ Proof.
   elim (succ_not_1 p); auto.
   elim (succ_not_1 q); auto.
 Qed.
+
+(** ** Predecessor to [N] *)
+
+Lemma pred_N_succ p : pred_N (succ p) = Npos p.
+Proof.
+ destruct p; simpl; trivial. f_equal. apply pred_double_succ.
+Qed.
+
 
 (**********************************************************************)
 (** * Properties of addition on binary positive numbers *)
@@ -1039,8 +1177,6 @@ Qed.
     - That leaves only 4 lemmas for [c] and [c'] being [Lt] or [Gt]
 *)
 
-Ltac easy' := repeat split; simpl; easy || now destruct 1.
-
 Theorem compare_cont_Eq p q c :
  compare_cont p q c = Eq -> c = Eq.
 Proof.
@@ -1219,6 +1355,18 @@ Qed.
 Lemma leb_le p q : (p <=? q) = true <-> p <= q.
 Proof.
   unfold leb, le. destruct compare; easy'.
+Qed.
+
+Lemma leb_spec p q : BoolSpec (p<=q) (q<p) (p <=? q).
+Proof.
+ unfold le, lt, leb. rewrite (compare_antisym p q).
+ case compare; now constructor.
+Qed.
+
+Lemma ltb_spec p q : BoolSpec (p<q) (q<=p) (p <? q).
+Proof.
+ unfold le, lt, ltb. rewrite (compare_antisym p q).
+ case compare; now constructor.
 Qed.
 
 (** ** Comparison and the successor *)

@@ -8,7 +8,7 @@
 
 (** Bitwise operations for ZArith *)
 
-Require Import Bool BinPos BinNat BinInt Ndigits Znat Zeven Zpow_def
+Require Import Bool BinPos BinNat BinInt Znat Zeven Zpow_def
  Zorder Zcompare.
 
 Local Open Scope Z_scope.
@@ -28,8 +28,8 @@ Definition Ztestbit a n :=
    | 0 => Zodd_bool a
    | Zpos p => match a with
                  | 0 => false
-                 | Zpos a => Ptestbit a (Npos p)
-                 | Zneg a => negb (Ntestbit (Ppred_N a) (Npos p))
+                 | Zpos a => Pos.testbit a (Npos p)
+                 | Zneg a => negb (N.testbit (Pos.pred_N a) (Npos p))
                end
    | Zneg _ => false
  end.
@@ -60,72 +60,72 @@ Definition Zor a b :=
  match a, b with
    | 0, _ => b
    | _, 0 => a
-   | Zpos a, Zpos b => Zpos (Por a b)
-   | Zneg a, Zpos b => Zneg (Nsucc_pos (Ndiff (Ppred_N a) (Npos b)))
-   | Zpos a, Zneg b => Zneg (Nsucc_pos (Ndiff (Ppred_N b) (Npos a)))
-   | Zneg a, Zneg b => Zneg (Nsucc_pos (Nand (Ppred_N a) (Ppred_N b)))
+   | Zpos a, Zpos b => Zpos (Pos.lor a b)
+   | Zneg a, Zpos b => Zneg (N.succ_pos (N.ldiff (Pos.pred_N a) (Npos b)))
+   | Zpos a, Zneg b => Zneg (N.succ_pos (N.ldiff (Pos.pred_N b) (Npos a)))
+   | Zneg a, Zneg b => Zneg (N.succ_pos (N.land (Pos.pred_N a) (Pos.pred_N b)))
  end.
 
 Definition Zand a b :=
  match a, b with
    | 0, _ => 0
    | _, 0 => 0
-   | Zpos a, Zpos b => Z_of_N (Pand a b)
-   | Zneg a, Zpos b => Z_of_N (Ndiff (Npos b) (Ppred_N a))
-   | Zpos a, Zneg b => Z_of_N (Ndiff (Npos a) (Ppred_N b))
-   | Zneg a, Zneg b => Zneg (Nsucc_pos (Nor (Ppred_N a) (Ppred_N b)))
+   | Zpos a, Zpos b => Z_of_N (Pos.land a b)
+   | Zneg a, Zpos b => Z_of_N (N.ldiff (Npos b) (Pos.pred_N a))
+   | Zpos a, Zneg b => Z_of_N (N.ldiff (Npos a) (Pos.pred_N b))
+   | Zneg a, Zneg b => Zneg (N.succ_pos (N.lor (Pos.pred_N a) (Pos.pred_N b)))
  end.
 
 Definition Zdiff a b :=
  match a, b with
    | 0, _ => 0
    | _, 0 => a
-   | Zpos a, Zpos b => Z_of_N (Pdiff a b)
-   | Zneg a, Zpos b => Zneg (Nsucc_pos (Nor (Ppred_N a) (Npos b)))
-   | Zpos a, Zneg b => Z_of_N (Nand (Npos a) (Ppred_N b))
-   | Zneg a, Zneg b => Z_of_N (Ndiff (Ppred_N b) (Ppred_N a))
+   | Zpos a, Zpos b => Z_of_N (Pos.ldiff a b)
+   | Zneg a, Zpos b => Zneg (N.succ_pos (N.lor (Pos.pred_N a) (Npos b)))
+   | Zpos a, Zneg b => Z_of_N (N.land (Npos a) (Pos.pred_N b))
+   | Zneg a, Zneg b => Z_of_N (N.ldiff (Pos.pred_N b) (Pos.pred_N a))
  end.
 
 Definition Zxor a b :=
  match a, b with
    | 0, _ => b
    | _, 0 => a
-   | Zpos a, Zpos b => Z_of_N (Pxor a b)
-   | Zneg a, Zpos b => Zneg (Nsucc_pos (Nxor (Ppred_N a) (Npos b)))
-   | Zpos a, Zneg b => Zneg (Nsucc_pos (Nxor (Npos a) (Ppred_N b)))
-   | Zneg a, Zneg b => Z_of_N (Nxor (Ppred_N a) (Ppred_N b))
+   | Zpos a, Zpos b => Z_of_N (Pos.lxor a b)
+   | Zneg a, Zpos b => Zneg (N.succ_pos (N.lxor (Pos.pred_N a) (Npos b)))
+   | Zpos a, Zneg b => Zneg (N.succ_pos (N.lxor (Npos a) (Pos.pred_N b)))
+   | Zneg a, Zneg b => Z_of_N (N.lxor (Pos.pred_N a) (Pos.pred_N b))
  end.
 
 
 (** Conversions between [Ztestbit] and [Ntestbit] *)
 
 Lemma Ztestbit_of_N : forall a n,
- Ztestbit (Z_of_N a) (Z_of_N n) = Ntestbit a n.
+ Ztestbit (Z_of_N a) (Z_of_N n) = N.testbit a n.
 Proof.
  intros [ |a] [ |n]; simpl; trivial. now destruct a.
 Qed.
 
 Lemma Ztestbit_of_N' : forall a n, 0<=n ->
- Ztestbit (Z_of_N a) n = Ntestbit a (Zabs_N n).
+ Ztestbit (Z_of_N a) n = N.testbit a (Zabs_N n).
 Proof.
  intros. now rewrite <- Ztestbit_of_N, Z_of_N_abs, Zabs_eq.
 Qed.
 
 Lemma Ztestbit_Zpos : forall a n, 0<=n ->
- Ztestbit (Zpos a) n = Ntestbit (Npos a) (Zabs_N n).
+ Ztestbit (Zpos a) n = N.testbit (Npos a) (Zabs_N n).
 Proof.
  intros. now rewrite <- Ztestbit_of_N'.
 Qed.
 
 Lemma Ztestbit_Zneg : forall a n, 0<=n ->
- Ztestbit (Zneg a) n = negb (Ntestbit (Ppred_N a) (Zabs_N n)).
+ Ztestbit (Zneg a) n = negb (N.testbit (Pos.pred_N a) (Zabs_N n)).
 Proof.
  intros a n Hn.
  rewrite <- Ztestbit_of_N' by trivial.
  destruct n as [ |n|n];
   [ | simpl; now destruct (Ppred_N a) | now destruct Hn].
  unfold Ztestbit.
- replace (Z_of_N (Ppred_N a)) with (Zpred (Zpos a))
+ replace (Z_of_N (Pos.pred_N a)) with (Zpred (Zpos a))
   by (destruct a; trivial).
  now rewrite Zodd_bool_pred, <- Zodd_even_bool.
 Qed.
@@ -164,7 +164,7 @@ Proof.
  destruct a as [|[a|a|]|[a|a|]]; simpl; trivial. now destruct a.
  unfold Ztestbit. rewrite <- Zpos_succ_morphism.
  destruct a as [|a|[a|a|]]; simpl; trivial;
-  rewrite ?Ppred_succ; now destruct n.
+  rewrite ?Pos.pred_N_succ; now destruct n.
 Qed.
 
 Lemma Ztestbit_even_succ a n : 0<=n ->
@@ -174,57 +174,64 @@ Proof.
  destruct a as [|[a|a|]|[a|a|]]; simpl; trivial. now destruct a.
  unfold Ztestbit. rewrite <- Zpos_succ_morphism.
  destruct a as [|a|[a|a|]]; simpl; trivial;
-  rewrite ?Ppred_succ; now destruct n.
+  rewrite ?Pos.pred_N_succ; now destruct n.
 Qed.
 
 Lemma Ppred_div2_up : forall p,
- Ppred_N (Pdiv2_up p) = Ndiv2 (Ppred_N p).
+ Pos.pred_N (Pos.div2_up p) = N.div2 (Pos.pred_N p).
 Proof.
  intros [p|p| ]; trivial.
- simpl. rewrite Ppred_N_spec. apply (Npred_succ (Npos p)).
+ simpl. apply Pos.pred_N_succ.
  destruct p; simpl; trivial.
 Qed.
 
-Lemma Z_of_N_div2 : forall n, Z_of_N (Ndiv2 n) = Zdiv2 (Z_of_N n).
+Lemma Z_of_N_div2 : forall n, Z_of_N (N.div2 n) = Zdiv2 (Z_of_N n).
 Proof.
  intros [|p]; trivial. now destruct p.
 Qed.
 
-Lemma Z_of_N_quot2 : forall n, Z_of_N (Ndiv2 n) = Zquot2 (Z_of_N n).
+Lemma Z_of_N_quot2 : forall n, Z_of_N (N.div2 n) = Zquot2 (Z_of_N n).
 Proof.
  intros [|p]; trivial. now destruct p.
 Qed.
 
 (** Auxiliary results about right shift on positive numbers *)
 
-Lemma Ppred_Pshiftl_low : forall p n m, (m<n)%nat ->
- Nbit (Ppred_N (iter_nat n _ xO p)) m = true.
+Lemma Ppred_Pshiftl_low : forall p n m, (m<n)%N ->
+ N.testbit (Pos.pred_N (Pos.shiftl p n)) m = true.
 Proof.
- induction n.
- inversion 1.
- intros m H. simpl.
- destruct m.
- now destruct (iter_nat n _ xO p).
- apply lt_S_n in H.
- specialize (IHn m H).
- now destruct (iter_nat n _ xO p).
+ induction n using N.peano_ind.
+ now destruct m.
+ intros m H. unfold Pos.shiftl.
+ destruct n as [|n]; simpl in *.
+ destruct m. now destruct p. elim (Pos.nlt_1_r _ H).
+ rewrite Pos.iter_succ. simpl.
+ set (u:=Pos.iter n xO p) in *; clearbody u.
+ destruct m as [|m]. now destruct u.
+ rewrite <- (IHn (Pos.pred_N m)).
+ rewrite <- (N.testbit_odd_succ _ (Pos.pred_N m)).
+ rewrite N.succ_pos_pred. now destruct u.
+ apply N.le_0_l.
+ apply N.succ_lt_mono. now rewrite N.succ_pos_pred.
 Qed.
 
-Lemma Ppred_Pshiftl_high : forall p n m, (n<=m)%nat ->
- Nbit (Ppred_N (iter_nat n _ xO p)) m =
- Nbit (Nshiftl_nat (Ppred_N p) n) m.
+Lemma Ppred_Pshiftl_high : forall p n m, (n<=m)%N ->
+ N.testbit (Pos.pred_N (Pos.shiftl p n)) m =
+ N.testbit (N.shiftl (Pos.pred_N p) n) m.
 Proof.
- induction n.
- now unfold Nshiftl_nat.
- intros m H.
- destruct m.
- inversion H.
- apply le_S_n in H.
- rewrite Nshiftl_nat_S.
- specialize (IHn m H).
- simpl in *.
- unfold Nbit.
- now destruct (Nshiftl_nat (Ppred_N p) n), (iter_nat n positive xO p).
+ induction n using N.peano_ind; intros m H.
+ unfold N.shiftl. simpl. now destruct (Pos.pred_N p).
+ rewrite N.shiftl_succ_r.
+ destruct n as [|n].
+ destruct m as [|m]. now destruct H. now destruct p.
+ destruct m as [|m]. now destruct H.
+ rewrite <- (N.succ_pos_pred m).
+ rewrite N.double_spec, N.testbit_even_succ by apply N.le_0_l.
+ rewrite <- IHn.
+ rewrite N.testbit_succ_r_div2 by apply N.le_0_l.
+ f_equal. simpl. rewrite Pos.iter_succ.
+ now destruct (Pos.iter n xO p).
+ apply N.succ_le_mono. now rewrite N.succ_pos_pred.
 Qed.
 
 (** Correctness proofs about [Zshiftr] and [Zshiftl] *)
@@ -245,14 +252,14 @@ Proof.
  rewrite <- (iter_pos_swap_gen _ _ _ Ndiv2) by exact Z_of_N_div2.
  rewrite Ztestbit_Zpos, Ztestbit_of_N'; trivial.
  rewrite Zabs_N_plus; try easy. simpl Zabs_N.
- exact (Nshiftr_spec (Npos a) (Npos n) (Zabs_N m)).
+ exact (N.shiftr_spec' (Npos a) (Npos n) (Zabs_N m)).
  now apply Zplus_le_0_compat.
  (* a < 0 *)
  rewrite <- (iter_pos_swap_gen _ _ _ Pdiv2_up) by trivial.
  rewrite 2 Ztestbit_Zneg; trivial. f_equal.
  rewrite Zabs_N_plus; try easy. simpl Zabs_N.
  rewrite (iter_pos_swap_gen _ _ _ _ Ndiv2) by exact Ppred_div2_up.
- exact (Nshiftr_spec (Ppred_N a) (Npos n) (Zabs_N m)).
+ exact (N.shiftr_spec' (Ppred_N a) (Npos n) (Zabs_N m)).
  now apply Zplus_le_0_compat.
 Qed.
 
@@ -271,14 +278,11 @@ Proof.
  (* a > 0 *)
  rewrite <- (iter_pos_swap_gen _ _ _ xO) by trivial.
  rewrite Ztestbit_Zpos by easy.
- exact (Nshiftl_spec_low (Npos a) (Npos n) (Npos m) H).
+ exact (N.shiftl_spec_low (Npos a) (Npos n) (Npos m) H).
  (* a < 0 *)
  rewrite <- (iter_pos_swap_gen _ _ _ xO) by trivial.
  rewrite Ztestbit_Zneg by easy.
- simpl Zabs_N.
- rewrite <- Nbit_Ntestbit, iter_nat_of_P. simpl nat_of_N.
- rewrite Ppred_Pshiftl_low; trivial.
- now apply Plt_lt.
+ now rewrite (Ppred_Pshiftl_low a (Npos n)).
 Qed.
 
 Lemma Zshiftl_spec_high : forall a n m, 0<=m -> n<=m ->
@@ -300,16 +304,13 @@ Proof.
  (* ... a > 0 *)
  rewrite <- (iter_pos_swap_gen _ _ _ xO) by trivial.
  rewrite 2 Ztestbit_Zpos, EQ by easy.
- exact (Nshiftl_spec_high (Npos p) (Npos n) (Npos m) H).
+ exact (N.shiftl_spec_high' (Npos p) (Npos n) (Npos m) H).
  (* ... a < 0 *)
  rewrite <- (iter_pos_swap_gen _ _ _ xO) by trivial.
  rewrite 2 Ztestbit_Zneg, EQ by easy. f_equal.
  simpl Zabs_N.
- rewrite <- Nshiftl_spec_high by easy.
- rewrite <- 2 Nbit_Ntestbit, iter_nat_of_P, <- Nshiftl_nat_equiv.
- simpl nat_of_N.
- apply Ppred_Pshiftl_high.
- now apply Ple_le.
+ rewrite <- N.shiftl_spec_high by easy.
+ now apply (Ppred_Pshiftl_high p (Npos n)).
  (* n < 0 *)
  unfold Zminus. simpl.
  now apply (Zshiftr_spec_aux a (Zpos n) m).
@@ -342,10 +343,10 @@ Proof.
   rewrite ?Ztestbit_0_l, ?orb_false_r; trivial; unfold Zor;
   rewrite ?Ztestbit_Zpos, ?Ztestbit_Zneg, ?Ppred_Nsucc
    by trivial.
- now rewrite <- Nor_spec.
- now rewrite Ndiff_spec, negb_andb, negb_involutive, orb_comm.
- now rewrite Ndiff_spec, negb_andb, negb_involutive.
- now rewrite Nand_spec, negb_andb.
+ now rewrite <- N.lor_spec.
+ now rewrite N.ldiff_spec, negb_andb, negb_involutive, orb_comm.
+ now rewrite N.ldiff_spec, negb_andb, negb_involutive.
+ now rewrite N.land_spec, negb_andb.
 Qed.
 
 Lemma Zand_spec : forall a b n,
@@ -357,10 +358,10 @@ Proof.
   rewrite ?Ztestbit_0_l, ?andb_false_r; trivial; unfold Zand;
   rewrite ?Ztestbit_Zpos, ?Ztestbit_Zneg, ?Ztestbit_of_N', ?Ppred_Nsucc
    by trivial.
- now rewrite <- Nand_spec.
- now rewrite Ndiff_spec.
- now rewrite Ndiff_spec, andb_comm.
- now rewrite Nor_spec, negb_orb.
+ now rewrite <- N.land_spec.
+ now rewrite N.ldiff_spec.
+ now rewrite N.ldiff_spec, andb_comm.
+ now rewrite N.lor_spec, negb_orb.
 Qed.
 
 Lemma Zdiff_spec : forall a b n,
@@ -372,10 +373,10 @@ Proof.
   rewrite ?Ztestbit_0_l, ?andb_true_r; trivial; unfold Zdiff;
   rewrite ?Ztestbit_Zpos, ?Ztestbit_Zneg, ?Ztestbit_of_N', ?Ppred_Nsucc
    by trivial.
- now rewrite <- Ndiff_spec.
- now rewrite Nand_spec, negb_involutive.
- now rewrite Nor_spec, negb_orb.
- now rewrite Ndiff_spec, negb_involutive, andb_comm.
+ now rewrite <- N.ldiff_spec.
+ now rewrite N.land_spec, negb_involutive.
+ now rewrite N.lor_spec, negb_orb.
+ now rewrite N.ldiff_spec, negb_involutive, andb_comm.
 Qed.
 
 Lemma Zxor_spec : forall a b n,
@@ -387,16 +388,17 @@ Proof.
   rewrite ?Ztestbit_0_l, ?xorb_false_l, ?xorb_false_r; trivial; unfold Zxor;
   rewrite ?Ztestbit_Zpos, ?Ztestbit_Zneg, ?Ztestbit_of_N', ?Ppred_Nsucc
    by trivial.
- now rewrite <- Nxor_spec.
- now rewrite Nxor_spec, negb_xorb_r.
- now rewrite Nxor_spec, negb_xorb_l.
- now rewrite Nxor_spec, xorb_negb_negb.
+ now rewrite <- N.lxor_spec.
+ now rewrite N.lxor_spec, negb_xorb_r.
+ now rewrite N.lxor_spec, negb_xorb_l.
+ now rewrite N.lxor_spec, xorb_negb_negb.
 Qed.
 
 (** An additionnal proof concerning [Pshiftl_nat], used in BigN *)
 
+
 Lemma Pshiftl_nat_Zpower : forall n p,
-  Zpos (Pshiftl_nat p n) = Zpos p * 2 ^ Z_of_nat n.
+  Zpos (Pos.shiftl_nat p n) = Zpos p * 2 ^ Z_of_nat n.
 Proof.
  intros.
  rewrite Zmult_comm.

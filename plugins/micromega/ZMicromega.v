@@ -212,9 +212,9 @@ Proof.
       repeat rewrite <- eval_pol_norm ; simpl in *;
   unfold eval_expr;
   generalize (   eval_pexpr  Zplus Zmult Zminus Zopp (fun x : Z => x)
-    (fun x : BinNat.N => x) (pow_N 1 Zmult) env lhs);
+    (fun x : N => x) (pow_N 1 Zmult) env lhs);
   generalize (eval_pexpr  Zplus Zmult Zminus Zopp (fun x : Z => x)
-    (fun x : BinNat.N => x) (pow_N 1 Zmult) env rhs) ; intros z1 z2 ; intros ; subst;
+    (fun x : N => x) (pow_N 1 Zmult) env rhs) ; intros z1 z2 ; intros ; subst;
     intuition (auto with zarith).
   Transparent padd.
 Qed.
@@ -249,9 +249,9 @@ Proof.
       repeat rewrite <- eval_pol_norm ; simpl in *;
   unfold eval_expr;
   generalize (   eval_pexpr  Zplus Zmult Zminus Zopp (fun x : Z => x)
-    (fun x : BinNat.N => x) (pow_N 1 Zmult) env lhs);
+    (fun x : N => x) (pow_N 1 Zmult) env lhs);
   generalize (eval_pexpr  Zplus Zmult Zminus Zopp (fun x : Z => x)
-    (fun x : BinNat.N => x) (pow_N 1 Zmult) env rhs) ; intros z1 z2 ; intros ; subst;
+    (fun x : N => x) (pow_N 1 Zmult) env rhs) ; intros z1 z2 ; intros ; subst;
     intuition (auto with zarith).
   Transparent padd.
 Qed.
@@ -1009,7 +1009,7 @@ Definition eval := eval_formula.
 
 Definition prod_pos_nat := prod positive nat.
 
-Definition n_of_Z (z:Z) : BinNat.N :=
+Definition n_of_Z (z:Z) : N :=
   match z with
     | Z0 => N0
     | Zpos p => Npos p

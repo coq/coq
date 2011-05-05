@@ -77,6 +77,10 @@ Ltac false_hyp H G :=
 
 Ltac case_eq x := generalize (refl_equal x); pattern x at -1; case x.
 
+(* use either discriminate or injection on a hypothesis *)
+
+Ltac destr_eq H := discriminate H || (try (injection H; clear H; intro H)).
+
 (* Similar variants of destruct *)
 
 Tactic Notation "destruct_with_eqn" constr(x) :=
@@ -184,6 +188,10 @@ Ltac easy :=
   (use_hyps; do_ccl) || fail "Cannot solve this goal".
 
 Tactic Notation "now" tactic(t) := t; easy.
+
+(** Slightly more than [easy]*)
+
+Ltac easy' := repeat split; simpl; easy || now destruct 1.
 
 (** A tactic to document or check what is proved at some point of a script *)
 

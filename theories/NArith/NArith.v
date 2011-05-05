@@ -17,11 +17,6 @@ Require Export Nsqrt_def.
 Require Export Ngcd_def.
 Require Export Ndigits.
 Require Export NArithRing.
-Require NBinary.
-
-Module N.
- Include NBinary.N.
-End N.
 
 (** [N] contains an [order] tactic for natural numbers *)
 

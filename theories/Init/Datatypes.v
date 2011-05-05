@@ -110,6 +110,17 @@ Proof.
   intros P b H H0; destruct H0 in H; assumption.
 Defined.
 
+(** The [BoolSpec] inductive will be used to relate a [boolean] value
+    and two propositions corresponding respectively to the [true]
+    case and the [false] case.
+    Interest: [BoolSpec] behave nicely with [case] and [destruct].
+    See also [Bool.reflect] when [Q = ~P].
+*)
+
+Inductive BoolSpec (P Q : Prop) : bool -> Prop :=
+  | BoolSpecT : P -> BoolSpec P Q true
+  | BoolSpecF : Q -> BoolSpec P Q false.
+
 
 (********************************************************************)
 (** * Peano natural numbers *)

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import BinPos BinNat BinInt Zbool Zcompare Zorder Zabs Znat Ndiv_def.
+Require Import BinPos BinNat BinInt Zbool Zcompare Zorder Zabs Znat.
 Local Open Scope Z_scope.
 
 (** * Definitions of divisions for binary integers *)
@@ -113,13 +113,13 @@ Definition Zquotrem (a b:Z) : Z * Z :=
    | 0,  _ => (0, 0)
    | _, 0  => (0, a)
    | Zpos a, Zpos b =>
-     let (q, r) := Pdiv_eucl a b in (Z_of_N q, Z_of_N r)
+     let (q, r) := N.pos_div_eucl a (Npos b) in (Z_of_N q, Z_of_N r)
    | Zneg a, Zpos b =>
-     let (q, r) := Pdiv_eucl a b in (- Z_of_N q, - Z_of_N r)
+     let (q, r) := N.pos_div_eucl a (Npos b) in (-Z_of_N q, - Z_of_N r)
    | Zpos a, Zneg b =>
-     let (q, r) := Pdiv_eucl a b in (- Z_of_N q, Z_of_N r)
+     let (q, r) := N.pos_div_eucl a (Npos b) in (-Z_of_N q, Z_of_N r)
    | Zneg a, Zneg b =>
-     let (q, r) := Pdiv_eucl a b in (Z_of_N q, - Z_of_N r)
+     let (q, r) := N.pos_div_eucl a (Npos b) in (Z_of_N q, - Z_of_N r)
   end.
 
 Definition Zquot a b := fst (Zquotrem a b).
@@ -261,7 +261,7 @@ Theorem Zquotrem_eq: forall a b,
   let (q,r) := Zquotrem a b in a = q * b + r.
 Proof.
  destruct a, b; simpl; trivial;
- generalize (Pdiv_eucl_correct p p0); case Pdiv_eucl; trivial;
+ generalize (N.pos_div_eucl_spec p (Npos p0)); case N.pos_div_eucl; trivial;
   intros q r H; try change (Zneg p) with (-Zpos p);
   rewrite <- (Z_of_N_pos p), H, Z_of_N_plus, Z_of_N_mult; f_equal.
  now rewrite Zmult_opp_comm.
@@ -281,19 +281,20 @@ Proof.
  destruct a as [|a|a]; (now destruct Ha) || clear Ha.
  compute. now split.
  unfold Zrem, Zquotrem.
- generalize (Pdiv_eucl_remainder a b). destruct Pdiv_eucl as (q,r).
- simpl. split. apply Z_of_N_le_0.
- destruct r; red; simpl; trivial.
+ assert (H := N.pos_div_eucl_remainder a (Npos b)).
+ destruct N.pos_div_eucl as (q,r); simpl.
+ split. apply Z_of_N_le_0.
+ destruct r; [ reflexivity | now apply H ].
 Qed.
 
 Lemma Zrem_opp_l : forall a b, Zrem (-a) b = - (Zrem a b).
 Proof.
  intros [|a|a] [|b|b]; trivial; unfold Zrem;
-  simpl; destruct Pdiv_eucl; simpl; try rewrite Zopp_involutive; trivial.
+  simpl; destruct N.pos_div_eucl; simpl; try rewrite Zopp_involutive; trivial.
 Qed.
 
 Lemma Zrem_opp_r : forall a b, Zrem a (-b) = Zrem a b.
 Proof.
  intros [|a|a] [|b|b]; trivial; unfold Zrem; simpl;
-  destruct Pdiv_eucl; simpl; try rewrite Zopp_involutive; trivial.
+  destruct N.pos_div_eucl; simpl; try rewrite Zopp_involutive; trivial.
 Qed.

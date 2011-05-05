@@ -48,18 +48,18 @@ Extract Constant Pos.compare =>
 Extract Constant Pos.compare_cont =>
  "fun x y c -> Big.compare_case c Lt Gt x y".
 
-Extract Constant Nplus => "Big.add".
-Extract Constant Nsucc => "Big.succ".
-Extract Constant Npred => "fun n -> Big.max Big.zero (Big.pred n)".
-Extract Constant Nminus => "fun n m -> Big.max Big.zero (Big.sub n m)".
-Extract Constant Nmult => "Big.mult".
-Extract Constant Nmin => "Big.min".
-Extract Constant Nmax => "Big.max".
-Extract Constant Ndiv =>
+Extract Constant N.add => "Big.add".
+Extract Constant N.succ => "Big.succ".
+Extract Constant N.pred => "fun n -> Big.max Big.zero (Big.pred n)".
+Extract Constant N.sub => "fun n m -> Big.max Big.zero (Big.sub n m)".
+Extract Constant N.mul => "Big.mult".
+Extract Constant N.min => "Big.min".
+Extract Constant N.max => "Big.max".
+Extract Constant N.div =>
  "fun a b -> if Big.eq b Big.zero then Big.zero else Big.div a b".
-Extract Constant Nmod =>
+Extract Constant N.modulo =>
  "fun a b -> if Big.eq b Big.zero then Big.zero else Big.modulo a b".
-Extract Constant Ncompare => "Big.compare_case Eq Lt Gt".
+Extract Constant N.compare => "Big.compare_case Eq Lt Gt".
 
 Extract Constant Zplus => "Big.add".
 Extract Constant Zsucc => "Big.succ".

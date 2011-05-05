@@ -46,16 +46,16 @@ Extract Constant Pos.compare_cont =>
  "fun x y c -> if x=y then c else if x<y then Lt else Gt".
 
 
-Extract Constant Nplus => "(+)".
-Extract Constant Nsucc => "succ".
-Extract Constant Npred => "fun n -> max 0 (n-1)".
-Extract Constant Nminus => "fun n m -> max 0 (n-m)".
-Extract Constant Nmult => "( * )".
-Extract Constant Nmin => "min".
-Extract Constant Nmax => "max".
-Extract Constant Ndiv => "fun a b -> if b=0 then 0 else a/b".
-Extract Constant Nmod => "fun a b -> if b=0 then a else a mod b".
-Extract Constant Ncompare =>
+Extract Constant N.add => "(+)".
+Extract Constant N.succ => "succ".
+Extract Constant N.pred => "fun n -> max 0 (n-1)".
+Extract Constant N.sub => "fun n m -> max 0 (n-m)".
+Extract Constant N.mul => "( * )".
+Extract Constant N.min => "min".
+Extract Constant N.max => "max".
+Extract Constant N.div => "fun a b -> if b=0 then 0 else a/b".
+Extract Constant N.modulo => "fun a b -> if b=0 then a else a mod b".
+Extract Constant N.compare =>
  "fun x y -> if x=y then Eq else if x<y then Lt else Gt".
 
 
