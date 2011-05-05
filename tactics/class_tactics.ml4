@@ -230,21 +230,39 @@ let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
 	       if not (eq_constr ty' ar) then iscl env' ty'
 	       else false
   in
-  let keep = not only_classes || iscl env cty in
-    if keep then let c = mkVar id in
-      map_succeed 
-	(fun f -> try f (c,cty) with UserError _ -> failwith "") 
+  let is_class = iscl env cty in
+  let keep = not only_classes || is_class in
+    if keep then 
+      let c = mkVar id in
+      let hints =
+	if is_class then
+	  let hints = build_subclasses env sigma (mkVar id) in
+	    list_map_append
+	      (make_resolves env sigma (true,false,Flags.is_verbose()) None) hints
+	else []
+      in
+	hints @ map_succeed 
+	  (fun f -> try f (c,cty) with UserError _ -> failwith "") 
 	[make_exact_entry sigma pri; make_apply_entry env sigma flags pri]
     else []
 
 let pf_filtered_hyps gls = 
-  Goal.V82.filtered_context gls.Evd.sigma (sig_it gls)
+  Goal.V82.hyps gls.Evd.sigma (sig_it gls)
 
-let make_autogoal_hints only_classes ?(st=full_transparent_state) g =
-  let sign = pf_filtered_hyps g in
-  let hintlist = list_map_append (pf_apply make_resolve_hyp g st (true,false,false) only_classes None) sign in
-    Hint_db.add_list hintlist (Hint_db.empty st true)
-  
+let make_hints g st only_classes sign =
+  let hintlist = list_map_append 
+    (pf_apply make_resolve_hyp g st (true,false,false) only_classes None) sign
+  in Hint_db.add_list hintlist (Hint_db.empty st true)
+    
+let make_autogoal_hints = 
+  let res = ref None in
+    fun only_classes ?(st=full_transparent_state) g ->
+    let sign = pf_filtered_hyps g in
+      match !res with
+      | Some (sign', hints) when sign = sign' -> hints
+      | _ -> let hints = make_hints g st only_classes (Environ.named_context_of_val sign) in
+	  res := Some (sign, hints); hints
+	  
 let lift_tactic tac (f : goal list sigma -> autoinfo -> autogoal list sigma) : 'a tac =
   { skft = fun sk fk {it = gl,hints; sigma=s} ->
     let res = try Some (tac {it=gl; sigma=s}) with e when catchable e -> None in
@@ -603,8 +621,10 @@ let initial_select_evars onlyargs =
     (fun evd ev evi -> Typeclasses.is_class_evar evd evi)
 
 let resolve_typeclass_evars debug m env evd onlyargs split fail =
-  let evd = Evarconv.consider_remaining_unif_problems
-    ~ts:(Typeclasses.classes_transparent_state ()) env evd 
+  let evd = 
+    try Evarconv.consider_remaining_unif_problems
+      ~ts:(Typeclasses.classes_transparent_state ()) env evd
+    with _ -> evd
   in
     resolve_all_evars debug m env (initial_select_evars onlyargs) evd split fail
 

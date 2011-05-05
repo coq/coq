@@ -356,7 +356,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri ?name (c,cty) =
    cty is the type of constr *)
 
 let make_resolves env sigma flags pri ?name c =
-  let cty = type_of env sigma c in
+  let cty = Retyping.get_type_of env sigma c in
   let ents =
     map_succeed
       (fun f -> f (c,cty))

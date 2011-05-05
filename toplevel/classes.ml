@@ -283,40 +283,25 @@ let named_of_rel_context l =
 let string_of_global r =
  string_of_qualid (Nametab.shortest_qualid_of_global Idset.empty r)
 
-let declare_subclasses gr cl =
-  let rec build_subclasses c (rels, (tc, args)) =
-    let projs = list_map_filter 
-      (fun (n, b, proj) ->
-	 if b then Option.map (fun p -> Nameops.out_name n, mkConst p) proj
-	 else None) tc.cl_projs 
-    in
-    let instapp = appvectc (constr_of_global gr)
-      (Termops.extended_rel_vect 0 rels)
-    in
-    let projargs = 
-      Array.of_list (args @ [instapp])
-    in
-    let declare_proj (n, p) =
-      let body = it_mkLambda_or_LetIn (mkApp (p, projargs)) rels in
-	(*     let ce = { *)
-	(*       const_entry_body   = ; *)
-(*       const_entry_type   = None; *)
-(*       const_entry_opaque = false } *)
-(*     in *)
-(*     let cst = Declare.declare_constant ~internal:Declare.KernelSilent  *)
-(*       (Nameops.add_suffix (Nameops.add_suffix (id_of_string (string_of_global gr)) "_")  *)
-(* 	 (string_of_id n)) *)
-(*       (DefinitionEntry ce, IsAssumption Logical) *)
-(*     in *)
-      let ty = Retyping.get_type_of (Global.env ()) Evd.empty body in
-	match class_of_constr ty with
-	| Some (rels, (tc, args) as cl) ->
-	    (* 	  add_instance (Typeclasses.new_instance tc None false (ConstRef cst)); *)
-	    body :: build_subclasses body cl
-	| None -> []
-    in list_map_append declare_proj projs
-  in
-  let hints = build_subclasses (constr_of_global gr) cl in
+let rec build_subclasses env sigma c =
+  let ty = Retyping.get_type_of env sigma c in
+    match class_of_constr ty with
+    | None -> []
+    | Some (rels, (tc, args)) ->
+	let projs = list_map_filter 
+	  (fun (n, b, proj) ->
+	     if b then Option.map (fun p -> Nameops.out_name n, mkConst p) proj
+	     else None) tc.cl_projs 
+	in
+	let instapp = appvectc c (Termops.extended_rel_vect 0 rels) in
+	let projargs = Array.of_list (args @ [instapp]) in
+	let declare_proj (n, p) =
+	  let body = it_mkLambda_or_LetIn (mkApp (p, projargs)) rels in
+	    body :: build_subclasses env sigma body
+	in list_map_append declare_proj projs
+	     
+let declare_subclasses constr =
+  let hints = build_subclasses (Global.env ()) Evd.empty constr in
   let entry = List.map (fun c -> (None, false, None, c)) hints in
     Auto.add_hints true (* local *) [typeclasses_db] (Auto.HintsResolveEntry entry)
 
@@ -346,9 +331,7 @@ let context l =
 	   match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls
       in
 	Command.declare_assumption false (Local (* global *), Definitional) t
-	  [] impl (* implicit *) None (* inline *) (dummy_loc, id))
-(* 	match class_of_constr t with *)
-(* 	| None -> () *)
-(* 	| Some tc -> declare_subclasses (VarRef id) tc) *)
+	  [] impl (* implicit *) None (* inline *) (dummy_loc, id);
+	declare_subclasses (mkVar id))
   in List.iter fn (List.rev ctx)
-	
+       

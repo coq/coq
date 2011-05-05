@@ -17,7 +17,6 @@ Notation "( x ,> y )" := (fpair x y) (at level 0).
 Instance Pointed_FPair B neutral:
  Pointed (fun A => FPair A B neutral) :=
  { creturn := fun A (a:A) => (a,> neutral) }.
-
 Definition blah_fail (x:bool) : FPair bool nat O :=
   creturn x.
 Set Printing All. Print blah_fail.

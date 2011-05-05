@@ -230,27 +230,33 @@ Hint Extern 4 (subrelation (inverse _) _) =>
 
 (** The complement of a relation conserves its proper elements. *)
 
-Program Instance complement_proper
+Program Definition complement_proper
   `(mR : Proper (A -> A -> Prop) (RA ==> RA ==> iff) R) :
-  Proper (RA ==> RA ==> iff) (complement R).
+  Proper (RA ==> RA ==> iff) (complement R) := _.
 
-  Next Obligation.
+ Next Obligation.
   Proof.
     unfold complement.
     pose (mR x y H x0 y0 H0).
     intuition.
   Qed.
+ 
+Hint Extern 1 (Proper (_ ==> _ ==> iff) (complement _)) => 
+  apply @complement_proper : typeclass_instances.
 
 (** The [inverse] too, actually the [flip] instance is a bit more general. *)
 
-Program Instance flip_proper
+Program Definition flip_proper
   `(mor : Proper (A -> B -> C) (RA ==> RB ==> RC) f) :
-  Proper (RB ==> RA ==> RC) (flip f).
+  Proper (RB ==> RA ==> RC) (flip f) := _.
 
   Next Obligation.
   Proof.
     apply mor ; auto.
   Qed.
+
+Hint Extern 1 (Proper (_ ==> _ ==> _) (flip _)) => 
+  apply @flip_proper : typeclass_instances.
 
 (** Every Transitive relation gives rise to a binary morphism on [impl],
    contravariant in the first argument, covariant in the second. *)
