@@ -62,9 +62,13 @@ let coq_modules =
     @ [module_refl_path]
     @ [module_refl_path@["ZOmega"]]
 
+let bin_module = [["Coq";"Numbers";"BinNums"]]
+let z_module = [["Coq";"ZArith";"BinInt"]]
 
 let init_constant = Coqlib.gen_constant_in_modules "Omega" Coqlib.init_modules
 let constant = Coqlib.gen_constant_in_modules "Omega" coq_modules
+let z_constant = Coqlib.gen_constant_in_modules "Omega" z_module
+let bin_constant = Coqlib.gen_constant_in_modules "Omega" bin_module
 
 (* Logic *)
 let coq_eq = lazy(init_constant  "eq")
@@ -277,18 +281,18 @@ end
 
 module Z : Int = struct
 
-let typ = lazy (constant "Z")
-let plus = lazy (constant "Z.add")
-let mult = lazy (constant  "Z.mul")
-let opp = lazy (constant "Z.opp")
-let minus = lazy (constant "Z.sub")
+let typ = lazy (bin_constant "Z")
+let plus = lazy (z_constant "Z.add")
+let mult = lazy (z_constant  "Z.mul")
+let opp = lazy (z_constant "Z.opp")
+let minus = lazy (z_constant "Z.sub")
 
-let coq_xH = lazy (constant "xH")
-let coq_xO = lazy (constant "xO")
-let coq_xI = lazy (constant "xI")
-let coq_Z0 = lazy (constant "Z0")
-let coq_Zpos = lazy (constant "Zpos")
-let coq_Zneg = lazy (constant "Zneg")
+let coq_xH = lazy (bin_constant "xH")
+let coq_xO = lazy (bin_constant "xO")
+let coq_xI = lazy (bin_constant "xI")
+let coq_Z0 = lazy (bin_constant "Z0")
+let coq_Zpos = lazy (bin_constant "Zpos")
+let coq_Zneg = lazy (bin_constant "Zneg")
 
 let recognize t =
   let rec loop t =
