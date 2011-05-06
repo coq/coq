@@ -11,7 +11,7 @@ match x with
     | 0%Z => x
     | Zpos y' => Zpos (x' + y')
     | Zneg y' =>
-        match (x' ?= y')%positive Eq with
+        match (x' ?= y')%positive with
         | Eq => 0%Z
         | Lt => Zneg (y' - x')
         | Gt => Zpos (x' - y')
@@ -21,7 +21,7 @@ match x with
     match y with
     | 0%Z => x
     | Zpos y' =>
-        match (x' ?= y')%positive Eq with
+        match (x' ?= y')%positive with
         | Eq => 0%Z
         | Lt => Zpos (y' - x')
         | Gt => Zneg (x' - y')

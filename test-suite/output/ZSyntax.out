@@ -16,11 +16,11 @@ fun x : positive => (- Zpos x~0)%Z
      : positive -> Z
 fun x : positive => (- Zpos x~0 + 0)%Z
      : positive -> Z
-(Z_of_nat 0 + 1)%Z
+(Z.of_nat 0 + 1)%Z
      : Z
-(0 + Z_of_nat (0 + 0))%Z
+(0 + Z.of_nat (0 + 0))%Z
      : Z
-Z_of_nat 0 = 0%Z
+Z.of_nat 0 = 0%Z
      : Prop
-(0 + Z_of_nat 11)%Z
+(0 + Z.of_nat 11)%Z
      : Z

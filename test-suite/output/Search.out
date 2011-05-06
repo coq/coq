@@ -26,7 +26,6 @@ implb: bool -> bool -> bool
 comparison_beq: comparison -> comparison -> bool
 bool_beq: bool -> bool -> bool
 andb: bool -> bool -> bool
-Empty_set_beq: Empty_set -> Empty_set -> bool
 pred_Sn: forall n : nat, n = pred (S n)
 plus_n_Sm: forall n m : nat, S (n + m) = n + S m
 plus_n_O: forall n : nat, n = n + 0

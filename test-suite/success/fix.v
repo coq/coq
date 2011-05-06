@@ -9,13 +9,12 @@ Inductive rBoolOp : Set :=
   | rAnd : rBoolOp
   | rEq : rBoolOp.
 
-Definition rlt (a b : rNat) : Prop :=
-  (a ?= b)%positive Datatypes.Eq = Datatypes.Lt.
+Definition rlt (a b : rNat) : Prop := Pcompare a b Eq = Lt.
 
 Definition rltDec : forall m n : rNat, {rlt m n} + {rlt n m \/ m = n}.
 intros n m; generalize (nat_of_P_lt_Lt_compare_morphism n m);
  generalize (nat_of_P_gt_Gt_compare_morphism n m);
- generalize (Pcompare_Eq_eq n m); case ((n ?= m)%positive Datatypes.Eq).
+ generalize (Pcompare_Eq_eq n m); case (Pcompare n m Eq).
 intros H' H'0 H'1; right; right; auto.
 intros H' H'0 H'1; left; unfold rlt in |- *.
 apply nat_of_P_lt_Lt_compare_complement_morphism; auto.
