@@ -135,19 +135,18 @@ through the <tt>Require Import</tt> command.</p>
     Binary positive integers
   </dt>
   <dd>
+    theories/PArith/BinPosDef.v
     theories/PArith/BinPos.v
     theories/PArith/Pnat.v
     theories/PArith/POrderedType.v
-    theories/PArith/Pminmax.v
-    theories/PArith/Psqrt.v
-    theories/PArith/Pgcd.v
     (theories/PArith/PArith.v)
   </dd>
 
   <dt> <b>NArith</b>:
     Binary natural numbers
   </dt>
-  <dd> 
+  <dd>
+    theories/NArith/BinNatDef.v
     theories/NArith/BinNat.v
     theories/NArith/Nnat.v
     theories/NArith/Ndigits.v
@@ -162,7 +161,8 @@ through the <tt>Require Import</tt> command.</p>
   <dt> <b>ZArith</b>:
        Binary integers
   </dt>
-  <dd> 
+  <dd>
+    theories/ZArith/BinIntDef.v
     theories/ZArith/BinInt.v
     theories/ZArith/Zorder.v
     theories/ZArith/Zcompare.v
@@ -224,6 +224,7 @@ through the <tt>Require Import</tt> command.</p>
   </dt>
     <dt> <b>&nbsp;&nbsp;Prelude</b>: 
     <dd>
+    theories/Numbers/BinNums.v
     theories/Numbers/NumPrelude.v
     theories/Numbers/BigNumPrelude.v
     theories/Numbers/NaryFunctions.v
