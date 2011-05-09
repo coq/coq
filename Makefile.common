@@ -243,7 +243,7 @@ COQCCMO:=$(COQENVCMO) toplevel/usage.cmo scripts/coqc.cmo
 ## Misc
 
 CSDPCERTCMO:=$(addprefix plugins/micromega/, \
-  mutils.cmo 	micromega.cmo 	mfourier.cmo 	certificate.cmo \
+  mutils.cmo 	micromega.cmo \
   sos_types.cmo sos_lib.cmo sos.cmo 	csdpcert.cmo )
 
 DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
