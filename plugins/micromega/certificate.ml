@@ -15,153 +15,18 @@
 (* We take as input a list of polynomials [p1...pn] and return an unfeasibility
    certificate polynomial. *)
 
-(*open Micromega.Polynomial*)
+type var = int
+
+
+
 open Big_int
 open Num
-open Sos_lib
+open Polynomial
 
 module Mc = Micromega
 module Ml2C = Mutils.CamlToCoq
 module C2Ml = Mutils.CoqToCaml
 
-let (<+>) = add_num
-let (<->) = minus_num
-let (<*>) = mult_num
-
-type var = Mc.positive
-
-module Monomial :
-sig
- type t
- val const : t
- val var : var -> t
- val find : var -> t -> int
- val mult : var -> t -> t
- val prod : t -> t -> t
- val compare : t -> t -> int
- val pp : out_channel -> t -> unit
- val fold : (var -> int -> 'a -> 'a) -> t -> 'a -> 'a
-end
- =
-struct
- (* A monomial is represented by a multiset of variables  *)
- module Map = Map.Make(struct type t = var let compare = Pervasives.compare end)
- open Map
-
- type t = int Map.t
-
- (* The monomial that corresponds to a constant *)
- let const = Map.empty
-
- (* The monomial 'x' *)
- let var x = Map.add x 1 Map.empty
-
- (* Get the degre of a variable in a monomial *)
- let find x m = try find x m with Not_found -> 0
-
- (* Multiply a monomial by a variable *)
- let mult x m = add x (  (find x m) + 1) m
-
- (* Product of monomials *)
- let prod m1 m2 = Map.fold (fun k d m -> add k ((find k m) + d) m) m1 m2
-
- (* Total ordering of monomials *)
- let compare m1 m2 = Map.compare Pervasives.compare m1 m2
-
- let pp o m = Map.iter (fun k v ->
-  if v = 1 then Printf.fprintf o "x%i." (C2Ml.index k)
-  else     Printf.fprintf o "x%i^%i." (C2Ml.index k) v) m
-
- let fold = fold
-
-end
-
-
-module Poly :
- (* A polynomial is a map of monomials *)
- (*
-    This is probably a naive implementation
-    (expected to be fast enough - Coq is probably the bottleneck)
-    *The new ring contribution is using a sparse Horner representation.
- *)
-sig
- type t
- val get : Monomial.t -> t -> num
- val variable : var -> t
- val add : Monomial.t -> num -> t -> t
- val constant : num -> t
- val mult : Monomial.t -> num -> t -> t
- val product : t -> t -> t
- val addition : t -> t -> t
- val uminus : t -> t
- val fold : (Monomial.t -> num -> 'a -> 'a) -> t -> 'a -> 'a
- val pp : out_channel -> t -> unit
- val compare : t -> t -> int
- val is_null : t -> bool
-end =
-struct
- (*normalisation bug : 0*x ... *)
- module P = Map.Make(Monomial)
- open P
-
- type t = num P.t
-
- let pp o p = P.iter (fun k v ->
-  if compare_num v (Int 0) <> 0
-  then
-   if Monomial.compare Monomial.const k = 0
-   then         Printf.fprintf o "%s " (string_of_num v)
-   else Printf.fprintf o "%s*%a " (string_of_num v) Monomial.pp k) p
-
- (* Get the coefficient of monomial mn *)
- let get : Monomial.t -> t -> num =
-  fun mn p -> try find mn p with Not_found -> (Int 0)
-
-
- (* The polynomial 1.x *)
- let variable : var -> t =
-  fun  x ->  add (Monomial.var x) (Int 1) empty
-
- (*The constant polynomial *)
- let constant : num -> t =
-  fun c -> add (Monomial.const) c empty
-
- (* The addition of a monomial *)
-
- let add : Monomial.t -> num -> t -> t =
-  fun mn v p ->
-   let vl = (get mn p) <+> v in
-    add mn vl p
-
-
- (** Design choice: empty is not a polynomial
-     I do not remember why ....
- **)
-
- (* The product by a monomial *)
- let mult : Monomial.t -> num -> t -> t =
-  fun mn v p ->
-   fold (fun mn' v' res -> P.add (Monomial.prod mn mn') (v<*>v') res) p empty
-
-
- let  addition : t -> t -> t =
-  fun p1 p2 -> fold (fun mn v p -> add mn v p) p1 p2
-
-
- let product : t -> t -> t =
-  fun p1 p2 ->
-   fold (fun mn v res -> addition (mult mn v p2) res ) p1 empty
-
-
- let uminus : t -> t =
-  fun p -> map (fun v -> minus_num v) p
-
- let fold = P.fold
-
- let is_null p = fold (fun mn vl b -> b & sign_num vl = 0) p  true
-
- let compare = compare compare_num
-end
 
 open Mutils
 type 'a number_spec = {
@@ -181,7 +46,7 @@ let z_spec = {
  mult = Mc.zmult;
  eqb  = Mc.zeq_bool
 }
-
+ 
 
 let q_spec = {
  bigint_to_number = (fun x -> {Mc.qnum = Ml2C.bigint x; Mc.qden = Mc.XH});
@@ -194,53 +59,59 @@ let q_spec = {
 
 let r_spec = z_spec
 
+
 let dev_form n_spec  p =
- let rec dev_form p =
+ let rec dev_form p = 
   match p with
    | Mc.PEc z ->  Poly.constant (n_spec.number_to_num z)
-   | Mc.PEX v ->  Poly.variable v
-   | Mc.PEmul(p1,p2) ->
+   | Mc.PEX v ->  Poly.variable (C2Ml.positive v)
+   | Mc.PEmul(p1,p2) -> 
       let p1 = dev_form p1 in
       let p2 = dev_form p2 in
-       Poly.product p1 p2
+       Poly.product p1 p2 
    | Mc.PEadd(p1,p2) -> Poly.addition (dev_form p1) (dev_form p2)
    | Mc.PEopp p ->  Poly.uminus (dev_form p)
    | Mc.PEsub(p1,p2) ->  Poly.addition (dev_form p1) (Poly.uminus (dev_form p2))
-   | Mc.PEpow(p,n)   ->
+   | Mc.PEpow(p,n)   ->  
       let p = dev_form p in
       let n = C2Ml.n n in
-      let rec pow n =
-       if n = 0
+      let rec pow n = 
+       if n = 0 
        then Poly.constant (n_spec.number_to_num n_spec.unit)
        else Poly.product p (pow (n-1)) in
        pow n in
   dev_form p
 
-let monomial_to_polynomial mn =
- Monomial.fold
-  (fun v i acc ->
-   let mn = if i = 1 then Mc.PEX v else Mc.PEpow (Mc.PEX v ,Ml2C.n i) in
-    if acc = Mc.PEc (Mc.Zpos Mc.XH)
-    then mn
-    else Mc.PEmul(mn,acc))
-  mn
-  (Mc.PEc (Mc.Zpos Mc.XH))
 
-let list_to_polynomial vars l =
+let monomial_to_polynomial mn = 
+ Monomial.fold 
+  (fun v i acc -> 
+     let v = Ml2C.positive v in
+     let mn = if i = 1 then Mc.PEX v else Mc.PEpow (Mc.PEX v ,Ml2C.n i) in
+       if acc = Mc.PEc (Mc.Zpos Mc.XH)
+       then mn 
+       else Mc.PEmul(mn,acc))
+   mn 
+   (Mc.PEc (Mc.Zpos Mc.XH))
+  
+
+
+let list_to_polynomial vars l = 
  assert (List.for_all (fun x -> ceiling_num x =/ x) l);
  let var x = monomial_to_polynomial (List.nth vars x)  in
+       
  let rec xtopoly p i = function
   | [] -> p
-  | c::l -> if c =/  (Int 0) then xtopoly p (i+1) l
+  | c::l -> if c =/  (Int 0) then xtopoly p (i+1) l 
     else let c = Mc.PEc (Ml2C.bigint (numerator c)) in
-    let mn =
+    let mn = 
      if c =  Mc.PEc (Mc.Zpos Mc.XH)
      then var i
      else Mc.PEmul (c,var i) in
     let p' = if p = Mc.PEc Mc.Z0 then mn else
       Mc.PEadd (mn, p) in
      xtopoly p' (i+1) l in
-
+  
   xtopoly (Mc.PEc Mc.Z0) 0 l
 
 let rec fixpoint f x =
@@ -248,51 +119,54 @@ let rec fixpoint f x =
   if y' = x then y'
   else fixpoint f y'
 
-let  rec_simpl_cone n_spec e =
- let simpl_cone =
+let  rec_simpl_cone n_spec e = 
+ let simpl_cone = 
   Mc.simpl_cone n_spec.zero n_spec.unit n_spec.mult n_spec.eqb in
 
  let rec rec_simpl_cone  = function
- | Mc.PsatzMulE(t1, t2) ->
+ | Mc.PsatzMulE(t1, t2) -> 
     simpl_cone  (Mc.PsatzMulE (rec_simpl_cone t1, rec_simpl_cone t2))
- | Mc.PsatzAdd(t1,t2)  ->
+ | Mc.PsatzAdd(t1,t2)  -> 
     simpl_cone (Mc.PsatzAdd (rec_simpl_cone t1, rec_simpl_cone t2))
  |  x           -> simpl_cone x in
   rec_simpl_cone e
-
+   
+   
 let simplify_cone n_spec c = fixpoint (rec_simpl_cone n_spec) c
-
-type cone_prod =
-  Const of cone
-  | Ideal of cone *cone
-  | Mult of cone * cone
+ 
+type cone_prod = 
+  Const of cone 
+  | Ideal of cone *cone 
+  | Mult of cone * cone 
   | Other of cone
 and cone =   Mc.zWitness
 
-let factorise_linear_cone c =
 
- let rec cone_list  c l =
+
+let factorise_linear_cone c =
+ 
+ let rec cone_list  c l = 
   match c with
    | Mc.PsatzAdd (x,r) -> cone_list  r (x::l)
    |  _        ->  c :: l in
-
+  
  let factorise c1 c2 =
   match c1 , c2 with
-   | Mc.PsatzMulC(x,y) , Mc.PsatzMulC(x',y') ->
+   | Mc.PsatzMulC(x,y) , Mc.PsatzMulC(x',y') -> 
       if x = x' then Some (Mc.PsatzMulC(x, Mc.PsatzAdd(y,y'))) else None
-   | Mc.PsatzMulE(x,y) , Mc.PsatzMulE(x',y') ->
+   | Mc.PsatzMulE(x,y) , Mc.PsatzMulE(x',y') -> 
       if x = x' then Some (Mc.PsatzMulE(x, Mc.PsatzAdd(y,y'))) else None
    |  _     -> None in
-
+  
  let rec rebuild_cone l pending  =
   match l with
    | [] -> (match pending with
       | None -> Mc.PsatzZ
       | Some p -> p
      )
-   | e::l ->
+   | e::l -> 
       (match pending with
-       | None -> rebuild_cone l (Some e)
+       | None -> rebuild_cone l (Some e) 
        | Some p -> (match factorise p e with
           | None -> Mc.PsatzAdd(p, rebuild_cone l (Some e))
           | Some f -> rebuild_cone l (Some f) )
@@ -300,15 +174,17 @@ let factorise_linear_cone c =
 
   (rebuild_cone (List.sort Pervasives.compare (cone_list c [])) None)
 
-(* The binding with Fourier might be a bit obsolete
+
+
+(* The binding with Fourier might be a bit obsolete 
    -- how does it handle equalities ? *)
 
 (* Certificates are elements of the cone such that P = 0  *)
 
 (* To begin with, we search for certificates of the form:
-   a1.p1 + ... an.pn + b1.q1 +... + bn.qn + c = 0
+   a1.p1 + ... an.pn + b1.q1 +... + bn.qn + c = 0   
    where pi >= 0 qi > 0
-   ai >= 0
+   ai >= 0 
    bi >= 0
    Sum bi + c >= 1
    This is a linear problem: each monomial is considered as a variable.
@@ -318,216 +194,209 @@ let factorise_linear_cone c =
 *)
 
 open Mfourier
-   (*module Fourier = Fourier(Vector.VList)(SysSet(Vector.VList))*)
-   (*module Fourier = Fourier(Vector.VSparse)(SysSetAlt(Vector.VSparse))*)
-(*module Fourier = Mfourier.Fourier(Vector.VSparse)(*(SysSetAlt(Vector.VMap))*)*)
-
-(*module Vect = Fourier.Vect*)
-(*open Fourier.Cstr*)
 
 (* fold_left followed by a rev ! *)
 
-let constrain_monomial mn l  =
+let constrain_monomial mn l  = 
  let coeffs = List.fold_left (fun acc p -> (Poly.get mn p)::acc) [] l in
   if mn = Monomial.const
-  then
-   { coeffs = Vect.from_list ((Big_int unit_big_int):: (List.rev coeffs)) ;
-     op = Eq ;
+  then  
+   { coeffs = Vect.from_list ((Big_int unit_big_int):: (List.rev coeffs)) ; 
+     op = Eq ; 
      cst = Big_int zero_big_int  }
   else
-   { coeffs = Vect.from_list ((Big_int zero_big_int):: (List.rev coeffs)) ;
-     op = Eq ;
+   { coeffs = Vect.from_list ((Big_int zero_big_int):: (List.rev coeffs)) ; 
+     op = Eq ; 
      cst = Big_int zero_big_int  }
 
-
-let positivity l =
- let rec xpositivity i l =
+    
+let positivity l = 
+ let rec xpositivity i l = 
   match l with
    | [] -> []
    | (_,Mc.Equal)::l -> xpositivity (i+1) l
-   | (_,_)::l ->
-      {coeffs = Vect.update (i+1) (fun _ -> Int 1) Vect.null ;
-       op = Ge ;
+   | (_,_)::l -> 
+      {coeffs = Vect.update (i+1) (fun _ -> Int 1) Vect.null ; 
+       op = Ge ; 
        cst = Int 0 }  :: (xpositivity (i+1) l)
  in
   xpositivity 0 l
 
 
 let string_of_op = function
- | Mc.Strict -> "> 0"
- | Mc.NonStrict -> ">= 0"
+ | Mc.Strict -> "> 0" 
+ | Mc.NonStrict -> ">= 0" 
  | Mc.Equal -> "= 0"
  | Mc.NonEqual -> "<> 0"
 
 
 
-(* If the certificate includes at least one strict inequality,
+(* If the certificate includes at least one strict inequality, 
    the obtained polynomial can also be 0 *)
 let build_linear_system l =
 
- (* Gather the monomials:  HINT add up of the polynomials *)
+ (* Gather the monomials:  HINT add up of the polynomials ==> This does not work anymore *)
  let l' = List.map fst l in
- let monomials =
-  List.fold_left (fun acc p -> Poly.addition p acc) (Poly.constant (Int 0)) l'
+
+ let module MonSet = Set.Make(Monomial) in
+
+ let monomials = 
+  List.fold_left (fun acc p -> 
+                    Poly.fold (fun m _ acc -> MonSet.add m acc) p acc) 
+    (MonSet.singleton Monomial.const) l'
  in  (* For each monomial, compute a constraint *)
- let s0 =
-  Poly.fold (fun mn _ res -> (constrain_monomial mn l')::res) monomials [] in
+ let s0 = 
+  MonSet.fold (fun mn  res -> (constrain_monomial mn l')::res) monomials [] in
   (* I need at least something strictly positive *)
  let strict = {
   coeffs = Vect.from_list ((Big_int unit_big_int)::
-                            (List.map (fun (x,y) ->
-			      match y with Mc.Strict ->
-				  Big_int unit_big_int
+                            (List.map (fun (x,y) -> 
+                              match y with Mc.Strict -> 
+                                  Big_int unit_big_int 
                               | _ -> Big_int zero_big_int) l));
   op = Ge ; cst = Big_int unit_big_int } in
   (* Add the positivity constraint *)
-  {coeffs = Vect.from_list ([Big_int unit_big_int]) ;
-   op = Ge ;
+  {coeffs = Vect.from_list ([Big_int unit_big_int]) ; 
+   op = Ge ; 
    cst = Big_int zero_big_int}::(strict::(positivity l)@s0)
 
 
 let big_int_to_z = Ml2C.bigint
-
-(* For Q, this is a pity that the certificate has been scaled
+ 
+(* For Q, this is a pity that the certificate has been scaled 
    -- at a lower layer, certificates are using nums... *)
-let make_certificate n_spec (cert,li) =
+let make_certificate n_spec (cert,li) = 
  let bint_to_cst = n_spec.bigint_to_number in
   match cert with
    | [] -> failwith "empty_certificate"
-   | e::cert' ->
-      let cst = match compare_big_int e zero_big_int with
+   | e::cert' -> 
+(*      let cst = match compare_big_int e zero_big_int with
        | 0 -> Mc.PsatzZ
-       | 1 ->  Mc.PsatzC (bint_to_cst e)
-       | _ -> failwith "positivity error"
-      in
+       | 1 ->  Mc.PsatzC (bint_to_cst e) 
+       | _ -> failwith "positivity error" 
+      in *)
       let rec scalar_product cert l =
        match cert with
         | [] -> Mc.PsatzZ
-        | c::cert -> match l with
-           | [] -> failwith "make_certificate(1)"
-           | i::l ->
-              let r = scalar_product cert l in
-               match compare_big_int c  zero_big_int with
-                | -1 -> Mc.PsatzAdd (
-                   Mc.PsatzMulC (Mc.Pc ( bint_to_cst c), Mc.PsatzIn (Ml2C.nat i)),
-                   r)
-                | 0  -> r
-                | _ ->  Mc.PsatzAdd (
-                   Mc.PsatzMulE (Mc.PsatzC (bint_to_cst c), Mc.PsatzIn (Ml2C.nat i)),
-                   r) in
-
-        ((factorise_linear_cone
-             (simplify_cone n_spec (Mc.PsatzAdd (cst, scalar_product cert' li)))))
+        | c::cert -> 
+	    match l with
+              | [] -> failwith "make_certificate(1)"
+              | i::l ->  
+		  let r = scalar_product cert l in
+		    match compare_big_int c  zero_big_int with
+                      | -1 -> Mc.PsatzAdd (
+			  Mc.PsatzMulC (Mc.Pc ( bint_to_cst c), Mc.PsatzIn (Ml2C.nat i)), 
+			  r)
+                      | 0  -> r
+                      | _ ->  Mc.PsatzAdd (
+			  Mc.PsatzMulE (Mc.PsatzC (bint_to_cst c), Mc.PsatzIn (Ml2C.nat i)),
+			  r) in
+        (factorise_linear_cone 
+             (simplify_cone n_spec (scalar_product cert' li)))
 
 
 exception Found of Monomial.t
 
 exception Strict
 
-let primal l =
+let primal l = 
   let vr = ref 0 in
   let module Mmn = Map.Make(Monomial) in
 
   let vect_of_poly map p =
-    Poly.fold (fun mn vl (map,vect) ->
-      if mn = Monomial.const
+    Poly.fold (fun mn vl (map,vect) -> 
+      if mn = Monomial.const 
       then (map,vect)
-      else
+      else 
 	let (mn,m) = try (Mmn.find mn map,map) with Not_found -> let res = (!vr, Mmn.add mn !vr map) in incr vr ; res in
 	  (m,if sign_num vl = 0 then vect else (mn,vl)::vect)) p (map,[]) in
-
+    
   let op_op = function Mc.NonStrict -> Ge |Mc.Equal -> Eq | _ -> raise Strict in
 
   let cmp x y = Pervasives.compare (fst x) (fst y) in
 
    snd (List.fold_right (fun  (p,op) (map,l) ->
-      let (mp,vect) = vect_of_poly map p in
+      let (mp,vect) = vect_of_poly map p in  
       let cstr = {coeffs = List.sort cmp vect; op = op_op op ; cst = minus_num (Poly.get Monomial.const p)} in
 
 	(mp,cstr::l)) l (Mmn.empty,[]))
 
-let dual_raw_certificate (l:  (Poly.t * Mc.op1) list) =
+let dual_raw_certificate (l:  (Poly.t * Mc.op1) list) = 
 (*  List.iter (fun (p,op) -> Printf.fprintf stdout "%a %s 0\n" Poly.pp p (string_of_op op) ) l ; *)
-
-
+    
  let sys = build_linear_system l in
 
-   try
+   try 
    match Fourier.find_point sys with
     | Inr _ -> None
-    | Inl cert ->  Some (rats_to_ints (Vect.to_list cert))
+    | Inl cert ->  Some (rats_to_ints (Vect.to_list cert)) 
        (* should not use rats_to_ints *)
-  with x ->
-   if debug
-   then (Printf.printf "raw certificate %s" (Printexc.to_string x);
+  with x -> 
+   if debug 
+   then (Printf.printf "raw certificate %s" (Printexc.to_string x);   
          flush stdout) ;
    None
 
 
-let raw_certificate l =
-  try
+let raw_certificate l = 
+  try 
     let p = primal l in
       match Fourier.find_point p with
-	| Inr prf ->
-	    if debug then Printf.printf "AProof : %a\n" pp_proof prf ;
-	    let cert = List.map (fun (x,n) -> x+1,n) (fst (List.hd (Mfourier.Proof.mk_proof p prf))) in
-	      if debug then Printf.printf "CProof : %a" Vect.pp_vect cert ;
+	| Inr prf -> 
+	    if debug then Printf.printf "AProof : %a\n" pp_proof prf ; 
+	    let cert = List.map (fun (x,n) -> x+1,n) (fst (List.hd (Proof.mk_proof p prf))) in
+	      if debug then Printf.printf "CProof : %a" Vect.pp_vect cert ; 
 	      Some (rats_to_ints (Vect.to_list cert))
 	| Inl _   -> None
-  with Strict ->
+  with Strict -> 
     (* Fourier elimination should handle > *)
-    dual_raw_certificate l
+    dual_raw_certificate l 
 
 
-let simple_linear_prover (*to_constant*) l =
+let simple_linear_prover  l =
  let (lc,li) = List.split l in
   match raw_certificate lc with
    |  None -> None (* No certificate *)
-   | Some cert -> (* make_certificate to_constant*)Some (cert,li)
+   | Some cert -> Some (cert,li)
+      
+
 
 
 
 let linear_prover n_spec l  =
- let li = List.combine l (interval 0 (List.length l -1)) in
- let (l1,l') = List.partition
-  (fun (x,_) -> if snd x = Mc.NonEqual then true else false) li in
- let l' = List.map
-  (fun ((x,y),i) -> match y with
-                   Mc.NonEqual -> failwith "cannot happen"
-                  |  y -> ((dev_form n_spec x, y),i)) l' in
-
-  simple_linear_prover (*n_spec*) l'
+  let build_system n_spec l = 
+    let li = List.combine l (interval 0 (List.length l -1)) in
+    let (l1,l') = List.partition 
+      (fun (x,_) -> if snd x = Mc.NonEqual then true else false) li in
+      List.map 
+	(fun ((x,y),i) -> match y with
+             Mc.NonEqual -> failwith "cannot happen"
+           |  y -> ((dev_form n_spec x, y),i)) l' in
+  let l' = build_system n_spec l in 
+    simple_linear_prover (*n_spec*) l' 
 
 
 let linear_prover n_spec l  =
  try linear_prover n_spec l with
    x -> (print_string (Printexc.to_string x); None)
 
-let linear_prover_with_cert spec l =
+let linear_prover_with_cert spec l = 
   match linear_prover spec l with
     | None -> None
     | Some cert -> Some (make_certificate spec cert)
 
 
 
-(* zprover.... *)
-
-(* I need to gather the set of variables --->
-   Then go for fold
-   Once I have an interval, I need a certificate : 2 other fourier elims.
-   (I could probably get the certificate directly
-   as it is done in the fourier contrib.)
-*)
 
 let make_linear_system l =
  let l' = List.map fst l in
- let monomials = List.fold_left (fun acc p -> Poly.addition p acc)
+ let monomials = List.fold_left (fun acc p -> Poly.addition p acc) 
   (Poly.constant (Int 0)) l' in
- let monomials = Poly.fold
+ let monomials = Poly.fold 
   (fun mn _ l -> if mn = Monomial.const then l else mn::l) monomials [] in
-  (List.map (fun (c,op) ->
-   {coeffs = Vect.from_list (List.map (fun mn ->  (Poly.get mn c)) monomials) ;
-    op = op ;
+  (List.map (fun (c,op) -> 
+   {coeffs = Vect.from_list (List.map (fun mn ->  (Poly.get mn c)) monomials) ; 
+    op = op ; 
     cst = minus_num ( (Poly.get Monomial.const c))}) l
     ,monomials)
 
@@ -536,130 +405,66 @@ let pplus x y = Mc.PEadd(x,y)
 let pmult x y = Mc.PEmul(x,y)
 let pconst x = Mc.PEc x
 let popp x = Mc.PEopp x
-
+ 
 let debug = false
-
+ 
 (* keep track of enumerated vectors *)
-let rec mem p x  l =
+let rec mem p x  l = 
  match l with  [] -> false | e::l -> if p x e then true else mem p x l
 
-let rec remove_assoc p x l =
+let rec remove_assoc p x l = 
  match l with [] -> [] | e::l -> if p x (fst e) then
-  remove_assoc p x l else e::(remove_assoc p x l)
+  remove_assoc p x l else e::(remove_assoc p x l) 
 
 let eq x y = Vect.compare x y = 0
 
 let  remove e  l  = List.fold_left (fun l x -> if eq x e then l else x::l) [] l
 
 
-(* The prover is (probably) incomplete --
+(* The prover is (probably) incomplete -- 
    only searching for naive cutting planes *)
 
-let candidates sys =
- let ll = List.fold_right (
-  fun (e,k) r ->
-   match k with
-    | Mc.NonStrict -> (dev_form z_spec e , Ge)::r
-    | Mc.Equal     ->  (dev_form z_spec e , Eq)::r
-       (* we already know the bound -- don't compute it again *)
-    | _     -> failwith "Cannot happen candidates") sys [] in
-
- let (sys,var_mn) = make_linear_system ll in
- let vars = mapi (fun _ i -> Vect.set i (Int 1) Vect.null) var_mn in
-  (List.fold_left (fun l cstr ->
-   let gcd = Big_int (Vect.gcd cstr.coeffs) in
-    if gcd =/ (Int 1) && cstr.op = Eq
-    then l
-    else  (Vect.mul (Int 1 // gcd) cstr.coeffs)::l) [] sys) @ vars
+let develop_constraint z_spec (e,k) = 
+    match k with
+      | Mc.NonStrict -> (dev_form z_spec e , Ge)
+      | Mc.Equal     ->  (dev_form z_spec e , Eq)
+      | _     -> assert false
 
 
+let op_of_op_compat = function
+  | Ge -> Mc.NonStrict
+  | Eq -> Mc.Equal
 
 
-let rec xzlinear_prover planes sys =
- match linear_prover z_spec sys with
-  | Some prf ->  Some (Mc.RatProof (make_certificate z_spec prf,Mc.DoneProof))
-  | None     -> (* find the candidate with the smallest range *)
-     (* Grrr - linear_prover is also calling 'make_linear_system' *)
-     let ll = List.fold_right (fun (e,k) r -> match k with
-       Mc.NonEqual -> r
-      | k -> (dev_form z_spec e ,
-             match k with
-               Mc.NonStrict -> Ge
-              | Mc.Equal              -> Eq
-              | Mc.Strict | Mc.NonEqual -> failwith "Cannot happen") :: r) sys [] in
-     let (ll,var) = make_linear_system ll in
-     let candidates = List.fold_left (fun  acc vect ->
-      match Fourier.optimise vect ll with
-       | None -> acc
-       | Some i ->
-(*	  Printf.printf "%s in %s\n" (Vect.string vect) (string_of_intrvl i) ; *)
-	  flush stdout ;
-	  (vect,i) ::acc)  [] planes in
+let integer_vector coeffs = 
+  let vars , coeffs = List.split coeffs in
+    List.combine vars (List.map (fun x -> Big_int x) (rats_to_ints coeffs))
 
-     let smallest_interval =
-      match List.fold_left (fun (x1,i1) (x2,i2) ->
-       if Itv.smaller_itv i1 i2
-       then (x1,i1) else (x2,i2)) (Vect.null,(None,None)) candidates
-      with
-       | (x,(Some i, Some j))  -> Some(i,x,j)
-       |   x        ->   None (* This might be a cutting plane *)
-      in
-      match smallest_interval with
-       | Some (lb,e,ub) ->
-          let (lbn,lbd) =
-           (Ml2C.bigint (sub_big_int (numerator lb)  unit_big_int),
-           Ml2C.bigint (denominator lb)) in
-          let (ubn,ubd) =
-           (Ml2C.bigint (add_big_int unit_big_int (numerator ub)) ,
-           Ml2C.bigint (denominator ub)) in
-          let expr = list_to_polynomial var (Vect.to_list e) in
-           (match
-             (*x <= ub ->  x  > ub *)
-             linear_prover  z_spec
-              ((pplus (pmult (pconst ubd) expr) (popp (pconst  ubn)),
-                      Mc.NonStrict) :: sys),
-            (* lb <= x  -> lb > x *)
-            linear_prover z_spec
-             ((pplus (popp (pmult  (pconst lbd) expr)) (pconst lbn),
-                     Mc.NonStrict)::sys)
-            with
-             | Some cub , Some clb  ->
-                (match zlinear_enum  (remove e planes)   expr
-                  (ceiling_num lb)  (floor_num ub) sys
-                 with
-                  | None -> None
-                  | Some prf ->
-		      let bound_proof (c,l) = make_certificate z_spec (List.tl c , List.tl (List.map (fun x -> x -1) l)) in
+let integer_cstr {coeffs = coeffs ; op = op ; cst = cst } = 
+  let vars , coeffs = List.split coeffs in
+  match rats_to_ints (cst::coeffs) with
+    | cst :: coeffs -> 
+	{
+	  coeffs = List.combine vars (List.map (fun x -> Big_int x) coeffs) ;
+	  op = op ; cst = Big_int cst}
+    |  _ -> assert false
+	 
 
-                     Some (Mc.EnumProof((*Ml2C.q lb,expr,Ml2C.q ub,*) bound_proof clb, bound_proof cub,prf)))
-             | _ -> None
-           )
-       |  _ -> None
-and zlinear_enum  planes expr clb cub l =
- if clb >/  cub
- then Some []
- else
-  let pexpr = pplus (popp (pconst (Ml2C.bigint (numerator clb)))) expr in
-  let sys' = (pexpr, Mc.Equal)::l in
-   (*let enum =  *)
-   match xzlinear_prover planes sys' with
-    | None -> if debug then print_string "zlp?"; None
-    | Some prf -> if debug then print_string "zlp!";
-    match zlinear_enum planes expr (clb +/ (Int 1)) cub l with
-     | None -> None
-     | Some prfl -> Some (prf :: prfl)
+let pexpr_of_cstr_compat var cstr  = 
+  let {coeffs = coeffs ; op = op ; cst = cst } = integer_cstr cstr in
+  try 
+    let expr = list_to_polynomial var (Vect.to_list coeffs) in  
+    let d = Ml2C.bigint (denominator cst) in
+    let n = Ml2C.bigint (numerator cst) in
+      (pplus (pmult (pconst d) expr) (popp (pconst n)), op_of_op_compat op)
+  with Failure _ -> failwith "pexpr_of_cstr_compat"
 
-let zlinear_prover sys =
- let candidates = candidates sys in
- (*  Printf.printf "candidates %d" (List.length candidates) ; *)
- (*let t0 = Sys.time () in*)
- let res = xzlinear_prover candidates sys in
-   (*Printf.printf "Time prover : %f" (Sys.time () -. t0) ;*) res
+
+
 
 open Sos_types
-open Mutils
 
-let rec scale_term t =
+let rec scale_term t = 
  match t with
   | Zero    -> unit_big_int , Zero
   | Const n ->  (denominator n) , Const (Big_int (numerator n))
@@ -692,7 +497,7 @@ let get_index_of_ith_match f i l  =
   match l with
    | [] -> failwith "bad index"
    | e::l -> if f e
-     then
+     then 
        (if j = i then res else get (j+1) (res+1) l )
      else get j (res+1) l in
   get 0 0 l
@@ -706,19 +511,19 @@ let rec scale_certificate pos = match pos with
  | Rational_eq n ->  (denominator n) , Rational_eq (Big_int (numerator n))
  | Rational_le n ->  (denominator n) , Rational_le (Big_int (numerator n))
  | Rational_lt n ->  (denominator n) , Rational_lt (Big_int (numerator n))
- | Square t -> let s,t' =  scale_term t in
+ | Square t -> let s,t' =  scale_term t in 
 		mult_big_int s s , Square t'
  | Eqmul (t, y) -> let s1,y1 = scale_term t and s2,y2 = scale_certificate y in
 		    mult_big_int s1 s2 , Eqmul (y1,y2)
- | Sum (y, z) -> let s1,y1 = scale_certificate y
+ | Sum (y, z) -> let s1,y1 = scale_certificate y 
    and s2,y2 = scale_certificate z in
    let g = gcd_big_int s1 s2 in
    let s1' = div_big_int s1 g in
    let s2' = div_big_int s2 g in
-    mult_big_int g (mult_big_int s1' s2'),
+    mult_big_int g (mult_big_int s1' s2'), 
     Sum (Product(Rational_le (Big_int s2'), y1),
 	Product (Rational_le (Big_int s1'), y2))
- | Product (y, z) ->
+ | Product (y, z) -> 
     let s1,y1 = scale_certificate y and s2,y2 = scale_certificate z in
      mult_big_int s1 s2 , Product (y1,y2)
 
@@ -727,7 +532,7 @@ open Micromega
  let rec term_to_q_expr = function
   | Const n ->  PEc (Ml2C.q n)
   | Zero   ->  PEc ( Ml2C.q (Int 0))
-  | Var s   ->  PEX (Ml2C.index
+  | Var s   ->  PEX (Ml2C.index 
 		      (int_of_string (String.sub s 1 (String.length s - 1))))
   | Mul(p1,p2) ->  PEmul(term_to_q_expr p1, term_to_q_expr p2)
   | Add(p1,p2) ->   PEadd(term_to_q_expr p1, term_to_q_expr p2)
@@ -739,20 +544,20 @@ open Micromega
  let term_to_q_pol e = Mc.norm_aux (Ml2C.q (Int 0)) (Ml2C.q (Int 1)) Mc.qplus  Mc.qmult Mc.qminus Mc.qopp Mc.qeq_bool (term_to_q_expr e)
 
 
- let rec product l =
+ let rec product l = 
    match l with
      | [] -> Mc.PsatzZ
      | [i] -> Mc.PsatzIn (Ml2C.nat i)
      | i ::l -> Mc.PsatzMulE(Mc.PsatzIn (Ml2C.nat i), product l)
 
 
-let  q_cert_of_pos  pos =
+let  q_cert_of_pos  pos = 
  let rec _cert_of_pos = function
    Axiom_eq i ->  Mc.PsatzIn (Ml2C.nat i)
   | Axiom_le i ->  Mc.PsatzIn (Ml2C.nat i)
   | Axiom_lt i ->  Mc.PsatzIn (Ml2C.nat i)
   | Monoid l  -> product l
-  | Rational_eq n | Rational_le n | Rational_lt n ->
+  | Rational_eq n | Rational_le n | Rational_lt n -> 
      if compare_num n (Int 0) = 0 then Mc.PsatzZ else
       Mc.PsatzC (Ml2C.q   n)
   | Square t -> Mc.PsatzSquare (term_to_q_pol  t)
@@ -765,7 +570,7 @@ let  q_cert_of_pos  pos =
  let rec term_to_z_expr = function
   | Const n ->  PEc (Ml2C.bigint (big_int_of_num n))
   | Zero   ->  PEc ( Z0)
-  | Var s   ->  PEX (Ml2C.index
+  | Var s   ->  PEX (Ml2C.index 
 		      (int_of_string (String.sub s 1 (String.length s - 1))))
   | Mul(p1,p2) ->  PEmul(term_to_z_expr p1, term_to_z_expr p2)
   | Add(p1,p2) ->   PEadd(term_to_z_expr p1, term_to_z_expr p2)
@@ -776,21 +581,644 @@ let  q_cert_of_pos  pos =
 
  let term_to_z_pol e = Mc.norm_aux (Ml2C.z 0) (Ml2C.z 1) Mc.zplus  Mc.zmult Mc.zminus Mc.zopp Mc.zeq_bool (term_to_z_expr e)
 
-let  z_cert_of_pos  pos =
+let  z_cert_of_pos  pos = 
  let s,pos = (scale_certificate pos) in
  let rec _cert_of_pos = function
    Axiom_eq i ->  Mc.PsatzIn (Ml2C.nat i)
   | Axiom_le i ->  Mc.PsatzIn (Ml2C.nat i)
   | Axiom_lt i ->  Mc.PsatzIn (Ml2C.nat i)
   | Monoid l  -> product l
-  | Rational_eq n | Rational_le n | Rational_lt n ->
+  | Rational_eq n | Rational_le n | Rational_lt n -> 
      if compare_num n (Int 0) = 0 then Mc.PsatzZ else
       Mc.PsatzC (Ml2C.bigint (big_int_of_num  n))
   | Square t -> Mc.PsatzSquare (term_to_z_pol  t)
-  | Eqmul (t, y) -> Mc.PsatzMulC(term_to_z_pol t, _cert_of_pos y)
+  | Eqmul (t, y) -> 
+      let is_unit =
+	match t with
+	  | Const n -> n =/ Int 1 
+	  |   _     -> false in
+	if is_unit
+	then _cert_of_pos y
+	else Mc.PsatzMulC(term_to_z_pol t, _cert_of_pos y)
   | Sum (y, z) -> Mc.PsatzAdd  (_cert_of_pos y, _cert_of_pos z)
   | Product (y, z) -> Mc.PsatzMulE (_cert_of_pos y, _cert_of_pos z) in
   simplify_cone z_spec (_cert_of_pos pos)
+
+(** All constraints (initial or derived) have an index and have a justification i.e., proof.
+    Given a constraint, all the coefficients are always integers.
+*)
+open Mutils
+open Mfourier
+open Num
+open Big_int
+open Polynomial
+
+(*module Mc = Micromega*)
+(*module Ml2C = Mutils.CamlToCoq
+module C2Ml = Mutils.CoqToCaml
+*)
+let debug = false
+
+
+
+module Env = 
+struct
+
+  type t = int list
+
+  let id_of_hyp hyp l = 
+    let rec xid_of_hyp i l = 
+      match l with
+      | [] -> failwith "id_of_hyp"
+      | hyp'::l -> if hyp = hyp' then i else xid_of_hyp (i+1) l in
+      xid_of_hyp 0 l
+
+end
+
+
+let  coq_poly_of_linpol (p,c) = 
+
+  let pol_of_mon m =
+    Monomial.fold (fun x v p -> Mc.PEmul(Mc.PEpow(Mc.PEX(Ml2C.positive x),Ml2C.n v),p)) m (Mc.PEc (Mc.Zpos Mc.XH)) in
+
+    List.fold_left (fun acc (x,v) -> 
+		      let mn = LinPoly.MonT.retrieve x in
+			Mc.PEadd(Mc.PEmul(Mc.PEc (Ml2C.bigint (numerator v)), pol_of_mon mn),acc)) (Mc.PEc (Ml2C.bigint (numerator c))) p
+			
+
+
+
+let rec cmpl_prf_rule env = function
+  | Hyp i | Def i -> Mc.PsatzIn (Ml2C.nat (Env.id_of_hyp i env))
+  | Cst i         -> Mc.PsatzC (Ml2C.bigint i)
+  | Zero          -> Mc.PsatzZ
+  | MulPrf(p1,p2)      -> Mc.PsatzMulE(cmpl_prf_rule env p1, cmpl_prf_rule env p2)
+  | AddPrf(p1,p2)      -> Mc.PsatzAdd(cmpl_prf_rule env p1 , cmpl_prf_rule env p2)
+  | MulC(lp,p)  -> let lp = Mc.norm0 (coq_poly_of_linpol lp) in
+      Mc.PsatzMulC(lp,cmpl_prf_rule env p)
+  | Square lp      -> Mc.PsatzSquare (Mc.norm0 (coq_poly_of_linpol lp))
+  | _                  -> failwith "Cuts should already be compiled"
+      
+
+let rec cmpl_proof env = function
+  | Done ->  Mc.DoneProof
+  | Step(i,p,prf) -> 
+      begin
+	match p with
+	| CutPrf p' -> 
+	    Mc.CutProof(cmpl_prf_rule env p', cmpl_proof (i::env) prf)
+	|   _       -> Mc.RatProof(cmpl_prf_rule env p,cmpl_proof (i::env) prf)
+      end
+  | Enum(i,p1,_,p2,l) -> 
+      Mc.EnumProof(cmpl_prf_rule env p1,cmpl_prf_rule env p2,List.map (cmpl_proof (i::env)) l)
+
+
+let compile_proof env prf = 
+  let id = 1 + proof_max_id prf in
+  let _,prf = normalise_proof id prf in
+    if debug then Printf.fprintf stdout "compiled proof %a\n" output_proof prf;
+    cmpl_proof env prf
+
+type prf_sys = (cstr_compat * prf_rule) list
+
+
+let xlinear_prover sys = 
+  match Fourier.find_point sys with
+  | Inr prf -> 
+      if debug then Printf.printf "AProof : %a\n" pp_proof prf ; 
+      let cert = (*List.map (fun (x,n) -> x+1,n)*) (fst (List.hd (Proof.mk_proof sys prf))) in
+	if debug then Printf.printf "CProof : %a" Vect.pp_vect cert ; 
+	Some (rats_to_ints (Vect.to_list cert))
+  | Inl _   -> None
+
+
+let output_num o n = output_string o (string_of_num n)
+let output_bigint o n = output_string o (string_of_big_int n)
+
+let proof_of_farkas prf cert = 
+(*  Printf.printf "\nproof_of_farkas  %a , %a \n" (pp_list output_prf_rule) prf (pp_list output_bigint) cert ;  *)
+  let rec mk_farkas acc prf cert = 
+    match prf, cert with
+    |   _  , []   -> acc
+    |  []  , _    -> failwith "proof_of_farkas : not enough hyps"
+    |  p::prf,c::cert -> 
+	   mk_farkas (add_proof (mul_proof c p) acc) prf cert in
+  let res =  mk_farkas Zero prf cert in
+    (*Printf.printf "==> %a" output_prf_rule res ; *)
+    res
+
+
+let linear_prover sys =
+  let (sysi,prfi) = List.split sys in
+    match xlinear_prover sysi with
+    | None -> None
+    | Some cert -> Some (proof_of_farkas prfi cert)
+
+let linear_prover  = 
+  if debug 
+  then 
+    fun sys -> 
+      Printf.printf "<linear_prover"; flush stdout ;
+      let res = linear_prover sys in
+	Printf.printf ">"; flush stdout ;
+	res
+  else linear_prover
+  
+
+
+
+(** A single constraint can be unsat for the following reasons:
+    - 0 >= c for c a negative constant
+    - 0 =  c for c a non-zero constant
+    - e = c  when the coeffs of e are all integers and c is rational
+*)
+
+type checksat = 
+  | Tauto (* Tautology *)
+  | Unsat of prf_rule (* Unsatisfiable *)
+  | Cut of cstr_compat * prf_rule (* Cutting plane *)
+  | Normalise of cstr_compat * prf_rule (* coefficients are relatively prime *)
+      
+
+(** [check_sat] 
+    - detects constraints that are not satisfiable;
+    - normalises constraints and generate cuts.
+*)
+
+let check_sat (cstr,prf) = 
+  let {coeffs=coeffs ; op=op ; cst=cst} = cstr in
+    match coeffs with
+    | [] -> 
+	if eval_op op (Int 0) cst then Tauto else Unsat prf
+    | _  -> 
+	let gcdi =  (gcd_list (List.map snd coeffs)) in
+	let gcd = Big_int gcdi in
+	  if eq_num gcd (Int 1)
+	  then Normalise(cstr,prf) 
+	  else
+	    if sign_num (mod_num cst gcd) = 0
+	    then (* We can really normalise *)
+	      begin
+		assert (sign_num gcd >=1 ) ;
+		let cstr = {
+		  coeffs = List.map (fun (x,v) -> (x, v // gcd)) coeffs; 
+		  op = op ; cst = cst // gcd
+		} in 
+		  Normalise(cstr,Gcd(gcdi,prf))
+		    (*		    Normalise(cstr,CutPrf prf)*)
+	      end
+	    else
+	      match op with
+	      | Eq -> Unsat (CutPrf prf)
+	      | Ge -> 
+		  let cstr = {
+		    coeffs = List.map (fun (x,v) -> (x, v // gcd)) coeffs; 
+		    op = op ; cst = ceiling_num (cst // gcd)
+		  } in Cut(cstr,CutPrf prf)
+
+
+(** Proof generating pivoting over variable v *)
+let pivot v (c1,p1) (c2,p2) = 
+  let {coeffs = v1 ; op = op1 ; cst = n1} = c1
+  and {coeffs = v2 ; op = op2 ; cst = n2} = c2 in
+
+
+
+  (* Could factorise gcd... *)
+  let xpivot cv1 cv2 =
+    (
+      {coeffs = Vect.add (Vect.mul cv1 v1) (Vect.mul cv2 v2) ;
+       op = Proof.add_op op1 op2 ;
+       cst = n1 */ cv1 +/ n2 */ cv2 },
+
+      AddPrf(mul_proof (numerator cv1) p1,mul_proof (numerator cv2) p2)) in
+    
+    match Vect.get v v1 , Vect.get v v2 with
+    | None , _ | _ , None -> None
+    | Some a   , Some b   ->
+	if (sign_num a) * (sign_num b) = -1
+	then 
+	  let cv1 = abs_num b 
+	  and cv2 = abs_num a  in
+	    Some (xpivot cv1 cv2)
+	else 
+	  if op1 = Eq
+          then 
+	    let cv1 = minus_num (b */ (Int (sign_num a)))
+	    and cv2 = abs_num a in
+	      Some (xpivot cv1 cv2)
+          else if op2 = Eq
+	  then
+	    let cv1 = abs_num b 
+	    and cv2 = minus_num (a */ (Int  (sign_num b))) in
+	      Some (xpivot cv1 cv2)
+	  else  None (* op2 could be Eq ... this might happen *)
+	    
+exception FoundProof of  prf_rule
+
+let rec simpl_sys sys = 
+  List.fold_left (fun acc (c,p) -> 
+		    match check_sat (c,p) with
+		    | Tauto -> acc
+		    | Unsat prf -> raise (FoundProof prf)
+		    | Cut(c,p)  -> (c,p)::acc
+		    | Normalise (c,p) -> (c,p)::acc) [] sys
+
+
+(** [ext_gcd a b] is the extended Euclid algorithm.
+    [ext_gcd a b = (x,y,g)] iff [ax+by=g]
+    Source: http://en.wikipedia.org/wiki/Extended_Euclidean_algorithm
+*)
+let rec ext_gcd a b = 
+  if sign_big_int b = 0 
+  then (unit_big_int,zero_big_int)
+  else
+    let (q,r) = quomod_big_int a b in
+    let (s,t) = ext_gcd b r in
+      (t, sub_big_int s (mult_big_int q t))
+
+
+let pp_ext_gcd a b = 
+  let a' = big_int_of_int a in
+  let b' = big_int_of_int b in
+    
+  let (x,y) = ext_gcd a' b' in
+    Printf.fprintf stdout "%s * %s + %s * %s = %s\n" 
+      (string_of_big_int x) (string_of_big_int a')
+      (string_of_big_int y) (string_of_big_int b')
+      (string_of_big_int (add_big_int (mult_big_int x a') (mult_big_int y b')))
+
+exception Result of (int * (proof * cstr_compat))
+
+let split_equations psys = 
+  List.partition (fun (c,p) -> c.op = Eq)
+
+
+let extract_coprime (c1,p1) (c2,p2) = 
+  let rec exist2 vect1 vect2 = 
+    match vect1 , vect2 with
+    | _ , [] | [], _ -> None
+    | (v1,n1)::vect1' , (v2, n2) :: vect2' -> 
+	if v1 = v2
+	then 
+	  if compare_big_int (gcd_big_int (numerator n1) (numerator n2)) unit_big_int  = 0
+	  then Some (v1,n1,n2)
+	  else 
+	    exist2 vect1' vect2'
+	else
+	  if v1 < v2 
+	  then exist2 vect1' vect2
+	  else exist2 vect1 vect2' in
+    
+    if c1.op = Eq && c2.op = Eq 
+    then exist2 c1.coeffs c2.coeffs
+    else None
+
+let extract2 pred l =
+  let rec xextract2 rl l = 
+    match l with
+    | [] -> (None,rl) (* Did not find *)
+    | e::l ->
+	match extract (pred e) l with
+	| None,_ -> xextract2 (e::rl) l
+	| Some (r,e'),l' -> Some (r,e,e'), List.rev_append rl l' in
+    
+    xextract2 [] l
+
+
+let extract_coprime_equation psys = 
+  extract2 extract_coprime psys
+
+
+let apply_and_normalise f psys =
+  List.fold_left (fun acc pc' -> 
+		    match f pc' with
+		     | None -> pc'::acc
+		     | Some pc' -> 
+			 match check_sat pc' with
+			  | Tauto -> acc
+			  | Unsat prf -> raise (FoundProof prf)
+			  | Cut(c,p)  -> (c,p)::acc
+			  | Normalise (c,p) -> (c,p)::acc
+		 ) [] psys
+
+
+
+
+let pivot_sys v pc psys = apply_and_normalise (pivot v pc) psys
+
+
+let reduce_coprime psys = 
+  let oeq,sys = extract_coprime_equation psys in
+    match oeq with
+    | None -> None (* Nothing to do *)
+    | Some((v,n1,n2),(c1,p1),(c2,p2) ) -> 
+	let (l1,l2) = ext_gcd (numerator n1) (numerator n2) in
+	let l1' = Big_int l1 and l2' = Big_int l2 in
+	let cstr = 
+	  {coeffs = Vect.add (Vect.mul l1' c1.coeffs) (Vect.mul l2' c2.coeffs);
+	   op = Eq ; 
+	   cst = (l1' */ c1.cst) +/ (l2' */ c2.cst) 
+	  } in
+	let prf = add_proof (mul_proof (numerator l1') p1) (mul_proof (numerator l2') p2) in
+
+	  Some (pivot_sys v (cstr,prf) ((c1,p1)::sys))
+
+(** If there is an equation [eq] of the form 1.x + e = c, do a pivot over x with equation [eq] *)
+let reduce_unary psys = 
+  let is_unary_equation (cstr,prf) = 
+    if cstr.op = Eq 
+    then 
+      try 
+	Some (fst (List.find (fun (_,n) -> n =/ (Int 1) || n=/ (Int (-1))) cstr.coeffs))
+      with Not_found -> None
+    else None in
+
+  let (oeq,sys) =  extract is_unary_equation psys in
+    match oeq with
+    | None -> None (* Nothing to do *)
+    | Some(v,pc) -> 
+	Some(pivot_sys v pc sys)
+
+let reduce_non_lin_unary psys = 
+
+  let is_unary_equation (cstr,prf) = 
+    if cstr.op = Eq 
+    then 
+      try 
+	let x = fst (List.find (fun (x,n) ->  (n =/ (Int 1) || n=/ (Int (-1))) && Monomial.is_var (LinPoly.MonT.retrieve x) ) cstr.coeffs) in
+	let x' = LinPoly.MonT.retrieve x in
+	  if List.for_all (fun (y,_) -> y = x  || snd (Monomial.div (LinPoly.MonT.retrieve y) x') = 0) cstr.coeffs 
+	  then Some x
+	  else None
+      with Not_found -> None
+    else None in
+
+
+  let (oeq,sys) =   extract is_unary_equation psys in
+    match oeq with
+     | None -> None (* Nothing to do *)
+     | Some(v,pc) -> 
+	 Some(apply_and_normalise (LinPoly.pivot_eq v pc) sys)
+
+let reduce_var_change psys = 
+
+  let rec rel_prime vect = 
+    match vect with
+     | [] -> None
+     | (x,v)::vect -> 
+	 let v = numerator v in
+	   try 
+	     let (x',v') = List.find (fun (_,v') -> 
+					let v' = numerator v' in 
+					  eq_big_int (gcd_big_int  v v') unit_big_int) vect in
+	       Some ((x,v),(x',numerator v'))
+	   with Not_found -> rel_prime vect in
+
+  let rel_prime (cstr,prf) =  if cstr.op = Eq then rel_prime cstr.coeffs else None in
+
+  let (oeq,sys) = extract rel_prime psys in
+    
+    match oeq with
+     | None -> None
+     | Some(((x,v),(x',v')),(c,p)) -> 
+	 let (l1,l2) = ext_gcd  v  v' in
+	 let l1,l2 = Big_int l1 , Big_int l2 in
+
+	 let get v vect = 
+	   match Vect.get v vect with
+	    | None -> Int 0
+	    | Some n -> n in
+
+	 let pivot_eq (c',p') = 
+	   let {coeffs = coeffs ; op = op ; cst = cst} = c' in
+	   let vx = get x coeffs in
+	   let vx' = get x' coeffs in
+	   let m = minus_num (vx */ l1 +/ vx' */ l2) in
+	     Some ({coeffs = 
+		       Vect.add (Vect.mul m c.coeffs) coeffs ; op = op ; cst = m */ c.cst +/ cst} , 
+	   AddPrf(MulC(([], m),p),p')) in
+
+	   Some (apply_and_normalise pivot_eq sys)
+
+
+
+
+  let reduce_pivot psys = 
+    let is_equation (cstr,prf) = 
+      if cstr.op = Eq
+      then
+	try 
+	  Some (fst (List.hd cstr.coeffs))
+	with Not_found -> None
+      else None in
+    let (oeq,sys) = extract is_equation psys in
+      match oeq with
+      | None -> None (* Nothing to do *)
+      | Some(v,pc) -> 
+	  if debug then 
+	    Printf.printf "Bad news : loss of completeness %a=%s" Vect.pp_vect (fst pc).coeffs (string_of_num (fst pc).cst); 
+	  Some(pivot_sys v pc sys)
+
+
+
+
+
+  let iterate_until_stable f x = 
+    let rec iter x = 
+      match f x with
+      | None -> x
+      | Some x' -> iter x' in
+      iter x
+
+  let rec app_funs l x = 
+    match l with
+    | [] -> None
+    | f::fl -> 
+	match f x with
+	| None    -> app_funs fl x
+	| Some x' -> Some x'
+
+  let reduction_equations psys =
+    iterate_until_stable (app_funs 
+			    [reduce_unary ; reduce_coprime ; 
+			     reduce_var_change (*; reduce_pivot*)]) psys 
+
+  let reduction_non_lin_equations psys =
+    iterate_until_stable (app_funs 
+			    [reduce_non_lin_unary (*; reduce_coprime ; 
+			     reduce_var_change ; reduce_pivot *)]) psys 
+
+
+
+
+  (** [get_bound sys] returns upon success an interval (lb,e,ub) with proofs *)
+  let get_bound sys = 
+    let is_small (v,i) = 
+      match Itv.range i with
+      | None -> false
+      | Some i -> i <=/ (Int 1) in
+      
+    let select_best (x1,i1) (x2,i2) = 
+      if Itv.smaller_itv i1 i2
+      then (x1,i1) else (x2,i2) in
+
+    (* For lia, there are no equations => these precautions are not needed *)
+    (* For nlia, there are equations => do not enumerate over equations! *)
+    let all_planes sys = 
+      let (eq,ineq) = List.partition (fun c -> c.op = Eq) sys in
+	match eq with
+	  | [] -> List.rev_map (fun c -> c.coeffs) ineq
+	  | _  -> 
+	      List.fold_left (fun acc c -> 
+				if List.exists (fun c' -> Vect.equal c.coeffs c'.coeffs) eq
+				then acc else c.coeffs ::acc) [] ineq in
+
+    let smallest_interval = 
+      List.fold_left 
+	(fun acc vect ->
+	   if is_small acc
+	   then acc
+	   else 
+	     match Fourier.optimise vect sys with
+	     | None -> acc
+	     | Some i -> 
+		 if debug then Printf.printf "Found a new bound %a" Vect.pp_vect vect ;
+		 select_best (vect,i) acc)  (Vect.null, (None,None)) (all_planes sys) in
+    let smallest_interval =
+      match smallest_interval
+      with
+      | (x,(Some i, Some j))  -> Some(i,x,j)
+      |   x        ->   None (* This should not be possible *)
+    in
+      match smallest_interval with
+      | Some (lb,e,ub) -> 
+	  let (lbn,lbd) = (sub_big_int (numerator lb)  unit_big_int, denominator lb) in
+	  let (ubn,ubd) = (add_big_int unit_big_int (numerator ub) , denominator ub) in
+	    (match
+               (* x <= ub ->  x  > ub *)
+               xlinear_prover   ({coeffs = Vect.mul (Big_int ubd)  e ; op = Ge ; cst = Big_int ubn} :: sys),
+               (* lb <= x  -> lb > x *)
+               xlinear_prover
+		 ({coeffs = Vect.mul (minus_num (Big_int lbd)) e ; op = Ge ; cst = minus_num (Big_int lbn)} :: sys)
+	     with
+	     | Some cub , Some clb  -> Some(List.tl clb,(lb,e,ub), List.tl cub)
+	     |         _            -> failwith "Interval without proof"
+	    )
+      | None -> None
+
+
+  let check_sys sys = 
+    List.for_all (fun (c,p) -> List.for_all (fun (_,n) -> sign_num n <> 0) c.coeffs) sys
+
+
+  let xlia reduction_equations  sys = 
+
+  let rec enum_proof (id:int) (sys:prf_sys) : proof option = 
+    if debug then (Printf.printf "enum_proof\n" ; flush stdout) ;
+    assert (check_sys sys) ; 
+
+    let nsys,prf = List.split sys in
+      match get_bound nsys with
+      | None -> None (* Is the systeme really unbounded ? *)
+      | Some(prf1,(lb,e,ub),prf2) -> 
+	  if debug then Printf.printf "Found interval: %a in [%s;%s] -> " Vect.pp_vect e (string_of_num lb) (string_of_num ub) ; 
+	  (match start_enum  id  e  (ceiling_num lb)  (floor_num ub) sys
+	   with
+	   | Some prfl -> 
+	       Some(Enum(id,proof_of_farkas prf prf1,e, proof_of_farkas prf prf2,prfl))
+	   | None -> None
+	  )
+
+  and start_enum id e clb cub sys = 
+    if clb >/ cub
+    then Some []
+    else
+      let eq = {coeffs = e ; op = Eq ; cst = clb} in
+	match aux_lia (id+1) ((eq, Def id) :: sys) with
+	| None -> None 
+	| Some prf  -> 
+	    match start_enum id e (clb +/ (Int 1)) cub sys with
+	    | None -> None
+	    | Some l -> Some (prf::l)
+
+  and aux_lia (id:int)  (sys:prf_sys) : proof option  = 
+    assert (check_sys sys) ; 
+    if debug then Printf.printf "xlia:  %a \n" (pp_list (fun o (c,_) -> output_cstr o c)) sys ; 
+    try 
+      let sys = reduction_equations sys in
+    if debug then 
+    Printf.printf "after reduction:  %a \n" (pp_list (fun o (c,_) -> output_cstr o c)) sys ; 	    	    
+	match linear_prover sys with
+	 | Some prf -> Some (Step(id,prf,Done))
+	 | None ->  enum_proof id sys
+    with FoundProof prf -> 
+      (* [reduction_equations] can find a proof *)
+      Some(Step(id,prf,Done)) in
+
+  (*  let sys' = List.map (fun (p,o) -> Mc.norm0 p , o) sys in*)
+  let id  = List.length sys in
+  let orpf = 
+    try 
+      let sys = simpl_sys sys in
+	  aux_lia id sys
+    with FoundProof pr -> Some(Step(id,pr,Done)) in
+    match orpf with
+     | None -> None
+     | Some prf -> 
+	 (*Printf.printf "direct proof %a\n" output_proof prf ; *)
+	 let env = mapi (fun _ i -> i) sys in
+	 let prf = compile_proof env prf in
+	   (*try 
+	     if Mc.zChecker sys' prf then Some prf else 
+	     raise Certificate.BadCertificate
+	     with Failure s -> (Printf.printf "%s" s ; Some prf)
+	   *) Some prf
+	   
+
+  let cstr_compat_of_poly (p,o) = 
+    let (v,c) = LinPoly.linpol_of_pol p in
+      {coeffs = v ; op = o ; cst = minus_num c }
+
+
+  let lia sys = 
+    let sys = List.map (develop_constraint z_spec) sys in
+    let (sys:cstr_compat list) = List.map cstr_compat_of_poly sys in
+    let sys = mapi (fun c i -> (c,Hyp i)) sys in
+      xlia reduction_equations sys
+
+
+  let nlia sys = 
+    let sys = List.map (develop_constraint z_spec) sys in
+    let sys = mapi (fun c i -> (c,Hyp i)) sys in
+
+    let is_linear =  List.for_all (fun ((p,_),_) -> Poly.is_linear p) sys in
+
+    let module MonMap = Map.Make(Monomial) in
+
+    let collect_square = 
+      List.fold_left (fun acc ((p,_),_) -> Poly.fold 
+			(fun m _ acc -> 
+			   match Monomial.sqrt m with
+			     | None -> acc
+			     | Some s -> MonMap.add  s m acc)  p acc) MonMap.empty sys in
+    let sys = MonMap.fold (fun s m acc -> 
+				    let s = LinPoly.linpol_of_pol (Poly.add s (Int 1) (Poly.constant (Int 0))) in
+				    let m = Poly.add m (Int 1) (Poly.constant (Int 0)) in
+				    ((m, Ge), (Square s))::acc) collect_square  sys in
+
+(*      List.iter (fun ((p,_),_) -> Printf.printf "square %a\n" Poly.pp p) gen_square*)
+
+    let sys = 
+      if is_linear then sys
+      else sys @ (all_sym_pairs (fun ((c,o),p) ((c',o'),p') -> 
+			    ((Poly.product c c',opMult o o'), MulPrf(p,p'))) sys) in
+
+    let sys = List.map (fun (c,p) -> cstr_compat_of_poly c,p) sys in
+    assert (check_sys sys) ; 
+    xlia (if is_linear then reduction_equations else reduction_non_lin_equations) sys
+
+
 
 (* Local Variables: *)
 (* coding: utf-8 *)

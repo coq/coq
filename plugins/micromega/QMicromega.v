@@ -173,8 +173,15 @@ Require Import Tauto.
 Definition Qnormalise := @cnf_normalise Q 0 1 Qplus Qmult Qminus Qopp Qeq_bool.
 Definition Qnegate := @cnf_negate Q 0 1 Qplus Qmult Qminus Qopp Qeq_bool.
 
+Definition qunsat := check_inconsistent 0 Qeq_bool Qle_bool.
+
+Definition qdeduce := nformula_plus_nformula 0 Qplus Qeq_bool.
+
+
+
 Definition QTautoChecker (f : BFormula (Formula Q)) (w: list QWitness)  : bool :=
   @tauto_checker (Formula Q) (NFormula Q)
+  qunsat qdeduce
   Qnormalise
   Qnegate QWitness QWeakChecker f w.
 
@@ -186,6 +193,11 @@ Proof.
   unfold QTautoChecker.
   apply (tauto_checker_sound  Qeval_formula Qeval_nformula).
   apply Qeval_nformula_dec.
+  intros until env.
+  unfold eval_nformula. unfold RingMicromega.eval_nformula.
+  destruct t.
+  apply (check_inconsistent_sound Qsor QSORaddon) ; auto.
+  unfold qdeduce. apply (nformula_plus_nformula_correct Qsor QSORaddon).
   intros. rewrite Qeval_formula_compat. unfold Qeval_formula'. now  apply (cnf_normalise_correct Qsor QSORaddon).
   intros. rewrite Qeval_formula_compat. unfold Qeval_formula'. now apply (cnf_negate_correct Qsor QSORaddon).
   intros t w0.

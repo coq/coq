@@ -158,8 +158,15 @@ Require Import Tauto.
 Definition Rnormalise := @cnf_normalise Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool.
 Definition Rnegate := @cnf_negate Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool.
 
+Definition runsat := check_inconsistent 0%Z Zeq_bool Zle_bool.
+
+Definition rdeduce := nformula_plus_nformula 0%Z Zplus Zeq_bool.
+
+
+
 Definition RTautoChecker (f : BFormula (Formula Z)) (w: list RWitness)  : bool :=
   @tauto_checker (Formula Z) (NFormula Z)
+  runsat rdeduce
   Rnormalise Rnegate
   RWitness RWeakChecker f w.
 
@@ -169,6 +176,11 @@ Proof.
   unfold RTautoChecker.
   apply (tauto_checker_sound  Reval_formula Reval_nformula).
   apply Reval_nformula_dec.
+  intros until env.
+  unfold eval_nformula. unfold RingMicromega.eval_nformula.
+  destruct t.
+  apply (check_inconsistent_sound Rsor RZSORaddon) ; auto.
+  unfold rdeduce. apply (nformula_plus_nformula_correct Rsor RZSORaddon).
   intros. rewrite Reval_formula_compat.
   unfold Reval_formula'. now apply (cnf_normalise_correct Rsor RZSORaddon).
   intros. rewrite Reval_formula_compat. unfold Reval_formula. now apply (cnf_negate_correct Rsor RZSORaddon).

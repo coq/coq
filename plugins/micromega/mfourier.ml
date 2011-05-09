@@ -1,137 +1,14 @@
 open Num
 module Utils = Mutils
+open Polynomial
+open Vect
+
 
 let map_option = Utils.map_option
 let from_option = Utils.from_option
 
 let debug = false
 type ('a,'b) lr = Inl of 'a | Inr of 'b
-
-
-module Vect =
-  struct
-    (** [t] is the type of vectors.
-	A vector [(x1,v1) ; ... ; (xn,vn)] is such that:
-	- variables indexes are ordered (x1 < ... < xn
-	- values are all non-zero
-    *)
-    type var = int
-    type t = (var * num) list
-
-(** [equal v1 v2 = true] if the vectors are syntactically equal.
-    ([num] is not handled by  [Pervasives.equal] *)
-
-    let rec equal v1 v2 =
-      match v1 , v2 with
-	| [] , []   -> true
-	| [] , _    -> false
-	| _::_ , [] -> false
-	| (i1,n1)::v1 , (i2,n2)::v2 ->
-	    (i1 = i2) && n1 =/ n2 && equal v1 v2
-
-    let hash v =
-      let rec hash i = function
-	| [] -> i
-	| (vr,vl)::l ->  hash (i + (Hashtbl.hash (vr, float_of_num vl))) l in
-	Hashtbl.hash (hash 0 v )
-
-
-    let null = []
-
-    let pp_vect o vect =
-      List.iter (fun (v,n) -> Printf.printf "%sx%i + " (string_of_num n) v) vect
-
-    let from_list (l: num list) =
-      let rec xfrom_list i l =
-	match l with
-	  | [] -> []
-	  | e::l ->
-	      if e <>/ Int 0
-	      then (i,e)::(xfrom_list (i+1) l)
-	      else xfrom_list (i+1) l in
-
-	xfrom_list 0 l
-
-    let zero_num = Int 0
-    let unit_num = Int 1
-
-
-    let to_list m =
-      let rec xto_list i l =
-	match l with
-	  | [] -> []
-	  |	(x,v)::l' ->
-		  if i = x then v::(xto_list (i+1) l') else zero_num ::(xto_list (i+1) l) in
-	xto_list 0 m
-
-
-    let cons i v rst = if v =/ Int 0 then rst else (i,v)::rst
-
-    let rec update i f t =
-      match t with
-	| [] -> cons i (f zero_num) []
-	| (k,v)::l ->
-	    match Pervasives.compare i k with
-	  | 0 -> cons k (f v) l
-	  | -1 -> cons i (f zero_num) t
-	  |  1 -> (k,v) ::(update i f l)
-	  |  _  -> failwith "compare_num"
-
-    let rec set i n t =
-      match t with
-	| [] -> cons i n []
-	| (k,v)::l ->
-	    match Pervasives.compare i k with
-	      | 0 -> cons k n l
-	      | -1 -> cons i n t
-	      |  1 -> (k,v) :: (set i n l)
-	      |  _  -> failwith "compare_num"
-
-    let gcd m =
-      let res = List.fold_left (fun x (i,e) -> Big_int.gcd_big_int  x (Utils.numerator e))  Big_int.zero_big_int m in
-	if Big_int.compare_big_int res Big_int.zero_big_int = 0
-	then Big_int.unit_big_int else res
-
-    let rec mul z t =
-      match z with
-	| Int 0 -> []
-	| Int 1 -> t
-	|  _    -> List.map (fun (i,n) -> (i, mult_num z n)) t
-
-    let compare : t -> t -> int = Utils.Cmp.compare_list (fun x y -> Utils.Cmp.compare_lexical
-      [
-	(fun () -> Pervasives.compare (fst x) (fst y));
-	(fun () -> compare_num (snd x) (snd y))])
-
-    (** [tail v vect] returns
-	- [None] if [v] is not a variable of the vector [vect]
-	- [Some(vl,rst)]  where [vl] is the value of [v] in vector [vect]
-        and [rst] is the remaining of the vector
-	We exploit that vectors are ordered lists
-    *)
-    let rec tail (v:var) (vect:t) =
-      match vect with
-	| [] -> None
-	| (v',vl)::vect' ->
-	    match Pervasives.compare v' v with
-	      | 0 -> Some (vl,vect) (* Ok, found *)
-	      | -1 -> tail v vect' (* Might be in the tail *)
-	      | _  -> None (* Hopeless *)
-
-    let get v vect =
-      match tail v vect with
-	| None -> None
-	| Some(vl,_) -> Some vl
-
-
-    let rec fresh v =
-	match v with
-	  | [] -> 1
-	  | [v,_] -> v + 1
-	  | _::v  -> fresh v
-
-  end
-open Vect
 
 (** Implementation of intervals *)
 module Itv =
@@ -203,11 +80,11 @@ let in_bound bnd v =
     | Some a , None -> a <=/ v
     | Some a , Some b -> a <=/ v && v <=/ b
 
+
 end
 open Itv
 type vector = Vect.t
 
-type cstr = { coeffs : vector ; bound : interval }
 (** 'cstr' is the type of constraints.
     {coeffs = v ; bound = (l,r) } models the constraints l <= v <= r
 **)
@@ -275,10 +152,6 @@ let pp_bound o  = function
 
 let pp_itv o (l,r) = Printf.fprintf o "(%a,%a)" pp_bound l pp_bound r
 
-let rec pp_list f o l =
-  match l with
-    | [] -> ()
-    | e::l -> f o e ; output_string o ";" ; pp_list f o l
 
 let pp_iset o s =
   output_string o "{" ;
@@ -366,12 +239,7 @@ let normalise_cstr vect cinfo =
 			       then{cinfo with bound = (map_option divn l , map_option  divn r) }
 			       else {cinfo with pos = cinfo.neg ; neg = cinfo.pos ; bound = (map_option divn r , map_option divn l)})
 
-(** For compatibility, there an external representation of constraints *)
-
-type cstr_compat = {coeffs : vector ; op : op ; cst : num}
-and op = |Eq | Ge
-
-let string_of_op = function Eq -> "=" | Ge -> ">="
+(** For compatibility, there is an external representation of constraints *)
 
 
 let eval_op = function
@@ -653,7 +521,7 @@ let solve_sys black_v choose_eq choose_variable sys sys_l =
       let vars = choose_variable  sys in
 	try
 	  let (v,est) =  (List.find (fun (v,_) -> v <> black_v) vars) in
-	    if debug then (Printf.printf "\nV : %i esimate %f\n" v est ; flush stdout) ;
+	    if debug then (Printf.printf "\nV : %i estimate %f\n" v est ; flush stdout) ;
 	    let sys' =  project v sys in
 	      solve_sys sys' ((v,sys)::sys_l)
 	with Not_found ->  (* we are done *) Inl (sys,sys_l)  in
@@ -666,7 +534,7 @@ let  solve black_v choose_eq choose_variable cstrs =
 
   try
     let sys = load_system cstrs in
-(*      Printf.printf "solve :\n %a" pp_system sys.sys ; *)
+      if debug then Printf.printf "solve :\n %a" pp_system sys.sys ; 
       solve_sys black_v choose_eq choose_variable sys []
   with SystemContradiction prf -> Inr prf
 
@@ -752,20 +620,33 @@ struct
 	else if i < v then unroll_until v rl else (false,l)
 
 
+  let rec choose_simple_equation eqs = 
+    match eqs with
+      | [] -> None
+      | (vect,a,prf,ln)::eqs -> 
+	  match vect with 
+	    | [i,_] -> Some (i,vect,a,prf,ln)
+	    |   _   -> choose_simple_equation eqs 
+
+
+
   let choose_primal_equation eqs sys_l =
 
+    (* Counts the number of equations refering to variable [v] --
+       It looks like nb_cst is dead...
+    *)
     let is_primal_equation_var v =
-      List.fold_left (fun (nb_eq,nb_cst) (vect,info) ->
+      List.fold_left (fun nb_eq (vect,info) ->
 	if fst (unroll_until v vect)
-	then if itv_point  info.bound then (nb_eq +  1,nb_cst) else (nb_eq,nb_cst)
-	else (nb_eq,nb_cst)) (0,0) sys_l in
+	then if itv_point  info.bound then nb_eq +  1 else nb_eq
+	else nb_eq) 0 sys_l in
 
     let rec find_var vect =
       match vect with
 	| [] -> None
 	| (i,_)::vect ->
-	    let (nb_eq,nb_cst) = is_primal_equation_var i in
-	      if nb_eq = 2 && nb_cst = 0
+	    let nb_eq = is_primal_equation_var i in
+	      if nb_eq = 2 
 	      then Some i else find_var vect in
 
     let rec find_eq_var eqs =
@@ -776,10 +657,9 @@ struct
 		| None -> find_eq_var l
 		| Some r -> Some (r,vect,a,prf,ln)
     in
-
-
-      find_eq_var eqs
-
+      match choose_simple_equation eqs with
+	| None -> find_eq_var eqs
+	| Some res -> Some res
 
 
 
@@ -913,7 +793,8 @@ struct
         | None , _ | _ , None -> None
         | Some a   , Some b   ->
             if (sign_num a) * (sign_num b) = -1
-            then Some (add (p1,abs_num a) (p2,abs_num b) ,
+            then 
+	      Some (add (p1,abs_num a) (p2,abs_num b) ,
                       {coeffs = add (v1,abs_num a) (v2,abs_num b) ;
                        op = add_op op1 op2 ;
                        cst = n1 // (abs_num a) +/ n2 // (abs_num b) })

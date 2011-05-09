@@ -23,7 +23,7 @@ Require Import NArith.
 Require Import QArith.
 
 Extract Inductive prod => "( * )" [ "(,)" ].
-Extract Inductive List.list => list [ "[]" "(::)" ].
+Extract Inductive list => list [ "[]" "(::)" ].
 Extract Inductive bool => bool [ true false ].
 Extract Inductive sumbool => bool [ true false ].
 Extract Inductive option => option [ Some None ].
@@ -41,7 +41,7 @@ Extract Inlined Constant andb => "(&&)".
 Extraction "micromega.ml"
   List.map simpl_cone (*map_cone  indexes*)
   denorm Qpower
-  n_of_Z Nnat.N_of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find.
+  n_of_Z N_of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find.
 
 (* Local Variables: *)
 (* coding: utf-8 *)

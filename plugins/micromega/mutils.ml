@@ -19,6 +19,12 @@
 
 let debug = false
 
+let rec pp_list f o l =
+  match l with
+    | [] -> ()
+    | e::l -> f o e ; output_string o ";" ; pp_list f o l
+
+
 let finally f rst =
   try
     let res = f () in
@@ -51,12 +57,16 @@ let iteri f l =
    | e::l -> f i e ; xiter (i+1) l in
   xiter 0 l
 
-let mapi f l =
- let rec xmap i l =
-  match l with
-   | [] -> []
-   | e::l -> (f i e)::xmap (i+1) l in
-  xmap 0 l
+let all_sym_pairs f l = 
+  let pair_with acc e l = List.fold_left (fun acc x -> (f e x) ::acc) acc l in
+
+  let rec xpairs acc l = 
+    match l with
+      | [] -> acc
+      | e::l -> xpairs (pair_with acc e l) l in
+    xpairs [] l
+
+
 
 let rec map3 f l1 l2 l3 =
   match l1 , l2 ,l3 with
@@ -91,6 +101,18 @@ let interval n m =
     if n > m then l else interval_n (m::l,pred m)
   in
   interval_n ([],m)
+
+let extract pred l = 
+  List.fold_left (fun (fd,sys) e -> 
+		    match fd with
+		    | None -> 
+			begin
+			  match pred e with
+			  | None -> fd, e::sys
+			  | Some v -> Some(v,e) , sys
+			end
+		    |  _   -> (fd, e::sys)
+		 ) (None,[]) l
 
 open Num
 open Big_int
@@ -251,7 +273,7 @@ struct
   else if n land 1 = 1 then XI (positive (n lsr 1))
   else  XO (positive (n lsr 1))
 
- let  n nt =
+ let n nt =
   if nt < 0
   then assert false
   else if nt = 0 then N0

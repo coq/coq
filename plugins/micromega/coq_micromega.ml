@@ -12,7 +12,7 @@
 (*                                                                      *)
 (* - Modules ISet, M, Mc, Env, Cache, CacheZ                            *)
 (*                                                                      *)
-(*  Frédéric Besson (Irisa/Inria) 2006-2009                             *)
+(*  Frédéric Besson (Irisa/Inria) 2006-20011                            *)
 (*                                                                      *)
 (************************************************************************)
 
@@ -125,7 +125,9 @@ let ff : 'cst cnf = [ [] ]
   * and the freeform formulas ('cst formula) that is retrieved from Coq.
   *)
 
-type 'cst mc_cnf = ('cst Micromega.nFormula) list list
+module Mc = Micromega
+
+type 'cst mc_cnf = ('cst Mc.nFormula) list list
 
 (**
   * From a freeform formula, build a cnf.
@@ -134,7 +136,12 @@ type 'cst mc_cnf = ('cst Micromega.nFormula) list list
   * and RingMicromega.v).
   *)
 
-let cnf (negate: 'cst atom -> 'cst mc_cnf) (normalise:'cst atom -> 'cst mc_cnf) (f:'cst formula) =
+type 'a tagged_option = T of tag list |  S of 'a 
+
+let cnf 
+    (negate: 'cst atom -> 'cst mc_cnf) (normalise:'cst atom -> 'cst mc_cnf) 
+    (unsat : 'cst Mc.nFormula -> bool) (deduce : 'cst Mc.nFormula -> 'cst Mc.nFormula -> 'cst Mc.nFormula option) (f:'cst formula) =
+
  let negate a t =
   List.map (fun cl -> List.map (fun x -> (x,t)) cl) (negate a) in
 
@@ -143,26 +150,79 @@ let cnf (negate: 'cst atom -> 'cst mc_cnf) (normalise:'cst atom -> 'cst mc_cnf) 
 
  let and_cnf x y = x @ y in
 
- let or_clause_cnf t f =  List.map (fun x -> t@x) f in
+let rec add_term  t0 = function
+  | [] -> 
+      (match deduce (fst t0) (fst t0) with
+	| Some u -> if unsat u then T [snd t0] else S (t0::[])
+	| None -> S (t0::[]))
+  | t'::cl0 ->
+      (match deduce (fst t0) (fst t') with
+	 | Some u ->
+	     if unsat u
+	     then T [snd t0 ; snd t']
+	     else (match add_term  t0 cl0 with
+		     | S cl' -> S (t'::cl')
+		     | T l -> T l)
+	 | None ->
+	     (match add_term  t0 cl0 with
+		| S cl' -> S (t'::cl')
+		| T l -> T l)) in
+
+
+ let rec or_clause  cl1 cl2 =
+   match cl1 with
+     | [] -> S cl2
+     | t0::cl ->
+	 (match add_term  t0 cl2 with
+	    | S cl' -> or_clause  cl cl'
+	    | T l -> T l) in
+
+
+
+ let or_clause_cnf t f =  
+   List.fold_right (fun e (acc,tg) -> 
+		      match or_clause t e with
+			| S cl -> (cl :: acc,tg)
+			| T l -> (acc,tg@l)) f ([],[]) in
+
 
  let rec or_cnf f f' =
   match f with
-   | [] -> tt
-   | e :: rst -> (or_cnf rst f') @ (or_clause_cnf e f') in
+   | [] -> tt,[]
+   | e :: rst -> 
+       let (rst_f',t) = or_cnf rst f' in
+       let (e_f', t') = or_clause_cnf e f' in
+	 (rst_f' @ e_f', t @ t') in
+
 
  let rec xcnf (polarity : bool) f =
   match f with
-   | TT -> if polarity then tt else ff
-   | FF  -> if polarity then ff else tt
-   | X p -> if polarity then ff else ff
-   | A(x,t,_) -> if polarity then normalise x t else negate x t
+   | TT -> if polarity then (tt,[]) else (ff,[])
+   | FF  -> if polarity then (ff,[]) else (tt,[])
+   | X p -> if polarity then (ff,[]) else (ff,[])
+   | A(x,t,_) -> ((if polarity then normalise x t else negate x t),[])
    | N(e)  -> xcnf (not polarity) e
-   | C(e1,e2) ->
-      (if polarity then and_cnf else or_cnf) (xcnf polarity e1) (xcnf polarity e2)
+   | C(e1,e2) -> 
+       let e1,t1 = xcnf polarity e1 in
+       let e2,t2 = xcnf polarity e2 in
+      if polarity 
+       then and_cnf e1 e2, t1 @ t2
+       else let f',t' = or_cnf e1 e2 in
+	 (f', t1 @ t2 @ t')
    | D(e1,e2)  ->
-      (if polarity then or_cnf else and_cnf) (xcnf polarity e1) (xcnf polarity e2)
+       let e1,t1 = xcnf polarity e1 in
+       let e2,t2 = xcnf polarity e2 in
+      if polarity 
+       then let f',t' = or_cnf e1 e2 in
+	 (f', t1 @ t2 @ t')
+       else and_cnf e1 e2, t1 @ t2
    | I(e1,_,e2) ->
-      (if polarity then or_cnf else and_cnf) (xcnf (not polarity) e1) (xcnf polarity e2) in
+       let e1 , t1 = (xcnf (not polarity) e1) in
+       let e2 , t2 = (xcnf polarity e2) in
+      if polarity 
+       then let f',t' = or_cnf e1 e2 in
+	 (f', t1 @ t2 @ t')
+       else and_cnf e1 e2, t1 @ t2 in
 
   xcnf true f
 
@@ -447,8 +507,6 @@ struct
 
   (* Access the Micromega module *)
   
-  module Mc = Micromega
-
   (* parse/dump/print from numbers up to expressions and formulas *)
 
   let rec parse_nat term =
@@ -513,7 +571,7 @@ struct
     | Mc.Zpos p -> Term.mkApp(Lazy.force coq_POS,[| dump_positive p|])
     | Mc.Zneg p -> Term.mkApp(Lazy.force coq_NEG,[| dump_positive p|])
 
-  let pp_z o x = Printf.fprintf o "%i" (CoqToCaml.z x)
+  let pp_z o x = Printf.fprintf o "%s" (Big_int.string_of_big_int (CoqToCaml.z_big_int x))
 
   let dump_num bd1 =
    Term.mkApp(Lazy.force coq_Qmake,
@@ -1022,9 +1080,9 @@ let tags_of_clause tgs wit clause =
   |   _   -> tgs in
   xtags tgs wit
 
-let tags_of_cnf wits cnf =
+(*let tags_of_cnf wits cnf =
  List.fold_left2 (fun acc w cl -> tags_of_clause acc w cl)
-  Names.Idset.empty wits cnf
+  Names.Idset.empty wits cnf *)
 
 let find_witness prover polys1 = try_any prover polys1
 
@@ -1100,6 +1158,27 @@ let rec dump_proof_term = function
     Term.mkApp (Lazy.force coq_enumProof,
 	       [|  dump_psatz coq_Z dump_z c1 ; dump_psatz coq_Z dump_z c2 ;
 		  dump_list (Lazy.force coq_proofTerm) dump_proof_term prfs |])
+
+
+let rec size_of_psatz = function
+  | Micromega.PsatzIn _ -> 1
+  | Micromega.PsatzSquare _ -> 1
+  | Micromega.PsatzMulC(_,p) -> 1 + (size_of_psatz p)
+  | Micromega.PsatzMulE(p1,p2) | Micromega.PsatzAdd(p1,p2) -> size_of_psatz p1 + size_of_psatz p2
+  | Micromega.PsatzC _ -> 1
+  | Micromega.PsatzZ   -> 1
+
+let rec size_of_pf = function
+  | Micromega.DoneProof -> 1
+  | Micromega.RatProof(p,a) -> (size_of_pf a) + (size_of_psatz p)
+  | Micromega.CutProof(p,a) -> (size_of_pf a) + (size_of_psatz p)
+  | Micromega.EnumProof(p1,p2,l) -> (size_of_psatz p1) + (size_of_psatz p2) + (List.fold_left (fun acc p -> size_of_pf p + acc) 0 l)
+
+let dump_proof_term t = 
+  if debug then  Printf.printf "dump_proof_term %i\n" (size_of_pf t) ; 
+  dump_proof_term t
+
+
 
 let pp_q o q = Printf.fprintf o "%a/%a" pp_z q.Micromega.qnum pp_positive q.Micromega.qden
 
@@ -1258,14 +1337,14 @@ let compact_proofs (cnf_ff: 'cst cnf) res (cnf_ff': 'cst cnf) =
     let remap i =
       let formula = try fst (List.nth old_cl i) with Failure _ -> failwith "bad old index" in
       List.assoc formula new_cl in
-    if debug then
+(*    if debug then
       begin
         Printf.printf "\ncompact_proof : %a %a %a"
           (pp_ml_list prover.pp_f) (List.map fst old_cl)
           prover.pp_prf prf
           (pp_ml_list prover.pp_f) (List.map fst new_cl)   ;
           flush stdout
-      end ;
+      end ; *)
     let res = try prover.compact prf remap with x ->
       if debug then Printf.fprintf stdout "Proof compaction %s" (Printexc.to_string x) ;
       (* This should not happen -- this is the recovery plan... *)
@@ -1337,7 +1416,7 @@ exception CsdpNotFound
   * prune unused fomulas, and finally modify the proof state.
   *)
 
-let micromega_tauto negate normalise spec prover env polys1 polys2 gl =
+let micromega_tauto negate normalise unsat deduce spec prover env polys1 polys2 gl =
  let spec = Lazy.force spec in
 
  (* Express the goal as one big implication *)
@@ -1350,7 +1429,7 @@ let micromega_tauto negate normalise spec prover env polys1 polys2 gl =
    polys1 (polys2,[]) in
 
  (* Convert the aplpication into a (mc_)cnf (a list of lists of formulas) *)
- let cnf_ff = cnf negate normalise ff in
+ let cnf_ff,cnf_ff_tags = cnf negate normalise unsat deduce ff in
 
  if debug then
    begin
@@ -1369,13 +1448,13 @@ let micromega_tauto negate normalise spec prover env polys1 polys2 gl =
     let tags = ISet.fold (fun i s -> let t = snd (List.nth cl i) in
                                      if debug then (Printf.fprintf stdout "T : %i -> %a" i Tag.pp t) ;
       (*try*) TagSet.add t s (* with Invalid_argument _ -> s*)) (p.hyps prf) TagSet.empty in
-    TagSet.union s tags) TagSet.empty (List.combine cnf_ff res) in
+    TagSet.union s tags) (List.fold_left (fun s i -> TagSet.add i s) TagSet.empty cnf_ff_tags) (List.combine cnf_ff res) in
 
   if debug then (Printf.printf "TForm : %a\n" pp_formula ff ; flush stdout;
                  Printf.printf "Hyps : %a\n" (fun o s -> TagSet.fold (fun i _ -> Printf.fprintf o "%a " Tag.pp i) s ()) hyps) ;
 
   let ff'     = abstract_formula hyps ff in
-  let cnf_ff' = cnf negate normalise ff' in
+  let cnf_ff',_ = cnf negate normalise unsat deduce ff' in
 
   if debug then
     begin
@@ -1416,16 +1495,17 @@ let micromega_gen
     parse_arith
     (negate:'cst atom -> 'cst mc_cnf)
     (normalise:'cst atom -> 'cst mc_cnf)
+    unsat deduce 
     spec prover gl =
   let concl = Tacmach.pf_concl gl in
   let hyps  = Tacmach.pf_hyps_types gl in
   try
    let (hyps,concl,env) = parse_goal parse_arith Env.empty hyps concl in
    let env = Env.elements env in
-    micromega_tauto negate normalise spec prover env hyps concl gl
+    micromega_tauto negate normalise unsat deduce spec prover env hyps concl gl
   with
-   | Failure x -> flush stdout ; Pp.pp_flush () ;
-      Tacticals.tclFAIL 0 (Pp.str x) gl
+(*   | Failure x -> flush stdout ; Pp.pp_flush () ;
+      Tacticals.tclFAIL 0 (Pp.str x) gl *)
    | ParseError  -> Tacticals.tclFAIL 0 (Pp.str "Bad logical fragment") gl
    | CsdpNotFound -> flush stdout ; Pp.pp_flush () ;
       Tacticals.tclFAIL 0 (Pp.str 
@@ -1647,7 +1727,13 @@ module CacheZ = PHashtable(struct
   let hash  = Hashtbl.hash
 end)
 
-let memo_zlinear_prover = CacheZ.memo "lia.cache" (lift_pexpr_prover Certificate.zlinear_prover)
+let memo_zlinear_prover = CacheZ.memo "lia.cache" (lift_pexpr_prover Certificate.lia)
+let memo_nlia = CacheZ.memo "nlia.cache" (lift_pexpr_prover Certificate.nlia)
+
+(*let memo_zlinear_prover = (lift_pexpr_prover Lia.lia)*)
+(*let memo_zlinear_prover = CacheZ.memo "lia.cache" (lift_pexpr_prover Certificate.zlinear_prover)*)
+
+
 
 let linear_Z =   {
   name    = "lia";
@@ -1658,50 +1744,79 @@ let linear_Z =   {
   pp_f    = fun o x -> pp_pol pp_z o (fst x)
 }
 
+let nlinear_Z =   {
+  name    = "nlia";
+  prover  = memo_nlia ;
+  hyps    = hyps_of_pt;
+  compact = compact_pt;
+  pp_prf  = pp_proof_term;
+  pp_f    = fun o x -> pp_pol pp_z o (fst x)
+}
+
+
+
+let tauto_lia ff = 
+  let prover = linear_Z in
+  let cnf_ff,_ = cnf Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce  ff in
+    match witness_list_tags [prover] cnf_ff with
+      | None -> None
+      | Some l -> Some (List.map fst l)
+
+
 (** 
   * Functions instantiating micromega_gen with the appropriate theories and
   * solvers
   *)
 
 let psatzl_Z gl =
- micromega_gen parse_zarith  Mc.negate Mc.normalise zz_domain_spec
+ micromega_gen parse_zarith  Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
   [ linear_prover_Z ] gl
 
 let psatzl_Q gl =
- micromega_gen parse_qarith Mc.qnegate Mc.qnormalise qq_domain_spec
+ micromega_gen parse_qarith Mc.qnegate Mc.qnormalise Mc.qunsat Mc.qdeduce qq_domain_spec
   [ linear_prover_Q ] gl
 
 let psatz_Q i gl =
- micromega_gen parse_qarith Mc.qnegate Mc.qnormalise qq_domain_spec
+ micromega_gen parse_qarith Mc.qnegate Mc.qnormalise Mc.qunsat Mc.qdeduce qq_domain_spec
   [ non_linear_prover_Q "real_nonlinear_prover" (Some i) ] gl
 
 let psatzl_R gl =
- micromega_gen parse_rarith Mc.rnegate Mc.rnormalise rz_domain_spec
+ micromega_gen parse_rarith Mc.rnegate Mc.rnormalise Mc.runsat Mc.rdeduce rz_domain_spec
   [ linear_prover_R ] gl
 
 let psatz_R i gl =
- micromega_gen parse_rarith Mc.rnegate Mc.rnormalise rz_domain_spec
+ micromega_gen parse_rarith Mc.rnegate Mc.rnormalise Mc.runsat Mc.rdeduce rz_domain_spec
   [ non_linear_prover_R "real_nonlinear_prover" (Some i) ] gl
 
 let psatz_Z i gl =
- micromega_gen parse_zarith Mc.negate Mc.normalise zz_domain_spec
-  [ non_linear_prover_Z "real_nonlinear_prover" (Some i) ] gl
+    micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
+      [ non_linear_prover_Z "real_nonlinear_prover" (Some i) ] gl
 
 let sos_Z gl =
- micromega_gen parse_zarith Mc.negate Mc.normalise  zz_domain_spec
+ micromega_gen parse_zarith Mc.negate Mc.normalise  Mc.zunsat Mc.zdeduce zz_domain_spec
   [ non_linear_prover_Z "pure_sos" None ] gl
 
 let sos_Q gl =
- micromega_gen parse_qarith Mc.qnegate Mc.qnormalise  qq_domain_spec
+ micromega_gen parse_qarith Mc.qnegate Mc.qnormalise  Mc.qunsat Mc.qdeduce qq_domain_spec
   [ non_linear_prover_Q "pure_sos" None ] gl
 
 let sos_R gl =
- micromega_gen parse_rarith Mc.rnegate Mc.rnormalise  rz_domain_spec
+ micromega_gen parse_rarith Mc.rnegate Mc.rnormalise Mc.runsat Mc.rdeduce rz_domain_spec
   [ non_linear_prover_R "pure_sos" None ] gl
 
 let xlia gl =
- micromega_gen parse_zarith Mc.negate Mc.normalise   zz_domain_spec
-  [ linear_Z ] gl
+  try 
+    micromega_gen parse_zarith Mc.negate Mc.normalise Mc.runsat Mc.rdeduce zz_domain_spec
+      [ linear_Z ] gl
+  with z -> Printexc.print_backtrace stdout ; raise z
+
+let xnlia gl =
+  try 
+    micromega_gen parse_zarith Mc.negate Mc.normalise Mc.runsat Mc.rdeduce zz_domain_spec
+      [ nlinear_Z ] gl
+  with z -> Printexc.print_backtrace stdout ; raise z
+
+
 
 (* Local Variables: *)
 (* coding: utf-8 *)

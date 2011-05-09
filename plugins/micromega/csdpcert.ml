@@ -28,7 +28,7 @@ type csdp_certificate = S of Sos_types.positivstellensatz option | F of string
 type provername = string * int option
 
 
-let debug = true
+let debug = false
 let flags = [Open_append;Open_binary;Open_creat]
 
 let chan = open_out_gen flags 0o666 "trace"

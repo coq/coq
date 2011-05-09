@@ -18,7 +18,7 @@ Require Import RMicromega.
 Require Import QArith.
 Require Export Ring_normalize.
 Require Import ZArith.
-Require Import Raxioms.
+Require Import Rdefinitions.
 Require Export RingMicromega.
 Require Import VarMap.
 Require Tauto.
@@ -80,6 +80,13 @@ Ltac lia :=
   intros __wit __varmap __ff ;
     change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
       apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.
+
+Ltac nlia :=
+  xnlia ;
+  intros __wit __varmap __ff ;
+    change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
+      apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.
+
 
 (* Local Variables: *)
 (* coding: utf-8 *)

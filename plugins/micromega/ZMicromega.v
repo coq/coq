@@ -200,12 +200,12 @@ Definition normalise (t:Formula Z) : cnf (NFormula Z) :=
   List.map  (fun x => x::nil) (xnormalise t).
 
 
-Lemma normalise_correct : forall env t, eval_cnf (eval_nformula env) (normalise t) <-> Zeval_formula env t.
+Lemma normalise_correct : forall env t, eval_cnf eval_nformula env (normalise t) <-> Zeval_formula env t.
 Proof.
   Opaque padd.
   unfold normalise, xnormalise  ; simpl; intros env t.
   rewrite Zeval_formula_compat.
-  unfold eval_cnf.
+  unfold eval_cnf, eval_clause.
   destruct t as [lhs o rhs]; case_eq o; simpl;
     repeat rewrite eval_pol_sub;
       repeat rewrite eval_pol_add;
@@ -235,14 +235,14 @@ Definition xnegate (t:RingMicromega.Formula Z) : list (NFormula Z)  :=
 Definition negate (t:RingMicromega.Formula Z) : cnf (NFormula Z) :=
   List.map  (fun x => x::nil) (xnegate t).
 
-Lemma negate_correct : forall env t, eval_cnf (eval_nformula env) (negate t) <-> ~ Zeval_formula env t.
+Lemma negate_correct : forall env t, eval_cnf eval_nformula env (negate t) <-> ~ Zeval_formula env t.
 Proof.
 Proof.
   Opaque padd.
   intros env t.
   rewrite Zeval_formula_compat.
   unfold negate, xnegate  ; simpl.
-  unfold eval_cnf.
+  unfold eval_cnf,eval_clause.
   destruct t as [lhs o rhs]; case_eq o; simpl;
     repeat rewrite eval_pol_sub;
       repeat rewrite eval_pol_add;
@@ -256,10 +256,13 @@ Proof.
   Transparent padd.
 Qed.
 
+Definition Zunsat := check_inconsistent 0  Zeq_bool Zle_bool.
+
+Definition Zdeduce := nformula_plus_nformula 0 Zplus Zeq_bool.
 
 
 Definition ZweakTautoChecker (w: list ZWitness) (f : BFormula (Formula Z)) : bool :=
-  @tauto_checker (Formula Z) (NFormula Z) normalise negate  ZWitness ZWeakChecker f w.
+  @tauto_checker (Formula Z) (NFormula Z) Zunsat Zdeduce normalise negate  ZWitness ZWeakChecker f w.
 
 (* To get a complete checker, the proof format has to be enriched *)
 
@@ -272,6 +275,36 @@ Definition ceiling (a b:Z) : Z :=
       | Z0 => q
       | _  => q + 1
     end.
+
+
+Require Import Znumtheory.
+
+Lemma Zdivide_ceiling : forall a b, (b | a) -> ceiling a b = Zdiv a b.
+Proof.
+  unfold ceiling.
+  intros.
+  apply Zdivide_mod in H.
+  case_eq (Zdiv_eucl a b).
+  intros.
+  change z with (fst (z,z0)).
+  rewrite <- H0.
+  change (fst (Zdiv_eucl a b)) with (Zdiv a b).
+  change z0 with (snd (z,z0)).
+  rewrite <- H0.
+  change (snd (Zdiv_eucl a b)) with (Zmod a b).
+  rewrite H.
+  reflexivity.
+Qed.
+
+Lemma Zdivide_Zdiv : forall a b c, b <> 0 -> (b | c) ->  b * a = c -> a = c / b.
+Proof.
+  intros.
+  inv H0.
+  rewrite H2.
+  rewrite Z_div_mult_full ; auto.
+  apply Zmult_reg_l with (p :=b) ; auto.
+  rewrite (Zmult_comm b q). auto.
+Qed.
 
 Lemma narrow_interval_lower_bound : forall a b x, a > 0 -> a * x  >= b -> x >= ceiling b a.
 Proof.
@@ -307,40 +340,13 @@ Inductive ZArithProof : Type :=
 | DoneProof
 | RatProof : ZWitness -> ZArithProof -> ZArithProof
 | CutProof : ZWitness -> ZArithProof -> ZArithProof
-| EnumProof : ZWitness -> ZWitness -> list ZArithProof -> ZArithProof.
+| EnumProof : ZWitness -> ZWitness -> list ZArithProof -> ZArithProof
+(*| SplitProof :   PolC Z -> ZArithProof -> ZArithProof -> ZArithProof*).
+
+
 
 (* n/d <= x  -> d*x - n >= 0 *)
-(*
-Definition makeLb (v:PExpr Z) (q:Q) : NFormula Z :=
-  let (n,d) := q in (PEsub (PEmul (PEc (Zpos d)) v) (PEc  n),NonStrict).
 
-(* x <= n/d  -> d * x <= d  *)
-Definition makeUb (v:PExpr Z) (q:Q) : NFormula Z :=
-  let (n,d) := q in
-    (PEsub (PEc n) (PEmul (PEc (Zpos d)) v), NonStrict).
-
-Definition qceiling (q:Q) : Z :=
-  let (n,d) := q in ceiling n (Zpos d).
-
-Definition qfloor (q:Q) : Z :=
-  let (n,d) := q in Zdiv n (Zpos d).
-
-Definition makeLbCut (v:PExprC Z) (q:Q) : NFormula Z :=
-  (PEsub v  (PEc (qceiling  q)), NonStrict).
-
-Definition neg_nformula (f : NFormula Z) :=
-  let (e,o) := f in
-    (PEopp (PEadd e (PEc 1%Z)), o).
-
-Lemma neg_nformula_sound : forall env f, snd f = NonStrict ->( ~ (Zeval_nformula env (neg_nformula f)) <-> Zeval_nformula env f).
-Proof.
-  unfold neg_nformula.
-  destruct f.
-  simpl.
-  intros ; subst ; simpl in *.
-  split;  auto with zarith.
-Qed.
-*)
 
 (* In order to compute the 'cut', we need to express a polynomial P as a * Q + b.
    - b is the constant
@@ -566,9 +572,11 @@ Definition genCuttingPlane (f : NFormula Z) : option (PolC Z * Z * Op1) :=
   let (e,op) := f in
     match op with
       | Equal => let (g,c) := Zgcd_pol e in
-        if andb (Zgt_bool g Z0) (andb (Zgt_bool c Z0) (negb (Zeq_bool (Zgcd g c) g)))
+        if andb (Zgt_bool g Z0) (andb (negb (Zeq_bool c Z0)) (negb (Zeq_bool (Zgcd g c) g)))
           then None (* inconsistent *)
-          else Some (e, Z0,op) (* It could still be inconsistent -- but not a cut *)
+          else (* Could be optimised Zgcd_pol is recomputed *)
+            let (p,c) := makeCuttingPlane e  in
+              Some (p,c,Equal)
       | NonEqual => Some (e,Z0,op)
       | Strict   =>  let (p,c) := makeCuttingPlane (PsubC Zminus e 1) in
         Some (p,c,NonStrict)
@@ -596,16 +604,16 @@ Proof.
 Qed.
 
 
-
-
-
 Definition eval_Psatz  : list (NFormula Z) -> ZWitness ->  option (NFormula Z) :=
   eval_Psatz 0 1 Zplus Zmult Zeq_bool Zle_bool.
 
 
-Definition check_inconsistent := check_inconsistent 0 Zeq_bool Zle_bool.
-
-
+Definition valid_cut_sign (op:Op1) :=
+  match op with 
+    | Equal => true
+    | NonStrict => true
+    | _         => false
+  end.
 
 Fixpoint ZChecker (l:list (NFormula Z)) (pf : ZArithProof)  {struct pf} : bool :=
   match pf with
@@ -614,7 +622,7 @@ Fixpoint ZChecker (l:list (NFormula Z)) (pf : ZArithProof)  {struct pf} : bool :
       match eval_Psatz l w  with
         | None => false
         | Some f =>
-          if check_inconsistent f then true
+          if Zunsat f then true
             else ZChecker (f::l) pf
       end
     | CutProof w pf =>
@@ -627,29 +635,24 @@ Fixpoint ZChecker (l:list (NFormula Z)) (pf : ZArithProof)  {struct pf} : bool :
           end
       end
     | EnumProof w1 w2 pf =>
-      match eval_Psatz l w1 , eval_Psatz l w2 with
-        |  Some f1 , Some f2 =>
-          match genCuttingPlane f1 , genCuttingPlane f2 with
-            |Some (e1,z1,op1) , Some (e2,z2,op2) =>
-              match op1 , op2 with
-                | NonStrict , NonStrict =>
-                  if is_pol_Z0 (padd e1 e2)
-                    then
-                      (fix label (pfs:list ZArithProof) :=
-                        fun lb ub =>
-                          match pfs with
-                            | nil => if Zgt_bool lb ub then true else false
-                            | pf::rsr => andb (ZChecker  ((psub e1 (Pc lb), Equal) :: l) pf) (label rsr (Zplus lb 1%Z) ub)
-                          end)
-                      pf (Zopp z1)  z2
-                    else false
-                |   _    ,   _   => false
-              end
-            |   _   ,  _ => false
-          end
-        |   _   , _  => false
-      end
-      end.
+       match eval_Psatz l w1 , eval_Psatz l w2 with
+         |  Some f1 , Some f2 =>
+           match genCuttingPlane f1 , genCuttingPlane f2 with
+             |Some (e1,z1,op1) , Some (e2,z2,op2) =>
+               if (valid_cut_sign op1 && valid_cut_sign op2 && is_pol_Z0 (padd e1 e2))
+                 then 
+                   (fix label (pfs:list ZArithProof) :=
+                   fun lb ub =>
+                     match pfs with
+                       | nil => if Zgt_bool lb ub then true else false
+                       | pf::rsr => andb (ZChecker  ((psub e1 (Pc lb), Equal) :: l) pf) (label rsr (Zplus lb 1%Z) ub)
+                     end)   pf (Zopp z1)  z2
+                  else false
+              |   _    ,   _   => true
+           end
+          |   _   ,  _ => false
+    end
+end.
 
 
 
@@ -702,7 +705,7 @@ Proof.
   apply make_conj_in ; auto.
 Qed.
 
-Lemma makeCuttingPlane_sound : forall env e e' c,
+Lemma makeCuttingPlane_ns_sound : forall env e e' c,
   eval_nformula env (e, NonStrict) ->
   makeCuttingPlane e = (e',c) ->
   eval_nformula env (nformula_of_cutting_plane (e', c, NonStrict)).
@@ -729,7 +732,6 @@ Proof.
   intros. inv H2. auto with zarith.
 Qed.
 
-
 Lemma cutting_plane_sound : forall env f p,
   eval_nformula env f ->
   genCuttingPlane f = Some p ->
@@ -741,13 +743,51 @@ Proof.
   (* Equal *)
   destruct p as [[e' z] op].
   case_eq (Zgcd_pol e) ; intros g c.
-  destruct (Zgt_bool g 0 && (Zgt_bool c 0 && negb (Zeq_bool (Zgcd g c) g))) ; [discriminate|].
-  intros. inv H1. unfold nformula_of_cutting_plane.
-  unfold eval_nformula in *.
-  unfold RingMicromega.eval_nformula in *.
-  unfold eval_op1 in *.
-  rewrite (RingMicromega.eval_pol_add Zsor ZSORaddon).
-  simpl. rewrite H0. reflexivity.
+  case_eq (Zgt_bool g 0 && (negb (Zeq_bool c 0) && negb (Zeq_bool (Zgcd g c) g))) ; [discriminate|].
+  case_eq (makeCuttingPlane e).
+  intros.
+  inv H3.
+  unfold makeCuttingPlane in H.
+  rewrite H1 in H.
+  revert H.
+  change (eval_pol env e = 0) in H2.
+  case_eq (Zgt_bool g 0).
+  intros.
+  rewrite <- Zgt_is_gt_bool in H.  
+  rewrite Zgcd_pol_correct_lt with (1:= H1)  in H2; auto with zarith.
+  unfold nformula_of_cutting_plane.  
+  change (eval_pol env (padd e' (Pc z)) = 0).
+  inv H3.
+  rewrite eval_pol_add.
+  set (x:=eval_pol env (Zdiv_pol (PsubC Zminus e c) g)) in *; clearbody x.
+  simpl.
+  rewrite andb_false_iff in H0.
+  destruct H0.
+  rewrite Zgt_is_gt_bool in H ; congruence.
+  rewrite andb_false_iff in H0.
+  destruct H0.
+  rewrite negb_false_iff in H0.
+  apply Zeq_bool_eq in H0.
+  subst. simpl.
+  rewrite Zplus_0_r in H2.
+  apply Zmult_integral in H2.
+  intuition auto with zarith.
+  rewrite negb_false_iff in H0.
+  apply Zeq_bool_eq in H0.
+  assert (HH := Zgcd_is_gcd g c).
+  rewrite H0 in HH.
+  inv HH.
+  apply Zdivide_opp_r in H4.
+  rewrite Zdivide_ceiling ; auto.
+  apply Zeq_minus.
+  apply Zdivide_Zdiv ; auto with zarith.
+  intros.
+  unfold nformula_of_cutting_plane.
+  inv H3.
+  change (eval_pol env (padd e' (Pc 0)) = 0).
+  rewrite eval_pol_add.
+  simpl.
+  auto with zarith.
   (* NonEqual *)
   intros.
   inv H0.
@@ -762,7 +802,7 @@ Proof.
   case_eq (makeCuttingPlane (PsubC Zminus e 1)).
   intros.
   inv H1.
-  apply makeCuttingPlane_sound with (env:=env) (2:= H).
+  apply makeCuttingPlane_ns_sound with (env:=env) (2:= H).
   simpl in *.
   rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
   auto with zarith.
@@ -771,7 +811,7 @@ Proof.
   case_eq (makeCuttingPlane e).
   intros.
   inv H1.
-  apply makeCuttingPlane_sound with (env:=env) (2:= H).
+  apply makeCuttingPlane_ns_sound with (env:=env) (2:= H).
   assumption.
 Qed.
 
@@ -783,23 +823,24 @@ Proof.
   destruct f.
   destruct o.
   case_eq (Zgcd_pol p) ; intros g c.
-  case_eq (Zgt_bool g 0 && (Zgt_bool c 0 && negb (Zeq_bool (Zgcd g c) g))).
+  case_eq (Zgt_bool g 0 && (negb (Zeq_bool c 0) && negb (Zeq_bool (Zgcd g c) g))).
   intros.
   flatten_bool.
   rewrite negb_true_iff in H5.
   apply Zeq_bool_neq in H5.
-  contradict H5.
   rewrite <- Zgt_is_gt_bool in H3.
-  rewrite <- Zgt_is_gt_bool in H.
-  apply Zis_gcd_gcd; auto with zarith.
-  constructor; auto with zarith.
+  rewrite negb_true_iff in H.
+  apply Zeq_bool_neq in H.
   change (eval_pol env p = 0) in H2.
   rewrite Zgcd_pol_correct_lt with (1:= H0) in H2; auto with zarith.
   set (x:=eval_pol env (Zdiv_pol (PsubC Zminus p c) g)) in *; clearbody x.
+  contradict H5.
+  apply Zis_gcd_gcd; auto with zarith.
+  constructor; auto with zarith.
   exists (-x).
   rewrite <- Zopp_mult_distr_l, Zmult_comm; auto with zarith.
   (**)
-  discriminate.
+  destruct (makeCuttingPlane p);  discriminate.
   discriminate.
   destruct (makeCuttingPlane (PsubC Zminus p 1)) ; discriminate.
   destruct (makeCuttingPlane p) ; discriminate.
@@ -816,11 +857,11 @@ Proof.
   simpl.
   intro l. case_eq (eval_Psatz l w) ; [| discriminate].
   intros f Hf.
-  case_eq (check_inconsistent f).
+  case_eq (Zunsat f).
   intros.
   apply (checker_nf_sound Zsor ZSORaddon l w).
   unfold check_normalised_formulas.  unfold eval_Psatz in Hf. rewrite Hf.
-  unfold check_inconsistent in H0. assumption.
+  unfold Zunsat in H0. assumption.
   intros.
   assert (make_impl  (eval_nformula env) (f::l) False).
    apply H with (2:= H1).
@@ -868,55 +909,54 @@ Proof.
   case_eq (eval_Psatz l w1) ; [  | discriminate].
   case_eq (eval_Psatz l w2) ; [  | discriminate].
   intros f1 Hf1 f2 Hf2.
-  case_eq (genCuttingPlane f2) ;  [  | discriminate].
+  case_eq (genCuttingPlane f2).
   destruct p as [ [p1 z1] op1].
-  case_eq (genCuttingPlane f1) ;  [  | discriminate].
+  case_eq (genCuttingPlane f1).
   destruct p as [ [p2 z2] op2].
-  case_eq op1 ; case_eq op2 ; try discriminate.
-  case_eq (is_pol_Z0 (padd p1 p2)) ; try discriminate.
-  intros.
+  case_eq (valid_cut_sign op1 && valid_cut_sign op2 && is_pol_Z0 (padd p1 p2)).
+  intros Hcond.
+  flatten_bool.
+  rename H1 into HZ0.
+  rename H2 into Hop1.
+  rename H3 into Hop2.
+  intros HCutL HCutR Hfix env.
   (* get the bounds of the enum *)
   rewrite <- make_conj_impl.
   intro.
   assert (-z1 <= eval_pol env p1 <= z2).
    split.
    apply  eval_Psatz_sound with (env:=env) in Hf2 ; auto.
-   apply cutting_plane_sound with (1:= Hf2) in H4.
-   unfold nformula_of_cutting_plane in H4.
-   unfold eval_nformula in H4.
-   unfold RingMicromega.eval_nformula in H4.
-   change (RingMicromega.eval_pol 0 Zplus Zmult (fun x : Z => x)) with eval_pol in H4.
-   unfold eval_op1 in H4.
-   rewrite eval_pol_add in H4. simpl in H4.
-   auto with zarith.
+   apply cutting_plane_sound with (1:= Hf2) in HCutR.
+   unfold nformula_of_cutting_plane in HCutR.
+   unfold eval_nformula in HCutR.
+   unfold RingMicromega.eval_nformula in HCutR.
+   change (RingMicromega.eval_pol 0 Zplus Zmult (fun x : Z => x)) with eval_pol in HCutR.
+   unfold eval_op1 in HCutR.
+   destruct op1 ; simpl in Hop1 ; try discriminate;
+     rewrite eval_pol_add in HCutR; simpl in HCutR; auto with zarith.
    (**)
-   apply is_pol_Z0_eval_pol with (env := env) in H0.
-   rewrite eval_pol_add in H0.
+   apply is_pol_Z0_eval_pol with (env := env) in HZ0.
+   rewrite eval_pol_add in HZ0.
    replace (eval_pol env p1) with (- eval_pol env p2) by omega.
    apply  eval_Psatz_sound with (env:=env) in Hf1 ; auto.
-   apply cutting_plane_sound with (1:= Hf1) in H3.
-   unfold nformula_of_cutting_plane in H3.
-   unfold eval_nformula in H3.
-   unfold RingMicromega.eval_nformula in H3.
-   change (RingMicromega.eval_pol 0 Zplus Zmult (fun x : Z => x)) with eval_pol in H3.
-   unfold eval_op1 in H3.
-   rewrite eval_pol_add in H3. simpl in H3.
-   omega.
-  revert H5.
-  set (FF := (fix label (pfs : list ZArithProof) (lb ub : Z) {struct pfs} : bool :=
-    match pfs with
-      | nil => if Z_gt_dec lb ub then true else false
-      | pf :: rsr =>
-        (ZChecker ((PsubC Zminus p1  lb, Equal) :: l) pf &&
-          label rsr (lb + 1)%Z ub)%bool
-    end)).
+   apply cutting_plane_sound with (1:= Hf1) in HCutL.
+   unfold nformula_of_cutting_plane in HCutL.
+   unfold eval_nformula in HCutL.
+   unfold RingMicromega.eval_nformula in HCutL.
+   change (RingMicromega.eval_pol 0 Zplus Zmult (fun x : Z => x)) with eval_pol in HCutL.
+   unfold eval_op1 in HCutL.
+   rewrite eval_pol_add in HCutL. simpl in HCutL.
+   destruct op2 ; simpl in Hop2 ; try discriminate ;  omega.
+  revert Hfix.
+  match goal with
+    | |- context[?F pf (-z1) z2 = true] => set (FF := F)
+  end.
   intros.
   assert (HH :forall x, -z1 <= x <= z2 -> exists pr,
     (In pr pf /\
       ZChecker  ((PsubC Zminus p1 x,Equal) :: l) pr = true)%Z).
-  clear H.
-  clear H0 H1 H2 H3 H4 H7.
-  revert H5.
+  clear HZ0 Hop1 Hop2 HCutL HCutR H0 H1.
+  revert Hfix.
   generalize (-z1). clear z1. intro z1.
   revert z1 z2.
   induction pf;simpl ;intros.
@@ -931,16 +971,22 @@ Proof.
   subst.
   exists a ; auto.
   assert (z1 + 1 <= x <= z2)%Z by omega.
-  destruct (IHpf _ _ H1 _ H3).
+  elim IHpf with (2:=H2) (3:= H4).
   destruct H4.
-  exists x0 ; split;auto.
+  intros.
+  exists x0 ; split;tauto.
+  intros until 1. 
+  apply H ; auto. 
+  unfold ltof in *.
+  simpl in *.
+  zify. omega.
   (*/asser *)
-  destruct (HH _ H7) as [pr [Hin Hcheker]].
+  destruct (HH _ H1) as [pr [Hin Hcheker]].
   assert (make_impl (eval_nformula env) ((PsubC Zminus p1 (eval_pol env p1),Equal) :: l) False).
    apply (H pr);auto.
    apply in_bdepth ; auto.
-  rewrite <- make_conj_impl in H8.
-  apply H8.
+  rewrite <- make_conj_impl in H2.
+  apply H2.
   rewrite  make_conj_cons.
   split ;auto.
   unfold  eval_nformula.
@@ -948,10 +994,23 @@ Proof.
   simpl.
   rewrite (RingMicromega.PsubC_ok Zsor ZSORaddon).
   unfold eval_pol. ring.
+  discriminate.
+  (* No cutting plane *)
+  intros.
+  rewrite <- make_conj_impl.
+  intros.
+  apply eval_Psatz_sound with (2:= Hf1) in H3.
+  apply genCuttingPlaneNone with (2:= H3) ; auto.
+  (* No Cutting plane (bis) *)
+  intros.
+  rewrite <- make_conj_impl.
+  intros.
+  apply eval_Psatz_sound with (2:= Hf2) in H2.
+  apply genCuttingPlaneNone with (2:= H2) ; auto.
 Qed.
 
 Definition ZTautoChecker  (f : BFormula (Formula Z)) (w: list ZArithProof): bool :=
-  @tauto_checker (Formula Z) (NFormula Z) normalise negate  ZArithProof ZChecker f w.
+  @tauto_checker (Formula Z) (NFormula Z) Zunsat Zdeduce normalise negate  ZArithProof ZChecker f w.
 
 Lemma ZTautoChecker_sound : forall f w, ZTautoChecker f w = true -> forall env, eval_f  (Zeval_formula env)  f.
 Proof.
@@ -959,6 +1018,11 @@ Proof.
   unfold ZTautoChecker.
   apply (tauto_checker_sound  Zeval_formula eval_nformula).
   apply Zeval_nformula_dec.
+  intros until env.
+  unfold eval_nformula. unfold RingMicromega.eval_nformula.
+  destruct t.
+  apply (check_inconsistent_sound Zsor ZSORaddon) ; auto.
+  unfold Zdeduce. apply (nformula_plus_nformula_correct Zsor ZSORaddon).
   intros env t.
   rewrite normalise_correct ; auto.
   intros env t.

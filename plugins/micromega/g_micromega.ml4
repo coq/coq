@@ -35,6 +35,11 @@ TACTIC EXTEND ZOmicron
 [ "xlia"  ] -> [ Coq_micromega.xlia]
 END
 
+TACTIC EXTEND Nlia
+[ "xnlia"  ] -> [ Coq_micromega.xnlia]
+END
+
+
 
 TACTIC EXTEND Sos_Z
 | [ "sos_Z" ] -> [ Coq_micromega.sos_Z]
