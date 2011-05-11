@@ -525,6 +525,24 @@ let process_module_bindings argids args =
     in
       List.iter2 process_arg argids args
 
+(* Same with module_type_body *)
+
+let rec seb2mse = function
+  | SEBident mp -> MSEident mp
+  | SEBapply (s,s',_) -> MSEapply(seb2mse s, seb2mse s')
+  | SEBwith (s,With_module_body (l,mp)) -> MSEwith(seb2mse s,With_Module(l,mp))
+  | SEBwith (s,With_definition_body(l,cb)) ->
+      (match cb.const_body with
+	| Def c -> MSEwith(seb2mse s,With_Definition(l,Declarations.force c))
+	| _ -> assert false)
+  | _ -> failwith "seb2mse: received a non-atomic seb"
+
+let process_module_seb_binding mbid seb =
+  process_module_bindings [id_of_mbid mbid]
+    [mbid,
+     (seb2mse seb,
+      { ann_inline = DefaultInline; ann_scope_subst = [] })]
+
 let intern_args interp_modtype (idl,(arg,ann)) =
   let inl = inline_annot ann in
   let lib_dir = Lib.library_dp() in

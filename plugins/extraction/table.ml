@@ -19,12 +19,11 @@ open Util
 open Pp
 open Miniml
 
-(** Sets and maps for [global_reference] that do _not_ work modulo
-    name equivalence (otherwise use Refset / Refmap ) *)
+(** Sets and maps for [global_reference] that use the "user" [kernel_name]
+    instead of the canonical one *)
 
-module RefOrd = struct type t = global_reference let compare = compare end
-module Refmap' = Map.Make(RefOrd)
-module Refset' = Set.Make(RefOrd)
+module Refmap' = Map.Make(RefOrdered_env)
+module Refset' = Set.Make(RefOrdered_env)
 
 (*S Utilities about [module_path] and [kernel_names] and [global_reference] *)
 

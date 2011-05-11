@@ -539,3 +539,103 @@ let pr_instance_gmap insts =
   prlist_with_sep fnl (fun (gr, insts) ->
     prlist_with_sep fnl pr_instance (cmap_to_list insts))
     (Gmap.to_list insts)
+
+(** Inductive declarations *)
+
+open Declarations
+open Termops
+open Reduction
+open Inductive
+open Inductiveops
+
+let print_params env params =
+  if params = [] then mt () else pr_rel_context env params ++ brk(1,2)
+
+let print_constructors envpar names types =
+  let pc =
+    prlist_with_sep (fun () -> brk(1,0) ++ str "| ")
+      (fun (id,c) -> pr_id id ++ str " : " ++ pr_lconstr_env envpar c)
+      (Array.to_list (array_map2 (fun n t -> (n,t)) names types))
+  in
+  hv 0 (str "  " ++ pc)
+
+let build_ind_type env mip =
+  match mip.mind_arity with
+    | Monomorphic ar -> ar.mind_user_arity
+    | Polymorphic ar ->
+      it_mkProd_or_LetIn (mkSort (Type ar.poly_level)) mip.mind_arity_ctxt
+
+let print_one_inductive env mib (mip,ind_typ) =
+  let params = mib.mind_params_ctxt in
+  (* In case of lets in params, mind_nparams <> List.length params *)
+  let lparams = List.length params in
+  let args = extended_rel_list 0 params in
+  let arity = hnf_prod_applist env ind_typ args in
+  let envpar = push_rel_context params env in
+  let cstrtypes =
+    Array.map (fun c -> hnf_prod_applist envpar (lift lparams c) args)
+      mip.mind_user_lc
+  in
+  hov 0 (
+    pr_id mip.mind_typename ++ brk(1,4) ++ print_params env params ++
+    str ": " ++ pr_lconstr_env envpar arity ++ str " :=") ++
+  brk(0,2) ++ print_constructors envpar mip.mind_consnames cstrtypes
+
+let print_mutual_inductive env mib =
+  let mips = Array.to_list mib.mind_packets in
+  let ind_types = List.map (build_ind_type env) mips in
+  let mips_types = List.combine mips ind_types in
+  let ind_ctxt =
+    List.rev_map (fun (m,t) -> (Name m.mind_typename, None, t)) mips_types
+  in
+  let envind = push_rel_context ind_ctxt env in
+  hov 0 (
+    str (if mib.mind_finite then "Inductive " else "CoInductive ") ++
+    prlist_with_sep (fun () -> fnl () ++ str"  with ")
+      (print_one_inductive envind mib) mips_types)
+
+let get_fields =
+  let rec prodec_rec l subst c =
+    match kind_of_term c with
+    | Prod (na,t,c) ->
+	let id = match na with Name id -> id | Anonymous -> id_of_string "_" in
+	prodec_rec ((id,true,substl subst t)::l) (mkVar id::subst) c
+    | LetIn (na,b,_,c) ->
+	let id = match na with Name id -> id | Anonymous -> id_of_string "_" in
+	prodec_rec ((id,false,substl subst b)::l) (mkVar id::subst) c
+    | _               -> List.rev l
+  in
+  prodec_rec [] []
+
+let print_record env mib =
+  let mip = mib.mind_packets.(0) in
+  let ind_typ = build_ind_type env mip in
+  let ind_name = mip.mind_typename in
+  let envind = push_rel_context [(Name ind_name, None, ind_typ)] env in
+  let params = mib.mind_params_ctxt in
+  let lparams = List.length params in
+  let args = extended_rel_list 0 params in
+  let arity = hnf_prod_applist env ind_typ args in
+  let envpar = push_rel_context params envind in
+  let cstr_typ =
+    hnf_prod_applist envpar (lift lparams mip.mind_user_lc.(0)) args
+  in
+  let fields = get_fields cstr_typ in
+  hov 0 (
+    hov 0 (
+      str "Record " ++ pr_id ind_name ++ brk(1,4) ++
+      print_params env params ++
+      str ": " ++ pr_lconstr_env envpar arity ++ brk(1,2) ++
+      str ":= " ++ pr_id mip.mind_consnames.(0)) ++
+    brk(1,2) ++
+    hv 2 (str "{ " ++
+      prlist_with_sep (fun () -> str ";" ++ brk(2,0))
+        (fun (id,b,c) ->
+	  pr_id id ++ str (if b then " : " else " := ") ++
+	  pr_lconstr_env envpar c) fields) ++ str" }")
+
+let pr_mutual_inductive_body env mib =
+  if mib.mind_record & not !Flags.raw_print then
+    print_record env mib
+  else
+    print_mutual_inductive env mib

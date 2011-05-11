@@ -199,9 +199,14 @@ let print_modtype r =
   let (loc,qid) = qualid_of_reference r in
   try
     let kn = Nametab.locate_modtype qid in
-      msgnl (Printmod.print_modtype kn)
-  with
-      Not_found -> msgnl (str"Unknown Module Type " ++ pr_qualid qid)
+    msgnl (Printmod.print_modtype kn)
+  with Not_found ->
+    (* Is there a module of this name ? If yes we display its type *)
+    try
+      let mp = Nametab.locate_module qid in
+      msgnl (Printmod.print_module false mp)
+    with Not_found ->
+      msgnl (str"Unknown Module Type or Module " ++ pr_qualid qid)
 
 let dump_universes_gen g s =
   let output = open_out s in

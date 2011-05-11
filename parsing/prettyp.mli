@@ -34,9 +34,6 @@ val print_safe_judgment : env -> Safe_typing.judgment -> std_ppcmds
 val print_eval :
   reduction_function -> env -> Evd.evar_map -> Topconstr.constr_expr -> unsafe_judgment -> std_ppcmds
 
-(** This function is exported for the graphical user-interface pcoq *)
-val build_inductive : mutual_inductive -> int ->
-  global_reference * rel_context * types * identifier array * types array
 val print_name : reference or_by_notation -> std_ppcmds
 val print_opaque_name : reference -> std_ppcmds
 val print_about : reference or_by_notation -> std_ppcmds

@@ -335,87 +335,11 @@ let assumptions_for_print lna =
 (*********************)
 (* *)
 
-let print_params env params =
-  if params = [] then mt () else pr_rel_context env params ++ brk(1,2)
-
-let print_constructors envpar names types =
-  let pc =
-    prlist_with_sep (fun () -> brk(1,0) ++ str "| ")
-      (fun (id,c) -> pr_id id ++ str " : " ++ pr_lconstr_env envpar c)
-      (Array.to_list (array_map2 (fun n t -> (n,t)) names types))
-  in
-  hv 0 (str "  " ++ pc)
-
-let build_inductive sp tyi =
-  let (mib,mip) = Global.lookup_inductive (sp,tyi) in
-  let params = mib.mind_params_ctxt in
-  let args = extended_rel_list 0 params in
-  let env = Global.env() in
-  let fullarity = match mip.mind_arity with
-    | Monomorphic ar -> ar.mind_user_arity
-    | Polymorphic ar ->
-	it_mkProd_or_LetIn (mkSort (Type ar.poly_level)) mip.mind_arity_ctxt in
-  let arity = hnf_prod_applist env fullarity args in
-  let cstrtypes = type_of_constructors env (sp,tyi) in
-  let cstrtypes =
-    Array.map (fun c -> hnf_prod_applist env c args) cstrtypes in
-  let cstrnames = mip.mind_consnames in
-  (IndRef (sp,tyi), params, arity, cstrnames, cstrtypes)
-
-let print_one_inductive (sp,tyi) =
-  let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp tyi in
-  let env = Global.env () in
-  let envpar = push_rel_context params env in
-  hov 0 (
-    pr_global (IndRef (sp,tyi)) ++ brk(1,4) ++ print_params env params ++
-    str ": " ++ pr_lconstr_env envpar arity ++ str " :=") ++
-  brk(0,2) ++ print_constructors envpar cstrnames cstrtypes
-
-let pr_mutual_inductive finite indl =
-  hov 0 (
-    str (if finite then "Inductive " else "CoInductive ") ++
-    prlist_with_sep (fun () -> fnl () ++ str"  with ")
-      print_one_inductive indl)
-
-let get_fields =
-  let rec prodec_rec l subst c =
-    match kind_of_term c with
-    | Prod (na,t,c) ->
-	let id = match na with Name id -> id | Anonymous -> id_of_string "_" in
-	prodec_rec ((id,true,substl subst t)::l) (mkVar id::subst) c
-    | LetIn (na,b,_,c) ->
-	let id = match na with Name id -> id | Anonymous -> id_of_string "_" in
-	prodec_rec ((id,false,substl subst b)::l) (mkVar id::subst) c
-    | _               -> List.rev l
-  in
-  prodec_rec [] []
-
-let pr_record (sp,tyi) =
-  let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp tyi in
-  let env = Global.env () in
-  let envpar = push_rel_context params env in
-  let fields = get_fields cstrtypes.(0) in
-  hov 0 (
-    hov 0 (
-      str "Record " ++ pr_global (IndRef (sp,tyi)) ++ brk(1,4) ++
-      print_params env params ++
-      str ": " ++ pr_lconstr_env envpar arity ++ brk(1,2) ++
-      str ":= " ++ pr_id cstrnames.(0)) ++
-    brk(1,2) ++
-    hv 2 (str "{ " ++
-      prlist_with_sep (fun () -> str ";" ++ brk(2,0))
-        (fun (id,b,c) ->
-	  pr_id id ++ str (if b then " : " else " := ") ++
-	  pr_lconstr_env envpar c) fields) ++ str" }")
-
 let gallina_print_inductive sp =
-  let (mib,mip) = Global.lookup_inductive (sp,0) in
+  let env = Global.env() in
+  let mib = Environ.lookup_mind sp env in
   let mipv = mib.mind_packets in
-  let names = list_tabulate (fun x -> (sp,x)) (Array.length mipv) in
-  (if mib.mind_record & not !Flags.raw_print then
-    pr_record (List.hd names)
-  else
-    pr_mutual_inductive mib.mind_finite names) ++ fnl () ++
+  pr_mutual_inductive_body env mib ++ fnl () ++
   with_line_skip
     (print_inductive_implicit_args sp mipv @
      print_inductive_argument_scopes sp mipv)
@@ -606,11 +530,9 @@ let print_full_pure_context () =
           ++ str "." ++ fnl () ++ fnl ()
       | "INDUCTIVE" ->
 	  let mind = Global.mind_of_delta (mind_of_kn kn) in
-	  let (mib,mip) = Global.lookup_inductive (mind,0) in
-	  let mipv = mib.mind_packets in
-	  let names = list_tabulate (fun x -> (mind,x)) (Array.length mipv) in
-	  pr_mutual_inductive mib.mind_finite names ++ str "." ++
-	  fnl () ++ fnl ()
+	  let mib = Global.lookup_mind mind in
+	  pr_mutual_inductive_body (Global.env()) mib ++
+	    str "." ++ fnl () ++ fnl ()
       | "MODULE" ->
 	  (* TODO: make it reparsable *)
 	  let (mp,_,l) = repr_kn kn in

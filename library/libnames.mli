@@ -51,7 +51,11 @@ module RefOrdered : sig
   type t = global_reference
   val compare : global_reference -> global_reference -> int
 end
-  
+
+module RefOrdered_env : sig
+  type t = global_reference
+  val compare : global_reference -> global_reference -> int
+end
 
 module Refset : Set.S with type elt = global_reference
 module Refmap : Map.S with type key = global_reference
@@ -63,6 +67,11 @@ type syndef_name = kernel_name
 type extended_global_reference =
   | TrueGlobal of global_reference
   | SynDef of syndef_name
+
+module ExtRefOrdered : sig
+  type t = extended_global_reference
+  val compare : t -> t -> int
+end
 
 (** {6 Dirpaths } *)
 val pr_dirpath : dir_path -> Pp.std_ppcmds

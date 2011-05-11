@@ -287,10 +287,7 @@ let the_dirtab = ref (DirTab.empty : dirtab)
 (* Reversed name tables ***************************************************)
 
 (* This table translates extended_global_references back to section paths *)
-module Globrevtab = Map.Make(struct
-			       type t=extended_global_reference
-			       let compare = compare
-			     end)
+module Globrevtab = Map.Make(ExtRefOrdered)
 
 type globrevtab = full_path Globrevtab.t
 let the_globrevtab = ref (Globrevtab.empty : globrevtab)

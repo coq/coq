@@ -105,6 +105,7 @@ val label : kernel_name -> label
 val string_of_kn : kernel_name -> string
 val pr_kn : kernel_name -> Pp.std_ppcmds
 
+val kn_ord : kernel_name -> kernel_name -> int
 
 module KNset  : Set.S with type elt = kernel_name
 module KNpred : Predicate.S with type elt = kernel_name

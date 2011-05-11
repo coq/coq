@@ -76,25 +76,37 @@ let constr_of_global = function
 let constr_of_reference = constr_of_global
 let reference_of_constr = global_of_constr
 
-(* outside of the kernel, names are ordered on their canonical part *)
+let global_ord_gen fc fmi x y =
+  let ind_ord (indx,ix) (indy,iy) =
+    let c = Pervasives.compare ix iy in
+    if c = 0 then kn_ord (fmi indx) (fmi indy) else c
+  in
+  match x, y with
+    | ConstRef cx, ConstRef cy -> kn_ord (fc cx) (fc cy)
+    | IndRef indx, IndRef indy -> ind_ord indx indy
+    | ConstructRef (indx,jx), ConstructRef (indy,jy) ->
+      let c = Pervasives.compare jx jy in
+      if c = 0 then ind_ord indx indy else c
+    | _, _ -> Pervasives.compare x y
+
+let global_ord_can = global_ord_gen canonical_con canonical_mind
+let global_ord_user = global_ord_gen user_con user_mind
+
+(* By default, [global_reference] are ordered on their canonical part *)
+
 module RefOrdered = struct
   type t = global_reference
-  let compare x y = 
-    let make_name = function
-      | ConstRef con -> 
-	  ConstRef(constant_of_kn(canonical_con con))
-      | IndRef (kn,i) ->
-	  IndRef(mind_of_kn(canonical_mind kn),i)
-      | ConstructRef ((kn,i),j )->
-	  ConstructRef((mind_of_kn(canonical_mind kn),i),j)
-      | VarRef id ->  VarRef id
-    in
-	Pervasives.compare (make_name x) (make_name y)
+  let compare = global_ord_can
 end
-  
+
+module RefOrdered_env = struct
+  type t = global_reference
+  let compare = global_ord_user
+end
+
 module Refset = Set.Make(RefOrdered)
 module Refmap = Map.Make(RefOrdered)
-  
+
 (* Extended global references *)
 
 type syndef_name = kernel_name
@@ -102,6 +114,18 @@ type syndef_name = kernel_name
 type extended_global_reference =
   | TrueGlobal of global_reference
   | SynDef of syndef_name
+
+(* We order [extended_global_reference] via their user part
+   (cf. pretty printer) *)
+
+module ExtRefOrdered = struct
+  type t = extended_global_reference
+  let compare x y =
+    match x, y with
+      | TrueGlobal rx, TrueGlobal ry -> global_ord_user rx ry
+      | SynDef knx, SynDef kny -> kn_ord knx kny
+      | _, _ -> Pervasives.compare x y
+end
 
 (**********************************************)
 
