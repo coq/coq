@@ -224,5 +224,5 @@ let subtac (loc, command) =
      Loc.Exc_located (loc, e') as e) -> raise e
 
   | e -> 
-      (*       msg_warning (str "Uncaught exception: " ++ Cerrors.explain_exn e); *)
+      (*       msg_warning (str "Uncaught exception: " ++ Errors.print e); *)
       raise e

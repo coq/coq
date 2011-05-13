@@ -233,7 +233,7 @@ IDEMOD:=$(shell cat ide/ide.mllib)
 
 COQENVCMO:=$(CONFIG) \
   lib/pp_control.cmo lib/pp.cmo  lib/compat.cmo lib/flags.cmo \
-  lib/segmenttree.cmo lib/unicodetable.cmo lib/util.cmo lib/system.cmo \
+  lib/segmenttree.cmo lib/unicodetable.cmo lib/util.cmo lib/errors.cmo lib/system.cmo \
   lib/envars.cmo
 
 COQMKTOPCMO:=$(COQENVCMO) scripts/tolink.cmo scripts/coqmktop.cmo 

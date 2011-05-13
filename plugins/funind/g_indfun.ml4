@@ -180,12 +180,12 @@ let warning_error names e =
 	Pp.msg_warning
 	  (str "Cannot define graph(s) for " ++
 	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Libnames.pr_reference names) ++
-	     if do_observe () then (spc () ++ Cerrors.explain_exn e) else mt ())
+	     if do_observe () then (spc () ++ Errors.print e) else mt ())
     | Defining_principle e ->
 	Pp.msg_warning
 	  (str "Cannot define principle(s) for "++
 	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Libnames.pr_reference names) ++
-	     if do_observe () then Cerrors.explain_exn e else mt ())
+	     if do_observe () then Errors.print e else mt ())
     | _ -> raise e
 
 

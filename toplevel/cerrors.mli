@@ -13,7 +13,9 @@ open Util
 
 val print_loc : loc -> std_ppcmds
 
+(*
 val explain_exn : exn -> std_ppcmds
+*)
 
 (** Precompute errors raised during vernac interpretation *)
 

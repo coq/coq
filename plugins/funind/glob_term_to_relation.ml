@@ -1404,7 +1404,7 @@ let do_build_inductive
 	  str "while trying to define"++ spc () ++
 	    Ppvernac.pr_vernac (Vernacexpr.VernacInductive(Decl_kinds.Finite,false,repacked_rel_inds))
 	    ++ fnl () ++
-	    Cerrors.explain_exn e
+	    Errors.print e
 	in
  	observe msg;
 	raise e

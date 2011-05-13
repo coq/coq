@@ -64,7 +64,7 @@ let do_observe_tac s tac g =
     let v = tac g in msgnl (goal ++ fnl () ++ s ++(str " ")++(str "finished")); v
   with e ->
     msgnl (str "observation "++ s++str " raised exception " ++
-	     Cerrors.explain_exn e ++ str " on goal " ++ goal );
+	     Errors.print e ++ str " on goal " ++ goal );
     raise e;;
 
 

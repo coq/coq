@@ -23,8 +23,6 @@ let print_loc loc =
 
 let guill s = "\""^s^"\""
 
-let where s =
-  if !Flags.debug then  (str"in " ++ str s ++ str":" ++ spc ()) else (mt ())
 
 exception EvaluatedError of std_ppcmds * exn option
 
@@ -40,16 +38,12 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
   | Lexer.Error.E err -> hov 0 (str (Lexer.Error.to_string err))
   | Sys_error msg ->
       hov 0 (anomaly_string () ++ str "uncaught exception Sys_error " ++ str (guill msg) ++ report_fn ())
-  | UserError(s,pps) ->
-      hov 0 (str "Error: " ++ where s ++ pps)
   | Out_of_memory ->
       hov 0 (str "Out of memory.")
   | Stack_overflow ->
       hov 0 (str "Stack overflow.")
   | Timeout ->
       hov 0 (str "Timeout!")
-  | Anomaly (s,pps) ->
-      hov 0 (anomaly_string () ++ where s ++ pps ++ report_fn ())
   | AnomalyOnError (s,exc) ->
       hov 0 (anomaly_string () ++ str s ++ str ". Received exception is:" ++
 	fnl() ++ explain_exn_default_aux anomaly_string report_fn exc)
@@ -81,9 +75,7 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       msg
   | EvaluatedError (msg,Some reraise) ->
       msg ++ explain_exn_default_aux anomaly_string report_fn reraise
-  | reraise ->
-      hov 0 (anomaly_string () ++ str "Uncaught exception " ++
-	       str (Printexc.to_string reraise) ++ report_fn ())
+  | _ -> raise Errors.Unhandled
 
 let wrap_vernac_error strm =
   EvaluatedError (hov 0 (str "Error:" ++ spc () ++ strm), None)
@@ -165,6 +157,7 @@ let _ = Tactic_debug.explain_logic_error_no_anomaly :=
 let explain_exn_function = ref explain_exn_default
 
 let explain_exn e = !explain_exn_function e
+let _ = Errors.register_handler explain_exn
 
 let explain_exn_no_anomaly e =
    explain_exn_default_aux (fun () -> raise e) mt e

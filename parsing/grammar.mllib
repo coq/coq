@@ -8,6 +8,7 @@ Flags
 Segmenttree
 Unicodetable
 Util
+Errors
 Bigint
 Dyn
 Hashcons

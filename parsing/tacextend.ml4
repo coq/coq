@@ -163,7 +163,7 @@ let declare_tactic loc s cl =
               (Tacexpr.TacAtom($default_loc$,
                  Tacexpr.TacExtend($default_loc$,s,[]))))
           $atomic_tactics$
-      with e -> Pp.pp (Cerrors.explain_exn e);
+      with e -> Pp.pp (Errors.print e);
       Egrammar.extend_tactic_grammar $se$ $gl$;
       List.iter Pptactic.declare_extra_tactic_pprule $pp$; } >>
     ])

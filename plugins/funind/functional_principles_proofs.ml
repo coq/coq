@@ -36,7 +36,7 @@ let do_observe_tac s tac g =
  with e ->
    let goal = begin try (Printer.pr_goal g) with _ -> assert false end in
    msgnl (str "observation "++ s++str " raised exception " ++
-	    Cerrors.explain_exn e ++ str " on goal " ++ goal );
+	    Errors.print e ++ str " on goal " ++ goal );
    raise e;;
 
 let observe_tac_stream s tac g =
@@ -608,7 +608,7 @@ let my_orelse tac1 tac2 g =
   try
     tac1 g
   with e ->
-(*     observe (str "using snd tac since : " ++ Cerrors.explain_exn e); *)
+(*     observe (str "using snd tac since : " ++ Errors.print e); *)
     tac2 g
 
 let instanciate_hyps_with_args (do_prove:identifier list -> tactic) hyps args_id =

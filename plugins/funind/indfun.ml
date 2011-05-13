@@ -254,14 +254,14 @@ let derive_inversion fix_names =
     with e ->
       msg_warning
 	(str "Cannot built inversion information" ++
-	   if do_observe () then Cerrors.explain_exn e else mt ())
+	   if do_observe () then Errors.print e else mt ())
   with _ -> ()
 
 let warning_error names e =
   let e_explain e =
     match e with
-      | ToShow e -> spc () ++ Cerrors.explain_exn e
-      | _ -> if do_observe () then (spc () ++ Cerrors.explain_exn e) else mt ()
+      | ToShow e -> spc () ++ Errors.print e
+      | _ -> if do_observe () then (spc () ++ Errors.print e) else mt ()
   in
   match e with
     | Building_graph e ->
@@ -279,8 +279,8 @@ let warning_error names e =
 let error_error names e =
   let e_explain e =
     match e with
-      | ToShow e -> spc () ++ Cerrors.explain_exn e
-      | _ -> if do_observe () then (spc () ++ Cerrors.explain_exn e) else mt ()
+      | ToShow e -> spc () ++ Errors.print e
+      | _ -> if do_observe () then (spc () ++ Errors.print e) else mt ()
   in
   match e with
     | Building_graph e ->

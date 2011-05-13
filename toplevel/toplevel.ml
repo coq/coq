@@ -309,7 +309,7 @@ let print_toplevel_error exc =
 	raise Vernacexpr.Quit
     | _ ->
 	(if is_pervasive_exn exc then (mt ()) else locstrm) ++
-        Cerrors.explain_exn exc
+        Errors.print exc
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot =

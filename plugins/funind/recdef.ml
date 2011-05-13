@@ -75,7 +75,7 @@ let rec print_debug_queue b e =
     begin
       let lmsg,goal = Stack.pop debug_queue in 
       if b then 
-	msgnl (lmsg ++ (str " raised exception " ++ Cerrors.explain_exn e) ++ str " on goal " ++ goal)
+	msgnl (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
       else
 	begin
 	  msgnl (str " from " ++ lmsg ++ str " on goal " ++ goal);
@@ -1433,7 +1433,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       with e ->
 	begin
 	  if Tacinterp.get_debug () <> Tactic_debug.DebugOff
-	  then pperrnl (str "Cannot create equation Lemma " ++ Cerrors.explain_exn e)
+	  then pperrnl (str "Cannot create equation Lemma " ++ Errors.print e)
 	  else anomaly "Cannot create equation Lemma"
 	  ;
 (* 	  ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ()); *)

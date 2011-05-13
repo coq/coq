@@ -54,7 +54,7 @@ let declare_command loc s nt cl =
   declare_str_items loc
     [ <:str_item< do {
 	try Vernacinterp.vinterp_add $mlexpr_of_string s$ $funcl$
-	with e -> Pp.pp (Cerrors.explain_exn e);
+	with e -> Pp.pp (Errors.print e);
 	Egrammar.extend_vernac_command_grammar $mlexpr_of_string s$ $nt$ $gl$
       } >> ]
 
