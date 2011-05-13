@@ -334,6 +334,7 @@ let defs _ rdefs _ _ =
     [null], [plus], [here] and [here_list] use internal exception [UndefinedHere]
     to communicate whether or not the value is defined in the particular context. *)
 exception UndefinedHere
+(* no handler: this should never be allowed to reach toplevel *)
 let null _ _ _ _ = raise UndefinedHere
 
 let plus s1 s2 env rdefs goal info =

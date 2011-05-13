@@ -92,6 +92,10 @@ let push a l = l := a::!l;
   update_proof_mode ()
 
 exception NoSuchProof
+let _ = Errors.register_handler begin function
+  | NoSuchProof -> Util.error "No such proof."
+  | _ -> raise Errors.Unhandled
+end
 let rec extract id l = 
   let rec aux = function
     | ((id',_) as np)::l when id_ord id id' = 0 -> (np,l)
@@ -104,6 +108,10 @@ let rec extract id l =
   np
 
 exception NoCurrentProof
+let _ = Errors.register_handler begin function
+  | NoCurrentProof -> Util.error "No focused proof (No proof-editing in progress)."
+  | _ -> raise Errors.Unhandled
+end
 let extract_top l =
   match !l with
   | np::l' -> l := l' ; update_proof_mode (); np
@@ -292,8 +300,7 @@ let maximal_unfocus k p =
   begin try while Proof.no_focused_goal p do
     Proof.unfocus k p
   done
-  with Util.UserError _ -> (* arnaud: attention à ça si je fini par me décider à mettre une vrai erreur pour Proof.unfocus *)
-    ()
+  with Proof.FullyUnfocused -> ()
   end
 
 

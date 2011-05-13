@@ -92,6 +92,10 @@ let set_end_tac tac =
   Proof_global.set_endline_tactic tac
 
 exception NoSuchGoal
+let _ = Errors.register_handler begin function
+  | NoSuchGoal -> Util.error "No such goal."
+  | _ -> raise Errors.Unhandled
+end
 let get_nth_V82_goal i =
   let p = Proof_global.give_me_the_proof () in
   let { it=goals ; sigma = sigma } = Proof.V82.subgoals p in

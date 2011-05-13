@@ -70,6 +70,7 @@ let return { initial=init; solution=defs }  =
 (* [IndexOutOfRange] occurs in case of malformed indices
    with respect to list lengths. *)
 exception IndexOutOfRange
+(* no handler: should not be allowed to reach toplevel *)
 
 (* [list_goto i l] returns a pair of lists [c,t] where
    [c] has length [i] and is the reversed of the [i] first
@@ -278,6 +279,10 @@ let tclFOCUS i j t env = { go = fun sk fk step ->
     sense in the goals immediatly built by it, and would cause an anomaly
     is used otherwise. *)
 exception SizeMismatch
+let _ = Errors.register_handler begin function
+  | SizeMismatch -> Util.error "Incorrect number of goals."
+  | _ -> raise Errors.Unhandled
+end
 (* spiwack: we use an parametrised function to generate the dispatch tacticals.
     [tclDISPATCHGEN] takes a [null] argument to generate the return value
     if there are no goal under focus, and a [join] argument to explain how

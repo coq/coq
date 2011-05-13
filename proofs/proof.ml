@@ -49,6 +49,7 @@ let new_focus_kind () =
    [check kind1 kind2 inf] returns [inf] if [kind1] and [kind2] match.
    Otherwise it raises [CheckNext] *)
 exception CheckNext
+(* no handler: confined to this module. *)
 let check kind1 kind2 inf =
   if kind1=kind2 then inf else raise CheckNext
 
@@ -130,6 +131,11 @@ let partial_proof p =
 
 exception UnfinishedProof
 exception HasUnresolvedEvar
+let _ = Errors.register_handler begin function
+  | UnfinishedProof -> Util.error "Some goals have not been solved."
+  | HasUnresolvedEvar -> Util.error "Some existential variables are uninstantiated."
+  | _ -> raise Errors.Unhandled
+end
 let return p =
   if not (is_done p) then
     raise UnfinishedProof
@@ -147,7 +153,10 @@ let push_focus cond inf context pr =
   pr.state <- { pr.state with focus_stack = (cond,inf,context)::pr.state.focus_stack }
 
 exception FullyUnfocused
-
+let _ = Errors.register_handler begin function
+  | FullyUnfocused -> Util.error "The proof is not focused"
+  | _ -> raise Errors.Unhandled
+end
 (* An auxiliary function to read the kind of the next focusing step *)
 let cond_of_focus pr =
   match pr.state.focus_stack with
@@ -171,6 +180,10 @@ let push_undo save pr =
 
 (* Auxiliary function to pop and read a [save_state] from the undo stack. *)
 exception EmptyUndoStack
+let _ = Errors.register_handler begin function
+  | EmptyUndoStack -> Util.error "Cannot undo: no more undo information"
+  | _ -> raise Errors.Unhandled
+end
 let pop_undo pr =
   match pr.transactions , pr.undo_stack with
   | [] , state::stack -> pr.undo_stack <- stack; state
@@ -242,19 +255,18 @@ let focus cond inf i pr =
    Fails if the proof is not focused. *)
 let unfocus kind pr =
   let starting_point = save_state pr in
-  try
-    let cond = cond_of_focus pr in
-    if fst cond kind pr.state.proofview then
-      (_unfocus pr;
-       push_undo starting_point pr)
-    else
-      Util.error "This proof is focused, but cannot be unfocused this way"
-  with FullyUnfocused -> 
-    Util.error "This proof is not focused"
-
+  let cond = cond_of_focus pr in
+  if fst cond kind pr.state.proofview then
+    (_unfocus pr;
+     push_undo starting_point pr)
+  else
+    Util.error "This proof is focused, but cannot be unfocused this way"
+      
 let get_at_point kind ((_,get),inf,_) = get kind inf
 exception NoSuchFocus
+(* no handler: should not be allowed to reach toplevel. *)
 exception GetDone of Obj.t
+(* no handler: confined to this module. *)
 let get_in_focus_stack kind stack =
   try
     List.iter begin fun pt ->
