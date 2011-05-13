@@ -142,6 +142,9 @@ val progress_evar_map : evar_map -> evar_map -> bool
 
 val empty : evar_map
 val is_empty : evar_map -> bool
+(** [has_undefined sigma] is [true] if and only if
+    there are uninstantiated evars in [sigma]. *)
+val has_undefined : evar_map -> bool
 
 val add : evar_map -> evar -> evar_info -> evar_map
 

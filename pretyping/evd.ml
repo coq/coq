@@ -97,6 +97,8 @@ module EvarInfoMap = struct
 
   let empty = ExistentialMap.empty, ExistentialMap.empty
 
+  let has_undefined (_,u) = not (ExistentialMap.is_empty u)
+
   let to_list (def,undef) =
     (* Workaround for change in Map.fold behavior in ocaml 3.08.4 *)
     let l = ref [] in
@@ -215,6 +217,7 @@ end
 module EvarMap = struct
   type t = EvarInfoMap.t * (Univ.UniverseLSet.t * Univ.universes)
   let empty = EvarInfoMap.empty, (Univ.UniverseLSet.empty, Univ.initial_universes)
+  let has_undefined (sigma,_) = EvarInfoMap.has_undefined sigma
   let add (sigma,sm) k v = (EvarInfoMap.add sigma k v, sm)
   let add_undefined (sigma,sm) k v = (EvarInfoMap.add_undefined sigma k v, sm)
   let find (sigma,_) = EvarInfoMap.find sigma
@@ -415,6 +418,9 @@ let empty =  {
   last_mods = ExistentialSet.empty;
   metas=Metamap.empty
 }
+
+let has_undefined evd =
+  EvarMap.has_undefined evd.evars
 
 let evars_reset_evd ?(with_conv_pbs=false) evd d = 
   {d with evars = evd.evars; 

@@ -467,9 +467,7 @@ module V82 = struct
 }
 
   let has_unresolved_evar pv =
-    let evd = pv.solution in
-    (* arnaud: essayer une procédure moins coûteuse *)
-    not ((Evarutil.non_instantiated evd) = [])
+    Evd.has_undefined pv.solution
 
   (* Returns the open goals of the proofview together with the evar_map to 
      interprete them. *)
