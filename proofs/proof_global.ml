@@ -8,9 +8,9 @@
 
 (***********************************************************************)
 (*                                                                     *)
-(*      This module defines the global proof environment               *)
-(*      In particular it keeps tracks of whether or not there is          *)
-(*      a proof which is currently being edited.                       *)
+(*      This module defines proof facilities relevant to the           *)
+(*      toplevel. In particular it defines the global proof            *)
+(*      environment.                                                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -295,6 +295,105 @@ let maximal_unfocus k p =
   with Util.UserError _ -> (* arnaud: attention à ça si je fini par me décider à mettre une vrai erreur pour Proof.unfocus *)
     ()
   end
+
+
+(**********************************************************)
+(*                                                        *)
+(*                                 Bullets                *)
+(*                                                        *)
+(**********************************************************)
+
+module Bullet = struct
+
+  open Store.Field
+
+
+  type t = 
+    | Dash
+    | Star
+    | Plus
+
+  type behavior = {
+    name : string;
+    put : Proof.proof -> t -> unit
+  }
+
+  let behaviors = Hashtbl.create 4
+  let register_behavior b = Hashtbl.add behaviors b.name b
+
+  (*** initial modes ***)
+  let none = {
+    name = "None";
+    put = fun _ _ -> ()
+  }
+  let _ = register_behavior none
+
+  module Strict = struct
+    (* spiwack: we need only one focus kind as we keep a stack of (distinct!) bullets *)
+    let bullet_kind = Proof.new_focus_kind () 
+    let bullet_cond = Proof.done_cond bullet_kind
+    let (get_bullets,set_bullets) =
+      let bullets = Store.field () in
+      begin fun pr -> Option.default [] (bullets.get (Proof.get_proof_info pr)) end ,
+      begin fun bs pr -> Proof.set_proof_info (bullets.set bs (Proof.get_proof_info pr)) pr end
+
+    let has_bullet bul pr =
+      let rec has_bullet = function
+	| b'::_ when bul=b' -> true
+	| _::l -> has_bullet l
+	| [] -> false
+      in
+      has_bullet (get_bullets pr)
+
+    (* precondition: the stack is not empty *)
+    let pop pr =
+      match get_bullets pr with
+      | b::stk -> 
+	Proof.unfocus bullet_kind pr ;
+	set_bullets stk pr ;
+	b
+      | [] -> Util.anomaly "Tried to pop bullet from an empty stack"
+
+    let push b pr =
+      Proof.focus bullet_cond () 1 pr ;
+      set_bullets (b::get_bullets pr) pr
+
+    let put p bul =
+      if has_bullet bul p then
+	begin 
+	  while bul <> pop p do () done;
+	  push bul p
+	end
+      else 
+	push bul p
+
+    let strict = {
+      name = "Strict Subproofs";
+      put = put
+    }
+    let _ = register_behavior strict
+  end
+
+  (* Current bullet behavior, controled by the option *)
+  let current_behavior = ref Strict.strict
+    
+  let _ =
+    Goptions.declare_string_option {Goptions.
+      optsync = true;
+      optname = "bullet behavior";
+      optkey = ["Bullet";"Behavior"];
+      optread = begin fun () ->
+	(!current_behavior).name
+      end;
+      optwrite = begin fun n ->
+	current_behavior := Hashtbl.find behaviors n
+      end
+    }
+
+  let put p b =
+    (!current_behavior).put p b
+end
+
 
 module V82 = struct
   let get_current_initial_conclusions () =

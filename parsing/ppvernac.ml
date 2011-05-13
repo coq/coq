@@ -745,7 +745,12 @@ let rec pr_vernac = function
   (* Solving *)
   | VernacSolve (i,b,tac,deftac) ->
       (if i = 1 then mt() else int i ++ str ": ") ++
-      (match b with None -> mt () | Some Dash -> str"-" | Some Star -> str"*" | Some Plus -> str"+") ++
+      begin match b with
+      | None -> mt ()
+      | Some Proof_global.Bullet.Dash -> str"-"
+      | Some Proof_global.Bullet.Star -> str"*"
+      | Some Proof_global.Bullet.Plus -> str"+"
+      end ++
       pr_raw_tactic tac
       ++ (try if deftac then str ".." else mt ()
       with UserError _|Loc.Exc_located _ -> mt())

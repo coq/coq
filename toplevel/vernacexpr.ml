@@ -184,11 +184,6 @@ type syntax_modifier =
   | SetOnlyParsing
   | SetFormat of string located
 
-type bullet = 
-  | Dash
-  | Star
-  | Plus
-
 type proof_end =
   | Admitted
   | Proved of opacity_flag * (lident * theorem_kind option) option
@@ -276,7 +271,7 @@ type vernac_expr =
 
   (* Solving *)
 
-  | VernacSolve of int * bullet option * raw_tactic_expr * bool
+  | VernacSolve of int * Proof_global.Bullet.t option * raw_tactic_expr * bool
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)

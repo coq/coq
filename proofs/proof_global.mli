@@ -6,9 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** This module defines the global proof environment
-
- Especially it keeps tracks of whether or not there is a proof which is currently being edited. *)
+(** This module defines proof facilities relevant to the
+     toplevel. In particular it defines the global proof
+     environment. *)
 
 (** Type of proof modes :
     - A name
@@ -94,6 +94,42 @@ val with_end_tac : unit Proofview.tactic -> unit Proofview.tactic
 (** [maximal_unfocus k p] unfocuses [p] until [p] has at least a
     focused goal or that the last focus isn't of kind [k]. *)
 val maximal_unfocus : 'a Proof.focus_kind -> Proof.proof -> unit
+
+(**********************************************************)
+(*                                                        *)
+(*                                 Bullets                *)
+(*                                                        *)
+(**********************************************************)
+
+module Bullet : sig
+  type t = 
+    | Dash
+    | Star
+    | Plus
+
+  (** A [behavior] is the data of a put function which
+      is called when a bullet prefixes a tactic, together
+      with a name to identify it. *)
+  type behavior = {
+    name : string;
+    put : Proof.proof -> t -> unit
+  }
+
+  (** A registered behavior can then be accessed in Coq
+      through the command [Set Bullet Behavior "name"].
+
+      Two modes are registered originally:
+      * "Strict Subproofs":
+        - If this bullet follows another one of its kind, defocuses then focuses
+          (which fails if the focused subproof is not complete).
+        - If it is the first bullet of its kind, then focuses a new subproof.
+      * "None": bullets don't do anything *)
+  val register_behavior : behavior -> unit
+
+  (** Handles focusing/defocusing with bullets:
+       *)
+  val put : Proof.proof -> t -> unit
+end
 
 module V82 : sig
   val get_current_initial_conclusions : unit -> Names.identifier *(Term.types list * Decl_kinds.goal_kind * Tacexpr.declaration_hook)

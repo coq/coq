@@ -652,48 +652,13 @@ let vernac_declare_class id =
 let command_focus = Proof.new_focus_kind ()
 let focus_command_cond = Proof.no_cond command_focus
 
-(* Gestion of bullets. *)
-open Store.Field
-(* spiwack: we need only one focus kind as we keep a stack of (distinct!) bullets *)
-let bullet_kind = Proof.new_focus_kind () 
-let bullet_cond = Proof.done_cond bullet_kind
-let (get_bullets,set_bullets) =
-  let bullets = Store.field () in
-  ( begin fun pr -> Option.default [] (bullets.get (Proof.get_proof_info pr)) end ,
-    begin fun bs pr -> Proof.set_proof_info (bullets.set bs (Proof.get_proof_info pr)) pr end )
-let has_bullet bul pr =
-  let rec has_bullet = function
-    | b'::_ when bul=b' -> true
-    | _::l -> has_bullet l
-    | [] -> false
-  in
-  has_bullet (get_bullets pr)
-(* precondition: the stack is not empty *)
-let pop_bullet pr =
-  match get_bullets pr with
-  | b::stk -> Proof.unfocus bullet_kind pr ;
-                   set_bullets stk pr ;
-		   b
-  | [] -> Util.anomaly "Tried to pop bullet from an empty stack"
-let push_bullet b pr =
-  Proof.focus bullet_cond () 1 pr ;
-  set_bullets (b::get_bullets pr) pr
-
-let put_bullet p bul =
-  if has_bullet bul p then
-    begin 
-      while bul <> pop_bullet p do () done;
-      push_bullet bul p
-    end
-  else 
-    push_bullet bul p
 
 let vernac_solve n bullet tcom b =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode.";
   let p = Proof_global.give_me_the_proof () in
   Proof.transaction p begin fun () ->
-    Option.iter (put_bullet p) bullet ;
+    Option.iter (Proof_global.Bullet.put p) bullet ;
     solve_nth n (Tacinterp.hide_interp tcom None) ~with_end_tac:b;
     (* in case a strict subtree was completed,
        go back to the top of the prooftree *)
