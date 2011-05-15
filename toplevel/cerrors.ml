@@ -37,7 +37,7 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (str "Syntax error: " ++ str txt ++ str ".")
   | Lexer.Error.E err -> hov 0 (str (Lexer.Error.to_string err))
   | Sys_error msg ->
-      hov 0 (anomaly_string () ++ str "uncaught exception Sys_error " ++ str (guill msg) ++ report_fn ())
+      hov 0 (str "System error: " ++ str (guill msg))
   | Out_of_memory ->
       hov 0 (str "Out of memory.")
   | Stack_overflow ->
