@@ -629,13 +629,15 @@ module Pretyping_F (Coercion : Coercion.S) = struct
  		let cj = pretype empty_tycon env evdref lvar c in
 		let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tj.utj_val in
 		let cj = match k with
-		  | VMcast when not (occur_existential cty || occur_existential tval) ->
+		  | VMcast ->
+                      if not (occur_existential cty || occur_existential tval) then
 		      begin 
 			try 
 			  ignore (Reduction.vm_conv Reduction.CUMUL env cty tval); cj
 			with Reduction.NotConvertible -> 
 			  error_actual_type_loc loc env !evdref cj tval 
 		      end
+                      else user_err_loc (loc,"",str "Cannot check cast with vm: unresolved arguments remain.")
 		  | _ -> inh_conv_coerce_to_tycon loc env evdref cj (mk_tycon tval)
 		in
 		let v = mkCast (cj.uj_val, k, tval) in
