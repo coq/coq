@@ -61,7 +61,7 @@ let _ =
       optread  = (fun () -> !case_flag) ;
       optwrite = (fun b -> case_flag := b) }
 
-let eq_flag = ref true
+let eq_flag = ref false
 let _ =
   declare_bool_option
     { optsync  = true;
