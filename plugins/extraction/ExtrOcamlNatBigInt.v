@@ -36,7 +36,7 @@ Extract Constant pred => "fun n -> Big.max Big.zero (Big.pred n)".
 Extract Constant minus => "fun n m -> Big.max Big.zero (Big.sub n m)".
 Extract Constant max => "Big.max".
 Extract Constant min => "Big.min".
-Extract Constant nat_beq => "Big.eq".
+(*Extract Constant nat_beq => "Big.eq".*)
 Extract Constant EqNat.beq_nat => "Big.eq".
 Extract Constant EqNat.eq_nat_decide => "Big.eq".
 
