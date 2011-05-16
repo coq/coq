@@ -1,12 +1,12 @@
 false: bool
 true: bool
+xorb: bool -> bool -> bool
 sumor_beq:
   forall (A : Type) (B : Prop),
   (A -> A -> bool) -> (B -> B -> bool) -> A + {B} -> A + {B} -> bool
 sumbool_beq:
   forall A B : Prop,
   (A -> A -> bool) -> (B -> B -> bool) -> {A} + {B} -> {A} + {B} -> bool
-xorb: bool -> bool -> bool
 sum_beq:
   forall A B : Type,
   (A -> A -> bool) -> (B -> B -> bool) -> A + B -> A + B -> bool
@@ -40,8 +40,8 @@ min: nat -> nat -> nat
 max: nat -> nat -> nat
 mult_n_Sm: forall n m : nat, n * m + n = n * S m
 le_n: forall n : nat, n <= n
-eq_refl: forall (A : Type) (x : A), x = x
 identity_refl: forall (A : Type) (a : A), identity a a
+eq_refl: forall (A : Type) (x : A), x = x
 iff_refl: forall A : Prop, A <-> A
-conj: forall A B : Prop, A -> B -> A /\ B
 pair: forall A B : Type, A -> B -> A * B
+conj: forall A B : Prop, A -> B -> A /\ B

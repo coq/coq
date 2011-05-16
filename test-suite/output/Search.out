@@ -4,13 +4,13 @@ le_pred: forall n m : nat, n <= m -> pred n <= pred m
 le_S_n: forall n m : nat, S n <= S m -> n <= m
 false: bool
 true: bool
+xorb: bool -> bool -> bool
 sumor_beq:
   forall (A : Type) (B : Prop),
   (A -> A -> bool) -> (B -> B -> bool) -> A + {B} -> A + {B} -> bool
 sumbool_beq:
   forall A B : Prop,
   (A -> A -> bool) -> (B -> B -> bool) -> {A} + {B} -> {A} + {B} -> bool
-xorb: bool -> bool -> bool
 sum_beq:
   forall A B : Type,
   (A -> A -> bool) -> (B -> B -> bool) -> A + B -> A + B -> bool
