@@ -13,13 +13,10 @@ open Util
 
 val print_loc : loc -> std_ppcmds
 
-(*
-val explain_exn : exn -> std_ppcmds
-*)
+(** Is an exception due to a regular user error, or to some
+    anomaly on the Coq side ? *)
 
-(** Precompute errors raised during vernac interpretation *)
-
-val explain_exn_no_anomaly : exn -> std_ppcmds
+val is_user_error : exn -> bool
 
 (** Pre-explain a vernac interpretation error *)
 

@@ -26,16 +26,28 @@ let guill s = "\""^s^"\""
 
 exception EvaluatedError of std_ppcmds * exn option
 
+(* Is an exception due to a regular user error, or to some
+   anomaly on the Coq side ? *)
+
+let rec is_user_error = function
+  | Loc.Exc_located (_,e) -> is_user_error e
+  | EvaluatedError (_,Some e) -> is_user_error e
+  | EvaluatedError (_,None)
+  | Stream.Error _ | Token.Error _ | Lexer.Error.E _
+  | Sys_error _ | Out_of_memory | Stack_overflow | Timeout | Sys.Break
+  | UserError _ -> true
+  | _ -> false
+
 (* assumption : explain_sys_exn does NOT end with a 'FNL anymore! *)
 
 let rec explain_exn_default_aux anomaly_string report_fn = function
-  | Stream.Failure ->
-      hov 0 (anomaly_string () ++ str "uncaught Stream.Failure.")
+  (* Basic interaction exceptions *)
   | Stream.Error txt ->
       hov 0 (str "Syntax error: " ++ str txt ++ str ".")
   | Token.Error txt ->
       hov 0 (str "Syntax error: " ++ str txt ++ str ".")
-  | Lexer.Error.E err -> hov 0 (str (Lexer.Error.to_string err))
+  | Lexer.Error.E err ->
+      hov 0 (str (Lexer.Error.to_string err))
   | Sys_error msg ->
       hov 0 (str "System error: " ++ str (guill msg))
   | Out_of_memory ->
@@ -44,25 +56,12 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (str "Stack overflow.")
   | Timeout ->
       hov 0 (str "Timeout!")
+  | Sys.Break ->
+      hov 0 (fnl () ++ str "User interrupt.")
+  (* Variants of anomaly *)
   | AnomalyOnError (s,exc) ->
       hov 0 (anomaly_string () ++ str s ++ str ". Received exception is:" ++
 	fnl() ++ explain_exn_default_aux anomaly_string report_fn exc)
-  | Match_failure(filename,pos1,pos2) ->
-      hov 0 (anomaly_string () ++ str "Match failure in file " ++
-	     str (guill filename) ++ str " at line " ++ int pos1 ++
-	     str " character " ++ int pos2 ++ report_fn ())
-  | Not_found ->
-      hov 0 (anomaly_string () ++ str "uncaught exception Not_found" ++ report_fn ())
-  | Failure s ->
-      hov 0 (anomaly_string () ++ str "uncaught exception Failure " ++ str (guill s) ++ report_fn ())
-  | Invalid_argument s ->
-      hov 0 (anomaly_string () ++ str "uncaught exception Invalid_argument " ++ str (guill s) ++ report_fn ())
-  | Sys.Break ->
-      hov 0 (fnl () ++ str "User interrupt.")
-  | Loc.Exc_located (loc,exc) ->
-      hov 0 ((if loc = dummy_loc then (mt ())
-               else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
-               ++ explain_exn_default_aux anomaly_string report_fn exc)
   | Assert_failure (s,b,e) ->
       hov 0 (anomaly_string () ++ str "assert failure" ++ spc () ++
 	       (if s = "" then mt ()
@@ -71,10 +70,16 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
 		   str ", characters " ++ int e ++ str "-" ++
 		   int (e+6) ++ str ")")) ++
 	       report_fn ())
+  (* Meta-exceptions *)
+  | Loc.Exc_located (loc,exc) ->
+      hov 0 ((if loc = dummy_loc then (mt ())
+               else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
+               ++ explain_exn_default_aux anomaly_string report_fn exc)
   | EvaluatedError (msg,None) ->
       msg
   | EvaluatedError (msg,Some reraise) ->
       msg ++ explain_exn_default_aux anomaly_string report_fn reraise
+  (* Otherwise, not handled here *)
   | _ -> raise Errors.Unhandled
 
 let wrap_vernac_error strm =
@@ -156,8 +161,4 @@ let _ = Tactic_debug.explain_logic_error_no_anomaly :=
 
 let explain_exn_function = ref explain_exn_default
 
-let explain_exn e = !explain_exn_function e
-let _ = Errors.register_handler explain_exn
-
-let explain_exn_no_anomaly e =
-   explain_exn_default_aux (fun () -> raise e) mt e
+let _ = Errors.register_handler explain_exn_default
