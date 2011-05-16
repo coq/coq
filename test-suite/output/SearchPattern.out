@@ -1,26 +1,9 @@
 false: bool
 true: bool
 xorb: bool -> bool -> bool
-sumor_beq:
-  forall (A : Type) (B : Prop),
-  (A -> A -> bool) -> (B -> B -> bool) -> A + {B} -> A + {B} -> bool
-sumbool_beq:
-  forall A B : Prop,
-  (A -> A -> bool) -> (B -> B -> bool) -> {A} + {B} -> {A} + {B} -> bool
-sum_beq:
-  forall A B : Type,
-  (A -> A -> bool) -> (B -> B -> bool) -> A + B -> A + B -> bool
-prod_beq:
-  forall A B : Type,
-  (A -> A -> bool) -> (B -> B -> bool) -> A * B -> A * B -> bool
 orb: bool -> bool -> bool
-option_beq: forall A : Type, (A -> A -> bool) -> option A -> option A -> bool
 negb: bool -> bool
-nat_beq: nat -> nat -> bool
-list_beq: forall A : Type, (A -> A -> bool) -> list A -> list A -> bool
 implb: bool -> bool -> bool
-comparison_beq: comparison -> comparison -> bool
-bool_beq: bool -> bool -> bool
 andb: bool -> bool -> bool
 S: nat -> nat
 O: nat
