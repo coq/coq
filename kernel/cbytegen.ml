@@ -728,6 +728,9 @@ let compile_constant_body env = function
 	    let to_patch = to_memory res in
 	    BCdefined to_patch
 
+(* Shortcut of the previous function used during module strengthening *)
+
+let compile_alias kn = BCallias (constant_of_kn (canonical_con kn))
 
 (* spiwack: additional function which allow different part of compilation of the
       31-bit integers *)

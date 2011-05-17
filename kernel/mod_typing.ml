@@ -167,14 +167,14 @@ and check_with_aux_mod env sign with_decl mp equiv =
 	      in
 	      let mb_mp1 = (lookup_module mp1 env) in
 	      let mtb_mp1 = 
-		module_type_of_module env' None mb_mp1  in
+		module_type_of_module None mb_mp1  in
 	      let cst =
 		match old.mod_expr with
 		    None ->
 		      begin
 			try union_constraints
 			  (check_subtypes env' mtb_mp1 
-			     (module_type_of_module env' None old))
+			     (module_type_of_module None old))
 			  old.mod_constraints
 			with Failure _ -> error_incorrect_with_constraint (label_of_id id)
 		      end
@@ -183,8 +183,8 @@ and check_with_aux_mod env sign with_decl mp equiv =
 		      old.mod_constraints
 		  | _ ->  error_generative_module_expected l
 	      in
-	      let new_mb = strengthen_and_subst_mb mb_mp1
-		(MPdot(mp,l)) env false in
+	      let new_mb = strengthen_and_subst_mb mb_mp1 (MPdot(mp,l)) false
+	      in
 	      let new_spec = SFBmodule {new_mb with 
 					  mod_mp = MPdot(mp,l);
 					  mod_expr = Some (SEBident mp1);
@@ -279,7 +279,7 @@ and translate_apply env inl ftrans mexpr mkalg =
     try path_of_mexpr mexpr
     with Not_path -> error_application_to_not_path mexpr
   in
-  let mtb = module_type_of_module env None (lookup_module mp1 env) in
+  let mtb = module_type_of_module None (lookup_module mp1 env) in
   let cst2 = check_subtypes env mtb farg_b in
   let mp_delta = discr_resolver env mtb in
   let mp_delta = inline_delta_resolver env inl mp1 farg_id farg_b mp_delta in
@@ -303,7 +303,7 @@ and translate_functor env inl arg_id arg_e trans mkalg =
 and translate_struct_module_entry env mp inl = function
   | MSEident mp1 ->
       let mb = lookup_module mp1 env in
-      let mb' = strengthen_and_subst_mb mb mp env false in
+      let mb' = strengthen_and_subst_mb mb mp false in
       mb'.mod_type, Some (SEBident mp1), mb'.mod_delta,Univ.empty_constraint
   | MSEfunctor (arg_id, arg_e, body_expr) ->
       let trans env' = translate_struct_module_entry env' mp inl body_expr in
@@ -345,13 +345,13 @@ and translate_module_type env mp inl mte =
      typ_expr = sign;
      typ_expr_alg = None;
      typ_constraints = cst;
-     typ_delta = resolve} mp env
+     typ_delta = resolve} mp
   in {mtb with typ_expr_alg = alg}
 
 let rec translate_struct_include_module_entry env mp inl = function
   | MSEident mp1 ->
       let mb = lookup_module mp1 env in
-      let mb' = strengthen_and_subst_mb mb mp env true in
+      let mb' = strengthen_and_subst_mb mb mp true in
       let mb_typ = clean_bounded_mod_expr mb'.mod_type in
       mb_typ,None,mb'.mod_delta,Univ.empty_constraint
   | MSEapply (fexpr,mexpr) ->

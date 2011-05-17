@@ -11,6 +11,9 @@ val compile : env -> constr -> bytecodes * bytecodes * fv
 
 val compile_constant_body : env -> constant_def -> body_code
 
+(** Shortcut of the previous function used during module strengthening *)
+
+val compile_alias : constant -> body_code
 
 (** spiwack: this function contains the information needed to perform
             the static compilation of int31 (trying and obtaining

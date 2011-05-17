@@ -179,15 +179,14 @@ let check_sub mtb sub_mtb_l =
    environment. *)
 
 let check_subtypes mp sub_mtb_l =
-  let env = Global.env () in
-  let mb = Environ.lookup_module mp env in
-  let mtb = Modops.module_type_of_module env None mb in
+  let mb = Global.lookup_module mp in
+  let mtb = Modops.module_type_of_module None mb in
   check_sub mtb sub_mtb_l
 
 (* Same for module type [mp] *)
 
 let check_subtypes_mt mp sub_mtb_l =
-  check_sub (Environ.lookup_modtype mp (Global.env())) sub_mtb_l
+  check_sub (Global.lookup_modtype mp) sub_mtb_l
 
 (* Create a functor type entry *)
 

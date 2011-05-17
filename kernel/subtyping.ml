@@ -302,8 +302,8 @@ let check_constant cst env mp1 l info1 cb2 spec2 subst1 subst2 =
    | _ -> error DefinitionFieldExpected
 
 let rec check_modules cst env msb1 msb2 subst1 subst2 =
-  let mty1 = module_type_of_module env None msb1 in
-  let mty2 =  module_type_of_module env None msb2 in
+  let mty1 = module_type_of_module None msb1 in
+  let mty2 =  module_type_of_module None msb2 in
   let cst = check_modtypes cst env mty1 mty2 subst1 subst2 false in
     cst
 
@@ -397,6 +397,6 @@ let check_subtypes env sup super =
   let env = add_module 
 		(module_body_of_type sup.typ_mp sup) env in
   check_modtypes empty_constraint env 
-    (strengthen env sup sup.typ_mp) super empty_subst 
+    (strengthen sup sup.typ_mp) super empty_subst
     (map_mp super.typ_mp sup.typ_mp sup.typ_delta) false
 

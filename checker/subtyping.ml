@@ -285,8 +285,8 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
    | _ -> error ()
 
 let rec check_modules  env msb1 msb2 subst1 subst2 =
-  let mty1 = module_type_of_module env None msb1 in
-  let mty2 =  module_type_of_module env None msb2 in
+  let mty1 = module_type_of_module None msb1 in
+  let mty2 = module_type_of_module None msb2 in
     check_modtypes env mty1 mty2 subst1 subst2 false;
  
 
@@ -368,7 +368,7 @@ and check_modtypes  env mtb1 mtb2 subst1 subst2 equiv =
 
 let check_subtypes env sup super =
   (*if sup<>super then*)
-  let env = add_module 
-    (module_body_of_type sup.typ_mp sup) env in
-    check_modtypes env (strengthen env sup sup.typ_mp) super empty_subst 
-      (map_mp super.typ_mp sup.typ_mp) false 
+  let env = add_module (module_body_of_type sup.typ_mp sup) env
+  in
+  check_modtypes env (strengthen sup sup.typ_mp) super empty_subst
+      (map_mp super.typ_mp sup.typ_mp) false

@@ -278,7 +278,7 @@ and check_structure_field env mp lab res = function
 and check_modexpr env mse mp_mse res = match mse with
   | SEBident mp ->
       let mb = lookup_module mp env in
-      	(subst_and_strengthen mb mp_mse env).mod_type
+      (subst_and_strengthen mb mp_mse).mod_type
   | SEBfunctor (arg_id, mtb, body) ->
       check_module_type env mtb ;
       let env' = add_module (module_body_of_type (MPbound arg_id) mtb) env in
@@ -291,7 +291,7 @@ and check_modexpr env mse mp_mse res = match mse with
 	try (path_of_mexpr m)
 	with Not_path -> error_application_to_not_path m
 	  (* place for nondep_supertype *) in
-      let mtb = module_type_of_module env (Some mp) (lookup_module mp env) in
+      let mtb = module_type_of_module (Some mp) (lookup_module mp env) in
 	check_subtypes env mtb farg_b;
 	(subst_struct_expr (map_mbid farg_id mp) fbody_b)
   | SEBwith(mte, with_decl) ->
@@ -319,7 +319,7 @@ and check_modtype env mse mp_mse res = match mse with
 	try (path_of_mexpr m)
 	with Not_path -> error_application_to_not_path m
 	  (* place for nondep_supertype *) in
-      let mtb = module_type_of_module env (Some mp) (lookup_module mp env) in
+      let mtb = module_type_of_module (Some mp) (lookup_module mp env) in
 	check_subtypes env mtb farg_b;
 	subst_struct_expr (map_mbid farg_id mp) fbody_b
   | SEBwith(mte, with_decl) ->

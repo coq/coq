@@ -19,7 +19,7 @@ open Mod_subst
 
 val module_body_of_type : module_path -> module_type_body  -> module_body 
 
-val module_type_of_module : env -> module_path option -> module_body -> 
+val module_type_of_module : module_path option -> module_body ->
   module_type_body
 
 val destr_functor :
@@ -37,16 +37,15 @@ val add_module : module_body -> env -> env
 
 val check_modpath_equiv : env -> module_path -> module_path -> unit
 
-val strengthen : env -> module_type_body -> module_path -> module_type_body
+val strengthen : module_type_body -> module_path -> module_type_body
 
 val inline_delta_resolver :
   env -> inline -> module_path -> mod_bound_id -> module_type_body ->
   delta_resolver -> delta_resolver
 
-val strengthen_and_subst_mb : module_body -> module_path -> env -> bool 
-  -> module_body
+val strengthen_and_subst_mb : module_body -> module_path -> bool -> module_body
 
-val subst_modtype_and_resolver : module_type_body -> module_path -> env ->
+val subst_modtype_and_resolver : module_type_body -> module_path ->
   module_type_body
 
 val clean_bounded_mod_expr : struct_expr_body -> struct_expr_body
