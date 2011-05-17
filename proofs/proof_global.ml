@@ -300,7 +300,7 @@ let maximal_unfocus k p =
   begin try while Proof.no_focused_goal p do
     Proof.unfocus k p
   done
-  with Proof.FullyUnfocused -> ()
+  with Proof.FullyUnfocused | Util.UserError _ -> ()
   end
 
 
