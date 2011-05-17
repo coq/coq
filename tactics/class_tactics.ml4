@@ -259,7 +259,7 @@ let make_autogoal_hints =
     fun only_classes ?(st=full_transparent_state) g ->
     let sign = pf_filtered_hyps g in
       match !res with
-      | Some (sign', hints) when sign = sign' -> hints
+      | Some (sign', hints) when Environ.eq_named_context_val sign sign' -> hints
       | _ -> let hints = make_hints g st only_classes (Environ.named_context_of_val sign) in
 	  res := Some (sign, hints); hints
 	  
