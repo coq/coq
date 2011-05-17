@@ -315,10 +315,7 @@ module Bullet = struct
   open Store.Field
 
 
-  type t = 
-    | Dash
-    | Star
-    | Plus
+  type t = Vernacexpr.bullet
 
   type behavior = {
     name : string;

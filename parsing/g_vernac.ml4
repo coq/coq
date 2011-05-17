@@ -103,9 +103,9 @@ GEXTEND Gram
     | b = bullet; tac = subgoal_command -> tac None (Some b)] ]
   ;
   bullet:
-  [ [ "-" -> Proof_global.Bullet.Dash
-    | "*" -> Proof_global.Bullet.Star
-    | "+" -> Proof_global.Bullet.Plus ] ]
+  [ [ "-" -> Dash
+    | "*" -> Star
+    | "+" -> Plus ] ]
   ;
   subgoal_command: 
     [ [ c = check_command; "." -> fun g _ -> c g

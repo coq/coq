@@ -195,6 +195,11 @@ type scheme =
 
 type inline = int option (* inlining level, none for no inlining *)
 
+type bullet =
+    | Dash
+    | Star
+    | Plus
+
 type vernac_expr =
   (* Control *)
   | VernacList of located_vernac_expr list
@@ -271,7 +276,7 @@ type vernac_expr =
 
   (* Solving *)
 
-  | VernacSolve of int * Proof_global.Bullet.t option * raw_tactic_expr * bool
+  | VernacSolve of int * bullet option * raw_tactic_expr * bool
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)

@@ -102,10 +102,7 @@ val maximal_unfocus : 'a Proof.focus_kind -> Proof.proof -> unit
 (**********************************************************)
 
 module Bullet : sig
-  type t = 
-    | Dash
-    | Star
-    | Plus
+  type t = Vernacexpr.bullet
 
   (** A [behavior] is the data of a put function which
       is called when a bullet prefixes a tactic, together
