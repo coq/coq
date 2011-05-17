@@ -27,8 +27,6 @@ val errorlabstrm : string -> std_ppcmds -> 'a
 exception AlreadyDeclared of std_ppcmds
 val alreadydeclared : std_ppcmds -> 'a
 
-exception AnomalyOnError of string * exn
-
 (** [todo] is for running of an incomplete code its implementation is
    "do nothing" (or print a message), but this function should not be
    used in a released code *)

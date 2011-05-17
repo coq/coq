@@ -26,61 +26,34 @@ let guill s = "\""^s^"\""
 
 exception EvaluatedError of std_ppcmds * exn option
 
-(* Is an exception due to a regular user error, or to some
-   anomaly on the Coq side ? *)
+(** Registration of generic errors
+    Nota: explain_exn does NOT end with a newline anymore!
+*)
 
-let rec is_user_error = function
-  | Loc.Exc_located (_,e) -> is_user_error e
-  | EvaluatedError (_,Some e) -> is_user_error e
-  | EvaluatedError (_,None)
-  | Stream.Error _ | Token.Error _ | Lexer.Error.E _
-  | Sys_error _ | Out_of_memory | Stack_overflow | Timeout | Sys.Break
-  | UserError _ -> true
-  | _ -> false
-
-(* assumption : explain_sys_exn does NOT end with a 'FNL anymore! *)
-
-let rec explain_exn_default_aux anomaly_string report_fn = function
+let explain_exn_default = function
   (* Basic interaction exceptions *)
-  | Stream.Error txt ->
-      hov 0 (str "Syntax error: " ++ str txt ++ str ".")
-  | Token.Error txt ->
-      hov 0 (str "Syntax error: " ++ str txt ++ str ".")
-  | Lexer.Error.E err ->
-      hov 0 (str (Lexer.Error.to_string err))
-  | Sys_error msg ->
-      hov 0 (str "System error: " ++ str (guill msg))
-  | Out_of_memory ->
-      hov 0 (str "Out of memory.")
-  | Stack_overflow ->
-      hov 0 (str "Stack overflow.")
-  | Timeout ->
-      hov 0 (str "Timeout!")
-  | Sys.Break ->
-      hov 0 (fnl () ++ str "User interrupt.")
-  (* Variants of anomaly *)
-  | AnomalyOnError (s,exc) ->
-      hov 0 (anomaly_string () ++ str s ++ str ". Received exception is:" ++
-	fnl() ++ explain_exn_default_aux anomaly_string report_fn exc)
-  | Assert_failure (s,b,e) ->
-      hov 0 (anomaly_string () ++ str "assert failure" ++ spc () ++
-	       (if s = "" then mt ()
-		else
-		  (str ("(file \"" ^ s ^ "\", line ") ++ int b ++
-		   str ", characters " ++ int e ++ str "-" ++
-		   int (e+6) ++ str ")")) ++
-	       report_fn ())
+  | Stream.Error txt -> hov 0 (str ("Syntax error: " ^ txt ^ "."))
+  | Token.Error txt ->  hov 0 (str ("Syntax error: " ^ txt ^ "."))
+  | Lexer.Error.E err -> hov 0 (str (Lexer.Error.to_string err))
+  | Sys_error msg -> hov 0 (str ("System error: " ^ guill msg))
+  | Out_of_memory -> hov 0 (str "Out of memory.")
+  | Stack_overflow -> hov 0 (str "Stack overflow.")
+  | Timeout -> hov 0 (str "Timeout!")
+  | Sys.Break -> hov 0 (fnl () ++ str "User interrupt.")
   (* Meta-exceptions *)
   | Loc.Exc_located (loc,exc) ->
       hov 0 ((if loc = dummy_loc then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
-               ++ explain_exn_default_aux anomaly_string report_fn exc)
-  | EvaluatedError (msg,None) ->
-      msg
-  | EvaluatedError (msg,Some reraise) ->
-      msg ++ explain_exn_default_aux anomaly_string report_fn reraise
+               ++ Errors.print_no_anomaly exc)
+  | EvaluatedError (msg,None) -> msg
+  | EvaluatedError (msg,Some reraise) -> msg ++ Errors.print_no_anomaly reraise
   (* Otherwise, not handled here *)
   | _ -> raise Errors.Unhandled
+
+let _ = Errors.register_handler explain_exn_default
+
+
+(** Pre-explain a vernac interpretation error *)
 
 let wrap_vernac_error strm =
   EvaluatedError (hov 0 (str "Error:" ++ spc () ++ strm), None)
@@ -125,10 +98,10 @@ let rec process_vernac_interp_error = function
         (str "No constant of this name:" ++ spc () ++
          Libnames.pr_qualid q ++ str ".")
   | Refiner.FailError (i,s) ->
-      EvaluatedError (hov 0 (str "Error: Tactic failure" ++
-                (if Lazy.force s <> mt() then str ":" ++ Lazy.force s else mt ()) ++
-                if i=0 then str "." else str " (level " ++ int i ++ str")."),
-                None)
+      wrap_vernac_error
+	(str "Tactic failure" ++
+           (if Lazy.force s <> mt() then str ":" ++ Lazy.force s else mt ()) ++
+           if i=0 then str "." else str " (level " ++ int i ++ str").")
   | AlreadyDeclared msg ->
       wrap_vernac_error (msg ++ str ".")
   | Proof_type.LtacLocated (_,(Refiner.FailError (i,s) as exc)) when Lazy.force s <> mt () ->
@@ -141,24 +114,8 @@ let rec process_vernac_interp_error = function
   | exc ->
       exc
 
-let anomaly_string () = str "Anomaly: "
-
-let report () = (str "." ++ spc () ++ str "Please report.")
-
-let explain_exn_default =
-  explain_exn_default_aux anomaly_string report
-
-let raise_if_debug e =
-  if !Flags.debug then raise e
-
 let _ = Tactic_debug.explain_logic_error :=
-  (fun e -> explain_exn_default (process_vernac_interp_error e))
+  (fun e -> Errors.print (process_vernac_interp_error e))
 
 let _ = Tactic_debug.explain_logic_error_no_anomaly :=
-  (fun e ->
-    explain_exn_default_aux mt (fun () -> str ".")
-      (process_vernac_interp_error e))
-
-let explain_exn_function = ref explain_exn_default
-
-let _ = Errors.register_handler explain_exn_default
+  (fun e -> Errors.print_no_report (process_vernac_interp_error e))

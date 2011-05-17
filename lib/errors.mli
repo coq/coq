@@ -15,13 +15,27 @@
     recent first) until a handle deals with it.
 
     Handles signal that they don't deal with some exception
-    by raisine [Unhandled].
+    by raising [Unhandled].
 
     Handles can raise exceptions themselves, in which
     case, the exception is passed to the handles which
-    were registered before. *)
+    were registered before.
+
+    The exception that are considered anomalies should not be
+    handled by registered handlers.
+*)
+
 exception Unhandled
 
 val register_handler : (exn -> Pp.std_ppcmds) -> unit
 
+(** The standard exception printer *)
 val print : exn -> Pp.std_ppcmds
+
+(** Same as [print], except that the "Please report" part of an anomaly
+    isn't printed (used in Ltac debugging). *)
+val print_no_report : exn -> Pp.std_ppcmds
+
+(** Same as [print], except that anomalies are not printed but re-raised
+    (used for the Fail command) *)
+val print_no_anomaly : exn -> Pp.std_ppcmds

@@ -2982,7 +2982,9 @@ let globTacticIn t = TacArg (TacDynamic (dummy_loc,tactic_in t))
 let tacticIn t =
   globTacticIn (fun ist ->
     try glob_tactic (t ist)
-    with e -> raise (AnomalyOnError ("Incorrect tactic expression", e)))
+    with e -> anomalylabstrm "tacticIn"
+      (str "Incorrect tactic expression. Received exception is:" ++
+       Errors.print e))
 
 let tacticOut = function
   | TacArg (TacDynamic (_,d)) ->

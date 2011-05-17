@@ -13,18 +13,12 @@ open Util
 
 val print_loc : loc -> std_ppcmds
 
-(** Is an exception due to a regular user error, or to some
-    anomaly on the Coq side ? *)
-
-val is_user_error : exn -> bool
-
 (** Pre-explain a vernac interpretation error *)
 
 val process_vernac_interp_error : exn -> exn
 
-(** For debugging purpose (?), the explain function can be twicked *)
+(** General explain function. Should not be used directly now,
+    see instead function [Errors.print] and variants *)
 
-val explain_exn_function : (exn -> std_ppcmds) ref
 val explain_exn_default : exn -> std_ppcmds
 
-val raise_if_debug : exn -> unit

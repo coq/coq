@@ -209,11 +209,12 @@ let rec vernac_com interpfun (loc,com) =
 	with e -> match real_error e with
 	  | HasNotFailed ->
 	      errorlabstrm "Fail" (str "The command has not failed !")
-	  | e when Cerrors.is_user_error e ->
+	  | e ->
+	      (* Anomalies are re-raised by the next line *)
+	      let msg = Errors.print_no_anomaly e in
 	      if_verbose msgnl
 		(str "The command has indeed failed with message:" ++
-		 fnl () ++ str "=> " ++ hov 0 (Errors.print e))
-	  | _ -> raise e (* Anomalies are not catched by Fail *)
+		 fnl () ++ str "=> " ++ hov 0 msg)
 	end
 
     | VernacTime v ->

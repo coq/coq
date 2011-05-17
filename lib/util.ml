@@ -19,8 +19,6 @@ exception UserError of string * std_ppcmds (* User errors *)
 let error string = raise (UserError(string, str string))
 let errorlabstrm l pps = raise (UserError(l,pps))
 
-exception AnomalyOnError of string * exn
-
 exception AlreadyDeclared of std_ppcmds (* for already declared Schemes *)
 let alreadydeclared pps = raise (AlreadyDeclared(pps))
 
