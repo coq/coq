@@ -76,13 +76,13 @@ Ltac psatzl dom :=
   end in tac.
 
 Ltac lia :=
-  xlia ;
+  cbv delta - [Zplus Zminus Zopp Zmult Zpower Zgt Zge Zle Zlt iff not] ; xlia ; 
   intros __wit __varmap __ff ;
     change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
       apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.
 
 Ltac nlia :=
-  xnlia ;
+  cbv delta - [Zplus Zminus Zopp Zmult Zpower Zgt Zge Zle Zlt iff not] ; xnlia ;
   intros __wit __varmap __ff ;
     change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
       apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.
