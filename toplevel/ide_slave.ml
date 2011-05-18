@@ -148,7 +148,7 @@ let rec attribute_of_vernac_command = function
   (* Proof management *)
   | VernacGoal _ -> [GoalStartingCommand]
 
-  | VernacAbort _ -> [NavigationCommand]
+  | VernacAbort _ -> []
   | VernacAbortAll -> [NavigationCommand]
   | VernacRestart -> [NavigationCommand]
   | VernacSuspend -> [NavigationCommand]
