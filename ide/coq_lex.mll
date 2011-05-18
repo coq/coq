@@ -67,7 +67,7 @@
   let is_proof_end =
     let h = Hashtbl.create 97 in
     List.iter (fun s -> Hashtbl.add h s ())
-      [ "Qed" ; "Defined" ; "Admitted" ];
+      [ "Qed" ; "Defined" ; "Admitted"; "Abort" ];
     Hashtbl.mem h
 
   let start = ref true
