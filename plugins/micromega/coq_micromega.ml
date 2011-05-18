@@ -988,7 +988,7 @@ struct
     * This is the big generic function for formula parsers.
     *)
   
-  let parse_formula parse_atom env term =
+  let parse_formula parse_atom env tg term =
 
     let parse_atom env tg t = try let (at,env) = parse_atom env t in
                                     (A(at,tg,t), env,Tag.next tg) with _ -> (X(t),env,tg) in
@@ -1019,7 +1019,7 @@ struct
       | _ when term = Lazy.force coq_True -> (TT,env,tg)
       | _ when term = Lazy.force coq_False -> (FF,env,tg)
       | _  -> X(term),env,tg in
-    xparse_formula env term
+    xparse_formula env tg  (Reductionops.whd_zeta term)
 
   let dump_formula typ dump_atom f =
    let rec xdump f =
@@ -1808,13 +1808,13 @@ let xlia gl =
   try 
     micromega_gen parse_zarith Mc.negate Mc.normalise Mc.runsat Mc.rdeduce zz_domain_spec
       [ linear_Z ] gl
-  with z -> Printexc.print_backtrace stdout ; raise z
+  with z -> (*Printexc.print_backtrace stdout ;*) raise z
 
 let xnlia gl =
   try 
     micromega_gen parse_zarith Mc.negate Mc.normalise Mc.runsat Mc.rdeduce zz_domain_spec
       [ nlinear_Z ] gl
-  with z -> Printexc.print_backtrace stdout ; raise z
+  with z -> (*Printexc.print_backtrace stdout ;*) raise z
 
 
 
