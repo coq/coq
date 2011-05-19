@@ -331,10 +331,6 @@ let run_command converter f c =
 
 type time = float * float * float
 
-let process_time () =
-  let t = times ()  in
-  (t.tms_utime, t.tms_stime)
-
 let get_time () =
   let t = times ()  in
   (time(), t.tms_utime, t.tms_stime)

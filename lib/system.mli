@@ -76,7 +76,6 @@ val run_command : (string -> string) -> (string -> unit) -> string ->
 
 type time
 
-val process_time : unit -> float * float
 val get_time : unit -> time
 val time_difference : time -> time -> float (** in seconds *)
 val fmt_time_difference : time -> time -> Pp.std_ppcmds
