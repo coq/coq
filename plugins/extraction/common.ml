@@ -179,6 +179,16 @@ let mktable autoclean =
   if autoclean then register_cleanup (fun () -> Hashtbl.clear h);
   (Hashtbl.add h, Hashtbl.find h, fun () -> Hashtbl.clear h)
 
+(* We might have built [global_reference] whose canonical part is
+   inaccurate. We must hence compare only the user part,
+   hence using a Hashtbl might be incorrect *)
+
+let mktable_ref autoclean =
+  let m = ref Refmap'.empty in
+  let clear () = m := Refmap'.empty in
+  if autoclean then register_cleanup clear;
+  (fun r v -> m := Refmap'.add r v !m), (fun r -> Refmap'.find r !m), clear
+
 (* A table recording objects in the first level of all MPfile *)
 
 let add_mpfiles_content,get_mpfiles_content,clear_mpfiles_content =
@@ -355,10 +365,10 @@ let ref_renaming_fun (k,r) =
 (* Cached version of the last function *)
 
 let ref_renaming =
-  let add,get,_ = mktable true in
-  fun x ->
-    try if is_mp_bound (base_mp (modpath_of_r (snd x))) then raise Not_found; get x
-    with Not_found -> let y = ref_renaming_fun x in add x y; y
+  let add,get,_ = mktable_ref true in
+  fun ((k,r) as x) ->
+    try if is_mp_bound (base_mp (modpath_of_r r)) then raise Not_found; get r
+    with Not_found -> let y = ref_renaming_fun x in add r y; y
 
 (* [visible_clash mp0 (k,s)] checks if [mp0-s] of kind [k]
    can be printed as [s] in the current context of visible

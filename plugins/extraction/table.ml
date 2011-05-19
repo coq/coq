@@ -21,10 +21,21 @@ open Util
 open Pp
 open Miniml
 
-(** Sets and maps for [global_reference] that do _not_ work modulo
-    name equivalence (otherwise use Refset / Refmap ) *)
+(** Sets and maps for [global_reference] that work modulo equivalent
+    on the user part of the name (otherwise use Refset / Refmap ) *)
 
-module RefOrd = struct type t = global_reference let compare = compare end
+module RefOrd = struct
+  type t = global_reference
+  let compare x y =
+    let make_name = function
+      | ConstRef con -> ConstRef(constant_of_kn(user_con con))
+      | IndRef (kn,i) -> IndRef(mind_of_kn(user_mind kn),i)
+      | ConstructRef ((kn,i),j)-> ConstructRef((mind_of_kn(user_mind kn),i),j)
+      | VarRef id -> VarRef id
+    in
+    Pervasives.compare (make_name x) (make_name y)
+end
+
 module Refmap' = Map.Make(RefOrd)
 module Refset' = Set.Make(RefOrd)
 
