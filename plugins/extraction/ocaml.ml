@@ -439,7 +439,7 @@ let pp_logical_ind packet =
   fnl ()
 
 let pp_singleton kn packet =
-  let name = pp_global Type (IndRef (mind_of_kn kn,0)) in
+  let name = pp_global Type (IndRef (kn,0)) in
   let l = rename_tvars keywords packet.ip_vars in
   hov 2 (str "type " ++ pp_parameters l ++ name ++ str " =" ++ spc () ++
 	 pp_type false l (List.hd packet.ip_types.(0)) ++ fnl () ++
@@ -447,7 +447,7 @@ let pp_singleton kn packet =
 		     pr_id packet.ip_consnames.(0)))
 
 let pp_record kn projs ip_equiv packet =
-  let name = pp_global Type (IndRef (mind_of_kn kn,0)) in
+  let name = pp_global Type (IndRef (kn,0)) in
   let projnames = List.map (pp_global Term) projs in
   let l = List.combine projnames packet.ip_types.(0) in
   let pl = rename_tvars keywords packet.ip_vars in
@@ -469,20 +469,20 @@ let pp_ind co kn ind =
   let init= ref (str "type ") in
   let names =
     Array.mapi (fun i p -> if p.ip_logical then mt () else
-		  pp_global Type (IndRef (mind_of_kn kn,i)))
+		  pp_global Type (IndRef (kn,i)))
       ind.ind_packets
   in
   let cnames =
     Array.mapi
       (fun i p -> if p.ip_logical then [||] else
-	 Array.mapi (fun j _ -> pp_global Cons (ConstructRef ((mind_of_kn kn,i),j+1)))
+	 Array.mapi (fun j _ -> pp_global Cons (ConstructRef ((kn,i),j+1)))
 	   p.ip_types)
       ind.ind_packets
   in
   let rec pp i =
     if i >= Array.length ind.ind_packets then mt ()
     else
-      let ip = (mind_of_kn kn,i) in
+      let ip = (kn,i) in
       let ip_equiv = ind.ind_equiv, i in
       let p = ind.ind_packets.(i) in
       if is_custom (IndRef ip) then pp (i+1)

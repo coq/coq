@@ -211,9 +211,8 @@ let rec extract_sfb_spec env mp = function
       if logical_spec s then specs
       else begin Visit.add_spec_deps s; (l,Spec s) :: specs end
   | (l,SFBmind _) :: msig ->
-      let kn = make_kn mp empty_dirpath l in
-      let mind = mind_of_kn kn in
-      let s = Sind (kn, extract_inductive env mind) in
+      let mind = make_mind mp empty_dirpath l in
+      let s = Sind (mind, extract_inductive env mind) in
       let specs = extract_sfb_spec env mp msig in
       if logical_spec s then specs
       else begin Visit.add_spec_deps s; (l,Spec s) :: specs end
@@ -294,11 +293,10 @@ let rec extract_sfb env mp all = function
 	 else ms)
   | (l,SFBmind mib) :: msb ->
       let ms = extract_sfb env mp all msb in
-      let kn = make_kn mp empty_dirpath l in
-      let mind = mind_of_kn kn in
+      let mind = make_mind mp empty_dirpath l in
       let b = Visit.needed_ind mind in
       if all || b then
-	let d = Dind (kn, extract_inductive env mind) in
+	let d = Dind (mind, extract_inductive env mind) in
 	if (not b) && (logical_decl d) then ms
 	else begin Visit.add_decl_deps d; (l,SEdecl d) :: ms end
       else ms

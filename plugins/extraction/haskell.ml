@@ -74,17 +74,16 @@ let pp_global k r =
 
 let kn_sig =
   let specif = MPfile (dirpath_of_string "Coq.Init.Specif") in
-  make_kn specif empty_dirpath (mk_label "sig")
+  make_mind specif empty_dirpath (mk_label "sig")
 
 let rec pp_type par vl t =
   let rec pp_rec par = function
     | Tmeta _ | Tvar' _ -> assert false
     | Tvar i -> (try pr_id (List.nth vl (pred i)) with _ -> (str "a" ++ int i))
     | Tglob (r,[]) -> pp_global Type r
-    | Tglob (r,l) ->
-	if r = IndRef (mind_of_kn kn_sig,0) then
+    | Tglob (IndRef(kn,0),l) when kn = mk_ind "Coq.Init.Specif" "sig" ->
 	  pp_type true vl (List.hd l)
-	else
+    | Tglob (r,l) ->
 	  pp_par par
 	    (pp_global Type r ++ spc () ++
 	     prlist_with_sep spc (pp_type true vl) l)
@@ -291,8 +290,8 @@ let rec pp_ind first kn i ind =
 
 let pp_decl = function
   | Dind (kn,i) when i.ind_kind = Singleton ->
-      pp_singleton (mind_of_kn kn) i.ind_packets.(0) ++ fnl ()
-  | Dind (kn,i) -> hov 0 (pp_ind true (mind_of_kn kn) 0 i)
+      pp_singleton kn i.ind_packets.(0) ++ fnl ()
+  | Dind (kn,i) -> hov 0 (pp_ind true kn 0 i)
   | Dtype (r, l, t) ->
       if is_inline_custom r then mt ()
       else

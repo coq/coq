@@ -109,15 +109,14 @@ let decl_iter_references do_term do_cons do_type =
   let type_iter = type_iter_references do_type
   and ast_iter = ast_iter_references do_term do_cons do_type in
   function
-    | Dind (kn,ind) -> ind_iter_references do_term do_cons do_type 
-	(mind_of_kn kn) ind
+    | Dind (kn,ind) -> ind_iter_references do_term do_cons do_type kn ind
     | Dtype (r,_,t) -> do_type r; type_iter t
     | Dterm (r,a,t) -> do_term r; ast_iter a; type_iter t
     | Dfix(rv,c,t) ->
 	Array.iter do_term rv; Array.iter ast_iter c; Array.iter type_iter t
 
 let spec_iter_references do_term do_cons do_type = function
-  | Sind (kn,ind) -> ind_iter_references do_term do_cons do_type (mind_of_kn kn) ind
+  | Sind (kn,ind) -> ind_iter_references do_term do_cons do_type kn ind
   | Stype (r,_,ot) -> do_type r; Option.iter (type_iter_references do_type) ot
   | Sval (r,t) -> do_term r; type_iter_references do_type t
 
@@ -295,7 +294,7 @@ let reset_needed, add_needed, add_needed_mp, found_needed, is_needed =
      Refset'.mem r !needed || MPset.mem (modpath_of_r r) !needed_mps))
 
 let declared_refs = function
-  | Dind (kn,_) -> [IndRef (mind_of_kn kn,0)]
+  | Dind (kn,_) -> [IndRef (kn,0)]
   | Dtype (r,_,_) -> [r]
   | Dterm (r,_,_) -> [r]
   | Dfix (rv,_,_) -> Array.to_list rv
@@ -306,7 +305,7 @@ let declared_refs = function
 let compute_deps_decl = function
   | Dind (kn,ind) ->
       (* Todo Later : avoid dependencies when Extract Inductive *)
-      ind_iter_references add_needed add_needed add_needed (mind_of_kn kn) ind
+      ind_iter_references add_needed add_needed add_needed kn ind
   | Dtype (r,ids,t) ->
       if not (is_custom r) then type_iter_references add_needed t
   | Dterm (r,u,t) ->
@@ -319,7 +318,7 @@ let compute_deps_decl = function
 let compute_deps_spec = function
   | Sind (kn,ind) ->
       (* Todo Later : avoid dependencies when Extract Inductive *)
-      ind_iter_references add_needed add_needed add_needed (mind_of_kn kn) ind
+      ind_iter_references add_needed add_needed add_needed kn ind
   | Stype (r,ids,t) ->
       if not (is_custom r) then Option.iter (type_iter_references add_needed) t
   | Sval (r,t) ->

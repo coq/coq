@@ -137,13 +137,13 @@ and ml_ast =
 (*s ML declarations. *)
 
 type ml_decl =
-  | Dind  of kernel_name * ml_ind
+  | Dind  of mutual_inductive * ml_ind
   | Dtype of global_reference * identifier list * ml_type
   | Dterm of global_reference * ml_ast * ml_type
   | Dfix  of global_reference array * ml_ast array * ml_type array
 
 type ml_spec =
-  | Sind  of kernel_name * ml_ind
+  | Sind  of mutual_inductive * ml_ind
   | Stype of global_reference * identifier list * ml_type option
   | Sval  of global_reference * ml_type
 
