@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Gc
-
 let word_length = Sys.word_size / 8
 
 let float_of_time t = float_of_int t /. 100.
