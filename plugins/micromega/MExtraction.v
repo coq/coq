@@ -38,10 +38,23 @@ Extract Inductive sumor => option [ Some None ].
     Let's rather use the ocaml && *)
 Extract Inlined Constant andb => "(&&)".
 
+Require Import Reals.
+
+Extract Constant R => "int".  
+Extract Constant R0 => "0".  
+Extract Constant R1 => "1".  
+Extract Constant Rplus => "( + )".
+Extract Constant Rmult => "( * )".
+Extract Constant Ropp  => "fun x -> - x".
+Extract Constant Rinv   => "fun x -> 1 / x".
+
 Extraction "micromega.ml"
   List.map simpl_cone (*map_cone  indexes*)
   denorm Qpower
   n_of_Z N_of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find.
+
+
+
 
 (* Local Variables: *)
 (* coding: utf-8 *)

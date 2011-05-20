@@ -43,7 +43,7 @@ let z_spec = {
  number_to_num = (fun x -> Big_int (C2Ml.z_big_int x));
  zero = Mc.Z0;
  unit = Mc.Zpos Mc.XH;
- mult = Mc.zmult;
+ mult = Mc.Z.mul;
  eqb  = Mc.zeq_bool
 }
  
@@ -579,7 +579,7 @@ let  q_cert_of_pos  pos =
   | Sub(t1,t2) ->  PEsub (term_to_z_expr t1,  term_to_z_expr t2)
   | _ -> failwith "term_to_z_expr: not implemented"
 
- let term_to_z_pol e = Mc.norm_aux (Ml2C.z 0) (Ml2C.z 1) Mc.zplus  Mc.zmult Mc.zminus Mc.zopp Mc.zeq_bool (term_to_z_expr e)
+ let term_to_z_pol e = Mc.norm_aux (Ml2C.z 0) (Ml2C.z 1) Mc.Z.add  Mc.Z.mul Mc.Z.sub Mc.Z.opp Mc.zeq_bool (term_to_z_expr e)
 
 let  z_cert_of_pos  pos = 
  let s,pos = (scale_certificate pos) in

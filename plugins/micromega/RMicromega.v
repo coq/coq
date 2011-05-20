@@ -16,6 +16,9 @@ Require Import OrderedRing.
 Require Import RingMicromega.
 Require Import Refl.
 Require Import Raxioms RIneq Rpow_def DiscrR.
+Require Import QArith.
+Require Import Qfield.
+
 Require Setoid.
 (*Declare ML Module "micromega_plugin".*)
 
@@ -60,31 +63,404 @@ Proof.
   apply (Rmult_lt_compat_r) ; auto.
 Qed.
 
-Require ZMicromega.
-(* R with coeffs in Z *)
+Definition Q2R := fun x : Q => (IZR (Qnum x) * / IZR (' Qden x))%R.
 
-Lemma RZSORaddon :
-  SORaddon R0 R1 Rplus Rmult Rminus Ropp  (@eq R)  Rle (* ring elements *)
-  0%Z 1%Z Zplus Zmult Zminus Zopp (* coefficients *)
-  Zeq_bool Zle_bool
-  IZR nat_of_N pow.
+
+Lemma Rinv_elim : forall x y z, 
+  y <> 0 -> (z * y = x <->   x * / y = z).
+Proof.
+  intros.
+  split ; intros.
+  subst.
+  rewrite Rmult_assoc.
+  rewrite Rinv_r; auto.
+  ring.
+  subst.
+  rewrite Rmult_assoc.
+  rewrite (Rmult_comm (/ y)).
+  rewrite Rinv_r ; auto.
+  ring.
+Qed.  
+
+Ltac INR_nat_of_P :=
+  match goal with
+    | H : context[INR (nat_of_P ?X)] |- _ => 
+      revert H ; 
+      let HH := fresh in
+        assert (HH := pos_INR_nat_of_P X) ; revert HH ; generalize (INR (nat_of_P X))
+    | |- context[INR (nat_of_P ?X)] =>
+      let HH := fresh in
+        assert (HH := pos_INR_nat_of_P X) ; revert HH ; generalize (INR (nat_of_P X))
+  end.
+
+Ltac add_eq expr val := set (temp := expr) ; 
+  generalize (refl_equal temp) ; 
+    unfold temp at 1 ; generalize temp ; intro val ; clear temp.
+
+Ltac Rinv_elim :=
+  match goal with
+    | |- context[?x * / ?y] => 
+      let z := fresh "v" in 
+      add_eq (x * / y) z  ;
+      let H := fresh in intro H ; rewrite <- Rinv_elim in H
+  end.
+
+Lemma Rlt_neq : forall r , 0 < r -> r <> 0.
+Proof.
+  red. intros.
+  subst.
+  apply (Rlt_irrefl 0 H).  
+Qed.
+
+
+Lemma Rinv_1 : forall x, x * / 1 = x.
+Proof.
+  intro.
+  Rinv_elim.
+  subst ; ring.
+  apply R1_neq_R0.
+Qed.
+
+Lemma Qeq_true : forall x y,  
+  Qeq_bool x y = true -> 
+   Q2R x = Q2R y.
+Proof.
+  unfold Q2R.
+  simpl.
+  intros.
+  apply Qeq_bool_eq in H.
+  unfold Qeq in H.
+  assert (IZR (Qnum x * ' Qden y) = IZR (Qnum y * ' Qden x))%Z.
+     rewrite H. reflexivity.
+  repeat rewrite mult_IZR in H0.
+  simpl in H0.
+  revert H0.
+  repeat INR_nat_of_P.
+  intros.
+  apply Rinv_elim in H2 ; [| apply Rlt_neq ; auto].
+  rewrite <- H2.
+  field.
+  split ; apply Rlt_neq ; auto.
+Qed.
+
+Lemma Qeq_false : forall x y, Qeq_bool x y = false -> Q2R x <> Q2R y.
+Proof.
+  intros.
+  apply Qeq_bool_neq  in H.
+  intro. apply H.   clear H.
+  unfold Qeq,Q2R in *.
+  simpl in *.
+  revert H0.
+  repeat Rinv_elim.
+  intros.
+  subst.
+  assert (IZR (Qnum x * ' Qden y)%Z = IZR (Qnum y * ' Qden x)%Z).
+  repeat rewrite mult_IZR.  
+  simpl.
+  rewrite <- H0. rewrite <- H.
+  ring.
+  apply eq_IZR ; auto.
+  INR_nat_of_P; intros; apply Rlt_neq ; auto. 
+  INR_nat_of_P; intros ; apply Rlt_neq ; auto. 
+Qed.
+
+  
+
+Lemma Qle_true : forall x y : Q, Qle_bool x y = true -> Q2R x <= Q2R y.
+Proof.
+  intros.
+  apply Qle_bool_imp_le in H.
+  unfold Qle in H.
+  unfold Q2R.
+  simpl in *.
+  apply IZR_le in H.
+  repeat rewrite mult_IZR in H.
+  simpl in H.
+  repeat INR_nat_of_P; intros.
+  assert (Hr := Rlt_neq r H).
+  assert (Hr0 := Rlt_neq r0 H0).
+  replace (IZR (Qnum x) * / r) with ((IZR (Qnum x) * r0) * (/r * /r0)).
+  replace (IZR (Qnum y) * / r0) with ((IZR (Qnum y) * r) * (/r * /r0)).
+  apply Rmult_le_compat_r ; auto.
+  apply Rmult_le_pos.
+  unfold Rle. left. apply Rinv_0_lt_compat ; auto.
+  unfold Rle. left. apply Rinv_0_lt_compat ; auto.
+  field ; intuition.
+  field ; intuition.
+Qed.
+
+
+
+Lemma Q2R_0 : Q2R 0 = 0.
+Proof.
+  compute. apply Rinv_1.
+Qed.
+
+Lemma Q2R_1 : Q2R 1 = 1.
+Proof.
+  compute. apply Rinv_1.
+Qed.
+
+Lemma Q2R_plus : forall x y, Q2R (x + y) = Q2R x + Q2R y.
+Proof.
+  intros.
+  unfold Q2R.
+  simpl in *.
+  rewrite plus_IZR in *.
+  rewrite mult_IZR in *.
+  simpl.  
+  rewrite nat_of_P_mult_morphism.
+  rewrite mult_INR.
+  rewrite mult_IZR.
+  simpl.
+  repeat INR_nat_of_P.
+  intros. field. 
+  split ; apply Rlt_neq ; auto.
+Qed.
+
+Lemma Q2R_opp : forall x, Q2R (- x) = - Q2R x.
+Proof.
+  intros.
+  unfold Q2R.
+  simpl.
+  rewrite opp_IZR.
+  ring.  
+Qed.
+
+Lemma Q2R_minus : forall x y, Q2R (x - y) = Q2R x - Q2R y.
+Proof.
+  intros.
+  unfold Qminus.
+  rewrite Q2R_plus.
+  rewrite Q2R_opp.
+  ring.
+Qed.
+
+
+Lemma Q2R_mult : forall x y, Q2R (x * y) = Q2R x * Q2R y.
+Proof.
+  unfold Q2R ; intros.
+  simpl.
+  repeat rewrite mult_IZR.
+  simpl.  
+  rewrite nat_of_P_mult_morphism.
+  rewrite mult_INR.
+  repeat INR_nat_of_P.
+  intros. field ; split ; apply Rlt_neq ; auto.
+Qed.
+
+Lemma Q2R_inv_lt : forall x, (0 < x)%Q -> 
+  Q2R (/ x) =  / Q2R x.
+Proof.
+  unfold Q2R ; simpl.
+  intros.
+  unfold Qlt in H.
+  revert H.
+  simpl.
+  intros.
+  unfold Qinv.
+  destruct x ; simpl in *.
+  destruct Qnum ; simpl.
+  exfalso. auto with zarith.
+  clear H.
+  repeat INR_nat_of_P.
+  intros.
+  assert (HH := Rlt_neq _ H).
+  assert (HH0 := Rlt_neq _ H0).
+  rewrite Rinv_mult_distr ; auto.
+  rewrite Rinv_involutive ; auto.
+  ring.
+  apply Rinv_0_lt_compat in H0.
+  apply Rlt_neq ; auto.
+  simpl in H.
+  exfalso.
+  rewrite Pmult_comm  in H.
+  compute in H.
+  discriminate.
+Qed.
+
+Lemma Qinv_opp : forall x, (- (/ x) = / ( -x))%Q.
+Proof.
+  destruct x ; destruct Qnum ; reflexivity.
+Qed.
+
+Lemma Qopp_involutive_strong : forall x, (- - x = x)%Q.
+Proof.
+  intros.
+  destruct x.
+  unfold Qopp.
+  simpl.
+  rewrite Zopp_involutive.
+  reflexivity.
+Qed.
+
+Lemma Ropp_0 : forall r , - r = 0 -> r = 0.
+Proof.
+  intros.
+  rewrite <- (Ropp_involutive r).
+  apply Ropp_eq_0_compat ; auto.
+Qed.
+
+Lemma Q2R_x_0 : forall x, Q2R x = 0 -> x == 0%Q.
+Proof.
+  destruct x ; simpl.
+  unfold Q2R.
+  simpl.
+  INR_nat_of_P.
+  intros.
+  apply Rmult_integral in H0.  
+  destruct H0.
+  apply eq_IZR_R0 in H0.
+  subst.
+  reflexivity.
+  exfalso.
+  apply Rinv_0_lt_compat in H.
+  rewrite <- H0 in H.
+  apply Rlt_irrefl in H. auto.
+Qed.
+  
+
+Lemma Q2R_inv_gt : forall x, (0 > x)%Q -> 
+  Q2R (/ x) =  / Q2R x.
+Proof.
+  intros.
+  rewrite <- (Qopp_involutive_strong x).
+  rewrite <- Qinv_opp.
+  rewrite Q2R_opp.
+  rewrite Q2R_inv_lt.
+  repeat rewrite Q2R_opp.
+  rewrite Ropp_inv_permute.
+  auto.
+  intro.
+  apply Ropp_0 in H0.
+  apply Q2R_x_0 in H0.
+  rewrite H0 in H.
+  compute in H. discriminate.
+  unfold Qlt in *.
+  destruct x ; simpl in *.
+  auto with zarith.
+Qed.
+
+Lemma Q2R_inv : forall x, ~ x ==  0 -> 
+  Q2R (/ x) =  / Q2R x.
+Proof.
+  intros.
+  assert ( 0 > x \/ 0 < x)%Q.
+   destruct x ; unfold Qlt, Qeq in * ; simpl in *.
+   rewrite Zmult_1_r in *.
+   destruct Qnum ; simpl in * ; intuition auto.
+   right. reflexivity.
+   left ; reflexivity.
+  destruct H0.
+  apply Q2R_inv_gt ; auto.
+  apply Q2R_inv_lt ; auto.
+Qed.
+
+Lemma Q2R_inv_ext : forall x, 
+  Q2R (/ x) = (if Qeq_bool x 0 then 0 else / Q2R x).
+Proof.
+  intros.
+  case_eq (Qeq_bool x 0).
+  intros.
+  apply Qeq_bool_eq in H.
+  destruct x ; simpl.
+  unfold Qeq in H.
+  simpl in H.
+  replace Qnum with 0%Z.
+  compute. rewrite Rinv_1.
+  reflexivity.
+  rewrite <- H. ring.
+  intros.
+  apply Q2R_inv.
+  intro.
+  rewrite <- Qeq_bool_iff in H0.
+  congruence.
+Qed.
+
+
+Notation to_nat := N.to_nat. (*Nnat.nat_of_N*)
+
+Lemma QSORaddon :
+  @SORaddon R
+  R0 R1 Rplus Rmult Rminus Ropp  (@eq R)  Rle (* ring elements *)
+  Q 0%Q 1%Q Qplus Qmult Qminus Qopp (* coefficients *)
+  Qeq_bool Qle_bool
+  Q2R nat to_nat pow.
 Proof.
   constructor.
   constructor ; intros ; try reflexivity.
-  apply plus_IZR.
-  symmetry. apply Z_R_minus.
-  apply mult_IZR.
-  apply Ropp_Ropp_IZR.
-  apply IZR_eq.
-  apply Zeq_bool_eq ; auto.
+  apply Q2R_0.
+  apply Q2R_1.
+  apply Q2R_plus.
+  apply Q2R_minus.
+  apply Q2R_mult.
+  apply Q2R_opp.
+  apply Qeq_true ; auto.
   apply R_power_theory.
-  intros x y.
-  intro.
-  apply IZR_neq.
-  apply Zeq_bool_neq ; auto.
-  intros. apply IZR_le.  apply Zle_bool_imp_le. auto.
+  apply Qeq_false.
+  apply Qle_true.
 Qed.
 
+
+(* Syntactic ring coefficients. 
+   For computing, we use Q. *)
+Inductive Rcst :=
+| C0
+| C1
+| CQ (r : Q)
+| CZ (r : Z)
+| CPlus (r1 r2 : Rcst)
+| CMinus (r1  r2 : Rcst)
+| CMult (r1 r2 : Rcst)
+| CInv  (r : Rcst)
+| COpp  (r : Rcst).
+
+
+Fixpoint Q_of_Rcst (r : Rcst) : Q :=
+  match r with
+    | C0 => 0 # 1
+    | C1 => 1 # 1
+    | CZ z => z # 1
+    | CQ q => q
+    | CPlus r1 r2 => Qplus (Q_of_Rcst r1) (Q_of_Rcst r2)
+    | CMinus r1 r2 => Qminus (Q_of_Rcst r1) (Q_of_Rcst r2)
+    | CMult r1 r2  => Qmult (Q_of_Rcst r1) (Q_of_Rcst r2)
+    | CInv r        => Qinv (Q_of_Rcst r)
+    | COpp r       => Qopp (Q_of_Rcst r)
+  end.
+
+
+Fixpoint R_of_Rcst (r : Rcst) : R :=
+  match r with
+    | C0 => R0
+    | C1 => R1
+    | CZ z => IZR z
+    | CQ q => Q2R q
+    | CPlus r1 r2  => (R_of_Rcst r1) + (R_of_Rcst r2)
+    | CMinus r1 r2 => (R_of_Rcst r1) - (R_of_Rcst r2)
+    | CMult r1 r2  => (R_of_Rcst r1) * (R_of_Rcst r2)
+    | CInv r       => 
+      if Qeq_bool (Q_of_Rcst r) (0 # 1)
+        then R0 
+        else Rinv (R_of_Rcst r)
+      | COpp r       => - (R_of_Rcst r)
+  end.
+
+Lemma Q_of_RcstR : forall c, Q2R (Q_of_Rcst c) = R_of_Rcst c.
+Proof.
+    induction c ; simpl ; try (rewrite <- IHc1 ; rewrite <- IHc2).
+    apply Q2R_0. 
+    apply Q2R_1. 
+    reflexivity.
+    unfold Q2R. simpl. rewrite Rinv_1. reflexivity.
+    apply Q2R_plus.
+    apply Q2R_minus.
+    apply Q2R_mult.
+    rewrite <- IHc.
+    apply Q2R_inv_ext.
+    rewrite <- IHc.
+    apply Q2R_opp.
+  Qed.
 
 Require Import EnvRing.
 
@@ -94,7 +470,7 @@ Definition INZ (n:N) : R :=
     | Npos p => IZR (Zpos p)
   end.
 
-Definition Reval_expr := eval_pexpr  Rplus Rmult Rminus Ropp IZR nat_of_N pow.
+Definition Reval_expr := eval_pexpr  Rplus Rmult Rminus Ropp R_of_Rcst nat_of_N pow.
 
 
 Definition Reval_op2 (o:Op2) : R -> R -> Prop :=
@@ -108,11 +484,15 @@ Definition Reval_op2 (o:Op2) : R -> R -> Prop :=
     end.
 
 
-Definition Reval_formula (e: PolEnv R) (ff : Formula Z) :=
+Definition Reval_formula (e: PolEnv R) (ff : Formula Rcst) :=
   let (lhs,o,rhs) := ff in Reval_op2 o (Reval_expr e lhs) (Reval_expr e rhs).
 
+
 Definition Reval_formula' :=
-  eval_formula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt IZR nat_of_N pow.
+  eval_sformula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt nat_of_N pow R_of_Rcst.
+
+Definition QReval_formula := 
+  eval_formula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt Q2R nat_of_N pow .
 
 Lemma Reval_formula_compat : forall env f, Reval_formula env f <-> Reval_formula' env f.
 Proof.
@@ -126,67 +506,72 @@ Proof.
   apply Rle_ge.
 Qed.
 
-Definition Reval_nformula :=
-  eval_nformula 0 Rplus Rmult  (@eq R) Rle Rlt IZR.
+Definition Qeval_nformula :=
+  eval_nformula 0 Rplus Rmult  (@eq R) Rle Rlt Q2R.
 
 
-Lemma Reval_nformula_dec : forall env d, (Reval_nformula env d) \/ ~ (Reval_nformula env d).
+Lemma Reval_nformula_dec : forall env d, (Qeval_nformula env d) \/ ~ (Qeval_nformula env d).
 Proof.
-  exact (fun env d =>eval_nformula_dec Rsor IZR env d).
+  exact (fun env d =>eval_nformula_dec Rsor Q2R env d).
 Qed.
 
-Definition RWitness := Psatz Z.
+Definition RWitness := Psatz Q.
 
-Definition RWeakChecker := check_normalised_formulas 0%Z 1%Z Zplus Zmult  Zeq_bool Zle_bool.
+Definition RWeakChecker := check_normalised_formulas 0%Q 1%Q Qplus Qmult  Qeq_bool Qle_bool.
 
 Require Import List.
 
-Lemma RWeakChecker_sound :   forall (l : list (NFormula Z)) (cm : RWitness),
+Lemma RWeakChecker_sound :   forall (l : list (NFormula Q)) (cm : RWitness),
   RWeakChecker l cm = true ->
-  forall env, make_impl (Reval_nformula env) l False.
+  forall env, make_impl (Qeval_nformula env) l False.
 Proof.
   intros l cm H.
   intro.
-  unfold Reval_nformula.
-  apply (checker_nf_sound Rsor RZSORaddon l cm).
+  unfold Qeval_nformula.
+  apply (checker_nf_sound Rsor QSORaddon l cm).
   unfold RWeakChecker in H.
   exact H.
 Qed.
 
 Require Import Tauto.
 
-Definition Rnormalise := @cnf_normalise Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool.
-Definition Rnegate := @cnf_negate Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool.
+Definition Rnormalise := @cnf_normalise Q 0%Q 1%Q Qplus Qmult Qminus Qopp Qeq_bool.
+Definition Rnegate := @cnf_negate Q 0%Q 1%Q Qplus Qmult Qminus Qopp Qeq_bool.
 
-Definition runsat := check_inconsistent 0%Z Zeq_bool Zle_bool.
+Definition runsat := check_inconsistent 0%Q Qeq_bool Qle_bool.
 
-Definition rdeduce := nformula_plus_nformula 0%Z Zplus Zeq_bool.
+Definition rdeduce := nformula_plus_nformula 0%Q Qplus Qeq_bool.
 
-
-
-Definition RTautoChecker (f : BFormula (Formula Z)) (w: list RWitness)  : bool :=
-  @tauto_checker (Formula Z) (NFormula Z)
+Definition RTautoChecker (f : BFormula (Formula Rcst)) (w: list RWitness)  : bool :=
+  @tauto_checker (Formula Q) (NFormula Q)
   runsat rdeduce
   Rnormalise Rnegate
-  RWitness RWeakChecker f w.
+  RWitness RWeakChecker (map_bformula (map_Formula Q_of_Rcst)  f) w.
 
 Lemma RTautoChecker_sound : forall f w, RTautoChecker f w = true -> forall env, eval_f  (Reval_formula env)  f.
 Proof.
   intros f w.
   unfold RTautoChecker.
-  apply (tauto_checker_sound  Reval_formula Reval_nformula).
+  intros TC env.
+  apply (tauto_checker_sound  QReval_formula Qeval_nformula) with (env := env) in TC.
+  rewrite eval_f_map in TC.
+  rewrite eval_f_morph with (ev':= Reval_formula env) in TC ; auto.
+  intro.
+  unfold QReval_formula.
+  rewrite <- eval_formulaSC  with (phiS := R_of_Rcst).
+  rewrite Reval_formula_compat.
+  tauto.
+  intro. rewrite Q_of_RcstR. reflexivity.
   apply Reval_nformula_dec.
-  intros until env.
-  unfold eval_nformula. unfold RingMicromega.eval_nformula.
   destruct t.
-  apply (check_inconsistent_sound Rsor RZSORaddon) ; auto.
-  unfold rdeduce. apply (nformula_plus_nformula_correct Rsor RZSORaddon).
-  intros. rewrite Reval_formula_compat.
-  unfold Reval_formula'. now apply (cnf_normalise_correct Rsor RZSORaddon).
-  intros. rewrite Reval_formula_compat. unfold Reval_formula. now apply (cnf_negate_correct Rsor RZSORaddon).
+  apply (check_inconsistent_sound Rsor QSORaddon) ; auto.
+  unfold rdeduce. apply (nformula_plus_nformula_correct Rsor QSORaddon).
+  now apply (cnf_normalise_correct Rsor QSORaddon).  
+  intros. now apply (cnf_negate_correct Rsor QSORaddon).
   intros t w0.
   apply RWeakChecker_sound.
 Qed.
+
 
 
 (* Local Variables: *)

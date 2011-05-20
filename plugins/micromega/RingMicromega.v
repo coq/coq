@@ -687,13 +687,13 @@ end.
 
 Definition  eval_pexpr (l : PolEnv) (pe : PExpr C) : R := PEeval rplus rtimes rminus ropp phi pow_phi rpow l pe.
 
-Record Formula : Type := {
-  Flhs : PExpr C;
+Record Formula (T:Type) : Type := {
+  Flhs : PExpr T;
   Fop : Op2;
-  Frhs : PExpr C
+  Frhs : PExpr T
 }.
 
-Definition eval_formula (env : PolEnv) (f : Formula) : Prop :=
+Definition eval_formula (env : PolEnv) (f : Formula C) : Prop :=
   let (lhs, op, rhs) := f in
     (eval_op2 op) (eval_pexpr env lhs) (eval_pexpr env rhs).
 
@@ -706,7 +706,7 @@ Definition psub := Psub cO  cplus cminus copp ceqb.
 
 Definition padd  := Padd cO  cplus ceqb.
 
-Definition normalise (f : Formula) : NFormula :=
+Definition normalise (f : Formula C) : NFormula :=
 let (lhs, op, rhs) := f in
   let lhs := norm lhs in
     let rhs := norm rhs in
@@ -719,7 +719,7 @@ let (lhs, op, rhs) := f in
   | OpLt => (psub  rhs lhs, Strict)
   end.
 
-Definition negate (f : Formula) : NFormula :=
+Definition negate (f : Formula C) : NFormula :=
 let (lhs, op, rhs) := f in
   let lhs := norm lhs in
     let rhs := norm rhs in
@@ -755,7 +755,7 @@ Qed.
 
 
 Theorem normalise_sound :
-  forall (env : PolEnv) (f : Formula),
+  forall (env : PolEnv) (f : Formula C),
     eval_formula env f -> eval_nformula env (normalise f).
 Proof.
 intros env f H; destruct f as [lhs op rhs]; simpl in *.
@@ -769,7 +769,7 @@ now apply -> (Rlt_lt_minus sor).
 Qed.
 
 Theorem negate_correct :
-  forall (env : PolEnv) (f : Formula),
+  forall (env : PolEnv) (f : Formula C),
     eval_formula env f <-> ~ (eval_nformula env (negate f)).
 Proof.
 intros env f; destruct f as [lhs op rhs]; simpl.
@@ -785,7 +785,7 @@ Qed.
 
 (** Another normalisation - this is used for cnf conversion **)
 
-Definition xnormalise (t:Formula) : list (NFormula)  :=
+Definition xnormalise (t:Formula C) : list (NFormula)  :=
   let (lhs,o,rhs) := t in
   let lhs := norm lhs in
     let rhs := norm rhs in
@@ -801,7 +801,7 @@ Definition xnormalise (t:Formula) : list (NFormula)  :=
 
 Require Import Tauto.
 
-Definition cnf_normalise (t:Formula) : cnf (NFormula) :=
+Definition cnf_normalise (t:Formula C) : cnf (NFormula) :=
   List.map  (fun x => x::nil) (xnormalise t).
 
 
@@ -826,7 +826,7 @@ Proof.
   rewrite (Rlt_nge sor).  rewrite (Rle_le_minus sor). auto.
 Qed.
 
-Definition xnegate (t:Formula) : list (NFormula)  :=
+Definition xnegate (t:Formula C) : list (NFormula)  :=
   let (lhs,o,rhs) := t in
     let lhs := norm lhs in
       let rhs := norm rhs in
@@ -839,7 +839,7 @@ Definition xnegate (t:Formula) : list (NFormula)  :=
       | OpLe  => (psub rhs lhs,NonStrict) :: nil
     end.
 
-Definition cnf_negate (t:Formula) : cnf (NFormula) :=
+Definition cnf_negate (t:Formula C) : cnf (NFormula) :=
   List.map  (fun x => x::nil) (xnegate t).
 
 Lemma cnf_negate_correct : forall env t, eval_cnf eval_nformula env (cnf_negate t) -> ~ eval_formula env t.
@@ -935,6 +935,63 @@ Proof.
   rewrite addon.(SORpower).(rpow_pow_N).
   simpl. reflexivity.
 Qed.
+
+
+(** Sometimes it is convenient to make a distinction between "syntactic" coefficients and "real"
+coefficients that are used to actually compute *)
+
+
+
+Variable S : Type.
+
+Variable C_of_S : S -> C.
+
+Variable phiS : S -> R.
+
+Variable phi_C_of_S :   forall c,  phiS c =  phi (C_of_S c).
+
+Fixpoint map_PExpr (e : PExpr S) : PExpr C :=
+  match e with
+    | PEc c => PEc (C_of_S c)
+    | PEX p => PEX _ p
+    | PEadd e1 e2 => PEadd (map_PExpr e1) (map_PExpr e2)
+    | PEsub e1 e2 => PEsub (map_PExpr e1) (map_PExpr e2)
+    | PEmul e1 e2 => PEmul (map_PExpr e1) (map_PExpr e2)
+    | PEopp e     => PEopp (map_PExpr e)
+    | PEpow e n   => PEpow (map_PExpr e) n
+  end.
+
+Definition map_Formula (f : Formula S)  : Formula C :=
+  let (l,o,r) := f in
+    Build_Formula (map_PExpr l) o (map_PExpr r).
+
+
+Definition eval_sexpr (env : PolEnv) (e : PExpr S) : R :=
+  PEeval rplus rtimes rminus ropp phiS pow_phi rpow env e.
+
+Definition eval_sformula (env : PolEnv) (f : Formula S) : Prop :=
+  let (lhs, op, rhs) := f in
+    (eval_op2 op) (eval_sexpr env lhs) (eval_sexpr env rhs).
+
+Lemma eval_pexprSC : forall env s, eval_sexpr env s = eval_pexpr env (map_PExpr s).
+Proof.
+  unfold eval_pexpr, eval_sexpr.
+  induction s ; simpl ; try (rewrite IHs1 ; rewrite IHs2) ; try reflexivity.
+  apply phi_C_of_S.
+  rewrite IHs. reflexivity.
+  rewrite IHs. reflexivity.
+Qed.
+
+(** equality migth be (too) strong *)
+Lemma eval_formulaSC : forall env f, eval_sformula env f = eval_formula env (map_Formula f).
+Proof.
+  destruct f.
+  simpl.
+  repeat rewrite eval_pexprSC.
+  reflexivity.
+Qed.
+
+
 
 
 (** Some syntactic simplifications of expressions  *)

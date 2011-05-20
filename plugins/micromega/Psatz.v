@@ -66,6 +66,7 @@ Ltac psatzl dom :=
         change (Tauto.eval_f (Qeval_formula (@find Q 0%Q __varmap)) __ff) ;
         apply (QTautoChecker_sound __ff __wit); vm_compute ; reflexivity)
   | R =>
+    unfold Rdiv in * ; 
     psatzl_R ;
     (* If csdp is not installed, the previous step might not produce any
     progress: the rest of the tactical will then fail. Hence the 'try'. *)

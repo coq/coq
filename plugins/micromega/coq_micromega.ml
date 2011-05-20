@@ -55,7 +55,7 @@ type 'cst atom = 'cst Micromega.formula
   * Micromega's encoding of formulas.
   * By order of appearance: boolean constants, variables, atoms, conjunctions,
   * disjunctions, negation, implication.
-  *)
+*)
 
 type 'cst formula =
   | TT
@@ -85,6 +85,18 @@ let rec pp_formula o f =
 	    | Some id -> Names.string_of_id id
 	    | None -> "") pp_formula f2
     | N(f) -> Printf.fprintf o "N(%a)" pp_formula f
+
+
+let rec map_atoms fct f = 
+  match f with
+    | TT -> TT
+    | FF -> FF
+    | X x -> X x
+    | A (at,tg,cstr) -> A(fct at,tg,cstr)
+    | C (f1,f2) -> C(map_atoms fct f1, map_atoms fct f2)
+    | D (f1,f2) -> D(map_atoms fct f1, map_atoms fct f2)
+    | N f -> N(map_atoms fct f)
+    | I(f1,o,f2) -> I(map_atoms fct f1, o , map_atoms fct f2)
 
 (**
   * Collect the identifiers of a (string of) implications. Implication labels
@@ -272,6 +284,7 @@ struct
       ["RingMicromega"];
       ["EnvRing"];
       ["Coq"; "micromega"; "ZMicromega"];
+      ["Coq"; "micromega"; "RMicromega"];
       ["Coq" ; "micromega" ; "Tauto"];
       ["Coq" ; "micromega" ; "RingMicromega"];
       ["Coq" ; "micromega" ; "EnvRing"];
@@ -284,7 +297,8 @@ struct
 
   let r_modules =
     [["Coq";"Reals" ; "Rdefinitions"];
-     ["Coq";"Reals" ; "Rpow_def"]]
+     ["Coq";"Reals" ; "Rpow_def"] ;
+]
 
   (**
     * Initialization : a large amount of Caml symbols are derived from
@@ -335,6 +349,19 @@ struct
   let coq_Build_Witness = lazy (constant "Build_Witness")
 
   let coq_Qmake = lazy (constant "Qmake")
+
+  let coq_Rcst = lazy (constant "Rcst")
+  let coq_C0   = lazy (constant "C0")
+  let coq_C1   = lazy (constant "C1")
+  let coq_CQ   = lazy (constant "CQ")
+  let coq_CZ   = lazy (constant "CZ")
+  let coq_CPlus = lazy (constant "CPlus")
+  let coq_CMinus = lazy (constant "CMinus")
+  let coq_CMult  = lazy (constant "CMult")
+  let coq_CInv   = lazy (constant "CInv")
+  let coq_COpp   = lazy (constant "COpp")
+
+
   let coq_R0    = lazy (constant "R0")
   let coq_R1    = lazy (constant "R1")
 
@@ -377,7 +404,11 @@ struct
   let coq_Rminus = lazy (r_constant "Rminus")
   let coq_Ropp = lazy (r_constant "Ropp")
   let coq_Rmult = lazy (r_constant "Rmult")
+  let coq_Rdiv = lazy (r_constant "Rdiv")
+  let coq_Rinv = lazy (r_constant "Rinv")
   let coq_Rpower = lazy (r_constant "pow")
+  let coq_Q2R    = lazy (constant "Q2R")
+  let coq_IZR    = lazy (constant "IZR")
 
   let coq_PEX = lazy (constant "PEX" )
   let coq_PEc = lazy (constant"PEc")
@@ -588,6 +619,48 @@ struct
              {Mc.qnum = parse_z args.(0) ; Mc.qden = parse_positive args.(1) }
        else raise ParseError
    |  _ -> raise ParseError
+
+
+  let rec pp_Rcst o cst = 
+    match cst with
+      | Mc.C0 -> output_string o "C0"
+      | Mc.C1 ->  output_string o "C1"
+      | Mc.CQ q ->  output_string o "CQ _"
+      | Mc.CZ z -> pp_z o z
+      | Mc.CPlus(x,y) -> Printf.fprintf o "(%a + %a)" pp_Rcst x pp_Rcst y
+      | Mc.CMinus(x,y) -> Printf.fprintf o "(%a - %a)" pp_Rcst x pp_Rcst y
+      | Mc.CMult(x,y) -> Printf.fprintf o "(%a * %a)" pp_Rcst x pp_Rcst y
+      | Mc.CInv t -> Printf.fprintf o "(/ %a)" pp_Rcst t
+      | Mc.COpp t -> Printf.fprintf o "(- %a)" pp_Rcst t
+
+
+  let rec dump_Rcst cst = 
+    match cst with
+      | Mc.C0 -> Lazy.force coq_C0 
+      | Mc.C1 ->  Lazy.force coq_C1
+      | Mc.CQ q ->  Term.mkApp(Lazy.force coq_CQ, [| dump_q q |])
+      | Mc.CZ z -> Term.mkApp(Lazy.force coq_CZ, [| dump_z z |])
+      | Mc.CPlus(x,y) -> Term.mkApp(Lazy.force coq_CPlus, [| dump_Rcst x ; dump_Rcst y |])
+      | Mc.CMinus(x,y) -> Term.mkApp(Lazy.force coq_CMinus, [| dump_Rcst x ; dump_Rcst y |])
+      | Mc.CMult(x,y) -> Term.mkApp(Lazy.force coq_CMult, [| dump_Rcst x ; dump_Rcst y |])
+      | Mc.CInv t -> Term.mkApp(Lazy.force coq_CInv, [| dump_Rcst t |])
+      | Mc.COpp t -> Term.mkApp(Lazy.force coq_COpp, [| dump_Rcst t |])
+
+  let rec parse_Rcst term = 
+    let (i,c) = get_left_construct term in
+      match i with
+	| 1 -> Mc.C0
+	| 2 -> Mc.C1
+	| 3 -> Mc.CQ (parse_q c.(0))
+	| 4 -> Mc.CPlus(parse_Rcst c.(0), parse_Rcst c.(1))
+	| 5 -> Mc.CMinus(parse_Rcst c.(0), parse_Rcst c.(1))
+	| 6 -> Mc.CMult(parse_Rcst  c.(0), parse_Rcst c.(1))
+	| 7 -> Mc.CInv(parse_Rcst c.(0))
+	| 8 -> Mc.COpp(parse_Rcst c.(0))
+	| _ -> raise ParseError
+
+
+
 
   let rec parse_list parse_elt term =
    let (i,c) = get_left_construct term in
@@ -824,12 +897,17 @@ struct
     then (Pp.pp (Pp.str "parse_expr: ");
           Pp.pp_flush ();Pp.pp (Printer.prterm term); Pp.pp_flush ());
 
+(*
     let constant_or_variable env term =
      try
       ( Mc.PEc (parse_constant term) , env)
      with ParseError ->
       let (env,n) = Env.compute_rank_add env term in
        (Mc.PEX  n , env) in
+*)
+    let parse_variable env term =
+      let (env,n) = Env.compute_rank_add env term in
+	(Mc.PEX  n , env) in
 
     let rec parse_expr env term =
      let combine env op (t1,t2) =
@@ -837,32 +915,34 @@ struct
       let (expr2,env) = parse_expr env t2 in
       (op expr1 expr2,env) in
 
-      match kind_of_term term with
-       | App(t,args) ->
-          (
-           match kind_of_term t with
-            | Const c ->
-               ( match assoc_ops t ops_spec  with
-                | Binop f -> combine env f (args.(0),args.(1))
-                | Opp     -> let (expr,env) = parse_expr env args.(0) in
-                              (Mc.PEopp expr, env)
-                | Power   ->
-                    begin
-                      try
-                        let (expr,env) = parse_expr env args.(0) in
-                        let power = (parse_exp expr args.(1)) in
-                          (power  , env)
-                      with _ ->   (* if the exponent is a variable *)
-                        let (env,n) = Env.compute_rank_add env term in (Mc.PEX n, env)
-                    end
-                | Ukn  s ->
-                   if debug
-                   then (Printf.printf "unknown op: %s\n" s; flush stdout;);
-                   let (env,n) = Env.compute_rank_add env term in (Mc.PEX n, env)
+       try (Mc.PEc (parse_constant term) , env)
+       with ParseError -> 
+	 match kind_of_term term with
+	   | App(t,args) ->
+               (
+		 match kind_of_term t with
+		   | Const c ->
+		       ( match assoc_ops t ops_spec  with
+			   | Binop f -> combine env f (args.(0),args.(1))
+                   | Opp     -> let (expr,env) = parse_expr env args.(0) in
+                       (Mc.PEopp expr, env)
+                   | Power   ->
+                       begin
+			 try
+                           let (expr,env) = parse_expr env args.(0) in
+                           let power = (parse_exp expr args.(1)) in
+                             (power  , env)
+			 with _ ->   (* if the exponent is a variable *)
+                           let (env,n) = Env.compute_rank_add env term in (Mc.PEX n, env)
+                       end
+                   | Ukn  s ->
+                       if debug
+                       then (Printf.printf "unknown op: %s\n" s; flush stdout;);
+                       let (env,n) = Env.compute_rank_add env term in (Mc.PEX n, env)
                )
-            |   _ -> constant_or_variable env term
-          )
-       | _ -> constant_or_variable env term in
+		   |   _ -> parse_variable env term
+               )
+	   | _ -> parse_variable env term in
      parse_expr env term
 
   let zop_spec =
@@ -892,19 +972,49 @@ struct
   let zconstant = parse_z
   let qconstant = parse_q
 
-  let rconstant term =
-   if debug
-   then (Pp.pp_flush ();
-         Pp.pp (Pp.str "rconstant: ");
-         Pp.pp (Printer.prterm  term); Pp.pp_flush ());
+
+  let rconst_assoc = 
+    [ 
+      coq_Rplus , (fun x y -> Mc.CPlus(x,y)) ;
+      coq_Rminus , (fun x y -> Mc.CMinus(x,y)) ; 
+      coq_Rmult  , (fun x y -> Mc.CMult(x,y)) ; 
+      coq_Rdiv   , (fun x y -> Mc.CMult(x,Mc.CInv y)) ;
+    ]
+
+  let rec rconstant term =
    match Term.kind_of_term term with
     | Const x ->
         if term = Lazy.force coq_R0
-        then Mc.Z0
+        then Mc.C0
         else if term = Lazy.force coq_R1
-        then Mc.Zpos Mc.XH
+        then Mc.C1
         else raise ParseError
+    | App(op,args) -> 
+	begin
+	  try 
+	    (assoc_const   op rconst_assoc) (rconstant args.(0)) (rconstant args.(1))
+	  with
+	      ParseError -> 
+		match op with
+		  | op when op = Lazy.force coq_Rinv -> Mc.CInv(rconstant args.(0))
+		  | op when op = Lazy.force coq_Q2R  -> Mc.CQ (parse_q args.(0))
+(*		  | op when op = Lazy.force coq_IZR  -> Mc.CZ (parse_z args.(0))*)
+		  | _ ->  raise ParseError
+	end
+
     |  _ -> raise ParseError
+
+
+  let rconstant term = 
+    if debug
+    then (Pp.pp_flush ();
+          Pp.pp (Pp.str "rconstant: ");
+          Pp.pp (Printer.prterm  term); Pp.pp_flush ());
+    let res = rconstant term in
+      if debug then 
+	(Printf.printf "rconstant -> %a" pp_Rcst res ; flush stdout) ; 
+      res
+
 
   let parse_zexpr =  parse_expr
     zconstant
@@ -912,7 +1022,7 @@ struct
       let exp = (parse_z x) in
         match exp with
           | Mc.Zneg _ -> Mc.PEc Mc.Z0
-          |   _     ->  Mc.PEpow(expr, Mc.n_of_Z exp))
+          |   _     ->  Mc.PEpow(expr, Mc.Z.to_N exp))
     zop_spec
 
   let parse_qexpr  =  parse_expr
@@ -926,14 +1036,14 @@ struct
                 | Mc.PEc q -> Mc.PEc (Mc.qpower q exp)
                 |     _    -> print_string "parse_qexpr parse error" ; flush stdout ; raise ParseError
               end
-          | _     ->  let exp = Mc.n_of_Z  exp in
+          | _     ->  let exp = Mc.Z.to_N  exp in
                         Mc.PEpow(expr,exp))
    qop_spec
 
   let parse_rexpr =  parse_expr
    rconstant
    (fun expr x ->
-      let exp = Mc.n_of_nat (parse_nat x) in
+      let exp = Mc.N.of_nat (parse_nat x) in
         Mc.PEpow(expr,exp))
    rop_spec
 
@@ -1019,7 +1129,7 @@ struct
       | _ when term = Lazy.force coq_True -> (TT,env,tg)
       | _ when term = Lazy.force coq_False -> (FF,env,tg)
       | _  -> X(term),env,tg in
-    xparse_formula env tg  (Reductionops.whd_zeta term)
+    xparse_formula env tg  ((*Reductionops.whd_zeta*) term)
 
   let dump_formula typ dump_atom f =
    let rec xdump f =
@@ -1216,13 +1326,12 @@ let parse_goal parse_arith env hyps term =
 (**
   * The datastructures that aggregate theory-dependent proof values.
   *)
-
-type ('d, 'prf) domain_spec = {
- typ : Term.constr; (* Z, Q , R *)
- coeff : Term.constr ; (* Z, Q *)
- dump_coeff : 'd -> Term.constr ;
- proof_typ : Term.constr ;
- dump_proof : 'prf -> Term.constr
+type ('synt_c, 'prf) domain_spec = {
+  typ : Term.constr; (* is the type of the interpretation domain - Z, Q, R*)
+  coeff : Term.constr ; (* is the type of the syntactic coeffs - Z , Q , Rcst *)
+  dump_coeff : 'synt_c -> Term.constr ; 
+  proof_typ  : Term.constr ; 
+  dump_proof   : 'prf -> Term.constr
 }
 
 let zz_domain_spec  = lazy {
@@ -1241,12 +1350,12 @@ let qq_domain_spec  = lazy {
  dump_proof = dump_psatz coq_Q dump_q
 }
 
-let rz_domain_spec  = lazy {
+let rcst_domain_spec  = lazy {
  typ = Lazy.force coq_R;
- coeff = Lazy.force coq_Z;
- dump_coeff = dump_z;
- proof_typ = Lazy.force coq_ZWitness ;
- dump_proof = dump_psatz coq_Z dump_z
+ coeff = Lazy.force coq_Rcst;
+ dump_coeff = dump_Rcst;
+ proof_typ = Lazy.force coq_QWitness ;
+ dump_proof = dump_psatz coq_Q dump_q
 }
 
 (**
@@ -1404,6 +1513,19 @@ let abstract_formula hyps f =
       | TT -> TT
   in  xabs f
 
+
+(* [abstract_wrt_formula] is used in contexts whre f1 is already an abstraction of f2   *)
+let rec abstract_wrt_formula f1 f2 = 
+  match f1 , f2 with
+    | X c  , _   -> X c
+    | A _  , A _ -> f2
+    | C(a,b) , C(a',b') -> C(abstract_wrt_formula a a', abstract_wrt_formula b b')
+    | D(a,b) , D(a',b') -> D(abstract_wrt_formula a a', abstract_wrt_formula b b')
+    | I(a,_,b) , I(a',x,b') -> I(abstract_wrt_formula a a',x, abstract_wrt_formula b b')
+    | FF , FF -> FF
+    | TT , TT -> TT
+    |    _    -> failwith "abstract_wrt_formula"
+
 (**
   * This exception is raised by really_call_csdpcert if Coq's configure didn't
   * find a CSDP executable.
@@ -1416,17 +1538,19 @@ exception CsdpNotFound
   * prune unused fomulas, and finally modify the proof state.
   *)
 
-let micromega_tauto negate normalise unsat deduce spec prover env polys1 polys2 gl =
- let spec = Lazy.force spec in
-
- (* Express the goal as one big implication *)
- let (ff,ids) =
+let formula_hyps_concl hyps concl = 
   List.fold_right
    (fun (id,f) (cc,ids) ->
     match f with
       X _ -> (cc,ids)
      | _ -> (I(f,Some id,cc), id::ids))
-   polys1 (polys2,[]) in
+    hyps (concl,[])
+
+
+let micromega_tauto negate normalise unsat deduce spec prover env polys1 polys2 gl =
+
+ (* Express the goal as one big implication *)
+ let (ff,ids) = formula_hyps_concl polys1 polys2 in
 
  (* Convert the aplpication into a (mc_)cnf (a list of lists of formulas) *)
  let cnf_ff,cnf_ff_tags = cnf negate normalise unsat deduce ff in
@@ -1442,7 +1566,7 @@ let micromega_tauto negate normalise unsat deduce spec prover env polys1 polys2 
    end;
 
  match witness_list_tags prover cnf_ff with
-  | None -> Tacticals.tclFAIL 0 (Pp.str " Cannot find witness") gl
+  | None -> None
   | Some res -> (*Printf.printf "\nList %i" (List.length `res); *)
   let hyps = List.fold_left (fun s (cl,(prf,p)) ->
     let tags = ISet.fold (fun i s -> let t = snd (List.nth cl i) in
@@ -1477,22 +1601,19 @@ let micromega_tauto negate normalise unsat deduce spec prover env polys1 polys2 
       end ; *)
   let res' = compact_proofs cnf_ff res cnf_ff' in
 
-  let (ff',res',ids) = (ff',res',List.map Term.mkVar (ids_of_formula ff')) in
+  let (ff',res',ids) = (ff',res', ids_of_formula ff') in
 
   let res' = dump_list (spec.proof_typ) spec.dump_proof res' in
-    (Tacticals.tclTHENSEQ
-      [
-        Tactics.generalize ids ;
-        micromega_order_change spec res'
-          (Term.mkApp(Lazy.force coq_list, [|spec.proof_typ|])) env ff'
-      ]) gl
+    Some (ids,ff',res')
+
+
 
 (**
   * Parse the proof environment, and call micromega_tauto
   *)
 
 let micromega_gen
-    parse_arith
+    parse_arith 
     (negate:'cst atom -> 'cst mc_cnf)
     (normalise:'cst atom -> 'cst mc_cnf)
     unsat deduce 
@@ -1502,7 +1623,17 @@ let micromega_gen
   try
    let (hyps,concl,env) = parse_goal parse_arith Env.empty hyps concl in
    let env = Env.elements env in
-    micromega_tauto negate normalise unsat deduce spec prover env hyps concl gl
+   let spec = Lazy.force spec in
+
+     match micromega_tauto  negate normalise unsat deduce spec prover env hyps concl gl with
+       | None -> Tacticals.tclFAIL 0 (Pp.str " Cannot find witness") gl
+       | Some (ids,ff',res') -> 
+	   (Tacticals.tclTHENSEQ
+	      [
+		Tactics.generalize (List.map Term.mkVar ids) ;
+		micromega_order_change  spec res' 
+		  (Term.mkApp(Lazy.force coq_list, [|spec.proof_typ|])) env ff'
+	      ]) gl
   with
 (*   | Failure x -> flush stdout ; Pp.pp_flush () ;
       Tacticals.tclFAIL 0 (Pp.str x) gl *)
@@ -1513,6 +1644,81 @@ let micromega_gen
       ^ "the use of a specialized external tool called csdp. \n\n" 
       ^ "Unfortunately Coq isn't aware of the presence of any \"csdp\" executable in the path. \n\n"
       ^ "Csdp packages are provided by some OS distributions; binaries and source code can be downloaded from https://projects.coin-or.org/Csdp")) gl
+
+
+
+let micromega_order_changer cert env ff gl =
+  let coeff = Lazy.force coq_Rcst in
+  let dump_coeff = dump_Rcst in
+  let typ  = Lazy.force coq_R in
+  let cert_typ = (Term.mkApp(Lazy.force coq_list, [|Lazy.force coq_QWitness |])) in
+
+ let formula_typ = (Term.mkApp (Lazy.force coq_Cstr,[| coeff|])) in
+ let ff = dump_formula formula_typ (dump_cstr coeff dump_coeff) ff in
+ let vm = dump_varmap (typ) env in
+  Tactics.change_in_concl None
+   (set
+     [
+      ("__ff", ff, Term.mkApp(Lazy.force coq_Formula, [|formula_typ |]));
+      ("__varmap", vm, Term.mkApp
+       (Coqlib.gen_constant_in_modules "VarMap"
+	 [["Coq" ; "micromega" ; "VarMap"] ; ["VarMap"]] "t", [|typ|]));
+      ("__wit", cert, cert_typ)
+     ]
+     (Tacmach.pf_concl gl)
+   )
+   gl
+
+
+let micromega_genr prover gl =
+  let parse_arith = parse_rarith in
+  let negate = Mc.rnegate in
+  let normalise = Mc.rnormalise in
+  let unsat = Mc.runsat in
+  let deduce = Mc.rdeduce in
+  let spec = lazy {
+    typ = Lazy.force coq_R;
+    coeff = Lazy.force coq_Rcst;
+    dump_coeff = dump_q;
+    proof_typ = Lazy.force coq_QWitness ;
+    dump_proof = dump_psatz coq_Q dump_q
+  } in
+    
+  let concl = Tacmach.pf_concl gl in
+  let hyps  = Tacmach.pf_hyps_types gl in
+  try
+   let (hyps,concl,env) = parse_goal parse_arith Env.empty hyps concl in
+   let env = Env.elements env in
+   let spec = Lazy.force spec in
+
+   let hyps' = List.map (fun (n,f) -> (n, map_atoms (Micromega.map_Formula Micromega.q_of_Rcst) f)) hyps in
+   let concl' = map_atoms (Micromega.map_Formula Micromega.q_of_Rcst) concl in
+
+     match micromega_tauto  negate normalise unsat deduce spec prover env hyps' concl' gl with
+       | None -> Tacticals.tclFAIL 0 (Pp.str " Cannot find witness") gl
+       | Some (ids,ff',res') -> 
+           let (ff,ids') = formula_hyps_concl 
+	     (List.filter (fun (n,_) -> List.mem n ids) hyps) concl in
+
+           (Tacticals.tclTHENSEQ
+              [
+                Tactics.generalize (List.map Term.mkVar ids) ;
+                micromega_order_changer res' env (abstract_wrt_formula ff' ff)
+              ]) gl
+  with
+(*   | Failure x -> flush stdout ; Pp.pp_flush () ;
+      Tacticals.tclFAIL 0 (Pp.str x) gl *)
+   | ParseError  -> Tacticals.tclFAIL 0 (Pp.str "Bad logical fragment") gl
+   | CsdpNotFound -> flush stdout ; Pp.pp_flush () ;
+      Tacticals.tclFAIL 0 (Pp.str 
+      (" Skipping what remains of this tactic: the complexity of the goal requires "
+      ^ "the use of a specialized external tool called csdp. \n\n" 
+      ^ "Unfortunately Coq isn't aware of the presence of any \"csdp\" executable in the path. \n\n"
+      ^ "Csdp packages are provided by some OS distributions; binaries and source code can be downloaded from https://projects.coin-or.org/Csdp")) gl
+
+
+
+
 
 let lift_ratproof  prover l =
  match prover l with
@@ -1685,14 +1891,16 @@ let linear_prover_Q = {
   pp_f   = fun o x -> pp_pol pp_q o  (fst x)
 }
 
+
 let linear_prover_R = {
   name    = "linear prover";
-  prover  = lift_pexpr_prover (Certificate.linear_prover_with_cert Certificate.z_spec) ;
+  prover  = lift_pexpr_prover (Certificate.linear_prover_with_cert Certificate.q_spec) ;
   hyps    = hyps_of_cone ;
   compact = compact_cone ;
-  pp_prf  = pp_psatz pp_z ;
-  pp_f    =  fun o x -> pp_pol pp_z o (fst x)
+  pp_prf  = pp_psatz pp_q ;
+  pp_f    =  fun o x -> pp_pol pp_q o (fst x)
 }
+
 
 let non_linear_prover_Q str o = {
   name    = "real nonlinear prover";
@@ -1705,11 +1913,11 @@ let non_linear_prover_Q str o = {
 
 let non_linear_prover_R str o = {
   name    = "real nonlinear prover";
-  prover  = call_csdpcert_z (str, o);
+  prover  = call_csdpcert_q (str, o);
   hyps    = hyps_of_cone;
   compact = compact_cone;
-  pp_prf  = pp_psatz pp_z;
-  pp_f    = fun o x -> pp_pol pp_z o  (fst x)
+  pp_prf  = pp_psatz pp_q;
+  pp_f    = fun o x -> pp_pol pp_q o  (fst x)
 }
 
 let non_linear_prover_Z str o  = {
@@ -1780,13 +1988,14 @@ let psatz_Q i gl =
  micromega_gen parse_qarith Mc.qnegate Mc.qnormalise Mc.qunsat Mc.qdeduce qq_domain_spec
   [ non_linear_prover_Q "real_nonlinear_prover" (Some i) ] gl
 
+
 let psatzl_R gl =
- micromega_gen parse_rarith Mc.rnegate Mc.rnormalise Mc.runsat Mc.rdeduce rz_domain_spec
-  [ linear_prover_R ] gl
+ micromega_genr [ linear_prover_R ] gl
+
 
 let psatz_R i gl =
- micromega_gen parse_rarith Mc.rnegate Mc.rnormalise Mc.runsat Mc.rdeduce rz_domain_spec
-  [ non_linear_prover_R "real_nonlinear_prover" (Some i) ] gl
+ micromega_genr  [ non_linear_prover_R "real_nonlinear_prover" (Some i) ] gl
+
 
 let psatz_Z i gl =
     micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
@@ -1800,19 +2009,20 @@ let sos_Q gl =
  micromega_gen parse_qarith Mc.qnegate Mc.qnormalise  Mc.qunsat Mc.qdeduce qq_domain_spec
   [ non_linear_prover_Q "pure_sos" None ] gl
 
+
 let sos_R gl =
- micromega_gen parse_rarith Mc.rnegate Mc.rnormalise Mc.runsat Mc.rdeduce rz_domain_spec
-  [ non_linear_prover_R "pure_sos" None ] gl
+ micromega_genr  [ non_linear_prover_R "pure_sos" None ] gl
+
 
 let xlia gl =
   try 
-    micromega_gen parse_zarith Mc.negate Mc.normalise Mc.runsat Mc.rdeduce zz_domain_spec
+    micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
       [ linear_Z ] gl
   with z -> (*Printexc.print_backtrace stdout ;*) raise z
 
 let xnlia gl =
   try 
-    micromega_gen parse_zarith Mc.negate Mc.normalise Mc.runsat Mc.rdeduce zz_domain_spec
+    micromega_gen parse_zarith Mc.negate Mc.normalise Mc.zunsat Mc.zdeduce zz_domain_spec
       [ nlinear_Z ] gl
   with z -> (*Printexc.print_backtrace stdout ;*) raise z
 

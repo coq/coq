@@ -41,6 +41,37 @@ Set Implicit Arguments.
       | I f1 f2 => (eval_f  ev f1) -> (eval_f  ev f2)
     end.
 
+  Lemma eval_f_morph : forall  A (ev ev' : A -> Prop) (f : BFormula A),
+    (forall a, ev a <-> ev' a) -> (eval_f ev f <-> eval_f ev' f).
+  Proof.
+    induction f ; simpl ; try tauto.
+    intros.
+    assert (H' := H a).
+    auto.
+  Qed.
+
+
+
+  Fixpoint map_bformula (T U : Type) (fct : T -> U) (f : BFormula T) : BFormula U :=
+    match f with
+      | TT => TT _
+      | FF => FF _
+      | X p => X _ p
+      | A a => A (fct a)
+      | Cj f1 f2 => Cj (map_bformula fct f1) (map_bformula fct f2)
+      | D f1 f2 => D (map_bformula fct f1) (map_bformula fct f2)
+      | N f     => N (map_bformula fct f)
+      | I f1 f2 => I (map_bformula fct f1) (map_bformula fct f2)
+    end.
+
+  Lemma eval_f_map : forall T U (fct: T-> U) env f ,
+    eval_f env  (map_bformula fct f)  = eval_f (fun x => env (fct x)) f.
+  Proof.
+    induction f ; simpl ; try (rewrite IHf1 ; rewrite IHf2) ; auto.
+    rewrite <- IHf.  auto.    
+  Qed.
+
+
 
   Lemma map_simpl : forall A B f l, @map A B f l = match l with
                                                  | nil => nil
@@ -49,6 +80,7 @@ Set Implicit Arguments.
   Proof.
     destruct l ; reflexivity.
   Qed.
+
 
 
 
@@ -477,7 +509,6 @@ Set Implicit Arguments.
     apply (xcnf_correct t true).
     eapply cnf_checker_sound ; eauto.
   Qed.
-
 
 
 
