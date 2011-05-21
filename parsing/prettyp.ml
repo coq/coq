@@ -339,7 +339,7 @@ let gallina_print_inductive sp =
   let env = Global.env() in
   let mib = Environ.lookup_mind sp env in
   let mipv = mib.mind_packets in
-  pr_mutual_inductive_body env mib ++ fnl () ++
+  pr_mutual_inductive_body env sp mib ++ fnl () ++
   with_line_skip
     (print_inductive_implicit_args sp mipv @
      print_inductive_argument_scopes sp mipv)
@@ -531,7 +531,7 @@ let print_full_pure_context () =
       | "INDUCTIVE" ->
 	  let mind = Global.mind_of_delta (mind_of_kn kn) in
 	  let mib = Global.lookup_mind mind in
-	  pr_mutual_inductive_body (Global.env()) mib ++
+	  pr_mutual_inductive_body (Global.env()) mind mib ++
 	    str "." ++ fnl () ++ fnl ()
       | "MODULE" ->
 	  (* TODO: make it reparsable *)

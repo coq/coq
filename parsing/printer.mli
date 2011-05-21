@@ -147,4 +147,4 @@ val pr_instance_gmap : (global_reference, Typeclasses.instance Names.Cmap.t) Gma
 (** Inductive declarations *)
 
 val pr_mutual_inductive_body :
-  env -> Declarations.mutual_inductive_body -> std_ppcmds
+  env -> mutual_inductive -> Declarations.mutual_inductive_body -> std_ppcmds

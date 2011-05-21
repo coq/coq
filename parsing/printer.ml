@@ -565,34 +565,26 @@ let build_ind_type env mip =
     | Polymorphic ar ->
       it_mkProd_or_LetIn (mkSort (Type ar.poly_level)) mip.mind_arity_ctxt
 
-let print_one_inductive env mib (mip,ind_typ) =
+let print_one_inductive env mib ((_,i) as ind) =
+  let mip = mib.mind_packets.(i) in
   let params = mib.mind_params_ctxt in
-  (* In case of lets in params, mind_nparams <> List.length params *)
-  let lparams = List.length params in
   let args = extended_rel_list 0 params in
-  let arity = hnf_prod_applist env ind_typ args in
+  let arity = hnf_prod_applist env (build_ind_type env mip) args in
+  let cstrtypes = Inductive.type_of_constructors ind (mib,mip) in
+  let cstrtypes = Array.map (fun c -> hnf_prod_applist env c args) cstrtypes in
   let envpar = push_rel_context params env in
-  let cstrtypes =
-    Array.map (fun c -> hnf_prod_applist envpar (lift lparams c) args)
-      mip.mind_user_lc
-  in
   hov 0 (
     pr_id mip.mind_typename ++ brk(1,4) ++ print_params env params ++
     str ": " ++ pr_lconstr_env envpar arity ++ str " :=") ++
   brk(0,2) ++ print_constructors envpar mip.mind_consnames cstrtypes
 
-let print_mutual_inductive env mib =
-  let mips = Array.to_list mib.mind_packets in
-  let ind_types = List.map (build_ind_type env) mips in
-  let mips_types = List.combine mips ind_types in
-  let ind_ctxt =
-    List.rev_map (fun (m,t) -> (Name m.mind_typename, None, t)) mips_types
+let print_mutual_inductive env mind mib =
+  let inds = list_tabulate (fun x -> (mind,x)) (Array.length mib.mind_packets)
   in
-  let envind = push_rel_context ind_ctxt env in
   hov 0 (
     str (if mib.mind_finite then "Inductive " else "CoInductive ") ++
     prlist_with_sep (fun () -> fnl () ++ str"  with ")
-      (print_one_inductive envind mib) mips_types)
+      (print_one_inductive env mib) inds)
 
 let get_fields =
   let rec prodec_rec l subst c =
@@ -607,23 +599,18 @@ let get_fields =
   in
   prodec_rec [] []
 
-let print_record env mib =
+let print_record env mind mib =
   let mip = mib.mind_packets.(0) in
-  let ind_typ = build_ind_type env mip in
-  let ind_name = mip.mind_typename in
-  let envind = push_rel_context [(Name ind_name, None, ind_typ)] env in
   let params = mib.mind_params_ctxt in
-  let lparams = List.length params in
   let args = extended_rel_list 0 params in
-  let arity = hnf_prod_applist env ind_typ args in
-  let envpar = push_rel_context params envind in
-  let cstr_typ =
-    hnf_prod_applist envpar (lift lparams mip.mind_user_lc.(0)) args
-  in
-  let fields = get_fields cstr_typ in
+  let arity = hnf_prod_applist env (build_ind_type env mip) args in
+  let cstrtypes = Inductive.type_of_constructors (mind,0) (mib,mip) in
+  let cstrtype = hnf_prod_applist env cstrtypes.(0) args in
+  let fields = get_fields cstrtype in
+  let envpar = push_rel_context params env in
   hov 0 (
     hov 0 (
-      str "Record " ++ pr_id ind_name ++ brk(1,4) ++
+      str "Record " ++ pr_id mip.mind_typename ++ brk(1,4) ++
       print_params env params ++
       str ": " ++ pr_lconstr_env envpar arity ++ brk(1,2) ++
       str ":= " ++ pr_id mip.mind_consnames.(0)) ++
@@ -634,8 +621,8 @@ let print_record env mib =
 	  pr_id id ++ str (if b then " : " else " := ") ++
 	  pr_lconstr_env envpar c) fields) ++ str" }")
 
-let pr_mutual_inductive_body env mib =
+let pr_mutual_inductive_body env mind mib =
   if mib.mind_record & not !Flags.raw_print then
-    print_record env mib
+    print_record env mind mib
   else
-    print_mutual_inductive env mib
+    print_mutual_inductive env mind mib

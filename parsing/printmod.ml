@@ -124,7 +124,7 @@ let print_body is_impl env mp (l,body) =
     | SFBmind mib ->
       try
 	let env = Option.get env in
-	Printer.pr_mutual_inductive_body env mib
+	Printer.pr_mutual_inductive_body env (make_mind mp empty_dirpath l) mib
       with _ ->
 	(if mib.mind_finite then str "Inductive " else str "CoInductive")
 	++ name)
@@ -248,9 +248,10 @@ let print_module with_body mp =
 let print_modtype kn =
   let mtb = Global.lookup_modtype kn in
   let name = print_kn [] kn in
-  str "Module Type " ++ name ++ str " = " ++
-  (try
-     if !short then raise ShortPrinting;
-     print_modtype' (Some (Global.env ())) kn mtb.typ_expr
-   with _ ->
-     print_modtype' None kn mtb.typ_expr)
+  hv 1
+    (str "Module Type " ++ name ++ str " =" ++ spc () ++
+     (try
+	if !short then raise ShortPrinting;
+	print_modtype' (Some (Global.env ())) kn mtb.typ_expr
+      with _ ->
+	print_modtype' None kn mtb.typ_expr))
