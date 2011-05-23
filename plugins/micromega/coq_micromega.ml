@@ -1524,6 +1524,7 @@ let rec abstract_wrt_formula f1 f2 =
     | I(a,_,b) , I(a',x,b') -> I(abstract_wrt_formula a a',x, abstract_wrt_formula b b')
     | FF , FF -> FF
     | TT , TT -> TT
+    | N x , N y -> N(abstract_wrt_formula x y)
     |    _    -> failwith "abstract_wrt_formula"
 
 (**

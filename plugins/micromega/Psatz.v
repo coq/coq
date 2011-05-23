@@ -76,6 +76,15 @@ Ltac psatzl dom :=
   | _ => fail "Unsupported domain"
   end in tac.
 
+
+Ltac lra := 
+    unfold Rdiv in * ; 
+    psatzl_R ;
+    try (intros __wit __varmap __ff ;
+        change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
+        apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity).
+
+
 Ltac lia :=
   cbv delta - [Zplus Zminus Zopp Zmult Zpower Zgt Zge Zle Zlt iff not] ; xlia ; 
   intros __wit __varmap __ff ;
