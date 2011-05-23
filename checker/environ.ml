@@ -111,6 +111,8 @@ let lookup_constant kn env =
   Cmap.find kn env.env_globals.env_constants
 
 let add_constant kn cs env =
+  if Cmap.mem kn env.env_globals.env_constants then
+    anomaly "Constant is already defined";
   let new_constants = 
     Cmap.add kn cs env.env_globals.env_constants in
   let new_globals = 
@@ -153,6 +155,8 @@ let rec scrape_mind env kn =
     | Some kn' -> scrape_mind env kn'
 
 let add_mind kn mib env =
+  if KNmap.mem kn env.env_globals.env_inductives then
+    anomaly "Inductive is already defined";
   let new_inds = KNmap.add kn mib env.env_globals.env_inductives in
   let new_globals = 
     { env.env_globals with 
@@ -169,6 +173,8 @@ let rec mind_equiv env (kn1,i1) (kn2,i2) =
 (* Modules *)
 
 let add_modtype ln mtb env = 
+  if MPmap.mem ln env.env_globals.env_modtypes then
+    anomaly "Module type is already defined";
   let new_modtypes = MPmap.add ln mtb env.env_globals.env_modtypes in
   let new_globals = 
     { env.env_globals with 
@@ -176,6 +182,8 @@ let add_modtype ln mtb env =
   { env with env_globals = new_globals }
 
 let shallow_add_module mp mb env = 
+  if MPmap.mem mp env.env_globals.env_modules then
+    anomaly "Module is already defined";
   let new_mods = MPmap.add mp mb env.env_globals.env_modules in
   let new_globals = 
     { env.env_globals with 
