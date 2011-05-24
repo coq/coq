@@ -357,25 +357,6 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	     let c = nf_evar i c1 in
 	     evar_conv_x ts (push_rel (na,None,c) env) i CONV c'1 c'2)]
 
-    (* Eta-expansion *)
-    | Rigid c1, _ when isLambda c1 ->
-	assert (l1 = []);
-	let (na,c1,c'1) = destLambda c1 in
-        let c = nf_evar evd c1 in
-	let env' = push_rel (na,None,c) env in
-        let appr1 = evar_apprec env' evd [] c'1 in
-	let appr2 = (lift 1 term2, List.map (lift 1) l2 @ [mkRel 1]) in
-	evar_eqappr_x ts env' evd CONV appr1 appr2
-
-    | _, Rigid c2 when isLambda c2 ->
-	assert (l2 = []);
-	let (na,c2,c'2) = destLambda c2 in
-        let c = nf_evar evd c2 in
-	let env' = push_rel (na,None,c) env in
-	let appr1 = (lift 1 term1, List.map (lift 1) l1 @ [mkRel 1]) in
-        let appr2 = evar_apprec env' evd [] c'2 in
-	evar_eqappr_x ts env' evd CONV appr1 appr2
-
     | Flexible ev1, (Rigid _ | PseudoRigid _) ->
 	if
 	  is_unification_pattern_evar env ev1 l1 (applist appr2) &
@@ -431,6 +412,25 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	    | None -> (i,false)
 	in
 	ise_try evd [f3; f4]
+
+    (* Eta-expansion *)
+    | Rigid c1, _ when isLambda c1 ->
+	assert (l1 = []);
+	let (na,c1,c'1) = destLambda c1 in
+        let c = nf_evar evd c1 in
+	let env' = push_rel (na,None,c) env in
+        let appr1 = evar_apprec env' evd [] c'1 in
+	let appr2 = (lift 1 term2, List.map (lift 1) l2 @ [mkRel 1]) in
+	evar_eqappr_x ts env' evd CONV appr1 appr2
+
+    | _, Rigid c2 when isLambda c2 ->
+	assert (l2 = []);
+	let (na,c2,c'2) = destLambda c2 in
+        let c = nf_evar evd c2 in
+	let env' = push_rel (na,None,c) env in
+	let appr1 = (lift 1 term1, List.map (lift 1) l1 @ [mkRel 1]) in
+        let appr2 = evar_apprec env' evd [] c'2 in
+	evar_eqappr_x ts env' evd CONV appr1 appr2
 
     | Rigid c1, Rigid c2 -> begin
         match kind_of_term c1, kind_of_term c2 with
