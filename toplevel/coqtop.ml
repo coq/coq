@@ -247,8 +247,9 @@ let parse_args arglist =
 
     | "-vm" :: rem -> use_vm := true; parse rem
     | "-emacs" :: rem -> Flags.print_emacs := true; Pp.make_pp_emacs(); parse rem
-    | "-emacs-U" :: rem -> Flags.print_emacs := true;
-	Flags.print_emacs_safechar := true; Pp.make_pp_emacs(); parse rem
+    | "-emacs-U" :: rem ->
+	warning "Obsolete option \"-emacs-U\", use -emacs instead.";	
+	Flags.print_emacs := true; Pp.make_pp_emacs(); parse rem
 
     | "-unicode" :: rem -> add_require "Utf8_core"; parse rem
 

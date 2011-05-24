@@ -33,7 +33,7 @@ let pr_goal gs =
   in
     preamb ++
     str"  " ++ hv 0 (penv ++ fnl () ++
-		       str (Printer.emacs_str (String.make 1 (Char.chr 253)) "")  ++
+		       str (Printer.emacs_str "")  ++
 		       str "============================" ++ fnl ()  ++
 		       thesis ++ str " " ++  pc) ++ fnl ()
 

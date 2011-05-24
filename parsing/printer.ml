@@ -27,11 +27,8 @@ open Tacexpr
 
 open Store.Field
 
-let emacs_str s alts =
-  match !Flags.print_emacs, !Flags.print_emacs_safechar with
-    | true, true -> alts
-    | true , false -> s
-    | false,_ -> ""
+let emacs_str s =
+  if !Flags.print_emacs then s else ""
 
 (**********************************************************************)
 (** Terms                                                             *)
@@ -220,7 +217,7 @@ let pr_context_limit n env =
 	   else
              let pidt = pr_var_decl env d in
 	     (i+1, (pps ++ fnl () ++
-		      str (emacs_str (String.make 1 (Char.chr 253)) "") ++
+		      str (emacs_str "") ++
 		      pidt)))
         env ~init:(0,(mt ()))
     in
@@ -229,7 +226,7 @@ let pr_context_limit n env =
         (fun env d pps ->
            let pnat = pr_rel_decl env d in
 	   (pps ++ fnl () ++
-	      str (emacs_str (String.make 1 (Char.chr 253)) "") ++
+	      str (emacs_str "") ++
 	      pnat))
         env ~init:(mt ())
     in
@@ -267,7 +264,7 @@ let default_pr_goal gs =
   in
     preamb ++
     str"  " ++ hv 0 (penv ++ fnl () ++
-		       str (emacs_str (String.make 1 (Char.chr 253)) "")  ++
+		       str (emacs_str "")  ++
 		       str "============================" ++ fnl ()  ++
 		       thesis ++ str " " ++  pc) ++ fnl ()
 
@@ -276,7 +273,7 @@ let pr_concl n sigma g =
   let (g,sigma) = Goal.V82.nf_evar sigma g in
   let env = Goal.V82.env sigma g in
   let pc = pr_ltype_env_at_top env (Goal.V82.concl sigma g) in
-    str (emacs_str (String.make 1 (Char.chr 253)) "")  ++
+    str (emacs_str "")  ++
       str "subgoal " ++ int n ++ str " is:" ++ cut () ++ str" "  ++ pc
 
 (* display evar type: a context and a type *)

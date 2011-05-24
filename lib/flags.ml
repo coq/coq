@@ -23,7 +23,6 @@ let batch_mode = ref false
 let debug = ref false
 
 let print_emacs = ref false
-let print_emacs_safechar = ref false
 
 let term_quality = ref false
 

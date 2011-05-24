@@ -47,13 +47,12 @@ let resynch_buffer ibuf =
     | _ -> ()
 
 
-(* emacs special character for prompt end (fast) detection. Prefer
-   (Char.chr 6) since it does not interfere with utf8. For
-    compatibility we let (Char.chr 249) as default for a while. *)
+(* emacs special prompt tag for easy detection. No special character,
+   to avoid interfering with utf8. Compatibility code removed. *)
 
-let emacs_prompt_startstring() = Printer.emacs_str "" "<prompt>"
+let emacs_prompt_startstring() = Printer.emacs_str "<prompt>"
 
-let emacs_prompt_endstring() = Printer.emacs_str (String.make 1 (Char.chr 249)) "</prompt>"
+let emacs_prompt_endstring() = Printer.emacs_str "</prompt>"
 
 (* Read a char in an input channel, displaying a prompt at every
    beginning of line. *)

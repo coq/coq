@@ -15,7 +15,6 @@ val batch_mode : bool ref
 val debug : bool ref
 
 val print_emacs : bool ref
-val print_emacs_safechar : bool ref
 
 val term_quality : bool ref
 
