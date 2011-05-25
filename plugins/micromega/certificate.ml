@@ -1182,6 +1182,7 @@ let reduce_var_change psys =
 
 
   let lia sys = 
+    LinPoly.MonT.clear ();
     let sys = List.map (develop_constraint z_spec) sys in
     let (sys:cstr_compat list) = List.map cstr_compat_of_poly sys in
     let sys = mapi (fun c i -> (c,Hyp i)) sys in
@@ -1189,6 +1190,7 @@ let reduce_var_change psys =
 
 
   let nlia sys = 
+    LinPoly.MonT.clear ();
     let sys = List.map (develop_constraint z_spec) sys in
     let sys = mapi (fun c i -> (c,Hyp i)) sys in
 

@@ -590,9 +590,13 @@ struct
     (** A hash table might be preferable but requires a hash function. *)
     let (index_of_monomial : int MonoMap.t ref) = ref (MonoMap.empty)
     let (monomial_of_index : Monomial.t IntMap.t ref) = ref (IntMap.empty)
-
-
     let fresh = ref 0
+
+    let clear () = 
+      index_of_monomial := MonoMap.empty;
+      monomial_of_index := IntMap.empty ; 
+      fresh := 0
+
 
     let register m = 
       try

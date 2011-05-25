@@ -407,7 +407,7 @@ struct
   let coq_Rdiv = lazy (r_constant "Rdiv")
   let coq_Rinv = lazy (r_constant "Rinv")
   let coq_Rpower = lazy (r_constant "pow")
-  let coq_Q2R    = lazy (constant "Q2R")
+  let coq_IQR    = lazy (constant "IQR")
   let coq_IZR    = lazy (constant "IZR")
 
   let coq_PEX = lazy (constant "PEX" )
@@ -997,7 +997,7 @@ struct
 	      ParseError -> 
 		match op with
 		  | op when op = Lazy.force coq_Rinv -> Mc.CInv(rconstant args.(0))
-		  | op when op = Lazy.force coq_Q2R  -> Mc.CQ (parse_q args.(0))
+		  | op when op = Lazy.force coq_IQR  -> Mc.CQ (parse_q args.(0))
 (*		  | op when op = Lazy.force coq_IZR  -> Mc.CZ (parse_z args.(0))*)
 		  | _ ->  raise ParseError
 	end

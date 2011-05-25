@@ -19,6 +19,7 @@ Require Import Raxioms RIneq Rpow_def DiscrR.
 Require Import QArith.
 Require Import Qfield.
 
+
 Require Setoid.
 (*Declare ML Module "micromega_plugin".*)
 
@@ -63,7 +64,7 @@ Proof.
   apply (Rmult_lt_compat_r) ; auto.
 Qed.
 
-Definition Q2R := fun x : Q => (IZR (Qnum x) * / IZR (' Qden x))%R.
+Definition IQR := fun x : Q => (IZR (Qnum x) * / IZR (' Qden x))%R.
 
 
 Lemma Rinv_elim : forall x y z, 
@@ -123,9 +124,9 @@ Qed.
 
 Lemma Qeq_true : forall x y,  
   Qeq_bool x y = true -> 
-   Q2R x = Q2R y.
+   IQR x = IQR y.
 Proof.
-  unfold Q2R.
+  unfold IQR.
   simpl.
   intros.
   apply Qeq_bool_eq in H.
@@ -143,12 +144,12 @@ Proof.
   split ; apply Rlt_neq ; auto.
 Qed.
 
-Lemma Qeq_false : forall x y, Qeq_bool x y = false -> Q2R x <> Q2R y.
+Lemma Qeq_false : forall x y, Qeq_bool x y = false -> IQR x <> IQR y.
 Proof.
   intros.
   apply Qeq_bool_neq  in H.
   intro. apply H.   clear H.
-  unfold Qeq,Q2R in *.
+  unfold Qeq,IQR in *.
   simpl in *.
   revert H0.
   repeat Rinv_elim.
@@ -166,12 +167,12 @@ Qed.
 
   
 
-Lemma Qle_true : forall x y : Q, Qle_bool x y = true -> Q2R x <= Q2R y.
+Lemma Qle_true : forall x y : Q, Qle_bool x y = true -> IQR x <= IQR y.
 Proof.
   intros.
   apply Qle_bool_imp_le in H.
   unfold Qle in H.
-  unfold Q2R.
+  unfold IQR.
   simpl in *.
   apply IZR_le in H.
   repeat rewrite mult_IZR in H.
@@ -191,20 +192,20 @@ Qed.
 
 
 
-Lemma Q2R_0 : Q2R 0 = 0.
+Lemma IQR_0 : IQR 0 = 0.
 Proof.
   compute. apply Rinv_1.
 Qed.
 
-Lemma Q2R_1 : Q2R 1 = 1.
+Lemma IQR_1 : IQR 1 = 1.
 Proof.
   compute. apply Rinv_1.
 Qed.
 
-Lemma Q2R_plus : forall x y, Q2R (x + y) = Q2R x + Q2R y.
+Lemma IQR_plus : forall x y, IQR (x + y) = IQR x + IQR y.
 Proof.
   intros.
-  unfold Q2R.
+  unfold IQR.
   simpl in *.
   rewrite plus_IZR in *.
   rewrite mult_IZR in *.
@@ -218,28 +219,28 @@ Proof.
   split ; apply Rlt_neq ; auto.
 Qed.
 
-Lemma Q2R_opp : forall x, Q2R (- x) = - Q2R x.
+Lemma IQR_opp : forall x, IQR (- x) = - IQR x.
 Proof.
   intros.
-  unfold Q2R.
+  unfold IQR.
   simpl.
   rewrite opp_IZR.
   ring.  
 Qed.
 
-Lemma Q2R_minus : forall x y, Q2R (x - y) = Q2R x - Q2R y.
+Lemma IQR_minus : forall x y, IQR (x - y) = IQR x - IQR y.
 Proof.
   intros.
   unfold Qminus.
-  rewrite Q2R_plus.
-  rewrite Q2R_opp.
+  rewrite IQR_plus.
+  rewrite IQR_opp.
   ring.
 Qed.
 
 
-Lemma Q2R_mult : forall x y, Q2R (x * y) = Q2R x * Q2R y.
+Lemma IQR_mult : forall x y, IQR (x * y) = IQR x * IQR y.
 Proof.
-  unfold Q2R ; intros.
+  unfold IQR ; intros.
   simpl.
   repeat rewrite mult_IZR.
   simpl.  
@@ -249,10 +250,10 @@ Proof.
   intros. field ; split ; apply Rlt_neq ; auto.
 Qed.
 
-Lemma Q2R_inv_lt : forall x, (0 < x)%Q -> 
-  Q2R (/ x) =  / Q2R x.
+Lemma IQR_inv_lt : forall x, (0 < x)%Q -> 
+  IQR (/ x) =  / IQR x.
 Proof.
-  unfold Q2R ; simpl.
+  unfold IQR ; simpl.
   intros.
   unfold Qlt in H.
   revert H.
@@ -301,10 +302,10 @@ Proof.
   apply Ropp_eq_0_compat ; auto.
 Qed.
 
-Lemma Q2R_x_0 : forall x, Q2R x = 0 -> x == 0%Q.
+Lemma IQR_x_0 : forall x, IQR x = 0 -> x == 0%Q.
 Proof.
   destruct x ; simpl.
-  unfold Q2R.
+  unfold IQR.
   simpl.
   INR_nat_of_P.
   intros.
@@ -320,20 +321,20 @@ Proof.
 Qed.
   
 
-Lemma Q2R_inv_gt : forall x, (0 > x)%Q -> 
-  Q2R (/ x) =  / Q2R x.
+Lemma IQR_inv_gt : forall x, (0 > x)%Q -> 
+  IQR (/ x) =  / IQR x.
 Proof.
   intros.
   rewrite <- (Qopp_involutive_strong x).
   rewrite <- Qinv_opp.
-  rewrite Q2R_opp.
-  rewrite Q2R_inv_lt.
-  repeat rewrite Q2R_opp.
+  rewrite IQR_opp.
+  rewrite IQR_inv_lt.
+  repeat rewrite IQR_opp.
   rewrite Ropp_inv_permute.
   auto.
   intro.
   apply Ropp_0 in H0.
-  apply Q2R_x_0 in H0.
+  apply IQR_x_0 in H0.
   rewrite H0 in H.
   compute in H. discriminate.
   unfold Qlt in *.
@@ -341,8 +342,8 @@ Proof.
   auto with zarith.
 Qed.
 
-Lemma Q2R_inv : forall x, ~ x ==  0 -> 
-  Q2R (/ x) =  / Q2R x.
+Lemma IQR_inv : forall x, ~ x ==  0 -> 
+  IQR (/ x) =  / IQR x.
 Proof.
   intros.
   assert ( 0 > x \/ 0 < x)%Q.
@@ -352,12 +353,12 @@ Proof.
    right. reflexivity.
    left ; reflexivity.
   destruct H0.
-  apply Q2R_inv_gt ; auto.
-  apply Q2R_inv_lt ; auto.
+  apply IQR_inv_gt ; auto.
+  apply IQR_inv_lt ; auto.
 Qed.
 
-Lemma Q2R_inv_ext : forall x, 
-  Q2R (/ x) = (if Qeq_bool x 0 then 0 else / Q2R x).
+Lemma IQR_inv_ext : forall x, 
+  IQR (/ x) = (if Qeq_bool x 0 then 0 else / IQR x).
 Proof.
   intros.
   case_eq (Qeq_bool x 0).
@@ -371,7 +372,7 @@ Proof.
   reflexivity.
   rewrite <- H. ring.
   intros.
-  apply Q2R_inv.
+  apply IQR_inv.
   intro.
   rewrite <- Qeq_bool_iff in H0.
   congruence.
@@ -385,16 +386,16 @@ Lemma QSORaddon :
   R0 R1 Rplus Rmult Rminus Ropp  (@eq R)  Rle (* ring elements *)
   Q 0%Q 1%Q Qplus Qmult Qminus Qopp (* coefficients *)
   Qeq_bool Qle_bool
-  Q2R nat to_nat pow.
+  IQR nat to_nat pow.
 Proof.
   constructor.
   constructor ; intros ; try reflexivity.
-  apply Q2R_0.
-  apply Q2R_1.
-  apply Q2R_plus.
-  apply Q2R_minus.
-  apply Q2R_mult.
-  apply Q2R_opp.
+  apply IQR_0.
+  apply IQR_1.
+  apply IQR_plus.
+  apply IQR_minus.
+  apply IQR_mult.
+  apply IQR_opp.
   apply Qeq_true ; auto.
   apply R_power_theory.
   apply Qeq_false.
@@ -435,7 +436,7 @@ Fixpoint R_of_Rcst (r : Rcst) : R :=
     | C0 => R0
     | C1 => R1
     | CZ z => IZR z
-    | CQ q => Q2R q
+    | CQ q => IQR q
     | CPlus r1 r2  => (R_of_Rcst r1) + (R_of_Rcst r2)
     | CMinus r1 r2 => (R_of_Rcst r1) - (R_of_Rcst r2)
     | CMult r1 r2  => (R_of_Rcst r1) * (R_of_Rcst r2)
@@ -446,20 +447,20 @@ Fixpoint R_of_Rcst (r : Rcst) : R :=
       | COpp r       => - (R_of_Rcst r)
   end.
 
-Lemma Q_of_RcstR : forall c, Q2R (Q_of_Rcst c) = R_of_Rcst c.
+Lemma Q_of_RcstR : forall c, IQR (Q_of_Rcst c) = R_of_Rcst c.
 Proof.
     induction c ; simpl ; try (rewrite <- IHc1 ; rewrite <- IHc2).
-    apply Q2R_0. 
-    apply Q2R_1. 
+    apply IQR_0. 
+    apply IQR_1. 
     reflexivity.
-    unfold Q2R. simpl. rewrite Rinv_1. reflexivity.
-    apply Q2R_plus.
-    apply Q2R_minus.
-    apply Q2R_mult.
+    unfold IQR. simpl. rewrite Rinv_1. reflexivity.
+    apply IQR_plus.
+    apply IQR_minus.
+    apply IQR_mult.
     rewrite <- IHc.
-    apply Q2R_inv_ext.
+    apply IQR_inv_ext.
     rewrite <- IHc.
-    apply Q2R_opp.
+    apply IQR_opp.
   Qed.
 
 Require Import EnvRing.
@@ -492,7 +493,7 @@ Definition Reval_formula' :=
   eval_sformula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt nat_of_N pow R_of_Rcst.
 
 Definition QReval_formula := 
-  eval_formula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt Q2R nat_of_N pow .
+  eval_formula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt IQR nat_of_N pow .
 
 Lemma Reval_formula_compat : forall env f, Reval_formula env f <-> Reval_formula' env f.
 Proof.
@@ -507,12 +508,12 @@ Proof.
 Qed.
 
 Definition Qeval_nformula :=
-  eval_nformula 0 Rplus Rmult  (@eq R) Rle Rlt Q2R.
+  eval_nformula 0 Rplus Rmult  (@eq R) Rle Rlt IQR.
 
 
 Lemma Reval_nformula_dec : forall env d, (Qeval_nformula env d) \/ ~ (Qeval_nformula env d).
 Proof.
-  exact (fun env d =>eval_nformula_dec Rsor Q2R env d).
+  exact (fun env d =>eval_nformula_dec Rsor IQR env d).
 Qed.
 
 Definition RWitness := Psatz Q.
