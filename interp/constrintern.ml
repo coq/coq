@@ -322,6 +322,10 @@ let locate_if_isevar loc na = function
       with Not_found -> RHole (loc, Evd.BinderType na))
   | x -> x
 
+let reset_hidden_inductive_implicit_test (ltacvars,namedctxvars,ntnvars,impls) =
+  let f = function id,(Inductive _,b,c,d) -> id,(Inductive [],b,c,d) | x -> x in
+  (ltacvars,namedctxvars,ntnvars,List.map f impls)
+
 let check_hidden_implicit_parameters id (_,_,_,impls) =
   if List.exists (function
     | (_,(Inductive indparams,_,_,_)) -> List.mem id indparams
@@ -1257,7 +1261,9 @@ let internalize sigma globalenv env allow_patvar lvar c =
         let tms,env' = List.fold_right
           (fun citm (inds,env) ->
 	    let (tm,ind),nal = intern_case_item env citm in
-	    (tm,ind)::inds,List.fold_left (push_name_env lvar) env nal)
+	    (tm,ind)::inds,List.fold_left
+              (push_name_env (reset_hidden_inductive_implicit_test lvar))
+              env nal)
 	  tms ([],env) in
         let rtnpo = Option.map (intern_type env') rtnpo in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
@@ -1266,7 +1272,9 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	let env' = reset_tmp_scope env in
         let ((b',(na',_)),ids) = intern_case_item env' (b,(na,None)) in
         let p' = Option.map (fun p ->
-          let env'' = List.fold_left (push_name_env lvar) env ids in
+          let env'' = List.fold_left 
+            (push_name_env (reset_hidden_inductive_implicit_test lvar))
+            env ids in
 	  intern_type env'' p) po in
         RLetTuple (loc, List.map snd nal, (na', p'), b',
                    intern (List.fold_left (push_name_env lvar) env nal) c)
@@ -1274,7 +1282,9 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	let env' = reset_tmp_scope env in
         let ((c',(na',_)),ids) = intern_case_item env' (c,(na,None)) in
         let p' = Option.map (fun p ->
-          let env'' = List.fold_left (push_name_env lvar) env ids in
+          let env'' = List.fold_left
+            (push_name_env (reset_hidden_inductive_implicit_test lvar))
+            env ids in
 	  intern_type env'' p) po in
         RIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole (loc, k) ->
