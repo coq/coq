@@ -681,10 +681,21 @@ let gen_absurdity id gl =
           absurd_term=False
 *)
 
+let ind_scheme_of_eq lbeq =
+  let ind = destInd lbeq.eq in
+  let (mib,mip) = Global.lookup_inductive ind in
+  let kind = inductive_sort_family mip in
+  (* use ind rather than case by compatibility *)
+  let kind =
+    if kind = InProp then Elimschemes.ind_scheme_kind_from_prop
+    else Elimschemes.ind_scheme_kind_from_type in
+  mkConst (find_scheme kind ind)
+
+
 let discrimination_pf e (t,t1,t2) discriminator lbeq =
   let i           = build_coq_I () in
   let absurd_term = build_coq_False () in
-  let eq_elim     = lbeq.ind in
+  let eq_elim     = ind_scheme_of_eq lbeq in
   (applist (eq_elim, [t;t1;mkNamedLambda e t discriminator;i;t2]), absurd_term)
 
 exception NotDiscriminable

@@ -298,7 +298,7 @@ let build_coq_sumbool () = Lazy.force coq_sumbool
 
 (* Equality on Type as a Type *)
 let coq_identity_eq = lazy_init_constant ["Datatypes"] "identity"
-let coq_identity_refl = lazy_init_constant ["Datatypes"] "refl_identity"
+let coq_identity_refl = lazy_init_constant ["Datatypes"] "identity_refl"
 let coq_identity_ind = lazy_init_constant ["Datatypes"] "identity_ind"
 let coq_identity_rec = lazy_init_constant ["Datatypes"] "identity_rec"
 let coq_identity_rect = lazy_init_constant ["Datatypes"] "identity_rect"
