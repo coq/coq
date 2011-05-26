@@ -14,6 +14,7 @@ val rect_scheme_kind_from_prop : individual scheme_kind
 val ind_scheme_kind_from_prop : individual scheme_kind
 val rec_scheme_kind_from_prop : individual scheme_kind
 val rect_dep_scheme_kind_from_type : individual scheme_kind
+val ind_scheme_kind_from_type : individual scheme_kind
 val ind_dep_scheme_kind_from_type : individual scheme_kind
 val rec_dep_scheme_kind_from_type : individual scheme_kind
 

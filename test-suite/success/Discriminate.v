@@ -32,3 +32,9 @@ intros.
 ediscriminate (H O).
 instantiate (1:=O).
 Abort.
+
+(* Check discriminate on identity *)
+
+Goal ~ identity 0 1.
+discriminate.
+Qed.

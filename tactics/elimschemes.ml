@@ -46,6 +46,10 @@ let optimize_non_type_induction_scheme kind dep sort ind =
 let build_induction_scheme_in_type dep sort ind =
   build_induction_scheme (Global.env()) Evd.empty ind dep sort
 
+let rect_scheme_kind_from_type =
+  declare_individual_scheme_object "_rect_nodep"
+    (build_induction_scheme_in_type false InType)
+
 let rect_scheme_kind_from_prop =
   declare_individual_scheme_object "_rect" ~aux:"_rect_from_prop"
     (build_induction_scheme_in_type false InType)
@@ -53,6 +57,14 @@ let rect_scheme_kind_from_prop =
 let rect_dep_scheme_kind_from_type =
   declare_individual_scheme_object "_rect" ~aux:"_rect_from_type"
     (build_induction_scheme_in_type true InType)
+
+let rect_dep_scheme_kind_from_prop =
+  declare_individual_scheme_object "_rect_dep"
+    (build_induction_scheme_in_type true InType)
+
+let ind_scheme_kind_from_type =
+  declare_individual_scheme_object "_ind_nodep"
+  (optimize_non_type_induction_scheme rect_scheme_kind_from_type false InProp)
 
 let ind_scheme_kind_from_prop =
   declare_individual_scheme_object "_ind" ~aux:"_ind_from_prop"
@@ -62,6 +74,14 @@ let ind_dep_scheme_kind_from_type =
   declare_individual_scheme_object "_ind" ~aux:"_ind_from_type"
   (optimize_non_type_induction_scheme rect_dep_scheme_kind_from_type true InProp)
 
+let ind_dep_scheme_kind_from_prop =
+  declare_individual_scheme_object "_ind_dep"
+  (optimize_non_type_induction_scheme rect_dep_scheme_kind_from_prop true InProp)
+
+let rec_scheme_kind_from_type =
+  declare_individual_scheme_object "_rec_nodep"
+  (optimize_non_type_induction_scheme rect_scheme_kind_from_type false InSet)
+
 let rec_scheme_kind_from_prop =
   declare_individual_scheme_object "_rec" ~aux:"_rec_from_prop"
   (optimize_non_type_induction_scheme rect_scheme_kind_from_prop false InSet)
@@ -69,6 +89,10 @@ let rec_scheme_kind_from_prop =
 let rec_dep_scheme_kind_from_type =
   declare_individual_scheme_object "_rec" ~aux:"_rec_from_type"
   (optimize_non_type_induction_scheme rect_dep_scheme_kind_from_type true InSet)
+
+let rec_dep_scheme_kind_from_prop =
+  declare_individual_scheme_object "_rec_dep"
+  (optimize_non_type_induction_scheme rect_dep_scheme_kind_from_prop true InSet)
 
 (* Case analysis *)
 
