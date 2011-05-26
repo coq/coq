@@ -38,11 +38,18 @@ let pr_goal gs =
 		       thesis ++ str " " ++  pc) ++ fnl ()
 
 (* arnaud: rebrancher ça 
+
+let is_guarded pts =
+  let { Evd.it=gl ; sigma=sigma } = Proof.V82.top_goal pts in
+  let c = List.hd (Proof.partial_proof pts) in
+  try let _ = Inductiveops.control_only_guard (Goal.V82.env sigma gl) c in true
+  with _ -> false
+
 let pr_open_subgoals () =
   let p = Proof_global.give_me_the_proof () in
   let { Evd.it = goals ; sigma = sigma } = Proof.V82.subgoals p in
   let close_cmd = Decl_mode.get_end_command p in
-  pr_subgoals close_cmd sigma goals
+  pr_subgoals close_cmd (fun () -> is_guarded p) sigma goals
 *)
 
 let pr_proof_instr instr = 
