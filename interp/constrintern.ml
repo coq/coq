@@ -348,6 +348,13 @@ let locate_if_isevar loc na = function
       with Not_found -> GHole (loc, Evd.BinderType na))
   | x -> x
 
+let reset_hidden_inductive_implicit_test env =
+  { env with impls = Idmap.fold (fun id x ->
+       let x = match x with
+         | (Inductive _,b,c,d) -> (Inductive [],b,c,d)
+         | x -> x
+       in Idmap.add id x) env.impls Idmap.empty }
+
 let check_hidden_implicit_parameters id impls =
   if Idmap.exists (fun _ -> function
     | (Inductive indparams,_,_,_) -> List.mem id indparams
@@ -1303,7 +1310,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
         let tms,env' = List.fold_right
           (fun citm (inds,env) ->
 	    let (tm,ind),nal = intern_case_item env citm in
-	    (tm,ind)::inds,List.fold_left (push_name_env lvar (Variable,[],[],[])) env nal)
+	    (tm,ind)::inds,List.fold_left (push_name_env lvar (Variable,[],[],[])) (reset_hidden_inductive_implicit_test env) nal)
 	  tms ([],env) in
         let rtnpo = Option.map (intern_type env') rtnpo in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
@@ -1315,12 +1322,12 @@ let internalize sigma globalenv env allow_patvar lvar c =
           let env'' = List.fold_left (push_name_env lvar (Variable,[],[],[])) env ids in
 	  intern_type env'' p) po in
         GLetTuple (loc, List.map snd nal, (na', p'), b',
-                   intern (List.fold_left (push_name_env lvar (Variable,[],[],[])) env nal) c)
+                   intern (List.fold_left (push_name_env lvar (Variable,[],[],[])) (reset_hidden_inductive_implicit_test env) nal) c)
     | CIf (loc, c, (na,po), b1, b2) ->
 	let env' = reset_tmp_scope env in
         let ((c',(na',_)),ids) = intern_case_item env' (c,(na,None)) in
         let p' = Option.map (fun p ->
-          let env'' = List.fold_left (push_name_env lvar (Variable,[],[],[])) env ids in
+          let env'' = List.fold_left (push_name_env lvar (Variable,[],[],[])) (reset_hidden_inductive_implicit_test env) ids in
 	  intern_type env'' p) po in
         GIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole (loc, k) ->

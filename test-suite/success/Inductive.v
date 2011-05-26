@@ -87,3 +87,23 @@ Record P:Type := {PA:Set; PB:Set}.
 Definition F (p:P) := (PA p) -> (PB p).
 
 Inductive I_F:Set := c : (F (Build_P nat I_F)) -> I_F.
+
+(* Check that test for binders capturing implicit arguments is not stronger
+   than needed (problem raised by Cedric Auger) *)
+
+Set Implicit Arguments.
+Inductive bool_comp2 (b: bool): bool -> Prop :=
+| Opp2: forall q, (match b return Prop with
+                  | true => match q return Prop with 
+                              true => False |
+                              false => True end
+                  | false => match q return Prop with
+                              true => True |
+                              false => False end end) -> bool_comp2 b q.
+
+(* This one is still to be made acceptable...
+
+Set Implicit Arguments.
+Inductive I A : A->Prop := C a : (forall A, A) -> I a.
+
+ *)
