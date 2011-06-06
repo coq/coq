@@ -648,7 +648,7 @@ let check_overlapping_include (inc_i,inc_r) =
     | [] -> ()
     | (pdir,_,abspdir)::l ->
 	if not (is_prefix pwd abspdir) then
-	  Printf.eprintf "Warning: in option -R, %s is not a subdirectoty of the current directory\n" pdir;
+	  Printf.eprintf "Warning: in option -R, %s is not a subdirectory of the current directory\n" pdir;
 	List.iter (fun (pdir',_,abspdir') ->
 	  if is_prefix abspdir abspdir' or is_prefix abspdir' abspdir then
 	    Printf.eprintf "Warning: in options -R, %s and %s overlap\n" pdir pdir') l;
