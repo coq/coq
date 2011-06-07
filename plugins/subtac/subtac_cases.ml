@@ -1531,7 +1531,7 @@ let constr_of_pat env isevars arsign pat avoid =
     | PatCstr (l,((_, i) as cstr),args,alias) ->
 	let cind = inductive_of_constructor cstr in
 	let IndType (indf, _) = 
-	  try find_rectype env ( !isevars) (lift (-(List.length realargs)) ty) 
+	  try find_rectype env ( !isevars) (lift (-(List.length realargs)) ty)
 	  with Not_found -> error_case_not_inductive env 
 	    {uj_val = ty; uj_type = Typing.type_of env !isevars ty}
 	in
@@ -1545,7 +1545,7 @@ let constr_of_pat env isevars arsign pat avoid =
 	  List.fold_right2
 	    (fun (na, c, t) ua (patargs, args, sign, env, n, m, avoid)  ->
 	       let pat', sign', arg', typ', argtypargs, n', avoid =
-		 typ env (lift (n - m) t, []) ua avoid
+		 typ env (substl args (liftn (List.length sign) (succ (List.length args)) t), []) ua avoid
 	       in
 	       let args' = arg' :: List.map (lift n') args in
 	       let env' = push_rels sign' env in
