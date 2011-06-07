@@ -422,8 +422,7 @@ let shrink_context env subst ty =
   in
   shrink_named subst [] rev_named_sign
 
-let extend_evar env evdref k (evk1,args1) c =
-  let ty = get_type_of env !evdref c in
+let extend_evar env evdref k (evk1,args1) ty =
   let overwrite_first v1 v2 =
     let v = Array.copy v1 in
     let n = Array.length v - Array.length v2 in
@@ -813,7 +812,20 @@ let filter_along f projs v =
  * such that "hyps' |- ?e : T"
  *)
 
-let restrict_hyps evd evk filter =
+exception IllTypedFilter
+
+let check_restricted_occur refine env filter constr =
+  let rec aux k filter c =
+    match kind_of_term c with
+    | Var id -> 
+      let idx = list_try_find_i (fun i (id', _, _) -> if id' = id then i else raise (Failure "")) 0 env in 
+	if not (List.nth filter idx)
+	then if refine then list_assign filter idx true else raise IllTypedFilter
+	else filter
+    | _ -> fold_constr_with_binders succ aux k filter c
+  in aux 0 filter constr
+
+let restrict_hyps ?(refine=false) evd evk filter =
     (* What to do with dependencies?
        Assume we have x:A, y:B(x), z:C(x,y) |- ?e:T(x,y,z) and restrict on y.
        - If y is in a non-erasable position in C(x,y) (i.e. it is not below an
@@ -829,7 +841,8 @@ let restrict_hyps evd evk filter =
     let oldfilter = evar_filter evi in
     let filter,_ = List.fold_right (fun oldb (l,filter) ->
       if oldb then List.hd filter::l,List.tl filter else (false::l,filter))
-      oldfilter ([],List.rev filter) in
+      oldfilter ([], List.rev filter) in
+    let filter = check_restricted_occur refine (named_context env) filter evi.evar_concl in
     (env,evar_source evk evd,filter,evi.evar_concl)
 
 let do_restrict_hyps evd evk projs =
@@ -925,15 +938,19 @@ let solve_evar_evar_l2r f env evd (evk1,args1) (evk2,args2 as ev2) =
       list_fold_map (instance_of_projection f env (mkEvar ev2)) evd proj1' in
     let evd,evk1' = do_restrict_hyps evd evk1 proj1 in
     Evd.define evk2 (mkEvar(evk1',Array.of_list args1')) evd
-  with NotUnique ->
+  with NotUnique | IllTypedFilter ->
     raise (CannotProject proj1)
 
 let solve_evar_evar f env evd ev1 ev2 =
-  try solve_evar_evar_l2r f env evd ev1 ev2
-  with CannotProject projs1 ->
-  try solve_evar_evar_l2r f env evd ev2 ev1
-  with CannotProject projs2 ->
-  postpone_evar_evar env evd projs1 ev1 projs2 ev2
+  try
+    try solve_evar_evar_l2r f env evd ev1 ev2
+    with CannotProject projs1 ->
+    try solve_evar_evar_l2r f env evd ev2 ev1
+    with CannotProject projs2 ->
+    postpone_evar_evar env evd projs1 ev1 projs2 ev2
+  with IllTypedFilter -> 
+    user_err_loc (fst (evar_source (fst ev1) evd),"",
+		  str "Unable to find a well-typed restriction of the context")
 
 (* Solve pbs (?i x1..xn) = (?i y1..yn) which arises often in fixpoint
  * definitions. We try to unify the xi with the yi pairwise. The pairs
@@ -971,7 +988,7 @@ let solve_refl conv_algo env evd evk argsv1 argsv2 =
  * Note: we don't assume rhs in normal form, it may fail while it would
  * have succeeded after some reductions.
  *
- * This is the work of [invert_definition Γ Σ ?ev[hyps:=args]
+ * This is the work of [invert_definition Γ Σ ?ev[hyps:=args] c]
  * Precondition:  Σ; Γ, y1..yk |- c /\ Σ; Γ |- u1..un
  * Postcondition: if φ(x1..xn) is returned then
  *                Σ; Γ, y1..yk |- φ(u1..un) = c /\ x1..xn |- φ(x1..xn)
@@ -1012,8 +1029,8 @@ let rec invert_definition choose env evd (evk,argsv as ev) rhs =
 	  let ts = expansions_of_var aliases t in
 	  let test c = isEvar c or List.mem c ts in
 	  let filter = array_map_to_list test argsv in
+	  let evarenv,src,filter,_ = restrict_hyps ~refine:true !evdref evk filter in
 	  let args' = filter_along (fun x -> x) filter argsv in
-	  let evarenv,src,filter,_ = restrict_hyps !evdref evk filter in
 	  let evd,evar = new_evar !evdref evarenv ~src ~filter ty in
 	  let evk',_ = destEvar evar in
 	  let pb = (Reduction.CONV,env,mkEvar(evk',args'),t) in
@@ -1032,27 +1049,32 @@ let rec invert_definition choose env evd (evk,argsv as ev) rhs =
 	  array_map_to_list
 	    (invert_arg_from_subst aliases k !evdref subst) args'
 	in
-	(try
-	  (* Try to project (a restriction of) the right evar *)
-	  let eprojs' = effective_projections projs' in
-	  let evd,args' =
-	    list_fold_map (instance_of_projection evar_define env' t)
-	      !evdref eprojs' in
-	  let evd,evk' = do_restrict_hyps evd evk' projs' in
-	  evdref := evd;
-	  mkEvar (evk',Array.of_list args')
-	with NotUnique ->
-	  assert !progress;
-	  (* Make the virtual left evar real *)
-	  let (evar'',ev'') = extend_evar env' evdref k ev t in
-	  let evd =
-	    (* Try to project (a restriction of) the left evar ... *)
-	    try solve_evar_evar_l2r evar_define env' !evdref ev'' ev'
-	    with CannotProject projs'' ->
-	    (* ... or postpone the problem *)
-	    postpone_evar_evar env' !evdref projs'' ev'' projs' ev' in
-	  evdref := evd;
-	  evar'')
+	  (try
+	     (* Try to project (a restriction of) the right evar *)
+	     let eprojs' = effective_projections projs' in
+	     let evd,args' =
+	       list_fold_map (instance_of_projection evar_define env' t)
+	         !evdref eprojs' in
+	     let evd,evk' = do_restrict_hyps evd evk' projs' in
+	       evdref := evd;
+	       mkEvar (evk',Array.of_list args')
+	   with NotUnique | IllTypedFilter ->
+	   assert !progress;
+	   (* Make the virtual left evar real *)
+	   let ty = get_type_of env' !evdref t in
+	   let nc, ty, _ = push_rel_context_to_named_context env' ty in
+	   let env' = reset_with_named_context nc env' in
+	   let (evar'',ev'') = extend_evar env' evdref k ev ty in
+	     try let evd =
+	       (* Try to project (a restriction of) the left evar ... *)
+	       try solve_evar_evar_l2r evar_define env' !evdref ev'' ev'
+	       with CannotProject projs'' ->
+	       (* ... or postpone the problem *)
+	       postpone_evar_evar env' !evdref projs'' ev'' projs' ev' 
+	     in
+	       evdref := evd;
+	       evar''
+	     with IllTypedFilter -> raise (NotInvertibleUsingOurAlgorithm t))
     | _ ->
 	match
 	  let c,args = decompose_app_vect t in
@@ -1300,6 +1322,27 @@ let status_changed lev (pbty,_,t1,t2) =
  * Returns an optional list of evars that were instantiated, or None
  * if the problem couldn't be solved. *)
 
+let check_evar_instance evd evk1 conv_algo =
+  let evi = Evd.find evd evk1 in
+  let evenv = evar_unfiltered_env evi in
+  let evc = nf_evar evd evi.evar_concl in
+    match evi.evar_body with
+    | Evar_defined body ->
+      (* FIXME: The body might be ill-typed when this is called from w_merge *)
+      let ty = 
+	try Retyping.get_type_of evenv evd body 
+	with _ -> error "Ill-typed evar instance"
+      in
+      let ty = nf_evar evd ty in
+(* 	if occur_existential evd evc || occur_existential evd ty  *)
+(* 	then add_conv_pb (Reduction.CUMUL,evenv,ty,evc) evd *)
+(* 	else *)
+	  let evd,b = conv_algo evenv evd Reduction.CUMUL ty evc in
+	    if b then evd else
+	      user_err_loc (fst (evar_source evk1 evd),"",
+			    str "Unable to find a well-typed instantiation")
+    | Evar_empty -> evd (* Resulted in a constraint *)
+
 (* Rq: uncomplete algorithm if pbty = CONV_X_LEQ ! *)
 let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1),t2) =
   try
@@ -1310,33 +1353,18 @@ let solve_simple_eqn conv_algo ?(choose=false) env evd (pbty,(evk1,args1 as ev1)
 	    solve_refl conv_algo env evd evk1 args1 args2
 	  else
 	    if pbty = None
-	    then solve_evar_evar evar_define env evd ev1 ev2
+	    then
+	      solve_evar_evar 
+	        (fun env ex c evm ->
+		 check_evar_instance (evar_define env ex c evm) (fst ex) conv_algo)
+	        env evd ev1 ev2 
 	    else if pbty = Some true then
 	      add_conv_pb (Reduction.CUMUL,env,mkEvar ev1,t2) evd
 	    else
 	      add_conv_pb (Reduction.CUMUL,env,t2,mkEvar ev1) evd
       | _ ->
 	  let evd = evar_define ~choose env ev1 t2 evd in
-	  let evi = Evd.find evd evk1 in
-	  let evenv = evar_unfiltered_env evi in
-	  let evc = nf_evar evd evi.evar_concl in
-	    match evi.evar_body with
-	    | Evar_defined body ->
-  	      (* FIXME: The body might be ill-typed when this is called from w_merge *)
-	      let ty = 
-		try Retyping.get_type_of evenv evd body 
-		with _ -> error "Ill-typed evar instance"
-	      in
-	      let ty = nf_evar evd ty in
-		if occur_existential evd evi.evar_concl
-		  || occur_existential evd ty 
-		then add_conv_pb (Reduction.CUMUL,evenv,ty,evc) evd
-		else
-		  let evd,b = conv_algo evenv evd Reduction.CUMUL ty evc in
-		    if b then evd else
-		      user_err_loc (fst (evar_source (fst ev1) evd),"",
-				    str "Unable to find a well-typed instantiation")
-	    | Evar_empty -> evd (* Resulted in a constraint *)
+	    check_evar_instance evd evk1 conv_algo
     in
     let (evd,pbs) = extract_changed_conv_pbs evd status_changed in
       List.fold_left
@@ -1523,7 +1551,7 @@ let define_pure_evar_as_lambda env evd evk =
   let newenv = push_named (id, None, dom) evenv in
   let filter = true::evar_filter evi in
   let src = evar_source evk evd1 in
-  let evd2,body = new_evar evd1 newenv ~src rng ~filter in
+  let evd2,body = new_evar evd1 newenv ~src (subst1 (mkVar id) rng) ~filter in
   let lam = mkLambda (Name id, dom, subst_var id body) in
   Evd.define evk lam evd2, lam
 
