@@ -205,20 +205,32 @@ let _ =
 
 let progmap_union = ProgMap.fold ProgMap.add
 
+let close sec =
+  if not (ProgMap.is_empty !from_prg) then
+    let keys = map_keys !from_prg in
+      errorlabstrm "Program" (str "Unsolved obligations when closing " ++ str sec ++ str":" ++ spc () ++
+			      prlist_with_sep spc (fun x -> Nameops.pr_id x) keys ++
+			      (str (if List.length keys = 1 then " has " else "have ") ++
+			       str "unsolved obligations"))
+
 let input =
   declare_object
     { (default_object "Program state") with
-      classify_function = (fun () ->
-	if not (ProgMap.is_empty !from_prg) then
-	  errorlabstrm "Program" (str "Unsolved obligations when closing module:" ++ spc () ++
-				     prlist_with_sep spc (fun x -> Nameops.pr_id x)
-				     (map_keys !from_prg));
-	Dispose) }
+      cache_function = (fun (na, pi) -> from_prg := pi);
+      load_function = (fun _ (_, pi) -> from_prg := pi);
+      discharge_function = (fun _ -> close "section"; None);
+      classify_function = (fun _ -> close "module"; Dispose) }
     
 open Evd
 
 let progmap_remove prg =
-  from_prg := ProgMap.remove prg.prg_name !from_prg
+  Lib.add_anonymous_leaf (input (ProgMap.remove prg.prg_name !from_prg))
+  
+let progmap_add n prg =
+  Lib.add_anonymous_leaf (input (ProgMap.add n prg !from_prg))
+
+let progmap_replace prg' = 
+  Lib.add_anonymous_leaf (input (map_replace prg'.prg_name prg' !from_prg))
 
 let rec intset_to = function
     -1 -> Intset.empty
@@ -404,7 +416,7 @@ let obligations_message rem =
 
 let update_obls prg obls rem =
   let prg' = { prg with prg_obligations = (obls, rem) } in
-    from_prg := map_replace prg.prg_name prg' !from_prg; 
+    progmap_replace prg';
     obligations_message rem;
     if rem > 0 then Remain rem
     else (
@@ -614,7 +626,7 @@ let add_definition n ?term t ?(implicits=[]) ?(kind=Global,Definition) ?tactic
   else (
     let len = Array.length obls in
     let _ = Flags.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
-      from_prg := ProgMap.add n prg !from_prg;
+      progmap_add n prg;
       let res = auto_solve_obligations (Some n) tactic in
 	match res with
 	| Remain rem -> Flags.if_verbose (fun () -> show_obligations ~msg:false (Some n)) (); res
@@ -623,14 +635,11 @@ let add_definition n ?term t ?(implicits=[]) ?(kind=Global,Definition) ?tactic
 let add_mutual_definitions l ?tactic ?(kind=Global,Definition) ?(reduce=reduce)
     ?(hook=fun _ _ -> ()) notations fixkind =
   let deps = List.map (fun (n, b, t, imps, obls) -> n) l in
-  let upd = List.fold_left
-      (fun acc (n, b, t, imps, obls) ->
-	let prg = init_prog_info n (Some b) t deps (Some fixkind) 
-	  notations obls imps kind reduce hook 
-	in ProgMap.add n prg acc)
-      !from_prg l
-  in
-    from_prg := upd;
+    List.iter
+    (fun  (n, b, t, imps, obls) ->
+     let prg = init_prog_info n (Some b) t deps (Some fixkind) 
+       notations obls imps kind reduce hook 
+     in progmap_add n prg) l;
     let _defined =
       List.fold_left (fun finished x ->
 	if finished then finished
