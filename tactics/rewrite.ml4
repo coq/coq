@@ -195,11 +195,17 @@ let proper_proof env evars carrier relation x =
   let goal = mkApp (Lazy.force proper_proxy_type, [| carrier ; relation; x |])
   in new_cstr_evar evars env goal
 
+let extends_undefined evars evars' =
+  let f ev evi found = found || not (Evd.mem evars ev)
+  in fold_undefined f evars' false
+  
+
 let find_class_proof proof_type proof_method env evars carrier relation =
   try
     let goal = mkApp (Lazy.force proof_type, [| carrier ; relation |]) in
-    let evars, c = Typeclasses.resolve_one_typeclass env evars goal in
-      mkApp (Lazy.force proof_method, [| carrier; relation; c |])
+    let evars', c = Typeclasses.resolve_one_typeclass env evars goal in
+      if extends_undefined evars evars' then raise Not_found
+      else mkApp (Lazy.force proof_method, [| carrier; relation; c |])
   with e when Logic.catchable_exception e -> raise Not_found
 
 let get_reflexive_proof env = find_class_proof reflexive_type reflexive_proof env
