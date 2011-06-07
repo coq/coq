@@ -59,12 +59,20 @@ Ltac destruct_pairs := repeat (destruct_one_pair).
 
 Ltac destruct_one_ex :=
   let tac H := let ph := fresh "H" in (destruct H as [H ph]) in
+  let tac2 H := let ph := fresh "H" in let ph' := fresh "H" in 
+    (destruct H as [H ph ph']) 
+  in
   let tacT H := let ph := fresh "X" in (destruct H as [H ph]) in
+  let tacT2 H := let ph := fresh "X" in let ph' := fresh "X" in 
+    (destruct H as [H ph ph']) 
+  in
     match goal with
       | [H : (ex _) |- _] => tac H
       | [H : (sig ?P) |- _ ] => tac H
       | [H : (sigT ?P) |- _ ] => tacT H
-      | [H : (ex2 _) |- _] => tac H
+      | [H : (ex2 _ _) |- _] => tac2 H
+      | [H : (sig2 ?P _) |- _ ] => tac2 H
+      | [H : (sigT2 ?P _) |- _ ] => tacT2 H
     end.
 
 (** Repeateadly destruct existentials. *)
