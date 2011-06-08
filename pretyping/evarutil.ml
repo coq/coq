@@ -373,10 +373,10 @@ let is_pattern inst =
 *)
 
 
-(* We have x1..xq |- ?e1 and had to solve something like
+(* We have x1..xq |- ?e1 : τ and had to solve something like
  * Σ; Γ |- ?e1[u1..uq] = (...\y1 ... \yk ... c), where c is typically some
  * ?e2[v1..vn], hence flexible. We had to go through k binders and now
- * virtually have x1..xq, y1..yk | ?e1' and the equation
+ * virtually have x1..xq, y1..yk | ?e1' : τ' and the equation
  * Γ, y1..yk |- ?e1'[u1..uq y1..yk] = c.
  * What we do is to formally introduce ?e1' in context x1..xq, Γ, y1..yk,
  * but forbidding it to use the variables of Γ (otherwise said,
@@ -388,7 +388,7 @@ let is_pattern inst =
  * u1..up = x1'..xp'.
  *
  * At the end, we return ?e1'[x1..xn z1..zm y1..yk] so that ?e1 can be
- * instantiated by (...\y1 ... \yk ... ?e1[x1..xn z1..zm y1..yk]) and the
+ * instantiated by (...\y1 ... \yk ... ?e1'[x1..xn z1..zm y1..yk]) and the
  * new problem is Σ; Γ, y1..yk |- ?e1'[u1..un z1..zm y1..yk] = c,
  * making the z1..zm unavailable.
  *
@@ -786,7 +786,7 @@ let effective_projections =
   map_succeed (function Invertible c -> c | _ -> failwith"")
 
 let instance_of_projection f env t evd projs =
-  let ty = lazy (Retyping.get_type_of env evd t) in
+  let ty = lazy (nf_evar evd (Retyping.get_type_of env evd t)) in
   match projs with
   | NoUniqueProjection -> raise NotUnique
   | UniqueProjection (c,effects) ->
@@ -814,16 +814,22 @@ let filter_along f projs v =
 
 exception IllTypedFilter
 
-let check_restricted_occur refine env filter constr =
-  let rec aux k filter c =
+let check_restricted_occur evd refine env filter constr =
+  let filter = Array.of_list filter in
+  let rec aux k c =
+    let c = whd_evar evd c in
     match kind_of_term c with
     | Var id -> 
       let idx = list_try_find_i (fun i (id', _, _) -> if id' = id then i else raise (Failure "")) 0 env in 
-	if not (List.nth filter idx)
-	then if refine then list_assign filter idx true else raise IllTypedFilter
-	else filter
-    | _ -> fold_constr_with_binders succ aux k filter c
-  in aux 0 filter constr
+	if not filter.(idx)
+	then if refine then
+	  (filter.(idx) <- true; c) 
+	else raise IllTypedFilter
+	else c
+    | _ -> map_constr_with_binders succ aux k c
+  in 
+  let res = aux 0 constr in
+    Array.to_list filter, res
 
 let restrict_hyps ?(refine=false) evd evk filter =
     (* What to do with dependencies?
@@ -842,8 +848,8 @@ let restrict_hyps ?(refine=false) evd evk filter =
     let filter,_ = List.fold_right (fun oldb (l,filter) ->
       if oldb then List.hd filter::l,List.tl filter else (false::l,filter))
       oldfilter ([], List.rev filter) in
-    let filter = check_restricted_occur refine (named_context env) filter evi.evar_concl in
-    (env,evar_source evk evd,filter,evi.evar_concl)
+    let filter, ccl = check_restricted_occur evd refine (named_context env) filter evi.evar_concl in
+    (env,evar_source evk evd,filter,ccl)
 
 let do_restrict_hyps evd evk projs =
   let filter = List.map filter_of_projection projs in
@@ -1062,8 +1068,6 @@ let rec invert_definition choose env evd (evk,argsv as ev) rhs =
 	   assert !progress;
 	   (* Make the virtual left evar real *)
 	   let ty = get_type_of env' !evdref t in
-	   let nc, ty, _ = push_rel_context_to_named_context env' ty in
-	   let env' = reset_with_named_context nc env' in
 	   let (evar'',ev'') = extend_evar env' evdref k ev ty in
 	     try let evd =
 	       (* Try to project (a restriction of) the left evar ... *)
@@ -1334,13 +1338,10 @@ let check_evar_instance evd evk1 conv_algo =
 	with _ -> error "Ill-typed evar instance"
       in
       let ty = nf_evar evd ty in
-(* 	if occur_existential evd evc || occur_existential evd ty  *)
-(* 	then add_conv_pb (Reduction.CUMUL,evenv,ty,evc) evd *)
-(* 	else *)
-	  let evd,b = conv_algo evenv evd Reduction.CUMUL ty evc in
-	    if b then evd else
-	      user_err_loc (fst (evar_source evk1 evd),"",
-			    str "Unable to find a well-typed instantiation")
+      let evd,b = conv_algo evenv evd Reduction.CUMUL ty evc in
+	if b then evd else
+	  user_err_loc (fst (evar_source evk1 evd),"",
+			str "Unable to find a well-typed instantiation")
     | Evar_empty -> evd (* Resulted in a constraint *)
 
 (* Rq: uncomplete algorithm if pbty = CONV_X_LEQ ! *)
