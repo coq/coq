@@ -120,3 +120,5 @@ fun x : option Z => match x with
                     | NONE3 => 0
                     end
      : option Z -> Z
+s
+     : s

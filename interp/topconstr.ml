@@ -713,6 +713,7 @@ let rec match_ inner alp (tmetas,blmetas as metas) sigma a1 a2 =
       match_ true alp metas (match_ true alp metas sigma c1 c2) t1 t2
   | GCast(_,c1, CastCoerce), ACast(c2, CastCoerce) ->
       match_ true alp metas sigma c1 c2
+  | GSort (_,GType _), ASort (GType None) -> sigma
   | GSort (_,s1), ASort s2 when s1 = s2 -> sigma
   | GPatVar _, AHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
   | a, AHole _ -> sigma
