@@ -373,6 +373,25 @@ let is_pattern inst =
 *)
 
 
+exception IllTypedFilter
+
+let check_restricted_occur evd refine env filter constr =
+  let filter = Array.of_list filter in
+  let rec aux k c =
+    let c = whd_evar evd c in
+    match kind_of_term c with
+    | Var id -> 
+      let idx = list_try_find_i (fun i (id', _, _) -> if id' = id then i else raise (Failure "")) 0 env in 
+	if not filter.(idx)
+	then if refine then
+	  (filter.(idx) <- true; c) 
+	else raise IllTypedFilter
+	else c
+    | _ -> map_constr_with_binders succ aux k c
+  in 
+  let res = aux 0 constr in
+    Array.to_list filter, res
+
 (* We have x1..xq |- ?e1 : τ and had to solve something like
  * Σ; Γ |- ?e1[u1..uq] = (...\y1 ... \yk ... c), where c is typically some
  * ?e2[v1..vn], hence flexible. We had to go through k binders and now
@@ -445,24 +464,34 @@ let extend_evar env evdref k (evk1,args1) ty =
   let args1'_in_extenv = Array.map (lift k) (overwrite_first args1'_in_env args1) in
   (evar1',(evk1',args1'_in_extenv))
 
-let subfilter p filter l =
-  let (filter,_,l) =
-    List.fold_left (fun (filter,l,newl) b ->
-      if b then
-	let a,l' = match l with a::args -> a,args | _ -> assert false in
-	if p a then (true::filter,l',a::newl) else (false::filter,l',newl)
-      else (false::filter,l,newl))
-      ([],l,[]) filter in
-  (List.rev filter,List.rev l)
-
-let restrict_upon_filter evd evi evk p args =
+let subfilter env ccl filter newfilter args =
+  let vars = collect_vars ccl in
+  let (filter, _, _, newargs) =
+    List.fold_left2 
+      (fun (filter, newl, args, newargs) oldf (n, _, _) ->
+       if oldf then
+	 let a, oldargs = match args with hd :: tl -> hd, tl | _ -> assert false in
+	   if Idset.mem n vars then 
+	     (oldf :: filter, List.tl newl, oldargs, a :: newargs)
+	   else if List.hd newl then (true :: filter, List.tl newl, oldargs, a :: newargs)
+	   else (false :: filter, List.tl newl, oldargs, newargs)
+       else (oldf :: filter, newl, args, newargs))
+    ([], newfilter, args, []) filter env
+  in List.rev filter, List.rev newargs
+    
+let restrict_upon_filter ?(refine=false) evd evi evk p args =
   let filter = evar_filter evi in
-  let newfilter,newargs = subfilter p filter args in
+  let newfilter = List.map p args in
+  let env = evar_unfiltered_env evi in
+  let ccl = nf_evar evd evi.evar_concl in
+  let newfilter, newargs = 
+    subfilter (named_context env) ccl filter newfilter args
+  in
   if newfilter <> filter then
-    let (evd,newev) = new_evar evd (evar_unfiltered_env evi) ~src:(evar_source evk evd)
-	~filter:newfilter evi.evar_concl in
+    let (evd,newev) = new_evar evd env ~src:(evar_source evk evd)
+	~filter:newfilter ccl in
     let evd = Evd.define evk newev evd in
-    evd,fst (destEvar newev),newargs
+      evd,fst (destEvar newev), newargs
   else
     evd,evk,args
 
@@ -812,25 +841,6 @@ let filter_along f projs v =
  * such that "hyps' |- ?e : T"
  *)
 
-exception IllTypedFilter
-
-let check_restricted_occur evd refine env filter constr =
-  let filter = Array.of_list filter in
-  let rec aux k c =
-    let c = whd_evar evd c in
-    match kind_of_term c with
-    | Var id -> 
-      let idx = list_try_find_i (fun i (id', _, _) -> if id' = id then i else raise (Failure "")) 0 env in 
-	if not filter.(idx)
-	then if refine then
-	  (filter.(idx) <- true; c) 
-	else raise IllTypedFilter
-	else c
-    | _ -> map_constr_with_binders succ aux k c
-  in 
-  let res = aux 0 constr in
-    Array.to_list filter, res
-
 let restrict_hyps ?(refine=false) evd evk filter =
     (* What to do with dependencies?
        Assume we have x:A, y:B(x), z:C(x,y) |- ?e:T(x,y,z) and restrict on y.
@@ -927,6 +937,9 @@ let are_canonical_instances args1 args2 env =
 
 exception CannotProject of projectibility_status list
 
+let is_variable_subst args = 
+  array_for_all (fun c -> isRel c || isVar c) args
+
 let solve_evar_evar_l2r f env evd (evk1,args1) (evk2,args2 as ev2) =
   let aliases = make_alias_map env in
   let subst,_ = make_projectable_subst aliases evd (Evd.find evd evk2) args2 in
@@ -935,17 +948,18 @@ let solve_evar_evar_l2r f env evd (evk1,args1) (evk2,args2 as ev2) =
     let sign = evar_filtered_context (Evd.find evd evk2) in
     let subst = List.map (fun (id,_,_) -> mkVar id) sign in
     Evd.define evk2 (mkEvar(evk1,Array.of_list subst)) evd
-  else
-  let proj1 = array_map_to_list (invert_arg aliases 0 evd evk2 subst) args1 in
-  try
-    (* Instantiate ev2 with (a restriction of) ev1 if uniquely projectable *)
-    let proj1' = effective_projections proj1 in
-    let evd,args1' =
-      list_fold_map (instance_of_projection f env (mkEvar ev2)) evd proj1' in
-    let evd,evk1' = do_restrict_hyps evd evk1 proj1 in
-    Evd.define evk2 (mkEvar(evk1',Array.of_list args1')) evd
-  with NotUnique | IllTypedFilter ->
-    raise (CannotProject proj1)
+  else if is_variable_subst args1 && is_variable_subst args2 then
+    let proj1 = array_map_to_list (invert_arg aliases 0 evd evk2 subst) args1 in
+      try
+	(* Instantiate ev2 with (a restriction of) ev1 if uniquely projectable *)
+	let proj1' = effective_projections proj1 in
+	let evd,args1' =
+	  list_fold_map (instance_of_projection f env (mkEvar ev2)) evd proj1' in
+	let evd,evk1' = do_restrict_hyps evd evk1 proj1 in
+	  Evd.define evk2 (mkEvar(evk1',Array.of_list args1')) evd
+      with NotUnique | IllTypedFilter ->
+      raise (CannotProject proj1)
+  else raise IllTypedFilter
 
 let solve_evar_evar f env evd ev1 ev2 =
   try
@@ -967,15 +981,19 @@ let solve_refl conv_algo env evd evk argsv1 argsv2 =
   if argsv1 = argsv2 then evd else
   let evi = Evd.find_undefined evd evk in
   (* Filter and restrict if needed *)
-  let evd,evk,args =
-    restrict_upon_filter evd evi evk
+  try
+    let evd,evk,args =
+      restrict_upon_filter evd evi evk
       (fun (a1,a2) -> snd (conv_algo env evd Reduction.CONV a1 a2))
       (List.combine (Array.to_list argsv1) (Array.to_list argsv2)) in
-  (* Leave a unification problem *)
-  let args1,args2 = List.split args in
-  let argsv1 = Array.of_list args1 and argsv2 = Array.of_list args2 in
-  let pb = (Reduction.CONV,env,mkEvar(evk,argsv1),mkEvar(evk,argsv2)) in
-  Evd.add_conv_pb pb evd
+      (* Leave a unification problem *)
+    let args1,args2 = List.split args in
+    let argsv1 = Array.of_list args1 and argsv2 = Array.of_list args2 in
+    let pb = (Reduction.CONV,env,mkEvar(evk,argsv1),mkEvar(evk,argsv2)) in
+      Evd.add_conv_pb pb evd
+  with IllTypedFilter ->
+    error_not_clean env evd evk (mkEvar (evk, argsv2)) (Evd.evar_source evk evd)
+
 
 (* We try to instantiate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times
