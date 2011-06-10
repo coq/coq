@@ -74,3 +74,13 @@ destruct H.
 destruct H0.
 reflexivity.
 Qed.
+
+(* These did not work before 8.4 *)
+
+Goal (exists x, x=0) -> True.
+destruct 1 as (_,_); exact I.
+Abort.
+
+Goal (exists x, x=0 /\ True) -> True.
+destruct 1 as (_,(_,H)); exact H.
+Abort.

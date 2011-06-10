@@ -1304,46 +1304,48 @@ let rec explicit_intro_names = function
      to ensure that dependent hypotheses are cleared in the right
      dependency order (see bug #1000); we use fresh names, not used in
      the tactic, for the hyps to clear *)
-let rec intros_patterns b avoid thin destopt = function
+let rec intros_patterns b avoid thin destopt tac = function
   | (loc, IntroWildcard) :: l ->
       intro_then_gen loc (IntroAvoid(avoid@explicit_intro_names l))
 	no_move true false
         (fun id ->
 	  tclORELSE
-	    (tclTHEN (clear [id]) (intros_patterns b avoid thin destopt l))
-	    (intros_patterns b avoid ((loc,id)::thin) destopt l))
+	    (tclTHEN (clear [id]) (intros_patterns b avoid thin destopt tac l))
+	    (intros_patterns b avoid ((loc,id)::thin) destopt tac l))
   | (loc, IntroIdentifier id) :: l ->
       intro_then_gen loc (IntroMustBe id) destopt true false
-        (fun _id -> intros_patterns b avoid thin destopt l)
+        (fun _id -> intros_patterns b avoid thin destopt tac l)
   | (loc, IntroAnonymous) :: l ->
       intro_then_gen loc (IntroAvoid (avoid@explicit_intro_names l))
 	destopt true false
-        (fun _id -> intros_patterns b avoid thin destopt l)
+        (fun _id -> intros_patterns b avoid thin destopt tac l)
   | (loc, IntroFresh id) :: l ->
       intro_then_gen loc (IntroBasedOn (id, avoid@explicit_intro_names l))
 	destopt true false
-        (fun _id -> intros_patterns b avoid thin destopt l)
+        (fun _id -> intros_patterns b avoid thin destopt tac l)
   | (loc, IntroForthcoming onlydeps) :: l ->
       tclTHEN
         (intro_forthcoming_gen loc (IntroAvoid (avoid@explicit_intro_names l))
 	  destopt onlydeps)
-        (intros_patterns b avoid thin destopt l)
+        (intros_patterns b avoid thin destopt tac l)
   | (loc, IntroOrAndPattern ll) :: l' ->
       intro_then_force
 	(intro_or_and_pattern loc b ll l'
-	   (intros_patterns b avoid thin destopt))
+	   (intros_patterns b avoid thin destopt tac))
   | (loc, IntroRewrite l2r) :: l ->
       intro_then_gen loc (IntroAvoid(avoid@explicit_intro_names l))
 	no_move true false
         (fun id ->
 	  tclTHENLAST (* Skip the side conditions of the rewriting step *)
 	    (rewrite_hyp l2r id)
-	    (intros_patterns b avoid thin destopt l))
-  | [] -> clear_wildcards thin
+	    (intros_patterns b avoid thin destopt tac l))
+  | [] -> tac thin
 
-let intros_pattern = intros_patterns false [] []
+let intros_pattern destopt =
+  intros_patterns false [] [] destopt clear_wildcards
 
-let intro_pattern destopt pat = intros_patterns false [] [] destopt [dloc,pat]
+let intro_pattern destopt pat =
+  intros_pattern destopt [dloc,pat]
 
 let intro_patterns = function
   | [] -> tclREPEAT intro
@@ -1368,7 +1370,7 @@ let prepare_intros s ipat gl = match ipat with
   | IntroOrAndPattern ll -> make_id s gl,
       onLastHypId
 	(intro_or_and_pattern loc true ll []
-	  (intros_patterns true [] [] no_move))
+	  (intros_patterns true [] [] no_move clear_wildcards))
   | IntroForthcoming _ -> user_err_loc
       (loc,"",str "Introduction pattern for one hypothesis expected")
 
@@ -1400,7 +1402,8 @@ let as_tac id ipat = match ipat with
   | Some (loc,IntroRewrite l2r) ->
       !forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
   | Some (loc,IntroOrAndPattern ll) ->
-      intro_or_and_pattern loc true ll [] (intros_patterns true [] [] no_move)
+      intro_or_and_pattern loc true ll []
+        (intros_patterns true [] [] no_move clear_wildcards)
         id
   | Some (loc,
       (IntroIdentifier _ | IntroAnonymous | IntroFresh _ |
@@ -1813,20 +1816,20 @@ let re_intro_dependent_hypotheses (lstatus,rstatus) tophyp =
 
 let update destopt tophyp = if destopt = no_move then tophyp else destopt
 
-let safe_dest_intros_patterns avoid dest pat gl =
-  try intros_patterns true avoid [] dest pat gl
+let safe_dest_intros_patterns avoid thin dest pat tac gl =
+  try intros_patterns true avoid thin dest tac pat gl
   with UserError ("move_hyp",_) ->
     (* May happen if the lemma has dependent arguments that has resolved
        only after cook_sign is called, e.g. as in 
        "dec:forall x, {x=0}+{x<>0};  a:A  |- if dec a then True else False"
        for argument a of dec which will be found only lately *)
-    intros_patterns true avoid [] no_move pat gl
+    intros_patterns true avoid [] no_move tac pat gl
 
 type elim_arg_kind = RecArg | IndArg | OtherArg
 
 let induct_discharge destopt avoid' tac (avoid,ra) names gl =
   let avoid = avoid @ avoid' in
-  let rec peel_tac ra names tophyp gl =
+  let rec peel_tac ra names thin tophyp gl =
     match ra with
     | (RecArg,deprec,recvarname) ::
         (IndArg,depind,hyprecname) :: ra' ->
@@ -1843,30 +1846,29 @@ let induct_discharge destopt avoid' tac (avoid,ra) names gl =
         let newtophyp =
 	  if tophyp=no_move then first_name_buggy avoid gl hyprec else tophyp
 	in
-        tclTHENLIST
-	  [ safe_dest_intros_patterns avoid (update destopt tophyp) [recpat];
-	    safe_dest_intros_patterns avoid no_move [hyprec];
-	    peel_tac ra' names newtophyp] gl
+        safe_dest_intros_patterns avoid thin (update destopt tophyp) [recpat] (fun thin ->
+	safe_dest_intros_patterns avoid thin no_move [hyprec] (fun thin ->
+	peel_tac ra' names thin newtophyp)) gl
     | (IndArg,dep,hyprecname) :: ra' ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
         let pat,names = consume_pattern avoid hyprecname dep gl names in
-	tclTHEN (safe_dest_intros_patterns avoid (update destopt tophyp) [pat])
-          (peel_tac ra' names tophyp) gl
+	safe_dest_intros_patterns avoid thin (update destopt tophyp) [pat] (fun thin ->
+        peel_tac ra' names thin tophyp) gl
     | (RecArg,dep,recvarname) :: ra' ->
         let pat,names = consume_pattern avoid recvarname dep gl names in
-	tclTHEN (safe_dest_intros_patterns avoid (update destopt tophyp) [pat])
-          (peel_tac ra' names tophyp) gl
+	safe_dest_intros_patterns avoid thin (update destopt tophyp) [pat] (fun thin ->
+        peel_tac ra' names thin tophyp) gl
     | (OtherArg,_,_) :: ra' ->
         let pat,names = match names with
           | [] -> (dloc, IntroAnonymous), []
           | pat::names -> pat,names in
-	tclTHEN (safe_dest_intros_patterns avoid (update destopt tophyp) [pat])
-          (peel_tac ra' names tophyp) gl
+	safe_dest_intros_patterns avoid thin (update destopt tophyp) [pat] (fun thin ->
+        peel_tac ra' names thin tophyp) gl
     | [] ->
         check_unused_names names;
-        tac tophyp gl
+        tclTHEN (clear_wildcards thin) (tac tophyp) gl
   in
-  peel_tac ra names no_move gl
+  peel_tac ra names [] no_move gl
 
 (* - le recalcul de indtyp à chaque itération de atomize_one est pour ne pas
      s'embêter à regarder si un letin_tac ne fait pas des
