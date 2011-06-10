@@ -175,6 +175,7 @@ END
 
 
 let warning_error names e =
+  let e = Cerrors.process_vernac_interp_error e in
   match e with
     | Building_graph e ->
 	Pp.msg_warning

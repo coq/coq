@@ -252,12 +252,14 @@ let derive_inversion fix_names =
 	   fix_names
 	)
     with e ->
+      let e' = Cerrors.process_vernac_interp_error e in
       msg_warning
-	(str "Cannot built inversion information" ++
-	   if do_observe () then Errors.print e else mt ())
+	(str "Cannot build inversion information" ++
+	   if do_observe () then (fnl() ++ Errors.print e') else mt ())
   with _ -> ()
 
 let warning_error names e =
+  let e = Cerrors.process_vernac_interp_error e in
   let e_explain e =
     match e with
       | ToShow e -> spc () ++ Errors.print e
@@ -277,6 +279,7 @@ let warning_error names e =
     | _ -> raise e
 
 let error_error names e =
+  let e = Cerrors.process_vernac_interp_error e in
   let e_explain e =
     match e with
       | ToShow e -> spc () ++ Errors.print e

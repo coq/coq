@@ -34,6 +34,7 @@ let observennl strm =
 let do_observe_tac s tac g =
  try let v = tac g in (* msgnl (goal ++ fnl () ++ (str s)++(str " ")++(str "finished")); *) v
  with e ->
+   let e = Cerrors.process_vernac_interp_error e in
    let goal = begin try (Printer.pr_goal g) with _ -> assert false end in
    msgnl (str "observation "++ s++str " raised exception " ++
 	    Errors.print e ++ str " on goal " ++ goal );

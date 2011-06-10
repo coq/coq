@@ -494,7 +494,7 @@ let rec solve_obligation prg num tac =
 		let obls = Array.copy obls in
 		let _ = obls.(num) <- obl in
 		let res = try update_obls prg obls (pred rem)
-		  with e -> pperror (Errors.print e)
+		  with e -> pperror (Errors.print (Cerrors.process_vernac_interp_error e))
 		in
 		  match res with
 		  | Remain n when n > 0 ->

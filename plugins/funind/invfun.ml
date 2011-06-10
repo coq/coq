@@ -63,8 +63,9 @@ let do_observe_tac s tac g =
   try
     let v = tac g in msgnl (goal ++ fnl () ++ s ++(str " ")++(str "finished")); v
   with e ->
+    let e' = Cerrors.process_vernac_interp_error e in
     msgnl (str "observation "++ s++str " raised exception " ++
-	     Errors.print e ++ str " on goal " ++ goal );
+	     Errors.print e' ++ str " on goal " ++ goal );
     raise e;;
 
 
