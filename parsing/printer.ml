@@ -311,7 +311,7 @@ let default_pr_subgoal n sigma =
   prrec n
 
 (* Print open subgoals. Checks for uninstantiated existential variables *)
-let default_pr_subgoals close_cmd check_guard sigma = function
+let default_pr_subgoals close_cmd sigma = function
   | [] ->
       begin
 	match close_cmd with
@@ -321,11 +321,7 @@ let default_pr_subgoals close_cmd check_guard sigma = function
 	| None ->
 	    let exl = Evarutil.non_instantiated sigma in
 	      if exl = [] then
-                if check_guard () then
-		  (str"Proof completed." ++ fnl ())
-                else
-                  (str"No more subgoals but unguarded recursive calls." ++
-                   fnl ())
+		(str"No more subgoals." ++ fnl ())
 	      else
 		let pei = pr_evars_int 1 exl in
 		  (str "No more subgoals but non-instantiated existential " ++
@@ -353,7 +349,7 @@ let default_pr_subgoals close_cmd check_guard sigma = function
 
 
 type printer_pr = {
- pr_subgoals            : string option -> (unit -> bool) -> evar_map -> goal list -> std_ppcmds;
+ pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds;
  pr_subgoal             : int -> evar_map -> goal list -> std_ppcmds;
  pr_goal                : goal sigma -> std_ppcmds;
 }
@@ -375,31 +371,24 @@ let pr_goal     x = !printer_pr.pr_goal     x
 (* End abstraction layer                                              *)
 (**********************************************************************)
 
-let is_guarded pts =
-  let { Evd.it=gl ; sigma=sigma } = Proof.V82.top_goal pts in
-  let c = List.hd (Proof.partial_proof pts) in
-  try let _ = Inductiveops.control_only_guard (Goal.V82.env sigma gl) c in true
-  with _ -> false
-
 let pr_open_subgoals () =
   let p = Proof_global.give_me_the_proof () in
   let { Evd.it = goals ; sigma = sigma } = Proof.V82.subgoals p in
-  let check_guard () = is_guarded p in
   begin match goals with
   | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
             begin match bgoals with
-	    | [] -> pr_subgoals None check_guard sigma goals
-	    | _ -> pr_subgoals None check_guard bsigma bgoals ++ fnl () ++ fnl () ++
+	    | [] -> pr_subgoals None sigma goals
+	    | _ -> pr_subgoals None bsigma bgoals ++ fnl () ++ fnl () ++
 		      str"This subproof is complete, but there are still unfocused goals:"
 		(* spiwack: to stay compatible with the proof general and coqide,
 		    I use print the message after the goal. It would be better to have
 		    something like:
  		      str"This subproof is complete, but there are still unfocused goals:" 
-		      ++ fnl () ++ fnl () ++ pr_subgoals None guarded bsigma bgoals
+		      ++ fnl () ++ fnl () ++ pr_subgoals None bsigma bgoals
 		    instead. But it doesn't quite work.
 		*)
 	    end
-  | _ -> pr_subgoals None check_guard sigma goals
+  | _ -> pr_subgoals None sigma goals
   end
 
 let pr_nth_open_subgoal n =
