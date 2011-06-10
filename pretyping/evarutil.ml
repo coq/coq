@@ -867,10 +867,13 @@ let do_restrict_hyps evd evk projs =
     evd,evk
   else
     let env,src,filter,ccl = restrict_hyps evd evk filter in
-    let evd,nc = new_evar evd env ~src ~filter ccl in
-    let evd = Evd.define evk nc evd in
-    let evk',_ = destEvar nc in
-    evd,evk'
+      if List.for_all (fun x -> x) filter then
+	evd,evk
+      else
+	let evd,nc = new_evar evd env ~src ~filter ccl in
+	let evd = Evd.define evk nc evd in
+	let evk',_ = destEvar nc in
+	  evd,evk'
 
 (* [postpone_evar_term] postpones an equation of the form ?e[σ] = c *)
 
@@ -948,18 +951,20 @@ let solve_evar_evar_l2r f env evd (evk1,args1) (evk2,args2 as ev2) =
     let sign = evar_filtered_context (Evd.find evd evk2) in
     let subst = List.map (fun (id,_,_) -> mkVar id) sign in
     Evd.define evk2 (mkEvar(evk1,Array.of_list subst)) evd
-  else if is_variable_subst args1 && is_variable_subst args2 then
-    let proj1 = array_map_to_list (invert_arg aliases 0 evd evk2 subst) args1 in
-      try
-	(* Instantiate ev2 with (a restriction of) ev1 if uniquely projectable *)
-	let proj1' = effective_projections proj1 in
-	let evd,args1' =
-	  list_fold_map (instance_of_projection f env (mkEvar ev2)) evd proj1' in
-	let evd,evk1' = do_restrict_hyps evd evk1 proj1 in
-	  Evd.define evk2 (mkEvar(evk1',Array.of_list args1')) evd
-      with NotUnique | IllTypedFilter ->
-      raise (CannotProject proj1)
-  else raise IllTypedFilter
+  else 
+    (* Only try pruning on variable substitutions, postpone otherwise. *)
+    if is_variable_subst args1 && is_variable_subst args2 then
+      let proj1 = array_map_to_list (invert_arg aliases 0 evd evk2 subst) args1 in
+	try
+	  (* Instantiate ev2 with (a restriction of) ev1 if uniquely projectable.
+	     Rules out non-linear instances. *)
+	  let proj1' = effective_projections proj1 in
+	  let evd,args1' =
+	    list_fold_map (instance_of_projection f env (mkEvar ev2)) evd proj1' in
+	  let evd,evk1' = do_restrict_hyps evd evk1 proj1 in
+	    Evd.define evk2 (mkEvar(evk1',Array.of_list args1')) evd
+	with NotUnique -> raise (CannotProject proj1)
+    else raise IllTypedFilter
 
 let solve_evar_evar f env evd ev1 ev2 =
   try
@@ -968,9 +973,9 @@ let solve_evar_evar f env evd ev1 ev2 =
     try solve_evar_evar_l2r f env evd ev2 ev1
     with CannotProject projs2 ->
     postpone_evar_evar env evd projs1 ev1 projs2 ev2
-  with IllTypedFilter -> 
-    user_err_loc (fst (evar_source (fst ev1) evd),"",
-		  str "Unable to find a well-typed restriction of the context")
+  with IllTypedFilter ->
+    let pb = (Reduction.CONV,env,mkEvar(ev1),mkEvar (ev2)) in
+      add_conv_pb pb evd
 
 (* Solve pbs (?i x1..xn) = (?i y1..yn) which arises often in fixpoint
  * definitions. We try to unify the xi with the yi pairwise. The pairs
@@ -981,18 +986,15 @@ let solve_refl conv_algo env evd evk argsv1 argsv2 =
   if argsv1 = argsv2 then evd else
   let evi = Evd.find_undefined evd evk in
   (* Filter and restrict if needed *)
-  try
-    let evd,evk,args =
-      restrict_upon_filter evd evi evk
+  let evd,evk,args =
+    restrict_upon_filter evd evi evk
       (fun (a1,a2) -> snd (conv_algo env evd Reduction.CONV a1 a2))
       (List.combine (Array.to_list argsv1) (Array.to_list argsv2)) in
-      (* Leave a unification problem *)
-    let args1,args2 = List.split args in
-    let argsv1 = Array.of_list args1 and argsv2 = Array.of_list args2 in
-    let pb = (Reduction.CONV,env,mkEvar(evk,argsv1),mkEvar(evk,argsv2)) in
-      Evd.add_conv_pb pb evd
-  with IllTypedFilter ->
-    error_not_clean env evd evk (mkEvar (evk, argsv2)) (Evd.evar_source evk evd)
+  (* Leave a unification problem *)
+  let args1,args2 = List.split args in
+  let argsv1 = Array.of_list args1 and argsv2 = Array.of_list args2 in
+  let pb = (Reduction.CONV,env,mkEvar(evk,argsv1),mkEvar(evk,argsv2)) in
+    Evd.add_conv_pb pb evd
 
 
 (* We try to instantiate the evar assuming the body won't depend
@@ -1087,16 +1089,17 @@ let rec invert_definition choose env evd (evk,argsv as ev) rhs =
 	   (* Make the virtual left evar real *)
 	   let ty = get_type_of env' !evdref t in
 	   let (evar'',ev'') = extend_evar env' evdref k ev ty in
-	     try let evd =
-	       (* Try to project (a restriction of) the left evar ... *)
-	       try solve_evar_evar_l2r evar_define env' !evdref ev'' ev'
-	       with CannotProject projs'' ->
-	       (* ... or postpone the problem *)
-	       postpone_evar_evar env' !evdref projs'' ev'' projs' ev' 
-	     in
-	       evdref := evd;
-	       evar''
-	     with IllTypedFilter -> raise (NotInvertibleUsingOurAlgorithm t))
+	     (try 
+		let evd =
+		  (* Try to project (a restriction of) the left evar ... *)
+		  try solve_evar_evar_l2r evar_define env' !evdref ev'' ev'
+		  with CannotProject projs'' ->
+		    (* ... or postpone the problem *)
+		    postpone_evar_evar env' !evdref projs'' ev'' projs' ev'
+		in
+	          evdref := evd;
+		  evar''
+	      with IllTypedFilter -> raise (NotInvertibleUsingOurAlgorithm t)))
     | _ ->
 	match
 	  let c,args = decompose_app_vect t in
