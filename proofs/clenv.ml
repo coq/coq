@@ -265,20 +265,20 @@ let clenv_dependent ce = clenv_dependent_gen false ce
 
 (******************************************************************)
 
-let clenv_unify allow_K ?(flags=default_unify_flags) cv_pb t1 t2 clenv =
+let clenv_unify ?(flags=default_unify_flags) cv_pb t1 t2 clenv =
   { clenv with
-      evd = w_unify allow_K ~flags:flags clenv.env cv_pb t1 t2 clenv.evd }
+      evd = w_unify ~flags clenv.env cv_pb t1 t2 clenv.evd }
 
 let clenv_unify_meta_types ?(flags=default_unify_flags) clenv =
   { clenv with evd = w_unify_meta_types ~flags:flags clenv.env clenv.evd }
 
-let clenv_unique_resolver allow_K ?(flags=default_unify_flags) clenv gl =
+let clenv_unique_resolver ?(flags=default_unify_flags) clenv gl =
   let concl = Goal.V82.concl clenv.evd (sig_it gl) in
   if isMeta (fst (whd_stack clenv.evd clenv.templtyp.rebus)) then
-    clenv_unify allow_K CUMUL ~flags:flags (clenv_type clenv) concl
-      (clenv_unify_meta_types ~flags:flags clenv)
+    clenv_unify CUMUL ~flags (clenv_type clenv) concl
+      (clenv_unify_meta_types ~flags clenv)
   else
-    clenv_unify allow_K CUMUL ~flags:flags
+    clenv_unify CUMUL ~flags
       (meta_reducible_instance clenv.evd clenv.templtyp) concl clenv
 
 (* [clenv_pose_metas_as_evars clenv dep_mvs]
@@ -356,7 +356,7 @@ let connect_clenv gls clenv =
 
    In particular, it assumes that [env'] and [sigma'] extend [env] and [sigma].
 *)
-let clenv_fchain ?(allow_K=true) ?(flags=default_unify_flags) mv clenv nextclenv =
+let clenv_fchain ?(flags=elim_flags) mv clenv nextclenv =
   (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
   let clenv' =
     { templval = clenv.templval;
@@ -365,7 +365,7 @@ let clenv_fchain ?(allow_K=true) ?(flags=default_unify_flags) mv clenv nextclenv
       env = nextclenv.env } in
   (* unify the type of the template of [nextclenv] with the type of [mv] *)
   let clenv'' =
-    clenv_unify allow_K ~flags:flags CUMUL
+    clenv_unify ~flags:flags CUMUL
       (clenv_term clenv' nextclenv.templtyp)
       (clenv_meta_type clenv' mv)
       clenv' in

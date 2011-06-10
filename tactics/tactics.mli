@@ -26,6 +26,7 @@ open Nametab
 open Glob_term
 open Pattern
 open Termops
+open Unification
 
 (** Main tactics. *)
 
@@ -248,19 +249,19 @@ type eliminator = {
   elimbody : constr with_bindings
 }
 
-val elimination_clause_scheme : evars_flag ->
-  bool -> int -> clausenv -> clausenv -> tactic
+val elimination_clause_scheme : evars_flag -> ?flags:unify_flags -> 
+  int -> clausenv -> clausenv -> tactic
 
-val elimination_in_clause_scheme : evars_flag -> identifier -> int ->
-  clausenv -> clausenv -> tactic
+val elimination_in_clause_scheme : evars_flag -> ?flags:unify_flags -> 
+  identifier -> int -> clausenv -> clausenv -> tactic
 
 val general_elim_clause_gen : (int -> Clenv.clausenv -> 'a -> tactic) ->
   'a -> eliminator -> tactic
 
 val general_elim  : evars_flag ->
-  constr with_bindings -> eliminator -> ?allow_K:bool -> tactic
-val general_elim_in : evars_flag ->
-  identifier -> constr with_bindings -> eliminator -> tactic
+  constr with_bindings -> eliminator -> tactic
+val general_elim_in : evars_flag -> identifier ->
+  constr with_bindings -> eliminator -> tactic
 
 val default_elim  : evars_flag -> constr with_bindings -> tactic
 val simplest_elim : constr -> tactic

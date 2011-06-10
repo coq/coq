@@ -88,7 +88,9 @@ let rewrite_unif_flags = {
   Unification.resolve_evars = true;
   Unification.use_evars_pattern_unification = true;
   Unification.modulo_betaiota = false;
-  Unification.modulo_eta = true
+  Unification.modulo_eta = true;
+  Unification.allow_K_in_toplevel_higher_order_unification = false
+    (* allow_K does not matter in practice because calls w_typed_unify *)
 }
 
 let side_tac tac sidetac =
@@ -120,11 +122,27 @@ let instantiate_lemma env sigma gl c ty l l2r concl =
   let eqclause = Clenv.make_clenv_binding gl (c,t) l in
    [eqclause]
 
-let rewrite_elim with_evars c e ?(allow_K=true) =
-  general_elim_clause_gen (elimination_clause_scheme with_evars allow_K) c e
+let rewrite_conv_closed_unif_flags = {
+  Unification.modulo_conv_on_closed_terms = Some full_transparent_state;
+  Unification.use_metas_eagerly = true;
+  Unification.modulo_delta = empty_transparent_state;
+  Unification.modulo_delta_types = full_transparent_state;
+  Unification.resolve_evars = false;
+  Unification.use_evars_pattern_unification = true;
+  Unification.modulo_betaiota = false;
+  Unification.modulo_eta = true;
+  Unification.allow_K_in_toplevel_higher_order_unification = false
+}
+
+let rewrite_elim with_evars c e =
+  general_elim_clause_gen
+    (elimination_clause_scheme with_evars ~flags:rewrite_conv_closed_unif_flags)
+     c e
 
 let rewrite_elim_in with_evars id c e =
-  general_elim_clause_gen (elimination_in_clause_scheme with_evars id) c e
+  general_elim_clause_gen
+    (elimination_in_clause_scheme with_evars
+       ~flags:rewrite_conv_closed_unif_flags id) c e
 
 (* Ad hoc asymmetric general_elim_clause *)
 let general_elim_clause with_evars cls rew elim =
@@ -134,7 +152,7 @@ let general_elim_clause with_evars cls rew elim =
 	  (* was tclWEAK_PROGRESS which only fails for tactics generating one
              subgoal and did not fail for useless conditional rewritings generating
              an extra condition *)
-	  tclNOTSAMEGOAL (rewrite_elim with_evars rew elim ~allow_K:false)
+	  tclNOTSAMEGOAL (rewrite_elim with_evars rew elim)
       | Some id -> rewrite_elim_in with_evars id rew elim)
   with Pretype_errors.PretypeError (env,evd,
 				    Pretype_errors.NoOccurrenceFound (c', _)) ->

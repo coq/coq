@@ -93,7 +93,7 @@ let priority l = List.map snd (List.filter (fun (pr,_) -> pr = 0) l)
 
 let unify_e_resolve flags (c,clenv) gls =
   let clenv' = connect_clenv gls clenv in
-  let _ = clenv_unique_resolver false ~flags clenv' gls in
+  let _ = clenv_unique_resolver ~flags clenv' gls in
   h_simplest_eapply c gls
 
 let rec e_trivial_fail_db db_list local_db goal =

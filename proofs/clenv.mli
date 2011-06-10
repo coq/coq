@@ -54,22 +54,22 @@ val mk_clenv_from_env : env -> evar_map -> int option -> constr * types -> claus
 
 val connect_clenv : Goal.goal sigma -> clausenv -> clausenv
 val clenv_fchain :
-  ?allow_K:bool -> ?flags:unify_flags -> metavariable -> clausenv -> clausenv -> clausenv
+  ?flags:unify_flags -> metavariable -> clausenv -> clausenv -> clausenv
 
 (** {6 Unification with clenvs } *)
 
 (** Unifies two terms in a clenv. The boolean is [allow_K] (see [Unification]) *)
 val clenv_unify :
-  bool -> ?flags:unify_flags -> conv_pb -> constr -> constr -> clausenv -> clausenv
+  ?flags:unify_flags -> conv_pb -> constr -> constr -> clausenv -> clausenv
 
 (** unifies the concl of the goal with the type of the clenv *)
 val clenv_unique_resolver :
-  bool -> ?flags:unify_flags -> clausenv -> Goal.goal sigma -> clausenv
+  ?flags:unify_flags -> clausenv -> Goal.goal sigma -> clausenv
 
 (** same as above ([allow_K=false]) but replaces remaining metas
    with fresh evars if [evars_flag] is [true] *)
 val evar_clenv_unique_resolver :
-  bool -> ?flags:unify_flags -> clausenv -> Goal.goal sigma -> clausenv
+  ?flags:unify_flags -> clausenv -> Goal.goal sigma -> clausenv
 
 val clenv_dependent : clausenv -> metavariable list
 

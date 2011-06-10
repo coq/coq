@@ -846,7 +846,8 @@ let auto_unif_flags = {
   resolve_evars = true;
   use_evars_pattern_unification = false;
   modulo_betaiota = false;
-  modulo_eta = true
+  modulo_eta = true;
+  allow_K_in_toplevel_higher_order_unification = false
 }
 
 (* Try unification with the precompiled clause, then use registered Apply *)
@@ -857,12 +858,12 @@ let h_clenv_refine ev c clenv =
 
 let unify_resolve_nodelta (c,clenv) gl =
   let clenv' = connect_clenv gl clenv in
-  let clenv'' = clenv_unique_resolver false ~flags:auto_unif_flags clenv' gl in
+  let clenv'' = clenv_unique_resolver ~flags:auto_unif_flags clenv' gl in
   h_clenv_refine false c clenv'' gl
 
 let unify_resolve flags (c,clenv) gl =
   let clenv' = connect_clenv gl clenv in
-  let clenv'' = clenv_unique_resolver false ~flags clenv' gl in
+  let clenv'' = clenv_unique_resolver ~flags clenv' gl in
   h_clenv_refine false c clenv'' gl
 
 let unify_resolve_gen = function

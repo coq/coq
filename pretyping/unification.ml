@@ -164,7 +164,8 @@ type unify_flags = {
   resolve_evars : bool;
   use_evars_pattern_unification : bool;
   modulo_betaiota : bool;
-  modulo_eta : bool
+  modulo_eta : bool;
+  allow_K_in_toplevel_higher_order_unification : bool
 }
 
 let default_unify_flags = {
@@ -175,7 +176,8 @@ let default_unify_flags = {
   resolve_evars = false;
   use_evars_pattern_unification = true;
   modulo_betaiota = false;
-  modulo_eta = true
+  modulo_eta = true;
+  allow_K_in_toplevel_higher_order_unification = false
 }
 
 let default_no_delta_unify_flags = {
@@ -186,7 +188,32 @@ let default_no_delta_unify_flags = {
   resolve_evars = false;
   use_evars_pattern_unification = false;
   modulo_betaiota = false;
-  modulo_eta = true
+  modulo_eta = true;
+  allow_K_in_toplevel_higher_order_unification = false
+}
+
+let elim_flags = {
+  modulo_conv_on_closed_terms = Some full_transparent_state;
+  use_metas_eagerly = true;
+  modulo_delta = full_transparent_state;
+  modulo_delta_types = full_transparent_state;
+  resolve_evars = false;
+  use_evars_pattern_unification = true;
+  modulo_betaiota = false;
+  modulo_eta = true;
+  allow_K_in_toplevel_higher_order_unification = true
+}
+
+let elim_no_delta_flags = {
+  modulo_conv_on_closed_terms = Some full_transparent_state;
+  use_metas_eagerly = true;
+  modulo_delta = empty_transparent_state;
+  modulo_delta_types = full_transparent_state;
+  resolve_evars = false;
+  use_evars_pattern_unification = false;
+  modulo_betaiota = false;
+  modulo_eta = true;
+  allow_K_in_toplevel_higher_order_unification = true
 }
 
 let use_evars_pattern_unification flags =
@@ -936,25 +963,28 @@ let w_unify_to_subterm_all env ?(flags=default_unify_flags) (op,cl) evd =
   else
     res
 
-let w_unify_to_subterm_list env flags allow_K hdmeta oplist t evd =
+let w_unify_to_subterm_list env flags hdmeta oplist t evd =
   List.fold_right
     (fun op (evd,l) ->
       let op = whd_meta evd op in
       if isMeta op then
-	if allow_K then (evd,op::l)
+	if flags.allow_K_in_toplevel_higher_order_unification then (evd,op::l)
 	else error_abstraction_over_meta env evd hdmeta (destMeta op)
       else if occur_meta_or_existential op then
         let (evd',cl) =
           try
 	    (* This is up to delta for subterms w/o metas ... *)
 	    w_unify_to_subterm env ~flags (strip_outer_cast op,t) evd
-	  with PretypeError (env,_,NoOccurrenceFound _) when allow_K -> (evd,op)
+	  with PretypeError (env,_,NoOccurrenceFound _) when
+              flags.allow_K_in_toplevel_higher_order_unification -> (evd,op)
         in
-	  if not allow_K && (* ensure we found a different instance *)
+	  if not flags.allow_K_in_toplevel_higher_order_unification &&
+            (* ensure we found a different instance *)
 	    List.exists (fun op -> eq_constr op cl) l
 	  then error_non_linear_unification env evd hdmeta cl
 	  else (evd',cl::l)
-      else if allow_K or dependent op t then
+      else if flags.allow_K_in_toplevel_higher_order_unification or dependent op t
+      then
 	(evd,op::l)
       else
 	(* This is not up to delta ... *)
@@ -962,29 +992,28 @@ let w_unify_to_subterm_list env flags allow_K hdmeta oplist t evd =
     oplist
     (evd,[])
 
-let secondOrderAbstraction env flags allow_K typ (p, oplist) evd =
+let secondOrderAbstraction env flags typ (p, oplist) evd =
   (* Remove delta when looking for a subterm *)
   let flags = { flags with modulo_delta = (fst flags.modulo_delta, Cpred.empty) } in
-  let (evd',cllist) =
-    w_unify_to_subterm_list env flags allow_K p oplist typ evd in
+  let (evd',cllist) = w_unify_to_subterm_list env flags p oplist typ evd in
   let typp = Typing.meta_type evd' p in
   let pred = abstract_list_all env evd' typp typ cllist in
   w_merge env false flags (evd',[p,pred,(Conv,TypeProcessed)],[])
 
-let w_unify2 env flags allow_K cv_pb ty1 ty2 evd =
+let w_unify2 env flags cv_pb ty1 ty2 evd =
   let c1, oplist1 = whd_stack evd ty1 in
   let c2, oplist2 = whd_stack evd ty2 in
   match kind_of_term c1, kind_of_term c2 with
     | Meta p1, _ ->
         (* Find the predicate *)
 	let evd' =
-          secondOrderAbstraction env flags allow_K ty2 (p1,oplist1) evd in
+          secondOrderAbstraction env flags ty2 (p1,oplist1) evd in
         (* Resume first order unification *)
 	w_unify_0 env cv_pb flags (nf_meta evd' ty1) ty2 evd'
     | _, Meta p2 ->
         (* Find the predicate *)
 	let evd' =
-          secondOrderAbstraction env flags allow_K ty1 (p2, oplist2) evd in
+          secondOrderAbstraction env flags ty1 (p2, oplist2) evd in
         (* Resume first order unification *)
 	w_unify_0 env cv_pb flags ty1 (nf_meta evd' ty2) evd'
     | _ -> error "w_unify2"
@@ -1009,7 +1038,7 @@ let w_unify2 env flags allow_K cv_pb ty1 ty2 evd =
    Before, second-order was used if the type of Meta(1) and [x:A]t was
    convertible and first-order otherwise. But if failed if e.g. the type of
    Meta(1) had meta-variables in it. *)
-let w_unify allow_K env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
+let w_unify env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
   let hd1,l1 = whd_stack evd ty1 in
   let hd2,l2 = whd_stack evd ty2 in
     match kind_of_term hd1, l1<>[], kind_of_term hd2, l2<>[] with
@@ -1020,13 +1049,13 @@ let w_unify allow_K env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
 	      w_typed_unify env cv_pb flags ty1 ty2 evd
 	    with ex when precatchable_exception ex ->
 	      try
-		w_unify2 env flags allow_K cv_pb ty1 ty2 evd
+		w_unify2 env flags cv_pb ty1 ty2 evd
 	      with PretypeError (env,_,NoOccurrenceFound _) as e -> raise e)
 
       (* Second order case *)
       | (Meta _, true, _, _ | _, _, Meta _, true) ->
 	  (try
-	      w_unify2 env flags allow_K cv_pb ty1 ty2 evd
+	      w_unify2 env flags cv_pb ty1 ty2 evd
 	    with PretypeError (env,_,NoOccurrenceFound _) as e -> raise e
 	      | ex when precatchable_exception ex ->
 		  try

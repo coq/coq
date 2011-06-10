@@ -246,7 +246,7 @@ type hypinfo = {
 
 let evd_convertible env evd x y =
   try
-    ignore(Unification.w_unify true env Reduction.CONV x y evd); true 
+    ignore(Unification.w_unify ~flags:Unification.elim_flags env Reduction.CONV x y evd); true 
   (* try ignore(Evarconv.the_conv_x env x y evd); true *)
   with _ -> false
 

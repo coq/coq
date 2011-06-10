@@ -81,25 +81,24 @@ let clenv_refine with_evars ?(with_classes=true) clenv gls =
     (refine (clenv_cast_meta clenv (clenv_value clenv)))
     gls
 
-let dft = Unification.default_unify_flags
+open Unification
 
-let res_pf clenv ?(with_evars=false) ?(allow_K=false) ?(flags=dft) gls =
-  clenv_refine with_evars
-    (clenv_unique_resolver allow_K ~flags:flags clenv gls) gls
+let dft = default_unify_flags
+
+let res_pf clenv ?(with_evars=false) ?(flags=dft) gls =
+  clenv_refine with_evars (clenv_unique_resolver ~flags clenv gls) gls
 
 let elim_res_pf_THEN_i clenv tac gls =
-  let clenv' = (clenv_unique_resolver true clenv gls) in
+  let clenv' = (clenv_unique_resolver ~flags:elim_flags clenv gls) in
   tclTHENLASTn (clenv_refine false clenv') (tac clenv') gls
 
-let e_res_pf clenv = res_pf clenv ~with_evars:true ~allow_K:false ~flags:dft
+let e_res_pf clenv = res_pf clenv ~with_evars:true ~flags:dft
 
 
 (* [unifyTerms] et [unify] ne semble pas gérer les Meta, en
    particulier ne semblent pas vérifier que des instances différentes
    d'une même Meta sont compatibles. D'ailleurs le "fst" jette les metas
    provenant de w_Unify. (Utilisé seulement dans prolog.ml) *)
-
-open Unification
 
 let fail_quick_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
@@ -109,14 +108,15 @@ let fail_quick_unif_flags = {
   resolve_evars = false;
   use_evars_pattern_unification = false;
   modulo_betaiota = false;
-  modulo_eta = true
+  modulo_eta = true;
+  allow_K_in_toplevel_higher_order_unification = false
 }
 
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)
 let unifyTerms ?(flags=fail_quick_unif_flags) m n gls =
   let env = pf_env gls in
   let evd = create_goal_evar_defs (project gls) in
-  let evd' = w_unify false env CONV ~flags m n evd in
+  let evd' = w_unify env CONV ~flags m n evd in
   tclIDTAC {it = gls.it; sigma =  evd'}
 
 let unify ?(flags=fail_quick_unif_flags) m gls =

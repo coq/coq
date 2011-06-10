@@ -308,7 +308,8 @@ let rewrite_unif_flags = {
   Unification.resolve_evars = true;
   Unification.use_evars_pattern_unification = true;
   Unification.modulo_betaiota = false;
-  Unification.modulo_eta = true
+  Unification.modulo_eta = true;
+  Unification.allow_K_in_toplevel_higher_order_unification = true
 }
 
 let rewrite2_unif_flags = 
@@ -319,7 +320,8 @@ let rewrite2_unif_flags =
      Unification.resolve_evars = true;
      Unification.use_evars_pattern_unification = true;
      Unification.modulo_betaiota = true;
-     Unification.modulo_eta = true
+     Unification.modulo_eta = true;
+     Unification.allow_K_in_toplevel_higher_order_unification = true
   }
 
 let general_rewrite_unif_flags () = 
@@ -331,12 +333,11 @@ let general_rewrite_unif_flags () =
        Unification.resolve_evars = true;
        Unification.use_evars_pattern_unification = true;
        Unification.modulo_betaiota = true;
-       Unification.modulo_eta = true }
+       Unification.modulo_eta = true;
+       Unification.allow_K_in_toplevel_higher_order_unification = true }
 
 let convertible env evd x y =
   Reductionops.is_conv env evd x y
-
-let allowK = true
 
 let refresh_hypinfo env sigma hypinfo =
   if hypinfo.abs = None then
@@ -356,11 +357,10 @@ let unify_eqn env sigma hypinfo t =
     let env', prf, c1, c2, car, rel =
       match abs with
       | Some (absprf, absprfty) ->
-	  let env' = clenv_unify allowK ~flags:rewrite_unif_flags CONV left t cl in
+	  let env' = clenv_unify ~flags:rewrite_unif_flags CONV left t cl in
 	    env', prf, c1, c2, car, rel
       | None ->
-	  let env' =
-	    clenv_unify allowK ~flags:!hypinfo.flags CONV left t cl
+	  let env' = clenv_unify ~flags:!hypinfo.flags CONV left t cl
 	  in
 	  let env' = Clenvtac.clenv_pose_dependent_evars true env' in
 (* 	  let env' = Clenv.clenv_pose_metas_as_evars env' (Evd.undefined_metas env'.evd) in *)
@@ -1018,7 +1018,7 @@ module Strategies =
 	  with _ -> error "fold: the term is not unfoldable !"
 	in
 	  try
-	    let sigma = Unification.w_unify true env CONV ~flags:Unification.default_unify_flags unfolded t sigma in
+	    let sigma = Unification.w_unify env CONV ~flags:Unification.elim_flags unfolded t sigma in
 	    let c' = Evarutil.nf_evar sigma c in
 	      Some (Some { rew_car = ty; rew_from = t; rew_to = c';
 			   rew_prf = RewCast DEFAULTcast; 

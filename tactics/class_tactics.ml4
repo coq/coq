@@ -80,7 +80,8 @@ let auto_unif_flags = {
   resolve_evars = false;
   use_evars_pattern_unification = true;
   modulo_betaiota = true;
-  modulo_eta = true
+  modulo_eta = true;
+  allow_K_in_toplevel_higher_order_unification = false
 }
 
 let rec eq_constr_mod_evars x y =
@@ -103,12 +104,12 @@ END
 
 let unify_e_resolve flags (c,clenv) gls =
   let clenv' = connect_clenv gls clenv in
-  let clenv' = clenv_unique_resolver false ~flags clenv' gls in
+  let clenv' = clenv_unique_resolver ~flags clenv' gls in
     Clenvtac.clenv_refine true ~with_classes:false clenv' gls
 
 let unify_resolve flags (c,clenv) gls =
   let clenv' = connect_clenv gls clenv in
-  let clenv' = clenv_unique_resolver false ~flags clenv' gls in
+  let clenv' = clenv_unique_resolver ~flags clenv' gls in
     Clenvtac.clenv_refine false ~with_classes:false clenv' gls
 
 let clenv_of_prods nprods (c, clenv) gls =

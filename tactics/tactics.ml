@@ -704,27 +704,15 @@ let index_of_ind_arg t =
       | None -> error "Could not find inductive argument of elimination scheme."
   in aux None 0 t
 
-let elim_flags = {
-  modulo_conv_on_closed_terms = Some full_transparent_state;
-  use_metas_eagerly = true;
-  modulo_delta = empty_transparent_state;
-  modulo_delta_types = full_transparent_state;
-  resolve_evars = false;
-  use_evars_pattern_unification = true;
-  modulo_betaiota = false;
-  modulo_eta = true
-}
-
-let elimination_clause_scheme with_evars allow_K i elimclause indclause gl =
+let elimination_clause_scheme with_evars ?(flags=elim_flags) i elimclause indclause gl =
   let indmv =
     (match kind_of_term (nth_arg i elimclause.templval.rebus) with
        | Meta mv -> mv
        | _  -> errorlabstrm "elimination_clause"
              (str "The type of elimination clause is not well-formed."))
   in
-  let elimclause' = clenv_fchain ~flags:elim_flags indmv elimclause indclause in
-  res_pf elimclause' ~with_evars:with_evars ~allow_K:allow_K ~flags:elim_flags
-    gl
+  let elimclause' = clenv_fchain ~flags indmv elimclause indclause in
+  res_pf elimclause' ~with_evars:with_evars ~flags gl
 
 (*
  * Elimination tactic with bindings and using an arbitrary
@@ -753,8 +741,8 @@ let general_elim_clause elimtac (c,lbindc) elim gl =
   let indclause  = make_clenv_binding gl (c,t) lbindc  in
     general_elim_clause_gen elimtac indclause elim gl
 
-let general_elim with_evars c e ?(allow_K=true) =
-  general_elim_clause (elimination_clause_scheme with_evars allow_K) c e
+let general_elim with_evars c e =
+  general_elim_clause (elimination_clause_scheme with_evars) c e
 
 (* Elimination tactic with bindings but using the default elimination
  * constant associated with the type. *)
@@ -770,7 +758,6 @@ let default_elim with_evars (c,_ as cx) gl =
 let elim_in_context with_evars c = function
   | Some elim ->
       general_elim with_evars c {elimindex = Some (-1); elimbody = elim}
-	~allow_K:true
   | None -> default_elim with_evars c
 
 let elim with_evars (c,lbindc as cx) elim =
@@ -795,13 +782,13 @@ let simplest_elim c = default_elim false (c,NoBindings)
    (e.g. it could replace id:A->B->C by id:C, knowing A/\B)
 *)
 
-let clenv_fchain_in id elim_flags mv elimclause hypclause =
-  try clenv_fchain ~allow_K:false ~flags:elim_flags mv elimclause hypclause
+let clenv_fchain_in id ?(flags=elim_flags) mv elimclause hypclause =
+  try clenv_fchain ~flags mv elimclause hypclause
   with PretypeError (env,evd,NoOccurrenceFound (op,_)) ->
     (* Set the hypothesis name in the message *)
     raise (PretypeError (env,evd,NoOccurrenceFound (op,Some id)))
 
-let elimination_in_clause_scheme with_evars id i elimclause indclause gl =
+let elimination_in_clause_scheme with_evars ?(flags=elim_flags) id i elimclause indclause gl =
   let indmv = destMeta (nth_arg i elimclause.templval.rebus) in
   let hypmv =
     try match list_remove indmv (clenv_independent elimclause) with
@@ -809,12 +796,11 @@ let elimination_in_clause_scheme with_evars id i elimclause indclause gl =
       | _ -> failwith ""
     with Failure _ -> errorlabstrm "elimination_clause"
           (str "The type of elimination clause is not well-formed.") in
-  let elimclause'  = clenv_fchain indmv elimclause indclause in
+  let elimclause'  = clenv_fchain ~flags indmv elimclause indclause in
   let hyp = mkVar id in
   let hyp_typ = pf_type_of gl hyp in
   let hypclause = mk_clenv_from_n gl (Some 0) (hyp, hyp_typ) in
-  let elimclause'' =
-    clenv_fchain_in id elim_flags hypmv elimclause' hypclause in
+  let elimclause'' = clenv_fchain_in id ~flags hypmv elimclause' hypclause in
   let new_hyp_typ  = clenv_type elimclause'' in
   if eq_constr hyp_typ new_hyp_typ then
     errorlabstrm "general_rewrite_in"
@@ -1008,8 +994,7 @@ let apply_in_once_main flags innerclause (d,lbind) gl =
 
 let apply_in_once sidecond_first with_delta with_destruct with_evars id
   (loc,(d,lbind)) gl0 =
-  let flags =
-    if with_delta then default_unify_flags else default_no_delta_unify_flags in
+  let flags = if with_delta then elim_flags else elim_no_delta_flags in
   let t' = pf_get_hyp_typ gl0 id in
   let innerclause = mk_clenv_from_n gl0 (Some 0) (mkVar id,t') in
   let rec aux with_destruct c gl =
@@ -2857,7 +2842,7 @@ let induction_tac_felim with_evars indvars nparams elim gl =
   (* elimclause' is built from elimclause by instanciating all args and params. *)
   let elimclause' = recolle_clenv nparams indvars elimclause gl in
   (* one last resolution (useless?) *)
-  let resolved = clenv_unique_resolver true elimclause' gl in
+  let resolved = clenv_unique_resolver ~flags:elim_flags elimclause' gl in
   clenv_refine with_evars resolved gl
 
 (* Apply induction "in place" replacing the hypothesis on which
@@ -2953,7 +2938,7 @@ let induction_tac with_evars elim (varname,lbind) typ gl =
   let elimclause =
     make_clenv_binding gl
       (mkCast (elimc,DEFAULTcast,elimt),elimt) lbindelimc in
-  elimination_clause_scheme with_evars true i elimclause indclause gl
+  elimination_clause_scheme with_evars i elimclause indclause gl
 
 let induction_from_context isrec with_evars (indref,nparams,elim) (hyp0,lbind) names
   inhyps gl =
@@ -3176,9 +3161,9 @@ let elim_scheme_type elim t gl =
     | Meta mv ->
         let clause' =
 	  (* t is inductive, then CUMUL or CONV is irrelevant *)
-	  clenv_unify true Reduction.CUMUL t
+	  clenv_unify ~flags:elim_flags Reduction.CUMUL t
             (clenv_meta_type clause mv) clause in
-	res_pf clause' ~allow_K:true gl
+	res_pf clause' ~flags:elim_flags gl
     | _ -> anomaly "elim_scheme_type"
 
 let elim_type t gl =
@@ -3480,7 +3465,6 @@ let unify ?(state=full_transparent_state) x y gl =
 	modulo_delta = state;
 	modulo_conv_on_closed_terms = Some state}
     in
-    let evd = w_unify false (pf_env gl) Reduction.CONV
-      ~flags x y (project gl)
+    let evd = w_unify (pf_env gl) Reduction.CONV ~flags x y (project gl)
     in tclEVARS evd gl
   with _ -> tclFAIL 0 (str"Not unifiable") gl

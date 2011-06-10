@@ -18,15 +18,19 @@ type unify_flags = {
   resolve_evars : bool;
   use_evars_pattern_unification : bool;
   modulo_betaiota : bool;
-  modulo_eta : bool
+  modulo_eta : bool;
+  allow_K_in_toplevel_higher_order_unification : bool
 }
 
 val default_unify_flags : unify_flags
 val default_no_delta_unify_flags : unify_flags
 
+val elim_flags : unify_flags
+val elim_no_delta_flags : unify_flags
+
 (** The "unique" unification fonction *)
 val w_unify :
-  bool -> env -> conv_pb -> ?flags:unify_flags -> constr -> constr -> evar_map -> evar_map
+  env -> conv_pb -> ?flags:unify_flags -> constr -> constr -> evar_map -> evar_map
 
 (** [w_unify_to_subterm env (c,t) m] performs unification of [c] with a
    subterm of [t]. Constraints are added to [m] and the matched

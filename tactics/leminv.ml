@@ -271,7 +271,7 @@ let lemInv id c gls =
   try
     let clause = mk_clenv_type_of gls c in
     let clause = clenv_constrain_last_binding (mkVar id) clause in
-    Clenvtac.res_pf clause ~allow_K:true gls
+    Clenvtac.res_pf clause ~flags:Unification.elim_flags gls
   with
     | NoSuchBinding ->
 	errorlabstrm ""
