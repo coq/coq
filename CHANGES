@@ -22,13 +22,15 @@ Specification language and notations
 Tactics
 
 - New proof engine supporting bullets.
+- Support for tactical "info" is suspended.
+- Support for command "Show Script" is suspended.
 - New tactics constr_eq, is_evar and has_evar.
 - Removed the two-argument variant of "decide equality".
 - New experimental tactical "timeout <n> <tac>". Since <n> is a time
   in second for the moment, this feature should rather be avoided
   in scripts meant to be machine-independent.
-- Fixing a bug of destruct that left local definitions in context might result
-  in some rare incompatibilities (solvable by adapting name hypotheses).
+- Fix in "destruct": removal of unexpected local definitions in context might
+  result in some rare incompatibilities (solvable by adapting name hypotheses).
 - Introduction pattern "_" made more robust.
 - Tactic (and Eval command) vm_compute can now be interrupted via Ctrl-C.
 
