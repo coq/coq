@@ -405,30 +405,33 @@ let find_intro_names ctxt gl =
     ctxt (pf_env gl , []) in
   List.rev res
 
-let build_intro_tac id = function
-  | MoveToEnd true -> introduction id
-  | dest -> tclTHEN (introduction id) (move_hyp true id dest)
+let build_intro_tac id dest tac = match dest with
+  | MoveToEnd true -> tclTHEN (introduction id) (tac id)
+  | dest -> tclTHENLIST [introduction id; move_hyp true id dest; tac id]
 
-let rec intro_gen loc name_flag move_flag force_flag dep_flag gl =
+let rec intro_then_gen loc name_flag move_flag force_flag dep_flag tac gl =
   match kind_of_term (pf_concl gl) with
     | Prod (name,t,u) when not dep_flag or (dependent (mkRel 1) u) ->
-	build_intro_tac (find_name loc (name,None,t) gl name_flag) move_flag gl
+	build_intro_tac (find_name loc (name,None,t) gl name_flag) move_flag tac gl
     | LetIn (name,b,t,u) when not dep_flag or (dependent (mkRel 1) u) ->
-	build_intro_tac (find_name loc (name,Some b,t) gl name_flag) move_flag
+	build_intro_tac (find_name loc (name,Some b,t) gl name_flag) move_flag tac
 	  gl
     | _ ->
 	if not force_flag then raise (RefinerError IntroNeedsProduct);
 	try
 	  tclTHEN try_red_in_concl
-	    (intro_gen loc name_flag move_flag force_flag dep_flag) gl
+	    (intro_then_gen loc name_flag move_flag force_flag dep_flag tac) gl
 	with Redelimination ->
 	  user_err_loc(loc,"Intro",str "No product even after head-reduction.")
 
+let intro_gen loc n m f d = intro_then_gen loc n m f d (fun _ -> tclIDTAC)
 let intro_mustbe_force id = intro_gen dloc (IntroMustBe id) no_move true false
 let intro_using id = intro_gen dloc (IntroBasedOn (id,[])) no_move false false
 let intro = intro_gen dloc (IntroAvoid []) no_move false false
 let introf = intro_gen dloc (IntroAvoid []) no_move true false
 let intro_avoiding l = intro_gen dloc (IntroAvoid l) no_move false false
+
+let intro_then_force = intro_then_gen dloc (IntroAvoid []) no_move true false
 
 (**** Multiple introduction tactics ****)
 
@@ -1303,46 +1306,39 @@ let rec explicit_intro_names = function
      the tactic, for the hyps to clear *)
 let rec intros_patterns b avoid thin destopt = function
   | (loc, IntroWildcard) :: l ->
-      tclTHEN
-        (intro_gen loc (IntroAvoid(avoid@explicit_intro_names l))
-	  no_move true false)
-        (onLastHypId (fun id ->
+      intro_then_gen loc (IntroAvoid(avoid@explicit_intro_names l))
+	no_move true false
+        (fun id ->
 	  tclORELSE
 	    (tclTHEN (clear [id]) (intros_patterns b avoid thin destopt l))
-	    (intros_patterns b avoid ((loc,id)::thin) destopt l)))
+	    (intros_patterns b avoid ((loc,id)::thin) destopt l))
   | (loc, IntroIdentifier id) :: l ->
-      tclTHEN
-        (intro_gen loc (IntroMustBe id) destopt true false)
-        (intros_patterns b avoid thin destopt l)
+      intro_then_gen loc (IntroMustBe id) destopt true false
+        (fun _id -> intros_patterns b avoid thin destopt l)
   | (loc, IntroAnonymous) :: l ->
-      tclTHEN
-        (intro_gen loc (IntroAvoid (avoid@explicit_intro_names l))
-	  destopt true false)
-        (intros_patterns b avoid thin destopt l)
+      intro_then_gen loc (IntroAvoid (avoid@explicit_intro_names l))
+	destopt true false
+        (fun _id -> intros_patterns b avoid thin destopt l)
   | (loc, IntroFresh id) :: l ->
-      tclTHEN
-        (intro_gen loc (IntroBasedOn (id, avoid@explicit_intro_names l))
-	  destopt true false)
-        (intros_patterns b avoid thin destopt l)
+      intro_then_gen loc (IntroBasedOn (id, avoid@explicit_intro_names l))
+	destopt true false
+        (fun _id -> intros_patterns b avoid thin destopt l)
   | (loc, IntroForthcoming onlydeps) :: l ->
       tclTHEN
         (intro_forthcoming_gen loc (IntroAvoid (avoid@explicit_intro_names l))
 	  destopt onlydeps)
         (intros_patterns b avoid thin destopt l)
   | (loc, IntroOrAndPattern ll) :: l' ->
-      tclTHEN
-        introf
-        (onLastHypId
-	  (intro_or_and_pattern loc b ll l'
-	    (intros_patterns b avoid thin destopt)))
+      intro_then_force
+	(intro_or_and_pattern loc b ll l'
+	   (intros_patterns b avoid thin destopt))
   | (loc, IntroRewrite l2r) :: l ->
-      tclTHEN
-        (intro_gen loc (IntroAvoid(avoid@explicit_intro_names l))
-	  no_move true false)
-        (onLastHypId (fun id ->
+      intro_then_gen loc (IntroAvoid(avoid@explicit_intro_names l))
+	no_move true false
+        (fun id ->
 	  tclTHENLAST (* Skip the side conditions of the rewriting step *)
 	    (rewrite_hyp l2r id)
-	    (intros_patterns b avoid thin destopt l)))
+	    (intros_patterns b avoid thin destopt l))
   | [] -> clear_wildcards thin
 
 let intros_pattern = intros_patterns false [] []
