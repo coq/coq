@@ -2,33 +2,10 @@ Require Import Nsatz ZArith Reals List Ring_polynom.
 
 (* Example with a generic domain *)
 
-Variable A: Type.
-Variable Ad: Domain A.
-
-Definition Ari : Ring A:= (@domain_ring A Ad).
-Existing Instance Ari.
-
-Existing Instance ring_setoid.
-Existing Instance ring_plus_comp.
-Existing Instance ring_mult_comp.
-Existing Instance ring_sub_comp.
-Existing Instance ring_opp_comp.
-
-Add Ring Ar: (@ring_ring A (@domain_ring A Ad)).
-
-Instance zero_ring2 : Zero A := {zero := ring0}.
-Instance one_ring2 : One A := {one := ring1}.
-Instance addition_ring2 : Addition A := {addition x y := ring_plus x y}.
-Instance multiplication_ring2 : Multiplication A := {multiplication x y := ring_mult x y}.
-Instance subtraction_ring2 : Subtraction A := {subtraction x y := ring_sub x y}.
-Instance opposite_ring2 : Opposite A := {opposite x := ring_opp x}.
-
-Infix "==" := ring_eq (at level 70, no associativity).
-
-Ltac nsatzA := simpl; unfold Ari; nsatz_domain.
+Context {R:Type}`{Rid:Integral_domain R}.
 
 Goal forall x y:A,  x == y -> x+0 == y*1+0.
-nsatzA.
+nsatz.
 Qed.
 
 Lemma example3 : forall x y z,

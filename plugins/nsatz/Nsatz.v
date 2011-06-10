@@ -7,14 +7,11 @@
 (************************************************************************)
 
 (*
- Tactic nsatz: proofs of polynomials equalities in a domain (ring without zero divisor).
- Reification is done by type classes, following a technique shown by Mathieu
-Sozeau. Verification of certificate is done by a code written by Benjamin
-Gregoire, following an idea of Laurent Théry.
-
+ Tactic nsatz: proofs of polynomials equalities in an integral domain 
+(commutative ring without zero divisor).
+ 
 Examples: see test-suite/success/Nsatz.v
 
-Loïc Pottier, july 2010
 *)
 
 Require Import List.
@@ -22,74 +19,37 @@ Require Import Setoid.
 Require Import BinPos.
 Require Import BinList.
 Require Import Znumtheory.
-Require Import Ring_polynom Ring_tac InitialRing.
 Require Export Morphisms Setoid Bool.
+Require Export Algebra_syntax.
+Require Export Ring2.
+Require Export Ring2_initial.
+Require Export Ring2_tac.
+Require Export Cring.
 
 Declare ML Module "nsatz_plugin".
 
-Class Zero (A : Type) := {zero : A}.
-Notation "0" := zero.
-Class One (A : Type) := {one : A}.
-Notation "1" := one.
-Class Addition (A : Type) := {addition : A -> A -> A}.
-Notation "x + y" := (addition x y).
-Class Multiplication (A : Type) := {multiplication : A -> A -> A}.
-Notation "x * y" := (multiplication x y).
-Class Subtraction (A : Type) := {subtraction : A -> A -> A}.
-Notation "x - y" := (subtraction x y).
-Class Opposite (A : Type) := {opposite : A -> A}.
-Notation "- x" := (opposite x).
+Class Integral_domain {R : Type}`{Rcr:Cring R} := {
+ integral_domain_product:
+   forall x y, x * y == 0 -> x == 0 \/ y == 0;
+ integral_domain_one_zero: not (1 == 0)}.
 
-Class Ring (R:Type) := {
- ring0: R; ring1: R; 
- ring_plus: R->R->R; ring_mult: R->R->R; 
- ring_sub:  R->R->R; ring_opp: R->R; 
- ring_eq : R -> R -> Prop;
- ring_ring: 
-   ring_theory ring0 ring1 ring_plus ring_mult ring_sub 
-               ring_opp ring_eq;
- ring_setoid: Equivalence ring_eq;
- ring_plus_comp: Proper (ring_eq==>ring_eq==>ring_eq) ring_plus;
- ring_mult_comp: Proper (ring_eq==>ring_eq==>ring_eq) ring_mult;
- ring_sub_comp: Proper (ring_eq==>ring_eq==>ring_eq) ring_sub;
- ring_opp_comp: Proper (ring_eq==>ring_eq) ring_opp
-}.
+Section integral_domain.
 
-Class Domain (R : Type) := {
- domain_ring:> Ring R;
- domain_axiom_product:
-   forall x y, ring_eq (ring_mult x y) ring0 -> (ring_eq x ring0) \/ (ring_eq y ring0);
- domain_axiom_one_zero: not (ring_eq ring1 ring0)}.
+Context {R:Type}`{Rid:Integral_domain R}.
 
-Section domain.
-
-Variable R: Type.
-Variable Rd: Domain R.
-
-Existing Instance ring_setoid.
-Existing Instance ring_plus_comp.
-Existing Instance ring_mult_comp.
-Existing Instance ring_sub_comp.
-Existing Instance ring_opp_comp.
-
-Add Ring Rr: (@ring_ring R (@domain_ring R Rd)).
-
-Instance zero_ring : Zero R := {zero := ring0}.
-Instance one_ring : One R := {one := ring1}.
-Instance addition_ring : Addition R := {addition x y := ring_plus x y}.
-Instance multiplication_ring : Multiplication R := {multiplication x y := ring_mult x y}.
-Instance subtraction_ring : Subtraction R := {subtraction x y := ring_sub x y}.
-Instance opposite_ring : Opposite R := {opposite x := ring_opp x}.
-
-Infix "==" := ring_eq (at level 70, no associativity).
+Lemma integral_domain_minus_one_zero: ~ - (1:R) == 0.
+red;intro. apply integral_domain_one_zero. 
+assert (0 == - (0:R)). cring.
+rewrite H0. rewrite <- H. cring.
+Qed.
 
 Lemma psos_r1b: forall x y:R, x - y == 0 -> x == y.
 intros x y H; setoid_replace x with ((x - y) + y); simpl;
- [setoid_rewrite H | idtac]; simpl; ring.
+ [setoid_rewrite H | idtac]; simpl. cring. cring.
 Qed.
 
 Lemma psos_r1: forall x y, x == y -> x - y == 0.
-intros x y H; simpl; setoid_rewrite H; simpl; ring.
+intros x y H; simpl; setoid_rewrite H; simpl; cring.
 Qed.
 
 Lemma nsatzR_diff: forall x y:R, not (x == y) -> not (x - y == 0).
@@ -97,23 +57,25 @@ intros.
 intro; apply H.
 simpl; setoid_replace x with ((x - y) + y). simpl.
 setoid_rewrite H0.
-simpl; ring.
-simpl. simpl; ring.
+simpl; cring.
+simpl. simpl; cring.
 Qed.
 
 (* adpatation du code de Benjamin aux setoides *)
 Require Import ZArith.
+Require Export Ring_polynom.
+Require Export InitialRing.
 
 Definition PolZ := Pol Z.
 Definition PEZ := PExpr Z.
 
-Definition P0Z : PolZ := @P0 Z 0%Z.
+Definition P0Z : PolZ := P0 (C:=Z) 0%Z.
 
 Definition PolZadd : PolZ -> PolZ -> PolZ :=
-  @Padd Z 0%Z Zplus Zeq_bool.
+  @Padd  Z 0%Z Zplus Zeq_bool.
 
 Definition PolZmul : PolZ -> PolZ -> PolZ :=
-  @Pmul Z 0%Z 1%Z Zplus Zmult Zeq_bool.
+  @Pmul  Z 0%Z 1%Z Zplus Zmult Zeq_bool.
 
 Definition PolZeq := @Peq Z Zeq_bool.
 
@@ -140,51 +102,67 @@ Definition check (lpe:list PEZ) (qe:PEZ) (certif: list (list PEZ) * list PEZ) :=
 
 (* Correction *)
 Definition PhiR : list R -> PolZ -> R :=
-  (Pphi 0 ring_plus ring_mult (gen_phiZ 0 1 ring_plus ring_mult ring_opp)).
+  (Pphi ring0 add mul 
+    (InitialRing.gen_phiZ ring0 ring1 add mul opp)).
 
-Definition pow (r : R) (n : nat) := pow_N 1 ring_mult r (N_of_nat n).
+Definition pow (r : R) (n : nat) := Ring_theory.pow_N 1 mul r (N_of_nat n).
 
 Definition PEevalR : list R -> PEZ -> R :=
-   PEeval 0 ring_plus ring_mult ring_sub ring_opp 
-    (gen_phiZ 0 1 ring_plus ring_mult ring_opp)
+   PEeval ring0 add mul sub opp
+    (gen_phiZ ring0 ring1 add mul opp)
          nat_of_N pow.
 
 Lemma P0Z_correct : forall l, PhiR l P0Z = 0.
 Proof. trivial. Qed.
 
-Lemma Rext: ring_eq_ext ring_plus ring_mult ring_opp ring_eq.
-apply mk_reqe. intros. setoid_rewrite H; rewrite H0; ring.
- intros. setoid_rewrite H; setoid_rewrite H0; ring. 
-intros. setoid_rewrite H; ring. Qed.
+Lemma Rext: ring_eq_ext add mul opp _==_.
+apply mk_reqe. intros. rewrite H ; rewrite H0; cring.
+ intros. rewrite H; rewrite H0; cring. 
+intros.  rewrite H; cring. Qed.
  
-Lemma Rset : Setoid_Theory R ring_eq.
+Lemma Rset : Setoid_Theory R _==_.
 apply ring_setoid.
 Qed.
+
+Definition Rtheory:ring_theory ring0 ring1 add mul sub opp _==_.
+apply mk_rt.
+apply ring_add_0_l.
+apply ring_add_comm.   
+apply ring_add_assoc.  
+apply ring_mul_1_l.    
+apply cring_mul_comm.
+apply ring_mul_assoc.
+apply ring_distr_l.    
+apply ring_sub_def.  
+apply ring_opp_def.
+Defined.
 
 Lemma PolZadd_correct : forall P' P l,
   PhiR l (PolZadd P P') == ((PhiR l P) + (PhiR l P')).
 Proof.
-simpl.
- refine (Padd_ok Rset Rext (Rth_ARth Rset Rext (@ring_ring _ (@domain_ring _ Rd)))
-           (gen_phiZ_morph Rset Rext (@ring_ring _ (@domain_ring _ Rd)))).
+unfold PolZadd, PhiR. intros. simpl.
+ refine (Padd_ok Rset Rext (Rth_ARth Rset Rext Rtheory)
+           (gen_phiZ_morph Rset Rext Rtheory) _ _ _).
 Qed.
 
 Lemma PolZmul_correct : forall P P' l,
   PhiR l (PolZmul P P') == ((PhiR l P) * (PhiR l P')).
 Proof.
- refine (Pmul_ok Rset Rext (Rth_ARth Rset Rext (@ring_ring _ (@domain_ring _ Rd)))
-           (gen_phiZ_morph Rset Rext (@ring_ring _ (@domain_ring _ Rd)))).
+unfold PolZmul, PhiR. intros. 
+ refine (Pmul_ok Rset Rext (Rth_ARth Rset Rext Rtheory)
+           (gen_phiZ_morph Rset Rext Rtheory) _ _ _).
 Qed.
 
 Lemma R_power_theory
-     : power_theory 1 ring_mult ring_eq nat_of_N pow.
-apply mkpow_th. unfold pow. intros. rewrite Nnat.N_of_nat_of_N. ring. Qed.
+     : Ring_theory.power_theory ring1 mul _==_ nat_of_N pow.
+apply Ring_theory.mkpow_th. unfold pow. intros. rewrite Nnat.N_of_nat_of_N. 
+reflexivity. Qed.
 
 Lemma norm_correct :
   forall (l : list R) (pe : PEZ), PEevalR l pe == PhiR l (norm pe).
 Proof.
- intros;apply (norm_aux_spec Rset Rext (Rth_ARth Rset Rext (@ring_ring _ (@domain_ring _ Rd)))
-           (gen_phiZ_morph Rset Rext (@ring_ring _ (@domain_ring _ Rd))) R_power_theory)
+ intros;apply (norm_aux_spec Rset Rext (Rth_ARth Rset Rext Rtheory)
+           (gen_phiZ_morph Rset Rext Rtheory) R_power_theory)
     with (lmp:= List.nil).
  compute;trivial.
 Qed.
@@ -194,7 +172,7 @@ Lemma PolZeq_correct : forall P P' l,
   PhiR l P == PhiR l P'.
 Proof.
  intros;apply
-   (Peq_ok Rset Rext (gen_phiZ_morph Rset Rext (@ring_ring _ (@domain_ring _ Rd))));trivial.
+   (Peq_ok Rset Rext (gen_phiZ_morph Rset Rext Rtheory));trivial.
 Qed.
 
 Fixpoint Cond0 (A:Type) (Interp:A->R) (l:list A) : Prop :=
@@ -207,12 +185,12 @@ Lemma mult_l_correct : forall l la lp,
   Cond0 PolZ (PhiR l) lp ->
   PhiR l (mult_l la lp) == 0.
 Proof.
- induction la;simpl;intros. ring.
- destruct lp;trivial. simpl. ring.
+ induction la;simpl;intros. cring.
+ destruct lp;trivial. simpl. cring.
  simpl in H;destruct H.
- setoid_rewrite  PolZadd_correct.
- simpl. setoid_rewrite PolZmul_correct. simpl. setoid_rewrite  H.
- setoid_rewrite IHla. unfold zero. simpl. ring. trivial.
+ rewrite  PolZadd_correct.
+ simpl. rewrite PolZmul_correct. simpl. rewrite  H.
+ rewrite IHla. cring. trivial.
 Qed.
 
 Lemma compute_list_correct : forall l lla lp,
@@ -244,49 +222,53 @@ Qed.
 
 Lemma pow_not_zero: forall p n, pow p n == 0 -> p == 0.
 induction n. unfold pow; simpl. intros. absurd (1 == 0). 
-simpl. apply domain_axiom_one_zero.
- trivial. setoid_replace (pow p (S n)) with (p * (pow p n)). intros. 
-case (@domain_axiom_product _ _ _ _ H). trivial. trivial. 
+simpl. apply integral_domain_one_zero.
+ trivial. setoid_replace (pow p (S n)) with (p * (pow p n)).
+intros. 
+case (integral_domain_product p (pow p n) H). trivial. trivial. 
 unfold pow; simpl. 
-clear IHn. induction n; simpl; try ring. 
- rewrite pow_pos_Psucc. ring. exact Rset.
- intros. setoid_rewrite H; setoid_rewrite H0; ring.
- intros. simpl; ring. intros. simpl; ring. Qed.
+clear IHn. induction n; simpl; try cring. 
+ rewrite Ring_theory.pow_pos_Psucc. cring. exact Rset.
+apply ring_mult_comp.
+apply cring_mul_comm.
+apply ring_mul_assoc.
+Qed.
 
-Lemma Rdomain_pow: forall c p r, ~c == ring0 -> ring_mult c (pow p r) == ring0 -> p == ring0.
-intros. case (@domain_axiom_product _ _ _ _ H0). intros; absurd (c == ring0); auto. 
+Lemma Rintegral_domain_pow:
+  forall c p r, ~c == 0 -> c * (pow p r) == ring0 -> p == ring0.
+intros. case (integral_domain_product c (pow p r) H0). intros; absurd (c == ring0); auto. 
 intros. apply pow_not_zero with r. trivial. Qed.   
 
-Definition R2:= ring_plus ring1 ring1.
+Definition R2:= 1 + 1.
 
 Fixpoint IPR p {struct p}: R :=
   match p with
     xH => ring1
-  | xO xH => ring_plus ring1 ring1
-  | xO p1 => ring_mult R2 (IPR p1)
-  | xI xH => ring_plus ring1 (ring_plus ring1 ring1)
-  | xI p1 => ring_plus ring1 (ring_mult R2 (IPR p1))
+  | xO xH => 1+1
+  | xO p1 => R2*(IPR p1)
+  | xI xH => 1+(1+1)
+  | xI p1 => 1+(R2*(IPR p1))
   end.
 
 Definition IZR1 z :=
-  match z with Z0 => ring0
+  match z with Z0 => 0
              | Zpos p => IPR p
-             | Zneg p => ring_opp(IPR p)
+             | Zneg p => -(IPR p)
   end.
 
 Fixpoint interpret3 t fv {struct t}: R :=
   match t with
   | (PEadd t1 t2) =>
        let v1  := interpret3 t1 fv in
-       let v2  := interpret3 t2 fv in (ring_plus v1 v2)
+       let v2  := interpret3 t2 fv in (v1 + v2)
   | (PEmul t1 t2) =>
        let v1  := interpret3 t1 fv in
-       let v2  := interpret3 t2 fv in (ring_mult v1 v2)
+       let v2  := interpret3 t2 fv in (v1 * v2)
   | (PEsub t1 t2) =>
        let v1  := interpret3 t1 fv in
-       let v2  := interpret3 t2 fv in (ring_sub v1 v2)
+       let v2  := interpret3 t2 fv in (v1 - v2)
   | (PEopp t1) =>
-       let v1  := interpret3 t1 fv in (ring_opp v1)
+       let v1  := interpret3 t1 fv in (-v1)
   | (PEpow t1 t2) =>
        let v1  := interpret3 t1 fv in pow v1 (nat_of_N t2)
   | (PEc t1) => (IZR1 t1)
@@ -294,33 +276,22 @@ Fixpoint interpret3 t fv {struct t}: R :=
   end.
 
 
-End domain.
+End integral_domain.
 
 Ltac equalities_to_goal :=
   lazymatch goal with
-  |  H: (@ring_eq _ _ ?x ?y) |- _ =>
-          try generalize (@psos_r1 _ _ _ _ H); clear H
+  |  H: (_ ?x ?y) |- _ =>
+          try generalize (@psos_r1 _ _ _ _ _ _ _ _ _ _ _ x y H); clear H
+  |  H: (_ _ ?x ?y) |- _ =>
+          try generalize (@psos_r1 _ _ _ _ _ _ _ _ _ _ _ x y H); clear H
+  |  H: (_ _ _ ?x ?y) |- _ =>
+          try generalize (@psos_r1 _ _ _ _ _ _ _ _ _ _ _ x y H); clear H
+  |  H: (_ _ _ _ ?x ?y) |- _ =>
+          try generalize (@psos_r1 _ _ _ _ _ _ _ _ _ _ _ x y H); clear H
+(* extension possible :-) *)
+  |  H: (?x == ?y) |- _ =>
+          try generalize (@psos_r1 _ _ _ _ _ _ _ _ _ _ _ x y H); clear H
    end.
-
-Ltac nsatz_domain_begin tacsimpl :=
-  intros;
-  try apply (@psos_r1b _ _);
-  repeat equalities_to_goal;
-  tacsimpl.
-
-Ltac generalise_eq_hyps:=
-  repeat
-    (match goal with
-     |h : (@ring_eq _ _ ?p ?q)|- _ => revert h
-     end).
-
-Ltac lpol_goal t :=
-  match t with
-  | ?a = ring0 -> ?b =>
-    let r:= lpol_goal b in
-    constr:(a::r)
-  | ?a = ring0 => constr:(a::nil)
- end.
 
 (* lp est incluse dans fv. La met en tete. *)
 
@@ -344,13 +315,12 @@ Ltac rev l :=
    | (cons ?x ?l) => let l' := rev l in append1 x l'
   end.
 
-
-
 Ltac nsatz_call_n info nparam p rr lp kont := 
-  (*idtac "Trying power: " rr;*)
+(*  idtac "Trying power: " rr;*)
   let ll := constr:(PEc info :: PEc nparam :: PEpow p rr :: lp) in
+(*  idtac "calcul...";*)
   nsatz_compute ll; 
-  (*idtac "done";*)
+(*  idtac "done";*)
   match goal with
   | |- (?c::PEpow _ ?r::?lq0)::?lci0 = _ -> _ =>
     intros _;
@@ -371,51 +341,13 @@ Ltac nsatz_call radicalmax info nparam p lp kont :=
   try_n radicalmax.
 
 
-Set Implicit Arguments.
-Class Cclosed_seq T (l:list T) := {}.
-Instance Iclosed_nil T : Cclosed_seq (T:=T) nil.
-Instance Iclosed_cons T t l `{Cclosed_seq (T:=T) l} : Cclosed_seq (T:=T) (t::l).
-
-Class Cfind_at (R:Type) (b:R) (l:list R) (i:nat) := {}.
-Instance  Ifind0 (R:Type) (b:R) l: Cfind_at b (b::l) 0.
-Instance  IfindS (R:Type) (b2 b1:R) l i `{Cfind_at R b1 l i} : Cfind_at b1 (b2::l) (S i) | 1.
-Definition Ifind0' := Ifind0.
-Definition IfindS' := IfindS.
-
-Definition li_find_at (R:Type) (b:R) l i `{Cfind_at R b l i} {H:Cclosed_seq (T:=R) l} := (l,i).
-
-Class Creify (R:Type) (e:PExpr Z) (l:list R) (b:R) := {}.
-Instance  Ireify_zero (R:Type) (Rd:Domain R) l : Creify (PEc 0%Z) l ring0.
-Instance  Ireify_one (R:Type)  (Rd:Domain R) l : Creify (PEc 1%Z) l ring1.
-Instance  Ireify_plus (R:Type)  (Rd:Domain R) e1 l b1 e2 b2 `{Creify R e1 l b1} `{Creify R e2 l b2} 
- : Creify (PEadd e1 e2) l (ring_plus b1 b2).
-Instance  Ireify_mult (R:Type)  (Rd:Domain R) e1 l b1 e2 b2 `{Creify R e1 l b1} `{Creify R e2 l b2}
- : Creify (PEmul e1 e2) l (ring_mult b1 b2).
-Instance  Ireify_sub (R:Type) (Rd:Domain R) e1 l b1 e2 b2 `{Creify R e1 l b1} `{Creify R e2 l b2}
- : Creify (PEsub e1 e2) l (ring_sub b1 b2).
-Instance  Ireify_opp (R:Type) (Rd:Domain R) e1 l b1 `{Creify R e1 l b1}
- : Creify (PEopp e1) l (ring_opp b1).
-Instance  Ireify_var (R:Type) b l i `{Cfind_at R b l i}
- : Creify (PEX _ (P_of_succ_nat i)) l b | 100.
-
-
-Class Creifylist (R:Type) (le:list (PExpr Z)) (l:list R) (lb:list R) := {}.
-Instance Creify_nil (R:Type) l : Creifylist nil l (@nil R).
-Instance Creify_cons (R:Type) e1 l b1 le2 lb2 `{Creify R e1 l b1} `{Creifylist R le2 l lb2} 
- : Creifylist (e1::le2) l (b1::lb2).
-
-Definition li_reifyl (R:Type) le l lb `{Creifylist R le l lb}
- {H:Cclosed_seq (T:=R) l} := (l,le).
-
-Unset Implicit Arguments.
-
 Ltac lterm_goal g :=
   match g with
-  ring_eq ?b1 ?b2 => constr:(b1::b2::nil)
-  | ring_eq ?b1 ?b2 -> ?g => let l := lterm_goal g in constr:(b1::b2::l)     
+    ?b1 == ?b2 => constr:(b1::b2::nil)
+  | ?b1 == ?b2 -> ?g => let l := lterm_goal g in constr:(b1::b2::l)     
   end.
 
-Ltac reify_goal l le lb Rd:=
+Ltac reify_goal l le lb:=
   match le with
      nil => idtac
    | ?e::?le1 => 
@@ -423,69 +355,76 @@ Ltac reify_goal l le lb Rd:=
          ?b::?lb1 => (* idtac "b="; idtac b;*)
            let x := fresh "B" in
            set (x:= b) at 1;
-           change x with (@interpret3 _ Rd e l); 
+           change x with (interpret3 e l); 
            clear x;
-           reify_goal l le1 lb1 Rd
+           reify_goal l le1 lb1
         end
   end.
 
 Ltac get_lpol g :=
   match g with
-  ring_eq (interpret3 _ _ ?p _) _ => constr:(p::nil)
-  | ring_eq (interpret3 _ _ ?p _) _ -> ?g =>
+  (interpret3 ?p _) == _ => constr:(p::nil)
+  | (interpret3 ?p _) == _ -> ?g =>
        let l := get_lpol g in constr:(p::l)     
   end.
 
-Ltac nsatz_domain_generic radicalmax info lparam lvar tacsimpl Rd :=
-  match goal with
+Ltac nsatz_generic radicalmax info lparam lvar :=
+match goal with
   |- ?g => let lb := lterm_goal g in
-     (*idtac "lb"; idtac lb;*)
-     match eval red in (li_reifyl (lb:=lb)) with
+(*     idtac "lb"; idtac lb;*)
+     match eval red in (list_reifyl (lterm:=lb)) with
      | (?fv, ?le) => 
         let fv := match lvar with
                      (@nil _) => fv
                     | _ => lvar
                   end in
-        (* idtac "variables:";idtac fv;*)
+(*         idtac "variables:";idtac fv;*)
         let nparam := eval compute in (Z_of_nat (List.length lparam)) in
         let fv := parametres_en_tete fv lparam in
-        (*idtac "variables:"; idtac fv;
+(*        idtac "variables:"; idtac fv;
         idtac "nparam:"; idtac nparam; *)
-        match eval red in (li_reifyl (l:=fv) (lb:=lb)) with
+        match eval red in (list_reifyl (lterm:=lb) (lvar:=fv)) with
           | (?fv, ?le) => 
-              (*idtac "variables:";idtac fv; idtac le; idtac lb;*)
-              reify_goal fv le lb Rd;
+(*              idtac "variables:";idtac fv; idtac le; idtac lb;*)
+              reify_goal fv le lb;
                 match goal with 
                    |- ?g => 
                        let lp := get_lpol g in 
                        let lpol := eval compute in (List.rev lp) in
-                       (*idtac "polynomes:"; idtac lpol;*)
-                       tacsimpl; intros;
- 
+(*                       idtac "polynomes:"; idtac lpol;*)
+                       simpl; intros;
+  simpl;
   let SplitPolyList kont :=
     match lpol with
     | ?p2::?lp2 => kont p2 lp2
     | _ => idtac "polynomial not in the ideal"
     end in 
-  tacsimpl; 
+
   SplitPolyList ltac:(fun p lp =>
     set (p21:=p) ;
     set (lp21:=lp);
-    (*idtac "lp:"; idtac lp; *)
+(*    idtac "nparam:"; idtac nparam; idtac "p:"; idtac p; idtac "lp:"; idtac lp; *)
     nsatz_call radicalmax info nparam p lp ltac:(fun c r lq lci => 
       set (q := PEmul c (PEpow p21 r)); 
       let Hg := fresh "Hg" in 
       assert (Hg:check lp21 q (lci,lq) = true); 
       [ (vm_compute;reflexivity) || idtac "invalid nsatz certificate"
       | let Hg2 := fresh "Hg" in 
-            assert (Hg2: ring_eq (interpret3 _ Rd q fv) ring0);
-        [ tacsimpl; 
-          apply (@check_correct _ Rd fv lp21 q (lci,lq) Hg);
-          tacsimpl;
+            assert (Hg2: (interpret3 q fv) == 0);
+        [ simpl; 
+          generalize (@check_correct _ _ _ _ _ _ _ _ _ _ _ fv lp21 q (lci,lq) Hg);
+          let cc := fresh "H" in
+             simpl; intro cc; apply cc; clear cc;
+          simpl;
           repeat (split;[assumption|idtac]); exact I
-        | simpl in Hg2; tacsimpl; 
-          apply Rdomain_pow with (interpret3 _ Rd c fv) (nat_of_N r); auto with domain;
-          tacsimpl; apply domain_axiom_one_zero 
+        | simpl in Hg2; simpl; 
+          apply Rintegral_domain_pow with (interpret3 c fv) (nat_of_N r);
+          simpl;
+            try apply integral_domain_one_zero;
+            try apply integral_domain_minus_one_zero;
+            try trivial;
+            try exact integral_domain_one_zero;
+            try exact integral_domain_minus_one_zero
           || (simpl) || idtac "could not prove discrimination result"
         ]
       ]
@@ -493,171 +432,128 @@ Ltac nsatz_domain_generic radicalmax info lparam lvar tacsimpl Rd :=
 )
 end end end end .
 
-Ltac nsatz_domainpv pretac radicalmax info lparam lvar tacsimpl rd :=
-  pretac;
-  nsatz_domain_begin tacsimpl; auto with domain;
-  nsatz_domain_generic radicalmax info lparam lvar tacsimpl rd.
-
-Ltac nsatz_domain:= 
+Ltac nsatz:=
   intros;
-  match goal with
-    |- (@ring_eq _ (@domain_ring ?r ?rd) _ _ ) =>
-          nsatz_domainpv ltac:idtac 6%N 1%Z (@nil r) (@nil r) ltac:(simpl) rd
+  try apply (@psos_r1b _ _ _ _ _ _ _ _ _ _ _);
+  match goal with |- (@equality ?r _ _ _) =>
+    repeat equalities_to_goal;
+    nsatz_generic 6%N 1%Z (@nil r) (@nil r)
   end.
 
-(* Dans R *)
+Section test.
+Context {R:Type}`{Rid:Integral_domain R}.
+
+Goal forall x y:R, x == x.
+nsatz.
+Qed.
+
+Goal forall x y:R, x == y -> y*y == x*x.
+nsatz.
+Qed.
+
+Lemma example3 : forall x y z:R,
+  x+y+z==0 ->
+  x*y+x*z+y*z==0->
+  x*y*z==0 -> x*x*x==0.
+Proof.
+nsatz.
+Qed.
+(*
+Lemma example5 : forall x y z u v:R,
+  x+y+z+u+v==0 ->
+  x*y+x*z+x*u+x*v+y*z+y*u+y*v+z*u+z*v+u*v==0->
+  x*y*z+x*y*u+x*y*v+x*z*u+x*z*v+x*u*v+y*z*u+y*z*v+y*u*v+z*u*v==0->
+  x*y*z*u+y*z*u*v+z*u*v*x+u*v*x*y+v*x*y*z==0 ->
+  x*y*z*u*v==0 -> x*x*x*x*x ==0.
+Proof.
+nsatz.
+Qed.
+*)
+End test.
+
+(* Real numbers *)
 Require Import Reals.
 Require Import RealField.
 
-Instance Rri : Ring R := {
-  ring0 := 0%R;
-  ring1 := 1%R;
-  ring_plus := Rplus;
-  ring_mult := Rmult;
-  ring_sub := Rminus;
-  ring_opp := Ropp; 
-  ring_eq := @eq R; 
-  ring_ring := RTheory}.
+Lemma Rsth : Setoid_Theory R (@eq R).
+constructor;red;intros;subst;trivial.
+Qed.
 
-Lemma Raxiom_one_zero: 1%R <> 0%R.
+Instance Rops: (@Ring_ops R 0%R 1%R Rplus Rmult Rminus Ropp (@eq R)).
+
+Instance Rri : (Ring (Ro:=Rops)).
+constructor;
+try (try apply Rsth;
+   try (unfold respectful, Proper; unfold equality; unfold eq_notation in *;
+  intros; try rewrite H; try rewrite H0; reflexivity)).
+ exact Rplus_0_l. exact Rplus_comm. symmetry. apply Rplus_assoc.
+ exact Rmult_1_l.  exact Rmult_1_r. symmetry. apply Rmult_assoc.
+ exact Rmult_plus_distr_r. intros; apply Rmult_plus_distr_l. 
+exact Rplus_opp_r.
+Defined.
+
+Lemma R_one_zero: 1%R <> 0%R.
 discrR.
 Qed.
 
-Instance Rdi : Domain R := {
-  domain_ring := Rri;
-  domain_axiom_product := Rmult_integral;
-  domain_axiom_one_zero := Raxiom_one_zero}.
+Instance Rcri: (Cring (Rr:=Rri)).
+red. exact Rmult_comm. Defined.
 
-Hint Resolve ring_setoid ring_plus_comp ring_mult_comp ring_sub_comp ring_opp_comp: domain.
-
-Ltac replaceR:=
-replace 0%R with (@ring0 _ (@domain_ring _ Rdi)) in *;[idtac|reflexivity];
-replace 1%R with (@ring1 _ (@domain_ring _ Rdi)) in *;[idtac|reflexivity];
-replace Rplus with (@ring_plus _ (@domain_ring _ Rdi)) in *;[idtac|reflexivity];
-replace Rmult with (@ring_mult _ (@domain_ring _ Rdi)) in *;[idtac|reflexivity];
-replace Rminus with (@ring_sub _ (@domain_ring _ Rdi)) in *;[idtac|reflexivity];
-replace Ropp with (@ring_opp _ (@domain_ring _ Rdi)) in *;[idtac|reflexivity];
-replace (@eq R) with (@ring_eq _ (@domain_ring _ Rdi)) in *;[idtac|reflexivity].
-
-Ltac simplR:=
-  simpl; replaceR.
-
-Ltac pretacR:=
-  replaceR;
-  replace Rri with (@domain_ring _ Rdi) in *; [idtac | reflexivity].
-
-Ltac nsatz_domainR:= 
-  nsatz_domainpv ltac:pretacR 6%N 1%Z (@Datatypes.nil R) (@Datatypes.nil R)
-    ltac:simplR Rdi;
-  discrR.
-
+Instance Rdi : (Integral_domain (Rcr:=Rcri)). 
+constructor. 
+exact Rmult_integral. exact R_one_zero. Defined.
 
 Goal forall x y:R, x = y -> (x*x-x+1)%R = ((y*y-y)+1+0)%R.
-nsatz_domainR.
+nsatz.
 Qed.
 
-
-(* Dans Z *)
-Instance Zri : Ring Z := {
-  ring0 := 0%Z;
-  ring1 := 1%Z;
-  ring_plus := Zplus;
-  ring_mult := Zmult;
-  ring_sub := Zminus;
-  ring_opp := Zopp; 
-  ring_eq := (@eq Z); 
-  ring_ring := Zth}.
-
-Lemma Zaxiom_one_zero: 1%Z <> 0%Z.
-discriminate.
-Qed.
-
-Instance Zdi : Domain Z := {
-  domain_ring := Zri;
-  domain_axiom_product := Zmult_integral;
-  domain_axiom_one_zero := Zaxiom_one_zero}.
-
-Ltac replaceZ :=
-replace 0%Z with (@ring0 _ (@domain_ring _ Zdi)) in *;[idtac|reflexivity];
-replace 1%Z with (@ring1 _ (@domain_ring _ Zdi)) in *;[idtac|reflexivity];
-replace Zplus with (@ring_plus _ (@domain_ring _ Zdi)) in *;[idtac|reflexivity];
-replace Zmult with (@ring_mult _ (@domain_ring _ Zdi)) in *;[idtac|reflexivity];
-replace Zminus with (@ring_sub _ (@domain_ring _ Zdi)) in *;[idtac|reflexivity];
-replace Zopp with (@ring_opp _ (@domain_ring _ Zdi)) in *;[idtac|reflexivity];
-replace (@eq Z) with (@ring_eq _ (@domain_ring _ Zdi)) in *;[idtac|reflexivity].
-
-Ltac simplZ:=
-  simpl; replaceZ.
-
-Ltac pretacZ :=
-replaceZ;
-replace Zri with (@domain_ring _ Zdi) in *; [idtac | reflexivity].
-
-Ltac nsatz_domainZ:= 
-nsatz_domainpv ltac:pretacZ 6%N 1%Z (@Datatypes.nil Z) (@Datatypes.nil Z) ltac:simplZ Zdi.
-
-
-(* Dans Q *)
+(* Rational numbers *)
 Require Import QArith.
 
-Instance Qri : Ring Q := {
-  ring0 := 0%Q;
-  ring1 := 1%Q;
-  ring_plus := Qplus;
-  ring_mult := Qmult;
-  ring_sub := Qminus;
-  ring_opp := Qopp; 
-  ring_eq := Qeq; 
-  ring_ring := Qsrt}.
+Check Q_Setoid.
 
-Lemma Qaxiom_one_zero: not (Qeq 1%Q 0%Q).
-discriminate.
-Qed.
+Instance Qops: (@Ring_ops Q 0%Q 1%Q Qplus Qmult Qminus Qopp Qeq).
 
-Instance Qdi : Domain Q := {
-  domain_ring := Qri;
-  domain_axiom_product := Qmult_integral;
-  domain_axiom_one_zero := Qaxiom_one_zero}.
+Instance Qri : (Ring (Ro:=Qops)).
+constructor.
+try apply Q_Setoid. 
+apply Qplus_comp. 
+apply Qmult_comp. 
+apply Qminus_comp. 
+apply Qopp_comp.
+ exact Qplus_0_l. exact Qplus_comm. apply Qplus_assoc.
+ exact Qmult_1_l.  exact Qmult_1_r. apply Qmult_assoc.
+ apply Qmult_plus_distr_l.  intros. apply Qmult_plus_distr_r. 
+reflexivity. exact Qplus_opp_r.
+Defined.
 
-Ltac replaceQ :=
-replace 0%Q with (@ring0 _ (@domain_ring _ Qdi)) in *;[idtac|reflexivity];
-replace 1%Q with (@ring1 _ (@domain_ring _ Qdi)) in *;[idtac|reflexivity];
-replace Qplus with (@ring_plus _ (@domain_ring _ Qdi)) in *;[idtac|reflexivity];
-replace Qmult with (@ring_mult _ (@domain_ring _ Qdi)) in *;[idtac|reflexivity];
-replace Qminus with (@ring_sub _ (@domain_ring _ Qdi)) in *;[idtac|reflexivity];
-replace Qopp with (@ring_opp _ (@domain_ring _ Qdi)) in *;[idtac|reflexivity];
-replace Qeq with (@ring_eq _ (@domain_ring _ Qdi)) in *;[idtac|reflexivity].
+Lemma Q_one_zero: not (Qeq 1%Q 0%Q).
+unfold Qeq. simpl. auto with *. Qed.
 
-Ltac simplQ:=
-  simpl; replaceQ.
+Instance Qcri: (Cring (Rr:=Qri)).
+red. exact Qmult_comm. Defined.
 
-Ltac pretacQ := 
-replaceQ;
-replace Qri with (@domain_ring _ Qdi) in *; [idtac | reflexivity].
+Instance Qdi : (Integral_domain (Rcr:=Qcri)). 
+constructor. 
+exact Qmult_integral. exact Q_one_zero. Defined.
 
-Ltac nsatz_domainQ:= 
-nsatz_domainpv ltac:pretacQ 6%N 1%Z (@Datatypes.nil Q) (@Datatypes.nil Q) ltac:simplQ Qdi.
-
-(* tactique générique *)
-
-Ltac nsatz :=
-  intros;
-  match goal with
-   | |- (@eq R _ _) => nsatz_domainR
-   | |- (@eq Z _ _) => nsatz_domainZ
-   | |- (@Qeq _ _) => nsatz_domainQ
-   | |- _ => nsatz_domain
-  end.
-(*
 Goal forall x y:Q, Qeq x y -> Qeq (x*x-x+1)%Q ((y*y-y)+1+0)%Q.
 nsatz.
 Qed.
 
-Goal forall x y:Z, x = y -> (x*x-x+1)%Z = ((y*y-y)+1+0)%Z.
-nsatz.
+(* Integers *)
+Lemma Z_one_zero: 1%Z <> 0%Z.
+omega. 
 Qed.
 
-Goal forall x y:R, x = y -> (x*x-x+1)%R = ((y*y-y)+1+0)%R.
-nsatz.
+Instance Zcri: (Cring (Rr:=Zr)).
+red. exact Zmult_comm. Defined.
+
+Instance Zdi : (Integral_domain (Rcr:=Zcri)). 
+constructor. 
+exact Zmult_integral. exact Z_one_zero. Defined.
+
+Goal forall x y:Z, x = y -> (x*x-x+1)%Z = ((y*y-y)+1+0)%Z.
+nsatz. 
 Qed.
-*)
+

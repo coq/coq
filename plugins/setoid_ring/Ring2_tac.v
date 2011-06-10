@@ -13,7 +13,6 @@ Require Import BinList.
 Require Import Znumtheory.
 Require Export Morphisms Setoid Bool.
 Require Import ZArith.
-Open Scope Z_scope.
 Require Import Algebra_syntax.
 Require Export Ring2.
 Require Import Ring2_polynom.
@@ -22,176 +21,163 @@ Require Import Ring2_initial.
 
 Set Implicit Arguments.
 
-(* Reification with Type Classes, inspired from B.Grégoire and A.Spiewack *)
+Class nth (R:Type) (t:R) (l:list R) (i:nat).
 
-Class is_in_list_at (R:Type) (t:R) (l:list R) (i:nat) := {}.
 Instance  Ifind0 (R:Type) (t:R) l
- : is_in_list_at t (t::l) 0.
-Instance  IfindS (R:Type) (t2 t1:R) l i 
- `{is_in_list_at R t1 l i} 
- : is_in_list_at t1 (t2::l) (S i) | 1.
+ : nth t(t::l) 0.
 
-Class reifyPE (R:Type) (e:PExpr Z) (lvar:list R) (t:R) := {}.
-Instance  reify_zero (R:Type) (RR:Ring R) lvar 
- : reifyPE (PEc 0%Z) lvar ring0.
-Instance  reify_one (R:Type) (RR:Ring R) lvar 
- : reifyPE (PEc 1%Z) lvar ring1.
-Instance  reify_plus (R:Type)  (RR:Ring R)
-  e1 lvar t1 e2 t2 
- `{reifyPE R e1 lvar t1} 
- `{reifyPE R e2 lvar t2} 
- : reifyPE (PEadd e1 e2) lvar (ring_plus t1 t2).
-Instance  reify_mult (R:Type)  (RR:Ring R)
-  e1 lvar t1 e2 t2 
- `{reifyPE R e1 lvar t1} 
- `{reifyPE R e2 lvar t2}
- : reifyPE (PEmul e1 e2) lvar (ring_mult t1 t2).
-Instance  reify_sub (R:Type) (RR:Ring R) 
- e1 lvar t1 e2 t2 
- `{reifyPE R e1 lvar t1} 
- `{reifyPE R e2 lvar t2}
- : reifyPE (PEsub e1 e2) lvar (ring_sub t1 t2).
-Instance  reify_opp (R:Type) (RR:Ring R) 
- e1 lvar t1 
- `{reifyPE R e1 lvar t1}
- : reifyPE (PEopp e1) lvar (ring_opp t1).
+Instance  IfindS (R:Type) (t2 t1:R) l i 
+ {_:nth t1 l i} 
+ : nth t1 (t2::l) (S i) | 1.
+
+Class closed (T:Type) (l:list T).
+
+Instance Iclosed_nil T 
+ : closed (T:=T) nil.
+
+Instance Iclosed_cons T t (l:list T) 
+ {_:closed l} 
+ : closed (t::l).
+
+Class reify (R:Type)`{Rr:Ring (T:=R)} (e:PExpr Z) (lvar:list R) (t:R).
+
+Instance  reify_zero (R:Type)  lvar op
+ `{Ring (T:=R)(ring0:=op)}
+ : reify (ring0:=op)(PEc 0%Z) lvar op.
+
+Instance  reify_one (R:Type)  lvar op
+ `{Ring (T:=R)(ring1:=op)}
+ : reify (ring1:=op) (PEc 1%Z) lvar op.
+
+Instance  reify_add (R:Type)
+  e1 lvar t1 e2 t2 op 
+ `{Ring (T:=R)(add:=op)}
+ {_:reify (add:=op) e1 lvar t1}
+ {_:reify (add:=op) e2 lvar t2}
+ : reify (add:=op) (PEadd e1 e2) lvar (op t1 t2).
+
+Instance  reify_mul (R:Type) 
+  e1 lvar t1 e2 t2 op 
+ `{Ring (T:=R)(mul:=op)}
+ {_:reify (mul:=op) e1 lvar t1}
+ {_:reify (mul:=op) e2 lvar t2}
+ : reify (mul:=op) (PEmul e1 e2) lvar (op t1 t2).
+
+Instance  reify_mul_ext (R:Type) `{Ring R}
+  lvar z e2 t2 
+ `{Ring (T:=R)}
+ {_:reify e2 lvar t2}
+ : reify (PEmul (PEc z) e2) lvar
+      (@multiplication Z _ _  z t2)|9.
+
+Instance  reify_sub (R:Type)
+ e1 lvar t1 e2 t2 op
+ `{Ring (T:=R)(sub:=op)}
+ {_:reify (sub:=op) e1 lvar t1}
+ {_:reify (sub:=op) e2 lvar t2}
+ : reify (sub:=op) (PEsub e1 e2) lvar (op t1 t2).
+
+Instance  reify_opp (R:Type)
+ e1 lvar t1  op
+ `{Ring (T:=R)(opp:=op)}
+ {_:reify (opp:=op) e1 lvar t1}
+ : reify (opp:=op) (PEopp e1) lvar (op t1).
+
+Instance  reify_pow (R:Type) `{Ring R}
+ e1 lvar t1 n 
+ `{Ring (T:=R)}
+ {_:reify e1 lvar t1}
+ : reify (PEpow e1 n) lvar (pow_N t1 n)|1.
+
 Instance  reify_var (R:Type) t lvar i 
- `{is_in_list_at R t lvar i}
- : reifyPE (PEX Z (P_of_succ_nat i)) lvar t 
+ `{nth R t lvar i}
+ `{Rr: Ring (T:=R)}
+ : reify (Rr:= Rr) (PEX Z (P_of_succ_nat i))lvar t 
  | 100.
 
-Class reifyPElist (R:Type) (lexpr:list (PExpr Z)) (lvar:list R) 
-  (lterm:list R) := {}.
-Instance reifyPE_nil (R:Type) lvar 
- : @reifyPElist R nil lvar (@nil R).
-Instance reifyPE_cons (R:Type) e1 lvar t1 lexpr2 lterm2
- `{reifyPE R e1 lvar t1} `{reifyPElist R lexpr2 lvar lterm2} 
- : reifyPElist (e1::lexpr2) lvar (t1::lterm2).
+Class reifylist (R:Type)`{Rr:Ring (T:=R)} (lexpr:list (PExpr Z)) (lvar:list R) 
+  (lterm:list R).
 
-Class is_closed_list T (l:list T) := {}.
-Instance Iclosed_nil T 
- : is_closed_list (T:=T) nil.
-Instance Iclosed_cons T t l 
- `{is_closed_list (T:=T) l} 
- : is_closed_list (T:=T) (t::l).
+Instance reify_nil (R:Type) lvar 
+ `{Rr: Ring (T:=R)}
+ : reifylist (Rr:= Rr) nil lvar (@nil R).
+
+Instance reify_cons (R:Type) e1 lvar t1 lexpr2 lterm2
+ `{Rr: Ring (T:=R)}
+ {_:reify (Rr:= Rr) e1 lvar t1}
+ {_:reifylist (Rr:= Rr) lexpr2 lvar lterm2} 
+ : reifylist (Rr:= Rr) (e1::lexpr2) lvar (t1::lterm2).
 
 Definition list_reifyl (R:Type) lexpr lvar lterm 
- `{reifyPElist R lexpr lvar lterm}
- `{is_closed_list (T:=R) lvar} := (lvar,lexpr).
+ `{Rr: Ring (T:=R)}
+ {_:reifylist (Rr:= Rr) lexpr lvar lterm}
+ `{closed (T:=R) lvar}  := (lvar,lexpr).
 
 Unset Implicit Arguments.
 
-Instance multiplication_phi_ring{R:Type}{Rr:Ring R} : Multiplication  :=
-  {multiplication x y := ring_mult (gen_phiZ Rr x) y}.
-
-(*
-Print HintDb typeclass_instances.
-*)
-(* Reification *)
 
 Ltac lterm_goal g :=
   match g with
-  ring_eq ?t1 ?t2 => constr:(t1::t2::nil)
-  | ring_eq ?t1 ?t2 -> ?g => let lvar :=
-    lterm_goal g in constr:(t1::t2::lvar)     
+  | ?t1 == ?t2 => constr:(t1::t2::nil)
+  | ?t1 = ?t2 => constr:(t1::t2::nil)
   end.
 
+Lemma Zeqb_ok: forall x y : Z, Zeq_bool x y = true -> x == y.
+ intros x y H. rewrite (Zeq_bool_eq x y H). reflexivity. Qed. 
+
 Ltac reify_goal lvar lexpr lterm:=
-(*  idtac lvar; idtac lexpr; idtac lterm;*)
+  (*idtac lvar; idtac lexpr; idtac lterm;*)
   match lexpr with
      nil => idtac
-   | ?e::?lexpr1 =>  
-        match lterm with
-         ?t::?lterm1 => (* idtac "t="; idtac t;*)
-           let x := fresh "T" in
-           set (x:= t);
-           change x with 
-             (@PEeval Z Zr _ _ (@gen_phiZ_morph _ _) N
-                      (fun n:N => n) (@Ring_theory.pow_N _ ring1 ring_mult)
-                      lvar e); 
-           clear x;
-           reify_goal lvar lexpr1 lterm1
+   | ?e1::?e2::_ =>  
+        match goal with
+          |- (?op ?u1 ?u2) =>
+           change (op 
+             (@PEeval Z _ _ _ _ _ _ _ _ _ (@gen_phiZ _ _ _ _ _ _ _ _ _) N
+                      (fun n:N => n) (@pow_N _ _ _ _ _ _ _ _ _)
+                      lvar e1)
+             (@PEeval Z _ _ _ _ _ _ _ _ _ (@gen_phiZ _ _ _ _ _ _ _ _ _) N
+                      (fun n:N => n) (@pow_N _ _ _ _ _ _ _ _ _)
+                      lvar e2))
         end
   end.
 
-Existing Instance gen_phiZ_morph.
-Existing Instance Zr.
-
-Lemma comm: forall (R:Type)(Rr:Ring R)(c : Z) (x : R),
-  x * [c] == [c] * x.
-induction c. intros. ring_simpl. gen_ring_rewrite. simpl. intros.
-ring_rewrite_rev same_gen.
-induction p. simpl.  gen_ring_rewrite. ring_rewrite IHp. rrefl.
-simpl.  gen_ring_rewrite. ring_rewrite IHp. rrefl.
-simpl.  gen_ring_rewrite. 
-simpl. intros. ring_rewrite_rev same_gen.
+Lemma comm: forall (R:Type)`{Ring R}(c : Z) (x : R),
+  x * (gen_phiZ c) == (gen_phiZ c) * x.
+induction c. intros. simpl. gen_rewrite. simpl. intros.
+rewrite <- same_gen.
+induction p. simpl.  gen_rewrite. rewrite IHp. reflexivity.
+simpl.  gen_rewrite. rewrite IHp. reflexivity.
+simpl.  gen_rewrite. 
+simpl. intros. rewrite <- same_gen.
 induction p. simpl. generalize IHp. clear IHp.
-gen_ring_rewrite. intro IHp.  ring_rewrite IHp. rrefl.
+gen_rewrite. intro IHp.  rewrite IHp. reflexivity.
 simpl. generalize IHp. clear IHp.
-gen_ring_rewrite. intro IHp.  ring_rewrite IHp. rrefl.
-simpl.  gen_ring_rewrite. Qed.
+gen_rewrite. intro IHp.  rewrite IHp. reflexivity.
+simpl.  gen_rewrite. Qed.
 
-Lemma Zeqb_ok: forall x y : Z, Zeq_bool x y = true -> x == y.
- intros x y H. rewrite (Zeq_bool_eq x y H). rrefl. Qed. 
-
-
- Ltac ring_gen :=
+Ltac ring_gen :=
    match goal with
-     |- ?g => let lterm := lterm_goal g in (* les variables *)
+     |- ?g => let lterm := lterm_goal g in 
        match eval red in (list_reifyl (lterm:=lterm)) with
          | (?fv, ?lexpr) => 
-(*         idtac "variables:";idtac fv;
+           (*idtac "variables:";idtac fv;
            idtac "terms:"; idtac lterm;
-           idtac "reifications:"; idtac lexpr; 
-*)
+           idtac "reifications:"; idtac lexpr; *)
            reify_goal fv lexpr lterm;
            match goal with 
              |- ?g => 
-               set_ring_notations;
-               apply (@ring_correct Z Zr _ _ (@gen_phiZ_morph _ _)
-                 (@comm _ _) Zeq_bool Zeqb_ok N (fun n:N => n)
-                 (@Ring_theory.pow_N _  1 multiplication));
-               [apply mkpow_th; rrefl
+               apply (@ring_correct Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+                       (@gen_phiZ _ _ _ _ _ _ _ _ _) _
+                 (@comm _ _ _ _ _ _ _ _ _ _) Zeq_bool Zeqb_ok N (fun n:N => n)
+                 (@pow_N _ _ _ _ _ _ _ _ _));
+               [apply mkpow_th; reflexivity
                  |vm_compute; reflexivity]
            end
        end
    end.
 
-(* Pierre L: these tests should be done in a section, otherwise
-   global axioms are generated. Ideally such tests should go in
-   the test-suite directory *)
-Section Tests.
- 
 Ltac ring2:= 
-  unset_ring_notations; intros;
-  match goal with
-    |- (@ring_eq ?r ?rd _ _ ) =>
-          simpl; ring_gen
-  end.
-Variable R: Type.
-Variable Rr: Ring R.
-Existing Instance Rr.
+  intros;
+  ring_gen.
 
-Goal forall x y z:R, x  == x .
-ring2. 
-Qed.
-
-Goal forall x y z:R, x * y * z == x * (y * z).
-ring2.
-Qed.
-
-Goal forall x y z:R, [3]* x *([2]* y * z) == [6] * (x * y) * z.
-ring2.
-Qed.
-
-Goal forall x y z:R, 3 * x * (2 * y * z) == 6 * (x * y) * z.
-ring2.
-Qed.
-
-
-(* Fails with Multiplication: A -> B -> C.
-Goal forall x:R,    2%Z * (x * x) == 3%Z * x.
-Admitted.
-*)
-
-End Tests.

@@ -15,8 +15,6 @@ Ring.vo
 ZArithRing.vo
 Algebra_syntax.vo
 Cring.vo
-Cring_initial.vo
-Cring_tac.vo
 Ring2.vo
 Ring2_polynom.vo
 Ring2_initial.vo
