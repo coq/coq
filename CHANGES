@@ -29,6 +29,7 @@ Tactics
   in scripts meant to be machine-independent.
 - Fixing a bug of destruct that left local definitions in context might result
   in some rare incompatibilities (solvable by adapting name hypotheses).
+- Introduction pattern "_" made more robust.
 - Tactic (and Eval command) vm_compute can now be interrupted via Ctrl-C.
 
 Vernacular commands

@@ -84,3 +84,8 @@ Abort.
 Goal (exists x, x=0 /\ True) -> True.
 destruct 1 as (_,(_,H)); exact H.
 Abort.
+
+Goal (exists x, x=0 /\ True) -> True.
+destruct 1 as (_,(_,x)); exact x.
+Abort.
+

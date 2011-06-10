@@ -1305,26 +1305,40 @@ let rec explicit_intro_names = function
 | [] ->
     []
 
+let wild_id = id_of_string "_tmp"
+
+let rec list_mem_assoc_right id = function
+  | [] -> false
+  | (x,id')::l -> id = id' || list_mem_assoc_right id l
+
+let check_thin_clash_then id thin avoid tac =
+  if list_mem_assoc_right id thin then
+    let newid = next_ident_away (add_suffix id "'") avoid in
+    let thin =
+      List.map (on_snd (fun id' -> if id = id' then newid else id')) thin in
+    tclTHEN (rename_hyp [id,newid]) (tac thin)
+  else
+    tac thin
+
   (* We delay thinning until the completion of the whole intros tactic
      to ensure that dependent hypotheses are cleared in the right
      dependency order (see bug #1000); we use fresh names, not used in
      the tactic, for the hyps to clear *)
 let rec intros_patterns b avoid ids thin destopt tac = function
   | (loc, IntroWildcard) :: l ->
-      intro_then_gen loc (IntroAvoid(avoid@explicit_intro_names l))
+      intro_then_gen loc (IntroBasedOn(wild_id,avoid@explicit_intro_names l))
 	no_move true false
-        (fun id ->
-	  tclORELSE
-	    (tclTHEN (clear [id]) (intros_patterns b avoid ids thin destopt tac l))
-	    (intros_patterns b avoid ids ((loc,id)::thin) destopt tac l))
+        (fun id -> intros_patterns b avoid ids ((loc,id)::thin) destopt tac l)
   | (loc, IntroIdentifier id) :: l ->
-      intro_then_gen loc (IntroMustBe id) destopt true false
-        (fun id -> intros_patterns b avoid (id::ids) thin destopt tac l)
+      check_thin_clash_then id thin avoid (fun thin ->
+        intro_then_gen loc (IntroMustBe id) destopt true false
+          (fun id -> intros_patterns b avoid (id::ids) thin destopt tac l))
   | (loc, IntroAnonymous) :: l ->
       intro_then_gen loc (IntroAvoid (avoid@explicit_intro_names l))
 	destopt true false
         (fun id -> intros_patterns b avoid (id::ids) thin destopt tac l)
   | (loc, IntroFresh id) :: l ->
+      (* todo: avoid thinned names to interfere with generation of fresh name *)
       intro_then_gen loc (IntroBasedOn (id, avoid@explicit_intro_names l))
 	destopt true false
         (fun id -> intros_patterns b avoid (id::ids) thin destopt tac l)
