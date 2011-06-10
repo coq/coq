@@ -55,6 +55,12 @@ let list_filter_i p =
   in
   filter_i_rec 0
 
+let string_map f s =
+  let l = String.length s in
+  let r = String.create l in
+  for i= 0 to (l - 1) do r.[i] <- f (s.[i]) done;
+  r
+
 let subst_command_placeholder s t =
   Str.global_replace (Str.regexp_string "%s") t s
 

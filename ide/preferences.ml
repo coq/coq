@@ -15,36 +15,19 @@ let accel_file = Filename.concat Minilib.home ".coqide.keys"
 
 let mod_to_str (m:Gdk.Tags.modifier) =
   match m with
-    | `MOD1 -> "MOD1"
-    | `MOD2 -> "MOD2"
-    | `MOD3 -> "MOD3"
-    | `MOD4 -> "MOD4"
-    | `MOD5 -> "MOD5"
-    | `BUTTON1 -> "BUTTON1"
-    | `BUTTON2 -> "BUTTON2"
-    | `BUTTON3 -> "BUTTON3"
-    | `BUTTON4 -> "BUTTON4"
-    | `BUTTON5 -> "BUTTON5"
-    | `CONTROL -> "CONTROL"
-    | `LOCK -> "LOCK"
-    | `SHIFT -> "SHIFT"
+    | `MOD1 -> "<Alt>"
+    | `MOD2 -> "<Mod2>"
+    | `MOD3 -> "<Mod3>"
+    | `MOD4 -> "<Mod4>"
+    | `MOD5 -> "<Mod5>"
+    | `CONTROL -> "<Control>"
+    | `SHIFT -> "<Shift>"
+    | `META -> "<Meta>"
+    |  `BUTTON1| `BUTTON2| `BUTTON3| `BUTTON4| `BUTTON5| `LOCK -> ""
 
-let (str_to_mod:string -> Gdk.Tags.modifier) =
-  function
-    | "MOD1" -> `MOD1
-    | "MOD2" -> `MOD2
-    | "MOD3" -> `MOD3
-    | "MOD4" -> `MOD4
-    | "MOD5" -> `MOD5
-    | "BUTTON1" -> `BUTTON1
-    | "BUTTON2" -> `BUTTON2
-    | "BUTTON3" -> `BUTTON3
-    | "BUTTON4" -> `BUTTON4
-    | "BUTTON5" -> `BUTTON5
-    | "CONTROL" -> `CONTROL
-    | "LOCK" -> `LOCK
-    | "SHIFT" -> `SHIFT
-    | s -> `MOD1
+let mod_list_to_str l = List.fold_left (fun s m -> (mod_to_str m)^s) "" l
+
+let str_to_mod_list s = snd (GtkData.AccelGroup.parse s)
 
 type pref =
     {
@@ -67,11 +50,11 @@ type pref =
       mutable automatic_tactics : string list;
       mutable cmd_print : string;
 
-      mutable modifier_for_navigation : Gdk.Tags.modifier list;
-      mutable modifier_for_templates : Gdk.Tags.modifier list;
-      mutable modifier_for_tactics : Gdk.Tags.modifier list;
-      mutable modifier_for_display : Gdk.Tags.modifier list;
-      mutable modifiers_valid : Gdk.Tags.modifier list;
+      mutable modifier_for_navigation : string;
+      mutable modifier_for_templates : string;
+      mutable modifier_for_tactics : string;
+      mutable modifier_for_display : string;
+      mutable modifiers_valid : string;
 
       mutable cmd_browse : string;
       mutable cmd_editor : string;
@@ -121,11 +104,11 @@ let (current:pref ref) =
     automatic_tactics = ["trivial"; "tauto"; "auto"; "omega";
 			 "auto with *"; "intuition" ];
 
-    modifier_for_navigation = [`CONTROL; `MOD1];
-    modifier_for_templates = [`CONTROL; `SHIFT];
-    modifier_for_tactics = [`CONTROL; `MOD1];
-    modifier_for_display = [`MOD1;`SHIFT];
-    modifiers_valid = [`SHIFT; `CONTROL; `MOD1];
+    modifier_for_navigation = "<Control><Alt>";
+    modifier_for_templates = "<Control><Shift>";
+    modifier_for_tactics = "<Control><Alt>";
+    modifier_for_display = "<Alt><Shift>";
+    modifiers_valid = "<Alt><Control><Shift>";
 
 
     cmd_browse = Flags.browser_cmd_fmt;
@@ -189,16 +172,11 @@ let save_pref () =
 
     add "automatic_tactics" p.automatic_tactics ++
     add "cmd_print" [p.cmd_print] ++
-    add "modifier_for_navigation"
-      (List.map mod_to_str p.modifier_for_navigation) ++
-    add "modifier_for_templates"
-      (List.map mod_to_str p.modifier_for_templates) ++
-    add "modifier_for_tactics"
-      (List.map mod_to_str p.modifier_for_tactics) ++
-    add "modifier_for_display"
-      (List.map mod_to_str p.modifier_for_display) ++
-    add "modifiers_valid"
-      (List.map mod_to_str p.modifiers_valid) ++
+    add "modifier_for_navigation" [p.modifier_for_navigation] ++
+    add "modifier_for_templates" [p.modifier_for_templates] ++
+    add "modifier_for_tactics" [p.modifier_for_tactics] ++
+    add "modifier_for_display" [p.modifier_for_display] ++
+    add "modifiers_valid" [p.modifiers_valid] ++
     add "cmd_browse" [p.cmd_browse] ++
     add "cmd_editor" [p.cmd_editor] ++
 
@@ -250,16 +228,16 @@ let load_pref () =
     set "automatic_tactics"
       (fun v -> np.automatic_tactics <- v);
     set_hd "cmd_print" (fun v -> np.cmd_print <- v);
-    set "modifier_for_navigation"
-      (fun v -> np.modifier_for_navigation <- List.map str_to_mod v);
-    set "modifier_for_templates"
-      (fun v -> np.modifier_for_templates <- List.map str_to_mod v);
-    set "modifier_for_tactics"
-      (fun v -> np.modifier_for_tactics <- List.map str_to_mod v);
-    set "modifier_for_display"
-      (fun v -> np.modifier_for_display <- List.map str_to_mod v);
-    set "modifiers_valid"
-      (fun v -> np.modifiers_valid <- List.map str_to_mod v);
+    set_hd "modifier_for_navigation"
+      (fun v -> np.modifier_for_navigation <- v);
+    set_hd "modifier_for_templates"
+      (fun v -> np.modifier_for_templates <- v);
+    set_hd "modifier_for_tactics"
+      (fun v -> np.modifier_for_tactics <- v);
+    set_hd "modifier_for_display"
+      (fun v -> np.modifier_for_display <- v);
+    set_hd "modifiers_valid"
+      (fun v -> np.modifiers_valid <- v);
     set_command_with_pair_compat "cmd_browse" (fun v -> np.cmd_browse <- v);
     set_command_with_pair_compat "cmd_editor" (fun v -> np.cmd_editor <- v);
     set_hd "text_font" (fun v -> np.text_font <- Pango.Font.from_string v);
@@ -450,43 +428,44 @@ let configure ?(apply=(fun () -> ())) () =
   let help_string =
     "restart to apply"
   in
+  let the_valid_mod = str_to_mod_list !current.modifiers_valid in
   let modifier_for_tactics =
     modifiers
-      ~allow:!current.modifiers_valid
-      ~f:(fun l -> !current.modifier_for_tactics <- l)
+      ~allow:the_valid_mod
+      ~f:(fun l -> !current.modifier_for_tactics <- mod_list_to_str l)
       ~help:help_string
       "Modifiers for Tactics Menu"
-      !current.modifier_for_tactics
+      (str_to_mod_list !current.modifier_for_tactics)
   in
   let modifier_for_templates =
     modifiers
-      ~allow:!current.modifiers_valid
-      ~f:(fun l -> !current.modifier_for_templates <- l)
+      ~allow:the_valid_mod
+      ~f:(fun l -> !current.modifier_for_templates <- mod_list_to_str l)
       ~help:help_string
       "Modifiers for Templates Menu"
-      !current.modifier_for_templates
+      (str_to_mod_list !current.modifier_for_templates)
   in
   let modifier_for_navigation =
     modifiers
-      ~allow:!current.modifiers_valid
-      ~f:(fun l -> !current.modifier_for_navigation <- l)
+      ~allow:the_valid_mod
+      ~f:(fun l -> !current.modifier_for_navigation <- mod_list_to_str l)
       ~help:help_string
       "Modifiers for Navigation Menu"
-      !current.modifier_for_navigation
+      (str_to_mod_list !current.modifier_for_navigation)
   in
   let modifier_for_display =
     modifiers
-      ~allow:!current.modifiers_valid
-      ~f:(fun l -> !current.modifier_for_display <- l)
+      ~allow:the_valid_mod
+      ~f:(fun l -> !current.modifier_for_display <- mod_list_to_str l)
       ~help:help_string
       "Modifiers for Display Menu"
-      !current.modifier_for_display
+      (str_to_mod_list !current.modifier_for_display)
   in
   let modifiers_valid =
     modifiers
-      ~f:(fun l -> !current.modifiers_valid <- l)
+      ~f:(fun l -> !current.modifiers_valid <- mod_list_to_str l)
       "Allowed modifiers"
-      !current.modifiers_valid
+      the_valid_mod
   in
   let cmd_editor =
     let predefined = [ "emacs %s"; "vi %s"; "NOTEPAD %s" ] in

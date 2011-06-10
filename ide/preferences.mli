@@ -27,11 +27,11 @@ type pref =
       mutable automatic_tactics : string list;
       mutable cmd_print : string;
 
-      mutable modifier_for_navigation : Gdk.Tags.modifier list;
-      mutable modifier_for_templates : Gdk.Tags.modifier list;
-      mutable modifier_for_tactics : Gdk.Tags.modifier list;
-      mutable modifier_for_display : Gdk.Tags.modifier list;
-      mutable modifiers_valid : Gdk.Tags.modifier list;
+      mutable modifier_for_navigation : string;
+      mutable modifier_for_templates : string;
+      mutable modifier_for_tactics : string;
+      mutable modifier_for_display : string;
+      mutable modifiers_valid : string;
 
       mutable cmd_browse : string;
       mutable cmd_editor : string;

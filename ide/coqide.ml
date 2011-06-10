@@ -324,15 +324,20 @@ let remove_current_view_page () =
 module Opt = Coq.PrintOpt
 
 let print_items = [
-  ([Opt.implicit],"Display _implicit arguments",GdkKeysyms._i,false);
-  ([Opt.coercions],"Display _coercions",GdkKeysyms._c,false);
-  ([Opt.raw_matching],"Display raw _matching expressions",GdkKeysyms._m,true);
-  ([Opt.notations],"Display _notations",GdkKeysyms._n,true);
-  ([Opt.all_basic],"Display _all basic low-level contents",GdkKeysyms._a,false);
-  ([Opt.existential],"Display _existential variable instances",GdkKeysyms._e,false);
-  ([Opt.universes],"Display _universe levels",GdkKeysyms._u,false);
-  ([Opt.all_basic;Opt.existential;Opt.universes],
-   "Display all _low-level contents",GdkKeysyms._l,false)
+  ([Opt.implicit],"Display implicit arguments","Display _implicit arguments",
+   "i",false);
+  ([Opt.coercions],"Display coercions","Display _coercions","c",false);
+  ([Opt.raw_matching],"Display raw matching expressions",
+   "Display raw _matching expressions","m",true);
+  ([Opt.notations],"Display notations","Display _notations","n",true);
+  ([Opt.all_basic],"Display all basic low-level contents",
+   "Display _all basic low-level contents","a",false);
+  ([Opt.existential],"Display existential variable instances",
+   "Display _existential variable instances","e",false);
+  ([Opt.universes],"Display universe levels","Display _universe levels",
+   "u",false);
+  ([Opt.all_basic;Opt.existential;Opt.universes], "Display all low-level contents",
+   "Display all _low-level contents","l",false)
 ]
 
 let setopts ct opts v =
@@ -1426,7 +1431,7 @@ let create_session () =
   let _ =
     GtkBase.Widget.add_events proof#as_widget [`ENTER_NOTIFY;`POINTER_MOTION] in
   let _ =
-    List.map (fun (opts,_,_,dflt) -> setopts !ct opts dflt) print_items in
+    List.map (fun (opts,_,_,_,dflt) -> setopts !ct opts dflt) print_items in
   let _ = legacy_av#activate () in
   let _ =
     proof#event#connect#motion_notify ~callback:
@@ -1745,53 +1750,17 @@ let main files =
 
   let vbox = GPack.vbox ~homogeneous:false ~packing:w#add () in
 
-
-  (* Menu bar *)
-  let menubar = GMenu.menu_bar ~packing:vbox#pack () in
-
-  (* Toolbar *)
-  let toolbar = GButton.toolbar
-    ~orientation:`HORIZONTAL
-    ~style:`ICONS
-    ~tooltips:true
-    ~packing:(* handle#add *)
-    (vbox#pack ~expand:false ~fill:false)
-    ()
-  in
-  show_toolbar :=
-    (fun b -> if b then toolbar#misc#show () else toolbar#misc#hide ());
-
-  let factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/" menubar in
-  let accel_group = factory#accel_group in
-
-  (* File Menu *)
-  let file_menu = factory#add_submenu "_File" in
-
-  let file_factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/File/" file_menu ~accel_group in
-
-  (* File/Load Menu *)
-  let load_m = file_factory#add_item "_New"
-    ~key:GdkKeysyms._N in
-  let load_f () =
+  let new_f _ =
     match select_file_for_save ~title:"Create file" () with
       | None -> ()
       | Some f -> do_load f
   in
-  ignore (load_m#connect#activate ~callback:(load_f));
-
-  let load_m = file_factory#add_item "_Open"
-    ~key:GdkKeysyms._O in
-  let load_f () =
+  let load_f _ =
     match select_file_for_open ~title:"Load file" () with
       | None -> ()
       | Some f -> do_load f
   in
-  ignore (load_m#connect#activate ~callback:(load_f));
-
-  (* File/Save Menu *)
-  let save_m = file_factory#add_item "_Save"
-    ~key:GdkKeysyms._S in
-  let save_f () =
+  let save_f _ =
     let current = session_notebook#current_term in
     try
       (match current.analyzed_view#filename with
@@ -1815,12 +1784,7 @@ let main files =
     with
       | e -> warning "Save: unexpected error"
   in
-  ignore (save_m#connect#activate ~callback:save_f);
-
-  (* File/Save As Menu *)
-  let saveas_m = file_factory#add_item "S_ave as"
-  in
-  let saveas_f () =
+  let saveas_f _ =
     let current = session_notebook#current_term in
     try (match current.analyzed_view#filename with
       | None ->
@@ -1849,15 +1813,6 @@ let main files =
         end);
     with e -> flash_info "Save Failed"
   in
-  ignore (saveas_m#connect#activate ~callback:saveas_f);
-  (* XXX *)
-  (* File/Save All Menu *)
-  let saveall_m = file_factory#add_item "Sa_ve all" in
-  (* XXX *)
-  ignore (saveall_m#connect#activate ~callback:saveall_f);
-  (* XXX *)
-  (* File/Revert Menu *)
-  let revert_m = file_factory#add_item "_Revert all buffers" in
   let revert_f {analyzed_view = av} =
     (try
        match av#filename,av#stats with
@@ -1869,20 +1824,7 @@ let main files =
          | _ -> ()
      with _ -> av#revert)
   in
-  ignore (revert_m#connect#activate ~callback:(fun () -> List.iter revert_f session_notebook#pages));
-
-  (* File/Close Menu *)
-  let close_m =
-    file_factory#add_item "_Close buffer" ~key:GdkKeysyms._W in
-  ignore (close_m#connect#activate ~callback:remove_current_view_page);
-
-  (* File/Print Menu *)
-  let _ = file_factory#add_item "_Print..."
-    ~key:GdkKeysyms._P
-    ~callback:(fun () -> do_print session_notebook#current_term) in
-
-  (* File/Export to Menu *)
-  let export_f kind () =
+  let export_f kind _ =
     let v = session_notebook#current_term in
     let av = v.analyzed_view in
     match av#filename with
@@ -1907,55 +1849,7 @@ let main files =
                       then " succeeded"
                       else " failed")
   in
-  let file_export_m =  file_factory#add_submenu "E_xport to" in
-
-  let file_export_factory = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/Export/" file_export_m ~accel_group in
-  let _ =
-    file_export_factory#add_item "_Html" ~callback:(export_f "html")
-  in
-  let _ =
-    file_export_factory#add_item "_LaTeX" ~callback:(export_f "latex")
-  in
-  let _ =
-    file_export_factory#add_item "_Dvi" ~callback:(export_f "dvi")
-  in
-  let _ =
-    file_export_factory#add_item "_Pdf" ~callback:(export_f "pdf")
-  in
-  let _ =
-    file_export_factory#add_item "_Ps" ~callback:(export_f "ps")
-  in
-
-  (* File/Rehighlight Menu *)
-  let rehighlight_m = file_factory#add_item "Reh_ighlight" ~key:GdkKeysyms._L in
-  ignore (rehighlight_m#connect#activate
-            ~callback:(fun () ->
-              force_retag
-                session_notebook#current_term.script#buffer;
-              session_notebook#current_term.analyzed_view#recenter_insert));
-
-  (* File/Quit Menu *)
-  let quit_f () = if not (forbid_quit_to_save ()) then exit 0 in
-  let _ = file_factory#add_item "_Quit" ~key:GdkKeysyms._Q
-    ~callback:quit_f
-  in
-    ignore (w#event#connect#delete ~callback:(fun _ -> quit_f (); true));
-
-  (* Edit Menu *)
-  let edit_menu = factory#add_submenu "_Edit" in
-  let edit_f = new GMenu.factory ~accel_path:"<CoqIde MenuBar>/Edit/" edit_menu ~accel_group in
-  ignore(edit_f#add_item "_Undo" ~key:GdkKeysyms._u ~callback:
-           (fun () -> do_if_not_computing "undo"
-             (fun sess ->
-               ignore (sess.analyzed_view#without_auto_complete
-                         (fun () -> session_notebook#current_term.script#undo) ()))
-             [session_notebook#current_term]));
-  ignore(edit_f#add_item "_Clear Undo Stack"
-               (* ~key:GdkKeysyms._exclam *)
-           ~callback:
-           (fun () ->
-             ignore session_notebook#current_term.script#clear_undo));
-  ignore(edit_f#add_separator ());
+  let quit_f _ = if not (forbid_quit_to_save ()) then exit 0 in
   let get_active_view_for_cp () =
     let has_sel (i0,i1) = i0#compare i1 <> 0 in
     let current = session_notebook#current_term in
@@ -1965,24 +1859,6 @@ let main files =
     then current.proof_view#as_view
     else current.message_view#as_view
   in
-  ignore(edit_f#add_item "Cut" ~key:GdkKeysyms._X ~callback:
-           (fun () -> GtkSignal.emit_unit
-             (get_active_view_for_cp ())
-             ~sgn:GtkText.View.S.cut_clipboard
-           ));
-  ignore(edit_f#add_item "Copy" ~key:GdkKeysyms._C ~callback:
-           (fun () -> GtkSignal.emit_unit
-             (get_active_view_for_cp ())
-             ~sgn:GtkText.View.S.copy_clipboard));
-  ignore(edit_f#add_item "Paste" ~key:GdkKeysyms._V ~callback:
-           (fun () ->
-             try GtkSignal.emit_unit
-                   session_notebook#current_term.script#as_view
-                   ~sgn:GtkText.View.S.paste_clipboard
-             with _ -> prerr_endline "EMIT PASTE FAILED"));
-  ignore (edit_f#add_separator ());
-
-
   (*
     let toggle_auto_complete_i =
     edit_f#add_check_item "_Auto Completion"
@@ -1997,6 +1873,7 @@ let main files =
     | None -> ());
   *)
 
+(* begin of find/replace mechanism *)
   let last_found = ref None in
   let search_backward = ref false in
   let find_w = GWindow.window
@@ -2173,14 +2050,6 @@ let main files =
     find_entry#misc#grab_focus ();
     search_backward := save_dir
   in
-  let _ = edit_f#add_item "_Find in buffer"
-    ~key:GdkKeysyms._F
-    ~callback:(find_f ~backward:false)
-  in
-  let _ = edit_f#add_item "Find _backwards"
-    ~key:GdkKeysyms._B
-    ~callback:(find_f ~backward:true)
-  in
   let _ = find_again_button#connect#clicked find_again in
   let _ = close_find_button#connect#clicked close_find in
   let _ = replace_find_button#connect#clicked do_replace_find in
@@ -2210,30 +2079,8 @@ let main files =
     in
     complete_i#misc#set_state `INSENSITIVE;
   *)
-
-  ignore(edit_f#add_item "Complete Word" ~key:GdkKeysyms._slash ~callback:
-	   (fun () ->
-	     ignore (
-	       let av = session_notebook#current_term.analyzed_view in
-	       av#complete_at_offset (av#get_insert)#offset
-	     )));
-
-  ignore(edit_f#add_separator ());
-  (* external editor *)
-  let _ =
-    edit_f#add_item "External editor" ~callback:
-      (fun () ->
-	let av = session_notebook#current_term.analyzed_view in
-	match av#filename with
-	  | None -> warning "Call to external editor available only on named files"
-	  | Some f ->
-	    save_f ();
-	    let com = Minilib.subst_command_placeholder !current.cmd_editor (Filename.quote f) in
-	    let _ = run_command av#insert_message com in
-	    av#revert)
-  in
-  let _ = edit_f#add_separator () in
-  (* Preferences *)
+(* end of find/replace mechanism *)
+(* begin Preferences *)
   let reset_revert_timer () =
     disconnect_revert_timer ();
     if !current.global_auto_revert then
@@ -2261,31 +2108,7 @@ let main files =
 	     do_if_not_computing "autosave" (sync auto_save_f) session_notebook#pages;
 	     true))
   in reset_auto_save_timer (); (* to enable statup preferences timer *)
-
-
-  let _ =
-    edit_f#add_item "_Preferences"
-      ~callback:(fun () ->
-	begin
-	  try configure ~apply:update_notebook_pos ()
-	  with _ -> flash_info "Cannot save preferences"
-	end;
-	reset_revert_timer ())
-  in
-  (*
-    let save_prefs_m =
-    configuration_factory#add_item "_Save preferences"
-    ~callback:(fun () -> save_pref ())
-    in
-  *)
-  (* Navigation Menu *)
-  let navigation_menu =  factory#add_submenu "_Navigation" in
-  let navigation_factory =
-    new GMenu.factory navigation_menu
-      ~accel_path:"<CoqIde MenuBar>/Navigation/"
-      ~accel_group
-      ~accel_modi:!current.modifier_for_navigation
-  in
+(* end Preferences *)
   let do_or_activate f () =
     do_if_not_computing "do_or_activate"
       (fun current ->
@@ -2300,237 +2123,11 @@ let main files =
       )
       [session_notebook#current_term]
   in
-  let add_to_menu_toolbar text ~tooltip ?key ~callback icon =
-    begin
-      match key with None -> ()
-	| Some key -> ignore (navigation_factory#add_item text ~key ~callback)
-    end;
-    ignore (toolbar#insert_button
-	      ~tooltip
-	      (* ~text:tooltip*)
-	      ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR icon)
-	      ~callback
-	      ())
-  in
-  add_to_menu_toolbar
-    "_Save"
-    ~tooltip:"Save current buffer"
-    ~callback:save_f
-    `SAVE;
-  add_to_menu_toolbar
-    "_Close"
-    ~tooltip:"Close current buffer"
-    ~callback:remove_current_view_page
-    `CLOSE;
-  add_to_menu_toolbar
-    "_Forward"
-    ~tooltip:"Forward one command"
-    ~key:GdkKeysyms._Down
-    ~callback:(do_or_activate (fun a -> a#process_next_phrase true))
-    `GO_DOWN;
-  add_to_menu_toolbar "_Backward"
-    ~tooltip:"Backward one command"
-    ~key:GdkKeysyms._Up
-    ~callback:(do_or_activate (fun a -> a#undo_last_step))
-    `GO_UP;
-  add_to_menu_toolbar
-    "_Go to"
-    ~tooltip:"Go to cursor"
-    ~key:GdkKeysyms._Right
-    ~callback:(do_or_activate (fun a-> a#go_to_insert))
-    `JUMP_TO;
-  add_to_menu_toolbar
-    "_Start"
-    ~tooltip:"Restart Coq"
-    ~key:GdkKeysyms._Home
-    ~callback:force_reset_initial
-    `GOTO_TOP;
-  add_to_menu_toolbar
-    "_End"
-    ~tooltip:"Go to end"
-    ~key:GdkKeysyms._End
-    ~callback:(do_or_activate (fun a -> a#process_until_end_or_error))
-    `GOTO_BOTTOM;
-  add_to_menu_toolbar "_Interrupt"
-    ~tooltip:"Interrupt computations"
-    ~key:GdkKeysyms._Break
-    ~callback:break
-    `STOP;
-  add_to_menu_toolbar "_Hide"
-    ~tooltip:"Hide proof"
-    ~key:GdkKeysyms._h
-    ~callback:(fun x ->
-      let sess = session_notebook#current_term in
-      toggle_proof_visibility sess.script#buffer
-        sess.analyzed_view#get_insert)
-    `MISSING_IMAGE;
-  add_to_menu_toolbar "_Previous"
-    ~tooltip:"Previous occurrence"
-    ~key:GdkKeysyms._less
-    ~callback:(do_or_activate (fun a ->
-      a#go_to_prev_occ_of_cur_word))
-    `GO_BACK;
-  add_to_menu_toolbar "_Next"
-    ~tooltip:"Next occurrence"
-    ~key:GdkKeysyms._greater
-    ~callback:(do_or_activate (fun a ->
-      a#go_to_next_occ_of_cur_word))
-    `GO_FORWARD;
-
-  (* Tactics Menu *)
-  let tactics_menu =  factory#add_submenu "_Try Tactics" in
-  let tactics_factory =
-    new GMenu.factory tactics_menu
-      ~accel_path:"<CoqIde MenuBar>/Tactics/"
-      ~accel_group
-      ~accel_modi:!current.modifier_for_tactics
-  in
-  let do_if_active f () =
+  let do_if_active f _ =
     do_if_not_computing "do_if_active"
       (fun sess -> ignore (f sess.analyzed_view))
       [session_notebook#current_term] in
-
-  ignore (tactics_factory#add_item "_auto"
-	    ~key:GdkKeysyms._a
-	    ~callback:(do_if_active (fun a -> a#insert_command "progress auto.\n" "auto.\n"))
-  );
-  ignore (tactics_factory#add_item "_auto with *"
-	    ~key:GdkKeysyms._asterisk
-	    ~callback:(do_if_active (fun a -> a#insert_command
-	      "progress auto with *.\n"
-	      "auto with *.\n")));
-  ignore (tactics_factory#add_item "_eauto"
-	    ~key:GdkKeysyms._e
-	    ~callback:(do_if_active (fun a -> a#insert_command
-	      "progress eauto.\n"
-	      "eauto.\n"))
-  );
-  ignore (tactics_factory#add_item "_eauto with *"
-	    ~key:GdkKeysyms._ampersand
-	    ~callback:(do_if_active (fun a -> a#insert_command
-	      "progress eauto with *.\n"
-	      "eauto with *.\n"))
-  );
-  ignore (tactics_factory#add_item "_intuition"
-	    ~key:GdkKeysyms._i
-	    ~callback:(do_if_active (fun a -> a#insert_command
-	      "progress intuition.\n"
-	      "intuition.\n"))
-  );
-  ignore (tactics_factory#add_item "_omega"
-	    ~key:GdkKeysyms._o
-	    ~callback:(do_if_active (fun a -> a#insert_command
-	      "omega.\n" "omega.\n"))
-  );
-  ignore (tactics_factory#add_item "_simpl"
-	    ~key:GdkKeysyms._s
-	    ~callback:(do_if_active (fun a -> a#insert_command "progress simpl.\n" "simpl.\n" ))
-  );
-  ignore (tactics_factory#add_item "_tauto"
-	    ~key:GdkKeysyms._p
-	    ~callback:(do_if_active (fun a -> a#insert_command "tauto.\n" "tauto.\n" ))
-  );
-  ignore (tactics_factory#add_item "_trivial"
-	    ~key:GdkKeysyms._v
-	    ~callback:(do_if_active( fun a -> a#insert_command "progress trivial.\n"  "trivial.\n" ))
-  );
-
-
-  ignore (toolbar#insert_button
-	    ~tooltip:"Proof Wizard"
-	    ~text:"Wizard"
-	    ~icon:(stock_to_widget ~size:`LARGE_TOOLBAR `DIALOG_INFO)
-	    ~callback:(do_if_active (fun a -> a#tactic_wizard
-	      !current.automatic_tactics
-	    ))
-	    ());
-
-
-
-  ignore (tactics_factory#add_item "<Proof _Wizard>"
-	    ~key:GdkKeysyms._dollar
-	    ~callback:(do_if_active (fun a -> a#tactic_wizard
-	      !current.automatic_tactics
-	    ))
-  );
-
-  ignore (tactics_factory#add_separator ());
-  let add_simple_template (factory: GMenu.menu GMenu.factory)
-      (menu_text, text) =
-    let text =
-      let l = String.length text - 1 in
-      if String.get text l = '.'
-      then text ^"\n"
-      else text ^" "
-    in
-    ignore (factory#add_item menu_text
-	      ~callback:
-	      (fun () -> let {script = view } = session_notebook#current_term in
-			 ignore (view#buffer#insert_interactive text)))
-  in
-  List.iter
-    (fun l ->
-      match l with
-	| [] -> ()
-	| [s] -> add_simple_template tactics_factory ("_"^s, s)
-	| s::_ ->
-	  let a = "_@..." in
-	  a.[1] <- s.[0];
-	  let f = tactics_factory#add_submenu a in
-	  let ff = new GMenu.factory f ~accel_group in
-	  List.iter
-	    (fun x ->
-	      add_simple_template
-		ff
-		((String.sub x 0 1)^
-		    "_"^
-		    (String.sub x 1 (String.length x - 1)),
-		 x))
-	    l
-    )
-    Coq_commands.tactics;
-
-  (* Templates Menu *)
-  let templates_menu =  factory#add_submenu "Te_mplates" in
-  let templates_factory = new GMenu.factory templates_menu
-    ~accel_path:"<CoqIde MenuBar>/Templates/"
-    ~accel_group
-    ~accel_modi:!current.modifier_for_templates
-  in
-  let add_complex_template (menu_text, text, offset, len, key) =
-    (* Templates/Lemma *)
-    let callback () =
-      let {script = view } = session_notebook#current_term in
-      if view#buffer#insert_interactive text then begin
-	let iter = view#buffer#get_iter_at_mark `INSERT in
-	ignore (iter#nocopy#backward_chars offset);
-	view#buffer#move_mark `INSERT ~where:iter;
-	ignore (iter#nocopy#backward_chars len);
-	view#buffer#move_mark `SEL_BOUND ~where:iter;
-      end in
-    ignore (templates_factory#add_item menu_text ~callback ?key)
-  in
-  add_complex_template
-    ("_Lemma __", "Lemma new_lemma : .\nIdeproof.\n\nSave.\n",
-     19, 9, Some GdkKeysyms._L);
-  add_complex_template
-    ("_Theorem __", "Theorem new_theorem : .\nIdeproof.\n\nSave.\n",
-     19, 11, Some GdkKeysyms._T);
-  add_complex_template
-    ("_Definition __", "Definition ident := .\n",
-     6, 5, Some GdkKeysyms._D);
-  add_complex_template
-    ("_Inductive __", "Inductive ident : :=\n  | : .\n",
-     14, 5, Some GdkKeysyms._I);
-  add_complex_template
-    ("_Fixpoint __", "Fixpoint ident (_ : _) {struct _} : _ :=\n.\n",
-     29, 5, Some GdkKeysyms._F);
-  add_complex_template("_Scheme __",
-		       "Scheme new_scheme := Induction for _ Sort _\
-\nwith _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
-
-  (* Template for match *)
-  let callback () =
+  let match_callback _ =
     let w = get_current_word () in
     let cur_ct = !(session_notebook#current_term.toplvl) in
     try
@@ -2562,148 +2159,8 @@ let main files =
               `SEL_BOUND
     with Not_found -> flash_info "Not an inductive type"
   in
-  ignore (templates_factory#add_item "match ..."
-	    ~key:GdkKeysyms._C
-	    ~callback
-  );
-
-  (*
-    let add_simple_template (factory: GMenu.menu GMenu.factory)
-    (menu_text, text) =
-    let text =
-    let l = String.length text - 1 in
-    if String.get text l = '.'
-    then text ^"\n"
-    else text ^" "
-    in
-    ignore (factory#add_item menu_text
-    ~callback:
-    (fun () -> let {view = view } = session_notebook#current_term in
-    ignore (view#buffer#insert_interactive text)))
-    in
-  *)
-  ignore (templates_factory#add_separator ());
-  (*
-    List.iter (add_simple_template templates_factory)
-    [ "_auto", "auto ";
-    "_auto with *", "auto with * ";
-    "_eauto", "eauto ";
-    "_eauto with *", "eauto with * ";
-    "_intuition", "intuition ";
-    "_omega", "omega ";
-    "_simpl", "simpl ";
-    "_tauto", "tauto ";
-    "tri_vial", "trivial ";
-    ];
-    ignore (templates_factory#add_separator ());
-  *)
-  List.iter
-    (fun l ->
-      match l with
-	| [] -> ()
-	| [s] -> add_simple_template templates_factory ("_"^s, s)
-	| s::_ ->
-	  let a = "_@..." in
-	  a.[1] <- s.[0];
-	  let f = templates_factory#add_submenu a in
-	  let ff = new GMenu.factory f ~accel_group in
-	  List.iter
-	    (fun x ->
-	      add_simple_template
-		ff
-		((String.sub x 0 1)^
-		    "_"^
-		    (String.sub x 1 (String.length x - 1)),
-		 x))
-	    l
-    )
-    Coq_commands.commands;
-
-  (* Queries Menu *)
-  let queries_menu =  factory#add_submenu "_Queries" in
-  let queries_factory = new GMenu.factory queries_menu ~accel_group
-    ~accel_path:"<CoqIde MenuBar>/Queries"
-    ~accel_modi:[]
-  in
-
-  (* Command/Show commands *)
-  let _ =
-    queries_factory#add_item "_SearchAbout " ~key:GdkKeysyms._F2
-      ~callback:(fun () -> let term = get_current_word () in
-			   session_notebook#current_term.command#new_command
-			     ~command:"SearchAbout"
-			     ~term
-			     ())
-  in
-  let _ =
-    queries_factory#add_item "_Check " ~key:GdkKeysyms._F3
-      ~callback:(fun () -> let term = get_current_word () in
-			   session_notebook#current_term.command#new_command
-			     ~command:"Check"
-			     ~term
-			     ())
-  in
-  let _ =
-    queries_factory#add_item "_Print " ~key:GdkKeysyms._F4
-      ~callback:(fun () -> let term = get_current_word () in
-			   session_notebook#current_term.command#new_command
-			     ~command:"Print"
-			     ~term
-			     ())
-  in
-  let _ =
-    queries_factory#add_item "_About " ~key:GdkKeysyms._F5
-      ~callback:(fun () -> let term = get_current_word () in
-			   session_notebook#current_term.command#new_command
-			     ~command:"About"
-			     ~term
-			     ())
-  in
-  let _ =
-    queries_factory#add_item "_Locate"
-      ~callback:(fun () -> let term = get_current_word () in
-			   session_notebook#current_term.command#new_command
-			     ~command:"Locate"
-			     ~term
-			     ())
-  in
-  let _ =
-    queries_factory#add_item "_Whelp Locate"
-      ~callback:(fun () -> let term = get_current_word () in
-			   session_notebook#current_term.command#new_command
-			     ~command:"Whelp Locate"
-			     ~term
-			     ())
-  in
-
-  (* Display menu *)
-
-  let display_menu =  factory#add_submenu "_Display" in
-  let view_factory =  new GMenu.factory display_menu
-    ~accel_path:"<CoqIde MenuBar>/Display/"
-    ~accel_group
-    ~accel_modi:!current.modifier_for_display
-  in
-  let _ =
-    List.map
-      (fun (opts,text,key,dflt) ->
-        view_factory#add_check_item ~key ~active:dflt text
-          ~callback:(fun v -> do_or_activate (fun a ->
-            ignore (setopts !(session_notebook#current_term.toplvl) opts v);
-            a#show_goals) ()))
-      print_items
-  in
-
-  (* Externals *)
-  let externals_menu =  factory#add_submenu "_Compile" in
-  let externals_factory = new GMenu.factory externals_menu
-    ~accel_path:"<CoqIde MenuBar>/Compile/"
-    ~accel_group
-    ~accel_modi:[]
-  in
-
-  (* Command/Compile Menu *)
-  let compile_f () =
+(* External command callback *)
+  let compile_f _ =
     let v = session_notebook#current_term in
     let av = v.analyzed_view in
     save_f ();
@@ -2724,12 +2181,7 @@ let main files =
 	  av#insert_message res
 	end
   in
-  let _ =
-    externals_factory#add_item "_Compile Buffer" ~callback:compile_f
-  in
-
-  (* Command/Make Menu *)
-  let make_f () =
+  let make_f _ =
     let v = session_notebook#current_term in
     let av = v.analyzed_view in
     match av#filename with
@@ -2747,14 +2199,7 @@ let main files =
 	last_make_index := 0;
 	flash_info (!current.cmd_make ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
   in
-  let _ = externals_factory#add_item "_Make"
-    ~key:GdkKeysyms._F6
-    ~callback:make_f
-  in
-
-
-  (* Compile/Next Error *)
-  let next_error () =
+  let next_error _ =
     try
       let file,line,start,stop,error_msg = search_next_error () in
       do_load file;
@@ -2788,14 +2233,7 @@ let main files =
       let av = v.analyzed_view in
       av#set_message "No more errors.\n"
   in
-  let _ =
-    externals_factory#add_item "_Next error"
-      ~key:GdkKeysyms._F7
-      ~callback:next_error in
-
-
-  (* Command/CoqMakefile Menu*)
-  let coq_makefile_f () =
+  let coq_makefile_f _ =
     let v = session_notebook#current_term in
     let av = v.analyzed_view in
     match av#filename with
@@ -2807,90 +2245,309 @@ let main files =
 	flash_info
 	  (!current.cmd_coqmakefile ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
   in
-  let _ = externals_factory#add_item "_Make makefile" ~callback:coq_makefile_f
-  in
-  (* Windows Menu *)
-  let configuration_menu = factory#add_submenu "_Windows" in
-  let configuration_factory = new GMenu.factory configuration_menu
-    ~accel_path:"<CoqIde MenuBar>/Windows"
-    ~accel_modi:[]
-    ~accel_group
-  in
-  let _ =
-    configuration_factory#add_item
-      "Show/Hide _Query Pane"
-      ~key:GdkKeysyms._Escape
-      ~callback:(fun () ->
-        let ccw = session_notebook#current_term.command in
-        if ccw#frame#misc#visible then
-          ccw#frame#misc#hide ()
-        else
-          ccw#frame#misc#show ())
-  in
-  let _ =
-    configuration_factory#add_check_item
-      "Show/Hide _Toolbar"
-      ~callback:(fun _ ->
-	!current.show_toolbar <- not !current.show_toolbar;
-	!show_toolbar !current.show_toolbar)
-  in
-  let _ =
-    configuration_factory#add_item
-      "Detach _View"
-      ~callback:
-      (fun () -> do_if_not_computing "detach view"
-	(function {script=v;analyzed_view=av} ->
-          let w = GWindow.window ~show:true
-            ~width:(!current.window_width*2/3)
-            ~height:(!current.window_height*2/3)
-            ~position:`CENTER
-            ~title:(match av#filename with
-              | None -> "*Unnamed*"
-              | Some f -> f)
-            ()
-          in
-          let sb = GBin.scrolled_window
-            ~packing:w#add ()
-          in
-          let nv = GText.view
-            ~buffer:v#buffer
-            ~packing:sb#add
-            ()
-          in
-          nv#misc#modify_font
-            !current.text_font;
-          ignore (w#connect#destroy
-                    ~callback:
-                    (fun () -> av#remove_detached_view w));
-          av#add_detached_view w)
-        [session_notebook#current_term])
-  in
 
-  (* Help Menu *)
-  let help_menu = factory#add_submenu "_Help" in
-  let help_factory = new GMenu.factory help_menu
-    ~accel_path:"<CoqIde MenuBar>/Help/"
-    ~accel_modi:[]
-    ~accel_group in
-  let _ = help_factory#add_item "Browse Coq _Manual"
-    ~callback:
-    (fun () ->
-      let av = session_notebook#current_term.analyzed_view in
-      browse av#insert_message (doc_url ())) in
-  let _ = help_factory#add_item "Browse Coq _Library"
-    ~callback:
-    (fun () ->
-      let av = session_notebook#current_term.analyzed_view in
-      browse av#insert_message !current.library_url) in
-  let _ =
-    help_factory#add_item "Help for _keyword" ~key:GdkKeysyms._F1
-      ~callback:(fun () ->
-	let av = session_notebook#current_term.analyzed_view in
-	av#help_for_keyword ())
+  let file_actions = GAction.action_group ~name:"File" () in
+  let export_actions = GAction.action_group ~name:"Export" () in
+  let edit_actions = GAction.action_group ~name:"Edit" () in
+  let navigation_actions = GAction.action_group ~name:"Navigation" () in
+  let tactics_actions = GAction.action_group ~name:"Tactics" () in
+  let templates_actions = GAction.action_group ~name:"Templates" () in
+  let queries_actions = GAction.action_group ~name:"Queries" () in
+  let display_actions = GAction.action_group ~name:"Display" () in
+  let compile_actions = GAction.action_group ~name:"Compile" () in
+  let windows_actions = GAction.action_group ~name:"Windows" () in
+  let help_actions = GAction.action_group ~name:"Help" () in
+  let add_gen_actions menu_name act_grp l =
+    let no_under = Minilib.string_map (fun x -> if x = '_' then '-' else x) in
+    let add_simple_template menu_name act_grp text =
+      let text' =
+	let l = String.length text - 1 in
+	if String.get text l = '.'
+	then text ^"\n"
+	else text ^" "
+      in
+      GAction.add_action (menu_name^" "^(no_under text)) ~label:text
+	~callback:(fun _ -> let {script = view } = session_notebook#current_term in
+			    ignore (view#buffer#insert_interactive text')) act_grp
+    in
+    List.iter (function
+      | [] -> ()
+      | [s] -> add_simple_template menu_name act_grp s
+      | s::_ as ll -> let label = "_@..." in label.[1] <- s.[0];
+		      GAction.add_action (menu_name^" "^(String.make 1 s.[0])) ~label act_grp;
+		      List.iter (add_simple_template menu_name act_grp) ll
+    ) l
   in
-  let _ = help_factory#add_separator () in
-  let about_m = help_factory#add_item "_About" in
-  (* End of menu *)
+  let tactic_shortcut s sc = GAction.add_action s ~label:("_"^s)
+    ~accel:(!current.modifier_for_tactics^sc)
+    ~callback:(do_if_active (fun a -> a#insert_command
+			       ("progress "^s^".\n") (s^".\n"))) in
+  let query_shortcut s accel = GAction.add_action s ~label:("_"^s) ?accel
+    ~callback:(fun _ -> let term = get_current_word () in
+		 session_notebook#current_term.command#new_command ~command:s ~term ())
+  in let add_complex_template (name, label, text, offset, len, key) =
+    (* Templates/Lemma *)
+    let callback _ =
+      let {script = view } = session_notebook#current_term in
+      if view#buffer#insert_interactive text then begin
+	let iter = view#buffer#get_iter_at_mark `INSERT in
+	ignore (iter#nocopy#backward_chars offset);
+	view#buffer#move_mark `INSERT ~where:iter;
+	ignore (iter#nocopy#backward_chars len);
+	view#buffer#move_mark `SEL_BOUND ~where:iter;
+      end in
+      match key with
+	|Some ac -> GAction.add_action name ~label ~callback ~accel:(!current.modifier_for_templates^ac)
+	|None -> GAction.add_action name ~label ~callback ?accel:None
+  in
+    GAction.add_actions file_actions [
+      GAction.add_action "File" ~label:"_File";
+      GAction.add_action "New" ~callback:new_f ~stock:`NEW;
+      GAction.add_action "Open" ~callback:load_f ~stock:`OPEN;
+      GAction.add_action "Save" ~callback:save_f ~stock:`SAVE ~tooltip:"Save current buffer";
+      GAction.add_action "Save as" ~label:"S_ave as" ~callback:saveas_f ~stock:`SAVE_AS;
+      GAction.add_action "Save all" ~label:"Sa_ve all" ~callback:(fun _ -> saveall_f ());
+      GAction.add_action "Revert all buffers" ~label:"_Revert all buffers" ~callback:(fun _ -> List.iter revert_f session_notebook#pages) ~stock:`REVERT_TO_SAVED;
+      GAction.add_action "Close buffer" ~label:"_Close buffer" ~callback:(fun _ -> remove_current_view_page ()) ~stock:`CLOSE ~tooltip:"Close current buffer";
+      GAction.add_action "Print..." ~label:"_Print..." ~callback:(fun _ -> do_print session_notebook#current_term) ~stock:`PRINT ~accel:"<Ctrl>p";
+      GAction.add_action "Rehighlight" ~label:"Reh_ighlight" ~accel:"<Ctrl>l"
+	~callback:(fun _ -> force_retag
+                     session_notebook#current_term.script#buffer;
+		     session_notebook#current_term.analyzed_view#recenter_insert)
+	~stock:`REFRESH;
+      GAction.add_action "Quit" ~callback:quit_f ~stock:`QUIT;
+    ];
+    GAction.add_actions export_actions [
+      GAction.add_action "Export to" ~label:"E_xport to";
+      GAction.add_action "Html" ~label:"_Html" ~callback:(export_f "html");
+      GAction.add_action "Latex" ~label:"_LaTeX" ~callback:(export_f "latex");
+      GAction.add_action "Dvi" ~label:"_Dvi" ~callback:(export_f "dvi");
+      GAction.add_action "Pdf" ~label:"_Pdf" ~callback:(export_f "pdf");
+      GAction.add_action "Ps" ~label:"_Ps" ~callback:(export_f "ps");
+    ];
+    GAction.add_actions edit_actions [
+      GAction.add_action "Edit" ~label:"_Edit";
+      GAction.add_action "Undo" ~accel:"<Ctrl>u"
+	~callback:(fun _ -> do_if_not_computing "undo"
+		     (fun sess ->
+			ignore (sess.analyzed_view#without_auto_complete
+				  (fun () -> session_notebook#current_term.script#undo) ()))
+		     [session_notebook#current_term]) ~stock:`UNDO;
+      GAction.add_action "Clear Undo Stack" ~label:"_Clear Undo Stack"
+	~callback:(fun _ -> ignore session_notebook#current_term.script#clear_undo);
+      GAction.add_action "Cut" ~callback:(fun _ -> GtkSignal.emit_unit
+					    (get_active_view_for_cp ())
+					    ~sgn:GtkText.View.S.cut_clipboard
+					 ) ~stock:`CUT;
+      GAction.add_action "Copy" ~callback:(fun _ -> GtkSignal.emit_unit
+             (get_active_view_for_cp ())
+             ~sgn:GtkText.View.S.copy_clipboard) ~stock:`COPY;
+      GAction.add_action "Paste" ~callback:(fun _ ->
+             try GtkSignal.emit_unit
+                   session_notebook#current_term.script#as_view
+                   ~sgn:GtkText.View.S.paste_clipboard
+             with _ -> prerr_endline "EMIT PASTE FAILED") ~stock:`PASTE;
+      GAction.add_action "Find in buffer" ~label:"_Find in buffer" ~callback:(fun _ -> find_f ~backward:false ()) ~stock:`FIND;
+      GAction.add_action "Find backwards" ~label:"Find _backwards" ~callback:(fun _ -> find_f ~backward:true ()) ~accel:"<Ctrl>b";
+      GAction.add_action "Complete Word" ~label:"Complete Word" ~callback:(fun _ ->
+	     ignore (
+	       let av = session_notebook#current_term.analyzed_view in
+	       av#complete_at_offset (av#get_insert)#offset
+	     )) ~accel:"<Ctrl>slash";
+      GAction.add_action "External editor" ~label:"External editor" ~callback:(fun _ ->
+	let av = session_notebook#current_term.analyzed_view in
+	match av#filename with
+	  | None -> warning "Call to external editor available only on named files"
+	  | Some f ->
+	    save_f ();
+	    let com = Minilib.subst_command_placeholder !current.cmd_editor (Filename.quote f) in
+	    let _ = run_command av#insert_message com in
+	    av#revert) ~stock:`EDIT;
+      GAction.add_action "Preferences" ~callback:(fun _ ->
+	begin
+	  try configure ~apply:update_notebook_pos ()
+	  with _ -> flash_info "Cannot save preferences"
+	end;
+	reset_revert_timer ()) ~stock:`PREFERENCES;
+      (* GAction.add_action "Save preferences" ~label:"_Save preferences" ~callback:(fun _ -> save_pref ()); *) ];
+    GAction.add_actions navigation_actions [
+      GAction.add_action "Navigation" ~label:"_Navigation";
+      GAction.add_action "Forward" ~label:"_Forward" ~stock:`GO_DOWN
+	~callback:(fun _ -> do_or_activate (fun a -> a#process_next_phrase true) ())
+	~tooltip:"Forward one command" ~accel:(!current.modifier_for_navigation^"Down");
+      GAction.add_action "Backward" ~label:"_Backward" ~stock:`GO_UP
+	~callback:(fun _ -> do_or_activate (fun a -> a#undo_last_step) ())
+	~tooltip:"Backward one command" ~accel:(!current.modifier_for_navigation^"Up");
+      GAction.add_action "Go to" ~label:"_Go to" ~stock:`JUMP_TO
+	~callback:(fun _ -> do_or_activate (fun a -> a#go_to_insert) ())
+	~tooltip:"Go to cursor" ~accel:(!current.modifier_for_navigation^"Right");
+      GAction.add_action "Start" ~label:"_Start" ~stock:`GOTO_TOP
+	~callback:(fun _ -> force_reset_initial ())
+	~tooltip:"Restart coq" ~accel:(!current.modifier_for_navigation^"Home");
+      GAction.add_action "End" ~label:"_End" ~stock:`GOTO_BOTTOM
+	~callback:(fun _ -> do_or_activate (fun a -> a#process_until_end_or_error) ())
+	~tooltip:"Go to end" ~accel:(!current.modifier_for_navigation^"End");
+      GAction.add_action "Interrupt" ~label:"_Interrupt" ~stock:`STOP
+	~callback:(fun _ -> break ()) ~tooltip:"Interrupt computations"
+	~accel:(!current.modifier_for_navigation^"Break");
+      GAction.add_action "Hide" ~label:"_Hide" ~stock:`MISSING_IMAGE
+	~callback:(fun _ -> let sess = session_notebook#current_term in
+		     toggle_proof_visibility sess.script#buffer
+		       sess.analyzed_view#get_insert) ~tooltip:"Hide proof"
+	~accel:(!current.modifier_for_navigation^"h");
+      GAction.add_action "Previous" ~label:"_Previous" ~stock:`GO_BACK
+	~callback:(fun _ -> do_or_activate (fun a -> a#go_to_prev_occ_of_cur_word) ())
+	~tooltip:"Previous occurence" ~accel:(!current.modifier_for_navigation^"less");
+      GAction.add_action "Next" ~label:"_Next" ~stock:`GO_FORWARD
+	~callback:(fun _ -> do_or_activate (fun a -> a#go_to_next_occ_of_cur_word) ())
+	~tooltip:"Next occurence" ~accel:(!current.modifier_for_navigation^"greater");
+    ];
+    GAction.add_actions tactics_actions [
+      GAction.add_action "Try Tactics" ~label:"_Try Tactics";
+      GAction.add_action "Wizard" ~tooltip:"Proof Wizard" ~label:"<Proof Wizard>"
+	~stock:`DIALOG_INFO ~callback:(do_if_active (fun a -> a#tactic_wizard
+						       !current.automatic_tactics))
+	~accel:(!current.modifier_for_tactics^"dollar");
+      tactic_shortcut "auto" "a";
+      tactic_shortcut "auto with *" "asterisk";
+      tactic_shortcut "eauto" "e";
+      tactic_shortcut "eauto with *" "ampersand";
+      tactic_shortcut "intuition" "i";
+      tactic_shortcut "omega" "o";
+      tactic_shortcut "simpl" "s";
+      tactic_shortcut "tauto" "p";
+      tactic_shortcut "trivial" "v";
+    ];
+    add_gen_actions "Tactic" tactics_actions Coq_commands.tactics;
+    GAction.add_actions templates_actions [
+      GAction.add_action "Templates" ~label:"Te_mplates";
+      add_complex_template
+	("Lemma", "_Lemma __", "Lemma new_lemma : .\nIdeproof.\n\nSave.\n",
+	 19, 9, Some "L");
+      add_complex_template
+	("Theorem", "_Theorem __", "Theorem new_theorem : .\nIdeproof.\n\nSave.\n",
+	 19, 11, Some "T");
+      add_complex_template
+	("Definition", "_Definition __", "Definition ident := .\n",
+	 6, 5, Some "D");
+      add_complex_template
+	("Inductive", "_Inductive __", "Inductive ident : :=\n  | : .\n",
+	 14, 5, Some "I");
+      add_complex_template
+	("Fixpoint", "_Fixpoint __", "Fixpoint ident (_ : _) {struct _} : _ :=\n.\n",
+	 29, 5, Some "F");
+      add_complex_template ("Scheme", "_Scheme __",
+			    "Scheme new_scheme := Induction for _ Sort _\
+\nwith _ := Induction for _ Sort _.\n",61,10, Some "S");
+      GAction.add_action "match" ~label:"match ..." ~callback:match_callback
+	~accel:(!current.modifier_for_templates^"C");
+    ];
+    add_gen_actions "Template" templates_actions Coq_commands.commands;
+    GAction.add_actions queries_actions [
+      GAction.add_action "Queries" ~label:"_Queries";
+      query_shortcut "SearchAbout" (Some "F2");
+      query_shortcut "Check" (Some "F3");
+      query_shortcut "Print" (Some "F4");
+      query_shortcut "About" (Some "F5");
+      query_shortcut "Locate" None;
+      query_shortcut "Whelp Locate" None;
+    ];
+    GAction.add_action "Display" ~label:"_Display" display_actions;
+    List.iter
+      (fun (opts,name,label,key,dflt) ->
+         GAction.add_toggle_action name ~active:dflt ~label
+	   ~accel:(!current.modifier_for_display^key)
+          ~callback:(fun v -> do_or_activate (fun a ->
+            ignore (setopts !(session_notebook#current_term.toplvl) opts v#get_active);
+            a#show_goals) ()) display_actions)
+      print_items;
+    GAction.add_actions compile_actions [
+      GAction.add_action "Compile" ~label:"_Compile";
+      GAction.add_action "Compile buffer" ~label:"_Compile buffer" ~callback:compile_f;
+      GAction.add_action "Make" ~label:"_Make" ~callback:make_f ~accel:"F6";
+      GAction.add_action "Next error" ~label:"_Next error" ~callback:next_error
+	~accel:"F7";
+      GAction.add_action "Make makefile" ~label:"Make makefile" ~callback:coq_makefile_f;
+    ];
+    GAction.add_actions windows_actions [
+      GAction.add_action "Windows" ~label:"_Windows";
+      GAction.add_toggle_action "Show/Hide Query Pane" ~label:"Show/Hide _Query Pane"
+	~callback:(fun _ -> let ccw = session_notebook#current_term.command in
+		     if ccw#frame#misc#visible
+		     then ccw#frame#misc#hide ()
+		     else ccw#frame#misc#show ())
+	~accel:"Escape";
+      GAction.add_toggle_action "Show/Hide Toolbar" ~label:"Show/Hide _Toolbar"
+	~active:(!current.show_toolbar) ~callback:
+	(fun _ -> !current.show_toolbar <- not !current.show_toolbar;
+	   !show_toolbar !current.show_toolbar);
+      GAction.add_action "Detach View" ~label:"Detach _View"
+	~callback:(fun _ -> do_if_not_computing "detach view"
+		     (function {script=v;analyzed_view=av} ->
+			let w = GWindow.window ~show:true
+			  ~width:(!current.window_width*2/3)
+			  ~height:(!current.window_height*2/3)
+			  ~position:`CENTER
+			  ~title:(match av#filename with
+				    | None -> "*Unnamed*"
+				    | Some f -> f)
+			  ()
+			in
+			let sb = GBin.scrolled_window
+			  ~packing:w#add ()
+			in
+			let nv = GText.view
+			  ~buffer:v#buffer
+			  ~packing:sb#add
+			  ()
+			in
+			  nv#misc#modify_font
+			    !current.text_font;
+			  ignore (w#connect#destroy
+				    ~callback:
+				    (fun () -> av#remove_detached_view w));
+			  av#add_detached_view w)
+		     [session_notebook#current_term]);
+    ];
+    GAction.add_actions help_actions [
+      GAction.add_action "Help" ~label:"_Help";
+      GAction.add_action "Browse Coq Manual" ~label:"Browse Coq _Manual"
+	~callback:(fun _ ->
+		     let av = session_notebook#current_term.analyzed_view in
+		       browse av#insert_message (doc_url ()));
+      GAction.add_action "Browse Coq Library" ~label:"Browse Coq _Library"
+	~callback:(fun _ ->
+		     let av = session_notebook#current_term.analyzed_view in
+		       browse av#insert_message !current.library_url);
+      GAction.add_action "Help for keyword" ~label:"Help for _keyword"
+	~callback:(fun _ -> let av = session_notebook#current_term.analyzed_view in
+		     av#help_for_keyword ()) ~stock:`HELP;
+      GAction.add_action "About Coq" ~label:"_About" ~stock:`ABOUT;
+    ];
+    Coqide_ui.init ();
+    Coqide_ui.ui_m#insert_action_group file_actions 0;
+    Coqide_ui.ui_m#insert_action_group export_actions 0;
+    Coqide_ui.ui_m#insert_action_group edit_actions 0;
+    Coqide_ui.ui_m#insert_action_group navigation_actions 0;
+    Coqide_ui.ui_m#insert_action_group tactics_actions 0;
+    Coqide_ui.ui_m#insert_action_group templates_actions 0;
+    Coqide_ui.ui_m#insert_action_group queries_actions 0;
+    Coqide_ui.ui_m#insert_action_group display_actions 0;
+    Coqide_ui.ui_m#insert_action_group compile_actions 0;
+    Coqide_ui.ui_m#insert_action_group windows_actions 0;
+    Coqide_ui.ui_m#insert_action_group help_actions 0;
+    w#add_accel_group Coqide_ui.ui_m#get_accel_group ;
+    vbox#pack (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar");
+    let tbar = GtkButton.Toolbar.cast ((Coqide_ui.ui_m#get_widget "/CoqIde ToolBar")#as_widget)
+    in let () = GtkButton.Toolbar.set ~orientation:`HORIZONTAL ~style:`ICONS
+	~tooltips:true tbar in
+    let toolbar = new GObj.widget tbar in
+    vbox#pack toolbar;
+
+    show_toolbar :=
+      (fun b -> if b then toolbar#misc#show () else toolbar#misc#hide ());
+
+    ignore (w#event#connect#delete ~callback:(fun _ -> quit_f (); true));
 
   (* The vertical Separator between Scripts and Goals *)
   vbox#pack ~expand:true session_notebook#coerce;
@@ -3118,11 +2775,10 @@ let main files =
     then b#insert coq_version
 
   in
-  w#add_accel_group accel_group;
   (* Remove default pango menu for textviews *)
   w#show ();
-  ignore (about_m#connect#activate
-	    ~callback:(fun () -> let prf_v = session_notebook#current_term.proof_view in
+  ignore ((help_actions#get_action "About Coq")#connect#activate
+	    ~callback:(fun _ -> let prf_v = session_notebook#current_term.proof_view in
                                  prf_v#buffer#set_text ""; about prf_v#buffer));
   (*
 

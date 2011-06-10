@@ -17,6 +17,8 @@ val list_filter_i : (int -> 'a -> bool) -> 'a list -> 'a list
 val list_chop : int -> 'a list -> 'a list * 'a list
 val list_index0 : 'a -> 'a list -> int
 
+val string_map : (char -> char) -> string -> string
+
 val subst_command_placeholder : string -> string -> string
 
 val home : string
