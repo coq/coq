@@ -38,7 +38,7 @@ let init () =
       <menuitem action='Ps' />
     </menu>
     <menuitem action='Rehighlight' />
-    <menuitem action='Quit' />
+    %s
   </menu>
   <menu name='Edit' action='Edit'>
     <menuitem action='Undo' />
@@ -144,6 +144,7 @@ let init () =
   <toolitem action='Wizard' />
 </toolbar>
 </ui>"
+    (if Gdk.Windowing.platform <> `QUARTZ then "<menuitem action='Quit' />" else "")
     (Buffer.contents (list_items "Tactic" Coq_commands.tactics))
     (Buffer.contents (list_items "Template" Coq_commands.commands))
  in

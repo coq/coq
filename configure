@@ -599,7 +599,7 @@ esac
 
 IDEARCHFLAGS=
 IDEARCHFILE=
-IDEARCHDEF=
+IDEARCHDEF=No
 
 # -byte-only should imply -coqide byte, unless the user decides otherwise
 
@@ -647,12 +647,12 @@ else
             cflags=$cflags" `pkg-config --cflags ige-mac-integration`"
 	    IDEARCHFLAGS='-ccopt "`pkg-config --libs ige-mac-integration`"'
 	    IDEARCHFILE=ide/ide_mac_stubs.o
-	    IDEARCHDEF=-DMacInt
+	    IDEARCHDEF=MacInt
 	elif [ "$ARCH" = "win32" ];
         then
 	    IDEARCHFLAGS=
 	    IDEARCHFILE=ide/ide_win32_stubs.o
-	    IDEARCHDEF=-DWin32
+	    IDEARCHDEF=Win32
 	fi
     fi
 fi
@@ -881,7 +881,7 @@ fi
 if test "$COQIDE" != "no"; then
 echo "  Lablgtk2 library in               : $LABLGTKLIB"
 fi
-if test "$IDEARCHDEF" = "-DMacInt"; then
+if test "$IDEARCHDEF" = "MacInt"; then
 echo "  Mac OS integration is on"
 fi
 if test "$with_doc" = "all"; then

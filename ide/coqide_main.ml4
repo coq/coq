@@ -10,13 +10,14 @@ IFDEF MacInt THEN
 external gtk_mac_init : (string -> unit) -> (unit -> bool) -> unit
   = "caml_gtk_mac_init"
 
-external gtk_mac_ready : unit -> unit
+external gtk_mac_ready :  ([> Gtk.widget ] as 'a) Gtk.obj -> ([> Gtk.widget ] as 'a) Gtk.obj ->
+                          ([> Gtk.widget ] as 'a) Gtk.obj -> unit
   = "caml_gtk_mac_ready"
 END
 
 let initmac () = IFDEF MacInt THEN gtk_mac_init Coqide.do_load Coqide.forbid_quit_to_save ELSE () END
 
-let macready () = IFDEF MacInt THEN gtk_mac_ready () ELSE ()  END
+let macready x y z = IFDEF MacInt THEN gtk_mac_ready x#as_widget y#as_widget z#as_widget ELSE ()  END
 
 (* On win32, we add the directory of coqide to the PATH at launch-time
    (this used to be done in a .bat script). *)
@@ -89,7 +90,8 @@ let () =
 		  else failwith ("Coqide internal error: " ^ msg)));
     Coqide.main files;
     if !Coq_config.with_geoproof then ignore (Thread.create Coqide.check_for_geoproof_input ());
-    macready () ;
+    macready (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar") (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar/Edit/Prefs")
+             (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar/Help/Abt");
     while true do
       try
 	GtkThread.main ()

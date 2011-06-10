@@ -199,7 +199,8 @@ let save_pref () =
     Config_lexer.print_file pref_file
 
 let load_pref () =
-  (try GtkData.AccelMap.load accel_file with _ -> ());
+  GtkData.AccelMap.load (Filename.concat !Minilib.coqlib "ide/default_accel_map");
+  GtkData.AccelMap.load accel_file;
   let p = !current in
 
     let m = Config_lexer.load_file pref_file in

@@ -329,7 +329,7 @@ install-coqide:: install-ide-$(HASCOQIDE) install-ide-files install-ide-info
 
 install-ide-no:
 
-install-ide-byte: 
+install-ide-byte:
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQIDEBYTE) $(FULLBINDIR)
 	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA) \
@@ -346,6 +346,7 @@ install-ide-opt:
 install-ide-files:
 	$(MKDIR) $(FULLIDELIB)
 	$(INSTALLLIB) $(IDEFILES) $(FULLIDELIB)
+	if [ $(IDEOPTINT) = "MacInt" ] ; then $(INSTALLLIB) ide/mac_default_accel_map $(INSTALLLIB)/ide/default_accel_map ; fi
 
 install-ide-info:
 	$(MKDIR) $(FULLIDELIB)
@@ -707,7 +708,7 @@ ide/coqide_main.ml: ide/coqide_main.ml4
 
 ide/coqide_main_opt.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) $(CAMLP4USE) $(IDEOPTP4) -impl $< -o $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4USE) -D$(IDEOPTINT) -impl $< -o $@
 
 
 # pretty printing of the revision number when compiling a checked out

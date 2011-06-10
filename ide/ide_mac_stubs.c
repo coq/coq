@@ -4,10 +4,33 @@
 #include <caml/callback.h>
 #include <caml/fail.h>
 
+#include <gtk/gtk.h>
+#include <lablgtk2/wrappers.h>
+#include <lablgtk2/ml_glib.h>
+#include <lablgtk2/ml_gobject.h>
 #include <igemacintegration/gtkosxapplication.h>
 
 GtkOSXApplication *theApp;
-value open_file_fun, forbid_quit_fun;
+value open_file_fun, forbid_quit_fun, themenubar, pref_item, about_item;
+
+static void osx_accel_map_foreach_lcb(gpointer data,const gchar *accel_path,
+				      guint accel_key, GdkModifierType accel_mods,
+				      gboolean changed) {
+  if (accel_mods & GDK_CONTROL_MASK) {
+    accel_mods |= GDK_META_MASK;
+    accel_mods &= (accel_mods & GDK_MOD1_MASK) ? ~GDK_MOD1_MASK : ~GDK_CONTROL_MASK;
+    if (!gtk_accel_map_change_entry(accel_path,accel_key,accel_mods,FALSE)) {
+      g_print("could not change accelerator %s\n",accel_path);
+    }
+  }
+  if (accel_mods & GDK_MOD1_MASK) {
+    accel_mods &= ~ GDK_MOD1_MASK;
+    accel_mods |= GDK_CONTROL_MASK;
+    if (!gtk_accel_map_change_entry(accel_path,accel_key,accel_mods,FALSE)) {
+      g_print("could not change accelerator %s\n",accel_path);
+    }
+  }
+}
 
 static gboolean deal_with_open(GtkOSXApplication *app, gchar *path, gpointer user_data)
 {
@@ -41,9 +64,22 @@ CAMLprim value caml_gtk_mac_init(value open_file_the_fun, value forbid_quit_the_
   CAMLreturn (Val_unit);
 }
 
-CAMLprim value caml_gtk_mac_ready(value unit)
+CAMLprim value caml_gtk_mac_ready(value menubar, value prefs, value about)
 {
-  CAMLparam1(unit);
+  GtkOSXApplicationMenuGroup * pref_grp, * about_grp;
+  CAMLparam3(menubar,prefs,about);
+  themenubar = menubar;
+  pref_item = prefs;
+  about_item = about;
+  caml_register_generational_global_root(&themenubar);
+  caml_register_generational_global_root(&pref_item);
+  caml_register_generational_global_root(&about_item);
+  /*  gtk_accel_map_foreach(NULL, osx_accel_map_foreach_lcb);*/
+  gtk_osxapplication_set_menu_bar(theApp,check_cast(GTK_MENU_SHELL,themenubar));
+  about_grp = gtk_osxapplication_add_app_menu_group(theApp);
+  pref_grp = gtk_osxapplication_add_app_menu_group(theApp);
+  gtk_osxapplication_add_app_menu_item(theApp,about_grp,check_cast(GTK_MENU_ITEM,about_item));
+  gtk_osxapplication_add_app_menu_item(theApp,pref_grp,check_cast(GTK_MENU_ITEM,pref_item));
   gtk_osxapplication_ready(theApp);
   CAMLreturn(Val_unit);
 }

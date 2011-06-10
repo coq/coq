@@ -2537,7 +2537,8 @@ let main files =
     Coqide_ui.ui_m#insert_action_group windows_actions 0;
     Coqide_ui.ui_m#insert_action_group help_actions 0;
     w#add_accel_group Coqide_ui.ui_m#get_accel_group ;
-    vbox#pack (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar");
+    if Gdk.Windowing.platform <> `QUARTZ
+    then vbox#pack (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar");
     let tbar = GtkButton.Toolbar.cast ((Coqide_ui.ui_m#get_widget "/CoqIde ToolBar")#as_widget)
     in let () = GtkButton.Toolbar.set ~orientation:`HORIZONTAL ~style:`ICONS
 	~tooltips:true tbar in
@@ -2811,9 +2812,7 @@ let main files =
     end;
   initial_about session_notebook#current_term.proof_view#buffer;
   !show_toolbar !current.show_toolbar;
-  session_notebook#current_term.script#misc#grab_focus ()
-
-;;
+  session_notebook#current_term.script#misc#grab_focus ();;
 
 (* This function check every half of second if GeoProof has send
    something on his private clipboard *)
