@@ -894,6 +894,10 @@ checker/%.mllib.d: $(D_DEPEND_BEFORE_SRC) checker/%.mllib $(D_DEPEND_AFTER_SRC) 
 	$(SHOW)'COQDEP    $<'
 	$(HIDE)$(COQDEPBOOT) $(DEPNATDYN) -slash "$<" $(TOTARGET)
 
+%_stubs.c.d: $(D_DEPEND_BEFORE_SRC) %_stubs.c $(D_DEPEND_AFTER_SRC)
+	$(SHOW)'CCDEP	$<'
+	$(HIDE)echo "$@ $(@:.c.d=.o): $(@:.c.d=.c)" > $@
+
 %.c.d: $(D_DEPEND_BEFORE_SRC) %.c $(D_DEPEND_AFTER_SRC) $(GENHFILES)
 	$(SHOW)'CCDEP     $<'
 	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) -isystem $(CAMLHLIB) $< $(TOTARGET)
