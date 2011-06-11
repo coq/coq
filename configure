@@ -630,7 +630,7 @@ else
     if [ "$lablgtkdir" = "" ]; then
 	echo "LablGtk2 not found: CoqIde will not be available."
 	COQIDE=no
-    elif [ -z "`grep -w convert_with_fallback "$lablgtkdir/glib.mli"`" ]; then
+    elif [ -z "`grep -w Windowing "$lablgtkdir/gdk.mli"`" ]; then
 	echo "LablGtk2 found but too old: CoqIde will not be available."
 	COQIDE=no;
     elif [ "$coqide_spec" = "yes" -a "$COQIDE" = "byte" ]; then 
