@@ -1021,16 +1021,10 @@ let w_unify2 env flags cv_pb ty1 ty2 evd =
   match kind_of_term c1, kind_of_term c2 with
     | Meta p1, _ ->
         (* Find the predicate *)
-	let evd' =
-          secondOrderAbstraction env flags ty2 (p1,oplist1) evd in
-        (* Resume first order unification *)
-	w_unify_0 env cv_pb flags (nf_meta evd' ty1) ty2 evd'
+        secondOrderAbstraction env flags ty2 (p1,oplist1) evd
     | _, Meta p2 ->
         (* Find the predicate *)
-	let evd' =
-          secondOrderAbstraction env flags ty1 (p2, oplist2) evd in
-        (* Resume first order unification *)
-	w_unify_0 env cv_pb flags ty1 (nf_meta evd' ty2) evd'
+        secondOrderAbstraction env flags ty1 (p2, oplist2) evd in
     | _ -> error "w_unify2"
 
 (* The unique unification algorithm works like this: If the pattern is
