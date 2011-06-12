@@ -1024,7 +1024,7 @@ let w_unify2 env flags cv_pb ty1 ty2 evd =
         secondOrderAbstraction env flags ty2 (p1,oplist1) evd
     | _, Meta p2 ->
         (* Find the predicate *)
-        secondOrderAbstraction env flags ty1 (p2, oplist2) evd in
+        secondOrderAbstraction env flags ty1 (p2, oplist2) evd
     | _ -> error "w_unify2"
 
 (* The unique unification algorithm works like this: If the pattern is
