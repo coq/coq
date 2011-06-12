@@ -17,6 +17,7 @@ type unify_flags = {
   modulo_delta_types : Names.transparent_state;
   resolve_evars : bool;
   use_evars_pattern_unification : bool;
+  frozen_evars : ExistentialSet.t;
   modulo_betaiota : bool;
   modulo_eta : bool;
   allow_K_in_toplevel_higher_order_unification : bool

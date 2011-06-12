@@ -495,6 +495,14 @@ let evar_list evd c =
     | _ -> fold_constr evrec acc c in
   evrec [] c
 
+let collect_evars c =
+  let rec collrec acc c =
+    match kind_of_term c with
+      | Evar (evk,_) -> ExistentialSet.add evk acc
+      | _       -> fold_constr collrec acc c
+  in
+  collrec ExistentialSet.empty c
+
 (**********************************************************)
 (* Sort variables *)
 

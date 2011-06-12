@@ -90,12 +90,14 @@ intros.
 apply H.
 Qed.
 
+(* Feature deactivated in commit 14189 (see commit log)
 (* Test instanciation of evars by unification *)
 
 Goal (forall x, 0 + x = 0 -> True) -> True.
 intros; eapply H.
 rewrite <- plus_n_Sm. (* should refine ?x with S ?x' *)
 Abort.
+*)
 
 (* Check handling of identity equation between evars *)
 (* The example failed to pass until revision 10623 *)

@@ -79,6 +79,7 @@ let auto_unif_flags = {
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = true;
+  frozen_evars = ExistentialSet.empty;
   modulo_betaiota = true;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = false

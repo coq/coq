@@ -163,6 +163,7 @@ type unify_flags = {
   modulo_delta_types : Names.transparent_state;
   resolve_evars : bool;
   use_evars_pattern_unification : bool;
+  frozen_evars : ExistentialSet.t;
   modulo_betaiota : bool;
   modulo_eta : bool;
   allow_K_in_toplevel_higher_order_unification : bool
@@ -175,6 +176,7 @@ let default_unify_flags = {
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = true;
+  frozen_evars = ExistentialSet.empty;
   modulo_betaiota = false;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = false
@@ -187,6 +189,7 @@ let default_no_delta_unify_flags = {
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = false;
+  frozen_evars = ExistentialSet.empty;
   modulo_betaiota = false;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = false
@@ -199,6 +202,7 @@ let elim_flags = {
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = true;
+  frozen_evars = ExistentialSet.empty;
   modulo_betaiota = false;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = true
@@ -211,6 +215,7 @@ let elim_no_delta_flags = {
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = false;
+  frozen_evars = ExistentialSet.empty;
   modulo_betaiota = false;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = true
@@ -251,6 +256,10 @@ let do_reduce env sigma c =
   let (t, l) = whd_betaiota_deltazeta_for_iota_state env sigma (c, empty_stack) in
     applist (t, list_of_stack l)
 
+let isAllowedEvar flags c = match kind_of_term c with
+  | Evar (evk,_) -> not (ExistentialSet.mem evk flags.frozen_evars)
+  | _ -> false
+
 let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flags m n =
   let rec unirec_rec (curenv,nb as curenvnb) pb b ((sigma,metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_head_evar sigma curm
@@ -280,8 +289,12 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
               (sigma,(k,lift (-nb) cM,fst (extract_instance_status pb))::metasubst,
               evarsubst)
 	    else error_cannot_unify_local curenv sigma (m,n,cM)
-	| Evar ev, _ -> sigma,metasubst,((curenv, ev,cN)::evarsubst)
-	| _, Evar ev -> sigma,metasubst,((curenv, ev,cM)::evarsubst)
+	| Evar (evk,_ as ev), _
+            when not (ExistentialSet.mem evk flags.frozen_evars) ->
+            sigma,metasubst,((curenv, ev,cN)::evarsubst)
+	| _, Evar (evk,_ as ev)
+            when not (ExistentialSet.mem evk flags.frozen_evars) ->
+            sigma,metasubst,((curenv, ev,cM)::evarsubst)
 
 	| Sort s1, Sort s2 ->
 	    (try 
@@ -318,13 +331,15 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	       reduce curenvnb pb b substn cM cN)
 
 	| App (f1,l1), _ when
-	    (isMeta f1 || use_evars_pattern_unification flags && isEvar f1) &
+	    (isMeta f1 || use_evars_pattern_unification flags &&
+                          isAllowedEvar flags f1) &
 	    is_unification_pattern curenvnb f1 l1 cN &
 	    not (dependent f1 cN) ->
 	      solve_pattern_eqn_array curenvnb f1 l1 cN substn
 
 	| _, App (f2,l2) when
-	    (isMeta f2 || use_evars_pattern_unification flags && isEvar f2) &
+	    (isMeta f2 || use_evars_pattern_unification flags &&
+                          isAllowedEvar flags f2) &
 	    is_unification_pattern curenvnb f2 l2 cM &
 	    not (dependent f2 cM) ->
 	      solve_pattern_eqn_array curenvnb f2 l2 cM substn

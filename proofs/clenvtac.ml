@@ -107,6 +107,7 @@ let fail_quick_unif_flags = {
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
   use_evars_pattern_unification = false;
+  frozen_evars = ExistentialSet.empty;
   modulo_betaiota = false;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = false

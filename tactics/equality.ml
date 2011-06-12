@@ -87,11 +87,24 @@ let rewrite_unif_flags = {
   Unification.modulo_delta_types = empty_transparent_state;
   Unification.resolve_evars = true;
   Unification.use_evars_pattern_unification = true;
+  Unification.frozen_evars = ExistentialSet.empty;
   Unification.modulo_betaiota = false;
   Unification.modulo_eta = true;
   Unification.allow_K_in_toplevel_higher_order_unification = false
     (* allow_K does not matter in practice because calls w_typed_unify *)
 }
+
+let freeze_initial_evars sigma flags clause =
+  (* We take evars of the type: this may include old evars! For excluding *)
+  (* all old evars, including the ones occurring in the rewriting lemma, *)
+  (* we would have to take the clenv_value *)
+  let newevars = Evd.collect_evars (clenv_type clause) in
+  let evars =
+    fold_undefined (fun evk _ evars ->
+      if ExistentialSet.mem evk newevars then evars
+      else ExistentialSet.add evk evars)
+      sigma ExistentialSet.empty in
+  { flags with Unification.frozen_evars = evars }
 
 let side_tac tac sidetac =
   match sidetac with
@@ -110,8 +123,9 @@ let instantiate_lemma_all env sigma gl c ty l l2r concl =
   let try_occ (evd', c') =
     clenv_pose_dependent_evars true {eqclause with evd = evd'}
   in
+  let flags = freeze_initial_evars sigma rewrite_unif_flags eqclause in
   let occs =
-    Unification.w_unify_to_subterm_all ~flags:rewrite_unif_flags env
+    Unification.w_unify_to_subterm_all ~flags env
       ((if l2r then c1 else c2),concl) eqclause.evd
   in List.map try_occ occs
 
@@ -129,20 +143,22 @@ let rewrite_conv_closed_unif_flags = {
   Unification.modulo_delta_types = full_transparent_state;
   Unification.resolve_evars = false;
   Unification.use_evars_pattern_unification = true;
+  Unification.frozen_evars = ExistentialSet.empty;
   Unification.modulo_betaiota = false;
   Unification.modulo_eta = true;
   Unification.allow_K_in_toplevel_higher_order_unification = false
 }
 
-let rewrite_elim with_evars c e =
-  general_elim_clause_gen
-    (elimination_clause_scheme with_evars ~flags:rewrite_conv_closed_unif_flags)
-     c e
+let rewrite_elim with_evars c e gl =
+  let flags =
+    freeze_initial_evars (project gl) rewrite_conv_closed_unif_flags c in
+  general_elim_clause_gen (elimination_clause_scheme with_evars ~flags) c e gl
 
-let rewrite_elim_in with_evars id c e =
+let rewrite_elim_in with_evars id c e gl =
+  let flags =
+    freeze_initial_evars (project gl) rewrite_conv_closed_unif_flags c in
   general_elim_clause_gen
-    (elimination_in_clause_scheme with_evars
-       ~flags:rewrite_conv_closed_unif_flags id) c e
+    (elimination_in_clause_scheme with_evars ~flags id) c e gl
 
 (* Ad hoc asymmetric general_elim_clause *)
 let general_elim_clause with_evars cls rew elim =
