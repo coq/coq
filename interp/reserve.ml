@@ -79,7 +79,7 @@ let revert_reserved_type t =
     let t = Detyping.detype false [] [] t in
     list_try_find
       (fun (pat,id) ->
-	try let _ = match_aconstr t ([],pat) in Name id
+	try let _ = match_aconstr false t ([],pat) in Name id
 	with No_match -> failwith "") l
   with Not_found | Failure _ -> Anonymous
 

@@ -778,7 +778,8 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
           | _, None -> t, [], [], []
           | _ -> raise No_match in
 	(* Try matching ... *)
-	let terms,termlists,binders = match_aconstr t pat in
+	let terms,termlists,binders =
+          match_aconstr !print_universes t pat in
 	(* Try availability of interpretation ... *)
         let e =
           match keyrule with

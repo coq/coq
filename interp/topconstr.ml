@@ -620,7 +620,7 @@ let match_alist match_fun metas sigma rest x iter termin lassoc =
   let l,sigma = aux sigma [] rest in
   (pi1 sigma, (x,if lassoc then l else List.rev l)::pi2 sigma, pi3 sigma)
 
-let rec match_ inner alp (tmetas,blmetas as metas) sigma a1 a2 =
+let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
   match (a1,a2) with
 
   (* Matching notation variable *)
@@ -628,28 +628,28 @@ let rec match_ inner alp (tmetas,blmetas as metas) sigma a1 a2 =
 
   (* Matching recursive notations for terms *)
   | r1, AList (x,_,iter,termin,lassoc) ->
-      match_alist (match_ false alp) metas sigma r1 x iter termin lassoc
+      match_alist (match_hd u alp) metas sigma r1 x iter termin lassoc
 
   (* Matching recursive notations for binders: ad hoc cases supporting let-in *)
   | GLambda (_,na1,bk,t1,b1), ABinderList (x,_,ALambda (Name id2,_,b2),termin)->
       let (decls,b) = match_iterated_binders true [(na1,bk,None,t1)] b1 in
       (* TODO: address the possibility that termin is a Lambda itself *)
-      match_ true alp metas (bind_binder sigma x decls) b termin
+      match_in u alp metas (bind_binder sigma x decls) b termin
   | GProd (_,na1,bk,t1,b1), ABinderList (x,_,AProd (Name id2,_,b2),termin)
       when na1 <> Anonymous ->
       let (decls,b) = match_iterated_binders false [(na1,bk,None,t1)] b1 in
       (* TODO: address the possibility that termin is a Prod itself *)
-      match_ true alp metas (bind_binder sigma x decls) b termin
+      match_in u alp metas (bind_binder sigma x decls) b termin
   (* Matching recursive notations for binders: general case *)
   | r, ABinderList (x,_,iter,termin) ->
-      match_abinderlist_with_app (match_ false alp) metas sigma r x iter termin
+      match_abinderlist_with_app (match_hd u alp) metas sigma r x iter termin
 
   (* Matching individual binders as part of a recursive pattern *)
   | GLambda (_,na,bk,t,b1), ALambda (Name id,_,b2) when List.mem id blmetas ->
-      match_ true alp metas (bind_binder sigma id [(na,bk,None,t)]) b1 b2
+      match_in u alp metas (bind_binder sigma id [(na,bk,None,t)]) b1 b2
   | GProd (_,na,bk,t,b1), AProd (Name id,_,b2)
       when List.mem id blmetas & na <> Anonymous ->
-      match_ true alp metas (bind_binder sigma id [(na,bk,None,t)]) b1 b2
+      match_in u alp metas (bind_binder sigma id [(na,bk,None,t)]) b1 b2
 
   (* Matching compositionally *)
   | GVar (_,id1), AVar id2 when alpha_var id1 id2 alp -> sigma
@@ -663,14 +663,14 @@ let rec match_ inner alp (tmetas,blmetas as metas) sigma a1 a2 =
 	else if n1 > n2 then
 	  let l11,l12 = list_chop (n1-n2) l1 in GApp (loc,f1,l11),l12, f2,l2
 	else f1,l1, f2, l2 in
-      List.fold_left2 (match_ true alp metas)
-        (match_ true alp metas sigma f1 f2) l1 l2
+      List.fold_left2 (match_in u alp metas)
+        (match_in u alp metas sigma f1 f2) l1 l2
   | GLambda (_,na1,_,t1,b1), ALambda (na2,t2,b2) ->
-     match_binders alp metas na1 na2 (match_ true alp metas sigma t1 t2) b1 b2
+     match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
   | GProd (_,na1,_,t1,b1), AProd (na2,t2,b2) ->
-     match_binders alp metas na1 na2 (match_ true alp metas sigma t1 t2) b1 b2
+     match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
   | GLetIn (_,na1,t1,b1), ALetIn (na2,t2,b2) ->
-     match_binders alp metas na1 na2 (match_ true alp metas sigma t1 t2) b1 b2
+     match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
   | GCases (_,sty1,rtno1,tml1,eqnl1), ACases (sty2,rtno2,tml2,eqnl2)
       when sty1 = sty2
 	 & List.length tml1 = List.length tml2
@@ -678,23 +678,23 @@ let rec match_ inner alp (tmetas,blmetas as metas) sigma a1 a2 =
       let rtno1' = abstract_return_type_context_glob_constr tml1 rtno1 in
       let rtno2' = abstract_return_type_context_aconstr tml2 rtno2 in
       let sigma =
-	try Option.fold_left2 (match_ true alp metas) sigma rtno1' rtno2'
+	try Option.fold_left2 (match_in u alp metas) sigma rtno1' rtno2'
 	with Option.Heterogeneous -> raise No_match
       in
       let sigma = List.fold_left2
       (fun s (tm1,_) (tm2,_) ->
-        match_ true alp metas s tm1 tm2) sigma tml1 tml2 in
-      List.fold_left2 (match_equations alp metas) sigma eqnl1 eqnl2
+        match_in u alp metas s tm1 tm2) sigma tml1 tml2 in
+      List.fold_left2 (match_equations u alp metas) sigma eqnl1 eqnl2
   | GLetTuple (_,nal1,(na1,to1),b1,c1), ALetTuple (nal2,(na2,to2),b2,c2)
       when List.length nal1 = List.length nal2 ->
-      let sigma = match_opt (match_binders alp metas na1 na2) sigma to1 to2 in
-      let sigma = match_ true alp metas sigma b1 b2 in
+      let sigma = match_opt (match_binders u alp metas na1 na2) sigma to1 to2 in
+      let sigma = match_in u alp metas sigma b1 b2 in
       let (alp,sigma) =
 	List.fold_left2 (match_names metas) (alp,sigma) nal1 nal2 in
-      match_ true alp metas sigma c1 c2
+      match_in u alp metas sigma c1 c2
   | GIf (_,a1,(na1,to1),b1,c1), AIf (a2,(na2,to2),b2,c2) ->
-      let sigma = match_opt (match_binders alp metas na1 na2) sigma to1 to2 in
-      List.fold_left2 (match_ true alp metas) sigma [a1;b1;c1] [a2;b2;c2]
+      let sigma = match_opt (match_binders u alp metas na1 na2) sigma to1 to2 in
+      List.fold_left2 (match_in u alp metas) sigma [a1;b1;c1] [a2;b2;c2]
   | GRec (_,fk1,idl1,dll1,tl1,bl1), ARec (fk2,idl2,dll2,tl2,bl2)
       when match_fix_kind fk1 fk2 & Array.length idl1 =  Array.length idl2 &
 	array_for_all2 (fun l1 l2 -> List.length l1 = List.length l2) dll1 dll2
@@ -702,18 +702,18 @@ let rec match_ inner alp (tmetas,blmetas as metas) sigma a1 a2 =
       let alp,sigma = array_fold_left2
 	(List.fold_left2 (fun (alp,sigma) (na1,_,oc1,b1) (na2,oc2,b2) ->
 	  let sigma =
-	    match_ true alp metas
-              (match_opt (match_ true alp metas) sigma oc1 oc2) b1 b2
+	    match_in u alp metas
+              (match_opt (match_in u alp metas) sigma oc1 oc2) b1 b2
 	  in match_names metas (alp,sigma) na1 na2)) (alp,sigma) dll1 dll2 in
-      let sigma = array_fold_left2 (match_ true alp metas) sigma tl1 tl2 in
+      let sigma = array_fold_left2 (match_in u alp metas) sigma tl1 tl2 in
       let alp,sigma = array_fold_right2 (fun id1 id2 alsig ->
 	match_names metas alsig (Name id1) (Name id2)) idl1 idl2 (alp,sigma) in
-      array_fold_left2 (match_ true alp metas) sigma bl1 bl2
+      array_fold_left2 (match_in u alp metas) sigma bl1 bl2
   | GCast(_,c1, CastConv(_,t1)), ACast(c2, CastConv (_,t2)) ->
-      match_ true alp metas (match_ true alp metas sigma c1 c2) t1 t2
+      match_in u alp metas (match_in u alp metas sigma c1 c2) t1 t2
   | GCast(_,c1, CastCoerce), ACast(c2, CastCoerce) ->
-      match_ true alp metas sigma c1 c2
-  | GSort (_,GType _), ASort (GType None) -> sigma
+      match_in u alp metas sigma c1 c2
+  | GSort (_,GType _), ASort (GType None) when not u -> sigma
   | GSort (_,s1), ASort s2 when s1 = s2 -> sigma
   | GPatVar _, AHole _ -> (*Don't hide Metas, they bind in ltac*) raise No_match
   | a, AHole _ -> sigma
@@ -724,29 +724,33 @@ let rec match_ inner alp (tmetas,blmetas as metas) sigma a1 a2 =
      ensure at least one constructor is consumed to avoid looping *)
   | b1, ALambda (Name id,AHole _,b2) when inner ->
       let id' = Namegen.next_ident_away id (free_glob_vars b1) in
-      match_ true alp metas (bind_binder sigma id
+      match_in u alp metas (bind_binder sigma id
        [(Name id',Explicit,None,GHole(dummy_loc,Evd.BinderType (Name id')))])
        (mkGApp dummy_loc b1 (GVar (dummy_loc,id'))) b2
 
   | (GDynamic _ | GRec _ | GEvar _), _
   | _,_ -> raise No_match
 
-and match_binders alp metas na1 na2 sigma b1 b2 =
-  let (alp,sigma) = match_names metas (alp,sigma) na1 na2 in
-  match_ true alp metas sigma b1 b2
+and match_in u = match_ true u
 
-and match_equations alp metas sigma (_,_,patl1,rhs1) (patl2,rhs2) =
+and match_hd u = match_ false u
+
+and match_binders u alp metas na1 na2 sigma b1 b2 =
+  let (alp,sigma) = match_names metas (alp,sigma) na1 na2 in
+  match_in u alp metas sigma b1 b2
+
+and match_equations u alp metas sigma (_,_,patl1,rhs1) (patl2,rhs2) =
   (* patl1 and patl2 have the same length because they respectively
      correspond to some tml1 and tml2 that have the same length *)
   let (alp,sigma) =
     List.fold_left2 (match_cases_pattern_binders metas)
       (alp,sigma) patl1 patl2 in
-  match_ true alp metas sigma rhs1 rhs2
+  match_in u alp metas sigma rhs1 rhs2
 
-let match_aconstr c (metas,pat) =
+let match_aconstr u c (metas,pat) =
   let vars = list_split_by (fun (_,(_,x)) -> x <> NtnTypeBinderList) metas in
   let vars = (List.map fst (fst vars), List.map fst (snd vars)) in
-  let terms,termlists,binders = match_ false [] vars ([],[],[]) c pat in
+  let terms,termlists,binders = match_ false u [] vars ([],[],[]) c pat in
   (* Reorder canonically the substitution *)
   let find x =
     try List.assoc x terms

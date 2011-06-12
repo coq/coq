@@ -93,7 +93,7 @@ val glob_constr_of_aconstr : loc -> aconstr -> glob_constr
 
 exception No_match
 
-val match_aconstr : glob_constr -> interpretation ->
+val match_aconstr : bool -> glob_constr -> interpretation ->
       (glob_constr * subscopes) list * (glob_constr list * subscopes) list *
       (glob_decl list * subscopes) list
 
