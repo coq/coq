@@ -297,7 +297,7 @@ requested
       let l1,l2 = split_scheme q in
       let names inds recs x y z =
         let ind = smart_global_inductive y in
-        let sort_of_ind = Retyping.get_sort_family_of env Evd.empty (mkInd ind) in
+        let sort_of_ind = inductive_sort_family (snd (lookup_mind_specif env ind)) in
         let z' = family_of_sort (interp_sort z) in
         let suffix = (
           match sort_of_ind with
