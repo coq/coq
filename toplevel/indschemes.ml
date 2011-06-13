@@ -289,34 +289,34 @@ requested
 *)
   | (None,t)::q ->
       let l1,l2 = split_scheme q in
-      let names inds recs x y z =
+      let names inds recs isdep y z =
         let ind = smart_global_inductive y in
         let sort_of_ind = inductive_sort_family (snd (lookup_mind_specif env ind)) in
         let z' = family_of_sort (interp_sort z) in
         let suffix = (
           match sort_of_ind with
           | InProp ->
-              if x then (match z' with
-              | InProp -> inds ^ "_nodep"
-              | InSet -> recs ^ "_nodep"
-              | InType -> recs ^ "t_nodep")
+              if isdep then (match z' with
+              | InProp -> inds ^ "_dep"
+              | InSet  -> recs ^ "_dep"
+              | InType -> recs ^ "t_dep")
               else ( match z' with
               | InProp -> inds
               | InSet -> recs
               | InType -> recs ^ "t" )
           | _ ->
-              if x then (match z' with
+              if isdep then (match z' with
               | InProp -> inds
               | InSet -> recs
               | InType -> recs ^ "t" )
               else (match z' with
-              | InProp -> inds ^ "_dep"
-              | InSet  -> recs ^ "_dep"
-              | InType -> recs ^ "t_dep")
+              | InProp -> inds ^ "_nodep"
+              | InSet -> recs ^ "_nodep"
+              | InType -> recs ^ "t_nodep")
         ) in
         let newid = add_suffix (basename_of_global (IndRef ind)) suffix in
         let newref = (dummy_loc,newid) in
-          ((newref,x,ind,z)::l1),l2
+          ((newref,isdep,ind,z)::l1),l2
       in
 	match t with
 	| CaseScheme (x,y,z) -> names "_case" "_case" x y z
