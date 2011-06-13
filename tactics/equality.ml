@@ -139,12 +139,23 @@ let instantiate_lemma env sigma gl c ty l l2r concl =
 
 let rewrite_conv_closed_unif_flags = {
   Unification.modulo_conv_on_closed_terms = Some full_transparent_state;
+    (* We have this flag for historical reasons, it has e.g. the consequence *)
+    (* to rewrite "?x+2" in "y+(1+1)=0" or to rewrite "?x+?x" in "2+(1+1)=0" *)
+
   Unification.use_metas_eagerly = true;
+    (* Combined with modulo_conv_on_closed_terms, this flag allows since 8.2 *)
+    (* to rewrite e.g. "?x+(2+?x)" in "1+(1+2)=0" *)
+
   Unification.modulo_delta = empty_transparent_state;
   Unification.modulo_delta_types = full_transparent_state;
   Unification.resolve_evars = false;
   Unification.use_evars_pattern_unification = true;
+    (* To rewrite "?n x y" in "y+x=0" when ?n is *)
+    (* a preexisting evar of the goal*)
+
   Unification.frozen_evars = ExistentialSet.empty;
+    (* This is set dynamically *)
+
   Unification.restrict_conv_on_strict_subterms = false;
   Unification.modulo_betaiota = false;
   Unification.modulo_eta = true;

@@ -1,0 +1,208 @@
+Some notes about the use of unification in Coq
+----------------------------------------------
+
+There are several applications of unification and pattern-matching
+
+** Unification of types **
+
+- For type inference, inference of implicit arguments
+  * this basically amounts to solve problems of the form T <= U or T = U
+    where T and U are types coming from a given typing problem
+  * this kind of problem has to succeed and all the power of unification is
+    a priori expected (full beta/delta/iota/zeta/nu/mu, pattern-unification,
+    pruning, imitation/projection heuristics, ...)
+
+- For lemma application (apply, auto, ...)
+  * these are also problems of the form T <= U on types but with T
+    coming from a lemma and U from the goal
+  * it is not obvious that we always want unification and not matching
+  * it is not clear which amounts of delta one wants to use
+
+** Looking for subterms **
+
+- For tactics applying on subterms: induction, destruct, rewrite
+
+- As part of unification of types in the presence of higher-order
+  evars (e.g. when applying a lemma of conclusion "?P t")
+
+
+----------------------------------------------------------------------
+Here are examples of features one may want or not when looking for subterms
+
+A- REWRITING
+
+1- Full conversion on closed terms
+
+1a- Full conversion on closed terms in the presence of at least one evars (meta)
+
+Section A1.
+Variable y: nat.
+Hypothesis H: forall x, x+2 = 0.
+Goal y+(1+1) = 0.
+rewrite H.
+(* 0 = 0 *)
+Abort.
+
+Goal 2+(1+1) = 0.
+rewrite H.
+(* 0 = 0 *)
+Abort.
+
+(* This exists since the very beginning of Chet's unification for tactics *)
+(* But this fails for setoid rewrite *)
+
+1b- Full conversion on closed terms without any evars in the lemma
+
+1b.1- Fails on rewrite (because Unification.w_unify_to_subterm_list replaces
+  unification by check for a syntactic subterm if terms has no evar/meta)
+
+Goal 0+1 = 0 -> 0+(1+0) = 0.
+intros H; rewrite H.
+(* fails *)
+Abort.
+
+1b.2- Works with setoid rewrite
+
+Require Import Setoid.
+Goal 0+1 = 0 -> 0+(1+0) = 0.
+intros H; rewrite H at 1.
+(* 0 = 0 *)
+Abort.
+
+2- Using known instances in full conversion on closed terms
+
+Section A2.
+Hypothesis H: forall x, x+(2+x) = 0.
+Goal 1+(1+2) = 0.
+rewrite H.
+Abort.
+End A2.
+
+(* This exists since 8.2 (HH) *)
+
+3- Pattern-unification on Rels
+
+Section A3a.
+Variable F: (nat->nat->nat)->nat.
+Goal exists f, F (fun x y => f x y) = 0 -> F (fun x y => plus y x) = 0.
+eexists. intro H; rewrite H.
+(* 0 = 0 *)
+Abort.
+End A3a.
+
+(* Works since pattern unification on Meta applied to Rel was introduced *)
+(* in unification.ml (8.1, Sep 2006, HH) *)
+
+Section A3b.
+Variables x y: nat.
+Variable H: forall f, f x y = 0.
+Goal plus y x = 0.
+rewrite H.
+(* 0 = 0 *)
+Abort.
+End A3b.
+
+(* Works since pattern unification on all Meta was supported *)
+(* in unification.ml (8.4, Jun 2011, HH) *)
+
+4- Unification with open terms
+
+Section A4.
+Hypothesis H: forall x, S x = 0.
+Goal S 0 = 0.
+rewrite (H _).
+(* 0 = 0 *)
+Abort.
+End A4.
+
+(* Works since unification on Evar was introduced so as to support rewriting *)
+(* with open terms (8.2, MS, r11543, Unification.w_unify_to_subterm_list ) *)
+
+5- Unification of pre-existing evars
+
+5a- Basic unification of pre-existing evars
+
+Section A4.
+Variables x y: nat.
+Goal exists z, S z = 0 -> S (plus y x) = 0.
+eexists. intro H; rewrite H.
+(* 0 = 0 *)
+Abort.
+End A4.
+
+(* This worked in 8.2 and 8.3 as a side-effect of support for rewriting *)
+(* with open terms (8.2, MS, r11543) *)
+
+5b- Pattern-unification of pre-existing evars in rewriting lemma
+
+Goal exists f, forall x y, f x y = 0 -> plus y x = 0.
+eexists. intros x y H; rewrite H.
+(* 0 = 0 *)
+Abort.
+
+(* Works since pattern-unification on Evar was introduced *)
+(* in unification.ml (8.3, HH, r12229) *)
+(* currently governed by a flag: use_evars_pattern_unification *)
+
+5c- Pattern-unification of pre-existing evars in goal
+
+Goal exists f, forall x y, plus x y = 0 -> f y x = 0.
+eexists. intros x y H; rewrite H.
+(* 0 = 0 *)
+Abort.
+
+(* This worked in 8.2 and 8.3 but was removed for autorewrite in 8.4 *)
+
+5d- Mixing pattern-unification of pre-existing evars in goal and evars in lemma
+
+Goal exists f, forall x, (forall y, plus x y = 0) -> forall y:nat, f y x = 0.
+eexists. intros x H y. rewrite H.
+(* 0 = 0 *)
+Abort.
+
+(* This worked in 8.2 and 8.3 but was removed for autorewrite in 8.4 *)
+
+6- Multiple non-identical but convertible occurrences
+
+Tactic rewrite only considers the first one, from left-to-right, e.g.:
+
+Section A6.
+Variable y: nat.
+Hypothesis H: forall x, x+2 = 0.
+Goal (y+(2+0))+(y+(1+1)) = (y+(1+1))+(y+(2+0)).
+rewrite H.
+(* 0+(y+(1+1)) = y+(1+1)+0 *)
+Abort.
+End A6.
+
+Tactic setoid rewrite first looks for syntactically equal terms and if
+not uses the leftmost occurrence modulo delta.
+
+Require Import Setoid.
+Section A6.
+Variable y: nat.
+Hypothesis H: forall x, x+2 = 0.
+Goal (y+(2+0))+(y+2) = (y+2)+(y+(2+0)).
+rewrite H at 1 2 3 4.
+(* (y+(2+0))+0 = 0+(y+(2+0)) *)
+Abort.
+
+Goal (y+(2+0))+(y+(1+1)) = (y+(1+1))+(y+(2+0)).
+rewrite H at 1 2 3 4.
+(* 0+(y+(1+1)) = y+(1+1)+0 *)
+Abort.
+End A6.
+
+7- Conversion
+
+Section A6.
+Variable y: nat.
+Hypothesis H: forall x, S x = 0.
+Goal id 1 = 0.
+rewrite H.
+
+
+B- ELIMINATION (INDUCTION / CASE ANALYSIS)
+
+This is simpler because open terms are not allowed and no unification
+is involved (8.3).
