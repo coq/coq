@@ -915,35 +915,34 @@ requested
   | (None,t)::q ->
        let l1,l2 = split_scheme q in
     ( match t with
-      | InductionScheme (x,y,z) ->
-             let ind = mkInd (Nametab.inductive_of_reference y) in
-             let sort_of_ind = family_of_sort (Typing.sort_of env Evd.empty ind)
-in
+      | InductionScheme (isdep,y,z) ->
+             let ind = Nametab.inductive_of_reference y in
+             let sort_of_ind = inductive_sort_family (snd (lookup_mind_specif env ind)) in
              let z' = family_of_sort (interp_sort z) in
              let suffix = (
                 match sort_of_ind with
                 | InProp ->
-                    if x then (match z' with
-                       | InProp -> "_ind_nodep"
-                       | InSet -> "_rec_nodep"
-                       | InType -> "_rect_nodep")
+                    if isdep then (match z' with
+                       | InProp -> "_ind_dep"
+                       | InSet  -> "_rec_dep"
+                       | InType -> "_rect_dep")
                     else ( match z' with
                        | InProp -> "_ind"
                        | InSet -> "_rec"
                        | InType -> "_rect" )
                 | _ ->
-                    if x then (match z' with
+                    if isdep then (match z' with
                        | InProp -> "_ind"
                        | InSet -> "_rec"
                        | InType -> "_rect" )
                     else (match z' with
                        | InProp -> "_ind_nodep"
-                       | InSet  -> "_rec_nodep"
+                       | InSet -> "_rec_nodep"
                        | InType -> "_rect_nodep")
                 ) in
             let newid = (string_of_id (Pcoq.coerce_global_to_id y))^suffix in
             let newref = (dummy_loc,id_of_string newid) in
-          ((newref,x,y,z)::l1),l2
+          ((newref,isdep,y,z)::l1),l2
       | EqualityScheme  x -> l1,(x::l2)
     )
 
