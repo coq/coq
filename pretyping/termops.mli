@@ -201,6 +201,9 @@ val last_arg : constr -> constr
 (** Force the decomposition of a term as an applicative one *)
 val decompose_app_vect : constr -> constr * constr array
 
+val adjust_app_list_size : constr -> constr list -> constr -> constr list ->
+  (constr * constr list * constr * constr list)
+
 (** name contexts *)
 type names_context = name list
 val add_name : name -> names_context -> names_context

@@ -1285,8 +1285,8 @@ let is_unification_pattern_evar env (_,args) l t =
 let is_unification_pattern (env,nb) f l t =
   match kind_of_term f with
     | Meta _ ->
-	array_for_all (fun c -> isRel c && destRel c <= nb) l
-	&& array_distinct l
+	let dummy_ev = (f,[||]) in
+	is_unification_pattern_evar env dummy_ev (Array.to_list l) t
     | Evar ev ->
 	is_unification_pattern_evar env ev (Array.to_list l) t
     | _ ->

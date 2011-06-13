@@ -282,6 +282,16 @@ let decompose_app_vect c =
   | App (f,cl) -> (f, cl)
   | _ -> (c,[||])
 
+let adjust_app_list_size f1 l1 f2 l2 =
+  let len1 = List.length l1 and len2 = List.length l2 in
+  if len1 = len2 then (f1,l1,f2,l2)
+  else if len1 < len2 then
+   let extras,restl2 = list_chop (len2-len1) l2 in
+    (f1, l1, applist (f2,extras), restl2)
+  else
+    let extras,restl1 = list_chop (len1-len2) l1 in
+    (applist (f1,extras), restl1, f2, l2)
+
 (* [map_constr_with_named_binders g f l c] maps [f l] on the immediate
    subterms of [c]; it carries an extra data [l] (typically a name
    list) which is processed by [g na] (which typically cons [na] to

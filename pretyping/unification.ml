@@ -231,6 +231,9 @@ let elim_no_delta_flags = {
   allow_K_in_toplevel_higher_order_unification = true
 }
 
+let set_no_head_reduction flags =
+  { flags with restrict_conv_on_strict_subterms = true }
+
 let use_evars_pattern_unification flags =
   !global_evars_pattern_unification_flag && flags.use_evars_pattern_unification
   && Flags.version_strictly_greater Flags.V8_2
@@ -837,6 +840,14 @@ let check_types env flags (sigma,_,_ as subst) m n =
       (get_type_of env sigma n)
   else subst
 
+let try_resolve_typeclasses env evd flags m n =
+  if flags.resolve_evars then
+    try Typeclasses.resolve_typeclasses ~onlyargs:false ~split:false
+	  ~fail:true env evd
+    with e when Typeclasses_errors.unsatisfiable_exception e ->
+      error_cannot_unify env evd (m, n)
+  else evd
+
 let w_unify_core_0 env with_types cv_pb flags m n evd =
   let (mc1,evd') = retract_coercible_metas evd in
   let (sigma,ms,es) = check_types env flags (evd,mc1,[]) m n in
@@ -844,15 +855,18 @@ let w_unify_core_0 env with_types cv_pb flags m n evd =
      unify_0_with_initial_metas (evd',ms,es) false env cv_pb flags m n
   in
   let evd = w_merge env with_types flags subst2 in
-    if flags.resolve_evars then
-      try Typeclasses.resolve_typeclasses ~onlyargs:false ~split:false
-	~fail:true env evd
-      with e when Typeclasses_errors.unsatisfiable_exception e ->
-	error_cannot_unify env evd (m, n)
-    else evd
+  try_resolve_typeclasses env evd flags m n
 
 let w_unify_0 env = w_unify_core_0 env false
 let w_typed_unify env = w_unify_core_0 env true
+
+let w_typed_unify_list env cv_pb flags f1 l1 f2 l2 evd =
+  let flags' = { flags with resolve_evars = false } in
+  let f1,l1,f2,l2 = adjust_app_list_size f1 l1 f2 l2 in
+  let evd =
+    List.fold_left2 (fun evd m n ->
+      w_unify_core_0 env true cv_pb flags' m n evd) evd (f1::l1) (f2::l2) in
+  try_resolve_typeclasses env evd flags (applist(f1,l1)) (applist(f2,l2))
 
 (* takes a substitution s, an open term op and a closed term cl
    try to find a subterm of cl which matches op, if op is just a Meta
@@ -1068,7 +1082,7 @@ let w_unify env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
       | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)
 	  when List.length l1 = List.length l2 ->
 	  (try
-	      w_typed_unify env cv_pb flags ty1 ty2 evd
+	      w_typed_unify_list env cv_pb flags hd1 l1 hd2 l2 evd
 	    with ex when precatchable_exception ex ->
 	      try
 		w_unify2 env flags cv_pb ty1 ty2 evd
@@ -1081,7 +1095,7 @@ let w_unify env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
 	    with PretypeError (env,_,NoOccurrenceFound _) as e -> raise e
 	      | ex when precatchable_exception ex ->
 		  try
-		    w_typed_unify env cv_pb flags ty1 ty2 evd
+		    w_typed_unify_list env cv_pb flags hd1 l1 hd2 l2 evd
 		  with ex' when precatchable_exception ex' ->
 		    raise ex)
 

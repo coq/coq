@@ -21,6 +21,12 @@ Proof.
 intros; apply H.
 Qed.
 
+  (* Feature introduced June 2011 *)
+
+Lemma l7 : forall x (P:nat->Prop), (forall f, P (f x)) -> P (x+x).
+Proof.
+intros x P H; apply H.
+Qed.
 
 (* Example submitted for Zenon *)
 
@@ -138,3 +144,4 @@ Goal (forall (A B : Set) (f : A -> B), (fun x => f x) = f) ->
 Proof.
   intros.
   rewrite H with (f:=f0).
+Abort.
