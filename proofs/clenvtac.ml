@@ -108,6 +108,7 @@ let fail_quick_unif_flags = {
   resolve_evars = false;
   use_evars_pattern_unification = false;
   frozen_evars = ExistentialSet.empty;
+  restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = false;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = false

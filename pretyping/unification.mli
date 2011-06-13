@@ -18,6 +18,7 @@ type unify_flags = {
   resolve_evars : bool;
   use_evars_pattern_unification : bool;
   frozen_evars : ExistentialSet.t;
+  restrict_conv_on_strict_subterms : bool;
   modulo_betaiota : bool;
   modulo_eta : bool;
   allow_K_in_toplevel_higher_order_unification : bool

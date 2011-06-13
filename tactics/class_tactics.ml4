@@ -80,6 +80,7 @@ let auto_unif_flags = {
   resolve_evars = false;
   use_evars_pattern_unification = true;
   frozen_evars = ExistentialSet.empty;
+  restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = true;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = false

@@ -356,7 +356,12 @@ let connect_clenv gls clenv =
 
    In particular, it assumes that [env'] and [sigma'] extend [env] and [sigma].
 *)
-let clenv_fchain ?(flags=elim_flags) mv clenv nextclenv =
+
+let fchain_flags =
+  { default_unify_flags with
+    allow_K_in_toplevel_higher_order_unification = true }
+
+let clenv_fchain ?(flags=fchain_flags) mv clenv nextclenv =
   (* Add the metavars of [nextclenv] to [clenv], with their name-environment *)
   let clenv' =
     { templval = clenv.templval;

@@ -164,6 +164,7 @@ type unify_flags = {
   resolve_evars : bool;
   use_evars_pattern_unification : bool;
   frozen_evars : ExistentialSet.t;
+  restrict_conv_on_strict_subterms : bool;
   modulo_betaiota : bool;
   modulo_eta : bool;
   allow_K_in_toplevel_higher_order_unification : bool
@@ -177,6 +178,7 @@ let default_unify_flags = {
   resolve_evars = false;
   use_evars_pattern_unification = true;
   frozen_evars = ExistentialSet.empty;
+  restrict_conv_on_strict_subterms = false;
   modulo_betaiota = false;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = false
@@ -190,10 +192,16 @@ let default_no_delta_unify_flags = {
   resolve_evars = false;
   use_evars_pattern_unification = false;
   frozen_evars = ExistentialSet.empty;
+  restrict_conv_on_strict_subterms = false;
   modulo_betaiota = false;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = false
 }
+
+(* Note: at least up to 13/6/11, elim_flags and elim_no_delta_flags have no
+   effect (to the exception of allow_K) because only closed terms are involved
+   in induction/destruct/case/elim and w_unify_to_subterm_list does not call
+   w_unify for induction/destruct/case/elim *)
 
 let elim_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
@@ -203,6 +211,7 @@ let elim_flags = {
   resolve_evars = false;
   use_evars_pattern_unification = true;
   frozen_evars = ExistentialSet.empty;
+  restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = false;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = true
@@ -216,6 +225,7 @@ let elim_no_delta_flags = {
   resolve_evars = false;
   use_evars_pattern_unification = false;
   frozen_evars = ExistentialSet.empty;
+  restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = false;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = true
@@ -231,7 +241,11 @@ let expand_key env = function
   | Some (RelKey _) -> None
   | None -> None
 
-let key_of flags f =
+let subterm_restriction is_subterm flags =
+  not is_subterm && flags.restrict_conv_on_strict_subterms
+
+let key_of b flags f =
+  if subterm_restriction b flags then None else
   match kind_of_term f with
   | Const cst when is_transparent (ConstKey cst) &&
         Cpred.mem cst (snd flags.modulo_delta) ->
@@ -378,14 +392,14 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 		    expand curenvnb pb b substn cM f1 l1 cN f2 l2
 
   and reduce curenvnb pb b (sigma, metas, evars as substn) cM cN =
-    if flags.modulo_betaiota then
+    if flags.modulo_betaiota && not (subterm_restriction b flags) then
       let cM' = do_reduce (fst curenvnb) sigma cM in
 	if not (eq_constr cM cM') then
-	  unirec_rec curenvnb pb true substn cM' cN
+	  unirec_rec curenvnb pb b substn cM' cN
 	else
 	  let cN' = do_reduce (fst curenvnb) sigma cN in
 	    if not (eq_constr cN cN') then
-	      unirec_rec curenvnb pb true substn cM cN'
+	      unirec_rec curenvnb pb b substn cM cN'
 	    else error_cannot_unify (fst curenvnb) sigma (cM,cN)
     else
       error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -407,7 +421,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	 essentially for apply)... *)
       match flags.modulo_conv_on_closed_terms with
       | None -> false
-      | Some convflags ->
+      | Some convflags when not (subterm_restriction b flags) ->
       let subst = if flags.use_metas_eagerly then metasubst else ms in
       match subst_defined_metas subst cM with
       | None -> (* some undefined Metas in cM *) false
@@ -415,6 +429,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       match subst_defined_metas subst cN with
       | None -> (* some undefined Metas in cN *) false
       | Some n1 ->
+          (* No subterm restriction there, too much incompatibilities *)
 	  if is_trans_fconv pb convflags env sigma m1 n1
 	  then true else
 	    if is_ground_term sigma m1 && is_ground_term sigma n1 then
@@ -423,9 +438,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
     then
       substn
     else
-      if b then
-      (* Try delta-expansion if in subterms or if asked to conv at top *)
-      let cf1 = key_of flags f1 and cf2 = key_of flags f2 in
+      let cf1 = key_of b flags f1 and cf2 = key_of b flags f2 in
 	match oracle_order curenv cf1 cf2 with
 	| None -> error_cannot_unify curenv sigma (cM,cN)
 	| Some true ->
@@ -452,8 +465,6 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
                       (whd_betaiotazeta sigma (mkApp(c,l1))) cN
 		| None ->
 		    error_cannot_unify curenv sigma (cM,cN)))
-    else
-      error_cannot_unify curenv sigma (cM,cN)
 
   and canonical_projections curenvnb pb b cM cN (sigma,_,_ as substn) =
     let f1 () =
@@ -465,7 +476,8 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	  else error_cannot_unify (fst curenvnb) sigma (cM,cN)
       else error_cannot_unify (fst curenvnb) sigma (cM,cN)
     in
-      if flags.modulo_conv_on_closed_terms = None then
+      if flags.modulo_conv_on_closed_terms = None ||
+         subterm_restriction b flags then
 	error_cannot_unify (fst curenvnb) sigma (cM,cN)
       else
 	try f1 () with e when precatchable_exception e ->
@@ -504,10 +516,11 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 
   in
   let evd = sigma in
-    if (if occur_meta_or_undefined_evar evd m || occur_meta_or_undefined_evar evd n then false 
+    if (if occur_meta_or_undefined_evar evd m || occur_meta_or_undefined_evar evd n
+        || subterm_restriction conv_at_top flags then false
       else if (match flags.modulo_conv_on_closed_terms with
-      | Some flags -> is_trans_fconv cv_pb flags env sigma m n
-      | None -> constr_cmp cv_pb m n) then true 
+      | Some convflags -> is_trans_fconv cv_pb convflags env sigma m n
+      | _ -> constr_cmp cv_pb m n) then true
       else if (match flags.modulo_conv_on_closed_terms, flags.modulo_delta with
             | Some (cv_id, cv_k), (dl_id, dl_k) ->
                 Idpred.subset dl_id cv_id && Cpred.subset dl_k cv_k
@@ -828,7 +841,7 @@ let w_unify_core_0 env with_types cv_pb flags m n evd =
   let (mc1,evd') = retract_coercible_metas evd in
   let (sigma,ms,es) = check_types env flags (evd,mc1,[]) m n in
   let subst2 =
-     unify_0_with_initial_metas (evd',ms,es) true env cv_pb flags m n
+     unify_0_with_initial_metas (evd',ms,es) false env cv_pb flags m n
   in
   let evd = w_merge env with_types flags subst2 in
     if flags.resolve_evars then
