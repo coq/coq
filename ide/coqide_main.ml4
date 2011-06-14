@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-IFDEF MacInt THEN
+IFDEF QUARTZ THEN
 external gtk_mac_init : (string -> unit) -> (unit -> bool) -> unit
   = "caml_gtk_mac_init"
 
@@ -15,9 +15,9 @@ external gtk_mac_ready :  ([> Gtk.widget ] as 'a) Gtk.obj -> ([> Gtk.widget ] as
   = "caml_gtk_mac_ready"
 END
 
-let initmac () = IFDEF MacInt THEN gtk_mac_init Coqide.do_load Coqide.forbid_quit_to_save ELSE () END
+let initmac () = IFDEF QUARTZ THEN gtk_mac_init Coqide.do_load Coqide.forbid_quit_to_save ELSE () END
 
-let macready x y z = IFDEF MacInt THEN gtk_mac_ready x#as_widget y#as_widget z#as_widget ELSE ()  END
+let macready x y z = IFDEF QUARTZ THEN gtk_mac_ready x#as_widget y#as_widget z#as_widget ELSE ()  END
 
 (* On win32, we add the directory of coqide to the PATH at launch-time
    (this used to be done in a .bat script). *)
@@ -54,7 +54,7 @@ let ctrl_c_protect f i =
   if not (Mutex.try_lock ctrl_c_mtx) then ()
   else try f i; Mutex.unlock ctrl_c_mtx with _ -> Mutex.unlock ctrl_c_mtx
 
-IFDEF Win32 THEN
+IFDEF WIN32 THEN
 external win32_kill : int -> unit = "win32_kill"
 external win32_interrupt : int -> unit = "win32_interrupt"
 let () =

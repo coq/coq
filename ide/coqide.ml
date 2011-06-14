@@ -2537,7 +2537,7 @@ let main files =
     Coqide_ui.ui_m#insert_action_group windows_actions 0;
     Coqide_ui.ui_m#insert_action_group help_actions 0;
     w#add_accel_group Coqide_ui.ui_m#get_accel_group ;
-    if Gdk.Windowing.platform <> `QUARTZ
+    if Coq_config.gtk_platform <> `QUARTZ
     then vbox#pack (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar");
     let tbar = GtkButton.Toolbar.cast ((Coqide_ui.ui_m#get_widget "/CoqIde ToolBar")#as_widget)
     in let () = GtkButton.Toolbar.set ~orientation:`HORIZONTAL ~style:`ICONS

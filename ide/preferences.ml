@@ -1,3 +1,4 @@
+
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
@@ -115,7 +116,9 @@ let (current:pref ref) =
     cmd_editor = if Sys.os_type = "Win32" then "NOTEPAD %s" else "emacs %s";
 
 (*    text_font = Pango.Font.from_string "sans 12";*)
-    text_font = Pango.Font.from_string "Monospace 10";
+    text_font = Pango.Font.from_string (match Coq_config.gtk_platform with
+					  |`QUARTZ -> "Arial Unicode MS 11"
+					  |_ -> "Monospace 10");
 
     doc_url = Coq_config.wwwrefman;
     library_url = Coq_config.wwwstdlib;

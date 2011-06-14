@@ -599,7 +599,7 @@ esac
 
 IDEARCHFLAGS=
 IDEARCHFILE=
-IDEARCHDEF=No
+IDEARCHDEF=X11
 
 # -byte-only should imply -coqide byte, unless the user decides otherwise
 
@@ -630,7 +630,7 @@ else
     if [ "$lablgtkdir" = "" ]; then
 	echo "LablGtk2 not found: CoqIde will not be available."
 	COQIDE=no
-    elif [ -z "`grep -w Windowing "$lablgtkdir/gdk.mli"`" ]; then
+    elif [ -z "`grep -w convert_with_fallback "$lablgtkdir/glib.mli"`" ]; then
 	echo "LablGtk2 found but too old: CoqIde will not be available."
 	COQIDE=no;
     elif [ "$coqide_spec" = "yes" -a "$COQIDE" = "byte" ]; then 
@@ -647,12 +647,12 @@ else
             cflags=$cflags" `pkg-config --cflags ige-mac-integration`"
 	    IDEARCHFLAGS='-ccopt "`pkg-config --libs ige-mac-integration`"'
 	    IDEARCHFILE=ide/ide_mac_stubs.o
-	    IDEARCHDEF=MacInt
+	    IDEARCHDEF=QUARTZ
 	elif [ "$ARCH" = "win32" ];
         then
 	    IDEARCHFLAGS=
 	    IDEARCHFILE=ide/ide_win32_stubs.o
-	    IDEARCHDEF=Win32
+	    IDEARCHDEF=WIN32
 	fi
     fi
 fi
@@ -662,8 +662,8 @@ case $COQIDE in
         case $lablgtkdir_spec in
             no)  LABLGTKLIB=+lablgtk2                   # Pour le message
                  LABLGTKINCLUDES="-I $LABLGTKLIB";;     # Pour le makefile
-            yes) LABLGTKLIB="$lablgtkdir"               # Pour le message
-                 LABLGTKINCLUDES="-I \"$LABLGTKLIB\"";; # Pour le makefile
+            yes) LABLGTKLIB=$lablgtkdir               # Pour le message
+                 LABLGTKINCLUDES="-I $LABLGTKLIB";; # Pour le makefile
         esac;;
     no) LABLGTKINCLUDES="";;
 esac
@@ -881,7 +881,7 @@ fi
 if test "$COQIDE" != "no"; then
 echo "  Lablgtk2 library in               : $LABLGTKLIB"
 fi
-if test "$IDEARCHDEF" = "MacInt"; then
+if test "$IDEARCHDEF" = "QUARTZ"; then
 echo "  Mac OS integration is on"
 fi
 if test "$with_doc" = "all"; then
@@ -1023,6 +1023,7 @@ let cflags = "$cflags"
 let best = "$best_compiler"
 let arch = "$ARCH"
 let has_coqide = "$COQIDE"
+let gtk_platform = \`$IDEARCHDEF
 let has_natdynlink = $HASNATDYNLINK
 let natdynlinkflag = "$NATDYNLINKFLAG"
 let osdeplibs = "$OSDEPLIBS"

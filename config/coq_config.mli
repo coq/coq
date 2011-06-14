@@ -59,6 +59,7 @@ val browser : string
     variable COQREMOTEBROWSER *)
 
 val has_coqide : string
+val gtk_platform : [`QUARTZ | `WIN32 | `X11]
 
 val has_natdynlink : bool
 val natdynlinkflag : string (* special cases of natdynlink (e.g. MacOS 10.5) *)
