@@ -26,7 +26,7 @@ Delimit Scope program_scope with prg.
 
 (** Abbreviation for first projection and hiding of proofs of subset objects. *)
 
-Notation " ` t " := (proj1_sig t) (at level 10, t at next level) : program_scope.
+Notation " `  t " := (proj1_sig t) (at level 10, t at next level) : program_scope.
 
 (** Coerces objects to their support before comparing them. *)
 
