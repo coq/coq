@@ -54,19 +54,17 @@ performed using {\em Type Classes}
 (see \ref{typeclasses})
 .
 
-The \texttt{Nsatz} module defines the generic tactic
-\texttt{nsatz}, which uses the low-level tactic \texttt{nsatz\_domainpv}: \\
+The \texttt{Nsatz} module defines the tactic
+\texttt{nsatz}, which can be used without arguments: \\
 \vspace*{3mm}
-\texttt{nsatz\_domainpv pretac rmax strategy lparam lvar simpltac domain}
-
+\texttt{nsatz}\\
+or with the syntax: \\
+\vspace*{3mm}
+\texttt{nsatz with radicalmax:={\em number}\%N strategy:={\em number}\%Z parameters:={\em list of variables} variables:={\em list of variables}}\\
 where:
 
 \begin{itemize}
-    \item \texttt{pretac} is a tactic depending on the ring A; its goal is to
-make apparent the generic operations of a domain (ring\_eq, ring\_plus, etc),
-both in the goal and the hypotheses; it is executed first. By default it is \texttt{ltac:idtac}.
-
-    \item \texttt{rmax} is a bound when for searching r s.t.$c (P-Q)^r =
+    \item \texttt{radicalmax} is a bound when for searching r s.t.$c (P-Q)^r =
 \sum_{i=1..s} S_i (P_i - Q_i)$
 	
     \item \texttt{strategy} gives the order on variables $X_1,...X_n$ and
@@ -80,7 +78,7 @@ the strategy used in Buchberger algorithm (see
 	        \item   strategy = 3: pure lexicographic order and sugar strategy.
 	\end{itemize}
 
-	\item \texttt{lparam} is the list of variables
+	\item \texttt{parameters} is the list of variables
 $X_{i_1},\ldots,X_{i_k}$  among $X_1,...,X_n$ which are considered as
    parameters: computation will be performed with rational fractions in these
    variables, i.e. polynomials are considered with coefficients in
@@ -88,21 +86,14 @@ $R(X_{i_1},\ldots,X_{i_k})$. In this case, the coefficient $c$ can be a non
 constant polynomial in $X_{i_1},\ldots,X_{i_k}$, and the tactic produces a goal
 which states that $c$ is not zero.
 
-	\item \texttt{lvar} is the list of the variables
-in the decreasing order in which they will be used in Buchberger algorithm. If \texttt{lvar} = {(@nil
+	\item \texttt{variables} is the list of the variables
+in the decreasing order in which they will be used in Buchberger algorithm. If \texttt{variables} = {(@nil
 R)}, then \texttt{lvar} is replaced by all the variables which are not in
-lparam.
-
-    \item \texttt{simpltac} is a tactic depending on the ring A; its goal is to
-simplify goals and make apparent the generic operations of a domain after
-simplifications. By default it is \texttt{ltac:simpl}.
-
- \item \texttt{domain} is the object of type Domain representing A, its
-operations and properties of integral domain.
+parameters.
 
 \end{itemize}
 
-See file \texttt{Nsatz.v} for examples.
+See file \texttt{Nsatz.v} for many examples, specially in geometry.
 
 %%% Local Variables: 
 %%% mode: latex
