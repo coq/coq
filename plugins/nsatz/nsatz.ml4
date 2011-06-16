@@ -326,6 +326,8 @@ open PIdeal
 let term_pol_sparse np t=
   let d = !nvars in
   let rec aux t =
+(*    info ("conversion de: "^(string_of_term t)^"\n");*)
+    let res =
     match t with
     | Zero -> zeroP
     | Const r ->
@@ -342,9 +344,11 @@ let term_pol_sparse np t=
     | Sub (t1,t2) -> plusP (aux t1) (oppP (aux t2))
     | Mul (t1,t2) -> multP (aux t1) (aux t2)
     | Pow (t1,n) ->  puisP (aux t1) n
-  in (*info ("conversion de: "^(string_of_term t)^"\n");*)
+    in 
+(*       info ("donne: "^(stringP res)^"\n");*)
+       res 
+  in
   let res= aux t in
-  (*info ("donne: "^(stringP res)^"\n");*)
   res
 
 (* sparse polynomial to term *)
@@ -367,7 +371,7 @@ let polrec_to_term p =
 (* approximation of the Horner form used in the tactic ring *)
 
 let pol_sparse_to_term n2 p =
-  info "pol_sparse_to_term ->\n";
+ (* info "pol_sparse_to_term ->\n";*)
   let p = PIdeal.repr p in
   let rec aux p =
     match p with
@@ -411,7 +415,7 @@ let pol_sparse_to_term n2 p =
 	  then Var (string_of_int (i0))
 	  else pow (Var (string_of_int (i0)),e0) in
 	add(mul(vm, aux (List.rev (!p1))), aux (List.rev (!p2))))
-  in   info "-> pol_sparse_to_term\n";
+  in   (*info "-> pol_sparse_to_term\n";*)
   aux p
 
 
@@ -492,35 +496,35 @@ let theoremedeszeros_termes lp =
   match lp with
   | Const (Int sugarparam)::Const (Int nparam)::lp ->
       ((match sugarparam with
-      |0 -> info "calcul sans sugar\n";
+      |0 -> info "computation without sugar\n";
 	  lexico:=false;
 	  sugar_flag := false;
 	  divide_rem_with_critical_pair := false
-      |1 -> info "calcul avec sugar\n";
+      |1 -> info "computation with sugar\n";
 	  lexico:=false;
 	  sugar_flag := true;
 	  divide_rem_with_critical_pair := false
-      |2 -> info "ordre lexico calcul sans sugar\n";
+      |2 -> info "ordre lexico computation without sugar\n";
 	  lexico:=true;
 	  sugar_flag := false;
 	  divide_rem_with_critical_pair := false
-      |3 -> info "ordre lexico calcul avec sugar\n";
+      |3 -> info "ordre lexico computation with sugar\n";
 	  lexico:=true;
 	  sugar_flag := true;
 	  divide_rem_with_critical_pair := false
-      |4 -> info "calcul sans sugar, division par les paires\n";
+      |4 -> info "computation without sugar, division by pairs\n";
 	  lexico:=false;
 	  sugar_flag := false;
 	  divide_rem_with_critical_pair := true
-      |5 -> info "calcul avec sugar, division par les paires\n";
+      |5 -> info "computation with sugar, division by pairs\n";
 	  lexico:=false;
 	  sugar_flag := true;
 	  divide_rem_with_critical_pair := true
-      |6 -> info "ordre lexico calcul sans sugar, division par les paires\n";
+      |6 -> info "ordre lexico computation without sugar, division by pairs\n";
 	  lexico:=true;
 	  sugar_flag := false;
 	  divide_rem_with_critical_pair := true
-      |7 -> info "ordre lexico calcul avec sugar, division par les paires\n";
+      |7 -> info "ordre lexico computation with sugar, division by pairs\n";
 	  lexico:=true;
 	  sugar_flag := true;
 	  divide_rem_with_critical_pair := true
@@ -537,6 +541,7 @@ let theoremedeszeros_termes lp =
       | p::lp1 ->
 	  let lpol = List.rev lp1 in
 	  let (cert,lp0,p,_lct) = theoremedeszeros lpol p in
+          info "cert ok\n";
 	  let lc = cert.last_comb::List.rev cert.gb_comb in
 	  match remove_zeros (fun x -> x=zeroP) lc with
 	  | [] -> assert false
@@ -548,8 +553,8 @@ let theoremedeszeros_termes lp =
 	      let lci = List.rev lci in
 	      let lci = List.map (List.map (pol_sparse_to_term m)) lci in
 	      let lq = List.map (pol_sparse_to_term m) lq in
-	      info ("nombre de parametres: "^string_of_int nparam^"\n");
-	      info "terme calcule\n";
+	      info ("number of parametres: "^string_of_int nparam^"\n");
+	      info "term computed\n";
 	      (c,r,lci,lq)
       )
   |_ -> assert false
@@ -568,7 +573,7 @@ let nsatz lpol =
   let certif = hash_certif certif in
   let certif = certif_term certif in
   let c = mkt_term c in
-  info "constr calcule\n";
+  info "constr computed\n";
   (c, certif)
 *)
 
@@ -589,7 +594,7 @@ let nsatz lpol =
 	 mkt_app lcons [tlp ();ltterm;r])
       res
       (mkt_app lnil [tlp ()]) in
-  info "terme calcule\n";
+  info "term computed\n";
   res
 
 let return_term t =

@@ -363,7 +363,7 @@ let stringPcut p =
   nsP2:=10;
   let res =
     if (length p)> !nsP2
-    then (stringP [hd p])^" + "^(string_of_int (length p))^" termes"
+    then (stringP [hd p])^" + "^(string_of_int (length p))^" terms"
     else  stringP p in
   (*Polynomesrec.nsP1:= max_int;*)
   nsP2:= max_int;
@@ -992,7 +992,7 @@ let pbuchf pq p lp0=
 		    coefpoldep_remove a q;
 		    coefpoldep_set a q c) lca !poldep;
 		  let a0 = a in
-		  info ("\nnew polynomials: "^(stringPcut (ppol a0))^"\n");
+		  info ("\nnew polynomial: "^(stringPcut (ppol a0))^"\n");
 		  let ct = coef1 (* contentP a0 *) in
 		  (*info ("content: "^(string_of_coef ct)^"\n");*)
 		  poldep:=addS a0 lp;

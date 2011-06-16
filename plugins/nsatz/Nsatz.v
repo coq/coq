@@ -28,6 +28,8 @@ Require Export Cring.
 
 Declare ML Module "nsatz_plugin".
 
+(* Definition of integral domains: commutative ring without zero divisor *)
+
 Class Integral_domain {R : Type}`{Rcr:Cring R} := {
  integral_domain_product:
    forall x y, x * y == 0 -> x == 0 \/ y == 0;
@@ -278,19 +280,21 @@ Fixpoint interpret3 t fv {struct t}: R :=
 
 End integral_domain.
 
+Ltac equality_to_goal H x y:=
+  let h := fresh "nH" in
+    (assert (h:equality x y);
+    [solve [cring] | clear H; clear h])
+  || (try generalize (@psos_r1 _ _ _ _ _ _ _ _ _ _ _ x y H); clear H)
+.
+
 Ltac equalities_to_goal :=
   lazymatch goal with
-  |  H: (_ ?x ?y) |- _ =>
-          try generalize (@psos_r1 _ _ _ _ _ _ _ _ _ _ _ x y H); clear H
-  |  H: (_ _ ?x ?y) |- _ =>
-          try generalize (@psos_r1 _ _ _ _ _ _ _ _ _ _ _ x y H); clear H
-  |  H: (_ _ _ ?x ?y) |- _ =>
-          try generalize (@psos_r1 _ _ _ _ _ _ _ _ _ _ _ x y H); clear H
-  |  H: (_ _ _ _ ?x ?y) |- _ =>
-          try generalize (@psos_r1 _ _ _ _ _ _ _ _ _ _ _ x y H); clear H
+  |  H: (_ ?x ?y) |- _ => equality_to_goal H x y
+  |  H: (_ _ ?x ?y) |- _ => equality_to_goal H x y
+  |  H: (_ _ _ ?x ?y) |- _ => equality_to_goal H x y
+  |  H: (_ _ _ _ ?x ?y) |- _ => equality_to_goal H x y
 (* extension possible :-) *)
-  |  H: (?x == ?y) |- _ =>
-          try generalize (@psos_r1 _ _ _ _ _ _ _ _ _ _ _ x y H); clear H
+  |  H: (?x == ?y) |- _ => equality_to_goal H x y
    end.
 
 (* lp est incluse dans fv. La met en tete. *)
@@ -392,8 +396,8 @@ match goal with
                        let lp := get_lpol g in 
                        let lpol := eval compute in (List.rev lp) in
 (*                       idtac "polynomes:"; idtac lpol;*)
-                       simpl; intros;
-  simpl;
+                       (*simpl;*) intros;
+  (*simpl;*)
   let SplitPolyList kont :=
     match lpol with
     | ?p2::?lp2 => kont p2 lp2
@@ -411,28 +415,28 @@ match goal with
       [ (vm_compute;reflexivity) || idtac "invalid nsatz certificate"
       | let Hg2 := fresh "Hg" in 
             assert (Hg2: (interpret3 q fv) == 0);
-        [ simpl; 
+        [ (*simpl*) idtac; 
           generalize (@check_correct _ _ _ _ _ _ _ _ _ _ _ fv lp21 q (lci,lq) Hg);
           let cc := fresh "H" in
-             simpl; intro cc; apply cc; clear cc;
-          simpl;
+             (*simpl*) idtac; intro cc; apply cc; clear cc;
+          (*simpl*) idtac;
           repeat (split;[assumption|idtac]); exact I
-        | simpl in Hg2; simpl; 
+        | (*simpl in Hg2;*) (*simpl*) idtac; 
           apply Rintegral_domain_pow with (interpret3 c fv) (nat_of_N r);
-          simpl;
+          (*simpl*) idtac;
             try apply integral_domain_one_zero;
             try apply integral_domain_minus_one_zero;
             try trivial;
             try exact integral_domain_one_zero;
             try exact integral_domain_minus_one_zero
-          || (simpl) || idtac "could not prove discrimination result"
+          || ((*simpl*) idtac) || idtac "could not prove discrimination result"
         ]
       ]
 ) 
 )
 end end end end .
 
-Ltac nsatz:=
+Ltac nsatz_default:=
   intros;
   try apply (@psos_r1b _ _ _ _ _ _ _ _ _ _ _);
   match goal with |- (@equality ?r _ _ _) =>
@@ -440,11 +444,26 @@ Ltac nsatz:=
     nsatz_generic 6%N 1%Z (@nil r) (@nil r)
   end.
 
+Tactic Notation "nsatz" := nsatz_default.
+
+Tactic Notation "nsatz" "with"
+ "radicalmax" ":=" constr(radicalmax) 
+ "strategy" ":=" constr(info) 
+ "parameters" ":=" constr(lparam)
+ "variables" ":=" constr(lvar):=
+  intros;
+  try apply (@psos_r1b _ _ _ _ _ _ _ _ _ _ _);
+  match goal with |- (@equality ?r _ _ _) =>
+    repeat equalities_to_goal;
+    nsatz_generic radicalmax info lparam lvar
+  end.
+
 Section test.
 Context {R:Type}`{Rid:Integral_domain R}.
 
 Goal forall x y:R, x == x.
-nsatz.
+nsatz with radicalmax := 6%N strategy := 1%Z parameters := (@nil R)
+ variables := (@nil R).
 Qed.
 
 Goal forall x y:R, x == y -> y*y == x*x.
@@ -510,8 +529,6 @@ Qed.
 (* Rational numbers *)
 Require Import QArith.
 
-Check Q_Setoid.
-
 Instance Qops: (@Ring_ops Q 0%Q 1%Q Qplus Qmult Qminus Qopp Qeq).
 
 Instance Qri : (Ring (Ro:=Qops)).
@@ -557,3 +574,6 @@ Goal forall x y:Z, x = y -> (x*x-x+1)%Z = ((y*y-y)+1+0)%Z.
 nsatz. 
 Qed.
 
+Goal forall x y:Z, x = y -> x = x -> (x*x-x+1)%Z = ((y*y-y)+1+0)%Z.
+nsatz. 
+Qed.
