@@ -346,7 +346,7 @@ install-ide-opt:
 install-ide-files:
 	$(MKDIR) $(FULLIDELIB)
 	$(INSTALLLIB) $(IDEFILES) $(FULLIDELIB)
-	if [ $(IDEOPTINT) = QUARTZ ] ; then $(INSTALLLIB) ide/mac_default_accel_map ide/default_accel_map ; fi
+	if [ $(IDEOPTINT) = QUARTZ ] ; then $(INSTALLLIB) ide/mac_default_accel_map $(FULLIDELIB)/default_accel_map ; fi
 
 install-ide-info:
 	$(MKDIR) $(FULLIDELIB)
