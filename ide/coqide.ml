@@ -1422,7 +1422,7 @@ let create_session () =
   let basename = GMisc.label ~text:"*scratch*" () in
   let stack = Stack.create () in
   let ct = ref (Coq.spawn_coqtop !sup_args) in
-  let command = new Command_windows.command_window !ct in
+  let command = new Command_windows.command_window !ct current in
   let legacy_av = new analyzed_view script proof message stack ct in
   let _ =
     script#buffer#create_mark ~name:"start_of_input" script#buffer#start_iter in

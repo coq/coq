@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-class command_window coqtop =
+class command_window coqtop current =
 (*  let window = GWindow.window
 		 ~allow_grow:true ~allow_shrink:true
 		 ~width:500 ~height:250
@@ -95,6 +95,7 @@ object(self)
 	~packing:(vbox#pack ~fill:true ~expand:true) () in
     let ok_b = GButton.button ~label:"Ok" ~packing:(hbox#pack ~expand:false) () in
     let result = GText.view ~packing:r_bin#add () in
+    result#misc#modify_font !current.Preferences.text_font;
     result#misc#set_can_focus true; (* false causes problems for selection *)
     result#set_editable false;
     let callback () =
