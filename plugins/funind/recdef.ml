@@ -373,7 +373,7 @@ let rec  mk_intros_and_continue thin_intros (extra_eqn:bool)
 		h_intros thin_intros;
 
 		tclMAP
-		  (fun eq -> tclTRY (Equality.general_rewrite_in true Termops.all_occurrences (* deps proofs also: *) true teq eq false))
+		  (fun eq -> tclTRY (Equality.general_rewrite_in true Termops.all_occurrences true (* deps proofs also: *) true teq eq false))
 		  (List.rev eqs);
 		(fun g1 ->
 		   let ty_teq = pf_type_of g1 (mkVar teq) in
@@ -534,7 +534,7 @@ let rec list_cond_rewrite k def pmax cond_eqs le_proofs =
 	 in
 	 tclTHENS
 	   (general_rewrite_bindings false Termops.all_occurrences
-	      (* dep proofs also: *) true
+	      (* dep proofs also: *) true true
 	      (mkVar eq,
 	       ExplicitBindings[dummy_loc, NamedHyp k_id, mkVar k;
 				dummy_loc, NamedHyp def_id, mkVar def]) false)
@@ -1211,7 +1211,7 @@ let rec introduce_all_values_eq cont_tac functional termine
 		  Nameops.out_name def_na
 		in
 		observe_tac "rewrite heq" (general_rewrite_bindings false Termops.all_occurrences
-		(* dep proofs also: *) true (mkVar heq2,
+		true (* dep proofs also: *) true (mkVar heq2,
 		 ExplicitBindings[dummy_loc,NamedHyp def_id,
 				  f]) false) gls)
 	     [tclTHENLIST
@@ -1266,7 +1266,7 @@ let rec introduce_all_values_eq cont_tac functional termine
 			       f_S(mkVar pmax');
 			       dummy_loc, NamedHyp def_id, f])
 			 in
-			   observe_tac "general_rewrite_bindings" ( (general_rewrite_bindings false Termops.all_occurrences (* dep proofs also: *) true
+			   observe_tac "general_rewrite_bindings" ( (general_rewrite_bindings false Termops.all_occurrences true (* dep proofs also: *) true
 							       c_b false))
 			     g
 		     )

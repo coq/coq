@@ -848,7 +848,7 @@ let compute_dec_tact ind lnamesparrec nparrec gsig =
                   Auto.default_auto
 		]);
 	      Equality.general_rewrite_bindings_in true
-	                      all_occurrences false
+	                      all_occurrences true false
                               (List.hd !avoid)
                               ((mkVar (List.hd (List.tl !avoid))),
                                 Glob_term.NoBindings

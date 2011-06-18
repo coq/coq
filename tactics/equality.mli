@@ -27,6 +27,7 @@ open Ind_tables
 (*i*)
 
 type dep_proof_flag = bool (* true = support rewriting dependent proofs *)
+type freeze_evars_flag = bool (* true = don't instantiate existing evars *)
 
 type orientation = bool
 
@@ -36,10 +37,10 @@ type conditions =
   | AllMatches (* Rewrite all matches whose side-conditions are solved *)
 
 val general_rewrite_bindings :
-  orientation -> occurrences -> dep_proof_flag ->
+  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
   ?tac:(tactic * conditions) -> constr with_bindings -> evars_flag -> tactic
 val general_rewrite :
-  orientation -> occurrences -> dep_proof_flag ->
+  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
   ?tac:(tactic * conditions) -> constr -> tactic
 
 (* Equivalent to [general_rewrite l2r] *)
@@ -54,15 +55,16 @@ val register_general_rewrite_clause :
 val register_is_applied_rewrite_relation : (env -> evar_map -> rel_context -> constr -> constr option) -> unit
 
 val general_rewrite_ebindings_clause : identifier option ->
-  orientation -> occurrences -> dep_proof_flag -> ?tac:(tactic * conditions) ->
-  constr with_bindings -> evars_flag -> tactic
+  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
+  ?tac:(tactic * conditions) -> constr with_bindings -> evars_flag -> tactic
 
 val general_rewrite_bindings_in :
-  orientation -> occurrences -> dep_proof_flag -> ?tac:(tactic * conditions) ->
+  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag ->
+  ?tac:(tactic * conditions) ->
   identifier -> constr with_bindings -> evars_flag -> tactic
 val general_rewrite_in          :
-  orientation -> occurrences -> dep_proof_flag -> ?tac:(tactic * conditions) ->
-  identifier -> constr -> evars_flag -> tactic
+  orientation -> occurrences -> freeze_evars_flag -> dep_proof_flag -> 
+  ?tac:(tactic * conditions) -> identifier -> constr -> evars_flag -> tactic
 
 val general_multi_rewrite :
   orientation -> evars_flag -> ?tac:(tactic * conditions) -> constr with_bindings -> clause -> tactic

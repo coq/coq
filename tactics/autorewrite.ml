@@ -117,7 +117,7 @@ let autorewrite ?(conds=Naive) tac_main lbas =
        tclTHEN tac
         (one_base (fun dir c tac ->
 	  let tac = tac, conds in
-	    general_rewrite dir all_occurrences false ~tac c)
+	    general_rewrite dir all_occurrences true false ~tac c)
 	  tac_main bas))
       tclIDTAC lbas))
 
@@ -135,7 +135,7 @@ let autorewrite_multi_in ?(conds=Naive) idl tac_main lbas : tactic =
       | _ -> (* even the hypothesis id is missing *)
              error ("No such hypothesis: " ^ (string_of_id !id) ^".")
     in
-    let gl' = general_rewrite_in dir all_occurrences ~tac:(tac, conds) false !id cstr false gl in
+    let gl' = general_rewrite_in dir all_occurrences true ~tac:(tac, conds) false !id cstr false gl in
     let gls = gl'.Evd.it in
     match gls with
        g::_ ->

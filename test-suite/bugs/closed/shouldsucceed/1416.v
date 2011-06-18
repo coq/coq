@@ -1,3 +1,8 @@
+(* In 8.1 autorewrite used to raised an anomaly here *)
+(* After resolution of the bug, autorewrite succeeded *)
+(* From forthcoming 8.4, autorewrite is forbidden to instantiate *)
+(* evars, so the new test just checks it is not an anomaly *)
+
 Set Implicit Arguments.
 
 Record Place (Env A: Type) : Type := {
@@ -22,6 +27,4 @@ Lemma autorewrite_raise_anomaly: forall (Env A:Type) (e: Env) (p:Place Env A),
 Proof.
   intros Env A e p; eapply ex_intro.
   autorewrite with placeeq. (* Here is the bug *)
-  auto.
-Qed.
 

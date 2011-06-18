@@ -108,3 +108,14 @@ intros.
 rewrite (H _).
 reflexivity.
 Qed.
+
+(* Example of rewriting of a degenerated pattern using the right-most
+   argument of the goal. This is sometimes used in contribs, even if
+   ad hoc. Here, we have the extra requirement that checking types
+   needs delta-conversion *)
+
+Axiom s : forall (A B : Type) (p : A * B), p = (fst p, snd p).
+Definition P := (nat * nat)%type.
+Goal forall x:P, x = x.
+intros. rewrite s.
+

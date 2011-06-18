@@ -223,7 +223,7 @@ END
 let rewrite_star clause orient occs (sigma,c) (tac : glob_tactic_expr option) =
   let tac' = Option.map (fun t -> Tacinterp.eval_tactic t, FirstSolved) tac in
   Refiner. tclWITHHOLES false
-    (general_rewrite_ebindings_clause clause orient occs ?tac:tac' true (c,NoBindings)) sigma true
+    (general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings)) sigma true
 
 let occurrences_of = function
   | n::_ as nl when n < 0 -> (false,List.map abs nl)
@@ -646,7 +646,7 @@ exception Found of tactic
 
 let rewrite_except h g =
   tclMAP (fun id -> if id = h then tclIDTAC else 
-      tclTRY (Equality.general_rewrite_in true Termops.all_occurrences true id (mkVar h) false))
+      tclTRY (Equality.general_rewrite_in true Termops.all_occurrences true true id (mkVar h) false))
     (Tacmach.pf_ids_of_hyps g) g
 
 

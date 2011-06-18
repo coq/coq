@@ -64,6 +64,7 @@ let _ =
 (* Rewriting tactics *)
 
 type dep_proof_flag = bool (* true = support rewriting dependent proofs *)
+type freeze_evars_flag = bool (* true = don't instantiate existing evars *)
 
 type orientation = bool
 
@@ -108,12 +109,15 @@ let freeze_initial_evars sigma flags clause =
       sigma ExistentialSet.empty in
   { flags with Unification.frozen_evars = evars }
 
+let make_flags frzevars sigma flags clause =
+  if frzevars then freeze_initial_evars sigma flags clause else flags
+
 let side_tac tac sidetac =
   match sidetac with
   | None -> tac
   | Some sidetac -> tclTHENSFIRSTn tac [|tclIDTAC|] sidetac
 
-let instantiate_lemma_all env sigma gl c ty l l2r concl =
+let instantiate_lemma_all frzevars env sigma gl c ty l l2r concl =
   let eqclause = Clenv.make_clenv_binding { gl with sigma = sigma } (c,ty) l in
   let (equiv, args) = decompose_app (Clenv.clenv_type eqclause) in
   let rec split_last_two = function
@@ -125,7 +129,7 @@ let instantiate_lemma_all env sigma gl c ty l l2r concl =
   let try_occ (evd', c') =
     clenv_pose_dependent_evars true {eqclause with evd = evd'}
   in
-  let flags = freeze_initial_evars sigma rewrite_unif_flags eqclause in
+  let flags = make_flags frzevars sigma rewrite_unif_flags eqclause in
   let occs =
     Unification.w_unify_to_subterm_all ~flags env
       ((if l2r then c1 else c2),concl) eqclause.evd
@@ -165,33 +169,33 @@ let rewrite_conv_closed_unif_flags = {
   Unification.allow_K_in_toplevel_higher_order_unification = false
 }
 
-let rewrite_elim with_evars c e gl =
+let rewrite_elim with_evars frzevars c e gl =
   let flags =
-    freeze_initial_evars (project gl) rewrite_conv_closed_unif_flags c in
+    make_flags frzevars (project gl) rewrite_conv_closed_unif_flags c in
   general_elim_clause_gen (elimination_clause_scheme with_evars ~flags) c e gl
 
-let rewrite_elim_in with_evars id c e gl =
+let rewrite_elim_in with_evars frzevars id c e gl =
   let flags =
-    freeze_initial_evars (project gl) rewrite_conv_closed_unif_flags c in
+    make_flags frzevars (project gl) rewrite_conv_closed_unif_flags c in
   general_elim_clause_gen
     (elimination_in_clause_scheme with_evars ~flags id) c e gl
 
 (* Ad hoc asymmetric general_elim_clause *)
-let general_elim_clause with_evars cls rew elim =
+let general_elim_clause with_evars frzevars cls rew elim =
   try
     (match cls with
       | None ->
 	  (* was tclWEAK_PROGRESS which only fails for tactics generating one
              subgoal and did not fail for useless conditional rewritings generating
              an extra condition *)
-	  tclNOTSAMEGOAL (rewrite_elim with_evars rew elim)
-      | Some id -> rewrite_elim_in with_evars id rew elim)
+	  tclNOTSAMEGOAL (rewrite_elim with_evars frzevars rew elim)
+      | Some id -> rewrite_elim_in with_evars frzevars id rew elim)
   with Pretype_errors.PretypeError (env,evd,
 				    Pretype_errors.NoOccurrenceFound (c', _)) ->
     raise (Pretype_errors.PretypeError
 	      (env,evd,Pretype_errors.NoOccurrenceFound (c', cls)))
 
-let general_elim_clause with_evars tac cls sigma c t l l2r elim gl =
+let general_elim_clause with_evars frzevars tac cls sigma c t l l2r elim gl =
   let all, firstonly, tac =
     match tac with
     | None -> false, false, None
@@ -200,12 +204,15 @@ let general_elim_clause with_evars tac cls sigma c t l l2r elim gl =
     | Some (tac, AllMatches) -> true, false, Some (tclCOMPLETE tac)
   in
   let cs =
-    (if not all then instantiate_lemma else instantiate_lemma_all)
+    (if not all then instantiate_lemma else instantiate_lemma_all frzevars)
       (pf_env gl) sigma gl c t l l2r
       (match cls with None -> pf_concl gl | Some id -> pf_get_hyp_typ gl id)
   in
   let try_clause c =
-    side_tac (tclTHEN (Refiner.tclEVARS c.evd) (general_elim_clause with_evars cls c elim)) tac
+    side_tac
+      (tclTHEN
+         (Refiner.tclEVARS c.evd)
+         (general_elim_clause with_evars frzevars cls c elim)) tac
   in
     if firstonly then
       tclFIRST (List.map try_clause cs) gl
@@ -279,12 +286,12 @@ let type_of_clause gl = function
   | None -> pf_concl gl
   | Some id -> pf_get_hyp_typ gl id
 
-let leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c t l with_evars dep_proof_ok gl hdcncl =
+let leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c t l with_evars frzevars dep_proof_ok gl hdcncl =
   let isatomic = isProd (whd_zeta hdcncl) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
   let dep = dep_proof_ok && dep_fun c (type_of_clause gl cls) in
   let elim = find_elim hdcncl lft2rgt dep cls (snd (decompose_app t)) gl in
-  general_elim_clause with_evars tac cls sigma c t l
+  general_elim_clause with_evars frzevars tac cls sigma c t l
     (match lft2rgt with None -> false | Some b -> b)
     {elimindex = None; elimbody = (elim,NoBindings)} gl
 
@@ -304,7 +311,7 @@ let rewrite_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
 
 (* Main function for dispatching which kind of rewriting it is about *)
 
-let general_rewrite_ebindings_clause cls lft2rgt occs dep_proof_ok ?tac
+let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
     ((c,l) : constr with_bindings) with_evars gl =
   if occs <> all_occurrences then (
     rewrite_side_tac (!general_rewrite_clause cls lft2rgt occs (c,l) ~new_goals:[]) tac gl)
@@ -317,7 +324,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs dep_proof_ok ?tac
       | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
 	  let lft2rgt = adjust_rewriting_direction args lft2rgt in
           leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c (it_mkProd_or_LetIn t rels)
-	    l with_evars dep_proof_ok gl hdcncl
+	    l with_evars frzevars dep_proof_ok gl hdcncl
       | None ->
 	  try
 	    rewrite_side_tac (!general_rewrite_clause cls
@@ -329,27 +336,31 @@ let general_rewrite_ebindings_clause cls lft2rgt occs dep_proof_ok ?tac
 	      | Some (hdcncl,args) ->
 		  let lft2rgt = adjust_rewriting_direction args lft2rgt in
 		    leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c
-		      (it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars dep_proof_ok gl hdcncl
+		      (it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars frzevars dep_proof_ok gl hdcncl
 	      | None -> raise e
 		  (* error "The provided term does not end with an equality or a declared rewrite relation." *)
 
 let general_rewrite_ebindings =
   general_rewrite_ebindings_clause None
 
-let general_rewrite_bindings l2r occs dep_proof_ok ?tac (c,bl) =
-  general_rewrite_ebindings_clause None l2r occs dep_proof_ok ?tac (c,bl)
+let general_rewrite_bindings l2r occs frzevars dep_proof_ok ?tac (c,bl) =
+  general_rewrite_ebindings_clause None l2r occs
+    frzevars dep_proof_ok ?tac (c,bl)
 
-let general_rewrite l2r occs dep_proof_ok ?tac c =
-  general_rewrite_bindings l2r occs dep_proof_ok ?tac (c,NoBindings) false
+let general_rewrite l2r occs frzevars dep_proof_ok ?tac c =
+  general_rewrite_bindings l2r occs
+    frzevars dep_proof_ok ?tac (c,NoBindings) false
 
-let general_rewrite_ebindings_in l2r occs dep_proof_ok ?tac id =
-  general_rewrite_ebindings_clause (Some id) l2r occs dep_proof_ok ?tac
+let general_rewrite_ebindings_in l2r occs frzevars dep_proof_ok ?tac id =
+  general_rewrite_ebindings_clause (Some id) l2r occs frzevars dep_proof_ok ?tac
 
-let general_rewrite_bindings_in l2r occs dep_proof_ok ?tac id (c,bl) =
-  general_rewrite_ebindings_clause (Some id) l2r occs dep_proof_ok ?tac (c,bl)
+let general_rewrite_bindings_in l2r occs frzevars dep_proof_ok ?tac id (c,bl) =
+  general_rewrite_ebindings_clause (Some id) l2r occs
+    frzevars dep_proof_ok ?tac (c,bl)
 
-let general_rewrite_in l2r occs dep_proof_ok ?tac id c =
-  general_rewrite_ebindings_clause (Some id) l2r occs dep_proof_ok ?tac (c,NoBindings)
+let general_rewrite_in l2r occs frzevars dep_proof_ok ?tac id c =
+  general_rewrite_ebindings_clause (Some id) l2r occs
+    frzevars dep_proof_ok ?tac (c,NoBindings)
 
 let general_multi_rewrite l2r with_evars ?tac c cl =
   let occs_of = on_snd (List.fold_left
@@ -365,12 +376,12 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	  | [] -> tclIDTAC
 	  | ((occs,id),_) :: l ->
 	    tclTHENFIRST
-	      (general_rewrite_ebindings_in l2r (occs_of occs) true ?tac id c with_evars)
+	      (general_rewrite_ebindings_in l2r (occs_of occs) false true ?tac id c with_evars)
 	      (do_hyps l)
 	in
 	if cl.concl_occs = no_occurrences_expr then do_hyps l else
 	  tclTHENFIRST
-	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) true ?tac c with_evars)
+	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) false true ?tac c with_evars)
 	   (do_hyps l)
     | None ->
 	(* Otherwise, if we are told to rewrite in all hypothesis via the
@@ -379,7 +390,7 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	  | [] -> (fun gl -> error "Nothing to rewrite.")
 	  | id :: l ->
 	    tclIFTHENTRYELSEMUST
-	     (general_rewrite_ebindings_in l2r all_occurrences true ?tac id c with_evars)
+	     (general_rewrite_ebindings_in l2r all_occurrences false true ?tac id c with_evars)
 	     (do_hyps_atleastonce l)
 	in
 	let do_hyps gl =
@@ -391,7 +402,7 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	in
 	if cl.concl_occs = no_occurrences_expr then do_hyps else
 	  tclIFTHENTRYELSEMUST
-	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) true ?tac c with_evars)
+	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) false true ?tac c with_evars)
 	   do_hyps
 
 type delayed_open_constr_with_bindings =
@@ -416,8 +427,8 @@ let general_multi_multi_rewrite with_evars l cl tac =
     | (l2r,m,c)::l -> tclTHENFIRST (doN l2r c m) (loop l)
   in loop l
 
-let rewriteLR = general_rewrite true all_occurrences true
-let rewriteRL = general_rewrite false all_occurrences true
+let rewriteLR = general_rewrite true all_occurrences true true
+let rewriteRL = general_rewrite false all_occurrences true true
 
 (* Replacing tactics *)
 
@@ -1424,7 +1435,7 @@ let subst_one dep_proof_ok x gl =
   tclTHENLIST
     ((if need_rewrite then
       [generalize abshyps;
-       general_rewrite dir all_occurrences dep_proof_ok (mkVar hyp);
+       general_rewrite dir all_occurrences true dep_proof_ok (mkVar hyp);
        thin dephyps;
        tclMAP introtac depdecls]
     else

@@ -19,5 +19,11 @@ Proof.
     apply H;reflexivity.
 Qed.
 
+(* Check autorewrite does not solve existing evars *)
+(* See discussion started by A. Chargueraud in Oct 2010 on coqdev *)
 
+Hint Rewrite <- plus_n_O : base1.
+Goal forall y, exists x, y+x = y.
+eexists. autorewrite with base1.
+Fail reflexivity.
 

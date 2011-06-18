@@ -36,6 +36,8 @@ Tactics
 - Unification in "apply" supports unification of patterns of the form
   ?f x y = g(x,y) (compatibility ensured by using
   "Unset Tactic Pattern Unification").
+- Tactic autorewrite does no longer instantiate pre-existing
+  existential variables (theoretical source of possible incompatibility).
 
 Vernacular commands
 
