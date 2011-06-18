@@ -860,12 +860,15 @@ let w_unify_core_0 env with_types cv_pb flags m n evd =
 let w_unify_0 env = w_unify_core_0 env false
 let w_typed_unify env = w_unify_core_0 env true
 
-let w_typed_unify_list env cv_pb flags f1 l1 f2 l2 evd =
+let w_typed_unify_list env flags f1 l1 f2 l2 evd =
   let flags' = { flags with resolve_evars = false } in
   let f1,l1,f2,l2 = adjust_app_list_size f1 l1 f2 l2 in
-  let evd =
-    List.fold_left2 (fun evd m n ->
-      w_unify_core_0 env true cv_pb flags' m n evd) evd (f1::l1) (f2::l2) in
+  let (mc1,evd') = retract_coercible_metas evd in
+  let subst =
+    List.fold_left2 (fun subst m n ->
+      unify_0_with_initial_metas subst true env CONV flags' m n) (evd,[],[])
+      (f1::l1) (f2::l2) in
+  let evd = w_merge env true flags subst in
   try_resolve_typeclasses env evd flags (applist(f1,l1)) (applist(f2,l2))
 
 (* takes a substitution s, an open term op and a closed term cl
@@ -1082,7 +1085,7 @@ let w_unify env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
       | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)
 	  when List.length l1 = List.length l2 ->
 	  (try
-	      w_typed_unify_list env cv_pb flags hd1 l1 hd2 l2 evd
+	      w_typed_unify_list env flags hd1 l1 hd2 l2 evd
 	    with ex when precatchable_exception ex ->
 	      try
 		w_unify2 env flags cv_pb ty1 ty2 evd
@@ -1095,9 +1098,9 @@ let w_unify env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
 	    with PretypeError (env,_,NoOccurrenceFound _) as e -> raise e
 	      | ex when precatchable_exception ex ->
 		  try
-		    w_typed_unify_list env cv_pb flags hd1 l1 hd2 l2 evd
+		    w_typed_unify_list env flags hd1 l1 hd2 l2 evd
 		  with ex' when precatchable_exception ex' ->
-		    raise ex)
+		    raise ex')
 
       (* General case: try first order *)
       | _ -> w_typed_unify env cv_pb flags ty1 ty2 evd
