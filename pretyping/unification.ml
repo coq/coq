@@ -170,6 +170,8 @@ type unify_flags = {
   allow_K_in_toplevel_higher_order_unification : bool
 }
 
+(* Default flag for unifying a type against a type (e.g. apply) *)
+(* We set all conversion flags *)
 let default_unify_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
@@ -179,11 +181,16 @@ let default_unify_flags = {
   use_evars_pattern_unification = true;
   frozen_evars = ExistentialSet.empty;
   restrict_conv_on_strict_subterms = false;
-  modulo_betaiota = false;
+  modulo_betaiota = true;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = false
+      (* in fact useless when not used in w_unify_to_subterm_list *)
 }
 
+(* Default flag for the "simple apply" version of unification of a *)
+(* type against a type (e.g. apply) *)
+(* We set only the flags available at the time the new "apply" extends *)
+(* out of "simple apply" *)
 let default_no_delta_unify_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
@@ -198,11 +205,11 @@ let default_no_delta_unify_flags = {
   allow_K_in_toplevel_higher_order_unification = false
 }
 
-(* Note: at least up to 13/6/11, elim_flags and elim_no_delta_flags have no
-   effect (to the exception of allow_K) because only closed terms are involved
-   in induction/destruct/case/elim and w_unify_to_subterm_list does not call
-   w_unify for induction/destruct/case/elim *)
-
+(* Default flags for looking for subterms in elimination tactics *)
+(* Not used in practice at the current date, to the exception of *)
+(* allow_K) because only closed terms are involved in *)
+(* induction/destruct/case/elim and w_unify_to_subterm_list does not *)
+(* call w_unify for induction/destruct/case/elim  (13/6/2011) *)
 let elim_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
   use_metas_eagerly = true;
