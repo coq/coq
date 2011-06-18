@@ -74,7 +74,7 @@ Libraries
   may introduce incompatibilities. In particular, the order of the arguments
   for BigN.shiftl and BigN.shiftr is now reversed: the number to shift now
   comes first. By default, the power function now takes two BigN.
-- Creation of Vector, an idenpedant library for list indiced by their length.
+- Creation of Vector, an independant library for list indiced by their length.
   Vectors' names overwrite lists' one so you shouldn't "Import" the library.
   All old names change: functions' name become the CaML one and for example
   Vcons become Vector.cons. You can use notations by importing
