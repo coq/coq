@@ -156,29 +156,71 @@ let _ =
       optread  = (fun () -> !global_evars_pattern_unification_flag);
       optwrite = (:=) global_evars_pattern_unification_flag }
 
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optname  = "pattern-unification for existential variables in tactics";
+      optkey   = ["Tactic";"Pattern";"Unification"];
+      optread  = (fun () -> !global_evars_pattern_unification_flag);
+      optwrite = (:=) global_evars_pattern_unification_flag }
+
 type unify_flags = {
   modulo_conv_on_closed_terms : Names.transparent_state option;
-  use_metas_eagerly : bool;
+    (* What this flag controls was activated with all constants transparent, *)
+    (* even for auto, since Coq V5.10 *)
+
+  use_metas_eagerly_in_conv_on_closed_terms : bool;
+    (* This refinement of the conversion on closed terms is activable *)
+    (* (and activated for apply, rewrite but not auto since Feb 2008 for 8.2) *)
+
   modulo_delta : Names.transparent_state;
+    (* This controls which constant are unfoldable; this is on for apply *)
+    (* (but not simple apply) since Feb 2008 for 8.2 *)
+
   modulo_delta_types : Names.transparent_state;
+
   resolve_evars : bool;
-  use_evars_pattern_unification : bool;
+    (* This says if type classes instances resolution must be used to infer *)
+    (* the remaining evars *)
+
+  use_pattern_unification : bool;
+    (* This says if type classes instances resolution must be used to infer *)
+    (* the remaining evars *)
+
+  use_meta_bound_pattern_unification : bool;
+    (* This solves pattern "?n x1 ... xn = t" when the xi are distinct rels *)
+    (* This allows for instance to unify "forall x:A, B(x)" with "A' -> B'" *)
+    (* This was on for all tactics, including auto, since Sep 2006 for 8.1 *)
+
   frozen_evars : ExistentialSet.t;
+    (* Evars of this set are considered axioms and never instantiated *)
+    (* Useful e.g. for autorewrite *)
+
   restrict_conv_on_strict_subterms : bool;
+    (* No conversion at the root of the term; potentially useful for rewrite *)
+
   modulo_betaiota : bool;
+    (* Support betaiota in the reduction *)
+    (* Note that zeta is always used *)
+
   modulo_eta : bool;
+    (* Support eta in the reduction *)
+
   allow_K_in_toplevel_higher_order_unification : bool
+    (* This is used only in second/higher order unification when looking for *)
+    (* subterms (rewrite and elim) *)
 }
 
 (* Default flag for unifying a type against a type (e.g. apply) *)
 (* We set all conversion flags *)
 let default_unify_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
-  use_metas_eagerly = true;
+  use_metas_eagerly_in_conv_on_closed_terms = true;
   modulo_delta = full_transparent_state;
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
-  use_evars_pattern_unification = true;
+  use_pattern_unification = true;
+  use_meta_bound_pattern_unification = true;
   frozen_evars = ExistentialSet.empty;
   restrict_conv_on_strict_subterms = false;
   modulo_betaiota = true;
@@ -193,11 +235,12 @@ let default_unify_flags = {
 (* out of "simple apply" *)
 let default_no_delta_unify_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
-  use_metas_eagerly = true;
+  use_metas_eagerly_in_conv_on_closed_terms = true;
   modulo_delta = empty_transparent_state;
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
-  use_evars_pattern_unification = false;
+  use_pattern_unification = false;
+  use_meta_bound_pattern_unification = true;
   frozen_evars = ExistentialSet.empty;
   restrict_conv_on_strict_subterms = false;
   modulo_betaiota = false;
@@ -212,11 +255,12 @@ let default_no_delta_unify_flags = {
 (* call w_unify for induction/destruct/case/elim  (13/6/2011) *)
 let elim_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
-  use_metas_eagerly = true;
+  use_metas_eagerly_in_conv_on_closed_terms = true;
   modulo_delta = full_transparent_state;
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
-  use_evars_pattern_unification = true;
+  use_pattern_unification = true;
+  use_meta_bound_pattern_unification = true;
   frozen_evars = ExistentialSet.empty;
   restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = false;
@@ -226,11 +270,12 @@ let elim_flags = {
 
 let elim_no_delta_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
-  use_metas_eagerly = true;
+  use_metas_eagerly_in_conv_on_closed_terms = true;
   modulo_delta = empty_transparent_state;
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
-  use_evars_pattern_unification = false;
+  use_pattern_unification = false;
+  use_meta_bound_pattern_unification = true;
   frozen_evars = ExistentialSet.empty;
   restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = false;
@@ -242,8 +287,14 @@ let set_no_head_reduction flags =
   { flags with restrict_conv_on_strict_subterms = true }
 
 let use_evars_pattern_unification flags =
-  !global_evars_pattern_unification_flag && flags.use_evars_pattern_unification
+  !global_evars_pattern_unification_flag && flags.use_pattern_unification
   && Flags.version_strictly_greater Flags.V8_2
+
+let use_metas_pattern_unification flags nb l =
+  !global_evars_pattern_unification_flag && flags.use_pattern_unification
+  || (Flags.version_less_or_equal Flags.V8_3 || 
+      flags.use_meta_bound_pattern_unification) &&
+     array_for_all (fun c -> isRel c && destRel c <= nb) l
 
 let expand_key env = function
   | Some (ConstKey cst) -> constant_opt_value env cst
@@ -355,15 +406,15 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	       reduce curenvnb pb b substn cM cN)
 
 	| App (f1,l1), _ when
-	    (isMeta f1 || use_evars_pattern_unification flags &&
-                          isAllowedEvar flags f1) &
+	    (isMeta f1 && use_metas_pattern_unification flags (snd curenvnb) l1
+             || use_evars_pattern_unification flags && isAllowedEvar flags f1) &
 	    is_unification_pattern curenvnb f1 l1 cN &
 	    not (dependent f1 cN) ->
 	      solve_pattern_eqn_array curenvnb f1 l1 cN substn
 
 	| _, App (f2,l2) when
-	    (isMeta f2 || use_evars_pattern_unification flags &&
-                          isAllowedEvar flags f2) &
+	    (isMeta f2 && use_metas_pattern_unification flags (snd curenvnb) l2
+             || use_evars_pattern_unification flags && isAllowedEvar flags f2) &
 	    is_unification_pattern curenvnb f2 l2 cM &
 	    not (dependent f2 cM) ->
 	      solve_pattern_eqn_array curenvnb f2 l2 cM substn
@@ -429,10 +480,11 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	 (it is used by apply and rewrite); it might now be redundant
 	 with the support for delta-expansion (which is used
 	 essentially for apply)... *)
+      not (subterm_restriction b flags) &&
       match flags.modulo_conv_on_closed_terms with
       | None -> false
-      | Some convflags when not (subterm_restriction b flags) ->
-      let subst = if flags.use_metas_eagerly then metasubst else ms in
+      | Some convflags ->
+      let subst = if flags.use_metas_eagerly_in_conv_on_closed_terms then metasubst else ms in
       match subst_defined_metas subst cM with
       | None -> (* some undefined Metas in cM *) false
       | Some m1 ->

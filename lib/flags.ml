@@ -36,7 +36,7 @@ let raw_print = ref false
 
 (* Compatibility mode *)
 
-type compat_version = V8_2
+type compat_version = V8_2 | V8_3
 let compat_version = ref None
 let version_strictly_greater v =
   match !compat_version with None -> true | Some v' -> v'>v

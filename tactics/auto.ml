@@ -840,11 +840,12 @@ open Unification
 
 let auto_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
-  use_metas_eagerly = false;
+  use_metas_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = empty_transparent_state;
   modulo_delta_types = full_transparent_state;
   resolve_evars = true;
-  use_evars_pattern_unification = false;
+  use_pattern_unification = false;
+  use_meta_bound_pattern_unification = true;
   frozen_evars = ExistentialSet.empty;
   restrict_conv_on_strict_subterms = false; (* Compat *)
   modulo_betaiota = false;
@@ -971,7 +972,7 @@ and my_find_search mod_delta =
   else my_find_search_nodelta
 
 and my_find_search_delta db_list local_db hdc concl =
-  let flags = {auto_unif_flags with use_metas_eagerly = true} in
+  let flags = {auto_unif_flags with use_metas_eagerly_in_conv_on_closed_terms = true} in
   let f = hintmap_of hdc concl in
     if occur_existential concl then
       list_map_append

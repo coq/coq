@@ -33,6 +33,9 @@ Tactics
   result in some rare incompatibilities (solvable by adapting name hypotheses).
 - Introduction pattern "_" made more robust.
 - Tactic (and Eval command) vm_compute can now be interrupted via Ctrl-C.
+- Unification in "apply" supports unification of patterns of the form
+  ?f x y = g(x,y) (compatibility ensured by using
+  "Unset Tactic Pattern Unification").
 
 Vernacular commands
 

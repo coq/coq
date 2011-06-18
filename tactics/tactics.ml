@@ -842,6 +842,7 @@ type conjunction_status =
 let make_projection sigma params cstr sign elim i n c =
   let elim = match elim with
   | NotADefinedRecordUseScheme elim ->
+      (* bugs: goes from right to left when i increases! *)
       let (na,b,t) = List.nth cstr.cs_args i in
       let b = match b with None -> mkRel (i+1) | Some b -> b in
       let branch = it_mkLambda_or_LetIn b cstr.cs_args in
@@ -856,6 +857,7 @@ let make_projection sigma params cstr sign elim i n c =
       else
 	None
   | DefinedRecord l ->
+      (* goes from left to right when i increases! *)
       match List.nth l i with
       | Some proj ->
 	  let t = Typeops.type_of_constant (Global.env()) proj in

@@ -82,11 +82,12 @@ type conditions =
 
 let rewrite_unif_flags = {
   Unification.modulo_conv_on_closed_terms = None;
-  Unification.use_metas_eagerly = true;
+  Unification.use_metas_eagerly_in_conv_on_closed_terms = true;
   Unification.modulo_delta = empty_transparent_state;
   Unification.modulo_delta_types = empty_transparent_state;
   Unification.resolve_evars = true;
-  Unification.use_evars_pattern_unification = true;
+  Unification.use_pattern_unification = true;
+  Unification.use_meta_bound_pattern_unification = true;
   Unification.frozen_evars = ExistentialSet.empty;
   Unification.restrict_conv_on_strict_subterms = false;
   Unification.modulo_betaiota = false;
@@ -142,16 +143,18 @@ let rewrite_conv_closed_unif_flags = {
     (* We have this flag for historical reasons, it has e.g. the consequence *)
     (* to rewrite "?x+2" in "y+(1+1)=0" or to rewrite "?x+?x" in "2+(1+1)=0" *)
 
-  Unification.use_metas_eagerly = true;
+  Unification.use_metas_eagerly_in_conv_on_closed_terms = true;
     (* Combined with modulo_conv_on_closed_terms, this flag allows since 8.2 *)
     (* to rewrite e.g. "?x+(2+?x)" in "1+(1+2)=0" *)
 
   Unification.modulo_delta = empty_transparent_state;
   Unification.modulo_delta_types = full_transparent_state;
   Unification.resolve_evars = false;
-  Unification.use_evars_pattern_unification = true;
+  Unification.use_pattern_unification = true;
     (* To rewrite "?n x y" in "y+x=0" when ?n is *)
     (* a preexisting evar of the goal*)
+
+  Unification.use_meta_bound_pattern_unification = true;
 
   Unification.frozen_evars = ExistentialSet.empty;
     (* This is set dynamically *)

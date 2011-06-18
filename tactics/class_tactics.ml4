@@ -74,11 +74,12 @@ open Unification
 
 let auto_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
-  use_metas_eagerly = true;
+  use_metas_eagerly_in_conv_on_closed_terms = true;
   modulo_delta = var_full_transparent_state;
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
-  use_evars_pattern_unification = true;
+  use_pattern_unification = true;
+  use_meta_bound_pattern_unification = true;
   frozen_evars = ExistentialSet.empty;
   restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = true;

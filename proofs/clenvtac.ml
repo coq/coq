@@ -102,11 +102,12 @@ let e_res_pf clenv = res_pf clenv ~with_evars:true ~flags:dft
 
 let fail_quick_unif_flags = {
   modulo_conv_on_closed_terms = Some full_transparent_state;
-  use_metas_eagerly = false;
+  use_metas_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = empty_transparent_state;
   modulo_delta_types = full_transparent_state;
   resolve_evars = false;
-  use_evars_pattern_unification = false;
+  use_pattern_unification = false;
+  use_meta_bound_pattern_unification = true; (* ? *)
   frozen_evars = ExistentialSet.empty;
   restrict_conv_on_strict_subterms = false; (* ? *)
   modulo_betaiota = false;

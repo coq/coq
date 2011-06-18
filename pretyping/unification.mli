@@ -12,11 +12,12 @@ open Evd
 
 type unify_flags = {
   modulo_conv_on_closed_terms : Names.transparent_state option;
-  use_metas_eagerly : bool;
+  use_metas_eagerly_in_conv_on_closed_terms : bool;
   modulo_delta : Names.transparent_state;
   modulo_delta_types : Names.transparent_state;
   resolve_evars : bool;
-  use_evars_pattern_unification : bool;
+  use_pattern_unification : bool;
+  use_meta_bound_pattern_unification : bool;
   frozen_evars : ExistentialSet.t;
   restrict_conv_on_strict_subterms : bool;
   modulo_betaiota : bool;
