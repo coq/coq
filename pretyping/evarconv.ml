@@ -55,19 +55,19 @@ let eval_flexible_term ts env c =
   | Lambda _ -> Some c
   | _ -> assert false
 
-let evar_apprec env evd stack c =
+let evar_apprec ts env evd stack c =
   let sigma =  evd in
   let rec aux s =
-    let (t,stack) = whd_betaiota_deltazeta_for_iota_state env sigma s in
+    let (t,stack) = whd_betaiota_deltazeta_for_iota_state ts env sigma s in
     match kind_of_term t with
       | Evar (evk,_ as ev) when Evd.is_defined sigma evk ->
 	  aux (Evd.existential_value sigma ev, stack)
       | _ -> (t, list_of_stack stack)
   in aux (c, append_stack_list stack empty_stack)
 
-let apprec_nohdbeta env evd c =
+let apprec_nohdbeta ts env evd c =
   match kind_of_term (fst (Reductionops.whd_stack evd c)) with
-    | (Case _ | Fix _) -> applist (evar_apprec env evd [] c)
+    | (Case _ | Fix _) -> applist (evar_apprec ts env evd [] c)
     | _ -> c
 
 let position_problem l2r = function
@@ -183,8 +183,8 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
     | None ->
 	(* Until pattern-unification is used consistently, use nohdbeta to not
 	   destroy beta-redexes that can be used for 1st-order unification *)
-        let term1 = apprec_nohdbeta env evd term1 in
-        let term2 = apprec_nohdbeta env evd term2 in
+        let term1 = apprec_nohdbeta ts env evd term1 in
+        let term2 = apprec_nohdbeta ts env evd term2 in
         if is_undefined_evar evd term1 then
           solve_simple_eqn (evar_conv_x ts) env evd
 	    (position_problem true pbty,destEvar term1,term2)
@@ -253,7 +253,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	and f2 i =
 	  match eval_flexible_term ts env flex2 with
 	    | Some v2 ->
-		evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
+		evar_eqappr_x ts env i pbty appr1 (evar_apprec ts env i l2 v2)
 	    | None -> (i,false)
 	in
 	ise_try evd [f1; f2]
@@ -285,7 +285,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	and f2 i =
 	  match eval_flexible_term ts env flex1 with
 	    | Some v1 ->
-		evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
+		evar_eqappr_x ts env i pbty (evar_apprec ts env i l1 v1) appr2
 	    | None -> (i,false)
 	in
 	ise_try evd [f1; f2]
@@ -302,8 +302,8 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	       evar_conv_x ts (push_rel (na,Some b,t) env) i pbty c'1 c'2);
 	     (fun i -> ise_list2 i (fun i -> evar_conv_x ts env i CONV) l1 l2)]
 	and f2 i =
-          let appr1 = evar_apprec env i l1 (subst1 b1 c'1)
-          and appr2 = evar_apprec env i l2 (subst1 b2 c'2)
+          let appr1 = evar_apprec ts env i l1 (subst1 b1 c'1)
+          and appr2 = evar_apprec ts env i l2 (subst1 b2 c'2)
 	  in evar_eqappr_x ts env i pbty appr1 appr2
 	in
 	ise_try evd [f1; f2]
@@ -328,20 +328,20 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	  then
 	    match eval_flexible_term ts env flex1 with
 	    | Some v1 ->
-		evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
+		evar_eqappr_x ts env i pbty (evar_apprec ts env i l1 v1) appr2
 	    | None ->
 		match eval_flexible_term ts env flex2 with
 		| Some v2 ->
-		    evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
+		    evar_eqappr_x ts env i pbty appr1 (evar_apprec ts env i l2 v2)
 		| None -> (i,false)
 	  else
 	    match eval_flexible_term ts env flex2 with
 	    | Some v2 ->
-		evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
+		evar_eqappr_x ts env i pbty appr1 (evar_apprec ts env i l2 v2)
 	    | None ->
 		match eval_flexible_term ts env flex1 with
 		| Some v1 ->
-		    evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
+		    evar_eqappr_x ts env i pbty (evar_apprec ts env i l1 v1) appr2
 		| None -> (i,false)
 	in
 	ise_try evd [f1; f2; f3]
@@ -396,7 +396,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	and f4 i =
 	  match eval_flexible_term ts env flex1 with
 	    | Some v1 ->
- 		evar_eqappr_x ts env i pbty (evar_apprec env i l1 v1) appr2
+		evar_eqappr_x ts env i pbty (evar_apprec ts env i l1 v1) appr2
 	    | None -> (i,false)
 	in
 	ise_try evd [f3; f4]
@@ -408,7 +408,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	and f4 i =
 	  match eval_flexible_term ts env flex2 with
 	    | Some v2 ->
- 		evar_eqappr_x ts env i pbty appr1 (evar_apprec env i l2 v2)
+		evar_eqappr_x ts env i pbty appr1 (evar_apprec ts env i l2 v2)
 	    | None -> (i,false)
 	in
 	ise_try evd [f3; f4]
@@ -419,7 +419,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	let (na,c1,c'1) = destLambda c1 in
         let c = nf_evar evd c1 in
 	let env' = push_rel (na,None,c) env in
-        let appr1 = evar_apprec env' evd [] c'1 in
+        let appr1 = evar_apprec ts env' evd [] c'1 in
 	let appr2 = (lift 1 term2, List.map (lift 1) l2 @ [mkRel 1]) in
 	evar_eqappr_x ts env' evd CONV appr1 appr2
 
@@ -429,7 +429,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
         let c = nf_evar evd c2 in
 	let env' = push_rel (na,None,c) env in
 	let appr1 = (lift 1 term1, List.map (lift 1) l1 @ [mkRel 1]) in
-        let appr2 = evar_apprec env' evd [] c'2 in
+        let appr2 = evar_apprec ts env' evd [] c'2 in
 	evar_eqappr_x ts env' evd CONV appr1 appr2
 
     | Rigid c1, Rigid c2 -> begin
@@ -568,8 +568,8 @@ let choose_less_dependent_instance evk evd term args =
   Evd.define evk (mkVar (fst (List.hd subst'))) evd
 
 let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
-  let t1 = apprec_nohdbeta env evd (whd_head_evar evd t1) in
-  let t2 = apprec_nohdbeta env evd (whd_head_evar evd t2) in
+  let t1 = apprec_nohdbeta ts env evd (whd_head_evar evd t1) in
+  let t2 = apprec_nohdbeta ts env evd (whd_head_evar evd t2) in
   let (term1,l1 as appr1) = decompose_app t1 in
   let (term2,l2 as appr2) = decompose_app t2 in
   match kind_of_term term1, kind_of_term term2 with

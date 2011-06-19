@@ -292,7 +292,7 @@ let reduce_fix whdfun sigma fix stack =
                               -------------------
    qui coute cher *)
 
-let rec whd_state_gen flags env sigma =
+let rec whd_state_gen flags ts env sigma =
   let rec whrec (x, stack as s) =
     match kind_of_term x with
       | Rel n when red_delta flags ->
@@ -311,7 +311,7 @@ let rec whd_state_gen flags env sigma =
 	  (match safe_meta_value sigma ev with
 	     | Some body -> whrec (body, stack)
 	     | None -> s)
-      | Const const when red_delta flags ->
+      | Const const when is_transparent_constant ts const ->
 	  (match constant_opt_value env const with
 	     | Some  body -> whrec (body, stack)
 	     | None -> s)
@@ -323,7 +323,7 @@ let rec whd_state_gen flags env sigma =
              | Some (a,m) when red_beta flags -> stacklam whrec [a] c m
              | None when red_eta flags ->
 		 let env' = push_rel (na,None,t) env in
-		 let whrec' = whd_state_gen flags env' sigma in
+		 let whrec' = whd_state_gen flags ts env' sigma in
                  (match kind_of_term (app_stack (whrec' (c, empty_stack))) with
                     | App (f,cl) ->
 			let napp = Array.length cl in
@@ -434,18 +434,19 @@ let whd_betalet = red_of_state_red whd_betalet_state
 
 (* 2. Delta Reduction Functions *)
 
-let whd_delta_state e = whd_state_gen delta e
+let whd_delta_state e = whd_state_gen delta full_transparent_state e
 let whd_delta_stack env = stack_red_of_state_red (whd_delta_state env)
 let whd_delta env = red_of_state_red  (whd_delta_state env)
 
-let whd_betadelta_state e = whd_state_gen betadelta e
+let whd_betadelta_state e = whd_state_gen betadelta full_transparent_state e
 let whd_betadelta_stack env =
   stack_red_of_state_red (whd_betadelta_state env)
 let whd_betadelta env =
   red_of_state_red (whd_betadelta_state env)
 
 
-let whd_betadeltaeta_state e = whd_state_gen betadeltaeta e
+let whd_betadeltaeta_state e =
+  whd_state_gen betadeltaeta full_transparent_state e
 let whd_betadeltaeta_stack env =
   stack_red_of_state_red (whd_betadeltaeta_state env)
 let whd_betadeltaeta env =
@@ -461,19 +462,29 @@ let whd_betaiotazeta_state = local_whd_state_gen betaiotazeta
 let whd_betaiotazeta_stack = stack_red_of_state_red whd_betaiotazeta_state
 let whd_betaiotazeta = red_of_state_red whd_betaiotazeta_state
 
-let whd_betadeltaiota_state e = whd_state_gen betadeltaiota e
+let whd_betadeltaiota_state env =
+  whd_state_gen betadeltaiota full_transparent_state env
 let whd_betadeltaiota_stack env =
   stack_red_of_state_red (whd_betadeltaiota_state env)
 let whd_betadeltaiota env =
   red_of_state_red (whd_betadeltaiota_state env)
 
-let whd_betadeltaiotaeta_state e = whd_state_gen betadeltaiotaeta e
+let whd_betadeltaiota_state_using ts env =
+  whd_state_gen betadeltaiota ts env
+let whd_betadeltaiota_stack_using ts env =
+  stack_red_of_state_red (whd_betadeltaiota_state_using ts env)
+let whd_betadeltaiota_using ts env =
+  red_of_state_red (whd_betadeltaiota_state_using ts env)
+
+let whd_betadeltaiotaeta_state env =
+  whd_state_gen betadeltaiotaeta full_transparent_state env
 let whd_betadeltaiotaeta_stack env =
   stack_red_of_state_red (whd_betadeltaiotaeta_state env)
 let whd_betadeltaiotaeta env =
   red_of_state_red (whd_betadeltaiotaeta_state env)
 
-let whd_betadeltaiota_nolet_state e = whd_state_gen betadeltaiota_nolet e
+let whd_betadeltaiota_nolet_state env =
+  whd_state_gen betadeltaiota_nolet full_transparent_state env
 let whd_betadeltaiota_nolet_stack env =
   stack_red_of_state_red (whd_betadeltaiota_nolet_state env)
 let whd_betadeltaiota_nolet env =
@@ -795,19 +806,21 @@ let is_sort env sigma arity =
 (* reduction to head-normal-form allowing delta/zeta only in argument
    of case/fix (heuristic used by evar_conv) *)
 
-let whd_betaiota_deltazeta_for_iota_state env sigma s =
+let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
   let rec whrec s =
     let (t, stack as s) = whd_betaiota_state sigma s in
     match kind_of_term t with
     | Case (ci,p,d,lf) ->
-        let (cr,crargs) = whd_betadeltaiota_stack env sigma d in
+        let (cr,crargs) = whd_betadeltaiota_stack_using ts env sigma d in
         let rslt = mkCase (ci, p, applist (cr,crargs), lf) in
         if reducible_mind_case cr then
 	  whrec (rslt, stack)
         else
 	  s
     | Fix fix ->
-	  (match reduce_fix (whd_betadeltaiota_state env) sigma fix stack with
+	  (match
+              reduce_fix (whd_betadeltaiota_state_using ts env) sigma fix stack
+           with
              | Reduced s -> whrec s
 	     | NotReducible -> s)
     | _ -> s

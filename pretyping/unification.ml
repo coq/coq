@@ -223,7 +223,7 @@ let default_unify_flags = {
   use_meta_bound_pattern_unification = true;
   frozen_evars = ExistentialSet.empty;
   restrict_conv_on_strict_subterms = false;
-  modulo_betaiota = true;
+  modulo_betaiota = false;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = false
       (* in fact useless when not used in w_unify_to_subterm_list *)
@@ -327,9 +327,12 @@ let oracle_order env cf1 cf2 =
       | None -> Some true
       | Some k2 -> Some (Conv_oracle.oracle_order k1 k2)
 
-let do_reduce env sigma c =
-  let (t, l) = whd_betaiota_deltazeta_for_iota_state env sigma (c, empty_stack) in
+let do_reduce ts env sigma c =
+  let (t, l) = whd_betaiota_deltazeta_for_iota_state ts env sigma (c, empty_stack) in
     applist (t, list_of_stack l)
+
+let use_full_betaiota flags =
+  flags.modulo_betaiota && Flags.version_strictly_greater Flags.V8_3
 
 let isAllowedEvar flags c = match kind_of_term c with
   | Evar (evk,_) -> not (ExistentialSet.mem evk flags.frozen_evars)
@@ -453,12 +456,12 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 		    expand curenvnb pb b substn cM f1 l1 cN f2 l2
 
   and reduce curenvnb pb b (sigma, metas, evars as substn) cM cN =
-    if flags.modulo_betaiota && not (subterm_restriction b flags) then
-      let cM' = do_reduce (fst curenvnb) sigma cM in
+    if use_full_betaiota flags && not (subterm_restriction b flags) then
+      let cM' = do_reduce flags.modulo_delta (fst curenvnb) sigma cM in
 	if not (eq_constr cM cM') then
 	  unirec_rec curenvnb pb b substn cM' cN
 	else
-	  let cN' = do_reduce (fst curenvnb) sigma cN in
+	  let cN' = do_reduce flags.modulo_delta (fst curenvnb) sigma cN in
 	    if not (eq_constr cN cN') then
 	      unirec_rec curenvnb pb b substn cM cN'
 	    else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -925,7 +928,7 @@ let w_typed_unify_list env flags f1 l1 f2 l2 evd =
   let (mc1,evd') = retract_coercible_metas evd in
   let subst =
     List.fold_left2 (fun subst m n ->
-      unify_0_with_initial_metas subst true env CONV flags' m n) (evd,[],[])
+      unify_0_with_initial_metas subst true env CONV flags' m n) (evd',[],[])
       (f1::l1) (f2::l2) in
   let evd = w_merge env true flags subst in
   try_resolve_typeclasses env evd flags (applist(f1,l1)) (applist(f2,l2))

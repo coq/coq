@@ -35,7 +35,7 @@ Tactics
 - Tactic (and Eval command) vm_compute can now be interrupted via Ctrl-C.
 - Unification in "apply" supports unification of patterns of the form
   ?f x y = g(x,y) (compatibility ensured by using
-  "Unset Tactic Pattern Unification").
+  "Unset Tactic Pattern Unification"). It also supports (full) betaiota.
 - Tactic autorewrite does no longer instantiate pre-existing
   existential variables (theoretical source of possible incompatibility).
 
