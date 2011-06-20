@@ -223,7 +223,7 @@ let default_unify_flags = {
   use_meta_bound_pattern_unification = true;
   frozen_evars = ExistentialSet.empty;
   restrict_conv_on_strict_subterms = false;
-  modulo_betaiota = false;
+  modulo_betaiota = true;
   modulo_eta = true;
   allow_K_in_toplevel_higher_order_unification = false
       (* in fact useless when not used in w_unify_to_subterm_list *)
@@ -1162,7 +1162,7 @@ let w_unify env cv_pb ?(flags=default_unify_flags) ty1 ty2 evd =
 		  try
 		    w_typed_unify_list env flags hd1 l1 hd2 l2 evd
 		  with ex' when precatchable_exception ex' ->
-		    raise ex')
+		    raise ex)
 
       (* General case: try first order *)
       | _ -> w_typed_unify env cv_pb flags ty1 ty2 evd
