@@ -120,6 +120,7 @@ let compile_files () =
       (List.rev !compile_list)
 
 let set_compat_version = function
+  | "8.3" -> compat_version := Some V8_3
   | "8.2" -> compat_version := Some V8_2
   | "8.1" -> warning "Compatibility with version 8.1 not supported."
   | "8.0" -> warning "Compatibility with version 8.0 not supported."
