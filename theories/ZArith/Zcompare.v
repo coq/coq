@@ -19,15 +19,6 @@ Local Open Scope Z_scope.
 (***************************)
 (** * Comparison on integers *)
 
-Ltac destr_zcompare :=
- match goal with |- context [Z.compare ?x ?y] =>
-  let H := fresh "H" in
-  case_eq (Z.compare x y); intro H;
-   [generalize (Z.compare_eq _ _ H); clear H; intro H |
-    change (x<y)%Z in H |
-    change (x>y)%Z in H ]
- end.
-
 Lemma Zcompare_Gt_Lt_antisym : forall n m:Z, (n ?= m) = Gt <-> (m ?= n) = Lt.
 Proof Z.gt_lt_iff.
 

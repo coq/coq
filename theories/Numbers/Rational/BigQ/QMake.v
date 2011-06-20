@@ -68,15 +68,9 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
  Proof.
  intros x; rewrite N.spec_0; generalize (N.spec_pos x). romega.
  Qed.
-(*
- Lemma if_fun_commut : forall A B (f:A->B)(b:bool) a a',
- f (if b then a else a') = if b then f a else f a'.
- Proof. now destruct b. Qed.
 
- Lemma if_fun_commut' : forall A B C D (f:A->B)(b:{C}+{D}) a a',
- f (if b then a else a') = if b then f a else f a'.
- Proof. now destruct b. Qed.
-*)
+ Ltac destr_zcompare := case Z.compare_spec; intros ?H.
+
  Ltac destr_eqb :=
   match goal with
    | |- context [Z.eqb ?x ?y] =>
