@@ -62,6 +62,9 @@ Infix "*" := BigN.mul : bigN_scope.
 Infix "/" := BigN.div : bigN_scope.
 Infix "^" := BigN.pow : bigN_scope.
 Infix "?=" := BigN.compare : bigN_scope.
+Infix "=?" := BigN.eqb (at level 70, no associativity) : bigN_scope.
+Infix "<=?" := BigN.leb (at level 70, no associativity) : bigN_scope.
+Infix "<?" := BigN.ltb (at level 70, no associativity) : bigN_scope.
 Infix "==" := BigN.eq (at level 70, no associativity) : bigN_scope.
 Notation "x != y" := (~x==y) (at level 70, no associativity) : bigN_scope.
 Infix "<" := BigN.lt : bigN_scope.
@@ -94,7 +97,7 @@ exact BigN.mul_1_l. exact BigN.mul_0_l. exact BigN.mul_comm.
 exact BigN.mul_assoc. exact BigN.mul_add_distr_r.
 Qed.
 
-Lemma BigNeqb_correct : forall x y, BigN.eq_bool x y = true -> x==y.
+Lemma BigNeqb_correct : forall x y, (x =? y) = true -> x==y.
 Proof. now apply BigN.eqb_eq. Qed.
 
 Lemma BigNpower : power_theory 1 BigN.mul BigN.eq BigN.of_N BigN.pow.
@@ -107,11 +110,11 @@ induction p; simpl; intros; BigN.zify; rewrite ?IHp; auto.
 Qed.
 
 Lemma BigNdiv : div_theory BigN.eq BigN.add BigN.mul (@id _)
- (fun a b => if BigN.eq_bool b 0 then (0,a) else BigN.div_eucl a b).
+ (fun a b => if b =? 0 then (0,a) else BigN.div_eucl a b).
 Proof.
 constructor. unfold id. intros a b.
 BigN.zify.
-generalize (Zeq_bool_if [b] 0); destruct (Zeq_bool [b] 0).
+case Z.eqb_spec.
 BigN.zify. auto with zarith.
 intros NEQ.
 generalize (BigN.spec_div_eucl a b).

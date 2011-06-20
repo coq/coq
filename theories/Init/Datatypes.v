@@ -120,6 +120,7 @@ Defined.
 Inductive BoolSpec (P Q : Prop) : bool -> Prop :=
   | BoolSpecT : P -> BoolSpec P Q true
   | BoolSpecF : Q -> BoolSpec P Q false.
+Hint Constructors BoolSpec.
 
 
 (********************************************************************)

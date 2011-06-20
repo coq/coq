@@ -56,6 +56,9 @@ Infix "*" := BigZ.mul : bigZ_scope.
 Infix "/" := BigZ.div : bigZ_scope.
 Infix "^" := BigZ.pow : bigZ_scope.
 Infix "?=" := BigZ.compare : bigZ_scope.
+Infix "=?" := BigZ.eqb (at level 70, no associativity) : bigZ_scope.
+Infix "<=?" := BigZ.leb (at level 70, no associativity) : bigZ_scope.
+Infix "<?" := BigZ.ltb (at level 70, no associativity) : bigZ_scope.
 Infix "==" := BigZ.eq (at level 70, no associativity) : bigZ_scope.
 Notation "x != y" := (~x==y) (at level 70, no associativity) : bigZ_scope.
 Infix "<" := BigZ.lt : bigZ_scope.
@@ -112,7 +115,7 @@ symmetry. apply BigZ.add_opp_r.
 exact BigZ.add_opp_diag_r.
 Qed.
 
-Lemma BigZeqb_correct : forall x y, BigZ.eq_bool x y = true -> x==y.
+Lemma BigZeqb_correct : forall x y, (x =? y) = true -> x==y.
 Proof. now apply BigZ.eqb_eq. Qed.
 
 Definition BigZ_of_N n := BigZ.of_Z (Z_of_N n).
@@ -127,11 +130,11 @@ induction p; simpl; intros; BigZ.zify; rewrite ?IHp; auto.
 Qed.
 
 Lemma BigZdiv : div_theory BigZ.eq BigZ.add BigZ.mul (@id _)
- (fun a b => if BigZ.eq_bool b 0 then (0,a) else BigZ.div_eucl a b).
+ (fun a b => if b =? 0 then (0,a) else BigZ.div_eucl a b).
 Proof.
 constructor. unfold id. intros a b.
 BigZ.zify.
-generalize (Zeq_bool_if [b] 0); destruct (Zeq_bool [b] 0).
+case Z.eqb_spec.
 BigZ.zify. auto with zarith.
 intros NEQ.
 generalize (BigZ.spec_div_eucl a b).

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Bool ZArith Nnat ZAxioms ZSig.
+Require Import Bool ZArith OrdersFacts Nnat ZAxioms ZSig.
 
 (** * The interface [ZSig.ZType] implies the interface [ZAxiomsSig] *)
 
@@ -15,9 +15,9 @@ Module ZTypeIsZAxioms (Import Z : ZType').
 Hint Rewrite
  spec_0 spec_1 spec_2 spec_add spec_sub spec_pred spec_succ
  spec_mul spec_opp spec_of_Z spec_div spec_modulo spec_sqrt
- spec_compare spec_eq_bool spec_max spec_min spec_abs spec_sgn
- spec_pow spec_log2 spec_even spec_odd spec_gcd spec_quot spec_rem
- spec_testbit spec_shiftl spec_shiftr
+ spec_compare spec_eqb spec_ltb spec_leb spec_max spec_min
+ spec_abs spec_sgn spec_pow spec_log2 spec_even spec_odd spec_gcd
+ spec_quot spec_rem spec_testbit spec_shiftl spec_shiftr
  spec_land spec_lor spec_ldiff spec_lxor spec_div2
  : zsimpl.
 
@@ -138,36 +138,66 @@ Qed.
 
 (** Order *)
 
-Lemma compare_spec : forall x y, CompareSpec (x==y) (x<y) (y<x) (compare x y).
+Lemma eqb_eq x y : eqb x y = true <-> x == y.
 Proof.
- intros. zify. destruct (Zcompare_spec [x] [y]); auto.
+ zify. apply Z.eqb_eq.
 Qed.
 
-Definition eqb := eq_bool.
-
-Lemma eqb_eq : forall x y, eq_bool x y = true <-> x == y.
+Lemma leb_le x y : leb x y = true <-> x <= y.
 Proof.
- intros. zify. symmetry. apply Zeq_is_eq_bool.
+ zify. apply Z.leb_le.
 Qed.
+
+Lemma ltb_lt x y : ltb x y = true <-> x < y.
+Proof.
+ zify. apply Z.ltb_lt.
+Qed.
+
+Lemma compare_eq_iff n m : compare n m = Eq <-> n == m.
+Proof.
+ intros. zify. apply Z.compare_eq_iff.
+Qed.
+
+Lemma compare_lt_iff n m : compare n m = Lt <-> n < m.
+Proof.
+ intros. zify. reflexivity.
+Qed.
+
+Lemma compare_le_iff n m : compare n m <> Gt <-> n <= m.
+Proof.
+ intros. zify. reflexivity.
+Qed.
+
+Lemma compare_antisym n m : compare m n = CompOpp (compare n m).
+Proof.
+ intros. zify. apply Z.compare_antisym.
+Qed.
+
+Include BoolOrderFacts Z Z Z [no inline].
 
 Instance compare_wd : Proper (eq ==> eq ==> Logic.eq) compare.
 Proof.
-intros x x' Hx y y' Hy. rewrite 2 spec_compare, Hx, Hy; intuition.
+intros x x' Hx y y' Hy. zify. now rewrite Hx, Hy.
+Qed.
+
+Instance eqb_wd : Proper (eq ==> eq ==> Logic.eq) eqb.
+Proof.
+intros x x' Hx y y' Hy. zify. now rewrite Hx, Hy.
+Qed.
+
+Instance ltb_wd : Proper (eq ==> eq ==> Logic.eq) ltb.
+Proof.
+intros x x' Hx y y' Hy. zify. now rewrite Hx, Hy.
+Qed.
+
+Instance leb_wd : Proper (eq ==> eq ==> Logic.eq) leb.
+Proof.
+intros x x' Hx y y' Hy. zify. now rewrite Hx, Hy.
 Qed.
 
 Instance lt_wd : Proper (eq ==> eq ==> iff) lt.
 Proof.
 intros x x' Hx y y' Hy; unfold lt; rewrite Hx, Hy; intuition.
-Qed.
-
-Theorem lt_eq_cases : forall n m, n <= m <-> n < m \/ n == m.
-Proof.
-intros. zify. omega.
-Qed.
-
-Theorem lt_irrefl : forall n, ~ n < n.
-Proof.
-intros. zify. omega.
 Qed.
 
 Theorem lt_succ_r : forall n m, n < (succ m) <-> n <= m.
@@ -491,5 +521,5 @@ Qed.
 End ZTypeIsZAxioms.
 
 Module ZType_ZAxioms (Z : ZType)
- <: ZAxiomsSig <: HasCompare Z <: HasEqBool Z <: HasMinMax Z
+ <: ZAxiomsSig <: OrderFunctions Z <: HasMinMax Z
  := Z <+ ZTypeIsZAxioms.

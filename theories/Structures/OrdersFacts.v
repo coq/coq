@@ -6,15 +6,76 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-Require Import Basics OrdersTac.
+Require Import Bool Basics OrdersTac.
 Require Export Orders.
 
 Set Implicit Arguments.
 Unset Strict Implicit.
 
-(** * Properties of [OrderedTypeFull] *)
+(** * Properties of [compare] *)
 
-Module OrderedTypeFullFacts (Import O:OrderedTypeFull').
+Module Type CompareFacts (Import O:DecStrOrder').
+
+ Local Infix "?=" := compare (at level 70, no associativity).
+
+ Lemma compare_eq_iff x y : (x ?= y) = Eq <-> x==y.
+ Proof.
+ case compare_spec; intro H; split; try easy; intro EQ;
+  contradict H; rewrite EQ; apply irreflexivity.
+ Qed.
+
+ Lemma compare_eq x y : (x ?= y) = Eq -> x==y.
+ Proof.
+ apply compare_eq_iff.
+ Qed.
+
+ Lemma compare_lt_iff x y : (x ?= y) = Lt <-> x<y.
+ Proof.
+ case compare_spec; intro H; split; try easy; intro LT;
+  contradict LT; rewrite H; apply irreflexivity.
+ Qed.
+
+ Lemma compare_gt_iff x y : (x ?= y) = Gt <-> y<x.
+ Proof.
+ case compare_spec; intro H; split; try easy; intro LT;
+  contradict LT; rewrite H; apply irreflexivity.
+ Qed.
+
+ Lemma compare_nlt_iff x y : (x ?= y) <> Lt <-> ~(x<y).
+ Proof.
+ rewrite compare_lt_iff; intuition.
+ Qed.
+
+ Lemma compare_ngt_iff x y : (x ?= y) <> Gt <-> ~(y<x).
+ Proof.
+ rewrite compare_gt_iff; intuition.
+ Qed.
+
+ Hint Rewrite compare_eq_iff compare_lt_iff compare_gt_iff : order.
+
+ Instance compare_compat : Proper (eq==>eq==>Logic.eq) compare.
+ Proof.
+ intros x x' Hxx' y y' Hyy'.
+ case (compare_spec x' y'); autorewrite with order; now rewrite Hxx', Hyy'.
+ Qed.
+
+ Lemma compare_refl x : (x ?= x) = Eq.
+ Proof.
+ case compare_spec; intros; trivial; now elim irreflexivity with x.
+ Qed.
+
+ Lemma compare_antisym x y : (y ?= x) = CompOpp (x ?= y).
+ Proof.
+ case (compare_spec x y); simpl; autorewrite with order;
+  trivial; now symmetry.
+ Qed.
+
+End CompareFacts.
+
+
+ (** * Properties of [OrderedTypeFull] *)
+
+Module Type OrderedTypeFullFacts (Import O:OrderedTypeFull').
 
  Module OrderTac := OTF_to_OrderTac O.
  Ltac order := OrderTac.order.
@@ -46,6 +107,18 @@ Module OrderedTypeFullFacts (Import O:OrderedTypeFull').
 
  Lemma eq_is_le_ge : forall x y, x==y <-> x<=y /\ y<=x.
  Proof. iorder. Qed.
+
+ Include CompareFacts O.
+
+ Lemma compare_le_iff x y : compare x y <> Gt <-> x<=y.
+ Proof.
+ rewrite le_not_gt_iff. apply compare_ngt_iff.
+ Qed.
+
+ Lemma compare_ge_iff x y : compare x y <> Lt <-> y<=x.
+ Proof.
+ rewrite le_not_gt_iff. apply compare_nlt_iff.
+ Qed.
 
 End OrderedTypeFullFacts.
 
@@ -84,50 +157,9 @@ Module OrderedTypeFacts (Import O: OrderedType').
 
   Definition lt_irrefl (x:t) : ~x<x := StrictOrder_Irreflexive x.
 
-  (** Some more about [compare] *)
-
-  Lemma compare_eq_iff : forall x y, (x ?= y) = Eq <-> x==y.
-  Proof.
-   intros; elim_compare x y; intuition; try discriminate; order.
-  Qed.
-
-  Lemma compare_lt_iff : forall x y, (x ?= y) = Lt <-> x<y.
-  Proof.
-   intros; elim_compare x y; intuition; try discriminate; order.
-  Qed.
-
-  Lemma compare_gt_iff : forall x y, (x ?= y) = Gt <-> y<x.
-  Proof.
-   intros; elim_compare x y; intuition; try discriminate; order.
-  Qed.
-
-  Lemma compare_ge_iff : forall x y, (x ?= y) <> Lt <-> y<=x.
-  Proof.
-   intros; rewrite compare_lt_iff; intuition.
-  Qed.
-
-  Lemma compare_le_iff : forall x y, (x ?= y) <> Gt <-> x<=y.
-  Proof.
-   intros; rewrite compare_gt_iff; intuition.
-  Qed.
-
-  Hint Rewrite compare_eq_iff compare_lt_iff compare_gt_iff : order.
-
-  Instance compare_compat : Proper (eq==>eq==>Logic.eq) compare.
-  Proof.
-  intros x x' Hxx' y y' Hyy'.
-  elim_compare x' y'; autorewrite with order; order.
-  Qed.
-
-  Lemma compare_refl : forall x, (x ?= x) = Eq.
-  Proof.
-   intros; elim_compare x x; auto; order.
-  Qed.
-
-  Lemma compare_antisym : forall x y, (y ?= x) = CompOpp (x ?= y).
-  Proof.
-   intros; elim_compare x y; simpl; autorewrite with order; order.
-  Qed.
+  Include CompareFacts O.
+  Notation compare_le_iff := compare_ngt_iff (only parsing).
+  Notation compare_ge_iff := compare_nlt_iff (only parsing).
 
   (** For compatibility reasons *)
   Definition eq_dec := eq_dec.
@@ -160,10 +192,6 @@ Module OrderedTypeFacts (Import O: OrderedType').
   Qed.
 
 End OrderedTypeFacts.
-
-
-
-
 
 
 (** * Tests of the order tactic
@@ -232,3 +260,195 @@ Qed.
 
 End OrderedTypeRev.
 
+Unset Implicit Arguments.
+
+(** * Order relations derived from a [compare] function.
+
+  We factorize here some common properties for ZArith, NArith
+  and co, where [lt] and [le] are defined in terms of [compare].
+  Note that we do not require anything here concerning compatibility
+  of [compare] w.r.t [eq], nor anything concerning transitivity.
+*)
+
+Module Type CompareBasedOrder (Import E:EqLtLe')(Import C:HasCmp E).
+ Include CmpNotation E C.
+ Include IsEq E.
+ Axiom compare_eq_iff : forall x y, (x ?= y) = Eq <-> x == y.
+ Axiom compare_lt_iff : forall x y, (x ?= y) = Lt <-> x < y.
+ Axiom compare_le_iff : forall x y, (x ?= y) <> Gt <-> x <= y.
+ Axiom compare_antisym : forall x y, (y ?= x) = CompOpp (x ?= y).
+End CompareBasedOrder.
+
+Module Type CompareBasedOrderFacts
+ (Import E:EqLtLe')
+ (Import C:HasCmp E)
+ (Import O:CompareBasedOrder E C).
+
+ Lemma compare_spec x y : CompareSpec (x==y) (x<y) (y<x) (x?=y).
+ Proof.
+  case_eq (compare x y); intros H; constructor.
+  now apply compare_eq_iff.
+  now apply compare_lt_iff.
+  rewrite compare_antisym, CompOpp_iff in H. now apply compare_lt_iff.
+ Qed.
+
+ Lemma compare_eq x y : (x ?= y) = Eq -> x==y.
+ Proof.
+ apply compare_eq_iff.
+ Qed.
+
+ Lemma compare_refl x : (x ?= x) = Eq.
+ Proof.
+ now apply compare_eq_iff.
+ Qed.
+
+ Lemma compare_gt_iff x y : (x ?= y) = Gt <-> y<x.
+ Proof.
+ now rewrite <- compare_lt_iff, compare_antisym, CompOpp_iff.
+ Qed.
+
+ Lemma compare_ge_iff x y : (x ?= y) <> Lt <-> y<=x.
+ Proof.
+ now rewrite <- compare_le_iff, compare_antisym, CompOpp_iff.
+ Qed.
+
+ Lemma compare_ngt_iff x y : (x ?= y) <> Gt <-> ~(y<x).
+ Proof.
+ rewrite compare_gt_iff; intuition.
+ Qed.
+
+ Lemma compare_nlt_iff x y : (x ?= y) <> Lt <-> ~(x<y).
+ Proof.
+ rewrite compare_lt_iff; intuition.
+ Qed.
+
+ Lemma compare_nle_iff x y : (x ?= y) = Gt <-> ~(x<=y).
+ Proof.
+ rewrite <- compare_le_iff.
+ destruct compare; split; easy || now destruct 1.
+ Qed.
+
+ Lemma compare_nge_iff x y : (x ?= y) = Lt <-> ~(y<=x).
+ Proof.
+ now rewrite <- compare_nle_iff, compare_antisym, CompOpp_iff.
+ Qed.
+
+ Lemma lt_irrefl x : ~ (x<x).
+ Proof.
+ now rewrite <- compare_lt_iff, compare_refl.
+ Qed.
+
+ Lemma lt_eq_cases n m : n <= m <-> n < m \/ n==m.
+ Proof.
+ rewrite <- compare_lt_iff, <- compare_le_iff, <- compare_eq_iff.
+ destruct (n ?= m); now intuition.
+ Qed.
+
+End CompareBasedOrderFacts.
+
+(** Basic facts about boolean comparisons *)
+
+Module Type BoolOrderFacts
+ (Import E:EqLtLe')
+ (Import C:HasCmp E)
+ (Import F:HasBoolOrdFuns' E)
+ (Import O:CompareBasedOrder E C)
+ (Import S:BoolOrdSpecs E F).
+
+Include CompareBasedOrderFacts E C O.
+
+(** Nota : apart from [eqb_compare] below, facts about [eqb]
+  are in BoolEqualityFacts *)
+
+(** Alternate specifications based on [BoolSpec] and [reflect] *)
+
+Lemma leb_spec0 x y : reflect (x<=y) (x<=?y).
+Proof.
+ apply iff_reflect. symmetry. apply leb_le.
+Qed.
+
+Lemma leb_spec x y : BoolSpec (x<=y) (y<x) (x<=?y).
+Proof.
+ case leb_spec0; constructor; trivial.
+ now rewrite <- compare_lt_iff, compare_nge_iff.
+Qed.
+
+Lemma ltb_spec0 x y : reflect (x<y) (x<?y).
+Proof.
+ apply iff_reflect. symmetry. apply ltb_lt.
+Qed.
+
+Lemma ltb_spec x y : BoolSpec (x<y) (y<=x) (x<?y).
+Proof.
+ case ltb_spec0; constructor; trivial.
+ now rewrite <- compare_le_iff, compare_ngt_iff.
+Qed.
+
+(** Negated variants of the specifications *)
+
+Lemma leb_nle x y : x <=? y = false <-> ~ (x <= y).
+Proof.
+now rewrite <- not_true_iff_false, leb_le.
+Qed.
+
+Lemma leb_gt x y : x <=? y = false <-> y < x.
+Proof.
+now rewrite leb_nle, <- compare_lt_iff, compare_nge_iff.
+Qed.
+
+Lemma ltb_nlt x y : x <? y = false <-> ~ (x < y).
+Proof.
+now rewrite <- not_true_iff_false, ltb_lt.
+Qed.
+
+Lemma ltb_ge x y : x <? y = false <-> y <= x.
+Proof.
+now rewrite ltb_nlt, <- compare_le_iff, compare_ngt_iff.
+Qed.
+
+(** Basic equality laws for boolean tests *)
+
+Lemma leb_refl x : x <=? x = true.
+Proof.
+apply leb_le. apply lt_eq_cases. now right.
+Qed.
+
+Lemma leb_antisym x y : y <=? x = negb (x <? y).
+Proof.
+apply eq_true_iff_eq. now rewrite negb_true_iff, leb_le, ltb_ge.
+Qed.
+
+Lemma ltb_irrefl x : x <? x = false.
+Proof.
+apply ltb_ge. apply lt_eq_cases. now right.
+Qed.
+
+Lemma ltb_antisym x y : y <? x = negb (x <=? y).
+Proof.
+apply eq_true_iff_eq. now rewrite negb_true_iff, ltb_lt, leb_gt.
+Qed.
+
+(** Relation bewteen [compare] and the boolean comparisons *)
+
+Lemma eqb_compare x y :
+ (x =? y) = match compare x y with Eq => true | _ => false end.
+Proof.
+apply eq_true_iff_eq. rewrite eqb_eq, <- compare_eq_iff.
+destruct compare; now split.
+Qed.
+
+Lemma ltb_compare x y :
+ (x <? y) = match compare x y with Lt => true | _ => false end.
+Proof.
+apply eq_true_iff_eq. rewrite ltb_lt, <- compare_lt_iff.
+destruct compare; now split.
+Qed.
+
+Lemma leb_compare x y :
+ (x <=? y) = match compare x y with Gt => false | _ => true end.
+Proof.
+apply eq_true_iff_eq. rewrite leb_le, <- compare_le_iff.
+destruct compare; split; try easy. now destruct 1.
+Qed.
+
+End BoolOrderFacts.

@@ -600,12 +600,12 @@ Fixpoint Zmod_POS (a : positive) (b : Z) : Z  :=
    | xI a' =>
       let r := Zmod_POS a' b in
       let r' := (2 * r + 1) in
-      if Zgt_bool b r' then r' else (r' - b)
+      if r' <? b then r' else (r' - b)
    | xO a' =>
       let r := Zmod_POS a' b in
       let r' := (2 * r) in
-      if Zgt_bool b r' then r' else (r' - b)
-   | xH => if Zge_bool b 2 then 1 else 0
+      if r' <? b then r' else (r' - b)
+   | xH => if 2 <=? b then 1 else 0
   end.
 
 Definition Zmod' a b :=
@@ -630,16 +630,14 @@ Definition Zmod' a b :=
   end.
 
 
-Theorem Zmod_POS_correct: forall a b, Zmod_POS a b = (snd (Zdiv_eucl_POS a b)).
+Theorem Zmod_POS_correct a b : Zmod_POS a b = snd (Zdiv_eucl_POS a b).
 Proof.
-  intros a b; elim a; simpl; auto.
-  intros p Rec; rewrite  Rec.
-  case (Zdiv_eucl_POS p b); intros z1 z2; simpl; auto.
-  match goal with |- context [Zgt_bool _ ?X] => case (Zgt_bool b X) end; auto.
-  intros p Rec; rewrite  Rec.
-  case (Zdiv_eucl_POS p b); intros z1 z2; simpl; auto.
-  match goal with |- context [Zgt_bool _ ?X] => case (Zgt_bool b X) end; auto.
-  case (Zge_bool b 2); auto.
+  induction a as [a IH|a IH| ]; simpl; rewrite ?IH.
+  destruct (Z.pos_div_eucl a b) as (p,q); simpl;
+   case Z.ltb_spec; reflexivity.
+  destruct (Z.pos_div_eucl a b) as (p,q); simpl;
+   case Z.ltb_spec; reflexivity.
+  case Z.leb_spec; trivial.
 Qed.
 
 Theorem Zmod'_correct: forall a b, Zmod' a b = Zmod a b.

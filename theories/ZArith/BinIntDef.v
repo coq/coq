@@ -166,19 +166,23 @@ Definition leb x y :=
     | _ => true
   end.
 
-Definition geb x y := (* TODO : to provide ? to modify ? *)
-  match x ?= y with
-    | Lt => false
-    | _ => true
-  end.
-
 Definition ltb x y :=
   match x ?= y with
     | Lt => true
     | _ => false
   end.
 
-Definition gtb x y := (* TODO : to provide ? to modify ? *)
+(** Nota: [geb] and [gtb] are provided for compatibility,
+  but [leb] and [ltb] should rather be used instead, since
+  more results we be available on them. *)
+
+Definition geb x y :=
+  match x ?= y with
+    | Lt => false
+    | _ => true
+  end.
+
+Definition gtb x y :=
   match x ?= y with
     | Gt => true
     | _ => false
@@ -322,15 +326,15 @@ Definition iter (n:Z) {A} (f:A -> A) (x:A) :=
 
 Fixpoint pos_div_eucl (a:positive) (b:Z) : Z * Z :=
   match a with
-    | xH => if b >=? 2 then (0, 1) else (1, 0)
+    | xH => if 2 <=? b then (0, 1) else (1, 0)
     | xO a' =>
       let (q, r) := pos_div_eucl a' b in
       let r' := 2 * r in
-      if b >? r' then (2 * q, r') else (2 * q + 1, r' - b)
+      if r' <? b then (2 * q, r') else (2 * q + 1, r' - b)
     | xI a' =>
       let (q, r) := pos_div_eucl a' b in
       let r' := 2 * r + 1 in
-      if b >? r' then (2 * q, r') else (2 * q + 1, r' - b)
+      if r' <? b then (2 * q, r') else (2 * q + 1, r' - b)
   end.
 
 (** Then the general euclidean division *)

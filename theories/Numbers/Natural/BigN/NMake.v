@@ -301,19 +301,47 @@ Module Make (W0:CyclicType) <: NType.
   intros. subst. apply Zcompare_antisym.
  Qed.
 
- Definition eq_bool (x y : t) : bool :=
+ Definition eqb (x y : t) : bool :=
   match compare x y with
   | Eq => true
   | _  => false
   end.
 
- Theorem spec_eq_bool : forall x y, eq_bool x y = Zeq_bool [x] [y].
+ Theorem spec_eqb x y : eqb x y = Z.eqb [x] [y].
  Proof.
- intros. unfold eq_bool, Zeq_bool. rewrite spec_compare; reflexivity.
+ apply eq_iff_eq_true.
+ unfold eqb. rewrite Z.eqb_eq, <- Z.compare_eq_iff, spec_compare.
+ split; [now destruct Z.compare | now intros ->].
  Qed.
 
  Definition lt (n m : t) := [n] < [m].
  Definition le (n m : t) := [n] <= [m].
+
+ Definition ltb (x y : t) : bool :=
+  match compare x y with
+  | Lt => true
+  | _  => false
+  end.
+
+ Theorem spec_ltb x y : ltb x y = Z.ltb [x] [y].
+ Proof.
+ apply eq_iff_eq_true.
+ rewrite Z.ltb_lt. unfold Z.lt, ltb. rewrite spec_compare.
+ split; [now destruct Z.compare | now intros ->].
+ Qed.
+
+ Definition leb (x y : t) : bool :=
+  match compare x y with
+  | Gt => false
+  | _  => true
+  end.
+
+ Theorem spec_leb x y : leb x y = Z.leb [x] [y].
+ Proof.
+ apply eq_iff_eq_true.
+ rewrite Z.leb_le. unfold Z.le, leb. rewrite spec_compare.
+ destruct Z.compare; split; try easy. now destruct 1.
+ Qed.
 
  Definition min (n m : t) : t := match compare n m with Gt => m | _ => n end.
  Definition max (n m : t) : t := match compare n m with Lt => m | _ => n end.
@@ -560,7 +588,7 @@ Module Make (W0:CyclicType) <: NType.
  (** * General Division *)
 
  Definition div_eucl (x y : t) : t * t :=
-  if eq_bool y zero then (zero,zero) else
+  if eqb y zero then (zero,zero) else
   match compare x y with
   | Eq => (one, zero)
   | Lt => (zero, x)
@@ -572,8 +600,8 @@ Module Make (W0:CyclicType) <: NType.
       ([q], [r]) = Zdiv_eucl [x] [y].
  Proof.
  intros x y. unfold div_eucl.
- rewrite spec_eq_bool, spec_compare, spec_0.
- generalize (Zeq_bool_if [y] 0); case Zeq_bool.
+ rewrite spec_eqb, spec_compare, spec_0.
+ case Z.eqb_spec.
  intros ->. rewrite spec_0. destruct [x]; auto.
  intros H'.
  assert (H : 0 < [y]) by (generalize (spec_pos y); auto with zarith).
@@ -685,7 +713,7 @@ Module Make (W0:CyclicType) <: NType.
  (** * General Modulo *)
 
  Definition modulo (x y : t) : t :=
-  if eq_bool y zero then zero else
+  if eqb y zero then zero else
   match compare x y with
   | Eq => zero
   | Lt => x
@@ -696,8 +724,8 @@ Module Make (W0:CyclicType) <: NType.
    forall x y, [modulo x y] = [x] mod [y].
  Proof.
  intros x y. unfold modulo.
- rewrite spec_eq_bool, spec_compare, spec_0.
- generalize (Zeq_bool_if [y] 0). case Zeq_bool.
+ rewrite spec_eqb, spec_compare, spec_0.
+ case Z.eqb_spec.
  intros ->; rewrite spec_0. destruct [x]; auto.
  intro H'.
  assert (H : 0 < [y]) by (generalize (spec_pos y); auto with zarith).
@@ -1157,16 +1185,16 @@ Module Make (W0:CyclicType) <: NType.
 
  Definition log2 : t -> t := Eval red_t in
    let log2 := iter_t log2n in
-   fun x => if eq_bool x zero then zero else log2 x.
+   fun x => if eqb x zero then zero else log2 x.
 
  Lemma log2_fold :
-   log2 = fun x => if eq_bool x zero then zero else iter_t log2n x.
+   log2 = fun x => if eqb x zero then zero else iter_t log2n x.
  Proof. red_t; reflexivity. Qed.
 
  Lemma spec_log2_0 : forall x, [x] = 0 -> [log2 x] = 0.
  Proof.
  intros x H. rewrite log2_fold.
- rewrite spec_eq_bool, H. rewrite spec_0. simpl. exact spec_0.
+ rewrite spec_eqb, H. rewrite spec_0. simpl. exact spec_0.
  Qed.
 
  Lemma head0_zdigits : forall n (x : dom_t n),
@@ -1193,8 +1221,8 @@ Module Make (W0:CyclicType) <: NType.
    2^[log2 x] <= [x] < 2^([log2 x]+1).
  Proof.
  intros x H. rewrite log2_fold.
- rewrite spec_eq_bool. rewrite spec_0.
- generalize (Zeq_bool_if [x] 0). destruct Zeq_bool.
+ rewrite spec_eqb. rewrite spec_0.
+ case Z.eqb_spec.
  auto with zarith.
  clear H.
  destr_t x as (n,x). intros H.
@@ -1229,8 +1257,8 @@ Module Make (W0:CyclicType) <: NType.
    [log2 x] = Zpos (digits x) - [head0 x] - 1.
  Proof.
  intros. rewrite log2_fold.
- rewrite spec_eq_bool. rewrite spec_0.
- generalize (Zeq_bool_if [x] 0). destruct Zeq_bool.
+ rewrite spec_eqb. rewrite spec_0.
+ case Z.eqb_spec.
  auto with zarith.
  intros _. revert H. rewrite digits_fold, head0_fold. destr_t x as (n,x).
  rewrite ZnZ.spec_sub_carry.

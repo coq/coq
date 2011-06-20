@@ -173,7 +173,7 @@ Qed.
 Lemma inj_sub_max n m : Z.of_N (n-m) = Z.max 0 (Z.of_N n - Z.of_N m).
 Proof.
  destruct n as [|n], m as [|m]; simpl; trivial.
- rewrite Z.pos_sub_spec, <- Pos.sub_mask_compare. unfold Pos.sub.
+ rewrite Z.pos_sub_spec, Pos.compare_sub_mask. unfold Pos.sub.
  now destruct (Pos.sub_mask n m).
 Qed.
 
@@ -181,7 +181,7 @@ Lemma inj_sub n m : (m<=n)%N -> Z.of_N (n-m) = Z.of_N n - Z.of_N m.
 Proof.
  intros H. rewrite inj_sub_max.
  unfold N.le in H.
- rewrite <- N.compare_antisym, <- inj_compare, Z.compare_sub in H.
+ rewrite N.compare_antisym, <- inj_compare, Z.compare_sub in H.
  destruct (Z.of_N n - Z.of_N m); trivial; now destruct H.
 Qed.
 
@@ -275,7 +275,7 @@ Lemma inj_sub n m : 0<=m -> Z.to_N (n - m) = (Z.to_N n - Z.to_N m)%N.
 Proof.
  destruct n as [|n|n], m as [|m|m]; trivial; try (now destruct 1).
  intros _. simpl.
- rewrite Z.pos_sub_spec, <- Pos.sub_mask_compare. unfold Pos.sub.
+ rewrite Z.pos_sub_spec, Pos.compare_sub_mask. unfold Pos.sub.
  now destruct (Pos.sub_mask n m).
 Qed.
 

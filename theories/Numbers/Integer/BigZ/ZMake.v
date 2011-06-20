@@ -109,20 +109,48 @@ Module Make (N:NType) <: ZType.
   exfalso. omega.
  Qed.
 
- Definition eq_bool x y :=
+ Definition eqb x y :=
   match compare x y with
   | Eq => true
   | _ => false
   end.
 
- Theorem spec_eq_bool:
-  forall x y, eq_bool x y = Zeq_bool (to_Z x) (to_Z y).
+ Theorem spec_eqb x y : eqb x y = Z.eqb (to_Z x) (to_Z y).
  Proof.
- unfold eq_bool, Zeq_bool; intros; rewrite spec_compare; reflexivity.
+ apply Bool.eq_iff_eq_true.
+ unfold eqb. rewrite Z.eqb_eq, <- Z.compare_eq_iff, spec_compare.
+ split; [now destruct Z.compare | now intros ->].
  Qed.
 
  Definition lt n m := to_Z n < to_Z m.
  Definition le n m := to_Z n <= to_Z m.
+
+
+ Definition ltb (x y : t) : bool :=
+  match compare x y with
+  | Lt => true
+  | _  => false
+  end.
+
+ Theorem spec_ltb x y : ltb x y = Z.ltb (to_Z x) (to_Z y).
+ Proof.
+ apply Bool.eq_iff_eq_true.
+ rewrite Z.ltb_lt. unfold Z.lt, ltb. rewrite spec_compare.
+ split; [now destruct Z.compare | now intros ->].
+ Qed.
+
+ Definition leb (x y : t) : bool :=
+  match compare x y with
+  | Gt => false
+  | _  => true
+  end.
+
+ Theorem spec_leb x y : leb x y = Z.leb (to_Z x) (to_Z y).
+ Proof.
+ apply Bool.eq_iff_eq_true.
+ rewrite Z.leb_le. unfold Z.le, leb. rewrite spec_compare.
+ destruct Z.compare; split; try easy. now destruct 1.
+ Qed.
 
  Definition min n m := match compare n m with Gt => m | _ => n end.
  Definition max n m := match compare n m with Lt => m | _ => n end.
@@ -372,12 +400,12 @@ Module Make (N:NType) <: ZType.
     (Pos q, Pos r)
   | Pos nx, Neg ny =>
     let (q, r) := N.div_eucl nx ny in
-    if N.eq_bool N.zero r
+    if N.eqb N.zero r
     then (Neg q, zero)
     else (Neg (N.succ q), Neg (N.sub ny r))
   | Neg nx, Pos ny =>
     let (q, r) := N.div_eucl nx ny in
-    if N.eq_bool N.zero r
+    if N.eqb N.zero r
     then (Neg q, zero)
     else (Neg (N.succ q), Pos (N.sub ny r))
   | Neg nx, Neg ny =>
@@ -401,32 +429,32 @@ Module Make (N:NType) <: ZType.
  (* Pos Neg *)
  generalize (N.spec_div_eucl x y); destruct (N.div_eucl x y) as (q,r).
  break_nonneg x px EQx; break_nonneg y py EQy;
- try (injection 1; intros Hr Hq; rewrite N.spec_eq_bool, N.spec_0, Hr;
+ try (injection 1; intros Hr Hq; rewrite N.spec_eqb, N.spec_0, Hr;
       simpl; rewrite Hq, N.spec_0; auto).
  change (- Zpos py) with (Zneg py).
  assert (GT : Zpos py > 0) by (compute; auto).
  generalize (Z_div_mod (Zpos px) (Zpos py) GT).
  unfold Zdiv_eucl. destruct (Zdiv_eucl_POS px (Zpos py)) as (q',r').
  intros (EQ,MOD). injection 1. intros Hr' Hq'.
- rewrite N.spec_eq_bool, N.spec_0, Hr'.
+ rewrite N.spec_eqb, N.spec_0, Hr'.
  break_nonneg r pr EQr.
  subst; simpl. rewrite N.spec_0; auto.
- subst. lazy iota beta delta [Zeq_bool Zcompare].
+ subst. lazy iota beta delta [Z.eqb].
  rewrite N.spec_sub, N.spec_succ, EQy, EQr. f_equal. omega with *.
  (* Neg Pos *)
  generalize (N.spec_div_eucl x y); destruct (N.div_eucl x y) as (q,r).
  break_nonneg x px EQx; break_nonneg y py EQy;
- try (injection 1; intros Hr Hq; rewrite N.spec_eq_bool, N.spec_0, Hr;
+ try (injection 1; intros Hr Hq; rewrite N.spec_eqb, N.spec_0, Hr;
       simpl; rewrite Hq, N.spec_0; auto).
  change (- Zpos px) with (Zneg px).
  assert (GT : Zpos py > 0) by (compute; auto).
  generalize (Z_div_mod (Zpos px) (Zpos py) GT).
  unfold Zdiv_eucl. destruct (Zdiv_eucl_POS px (Zpos py)) as (q',r').
  intros (EQ,MOD). injection 1. intros Hr' Hq'.
- rewrite N.spec_eq_bool, N.spec_0, Hr'.
+ rewrite N.spec_eqb, N.spec_0, Hr'.
  break_nonneg r pr EQr.
  subst; simpl. rewrite N.spec_0; auto.
- subst. lazy iota beta delta [Zeq_bool Zcompare].
+ subst. lazy iota beta delta [Z.eqb].
  rewrite N.spec_sub, N.spec_succ, EQy, EQr. f_equal. omega with *.
  (* Neg Neg *)
  generalize (N.spec_div_eucl x y); destruct (N.div_eucl x y) as (q,r).
@@ -464,7 +492,7 @@ Module Make (N:NType) <: ZType.
   end.
 
  Definition rem x y :=
-  if eq_bool y zero then x
+  if eqb y zero then x
   else
     match x, y with
       | Pos nx, Pos ny => Pos (N.modulo nx ny)
@@ -483,8 +511,8 @@ Module Make (N:NType) <: ZType.
  Lemma spec_rem : forall x y,
    to_Z (rem x y) = Zrem (to_Z x) (to_Z y).
  Proof.
-  intros x y. unfold rem. rewrite spec_eq_bool, spec_0.
-  assert (Hy := Zeq_bool_if (to_Z y) 0). destruct Zeq_bool.
+  intros x y. unfold rem. rewrite spec_eqb, spec_0.
+  case Z.eqb_spec; intros Hy.
   now rewrite Hy, Zrem_0_r.
   destruct x as [x|x], y as [y|y]; simpl in *; symmetry;
    rewrite N.spec_modulo, ?Zrem_opp_r, ?Zrem_opp_l, ?Zopp_involutive;
@@ -551,7 +579,7 @@ Module Make (N:NType) <: ZType.
  Definition norm_pos z :=
    match z with
      | Pos _ => z
-     | Neg n => if N.eq_bool n N.zero then Pos n else z
+     | Neg n => if N.eqb n N.zero then Pos n else z
    end.
 
  Definition testbit a n :=
@@ -623,19 +651,17 @@ Module Make (N:NType) <: ZType.
  Lemma spec_norm_pos : forall x, to_Z (norm_pos x) = to_Z x.
  Proof.
   intros [x|x]; simpl; trivial.
-  rewrite N.spec_eq_bool, N.spec_0.
-  assert (H := Zeq_bool_if (N.to_Z x) 0).
-  destruct Zeq_bool; simpl; auto with zarith.
+  rewrite N.spec_eqb, N.spec_0.
+  case Z.eqb_spec; simpl; auto with zarith.
  Qed.
 
  Lemma spec_norm_pos_pos : forall x y, norm_pos x = Neg y ->
   0 < N.to_Z y.
  Proof.
   intros [x|x] y; simpl; try easy.
-  rewrite N.spec_eq_bool, N.spec_0.
-  assert (H := Zeq_bool_if (N.to_Z x) 0).
-  destruct Zeq_bool; simpl; try easy.
-  inversion 1; subst. generalize (N.spec_pos y); auto with zarith.
+  rewrite N.spec_eqb, N.spec_0.
+  case Z.eqb_spec; simpl; try easy.
+  inversion 2. subst. generalize (N.spec_pos y); auto with zarith.
  Qed.
 
  Ltac destr_norm_pos x :=

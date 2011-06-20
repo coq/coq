@@ -8,7 +8,7 @@
 
 Require Export BinNums.
 Require Import BinPos RelationClasses Morphisms Setoid
- Equalities GenericMinMax Bool NAxioms NProperties.
+ Equalities OrdersFacts GenericMinMax Bool NAxioms NProperties.
 Require BinNatDef.
 
 (**********************************************************************)
@@ -35,6 +35,10 @@ Module N
 (** Definitions of operations, now in a separate file *)
 
 Include BinNatDef.N.
+
+(** When including property functors, only inline t eq zero one two *)
+
+Set Inline Level 30.
 
 (** Logical predicates *)
 
@@ -213,58 +217,7 @@ destruct n, m; simpl; trivial. f_equal. rewrite Pos.add_comm.
 apply Pos.mul_succ_l.
 Qed.
 
-(** Properties of comparison *)
-
-Lemma compare_refl n : (n ?= n) = Eq.
-Proof.
-destruct n; simpl; trivial. apply Pos.compare_refl.
-Qed.
-
-Theorem compare_eq n m : (n ?= m) = Eq -> n = m.
-Proof.
-destruct n, m; simpl; try easy. intros. f_equal.
-now apply Pos.compare_eq.
-Qed.
-
-Theorem compare_eq_iff n m : (n ?= m) = Eq <-> n = m.
-Proof.
-split; intros. now apply compare_eq. subst; now apply compare_refl.
-Qed.
-
-Lemma compare_antisym n m : CompOpp (n ?= m) = (m ?= n).
-Proof.
-destruct n, m; simpl; trivial.
-symmetry. apply Pos.compare_antisym. (* TODO : quel sens ? *)
-Qed.
-
-(** Specification of lt and le *)
-
-Theorem lt_irrefl n : ~ n < n.
-Proof.
-unfold lt. now rewrite compare_refl.
-Qed.
-
-Lemma lt_eq_cases n m : n <= m <-> n < m \/ n=m.
-Proof.
-unfold le, lt. rewrite <- compare_eq_iff.
-destruct (n ?= m); now intuition.
-Qed.
-
-Lemma lt_succ_r n m : n < succ m <-> n<=m.
-Proof.
-destruct n as [|p], m as [|q]; simpl; try easy'.
-split. now destruct p. now destruct 1.
-apply Pos.lt_succ_r.
-Qed.
-
-Lemma compare_spec n m : CompareSpec (n=m) (n<m) (m<n) (n ?= m).
-Proof.
-case_eq (n ?= m); intro H; constructor; trivial.
-now apply compare_eq.
-red. now rewrite <- compare_antisym, H.
-Qed.
-
-(** Properties of boolean comparisons. *)
+(** Specification of boolean comparisons. *)
 
 Lemma eqb_eq n m : eqb n m = true <-> n=m.
 Proof.
@@ -282,17 +235,32 @@ Proof.
   unfold leb, le. destruct compare; easy'.
 Qed.
 
-Lemma leb_spec n m : BoolSpec (n<=m) (m<n) (n <=? m).
+(** Basic properties of comparison *)
+
+Theorem compare_eq_iff n m : (n ?= m) = Eq <-> n = m.
 Proof.
- unfold le, lt, leb. rewrite <- (compare_antisym n m).
- case compare; now constructor.
+destruct n, m; simpl; rewrite ?Pos.compare_eq_iff; split; congruence.
 Qed.
 
-Lemma ltb_spec n m : BoolSpec (n<m) (m<=n) (n <? m).
+Theorem compare_lt_iff n m : (n ?= m) = Lt <-> n < m.
 Proof.
- unfold le, lt, ltb. rewrite <- (compare_antisym n m).
- case compare; now constructor.
+reflexivity.
 Qed.
+
+Theorem compare_le_iff n m : (n ?= m) <> Gt <-> n <= m.
+Proof.
+reflexivity.
+Qed.
+
+Theorem compare_antisym n m : (m ?= n) = CompOpp (n ?= m).
+Proof.
+destruct n, m; simpl; trivial. apply Pos.compare_antisym.
+Qed.
+
+(** Some more advanced properties of comparison and orders,
+    including [compare_spec] and [lt_irrefl] and [lt_eq_cases]. *)
+
+Include BoolOrderFacts.
 
 (** We regroup here some results used for proving the correctness
     of more advanced functions. These results will also be provided
@@ -321,14 +289,10 @@ Qed.
 
 Lemma sub_add n m : n <= m -> m - n + n = m.
 Proof.
- destruct n as [|p], m as [|q]; simpl; try easy'.
- unfold le, compare. rewrite Pos.compare_antisym. intros H.
- assert (H1 := Pos.sub_mask_compare q p).
- assert (H2 := Pos.sub_mask_add q p).
- destruct Pos.sub_mask as [|r|]; simpl in *; f_equal.
- symmetry. now apply Pos.compare_eq.
- rewrite Pos.add_comm. now apply H2.
- rewrite <- H1 in H. now destruct H.
+ destruct n as [|p], m as [|q]; simpl; try easy'. intros H.
+ case Pos.sub_mask_spec; intros; simpl; subst; trivial.
+ now rewrite Pos.add_comm.
+ apply Pos.le_nlt in H. elim H. apply Pos.lt_add_r.
 Qed.
 
 Theorem mul_comm n m : n * m = m * n.
@@ -341,11 +305,17 @@ Proof.
 now destruct n.
 Qed.
 
+Lemma leb_spec n m : BoolSpec (n<=m) (m<n) (n <=? m).
+Proof.
+ unfold le, lt, leb. rewrite (compare_antisym n m).
+ case compare; now constructor.
+Qed.
+
 Lemma add_lt_cancel_l n m p : p+n < p+m -> n<m.
 Proof.
  intro H. destruct p. simpl; auto.
  destruct n; destruct m.
- elim (lt_irrefl _ H).
+ elim (Pos.lt_irrefl _ H).
  red; auto.
  rewrite add_0_r in H. simpl in H.
  red in H. simpl in H.
@@ -355,6 +325,14 @@ Qed.
 
 End BootStrap.
 
+(** Specification of lt and le. *)
+
+Lemma lt_succ_r n m : n < succ m <-> n<=m.
+Proof.
+destruct n as [|p], m as [|q]; simpl; try easy'.
+split. now destruct p. now destruct 1.
+apply Pos.lt_succ_r.
+Qed.
 
 (** Properties of [double] and [succ_double] *)
 
@@ -426,13 +404,13 @@ Qed.
 
 Theorem min_r n m : m <= n -> min n m = m.
 Proof.
-unfold min, le. rewrite <- compare_antisym.
+unfold min, le. rewrite compare_antisym.
 case compare_spec; trivial. now destruct 2.
 Qed.
 
 Theorem max_l n m : m <= n -> max n m = n.
 Proof.
-unfold max, le. rewrite <- compare_antisym.
+unfold max, le. rewrite compare_antisym.
 case compare_spec; auto. now destruct 2.
 Qed.
 
@@ -762,7 +740,7 @@ Lemma shiftl_spec_low a n m : m<n ->
 Proof.
  revert a m.
  induction n using peano_ind; intros a m H.
- elim (le_0_l m). now rewrite <- compare_antisym, H.
+ elim (le_0_l m). now rewrite compare_antisym, H.
  rewrite shiftl_succ_r.
  destruct m. now destruct (shiftl a n).
  rewrite <- (succ_pos_pred p), testbit_succ_r_div2, div2_double by apply le_0_l.
@@ -906,8 +884,6 @@ Qed.
 
 (** Instantiation of generic properties of natural numbers *)
 
-Set Inline Level 30. (* For inlining only t eq zero one two *)
-
 Include NProp
  <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
 
@@ -919,34 +895,34 @@ Bind Scope N_scope with N.
   layers. The use of [gt] and [ge] is hence not recommended. We provide
   here the bare minimal results to related them with [lt] and [le]. *)
 
+Lemma gt_lt_iff n m : n > m <-> m < n.
+Proof.
+ unfold lt, gt. now rewrite compare_antisym, CompOpp_iff.
+Qed.
+
 Lemma gt_lt n m : n > m -> m < n.
 Proof.
-  unfold lt, gt. intros H. now rewrite <- compare_antisym, H.
+ apply gt_lt_iff.
 Qed.
 
 Lemma lt_gt n m : n < m -> m > n.
 Proof.
-  unfold lt, gt. intros H. now rewrite <- compare_antisym, H.
-Qed.
-
-Lemma gt_lt_iff n m : n > m <-> m < n.
-Proof.
-  split. apply gt_lt. apply lt_gt.
-Qed.
-
-Lemma ge_le n m : n >= m -> m <= n.
-Proof.
-  unfold le, ge. intros H. contradict H. now apply gt_lt.
-Qed.
-
-Lemma le_ge n m : n <= m -> m >= n.
-Proof.
-  unfold le, ge. intros H. contradict H. now apply lt_gt.
+ apply gt_lt_iff.
 Qed.
 
 Lemma ge_le_iff n m : n >= m <-> m <= n.
 Proof.
-  split. apply ge_le. apply le_ge.
+ unfold le, ge. now rewrite compare_antisym, CompOpp_iff.
+Qed.
+
+Lemma ge_le n m : n >= m -> m <= n.
+Proof.
+ apply ge_le_iff.
+Qed.
+
+Lemma le_ge n m : n <= m -> m >= n.
+Proof.
+ apply ge_le_iff.
 Qed.
 
 (** Auxiliary results about right shift on positive numbers,
@@ -1097,7 +1073,6 @@ Notation Nle_0 := N.le_0_l (only parsing).
 Notation Ncompare_refl := N.compare_refl (only parsing).
 Notation Ncompare_Eq_eq := N.compare_eq (only parsing).
 Notation Ncompare_eq_correct := N.compare_eq_iff (only parsing).
-Notation Ncompare_antisym := N.compare_antisym (only parsing).
 Notation Nlt_irrefl := N.lt_irrefl (only parsing).
 Notation Nlt_trans := N.lt_trans (only parsing).
 Notation Nle_lteq := N.lt_eq_cases (only parsing).
@@ -1130,6 +1105,8 @@ Lemma Nmult_plus_distr_l n m p : p * (n + m) = p * n + p * m.
 Proof (N.mul_add_distr_l p n m).
 Lemma Nmult_reg_r n m p : p <> 0 -> n * p = m * p -> n = m.
 Proof (fun H => proj1 (N.mul_cancel_r n m p H)).
+Lemma Ncompare_antisym n m : CompOpp (n ?= m) = (m ?= n).
+Proof (eq_sym (N.compare_antisym n m)).
 
 Definition N_ind_double a P f0 f2 fS2 := N.binary_ind P f0 f2 fS2 a.
 Definition N_rec_double a P f0 f2 fS2 := N.binary_rec P f0 f2 fS2 a.

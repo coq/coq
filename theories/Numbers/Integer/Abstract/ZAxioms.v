@@ -111,14 +111,12 @@ Module Type ZQuot' (Z:ZAxiomsMiniSig) := QuotRem' Z <+ QuotRemSpec Z.
 
 (** Let's group everything *)
 
-Module Type ZAxiomsSig :=
-  ZAxiomsMiniSig <+ HasCompare <+ HasEqBool <+ HasAbs <+ HasSgn
-   <+ NZParity.NZParity
+Module Type ZAxiomsSig := ZAxiomsMiniSig <+ OrderFunctions
+   <+ HasAbs <+ HasSgn <+ NZParity.NZParity
    <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2 <+ NZGcd.NZGcd
    <+ ZDiv <+ ZQuot <+ NZBits.NZBits.
 
-Module Type ZAxiomsSig' :=
-  ZAxiomsMiniSig' <+ HasCompare <+ HasEqBool <+ HasAbs <+ HasSgn
-   <+ NZParity.NZParity
+Module Type ZAxiomsSig' := ZAxiomsMiniSig' <+ OrderFunctions'
+   <+ HasAbs <+ HasSgn <+ NZParity.NZParity
    <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2 <+ NZGcd.NZGcd'
    <+ ZDiv' <+ ZQuot' <+ NZBits.NZBits'.

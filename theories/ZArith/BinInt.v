@@ -9,7 +9,7 @@
 
 Require Export BinNums BinPos Pnat.
 Require Import BinNat Bool Plus Mult Equalities GenericMinMax
- ZAxioms ZProperties.
+ OrdersFacts ZAxioms ZProperties.
 Require BinIntDef.
 
 (***********************************************************)
@@ -35,6 +35,10 @@ Module Z
 (** * Definitions of operations, now in a separate file *)
 
 Include BinIntDef.Z.
+
+(** When including property functors, only inline t eq zero one two *)
+
+Set Inline Level 30.
 
 (** * Logic Predicates *)
 
@@ -444,65 +448,7 @@ Proof.
  unfold succ. now rewrite mul_add_distr_r, mul_1_l.
 Qed.
 
-(** ** Specification of order *)
-
-Lemma compare_refl n : (n ?= n) = Eq.
-Proof.
- destruct n; simpl; trivial; now rewrite Pos.compare_refl.
-Qed.
-
-Lemma compare_eq n m : (n ?= m) = Eq -> n = m.
-Proof.
-destruct n, m; simpl; try easy; intros; f_equal.
-now apply Pos.compare_eq.
-apply Pos.compare_eq, CompOpp_inj. now rewrite H.
-Qed.
-
-Lemma compare_eq_iff n m : (n ?= m) = Eq <-> n = m.
-Proof.
-split; intros. now apply compare_eq. subst; now apply compare_refl.
-Qed.
-
-Lemma compare_antisym n m : CompOpp (n ?= m) = (m ?= n).
-Proof.
-destruct n, m; simpl; trivial.
-symmetry. apply Pos.compare_antisym. (* TODO : quel sens ? *)
-f_equal. symmetry. apply Pos.compare_antisym.
-Qed.
-
-Lemma compare_sub n m : (n ?= m) = (n - m ?= 0).
-Proof.
- destruct n as [|n|n], m as [|m|m]; simpl; trivial;
- rewrite <- ? Pos.compare_antisym, ?pos_sub_spec;
- case Pos.compare_spec; trivial.
-Qed.
-
-Lemma compare_spec n m : CompareSpec (n=m) (n<m) (m<n) (n ?= m).
-Proof.
- case_eq (n ?= m); intros H; constructor; trivial.
- now apply compare_eq.
- red. now rewrite <- compare_antisym, H.
-Qed.
-
-Lemma lt_irrefl n : ~ n < n.
-Proof.
- unfold lt. now rewrite compare_refl.
-Qed.
-
-Lemma lt_eq_cases n m : n <= m <-> n < m \/ n = m.
-Proof.
- unfold le, lt. rewrite <- compare_eq_iff.
- case compare; now intuition.
-Qed.
-
-Lemma lt_succ_r n m : n < succ m <-> n<=m.
-Proof.
- unfold lt, le. rewrite compare_sub, sub_succ_r.
- rewrite (compare_sub n m).
- destruct (n-m) as [|[ | | ]|]; easy'.
-Qed.
-
-(** ** Specification of boolean comparisons *)
+(** ** Specification of comparisons and order *)
 
 Lemma eqb_eq n m : (n =? m) = true <-> n = m.
 Proof.
@@ -521,53 +467,49 @@ Proof.
  unfold leb, le. destruct compare; easy'.
 Qed.
 
-Lemma leb_spec n m : BoolSpec (n<=m) (m<n) (n <=? m).
+Lemma compare_eq_iff n m : (n ?= m) = Eq <-> n = m.
 Proof.
- unfold le, lt, leb. rewrite <- (compare_antisym n m).
- case compare; now constructor.
+destruct n, m; simpl; rewrite ?CompOpp_iff, ?Pos.compare_eq_iff;
+ split; congruence.
 Qed.
 
-Lemma ltb_spec n m : BoolSpec (n<m) (m<=n) (n <? m).
+Lemma compare_sub n m : (n ?= m) = (n - m ?= 0).
 Proof.
- unfold le, lt, ltb. rewrite <- (compare_antisym n m).
- case compare; now constructor.
+ destruct n as [|n|n], m as [|m|m]; simpl; trivial;
+ rewrite <- ? Pos.compare_antisym, ?pos_sub_spec;
+ case Pos.compare_spec; trivial.
 Qed.
 
-Lemma gtb_ltb n m : (n >? m) = (m <? n).
+Lemma compare_antisym n m : (m ?= n) = CompOpp (n ?= m).
 Proof.
- unfold gtb, ltb. rewrite <- compare_antisym. now case compare.
+destruct n, m; simpl; trivial; now rewrite <- ?Pos.compare_antisym.
 Qed.
 
-Lemma geb_leb n m : (n >=? m) = (m <=? n).
-Proof.
- unfold geb, leb. rewrite <- compare_antisym. now case compare.
-Qed.
+Lemma compare_lt_iff n m : (n ?= m) = Lt <-> n < m.
+Proof. reflexivity. Qed.
 
-Lemma gtb_lt n m : (n >? m) = true <-> m < n.
-Proof.
- rewrite gtb_ltb. apply ltb_lt.
-Qed.
+Lemma compare_le_iff n m : (n ?= m) <> Gt <-> n <= m.
+Proof. reflexivity. Qed.
 
-Lemma geb_le n m : (n >=? m) = true <-> m <= n.
-Proof.
- rewrite geb_leb. apply leb_le.
-Qed.
+(** Some more advanced properties of comparison and orders,
+    including [compare_spec] and [lt_irrefl] and [lt_eq_cases]. *)
 
-Lemma gtb_spec n m : BoolSpec (m<n) (n<=m) (n >? m).
-Proof.
- rewrite gtb_ltb. apply ltb_spec.
-Qed.
+Include BoolOrderFacts.
 
-Lemma geb_spec n m : BoolSpec (m<=n) (n<m) (n >=? m).
+(** Remaining specification of [lt] and [le] *)
+
+Lemma lt_succ_r n m : n < succ m <-> n<=m.
 Proof.
- rewrite geb_leb. apply leb_spec.
+ unfold lt, le. rewrite compare_sub, sub_succ_r.
+ rewrite (compare_sub n m).
+ destruct (n-m) as [|[ | | ]|]; easy'.
 Qed.
 
 (** ** Specification of minimum and maximum *)
 
 Lemma max_l n m : m<=n -> max n m = n.
 Proof.
- unfold le, max. rewrite <- (compare_antisym n m).
+ unfold le, max. rewrite (compare_antisym n m).
  case compare; intuition.
 Qed.
 
@@ -584,7 +526,7 @@ Qed.
 Lemma min_r n m : m<=n -> min n m = m.
 Proof.
  unfold le, min.
- rewrite <- (compare_antisym n m). case compare_spec; intuition.
+ rewrite (compare_antisym n m). case compare_spec; intuition.
 Qed.
 
 (** ** Specification of absolute value *)
@@ -727,19 +669,19 @@ Proof.
  (* ~1 *)
  destruct pos_div_eucl as (q,r).
  rewrite pos_xI, IHa, mul_add_distr_l, mul_assoc.
- destruct gtb.
+ destruct ltb.
  now rewrite add_assoc.
  rewrite mul_add_distr_r, mul_1_l, <- !add_assoc. f_equal.
  unfold sub. now rewrite (add_comm _ (-b)), add_assoc, add_opp_diag_r.
  (* ~0 *)
  destruct pos_div_eucl as (q,r).
  rewrite (pos_xO a), IHa, mul_add_distr_l, mul_assoc.
- destruct gtb.
+ destruct ltb.
  trivial.
  rewrite mul_add_distr_r, mul_1_l, <- !add_assoc. f_equal.
  unfold sub. now rewrite (add_comm _ (-b)), add_assoc, add_opp_diag_r.
  (* ~1 *)
- case geb_spec; trivial.
+ case leb_spec; trivial.
  intros Hb'.
  destruct b as [|b|b]; try easy; clear Hb.
  replace b with 1%positive; trivial.
@@ -788,21 +730,21 @@ Proof.
  (* ~1 *)
  destruct pos_div_eucl as (q,r).
  simpl in IHa; destruct IHa as (Hr,Hr').
- case gtb_spec; intros H; unfold snd. split; trivial. now destruct r.
+ case ltb_spec; intros H; unfold snd. split; trivial. now destruct r.
  split. unfold le.
-  now rewrite <- compare_antisym, <- compare_sub, compare_antisym.
+  now rewrite compare_antisym, <- compare_sub, <- compare_antisym.
  apply AUX. rewrite <- succ_double_spec.
  destruct r; try easy. unfold lt in *; simpl in *.
   now rewrite Pos.compare_xI_xO, Hr'.
  (* ~0 *)
  destruct pos_div_eucl as (q,r).
  simpl in IHa; destruct IHa as (Hr,Hr').
- case gtb_spec; intros H; unfold snd. split; trivial. now destruct r.
+ case ltb_spec; intros H; unfold snd. split; trivial. now destruct r.
  split. unfold le.
-  now rewrite <- compare_antisym, <- compare_sub, compare_antisym.
+  now rewrite compare_antisym, <- compare_sub, <- compare_antisym.
  apply AUX. destruct r; try easy.
  (* 1 *)
- case geb_spec; intros H; simpl; split; try easy.
+ case leb_spec; intros H; simpl; split; try easy.
  red; simpl. now apply Pos.le_succ_l.
 Qed.
 
@@ -817,7 +759,7 @@ Proof.
  destruct r as [|r|r]; (now destruct Hr) || clear Hr.
  now split.
  split. unfold le.
-  now rewrite <- compare_antisym, <- compare_sub, compare_antisym, Hr'.
+  now rewrite compare_antisym, <- compare_sub, <- compare_antisym, Hr'.
  unfold lt in *; simpl in *. rewrite pos_sub_gt by trivial.
  simpl. now apply Pos.sub_decr.
 Qed.
@@ -1111,7 +1053,7 @@ Proof.
  (* n > 0 *)
  destruct m as [ |m|m]; try (now destruct H).
  assert (0 <= Zpos m - Zpos n).
-  red. now rewrite <- compare_antisym, <- compare_sub, compare_antisym.
+  red. now rewrite compare_antisym, <- compare_sub, <- compare_antisym.
  assert (EQ : to_N (Zpos m - Zpos n) = (Npos m - Npos n)%N).
   red in H. simpl in H. simpl to_N.
   rewrite pos_sub_spec, Pos.compare_antisym.
@@ -1278,8 +1220,6 @@ Program Definition rem_wd : Proper (eq==>eq==>eq) rem := _.
 Program Definition pow_wd : Proper (eq==>eq==>eq) pow := _.
 Program Definition testbit_wd : Proper (eq==>eq==>Logic.eq) testbit := _.
 
-Set Inline Level 30. (* For inlining only t eq zero one two *)
-
 Include ZProp
  <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
 
@@ -1291,34 +1231,68 @@ Bind Scope Z_scope with Z.
   layers. The use of [gt] and [ge] is hence not recommended. We provide
   here the bare minimal results to related them with [lt] and [le]. *)
 
+Lemma gt_lt_iff n m : n > m <-> m < n.
+Proof.
+ unfold lt, gt. now rewrite compare_antisym, CompOpp_iff.
+Qed.
+
 Lemma gt_lt n m : n > m -> m < n.
 Proof.
-  unfold lt, gt. intros H. now rewrite <- compare_antisym, H.
+ apply gt_lt_iff.
 Qed.
 
 Lemma lt_gt n m : n < m -> m > n.
 Proof.
-  unfold lt, gt. intros H. now rewrite <- compare_antisym, H.
-Qed.
-
-Lemma gt_lt_iff n m : n > m <-> m < n.
-Proof.
-  split. apply gt_lt. apply lt_gt.
-Qed.
-
-Lemma ge_le n m : n >= m -> m <= n.
-Proof.
-  unfold le, ge. intros H. contradict H. now apply gt_lt.
-Qed.
-
-Lemma le_ge n m : n <= m -> m >= n.
-Proof.
-  unfold le, ge. intros H. contradict H. now apply lt_gt.
+ apply gt_lt_iff.
 Qed.
 
 Lemma ge_le_iff n m : n >= m <-> m <= n.
 Proof.
-  split. apply ge_le. apply le_ge.
+ unfold le, ge. now rewrite compare_antisym, CompOpp_iff.
+Qed.
+
+Lemma ge_le n m : n >= m -> m <= n.
+Proof.
+ apply ge_le_iff.
+Qed.
+
+Lemma le_ge n m : n <= m -> m >= n.
+Proof.
+ apply ge_le_iff.
+Qed.
+
+(** Similarly, the boolean comparisons [ltb] and [leb] are favored
+  over their dual [gtb] and [geb]. We prove here the equivalence
+  and a few minimal results. *)
+
+Lemma gtb_ltb n m : (n >? m) = (m <? n).
+Proof.
+ unfold gtb, ltb. rewrite compare_antisym. now case compare.
+Qed.
+
+Lemma geb_leb n m : (n >=? m) = (m <=? n).
+Proof.
+ unfold geb, leb. rewrite compare_antisym. now case compare.
+Qed.
+
+Lemma gtb_lt n m : (n >? m) = true <-> m < n.
+Proof.
+ rewrite gtb_ltb. apply ltb_lt.
+Qed.
+
+Lemma geb_le n m : (n >=? m) = true <-> m <= n.
+Proof.
+ rewrite geb_leb. apply leb_le.
+Qed.
+
+Lemma gtb_spec n m : BoolSpec (m<n) (n<=m) (n >? m).
+Proof.
+ rewrite gtb_ltb. apply ltb_spec.
+Qed.
+
+Lemma geb_spec n m : BoolSpec (m<=n) (n<m) (n >=? m).
+Proof.
+ rewrite geb_leb. apply leb_spec.
 Qed.
 
 (** TODO : to add in Numbers *)

@@ -8,7 +8,7 @@
 (*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
 (************************************************************************)
 
-Require Import ZArith Znumtheory.
+Require Import BinInt.
 
 Open Scope Z_scope.
 
@@ -35,7 +35,9 @@ Module Type NType.
  Definition le n m := [n] <= [m].
 
  Parameter compare : t -> t -> comparison.
- Parameter eq_bool : t -> t -> bool.
+ Parameter eqb : t -> t -> bool.
+ Parameter ltb : t -> t -> bool.
+ Parameter leb : t -> t -> bool.
  Parameter max : t -> t -> t.
  Parameter min : t -> t -> t.
  Parameter zero : t.
@@ -67,39 +69,41 @@ Module Type NType.
  Parameter lxor : t -> t -> t.
  Parameter div2 : t -> t.
 
- Parameter spec_compare: forall x y, compare x y = Zcompare [x] [y].
- Parameter spec_eq_bool: forall x y, eq_bool x y = Zeq_bool [x] [y].
- Parameter spec_max : forall x y, [max x y] = Zmax [x] [y].
- Parameter spec_min : forall x y, [min x y] = Zmin [x] [y].
+ Parameter spec_compare: forall x y, compare x y = ([x] ?= [y]).
+ Parameter spec_eqb : forall x y, eqb x y = ([x] =? [y]).
+ Parameter spec_ltb : forall x y, ltb x y = ([x] <? [y]).
+ Parameter spec_leb : forall x y, leb x y = ([x] <=? [y]).
+ Parameter spec_max : forall x y, [max x y] = Z.max [x] [y].
+ Parameter spec_min : forall x y, [min x y] = Z.min [x] [y].
  Parameter spec_0: [zero] = 0.
  Parameter spec_1: [one] = 1.
  Parameter spec_2: [two] = 2.
  Parameter spec_succ: forall n, [succ n] = [n] + 1.
  Parameter spec_add: forall x y, [add x y] = [x] + [y].
- Parameter spec_pred: forall x, [pred x] = Zmax 0 ([x] - 1).
- Parameter spec_sub: forall x y, [sub x y] = Zmax 0 ([x] - [y]).
+ Parameter spec_pred: forall x, [pred x] = Z.max 0 ([x] - 1).
+ Parameter spec_sub: forall x y, [sub x y] = Z.max 0 ([x] - [y]).
  Parameter spec_mul: forall x y, [mul x y] = [x] * [y].
  Parameter spec_square: forall x, [square x] = [x] *  [x].
  Parameter spec_pow_pos: forall x n, [pow_pos x n] = [x] ^ Zpos n.
  Parameter spec_pow_N: forall x n, [pow_N x n] = [x] ^ Z_of_N n.
  Parameter spec_pow: forall x n, [pow x n] = [x] ^ [n].
- Parameter spec_sqrt: forall x, [sqrt x] = Zsqrt [x].
- Parameter spec_log2: forall x, [log2 x] = Zlog2 [x].
+ Parameter spec_sqrt: forall x, [sqrt x] = Z.sqrt [x].
+ Parameter spec_log2: forall x, [log2 x] = Z.log2 [x].
  Parameter spec_div_eucl: forall x y,
-  let (q,r) := div_eucl x y in ([q], [r]) = Zdiv_eucl [x] [y].
+  let (q,r) := div_eucl x y in ([q], [r]) = Z.div_eucl [x] [y].
  Parameter spec_div: forall x y, [div x y] = [x] / [y].
  Parameter spec_modulo: forall x y, [modulo x y] = [x] mod [y].
- Parameter spec_gcd: forall a b, [gcd a b] = Zgcd [a] [b].
- Parameter spec_even: forall x, even x = Zeven_bool [x].
- Parameter spec_odd: forall x, odd x = Zodd_bool [x].
- Parameter spec_testbit: forall x p, testbit x p = Ztestbit [x] [p].
- Parameter spec_shiftr: forall x p, [shiftr x p] = Zshiftr [x] [p].
- Parameter spec_shiftl: forall x p, [shiftl x p] = Zshiftl [x] [p].
- Parameter spec_land: forall x y, [land x y] = Zand [x] [y].
- Parameter spec_lor: forall x y, [lor x y] = Zor [x] [y].
- Parameter spec_ldiff: forall x y, [ldiff x y] = Zdiff [x] [y].
- Parameter spec_lxor: forall x y, [lxor x y] = Zxor [x] [y].
- Parameter spec_div2: forall x, [div2 x] = Zdiv2 [x].
+ Parameter spec_gcd: forall a b, [gcd a b] = Z.gcd [a] [b].
+ Parameter spec_even: forall x, even x = Z.even [x].
+ Parameter spec_odd: forall x, odd x = Z.odd [x].
+ Parameter spec_testbit: forall x p, testbit x p = Z.testbit [x] [p].
+ Parameter spec_shiftr: forall x p, [shiftr x p] = Z.shiftr [x] [p].
+ Parameter spec_shiftl: forall x p, [shiftl x p] = Z.shiftl [x] [p].
+ Parameter spec_land: forall x y, [land x y] = Z.land [x] [y].
+ Parameter spec_lor: forall x y, [lor x y] = Z.lor [x] [y].
+ Parameter spec_ldiff: forall x y, [ldiff x y] = Z.ldiff [x] [y].
+ Parameter spec_lxor: forall x y, [lxor x y] = Z.lxor [x] [y].
+ Parameter spec_div2: forall x, [div2 x] = Z.div2 [x].
 
 End NType.
 

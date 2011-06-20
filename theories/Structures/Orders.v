@@ -65,20 +65,34 @@ Module Type LeIsLtEq (Import E:EqLtLe').
   Axiom le_lteq : forall x y, x<=y <-> x<y \/ x==y.
 End LeIsLtEq.
 
-Module Type HasCompare (Import E:EqLt').
-  Parameter Inline compare : t -> t -> comparison.
-  Axiom compare_spec : forall x y, CompareSpec (x==y) (x<y) (y<x) (compare x y).
-End HasCompare.
-
 Module Type StrOrder := EqualityType <+ HasLt <+ IsStrOrder.
-Module Type DecStrOrder := StrOrder <+ HasCompare.
-Module Type OrderedType <: DecidableType := DecStrOrder <+ HasEqDec.
-Module Type OrderedTypeFull := OrderedType <+ HasLe <+ LeIsLtEq.
-
 Module Type StrOrder' := StrOrder <+ EqLtNotation.
-Module Type DecStrOrder' := DecStrOrder <+ EqLtNotation.
-Module Type OrderedType' := OrderedType <+ EqLtNotation.
-Module Type OrderedTypeFull' := OrderedTypeFull <+ EqLtLeNotation.
+
+(** Versions with a decidable ternary comparison *)
+
+Module Type HasCmp (Import T:Typ).
+  Parameter Inline compare : t -> t -> comparison.
+End HasCmp.
+
+Module Type CmpNotation (T:Typ)(C:HasCmp T).
+  Infix "?=" := C.compare (at level 70, no associativity).
+End CmpNotation.
+
+Module Type CmpSpec (Import E:EqLt')(Import C:HasCmp E).
+  Axiom compare_spec : forall x y, CompareSpec (x==y) (x<y) (y<x) (compare x y).
+End CmpSpec.
+
+Module Type HasCompare (E:EqLt) := HasCmp E <+ CmpSpec E.
+
+Module Type DecStrOrder := StrOrder <+ HasCompare.
+Module Type DecStrOrder' := DecStrOrder <+ EqLtNotation <+ CmpNotation.
+
+Module Type OrderedType <: DecidableType := DecStrOrder <+ HasEqDec.
+Module Type OrderedType' := OrderedType <+ EqLtNotation <+ CmpNotation.
+
+Module Type OrderedTypeFull := OrderedType <+ HasLe <+ LeIsLtEq.
+Module Type OrderedTypeFull' :=
+ OrderedTypeFull <+ EqLtLeNotation <+ CmpNotation.
 
 (** NB: in [OrderedType], an [eq_dec] could be deduced from [compare].
   But adding this redundant field allows to see an [OrderedType] as a
@@ -167,50 +181,63 @@ Module OTF_to_TotalOrder (O:OrderedTypeFull) <: TotalOrder
 Local Coercion is_true : bool >-> Sortclass.
 Hint Unfold is_true.
 
-Module Type HasLeBool (Import T:Typ).
-  Parameter Inline leb : t -> t -> bool.
-End HasLeBool.
+Module Type HasLeb (Import T:Typ).
+ Parameter Inline leb : t -> t -> bool.
+End HasLeb.
 
-Module Type HasLtBool (Import T:Typ).
-  Parameter Inline ltb : t -> t -> bool.
-End HasLtBool.
+Module Type HasLtb (Import T:Typ).
+ Parameter Inline ltb : t -> t -> bool.
+End HasLtb.
 
-Module Type LeBool := Typ <+ HasLeBool.
-Module Type LtBool := Typ <+ HasLtBool.
+Module Type LebNotation (T:Typ)(E:HasLeb T).
+ Infix "<=?" := E.leb (at level 35).
+End LebNotation.
 
-Module Type LeBoolNotation (E:LeBool).
-  Infix "<=?" := E.leb (at level 35).
-End LeBoolNotation.
+Module Type LtbNotation (T:Typ)(E:HasLtb T).
+ Infix "<?" := E.ltb (at level 35).
+End LtbNotation.
 
-Module Type LtBoolNotation (E:LtBool).
-  Infix "<?" := E.ltb (at level 35).
-End LtBoolNotation.
+Module Type LebSpec (T:Typ)(X:HasLe T)(Y:HasLeb T).
+ Parameter leb_le : forall x y, Y.leb x y = true <-> X.le x y.
+End LebSpec.
 
-Module Type LeBool' := LeBool <+ LeBoolNotation.
-Module Type LtBool' := LtBool <+ LtBoolNotation.
+Module Type LtbSpec (T:Typ)(X:HasLt T)(Y:HasLtb T).
+ Parameter ltb_lt : forall x y, Y.ltb x y = true <-> X.lt x y.
+End LtbSpec.
 
-Module Type LeBool_Le (T:Typ)(X:HasLeBool T)(Y:HasLe T).
- Parameter leb_le : forall x y, X.leb x y = true <-> Y.le x y.
-End LeBool_Le.
+Module Type LeBool := Typ <+ HasLeb.
+Module Type LtBool := Typ <+ HasLtb.
+Module Type LeBool' := LeBool <+ LebNotation.
+Module Type LtBool' := LtBool <+ LtbNotation.
 
-Module Type LtBool_Lt (T:Typ)(X:HasLtBool T)(Y:HasLt T).
- Parameter ltb_lt : forall x y, X.ltb x y = true <-> Y.lt x y.
-End LtBool_Lt.
-
-Module Type LeBoolIsTotal (Import X:LeBool').
+Module Type LebIsTotal (Import X:LeBool').
  Axiom leb_total : forall x y, (x <=? y) = true \/ (y <=? x) = true.
-End LeBoolIsTotal.
+End LebIsTotal.
 
-Module Type TotalLeBool := LeBool <+ LeBoolIsTotal.
-Module Type TotalLeBool' := LeBool' <+ LeBoolIsTotal.
+Module Type TotalLeBool := LeBool <+ LebIsTotal.
+Module Type TotalLeBool' := LeBool' <+ LebIsTotal.
 
-Module Type LeBoolIsTransitive (Import X:LeBool').
+Module Type LebIsTransitive (Import X:LeBool').
  Axiom leb_trans : Transitive X.leb.
-End LeBoolIsTransitive.
+End LebIsTransitive.
 
-Module Type TotalTransitiveLeBool := TotalLeBool <+ LeBoolIsTransitive.
-Module Type TotalTransitiveLeBool' := TotalLeBool' <+ LeBoolIsTransitive.
+Module Type TotalTransitiveLeBool := TotalLeBool <+ LebIsTransitive.
+Module Type TotalTransitiveLeBool' := TotalLeBool' <+ LebIsTransitive.
 
+(** Grouping all boolean comparison functions *)
+
+Module Type HasBoolOrdFuns (T:Typ) := HasEqb T <+ HasLtb T <+ HasLeb T.
+
+Module Type HasBoolOrdFuns' (T:Typ) :=
+ HasBoolOrdFuns T <+ EqbNotation T <+ LtbNotation T <+ LebNotation T.
+
+Module Type BoolOrdSpecs (O:EqLtLe)(F:HasBoolOrdFuns O) :=
+ EqbSpec O O F <+ LtbSpec O O F <+ LebSpec O O F.
+
+Module Type OrderFunctions (E:EqLtLe) :=
+  HasCompare E <+ HasBoolOrdFuns E <+ BoolOrdSpecs E.
+Module Type OrderFunctions' (E:EqLtLe) :=
+  HasCompare E <+ CmpNotation E <+ HasBoolOrdFuns' E <+ BoolOrdSpecs E.
 
 (** * From [OrderedTypeFull] to [TotalTransitiveLeBool] *)
 

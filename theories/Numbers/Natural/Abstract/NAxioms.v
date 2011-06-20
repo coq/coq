@@ -32,11 +32,11 @@ End NDivSpecific.
 
 (** We now group everything together. *)
 
-Module Type NAxiomsSig := NAxiomsMiniSig <+ HasCompare <+ HasEqBool
+Module Type NAxiomsSig := NAxiomsMiniSig <+ OrderFunctions
   <+ NZParity.NZParity <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2
   <+ NZGcd.NZGcd <+ NZDiv.NZDiv <+ NZBits.NZBits.
 
-Module Type NAxiomsSig' := NAxiomsMiniSig' <+ HasCompare <+ HasEqBool
+Module Type NAxiomsSig' := NAxiomsMiniSig' <+ OrderFunctions'
   <+ NZParity.NZParity <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2
   <+ NZGcd.NZGcd' <+ NZDiv.NZDiv' <+ NZBits.NZBits'.
 

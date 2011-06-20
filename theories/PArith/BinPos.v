@@ -9,7 +9,7 @@
 
 Require Export BinNums.
 Require Import Eqdep_dec EqdepFacts RelationClasses Morphisms Setoid
- Equalities Orders GenericMinMax Le Plus.
+ Equalities Orders OrdersFacts GenericMinMax Le Plus.
 
 Require Export BinPosDef.
 
@@ -37,6 +37,10 @@ Module Pos
 (** * Definitions of operations, now in a separate file *)
 
 Include BinPosDef.Pos.
+
+(** In functor applications that follow, we only inline t and eq *)
+
+Set Inline Level 30.
 
 (** * Logical Predicates *)
 
@@ -625,26 +629,121 @@ Proof.
  unfold pow. now rewrite iter_succ.
 Qed.
 
+(** ** Properties of [sub_mask] *)
+
+Lemma sub_mask_succ_r p q :
+  sub_mask p (succ q) = sub_mask_carry p q.
+Proof.
+ revert q. induction p; destruct q; simpl; f_equal; trivial; now destruct p.
+Qed.
+
+Theorem sub_mask_carry_spec p q :
+  sub_mask_carry p q = pred_mask (sub_mask p q).
+Proof.
+  revert q. induction p as [p IHp|p IHp| ]; destruct q; simpl;
+   try reflexivity; try rewrite IHp;
+   destruct (sub_mask p q) as [|[r|r| ]|] || destruct p; auto.
+Qed.
+
+Inductive SubMaskSpec (p q : positive) : mask -> Prop :=
+ | SubIsNul : p = q -> SubMaskSpec p q IsNul
+ | SubIsPos : forall r, q + r = p -> SubMaskSpec p q (IsPos r)
+ | SubIsNeg : forall r, p + r = q -> SubMaskSpec p q IsNeg.
+
+Theorem sub_mask_spec p q : SubMaskSpec p q (sub_mask p q).
+Proof.
+ revert q. induction p; destruct q; simpl; try constructor; trivial.
+ (* p~1 q~1 *)
+ destruct (IHp q); subst; try now constructor.
+  now apply SubIsNeg with r~0.
+ (* p~1 q~0 *)
+ destruct (IHp q); subst; try now constructor.
+  apply SubIsNeg with (pred_double r). symmetry. apply add_xI_pred_double.
+ (* p~0 q~1 *)
+ rewrite sub_mask_carry_spec.
+ destruct (IHp q); subst; try constructor.
+  now apply SubIsNeg with 1.
+  destruct r; simpl; try constructor; simpl.
+   now rewrite add_carry_spec, <- add_succ_r.
+   now rewrite add_carry_spec, <- add_succ_r, succ_pred_double.
+   now rewrite add_1_r.
+  now apply SubIsNeg with r~1.
+ (* p~0 q~0 *)
+ destruct (IHp q); subst; try now constructor.
+  now apply SubIsNeg with r~0.
+ (* p~0 1 *)
+ now rewrite add_1_l, succ_pred_double.
+ (* 1 q~1 *)
+ now apply SubIsNeg with q~0.
+ (* 1 q~0 *)
+ apply SubIsNeg with (pred_double q). now rewrite add_1_l, succ_pred_double.
+Qed.
+
+Theorem sub_mask_nul_iff p q : sub_mask p q = IsNul <-> p = q.
+Proof.
+ split.
+ now case sub_mask_spec.
+ intros <-. induction p; simpl; now rewrite ?IHp.
+Qed.
+
+Theorem sub_mask_diag p : sub_mask p p = IsNul.
+Proof.
+  now apply sub_mask_nul_iff.
+Qed.
+
+Lemma sub_mask_add p q r : sub_mask p q = IsPos r -> q + r = p.
+Proof.
+ case sub_mask_spec; congruence.
+Qed.
+
+Lemma sub_mask_add_diag_l p q : sub_mask (p+q) p = IsPos q.
+Proof.
+ case sub_mask_spec.
+ intros H. rewrite add_comm in H. elim (add_no_neutral _ _ H).
+ intros r H. apply add_cancel_l in H. now f_equal.
+ intros r H. rewrite <- add_assoc, add_comm in H. elim (add_no_neutral _ _ H).
+Qed.
+
+Lemma sub_mask_pos_iff p q r : sub_mask p q = IsPos r <-> q + r = p.
+Proof.
+ split. apply sub_mask_add. intros <-; apply sub_mask_add_diag_l.
+Qed.
+
+Lemma sub_mask_add_diag_r p q : sub_mask p (p+q) = IsNeg.
+Proof.
+ case sub_mask_spec; trivial.
+ intros H. symmetry in H; rewrite add_comm in H. elim (add_no_neutral _ _ H).
+ intros r H. rewrite <- add_assoc, add_comm in H. elim (add_no_neutral _ _ H).
+Qed.
+
+Lemma sub_mask_neg_iff p q : sub_mask p q = IsNeg <-> exists r, p + r = q.
+Proof.
+ split.
+ case sub_mask_spec; try discriminate. intros r Hr _; now exists r.
+ intros (r,<-). apply sub_mask_add_diag_r.
+Qed.
+
 (*********************************************************************)
-(** * Properties of boolean equality *)
+(** * Properties of boolean comparisons *)
 
-Theorem eqb_refl x : eqb x x = true.
+Theorem eqb_eq p q : (p =? q) = true <-> p=q.
 Proof.
- induction x; auto.
+ revert q. induction p; destruct q; simpl; rewrite ?IHp; split; congruence.
 Qed.
 
-Theorem eqb_true_eq x y : eqb x y = true -> x=y.
+Theorem ltb_lt p q : (p <? q) = true <-> p < q.
 Proof.
- revert y. induction x; destruct y; simpl; intros;
-  try discriminate; f_equal; auto.
+  unfold ltb, lt. destruct compare; easy'.
 Qed.
 
-Theorem eqb_eq x y : eqb x y = true <-> x=y.
+Theorem leb_le p q : (p <=? q) = true <-> p <= q.
 Proof.
- split. apply eqb_true_eq.
- intros; subst; apply eqb_refl.
+  unfold leb, le. destruct compare; easy'.
 Qed.
 
+(** More about [eqb] *)
+
+Include BoolEqualityFacts.
 
 (**********************************************************************)
 (** * Properties of comparison on binary positive numbers *)
@@ -728,45 +827,49 @@ Hint Rewrite compare_xO_xO compare_xI_xI compare_xI_xO compare_xO_xI : compare.
 Ltac simpl_compare := autorewrite with compare.
 Ltac simpl_compare_in H := autorewrite with compare in H.
 
-(** Comparison and equality *)
+(** Relation between [compare] and [sub_mask] *)
 
-Theorem compare_refl p : (p ?= p) = Eq.
+Definition mask2cmp (p:mask) : comparison :=
+ match p with
+  | IsNul => Eq
+  | IsPos _ => Gt
+  | IsNeg => Lt
+ end.
+
+Lemma compare_sub_mask p q : (p ?= q) = mask2cmp (sub_mask p q).
 Proof.
-  induction p; auto.
+  revert q.
+  induction p as [p IHp| p IHp| ]; intros [q|q| ]; simpl; trivial;
+  specialize (IHp q); rewrite ?sub_mask_carry_spec;
+  destruct (sub_mask p q) as [|r|]; simpl in *;
+  try clear r; try destruct r; simpl; trivial;
+  simpl_compare; now rewrite IHp.
 Qed.
 
-(* A generalization of the last property *)
+(** Alternative characterisation of strict order in term of addition *)
+
+Lemma lt_iff_add p q : p < q <-> exists r, p + r = q.
+Proof.
+ unfold "<". rewrite <- sub_mask_neg_iff, compare_sub_mask.
+ destruct sub_mask; now split.
+Qed.
+
+Lemma gt_iff_add p q : p > q <-> exists r, q + r = p.
+Proof.
+ unfold ">". rewrite compare_sub_mask.
+ split.
+ case_eq (sub_mask p q); try discriminate; intros r Hr _.
+  exists r. now apply sub_mask_pos_iff.
+ intros (r,Hr). apply sub_mask_pos_iff in Hr. now rewrite Hr.
+Qed.
+
+(** Basic facts about [compare_cont] *)
 
 Theorem compare_cont_refl p c :
   compare_cont p p c = c.
 Proof.
-  now rewrite compare_cont_spec, compare_refl.
+  now induction p.
 Qed.
-
-Theorem compare_eq p q : (p ?= q) = Eq -> p = q.
-Proof.
-  revert q. induction p; destruct q; intros H;
-   simpl; try easy; simpl_compare_in H;
-   (f_equal; now auto) || (now destruct compare).
-Qed.
-
-Lemma compare_eq_iff p q : (p ?= q) = Eq <-> p = q.
-Proof.
-  split. apply compare_eq.
-  intros; subst; apply compare_refl.
-Qed.
-
-Lemma compare_lt_iff p q : (p ?= q) = Lt <-> p < q.
-Proof. reflexivity. Qed.
-
-Lemma compare_gt_iff p q : (p ?= q) = Gt <-> p > q.
-Proof. reflexivity. Qed.
-
-Lemma compare_le_iff p q : (p ?= q) <> Gt <-> p <= q.
-Proof. reflexivity. Qed.
-
-Lemma compare_ge_iff p q : (p ?= q) <> Lt <-> p >= q.
-Proof. reflexivity. Qed.
 
 Lemma compare_cont_antisym p q c :
   CompOpp (compare_cont p q c) = compare_cont q p (CompOpp c).
@@ -776,97 +879,67 @@ Proof.
    trivial; apply IHp.
 Qed.
 
+(** Basic facts about [compare] *)
+
+Lemma compare_eq_iff p q : (p ?= q) = Eq <-> p = q.
+Proof.
+ rewrite compare_sub_mask, <- sub_mask_nul_iff.
+ destruct sub_mask; now split.
+Qed.
+
 Lemma compare_antisym p q : (q ?= p) = CompOpp (p ?= q).
 Proof.
   unfold compare. now rewrite compare_cont_antisym.
 Qed.
 
+Lemma compare_lt_iff p q : (p ?= q) = Lt <-> p < q.
+Proof. reflexivity. Qed.
+
+Lemma compare_le_iff p q : (p ?= q) <> Gt <-> p <= q.
+Proof. reflexivity. Qed.
+
+(** More properties about [compare] and boolean comparisons,
+  including [compare_spec] and [lt_irrefl] and [lt_eq_cases]. *)
+
+Include BoolOrderFacts.
+
+Definition le_lteq := lt_eq_cases.
+
+(** ** Facts about [gt] and [ge] *)
+
+(** The predicates [lt] and [le] are now favored in the statements
+  of theorems, the use of [gt] and [ge] is hence not recommended.
+  We provide here the bare minimal results to related them with
+  [lt] and [le]. *)
+
+Lemma gt_lt_iff p q : p > q <-> q < p.
+Proof.
+ unfold lt, gt. now rewrite compare_antisym, CompOpp_iff.
+Qed.
+
 Lemma gt_lt p q : p > q -> q < p.
 Proof.
-  unfold lt, gt. intros H. now rewrite compare_antisym, H.
+ apply gt_lt_iff.
 Qed.
 
 Lemma lt_gt p q : p < q -> q > p.
 Proof.
-  unfold lt, gt. intros H. now rewrite compare_antisym, H.
-Qed.
-
-Lemma gt_lt_iff p q : p > q <-> q < p.
-Proof.
-  split. apply gt_lt. apply lt_gt.
-Qed.
-
-Lemma ge_le p q : p >= q -> q <= p.
-Proof.
-  unfold le, ge. intros H. contradict H. now apply gt_lt.
-Qed.
-
-Lemma le_ge p q : p <= q -> q >= p.
-Proof.
-  unfold le, ge. intros H. contradict H. now apply lt_gt.
+ apply gt_lt_iff.
 Qed.
 
 Lemma ge_le_iff p q : p >= q <-> q <= p.
 Proof.
-  split. apply ge_le. apply le_ge.
+ unfold le, ge. now rewrite compare_antisym, CompOpp_iff.
 Qed.
 
-Lemma le_nlt p q : p <= q <-> ~ q < p.
+Lemma ge_le p q : p >= q -> q <= p.
 Proof.
-  now rewrite <- ge_le_iff.
+ apply ge_le_iff.
 Qed.
 
-Lemma lt_nle p q : p < q <-> ~ q <= p.
+Lemma le_ge p q : p <= q -> q >= p.
 Proof.
- intros. unfold lt, le. rewrite compare_antisym.
- destruct compare; split; auto; easy'.
-Qed.
-
-Lemma compare_spec p q : CompareSpec (p=q) (p<q) (q<p) (p ?= q).
-Proof.
-  destruct (p ?= q) as [ ]_eqn; constructor.
-  now apply compare_eq.
-  trivial.
-  now apply gt_lt.
-Qed.
-
-Lemma le_lteq p q : p <= q <-> p < q \/ p = q.
-Proof.
-  unfold le, lt. case compare_spec; split; try easy.
-  now right.
-  now left.
-  now destruct 1.
-  destruct 1. discriminate.
-  subst. unfold lt in *. now rewrite compare_refl in *.
-Qed.
-
-Lemma lt_le_incl p q : p<q -> p<=q.
-Proof.
-  intros. apply le_lteq. now left.
-Qed.
-
-(** ** Boolean comparisons *)
-
-Lemma ltb_lt p q : (p <? q) = true <-> p < q.
-Proof.
-  unfold ltb, lt. destruct compare; easy'.
-Qed.
-
-Lemma leb_le p q : (p <=? q) = true <-> p <= q.
-Proof.
-  unfold leb, le. destruct compare; easy'.
-Qed.
-
-Lemma leb_spec p q : BoolSpec (p<=q) (q<p) (p <=? q).
-Proof.
- unfold le, lt, leb. rewrite (compare_antisym p q).
- case compare; now constructor.
-Qed.
-
-Lemma ltb_spec p q : BoolSpec (p<q) (q<=p) (p <? q).
-Proof.
- unfold le, lt, ltb. rewrite (compare_antisym p q).
- case compare; now constructor.
+ apply ge_le_iff.
 Qed.
 
 (** ** Comparison and the successor *)
@@ -895,7 +968,7 @@ Qed.
 
 Lemma lt_succ_diag_r p : p < succ p.
 Proof.
-  rewrite lt_succ_r. apply le_lteq. now right.
+ rewrite lt_iff_add. exists 1. apply add_1_r.
 Qed.
 
 Lemma compare_succ_succ p q : (succ p ?= succ q) = (p ?= q).
@@ -913,14 +986,9 @@ Proof.
   now destruct p.
 Qed.
 
-Lemma ge_1_r p : p >= 1.
-Proof.
-  now destruct p.
-Qed.
-
 Lemma nlt_1_r p : ~ p < 1.
 Proof.
-  exact (ge_1_r p).
+  now destruct p.
 Qed.
 
 Lemma lt_1_succ p : 1 < succ p.
@@ -929,6 +997,22 @@ Proof.
 Qed.
 
 (** ** Properties of the order *)
+
+Lemma le_nlt p q : p <= q <-> ~ q < p.
+Proof.
+  now rewrite <- ge_le_iff.
+Qed.
+
+Lemma lt_nle p q : p < q <-> ~ q <= p.
+Proof.
+ intros. unfold lt, le. rewrite compare_antisym.
+ destruct compare; split; auto; easy'.
+Qed.
+
+Lemma lt_le_incl p q : p<q -> p<=q.
+Proof.
+  intros. apply le_lteq. now left.
+Qed.
 
 Lemma lt_lt_succ n m : n < m -> n < succ m.
 Proof.
@@ -945,17 +1029,10 @@ Proof.
   unfold le. now rewrite compare_succ_succ.
 Qed.
 
-Lemma lt_irrefl p : ~ p < p.
-Proof.
-  unfold lt. now rewrite compare_refl.
-Qed.
-
 Lemma lt_trans n m p : n < m -> m < p -> n < p.
 Proof.
-  induction p using peano_ind; intros H H'.
-  elim (nlt_1_r _ H').
-  apply lt_lt_succ.
-  apply lt_succ_r, le_lteq in H'. destruct H' as [H'|H']; subst; auto.
+ rewrite 3 lt_iff_add. intros (r,Hr) (s,Hs).
+ exists (r+s). now rewrite add_assoc, Hr, Hs.
 Qed.
 
 Theorem lt_ind : forall (A : positive -> Prop) (n : positive),
@@ -1041,6 +1118,11 @@ Proof.
 Qed.
 
 (** ** Order and addition *)
+
+Lemma lt_add_diag_r p q : p < p + q.
+Proof.
+ rewrite lt_iff_add. now exists q.
+Qed.
 
 Lemma add_lt_mono_l p q r : q<r <-> p+q < p+r.
 Proof.
@@ -1166,137 +1248,30 @@ Proof.
   symmetry. apply sub_1_r.
 Qed.
 
-Lemma sub_mask_succ_r p q :
-  sub_mask p (succ q) = sub_mask_carry p q.
-Proof.
-  revert q. induction p ; destruct q; simpl; f_equal; trivial; now destruct p.
-Qed.
-
-Theorem sub_mask_carry_spec p q :
-  sub_mask_carry p q = pred_mask (sub_mask p q).
-Proof.
-  revert q. induction p as [p IHp|p IHp| ]; destruct q; simpl;
-   try reflexivity; try rewrite IHp;
-   destruct (sub_mask p q) as [|[r|r| ]|] || destruct p; auto.
-Qed.
-
 Theorem sub_succ_r p q : p - (succ q) = pred (p - q).
 Proof.
   unfold sub; rewrite sub_mask_succ_r, sub_mask_carry_spec.
   destruct (sub_mask p q) as [|[r|r| ]|]; auto.
 Qed.
 
-Lemma double_eq_0_inversion (p:mask) :
-  double_mask p = IsNul -> p = IsNul.
-Proof.
-  now destruct p.
-Qed.
-
-Lemma succ_double_0_discr (p:mask) : succ_double_mask p <> IsNul.
-Proof.
-  now destruct p.
-Qed.
-
-Lemma succ_double_eq_1_inversion (p:mask) :
-  succ_double_mask p = IsPos 1 -> p = IsNul.
-Proof.
-  now destruct p.
-Qed.
-
-Lemma double_eq_1_discr (p:mask) : double_mask p <> IsPos 1.
-Proof.
-  now destruct p.
-Qed.
-
-Definition mask2cmp (p:mask) : comparison :=
- match p with
-  | IsNul => Eq
-  | IsPos _ => Gt
-  | IsNeg => Lt
- end.
-
-Lemma sub_mask_compare p q :
- mask2cmp (sub_mask p q) = (p ?= q).
-Proof.
-  symmetry. revert q.
-  induction p as [p IHp| p IHp| ]; intros [q|q| ]; simpl; trivial;
-  specialize (IHp q); rewrite ?sub_mask_carry_spec;
-  destruct (sub_mask p q) as [|r|]; simpl in *;
-  try clear r; try destruct r; simpl; trivial;
-  simpl_compare; now rewrite IHp.
-Qed.
-
-Theorem sub_mask_nul_iff p q : sub_mask p q = IsNul <-> p = q.
-Proof.
-  rewrite <- compare_eq_iff, <- sub_mask_compare.
-  destruct (sub_mask p q); now split.
-Qed.
-
-Theorem sub_mask_diag p : sub_mask p p = IsNul.
-Proof.
-  now apply sub_mask_nul_iff.
-Qed.
-
 (** ** Properties of subtraction without underflow *)
 
-Lemma sub_mask_carry_pos p q r :
-  sub_mask p q = IsPos r ->
-  r = 1 \/ sub_mask_carry p q = IsPos (pred r).
+Lemma sub_mask_pos' p q :
+  q < p -> exists r, sub_mask p q = IsPos r /\ q + r = p.
 Proof.
- intros H.
- destruct (eq_dec r 1) as [EQ|NE]; [now left|right].
- rewrite sub_mask_carry_spec, H. destruct r; trivial. now elim NE.
-Qed.
-
-Lemma sub_mask_add p q r :
-  sub_mask p q = IsPos r -> q + r = p.
-Proof.
- revert q r.
- induction p as [p IHp|p IHp| ]; intros [q|q| ] r H;
-  simpl in H; try destr_eq H; try specialize (IHp q);
-  rewrite ?sub_mask_carry_spec in H.
- (* p~1 q~1 *)
- destruct (sub_mask p q) as [|r'|]; destr_eq H. subst r; simpl; f_equal; auto.
- (* p~1 q~0 *)
- assert (H' := proj1 (sub_mask_nul_iff p q)).
- destruct (sub_mask p q) as [|r'|]; destr_eq H; subst r; simpl; f_equal; auto.
- symmetry; auto.
- (* p~1 1 *)
- subst r; simpl; f_equal; auto.
- (* p~0 q~1 *)
- destruct (sub_mask p q) as [|[r'|r'| ]|]; destr_eq H; subst r; simpl; f_equal.
- rewrite add_carry_spec, <- add_succ_r. auto.
- rewrite add_carry_spec, <- add_succ_r, succ_pred_double. auto.
- rewrite <- add_1_r. auto.
- (* p~0 q~0 *)
- destruct (sub_mask p q) as [|r'|]; destr_eq H; subst r; simpl; f_equal. auto.
- (* p~0 1 *)
- subst r; now rewrite add_1_l, succ_pred_double.
-Qed.
-
-Lemma sub_mask_pos_iff p q :
-  (exists r, sub_mask p q = IsPos r) <-> p > q.
-Proof.
- unfold gt. rewrite <- sub_mask_compare.
- destruct (sub_mask p q) as [|r|]; split; try easy'. now exists r.
+ rewrite lt_iff_add. intros (r,Hr). exists r. split; trivial.
+ now apply sub_mask_pos_iff.
 Qed.
 
 Lemma sub_mask_pos p q :
   q < p -> exists r, sub_mask p q = IsPos r.
 Proof.
- intros. now apply sub_mask_pos_iff, lt_gt.
-Qed.
-
-Lemma sub_mask_pos' p q :
-  q < p -> exists r, sub_mask p q = IsPos r /\ q + r = p.
-Proof.
- intros H. destruct (sub_mask_pos p q H) as (r,Hr).
- exists r. split; trivial. now apply sub_mask_add.
+ intros H. destruct (sub_mask_pos' p q H) as (r & Hr & _). now exists r.
 Qed.
 
 Theorem sub_add p q : q < p -> (p-q)+q = p.
 Proof.
-  intros H; destruct (sub_mask_pos p q H) as (r,U).
+  intros H. destruct (sub_mask_pos p q H) as (r,U).
   unfold sub. rewrite U. rewrite add_comm. now apply sub_mask_add.
 Qed.
 
@@ -1414,20 +1389,19 @@ Qed.
 
 (** Properties of subtraction with underflow *)
 
-Lemma sub_mask_neg_iff p q : sub_mask p q = IsNeg <-> p < q.
+Lemma sub_mask_neg_iff' p q : sub_mask p q = IsNeg <-> p < q.
 Proof.
-  unfold lt. rewrite <- sub_mask_compare.
-  destruct sub_mask; now split.
+  rewrite lt_iff_add. apply sub_mask_neg_iff.
 Qed.
 
 Lemma sub_mask_neg p q : p<q -> sub_mask p q = IsNeg.
 Proof.
-  apply sub_mask_neg_iff.
+  apply sub_mask_neg_iff'.
 Qed.
 
 Lemma sub_le p q : p<=q -> p-q = 1.
 Proof.
-  unfold le, sub. rewrite <- sub_mask_compare.
+  unfold le, sub. rewrite compare_sub_mask.
   destruct sub_mask; easy'.
 Qed.
 
@@ -1983,14 +1957,13 @@ Notation iter_pos_invariant := Pos.iter_invariant (only parsing).
 Notation Ppow_1_r := Pos.pow_1_r (only parsing).
 Notation Ppow_succ_r := Pos.pow_succ_r (only parsing).
 Notation Peqb_refl := Pos.eqb_refl (only parsing).
-Notation Peqb_true_eq := Pos.eqb_true_eq (only parsing).
 Notation Peqb_eq := Pos.eqb_eq (only parsing).
 Notation Pcompare_refl_id := Pos.compare_cont_refl (only parsing).
 Notation Pcompare_eq_iff := Pos.compare_eq_iff (only parsing).
 Notation Pcompare_Gt_Lt := Pos.compare_cont_Gt_Lt (only parsing).
 Notation Pcompare_eq_Lt := Pos.compare_lt_iff (only parsing).
 Notation Pcompare_Lt_Gt := Pos.compare_cont_Lt_Gt (only parsing).
-Notation Pcompare_eq_Gt := Pos.compare_gt_iff (only parsing).
+
 Notation Pcompare_antisym := Pos.compare_cont_antisym (only parsing).
 Notation ZC1 := Pos.gt_lt (only parsing).
 Notation ZC2 := Pos.lt_gt (only parsing).
@@ -2034,11 +2007,6 @@ Notation Ppred_mask := Pos.pred_mask (only parsing).
 Notation Pminus_mask_succ_r := Pos.sub_mask_succ_r (only parsing).
 Notation Pminus_mask_carry_spec := Pos.sub_mask_carry_spec (only parsing).
 Notation Pminus_succ_r := Pos.sub_succ_r (only parsing).
-Notation double_eq_zero_inversion := Pos.succ_double_0_discr (only parsing).
-Notation double_plus_one_zero_discr := Pos.succ_double_0_discr (only parsing).
-Notation double_plus_one_eq_one_inversion :=
- Pos.succ_double_eq_1_inversion (only parsing).
-Notation double_eq_one_discr := Pos.double_eq_1_discr (only parsing).
 Notation Pminus_mask_diag := Pos.sub_mask_diag (only parsing).
 
 Notation Pplus_minus_eq := Pos.add_sub (only parsing).
@@ -2062,6 +2030,10 @@ Notation Psize_pos_le := Pos.size_le (only parsing).
 (** More complex compatibility facts, expressed as lemmas
     (to preserve scopes for instance) *)
 
+Lemma Peqb_true_eq x y : Pos.eqb x y = true -> x=y.
+Proof. apply Pos.eqb_eq. Qed.
+Lemma Pcompare_eq_Gt p q : (p ?= q) = Gt <-> p > q.
+Proof. reflexivity. Qed.
 Lemma Pplus_one_succ_r p : Psucc p = p + 1.
 Proof (eq_sym (Pos.add_1_r p)).
 Lemma Pplus_one_succ_l p : Psucc p = 1 + p.
@@ -2082,8 +2054,11 @@ Lemma Pminus_mask_Gt p q :
    q + h = p /\ (h = 1 \/ Pminus_mask_carry p q = IsPos (Ppred h)).
 Proof.
  intros H. apply Pos.gt_lt in H.
- destruct (Pos.sub_mask_pos' p q H) as (r & U & V).
- exists r. repeat split; trivial. now apply Pos.sub_mask_carry_pos.
+ destruct (Pos.sub_mask_pos p q H) as (r & U).
+ exists r. repeat split; trivial.
+ now apply Pos.sub_mask_pos_iff.
+ destruct (Pos.eq_dec r 1) as [EQ|NE]; [now left|right].
+ rewrite Pos.sub_mask_carry_spec, U. destruct r; trivial. now elim NE.
 Qed.
 
 Lemma Pplus_minus : forall p q, p > q -> q+(p-q) = p.
@@ -2109,6 +2084,10 @@ Qed.
     Pminus_mask_IsNeg
     ZL10
     ZL11
+    double_eq_zero_inversion
+    double_plus_one_zero_discr
+    double_plus_one_eq_one_inversion
+    double_eq_one_discr
 
     Infix "/" := Pdiv2 : positive_scope.
 *)

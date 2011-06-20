@@ -14,6 +14,31 @@ Require Import
 
 (** Functions not already defined *)
 
+Fixpoint leb n m :=
+  match n, m with
+    | O, _ => true
+    | _, O => false
+    | S n', S m' => leb n' m'
+  end.
+
+Definition ltb n m := leb (S n) m.
+
+Infix "<=?" := leb (at level 70) : nat_scope.
+Infix "<?" := ltb (at level 70) : nat_scope.
+
+Lemma leb_le n m : (n <=? m) = true <-> n <= m.
+Proof.
+ revert m.
+ induction n. split; auto with arith.
+ destruct m; simpl. now split.
+ rewrite IHn. split; auto with arith.
+Qed.
+
+Lemma ltb_lt n m : (n <? m) = true <-> n < m.
+Proof.
+ unfold ltb, lt. apply leb_le.
+Qed.
+
 Fixpoint pow n m :=
   match m with
     | O => 1
@@ -681,6 +706,8 @@ Definition sub := minus.
 Definition mul := mult.
 Definition lt := lt.
 Definition le := le.
+Definition ltb := ltb.
+Definition leb := leb.
 
 Definition min := min.
 Definition max := max.
@@ -692,6 +719,8 @@ Definition min_r := min_r.
 Definition eqb_eq := beq_nat_true_iff.
 Definition compare_spec := nat_compare_spec.
 Definition eq_dec := eq_nat_dec.
+Definition leb_le := leb_le.
+Definition ltb_lt := ltb_lt.
 
 Definition Even := Even.
 Definition Odd := Odd.
