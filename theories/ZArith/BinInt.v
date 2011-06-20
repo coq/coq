@@ -1295,17 +1295,7 @@ Proof.
  rewrite geb_leb. apply leb_spec.
 Qed.
 
-(** TODO : to add in Numbers *)
-
-Lemma add_shuffle3 n m p : n + (m + p) = m + (n + p).
-Proof.
- now rewrite add_comm, <- add_assoc, (add_comm p).
-Qed.
-
-Lemma mul_shuffle3 n m p : n * (m * p) = m * (n * p).
-Proof.
- now rewrite mul_assoc, (mul_comm n), mul_assoc.
-Qed.
+(** TODO : to add in Numbers ? *)
 
 Lemma add_reg_l n m p : n + m = n + p -> m = p.
 Proof.
@@ -1321,25 +1311,6 @@ Lemma mul_reg_r n m p : p <> 0 -> n * p = m * p -> n = m.
 Proof.
  exact (fun Hp => proj1 (mul_cancel_r n m p Hp)).
 Qed.
-
-Lemma add_succ_comm n m : succ n + m = n + succ m.
-Proof.
- now rewrite add_succ_r, add_succ_l.
-Qed.
-
-Lemma mul_opp_comm n m : - n * m = n * - m.
-Proof.
- now destruct n, m.
-Qed.
-
-Notation mul_eq_0 := eq_mul_0.
-
-Lemma mul_eq_0_l n m : n <> 0 -> m * n = 0 -> m = 0.
-Proof.
- intros Hn H. apply eq_mul_0 in H. now destruct H.
-Qed.
-
-Notation mul_eq_1 := eq_mul_1.
 
 Lemma opp_eq_mul_m1 n : - n = n * -1.
 Proof.
@@ -1466,7 +1437,6 @@ Notation Zmult_1_r := Z.mul_1_r (only parsing).
 Notation Zmult_comm := Z.mul_comm (only parsing).
 Notation Zmult_assoc := Z.mul_assoc (only parsing).
 Notation Zmult_permute := Z.mul_shuffle3 (only parsing).
-Notation Zmult_integral_l := Z.mul_eq_0_l (only parsing).
 Notation Zmult_1_inversion_l := Z.mul_eq_1 (only parsing).
 Notation Zdouble_mult := Z.double_spec (only parsing).
 Notation Zdouble_plus_one_mult := Z.succ_double_spec (only parsing).
@@ -1550,6 +1520,8 @@ Lemma Zmult_assoc_reverse : forall n m p, n * m * p = n * (m * p).
 Proof (SYM3 Z.mul_assoc).
 Lemma Zmult_integral : forall n m, n * m = 0 -> n = 0 \/ m = 0.
 Proof (fun n m => proj1 (Z.mul_eq_0 n m)).
+Lemma Zmult_integral_l : forall n m, n <> 0 -> m * n = 0 -> m = 0.
+Proof (fun n m H H' => Z.mul_eq_0_l m n H' H).
 Lemma Zopp_mult_distr_l : forall n m, - (n * m) = - n * m.
 Proof (SYM2 Z.mul_opp_l).
 Lemma Zopp_mult_distr_r : forall n m, - (n * m) = n * - m.

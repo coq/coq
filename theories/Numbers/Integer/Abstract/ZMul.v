@@ -53,6 +53,11 @@ Proof.
 intros n m; now rewrite mul_opp_l, mul_opp_r, opp_involutive.
 Qed.
 
+Theorem mul_opp_comm : forall n m, (- n) * m == n * (- m).
+Proof.
+intros n m. now rewrite mul_opp_l, <- mul_opp_r.
+Qed.
+
 Theorem mul_sub_distr_l : forall n m p, n * (m - p) == n * m - n * p.
 Proof.
 intros n m p. do 2 rewrite <- add_opp_r. rewrite mul_add_distr_l.

@@ -74,5 +74,9 @@ assert (H3 : 1 < n * m) by now apply (lt_1_l m).
 rewrite H in H3; false_hyp H3 lt_irrefl.
 Qed.
 
+(** Alternative name : *)
+
+Definition mul_eq_1 := eq_mul_1.
+
 End NMulOrderProp.
 

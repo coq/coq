@@ -241,6 +241,12 @@ intros n m H1 H2; apply eq_mul_0 in H1. destruct H1 as [H1 | H1].
 false_hyp H1 H2. assumption.
 Qed.
 
+(** Some alternative names: *)
+
+Definition mul_eq_0 := eq_mul_0.
+Definition mul_eq_0_l := eq_mul_0_l.
+Definition mul_eq_0_r := eq_mul_0_r.
+
 Theorem lt_0_mul : forall n m, 0 < n * m <-> (0 < n /\ 0 < m) \/ (m < 0 /\ n < 0).
 Proof.
 intros n m; split; [intro H | intros [[H1 H2] | [H1 H2]]].

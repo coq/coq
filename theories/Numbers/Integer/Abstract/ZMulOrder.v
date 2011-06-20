@@ -208,5 +208,9 @@ apply mul_lt_mono_nonneg.
 now apply lt_le_incl. assumption. apply le_0_1. assumption.
 Qed.
 
+(** Alternative name : *)
+
+Definition mul_eq_1 := eq_mul_1.
+
 End ZMulOrderProp.
 

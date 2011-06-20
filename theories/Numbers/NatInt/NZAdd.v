@@ -30,6 +30,11 @@ intros n m; nzinduct n. now nzsimpl.
 intro. nzsimpl. now rewrite succ_inj_wd.
 Qed.
 
+Theorem add_succ_comm : forall n m, S n + m == n + S m.
+Proof.
+intros n m. now rewrite add_succ_r, add_succ_l.
+Qed.
+
 Hint Rewrite add_0_r add_succ_r : nz.
 
 Theorem add_comm : forall n m, n + m == m + n.
@@ -80,6 +85,11 @@ Qed.
 Theorem add_shuffle2 : forall n m p q, (n + m) + (p + q) == (n + q) + (m + p).
 Proof.
 intros n m p q. rewrite (add_comm p). apply add_shuffle1.
+Qed.
+
+Theorem add_shuffle3 : forall n m p, n + (m + p) == m + (n + p).
+Proof.
+intros n m p. now rewrite add_comm, <- add_assoc, (add_comm p).
 Qed.
 
 Theorem sub_1_r : forall n, n - 1 == P n.

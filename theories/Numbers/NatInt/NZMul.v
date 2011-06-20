@@ -81,4 +81,9 @@ Proof.
 intros n m p q. rewrite (mul_comm p). apply mul_shuffle1.
 Qed.
 
+Theorem mul_shuffle3 : forall n m p, n * (m * p) == m * (n * p).
+Proof.
+intros n m p. now rewrite mul_assoc, (mul_comm n), mul_assoc.
+Qed.
+
 End NZMulProp.
