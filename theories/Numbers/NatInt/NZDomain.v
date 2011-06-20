@@ -14,97 +14,36 @@ Require Import NZBase NZOrder NZAddOrder Plus Minus.
     translation from Peano numbers [nat] into NZ.
 *)
 
-(** First, a section about iterating a function. *)
+(** First, some complements about [nat_iter] *)
 
-Section Iter.
-Variable A : Type.
-Fixpoint iter (f:A->A)(n:nat) : A -> A := fun a =>
-  match n with
-    | O => a
-    | S n => f (iter f n a)
-  end.
-Infix "^" := iter.
+Local Notation "f ^ n" := (nat_iter n f).
 
-Lemma iter_alt : forall f n m, (f^(Datatypes.S n)) m = (f^n) (f m).
+Instance nat_iter_wd n {A} (R:relation A) :
+ Proper ((R==>R)==>R==>R) (nat_iter n).
 Proof.
-induction n; simpl; auto.
-intros; rewrite <- IHn; auto.
+intros f f' Hf. induction n; simpl; red; auto.
 Qed.
-
-Lemma iter_plus : forall f n n' m, (f^(n+n')) m = (f^n) ((f^n') m).
-Proof.
-induction n; simpl; auto.
-intros; rewrite IHn; auto.
-Qed.
-
-Lemma iter_plus_bis : forall f n n' m, (f^(n+n')) m = (f^n') ((f^n) m).
-Proof.
-induction n; simpl; auto.
-intros. rewrite <- iter_alt, IHn; auto.
-Qed.
-
-Global Instance iter_wd (R:relation A) : Proper ((R==>R)==>eq==>R==>R) iter.
-Proof.
-intros f f' Hf n n' Hn; subst n'. induction n; simpl; red; auto.
-Qed.
-
-End Iter.
-Implicit Arguments iter [A].
-Local Infix "^" := iter.
-
 
 Module NZDomainProp (Import NZ:NZDomainSig').
+Include NZBaseProp NZ.
 
 (** * Relationship between points thanks to [succ] and [pred]. *)
 
-(** We prove that any points in NZ have a common descendant by [succ] *)
+(** For any two points, one is an iterated successor of the other. *)
 
-Definition common_descendant n m := exists k l, (S^k) n == (S^l) m.
-
-Instance common_descendant_wd : Proper (eq==>eq==>iff) common_descendant.
+Lemma itersucc_or_itersucc n m : exists k, n == (S^k) m \/ m == (S^k) n.
 Proof.
-unfold common_descendant. intros n n' Hn m m' Hm.
-setoid_rewrite Hn. setoid_rewrite Hm. auto with *.
-Qed.
-
-Instance common_descendant_equiv : Equivalence common_descendant.
-Proof.
-split; red.
-intros x. exists O; exists O. simpl; auto with *.
-intros x y (p & q & H); exists q; exists p; auto with *.
-intros x y z (p & q & Hpq) (r & s & Hrs).
-exists (r+p)%nat. exists (q+s)%nat.
-rewrite !iter_plus. rewrite Hpq, <-Hrs, <-iter_plus, <- iter_plus_bis.
-auto with *.
-Qed.
-
-Lemma common_descendant_with_0 : forall n, common_descendant n 0.
-Proof.
-apply bi_induction.
-intros n n' Hn. rewrite Hn; auto with *.
-reflexivity.
-split; intros (p & q & H).
-exists p; exists (Datatypes.S q). rewrite <- iter_alt; simpl.
- now f_equiv.
-exists (Datatypes.S p); exists q. rewrite iter_alt; auto.
-Qed.
-
-Lemma common_descendant_always : forall n m, common_descendant n m.
-Proof.
-intros. transitivity 0; [|symmetry]; apply common_descendant_with_0.
-Qed.
-
-(** Thanks to [succ] being injective, we can then deduce that for any two
-    points, one is an iterated successor of the other. *)
-
-Lemma itersucc_or_itersucc : forall n m, exists k, n == (S^k) m \/ m == (S^k) n.
-Proof.
-intros n m. destruct (common_descendant_always n m) as (k & l & H).
-revert l H. induction k.
-simpl. intros; exists l; left; auto with *.
-intros. destruct l.
-simpl in *. exists (Datatypes.S k); right; auto with *.
-simpl in *. apply pred_wd in H; rewrite !pred_succ in H. eauto.
+nzinduct n m.
+exists 0%nat. now left.
+intros n. split; intros [k [L|R]].
+exists (Datatypes.S k). left. now apply succ_wd.
+destruct k as [|k].
+simpl in R. exists 1%nat. left. now apply succ_wd.
+rewrite nat_iter_succ_r in R. exists k. now right.
+destruct k as [|k]; simpl in L.
+exists 1%nat. now right.
+apply succ_inj in L. exists k. now left.
+exists (Datatypes.S k). right. now rewrite nat_iter_succ_r.
 Qed.
 
 (** Generalized version of [pred_succ] when iterating *)
@@ -114,7 +53,7 @@ Proof.
 induction k.
 simpl; auto with *.
 simpl; intros. apply pred_wd in H. rewrite pred_succ in H. apply IHk in H; auto.
-rewrite <- iter_alt in H; auto.
+rewrite <- nat_iter_succ_r in H; auto.
 Qed.
 
 (** From a given point, all others are iterated successors
@@ -407,7 +346,7 @@ Proof.
  intros.
  destruct n.
  inversion H.
- rewrite iter_alt.
+ rewrite nat_iter_succ_r.
  simpl.
  rewrite ofnat_succ, pred_succ; auto with arith.
 Qed.

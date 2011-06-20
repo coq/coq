@@ -270,6 +270,12 @@ Fixpoint nat_iter (n:nat) {A} (f:A->A) (x:A) : A :=
     | S n' => f (nat_iter n' f x)
   end.
 
+Lemma nat_iter_succ_r n {A} (f:A->A) (x:A) :
+  nat_iter (S n) f x = nat_iter n f (f x).
+Proof.
+  induction n; intros; simpl; rewrite <- ?IHn; trivial.
+Qed.
+
 Theorem nat_iter_plus :
   forall (n m:nat) {A} (f:A -> A) (x:A),
     nat_iter (n + m) f x = nat_iter n f (nat_iter m f x).
