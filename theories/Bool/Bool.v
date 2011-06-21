@@ -791,7 +791,7 @@ Qed.
 Lemma iff_reflect : forall P b, (P<->b=true) -> reflect P b.
 Proof.
  destr_bool; intuition.
-Qed.
+Defined.
 
 (** It would be nice to join [reflect_iff] and [iff_reflect]
     in a unique [iff] statement, but this isn't allowed since
@@ -802,7 +802,7 @@ Qed.
 Lemma reflect_dec : forall P b, reflect P b -> {P}+{~P}.
 Proof.
  destruct 1; auto.
-Qed.
+Defined.
 
 (** Reciprocally, from a decidability, we could state a
     [reflect] as soon as we have a [bool_of_sumbool]. *)

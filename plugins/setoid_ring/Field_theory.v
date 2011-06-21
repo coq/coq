@@ -390,16 +390,6 @@ Qed.
 
   ***************************************************************************)
 
-Lemma Peqb_spec x y : Bool.reflect (x=y) (Pos.eqb x y).
-Proof.
- apply Bool.iff_reflect. symmetry. apply Pos.eqb_eq.
-Qed.
-
-Lemma Neqb_spec x y : Bool.reflect (x=y) (N.eqb x y).
-Proof.
- apply Bool.iff_reflect. symmetry. apply N.eqb_eq.
-Qed.
-
 (* equality test *)
 Fixpoint PExpr_eq (e1 e2 : PExpr C) {struct e1} : bool :=
  match e1, e2 with
@@ -434,7 +424,7 @@ intros l e1; elim e1.
 intros c1; intros e2; elim e2; simpl; (try (intros; discriminate)).
 intros c2; apply (morph_eq CRmorph).
 intros p1; intros e2; elim e2; simpl; (try (intros; discriminate)).
-intros p2; case Peqb_spec; intros; now subst.
+intros p2; case Pos.eqb_spec; intros; now subst.
 intros e3 rec1 e5 rec2 e2; case e2; simpl; (try (intros; discriminate)).
 intros e4 e6; generalize (rec1 e4); case (PExpr_eq e3 e4);
  (try (intros; discriminate)); generalize (rec2 e6); case (PExpr_eq e5 e6);
@@ -451,7 +441,7 @@ intros e3 rec e2; (case e2; simpl; (try (intros; discriminate))).
 intros e4; generalize (rec e4); case (PExpr_eq e3 e4);
  (try (intros; discriminate)); auto.
 intros e3 rec n3 e2;(case e2;simpl;(try (intros;discriminate))).
-intros e4 n4; case Neqb_spec; try discriminate; intros EQ H; subst.
+intros e4 n4; case N.eqb_spec; try discriminate; intros EQ H; subst.
 repeat rewrite  pow_th.(rpow_pow_N). rewrite (rec _ H);auto.
 Qed.
 
@@ -493,7 +483,7 @@ Proof.
  destruct n;simpl.
  rewrite pow_th.(rpow_pow_N);simpl;auto.
  fold (p =? 1)%positive.
- case Peqb_spec; intros H; (rewrite H || clear H).
+ case Pos.eqb_spec; intros H; (rewrite H || clear H).
  now rewrite  pow_th.(rpow_pow_N).
  destruct e;simpl;auto.
  repeat apply ceqb_rect;simpl;intros;rewrite pow_th.(rpow_pow_N);simpl.
@@ -526,7 +516,7 @@ induction e1;destruct e2; simpl in |- *;try reflexivity;
  try (intro eq_c; rewrite eq_c in |- *); simpl in |- *; try reflexivity;
  try ring [(morph0 CRmorph) (morph1 CRmorph)].
  apply (morph_mul CRmorph).
-case Neqb_spec; intros H; try rewrite <- H; clear H.
+case N.eqb_spec; intros H; try rewrite <- H; clear H.
 rewrite NPEpow_correct. simpl.
 repeat rewrite pow_th.(rpow_pow_N).
 rewrite IHe1; destruct n;simpl;try ring.

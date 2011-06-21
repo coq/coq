@@ -196,7 +196,7 @@ Qed.
 Lemma eqb_spec x y : reflect (x==y) (x =? y).
 Proof.
 apply iff_reflect. symmetry. apply eqb_eq.
-Qed.
+Defined.
 
 (** Negated form of [eqb_eq] *)
 

@@ -365,7 +365,7 @@ Include CompareBasedOrderFacts E C O.
 Lemma leb_spec0 x y : reflect (x<=y) (x<=?y).
 Proof.
  apply iff_reflect. symmetry. apply leb_le.
-Qed.
+Defined.
 
 Lemma leb_spec x y : BoolSpec (x<=y) (y<x) (x<=?y).
 Proof.
@@ -376,7 +376,7 @@ Qed.
 Lemma ltb_spec0 x y : reflect (x<y) (x<?y).
 Proof.
  apply iff_reflect. symmetry. apply ltb_lt.
-Qed.
+Defined.
 
 Lemma ltb_spec x y : BoolSpec (x<y) (y<=x) (x<?y).
 Proof.
