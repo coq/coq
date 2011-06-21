@@ -24,11 +24,7 @@
 #install_printer  (* judgement *) ppj;;
 
 #install_printer  (* hint_db *)  print_hint_db;;
-#install_printer  (* goal *)  ppgoal;;
-#install_printer  (* sigma goal *)  ppsigmagoal;;
-#install_printer  (* proof *)  pproof;;
 #install_printer  (* Goal.goal *)  ppgoalgoal;;
-#install_printer  (* pftreestate *)  pppftreestate;;
 #install_printer  (* metaset.t *) ppmetas;;
 #install_printer  (* evar_map *)  ppevm;;
 #install_printer  (* clenv *) ppclenv;;

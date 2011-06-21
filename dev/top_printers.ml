@@ -112,7 +112,8 @@ let pp_transparent_state s = pp (pr_transparent_state s)
 
 (* proof printers *)
 let ppmetas metas = pp(pr_metaset metas)
-let ppevm evd = pp(pr_evar_map evd)
+let ppevm evd = pp(pr_evar_map (Some 2) evd)
+let ppevmall evd = pp(pr_evar_map None evd)
 let ppclenv clenv = pp(pr_clenv clenv)
 let ppgoalgoal gl = pp(Goal.pr_goal gl)
 (* spiwack: deactivated until a replacement is found

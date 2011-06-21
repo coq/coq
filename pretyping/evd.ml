@@ -766,21 +766,55 @@ let pr_evar_info evi =
   in
   hov 2 (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]")
 
-let pr_evar_map_t (evars,(uvs,univs) as sigma) =
+let compute_evar_dependency_graph (sigma:evar_map) =
+  (* Compute the map binding ev to the evars whose body depends on ev *)
+  fold (fun evk evi acc ->
+    let deps =
+      match evar_body evi with
+      | Evar_empty -> ExistentialSet.empty
+      | Evar_defined c -> collect_evars c in
+    ExistentialSet.fold (fun evk' acc ->
+      let tab = try ExistentialMap.find evk' acc with Not_found -> [] in
+      ExistentialMap.add evk' ((evk,evi)::tab) acc) deps acc)
+    sigma ExistentialMap.empty
+
+let evar_dependency_closure n sigma =
+  let graph = compute_evar_dependency_graph sigma in
+  let order a b = fst a < fst b in
+  let rec aux n l =
+    if n=0 then l
+    else
+      let l' =
+        list_map_append (fun (evk,_) -> ExistentialMap.find evk graph) l in
+      aux (n-1) (list_uniquize (Sort.list order (l@l'))) in
+  aux n (undefined_list sigma)
+
+let pr_evar_map_t depth sigma =
+  let (evars,(uvs,univs)) = sigma.evars in
+  let pr_evar_list l =
+    h 0 (prlist_with_sep pr_fnl
+	   (fun (ev,evi) ->
+	     h 0 (str(string_of_existential ev) ++
+                    str"==" ++ pr_evar_info evi)) l) in
   let evs =
     if evars = EvarInfoMap.empty then mt ()
     else
-      str"EVARS:"++brk(0,1)++
-	h 0 (prlist_with_sep pr_fnl
-		(fun (ev,evi) ->
-		  h 0 (str(string_of_existential ev)++str"=="++ pr_evar_info evi))
-		(EvarMap.to_list sigma))++fnl()
+      match depth with
+      | None ->
+          (* Print all evars *)
+          str"EVARS:"++brk(0,1)++pr_evar_list (to_list sigma)++fnl()
+      | Some n ->
+          (* Print all evars *)
+          str"UNDEFINED EVARS"++
+          (if n=0 then mt() else str" (+level "++int n++str" closure):")++
+          brk(0,1)++
+          pr_evar_list (evar_dependency_closure n sigma)++fnl()
   and svs =
     if Univ.UniverseLSet.is_empty uvs then mt ()
     else str"UNIVERSE VARIABLES:"++brk(0,1)++
       h 0 (prlist_with_sep pr_fnl 
 	     (fun u -> Univ.pr_uni_level u) (Univ.UniverseLSet.elements uvs))++fnl()
-   and cs =
+  and cs =
     if univs = Univ.initial_universes then mt ()
     else str"UNIVERSES:"++brk(0,1)++
       h 0 (Univ.pr_universes univs)++fnl()
@@ -810,10 +844,10 @@ let pr_evar_map_constraints evd =
   if evd.conv_pbs = [] then mt() 
   else pr_constraints evd.conv_pbs++fnl()
 
-let pr_evar_map evd =
+let pr_evar_map allevars evd =
   let pp_evm =
     if evd.evars = EvarMap.empty then mt() else
-      pr_evar_map_t evd.evars++fnl() in
+      pr_evar_map_t allevars evd++fnl() in
   let cstrs = if evd.conv_pbs = [] then mt() else
     str"CONSTRAINTS:"++brk(0,1)++pr_constraints evd.conv_pbs++fnl() in
   let pp_met =

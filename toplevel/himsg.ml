@@ -711,7 +711,7 @@ let pr_constraints printenv env evm =
 	     str " : " ++ pr_lconstr evi.evar_concl) l ++ fnl() ++
 	  pr_evar_map_constraints evm
     else
-      pr_evar_map evm
+      pr_evar_map None evm
 
 let explain_unsatisfiable_constraints env evd constr =
   let evm = Evarutil.nf_evar_map evd in

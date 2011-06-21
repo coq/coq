@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Pp
 open Term
 
 (* This module implements the abstract interface to goals *)
@@ -22,7 +23,7 @@ type goal = {
 (* spiwack: I don't deal with the tags, yet. It is a worthy discussion
    whether we do want some tags displayed besides the goal or not. *)
 
-let pr_goal {content = e} = Pp.int e
+let pr_goal {content = e} = str "GOAL:" ++ Pp.int e
 
 (* access primitive *)
 (* invariant : [e] must exist in [em] *)

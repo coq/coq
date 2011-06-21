@@ -213,9 +213,9 @@ let db_pr_goal sigma g =
                    str" "  ++ pc) ++ fnl ()
 
 let pr_gls gls =
-  hov 0 (pr_evar_map (sig_sig gls) ++ fnl () ++ db_pr_goal (project gls) (sig_it gls))
+  hov 0 (pr_evar_map (Some 2) (sig_sig gls) ++ fnl () ++ db_pr_goal (project gls) (sig_it gls))
 
 let pr_glls glls =
-  hov 0 (pr_evar_map (sig_sig glls) ++ fnl () ++
+  hov 0 (pr_evar_map (Some 2) (sig_sig glls) ++ fnl () ++
          prlist_with_sep pr_fnl (db_pr_goal (project glls)) (sig_it glls))
 

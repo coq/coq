@@ -134,6 +134,6 @@ val clenv_conv_leq :
 exception NotExtensibleClause
 val clenv_push_prod : clausenv -> clausenv
 
-(** {6 Pretty-print } *)
+(** {6 Pretty-print (debug only) } *)
 val pr_clenv : clausenv -> Pp.std_ppcmds
 
