@@ -371,7 +371,7 @@ misc/xml.log:
 	  else \
 	    echo $(log_success); \
 	    echo "    misc/xml...apparently ok"; \
-	  fi; rm -r misc/xml; \
+	  fi; rm -rf misc/xml; \
 	} > "$@"
 
 # Check that both coqdep and coqtop/coqc takes the later -I/-R
