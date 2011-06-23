@@ -10,103 +10,102 @@
 
 Require Export BinInt Zcompare Zorder.
 
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
-(** Definition [Zmax] is now [BinInt.Zmax]. *)
-
+(** Definition [Zmax] is now [BinInt.Z.max]. *)
 
 (** * Characterization of maximum on binary integer numbers *)
 
 Definition Zmax_case := Z.max_case.
 Definition Zmax_case_strong := Z.max_case_strong.
 
-Lemma Zmax_spec : forall x y,
-  x >= y /\ Zmax x y = x  \/ x < y /\ Zmax x y = y.
+Lemma Zmax_spec x y :
+  x >= y /\ Z.max x y = x  \/ x < y /\ Z.max x y = y.
 Proof.
- intros x y. rewrite Zge_iff_le. destruct (Z.max_spec x y); auto.
+ Z.swap_greater. destruct (Z.max_spec x y); auto.
 Qed.
 
-Lemma Zmax_left : forall n m, n>=m -> Zmax n m = n.
-Proof. intros x y. rewrite Zge_iff_le. apply Zmax_l. Qed.
+Lemma Zmax_left n m : n>=m -> Z.max n m = n.
+Proof. Z.swap_greater. apply Zmax_l. Qed.
 
-Definition Zmax_right : forall n m, n<=m -> Zmax n m = m := Zmax_r.
+Lemma Zmax_right : forall n m, n<=m -> Z.max n m = m. Proof Zmax_r.
 
 (** * Least upper bound properties of max *)
 
-Definition Zle_max_l : forall n m, n <= Zmax n m := Z.le_max_l.
-Definition Zle_max_r : forall n m, m <= Zmax n m := Z.le_max_r.
+Lemma Zle_max_l : forall n m, n <= Z.max n m. Proof Z.le_max_l.
+Lemma Zle_max_r : forall n m, m <= Z.max n m. Proof Z.le_max_r.
 
-Definition Zmax_lub : forall n m p, n <= p -> m <= p -> Zmax n m <= p
- := Z.max_lub.
+Lemma Zmax_lub : forall n m p, n <= p -> m <= p -> Z.max n m <= p.
+Proof Z.max_lub.
 
-Definition Zmax_lub_lt : forall n m p:Z, n < p -> m < p -> Zmax n m < p
- := Z.max_lub_lt.
+Lemma Zmax_lub_lt : forall n m p:Z, n < p -> m < p -> Z.max n m < p.
+Proof Z.max_lub_lt.
 
 
 (** * Compatibility with order *)
 
-Definition Zle_max_compat_r : forall n m p, n <= m -> Zmax n p <= Zmax m p
- := Z.max_le_compat_r.
+Lemma Zle_max_compat_r : forall n m p, n <= m -> Z.max n p <= Z.max m p.
+Proof Z.max_le_compat_r.
 
-Definition Zle_max_compat_l : forall n m p, n <= m -> Zmax p n <= Zmax p m
- := Z.max_le_compat_l.
+Lemma Zle_max_compat_l : forall n m p, n <= m -> Z.max p n <= Z.max p m.
+Proof Z.max_le_compat_l.
 
 
 (** * Semi-lattice properties of max *)
 
-Definition Zmax_idempotent : forall n, Zmax n n = n := Z.max_id.
-Definition Zmax_comm : forall n m, Zmax n m = Zmax m n := Z.max_comm.
-Definition Zmax_assoc : forall n m p, Zmax n (Zmax m p) = Zmax (Zmax n m) p
- := Z.max_assoc.
+Lemma Zmax_idempotent : forall n, Z.max n n = n. Proof Z.max_id.
+Lemma Zmax_comm : forall n m, Z.max n m = Z.max m n. Proof Z.max_comm.
+Lemma Zmax_assoc : forall n m p, Z.max n (Z.max m p) = Z.max (Z.max n m) p.
+Proof Z.max_assoc.
 
 (** * Additional properties of max *)
 
-Lemma Zmax_irreducible_dec : forall n m, {Zmax n m = n} + {Zmax n m = m}.
-Proof. exact Z.max_dec. Qed.
+Lemma Zmax_irreducible_dec : forall n m, {Z.max n m = n} + {Z.max n m = m}.
+Proof Z.max_dec.
 
-Definition Zmax_le_prime : forall n m p, p <= Zmax n m -> p <= n \/ p <= m
- := Z.max_le.
+Lemma Zmax_le_prime : forall n m p, p <= Z.max n m -> p <= n \/ p <= m.
+Proof Z.max_le.
 
 
 (** * Operations preserving max *)
 
-Definition Zsucc_max_distr :
-  forall n m:Z, Zsucc (Zmax n m) = Zmax (Zsucc n) (Zsucc m)
- := Z.succ_max_distr.
+Lemma Zsucc_max_distr :
+  forall n m, Z.succ (Z.max n m) = Z.max (Z.succ n) (Z.succ m).
+Proof Z.succ_max_distr.
 
-Definition Zplus_max_distr_l : forall n m p:Z, Zmax (p + n) (p + m) = p + Zmax n m
- := Z.add_max_distr_l.
+Lemma Zplus_max_distr_l : forall n m p, Z.max (p + n) (p + m) = p + Z.max n m.
+Proof Z.add_max_distr_l.
 
-Definition Zplus_max_distr_r : forall n m p:Z, Zmax (n + p) (m + p) = Zmax n m + p
- := Z.add_max_distr_r.
+Lemma Zplus_max_distr_r : forall n m p, Z.max (n + p) (m + p) = Z.max n m + p.
+Proof Z.add_max_distr_r.
 
 (** * Maximum and Zpos *)
 
-Lemma Zpos_max : forall p q, Zpos (Pmax p q) = Zmax (Zpos p) (Zpos q).
+Lemma Zpos_max p q : Zpos (Pos.max p q) = Z.max (Zpos p) (Zpos q).
 Proof.
- intros; unfold Zmax, Pmax. simpl.
+ unfold Zmax, Pmax. simpl.
  case Pos.compare_spec; auto; congruence.
 Qed.
 
-Lemma Zpos_max_1 : forall p, Zmax 1 (Zpos p) = Zpos p.
+Lemma Zpos_max_1 p : Z.max 1 (Zpos p) = Zpos p.
 Proof.
-  intros; unfold Zmax; simpl; destruct p; simpl; auto.
+ now destruct p.
 Qed.
 
-(** * Characterization of Pminus in term of Zminus and Zmax *)
+(** * Characterization of Pos.sub in term of Z.sub and Z.max *)
 
-Lemma Zpos_minus : forall p q, Zpos (Pminus p q) = Zmax 1 (Zpos p - Zpos q).
+Lemma Zpos_minus p q : Zpos (p - q) = Z.max 1 (Zpos p - Zpos q).
 Proof.
-  intros; simpl. rewrite Z.pos_sub_spec. case Pos.compare_spec; intros H.
-  now rewrite H, Pos.sub_diag.
-  rewrite Pminus_Lt; auto.
+  simpl. rewrite Z.pos_sub_spec. case Pos.compare_spec; intros H.
+  subst; now rewrite Pos.sub_diag.
+  now rewrite Pos.sub_lt.
   symmetry. apply Zpos_max_1.
 Qed.
 
 (* begin hide *)
 (* Compatibility *)
-Notation Zmax1 := Zle_max_l (only parsing).
-Notation Zmax2 := Zle_max_r (only parsing).
-Notation Zmax_irreducible_inf := Zmax_irreducible_dec (only parsing).
-Notation Zmax_le_prime_inf := Zmax_le_prime (only parsing).
+Notation Zmax1 := Z.le_max_l (only parsing).
+Notation Zmax2 := Z.le_max_r (only parsing).
+Notation Zmax_irreducible_inf := Z.max_dec (only parsing).
+Notation Zmax_le_prime_inf := Z.max_le (only parsing).
 (* end hide *)
