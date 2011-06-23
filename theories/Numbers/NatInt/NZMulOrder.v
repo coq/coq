@@ -196,6 +196,30 @@ Proof.
 intros. rewrite <- (mul_0_l m). apply mul_le_mono_nonneg; order.
 Qed.
 
+Theorem mul_pos_cancel_l : forall n m, 0 < n -> (0 < n*m <-> 0 < m).
+Proof.
+intros n m Hn. rewrite <- (mul_0_r n) at 1.
+ symmetry. now apply mul_lt_mono_pos_l.
+Qed.
+
+Theorem mul_pos_cancel_r : forall n m, 0 < m -> (0 < n*m <-> 0 < n).
+Proof.
+intros n m Hn. rewrite <- (mul_0_l m) at 1.
+ symmetry. now apply mul_lt_mono_pos_r.
+Qed.
+
+Theorem mul_nonneg_cancel_l : forall n m, 0 < n -> (0 <= n*m <-> 0 <= m).
+Proof.
+intros n m Hn. rewrite <- (mul_0_r n) at 1.
+ symmetry. now apply mul_le_mono_pos_l.
+Qed.
+
+Theorem mul_nonneg_cancel_r : forall n m, 0 < m -> (0 <= n*m <-> 0 <= n).
+Proof.
+intros n m Hn. rewrite <- (mul_0_l m) at 1.
+ symmetry. now apply mul_le_mono_pos_r.
+Qed.
+
 Theorem lt_1_mul_pos : forall n m, 1 < n -> 0 < m -> 1 < n * m.
 Proof.
 intros n m H1 H2. apply (mul_lt_mono_pos_r m) in H1.

@@ -1261,6 +1261,10 @@ Proof.
  apply ge_le_iff.
 Qed.
 
+(** We provide a tactic converting from one style to the other. *)
+
+Ltac swap_greater := rewrite ?gt_lt_iff in *; rewrite ?ge_le_iff in *.
+
 (** Similarly, the boolean comparisons [ltb] and [leb] are favored
   over their dual [gtb] and [geb]. We prove here the equivalence
   and a few minimal results. *)

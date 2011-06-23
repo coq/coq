@@ -6,10 +6,16 @@
 (*    //   *      This file is distributed under the terms of the       *)
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
-(** Binary Integers (Pierre Crégut, CNET, Lannion, France) *)
+
+(** Binary Integers : results about order predicates *)
+(** Initial author : Pierre Crégut (CNET, Lannion, France) *)
+
+(** THIS FILE IS DEPRECATED.
+    It is now almost entirely made of compatibility formulations
+    for results already present in BinInt.Z. *)
 
 Require Import BinPos BinInt Decidable Zcompare.
-Require Import Arith_base. (* Useless now, for compatibility *)
+Require Import Arith_base. (* Useless now, for compatibility only *)
 
 Local Open Scope Z_scope.
 
@@ -26,7 +32,7 @@ Defined.
 
 Theorem Ztrichotomy n m : n < m \/ n = m \/ n > m.
 Proof.
-  rewrite Z.gt_lt_iff. apply Z.lt_trichotomy.
+  Z.swap_greater. apply Z.lt_trichotomy.
 Qed.
 
 (**********************************************************************)
@@ -43,12 +49,12 @@ Qed.
 
 Theorem dec_Zgt n m : decidable (n > m).
 Proof.
-  destruct (Z.lt_decidable m n); [left|right]; rewrite Z.gt_lt_iff; auto.
+  destruct (Z.lt_decidable m n); [left|right]; Z.swap_greater; auto.
 Qed.
 
 Theorem dec_Zge n m : decidable (n >= m).
 Proof.
-  destruct (Z.le_decidable m n); [left|right]; rewrite Z.ge_le_iff; auto.
+  destruct (Z.le_decidable m n); [left|right]; Z.swap_greater; auto.
 Qed.
 
 Theorem not_Zeq n m : n <> m -> n < m \/ m < n.
@@ -82,12 +88,12 @@ Qed.
 
 Lemma Zgt_not_le n m : n > m -> ~ n <= m.
 Proof.
-  rewrite Z.gt_lt_iff. apply Z.lt_nge.
+  Z.swap_greater. apply Z.lt_nge.
 Qed.
 
 Lemma Znot_ge_lt n m : ~ n >= m -> n < m.
 Proof.
-  rewrite Z.ge_le_iff. apply Z.nle_gt.
+  Z.swap_greater. apply Z.nle_gt.
 Qed.
 
 Lemma Znot_lt_ge n m : ~ n < m -> n >= m.
@@ -102,7 +108,7 @@ Qed.
 
 Lemma Znot_le_gt n m : ~ n <= m -> n > m.
 Proof.
-  rewrite Z.gt_lt_iff. apply Z.nle_gt.
+  Z.swap_greater. apply Z.nle_gt.
 Qed.
 
 (** * Equivalence and order properties *)
@@ -124,7 +130,7 @@ Notation Zlt_asym := Z.lt_asymm (only parsing).
 
 Lemma Zgt_asym n m : n > m -> ~ m > n.
 Proof.
-  rewrite !Z.gt_lt_iff. apply Z.lt_asymm.
+  Z.swap_greater. apply Z.lt_asymm.
 Qed.
 
 (** Irreflexivity *)
@@ -134,7 +140,7 @@ Notation Zlt_not_eq := Z.lt_neq (only parsing).
 
 Lemma Zgt_irrefl n : ~ n > n.
 Proof.
-  rewrite Z.gt_lt_iff. apply Z.lt_irrefl.
+  Z.swap_greater. apply Z.lt_irrefl.
 Qed.
 
 (** Large = strict or equal *)
@@ -165,12 +171,12 @@ Notation Zle_lt_trans := Z.le_lt_trans (only parsing).
 
 Lemma Zle_gt_trans n m p : m <= n -> m > p -> n > p.
 Proof.
-  rewrite !Z.gt_lt_iff. Z.order.
+  Z.swap_greater. Z.order.
 Qed.
 
 Lemma Zgt_le_trans n m p : n > m -> p <= m -> n > p.
 Proof.
-  rewrite !Z.gt_lt_iff. Z.order.
+  Z.swap_greater. Z.order.
 Qed.
 
 (** Transitivity of large orders *)
@@ -179,7 +185,7 @@ Notation Zle_trans := Z.le_trans (only parsing).
 
 Lemma Zge_trans n m p : n >= m -> m >= p -> n >= p.
 Proof.
-  rewrite !Z.ge_le_iff. Z.order.
+  Z.swap_greater. Z.order.
 Qed.
 
 Hint Resolve Z.le_trans: zarith.
@@ -202,7 +208,7 @@ Qed.
 
 Lemma Zsucc_gt_compat n m : m > n -> Z.succ m > Z.succ n.
 Proof.
-  rewrite !Z.gt_lt_iff. apply Z.succ_lt_mono.
+  Z.swap_greater. apply Z.succ_lt_mono.
 Qed.
 
 Hint Resolve Zsucc_le_compat: zarith.
@@ -211,7 +217,7 @@ Hint Resolve Zsucc_le_compat: zarith.
 
 Lemma Zsucc_gt_reg n m : Z.succ m > Z.succ n -> m > n.
 Proof.
-  rewrite !Z.gt_lt_iff. apply Z.succ_lt_mono.
+  Z.swap_greater. apply Z.succ_lt_mono.
 Qed.
 
 Lemma Zsucc_le_reg n m : Z.succ m <= Z.succ n -> m <= n.
@@ -231,7 +237,7 @@ Notation Zlt_pred := Z.lt_pred_l (only parsing).
 
 Lemma Zgt_succ n : Z.succ n > n.
 Proof.
-  apply Z.lt_gt, Z.lt_succ_diag_r.
+  Z.swap_greater. apply Z.lt_succ_diag_r.
 Qed.
 
 Lemma Znot_le_succ n : ~ Z.succ n <= n.
@@ -246,12 +252,12 @@ Notation Zle_succ_l := Z.le_succ_l (only parsing).
 
 Lemma Zgt_le_succ n m : m > n -> Z.succ n <= m.
 Proof.
-  rewrite Z.gt_lt_iff. apply Z.le_succ_l.
+  Z.swap_greater. apply Z.le_succ_l.
 Qed.
 
 Lemma Zle_gt_succ n m : n <= m -> Z.succ m > n.
 Proof.
-  rewrite Z.gt_lt_iff. apply Z.lt_succ_r.
+  Z.swap_greater. apply Z.lt_succ_r.
 Qed.
 
 Lemma Zle_lt_succ n m : n <= m -> n < Z.succ m.
@@ -266,7 +272,7 @@ Qed.
 
 Lemma Zgt_succ_le n m : Z.succ m > n -> n <= m.
 Proof.
-  rewrite Z.gt_lt_iff. apply Z.lt_succ_r.
+  Z.swap_greater. apply Z.lt_succ_r.
 Qed.
 
 Lemma Zlt_succ_le n m : n < Z.succ m -> n <= m.
@@ -276,7 +282,7 @@ Qed.
 
 Lemma Zle_succ_gt n m : Z.succ n <= m -> m > n.
 Proof.
-  rewrite Z.gt_lt_iff. apply Z.le_succ_l.
+  Z.swap_greater. apply Z.le_succ_l.
 Qed.
 
 (** Weakening order *)
@@ -298,7 +304,7 @@ Hint Resolve Zle_le_succ: zarith.
 
 Lemma Zgt_succ_pred n m : m > Z.succ n -> Z.pred m > n.
 Proof.
-  rewrite !Z.gt_lt_iff. apply Z.lt_succ_lt_pred.
+  Z.swap_greater. apply Z.lt_succ_lt_pred.
 Qed.
 
 Lemma Zlt_succ_pred n m : Z.succ n < m -> n < Z.pred m.
@@ -315,7 +321,7 @@ Qed.
 
 Lemma Zgt_0_le_0_pred n : n > 0 -> 0 <= Z.pred n.
 Proof.
-  rewrite Z.gt_lt_iff. apply Z.lt_le_pred.
+  Z.swap_greater. apply Z.lt_le_pred.
 Qed.
 
 (** Special cases of ordered integers *)
@@ -355,7 +361,7 @@ Hint Immediate Zeq_le: zarith.
 
 Lemma Zgt_succ_gt_or_eq n m : Z.succ n > m -> n > m \/ m = n.
 Proof.
-  rewrite !Z.gt_lt_iff. intros. now apply Z.lt_eq_cases, Z.lt_succ_r.
+  Z.swap_greater. intros. now apply Z.lt_eq_cases, Z.lt_succ_r.
 Qed.
 
 (** ** Addition *)
@@ -368,12 +374,12 @@ Notation Zplus_lt_compat := Z.add_lt_mono (only parsing).
 
 Lemma Zplus_gt_compat_l n m p : n > m -> p + n > p + m.
 Proof.
-  rewrite !Z.gt_lt_iff. apply Z.add_lt_mono_l.
+  Z.swap_greater. apply Z.add_lt_mono_l.
 Qed.
 
 Lemma Zplus_gt_compat_r n m p : n > m -> n + p > m + p.
 Proof.
-  rewrite !Z.gt_lt_iff. apply Z.add_lt_mono_r.
+  Z.swap_greater. apply Z.add_lt_mono_r.
 Qed.
 
 Lemma Zplus_le_compat_l n m p : n <= m -> p + n <= p + m.
@@ -424,12 +430,12 @@ Qed.
 
 Lemma Zplus_gt_reg_l n m p : p + n > p + m -> n > m.
 Proof.
- rewrite !Z.gt_lt_iff. apply Z.add_lt_mono_l.
+ Z.swap_greater. apply Z.add_lt_mono_l.
 Qed.
 
 Lemma Zplus_gt_reg_r n m p : n + p > m + p -> n > m.
 Proof.
- rewrite !Z.gt_lt_iff. apply Z.add_lt_mono_r.
+ Z.swap_greater. apply Z.add_lt_mono_r.
 Qed.
 
 (** ** Multiplication *)
@@ -452,17 +458,17 @@ Qed.
 
 Lemma Zmult_gt_compat_r n m p : p > 0 -> n > m -> n * p > m * p.
 Proof.
- rewrite !Z.gt_lt_iff. apply Z.mul_lt_mono_pos_r.
+ Z.swap_greater. apply Z.mul_lt_mono_pos_r.
 Qed.
 
 Lemma Zmult_gt_0_lt_compat_r n m p : p > 0 -> n < m -> n * p < m * p.
 Proof.
- rewrite Z.gt_lt_iff. apply Z.mul_lt_mono_pos_r.
+ Z.swap_greater. apply Z.mul_lt_mono_pos_r.
 Qed.
 
 Lemma Zmult_gt_0_le_compat_r n m p : p > 0 -> n <= m -> n * p <= m * p.
 Proof.
- rewrite Z.gt_lt_iff. apply Z.mul_le_mono_pos_r.
+ Z.swap_greater. apply Z.mul_le_mono_pos_r.
 Qed.
 
 Lemma Zmult_lt_0_le_compat_r n m p : 0 < p -> n <= m -> n * p <= m * p.
@@ -472,7 +478,7 @@ Qed.
 
 Lemma Zmult_gt_0_lt_compat_l n m p : p > 0 -> n < m -> p * n < p * m.
 Proof.
- rewrite Z.gt_lt_iff. apply Z.mul_lt_mono_pos_l.
+ Z.swap_greater. apply Z.mul_lt_mono_pos_l.
 Qed.
 
 Lemma Zmult_lt_compat_l n m p : 0 < p -> n < m -> p * n < p * m.
@@ -482,23 +488,23 @@ Qed.
 
 Lemma Zmult_gt_compat_l n m p : p > 0 -> n > m -> p * n > p * m.
 Proof.
- rewrite !Z.gt_lt_iff. apply Z.mul_lt_mono_pos_l.
+ Z.swap_greater. apply Z.mul_lt_mono_pos_l.
 Qed.
 
 Lemma Zmult_ge_compat_r n m p : n >= m -> p >= 0 -> n * p >= m * p.
 Proof.
- rewrite !Z.ge_le_iff. intros. now apply Z.mul_le_mono_nonneg_r.
+ Z.swap_greater. intros. now apply Z.mul_le_mono_nonneg_r.
 Qed.
 
 Lemma Zmult_ge_compat_l n m p : n >= m -> p >= 0 -> p * n >= p * m.
 Proof.
- rewrite !Z.ge_le_iff. intros. now apply Z.mul_le_mono_nonneg_l.
+ Z.swap_greater. intros. now apply Z.mul_le_mono_nonneg_l.
 Qed.
 
 Lemma Zmult_ge_compat n m p q :
   n >= p -> m >= q -> p >= 0 -> q >= 0 -> n * m >= p * q.
 Proof.
- rewrite !Z.ge_le_iff. intros. now apply Z.mul_le_mono_nonneg.
+ Z.swap_greater. intros. now apply Z.mul_le_mono_nonneg.
 Qed.
 
 Lemma Zmult_le_compat n m p q :
@@ -511,7 +517,7 @@ Qed.
 
 Lemma Zmult_gt_0_lt_reg_r n m p : p > 0 -> n * p < m * p -> n < m.
 Proof.
- rewrite Z.gt_lt_iff. apply Z.mul_lt_mono_pos_r.
+ Z.swap_greater. apply Z.mul_lt_mono_pos_r.
 Qed.
 
 Lemma Zmult_lt_reg_r n m p : 0 < p -> n * p < m * p -> n < m.
@@ -521,7 +527,7 @@ Qed.
 
 Lemma Zmult_le_reg_r n m p : p > 0 -> n * p <= m * p -> n <= m.
 Proof.
- rewrite Z.gt_lt_iff. apply Z.mul_le_mono_pos_r.
+ Z.swap_greater. apply Z.mul_le_mono_pos_r.
 Qed.
 
 Lemma Zmult_lt_0_le_reg_r n m p : 0 < p -> n * p <= m * p -> n <= m.
@@ -531,12 +537,12 @@ Qed.
 
 Lemma Zmult_ge_reg_r n m p : p > 0 -> n * p >= m * p -> n >= m.
 Proof.
- rewrite Z.gt_lt_iff, !Z.ge_le_iff. apply Z.mul_le_mono_pos_r.
+ Z.swap_greater. apply Z.mul_le_mono_pos_r.
 Qed.
 
 Lemma Zmult_gt_reg_r n m p : p > 0 -> n * p > m * p -> n > m.
 Proof.
- rewrite !Z.gt_lt_iff. apply Z.mul_lt_mono_pos_r.
+ Z.swap_greater. apply Z.mul_lt_mono_pos_r.
 Qed.
 
 Lemma Zmult_lt_compat n m p q :
@@ -562,13 +568,14 @@ Notation Zmult_lt_O_compat := Z.mul_pos_pos (only parsing).
 
 Lemma Zmult_gt_0_compat n m : n > 0 -> m > 0 -> n * m > 0.
 Proof.
- rewrite !Z.gt_lt_iff. apply Z.mul_pos_pos.
+ Z.swap_greater. apply Z.mul_pos_pos.
 Qed.
 
-(* TODO: to remove ? *)
+(* To remove someday ... *)
+
 Lemma Zmult_gt_0_le_0_compat n m : n > 0 -> 0 <= m -> 0 <= m * n.
 Proof.
- rewrite Z.gt_lt_iff. intros. apply Z.mul_nonneg_nonneg. trivial.
+ Z.swap_greater. intros. apply Z.mul_nonneg_nonneg. trivial.
   now apply Z.lt_le_incl.
 Qed.
 
@@ -576,25 +583,22 @@ Qed.
 
 Lemma Zmult_le_0_reg_r n m : n > 0 -> 0 <= m * n -> 0 <= m.
 Proof.
- rewrite Z.gt_lt_iff. intros Hn Hmn.
- destruct (Z.le_0_mul _ _ Hmn) as [[Hm _]|[_ Hn']]; Z.order.
+ Z.swap_greater. apply Z.mul_nonneg_cancel_r.
 Qed.
 
-(* TODO move to numbers ? *)
 Lemma Zmult_lt_0_reg_r n m : 0 < n -> 0 < m * n -> 0 < m.
 Proof.
- intros Hn Hmn.
- rewrite Z.lt_0_mul in Hmn. destruct Hmn as [[Hm _]|[Hn' _]]; Z.order.
+ apply Z.mul_pos_cancel_r.
 Qed.
 
 Lemma Zmult_gt_0_lt_0_reg_r n m : n > 0 -> 0 < m * n -> 0 < m.
 Proof.
- rewrite Z.gt_lt_iff. apply Zmult_lt_0_reg_r.
+ Z.swap_greater. apply Z.mul_pos_cancel_r.
 Qed.
 
 Lemma Zmult_gt_0_reg_l n m : n > 0 -> n * m > 0 -> m > 0.
 Proof.
- rewrite !Z.gt_lt_iff. rewrite Z.mul_comm. apply Zmult_lt_0_reg_r.
+ Z.swap_greater. apply Z.mul_pos_cancel_l.
 Qed.
 
 (** ** Square *)
@@ -607,7 +611,7 @@ Qed.
 
 Lemma Zgt_square_simpl n m : n >= 0 -> n * n > m * m -> n > m.
 Proof.
- rewrite !Z.gt_lt_iff, Z.ge_le_iff. apply Z.square_lt_simpl_nonneg.
+ Z.swap_greater. apply Z.square_lt_simpl_nonneg.
 Qed.
 
 (** * Equivalence between inequalities *)

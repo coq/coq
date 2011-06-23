@@ -7,12 +7,15 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(**********************************************************************)
-(** Binary Integers (Pierre Crégut, CNET, Lannion, France)            *)
-(**********************************************************************)
+(** Binary Integers : results about Zcompare *)
+(** Initial author: Pierre Crégut (CNET, Lannion, France *)
+
+(** THIS FILE IS DEPRECATED.
+    It is now almost entirely made of compatibility formulations
+    for results already present in BinInt.Z. *)
 
 Require Export BinPos BinInt.
-Require Import Lt Gt Plus Mult. (* Useless now, for compatibility *)
+Require Import Lt Gt Plus Mult. (* Useless now, for compatibility only *)
 
 Local Open Scope Z_scope.
 
@@ -35,7 +38,7 @@ Lemma Zcompare_Gt_trans :
   forall n m p:Z, (n ?= m) = Gt -> (m ?= p) = Gt -> (n ?= p) = Gt.
 Proof.
  intros n m p. change (n > m -> m > p -> n > p).
- rewrite !Z.gt_lt_iff. intros. now transitivity m.
+ Z.swap_greater. intros. now transitivity m.
 Qed.
 
 (** * Comparison and opposite *)
@@ -75,8 +78,7 @@ Qed.
 
 Lemma Zcompare_Gt_not_Lt n m : (n ?= m) = Gt <-> (n ?= m+1) <> Lt.
 Proof.
- change (n > m <-> n >= m+1). rewrite Z.gt_lt_iff, Z.ge_le_iff.
- symmetry. apply Z.le_succ_l.
+ change (n > m <-> n >= m+1). Z.swap_greater. symmetry. apply Z.le_succ_l.
 Qed.
 
 (** * Successor and comparison *)
@@ -119,7 +121,7 @@ Lemma Zcompare_elim :
                        | Gt => c3
                      end.
 Proof.
- intros. case Z.compare_spec; trivial. now rewrite <- Z.gt_lt_iff.
+ intros. case Z.compare_spec; trivial. now Z.swap_greater.
 Qed.
 
 Lemma Zcompare_eq_case :
