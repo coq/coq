@@ -290,6 +290,16 @@ Proof.
  intros Hn Hm. now rewrite <- N2Z.inj_compare, !id.
 Qed.
 
+Lemma inj_le n m : 0<=n -> 0<=m -> (n<=m <-> (Z.to_N n <= Z.to_N m)%N).
+Proof.
+ intros Hn Hm. unfold Z.le, N.le. now rewrite inj_compare.
+Qed.
+
+Lemma inj_lt n m : 0<=n -> 0<=m -> (n<m <-> (Z.to_N n < Z.to_N m)%N).
+Proof.
+ intros Hn Hm. unfold Z.lt, N.lt. now rewrite inj_compare.
+Qed.
+
 Lemma inj_min n m : Z.to_N (Z.min n m) = N.min (Z.to_N n) (Z.to_N m).
 Proof.
  destruct n, m; simpl; trivial; unfold Z.min, N.min; simpl;
@@ -384,6 +394,16 @@ Lemma inj_compare n m : 0<=n -> 0<=m ->
  (Z.abs_N n ?= Z.abs_N m)%N = (n ?= m).
 Proof.
  intros. rewrite !abs_N_nonneg by trivial. now apply Z2N.inj_compare.
+Qed.
+
+Lemma inj_le n m : 0<=n -> 0<=m -> (n<=m <-> (Z.abs_N n <= Z.abs_N m)%N).
+Proof.
+ intros Hn Hm. unfold Z.le, N.le. now rewrite inj_compare.
+Qed.
+
+Lemma inj_lt n m : 0<=n -> 0<=m -> (n<m <-> (Z.abs_N n < Z.abs_N m)%N).
+Proof.
+ intros Hn Hm. unfold Z.lt, N.lt. now rewrite inj_compare.
 Qed.
 
 Lemma inj_min n m : 0<=n -> 0<=m ->
@@ -619,6 +639,16 @@ Proof.
  intros Hn Hm. now rewrite <- Nat2Z.inj_compare, !id.
 Qed.
 
+Lemma inj_le n m : 0<=n -> 0<=m -> (n<=m <-> (Z.to_nat n <= Z.to_nat m)%nat).
+Proof.
+ intros Hn Hm. unfold Z.le. now rewrite nat_compare_le, inj_compare.
+Qed.
+
+Lemma inj_lt n m : 0<=n -> 0<=m -> (n<m <-> (Z.to_nat n < Z.to_nat m)%nat).
+Proof.
+ intros Hn Hm. unfold Z.lt. now rewrite nat_compare_lt, inj_compare.
+Qed.
+
 Lemma inj_min n m : Z.to_nat (Z.min n m) = min (Z.to_nat n) (Z.to_nat m).
 Proof.
  now rewrite <- !Z_N_nat, Z2N.inj_min, N2Nat.inj_min.
@@ -706,6 +736,16 @@ Lemma inj_compare n m : 0<=n -> 0<=m ->
  nat_compare (Z.abs_nat n) (Z.abs_nat m) = (n ?= m).
 Proof.
  intros. now rewrite <- !Zabs_N_nat, <- N2Nat.inj_compare, Zabs2N.inj_compare.
+Qed.
+
+Lemma inj_le n m : 0<=n -> 0<=m -> (n<=m <-> (Z.abs_nat n <= Z.abs_nat m)%nat).
+Proof.
+ intros Hn Hm. unfold Z.le. now rewrite nat_compare_le, inj_compare.
+Qed.
+
+Lemma inj_lt n m : 0<=n -> 0<=m -> (n<m <-> (Z.abs_nat n < Z.abs_nat m)%nat).
+Proof.
+ intros Hn Hm. unfold Z.lt. now rewrite nat_compare_lt, inj_compare.
 Qed.
 
 Lemma inj_min n m : 0<=n -> 0<=m ->
