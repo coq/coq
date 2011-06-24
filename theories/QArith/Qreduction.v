@@ -9,7 +9,7 @@
 (** Normalisation functions for rational numbers. *)
 
 Require Export QArith_base.
-Require Import Zgcd_def Znumtheory.
+Require Import Znumtheory.
 
 (** First, a function that (tries to) build a positive back from a Z. *)
 
@@ -83,14 +83,13 @@ Proof.
   exists bb; auto with zarith.
   intros.
   inversion Hg1.
-  destruct (H6 (g*x)).
+  destruct (H6 (g*x)) as (x',Hx).
   rewrite Hg3.
   destruct H2 as (xa,Hxa); exists xa; rewrite Hxa; ring.
   rewrite Hg4.
   destruct H3 as (xb,Hxb); exists xb; rewrite Hxb; ring.
-  exists q.
-  apply Zmult_reg_l with g; auto.
-  pattern g at 1; rewrite H7; ring.
+  exists x'.
+  apply Zmult_reg_l with g; auto. rewrite Hx at 1; ring.
   (* /rel_prime *)
   unfold rel_prime in |- *.
   (* rel_prime *)
@@ -99,14 +98,13 @@ Proof.
   exists dd; auto with zarith.
   intros.
   inversion Hg'1.
-  destruct (H6 (g'*x)).
+  destruct (H6 (g'*x)) as (x',Hx).
   rewrite Hg'3.
   destruct H2 as (xc,Hxc); exists xc; rewrite Hxc; ring.
   rewrite Hg'4.
   destruct H3 as (xd,Hxd); exists xd; rewrite Hxd; ring.
-  exists q.
-  apply Zmult_reg_l with g'; auto.
-  pattern g' at 1; rewrite H7; ring.
+  exists x'.
+  apply Zmult_reg_l with g'; auto. rewrite Hx at 1; ring.
     (* /rel_prime *)
   assert (0<bb); [|auto with zarith].
   apply Zmult_gt_0_lt_0_reg_r with g.

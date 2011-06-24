@@ -22,7 +22,6 @@ Author: Pierre Letouzey
 Require Import ZArith_base.
 Require Import ZArithRing.
 Require Import Zdiv.
-Require Import Zgcd_def.
 Require Import Znumtheory.
 
 Open Scope Z_scope.

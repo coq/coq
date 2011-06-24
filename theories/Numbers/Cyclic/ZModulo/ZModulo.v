@@ -465,8 +465,8 @@ Section ZModulo.
  Proof.
  intros.
  generalize (Zgcd_is_gcd a b); inversion_clear 1.
- destruct H2; destruct H3; clear H4.
- assert (H3:=Zgcd_is_pos a b).
+ destruct H2 as (q,H2); destruct H3 as (q',H3); clear H4.
+ assert (H4:=Zgcd_is_pos a b).
  destruct (Z_eq_dec (Zgcd a b) 0).
  rewrite e; generalize (Zmax_spec a b); omega.
  assert (0 <= q).
@@ -477,7 +477,7 @@ Section ZModulo.
  generalize (Zmax_spec 0 b) (Zabs_spec b); omega.
 
  apply Zle_trans with a.
- rewrite H1 at 2.
+ rewrite H2 at 2.
  rewrite <- (Zmult_1_l (Zgcd a b)) at 1.
  apply Zmult_le_compat; auto with zarith.
  generalize (Zmax_spec a b); omega.

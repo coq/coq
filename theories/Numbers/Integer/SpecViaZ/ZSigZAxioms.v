@@ -421,22 +421,22 @@ Qed.
 
 Lemma gcd_divide_l : forall n m, (gcd n m | n).
 Proof.
- intros n m. apply spec_divide. zify. apply Zgcd_divide_l.
+ intros n m. apply spec_divide. zify. apply Z.gcd_divide_l.
 Qed.
 
 Lemma gcd_divide_r : forall n m, (gcd n m | m).
 Proof.
- intros n m. apply spec_divide. zify. apply Zgcd_divide_r.
+ intros n m. apply spec_divide. zify. apply Z.gcd_divide_r.
 Qed.
 
 Lemma gcd_greatest : forall n m p, (p|n) -> (p|m) -> (p|gcd n m).
 Proof.
- intros n m p. rewrite !spec_divide. zify. apply Zgcd_greatest.
+ intros n m p. rewrite !spec_divide. zify. apply Z.gcd_greatest.
 Qed.
 
 Lemma gcd_nonneg : forall n m, 0 <= gcd n m.
 Proof.
- intros. zify. apply Zgcd_nonneg.
+ intros. zify. apply Z.gcd_nonneg.
 Qed.
 
 (** Bitwise operations *)
