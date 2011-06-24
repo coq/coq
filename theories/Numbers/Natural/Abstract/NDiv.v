@@ -47,6 +47,9 @@ Theorem mod_unique:
  forall a b q r, r<b -> a == b*q + r -> r == a mod b.
 Proof. intros. apply mod_unique with q; auto'. Qed.
 
+Theorem div_unique_exact: forall a b q, b~=0 -> a == b*q -> q == a/b.
+Proof. intros. apply div_unique_exact; auto'. Qed.
+
 (** A division by itself returns 1 *)
 
 Lemma div_same : forall a, a~=0 -> a/a == 1.
@@ -236,4 +239,3 @@ Lemma mod_divides : forall a b, b~=0 ->
 Proof. intros. apply mod_divides; auto'. Qed.
 
 End NDivProp.
-

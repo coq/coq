@@ -90,14 +90,17 @@ apply mod_bound_pos; order.
 rewrite <- div_mod; order.
 Qed.
 
+Theorem div_unique_exact a b q:
+ 0<=a -> 0<b -> a == b*q -> q == a/b.
+Proof.
+ intros Ha Hb H. apply div_unique with 0; nzsimpl; now try split.
+Qed.
 
 (** A division by itself returns 1 *)
 
 Lemma div_same : forall a, 0<a -> a/a == 1.
 Proof.
-intros. symmetry.
-apply div_unique with 0; intuition; try order.
-now nzsimpl.
+intros. symmetry. apply div_unique_exact; nzsimpl; order.
 Qed.
 
 Lemma mod_same : forall a, 0<a -> a mod a == 0.
@@ -139,9 +142,7 @@ Qed.
 
 Lemma div_1_r: forall a, 0<=a -> a/1 == a.
 Proof.
-intros. symmetry.
-apply div_unique with 0; try split; try order; try apply lt_0_1.
-now nzsimpl.
+intros. symmetry. apply div_unique_exact; nzsimpl; order'.
 Qed.
 
 Lemma mod_1_r: forall a, 0<=a -> a mod 1 == 0.
@@ -163,10 +164,9 @@ Qed.
 
 Lemma div_mul : forall a b, 0<=a -> 0<b -> (a*b)/b == a.
 Proof.
-intros; symmetry.
-apply div_unique with 0; try split; try order.
+intros; symmetry. apply div_unique_exact; trivial.
 apply mul_nonneg_nonneg; order.
-nzsimpl; apply mul_comm.
+apply mul_comm.
 Qed.
 
 Lemma mod_mul : forall a b, 0<=a -> 0<b -> (a*b) mod b == 0.

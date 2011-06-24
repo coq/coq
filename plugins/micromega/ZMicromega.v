@@ -296,16 +296,6 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma Zdivide_Zdiv : forall a b c, b <> 0 -> (b | c) ->  b * a = c -> a = c / b.
-Proof.
-  intros.
-  inv H0.
-  rewrite H2.
-  rewrite Z_div_mult_full ; auto.
-  apply Zmult_reg_l with (p :=b) ; auto.
-  rewrite (Zmult_comm b q). auto.
-Qed.
-
 Lemma narrow_interval_lower_bound : forall a b x, a > 0 -> a * x  >= b -> x >= ceiling b a.
 Proof.
   unfold ceiling.
@@ -780,7 +770,7 @@ Proof.
   apply Zdivide_opp_r in H4.
   rewrite Zdivide_ceiling ; auto.
   apply Zeq_minus.
-  apply Zdivide_Zdiv ; auto with zarith.
+  apply Z.div_unique_exact ; auto with zarith.
   intros.
   unfold nformula_of_cutting_plane.
   inv H3.

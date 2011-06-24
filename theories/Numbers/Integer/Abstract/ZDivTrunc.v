@@ -178,6 +178,11 @@ Proof.
 intros. rewrite rem_eq, quot_mul by trivial. rewrite mul_comm; apply sub_diag.
 Qed.
 
+Theorem quot_unique_exact a b q: b~=0 -> a == b*q -> q == a÷b.
+Proof.
+ intros Hb H. rewrite H, mul_comm. symmetry. now apply quot_mul.
+Qed.
+
 (** The sign of [a rem b] is the one of [a] (when it's not null) *)
 
 Lemma rem_nonneg : forall a b, b~=0 -> 0 <= a -> 0 <= a rem b.

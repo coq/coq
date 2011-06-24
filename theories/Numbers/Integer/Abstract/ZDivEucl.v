@@ -268,6 +268,11 @@ Proof.
 intros. rewrite mod_eq, div_mul by trivial. rewrite mul_comm; apply sub_diag.
 Qed.
 
+Theorem div_unique_exact a b q: b~=0 -> a == b*q -> q == a/b.
+Proof.
+ intros Hb H. rewrite H, mul_comm. symmetry. now apply div_mul.
+Qed.
+
 (** * Order results about mod and div *)
 
 (** A modulo cannot grow beyond its starting point. *)
