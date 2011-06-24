@@ -519,7 +519,7 @@ Lemma Zmod_divides : forall a b, b<>0 ->
  (a mod b = 0 <-> exists c, a = b*c).
 Proof.
  intros. rewrite Z.mod_divide; trivial.
- split; intros (c,Hc); exists c; auto.
+ split; intros (c,Hc); exists c; subst; auto with zarith.
 Qed.
 
 (** Particular case : dividing by 2 is related with parity *)

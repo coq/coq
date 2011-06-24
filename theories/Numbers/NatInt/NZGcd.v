@@ -18,7 +18,7 @@ End Gcd.
 
 Module Type NZGcdSpec (A : NZOrdAxiomsSig')(B : Gcd A).
  Import A B.
- Definition divide n m := exists p, n*p == m.
+ Definition divide n m := exists p, m == p*n.
  Local Notation "( n | m )" := (divide n m) (at level 0).
  Axiom gcd_divide_l : forall n m, (gcd n m | n).
  Axiom gcd_divide_r : forall n m, (gcd n m | m).
@@ -83,9 +83,17 @@ Proof.
  rewrite <- Hn, mul_0_l in H. order'.
 Qed.
 
+Lemma eq_mul_1_nonneg' : forall n m,
+ 0<=m -> n*m == 1 -> n==1 /\ m==1.
+Proof.
+ intros n m Hm H. rewrite mul_comm in H.
+ now apply and_comm, eq_mul_1_nonneg.
+Qed.
+
 Lemma divide_1_r_nonneg : forall n, 0<=n -> (n | 1) -> n==1.
 Proof.
- intros n Hn (m,Hm). now apply (eq_mul_1_nonneg n m).
+ intros n Hn (m,Hm). symmetry in Hm.
+ now apply (eq_mul_1_nonneg' m n).
 Qed.
 
 Lemma divide_refl : forall n, (n | n).
@@ -95,8 +103,8 @@ Qed.
 
 Lemma divide_trans : forall n m p, (n | m) -> (m | p) -> (n | p).
 Proof.
- intros n m p (q,Hq) (r,Hr). exists (q*r).
- now rewrite mul_assoc, Hq.
+ intros n m p (q,Hq) (r,Hr). exists (r*q).
+ now rewrite Hr, Hq, mul_assoc.
 Qed.
 
 Instance divide_reflexive : Reflexive divide := divide_refl.
@@ -110,29 +118,29 @@ Proof.
  intros n m Hn Hm (q,Hq) (r,Hr).
  le_elim Hn.
  destruct (lt_ge_cases q 0) as [Hq'|Hq'].
- generalize (mul_pos_neg n q Hn Hq'). order.
- rewrite <- Hq, <- mul_assoc in Hr.
- apply mul_id_r in Hr; [|order].
- destruct (eq_mul_1_nonneg q r) as [H _]; trivial.
- now rewrite H, mul_1_r in Hq.
- rewrite <- Hn, mul_0_l in Hq. now rewrite <- Hn.
+ generalize (mul_neg_pos q n Hq' Hn). order.
+ rewrite Hq, mul_assoc in Hr. symmetry in Hr.
+ apply mul_id_l in Hr; [|order].
+ destruct (eq_mul_1_nonneg' r q) as [_ H]; trivial.
+ now rewrite H, mul_1_l in Hq.
+ rewrite <- Hn, mul_0_r in Hq. now rewrite <- Hn.
 Qed.
 
 Lemma mul_divide_mono_l : forall n m p, (n | m) -> (p * n | p * m).
 Proof.
- intros n m p (q,Hq). exists q. now rewrite <- mul_assoc, Hq.
+ intros n m p (q,Hq). exists q. now rewrite mul_shuffle3, Hq.
 Qed.
 
 Lemma mul_divide_mono_r : forall n m p, (n | m) -> (n * p | m * p).
 Proof.
- intros n m p (q,Hq). exists q. now rewrite mul_shuffle0, Hq.
+ intros n m p (q,Hq). exists q. now rewrite mul_assoc, Hq.
 Qed.
 
 Lemma mul_divide_cancel_l : forall n m p, p ~= 0 ->
  ((p * n | p * m) <-> (n | m)).
 Proof.
  intros n m p Hp. split.
- intros (q,Hq). exists q. now rewrite <- mul_assoc, mul_cancel_l in Hq.
+ intros (q,Hq). exists q. now rewrite mul_shuffle3, mul_cancel_l in Hq.
  apply mul_divide_mono_l.
 Qed.
 
@@ -145,12 +153,12 @@ Qed.
 Lemma divide_add_r : forall n m p, (n | m) -> (n | p) -> (n | m + p).
 Proof.
  intros n m p (q,Hq) (r,Hr). exists (q+r).
- now rewrite mul_add_distr_l, Hq, Hr.
+ now rewrite mul_add_distr_r, Hq, Hr.
 Qed.
 
 Lemma divide_mul_l : forall n m p, (n | m) -> (n | m * p).
 Proof.
- intros n m p (q,Hq). exists (q*p). now rewrite mul_assoc, Hq.
+ intros n m p (q,Hq). exists (q*p). now rewrite mul_shuffle0, Hq.
 Qed.
 
 Lemma divide_mul_r : forall n m p, (n | p) -> (n | m * p).
@@ -172,13 +180,13 @@ Lemma divide_pos_le : forall n m, 0 < m -> (n | m) -> n <= m.
 Proof.
  intros n m Hm (q,Hq).
  destruct (le_gt_cases n 0) as [Hn|Hn]. order.
- rewrite <- Hq.
+ rewrite Hq.
  destruct (lt_ge_cases q 0) as [Hq'|Hq'].
- generalize (mul_pos_neg n q Hn Hq'). order.
+ generalize (mul_neg_pos q n Hq' Hn). order.
  le_elim Hq'.
- rewrite <- (mul_1_r n) at 1. apply mul_le_mono_pos_l; trivial.
+ rewrite <- (mul_1_l n) at 1. apply mul_le_mono_pos_r; trivial.
  now rewrite one_succ, le_succ_l.
- rewrite <- Hq', mul_0_r in Hq. order.
+ rewrite <- Hq', mul_0_l in Hq. order.
 Qed.
 
 (** Basic properties of gcd *)
@@ -291,8 +299,8 @@ Qed.
 
 Lemma divide_gcd_iff : forall n m, 0<=n -> ((n|m) <-> gcd n m == n).
 Proof.
- intros n m Hn. split. intros (q,Hq). rewrite <- Hq.
- now apply gcd_mul_diag_l.
+ intros n m Hn. split. intros (q,Hq). rewrite Hq.
+ rewrite mul_comm. now apply gcd_mul_diag_l.
  intros EQ. rewrite <- EQ. apply gcd_divide_r.
 Qed.
 

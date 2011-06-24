@@ -27,7 +27,7 @@ Definition divide_antisym n m : (n | m) -> (m | n) -> n == m
 Lemma divide_add_cancel_r : forall n m p, (n | m) -> (n | m + p) -> (n | p).
 Proof.
  intros n m p (q,Hq) (r,Hr).
- exists (r-q). rewrite mul_sub_distr_l, Hq, Hr.
+ exists (r-q). rewrite mul_sub_distr_r, <- Hq, <- Hr.
  now rewrite add_comm, add_sub.
 Qed.
 
@@ -194,15 +194,15 @@ Proof.
  assert (G := gcd_nonneg n m). le_elim G.
  destruct (gcd_divide_l n m) as (q,Hq).
  exists (gcd n m). exists q.
- split. easy.
+ split. now rewrite mul_comm.
  split. apply gcd_divide_r.
  destruct (gcd_divide_r n m) as (r,Hr).
- rewrite <- Hr in H. rewrite <- Hq in H at 1.
- rewrite <- mul_assoc in H. apply mul_divide_cancel_l in H; [|order].
+ rewrite Hr in H. rewrite Hq in H at 1.
+ rewrite mul_shuffle0 in H. apply mul_divide_cancel_r in H; [|order].
  apply gauss with r; trivial.
- apply mul_cancel_l with (gcd n m); [order|].
- rewrite mul_1_r.
- rewrite <- gcd_mul_mono_l, Hq, Hr; order.
+ apply mul_cancel_r with (gcd n m); [order|].
+ rewrite mul_1_l.
+ rewrite <- gcd_mul_mono_r, <- Hq, <- Hr; order.
  symmetry in G. apply gcd_eq_0 in G. destruct G as (Hn',_); order.
 Qed.
 

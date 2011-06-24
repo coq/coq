@@ -331,7 +331,7 @@ Qed.
 
 (** Gcd *)
 
-Definition divide n m := exists p, n*p == m.
+Definition divide n m := exists p, m == p*n.
 Local Notation "( x | y )" := (divide x y) (at level 0).
 
 Lemma spec_divide : forall n m, (n|m) <-> Z.divide [n] [m].
@@ -341,8 +341,8 @@ Proof.
  intros (z,H). exists (of_N (Zabs_N z)). zify.
  rewrite Z_of_N_abs.
  rewrite <- (Zabs_eq [n]) by apply spec_pos.
- rewrite <- Zabs_Zmult, H.
- apply Zabs_eq, spec_pos.
+ rewrite <- Zabs_Zmult, <- H.
+ symmetry. apply Zabs_eq, spec_pos.
 Qed.
 
 Lemma gcd_divide_l : forall n m, (gcd n m | n).

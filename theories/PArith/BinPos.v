@@ -1292,6 +1292,11 @@ Proof.
  now apply mul_lt_mono_l.
 Qed.
 
+Lemma mul_sub_distr_r p q r : q<p -> (p-q)*r = p*r-q*r.
+Proof.
+ intros H. rewrite 3 (mul_comm _ r). now apply mul_sub_distr_l.
+Qed.
+
 Lemma sub_lt_mono_l p q r: q<p -> p<r -> r-p < r-q.
 Proof.
  intros Hqp Hpr.
@@ -1640,11 +1645,11 @@ Lemma divide_add_cancel_l p q r : (p | r) -> (p | q + r) -> (p | q).
 Proof.
  intros (s,Hs) (t,Ht).
  exists (t-s).
- rewrite mul_sub_distr_l.
- rewrite Hs, Ht.
- apply add_sub.
- apply mul_lt_mono_l with p.
- rewrite Hs, Ht, add_comm.
+ rewrite mul_sub_distr_r.
+ rewrite <- Hs, <- Ht.
+ symmetry. apply add_sub.
+ apply mul_lt_mono_r with p.
+ rewrite <- Hs, <- Ht, add_comm.
  apply lt_add_r.
 Qed.
 
@@ -1652,20 +1657,22 @@ Lemma divide_xO_xI p q r : (p | q~0) -> (p | r~1) -> (p | q).
 Proof.
  intros (s,Hs) (t,Ht).
  destruct p.
- destruct s; try easy. rewrite mul_xO_r in Hs. destr_eq Hs. now exists s.
- discriminate.
- exists q; auto.
+ destruct s; try easy. simpl in Hs. destr_eq Hs. now exists s.
+ rewrite mul_xO_r in Ht; discriminate.
+ exists q; now rewrite mul_1_r.
 Qed.
 
 Lemma divide_xO_xO p q : (p~0|q~0) <-> (p|q).
 Proof.
- split; intros (r,H); simpl in *. destr_eq H. now exists r.
- exists r; simpl; f_equal; auto.
+ split; intros (r,H); simpl in *.
+ rewrite mul_xO_r in H. destr_eq H. now exists r.
+ exists r; simpl. rewrite mul_xO_r. f_equal; auto.
 Qed.
 
 Lemma divide_mul_l p q r : (p|q) -> (p|q*r).
 Proof.
- intros (s,H). exists (s*r). rewrite mul_assoc; now f_equal.
+ intros (s,H). exists (s*r).
+ rewrite <- mul_assoc, (mul_comm r p), mul_assoc. now f_equal.
 Qed.
 
 Lemma divide_mul_r p q r : (p|r) -> (p|q*r).
@@ -1733,13 +1740,15 @@ Qed.
 Lemma gcd_divide_l : forall a b, (gcd a b | a).
 Proof.
  intros a b. rewrite <- ggcd_gcd. generalize (ggcd_correct_divisors a b).
- destruct ggcd as (g,(aa,bb)); simpl. intros (H,_). exists aa; auto.
+ destruct ggcd as (g,(aa,bb)); simpl. intros (H,_). exists aa.
+  now rewrite mul_comm.
 Qed.
 
 Lemma gcd_divide_r : forall a b, (gcd a b | b).
 Proof.
  intros a b. rewrite <- ggcd_gcd. generalize (ggcd_correct_divisors a b).
- destruct ggcd as (g,(aa,bb)); simpl. intros (_,H). exists bb; auto.
+ destruct ggcd as (g,(aa,bb)); simpl. intros (_,H). exists bb.
+  now rewrite mul_comm.
 Qed.
 
 (** We now prove directly that gcd is the greatest amongst common divisors *)
@@ -1782,14 +1791,14 @@ Proof.
  apply divide_mul_r.
  apply IHn; clear IHn.
  apply le_S_n in LE. apply le_Sn_le. now rewrite plus_n_Sm.
- apply divide_xO_xI with p; trivial. exists 1; now rewrite mul_1_r.
- apply divide_xO_xI with p; trivial. exists 1; now rewrite mul_1_r.
+ apply divide_xO_xI with p; trivial. now exists 1.
+ apply divide_xO_xI with p; trivial. now exists 1.
  apply divide_xO_xO.
  apply IHn; clear IHn.
  apply le_S_n in LE. apply le_Sn_le. now rewrite plus_n_Sm.
  now apply divide_xO_xO.
  now apply divide_xO_xO.
- exists (gcdn n a b)~0. auto.
+ exists (gcdn n a b)~0. now rewrite mul_1_r.
 Qed.
 
 Lemma gcd_greatest : forall a b p, (p|a) -> (p|b) -> (p|gcd a b).
@@ -1808,11 +1817,14 @@ Proof.
  intros H (EQa,EQb) p Hp1 Hp2; subst.
  assert (H' : (g*p | g)).
   apply H.
-  destruct Hp1 as (r,Hr). exists r. now rewrite <- Hr, mul_assoc.
-  destruct Hp2 as (r,Hr). exists r. now rewrite <- Hr, mul_assoc.
+  destruct Hp1 as (r,Hr). exists r.
+   now rewrite mul_assoc, (mul_comm r g), <- mul_assoc, <- Hr.
+  destruct Hp2 as (r,Hr). exists r.
+   now rewrite mul_assoc, (mul_comm r g), <- mul_assoc, <- Hr.
  destruct H' as (q,H').
- apply mul_eq_1 with q.
- apply mul_reg_l with g. now rewrite mul_assoc, mul_1_r.
+ rewrite (mul_comm g p), mul_assoc in H'.
+ apply mul_eq_1 with q; rewrite mul_comm.
+ now apply mul_reg_r with g.
 Qed.
 
 End Pos.

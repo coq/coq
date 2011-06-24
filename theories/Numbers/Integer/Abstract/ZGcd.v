@@ -21,7 +21,7 @@ Module Type ZGcdProp
 
 Lemma divide_opp_l : forall n m, (-n | m) <-> (n | m).
 Proof.
- intros n m. split; intros (p,Hp); exists (-p); rewrite <- Hp.
+ intros n m. split; intros (p,Hp); exists (-p); rewrite Hp.
   now rewrite mul_opp_l, mul_opp_r.
   now rewrite mul_opp_opp.
 Qed.
@@ -29,8 +29,8 @@ Qed.
 Lemma divide_opp_r : forall n m, (n | -m) <-> (n | m).
 Proof.
  intros n m. split; intros (p,Hp); exists (-p).
-  now rewrite mul_opp_r, Hp, opp_involutive.
-  now rewrite <- Hp, mul_opp_r.
+  now rewrite mul_opp_l, <- Hp, opp_involutive.
+  now rewrite Hp, mul_opp_l.
 Qed.
 
 Lemma divide_abs_l : forall n m, (abs n | m) <-> (n | m).
@@ -53,7 +53,7 @@ Qed.
 
 Lemma divide_1_r : forall n, (n | 1) -> n==1 \/ n==-1.
 Proof.
- intros n (m,Hm). now apply eq_mul_1 with m.
+ intros n (m,H). rewrite mul_comm in H. now apply eq_mul_1 with m.
 Qed.
 
 Lemma divide_antisym_abs : forall n m,
@@ -210,11 +210,11 @@ Proof.
  apply gcd_unique.
  apply mul_nonneg_nonneg; trivial using gcd_nonneg, abs_nonneg.
  destruct (gcd_divide_l n m) as (q,Hq).
- rewrite <- Hq at 2. rewrite <- (abs_sgn p) at 2.
- rewrite mul_shuffle1. apply divide_factor_l.
+ rewrite Hq at 2. rewrite mul_assoc. apply mul_divide_mono_r.
+ rewrite <- (abs_sgn p) at 2. rewrite <- mul_assoc. apply divide_factor_l.
  destruct (gcd_divide_r n m) as (q,Hq).
- rewrite <- Hq at 2. rewrite <- (abs_sgn p) at 2.
- rewrite mul_shuffle1. apply divide_factor_l.
+ rewrite Hq at 2. rewrite mul_assoc. apply mul_divide_mono_r.
+ rewrite <- (abs_sgn p) at 2. rewrite <- mul_assoc. apply divide_factor_l.
  intros q H H'.
  destruct (gcd_bezout n m (gcd n m) (eq_refl _)) as (a & b & EQ).
  rewrite <- EQ, <- sgn_abs, mul_add_distr_l. apply divide_add_r.
@@ -257,15 +257,15 @@ Proof.
  apply le_lteq in G; destruct G as [G|G].
  destruct (gcd_divide_l n m) as (q,Hq).
  exists (gcd n m). exists q.
- split. easy.
+ split. now rewrite mul_comm.
  split. apply gcd_divide_r.
  destruct (gcd_divide_r n m) as (r,Hr).
- rewrite <- Hr in H. rewrite <- Hq in H at 1.
- rewrite <- mul_assoc in H. apply mul_divide_cancel_l in H; [|order].
+ rewrite Hr in H. rewrite Hq in H at 1.
+ rewrite mul_shuffle0 in H. apply mul_divide_cancel_r in H; [|order].
  apply gauss with r; trivial.
- apply mul_cancel_l with (gcd n m); [order|].
- rewrite mul_1_r.
- rewrite <- gcd_mul_mono_l_nonneg, Hq, Hr; order.
+ apply mul_cancel_r with (gcd n m); [order|].
+ rewrite mul_1_l.
+ rewrite <- gcd_mul_mono_r_nonneg, <- Hq, <- Hr; order.
  symmetry in G. apply gcd_eq_0 in G. destruct G as (Hn',_); order.
 Qed.
 

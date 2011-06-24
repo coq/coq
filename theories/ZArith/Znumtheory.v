@@ -39,7 +39,7 @@ Notation "( a | b )" := (Zdivide a b) (at level 0) : Z_scope.
 
 Lemma Zdivide_equiv : forall a b, Z.divide a b <-> Zdivide a b.
 Proof.
- intros a b; split; intros (c,H); exists c; rewrite Zmult_comm; auto.
+ intros a b; split; intros (c,H); now exists c.
 Qed.
 
 Lemma Zdivide_refl : forall a:Z, (a | a).

@@ -60,7 +60,7 @@ Notation "x <= y < z" := (x <= y /\ y < z) : N_scope.
 Notation "x < y < z" := (x < y /\ y < z) : N_scope.
 Notation "x < y <= z" := (x < y /\ y <= z) : N_scope.
 
-Definition divide p q := exists r, p*r = q.
+Definition divide p q := exists r, q = r*p.
 Notation "( p | q )" := (divide p q) (at level 0) : N_scope.
 
 Definition Even n := exists m, n = 2*m.
@@ -636,13 +636,15 @@ Qed.
 Lemma gcd_divide_l a b : (gcd a b | a).
 Proof.
  rewrite <- ggcd_gcd. generalize (ggcd_correct_divisors a b).
- destruct ggcd as (g,(aa,bb)); simpl. intros (H,_). exists aa; auto.
+ destruct ggcd as (g,(aa,bb)); simpl. intros (H,_). exists aa.
+  now rewrite mul_comm.
 Qed.
 
 Lemma gcd_divide_r a b : (gcd a b | b).
 Proof.
  rewrite <- ggcd_gcd. generalize (ggcd_correct_divisors a b).
- destruct ggcd as (g,(aa,bb)); simpl. intros (_,H). exists bb; auto.
+ destruct ggcd as (g,(aa,bb)); simpl. intros (_,H). exists bb.
+  now rewrite mul_comm.
 Qed.
 
 (** We now prove directly that gcd is the greatest amongst common divisors *)
@@ -650,7 +652,7 @@ Qed.
 Lemma gcd_greatest a b c : (c|a) -> (c|b) -> (c|gcd a b).
 Proof.
  destruct a as [ |p], b as [ |q]; simpl; trivial.
- destruct c as [ |r]. intros (s,H). discriminate.
+ destruct c as [ |r]. intros (s,H). destruct s; discriminate.
  intros ([ |s],Hs) ([ |t],Ht); try discriminate; simpl in *.
  destruct (Pos.gcd_greatest p q r) as (u,H).
  exists s. now inversion Hs.

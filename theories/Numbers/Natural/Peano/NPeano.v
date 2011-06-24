@@ -343,7 +343,7 @@ Fixpoint gcd a b :=
    | S a' => gcd (b mod (S a')) (S a')
   end.
 
-Definition divide x y := exists z, x*z=y.
+Definition divide x y := exists z, y=z*x.
 Notation "( x | y )" := (divide x y) (at level 0) : nat_scope.
 
 Lemma gcd_divide : forall a b, (gcd a b | a) /\ (gcd a b | b).
@@ -351,17 +351,18 @@ Proof.
  fix 1.
  intros [|a] b; simpl.
  split.
-  exists 0; now rewrite <- mult_n_O.
-  exists 1; now rewrite <- mult_n_Sm, <- mult_n_O.
+  now exists 0.
+  exists 1. simpl. now rewrite <- plus_n_O.
  fold (b mod (S a)).
  destruct (gcd_divide (b mod (S a)) (S a)) as (H,H').
  set (a':=S a) in *.
  split; auto.
  rewrite (div_mod b a') at 2 by discriminate.
  destruct H as (u,Hu), H' as (v,Hv).
+ rewrite mult_comm.
  exists ((b/a')*v + u).
- rewrite mult_plus_distr_l.
- now rewrite (mult_comm _ v), mult_assoc, Hv, Hu.
+ rewrite mult_plus_distr_r.
+ now rewrite <- mult_assoc, <- Hv, <- Hu.
 Qed.
 
 Lemma gcd_divide_l : forall a b, (gcd a b | a).
@@ -383,8 +384,9 @@ Proof.
  set (a':=S a) in *.
  rewrite (div_mod b a') in H' by discriminate.
  destruct H as (u,Hu), H' as (v,Hv).
- exists (v - u * (b/a')).
- now rewrite mult_minus_distr_l, mult_assoc, Hu, Hv, minus_plus.
+ exists (v - (b/a')*u).
+ rewrite mult_comm in Hv.
+ now rewrite mult_minus_distr_r, <- Hv, <-mult_assoc, <-Hu, minus_plus.
 Qed.
 
 (** * Bitwise operations *)

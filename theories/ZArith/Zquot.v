@@ -462,7 +462,8 @@ Lemma Zrem_divides : forall a b,
  Zrem a b = 0 <-> exists c, a = b*c.
 Proof.
  intros. zero_or_not b. firstorder.
- rewrite Z.rem_divide; trivial. split; intros (c,Hc); exists c; auto.
+ rewrite Z.rem_divide; trivial.
+ split; intros (c,Hc); exists c; subst; auto with zarith.
 Qed.
 
 (** Particular case : dividing by 2 is related with parity *)

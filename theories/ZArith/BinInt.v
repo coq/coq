@@ -60,7 +60,7 @@ Notation "x <= y < z" := (x <= y /\ y < z) : Z_scope.
 Notation "x < y < z" := (x < y /\ y < z) : Z_scope.
 Notation "x < y <= z" := (x < y /\ y <= z) : Z_scope.
 
-Definition divide x y := exists z, x*z = y.
+Definition divide x y := exists z, y = z*x.
 Notation "( x | y )" := (divide x y) (at level 0).
 
 Definition Even a := exists b, a = 2*b.
@@ -847,12 +847,12 @@ Qed.
 
 Lemma divide_Zpos_Zneg_r n p : (n|Zpos p) <-> (n|Zneg p).
 Proof.
- split; intros (m,H); exists (-m); now rewrite mul_opp_r, H.
+ split; intros (m,H); exists (-m); now rewrite mul_opp_l, <- H.
 Qed.
 
 Lemma divide_Zpos_Zneg_l n p : (Zpos p|n) <-> (Zneg p|n).
 Proof.
- split; intros (m,H); exists (-m); now rewrite mul_opp_r, <- mul_opp_l.
+ split; intros (m,H); exists (-m); now rewrite mul_opp_l, <- mul_opp_r.
 Qed.
 
 (** ** Correctness proofs for gcd *)
@@ -876,20 +876,22 @@ Qed.
 Lemma gcd_divide_l a b : (gcd a b | a).
 Proof.
  rewrite <- ggcd_gcd. generalize (ggcd_correct_divisors a b).
- destruct ggcd as (g,(aa,bb)); simpl. intros (H,_). exists aa; auto.
+ destruct ggcd as (g,(aa,bb)); simpl. intros (H,_). exists aa.
+  now rewrite mul_comm.
 Qed.
 
 Lemma gcd_divide_r a b : (gcd a b | b).
 Proof.
  rewrite <- ggcd_gcd. generalize (ggcd_correct_divisors a b).
- destruct ggcd as (g,(aa,bb)); simpl. intros (_,H). exists bb; auto.
+ destruct ggcd as (g,(aa,bb)); simpl. intros (_,H). exists bb.
+  now rewrite mul_comm.
 Qed.
 
 Lemma gcd_greatest a b c : (c|a) -> (c|b) -> (c | gcd a b).
 Proof.
  assert (H : forall p q r, (r|Zpos p) -> (r|Zpos q) -> (r|Zpos (Pos.gcd p q))).
   intros p q [|r|r] H H'.
-  now destruct H.
+  destruct H; now rewrite mul_comm in *.
   apply divide_Zpos, Pos.gcd_greatest; now apply divide_Zpos.
   apply divide_Zpos_Zneg_l, divide_Zpos, Pos.gcd_greatest;
    now apply divide_Zpos, divide_Zpos_Zneg_l.

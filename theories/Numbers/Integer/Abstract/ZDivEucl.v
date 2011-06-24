@@ -604,11 +604,9 @@ Lemma mod_divides : forall a b, b~=0 ->
  (a mod b == 0 <-> (b|a)).
 Proof.
 intros a b Hb. split.
-intros Hab. exists (a/b). rewrite (div_mod a b Hb) at 2.
- rewrite Hab; now nzsimpl.
-intros (c,Hc).
-rewrite <- Hc, mul_comm.
-now apply mod_mul.
+intros Hab. exists (a/b). rewrite mul_comm.
+ rewrite (div_mod a b Hb) at 1. rewrite Hab; now nzsimpl.
+intros (c,Hc). rewrite Hc. now apply mod_mul.
 Qed.
 
 End ZEuclidProp.

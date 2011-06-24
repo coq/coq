@@ -30,9 +30,9 @@ Module Type NLcmProp
 Lemma mod_divide : forall a b, b~=0 -> (a mod b == 0 <-> (b|a)).
 Proof.
  intros a b Hb. split.
- intros Hab. exists (a/b). rewrite (div_mod a b Hb) at 2.
-  rewrite Hab; now nzsimpl.
- intros (c,Hc). rewrite <- Hc, mul_comm. now apply mod_mul.
+ intros Hab. exists (a/b). rewrite mul_comm.
+  rewrite (div_mod a b Hb) at 1. rewrite Hab; now nzsimpl.
+ intros (c,Hc). rewrite Hc. now apply mod_mul.
 Qed.
 
 Lemma divide_div_mul_exact : forall a b c, b~=0 -> (b|a) ->
@@ -132,7 +132,7 @@ Qed.
 Lemma divide_div : forall a b c, a~=0 -> (a|b) -> (b|c) -> (b/a|c/a).
 Proof.
  intros a b c Ha Hb (c',Hc). exists c'.
- now rewrite mul_comm, <- divide_div_mul_exact, mul_comm, Hc.
+ now rewrite <- divide_div_mul_exact, Hc.
 Qed.
 
 Lemma lcm_least : forall a b c,
@@ -146,14 +146,14 @@ Proof.
  set (g:=gcd a b) in *.
  assert (Ha' := divide_div g a c NEQ Ga Ha).
  assert (Hb' := divide_div g b c NEQ Gb Hb).
- destruct Ha' as (a',Ha'). rewrite <- Ha' in Hb'.
+ destruct Ha' as (a',Ha'). rewrite Ha', mul_comm in Hb'.
  apply gauss in Hb'; [|apply gcd_div_gcd; unfold g; trivial using gcd_comm].
  destruct Hb' as (b',Hb').
  exists b'.
- rewrite <- mul_assoc, Hb'.
+ rewrite mul_shuffle3, <- Hb'.
  rewrite (proj2 (div_exact c g NEQ)).
- rewrite <- Ha', mul_assoc. f_equiv.
- apply div_exact; trivial.
+ rewrite Ha', mul_shuffle3, (mul_comm a a'). f_equiv.
+ symmetry. apply div_exact; trivial.
  apply mod_divide; trivial.
  apply mod_divide; trivial. transitivity a; trivial.
 Qed.

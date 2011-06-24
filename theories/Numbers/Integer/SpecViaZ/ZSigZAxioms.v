@@ -409,7 +409,7 @@ Qed.
 
 (** Gcd *)
 
-Definition divide n m := exists p, n*p == m.
+Definition divide n m := exists p, m == p*n.
 Local Notation "( x | y )" := (divide x y) (at level 0).
 
 Lemma spec_divide : forall n m, (n|m) <-> Z.divide [n] [m].

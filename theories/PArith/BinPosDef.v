@@ -338,7 +338,7 @@ Definition sqrt p := fst (sqrtrem p).
 
 (** ** Greatest Common Divisor *)
 
-Definition divide p q := exists r, p*r = q.
+Definition divide p q := exists r, q = r*p.
 Notation "( p | q )" := (divide p q) (at level 0) : positive_scope.
 
 (** Instead of the Euclid algorithm, we use here the Stein binary
