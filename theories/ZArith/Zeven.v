@@ -6,15 +6,20 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** Binary Integers : Parity and Division by Two *)
+(** Initial author : Pierre Crégut (CNET, Lannion, France) *)
+
+(** THIS FILE IS DEPRECATED.
+    It is now almost entirely made of compatibility formulations
+    for results already present in BinInt.Z. *)
+
 Require Import BinInt.
 
 Open Scope Z_scope.
 
-(*******************************************************************)
-(** About parity: even and odd predicates on Z, division by 2 on Z *)
-
-(***************************************************)
-(** * [Zeven], [Zodd] and their related properties *)
+(** Historical formulation of even and odd predicates, based on
+    case analysis. We now rather recommend using [Z.Even] and
+    [Z.Odd], which are based on the exist predicate. *)
 
 Definition Zeven (z:Z) :=
   match z with
@@ -33,128 +38,102 @@ Definition Zodd (z:Z) :=
     | _ => False
   end.
 
+Lemma Zeven_equiv z : Zeven z <-> Z.Even z.
+Proof.
+ rewrite <- Z.even_spec.
+ destruct z as [|p|p]; try destruct p; simpl; intuition.
+Qed.
+
+Lemma Zodd_equiv z : Zodd z <-> Z.Odd z.
+Proof.
+ rewrite <- Z.odd_spec.
+ destruct z as [|p|p]; try destruct p; simpl; intuition.
+Qed.
+
+Theorem Zeven_ex_iff n : Zeven n <-> exists m, n = 2*m.
+Proof (Zeven_equiv n).
+
+Theorem Zodd_ex_iff n : Zodd n <-> exists m, n = 2*m + 1.
+Proof (Zodd_equiv n).
+
+(** Boolean tests of parity (now in BinInt.Z) *)
+
 Notation Zeven_bool := Z.even (only parsing).
 Notation Zodd_bool := Z.odd (only parsing).
 
-Lemma Zeven_bool_iff : forall n, Zeven_bool n = true <-> Zeven n.
+Lemma Zeven_bool_iff n : Z.even n = true <-> Zeven n.
 Proof.
- destruct n as [|p|p]; try destruct p; simpl in *; split; easy.
+ now rewrite Z.even_spec, Zeven_equiv.
 Qed.
 
-Lemma Zodd_bool_iff : forall n, Zodd_bool n = true <-> Zodd n.
+Lemma Zodd_bool_iff n : Z.odd n = true <-> Zodd n.
 Proof.
- destruct n as [|p|p]; try destruct p; simpl in *; split; easy.
+ now rewrite Z.odd_spec, Zodd_equiv.
 Qed.
 
-Lemma Zodd_even_bool : forall n, Zodd_bool n = negb (Zeven_bool n).
+Ltac boolify_even_odd := rewrite <- ?Zeven_bool_iff, <- ?Zodd_bool_iff.
+
+Lemma Zodd_even_bool n : Z.odd n = negb (Z.even n).
 Proof.
- destruct n as [|p|p]; trivial; now destruct p.
+ symmetry. apply Z.negb_even.
 Qed.
 
-Lemma Zeven_odd_bool : forall n, Zeven_bool n = negb (Zodd_bool n).
+Lemma Zeven_odd_bool n : Z.even n = negb (Z.odd n).
 Proof.
- destruct n as [|p|p]; trivial; now destruct p.
+ symmetry. apply Z.negb_odd.
 Qed.
 
-Definition Zeven_odd_dec : forall z:Z, {Zeven z} + {Zodd z}.
+Definition Zeven_odd_dec n : {Zeven n} + {Zodd n}.
 Proof.
-  intro z. case z;
-  [ left; compute; trivial
-    | intro p; case p; intros;
-      (right; compute; exact I) || (left; compute; exact I)
-    | intro p; case p; intros;
-      (right; compute; exact I) || (left; compute; exact I) ].
+ destruct n as [|p|p]; try destruct p; simpl; (now left) || (now right).
 Defined.
 
-Definition Zeven_dec : forall z:Z, {Zeven z} + {~ Zeven z}.
+Definition Zeven_dec n : {Zeven n} + {~ Zeven n}.
 Proof.
-  intro z. case z;
-  [ left; compute; trivial
-    | intro p; case p; intros;
-      (left; compute; exact I) || (right; compute; trivial)
-    | intro p; case p; intros;
-      (left; compute; exact I) || (right; compute; trivial) ].
+ destruct n as [|p|p]; try destruct p; simpl; (now left) || (now right).
 Defined.
 
-Definition Zodd_dec : forall z:Z, {Zodd z} + {~ Zodd z}.
+Definition Zodd_dec n : {Zodd n} + {~ Zodd n}.
 Proof.
-  intro z. case z;
-  [ right; compute; trivial
-    | intro p; case p; intros;
-      (left; compute; exact I) || (right; compute; trivial)
-    | intro p; case p; intros;
-      (left; compute; exact I) || (right; compute; trivial) ].
+ destruct n as [|p|p]; try destruct p; simpl; (now left) || (now right).
 Defined.
 
-Lemma Zeven_not_Zodd : forall n:Z, Zeven n -> ~ Zodd n.
+Lemma Zeven_not_Zodd n : Zeven n -> ~ Zodd n.
 Proof.
-  intro z; destruct z; [ idtac | destruct p | destruct p ]; compute;
-    trivial.
+ boolify_even_odd. rewrite <- Z.negb_odd. destruct Z.odd; intuition.
 Qed.
 
-Lemma Zodd_not_Zeven : forall n:Z, Zodd n -> ~ Zeven n.
+Lemma Zodd_not_Zeven n : Zodd n -> ~ Zeven n.
 Proof.
-  intro z; destruct z; [ idtac | destruct p | destruct p ]; compute;
-    trivial.
+ boolify_even_odd. rewrite <- Z.negb_odd. destruct Z.odd; intuition.
 Qed.
 
-Lemma Zeven_Sn : forall n:Z, Zodd n -> Zeven (Zsucc n).
+Lemma Zeven_Sn n : Zodd n -> Zeven (Z.succ n).
 Proof.
-  intro z; destruct z; unfold Zsucc;
-    [ idtac | destruct p | destruct p ]; simpl;
-      trivial.
-  unfold Pdouble_minus_one; case p; simpl; auto.
+ boolify_even_odd. now rewrite Z.even_succ.
 Qed.
 
-Lemma Zodd_Sn : forall n:Z, Zeven n -> Zodd (Zsucc n).
+Lemma Zodd_Sn n : Zeven n -> Zodd (Z.succ n).
 Proof.
-  intro z; destruct z; unfold Zsucc;
-    [ idtac | destruct p | destruct p ]; simpl;
-      trivial.
-  unfold Pdouble_minus_one; case p; simpl; auto.
+ boolify_even_odd. now rewrite Z.odd_succ.
 Qed.
 
-Lemma Zeven_pred : forall n:Z, Zodd n -> Zeven (Zpred n).
+Lemma Zeven_pred n : Zodd n -> Zeven (Z.pred n).
 Proof.
-  intro z; destruct z; unfold Zpred;
-    [ idtac | destruct p | destruct p ]; simpl;
-      trivial.
-  unfold Pdouble_minus_one; case p; simpl; auto.
+ boolify_even_odd. now rewrite Z.even_pred.
 Qed.
 
-Lemma Zodd_pred : forall n:Z, Zeven n -> Zodd (Zpred n).
+Lemma Zodd_pred n : Zeven n -> Zodd (Z.pred n).
 Proof.
-  intro z; destruct z; unfold Zpred;
-    [ idtac | destruct p | destruct p ]; simpl;
-      trivial.
-  unfold Pdouble_minus_one; case p; simpl; auto.
+ boolify_even_odd. now rewrite Z.odd_pred.
 Qed.
 
 Hint Unfold Zeven Zodd: zarith.
 
-Lemma Zeven_bool_succ : forall n, Zeven_bool (Zsucc n) = Zodd_bool n.
-Proof.
- destruct n as [ |p|p]; trivial; destruct p as [p|p| ]; trivial.
- now destruct p.
-Qed.
-
-Lemma Zeven_bool_pred : forall n, Zeven_bool (Zpred n) = Zodd_bool n.
-Proof.
- destruct n as [ |p|p]; trivial; destruct p as [p|p| ]; trivial.
- now destruct p.
-Qed.
-
-Lemma Zodd_bool_succ : forall n, Zodd_bool (Zsucc n) = Zeven_bool n.
-Proof.
- destruct n as [ |p|p]; trivial; destruct p as [p|p| ]; trivial.
- now destruct p.
-Qed.
-
-Lemma Zodd_bool_pred : forall n, Zodd_bool (Zpred n) = Zeven_bool n.
-Proof.
- destruct n as [ |p|p]; trivial; destruct p as [p|p| ]; trivial.
- now destruct p.
-Qed.
+Notation Zeven_bool_succ := Z.even_succ (only parsing).
+Notation Zeven_bool_pred := Z.even_pred (only parsing).
+Notation Zodd_bool_succ := Z.odd_succ (only parsing).
+Notation Zodd_bool_pred := Z.odd_pred (only parsing).
 
 (******************************************************************)
 (** * Definition of [Zquot2], [Zdiv2] and properties wrt [Zeven]
@@ -163,172 +142,149 @@ Qed.
 Notation Zdiv2 := Z.div2 (only parsing).
 Notation Zquot2 := Z.quot2 (only parsing).
 
-(** Properties of [Zdiv2] *)
+(** Properties of [Z.div2] *)
 
-Lemma Zdiv2_odd_eqn : forall n,
- n = 2*(Zdiv2 n) + if Zodd_bool n then 1 else 0.
+Lemma Zdiv2_odd_eqn n : n = 2*(Z.div2 n) + if Z.odd n then 1 else 0.
+Proof (Z.div2_odd n).
+
+Lemma Zeven_div2 n : Zeven n -> n = 2 * Z.div2 n.
 Proof.
- intros [ |[p|p| ]|[p|p|  ]]; simpl; trivial.
- f_equal. symmetry. apply Pos.pred_double_succ.
+ boolify_even_odd. rewrite <- Z.negb_odd, Bool.negb_true_iff.
+ intros Hn. rewrite (Zdiv2_odd_eqn n) at 1. now rewrite Hn, Z.add_0_r.
 Qed.
 
-Lemma Zeven_div2 : forall n:Z, Zeven n -> n = 2 * Zdiv2 n.
+Lemma Zodd_div2 n : Zodd n -> n = 2 * Z.div2 n + 1.
 Proof.
- intros n Hn. apply Zeven_bool_iff in Hn.
- pattern n at 1.
- now rewrite (Zdiv2_odd_eqn n), Zodd_even_bool, Hn, Zplus_0_r.
+ boolify_even_odd.
+ intros Hn. rewrite (Zdiv2_odd_eqn n) at 1. now rewrite Hn.
 Qed.
 
-Lemma Zodd_div2 : forall n:Z, Zodd n -> n = 2 * Zdiv2 n + 1.
+(** Properties of [Z.quot2] *)
+
+(** TODO: move to Numbers someday *)
+
+Lemma Zquot2_odd_eqn n : n = 2*(Z.quot2 n) + if Z.odd n then Z.sgn n else 0.
 Proof.
- intros n Hn. apply Zodd_bool_iff in Hn.
- pattern n at 1. now rewrite (Zdiv2_odd_eqn n), Hn.
+ now destruct n as [ |[p|p| ]|[p|p| ]].
 Qed.
 
-(** Properties of [Zquot2] *)
-
-Lemma Zquot2_odd_eqn : forall n,
- n = 2*(Zquot2 n) + if Zodd_bool n then Zsgn n else 0.
+Lemma Zeven_quot2 n : Zeven n -> n = 2 * Z.quot2 n.
 Proof.
- intros [ |[p|p| ]|[p|p|  ]]; simpl; trivial.
+ intros Hn. apply Zeven_bool_iff in Hn.
+ rewrite (Zquot2_odd_eqn n) at 1.
+ now rewrite Zodd_even_bool, Hn, Z.add_0_r.
 Qed.
 
-Lemma Zeven_quot2 : forall n:Z, Zeven n -> n = 2 * Zquot2 n.
+Lemma Zodd_quot2 n : n >= 0 -> Zodd n -> n = 2 * Z.quot2 n + 1.
 Proof.
- intros n Hn. apply Zeven_bool_iff in Hn.
- pattern n at 1.
- now rewrite (Zquot2_odd_eqn n), Zodd_even_bool, Hn, Zplus_0_r.
-Qed.
-
-Lemma Zodd_quot2 : forall n:Z, n >= 0 -> Zodd n -> n = 2 * Zquot2 n + 1.
-Proof.
- intros n Hn Hn'. apply Zodd_bool_iff in Hn'.
- pattern n at 1. rewrite (Zquot2_odd_eqn n), Hn'. f_equal.
+ intros Hn Hn'. apply Zodd_bool_iff in Hn'.
+ rewrite (Zquot2_odd_eqn n) at 1. rewrite Hn'. f_equal.
  destruct n; (now destruct Hn) || easy.
 Qed.
 
-Lemma Zodd_quot2_neg :
-  forall n:Z, n <= 0 -> Zodd n -> n = 2 * Zquot2 n - 1.
+Lemma Zodd_quot2_neg n : n <= 0 -> Zodd n -> n = 2 * Z.quot2 n - 1.
 Proof.
- intros n Hn Hn'. apply Zodd_bool_iff in Hn'.
- pattern n at 1. rewrite (Zquot2_odd_eqn n), Hn'. unfold Zminus. f_equal.
+ intros Hn Hn'. apply Zodd_bool_iff in Hn'.
+ rewrite (Zquot2_odd_eqn n) at 1; rewrite Hn'. unfold Z.sub. f_equal.
  destruct n; (now destruct Hn) || easy.
+Qed.
+
+Lemma Zquot2_opp n : Z.quot2 (-n) = - Z.quot2 n.
+Proof.
+ now destruct n as [ |[p|p| ]|[p|p| ]].
+Qed.
+
+Lemma Zquot2_quot n : Z.quot2 n = n ÷ 2.
+Proof.
+ assert (AUX : forall m, 0 < m -> Z.quot2 m = m ÷ 2).
+  BeginSubproof.
+   intros m Hm.
+   apply Z.quot_unique with (if Z.odd m then Z.sgn m else 0).
+   now apply Z.lt_le_incl.
+   rewrite Z.sgn_pos by trivial.
+   destruct (Z.odd m); now split.
+   apply Zquot2_odd_eqn.
+  EndSubproof.
+ destruct (Z.lt_trichotomy 0 n) as [POS|[NUL|NEG]].
+ - now apply AUX.
+ - now subst.
+ - apply Z.opp_inj. rewrite <- Z.quot_opp_l, <- Zquot2_opp.
+   apply AUX. now destruct n. easy.
 Qed.
 
 (** More properties of parity *)
 
-Lemma Z_modulo_2 :
-  forall n:Z, {y : Z | n = 2 * y} + {y : Z | n = 2 * y + 1}.
+Lemma Z_modulo_2 n : {y | n = 2 * y} + {y | n = 2 * y + 1}.
 Proof.
- intros n.
  destruct (Zeven_odd_dec n) as [Hn|Hn].
- left. exists (Zdiv2 n). exact (Zeven_div2 n Hn).
- right. exists (Zdiv2 n). exact (Zodd_div2 n Hn).
+ - left. exists (Z.div2 n). exact (Zeven_div2 n Hn).
+ - right. exists (Z.div2 n). exact (Zodd_div2 n Hn).
 Qed.
 
-Lemma Zsplit2 :
-  forall n:Z,
-    {p : Z * Z |
-      let (x1, x2) := p in n = x1 + x2 /\ (x1 = x2 \/ x2 = x1 + 1)}.
+Lemma Zsplit2 n :
+ {p : Z * Z | let (x1, x2) := p in n = x1 + x2 /\ (x1 = x2 \/ x2 = x1 + 1)}.
 Proof.
- intros n.
  destruct (Z_modulo_2 n) as [(y,Hy)|(y,Hy)];
-  rewrite Zmult_comm, <- Zplus_diag_eq_mult_2 in Hy.
- exists (y, y). split. assumption. now left.
- exists (y, y + 1). split. now rewrite Zplus_assoc. now right.
+  rewrite Z.mul_comm, <- Zplus_diag_eq_mult_2 in Hy.
+ - exists (y, y). split. assumption. now left.
+ - exists (y, y + 1). split. now rewrite Z.add_assoc. now right.
 Qed.
 
-Theorem Zeven_ex: forall n, Zeven n -> exists m, n = 2 * m.
+Theorem Zeven_ex n : Zeven n -> exists m, n = 2 * m.
 Proof.
-  intro n; exists (Zdiv2 n); apply Zeven_div2; auto.
+ exists (Z.div2 n); apply Zeven_div2; auto.
 Qed.
 
-Theorem Zodd_ex: forall n, Zodd n -> exists m, n = 2 * m + 1.
+Theorem Zodd_ex n : Zodd n -> exists m, n = 2 * m + 1.
 Proof.
-  intro n; exists (Zdiv2 n); apply Zodd_div2; auto.
+ exists (Z.div2 n); apply Zodd_div2; auto.
 Qed.
 
-Theorem Zeven_2p: forall p, Zeven (2 * p).
+Theorem Zeven_2p p : Zeven (2 * p).
 Proof.
-  destruct p; simpl; auto.
+ now destruct p.
 Qed.
 
-Theorem Zodd_2p_plus_1: forall p, Zodd (2 * p + 1).
+Theorem Zodd_2p_plus_1 p : Zodd (2 * p + 1).
 Proof.
-  destruct p; simpl; auto.
-  destruct p; simpl; auto.
+ destruct p as [|p|p]; now try destruct p.
 Qed.
 
-Theorem Zeven_ex_iff : forall n, Zeven n <-> exists m, n = 2*m.
+Theorem Zeven_plus_Zodd a b : Zeven a -> Zodd b -> Zodd (a + b).
 Proof.
- split. apply Zeven_ex. intros (m,->). apply Zeven_2p.
+ boolify_even_odd. rewrite <- Z.negb_odd, Bool.negb_true_iff.
+ intros Ha Hb. now rewrite Z.odd_add, Ha, Hb.
 Qed.
 
-Theorem Zodd_ex_iff : forall n, Zodd n <-> exists m, n = 2*m + 1.
+Theorem Zeven_plus_Zeven a b : Zeven a -> Zeven b -> Zeven (a + b).
 Proof.
- split. apply Zodd_ex. intros (m,->). apply Zodd_2p_plus_1.
+ boolify_even_odd. intros Ha Hb. now rewrite Z.even_add, Ha, Hb.
 Qed.
 
-Theorem Zeven_plus_Zodd: forall a b,
- Zeven a -> Zodd b -> Zodd (a + b).
+Theorem Zodd_plus_Zeven a b : Zodd a -> Zeven b -> Zodd (a + b).
 Proof.
-  intros a b Ha Hb.
-  destruct (Zeven_ex a) as (x,->), (Zodd_ex b) as (y,->); trivial.
-  rewrite Zplus_assoc, <- Zmult_plus_distr_r.
-  apply Zodd_2p_plus_1.
+ intros. rewrite Z.add_comm. now apply Zeven_plus_Zodd.
 Qed.
 
-Theorem Zeven_plus_Zeven: forall a b,
- Zeven a -> Zeven b -> Zeven (a + b).
+Theorem Zodd_plus_Zodd a b : Zodd a -> Zodd b -> Zeven (a + b).
 Proof.
-  intros a b Ha Hb.
-  destruct (Zeven_ex a) as (x,->), (Zeven_ex b) as (y,->); trivial.
-  rewrite <- Zmult_plus_distr_r.
-  apply Zeven_2p.
+ boolify_even_odd. rewrite <- 2 Z.negb_even, 2 Bool.negb_true_iff.
+ intros Ha Hb. now rewrite Z.even_add, Ha, Hb.
 Qed.
 
-Theorem Zodd_plus_Zeven: forall a b,
- Zodd a -> Zeven b -> Zodd (a + b).
+Theorem Zeven_mult_Zeven_l a b : Zeven a -> Zeven (a * b).
 Proof.
-  intros a b Ha Hb; rewrite Zplus_comm; apply Zeven_plus_Zodd; auto.
+ boolify_even_odd. intros Ha. now rewrite Z.even_mul, Ha.
 Qed.
 
-Theorem Zodd_plus_Zodd: forall a b,
- Zodd a -> Zodd b -> Zeven (a + b).
+Theorem Zeven_mult_Zeven_r a b : Zeven b -> Zeven (a * b).
 Proof.
-  intros a b Ha Hb.
-  destruct (Zodd_ex a) as (x,->), (Zodd_ex b) as (y,->); trivial.
-  rewrite <- Zplus_assoc, (Zplus_comm 1), <- Zplus_assoc.
-  change (1+1) with (2*1). rewrite <- 2 Zmult_plus_distr_r.
-  apply Zeven_2p.
+ intros. rewrite Z.mul_comm. now apply Zeven_mult_Zeven_l.
 Qed.
 
-Theorem Zeven_mult_Zeven_l: forall a b,
- Zeven a -> Zeven (a * b).
+Theorem Zodd_mult_Zodd a b : Zodd a -> Zodd b -> Zodd (a * b).
 Proof.
-  intros a b Ha.
-  destruct (Zeven_ex a) as (x,->); trivial.
-  rewrite <- Zmult_assoc.
-  apply Zeven_2p.
-Qed.
-
-Theorem Zeven_mult_Zeven_r: forall a b,
- Zeven b -> Zeven (a * b).
-Proof.
-  intros a b Hb. rewrite Zmult_comm. now apply Zeven_mult_Zeven_l.
-Qed.
-
-Hint Rewrite Zmult_plus_distr_r Zmult_plus_distr_l
-     Zplus_assoc Zmult_1_r Zmult_1_l : Zexpand.
-
-Theorem Zodd_mult_Zodd: forall a b,
- Zodd a -> Zodd b -> Zodd (a * b).
-Proof.
-  intros a b Ha Hb.
-  destruct (Zodd_ex a) as (x,->), (Zodd_ex b) as (y,->); trivial.
-  rewrite Zmult_plus_distr_l, Zmult_1_l.
-  rewrite <- Zmult_assoc, Zplus_assoc, <- Zmult_plus_distr_r.
-  apply Zodd_2p_plus_1.
+ boolify_even_odd. intros Ha Hb. now rewrite Z.odd_mul, Ha, Hb.
 Qed.
 
 (* for compatibility *)

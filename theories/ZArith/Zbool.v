@@ -38,6 +38,9 @@ Notation Zge_bool := Z.geb (only parsing).
 Notation Zlt_bool := Z.ltb (only parsing).
 Notation Zgt_bool := Z.gtb (only parsing).
 
+(** We now provide a direct [Z.eqb] that doesn't refer to [Z.compare].
+   The old [Zeq_bool] is kept for compatibility. *)
+
 Definition Zeq_bool (x y:Z) :=
   match x ?= y with
     | Eq => true
@@ -52,162 +55,130 @@ Definition Zneq_bool (x y:Z) :=
 
 (** Properties in term of [if ... then ... else ...] *)
 
-Lemma Zle_cases :
-  forall n m:Z, if Zle_bool n m then (n <= m) else (n > m).
+Lemma Zle_cases n m : if n <=? m then n <= m else n > m.
 Proof.
-  intros x y; unfold Zle_bool, Zle, Zgt in |- *.
-  case (x ?= y); auto; discriminate.
+ case Z.leb_spec; now Z.swap_greater.
 Qed.
 
-Lemma Zlt_cases :
-  forall n m:Z, if Zlt_bool n m then (n < m) else (n >= m).
+Lemma Zlt_cases n m : if n <? m then n < m else n >= m.
 Proof.
-  intros x y; unfold Zlt_bool, Zlt, Zge in |- *.
-  case (x ?= y); auto; discriminate.
+ case Z.ltb_spec; now Z.swap_greater.
 Qed.
 
-Lemma Zge_cases :
-  forall n m:Z, if Zge_bool n m then (n >= m) else (n < m).
+Lemma Zge_cases n m : if n >=? m then n >= m else n < m.
 Proof.
-  intros x y; unfold Zge_bool, Zge, Zlt in |- *.
-  case (x ?= y); auto; discriminate.
+ rewrite Z.geb_leb. case Z.leb_spec; now Z.swap_greater.
 Qed.
 
-Lemma Zgt_cases :
-  forall n m:Z, if Zgt_bool n m then (n > m) else (n <= m).
+Lemma Zgt_cases n m : if n >? m then n > m else n <= m.
 Proof.
-  intros x y; unfold Zgt_bool, Zgt, Zle in |- *.
-  case (x ?= y); auto; discriminate.
+ rewrite Z.gtb_ltb. case Z.ltb_spec; now Z.swap_greater.
 Qed.
 
-(** Lemmas on [Zle_bool] used in contrib/graphs *)
+(** Lemmas on [Z.leb] used in contrib/graphs *)
 
-Lemma Zle_bool_imp_le : forall n m:Z, Zle_bool n m = true -> (n <= m).
+Lemma Zle_bool_imp_le n m : (n <=? m) = true -> (n <= m).
 Proof.
-  unfold Zle_bool, Zle in |- *. intros x y. unfold not in |- *.
-  case (x ?= y); intros; discriminate.
+ apply Z.leb_le.
 Qed.
 
-Lemma Zle_imp_le_bool : forall n m:Z, (n <= m) -> Zle_bool n m = true.
+Lemma Zle_imp_le_bool n m : (n <= m) -> (n <=? m) = true.
 Proof.
-  unfold Zle, Zle_bool in |- *. intros x y. case (x ?= y); trivial. intro. elim (H (refl_equal _)).
+ apply Z.leb_le.
 Qed.
 
-Lemma Zle_bool_refl : forall n:Z, Zle_bool n n = true.
+Notation Zle_bool_refl := Z.leb_refl (only parsing).
+
+Lemma Zle_bool_antisym n m :
+ (n <=? m) = true -> (m <=? n) = true -> n = m.
 Proof.
-  intro. apply Zle_imp_le_bool. apply Zeq_le. reflexivity.
+ rewrite !Z.leb_le. apply Z.le_antisymm.
 Qed.
 
-Lemma Zle_bool_antisym :
-  forall n m:Z, Zle_bool n m = true -> Zle_bool m n = true -> n = m.
+Lemma Zle_bool_trans n m p :
+ (n <=? m) = true -> (m <=? p) = true -> (n <=? p) = true.
 Proof.
-  intros. apply Zle_antisym. apply Zle_bool_imp_le. assumption.
-  apply Zle_bool_imp_le. assumption.
+ rewrite !Z.leb_le. apply Z.le_trans.
 Qed.
 
-Lemma Zle_bool_trans :
-  forall n m p:Z,
-    Zle_bool n m = true -> Zle_bool m p = true -> Zle_bool n p = true.
+Definition Zle_bool_total x y :
+  { x <=? y = true } + { y <=? x = true }.
 Proof.
-  intros x y z; intros. apply Zle_imp_le_bool. apply Zle_trans with (m := y). apply Zle_bool_imp_le. assumption.
-  apply Zle_bool_imp_le. assumption.
-Qed.
-
-Definition Zle_bool_total :
-  forall x y:Z, {Zle_bool x y = true} + {Zle_bool y x = true}.
-Proof.
-  intros x y; intros. unfold Zle_bool in |- *. cut ((x ?= y) = Gt <-> (y ?= x) = Lt).
-  case (x ?= y). left. reflexivity.
-  left. reflexivity.
-  right. rewrite (proj1 H (refl_equal _)). reflexivity.
-  apply Zcompare_Gt_Lt_antisym.
+ case_eq (x <=? y); intros H.
+ - left; trivial.
+ - right. apply Z.leb_gt in H. now apply Z.leb_le, Z.lt_le_incl.
 Defined.
 
-Lemma Zle_bool_plus_mono :
-  forall n m p q:Z,
-    Zle_bool n m = true ->
-    Zle_bool p q = true -> Zle_bool (n + p) (m + q) = true.
+Lemma Zle_bool_plus_mono n m p q :
+ (n <=? m) = true ->
+ (p <=? q) = true ->
+ (n + p <=? m + q) = true.
 Proof.
-  intros. apply Zle_imp_le_bool. apply Zplus_le_compat. apply Zle_bool_imp_le. assumption.
-  apply Zle_bool_imp_le. assumption.
+ rewrite !Z.leb_le. apply Z.add_le_mono.
 Qed.
 
-Lemma Zone_pos : Zle_bool 1 0 = false.
+Lemma Zone_pos : 1 <=? 0 = false.
 Proof.
-  reflexivity.
+ reflexivity.
 Qed.
 
-Lemma Zone_min_pos : forall n:Z, Zle_bool n 0 = false -> Zle_bool 1 n = true.
+Lemma Zone_min_pos n : (n <=? 0) = false -> (1 <=? n) = true.
 Proof.
-  intros x; intros. apply Zle_imp_le_bool. change (Zsucc 0 <= x) in |- *. apply Zgt_le_succ. generalize H.
-  unfold Zle_bool, Zgt in |- *. case (x ?= 0). intro H0. discriminate H0.
-  intro H0. discriminate H0.
-  reflexivity.
+ rewrite Z.leb_le, Z.leb_gt. apply Z.le_succ_l.
 Qed.
 
 (** Properties in term of [iff] *)
 
-Lemma Zle_is_le_bool : forall n m:Z, (n <= m) <-> Zle_bool n m = true.
+Lemma Zle_is_le_bool n m : (n <= m) <-> (n <=? m) = true.
 Proof.
-  intros. split. intro. apply Zle_imp_le_bool. assumption.
-  intro. apply Zle_bool_imp_le. assumption.
+ symmetry. apply Z.leb_le.
 Qed.
 
-Lemma Zge_is_le_bool : forall n m:Z, (n >= m) <-> Zle_bool m n = true.
+Lemma Zge_is_le_bool n m : (n >= m) <-> (m <=? n) = true.
 Proof.
-  intros. split. intro. apply Zle_imp_le_bool. apply Zge_le. assumption.
-  intro. apply Zle_ge. apply Zle_bool_imp_le. assumption.
+ Z.swap_greater. symmetry. apply Z.leb_le.
 Qed.
 
-Lemma Zlt_is_lt_bool : forall n m:Z, (n < m) <-> Zlt_bool n m = true.
+Lemma Zlt_is_lt_bool n m : (n < m) <-> (n <? m) = true.
 Proof.
-intros n m; unfold Zlt_bool, Zlt.
-destruct (n ?= m); simpl; split; now intro.
+ symmetry. apply Z.ltb_lt.
 Qed.
 
-Lemma Zgt_is_gt_bool : forall n m:Z, (n > m) <-> Zgt_bool n m = true.
+Lemma Zgt_is_gt_bool n m : (n > m) <-> (n >? m) = true.
 Proof.
-intros n m; unfold Zgt_bool, Zgt.
-destruct (n ?= m); simpl; split; now intro.
+ Z.swap_greater. rewrite Z.gtb_ltb. symmetry. apply Z.ltb_lt.
 Qed.
 
-Lemma Zlt_is_le_bool :
-  forall n m:Z, (n < m) <-> Zle_bool n (m - 1) = true.
+Lemma Zlt_is_le_bool n m : (n < m) <-> (n <=? m - 1) = true.
 Proof.
-  intros x y. split. intro. apply Zle_imp_le_bool. apply Zlt_succ_le. rewrite (Zsucc_pred y) in H.
-  assumption.
-  intro. rewrite (Zsucc_pred y). apply Zle_lt_succ. apply Zle_bool_imp_le. assumption.
+ rewrite Z.leb_le. apply Z.lt_le_pred.
 Qed.
 
-Lemma Zgt_is_le_bool :
-  forall n m:Z, (n > m) <-> Zle_bool m (n - 1) = true.
+Lemma Zgt_is_le_bool n m : (n > m) <-> (m <=? n - 1) = true.
 Proof.
-  intros x y. apply iff_trans with (y < x). split. exact (Zgt_lt x y).
-  exact (Zlt_gt y x).
-  exact (Zlt_is_le_bool y x).
+ Z.swap_greater. rewrite Z.leb_le. apply Z.lt_le_pred.
 Qed.
 
-Lemma Zeq_is_eq_bool : forall x y, x = y <-> Zeq_bool x y = true.
+(** Properties of the deprecated [Zeq_bool] *)
+
+Lemma Zeq_is_eq_bool x y : x = y <-> Zeq_bool x y = true.
 Proof.
-  intros; unfold Zeq_bool.
-  generalize (Zcompare_Eq_iff_eq x y); destruct Zcompare; intuition;
-   try discriminate.
+ unfold Zeq_bool.
+ rewrite <- Z.compare_eq_iff. destruct Z.compare; now split.
 Qed.
 
-Lemma Zeq_bool_eq : forall x y, Zeq_bool x y = true -> x = y.
+Lemma Zeq_bool_eq x y : Zeq_bool x y = true -> x = y.
 Proof.
-  intros x y H; apply <- Zeq_is_eq_bool; auto.
+ apply Zeq_is_eq_bool.
 Qed.
 
-Lemma Zeq_bool_neq : forall x y, Zeq_bool x y = false -> x <> y.
+Lemma Zeq_bool_neq x y : Zeq_bool x y = false -> x <> y.
 Proof.
-  unfold Zeq_bool; red ; intros; subst.
-  rewrite Zcompare_refl in H.
-  discriminate.
+ rewrite Zeq_is_eq_bool; now destruct Zeq_bool.
 Qed.
 
-Lemma Zeq_bool_if : forall x y, if Zeq_bool x y then x=y else x<>y.
+Lemma Zeq_bool_if x y : if Zeq_bool x y then x=y else x<>y.
 Proof.
-  intros. generalize (Zeq_bool_eq x y)(Zeq_bool_neq x y).
-  destruct Zeq_bool; auto.
+ generalize (Zeq_bool_eq x y) (Zeq_bool_neq x y).
+ destruct Zeq_bool; auto.
 Qed.

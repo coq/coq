@@ -28,8 +28,8 @@ Require Export Zbool.
 Require Export Zmisc.
 Require Export Wf_Z.
 
-Hint Resolve Zle_refl Zplus_comm Zplus_assoc Zmult_comm Zmult_assoc Zplus_0_l
-  Zplus_0_r Zmult_1_l Zplus_opp_l Zplus_opp_r Zmult_plus_distr_l
-  Zmult_plus_distr_r: zarith.
+Hint Resolve Z.le_refl Z.add_comm Z.add_assoc Z.mul_comm Z.mul_assoc Z.add_0_l
+  Z.add_0_r Z.mul_1_l Z.add_opp_diag_l Z.add_opp_diag_r Z.mul_add_distr_l
+  Z.mul_add_distr_r: zarith.
 
 Require Export Zhints.
