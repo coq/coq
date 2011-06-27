@@ -39,7 +39,10 @@ Notation Zggcd_opp := Z.ggcd_opp (only parsing).
     a generic existential predicate. *)
 
 Notation Zdivide := Z.divide (only parsing).
-Notation Zdivide_intro := ex_intro (only parsing).
+
+(** Its former constructor is now a pseudo-constructor. *)
+
+Definition Zdivide_intro a b q (H:b=q*a) : Z.divide a b := ex_intro _ q H.
 
 (** Results concerning divisibility*)
 
