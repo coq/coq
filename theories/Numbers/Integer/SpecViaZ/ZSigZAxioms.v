@@ -445,77 +445,77 @@ Program Instance testbit_wd : Proper (eq==>eq==>Logic.eq) testbit.
 
 Lemma testbit_odd_0 : forall a, testbit (2*a+1) 0 = true.
 Proof.
- intros. zify. apply Ztestbit_odd_0.
+ intros. zify. apply Z.testbit_odd_0.
 Qed.
 
 Lemma testbit_even_0 : forall a, testbit (2*a) 0 = false.
 Proof.
- intros. zify. apply Ztestbit_even_0.
+ intros. zify. apply Z.testbit_even_0.
 Qed.
 
 Lemma testbit_odd_succ : forall a n, 0<=n ->
  testbit (2*a+1) (succ n) = testbit a n.
 Proof.
- intros a n. zify. apply Ztestbit_odd_succ.
+ intros a n. zify. apply Z.testbit_odd_succ.
 Qed.
 
 Lemma testbit_even_succ : forall a n, 0<=n ->
  testbit (2*a) (succ n) = testbit a n.
 Proof.
- intros a n. zify. apply Ztestbit_even_succ.
+ intros a n. zify. apply Z.testbit_even_succ.
 Qed.
 
 Lemma testbit_neg_r : forall a n, n<0 -> testbit a n = false.
 Proof.
- intros a n. zify. apply Ztestbit_neg_r.
+ intros a n. zify. apply Z.testbit_neg_r.
 Qed.
 
 Lemma shiftr_spec : forall a n m, 0<=m ->
  testbit (shiftr a n) m = testbit a (m+n).
 Proof.
- intros a n m. zify. apply Zshiftr_spec.
+ intros a n m. zify. apply Z.shiftr_spec.
 Qed.
 
 Lemma shiftl_spec_high : forall a n m, 0<=m -> n<=m ->
  testbit (shiftl a n) m = testbit a (m-n).
 Proof.
  intros a n m. zify. intros Hn H.
- now apply Zshiftl_spec_high.
+ now apply Z.shiftl_spec_high.
 Qed.
 
 Lemma shiftl_spec_low : forall a n m, m<n ->
  testbit (shiftl a n) m = false.
 Proof.
- intros a n m. zify. intros H. now apply Zshiftl_spec_low.
+ intros a n m. zify. intros H. now apply Z.shiftl_spec_low.
 Qed.
 
 Lemma land_spec : forall a b n,
  testbit (land a b) n = testbit a n && testbit b n.
 Proof.
- intros a n m. zify. now apply Zand_spec.
+ intros a n m. zify. now apply Z.land_spec.
 Qed.
 
 Lemma lor_spec : forall a b n,
  testbit (lor a b) n = testbit a n || testbit b n.
 Proof.
- intros a n m. zify. now apply Zor_spec.
+ intros a n m. zify. now apply Z.lor_spec.
 Qed.
 
 Lemma ldiff_spec : forall a b n,
  testbit (ldiff a b) n = testbit a n && negb (testbit b n).
 Proof.
- intros a n m. zify. now apply Zdiff_spec.
+ intros a n m. zify. now apply Z.ldiff_spec.
 Qed.
 
 Lemma lxor_spec : forall a b n,
  testbit (lxor a b) n = xorb (testbit a n) (testbit b n).
 Proof.
- intros a n m. zify. now apply Zxor_spec.
+ intros a n m. zify. now apply Z.lxor_spec.
 Qed.
 
 Lemma div2_spec : forall a, div2 a == shiftr a 1.
 Proof.
- intros a. zify. now apply Zdiv2_spec.
+ intros a. zify. now apply Z.div2_spec.
 Qed.
 
 End ZTypeIsZAxioms.

@@ -992,12 +992,7 @@ Proof.
   rewrite ?Pos.pred_N_succ; now destruct n.
 Qed.
 
-Lemma div2_of_N n : of_N (N.div2 n) = div2 (of_N n).
-Proof.
- now destruct n as [|[ | | ]].
-Qed.
-
-(** Correctness proofs about [Zshiftr] and [Zshiftl] *)
+(** Correctness proofs about [Z.shiftr] and [Z.shiftl] *)
 
 Lemma shiftr_spec_aux a n m : 0<=n -> 0<=m ->
  testbit (shiftr a n) m = testbit a (m+n).
@@ -1016,7 +1011,7 @@ Proof.
  now rewrite 2 testbit_0_l.
  (* a > 0 *)
  change (Zpos a) with (of_N (Npos a)) at 1.
- rewrite <- (Pos.iter_swap_gen _ _ _ Ndiv2) by exact div2_of_N.
+ rewrite <- (Pos.iter_swap_gen _ _ _ Ndiv2) by now intros [|[ | | ]].
  rewrite testbit_Zpos, testbit_of_N', H; trivial.
  exact (N.shiftr_spec' (Npos a) (Npos n) (to_N m)).
  (* a < 0 *)
@@ -1153,23 +1148,6 @@ Proof.
  now rewrite N.lxor_spec, negb_xorb_r.
  now rewrite N.lxor_spec, negb_xorb_l.
  now rewrite N.lxor_spec, xorb_negb_negb.
-Qed.
-
-(** An additionnal proof concerning [Pos.shiftl_nat], used in BigN *)
-
-Lemma pos_shiftl_nat_pow n p :
-  Zpos (Pos.shiftl_nat p n) = Zpos p * 2 ^ Z.of_nat n.
-Proof.
- intros.
- rewrite mul_comm.
- induction n. simpl; auto.
- transitivity (2 * (2 ^ Z.of_nat n * Zpos p)).
- rewrite <- IHn. auto.
- rewrite mul_assoc.
- replace (of_nat (S n)) with (succ (of_nat n)).
- rewrite <- pow_succ_r. trivial.
- now destruct n.
- destruct n. trivial. simpl. now rewrite Pos.add_1_r.
 Qed.
 
 (** ** Induction principles based on successor / predecessor *)

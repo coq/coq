@@ -11,7 +11,7 @@ Require Import ZArith OrdersFacts Nnat Ndigits NAxioms NDiv NSig.
 
 (** * The interface [NSig.NType] implies the interface [NAxiomsSig] *)
 
-Module NTypeIsNAxioms (Import N : NType').
+Module NTypeIsNAxioms (Import NN : NType').
 
 Hint Rewrite
  spec_0 spec_1 spec_2 spec_succ spec_add spec_mul spec_pred spec_sub
@@ -54,7 +54,7 @@ Definition N_of_Z z := of_N (Zabs_N z).
 
 Section Induction.
 
-Variable A : N.t -> Prop.
+Variable A : NN.t -> Prop.
 Hypothesis A_wd : Proper (eq==>iff) A.
 Hypothesis A0 : A 0.
 Hypothesis AS : forall n, A n <-> A (succ n).
@@ -161,7 +161,7 @@ Proof.
  intros. zify. apply Z.compare_antisym.
 Qed.
 
-Include BoolOrderFacts N N N [no inline].
+Include BoolOrderFacts NN NN NN [no inline].
 
 Instance compare_wd : Proper (eq ==> eq ==> Logic.eq) compare.
 Proof.
@@ -371,83 +371,83 @@ Program Instance testbit_wd : Proper (eq==>eq==>Logic.eq) testbit.
 
 Lemma testbit_odd_0 : forall a, testbit (2*a+1) 0 = true.
 Proof.
- intros. zify. apply Ztestbit_odd_0.
+ intros. zify. apply Z.testbit_odd_0.
 Qed.
 
 Lemma testbit_even_0 : forall a, testbit (2*a) 0 = false.
 Proof.
- intros. zify. apply Ztestbit_even_0.
+ intros. zify. apply Z.testbit_even_0.
 Qed.
 
 Lemma testbit_odd_succ : forall a n, 0<=n ->
  testbit (2*a+1) (succ n) = testbit a n.
 Proof.
- intros a n. zify. apply Ztestbit_odd_succ.
+ intros a n. zify. apply Z.testbit_odd_succ.
 Qed.
 
 Lemma testbit_even_succ : forall a n, 0<=n ->
  testbit (2*a) (succ n) = testbit a n.
 Proof.
- intros a n. zify. apply Ztestbit_even_succ.
+ intros a n. zify. apply Z.testbit_even_succ.
 Qed.
 
 Lemma testbit_neg_r : forall a n, n<0 -> testbit a n = false.
 Proof.
- intros a n. zify. apply Ztestbit_neg_r.
+ intros a n. zify. apply Z.testbit_neg_r.
 Qed.
 
 Lemma shiftr_spec : forall a n m, 0<=m ->
  testbit (shiftr a n) m = testbit a (m+n).
 Proof.
- intros a n m. zify. apply Zshiftr_spec.
+ intros a n m. zify. apply Z.shiftr_spec.
 Qed.
 
 Lemma shiftl_spec_high : forall a n m, 0<=m -> n<=m ->
  testbit (shiftl a n) m = testbit a (m-n).
 Proof.
- intros a n m. zify. intros Hn H. rewrite Zmax_r by auto with zarith.
- now apply Zshiftl_spec_high.
+ intros a n m. zify. intros Hn H. rewrite Z.max_r by auto with zarith.
+ now apply Z.shiftl_spec_high.
 Qed.
 
 Lemma shiftl_spec_low : forall a n m, m<n ->
  testbit (shiftl a n) m = false.
 Proof.
- intros a n m. zify. intros H. now apply Zshiftl_spec_low.
+ intros a n m. zify. intros H. now apply Z.shiftl_spec_low.
 Qed.
 
 Lemma land_spec : forall a b n,
  testbit (land a b) n = testbit a n && testbit b n.
 Proof.
- intros a n m. zify. now apply Zand_spec.
+ intros a n m. zify. now apply Z.land_spec.
 Qed.
 
 Lemma lor_spec : forall a b n,
  testbit (lor a b) n = testbit a n || testbit b n.
 Proof.
- intros a n m. zify. now apply Zor_spec.
+ intros a n m. zify. now apply Z.lor_spec.
 Qed.
 
 Lemma ldiff_spec : forall a b n,
  testbit (ldiff a b) n = testbit a n && negb (testbit b n).
 Proof.
- intros a n m. zify. now apply Zdiff_spec.
+ intros a n m. zify. now apply Z.ldiff_spec.
 Qed.
 
 Lemma lxor_spec : forall a b n,
  testbit (lxor a b) n = xorb (testbit a n) (testbit b n).
 Proof.
- intros a n m. zify. now apply Zxor_spec.
+ intros a n m. zify. now apply Z.lxor_spec.
 Qed.
 
 Lemma div2_spec : forall a, div2 a == shiftr a 1.
 Proof.
- intros a. zify. now apply Zdiv2_spec.
+ intros a. zify. now apply Z.div2_spec.
 Qed.
 
 (** Recursion *)
 
-Definition recursion (A : Type) (a : A) (f : N.t -> A -> A) (n : N.t) :=
-  Nrect (fun _ => A) a (fun n a => f (N.of_N n) a) (N.to_N n).
+Definition recursion (A : Type) (a : A) (f : NN.t -> A -> A) (n : NN.t) :=
+  Nrect (fun _ => A) a (fun n a => f (NN.of_N n) a) (NN.to_N n).
 Implicit Arguments recursion [A].
 
 Instance recursion_wd (A : Type) (Aeq : relation A) :
@@ -456,7 +456,7 @@ Proof.
 unfold eq.
 intros a a' Eaa' f f' Eff' x x' Exx'.
 unfold recursion.
-unfold N.to_N.
+unfold NN.to_N.
 rewrite <- Exx'; clear x' Exx'.
 replace (Zabs_N [x]) with (N_of_nat (Zabs_nat [x])).
 induction (Zabs_nat [x]).
@@ -468,30 +468,30 @@ change (nat_of_P p) with (nat_of_N (Npos p)); apply N_of_nat_of_N.
 Qed.
 
 Theorem recursion_0 :
-  forall (A : Type) (a : A) (f : N.t -> A -> A), recursion a f 0 = a.
+  forall (A : Type) (a : A) (f : NN.t -> A -> A), recursion a f 0 = a.
 Proof.
-intros A a f; unfold recursion, N.to_N; rewrite N.spec_0; simpl; auto.
+intros A a f; unfold recursion, NN.to_N; rewrite NN.spec_0; simpl; auto.
 Qed.
 
 Theorem recursion_succ :
-  forall (A : Type) (Aeq : relation A) (a : A) (f : N.t -> A -> A),
+  forall (A : Type) (Aeq : relation A) (a : A) (f : NN.t -> A -> A),
     Aeq a a -> Proper (eq==>Aeq==>Aeq) f ->
       forall n, Aeq (recursion a f (succ n)) (f n (recursion a f n)).
 Proof.
-unfold N.eq, recursion; intros A Aeq a f EAaa f_wd n.
-replace (N.to_N (succ n)) with (Nsucc (N.to_N n)).
+unfold NN.eq, recursion; intros A Aeq a f EAaa f_wd n.
+replace (NN.to_N (succ n)) with (N.succ (NN.to_N n)).
 rewrite Nrect_step.
 apply f_wd; auto.
-unfold N.to_N.
-rewrite N.spec_of_N, Z_of_N_abs, Zabs_eq; auto.
- apply N.spec_pos.
+unfold NN.to_N.
+rewrite NN.spec_of_N, Z_of_N_abs, Zabs_eq; auto.
+ apply NN.spec_pos.
 
 fold (recursion a f n).
 apply recursion_wd; auto.
 red; auto.
-unfold N.to_N.
+unfold NN.to_N.
 
-rewrite N.spec_succ.
+rewrite NN.spec_succ.
 change ([n]+1)%Z with (Zsucc [n]).
 apply Z_of_N_eq_rev.
 rewrite Z_of_N_succ.
@@ -503,6 +503,6 @@ Qed.
 
 End NTypeIsNAxioms.
 
-Module NType_NAxioms (N : NType)
- <: NAxiomsSig <: OrderFunctions N <: HasMinMax N
- := N <+ NTypeIsNAxioms.
+Module NType_NAxioms (NN : NType)
+ <: NAxiomsSig <: OrderFunctions NN <: HasMinMax NN
+ := NN <+ NTypeIsNAxioms.

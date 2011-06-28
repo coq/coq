@@ -678,17 +678,17 @@ Module Make (N:NType) <: ZType.
   destruct (norm_pos x) as [x'|x'];
    specialize (H x' (eq_refl _)) || clear H.
 
- Lemma spec_testbit: forall x p, testbit x p = Ztestbit (to_Z x) (to_Z p).
+ Lemma spec_testbit: forall x p, testbit x p = Z.testbit (to_Z x) (to_Z p).
  Proof.
   intros x p. unfold testbit.
   destr_norm_pos p; simpl. destr_norm_pos x; simpl.
   apply N.spec_testbit.
   rewrite N.spec_testbit, N.spec_pred, Zmax_r by auto with zarith.
   symmetry. apply Z.bits_opp. apply N.spec_pos.
-  symmetry. apply Ztestbit_neg_r; auto with zarith.
+  symmetry. apply Z.testbit_neg_r; auto with zarith.
  Qed.
 
- Lemma spec_shiftl: forall x p, to_Z (shiftl x p) = Zshiftl (to_Z x) (to_Z p).
+ Lemma spec_shiftl: forall x p, to_Z (shiftl x p) = Z.shiftl (to_Z x) (to_Z p).
  Proof.
   intros x p. unfold shiftl.
   destr_norm_pos x; destruct p as [p|p]; simpl;
@@ -703,13 +703,13 @@ Module Make (N:NType) <: ZType.
   now rewrite Zlnot_alt1, Z.lnot_shiftr, Zlnot_alt2.
  Qed.
 
- Lemma spec_shiftr: forall x p, to_Z (shiftr x p) = Zshiftr (to_Z x) (to_Z p).
+ Lemma spec_shiftr: forall x p, to_Z (shiftr x p) = Z.shiftr (to_Z x) (to_Z p).
  Proof.
   intros. unfold shiftr. rewrite spec_shiftl, spec_opp.
   apply Z.shiftl_opp_r.
  Qed.
 
- Lemma spec_land: forall x y, to_Z (land x y) = Zand (to_Z x) (to_Z y).
+ Lemma spec_land: forall x y, to_Z (land x y) = Z.land (to_Z x) (to_Z y).
  Proof.
   intros x y. unfold land.
   destr_norm_pos x; destr_norm_pos y; simpl;
@@ -720,7 +720,7 @@ Module Make (N:NType) <: ZType.
   now rewrite Z.lnot_lor, !Zlnot_alt2.
  Qed.
 
- Lemma spec_lor: forall x y, to_Z (lor x y) = Zor (to_Z x) (to_Z y).
+ Lemma spec_lor: forall x y, to_Z (lor x y) = Z.lor (to_Z x) (to_Z y).
  Proof.
   intros x y. unfold lor.
   destr_norm_pos x; destr_norm_pos y; simpl;
@@ -731,7 +731,7 @@ Module Make (N:NType) <: ZType.
   now rewrite Z.lnot_land, !Zlnot_alt2.
  Qed.
 
- Lemma spec_ldiff: forall x y, to_Z (ldiff x y) = Zdiff (to_Z x) (to_Z y).
+ Lemma spec_ldiff: forall x y, to_Z (ldiff x y) = Z.ldiff (to_Z x) (to_Z y).
  Proof.
   intros x y. unfold ldiff.
   destr_norm_pos x; destr_norm_pos y; simpl;
@@ -742,7 +742,7 @@ Module Make (N:NType) <: ZType.
   now rewrite 2 Z.ldiff_land, Zlnot_alt2, Z.land_comm, Zlnot_alt3.
  Qed.
 
- Lemma spec_lxor: forall x y, to_Z (lxor x y) = Zxor (to_Z x) (to_Z y).
+ Lemma spec_lxor: forall x y, to_Z (lxor x y) = Z.lxor (to_Z x) (to_Z y).
  Proof.
   intros x y. unfold lxor.
   destr_norm_pos x; destr_norm_pos y; simpl;
@@ -753,9 +753,9 @@ Module Make (N:NType) <: ZType.
   now rewrite <- Z.lxor_lnot_lnot, !Zlnot_alt2.
  Qed.
 
- Lemma spec_div2: forall x, to_Z (div2 x) = Zdiv2 (to_Z x).
+ Lemma spec_div2: forall x, to_Z (div2 x) = Z.div2 (to_Z x).
  Proof.
-  intros x. unfold div2. now rewrite spec_shiftr, Zdiv2_spec, spec_1.
+  intros x. unfold div2. now rewrite spec_shiftr, Z.div2_spec, spec_1.
  Qed.
 
 End Make.

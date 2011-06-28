@@ -1330,7 +1330,7 @@ Module Make (W0:CyclicType) <: NType.
   generalize (ZnZ.spec_to_Z d); auto with zarith.
  Qed.
 
- Lemma spec_shiftr: forall x p, [shiftr x p] = Zshiftr [x] [p].
+ Lemma spec_shiftr: forall x p, [shiftr x p] = Z.shiftr [x] [p].
  Proof.
   intros.
   now rewrite spec_shiftr_pow2, Z.shiftr_div_pow2 by apply spec_pos.
@@ -1603,7 +1603,7 @@ Module Make (W0:CyclicType) <: NType.
  apply Zpower_le_monotone2; auto with zarith.
  Qed.
 
- Lemma spec_shiftl: forall x p, [shiftl x p] = Zshiftl [x] [p].
+ Lemma spec_shiftl: forall x p, [shiftl x p] = Z.shiftl [x] [p].
  Proof.
   intros.
   now rewrite spec_shiftl_pow2, Z.shiftl_mul_pow2 by apply spec_pos.
@@ -1613,7 +1613,7 @@ Module Make (W0:CyclicType) <: NType.
 
  Definition testbit x n := odd (shiftr x n).
 
- Lemma spec_testbit: forall x p, testbit x p = Ztestbit [x] [p].
+ Lemma spec_testbit: forall x p, testbit x p = Z.testbit [x] [p].
  Proof.
   intros. unfold testbit. symmetry.
   rewrite spec_odd, spec_shiftr. apply Z.testbit_odd.
@@ -1621,42 +1621,42 @@ Module Make (W0:CyclicType) <: NType.
 
  Definition div2 x := shiftr x one.
 
- Lemma spec_div2: forall x, [div2 x] = Zdiv2 [x].
+ Lemma spec_div2: forall x, [div2 x] = Z.div2 [x].
  Proof.
   intros. unfold div2. symmetry.
-  rewrite spec_shiftr, spec_1. apply Zdiv2_spec.
+  rewrite spec_shiftr, spec_1. apply Z.div2_spec.
  Qed.
 
  (** TODO : provide efficient versions instead of just converting
    from/to N (see with Laurent) *)
 
- Definition lor x y := of_N (Nor (to_N x) (to_N y)).
- Definition land x y := of_N (Nand (to_N x) (to_N y)).
- Definition ldiff x y := of_N (Ndiff (to_N x) (to_N y)).
- Definition lxor x y := of_N (Nxor (to_N x) (to_N y)).
+ Definition lor x y := of_N (N.lor (to_N x) (to_N y)).
+ Definition land x y := of_N (N.land (to_N x) (to_N y)).
+ Definition ldiff x y := of_N (N.ldiff (to_N x) (to_N y)).
+ Definition lxor x y := of_N (N.lxor (to_N x) (to_N y)).
 
- Lemma spec_land: forall x y, [land x y] = Zand [x] [y].
+ Lemma spec_land: forall x y, [land x y] = Z.land [x] [y].
  Proof.
   intros x y. unfold land. rewrite spec_of_N. unfold to_N.
   generalize (spec_pos x), (spec_pos y).
   destruct [x], [y]; trivial; (now destruct 1) || (now destruct 2).
  Qed.
 
- Lemma spec_lor: forall x y, [lor x y] = Zor [x] [y].
+ Lemma spec_lor: forall x y, [lor x y] = Z.lor [x] [y].
  Proof.
   intros x y. unfold lor. rewrite spec_of_N. unfold to_N.
   generalize (spec_pos x), (spec_pos y).
   destruct [x], [y]; trivial; (now destruct 1) || (now destruct 2).
  Qed.
 
- Lemma spec_ldiff: forall x y, [ldiff x y] = Zdiff [x] [y].
+ Lemma spec_ldiff: forall x y, [ldiff x y] = Z.ldiff [x] [y].
  Proof.
   intros x y. unfold ldiff. rewrite spec_of_N. unfold to_N.
   generalize (spec_pos x), (spec_pos y).
   destruct [x], [y]; trivial; (now destruct 1) || (now destruct 2).
  Qed.
 
- Lemma spec_lxor: forall x y, [lxor x y] = Zxor [x] [y].
+ Lemma spec_lxor: forall x y, [lxor x y] = Z.lxor [x] [y].
  Proof.
   intros x y. unfold lxor. rewrite spec_of_N. unfold to_N.
   generalize (spec_pos x), (spec_pos y).

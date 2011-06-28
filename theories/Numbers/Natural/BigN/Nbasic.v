@@ -23,6 +23,19 @@ Implicit Arguments mk_zn2z_specs_karatsuba [t ops].
 Implicit Arguments ZnZ.digits [t].
 Implicit Arguments ZnZ.zdigits [t].
 
+Lemma Pshiftl_nat_Zpower : forall n p,
+  Zpos (Pos.shiftl_nat p n) = Zpos p * 2 ^ Z.of_nat n.
+Proof.
+ intros.
+ rewrite Z.mul_comm.
+ induction n. simpl; auto.
+ transitivity (2 * (2 ^ Z.of_nat n * Zpos p)).
+ rewrite <- IHn. auto.
+ rewrite Z.mul_assoc.
+ rewrite inj_S.
+ rewrite <- Z.pow_succ_r; auto with zarith.
+Qed.
+
 (* To compute the necessary height *)
 
 Fixpoint plength (p: positive) : positive :=

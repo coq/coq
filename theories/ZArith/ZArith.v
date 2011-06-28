@@ -12,7 +12,7 @@ Require Export ZArith_base.
 
 (** Extra definitions *)
 
-Require Export Zpow_def Zdigits_def.
+Require Export Zpow_def.
 
 (** Extra modules using [Omega] or [Ring]. *)
 

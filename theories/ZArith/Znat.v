@@ -212,6 +212,16 @@ Proof.
  case N.compare_spec; intros; subst; trivial.
 Qed.
 
+Lemma inj_div2 n : Z.of_N (N.div2 n) = Z.div2 (Z.of_N n).
+Proof.
+ destruct n as [|p]; trivial. now destruct p.
+Qed.
+
+Lemma inj_quot2 n : Z.of_N (N.div2 n) = Z.quot2 (Z.of_N n).
+Proof.
+ destruct n as [|p]; trivial. now destruct p.
+Qed.
+
 End N2Z.
 
 Module Z2N.
