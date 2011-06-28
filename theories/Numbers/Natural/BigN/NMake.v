@@ -1244,7 +1244,7 @@ Module Make (W0:CyclicType) <: NType.
  apply ZnZ.spec_head0; auto with zarith.
  Qed.
 
- Lemma spec_log2 : forall x, [log2 x] = Zlog2 [x].
+ Lemma spec_log2 : forall x, [log2 x] = Z.log2 [x].
  Proof.
   intros. destruct (Z_lt_ge_dec 0 [x]).
   symmetry. apply Z.log2_unique. apply spec_pos.

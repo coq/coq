@@ -277,13 +277,13 @@ Qed.
 Lemma log2_spec : forall n, 0<n ->
  2^(log2 n) <= n /\ n < 2^(succ (log2 n)).
 Proof.
- intros n. zify. change (Zlog2 [n]+1)%Z with (Zsucc (Zlog2 [n])).
- apply Zlog2_spec.
+ intros n. zify. change (Z.log2 [n]+1)%Z with (Z.succ (Z.log2 [n])).
+ apply Z.log2_spec.
 Qed.
 
 Lemma log2_nonpos : forall n, n<=0 -> log2 n == 0.
 Proof.
- intros n. zify. apply Zlog2_nonpos.
+ intros n. zify. apply Z.log2_nonpos.
 Qed.
 
 (** Even / Odd *)

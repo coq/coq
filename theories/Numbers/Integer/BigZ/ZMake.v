@@ -368,12 +368,12 @@ Module Make (N:NType) <: ZType.
   | Neg nx => zero
   end.
 
- Theorem spec_log2: forall x, to_Z (log2 x) = Zlog2 (to_Z x).
+ Theorem spec_log2: forall x, to_Z (log2 x) = Z.log2 (to_Z x).
  Proof.
   intros. destruct x as [p|p]; simpl. apply N.spec_log2.
   rewrite N.spec_0.
   destruct (Z_le_lt_eq_dec _ _ (N.spec_pos p)) as [LT|EQ].
-  rewrite Zlog2_nonpos; auto with zarith.
+  rewrite Z.log2_nonpos; auto with zarith.
   now rewrite <- EQ.
  Qed.
 

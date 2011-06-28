@@ -8,11 +8,14 @@
 
 (**********************************************************************)
 
-(** The integer logarithms with base 2.
+(** The integer logarithms with base 2. *)
 
-    NOTA: This file is deprecated, please use Zlog2 defined in Zlog_def.
+(** THIS FILE IS DEPRECATED.
+    Please rather use [Z.log2] (or [Z.log2_up]), which
+    are defined in [BinIntDef], and whose properties can
+    be found in [BinInt.Z]. *)
 
-    There are three logarithms defined here,
+(*  There are three logarithms defined here,
     depending on the rounding of the real 2-based logarithm:
     - [Log_inf]: [y = (Log_inf x) iff 2^y <= x < 2^(y+1)]
       i.e. [Log_inf x] is the biggest integer that is smaller than [Log x]
@@ -21,7 +24,7 @@
     - [Log_nearest]: [y= (Log_nearest x) iff 2^(y-1/2) < x <= 2^(y+1/2)]
       i.e. [Log_nearest x] is the integer nearest from [Log x] *)
 
-Require Import ZArith_base Omega Zcomplements Zlog_def Zpower.
+Require Import ZArith_base Omega Zcomplements Zpower.
 Local Open Scope Z_scope.
 
 Section Log_pos. (* Log of positive integers *)
@@ -44,25 +47,25 @@ Section Log_pos. (* Log of positive integers *)
 
   Hint Unfold log_inf log_sup.
 
-  Lemma Psize_log_inf : forall p, Zpos (Psize_pos p) = Zsucc (log_inf p).
+  Lemma Psize_log_inf : forall p, Zpos (Pos.size p) = Z.succ (log_inf p).
   Proof.
-   induction p; simpl; now rewrite ?Zpos_succ_morphism, ?IHp.
+   induction p; simpl; now rewrite <- ?Z.succ_Zpos, ?IHp.
   Qed.
 
-  Lemma Zlog2_log_inf : forall p, Zlog2 (Zpos p) = log_inf p.
+  Lemma Zlog2_log_inf : forall p, Z.log2 (Zpos p) = log_inf p.
   Proof.
-   unfold Zlog2. destruct p; simpl; trivial; apply Psize_log_inf.
+   unfold Z.log2. destruct p; simpl; trivial; apply Psize_log_inf.
   Qed.
 
   Lemma Zlog2_up_log_sup : forall p, Z.log2_up (Zpos p) = log_sup p.
   Proof.
    induction p; simpl.
-   change (Zpos p~1) with (2*(Zpos p)+1).
-   rewrite Z.log2_up_succ_double, Zlog2_log_inf; try easy.
-   unfold Zsucc. now rewrite !(Zplus_comm _ 1), Zplus_assoc.
-   change (Zpos p~0) with (2*Zpos p).
-   now rewrite Z.log2_up_double, IHp.
-   reflexivity.
+   - change (Zpos p~1) with (2*(Zpos p)+1).
+     rewrite Z.log2_up_succ_double, Zlog2_log_inf; try easy.
+     unfold Z.succ. now rewrite !(Z.add_comm _ 1), Z.add_assoc.
+   - change (Zpos p~0) with (2*Zpos p).
+     now rewrite Z.log2_up_double, IHp.
+   - reflexivity.
   Qed.
 
   (** Then we give the specifications of [log_inf] and [log_sup]
