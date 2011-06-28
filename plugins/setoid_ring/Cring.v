@@ -11,7 +11,6 @@ Require Import Setoid.
 Require Import BinPos.
 Require Import BinList.
 Require Import Znumtheory.
-Require Import Zdiv_def.
 Require Export Morphisms Setoid Bool.
 Require Import ZArith.
 Require Export Algebra_syntax.
@@ -81,7 +80,7 @@ Lemma cring_power_theory :
 intros; apply Ring_theory.mkpow_th. reflexivity. Defined.
 
 Lemma cring_div_theory: 
-  div_theory _==_ Zplus Zmult gen_phiZ Zquotrem.
+  div_theory _==_ Zplus Zmult gen_phiZ Z.quotrem.
 intros. apply InitialRing.Ztriv_div_th. unfold Setoid_Theory.
 simpl.   apply ring_setoid. Defined.
 End cring.
@@ -109,7 +108,7 @@ Ltac cring_gen :=
                         (fun n:N => n)
                         (@Ring_theory.pow_N _  1 multiplication)
                         cring_power_theory
-                        Zquotrem
+                        Z.quotrem
                         cring_div_theory
                         O fv nil);
                  let rc := fresh "rc"in

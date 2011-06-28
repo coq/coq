@@ -88,7 +88,7 @@ Theorem div_unique_pos:
 Proof. intros; apply div_unique with r; auto. Qed.
 
 Theorem div_unique_neg:
- forall a b q r, 0<=r<b -> a == b*q + r -> q == a/b.
+ forall a b q r, b<r<=0 -> a == b*q + r -> q == a/b.
 Proof. intros; apply div_unique with r; auto. Qed.
 
 Theorem mod_unique:

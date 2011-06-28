@@ -10,7 +10,7 @@ Require Import Bool ZArith OrdersFacts Nnat ZAxioms ZSig.
 
 (** * The interface [ZSig.ZType] implies the interface [ZAxiomsSig] *)
 
-Module ZTypeIsZAxioms (Import Z : ZType').
+Module ZTypeIsZAxioms (Import ZZ : ZType').
 
 Hint Rewrite
  spec_0 spec_1 spec_2 spec_add spec_sub spec_pred spec_succ
@@ -53,7 +53,7 @@ Qed.
 
 Section Induction.
 
-Variable A : Z.t -> Prop.
+Variable A : ZZ.t -> Prop.
 Hypothesis A_wd : Proper (eq==>iff) A.
 Hypothesis A0 : A 0.
 Hypothesis AS : forall n, A n <-> A (succ n).
@@ -173,7 +173,7 @@ Proof.
  intros. zify. apply Z.compare_antisym.
 Qed.
 
-Include BoolOrderFacts Z Z Z [no inline].
+Include BoolOrderFacts ZZ ZZ ZZ [no inline].
 
 Instance compare_wd : Proper (eq ==> eq ==> Logic.eq) compare.
 Proof.
@@ -388,23 +388,23 @@ Program Instance rem_wd : Proper (eq==>eq==>eq) rem.
 
 Theorem quot_rem : forall a b, ~b==0 -> a == b*(quot a b) + rem a b.
 Proof.
-intros a b _. zify. apply Z_quot_rem_eq.
+intros a b. zify. apply Z.quot_rem.
 Qed.
 
 Theorem rem_bound_pos :
  forall a b, 0<=a -> 0<b -> 0 <= rem a b /\ rem a b < b.
 Proof.
-intros a b. zify. intros. now apply Zrem_bound.
+intros a b. zify. apply Z.rem_bound_pos.
 Qed.
 
 Theorem rem_opp_l : forall a b, ~b==0 -> rem (-a) b == -(rem a b).
 Proof.
-intros a b _. zify. apply Zrem_opp_l.
+intros a b. zify. apply Z.rem_opp_l.
 Qed.
 
 Theorem rem_opp_r : forall a b, ~b==0 -> rem a (-b) == rem a b.
 Proof.
-intros a b _. zify. apply Zrem_opp_r.
+intros a b. zify. apply Z.rem_opp_r.
 Qed.
 
 (** Gcd *)
@@ -520,6 +520,6 @@ Qed.
 
 End ZTypeIsZAxioms.
 
-Module ZType_ZAxioms (Z : ZType)
- <: ZAxiomsSig <: OrderFunctions Z <: HasMinMax Z
- := Z <+ ZTypeIsZAxioms.
+Module ZType_ZAxioms (ZZ : ZType)
+ <: ZAxiomsSig <: OrderFunctions ZZ <: HasMinMax ZZ
+ := ZZ <+ ZTypeIsZAxioms.

@@ -8,7 +8,7 @@
 (*            Benjamin Gregoire, Laurent Thery, INRIA, 2007             *)
 (************************************************************************)
 
-Require Import ZArith Zquot.
+Require Import ZArith.
 Require Import BigNumPrelude.
 Require Import NSig.
 Require Import ZSig.
@@ -503,22 +503,28 @@ Module Make (N:NType) <: ZType.
 
  Lemma spec_quot : forall x y, to_Z (quot x y) = (to_Z x) ÷ (to_Z y).
  Proof.
-  intros [x|x] [y|y]; simpl; symmetry;
-   rewrite N.spec_div, ?Zquot_opp_r, ?Zquot_opp_l, ?Zopp_involutive;
-   rewrite Zquot_Zdiv_pos; trivial using N.spec_pos.
+  intros [x|x] [y|y]; simpl; symmetry; rewrite N.spec_div;
+  (* Nota: we rely here on [forall a b, a ÷ 0 = b / 0] *)
+  destruct (Z.eq_dec (N.to_Z y) 0) as [EQ|NEQ];
+    try (rewrite EQ; now destruct (N.to_Z x));
+  rewrite ?Z.quot_opp_r, ?Z.quot_opp_l, ?Z.opp_involutive, ?Z.opp_inj_wd;
+  trivial; apply Z.quot_div_nonneg;
+   generalize (N.spec_pos x) (N.spec_pos y); Z.order.
  Qed.
 
  Lemma spec_rem : forall x y,
-   to_Z (rem x y) = Zrem (to_Z x) (to_Z y).
+   to_Z (rem x y) = Z.rem (to_Z x) (to_Z y).
  Proof.
   intros x y. unfold rem. rewrite spec_eqb, spec_0.
   case Z.eqb_spec; intros Hy.
-  now rewrite Hy, Zrem_0_r.
+  (* Nota: we rely here on [Z.rem a 0 = a] *)
+  rewrite Hy. now destruct (to_Z x).
   destruct x as [x|x], y as [y|y]; simpl in *; symmetry;
-   rewrite N.spec_modulo, ?Zrem_opp_r, ?Zrem_opp_l, ?Zopp_involutive;
-   try rewrite Z.eq_opp_l, Z.opp_0 in Hy;
-   rewrite Zrem_Zmod_pos; generalize (N.spec_pos x) (N.spec_pos y);
-   Z.order.
+   rewrite ?Z.eq_opp_l, ?Z.opp_0 in Hy;
+   rewrite N.spec_modulo, ?Z.rem_opp_r, ?Z.rem_opp_l, ?Z.opp_involutive,
+    ?Z.opp_inj_wd;
+   trivial; apply Z.rem_mod_nonneg;
+    generalize (N.spec_pos x) (N.spec_pos y); Z.order.
  Qed.
 
  Definition gcd x y :=
