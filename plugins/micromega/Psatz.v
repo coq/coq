@@ -78,21 +78,16 @@ Ltac psatzl dom :=
 
 
 Ltac lra := 
-    unfold Rdiv in * ; 
-    psatzl_R ;
-    try (intros __wit __varmap __ff ;
-        change (Tauto.eval_f (Reval_formula (@find R 0%R __varmap)) __ff) ;
-        apply (RTautoChecker_sound __ff __wit); vm_compute ; reflexivity).
-
+  first [ psatzl R | psatzl Q ].
 
 Ltac lia :=
-  cbv delta - [Zplus Zminus Zopp Zmult Zpower Zgt Zge Zle Zlt iff not] ; xlia ; 
+  (*cbv delta - [Zplus Zminus Zopp Zmult Zpower Zgt Zge Zle Zlt iff not] ;*) xlia ; 
   intros __wit __varmap __ff ;
     change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
       apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.
 
-Ltac nlia :=
-  cbv delta - [Zplus Zminus Zopp Zmult Zpower Zgt Zge Zle Zlt iff not] ; xnlia ;
+Ltac nia :=
+  xnlia ;
   intros __wit __varmap __ff ;
     change (Tauto.eval_f (Zeval_formula (@find Z Z0 __varmap)) __ff) ;
       apply (ZTautoChecker_sound __ff __wit); vm_compute ; reflexivity.
