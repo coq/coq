@@ -12,112 +12,72 @@ Require Import Zorder.
 Require Import Znat.
 Require Import Zmisc.
 Require Import Wf_nat.
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
 (** Our purpose is to write an induction shema for {0,1,2,...}
   similar to the [nat] schema (Theorem [Natlike_rec]). For that the
   following implications will be used :
 <<
- (n:nat)(Q n)==(n:nat)(P (inject_nat n)) ===> (x:Z)`x > 0) -> (P x)
+ ∀n:nat, Q n == ∀n:nat, P (Z.of_nat n) ===> ∀x:Z, x <= 0 -> P x
 
        	     /\
              ||
              ||
 
-  (Q O) (n:nat)(Q n)->(Q (S n)) <=== (P 0) (x:Z) (P x) -> (P (Zs x))
+ (Q O) ∧ (∀n:nat, Q n -> Q (S n)) <=== (P 0) ∧ (∀x:Z, P x -> P (Z.succ x))
 
-      	       	       	       	<=== (inject_nat (S n))=(Zs (inject_nat n))
+				  <=== (Z.of_nat (S n) = Z.succ (Z.of_nat n))
 
-      	       	       	       	<=== inject_nat_complete
+				  <=== Z_of_nat_complete
 >>
   Then the  diagram will be closed and the theorem proved. *)
 
-Lemma Z_of_nat_complete :
-  forall x:Z, 0 <= x ->  exists n : nat, x = Z_of_nat n.
+Lemma Z_of_nat_complete (x : Z) :
+ 0 <= x -> exists n : nat, x = Z.of_nat n.
 Proof.
-  intro x; destruct x; intros;
-    [ exists 0%nat; auto with arith
-      | specialize (nat_of_P_is_S p); intros Hp; elim Hp; intros; exists (S x); intros;
-	simpl in |- *; specialize (nat_of_P_of_succ_nat x);
-	  intro Hx0; rewrite <- H0 in Hx0; apply f_equal with (f := Zpos);
-	    apply nat_of_P_inj; auto with arith
-      | absurd (0 <= Zneg p);
-	[ unfold Zle in |- *; simpl in |- *; do 2 unfold not in |- *;
-	  auto with arith
-	  | assumption ] ].
+ intros H. exists (Z.to_nat x). symmetry. now apply Z2Nat.id.
 Qed.
 
-Lemma nat_of_P_is_S_inf : forall y:positive, {h : nat | nat_of_P y = S h}.
+Lemma Z_of_nat_complete_inf (x : Z) :
+ 0 <= x -> {n : nat | x = Z_of_nat n}.
 Proof.
-  intro y; induction y as [p H| p H1| ];
-    [ elim H; intros x H1; exists (S x + S x)%nat; unfold nat_of_P in |- *;
-      simpl in |- *; rewrite ZL0; rewrite Pmult_nat_r_plus_morphism;
-	unfold nat_of_P in H1; rewrite H1; auto with arith
-      | elim H1; intros x H2; exists (x + S x)%nat; unfold nat_of_P in |- *;
-	simpl in |- *; rewrite ZL0; rewrite Pmult_nat_r_plus_morphism;
-	  unfold nat_of_P in H2; rewrite H2; auto with arith
-      | exists 0%nat; auto with arith ].
-Qed.
-
-Notation ZL4_inf := nat_of_P_is_S_inf (only parsing).
-
-Lemma Z_of_nat_complete_inf :
- forall x:Z, 0 <= x -> {n : nat | x = Z_of_nat n}.
-Proof.
-  intro x; destruct x; intros;
-    [ exists 0%nat; auto with arith
-      | specialize (nat_of_P_is_S_inf p); intros Hp; elim Hp; intros x0 H0; exists (S x0);
-	intros; simpl in |- *; specialize (nat_of_P_of_succ_nat x0);
-	  intro Hx0; rewrite <- H0 in Hx0; apply f_equal with (f := Zpos);
-	    apply nat_of_P_inj; auto with arith
-      | absurd (0 <= Zneg p);
-	[ unfold Zle in |- *; simpl in |- *; do 2 unfold not in |- *;
-	  auto with arith
-	  | assumption ] ].
+ intros H. exists (Z.to_nat x). symmetry. now apply Z2Nat.id.
 Qed.
 
 Lemma Z_of_nat_prop :
   forall P:Z -> Prop,
-    (forall n:nat, P (Z_of_nat n)) -> forall x:Z, 0 <= x -> P x.
+    (forall n:nat, P (Z.of_nat n)) -> forall x:Z, 0 <= x -> P x.
 Proof.
-  intros P H x H0.
-  specialize (Z_of_nat_complete x H0).
-  intros Hn; elim Hn; intros.
-  rewrite H1; apply H.
+ intros P H x Hx. now destruct (Z_of_nat_complete x Hx) as (n,->).
 Qed.
 
 Lemma Z_of_nat_set :
  forall P:Z -> Set,
    (forall n:nat, P (Z_of_nat n)) -> forall x:Z, 0 <= x -> P x.
 Proof.
-  intros P H x H0.
-  specialize (Z_of_nat_complete_inf x H0).
-  intros Hn; elim Hn; intros.
-  rewrite p; apply H.
+ intros P H x Hx. now destruct (Z_of_nat_complete_inf x Hx) as (n,->).
 Qed.
 
 Lemma natlike_ind :
  forall P:Z -> Prop,
    P 0 ->
-   (forall x:Z, 0 <= x -> P x -> P (Zsucc x)) -> forall x:Z, 0 <= x -> P x.
+   (forall x:Z, 0 <= x -> P x -> P (Z.succ x)) ->
+   forall x:Z, 0 <= x -> P x.
 Proof.
-  intros P H H0 x H1; apply Z_of_nat_prop;
-    [ simple induction n;
-      [ simpl in |- *; assumption
-	| intros; rewrite (inj_S n0); exact (H0 (Z_of_nat n0) (Zle_0_nat n0) H2) ]
-      | assumption ].
+ intros P Ho Hrec x Hx; apply Z_of_nat_prop; trivial.
+ induction n. exact Ho.
+ rewrite Nat2Z.inj_succ. apply Hrec; trivial using Nat2Z.is_nonneg.
 Qed.
 
 Lemma natlike_rec :
  forall P:Z -> Set,
    P 0 ->
-   (forall x:Z, 0 <= x -> P x -> P (Zsucc x)) -> forall x:Z, 0 <= x -> P x.
+   (forall x:Z, 0 <= x -> P x -> P (Z.succ x)) ->
+   forall x:Z, 0 <= x -> P x.
 Proof.
-  intros P H H0 x H1; apply Z_of_nat_set;
-    [ simple induction n;
-      [ simpl in |- *; assumption
-	| intros; rewrite (inj_S n0); exact (H0 (Z_of_nat n0) (Zle_0_nat n0) H2) ]
-      | assumption ].
+ intros P Ho Hrec x Hx; apply Z_of_nat_set; trivial.
+ induction n. exact Ho.
+ rewrite Nat2Z.inj_succ. apply Hrec; trivial using Nat2Z.is_nonneg.
 Qed.
 
 Section Efficient_Rec.
@@ -129,56 +89,44 @@ Section Efficient_Rec.
 
   Let R_wf : well_founded R.
   Proof.
-    set (f z :=
-	  match z with
-	    | Zpos p => nat_of_P p
-	    | Z0 => 0%nat
-	    | Zneg _ => 0%nat
-	  end).
-    apply well_founded_lt_compat with f.
-    unfold R, f; clear f R.
-    intros [|x|x] [|y|y] (H,H');
-     try (now elim H); try (discriminate H').
-    apply nat_of_P_pos.
-    now apply Plt_lt.
+   apply well_founded_lt_compat with Z.to_nat.
+   intros x y (Hx,H). apply Z2Nat.inj_lt; Z.order.
   Qed.
 
   Lemma natlike_rec2 :
     forall P:Z -> Type,
       P 0 ->
-      (forall z:Z, 0 <= z -> P z -> P (Zsucc z)) -> forall z:Z, 0 <= z -> P z.
+      (forall z:Z, 0 <= z -> P z -> P (Z.succ z)) ->
+      forall z:Z, 0 <= z -> P z.
   Proof.
-    intros P Ho Hrec z; pattern z in |- *;
-      apply (well_founded_induction_type R_wf).
-    intro x; case x.
-    trivial.
-    intros.
-    assert (0 <= Zpred (Zpos p)).
-    apply Zorder.Zlt_0_le_0_pred; unfold Zlt in |- *; simpl in |- *; trivial.
-    rewrite Zsucc_pred.
-    apply Hrec.
-    auto.
-    apply X; auto; unfold R in |- *; intuition; apply Zlt_pred.
-    intros; elim H; simpl in |- *; trivial.
+   intros P Ho Hrec.
+   induction z as [z IH] using (well_founded_induction_type R_wf).
+   destruct z; intros Hz.
+   - apply Ho.
+   - set (y:=Z.pred (Zpos p)).
+     assert (LE : 0 <= y) by (unfold y; now apply Z.lt_le_pred).
+     assert (EQ : Zpos p = Z.succ y) by (unfold y; now rewrite Z.succ_pred).
+     rewrite EQ. apply Hrec, IH; trivial.
+     split; trivial. unfold y; apply Z.lt_pred_l.
+   - now destruct Hz.
   Qed.
 
-  (** A variant of the previous using [Zpred] instead of [Zs]. *)
+  (** A variant of the previous using [Z.pred] instead of [Z.succ]. *)
 
   Lemma natlike_rec3 :
     forall P:Z -> Type,
       P 0 ->
-      (forall z:Z, 0 < z -> P (Zpred z) -> P z) -> forall z:Z, 0 <= z -> P z.
+      (forall z:Z, 0 < z -> P (Z.pred z) -> P z) ->
+      forall z:Z, 0 <= z -> P z.
   Proof.
-    intros P Ho Hrec z; pattern z in |- *;
-      apply (well_founded_induction_type R_wf).
-    intro x; case x.
-    trivial.
-    intros; apply Hrec.
-    unfold Zlt in |- *; trivial.
-    assert (0 <= Zpred (Zpos p)).
-    apply Zorder.Zlt_0_le_0_pred; unfold Zlt in |- *; simpl in |- *; trivial.
-    apply X; auto; unfold R in |- *; intuition; apply Zlt_pred.
-    intros; elim H; simpl in |- *; trivial.
+   intros P Ho Hrec.
+   induction z as [z IH] using (well_founded_induction_type R_wf).
+   destruct z; intros Hz.
+   - apply Ho.
+   - assert (EQ : 0 <= Z.pred (Zpos p)) by now apply Z.lt_le_pred.
+     apply Hrec. easy. apply IH; trivial. split; trivial.
+     apply Z.lt_pred_l.
+   - now destruct Hz.
   Qed.
 
   (** A more general induction principle on non-negative numbers using [Zlt]. *)
@@ -188,15 +136,15 @@ Section Efficient_Rec.
       (forall x:Z, (forall y:Z, 0 <= y < x -> P y) -> 0 <= x -> P x) ->
       forall x:Z, 0 <= x -> P x.
   Proof.
-    intros P Hrec z; pattern z in |- *; apply (well_founded_induction_type R_wf).
-    intro x; case x; intros.
-    apply Hrec; intros.
-    assert (H2 : 0 < 0).
-    apply Zle_lt_trans with y; intuition.
-    inversion H2.
-    assumption.
-    firstorder.
-    unfold Zle, Zcompare in H; elim H; auto.
+   intros P Hrec.
+   induction x as [x IH] using (well_founded_induction_type R_wf).
+   destruct x; intros Hx.
+   - apply Hrec; trivial. intros y (Hy,Hy').
+     assert (0 < 0) by now apply Z.le_lt_trans with y.
+     discriminate.
+   - apply Hrec; trivial. intros y (Hy,Hy').
+     apply IH; trivial. now split.
+   - now destruct Hx.
   Defined.
 
   Lemma Zlt_0_ind :
@@ -232,22 +180,15 @@ Section Efficient_Rec.
       (forall x:Z, (forall y:Z, z <= y < x -> P y) -> z <= x -> P x) ->
       forall x:Z, z <= x -> P x.
   Proof.
-    intros P z Hrec x.
-    assert (Hexpand : forall x, x = x - z + z).
-    intro; unfold Zminus; rewrite <- Zplus_assoc; rewrite Zplus_opp_l;
-      rewrite Zplus_0_r; trivial.
-    intro Hz.
-    rewrite (Hexpand x); pattern (x - z) in |- *; apply Zlt_0_rec.
-    2: apply Zplus_le_reg_r with z; rewrite <- Hexpand; assumption.
-    intros x0 Hlt_x0 H.
-    apply Hrec.
-    2: change z with (0+z); apply Zplus_le_compat_r; assumption.
-    intro y; rewrite (Hexpand y); intros.
-    destruct H0.
-    apply Hlt_x0.
-    split.
-    apply Zplus_le_reg_r with z; assumption.
-    apply Zplus_lt_reg_r with z; assumption.
+    intros P z Hrec x Hx.
+    rewrite <- (Z.sub_simpl_r x z). apply Z.le_0_sub in Hx.
+    pattern (x - z); apply Zlt_0_rec; trivial.
+    clear x Hx. intros x IH Hx.
+    apply Hrec. intros y (Hy,Hy').
+    rewrite <- (Z.sub_simpl_r y z). apply IH; split.
+    now rewrite Z.le_0_sub.
+    now apply Z.lt_sub_lt_add_r.
+    now rewrite <- (Z.add_le_mono_r 0 x z).
   Qed.
 
   Lemma Zlt_lower_bound_ind :
