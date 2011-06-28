@@ -263,7 +263,7 @@ Qed.
 Lemma sqrt_spec : forall n, 0<=n ->
  (sqrt n)*(sqrt n) <= n /\ n < (succ (sqrt n))*(succ (sqrt n)).
 Proof.
- intros n. zify. apply Zsqrt_spec.
+ intros n. zify. apply Z.sqrt_spec.
 Qed.
 
 Lemma sqrt_neg : forall n, n<0 -> sqrt n == 0.

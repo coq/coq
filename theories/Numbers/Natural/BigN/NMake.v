@@ -771,7 +771,7 @@ Module Make (W0:CyclicType) <: NType.
   intros x. rewrite sqrt_fold. destr_t x as (n,x). exact (ZnZ.spec_sqrt x).
  Qed.
 
- Theorem spec_sqrt: forall x, [sqrt x] = Zsqrt [x].
+ Theorem spec_sqrt: forall x, [sqrt x] = Z.sqrt [x].
  Proof.
   intros x.
   symmetry. apply Z.sqrt_unique.

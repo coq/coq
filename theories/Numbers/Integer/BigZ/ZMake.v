@@ -383,13 +383,13 @@ Module Make (N:NType) <: ZType.
   | Neg nx => Neg N.zero
   end.
 
- Theorem spec_sqrt: forall x, to_Z (sqrt x) = Zsqrt (to_Z x).
+ Theorem spec_sqrt: forall x, to_Z (sqrt x) = Z.sqrt (to_Z x).
  Proof.
   destruct x as [p|p]; simpl.
   apply N.spec_sqrt.
   rewrite N.spec_0.
   destruct (Z_le_lt_eq_dec _ _ (N.spec_pos p)) as [LT|EQ].
-  rewrite Zsqrt_neg; auto with zarith.
+  rewrite Z.sqrt_neg; auto with zarith.
   now rewrite <- EQ.
  Qed.
 

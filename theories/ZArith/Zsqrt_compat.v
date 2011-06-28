@@ -11,12 +11,13 @@ Require Import Omega.
 Require Export ZArith_base.
 Open Local Scope Z_scope.
 
-(**    !! This file is deprecated !!
+(**  THIS FILE IS DEPRECATED
 
-    Please use rather Zsqrt_def.Zsqrt (or Zsqrtrem).
-    Unlike here, proofs there are fully separated from functions.
+    Instead of the various [Zsqrt] defined here, please use rather
+    [Z.sqrt] (or [Z.sqrtrem]). The latter are pure functions without
+    proof parts, and more results are available about them.
     Some equivalence proofs between the old and the new versions
-    can be found below. A Require Import ZArith provides by default
+    can be found below. Importing ZArith will provides by default
     the new versions.
 
 *)

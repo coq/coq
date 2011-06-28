@@ -574,15 +574,15 @@ Section ZModulo.
  generalize (Z_mod_lt [|x|] 2); omega.
  Qed.
 
- Definition sqrt x := Zsqrt [|x|].
+ Definition sqrt x := Z.sqrt [|x|].
  Lemma spec_sqrt : forall x,
        [|sqrt x|] ^ 2 <= [|x|] < ([|sqrt x|] + 1) ^ 2.
  Proof.
  intros.
  unfold sqrt.
  repeat rewrite Zpower_2.
- replace [|Zsqrt [|x|]|] with (Zsqrt [|x|]).
- apply Zsqrt_spec; auto with zarith.
+ replace [|Z.sqrt [|x|]|] with (Z.sqrt [|x|]).
+ apply Z.sqrt_spec; auto with zarith.
  symmetry; apply Zmod_small.
  split. apply Z.sqrt_nonneg; auto.
  apply Zle_lt_trans with [|x|]; auto.
@@ -594,7 +594,7 @@ Section ZModulo.
   match z with
    | Z0 => (0, C0 0)
    | Zpos p =>
-      let (s,r) := Zsqrtrem (Zpos p) in
+      let (s,r) := Z.sqrtrem (Zpos p) in
       (s, if Z_lt_le_dec r wB then C0 r else C1 (r-wB))
    | Zneg _ => (0, C0 0)
   end.
@@ -610,8 +610,8 @@ Section ZModulo.
  remember ([|x|]*wB+[|y|]) as z.
  destruct z.
  auto with zarith.
- generalize (Zsqrtrem_spec (Zpos p)).
- destruct Zsqrtrem as (s,r); intros [U V]; auto with zarith.
+ generalize (Z.sqrtrem_spec (Zpos p)).
+ destruct Z.sqrtrem as (s,r); intros [U V]; auto with zarith.
  assert (s < wB).
   destruct (Z_lt_le_dec s wB); auto.
   assert (wB * wB <= Zpos p).
