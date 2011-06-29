@@ -1,33 +1,24 @@
-\achapter{Micromega : tactics for solving arithmetics goals over ordered rings}
+\achapter{Micromega : tactics for solving arithmetic goals over ordered rings}
 \aauthor{Frédéric Besson and Evgeny Makarov}
 \newtheorem{theorem}{Theorem}
 
-For using the tactics out-of-the-box, read Section~\ref{sec:psatz-hurry}.
-%
-Section~\ref{sec:psatz-back} presents some background explaining the proof principle for solving polynomials goals.
-%
-Section~\ref{sec:lia} explains how to get a complete procedure for linear integer arithmetic.
-
-\asection{The {\tt psatz} tactic in a hurry}
-\tacindex{psatz}
+ 
+\asection{Short description of the tactics}
+\tacindex{psatz}  \tacindex{lra} 
 \label{sec:psatz-hurry}
-Load the {\tt Psatz} module ({\tt Require Psatz}.).  This module defines the tactics:
-{\tt lia}, {\tt psatzl D}, %{\tt sos D} 
-and {\tt psatz D n} where {\tt D} is {\tt Z}, {\tt Q} or {\tt R} and {\tt n} is an optional integer limiting the proof search depth.
-  % 
-  \begin{itemize}
-  \item The {\tt psatzl} tactic solves linear goals using an embedded (naive) linear programming prover \emph{i.e.},
-    fourier elimination.
-  \item The {\tt psatz} tactic solves polynomial goals using John Harrison's Hol light driver to the external prover {\tt cspd}\footnote{Sources and binaries can be found at \url{https://projects.coin-or.org/Csdp}}. Note that the {\tt csdp} driver is generating 
-    a \emph{proof cache} thus allowing to rerun scripts even without {\tt csdp}. 
-  \item The {\tt lia} (linear integer arithmetic) tactic is specialised to solve linear goals over $\mathbb{Z}$.
-    It extends {\tt psatzl Z} and exploits the discreetness of $\mathbb{Z}$.
-%%   \item The {\tt sos} tactic is another Hol light driver to the {\tt csdp} prover.  In theory, it is less general than
-%%     {\tt psatz}. In practice, even when {\tt psatz} fails, it can be worth a try -- see
-%%     Section~\ref{sec:psatz-back} for details.
-  \end{itemize}
+The {\tt Psatz} module ({\tt Require Psatz.}) gives access to several tactics for solving arithmetic goals over
+ {\tt Z}\footnote{Support for {\tt nat} and {\tt N} is obtained by pre-processing the goal with the {\tt zify} tactic.}, {\tt Q} and {\tt R}:
+\begin{itemize}
+\item {\tt lia} is a decision procedure for linear integer arithmetic (see Section~\ref{sec:lia});
+\item {\tt nia} is an incomplete proof procedure for integer non-linear arithmetic (see Section~\ref{sec:nia});
+\item {\tt lra} is a decision procedure for linear (real or rational) arithmetic goals (see Section~\ref{sec:lra});
+\item {\tt psatz D n} where {\tt D} is {\tt Z}, {\tt Q} or {\tt R} and {\tt n} is an optional integer limiting the proof search depth is
+is an incomplete proof procedure for non-linear arithmetic. It is based on John Harrison's Hol light driver to the external prover {\tt cspd}\footnote{Sources and binaries can be found at \url{https://projects.coin-or.org/Csdp}}. 
+   Note that the {\tt csdp} driver is generating 
+   a \emph{proof cache} thus allowing to rerun scripts even without {\tt csdp} (see Section~\ref{sec:psatz}). 
+\end{itemize}
 
-These tactics solve propositional formulas parameterised by atomic arithmetics expressions
+The tactics solve propositional formulas parameterised by atomic arithmetics expressions
 interpreted over a domain $D \in \{\mathbb{Z}, \mathbb{Q}, \mathbb{R} \}$.
 The syntax of the formulas is the following:
 \[
@@ -39,21 +30,29 @@ The syntax of the formulas is the following:
  \]
  where $c$ is a numeric constant, $x\in D$ is a numeric variable and the operators $-$, $+$, $\times$, are
  respectively subtraction, addition, product, $p \verb!^!n $ is exponentiation by a constant $n$, $P$ is an
- arbitrary proposition. %that is mostly ignored.
-%%
-%% Over $\mathbb{Z}$, $c$ is an integer ($c \in \mathtt{Z}$), over $\mathbb{Q}$, $c$ is 
-The following table details for each domain $D \in \{\mathbb{Z},\mathbb{Q},\mathbb{R}\}$ the range of constants $c$ and exponent $n$.
-\[
-\begin{array}{|c|c|c|c|}
-  \hline
-  &\mathbb{Z} & \mathbb{Q} & \mathbb{R} \\
-  \hline
-  c &\mathtt{Z} & \mathtt{Q} & \{R1, R0\} \\
-  \hline
-  n &\mathtt{Z} & \mathtt{Z} & \mathtt{nat}\\
-  \hline
-\end{array}
-\]
+ arbitrary proposition.
+ %
+ For {\tt Q}, equality is not leibnitz equality {\tt =} but the equality of rationals {\tt ==}.
+
+For {\tt Z} (resp. {\tt Q} ), $c$ ranges over integer constants (resp. rational constants).
+%% The following table details for each domain $D \in \{\mathbb{Z},\mathbb{Q},\mathbb{R}\}$ the range of constants $c$ and exponent $n$.
+%% \[
+%% \begin{array}{|c|c|c|c|}
+%%   \hline
+%%   &\mathbb{Z} & \mathbb{Q} & \mathbb{R} \\
+%%   \hline
+%%   c &\mathtt{Z} & \mathtt{Q} & (see below) \\
+%%   \hline
+%%   n &\mathtt{Z} & \mathtt{Z} & \mathtt{nat}\\
+%%   \hline
+%% \end{array}
+%% \]
+For {\tt R}, the tactic recognises as real constants the following expressions:
+\begin{verbatim}
+c ::= R0 | R1 | Rmul(c,c) | Rplus(c,c) | Rminus(c,c) | IZR z | IQR q | Rdiv(c,c) | Rinv c
+\end{verbatim}
+where ${\tt z}$ is a constant in {\tt Z} and {\tt q} is a constant in {\tt Q}.
+This includes integer constants written using the decimal notation \emph{i.e.,} {\tt c\%R}.
 
 \asection{\emph{Positivstellensatz} refutations}
 \label{sec:psatz-back}
@@ -87,6 +86,26 @@ For each conjunct $C_i$, the tactic calls a oracle which searches for $-1$ withi
 Upon success, the oracle returns a \emph{cone expression} that is normalised by the {\tt ring} tactic (see chapter~\ref{ring}) and checked to be
 $-1$.
 
+
+\asection{{\tt lra} : a decision procedure for linear real and rational arithmetic}
+\label{sec:lra}
+The {\tt lra} tactic is searching for \emph{linear} refutations using
+Fourier elimination\footnote{More efficient linear programming techniques could equally be employed}.  As a
+result, this tactic explores a subset of the $Cone$ defined as:
+\[
+LinCone(S) =\left\{ \left. \sum_{p \in S} \alpha_p \times p\ \right|\ \alpha_p \mbox{ are positive constants} \right\}
+\]
+The deductive power of {\tt lra} is the combined deductive power of {\tt ring\_simplify} and {\tt fourier}.
+%
+There is also an overlap with the {\tt field} tactic {\emph e.g.}, {\tt x = 10 * x / 10} is solved by {\tt lra}.
+
+\asection{ {\tt psatz} : a proof procedure for non-linear arithmetic}
+\label{sec:psatz}
+The {\tt psatz} tactic explores the $Cone$ by increasing degrees -- hence the depth parameter $n$.
+In theory, such a proof search is complete -- if the goal is provable the search eventually stops.
+Unfortunately, the external oracle is using numeric (approximate) optimisation techniques that might miss a
+refutation. 
+
 To illustrate the working of the tactic, consider we wish to prove the following Coq goal.\\
 \begin{coq_eval}
   Require Import ZArith Psatz.
@@ -104,30 +123,21 @@ expression belongs to $Cone(\{-x^2, x -1\})$.  Moreover, by running {\tt ring} w
 Theorem~\ref{thm:psatz}, the goal is valid.
 %
 
-\paragraph{The {\tt psatzl} tactic} is searching for \emph{linear} refutations using a fourier
-elimination\footnote{More efficient linear programming techniques could equally be employed}.
-As a result, this tactic explore a subset of the $Cone$  defined as:
-\[
-LinCone(S) =\left\{ \left. \sum_{p \in S} \alpha_p \times p\ \right|\ \alpha_p \mbox{ are positive constants} \right\}
-\]
-Basically, the deductive power of {\tt psatzl} is the combined deductive power of {\tt ring\_simplify} and {\tt fourier}.
-
-\paragraph{The {\tt psatz} tactic} explores the $Cone$ by increasing degrees -- hence the depth parameter $n$.
-In theory, such a proof search is complete -- if the goal is provable the search eventually stops.
-Unfortunately, the external oracle is using numeric (approximate) optimisation techniques that might miss a
-refutation. 
-
 %% \paragraph{The {\tt sos} tactic} -- where {\tt sos} stands for \emph{sum of squares} -- tries to prove that a
 %% single polynomial $p$ is positive by expressing it as a sum of squares \emph{i.e.,} $\sum_{i\in S} p_i^2$.
 %% This amounts to searching for $p$ in the cone without generators \emph{i.e.}, $Cone(\{\})$.
 %
 
-\asection{ {\tt lia} : the linear integer arithmetic tactic }
+\asection{ {\tt lia} : a tactic for linear integer arithmetic }
 \tacindex{lia}
 \label{sec:lia}
 
 The tactic {\tt lia} offers an alternative to the {\tt omega} and {\tt romega} tactic (see
-Chapter~\ref{OmegaChapter}). It solves goals that {\tt omega} and {\tt romega} do not solve, such as the
+Chapter~\ref{OmegaChapter}). 
+%
+Rougthly speaking, the deductive power of {\tt lia} is the combined deductive power of {\tt ring\_simplify} and {\tt omega}.
+%
+However, it solves linear goals that {\tt omega} and {\tt romega} do not solve, such as the
 following so-called \emph{omega nightmare}~\cite{TheOmegaPaper}.
 \begin{coq_example*}
   Goal forall x y, 
@@ -153,7 +163,7 @@ The canonical exemple is {\tt 2 * x = 1 -> False} which is a theorem of $\mathbb
 To remedy this weakness, the {\tt lia} tactic is using recursively a combination of:
 %
 \begin{itemize}
-\item linear \emph{positivstellensatz} refutations \emph{i.e.}, {\tt psatzl Z};
+\item linear \emph{positivstellensatz} refutations;
 \item cutting plane proofs;
 \item case split.
 \end{itemize}
@@ -189,7 +199,21 @@ Our current oracle tries to find an expression $e$ with a small range $[c_1,c_2]
 We generate $c_2 - c_1$ subgoals which contexts are enriched with an equation $e = i$ for $i \in [c_1,c_2]$ and
 recursively search for a proof.
 
-% This technique is used to solve so-called \emph{Omega nightmare}
+\asection{ {\tt nia} : a proof procedure for non-linear integer arithmetic}
+\tacindex{nia}
+\label{sec:nia}
+The {\tt nia} tactic is an {\emph experimental} proof procedure for non-linear  integer arithmetic.
+%
+The tactic performs a limited amount of non-linear reasoning before running the
+linear prover of {\tt lia}.
+This pre-processing does the following:
+\begin{itemize}
+\item If the context contains an arithmetic expression of the form $e[x^2]$ where $x$ is a
+  monomial, the context is enriched with $x^2\ge 0$;
+\item For all pairs of hypotheses $e_1\ge 0$, $e_2 \ge 0$, the context is enriched with $e_1 \times e_2 \ge 0$.
+\end{itemize}
+After pre-processing, the linear prover of {\tt lia} is searching for a proof by abstracting monomials by variables.
+
 
 
 %%% Local Variables: 
