@@ -27,8 +27,8 @@ Module Type NType.
  Parameter spec_pos: forall x, 0 <= [x].
 
  Parameter of_N : N -> t.
- Parameter spec_of_N: forall x, to_Z (of_N x) = Z_of_N x.
- Definition to_N n := Zabs_N (to_Z n).
+ Parameter spec_of_N: forall x, to_Z (of_N x) = Z.of_N x.
+ Definition to_N n := Z.to_N (to_Z n).
 
  Definition eq n m := [n] = [m].
  Definition lt n m := [n] < [m].
@@ -85,7 +85,7 @@ Module Type NType.
  Parameter spec_mul: forall x y, [mul x y] = [x] * [y].
  Parameter spec_square: forall x, [square x] = [x] *  [x].
  Parameter spec_pow_pos: forall x n, [pow_pos x n] = [x] ^ Zpos n.
- Parameter spec_pow_N: forall x n, [pow_N x n] = [x] ^ Z_of_N n.
+ Parameter spec_pow_N: forall x n, [pow_N x n] = [x] ^ Z.of_N n.
  Parameter spec_pow: forall x n, [pow x n] = [x] ^ [n].
  Parameter spec_sqrt: forall x, [sqrt x] = Z.sqrt [x].
  Parameter spec_log2: forall x, [log2 x] = Z.log2 [x].

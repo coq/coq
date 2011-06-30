@@ -69,7 +69,7 @@ Module Make (W0:CyclicType) <: NType.
  apply Zpower_le_monotone2; auto with zarith.
  Qed.
 
- Definition to_N (x : t) := Zabs_N (to_Z x).
+ Definition to_N (x : t) := Z.to_N (to_Z x).
 
  (** * Zero, One *)
 
@@ -817,7 +817,7 @@ Module Make (W0:CyclicType) <: NType.
  Theorem spec_pow : forall x y, [pow x y] = [x] ^ [y].
  Proof.
  intros. unfold pow, to_N.
- now rewrite spec_pow_N, Z_of_N_abs, Zabs_eq by apply spec_pos.
+ now rewrite spec_pow_N, Z2N.id by apply spec_pos.
  Qed.
 
 

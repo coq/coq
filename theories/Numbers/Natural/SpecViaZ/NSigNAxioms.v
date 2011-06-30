@@ -1,5 +1,4 @@
 (************************************************************************)
-
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
 (*   \VV/  **************************************************************)
@@ -23,6 +22,7 @@ Hint Rewrite
 Ltac nsimpl := autorewrite with nsimpl.
 Ltac ncongruence := unfold eq, to_N; repeat red; intros; nsimpl; congruence.
 Ltac zify := unfold eq, lt, le, to_N in *; nsimpl.
+Ltac omega_pos n := generalize (spec_pos n); omega with *.
 
 Local Obligation Tactic := ncongruence.
 
@@ -37,7 +37,7 @@ Program Instance mul_wd : Proper (eq==>eq==>eq) mul.
 
 Theorem pred_succ : forall n, pred (succ n) == n.
 Proof.
-intros. zify. generalize (spec_pos n); omega with *.
+intros. zify. omega_pos n.
 Qed.
 
 Theorem one_succ : 1 == succ 0.
@@ -50,7 +50,12 @@ Proof.
 now zify.
 Qed.
 
-Definition N_of_Z z := of_N (Zabs_N z).
+Definition N_of_Z z := of_N (Z.to_N z).
+
+Lemma spec_N_of_Z z : (0<=z)%Z -> [N_of_Z z] = z.
+Proof.
+ unfold N_of_Z. zify. apply Z2N.id.
+Qed.
 
 Section Induction.
 
@@ -73,9 +78,7 @@ Proof.
 intros z H1 H2.
 unfold B in *. apply -> AS in H2.
 setoid_replace (N_of_Z (z + 1)) with (succ (N_of_Z z)); auto.
-unfold eq. rewrite spec_succ.
-unfold N_of_Z.
-rewrite 2 spec_of_N, 2 Z_of_N_abs, 2 Zabs_eq; auto with zarith.
+unfold eq. rewrite spec_succ, 2 spec_N_of_Z; auto with zarith.
 Qed.
 
 Lemma B_holds : forall z : Z, (0 <= z)%Z -> B z.
@@ -87,9 +90,7 @@ Theorem bi_induction : forall n, A n.
 Proof.
 intro n. setoid_replace n with (N_of_Z (to_Z n)).
 apply B_holds. apply spec_pos.
-red; unfold N_of_Z.
-rewrite spec_of_N, Z_of_N_abs, Zabs_eq; auto.
-apply spec_pos.
+red. now rewrite spec_N_of_Z by apply spec_pos.
 Qed.
 
 End Induction.
@@ -106,7 +107,7 @@ Qed.
 
 Theorem sub_0_r : forall n, n - 0 == n.
 Proof.
-intros. zify. generalize (spec_pos n); omega with *.
+intros. zify. omega_pos n.
 Qed.
 
 Theorem sub_succ_r : forall n m, n - (succ m) == pred (n - m).
@@ -188,7 +189,7 @@ Proof.
 intros x x' Hx y y' Hy; unfold lt; rewrite Hx, Hy; intuition.
 Qed.
 
-Theorem lt_succ_r : forall n m, n < (succ m) <-> n <= m.
+Theorem lt_succ_r : forall n m, n < succ m <-> n <= m.
 Proof.
 intros. zify. omega.
 Qed.
@@ -231,21 +232,18 @@ Qed.
 
 Lemma pow_succ_r : forall a b, 0<=b -> a^(succ b) == a * a^b.
 Proof.
- intros a b. zify. intro Hb.
- rewrite Zpower_exp; auto with zarith.
- simpl. unfold Zpower_pos; simpl. ring.
+ intros a b. zify. intros. now Z.nzsimpl.
 Qed.
 
 Lemma pow_neg_r : forall a b, b<0 -> a^b == 0.
 Proof.
- intros a b. zify. intro Hb. exfalso.
- generalize (spec_pos b); omega.
+ intros a b. zify. intro Hb. exfalso. omega_pos b.
 Qed.
 
 Lemma pow_pow_N : forall a b, a^b == pow_N a (to_N b).
 Proof.
  intros. zify. f_equal.
- now rewrite Z_of_N_abs, Zabs_eq by apply spec_pos.
+ now rewrite Z2N.id by apply spec_pos.
 Qed.
 
 Lemma pow_N_pow : forall a b, pow_N a b == a^(of_N b).
@@ -268,8 +266,7 @@ Qed.
 
 Lemma sqrt_neg : forall n, n<0 -> sqrt n == 0.
 Proof.
- intros n. zify. intro H. exfalso.
- generalize (spec_pos n); omega.
+ intros n. zify. intro H. exfalso. omega_pos n.
 Qed.
 
 (** Log2 *)
@@ -291,26 +288,20 @@ Qed.
 Definition Even n := exists m, n == 2*m.
 Definition Odd n := exists m, n == 2*m+1.
 
-Lemma even_spec : forall n, even n = true <-> Even n.
+Lemma even_spec n : even n = true <-> Even n.
 Proof.
- intros n. unfold Even. zify.
- rewrite Zeven_bool_iff, Zeven_ex_iff.
+ unfold Even. zify. rewrite Z.even_spec.
  split; intros (m,Hm).
- exists (of_N (Zabs_N m)).
- zify. rewrite Z_of_N_abs, Zabs_eq; trivial.
- generalize (spec_pos n); auto with zarith.
- exists [m]. revert Hm. now zify.
+ - exists (N_of_Z m). zify. rewrite spec_N_of_Z; trivial. omega_pos n.
+ - exists [m]. revert Hm; now zify.
 Qed.
 
-Lemma odd_spec : forall n, odd n = true <-> Odd n.
+Lemma odd_spec n : odd n = true <-> Odd n.
 Proof.
- intros n. unfold Odd. zify.
- rewrite Zodd_bool_iff, Zodd_ex_iff.
+ unfold Odd. zify. rewrite Z.odd_spec.
  split; intros (m,Hm).
- exists (of_N (Zabs_N m)).
- zify. rewrite Z_of_N_abs, Zabs_eq; trivial.
- generalize (spec_pos n); auto with zarith.
- exists [m]. revert Hm. now zify.
+ - exists (N_of_Z m). zify. rewrite spec_N_of_Z; trivial. omega_pos n.
+ - exists [m]. revert Hm; now zify.
 Qed.
 
 (** Div / Mod *)
@@ -337,12 +328,11 @@ Local Notation "( x | y )" := (divide x y) (at level 0).
 Lemma spec_divide : forall n m, (n|m) <-> Z.divide [n] [m].
 Proof.
  intros n m. split.
- intros (p,H). exists [p]. revert H; now zify.
- intros (z,H). exists (of_N (Zabs_N z)). zify.
- rewrite Z_of_N_abs.
- rewrite <- (Zabs_eq [n]) by apply spec_pos.
- rewrite <- Zabs_Zmult, <- H.
- symmetry. apply Zabs_eq, spec_pos.
+ - intros (p,H). exists [p]. revert H; now zify.
+ - intros (z,H). exists (of_N (Z.abs_N z)). zify.
+   rewrite N2Z.inj_abs_N.
+   rewrite <- (Z.abs_eq [m]), <- (Z.abs_eq [n]) by apply spec_pos.
+   now rewrite H, Z.abs_mul.
 Qed.
 
 Lemma gcd_divide_l : forall n m, (gcd n m | n).
@@ -458,13 +448,9 @@ intros a a' Eaa' f f' Eff' x x' Exx'.
 unfold recursion.
 unfold NN.to_N.
 rewrite <- Exx'; clear x' Exx'.
-replace (Zabs_N [x]) with (N_of_nat (Zabs_nat [x])).
-induction (Zabs_nat [x]).
+induction (Z.to_N [x]) using N.peano_ind.
 simpl; auto.
-rewrite N_of_S, 2 Nrect_step; auto. apply Eff'; auto.
-destruct [x]; simpl; auto.
-change (nat_of_P p) with (nat_of_N (Npos p)); apply N_of_nat_of_N.
-change (nat_of_P p) with (nat_of_N (Npos p)); apply N_of_nat_of_N.
+rewrite 2 Nrect_step. now apply Eff'.
 Qed.
 
 Theorem recursion_0 :
@@ -478,27 +464,13 @@ Theorem recursion_succ :
     Aeq a a -> Proper (eq==>Aeq==>Aeq) f ->
       forall n, Aeq (recursion a f (succ n)) (f n (recursion a f n)).
 Proof.
-unfold NN.eq, recursion; intros A Aeq a f EAaa f_wd n.
-replace (NN.to_N (succ n)) with (N.succ (NN.to_N n)).
+unfold eq, recursion; intros A Aeq a f EAaa f_wd n.
+replace (to_N (succ n)) with (N.succ (to_N n)) by
+ (zify; now rewrite <- Z2N.inj_succ by apply spec_pos).
 rewrite Nrect_step.
 apply f_wd; auto.
-unfold NN.to_N.
-rewrite NN.spec_of_N, Z_of_N_abs, Zabs_eq; auto.
- apply NN.spec_pos.
-
-fold (recursion a f n).
-apply recursion_wd; auto.
-red; auto.
-unfold NN.to_N.
-
-rewrite NN.spec_succ.
-change ([n]+1)%Z with (Zsucc [n]).
-apply Z_of_N_eq_rev.
-rewrite Z_of_N_succ.
-rewrite 2 Z_of_N_abs.
-rewrite 2 Zabs_eq; auto.
-generalize (spec_pos n); auto with zarith.
-apply spec_pos; auto.
+zify. now rewrite Z2N.id by apply spec_pos.
+fold (recursion a f n). apply recursion_wd; auto. red; auto.
 Qed.
 
 End NTypeIsNAxioms.

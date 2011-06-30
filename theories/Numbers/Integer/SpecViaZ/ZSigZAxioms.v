@@ -284,9 +284,7 @@ Qed.
 
 Lemma pow_succ_r : forall a b, 0<=b -> a^(succ b) == a * a^b.
 Proof.
- intros a b. zify. intros Hb.
- rewrite Zpower_exp; auto with zarith.
- simpl. unfold Zpower_pos; simpl. ring.
+ intros a b. zify. intros. now rewrite Z.add_1_r, Z.pow_succ_r.
 Qed.
 
 Lemma pow_neg_r : forall a b, b<0 -> a^b == 0.
@@ -295,10 +293,9 @@ Proof.
  destruct [b]; reflexivity || discriminate.
 Qed.
 
-Lemma pow_pow_N : forall a b, 0<=b -> a^b == pow_N a (Zabs_N (to_Z b)).
+Lemma pow_pow_N : forall a b, 0<=b -> a^b == pow_N a (Z.to_N (to_Z b)).
 Proof.
- intros a b. zify. intros Hb.
- now rewrite spec_pow_N, Z_of_N_abs, Zabs_eq.
+ intros a b. zify. intros Hb. now rewrite spec_pow_N, Z2N.id.
 Qed.
 
 Lemma pow_pos_N : forall a p, pow_pos a p == pow_N a (Npos p).
@@ -337,22 +334,20 @@ Qed.
 Definition Even n := exists m, n == 2*m.
 Definition Odd n := exists m, n == 2*m+1.
 
-Lemma even_spec : forall n, even n = true <-> Even n.
+Lemma even_spec n : even n = true <-> Even n.
 Proof.
- intros n. unfold Even. zify.
- rewrite Zeven_bool_iff, Zeven_ex_iff.
+ unfold Even. zify. rewrite Z.even_spec.
  split; intros (m,Hm).
- exists (of_Z m). now zify.
- exists [m]. revert Hm. now zify.
+ - exists (of_Z m). now zify.
+ - exists [m]. revert Hm. now zify.
 Qed.
 
-Lemma odd_spec : forall n, odd n = true <-> Odd n.
+Lemma odd_spec n : odd n = true <-> Odd n.
 Proof.
- intros n. unfold Odd. zify.
- rewrite Zodd_bool_iff, Zodd_ex_iff.
+ unfold Odd. zify. rewrite Z.odd_spec.
  split; intros (m,Hm).
- exists (of_Z m). now zify.
- exists [m]. revert Hm. now zify.
+ - exists (of_Z m). now zify.
+ - exists [m]. revert Hm. now zify.
 Qed.
 
 (** Div / Mod *)
@@ -415,8 +410,8 @@ Local Notation "( x | y )" := (divide x y) (at level 0).
 Lemma spec_divide : forall n m, (n|m) <-> Z.divide [n] [m].
 Proof.
  intros n m. split.
- intros (p,H). exists [p]. revert H; now zify.
- intros (z,H). exists (of_Z z). now zify.
+ - intros (p,H). exists [p]. revert H; now zify.
+ - intros (z,H). exists (of_Z z). now zify.
 Qed.
 
 Lemma gcd_divide_l : forall n m, (gcd n m | n).
