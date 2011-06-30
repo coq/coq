@@ -13,145 +13,139 @@ Local Open Scope N_scope.
 
 (** This file is mostly obsolete, see directly [BinNat] now. *)
 
-(** Operation over bits of a [N] number. *)
+(** Compatibility names for some bitwise operations *)
 
-Notation Por := Pos.lor (only parsing).
-Notation Nor := N.lor (only parsing).
-Notation Pand := Pos.land (only parsing).
-Notation Nand := N.land (only parsing).
-Notation Pdiff := Pos.ldiff (only parsing).
-Notation Ndiff := N.ldiff (only parsing).
 Notation Pxor := Pos.lxor (only parsing).
 Notation Nxor := N.lxor (only parsing).
-Notation Nshiftl_nat := N.shiftl_nat (only parsing).
-Notation Nshiftr_nat := N.shiftr_nat (only parsing).
-Notation Nshiftl := N.shiftl (only parsing).
-Notation Nshiftr := N.shiftr (only parsing).
 Notation Pbit := Pos.testbit_nat (only parsing).
 Notation Nbit := N.testbit_nat (only parsing).
-Notation Ptestbit := Pos.testbit (only parsing).
-Notation Ntestbit := N.testbit (only parsing).
 
-(** Equivalence of Pbit and Ptestbit *)
+Notation Nxor_eq := N.lxor_eq (only parsing).
+Notation Nxor_comm := N.lxor_comm (only parsing).
+Notation Nxor_assoc := N.lxor_assoc (only parsing).
+Notation Nxor_neutral_left := N.lxor_0_l (only parsing).
+Notation Nxor_neutral_right := N.lxor_0_r (only parsing).
+Notation Nxor_nilpotent := N.lxor_nilpotent (only parsing).
+
+(** Equivalence of bit-testing functions,
+    either with index in [N] or in [nat]. *)
 
 Lemma Ptestbit_Pbit :
- forall p n, Ptestbit p (N_of_nat n) = Pbit p n.
+ forall p n, Pos.testbit p (N.of_nat n) = Pbit p n.
 Proof.
  induction p as [p IH|p IH| ]; intros [|n]; simpl; trivial;
   rewrite <- IH; f_equal; rewrite (pred_Sn n) at 2; now rewrite N_of_pred.
 Qed.
 
-Lemma Ntestbit_Nbit : forall a n, Ntestbit a (N_of_nat n) = Nbit a n.
+Lemma Ntestbit_Nbit : forall a n, N.testbit a (N.of_nat n) = Nbit a n.
 Proof.
  destruct a. trivial. apply Ptestbit_Pbit.
 Qed.
 
 Lemma Pbit_Ptestbit :
- forall p n, Pbit p (nat_of_N n) = Ptestbit p n.
+ forall p n, Pbit p (N.to_nat n) = Pos.testbit p n.
 Proof.
- intros; now rewrite <- Ptestbit_Pbit, N_of_nat_of_N.
+ intros; now rewrite <- Ptestbit_Pbit, N2Nat.id.
 Qed.
 
 Lemma Nbit_Ntestbit :
- forall a n, Nbit a (nat_of_N n) = Ntestbit a n.
+ forall a n, Nbit a (N.to_nat n) = N.testbit a n.
 Proof.
  destruct a. trivial. apply Pbit_Ptestbit.
 Qed.
 
-(** Equivalence of shifts, N and nat versions *)
+(** Equivalence of shifts, index in [N] or [nat] *)
 
 Lemma Nshiftr_nat_S : forall a n,
- Nshiftr_nat a (S n) = Ndiv2 (Nshiftr_nat a n).
+ N.shiftr_nat a (S n) = N.div2 (N.shiftr_nat a n).
 Proof.
  reflexivity.
 Qed.
 
 Lemma Nshiftl_nat_S : forall a n,
- Nshiftl_nat a (S n) = Ndouble (Nshiftl_nat a n).
+ N.shiftl_nat a (S n) = N.double (N.shiftl_nat a n).
 Proof.
  reflexivity.
 Qed.
 
 Lemma Nshiftr_nat_equiv :
- forall a n, Nshiftr_nat a (nat_of_N n) = Nshiftr a n.
+ forall a n, N.shiftr_nat a (N.to_nat n) = N.shiftr a n.
 Proof.
- intros a [|n]; simpl. unfold Nshiftr_nat.
+ intros a [|n]; simpl. unfold N.shiftr_nat.
  trivial.
  symmetry. apply iter_nat_of_P.
 Qed.
 
 Lemma Nshiftr_equiv_nat :
- forall a n, Nshiftr a (N_of_nat n) = Nshiftr_nat a n.
+ forall a n, N.shiftr a (N.of_nat n) = N.shiftr_nat a n.
 Proof.
- intros. now rewrite <- Nshiftr_nat_equiv, nat_of_N_of_nat.
+ intros. now rewrite <- Nshiftr_nat_equiv, Nat2N.id.
 Qed.
 
 Lemma Nshiftl_nat_equiv :
- forall a n, Nshiftl_nat a (nat_of_N n) = Nshiftl a n.
+ forall a n, N.shiftl_nat a (N.to_nat n) = N.shiftl a n.
 Proof.
- intros [|a] [|n]; simpl; unfold Nshiftl_nat; trivial.
- apply iter_nat_invariant; intros; now subst.
- rewrite <- iter_nat_of_P. symmetry. now apply iter_pos_swap_gen.
+ intros [|a] [|n]; simpl; unfold N.shiftl_nat; trivial.
+ apply nat_iter_invariant; intros; now subst.
+ rewrite <- Pos2Nat.inj_iter. symmetry. now apply Pos.iter_swap_gen.
 Qed.
 
 Lemma Nshiftl_equiv_nat :
- forall a n, Nshiftl a (N_of_nat n) = Nshiftl_nat a n.
+ forall a n, N.shiftl a (N.of_nat n) = N.shiftl_nat a n.
 Proof.
- intros. now rewrite <- Nshiftl_nat_equiv, nat_of_N_of_nat.
+ intros. now rewrite <- Nshiftl_nat_equiv, Nat2N.id.
 Qed.
 
 (** Correctness proofs for shifts, nat version *)
 
 Lemma Nshiftr_nat_spec : forall a n m,
-  Nbit (Nshiftr_nat a n) m = Nbit a (m+n).
+  Nbit (N.shiftr_nat a n) m = Nbit a (m+n).
 Proof.
  induction n; intros m.
  now rewrite <- plus_n_O.
  simpl. rewrite <- plus_n_Sm, <- plus_Sn_m, <- IHn, Nshiftr_nat_S.
- destruct (Nshiftr_nat a n) as [|[p|p|]]; simpl; trivial.
+ destruct (N.shiftr_nat a n) as [|[p|p|]]; simpl; trivial.
 Qed.
 
 Lemma Nshiftl_nat_spec_high : forall a n m, (n<=m)%nat ->
-  Nbit (Nshiftl_nat a n) m = Nbit a (m-n).
+  Nbit (N.shiftl_nat a n) m = Nbit a (m-n).
 Proof.
  induction n; intros m H.
  now rewrite <- minus_n_O.
  destruct m. inversion H. apply le_S_n in H.
  simpl. rewrite <- IHn, Nshiftl_nat_S; trivial.
- destruct (Nshiftl_nat a n) as [|[p|p|]]; simpl; trivial.
+ destruct (N.shiftl_nat a n) as [|[p|p|]]; simpl; trivial.
 Qed.
 
 Lemma Nshiftl_nat_spec_low : forall a n m, (m<n)%nat ->
- Nbit (Nshiftl_nat a n) m = false.
+ Nbit (N.shiftl_nat a n) m = false.
 Proof.
  induction n; intros m H. inversion H.
  rewrite Nshiftl_nat_S.
  destruct m.
- destruct (Nshiftl_nat a n); trivial.
+ destruct (N.shiftl_nat a n); trivial.
  specialize (IHn m (lt_S_n _ _ H)).
- destruct (Nshiftl_nat a n); trivial.
+ destruct (N.shiftl_nat a n); trivial.
 Qed.
 
 (** A left shift for positive numbers (used in BigN) *)
 
-Notation Pshiftl_nat := Pos.shiftl_nat (only parsing).
-
-Lemma Pshiftl_nat_0 : forall p, Pshiftl_nat p 0 = p.
+Lemma Pshiftl_nat_0 : forall p, Pos.shiftl_nat p 0 = p.
 Proof. reflexivity. Qed.
 
 Lemma Pshiftl_nat_S :
- forall p n, Pshiftl_nat p (S n) = xO (Pshiftl_nat p n).
+ forall p n, Pos.shiftl_nat p (S n) = xO (Pos.shiftl_nat p n).
 Proof. reflexivity. Qed.
 
 Lemma Pshiftl_nat_N :
- forall p n, Npos (Pshiftl_nat p n) = Nshiftl_nat (Npos p) n.
+ forall p n, Npos (Pos.shiftl_nat p n) = N.shiftl_nat (Npos p) n.
 Proof.
- unfold Pshiftl_nat, Nshiftl_nat.
+ unfold Pos.shiftl_nat, N.shiftl_nat.
  induction n; simpl; auto. now rewrite <- IHn.
 Qed.
 
 Lemma Pshiftl_nat_plus : forall n m p,
-  Pshiftl_nat p (m + n) = Pshiftl_nat (Pshiftl_nat p n) m.
+  Pos.shiftl_nat p (m + n) = Pos.shiftl_nat (Pos.shiftl_nat p n) m.
 Proof.
  induction m; simpl; intros. reflexivity.
  rewrite 2 Pshiftl_nat_S. now f_equal.
@@ -159,70 +153,53 @@ Qed.
 
 (** Semantics of bitwise operations with respect to [Nbit] *)
 
-Lemma Pxor_semantics : forall p p' n,
- Nbit (Pxor p p') n = xorb (Pbit p n) (Pbit p' n).
+Lemma Pxor_semantics p p' n :
+ Nbit (Pos.lxor p p') n = xorb (Pbit p n) (Pbit p' n).
 Proof.
- induction p as [p IHp|p IHp|]; intros [p'|p'|] [|n]; trivial; simpl;
-  (specialize (IHp p'); destruct Pxor; trivial; apply (IHp n)) ||
-  now destruct Pbit.
+ rewrite <- Ntestbit_Nbit, <- !Ptestbit_Pbit. apply N.pos_lxor_spec.
 Qed.
 
-Lemma Nxor_semantics : forall a a' n,
- Nbit (Nxor a a') n = xorb (Nbit a n) (Nbit a' n).
+Lemma Nxor_semantics a a' n :
+ Nbit (N.lxor a a') n = xorb (Nbit a n) (Nbit a' n).
 Proof.
- intros [|p] [|p'] n; simpl; trivial.
- now destruct Pbit.
- now destruct Pbit.
- apply Pxor_semantics.
+ rewrite <- !Ntestbit_Nbit. apply N.lxor_spec.
 Qed.
 
-Lemma Por_semantics : forall p p' n,
- Pbit (Por p p') n = (Pbit p n) || (Pbit p' n).
+Lemma Por_semantics p p' n :
+ Pbit (Pos.lor p p') n = (Pbit p n) || (Pbit p' n).
 Proof.
- induction p as [p IHp|p IHp|]; intros [p'|p'|] [|n]; trivial;
-  apply (IHp p' n) || now rewrite orb_false_r.
+ rewrite <- !Ptestbit_Pbit. apply N.pos_lor_spec.
 Qed.
 
-Lemma Nor_semantics : forall a a' n,
- Nbit (Nor a a') n = (Nbit a n) || (Nbit a' n).
+Lemma Nor_semantics a a' n :
+ Nbit (N.lor a a') n = (Nbit a n) || (Nbit a' n).
 Proof.
- intros [|p] [|p'] n; simpl; trivial.
- now rewrite orb_false_r.
- apply Por_semantics.
+ rewrite <- !Ntestbit_Nbit. apply N.lor_spec.
 Qed.
 
-Lemma Pand_semantics : forall p p' n,
- Nbit (Pand p p') n = (Pbit p n) && (Pbit p' n).
+Lemma Pand_semantics p p' n :
+ Nbit (Pos.land p p') n = (Pbit p n) && (Pbit p' n).
 Proof.
- induction p as [p IHp|p IHp|]; intros [p'|p'|] [|n]; trivial; simpl;
-  (specialize (IHp p'); destruct Pand; trivial; apply (IHp n)) ||
-  now rewrite andb_false_r.
+ rewrite <- Ntestbit_Nbit, <- !Ptestbit_Pbit. apply N.pos_land_spec.
 Qed.
 
-Lemma Nand_semantics : forall a a' n,
- Nbit (Nand a a') n = (Nbit a n) && (Nbit a' n).
+Lemma Nand_semantics a a' n :
+ Nbit (N.land a a') n = (Nbit a n) && (Nbit a' n).
 Proof.
- intros [|p] [|p'] n; simpl; trivial.
- now rewrite andb_false_r.
- apply Pand_semantics.
+ rewrite <- !Ntestbit_Nbit. apply N.land_spec.
 Qed.
 
-Lemma Pdiff_semantics : forall p p' n,
- Nbit (Pdiff p p') n = (Pbit p n) && negb (Pbit p' n).
+Lemma Pdiff_semantics p p' n :
+ Nbit (Pos.ldiff p p') n = (Pbit p n) && negb (Pbit p' n).
 Proof.
- induction p as [p IHp|p IHp|]; intros [p'|p'|] [|n]; trivial; simpl;
-  (specialize (IHp p'); destruct Pdiff; trivial; apply (IHp n)) ||
-  now rewrite andb_true_r.
+ rewrite <- Ntestbit_Nbit, <- !Ptestbit_Pbit. apply N.pos_ldiff_spec.
 Qed.
 
-Lemma Ndiff_semantics : forall a a' n,
- Nbit (Ndiff a a') n = (Nbit a n) && negb (Nbit a' n).
+Lemma Ndiff_semantics a a' n :
+ Nbit (N.ldiff a a') n = (Nbit a n) && negb (Nbit a' n).
 Proof.
- intros [|p] [|p'] n; simpl; trivial.
- simpl. now rewrite andb_true_r.
- apply Pdiff_semantics.
+ rewrite <- !Ntestbit_Nbit. apply N.ldiff_spec.
 Qed.
-
 
 (** Equality over functional streams of bits *)
 
@@ -264,70 +241,6 @@ Lemma Nbit_faithful_iff : forall n n', Nbit n == Nbit n' <-> n = n'.
 Proof.
  split. apply Nbit_faithful. intros; now subst.
 Qed.
-
-Hint Rewrite Nxor_semantics Nor_semantics
- Nand_semantics Ndiff_semantics : bitwise_semantics.
-
-Ltac bitwise_semantics :=
- apply Nbit_faithful; intro n; autorewrite with bitwise_semantics.
-
-(** Now, we can easily deduce properties of [Nxor] and others
-    from properties of [xorb] and others. *)
-
-Definition Nxor_eq : forall a a', Nxor a a' = 0 -> a = a' := N.lxor_eq.
-Definition Nxor_nilpotent : forall a, Nxor a a = 0 := N.lxor_nilpotent.
-Definition Nxor_0_l : forall n, Nxor 0 n = n := N.lxor_0_l.
-Definition Nxor_0_r : forall n, Nxor n 0 = n := N.lxor_0_r.
-
-Notation Nxor_neutral_left := Nxor_0_l (only parsing).
-Notation Nxor_neutral_right := Nxor_0_r (only parsing).
-
-Definition Nxor_comm : forall a a', Nxor a a' = Nxor a' a := N.lxor_comm.
-
-Definition Nxor_assoc :
- forall a a' a'', Nxor (Nxor a a') a'' = Nxor a (Nxor a' a'')
- := N.lxor_assoc.
-
-Definition Nor_0_l : forall n, Nor 0 n = n := N.lor_0_l.
-Definition Nor_0_r : forall n, Nor n 0 = n := N.lor_0_r.
-Definition Nor_comm : forall a a', Nor a a' = Nor a' a := N.lor_comm.
-Definition Nor_assoc :
- forall a a' a'', Nor a (Nor a' a'') = Nor (Nor a a') a''
- := N.lor_assoc.
-Definition Nor_diag : forall a, Nor a a = a := N.lor_diag.
-
-Definition Nand_0_l : forall n, Nand 0 n = 0 := N.land_0_l.
-Definition Nand_0_r : forall n, Nand n 0 = 0 := N.land_0_r.
-Definition Nand_comm : forall a a', Nand a a' = Nand a' a := N.land_comm.
-Definition Nand_assoc :
- forall a a' a'', Nand a (Nand a' a'') = Nand (Nand a a') a''
- := N.land_assoc.
-Definition Nand_diag : forall a, Nand a a = a := N.land_diag.
-
-Definition Ndiff_0_l : forall n, Ndiff 0 n = 0 := N.ldiff_0_l.
-Definition Ndiff_0_r : forall n, Ndiff n 0 = n := N.ldiff_0_r.
-Definition Ndiff_diag : forall a, Ndiff a a = 0 := N.ldiff_diag.
-Definition Nor_and_distr_l : forall a b c,
- Nor (Nand a b) c = Nand (Nor a c) (Nor b c)
- := N.lor_land_distr_l.
-Definition Nor_and_distr_r : forall a b c,
- Nor a (Nand b c) = Nand (Nor a b) (Nor a c)
- := N.lor_land_distr_r.
-Definition Nand_or_distr_l : forall a b c,
- Nand (Nor a b) c = Nor (Nand a c) (Nand b c)
- := N.land_lor_distr_l.
-Definition Nand_or_distr_r : forall a b c,
- Nand a (Nor b c) = Nor (Nand a b) (Nand a c)
- := N.land_lor_distr_r.
-Definition Ndiff_diff_l : forall a b c,
- Ndiff (Ndiff a b) c = Ndiff a (Nor b c)
- := N.ldiff_ldiff_l.
-Definition Nor_diff_and : forall a b,
- Nor (Ndiff a b) (Nand a b) = a
- := N.lor_ldiff_and.
-Definition Nand_diff : forall a b,
- Nand (Ndiff a b) b = 0
- := N.land_ldiff.
 
 Local Close Scope N_scope.
 
@@ -742,7 +655,7 @@ destruct a, b, (Bv2N n v1), (Bv2N n v2); simpl in *; rewrite H ; now simpl.
 Qed.
 
 Lemma Nand_BVand : forall n (bv bv' : Bvector n),
-  Bv2N _ (BVand _ bv bv') = Nand (Bv2N _ bv) (Bv2N _ bv').
+  Bv2N _ (BVand _ bv bv') = N.land (Bv2N _ bv) (Bv2N _ bv').
 Proof.
 refine (@Vector.rect2 _ _ _ _ _); simpl; intros; auto.
 rewrite H.

@@ -7,7 +7,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import ZArith OrdersFacts Nnat Ndigits NAxioms NDiv NSig.
+Require Import ZArith OrdersFacts Nnat NAxioms NSig.
 
 (** * The interface [NSig.NType] implies the interface [NAxiomsSig] *)
 

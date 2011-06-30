@@ -17,7 +17,7 @@ Require Import DoubleBase.
 
 Local Open Scope Z_scope.
 
-Local Infix "<<" := Pshiftl_nat (at level 30).
+Local Infix "<<" := Pos.shiftl_nat (at level 30).
 
 Section GENDIVN1.
 

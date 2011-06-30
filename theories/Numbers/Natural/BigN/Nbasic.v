@@ -372,7 +372,7 @@ Section CompareRec.
  apply Zlt_le_trans with (1:= H).
  unfold double_wB, DoubleBase.double_wB; simpl.
  rewrite Pshiftl_nat_S, base_xO.
- set (u := base (Pshiftl_nat wm_base n)).
+ set (u := base (Pos.shiftl_nat wm_base n)).
  assert (0 < u).
   unfold u, base; auto with zarith.
  replace (u^2) with (u * u); simpl; auto with zarith.
@@ -507,7 +507,7 @@ Declare Instance dom_op n : ZnZ.Ops (dom_t n).
 Declare Instance dom_spec n : ZnZ.Specs (dom_op n).
 
 Axiom digits_dom_op : forall n,
-  ZnZ.digits (dom_op n) = Pshiftl_nat (ZnZ.digits (dom_op 0)) n.
+  ZnZ.digits (dom_op n) = Pos.shiftl_nat (ZnZ.digits (dom_op 0)) n.
 
 (** The type [t] of arbitrary-large numbers, with abstract constructor [mk_t]
     and destructor [destr_t] and iterator [iter_t] *)

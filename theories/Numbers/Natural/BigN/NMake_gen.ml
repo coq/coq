@@ -250,7 +250,7 @@ pr
  Qed.
 
  Theorem digits_nmake : forall n ww (w_op: ZnZ.Ops ww),
-    ZnZ.digits (nmake_op _ w_op n) = Pshiftl_nat (ZnZ.digits w_op) n.
+    ZnZ.digits (nmake_op _ w_op n) = Pos.shiftl_nat (ZnZ.digits w_op) n.
  Proof.
  induction n. auto.
  intros ww ww_op. rewrite Pshiftl_nat_S, <- IHn; auto.
@@ -333,7 +333,7 @@ pr "
  (** * Digits *)
 
  Lemma digits_make_op_0 : forall n,
-  ZnZ.digits (make_op n) = Pshiftl_nat (ZnZ.digits (dom_op Size)) (S n).
+  ZnZ.digits (make_op n) = Pos.shiftl_nat (ZnZ.digits (dom_op Size)) (S n).
  Proof.
  induction n.
  auto.
@@ -343,7 +343,7 @@ pr "
  Qed.
 
  Lemma digits_make_op : forall n,
-  ZnZ.digits (make_op n) = Pshiftl_nat (ZnZ.digits w0_op) (SizePlus (S n)).
+  ZnZ.digits (make_op n) = Pos.shiftl_nat (ZnZ.digits w0_op) (SizePlus (S n)).
  Proof.
  intros. rewrite digits_make_op_0.
  replace (SizePlus (S n)) with (S n + Size) by (rewrite <- plus_comm; auto).
@@ -351,7 +351,7 @@ pr "
  Qed.
 
  Lemma digits_dom_op : forall n,
-  ZnZ.digits (dom_op n) = Pshiftl_nat (ZnZ.digits w0_op) n.
+  ZnZ.digits (dom_op n) = Pos.shiftl_nat (ZnZ.digits w0_op) n.
  Proof.
  do_size (destruct n; try reflexivity).
  exact (digits_make_op n).
