@@ -545,7 +545,7 @@ and solve_obligation_by_tac prg obls i tac =
 	| Loc.Exc_located(_, Proof_type.LtacLocated (_, Refiner.FailError (_, s)))
 	| Loc.Exc_located(_, Refiner.FailError (_, s))
 	| Refiner.FailError (_, s) ->
-	    user_err_loc (unloc obl.obl_location, "solve_obligation", Lazy.force s)
+	    user_err_loc (fst obl.obl_location, "solve_obligation", Lazy.force s)
 	| Util.Anomaly _ as e -> raise e
 	| e -> false
 
