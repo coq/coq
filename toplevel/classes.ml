@@ -52,6 +52,7 @@ let declare_class g =
   | _ -> user_err_loc (loc_of_reference g, "declare_class", 
 		      Pp.str"Unsupported class type, only constants and inductives are allowed")
     
+(** TODO: add subinstances *)
 let declare_instance glob g =
   let c = global g in
   let instance = Typing.type_of (Global.env ()) Evd.empty (constr_of_global c) in

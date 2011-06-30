@@ -6,7 +6,7 @@ open Proof_type
 open Vernacexpr
 
 type obligation_info =
-  (identifier * Term.types * loc *
+  (identifier * Term.types * hole_kind located *
       obligation_definition_status * Intset.t * tactic option) array
     (* ident, type, location, (opaque or transparent, expand or define),
        dependencies, tactic to solve it *)

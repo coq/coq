@@ -30,13 +30,13 @@ let explain_no_obligations = function
     Some ident -> str "No obligations for program " ++ str (string_of_id ident)
   | None -> str "No obligations remaining"
 
-type obligation_info = (Names.identifier * Term.types * loc * obligation_definition_status * Intset.t
-			 * tactic option) array
+type obligation_info = (Names.identifier * Term.types * hole_kind located *
+			  obligation_definition_status * Intset.t * tactic option) array
 
 type obligation =
   { obl_name : identifier;
     obl_type : types;
-    obl_location : loc;
+    obl_location : hole_kind located;
     obl_body : constr option;
     obl_status : obligation_definition_status;
     obl_deps : Intset.t;
@@ -364,7 +364,7 @@ let init_prog_info n b t deps fixkind notations obls impls kind reduce hook =
 	assert(obls = [||]);
 	let n = Nameops.add_suffix n "_obligation" in
 	  [| { obl_name = n; obl_body = None;
-	       obl_location = dummy_loc; obl_type = t;
+	       obl_location = dummy_loc, InternalHole; obl_type = t;
 	       obl_status = Expand; obl_deps = Intset.empty; obl_tac = None } |],
 	mkVar n
     | Some b ->
@@ -545,7 +545,7 @@ and solve_obligation_by_tac prg obls i tac =
 	| Loc.Exc_located(_, Proof_type.LtacLocated (_, Refiner.FailError (_, s)))
 	| Loc.Exc_located(_, Refiner.FailError (_, s))
 	| Refiner.FailError (_, s) ->
-	    user_err_loc (obl.obl_location, "solve_obligation", Lazy.force s)
+	    user_err_loc (unloc obl.obl_location, "solve_obligation", Lazy.force s)
 	| Util.Anomaly _ as e -> raise e
 	| e -> false
 

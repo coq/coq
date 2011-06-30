@@ -27,7 +27,7 @@ type oblinfo =
     ev_hyps: named_context;
     ev_status: obligation_definition_status;
     ev_chop: int option;
-    ev_loc: Util.loc;
+    ev_src: hole_kind located;
     ev_typ: types;
     ev_tac: tactic option;
     ev_deps: Intset.t }
@@ -223,7 +223,7 @@ let eterm_obligations env name isevars evm fs ?status t ty =
 	 in
 	 let info = { ev_name = (n, nstr);
 		      ev_hyps = hyps; ev_status = status; ev_chop = chop;
-		      ev_loc = loc; ev_typ = evtyp ; ev_deps = deps; ev_tac = tac }
+		      ev_src = loc, k; ev_typ = evtyp ; ev_deps = deps; ev_tac = tac }
 	 in (id, info) :: l)
       evn []
   in
@@ -234,12 +234,12 @@ let eterm_obligations env name isevars evm fs ?status t ty =
   let evars = 
     List.map (fun (ev, info) ->
       let { ev_name = (_, name); ev_status = status;
-	    ev_loc = loc; ev_typ = typ; ev_deps = deps; ev_tac = tac } = info
+	    ev_src = src; ev_typ = typ; ev_deps = deps; ev_tac = tac } = info
       in
       let status = match status with
 	| Define true when Idset.mem name transparent -> Define false
 	| _ -> status
-      in name, typ, loc, status, deps, tac) evts
+      in name, typ, src, status, deps, tac) evts
   in
   let evnames = List.map (fun (ev, info) -> ev, snd info.ev_name) evts in
   let evmap f c = pi1 (subst_evar_constr evts 0 f c) in
