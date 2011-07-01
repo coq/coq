@@ -210,6 +210,15 @@ Definition pow (x y:positive) := iter y (mul x) 1.
 
 Infix "^" := pow : positive_scope.
 
+(** ** Square *)
+
+Fixpoint square p :=
+  match p with
+    | p~1 => (square p + p)~0~1
+    | p~0 => (square p)~0~0
+    | 1 => 1
+  end.
+
 (** ** Division by 2 rounded below but for 1 *)
 
 Definition div2 p :=

@@ -34,11 +34,11 @@ End NDivSpecific.
 
 Module Type NAxiomsSig := NAxiomsMiniSig <+ OrderFunctions
   <+ NZParity.NZParity <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2
-  <+ NZGcd.NZGcd <+ NZDiv.NZDiv <+ NZBits.NZBits.
+  <+ NZGcd.NZGcd <+ NZDiv.NZDiv <+ NZBits.NZBits <+ NZSquare.
 
 Module Type NAxiomsSig' := NAxiomsMiniSig' <+ OrderFunctions'
   <+ NZParity.NZParity <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2
-  <+ NZGcd.NZGcd' <+ NZDiv.NZDiv' <+ NZBits.NZBits'.
+  <+ NZGcd.NZGcd' <+ NZDiv.NZDiv' <+ NZBits.NZBits' <+ NZSquare.
 
 
 (** It could also be interesting to have a constructive recursor function. *)

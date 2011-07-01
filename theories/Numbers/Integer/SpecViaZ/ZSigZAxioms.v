@@ -14,7 +14,7 @@ Module ZTypeIsZAxioms (Import ZZ : ZType').
 
 Hint Rewrite
  spec_0 spec_1 spec_2 spec_add spec_sub spec_pred spec_succ
- spec_mul spec_opp spec_of_Z spec_div spec_modulo spec_sqrt
+ spec_mul spec_opp spec_of_Z spec_div spec_modulo spec_square spec_sqrt
  spec_compare spec_eqb spec_ltb spec_leb spec_max spec_min
  spec_abs spec_sgn spec_pow spec_log2 spec_even spec_odd spec_gcd
  spec_quot spec_rem spec_testbit spec_shiftl spec_shiftr
@@ -301,6 +301,13 @@ Qed.
 Lemma pow_pos_N : forall a p, pow_pos a p == pow_N a (Npos p).
 Proof.
  intros a b. red. now rewrite spec_pow_N, spec_pow_pos.
+Qed.
+
+(** Square *)
+
+Lemma square_spec n : square n == n * n.
+Proof.
+ now zify.
 Qed.
 
 (** Sqrt *)

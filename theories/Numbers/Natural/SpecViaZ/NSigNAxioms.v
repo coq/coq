@@ -15,8 +15,8 @@ Module NTypeIsNAxioms (Import NN : NType').
 Hint Rewrite
  spec_0 spec_1 spec_2 spec_succ spec_add spec_mul spec_pred spec_sub
  spec_div spec_modulo spec_gcd spec_compare spec_eqb spec_ltb spec_leb
- spec_sqrt spec_log2 spec_max spec_min spec_pow_pos spec_pow_N spec_pow
- spec_even spec_odd spec_testbit spec_shiftl spec_shiftr
+ spec_square spec_sqrt spec_log2 spec_max spec_min spec_pow_pos spec_pow_N
+ spec_pow spec_even spec_odd spec_testbit spec_shiftl spec_shiftr
  spec_land spec_lor spec_ldiff spec_lxor spec_div2 spec_of_N
  : nsimpl.
 Ltac nsimpl := autorewrite with nsimpl.
@@ -254,6 +254,13 @@ Qed.
 Lemma pow_pos_N : forall a p, pow_pos a p == pow_N a (Npos p).
 Proof.
  intros. now zify.
+Qed.
+
+(** Square *)
+
+Lemma square_spec n : square n == n * n.
+Proof.
+ now zify.
 Qed.
 
 (** Sqrt *)

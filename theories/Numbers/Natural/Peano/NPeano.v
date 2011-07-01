@@ -53,6 +53,11 @@ Proof. reflexivity. Qed.
 Lemma pow_succ_r : forall a b, 0<=b -> a^(S b) = a * a^b.
 Proof. reflexivity. Qed.
 
+Definition square n := n * n.
+
+Lemma square_spec n : square n = n * n.
+Proof. reflexivity. Qed.
+
 Definition Even n := exists m, n = 2*m.
 Definition Odd n := exists m, n = 2*m+1.
 
@@ -736,6 +741,9 @@ Definition pow_0_r := pow_0_r.
 Definition pow_succ_r := pow_succ_r.
 Lemma pow_neg_r : forall a b, b<0 -> a^b = 0. inversion 1. Qed.
 Definition pow := pow.
+
+Definition square := square.
+Definition square_spec := square_spec.
 
 Definition log2_spec := log2_spec.
 Definition log2_nonpos := log2_nonpos.

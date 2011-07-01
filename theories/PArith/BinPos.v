@@ -629,6 +629,16 @@ Proof.
  unfold pow. now rewrite iter_succ.
 Qed.
 
+(** ** Properties of square *)
+
+Lemma square_spec p : square p = p * p.
+Proof.
+ induction p.
+ - rewrite square_xI. simpl. now rewrite IHp.
+ - rewrite square_xO. simpl. now rewrite IHp.
+ - trivial.
+Qed.
+
 (** ** Properties of [sub_mask] *)
 
 Lemma sub_mask_succ_r p q :

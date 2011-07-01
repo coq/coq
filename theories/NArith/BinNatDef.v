@@ -181,6 +181,14 @@ Definition pow n p :=
 
 Infix "^" := pow : N_scope.
 
+(** Square *)
+
+Definition square n :=
+  match n with
+    | 0 => 0
+    | Npos p => Npos (Pos.square p)
+  end.
+
 (** Base-2 logarithm *)
 
 Definition log2 n :=

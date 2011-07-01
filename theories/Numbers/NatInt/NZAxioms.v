@@ -137,3 +137,9 @@ Module Type NZDecOrdSig' := NZOrdSig' <+ HasCompare.
 Module Type NZDecOrdAxiomsSig := NZOrdAxiomsSig <+ HasCompare.
 Module Type NZDecOrdAxiomsSig' := NZOrdAxiomsSig' <+ HasCompare.
 
+(** A square function *)
+
+Module Type NZSquare (Import NZ : NZBasicFunsSig').
+ Parameter Inline square : t -> t.
+ Axiom square_spec : forall n, square n == n * n.
+End NZSquare.

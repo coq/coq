@@ -442,6 +442,13 @@ Proof.
  now destruct p.
 Qed.
 
+(** Specification of square *)
+
+Lemma square_spec n : square n = n * n.
+Proof.
+ destruct n; trivial. simpl. f_equal. apply Pos.square_spec.
+Qed.
+
 (** Specification of Base-2 logarithm *)
 
 Lemma size_log2 n : n<>0 -> size n = succ (log2 n).

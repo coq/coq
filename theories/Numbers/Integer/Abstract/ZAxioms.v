@@ -114,9 +114,9 @@ Module Type ZQuot' (Z:ZAxiomsMiniSig) := QuotRem' Z <+ QuotRemSpec Z.
 Module Type ZAxiomsSig := ZAxiomsMiniSig <+ OrderFunctions
    <+ HasAbs <+ HasSgn <+ NZParity.NZParity
    <+ NZPow.NZPow <+ NZSqrt.NZSqrt <+ NZLog.NZLog2 <+ NZGcd.NZGcd
-   <+ ZDiv <+ ZQuot <+ NZBits.NZBits.
+   <+ ZDiv <+ ZQuot <+ NZBits.NZBits <+ NZSquare.
 
 Module Type ZAxiomsSig' := ZAxiomsMiniSig' <+ OrderFunctions'
    <+ HasAbs <+ HasSgn <+ NZParity.NZParity
    <+ NZPow.NZPow' <+ NZSqrt.NZSqrt' <+ NZLog.NZLog2 <+ NZGcd.NZGcd'
-   <+ ZDiv' <+ ZQuot' <+ NZBits.NZBits'.
+   <+ ZDiv' <+ ZQuot' <+ NZBits.NZBits' <+ NZSquare.

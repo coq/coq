@@ -212,6 +212,36 @@ Proof.
  case N.compare_spec; intros; subst; trivial.
 Qed.
 
+Lemma inj_div n m : Z.of_N (n/m) = Z.of_N n / Z.of_N m.
+Proof.
+ destruct m as [|m]. now destruct n.
+ apply Z.div_unique_pos with (Z.of_N (n mod (Npos m))).
+ split. apply is_nonneg. apply inj_lt. now apply N.mod_lt.
+ rewrite <- inj_mul, <- inj_add. f_equal. now apply N.div_mod.
+Qed.
+
+Lemma inj_mod n m : (m<>0)%N -> Z.of_N (n mod m) = (Z.of_N n) mod (Z.of_N m).
+Proof.
+ intros Hm.
+ apply Z.mod_unique_pos with (Z.of_N (n / m)).
+ split. apply is_nonneg. apply inj_lt. now apply N.mod_lt.
+ rewrite <- inj_mul, <- inj_add. f_equal. now apply N.div_mod.
+Qed.
+
+Lemma inj_quot n m : Z.of_N (n/m) = Z.of_N n ÷ Z.of_N m.
+Proof.
+ destruct m.
+ - now destruct n.
+ - rewrite Z.quot_div_nonneg, inj_div; trivial. apply is_nonneg. easy.
+Qed.
+
+Lemma inj_rem n m : Z.of_N (n mod m) = Z.rem (Z.of_N n) (Z.of_N m).
+Proof.
+ destruct m.
+ - now destruct n.
+ - rewrite Z.rem_mod_nonneg, inj_mod; trivial. easy. apply is_nonneg. easy.
+Qed.
+
 Lemma inj_div2 n : Z.of_N (N.div2 n) = Z.div2 (Z.of_N n).
 Proof.
  destruct n as [|p]; trivial. now destruct p.
@@ -220,6 +250,11 @@ Qed.
 Lemma inj_quot2 n : Z.of_N (N.div2 n) = Z.quot2 (Z.of_N n).
 Proof.
  destruct n as [|p]; trivial. now destruct p.
+Qed.
+
+Lemma inj_pow n m : Z.of_N (n^m) = (Z.of_N n)^(Z.of_N m).
+Proof.
+ symmetry. destruct n, m; trivial. now apply Z.pow_0_l. apply Z.pow_Zpos.
 Qed.
 
 End N2Z.
@@ -323,6 +358,56 @@ Proof.
   now case Pos.compare.
 Qed.
 
+Lemma inj_div n m : 0<=n -> 0<=m -> Z.to_N (n/m) = (Z.to_N n / Z.to_N m)%N.
+Proof.
+ destruct n, m; trivial; intros Hn Hm;
+ (now destruct Hn) || (now destruct Hm) || clear.
+ simpl. rewrite <- (N2Z.id (_ / _)). f_equal. now rewrite N2Z.inj_div.
+Qed.
+
+Lemma inj_mod n m : 0<=n -> 0<m ->
+ Z.to_N (n mod m) = ((Z.to_N n) mod (Z.to_N m))%N.
+Proof.
+ destruct n, m; trivial; intros Hn Hm;
+ (now destruct Hn) || (now destruct Hm) || clear.
+ simpl. rewrite <- (N2Z.id (_ mod _)). f_equal. now rewrite N2Z.inj_mod.
+Qed.
+
+Lemma inj_quot n m : 0<=n -> 0<=m -> Z.to_N (n÷m) = (Z.to_N n / Z.to_N m)%N.
+Proof.
+ destruct m.
+ - now destruct n.
+ - intros. now rewrite Z.quot_div_nonneg, inj_div.
+ - now destruct 2.
+Qed.
+
+Lemma inj_rem n m :0<=n -> 0<=m ->
+ Z.to_N (Z.rem n m) = ((Z.to_N n) mod (Z.to_N m))%N.
+Proof.
+ destruct m.
+ - now destruct n.
+ - intros. now rewrite Z.rem_mod_nonneg, inj_mod.
+ - now destruct 2.
+Qed.
+
+Lemma inj_div2 n : Z.to_N (Z.div2 n) = N.div2 (Z.to_N n).
+Proof.
+ destruct n as [|p|p]; trivial. now destruct p.
+Qed.
+
+Lemma inj_quot2 n : Z.to_N (Z.quot2 n) = N.div2 (Z.to_N n).
+Proof.
+ destruct n as [|p|p]; trivial; now destruct p.
+Qed.
+
+Lemma inj_pow n m : 0<=n -> 0<=m -> Z.to_N (n^m) = ((Z.to_N n)^(Z.to_N m))%N.
+Proof.
+ destruct m.
+ - trivial.
+ - intros. now rewrite <- (N2Z.id (_ ^ _)), N2Z.inj_pow, id.
+ - now destruct 2.
+Qed.
+
 End Z2N.
 
 Module Zabs2N.
@@ -368,6 +453,11 @@ Proof.
 Qed.
 
 (** [Z.abs_N] and usual operations, with non-negative integers *)
+
+Lemma inj_opp n : Z.abs_N (-n) = Z.abs_N n.
+Proof.
+ now destruct n.
+Qed.
 
 Lemma inj_succ n : 0<=n -> Z.abs_N (Z.succ n) = N.succ (Z.abs_N n).
 Proof.
@@ -428,6 +518,35 @@ Lemma inj_max n m : 0<=n -> 0<=m ->
 Proof.
  intros. rewrite !abs_N_nonneg; trivial. now apply Z2N.inj_max.
  transitivity n; trivial. apply Z.le_max_l.
+Qed.
+
+Lemma inj_quot n m : Z.abs_N (n÷m) = ((Z.abs_N n) / (Z.abs_N m))%N.
+Proof.
+ assert (forall p q, Z.abs_N (Zpos p ÷ Zpos q) = (Npos p / Npos q)%N).
+  intros. rewrite abs_N_nonneg. now apply Z2N.inj_quot. now apply Z.quot_pos.
+ destruct n, m; trivial; simpl.
+ - trivial.
+ - now rewrite <- Z.opp_Zpos, Z.quot_opp_r, inj_opp.
+ - now rewrite <- Z.opp_Zpos, Z.quot_opp_l, inj_opp.
+ - now rewrite <- 2 Z.opp_Zpos, Z.quot_opp_opp.
+Qed.
+
+Lemma inj_rem n m : Z.abs_N (Z.rem n m) = ((Z.abs_N n) mod (Z.abs_N m))%N.
+Proof.
+ assert
+  (forall p q, Z.abs_N (Z.rem (Zpos p) (Zpos q)) = ((Npos p) mod (Npos q))%N).
+  intros. rewrite abs_N_nonneg. now apply Z2N.inj_rem. now apply Z.rem_nonneg.
+ destruct n, m; trivial; simpl.
+ - trivial.
+ - now rewrite <- Z.opp_Zpos, Z.rem_opp_r.
+ - now rewrite <- Z.opp_Zpos, Z.rem_opp_l, inj_opp.
+ - now rewrite <- 2 Z.opp_Zpos, Z.rem_opp_opp, inj_opp.
+Qed.
+
+Lemma inj_pow n m : 0<=m -> Z.abs_N (n^m) = ((Z.abs_N n)^(Z.abs_N m))%N.
+Proof.
+ intros Hm. rewrite abs_N_spec, Z.abs_pow, Z2N.inj_pow, <- abs_N_spec; trivial.
+ f_equal. symmetry; now apply abs_N_nonneg. apply Z.abs_nonneg.
 Qed.
 
 (** [Z.abs_N] and usual operations, statements with [Z.abs] *)

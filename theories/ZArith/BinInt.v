@@ -576,6 +576,20 @@ Proof.
  now destruct m.
 Qed.
 
+(** For folding back a [pow_pos] into a [pow] *)
+
+Lemma pow_pos_fold n p : pow_pos n p = n ^ (Zpos p).
+Proof.
+ reflexivity.
+Qed.
+
+(** ** Specification of square *)
+
+Lemma square_spec n : square n = n * n.
+Proof.
+ destruct n; trivial; simpl; f_equal; apply Pos.square_spec.
+Qed.
+
 (** ** Specification of square root *)
 
 Lemma sqrtrem_spec n : 0<=n ->

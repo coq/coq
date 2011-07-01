@@ -83,7 +83,7 @@ Module Type NType.
  Parameter spec_pred: forall x, [pred x] = Z.max 0 ([x] - 1).
  Parameter spec_sub: forall x y, [sub x y] = Z.max 0 ([x] - [y]).
  Parameter spec_mul: forall x y, [mul x y] = [x] * [y].
- Parameter spec_square: forall x, [square x] = [x] *  [x].
+ Parameter spec_square: forall x, [square x] = [x] * [x].
  Parameter spec_pow_pos: forall x n, [pow_pos x n] = [x] ^ Zpos n.
  Parameter spec_pow_N: forall x n, [pow_N x n] = [x] ^ Z.of_N n.
  Parameter spec_pow: forall x n, [pow x n] = [x] ^ [n].

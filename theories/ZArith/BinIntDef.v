@@ -132,6 +132,15 @@ Definition pow x y :=
 
 Infix "^" := pow : Z_scope.
 
+(** ** Square *)
+
+Definition square x :=
+  match x with
+    | 0 => 0
+    | Zpos p => Zpos (Pos.square p)
+    | Zneg p => Zpos (Pos.square p)
+  end.
+
 (** ** Comparison *)
 
 Definition compare x y :=
