@@ -421,6 +421,10 @@ let auto_inline = my_bool_option "AutoInline" false
 
 let type_expand = my_bool_option "TypeExpand" true
 
+(*s Extraction KeepSingleton *)
+
+let keep_singleton = my_bool_option "KeepSingleton" false
+
 (*s Extraction Optimize *)
 
 type opt_flag =

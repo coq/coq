@@ -402,7 +402,8 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	if Array.length p.ip_types <> 1 then raise (I Standard);
 	let typ = p.ip_types.(0) in
 	let l = List.filter (fun t -> not (isDummy (expand env t))) typ in
-	if List.length l = 1 && not (type_mem_kn kn (List.hd l))
+	if not (keep_singleton ()) &&
+	    List.length l = 1 && not (type_mem_kn kn (List.hd l))
 	then raise (I Singleton);
 	if l = [] then raise (I Standard);
 	if not mib.mind_record then raise (I Standard);

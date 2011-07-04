@@ -126,7 +126,8 @@ let rec pp_type par vl t =
     | Tglob (r,[a1;a2]) when is_infix r ->
 	pp_par par (pp_rec true a1 ++ str (get_infix r) ++ pp_rec true a2)
     | Tglob (r,[]) -> pp_global Type r
-    | Tglob (IndRef(kn,0),l) when kn = mk_ind "Coq.Init.Specif" "sig" ->
+    | Tglob (IndRef(kn,0),l)
+	when not (keep_singleton ()) && kn = mk_ind "Coq.Init.Specif" "sig" ->
 	pp_tuple_light pp_rec l
     | Tglob (r,l) ->
 	pp_tuple_light pp_rec l ++ spc () ++ pp_global Type r

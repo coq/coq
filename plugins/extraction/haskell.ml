@@ -83,7 +83,8 @@ let rec pp_type par vl t =
     | Tmeta _ | Tvar' _ -> assert false
     | Tvar i -> (try pr_id (List.nth vl (pred i)) with _ -> (str "a" ++ int i))
     | Tglob (r,[]) -> pp_global Type r
-    | Tglob (IndRef(kn,0),l) when kn = mk_ind "Coq.Init.Specif" "sig" ->
+    | Tglob (IndRef(kn,0),l)
+	when not (keep_singleton ()) && kn = mk_ind "Coq.Init.Specif" "sig" ->
 	  pp_type true vl (List.hd l)
     | Tglob (r,l) ->
 	  pp_par par
