@@ -419,7 +419,7 @@ Instance equivalence_rewrite_relation `(Equivalence A eqA) : RewriteRelation eqA
 
 (** Strict Order *)
 
-Class StrictOrder {A : Type} (R : relation A) := {
+Class StrictOrder {A : Type} (R : relation A) : Prop := {
   StrictOrder_Irreflexive :> Irreflexive R ;
   StrictOrder_Transitive :> Transitive R
 }.
