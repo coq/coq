@@ -42,7 +42,7 @@ let type_of_var env id =
   with Not_found ->
     anomaly ("type_of: variable "^(string_of_id id)^" unbound")
 
-let retype sigma =
+let retype ?(polyprop=true) sigma =
   let rec type_of env cstr=
     match kind_of_term cstr with
     | Meta n ->
@@ -127,7 +127,8 @@ let retype sigma =
     match kind_of_term c with
     | Ind ind ->
       let (_,mip) = lookup_mind_specif env ind in
-	(try Inductive.type_of_inductive_knowing_parameters env mip argtyps
+	(try Inductive.type_of_inductive_knowing_parameters
+	       ~polyprop env mip argtyps
 	 with Reduction.NotArity -> anomaly "type_of: Not an arity")
     | Const cst ->
       let t = constant_type env cst in
@@ -140,8 +141,10 @@ let retype sigma =
   in type_of, sort_of, sort_family_of,
      type_of_global_reference_knowing_parameters
 
-let get_sort_of env sigma t = let _,f,_,_ = retype sigma in f env t
-let get_sort_family_of env sigma c = let _,_,f,_ = retype sigma in f env c
+let get_sort_of ?(polyprop=true) env sigma t =
+  let _,f,_,_ = retype ~polyprop sigma in f env t
+let get_sort_family_of ?(polyprop=true) env sigma c =
+  let _,_,f,_ = retype ~polyprop sigma in f env c
 let type_of_global_reference_knowing_parameters env sigma c args =
   let _,_,_,f = retype sigma in f env c args
 
@@ -161,8 +164,8 @@ let type_of_global_reference_knowing_conclusion env sigma c conclty =
 
 (* We are outside the kernel: we take fresh universes *)
 (* to avoid tactics and co to refresh universes themselves *)
-let get_type_of ?(refresh=true) env sigma c =
-  let f,_,_,_ = retype sigma in
+let get_type_of ?(polyprop=true) ?(refresh=true) env sigma c =
+  let f,_,_,_ = retype ~polyprop sigma in
   let t = f env c in
     if refresh then refresh_universes t else t
 

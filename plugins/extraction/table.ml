@@ -334,6 +334,15 @@ let error_no_module_expr mp =
        ++ str "some Declare Module outside any Module Type.\n"
        ++ str "This situation is currently unsupported by the extraction.")
 
+let error_singleton_become_prop id =
+  err (str "The informative inductive type " ++ pr_id id ++
+       str " has a Prop instance.\n" ++
+       str "This happens when a sort-polymorphic singleton inductive type\n" ++
+       str "has logical parameters, such as (I,I) : (True * True) : Prop.\n" ++
+       str "The Ocaml extraction cannot handle this situation yet.\n" ++
+       str "Instead, use a sort-monomorphic type such as (True /\\ True)\n" ++
+       str "or extract to Haskell.")
+
 let error_unknown_module m =
   err (str "Module" ++ spc () ++ pr_qualid m ++ spc () ++ str "not found.")
 

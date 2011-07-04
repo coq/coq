@@ -29,6 +29,7 @@ val error_inductive : global_reference -> 'a
 val error_nb_cons : unit -> 'a
 val error_module_clash : module_path -> module_path -> 'a
 val error_no_module_expr : module_path -> 'a
+val error_singleton_become_prop : identifier -> 'a
 val error_unknown_module : qualid -> 'a
 val error_scheme : unit -> 'a
 val error_not_visible : global_reference -> 'a
