@@ -105,6 +105,7 @@ let rec mgu = function
       mgu (a, a'); mgu (b, b')
   | Tglob (r,l), Tglob (r',l') when r = r' ->
        List.iter mgu (List.combine l l')
+  | (Tdummy _, _ | _, Tdummy _) when lang() = Haskell -> ()
   | Tdummy _, Tdummy _ -> ()
   | t, u when t = u -> () (* for Tvar, Tvar', Tunknown, Taxiom *)
   | _ -> raise Impossible
