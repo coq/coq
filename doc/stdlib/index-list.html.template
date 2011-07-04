@@ -180,24 +180,20 @@ through the <tt>Require Import</tt> command.</p>
     theories/ZArith/Zhints.v
     (theories/ZArith/ZArith_base.v)
     theories/ZArith/Zcomplements.v
-    theories/ZArith/Zsqrt_def.v
     theories/ZArith/Zsqrt_compat.v
     theories/ZArith/Zpow_def.v
+    theories/ZArith/Zpow_alt.v
     theories/ZArith/Zpower.v
-    theories/ZArith/Zdiv_def.v
     theories/ZArith/Zdiv.v
     theories/ZArith/Zquot.v
     theories/ZArith/Zeuclid.v
-    theories/ZArith/Zlog_def.v
     theories/ZArith/Zlogarithm.v
     (theories/ZArith/ZArith.v)
-    theories/ZArith/Zgcd_def.v
     theories/ZArith/Zgcd_alt.v
     theories/ZArith/Zwf.v
     theories/ZArith/Znumtheory.v
     theories/ZArith/Int.v
     theories/ZArith/Zpow_facts.v
-    theories/ZArith/Zdigits_def.v
     theories/ZArith/Zdigits.v
   </dd>
 
