@@ -85,11 +85,21 @@ val new_focus_kind : unit -> 'a focus_kind
     from it.*)
 type 'a focus_condition 
 (* [no_cond] only checks that the unfocusing command uses the right
-    [focus_kind]. *)
-val no_cond : 'a focus_kind -> 'a focus_condition
+    [focus_kind].
+   If [loose_end] (default [false]) is [true], then if the [focus_kind]
+   doesn't match, then unfocusing can occur, provided it unfocuses
+   an earlier focus.
+   For instance bullets can be unfocused in the following situation
+   [{- solve_goal. }] because they use a loose-end condition. *)
+val no_cond : ?loose_end:bool -> 'a focus_kind -> 'a focus_condition
 (* [done_cond] checks that the unfocusing command uses the right [focus_kind]
-    and that the focused proofview is complete. *)
-val done_cond : 'a focus_kind -> 'a focus_condition
+    and that the focused proofview is complete.
+   If [loose_end] (default [false]) is [true], then if the [focus_kind]
+   doesn't match, then unfocusing can occur, provided it unfocuses
+   an earlier focus.
+   For instance bullets can be unfocused in the following situation
+   [{ - solve_goal. }] because they use a loose-end condition.  *)
+val done_cond : ?loose_end:bool -> 'a focus_kind -> 'a focus_condition
 
 (* focus command (focuses on the [i]th subgoal) *)
 (* spiwack: there could also, easily be a focus-on-a-range tactic, is there 
@@ -97,8 +107,11 @@ val done_cond : 'a focus_kind -> 'a focus_condition
 val focus : 'a focus_condition -> 'a -> int -> proof -> unit
 
 exception FullyUnfocused
+exception CannotUnfocusThisWay
 (* Unfocusing command.
-   Raises [FullyUnfocused] if the proof is not focused. *)
+   Raises [FullyUnfocused] if the proof is not focused.
+   Raises [CannotUnfocusThisWay] if the proof the unfocusing condition
+     is not met. *)
 val unfocus : 'a focus_kind -> proof -> unit
 
 (* [get_at_focus k] gets the information stored at the closest focus point

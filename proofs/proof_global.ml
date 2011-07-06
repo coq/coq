@@ -300,7 +300,7 @@ let maximal_unfocus k p =
   begin try while Proof.no_focused_goal p do
     Proof.unfocus k p
   done
-  with Proof.FullyUnfocused | Util.UserError _ -> ()
+  with Proof.FullyUnfocused | Proof.CannotUnfocusThisWay -> ()
   end
 
 
@@ -335,7 +335,7 @@ module Bullet = struct
   module Strict = struct
     (* spiwack: we need only one focus kind as we keep a stack of (distinct!) bullets *)
     let bullet_kind = Proof.new_focus_kind () 
-    let bullet_cond = Proof.done_cond bullet_kind
+    let bullet_cond = Proof.done_cond ~loose_end:true bullet_kind
     let (get_bullets,set_bullets) =
       let bullets = Store.field () in
       begin fun pr -> Option.default [] (bullets.get (Proof.get_proof_info pr)) end ,
@@ -364,7 +364,7 @@ module Bullet = struct
 
     let put p bul =
       if has_bullet bul p then
-	begin 
+	Proof.transaction p begin fun () ->
 	  while bul <> pop p do () done;
 	  push bul p
 	end

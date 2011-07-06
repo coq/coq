@@ -34,8 +34,12 @@ open Term
 type _focus_kind = int
 type 'a focus_kind = _focus_kind
 type focus_info = Obj.t
+type unfocusable =
+  | Cannot
+  | Loose
+  | Strict
 type _focus_condition = 
-    (_focus_kind -> Proofview.proofview -> bool) *
+    (_focus_kind -> Proofview.proofview -> unfocusable) *
     (_focus_kind -> focus_info -> focus_info)
 type 'a focus_condition = _focus_condition
 
@@ -59,12 +63,45 @@ let check kind1 kind2 inf =
     of just one, if anyone needs it *)
 (* [no_cond] only checks that the unfocusing command uses the right
     [focus_kind]. *)
-let no_cond k0 k _ = k0 = k
-let no_cond k = no_cond k , check k
+
+module Cond = struct
+  (* first attempt at an algebra of condition *)
+  (* semantics:
+     - [Cannot] means that the condition is not met
+     - [Strict] that the condition is meant
+     - [Loose] that the condition is not quite meant
+       but authorises to unfocus provided a condition
+       of a previous focus on the stack is (strictly)
+       met.
+  *)
+  let bool b =
+    if b then fun _ _ -> Strict
+    else fun _ _ -> Cannot
+  let loose c k p = match c k p with
+    | Cannot -> Loose
+    | c -> c
+  let cloose l c =
+    if l then loose c
+    else c
+  let (&&&) c1 c2 k p=
+    match c1 k p , c2 k p with
+    | Cannot , _ 
+    | _ , Cannot -> Cannot
+    | Strict, Strict -> Strict
+    | _ , _ -> Loose
+  let kind k0 k p = bool (k0=k) k p 
+  let pdone k p = bool (Proofview.finished p) k p
+end
+
+open Cond
+let no_cond ~loose_end k0 =
+  cloose loose_end (kind k0)
+let no_cond ?(loose_end=false) k = no_cond ~loose_end k , check k
 (* [done_cond] checks that the unfocusing command uses the right [focus_kind]
     and that the focused proofview is complete. *)
-let done_cond k0 k p = k0 = k && Proofview.finished p
-let done_cond k = done_cond k , check k
+let done_cond ~loose_end k0 =
+  (cloose loose_end (kind k0)) &&& pdone
+let done_cond ?(loose_end=false) k = done_cond ~loose_end k , check k
 
 
 (* Subpart of the type of proofs. It contains the parts of the proof which
@@ -144,6 +181,7 @@ let return p =
     raise HasUnresolvedEvar
   else
     Proofview.return p.state.proofview
+
 
 (*** The following functions implement the basic internal mechanisms
      of proofs, they are not meant to be exported in the .mli ***)
@@ -244,6 +282,44 @@ let undo pr =
 let add_undo effect pr =
   push_undo (Effect effect) pr
 
+
+
+(*** Transactions ***)
+
+let init_transaction pr =
+  pr.transactions <- []::pr.transactions
+
+let commit_stack pr stack =
+  let push s = push_undo s pr in
+  List.iter push (List.rev stack)
+
+(* Invariant: [commit] should be called only when a transaction
+   is open. It closes the current transaction. *)
+let commit pr =
+  match pr.transactions with
+  | stack::trans' ->
+    pr.transactions <- trans';
+    commit_stack pr stack
+  | [] -> assert false
+
+(* Invariant: [rollback] should be called only when a transaction
+   is open. It closes the current transaction. *)
+let rec rollback pr =
+  try
+    undo pr;
+    rollback pr
+  with EmptyUndoStack ->
+    match pr.transactions with
+    | []::trans' -> pr.transactions <- trans'
+    | _ -> assert false
+
+
+let transaction pr t =
+  init_transaction pr;
+  try t (); commit pr
+  with e -> rollback pr; raise e
+
+
 (* Focus command (focuses on the [i]th subgoal) *)
 (* spiwack: there could also, easily be a focus-on-a-range tactic, is there 
    a need for it? *)
@@ -253,14 +329,31 @@ let focus cond inf i pr =
 
 (* Unfocus command.
    Fails if the proof is not focused. *)
-let unfocus kind pr =
+exception CannotUnfocusThisWay
+let _ = Errors.register_handler begin function
+  | CannotUnfocusThisWay ->
+    Util.error "This proof is focused, but cannot be unfocused this way"
+  | _ -> raise Errors.Unhandled
+end
+
+let rec unfocus kind pr () =
   let starting_point = save_state pr in
   let cond = cond_of_focus pr in
-  if fst cond kind pr.state.proofview then
+  match fst cond kind pr.state.proofview with
+  | Cannot -> raise CannotUnfocusThisWay
+  | Strict -> 
     (_unfocus pr;
      push_undo starting_point pr)
-  else
-    Util.error "This proof is focused, but cannot be unfocused this way"
+  | Loose ->
+    begin try
+	    _unfocus pr;
+	    push_undo starting_point pr;
+	    unfocus kind pr ()
+      with FullyUnfocused -> raise CannotUnfocusThisWay
+    end
+
+let unfocus kind pr =
+  transaction pr (unfocus kind pr)
       
 let get_at_point kind ((_,get),inf,_) = get kind inf
 exception NoSuchFocus
@@ -306,40 +399,6 @@ let run_tactic env tac pr =
     raise e
 
 
-(*** Transactions ***)
-
-let init_transaction pr =
-  pr.transactions <- []::pr.transactions
-
-let commit_stack pr stack =
-  let push s = push_undo s pr in
-  List.iter push (List.rev stack)
-
-(* Invariant: [commit] should be called only when a transaction
-   is open. It closes the current transaction. *)
-let commit pr =
-  match pr.transactions with
-  | stack::trans' ->
-    pr.transactions <- trans';
-    commit_stack pr stack
-  | [] -> assert false
-
-(* Invariant: [rollback] should be called only when a transaction
-   is open. It closes the current transaction. *)
-let rec rollback pr =
-  try
-    undo pr;
-    rollback pr
-  with EmptyUndoStack ->
-    match pr.transactions with
-    | []::trans' -> pr.transactions <- trans'
-    | _ -> assert false
-
-
-let transaction pr t =
-  init_transaction pr;
-  try t (); commit pr
-  with e -> rollback pr; raise e
 
 
 (*** Compatibility layer with <=v8.2 ***)
