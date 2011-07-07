@@ -164,7 +164,7 @@ let version () =
 
 let print_usage_channel co command =
   output_string co command;
-  output_string co "Coq options are:\n";
+  output_string co "coqchk options are:\n";
   output_string co
 "  -I dir -as coqdir      map physical dir to logical coqdir\
 \n  -I dir                 map directory dir to the empty logical path\
@@ -175,11 +175,11 @@ let print_usage_channel co command =
 \n  -admit module          load module and dependencies without checking\
 \n  -norec module          check module but admit dependencies without checking\
 \n\
-\n  -where                 print Coq's standard library location and exit\
-\n  -v                     print Coq version and exit\
+\n  -where                 print coqchk's standard library location and exit\
+\n  -v                     print coqchk version and exit\
 \n  -boot                  boot mode\
 \n  -o, --output-context   print the list of assumptions\
-\n  -m, --memoty           print the maximum heap size\
+\n  -m, --memory           print the maximum heap size\
 \n  -silent                disable trace of constants being checked\
 \n\
 \n  -impredicative-set     set sort Set impredicative\
@@ -192,7 +192,7 @@ let print_usage_channel co command =
 let print_usage = print_usage_channel stderr
 
 let print_usage_coqtop () =
-  print_usage "Usage: coqchk <options>\n\n"
+  print_usage "Usage: coqchk <options> modules\n\n"
 
 let usage () =
   print_usage_coqtop ();
@@ -282,8 +282,15 @@ let rec explain_exn = function
 let parse_args argv =
   let rec parse = function
     | [] -> ()
-   | "-impredicative-set" :: rem ->
-       set_engagement Declarations.ImpredicativeSet; parse rem
+    | "-impredicative-set" :: rem ->
+      set_engagement Declarations.ImpredicativeSet; parse rem
+
+    | "-coqlib" :: s :: rem ->
+      if not (exists_dir s) then 
+	(msgnl (str ("Directory '"^s^"' does not exist")); exit 1);
+      Flags.coqlib := s;
+      Flags.coqlib_spec := true;
+      parse rem
 
     | ("-I"|"-include") :: d :: "-as" :: p :: rem -> set_include d p; parse rem
     | ("-I"|"-include") :: d :: "-as" :: [] -> usage ()
