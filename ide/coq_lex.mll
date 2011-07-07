@@ -131,8 +131,9 @@ rule coq_string = parse
 and comment = parse
   | "(*" { ignore (comment lexbuf); comment lexbuf }
   | "\"" { ignore (coq_string lexbuf); comment lexbuf }
-  | "*)" { Lexing.lexeme_end lexbuf }
-  | eof { Lexing.lexeme_end lexbuf }
+  | "*)" space? { (* See undotted_command rule to understand the space? *)
+      (true, Lexing.lexeme_start lexbuf + 2) }
+  | eof { (false, Lexing.lexeme_end lexbuf) }
   | _ { comment lexbuf }
 
 and sentence stamp = parse
@@ -142,10 +143,13 @@ and sentence stamp = parse
     }
   | "(*" {
       let comm_start = Lexing.lexeme_start lexbuf in
-      let comm_end = comment lexbuf in
-      if !start then last_leading_blank := comm_end;
+      let trully_terminated,comm_end = comment lexbuf in
       stamp comm_start comm_end Comment;
-      sentence stamp lexbuf
+	(* A comment alone is a sentence.
+	   A comment in a sentence doesn't terminate the sentence.
+	*)
+      if not !start then sentence stamp lexbuf
+      else if not trully_terminated then raise Not_found
     }
   | "\"" {
       let str_start = Lexing.lexeme_start lexbuf in
