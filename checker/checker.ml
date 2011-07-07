@@ -31,11 +31,11 @@ let parse_dir s =
     decoupe_dirs [] 0
 let dirpath_of_string s =
   match parse_dir s with
-      [] -> invalid_arg "dirpath_of_string"
+      [] -> Check.default_root_prefix
     | dir -> make_dirpath (List.map id_of_string dir)
 let path_of_string s =
   match parse_dir s with
-      [] -> invalid_arg "dirpath_of_string"
+      [] -> invalid_arg "path_of_string"
     | l::dir -> {dirpath=dir; basename=l}
 
 let (/) = Filename.concat
