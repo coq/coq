@@ -68,13 +68,14 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ... [-custom
 
 [file.v]: Coq file to be compiled
 [file.ml[i4]?]: Objective Caml file to be compiled
-[subdirectory] : subdirectory that should be \"made\"
+[subdirectory] : subdirectory that should be \"made\" and has a
+  Makefile itself to do so.
 [-custom command dependencies file]: add target \"file\" with command
   \"command\" and dependencies \"dependencies\"
-[-I dir]: look for dependencies in \"dir\"
-[-R physicalpath logicalpath]: look for dependencies resursively starting from
- \"physicalpath\". The logical path associated to the physical path is
- \"logicalpath\".
+[-I dir]: look for Objective Caml dependencies in \"dir\"
+[-R physicalpath logicalpath]: look for Coq dependencies resursively
+  starting from \"physicalpath\". The logical path associated to the
+  physical path is \"logicalpath\".
 [VARIABLE = value]: Add the variable definition \"VARIABLE=value\"
 [-byte]: compile with byte-code version of coq
 [-opt]: compile with native-code version of coq

@@ -84,42 +84,37 @@ modules.
 
 The writing of a generic and complete {\tt Makefile} may be a tedious work
 and that's why \Coq\ provides a tool to automate its creation,
-{\tt coq\_makefile}. Given the files to compile, the command {\tt
-coq\_makefile} prints a 
-{\tt Makefile} on the standard output. So one has just to run the
-command:
+{\tt coq\_makefile}.
 
+Arguments are explain by \texttt{\% coq\_makefile --help}.  They can be directly
+written in the command line but it is recommended to write them in a file (called
+for example {\tt Make}) and then call {\tt coq\_makefile -f Make -o
+  Makefile}. That means options are in {\tt Make} file and output is {\tt
+  Makefile} This way, {\tt Makefile} will be automatically regenerated if
+something changes in {\tt Make}.
+
+The first time you use this tool, you may be happy with:
 \begin{quotation}
-\texttt{\% coq\_makefile} {\em file$_1$.v \dots\ file$_n$.v} \texttt{> Makefile}
+\texttt{\% \{ echo '-R .} {\em MyFancyLib} \texttt{' ; find -name '*.v' -print \} >
+  Make \&\& coq\_makefile -f Make -o Makefile}
 \end{quotation}
 
-The resulted {\tt Makefile} has a target {\tt depend} which computes the
-dependencies and puts them in a separate file {\tt .depend}, which is
-included by the {\tt Makefile}. 
-Therefore, you should create such a file before the first invocation
-of make. You can for instance use the command 
-
-\begin{quotation}
-\texttt{\% touch .depend}
-\end{quotation}
-
-Then, to initialize or update the modules dependencies, type in:
-
-\begin{quotation}
-\texttt{\% make depend}
-\end{quotation}
-
-There is a target {\tt all} to compile all the files {\em file$_1$
-\dots\ file$_n$}, and a generic target to produce a {\tt .vo} file from
-the corresponding {\tt .v} file (so you can do {\tt make} {\em file}{\tt.vo}
-to compile the file {\em file}{\tt.v}).
-
-{\tt coq\_makefile} can also handle the case of ML files and
-subdirectories. For more options type
-
-\begin{quotation}
-\texttt{\% coq\_makefile --help}
-\end{quotation}
+To customize things afterwards, remember:
+\begin{itemize}
+\item Coq files must end in {\tt .v}, caml modules in {\tt .ml4} if they
+  require camlp preproccessing (and in {\tt .ml} otherwise), and caml module signatures in {\tt
+    .mli}.
+\item If you give a directory directly as argument, it is because you provide a
+  Makefile for it in it.
+\item {\tt -R} option is for Coq, {\tt -I} for caml. The same directory can
+  ``included'' by both.
+  Using {\tt -R} option gives a right logical path and a correct installation
+  emplacement to your coq files.
+\item If your files depend on an external library that isn't install somewhere
+  looked by coqc, use {\tt OTHERFLAGS = '-R path/to/lib lib\_name'} option in your {\tt
+    Make} but don't do {\tt -R \dots} directly, the {\em make clean} command would
+  erase it!
+\end{itemize}
 
 \Warning To compile a project containing \ocaml{} files you must keep
 the sources of \Coq{} somewhere and have an environment variable named
