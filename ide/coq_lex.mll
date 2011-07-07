@@ -83,6 +83,8 @@ let ident = firstchar identchar*
 
 let sentence_sep = '.' [ ' ' '\r' '\n' '\t' ]
 
+let undotted_command = [ '{' '}' ]
+
 let multiword_declaration =
   "Module" (space+ "Type")?
 | "Program" space+ ident
@@ -185,6 +187,13 @@ and sentence stamp = parse
       sentence stamp lexbuf }
   | ".."
   | _    { sentence stamp lexbuf}
+  | undotted_command space? { (* the space? here is a awful consequence of
+				 the way lexing is asked by Coqide.split_slice_lax:
+				 a training whitespace is add at the end of text
+				 and then dropped. This space has consequently to be
+				 part of the sentence *)
+      if not !start then sentence stamp lexbuf (* in the middle of a command our token
+						  aren't command *)}
   | sentence_sep { }
   | eof { raise Not_found }
 
