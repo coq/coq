@@ -218,7 +218,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles),_,sds) inc =
       print "\n";
     end;
     print "install:";
-    if (not_empty ml4files) || (not_empty mlfiles) then print "$(if ifeq '$(HASNATDYNLINK)' 'true',install-natdynlink)";
+    if (not_empty cmfiles) then print "$(if ifeq '$(HASNATDYNLINK)' 'true',install-natdynlink)";
     print "\n";
     if not_empty vfiles then install_include_by_root "COQLIB" "VOFILES" vfiles inc;
     if (not_empty cmfiles) then begin
@@ -634,15 +634,15 @@ let ensure_root_dir l =
 
 let warn_install_at_root_directory (vfiles,(mlifiles,ml4files,mlfiles),_,_) (inc_i,inc_r) =
   let inc_r_top = List.filter (fun (_,ldir,_) -> ldir = "") inc_r in
-  let inc_top = List.map (fun (p,_,a) -> (p,a)) inc_r_top @ inc_i in
+  let inc_top = List.map (fun (p,_,_) -> p) inc_r_top @ List.map fst inc_i in
   let files = vfiles @ mlifiles @ ml4files @ mlfiles in
   if not !no_install &&
-    List.exists (fun f -> List.mem_assoc (Filename.dirname f) inc_top) files
+    List.exists (fun f -> List.mem (Filename.dirname f) inc_top) files
   then
     Printf.eprintf "Warning: install target will copy files at the first level of the coq contributions installation directory; option -R %sis recommended\n"
       (if inc_r_top = [] then "" else "with non trivial logical root ")
 
-let check_overlapping_include (inc_i,inc_r) =
+let check_overlapping_include (_,inc_r) =
   let pwd = Sys.getcwd () in
   let rec aux = function
     | [] -> ()
@@ -652,9 +652,6 @@ let check_overlapping_include (inc_i,inc_r) =
 	List.iter (fun (pdir',_,abspdir') ->
 	  if is_prefix abspdir abspdir' or is_prefix abspdir' abspdir then
 	    Printf.eprintf "Warning: in options -R, %s and %s overlap\n" pdir pdir') l;
-	List.iter (fun (pdir',abspdir') ->
-	  if is_prefix abspdir abspdir' or is_prefix abspdir' abspdir then
-	    Printf.eprintf "Warning: in option -I, %s overlap with %s in option -R\n" pdir' pdir) inc_i
   in aux inc_r
 
 let do_makefile args =
