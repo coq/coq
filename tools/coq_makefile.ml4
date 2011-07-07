@@ -123,8 +123,9 @@ let has_top_file = function
   | _ -> false
 
 let physical_dir_of_logical_dir ldir =
-  let pdir = String.copy ldir in
-  for i = 0 to String.length ldir - 1 do
+  let le = String.length ldir - 1 in
+  let pdir = if ldir.[le] = '.' then String.sub ldir 0 (le - 1) else String.copy ldir in
+  for i = 0 to le - 1 do
     if pdir.[i] = '.' then pdir.[i] <- '/';
   done;
   pdir
@@ -198,12 +199,14 @@ let install_doc some_vfiles some_mlifiles (_,inc_r) =
 	  if some_mlifiles then install_one_kind "mlihtml" "$(INSTALLDEFAULTROOT)";
       |(_,lp,_)::q ->
 	 let pr = List.fold_left (fun a (_,b,_) -> string_prefix a b) lp q in
-	   if (pr <> "") && ((lp = pr) || pr.[String.length pr - 1] = '.') then begin
+	   if (pr <> "") &&
+	     ((List.exists (fun(_,b,_) -> b = pr) inc_r) || pr.[String.length pr - 1] = '.')
+	   then begin
 	     let rt = physical_dir_of_logical_dir pr in
 	       if some_vfiles then install_one_kind "html" rt;
 	       if some_mlifiles then install_one_kind "mlihtml" rt;
 	   end else begin
-	     prerr_string "Warning: -R options don't have a correct common preffix,
+	     prerr_string "Warning: -R options don't have a correct common prefix,
  install-doc will put anything in $INSTALLDEFAULTROOT";
 	   if some_vfiles then install_one_kind "html" "$(INSTALLDEFAULTROOT)";
 	   if some_mlifiles then install_one_kind "mlihtml" "$(INSTALLDEFAULTROOT)";
