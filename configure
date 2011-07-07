@@ -292,6 +292,7 @@ case $arch_spec in
     # First we test if we are running a Cygwin system
     if [ `uname -s | cut -c -6` = "CYGWIN" ] ; then
 	ARCH="win32"
+	CYGWIN=yes
     else
 	# If not, we determine the architecture
 	if test -x /bin/uname ; then
@@ -722,7 +723,7 @@ case $ARCH in
     win32) COQTOP=`cygpath -m ${COQTOP}`
 esac
 
-case $ARCH in
+case $ARCH$CYGWIN in
   win32)
 	 bindir_def='C:\coq\bin'
 	 libdir_def='C:\coq\lib'
