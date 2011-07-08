@@ -1090,8 +1090,11 @@ object(self)
     let rec n_step n =
       if Stack.is_empty cmd_stack then n else
         let ide_ri = Stack.pop cmd_stack in
-        if i#compare (input_buffer#get_iter_at_mark ide_ri.stop) < 0 then
-          n_step (succ n)
+	let stop = input_buffer#get_iter_at_mark ide_ri.stop in
+        if i#compare stop < 0 then
+          if stop#backward_char#has_tag Tags.Script.comment
+	  then n_step n
+	  else n_step (succ n)
         else
           (Stack.push ide_ri cmd_stack; n)
     in
@@ -1149,27 +1152,20 @@ object(self)
        (try
           let ide_ri = Stack.pop cmd_stack in
           let start = input_buffer#get_iter_at_mark ide_ri.start in
+	  let stop = input_buffer#get_iter_at_mark ide_ri.stop in
           let update_input () =
             prerr_endline "Removing processed tag...";
-            input_buffer#remove_tag
-              Tags.Script.processed
-              ~start
-              ~stop:(input_buffer#get_iter_at_mark ide_ri.stop);
-            input_buffer#remove_tag
-              Tags.Script.unjustified
-              ~start
-              ~stop:(input_buffer#get_iter_at_mark ide_ri.stop);
+            input_buffer#remove_tag Tags.Script.processed ~start ~stop;
+            input_buffer#remove_tag Tags.Script.unjustified ~start ~stop;
             prerr_endline "Moving start_of_input";
-            input_buffer#move_mark
-              ~where:start
-              (`NAME "start_of_input");
+            input_buffer#move_mark ~where:start (`NAME "start_of_input");
             input_buffer#place_cursor ~where:start;
             self#recenter_insert;
             self#show_goals;
             self#clear_message
           in
-          ignore (Coq.rewind !mycoqtop 1);
-          sync update_input ()
+            if not (stop#backward_char#has_tag Tags.Script.comment) then ignore (Coq.rewind !mycoqtop 1);
+            sync update_input ()
         with
           | Stack.Empty -> (* flash_info "Nothing to Undo"*)()
        );
