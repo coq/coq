@@ -334,12 +334,12 @@ module Bullet = struct
 
   module Strict = struct
     (* spiwack: we need only one focus kind as we keep a stack of (distinct!) bullets *)
-    let bullet_kind = Proof.new_focus_kind () 
+    let bullet_kind = (Proof.new_focus_kind () : t list Proof.focus_kind)
     let bullet_cond = Proof.done_cond ~loose_end:true bullet_kind
-    let (get_bullets,set_bullets) =
-      let bullets = Store.field () in
-      begin fun pr -> Option.default [] (bullets.get (Proof.get_proof_info pr)) end ,
-      begin fun bs pr -> Proof.set_proof_info (bullets.set bs (Proof.get_proof_info pr)) pr end
+
+    let get_bullets pr =
+      try Proof.get_at_focus bullet_kind pr
+      with Proof.NoSuchFocus -> []
 
     let has_bullet bul pr =
       let rec has_bullet = function
@@ -352,15 +352,13 @@ module Bullet = struct
     (* precondition: the stack is not empty *)
     let pop pr =
       match get_bullets pr with
-      | b::stk -> 
-	Proof.unfocus bullet_kind pr ;
-	set_bullets stk pr ;
-	b
-      | [] -> Util.anomaly "Tried to pop bullet from an empty stack"
+      | b::_ ->
+	Proof.unfocus bullet_kind pr;
+	(*returns*) b
+      | _ -> assert false
 
     let push b pr =
-      Proof.focus bullet_cond () 1 pr ;
-      set_bullets (b::get_bullets pr) pr
+      Proof.focus bullet_cond (b::get_bullets pr) 1 pr
 
     let put p bul =
       if has_bullet bul p then
