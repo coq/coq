@@ -12,6 +12,7 @@ type target =
   | ML of string (* ML file : foo.ml -> (ML "foo.ml") *)
   | MLI of string (* MLI file : foo.mli -> (MLI "foo.mli") *)
   | ML4 of string (* ML4 file : foo.ml4 -> (ML4 "foo.ml4") *)
+  | MLLIB of string (* MLLIB file : foo.mllib -> (MLLIB "foo.mllib") *)
   | V of string  (* V file : foo.v -> (V "foo") *)
   | Special of string * string * string (* file, dependencies, command *)
   | Subdir of string
@@ -27,6 +28,7 @@ let some_vfile = ref false
 let some_mlfile = ref false
 let some_mlifile = ref false
 let some_ml4file = ref false
+let some_mllibfile = ref false
 
 let opt = ref "-opt"
 let impredicative_set = ref false
@@ -61,13 +63,14 @@ let section s =
 let usage () =
   output_string stderr "Usage summary:
 
-coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ... [-custom
-  command dependencies file] ... [-I dir] ... [-R physicalpath logicalpath]
-  ... [VARIABLE = value] ...  [-opt|-byte] [-impredicative-set] [-no-install]
-  [-f file] [-o file] [-h] [--help]
+coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ... [file.mllib]
+  ... [-custom command dependencies file] ... [-I dir] ... [-R physicalpath
+  logicalpath] ... [VARIABLE = value] ...  [-opt|-byte] [-impredicative-set]
+  [-no-install] [-f file] [-o file] [-h] [--help]
 
 [file.v]: Coq file to be compiled
 [file.ml[i4]?]: Objective Caml file to be compiled
+[file.mllib]: ocamlbuild file that describes a Objective Caml library
 [subdirectory] : subdirectory that should be \"made\" and has a
   Makefile itself to do so.
 [-custom command dependencies file]: add target \"file\" with command
@@ -119,7 +122,7 @@ let is_included dir = function
   | _ -> false
 
 let has_top_file = function
-  | ML s | V s | MLI s | ML4 s -> s = Filename.basename s
+  | ML s | V s | MLI s | ML4 s |MLLIB s -> s = Filename.basename s
   | _ -> false
 
 let physical_dir_of_logical_dir ldir =
@@ -213,22 +216,25 @@ let install_doc some_vfiles some_mlifiles (_,inc_r) =
 	   end in
       print "\n"
 
-let install (vfiles,(mlifiles,ml4files,mlfiles),_,sds) inc =
+let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles),_,sds) inc =
   let not_empty = function |[] -> false |_::_ -> true in
   let cmfiles = mlfiles@ml4files in
-    if (not_empty cmfiles) then begin
+  let allcmfiles = cmfiles@mllibfiles in
+    if (not_empty allcmfiles) then begin
       print "install-natdynlink:\n";
-      install_include_by_root "COQLIB" "CMXSFILES" cmfiles inc;
+      install_include_by_root "COQLIB" "CMXSFILES" allcmfiles inc;
       print "\n";
     end;
     print "install:";
-    if (not_empty cmfiles) then print "$(if ifeq '$(HASNATDYNLINK)' 'true',install-natdynlink)";
+    if (not_empty allcmfiles) then print "$(if ifeq '$(HASNATDYNLINK)' 'true',install-natdynlink)";
     print "\n";
     if not_empty vfiles then install_include_by_root "COQLIB" "VOFILES" vfiles inc;
     if (not_empty cmfiles) then begin
       install_include_by_root "COQLIB" "CMOFILES" cmfiles inc;
       install_include_by_root "COQLIB" "CMIFILES" cmfiles inc;
     end;
+    if (not_empty mllibfiles) then
+      install_include_by_root "COQLIB" "CMAFILES" mllibfiles inc;
     List.iter
       (fun x ->
 	 printf "\t(cd %s; $(MAKE) DSTROOT=$(DSTROOT) INSTALLDEFAULTROOT=$(INSTALLDEFAULTROOT)/%s install)\n" x x)
@@ -250,8 +256,10 @@ let make_makefile sds =
 let clean sds sps =
   print "clean:\n";
   print "\trm -f *~ Makefile-localvars.gen\n";
-  if !some_mlfile || !some_mlifile || !some_ml4file then
-    print "\trm -f $(CMOFILES) $(CMIFILES) $(CMXFILES) $(CMXSFILES) $(OFILES) $(MLFILES:.ml=.ml.d) $(MLIFILES:.mli=.mli.d) $(ML4FILES:.ml4=.ml4.d)\n";
+  if !some_mlfile || !some_mlifile || !some_ml4file || !some_mllibfile then begin
+    print "\trm -f $(CMOFILES) $(CMIFILES) $(CMXFILES) $(CMAFILES) $(CMXAFILES) $(CMXSFILES) $(OFILES)\n";
+    print "\trm -f $(MLFILES:.ml=.ml.d) $(MLIFILES:.mli=.mli.d) $(ML4FILES:.ml4=.ml4.d) $(MLLIBFILES:.mllib=.mllib.d)\n";
+  end;
   if !some_vfile then
     print "\trm -f $(VOFILES) $(VIFILES) $(GFILES) $(VFILES:.v=.v.d)\n";
   print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) all-mli.tex\n";
@@ -280,7 +288,8 @@ let footer_includes () =
   if !some_vfile then print "-include $(VFILES:.v=.v.d)\n.SECONDARY: $(VFILES:.v=.v.d)\n\n";
   if !some_mlfile then print "-include $(MLFILES:.ml=.ml.d)\n.SECONDARY: $(MLFILES:.ml=.ml.d)\n\n";
   if !some_mlifile then print "-include $(MLIFILES:.mli=.mli.d)\n.SECONDARY: $(MLIFILES:.mli=.mli.d)\n\n";
-  if !some_ml4file then print "-include $(ML4FILES:.ml4=.ml4.d)\n.SECONDARY: $(ML4FILES:.ml4=.ml4.d)\n\n"
+  if !some_ml4file then print "-include $(ML4FILES:.ml4=.ml4.d)\n.SECONDARY: $(ML4FILES:.ml4=.ml4.d)\n\n";
+  if !some_mllibfile then print "-include $(MLLIBFILES:.mllib=.mllib.d)\n.SECONDARY: $(MLLIBFILES:.mllib=.mllib.d)\n\n"
 
 let implicit () =
   let mli_rules () =
@@ -291,7 +300,7 @@ let implicit () =
     print "%.cmo: %.ml4\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "%.cmx: %.ml4\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $(PP) -impl $<\n\n";
     print "%.ml4.d: %.ml4\n";
-    print "\t$(OCAMLDEP) -slash $(OCAMLLIBS) $(PP) -impl \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"in
+    print "\t$(OCAMLDEP) -slash $(OCAMLLIBS) $(PP) -impl \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let ml_rules () =
     print "%.cmo: %.ml\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "%.cmx: %.ml\n\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
@@ -299,6 +308,12 @@ let implicit () =
     print "\t$(OCAMLDEP) -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let cmxs_rules () =
     print "%.cmxs: %.cmx\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $<\n\n" in
+  let mllib_rules () =
+    print "%.cma: | %.mllib\n\t$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
+    print "%.cmxa: | %.mllib\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
+    print "%.cmxs: %.cmxa\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -linkall -shared -o $@ $<\n\n";
+    print "%.mllib.d: %.mllib\n";
+    print "\t$(COQDEP) -slash $(COQLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let v_rules () =
     print "%.vo %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.vi: %.v\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
@@ -314,6 +329,7 @@ let implicit () =
     if !some_ml4file then ml4_rules ();
     if !some_mlfile then ml_rules ();
     if !some_mlfile || !some_ml4file then cmxs_rules ();
+    if !some_mllibfile then mllib_rules ();
     if !some_vfile then v_rules ()
 
 let variables defs =
@@ -405,11 +421,13 @@ let rec split_arguments = function
   | V n :: r ->
       let (v,m,o,s),i,d = split_arguments r in ((canonize n::v,m,o,s),i,d)
   | ML n :: r ->
-      let (v,(mli,ml4,ml),o,s),i,d = split_arguments r in ((v,(mli,ml4,canonize n::ml),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(mli,ml4,canonize n::ml,mllib),o,s),i,d)
   | MLI n :: r ->
-      let (v,(mli,ml4,ml),o,s),i,d = split_arguments r in ((v,(canonize n::mli,ml4,ml),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(canonize n::mli,ml4,ml,mllib),o,s),i,d)
   | ML4 n :: r ->
-      let (v,(mli,ml4,ml),o,s),i,d = split_arguments r in ((v,(mli,canonize n::ml4,ml),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(mli,canonize n::ml4,ml,mllib),o,s),i,d)
+  | MLLIB n :: r ->
+      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(mli,ml4,ml,canonize n::mllib),o,s),i,d)
   | Special (n,dep,c) :: r ->
       let (v,m,o,s),i,d = split_arguments r in ((v,m,(n,dep,c)::o,s),i,d)
   | Subdir n :: r ->
@@ -420,9 +438,9 @@ let rec split_arguments = function
       let t,(i,r),d = split_arguments r in (t,(i,(p,l,absolute_dir p)::r),d)
   | Def (v,def) :: r ->
       let t,i,d = split_arguments r in (t,i,(v,def)::d)
-  | [] -> ([],([],[],[]),[],[]),([],[]),[]
+  | [] -> ([],([],[],[],[]),[],[]),([],[]),[]
 
-let main_targets vfiles (mlifiles,ml4files,mlfiles) other_targets inc =
+let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles) other_targets inc =
   begin match vfiles with
     |[] -> ()
     |l ->
@@ -435,7 +453,7 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles) other_targets inc =
       print "HTMLFILES:=$(VFILES:.v=.html)\n";
       print "GHTMLFILES:=$(VFILES:.v=.g.html)\n"
   end;
-  begin match match ml4files,mlfiles with
+  let mlsfiles = match ml4files,mlfiles with
     |[],[] -> []
     |[],ml ->
       print "MLFILES:="; print_list "\\\n  " ml; print "\n";
@@ -449,29 +467,55 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles) other_targets inc =
       print "ML4FILES:="; print_list "\\\n  " ml4; print "\n";
       print "MLFILES:="; print_list "\\\n  " ml; print "\n";
       print "CMOFILES:=$(ML4FILES:.ml4=.cmo) $(MLFILES:.ml=.cmo)\n";
-      ml@ml4
-  with
+      ml@ml4 in
+  begin match mlsfiles with
     |[] -> ()
     |l ->
       classify_files_by_root "CMOFILES" l inc;
-      print "CMIFILES:=$(sort $(CMOFILES:.cmo=.cmi) $(MLIFILES:.mli=.cmi))\n";
-      classify_files_by_root "CMIFILES" l inc;
       print "CMXFILES:=$(CMOFILES:.cmo=.cmx)\n";
-      print "CMXSFILES:=$(CMXFILES:.cmx=.cmxs)\n";
-      classify_files_by_root "CMXSFILES" l inc;
       print "OFILES:=$(CMXFILES:.cmx=.o)\n";
+  end;
+  begin match mllibfiles with
+    |[] -> ()
+    |l ->
+      print "MLLIBFILES:="; print_list "\\\n  " l; print "\n";
+      print "CMAFILES:=$(MLLIBFILES:.mllib=.cma)\n";
+      print "CMXAFILES:=$(CMAFILES:.cma=.cmxa)\n";
   end;
   begin match mlifiles with
     |[] -> ()
     |l ->
       print "MLIFILES:="; print_list "\\\n  " l; print "\n";
   end;
+  begin match mlifiles,mlfiles with
+    |[],[] -> ()
+    |l,[] ->
+       print "CMIFILES:=$(MLIFILES:.mli=.cmi)\n";
+	classify_files_by_root "CMIFILES" l inc;
+    |[],l ->
+      print "CMIFILES:=$(CMOFILES:.cmo=.cmi)\n";
+      classify_files_by_root "CMIFILES" l inc;
+    |l1,l2 ->
+      print "CMIFILES:=$(sort $(CMOFILES:.cmo=.cmi) $(MLIFILES:.mli=.cmi))\n";
+      classify_files_by_root "CMIFILES" (l1@l2) inc;
+  end;
+  begin match mllibfiles,mlsfiles with
+    |[],[] -> ()
+    |l,[] ->
+      print "CMXSFILES:=$(CMXAFILES:.cmxa=.cmxs)\n";
+      classify_files_by_root "CMXSFILES" l inc;
+    |[],l ->
+      print "CMXSFILES:=$(CMXFILES:.cmx=.cmxs)\n";
+      classify_files_by_root "CMXSFILES" l inc;
+    |l1,l2 ->
+      print "CMXSFILES:=$(CMXFILES:.cmx=.cmxs) $(CMXAFILES:.cmxa=.cmxs)\n";
+      classify_files_by_root "CMXSFILES" (l1@l2) inc;
+  end;
   print "\nall: ";
   if !some_vfile then print "$(VOFILES) ";
-  if !some_mlfile || !some_ml4file then begin
-    print "$(CMOFILES) ";
-    print "$(if ifeq '$(HASNATDYNLINK)' 'true',$(CMXSFILES)) ";
-  end;
+  if !some_mlfile || !some_ml4file then print "$(CMOFILES) ";
+  if !some_mllibfile then print "$(CMAFILES) ";
+  if !some_mlfile || !some_ml4file || !some_mllibfile then print "$(if ifeq '$(HASNATDYNLINK)' 'true',$(CMXSFILES)) ";
   print_list "\\\n  " other_targets; print "\n\n";
   if !some_mlifile then
     begin
@@ -585,6 +629,9 @@ let rec process_cmd_line = function
     end else if (Filename.check_suffix f ".mli") then begin
       some_mlifile := true;
       MLI f :: (process_cmd_line r)
+    end else if (Filename.check_suffix f ".mllib") then begin
+      some_mllibfile := true;
+      MLLIB f :: (process_cmd_line r)
     end else
           Subdir f :: (process_cmd_line r)
 
@@ -622,7 +669,7 @@ let directories_deps l =
 	()
     | (Subdir d) :: l ->
 	print_dep d before; iter (d :: dirs, d :: before) l
-    | (ML f) :: l | (V f) :: l | (MLI f) :: l | (ML4 f) :: l ->
+    | (ML f) :: l | (V f) :: l | (MLI f) :: l | (ML4 f) :: l | (MLLIB f) :: l ->
 	print_dep f dirs; iter (dirs, f :: before) l
     | (Special (f,_,_)) :: l ->
 	print_dep f dirs; iter (dirs, f :: before) l
@@ -637,10 +684,10 @@ let ensure_root_dir l =
   else
     Include "." :: l
 
-let warn_install_at_root_directory (vfiles,(mlifiles,ml4files,mlfiles),_,_) (inc_i,inc_r) =
+let warn_install_at_root_directory (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles),_,_) (inc_i,inc_r) =
   let inc_r_top = List.filter (fun (_,ldir,_) -> ldir = "") inc_r in
   let inc_top = List.map (fun (p,_,_) -> p) inc_r_top @ List.map fst inc_i in
-  let files = vfiles @ mlifiles @ ml4files @ mlfiles in
+  let files = vfiles @ mlifiles @ ml4files @ mlfiles @ mllibfiles in
   if not !no_install &&
     List.exists (fun f -> List.mem (Filename.dirname f) inc_top) files
   then
