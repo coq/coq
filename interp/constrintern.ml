@@ -956,7 +956,7 @@ let sort_fields mode loc l completer =
 	    try Recordops.find_projection
 	      (global_reference_of_reference refer)
 	    with Not_found ->
-	      user_err_loc (loc, "intern", str"Not a projection")
+	      user_err_loc (loc_of_reference refer, "intern", pr_reference refer ++ str": Not a projection")
 	    in
 	  (* elimination of the first field from the projections *)
 	  let rec build_patt l m i acc =
@@ -996,6 +996,10 @@ let sort_fields mode loc l completer =
 	    | [] -> accpatt
 	    | p::q->
 	       let refer, patt = p in
+	       let glob_refer = try global_reference_of_reference refer
+	       with |Not_found ->
+		 user_err_loc (loc_of_reference refer, "intern",
+			       str "The field \"" ++ pr_reference refer ++ str "\" does not exist.") in
 	       let rec add_patt l acc =
 		 match l with
 		   | [] ->
@@ -1003,7 +1007,7 @@ let sort_fields mode loc l completer =
 			 (loc, "",
 			  str "This record contains fields of different records.")
 		   | (i, a) :: b->
-		       if global_reference_of_reference refer = a
+		       if glob_refer = a
 		       then (i,List.rev_append acc l)
 		       else add_patt b ((i,a)::acc)
 	         in
