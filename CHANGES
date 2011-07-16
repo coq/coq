@@ -19,6 +19,8 @@ Specification language and notations
 - Added support for recursive notations with binders (allows for instance
   to write "exists x y z, P").
 - Structure/Record printing can be disable by "Unset Printing Records".
+  In addition, it can be controlled on type by type basis using
+  "Add Printing Record" or "Add Printing Constructor".
 
 Tactics
 

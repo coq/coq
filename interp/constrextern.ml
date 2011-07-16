@@ -74,6 +74,49 @@ let without_symbols f = Flags.with_option print_no_symbol f
 let with_meta_as_hole f = Flags.with_option print_meta_as_hole f
 
 (**********************************************************************)
+(* Control printing of records *)
+
+let is_record indsp =
+  try
+    let _ = Recordops.lookup_structure indsp in
+    true
+  with Not_found -> false
+
+let encode_record r =
+  let indsp = global_inductive r in
+  if not (is_record indsp) then
+    user_err_loc (loc_of_reference r,"encode_record",
+    str "This type is not a structure type.");
+  indsp
+
+module PrintingRecordRecord =
+  PrintingInductiveMake (struct
+    let encode = encode_record
+    let field = "Record"
+    let title = "Types leading to pretty-printing using record notation: "
+    let member_message s b =
+      str "Terms of " ++ s ++
+      str
+      (if b then " are printed using record notation"
+      else " are not printed using record notation")
+  end)
+
+module PrintingRecordConstructor =
+  PrintingInductiveMake (struct
+    let encode = encode_record
+    let field = "Constructor"
+    let title = "Types leading to pretty-printing using constructor form: "
+    let member_message s b =
+      str "Terms of " ++ s ++
+      str
+      (if b then " are printed using constructor form"
+      else " are not printed using constructor form")
+  end)
+
+module PrintingRecord = Goptions.MakeRefTable(PrintingRecordRecord)
+module PrintingConstructor = Goptions.MakeRefTable(PrintingRecordConstructor)
+
+(**********************************************************************)
 (* Various externalisation functions *)
 
 let insert_delimiters e = function
@@ -299,7 +342,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
       let p =
 	try
-	  if !Flags.raw_print then raise Exit;
+          if !Flags.raw_print then raise Exit;
 	  let projs = Recordops.lookup_projections (fst cstrsp) in
 	  let rec ip projs args acc =
 	    match projs with
@@ -550,9 +593,15 @@ let rec extern inctx scopes vars r =
 	       extern_args (extern true) (snd scopes) vars args subscopes in
 	     begin
 	       try
-		 if !Flags.raw_print or not !Flags.record_print then raise Exit;
+                 if !Flags.raw_print then raise Exit;
 		 let cstrsp = match ref with ConstructRef c -> c | _ -> raise Not_found in
 		 let struc = Recordops.lookup_structure (fst cstrsp) in
+                 if PrintingRecord.active (fst cstrsp) then
+                   ()
+                 else if PrintingConstructor.active (fst cstrsp) then
+                   raise Exit
+                 else if not !Flags.record_print then
+                   raise Exit;
 		 let projs = struc.Recordops.s_PROJ in
 		 let locals = struc.Recordops.s_PROJKIND in
 		 let rec cut args n =

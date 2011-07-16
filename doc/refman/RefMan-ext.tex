@@ -200,10 +200,19 @@ Definition b := {| x := 5; y := 3 |}.
 Definition c := {| y := 3; x := 5 |}.
 \end{coq_example}
 
-This syntax can be disabled for printing by
+This syntax can be disabled globally for printing by
 \begin{quote}
 {\tt Unset Printing Records.}
 \end{quote}
+For a given type, one can override this using either
+\begin{quote}
+{\tt Add Printing Record {\ident}.}
+\end{quote}
+to get record syntax or
+\begin{quote}
+{\tt Add Printing Constructor {\ident}.}
+\end{quote}
+to get constructor syntax.
 
 This syntax can also be used for pattern matching.
 

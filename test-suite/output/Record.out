@@ -1,0 +1,16 @@
+{| field := 5 |}
+     : test
+{| field := 5 |}
+     : test
+{| field_r := 5 |}
+     : test_r
+build_c 5
+     : test_c
+build 5
+     : test
+build 5
+     : test
+{| field_r := 5 |}
+     : test_r
+build_c 5
+     : test_c
