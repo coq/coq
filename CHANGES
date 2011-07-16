@@ -38,6 +38,7 @@ Tactics
   "Unset Tactic Pattern Unification"). It also supports (full) betaiota.
 - Tactic autorewrite does no longer instantiate pre-existing
   existential variables (theoretical source of possible incompatibility).
+- Tactic "dependent rewrite" now supports equality in "sig".
 
 Vernacular commands
 

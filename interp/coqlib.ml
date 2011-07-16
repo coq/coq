@@ -187,9 +187,16 @@ let build_sigma_set () = anomaly "Use build_sigma_type"
 let build_sigma_type () =
   { proj1 = init_constant ["Specif"] "projT1";
     proj2 = init_constant ["Specif"] "projT2";
-    elim = init_constant ["Specif"] "sigT_rec";
+    elim = init_constant ["Specif"] "sigT_rect";
     intro = init_constant ["Specif"] "existT";
     typ = init_constant ["Specif"] "sigT" }
+
+let build_sigma () =
+  { proj1 = init_constant ["Specif"] "proj1_sig";
+    proj2 = init_constant ["Specif"] "proj2_sig";
+    elim = init_constant ["Specif"] "sig_rect";
+    intro = init_constant ["Specif"] "exist";
+    typ = init_constant ["Specif"] "sig" }
 
 let build_prod () =
   { proj1 = init_constant ["Datatypes"] "fst";
@@ -363,6 +370,7 @@ let coq_jmeq_ref     = lazy (gen_reference "Coqlib" ["Logic";"JMeq"] "JMeq")
 let coq_eq_true_ref = lazy (gen_reference "Coqlib" ["Init";"Datatypes"] "eq_true")
 let coq_existS_ref  = lazy (anomaly "use coq_existT_ref")
 let coq_existT_ref  = lazy (init_reference ["Specif"] "existT")
+let coq_exist_ref  = lazy (init_reference ["Specif"] "exist")
 let coq_not_ref     = lazy (init_reference ["Logic"] "not")
 let coq_False_ref   = lazy (init_reference ["Logic"] "False")
 let coq_sumbool_ref = lazy (init_reference ["Specif"] "sumbool")

@@ -423,6 +423,7 @@ let dest_nf_eq gls eqn =
 (* Patterns "(existS ?1 ?2 ?3 ?4)" and "(existT ?1 ?2 ?3 ?4)" *)
 let coq_ex_pattern_gen ex = lazy PATTERN [ %ex ?X1 ?X2 ?X3 ?X4 ]
 let coq_existT_pattern = coq_ex_pattern_gen coq_existT_ref
+let coq_exist_pattern = coq_ex_pattern_gen coq_exist_ref
 
 let match_sigma ex ex_pat =
   match matches (Lazy.force ex_pat) ex with
@@ -434,7 +435,8 @@ let match_sigma ex ex_pat =
 
 let find_sigma_data_decompose ex = (* fails with PatternMatchingFailure *)
   first_match (match_sigma ex)
-    [coq_existT_pattern, build_sigma_type]
+    [coq_existT_pattern, build_sigma_type;
+     coq_exist_pattern, build_sigma]
 
 (* Pattern "(sig ?1 ?2)" *)
 let coq_sig_pattern = lazy PATTERN [ %coq_sig_ref ?X1 ?X2 ]

@@ -1390,29 +1390,16 @@ let is_eq_x gl x (id,_,c) =
   with PatternMatchingFailure ->
     ()
 
-let subst_one dep_proof_ok x gl =
-  let hyps = pf_hyps gl in
-  let (_,xval,_) = pf_get_hyp gl x in
-  (* If x has a body, simply replace x with body and clear x *)
-  if xval <> None then tclTHEN (unfold_body x) (clear [x]) gl else
-  (* x is a variable: *)
-  let varx = mkVar x in
-  (* Find a non-recursive definition for x *)
-  let (hyp,rhs,dir) =
-    try
-      let test hyp _ = is_eq_x gl varx hyp in
-      Sign.fold_named_context test ~init:() hyps;
-      errorlabstrm "Subst"
-        (str "Cannot find any non-recursive equality over " ++ pr_id x ++
-	 str".")
-    with FoundHyp res -> res
-  in
+(* Rewrite "hyp:x=rhs" or "hyp:rhs=x" (if dir=false) everywhere and
+   erase hyp and x; proceed by generalizing all dep hyps *)
+
+let subst_one dep_proof_ok x (hyp,rhs,dir) gl =
   (* The set of hypotheses using x *)
   let depdecls =
     let test (id,_,c as dcl) =
       if id <> hyp && occur_var_in_decl (pf_env gl) x dcl then dcl
       else failwith "caught" in
-    List.rev (map_succeed test hyps) in
+    List.rev (map_succeed test (pf_hyps gl)) in
   let dephyps = List.map (fun (id,_,_) -> id) depdecls in
   (* Decides if x appears in conclusion *)
   let depconcl = occur_var (pf_env gl) x (pf_concl gl) in
@@ -1428,8 +1415,8 @@ let subst_one dep_proof_ok x gl =
       (id,None,_) -> intro_using id
     | (id,Some hval,htyp) ->
         letin_tac None (Name id)
-	  (replace_term varx rhs hval)
-	  (Some (replace_term varx rhs htyp)) nowhere
+	  (replace_term (mkVar x) rhs hval)
+	  (Some (replace_term (mkVar x) rhs htyp)) nowhere
   in
   let need_rewrite = dephyps <> [] || depconcl in
   tclTHENLIST
@@ -1438,13 +1425,37 @@ let subst_one dep_proof_ok x gl =
        general_rewrite dir all_occurrences true dep_proof_ok (mkVar hyp);
        thin dephyps;
        tclMAP introtac depdecls]
-    else
-      [thin dephyps;
-       tclMAP introtac depdecls]) @
+      else
+       [tclIDTAC]) @
      [tclTRY (clear [x;hyp])]) gl
 
+(* Look for an hypothesis hyp of the form "x=rhs" or "rhs=x", rewrite
+   it everywhere, and erase hyp and x; proceed by generalizing all dep hyps *)
+
+let subst_one_var dep_proof_ok x gl =
+  let hyps = pf_hyps gl in
+  let (_,xval,_) = pf_get_hyp gl x in
+  (* If x has a body, simply replace x with body and clear x *)
+  if xval <> None then tclTHEN (unfold_body x) (clear [x]) gl else
+  (* x is a variable: *)
+  let varx = mkVar x in
+  (* Find a non-recursive definition for x *)
+  let (hyp,rhs,dir) =
+    try
+      let test hyp _ = is_eq_x gl varx hyp in
+      Sign.fold_named_context test ~init:() hyps;
+      errorlabstrm "Subst"
+        (str "Cannot find any non-recursive equality over " ++ pr_id x ++
+	 str".")
+    with FoundHyp res -> res in
+  subst_one dep_proof_ok x (hyp,rhs,dir) gl
+
 let subst_gen dep_proof_ok ids =
-  tclTHEN tclNORMEVAR (tclMAP (subst_one dep_proof_ok) ids)
+  tclTHEN tclNORMEVAR (tclMAP (subst_one_var dep_proof_ok) ids)
+
+(* For every x, look for an hypothesis hyp of the form "x=rhs" or "rhs=x",
+   rewrite it everywhere, and erase hyp and x; proceed by generalizing
+   all dep hyps *)
 
 let subst = subst_gen true
 
@@ -1521,3 +1532,5 @@ let replace_multi_term dir_opt c  =
 
 let _ = Tactics.register_general_multi_rewrite
   (fun b evars t cls -> general_multi_rewrite b evars t cls)
+
+let _ = Tactics.register_subst_one (fun b -> subst_one b)

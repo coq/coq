@@ -104,6 +104,7 @@ type coq_sigma_data = {
 
 val build_sigma_set : coq_sigma_data delayed
 val build_sigma_type : coq_sigma_data delayed
+val build_sigma : coq_sigma_data delayed
 
 (** Non-dependent pairs in Set from Datatypes *)
 val build_prod : coq_sigma_data delayed
@@ -175,6 +176,7 @@ val coq_jmeq_ref : global_reference lazy_t
 val coq_eq_true_ref : global_reference lazy_t
 val coq_existS_ref : global_reference lazy_t
 val coq_existT_ref : global_reference lazy_t
+val coq_exist_ref : global_reference lazy_t
 val coq_not_ref : global_reference lazy_t
 val coq_False_ref : global_reference lazy_t
 val coq_sumbool_ref : global_reference lazy_t

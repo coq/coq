@@ -1222,11 +1222,19 @@ let simplest_split = split NoBindings
 (* Decomposing introductions *)
 (*****************************)
 
+(* Rewriting function for rewriting one hypothesis at the time *)
 let forward_general_multi_rewrite =
   ref (fun _ -> failwith "general_multi_rewrite undefined")
 
+(* Rewriting function for substitution (x=t) everywhere at the same time *)
+let forward_subst_one =
+  ref (fun _ -> failwith "subst_one undefined")
+
 let register_general_multi_rewrite f =
   forward_general_multi_rewrite := f
+
+let register_subst_one f =
+  forward_subst_one := f
 
 let error_unexpected_extra_pattern loc nb pat =
   let s1,s2,s3 = match pat with
@@ -1261,6 +1269,8 @@ let intro_or_and_pattern loc b ll l' tac id gl =
 let rewrite_hyp l2r id gl =
   let rew_on l2r =
     !forward_general_multi_rewrite l2r false (mkVar id,NoBindings) in
+  let subst_on l2r x rhs =
+    !forward_subst_one true x (id,rhs,l2r) in
   let clear_var_and_eq c =
     tclTRY (tclTHEN (clear [id]) (tclTRY (clear [destVar c]))) in
   let t = pf_whd_betadeltaiota gl (pf_type_of gl (mkVar id)) in
@@ -1268,9 +1278,9 @@ let rewrite_hyp l2r id gl =
   match match_with_equality_type t with
   | Some (hdcncl,[_;lhs;rhs]) ->
       if l2r & isVar lhs & not (occur_var (pf_env gl) (destVar lhs) rhs) then
-	tclTHEN (rew_on l2r allHypsAndConcl) (clear_var_and_eq lhs) gl
+	subst_on l2r (destVar lhs) rhs gl
       else if not l2r & isVar rhs & not (occur_var (pf_env gl) (destVar rhs) lhs) then
-	tclTHEN (rew_on l2r allHypsAndConcl) (clear_var_and_eq rhs) gl
+	subst_on l2r (destVar rhs) lhs gl
       else
 	tclTHEN (rew_on l2r onConcl) (tclTRY (clear [id])) gl
   | Some (hdcncl,[c]) ->

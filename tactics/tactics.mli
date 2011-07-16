@@ -379,3 +379,6 @@ val specialize_eqs : identifier -> tactic
 
 val register_general_multi_rewrite :
   (bool -> evars_flag -> constr with_bindings -> clause -> tactic) -> unit
+
+val register_subst_one :
+  (bool -> identifier -> identifier * constr * bool -> tactic) -> unit
