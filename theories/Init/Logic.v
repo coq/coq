@@ -407,6 +407,29 @@ Proof.
   auto.
 Qed.
 
+Lemma forall_exists_unique_domain_coincide :
+  forall A (P:A->Prop), (exists! x, P x) ->
+  forall Q:A->Prop, (forall x, P x -> Q x) <-> (exists x, P x /\ Q x).
+Proof.
+  intros A P (x & Hp & Huniq); split.
+  intro; exists x; auto.
+  intros (x0 & HPx0 & HQx0) x1 HPx1.
+  replace x1 with x0 by (transitivity x; [symmetry|]; auto).
+  assumption.
+Qed.   
+
+Lemma forall_exists_coincide_unique_domain :
+  forall A (P:A->Prop),
+  (forall Q:A->Prop, (forall x, P x -> Q x) <-> (exists x, P x /\ Q x))
+  -> (exists! x, P x).
+Proof.
+  intros A P H.
+  destruct H with (Q:=P) as ((x & Hx & _),_); [trivial|].
+  exists x. split; [trivial|].
+  destruct H with (Q:=fun x'=>x=x') as (_,Huniq).
+  apply Huniq. exists x; auto.
+Qed.       
+
 (** * Being inhabited *)
 
 (** The predicate [inhabited] can be used in different contexts. If [A] is
