@@ -24,6 +24,7 @@ type load_proofs = Force | Lazy | Dont
 val load_proofs : load_proofs ref
 
 val raw_print : bool ref
+val record_print : bool ref
 
 type compat_version = V8_2 | V8_3
 val compat_version : compat_version option ref

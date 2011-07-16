@@ -18,6 +18,7 @@ Specification language and notations
   applications (use eta expanded form with explicit { } instead).
 - Added support for recursive notations with binders (allows for instance
   to write "exists x y z, P").
+- Structure/Record printing can be disable by "Unset Printing Records".
 
 Tactics
 

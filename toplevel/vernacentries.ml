@@ -908,6 +908,14 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optname  = "record printing";
+      optkey   = ["Printing";"Records"];
+      optread  = (fun () -> !Flags.record_print);
+      optwrite = (fun b -> Flags.record_print := b) }
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
       optname  = "use of virtual machine inside the kernel";
       optkey   = ["Virtual";"Machine"];
       optread  = (fun () -> Vconv.use_vm ());

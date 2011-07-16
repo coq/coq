@@ -550,7 +550,7 @@ let rec extern inctx scopes vars r =
 	       extern_args (extern true) (snd scopes) vars args subscopes in
 	     begin
 	       try
-		 if !Flags.raw_print then raise Exit;
+		 if !Flags.raw_print or not !Flags.record_print then raise Exit;
 		 let cstrsp = match ref with ConstructRef c -> c | _ -> raise Not_found in
 		 let struc = Recordops.lookup_structure (fst cstrsp) in
 		 let projs = struc.Recordops.s_PROJ in

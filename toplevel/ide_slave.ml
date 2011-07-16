@@ -32,6 +32,7 @@ let coqide_known_option table = List.mem table [
   ["Printing";"Synth"];
   ["Printing";"Notations"];
   ["Printing";"All"];
+  ["Printing";"Records"];
   ["Printing";"Existential";"Instances"];
   ["Printing";"Universes"]]
 

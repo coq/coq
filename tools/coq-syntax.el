@@ -497,6 +497,7 @@
      ("Set Printing Synth" nil "Set Printing Synth" t "Set\\s-+Printing\\s-+Synth")
      ("Set Printing Wildcard" nil "Set Printing Wildcard" t "Set\\s-+Printing\\s-+Wildcard")
      ("Set Printing All" "sprall" "Set Printing All" t "Set\\s-+Printing\\s-+All")
+     ("Set Printing Records" nil "Set Printing Records" t "Set\\s-+Printing\\s-+Records")
      ("Set Hyps Limit" nil "Set Hyps Limit #." nil "Set\\s-+Hyps\\s-+Limit")
      ("Set Printing Coercions" nil "Set Printing Coercions." t "Set\\s-+Printing\\s-+Coercions")
      ("Set Printing Notations" "sprn" "Set Printing Notations" t "Set\\s-+Printing\\s-+Notations")

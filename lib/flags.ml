@@ -34,6 +34,8 @@ let load_proofs = ref Lazy
 
 let raw_print = ref false
 
+let record_print = ref true
+
 (* Compatibility mode *)
 
 type compat_version = V8_2 | V8_3
