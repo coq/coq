@@ -37,7 +37,8 @@
 
 Table of contents:
 
-1. Definition of dependent equality and equivalence with equality
+1. Definition of dependent equality and equivalence with equality of
+   dependent pairs and with dependent pair of equalities
 
 2. Eq_rect_eq <-> Eq_dep_eq <-> UIP <-> UIP_refl <-> K
 
@@ -79,11 +80,11 @@ Section Dependent_Equality.
 
   Scheme eq_indd := Induction for eq Sort Prop.
 
-  (** Equivalent definition of dependent equality expressed as a non
-      dependent inductive type *)
+  (** Equivalent definition of dependent equality as a dependent pair of
+      equalities *)
 
   Inductive eq_dep1 (p:U) (x:P p) (q:U) (y:P q) : Prop :=
-    eq_dep1_intro : forall h:q = p, x = eq_rect q P y p h -> eq_dep1 p x q y.
+    eq_dep1_intro : forall h:q = p, x = rew h in y -> eq_dep1 p x q y.
 
   Lemma eq_dep1_dep :
     forall (p:U) (x:P p) (q:U) (y:P q), eq_dep1 p x q y -> eq_dep p x q y.
@@ -99,7 +100,7 @@ Section Dependent_Equality.
   Proof.
     destruct 1.
     apply eq_dep1_intro with (refl_equal p).
-    simpl in |- *; trivial.
+    simpl; trivial.
   Qed.
 
 End Dependent_Equality.
@@ -120,23 +121,102 @@ Qed.
 
 Notation eq_sigS_eq_dep := eq_sigT_eq_dep (only parsing). (* Compatibility *)
 
-Lemma equiv_eqex_eqdep :
-  forall (U:Type) (P:U -> Type) (p q:U) (x:P p) (y:P q),
-   existT P p x = existT P q y <-> eq_dep p x q y.
-Proof.
-  split.
-  (* -> *)
-  apply eq_sigT_eq_dep.
-  (* <- *)
-  destruct 1; reflexivity.
-Qed.
-
 Lemma eq_dep_eq_sigT :
   forall (U:Type) (P:U -> Type) (p q:U) (x:P p) (y:P q),
     eq_dep p x q y -> existT P p x = existT P q y.
 Proof.
   destruct 1; reflexivity.
 Qed.
+
+Lemma eq_sigT_iff_eq_dep :
+  forall (U:Type) (P:U -> Type) (p q:U) (x:P p) (y:P q),
+    existT P p x = existT P q y <-> eq_dep p x q y.
+Proof.
+  split; auto using eq_sigT_eq_dep, eq_dep_eq_sigT.
+Qed.
+
+Notation equiv_eqex_eqdep := eq_sigT_iff_eq_dep (only parsing). (* Compat *)
+
+Lemma eq_sig_eq_dep :
+  forall (U:Prop) (P:U -> Prop) (p q:U) (x:P p) (y:P q),
+    exist P p x = exist P q y -> eq_dep p x q y.
+Proof.
+  intros.
+  dependent rewrite H.
+  apply eq_dep_intro.
+Qed.
+
+Lemma eq_dep_eq_sig :
+  forall (U:Prop) (P:U -> Prop) (p q:U) (x:P p) (y:P q),
+    eq_dep p x q y -> exist P p x = exist P q y.
+Proof.
+  destruct 1; reflexivity.
+Qed.
+
+Lemma eq_sig_iff_eq_dep :
+  forall (U:Prop) (P:U -> Prop) (p q:U) (x:P p) (y:P q),
+    exist P p x = exist P q y <-> eq_dep p x q y.
+Proof.
+  split; auto using eq_sig_eq_dep, eq_dep_eq_sig.
+Qed.
+
+(** Dependent equality is equivalent to a dependent pair of equalities *)
+
+Set Implicit Arguments.
+
+Lemma eq_sigT_sig_eq : forall X P (x1 x2:X) H1 H2, existT P x1 H1 = existT P x2 H2 <-> {H:x1=x2 | rew H in H1 = H2}.
+Proof.
+  intros; split; intro H.
+  - change x2 with (projT1 (existT P x2 H2)).
+    change H2 with (projT2 (existT P x2 H2)) at 5.
+    destruct H. simpl.
+    exists eq_refl.
+    reflexivity.
+  - destruct H as (->,<-).
+    reflexivity.
+Defined.
+
+Lemma eq_sigT_fst :
+  forall X P (x1 x2:X) H1 H2 (H:existT P x1 H1 = existT P x2 H2), x1 = x2.
+Proof.
+  intros.
+  change x2 with (projT1 (existT P x2 H2)).
+  destruct H.
+  reflexivity.
+Defined.
+
+Lemma eq_sigT_snd :
+  forall X P (x1 x2:X) H1 H2 (H:existT P x1 H1 = existT P x2 H2), rew (eq_sigT_fst H) in H1 = H2.
+Proof.
+  intros.
+  unfold eq_sigT_fst.
+  change x2 with (projT1 (existT P x2 H2)).
+  change H2 with (projT2 (existT P x2 H2)) at 3.
+  destruct H.
+  reflexivity.
+Defined.
+
+Lemma eq_sig_fst :
+  forall X P (x1 x2:X) H1 H2 (H:exist P x1 H1 = exist P x2 H2), x1 = x2.
+Proof.
+  intros.
+  change x2 with (proj1_sig (exist P x2 H2)).
+  destruct H.
+  reflexivity.
+Defined.
+
+Lemma eq_sig_snd :
+  forall X P (x1 x2:X) H1 H2 (H:exist P x1 H1 = exist P x2 H2), rew (eq_sig_fst H) in H1 = H2.
+Proof.
+  intros.
+  unfold eq_sig_fst, eq_ind.
+  change x2 with (proj1_sig (exist P x2 H2)).
+  change H2 with (proj2_sig (exist P x2 H2)) at 3.
+  destruct H.
+  reflexivity.
+Defined.
+
+Unset Implicit Arguments.
 
 (** Exported hints *)
 
