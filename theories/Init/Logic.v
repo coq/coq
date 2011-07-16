@@ -331,6 +331,13 @@ Section Logic_lemmas.
   Defined.
 End Logic_lemmas.
 
+Notation "'rew' H 'in' H'" := (eq_rect _ _ H' _ H)
+  (at level 0, H' at level 9).
+Notation "'rew' <- H 'in' H'" := (eq_rect_r _ H' H)
+  (at level 0, H' at level 9).
+Notation "'rew' -> H 'in' H'" := (eq_rect _ _ H' _ H)
+  (at level 0, H' at level 9, only parsing).
+
 Theorem f_equal2 :
   forall (A1 A2 B:Type) (f:A1 -> A2 -> B) (x1 y1:A1)
     (x2 y2:A2), x1 = y1 -> x2 = y2 -> f x1 x2 = f y1 y2.
