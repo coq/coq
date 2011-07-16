@@ -45,34 +45,34 @@ let has_two_constructors lc =
 let isomorphic_to_tuple lc = (Array.length lc = 1)
 
 let encode_bool r =
-  let (_,lc as x) = encode_inductive r in
+  let (x,lc) = encode_inductive r in
   if not (has_two_constructors lc) then
     user_err_loc (loc_of_reference r,"encode_if",
       str "This type has not exactly two constructors.");
   x
 
 let encode_tuple r =
-  let (_,lc as x) = encode_inductive r in
+  let (x,lc) = encode_inductive r in
   if not (isomorphic_to_tuple lc) then
     user_err_loc (loc_of_reference r,"encode_tuple",
       str "This type cannot be seen as a tuple type.");
   x
 
-module PrintingCasesMake =
+module PrintingInductiveMake =
   functor (Test : sig
-     val encode : reference -> inductive * int array
+     val encode : reference -> inductive
      val member_message : std_ppcmds -> bool -> std_ppcmds
      val field : string
      val title : string
   end) ->
   struct
-    type t = inductive * int array
+    type t = inductive
     let encode = Test.encode
-    let subst subst ((kn,i), ints as obj) =
+    let subst subst (kn, ints as obj) =
       let kn' = subst_ind subst kn in
 	if kn' == kn then obj else
-	  (kn',i), ints
-    let printer (ind,_) = pr_global_env Idset.empty (IndRef ind)
+	  kn', ints
+    let printer ind = pr_global_env Idset.empty (IndRef ind)
     let key = ["Printing";Test.field]
     let title = Test.title
     let member_message x = Test.member_message (printer x)
@@ -80,7 +80,7 @@ module PrintingCasesMake =
   end
 
 module PrintingCasesIf =
-  PrintingCasesMake (struct
+  PrintingInductiveMake (struct
     let encode = encode_bool
     let field = "If"
     let title = "Types leading to pretty-printing of Cases using a `if' form: "
@@ -92,7 +92,7 @@ module PrintingCasesIf =
   end)
 
 module PrintingCasesLet =
-  PrintingCasesMake (struct
+  PrintingInductiveMake (struct
     let encode = encode_tuple
     let field = "Let"
     let title =
@@ -329,9 +329,9 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
         RegularStyle
       else if st = LetPatternStyle then
 	st
-      else if PrintingLet.active (indsp,consnargsl) then
+      else if PrintingLet.active indsp then
 	LetStyle
-      else if PrintingIf.active (indsp,consnargsl) then
+      else if PrintingIf.active indsp then
 	IfStyle
       else
 	st

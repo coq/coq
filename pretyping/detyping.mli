@@ -54,3 +54,21 @@ val simple_cases_matrix_of_branches :
   inductive -> int list -> glob_constr list -> cases_clauses
 val return_type_of_predicate :
   inductive -> int -> int -> glob_constr -> predicate_pattern * glob_constr option
+
+module PrintingInductiveMake :
+  functor (Test : sig
+    val encode : Libnames.reference -> Names.inductive
+    val member_message : Pp.std_ppcmds -> bool -> Pp.std_ppcmds
+    val field : string
+    val title : string
+  end) ->
+    sig
+      type t = Names.inductive
+      val encode : Libnames.reference -> Names.inductive
+      val subst : substitution -> t -> t
+      val printer : t -> Pp.std_ppcmds
+      val key : Goptions.option_name
+      val title : string
+      val member_message : t -> bool -> Pp.std_ppcmds
+      val synchronous : bool
+    end
