@@ -174,7 +174,7 @@ let build_sym_scheme env ind =
        [|cstr (nrealargs+1)|]))))
 
 let sym_scheme_kind =
-  declare_individual_scheme_object "_sym"
+  declare_individual_scheme_object "_sym_internal"
   (fun ind -> build_sym_scheme (Global.env() (* side-effect! *)) ind)
 
 (**********************************************************************)
