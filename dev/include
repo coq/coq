@@ -24,6 +24,7 @@
 #install_printer  (* judgement *) ppj;;
 
 #install_printer  (* hint_db *)  print_hint_db;;
+#install_printer  (* Goal.goal *)  ppgoal;;
 #install_printer  (* Goal.goal *)  ppgoalgoal;;
 #install_printer  (* metaset.t *) ppmetas;;
 #install_printer  (* evar_map *)  ppevm;;

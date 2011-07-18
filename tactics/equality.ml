@@ -1241,26 +1241,37 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
 
 let decomp_tuple_term env c t =
   let rec decomprec inner_code ex exty =
+    let iterated_decomp =
     try
       let {proj1=p1; proj2=p2},(a,p,car,cdr) = find_sigma_data_decompose ex in
       let car_code = applist (p1,[a;p;inner_code])
       and cdr_code = applist (p2,[a;p;inner_code]) in
       let cdrtyp = beta_applist (p,[car]) in
-      ((car,a),car_code)::(decomprec cdr_code cdr cdrtyp)
+      List.map (fun l -> ((car,a),car_code)::l) (decomprec cdr_code cdr cdrtyp)
     with PatternMatchingFailure ->
-      [((ex,exty),inner_code)]
+      []
+    in
+    [((ex,exty),inner_code)]::iterated_decomp
   in
-  List.split (decomprec (mkRel 1) c t)
+  decomprec (mkRel 1) c t
 
 let subst_tuple_term env sigma dep_pair1 dep_pair2 b =
   let typ = get_type_of env sigma dep_pair1 in
+  (* We find all possible decompositions *)
+  let decomps1 = decomp_tuple_term env dep_pair1 typ in
+  let decomps2 = decomp_tuple_term env dep_pair2 typ in
+  (* We adjust to the shortest decomposition *)
+  let n = min (List.length decomps1) (List.length decomps2) in
+  let decomp1 = List.nth decomps1 (n-1) in
+  let decomp2 = List.nth decomps2 (n-1) in
   (* We rewrite dep_pair1 ... *)
-  let e1_list,proj_list = decomp_tuple_term env dep_pair1 typ in
+  let e1_list,proj_list = List.split decomp1 in
+  (* ... and use dep_pair2 to compute the expected goal *)
+  let e2_list,_ = List.split decomp2 in
+  (* We build the expected goal *)
   let abst_B =
     List.fold_right
       (fun (e,t) body -> lambda_create env (t,subst_term e body)) e1_list b in
-  (* ... and use dep_pair2 to compute the expected goal *)
-  let e2_list,_ = decomp_tuple_term env dep_pair2 typ in
   let pred_body = beta_applist(abst_B,proj_list) in
   let expected_goal = beta_applist (abst_B,List.map fst e2_list) in
   (* Simulate now the normalisation treatment made by Logic.mk_refgoals *)
