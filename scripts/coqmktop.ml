@@ -126,14 +126,14 @@ let usage () =
 \nFlags are:\
 \n  -coqlib dir    Specify where the Coq object files are\
 \n  -camlbin dir   Specify where the OCaml binaries are\
-\n  -camlp4bin dir Specify where the CAmp4/5 binaries are\
+\n  -camlp4bin dir Specify where the Camlp4/5 binaries are\
 \n  -o exec-file   Specify the name of the resulting toplevel\
 \n  -boot          Run in boot mode\
 \n  -echo          Print calls to external commands\
 \n  -full          Link high level tactics\
 \n  -opt           Compile in native code\
 \n  -top           Build Coq on a OCaml toplevel (incompatible with -opt)\
-\n  -R dir         Specify recursively directories for Ocaml\
+\n  -R dir         Add recursively dir to OCaml search path\
 \n";
   exit 1
 
