@@ -832,7 +832,7 @@ let rec subst_pat_iterator y t (subst,p) = match p with
       let pl = simple_product_of_cases_patterns l' in
       List.map (fun (subst',pl) -> subst'@subst,PatCstr (loc,id,pl,alias)) pl
 
-let subst_cases_pattern loc alias intern fullsubst scopes a =
+let subst_cases_pattern loc alias intern fullsubst env a =
   let rec aux alias (subst,substlist as fullsubst) = function
   | AVar id ->
       begin
@@ -840,7 +840,8 @@ let subst_cases_pattern loc alias intern fullsubst scopes a =
 	(* of the notations *)
 	try
 	  let (a,(scopt,subscopes)) = List.assoc id subst in
-	    intern (subscopes@scopes) ([],[]) scopt a
+	    intern {env with scopes=subscopes@env.scopes;
+		      tmp_scope = scopt} ([],[]) a
 	with Not_found ->
 	  if id = ldots_var then [], [[], PatVar (loc,Name id)] else
 	  anomaly ("Unbound pattern notation variable: "^(string_of_id id))
@@ -885,7 +886,7 @@ type pattern_qualid_kind =
       ((identifier * identifier) list * cases_pattern) list) list
   | VarPat of identifier
 
-let find_constructor ref f aliases pats scopes =
+let find_constructor ref f aliases pats env =
   let (loc,qid) = qualid_of_reference ref in
   let gref =
     try locate_extended qid
@@ -903,7 +904,7 @@ let find_constructor ref f aliases pats scopes =
 	   if List.length pats < nvars then error_not_enough_arguments loc;
 	   let pats1,pats2 = list_chop nvars pats in
 	   let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) vars pats1 in
-	   let idspl1 = List.map (subst_cases_pattern loc (alias_of aliases) f (subst,[]) scopes) args in
+	   let idspl1 = List.map (subst_cases_pattern loc (alias_of aliases) f (subst,[]) env) args in
 	   cstr, idspl1, pats2
        | _ -> raise Not_found)
 
@@ -922,9 +923,9 @@ let find_pattern_variable = function
   | Ident (loc,id) -> id
   | Qualid (loc,_) as x -> raise (InternalizationError(loc,NotAConstructor x))
 
-let maybe_constructor ref f aliases scopes =
+let maybe_constructor ref f aliases env =
   try
-    let c,idspl1,pl2 = find_constructor ref f aliases [] scopes in
+    let c,idspl1,pl2 = find_constructor ref f aliases [] env in
     assert (pl2 = []);
     ConstrPat (c,idspl1)
   with
@@ -936,8 +937,8 @@ let maybe_constructor ref f aliases scopes =
               str " is understood as a pattern variable");
         VarPat (find_pattern_variable ref)
 
-let mustbe_constructor loc ref f aliases patl scopes =
-  try find_constructor ref f aliases patl scopes
+let mustbe_constructor loc ref f aliases patl env =
+  try find_constructor ref f aliases patl env
   with (Environ.NotEvaluableConst _ | Not_found) ->
     raise (InternalizationError (loc,NotAConstructor ref))
 
@@ -1030,12 +1031,12 @@ let sort_fields mode loc l completer =
 	Some (nparams, base_constructor,
 	  List.rev (clean_list sorted_indexed_pattern 0 []))
 
-let rec intern_cases_pattern genv scopes (ids,asubst as aliases) tmp_scope pat=
+let rec intern_cases_pattern genv env (ids,asubst as aliases) pat =
   let intern_pat = intern_cases_pattern genv in
   match pat with
   | CPatAlias (loc, p, id) ->
       let aliases' = merge_aliases aliases id in
-      intern_pat scopes aliases' tmp_scope p
+      intern_pat env aliases' p
     | CPatRecord (loc, l) ->
 	let sorted_fields = sort_fields false loc l (fun _ l -> (CPatAtom (loc, None))::l) in
 	let self_patt =
@@ -1043,41 +1044,42 @@ let rec intern_cases_pattern genv scopes (ids,asubst as aliases) tmp_scope pat=
 	    | None -> CPatAtom (loc, None)
 	    | Some (_, head, pl) -> CPatCstr(loc, head, pl)
 	  in
-	intern_pat scopes aliases tmp_scope self_patt
+	intern_pat env aliases self_patt
   | CPatCstr (loc, head, pl) ->
-      let c,idslpl1,pl2 = mustbe_constructor loc head intern_pat aliases pl scopes in
+      let c,idslpl1,pl2 = mustbe_constructor loc head intern_pat aliases pl env in
       check_constructor_length genv loc c idslpl1 pl2;
       let argscs2 = find_remaining_constructor_scopes idslpl1 pl2 c in
-      let idslpl2 = List.map2 (intern_pat scopes ([],[])) argscs2 pl2 in
+      let idslpl2 = List.map2 (fun x -> intern_pat {env with tmp_scope = x} ([],[])) argscs2 pl2 in
       let (ids',pll) = product_of_cases_patterns ids (idslpl1@idslpl2) in
       let pl' = List.map (fun (asubst,pl) ->
         (asubst, PatCstr (loc,c,pl,alias_of aliases))) pll in
       ids',pl'
   | CPatNotation (loc,"- _",([CPatPrim(_,Numeral p)],[]))
       when Bigint.is_strictly_pos p ->
-      intern_pat scopes aliases tmp_scope (CPatPrim(loc,Numeral(Bigint.neg p)))
+      intern_pat env aliases (CPatPrim(loc,Numeral(Bigint.neg p)))
   | CPatNotation (_,"( _ )",([a],[])) ->
-      intern_pat scopes aliases tmp_scope a
+      intern_pat env aliases a
   | CPatNotation (loc, ntn, fullargs) ->
       let ntn,(args,argsl as fullargs) = contract_pat_notation ntn fullargs in
-      let ((ids',c),df) = Notation.interp_notation loc ntn (tmp_scope,scopes) in
+      let ((ids',c),df) = Notation.interp_notation loc ntn (env.tmp_scope,env.scopes) in
       let (ids',idsl',_) = split_by_type ids' in
       Dumpglob.dump_notation_location (patntn_loc loc fullargs ntn) ntn df;
       let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids' args in
       let substlist = List.map2 (fun (id,scl) a -> (id,(a,scl))) idsl' argsl in
       let ids'',pl =
 	subst_cases_pattern loc (alias_of aliases) intern_pat (subst,substlist)
-	  scopes c
+	  env c
       in ids@ids'', pl
   | CPatPrim (loc, p) ->
       let a = alias_of aliases in
       let (c,_) = Notation.interp_prim_token_cases_pattern loc p a
-	(tmp_scope,scopes) in
+	(env.tmp_scope,env.scopes) in
       (ids,[asubst,c])
   | CPatDelimiters (loc, key, e) ->
-      intern_pat (find_delimiters_scope loc key::scopes) aliases None e
+      intern_pat {env with scopes=find_delimiters_scope loc key::env.scopes;
+		    tmp_scope = None} aliases e
   | CPatAtom (loc, Some head) ->
-      (match maybe_constructor head intern_pat aliases scopes with
+      (match maybe_constructor head intern_pat aliases env with
 	 | ConstrPat (c,idspl) ->
 	     check_constructor_length genv loc c idspl [];
 	     let (ids',pll) = product_of_cases_patterns ids idspl in
@@ -1090,7 +1092,7 @@ let rec intern_cases_pattern genv scopes (ids,asubst as aliases) tmp_scope pat=
       (ids,[asubst, PatVar (loc,alias_of aliases)])
   | CPatOr (loc, pl) ->
       assert (pl <> []);
-      let pl' = List.map (intern_pat scopes aliases tmp_scope) pl in
+      let pl' = List.map (intern_pat env aliases) pl in
       let (idsl,pl') = List.split pl' in
       let ids = List.hd idsl in
       check_or_pat_variables loc ids (List.tl idsl);
@@ -1357,16 +1359,16 @@ let internalize sigma globalenv env allow_patvar lvar c =
     intern_local_binder_aux intern intern_type lvar env bind
 
   (* Expands a multiple pattern into a disjunction of multiple patterns *)
-  and intern_multiple_pattern scopes n (loc,pl) =
+  and intern_multiple_pattern env n (loc,pl) =
     let idsl_pll =
-      List.map (intern_cases_pattern globalenv scopes ([],[]) None) pl in
+      List.map (intern_cases_pattern globalenv {env with tmp_scope = None} ([],[])) pl in
     check_number_of_pattern loc n pl;
     product_of_cases_patterns [] idsl_pll
 
   (* Expands a disjunction of multiple pattern *)
-  and intern_disjunctive_multiple_pattern scopes loc n mpl =
+  and intern_disjunctive_multiple_pattern env loc n mpl =
     assert (mpl <> []);
-    let mpl' = List.map (intern_multiple_pattern scopes n) mpl in
+    let mpl' = List.map (intern_multiple_pattern env n) mpl in
     let (idsl,mpl') = List.split mpl' in
     let ids = List.hd idsl in
     check_or_pat_variables loc ids (List.tl idsl);
@@ -1374,7 +1376,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 
   (* Expands a pattern-matching clause [lhs => rhs] *)
   and intern_eqn n env (loc,lhs,rhs) =
-    let eqn_ids,pll = intern_disjunctive_multiple_pattern env.scopes loc n lhs in
+    let eqn_ids,pll = intern_disjunctive_multiple_pattern env loc n lhs in
     (* Linearity implies the order in ids is irrelevant *)
     check_linearity lhs eqn_ids;
     let env_ids = List.fold_right Idset.add eqn_ids env.ids in
@@ -1519,9 +1521,11 @@ let intern_constr sigma env c = intern_gen false sigma env c
 
 let intern_type sigma env c = intern_gen true sigma env c
 
-let intern_pattern env patt =
+let intern_pattern globalenv patt =
   try
-    intern_cases_pattern env [] ([],[]) None patt
+    intern_cases_pattern globalenv {ids = extract_ids globalenv; unb = false;
+				    tmp_scope = None; scopes = [];
+				    impls = empty_internalization_env} ([],[]) patt
   with
       InternalizationError (loc,e) ->
 	user_err_loc (loc,"internalize",explain_internalization_error e)
