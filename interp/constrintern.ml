@@ -1045,7 +1045,7 @@ let rec intern_cases_pattern genv env (ids,asubst as aliases) pat =
 	    | Some (_, head, pl) -> CPatCstr(loc, head, pl)
 	  in
 	intern_pat env aliases self_patt
-  | CPatCstr (loc, head, pl) ->
+  | CPatCstr (loc, head, pl) | CPatCstrExpl (loc, head, pl) ->
       let c,idslpl1,pl2 = mustbe_constructor loc head intern_pat aliases pl env in
       check_constructor_length genv loc c idslpl1 pl2;
       let argscs2 = find_remaining_constructor_scopes idslpl1 pl2 c in

@@ -125,6 +125,7 @@ type prim_token = Numeral of Bigint.bigint | String of string
 type cases_pattern_expr =
   | CPatAlias of loc * cases_pattern_expr * identifier
   | CPatCstr of loc * reference * cases_pattern_expr list
+  | CPatCstrExpl of loc * reference * cases_pattern_expr list
   | CPatAtom of loc * reference option
   | CPatOr of loc * cases_pattern_expr list
   | CPatNotation of loc * notation * cases_pattern_notation_substitution

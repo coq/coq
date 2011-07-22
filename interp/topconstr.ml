@@ -830,6 +830,7 @@ type prim_token = Numeral of Bigint.bigint | String of string
 type cases_pattern_expr =
   | CPatAlias of loc * cases_pattern_expr * identifier
   | CPatCstr of loc * reference * cases_pattern_expr list
+  | CPatCstrExpl of loc * reference * cases_pattern_expr list
   | CPatAtom of loc * reference option
   | CPatOr of loc * cases_pattern_expr list
   | CPatNotation of loc * notation * cases_pattern_notation_substitution
@@ -940,6 +941,7 @@ let constr_loc = function
 let cases_pattern_expr_loc = function
   | CPatAlias (loc,_,_) -> loc
   | CPatCstr (loc,_,_) -> loc
+  | CPatCstrExpl (loc,_,_) -> loc
   | CPatAtom (loc,_) -> loc
   | CPatOr (loc,_) -> loc
   | CPatNotation (loc,_,_) -> loc
@@ -983,7 +985,7 @@ let rec cases_pattern_fold_names f a = function
   | CPatRecord (_, l) ->
       List.fold_left (fun acc (r, cp) -> cases_pattern_fold_names f acc cp) a l
   | CPatAlias (_,pat,id) -> f id a
-  | CPatCstr (_,_,patl) | CPatOr (_,patl) ->
+  | CPatCstr (_,_,patl) | CPatCstrExpl (_,_,patl) | CPatOr (_,patl) ->
       List.fold_left (cases_pattern_fold_names f) a patl
   | CPatNotation (_,_,(patl,patll)) ->
       List.fold_left (cases_pattern_fold_names f) a (patl@List.flatten patll)

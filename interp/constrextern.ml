@@ -158,6 +158,8 @@ let rec check_same_pattern p1 p2 =
         check_same_pattern a1 a2
     | CPatCstr(_,c1,a1), CPatCstr(_,c2,a2) when c1=c2 ->
         List.iter2 check_same_pattern a1 a2
+    | CPatCstrExpl(_,c1,a1), CPatCstrExpl(_,c2,a2) when c1=c2 ->
+        List.iter2 check_same_pattern a1 a2
     | CPatAtom(_,r1), CPatAtom(_,r2) when r1=r2 -> ()
     | CPatPrim(_,i1), CPatPrim(_,i2) when i1=i2 -> ()
     | CPatDelimiters(_,s1,e1), CPatDelimiters(_,s2,e2) when s1=s2 ->
@@ -317,7 +319,7 @@ let make_pat_notation loc ntn (terms,termlists as subst) =
 
 let mkPat loc qid l =
   (* Normally irrelevant test with v8 syntax, but let's do it anyway *)
-  if l = [] then CPatAtom (loc,Some qid) else CPatCstr (loc,qid,l)
+  if l = [] then CPatAtom (loc,Some qid) else CPatCstrExpl (loc,qid,l)
 
  (* Better to use extern_glob_constr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
@@ -359,7 +361,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 	  CPatRecord(loc, List.rev (ip projs args []))
 	with
 	  Not_found | No_match | Exit ->
-	    CPatCstr (loc, extern_reference loc vars (ConstructRef cstrsp), args) in
+	    CPatCstrExpl (loc, extern_reference loc vars (ConstructRef cstrsp), args) in
       insert_pat_alias loc p na
 
 and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function

@@ -93,7 +93,7 @@ let rec add_vars_of_simple_pattern globs = function
 	(UserError ("simple_pattern",str "\"(_ | _)\" is not allowed here"))
   | CPatDelimiters (_,_,p) ->
       add_vars_of_simple_pattern globs p
-  | CPatCstr (_,_,pl) ->
+  | CPatCstr (_,_,pl) | CPatCstrExpl (_,_,pl) ->
       List.fold_left add_vars_of_simple_pattern globs pl
   | CPatNotation(_,_,(pl,pll)) ->
       List.fold_left add_vars_of_simple_pattern globs (List.flatten (pl::pll))
