@@ -399,7 +399,7 @@ let rec special = function
 let custom sps =
   let pr_path (file,dependencies,com) =
     print file; print ": "; print dependencies; print "\n";
-    print "\t"; print com; print "\n\n"
+    if com <> "" then (print "\t"; print com); print "\n\n"
   in
     if sps <> [] then section "Custom targets.";
     List.iter pr_path sps
