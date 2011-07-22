@@ -428,10 +428,15 @@ let list_tabulate f len =
   in
   tabrec 0
 
-let rec list_make n v =
-  if n = 0 then []
-  else if n < 0 then invalid_arg "list_make"
-  else v::list_make (n-1) v
+let list_addn n v =
+  let rec aux n l =
+    if n = 0 then l
+    else aux (pred n) (v::l)
+  in
+    if n < 0 then invalid_arg "list_addn"
+    else aux n
+
+let list_make n v = list_addn n v []
 
 let list_assign l n e =
   let rec assrec stk = function
@@ -756,9 +761,6 @@ let rec list_skipn n l = match n,l with
 
 let rec list_skipn_at_least n l =
   try list_skipn n l with Failure _ -> []
-
-let rec list_addn n x l =
-  if n = 0 then l else x :: (list_addn (pred n) x l)
 
 let list_prefix_of prefl l =
   let rec prefrec = function
