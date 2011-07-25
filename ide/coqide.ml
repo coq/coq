@@ -447,61 +447,61 @@ let remove_tags (buffer:GText.buffer) from upto =
     [ Tags.Script.comment; Tags.Script.kwd; Tags.Script.decl;
       Tags.Script.proof_decl; Tags.Script.qed ]
 
+(** Cut a part of the buffer in sentences and tag them.
+    May raise [Coq_lex.Unterminated] when the zone ends with
+    an unterminated sentence. *)
+
 let split_slice_lax (buffer:GText.buffer) from upto =
   remove_tags buffer from upto;
   buffer#remove_tag ~start:from ~stop:upto Tags.Script.sentence;
   let slice = buffer#get_text ~start:from ~stop:upto () in
-  let slice = slice ^ " " in
   let rec split_substring str =
     let off_conv = byte_offset_to_char_offset str in
     let slice_len = String.length str in
-    let start_off,end_off = Coq_lex.find_end_offset (apply_tag buffer from off_conv) str in
-
-    let _ = from#forward_chars (off_conv start_off) in
-    let stop = from#forward_chars (pred (off_conv end_off)) in
-    let start = stop#backward_char in
+    let end_off = Coq_lex.delimit_sentence (apply_tag buffer from off_conv) str
+    in
+    let start = from#forward_chars (off_conv end_off) in
+    let stop = start#forward_char in
     buffer#apply_tag ~start ~stop Tags.Script.sentence;
-
-    if 1 < slice_len - end_off then begin (* remember that we added a trailing space *)
-      ignore (from#nocopy#forward_chars (off_conv end_off));
-      split_substring (String.sub str end_off (slice_len - end_off))
+    let next = end_off + 1 in
+    if next < slice_len then begin
+      ignore (from#nocopy#forward_chars (off_conv next));
+      split_substring (String.sub str next (slice_len - next))
     end
   in
   split_substring slice
 
-let rec grab_safe_sentence_start (iter:GText.iter) soi =
+(** Search backward a position strictly before [iter] where [tag] has
+    just been turned off. *)
+
+let backward_to_untag iter tag =
+  let prev = iter#backward_to_tag_toggle (Some tag) in
+  (* At [prev], the tag has just been toggled. If it's now off, we're done.
+     Otherwise look for the previous toogle, which must be a on->off toggle *)
+  if not (prev#has_tag tag) then prev
+  else prev#backward_to_tag_toggle (Some tag)
+
+(** Search backward the first character of a sentence, starting at [iter]
+    and going at most up to [soi] (meant to be the end of the locked zone).
+    We check that the previous terminator is still followed by a blank. *)
+
+let rec grab_sentence_start (iter:GText.iter) soi =
   let lax_back = iter#backward_char#has_tag Tags.Script.sentence in
   let on_space = List.mem iter#char [0x09;0x0A;0x20;0x0D] in
-  let full_ending = iter#is_start || (lax_back & on_space) in
+  let full_ending = iter#is_start || (lax_back && on_space) in
   if full_ending then iter
   else if iter#compare soi <= 0 then raise Not_found
   else
-    let prev = iter#backward_to_tag_toggle (Some Tags.Script.sentence) in
-    (if prev#has_tag Tags.Script.sentence then
-	ignore (prev#nocopy#backward_to_tag_toggle (Some Tags.Script.sentence)));
-    grab_safe_sentence_start prev soi
+    grab_sentence_start (backward_to_untag iter Tags.Script.sentence) soi
 
-let grab_sentence_end_from (start:GText.iter) =
+(** Search forward the last character of a sentence (most frequently "."),
+    or sometimes the space immediatly after. *)
+
+let grab_sentence_end (start:GText.iter) =
   let stop = start#forward_to_tag_toggle (Some Tags.Script.sentence) in
   stop#forward_char
 
-(* XXX - a activer plus tard
-   let get_curr_sentence (iter:GText.iter) =
-   let start = iter#backward_to_tag_toggle (Some Tags.Script.sentence) in
-   if not (start#has_tag Tags.Script.sentence) then
-   ignore (start#nocopy#backward_to_tag_toggle (Some Tags.Script.sentence));
-   let stop = start#forward_to_tag_toggle (Some Tags.Script.sentence) in
-   start,stop
-
-   let get_next_sentence ?(check=false) (iter:GText.iter) =
-   let start = iter#forward_to_tag_toggle (Some Tags.Script.sentence) in
-   if iter#has_tag Tags.Script.sentence then
-   ignore (start#nocopy#forward_to_tag_toggle (Some Tags.Script.sentence));
-   if check && (not (start#has_tag Tags.Script.sentence)) then
-   raise Not_found;
-   let stop = start#forward_to_tag_toggle (Some Tags.Script.sentence) in
-   start,stop
-*)
+(** Retag a zone that has been edited *)
 
 let tag_on_insert =
   (* possible race condition here : editing two buffers with a timedelta smaller
@@ -509,25 +509,38 @@ let tag_on_insert =
   let skip_last = ref (ref true) in (* ref to the mutable flag created on last call *)
   fun buffer ->
     try
+      (* the start of the non-locked zone *)
+      let soi = buffer#get_iter_at_mark (`NAME "start_of_input") in
+      (* the inserted zone is between [prev_insert] and [insert] *)
       let insert = buffer#get_iter_at_mark `INSERT in
-      let start = grab_safe_sentence_start insert
-        (buffer#get_iter_at_mark (`NAME "start_of_input")) in
-      let stop = grab_sentence_end_from insert in
+      let prev_insert = buffer#get_iter_at_mark (`NAME "prev_insert") in
+      (* [prev_insert] is normally always before [insert] even when deleting.
+	 Let's check this nonetheless *)
+      let prev_insert =
+	if insert#compare prev_insert < 0 then insert else prev_insert
+      in
+      let start = grab_sentence_start prev_insert soi in
+      let stop = grab_sentence_end insert in
       let skip_curr = ref true in (* shall the callback be skipped ? by default yes*)
       (!skip_last) := true; (* skip the previously created callback *)
       skip_last := skip_curr;
       try split_slice_lax buffer start stop
-      with Not_found ->
+      with Coq_lex.Unterminated ->
         skip_curr := false;
-        ignore (Glib.Timeout.add ~ms:1500
-                  ~callback:(fun () -> if not !skip_curr then (
-                    try split_slice_lax buffer start buffer#end_iter with _ -> ()); false))
+	let callback () =
+	  if not !skip_curr then begin
+	    try split_slice_lax buffer start buffer#end_iter
+	    with Coq_lex.Unterminated -> ()
+	  end; false
+	in
+	ignore (Glib.Timeout.add ~ms:1500 ~callback)
     with Not_found ->
       let err_pos = buffer#get_iter_at_mark (`NAME "start_of_input") in
       buffer#apply_tag Tags.Script.error ~start:err_pos ~stop:err_pos#forward_char
 
 let force_retag buffer =
-  try split_slice_lax buffer buffer#start_iter buffer#end_iter with _ -> ()
+  try split_slice_lax buffer buffer#start_iter buffer#end_iter
+  with Coq_lex.Unterminated -> ()
 
 let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
   (* move back twice if not into proof_decl,
@@ -539,8 +552,8 @@ let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
     ignore (cursor#nocopy#backward_to_tag_toggle (Some Tags.Script.proof_decl));
   let decl_start = cursor in
   let prf_end = decl_start#forward_to_tag_toggle (Some Tags.Script.qed) in
-  let decl_end = grab_sentence_end_from decl_start in
-  let prf_end = grab_sentence_end_from prf_end in
+  let decl_end = grab_sentence_end decl_start in
+  let prf_end = grab_sentence_end prf_end in
   let prf_end = prf_end#forward_char in
   if decl_start#has_tag Tags.Script.folded then (
     buffer#remove_tag ~start:decl_start ~stop:decl_end Tags.Script.folded;
@@ -869,8 +882,8 @@ object(self)
 
   method find_phrase_starting_at (start:GText.iter) =
     try
-      let start = grab_safe_sentence_start start self#get_start_of_input in
-      let stop = grab_sentence_end_from start in
+      let start = grab_sentence_start start self#get_start_of_input in
+      let stop = grab_sentence_end start in
       if (stop#backward_char#has_tag Tags.Script.sentence) then
         Some (start,stop)
       else
@@ -1289,6 +1302,36 @@ object(self)
   method help_for_keyword () =
     browse_keyword (self#insert_message) (get_current_word ())
 
+(** NB: Events during text edition:
+
+    - [begin_user_action]
+    - [insert_text] (or [delete_range] when deleting)
+    - [changed]
+    - [end_user_action]
+
+   When pasting a text containing tags (e.g. the sentence terminators),
+   there is actually many [insert_text] and [changed]. For instance,
+   for "a. b.":
+
+    - [begin_user_action]
+    - [insert_text] (for "a")
+    - [changed]
+    - [insert_text] (for ".")
+    - [changed]
+    - [apply_tag] (for the tag of ".")
+    - [insert_text] (for " b")
+    - [changed]
+    - [insert_text] (for ".")
+    - [changed]
+    - [apply_tag] (for the tag of ".")
+    - [end_user_action]
+
+  Since these copy-pasted tags may interact badly with the retag mechanism,
+  we now don't monitor the "changed" event, but rather the "begin_user_action"
+  and "end_user_action". We begin by setting a mark at the initial cursor
+  point. At the end, the zone between the mark and the cursor is to be
+  untagged and then retagged. *)
+
   initializer
     ignore (message_buffer#connect#insert_text
               ~callback:(fun it s -> ignore
@@ -1331,11 +1374,15 @@ object(self)
                   in
                   if has_completed then
                     input_buffer#move_mark `SEL_BOUND ~where:(input_buffer#get_iter `SEL_BOUND)#forward_char;
-
-
               )
     );
-    ignore (input_buffer#connect#changed
+    ignore (input_buffer#connect#begin_user_action
+	      ~callback:(fun () ->
+		           let here = input_buffer#get_iter_at_mark `INSERT in
+			   input_buffer#move_mark (`NAME "prev_insert") here
+	      )
+    );
+    ignore (input_buffer#connect#end_user_action
               ~callback:(fun () ->
                 last_modification_time <- Unix.time ();
                 let r = input_view#visible_rect in
@@ -1424,6 +1471,8 @@ let create_session () =
   let legacy_av = new analyzed_view script proof message stack ct in
   let _ =
     script#buffer#create_mark ~name:"start_of_input" script#buffer#start_iter in
+  let _ =
+    script#buffer#create_mark ~name:"prev_insert" script#buffer#start_iter in
   let _ =
     proof#buffer#create_mark ~name:"end_of_conclusion" proof#buffer#start_iter in
   let _ =
@@ -1651,6 +1700,7 @@ let load_file handler f =
       prerr_endline "Loading: fill buffer";
       input_buffer#set_text s;
       input_buffer#place_cursor ~where:input_buffer#start_iter;
+      force_retag input_buffer;
       prerr_endline ("Loading: switch to view "^ string_of_int index);
       session_notebook#goto_page index;
       prerr_endline "Loading: highlight";
