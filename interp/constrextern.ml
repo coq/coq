@@ -319,7 +319,7 @@ let make_pat_notation loc ntn (terms,termlists as subst) =
 
 let mkPat loc qid l =
   (* Normally irrelevant test with v8 syntax, but let's do it anyway *)
-  if l = [] then CPatAtom (loc,Some qid) else CPatCstrExpl (loc,qid,l)
+  if l = [] then CPatAtom (loc,Some qid) else CPatCstr (loc,qid,l)
 
  (* Better to use extern_glob_constr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
@@ -361,7 +361,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 	  CPatRecord(loc, List.rev (ip projs args []))
 	with
 	  Not_found | No_match | Exit ->
-	    CPatCstrExpl (loc, extern_reference loc vars (ConstructRef cstrsp), args) in
+	    CPatCstr (loc, extern_reference loc vars (ConstructRef cstrsp), args) in
       insert_pat_alias loc p na
 
 and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
