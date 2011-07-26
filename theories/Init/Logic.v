@@ -62,6 +62,9 @@ Inductive or (A B:Prop) : Prop :=
 
 where "A \/ B" := (or A B) : type_scope.
 
+Implicit Arguments or_introl [A B] [A].
+Implicit Arguments or_intror [A B] [B].
+
 (** [iff A B], written [A <-> B], expresses the equivalence of [A] and [B] *)
 
 Definition iff (A B:Prop) := (A -> B) /\ (B -> A).
