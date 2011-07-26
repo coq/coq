@@ -139,6 +139,9 @@ Inductive sumor (A:Type) (B:Prop) : Type :=
 
 Add Printing If sumor.
 
+Implicit Arguments inleft [[A] [B]] [A].
+Implicit Arguments inright [[A] [B]] [B].
+
 (** Various forms of the axiom of choice for specifications *)
 
 Section Choice_lemmas.
