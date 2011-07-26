@@ -160,8 +160,15 @@ and sentence initial stamp = parse
   | ident as id {
       (try here stamp lexbuf (tag_of_ident initial id) with Not_found -> ());
       sentence false stamp lexbuf }
+  | ".." {
+      (* We must have a particular rule for parsing "..", where no dot
+	 is a terminator, even if we have a blank afterwards
+	 (cf. for instance the syntax for recursive notation).
+	 This rule and the following one also allow to treat the "..."
+	 special case, where the third dot is a terminator. *)
+      sentence false stamp lexbuf
+    }
   | dot_sep { Lexing.lexeme_start lexbuf } (* The usual "." terminator *)
-  | ".." dot_sep { Lexing.lexeme_start lexbuf + 2 } (* The "..." special case *)
   | undotted_sep {
       (* Separators like { or } are only active at the start of a sentence *)
       if initial then Lexing.lexeme_start lexbuf
