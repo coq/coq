@@ -20,6 +20,10 @@ Inductive Compare (X : Type) (lt eq : X -> X -> Prop) (x y : X) : Type :=
   | EQ : eq x y -> Compare lt eq x y
   | GT : lt y x -> Compare lt eq x y.
 
+Implicit Arguments LT [X lt eq x y].
+Implicit Arguments EQ [X lt eq x y].
+Implicit Arguments GT [X lt eq x y].
+
 Module Type MiniOrderedType.
 
   Parameter Inline t : Type.
@@ -141,7 +145,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
 
   Lemma elim_compare_eq :
    forall x y : t,
-   eq x y -> exists H : eq x y, compare x y = EQ _ H.
+   eq x y -> exists H : eq x y, compare x y = EQ H.
   Proof.
    intros; case (compare x y); intros H'; try (exfalso; order).
    exists H'; auto.
@@ -149,7 +153,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
 
   Lemma elim_compare_lt :
    forall x y : t,
-   lt x y -> exists H : lt x y, compare x y = LT _ H.
+   lt x y -> exists H : lt x y, compare x y = LT H.
   Proof.
    intros; case (compare x y); intros H'; try (exfalso; order).
    exists H'; auto.
@@ -157,7 +161,7 @@ Module OrderedTypeFacts (Import O: OrderedType).
 
   Lemma elim_compare_gt :
    forall x y : t,
-   lt y x -> exists H : lt y x, compare x y = GT _ H.
+   lt y x -> exists H : lt y x, compare x y = GT H.
   Proof.
    intros; case (compare x y); intros H'; try (exfalso; order).
    exists H'; auto.
