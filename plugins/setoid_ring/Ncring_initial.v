@@ -16,8 +16,8 @@ Require Import BinPos.
 Require Import BinNat.
 Require Import BinInt.
 Require Import Setoid.
-Require Export Ring2.
-Require Export Ring2_polynom.
+Require Export Ncring.
+Require Export Ncring_polynom.
 Import List.
 
 Set Implicit Arguments.
@@ -90,7 +90,7 @@ Context {R:Type}`{Ring R}.
   end.
 
    Ltac norm := gen_rewrite.
-   Ltac add_push :=  gen_add_push.
+   Ltac add_push :=  Ncring.gen_add_push.
 Ltac rsimpl := simpl.
 
  Lemma same_gen : forall x, gen_phiPOS1 x == gen_phiPOS x.
@@ -98,15 +98,14 @@ Ltac rsimpl := simpl.
   induction x;rsimpl.
   rewrite IHx. destruct x;simpl;norm.
   rewrite IHx;destruct x;simpl;norm.
-  gen_reflexivity.
+  reflexivity.
  Qed.
 
  Lemma ARgen_phiPOS_Psucc : forall x,
    gen_phiPOS1 (Psucc x) == 1 + (gen_phiPOS1 x).
  Proof.
   induction x;rsimpl;norm.
-  rewrite IHx ;norm.
-  add_push 1;gen_reflexivity.
+ rewrite IHx. gen_rewrite. add_push 1. reflexivity.
  Qed.
 
  Lemma ARgen_phiPOS_add : forall x y,
@@ -116,13 +115,13 @@ Ltac rsimpl := simpl.
   rewrite Pplus_carry_spec.
   rewrite ARgen_phiPOS_Psucc.
   rewrite IHx;norm.
-  add_push (gen_phiPOS1 y);add_push 1;gen_reflexivity.
-  rewrite IHx;norm;add_push (gen_phiPOS1 y);gen_reflexivity.
-  rewrite ARgen_phiPOS_Psucc;norm;add_push 1;gen_reflexivity.
-  rewrite IHx;norm;add_push(gen_phiPOS1 y); add_push 1;gen_reflexivity.
-  rewrite IHx;norm;add_push(gen_phiPOS1 y);gen_reflexivity.
-  add_push 1;gen_reflexivity.
-  rewrite ARgen_phiPOS_Psucc;norm;add_push 1;gen_reflexivity.
+  add_push (gen_phiPOS1 y);add_push 1;reflexivity.
+  rewrite IHx;norm;add_push (gen_phiPOS1 y);reflexivity.
+  rewrite ARgen_phiPOS_Psucc;norm;add_push 1;reflexivity.
+  rewrite IHx;norm;add_push(gen_phiPOS1 y); add_push 1;reflexivity.
+  rewrite IHx;norm;add_push(gen_phiPOS1 y);reflexivity.
+  add_push 1;reflexivity.
+  rewrite ARgen_phiPOS_Psucc;norm;add_push 1;reflexivity.
  Qed.
 
  Lemma ARgen_phiPOS_mult :
@@ -130,14 +129,14 @@ Ltac rsimpl := simpl.
  Proof.
   induction x;intros;simpl;norm.
   rewrite ARgen_phiPOS_add;simpl;rewrite IHx;norm.
-  rewrite IHx;gen_reflexivity.
+  rewrite IHx;reflexivity.
  Qed.
 
 
 (*morphisms are extensionaly equal*)
  Lemma same_genZ : forall x, [x] == gen_phiZ1 x.
  Proof.
-  destruct x;rsimpl; try rewrite same_gen; gen_reflexivity.
+  destruct x;rsimpl; try rewrite same_gen; reflexivity.
  Qed.
 
  Lemma gen_Zeqb_ok : forall x y,
@@ -145,7 +144,7 @@ Ltac rsimpl := simpl.
  Proof.
   intros x y H7.
   assert (H10 := Zeq_bool_eq x y H7);unfold IDphi in H10.
-  rewrite H10;gen_reflexivity.
+  rewrite H10;reflexivity.
  Qed.
 
  Lemma gen_phiZ1_add_pos_neg : forall x y,
@@ -158,7 +157,7 @@ Ltac rsimpl := simpl.
   assert (HH1 := Pminus_mask_Gt y x). unfold Pos.gt in HH1.
   rewrite Pos.compare_antisym in HH1.
   destruct (Pos.compare_spec x y) as [HH|HH|HH].
-  subst. rewrite ring_opp_def;gen_reflexivity.
+  subst. rewrite ring_opp_def;reflexivity.
   destruct HH1 as [h [HHeq1 [HHeq2 HHor]]];trivial.
   unfold Pminus; rewrite HHeq1;rewrite <- HHeq2.
   rewrite ARgen_phiPOS_add;simpl;norm.
@@ -168,38 +167,7 @@ Ltac rsimpl := simpl.
   rewrite ARgen_phiPOS_add;simpl;norm.
   add_push (gen_phiPOS1 h). rewrite ring_opp_def ; norm.
  Qed.
-(*
-Lemma gen_phiZ1_add_pos_neg : forall x y,
- gen_phiZ1
-    match Pos.compare_cont x y Eq with
-    | Eq => Z0
-    | Lt => Zneg (y - x)
-    | Gt => Zpos (x - y)
-    end
- == gen_phiPOS1 x + -gen_phiPOS1 y.
- Proof.
-  intros x y.
-  assert (HH:= (Pcompare_Eq_eq x y)); assert (HH0 := Pminus_mask_Gt x y).
-  generalize (Pminus_mask_Gt y x).
-  replace Eq with (CompOpp Eq);[intro HH1;simpl|trivial].
-  assert (Pos.compare_cont x y Eq = Gt -> (x > y)%positive).
-  auto with *.
-  assert (CompOpp(Pos.compare_cont x y Eq) = Gt -> (y > x)%positive).
-  rewrite Pcompare_antisym . simpl.
-  auto with *.
-  destruct (Pos.compare_cont x y Eq).
-  rewrite HH;trivial. rewrite ring_opp_def. rrefl.
-  destruct HH1 as [h [HHeq1 [HHeq2 HHor]]];trivial. simpl in H8. auto.
-  
-  unfold Pminus; rewrite HHeq1;rewrite <- HHeq2.
-  rewrite ARgen_phiPOS_add;simpl;norm.
-  rewrite ring_opp_def;norm.
-  destruct HH0 as [h [HHeq1 [HHeq2 HHor]]];trivial. auto.
-  unfold Pminus; rewrite HHeq1;rewrite <- HHeq2.
-  rewrite ARgen_phiPOS_add;simpl;norm.
-  add_push (gen_phiPOS1 h);rewrite ring_opp_def; norm.
- Qed.
-*)
+
  Lemma match_compOpp : forall x (B:Type) (be bl bg:B),
   match CompOpp x with Eq => be | Lt => bl | Gt => bg end
   = match x with Eq => be | Lt => bg | Gt => bl end.
@@ -220,7 +188,7 @@ Lemma gen_phiZ_opp : forall x, [- x] == - [x].
  Proof.
   intros x. repeat rewrite same_genZ. generalize x ;clear x.
   induction x;simpl;norm.
-  rewrite ring_opp_opp.  gen_reflexivity.
+  rewrite ring_opp_opp.  reflexivity.
  Qed.
 
  Lemma gen_phiZ_mul : forall x y, [x * y] == [x] * [y].
@@ -228,19 +196,19 @@ Lemma gen_phiZ_opp : forall x, [- x] == - [x].
   intros x y;repeat rewrite same_genZ.
   destruct x;destruct y;simpl;norm;
   rewrite  ARgen_phiPOS_mult;try (norm;fail).
-  rewrite ring_opp_opp ;gen_reflexivity.
+  rewrite ring_opp_opp ;reflexivity.
  Qed.
 
  Lemma gen_phiZ_ext : forall x y : Z, x = y -> [x] == [y].
- Proof. intros;subst;gen_reflexivity. Qed.
+ Proof. intros;subst;reflexivity. Qed.
 
 (*proof that [.] satisfies morphism specifications*)
 Global Instance gen_phiZ_morph :
 (@Ring_morphism (Z:Type) R _ _ _ _ _ _ _ Zops Zr _ _ _ _ _ _ _ _ _ gen_phiZ) . (* beurk!*)
- apply Build_Ring_morphism; simpl;try gen_reflexivity.
+ apply Build_Ring_morphism; simpl;try reflexivity.
    apply gen_phiZ_add. intros. rewrite ring_sub_def. 
 replace (Zminus x y) with (x + (-y))%Z. rewrite gen_phiZ_add. 
-rewrite gen_phiZ_opp.  rewrite ring_sub_def. gen_reflexivity.
+rewrite gen_phiZ_opp.  rewrite ring_sub_def. reflexivity.
 reflexivity.
  apply gen_phiZ_mul. apply gen_phiZ_opp. apply gen_phiZ_ext. 
  Defined.

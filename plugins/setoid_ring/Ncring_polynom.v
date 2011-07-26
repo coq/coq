@@ -15,7 +15,7 @@ Require Import BinPos.
 Require Import BinNat.
 Require Import BinInt.
 Require Export Ring_polynom. (* n'utilise que PExpr *)
-Require Export Ring2.
+Require Export Ncring.
 
 Section MakeRingPol.
 
@@ -617,6 +617,5 @@ exact pow_th.
   do 2 (rewrite (norm_subst_ok l);trivial).
   apply Peq_ok;trivial.
  Qed.
-
 
 End MakeRingPol.

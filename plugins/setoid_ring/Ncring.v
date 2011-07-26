@@ -12,7 +12,7 @@ Require Import Setoid.
 Require Import BinPos.
 Require Import BinNat.
 Require Export Morphisms Setoid Bool.
-Require Export ZArith.
+Require Export ZArith_base.
 Require Export Algebra_syntax.
 
 Set Implicit Arguments.
@@ -26,14 +26,13 @@ Class Ring_ops(T:Type)
    {opp:T->T}
    {ring_eq:T->T->Prop}.
 
-Instance zero_notation(T:Type)`{Ring_ops T}:Zero T. exact ring0. Defined.
-Instance one_notation(T:Type)`{Ring_ops T}:One T. exact ring1. Defined.
-Instance add_notation(T:Type)`{Ring_ops T}:Addition T. exact add. Defined.
-Instance mul_notation(T:Type)`{Ring_ops T}:@Multiplication T T.
-     exact mul. Defined.
-Instance sub_notation(T:Type)`{Ring_ops T}:Subtraction T. exact sub. Defined.
-Instance opp_notation(T:Type)`{Ring_ops T}:Opposite T. exact opp. Defined.
-Instance eq_notation(T:Type)`{Ring_ops T}:@Equality T. exact ring_eq. Defined.
+Instance zero_notation(T:Type)`{Ring_ops T}:Zero T:= ring0. 
+Instance one_notation(T:Type)`{Ring_ops T}:One T:= ring1.
+Instance add_notation(T:Type)`{Ring_ops T}:Addition T:= add.
+Instance mul_notation(T:Type)`{Ring_ops T}:@Multiplication T T:= mul.
+Instance sub_notation(T:Type)`{Ring_ops T}:Subtraction T:= sub.
+Instance opp_notation(T:Type)`{Ring_ops T}:Opposite T:= opp.
+Instance eq_notation(T:Type)`{Ring_ops T}:@Equality T:= ring_eq.
 
 Class Ring `{Ro:Ring_ops}:={
  ring_setoid: Equivalence _==_;
@@ -52,10 +51,10 @@ Class Ring `{Ro:Ring_ops}:={
  ring_sub_def    : \/x y, x - y == x + -y;
  ring_opp_def    : \/x, x + -x == 0
 }.
-
+(* inutile! je sais plus pourquoi j'ai mis ca...
 Instance ring_Ring_ops(R:Type)`{Ring R}
   :@Ring_ops R 0 1 addition multiplication subtraction opposite equality.
-
+*)
 Existing Instance ring_setoid.
 Existing Instance ring_plus_comp.
 Existing Instance ring_mult_comp.

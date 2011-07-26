@@ -12,6 +12,8 @@
  
 Examples: see test-suite/success/Nsatz.v
 
+Reification is done using type classes, defined in Ncring_tac.v
+
 *)
 
 Require Import List.
@@ -21,29 +23,16 @@ Require Import BinList.
 Require Import Znumtheory.
 Require Export Morphisms Setoid Bool.
 Require Export Algebra_syntax.
-Require Export Ring2.
-Require Export Ring2_initial.
-Require Export Ring2_tac.
-Require Export Cring.
+Require Export Ncring.
+Require Export Ncring_initial.
+Require Export Ncring_tac.
+Require Export Integral_domain.
 
 Declare ML Module "nsatz_plugin".
 
-(* Definition of integral domains: commutative ring without zero divisor *)
-
-Class Integral_domain {R : Type}`{Rcr:Cring R} := {
- integral_domain_product:
-   forall x y, x * y == 0 -> x == 0 \/ y == 0;
- integral_domain_one_zero: not (1 == 0)}.
-
-Section integral_domain.
+Section nsatz1.
 
 Context {R:Type}`{Rid:Integral_domain R}.
-
-Lemma integral_domain_minus_one_zero: ~ - (1:R) == 0.
-red;intro. apply integral_domain_one_zero. 
-assert (0 == - (0:R)). cring.
-rewrite H0. rewrite <- H. cring.
-Qed.
 
 Lemma psos_r1b: forall x y:R, x - y == 0 -> x == y.
 intros x y H; setoid_replace x with ((x - y) + y); simpl;
@@ -106,8 +95,6 @@ Definition check (lpe:list PEZ) (qe:PEZ) (certif: list (list PEZ) * list PEZ) :=
 Definition PhiR : list R -> PolZ -> R :=
   (Pphi ring0 add mul 
     (InitialRing.gen_phiZ ring0 ring1 add mul opp)).
-
-Definition pow (r : R) (n : nat) := Ring_theory.pow_N 1 mul r (N_of_nat n).
 
 Definition PEevalR : list R -> PEZ -> R :=
    PEeval ring0 add mul sub opp
@@ -222,25 +209,6 @@ Qed.
 
 (* fin *)
 
-Lemma pow_not_zero: forall p n, pow p n == 0 -> p == 0.
-induction n. unfold pow; simpl. intros. absurd (1 == 0). 
-simpl. apply integral_domain_one_zero.
- trivial. setoid_replace (pow p (S n)) with (p * (pow p n)).
-intros. 
-case (integral_domain_product p (pow p n) H). trivial. trivial. 
-unfold pow; simpl. 
-clear IHn. induction n; simpl; try cring. 
- rewrite Ring_theory.pow_pos_Psucc. cring. exact Rset.
-apply ring_mult_comp.
-apply cring_mul_comm.
-apply ring_mul_assoc.
-Qed.
-
-Lemma Rintegral_domain_pow:
-  forall c p r, ~c == 0 -> c * (pow p r) == ring0 -> p == ring0.
-intros. case (integral_domain_product c (pow p r) H0). intros; absurd (c == ring0); auto. 
-intros. apply pow_not_zero with r. trivial. Qed.   
-
 Definition R2:= 1 + 1.
 
 Fixpoint IPR p {struct p}: R :=
@@ -278,7 +246,7 @@ Fixpoint interpret3 t fv {struct t}: R :=
   end.
 
 
-End integral_domain.
+End nsatz1.
 
 Ltac equality_to_goal H x y:=
   let h := fresh "nH" in
@@ -458,38 +426,6 @@ Tactic Notation "nsatz" "with"
     nsatz_generic radicalmax info lparam lvar
   end.
 
-Section test.
-Context {R:Type}`{Rid:Integral_domain R}.
-
-Goal forall x y:R, x == x.
-nsatz with radicalmax := 6%N strategy := 1%Z parameters := (@nil R)
- variables := (@nil R).
-Qed.
-
-Goal forall x y:R, x == y -> y*y == x*x.
-nsatz.
-Qed.
-
-Lemma example3 : forall x y z:R,
-  x+y+z==0 ->
-  x*y+x*z+y*z==0->
-  x*y*z==0 -> x*x*x==0.
-Proof.
-nsatz.
-Qed.
-(*
-Lemma example5 : forall x y z u v:R,
-  x+y+z+u+v==0 ->
-  x*y+x*z+x*u+x*v+y*z+y*u+y*v+z*u+z*v+u*v==0->
-  x*y*z+x*y*u+x*y*v+x*z*u+x*z*v+x*u*v+y*z*u+y*z*v+y*u*v+z*u*v==0->
-  x*y*z*u+y*z*u*v+z*u*v*x+u*v*x*y+v*x*y*z==0 ->
-  x*y*z*u*v==0 -> x*x*x*x*x ==0.
-Proof.
-nsatz.
-Qed.
-*)
-End test.
-
 (* Real numbers *)
 Require Import Reals.
 Require Import RealField.
@@ -522,10 +458,6 @@ Instance Rdi : (Integral_domain (Rcr:=Rcri)).
 constructor. 
 exact Rmult_integral. exact R_one_zero. Defined.
 
-Goal forall x y:R, x = y -> (x*x-x+1)%R = ((y*y-y)+1+0)%R.
-nsatz.
-Qed.
-
 (* Rational numbers *)
 Require Import QArith.
 
@@ -554,10 +486,6 @@ Instance Qdi : (Integral_domain (Rcr:=Qcri)).
 constructor. 
 exact Qmult_integral. exact Q_one_zero. Defined.
 
-Goal forall x y:Q, Qeq x y -> Qeq (x*x-x+1)%Q ((y*y-y)+1+0)%Q.
-nsatz.
-Qed.
-
 (* Integers *)
 Lemma Z_one_zero: 1%Z <> 0%Z.
 omega. 
@@ -570,10 +498,3 @@ Instance Zdi : (Integral_domain (Rcr:=Zcri)).
 constructor. 
 exact Zmult_integral. exact Z_one_zero. Defined.
 
-Goal forall x y:Z, x = y -> (x*x-x+1)%Z = ((y*y-y)+1+0)%Z.
-nsatz. 
-Qed.
-
-Goal forall x y:Z, x = y -> x = x -> (x*x-x+1)%Z = ((y*y-y)+1+0)%Z.
-nsatz. 
-Qed.
