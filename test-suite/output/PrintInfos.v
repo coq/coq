@@ -1,6 +1,6 @@
-About or_introl.
-Print or_introl.
-Print Implicit or_introl.
+About existT.
+Print existT.
+Print Implicit existT.
 
 Print eq_refl.
 About eq_refl.

@@ -1,17 +1,16 @@
-or_introl : forall A B : Prop, A -> A \/ B
+existT : forall (A : Type) (P : A -> Type) (x : A), P x -> sigT P
 
 Argument A is implicit
-Argument scopes are [type_scope type_scope _]
-Expands to: Constructor Coq.Init.Logic.or_introl
-Inductive or (A B : Prop) : Prop :=
-    or_introl : A -> A \/ B | or_intror : B -> A \/ B
+Argument scopes are [type_scope _ _ _]
+Expands to: Constructor Coq.Init.Specif.existT
+Inductive sigT (A : Type) (P : A -> Type) : Type :=
+    existT : forall x : A, P x -> sigT P
 
-For or_introl: Argument A is implicit
-For or_intror: Argument B is implicit
-For or: Argument scopes are [type_scope type_scope]
-For or_introl: Argument scopes are [type_scope type_scope _]
-For or_intror: Argument scopes are [type_scope type_scope _]
-or_introl : forall A B : Prop, A -> A \/ B
+For sigT: Argument A is implicit
+For existT: Argument A is implicit
+For sigT: Argument scopes are [type_scope type_scope]
+For existT: Argument scopes are [type_scope _ _ _]
+existT : forall (A : Type) (P : A -> Type) (x : A), P x -> sigT P
 
 Argument A is implicit
 Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
