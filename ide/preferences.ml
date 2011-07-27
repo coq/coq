@@ -520,6 +520,7 @@ let configure ?(apply=(fun () -> ())) () =
     combo
       "Library URL"
       ~f:(fun s -> !current.library_url <- s)
+      ~new_allowed: true
       (predefined@[if List.mem !current.library_url predefined then ""
                    else !current.library_url])
       !current.library_url

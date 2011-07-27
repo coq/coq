@@ -393,38 +393,50 @@ class string_param_box param (tt:GData.tooltips) =
 
 (** This class is used to build a box for a combo parameter.*)
 class combo_param_box param (tt:GData.tooltips) =
-  let _ = dbg "combo_param_box" in
-  let hbox = GPack.hbox () in
-  let wev = GBin.event_box ~packing: (hbox#pack ~expand: false ~padding: 2) () in
-  let _wl = GMisc.label ~text: param.combo_label ~packing: wev#add () in
-  let wc = GEdit.combo
-      ~popdown_strings: param.combo_choices
-      ~value_in_list: (not param.combo_new_allowed)
-      (* ~allow_empty: param.combo_blank_allowed *)
-      ~packing: (hbox#pack ~expand: param.combo_expand ~padding: 2)
-      ()
-  in
-  let _ =
-    match param.combo_help with
-      None -> ()
-    | Some help ->
-	tt#set_tip ~text: help ~privat: help wev#coerce
-  in
-  let _ = wc#entry#set_editable param.combo_editable in
-  let _ = wc#entry#set_text param.combo_value in
-
-  object (self)
-    (** This method returns the main box ready to be packed. *)
-    method box = hbox#coerce
+    let _ = dbg "combo_param_box" in
+    let hbox = GPack.hbox () in
+    let wev = GBin.event_box ~packing: (hbox#pack ~expand: false ~padding: 2) () in
+    let _wl = GMisc.label ~text: param.combo_label ~packing: wev#add () in
+    let _ =
+      match param.combo_help with
+	  None -> ()
+	| Some help ->
+	    tt#set_tip ~text: help ~privat: help wev#coerce
+    in
+    let get_value = if not param.combo_new_allowed then
+      let wc = GEdit.combo_box_text
+	~strings: param.combo_choices
+	?active:(let rec aux i = function
+		   |[] -> None
+		   |h::_ when h = param.combo_value -> Some i
+		   |_::t -> aux (succ i) t
+		 in aux 0 param.combo_choices)
+	~packing: (hbox#pack ~expand: param.combo_expand ~padding: 2)
+	()
+      in
+	fun () -> match GEdit.text_combo_get_active wc with |None -> "" |Some s -> s
+    else
+      let (wc,_) = GEdit.combo_box_entry_text
+	~strings: param.combo_choices
+	~packing: (hbox#pack ~expand: param.combo_expand ~padding: 2)
+	()
+      in
+      let _ = wc#entry#set_editable param.combo_editable in
+      let _ = wc#entry#set_text param.combo_value in
+	fun () -> wc#entry#text
+    in
+object (self)
+  (** This method returns the main box ready to be packed. *)
+  method box = hbox#coerce
     (** This method applies the new value of the parameter. *)
-    method apply =
-      let new_value = wc#entry#text in
+  method apply =
+    let new_value = get_value () in
       if new_value <> param.combo_value then
 	let _ = param.combo_f_apply new_value in
-	param.combo_value <- new_value
+	  param.combo_value <- new_value
       else
 	()
-  end ;;
+end ;;
 
 (** Class used to pack a custom box. *)
 class custom_param_box param (tt:GData.tooltips) =

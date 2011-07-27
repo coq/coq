@@ -2609,12 +2609,9 @@ let main files =
     ~packing:(lower_hbox#pack ~expand:false) ()
   in
   let search_history = ref [] in
-  let search_input = GEdit.combo ~popdown_strings:!search_history
-    ~enable_arrow_keys:true
-    ~show:false
+  let (search_input,_) = GEdit.combo_box_entry_text ~strings:!search_history ~show:false
     ~packing:(lower_hbox#pack ~expand:false) ()
   in
-  search_input#disable_activate ();
   let ready_to_wrap_search = ref false in
 
   let start_of_search = ref None in

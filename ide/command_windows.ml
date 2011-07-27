@@ -74,14 +74,10 @@ object(self)
     notebook#goto_page (notebook#page_num frame#coerce);
     let vbox = GPack.vbox ~homogeneous:false ~packing:frame#add () in
     let hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
-    let combo = GEdit.combo ~popdown_strings:Coq_commands.state_preserving
-		  ~enable_arrow_keys:true
-		  ~allow_empty:false
-		  ~value_in_list:false (* true is not ok with disable_activate...*)
+    let (combo,_) = GEdit.combo_box_entry_text ~strings:Coq_commands.state_preserving
 		  ~packing:hbox#pack
 		  ()
     in
-    combo#disable_activate ();
     let on_activate c () =
       if List.mem combo#entry#text Coq_commands.state_preserving then c ()
       else prerr_endline "Not a state preserving command"
