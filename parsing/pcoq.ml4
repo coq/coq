@@ -463,6 +463,7 @@ let default_pattern_levels =
    100,RightA,false;
    99,RightA,true;
    10,LeftA,false;
+   9,RightA,false;
    1,LeftA,false;
    0,RightA,false]
 
