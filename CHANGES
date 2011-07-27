@@ -122,7 +122,7 @@ Automation tactics
 
 - Tactic "intuition" now preserves inner "iff" and "not" (exceptional
   source of incompatibilities solvable by redefining "intuition" as
-  "unfold iff, not in *; intuition", or by using "Set Intuition Unfolding".)
+  "unfold iff, not in *; intuition", or by using "Set Intuition Iff Unfolding".)
 - Tactic "tauto" now proves classical tautologies as soon as classical logic
   (i.e. library Classical_Prop or Classical) is loaded.
 - Tactic "gappa" has been removed from the Dp plugin.
