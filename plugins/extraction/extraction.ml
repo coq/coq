@@ -36,9 +36,17 @@ let current_fixpoints = ref ([] : constant list)
 
 let none = Evd.empty
 
-let type_of env c = Retyping.get_type_of env none (strip_outer_cast c)
+let type_of env c =
+  try
+    let polyprop = (lang() = Haskell) in
+    Retyping.get_type_of ~polyprop env none (strip_outer_cast c)
+  with SingletonInductiveBecomesProp id -> error_singleton_become_prop id
 
-let sort_of env c = Retyping.get_sort_family_of env none (strip_outer_cast c)
+let sort_of env c =
+  try
+    let polyprop = (lang() = Haskell) in
+    Retyping.get_sort_family_of ~polyprop env none (strip_outer_cast c)
+  with SingletonInductiveBecomesProp id -> error_singleton_become_prop id
 
 let is_axiom env kn = (Environ.lookup_constant kn env).const_body = None
 

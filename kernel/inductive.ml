@@ -186,13 +186,20 @@ let instantiate_universes env ctx ar argsorts =
   (* This is a Type with constraints *)
  else Type level
 
-let type_of_inductive_knowing_parameters env mip paramtyps =
+exception SingletonInductiveBecomesProp of identifier
+
+let type_of_inductive_knowing_parameters ?(polyprop=true) env mip paramtyps =
   match mip.mind_arity with
   | Monomorphic s ->
       s.mind_user_arity
   | Polymorphic ar ->
       let ctx = List.rev mip.mind_arity_ctxt in
       let ctx,s = instantiate_universes env ctx ar paramtyps in
+      (* The Ocaml extraction cannot handle (yet?) "Prop-polymorphism", i.e.
+         the situation where a non-Prop singleton inductive becomes Prop
+         when applied to Prop params *)
+      if not polyprop && not (is_type0m_univ ar.poly_level) && s = prop_sort
+      then raise (SingletonInductiveBecomesProp mip.mind_typename);
       mkArity (List.rev ctx,s)
 
 (* Type of a (non applied) inductive type *)

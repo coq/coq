@@ -323,7 +323,8 @@ let check_conv_leq_goal env sigma arg ty conclty =
     raise (RefinerError (BadType (arg,ty,conclty)))
 
 let goal_type_of env sigma c =
-  (if !check then type_of else Retyping.get_type_of ~refresh:true) env sigma c
+  if !check then type_of env sigma c
+  else Retyping.get_type_of ~refresh:true env sigma c
 
 let rec mk_refgoals sigma goal goalacc conclty trm =
   let env = evar_env goal in

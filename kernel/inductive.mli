@@ -85,7 +85,16 @@ val check_cofix : env -> cofixpoint -> unit
 
 (*s Support for sort-polymorphic inductive types *)
 
-val type_of_inductive_knowing_parameters :
+(** The "polyprop" optional argument below allows to control
+    the "Prop-polymorphism". By default, it is allowed.
+    But when "polyprop=false", the following exception is raised
+    when a polymorphic singleton inductive type becomes Prop due to
+    parameter instantiation. This is used by the Ocaml extraction,
+    which cannot handle (yet?) Prop-polymorphism. *)
+
+exception SingletonInductiveBecomesProp of identifier
+
+val type_of_inductive_knowing_parameters : ?polyprop:bool ->
   env -> one_inductive_body -> types array -> types
 
 val max_inductive_sort : sorts array -> universe
