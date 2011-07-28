@@ -47,6 +47,7 @@ let preamble mod_name used_modules usf =
   (if used_modules = [] then mt () else fnl ()) ++
   (if not usf.magic then mt ()
    else str "\
+unsafeCoerce :: a -> b
 #ifdef __GLASGOW_HASKELL__
 import qualified GHC.Base
 unsafeCoerce = GHC.Base.unsafeCoerce#
@@ -57,7 +58,8 @@ unsafeCoerce = IOExts.unsafeCoerce
 #endif" ++ fnl2 ())
   ++
   (if not usf.mldummy then mt ()
-   else str "__ = Prelude.error \"Logical or arity value used\"" ++ fnl2 ())
+   else str "__ :: any" ++ fnl () ++
+        str "__ = Prelude.error \"Logical or arity value used\"" ++ fnl2 ())
 
 let pp_abst = function
   | [] -> (mt ())
