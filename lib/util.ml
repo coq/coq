@@ -399,6 +399,13 @@ let rec list_compare cmp l1 l2 =
 	   | 0 -> list_compare cmp l1 l2
 	   | c -> c)
 
+let rec list_equal cmp l1 l2 =
+  match l1, l2 with
+    | [], [] -> true
+    | x1 :: l1, x2 :: l2 ->
+      cmp x1 x2 && list_equal cmp l1 l2
+    | _ -> false
+
 let list_intersect l1 l2 =
   List.filter (fun x -> List.mem x l2) l1
 

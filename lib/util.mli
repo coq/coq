@@ -116,6 +116,7 @@ val ascii_of_ident : string -> string
 (** {6 Lists. } *)
 
 val list_compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
+val list_equal : ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
 val list_add_set : 'a -> 'a list -> 'a list
 val list_eq_set : 'a list -> 'a list -> bool
 val list_intersect : 'a list -> 'a list -> 'a list

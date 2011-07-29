@@ -2710,8 +2710,9 @@ let compute_scheme_signature scheme names_info ind_type_guess =
 
 		let ccl_arg_ok = is_pred (p + scheme.nargs + 1) f = IndArg in
 		let ind_is_ok =
-		  list_lastn scheme.nargs indargs
-		  = extended_rel_list 0 scheme.args in
+		  list_equal eq_constr
+		    (list_lastn scheme.nargs indargs)
+		    (extended_rel_list 0 scheme.args) in
 		if not (ccl_arg_ok & ind_is_ok) then
 		  error_ind_scheme "the conclusion of";
 		[]
