@@ -102,9 +102,13 @@ let compare_constr_int f t1 t2 =
 	  (f =? (compare_list f)) c1 c2 l1 l2
     | Evar (e1,l1), Evar (e2,l2) ->
 	((-) =? (compare_array f)) e1 e2 l1 l2
-    | Const c1, Const c2 -> Pervasives.compare c1 c2
-    | Ind c1, Ind c2 -> Pervasives.compare c1 c2
-    | Construct c1, Construct c2 -> Pervasives.compare c1 c2
+    | Const c1, Const c2 -> kn_ord (canonical_con c1) (canonical_con c2)
+    | Ind (spx, ix), Ind (spy, iy) ->
+	let c = ix - iy in if c = 0 then kn_ord (canonical_mind spx) (canonical_mind spy) else c
+    | Construct ((spx, ix), jx), Construct ((spy, iy), jy) ->
+	let c = jx - jy in if c = 0 then
+	  (let c = ix - iy in if c = 0 then kn_ord (canonical_mind spx) (canonical_mind spy) else c)
+	else c
     | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
 	((f =? f) ==? (compare_array f)) p1 p2 c1 c2 bl1 bl2
     | Fix (ln1,(_,tl1,bl1)), Fix (ln2,(_,tl2,bl2)) ->
