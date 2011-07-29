@@ -595,7 +595,7 @@ let regeneralize_index_tomatch n =
   genrec 0
 
 let rec replace_term n c k t =
-  if t = mkRel (n+k) then lift k c
+  if isRel t && destRel t = n+k then lift k c
   else map_constr_with_binders succ (replace_term n c) k t
 
 let length_of_tomatch_type_sign (dep,_) = function
