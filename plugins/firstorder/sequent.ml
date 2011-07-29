@@ -87,7 +87,7 @@ let compare_constr_int f t1 t2 =
   match kind_of_term t1, kind_of_term t2 with
     | Rel n1, Rel n2 -> n1 - n2
     | Meta m1, Meta m2 -> m1 - m2
-    | Var id1, Var id2 -> Pervasives.compare id1 id2
+    | Var id1, Var id2 -> id_ord id1 id2
     | Sort s1, Sort s2 -> Pervasives.compare s1 s2
     | Cast (c1,_,_), _ -> f c1 t2
     | _, Cast (c2,_,_) -> f t1 c2
