@@ -591,7 +591,6 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
     (* Type of constructors in normal form *)
     let splayed_lc = Array.map (dest_prod_assum env_ar) lc in
     let nf_lc = Array.map (fun (d,b) -> it_mkProd_or_LetIn b d) splayed_lc in
-    let nf_lc = if nf_lc = lc then lc else nf_lc in
     let consnrealargs =
       Array.map (fun (d,_) -> rel_context_length d - rel_context_length params)
 	splayed_lc in
