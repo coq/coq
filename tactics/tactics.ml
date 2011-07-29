@@ -2646,7 +2646,7 @@ let compute_scheme_signature scheme names_info ind_type_guess =
 	let is_pred n c =
 	  let hd = fst (decompose_app c) in match kind_of_term hd with
 	    | Rel q when n < q & q <= n+scheme.npredicates -> IndArg
-	    | _ when hd = ind_type_guess & not scheme.farg_in_concl -> RecArg
+	    | _ when eq_constr hd ind_type_guess & not scheme.farg_in_concl -> RecArg
 	    | _ -> OtherArg in
 	let rec check_branch p c =
 	  match kind_of_term c with
