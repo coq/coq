@@ -175,7 +175,7 @@ let rec check_not_nested f t =
   match kind_of_term t with 
     | App(g, _) when eq_constr f g -> 
 	errorlabstrm "recdef" (str "Nested recursive function are not allowed with Function")
-    | Var(_) when t = f -> errorlabstrm "recdef" (str "Nested recursive function are not allowed with Function")
+    | Var(_) when eq_constr t f -> errorlabstrm "recdef" (str "Nested recursive function are not allowed with Function")
     | _ -> iter_constr (check_not_nested f) t 
 
 
@@ -185,7 +185,7 @@ let rec (find_call_occs : int -> int -> constr -> constr ->
   (constr list -> constr) * constr list list) =
  fun nb_arg nb_lam f expr ->
   match (kind_of_term expr) with
-    App (g, args) when g = f ->
+    App (g, args) when eq_constr g f ->
       if Array.length args <> nb_arg then errorlabstrm "recdef" (str "Partial application of function " ++ Printer.pr_lconstr expr ++ str " in its body is not allowed while using Function");
       Array.iter (check_not_nested f) args;
       (fun l -> List.hd l), [Array.to_list args]
@@ -230,7 +230,7 @@ let rec (find_call_occs : int -> int -> constr -> constr ->
 	     (fun l -> mkApp (g, Array.of_list (cf l))), args
      end
   | Rel(v) -> if v > nb_lam then error "find_call_occs : Rel" else ((fun l -> expr),[])
-  | Var(_) when expr = f -> errorlabstrm "recdef" (str "Partial application of function " ++ Printer.pr_lconstr expr ++ str " in its body is not allowed while using Function")
+  | Var(_) when eq_constr expr f -> errorlabstrm "recdef" (str "Partial application of function " ++ Printer.pr_lconstr expr ++ str " in its body is not allowed while using Function")
   | Var(id) -> (fun l -> expr), []
   | Meta(_) -> error "find_call_occs : Meta"
   | Evar(_) -> error "find_call_occs : Evar"
