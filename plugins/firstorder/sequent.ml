@@ -113,7 +113,27 @@ let compare_constr_int f t1 t2 =
     | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
 	((Pervasives.compare =? (compare_array f)) ==? (compare_array f))
 	ln1 ln2 tl1 tl2 bl1 bl2
-    | _ -> Pervasives.compare t1 t2
+    | Var _, (Rel _)
+    | Meta _, (Rel _ | Var _)
+    | Evar _, (Rel _ | Var _ | Meta _)
+    | Sort _, (Rel _ | Var _ | Meta _ | Evar _)
+    | Prod _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _)
+    | Lambda _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _)
+    | LetIn _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _)
+    | App _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _)
+    | Const _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _)
+    | Ind _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _ | Const _)
+    | Construct _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _ | Const _ | Ind _)
+    | Case _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _ | Const _ | Ind _ | Construct _)
+    | Fix _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _ | Const _ | Ind _ | Construct _ | Case _)
+    | CoFix _, _
+      -> -1
+    | Rel _, _ | Var _, _ | Meta _, _ | Evar _, _
+    | Sort _, _ | Prod _, _
+    | Lambda _, _ | LetIn _, _ | App _, _
+    | Const _, _ | Ind _, _ | Construct _, _
+    | Case _, _| Fix _, _
+      -> 1
 
 let rec compare_constr m n=
   compare_constr_int compare_constr m n
