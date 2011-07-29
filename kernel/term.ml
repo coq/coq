@@ -129,257 +129,6 @@ type rec_declaration = name array * constr array * constr array
 type fixpoint = (int array * int) * rec_declaration
 type cofixpoint = int * rec_declaration
 
-(***************************)
-(* Hash-consing functions  *)
-(***************************)
-(* Hash-consing of [constr] does not use the module [Hashcons] because
-   [Hashcons] is not efficient on deep tree-like data
-   structures. Indeed, [Hashcons] is based the (very efficient)
-   generic hash function [Hashtbl.hash], which computes the hash key
-   through a depth bounded traversal of the data structure to be
-   hashed. As a consequence, for a deep [constr] like the natural
-   number 1000 (S (S (... (S O)))), the same hash is assigned to all
-   the sub [constr]s greater than the maximal depth handled by
-   [Hashtbl.hash]. This entails a huge number of collisions in the
-   hash table and leads to cubic hash-consing in this worst-case. 
-
-   In order to compute a hash key that is independent of the data
-   structure depth while being constant-time, an incremental hashing
-   function must be devised. A standard implementation creates a cache
-   of the hashing function by decorating each node of the hash-consed
-   data structure with its hash key. In that case, the hash function
-   can deduce the hash key of a toplevel data structure by a local
-   computation based on the cache held on its substructures.
-   Unfortunately, this simple implementation introduces a space
-   overhead that is damageable for the hash-consing of small [constr]s
-   (the most common case). One can think of an heterogeneous
-   distribution of caches on smartly chosen nodes, but this is forbidden
-   by the use of generic equality in Coq source code. (Indeed, this forces 
-   each [constr] to have a unique canonical representation.)
-   
-   Given that hash-consing proceeds inductively, we can nonetheless
-   computes the hash key incrementally during hash-consing by changing
-   a little the signature of the hash-consing function: it now returns
-   both the hash-consed term and its hash key. This simple solution is
-   implemented in the following code: it does not introduce a space
-   overhead in [constr], that's why the efficiency is unchanged for
-   small [constr]s. Besides, it does handle deep [constr]s without
-   introducing an unreasonable number of collisions in the hash table.
-   Some benchmarks make us think that this implementation of
-   hash-consing is linear in the size of the hash-consed data
-   structure for our daily use of Coq. 
-*)
-
-let array_eqeq t1 t2 = 
-  Array.length t1 = Array.length t2 && 
-  let rec aux i = 
-    (i = Array.length t1) || (t1.(i) == t2.(i) && aux (i + 1))
-  in aux 0 
-
-let comp_term t1 t2 =
-  match t1, t2 with
-    | Rel n1, Rel n2 -> n1 == n2
-    | Meta m1, Meta m2 -> m1 == m2
-    | Var id1, Var id2 -> id1 == id2
-    | Sort s1, Sort s2 -> s1 == s2
-    | Cast (c1,k1,t1), Cast (c2,k2,t2) -> c1 == c2 & k1 == k2 & t1 == t2 
-    | Prod (n1,t1,c1), Prod (n2,t2,c2) -> n1 == n2 & t1 == t2 & c1 == c2
-    | Lambda (n1,t1,c1), Lambda (n2,t2,c2) -> n1 == n2 & t1 == t2 & c1 == c2
-    | LetIn (n1,b1,t1,c1), LetIn (n2,b2,t2,c2) ->
-      n1 == n2 & b1 == b2 & t1 == t2 & c1 == c2
-    | App (c1,l1), App (c2,l2) -> c1 == c2 & array_eqeq l1 l2
-    | Evar (e1,l1), Evar (e2,l2) -> e1 = e2 & array_eqeq l1 l2
-    | Const c1, Const c2 -> c1 == c2
-    | Ind (sp1,i1), Ind (sp2,i2) -> sp1 == sp2 & i1 = i2
-    | Construct ((sp1,i1),j1), Construct ((sp2,i2),j2) ->
-      sp1 == sp2 & i1 = i2 & j1 = j2
-    | Case (ci1,p1,c1,bl1), Case (ci2,p2,c2,bl2) ->
-      ci1 == ci2 & p1 == p2 & c1 == c2 & array_eqeq bl1 bl2
-    | Fix (ln1,(lna1,tl1,bl1)), Fix (ln2,(lna2,tl2,bl2)) ->
-      ln1 = ln2
-      & array_eqeq lna1 lna2
-      & array_eqeq tl1 tl2
-      & array_eqeq bl1 bl2
-    | CoFix(ln1,(lna1,tl1,bl1)), CoFix(ln2,(lna2,tl2,bl2)) ->
-      ln1 = ln2
-      & array_eqeq lna1 lna2
-      & array_eqeq tl1 tl2
-      & array_eqeq bl1 bl2
-    | _ -> false
-
-(* The following module is a specialized version of [Hashtbl] that is
-   a better space saver. Actually, [Hashcons] instanciates [Hashtbl.t]
-   with [constr] used both as a key and as an image.  Thus, in each
-   cell of the internal bucketlist, there are two representations of
-   the same value. In this implementation, there is only one. 
-
-   Besides, the responsibility of computing the hash function is now 
-   given to the caller, which makes possible the interleaving of the 
-   hash key computation and the hash-consing. *)
-module H : sig
-  (* [may_add_and_get key constr] uses [key] to look for [constr] 
-     in the hash table [H]. If [constr] is [H], returns the 
-     specific representation that is stored in [H]. Otherwise, 
-     [constr] is stored in [H] and will be used as the canonical 
-     representation of this value in the future. *)
-  val may_add_and_get : int -> constr -> constr
-end = struct
-  type bucketlist = Empty | Cons of constr * int * bucketlist
-
-  let initial_size = 19991
-  let table_data = ref (Array.make initial_size Empty)
-  let table_size = ref 0
-    
-  let resize () =
-    let odata = !table_data in
-    let osize = Array.length odata in
-    let nsize = min (2 * osize + 1) Sys.max_array_length in
-    if nsize <> osize then begin
-      let ndata = Array.create nsize Empty in
-      let rec insert_bucket = function
-	| Empty -> ()
-	| Cons (key, hash, rest) ->
-          let nidx = hash mod nsize in
-          ndata.(nidx) <- Cons (key, hash, ndata.(nidx));
-          insert_bucket rest
-      in
-      for i = 0 to osize - 1 do insert_bucket odata.(i) done;
-      table_data := ndata
-    end
-
-  let add hash key =
-    let odata = !table_data in
-    let osize = Array.length odata in
-    let i = hash mod osize in
-    odata.(i) <- Cons (key, hash, odata.(i));
-    incr table_size;
-    if !table_size > osize lsl 1 then resize ()    
-
-  let find_rec hash key bucket = 
-    let rec aux = function
-      | Empty -> 
-	add hash key; key
-      | Cons (k, h, rest) -> 
-	if hash == h && comp_term key k then k else aux rest
-    in
-    aux bucket
-
-  let may_add_and_get hash key =
-    let odata = !table_data in
-    match odata.(hash mod (Array.length odata)) with
-      |	Empty -> add hash key; key
-      | Cons (k1, h1, rest1) ->
-	if hash == h1 && comp_term key k1 then k1 else
-	  match rest1 with
-            | Empty -> add hash key; key
-	    | Cons (k2, h2, rest2) ->
-              if hash == h2 && comp_term key k2 then k2 else
-		match rest2 with
-		  | Empty -> add hash key; key 
-		  | Cons (k3, h3, rest3) ->
-		    if hash == h2 && comp_term key k3 then k3 
-		    else find_rec hash key rest3
-
-end		      
-
-(* These are helper functions to combine the hash keys in a similar
-   way as [Hashtbl.hash] does. The constants [alpha] and [beta] must
-   be prime numbers. There were chosen empirically. Notice that the
-   problem of hashing trees is hard and there are plenty of study on
-   this topic. Therefore, there must be room for improvement here. *)
-let ghash = Hashtbl.hash
-let alpha = 65599
-let beta  = 7
-let combine2 x y     = x * alpha + y
-let combine3 x y z   = combine2 x (combine2 y z)
-let combine4 x y z t = combine2 x (combine3 y z t)
-let combine          = combine2
-let combinesmall x y = beta * x + y
-
-(* [hcons_term hash_consing_functions constr] computes an hash-consed
-   representation for [constr] using [hash_consing_functions] on
-   leaves. *)
-let hcons_term (sh_sort,sh_con,sh_kn,sh_na,sh_id) =
-
-  let rec hash_term_array t = 
-    let accu = ref 0 in 
-    for i = 0 to Array.length t - 1 do 
-      let x, h = sh_rec t.(i) in 
-      accu := combine !accu h; 
-      t.(i) <- x
-    done;
-    (t, !accu) 
-
-  and hash_term t =
-    match t with
-      | Var i -> 
-	(Var (sh_id i), combinesmall 1 (ghash i))
-      | Sort s -> 
-	(Sort (sh_sort s), combinesmall 2 (ghash s))
-      | Cast (c, k, t) -> 
-	let c, hc = sh_rec c in
-	let t, ht = sh_rec t in 
-	(Cast (c, k, t), combinesmall 3 (combine3 hc (ghash k) ht))
-      | Prod (na,t,c) -> 
-	let t, ht = sh_rec t
-	and c, hc = sh_rec c in
-	(Prod (sh_na na, t, c), combinesmall 4 (combine3 (ghash na) ht hc))
-      | Lambda (na,t,c) -> 
-	let t, ht = sh_rec t 
-	and c, hc = sh_rec c in
-	(Lambda (sh_na na, t, c), combinesmall 5 (combine3 (ghash na) ht hc))
-      | LetIn (na,b,t,c) -> 
-	let b, hb = sh_rec b in
-	let t, ht = sh_rec t in 
-	let c, hc = sh_rec c in
-	(LetIn (sh_na na, b, t, c), combinesmall 6 (combine4 (ghash na) hb ht hc))
-      | App (c,l) -> 
-	let c, hc = sh_rec c in
-	let l, hl = hash_term_array l in
-	(App (c, l), combinesmall 7 (combine hl hc))
-      | Evar (e,l) -> 
-	let l, hl = hash_term_array l in
-	(Evar (e, l), combinesmall 8 (combine (ghash e) hl))
-      | Const c -> 
-	(Const (sh_con c), combinesmall 9 (ghash c))
-      | Ind (kn,i) -> 
-	(Ind (sh_kn kn, i), combinesmall 9 (combine (ghash kn) i))
-      | Construct ((kn,i),j) -> 
-	(Construct ((sh_kn kn, i), j), combinesmall 10 (combine3 (ghash kn) i j))
-      | Case (ci,p,c,bl) -> (* TO DO: extract ind_kn *)
-	let p, hp = sh_rec p 
-	and c, hc = sh_rec c in
-	let bl, hbl = hash_term_array  bl in
-	let hbl = combine (combine hc hp) hbl in
-	(Case (ci, p, c, bl), combinesmall 11 hbl)
-      | Fix (ln,(lna,tl,bl)) ->
-	let bl, hbl = hash_term_array  bl in
-	let tl, htl = hash_term_array  tl in
-	let h = combine hbl htl in
-	Array.iteri (fun i x -> lna.(i) <- sh_na x) lna;
-	(Fix (ln,(lna, tl, bl)),
-	 combinesmall 13 (combine (ghash lna) h))
-      | CoFix(ln,(lna,tl,bl)) ->
-	let bl, hbl = hash_term_array bl in
-	let tl, htl = hash_term_array tl in
-	let h = combine hbl htl in
-	Array.iteri (fun i x -> lna.(i) <- sh_na x) lna;
-	(CoFix (ln, (lna, tl, bl)),
-	 combinesmall 14 (combine (ghash lna) h))
-      | Meta n ->
-	(Meta n, combinesmall 15 n)
-      | Rel n ->
-  	(Rel n, combinesmall 16 n)
-  
-  and sh_rec t = 
-    let (y, h) = hash_term t in
-    (* [h] must be positive. *)
-    let h = h land 0x3FFFFFFF in
-    (H.may_add_and_get h y, h)
-
-  in
-  fun t -> fst (sh_rec t)
-
 (* Constructs a DeBrujin index with number n *)
 let rels =
   [|Rel  1;Rel  2;Rel  3;Rel  4;Rel  5;Rel  6;Rel  7; Rel  8;
@@ -1412,6 +1161,167 @@ let eq_constr m n = eq_constr m n (* to avoid tracing a recursive fun *)
 (*******************)
 (*  hash-consing   *)
 (*******************)
+
+(* Hash-consing of [constr] does not use the module [Hashcons] because
+   [Hashcons] is not efficient on deep tree-like data
+   structures. Indeed, [Hashcons] is based the (very efficient)
+   generic hash function [Hashtbl.hash], which computes the hash key
+   through a depth bounded traversal of the data structure to be
+   hashed. As a consequence, for a deep [constr] like the natural
+   number 1000 (S (S (... (S O)))), the same hash is assigned to all
+   the sub [constr]s greater than the maximal depth handled by
+   [Hashtbl.hash]. This entails a huge number of collisions in the
+   hash table and leads to cubic hash-consing in this worst-case.
+
+   In order to compute a hash key that is independent of the data
+   structure depth while being constant-time, an incremental hashing
+   function must be devised. A standard implementation creates a cache
+   of the hashing function by decorating each node of the hash-consed
+   data structure with its hash key. In that case, the hash function
+   can deduce the hash key of a toplevel data structure by a local
+   computation based on the cache held on its substructures.
+   Unfortunately, this simple implementation introduces a space
+   overhead that is damageable for the hash-consing of small [constr]s
+   (the most common case). One can think of an heterogeneous
+   distribution of caches on smartly chosen nodes, but this is forbidden
+   by the use of generic equality in Coq source code. (Indeed, this forces
+   each [constr] to have a unique canonical representation.)
+
+   Given that hash-consing proceeds inductively, we can nonetheless
+   computes the hash key incrementally during hash-consing by changing
+   a little the signature of the hash-consing function: it now returns
+   both the hash-consed term and its hash key. This simple solution is
+   implemented in the following code: it does not introduce a space
+   overhead in [constr], that's why the efficiency is unchanged for
+   small [constr]s. Besides, it does handle deep [constr]s without
+   introducing an unreasonable number of collisions in the hash table.
+   Some benchmarks make us think that this implementation of
+   hash-consing is linear in the size of the hash-consed data
+   structure for our daily use of Coq.
+*)
+
+let array_eqeq t1 t2 =
+  Array.length t1 = Array.length t2 &&
+  let rec aux i =
+    (i = Array.length t1) || (t1.(i) == t2.(i) && aux (i + 1))
+  in aux 0
+
+let equals_constr t1 t2 =
+  match t1, t2 with
+    | Rel n1, Rel n2 -> n1 == n2
+    | Meta m1, Meta m2 -> m1 == m2
+    | Var id1, Var id2 -> id1 == id2
+    | Sort s1, Sort s2 -> s1 == s2
+    | Cast (c1,k1,t1), Cast (c2,k2,t2) -> c1 == c2 & k1 == k2 & t1 == t2
+    | Prod (n1,t1,c1), Prod (n2,t2,c2) -> n1 == n2 & t1 == t2 & c1 == c2
+    | Lambda (n1,t1,c1), Lambda (n2,t2,c2) -> n1 == n2 & t1 == t2 & c1 == c2
+    | LetIn (n1,b1,t1,c1), LetIn (n2,b2,t2,c2) ->
+      n1 == n2 & b1 == b2 & t1 == t2 & c1 == c2
+    | App (c1,l1), App (c2,l2) -> c1 == c2 & array_eqeq l1 l2
+    | Evar (e1,l1), Evar (e2,l2) -> e1 = e2 & array_eqeq l1 l2
+    | Const c1, Const c2 -> c1 == c2
+    | Ind (sp1,i1), Ind (sp2,i2) -> sp1 == sp2 & i1 = i2
+    | Construct ((sp1,i1),j1), Construct ((sp2,i2),j2) ->
+      sp1 == sp2 & i1 = i2 & j1 = j2
+    | Case (ci1,p1,c1,bl1), Case (ci2,p2,c2,bl2) ->
+      ci1 == ci2 & p1 == p2 & c1 == c2 & array_eqeq bl1 bl2
+    | Fix (ln1,(lna1,tl1,bl1)), Fix (ln2,(lna2,tl2,bl2)) ->
+      ln1 = ln2
+      & array_eqeq lna1 lna2
+      & array_eqeq tl1 tl2
+      & array_eqeq bl1 bl2
+    | CoFix(ln1,(lna1,tl1,bl1)), CoFix(ln2,(lna2,tl2,bl2)) ->
+      ln1 = ln2
+      & array_eqeq lna1 lna2
+      & array_eqeq tl1 tl2
+      & array_eqeq bl1 bl2
+    | _ -> false
+
+module H = Hashtbl_alt.Make(struct type t = constr let equals = equals_constr end)
+
+(* [hcons_term hash_consing_functions constr] computes an hash-consed
+   representation for [constr] using [hash_consing_functions] on
+   leaves. *)
+let hcons_term (sh_sort,sh_con,sh_kn,sh_na,sh_id) =
+
+  let rec hash_term_array t =
+    let accu = ref 0 in
+    for i = 0 to Array.length t - 1 do
+      let x, h = sh_rec t.(i) in
+      accu := H.combine !accu h;
+      t.(i) <- x
+    done;
+    (t, !accu)
+
+  and hash_term t =
+    match t with
+      | Var i ->
+	(Var (sh_id i), H.combinesmall 1 (Hashtbl.hash i))
+      | Sort s ->
+	(Sort (sh_sort s), H.combinesmall 2 (Hashtbl.hash s))
+      | Cast (c, k, t) ->
+	let c, hc = sh_rec c in
+	let t, ht = sh_rec t in
+	(Cast (c, k, t), H.combinesmall 3 (H.combine3 hc (Hashtbl.hash k) ht))
+      | Prod (na,t,c) ->
+	let t, ht = sh_rec t
+	and c, hc = sh_rec c in
+	(Prod (sh_na na, t, c), H.combinesmall 4 (H.combine3 (Hashtbl.hash na) ht hc))
+      | Lambda (na,t,c) ->
+	let t, ht = sh_rec t
+	and c, hc = sh_rec c in
+	(Lambda (sh_na na, t, c), H.combinesmall 5 (H.combine3 (Hashtbl.hash na) ht hc))
+      | LetIn (na,b,t,c) ->
+	let b, hb = sh_rec b in
+	let t, ht = sh_rec t in
+	let c, hc = sh_rec c in
+	(LetIn (sh_na na, b, t, c), H.combinesmall 6 (H.combine4 (Hashtbl.hash na) hb ht hc))
+      | App (c,l) ->
+	let c, hc = sh_rec c in
+	let l, hl = hash_term_array l in
+	(App (c, l), H.combinesmall 7 (H.combine hl hc))
+      | Evar (e,l) ->
+	let l, hl = hash_term_array l in
+	(Evar (e, l), H.combinesmall 8 (H.combine (Hashtbl.hash e) hl))
+      | Const c ->
+	(Const (sh_con c), H.combinesmall 9 (Hashtbl.hash c))
+      | Ind (kn,i) ->
+	(Ind (sh_kn kn, i), H.combinesmall 9 (H.combine (Hashtbl.hash kn) i))
+      | Construct ((kn,i),j) ->
+	(Construct ((sh_kn kn, i), j), H.combinesmall 10 (H.combine3 (Hashtbl.hash kn) i j))
+      | Case (ci,p,c,bl) -> (* TO DO: extract ind_kn *)
+	let p, hp = sh_rec p
+	and c, hc = sh_rec c in
+	let bl, hbl = hash_term_array  bl in
+	let hbl = H.combine (H.combine hc hp) hbl in
+	(Case (ci, p, c, bl), H.combinesmall 11 hbl)
+      | Fix (ln,(lna,tl,bl)) ->
+	let bl, hbl = hash_term_array  bl in
+	let tl, htl = hash_term_array  tl in
+	let h = H.combine hbl htl in
+	Array.iteri (fun i x -> lna.(i) <- sh_na x) lna;
+	(Fix (ln,(lna, tl, bl)),
+	 H.combinesmall 13 (H.combine (Hashtbl.hash lna) h))
+      | CoFix(ln,(lna,tl,bl)) ->
+	let bl, hbl = hash_term_array bl in
+	let tl, htl = hash_term_array tl in
+	let h = H.combine hbl htl in
+	Array.iteri (fun i x -> lna.(i) <- sh_na x) lna;
+	(CoFix (ln, (lna, tl, bl)),
+	 H.combinesmall 14 (H.combine (Hashtbl.hash lna) h))
+      | Meta n ->
+	(Meta n, H.combinesmall 15 n)
+      | Rel n ->
+	(Rel n, H.combinesmall 16 n)
+
+  and sh_rec t =
+    let (y, h) = hash_term t in
+    (* [h] must be positive. *)
+    let h = h land 0x3FFFFFFF in
+    (H.may_add_and_get h y, h)
+
+  in
+  fun t -> fst (sh_rec t)
 
 module Htype =
   Hashcons.Make(

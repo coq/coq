@@ -16,6 +16,7 @@ Predicate
 Rtree
 Option
 Store
+Hashtbl_alt
 
 Names
 Univ
