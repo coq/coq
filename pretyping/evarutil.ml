@@ -420,7 +420,7 @@ let shrink_context env subst ty =
   (* We merge the contexts (optimization) *)
   let rec shrink_rel i subst rel_subst rev_rel_sign =
     match subst,rev_rel_sign with
-    | (id,c)::subst,_::rev_rel_sign when c = mkRel i ->
+    | (id,c)::subst,_::rev_rel_sign when isRel c && destRel c = i ->
 	shrink_rel (i-1) subst (mkVar id::rel_subst) rev_rel_sign
     | _ ->
 	substl_rel_context rel_subst (List.rev rev_rel_sign),
@@ -428,7 +428,7 @@ let shrink_context env subst ty =
   in
   let rec shrink_named subst named_subst rev_named_sign =
     match subst,rev_named_sign with
-    | (id,c)::subst,(id',b',t')::rev_named_sign when c = mkVar id' ->
+    | (id,c)::subst,(id',b',t')::rev_named_sign when isVar c && destVar c = id' ->
 	shrink_named subst ((id',mkVar id)::named_subst) rev_named_sign
     | _::_, [] ->
 	let nrel = List.length rel_sign in
@@ -928,7 +928,7 @@ let are_canonical_instances args1 args2 env =
   let n2 = Array.length args2 in
   let rec aux n = function
     | (id,_,c)::sign
-	when n < n1 && args1.(n) = mkVar id && args1.(n) = args2.(n) ->
+	when n < n1 && isVar args1.(n) && destVar args1.(n) = id && eq_constr args1.(n) args2.(n) ->
 	aux (n+1) sign
     | [] ->
 	let rec aux2 n =
