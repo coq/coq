@@ -68,13 +68,13 @@ let rec psym p =
   | Congr (p1,p2)-> pcongr (psym p1) (psym p2)
 
 let pax axioms s =
-  let l,r = Hashtbl.find axioms s in
+  let l,r = Constrhash.find axioms s in
     {p_lhs=l;
      p_rhs=r;
      p_rule=Ax s}
 
 let psymax axioms s =
-  let l,r = Hashtbl.find axioms s in
+  let l,r = Constrhash.find axioms s in
     {p_lhs=r;
      p_rhs=l;
      p_rule=SymAx s}

@@ -114,6 +114,15 @@ let rec term_equal t1 t2 =
       i1 = i2 && j1 = j2 && eq_constructor c1 c2
     | _ -> t1 = t2
 
+open Hashtbl_alt.Combine
+
+let rec hash_term = function
+  | Symb c -> combine 1 (hash_constr c)
+  | Product (s1, s2) -> combine3 2 (Hashtbl.hash s1) (Hashtbl.hash s2)
+  | Eps i -> combine 3 (Hashtbl.hash i)
+  | Appli (t1, t2) -> combine3 4 (hash_term t1) (hash_term t2)
+  | Constructor {ci_constr=c; ci_arity=i; ci_nhyps=j} -> combine4 5 (Hashtbl.hash c) i j
+
 type ccpattern =
     PApp of term * ccpattern list (* arguments are reversed *)
   | PVar of int
@@ -181,13 +190,32 @@ type node =
      vertex:vertex;
      term:term}
 
+module Constrhash = Hashtbl.Make
+  (struct type t = constr
+	  let equal = eq_constr
+	  let hash = hash_constr
+   end)
+module Typehash = Constrhash
+
+module Termhash = Hashtbl.Make
+  (struct type t = term
+	  let equal = term_equal
+	  let hash = hash_term
+   end)
+
+module Identhash = Hashtbl.Make
+  (struct type t = identifier
+	  let equal = Pervasives.(=)
+	  let hash = Hashtbl.hash
+   end)
+
 type forest=
     {mutable max_size:int;
      mutable size:int;
      mutable map: node array;
-     axioms: (constr,term*term) Hashtbl.t;
+     axioms: (term*term) Constrhash.t;
      mutable epsilons: pa_constructor list;
-     syms:(term,int) Hashtbl.t}
+     syms: int Termhash.t}
 
 type state =
     {uf: forest;
@@ -198,10 +226,10 @@ type state =
      mutable diseq: disequality list;
      mutable quant: quant_eq list;
      mutable pa_classes: Intset.t;
-     q_history: (identifier,int array) Hashtbl.t;
+     q_history: (int array) Identhash.t;
      mutable rew_depth:int;
      mutable changed:bool;
-     by_type: (types,Intset.t) Hashtbl.t;
+     by_type: Intset.t Typehash.t;
      mutable gls:Proof_type.goal Tacmach.sigma}
 
 let dummy_node =
@@ -216,8 +244,8 @@ let empty depth gls:state =
       size=0;
       map=Array.create init_size dummy_node;
       epsilons=[];
-      axioms=Hashtbl.create init_size;
-      syms=Hashtbl.create init_size};
+      axioms=Constrhash.create init_size;
+      syms=Termhash.create init_size};
   terms=Intset.empty;
   combine=Queue.create ();
   marks=Queue.create ();
@@ -225,9 +253,9 @@ let empty depth gls:state =
   diseq=[];
   quant=[];
   pa_classes=Intset.empty;
-  q_history=Hashtbl.create init_size;
+  q_history=Identhash.create init_size;
   rew_depth=depth;
-  by_type=Hashtbl.create init_size;
+  by_type=Constrhash.create init_size;
   changed=false;
   gls=gls}
 
@@ -393,7 +421,7 @@ let pr_term t = str "[" ++
 
 let rec add_term state t=
   let uf=state.uf in
-    try Hashtbl.find uf.syms t with
+    try Termhash.find uf.syms t with
 	Not_found ->
 	  let b=next uf in
 	  let typ = pf_type_of state.gls (constr_of_term t) in
@@ -439,10 +467,10 @@ let rec add_term state t=
 		     term=t}
 	  in
 	    uf.map.(b)<-new_node;
-	    Hashtbl.add uf.syms t b;
-	    Hashtbl.replace state.by_type typ
+	    Termhash.add uf.syms t b;
+	    Typehash.replace state.by_type typ
 	      (Intset.add b
-		 (try Hashtbl.find state.by_type typ with
+		 (try Typehash.find state.by_type typ with
 		      Not_found -> Intset.empty));
 	    b
 
@@ -450,7 +478,7 @@ let add_equality state c s t=
   let i = add_term state s in
   let j = add_term state t in
     Queue.add {lhs=i;rhs=j;rule=Axiom(c,false)} state.combine;
-    Hashtbl.add state.uf.axioms c (s,t)
+    Constrhash.add state.uf.axioms c (s,t)
 
 let add_disequality state from s t =
   let i = add_term state s in
@@ -470,7 +498,7 @@ let add_quant state id pol (nvars,valid1,patt1,valid2,patt2) =
 let is_redundant state id args =
   try
     let norm_args = Array.map (find state.uf) args in
-    let prev_args = Hashtbl.find_all state.q_history id in
+    let prev_args = Identhash.find_all state.q_history id in
     List.exists
       (fun old_args ->
 	 Util.array_for_all2 (fun i j -> i = find state.uf j)
@@ -485,7 +513,7 @@ let add_inst state (inst,int_subst) =
     debug msgnl (str "discarding redundant (dis)equality")
   else
     begin
-      Hashtbl.add state.q_history inst.qe_hyp_id int_subst;
+      Identhash.add state.q_history inst.qe_hyp_id int_subst;
       let subst = build_subst (forest state) int_subst in
       let prfhead= mkVar inst.qe_hyp_id in
       let args = Array.map constr_of_term subst in
@@ -541,9 +569,9 @@ let union state i1 i2 eq=
   let r1= get_representative state.uf i1
   and r2= get_representative state.uf i2 in
     link state.uf i1 i2 eq;
-    Hashtbl.replace state.by_type r1.class_type
+    Constrhash.replace state.by_type r1.class_type
       (Intset.remove i1
-	 (try Hashtbl.find state.by_type r1.class_type with
+	 (try Constrhash.find state.by_type r1.class_type with
 	      Not_found -> Intset.empty));
     let f= Intset.union r1.fathers r2.fathers in
       r2.weight<-Intset.cardinal f;
@@ -772,14 +800,14 @@ let rec do_match state res pb_stack =
 		    else (* mismatch for non-linear variable in pattern *) ()
 	      | PApp (f,[]) ->
 		  begin
-		    try let j=Hashtbl.find uf.syms f in
+		    try let j=Termhash.find uf.syms f in
 		      if find uf j =cl then
 			Stack.push {mp with mp_stack=remains} pb_stack
 		    with Not_found -> ()
 		  end
 	      | PApp(f, ((last_arg::rem_args) as args)) ->
 		  try
-		    let j=Hashtbl.find uf.syms f in
+		    let j=Termhash.find uf.syms f in
 		    let paf={fsym=j;fnargs=List.length args} in
 		    let rep=get_representative uf cl in
 		    let good_terms = PafMap.find paf rep.functions in
@@ -797,7 +825,7 @@ let rec do_match state res pb_stack =
 let paf_of_patt syms = function
     PVar _ -> invalid_arg "paf_of_patt: pattern is trivial"
   | PApp (f,args) ->
-      {fsym=Hashtbl.find syms f;
+      {fsym=Termhash.find syms f;
        fnargs=List.length args}
 
 let init_pb_stack state =
@@ -819,7 +847,7 @@ let init_pb_stack state =
 	| Trivial typ ->
 	    begin
 	      try
-		Hashtbl.find state.by_type typ
+		Typehash.find state.by_type typ
 	      with Not_found -> Intset.empty
 	    end in
 	Intset.iter (fun i ->
@@ -842,7 +870,7 @@ let init_pb_stack state =
 	| Trivial typ ->
 	    begin
 	      try
-		Hashtbl.find state.by_type typ
+		Typehash.find state.by_type typ
 	      with Not_found -> Intset.empty
 	    end in
 	Intset.iter (fun i ->

@@ -66,13 +66,16 @@ type explanation =
   | Contradiction of disequality
   | Incomplete
 
+module Constrhash : Hashtbl.S with type key = constr
+module Termhash : Hashtbl.S with type key = term
+
 val constr_of_term : term -> constr
 
 val debug : (Pp.std_ppcmds -> unit) -> Pp.std_ppcmds -> unit
 
 val forest : state -> forest
 
-val axioms : forest -> (constr, term * term) Hashtbl.t
+val axioms : forest -> (term * term) Constrhash.t
 
 val epsilons : forest -> pa_constructor list
 
@@ -127,7 +130,7 @@ val do_match :  state ->
 
 val init_pb_stack : state -> matching_problem Stack.t
 
-val paf_of_patt : (term, int) Hashtbl.t -> ccpattern -> pa_fun
+val paf_of_patt : int Termhash.t -> ccpattern -> pa_fun
 
 val find_instances : state -> (quant_eq * int array) list
 

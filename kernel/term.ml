@@ -1271,6 +1271,42 @@ let hcons_term (sh_sort,sh_con,sh_kn,sh_na,sh_id) =
   in
   fun t -> fst (sh_rec t)
 
+
+let rec hash_constr t =
+  match kind_of_term t with
+    | Var i -> combinesmall 1 (Hashtbl.hash i)
+    | Sort s -> combinesmall 2 (Hashtbl.hash s)
+    | Cast (c, k, t) ->
+      combinesmall 3 (combine3 (hash_constr c) (Hashtbl.hash k) (hash_constr t))
+    | Prod (na,t,c) ->
+      combinesmall 4 (combine3 (Hashtbl.hash na) (hash_constr t) (hash_constr c))
+    | Lambda (na,t,c) ->
+      combinesmall 5 (combine3 (Hashtbl.hash na) (hash_constr t) (hash_constr c))
+    | LetIn (na,b,t,c) ->
+      combinesmall 6 (combine4 (Hashtbl.hash na) (hash_constr b) (hash_constr t) (hash_constr c))
+    | App (c,l) ->
+      combinesmall 7 (combine (hash_term_array l) (hash_constr c))
+    | Evar (e,l) ->
+      combinesmall 8 (combine (Hashtbl.hash e) (hash_term_array l))
+    | Const c ->
+      combinesmall 9 (Hashtbl.hash c)
+    | Ind (kn,i) ->
+      combinesmall 9 (combine (Hashtbl.hash kn) i)
+    | Construct ((kn,i),j) ->
+      combinesmall 10 (combine3 (Hashtbl.hash kn) i j)
+    | Case (ci,p,c,bl) -> (* TO DO: extract ind_kn *)
+      combinesmall 11 (combine (combine (hash_constr c) (hash_constr p)) (hash_term_array bl))
+    | Fix (ln,(lna,tl,bl)) ->
+      let h = combine (hash_term_array bl) (hash_term_array tl) in
+      combinesmall 13 (combine (Hashtbl.hash lna) h)
+    | CoFix(ln,(lna,tl,bl)) ->
+      let h = combine (hash_term_array bl) (hash_term_array tl) in
+       combinesmall 14 (combine (Hashtbl.hash lna) h)
+    | Meta n -> combinesmall 15 n
+    | Rel n -> combinesmall 16 n
+and hash_term_array t =
+  Array.fold_left (fun acc t -> combine (hash_constr t) acc) 0 t
+
 module Htype =
   Hashcons.Make(
     struct
