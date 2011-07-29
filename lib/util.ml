@@ -507,6 +507,15 @@ let rec list_smartfilter f l = match l with
 	  else h :: tl'
 	else tl'
 	  
+let list_index_f f x =
+  let rec index_x n = function
+    | y::l -> if f x y then n else index_x (succ n) l
+    | [] -> raise Not_found
+  in
+  index_x 1
+
+let list_index0_f f x l = list_index_f f x l - 1
+
 let list_index x =
   let rec index_x n = function
     | y::l -> if x = y then n else index_x (succ n) l

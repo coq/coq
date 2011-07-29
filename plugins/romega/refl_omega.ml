@@ -219,7 +219,7 @@ let unintern_omega env id =
    calcul des variables utiles. *)
 
 let add_reified_atom t env =
-  try list_index0 t env.terms
+  try list_index0_f Term.eq_constr t env.terms
   with Not_found ->
     let i = List.length env.terms in
     env.terms <- env.terms @ [t]; i

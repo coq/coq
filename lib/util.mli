@@ -154,12 +154,14 @@ val list_smartfilter : ('a -> bool) -> 'a list -> 'a list
 
 (** [list_index] returns the 1st index of an element in a list (counting from 1) *)
 val list_index : 'a -> 'a list -> int
+val list_index_f : ('a -> 'a -> bool) -> 'a -> 'a list -> int
 
 (** [list_unique_index x l] returns [Not_found] if [x] doesn't occur exactly once *)
 val list_unique_index : 'a -> 'a list -> int
 
 (** [list_index0] behaves as [list_index] except that it starts counting at 0 *)
 val list_index0 : 'a -> 'a list -> int
+val list_index0_f : ('a -> 'a -> bool) -> 'a -> 'a list -> int
 val list_iter3 : ('a -> 'b -> 'c -> unit) -> 'a list -> 'b list -> 'c list -> unit
 val list_iter_i :  (int -> 'a -> unit) -> 'a list -> unit
 val list_fold_right_i :  (int -> 'a -> 'b -> 'b) -> int -> 'a list -> 'b -> 'b
