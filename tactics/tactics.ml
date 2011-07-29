@@ -1395,7 +1395,8 @@ let ipat_of_name = function
 
 let allow_replace c gl = function (* A rather arbitrary condition... *)
   | Some (_, IntroIdentifier id) ->
-      fst (decompose_app ((strip_lam_assum c))) = mkVar id
+      let c = fst (decompose_app ((strip_lam_assum c))) in
+      isVar c && destVar c = id
   | _ ->
       false
 
