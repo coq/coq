@@ -178,21 +178,21 @@ let coq_do_omega = lazy (constant  "do_omega")
 (* \subsection{Construction d'expressions} *)
 
 let do_left t =
-  if t = Lazy.force coq_c_nop then Lazy.force coq_c_nop
+  if Term.eq_constr t (Lazy.force coq_c_nop) then Lazy.force coq_c_nop
   else Term.mkApp (Lazy.force coq_c_do_left, [|t |] )
 
 let do_right t =
-  if t = Lazy.force coq_c_nop then Lazy.force coq_c_nop
+  if Term.eq_constr t (Lazy.force coq_c_nop) then Lazy.force coq_c_nop
   else Term.mkApp (Lazy.force coq_c_do_right, [|t |])
 
 let do_both t1 t2 =
-  if t1 = Lazy.force coq_c_nop then do_right t2
-  else if t2 = Lazy.force coq_c_nop then do_left t1
+  if Term.eq_constr t1 (Lazy.force coq_c_nop) then do_right t2
+  else if Term.eq_constr t2 (Lazy.force coq_c_nop) then do_left t1
   else Term.mkApp (Lazy.force coq_c_do_both , [|t1; t2 |])
 
 let do_seq t1 t2 =
-  if t1 = Lazy.force coq_c_nop then t2
-  else if t2 = Lazy.force coq_c_nop then t1
+  if Term.eq_constr t1 (Lazy.force coq_c_nop) then t2
+  else if Term.eq_constr t2 (Lazy.force coq_c_nop) then t1
   else Term.mkApp (Lazy.force coq_c_do_seq, [|t1; t2 |])
 
 let rec do_list = function
