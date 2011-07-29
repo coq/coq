@@ -824,6 +824,10 @@ let list_fold_map' f l e =
 
 let list_map_assoc f = List.map (fun (x,a) -> (x,f a))
 
+let rec list_assoc_f f a = function
+  | (x, e) :: xs -> if f a x then e else list_assoc_f f a xs
+  | [] -> raise Not_found
+
 (* Specification:
    - =p= is set equality (double inclusion)
    - f such that \forall l acc, (f l acc) =p= append (f l []) acc

@@ -212,6 +212,7 @@ val list_share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
 val list_fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
 val list_fold_map' : ('b -> 'a -> 'c * 'a) -> 'b list -> 'a -> 'c list * 'a
 val list_map_assoc : ('a -> 'b) -> ('c * 'a) list -> ('c * 'b) list
+val list_assoc_f : ('a -> 'a -> bool) -> 'a -> ('a * 'b) list -> 'b
 
 (** A generic cartesian product: for any operator (**),
    [list_cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]],

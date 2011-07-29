@@ -147,7 +147,7 @@ let tag_hypothesis,tag_of_hyp, hyp_of_tag =
 let hide_constr,find_constr,clear_tables,dump_tables =
   let l = ref ([]:(constr * (identifier * identifier * bool)) list) in
   (fun h id eg b -> l := (h,(id,eg,b)):: !l),
-  (fun h -> try List.assoc h !l with Not_found -> failwith "find_contr"),
+  (fun h -> try list_assoc_f eq_constr h !l with Not_found -> failwith "find_contr"),
   (fun () -> l := []),
   (fun () -> !l)
 
