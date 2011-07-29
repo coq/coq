@@ -470,7 +470,7 @@ let get_funs_constant mp dp =
       let first_params = List.hd l_params  in
       List.iter
 	(fun params ->
-	   if not ((=) first_params params)
+	   if not (list_equal (fun (n1, c1) (n2, c2) -> n1 = n2 && eq_constr c1 c2) first_params params)
 	   then error "Not a mutal recursive block"
 	)
 	l_params
@@ -488,7 +488,10 @@ let get_funs_constant mp dp =
 	in
 	let first_infos = extract_info true (List.hd l_bodies) in
 	let check body  = (* Hope this is correct *)
-	  if not (first_infos = (extract_info false body))
+	  let eq_infos (ia1, na1, ta1, ca1) (ia2, na2, ta2, ca2) =
+	    ia1 = ia2 && na1 = na2 && array_equal eq_constr ta1 ta2 && array_equal eq_constr ca1 ca2
+	  in
+	  if not (eq_infos first_infos (extract_info false body))
 	  then  error "Not a mutal recursive block"
 	in
 	List.iter check l_bodies
