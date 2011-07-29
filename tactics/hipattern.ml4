@@ -95,7 +95,7 @@ let match_with_one_constructor style allow_rec t =
 	      (decompose_prod_n_assum mib.mind_nparams mip.mind_nf_lc.(0)))) in
 	  if
 	    List.for_all
-	      (fun (_,b,c) -> b=None && c = mkRel mib.mind_nparams) ctx
+	      (fun (_,b,c) -> b=None && isRel c && destRel c = mib.mind_nparams) ctx
 	  then
 	    Some (hdapp,args)
 	  else None
@@ -142,7 +142,7 @@ let is_tuple t =
 let test_strict_disjunction n lc =
   array_for_all_i (fun i c ->
     match (prod_assum (snd (decompose_prod_n_assum n c))) with
-    | [_,None,c] -> c = mkRel (n - i)
+    | [_,None,c] -> isRel c && destRel c = (n - i)
     | _ -> false) 0 lc
 
 let match_with_disjunction ?(strict=false) t =
