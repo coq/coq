@@ -193,6 +193,27 @@ let parse_ind_args si args relmax =
 	 | _ -> parse (i+1) (j+1) s)
   in parse 1 1 si
 
+let oib_equal o1 o2 =
+  id_ord o1.mind_typename o2.mind_typename = 0 &&
+  list_equal eq_rel_declaration o1.mind_arity_ctxt o2.mind_arity_ctxt &&
+  begin match o1.mind_arity, o2.mind_arity with
+  | Monomorphic {mind_user_arity=c1; mind_sort=s1},
+    Monomorphic {mind_user_arity=c2; mind_sort=s2} ->
+      eq_constr c1 c2 && s1 = s2
+  | ma1, ma2 -> ma1 = ma2 end &&
+  o1.mind_consnames = o2.mind_consnames
+
+let mib_equal m1 m2 =
+  array_equal oib_equal m1.mind_packets m1.mind_packets &&
+  m1.mind_record = m2.mind_record &&
+  m1.mind_finite = m2.mind_finite &&
+  m1.mind_ntypes = m2.mind_ntypes &&
+  list_equal eq_named_declaration m1.mind_hyps m2.mind_hyps &&
+  m1.mind_nparams = m2.mind_nparams &&
+  m1.mind_nparams_rec = m2.mind_nparams_rec &&
+  list_equal eq_rel_declaration m1.mind_params_ctxt m2.mind_params_ctxt &&
+  m1.mind_constraints = m2.mind_constraints
+
 (*S Extraction of a type. *)
 
 (* [extract_type env db c args] is used to produce an ML type from the
@@ -327,13 +348,13 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
        We hence check that the mib has not changed from recording
        time to retrieving time. Ideally we should also check the env. *)
     let (mib0,ml_ind) = lookup_ind kn in
-    if not (mib = mib0) then raise Not_found;
+    if not (mib_equal mib mib0) then raise Not_found;
     ml_ind
   with Not_found ->
     (* First, if this inductive is aliased via a Module, *)
     (* we process the original inductive. *)
     let equiv = 
-      if (canonical_mind kn) = (user_mind kn) then
+      if kn_ord (canonical_mind kn) (user_mind kn) = 0 then
 	NoEquiv
       else
 	begin

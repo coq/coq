@@ -686,6 +686,9 @@ let for_all_rel_declaration f (_, v, ty) = Option.cata f true v && f ty
 let eq_named_declaration (i1, c1, t1) (i2, c2, t2) =
   id_ord i1 i2 = 0 && Option.Misc.compare eq_constr c1 c2 && eq_constr t1 t2
 
+let eq_rel_declaration (n1, c1, t1) (n2, c2, t2) =
+  n1 = n2 && Option.Misc.compare eq_constr c1 c2 && eq_constr t1 t2
+
 (***************************************************************************)
 (*     Type of local contexts (telescopes)                                 *)
 (***************************************************************************)
