@@ -671,7 +671,7 @@ let rec assoc_up_to_alias sigma aliases y yc = function
   | [] -> raise Not_found
   | (c,cc,id)::l ->
       let c' = whd_evar sigma c in
-      if y = c' then id
+      if eq_constr y c' then id
       else
 	if l <> [] then assoc_up_to_alias sigma aliases y yc l
 	else
