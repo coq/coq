@@ -37,18 +37,20 @@ let constr_of_opt a opt =
   | None -> mkApp (init_constant "None",[|ac3|])
   | Some f -> mkApp (init_constant "Some",[|ac3;constr_of f|])
 
+module Cmap = Map.Make(struct type t = constr let compare = constr_ord end)
+
 (* Table of theories *)
-let th_tab = ref (Gmap.empty : (constr,constr) Gmap.t)
+let th_tab = ref (Cmap.empty : constr Cmap.t)
 
 let lookup env typ =
-  try Gmap.find typ !th_tab
+  try Cmap.find typ !th_tab
   with Not_found ->
     errorlabstrm "field"
       (str "No field is declared for type" ++ spc() ++
       Printer.pr_lconstr_env env typ)
 
 let _ =
-  let init () = th_tab := Gmap.empty in
+  let init () = th_tab := Cmap.empty in
   let freeze () = !th_tab in
   let unfreeze fs = th_tab := fs in
   Summary.declare_summary "field"
@@ -57,7 +59,7 @@ let _ =
       Summary.init_function     = init }
 
 let load_addfield _ = ()
-let cache_addfield (_,(typ,th)) = th_tab := Gmap.add typ th !th_tab
+let cache_addfield (_,(typ,th)) = th_tab := Cmap.add typ th !th_tab
 let subst_addfield (subst,(typ,th as obj)) =
   let typ' = subst_mps subst typ in
   let th' = subst_mps subst th in
