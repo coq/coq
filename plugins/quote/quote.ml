@@ -370,7 +370,7 @@ let rec subterm gl (t : constr) (t' : constr) =
 let rec sort_subterm gl l =
   let rec insert c = function
     | [] -> [c]
-    | (h::t as l) when c = h -> l (* Avoid doing the same work twice *)
+    | (h::t as l) when eq_constr c h -> l (* Avoid doing the same work twice *)
     | h::t -> if subterm gl c h then c::h::t else h::(insert c t)
   in
   match l with
