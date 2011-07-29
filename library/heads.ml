@@ -146,7 +146,7 @@ let cache_head o =
 let subst_head_approximation subst = function
   | RigidHead (RigidParameter cst) as k ->
       let cst,c = subst_con subst cst in
-      if c = mkConst cst then
+      if isConst c && eq_constant (destConst c) cst then
         (* A change of the prefix of the constant *)
         k
       else
