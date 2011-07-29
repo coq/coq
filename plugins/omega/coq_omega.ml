@@ -378,23 +378,23 @@ type result =
 let destructurate_prop t =
   let c, args = decompose_app t in
   match kind_of_term c, args with
-    | _, [_;_;_] when c = build_coq_eq () -> Kapp (Eq,args)
-    | _, [_;_] when c = Lazy.force coq_neq -> Kapp (Neq,args)
-    | _, [_;_] when c = Lazy.force coq_Zne -> Kapp (Zne,args)
-    | _, [_;_] when c = Lazy.force coq_Zle -> Kapp (Zle,args)
-    | _, [_;_] when c = Lazy.force coq_Zlt -> Kapp (Zlt,args)
-    | _, [_;_] when c = Lazy.force coq_Zge -> Kapp (Zge,args)
-    | _, [_;_] when c = Lazy.force coq_Zgt -> Kapp (Zgt,args)
-    | _, [_;_] when c = build_coq_and () -> Kapp (And,args)
-    | _, [_;_] when c = build_coq_or () -> Kapp (Or,args)
-    | _, [_;_] when c = Lazy.force coq_iff -> Kapp (Iff, args)
-    | _, [_] when c = build_coq_not () -> Kapp (Not,args)
-    | _, [] when c = build_coq_False () -> Kapp (False,args)
-    | _, [] when c = build_coq_True () -> Kapp (True,args)
-    | _, [_;_] when c = Lazy.force coq_le -> Kapp (Le,args)
-    | _, [_;_] when c = Lazy.force coq_lt -> Kapp (Lt,args)
-    | _, [_;_] when c = Lazy.force coq_ge -> Kapp (Ge,args)
-    | _, [_;_] when c = Lazy.force coq_gt -> Kapp (Gt,args)
+    | _, [_;_;_] when eq_constr c (build_coq_eq ()) -> Kapp (Eq,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_neq) -> Kapp (Neq,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_Zne) -> Kapp (Zne,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_Zle) -> Kapp (Zle,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_Zlt) -> Kapp (Zlt,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_Zge) -> Kapp (Zge,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_Zgt) -> Kapp (Zgt,args)
+    | _, [_;_] when eq_constr c (build_coq_and ()) -> Kapp (And,args)
+    | _, [_;_] when eq_constr c (build_coq_or ()) -> Kapp (Or,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_iff) -> Kapp (Iff, args)
+    | _, [_] when eq_constr c (build_coq_not ()) -> Kapp (Not,args)
+    | _, [] when eq_constr c (build_coq_False ()) -> Kapp (False,args)
+    | _, [] when eq_constr c (build_coq_True ()) -> Kapp (True,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_le) -> Kapp (Le,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_lt) -> Kapp (Lt,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_ge) -> Kapp (Ge,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_gt) -> Kapp (Gt,args)
     | Const sp, args ->
 	Kapp (Other (string_of_path (path_of_global (ConstRef sp))),args)
     | Construct csp , args ->
@@ -409,43 +409,43 @@ let destructurate_prop t =
 let destructurate_type t =
   let c, args = decompose_app t in
   match kind_of_term c, args with
-    | _, [] when c = Lazy.force coq_Z -> Kapp (Z,args)
-    | _, [] when c = Lazy.force coq_nat -> Kapp (Nat,args)
+    | _, [] when eq_constr c (Lazy.force coq_Z) -> Kapp (Z,args)
+    | _, [] when eq_constr c (Lazy.force coq_nat) -> Kapp (Nat,args)
     | _ -> Kufo
 
 let destructurate_term t =
   let c, args = decompose_app t in
   match kind_of_term c, args with
-    | _, [_;_] when c = Lazy.force coq_Zplus -> Kapp (Zplus,args)
-    | _, [_;_] when c = Lazy.force coq_Zmult -> Kapp (Zmult,args)
-    | _, [_;_] when c = Lazy.force coq_Zminus -> Kapp (Zminus,args)
-    | _, [_] when c = Lazy.force coq_Zsucc -> Kapp (Zsucc,args)
-    | _, [_] when c = Lazy.force coq_Zopp -> Kapp (Zopp,args)
-    | _, [_;_] when c = Lazy.force coq_plus -> Kapp (Plus,args)
-    | _, [_;_] when c = Lazy.force coq_mult -> Kapp (Mult,args)
-    | _, [_;_] when c = Lazy.force coq_minus -> Kapp (Minus,args)
-    | _, [_] when c = Lazy.force coq_pred -> Kapp (Pred,args)
-    | _, [_] when c = Lazy.force coq_S -> Kapp (S,args)
-    | _, [] when c = Lazy.force coq_O -> Kapp (O,args)
-    | _, [_] when c = Lazy.force coq_Zpos -> Kapp (Zneg,args)
-    | _, [_] when c = Lazy.force coq_Zneg -> Kapp (Zpos,args)
-    | _, [] when c = Lazy.force coq_Z0 -> Kapp (Z0,args)
-    | _, [_] when c = Lazy.force coq_Z_of_nat -> Kapp (Z_of_nat,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_Zplus) -> Kapp (Zplus,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_Zmult) -> Kapp (Zmult,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_Zminus) -> Kapp (Zminus,args)
+    | _, [_] when eq_constr c (Lazy.force coq_Zsucc) -> Kapp (Zsucc,args)
+    | _, [_] when eq_constr c (Lazy.force coq_Zopp) -> Kapp (Zopp,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_plus) -> Kapp (Plus,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_mult) -> Kapp (Mult,args)
+    | _, [_;_] when eq_constr c (Lazy.force coq_minus) -> Kapp (Minus,args)
+    | _, [_] when eq_constr c (Lazy.force coq_pred) -> Kapp (Pred,args)
+    | _, [_] when eq_constr c (Lazy.force coq_S) -> Kapp (S,args)
+    | _, [] when eq_constr c (Lazy.force coq_O) -> Kapp (O,args)
+    | _, [_] when eq_constr c (Lazy.force coq_Zpos) -> Kapp (Zneg,args)
+    | _, [_] when eq_constr c (Lazy.force coq_Zneg) -> Kapp (Zpos,args)
+    | _, [] when eq_constr c (Lazy.force coq_Z0) -> Kapp (Z0,args)
+    | _, [_] when eq_constr c (Lazy.force coq_Z_of_nat) -> Kapp (Z_of_nat,args)
     | Var id,[] -> Kvar id
     | _ -> Kufo
 
 let recognize_number t =
   let rec loop t =
     match decompose_app t with
-      | f, [t] when f = Lazy.force coq_xI -> one + two * loop t
-      | f, [t] when f = Lazy.force coq_xO -> two * loop t
-      | f, [] when f = Lazy.force coq_xH -> one
+      | f, [t] when eq_constr f (Lazy.force coq_xI) -> one + two * loop t
+      | f, [t] when eq_constr f (Lazy.force coq_xO) -> two * loop t
+      | f, [] when eq_constr f (Lazy.force coq_xH) -> one
       | _ -> failwith "not a number"
   in
   match decompose_app t with
-    | f, [t] when f = Lazy.force coq_Zpos -> loop t
-    | f, [t] when f = Lazy.force coq_Zneg -> neg (loop t)
-    | f, [] when f = Lazy.force coq_Z0 -> zero
+    | f, [t] when eq_constr f (Lazy.force coq_Zpos) -> loop t
+    | f, [t] when eq_constr f (Lazy.force coq_Zneg) -> neg (loop t)
+    | f, [] when eq_constr f (Lazy.force coq_Z0) -> zero
     | _ -> failwith "not a number"
 
 type constr_path =
