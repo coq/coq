@@ -1662,7 +1662,7 @@ let letin_abstract id c (occs,check_occs) gl =
       | None -> depdecls
       | Some occ ->
           let newdecl = subst_term_occ_decl occ c d in
-          if occ = (all_occurrences,InHyp) & d = newdecl then
+          if occ = (all_occurrences,InHyp) && eq_named_declaration d newdecl then
 	    if check_occs & not (in_every_hyp occs)
 	    then raise (RefinerError (DoesNotOccurIn (c,hyp)))
 	    else depdecls
