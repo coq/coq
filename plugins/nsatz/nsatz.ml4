@@ -240,14 +240,14 @@ else
 let rec parse_pos p =
   match kind_of_term p with
 | App (a,[|p2|]) ->
-    if a = Lazy.force pxO then num_2 */ (parse_pos p2)
+    if eq_constr a (Lazy.force pxO) then num_2 */ (parse_pos p2)
     else num_1 +/ (num_2 */ (parse_pos p2))
 | _ -> num_1
 
 let parse_z z =
   match kind_of_term z with
 | App (a,[|p2|]) ->
-    if a = Lazy.force zpos then parse_pos p2 else (num_0 -/ (parse_pos p2))
+    if eq_constr a (Lazy.force zpos) then parse_pos p2 else (num_0 -/ (parse_pos p2))
 | _ -> num_0
 
 let parse_n z =
@@ -259,15 +259,15 @@ let parse_n z =
 let rec parse_term p =
   match kind_of_term p with
 | App (a,[|_;p2|]) ->
-    if a = Lazy.force ttvar then Var (string_of_num (parse_pos p2))
-    else if a = Lazy.force ttconst then Const (parse_z p2)
-    else if a = Lazy.force ttopp then Opp (parse_term p2)
+    if eq_constr a (Lazy.force ttvar) then Var (string_of_num (parse_pos p2))
+    else if eq_constr a (Lazy.force ttconst) then Const (parse_z p2)
+    else if eq_constr a (Lazy.force ttopp) then Opp (parse_term p2)
     else Zero
 | App (a,[|_;p2;p3|]) ->
-    if a = Lazy.force ttadd then Add (parse_term p2, parse_term p3)
-    else if a = Lazy.force ttsub then Sub (parse_term p2, parse_term p3)
-    else if a = Lazy.force ttmul then Mul (parse_term p2, parse_term p3)
-    else if a = Lazy.force ttpow then
+    if eq_constr a (Lazy.force ttadd) then Add (parse_term p2, parse_term p3)
+    else if eq_constr a (Lazy.force ttsub) then Sub (parse_term p2, parse_term p3)
+    else if eq_constr a (Lazy.force ttmul) then Mul (parse_term p2, parse_term p3)
+    else if eq_constr a (Lazy.force ttpow) then
       Pow (parse_term p2, int_of_num (parse_n p3))
     else Zero
 | _ -> Zero
