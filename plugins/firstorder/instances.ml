@@ -33,11 +33,11 @@ let compare_instance inst1 inst2=
 	  | Phantom(_),Real((m,_),_)-> if m=0 then -1 else 1
 	  | Real((m,_),_),Phantom(_)-> if m=0 then 1 else -1
 
-let compare_gr id1 id2=
+let compare_gr id1 id2 =
   if id1==id2 then 0 else
     if id1==dummy_id then 1
     else if id2==dummy_id then -1
-    else Pervasives.compare id1 id2
+    else Libnames.RefOrdered.compare id1 id2
 
 module OrderedInstance=
 struct
