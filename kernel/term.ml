@@ -923,12 +923,12 @@ let rec exliftn el c = match kind_of_term c with
 
 (* Lifting the binding depth across k bindings *)
 
-let liftn k n =
-  match el_liftn (pred n) (el_shft k ELID) with
+let liftn n k =
+  match el_liftn (pred k) (el_shft n ELID) with
     | ELID -> (fun c -> c)
     | el -> exliftn el
 
-let lift k = liftn k 1
+let lift n = liftn n 1
 
 (*********************)
 (*   Substituting    *)
