@@ -166,7 +166,7 @@ type theory =
 (* Theories are stored in a table which is synchronised with the Reset
    mechanism. *)
 
-module Cmap = Map.Make(struct type t = constr let compare = compare end)
+module Cmap = Map.Make(struct type t = constr let compare = constr_ord end)
 
 let theories_map = ref Cmap.empty
 
