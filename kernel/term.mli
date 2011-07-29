@@ -354,6 +354,9 @@ val for_all_named_declaration :
 val for_all_rel_declaration :
   (constr -> bool) -> rel_declaration -> bool
 
+val eq_named_declaration :
+  named_declaration -> named_declaration -> bool
+
 (** {6 Contexts of declarations referred to by de Bruijn indices } *)
 
 (** In [rel_context], more recent declaration is on top *)

@@ -583,6 +583,18 @@ let compare_constr f t1 t2 =
       ln1 = ln2 & array_for_all2 f tl1 tl2 & array_for_all2 f bl1 bl2
   | _ -> false
 
+(*******************************)
+(*  alpha conversion functions *)
+(*******************************)
+
+(* alpha conversion : ignore print names and casts *)
+
+let rec eq_constr m n =
+  (m==n) or
+  compare_constr eq_constr m n
+
+let eq_constr m n = eq_constr m n (* to avoid tracing a recursive fun *)
+
 (***************************************************************************)
 (*     Type of assumptions                                                 *)
 (***************************************************************************)
@@ -605,6 +617,9 @@ let exists_rel_declaration f (_, v, ty) = Option.cata f false v || f ty
 
 let for_all_named_declaration f (_, v, ty) = Option.cata f true v && f ty
 let for_all_rel_declaration f (_, v, ty) = Option.cata f true v && f ty
+
+let eq_named_declaration (i1, c1, t1) (i2, c2, t2) =
+  id_ord i1 i2 = 0 && Option.Misc.compare eq_constr c1 c2 && eq_constr t1 t2
 
 (***************************************************************************)
 (*     Type of local contexts (telescopes)                                 *)
@@ -1088,18 +1103,6 @@ let rec isArity c =
   | Cast (c,_,_)      -> isArity c
   | Sort _          -> true
   | _               -> false
-
-(*******************************)
-(*  alpha conversion functions *)
-(*******************************)
-
-(* alpha conversion : ignore print names and casts *)
-
-let rec eq_constr m n =
-  (m==n) or
-  compare_constr eq_constr m n
-
-let eq_constr m n = eq_constr m n (* to avoid tracing a recursive fun *)
 
 (*******************)
 (*  hash-consing   *)
