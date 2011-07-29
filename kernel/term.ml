@@ -1185,6 +1185,8 @@ let equals_constr t1 t2 =
 
 module H = Hashtbl_alt.Make(struct type t = constr let equals = equals_constr end)
 
+open Hashtbl_alt.Combine
+
 (* [hcons_term hash_consing_functions constr] computes an hash-consed
    representation for [constr] using [hash_consing_functions] on
    leaves. *)
@@ -1194,7 +1196,7 @@ let hcons_term (sh_sort,sh_con,sh_kn,sh_na,sh_id) =
     let accu = ref 0 in
     for i = 0 to Array.length t - 1 do
       let x, h = sh_rec t.(i) in
-      accu := H.combine !accu h;
+      accu := combine !accu h;
       t.(i) <- x
     done;
     (t, !accu)
@@ -1202,63 +1204,63 @@ let hcons_term (sh_sort,sh_con,sh_kn,sh_na,sh_id) =
   and hash_term t =
     match t with
       | Var i ->
-	(Var (sh_id i), H.combinesmall 1 (Hashtbl.hash i))
+	(Var (sh_id i), combinesmall 1 (Hashtbl.hash i))
       | Sort s ->
-	(Sort (sh_sort s), H.combinesmall 2 (Hashtbl.hash s))
+	(Sort (sh_sort s), combinesmall 2 (Hashtbl.hash s))
       | Cast (c, k, t) ->
 	let c, hc = sh_rec c in
 	let t, ht = sh_rec t in
-	(Cast (c, k, t), H.combinesmall 3 (H.combine3 hc (Hashtbl.hash k) ht))
+	(Cast (c, k, t), combinesmall 3 (combine3 hc (Hashtbl.hash k) ht))
       | Prod (na,t,c) ->
 	let t, ht = sh_rec t
 	and c, hc = sh_rec c in
-	(Prod (sh_na na, t, c), H.combinesmall 4 (H.combine3 (Hashtbl.hash na) ht hc))
+	(Prod (sh_na na, t, c), combinesmall 4 (combine3 (Hashtbl.hash na) ht hc))
       | Lambda (na,t,c) ->
 	let t, ht = sh_rec t
 	and c, hc = sh_rec c in
-	(Lambda (sh_na na, t, c), H.combinesmall 5 (H.combine3 (Hashtbl.hash na) ht hc))
+	(Lambda (sh_na na, t, c), combinesmall 5 (combine3 (Hashtbl.hash na) ht hc))
       | LetIn (na,b,t,c) ->
 	let b, hb = sh_rec b in
 	let t, ht = sh_rec t in
 	let c, hc = sh_rec c in
-	(LetIn (sh_na na, b, t, c), H.combinesmall 6 (H.combine4 (Hashtbl.hash na) hb ht hc))
+	(LetIn (sh_na na, b, t, c), combinesmall 6 (combine4 (Hashtbl.hash na) hb ht hc))
       | App (c,l) ->
 	let c, hc = sh_rec c in
 	let l, hl = hash_term_array l in
-	(App (c, l), H.combinesmall 7 (H.combine hl hc))
+	(App (c, l), combinesmall 7 (combine hl hc))
       | Evar (e,l) ->
 	let l, hl = hash_term_array l in
-	(Evar (e, l), H.combinesmall 8 (H.combine (Hashtbl.hash e) hl))
+	(Evar (e, l), combinesmall 8 (combine (Hashtbl.hash e) hl))
       | Const c ->
-	(Const (sh_con c), H.combinesmall 9 (Hashtbl.hash c))
+	(Const (sh_con c), combinesmall 9 (Hashtbl.hash c))
       | Ind (kn,i) ->
-	(Ind (sh_kn kn, i), H.combinesmall 9 (H.combine (Hashtbl.hash kn) i))
+	(Ind (sh_kn kn, i), combinesmall 9 (combine (Hashtbl.hash kn) i))
       | Construct ((kn,i),j) ->
-	(Construct ((sh_kn kn, i), j), H.combinesmall 10 (H.combine3 (Hashtbl.hash kn) i j))
+	(Construct ((sh_kn kn, i), j), combinesmall 10 (combine3 (Hashtbl.hash kn) i j))
       | Case (ci,p,c,bl) -> (* TO DO: extract ind_kn *)
 	let p, hp = sh_rec p
 	and c, hc = sh_rec c in
 	let bl, hbl = hash_term_array  bl in
-	let hbl = H.combine (H.combine hc hp) hbl in
-	(Case (ci, p, c, bl), H.combinesmall 11 hbl)
+	let hbl = combine (combine hc hp) hbl in
+	(Case (ci, p, c, bl), combinesmall 11 hbl)
       | Fix (ln,(lna,tl,bl)) ->
 	let bl, hbl = hash_term_array  bl in
 	let tl, htl = hash_term_array  tl in
-	let h = H.combine hbl htl in
+	let h = combine hbl htl in
 	Array.iteri (fun i x -> lna.(i) <- sh_na x) lna;
 	(Fix (ln,(lna, tl, bl)),
-	 H.combinesmall 13 (H.combine (Hashtbl.hash lna) h))
+	 combinesmall 13 (combine (Hashtbl.hash lna) h))
       | CoFix(ln,(lna,tl,bl)) ->
 	let bl, hbl = hash_term_array bl in
 	let tl, htl = hash_term_array tl in
-	let h = H.combine hbl htl in
+	let h = combine hbl htl in
 	Array.iteri (fun i x -> lna.(i) <- sh_na x) lna;
 	(CoFix (ln, (lna, tl, bl)),
-	 H.combinesmall 14 (H.combine (Hashtbl.hash lna) h))
+	 combinesmall 14 (combine (Hashtbl.hash lna) h))
       | Meta n ->
-	(Meta n, H.combinesmall 15 n)
+	(Meta n, combinesmall 15 n)
       | Rel n ->
-	(Rel n, H.combinesmall 16 n)
+	(Rel n, combinesmall 16 n)
 
   and sh_rec t =
     let (y, h) = hash_term t in

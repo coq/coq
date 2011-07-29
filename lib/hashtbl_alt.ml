@@ -29,10 +29,6 @@ module type S = sig
      [constr] is stored in [H] and will be used as the canonical
      representation of this value in the future. *)
   val may_add_and_get : int -> elt -> elt
-  val combine : int -> int -> int
-  val combinesmall : int -> int -> int
-  val combine3 : int -> int -> int -> int
-  val combine4 : int -> int -> int -> int -> int
 end
 
 module Make (E : Hashtype) =
@@ -96,6 +92,9 @@ module Make (E : Hashtype) =
 		    if hash == h2 && E.equals key k3 then k3
 		    else find_rec hash key rest3
 
+end
+
+module Combine = struct
     (* These are helper functions to combine the hash keys in a similar
        way as [Hashtbl.hash] does. The constants [alpha] and [beta] must
        be prime numbers. There were chosen empirically. Notice that the
@@ -107,5 +106,4 @@ module Make (E : Hashtype) =
     let combine3 x y z   = combine x (combine y z)
     let combine4 x y z t = combine x (combine3 y z t)
     let combinesmall x y = beta * x + y
-
 end

@@ -29,10 +29,13 @@ module type S = sig
      [constr] is stored in [H] and will be used as the canonical
      representation of this value in the future. *)
   val may_add_and_get : int -> elt -> elt
+end
+
+module Make (E : Hashtype) : S with type elt = E.t
+
+module Combine : sig
   val combine : int -> int -> int
   val combinesmall : int -> int -> int
   val combine3 : int -> int -> int -> int
   val combine4 : int -> int -> int -> int -> int
 end
-
-module Make (E : Hashtype) : S with type elt = E.t
