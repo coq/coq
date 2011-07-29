@@ -34,6 +34,7 @@ type existential_key = int
 type metavariable = int
 
 (* This defines the strategy to use for verifiying a Cast *)
+type cast_kind = VMcast | DEFAULTcast
 
 (* This defines Cases annotations *)
 type case_style = LetStyle | IfStyle | LetPatternStyle | MatchStyle | RegularStyle
@@ -70,8 +71,6 @@ let family_of_sort = function
 (*       Constructions as implemented                               *)
 (********************************************************************)
 
-type cast_kind = VMcast | DEFAULTcast
-
 (* [constr array] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
 type 'constr pexistential = existential_key * 'constr array
@@ -102,24 +101,6 @@ type ('constr, 'types) kind_of_term =
   | Fix       of ('constr, 'types) pfixpoint
   | CoFix     of ('constr, 'types) pcofixpoint
 
-(* Experimental, used in Presburger contrib *)
-type ('constr, 'types) kind_of_type =
-  | SortType   of sorts
-  | CastType   of 'types * 'types
-  | ProdType   of name * 'types * 'types
-  | LetInType  of name * 'constr * 'types * 'types
-  | AtomicType of 'constr * 'constr array
-
-let kind_of_type = function
-  | Sort s -> SortType s
-  | Cast (c,_,t) -> CastType (c, t)
-  | Prod (na,t,c) -> ProdType (na, t, c)
-  | LetIn (na,b,t,c) -> LetInType (na, b, t, c)
-  | App (c,l) -> AtomicType (c, l)
-  | (Rel _ | Meta _ | Var _ | Evar _ | Const _ | Case _ | Fix _ | CoFix _ | Ind _ as c)
-    -> AtomicType (c,[||])
-  | (Lambda _ | Construct _) -> failwith "Not a type"
-
 (* constr is the fixpoint of the previous type. Requires option
    -rectypes of the Caml compiler to be set *)
 type constr = (constr,constr) kind_of_term
@@ -129,6 +110,11 @@ type rec_declaration = name array * constr array * constr array
 type fixpoint = (int array * int) * rec_declaration
 type cofixpoint = int * rec_declaration
 
+
+(*********************)
+(* Term constructors *)
+(*********************)
+
 (* Constructs a DeBrujin index with number n *)
 let rels =
   [|Rel  1;Rel  2;Rel  3;Rel  4;Rel  5;Rel  6;Rel  7; Rel  8;
@@ -136,18 +122,17 @@ let rels =
 
 let mkRel n = if 0<n & n<=16 then rels.(n-1) else Rel n
 
-(* Constructs an existential variable named "?n" *)
-let mkMeta  n =  Meta n
-
-(* Constructs a Variable named id *)
-let mkVar id = Var id
-
 (* Construct a type *)
-let mkSort s = Sort s
+let mkProp   = Sort prop_sort
+let mkSet    = Sort set_sort
+let mkType u = Sort (Type u)
+let mkSort   = function
+  | Prop Null -> mkProp (* Easy sharing *)
+  | Prop Pos -> mkSet
+  | s -> Sort s
 
 (* Constructs the term t1::t2, i.e. the term t1 casted with the type t2 *)
-(* (that means t2 is declared as the type of t1)
-   [s] is the strategy to use when *)
+(* (that means t2 is declared as the type of t1) *)
 let mkCast (t1,k2,t2) =
   match t1 with
   | Cast (c,k1, _) when k1 = k2 -> Cast (c,k1,t2)
@@ -171,16 +156,13 @@ let mkApp (f, a) =
       | App (g, cl) -> App (g, Array.append cl a)
       | _ -> App (f, a)
 
-
 (* Constructs a constant *)
-(* The array of terms correspond to the variables introduced in the section *)
 let mkConst c = Const c
 
 (* Constructs an existential variable *)
 let mkEvar e = Evar e
 
 (* Constructs the ith (co)inductive type of the block named kn *)
-(* The array of terms correspond to the variables introduced in the section *)
 let mkInd m = Ind m
 
 (* Constructs the jth constructor of the ith (co)inductive type of the
@@ -191,11 +173,48 @@ let mkConstruct c = Construct c
 (* Constructs the term <p>Case c of c1 | c2 .. | cn end *)
 let mkCase (ci, p, c, ac) = Case (ci, p, c, ac)
 
+(* If recindxs = [|i1,...in|]
+      funnames = [|f1,...fn|]
+      typarray = [|t1,...tn|]
+      bodies   = [|b1,...bn|]
+   then
+
+      mkFix ((recindxs,i),(funnames,typarray,bodies))
+
+   constructs the ith function of the block
+
+    Fixpoint f1 [ctx1] : t1 := b1
+    with     f2 [ctx2] : t2 := b2
+    ...
+    with     fn [ctxn] : tn := bn.
+
+   where the lenght of the jth context is ij.
+*)
+
 let mkFix fix = Fix fix
 
-let mkCoFix cofix = CoFix cofix
+(* If funnames = [|f1,...fn|]
+      typarray = [|t1,...tn|]
+      bodies   = [|b1,...bn|]
+   then
 
-let kind_of_term c = c
+      mkCoFix (i,(funnames,typsarray,bodies))
+
+   constructs the ith function of the block
+
+    CoFixpoint f1 : t1 := b1
+    with       f2 : t2 := b2
+    ...
+    with       fn : tn := bn.
+*)
+let mkCoFix cofix= CoFix cofix
+
+(* Constructs an existential variable named "?n" *)
+let mkMeta  n =  Meta n
+
+(* Constructs a Variable named id *)
+let mkVar id = Var id
+
 
 (************************************************************************)
 (*    kind_of_term = constructions as seen by the user                 *)
@@ -205,7 +224,25 @@ let kind_of_term c = c
    least one argument and the function is not itself an applicative
    term *)
 
-let kind_of_term = kind_of_term
+let kind_of_term c = c
+
+(* Experimental, used in Presburger contrib *)
+type ('constr, 'types) kind_of_type =
+  | SortType   of sorts
+  | CastType   of 'types * 'types
+  | ProdType   of name * 'types * 'types
+  | LetInType  of name * 'constr * 'types * 'types
+  | AtomicType of 'constr * 'constr array
+
+let kind_of_type = function
+  | Sort s -> SortType s
+  | Cast (c,_,t) -> CastType (c, t)
+  | Prod (na,t,c) -> ProdType (na, t, c)
+  | LetIn (na,b,t,c) -> LetInType (na, b, t, c)
+  | App (c,l) -> AtomicType (c, l)
+  | (Rel _ | Meta _ | Var _ | Evar _ | Const _ | Case _ | Fix _ | CoFix _ | Ind _ as c)
+    -> AtomicType (c,[||])
+  | (Lambda _ | Construct _) -> failwith "Not a type"
 
 (**********************************************************************)
 (*          Non primitive term destructors                            *)
@@ -768,42 +805,12 @@ let substn_vars p vars =
 
 let subst_vars = substn_vars 1
 
-(*********************)
-(* Term constructors *)
-(*********************)
+(***************************)
+(* Other term constructors *)
+(***************************)
 
-(* Constructs a DeBrujin index with number n *)
-let mkRel = mkRel
-
-(* Constructs an existential variable named "?n" *)
-let mkMeta = mkMeta
-
-(* Constructs a Variable named id *)
-let mkVar = mkVar
-
-(* Construct a type *)
-let mkProp   = mkSort prop_sort
-let mkSet    = mkSort set_sort
-let mkType u = mkSort (Type u)
-let mkSort   = function
-  | Prop Null -> mkProp (* Easy sharing *)
-  | Prop Pos -> mkSet
-  | s -> mkSort s
-
-(* Constructs the term t1::t2, i.e. the term t1 casted with the type t2 *)
-(* (that means t2 is declared as the type of t1) *)
-let mkCast = mkCast
-
-(* Constructs the product (x:t1)t2 *)
-let mkProd = mkProd
 let mkNamedProd id typ c = mkProd (Name id, typ, subst_var id c)
-
-(* Constructs the abstraction [x:t1]t2 *)
-let mkLambda = mkLambda
 let mkNamedLambda id typ c = mkLambda (Name id, typ, subst_var id c)
-
-(* Constructs [x=c_1:t]c_2 *)
-let mkLetIn = mkLetIn
 let mkNamedLetIn id c1 t c2 = mkLetIn (Name id, c1, t, subst_var id c2)
 
 (* Constructs either [(x:t)c] or [[x=b:t]c] *)
@@ -815,17 +822,6 @@ let mkProd_or_LetIn (na,body,t) c =
 let mkNamedProd_or_LetIn (id,body,t) c =
   match body with
     | None -> mkNamedProd id t c
-    | Some b -> mkNamedLetIn id b t c
-
-(* Constructs either [[x:t]c] or [[x=b:t]c] *)
-let mkLambda_or_LetIn (na,body,t) c =
-  match body with
-    | None -> mkLambda (na, t, c)
-    | Some b -> mkLetIn (na, b, t, c)
-
-let mkNamedLambda_or_LetIn (id,body,t) c =
-  match body with
-    | None -> mkNamedLambda id t c
     | Some b -> mkNamedLetIn id b t c
 
 (* Constructs either [(x:t)c] or [c] where [x] is replaced by [b] *)
@@ -842,69 +838,16 @@ let mkNamedProd_wo_LetIn (id,body,t) c =
 (* non-dependent product t1 -> t2 *)
 let mkArrow t1 t2 = mkProd (Anonymous, t1, t2)
 
-(* If lt = [t1; ...; tn], constructs the application (t1 ... tn) *)
-(* We ensure applicative terms have at most one arguments and the
-   function is not itself an applicative term *)
-let mkApp = mkApp
+(* Constructs either [[x:t]c] or [[x=b:t]c] *)
+let mkLambda_or_LetIn (na,body,t) c =
+  match body with
+    | None -> mkLambda (na, t, c)
+    | Some b -> mkLetIn (na, b, t, c)
 
-(* Constructs a constant *)
-(* The array of terms correspond to the variables introduced in the section *)
-let mkConst = mkConst
-
-(* Constructs an existential variable *)
-let mkEvar = mkEvar
-
-(* Constructs the ith (co)inductive type of the block named kn *)
-(* The array of terms correspond to the variables introduced in the section *)
-let mkInd = mkInd
-
-(* Constructs the jth constructor of the ith (co)inductive type of the
-   block named kn. The array of terms correspond to the variables
-   introduced in the section *)
-let mkConstruct = mkConstruct
-
-(* Constructs the term <p>Case c of c1 | c2 .. | cn end *)
-let mkCase = mkCase
-
-(* If recindxs = [|i1,...in|]
-      funnames = [|f1,...fn|]
-      typarray = [|t1,...tn|]
-      bodies   = [|b1,...bn|]
-   then
-
-      mkFix ((recindxs,i),(funnames,typarray,bodies))
-
-   constructs the ith function of the block
-
-    Fixpoint f1 [ctx1] : t1 := b1
-    with     f2 [ctx2] : t2 := b2
-    ...
-    with     fn [ctxn] : tn := bn.
-
-   where the lenght of the jth context is ij.
-*)
-
-let mkFix = mkFix
-
-(* If funnames = [|f1,...fn|]
-      typarray = [|t1,...tn|]
-      bodies   = [|b1,...bn|]
-   then
-
-      mkCoFix (i,(funnames,typsarray,bodies))
-
-   constructs the ith function of the block
-
-    CoFixpoint f1 : t1 := b1
-    with       f2 : t2 := b2
-    ...
-    with       fn : tn := bn.
-*)
-let mkCoFix = mkCoFix
-
-(***************************)
-(* Other term constructors *)
-(***************************)
+let mkNamedLambda_or_LetIn (id,body,t) c =
+  match body with
+    | None -> mkNamedLambda id t c
+    | Some b -> mkNamedLetIn id b t c
 
 (* prodn n [xn:Tn;..;x1:T1;Gamma] b = (x1:T1)..(xn:Tn)b *)
 let prodn n env b =
