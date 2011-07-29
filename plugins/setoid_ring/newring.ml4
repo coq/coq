@@ -84,7 +84,7 @@ let interp_map l c =
   with Not_found -> None
 
 let interp_map l t =
-  try Some(List.assoc t l) with Not_found -> None
+  try Some(list_assoc_f eq_constr t l) with Not_found -> None
 
 let protect_maps = ref Stringmap.empty
 let add_map s m = protect_maps := Stringmap.add s m !protect_maps
