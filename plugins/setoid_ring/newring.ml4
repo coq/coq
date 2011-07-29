@@ -590,10 +590,10 @@ let dest_morph env sigma m_spec =
   match kind_of_term m_typ with
       App(f,[|r;zero;one;add;mul;sub;opp;req;
               c;czero;cone;cadd;cmul;csub;copp;ceqb;phi|])
-        when f = Lazy.force coq_ring_morph ->
+        when eq_constr f (Lazy.force coq_ring_morph) ->
           (c,czero,cone,cadd,cmul,Some csub,Some copp,ceqb,phi)
     | App(f,[|r;zero;one;add;mul;req;c;czero;cone;cadd;cmul;ceqb;phi|])
-        when f = Lazy.force coq_semi_morph ->
+        when eq_constr f (Lazy.force coq_semi_morph) ->
         (c,czero,cone,cadd,cmul,None,None,ceqb,phi)
     | _ -> error "bad morphism structure"
 
@@ -896,7 +896,7 @@ let dest_field env sigma th_spec =
           [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (None,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
-        when f = Lazy.force field_theory ->
+        when eq_constr f (Lazy.force field_theory) ->
         let rth =
           lapp f_r
             [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
