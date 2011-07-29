@@ -89,9 +89,30 @@ let insert v l =
 
 type stored_data = pri_auto_tactic
 
+let auto_tactic_ord code1 code2 =
+  match code1, code2 with
+  | Res_pf (c1, _), Res_pf (c2, _)
+  | ERes_pf (c1, _), ERes_pf (c2, _)
+  | Give_exact c1, Give_exact c2
+  | Res_pf_THEN_trivial_fail (c1, _), Res_pf_THEN_trivial_fail (c2, _) -> constr_ord c1 c2
+  | Unfold_nth (EvalVarRef i1), Unfold_nth (EvalVarRef i2) -> Pervasives.compare i1 i2
+  | Unfold_nth (EvalConstRef c1), Unfold_nth (EvalConstRef c2) ->
+      kn_ord (canonical_con c1) (canonical_con c2)
+  | Extern t1, Extern t2 -> Pervasives.compare t1 t2
+  | _ -> Pervasives.compare code1 code2
+
+let pri_auto_tactic_ord
+    {pri=pri1; pat=pat1; name=name1; code=code1}
+    {pri=pri2; pat=pat2; name=name2; code=code2} =
+  let r = pri1 - pri2 in
+  if r <> 0 then r else
+  let r = Pervasives.compare pat1 pat2 in (* there should be an equality on constr_pattern *)
+  if r <> 0 then r else
+  auto_tactic_ord code1 code2
+
 module Bounded_net = Btermdn.Make(struct
 				    type t = stored_data
-				    let compare = Pervasives.compare
+				    let compare = pri_auto_tactic_ord
 				  end)
 
 type search_entry = stored_data list * stored_data list * Bounded_net.t
