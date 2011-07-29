@@ -352,7 +352,7 @@ let hints_tac hints =
 			  { info with auto_depth = j :: i :: info.auto_depth; auto_last_tac = pp;
 			      is_evar = evar;
 			      hints =
-			      if b && Goal.V82.hyps s' g <> Goal.V82.hyps s' gl
+			      if b && not (Environ.eq_named_context_val (Goal.V82.hyps s' g) (Goal.V82.hyps s' gl))
 			      then make_autogoal_hints info.only_classes
 				~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s'}
 			      else info.hints }
