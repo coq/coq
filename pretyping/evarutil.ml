@@ -1258,6 +1258,21 @@ let rec expand_and_check_vars env = function
       else
 	raise Exit
 
+module Constrhash = Hashtbl.Make
+  (struct type t = constr
+	  let equal = eq_constr
+	  let hash = hash_constr
+   end)
+
+let rec constr_list_distinct l =
+  let visited = Constrhash.create 23 in
+  let rec loop = function
+    | h::t ->
+	if Constrhash.mem visited h then false
+	else (Constrhash.add visited h h; loop t)
+    | [] -> true
+  in loop l
+
 let is_unification_pattern_evar env (_,args) l t =
   List.for_all (fun x -> isRel x || isVar x) l (* common failure case *)
   &&
@@ -1280,7 +1295,7 @@ let is_unification_pattern_evar env (_,args) l t =
 	      | Var id -> List.mem id fv_ids
 	      | Rel n -> Intset.mem n fv_rels
 	      | _ -> assert false) l in
-	list_distinct deps
+	constr_list_distinct deps
     | None -> false
 
 let is_unification_pattern (env,nb) f l t =
