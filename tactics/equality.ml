@@ -1396,8 +1396,8 @@ exception FoundHyp of (identifier * constr * bool)
 let is_eq_x gl x (id,_,c) =
   try
     let (_,lhs,rhs) = snd (find_eq_data_decompose gl c) in
-    if (x = lhs) && not (occur_term x rhs) then raise (FoundHyp (id,rhs,true));
-    if (x = rhs) && not (occur_term x lhs) then raise (FoundHyp (id,lhs,false))
+    if (eq_constr x lhs) && not (occur_term x rhs) then raise (FoundHyp (id,rhs,true));
+    if (eq_constr x rhs) && not (occur_term x lhs) then raise (FoundHyp (id,lhs,false))
   with PatternMatchingFailure ->
     ()
 
