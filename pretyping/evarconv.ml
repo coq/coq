@@ -563,7 +563,7 @@ let first_order_unification ts env evd (ev1,l1) (term2,l2) =
 let choose_less_dependent_instance evk evd term args =
   let evi = Evd.find_undefined evd evk in
   let subst = make_pure_subst evi args in
-  let subst' = List.filter (fun (id,c) -> c = term) subst in
+  let subst' = List.filter (fun (id,c) -> eq_constr c term) subst in
   if subst' = [] then error "Too complex unification problem." else
   Evd.define evk (mkVar (fst (List.hd subst'))) evd
 
@@ -574,12 +574,12 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   let (term2,l2 as appr2) = decompose_app t2 in
   match kind_of_term term1, kind_of_term term2 with
   | Evar (evk1,args1), (Rel _|Var _) when l1 = [] & l2 = []
-      & array_for_all (fun a -> a = term2 or isEvar a) args1 ->
+      & array_for_all (fun a -> eq_constr a term2 or isEvar a) args1 ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
       choose_less_dependent_instance evk1 evd term2 args1, true
   | (Rel _|Var _), Evar (evk2,args2) when l1 = [] & l2 = []
-      & array_for_all (fun a -> a = term1 or isEvar a) args2 ->
+      & array_for_all (fun a -> eq_constr a term1 or isEvar a) args2 ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
       choose_less_dependent_instance evk2 evd term1 args2, true
