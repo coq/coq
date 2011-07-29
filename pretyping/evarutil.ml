@@ -677,8 +677,8 @@ let rec assoc_up_to_alias sigma aliases y yc = function
 	else
 	  (* Last chance, we reason up to alias conversion *)
 	  match (if c == c' then cc else expand_full_opt aliases c') with
-	  | Some cc when yc = cc -> id
-	  | _ -> if yc = c then id else raise Not_found
+	  | Some cc when eq_constr yc cc -> id
+	  | _ -> if eq_constr yc c then id else raise Not_found
 
 let rec find_projectable_vars with_evars aliases sigma y subst =
   let yc = expand_var aliases y in
@@ -983,7 +983,7 @@ let solve_evar_evar f env evd ev1 ev2 =
  * depend on these args). *)
 
 let solve_refl conv_algo env evd evk argsv1 argsv2 =
-  if argsv1 = argsv2 then evd else
+  if array_equal eq_constr argsv1 argsv2 then evd else
   let evi = Evd.find_undefined evd evk in
   (* Filter and restrict if needed *)
   let evd,evk,args =

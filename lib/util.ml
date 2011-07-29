@@ -887,6 +887,12 @@ let array_compare item_cmp v1 v2 =
 	  else cmp (i-1) in
     cmp (Array.length v1 - 1)
 
+let array_equal cmp t1 t2 =
+  Array.length t1 = Array.length t2 &&
+  let rec aux i =
+    (i = Array.length t1) || (cmp t1.(i) t2.(i) && aux (i + 1))
+  in aux 0
+
 let array_exists f v =
   let rec exrec = function
     | -1 -> false

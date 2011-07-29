@@ -237,6 +237,7 @@ val list_union_map : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
 (** {6 Arrays. } *)
 
 val array_compare : ('a -> 'a -> int) -> 'a array -> 'a array -> int
+val array_equal : ('a -> 'a -> bool) -> 'a array -> 'a array -> bool
 val array_exists : ('a -> bool) -> 'a array -> bool
 val array_for_all : ('a -> bool) -> 'a array -> bool
 val array_for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
