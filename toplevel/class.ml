@@ -92,7 +92,9 @@ let check_target clt = function
 let uniform_cond nargs lt =
   let rec aux = function
     | (0,[]) -> true
-    | (n,t::l) -> (strip_outer_cast t = mkRel n) & (aux ((n-1),l))
+    | (n,t::l) ->
+      let t = strip_outer_cast t in
+      isRel t && destRel t = n && aux ((n-1),l)
     | _ -> false
   in
   aux (nargs,lt)
