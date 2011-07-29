@@ -413,7 +413,7 @@ let subst_th (subst,th) =
   let posttac'= subst_tactic subst th.ring_post_tac in
   if c' == th.ring_carrier &&
      eq' == th.ring_req &&
-     set' = th.ring_setoid &&
+     eq_constr set' th.ring_setoid &&
      ext' == th.ring_ext &&
      morph' == th.ring_morph &&
      th' == th.ring_th &&
