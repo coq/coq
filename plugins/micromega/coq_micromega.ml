@@ -1107,17 +1107,17 @@ struct
      match kind_of_term term with
       | App(l,rst) ->
           (match rst with
-           | [|a;b|] when l = Lazy.force coq_and ->
+           | [|a;b|] when eq_constr l (Lazy.force coq_and) ->
                let f,env,tg = xparse_formula env tg a in
                let g,env, tg = xparse_formula env tg b  in
                mkformula_binary mkC term f g,env,tg
-           | [|a;b|] when l = Lazy.force coq_or ->
+           | [|a;b|] when eq_constr l (Lazy.force coq_or) ->
                let f,env,tg = xparse_formula env tg a in
                let g,env,tg  = xparse_formula env tg b in
                mkformula_binary mkD term f g,env,tg
-           | [|a|] when l = Lazy.force coq_not ->
+           | [|a|] when eq_constr l (Lazy.force coq_not) ->
                let (f,env,tg) = xparse_formula env tg a in (N(f), env,tg)
-           | [|a;b|] when l = Lazy.force coq_iff ->
+           | [|a;b|] when eq_constr l (Lazy.force coq_iff) ->
                let f,env,tg = xparse_formula env tg a in
                let g,env,tg = xparse_formula env tg b in
                mkformula_binary mkIff term f g,env,tg
@@ -1126,8 +1126,8 @@ struct
           let f,env,tg = xparse_formula env tg a in
           let g,env,tg = xparse_formula env tg b in
           mkformula_binary mkI term f g,env,tg
-      | _ when term = Lazy.force coq_True -> (TT,env,tg)
-      | _ when term = Lazy.force coq_False -> (FF,env,tg)
+      | _ when eq_constr term (Lazy.force coq_True) -> (TT,env,tg)
+      | _ when eq_constr term (Lazy.force coq_False) -> (FF,env,tg)
       | _  -> X(term),env,tg in
     xparse_formula env tg  ((*Reductionops.whd_zeta*) term)
 
