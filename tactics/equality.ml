@@ -236,8 +236,8 @@ let register_is_applied_rewrite_relation = (:=) is_applied_rewrite_relation
 
 let find_elim hdcncl lft2rgt dep cls args gl =
   let inccl = (cls = None) in
-  if (hdcncl = constr_of_reference (Coqlib.glob_eq) ||
-      hdcncl = constr_of_reference (Coqlib.glob_jmeq) &&
+  if (eq_constr hdcncl (constr_of_reference (Coqlib.glob_eq)) ||
+      eq_constr hdcncl (constr_of_reference (Coqlib.glob_jmeq)) &&
       pf_conv_x gl (List.nth args 0) (List.nth args 2)) && not dep
     || Flags.version_less_or_equal Flags.V8_2
   then
