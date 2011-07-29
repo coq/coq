@@ -32,7 +32,7 @@ let constrain_type env j cst1 = function
   | Some t ->
       let (tj,cst2) = infer_type env t in
       let (_,cst3) = judge_of_cast env j DEFAULTcast tj in
-	assert (t = tj.utj_val);
+	assert (eq_constr t tj.utj_val);
 	let cstrs = union_constraints (union_constraints cst1 cst2) cst3 in
 	  NonPolymorphicType t, cstrs
 
@@ -42,7 +42,7 @@ let local_constrain_type env j cst1 = function
   | Some t ->
       let (tj,cst2) = infer_type env t in
       let (_,cst3) = judge_of_cast env j DEFAULTcast tj in
-      assert (t = tj.utj_val);
+      assert (eq_constr t tj.utj_val);
       t, union_constraints (union_constraints cst1 cst2) cst3
 
 let translate_local_def env (b,topt) =

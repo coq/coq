@@ -475,7 +475,7 @@ and execute_array env = array_fold_map' (execute env)
 let infer env constr =
   let (j,(cst,_)) =
     execute env constr (empty_constraint, universes env) in
-  assert (j.uj_val = constr);
+  assert (eq_constr j.uj_val constr);
   ({ j with uj_val = constr }, cst)
 
 let infer_type env constr =
