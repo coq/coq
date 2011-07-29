@@ -767,7 +767,7 @@ let substlin env evalref n (nowhere_except_in,locs) c =
   let term = constr_of_evaluable_ref evalref in
   let rec substrec () c =
     if nowhere_except_in & !pos > maxocc then c
-    else if c = term then
+    else if eq_constr c term then
       let ok =
 	if nowhere_except_in then List.mem !pos locs
 	else not (List.mem !pos locs) in
