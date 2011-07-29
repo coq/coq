@@ -933,7 +933,8 @@ let are_canonical_instances args1 args2 env =
     | [] ->
 	let rec aux2 n =
 	  n = n1 ||
-	  (args1.(n) = mkRel (n1-n) && args2.(n) = mkRel (n1-n) && aux2 (n+1))
+	  (isRel args1.(n) && destRel args1.(n) = n1-n &&
+	   isRel args2.(n) && destRel args2.(n) = n1-n && aux2 (n+1))
 	in aux2 n
     | _ -> false in
   n1 = n2 & aux 0 (named_context env)
