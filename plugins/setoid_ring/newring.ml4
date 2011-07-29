@@ -891,7 +891,7 @@ let dest_field env sigma th_spec =
   let th_typ = Retyping.get_type_of env sigma th_spec in
   match kind_of_term th_typ with
     | App(f,[|r;zero;one;add;mul;sub;opp;div;inv;req|])
-        when f = Lazy.force afield_theory ->
+        when eq_constr f (Lazy.force afield_theory) ->
         let rth = lapp af_ar
           [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (None,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
@@ -902,7 +902,7 @@ let dest_field env sigma th_spec =
             [|r;zero;one;add;mul;sub;opp;div;inv;req;th_spec|] in
         (Some false,r,zero,one,add,mul,Some sub,Some opp,div,inv,req,rth)
     | App(f,[|r;zero;one;add;mul;div;inv;req|])
-        when f = Lazy.force sfield_theory ->
+        when eq_constr f (Lazy.force sfield_theory) ->
         let rth = lapp sf_sr
           [|r;zero;one;add;mul;div;inv;req;th_spec|] in
         (Some true,r,zero,one,add,mul,None,None,div,inv,req,rth)
