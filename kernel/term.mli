@@ -618,6 +618,7 @@ val iter_constr_with_binders :
 
 val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
 
+val constr_ord : constr -> constr -> int
 val hash_constr : constr -> int
 
 (*********************************************************************)

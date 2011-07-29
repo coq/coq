@@ -595,6 +595,71 @@ let rec eq_constr m n =
 
 let eq_constr m n = eq_constr m n (* to avoid tracing a recursive fun *)
 
+let constr_ord_int f t1 t2 =
+  let (=?) f g i1 i2 j1 j2=
+    let c=f i1 i2 in
+    if c=0 then g j1 j2 else c in
+  let (==?) fg h i1 i2 j1 j2 k1 k2=
+    let c=fg i1 i2 j1 j2 in
+    if c=0 then h k1 k2 else c in
+  match kind_of_term t1, kind_of_term t2 with
+    | Rel n1, Rel n2 -> n1 - n2
+    | Meta m1, Meta m2 -> m1 - m2
+    | Var id1, Var id2 -> id_ord id1 id2
+    | Sort s1, Sort s2 -> Pervasives.compare s1 s2
+    | Cast (c1,_,_), _ -> f c1 t2
+    | _, Cast (c2,_,_) -> f t1 c2
+    | Prod (_,t1,c1), Prod (_,t2,c2)
+    | Lambda (_,t1,c1), Lambda (_,t2,c2) ->
+	(f =? f) t1 t2 c1 c2
+    | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) ->
+	((f =? f) ==? f) b1 b2 t1 t2 c1 c2
+    | App (_,_), App (_,_) ->
+	let c1,l1=decompose_app t1
+	and c2,l2=decompose_app t2 in
+	  (f =? (list_compare f)) c1 c2 l1 l2
+    | Evar (e1,l1), Evar (e2,l2) ->
+	((-) =? (array_compare f)) e1 e2 l1 l2
+    | Const c1, Const c2 -> kn_ord (canonical_con c1) (canonical_con c2)
+    | Ind (spx, ix), Ind (spy, iy) ->
+	let c = ix - iy in if c = 0 then kn_ord (canonical_mind spx) (canonical_mind spy) else c
+    | Construct ((spx, ix), jx), Construct ((spy, iy), jy) ->
+	let c = jx - jy in if c = 0 then
+	  (let c = ix - iy in if c = 0 then kn_ord (canonical_mind spx) (canonical_mind spy) else c)
+	else c
+    | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
+	((f =? f) ==? (array_compare f)) p1 p2 c1 c2 bl1 bl2
+    | Fix (ln1,(_,tl1,bl1)), Fix (ln2,(_,tl2,bl2)) ->
+	((Pervasives.compare =? (array_compare f)) ==? (array_compare f))
+	ln1 ln2 tl1 tl2 bl1 bl2
+    | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
+	((Pervasives.compare =? (array_compare f)) ==? (array_compare f))
+	ln1 ln2 tl1 tl2 bl1 bl2
+    | Var _, (Rel _)
+    | Meta _, (Rel _ | Var _)
+    | Evar _, (Rel _ | Var _ | Meta _)
+    | Sort _, (Rel _ | Var _ | Meta _ | Evar _)
+    | Prod _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _)
+    | Lambda _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _)
+    | LetIn _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _)
+    | App _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _)
+    | Const _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _)
+    | Ind _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _ | Const _)
+    | Construct _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _ | Const _ | Ind _)
+    | Case _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _ | Const _ | Ind _ | Construct _)
+    | Fix _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _ | Const _ | Ind _ | Construct _ | Case _)
+    | CoFix _, _
+      -> -1
+    | Rel _, _ | Var _, _ | Meta _, _ | Evar _, _
+    | Sort _, _ | Prod _, _
+    | Lambda _, _ | LetIn _, _ | App _, _
+    | Const _, _ | Ind _, _ | Construct _, _
+    | Case _, _| Fix _, _
+      -> 1
+
+let rec constr_ord m n=
+  constr_ord_int constr_ord m n
+
 (***************************************************************************)
 (*     Type of assumptions                                                 *)
 (***************************************************************************)
