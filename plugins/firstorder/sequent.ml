@@ -154,7 +154,7 @@ module Hitem=
 struct
   type t = h_item
   let compare (id1,co1) (id2,co2)=
-    (Pervasives.compare
+    (Libnames.RefOrdered.compare
      =? (fun oc1 oc2 ->
 	   match oc1,oc2 with
 	       Some (m1,c1),Some (m2,c2) ->
