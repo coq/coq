@@ -34,6 +34,7 @@ let rec lookup_named id = function
   | [] -> raise Not_found
 
 let named_context_length = List.length
+let named_context_equal = list_equal eq_named_declaration
 
 let vars_of_named_context = List.map (fun (id,_,_) -> id)
 

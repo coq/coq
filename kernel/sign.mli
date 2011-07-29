@@ -23,6 +23,9 @@ val lookup_named : identifier -> named_context -> named_declaration
 (** number of declarations *)
 val named_context_length : named_context -> int
 
+(** named context equality *)
+val named_context_equal : named_context -> named_context -> bool
+
 (** {6 Recurrence on [named_context]: older declarations processed first } *)
 val fold_named_context :
   (named_declaration -> 'a -> 'a) -> named_context -> init:'a -> 'a

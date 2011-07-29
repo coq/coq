@@ -109,7 +109,7 @@ let lookup_named id env = Sign.lookup_named id env.env_named_context
 let lookup_named_val id (ctxt,_) = Sign.lookup_named id ctxt
 
 let eq_named_context_val c1 c2 =
-   c1 == c2 || named_context_of_val c1 = named_context_of_val c2
+   c1 == c2 || named_context_equal (named_context_of_val c1) (named_context_of_val c2)
 
 (* A local const is evaluable if it is defined  *)
 
