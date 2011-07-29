@@ -22,6 +22,8 @@ type term =
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
 
+val term_equal : term -> term -> bool
+
 type patt_kind =
     Normal
   | Trivial of types

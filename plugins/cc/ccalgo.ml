@@ -103,6 +103,17 @@ type term=
   | Appli of term*term
   | Constructor of cinfo (* constructor arity + nhyps *)
 
+let rec term_equal t1 t2 =
+  match t1, t2 with
+    | Symb c1, Symb c2 -> eq_constr c1 c2
+    | Product (s1, t1), Product (s2, t2) -> s1 = s2 && t1 = t2
+    | Eps i1, Eps i2 -> id_ord i1 i2 = 0
+    | Appli (t1, u1), Appli (t2, u2) -> term_equal t1 t2 && term_equal u1 u2
+    | Constructor {ci_constr=c1; ci_arity=i1; ci_nhyps=j1},
+      Constructor {ci_constr=c2; ci_arity=i2; ci_nhyps=j2} ->
+      i1 = i2 && j1 = j2 && eq_constructor c1 c2
+    | _ -> t1 = t2
+
 type ccpattern =
     PApp of term * ccpattern list (* arguments are reversed *)
   | PVar of int

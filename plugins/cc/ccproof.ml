@@ -43,7 +43,7 @@ let rec ptrans p1 p3=
     | Congr(p1,p2), Trans({p_rule=Congr(p3,p4)},p5) ->
 	ptrans (pcongr (ptrans p1 p3) (ptrans p2 p4)) p5
   | _, _ ->
-      if p1.p_rhs = p3.p_lhs then
+      if term_equal p1.p_rhs p3.p_lhs then
 	{p_lhs=p1.p_lhs;
 	 p_rhs=p3.p_rhs;
 	 p_rule=Trans (p1,p3)}
