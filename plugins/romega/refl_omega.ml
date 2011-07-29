@@ -230,7 +230,7 @@ let get_reified_atom env =
 (* \subsection{Gestion de l'environnement de proposition pour Omega} *)
 (* ajout d'une proposition *)
 let add_prop env t =
-  try list_index0 t env.props
+  try list_index0_f Term.eq_constr t env.props
   with Not_found ->
     let i = List.length env.props in  env.props <- env.props @ [t]; i
 
