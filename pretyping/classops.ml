@@ -46,6 +46,13 @@ type coe_info_typ = {
   coe_is_identity : bool;
   coe_param : int }
 
+let coe_info_typ_equal c1 c2 =
+  eq_constr c1.coe_value c2.coe_value &&
+    eq_constr c1.coe_type c2.coe_type &&
+    c1.coe_strength = c2.coe_strength &&
+    c1.coe_is_identity = c2.coe_is_identity &&
+    c1.coe_param = c2.coe_param
+
 type cl_index = int
 
 type coe_index = coe_info_typ
@@ -306,7 +313,7 @@ let add_coercion_in_graph (ic,source,target) =
              try_add_new_path1 (s,target) (p@[ic]);
              Gmap.iter
 	       (fun (u,v) q ->
-                  if u<>v & (u = target) & (p <> q) then
+                  if u<>v & u = target &&  not (list_equal coe_info_typ_equal p q) then
 		    try_add_new_path1 (s,v) (p@[ic]@q))
                old_inheritance_graph
            end;
