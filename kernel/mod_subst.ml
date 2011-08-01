@@ -730,3 +730,8 @@ let subst_substituted s r =
     | LSlazy(s',a) ->
 	  ref (LSlazy(s::s',a))
 
+(* debug *)
+let repr_substituted r =
+  match !r with
+    | LSval a -> None, a
+    | LSlazy(s,a) -> Some s, a

@@ -295,6 +295,8 @@ let init () =
 
 type emitcodes = string
 
+let copy = String.copy
+
 let length = String.length
 
 type to_patch = emitcodes * (patch list) * fv
@@ -340,6 +342,8 @@ let is_boxed tps =
   match force tps with
   | BCdefined(b,_) -> b
   | _ -> false
+
+let repr_body_code = repr_substituted
 
 let to_memory (init_code, fun_code, fv) =
   init();
