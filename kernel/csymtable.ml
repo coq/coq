@@ -94,9 +94,10 @@ let annot_tbl = Hashtbl.create 31
 
 exception NotEvaluated
 
+open Pp
 let key rk =
   match !rk with
-  | Some k -> k
+  | Some k -> (*Pp.msgnl (str"found at: "++int k);*)  k
   | _ -> raise NotEvaluated
 
 (************************)
@@ -123,6 +124,7 @@ let rec slot_for_getglobal env kn =
   let (cb,rk) = lookup_constant_key kn env in
   try key rk
   with NotEvaluated ->
+(*    Pp.msgnl(str"not yet evaluated");*)
     let pos =
       match Cemitcodes.force cb.const_body_code with
       | BCdefined(code,pl,fv) ->
@@ -130,6 +132,7 @@ let rec slot_for_getglobal env kn =
 	set_global v
     | BCallias kn' -> slot_for_getglobal env kn'
     | BCconstant -> set_global (val_of_constant kn) in
+(*Pp.msgnl(str"value stored at: "++int pos);*)
     rk := Some pos;
     pos
 
@@ -166,15 +169,22 @@ and slot_for_fv env fv =
       end
 
 and eval_to_patch env (buff,pl,fv) =
+  (* copy code *before* patching because of nested evaluations:
+     the code we are patching might be called (and thus "concurrently" patched)
+     and results in wrong results. Side-effects... *)
+  let buff = Cemitcodes.copy buff in
   let patch = function
     | Reloc_annot a, pos -> patch_int buff pos (slot_for_annot a)
     | Reloc_const sc, pos -> patch_int buff pos (slot_for_str_cst sc)
     | Reloc_getglobal kn, pos ->
-	patch_int buff pos (slot_for_getglobal env kn)
+(*      Pp.msgnl (str"patching global: "++str(debug_string_of_con kn));*)
+	patch_int buff pos (slot_for_getglobal env kn);
+(*      Pp.msgnl (str"patch done: "++str(debug_string_of_con kn))*)
   in
   List.iter patch pl;
   let vm_env = Array.map (slot_for_fv env) fv in
   let tc = tcode_of_code buff (length buff) in
+(*Pp.msgnl (str"execute code");*)
   eval_tcode tc vm_env
 
 and val_of_constr env c =

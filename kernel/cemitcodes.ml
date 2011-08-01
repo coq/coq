@@ -307,6 +307,8 @@ let init () =
 
 type emitcodes = string
 
+let copy = String.copy
+
 let length = String.length
 
 type to_patch = emitcodes * (patch list) * fv
@@ -347,6 +349,8 @@ let from_val = from_val
 let force = force subst_body_code
 
 let subst_to_patch_subst = subst_substituted
+
+let repr_body_code = repr_substituted
 
 let to_memory (init_code, fun_code, fv) =
   init();
