@@ -756,8 +756,11 @@ let pr_decl ((id,b,_),ok) =
       print_constr c ++ str (if ok then ")" else "}")
 
 let pr_evar_info evi =
-  let decls = List.combine (evar_context evi) (evar_filter evi) in
-  let phyps = prlist_with_sep pr_spc pr_decl (List.rev decls) in
+  let phyps =
+    try
+      let decls = List.combine (evar_context evi) (evar_filter evi) in
+      prlist_with_sep pr_spc pr_decl (List.rev decls)
+    with Invalid_argument _ -> str "Ill-formed filtered context" in
   let pty = print_constr evi.evar_concl in
   let pb =
     match evi.evar_body with
@@ -785,7 +788,8 @@ let evar_dependency_closure n sigma =
     if n=0 then l
     else
       let l' =
-        list_map_append (fun (evk,_) -> ExistentialMap.find evk graph) l in
+        list_map_append (fun (evk,_) ->
+          try ExistentialMap.find evk graph with Not_found -> []) l in
       aux (n-1) (list_uniquize (Sort.list order (l@l'))) in
   aux n (undefined_list sigma)
 
