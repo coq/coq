@@ -697,7 +697,7 @@ let explain_no_instance env (_,id) l =
     prlist_with_sep pr_spc (pr_lconstr_env env) l
 
 let pr_constraints printenv env evm =
-  let evm = Evarutil.nf_evar_map_undefined evm in
+  let evm = Evd.undefined_evars (Evarutil.nf_evar_map_undefined evm) in
   let l = Evd.to_list evm in
   let (ev, evi) = List.hd l in
     if List.for_all (fun (ev', evi') ->
