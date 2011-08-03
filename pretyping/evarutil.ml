@@ -58,7 +58,6 @@ let nf_evar_info evc info =
     evar_body = match info.evar_body with
       | Evar_empty -> Evar_empty
       | Evar_defined c -> Evar_defined (Reductionops.nf_evar evc c) }
-
 let nf_evars evm =
   Evd.fold
     (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
@@ -67,7 +66,7 @@ let nf_evars evm =
 let nf_evars_undefined evm =
   Evd.fold_undefined
     (fun ev evi evm' -> Evd.add evm' ev (nf_evar_info evm evi))
-    evm Evd.empty
+    evm (defined_evars evm)
 
 let nf_evar_map evd = Evd.evars_reset_evd (nf_evars evd) evd
 let nf_evar_map_undefined evd = Evd.evars_reset_evd (nf_evars_undefined evd) evd
