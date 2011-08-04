@@ -327,9 +327,10 @@ let oracle_order env cf1 cf2 =
       | None -> Some true
       | Some k2 -> Some (Conv_oracle.oracle_order k1 k2)
 
-let do_reduce ts env sigma c =
-  let (t, l) = whd_betaiota_deltazeta_for_iota_state ts env sigma (c, empty_stack) in
-    applist (t, list_of_stack l)
+let do_reduce ts (env, nb) sigma c =
+  let (t, stack') = whd_betaiota_deltazeta_for_iota_state ts env sigma (c, empty_stack) in
+  let l = list_of_stack stack' in
+    applist (t, l)
 
 let use_full_betaiota flags =
   flags.modulo_betaiota && Flags.version_strictly_greater Flags.V8_3
@@ -369,11 +370,16 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	    else error_cannot_unify_local curenv sigma (m,n,cM)
 	| Evar (evk,_ as ev), _
             when not (ExistentialSet.mem evk flags.frozen_evars) ->
-            sigma,metasubst,((curenv, ev,cN)::evarsubst)
+	    let cmvars = free_rels cM and cnvars = free_rels cN in
+	      if Intset.subset cnvars cmvars then
+		sigma,metasubst,((curenv,ev,cN)::evarsubst)
+	      else error_cannot_unify_local curenv sigma (m,n,cN)
 	| _, Evar (evk,_ as ev)
             when not (ExistentialSet.mem evk flags.frozen_evars) ->
-            sigma,metasubst,((curenv, ev,cM)::evarsubst)
-
+	    let cmvars = free_rels cM and cnvars = free_rels cN in
+	      if Intset.subset cmvars cnvars then
+		sigma,metasubst,((curenv,ev,cM)::evarsubst)
+	      else error_cannot_unify_local curenv sigma (m,n,cN)
 	| Sort s1, Sort s2 ->
 	    (try 
 	       let sigma' = 
@@ -457,11 +463,11 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 
   and reduce curenvnb pb b (sigma, metas, evars as substn) cM cN =
     if use_full_betaiota flags && not (subterm_restriction b flags) then
-      let cM' = do_reduce flags.modulo_delta (fst curenvnb) sigma cM in
+      let cM' = do_reduce flags.modulo_delta curenvnb sigma cM in
 	if not (eq_constr cM cM') then
 	  unirec_rec curenvnb pb b substn cM' cN
 	else
-	  let cN' = do_reduce flags.modulo_delta (fst curenvnb) sigma cN in
+	  let cN' = do_reduce flags.modulo_delta curenvnb sigma cN in
 	    if not (eq_constr cN cN') then
 	      unirec_rec curenvnb pb b substn cM cN'
 	    else error_cannot_unify (fst curenvnb) sigma (cM,cN)

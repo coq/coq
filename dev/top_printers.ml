@@ -114,6 +114,10 @@ let pp_transparent_state s = pp (pr_transparent_state s)
 let ppmetas metas = pp(pr_metaset metas)
 let ppevm evd = pp(pr_evar_map (Some 2) evd)
 let ppevmall evd = pp(pr_evar_map None evd)
+let pr_existentialset evars =
+  prlist_with_sep spc pr_meta (ExistentialSet.elements evars)
+let ppexistentialset evars =
+  pp (pr_existentialset evars)
 let ppclenv clenv = pp(pr_clenv clenv)
 let ppgoalgoal gl = pp(Goal.pr_goal gl)
 let ppgoal g = pp(Printer.pr_goal g)

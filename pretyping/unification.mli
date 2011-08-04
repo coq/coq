@@ -66,3 +66,12 @@ val w_merge : env -> bool -> unify_flags -> evar_map *
   (metavariable * constr * (instance_constraint * instance_typing_status)) list *
   (env * types pexistential * types) list -> evar_map
 
+val unify_0 :            Environ.env ->
+           Evd.evar_map ->
+           Evd.conv_pb ->
+           unify_flags ->
+           Term.types ->
+           Term.types ->
+           Evd.evar_map * Evd.metabinding list *
+           (Environ.env * Term.types Term.pexistential * Term.constr) list
+

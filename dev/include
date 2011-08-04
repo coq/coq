@@ -28,6 +28,7 @@
 #install_printer  (* Goal.goal *)  ppgoalgoal;;
 #install_printer  (* metaset.t *) ppmetas;;
 #install_printer  (* evar_map *)  ppevm;;
+#install_printer  (* ExistentialSet.t *) ppexistentialset;;
 #install_printer  (* clenv *) ppclenv;;
 #install_printer  (* env *) ppenv;;
 
