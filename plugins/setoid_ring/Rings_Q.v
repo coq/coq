@@ -1,4 +1,5 @@
 Require Export Cring.
+Require Export Integral_domain.
 
 (* Rational numbers *)
 Require Import QArith.
@@ -20,3 +21,10 @@ Defined.
 
 Instance Qcri: (Cring (Rr:=Qri)).
 red. exact Qmult_comm. Defined.
+
+Lemma Q_one_zero: not (Qeq 1%Q 0%Q).
+unfold Qeq. simpl. auto with *. Qed.
+
+Instance Qdi : (Integral_domain (Rcr:=Qcri)). 
+constructor. 
+exact Qmult_integral. exact Q_one_zero. Defined.

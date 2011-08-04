@@ -1,3 +1,4 @@
+(* compile en user    3m39.915s sur cachalot *)
 Require Import Nsatz.
 
 (* Example with a generic domain *)
@@ -214,10 +215,6 @@ Ltac geo_begin:=
   geo_split_hyps;
   scnf; proof_pol_disj.
 
-Ltac geo_end:=
-  simpl; unfold R2, addition, add_notation, multiplication, mul_notation, one, one_notation, zero, zero_notation, equality, eq_notation;
-  discrR.
-
 (* Examples *)
 
 Lemma medians: forall A B C A1 B1 C1 H:point,
@@ -300,7 +297,6 @@ Time nsatz with radicalmax :=1%N strategy:=1%Z
   variables:= (@nil R).
 (*Finished transaction in 13. secs (10.102464u,0.s)
 *)
-geo_end. 
 Qed.
 
 Lemma Pappus: forall A B C A1 B1 C1 P Q S:point,
@@ -370,7 +366,7 @@ Lemma threepoints: forall A B C A1 B1 A2 B2 H1 H2 H3:point,
   \/ collinear A B C.
 Proof. geo_begin. 
 idtac "threepoints".
-Time nsatz. geo_end.  
+Time nsatz. 
 (*Finished transaction in 7. secs (6.282045u,0.s)
 *) Qed.
 
@@ -394,7 +390,7 @@ Proof. geo_begin.
 idtac "Feuerbach".
 Time nsatz. 
 (*Finished transaction in 21. secs (19.021109u,0.s)*)
-geo_end. Qed.
+Qed.
 
 
 
@@ -414,13 +410,10 @@ Proof. geo_begin.
 idtac "Euler_circle 3 goals".
 Time nsatz. 
 (*Finished transaction in 13. secs (11.208296u,0.124981s)*)
-geo_end. 
 Time nsatz.  
 (*Finished transaction in 10. secs (8.846655u,0.s)*) 
-geo_end. 
 Time nsatz. 
 (*Finished transaction in 11. secs (9.186603u,0.s)*)
-geo_end. 
 Qed.
 
 
@@ -489,7 +482,7 @@ Proof. geo_begin.
 idtac "bissectrices".
 Time nsatz.
 (*Finished transaction in 2. secs (1.937705u,0.s)*)
-geo_end. Qed.
+Qed.
 
 Lemma bisections: forall A B C A1 B1 C1 H:point,
   middle B C A1 ->  orthogonal H A1 B C ->

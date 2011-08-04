@@ -40,16 +40,16 @@ Class Ring `{Ro:Ring_ops}:={
  ring_mult_comp: Proper (_==_ ==> _==_ ==>_==_) _*_;
  ring_sub_comp: Proper (_==_ ==> _==_ ==>_==_) _-_;
  ring_opp_comp: Proper (_==_==>_==_) -_;
- ring_add_0_l    : \/x, 0 + x == x;
- ring_add_comm   : \/x y, x + y == y + x;
- ring_add_assoc  : \/x y z, x + (y + z) == (x + y) + z;
- ring_mul_1_l    : \/x, 1 * x == x;
- ring_mul_1_r    : \/x, x * 1 == x;
- ring_mul_assoc  : \/x y z, x * (y * z) == (x * y) * z;
- ring_distr_l    : \/x y z, (x + y) * z == x * z + y * z;
- ring_distr_r    : \/x y z, z * ( x + y) == z * x + z * y;
- ring_sub_def    : \/x y, x - y == x + -y;
- ring_opp_def    : \/x, x + -x == 0
+ ring_add_0_l    : forall x, 0 + x == x;
+ ring_add_comm   : forall x y, x + y == y + x;
+ ring_add_assoc  : forall x y z, x + (y + z) == (x + y) + z;
+ ring_mul_1_l    : forall x, 1 * x == x;
+ ring_mul_1_r    : forall x, x * 1 == x;
+ ring_mul_assoc  : forall x y z, x * (y * z) == (x * y) * z;
+ ring_distr_l    : forall x y z, (x + y) * z == x * z + y * z;
+ ring_distr_r    : forall x y z, z * ( x + y) == z * x + z * y;
+ ring_sub_def    : forall x y, x - y == x + -y;
+ ring_opp_def    : forall x, x + -x == 0
 }.
 (* inutile! je sais plus pourquoi j'ai mis ca...
 Instance ring_Ring_ops(R:Type)`{Ring R}
@@ -94,11 +94,11 @@ Instance power_ring {R:Type}`{Ring R} : Power:=
 Class Ring_morphism (C R:Type)`{Cr:Ring C} `{Rr:Ring R}`{Rh:Bracket C R}:= {
     ring_morphism0    : [0] == 0;
     ring_morphism1    : [1] == 1;
-    ring_morphism_add : \/x y, [x + y] == [x] + [y];
-    ring_morphism_sub : \/x y, [x - y] == [x] - [y];
-    ring_morphism_mul : \/x y, [x * y] == [x] * [y];
-    ring_morphism_opp : \/ x, [-x] == -[x];
-    ring_morphism_eq  : \/x y, x == y -> [x] == [y]}.
+    ring_morphism_add : forall x y, [x + y] == [x] + [y];
+    ring_morphism_sub : forall x y, [x - y] == [x] - [y];
+    ring_morphism_mul : forall x y, [x * y] == [x] * [y];
+    ring_morphism_opp : forall  x, [-x] == -[x];
+    ring_morphism_eq  : forall x y, x == y -> [x] == [y]}.
 
 Section Ring.
 
@@ -106,7 +106,7 @@ Context {R:Type}`{Rr:Ring R}.
 
 (* Powers *)
 
- Lemma pow_pos_comm : \/ x j,  x * pow_pos x j == pow_pos x j * x.
+ Lemma pow_pos_comm : forall  x j,  x * pow_pos x j == pow_pos x j * x.
 induction j; simpl. rewrite <- ring_mul_assoc.
 rewrite <- ring_mul_assoc. 
 rewrite <- IHj. rewrite (ring_mul_assoc (pow_pos x j) x (pow_pos x j)).
@@ -116,7 +116,7 @@ rewrite ring_mul_assoc. rewrite IHj.
 rewrite <- ring_mul_assoc. rewrite IHj. reflexivity. reflexivity.
 Qed.
 
- Lemma pow_pos_Psucc : \/ x j, pow_pos x (Psucc j) == x * pow_pos x j.
+ Lemma pow_pos_Psucc : forall  x j, pow_pos x (Psucc j) == x * pow_pos x j.
  Proof.
   induction j; simpl. 
   rewrite IHj. 
@@ -127,7 +127,7 @@ rewrite <- ring_mul_assoc. reflexivity.
 reflexivity. reflexivity.
 Qed.
 
- Lemma pow_pos_Pplus : \/ x i j,
+ Lemma pow_pos_Pplus : forall  x i j,
    pow_pos x (i + j) == pow_pos x i * pow_pos x j.
  Proof.
   intro x;induction i;intros.
@@ -145,7 +145,7 @@ Qed.
 
  Definition id_phi_N (x:N) : N := x.
 
- Lemma pow_N_pow_N : \/ x n, pow_N x (id_phi_N n) == pow_N x n.
+ Lemma pow_N_pow_N : forall  x n, pow_N x (id_phi_N n) == pow_N x n.
  Proof.
   intros; reflexivity.
  Qed.
@@ -159,7 +159,7 @@ Qed.
  Qed.
 *)
  (** rings are almost rings*)
- Lemma ring_mul_0_l : \/ x, 0 * x == 0.
+ Lemma ring_mul_0_l : forall  x, 0 * x == 0.
  Proof.
   intro x. setoid_replace (0*x) with ((0+1)*x + -x). 
   rewrite ring_add_0_l. rewrite ring_mul_1_l .
@@ -169,7 +169,7 @@ Qed.
   rewrite ring_add_comm ; rewrite ring_add_0_l ;reflexivity.
  Qed.
 
- Lemma ring_mul_0_r : \/ x, x * 0 == 0.
+ Lemma ring_mul_0_r : forall  x, x * 0 == 0.
  Proof.
   intro x; setoid_replace (x*0)  with (x*(0+1) + -x).
   rewrite ring_add_0_l ; rewrite ring_mul_1_r .
@@ -180,7 +180,7 @@ Qed.
   rewrite ring_add_comm ; rewrite ring_add_0_l ;reflexivity.
  Qed.
 
- Lemma ring_opp_mul_l : \/x y, -(x * y) == -x * y.
+ Lemma ring_opp_mul_l : forall x y, -(x * y) == -x * y.
  Proof.
   intros x y;rewrite <- (ring_add_0_l (- x * y)).
   rewrite ring_add_comm .
@@ -191,7 +191,7 @@ Qed.
   rewrite ring_mul_0_l;rewrite ring_add_0_l ;reflexivity.
  Qed.
 
-Lemma ring_opp_mul_r : \/x y, -(x * y) == x * -y.
+Lemma ring_opp_mul_r : forall x y, -(x * y) == x * -y.
  Proof.
   intros x y;rewrite <- (ring_add_0_l (x * - y)).
   rewrite ring_add_comm .
@@ -202,7 +202,7 @@ Lemma ring_opp_mul_r : \/x y, -(x * y) == x * -y.
   rewrite ring_mul_0_r;rewrite ring_add_0_l ;reflexivity.
  Qed.
 
- Lemma ring_opp_add : \/x y, -(x + y) == -x + -y.
+ Lemma ring_opp_add : forall x y, -(x + y) == -x + -y.
  Proof.
   intros x y;rewrite <- (ring_add_0_l  (-(x+y))).
   rewrite <- (ring_opp_def  x).
@@ -221,7 +221,7 @@ Lemma ring_opp_mul_r : \/x y, -(x * y) == x * -y.
   rewrite ring_add_comm; reflexivity.
  Qed.
 
- Lemma ring_opp_opp : \/ x, - -x == x.
+ Lemma ring_opp_opp : forall  x, - -x == x.
  Proof.
   intros x; rewrite <- (ring_add_0_l (- -x)).
   rewrite <- (ring_opp_def x).
@@ -230,7 +230,7 @@ Lemma ring_opp_mul_r : \/x y, -(x * y) == x * -y.
  Qed.
 
  Lemma ring_sub_ext :
-      \/ x1 x2, x1 == x2 -> \/ y1 y2, y1 == y2 -> x1 - y1 == x2 - y2.
+      forall  x1 x2, x1 == x2 -> forall  y1 y2, y1 == y2 -> x1 - y1 == x2 - y2.
  Proof.
   intros.
   setoid_replace (x1 - y1)  with (x1 + -y1).
@@ -250,17 +250,17 @@ Lemma ring_opp_mul_r : \/x y, -(x * y) == x * -y.
      | reflexivity
      ].
 
- Lemma ring_add_0_r : \/ x, (x + 0) == x.
+ Lemma ring_add_0_r : forall  x, (x + 0) == x.
  Proof. intros; mrewrite. Qed.
 
  
- Lemma ring_add_assoc1 : \/x y z, (x + y) + z == (y + z) + x.
+ Lemma ring_add_assoc1 : forall x y z, (x + y) + z == (y + z) + x.
  Proof.
   intros;rewrite <- (ring_add_assoc x).
   rewrite (ring_add_comm x);reflexivity.
  Qed.
 
- Lemma ring_add_assoc2 : \/x y z, (y + x) + z == (y + z) + x.
+ Lemma ring_add_assoc2 : forall x y z, (y + x) + z == (y + z) + x.
  Proof.
   intros; repeat rewrite <- ring_add_assoc.
    rewrite (ring_add_comm x); reflexivity.

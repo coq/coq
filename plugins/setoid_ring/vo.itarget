@@ -19,6 +19,7 @@ Ncring.vo
 Ncring_polynom.vo
 Ncring_initial.vo
 Ncring_tac.vo
-Cring_R.vo
-Cring_Q.vo
+Rings_Z.vo
+Rings_R.vo
+Rings_Q.vo
 Integral_domain.vo

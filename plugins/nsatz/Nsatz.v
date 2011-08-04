@@ -27,6 +27,7 @@ Require Export Ncring.
 Require Export Ncring_initial.
 Require Export Ncring_tac.
 Require Export Integral_domain.
+Require Import DiscrR.
 
 Declare ML Module "nsatz_plugin".
 
@@ -250,9 +251,10 @@ End nsatz1.
 
 Ltac equality_to_goal H x y:=
   let h := fresh "nH" in
+  (* eliminate trivial  hypotheses, but it takes time!:
     (assert (h:equality x y);
     [solve [cring] | clear H; clear h])
-  || (try generalize (@psos_r1 _ _ _ _ _ _ _ _ _ _ _ x y H); clear H)
+  || *) (try generalize (@psos_r1 _ _ _ _ _ _ _ _ _ _ _ x y H); clear H)
 .
 
 Ltac equalities_to_goal :=
@@ -341,31 +343,36 @@ Ltac get_lpol g :=
   end.
 
 Ltac nsatz_generic radicalmax info lparam lvar :=
-match goal with
-  |- ?g => let lb := lterm_goal g in
-(*     idtac "lb"; idtac lb;*)
-     match eval red in (list_reifyl (lterm:=lb)) with
-     | (?fv, ?le) => 
-        let fv := match lvar with
-                     (@nil _) => fv
-                    | _ => lvar
-                  end in
-(*         idtac "variables:";idtac fv;*)
-        let nparam := eval compute in (Z_of_nat (List.length lparam)) in
-        let fv := parametres_en_tete fv lparam in
-(*        idtac "variables:"; idtac fv;
-        idtac "nparam:"; idtac nparam; *)
-        match eval red in (list_reifyl (lterm:=lb) (lvar:=fv)) with
-          | (?fv, ?le) => 
-(*              idtac "variables:";idtac fv; idtac le; idtac lb;*)
-              reify_goal fv le lb;
-                match goal with 
+ let nparam := eval compute in (Z_of_nat (List.length lparam)) in
+ match goal with
+  |- ?g => let lb := lterm_goal g in 
+     match (match lvar with
+              |(@nil _) =>
+                 match lparam with
+                   |(@nil _) =>
+                     let r := eval red in (list_reifyl (lterm:=lb)) in r
+                   |_ =>
+                     match eval red in (list_reifyl (lterm:=lb)) with
+                       |(?fv, ?le) =>
+                         let fv := parametres_en_tete fv lparam in
+                           (* we reify a second time, with the good order
+                              for variables *)
+                         let r := eval red in 
+                                  (list_reifyl (lterm:=lb) (lvar:=fv)) in r
+                     end
+                  end
+              |_ => 
+                let fv := parametres_en_tete lvar lparam in
+                let r := eval red in (list_reifyl (lterm:=lb) (lvar:=fv)) in r
+            end) with
+          |(?fv, ?le) => 
+            reify_goal fv le lb ;
+            match goal with 
                    |- ?g => 
                        let lp := get_lpol g in 
                        let lpol := eval compute in (List.rev lp) in
-(*                       idtac "polynomes:"; idtac lpol;*)
-                       (*simpl;*) intros;
-  (*simpl;*)
+                       intros;
+
   let SplitPolyList kont :=
     match lpol with
     | ?p2::?lp2 => kont p2 lp2
@@ -397,12 +404,15 @@ match goal with
             try trivial;
             try exact integral_domain_one_zero;
             try exact integral_domain_minus_one_zero
+          || (solve [simpl; unfold R2, equality, eq_notation, addition, add_notation,
+                     one, one_notation, multiplication, mul_notation, zero, zero_notation;
+                     discrR || omega]) 
           || ((*simpl*) idtac) || idtac "could not prove discrimination result"
         ]
       ]
 ) 
 )
-end end end end .
+end end end .
 
 Ltac nsatz_default:=
   intros;

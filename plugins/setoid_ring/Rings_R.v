@@ -1,4 +1,5 @@
 Require Export Cring.
+Require Export Integral_domain.
 
 (* Real numbers *)
 Require Import Reals.
@@ -23,3 +24,11 @@ Defined.
 
 Instance Rcri: (Cring (Rr:=Rri)).
 red. exact Rmult_comm. Defined.
+
+Lemma R_one_zero: 1%R <> 0%R.
+discrR.
+Qed.
+
+Instance Rdi : (Integral_domain (Rcr:=Rcri)). 
+constructor. 
+exact Rmult_integral. exact R_one_zero. Defined.
