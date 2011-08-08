@@ -84,7 +84,7 @@ Section Dependent_Equality.
       equalities *)
 
   Inductive eq_dep1 (p:U) (x:P p) (q:U) (y:P q) : Prop :=
-    eq_dep1_intro : forall h:q = p, x = rew h in y -> eq_dep1 p x q y.
+    eq_dep1_intro : forall h:q = p, x = rewrite h in y -> eq_dep1 p x q y.
 
   Lemma eq_dep1_dep :
     forall (p:U) (x:P p) (q:U) (y:P q), eq_dep1 p x q y -> eq_dep p x q y.
@@ -164,7 +164,7 @@ Qed.
 
 Set Implicit Arguments.
 
-Lemma eq_sigT_sig_eq : forall X P (x1 x2:X) H1 H2, existT P x1 H1 = existT P x2 H2 <-> {H:x1=x2 | rew H in H1 = H2}.
+Lemma eq_sigT_sig_eq : forall X P (x1 x2:X) H1 H2, existT P x1 H1 = existT P x2 H2 <-> {H:x1=x2 | rewrite H in H1 = H2}.
 Proof.
   intros; split; intro H.
   - change x2 with (projT1 (existT P x2 H2)).
@@ -186,7 +186,7 @@ Proof.
 Defined.
 
 Lemma eq_sigT_snd :
-  forall X P (x1 x2:X) H1 H2 (H:existT P x1 H1 = existT P x2 H2), rew (eq_sigT_fst H) in H1 = H2.
+  forall X P (x1 x2:X) H1 H2 (H:existT P x1 H1 = existT P x2 H2), rewrite (eq_sigT_fst H) in H1 = H2.
 Proof.
   intros.
   unfold eq_sigT_fst.
@@ -206,7 +206,7 @@ Proof.
 Defined.
 
 Lemma eq_sig_snd :
-  forall X P (x1 x2:X) H1 H2 (H:exist P x1 H1 = exist P x2 H2), rew (eq_sig_fst H) in H1 = H2.
+  forall X P (x1 x2:X) H1 H2 (H:exist P x1 H1 = exist P x2 H2), rewrite (eq_sig_fst H) in H1 = H2.
 Proof.
   intros.
   unfold eq_sig_fst, eq_ind.

@@ -202,13 +202,13 @@ Import EqdepFacts.
 (** This one has a better type *)
 Definition rev_append {A n p} (v: t A n) (w: t A p)
   :t A (n + p) :=
-  rew <- (plus_tail_plus n p) in (rev_append_tail v w).
+  rewrite <- (plus_tail_plus n p) in (rev_append_tail v w).
 
 (** rev [a₁ ; a₂ ; .. ; an] is [an ; a{n-1} ; .. ; a₁]
 
 Caution : There is a lot of rewrite garbage in this definition *)
 Definition rev {A n} (v : t A n) : t A n :=
- rew <- (plus_n_O _) in (rev_append v []).
+ rewrite <- (plus_n_O _) in (rev_append v []).
 
 End BASES.
 Local Notation "v [@ p ]" := (nth v p) (at level 1).

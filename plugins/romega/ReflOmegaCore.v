@@ -2038,12 +2038,12 @@ Qed.
 (* \subsection{La fonction de normalisation des termes (moteur de réécriture)} *)
 
 
-Fixpoint rewrite (s : step) : term -> term :=
+Fixpoint t_rewrite (s : step) : term -> term :=
   match s with
-  | C_DO_BOTH s1 s2 => apply_both (rewrite s1) (rewrite s2)
-  | C_LEFT s => apply_left (rewrite s)
-  | C_RIGHT s => apply_right (rewrite s)
-  | C_SEQ s1 s2 => fun t : term => rewrite s2 (rewrite s1 t)
+  | C_DO_BOTH s1 s2 => apply_both (t_rewrite s1) (t_rewrite s2)
+  | C_LEFT s => apply_left (t_rewrite s)
+  | C_RIGHT s => apply_right (t_rewrite s)
+  | C_SEQ s1 s2 => fun t : term => t_rewrite s2 (t_rewrite s1 t)
   | C_NOP => fun t : term => t
   | C_OPP_PLUS => Topp_plus
   | C_OPP_OPP => Topp_opp
@@ -2069,7 +2069,7 @@ Fixpoint rewrite (s : step) : term -> term :=
   | C_MULT_COMM => Tmult_comm
   end.
 
-Theorem rewrite_stable : forall s : step, term_stable (rewrite s).
+Theorem t_rewrite_stable : forall s : step, term_stable (t_rewrite s).
 Proof.
  simple induction s; simpl in |- *;
  [ intros; apply apply_both_stable; auto
@@ -2453,7 +2453,7 @@ Definition state (m : int) (s : step) (prop1 prop2 : proposition) :=
       match prop2 with
       | EqTerm b2 b3 =>
           if beq Null 0
-          then EqTerm (Tint 0) (rewrite s (b1 + (- b3 + b2) * Tint m)%term)
+          then EqTerm (Tint 0) (t_rewrite s (b1 + (- b3 + b2) * Tint m)%term)
           else TrueTerm
       | _ => TrueTerm
       end
@@ -2463,7 +2463,7 @@ Definition state (m : int) (s : step) (prop1 prop2 : proposition) :=
 Theorem state_valid : forall (m : int) (s : step), valid2 (state m s).
 Proof.
  unfold valid2 in |- *; intros m s ep e p1 p2; unfold state in |- *; Simplify;
- simpl in |- *; auto; elim (rewrite_stable s e); simpl in |- *;
+ simpl in |- *; auto; elim (t_rewrite_stable s e); simpl in |- *;
  intros H1 H2; elim H1.
  now rewrite H2, plus_opp_l, plus_0_l, mult_0_l.
 Qed.
@@ -2585,19 +2585,19 @@ Qed.
 
 Definition move_right (s : step) (p : proposition) :=
   match p with
-  | EqTerm t1 t2 => EqTerm (Tint 0) (rewrite s (t1 + - t2)%term)
-  | LeqTerm t1 t2 => LeqTerm (Tint 0) (rewrite s (t2 + - t1)%term)
-  | GeqTerm t1 t2 => LeqTerm (Tint 0) (rewrite s (t1 + - t2)%term)
-  | LtTerm t1 t2 => LeqTerm (Tint 0) (rewrite s (t2 + Tint (-(1)) + - t1)%term)
-  | GtTerm t1 t2 => LeqTerm (Tint 0) (rewrite s (t1 + Tint (-(1)) + - t2)%term)
-  | NeqTerm t1 t2 => NeqTerm (Tint 0) (rewrite s (t1 + - t2)%term)
+  | EqTerm t1 t2 => EqTerm (Tint 0) (t_rewrite s (t1 + - t2)%term)
+  | LeqTerm t1 t2 => LeqTerm (Tint 0) (t_rewrite s (t2 + - t1)%term)
+  | GeqTerm t1 t2 => LeqTerm (Tint 0) (t_rewrite s (t1 + - t2)%term)
+  | LtTerm t1 t2 => LeqTerm (Tint 0) (t_rewrite s (t2 + Tint (-(1)) + - t1)%term)
+  | GtTerm t1 t2 => LeqTerm (Tint 0) (t_rewrite s (t1 + Tint (-(1)) + - t2)%term)
+  | NeqTerm t1 t2 => NeqTerm (Tint 0) (t_rewrite s (t1 + - t2)%term)
   | p => p
   end.
 
 Theorem move_right_valid : forall s : step, valid1 (move_right s).
 Proof.
  unfold valid1, move_right in |- *; intros s ep e p; Simplify; simpl in |- *;
- elim (rewrite_stable s e); simpl in |- *;
+ elim (t_rewrite_stable s e); simpl in |- *;
  [ symmetry  in |- *; apply egal_left; assumption
  | intro; apply le_left; assumption
  | intro; apply le_left; rewrite <- ge_le_iff; assumption
@@ -2950,14 +2950,14 @@ Qed.
 Theorem move_right_stable : forall s : step, prop_stable (move_right s).
 Proof.
  unfold move_right, prop_stable in |- *; intros s ep e p; split;
- [ Simplify; simpl in |- *; elim (rewrite_stable s e); simpl in |- *;
+ [ Simplify; simpl in |- *; elim (t_rewrite_stable s e); simpl in |- *;
     [ symmetry  in |- *; apply egal_left; assumption
     | intro; apply le_left; assumption
     | intro; apply le_left; rewrite <- ge_le_iff; assumption
     | intro; apply lt_left; rewrite <- gt_lt_iff; assumption
     | intro; apply lt_left; assumption
     | intro; apply ne_left_2; assumption ]
- | case p; simpl in |- *; intros; auto; generalize H; elim (rewrite_stable s);
+ | case p; simpl in |- *; intros; auto; generalize H; elim (t_rewrite_stable s);
     simpl in |- *; intro H1;
     [ rewrite (plus_0_r_reverse (interp_term e t0)); rewrite H1;
        rewrite plus_permute; rewrite plus_opp_r;
