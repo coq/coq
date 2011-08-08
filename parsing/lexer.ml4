@@ -205,6 +205,9 @@ let check_ident str =
   in
   loop_id false (Stream.of_string str)
 
+let is_ident str =
+  try let _ = check_ident str in true with Error.E _ -> false
+
 (* Keyword and symbol dictionary *)
 let token_tree = ref empty_ttree
 
@@ -609,7 +612,7 @@ END
 
 let is_ident_not_keyword s =
   match s.[0] with
-    | 'a'..'z' | 'A'..'Z' | '_' -> not (is_keyword s)
+    | 'a'..'z' | 'A'..'Z' | '_' -> is_ident s && not (is_keyword s)
     | _ -> false
 
 let is_number s =

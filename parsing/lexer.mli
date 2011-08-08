@@ -21,6 +21,7 @@ val location_table : unit -> location_table
 val restore_location_table : location_table -> unit
 
 val check_ident : string -> unit
+val is_ident : string -> bool
 val check_keyword : string -> unit
 
 type frozen_t
