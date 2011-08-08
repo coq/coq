@@ -95,7 +95,7 @@ let lookup_map map =
 
 let protect_red map env sigma c =
   kl (create_clos_infos betadeltaiota env)
-    (mk_clos_but (lookup_map map c) (Esubst.ESID 0) c);;
+    (mk_clos_but (lookup_map map c) (Esubst.subs_id 0) c);;
 
 let protect_tac map =
   Tactics.reduct_option (protect_red map,DEFAULTcast) None ;;

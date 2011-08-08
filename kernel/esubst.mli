@@ -16,13 +16,14 @@
     - SHIFT(n,S)          = (^n o S) terms in S are relocated with n vars
     - LIFT(n,S)           = (%n S) stands for ((^n o S).n...1)
          (corresponds to S crossing n binders) *)
-type 'a subs =
+type 'a subs = private
   | ESID of int
   | CONS of 'a array * 'a subs
   | SHIFT of int * 'a subs
   | LIFT of int * 'a subs
 
 (** Derived constructors granting basic invariants *)
+val subs_id : int -> 'a subs
 val subs_cons: 'a array * 'a subs -> 'a subs
 val subs_shft: int * 'a subs -> 'a subs
 val subs_lift: 'a subs -> 'a subs
@@ -54,11 +55,12 @@ val comp : ('a subs * 'a -> 'a) -> 'a subs -> 'a subs -> 'a subs
 (** Compact representation of explicit relocations
     - [ELSHFT(l,n)] == lift of [n], then apply [lift l].
     - [ELLFT(n,l)] == apply [l] to de Bruijn > [n] i.e under n binders. *)
-type lift =
+type lift = private
   | ELID
   | ELSHFT of lift * int
   | ELLFT of int * lift
 
+val el_id : lift
 val el_shft : int -> lift -> lift
 val el_liftn : int -> lift -> lift
 val el_lift : lift -> lift

@@ -23,6 +23,8 @@ type lift =
   | ELLFT of int * lift  (* ELLFT(n,l)  == apply l to de Bruijn > n *)
                          (*                 i.e under n binders *)
 
+let el_id = ELID
+
 (* compose a relocation of magnitude n *)
 let rec el_shft_rec n = function
   | ELSHFT(el,k) -> el_shft_rec (k+n) el
@@ -68,6 +70,8 @@ type 'a subs =
 (* operations of subs: collapses constructors when possible.
  * Needn't be recursive if we always use these functions
  *)
+
+let subs_id i = ESID i
 
 let subs_cons(x,s) = if Array.length x = 0 then s else CONS(x,s)
 

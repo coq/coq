@@ -261,7 +261,7 @@ let rec exliftn el c = match c with
 (* Lifting the binding depth across k bindings *)
 
 let liftn k n =
-  match el_liftn (pred n) (el_shft k ELID) with
+  match el_liftn (pred n) (el_shft k el_id) with
     | ELID -> (fun c -> c)
     | el -> exliftn el
 

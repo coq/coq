@@ -426,7 +426,7 @@ and convert_vect infos lft1 lft2 v1 v2 cuniv =
 
 let clos_fconv trans cv_pb evars env t1 t2 =
   let infos = trans, create_clos_infos ~evars betaiotazeta env in
-  ccnv cv_pb infos ELID ELID (inject t1) (inject t2) empty_constraint
+  ccnv cv_pb infos el_id el_id (inject t1) (inject t2) empty_constraint
 
 let trans_fconv reds cv_pb evars env t1 t2 =
   if eq_constr t1 t2 then empty_constraint

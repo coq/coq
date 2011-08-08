@@ -356,14 +356,14 @@ and cbv_norm_value info = function (* reduction under binders *)
 
 (* with profiling *)
 let cbv_norm infos constr =
-  with_stats (lazy (cbv_norm_term infos (ESID 0) constr))
+  with_stats (lazy (cbv_norm_term infos (subs_id 0) constr))
 
 type cbv_infos = cbv_value infos
 
 (* constant bodies are normalized at the first expansion *)
 let create_cbv_infos flgs env sigma =
   create
-    (fun old_info c -> cbv_stack_term old_info TOP (ESID 0) c)
+    (fun old_info c -> cbv_stack_term old_info TOP (subs_id 0) c)
     flgs
     env
     (Reductionops.safe_evar_value sigma)

@@ -514,7 +514,7 @@ let optimise_closure env c =
     let (c',(_,s)) = compact_constr (0,[]) c 1 in
     let env' =
       Array.map (fun i -> clos_rel env i) (Array.of_list s) in
-    (subs_cons (env', ESID 0),c')
+    (subs_cons (env', subs_id 0),c')
 
 let mk_lambda env t =
   let (env,t) = optimise_closure env t in
@@ -647,7 +647,7 @@ let term_of_fconstr =
       | FFix(fx,e) when is_subs_id e & is_lift_id lfts -> mkFix fx
       | FCoFix(cfx,e) when is_subs_id e & is_lift_id lfts -> mkCoFix cfx
       | _ -> to_constr term_of_fconstr_lift lfts v in
-  term_of_fconstr_lift ELID
+  term_of_fconstr_lift el_id
 
 
 
@@ -963,7 +963,7 @@ let whd_val info v =
 let norm_val info v =
   with_stats (lazy (kl info v))
 
-let inject = mk_clos (ESID 0)
+let inject = mk_clos (subs_id 0)
 
 let whd_stack infos m stk =
   let k = kni infos m stk in

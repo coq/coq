@@ -372,7 +372,7 @@ and convert_vect univ infos lft1 lft2 v1 v2 =
 let clos_fconv cv_pb env t1 t2 =
   let infos = create_clos_infos betaiotazeta env in
   let univ = universes env in
-  ccnv univ cv_pb infos ELID ELID (inject t1) (inject t2)
+  ccnv univ cv_pb infos el_id el_id (inject t1) (inject t2)
 
 let fconv cv_pb env t1 t2 =
   if eq_constr t1 t2 then ()
