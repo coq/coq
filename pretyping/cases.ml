@@ -877,13 +877,14 @@ let abstract_predicate env sigma indf cur (names,(nadep,_)) tms ccl =
 let known_dependent (_,dep) = (dep = KnownDep)
 
 (* [expand_arg] is used by [specialize_predicate]
-   it replaces gamma, x1...xn, x1...xk |- pred
-   by gamma, x1...xn, x1...xk-1 |- [X=realargs,xk=xk]pred (if dep) or
-   by gamma, x1...xn, x1...xk-1 |- [X=realargs]pred (if not dep) *)
+   if Yk denotes [Xk;xk] or [Xk],
+   it replaces gamma, x1...xn, x1...xk Yk+1...Yn |- pred
+   by gamma, x1...xn, x1...xk-1 [Xk;xk] Yk+1...Yn |- pred (if dep) or
+   by gamma, x1...xn, x1...xk-1 [Xk] Yk+1...Yn |- pred (if not dep) *)
 
-let expand_arg tms ccl ((_,t),_,na) =
+let expand_arg tms (p,ccl) ((_,t),_,na) =
   let k = length_of_tomatch_type_sign na t in
-  lift_predicate (k-1) ccl tms
+  (p+k,liftn_predicate (k-1) p ccl tms)
 
 let adjust_impossible_cases pb pred tomatch submat =
   if submat = [] then
@@ -940,10 +941,10 @@ let specialize_predicate newtomatchs (names,(depna,_)) arsign cs tms ccl =
   (* We need _parallel_ bindings to get gamma, x1...xn, tms |- ccl'' *)
   let ccl'' =
     whd_betaiota Evd.empty (subst_predicate (argsi, copti) ccl' tms) in
-  (* We adjust ccl st: gamma, x1..xn, x1..xn, tms |- ccl'' *)
+  (* We adjust ccl st: gamma, x1..xn, x1..xn, tms |- ccl'' so as *)
   let ccl''' = liftn_predicate n (n+1) ccl'' tms in
-  (* We finally get gamma,x1..xn |- [X1,x1:=R1,x1]..[Xn,xn:=Rn,xn]pred'''*)
-  List.fold_left (expand_arg tms) ccl''' newtomatchs
+  (* We adjust ccl so that gamma,x1..xn |- [X1,x1:=R1,x1]..[Xn,xn:=Rn,xn]pred'''*)
+  snd (List.fold_left (expand_arg tms) (1,ccl''') newtomatchs)
 
 let find_predicate loc env evdref p current (IndType (indf,realargs)) dep tms =
   let pred= abstract_predicate env !evdref indf current dep tms p in
@@ -1020,7 +1021,7 @@ let rec generalize_problem names pb = function
       let tomatch = regeneralize_index_tomatch (i+1) tomatch in
       { pb' with
 	  tomatch = Abstract d :: tomatch;
-          pred = generalize_predicate names i d pb.tomatch pb'.pred  }
+          pred = generalize_predicate names i d pb'.tomatch pb'.pred  }
 
 (* No more patterns: typing the right-hand side of equations *)
 let build_leaf pb =
