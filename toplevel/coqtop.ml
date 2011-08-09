@@ -315,6 +315,8 @@ let parse_args arglist =
 let init arglist =
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
   Lib.init();
+  (* Default Proofb Mode starts with an alternative default. *)
+  Goptions.set_string_option_value ["Default";"Proof";"Mode"] "Classic";
   begin
     try
       let foreign_args = parse_args arglist in

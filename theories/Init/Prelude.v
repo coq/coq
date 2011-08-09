@@ -23,4 +23,3 @@ Declare ML Module "dp_plugin".
 Declare ML Module "recdef_plugin".
 Declare ML Module "subtac_plugin".
 Declare ML Module "xml_plugin".
-Global Set Default Proof Mode "Classic".
