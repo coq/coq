@@ -471,35 +471,47 @@ let split_slice_lax (buffer:GText.buffer) from upto =
   in
   split_substring slice
 
-(** Search backward a position strictly before [iter] where [tag] has
-    just been turned off. *)
+(** Searching forward and backward a position fulfilling some condition *)
 
-let backward_to_untag iter tag =
-  let prev = iter#backward_to_tag_toggle (Some tag) in
-  (* At [prev], the tag has just been toggled. If it's now off, we're done.
-     Otherwise look for the previous toogle, which must be a on->off toggle *)
-  if not (prev#has_tag tag) then prev
-  else prev#backward_to_tag_toggle (Some tag)
+let rec forward_search cond (iter:GText.iter) =
+  if iter#is_end || cond iter then iter
+  else forward_search cond iter#forward_char
+
+let rec backward_search cond (iter:GText.iter) =
+  if iter#is_start || cond iter then iter
+  else backward_search cond iter#backward_char
+
+let is_sentence_end s = s#has_tag Tags.Script.sentence
+let is_char s c = s#char = Char.code c
 
 (** Search backward the first character of a sentence, starting at [iter]
     and going at most up to [soi] (meant to be the end of the locked zone).
-    We check that the previous terminator is still followed by a blank. *)
+    Raise [Not_found] when no proper sentence start has been found,
+    in particular when the final "." of the locked zone is followed
+    by a non-blank character outside the locked zone. This non-blank
+    character will be signaled as erroneous in [tag_on_insert] below. *)
 
-let rec grab_sentence_start (iter:GText.iter) soi =
-  let lax_back = iter#backward_char#has_tag Tags.Script.sentence in
-  let on_space = List.mem iter#char [0x09;0x0A;0x20;0x0D] in
-  let full_ending = iter#is_start || (lax_back && on_space) in
-  if full_ending then iter
-  else if iter#compare soi <= 0 then raise Not_found
-  else
-    grab_sentence_start (backward_to_untag iter Tags.Script.sentence) soi
+let grab_sentence_start (iter:GText.iter) soi =
+  let cond iter =
+    if iter#compare soi < 0 then raise Not_found;
+    let prev = iter#backward_char in
+    is_sentence_end prev &&
+      (not (is_char prev '.') ||
+       List.exists (is_char iter) [' ';'\n';'\r';'\t'])
+  in
+  backward_search cond iter
 
-(** Search forward the last character of a sentence (most frequently "."),
-    or sometimes the space immediatly after. *)
+(** Search forward the first character immediately after a sentence end *)
 
-let grab_sentence_end (start:GText.iter) =
-  let stop = start#forward_to_tag_toggle (Some Tags.Script.sentence) in
-  stop#forward_char
+let rec grab_sentence_stop (start:GText.iter) =
+  (forward_search is_sentence_end start)#forward_char
+
+(** Search forward the first character immediately after a "." sentence end
+    (and not just a "{" or "}" or comment end *)
+
+let rec grab_ending_dot (start:GText.iter) =
+  let is_ending_dot s = is_sentence_end s && s#char = Char.code '.' in
+  (forward_search is_ending_dot start)#forward_char
 
 (** Retag a zone that has been edited *)
 
@@ -520,7 +532,9 @@ let tag_on_insert =
 	if insert#compare prev_insert < 0 then insert else prev_insert
       in
       let start = grab_sentence_start prev_insert soi in
-      let stop = grab_sentence_end insert in
+      (** The status of "{" "}" as sentence delimiters is too fragile.
+	  We retag up to the next "." instead. *)
+      let stop = grab_ending_dot insert in
       let skip_curr = ref true in (* shall the callback be skipped ? by default yes*)
       (!skip_last) := true; (* skip the previously created callback *)
       skip_last := skip_curr;
@@ -552,8 +566,8 @@ let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
     ignore (cursor#nocopy#backward_to_tag_toggle (Some Tags.Script.proof_decl));
   let decl_start = cursor in
   let prf_end = decl_start#forward_to_tag_toggle (Some Tags.Script.qed) in
-  let decl_end = grab_sentence_end decl_start in
-  let prf_end = grab_sentence_end prf_end in
+  let decl_end = grab_ending_dot decl_start in
+  let prf_end = grab_ending_dot prf_end in
   let prf_end = prf_end#forward_char in
   if decl_start#has_tag Tags.Script.folded then (
     buffer#remove_tag ~start:decl_start ~stop:decl_end Tags.Script.folded;
@@ -883,11 +897,9 @@ object(self)
   method find_phrase_starting_at (start:GText.iter) =
     try
       let start = grab_sentence_start start self#get_start_of_input in
-      let stop = grab_sentence_end start in
-      if (stop#backward_char#has_tag Tags.Script.sentence) then
-        Some (start,stop)
-      else
-        None
+      let stop = grab_sentence_stop start in
+      if is_sentence_end stop#backward_char then Some (start,stop)
+      else None
     with Not_found -> None
 
   method complete_at_offset (offset:int) =

@@ -75,7 +75,7 @@ let identchar =
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let ident = firstchar identchar*
 
-let undotted_sep = [ '{' '}' ] (space | eof)
+let undotted_sep = [ '{' '}' ]
 
 let dot_sep = '.' (space | eof)
 
