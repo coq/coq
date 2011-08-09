@@ -246,40 +246,42 @@ Lemma pos_sub_add p q r :
 Proof.
  simpl. rewrite !pos_sub_spec.
  case (Pos.compare_spec q r); intros E0.
- (* q = r *)
- subst.
- assert (H := Pos.lt_add_r r p).
- rewrite Pos.add_comm in H. apply Pos.lt_gt in H.
- now rewrite H, Pos.add_sub.
- (* q < r *)
- rewrite pos_sub_spec.
- assert (Hr : (r = (r-q)+q)%positive) by (now rewrite Pos.sub_add).
- rewrite Hr at 1. rewrite Pos.add_compare_mono_r.
- case Pos.compare_spec; intros E1; trivial; f_equal.
- rewrite Pos.add_comm. apply Pos.sub_add_distr.
- rewrite Hr, Pos.add_comm. now apply Pos.add_lt_mono_r.
- symmetry. apply Pos.sub_sub_distr; trivial.
- (* r < q *)
- assert (LT : (r < p + q)%positive).
-  apply Pos.lt_trans with q; trivial. rewrite Pos.add_comm. apply Pos.lt_add_r.
- apply Pos.lt_gt in LT. rewrite LT. f_equal.
- symmetry. now apply Pos.add_sub_assoc.
+ - (* q = r *)
+   subst.
+   assert (H := Pos.lt_add_r r p).
+   rewrite Pos.add_comm in H. apply Pos.lt_gt in H.
+   now rewrite H, Pos.add_sub.
+ - (* q < r *)
+   rewrite pos_sub_spec.
+   assert (Hr : (r = (r-q)+q)%positive) by (now rewrite Pos.sub_add).
+   rewrite Hr at 1. rewrite Pos.add_compare_mono_r.
+   case Pos.compare_spec; intros E1; trivial; f_equal.
+   rewrite Pos.add_comm. apply Pos.sub_add_distr.
+   rewrite Hr, Pos.add_comm. now apply Pos.add_lt_mono_r.
+   symmetry. apply Pos.sub_sub_distr; trivial.
+ - (* r < q *)
+   assert (LT : (r < p + q)%positive).
+   { apply Pos.lt_trans with q; trivial.
+     rewrite Pos.add_comm. apply Pos.lt_add_r. }
+   apply Pos.lt_gt in LT. rewrite LT. f_equal.
+   symmetry. now apply Pos.add_sub_assoc.
 Qed.
 
 Lemma add_assoc n m p : n + (m + p) = n + m + p.
 Proof.
  assert (AUX : forall x y z, Zpos x + (y + z) = Zpos x + y + z).
-  intros x [|y|y] [|z|z]; rewrite ?add_0_r; trivial.
-  simpl. now rewrite Pos.add_assoc.
-  simpl (_ + Zneg _). symmetry. apply pos_sub_add.
-  simpl (Zneg _ + _); simpl (_ + Zneg _).
-  now rewrite (add_comm _ (Zpos _)), <- 2 pos_sub_add, Pos.add_comm.
-  apply opp_inj. rewrite !opp_add_distr, opp_Zpos, !opp_Zneg.
-  simpl (Zneg _ + _); simpl (_ + Zneg _).
-  rewrite add_comm, Pos.add_comm. apply pos_sub_add.
- (* main *)
- destruct n as [|n|n]. trivial. apply AUX.
- apply opp_inj. rewrite !opp_add_distr, opp_Zneg. apply AUX.
+ { intros x [|y|y] [|z|z]; rewrite ?add_0_r; trivial.
+   - simpl. now rewrite Pos.add_assoc.
+   - simpl (_ + Zneg _). symmetry. apply pos_sub_add.
+   - simpl (Zneg _ + _); simpl (_ + Zneg _).
+     now rewrite (add_comm _ (Zpos _)), <- 2 pos_sub_add, Pos.add_comm.
+   - apply opp_inj. rewrite !opp_add_distr, opp_Zpos, !opp_Zneg.
+     simpl (Zneg _ + _); simpl (_ + Zneg _).
+     rewrite add_comm, Pos.add_comm. apply pos_sub_add. }
+ destruct n.
+ - trivial.
+ - apply AUX.
+ - apply opp_inj. rewrite !opp_add_distr, opp_Zneg. apply AUX.
 Qed.
 
 (** ** Subtraction and successor *)
@@ -680,26 +682,26 @@ Lemma pos_div_eucl_eq a b : 0 < b ->
 Proof.
  intros Hb.
  induction a; unfold pos_div_eucl; fold pos_div_eucl.
- (* ~1 *)
- destruct pos_div_eucl as (q,r).
- rewrite pos_xI, IHa, mul_add_distr_l, mul_assoc.
- destruct ltb.
- now rewrite add_assoc.
- rewrite mul_add_distr_r, mul_1_l, <- !add_assoc. f_equal.
- unfold sub. now rewrite (add_comm _ (-b)), add_assoc, add_opp_diag_r.
- (* ~0 *)
- destruct pos_div_eucl as (q,r).
- rewrite (pos_xO a), IHa, mul_add_distr_l, mul_assoc.
- destruct ltb.
- trivial.
- rewrite mul_add_distr_r, mul_1_l, <- !add_assoc. f_equal.
- unfold sub. now rewrite (add_comm _ (-b)), add_assoc, add_opp_diag_r.
- (* ~1 *)
- case leb_spec; trivial.
- intros Hb'.
- destruct b as [|b|b]; try easy; clear Hb.
- replace b with 1%positive; trivial.
- apply Pos.le_antisym. apply Pos.le_1_l. now apply Pos.lt_succ_r.
+ - (* ~1 *)
+   destruct pos_div_eucl as (q,r).
+   rewrite pos_xI, IHa, mul_add_distr_l, mul_assoc.
+   destruct ltb.
+   now rewrite add_assoc.
+   rewrite mul_add_distr_r, mul_1_l, <- !add_assoc. f_equal.
+   unfold sub. now rewrite (add_comm _ (-b)), add_assoc, add_opp_diag_r.
+ - (* ~0 *)
+   destruct pos_div_eucl as (q,r).
+   rewrite (pos_xO a), IHa, mul_add_distr_l, mul_assoc.
+   destruct ltb.
+   trivial.
+   rewrite mul_add_distr_r, mul_1_l, <- !add_assoc. f_equal.
+   unfold sub. now rewrite (add_comm _ (-b)), add_assoc, add_opp_diag_r.
+ - (* 1 *)
+   case leb_spec; trivial.
+   intros Hb'.
+   destruct b as [|b|b]; try easy; clear Hb.
+   replace b with 1%positive; trivial.
+   apply Pos.le_antisym. apply Pos.le_1_l. now apply Pos.lt_succ_r.
 Qed.
 
 Lemma div_eucl_eq a b : b<>0 ->
@@ -710,19 +712,19 @@ Proof.
   generalize (pos_div_eucl_eq a (Zpos b) (eq_refl _));
   destruct pos_div_eucl as (q,r); rewrite <- ?opp_Zpos, mul_comm;
   intros ->.
- (* Zpos Zpos *)
- trivial.
- (* Zpos Zneg *)
- destruct r as [ |r|r]; rewrite !mul_opp_opp; trivial;
-  rewrite mul_add_distr_l, mul_1_r, <- add_assoc; f_equal;
-  now rewrite add_assoc, add_opp_diag_r.
- (* Zneg Zpos *)
- rewrite (opp_add_distr _ r), <- mul_opp_r.
- destruct r as [ |r|r]; trivial;
-  rewrite opp_add_distr, mul_add_distr_l, <- add_assoc; f_equal;
-  unfold sub; now rewrite add_assoc, mul_opp_r, mul_1_r, add_opp_diag_l.
- (* Zneg Zneg *)
- now rewrite opp_add_distr, <- mul_opp_l.
+ - (* Zpos Zpos *)
+   trivial.
+ - (* Zpos Zneg *)
+   destruct r as [ |r|r]; rewrite !mul_opp_opp; trivial;
+    rewrite mul_add_distr_l, mul_1_r, <- add_assoc; f_equal;
+   now rewrite add_assoc, add_opp_diag_r.
+ - (* Zneg Zpos *)
+   rewrite (opp_add_distr _ r), <- mul_opp_r.
+   destruct r as [ |r|r]; trivial;
+    rewrite opp_add_distr, mul_add_distr_l, <- add_assoc; f_equal;
+    unfold sub; now rewrite add_assoc, mul_opp_r, mul_1_r, add_opp_diag_l.
+ - (* Zneg Zneg *)
+   now rewrite opp_add_distr, <- mul_opp_l.
 Qed.
 
 Lemma div_mod a b : b<>0 -> a = b*(a/b) + (a mod b).
@@ -904,11 +906,12 @@ Qed.
 Lemma gcd_greatest a b c : (c|a) -> (c|b) -> (c | gcd a b).
 Proof.
  assert (H : forall p q r, (r|Zpos p) -> (r|Zpos q) -> (r|Zpos (Pos.gcd p q))).
-  intros p q [|r|r] H H'.
-  destruct H; now rewrite mul_comm in *.
-  apply divide_Zpos, Pos.gcd_greatest; now apply divide_Zpos.
-  apply divide_Zpos_Zneg_l, divide_Zpos, Pos.gcd_greatest;
-   now apply divide_Zpos, divide_Zpos_Zneg_l.
+ { intros p q [|r|r] H H'.
+   destruct H; now rewrite mul_comm in *.
+   apply divide_Zpos, Pos.gcd_greatest; now apply divide_Zpos.
+   apply divide_Zpos_Zneg_l, divide_Zpos, Pos.gcd_greatest;
+    now apply divide_Zpos, divide_Zpos_Zneg_l.
+ }
  destruct a, b; simpl; auto; intros; try apply H; trivial;
   now apply divide_Zpos_Zneg_r.
 Qed.
