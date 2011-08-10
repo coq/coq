@@ -150,7 +150,7 @@ let rec e_trivial_fail_db db_list local_db goal =
   in 
   tclFIRST (List.map tclCOMPLETE tacl) goal 
 
-and e_my_find_search db_list local_db hdc concl =
+and e_my_find_search db_list local_db hdc complete concl =
   let hdc = head_of_constr_reference hdc in
   let prods, concl = decompose_prod_assum concl in
   let nprods = List.length prods in
@@ -174,13 +174,14 @@ and e_my_find_search db_list local_db hdc concl =
 	  | Give_exact (c) -> e_give_exact flags c
 	  | Res_pf_THEN_trivial_fail (term,cl) ->
               tclTHEN (with_prods nprods (term,cl) (unify_e_resolve flags))
-		(e_trivial_fail_db db_list local_db)
+	        (if complete then tclIDTAC else e_trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> tclWEAK_PROGRESS (unfold_in_concl [all_occurrences,c])
 	  | Extern tacast -> 
 	    tclTHEN
 	      (fun gl -> Refiner.tclEVARS (mark_unresolvables (project gl)) gl)
 	      (conclPattern concl p tacast)
       in
+      let tac = if complete then tclCOMPLETE tac else tac in
 	match t with
 	| Extern _ -> (tac,b,true,lazy (pr_autotactic t))
 	| _ -> (tac,b,false,lazy (pr_autotactic t))
@@ -189,13 +190,13 @@ and e_my_find_search db_list local_db hdc concl =
 and e_trivial_resolve db_list local_db gl =
   try
     e_my_find_search db_list local_db
-      (fst (head_constr_bound gl)) gl
+    (fst (head_constr_bound gl)) true gl
   with Bound | Not_found -> []
 
 let e_possible_resolve db_list local_db gl =
   try
     e_my_find_search db_list local_db
-      (fst (head_constr_bound gl)) gl
+      (fst (head_constr_bound gl)) false gl
   with Bound | Not_found -> []
 
 let rec catchable = function
@@ -319,9 +320,13 @@ let hints_tac hints =
       let poss = e_possible_resolve hints info.hints concl in
       let rec aux i foundone = function
 	| (tac, _, b, pp) :: tl ->
-	    let res = try Some (tac tacgl) with e when catchable e -> None in
-	      (match res with
-	       | None -> aux i foundone tl
+	  let res = 
+	    try Some (tac tacgl) 
+	    with e when catchable e -> None 
+	  in
+	    (match res with
+	       | None -> 
+		 aux i foundone tl
 	       | Some {it = gls; sigma = s'} ->
 	    	   if !typeclasses_debug then
 		     msgnl (pr_depth (i :: info.auto_depth) ++ str": " ++ Lazy.force pp
