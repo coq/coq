@@ -133,6 +133,7 @@ val list_distinct : 'a list -> bool
 val list_duplicates : 'a list -> 'a list
 val list_filter2 : ('a -> 'b -> bool) -> 'a list * 'b list -> 'a list * 'b list
 val list_map_filter : ('a -> 'b option) -> 'a list -> 'b list
+val list_map_filter_i : (int -> 'a -> 'b option) -> 'a list -> 'b list
 
 (** [list_smartmap f [a1...an] = List.map f [a1...an]] but if for all i
    [ f ai == ai], then [list_smartmap f l==l] *)

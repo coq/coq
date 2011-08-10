@@ -695,6 +695,14 @@ let rec list_map_filter f = function
       let l' = list_map_filter f l in
       match f x with None -> l' | Some y -> y::l'
 
+let list_map_filter_i f =
+  let rec aux i = function
+    | [] -> []
+    | x::l ->
+      let l' = aux (succ i) l in
+	match f i x with None -> l' | Some y -> y::l'
+  in aux 0
+
 let list_subset l1 l2 =
   let t2 = Hashtbl.create 151 in
   List.iter (fun x -> Hashtbl.add t2 x ()) l2;
