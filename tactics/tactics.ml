@@ -267,9 +267,12 @@ let reduct_in_hyp redfun (id,where) gl =
   convert_hyp_no_check
     (pf_reduce_decl redfun where (pf_get_hyp gl id) gl) gl
 
+let revert_cast (redfun,kind as r) =
+  if kind = DEFAULTcast then (redfun,REVERTcast) else r
+
 let reduct_option redfun = function
   | Some id -> reduct_in_hyp (fst redfun) id
-  | None    -> reduct_in_concl redfun
+  | None    -> reduct_in_concl (revert_cast redfun)
 
 (* Now we introduce different instances of the previous tacticals *)
 let change_and_check cv_pb t env sigma c =
@@ -305,21 +308,21 @@ let change chg c cls gl =
     cls gl
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
-let try_red_in_concl    = reduct_in_concl (try_red_product,DEFAULTcast)
-let red_in_concl        = reduct_in_concl (red_product,DEFAULTcast)
+let try_red_in_concl    = reduct_in_concl (try_red_product,REVERTcast)
+let red_in_concl        = reduct_in_concl (red_product,REVERTcast)
 let red_in_hyp          = reduct_in_hyp   red_product
-let red_option          = reduct_option   (red_product,DEFAULTcast)
-let hnf_in_concl        = reduct_in_concl (hnf_constr,DEFAULTcast)
+let red_option          = reduct_option   (red_product,REVERTcast)
+let hnf_in_concl        = reduct_in_concl (hnf_constr,REVERTcast)
 let hnf_in_hyp          = reduct_in_hyp   hnf_constr
-let hnf_option          = reduct_option   (hnf_constr,DEFAULTcast)
-let simpl_in_concl      = reduct_in_concl (simpl,DEFAULTcast)
+let hnf_option          = reduct_option   (hnf_constr,REVERTcast)
+let simpl_in_concl      = reduct_in_concl (simpl,REVERTcast)
 let simpl_in_hyp        = reduct_in_hyp   simpl
-let simpl_option        = reduct_option   (simpl,DEFAULTcast)
-let normalise_in_concl  = reduct_in_concl (compute,DEFAULTcast)
+let simpl_option        = reduct_option   (simpl,REVERTcast)
+let normalise_in_concl  = reduct_in_concl (compute,REVERTcast)
 let normalise_in_hyp    = reduct_in_hyp   compute
-let normalise_option    = reduct_option   (compute,DEFAULTcast)
+let normalise_option    = reduct_option   (compute,REVERTcast)
 let normalise_vm_in_concl = reduct_in_concl (Redexpr.cbv_vm,VMcast)
-let unfold_in_concl loccname = reduct_in_concl (unfoldn loccname,DEFAULTcast)
+let unfold_in_concl loccname = reduct_in_concl (unfoldn loccname,REVERTcast)
 let unfold_in_hyp   loccname = reduct_in_hyp   (unfoldn loccname)
 let unfold_option   loccname = reduct_option (unfoldn loccname,DEFAULTcast)
 let pattern_option l = reduct_option (pattern_occs l,DEFAULTcast)

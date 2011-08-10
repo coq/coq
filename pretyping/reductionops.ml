@@ -606,7 +606,7 @@ let pb_equal = function
 
 let sort_cmp = sort_cmp
 
-let test_conversion (f:?evars:'a->'b) env sigma x y =
+let test_conversion (f: ?l2r:bool-> ?evars:'a->'b) env sigma x y =
   try let _ =
     f ~evars:(safe_evar_value sigma) env x y in true
   with NotConvertible -> false
@@ -616,7 +616,7 @@ let is_conv env sigma = test_conversion Reduction.conv env sigma
 let is_conv_leq env sigma = test_conversion Reduction.conv_leq env sigma
 let is_fconv = function | CONV -> is_conv | CUMUL -> is_conv_leq
 
-let test_trans_conversion (f:?evars:'a->'b) reds env sigma x y =
+let test_trans_conversion (f: ?l2r:bool-> ?evars:'a->'b) reds env sigma x y =
   try let _ = f ~evars:(safe_evar_value sigma) reds env x y in true
   with NotConvertible -> false
     | Anomaly _ -> error "Conversion test raised an anomaly"

@@ -519,7 +519,7 @@ let pr pr sep inherited a =
   | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
   | CSort (_,s) -> pr_glob_sort s, latom
   | CCast (_,a,CastConv (k,b)) ->
-      let s = match k with VMcast -> "<:" | DEFAULTcast -> ":" in
+      let s = match k with VMcast -> "<:" | DEFAULTcast | REVERTcast -> ":" in
       hv 0 (pr mt (lcast,L) a ++ cut () ++ str s ++ pr mt (-lcast,E) b),
       lcast
   | CCast (_,a,CastCoerce) ->

@@ -18,7 +18,7 @@ open Reduction
 open Inductive
 open Type_errors
 
-let conv_leq = default_conv CUMUL
+let conv_leq l2r = default_conv CUMUL ~l2r
 
 let conv_leq_vecti env v1 v2 =
   array_fold_left2_i
@@ -191,6 +191,8 @@ let judge_of_letin env name defj typj j =
 
 (* Type of an application. *)
 
+let has_revert c = match kind_of_term c with Cast (c,REVERTcast,_) -> true | _ -> false
+
 let judge_of_apply env funj argjv =
   let rec apply_rec n typ cst = function
     | [] ->
@@ -201,7 +203,8 @@ let judge_of_apply env funj argjv =
         (match kind_of_term (whd_betadeltaiota env typ) with
           | Prod (_,c1,c2) ->
 	      (try
-		let c = conv_leq env hj.uj_type c1 in
+		let l2r = has_revert hj.uj_val in
+		let c = conv_leq l2r env hj.uj_type c1 in
 		let cst' = union_constraints cst c in
 		apply_rec (n+1) (subst1 hj.uj_val c2) cst' restjl
 	      with NotConvertible ->
@@ -268,7 +271,8 @@ let judge_of_cast env cj k tj =
     let cst =
       match k with
       | VMcast -> vm_conv CUMUL env cj.uj_type expected_type
-      | DEFAULTcast -> conv_leq env cj.uj_type expected_type in
+      | DEFAULTcast -> conv_leq false env cj.uj_type expected_type
+      | REVERTcast -> conv_leq true env cj.uj_type expected_type in
     { uj_val = mkCast (cj.uj_val, k, expected_type);
       uj_type = expected_type },
     cst

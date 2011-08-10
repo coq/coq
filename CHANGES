@@ -52,6 +52,8 @@ Vernacular commands
 - The undocumented and obsolete option "Set/Unset Boxed Definitions" has
   been removed, as well as syntaxes like "Boxed Fixpoint foo".
 - A new option "Set Default Timeout n / Unset Default Timeout".
+- Qed now uses information from the reduction tactics used in proof script
+  to avoid conversion at Qed time to go into a very long computation.
 
 Module System
 

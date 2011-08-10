@@ -627,7 +627,7 @@ let prim_refiner r sigma goal =
 	check_typability env sigma cl';
 	if (not !check) || is_conv_leq env sigma cl' cl then
           let (sg,ev,sigma) = mk_goal sign cl' in
-	  let ev = if k=VMcast then mkCast(ev,k,cl) else ev in
+	  let ev = if k<>DEFAULTcast then mkCast(ev,k,cl) else ev in
 	  let sigma = Goal.V82.partial_solution sigma goal ev in
           ([sg], sigma)
 	else

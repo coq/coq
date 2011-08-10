@@ -100,7 +100,7 @@ and conv_atom pb k a1 stk1 a2 stk2 cu =
 	    conv_stack k stk1 stk2 cu
 	  else raise NotConvertible
 	with NotConvertible ->
-	  if oracle_order ik1 ik2 then
+	  if oracle_order false ik1 ik2 then
             conv_whd pb k (whd_stack v1 stk1) (Vatom_stk(a2,stk2)) cu
           else conv_whd pb k (Vatom_stk(a1,stk1)) (whd_stack v2 stk2) cu
       end
@@ -236,8 +236,8 @@ let use_vm = ref false
 
 let set_use_vm b =
   use_vm := b;
-  if b then Reduction.set_default_conv vconv
-  else Reduction.set_default_conv Reduction.conv_cmp
+  if b then Reduction.set_default_conv (fun cv_pb ?(l2r=false) -> vconv cv_pb)
+  else Reduction.set_default_conv (fun cv_pb ?(l2r=false) -> Reduction.conv_cmp cv_pb)
 
 let use_vm _ = !use_vm
 

@@ -325,7 +325,7 @@ let oracle_order env cf1 cf2 =
   | Some k1 ->
       match cf2 with
       | None -> Some true
-      | Some k2 -> Some (Conv_oracle.oracle_order k1 k2)
+      | Some k2 -> Some (Conv_oracle.oracle_order false k1 k2)
 
 let do_reduce ts (env, nb) sigma c =
   let (t, stack') = whd_betaiota_deltazeta_for_iota_state ts env sigma (c, empty_stack) in

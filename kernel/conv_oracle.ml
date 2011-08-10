@@ -56,12 +56,12 @@ let get_transp_state () =
 
 (* Unfold the first constant only if it is "more transparent" than the
    second one. In case of tie, expand the second one. *)
-let oracle_order k1 k2 =
+let oracle_order l2r k1 k2 =
   match get_strategy k1, get_strategy k2 with
     | Expand, _ -> true
     | Level n1, Opaque -> true
     | Level n1, Level n2 -> n1 < n2
-    | _ -> false (* expand k2 *)
+    | _ -> l2r (* use recommended default *)
 
 (* summary operations *)
 let init() = (cst_opacity := Cmap.empty; var_opacity := Idmap.empty)
