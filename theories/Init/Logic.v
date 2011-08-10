@@ -96,53 +96,53 @@ Hint Unfold iff: extcore.
 
 Theorem neg_false : forall A : Prop, ~ A <-> (A <-> False).
 Proof.
-intro A; unfold not; split.
-intro H; split; [exact H | intro H1; elim H1].
-intros [H _]; exact H.
+  intro A; unfold not; split.
+  - intro H; split; [exact H | intro H1; elim H1].
+  - intros [H _]; exact H.
 Qed.
 
 Theorem and_cancel_l : forall A B C : Prop,
   (B -> A) -> (C -> A) -> ((A /\ B <-> A /\ C) <-> (B <-> C)).
 Proof.
-intros; tauto.
+  intros; tauto.
 Qed.
 
 Theorem and_cancel_r : forall A B C : Prop,
   (B -> A) -> (C -> A) -> ((B /\ A <-> C /\ A) <-> (B <-> C)).
 Proof.
-intros; tauto.
+  intros; tauto.
 Qed.
 
 Theorem and_comm : forall A B : Prop, A /\ B <-> B /\ A.
 Proof.
-intros; tauto.
+  intros; tauto.
 Qed.
 
 Theorem and_assoc : forall A B C : Prop, (A /\ B) /\ C <-> A /\ B /\ C.
 Proof.
-intros; tauto.
+  intros; tauto.
 Qed.
 
 Theorem or_cancel_l : forall A B C : Prop,
   (B -> ~ A) -> (C -> ~ A) -> ((A \/ B <-> A \/ C) <-> (B <-> C)).
 Proof.
-intros; tauto.
+  intros; tauto.
 Qed.
 
 Theorem or_cancel_r : forall A B C : Prop,
   (B -> ~ A) -> (C -> ~ A) -> ((B \/ A <-> C \/ A) <-> (B <-> C)).
 Proof.
-intros; tauto.
+  intros; tauto.
 Qed.
 
 Theorem or_comm : forall A B : Prop, (A \/ B) <-> (B \/ A).
 Proof.
-intros; tauto.
+  intros; tauto.
 Qed.
 
 Theorem or_assoc : forall A B C : Prop, (A \/ B) \/ C <-> A \/ B \/ C.
 Proof.
-intros; tauto.
+  intros; tauto.
 Qed.
 
 (** Backward direction of the equivalences above does not need assumptions *)
@@ -150,35 +150,35 @@ Qed.
 Theorem and_iff_compat_l : forall A B C : Prop,
   (B <-> C) -> (A /\ B <-> A /\ C).
 Proof.
-intros; tauto.
+  intros; tauto.
 Qed.
 
 Theorem and_iff_compat_r : forall A B C : Prop,
   (B <-> C) -> (B /\ A <-> C /\ A).
 Proof.
-intros; tauto.
+  intros; tauto.
 Qed.
 
 Theorem or_iff_compat_l : forall A B C : Prop,
   (B <-> C) -> (A \/ B <-> A \/ C).
 Proof.
-intros; tauto.
+  intros; tauto.
 Qed.
 
 Theorem or_iff_compat_r : forall A B C : Prop,
   (B <-> C) -> (B \/ A <-> C \/ A).
 Proof.
-intros; tauto.
+  intros; tauto.
 Qed.
 
 Lemma iff_and : forall A B : Prop, (A <-> B) -> (A -> B) /\ (B -> A).
 Proof.
-intros A B []; split; trivial.
+  intros A B []; split; trivial.
 Qed.
 
 Lemma iff_to_and : forall A B : Prop, (A <-> B) <-> (A -> B) /\ (B -> A).
 Proof.
-intros; tauto.
+  intros; tauto.
 Qed.
 
 (** [(IF_then_else P Q R)], written [IF P then Q else R] denotes
@@ -411,12 +411,12 @@ Lemma unique_existence : forall (A:Type) (P:A->Prop),
   ((exists x, P x) /\ uniqueness P) <-> (exists! x, P x).
 Proof.
   intros A P; split.
-  intros ((x,Hx),Huni); exists x; red; auto.
-  intros (x,(Hx,Huni)); split.
-  exists x; assumption.
-  intros x' x'' Hx' Hx''; transitivity x.
-  symmetry; auto.
-  auto.
+  - intros ((x,Hx),Huni); exists x; red; auto.
+  - intros (x,(Hx,Huni)); split.
+    + exists x; assumption.
+    + intros x' x'' Hx' Hx''; transitivity x.
+      symmetry; auto.
+      auto.
 Qed.
 
 Lemma forall_exists_unique_domain_coincide :
@@ -424,10 +424,10 @@ Lemma forall_exists_unique_domain_coincide :
   forall Q:A->Prop, (forall x, P x -> Q x) <-> (exists x, P x /\ Q x).
 Proof.
   intros A P (x & Hp & Huniq); split.
-  intro; exists x; auto.
-  intros (x0 & HPx0 & HQx0) x1 HPx1.
-  replace x1 with x0 by (transitivity x; [symmetry|]; auto).
-  assumption.
+  - intro; exists x; auto.
+  - intros (x0 & HPx0 & HQx0) x1 HPx1.
+    replace x1 with x0 by (transitivity x; [symmetry|]; auto).
+    assumption.
 Qed.   
 
 Lemma forall_exists_coincide_unique_domain :
@@ -466,7 +466,7 @@ Qed.
 
 Lemma eq_stepl : forall (A : Type) (x y z : A), x = y -> x = z -> z = y.
 Proof.
-intros A x y z H1 H2. rewrite <- H2; exact H1.
+  intros A x y z H1 H2. rewrite <- H2; exact H1.
 Qed.
 
 Declare Left Step eq_stepl.
@@ -474,7 +474,7 @@ Declare Right Step eq_trans.
 
 Lemma iff_stepl : forall A B C : Prop, (A <-> B) -> (A <-> C) -> (C <-> B).
 Proof.
-intros; tauto.
+  intros; tauto.
 Qed.
 
 Declare Left Step iff_stepl.
