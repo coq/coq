@@ -308,6 +308,7 @@ let rec interp_list_parser hd = function
       xyl, List.rev_append hd tl'
   | SProdList _ :: _ -> anomaly "Unexpected SProdList in interp_list_parser"
 
+
 (* Find non-terminal tokens of notation *)
 
 (* To protect alphabetic tokens and quotes from being seen as variables *)
@@ -575,23 +576,27 @@ let hunks_of_format (from,(vars,typs)) symfmt =
 
 let assoc_of_type n (_,typ) = precedence_of_entry_type n typ
 
-let constr_level n = function
-  | ETConstr (NextLevel,_) -> n-1
-  | ETConstr (NumLevel n,_) -> n
-  | ETOther("constr","binder_constr") -> 200
-  | _ -> 0
+let is_not_small_constr = function
+    ETConstr _ -> true
+  | ETOther("constr","binder_constr") -> true
+  | _ -> false
 
-  (* Ensure that IDENT articulation terminal symbols are keywords *)
-let rec define_keywords n = function
-  | GramConstrNonTerminal(e,Some _) as x1 :: GramConstrTerminal(IDENT k) :: l
-      when constr_level n e > 9 ->
-      (* an entry can catch an ident coming next if it is at a level *)
-      (* higher than the level of applications which is 10 *)
+let rec define_keywords_aux = function
+  | GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal(IDENT k) :: l
+      when is_not_small_constr e ->
       message ("Defining '"^k^"' as keyword");
       Lexer.add_keyword k;
-      x1 :: GramConstrTerminal(KEYWORD k) :: define_keywords n l
-  | x :: l -> x :: define_keywords  n l
+      n1 :: GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
+  | n :: l -> n :: define_keywords_aux l
   | [] -> []
+
+  (* Ensure that IDENT articulation terminal symbols are keywords *)
+let define_keywords = function
+  | GramConstrTerminal(IDENT k)::l ->
+      message ("Defining '"^k^"' as keyword");
+      Lexer.add_keyword k;
+      GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
+  | l -> define_keywords_aux l
 
 let distribute a ll = List.map (fun l -> a @ l) ll
 
@@ -610,7 +615,7 @@ let rec expand_list_rule typ tkl x n i hds ll =
     distribute (GramConstrListMark (i+1,false) :: hds @ [main]) ll @
       expand_list_rule typ tkl x n (i+1) (main :: tks @ hds) ll
 
-let make_production n etyps symbols =
+let make_production etyps symbols =
   let prod =
     List.fold_right
       (fun t ll -> match t with
@@ -634,7 +639,7 @@ let make_production n etyps symbols =
             | _ ->
                 error "Components of recursive patterns in notation must be terms or binders.")
       symbols [[]] in
-  List.map (define_keywords n) prod
+  List.map define_keywords prod
 
 let rec find_symbols c_current c_next c_last = function
   | [] -> []
@@ -1005,7 +1010,7 @@ let recover_notation_syntax rawntn =
 
 let make_pa_rule (n,typs,symbols,_) ntn =
   let assoc = recompute_assoc typs in
-  let prod = make_production n typs symbols in
+  let prod = make_production typs symbols in
   (n,assoc,ntn,prod)
 
 let make_pp_rule (n,typs,symbols,fmt) =
