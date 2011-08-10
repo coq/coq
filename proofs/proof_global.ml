@@ -29,6 +29,11 @@ type proof_mode = {
 }
 
 let proof_modes = Hashtbl.create 6
+let find_proof_mode n =
+  try Hashtbl.find proof_modes n
+  with Not_found ->
+    Util.error (Format.sprintf "No proof mode named \"%s\"." n)
+
 let register_proof_mode ({ name = n } as m) = Hashtbl.add proof_modes n m
 (* initial mode: standard mode *)
 let standard = { name = "No" ; set = (fun ()->()) ; reset = (fun () -> ()) }
@@ -46,7 +51,7 @@ let _ =
                                let { name = name } = !default_proof_mode in name 
                      end;
     optwrite = begin fun n -> 
-                                default_proof_mode := Hashtbl.find proof_modes n
+                                default_proof_mode := find_proof_mode n
                       end
   }
 
@@ -226,7 +231,7 @@ let set_proof_mode m id =
     Handles undo.
     Applies to current proof, and proof mode name [mn]. *)
 let set_proof_mode mn =
-  let m = Hashtbl.find proof_modes mn in
+  let m = find_proof_mode mn in
   let id = get_current_proof_name () in
   let pr = give_me_the_proof () in
   Proof.add_undo begin let curr = !current_proof_mode in fun () ->
