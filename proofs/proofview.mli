@@ -107,7 +107,7 @@ val tclUNIT : 'a -> 'a tactic
 (* Bind operation of the tactic monad *)
 val tclBIND : 'a tactic -> ('a -> 'b tactic) -> 'b tactic
 
-(* Interpetes the ";" (semicolon) of Ltac.
+(* Interprets the ";" (semicolon) of Ltac.
    As a monadic operation, it's a specialized "bind"
    on unit-returning tactic (meaning "there is no value to bind") *)
 val tclTHEN : unit tactic -> 'a tactic -> 'a tactic
