@@ -334,12 +334,14 @@ Section Logic_lemmas.
   Defined.
 End Logic_lemmas.
 
-Notation "'rewrite' H 'in' H'" := (eq_rect _ _ H' _ H)
-  (at level 10, H' at level 9).
-Notation "'rewrite' <- H 'in' H'" := (eq_rect_r _ H' H)
-  (at level 10, H' at level 9).
-Notation "'rewrite' -> H 'in' H'" := (eq_rect _ _ H' _ H)
-  (at level 10, H' at level 9, only parsing).
+Module EqNotations.
+  Notation "'rew' H 'in' H'" := (eq_rect _ _ H' _ H)
+    (at level 10, H' at level 10).
+  Notation "'rew' <- H 'in' H'" := (eq_rect_r _ H' H)
+    (at level 10, H' at level 10).
+  Notation "'rew' -> H 'in' H'" := (eq_rect _ _ H' _ H)
+    (at level 10, H' at level 10, only parsing).
+End EqNotations.
 
 Theorem f_equal2 :
   forall (A1 A2 B:Type) (f:A1 -> A2 -> B) (x1 y1:A1)

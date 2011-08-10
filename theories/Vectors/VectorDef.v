@@ -18,6 +18,7 @@ have to be the same. complain if you see mistakes ... *)
 
 Require Import Arith_base.
 Require Vectors.Fin.
+Import EqNotations.
 Open Local Scope nat_scope.
 
 (**
@@ -202,13 +203,13 @@ Import EqdepFacts.
 (** This one has a better type *)
 Definition rev_append {A n p} (v: t A n) (w: t A p)
   :t A (n + p) :=
-  rewrite <- (plus_tail_plus n p) in (rev_append_tail v w).
+  rew <- (plus_tail_plus n p) in (rev_append_tail v w).
 
 (** rev [a₁ ; a₂ ; .. ; an] is [an ; a{n-1} ; .. ; a₁]
 
 Caution : There is a lot of rewrite garbage in this definition *)
 Definition rev {A n} (v : t A n) : t A n :=
- rewrite <- (plus_n_O _) in (rev_append v []).
+ rew <- (plus_n_O _) in (rev_append v []).
 
 End BASES.
 Local Notation "v [@ p ]" := (nth v p) (at level 1).

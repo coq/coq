@@ -89,7 +89,8 @@ Libraries
   Vcons become Vector.cons. You can use notations by importing
   Vector.VectorNotations.
 - Removal of TheoryList. Requiring List instead should work most of the time.
-- New syntax "rew Heq in H" and "rew <- Heq in H" for eq_rect and eq_rect_r.
+- New syntax "rew Heq in H" and "rew <- Heq in H" for eq_rect and 
+  eq_rect_r (available by importing module EqNotations).
 
 Internal infrastructure
 
