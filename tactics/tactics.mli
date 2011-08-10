@@ -69,6 +69,7 @@ val intro_avoiding       : identifier list -> tactic
 val intro_replacing      : identifier -> tactic
 val intro_using          : identifier -> tactic
 val intro_mustbe_force   : identifier -> tactic
+val intro_then           : (identifier -> tactic) -> tactic
 val intros_using         : identifier list -> tactic
 val intro_erasing        : identifier -> tactic
 val intros_replacing     : identifier list -> tactic

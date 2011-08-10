@@ -427,6 +427,7 @@ let rec intro_then_gen loc name_flag move_flag force_flag dep_flag tac gl =
 let intro_gen loc n m f d = intro_then_gen loc n m f d (fun _ -> tclIDTAC)
 let intro_mustbe_force id = intro_gen dloc (IntroMustBe id) no_move true false
 let intro_using id = intro_gen dloc (IntroBasedOn (id,[])) no_move false false
+let intro_then = intro_then_gen dloc (IntroAvoid []) no_move false false
 let intro = intro_gen dloc (IntroAvoid []) no_move false false
 let introf = intro_gen dloc (IntroAvoid []) no_move true false
 let intro_avoiding l = intro_gen dloc (IntroAvoid l) no_move false false
