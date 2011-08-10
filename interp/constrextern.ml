@@ -438,8 +438,11 @@ let is_projection nargs = function
 
 let is_hole = function CHole _ -> true | _ -> false
 
-let is_significant_implicit a impl tail =
-  not (is_hole a) or (tail = [] & not (List.for_all is_status_implicit impl))
+let is_significant_implicit a =
+  not (is_hole a)
+
+let is_needed_for_correct_partial_application tail imp =
+  tail = [] & not (maximal_insertion_of imp)
 
 (* Implicit args indexes are in ascending order *)
 (* inctx is useful only if there is a last argument to be deduced from ctxt *)
@@ -451,8 +454,9 @@ let explicitize loc inctx impl (cf,f) args =
         let visible =
           !Flags.raw_print or
           (!print_implicits & !print_implicits_explicit_args) or
+          (is_needed_for_correct_partial_application tail imp) or
 	  (!print_implicits_defensive &
-	   is_significant_implicit a impl tail &
+	   is_significant_implicit a &
 	   not (is_inferable_implicit inctx n imp))
 	in
         if visible then

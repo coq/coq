@@ -11,3 +11,5 @@ map id (1 :: nil)
      : list nat
 map id' (1 :: nil)
      : list nat
+map (id'' (A:=nat)) (1 :: nil)
+     : list nat
