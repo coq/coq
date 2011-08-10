@@ -289,12 +289,12 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
       str "Recursive call forbidden in the type of a recursive definition" ++
       spc () ++ pr_lconstr_env env c
   | RecCallInCaseFun c ->
-      str "Recursive call in a branch of" ++ spc () ++ pr_lconstr_env env c
+      str "Invalid recursive call in a branch of" ++ spc () ++ pr_lconstr_env env c
   | RecCallInCaseArg c ->
-      str "Recursive call in the argument of cases in" ++ spc () ++
+      str "Invalid recursive call in the argument of \"match\" in" ++ spc () ++
       pr_lconstr_env env c
   | RecCallInCasePred c ->
-      str "Recursive call in the type of cases in" ++  spc () ++
+      str "Invalid recursive call in the \"return\" clause of \"match\" in" ++  spc () ++
       pr_lconstr_env env c
   | NotGuardedForm c ->
       str "Sub-expression " ++ pr_lconstr_env env c ++
