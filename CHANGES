@@ -3,12 +3,11 @@ Changes from V8.3 to V8.4
 
 Logic
 
-- Coq's logic now support eta-expansion. (DOC TO DO)
-- Guard condition now compatible with beta-redexes blocked by "match"
-  (i.e.  [x] inherits the subterm property of [t] in [u] even if [v]
-  doesn't start by a constructor in [(match v with C .. => fun x => u end) t]);
-  this allows for instance to use "rewrite ... in ..." and "Theorem
-  ... with ..."  without risking to accidentally break the guard condition).
+- Standard eta-conversion now supported (dependent product only). (DOC TO DO)
+- Guard condition improvement: subterm property is propagated through beta-redex
+  blocked by pattern-matching, as in "(match v with C .. => fun x => u end) x";
+  this allows for instance to use "rewrite ... in ..." without breaking
+  the guard condition.
 
 Specification language and notations
 
@@ -124,8 +123,7 @@ Tools
   (cf button "Restart Coq", ex-"Go to Start"). For allowing such interrupts,
   the Windows version of coqide now requires Windows >= XP SP1.
 - coq_makefile major cleanup.
-  * mli are taken into account, ml aren't preproccessed anymore, ml4 really
-    work
+  * mli taken into account, ml not preproccessed anymore, ml4 work
   * mlihtml generates doc of mli, install-doc install the html doc in DOCDIR
     with the same policy as vo in COQLIB
   * More variables are given by coqtop -config, others are defined only if the
