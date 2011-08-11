@@ -79,7 +79,7 @@ End GenericMinMax.
 (** ** Consequences of the minimalist interface: facts about [max]. *)
 
 Module MaxLogicalProperties (Import O:TotalOrder')(Import M:HasMax O).
- Module Import T := !MakeOrderTac O.
+ Module Import Private_Tac := !MakeOrderTac O.
 
 (** An alternative caracterisation of [max], equivalent to
     [max_l /\ max_r] *)
@@ -277,8 +277,9 @@ End MaxLogicalProperties.
 
 Module MinMaxLogicalProperties (Import O:TotalOrder')(Import M:HasMinMax O).
  Include MaxLogicalProperties O M.
- Import T.
+ Import Private_Tac.
 
+ Module Import Private_Rev.
  Module ORev := TotalOrderRev O.
  Module MRev <: HasMax ORev.
   Definition max x y := M.min y x.
@@ -286,6 +287,7 @@ Module MinMaxLogicalProperties (Import O:TotalOrder')(Import M:HasMinMax O).
   Definition max_r x y := M.min_l y x.
  End MRev.
  Module MPRev := MaxLogicalProperties ORev MRev.
+ End Private_Rev.
 
 Instance min_compat : Proper (eq==>eq==>eq) min.
 Proof. intros x x' Hx y y' Hy. apply MPRev.max_compat; assumption. Qed.
@@ -578,29 +580,29 @@ End UsualMinMaxLogicalProperties.
 Module UsualMinMaxDecProperties
  (Import O:UsualOrderedTypeFull')(Import M:HasMinMax O).
 
- Module P := MinMaxDecProperties O M.
+ Module Import Private_Dec := MinMaxDecProperties O M.
 
  Lemma max_case_strong : forall n m (P:t -> Type),
   (m<=n -> P n) -> (n<=m -> P m) -> P (max n m).
- Proof. intros; apply P.max_case_strong; auto. congruence. Defined.
+ Proof. intros; apply max_case_strong; auto. congruence. Defined.
 
  Lemma max_case : forall n m (P:t -> Type),
   P n -> P m -> P (max n m).
  Proof. intros; apply max_case_strong; auto. Defined.
 
  Lemma max_dec : forall n m, {max n m = n} + {max n m = m}.
- Proof. exact P.max_dec. Defined.
+ Proof. exact max_dec. Defined.
 
  Lemma min_case_strong : forall n m (P:O.t -> Type),
   (n<=m -> P n) -> (m<=n -> P m) -> P (min n m).
- Proof. intros; apply P.min_case_strong; auto. congruence. Defined.
+ Proof. intros; apply min_case_strong; auto. congruence. Defined.
 
  Lemma min_case : forall n m (P:O.t -> Type),
   P n -> P m -> P (min n m).
  Proof. intros. apply min_case_strong; auto. Defined.
 
  Lemma min_dec : forall n m, {min n m = n} + {min n m = m}.
- Proof. exact P.min_dec. Defined.
+ Proof. exact min_dec. Defined.
 
 End UsualMinMaxDecProperties.
 

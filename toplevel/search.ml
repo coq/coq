@@ -22,6 +22,16 @@ open Printer
 open Libnames
 open Nametab
 
+module SearchBlacklist =
+  Goptions.MakeStringTable
+    (struct
+      let key = ["Search";"Blacklist"]
+      let title = "Current search blacklist : "
+      let member_message s b =
+	str ("Search blacklist does "^(if b then "" else "not ")^"include "^s)
+      let synchronous = true
+     end)
+
 (* The functions print_constructors and crible implement the behavior needed
    for the Coq searching commands.
    These functions take as first argument the procedure
@@ -164,6 +174,10 @@ let raw_search_by_head extra_filter display_function pattern =
 
 let name_of_reference ref = string_of_id (basename_of_global ref)
 
+let full_name_of_reference ref =
+  let (dir,id) = repr_path (path_of_global ref) in
+  string_of_dirpath dir ^ "." ^ string_of_id id
+
 (*
  * functions to use the new Libtypes facility
  *)
@@ -190,20 +204,21 @@ let filter_by_module_from_list = function
   | [], _ -> (fun _ _ _ -> true)
   | l, outside -> filter_by_module l (not outside)
 
-let filter_subproof gr _ _ =
-  not (string_string_contains ~where:(name_of_reference gr) ~what:"_subproof") &&
-  not (string_string_contains ~where:(name_of_reference gr) ~what:"_admitted")
+let filter_blacklist gr _ _ =
+  let name = full_name_of_reference gr in
+  let l = SearchBlacklist.elements () in
+  List.for_all (fun str -> not (string_string_contains ~where:name ~what:str)) l
 
 let (&&&&&) f g x y z = f x y z && g x y z
 
 let search_by_head pat inout =
-  text_search_by_head (filter_by_module_from_list inout &&&&& filter_subproof) pat
+  text_search_by_head (filter_by_module_from_list inout &&&&& filter_blacklist) pat
 
 let search_rewrite pat inout =
-  text_search_rewrite (filter_by_module_from_list inout &&&&& filter_subproof) pat
+  text_search_rewrite (filter_by_module_from_list inout &&&&& filter_blacklist) pat
 
 let search_pattern pat inout =
-  text_pattern_search (filter_by_module_from_list inout &&&&& filter_subproof) pat
+  text_pattern_search (filter_by_module_from_list inout &&&&& filter_blacklist) pat
 
 let gen_filtered_search filter_function display_function =
   gen_crible None
@@ -223,7 +238,7 @@ let raw_search_about filter_modules display_function l =
   let filter ref' env typ =
     filter_modules ref' env typ &&
     List.for_all (fun (b,i) -> b = search_about_item (ref',typ) i) l &&
-      filter_subproof ref' () ()
+      filter_blacklist ref' () ()
   in
   gen_filtered_search filter display_function
 

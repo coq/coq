@@ -33,6 +33,7 @@ Module Type ZQuotProp
 
 (** We benefit from what already exists for NZ *)
 
+ Module Import Private_Div.
  Module Quot2Div <: NZDiv A.
   Definition div := quot.
   Definition modulo := A.rem.
@@ -41,8 +42,8 @@ Module Type ZQuotProp
   Definition div_mod := quot_rem.
   Definition mod_bound_pos := rem_bound_pos.
  End Quot2Div.
-
  Module NZQuot := Nop <+ NZDivProp A Quot2Div B.
+ End Private_Div.
 
 Ltac pos_or_neg a :=
  let LT := fresh "LT" in

@@ -13,7 +13,7 @@ Require Import NAxioms NSub NZDiv.
 Module Type NDivProp (Import N : NAxiomsSig')(Import NP : NSubProp N).
 
 (** We benefit from what already exists for NZ *)
-Module Import NZDivP := Nop <+ NZDivProp N N NP.
+Module Import Private_NZDiv := Nop <+ NZDivProp N N NP.
 
 Ltac auto' := try rewrite <- neq_0_lt_0; auto using le_0_l.
 

@@ -32,7 +32,7 @@ Module Type ZDivProp
  (Import C : ZSgnAbsProp A B).
 
 (** We benefit from what already exists for NZ *)
-Module Import NZDivP := Nop <+ NZDivProp A A B.
+Module Import Private_NZDiv := Nop <+ NZDivProp A A B.
 
 (** Another formulation of the main equation *)
 

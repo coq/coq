@@ -146,7 +146,8 @@ Definition lt_compat := lt_wd.
 Definition lt_total := lt_trichotomy.
 Definition le_lteq := lt_eq_cases.
 
-Module OrderElts <: TotalOrder.
+Module Private_OrderTac.
+Module Elts <: TotalOrder.
  Definition t := t.
  Definition eq := eq.
  Definition lt := lt.
@@ -156,9 +157,10 @@ Module OrderElts <: TotalOrder.
  Definition lt_compat := lt_compat.
  Definition lt_total := lt_total.
  Definition le_lteq := le_lteq.
-End OrderElts.
-Module OrderTac := !MakeOrderTac OrderElts.
-Ltac order := OrderTac.order.
+End Elts.
+Module Tac := !MakeOrderTac Elts.
+End Private_OrderTac.
+Ltac order := Private_OrderTac.Tac.order.
 
 (** Some direct consequences of [order]. *)
 

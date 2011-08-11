@@ -43,7 +43,7 @@ Module ZEuclidProp
  (Import C : ZSgnAbsProp A B)
  (Import D : ZEuclid' A).
 
- Module Import NZDivP := Nop <+ NZDivProp A D B.
+ Module Import Private_NZDiv := Nop <+ NZDivProp A D B.
 
 (** Another formulation of the main equation *)
 

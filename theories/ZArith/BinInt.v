@@ -207,7 +207,7 @@ Qed.
   to prove specifications of operations, but will also be provided
   later by the generic functor of properties. *)
 
-Module Import BootStrap.
+Module Import Private_BootStrap.
 
 (** * Properties of addition *)
 
@@ -374,7 +374,7 @@ Proof.
  rewrite !(mul_comm _ p). apply mul_add_distr_l.
 Qed.
 
-End BootStrap.
+End Private_BootStrap.
 
 (** * Proofs of specifications *)
 

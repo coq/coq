@@ -267,7 +267,7 @@ Include BoolOrderFacts.
     by the generic functor of properties about natural numbers
     instantiated at the end of the file. *)
 
-Module Import BootStrap.
+Module Import Private_BootStrap.
 
 Theorem add_0_r n : n + 0 = n.
 Proof.
@@ -323,7 +323,7 @@ Proof.
  now apply (Pos.add_lt_mono_l p).
 Qed.
 
-End BootStrap.
+End Private_BootStrap.
 
 (** Specification of lt and le. *)
 

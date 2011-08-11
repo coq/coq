@@ -17,7 +17,7 @@ Module Type NPowProp
  (Import B : NSubProp A)
  (Import C : NParityProp A B).
 
- Module Import NZPowP := Nop <+ NZPowProp A A B.
+ Module Import Private_NZPow := Nop <+ NZPowProp A A B.
 
 Ltac auto' := trivial; try rewrite <- neq_0_lt_0; auto using le_0_l.
 Ltac wrap l := intros; apply l; auto'.
