@@ -138,22 +138,13 @@ type proof = { (* current proof_state *)
 
 (*** General proof functions ***)
 
-let start goals =
-  { state = { proofview = Proofview.init goals ;
-	             focus_stack = [] ;
-	             intel = Store.empty} ;
-      undo_stack = [] ;
-      transactions = [] ;
-      info = { endline_tactic = Proofview.tclUNIT ();
-	            initial_conclusions = List.map snd goals }
-  }
-
 let rec unroll_focus pv = function
   | (_,_,ctx)::stk -> unroll_focus (Proofview.unfocus ctx pv) stk
   | [] -> pv
 
 (* spiwack: a proof is considered completed even if its still focused, if the focus
-                   doesn't hide any goal. *)
+                   doesn't hide any goal.
+   Unfocusing is handled in {!return}. *)
 let is_done p =
   Proofview.finished p.state.proofview && 
   Proofview.finished (unroll_focus p.state.proofview p.state.focus_stack)
@@ -166,21 +157,6 @@ let has_unresolved_evar p =
 let partial_proof p =
   List.map fst (Proofview.return p.state.proofview)
 
-exception UnfinishedProof
-exception HasUnresolvedEvar
-let _ = Errors.register_handler begin function
-  | UnfinishedProof -> Util.error "Some goals have not been solved."
-  | HasUnresolvedEvar -> Util.error "Some existential variables are uninstantiated."
-  | _ -> raise Errors.Unhandled
-end
-let return p =
-  if not (is_done p) then
-    raise UnfinishedProof
-  else if has_unresolved_evar p then 
-    (* spiwack: for compatibility with <= 8.3 proof engine *)
-    raise HasUnresolvedEvar
-  else
-    Proofview.return p.state.proofview
 
 
 (*** The following functions implement the basic internal mechanisms
@@ -374,6 +350,42 @@ let get_at_focus kind pr =
 
 let no_focused_goal p =
   Proofview.finished p.state.proofview
+
+(*** Proof Creation/Termination ***)
+
+let end_of_stack_kind = new_focus_kind ()
+let end_of_stack = done_cond end_of_stack_kind
+
+let start goals =
+  let pr = 
+    { state = { proofview = Proofview.init goals ;
+	        focus_stack = [] ;
+	        intel = Store.empty} ;
+      undo_stack = [] ;
+      transactions = [] ;
+      info = { endline_tactic = Proofview.tclUNIT ();
+	       initial_conclusions = List.map snd goals }
+    }
+  in
+  _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr;
+  pr
+
+exception UnfinishedProof
+exception HasUnresolvedEvar
+let _ = Errors.register_handler begin function
+  | UnfinishedProof -> Util.error "Some goals have not been solved."
+  | HasUnresolvedEvar -> Util.error "Some existential variables are uninstantiated."
+  | _ -> raise Errors.Unhandled
+end
+let return p =
+  if not (is_done p) then
+    raise UnfinishedProof
+  else if has_unresolved_evar p then 
+    (* spiwack: for compatibility with <= 8.3 proof engine *)
+    raise HasUnresolvedEvar
+  else
+    unfocus end_of_stack_kind p;
+    Proofview.return p.state.proofview
 
 (*** Function manipulation proof extra informations ***)
 

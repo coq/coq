@@ -122,7 +122,7 @@ let unfocus_sublist (left,right) s =
 
 (* [focus i j] focuses a proofview on the goals from index [i] to index [j] 
    (inclusive). (i.e. goals number [i] to [j] become the only goals of the
-   returned proofview).
+   returned proofview). The first goal has index 1.
    It returns the focus proof, and a context for the focus trace. *)
 let focus i j sp =
   let (new_comb, context) = focus_sublist i j sp.comb in
