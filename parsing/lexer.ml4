@@ -627,9 +627,7 @@ END
 (** Terminal symbols interpretation *)
 
 let is_ident_not_keyword s =
-  match s.[0] with
-    | 'a'..'z' | 'A'..'Z' | '_' -> is_ident s && not (is_keyword s)
-    | _ -> false
+  is_ident s && not (is_keyword s)
 
 let is_number s =
   let rec aux i =
