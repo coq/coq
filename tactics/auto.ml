@@ -806,8 +806,11 @@ let print_hint_term cl = ppnl (pr_hint_term cl)
 let print_applicable_hint () =
   let pts = get_pftreestate () in
   let glss = Proof.V82.subgoals pts in
-  let gl = { Evd.it = List.hd glss.Evd.it; sigma = glss.Evd.sigma } in
-  print_hint_term (pf_concl gl)
+  match glss.Evd.it with
+  | [] -> Util.error "No focused goal."
+  | g::_ ->
+    let gl = { Evd.it = g; sigma = glss.Evd.sigma } in
+    print_hint_term (pf_concl gl)
 
 (* displays the whole hint database db *)
 let print_hint_db db =
