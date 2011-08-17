@@ -349,16 +349,16 @@ Register div31 as int31 div in "coq_int31" by True.
 Register compare31 as int31 compare in "coq_int31" by True.
 Register addmuldiv31 as int31 addmuldiv in "coq_int31" by True.
 
-Definition gcd31 (i j:int31) :=
-  (fix euler (guard:nat) (i j:int31) {struct guard} :=
-   match guard with
-   | O => In
-   | S p => match j ?= On with
-            | Eq => i
-            | _ => euler p j (let (_, r ) := i/j in r)
-            end
-   end)
-  (2*size)%nat i j.
+Fixpoint euler (guard:nat) (i j:int31) {struct guard} :=
+  match guard with
+    | O => In
+    | S p => match j ?= On with
+               | Eq => i
+               | _ => euler p j (let (_, r ) := i/j in r)
+             end
+  end.
+
+Definition gcd31 (i j:int31) := euler (2*size)%nat i j.
 
 (** Square root functions using newton iteration
     we use a very naive upper-bound on the iteration
