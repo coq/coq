@@ -466,18 +466,16 @@ Proof.
   destruct n; simpl.
   destruct 1; auto.
   intros.
-  apply Qc_is_canon.
-  simpl.
-  compute; auto.
+  now apply Qc_is_canon.
 Qed.
 
 Lemma Qcpower_pos : forall p n, 0 <= p -> 0 <= p^n.
 Proof.
   induction n; simpl; auto with qarith.
-  intros; compute; intro; discriminate.
+  easy.
   intros.
   apply Qcle_trans with (0*(p^n)).
-  compute; intro; discriminate.
+  easy.
   apply Qcmult_le_compat_r; auto.
 Qed.
 
