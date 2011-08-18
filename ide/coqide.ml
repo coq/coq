@@ -2194,16 +2194,14 @@ let main files =
       match Coq.make_cases cur_ct w with
         | Ide_intf.Fail _ -> raise Not_found
         | Ide_intf.Good cases ->
-          let print c = function
-            | [x] -> Format.fprintf c "  | %s => _@\n" x
-            | x::l -> Format.fprintf c "  | (%s%a) => _@\n" x
-              (print_list (fun c s -> Format.fprintf c " %s" s)) l
-            | [] -> assert false
+          let print_branch c l =
+	    Format.fprintf c " | @[<hov 1>%a@]=> _@\n"
+	      (print_list (fun c s -> Format.fprintf c "%s@ " s)) l
           in
           let b = Buffer.create 1024 in
           let fmt = Format.formatter_of_buffer b in
           Format.fprintf fmt "@[match var with@\n%aend@]@."
-            (print_list print) cases;
+            (print_list print_branch) cases;
           let s = Buffer.contents b in
           prerr_endline s;
           let {script = view } = session_notebook#current_term in

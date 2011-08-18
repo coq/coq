@@ -56,3 +56,11 @@ val vernac_reset_name : identifier Util.located -> unit
 (* Print subgoals when the verbose flag is on. Meant to be used inside
     vernac commands from plugins. *)
 val print_subgoals : unit -> unit
+
+(** Prepare a "match" template for a given inductive type.
+    For each branch of the match, we list the constructor name
+    followed by enough pattern variables.
+    [Not_found] is raised if the given string isn't the qualid of
+    a known inductive type. *)
+
+val make_cases : string -> string list list

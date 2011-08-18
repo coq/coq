@@ -110,13 +110,12 @@ let show_intro all =
       msgnl (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
     with Failure "list_last" -> message ""
 
-let id_of_name = function
-  | Names.Anonymous -> id_of_string "x"
-  | Names.Name x -> x
+(** Prepare a "match" template for a given inductive type.
+    For each branch of the match, we list the constructor name
+    followed by enough pattern variables.
+    [Not_found] is raised if the given string isn't the qualid of
+    a known inductive type. *)
 
-
-(* Building of match expression *)
-(* From ide/coq.ml *)
 let make_cases s =
   let qualified_name = Libnames.qualid_of_string s in
   let glob_ref = Nametab.locate qualified_name in
@@ -126,36 +125,31 @@ let make_cases s =
 	    , {Declarations.mind_consnames = carr ; Declarations.mind_nf_lc = tarr }
 	      = Global.lookup_inductive i in
 	Util.array_fold_right2
-	  (fun n t l ->
-	     let (al,_) = Term.decompose_prod t in
-	     let al,_ = Util.list_chop (List.length al - np) al in
+	  (fun consname typ l ->
+	     let al = List.rev (fst (Term.decompose_prod typ)) in
+	     let al = Util.list_skipn np al in
 	     let rec rename avoid = function
 	       | [] -> []
 	       | (n,_)::l ->
-		   let n' = Namegen.next_ident_away_in_goal (id_of_name n) avoid in
+		   let n' = Namegen.next_name_away_in_cases_pattern n avoid in
 		   string_of_id n' :: rename (n'::avoid) l in
-	     let al' = rename [] (List.rev al) in
-	     (string_of_id n :: al') :: l)
+	     let al' = rename [] al in
+	     (string_of_id consname :: al') :: l)
 	  carr tarr []
     | _ -> raise Not_found
 
+(** Textual display of a generic "match" template *)
 
 let show_match id =
-  try
-    let s = string_of_id (snd id) in
-    let patterns = List.rev (make_cases s) in
-    let cases =
-      List.fold_left
-	(fun acc x ->
-	  match x with
-	    | [] -> assert false
-	    | [x] -> "| "^ x  ^ " => \n" ^ acc
-	    | x::l ->
-		"| " ^ List.fold_left (fun acc s ->  acc ^ " " ^ s) x l
-		^ " => \n" ^ acc)
-	"end" patterns in
-    msg (str ("match # with\n" ^ cases))
-  with Not_found -> error "Unknown inductive type."
+  let patterns =
+    try make_cases (string_of_id (snd id))
+    with Not_found -> error "Unknown inductive type."
+  in
+  let pr_branch l =
+    str "| " ++ hov 1 (prlist_with_sep spc str l) ++ str " =>"
+  in
+  msg (v 1 (str "match # with" ++ fnl () ++
+	    prlist_with_sep fnl pr_branch patterns ++ fnl ()))
 
 (* "Print" commands *)
 

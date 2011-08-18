@@ -430,40 +430,6 @@ let current_goals () =
   with Proof_global.NoCurrentProof ->
     Ide_intf.Message "" (* quick hack to have a clean message screen *)
 
-let id_of_name = function
-  | Names.Anonymous -> id_of_string "x"
-  | Names.Name x -> x
-
-let make_cases s =
-  let qualified_name = Libnames.qualid_of_string s in
-  let glob_ref = Nametab.locate qualified_name in
-  match glob_ref with
-    | Libnames.IndRef i ->
-        let {Declarations.mind_nparams = np},
-            {Declarations.mind_consnames = carr ;
-             Declarations.mind_nf_lc = tarr }
-              = Global.lookup_inductive i
-        in
-        Util.array_fold_right2
-          (fun n t l ->
-             let (al,_) = Term.decompose_prod t in
-             let al,_ = Util.list_chop (List.length al - np) al in
-             let rec rename avoid = function
-               | [] -> []
-               | (n,_)::l ->
-                   let n' = next_ident_away_in_goal
-                              (id_of_name n)
-                              avoid
-                   in (string_of_id n')::(rename (n'::avoid) l)
-             in
-             let al' = rename [] (List.rev al) in
-             (string_of_id n :: al') :: l
-          )
-          carr
-          tarr
-          []
-    | _ -> raise Not_found
-
 let current_status () =
   (** We remove the initial part of the current [dir_path]
       (usually Top in an interactive session, cf "coqtop -top"),
@@ -539,7 +505,7 @@ let eval_call c =
     Ide_intf.read_stdout = interruptible read_stdout;
     Ide_intf.current_goals = interruptible current_goals;
     Ide_intf.current_status = interruptible current_status;
-    Ide_intf.make_cases = interruptible make_cases }
+    Ide_intf.make_cases = interruptible Vernacentries.make_cases }
   in
   Ide_intf.abstract_eval_call handler handle_exn c
 

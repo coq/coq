@@ -34,7 +34,9 @@ val rewind : int -> unit call
 (** Is a file present somewhere in Coq's loadpath ? *)
 val is_in_loadpath : string -> bool call
 
-(** Create a "match" template for a given inductive type *)
+(** Create a "match" template for a given inductive type.
+    For each branch of the match, we list the constructor name
+    followed by enough pattern variables. *)
 val make_cases : string -> string list list call
 
 (** The status, for instance "Ready in SomeSection, proving Foo" *)
