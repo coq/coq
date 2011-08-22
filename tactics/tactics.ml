@@ -2645,84 +2645,62 @@ let compute_elim_sig ?elimc elimt =
 let compute_scheme_signature scheme names_info ind_type_guess =
   let f,l = decompose_app scheme.concl in
   (* Vérifier que les arguments de Qi sont bien les xi. *)
-  match scheme.indarg with
-    | Some (_,Some _,_) -> error "Strange letin, cannot recognize an induction scheme."
-    | None -> (* Non standard scheme *)
-	let is_pred n c =
-	  let hd = fst (decompose_app c) in match kind_of_term hd with
-	    | Rel q when n < q & q <= n+scheme.npredicates -> IndArg
-	    | _ when eq_constr hd ind_type_guess & not scheme.farg_in_concl -> RecArg
-	    | _ -> OtherArg in
-	let rec check_branch p c =
-	  match kind_of_term c with
-	    | Prod (_,t,c) ->
-		(is_pred p t, dependent (mkRel 1) c) :: check_branch (p+1) c
-	    | LetIn (_,_,_,c) ->
-		(OtherArg, dependent (mkRel 1) c) :: check_branch (p+1) c
-	    | _ when is_pred p c = IndArg -> []
-	    | _ -> raise Exit in
-	let rec find_branches p lbrch =
-	  match lbrch with
-	    | (_,None,t)::brs ->
-		(try
-		  let lchck_brch = check_branch p t in
-		  let n = List.fold_left
-		    (fun n (b,_) -> if b=RecArg then n+1 else n) 0 lchck_brch in
-		  let recvarname, hyprecname, avoid =
-		    make_up_names n scheme.indref names_info in
-		  let namesign =
-		    List.map (fun (b,dep) ->
-		      (b,dep,if b=IndArg then hyprecname else recvarname))
-		      lchck_brch in
-		  (avoid,namesign) :: find_branches (p+1) brs
-		with Exit-> error_ind_scheme "the branches of")
-	    | (_,Some _,_)::_ -> error_ind_scheme "the branches of"
-	    | [] -> [] in
-	Array.of_list (find_branches 0 (List.rev scheme.branches))
-
-    | Some ( _,None,ind) -> (* Standard scheme from an inductive type *)
-	let indhd,indargs = decompose_app ind in
-	let is_pred n c =
-	  let hd = fst (decompose_app c) in match kind_of_term hd with
-	    | Rel q when n < q & q <= n+scheme.npredicates -> IndArg
-	    | _ when eq_constr hd indhd -> RecArg
-	    | _ -> OtherArg in
-	let rec check_branch p c = match kind_of_term c with
-	  | Prod (_,t,c) ->
-	      (is_pred p t, dependent (mkRel 1) c) :: check_branch (p+1) c
-	  | LetIn (_,_,_,c) ->
-	      (OtherArg, dependent (mkRel 1) c) :: check_branch (p+1) c
-	  | _ when is_pred p c = IndArg -> []
-	  | _ -> raise Exit in
-	let rec find_branches p lbrch =
-	  match lbrch with
-	    | (_,None,t)::brs ->
-		(try
-		  let lchck_brch = check_branch p t in
-		  let n = List.fold_left
-		    (fun n (b,_) -> if b=RecArg then n+1 else n) 0 lchck_brch in
-		  let recvarname, hyprecname, avoid =
-		    make_up_names n scheme.indref names_info in
-		  let namesign =
-		    List.map (fun (b,dep) ->
-		      (b,dep,if b=IndArg then hyprecname else recvarname))
-		      lchck_brch in
-		  (avoid,namesign) :: find_branches (p+1) brs
-		with Exit -> error_ind_scheme "the branches of")
-	    | (_,Some _,_)::_ -> error_ind_scheme "the branches of"
-	    | [] ->
-		(* Check again conclusion *)
-
-		let ccl_arg_ok = is_pred (p + scheme.nargs + 1) f = IndArg in
-		let ind_is_ok =
-		  list_equal eq_constr
-		    (list_lastn scheme.nargs indargs)
-		    (extended_rel_list 0 scheme.args) in
-		if not (ccl_arg_ok & ind_is_ok) then
-		  error_ind_scheme "the conclusion of";
-		[]
-	in
-	Array.of_list (find_branches 0 (List.rev scheme.branches))
+  let cond, check_concl =
+    match scheme.indarg with
+      | Some (_,Some _,_) ->
+	  error "Strange letin, cannot recognize an induction scheme."
+      | None -> (* Non standard scheme *)
+	  let cond hd = eq_constr hd ind_type_guess && not scheme.farg_in_concl
+	  in (cond, fun _ _ -> ())
+      | Some ( _,None,ind) -> (* Standard scheme from an inductive type *)
+	  let indhd,indargs = decompose_app ind in
+	  let cond hd = eq_constr hd indhd in
+	  let check_concl is_pred p =
+	    (* Check again conclusion *)
+	    let ccl_arg_ok = is_pred (p + scheme.nargs + 1) f = IndArg in
+	    let ind_is_ok =
+	      list_equal eq_constr
+		(list_lastn scheme.nargs indargs)
+		(extended_rel_list 0 scheme.args) in
+	    if not (ccl_arg_ok & ind_is_ok) then
+	      error_ind_scheme "the conclusion of"
+	  in (cond, check_concl)
+  in
+  let is_pred n c =
+    let hd = fst (decompose_app c) in
+    match kind_of_term hd with
+      | Rel q when n < q & q <= n+scheme.npredicates -> IndArg
+      | _ when cond hd -> RecArg
+      | _ -> OtherArg
+  in
+  let rec check_branch p c =
+    match kind_of_term c with
+      | Prod (_,t,c) ->
+	(is_pred p t, dependent (mkRel 1) c) :: check_branch (p+1) c
+      | LetIn (_,_,_,c) ->
+	(OtherArg, dependent (mkRel 1) c) :: check_branch (p+1) c
+      | _ when is_pred p c = IndArg -> []
+      | _ -> raise Exit
+  in
+  let rec find_branches p lbrch =
+    match lbrch with
+      | (_,None,t)::brs ->
+	(try
+	   let lchck_brch = check_branch p t in
+	   let n = List.fold_left
+	     (fun n (b,_) -> if b=RecArg then n+1 else n) 0 lchck_brch in
+	   let recvarname, hyprecname, avoid =
+	     make_up_names n scheme.indref names_info in
+	   let namesign =
+	     List.map (fun (b,dep) ->
+	       (b,dep,if b=IndArg then hyprecname else recvarname))
+	       lchck_brch in
+	   (avoid,namesign) :: find_branches (p+1) brs
+	 with Exit-> error_ind_scheme "the branches of")
+      | (_,Some _,_)::_ -> error_ind_scheme "the branches of"
+      | [] -> check_concl is_pred p; []
+  in
+  Array.of_list (find_branches 0 (List.rev scheme.branches))
 
 (* Check that the elimination scheme has a form similar to the
    elimination schemes built by Coq. Schemes may have the standard
