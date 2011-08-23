@@ -584,7 +584,7 @@ let is_not_small_constr = function
 let rec define_keywords_aux = function
   | GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal(IDENT k) :: l
       when is_not_small_constr e ->
-      message ("Defining '"^k^"' as keyword");
+      message ("Identifier '"^k^"' now a keyword");
       Lexer.add_keyword k;
       n1 :: GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
   | n :: l -> n :: define_keywords_aux l
@@ -593,7 +593,7 @@ let rec define_keywords_aux = function
   (* Ensure that IDENT articulation terminal symbols are keywords *)
 let define_keywords = function
   | GramConstrTerminal(IDENT k)::l ->
-      message ("Defining '"^k^"' as keyword");
+      message ("Identifier '"^k^"' now a keyword");
       Lexer.add_keyword k;
       GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
   | l -> define_keywords_aux l
