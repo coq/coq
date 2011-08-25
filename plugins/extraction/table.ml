@@ -355,10 +355,6 @@ let error_MPfile_as_mod mp b =
 	    "Monolithic Extraction cannot deal with this situation.\n"^
 	    "Please "^s2^"use (Recursive) Extraction Library instead.\n"))
 
-let error_record r =
-  err (str "Record " ++ safe_pr_global r ++ str " has an anonymous field." ++
-       fnl () ++ str "To help extraction, please use an explicit name.")
-
 let msg_non_implicit r n id =
   let name = match id with
     | Anonymous -> ""
