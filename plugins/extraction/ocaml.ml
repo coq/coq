@@ -111,9 +111,18 @@ let get_infix r =
   let s = find_custom r in
   String.sub s 1 (String.length s - 2)
 
-exception NoRecord
+let get_ind = function
+  | IndRef _ as r -> r
+  | ConstructRef (ind,_) -> IndRef ind
+  | _ -> assert false
 
-let find_projections = function Record l -> l | _ -> raise NoRecord
+let pp_one_field r i = function
+  | Some r -> pp_global Term r
+  | None -> pp_global Type (get_ind r) ++ str "__" ++ int i
+
+let pp_field r fields i = pp_one_field r i (List.nth fields i)
+
+let pp_fields r fields = list_map_i (pp_one_field r) 0 fields
 
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
@@ -201,9 +210,9 @@ let rec pp_expr par env args =
     | MLcons (_,r,[]) ->
 	assert (args=[]);
 	pp_global Cons r
-    | MLcons ({c_kind = Record projs}, r, args') ->
+    | MLcons ({c_kind = Record fields}, r, args') ->
 	assert (args=[]);
-	pp_record_pat (projs, List.map (pp_expr true env []) args')
+	pp_record_pat (pp_fields r fields, List.map (pp_expr true env []) args')
     | MLcons (_,r,[arg1;arg2]) when is_infix r ->
 	assert (args=[]);
 	pp_par par
@@ -233,25 +242,25 @@ let rec pp_expr par env args =
 	  (pp_expr false env [] t)
 	in
 	(try
-	   let projs = find_projections info.m_kind in
-	   let (_, ids, c) = pv.(0) in
+	   (* First, can this match be printed as a mere record projection ? *)
+	   let fields =
+	     match info.m_kind with Record f -> f | _ -> raise Impossible
+	   in
+	   let (r, ids, c) = pv.(0) in
 	   let n = List.length ids in
+	   let free_of_patvar a = not (List.exists (ast_occurs_itvl 1 n) a) in
+	   let proj_hd i =
+	     pp_expr true env [] t ++ str "." ++ pp_field r fields i
+	   in
 	   match c with
-	     | MLrel i when i <= n ->
-		 apply (pp_par par' (pp_expr true env [] t ++ str "." ++
-				     pp_global Term (List.nth projs (n-i))))
-	     | MLapp (MLrel i, a) when i <= n ->
-		 if List.exists (ast_occurs_itvl 1 n) a
-		 then raise NoRecord
-		 else
-		   let ids,env' = push_vars (List.rev_map id_of_mlid ids) env
-		   in
-		   (pp_apply
-		      (pp_expr true env [] t ++ str "." ++
-		       pp_global Term (List.nth projs (n-i)))
-		      par ((List.map (pp_expr true env' []) a) @ args))
-	     | _ -> raise NoRecord
-	 with NoRecord ->
+	     | MLrel i when i <= n -> apply (pp_par par' (proj_hd (n-i)))
+	     | MLapp (MLrel i, a) when (i <= n) && (free_of_patvar a) ->
+	       let ids,env' = push_vars (List.rev_map id_of_mlid ids) env in
+	       (pp_apply (proj_hd (n-i))
+		  par ((List.map (pp_expr true env' []) a) @ args))
+	     | _ -> raise Impossible
+	 with Impossible ->
+	   (* Second, can this match be printed as a let-in ? *)
 	   if Array.length pv = 1 then
 	     let s1,s2 = pp_one_pat env info pv.(0) in
 	     apply
@@ -262,6 +271,7 @@ let rec pp_expr par env args =
 			 ++ spc () ++ str "in") ++
 		      spc () ++ hov 0 s2)))
 	   else
+	     (* Otherwise, standard match *)
  	     apply
       	       (pp_par par'
 		  (try pp_ifthenelse par' env expr pv
@@ -282,11 +292,11 @@ let rec pp_expr par env args =
 	pp_par par (str "failwith \"AXIOM TO BE REALIZED\"")
 
 
-and pp_record_pat (projs, args) =
+and pp_record_pat (fields, args) =
    str "{ " ++
    prlist_with_sep (fun () -> str ";" ++ spc ())
-     (fun (r,a) -> pp_global Term r ++ str " =" ++ spc () ++ a)
-     (List.combine projs args) ++
+     (fun (f,a) -> f ++ str " =" ++ spc () ++ a)
+     (List.combine fields args) ++
    str " }"
 
 and pp_ifthenelse par env expr pv = match pv with
@@ -303,18 +313,18 @@ and pp_ifthenelse par env expr pv = match pv with
 and pp_one_pat env info (r,ids,t) =
   let ids,env' = push_vars (List.rev_map id_of_mlid ids) env in
   let expr = pp_expr (expr_needs_par t) env' [] t in
-  try
-    let projs = find_projections info.m_kind in
-    pp_record_pat (projs, List.rev_map pr_id ids), expr
-  with NoRecord ->
-    (match List.rev ids with
-      | [i1;i2] when is_infix r -> pr_id i1 ++ str (get_infix r) ++ pr_id i2
-      | [] -> pp_global Cons r
-      | ids ->
+  let patt = match info.m_kind with
+    | Record fields ->
+      pp_record_pat (pp_fields r fields, List.rev_map pr_id ids)
+    | _ -> match List.rev ids with
+	| [i1;i2] when is_infix r -> pr_id i1 ++ str (get_infix r) ++ pr_id i2
+	| [] -> pp_global Cons r
+	| ids ->
 	  (* hack Extract Inductive prod *)
 	  (if str_global Cons r = "" then mt () else pp_global Cons r ++ spc ())
-	   ++ pp_boxed_tuple pr_id ids),
-    expr
+	  ++ pp_boxed_tuple pr_id ids
+  in
+  patt, expr
 
 and pp_pat env info pv =
   let factor_br, factor_set = try match info.m_same with
@@ -447,10 +457,11 @@ let pp_singleton kn packet =
 	 pp_comment (str "singleton inductive, whose constructor was " ++
 		     pr_id packet.ip_consnames.(0)))
 
-let pp_record kn projs ip_equiv packet =
-  let name = pp_global Type (IndRef (kn,0)) in
-  let projnames = List.map (pp_global Term) projs in
-  let l = List.combine projnames packet.ip_types.(0) in
+let pp_record kn fields ip_equiv packet =
+  let ind = IndRef (kn,0) in
+  let name = pp_global Type ind in
+  let fieldnames = pp_fields ind fields in
+  let l = List.combine fieldnames packet.ip_types.(0) in
   let pl = rename_tvars keywords packet.ip_vars in
   str "type " ++ pp_parameters pl ++ name ++
   pp_equiv pl name ip_equiv ++ str " = { "++
@@ -511,8 +522,7 @@ let pp_mind kn i =
   match i.ind_kind with
     | Singleton -> pp_singleton kn i.ind_packets.(0)
     | Coinductive -> pp_ind true kn i
-    | Record projs ->
-	pp_record kn projs (i.ind_equiv,0) i.ind_packets.(0)
+    | Record fields -> pp_record kn fields (i.ind_equiv,0) i.ind_packets.(0)
     | Standard -> pp_ind false kn i
 
 let pp_decl = function

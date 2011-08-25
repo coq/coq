@@ -55,7 +55,7 @@ type inductive_kind =
   | Singleton
   | Coinductive
   | Standard
-  | Record of global_reference list
+  | Record of global_reference option list (* None for anonymous field *)
 
 (* A [ml_ind_packet] is the miniml counterpart of a [one_inductive_body].
    If the inductive is logical ([ip_logical = false]), then all other fields

@@ -443,17 +443,16 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	let mp,d,_ = repr_mind kn in
 	let rec select_fields l typs = match l,typs with
 	  | [],[] -> []
-	  | (Name id)::l, typ::typs ->
-	      if isDummy (expand env typ) then select_fields l typs
-	      else
-		let knp = make_con mp d (label_of_id id) in
-		if List.for_all ((=) Keep) (type2signature env typ)
-		then
-		  projs := Cset.add knp !projs;
-		(ConstRef knp) :: (select_fields l typs)
+	  | _::l, typ::typs when isDummy (expand env typ) ->
+	      select_fields l typs
 	  | Anonymous::l, typ::typs ->
-	      if isDummy (expand env typ) then select_fields l typs
-	      else error_record r
+	      None :: (select_fields l typs)
+	  | Name id::l, typ::typs ->
+	      let knp = make_con mp d (label_of_id id) in
+	      (* Is it safe to use [id] for projections [foo.id] ? *)
+	      if List.for_all ((=) Keep) (type2signature env typ)
+	      then projs := Cset.add knp !projs;
+	      Some (ConstRef knp) :: (select_fields l typs)
 	  | _ -> assert false
 	in
 	let field_glob = select_fields field_names typ
@@ -464,10 +463,8 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	  let n = nb_default_params env
             (Inductive.type_of_inductive env (mib,mip0))
 	  in
-	  List.iter
-	    (Option.iter
-	       (fun kn -> if Cset.mem kn !projs then add_projection n kn))
-	    (lookup_projections ip)
+	  let check_proj kn = if Cset.mem kn !projs then add_projection n kn in
+	  List.iter (Option.iter check_proj) (lookup_projections ip)
 	with Not_found -> ()
 	end;
 	Record field_glob
