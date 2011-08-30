@@ -262,8 +262,8 @@ type with_declaration_ast =
 
 type module_ast =
   | CMident of qualid located
-  | CMapply of module_ast * module_ast
-  | CMwith of module_ast * with_declaration_ast
+  | CMapply of loc * module_ast * module_ast
+  | CMwith of loc * module_ast * with_declaration_ast
 
 val ntn_loc :
   Util.loc -> constr_notation_substitution -> string -> (int * int) list

@@ -579,7 +579,7 @@ let explain_label_already_declared l =
   str ("The label "^string_of_label l^" is already declared.")
 
 let explain_application_to_not_path _ =
-  str "Application to not path."
+  str "Application of modules is restricted to paths."
 
 let explain_not_a_functor mtb =
   str "Application of not a functor."
@@ -668,7 +668,7 @@ let explain_incorrect_with_in_module () =
   str "The syntax \"with\" is not allowed for modules."
 
 let explain_incorrect_module_application () =
-  str "Module application to a module type."
+  str "Illegal application to a module type."
 
 open Modintern
 

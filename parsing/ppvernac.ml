@@ -218,13 +218,13 @@ let pr_with_declaration pr_c = function
 
 let rec pr_module_ast pr_c = function
   | CMident qid -> spc () ++ pr_located pr_qualid qid
-  | CMwith (mty,decl) ->
+  | CMwith (_,mty,decl) ->
       let m = pr_module_ast pr_c mty in
       let p = pr_with_declaration pr_c decl in
       m ++ spc() ++ str"with" ++ spc() ++ p
-  | CMapply (me1,(CMident _ as me2)) ->
+  | CMapply (_,me1,(CMident _ as me2)) ->
       pr_module_ast pr_c me1 ++ spc() ++ pr_module_ast pr_c me2
-  | CMapply (me1,me2) ->
+  | CMapply (_,me1,me2) ->
       pr_module_ast pr_c me1 ++ spc() ++
       hov 1 (str"(" ++ pr_module_ast pr_c me2 ++ str")")
 

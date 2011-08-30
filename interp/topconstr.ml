@@ -1237,8 +1237,8 @@ type with_declaration_ast =
 
 type module_ast =
   | CMident of qualid located
-  | CMapply of module_ast * module_ast
-  | CMwith of module_ast * with_declaration_ast
+  | CMapply of loc * module_ast * module_ast
+  | CMwith of loc * module_ast * with_declaration_ast
 
 (* Returns the ranges of locs of the notation that are not occupied by args  *)
 (* and which are then occupied by proper symbols of the notation (or spaces) *)

@@ -53,11 +53,11 @@ let error_not_a_module_loc loc s =
 let error_not_a_module_nor_modtype_loc loc s =
   Compat.Loc.raise loc (ModuleInternalizationError (NotAModuleNorModtype s))
 
-let error_incorrect_with_in_module () =
-  raise (ModuleInternalizationError IncorrectWithInModule)
+let error_incorrect_with_in_module loc =
+  Compat.Loc.raise loc (ModuleInternalizationError IncorrectWithInModule)
 
-let error_application_to_module_type () =
-  raise (ModuleInternalizationError IncorrectModuleApplication)
+let error_application_to_module_type loc =
+  Compat.Loc.raise loc (ModuleInternalizationError IncorrectModuleApplication)
 
 
 
@@ -142,24 +142,35 @@ let transl_with_decl env = function
   | CWith_Definition ((_,fqid),c) ->
       With_Definition (fqid,interp_constr Evd.empty env c)
 
+let loc_of_module = function
+  | CMident (loc,_) | CMapply (loc,_,_) | CMwith (loc,_,_) -> loc
+
+let check_module_argument_is_path me' = function
+  | CMident _ -> ()
+  | (CMapply (loc,_,_) | CMwith (loc,_,_)) ->
+      Compat.Loc.raise loc
+        (Modops.ModuleTypingError (Modops.ApplicationToNotPath me'))
+
 let rec interp_modexpr env = function
   | CMident qid ->
       MSEident (lookup_module qid)
-  | CMapply (me1,me2) ->
-      let me1 = interp_modexpr env me1 in
-      let me2 = interp_modexpr env me2 in
-	MSEapply(me1,me2)
-  | CMwith _ -> error_incorrect_with_in_module ()
+  | CMapply (_,me1,me2) ->
+      let me1' = interp_modexpr env me1 in
+      let me2' = interp_modexpr env me2 in
+      check_module_argument_is_path me2' me2;
+      MSEapply(me1',me2')
+  | CMwith (loc,_,_) -> error_incorrect_with_in_module loc
 
 
 let rec interp_modtype env = function
   | CMident qid ->
       MSEident (lookup_modtype qid)
-  | CMapply (mty1,me) ->
+  | CMapply (_,mty1,me) ->
       let mty' = interp_modtype env mty1 in
       let me' = interp_modexpr env me in
-	MSEapply(mty',me')
-  | CMwith (mty,decl) ->
+      check_module_argument_is_path me' me;
+      MSEapply(mty',me')
+  | CMwith (_,mty,decl) ->
       let mty = interp_modtype env mty in
       let decl = transl_with_decl env decl in
 	MSEwith(mty,decl)
@@ -168,13 +179,14 @@ let rec interp_modexpr_or_modtype env = function
   | CMident qid ->
       let (mp,ismod) = lookup_module_or_modtype qid in
       (MSEident mp, ismod)
-  | CMapply (me1,me2) ->
-      let me1,ismod1 = interp_modexpr_or_modtype env me1 in
-      let me2,ismod2 = interp_modexpr_or_modtype env me2 in
-      if not ismod2 then error_application_to_module_type ();
-      (MSEapply (me1,me2), ismod1)
-  | CMwith (me,decl) ->
+  | CMapply (_,me1,me2) ->
+      let me1',ismod1 = interp_modexpr_or_modtype env me1 in
+      let me2',ismod2 = interp_modexpr_or_modtype env me2 in
+      check_module_argument_is_path me2' me2;
+      if not ismod2 then error_application_to_module_type (loc_of_module me2);
+      (MSEapply (me1',me2'), ismod1)
+  | CMwith (loc,me,decl) ->
       let me,ismod = interp_modexpr_or_modtype env me in
       let decl = transl_with_decl env decl in
-      if ismod then error_incorrect_with_in_module ();
+      if ismod then error_incorrect_with_in_module loc;
       (MSEwith(me,decl), ismod)

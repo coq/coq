@@ -485,7 +485,7 @@ GEXTEND Gram
   (* Module expressions *)
   module_expr:
     [ [ me = module_expr_atom -> me
-      | me1 = module_expr; me2 = module_expr_atom -> CMapply (me1,me2)
+      | me1 = module_expr; me2 = module_expr_atom -> CMapply (loc,me1,me2)
       ] ]
   ;
   module_expr_atom:
@@ -501,8 +501,9 @@ GEXTEND Gram
   module_type:
     [ [ qid = qualid -> CMident qid
       | "("; mt = module_type; ")" -> mt
-      | mty = module_type; me = module_expr_atom -> CMapply (mty,me)
-      | mty = module_type; "with"; decl = with_declaration -> CMwith (mty,decl)
+      | mty = module_type; me = module_expr_atom -> CMapply (loc,mty,me)
+      | mty = module_type; "with"; decl = with_declaration ->
+          CMwith (loc,mty,decl)
       ] ]
   ;
 END
