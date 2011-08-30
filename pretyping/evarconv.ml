@@ -195,7 +195,8 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
           evar_eqappr_x ts env evd pbty
             (decompose_app term1) (decompose_app term2)
 
-and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
+and evar_eqappr_x ?(rhs_is_stuck_proj = false)
+  ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
   (* Evar must be undefined since we have flushed evars *)
   match (flex_kind_of_term term1 l1, flex_kind_of_term term2 l2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
@@ -324,11 +325,13 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
              if the first argument is a beta-redex (expand a constant
              only if necessary) or the second argument is potentially
              usable as a canonical projection *)
-	  if isLambda flex1 or is_open_canonical_projection env i appr2
-	  then
+          let rhs_is_stuck_proj =
+            rhs_is_stuck_proj || is_open_canonical_projection env i appr2 in
+	  if isLambda flex1 || rhs_is_stuck_proj then
 	    match eval_flexible_term ts env flex1 with
 	    | Some v1 ->
-		evar_eqappr_x ts env i pbty (evar_apprec ts env i l1 v1) appr2
+		evar_eqappr_x ~rhs_is_stuck_proj 
+                  ts env i pbty (evar_apprec ts env i l1 v1) appr2
 	    | None ->
 		match eval_flexible_term ts env flex2 with
 		| Some v2 ->
@@ -544,6 +547,10 @@ and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) 
         us2 us);
     (fun i -> evar_conv_x trs env i CONV c1 (applist (c,(List.rev ks))));
     (fun i -> ise_list2 i (fun i -> evar_conv_x trs env i CONV) ts ts1)]
+
+(* getting rid of the optional argument rhs_is_stuck_proj *)
+let evar_eqappr_x ts env evd pbty appr1 appr2 =
+  evar_eqappr_x ts env evd pbty appr1 appr2
 
 (* We assume here |l1| <= |l2| *)
 
