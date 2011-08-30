@@ -268,13 +268,19 @@ let default_pr_goal gs =
 		       str "============================" ++ fnl ()  ++
 		       thesis ++ str " " ++  pc) ++ fnl ()
 
+(* display a goal tag *)
+let pr_goal_tag g =
+  let s = " (ID " ^ Goal.uid g ^ ")" in
+  str (emacs_str s)
+
 (* display the conclusion of a goal *)
 let pr_concl n sigma g =
   let (g,sigma) = Goal.V82.nf_evar sigma g in
   let env = Goal.V82.env sigma g in
   let pc = pr_ltype_env_at_top env (Goal.V82.concl sigma g) in
     str (emacs_str "")  ++
-      str "subgoal " ++ int n ++ str " is:" ++ cut () ++ str" "  ++ pc
+      str "subgoal " ++ int n ++ pr_goal_tag g ++
+      str " is:" ++ cut () ++ str" "  ++ pc
 
 (* display evar type: a context and a type *)
 let pr_evgl_sign gl =
@@ -304,7 +310,8 @@ let default_pr_subgoal n sigma =
     | g::rest ->
        	if p = 1 then
           let pg = default_pr_goal { sigma=sigma ; it=g } in
-          v 0 (str "subgoal " ++ int n ++ str " is:" ++ cut () ++ pg)
+          v 0 (str "subgoal " ++ int n ++ pr_goal_tag g
+	       ++ str " is:" ++ cut () ++ pg)
        	else
 	  prrec (p-1) rest
   in
@@ -329,7 +336,7 @@ let default_pr_subgoals close_cmd sigma = function
       end
   | [g] ->
       let pg = default_pr_goal { it = g ; sigma = sigma } in
-      v 0 (str ("1 "^"subgoal") ++cut () ++ pg)
+      v 0 (str ("1 "^"subgoal") ++ pr_goal_tag g ++ cut () ++ pg)
   | g1::rest ->
       let rec pr_rec n = function
         | [] -> (mt ())
@@ -340,9 +347,9 @@ let default_pr_subgoals close_cmd sigma = function
       in
       let pg1 = default_pr_goal { it = g1 ; sigma = sigma } in
       let prest = pr_rec 2 rest in
-      v 0 (int(List.length rest+1) ++ str" subgoals" ++ cut ()
+      v 0 (int(List.length rest+1) ++ str" subgoals" ++
+             str (emacs_str ", subgoal 1") ++ pr_goal_tag g1 ++ cut ()
 	   ++ pg1 ++ prest ++ fnl ())
-
 
 (**********************************************************************)
 (* Abstraction layer                                                  *)

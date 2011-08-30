@@ -23,6 +23,8 @@ type goal = {
 (* spiwack: I don't deal with the tags, yet. It is a worthy discussion
    whether we do want some tags displayed besides the goal or not. *)
 
+let uid {content = e} = string_of_int e
+
 let pr_goal {content = e} = str "GOAL:" ++ Pp.int e
 
 (* access primitive *)

@@ -15,6 +15,10 @@ type goal
     sort of communication pipes. But I find it heavy. *)
 val build : Evd.evar -> goal 
 
+(* Gives a unique identifier to each goal. The identifier is
+   guaranteed to contain no space. *)
+val uid : goal -> string
+
 (* Debugging help *)
 val pr_goal : goal -> Pp.std_ppcmds
 
