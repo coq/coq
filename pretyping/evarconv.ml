@@ -324,7 +324,7 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
              if the first argument is a beta-redex (expand a constant
              only if necessary) or the second argument is potentially
              usable as a canonical projection *)
-	  if isLambda flex1 or is_open_canonical_projection i appr2
+	  if isLambda flex1 or is_open_canonical_projection env i appr2
 	  then
 	    match eval_flexible_term ts env flex1 with
 	    | Some v1 ->

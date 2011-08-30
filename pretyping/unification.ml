@@ -541,7 +541,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
     let f1 () =
       if isApp cM then
 	let f1l1 = decompose_app cM in
-	  if is_open_canonical_projection sigma f1l1 then
+	  if is_open_canonical_projection env sigma f1l1 then
 	    let f2l2 = decompose_app cN in
 	      solve_canonical_projection curenvnb pb b cM f1l1 cN f2l2 substn
 	  else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -554,7 +554,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	try f1 () with e when precatchable_exception e ->
 	  if isApp cN then
 	    let f2l2 = decompose_app cN in
-	      if is_open_canonical_projection sigma f2l2 then
+	      if is_open_canonical_projection env sigma f2l2 then
 		let f1l1 = decompose_app cM in
 		  solve_canonical_projection curenvnb pb b cN f2l2 cM f1l1 substn
 	      else error_cannot_unify (fst curenvnb) sigma (cM,cN)
