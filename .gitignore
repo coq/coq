@@ -102,13 +102,12 @@ tools/coqdoc/cpretty.ml
 
 # .mly files
 
-dev/ocamlweb-doc/syntax.ml
-dev/ocamlweb-doc/syntax.mli
 ide/config_parser.ml
 ide/config_parser.mli
 
 # .ml4 files
 
+ide/project_file.ml
 lib/pp.ml
 lib/compat.ml
 parsing/g_xml.ml
@@ -157,7 +156,6 @@ tactics/rewrite.ml
 tactics/eqdecide.ml
 tactics/extratactics.ml
 tactics/extraargs.ml
-tools/coq_makefile.ml
 tools/coq_tex.ml
 toplevel/mltop.ml
 toplevel/whelp.ml
