@@ -25,3 +25,6 @@ val home : string
 
 val coqlib : string ref
 val coqtop_path : string ref
+
+val strip_path : string -> string
+val canonical_path_name : string -> string

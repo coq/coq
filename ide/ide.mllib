@@ -22,4 +22,5 @@ Coq
 Coq_commands
 Command_windows
 Coqide_ui
+Project_file
 Coqide
