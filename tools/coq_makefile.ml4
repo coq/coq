@@ -693,10 +693,11 @@ let do_makefile args =
   has_file some_vfile v_f; has_file some_mlifile mli_f; has_file some_mlfile ml_f;
   has_file some_ml4file ml4_f; has_file some_mllibfile mllib_f;
   let check_dep f =
-    if Filename.check_suffix f ".v" then
-      some_vfile := true
-    else if (Filename.check_suffix f ".ml") || (Filename.check_suffix f ".ml4") then
-      some_mlfile := true
+    if Filename.check_suffix f ".v" then some_vfile := true
+    else if (Filename.check_suffix f ".mli") then some_mlifile := true
+    else if (Filename.check_suffix f ".ml4") then some_ml4file := true
+    else if (Filename.check_suffix f ".ml") then some_mlfile := true
+    else if (Filename.check_suffix f ".mllib") then some_mllibfile := true
   in
   List.iter (fun (_,dependencies,_) ->
     List.iter check_dep (Str.split (Str.regexp "[ \t]+") dependencies)) sps;
