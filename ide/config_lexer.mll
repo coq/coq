@@ -10,7 +10,6 @@
 
   open Lexing
   open Format
-  open Config_parser
   open Minilib
 
   let string_buffer = Buffer.create 1024
@@ -20,21 +19,23 @@
 let space = [' ' '\010' '\013' '\009' '\012']
 let char = ['A'-'Z' 'a'-'z' '_' '0'-'9']
 let ident = char+
+let ignore = space | ('#' [^ '\n']*)
 
-rule token = parse
-  | space+        { token lexbuf }
-  | '#' [^ '\n']* { token lexbuf }
-  | ident { IDENT (lexeme lexbuf) }
-  | '='   { EQUAL }
-  | '"'   { Buffer.reset string_buffer;
-	    Buffer.add_char string_buffer '"';
-	    string lexbuf;
-	    let s = Buffer.contents string_buffer in
-	    STRING (Scanf.sscanf s "%S" (fun s -> s)) }
+rule prefs m = parse
+  |ignore* (ident as id) ignore* '=' { let conf = str_list [] lexbuf in
+				 prefs (Stringmap.add id conf m) lexbuf }
   | _     { let c = lexeme_start lexbuf in
-	    eprintf ".coqiderc: invalid character (%d)\n@." c;
-	    token lexbuf }
-  | eof   { EOF }
+	      eprintf ".coqiderc: invalid character (%d)\n@." c;
+	      prefs m lexbuf }
+  | eof   { m }
+
+and str_list l = parse
+  | ignore* '"'   { Buffer.reset string_buffer;
+		    Buffer.add_char string_buffer '"';
+		    string lexbuf;
+		    let s = Buffer.contents string_buffer in
+		      str_list ((Scanf.sscanf s "%S" (fun s -> s))::l) lexbuf }
+  |ignore+ { List.rev l}
 
 and string = parse
   | '"'  { Buffer.add_char string_buffer '"' }
@@ -47,7 +48,7 @@ and string = parse
   let load_file f =
     let c = open_in f in
     let lb = from_channel c in
-    let m = Config_parser.prefs token lb in
+    let m = prefs Stringmap.empty lb in
     close_in c;
     m
 
