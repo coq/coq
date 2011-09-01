@@ -1479,8 +1479,9 @@ let create_session file =
     |None -> !sup_args
     |Some the_file -> match !current.read_project with
 	|Ignore_args -> !sup_args
-	|Append_args -> (Project_file.args_from_project the_file !custom_project_files)@(!sup_args)
-	|Subst_args -> Project_file.args_from_project the_file !custom_project_files
+	|Append_args -> (Project_file.args_from_project the_file !custom_project_files !current.project_file_name)
+	   @(!sup_args)
+	|Subst_args -> Project_file.args_from_project the_file !custom_project_files !current.project_file_name
   in
   let ct = ref (Coq.spawn_coqtop coqtop_args) in
   let command = new Command_windows.command_window !ct current in
@@ -1687,7 +1688,6 @@ let load_file handler f =
   try
     prerr_endline "Loading file starts";
     let is_f = Minilib.same_file f in
-      Minilib.safe_prerr_endline f;
       if not (Minilib.list_fold_left_i
 		(fun i found x -> if found then found else
                    let {analyzed_view=av} = x in
