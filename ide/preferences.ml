@@ -30,6 +30,18 @@ let mod_list_to_str l = List.fold_left (fun s m -> (mod_to_str m)^s) "" l
 
 let str_to_mod_list s = snd (GtkData.AccelGroup.parse s)
 
+type project_behavior = Ignore_args | Append_args | Subst_args
+
+let string_of_project_behavior = function
+  |Ignore_args -> "ignored"
+  |Append_args -> "appended to arguments"
+  |Subst_args -> "taken instead of arguments"
+
+let project_behavior_of_string s =
+  if s = "taken instead of arguments" then Subst_args
+  else if s = "appened to arguments" then Append_args
+  else Ignore_args
+
 type pref =
     {
       mutable cmd_coqc : string;
@@ -43,6 +55,9 @@ type pref =
       mutable auto_save : bool;
       mutable auto_save_delay : int;
       mutable auto_save_name : string * string;
+
+      mutable read_project : project_behavior;
+      mutable project_file_name : string;
 
       mutable encoding_use_locale : bool;
       mutable encoding_use_utf8 : bool;
@@ -97,6 +112,9 @@ let (current:pref ref) =
     auto_save = true;
     auto_save_delay = 10000;
     auto_save_name = "#","#";
+
+    read_project = Ignore_args;
+    project_file_name = "_CoqProject";
 
     encoding_use_locale = true;
     encoding_use_utf8 = false;
@@ -169,6 +187,9 @@ let save_pref () =
     add "auto_save_delay" [string_of_int p.auto_save_delay] ++
     add "auto_save_name" [fst p.auto_save_name; snd p.auto_save_name] ++
 
+    add "project_options" [string_of_project_behavior p.read_project] ++
+    add "project_file_name" [p.project_file_name] ++
+
     add "encoding_use_locale" [string_of_bool p.encoding_use_locale] ++
     add "encoding_use_utf8" [string_of_bool p.encoding_use_utf8] ++
     add "encoding_manual" [p.encoding_manual] ++
@@ -229,6 +250,9 @@ let load_pref () =
     set_bool "encoding_use_locale" (fun v -> np.encoding_use_locale <- v);
     set_bool "encoding_use_utf8" (fun v -> np.encoding_use_utf8 <- v);
     set_hd "encoding_manual" (fun v -> np.encoding_manual <- v);
+    set_hd "project_options"
+      (fun v -> np.read_project <- (project_behavior_of_string v));
+    set_hd "project_file_name" (fun v -> np.project_file_name <- v);
     set "automatic_tactics"
       (fun v -> np.automatic_tactics <- v);
     set_hd "cmd_print" (fun v -> np.cmd_print <- v);
@@ -429,6 +453,21 @@ let configure ?(apply=(fun () -> ())) () =
       (if !current.encoding_use_utf8 then "UTF-8"
        else if !current.encoding_use_locale then "LOCALE" else !current.encoding_manual)
   in
+  let read_project =
+    combo
+      "Project file options are"
+      ~f:(fun s -> !current.read_project <- project_behavior_of_string s)
+      ~editable:false
+      [string_of_project_behavior Subst_args;
+       string_of_project_behavior Append_args;
+       string_of_project_behavior Ignore_args]
+      (string_of_project_behavior !current.read_project)
+  in
+  let project_file_name =
+    string "Default name for project file"
+      ~f:(fun s -> !current.project_file_name <- s)
+      !current.project_file_name
+  in
   let help_string =
     "restart to apply"
   in
@@ -554,6 +593,9 @@ let configure ?(apply=(fun () -> ())) () =
 	     [global_auto_revert;global_auto_revert_delay;
 	      auto_save; auto_save_delay; (* auto_save_name*)
 	      encodings;
+	     ]);
+     Section("Project",
+	     [project_file_name;read_project;
 	     ]);
 (*
      Section("Appearance",

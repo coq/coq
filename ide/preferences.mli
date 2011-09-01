@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+type project_behavior = Ignore_args | Append_args | Subst_args
+
 type pref =
     {
       mutable cmd_coqc : string;
@@ -19,6 +21,9 @@ type pref =
       mutable auto_save : bool;
       mutable auto_save_delay : int;
       mutable auto_save_name : string * string;
+
+      mutable read_project : project_behavior;
+      mutable project_file_name : string;
 
       mutable encoding_use_locale : bool;
       mutable encoding_use_utf8 : bool;
