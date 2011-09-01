@@ -78,13 +78,6 @@ let is_genrule r =
     let genrule = Str.regexp("%") in
       Str.string_match genrule r 0
 
-let absolute_dir dir =
-  let current = Sys.getcwd () in
-    Sys.chdir dir;
-    let dir' = Sys.getcwd () in
-      Sys.chdir current;
-      dir'
-
 let string_prefix a b =
   let rec aux i = try if a.[i] = b.[i] then aux (i+1) else i with |Invalid_argument _ -> i in
     String.sub a 0 (aux 0)
@@ -111,7 +104,7 @@ let standard opt =
   print "\"\n\n"
 
 let is_prefix_of_file dir f =
-  is_prefix dir (absolute_dir (Filename.dirname f))
+  is_prefix dir (Minilib.canonical_path_name (Filename.dirname f))
 
 let classify_files_by_root var files (inc_i,inc_r) =
   if not (List.exists (fun (pdir,_,_) -> pdir = ".") inc_r) then
@@ -523,7 +516,7 @@ let command_line args =
   print "\n#\n\n"
 
 let ensure_root_dir (v,(mli,ml4,ml,mllib),_,_) ((i_inc,r_inc) as l) =
-  let here = absolute_dir "." in
+  let here = Sys.getcwd () in
   let not_tops =List.for_all (fun s -> s <> Filename.basename s) in
   if List.exists (fun (_,x) -> x = here) i_inc
     or List.exists (fun (_,_,x) -> is_prefix x here) r_inc
