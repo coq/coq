@@ -92,6 +92,8 @@ Program Definition id (n : nat) : { x : nat | x = n } :=
 Finally, the let tupling construct {\tt let (x1, ..., xn) := t in b}
 does not produce an equality, contrary to the let pattern construct 
 {\tt let '(x1, ..., xn) := t in b}.
+Also, ``{\term}:>'' explicitly asks the system to see {\term} in a coerced
+way.
 
 The next two commands are similar to their standard counterparts
 Definition (see Section~\ref{Basic-definitions}) and Fixpoint (see Section~\ref{Fixpoint}) in that

@@ -217,12 +217,12 @@ possible one (among all tokens defined at this moment), and so on.
 
 \subsection{Syntax of terms}
 
-Figures \ref{term-syntax} and \ref{term-syntax-aux} describe the basic
-set of terms which form the {\em Calculus of Inductive Constructions}
-(also called \CIC). The formal presentation of {\CIC} is given in
-Chapter \ref{Cic}. Extensions of this syntax are given in chapter
-\ref{Gallina-extension}. How to customize the syntax is described in
-Chapter \ref{Addoc-syntax}.
+Figures \ref{term-syntax} and \ref{term-syntax-aux} describe the basic syntax of
+the terms of the {\em Calculus of Inductive Constructions} (also
+called \CIC). The formal presentation of {\CIC} is given in Chapter
+\ref{Cic}. Extensions of this syntax are given in chapter
+\ref{Gallina-extension}. How to customize the syntax is described in Chapter
+\ref{Addoc-syntax}.
 
 \begin{figure}[htbp]
 \begin{centerframe}
@@ -240,9 +240,13 @@ Chapter \ref{Addoc-syntax}.
  & $|$ & {\tt let} {\tt (} \sequence{\name}{,} {\tt )} \zeroone{\ifitem}
          {\tt :=} {\term}
          {\tt in} {\term}  &(\ref{caseanalysis}, \ref{Mult-match})\\
+ & $|$ & {\tt let '} {\pattern} \zeroone{{\tt in} {\term}} {\tt :=} {\term}
+        \zeroone{\returntype} {\tt in} {\term} & (\ref{caseanalysis}, \ref{Mult-match})\\
  & $|$ & {\tt if} {\term} \zeroone{\ifitem} {\tt then} {\term}
          {\tt else} {\term} &(\ref{caseanalysis}, \ref{Mult-match})\\
  & $|$ & {\term} {\tt :} {\term} &(\ref{typecast})\\
+ & $|$ & {\term} {\tt <:} {\term} &(\ref{typecast})\\
+ & $|$ & {\term} {\tt :>} &(\ref{Program})\\
  & $|$ & {\term} {\tt ->} {\term} &(\ref{products})\\
  & $|$ & {\term} \nelist{\termarg}{}&(\ref{applications})\\
  & $|$ & {\tt @} {\qualid} \sequence{\term}{}
@@ -256,6 +260,7 @@ Chapter \ref{Addoc-syntax}.
  & $|$ & {\sort} &(\ref{Gallina-sorts})\\
  & $|$ & {\num} &(\ref{numerals})\\
  & $|$ & {\_} &(\ref{hole})\\
+ & $|$ & {\tt (} {\term} {\tt )} & \\
  & & &\\
 {\termarg} & ::= & {\term} &\\
  & $|$ & {\tt (} {\ident} {\tt :=} {\term} {\tt )}
@@ -495,6 +500,10 @@ arguments is used for making explicit the value of implicit arguments
 
 The expression ``{\term}~{\tt :}~{\type}'' is a type cast
 expression. It enforces the type of {\term} to be {\type}.
+
+``{\term}~{\tt <:}~{\type}'' locally sets up the virtual machine (as if option
+{\tt Virtual Machine} were on, see \ref{SetVirtualMachine}) for checking that
+{\term} has type {\type}.
 
 \subsection{Inferable subterms
 \label{hole}
