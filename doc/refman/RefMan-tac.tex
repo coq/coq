@@ -497,6 +497,89 @@ Section~\ref{pattern} to transform the goal so that it gets the form
 
 \end{Variants}
 
+\subsection{{\tt apply {\term} in {\ident}}
+\tacindex{apply \ldots\ in}}
+
+This tactic applies to any goal.  The argument {\term} is a term
+well-formed in the local context and the argument {\ident} is an
+hypothesis of the context.  The tactic {\tt apply {\term} in {\ident}}
+tries to match the conclusion of the type of {\ident} against a non
+dependent premise of the type of {\term}, trying them from right to
+left.  If it succeeds, the statement of hypothesis {\ident} is
+replaced by the conclusion of the type of {\term}. The tactic also
+returns as many subgoals as the number of other non dependent premises
+in the type of {\term} and of the non dependent premises of the type
+of {\ident}.  If the conclusion of the type of {\term} does not match
+the goal {\em and} the conclusion is an inductive type isomorphic to a
+tuple type, then the tuple is (recursively) decomposed and the first
+component of the tuple of which a non dependent premise matches the
+conclusion of the type of {\ident}. Tuples are decomposed in a
+width-first left-to-right order (for instance if the type of {\tt H1}
+is a \verb=A <-> B= statement, and the type of {\tt H2} is \verb=A=
+then {\tt apply H1 in H2} transforms the type of {\tt H2} into {\tt
+  B}). The tactic {\tt apply} relies on first-order pattern-matching
+with dependent types.
+
+\begin{ErrMsgs}
+\item \errindex{Statement without assumptions}
+
+This happens if the type of {\term} has no non dependent premise.
+
+\item \errindex{Unable to apply}
+
+This happens if the conclusion of {\ident} does not match any of the
+non dependent premises of the type of {\term}.
+\end{ErrMsgs}
+
+\begin{Variants}
+\item {\tt apply \nelist{\term}{,} in {\ident}}
+
+This applies each of {\term} in sequence in {\ident}.
+
+\item {\tt apply \nelist{{\term} {\bindinglist}}{,} in {\ident}}
+
+This does the same but uses the bindings in each {\bindinglist} to 
+instantiate the parameters of the corresponding type of {\term}
+(see syntax of bindings in Section~\ref{Binding-list}).
+
+\item {\tt eapply \nelist{{\term} {\bindinglist}}{,} in {\ident}}
+\tacindex{eapply {\ldots} in}
+
+This works as {\tt apply \nelist{{\term} {\bindinglist}}{,} in
+{\ident}} but turns unresolved bindings into existential variables, if
+any, instead of failing.
+
+\item {\tt apply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}
+
+This works as {\tt apply \nelist{{\term}{,} {\bindinglist}}{,} in
+{\ident}} then destructs the hypothesis {\ident} along
+{\disjconjintropattern} as {\tt destruct {\ident} as
+{\disjconjintropattern}} would.
+
+\item {\tt eapply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}
+
+This works as {\tt apply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}} but using {\tt eapply}.
+
+\item {\tt simple apply {\term} in {\ident}}
+\tacindex{simple apply {\ldots} in} 
+\tacindex{simple eapply {\ldots} in} 
+
+This behaves like {\tt apply {\term} in {\ident}} but it reasons
+modulo conversion only on subterms that contain no variables to
+instantiate. For instance, if {\tt id := fun x:nat => x} and {\tt H :
+  forall y, id y = y -> True} and {\tt H0 : O = O} then {\tt simple
+  apply H in H0} does not succeed because it would require the
+conversion of {\tt f ?y} and {\tt O} where {\tt ?y} is a variable to
+instantiate.  Tactic {\tt simple apply {\term} in {\ident}} does not
+either traverse tuples as {\tt apply {\term} in {\ident}} does.
+
+\item {\tt simple apply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}\\
+{\tt simple eapply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}
+
+This are the general forms of {\tt simple apply {\term} in {\ident}} and 
+{\tt simple eapply {\term} in {\ident}}.
+\end{Variants}
+
 \subsection{{\tt set ( {\ident} {\tt :=} {\term} \tt )}
 \label{tactic:set}
 \tacindex{set}
@@ -658,89 +741,6 @@ in the list of subgoals remaining to prove.
 %% many premises can be eaten without leaving meta-variables). Hence 
 %% no documentation for this integer optional argument of specialize
 
-\end{Variants}
-
-\subsection{{\tt apply {\term} in {\ident}}
-\tacindex{apply \ldots\ in}}
-
-This tactic applies to any goal.  The argument {\term} is a term
-well-formed in the local context and the argument {\ident} is an
-hypothesis of the context.  The tactic {\tt apply {\term} in {\ident}}
-tries to match the conclusion of the type of {\ident} against a non
-dependent premise of the type of {\term}, trying them from right to
-left.  If it succeeds, the statement of hypothesis {\ident} is
-replaced by the conclusion of the type of {\term}. The tactic also
-returns as many subgoals as the number of other non dependent premises
-in the type of {\term} and of the non dependent premises of the type
-of {\ident}.  If the conclusion of the type of {\term} does not match
-the goal {\em and} the conclusion is an inductive type isomorphic to a
-tuple type, then the tuple is (recursively) decomposed and the first
-component of the tuple of which a non dependent premise matches the
-conclusion of the type of {\ident}. Tuples are decomposed in a
-width-first left-to-right order (for instance if the type of {\tt H1}
-is a \verb=A <-> B= statement, and the type of {\tt H2} is \verb=A=
-then {\tt apply H1 in H2} transforms the type of {\tt H2} into {\tt
-  B}). The tactic {\tt apply} relies on first-order pattern-matching
-with dependent types.
-
-\begin{ErrMsgs}
-\item \errindex{Statement without assumptions}
-
-This happens if the type of {\term} has no non dependent premise.
-
-\item \errindex{Unable to apply}
-
-This happens if the conclusion of {\ident} does not match any of the
-non dependent premises of the type of {\term}.
-\end{ErrMsgs}
-
-\begin{Variants}
-\item {\tt apply \nelist{\term}{,} in {\ident}}
-
-This applies each of {\term} in sequence in {\ident}.
-
-\item {\tt apply \nelist{{\term} {\bindinglist}}{,} in {\ident}}
-
-This does the same but uses the bindings in each {\bindinglist} to 
-instantiate the parameters of the corresponding type of {\term}
-(see syntax of bindings in Section~\ref{Binding-list}).
-
-\item {\tt eapply \nelist{{\term} {\bindinglist}}{,} in {\ident}}
-\tacindex{eapply {\ldots} in}
-
-This works as {\tt apply \nelist{{\term} {\bindinglist}}{,} in
-{\ident}} but turns unresolved bindings into existential variables, if
-any, instead of failing.
-
-\item {\tt apply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}
-
-This works as {\tt apply \nelist{{\term}{,} {\bindinglist}}{,} in
-{\ident}} then destructs the hypothesis {\ident} along
-{\disjconjintropattern} as {\tt destruct {\ident} as
-{\disjconjintropattern}} would.
-
-\item {\tt eapply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}
-
-This works as {\tt apply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}} but using {\tt eapply}.
-
-\item {\tt simple apply {\term} in {\ident}}
-\tacindex{simple apply {\ldots} in} 
-\tacindex{simple eapply {\ldots} in} 
-
-This behaves like {\tt apply {\term} in {\ident}} but it reasons
-modulo conversion only on subterms that contain no variables to
-instantiate. For instance, if {\tt id := fun x:nat => x} and {\tt H :
-  forall y, id y = y -> True} and {\tt H0 : O = O} then {\tt simple
-  apply H in H0} does not succeed because it would require the
-conversion of {\tt f ?y} and {\tt O} where {\tt ?y} is a variable to
-instantiate.  Tactic {\tt simple apply {\term} in {\ident}} does not
-either traverse tuples as {\tt apply {\term} in {\ident}} does.
-
-\item {\tt simple apply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}\\
-{\tt simple eapply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}
-
-This are the general forms of {\tt simple apply {\term} in {\ident}} and 
-{\tt simple eapply {\term} in {\ident}}.
 \end{Variants}
 
 \subsection{\tt generalize \term
