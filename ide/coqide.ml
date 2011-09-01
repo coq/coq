@@ -52,7 +52,6 @@ object
 
   method filename : string option
   method stats :  Unix.stats option
-  method set_filename : string option -> unit
   method update_stats : unit
   method revert : unit
   method auto_save : unit
@@ -580,7 +579,7 @@ let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
     no /bin/sh when using create_process instead of open_process. *)
 let sup_args = ref []
 
-class analyzed_view (_script:Undo.undoable_view) (_pv:GText.view) (_mv:GText.view) _cs _ct =
+class analyzed_view (_script:Undo.undoable_view) (_pv:GText.view) (_mv:GText.view) _cs _ct _fn =
 object(self)
   val input_view = _script
   val input_buffer = _script#buffer
@@ -592,7 +591,7 @@ object(self)
   val mycoqtop = _ct
   val mutable is_active = false
   val mutable read_only = false
-  val mutable filename = None
+  val mutable filename = _fn
   val mutable stats = None
   val mutable last_modification_time = 0.
   val mutable last_auto_save_time = 0.
@@ -622,12 +621,6 @@ object(self)
 
   method filename = filename
   method stats = stats
-  method set_filename f =
-    filename <- f;
-    match f with
-      | Some f -> stats <- my_stat f
-      | None -> ()
-
   method update_stats =
     match filename with
       | Some f -> stats <- my_stat f
@@ -1463,7 +1456,7 @@ let search_next_error () =
 (* session creation and primitive handling                            *)
 (**********************************************************************)
 
-let create_session () =
+let create_session file =
   let script =
     Undo.undoable_view
       ~buffer:(GText.buffer ~tag_table:Tags.Script.table ())
@@ -1476,11 +1469,15 @@ let create_session () =
     GText.view
       ~buffer:(GText.buffer ~tag_table:Tags.Message.table ())
       ~editable:false ~wrap_mode:`WORD () in
-  let basename = GMisc.label ~text:"*scratch*" () in
+  let basename = GMisc.label ~text:(match file with
+				      |None -> "*scratch*"
+				      |Some f -> (Glib.Convert.filename_to_utf8 (Filename.basename f))
+				   ) () in
   let stack = Stack.create () in
   let ct = ref (Coq.spawn_coqtop !sup_args) in
   let command = new Command_windows.command_window !ct current in
-  let legacy_av = new analyzed_view script proof message stack ct in
+  let legacy_av = new analyzed_view script proof message stack ct file in
+  let () = legacy_av#update_stats in
   let _ =
     script#buffer#create_mark ~name:"start_of_input" script#buffer#start_iter in
   let _ =
@@ -1515,7 +1512,7 @@ let create_session () =
   proof#misc#modify_font !current.text_font;
   message#misc#modify_font !current.text_font;
   { tab_label=basename;
-    filename="";
+    filename=begin match file with None -> "" |Some f -> f end;
     script=script;
     proof_view=proof;
     message_view=message;
@@ -1699,13 +1696,10 @@ let load_file handler f =
       prerr_endline "Loading: convert content";
       let s = do_convert (Buffer.contents b) in
       prerr_endline "Loading: create view";
-      let session = create_session () in
-      session.tab_label#set_text (Glib.Convert.filename_to_utf8 (Filename.basename f));
+      let session = create_session (Some f) in
       prerr_endline "Loading: adding view";
       let index = session_notebook#append_term session in
       let av = session.analyzed_view in
-      prerr_endline "Loading: set filename";
-      av#set_filename (Some f);
       prerr_endline "Loading: stats";
       av#update_stats;
       let input_buffer = session.script#buffer in
@@ -2861,7 +2855,7 @@ let main files =
     end
   else
     begin
-      let session = create_session () in
+      let session = create_session None in
       let index = session_notebook#append_term session in
       session_notebook#goto_page index;
     end;
