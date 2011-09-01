@@ -14,6 +14,7 @@ type target =
   | ML4 of string (* ML4 file : foo.ml4 -> (ML4 "foo.ml4") *)
   | MLLIB of string (* MLLIB file : foo.mllib -> (MLLIB "foo.mllib") *)
   | V of string  (* V file : foo.v -> (V "foo") *)
+  | Arg of string
   | Special of string * string * string (* file, dependencies, command *)
   | Subdir of string
   | Def of string * string (* X=foo -> Def ("X","foo") *)
@@ -31,7 +32,6 @@ let some_ml4file = ref false
 let some_mllibfile = ref false
 
 let opt = ref "-opt"
-let impredicative_set = ref false
 let no_install = ref false
 
 let print x = output_string !output_channel x
@@ -65,7 +65,7 @@ let usage () =
 
 coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ... [file.mllib]
   ... [-custom command dependencies file] ... [-I dir] ... [-R physicalpath
-  logicalpath] ... [VARIABLE = value] ...  [-opt|-byte] [-impredicative-set]
+  logicalpath] ... [VARIABLE = value] ...  [-arg opt] ... [-opt|-byte]
   [-no-install] [-f file] [-o file] [-h] [--help]
 
 [file.v]: Coq file to be compiled
@@ -82,7 +82,7 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ... [file.mllib]
 [VARIABLE = value]: Add the variable definition \"VARIABLE=value\"
 [-byte]: compile with byte-code version of coq
 [-opt]: compile with native-code version of coq
-[-impredicative-set]: compile with option -impredicative-set of coq
+[-arg opt]: send option \"opt\" to coqc
 [-no-install]: build a makefile with no install target
 [-f file]: take the contents of file as arguments
 [-o file]: output should go in file file
@@ -336,7 +336,7 @@ let implicit () =
     if !some_mllibfile then mllib_rules ();
     if !some_vfile then v_rules ()
 
-let variables defs =
+let variables (args,defs) =
   let var_aux (v,def) = print v; print "="; print def; print "\n" in
     section "Variables definitions.";
     List.iter var_aux defs;
@@ -346,7 +346,14 @@ let variables defs =
       print "override OPT:=-byte\n"
     else
       print "OPT?=\n";
-    if !impredicative_set = true then print "OTHERFLAGS=-impredicative-set\n";
+    begin
+      match args with
+	|[] -> ()
+	|h::t -> print "OTHERFLAGS=";
+	  print h;
+	  List.iter (fun s -> print " ";print s) t;
+	  print "\n";
+    end;
     (* Coq executables and relative variables *)
     print "COQFLAGS?=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
     print "COQC?=$(COQBIN)coqc\n";
@@ -358,7 +365,6 @@ let variables defs =
     print "CAMLOPTC?=$(OCAMLOPT) -c -rectypes\n";
     print "CAMLLINK?=$(OCAMLC) -rectypes\n";
     print "CAMLOPTLINK?=$(OCAMLOPT) -rectypes\n";
-
     print "GRAMMARS?=grammar.cma\n";
     print "CAMLP4EXTEND?=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
     print "CAMLP4OPTIONS?=\n";
@@ -421,6 +427,7 @@ let subdirs sds =
 	:: "depend" :: "html" :: sds);
     print "\n\n"
 
+(* Return: ((v,(mli,ml4,ml,mllib),special,subdir),(i_inc,r_inc),(args,defs)) *)
 let rec split_arguments = function
   | V n :: r ->
       let (v,m,o,s),i,d = split_arguments r in ((pre_canonize n::v,m,o,s),i,d)
@@ -441,8 +448,10 @@ let rec split_arguments = function
   | RInclude (p,l) :: r ->
       let t,(i,r),d = split_arguments r in (t,(i,(post_canonize p,l,absolute_dir p)::r),d)
   | Def (v,def) :: r ->
-      let t,i,d = split_arguments r in (t,i,(v,def)::d)
-  | [] -> ([],([],[],[],[]),[],[]),([],[]),[]
+      let t,i,(args,defs) = split_arguments r in (t,i,(args,(v,def)::defs))
+  | Arg a :: r ->
+      let t,i,(args,defs) = split_arguments r in (t,i,(a::args,defs))
+  | [] -> ([],([],[],[],[]),[],[]),([],[]),([],[])
 
 let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles) other_targets inc =
   begin match vfiles with
@@ -591,7 +600,8 @@ let rec process_cmd_line = function
   | ("-full"|"-opt") :: r ->
       opt := "-opt"; process_cmd_line r
   | "-impredicative-set" :: r ->
-      impredicative_set := true; process_cmd_line r
+    prerr_string "Please now use \"-arg -impredicative-set\" instead of \"-impredicative-set\" alone to be more uniform.\n";
+      Arg "-impredicative_set" :: process_cmd_line r
   | "-no-install" :: r ->
       no_install := true; process_cmd_line r
   | "-custom" :: com :: dependencies :: file :: r ->
@@ -620,6 +630,8 @@ let rec process_cmd_line = function
       (process_cmd_line r)
   | v :: "=" :: def :: r ->
       Def (v,def) :: (process_cmd_line r)
+  | "-arg" :: a :: r ->
+    Arg a :: (process_cmd_line r)
   | f :: r ->
     if Filename.check_suffix f ".v" then begin
       some_vfile := true;
