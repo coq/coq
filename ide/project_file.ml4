@@ -38,54 +38,63 @@ let parse f =
     close_in c;
     res
 
-let rec process_cmd_line ((project_file,makefile,install,opt) as opts) l = function
+let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) l = function
   | [] -> opts,List.rev l
   | ("-h"|"--help") :: _ ->
     raise Parsing_error
   | ("-no-opt"|"-byte") :: r ->
-    process_cmd_line (project_file,makefile,install,false) l r
+    process_cmd_line orig_dir (project_file,makefile,install,false) l r
   | ("-full"|"-opt") :: r ->
-    process_cmd_line (project_file,makefile,install,true) l r
+    process_cmd_line orig_dir (project_file,makefile,install,true) l r
   | "-impredicative-set" :: r ->
     Minilib.safe_prerr_endline "Please now use \"-arg -impredicative-set\" instead of \"-impredicative-set\" alone to be more uniform.";
-    process_cmd_line opts (Arg "-impredicative_set" :: l) r
+    process_cmd_line orig_dir opts (Arg "-impredicative_set" :: l) r
   | "-no-install" :: r ->
     if not install then Minilib.safe_prerr_endline "Warning: -no-install sets more than once.";
-    process_cmd_line (project_file,makefile,false,opt) l r
+    process_cmd_line orig_dir (project_file,makefile,false,opt) l r
   | "-custom" :: com :: dependencies :: file :: r ->
-    process_cmd_line opts (Special (file,dependencies,com) :: l) r
+    process_cmd_line orig_dir opts (Special (file,dependencies,com) :: l) r
   | "-I" :: d :: r ->
-    process_cmd_line opts (Include d :: l) r
+    process_cmd_line orig_dir opts ((Include (Minilib.correct_path d orig_dir)) :: l) r
   | "-R" :: p :: lp :: r ->
-    process_cmd_line opts (RInclude (p,lp) :: l) r
+    process_cmd_line orig_dir opts (RInclude (Minilib.correct_path p orig_dir,lp) :: l) r
   | ("-I"|"-custom") :: _ ->
     raise Parsing_error
   | "-f" :: file :: r ->
+    let file = Minilib.correct_path file orig_dir in
     let () = match project_file with
       | None -> ()
       | Some _ -> Minilib.safe_prerr_endline
 	"Warning: Several features will not work with multiple project files."
-    in process_cmd_line (Some file,makefile,install,opt) l ((parse file)@r)
+    in
+    let (opts',l') = process_cmd_line (Filename.dirname file) (Some file,makefile,install,opt) l (parse file) in
+      process_cmd_line orig_dir opts' l' r
   | ["-f"] ->
     raise Parsing_error
   | "-o" :: file :: r ->
-    let () = match makefile with
-      |None -> ()
-      |Some f ->
-	Minilib.safe_prerr_endline ("Warning: Only one output file in genererated. "^f^" will not.")
-    in process_cmd_line (project_file,Some file,install,opt) l r
+      begin try
+	let _ = String.index file '/' in
+	  raise Parsing_error
+      with Not_found ->
+	let () = match makefile with
+	  |None -> ()
+	  |Some f ->
+	     Minilib.safe_prerr_endline ("Warning: Only one output file in genererated. "^f^" will not.")
+	in process_cmd_line orig_dir (project_file,Some file,install,opt) l r
+      end
   | v :: "=" :: def :: r ->
-    process_cmd_line opts (Def (v,def) :: l) r
+    process_cmd_line orig_dir opts (Def (v,def) :: l) r
   | "-arg" :: a :: r ->
-    process_cmd_line opts (Arg a :: l) r
+    process_cmd_line orig_dir opts (Arg a :: l) r
   | f :: r ->
-    process_cmd_line opts ((
-      if Filename.check_suffix f ".v" then V f
-      else if (Filename.check_suffix f ".ml") then ML f
-      else if (Filename.check_suffix f ".ml4") then ML4 f
-      else if (Filename.check_suffix f ".mli") then MLI f
-      else if (Filename.check_suffix f ".mllib") then MLLIB f
-      else Subdir f) :: l) r
+      let f = Minilib.correct_path f orig_dir in
+	process_cmd_line orig_dir opts ((
+          if Filename.check_suffix f ".v" then V f
+	  else if (Filename.check_suffix f ".ml") then ML f
+	  else if (Filename.check_suffix f ".ml4") then ML4 f
+	  else if (Filename.check_suffix f ".mli") then MLI f
+	  else if (Filename.check_suffix f ".mllib") then MLLIB f
+	  else Subdir f) :: l) r
 
 let rec post_canonize f =
   if Filename.basename f = Filename.current_dir_name
@@ -94,32 +103,36 @@ let rec post_canonize f =
   else f
 
 (* Return: ((v,(mli,ml4,ml,mllib),special,subdir),(i_inc,r_inc),(args,defs)) *)
-let rec split_arguments = function
+let split_arguments =
+  let rec aux = function
   | V n :: r ->
-      let (v,m,o,s),i,d = split_arguments r in ((Minilib.strip_path n::v,m,o,s),i,d)
+	let (v,m,o,s),i,d = aux r in ((Minilib.remove_path_dot n::v,m,o,s),i,d)
   | ML n :: r ->
-      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(mli,ml4,Minilib.strip_path n::ml,mllib),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib),o,s),i,d = aux r in ((v,(mli,ml4,Minilib.remove_path_dot n::ml,mllib),o,s),i,d)
   | MLI n :: r ->
-      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(Minilib.strip_path n::mli,ml4,ml,mllib),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib),o,s),i,d = aux r in ((v,(Minilib.remove_path_dot n::mli,ml4,ml,mllib),o,s),i,d)
   | ML4 n :: r ->
-      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(mli,Minilib.strip_path n::ml4,ml,mllib),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib),o,s),i,d = aux r in ((v,(mli,Minilib.remove_path_dot n::ml4,ml,mllib),o,s),i,d)
   | MLLIB n :: r ->
-      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(mli,ml4,ml,Minilib.strip_path n::mllib),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib),o,s),i,d = aux r in ((v,(mli,ml4,ml,Minilib.remove_path_dot n::mllib),o,s),i,d)
   | Special (n,dep,c) :: r ->
-      let (v,m,o,s),i,d = split_arguments r in ((v,m,(n,dep,c)::o,s),i,d)
+      let (v,m,o,s),i,d = aux r in ((v,m,(n,dep,c)::o,s),i,d)
   | Subdir n :: r ->
-      let (v,m,o,s),i,d = split_arguments r in ((v,m,o,n::s),i,d)
+      let (v,m,o,s),i,d = aux r in ((v,m,o,n::s),i,d)
   | Include p :: r ->
-      let t,(i,r),d = split_arguments r in (t,((post_canonize p,Minilib.canonical_path_name p)::i,r),d)
+      let t,(i,r),d = aux r in (t,((Minilib.remove_path_dot (post_canonize p),
+				    Minilib.canonical_path_name p)::i,r),d)
   | RInclude (p,l) :: r ->
-      let t,(i,r),d = split_arguments r in (t,(i,(post_canonize p,l,Minilib.canonical_path_name p)::r),d)
+      let t,(i,r),d = aux r in (t,(i,(Minilib.remove_path_dot (post_canonize p),l,
+				      Minilib.canonical_path_name p)::r),d)
   | Def (v,def) :: r ->
-      let t,i,(args,defs) = split_arguments r in (t,i,(args,(v,def)::defs))
+      let t,i,(args,defs) = aux r in (t,i,(args,(v,def)::defs))
   | Arg a :: r ->
-      let t,i,(args,defs) = split_arguments r in (t,i,(a::args,defs))
+      let t,i,(args,defs) = aux r in (t,i,(a::args,defs))
   | [] -> ([],([],[],[],[]),[],[]),([],[]),([],[])
+  in aux
 
-let read_project_file f = split_arguments (snd (process_cmd_line (Some f, None, false, true) [] (parse f)))
+let read_project_file f = split_arguments (snd (process_cmd_line (Filename.dirname f) (Some f, None, false, true) [] (parse f)))
 
 let args_from_project file project_files =
   let contains_file f dir =

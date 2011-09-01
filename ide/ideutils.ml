@@ -328,7 +328,4 @@ let browse_keyword f text =
   try let u = Lazy.force url_for_keyword text in browse f (doc_url() ^ u)
   with Not_found -> f ("No documentation found for \""^text^"\".\n")
 
-let absolute_filename f =
-  if Filename.is_relative f then
-    Filename.concat (Sys.getcwd ()) f
-  else f
+let absolute_filename f = Minilib.correct_path f (Sys.getcwd ())

@@ -70,6 +70,7 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ... [file.mllib]
 [-no-install]: build a makefile with no install target
 [-f file]: take the contents of file as arguments
 [-o file]: output should go in file file
+	Output file outside the current directory is forbidden.
 [-h]: print this usage summary
 [--help]: equivalent to [-h]\n";
   exit 1
@@ -551,7 +552,7 @@ let do_makefile args =
     |[] -> var := false
     |_::_ -> var := true in
   let (project_file,makefile,is_install,opt),l =
-    try Project_file.process_cmd_line (None,None,true,true) [] args
+    try Project_file.process_cmd_line Filename.current_dir_name (None,None,true,true) [] args
     with Project_file.Parsing_error -> usage () in
   let (v_f,(mli_f,ml4_f,ml_f,mllib_f),sps,sds as targets), inc, defs =
     Project_file.split_arguments l in

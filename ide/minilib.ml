@@ -122,6 +122,8 @@ let canonical_path_name p =
     (* We give up to find a canonical name and just simplify it... *)
     strip_path p
 
+let correct_path f dir = if Filename.is_relative f then Filename.concat dir f else f
+
 (*
   checks if two file names refer to the same (existing) file by
   comparing their device and inode.
