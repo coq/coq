@@ -121,18 +121,6 @@ let post_canonize f =
   let n = 1 + let i = ref (String.length f - 1) in while !i >= 0 && f.[!i] = '/' do decr i done; !i in
     String.sub f 0 n
 
-let is_absolute_prefix dir dir' =
-  is_prefix (absolute_dir dir) (absolute_dir dir')
-
-let is_included dir = function
-  | RInclude (dir',_) -> is_absolute_prefix dir' dir
-  | Include dir' -> absolute_dir dir = absolute_dir dir'
-  | _ -> false
-
-let has_top_file = function
-  | ML s | V s | MLI s | ML4 s |MLLIB s -> s = Filename.basename s
-  | _ -> false
-
 let physical_dir_of_logical_dir ldir =
   let le = String.length ldir - 1 in
   let pdir = if ldir.[le] = '.' then String.sub ldir 0 (le - 1) else String.copy ldir in
@@ -399,12 +387,6 @@ let include_dirs (inc_i,inc_r) =
   -I $(COQLIB)plugins/"; print c) Coq_config.plugins_dirs; print "\n";
     print "COQLIBS?="; print_list "\\\n  " str_i'; print " "; print_list "\\\n  " str_r; print "\n";
     print "COQDOCLIBS?=";   print_list "\\\n  " str_r; print "\n\n"
-
-
-let rec special = function
-  | [] -> []
-  | Special (file,deps,com) :: r -> (file,deps,com) :: (special r)
-  | _ :: r -> special r
 
 let custom sps =
   let pr_path (file,dependencies,com) =
@@ -676,29 +658,15 @@ let command_line args =
   print_list args;
   print "\n#\n\n"
 
-let directories_deps l =
-  let print_dep f dep =
-    if dep <> [] then begin print f; print ": "; print_list dep; print "\n" end
-  in
-  let rec iter ((dirs,before) as acc) = function
-    | [] ->
-	()
-    | (Subdir d) :: l ->
-	print_dep d before; iter (d :: dirs, d :: before) l
-    | (ML f) :: l | (V f) :: l | (MLI f) :: l | (ML4 f) :: l | (MLLIB f) :: l ->
-	print_dep f dirs; iter (dirs, f :: before) l
-    | (Special (f,_,_)) :: l ->
-	print_dep f dirs; iter (dirs, f :: before) l
-    | _ :: l ->
-	iter acc l
-  in
-    iter ([],[]) l
-
-let ensure_root_dir l =
-  if List.exists (is_included ".") l or not (List.exists has_top_file l) then
+let ensure_root_dir (v,(mli,ml4,ml,mllib),_,_) ((i_inc,r_inc) as l) =
+  let here = absolute_dir "." in
+  let not_tops =List.for_all (fun s -> s <> Filename.basename s) in
+  if List.exists (fun (_,x) -> x = here) i_inc
+    or List.exists (fun (_,_,x) -> is_prefix x here) r_inc
+    or (not_tops v && not_tops mli && not_tops ml4 && not_tops ml && not_tops mllib) then
     l
   else
-    Include "." :: l
+    ((".",here)::i_inc,r_inc)
 
 let warn_install_at_root_directory (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles),_,_) (inc_i,inc_r) =
   let inc_r_top = List.filter (fun (_,ldir,_) -> ldir = "") inc_r in
@@ -724,8 +692,8 @@ let check_overlapping_include (_,inc_r) =
 
 let do_makefile args =
   let l = process_cmd_line args in
-  let l = ensure_root_dir l in
   let (_,_,sps,sds as targets), inc, defs = split_arguments l in
+  let inc = ensure_root_dir targets inc in
   warn_install_at_root_directory targets inc;
   check_overlapping_include inc;
   banner ();
@@ -741,7 +709,6 @@ let do_makefile args =
   if not !no_install then install targets inc;
   clean sds sps;
   make_makefile sds;
-  (* TEST directories_deps l; *)
   footer_includes ();
   warning ();
   if not (!output_channel == stdout) then close_out !output_channel;
