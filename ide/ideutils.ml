@@ -31,15 +31,6 @@ let pbar = GRange.progress_bar ~pulse_step:0.2 ()
 
 let debug = Flags.debug
 
-(* On a Win32 application with no console, writing to stderr raise
-   a Sys_error "bad file descriptor", hence the "try" below.
-   Ideally, we should re-route message to a log file somewhere, or
-   print in the response buffer.
-*)
-
-let safe_prerr_endline s =
-  try prerr_endline s;flush stderr with _ -> ()
-
 let prerr_endline s =
   if !debug then try prerr_endline s;flush stderr with _ -> ()
 
@@ -324,11 +315,11 @@ let url_for_keyword =
 	let u = String.sub s (i + 1) (String.length s - i - 1) in
 	Hashtbl.add ht k u
       with _ ->
-	safe_prerr_endline "Warning: Cannot parse documentation index file."
+	Minilib.safe_prerr_endline "Warning: Cannot parse documentation index file."
     done with End_of_file ->
       close_in cin
   with _ ->
-    safe_prerr_endline "Warning: Cannot find documentation index file."
+    Minilib.safe_prerr_endline "Warning: Cannot find documentation index file."
   end;
   Hashtbl.find ht : string -> string)
 

@@ -189,7 +189,7 @@ let signals_to_crash = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup;
 
 let crash_save i =
   (*  ignore (Unix.sigprocmask Unix.SIG_BLOCK signals_to_crash);*)
-  safe_prerr_endline "Trying to save all buffers in .crashcoqide files";
+  Minilib.safe_prerr_endline "Trying to save all buffers in .crashcoqide files";
   let count = ref 0 in
   List.iter
     (function {script=view; analyzed_view = av } ->
@@ -201,12 +201,12 @@ let crash_save i =
        in
        try
 	 if try_export filename (view#buffer#get_text ()) then
-	   safe_prerr_endline ("Saved "^filename)
-	 else safe_prerr_endline ("Could not save "^filename)
-       with _ -> safe_prerr_endline ("Could not save "^filename))
+	   Minilib.safe_prerr_endline ("Saved "^filename)
+	 else Minilib.safe_prerr_endline ("Could not save "^filename)
+       with _ -> Minilib.safe_prerr_endline ("Could not save "^filename))
     )
     session_notebook#pages;
-  safe_prerr_endline "Done. Please report.";
+  Minilib.safe_prerr_endline "Done. Please report.";
   if i <> 127 then exit i
 
 let ignore_break () =
@@ -1687,6 +1687,7 @@ let load_file handler f =
   try
     prerr_endline "Loading file starts";
     let is_f = Minilib.same_file f in
+      Minilib.safe_prerr_endline f;
       if not (Minilib.list_fold_left_i
 		(fun i found x -> if found then found else
                    let {analyzed_view=av} = x in
@@ -2931,10 +2932,10 @@ let process_argv argv =
   try
     let continue,filtered = Coq.filter_coq_opts (List.tl argv) in
     if not continue then
-      (List.iter safe_prerr_endline filtered; exit 0);
+      (List.iter Minilib.safe_prerr_endline filtered; exit 0);
     let opts = List.filter (fun arg -> String.get arg 0 == '-') filtered in
     if opts <> [] then
-      (safe_prerr_endline ("Illegal option: "^List.hd opts); exit 1);
+      (Minilib.safe_prerr_endline ("Illegal option: "^List.hd opts); exit 1);
     filtered
   with _ ->
-    (safe_prerr_endline "coqtop choked on one of your option"; exit 1)
+    (Minilib.safe_prerr_endline "coqtop choked on one of your option"; exit 1)

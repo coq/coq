@@ -47,10 +47,10 @@ let rec process_cmd_line ((project_file,makefile,install,opt) as opts) l = funct
   | ("-full"|"-opt") :: r ->
     process_cmd_line (project_file,makefile,install,true) l r
   | "-impredicative-set" :: r ->
-    prerr_string "Please now use \"-arg -impredicative-set\" instead of \"-impredicative-set\" alone to be more uniform.\n";
+    Minilib.safe_prerr_endline "Please now use \"-arg -impredicative-set\" instead of \"-impredicative-set\" alone to be more uniform.";
     process_cmd_line opts (Arg "-impredicative_set" :: l) r
   | "-no-install" :: r ->
-    if not install then prerr_string "Warning: -no-install sets more than once.\n";
+    if not install then Minilib.safe_prerr_endline "Warning: -no-install sets more than once.";
     process_cmd_line (project_file,makefile,false,opt) l r
   | "-custom" :: com :: dependencies :: file :: r ->
     process_cmd_line opts (Special (file,dependencies,com) :: l) r
@@ -63,8 +63,8 @@ let rec process_cmd_line ((project_file,makefile,install,opt) as opts) l = funct
   | "-f" :: file :: r ->
     let () = match project_file with
       | None -> ()
-      | Some _ -> prerr_string
-	"Warning: Several features will not work with multiple project files.\n"
+      | Some _ -> Minilib.safe_prerr_endline
+	"Warning: Several features will not work with multiple project files."
     in process_cmd_line (Some file,makefile,install,opt) l ((parse file)@r)
   | ["-f"] ->
     raise Parsing_error
@@ -72,8 +72,7 @@ let rec process_cmd_line ((project_file,makefile,install,opt) as opts) l = funct
     let () = match makefile with
       |None -> ()
       |Some f ->
-	prerr_string "Warning: Only one output file in genererated. ";
-	prerr_string f; prerr_string " will not.\n"
+	Minilib.safe_prerr_endline ("Warning: Only one output file in genererated. "^f^" will not.")
     in process_cmd_line (project_file,Some file,install,opt) l r
   | v :: "=" :: def :: r ->
     process_cmd_line opts (Def (v,def) :: l) r
@@ -125,7 +124,8 @@ let read_project_file f = split_arguments (snd (process_cmd_line (Some f, None, 
 let args_from_project file project_files =
   let contains_file f dir =
     let is_f = Minilib.same_file f in
-      List.exists (fun x -> is_f (if Filename.is_relative x then Filename.concat dir x else x))
+      List.exists (fun x -> let tmp = (if Filename.is_relative x then Filename.concat dir x else x)
+		   in Minilib.safe_prerr_endline tmp; is_f tmp)
   in try
       let (_,(_,(i_inc,r_inc),(args,_))) = List.find (fun (dir,((v_files,_,_,_),_,_)) ->
 							contains_file file dir v_files) project_files in

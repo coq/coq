@@ -75,6 +75,15 @@ let home =
 let coqlib = ref ""
 let coqtop_path = ref ""
 
+(* On a Win32 application with no console, writing to stderr raise
+   a Sys_error "bad file descriptor", hence the "try" below.
+   Ideally, we should re-route message to a log file somewhere, or
+   print in the response buffer.
+*)
+
+let safe_prerr_endline s =
+  try prerr_endline s;flush stderr with _ -> ()
+
 (* Hints to partially detects if two paths refer to the same repertory *)
 let rec remove_path_dot p =
   let curdir = Filename.concat Filename.current_dir_name "" in (* Unix: "./" *)

@@ -26,6 +26,10 @@ val home : string
 val coqlib : string ref
 val coqtop_path : string ref
 
+(** safe version of Pervasives.prerr_endline
+    (avoid exception in win32 without console) *)
+val safe_prerr_endline : string -> unit
+
 val strip_path : string -> string
 val canonical_path_name : string -> string
 
