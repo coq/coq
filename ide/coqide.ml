@@ -1678,43 +1678,44 @@ let load_file handler f =
   let f = absolute_filename f in
   try
     prerr_endline "Loading file starts";
-    if not (Minilib.list_fold_left_i
-              (fun i found x -> if found then found else
-                  let {analyzed_view=av} = x in
-                  (match av#filename with
-                    | None -> false
-                    | Some fn ->
-                      if same_file f fn
-                      then (session_notebook#goto_page i; true)
-                      else false))
+    let is_f = same_file f in
+      if not (Minilib.list_fold_left_i
+		(fun i found x -> if found then found else
+                   let {analyzed_view=av} = x in
+                     (match av#filename with
+			| None -> false
+			| Some fn ->
+			    if is_f fn
+			    then (session_notebook#goto_page i; true)
+			    else false))
               0 false session_notebook#pages)
-    then begin
-      prerr_endline "Loading: must open";
-      let b = Buffer.create 1024 in
-      prerr_endline "Loading: get raw content";
-      with_file handler f ~f:(input_channel b);
-      prerr_endline "Loading: convert content";
-      let s = do_convert (Buffer.contents b) in
-      prerr_endline "Loading: create view";
-      let session = create_session (Some f) in
-      prerr_endline "Loading: adding view";
-      let index = session_notebook#append_term session in
-      let av = session.analyzed_view in
-      prerr_endline "Loading: stats";
-      av#update_stats;
-      let input_buffer = session.script#buffer in
-      prerr_endline "Loading: fill buffer";
-      input_buffer#set_text s;
-      input_buffer#place_cursor ~where:input_buffer#start_iter;
-      force_retag input_buffer;
-      prerr_endline ("Loading: switch to view "^ string_of_int index);
-      session_notebook#goto_page index;
-      prerr_endline "Loading: highlight";
-      input_buffer#set_modified false;
-      prerr_endline "Loading: clear undo";
-      session.script#clear_undo;
-      prerr_endline "Loading: success"
-    end
+      then begin
+	prerr_endline "Loading: must open";
+	let b = Buffer.create 1024 in
+	prerr_endline "Loading: get raw content";
+	with_file handler f ~f:(input_channel b);
+	prerr_endline "Loading: convert content";
+	let s = do_convert (Buffer.contents b) in
+	prerr_endline "Loading: create view";
+	let session = create_session (Some f) in
+	prerr_endline "Loading: adding view";
+	let index = session_notebook#append_term session in
+	let av = session.analyzed_view in
+	prerr_endline "Loading: stats";
+	av#update_stats;
+	let input_buffer = session.script#buffer in
+	prerr_endline "Loading: fill buffer";
+	input_buffer#set_text s;
+	input_buffer#place_cursor ~where:input_buffer#start_iter;
+	force_retag input_buffer;
+	prerr_endline ("Loading: switch to view "^ string_of_int index);
+	session_notebook#goto_page index;
+	prerr_endline "Loading: highlight";
+	input_buffer#set_modified false;
+	prerr_endline "Loading: clear undo";
+	session.script#clear_undo;
+	prerr_endline "Loading: success"
+      end
   with
     | e -> handler ("Load failed: "^(Printexc.to_string e))
 
