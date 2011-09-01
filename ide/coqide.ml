@@ -577,6 +577,7 @@ let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
 
 (** The arguments that will be passed to coqtop. No quoting here, since
     no /bin/sh when using create_process instead of open_process. *)
+let custom_project_files = ref []
 let sup_args = ref []
 
 class analyzed_view (_script:Undo.undoable_view) (_pv:GText.view) (_mv:GText.view) _cs _ct _fn =
@@ -1474,7 +1475,14 @@ let create_session file =
 				      |Some f -> (Glib.Convert.filename_to_utf8 (Filename.basename f))
 				   ) () in
   let stack = Stack.create () in
-  let ct = ref (Coq.spawn_coqtop !sup_args) in
+  let coqtop_args = match file with
+    |None -> !sup_args
+    |Some the_file -> match !current.read_project with
+	|Ignore_args -> !sup_args
+	|Append_args -> (Project_file.args_from_project the_file !custom_project_files)@(!sup_args)
+	|Subst_args -> Project_file.args_from_project the_file !custom_project_files
+  in
+  let ct = ref (Coq.spawn_coqtop coqtop_args) in
   let command = new Command_windows.command_window !ct current in
   let legacy_av = new analyzed_view script proof message stack ct file in
   let () = legacy_av#update_stats in
@@ -2899,19 +2907,24 @@ let default_coqtop_path () =
     prog
   with _ -> "coqtop"
 
-let set_coqtop_path argv =
-  let coqtop = ref "" in
-  let rec filter_coqtop = function
+let read_coqide_args argv =
+  let rec filter_coqtop coqtop project_files out = function
     | "-coqtop" :: prog :: args ->
-      if !coqtop = "" then
-	(coqtop:=prog; filter_coqtop args)
+      if coqtop = "" then filter_coqtop prog project_files out args
       else
 	(output_string stderr "Error: multiple -coqtop options"; exit 1)
-    | arg::args -> arg::filter_coqtop args
-    | [] -> (if !coqtop = "" then coqtop := default_coqtop_path (); [])
+    | "-f" :: file :: args ->
+	filter_coqtop coqtop
+	  ((Minilib.canonical_path_name (Filename.dirname file),
+	    Project_file.read_project_file file) :: project_files) out args
+    | "-f" :: [] -> output_string stderr "Error: missing project file name"; exit 1
+    | arg::args -> filter_coqtop coqtop project_files (arg::out) args
+    | [] -> ((if coqtop = "" then default_coqtop_path () else coqtop),
+	     List.rev project_files,List.rev out)
   in
-  let argv = filter_coqtop argv in
-  Minilib.coqtop_path := !coqtop;
+  let coqtop,project_files,argv = filter_coqtop "" [] [] argv in
+    Minilib.coqtop_path := coqtop;
+    custom_project_files := project_files;
   argv
 
 let process_argv argv =

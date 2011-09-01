@@ -13,6 +13,7 @@ Typed_notebook
 Config_lexer
 Utf8_convert
 Preferences
+Project_file
 Ideutils
 Ideproof
 Coq_lex
@@ -22,5 +23,4 @@ Coq
 Coq_commands
 Command_windows
 Coqide_ui
-Project_file
 Coqide

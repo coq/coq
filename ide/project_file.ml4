@@ -119,3 +119,17 @@ let rec split_arguments = function
   | Arg a :: r ->
       let t,i,(args,defs) = split_arguments r in (t,i,(a::args,defs))
   | [] -> ([],([],[],[],[]),[],[]),([],[]),([],[])
+
+let read_project_file f = split_arguments (snd (process_cmd_line (Some f, None, false, true) [] (parse f)))
+
+let args_from_project file project_files =
+  let contains_file f dir =
+    let is_f = Minilib.same_file f in
+      List.exists (fun x -> is_f (if Filename.is_relative x then Filename.concat dir x else x))
+  in try
+      let (_,(_,(i_inc,r_inc),(args,_))) = List.find (fun (dir,((v_files,_,_,_),_,_)) ->
+							contains_file file dir v_files) project_files in
+	List.fold_right (fun (_,i) o -> "-I" :: i :: o) i_inc
+	  (List.fold_right (fun (_,l,p) o -> "-R" :: p :: l :: o) r_inc
+	     (List.fold_right (fun a o -> parse_args (Stream.of_string a) @ o) args []))
+    with Not_found -> []

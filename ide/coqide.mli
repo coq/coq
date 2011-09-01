@@ -12,9 +12,9 @@
     no /bin/sh when using create_process instead of open_process. *)
 val sup_args : string list ref
 
-(** Filter the argv from the option -coqtop, and set
+(** Filter the argv from coqide specific options, and set
     Minilib.coqtop_path accordingly *)
-val set_coqtop_path : string list -> string list
+val read_coqide_args : string list -> string list
 
 (** Ask coqtop the remaining options it doesn't recognize *)
 val process_argv : string list -> string list
