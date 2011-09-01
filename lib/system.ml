@@ -95,16 +95,26 @@ let lpath_from_path path path_separator =
 let rec remove_path_dot p =
   let curdir = Filename.concat Filename.current_dir_name "" in (* Unix: "./" *)
   let n = String.length curdir in
-  if String.length p > n && String.sub p 0 n = curdir then
-    remove_path_dot (String.sub p n (String.length p - n))
+  let l = String.length p in
+  if l > n && String.sub p 0 n = curdir then
+    let n' =
+      let sl = String.length Filename.dir_sep in
+      let i = ref n in
+	while !i <= l - sl && String.sub p !i sl = Filename.dir_sep do i := !i + sl done; !i in
+    remove_path_dot (String.sub p n' (l - n'))
   else
     p
 
 let strip_path p =
   let cwd = Filename.concat (Sys.getcwd ()) "" in (* Unix: "`pwd`/" *)
   let n = String.length cwd in
-  if String.length p > n && String.sub p 0 n = cwd then
-    remove_path_dot (String.sub p n (String.length p - n))
+  let l = String.length p in
+  if l > n && String.sub p 0 n = cwd then
+    let n' =
+      let sl = String.length Filename.dir_sep in
+      let i = ref n in
+	while !i <= l - sl && String.sub p !i sl = Filename.dir_sep do i := !i + sl done; !i in
+    remove_path_dot (String.sub p n' (l - n'))
   else
     remove_path_dot p
 
