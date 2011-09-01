@@ -31,9 +31,6 @@ let some_mlifile = ref false
 let some_ml4file = ref false
 let some_mllibfile = ref false
 
-let opt = ref "-opt"
-let no_install = ref false
-
 let print x = output_string !output_channel x
 let printf x = Printf.fprintf !output_channel x
 
@@ -129,12 +126,13 @@ let physical_dir_of_logical_dir ldir =
   done;
   pdir
 
-let standard ()=
+let standard opt =
   print "byte:\n";
   print "\t$(MAKE) all \"OPT:=-byte\"\n\n";
   print "opt:\n";
-  if !opt = "" then print "\t@echo \"WARNING: opt is disabled\"\n";
-  print "\t$(MAKE) all \"OPT:="; print !opt; print "\"\n\n"
+  if not opt then print "\t@echo \"WARNING: opt is disabled\"\n";
+  print "\t$(MAKE) all \"OPT:="; print (if opt then "-opt" else "-byte");
+  print "\"\n\n"
 
 let is_prefix_of_file dir f =
   is_prefix dir (absolute_dir (Filename.dirname f))
@@ -324,13 +322,13 @@ let implicit () =
     if !some_mllibfile then mllib_rules ();
     if !some_vfile then v_rules ()
 
-let variables (args,defs) =
+let variables opt (args,defs) =
   let var_aux (v,def) = print v; print "="; print def; print "\n" in
     section "Variables definitions.";
     List.iter var_aux defs;
     print "\n";
     print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n";
-    if !opt = "-byte" then
+    if not opt then
       print "override OPT:=-byte\n"
     else
       print "OPT?=\n";
@@ -573,65 +571,55 @@ let parse f =
     close_in c;
     res
 
-let rec process_cmd_line = function
-  | [] -> []
+let rec process_cmd_line ((project_file,makefile,install,opt) as opts) l = function
+  | [] -> opts,List.rev l
   | ("-h"|"--help") :: _ ->
-      usage ()
+    usage ()
   | ("-no-opt"|"-byte") :: r ->
-      opt := "-byte"; process_cmd_line r
+    process_cmd_line (project_file,makefile,install,false) l r
   | ("-full"|"-opt") :: r ->
-      opt := "-opt"; process_cmd_line r
+    process_cmd_line (project_file,makefile,install,true) l r
   | "-impredicative-set" :: r ->
     prerr_string "Please now use \"-arg -impredicative-set\" instead of \"-impredicative-set\" alone to be more uniform.\n";
-      Arg "-impredicative_set" :: process_cmd_line r
+    process_cmd_line opts (Arg "-impredicative_set" :: l) r
   | "-no-install" :: r ->
-      no_install := true; process_cmd_line r
+    if not install then prerr_string "Warning: -no-install sets more than once.\n";
+    process_cmd_line (project_file,makefile,false,opt) l r
   | "-custom" :: com :: dependencies :: file :: r ->
-      let check_dep f =
-	if Filename.check_suffix f ".v" then
-          some_vfile := true
-	else if (Filename.check_suffix f ".ml") || (Filename.check_suffix f ".ml4") then
-          some_mlfile := true
-      in
-	List.iter check_dep (Str.split (Str.regexp "[ \t]+") dependencies);
-	Special (file,dependencies,com) :: (process_cmd_line r)
+    process_cmd_line opts (Special (file,dependencies,com) :: l) r
   | "-I" :: d :: r ->
-      Include d :: (process_cmd_line r)
-  | "-R" :: p :: l :: r ->
-      RInclude (p,l) :: (process_cmd_line r)
+    process_cmd_line opts (Include d :: l) r
+  | "-R" :: p :: lp :: r ->
+    process_cmd_line opts (RInclude (p,lp) :: l) r
   | ("-I"|"-custom") :: _ ->
-      usage ()
+    usage ()
   | "-f" :: file :: r ->
-      make_name := file;
-      process_cmd_line ((parse file)@r)
+    let () = match project_file with
+      | None -> ()
+      | Some _ -> prerr_string
+	"Warning: Several features will not work with multiple project files.\n"
+    in process_cmd_line (Some file,makefile,install,opt) l ((parse file)@r)
   | ["-f"] ->
-      usage ()
+    usage ()
   | "-o" :: file :: r ->
-      makefile_name := file;
-      output_channel := (open_out file);
-      (process_cmd_line r)
+    let () = match makefile with
+      |None -> ()
+      |Some f ->
+	prerr_string "Warning: Only one output file in genererated. ";
+	prerr_string f; prerr_string " will not.\n"
+    in process_cmd_line (project_file,Some file,install,opt) l r
   | v :: "=" :: def :: r ->
-      Def (v,def) :: (process_cmd_line r)
+    process_cmd_line opts (Def (v,def) :: l) r
   | "-arg" :: a :: r ->
-    Arg a :: (process_cmd_line r)
+    process_cmd_line opts (Arg a :: l) r
   | f :: r ->
-    if Filename.check_suffix f ".v" then begin
-      some_vfile := true;
-      V f :: (process_cmd_line r)
-    end else if (Filename.check_suffix f ".ml") then begin
-      some_mlfile := true;
-      ML f :: (process_cmd_line r)
-    end else if (Filename.check_suffix f ".ml4") then begin
-      some_ml4file := true;
-      ML4 f :: (process_cmd_line r)
-    end else if (Filename.check_suffix f ".mli") then begin
-      some_mlifile := true;
-      MLI f :: (process_cmd_line r)
-    end else if (Filename.check_suffix f ".mllib") then begin
-      some_mllibfile := true;
-      MLLIB f :: (process_cmd_line r)
-    end else
-          Subdir f :: (process_cmd_line r)
+    process_cmd_line opts ((
+      if Filename.check_suffix f ".v" then V f
+      else if (Filename.check_suffix f ".ml") then ML f
+      else if (Filename.check_suffix f ".ml4") then ML4 f
+      else if (Filename.check_suffix f ".mli") then MLI f
+      else if (Filename.check_suffix f ".mllib") then MLLIB f
+      else Subdir f) :: l) r
 
 let banner () =
   print (Printf.sprintf
@@ -672,8 +660,7 @@ let warn_install_at_root_directory (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles
   let inc_r_top = List.filter (fun (_,ldir,_) -> ldir = "") inc_r in
   let inc_top = List.map (fun (p,_,_) -> p) inc_r_top @ List.map fst inc_i in
   let files = vfiles @ mlifiles @ ml4files @ mlfiles @ mllibfiles in
-  if not !no_install &&
-    List.exists (fun f -> List.mem (Filename.dirname f) inc_top) files
+  if List.exists (fun f -> List.mem (Filename.dirname f) inc_top) files
   then
     Printf.eprintf "Warning: install target will copy files at the first level of the coq contributions installation directory; option -R %sis recommended\n"
       (if inc_r_top = [] then "" else "with non trivial logical root ")
@@ -691,10 +678,31 @@ let check_overlapping_include (_,inc_r) =
   in aux inc_r
 
 let do_makefile args =
-  let l = process_cmd_line args in
-  let (_,_,sps,sds as targets), inc, defs = split_arguments l in
+  let has_file var = function
+    |[] -> var := false
+    |_::_ -> var := true in
+  let (project_file,makefile,is_install,opt),l =
+    process_cmd_line (None,None,true,true) [] args in
+  let (v_f,(mli_f,ml4_f,ml_f,mllib_f),sps,sds as targets), inc, defs =
+    split_arguments l in
+
+  let () = match project_file with |None -> () |Some f -> make_name := f in
+  let () = match makefile with
+    |None -> ()
+    |Some f -> makefile_name := f; output_channel := open_out f in
+  has_file some_vfile v_f; has_file some_mlifile mli_f; has_file some_mlfile ml_f;
+  has_file some_ml4file ml4_f; has_file some_mllibfile mllib_f;
+  let check_dep f =
+    if Filename.check_suffix f ".v" then
+      some_vfile := true
+    else if (Filename.check_suffix f ".ml") || (Filename.check_suffix f ".ml4") then
+      some_mlfile := true
+  in
+  List.iter (fun (_,dependencies,_) ->
+    List.iter check_dep (Str.split (Str.regexp "[ \t]+") dependencies)) sps;
+
   let inc = ensure_root_dir targets inc in
-  warn_install_at_root_directory targets inc;
+  if is_install then warn_install_at_root_directory targets inc;
   check_overlapping_include inc;
   banner ();
   header_includes ();
@@ -702,16 +710,16 @@ let do_makefile args =
   command_line args;
   parameters ();
   include_dirs inc;
-  variables defs;
+  variables opt defs;
   all_target targets inc;
   implicit ();
-  standard ();
-  if not !no_install then install targets inc;
+  standard opt;
+  if is_install then install targets inc;
   clean sds sps;
   make_makefile sds;
   footer_includes ();
   warning ();
-  if not (!output_channel == stdout) then close_out !output_channel;
+  if not (makefile = None) then close_out !output_channel;
   exit 0
 
 let main () =
