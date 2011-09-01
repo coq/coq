@@ -101,17 +101,25 @@ let absolute_dir dir =
       Sys.chdir current;
       dir'
 
+let string_prefix a b =
+  let rec aux i = try if a.[i] = b.[i] then aux (i+1) else i with |Invalid_argument _ -> i in
+    String.sub a 0 (aux 0)
+
 let is_prefix dir1 dir2 =
   let l1 = String.length dir1 in
   let l2 = String.length dir2 in
     dir1 = dir2 or (l1 < l2 & String.sub dir2 0 l1 = dir1 & dir2.[l1] = '/')
 
-let canonize f =
+let pre_canonize f =
   let l = String.length f in
   if l > 2 && f.[0] = '.' && f.[1] = '/' then
     let n = let i = ref 2 in while !i < l && f.[!i] = '/' do incr i done; !i in
     String.sub f n (l-n)
   else f
+
+let post_canonize f =
+  let n = 1 + let i = ref (String.length f - 1) in while !i >= 0 && f.[!i] = '/' do decr i done; !i in
+    String.sub f 0 n
 
 let is_absolute_prefix dir dir' =
   is_prefix (absolute_dir dir) (absolute_dir dir')
@@ -184,10 +192,6 @@ let install_include_by_root path_var files_var files (_,inc_r) =
     printf "\tfor i in $(%s0); do \\\n" files_var;
     printf "\t install -d `dirname $(DSTROOT)$(%s)user-contrib/$(INSTALLDEFAULTROOT)/$$i`; \\\n\t install $$i $(DSTROOT)$(%s)user-contrib/$(INSTALLDEFAULTROOT)/$$i; \\\n" path_var path_var;
     printf "\tdone\n"
-
-let string_prefix a b =
-  let rec aux i = try if a.[i] = b.[i] then aux (i+1) else i with |Invalid_argument _ -> i in
-    String.sub a 0 (aux 0)
 
 let install_doc some_vfiles some_mlifiles (_,inc_r) =
   let install_one_kind kind dir =
@@ -374,7 +378,7 @@ let include_dirs (inc_i,inc_r) =
     List.map (fun (p,l,_) ->
       let l' = if l = "" then "\"\"" else l in "-R " ^ p ^ " " ^ l')
       l in
-  let inc_i' = List.filter (fun (i,_) -> not (List.exists (fun (i',_,_) -> is_absolute_prefix i' i) inc_r)) inc_i in
+  let inc_i' = List.filter (fun (_,i) -> not (List.exists (fun (_,_,i') -> is_prefix i' i) inc_r)) inc_i in
   let str_i = parse_includes inc_i in
   let str_i' = parse_includes inc_i' in
   let str_r = parse_rec_includes inc_r in
@@ -419,23 +423,23 @@ let subdirs sds =
 
 let rec split_arguments = function
   | V n :: r ->
-      let (v,m,o,s),i,d = split_arguments r in ((canonize n::v,m,o,s),i,d)
+      let (v,m,o,s),i,d = split_arguments r in ((pre_canonize n::v,m,o,s),i,d)
   | ML n :: r ->
-      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(mli,ml4,canonize n::ml,mllib),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(mli,ml4,pre_canonize n::ml,mllib),o,s),i,d)
   | MLI n :: r ->
-      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(canonize n::mli,ml4,ml,mllib),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(pre_canonize n::mli,ml4,ml,mllib),o,s),i,d)
   | ML4 n :: r ->
-      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(mli,canonize n::ml4,ml,mllib),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(mli,pre_canonize n::ml4,ml,mllib),o,s),i,d)
   | MLLIB n :: r ->
-      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(mli,ml4,ml,canonize n::mllib),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib),o,s),i,d = split_arguments r in ((v,(mli,ml4,ml,pre_canonize n::mllib),o,s),i,d)
   | Special (n,dep,c) :: r ->
       let (v,m,o,s),i,d = split_arguments r in ((v,m,(n,dep,c)::o,s),i,d)
   | Subdir n :: r ->
       let (v,m,o,s),i,d = split_arguments r in ((v,m,o,n::s),i,d)
   | Include p :: r ->
-      let t,(i,r),d = split_arguments r in (t,((p,absolute_dir p)::i,r),d)
+      let t,(i,r),d = split_arguments r in (t,((post_canonize p,absolute_dir p)::i,r),d)
   | RInclude (p,l) :: r ->
-      let t,(i,r),d = split_arguments r in (t,(i,(p,l,absolute_dir p)::r),d)
+      let t,(i,r),d = split_arguments r in (t,(i,(post_canonize p,l,absolute_dir p)::r),d)
   | Def (v,def) :: r ->
       let t,i,d = split_arguments r in (t,i,(v,def)::d)
   | [] -> ([],([],[],[],[]),[],[]),([],[]),[]
