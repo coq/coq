@@ -494,7 +494,7 @@ $(GALLINA): $(addsuffix $(BESTOBJ), tools/gallina_lexer tools/gallina)
 
 $(COQMAKEFILE): $(addsuffix $(BESTOBJ),config/coq_config ide/minilib ide/project_file tools/coq_makefile)
 	$(SHOW)'OCAMLBEST -o $@'
-	$(HIDE)$(call bestocaml,,str)
+	$(HIDE)$(call bestocaml,,str unix)
 
 $(COQTEX): tools/coq_tex$(BESTOBJ)
 	$(SHOW)'OCAMLBEST -o $@'

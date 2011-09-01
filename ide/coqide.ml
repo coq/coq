@@ -1678,7 +1678,7 @@ let load_file handler f =
   let f = absolute_filename f in
   try
     prerr_endline "Loading file starts";
-    let is_f = same_file f in
+    let is_f = Minilib.same_file f in
       if not (Minilib.list_fold_left_i
 		(fun i found x -> if found then found else
                    let {analyzed_view=av} = x in

@@ -67,13 +67,6 @@ val set_location : (string -> unit) ref
 
 val pbar : GRange.progress_bar
 
-
-(*
-  checks if two file names refer to the same (existing) file
-*)
-
-val same_file : string -> string -> bool
-
 (*
   returns an absolute filename equivalent to given filename
 *)

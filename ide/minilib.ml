@@ -112,3 +112,26 @@ let canonical_path_name p =
   with Sys_error _ ->
     (* We give up to find a canonical name and just simplify it... *)
     strip_path p
+
+(*
+  checks if two file names refer to the same (existing) file by
+  comparing their device and inode.
+  It seems that under Windows, inode is always 0, so we cannot
+  accurately check if
+
+*)
+(* Optimised for partial application (in case many candidates must be
+   compared to f1). *)
+let same_file f1 =
+  try
+    let s1 = Unix.stat f1 in
+    (fun f2 ->
+      try
+        let s2 = Unix.stat f2 in
+        s1.Unix.st_dev = s2.Unix.st_dev &&
+          if Sys.os_type = "Win32" then f1 = f2
+          else s1.Unix.st_ino = s2.Unix.st_ino
+      with
+          Unix.Unix_error _ -> false)
+  with
+      Unix.Unix_error _ -> (fun _ -> false)
