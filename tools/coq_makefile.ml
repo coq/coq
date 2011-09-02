@@ -104,25 +104,34 @@ let standard opt =
   print "\t$(MAKE) all \"OPT:="; print (if opt then "-opt" else "-byte");
   print "\"\n\n"
 
-let is_prefix_of_file dir f =
-  is_prefix dir (Minilib.canonical_path_name (Filename.dirname f))
-
 let classify_files_by_root var files (inc_i,inc_r) =
   if not (List.exists (fun (pdir,_,_) -> pdir = ".") inc_r) then
     begin
+      let absdir_of_files = List.rev_map
+	(fun x -> Minilib.canonical_path_name (Filename.dirname x))
+	files in
+	(* files in scope of a -I option (assuming they are no overlapping) *)
+      let has_inc_i = List.exists (fun (_,a) -> List.mem a absdir_of_files) inc_i in
+	if has_inc_i then
+	  begin
+	    printf "%sINC=" var;
+	    List.iter (fun (pdir,absdir) ->
+			 if List.mem absdir absdir_of_files
+			 then printf
+			   "$(filter $(wildcard %s/*),$(%s)) "
+			   pdir var
+		      ) inc_i;
+	    printf "\n";
+	  end;
       (* Files in the scope of a -R option (assuming they are disjoint) *)
-      list_iter_i (fun i (pdir,ldir,abspdir) ->
-	if List.exists (is_prefix_of_file abspdir) files then
-	  printf "%s%d:=$(patsubst %s/%%,%%,$(filter %s/%%,$(%s)))\n"
-	    var i pdir pdir var)
-	inc_r;
-      (* Files not in the scope of a -R option *)
-      let pat_of_dir (pdir,_,_) = pdir^"/%" in
-      let pdir_patterns = String.concat " " (List.map pat_of_dir inc_r) in
-      printf "%s0:=$(filter-out %s,$(%s))\n" var pdir_patterns var
+	list_iter_i (fun i (pdir,ldir,abspdir) ->
+		       if List.exists (is_prefix abspdir) absdir_of_files then
+			 printf "%s%d=$(patsubst %s/%%,%%,$(filter %s/%%,$(%s)))\n"
+			   var i pdir pdir var)
+	  inc_r;
     end
 
-let install_include_by_root path_var files_var files (_,inc_r) =
+let install_include_by_root path_var files_var files (inc_i,inc_r) =
   try
     (* All files caught by a -R . option (assuming it is the only one) *)
     let ldir = match inc_r with
@@ -131,23 +140,42 @@ let install_include_by_root path_var files_var files (_,inc_r) =
 	 let () = prerr_string "Warning: install rule assumes that -R . _ is the only -R option" in
 	   out in
     let pdir = physical_dir_of_logical_dir ldir in
-    printf "\tfor i in $(%s); do \\\n" files_var;
-    printf "\t install -d `dirname $(DSTROOT)$(%s)user-contrib/%s/$$i`; \\\n\t install $$i $(DSTROOT)$(%s)user-contrib/%s/$$i; \\\n" path_var pdir path_var pdir;
-    printf "\tdone\n"
+      printf "\tfor i in $(%s); do \\\n" files_var;
+      printf "\t install -d `dirname $(DSTROOT)$(%s)user-contrib/%s/$$i`; \\\n" path_var pdir;
+      printf "\t install $$i $(DSTROOT)$(%s)user-contrib/%s/$$i; \\\n" path_var pdir;
+      printf "\tdone\n"
   with Not_found ->
-    (* Files in the scope of a -R option (assuming they are disjoint) *)
-    list_iter_i (fun i (pdir,ldir,abspdir) ->
-      if List.exists (is_prefix_of_file abspdir) files then
-	begin
-	  let pdir' = physical_dir_of_logical_dir ldir in
-	  printf "\tcd %s; for i in $(%s%d); do \\\n" pdir files_var i;
-	  printf "\t install -d `dirname $(DSTROOT)$(%s)user-contrib/%s/$$i`; \\\n\t install $$i $(DSTROOT)$(%s)user-contrib/%s/$$i; \\\n" path_var pdir' path_var pdir';
-	  printf "\tdone\n"
-	end) inc_r;
-    (* Files not in the scope of a -R option *)
-    printf "\tfor i in $(%s0); do \\\n" files_var;
-    printf "\t install -d `dirname $(DSTROOT)$(%s)user-contrib/$(INSTALLDEFAULTROOT)/$$i`; \\\n\t install $$i $(DSTROOT)$(%s)user-contrib/$(INSTALLDEFAULTROOT)/$$i; \\\n" path_var path_var;
-    printf "\tdone\n"
+    let absdir_of_files = List.rev_map
+      (fun x -> Minilib.canonical_path_name (Filename.dirname x))
+      files in
+    let has_inc_i_files =
+      List.exists (fun (_,a) -> List.mem a absdir_of_files) inc_i in
+    let install_inc_i d =
+      printf "\tinstall -d $(DSTROOT)$(%s)user-contrib/%s; \\\n" path_var d;
+      printf "\tfor i in $(%sINC); do \\\n" files_var;
+      printf "\t install $$i $(DSTROOT)$(%s)user-contrib/%s/`basename $$i`; \\\n" path_var d;
+      printf "\tdone\n"
+    in
+      if inc_r = [] then
+	if has_inc_i_files then
+	  begin
+	    (* Files in the scope of a -I option *)
+	    install_inc_i "$(INSTALLDEFAULTROOT)";
+	  end else ()
+      else
+	(* Files in the scope of a -R option (assuming they are disjoint) *)
+	list_iter_i (fun i (pdir,ldir,abspdir) ->
+		       let has_inc_r_files = List.exists (is_prefix abspdir) absdir_of_files in
+		       let pdir' = physical_dir_of_logical_dir ldir in
+			 if has_inc_r_files then
+			   begin
+			     printf "\tcd %s; for i in $(%s%d); do \\\n" pdir files_var i;
+			     printf "\t install -d `dirname $(DSTROOT)$(%s)user-contrib/%s/$$i`; \\\n" path_var pdir';
+			     printf "\t install $$i $(DSTROOT)$(%s)user-contrib/%s/$$i; \\\n" path_var pdir';
+			     printf "\tdone\n";
+			   end;
+			 if has_inc_i_files then install_inc_i pdir'
+		    ) inc_r
 
 let install_doc some_vfiles some_mlifiles (_,inc_r) =
   let install_one_kind kind dir =
@@ -528,9 +556,9 @@ let ensure_root_dir (v,(mli,ml4,ml,mllib),_,_) ((i_inc,r_inc) as l) =
 
 let warn_install_at_root_directory (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles),_,_) (inc_i,inc_r) =
   let inc_r_top = List.filter (fun (_,ldir,_) -> ldir = "") inc_r in
-  let inc_top = List.map (fun (p,_,_) -> p) inc_r_top @ List.map fst inc_i in
+  let inc_top = List.map (fun (p,_,_) -> p) inc_r_top in
   let files = vfiles @ mlifiles @ ml4files @ mlfiles @ mllibfiles in
-  if List.exists (fun f -> List.mem (Filename.dirname f) inc_top) files
+  if inc_r = [] || List.exists (fun f -> List.mem (Filename.dirname f) inc_top) files
   then
     Printf.eprintf "Warning: install target will copy files at the first level of the coq contributions installation directory; option -R %sis recommended\n"
       (if inc_r_top = [] then "" else "with non trivial logical root ")

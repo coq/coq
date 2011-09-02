@@ -61,7 +61,7 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
   | ("-I"|"-custom") :: _ ->
     raise Parsing_error
   | "-f" :: file :: r ->
-    let file = Minilib.correct_path file orig_dir in
+    let file = Minilib.remove_path_dot (Minilib.correct_path file orig_dir) in
     let () = match project_file with
       | None -> ()
       | Some _ -> Minilib.safe_prerr_endline
