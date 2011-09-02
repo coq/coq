@@ -1289,8 +1289,8 @@ computational expressions (i.e. with few dead code).
 \item {\tt lazy [\qualid$_1$\ldots\qualid$_k$]}\\
       {\tt lazy -[\qualid$_1$\ldots\qualid$_k$]}
 
-  These are respectively synonyms of {\tt cbv beta delta
-  [\qualid$_1$\ldots\qualid$_k$] iota zeta} and {\tt cbv beta delta
+  These are respectively synonyms of {\tt lazy beta delta
+  [\qualid$_1$\ldots\qualid$_k$] iota zeta} and {\tt lazy beta delta
   -[\qualid$_1$\ldots\qualid$_k$] iota zeta}.
 
 \item {\tt vm\_compute} \tacindex{vm\_compute}
@@ -2684,7 +2684,7 @@ If {\term} is a proof of a statement of conclusion
 then {\tt injection} applies injectivity as deep as possible to
 derive the equality of all the subterms of {\term$_1$} and {\term$_2$}
 placed in the same positions. For example, from {\tt (S
-  (S n))=(S (S (S m))} we may derive {\tt n=(S m)}.  To use this
+  (S n))=(S (S (S m)))} we may derive {\tt n=(S m)}.  To use this
 tactic {\term$_1$} and {\term$_2$} should be elements of an inductive
 set and they should be neither explicitly equal, nor structurally
 different. We mean by this that, if {\tt n$_1$} and {\tt n$_2$} are

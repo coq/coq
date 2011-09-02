@@ -1014,7 +1014,7 @@ Inductive h_step : Set :=
 (* This type allows to navigate in the logical constructors that
    form the predicats of the hypothesis in order to decompose them.
    This allows in particular to extract one hypothesis from a
-   conjonction with possibly the right level of negations. *)
+   conjunction with possibly the right level of negations. *)
 
 Inductive direction : Set :=
   | D_left : direction

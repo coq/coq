@@ -259,7 +259,7 @@ Section Facts.
   Qed.
 
 
-  (** Compatibility wtih other operations *)
+  (** Compatibility with other operations *)
 
   Lemma app_length : forall l l' : list A, length (l++l') = length l + length l'.
   Proof.
