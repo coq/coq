@@ -562,6 +562,8 @@ let compare_constr f t1 t2 =
   | Prod (_,t1,c1), Prod (_,t2,c2) -> f t1 t2 & f c1 c2
   | Lambda (_,t1,c1), Lambda (_,t2,c2) -> f t1 t2 & f c1 c2
   | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> f b1 b2 & f t1 t2 & f c1 c2
+  | App (c1,l1), _ when isCast c1 -> f (mkApp (pi1 (destCast c1),l1)) t2
+  | _, App (c2,l2) when isCast c2 -> f t1 (mkApp (pi1 (destCast c2),l2))
   | App (c1,l1), App (c2,l2) ->
     Array.length l1 = Array.length l2 &&
       f c1 c2 && array_for_all2 f l1 l2
