@@ -68,9 +68,9 @@ val mark_end_of_command : unit -> unit
 (** Returns the current label number *)
 val current_command_label : unit -> int
 
-(** [reset_label n ] resets [lib_stk] to the label n registered by
-   [mark_end_of_command()]. That is it forgets the label and anything
-   registered after it. *)
+(** [reset_label n] resets [lib_stk] to the label n registered by
+   [mark_end_of_command()]. It forgets the label and anything
+   registered after it. The label should be strictly in the past. *)
 val reset_label : int -> unit
 
 (** {6 ... } *)

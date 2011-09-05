@@ -659,17 +659,16 @@ let is_label_n n x =
     | (sp,Leaf o) when object_tag o = "DOT" && n = outLabel o -> true
     | _ -> false
 
-(* Reset the label registered by [mark_end_of_command()] with number n. *)
+(** Reset the label registered by [mark_end_of_command()] with number n,
+    which should be strictly in the past. *)
+
 let reset_label n =
-  let current = current_command_label() in
-  if n < current then
-    let res = reset_to_gen (is_label_n n) in
-    set_command_label (n-1); (* forget state numbers after n only if reset succeeded *)
-    res
-  else (* optimisation to avoid recaching when not necessary (why is it so long??) *)
-    match !lib_stk with
-      | [] -> ()
-      | x :: ls -> (lib_stk := ls;set_command_label (n-1))
+  if n >= current_command_label () then
+    error "Cannot backtrack to the current label or a future one";
+  let res = reset_to_gen (is_label_n n) in
+  (* forget state numbers after n only if reset succeeded *)
+  set_command_label (n-1);
+  res
 
 let rec back_stk n stk =
   match stk with
