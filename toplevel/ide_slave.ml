@@ -25,6 +25,27 @@ let init_signal_handler () =
 
 let prerr_endline _ = ()
 
+let orig_stdout = ref stdout
+
+let init_stdout,read_stdout =
+  let out_buff = Buffer.create 100 in
+  let out_ft = Format.formatter_of_buffer out_buff in
+  let deep_out_ft = Format.formatter_of_buffer out_buff in
+  let _ = Pp_control.set_gp deep_out_ft Pp_control.deep_gp in
+  (fun () ->
+     flush_all ();
+     orig_stdout := Unix.out_channel_of_descr (Unix.dup Unix.stdout);
+     Unix.dup2 Unix.stderr Unix.stdout;
+     Pp_control.std_ft := out_ft;
+     Pp_control.err_ft := out_ft;
+     Pp_control.deep_ft := deep_out_ft;
+     set_binary_mode_out !orig_stdout true;
+     set_binary_mode_in stdin true;
+  ),
+  (fun () -> Format.pp_print_flush out_ft ();
+             let r = Buffer.contents out_buff in
+             Buffer.clear out_buff; r)
+
 let coqide_known_option table = List.mem table [
   ["Printing";"Implicit"];
   ["Printing";"Coercions"];
@@ -242,41 +263,42 @@ let compute_reset_info loc_ast =
     loc_ast = loc_ast;
   }
 
-let parsable_of_string s =
-  Pcoq.Gram.parsable (Stream.of_string s)
+(** Check whether a command is forbidden by CoqIDE *)
+
+let coqide_cmd_checks (loc,ast) =
+  let user_error s =
+    raise (Loc.Exc_located (loc, Util.UserError ("CoqIde", str s)))
+  in
+  if is_vernac_debug_command ast then
+    user_error "Debug mode not available within CoqIDE";
+  if is_vernac_navigation_command ast then
+    user_error "Use CoqIDE navigation instead";
+  if is_vernac_known_option_command ast then
+    user_error "Use CoqIDE display menu instead";
+  if is_vernac_query_command ast then
+    msgerrnl (str "Warning: query commands should not be inserted in scripts")
+
+let raw_eval_expr = Vernac.eval_expr
 
 let eval_expr loc_ast =
   let rewind_info = compute_reset_info loc_ast in
-  Vernac.eval_expr loc_ast;
+  raw_eval_expr loc_ast;
   Stack.push rewind_info com_stk
 
-let raw_interp s =
-  Vernac.eval_expr (Vernac.parse_sentence (parsable_of_string s,None))
-
-let user_error_loc l s =
-    raise (Loc.Exc_located (l, Util.UserError ("CoqIde", s)))
-
-let interp (verbosely,s) =
+let interp (raw,verbosely,s) =
   prerr_endline "Starting interp...";
   prerr_endline s;
-  let pa = parsable_of_string s in
-  try
-    let (loc,vernac) = Vernac.parse_sentence (pa,None) in
-    if is_vernac_debug_command vernac then
-      user_error_loc loc (str "Debug mode not available within CoqIDE");
-    if is_vernac_navigation_command vernac then
-      user_error_loc loc (str "Use CoqIDE navigation instead");
-    if is_vernac_known_option_command vernac then
-      user_error_loc loc (str "Use CoqIDE display menu instead");
-    if is_vernac_query_command vernac then
-      msgerrnl (str "Warning: query commands should not be inserted in scripts");
-    if not (is_vernac_goal_printing_command vernac) then
-      (* Verbose if in small step forward and not a tactic *)
-      Flags.make_silent (not verbosely);
-    eval_expr (loc,vernac);
-    Flags.make_silent true;
-    prerr_endline ("...Done with interp of : "^s);
-  with Vernac.End_of_input -> assert false
+  let pa = Pcoq.Gram.parsable (Stream.of_string s) in
+  let loc_ast = Vernac.parse_sentence (pa,None) in
+  if not raw then coqide_cmd_checks loc_ast;
+  (* Verbose if command is not a tactic and IDE said to be verbose
+     (i.e. we're in small step forward mode) *)
+  Flags.make_silent
+    (is_vernac_goal_printing_command (snd loc_ast) || not verbosely);
+  if raw then raw_eval_expr loc_ast else eval_expr loc_ast;
+  Flags.make_silent true;
+  prerr_endline ("...Done with interp of : "^s);
+  read_stdout ()
 
 let rewind count =
   let undo_ops = Hashtbl.create 31 in
@@ -333,7 +355,7 @@ let rewind count =
   in
   do_rewind count NoReset current_proofs None
 
-let is_in_loadpath dir =
+let inloadpath dir =
   Library.is_in_load_paths (System.physical_path_of_string dir)
 
 let string_of_ppcmds c =
@@ -388,7 +410,7 @@ let concl_next_tac sigma concl =
     "right"
   ])
 
-let current_goals () =
+let goals () =
   try
     let pfts =
       Proof_global.give_me_the_proof ()
@@ -430,7 +452,7 @@ let current_goals () =
   with Proof_global.NoCurrentProof ->
     Ide_intf.Message "" (* quick hack to have a clean message screen *)
 
-let current_status () =
+let status () =
   (** We remove the initial part of the current [dir_path]
       (usually Top in an interactive session, cf "coqtop -top"),
       and display the other parts (opened sections and modules) *)
@@ -447,27 +469,6 @@ let current_status () =
   in
   "Ready"^path^proof
 
-let orig_stdout = ref stdout
-
-let init_stdout,read_stdout =
-  let out_buff = Buffer.create 100 in
-  let out_ft = Format.formatter_of_buffer out_buff in
-  let deep_out_ft = Format.formatter_of_buffer out_buff in
-  let _ = Pp_control.set_gp deep_out_ft Pp_control.deep_gp in
-  (fun () ->
-     flush_all ();
-     orig_stdout := Unix.out_channel_of_descr (Unix.dup Unix.stdout);
-     Unix.dup2 Unix.stderr Unix.stdout;
-     Pp_control.std_ft := out_ft;
-     Pp_control.err_ft := out_ft;
-     Pp_control.deep_ft := deep_out_ft;
-     set_binary_mode_out !orig_stdout true;
-     set_binary_mode_in stdin true;
-  ),
-  (fun () -> Format.pp_print_flush out_ft ();
-             let r = Buffer.contents out_buff in
-             Buffer.clear out_buff; r)
-
 let explain_exn e =
   let toploc,exc =
     match e with
@@ -480,6 +481,8 @@ let explain_exn e =
   toploc,(Errors.print exc)
 
 let eval_call c =
+  (* If the messages of last command are still there, we remove them *)
+  ignore (read_stdout ());
   let rec handle_exn e =
     catch_break := false;
     match e with
@@ -498,14 +501,12 @@ let eval_call c =
     r
   in
   let handler = {
-    Ide_intf.is_in_loadpath = interruptible is_in_loadpath;
-    Ide_intf.raw_interp = interruptible raw_interp;
     Ide_intf.interp = interruptible interp;
     Ide_intf.rewind = interruptible rewind;
-    Ide_intf.read_stdout = interruptible read_stdout;
-    Ide_intf.current_goals = interruptible current_goals;
-    Ide_intf.current_status = interruptible current_status;
-    Ide_intf.make_cases = interruptible Vernacentries.make_cases }
+    Ide_intf.goals = interruptible goals;
+    Ide_intf.status = interruptible status;
+    Ide_intf.inloadpath = interruptible inloadpath;
+    Ide_intf.mkcases = interruptible Vernacentries.make_cases }
   in
   Ide_intf.abstract_eval_call handler handle_exn c
 
@@ -529,7 +530,7 @@ let loop () =
       let q = (Marshal.from_channel: in_channel -> 'a Ide_intf.call) stdin in
       pr_debug ("<-- " ^ Ide_intf.pr_call q);
       let r = eval_call q in
-      pr_debug ("--> " ^ Ide_intf.pr_value r);
+      pr_debug ("--> " ^ Ide_intf.pr_full_value q r);
       Marshal.to_channel !orig_stdout r []; flush !orig_stdout
     done
   with e ->

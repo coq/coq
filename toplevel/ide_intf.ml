@@ -16,24 +16,23 @@ type goals =
 
 (** We use phantom types and GADT to protect ourselves against wild casts *)
 
-type 'a call =
-  | In_loadpath of string
-  | Raw_interp of string
-  | Interp of bool * string
-  | Rewind of int
-  | Read_stdout
-  | Cur_goals
-  | Cur_status
-  | Cases of string
+type raw = bool
+type verbose = bool
 
-let interp (b,s) : unit call = Interp (b,s)
-let raw_interp s : unit call = Raw_interp s
-let read_stdout : string call = Read_stdout
+type 'a call =
+  | Interp of raw * verbose * string
+  | Rewind of int
+  | Goals
+  | Status
+  | InLoadPath of string
+  | MkCases of string
+
+let interp (r,b,s) : string call = Interp (r,b,s)
 let rewind i : unit call = Rewind i
-let is_in_loadpath s : bool call = In_loadpath s
-let current_goals : goals call = Cur_goals
-let current_status : string call = Cur_status
-let make_cases s : string list list call = Cases s
+let goals : goals call = Goals
+let status : string call = Status
+let inloadpath s : bool call = InLoadPath s
+let mkcases s : string list list call = MkCases s
 
 (** * Coq answers to CoqIde *)
 
@@ -44,27 +43,23 @@ type 'a value =
   | Fail of (location * string)
 
 type handler = {
-  interp : bool * string -> unit;
-  raw_interp : string -> unit;
-  read_stdout : unit -> string;
+  interp : raw * verbose * string -> string;
   rewind : int -> unit;
-  is_in_loadpath : string -> bool;
-  current_goals : unit -> goals;
-  current_status : unit -> string;
-  make_cases : string -> string list list;
+  goals : unit -> goals;
+  status : unit -> string;
+  inloadpath : string -> bool;
+  mkcases : string -> string list list;
 }
 
 let abstract_eval_call handler explain_exn c =
   try
     let res = match c with
-      | In_loadpath s -> Obj.magic (handler.is_in_loadpath s)
-      | Raw_interp s -> Obj.magic (handler.raw_interp s)
-      | Interp (b,s) -> Obj.magic (handler.interp (b,s))
+      | Interp (r,b,s) -> Obj.magic (handler.interp (r,b,s))
       | Rewind i -> Obj.magic (handler.rewind i)
-      | Read_stdout -> Obj.magic (handler.read_stdout ())
-      | Cur_goals -> Obj.magic (handler.current_goals ())
-      | Cur_status -> Obj.magic (handler.current_status ())
-      | Cases s -> Obj.magic (handler.make_cases s)
+      | Goals -> Obj.magic (handler.goals ())
+      | Status -> Obj.magic (handler.status ())
+      | InLoadPath s -> Obj.magic (handler.inloadpath s)
+      | MkCases s -> Obj.magic (handler.mkcases s)
     in Good res
   with e ->
     let (l,str) = explain_exn e in
@@ -73,15 +68,30 @@ let abstract_eval_call handler explain_exn c =
 (** * Debug printing *)
 
 let pr_call = function
-  | In_loadpath s -> "In_loadpath["^s^"]"
-  | Raw_interp s -> "Raw_interp["^s^"]"
-  | Interp (b,s) -> "Interp["^(if b then "true" else "false")^","^s^"]"
-  | Rewind i -> "Rewind["^(string_of_int i)^"]"
-  | Read_stdout -> "Read_stdout"
-  | Cur_goals -> "Cur_goals"
-  | Cur_status -> "Cur_status"
-  | Cases s -> "Cases["^s^"]"
+  | Interp (r,b,s) ->
+    let raw = if r then "RAW" else "" in
+    let verb = if b then "" else "SILENT" in
+    "INTERP"^raw^verb^" ["^s^"]"
+  | Rewind i -> "REWIND "^(string_of_int i)
+  | Goals -> "GOALS"
+  | Status -> "STATUS"
+  | InLoadPath s -> "INLOADPATH "^s
+  | MkCases s -> "MKCASES "^s
 
-let pr_value = function
-  | Good _ -> "Good"
-  | Fail (_,str) -> "Fail["^str^"]"
+let pr_value_gen pr = function
+  | Good v -> "GOOD " ^ pr v
+  | Fail (_,str) -> "FAIL ["^str^"]"
+
+let pr_value v = pr_value_gen (fun _ -> "") v
+
+let pr_string s = "["^s^"]"
+let pr_bool b = if b then "true" else "false"
+
+let pr_full_value call value =
+  match call with
+    | Interp _ -> pr_value_gen pr_string (Obj.magic value)
+    | Rewind i -> pr_value value
+    | Goals -> pr_value value (* TODO *)
+    | Status -> pr_value_gen pr_string (Obj.magic value)
+    | InLoadPath s -> pr_value_gen pr_bool (Obj.magic value)
+    | MkCases s -> pr_value value (* TODO *)

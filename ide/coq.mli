@@ -45,14 +45,13 @@ val interrupter : (int -> unit) ref
 
 (** * Calls to Coqtop, cf [Ide_intf] for more details *)
 
-val interp : coqtop -> bool -> string -> unit Ide_intf.value
-val raw_interp : coqtop -> string -> unit Ide_intf.value
-val read_stdout : coqtop -> string Ide_intf.value
+val interp :
+  coqtop -> ?raw:bool -> ?verbose:bool -> string -> string Ide_intf.value
 val rewind : coqtop -> int -> unit Ide_intf.value
-val is_in_loadpath : coqtop -> string -> bool Ide_intf.value
-val make_cases : coqtop -> string -> string list list Ide_intf.value
-val current_status : coqtop -> string Ide_intf.value
-val current_goals : coqtop -> Ide_intf.goals Ide_intf.value
+val status : coqtop -> string Ide_intf.value
+val goals : coqtop -> Ide_intf.goals Ide_intf.value
+val inloadpath : coqtop -> string -> bool Ide_intf.value
+val mkcases : coqtop -> string -> string list list Ide_intf.value
 
 (** A specialized version of [raw_interp] dedicated to
     set/unset options. *)

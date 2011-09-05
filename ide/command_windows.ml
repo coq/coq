@@ -102,15 +102,11 @@ object(self)
       in
       try
         result#buffer#set_text
-          (match Coq.raw_interp coqtop phrase with
+          (match Coq.interp coqtop ~raw:true phrase with
              | Ide_intf.Fail (l,str) ->
                  ("Error while interpreting "^phrase^":\n"^str)
-             | Ide_intf.Good () ->
-                 match Coq.read_stdout coqtop with
-                   | Ide_intf.Fail (l,str) ->
-                       ("Error while fetching "^phrase^"results:\n"^str)
-                   | Ide_intf.Good results ->
-                       ("Result for command " ^ phrase ^ ":\n" ^ results))
+             | Ide_intf.Good results ->
+                 ("Result for command " ^ phrase ^ ":\n" ^ results))
       with e ->
 	let s = Printexc.to_string e in
 	assert (Glib.Utf8.validate s);

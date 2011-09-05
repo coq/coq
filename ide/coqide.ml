@@ -829,7 +829,7 @@ object(self)
         else
           (fun _ _ -> ()) in
       try
-        match Coq.current_goals !mycoqtop with
+        match Coq.goals !mycoqtop with
           | Ide_intf.Fail (l,str) ->
             self#set_message ("Error in coqtop :\n"^str)
           | Ide_intf.Good goals ->
@@ -842,7 +842,7 @@ object(self)
 
   method show_goals = self#show_goals_full
 
-  method private send_to_coq ct verbosely phrase show_output show_error localize =
+  method private send_to_coq ct verbose phrase show_output show_error localize =
     let display_output msg =
       self#insert_message (if show_output then msg else "") in
     let display_error (loc,s) =
@@ -873,16 +873,11 @@ object(self)
       prerr_endline "Send_to_coq starting now";
       (* It's important here to work with [ct] and not [!mycoqtop], otherwise
          we could miss a restart of coqtop and continue sending it orders. *)
-      match Coq.interp ct verbosely phrase with
+      match Coq.interp ct ~verbose phrase with
         | Ide_intf.Fail (l,str) -> sync display_error (l,str); None
-        | Ide_intf.Good () ->
-	  match Coq.read_stdout ct with
-            | Ide_intf.Fail (l,str) -> sync display_error (l,str); None
-            | Ide_intf.Good msg ->
-              sync display_output msg;
-	      (** TODO: Restore someday the access to Decl_mode.get_damon_flag,
-		  and also detect the use of admit, and then return Unsafe *)
-              Some Safe
+        | Ide_intf.Good msg -> sync display_output msg; Some Safe
+          (* TODO: Restore someday the access to Decl_mode.get_damon_flag,
+	     and also detect the use of admit, and then return Unsafe *)
     with
       | End_of_file -> (* Coqtop has died, let's trigger a reset_initial. *)
         raise RestartCoqtop
@@ -1253,24 +1248,22 @@ object(self)
       (input_view#event#connect#key_press ~callback:self#active_keypress_handler);
     prerr_endline "CONNECTED active : ";
     print_id (match act_id with Some x -> x | None -> assert false);
-    match
-      filename
-    with
+    match filename with
       | None -> ()
       | Some f ->
 	let dir = Filename.dirname f in
 	let ct = !mycoqtop in
-	match Coq.is_in_loadpath ct dir with
+	match Coq.inloadpath ct dir with
 	  | Ide_intf.Fail (_,str) ->
 	    self#set_message
 	      ("Could not determine lodpath, this might lead to problems:\n"^str)
 	  | Ide_intf.Good true -> ()
 	  | Ide_intf.Good false ->
 	    let cmd = Printf.sprintf "Add LoadPath \"%s\". "  dir in
-	    match Coq.interp ct false cmd with
+	    match Coq.interp ct cmd with
 	      | Ide_intf.Fail (l,str) ->
 		self#set_message ("Couln't add loadpath:\n"^str)
-	      | Ide_intf.Good () -> ()
+	      | Ide_intf.Good _ -> ()
   end
 
   method private electric_paren tag =
@@ -2180,7 +2173,7 @@ let main files =
         ignore (f av);
         pop_info ();
         push_info
-          (match Coq.current_status !(current.toplvl) with
+          (match Coq.status !(current.toplvl) with
             | Ide_intf.Fail (l,str) ->
 	      "Oops, problem while fetching coq status."
             | Ide_intf.Good str -> str)
@@ -2195,7 +2188,7 @@ let main files =
     let w = get_current_word () in
     let cur_ct = !(session_notebook#current_term.toplvl) in
     try
-      match Coq.make_cases cur_ct w with
+      match Coq.mkcases cur_ct w with
         | Ide_intf.Fail _ -> raise Not_found
         | Ide_intf.Good cases ->
           let print_branch c l =

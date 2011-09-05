@@ -16,34 +16,36 @@ type goals =
 
 type 'a call
 
-(** Running a command. The boolean is a verbosity flag.
-    Output will be fetch later via [read_stdout]. *)
-val interp : bool * string -> unit call
+type raw = bool
+type verbose = bool
 
-(** Running a command with no impact on the undo stack,
-    such as a query or a Set/Unset.
-    Output will be fetch later via [read_stdout]. *)
-val raw_interp : string -> unit call
-
-(** What messages have been displayed by coqtop recently ? *)
-val read_stdout : string call
+(** Running a command (given as a string).
+    - The 1st flag indicates whether to use "raw" mode
+      (less sanity checks, no impact on the undo stack).
+      Suitable e.g. for queries, or for the Set/Unset
+      of display options that coqide performs all the time.
+    - The 2nd flag controls the verbosity.
+    - The returned string contains the messages produced
+      by this command, but not the updated goals (they are
+      to be fetch by a separated [current_goals]). *)
+val interp : raw * verbose * string -> string call
 
 (** Backtracking by a certain number of phrases. *)
 val rewind : int -> unit call
 
-(** Is a file present somewhere in Coq's loadpath ? *)
-val is_in_loadpath : string -> bool call
+(** Fetching the list of current goals *)
+val goals : goals call
+
+(** The status, for instance "Ready in SomeSection, proving Foo" *)
+val status : string call
+
+(** Is a directory part of Coq's loadpath ? *)
+val inloadpath : string -> bool call
 
 (** Create a "match" template for a given inductive type.
     For each branch of the match, we list the constructor name
     followed by enough pattern variables. *)
-val make_cases : string -> string list list call
-
-(** The status, for instance "Ready in SomeSection, proving Foo" *)
-val current_status : string call
-
-(** Fetching the list of current goals *)
-val current_goals : goals call
+val mkcases : string -> string list list call
 
 
 (** * Coq answers to CoqIde *)
@@ -54,15 +56,15 @@ type 'a value =
   | Good of 'a
   | Fail of (location * string)
 
+(** * The structure that coqtop should implement *)
+
 type handler = {
-  interp : bool * string -> unit;
-  raw_interp : string -> unit;
-  read_stdout : unit -> string;
+  interp : raw * verbose * string -> string;
   rewind : int -> unit;
-  is_in_loadpath : string -> bool;
-  current_goals : unit -> goals;
-  current_status : unit -> string;
-  make_cases : string -> string list list;
+  goals : unit -> goals;
+  status : unit -> string;
+  inloadpath : string -> bool;
+  mkcases : string -> string list list;
 }
 
 val abstract_eval_call :
@@ -73,3 +75,4 @@ val abstract_eval_call :
 
 val pr_call : 'a call -> string
 val pr_value : 'a value -> string
+val pr_full_value : 'a call -> 'a value -> string
