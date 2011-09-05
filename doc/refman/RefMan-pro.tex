@@ -211,7 +211,6 @@ backtracks one step.
 
 \begin{ErrMsgs}
 \item \errindex{No focused proof (No proof-editing in progress)}
-\item \errindex{Undo stack would be exhausted}
 \end{ErrMsgs}
 
 \begin{Variants}
@@ -221,18 +220,6 @@ backtracks one step.
   Repeats {\tt Undo} {\num} times.
 
 \end{Variants}
-
-\subsection[\tt Set Undo {\num}.]{\tt Set Undo {\num}.\comindex{Set Undo}}
-
-This command changes the maximum number of {\tt Undo}'s that will be
-possible when doing a proof. It only affects proofs started after
-this command, such that if you want to change the current undo limit
-inside a proof, you should first restart this proof.
-
-\subsection[\tt Unset Undo.]{\tt Unset Undo.\comindex{Unset Undo}}
-
-This command resets the default number of possible {\tt Undo} commands
-(which is currently 12).
 
 \subsection[\tt Restart.]{\tt Restart.\comindex{Restart}}
 This command restores the proof editing process to the original goal.

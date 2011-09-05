@@ -64,11 +64,6 @@ val undo_todepth : int -> unit
    to put informations in coq prompt (in emacs mode). *)
 val current_proof_depth: unit -> int
 
-(** [set_undo (Some n)] used to set the size of the ``undo'' stack. 
-    These function now do nothing and will disapear. *)
-val set_undo : int option -> unit
-val get_undo : unit -> int option
-
 (** {6 ... } *)
 (** [start_proof s str env t hook tac] starts a proof of name [s] and
     conclusion [t]; [hook] is optionally a function to be applied at

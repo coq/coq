@@ -933,13 +933,16 @@ let _ =
       optread  = (fun _ -> not (Vm.transp_values ()));
       optwrite = (fun b -> Vm.set_transp_values (not b)) }
 
+(* No more undo limit in the new proof engine.
+   The command still exists for compatibility (e.g. with ProofGeneral) *)
+
 let _ =
   declare_int_option
     { optsync  = false;
-      optname  = "the undo limit";
+      optname  = "the undo limit (OBSOLETE)";
       optkey   = ["Undo"];
-      optread  = Pfedit.get_undo;
-      optwrite = Pfedit.set_undo }
+      optread  = (fun _ -> None);
+      optwrite = (fun _ -> ()) }
 
 let _ =
   declare_int_option

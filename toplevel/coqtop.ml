@@ -324,7 +324,6 @@ let init arglist =
         (print_string (String.concat "\n" foreign_args); exit 0);
       if !ide_slave then begin
         Flags.make_silent true;
-        Pfedit.set_undo (Some 5000);
         Ide_slave.init_stdout ()
       end;
       if_verbose print_header ();
