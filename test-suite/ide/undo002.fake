@@ -1,0 +1,10 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# Simple backtrack by 2 before two global definitions
+#
+INTERP Definition foo := 0.
+INTERP Definition bar := 1.
+REWIND 2
+INTERPRAW Fail Check foo.
+INTERPRAW Fail Check bar.

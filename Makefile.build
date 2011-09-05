@@ -379,7 +379,7 @@ MAKE_TSOPTS=-C test-suite -s BEST=$(BEST) VERBOSE=$(VERBOSE)
 
 check:: validate test-suite
 
-test-suite: world $(ALLSTDLIB).v
+test-suite: world $(ALLSTDLIB).v bin/fake_ide
 	$(MAKE) $(MAKE_TSOPTS) clean
 	$(MAKE) $(MAKE_TSOPTS) all
 	$(HIDE)if grep -F 'Error!' test-suite/summary.log ; then false; fi
@@ -507,6 +507,13 @@ $(COQWC): tools/coqwc$(BESTOBJ)
 $(COQDOC): $(COQDOCCMO:.cmo=$(BESTOBJ))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,str unix)
+
+# fake_ide : for debugging or test-suite purpose, a fake ide simulating
+# a connection to coqtop -ideslave
+
+bin/fake_ide: toplevel/ide_intf.mli toplevel/ide_intf.ml tools/fake_ide.ml
+	$(SHOW)'OCAMLBEST -o $@'
+	$(HIDE)$(call bestocaml,,unix)
 
 # Special rule for the compatibility-with-camlp5 extension for camlp4
 

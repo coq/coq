@@ -1,0 +1,20 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# Undoing declarations, interleaved with proof steps
+# new in 8.2 *)
+#
+INTERP Theorem k : O=O.
+INTERP assert True by trivial.
+INTERP Definition l := O.
+INTERP assert True by trivial.
+INTERP Definition m := O.
+REWIND 3
+# <replay>
+INTERP Definition l := O.
+INTERP assert True by trivial.
+INTERP Definition m := O.
+# <\replay>
+INTERP assert True by trivial.
+INTERP trivial.
+INTERP Qed.

@@ -1,0 +1,14 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# bug #2569 : Undoing a focused subproof
+#
+INTERP Goal True.
+INTERP {
+INTERP exact I.
+INTERP }
+REWIND 1
+# <replay>
+INTERP }
+# </replay>
+INTERP Qed.

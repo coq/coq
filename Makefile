@@ -165,7 +165,7 @@ cruftclean: ml4clean
 
 indepclean:
 	rm -f $(GENFILES)
-	rm -f $(COQTOPBYTE) $(COQMKTOPBYTE) $(COQCBYTE) $(CHICKENBYTE)
+	rm -f $(COQTOPBYTE) $(COQMKTOPBYTE) $(COQCBYTE) $(CHICKENBYTE) bin/fake_ide
 	find . -name '*~' -o -name '*.cm[ioa]' | xargs rm -f
 	rm -f */*.pp[iox] plugins/*/*.pp[iox]
 	rm -rf $(SOURCEDOCDIR)

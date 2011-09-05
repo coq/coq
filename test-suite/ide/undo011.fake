@@ -1,0 +1,32 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# Bug 2082
+# Broken due to proof engine rewriting
+#
+INTERP Variable A : Prop.
+INTERP Variable B : Prop.
+INTERP Axiom OR : A \/ B.
+INTERP Lemma MyLemma2 : True.
+INTERP proof.
+INTERP per cases of (A \/ B) by OR.
+INTERP suppose A.
+INTERP     then (1 = 1).
+INTERP     then H1 : thesis.
+INTERP     thus thesis by H1.
+INTERP suppose B.
+REWIND 1
+# <replay>
+INTERP suppose B.
+# </replay>
+REWIND 2
+# <replay>
+INTERP     thus thesis by H1.
+INTERP suppose B.
+# </replay>
+INTERP    then (1 = 1).
+INTERP    then H2 : thesis.
+INTERP    thus thesis by H2.
+INTERP end cases.
+INTERP end proof.
+INTERP Qed.

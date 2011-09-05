@@ -1,0 +1,13 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# bug #2569 : Undoing inside section
+#
+INTERP Section M.
+INTERP Definition x := 0.
+INTERP End M.
+REWIND 1
+# <replay>
+INTERP End M.
+# </replay>
+INTERPRAW Check x.

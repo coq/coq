@@ -1,0 +1,8 @@
+# Script simulating a dialog between coqide and coqtop -ideslave
+# Run it via fake_ide
+#
+# Simple backtrack by 0 should be a no-op
+#
+INTERP Definition foo := 0.
+REWIND 0
+INTERPRAW Check foo.
