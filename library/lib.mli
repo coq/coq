@@ -13,13 +13,14 @@
    and to backtrack (undo) those operations. It provides also the section
    mechanism (at a low level; discharge is not known at this step). *)
 
+type is_type = bool (* Module Type or just Module *)
+type export = bool option (* None for a Module Type *)
+
 type node =
   | Leaf of Libobject.obj
   | CompilingLibrary of Libnames.object_prefix
-  | OpenedModule of bool option * Libnames.object_prefix * Summary.frozen
+  | OpenedModule of is_type * export * Libnames.object_prefix * Summary.frozen
   | ClosedModule  of library_segment
-  | OpenedModtype of Libnames.object_prefix * Summary.frozen
-  | ClosedModtype of library_segment
   | OpenedSection of Libnames.object_prefix * Summary.frozen
   | ClosedSection of library_segment
   | FrozenState of Summary.frozen
@@ -99,6 +100,7 @@ val sections_are_opened : unit -> bool
 val sections_depth : unit -> int
 
 (** Are we inside an opened module type *)
+val is_module_or_modtype : unit -> bool
 val is_modtype : unit -> bool
 val is_module : unit -> bool
 val current_mod_id : unit -> Names.module_ident
@@ -109,14 +111,22 @@ val find_opening_node : Names.identifier -> node
 (** {6 Modules and module types } *)
 
 val start_module :
-  bool option -> Names.module_ident -> Names.module_path -> Summary.frozen -> Libnames.object_prefix
-val end_module : unit
-  -> Libnames.object_name * Libnames.object_prefix * Summary.frozen * library_segment
+  export -> Names.module_ident -> Names.module_path ->
+  Summary.frozen -> Libnames.object_prefix
 
 val start_modtype :
-  Names.module_ident -> Names.module_path -> Summary.frozen -> Libnames.object_prefix
-val end_modtype : unit
-  -> Libnames.object_name * Libnames.object_prefix * Summary.frozen * library_segment
+  Names.module_ident -> Names.module_path ->
+  Summary.frozen -> Libnames.object_prefix
+
+val end_module :
+  unit ->
+  Libnames.object_name * Libnames.object_prefix *
+    Summary.frozen * library_segment
+
+val end_modtype :
+  unit ->
+  Libnames.object_name * Libnames.object_prefix *
+    Summary.frozen * library_segment
 
 (** [Lib.add_frozen_state] must be called after each of the above functions *)
 

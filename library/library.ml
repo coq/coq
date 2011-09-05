@@ -543,7 +543,7 @@ let set_xml_require f = xml_require := f
 let require_library_from_dirpath modrefl export =
   let needed = List.rev (List.fold_left rec_intern_library [] modrefl) in
   let modrefl = List.map fst modrefl in
-    if Lib.is_modtype () || Lib.is_module () then
+    if Lib.is_module_or_modtype () then
       begin
 	add_anonymous_leaf (in_require (needed,modrefl,None));
 	Option.iter (fun exp ->
@@ -562,7 +562,7 @@ let require_library qidl export =
 let require_library_from_file idopt file export =
   let modref,needed = rec_intern_library_from_file idopt file in
   let needed = List.rev needed in
-  if Lib.is_modtype () || Lib.is_module () then begin
+  if Lib.is_module_or_modtype () then begin
     add_anonymous_leaf (in_require (needed,[modref],None));
     Option.iter (fun exp -> add_anonymous_leaf (in_import (modref,exp)))
       export
@@ -578,7 +578,7 @@ let import_module export (loc,qid) =
   try
     match Nametab.locate_module qid with
       | MPfile dir ->
-	  if Lib.is_modtype () || Lib.is_module () || not export then
+	  if Lib.is_module_or_modtype () || not export then
 	    add_anonymous_leaf (in_import (dir, export))
 	  else
 	    add_anonymous_leaf (in_import (dir, export))
