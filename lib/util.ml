@@ -16,7 +16,7 @@ let anomaly string = raise (Anomaly(string, str string))
 let anomalylabstrm string pps = raise (Anomaly(string,pps))
 
 exception UserError of string * std_ppcmds (* User errors *)
-let error string = raise (UserError(string, str string))
+let error string = raise (UserError("_", str string))
 let errorlabstrm l pps = raise (UserError(l,pps))
 
 exception AlreadyDeclared of std_ppcmds (* for already declared Schemes *)
