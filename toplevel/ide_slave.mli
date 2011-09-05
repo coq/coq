@@ -6,12 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Specialize loop of Coqtop for interaction with CoqIde *)
-
-val reinit : unit -> unit
+(** [Ide_slave] : an implementation of [Ide_intf], i.e. mainly an interp
+    function and a rewind function. This specialized loop is triggered
+    when the -ideslave option is passed to Coqtop. Currently CoqIDE is
+    the only one using this mode, but we try here to be as generic as
+    possible, so this may change in the future... *)
 
 val init_stdout : unit -> unit
-
-val eval_call : 'a Ide_intf.call -> 'a Ide_intf.value
 
 val loop : unit -> unit

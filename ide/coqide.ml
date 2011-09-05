@@ -1096,6 +1096,41 @@ object(self)
       Mutex.unlock resetting
     end
 
+  (* Internal method for dialoging with coqtop about a backtrack.
+     The ide's cmd_stack has already been cleared up to the desired point.
+     The [finish] function is used to handle minor differences between
+     [go_to_insert] and [undo_last_step] *)
+
+  method private do_backtrack finish n =
+    (* pop n more commands if coqtop has said so (e.g. for undoing a proof) *)
+    let rec n_pop n =
+      if n = 0 then ()
+      else
+	let phrase = Stack.pop cmd_stack in
+	let stop = input_buffer#get_iter_at_mark phrase.stop in
+        if stop#backward_char#has_tag Tags.Script.comment
+	  then n_pop n
+	  else n_pop (pred n)
+    in
+    match Coq.rewind !mycoqtop n with
+      | Ide_intf.Good n ->
+	n_pop n;
+        sync (fun _ ->
+          let start =
+            if Stack.is_empty cmd_stack then input_buffer#start_iter
+            else input_buffer#get_iter_at_mark (Stack.top cmd_stack).stop in
+	  let stop = self#get_start_of_input in
+          input_buffer#remove_tag Tags.Script.processed ~start ~stop;
+          input_buffer#remove_tag Tags.Script.unjustified ~start ~stop;
+          input_buffer#move_mark ~where:start (`NAME "start_of_input");
+          self#show_goals;
+          self#clear_message;
+          finish start) ()
+      | Ide_intf.Fail (l,str) ->
+        sync self#set_message
+          ("Error while backtracking :\n" ^ str ^ "\n" ^
+	   "CoqIDE and coqtop may be out of sync, you may want to use Restart.")
+
   (* backtrack Coq to the phrase preceding iterator [i] *)
   method backtrack_to_no_lock i =
     prerr_endline "Backtracking_to iter starts now.";
@@ -1103,42 +1138,21 @@ object(self)
     (* pop Coq commands until we reach iterator [i] *)
     let rec n_step n =
       if Stack.is_empty cmd_stack then n else
-        let ide_ri = Stack.pop cmd_stack in
-	let stop = input_buffer#get_iter_at_mark ide_ri.stop in
-        if i#compare stop < 0 then
+        let phrase = Stack.top cmd_stack in
+	let stop = input_buffer#get_iter_at_mark phrase.stop in
+        if i#compare stop >= 0 then n
+	else begin
+	  ignore (Stack.pop cmd_stack);
           if stop#backward_char#has_tag Tags.Script.comment
 	  then n_step n
 	  else n_step (succ n)
-        else
-          (Stack.push ide_ri cmd_stack; n)
+	end
     in
     begin
       try
-        match Coq.rewind !mycoqtop (n_step 0) with
-          | Ide_intf.Fail (l,str) ->
-            sync self#set_message
-              ("Error while backtracking :\n" ^ str ^ "\n" ^
-	       "CoqIDE and coqtop may be out of sync," ^
-	       "you may want to use Restart.")
-          | Ide_intf.Good () ->
-            sync (fun _ ->
-              let start =
-                if Stack.is_empty cmd_stack then input_buffer#start_iter
-                else input_buffer#get_iter_at_mark (Stack.top cmd_stack).stop in
-              prerr_endline "Removing (long) processed tag...";
-              input_buffer#remove_tag
-                Tags.Script.processed
-                ~start
-                ~stop:self#get_start_of_input;
-              input_buffer#remove_tag
-                Tags.Script.unjustified
-                ~start
-                ~stop:self#get_start_of_input;
-              prerr_endline "Moving (long) start_of_input...";
-              input_buffer#move_mark ~where:start (`NAME "start_of_input");
-              self#show_goals;
-              self#clear_message)
-              ();
+	self#do_backtrack (fun _ -> ()) (n_step 0);
+	(* We may have backtracked too much: let's replay *)
+	self#process_until_iter_or_error i
       with _ ->
         push_info
 	  ("WARNING: undo failed badly.\n" ^
@@ -1164,24 +1178,17 @@ object(self)
     if Mutex.try_lock coq_may_stop then
       (push_info "Undoing last step...";
        (try
-          let ide_ri = Stack.pop cmd_stack in
-          let start = input_buffer#get_iter_at_mark ide_ri.start in
-	  let stop = input_buffer#get_iter_at_mark ide_ri.stop in
-          let update_input () =
-            prerr_endline "Removing processed tag...";
-            input_buffer#remove_tag Tags.Script.processed ~start ~stop;
-            input_buffer#remove_tag Tags.Script.unjustified ~start ~stop;
-            prerr_endline "Moving start_of_input";
-            input_buffer#move_mark ~where:start (`NAME "start_of_input");
-            input_buffer#place_cursor ~where:start;
-            self#recenter_insert;
-            self#show_goals;
-            self#clear_message
-          in
-            if not (stop#backward_char#has_tag Tags.Script.comment) then ignore (Coq.rewind !mycoqtop 1);
-            sync update_input ()
-        with
-          | Stack.Empty -> (* flash_info "Nothing to Undo"*)()
+          let phrase = Stack.pop cmd_stack in
+	  let stop = input_buffer#get_iter_at_mark phrase.stop in
+	  let count =
+	    if stop#backward_char#has_tag Tags.Script.comment then 0 else 1
+	  in
+	  let finish where =
+	    input_buffer#place_cursor ~where;
+	    self#recenter_insert;
+	  in
+	  self#do_backtrack finish count
+        with Stack.Empty -> ()
        );
        pop_info ();
        Mutex.unlock coq_may_stop)

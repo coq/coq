@@ -28,7 +28,7 @@ type 'a call =
   | MkCases of string
 
 let interp (r,b,s) : string call = Interp (r,b,s)
-let rewind i : unit call = Rewind i
+let rewind i : int call = Rewind i
 let goals : goals call = Goals
 let status : string call = Status
 let inloadpath s : bool call = InLoadPath s
@@ -44,7 +44,7 @@ type 'a value =
 
 type handler = {
   interp : raw * verbose * string -> string;
-  rewind : int -> unit;
+  rewind : int -> int;
   goals : unit -> goals;
   status : unit -> string;
   inloadpath : string -> bool;
@@ -90,7 +90,7 @@ let pr_bool b = if b then "true" else "false"
 let pr_full_value call value =
   match call with
     | Interp _ -> pr_value_gen pr_string (Obj.magic value)
-    | Rewind i -> pr_value value
+    | Rewind i -> pr_value_gen string_of_int (Obj.magic value)
     | Goals -> pr_value value (* TODO *)
     | Status -> pr_value_gen pr_string (Obj.magic value)
     | InLoadPath s -> pr_value_gen pr_bool (Obj.magic value)

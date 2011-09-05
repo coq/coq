@@ -30,8 +30,13 @@ type verbose = bool
       to be fetch by a separated [current_goals]). *)
 val interp : raw * verbose * string -> string call
 
-(** Backtracking by a certain number of phrases. *)
-val rewind : int -> unit call
+(** Backtracking by at least a certain number of phrases.
+    No finished proofs will be re-opened. Instead,
+    we continue backtracking until before these proofs,
+    and answer the amount of extra backtracking performed.
+    Backtracking by more than the number of phrases already
+    interpreted successfully (and not yet undone) will fail. *)
+val rewind : int -> int call
 
 (** Fetching the list of current goals *)
 val goals : goals call
@@ -60,7 +65,7 @@ type 'a value =
 
 type handler = {
   interp : raw * verbose * string -> string;
-  rewind : int -> unit;
+  rewind : int -> int;
   goals : unit -> goals;
   status : unit -> string;
   inloadpath : string -> bool;

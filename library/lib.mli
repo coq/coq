@@ -157,9 +157,6 @@ val reset_to : Libnames.object_name -> unit
 val reset_name : Names.identifier Util.located -> unit
 val remove_name : Names.identifier Util.located -> unit
 val reset_mod : Names.identifier Util.located -> unit
-val reset_to_state : Libnames.object_name -> unit
-
-val has_top_frozen_state : unit -> Libnames.object_name option
 
 (** [back n] resets to the place corresponding to the {% $ %}n{% $ %}-th call of
    [mark_end_of_command] (counting backwards) *)

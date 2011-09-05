@@ -53,6 +53,8 @@ val interp : Vernacexpr.vernac_expr -> unit
 
 val vernac_reset_name : identifier Util.located -> unit
 
+val vernac_backtrack : int -> int -> int -> unit
+
 (* Print subgoals when the verbose flag is on. Meant to be used inside
     vernac commands from plugins. *)
 val print_subgoals : unit -> unit

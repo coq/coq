@@ -14,6 +14,18 @@ open Pp
 open Printer
 open Namegen
 
+(** Ide_slave : an implementation of [Ide_intf], i.e. mainly an interp
+    function and a rewind function. This specialized loop is triggered
+    when the -ideslave option is passed to Coqtop. Currently CoqIDE is
+    the only one using this mode, but we try here to be as generic as
+    possible, so this may change in the future... *)
+
+
+(** Comment the next line for displaying some more debug messages *)
+
+let prerr_endline _ = ()
+
+
 (** Signal handling: we postpone ^C during input and output phases,
     but make it directly raise a Sys.Break during evaluation of the request. *)
 
@@ -23,7 +35,8 @@ let init_signal_handler () =
   let f _ = if !catch_break then raise Sys.Break else Util.interrupt := true in
   Sys.set_signal Sys.sigint (Sys.Signal_handle f)
 
-let prerr_endline _ = ()
+
+(** Redirection of standard output to a printable buffer *)
 
 let orig_stdout = ref stdout
 
@@ -45,6 +58,9 @@ let init_stdout,read_stdout =
   (fun () -> Format.pp_print_flush out_ft ();
              let r = Buffer.contents out_buff in
              Buffer.clear out_buff; r)
+
+
+(** Categories of commands *)
 
 let coqide_known_option table = List.mem table [
   ["Printing";"Implicit"];
@@ -125,7 +141,11 @@ let rec attribute_of_vernac_command = function
   | VernacRemoveLoadPath _ -> []
   | VernacAddMLPath _ -> []
   | VernacDeclareMLModule _ -> []
-  | VernacChdir _ -> [OtherStatePreservingCommand]
+  | VernacChdir o ->
+    (* TODO: [Chdir d] is currently not undo-able (not stored in coq state).
+       But if we register [Chdir] in the state, loading [initial.coq] will
+       wrongly cd to the compile-time directory at each coqtop launch. *)
+    if o = None then [QueryCommand] else []
 
   (* State management *)
   | VernacWriteState _ -> []
@@ -225,43 +245,28 @@ let is_vernac_tactic_command com =
 let is_vernac_proof_ending_command com =
   List.mem ProofEndingCommand (attribute_of_vernac_command com)
 
-type reset_status =
-  | NoReset
-  | ResetToNextMark
-  | ResetAtMark of Libnames.object_name
 
-type reset_info = {
-  status : reset_status;
-  proofs : identifier list;
-  cur_prf : (identifier * int) option;
-  loc_ast : Util.loc * Vernacexpr.vernac_expr;
-}
+(** Command history stack
+
+    We maintain a stack of the past states of the system. Each
+    successfully interpreted command adds a [reset_info] element
+    to this stack, storing what were the (label / open proofs /
+    current proof depth) just _before_ the interpretation of this
+    command. A label is just an integer (cf. BackTo and Bactrack
+    vernac commands).
+*)
+
+type reset_info = { label : int; proofs : identifier list; depth : int }
 
 let com_stk = Stack.create ()
 
-let reinit () =
-  Vernacentries.abort_refine Lib.reset_initial ();
-  Stack.clear com_stk
-
-let compute_reset_info loc_ast =
-  let status,cur_prf = match snd loc_ast with
-    | com when is_vernac_tactic_command com ->
-        NoReset,Some (Pfedit.get_current_proof_name (),Pfedit.current_proof_depth ())
-    | com when is_vernac_state_preserving_command com -> NoReset,None
-    | com when is_vernac_proof_ending_command com -> ResetToNextMark,None
-    | VernacEndSegment _ -> NoReset,None
-    | _ ->
-        (match Lib.has_top_frozen_state () with
-           | Some sp ->
-               prerr_endline ("On top of state "^Libnames.string_of_path (fst sp));
-               ResetAtMark sp,None
-           | None -> prerr_endline "No top state"; (NoReset,None))
-  in
-  { status = status;
+let compute_reset_info () =
+  { label = Lib.current_command_label ();
     proofs = Pfedit.get_all_proof_names ();
-    cur_prf = cur_prf;
-    loc_ast = loc_ast;
-  }
+    depth = max 0 (Pfedit.current_proof_depth ()) }
+
+
+(** Interpretation (cf. [Ide_intf.interp]) *)
 
 (** Check whether a command is forbidden by CoqIDE *)
 
@@ -281,82 +286,71 @@ let coqide_cmd_checks (loc,ast) =
 let raw_eval_expr = Vernac.eval_expr
 
 let eval_expr loc_ast =
-  let rewind_info = compute_reset_info loc_ast in
+  let rewind_info = compute_reset_info () in
   raw_eval_expr loc_ast;
   Stack.push rewind_info com_stk
 
 let interp (raw,verbosely,s) =
-  prerr_endline "Starting interp...";
-  prerr_endline s;
+  if not raw then (prerr_endline "Starting interp..."; prerr_endline s);
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   let loc_ast = Vernac.parse_sentence (pa,None) in
   if not raw then coqide_cmd_checks loc_ast;
-  (* Verbose if command is not a tactic and IDE said to be verbose
-     (i.e. we're in small step forward mode) *)
+  (* We run tactics silently, since we will query the goal state later.
+     Otherwise, we honor the IDE verbosity flag. *)
   Flags.make_silent
     (is_vernac_goal_printing_command (snd loc_ast) || not verbosely);
   if raw then raw_eval_expr loc_ast else eval_expr loc_ast;
   Flags.make_silent true;
-  prerr_endline ("...Done with interp of : "^s);
+  if not raw then prerr_endline ("...Done with interp of : "^s);
   read_stdout ()
 
-let rewind count =
-  let undo_ops = Hashtbl.create 31 in
-  let current_proofs = Pfedit.get_all_proof_names () in
-  let rec do_rewind count reset_op prev_proofs curprf =
-    if (count <= 0) && (reset_op <> ResetToNextMark) &&
-       (Util.list_subset prev_proofs current_proofs) then
-      (* We backtracked at least what we wanted to, we have no
-       * proof to reopen, and we don't need to find a reset mark *)
-      begin
-        Hashtbl.iter
-          (fun id depth ->
-             if List.mem id prev_proofs then begin
-               Pfedit.suspend_proof ();
-               Pfedit.resume_proof (Util.dummy_loc,id);
-               Pfedit.undo_todepth depth
-             end)
-          undo_ops;
-        prerr_endline "OK for undos";
-        Option.iter (fun id -> if List.mem id prev_proofs then
-                       Pfedit.suspend_proof ();
-                       Pfedit.resume_proof (Util.dummy_loc,id)) curprf;
-        prerr_endline "OK for focusing";
-        List.iter
-          (fun id -> Pfedit.delete_proof (Util.dummy_loc,id))
-          (Util.list_subtract current_proofs prev_proofs);
-        prerr_endline "OK for aborts";
-        (match reset_op with
-           | NoReset -> prerr_endline "No Reset"
-           | ResetAtMark m -> (prerr_endline ("Reset at "^(Libnames.string_of_path (fst m))); Lib.reset_to_state m)
-           | ResetToNextMark -> assert false);
-        prerr_endline "OK for reset"
-          end
-        else
-          begin
-            prerr_endline "pop";
-            let coq = Stack.pop com_stk in
-            let curprf =
-              Option.map
-                (fun (curprf,depth) ->
-                   (if Hashtbl.mem undo_ops curprf then Hashtbl.replace else Hashtbl.add)
-                     undo_ops curprf depth;
-                   curprf)
-                coq.cur_prf in
-            do_rewind (pred count)
-              (if coq.status <> NoReset then coq.status else reset_op) coq.proofs curprf;
-            if count <= 0 then begin
-              (* we had to backtrack further to find a suitable
-               * anchor point, replaying *)
-              prerr_endline "push";
-              ignore (eval_expr coq.loc_ast);
-            end
-          end
-  in
-  do_rewind count NoReset current_proofs None
 
-let inloadpath dir =
-  Library.is_in_load_paths (System.physical_path_of_string dir)
+(** Backtracking (cf. [Ide_intf.rewind]).
+    We now rely on the [Backtrack] command just as ProofGeneral. *)
+
+let rewind count =
+  if count = 0 then 0
+  else
+    let current_proofs = Pfedit.get_all_proof_names ()
+    in
+    (* 1) First, let's pop the history stack exactly [count] times.
+       NB: Normally, the IDE will not rewind by more than the numbers
+       of already interpreted commands, hence no risk of [Stack.Empty].
+    *)
+    let initial_target =
+      for i = 1 to count - 1 do ignore (Stack.pop com_stk) done;
+      Stack.pop com_stk
+    in
+    (* 2) Backtrack by enough additional steps to avoid re-opening proofs.
+       Typically, when a Qed has been crossed, we backtrack to the proof start.
+       NB: We cannot reach the empty stack, since the oldest [reset_info]
+       in the history cannot have opened proofs.
+    *)
+    let already_opened p = List.mem p current_proofs in
+    let rec extra_back n target =
+      if List.for_all already_opened target.proofs then n,target
+      else extra_back (n+1) (Stack.pop com_stk)
+    in
+    let extra_count, target = extra_back 0 initial_target
+    in
+    (* 3) Now that [target.proofs] is a subset of the opened proofs before
+       the rewind, we simply abort the extra proofs (if any).
+       NB: It is critical here that proofs are nested in a regular way
+       (i.e. no Resume or Suspend, as enforced above). This way, we can simply
+       count the extra proofs to abort instead of taking care of their names.
+    *)
+    let naborts = List.length current_proofs - List.length target.proofs
+    in
+    (* 4) We are now ready to call [Backtrack] *)
+    prerr_endline ("Rewind to state "^string_of_int target.label^
+		   ", proof depth "^string_of_int target.depth^
+		   ", num of aborts "^string_of_int naborts);
+    Vernacentries.vernac_backtrack target.label target.depth naborts;
+    Lib.mark_end_of_command (); (* We've short-circuited Vernac.eval_expr *)
+    extra_count
+
+
+(** Goal display *)
 
 let string_of_ppcmds c =
   Pp.msg_with Format.str_formatter c;
@@ -452,6 +446,12 @@ let goals () =
   with Proof_global.NoCurrentProof ->
     Ide_intf.Message "" (* quick hack to have a clean message screen *)
 
+
+(** Other API calls *)
+
+let inloadpath dir =
+  Library.is_in_load_paths (System.physical_path_of_string dir)
+
 let status () =
   (** We remove the initial part of the current [dir_path]
       (usually Top in an interactive session, cf "coqtop -top"),
@@ -469,29 +469,21 @@ let status () =
   in
   "Ready"^path^proof
 
-let explain_exn e =
-  let toploc,exc =
-    match e with
-      | Loc.Exc_located (loc, inner) ->
-	let l = if loc = dummy_loc then None else Some (Util.unloc loc) in
-	l,inner
-      | Error_in_file (s, _, inner) -> None,inner
-      | _ -> None,e
-  in
-  toploc,(Errors.print exc)
+
+(** Grouping all call handlers together + error handling *)
 
 let eval_call c =
-  (* If the messages of last command are still there, we remove them *)
-  ignore (read_stdout ());
   let rec handle_exn e =
     catch_break := false;
+    let pr_exn e = string_of_ppcmds (Errors.print e) in
     match e with
-      | Vernac.DuringCommandInterp (loc,inner) -> handle_exn inner
       | Vernacexpr.Drop -> None, "Drop is not allowed by coqide!"
       | Vernacexpr.Quit -> None, "Quit is not allowed by coqide!"
-      | e ->
-	let (l,pp) = explain_exn e in
-	l, string_of_ppcmds pp
+      | Vernac.DuringCommandInterp (_,inner) -> handle_exn inner
+      | Error_in_file (_,_,inner) -> None, pr_exn inner
+      | Loc.Exc_located (loc, inner) when loc = dummy_loc -> None, pr_exn inner
+      | Loc.Exc_located (loc, inner) -> Some (Util.unloc loc), pr_exn inner
+      | e -> None, pr_exn e
   in
   let interruptible f x =
     catch_break := true;
@@ -508,23 +500,29 @@ let eval_call c =
     Ide_intf.inloadpath = interruptible inloadpath;
     Ide_intf.mkcases = interruptible Vernacentries.make_cases }
   in
+  (* If the messages of last command are still there, we remove them *)
+  ignore (read_stdout ());
   Ide_intf.abstract_eval_call handler handle_exn c
 
-let pr_debug s =
-  if !Flags.debug then begin
-    Printf.eprintf "[pid %d] %s\n" (Unix.getpid ()) s; flush stderr
-  end
 
-(** Exceptions during eval_call should be converted into Ide_intf.Fail
-    messages by explain_exn above. Otherwise, we die badly, after having
+(** The main loop *)
+
+(** Exceptions during eval_call should be converted into [Ide_intf.Fail]
+    messages by [handle_exn] above. Otherwise, we die badly, after having
     tried to send a last message to the ide: trying to recover from errors
     with the current protocol would most probably bring desynchronisation
     between coqtop and ide. With marshalling, reading an answer to
     a different request could hang the ide... *)
 
+let pr_debug s =
+  if !Flags.debug then Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
+
 let loop () =
   init_signal_handler ();
   catch_break := false;
+  (* ensure we have a command separator object (DOT) so that the first
+     command can be reseted. *)
+  Lib.mark_end_of_command();
   try
     while true do
       let q = (Marshal.from_channel: in_channel -> 'a Ide_intf.call) stdin in
