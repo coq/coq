@@ -1018,7 +1018,7 @@ let extract_inductive env kn =
 	  let l' = filter (succ i) l in
 	  if isDummy (expand env t) || List.mem i implicits then l'
 	  else t::l'
-    in filter 1 l
+    in filter (1+ind.ind_nparams) l
   in
   let packets =
     Array.mapi (fun i p -> { p with ip_types = Array.mapi (f i) p.ip_types })
