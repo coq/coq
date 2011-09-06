@@ -28,6 +28,7 @@ CHICKENBYTE:=bin/coqchk.byte$(EXE)
 CHICKENOPT:=bin/coqchk.opt$(EXE)
 BESTCHICKEN:=bin/coqchk.$(BEST)$(EXE)
 CHICKEN:=bin/coqchk$(EXE)
+FAKEIDE:=bin/fake_ide$(EXE)
 
 ifeq ($(CAMLP4),camlp4)
 CAMLP4MOD:=camlp4lib

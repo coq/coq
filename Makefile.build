@@ -187,7 +187,7 @@ kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
 ###########################################################################
 
-coqbinaries:: ${COQBINARIES} ${CSDPCERT}
+coqbinaries:: ${COQBINARIES} ${CSDPCERT} ${FAKEIDE}
 
 coq: coqlib tools coqbinaries
 
@@ -379,7 +379,7 @@ MAKE_TSOPTS=-C test-suite -s BEST=$(BEST) VERBOSE=$(VERBOSE)
 
 check:: validate test-suite
 
-test-suite: world $(ALLSTDLIB).v bin/fake_ide
+test-suite: world $(ALLSTDLIB).v
 	$(MAKE) $(MAKE_TSOPTS) clean
 	$(MAKE) $(MAKE_TSOPTS) all
 	$(HIDE)if grep -F 'Error!' test-suite/summary.log ; then false; fi
@@ -511,7 +511,7 @@ $(COQDOC): $(COQDOCCMO:.cmo=$(BESTOBJ))
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqtop -ideslave
 
-bin/fake_ide: toplevel/ide_intf.mli toplevel/ide_intf.ml tools/fake_ide.ml
+$(FAKEIDE): toplevel/ide_intf.mli toplevel/ide_intf.ml tools/fake_ide.ml
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,unix)
 
