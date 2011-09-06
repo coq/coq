@@ -28,7 +28,7 @@ Open Local Scope Z_scope.
 
 Ltac zify_unop_core t thm a :=
  (* Let's introduce the specification theorem for t *)
- let H:= fresh "H" in assert (H:=thm a);
+ pose proof (thm a);
  (* Then we replace (t a) everywhere with a fresh variable *)
  let z := fresh "z" in set (z:=t a) in *; clearbody z.
 
@@ -159,11 +159,9 @@ Ltac zify_nat_op :=
 
   (* mult -> Zmult and a positivity hypothesis *)
   | H : context [ Z_of_nat (mult ?a ?b) ] |- _ =>
-        let H:= fresh "H" in
-        assert (H:=Zle_0_nat (mult a b)); rewrite (inj_mult a b) in *
+        pose proof (Zle_0_nat (mult a b)); rewrite (inj_mult a b) in *
   | |- context [ Z_of_nat (mult ?a ?b) ] =>
-        let H:= fresh "H" in
-        assert (H:=Zle_0_nat (mult a b)); rewrite (inj_mult a b) in *
+        pose proof (Zle_0_nat (mult a b)); rewrite (inj_mult a b) in *
 
   (* O -> Z0 *)
   | H : context [ Z_of_nat O ] |- _ => simpl (Z_of_nat O) in H
@@ -184,20 +182,9 @@ Ltac zify_nat_op :=
      end
 
   (* atoms of type nat : we add a positivity condition (if not already there) *)
-  | H : context [ Z_of_nat ?a ] |- _ =>
-        match goal with
-          | H' : 0 <= Z_of_nat a |- _ => hide_Z_of_nat a
-          | H' : 0 <= Z_of_nat' a |- _ => fail
-          | _ => let H:= fresh "H" in
-                 assert (H:=Zle_0_nat a); hide_Z_of_nat a
-        end
-  | |- context [ Z_of_nat ?a ] =>
-        match goal with
-          | H' : 0 <= Z_of_nat a |- _ => hide_Z_of_nat a
-          | H' : 0 <= Z_of_nat' a |- _ => fail
-          | _ => let H:= fresh "H" in
-                 assert (H:=Zle_0_nat a); hide_Z_of_nat a
-        end
+  | _ : 0 <= Z_of_nat ?a |- _ => hide_Z_of_nat a
+  | _ : context [ Z_of_nat ?a ] |- _ => pose proof (Zle_0_nat a); hide_Z_of_nat a
+  | |- context [ Z_of_nat ?a ] => pose proof (Zle_0_nat a); hide_Z_of_nat a
  end.
 
 Ltac zify_nat := repeat zify_nat_rel; repeat zify_nat_op; unfold Z_of_nat' in *.
@@ -282,11 +269,9 @@ Ltac zify_positive_op :=
 
   (* Pmult -> Zmult and a positivity hypothesis *)
   | H : context [ Zpos (Pmult ?a ?b) ] |- _ =>
-        let H:= fresh "H" in
-        assert (H:=Zgt_pos_0 (Pmult a b)); rewrite (Zpos_mult_morphism a b) in *
+        pose proof (Zgt_pos_0 (Pmult a b)); rewrite (Zpos_mult_morphism a b) in *
   | |- context [ Zpos (Pmult ?a ?b) ] =>
-        let H:= fresh "H" in
-        assert (H:=Zgt_pos_0 (Pmult a b)); rewrite (Zpos_mult_morphism a b) in *
+        pose proof (Zgt_pos_0 (Pmult a b)); rewrite (Zpos_mult_morphism a b) in *
 
   (* xO *)
   | H : context [ Zpos (xO ?a) ] |- _ =>
@@ -320,18 +305,9 @@ Ltac zify_positive_op :=
   | |- context [ Zpos xH ] => hide_Zpos xH
 
   (* atoms of type positive : we add a positivity condition (if not already there) *)
-  | H : context [ Zpos ?a ] |- _ =>
-        match goal with
-         | H' : Zpos a > 0 |- _ => hide_Zpos a
-         | H' : Zpos' a > 0 |- _ => fail
-         | _ => let H:= fresh "H" in assert (H:=Zgt_pos_0 a); hide_Zpos a
-        end
-  | |- context [ Zpos ?a ] =>
-        match goal with
-         | H' : Zpos a > 0 |- _ => hide_Zpos a
-         | H' : Zpos' a > 0 |- _ => fail
-         | _ => let H:= fresh "H" in assert (H:=Zgt_pos_0 a); hide_Zpos a
-        end
+  | _ : Zpos ?a > 0 |- _ => hide_Zpos a
+  | _ : context [ Zpos ?a ] |- _ => pose proof (Zgt_pos_0 a); hide_Zpos a
+  | |- context [ Zpos ?a ] => pose proof (Zgt_pos_0 a); hide_Zpos a
  end.
 
 Ltac zify_positive :=
@@ -413,25 +389,14 @@ Ltac zify_N_op :=
 
   (* Nmult -> Zmult and a positivity hypothesis *)
   | H : context [ Z_of_N (Nmult ?a ?b) ] |- _ =>
-        let H:= fresh "H" in
-        assert (H:=Z_of_N_le_0 (Nmult a b)); rewrite (Z_of_N_mult a b) in *
+        pose proof (Z_of_N_le_0 (Nmult a b)); rewrite (Z_of_N_mult a b) in *
   | |- context [ Z_of_N  (Nmult ?a ?b) ] =>
-        let H:= fresh "H" in
-        assert (H:=Z_of_N_le_0 (Nmult a b)); rewrite (Z_of_N_mult a b) in *
+        pose proof (Z_of_N_le_0 (Nmult a b)); rewrite (Z_of_N_mult a b) in *
 
   (* atoms of type N : we add a positivity condition (if not already there) *)
-  | H : context [ Z_of_N ?a ] |- _ =>
-        match goal with
-         | H' : 0 <= Z_of_N a |- _ => hide_Z_of_N a
-         | H' : 0 <= Z_of_N' a |- _ => fail
-         | _ => let H:= fresh "H" in assert (H:=Z_of_N_le_0 a); hide_Z_of_N a
-        end
-  | |- context [ Z_of_N ?a ] =>
-        match goal with
-         | H' : 0 <= Z_of_N a |- _ => hide_Z_of_N a
-         | H' : 0 <= Z_of_N' a |- _ => fail
-         | _ => let H:= fresh "H" in assert (H:=Z_of_N_le_0 a); hide_Z_of_N a
-        end
+  | _ : 0 <= Z_of_N ?a |- _ => hide_Z_of_N a
+  | _ : context [ Z_of_N ?a ] |- _ => pose proof (Z_of_N_le_0 a); hide_Z_of_N a
+  | |- context [ Z_of_N ?a ] => pose proof (Z_of_N_le_0 a); hide_Z_of_N a
  end.
 
 Ltac zify_N := repeat zify_N_rel; repeat zify_N_op; unfold Z_of_N' in *.
