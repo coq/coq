@@ -13,9 +13,6 @@ Require Export JMeq.
 
 Require Import Coq.Program.Tactics.
 
-Local Notation "'Π'  x .. y , P" := (forall x, .. (forall y, P) ..)
-  (at level 200, x binder, y binder, right associativity) : type_scope.
-
 Ltac is_ground_goal := 
   match goal with
     |- ?T => is_ground T
@@ -169,15 +166,15 @@ Hint Rewrite <- eq_rect_eq : refl_id.
    [coerce_* t eq_refl = t]. *)
 
 Lemma JMeq_eq_refl {A} (x : A) : JMeq_eq (@JMeq_refl _ x) = eq_refl.
-Proof. intros. apply proof_irrelevance. Qed.
+Proof. apply proof_irrelevance. Qed.
 
-Lemma UIP_refl_refl : Π A (x : A),
+Lemma UIP_refl_refl A (x : A) :
   Eqdep.EqdepTheory.UIP_refl A x eq_refl = eq_refl.
-Proof. intros. apply UIP_refl. Qed.
+Proof. apply UIP_refl. Qed.
 
-Lemma inj_pairT2_refl : Π A (x : A) (P : A -> Type) (p : P x),
+Lemma inj_pairT2_refl A (x : A) (P : A -> Type) (p : P x) :
   Eqdep.EqdepTheory.inj_pairT2 A P x p p eq_refl = eq_refl.
-Proof. intros. apply UIP_refl. Qed.
+Proof. apply UIP_refl. Qed.
 
 Hint Rewrite @JMeq_eq_refl @UIP_refl_refl @inj_pairT2_refl : refl_id.
 
@@ -277,27 +274,31 @@ Ltac elim_ind p := elim_tac ltac:(fun p el => induction p using el) p.
 
 (** Lemmas used by the simplifier, mainly rephrasings of [eq_rect], [eq_ind]. *)
 
-Lemma solution_left : Π A (B : A -> Type) (t : A), B t -> (Π x, x = t -> B x).
-Proof. intros; subst. apply X. Defined.
+Lemma solution_left A (B : A -> Type) (t : A) :
+  B t -> (forall x, x = t -> B x).
+Proof. intros; subst; assumption. Defined.
 
-Lemma solution_right : Π A (B : A -> Type) (t : A), B t -> (Π x, t = x -> B x).
-Proof. intros; subst; apply X. Defined.
+Lemma solution_right A (B : A -> Type) (t : A) :
+  B t -> (forall x, t = x -> B x).
+Proof. intros; subst; assumption. Defined.
 
-Lemma deletion : Π A B (t : A), B -> (t = t -> B).
+Lemma deletion A B (t : A) : B -> (t = t -> B).
 Proof. intros; assumption. Defined.
 
-Lemma simplification_heq : Π A B (x y : A), (x = y -> B) -> (JMeq x y -> B).
-Proof. intros; apply X; apply (JMeq_eq H). Defined.
+Lemma simplification_heq A B (x y : A) :
+  (x = y -> B) -> (JMeq x y -> B).
+Proof. intros H J; apply H; apply (JMeq_eq J). Defined.
 
-Lemma simplification_existT2 : Π A (P : A -> Type) B (p : A) (x y : P p),
+Lemma simplification_existT2 A (P : A -> Type) B (p : A) (x y : P p) :
   (x = y -> B) -> (existT P p x = existT P p y -> B).
-Proof. intros. apply X. apply inj_pair2. exact H. Defined.
+Proof. intros H E. apply H. apply inj_pair2. assumption. Defined.
 
-Lemma simplification_existT1 : Π A (P : A -> Type) B (p q : A) (x : P p) (y : P q),
+Lemma simplification_existT1 A (P : A -> Type) B (p q : A) (x : P p) (y : P q) :
   (p = q -> existT P p x = existT P q y -> B) -> (existT P p x = existT P q y -> B).
-Proof. intros. injection H. intros ; auto. Defined.
-  
-Lemma simplification_K : Π A (x : A) (B : x = x -> Type), B eq_refl -> (Π p : x = x, B p).
+Proof. injection 2. auto. Defined.
+
+Lemma simplification_K A (x : A) (B : x = x -> Type) :
+  B eq_refl -> (forall p : x = x, B p).
 Proof. intros. rewrite (UIP_refl A). assumption. Defined.
 
 (** This hint database and the following tactic can be used with [autounfold] to 

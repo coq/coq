@@ -21,12 +21,6 @@ Require Export Coq.Classes.RelationClasses.
 Generalizable All Variables.
 Local Obligation Tactic := simpl_relation.
 
-Local Notation "'λ'  x .. y , t" := (fun x => .. (fun y => t) ..)
-  (at level 200, x binder, y binder, right associativity).
-
-Local Notation "'Π'  x .. y , P" := (forall x, .. (forall y, P) ..)
-  (at level 200, x binder, y binder, right associativity) : type_scope.
-
 (** * Morphisms.
 
    We now turn to the definition of [Proper] and declare standard instances.
@@ -123,15 +117,16 @@ Definition forall_def {A : Type} (B : A -> Type) : Type := forall x : A, B x.
 
 (** Dependent pointwise lifting of a relation on the range. *)
 
-Definition forall_relation {A : Type} {B : A -> Type} (sig : Π a : A, relation (B a)) : relation (Π x : A, B x) :=
-  λ f g, Π a : A, sig a (f a) (g a).
+Definition forall_relation {A : Type} {B : A -> Type}
+ (sig : forall a, relation (B a)) : relation (forall x, B x) :=
+ fun f g => forall a, sig a (f a) (g a).
 
 Arguments Scope forall_relation [type_scope type_scope signature_scope].
 
 (** Non-dependent pointwise lifting *)
 
 Definition pointwise_relation (A : Type) {B : Type} (R : relation B) : relation (A -> B) :=
-  Eval compute in forall_relation (B:=λ _, B) (λ _, R).
+  Eval compute in forall_relation (B:=fun _ => B) (fun _ => R).
 
 Lemma pointwise_pointwise A B (R : relation B) :
   relation_equivalence (pointwise_relation A R) (@eq A ==> R).
