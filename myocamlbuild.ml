@@ -181,6 +181,7 @@ let all_binaries =
    "coq-tex", "tools/coq_tex", Best;
    "gallina", "tools/gallina", Best;
    "csdpcert", "plugins/micromega/csdpcert", BestInPlace;
+   "fake_ide", "tools/fake_ide", Best;
  ]
 
 

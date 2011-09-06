@@ -12,6 +12,7 @@
 <checker/main.{native,byte}> : use_str, use_unix, use_dynlink, use_camlpX
 <plugins/micromega/csdpcert.{native,byte}> : use_nums, use_unix
 <tools/mkwinapp.{native,byte}> : use_unix
+<tools/fake_ide.{native,byte}> : use_unix
 
 ## tags for ide
 
