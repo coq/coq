@@ -23,7 +23,6 @@ let mod_to_str (m:Gdk.Tags.modifier) =
     | `MOD5 -> "<Mod5>"
     | `CONTROL -> "<Control>"
     | `SHIFT -> "<Shift>"
-    | `META -> "<Meta>"
     |  `BUTTON1| `BUTTON2| `BUTTON3| `BUTTON4| `BUTTON5| `LOCK -> ""
 
 let mod_list_to_str l = List.fold_left (fun s m -> (mod_to_str m)^s) "" l
