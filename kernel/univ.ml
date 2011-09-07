@@ -824,18 +824,30 @@ let dump_universes output g =
 
 (* Hash-consing *)
 
+module Hunivlevel =
+  Hashcons.Make(
+    struct
+      type t = universe_level
+      type u = Names.dir_path -> Names.dir_path
+      let hash_sub hdir = function
+	| UniverseLevel.Set -> UniverseLevel.Set
+	| UniverseLevel.Level (d,n) -> UniverseLevel.Level (hdir d,n)
+      let equal l1 l2 = match l1,l2 with
+	| UniverseLevel.Set, UniverseLevel.Set -> true
+	| UniverseLevel.Level (d,n), UniverseLevel.Level (d',n') ->
+	  n == n' && d == d'
+	| _ -> false
+      let hash = Hashtbl.hash
+    end)
+
 module Huniv =
   Hashcons.Make(
     struct
       type t = universe
-      type u = Names.dir_path -> Names.dir_path
-      let hash_aux hdir = function
-	| UniverseLevel.Set -> UniverseLevel.Set
-	| UniverseLevel.Level (d,n) -> UniverseLevel.Level (hdir d,n)
+      type u = universe_level -> universe_level
       let hash_sub hdir = function
-	| Atom u -> Atom (hash_aux hdir u)
-	| Max (gel,gtl) ->
-	    Max (List.map (hash_aux hdir) gel, List.map (hash_aux hdir) gtl)
+	| Atom u -> Atom (hdir u)
+	| Max (gel,gtl) -> Max (List.map hdir gel, List.map hdir gtl)
       let equal u v =
 	match u, v with
 	  | Atom u, Atom v -> u == v
@@ -846,7 +858,13 @@ module Huniv =
       let hash = Hashtbl.hash
     end)
 
-let hcons1_univ u =
+let hcons1_univlevel =
+  (* Beware: it is important to run the next line at launch-time
+     since it creates internal hash-tables.
+     We could/should probably share the other calls to [hcons_names]
+     in Term and Declare *)
   let _,_,hdir,_,_,_ = Names.hcons_names() in
-  Hashcons.simple_hcons Huniv.f hdir u
+  Hashcons.simple_hcons Hunivlevel.f hdir
+
+let hcons1_univ = Hashcons.simple_hcons Huniv.f hcons1_univlevel
 
