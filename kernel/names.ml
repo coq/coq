@@ -31,16 +31,6 @@ let id_of_string s = check_ident_soft s; String.copy s
 
 let string_of_id id = String.copy id
 
-(* Hash-consing of identifier *)
-module Hident = Hashcons.Make(
-  struct
-    type t = string
-    type u = string -> string
-    let hash_sub hstr id = hstr id
-    let equal id1 id2 = id1 == id2
-    let hash = Hashtbl.hash
-  end)
-
 module IdOrdered =
   struct
     type t = identifier
@@ -359,7 +349,7 @@ module Huniqid = Hashcons.Make(
     type t = uniq_ident
     type u = (string -> string) * (dir_path -> dir_path)
     let hash_sub (hstr,hdir) (n,s,dir) = (n,hstr s,hdir dir)
-    let equal (n1,s1,dir1) (n2,s2,dir2) = n1 = n2 & s1 = s2 & dir1 == dir2
+    let equal (n1,s1,dir1) (n2,s2,dir2) = n1 = n2 && s1 == s2 && dir1 == dir2
     let hash = Hashtbl.hash
   end)
 
@@ -375,11 +365,17 @@ module Hmod = Hashcons.Make(
     let rec equal d1 d2 = match (d1,d2) with
       | MPfile dir1, MPfile dir2 -> dir1 == dir2
       | MPbound m1, MPbound m2 -> m1 == m2
-      | MPdot (mod1,l1), MPdot (mod2,l2) -> equal mod1 mod2 & l1 = l2
+      | MPdot (mod1,l1), MPdot (mod2,l2) -> l1 == l2 && equal mod1 mod2
       | _ -> false
     let hash = Hashtbl.hash
   end)
 
+
+(** For [constant] and [mutual_inductive], we hash-cons only the user part.
+    If two constants have equal user parts (according to =), then their
+    canonical parts are also equal (invariant of the system), and then
+    the hash-consed versions of these constants will be equal according
+    to ==. *)
 
 module Hcn = Hashcons.Make(
   struct 
@@ -390,19 +386,19 @@ module Hcn = Hashcons.Make(
       ((hmod md, hdir dir, hstr l),(hmod mde, hdir dire, hstr le))
     let equal ((mod1,dir1,l1),_) ((mod2,dir2,l2),_) =
       mod1 == mod2 && dir1 == dir2 && l1 == l2
-    let hash = Hashtbl.hash
+    let hash x = Hashtbl.hash (fst x)
   end)
 
 let hcons_names () =
   let hstring = Hashcons.simple_hcons Hashcons.Hstring.f () in
-  let hident = Hashcons.simple_hcons Hident.f hstring in
+  let hident = hstring in
   let hname = Hashcons.simple_hcons Hname.f hident in
   let hdir = Hashcons.simple_hcons Hdir.f hident in
   let huniqid = Hashcons.simple_hcons Huniqid.f (hstring,hdir) in
   let hmod = Hashcons.simple_hcons Hmod.f (hdir,huniqid,hstring) in
   let hmind = Hashcons.simple_hcons Hcn.f (hmod,hdir,hstring) in
   let hcn = Hashcons.simple_hcons Hcn.f (hmod,hdir,hstring) in
-  (hcn,hmind,hdir,hname,hident,hstring)
+  (hcn,hmind,hdir,hname,hident)
 
 
 (*******)

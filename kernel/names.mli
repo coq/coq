@@ -200,7 +200,7 @@ val eq_egr : evaluable_global_reference ->  evaluable_global_reference
 val hcons_names : unit ->
   (constant -> constant) *
   (mutual_inductive -> mutual_inductive) * (dir_path -> dir_path) *
-  (name -> name) * (identifier -> identifier) * (string -> string)
+  (name -> name) * (identifier -> identifier)
 
 
 (******)

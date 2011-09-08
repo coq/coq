@@ -1401,7 +1401,7 @@ module Hsorts =
 
 let hsort = Hsorts.f
 
-let hcons_constr (hcon,hkn,hdir,hname,hident,hstr) =
+let hcons_constr (hcon,hkn,hdir,hname,hident) =
   let hsortscci = Hashcons.simple_hcons hsort hcons1_univ in
   let hcci = hcons_term (hsortscci,hcon,hkn,hname,hident) in
   let htcci = Hashcons.simple_hcons Htype.f (hcci,hsortscci) in

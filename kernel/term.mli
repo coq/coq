@@ -631,8 +631,7 @@ val hcons_constr:
   (mutual_inductive -> mutual_inductive) *
   (dir_path -> dir_path) *
   (name -> name) *
-  (identifier -> identifier) *
-  (string -> string)
+  (identifier -> identifier)
   ->
     (constr -> constr) *
     (types -> types)
