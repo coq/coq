@@ -716,11 +716,11 @@ and build_entry_lc_from_case env funname make_discr
 	*)
 	let case_resl =
 	    List.fold_right
-	    (fun (case_arg,_) ctxt_argsl ->
-	       let arg_res = build_entry_lc env funname avoid case_arg  in
-	       combine_results combine_args arg_res ctxt_argsl
-	    )
-	    el
+	      (fun (case_arg,_) ctxt_argsl ->
+		let arg_res = build_entry_lc env funname avoid case_arg  in
+		combine_results combine_args arg_res ctxt_argsl
+	      )
+	      el
 	      (mk_result [] [] avoid)
 	in
 	let types =
@@ -875,6 +875,32 @@ let is_res id =
     String.sub (string_of_id id) 0 3 = "res"
   with Invalid_argument _ -> false
 
+
+
+let same_raw_term rt1 rt2 = 
+  match rt1,rt2 with 
+    | RRef(_,r1), RRef (_,r2) -> r1=r2
+    | RHole _, RHole _ -> true
+    | _ -> false
+let decompose_raw_eq lhs rhs = 
+  let rec decompose_raw_eq lhs rhs acc = 
+    observe (str "decomposing eq for " ++ pr_rawconstr lhs ++ str " " ++ pr_rawconstr rhs);
+    let (rhd,lrhs) = raw_decompose_app rhs in 
+    let (lhd,llhs) = raw_decompose_app lhs in 
+    observe (str "lhd := " ++ pr_rawconstr lhd);
+    observe (str "rhd := " ++ pr_rawconstr rhd);
+    observe (str "llhs := " ++ int (List.length llhs));
+    observe (str "lrhs := " ++ int (List.length lrhs));
+    let sllhs = List.length llhs in 
+    let slrhs = List.length lrhs in 
+    if same_raw_term lhd rhd && sllhs = slrhs 
+    then
+      (* let _ = assert false in  *)
+      List.fold_right2 decompose_raw_eq	llhs lrhs acc
+    else (lhs,rhs)::acc
+  in
+  decompose_raw_eq lhs rhs []
+     
 
 exception Continue
 (*
@@ -1032,6 +1058,41 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		     mkRProd(n,t,new_b),id_to_exclude
 		     else new_b, Idset.add id id_to_exclude
 		  *)
+	    | RApp(loc1,RRef(loc2,eq_as_ref),[ty;rt1;rt2])
+		when  eq_as_ref = Lazy.force Coqlib.coq_eq_ref  && n = Anonymous
+		  ->
+	      begin
+		try 
+		  let l = decompose_raw_eq rt1 rt2 in 
+		  if List.length l > 1 
+		  then 
+		    let new_rt =
+		      List.fold_left 
+			(fun acc (lhs,rhs) -> 
+			  mkRProd(Anonymous,
+				  mkRApp(mkRRef(eq_as_ref),[mkRHole ();lhs;rhs]),acc)
+			)
+			b
+			l
+		    in
+		    rebuild_cons env nb_args relname args crossed_types depth new_rt
+		  else raise Continue
+	      with Continue -> 
+		observe (str "computing new type for prod : " ++ pr_rawconstr rt);
+		let t' = Pretyping.Default.understand Evd.empty env t in
+		let new_env = Environ.push_rel (n,None,t') env in
+		let new_b,id_to_exclude =
+		  rebuild_cons new_env
+		    nb_args relname
+		    args new_crossed_types
+		    (depth + 1) b
+		in
+		match n with
+		  | Name id when Idset.mem id id_to_exclude && depth >= nb_args ->
+		      new_b,Idset.remove id
+			(Idset.filter not_free_in_t id_to_exclude)
+		  | _ -> mkRProd(n,t,new_b),Idset.filter not_free_in_t id_to_exclude
+	      end
 	    | _ ->
 		observe (str "computing new type for prod : " ++ pr_rawconstr rt);
 		let t' = Pretyping.Default.understand Evd.empty env t in
@@ -1122,12 +1183,12 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 
 (* debuging wrapper *)
 let rebuild_cons env nb_args relname args crossed_types rt =
-(*   observennl  (str "rebuild_cons : rt := "++ pr_rawconstr rt ++  *)
-(* 		 str "nb_args := " ++ str (string_of_int nb_args)); *)
+  observe  (str "rebuild_cons : rt := "++ pr_rawconstr rt ++
+		 str "nb_args := " ++ str (string_of_int nb_args));
   let res =
     rebuild_cons env nb_args relname args crossed_types 0 rt
   in
-(*   observe (str " leads to "++ pr_rawconstr (fst res)); *)
+  observe (str " leads to "++ pr_rawconstr (fst res));
   res
 
 
@@ -1266,7 +1327,7 @@ let do_build_inductive
       (function result (* (args',concl') *) ->
 	 let rt = compose_raw_context result.context result.value in
 	 let nb_args = List.length funsargs.(i) in
-	 (*  with_full_print (fun rt -> Pp.msgnl (str "raw constr " ++ pr_rawconstr rt)) rt; *)
+	  (* with_full_print (fun rt -> Pp.msgnl (str "raw constr " ++ pr_rawconstr rt)) rt; *)
 	 fst (
 	   rebuild_cons env_with_graphs nb_args relnames.(i)
 	     []
