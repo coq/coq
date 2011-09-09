@@ -716,11 +716,11 @@ and build_entry_lc_from_case env funname make_discr
 	*)
 	let case_resl =
 	    List.fold_right
-	    (fun (case_arg,_) ctxt_argsl ->
-	       let arg_res = build_entry_lc env funname avoid case_arg  in
-	       combine_results combine_args arg_res ctxt_argsl
-	    )
-	    el
+	      (fun (case_arg,_) ctxt_argsl ->
+		let arg_res = build_entry_lc env funname avoid case_arg  in
+		combine_results combine_args arg_res ctxt_argsl
+	      )
+	      el
 	      (mk_result [] [] avoid)
 	in
 	let types =
@@ -875,6 +875,32 @@ let is_res id =
     String.sub (string_of_id id) 0 3 = "res"
   with Invalid_argument _ -> false
 
+
+
+let same_raw_term rt1 rt2 = 
+  match rt1,rt2 with 
+    | GRef(_,r1), GRef (_,r2) -> r1=r2
+    | GHole _, GHole _ -> true
+    | _ -> false
+let decompose_raw_eq lhs rhs = 
+  let rec decompose_raw_eq lhs rhs acc = 
+    observe (str "decomposing eq for " ++ pr_glob_constr lhs ++ str " " ++ pr_glob_constr rhs);
+    let (rhd,lrhs) = glob_decompose_app rhs in 
+    let (lhd,llhs) = glob_decompose_app lhs in 
+    observe (str "lhd := " ++ pr_glob_constr lhd);
+    observe (str "rhd := " ++ pr_glob_constr rhd);
+    observe (str "llhs := " ++ int (List.length llhs));
+    observe (str "lrhs := " ++ int (List.length lrhs));
+    let sllhs = List.length llhs in 
+    let slrhs = List.length lrhs in 
+    if same_raw_term lhd rhd && sllhs = slrhs 
+    then
+      (* let _ = assert false in  *)
+      List.fold_right2 decompose_raw_eq	llhs lrhs acc
+    else (lhs,rhs)::acc
+  in
+  decompose_raw_eq lhs rhs []
+     
 
 exception Continue
 (*
@@ -1032,6 +1058,41 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		     mkGProd(n,t,new_b),id_to_exclude
 		     else new_b, Idset.add id id_to_exclude
 		  *)
+	    | GApp(loc1,GRef(loc2,eq_as_ref),[ty;rt1;rt2])
+		when  eq_as_ref = Lazy.force Coqlib.coq_eq_ref  && n = Anonymous
+		  ->
+	      begin
+		try 
+		  let l = decompose_raw_eq rt1 rt2 in 
+		  if List.length l > 1 
+		  then 
+		    let new_rt =
+		      List.fold_left 
+			(fun acc (lhs,rhs) -> 
+			  mkGProd(Anonymous,
+				  mkGApp(mkGRef(eq_as_ref),[mkGHole ();lhs;rhs]),acc)
+			)
+			b
+			l
+		    in
+		    rebuild_cons env nb_args relname args crossed_types depth new_rt
+		  else raise Continue
+	      with Continue -> 
+		observe (str "computing new type for prod : " ++ pr_glob_constr rt);
+		let t' = Pretyping.Default.understand Evd.empty env t in
+		let new_env = Environ.push_rel (n,None,t') env in
+		let new_b,id_to_exclude =
+		  rebuild_cons new_env
+		    nb_args relname
+		    args new_crossed_types
+		    (depth + 1) b
+		in
+		match n with
+		  | Name id when Idset.mem id id_to_exclude && depth >= nb_args ->
+		      new_b,Idset.remove id
+			(Idset.filter not_free_in_t id_to_exclude)
+		  | _ -> mkGProd(n,t,new_b),Idset.filter not_free_in_t id_to_exclude
+	      end
 	    | _ ->
 		observe (str "computing new type for prod : " ++ pr_glob_constr rt);
 		let t' = Pretyping.Default.understand Evd.empty env t in

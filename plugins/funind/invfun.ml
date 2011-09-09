@@ -504,6 +504,24 @@ and intros_with_rewrite_aux : tactic =
 				     intros_with_rewrite
 				   ]
 			  g
+		      else if isVar args.(2) 
+		      then 
+			let id = pf_get_new_id (id_of_string "y") g  in
+			tclTHENSEQ [ h_intro id;
+				     generalize_dependent_of (destVar args.(2)) id;
+				     tclTRY (Equality.rewriteRL (mkVar id));
+				     intros_with_rewrite
+				   ]
+			  g
+		      else if isVar args.(2) 
+		      then 
+			let id = pf_get_new_id (id_of_string "y") g  in
+			tclTHENSEQ [ h_intro id;
+				     generalize_dependent_of (destVar args.(2)) id;
+				     tclTRY (Equality.rewriteRL (mkVar id));
+				     intros_with_rewrite
+				   ]
+			  g
 		      else
 			begin
 			  let id = pf_get_new_id (id_of_string "y") g  in
