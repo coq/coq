@@ -23,7 +23,6 @@ type goal = {
 (* spiwack: I don't deal with the tags, yet. It is a worthy discussion
    whether we do want some tags displayed besides the goal or not. *)
 
-let uid {content = e} = string_of_int e
 
 let pr_goal {content = e} = str "GOAL:" ++ Pp.int e
 
@@ -37,6 +36,16 @@ let build e =
   { content = e ;
     tags = []
   }
+
+
+let uid {content = e} = string_of_int e
+let get_by_uid u =
+  (* this necessarily forget about tags.
+     when tags are to be implemented, they
+     should be done another way.
+     We could use the store in evar_extra,
+     for instance. *)
+  build (int_of_string u)
 
 (* Builds a new goal with content evar [e] and 
    inheriting from goal [gl]*)

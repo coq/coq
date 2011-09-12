@@ -154,6 +154,11 @@ val run_tactic : Environ.env -> unit Proofview.tactic -> proof -> unit
    [transaction p f] can be called on an [f] using, itself, [transaction p].*)
 val transaction : proof -> (unit -> unit) -> unit
 
+
+(*** Commands ***)
+
+val in_proof : proof -> (Evd.evar_map -> 'a) -> 'a
+
 (*** Compatibility layer with <=v8.2 ***)
 module V82 : sig
   val subgoals : proof -> Goal.goal list Evd.sigma

@@ -45,7 +45,7 @@ type pcoq_hook = {
   print_check : Environ.env -> Environ.unsafe_judgment -> unit;
   print_eval : Reductionops.reduction_function -> Environ.env -> Evd.evar_map -> constr_expr ->
     Environ.unsafe_judgment -> unit;
-  show_goal : int option -> unit
+  show_goal : goal_reference -> unit
 }
 
 let pcoq = ref None
@@ -1259,11 +1259,12 @@ let vernac_end_subproof () =
   Proof.unfocus subproof_kind p ; print_subgoals ()
 
 let vernac_show = function
-  | ShowGoal nopt ->
-      if !pcoq <> None then (Option.get !pcoq).show_goal nopt
-      else msg (match nopt with
-	| None -> pr_open_subgoals ()
-	| Some n -> pr_nth_open_subgoal n)
+  | ShowGoal goalref ->
+      if !pcoq <> None then (Option.get !pcoq).show_goal goalref
+      else msg (match goalref with
+	| OpenSubgoals -> pr_open_subgoals ()
+	| NthGoal n -> pr_nth_open_subgoal n
+        | GoalId id -> pr_goal_by_id id)
   | ShowGoalImplicitly None ->
       Constrextern.with_implicits msg (pr_open_subgoals ())
   | ShowGoalImplicitly (Some n) ->

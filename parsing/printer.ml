@@ -403,6 +403,13 @@ let pr_nth_open_subgoal n =
   let { it=gls ; sigma=sigma } = Proof.V82.subgoals pf in
   pr_subgoal n sigma gls
 
+let pr_goal_by_id id =
+  let p = Proof_global.give_me_the_proof () in
+  let g = Goal.get_by_uid id in
+  try
+    Proof.in_proof p (fun sigma -> pr_goal {it=g;sigma=sigma})
+  with Not_found -> error "Invalid goal identifier."
+
 (* Elementary tactics *)
 
 let pr_prim_rule = function

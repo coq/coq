@@ -63,6 +63,8 @@ Vernacular commands
 - A new option "Set Default Timeout n / Unset Default Timeout".
 - Qed now uses information from the reduction tactics used in proof script
   to avoid conversion at Qed time to go into a very long computation.
+- New command "Show Goal ident" to display the statement of a goal, even
+  a closed one (available from Proof General).
 
 Module System
 

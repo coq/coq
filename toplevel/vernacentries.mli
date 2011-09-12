@@ -39,7 +39,7 @@ type pcoq_hook = {
   print_check : Environ.env -> Environ.unsafe_judgment -> unit;
   print_eval : Reductionops.reduction_function -> Environ.env -> Evd.evar_map -> constr_expr ->
     Environ.unsafe_judgment -> unit;
-  show_goal : int option -> unit
+  show_goal : goal_reference -> unit
 }
 
 val set_pcoq_hook : pcoq_hook -> unit

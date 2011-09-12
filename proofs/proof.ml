@@ -410,7 +410,10 @@ let run_tactic env tac pr =
     restore_state starting_point pr;
     raise e
 
+(*** Commands ***)
 
+let in_proof p k =
+  Proofview.in_proofview p.state.proofview k
 
 
 (*** Compatibility layer with <=v8.2 ***)

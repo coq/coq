@@ -153,6 +153,15 @@ val tclGOALBINDU : 'a Goal.sensitive -> ('a -> unit tactic) -> unit tactic
 (* [tclSENSITIVE] views goal-type tactics as a special kind of tactics.*)
 val tclSENSITIVE : Goal.subgoals Goal.sensitive -> unit tactic 
 
+
+(*** Commands ***)
+
+val in_proofview : proofview -> (Evd.evar_map -> 'a) -> 'a
+
+
+
+
+
 (* Notations for building tactics. *)
 module Notations : sig
   (* Goal.bind *)

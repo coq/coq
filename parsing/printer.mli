@@ -136,6 +136,7 @@ val prterm                 : constr -> std_ppcmds (** = pr_lconstr *)
             It is used primarily by the Print Assumption command. *)
 val pr_assumptionset : env -> Term.types Environ.ContextObjectMap.t ->std_ppcmds
 
+val pr_goal_by_id : string -> std_ppcmds
 
 type printer_pr = {
  pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds;

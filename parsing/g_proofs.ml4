@@ -66,8 +66,10 @@ GEXTEND Gram
       | IDENT "BeginSubproof" -> VernacSubproof None
       | IDENT "BeginSubproof"; n = natural -> VernacSubproof (Some n)
       | IDENT "EndSubproof" -> VernacEndSubproof
-      | IDENT "Show" -> VernacShow (ShowGoal None)
-      | IDENT "Show"; n = natural -> VernacShow (ShowGoal (Some n))
+      | IDENT "Show" -> VernacShow (ShowGoal OpenSubgoals)
+      | IDENT "Show"; n = natural -> VernacShow (ShowGoal (NthGoal n))
+      | IDENT "Show"; IDENT "Goal"; n = string ->
+          VernacShow (ShowGoal (GoalId n))
       | IDENT "Show"; IDENT "Implicit"; IDENT "Arguments"; n = OPT natural ->
 	  VernacShow (ShowGoalImplicitly n)
       | IDENT "Show"; IDENT "Node" -> VernacShow ShowNode

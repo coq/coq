@@ -31,6 +31,13 @@ type lreference = reference
 
 type class_rawexpr = FunClass | SortClass | RefClass of reference or_by_notation
 
+type goal_identifier = string
+
+type goal_reference =
+  | OpenSubgoals
+  | NthGoal of int
+  | GoalId of goal_identifier
+
 type printable =
   | PrintTables
   | PrintFullContext
@@ -83,7 +90,7 @@ type locatable =
   | LocateFile of string
 
 type showable =
-  | ShowGoal of int option
+  | ShowGoal of goal_reference
   | ShowGoalImplicitly of int option
   | ShowProof
   | ShowNode

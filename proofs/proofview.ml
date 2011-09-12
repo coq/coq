@@ -433,6 +433,12 @@ let tclSENSITIVE s =
     fun env -> { go = fun sk fk step -> sk () fk (sensitive_on_step s env step) }
   end
 
+
+(*** Commands ***)
+
+let in_proofview p k =
+  k p.solution
+
 module Notations = struct
   let (>-) = Goal.bind
   let (>>-) = tclGOALBINDU
