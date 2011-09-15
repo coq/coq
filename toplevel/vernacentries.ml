@@ -370,9 +370,6 @@ let vernac_exact_proof c =
 	(strbrk "Command 'Proof ...' can only be used at the beginning of the proof.")
 
 let vernac_assumption kind l nl=
-  if Pfedit.refining () then
-    errorlabstrm ""
-      (str "Cannot declare an assumption while in proof editing mode.");
   let global = fst kind = Global in
     List.iter (fun (is_coe,(idl,c)) ->
       if Dumpglob.dump () then
