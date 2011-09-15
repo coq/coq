@@ -183,6 +183,7 @@ let coq_Zmult = lazy (constant "Zmult")
 let coq_Zopp = lazy (constant "Zopp")
 let coq_Zminus = lazy (constant "Zminus")
 let coq_Zsucc = lazy (constant "Zsucc")
+let coq_Zpred = lazy (constant "Zpred")
 let coq_Zgt = lazy (constant "Zgt")
 let coq_Zle = lazy (constant "Zle")
 let coq_Z_of_nat = lazy (constant "Z_of_nat")
@@ -322,6 +323,7 @@ let evaluable_ref_of_constr s c = match kind_of_term (Lazy.force c) with
   | _ -> anomaly ("Coq_omega: "^s^" is not an evaluable constant")
 
 let sp_Zsucc =     lazy (evaluable_ref_of_constr "Zsucc" coq_Zsucc)
+let sp_Zpred =     lazy (evaluable_ref_of_constr "Zpred" coq_Zpred)
 let sp_Zminus = lazy (evaluable_ref_of_constr "Zminus" coq_Zminus)
 let sp_Zle = lazy (evaluable_ref_of_constr "Zle" coq_Zle)
 let sp_Zgt = lazy (evaluable_ref_of_constr "Zgt" coq_Zgt)
@@ -355,7 +357,7 @@ let mk_integer n =
 		 [| loop (abs n) |])
 
 type omega_constant =
-  | Zplus | Zmult | Zminus | Zsucc | Zopp
+  | Zplus | Zmult | Zminus | Zsucc | Zopp | Zpred
   | Plus | Mult | Minus | Pred | S | O
   | Zpos | Zneg | Z0 | Z_of_nat
   | Eq | Neq
@@ -420,6 +422,7 @@ let destructurate_term t =
     | _, [_;_] when eq_constr c (Lazy.force coq_Zmult) -> Kapp (Zmult,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_Zminus) -> Kapp (Zminus,args)
     | _, [_] when eq_constr c (Lazy.force coq_Zsucc) -> Kapp (Zsucc,args)
+    | _, [_] when eq_constr c (Lazy.force coq_Zpred) -> Kapp (Zpred,args)
     | _, [_] when eq_constr c (Lazy.force coq_Zopp) -> Kapp (Zopp,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_plus) -> Kapp (Plus,args)
     | _, [_;_] when eq_constr c (Lazy.force coq_mult) -> Kapp (Mult,args)
@@ -890,6 +893,10 @@ let rec transform p t =
 	let tac,t = transform p (mkApp (Lazy.force coq_Zplus,
 					 [| t1; mk_integer one |])) in
 	unfold sp_Zsucc :: tac,t
+    | Kapp(Zpred,[t1]) ->
+	let tac,t = transform p (mkApp (Lazy.force coq_Zplus,
+					 [| t1; mk_integer negone |])) in
+	unfold sp_Zpred :: tac,t
    | Kapp(Zmult,[t1;t2]) ->
        let tac1,t1' = transform (P_APP 1 :: p) t1
        and tac2,t2' = transform (P_APP 2 :: p) t2 in
