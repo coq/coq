@@ -728,7 +728,7 @@ let rec split_mp mp =
     | Names.MPdot (prfx, lbl) ->
 	let mprec, dprec = split_mp prfx in
 	  mprec, Names.make_dirpath (Names.id_of_string (Names.string_of_label lbl) :: (Names.repr_dirpath dprec))
-    | Names.MPbound mbid -> let (_, id, dp) = Names.repr_mbid mbid in  library_dp(), Names.make_dirpath [Names.id_of_string id]
+    | Names.MPbound mbid -> let (_, id, dp) = Names.repr_mbid mbid in  library_dp(), Names.make_dirpath [id]
 
 let split_modpath mp =
   let rec aux = function

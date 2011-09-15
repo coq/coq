@@ -260,7 +260,7 @@ let pr_module_vardecls pr_c (export,idl,(mty,inl)) =
   let lib_dir = Lib.library_dp() in
   List.iter (fun (_,id) ->
     Declaremods.process_module_bindings [id]
-      [make_mbid lib_dir (string_of_id id),
+      [make_mbid lib_dir id,
        (Modintern.interp_modtype (Global.env()) mty, inl)]) idl;
   (* Builds the stream *)
   spc() ++

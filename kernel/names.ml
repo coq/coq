@@ -72,8 +72,8 @@ let string_of_dirpath = function
 
 
 let u_number = ref 0
-type uniq_ident = int * string * dir_path
-let make_uid dir s = incr u_number;(!u_number,String.copy s,dir)
+type uniq_ident = int * identifier * dir_path
+let make_uid dir s = incr u_number;(!u_number,s,dir)
  let debug_string_of_uid (i,s,p) =
  "<"(*^string_of_dirpath p ^"#"^*) ^ s ^"#"^ string_of_int i^">"
 let string_of_uid (i,s,p) =
@@ -347,8 +347,8 @@ module Hdir = Hashcons.Make(
 module Huniqid = Hashcons.Make(
   struct
     type t = uniq_ident
-    type u = (string -> string) * (dir_path -> dir_path)
-    let hash_sub (hstr,hdir) (n,s,dir) = (n,hstr s,hdir dir)
+    type u = (identifier -> identifier) * (dir_path -> dir_path)
+    let hash_sub (hid,hdir) (n,s,dir) = (n,hid s,hdir dir)
     let equal (n1,s1,dir1) (n2,s2,dir2) = n1 = n2 && s1 == s2 && dir1 == dir2
     let hash = Hashtbl.hash
   end)
@@ -394,7 +394,7 @@ let hcons_names () =
   let hident = hstring in
   let hname = Hashcons.simple_hcons Hname.f hident in
   let hdir = Hashcons.simple_hcons Hdir.f hident in
-  let huniqid = Hashcons.simple_hcons Huniqid.f (hstring,hdir) in
+  let huniqid = Hashcons.simple_hcons Huniqid.f (hident,hdir) in
   let hmod = Hashcons.simple_hcons Hmod.f (hdir,huniqid,hstring) in
   let hmind = Hashcons.simple_hcons Hcn.f (hmod,hdir,hstring) in
   let hcn = Hashcons.simple_hcons Hcn.f (hmod,hdir,hstring) in

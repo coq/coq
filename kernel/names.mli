@@ -62,8 +62,8 @@ type mod_bound_id
 (** The first argument is a file name - to prevent conflict between
    different files *)
 
-val make_mbid : dir_path -> string -> mod_bound_id
-val repr_mbid : mod_bound_id -> int * string * dir_path
+val make_mbid : dir_path -> identifier -> mod_bound_id
+val repr_mbid : mod_bound_id -> int * identifier * dir_path
 val id_of_mbid : mod_bound_id -> identifier
 val label_of_mbid : mod_bound_id -> label
 val debug_string_of_mbid : mod_bound_id -> string
