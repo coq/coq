@@ -111,6 +111,12 @@ Proof.
   Z.swap_greater. apply Z.nle_gt.
 Qed.
 
+Lemma not_Zne n m : ~ Zne n m -> n = m.
+Proof.
+  intros H.
+  destruct (Z.eq_decidable n m); [assumption|now elim H].
+Qed.
+
 (** * Equivalence and order properties *)
 
 (** Reflexivity *)
