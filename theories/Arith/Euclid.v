@@ -10,13 +10,12 @@ Require Import Mult.
 Require Import Compare_dec.
 Require Import Wf_nat.
 
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 Implicit Types a b n q r : nat.
 
 Inductive diveucl a b : Set :=
   divex : forall q r, b > r -> a = q * b + r -> diveucl a b.
-
 
 Lemma eucl_dev : forall n, n > 0 -> forall m:nat, diveucl m n.
 Proof.
@@ -30,7 +29,7 @@ Proof.
   elim e; auto with arith.
   intros gtbn.
   apply divex with 0 n; simpl in |- *; auto with arith.
-Qed.
+Defined.
 
 Lemma quotient :
   forall n,
@@ -48,7 +47,7 @@ Proof.
   elim H1; auto with arith.
   intros gtbn.
   exists 0; exists n; simpl in |- *; auto with arith.
-Qed.
+Defined.
 
 Lemma modulo :
   forall n,
@@ -66,4 +65,4 @@ Proof.
   elim H1; auto with arith.
   intros gtbn.
   exists n; exists 0; simpl in |- *; auto with arith.
-Qed.
+Defined.
