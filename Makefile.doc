@@ -11,9 +11,12 @@
 ### General rules
 ######################################################################
 
-.PHONY: doc doc-html doc-pdf doc-ps refman tutorial stdlib faq rectutorial
+.PHONY: doc doc-html doc-pdf doc-ps refman refman-quick tutorial
+.PHONY: stdlib full-stdlib faq rectutorial
 
-doc: refman faq tutorial rectutorial stdlib ide/index_urls.txt
+INDEXURLS:=doc/refman/html/index_url.txt
+
+doc: refman faq tutorial rectutorial stdlib $(INDEXURLS)
 
 doc-html:\
   doc/tutorial/Tutorial.v.html doc/refman/html/index.html \
@@ -120,8 +123,11 @@ doc/refman/cover.html: doc/common/styles/html/$(HTMLSTYLE)/cover.html
 doc/refman/styles.hva: doc/common/styles/html/$(HTMLSTYLE)/styles.hva
 	$(INSTALLLIB) $< doc/refman
 
-doc/refman/html/index.html: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
-                        doc/refman/cover.html doc/refman/styles.hva doc/refman/index.html
+INDEXES:= doc/refman/html/command-index.html doc/refman/html/tactic-index.html
+ALLINDEXES:= doc/refman/html/index.html $(INDEXES)
+
+$(ALLINDEXES): doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
+	       doc/refman/cover.html doc/refman/styles.hva doc/refman/index.html
 	- rm -rf doc/refman/html
 	$(MKDIR) doc/refman/html
 	$(INSTALLLIB) $(REFMANPNGFILES) doc/refman/html
@@ -134,6 +140,14 @@ refman-quick:
 	$(PDFLATEX) -interaction=batchmode Reference-Manual.tex;\
 	../tools/show_latex_messages -no-overfull Reference-Manual.log && \
 	$(HEVEA) $(HEVEAOPTS) ./Reference-Manual.tex)
+
+######################################################################
+# Index file for CoqIDE
+######################################################################
+
+doc/refman/html/index_url.txt: $(INDEXES)
+	cat $< | grep li-indexenv | grep HREF | sed -e 's@.*<TT>\(.*\)</TT>.*, <A HREF="\(.*\)">.*@\1,\2@' > $@
+
 
 ######################################################################
 # Tutorial
@@ -279,16 +293,6 @@ doc/RecTutorial/RecTutorial.pdf: doc/common/version.tex doc/common/title.tex doc
 
 doc/RecTutorial/RecTutorial.html: doc/RecTutorial/RecTutorial.tex
 	(cd doc/RecTutorial; $(HEVEA) $(HEVEAOPTS) RecTutorial)
-
-######################################################################
-# Index file for CoqIDE
-######################################################################
-
-# Not robust, improve...
-ide/index_urls.txt: doc/refman/html/index.html
-	@ rm -f doc/refman/html/index_urls.txt
-	cat doc/refman/html/command-index.html doc/refman/html/tactic-index.html | grep li-indexenv | grep HREF | sed -e 's@.*<TT>\(.*\)</TT>.*, <A HREF="\(.*\)">.*@\1,\2@' > doc/refman/html/index_urls.txt
-
 
 ######################################################################
 # Install all documentation files

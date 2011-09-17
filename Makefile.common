@@ -16,18 +16,22 @@ COQMKTOPBYTE:=bin/coqmktop.byte$(EXE)
 COQMKTOPOPT:=bin/coqmktop.opt$(EXE)
 BESTCOQMKTOP:=bin/coqmktop.$(BEST)$(EXE)
 COQMKTOP:=bin/coqmktop$(EXE) 
+
 COQCBYTE:=bin/coqc.byte$(EXE)
 COQCOPT:=bin/coqc.opt$(EXE)
 BESTCOQC:=bin/coqc.$(BEST)$(EXE)
 COQC:=bin/coqc$(EXE)
+
 COQTOPBYTE:=bin/coqtop.byte$(EXE)
 COQTOPOPT:=bin/coqtop.opt$(EXE)
 BESTCOQTOP:=bin/coqtop.$(BEST)$(EXE)
 COQTOPEXE:=bin/coqtop$(EXE)
+
 CHICKENBYTE:=bin/coqchk.byte$(EXE)
 CHICKENOPT:=bin/coqchk.opt$(EXE)
 BESTCHICKEN:=bin/coqchk.$(BEST)$(EXE)
 CHICKEN:=bin/coqchk$(EXE)
+
 FAKEIDE:=bin/fake_ide$(EXE)
 
 ifeq ($(CAMLP4),camlp4)
@@ -66,7 +70,6 @@ BESTOBJ:=$(if $(OPT),.cmx,.cmo)
 COQBINARIES:= $(COQMKTOP) $(COQC) \
   $(COQTOPBYTE) $(if $(OPT),$(COQTOPOPT)) $(COQTOPEXE) \
   $(CHICKENBYTE) $(if $(OPT),$(CHICKENOPT)) $(CHICKEN)
-OTHERBINARIES:=$(COQMKTOPBYTE) $(COQCBYTE)
 
 CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 

@@ -187,6 +187,8 @@ kernel/copcodes.ml: kernel/byterun/coq_instruct.h
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
 ###########################################################################
 
+.PHONY: coqbinaries coq coqlib coqlight states
+
 coqbinaries:: ${COQBINARIES} ${CSDPCERT} ${FAKEIDE}
 
 coq: coqlib tools coqbinaries
@@ -197,14 +199,14 @@ coqlight: theories-light tools coqbinaries
 
 states:: states/initial.coq
 
-$(COQTOPOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
+$(COQTOPOPT): $(BESTCOQMKTOP) $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) -o $@
+	$(HIDE)$(BESTCOQMKTOP) -boot -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
-$(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN)
+$(COQTOPBYTE): $(BESTCOQMKTOP) $(LINKCMO) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -o $@
+	$(HIDE)$(BESTCOQMKTOP) -boot -top $(BYTEFLAGS) -o $@
 
 $(COQTOPEXE): $(ORDER_ONLY_SEP) $(BESTCOQTOP)
 	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)
@@ -292,6 +294,8 @@ plugins/micromega/csdpcert$(EXE): $(CSDPCERTCMO:.cmo=$(BESTOBJ))
 # CoqIde special targets
 ###########################################################################
 
+.PHONY: coqide coqide-binaries coqide-no coqide-byte coqide-opt coqide-files
+
 # target to build CoqIde
 coqide:: coqide-files coqide-binaries states
 
@@ -322,6 +326,9 @@ $(COQIDE):
 	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)
 
 # install targets
+
+.PHONY: install-coqide install-ide-no install-ide-byte install-ide-opt
+.PHONY: install-ide-files install-ide-info install-im
 
 FULLIDELIB=$(FULLCOQLIB)/ide
 
@@ -364,13 +371,14 @@ install-im:
 # tests
 ###########################################################################
 
+.PHONY: validate check test-suite $(ALLSTDLIB).v
+
 VALIDOPTS=-silent -o -m
 
 validate:: $(BESTCHICKEN) $(ALLVO)
 	$(SHOW)'COQCHK <theories & plugins>'
 	$(HIDE)$(BESTCHICKEN) -boot $(VALIDOPTS) $(ALLMODS)
 
-.PHONY: $(ALLSTDLIB).v
 $(ALLSTDLIB).v:
 	$(SHOW)'MAKE $(notdir $@)'
 	$(HIDE)echo "Require $(ALLMODS)." > $@
@@ -388,6 +396,9 @@ test-suite: world $(ALLSTDLIB).v
 # partial targets: 1) core ML parts
 ##################################################################
 
+.PHONY: lib kernel byterun library proofs tactics interp parsing pretyping
+.PHONY: highparsing toplevel hightactics
+
 lib: lib/lib.cma
 kernel: kernel/kernel.cma
 byterun: $(BYTERUN)
@@ -404,6 +415,10 @@ hightactics: tactics/hightactics.cma
 ###########################################################################
 # 2) theories and plugins files
 ###########################################################################
+
+.PHONY: init theories theories-light
+.PHONY: logic arith bool narith zarith qarith lists strings sets
+.PHONY: fsets relations wellfounded reals setoids sorting numbers noreal
 
 init: $(INITVO)
 
@@ -433,6 +448,9 @@ noreal: logic arith bool zarith qarith lists sets fsets relations \
 ###########################################################################
 # 3) plugins
 ###########################################################################
+
+.PHONY: plugins omega micromega ring setoid_ring nsatz dp xml extraction
+.PHONY: field fourier funind cc subtac rtauto pluginsopt
 
 plugins: $(PLUGINSVO)
 omega: $(OMEGAVO) $(OMEGACMA) $(ROMEGAVO) $(ROMEGACMA)
@@ -471,6 +489,8 @@ theories/Numbers/Natural/BigN/NMake_gen.v: theories/Numbers/Natural/BigN/NMake_g
 ###########################################################################
 # tools
 ###########################################################################
+
+.PHONY: printers tools
 
 printers: $(DEBUGPRINTERS)
 
@@ -511,7 +531,7 @@ $(COQDOC): $(COQDOCCMO:.cmo=$(BESTOBJ))
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqtop -ideslave
 
-$(FAKEIDE): toplevel/ide_intf.mli toplevel/ide_intf.ml tools/fake_ide.ml
+$(FAKEIDE): toplevel/ide_intf$(BESTOBJ) tools/fake_ide$(BESTOBJ)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,unix)
 
@@ -555,6 +575,10 @@ FULLEMACSLIB=$(EMACSLIB)
 FULLCOQDOCDIR=$(COQDOCDIR)
 FULLDOCDIR=$(DOCDIR)
 endif
+
+.PHONY: install-coq install-coqlight install-binaries install-byte install-opt
+.PHONY: install-tools install-library install-library-light
+.PHONY: install-coq-info install-coq-manpages install-emacs install-latex
 
 install-coq: install-binaries install-library install-coq-info
 install-coqlight: install-binaries install-library-light
