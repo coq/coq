@@ -496,9 +496,18 @@ printers: $(DEBUGPRINTERS)
 
 tools:: $(TOOLS) $(DEBUGPRINTERS) $(COQDEPBOOT)
 
-# coqdep_boot : a basic version of coqdep, with almost no dependencies
+# coqdep_boot : a basic version of coqdep, with almost no dependencies.
 
-$(COQDEPBOOT): tools/coqdep_lexer.ml tools/coqdep_common.ml tools/coqdep_boot.ml
+# Here it is important to mention .ml files instead of .cmo in order
+# to avoid using implicit rules and hence .ml.d files that would need
+# coqdep_boot.
+
+COQDEPBOOTSRC:= \
+  tools/coqdep_lexer.mli tools/coqdep_lexer.ml \
+  tools/coqdep_common.mli tools/coqdep_common.ml \
+  tools/coqdep_boot.ml
+
+$(COQDEPBOOT): $(COQDEPBOOTSRC)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, -I tools, unix)
 

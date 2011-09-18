@@ -13,8 +13,6 @@
 
   type mL_token = Use_module of string
 
-  type spec = bool
-
   type coq_token =
     | Require of string list list
     | RequireString of string
