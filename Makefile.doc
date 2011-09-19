@@ -14,7 +14,7 @@
 .PHONY: doc doc-html doc-pdf doc-ps refman refman-quick tutorial
 .PHONY: stdlib full-stdlib faq rectutorial
 
-INDEXURLS:=doc/refman/html/index_url.txt
+INDEXURLS:=doc/refman/html/index_urls.txt
 
 doc: refman faq tutorial rectutorial stdlib $(INDEXURLS)
 
@@ -145,7 +145,7 @@ refman-quick:
 # Index file for CoqIDE
 ######################################################################
 
-doc/refman/html/index_url.txt: $(INDEXES)
+$(INDEXURLS): $(INDEXES)
 	cat $< | grep li-indexenv | grep HREF | sed -e 's@.*<TT>\(.*\)</TT>.*, <A HREF="\(.*\)">.*@\1,\2@' > $@
 
 
@@ -298,9 +298,9 @@ doc/RecTutorial/RecTutorial.html: doc/RecTutorial/RecTutorial.tex
 # Install all documentation files
 ######################################################################
 
-.PHONY: install-doc install-doc-meta install-doc-html install-doc-printable install-doc-index-url
+.PHONY: install-doc install-doc-meta install-doc-html install-doc-printable install-doc-index-urls
 
-install-doc: install-doc-meta install-doc-html install-doc-printable install-doc-index-url
+install-doc: install-doc-meta install-doc-html install-doc-printable install-doc-index-urls
 
 install-doc-meta:
 	$(MKDIR) $(FULLDOCDIR)
@@ -327,9 +327,9 @@ install-doc-printable:
 	$(INSTALLLIB) doc/RecTutorial/RecTutorial.ps $(FULLDOCDIR)/ps/RecTutorial.ps
 	$(INSTALLLIB) doc/faq/FAQ.v.ps $(FULLDOCDIR)/ps/FAQ.ps
 
-install-doc-index-url:
+install-doc-index-urls:
 	$(MKDIR) $(FULLDOCDIR)/ps $(FULLDOCDIR)/pdf
-	$(INSTALLLIB) doc/refman/html/index_urls.txt \
+	$(INSTALLLIB) $(INDEXURLS) \
 		$(FULLDOCDIR)/html/refman 
 
 # For emacs:
