@@ -56,6 +56,9 @@ let usage () =
   exit 1
 
 let main =
+  Sys.set_signal Sys.sigpipe
+    (Sys.Signal_handle
+       (fun _ -> prerr_endline "Broken Pipe (coqtop died ?)"; exit 1));
   let coqtop_name = match Array.length Sys.argv with
     | 1 -> "coqtop"
     | 2 when Sys.argv.(1) <> "-help" -> Sys.argv.(1)
@@ -63,8 +66,11 @@ let main =
   in
   coqtop := Unix.open_process (coqtop_name^" -ideslave");
   while true do
-    try read_eval_print (read_line ())
+    let l = try read_line () with End_of_file -> exit 0
+    in
+    try read_eval_print l
     with
-      | End_of_file -> exit 0
       | Comment -> ()
+      | e ->
+	prerr_endline ("Uncaught exception" ^ Printexc.to_string e); exit 1
   done
