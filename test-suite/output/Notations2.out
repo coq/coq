@@ -30,7 +30,7 @@ let d := 2 in ∃ z : nat, let e := 3 in let f := 4 in x + y = z + d
      : Type -> Prop
 λ A : Type, ∀ n p : A, n = p
      : Type -> Prop
-Defining 'let'' as keyword
+Identifier 'let'' now a keyword
 let' f (x y : nat) (a:=0) (z : nat) (_ : bool) := x + y + z + 1 in f 0 1 2
      : bool -> nat
 λ (f : nat -> nat) (x : nat), f(x) + S(x)
