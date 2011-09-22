@@ -902,7 +902,9 @@ and escaped_coq = parse
   | eof
       { Tokens.flush_sublexer () }
   | (identifier '.')* identifier
-      { Output.ident (lexeme lexbuf) (lexeme_start lexbuf); escaped_coq lexbuf }
+      { Tokens.flush_sublexer();
+        Output.ident (lexeme lexbuf) (lexeme_start lexbuf);
+        escaped_coq lexbuf }
   | space
       { Tokens.flush_sublexer(); Output.char (lexeme_char lexbuf 0);
         escaped_coq lexbuf }
