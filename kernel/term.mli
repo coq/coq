@@ -626,16 +626,6 @@ val hash_constr : constr -> int
 
 (*********************************************************************)
 
-val hcons_constr:
-  (constant -> constant) *
-  (mutual_inductive -> mutual_inductive) *
-  (dir_path -> dir_path) *
-  (name -> name) *
-  (identifier -> identifier)
-  ->
-    (constr -> constr) *
-    (types -> types)
-
 val hcons1_constr : constr -> constr
 val hcons1_types : types -> types
 

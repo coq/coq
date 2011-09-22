@@ -1367,22 +1367,6 @@ let rec hash_constr t =
 and hash_term_array t =
   Array.fold_left (fun acc t -> combine (hash_constr t) acc) 0 t
 
-module Htype =
-  Hashcons.Make(
-    struct
-      type t = types
-      type u = (constr -> constr) * (sorts -> sorts)
-(*
-      let hash_sub (hc,hs) j = {body=hc j.body; typ=hs j.typ}
-      let equal j1 j2 = j1.body==j2.body & j1.typ==j2.typ
-*)
-(**)
-      let hash_sub (hc,hs) j = hc j
-      let equal j1 j2 = j1==j2
-(**)
-      let hash = Hashtbl.hash
-    end)
-
 module Hsorts =
   Hashcons.Make(
     struct
@@ -1401,14 +1385,12 @@ module Hsorts =
 
 let hsort = Hsorts.f
 
-let hcons_constr (hcon,hkn,hdir,hname,hident) =
+let hcons1_constr =
+  let (hcon,hkn,hdir,hname,hident) = hcons_names in
   let hsortscci = Hashcons.simple_hcons hsort hcons1_univ in
-  let hcci = hcons_term (hsortscci,hcon,hkn,hname,hident) in
-  let htcci = Hashcons.simple_hcons Htype.f (hcci,hsortscci) in
-  (hcci,htcci)
+  hcons_term (hsortscci,hcon,hkn,hname,hident)
 
-let (hcons1_constr, hcons1_types) = hcons_constr hcons_names
-
+let hcons1_types = hcons1_constr
 
 (*******)
 (* Type of abstract machine values *)
