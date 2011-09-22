@@ -1407,7 +1407,7 @@ let hcons_constr (hcon,hkn,hdir,hname,hident) =
   let htcci = Hashcons.simple_hcons Htype.f (hcci,hsortscci) in
   (hcci,htcci)
 
-let (hcons1_constr, hcons1_types) = hcons_constr (hcons_names())
+let (hcons1_constr, hcons1_types) = hcons_constr hcons_names
 
 
 (*******)

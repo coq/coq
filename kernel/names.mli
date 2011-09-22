@@ -197,7 +197,7 @@ val eq_egr : evaluable_global_reference ->  evaluable_global_reference
   -> bool
 
 (** Hash-consing *)
-val hcons_names : unit ->
+val hcons_names :
   (constant -> constant) *
   (mutual_inductive -> mutual_inductive) * (dir_path -> dir_path) *
   (name -> name) * (identifier -> identifier)

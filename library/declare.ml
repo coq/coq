@@ -156,7 +156,6 @@ let inConstant =
 
 let hcons_constant_declaration = function
   | DefinitionEntry ce when !Flags.hash_cons_proofs ->
-      let (hcons1_constr,_) = hcons_constr (hcons_names()) in
       DefinitionEntry
        { const_entry_body = hcons1_constr ce.const_entry_body;
 	 const_entry_type = Option.map hcons1_constr ce.const_entry_type;

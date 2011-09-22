@@ -859,11 +859,7 @@ module Huniv =
     end)
 
 let hcons1_univlevel =
-  (* Beware: it is important to run the next line at launch-time
-     since it creates internal hash-tables.
-     We could/should probably share the other calls to [hcons_names]
-     in Term and Declare *)
-  let _,_,hdir,_,_ = Names.hcons_names() in
+  let _,_,hdir,_,_ = Names.hcons_names in
   Hashcons.simple_hcons Hunivlevel.f hdir
 
 let hcons1_univ = Hashcons.simple_hcons Huniv.f hcons1_univlevel
