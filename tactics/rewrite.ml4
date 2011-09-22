@@ -40,18 +40,12 @@ open Compat
 
 (** Typeclass-based generalized rewriting. *)
 
-let check_required_library d =
-  let d' = List.map id_of_string d in
-  let dir = make_dirpath (List.rev d') in
-  if not (Library.library_is_loaded dir) then
-    error ("Library "^(list_last d)^" has to be required first.")
-
 let classes_dirpath =
   make_dirpath (List.map id_of_string ["Classes";"Coq"])
 
 let init_setoid () =
   if is_dirpath_prefix_of classes_dirpath (Lib.cwd ()) then ()
-  else check_required_library ["Coq";"Setoids";"Setoid"]
+  else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
 
 let proper_class =
   lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Proper"))))
