@@ -917,7 +917,9 @@ and escaped_coq = parse
   | eof
       { Tokens.flush_sublexer () }
   | (identifier '.')* identifier
-      { Output.ident (lexeme lexbuf) (lexeme_start lexbuf); escaped_coq lexbuf }
+      { Tokens.flush_sublexer();
+        Output.ident (lexeme lexbuf) (lexeme_start lexbuf);
+        escaped_coq lexbuf }
   | space_nl*
       { let str = lexeme lexbuf in
           Tokens.flush_sublexer();
