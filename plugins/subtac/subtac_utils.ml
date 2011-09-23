@@ -15,15 +15,16 @@ let ($) f x = f x
 let contrib_name = "Program"
 
 let subtac_dir = [contrib_name]
-let fix_sub_module = "Wf"
-let utils_module = "Utils"
-let fixsub_module = subtac_dir @ [fix_sub_module]
-let utils_module = subtac_dir @ [utils_module]
+let fixsub_module = subtac_dir @ ["Wf"]
+let utils_module = subtac_dir @ ["Utils"]
 let tactics_module = subtac_dir @ ["Tactics"]
 let init_constant dir s () = gen_constant contrib_name dir s
 let init_reference dir s () = gen_reference contrib_name dir s
 
-let fixsub = init_constant fixsub_module "Fix_sub"
+let safe_init_constant md name () =
+  check_required_library md;
+  init_constant md name ()
+
 let ex_pi1 = init_constant utils_module "ex_pi1"
 let ex_pi2 = init_constant utils_module "ex_pi2"
 
@@ -51,13 +52,9 @@ let build_sig () =
 
 let sig_ = build_sig
 
-let fix_proto = init_constant tactics_module "fix_proto"
-let fix_proto_ref () = 
-  match Nametab.global (make_ref "Program.Tactics.fix_proto") with
-  | ConstRef c -> c
-  | _ -> assert false
+let fix_proto = safe_init_constant tactics_module "fix_proto"
 
-let hide_obligation = init_constant tactics_module "obligation"
+let hide_obligation = safe_init_constant tactics_module "obligation"
 
 let eq_ind = init_constant ["Init"; "Logic"] "eq"
 let eq_rec = init_constant ["Init"; "Logic"] "eq_rec"
@@ -89,12 +86,6 @@ let ex_intro = init_reference ["Init"; "Logic"] "ex_intro"
 
 let proj1 = init_constant ["Init"; "Logic"] "proj1"
 let proj2 = init_constant ["Init"; "Logic"] "proj2"
-
-let boolind = init_constant ["Init"; "Datatypes"] "bool"
-let sumboolind = init_constant ["Init"; "Specif"] "sumbool"
-let natind = init_constant ["Init"; "Datatypes"] "nat"
-let intind = init_constant ["ZArith"; "binint"] "Z"
-let existSind = init_constant ["Init"; "Specif"] "sigS"
 
 let existS = build_sigma_type
 

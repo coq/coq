@@ -15,11 +15,9 @@ open Sign
 val ($) : ('a -> 'b) -> 'a -> 'b
 val contrib_name : string
 val subtac_dir : string list
-val fix_sub_module : string
 val fixsub_module : string list
 val init_constant : string list -> string -> constr delayed
 val init_reference : string list -> string -> global_reference delayed
-val fixsub : constr delayed
 val well_founded_ref : global_reference delayed
 val acc_ref : global_reference delayed
 val acc_inv_ref : global_reference delayed
@@ -35,7 +33,6 @@ val build_sig : unit -> coq_sigma_data
 val sig_ : coq_sigma_data delayed
 
 val fix_proto : constr delayed
-val fix_proto_ref : unit -> constant
 
 val hide_obligation : constr delayed
 
@@ -54,11 +51,6 @@ val jmeq_ind : constr delayed
 val jmeq_rec : constr delayed
 val jmeq_refl : constr delayed
 
-val boolind : constr delayed
-val sumboolind : constr delayed
-val natind : constr delayed
-val intind : constr delayed
-val existSind : constr delayed
 val existS : coq_sigma_data delayed
 val prod : coq_sigma_data delayed
 
