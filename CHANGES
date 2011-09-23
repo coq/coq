@@ -46,6 +46,8 @@ Tactics
 - Tactic "dependent rewrite" now supports equality in "sig".
 - Tactic omega now understands Zpred (wish #1912) and can prove any goal
   from a context containing an arithmetical contradiction (wish #2236).
+- Using "auto with nocore" disables the use of the "core" database (wish #2188).
+  This pseudo-database "nocore" can also be used with trivial and eauto.
 
 Vernacular commands
 

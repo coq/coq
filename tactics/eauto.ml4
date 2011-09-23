@@ -303,18 +303,12 @@ let eauto_with_bases debug np lems db_list =
   tclTRY (e_search_auto debug np lems db_list)
 
 let eauto debug np lems dbnames =
-  let db_list =
-    List.map
-      (fun x ->
-	 try searchtable_map x
-	 with Not_found -> error ("No such Hint database: "^x^"."))
-      ("core"::dbnames)
-  in
+  let db_list = make_db_list dbnames in
   tclTRY (e_search_auto debug np lems db_list)
 
 let full_eauto debug n lems gl =
   let dbnames = current_db_names () in
-  let dbnames =  list_subtract dbnames ["v62"] in
+  let dbnames =  list_remove "v62" dbnames in
   let db_list = List.map searchtable_map dbnames in
   tclTRY (e_search_auto debug n lems db_list) gl
 

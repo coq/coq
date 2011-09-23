@@ -4030,7 +4030,9 @@ databases are non empty and can be used.
 \begin{description}
 
 \item[\tt core] This special database is automatically used by
-  \texttt{auto}. It contains only basic lemmas about negation,
+  \texttt{auto}, except when pseudo-database \texttt{nocore} is
+  given to \texttt{auto}. The \texttt{core} database contains
+  only basic lemmas about negation,
   conjunction, and so on from. Most of the hints in this database come 
   from the \texttt{Init} and \texttt{Logic} directories.
 

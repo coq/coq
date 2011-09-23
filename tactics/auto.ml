@@ -714,6 +714,8 @@ let interp_hints h =
       HintsDestructEntry (na,pri,loc,pat,!forward_intern_tac l code)
 
 let add_hints local dbnames0 h =
+  if List.mem "nocore" dbnames0 then
+    error "The hint database \"nocore\" is meant to stay empty.";
   let dbnames = if dbnames0 = [] then ["core"] else dbnames0 in
   let env = Global.env() and sigma = Evd.empty in
   match h with
@@ -1053,21 +1055,27 @@ and trivial_resolve mod_delta db_list local_db cl =
 	    (my_find_search mod_delta db_list local_db head cl))
   with Not_found -> []
 
-let trivial lems dbnames gl =
-  let db_list =
-    List.map
-      (fun x ->
-	 try
-	   searchtable_map x
-	 with Not_found ->
-	   error_no_such_hint_database x)
-      ("core"::dbnames)
+(** Two ways to disable the use of the "core" database:
+    - Via the optional argument : use_core_db=false
+      This is kept for compatibility with the rippling plugin.
+    - By passing "nocore" amongst the databases *)
+
+let make_db_list ?(use_core_db=true) dbnames =
+  let use_core = use_core_db && not (List.mem "nocore" dbnames) in
+  let dbnames = list_remove "nocore" dbnames in
+  let dbnames = if use_core then "core"::dbnames else dbnames in
+  let lookup db =
+    try searchtable_map db with Not_found -> error_no_such_hint_database db
   in
+  List.map lookup dbnames
+
+let trivial lems dbnames gl =
+  let db_list = make_db_list dbnames in
   tclTRY (trivial_fail_db false db_list (make_local_hint_db false lems gl)) gl
 
 let full_trivial lems gl =
   let dbnames = Hintdbmap.dom !searchtable in
-  let dbnames = list_subtract dbnames ["v62"] in
+  let dbnames = list_remove "v62" dbnames in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   tclTRY (trivial_fail_db false db_list (make_local_hint_db false lems gl)) gl
 
@@ -1169,15 +1177,7 @@ let search = search_gen 0
 let default_search_depth = ref 5
 
 let delta_auto ?(use_core_db=true) mod_delta n lems dbnames gl =
-  let db_list =
-    List.map
-      (fun x ->
-	 try
-	   searchtable_map x
-	 with Not_found ->
-	   error_no_such_hint_database x)
-      (if use_core_db then "core"::dbnames else dbnames)
-  in
+  let db_list = make_db_list ~use_core_db dbnames in
   tclTRY (search n mod_delta db_list (make_local_hint_db false lems gl)) gl
 
 let auto ?(use_core_db=true) = delta_auto ~use_core_db false
@@ -1188,7 +1188,7 @@ let default_auto = auto !default_search_depth [] []
 
 let delta_full_auto mod_delta n lems gl =
   let dbnames = Hintdbmap.dom !searchtable in
-  let dbnames = list_subtract dbnames ["v62"] in
+  let dbnames = list_remove "v62" dbnames in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   tclTRY (search n mod_delta db_list (make_local_hint_db false lems gl)) gl
 
