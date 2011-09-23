@@ -22,7 +22,7 @@ let init_constant dir s () = gen_constant contrib_name dir s
 let init_reference dir s () = gen_reference contrib_name dir s
 
 let safe_init_constant md name () =
-  check_required_library md;
+  check_required_library ("Coq"::md);
   init_constant md name ()
 
 let ex_pi1 = init_constant utils_module "ex_pi1"
