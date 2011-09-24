@@ -154,14 +154,6 @@ let inConstant =
     subst_function = ident_subst_function;
     discharge_function = discharge_constant }
 
-let hcons_constant_declaration = function
-  | DefinitionEntry ce when !Flags.hash_cons_proofs ->
-      DefinitionEntry
-       { const_entry_body = hcons1_constr ce.const_entry_body;
-	 const_entry_type = Option.map hcons1_constr ce.const_entry_type;
-         const_entry_opaque = ce.const_entry_opaque }
-  | cd -> cd
-
 let declare_constant_common id dhyps (cd,kind) =
   let (sp,kn) = add_leaf id (inConstant (cd,dhyps,kind)) in
   let c = Global.constant_of_delta (constant_of_kn kn) in
@@ -171,7 +163,6 @@ let declare_constant_common id dhyps (cd,kind) =
   c
 
 let declare_constant ?(internal = UserVerbose) id (cd,kind) =
-  let cd = hcons_constant_declaration cd in
   let kn = declare_constant_common id [] (ConstantEntry cd,kind) in
   !xml_declare_constant (internal,kn);
   kn

@@ -483,7 +483,7 @@ let infer env constr =
   let (j,(cst,_)) =
     execute env constr (empty_constraint, universes env) in
   assert (eq_constr j.uj_val constr);
-  ({ j with uj_val = constr }, cst)
+  (j, cst)
 
 let infer_type env constr =
   let (j,(cst,_)) =
