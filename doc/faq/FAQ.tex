@@ -2393,21 +2393,32 @@ pretty simple notations.
 	2200 is the hexadecimal code for forall in unicode charts and is encoded as 	
 	in UTF-8.
 	2203 is for exists. See \ahref{http://www.unicode.org}{\url{http://www.unicode.org}} for more codes.
-\item Second solution: rebind \verb#<AltGr>a# to forall and \verb#<AltGr>e# to exists. 
-	Under X11, you need to use something like
+\item Second solution: rebind \verb#<AltGr>a# to forall and \verb#<AltGr>e# to exists.
+
+       Under X11, one can add those lines in the file ~/.xmodmaprc :
+
 \begin{verbatim}
-		xmodmap -e "keycode  24 = a A F13 F13" 
-		xmodmap -e "keycode  26 = e E F14 F14"
+! forall
+keycode  24 = a A a A U2200 NoSymbol U2200 NoSymbol
+! exists
+keycode  26 = e E e E U2203 NoSymbol U2203 NoSymbol
 \end{verbatim}
-	and then to add   
+and then run xmodmap ~/.xmodmaprc.
+
+	Alternatively, if your version of \verb=xmodmap= does not support unicode, you need to use something like
 \begin{verbatim}
-		bind "F13" {"insert-at-cursor" ("")}
-		bind "F14" {"insert-at-cursor" ("")}
+xmodmap -e "keycode  24 = a A F13 F13"
+xmodmap -e "keycode  26 = e E F14 F14"
 \end{verbatim}
+	and then to add
+
+\verb=bind "F13" {"insert-at-cursor" ("=$\forall$\verb=")}=\\
+\verb=bind "F14" {"insert-at-cursor" ("=$\exists$\verb=")}=
+
 	to your "binding "text"" section in \verb#.coqiderc-gtk2rc.#
-	The strange ("") argument is the UTF-8 encoding for
-	0x2200. 
-	You can compute these encodings using the lablgtk2 toplevel with 
+	The last arguments to {\tt bind} between "" are
+        the UTF-8 encodings for 0x2200 and 0x2203.
+	You can compute these encodings using the lablgtk2 toplevel with
 \begin{verbatim}		
 Glib.Utf8.from_unichar 0x2200;;
 \end{verbatim}
