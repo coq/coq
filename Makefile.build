@@ -667,12 +667,12 @@ install-latex:
 source-doc: mli-doc $(OCAMLDOCDIR)/coq.pdf
 
 $(OCAMLDOCDIR)/coq.tex:: $(DOCMLIS:.mli=.cmi)
-	$(OCAMLDOC) -latex -rectypes -I /usr/lib/ocaml/camlp5 $(MLINCLUDES)\
+	$(OCAMLDOC) -latex -rectypes -I $(MYCAMLP4LIB) $(MLINCLUDES)\
 	$(DOCMLIS) -t "Coq mlis documentation" \
 	-intro $(OCAMLDOCDIR)/docintro -o $@
 
 mli-doc:: $(DOCMLIS:.mli=.cmi)
-	$(OCAMLDOC) -html -rectypes -I /usr/lib/ocaml/camlp5 $(MLINCLUDES)\
+	$(OCAMLDOC) -html -rectypes -I $(MYCAMLP4LIB) $(MLINCLUDES)\
 	$(DOCMLIS) -d $(OCAMLDOCDIR)/html -colorize-code \
 	-t "Coq mlis documentation" -intro $(OCAMLDOCDIR)/docintro \
 	-css-style style.css
