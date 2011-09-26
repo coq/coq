@@ -1660,6 +1660,25 @@ let letin_tac with_eq name c occs gl =
 (* Implementation without generalisation: abbrev will be lost in hyps in *)
 (* in the extracted proof *)
 
+let default_matching_flags = {
+  modulo_conv_on_closed_terms = Some empty_transparent_state;
+  use_metas_eagerly_in_conv_on_closed_terms = false;
+  modulo_delta = empty_transparent_state;
+  modulo_delta_types = full_transparent_state;
+  resolve_evars = false;
+  use_pattern_unification = false;
+  use_meta_bound_pattern_unification = false;
+  frozen_evars = ExistentialSet.empty;
+  restrict_conv_on_strict_subterms = false;
+  modulo_betaiota = false;
+  modulo_eta = false;
+  allow_K_in_toplevel_higher_order_unification = false
+}
+
+let matching_fun sigma c1 c2 =
+  w_unify false env CONV flags:default_matching_flags
+
+
 let letin_abstract id c (occs,check_occs) gl =
   let env = pf_env gl in
   let compute_dependency _ (hyp,_,_ as d) depdecls =

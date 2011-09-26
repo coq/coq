@@ -153,6 +153,13 @@ val no_occurrences_in_set : occurrences
 val subst_term_occ_gen :
   occurrences -> int -> constr -> types -> int * types
 
+(** [subst_term_occ_gen_modulo] looks for subterm modulo a comparison
+    function returning a substitution of type ['a]; a function for
+    merging substitution and an initial substitution are required too *)
+val subst_term_occ_gen_modulo :
+  occurrences -> (constr -> constr -> 'a) -> ('a -> 'a -> 'a) -> 'a ->
+  int -> constr -> types -> 'a * int * types
+
 (** [subst_term_occ occl c d] replaces occurrences of [c] at
    positions [occl] by [Rel 1] in [d] (see also Note OCC) *)
 val subst_term_occ : occurrences -> constr -> constr -> constr

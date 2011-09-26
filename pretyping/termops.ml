@@ -673,27 +673,50 @@ let error_invalid_occurrence l =
     (str ("Invalid occurrence " ^ plural (List.length l) "number" ^": ") ++
      prlist_with_sep spc int l ++ str ".")
 
-let subst_term_occ_gen (nowhere_except_in,locs) occ c t =
+let error_cannot_unify_occurrences pos (nowhere_except_in,locs) =
+(*
+  let l = List.filter ((>) !pos) locs in
+  let l =
+    if nowhere_except_in then list_subtract (interval 1 (!pos-1)) l else l in
+  errorlabstrm "" (str "Cannot unify occurrence at position " ++ int pos ++
+    plural n " with occurrence" ++ plural n " at position" ++
+    spc() ++ pr_enum l ++ str".")
+*)
+  errorlabstrm "" (str "Cannot unify occurrence at position " ++ int pos ++
+    strbrk " in a way compatible with the other unifications found for the given term.")
+
+let is_selected pos (nowhere_except_in,locs) =
+  nowhere_except_in && List.mem pos locs ||
+  not nowhere_except_in && not (List.mem pos locs)
+
+let subst_term_occ_gen_modulo (nowhere_except_in,locs as plocs) 
+    unify_fun merge_fun substs occ c t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref occ in
+  let substs = ref substs in
+  let add_subst subst =
+    try substs := merge_fun subst !substs
+    with _ -> error_cannot_unify_occurrences !pos plocs in
   assert (List.for_all (fun x -> x >= 0) locs);
   let rec substrec (k,c as kc) t =
-    if nowhere_except_in & !pos > maxocc then t
-    else
-    if eq_constr c t then
-      let r =
-	if nowhere_except_in then
-	  if List.mem !pos locs then (mkRel k) else t
-	else
-	  if List.mem !pos locs then t else (mkRel k)
+    if nowhere_except_in & !pos > maxocc then t else
+    try
+      let subst = unify_fun c t in
+      let r = if is_selected !pos plocs then (add_subst subst; mkRel k) else t
       in incr pos; r
-    else
+    with _ ->
       map_constr_with_binders_left_to_right
 	(fun d (k,c) -> (k+1,lift 1 c))
         substrec kc t
   in
   let t' = substrec (1,c) t in
-  (!pos, t')
+  (!substs,!pos, t')
+
+let subst_term_occ_gen plocs pos c t =
+  let (_,pos,t) = subst_term_occ_gen_modulo plocs 
+    (fun c1 c2 -> if eq_constr c1 c2 then () else raise Exit)
+    (fun () () -> ()) () pos c t in
+  (pos,t)
 
 let subst_term_occ (nowhere_except_in,locs as plocs) c t =
   if locs = [] then if nowhere_except_in then t else subst_term c t
