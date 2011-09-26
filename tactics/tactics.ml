@@ -1485,7 +1485,7 @@ let generalize_goal gl i ((occs,c,b),na) cl =
   let decls,cl = decompose_prod_n_assum i cl in
   let dummy_prod = it_mkProd_or_LetIn mkProp decls in
   let newdecls,_ = decompose_prod_n_assum i (subst_term c dummy_prod) in
-  let cl' = subst_term_occ occs c (it_mkProd_or_LetIn cl newdecls) in
+  let cl' = subst_closed_term_occ occs c (it_mkProd_or_LetIn cl newdecls) in
   let na = generalized_name c t (pf_ids_of_hyps gl) cl' na in
     mkProd_or_LetIn (na,b,t) cl'
 
@@ -1660,33 +1660,14 @@ let letin_tac with_eq name c occs gl =
 (* Implementation without generalisation: abbrev will be lost in hyps in *)
 (* in the extracted proof *)
 
-let default_matching_flags = {
-  modulo_conv_on_closed_terms = Some empty_transparent_state;
-  use_metas_eagerly_in_conv_on_closed_terms = false;
-  modulo_delta = empty_transparent_state;
-  modulo_delta_types = full_transparent_state;
-  resolve_evars = false;
-  use_pattern_unification = false;
-  use_meta_bound_pattern_unification = false;
-  frozen_evars = ExistentialSet.empty;
-  restrict_conv_on_strict_subterms = false;
-  modulo_betaiota = false;
-  modulo_eta = false;
-  allow_K_in_toplevel_higher_order_unification = false
-}
-
-let matching_fun sigma c1 c2 =
-  w_unify false env CONV flags:default_matching_flags
-
-
 let letin_abstract id c (occs,check_occs) gl =
   let env = pf_env gl in
   let compute_dependency _ (hyp,_,_ as d) depdecls =
     match occurrences_of_hyp hyp occs with
       | None -> depdecls
       | Some occ ->
-          let newdecl = subst_term_occ_decl occ c d in
-          if occ = (all_occurrences,InHyp) && eq_named_declaration d newdecl then
+          let newdecl = subst_closed_term_occ_decl occ c d in
+          if occ = (all_occurrences,InHyp) & eq_named_declaration d newdecl then
 	    if check_occs & not (in_every_hyp occs)
 	    then raise (RefinerError (DoesNotOccurIn (c,hyp)))
 	    else depdecls
@@ -1695,7 +1676,8 @@ let letin_abstract id c (occs,check_occs) gl =
   let depdecls = fold_named_context compute_dependency env ~init:[] in
   let ccl = match occurrences_of_goal occs with
     | None -> pf_concl gl
-    | Some occ -> subst1 (mkVar id) (subst_term_occ occ c (pf_concl gl)) in
+    | Some occ -> subst1 (mkVar id) (subst_closed_term_occ occ c (pf_concl gl))
+  in
   let lastlhyp =
     if depdecls = [] then no_move else MoveAfter(pi1(list_last depdecls)) in
   (depdecls,lastlhyp,ccl)

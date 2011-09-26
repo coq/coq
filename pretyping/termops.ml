@@ -622,10 +622,8 @@ let my_prefix_application eq_fun (k,c) (by_c : constr) (t : constr) =
 	  None
     | _ -> None
 
-(* Recognizing occurrences of a given (closed) subterm in a term for Pattern :
-   [subst_term c t] substitutes [(Rel 1)] for all occurrences of (closed)
-   term [c] in a term [t] *)
-(*i Bizarre : si on cherche un sous terme clos, pourquoi le lifter ? i*)
+(* Recognizing occurrences of a given subterm in a term: [subst_term c t]
+   substitutes [(Rel 1)] for all occurrences of term [c] in a term [t] *)
 
 let subst_term_gen eq_fun c t =
   let rec substrec (k,c as kc) t =
@@ -638,8 +636,8 @@ let subst_term_gen eq_fun c t =
   in
   substrec (1,c) t
 
-(* Recognizing occurrences of a given (closed) subterm in a term :
-   [replace_term c1 c2 t] substitutes [c2] for all occurrences of (closed)
+(* Recognizing occurrences of a given subterm in a term :
+   [replace_term c1 c2 t] substitutes [c2] for all occurrences of
    term [c1] in a term [t] *)
 (*i Meme remarque : a priori [c] n'est pas forcement clos i*)
 
@@ -689,64 +687,88 @@ let is_selected pos (nowhere_except_in,locs) =
   nowhere_except_in && List.mem pos locs ||
   not nowhere_except_in && not (List.mem pos locs)
 
-let subst_term_occ_gen_modulo (nowhere_except_in,locs as plocs) 
-    unify_fun merge_fun substs occ c t =
+exception NotUnifiable
+
+let subst_closed_term_occ_gen_modulo (nowhere_except_in,locs as plocs) 
+    match_fun merge_fun substs occ t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref occ in
   let substs = ref substs in
   let add_subst subst =
     try substs := merge_fun subst !substs
-    with _ -> error_cannot_unify_occurrences !pos plocs in
-  assert (List.for_all (fun x -> x >= 0) locs);
-  let rec substrec (k,c as kc) t =
+    with NotUnifiable -> error_cannot_unify_occurrences !pos plocs in
+  let rec substrec k t =
     if nowhere_except_in & !pos > maxocc then t else
     try
-      let subst = unify_fun c t in
+      let subst = match_fun t in
       let r = if is_selected !pos plocs then (add_subst subst; mkRel k) else t
       in incr pos; r
     with _ ->
-      map_constr_with_binders_left_to_right
-	(fun d (k,c) -> (k+1,lift 1 c))
-        substrec kc t
+      map_constr_with_binders_left_to_right (fun d k -> k+1) substrec k t
   in
-  let t' = substrec (1,c) t in
+  let t' = substrec 1 t in
   (!substs,!pos, t')
 
-let subst_term_occ_gen plocs pos c t =
-  let (_,pos,t) = subst_term_occ_gen_modulo plocs 
-    (fun c1 c2 -> if eq_constr c1 c2 then () else raise Exit)
-    (fun () () -> ()) () pos c t in
+let is_nowhere (nowhere_except_in,locs) = nowhere_except_in && locs = [] 
+
+let check_used_occurrences nbocc (nowhere_except_in,locs) =
+  let rest = List.filter (fun o -> o >= nbocc) locs in
+  if rest <> [] then error_invalid_occurrence rest
+
+let proceed_with_occurrences f plocs x =
+  if is_nowhere plocs then (* optimization *) x else
+  begin
+    assert (List.for_all (fun x -> x >= 0) (snd plocs));
+    let (nbocc,x) = f 1 x in
+    check_used_occurrences nbocc plocs;
+    x
+  end
+
+let subst_closed_term_occ_gen plocs pos c t =
+  let (_,pos,t) = subst_closed_term_occ_gen_modulo plocs 
+    (fun c' -> if eq_constr c c' then () else raise Exit)
+    (fun () () -> ()) () pos t in
   (pos,t)
 
-let subst_term_occ (nowhere_except_in,locs as plocs) c t =
-  if locs = [] then if nowhere_except_in then t else subst_term c t
-  else
-    let (nbocc,t') = subst_term_occ_gen plocs 1 c t in
-    let rest = List.filter (fun o -> o >= nbocc) locs in
-    if rest <> [] then error_invalid_occurrence rest;
-    t'
+let subst_closed_term_occ plocs c t =
+  proceed_with_occurrences (fun occ -> subst_closed_term_occ_gen plocs occ c)
+    plocs t
 
 type hyp_location_flag = (* To distinguish body and type of local defs *)
   | InHyp
   | InHypTypeOnly
   | InHypValueOnly
 
-let subst_term_occ_decl ((nowhere_except_in,locs as plocs),hloc) c (id,bodyopt,typ as d) =
-  match bodyopt,hloc with
-  | None, InHypValueOnly -> errorlabstrm "" (pr_id id ++ str " has no value")
-  | None, _ -> (id,None,subst_term_occ plocs c typ)
-  | Some body, InHypTypeOnly -> (id,Some body,subst_term_occ plocs c typ)
-  | Some body, InHypValueOnly -> (id,Some (subst_term_occ plocs c body),typ)
+let map_named_declaration_with_hyploc f hyploc acc (id,bodyopt,typ) =
+  match bodyopt,hyploc with
+  | None, InHypValueOnly ->
+      errorlabstrm "" (pr_id id ++ str " has no value.")
+  | None, _ | Some _, InHypTypeOnly ->
+      let acc,typ = f acc typ in acc,(id,bodyopt,typ)
+  | Some body, InHypValueOnly ->
+      let acc,body = f acc body in acc,(id,Some body,typ)
   | Some body, InHyp ->
-	if locs = [] then
-	  if nowhere_except_in then d
-	  else (id,Some (subst_term c body),subst_term c typ)
-	else
-	  let (nbocc,body') = subst_term_occ_gen plocs 1 c body in
-	  let (nbocc',t') = subst_term_occ_gen plocs nbocc c typ in
-	  let rest = List.filter (fun o -> o >= nbocc') locs in
-	  if rest <> [] then error_invalid_occurrence rest;
-	  (id,Some body',t')
+      let acc,body = f acc body in
+      let acc,typ = f acc typ in
+      acc,(id,Some body,typ)
+
+let subst_closed_term_occ_decl (plocs,hyploc) c d =
+  proceed_with_occurrences
+    (map_named_declaration_with_hyploc
+       (fun occ -> subst_closed_term_occ_gen plocs occ c) hyploc) plocs d
+
+let subst_closed_term_occ_decl_modulo (plocs,hyploc)
+    match_fun merge_fun substs d =
+  let subst = ref substs in
+  proceed_with_occurrences
+    (map_named_declaration_with_hyploc
+        (fun occ t ->
+          let (substs,occ,t) =
+            subst_closed_term_occ_gen_modulo plocs
+              match_fun merge_fun !subst occ t
+          in subst := substs; (occ,t))
+        hyploc)
+    plocs d
 
 let vars_of_env env =
   let s =

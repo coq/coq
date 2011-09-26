@@ -854,7 +854,7 @@ let abstract_scheme env sigma (locc,a) c =
   if occur_meta a then
     mkLambda (na,ta,c)
   else
-    mkLambda (na,ta,subst_term_occ locc a c)
+    mkLambda (na,ta,subst_closed_term_occ locc a c)
 
 let pattern_occs loccs_trm env sigma c =
   let abstr_trm = List.fold_right (abstract_scheme env sigma) loccs_trm c in

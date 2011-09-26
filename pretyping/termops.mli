@@ -148,33 +148,42 @@ type occurrences = bool * int list
 val all_occurrences : occurrences
 val no_occurrences_in_set : occurrences
 
-(** [subst_term_occ_gen occl n c d] replaces occurrences of [c] at
+(** [subst_closed_term_occ_gen occl n c d] replaces occurrences of closed [c] at
    positions [occl], counting from [n], by [Rel 1] in [d] *)
-val subst_term_occ_gen :
+val subst_closed_term_occ_gen :
   occurrences -> int -> constr -> types -> int * types
 
-(** [subst_term_occ_gen_modulo] looks for subterm modulo a comparison
-    function returning a substitution of type ['a]; a function for
-    merging substitution and an initial substitution are required too *)
-val subst_term_occ_gen_modulo :
-  occurrences -> (constr -> constr -> 'a) -> ('a -> 'a -> 'a) -> 'a ->
-  int -> constr -> types -> 'a * int * types
+(** [subst_closed_term_occ_gen_modulo] looks for subterm modulo a
+    testing function returning a substitution of type ['a] (or failing
+    with NotUnifiable); a function for merging substitution (possibly
+    failing with NotUnifiable) and an initial substitution are
+    required too *)
 
-(** [subst_term_occ occl c d] replaces occurrences of [c] at
+exception NotUnifiable
+
+val subst_closed_term_occ_gen_modulo :
+  occurrences -> (constr -> 'a) -> ('a -> 'a -> 'a) -> 'a ->
+  int -> constr -> 'a * int * types
+
+(** [subst_closed_term_occ occl c d] replaces occurrences of closed [c] at
    positions [occl] by [Rel 1] in [d] (see also Note OCC) *)
-val subst_term_occ : occurrences -> constr -> constr -> constr
+val subst_closed_term_occ : occurrences -> constr -> constr -> constr
 
-(** [subst_term_occ_decl occl c decl] replaces occurrences of [c] at
-   positions [occl] by [Rel 1] in [decl] *)
+(** [subst_closed_term_occ_decl occl c decl] replaces occurrences of closed [c]
+   at positions [occl] by [Rel 1] in [decl] *)
 
 type hyp_location_flag = (** To distinguish body and type of local defs *)
   | InHyp
   | InHypTypeOnly
   | InHypValueOnly
 
-val subst_term_occ_decl :
+val subst_closed_term_occ_decl :
   occurrences * hyp_location_flag -> constr -> named_declaration ->
       named_declaration
+
+val subst_closed_term_occ_decl_modulo :
+  occurrences * hyp_location_flag -> (constr -> 'a) -> ('a -> 'a -> 'a) -> 'a ->
+  named_declaration -> named_declaration
 
 val error_invalid_occurrence : int list -> 'a
 

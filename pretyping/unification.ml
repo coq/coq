@@ -49,7 +49,7 @@ let abstract_scheme env c l lname_typ =
    are unclear...
        if occur_meta ta then error "cannot find a type for the generalisation"
        else *) if occur_meta a then mkLambda_name env (na,ta,t)
-       else mkLambda_name env (na,ta,subst_term_occ locc a t))
+       else mkLambda_name env (na,ta,subst_closed_term_occ locc a t))
     c
     (List.rev l)
     lname_typ
