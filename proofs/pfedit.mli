@@ -177,4 +177,11 @@ val instantiate_nth_evar_com : int -> Topconstr.constr_expr -> unit
 
 val build_constant_by_tactic : identifier -> named_context_val -> types -> tactic ->
   Entries.definition_entry
-val build_by_tactic : types -> tactic -> constr
+val build_by_tactic : env -> types -> tactic -> constr
+
+(** Declare the default tactic to fill implicit arguments *)
+
+val declare_implicit_tactic : tactic -> unit
+
+(* Raise Exit if cannot solve *)
+val solve_by_implicit_tactic : env -> Evd.evar_map -> existential -> constr

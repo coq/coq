@@ -49,6 +49,7 @@ type var_map = (identifier * constr_under_binders) list
 type unbound_ltac_var_map = (identifier * identifier option) list
 type ltac_var_map = var_map * unbound_ltac_var_map
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
+type pure_open_constr = evar_map * constr
 
 (************************************************************************)
 (* This concerns Cases *)
@@ -101,6 +102,42 @@ let interp_elimination_sort = function
   | GProp Pos  -> InSet
   | GType _ -> InType
 
+let resolve_evars env evdref fail_evar resolve_classes =
+  if resolve_classes then
+    evdref := (Typeclasses.resolve_typeclasses ~onlyargs:false
+		 ~split:true ~fail:fail_evar env !evdref);
+  (* Resolve eagerly, potentially making wrong choices *)
+  evdref := (try consider_remaining_unif_problems
+	       ~ts:(Typeclasses.classes_transparent_state ()) env !evdref
+	     with e -> if fail_evar then raise e else !evdref)
+
+let solve_remaining_evars fail_evar use_classes hook env initial_sigma (evd,c) =
+  let evdref =
+    if use_classes then
+      ref (Typeclasses.resolve_typeclasses ~split:true ~fail:fail_evar env evd)
+    else
+      ref evd in
+  let rec proc_rec c =
+    let c = Reductionops.whd_evar !evdref c in
+    match kind_of_term c with
+    | Evar (evk,args as ev) when not (Evd.mem initial_sigma evk) ->
+        let sigma = !evdref in
+	(try
+	   let c = hook env sigma ev in
+	   evdref := Evd.define evk c !evdref;
+	   c
+	 with Exit ->
+           if fail_evar then
+	     let evi = Evd.find_undefined sigma evk in
+             let (loc,src) = evar_source evk !evdref in
+	     Pretype_errors.error_unsolvable_implicit loc env sigma evi src None
+           else
+             c)
+    | _ -> map_constr proc_rec c in
+  let c = proc_rec c in
+  (* Side-effect *)
+  !evdref,c
+
 module type S =
 sig
 
@@ -134,7 +171,7 @@ sig
 
   val understand_ltac :
     bool -> evar_map -> env -> ltac_var_map ->
-    typing_constraint -> glob_constr -> evar_map * constr
+    typing_constraint -> glob_constr -> pure_open_constr
 
   (* Standard call to get a constr from a glob_constr, resolving implicit args *)
 
@@ -685,15 +722,6 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		  error_unexpected_type_loc
                     (loc_of_glob_constr c) env !evdref tj.utj_val v
 
-  let resolve_evars env evdref fail_evar resolve_classes =
-    if resolve_classes then
-      evdref := (Typeclasses.resolve_typeclasses ~onlyargs:false
-		 ~split:true ~fail:fail_evar env !evdref);
-    (* Resolve eagerly, potentially making wrong choices *)
-    evdref := (try consider_remaining_unif_problems 
-		 ~ts:(Typeclasses.classes_transparent_state ()) env !evdref
-	       with e -> if fail_evar then raise e else !evdref)
-    
   let pretype_gen expand_evar fail_evar resolve_classes evdref env lvar kind c =
     let c' = match kind with
       | OfType exptyp ->

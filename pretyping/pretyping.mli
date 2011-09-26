@@ -31,6 +31,7 @@ type var_map = (identifier * Pattern.constr_under_binders) list
 type unbound_ltac_var_map = (identifier * identifier option) list
 type ltac_var_map = var_map * unbound_ltac_var_map
 type glob_constr_ltac_closure = ltac_var_map * glob_constr
+type pure_open_constr = evar_map * constr
 
 module type S =
 sig
@@ -65,7 +66,7 @@ sig
 
   val understand_ltac :
     bool -> evar_map -> env -> ltac_var_map ->
-    typing_constraint -> glob_constr -> evar_map * constr
+    typing_constraint -> glob_constr -> pure_open_constr
 
   (** Standard call to get a constr from a glob_constr, resolving implicit args *)
 
@@ -117,3 +118,7 @@ val constr_out : Dyn.t -> constr
 val interp_sort : glob_sort -> sorts
 val interp_elimination_sort : glob_sort -> sorts_family
 
+(** Last chance for solving evars, possibly using external solver *)
+val solve_remaining_evars : bool -> bool ->
+  (env -> evar_map -> existential -> constr) ->
+  env -> evar_map -> pure_open_constr -> pure_open_constr

@@ -14,8 +14,4 @@ open Termops
 val instantiate : int -> Tacinterp.interp_sign * Glob_term.glob_constr ->
   (identifier * hyp_location_flag, unit) location -> tactic
 
-(*i
-val instantiate_tac : tactic_arg list -> tactic
-i*)
-
 val let_evar : name -> Term.types -> tactic

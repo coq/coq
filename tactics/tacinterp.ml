@@ -47,6 +47,7 @@ open Pretyping.Default
 open Extrawit
 open Pcoq
 open Compat
+open Evd
 
 let safe_msgnl s =
     try msgnl s with e ->
@@ -1225,59 +1226,6 @@ let interp_fresh_id ist env l =
 
 let pf_interp_fresh_id ist gl = interp_fresh_id ist (pf_env gl)
 
-let implicit_tactic = ref None
-
-let declare_implicit_tactic tac = implicit_tactic := Some tac
-
-open Evd
-
-let solvable_by_tactic env evi (ev,args) src =
-  match (!implicit_tactic, src) with
-  | Some tac, (ImplicitArg _ | QuestionMark _)
-      when
-	Sign.named_context_equal (Environ.named_context_of_val evi.evar_hyps)
-	(Environ.named_context env) ->
-      let id = id_of_string "H" in
-      start_proof id (Local,Proof Lemma) evi.evar_hyps evi.evar_concl
-	(fun _ _ -> ());
-      begin
-	try
-	  by (tclCOMPLETE tac);
-	  let _,(const,_,_,_) = cook_proof ignore in
-	  delete_current_proof (); const.const_entry_body
-	with e when Logic.catchable_exception e ->
-	  delete_current_proof();
-	  raise Exit
-      end
-  | _ -> raise Exit
-
-let solve_remaining_evars fail_evar use_classes env initial_sigma evd c =
-  let evdref =
-    if use_classes then 
-      ref (Typeclasses.resolve_typeclasses ~split:true ~fail:fail_evar env evd)
-    else ref evd in
-  let rec proc_rec c =
-    let c = Reductionops.whd_evar !evdref c in
-    match kind_of_term c with
-      | Evar (evk,args as ev) when not (Evd.mem initial_sigma evk) ->
-            let (loc,src) = evar_source evk !evdref in
-	    let sigma =  !evdref in
-	    let evi = Evd.find_undefined sigma evk in
-	    (try
-	      let c = solvable_by_tactic env evi ev src in
-	      evdref := Evd.define evk c !evdref;
-	      c
-	    with Exit ->
-              if fail_evar then
-	        Pretype_errors.error_unsolvable_implicit loc env sigma evi src None
-              else
-                c)
-      | _ -> map_constr proc_rec c
-  in
-  let c = proc_rec c in
-  (* Side-effect *)
-  !evdref,c
-
 let interp_gen kind ist allow_patvar expand_evar fail_evar use_classes env sigma (c,ce) =
   let (ltacvars,unbndltacvars as vars) = extract_ltac_constr_values ist env in
   let c = match ce with
@@ -1290,13 +1238,14 @@ let interp_gen kind ist allow_patvar expand_evar fail_evar use_classes env sigma
       intern_gen (kind = IsType) ~allow_patvar ~ltacvars:ltacdata sigma env c
   in
   let trace = push_trace (dloc,LtacConstrInterp (c,vars)) ist.trace in
-  let evd,c =
+  let evdc =
     catch_error trace (understand_ltac expand_evar sigma env vars kind) c in
-  let evd,c =
+  let (evd,c) =
     if expand_evar then
-      solve_remaining_evars fail_evar use_classes env sigma evd c
+      solve_remaining_evars fail_evar use_classes
+        solve_by_implicit_tactic env sigma evdc
     else
-      evd,c in
+      evdc in
   db_constr ist.debug env c;
   (evd,c)
 

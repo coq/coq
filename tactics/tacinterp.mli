@@ -152,9 +152,6 @@ val subst_tactic : substitution -> glob_tactic_expr -> glob_tactic_expr
 
 val hide_interp : raw_tactic_expr -> tactic option -> tactic
 
-(** Declare the default tactic to fill implicit arguments *)
-val declare_implicit_tactic : tactic -> unit
-
 (** Declare the xml printer *)
 val declare_xml_printer :
   (out_channel -> Environ.env -> Evd.evar_map -> constr -> unit) -> unit

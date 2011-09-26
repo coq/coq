@@ -581,7 +581,7 @@ let make_bl_scheme mind =
   let nparrec = mib.mind_nparams_rec in
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  [|Pfedit.build_by_tactic
+  [|Pfedit.build_by_tactic (Global.env())
     (compute_bl_goal ind lnamesparrec nparrec)
     (compute_bl_tact (!bl_scheme_kind_aux()) ind lnamesparrec nparrec)|]
 
@@ -701,7 +701,7 @@ let make_lb_scheme mind =
   let nparrec = mib.mind_nparams_rec in
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  [|Pfedit.build_by_tactic
+  [|Pfedit.build_by_tactic (Global.env())
     (compute_lb_goal ind lnamesparrec nparrec)
     (compute_lb_tact (!lb_scheme_kind_aux()) ind lnamesparrec nparrec)|]
 
@@ -868,7 +868,7 @@ let make_eq_decidability mind =
   let nparrec = mib.mind_nparams_rec in
   let lnonparrec,lnamesparrec =
     context_chop (nparams-nparrec) mib.mind_params_ctxt in
-  [|Pfedit.build_by_tactic
+  [|Pfedit.build_by_tactic (Global.env())
     (compute_dec_goal ind lnamesparrec nparrec)
     (compute_dec_tact ind lnamesparrec nparrec)|]
 

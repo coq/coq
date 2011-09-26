@@ -497,7 +497,7 @@ END
 
 VERNAC COMMAND EXTEND ImplicitTactic
 | [ "Declare" "Implicit" "Tactic" tactic(tac) ] ->
-    [ Tacinterp.declare_implicit_tactic (Tacinterp.interp tac) ]
+    [ Pfedit.declare_implicit_tactic (Tacinterp.interp tac) ]
 END
 
 

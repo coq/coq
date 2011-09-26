@@ -165,7 +165,26 @@ let build_constant_by_tactic id sign typ tac =
     delete_current_proof ();
     raise e
 
-let build_by_tactic typ tac =
+let build_by_tactic env typ tac =
   let id = id_of_string ("temporary_proof"^string_of_int (next())) in
-  let sign = Decls.clear_proofs (Global.named_context ()) in
+  let sign = Decls.clear_proofs (named_context env) in
   (build_constant_by_tactic id sign typ tac).const_entry_body
+
+(**********************************************************************)
+(* Support for resolution of evars in tactic interpretation, including
+   resolution by application of tactics *)
+
+let implicit_tactic = ref None
+
+let declare_implicit_tactic tac = implicit_tactic := Some tac
+
+let solve_by_implicit_tactic env sigma (evk,args) =
+  let evi = Evd.find_undefined sigma evk in
+  match (!implicit_tactic, snd (evar_source evk sigma)) with
+  | Some tac, (ImplicitArg _ | QuestionMark _)
+      when
+	Sign.named_context_equal (Environ.named_context_of_val evi.evar_hyps)
+	(Environ.named_context env) ->
+      (try build_by_tactic env evi.evar_concl (tclCOMPLETE tac)
+       with e when Logic.catchable_exception e -> raise Exit)
+  | _ -> raise Exit
