@@ -168,4 +168,3 @@ val interp_ltac_var : (value -> 'a) -> interp_sign -> Environ.env option -> iden
 val interp_int : interp_sign -> identifier located -> int
 
 val error_ltac_variable : loc -> identifier -> Environ.env option -> value -> string -> 'a
-

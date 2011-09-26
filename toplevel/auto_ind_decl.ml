@@ -77,6 +77,25 @@ let sumbool = Coqlib.build_coq_sumbool
 
 let andb = fun _ -> (Coqlib.build_bool_type()).Coqlib.andb
 
+let induct_on c =
+  new_induct false
+    [Tacexpr.ElimOnConstr (Evd.empty,(c,Glob_term.NoBindings))]
+    None (None,None) None
+
+let destruct_on_using c id =
+  new_destruct false
+    [Tacexpr.ElimOnConstr (Evd.empty,(c,Glob_term.NoBindings))]
+    None
+    (None,Some (dl,Genarg.IntroOrAndPattern [
+                                    [dl,Genarg.IntroAnonymous];
+                                    [dl,Genarg.IntroIdentifier id]]))
+    None
+
+let destruct_on c =
+  new_destruct false
+    [Tacexpr.ElimOnConstr (Evd.empty,(c,Glob_term.NoBindings))]
+    None (None,None) None
+
 (* reconstruct the inductive with the correct deBruijn indexes *)
 let mkFullInd ind n =
   let mib = Global.lookup_mind (fst ind) in
@@ -511,17 +530,9 @@ let compute_bl_tact bl_scheme_key ind lnamesparrec nparrec gsig =
       avoid := freshz::(!avoid);
       tclTHENSEQ [ intros_using fresh_first_intros;
                      intro_using freshn ;
-                     new_induct false [ (Tacexpr.ElimOnConstr ((mkVar freshn),
-                                        Glob_term.NoBindings))]
-                                None
-                                (None,None)
-		                None;
+                     induct_on (mkVar freshn);
                      intro_using freshm;
-                     new_destruct false [ (Tacexpr.ElimOnConstr ((mkVar freshm),
-                                    Glob_term.NoBindings))]
-                                None
-                                (None,None)
-		                None;
+                     destruct_on (mkVar freshm);
                      intro_using freshz;
                      intros;
                      tclTRY (
@@ -539,7 +550,7 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                            in
                             avoid := fresht::(!avoid);
                             (new_destruct false [Tacexpr.ElimOnConstr
-                                      ((mkVar freshz,Glob_term.NoBindings))]
+                                      (Evd.empty,((mkVar freshz,Glob_term.NoBindings)))]
                                   None
                                   (None, Some (dl,Genarg.IntroOrAndPattern [[
                                     dl,Genarg.IntroIdentifier fresht;
@@ -649,17 +660,9 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec gsig =
       avoid := freshz::(!avoid);
       tclTHENSEQ [ intros_using fresh_first_intros;
                      intro_using freshn ;
-                     new_induct false [Tacexpr.ElimOnConstr
-                                    ((mkVar freshn),Glob_term.NoBindings)]
-                                None
-                                (None,None)
-		                None;
+                     induct_on (mkVar freshn);
                      intro_using freshm;
-                     new_destruct false [Tacexpr.ElimOnConstr
-                                    ((mkVar freshm),Glob_term.NoBindings)]
-                                None
-                                (None,None)
-		                None;
+                     destruct_on (mkVar freshm);
                      intro_using freshz;
                      intros;
                      tclTRY (
@@ -808,24 +811,11 @@ let compute_dec_tact ind lnamesparrec nparrec gsig =
         assert_by (Name freshH) (
           mkApp(sumbool(),[|eqtrue eqbnm; eqfalse eqbnm|])
 	)
-	  (tclTHEN
-	    (new_destruct false [Tacexpr.ElimOnConstr
-              (eqbnm,Glob_term.NoBindings)]
-              None
-              (None,None)
-	      None)
-	    Auto.default_auto);
+	  (tclTHEN (destruct_on eqbnm) Auto.default_auto);
         (fun gsig ->
 	  let freshH2 = fresh_id (!avoid) (id_of_string "H") gsig in
           avoid := freshH2::(!avoid);
-	  tclTHENS (
-	    new_destruct false [Tacexpr.ElimOnConstr
-                                    ((mkVar freshH),Glob_term.NoBindings)]
-                                None
-                                (None,Some (dl,Genarg.IntroOrAndPattern [
-                                    [dl,Genarg.IntroAnonymous];
-                                    [dl,Genarg.IntroIdentifier freshH2]])) None
-	  ) [
+	  tclTHENS (destruct_on_using (mkVar freshH) freshH2) [
 	    (* left *)
 	    tclTHENSEQ [
 	      simplest_left;

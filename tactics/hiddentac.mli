@@ -57,6 +57,8 @@ val h_generalize_gen  : (constr with_occurrences * name) list -> tactic
 val h_generalize_dep  : constr -> tactic
 val h_let_tac         : letin_flag -> name -> constr ->
                         Tacticals.clause -> tactic
+val h_let_pat_tac     : letin_flag -> name -> evar_map * constr ->
+                        Tacticals.clause -> tactic
 
 (** Derived basic tactics *)
 
@@ -64,15 +66,18 @@ val h_simple_induction   : quantified_hypothesis -> tactic
 val h_simple_destruct    : quantified_hypothesis -> tactic
 val h_simple_induction_destruct : rec_flag -> quantified_hypothesis -> tactic
 val h_new_induction   : evars_flag ->
-  constr with_bindings induction_arg list -> constr with_bindings option ->
+  (evar_map * constr with_bindings) induction_arg list ->
+  constr with_bindings option ->
   intro_pattern_expr located option * intro_pattern_expr located option ->
   Tacticals.clause option -> tactic
 val h_new_destruct    : evars_flag ->
-  constr with_bindings induction_arg list -> constr with_bindings option ->
+  (evar_map * constr with_bindings) induction_arg list ->
+  constr with_bindings option ->
   intro_pattern_expr located option * intro_pattern_expr located option ->
   Tacticals.clause option -> tactic
 val h_induction_destruct : rec_flag -> evars_flag ->
-  (constr with_bindings induction_arg list * constr with_bindings option *
+  ((evar_map * constr with_bindings) induction_arg list *
+   constr with_bindings option *
    (intro_pattern_expr located option * intro_pattern_expr located option)) list
     * Tacticals.clause option -> tactic
 

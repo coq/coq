@@ -75,7 +75,7 @@ let functional_induction with_clean c princl pat =
 	if princ_infos.Tactics.farg_in_concl
 	then [c] else []
       in
-      List.map (fun c -> Tacexpr.ElimOnConstr (c,NoBindings)) (args@c_list)
+      List.map (fun c -> Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))) (args@c_list)
     in
     let princ' = Some (princ,bindings) in
     let princ_vars =

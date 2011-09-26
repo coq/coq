@@ -48,6 +48,8 @@ Tactics
   from a context containing an arithmetical contradiction (wish #2236).
 - Using "auto with nocore" disables the use of the "core" database (wish #2188).
   This pseudo-database "nocore" can also be used with trivial and eauto.
+- Tactics "set", "destruct" and "induction" accepts incomplete terms and
+  use the goal to complete the pattern assuming it is no ambiguous.
 
 Vernacular commands
 

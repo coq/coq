@@ -59,6 +59,8 @@ let inj_with_occurrences e = (all_occurrences_expr,e)
 
 let dloc = dummy_loc
 
+let typ_of = Retyping.get_type_of
+
 (* Option for 8.2 compatibility *)
 open Goptions
 let dependent_propositions_elimination = ref true
@@ -74,6 +76,10 @@ let _ =
       optkey   = ["Dependent";"Propositions";"Elimination"];
       optread  = (fun () -> !dependent_propositions_elimination) ;
       optwrite = (fun b -> dependent_propositions_elimination := b) }
+
+let finish_evar_resolution env initial_sigma c =
+  snd (Pretyping.solve_remaining_evars true true solve_by_implicit_tactic
+         env initial_sigma c)
 
 (*********************************************)
 (*                 Tactics                   *)
@@ -571,6 +577,19 @@ let dependent_in_decl a (_,c,t) =
 (* Apply a tactic on a quantified hypothesis, an hypothesis in context
    or a term with bindings *)
 
+let onOpenInductionArg tac = function
+  | ElimOnConstr cbl ->
+      tac cbl
+  | ElimOnAnonHyp n ->
+      tclTHEN
+        (intros_until_n n)
+        (onLastHyp (fun c -> tac (Evd.empty,(c,NoBindings))))
+  | ElimOnIdent (_,id) ->
+      (* A quantified hypothesis *)
+      tclTHEN
+        (try_intros_until_id_check id)
+        (tac (Evd.empty,(mkVar id,NoBindings)))
+
 let onInductionArg tac = function
   | ElimOnConstr cbl ->
       tac cbl
@@ -579,6 +598,11 @@ let onInductionArg tac = function
   | ElimOnIdent (_,id) ->
       (* A quantified hypothesis *)
       tclTHEN (try_intros_until_id_check id) (tac (mkVar id,NoBindings))
+
+let map_induction_arg f = function
+  | ElimOnConstr (sigma,(c,bl)) -> ElimOnConstr (f (sigma,c),bl)
+  | ElimOnAnonHyp n -> ElimOnAnonHyp n
+  | ElimOnIdent id -> ElimOnIdent id
 
 (**************************)
 (*  Refinement tactics    *)
@@ -1660,13 +1684,46 @@ let letin_tac with_eq name c occs gl =
 (* Implementation without generalisation: abbrev will be lost in hyps in *)
 (* in the extracted proof *)
 
-let letin_abstract id c (occs,check_occs) gl =
+let default_matching_flags sigma = {
+  modulo_conv_on_closed_terms = Some empty_transparent_state;
+  use_metas_eagerly_in_conv_on_closed_terms = false;
+  modulo_delta = empty_transparent_state;
+  modulo_delta_types = empty_transparent_state;
+  resolve_evars = false;
+  use_pattern_unification = false;
+  use_meta_bound_pattern_unification = false;
+  frozen_evars =
+    fold_undefined (fun evk _ evars -> ExistentialSet.add evk evars)
+      sigma ExistentialSet.empty;
+  restrict_conv_on_strict_subterms = false;
+  modulo_betaiota = false;
+  modulo_eta = false;
+  allow_K_in_toplevel_higher_order_unification = false
+}
+
+let make_pattern_test env sigma0 (sigma,c) =
+  let flags = default_matching_flags sigma0 in
+  let matching_fun t =
+    try ignore (w_unify env Reduction.CONV ~flags c t sigma); Some t
+    with _ -> raise NotUnifiable in
+  let merge_fun c1 c2 =
+    match c1, c2 with
+    | Some c1, Some c2 when not (is_fconv Reduction.CONV env sigma0 c1 c2) ->
+        raise NotUnifiable
+    | _ -> c1 in
+  { match_fun = matching_fun; merge_fun = merge_fun; 
+    testing_state = None; last_found = None },
+  (fun test -> match test.testing_state with
+   | None -> finish_evar_resolution env sigma0 (sigma,c)
+   | Some c -> c)
+
+let letin_abstract id c (test,out) (occs,check_occs) gl =
   let env = pf_env gl in
   let compute_dependency _ (hyp,_,_ as d) depdecls =
     match occurrences_of_hyp hyp occs with
       | None -> depdecls
       | Some occ ->
-          let newdecl = subst_closed_term_occ_decl occ c d in
+          let newdecl = subst_closed_term_occ_decl_modulo occ test d in
           if occ = (all_occurrences,InHyp) & eq_named_declaration d newdecl then
 	    if check_occs & not (in_every_hyp occs)
 	    then raise (RefinerError (DoesNotOccurIn (c,hyp)))
@@ -1676,20 +1733,21 @@ let letin_abstract id c (occs,check_occs) gl =
   let depdecls = fold_named_context compute_dependency env ~init:[] in
   let ccl = match occurrences_of_goal occs with
     | None -> pf_concl gl
-    | Some occ -> subst1 (mkVar id) (subst_closed_term_occ occ c (pf_concl gl))
-  in
+    | Some occ ->
+        subst1 (mkVar id) (subst_closed_term_occ_modulo occ test None (pf_concl gl)) in
   let lastlhyp =
     if depdecls = [] then no_move else MoveAfter(pi1(list_last depdecls)) in
-  (depdecls,lastlhyp,ccl)
+  (depdecls,lastlhyp,ccl,out test)
 
-let letin_tac_gen with_eq name c ty occs gl =
+let letin_tac_gen with_eq name (sigmac,c) test ty occs gl =
   let id =
-    let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) name in
+    let t = match ty with Some t -> t | None -> typ_of (pf_env gl) sigmac c in
+    let x = id_of_name_using_hdchar (Global.env()) t name in
     if name = Anonymous then fresh_id [] x gl else
       if not (mem_named_context x (pf_hyps gl)) then x else
 	error ("The variable "^(string_of_id x)^" is already declared.") in
-  let (depdecls,lastlhyp,ccl)= letin_abstract id c occs gl in
-  let t = match ty with Some t -> t | None -> pf_type_of gl c in
+  let (depdecls,lastlhyp,ccl,c) = letin_abstract id c test occs gl in
+  let t = match ty with Some t -> t | None -> pf_apply typ_of gl c in
   let newcl,eq_tac = match with_eq with
     | Some (lr,(loc,ido)) ->
       let heq = match ido with
@@ -1713,8 +1771,15 @@ let letin_tac_gen with_eq name c ty occs gl =
       eq_tac;
       tclMAP convert_hyp_no_check depdecls ] gl
 
-let letin_tac with_eq name c ty occs =
-  letin_tac_gen with_eq name c ty (occs,true)
+let make_eq_test c = (make_eq_test c,fun _ -> c)
+
+let letin_tac with_eq name c ty occs gl =
+  letin_tac_gen with_eq name (project gl,c) (make_eq_test c) ty (occs,true) gl
+
+let letin_pat_tac with_eq name c ty occs gl =
+  letin_tac_gen with_eq name c
+    (make_pattern_test (pf_env gl) (project gl) c)
+    ty (occs,true) gl
 
 (* Tactics "pose proof" (usetac=None) and "assert" (otherwise) *)
 let forward usetac ipat c gl =
@@ -2393,7 +2458,7 @@ let abstract_args gl generalize_vars dep id defined f args =
 	    hyps_of_vars (pf_env gl) (pf_hyps gl) nogen vars
 	else []
       in
-      let body, c' = if defined then Some c', Retyping.get_type_of ctxenv Evd.empty c' else None, c' in
+      let body, c' = if defined then Some c', typ_of ctxenv Evd.empty c' else None, c' in
 	Some (make_abstract_generalize gl id concl dep ctx body c' eqs args refls,
 	     dep, succ (List.length ctx), vars)
     else None
@@ -3002,7 +3067,7 @@ let clear_unselected_context id inhyps cls gl =
 	  thin ids gl
       | None -> tclIDTAC gl
 
-let new_induct_gen isrec with_evars elim (eqname,names) (c,lbind) cls gl =
+let new_induct_gen isrec with_evars elim (eqname,names) (sigma,(c,lbind)) cls gl =
   let inhyps = match cls with
   | Some {onhyps=Some hyps} -> List.map (fun ((_,id),_) -> id) hyps
   | _ -> [] in
@@ -3015,14 +3080,17 @@ let new_induct_gen isrec with_evars elim (eqname,names) (c,lbind) cls gl =
 	  (induction_with_atomization_of_ind_arg
 	    isrec with_evars elim names (id,lbind) inhyps) gl
     | _        ->
-	let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c)
+	let x = id_of_name_using_hdchar (Global.env()) (typ_of (pf_env gl) sigma c)
 		  Anonymous in
 	let id = fresh_id [] x gl in
 	(* We need the equality name now *)
 	let with_eq = Option.map (fun eq -> (false,eq)) eqname in
 	(* TODO: if ind has predicate parameters, use JMeq instead of eq *)
 	tclTHEN
-	  (letin_tac_gen with_eq (Name id) c None (Option.default allHypsAndConcl cls,false))
+          (* Warning: letin is buggy when c is not of inductive type *)
+	  (letin_tac_gen with_eq (Name id) (sigma,c)
+             (make_pattern_test (pf_env gl) (project gl) (sigma,c))
+             None (Option.default allHypsAndConcl cls,false))
 	  (induction_with_atomization_of_ind_arg
 	     isrec with_evars elim names (id,lbind) inhyps) gl
 
@@ -3079,7 +3147,7 @@ let induct_destruct isrec with_evars (lc,elim,names,cls) gl =
   assert (List.length lc > 0); (* ensured by syntax, but if called inside caml? *)
   if List.length lc = 1 && not (is_functional_induction elim gl) then
     (* standard induction *)
-    onInductionArg
+    onOpenInductionArg
       (fun c -> new_induct_gen isrec with_evars elim names c cls)
       (List.hd lc) gl
   else begin
@@ -3091,6 +3159,8 @@ let induct_destruct isrec with_evars (lc,elim,names,cls) gl =
       str "Example: induction x1 x2 x3 using my_scheme.");
     if cls <> None then
       error "'in' clause not supported here.";
+    let lc = List.map
+      (map_induction_arg (pf_apply finish_evar_resolution gl)) lc in
     if List.length lc = 1 then
       (* Hook to recover standard induction on non-standard induction schemes *)
       (* will be removable when is_functional_induction will be more clever *)
@@ -3098,8 +3168,7 @@ let induct_destruct isrec with_evars (lc,elim,names,cls) gl =
 	(fun (c,lbind) ->
 	  if lbind <> NoBindings then
 	    error "'with' clause not supported here.";
-	  new_induct_gen_l isrec with_evars elim names [c])
-	(List.hd lc) gl
+	  new_induct_gen_l isrec with_evars elim names [c]) (List.hd lc) gl
     else
       let newlc =
 	List.map (fun x ->

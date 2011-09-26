@@ -1264,6 +1264,9 @@ let interp_open_constr_gen kind ist =
 let interp_open_constr ccl =
   interp_open_constr_gen (OfType ccl)
 
+let interp_pure_open_constr ist =
+  interp_gen (OfType None) ist false false false false
+
 let interp_typed_pattern ist env sigma (c,_) =
   let sigma, c =
     interp_gen (OfType None) ist true false false false env sigma c in
@@ -1515,16 +1518,14 @@ let interp_open_constr_with_bindings_loc ist env sigma ((c,_),bl as cb) =
   let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
   sigma, (loc,cb)
 
-let interp_induction_arg ist gl sigma arg =
-  let env = pf_env gl in
+let interp_induction_arg ist gl arg =
+  let env = pf_env gl and sigma = project gl in
   match arg with
   | ElimOnConstr c ->
-      let sigma, c = interp_constr_with_bindings ist env sigma c in
-      sigma, ElimOnConstr c
-  | ElimOnAnonHyp n as x -> sigma, x
+      ElimOnConstr (interp_constr_with_bindings ist env sigma c)
+  | ElimOnAnonHyp n as x -> x
   | ElimOnIdent (loc,id) ->
       try
-	sigma,
         match List.assoc id ist.lfun with
 	| VInteger n ->
 	    ElimOnAnonHyp n
@@ -1532,23 +1533,23 @@ let interp_induction_arg ist gl sigma arg =
 	    if Tactics.is_quantified_hypothesis id' gl
 	    then ElimOnIdent (loc,id')
 	    else
-	      (try ElimOnConstr (constr_of_id env id',NoBindings)
+	      (try ElimOnConstr (sigma,(constr_of_id env id',NoBindings))
 	       with Not_found ->
 		user_err_loc (loc,"",
 		pr_id id ++ strbrk " binds to " ++ pr_id id' ++ strbrk " which is neither a declared or a quantified hypothesis."))
 	| VConstr ([],c) ->
-	    ElimOnConstr (c,NoBindings)
+	    ElimOnConstr (sigma,(c,NoBindings))
 	| _ -> user_err_loc (loc,"",
 	      strbrk "Cannot coerce " ++ pr_id id ++
 	      strbrk " neither to a quantified hypothesis nor to a term.")
       with Not_found ->
 	(* We were in non strict (interactive) mode *)
 	if Tactics.is_quantified_hypothesis id gl then
-          sigma, ElimOnIdent (loc,id)
+          ElimOnIdent (loc,id)
 	else
           let c = (GVar (loc,id),Some (CRef (Ident (loc,id)))) in
           let c = interp_constr ist env sigma c in
-          sigma, ElimOnConstr (c,NoBindings)
+          ElimOnConstr (sigma,(c,NoBindings))
 
 (* Associates variables with values and gives the remaining variables and
    values *)
@@ -2242,7 +2243,14 @@ and interp_atomic ist gl tac =
   | TacGeneralizeDep c -> h_generalize_dep (pf_interp_constr ist gl c)
   | TacLetTac (na,c,clp,b) ->
       let clp = interp_clause ist gl clp in
-      h_let_tac b (interp_fresh_name ist env na) (pf_interp_constr ist gl c) clp
+      if clp = nowhere then
+        (* We try to fully-typechect the term *)
+        h_let_tac b (interp_fresh_name ist env na)
+          (pf_interp_constr ist gl c) clp
+      else
+        (* We try to keep the pattern structure as much as possible *)
+        h_let_pat_tac b (interp_fresh_name ist env na)
+          (interp_pure_open_constr ist env sigma c) clp
 
   (* Automation tactics *)
   | TacTrivial (lems,l) ->
@@ -2267,8 +2275,7 @@ and interp_atomic ist gl tac =
   | TacInductionDestruct (isrec,ev,(l,cls)) ->
       let sigma, l =
         list_fold_map (fun sigma (lc,cbo,(ipato,ipats)) ->
-          let sigma,lc =
-            list_fold_map (interp_induction_arg ist gl) sigma lc in
+          let lc = List.map (interp_induction_arg ist gl) lc in
 	  let sigma,cbo =
             Option.fold_map (interp_constr_with_bindings ist env) sigma cbo in
           (sigma,(lc,cbo,

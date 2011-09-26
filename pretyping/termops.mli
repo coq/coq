@@ -153,17 +153,31 @@ val no_occurrences_in_set : occurrences
 val subst_closed_term_occ_gen :
   occurrences -> int -> constr -> types -> int * types
 
-(** [subst_closed_term_occ_gen_modulo] looks for subterm modulo a
+(** [subst_closed_term_occ_modulo] looks for subterm modulo a
     testing function returning a substitution of type ['a] (or failing
     with NotUnifiable); a function for merging substitution (possibly
     failing with NotUnifiable) and an initial substitution are
     required too *)
 
+type hyp_location_flag = (** To distinguish body and type of local defs *)
+  | InHyp
+  | InHypTypeOnly
+  | InHypValueOnly
+
+type 'a testing_function = {
+  match_fun : constr -> 'a;
+  merge_fun : 'a -> 'a -> 'a;
+  mutable testing_state : 'a;
+  mutable last_found : ((identifier * hyp_location_flag) option * int * constr) option
+}
+
+val make_eq_test : constr -> unit testing_function
+
 exception NotUnifiable
 
-val subst_closed_term_occ_gen_modulo :
-  occurrences -> (constr -> 'a) -> ('a -> 'a -> 'a) -> 'a ->
-  int -> constr -> 'a * int * types
+val subst_closed_term_occ_modulo :
+  occurrences -> 'a testing_function -> (identifier * hyp_location_flag) option
+  -> constr -> types
 
 (** [subst_closed_term_occ occl c d] replaces occurrences of closed [c] at
    positions [occl] by [Rel 1] in [d] (see also Note OCC) *)
@@ -172,17 +186,12 @@ val subst_closed_term_occ : occurrences -> constr -> constr -> constr
 (** [subst_closed_term_occ_decl occl c decl] replaces occurrences of closed [c]
    at positions [occl] by [Rel 1] in [decl] *)
 
-type hyp_location_flag = (** To distinguish body and type of local defs *)
-  | InHyp
-  | InHypTypeOnly
-  | InHypValueOnly
-
 val subst_closed_term_occ_decl :
   occurrences * hyp_location_flag -> constr -> named_declaration ->
       named_declaration
 
 val subst_closed_term_occ_decl_modulo :
-  occurrences * hyp_location_flag -> (constr -> 'a) -> ('a -> 'a -> 'a) -> 'a ->
+  occurrences * hyp_location_flag -> 'a testing_function ->
   named_declaration -> named_declaration
 
 val error_invalid_occurrence : int list -> 'a

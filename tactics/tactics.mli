@@ -271,7 +271,8 @@ val elim :
 
 val simple_induct : quantified_hypothesis -> tactic
 
-val new_induct : evars_flag -> constr with_bindings induction_arg list ->
+val new_induct : evars_flag -> 
+  (evar_map * constr with_bindings) induction_arg list ->
   constr with_bindings option ->
     intro_pattern_expr located option * intro_pattern_expr located option ->
       clause option -> tactic
@@ -282,7 +283,8 @@ val general_case_analysis : evars_flag -> constr with_bindings ->  tactic
 val simplest_case         : constr -> tactic
 
 val simple_destruct          : quantified_hypothesis -> tactic
-val new_destruct : evars_flag -> constr with_bindings induction_arg list ->
+val new_destruct : evars_flag ->
+  (evar_map * constr with_bindings) induction_arg list ->
   constr with_bindings option ->
     intro_pattern_expr located option * intro_pattern_expr located option ->
       clause option -> tactic
@@ -290,7 +292,7 @@ val new_destruct : evars_flag -> constr with_bindings induction_arg list ->
 (** {6 Generic case analysis / induction tactics. } *)
 
 val induction_destruct : rec_flag -> evars_flag ->
-  (constr with_bindings induction_arg list *
+  ((evar_map * constr with_bindings) induction_arg list *
   constr with_bindings option *
   (intro_pattern_expr located option * intro_pattern_expr located option))
   list *
@@ -360,6 +362,8 @@ val assert_as : bool -> intro_pattern_expr located option -> constr -> tactic
 val forward   : tactic option -> intro_pattern_expr located option -> constr -> tactic
 val letin_tac : (bool * intro_pattern_expr located) option -> name ->
   constr -> types option -> clause -> tactic
+val letin_pat_tac : (bool * intro_pattern_expr located) option -> name ->
+  evar_map * constr -> types option -> clause -> tactic
 val assert_tac : name -> types -> tactic
 val assert_by  : name -> types -> tactic -> tactic
 val pose_proof : name -> constr -> tactic
