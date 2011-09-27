@@ -121,9 +121,8 @@ let init_library_roots () =
 (* Initialises the Ocaml toplevel before launching it, so that it can
    find the "include" file in the *source* directory *)
 let init_ocaml_path () =
-  let coqsrc = Coq_config.coqsrc in
   let add_subdir dl =
-    Mltop.add_ml_dir (List.fold_left (/) coqsrc dl)
+    Mltop.add_ml_dir (List.fold_left (/) Envars.coqroot dl)
   in
     Mltop.add_ml_dir (Envars.coqlib ());
     List.iter add_subdir

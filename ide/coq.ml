@@ -16,7 +16,12 @@ let get_version_date () =
     then Coq_config.date
     else "<date not printable>" in
   try
-    let ch = open_in (Coq_config.coqsrc^"/revision") in
+    (* the following makes sense only when running with local layout *)
+    let coqroot = Filename.concat
+      (Filename.dirname Sys.executable_name)
+      Filename.parent_dir_name
+    in
+    let ch = open_in (Filename.concat coqroot "revision") in
     let ver = input_line ch in
     let rev = input_line ch in
     (ver,rev)

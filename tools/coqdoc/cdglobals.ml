@@ -49,21 +49,40 @@ type glob_source_t =
 
 let glob_source = ref DotGlob
 
+(*s Manipulations of paths and path aliases *)
+
+let normalize_path p =
+  (* We use the Unix subsystem to normalize a physical path (relative
+     or absolute) and get rid of symbolic links, relative links (like
+     ./ or ../ in the middle of the path; it's tricky but it
+     works... *)
+  (* Rq: Sys.getcwd () returns paths without '/' at the end *)
+  let orig = Sys.getcwd () in
+  Sys.chdir p;
+  let res = Sys.getcwd () in
+  Sys.chdir orig;
+  res
+
+let normalize_filename f =
+  let basename = Filename.basename f in
+  let dirname = Filename.dirname f in
+  normalize_path dirname, basename
+
 (** A weaker analog of the function in Envars *)
 
 let guess_coqlib () =
   let file = "states/initial.coq" in
-  if Sys.file_exists (Filename.concat Coq_config.coqlib file)
-  then Coq_config.coqlib
-  else
-    let coqbin = Filename.dirname Sys.executable_name in
-    let prefix = Filename.dirname coqbin in
-    let rpath = if Coq_config.local then [] else
-	(if Coq_config.arch = "win32" then ["lib"] else ["lib";"coq"]) in
-    let coqlib = List.fold_left Filename.concat prefix rpath in
-    if Sys.file_exists (Filename.concat coqlib file) then coqlib
-    else
-      Coq_config.coqlib
+  match Coq_config.coqlib with
+    | Some coqlib when Sys.file_exists (Filename.concat coqlib file) ->
+      coqlib
+    | Some _ | None ->
+      let coqbin = normalize_path (Filename.dirname Sys.executable_name) in
+      let prefix = Filename.dirname coqbin in
+      let rpath = if Coq_config.local then [] else
+	  (if Coq_config.arch = "win32" then ["lib"] else ["lib";"coq"]) in
+      let coqlib = List.fold_left Filename.concat prefix rpath in
+      if Sys.file_exists (Filename.concat coqlib file) then coqlib
+      else prefix
 
 let header_trailer = ref true
 let header_file = ref ""

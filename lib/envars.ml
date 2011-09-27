@@ -9,34 +9,40 @@
 (* This file gathers environment variables needed by Coq to run (such
    as coqlib) *)
 
-let coqbin () =
-  if !Flags.boot || Coq_config.local
-  then Filename.concat Coq_config.coqsrc "bin"
-  else System.canonical_path_name (Filename.dirname Sys.executable_name)
+let coqbin =
+  System.canonical_path_name (Filename.dirname Sys.executable_name)
+
+(* The following only makes sense when executables are running from
+   source tree (e.g. during build or in local mode). *)
+let coqroot = Filename.dirname coqbin
 
 (* On win32, we add coqbin to the PATH at launch-time (this used to be
    done in a .bat script). *)
 
 let _ =
   if Coq_config.arch = "win32" then
-    Unix.putenv "PATH" (coqbin() ^ ";" ^ System.getenv_else "PATH" "")
+    Unix.putenv "PATH" (coqbin ^ ";" ^ System.getenv_else "PATH" "")
 
 let reldir instdir testfile oth =
-  let prefix = Filename.dirname (coqbin ()) in
   let rpath = if Coq_config.local then [] else instdir in
-  let out = List.fold_left Filename.concat prefix rpath in
+  let out = List.fold_left Filename.concat coqroot rpath in
   if Sys.file_exists (Filename.concat out testfile) then out else oth ()
 
 let guess_coqlib () =
   let file = "states/initial.coq" in
     reldir (if Coq_config.arch = "win32" then ["lib"] else ["lib";"coq"]) file
-      (fun () -> if Sys.file_exists (Filename.concat Coq_config.coqlib file)
-                 then Coq_config.coqlib
-                 else Util.error "cannot guess a path for Coq libraries; please use -coqlib option")
+      (fun () ->
+        let coqlib = match Coq_config.coqlib with
+          | Some coqlib -> coqlib
+          | None -> coqroot
+        in
+        if Sys.file_exists (Filename.concat coqlib file)
+        then coqlib
+        else Util.error "cannot guess a path for Coq libraries; please use -coqlib option")
 
 let coqlib () =
   if !Flags.coqlib_spec then !Flags.coqlib else
-    (if !Flags.boot then Coq_config.coqsrc else guess_coqlib ())
+    (if !Flags.boot then coqroot else guess_coqlib ())
 
 let docdir () =
   reldir (if Coq_config.arch = "win32" then ["doc"] else ["share";"doc";"coq"]) "html" (fun () -> Coq_config.docdir)

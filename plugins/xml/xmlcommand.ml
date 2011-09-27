@@ -652,7 +652,7 @@ let _ =
        end ;
        Option.iter
 	(fun fn ->
-	  let coqdoc = Filename.concat (Envars.coqbin ()) ("coqdoc" ^ Coq_config.exec_extension) in
+	  let coqdoc = Filename.concat Envars.coqbin ("coqdoc" ^ Coq_config.exec_extension) in
 	  let options = " --html -s --body-only --no-index --latin1 --raw-comments" in
           let command cmd =
            if Sys.command cmd <> 0 then

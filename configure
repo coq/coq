@@ -757,6 +757,7 @@ esac
 case $libdir_spec/$prefix_spec/$local in
     yes/*/*) LIBDIR=$libdir;;
     */yes/*)
+        libdir_spec=yes
         case $ARCH in
           win32) LIBDIR=$prefix ;;
           *)  LIBDIR=$prefix/lib/coq ;;
@@ -764,10 +765,16 @@ case $libdir_spec/$prefix_spec/$local in
     */*/true) LIBDIR=$COQTOP ;;
     *)  printf "Where should I install the Coq library [$libdir_def]? "
         read LIBDIR
+        libdir_spec=yes
 	case $LIBDIR in
 	    "") LIBDIR=$libdir_def;;
 	    *) true;;
 	esac;;
+esac
+
+case $libdir_spec in
+    yes) LIBDIR_OPTION="Some \"$LIBDIR\"";;
+    *) LIBDIR_OPTION="None";;
 esac
 
 case $mandir_spec/$prefix_spec/$local in
@@ -1001,8 +1008,7 @@ cat << END_OF_COQ_CONFIG > $mlconfig_file
 
 let local = $local
 let coqrunbyteflags = "$COQRUNBYTEFLAGS"
-let coqlib = "$LIBDIR"
-let coqsrc = "$COQSRC"
+let coqlib = $LIBDIR_OPTION
 let docdir = "$DOCDIR"
 let ocaml = "$ocamlexec"
 let ocamlc = "$bytecamlc"

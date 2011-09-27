@@ -92,7 +92,6 @@ let flag_dynlink = if hasdynlink then A"-DHasDynlink" else N
 let dep_dynlink = if hasdynlink then N else Sh"-natdynlink no"
 let lablgtkincl = Sh Coq_config.coqideincl
 let local = Coq_config.local
-let coqsrc = Coq_config.coqsrc
 let cflags = S[A"-ccopt";A Coq_config.cflags]
 
 (** Do we want to inspect .ml generated from .ml4 ? *)
@@ -261,10 +260,8 @@ let extra_rules () = begin
        if w32 then cp "config/coq_config.ml" "coq_config.ml" else
        let lines = read_file "config/coq_config.ml" in
        let lines = List.map (fun s -> s^"\n") lines in
-       let srcbuild = Filename.concat coqsrc !_build in
        let line0 = "\n(* Adapted variables for ocamlbuild *)\n" in
-       let line1 = "let coqsrc = \""^srcbuild^"\"\n" in
-       let line2 = "let coqlib = \""^srcbuild^"\"\n" in
+       let line2 = "let coqlib = None\n" in
        (* TODO : line3 isn't completely accurate with respect to ./configure:
 	  the case of -local -coqrunbyteflags foo isn't supported *)
        let line3 =

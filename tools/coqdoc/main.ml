@@ -106,25 +106,6 @@ let check_if_file_exists f =
   end
 
 
-(*s Manipulations of paths and path aliases *)
-
-let normalize_path p =
-  (* We use the Unix subsystem to normalize a physical path (relative
-     or absolute) and get rid of symbolic links, relative links (like
-     ./ or ../ in the middle of the path; it's tricky but it
-     works... *)
-  (* Rq: Sys.getcwd () returns paths without '/' at the end *)
-  let orig = Sys.getcwd () in
-  Sys.chdir p;
-  let res = Sys.getcwd () in
-  Sys.chdir orig;
-  res
-
-let normalize_filename f =
-  let basename = Filename.basename f in
-  let dirname = Filename.dirname f in
-  normalize_path dirname, basename
-
 (* [paths] maps a physical path to a name *)
 let paths = ref []
 
@@ -354,7 +335,11 @@ let parse () =
     | ("--coqlib" | "-coqlib") :: [] ->
 	usage ()
     | ("--boot" | "-boot") :: rem ->
-	Cdglobals.coqlib_path := Coq_config.coqsrc; parse_rec rem
+	Cdglobals.coqlib_path := normalize_path (
+          Filename.concat
+            (Filename.dirname Sys.executable_name)
+            Filename.parent_dir_name
+        ); parse_rec rem
     | ("--coqlib_path" | "-coqlib_path") :: d :: rem ->
 	Cdglobals.coqlib_path := d; parse_rec rem
     | ("--coqlib_path" | "-coqlib_path") :: [] ->

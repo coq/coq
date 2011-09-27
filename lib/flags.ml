@@ -115,9 +115,21 @@ let is_standard_doc_url url =
   url = Coq_config.wwwrefman ||
   url = wwwcompatprefix ^ String.sub Coq_config.wwwrefman n (n'-n)
 
+(* same as in System, but copied here because of dependencies *)
+let canonical_path_name p =
+  let current = Sys.getcwd () in
+  Sys.chdir p;
+  let result = Sys.getcwd () in
+  Sys.chdir current;
+  result
+
 (* Options for changing coqlib *)
 let coqlib_spec = ref false
-let coqlib = ref Coq_config.coqlib
+let coqlib = ref (
+  (* same as Envars.coqroot, but copied here because of dependencies *)
+  Filename.dirname
+    (canonical_path_name (Filename.dirname Sys.executable_name))
+)
 
 (* Options for changing camlbin (used by coqmktop) *)
 let camlbin_spec = ref false

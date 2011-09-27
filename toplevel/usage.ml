@@ -92,7 +92,6 @@ let print_usage_coqc () =
 let print_config () =
   if Coq_config.local then Printf.printf "LOCAL=1\n" else Printf.printf "LOCAL=0\n";
   Printf.printf "COQLIB=%s/\n" (Envars.coqlib ());
-  (*Printf.printf "COQSRC=%s/\n" Coq_config.coqsrc;*)
   Printf.printf "DOCDIR=%s/\n" (Envars.docdir ());
   Printf.printf "OCAMLDEP=%s\n" Coq_config.ocamldep;
   Printf.printf "OCAMLC=%s\n" Coq_config.ocamlc;
