@@ -103,5 +103,5 @@ val dump_universes :
 
 (** {6 Hash-consing } *)
 
-val hcons1_univlevel : universe_level -> universe_level
-val hcons1_univ : universe -> universe
+val hcons_univlevel : universe_level -> universe_level
+val hcons_univ : universe -> universe

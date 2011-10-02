@@ -370,35 +370,61 @@ module Hmod = Hashcons.Make(
     let hash = Hashtbl.hash
   end)
 
-
-(** For [constant] and [mutual_inductive], we hash-cons only the user part.
-    If two constants have equal user parts (according to =), then their
-    canonical parts are also equal (invariant of the system), and then
-    the hash-consed versions of these constants will be equal according
-    to ==. *)
-
-module Hcn = Hashcons.Make(
-  struct 
-    type t = kernel_name*kernel_name
+module Hkn = Hashcons.Make(
+  struct
+    type t = kernel_name
     type u = (module_path -> module_path)
 	* (dir_path -> dir_path) * (string -> string)
-    let hash_sub (hmod,hdir,hstr) ((md,dir,l),(mde,dire,le)) = 
-      ((hmod md, hdir dir, hstr l),(hmod mde, hdir dire, hstr le))
-    let equal ((mod1,dir1,l1),_) ((mod2,dir2,l2),_) =
+    let hash_sub (hmod,hdir,hstr) (md,dir,l) =
+      (hmod md, hdir dir, hstr l)
+    let equal (mod1,dir1,l1) (mod2,dir2,l2) =
       mod1 == mod2 && dir1 == dir2 && l1 == l2
-    let hash x = Hashtbl.hash (fst x)
+    let hash = Hashtbl.hash
   end)
 
-let hcons_names =
-  let hstring = Hashcons.simple_hcons Hashcons.Hstring.f () in
-  let hident = hstring in
-  let hname = Hashcons.simple_hcons Hname.f hident in
-  let hdir = Hashcons.simple_hcons Hdir.f hident in
-  let huniqid = Hashcons.simple_hcons Huniqid.f (hident,hdir) in
-  let hmod = Hashcons.simple_hcons Hmod.f (hdir,huniqid,hstring) in
-  let hmind = Hashcons.simple_hcons Hcn.f (hmod,hdir,hstring) in
-  let hcn = Hashcons.simple_hcons Hcn.f (hmod,hdir,hstring) in
-  (hcn,hmind,hdir,hname,hident)
+(** For [constant] and [mutual_inductive], we discriminate only on
+    the user part : having the same user part implies having the
+    same canonical part (invariant of the system). *)
+
+module Hcn = Hashcons.Make(
+  struct
+    type t = kernel_name*kernel_name
+    type u = kernel_name -> kernel_name
+    let hash_sub hkn (user,can) = (hkn user, hkn can)
+    let equal (user1,_) (user2,_) = user1 == user2
+    let hash (user,_) = Hashtbl.hash user
+  end)
+
+module Hind = Hashcons.Make(
+  struct
+    type t = inductive
+    type u = mutual_inductive -> mutual_inductive
+    let hash_sub hmind (mind, i) = (hmind mind, i)
+    let equal (mind1,i1) (mind2,i2) = mind1 == mind2 && i1 = i2
+    let hash = Hashtbl.hash
+  end)
+
+module Hconstruct = Hashcons.Make(
+  struct
+    type t = constructor
+    type u = inductive -> inductive
+    let hash_sub hind (ind, j) = (hind ind, j)
+    let equal (ind1,j1) (ind2,j2) = ind1 == ind2 && j1 = j2
+    let hash = Hashtbl.hash
+  end)
+
+let hcons_string = Hashcons.simple_hcons Hashcons.Hstring.f ()
+let hcons_ident = hcons_string
+let hcons_name = Hashcons.simple_hcons Hname.f hcons_ident
+let hcons_dirpath = Hashcons.simple_hcons Hdir.f hcons_ident
+let hcons_uid = Hashcons.simple_hcons Huniqid.f (hcons_ident,hcons_dirpath)
+let hcons_mp =
+  Hashcons.simple_hcons Hmod.f (hcons_dirpath,hcons_uid,hcons_string)
+let hcons_kn = Hashcons.simple_hcons Hkn.f (hcons_mp,hcons_dirpath,hcons_string)
+let hcons_con = Hashcons.simple_hcons Hcn.f hcons_kn
+let hcons_mind = Hashcons.simple_hcons Hcn.f hcons_kn
+let hcons_ind = Hashcons.simple_hcons Hind.f hcons_mind
+let hcons_construct = Hashcons.simple_hcons Hconstruct.f hcons_ind
 
 
 (*******)

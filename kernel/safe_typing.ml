@@ -255,19 +255,19 @@ type global_declaration =
 
 let hcons_const_type = function
   | NonPolymorphicType t ->
-      NonPolymorphicType (hcons1_constr t)
+      NonPolymorphicType (hcons_constr t)
   | PolymorphicArity (ctx,s) ->
-      PolymorphicArity (map_rel_context hcons1_constr ctx,s)
+      PolymorphicArity (map_rel_context hcons_constr ctx,s)
 
 let hcons_const_body = function
   | Undef inl -> Undef inl
   | Def l_constr ->
     let constr = Declarations.force l_constr in
-    Def (Declarations.from_val (hcons1_constr constr))
+    Def (Declarations.from_val (hcons_constr constr))
   | OpaqueDef lc ->
     if lazy_constr_is_val lc then
       let constr = Declarations.force_opaque lc in
-      OpaqueDef (Declarations.opaque_from_val (hcons1_constr constr))
+      OpaqueDef (Declarations.opaque_from_val (hcons_constr constr))
     else OpaqueDef lc
 
 let hcons_constant_body cb =

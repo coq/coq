@@ -626,8 +626,8 @@ val hash_constr : constr -> int
 
 (*********************************************************************)
 
-val hcons1_constr : constr -> constr
-val hcons1_types : types -> types
+val hcons_constr : constr -> constr
+val hcons_types : types -> types
 
 (**************************************)
 

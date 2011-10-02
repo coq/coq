@@ -1213,10 +1213,11 @@ let rec isArity c =
 *)
 
 let array_eqeq t1 t2 =
-  Array.length t1 = Array.length t2 &&
-  let rec aux i =
-    (i = Array.length t1) || (t1.(i) == t2.(i) && aux (i + 1))
-  in aux 0
+  t1 == t2 ||
+  (Array.length t1 = Array.length t2 &&
+   let rec aux i =
+     (i = Array.length t1) || (t1.(i) == t2.(i) && aux (i + 1))
+   in aux 0)
 
 let equals_constr t1 t2 =
   match t1, t2 with
@@ -1249,6 +1250,9 @@ let equals_constr t1 t2 =
       & array_eqeq bl1 bl2
     | _ -> false
 
+(** Note that the following Make has the side effect of creating
+    once and for all the table we'll use for hash-consing all constr *)
+
 module H = Hashtbl_alt.Make(struct type t = constr let equals = equals_constr end)
 
 open Hashtbl_alt.Combine
@@ -1256,7 +1260,9 @@ open Hashtbl_alt.Combine
 (* [hcons_term hash_consing_functions constr] computes an hash-consed
    representation for [constr] using [hash_consing_functions] on
    leaves. *)
-let hcons_term (sh_sort,sh_con,sh_kn,sh_na,sh_id) =
+let hcons_term (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
+
+  (* Note : we hash-cons constr arrays *in place* *)
 
   let rec hash_term_array t =
     let accu = ref 0 in
@@ -1299,16 +1305,16 @@ let hcons_term (sh_sort,sh_con,sh_kn,sh_na,sh_id) =
 	(Evar (e, l), combinesmall 8 (combine (Hashtbl.hash e) hl))
       | Const c ->
 	(Const (sh_con c), combinesmall 9 (Hashtbl.hash c))
-      | Ind (kn,i) ->
-	(Ind (sh_kn kn, i), combinesmall 9 (combine (Hashtbl.hash kn) i))
-      | Construct ((kn,i),j) ->
-	(Construct ((sh_kn kn, i), j), combinesmall 10 (combine3 (Hashtbl.hash kn) i j))
-      | Case (ci,p,c,bl) -> (* TO DO: extract ind_kn *)
+      | Ind ((kn,i) as ind) ->
+	(Ind (sh_ind ind), combinesmall 9 (combine (Hashtbl.hash kn) i))
+      | Construct (((kn,i),j) as c)->
+	(Construct (sh_construct c), combinesmall 10 (combine3 (Hashtbl.hash kn) i j))
+      | Case (ci,p,c,bl) ->
 	let p, hp = sh_rec p
 	and c, hc = sh_rec c in
 	let bl, hbl = hash_term_array  bl in
 	let hbl = combine (combine hc hp) hbl in
-	(Case (ci, p, c, bl), combinesmall 11 hbl)
+	(Case (sh_ci ci, p, c, bl), combinesmall 11 hbl)
       | Fix (ln,(lna,tl,bl)) ->
 	let bl, hbl = hash_term_array  bl in
 	let tl, htl = hash_term_array  tl in
@@ -1337,6 +1343,8 @@ let hcons_term (sh_sort,sh_con,sh_kn,sh_na,sh_id) =
   in
   fun t -> fst (sh_rec t)
 
+(* Exported hashing fonction on constr, used mainly in plugins.
+   Appears to have slight differences from [snd (hash_term t)] above ? *)
 
 let rec hash_constr t =
   match kind_of_term t with
@@ -1385,14 +1393,34 @@ module Hsorts =
       let hash = Hashtbl.hash
     end)
 
-let hsort = Hsorts.f
+module Hcaseinfo =
+  Hashcons.Make(
+    struct
+      type t = case_info
+      type u = inductive -> inductive
+      let hash_sub hind ci = { ci with ci_ind = hind ci.ci_ind }
+      let equal ci ci' =
+	ci.ci_ind == ci'.ci_ind &&
+	ci.ci_npar = ci'.ci_npar &&
+	ci.ci_cstr_ndecls = ci'.ci_cstr_ndecls && (* we use (=) on purpose *)
+	ci.ci_pp_info = ci'.ci_pp_info  (* we use (=) on purpose *)
+      let hash = Hashtbl.hash
+    end)
 
-let hcons1_constr =
-  let (hcon,hkn,hdir,hname,hident) = hcons_names in
-  let hsortscci = Hashcons.simple_hcons hsort hcons1_univ in
-  hcons_term (hsortscci,hcon,hkn,hname,hident)
+let hcons_sorts = Hashcons.simple_hcons Hsorts.f hcons_univ
+let hcons_caseinfo = Hashcons.simple_hcons Hcaseinfo.f hcons_ind
 
-let hcons1_types = hcons1_constr
+let hcons_constr =
+  hcons_term
+    (hcons_sorts,
+     hcons_caseinfo,
+     hcons_construct,
+     hcons_ind,
+     hcons_con,
+     hcons_name,
+     hcons_ident)
+
+let hcons_types = hcons_constr
 
 (*******)
 (* Type of abstract machine values *)

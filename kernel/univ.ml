@@ -858,9 +858,6 @@ module Huniv =
       let hash = Hashtbl.hash
     end)
 
-let hcons1_univlevel =
-  let _,_,hdir,_,_ = Names.hcons_names in
-  Hashcons.simple_hcons Hunivlevel.f hdir
-
-let hcons1_univ = Hashcons.simple_hcons Huniv.f hcons1_univlevel
+let hcons_univlevel = Hashcons.simple_hcons Hunivlevel.f Names.hcons_dirpath
+let hcons_univ = Hashcons.simple_hcons Huniv.f hcons_univlevel
 
