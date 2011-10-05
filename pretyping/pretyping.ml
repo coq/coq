@@ -559,10 +559,11 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		     let fj = pretype (mk_tycon fty) env_f evdref lvar d in
 		     let f = it_mkLambda_or_LetIn fj.uj_val fsign in
 		     let v =
-		       let mis,_ = dest_ind_family indf in
-		       let ci = make_case_info env mis LetStyle in
-			 mkCase (ci, p, cj.uj_val,[|f|]) in
-		       { uj_val = v; uj_type = substl (realargs@[cj.uj_val]) ccl }
+		       let ind,_ = dest_ind_family indf in
+		       let ci = make_case_info env ind LetStyle in
+		       Typing.check_allowed_sort env !evdref ind cj.uj_val p;
+		       mkCase (ci, p, cj.uj_val,[|f|]) in
+		     { uj_val = v; uj_type = substl (realargs@[cj.uj_val]) ccl }
 
 		 | None ->
 		     let tycon = lift_tycon cs.cs_nargs tycon in
@@ -578,9 +579,10 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		     let ccl = refresh_universes ccl in
 		     let p = it_mkLambda_or_LetIn (lift (nar+1) ccl) psign in
 		     let v =
-		       let mis,_ = dest_ind_family indf in
-		       let ci = make_case_info env mis LetStyle in
-			 mkCase (ci, p, cj.uj_val,[|f|])
+		       let ind,_ = dest_ind_family indf in
+		       let ci = make_case_info env ind LetStyle in
+		       Typing.check_allowed_sort env !evdref ind cj.uj_val p;
+		       mkCase (ci, p, cj.uj_val,[|f|])
 		     in { uj_val = v; uj_type = ccl })
 
     | GIf (loc,c,(na,po),b1,b2) ->
@@ -611,10 +613,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 		let ccl = nf_evar !evdref pj.utj_val in
 		let pred = it_mkLambda_or_LetIn ccl psign in
 		let typ = lift (- nar) (beta_applist (pred,[cj.uj_val])) in
-		let jtyp = inh_conv_coerce_to_tycon loc env evdref {uj_val = pred;
-								     uj_type = typ} tycon
-		in
-		  jtyp.uj_val, jtyp.uj_type
+	        pred, typ
 	    | None ->
 		let p = match tycon with
 		  | Some (None, ty) -> ty
@@ -644,9 +643,11 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	  let b1 = f cstrs.(0) b1 in
 	  let b2 = f cstrs.(1) b2 in
 	  let v =
-	    let mis,_ = dest_ind_family indf in
-	    let ci = make_case_info env mis IfStyle in
-	      mkCase (ci, pred, cj.uj_val, [|b1;b2|])
+	    let ind,_ = dest_ind_family indf in
+	    let ci = make_case_info env ind IfStyle in
+	    let pred = nf_evar !evdref pred in
+	    Typing.check_allowed_sort env !evdref ind cj.uj_val pred;
+	    mkCase (ci, pred, cj.uj_val, [|b1;b2|])
 	  in
 	    { uj_val = v; uj_type = p }
 

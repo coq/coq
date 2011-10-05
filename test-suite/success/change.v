@@ -30,3 +30,11 @@ change 3 at 1 with (1+2) in H |- *.
 change 3 at 1 with (1+2) in H, H|-.
 change 3 in |- * at 1.
  *)
+
+(* Test that pretyping checks allowed elimination sorts *)
+
+Goal True.
+Fail change True with (let (x,a) := ex_intro _ True (eq_refl True) in x).
+Fail change True with
+        match ex_intro _ True (eq_refl True) with ex_intro x _ => x end.
+Abort.

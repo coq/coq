@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Names
 open Term
 open Environ
 open Evd
@@ -27,3 +28,8 @@ val meta_type : evar_map -> metavariable -> types
 
 (** Solve existential variables using typing *)
 val solve_evars : env -> evar_map -> constr -> constr
+
+(** Raise an error message if incorrect elimination for this inductive *)
+(** (first constr is term to match, second is return predicate) *)
+val check_allowed_sort : env -> evar_map -> inductive -> constr -> constr ->
+  unit

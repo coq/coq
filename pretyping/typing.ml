@@ -68,6 +68,16 @@ let e_judge_of_case env evdref ci pj cj lfj =
   { uj_val  = mkCase (ci, pj.uj_val, cj.uj_val, Array.map j_val lfj);
     uj_type = rslty }
 
+let check_allowed_sort env sigma ind c p =
+  let pj = Retyping.get_judgment_of env sigma p in
+  let ksort = family_of_sort (sort_of_arity env sigma pj.uj_type) in
+  let specif = Global.lookup_inductive ind in
+  let sorts = elim_sorts specif in
+  if not (List.exists ((=) ksort) sorts) then
+    let s = inductive_sort_family (snd specif) in
+    error_elim_arity env ind sorts c pj
+      (Some(ksort,s,error_elim_explain ksort s))
+
 let e_judge_of_cast env evdref cj k tj =
   let expected_type = tj.utj_val in
   if not (Evarconv.e_cumul env evdref cj.uj_type expected_type) then
@@ -218,4 +228,3 @@ let solve_evars env evd c =
   let c = (execute env evdref c).uj_val in
   (* side-effect on evdref *)
   nf_evar !evdref c
-  

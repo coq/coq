@@ -97,3 +97,4 @@ val error_ill_formed_rec_body :
 val error_ill_typed_rec_body  :
   env -> int -> name array -> unsafe_judgment array -> types array -> 'a
 
+val error_elim_explain : sorts_family -> sorts_family -> arity_error

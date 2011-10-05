@@ -233,12 +233,6 @@ let type_of_constructors ind (mib,mip) =
 
 (************************************************************************)
 
-let error_elim_expln kp ki =
-  match kp,ki with
-  | (InType | InSet), InProp -> NonInformativeToInformative
-  | InType, InSet -> StrongEliminationOnNonSmallType (* if Set impredicative *)
-  | _ -> WrongArity
-
 (* Type of case predicates *)
 
 let local_rels ctxt =
@@ -290,7 +284,7 @@ exception LocalArity of (sorts_family * sorts_family * arity_error) option
 let check_allowed_sort ksort specif =
   if not (List.exists ((=) ksort) (elim_sorts specif)) then
     let s = inductive_sort_family (snd specif) in
-    raise (LocalArity (Some(ksort,s,error_elim_expln ksort s)))
+    raise (LocalArity (Some(ksort,s,error_elim_explain ksort s)))
 
 let is_correct_arity env c pj ind specif params =
   let arsign,_ = get_instantiated_arity specif params in

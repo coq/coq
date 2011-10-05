@@ -109,4 +109,9 @@ let error_ill_formed_rec_body env why lna i fixenv vdefj =
 let error_ill_typed_rec_body env i lna vdefj vargs =
   raise (TypeError (env, IllTypedRecBody (i,lna,vdefj,vargs)))
 
+let error_elim_explain kp ki =
+  match kp,ki with
+  | (InType | InSet), InProp -> NonInformativeToInformative
+  | InType, InSet -> StrongEliminationOnNonSmallType (* if Set impredicative *)
+  | _ -> WrongArity
 

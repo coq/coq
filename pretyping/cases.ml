@@ -947,7 +947,7 @@ let specialize_predicate newtomatchs (names,(depna,_)) arsign cs tms ccl =
   snd (List.fold_left (expand_arg tms) (1,ccl''') newtomatchs)
 
 let find_predicate loc env evdref p current (IndType (indf,realargs)) dep tms =
-  let pred= abstract_predicate env !evdref indf current dep tms p in
+  let pred = abstract_predicate env !evdref indf current dep tms p in
   (pred, whd_betaiota !evdref
            (applist (pred, realargs@[current])))
 
@@ -1169,7 +1169,9 @@ and match_current pb tomatch =
 	    find_predicate pb.caseloc pb.env pb.evdref
 	      pb.pred current indt (names,dep) pb.tomatch in
 	  let ci = make_case_info pb.env mind pb.casestyle in
-	  let case = mkCase (ci,nf_betaiota Evd.empty pred,current,brvals) in
+	  let pred = nf_betaiota !(pb.evdref) pred in
+	  let case = mkCase (ci,pred,current,brvals) in
+	  Typing.check_allowed_sort pb.env !(pb.evdref) mind current pred;
 	  let inst = List.map mkRel deps in
 	  { uj_val = applist (case, inst);
 	    uj_type = substl inst typ }

@@ -770,7 +770,7 @@ let splay_arity env sigma c =
     | Sort s -> l,s
     | _ -> invalid_arg "splay_arity"
 
-let sort_of_arity env c = snd (splay_arity env Evd.empty c)
+let sort_of_arity env sigma c = snd (splay_arity env sigma c)
 
 let splay_prod_n env sigma n =
   let rec decrec env m ln c = if m = 0 then (ln,c) else
