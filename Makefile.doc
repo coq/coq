@@ -107,7 +107,7 @@ doc/refman/Reference-Manual.dvi: $(REFMANFILES) doc/refman/Reference-Manual.tex
 	$(LATEX) -interaction=batchmode Reference-Manual > /dev/null;\
 	../tools/show_latex_messages -no-overfull Reference-Manual.log)
 
-doc/refman/Reference-Manual.pdf: $(REFMANFILES) doc/refman/Reference-Manual.tex
+doc/refman/Reference-Manual.pdf: doc/refman/Reference-Manual.dvi
 	(cd doc/refman;\
 	$(PDFLATEX) -interaction=batchmode Reference-Manual.tex;\
 	../tools/show_latex_messages -no-overfull Reference-Manual.log)
