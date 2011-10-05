@@ -208,17 +208,21 @@ Local Open Scope list_scope.
 
 (** A compact representation of non-dependent arities, with the codomain singled-out. *)
 
-Fixpoint arrows (l : list Type) (r : Type) : Type :=
+(* Note, we do not use [list Type] because it imposes unnecessary universe constraints *)
+Inductive Tlist : Type := Tnil : Tlist | Tcons : Type -> Tlist -> Tlist.
+Local Infix "::" := Tcons.
+
+Fixpoint arrows (l : Tlist) (r : Type) : Type :=
   match l with
-    | nil => r
+    | Tnil => r
     | A :: l' => A -> arrows l' r
   end.
 
 (** We can define abbreviations for operation and relation types based on [arrows]. *)
 
-Definition unary_operation A := arrows (A::nil) A.
-Definition binary_operation A := arrows (A::A::nil) A.
-Definition ternary_operation A := arrows (A::A::A::nil) A.
+Definition unary_operation A := arrows (A::Tnil) A.
+Definition binary_operation A := arrows (A::A::Tnil) A.
+Definition ternary_operation A := arrows (A::A::A::Tnil) A.
 
 (** We define n-ary [predicate]s as functions into [Prop]. *)
 
@@ -226,23 +230,23 @@ Notation predicate l := (arrows l Prop).
 
 (** Unary predicates, or sets. *)
 
-Definition unary_predicate A := predicate (A::nil).
+Definition unary_predicate A := predicate (A::Tnil).
 
 (** Homogeneous binary relations, equivalent to [relation A]. *)
 
-Definition binary_relation A := predicate (A::A::nil).
+Definition binary_relation A := predicate (A::A::Tnil).
 
 (** We can close a predicate by universal or existential quantification. *)
 
-Fixpoint predicate_all (l : list Type) : predicate l -> Prop :=
+Fixpoint predicate_all (l : Tlist) : predicate l -> Prop :=
   match l with
-    | nil => fun f => f
+    | Tnil => fun f => f
     | A :: tl => fun f => forall x : A, predicate_all tl (f x)
   end.
 
-Fixpoint predicate_exists (l : list Type) : predicate l -> Prop :=
+Fixpoint predicate_exists (l : Tlist) : predicate l -> Prop :=
   match l with
-    | nil => fun f => f
+    | Tnil => fun f => f
     | A :: tl => fun f => exists x : A, predicate_exists tl (f x)
   end.
 
@@ -251,30 +255,30 @@ Fixpoint predicate_exists (l : list Type) : predicate l -> Prop :=
    For an operator on [Prop] this lifts the operator to a binary operation. *)
 
 Fixpoint pointwise_extension {T : Type} (op : binary_operation T)
-  (l : list Type) : binary_operation (arrows l T) :=
+  (l : Tlist) : binary_operation (arrows l T) :=
   match l with
-    | nil => fun R R' => op R R'
+    | Tnil => fun R R' => op R R'
     | A :: tl => fun R R' =>
       fun x => pointwise_extension op tl (R x) (R' x)
   end.
 
 (** Pointwise lifting, equivalent to doing [pointwise_extension] and closing using [predicate_all]. *)
 
-Fixpoint pointwise_lifting (op : binary_relation Prop)  (l : list Type) : binary_relation (predicate l) :=
+Fixpoint pointwise_lifting (op : binary_relation Prop)  (l : Tlist) : binary_relation (predicate l) :=
   match l with
-    | nil => fun R R' => op R R'
+    | Tnil => fun R R' => op R R'
     | A :: tl => fun R R' =>
       forall x, pointwise_lifting op tl (R x) (R' x)
   end.
 
 (** The n-ary equivalence relation, defined by lifting the 0-ary [iff] relation. *)
 
-Definition predicate_equivalence {l : list Type} : binary_relation (predicate l) :=
+Definition predicate_equivalence {l : Tlist} : binary_relation (predicate l) :=
   pointwise_lifting iff l.
 
 (** The n-ary implication relation, defined by lifting the 0-ary [impl] relation. *)
 
-Definition predicate_implication {l : list Type} :=
+Definition predicate_implication {l : Tlist} :=
   pointwise_lifting impl l.
 
 (** Notations for pointwise equivalence and implication of predicates. *)
@@ -295,15 +299,15 @@ Infix "\∙/" := predicate_union (at level 85, right associativity) : predicate_
 
 (** The always [True] and always [False] predicates. *)
 
-Fixpoint true_predicate {l : list Type} : predicate l :=
+Fixpoint true_predicate {l : Tlist} : predicate l :=
   match l with
-    | nil => True
+    | Tnil => True
     | A :: tl => fun _ => @true_predicate tl
   end.
 
-Fixpoint false_predicate {l : list Type} : predicate l :=
+Fixpoint false_predicate {l : Tlist} : predicate l :=
   match l with
-    | nil => False
+    | Tnil => False
     | A :: tl => fun _ => @false_predicate tl
   end.
 
@@ -342,18 +346,18 @@ Program Instance predicate_implication_preorder :
    from the general ones. *)
 
 Definition relation_equivalence {A : Type} : relation (relation A) :=
-  @predicate_equivalence (_::_::nil).
+  @predicate_equivalence (_::_::Tnil).
 
 Class subrelation {A:Type} (R R' : relation A) : Prop :=
-  is_subrelation : @predicate_implication (A::A::nil) R R'.
+  is_subrelation : @predicate_implication (A::A::Tnil) R R'.
 
 Implicit Arguments subrelation [[A]].
 
 Definition relation_conjunction {A} (R : relation A) (R' : relation A) : relation A :=
-  @predicate_intersection (A::A::nil) R R'.
+  @predicate_intersection (A::A::Tnil) R R'.
 
 Definition relation_disjunction {A} (R : relation A) (R' : relation A) : relation A :=
-  @predicate_union (A::A::nil) R R'.
+  @predicate_union (A::A::Tnil) R R'.
 
 (** Relation equivalence is an equivalence, and subrelation defines a partial order. *)
 
@@ -361,10 +365,10 @@ Set Automatic Introduction.
 
 Instance relation_equivalence_equivalence (A : Type) :
   Equivalence (@relation_equivalence A).
-Proof. exact (@predicate_equivalence_equivalence (A::A::nil)). Qed.
+Proof. exact (@predicate_equivalence_equivalence (A::A::Tnil)). Qed.
 
 Instance relation_implication_preorder A : PreOrder (@subrelation A).
-Proof. exact (@predicate_implication_preorder (A::A::nil)). Qed.
+Proof. exact (@predicate_implication_preorder (A::A::Tnil)). Qed.
 
 (** *** Partial Order.
    A partial order is a preorder which is additionally antisymmetric.
