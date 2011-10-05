@@ -235,9 +235,18 @@ let typecheck_inductive env mie =
   let arities = Array.of_list arity_list in
   let param_ccls = List.fold_left (fun l (_,b,p) ->
     if b = None then
-      let _,c = dest_prod_assum env p in
-      let u = match kind_of_term c with Sort (Type u) -> Some u | _ -> None in
-      u::l
+      (* Parameter contributes to polymorphism only if explicit Type *)
+      let c = strip_prod_assum p in
+      (* Add Type levels to the ordered list of parameters contributing to *)
+      (* polymorphism unless there is aliasing (i.e. non distinct levels) *)
+      match kind_of_term c with
+      | Sort (Type u) ->
+          if List.mem (Some u) l then
+            None :: List.map (function Some v when u = v -> None | x -> x) l
+          else
+            Some u :: l
+      | _ ->
+          None :: l
     else
       l) [] params in
 
