@@ -36,42 +36,6 @@ Set Implicit Arguments.
 
 Definition is_inverse A B f g := (forall a:A, g (f a) = a) /\ (forall b:B, f (g b) = b).
 
-Definition iscontr (X:Type) := {x:X| forall y, x=y}.
-Definition hfiber X Y (f:X -> Y) (y:Y) := {x:X| f x=y}.                                    
-Definition isweq X Y (f:X -> Y) := forall y, iscontr (hfiber f y).                                                          
-
-Goal forall X Y (f:X->Y), isweq f -> {g|is_inverse f g}.
-Proof.
-  intros * Hweq.
-  set (g:=fun y => proj1_sig (proj1_sig (Hweq y))).
-  exists g. split.
-  - intro x. unfold g. destruct (Hweq (f x)) as ((x0,Hx0),Hxy). simpl.
-    set (fiber0 := exist (fun x0 => f x0 = f x) x0 Hx0) in *. 
-    set (fiber := exist (fun x0 => f x0 = f x) x eq_refl). 
-    change (proj1_sig fiber0 = proj1_sig fiber).
-    specialize Hxy with fiber.
-    destruct Hxy.
-    reflexivity.
-  - intro y.
-    unfold g.
-    destruct (Hweq y) as ((x,Hxy),Hyuniq). simpl. assumption.
-Qed.
-
-Goal forall X Y (f:X->Y), {g|is_inverse f g} -> isweq f.
-Proof.
-  destruct 1 as (g,(Hgf,Hfg)).
-  intro y.
-  set (fiber := exist (fun x => f x = y) (g y) (Hfg y)).
-  exists fiber.
-  destruct y0 as (y0,Hfy0).
-  unfold fiber.
-  rewrite <- Hfy0 in *.
-  assert (forall y, f_equal f (Hgf y) = Hfg (f y)). admit.
-  rewrite <- H.
-  rewrite Hgf.
-  reflexivity.
-Qed.
-
 (** The diagonal over A and the one-one correspondence with A *)
 
 Record Delta A := { pi1:A; pi2:A; eq:pi1=pi2 }.
