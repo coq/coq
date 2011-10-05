@@ -1704,18 +1704,18 @@ let default_matching_flags sigma = {
 let make_pattern_test env sigma0 (sigma,c) =
   let flags = default_matching_flags sigma0 in
   let matching_fun t =
-    try ignore (w_unify env Reduction.CONV ~flags c t sigma); Some t
+    try let sigma = w_unify env Reduction.CONV ~flags c t sigma in Some(sigma,t)
     with _ -> raise NotUnifiable in
   let merge_fun c1 c2 =
     match c1, c2 with
-    | Some c1, Some c2 when not (is_fconv Reduction.CONV env sigma0 c1 c2) ->
+    | Some (_,c1), Some (_,c2) when not (is_fconv Reduction.CONV env sigma0 c1 c2) ->
         raise NotUnifiable
     | _ -> c1 in
   { match_fun = matching_fun; merge_fun = merge_fun; 
     testing_state = None; last_found = None },
   (fun test -> match test.testing_state with
    | None -> finish_evar_resolution env sigma0 (sigma,c)
-   | Some c -> c)
+   | Some (sigma,_) -> nf_evar sigma c)
 
 let letin_abstract id c (test,out) (occs,check_occs) gl =
   let env = pf_env gl in
