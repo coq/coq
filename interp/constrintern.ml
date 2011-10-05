@@ -1204,7 +1204,7 @@ let interp_context_evars isevars env params =
 	  (push_rel d env, d::params)
       | LocalRawAssum (nal,t) ->
 	  let t = interp_type_evars isevars env t in
-	  let ctx = list_map_i (fun i (_,na) -> (na,None,lift i t)) 0 nal in
+	  let ctx = list_map_i (fun i (_,na) -> (na,None,Termops.refresh_universes (lift i t))) 0 nal in
 	  let ctx = List.rev ctx in
 	  (push_rel_context ctx env, ctx@params)
       | LocalRawDef ((_,na),c) ->
