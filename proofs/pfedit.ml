@@ -167,7 +167,7 @@ let build_constant_by_tactic id sign typ tac =
 
 let build_by_tactic env typ tac =
   let id = id_of_string ("temporary_proof"^string_of_int (next())) in
-  let sign = Decls.clear_proofs (named_context env) in
+  let sign = val_of_named_context (named_context env) in
   (build_constant_by_tactic id sign typ tac).const_entry_body
 
 (**********************************************************************)

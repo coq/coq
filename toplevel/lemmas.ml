@@ -252,8 +252,7 @@ let start_hook = ref ignore
 let set_start_hook = (:=) start_hook
 
 let start_proof id kind c ?init_tac ?(compute_guard=[]) hook =
-  let sign = Global.named_context () in
-  let sign = clear_proofs sign in
+  let sign = initialize_named_context_for_proof () in
   !start_hook c;
   Pfedit.start_proof id kind sign c ?init_tac ~compute_guard hook
 

@@ -955,8 +955,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 	try (add_suffix current_proof_name "_subproof")
 	with _ -> anomaly "open_new_goal with an unamed theorem"
   in
-  let sign = Global.named_context () in
-  let sign = clear_proofs sign in
+  let sign = initialize_named_context_for_proof () in
   let na = next_global_ident_away name [] in
   if Termops.occur_existential gls_type then
     Util.error "\"abstract\" cannot handle existentials";
