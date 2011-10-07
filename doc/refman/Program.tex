@@ -3,11 +3,7 @@
 \aauthor{Matthieu Sozeau}
 \index{Program}
 
-\begin{flushleft}
-  \em The status of \Program\ is experimental.
-\end{flushleft}
-
-We present here the new \Program\ tactic commands, used to build certified
+We present here the \Program\ tactic commands, used to build certified
 \Coq\ programs, elaborating them from their algorithmic skeleton and a
 rich specification \cite{Sozeau06}. It can be sought of as a dual of extraction
 (see Chapter~\ref{Extraction}). The goal of \Program~is to program as in a regular
@@ -73,6 +69,8 @@ will be first rewrote to:
   works with the previous mechanism.
 \end{itemize}
 
+\subsection{Syntactic control over equalities}
+\label{ProgramSyntax}
 To give more control over the generation of equalities, the typechecker will
 fall back directly to \Coq's usual typing of dependent pattern-matching
 if a {\tt return} or {\tt in} clause is specified. Likewise,
@@ -89,11 +87,18 @@ Program Definition id (n : nat) : { x : nat | x = n } :=
   else S (pred n).
 \end{coq_example}
 
-Finally, the let tupling construct {\tt let (x1, ..., xn) := t in b}
+The let tupling construct {\tt let (x1, ..., xn) := t in b}
 does not produce an equality, contrary to the let pattern construct 
 {\tt let '(x1, ..., xn) := t in b}.
-Also, ``{\term}:>'' explicitly asks the system to see {\term} in a coerced
-way.
+Also, {\tt {\term}:>} explicitly asks the system to coerce {\tt \term} to its
+support type. It can be useful in notations, for example:
+\begin{coq_example}
+Notation " x `= y " := (@eq _ (x :>) (y :>)) (only parsing).
+\end{coq_example}
+
+This notation denotes equality on subset types using equality on their
+support types, avoiding uses of proof-irrelevance that would come up
+when reasoning with equality on the subset types themselves. 
 
 The next two commands are similar to their standard counterparts
 Definition (see Section~\ref{Basic-definitions}) and Fixpoint (see Section~\ref{Fixpoint}) in that
