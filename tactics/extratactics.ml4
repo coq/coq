@@ -754,3 +754,10 @@ TACTIC EXTEND has_evar
 | [ "has_evar" constr(x) ] ->
     [ if has_evar x then tclIDTAC else tclFAIL 0 (str "No evars") ]
 END
+
+TACTIC EXTEND is_hyp
+| [ "is_var" constr(x) ] ->
+  [ match kind_of_term x with
+    | Var _ -> tclIDTAC
+    | _ -> tclFAIL 0 (str "Not a variable or hypothesis") ]
+END
