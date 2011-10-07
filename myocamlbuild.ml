@@ -264,7 +264,7 @@ let extra_rules () = begin
        (* TODO : line2 isn't completely accurate with respect to ./configure:
 	  the case of -local -coqrunbyteflags foo isn't supported *)
        let line1 =
-	 "let coqrunbyteflags = \"-dllib -lcoqrun -dllpath 'kernel/byterun'\"\n"
+	 "let coqrunbyteflags = \"-dllib -lcoqrun\"\n"
        in
        Echo (lines @ (if local then [line0;line1] else []),
 	     "coq_config.ml"));
