@@ -368,6 +368,23 @@ the above form:
       "else" tactic(t2) :=
       first [ t; first [ t1 | fail 2 ] | t2 ].
 
+    Ltac abstract_term t :=
+      if (is_var t) then fail "no need to abstract a variable"
+      else (let x := fresh "x" in set (x := t) in *; try clearbody x).
+
+    Ltac abstract_elements :=
+      repeat
+        (match goal with
+           | |- context [ singleton ?t ] => abstract_term t
+           | _ : context [ singleton ?t ] |- _ => abstract_term t
+           | |- context [ add ?t _ ] => abstract_term t
+           | _ : context [ add ?t _ ] |- _ => abstract_term t
+           | |- context [ remove ?t _ ] => abstract_term t
+           | _ : context [ remove ?t _ ] |- _ => abstract_term t
+           | |- context [ In ?t _ ] => abstract_term t
+           | _ : context [ In ?t _ ] |- _ => abstract_term t
+         end).
+
     (** [prop P holds by t] succeeds (but does not modify the
         goal or context) if the proposition [P] can be proved by
         [t] in the current context.  Otherwise, the tactic
@@ -460,9 +477,12 @@ the above form:
         tactic). *)
     Hint Constructors MSet_elt_Prop MSet_Prop : MSet_Prop.
     Ltac discard_nonMSet :=
-      decompose records;
       repeat (
         match goal with
+        | H : context [ @Logic.eq ?T ?x ?y ] |- _ =>
+          if (change T with E.t in H) then fail
+          else if (change T with t in H) then fail
+          else clear H
         | H : ?P |- _ =>
           if prop (MSet_Prop P) holds by
             (auto 100 with MSet_Prop)
@@ -681,6 +701,10 @@ the above form:
         [intros] to leave us with a goal of [~ P] than a goal of
         [False]. *)
     fold any not; intros;
+    (** We don't care about the value of elements : complex ones are
+        abstracted as new variables (avoiding potential dependencies,
+        see bug #2464) *)
+    abstract_elements;
     (** We remove dependencies to logical hypothesis. This way,
         later "clear" will work nicely (see bug #2136) *)
     no_logical_interdep;
