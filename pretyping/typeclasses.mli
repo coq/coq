@@ -73,7 +73,7 @@ val is_implicit_arg : hole_kind -> bool
 (** Returns the term and type for the given instance of the parameters and fields
    of the type class. *)
 
-val instance_constructor : typeclass -> constr list -> constr * types
+val instance_constructor : typeclass -> constr list -> constr option * types
 
 (** Resolvability.
     Only undefined evars could be marked or checked for resolvability. *)

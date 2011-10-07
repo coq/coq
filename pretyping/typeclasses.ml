@@ -337,9 +337,11 @@ let instance_constructor cl args =
   let lenpars = List.length (List.filter (fun (na, b, t) -> b = None) (snd cl.cl_context)) in
   let pars = fst (list_chop lenpars args) in
     match cl.cl_impl with
-      | IndRef ind -> applistc (mkConstruct (ind, 1)) args,
+      | IndRef ind -> Some (applistc (mkConstruct (ind, 1)) args),
 	  applistc (mkInd ind) pars
-      | ConstRef cst -> list_last args, applistc (mkConst cst) pars
+      | ConstRef cst -> 
+	let term = if args = [] then None else Some (list_last args) in
+	  term, applistc (mkConst cst) pars
       | _ -> assert false
 
 let typeclasses () = Gmap.fold (fun _ l c -> l :: c) !classes []

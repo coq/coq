@@ -236,7 +236,7 @@ Program Definition complement_proper
     intuition.
   Qed.
  
-Hint Extern 1 (Proper (_ ==> _ ==> iff) (complement _)) => 
+Hint Extern 1 (Proper (_ ==> _ ==> _) (complement _)) => 
   apply @complement_proper : typeclass_instances.
 
 (** The [inverse] too, actually the [flip] instance is a bit more general. *)
