@@ -482,6 +482,13 @@ the above form:
       F.union_iff F.inter_iff F.diff_iff
     : set_simpl.
 
+    Lemma eq_refl_iff (x : E.t) : E.eq x x <-> True.
+    Proof.
+     now split.
+    Qed.
+
+    Hint Rewrite eq_refl_iff : set_eq_simpl.
+
     (** ** Decidability of FSet Propositions *)
 
     (** [In] is decidable. *)
@@ -558,8 +565,10 @@ the above form:
     Ltac substFSet :=
       repeat (
         match goal with
+        | H: E.eq ?x ?x |- _ => clear H
         | H: E.eq ?x ?y |- _ => rewrite H in *; clear H
-        end).
+        end);
+      autorewrite with set_eq_simpl in *.
 
     (** ** Considering Decidability of Base Propositions
         This tactic adds assertions about the decidability of
@@ -639,13 +648,7 @@ the above form:
     (** Here is the crux of the proof search.  Recursion through
         [intuition]!  (This will terminate if I correctly
         understand the behavior of [intuition].) *)
-    Ltac fsetdec_rec :=
-      try (match goal with
-      | H: E.eq ?x ?x -> False |- _ => destruct H
-      end);
-      (reflexivity ||
-      contradiction ||
-      (progress substFSet; intuition fsetdec_rec)).
+    Ltac fsetdec_rec := progress substFSet; intuition fsetdec_rec.
 
     (** If we add [unfold Empty, Subset, Equal in *; intros;] to
         the beginning of this tactic, it will satisfy the same
@@ -653,12 +656,13 @@ the above form:
         be much slower than necessary without the pre-processing
         done by the wrapper tactic [fsetdec]. *)
     Ltac fsetdec_body :=
+      autorewrite with set_eq_simpl in *;
       inst_FSet_hypotheses;
-      autorewrite with set_simpl in *;
+      autorewrite with set_simpl set_eq_simpl in *;
       push not in * using FSet_decidability;
       substFSet;
       assert_decidability;
-      auto using E.eq_refl;
+      auto;
       (intuition fsetdec_rec) ||
       fail 1
         "because the goal is beyond the scope of this tactic".
@@ -876,5 +880,5 @@ Require Import FSetInterface.
     the subtyping [WS<=S], the [Decide] functor which is meant to be
     used on modules [(M:S)] can simply be an alias of [WDecide]. *)
 
-Module WDecide (M:WS) := WDecide_fun M.E M.
+Module WDecide (M:WS) := !WDecide_fun M.E M.
 Module Decide := WDecide.
