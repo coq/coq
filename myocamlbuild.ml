@@ -261,14 +261,12 @@ let extra_rules () = begin
        let lines = read_file "config/coq_config.ml" in
        let lines = List.map (fun s -> s^"\n") lines in
        let line0 = "\n(* Adapted variables for ocamlbuild *)\n" in
-       let line2 = "let coqlib = None\n" in
-       (* TODO : line3 isn't completely accurate with respect to ./configure:
+       (* TODO : line2 isn't completely accurate with respect to ./configure:
 	  the case of -local -coqrunbyteflags foo isn't supported *)
-       let line3 =
-	 "let coqrunbyteflags = \"-dllib -lcoqrun -dllpath '"
-	 ^srcbuild^"/kernel/byterun'\"\n"
+       let line1 =
+	 "let coqrunbyteflags = \"-dllib -lcoqrun -dllpath 'kernel/byterun'\"\n"
        in
-       Echo (lines @ [line0;line1] @ (if local then [line2;line3] else []),
+       Echo (lines @ (if local then [line0;line1] else []),
 	     "coq_config.ml"));
 
 (** Camlp4 extensions *)
