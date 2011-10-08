@@ -109,8 +109,19 @@ let declare_individual_scheme_object s ?(aux="") f =
 let declare_scheme kind indcl =
   Lib.add_anonymous_leaf (inScheme (kind,indcl))
 
+let is_visible_name id =
+  try ignore (Nametab.locate (Libnames.qualid_of_ident id)); true
+  with Not_found -> false
+
+let compute_name internal id =
+  match internal with
+  | KernelVerbose | UserVerbose -> id
+  | KernelSilent ->
+      Namegen.next_ident_away_from (add_prefix "internal_" id) is_visible_name
+
 let define internal id c =
   let fd = declare_constant ~internal in
+  let id = compute_name internal id in
   let kn = fd id
     (DefinitionEntry
       { const_entry_body = c;
