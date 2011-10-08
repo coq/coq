@@ -87,6 +87,7 @@ val lookup_module    : module_path -> module_body
 val lookup_modtype   : module_path -> module_type_body
 val constant_of_delta : constant -> constant
 val mind_of_delta : mutual_inductive -> mutual_inductive
+val exists_label     : label -> bool
 
 (** Compiled modules *)
 val start_library : dir_path -> module_path

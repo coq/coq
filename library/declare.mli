@@ -79,3 +79,4 @@ val cofixpoint_message : identifier list -> unit
 val recursive_message : bool (** true = fixpoint *) ->
   int array option -> identifier list -> unit
 
+val exists_name : identifier -> bool

@@ -136,6 +136,10 @@ val safe_infer : safe_environment -> constr -> judgment * Univ.constraints
 
 val typing : safe_environment -> constr -> judgment
 
+(** {7 Query } *)
+
+val exists_label : label -> safe_environment -> bool
+
 (*spiwack: safe retroknowledge functionalities *)
 
 open Retroknowledge

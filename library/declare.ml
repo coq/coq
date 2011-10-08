@@ -112,11 +112,17 @@ let open_constant i ((sp,kn),_) =
   let con = Global.constant_of_delta (constant_of_kn kn) in
     Nametab.push (Nametab.Exactly i) sp (ConstRef con)
 
+let exists_name id =
+  variable_exists id or Global.exists_label (label_of_id id)
+
+let check_exists sp =
+  let id = basename sp in
+  if exists_name id then alreadydeclared (pr_id id ++ str " already exists")
+
 let cache_constant ((sp,kn),(cdt,dhyps,kind)) =
   let id = basename sp in
   let _,dir,_ = repr_kn kn in
-  if variable_exists id or Nametab.exists_cci sp then
-    alreadydeclared (pr_id id ++ str " already exists");
+  check_exists sp;
   let kn' = Global.add_constant dir id cdt in
   assert (kn' = constant_of_kn kn);
   Nametab.push (Nametab.Until 1) sp (ConstRef (constant_of_kn kn));
@@ -197,16 +203,8 @@ let inductive_names sp kn mie =
       ([], 0) mie.mind_entry_inds
   in names
 
-let check_exists_inductive (sp,_) =
-  (if variable_exists (basename sp) then
-    alreadydeclared (pr_id (basename sp) ++ str " already exists"));
-  if Nametab.exists_cci sp then
-    let (_,id) = repr_path sp in
-    alreadydeclared (pr_id id ++ str " already exists")
-
 let load_inductive i ((sp,kn),(_,mie)) =
   let names = inductive_names sp kn mie in
-  List.iter check_exists_inductive names;
   List.iter (fun (sp, ref) -> Nametab.push (Nametab.Until i) sp ref ) names
 
 let open_inductive i ((sp,kn),(_,mie)) =
@@ -215,7 +213,7 @@ let open_inductive i ((sp,kn),(_,mie)) =
 
 let cache_inductive ((sp,kn),(dhyps,mie)) =
   let names = inductive_names sp kn mie in
-  List.iter check_exists_inductive names;
+  List.iter check_exists (List.map fst names);
   let id = basename sp in
   let _,dir,_ = repr_kn kn in
   let kn' = Global.add_mind dir id mie in

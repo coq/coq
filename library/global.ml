@@ -128,7 +128,9 @@ let mind_of_delta mind =
   let resolver,resolver_param = (delta_of_senv !global_env) in
     Mod_subst.mind_of_delta resolver_param
       (Mod_subst.mind_of_delta resolver mind)
-	
+
+let exists_label id = exists_label id !global_env
+
 let start_library dir =
   let mp,newenv = start_library dir !global_env in
     global_env := newenv;
