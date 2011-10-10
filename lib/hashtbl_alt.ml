@@ -24,7 +24,7 @@ end
 module type S = sig
   type elt
   (* [may_add_and_get key constr] uses [key] to look for [constr]
-     in the hash table [H]. If [constr] is [H], returns the
+     in the hash table [H]. If [constr] is in [H], returns the
      specific representation that is stored in [H]. Otherwise,
      [constr] is stored in [H] and will be used as the canonical
      representation of this value in the future. *)
