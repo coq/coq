@@ -1271,7 +1271,7 @@ let hcons_term (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       accu := combine !accu h;
       t.(i) <- x
     done;
-    (t, !accu)
+    !accu
 
   and hash_term t =
     match t with
@@ -1298,11 +1298,12 @@ let hcons_term (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
 	(LetIn (sh_na na, b, t, c), combinesmall 6 (combine4 (Hashtbl.hash na) hb ht hc))
       | App (c,l) ->
 	let c, hc = sh_rec c in
-	let l, hl = hash_term_array l in
+	let hl = hash_term_array l in
 	(App (c, l), combinesmall 7 (combine hl hc))
       | Evar (e,l) ->
-	let l, hl = hash_term_array l in
-	(Evar (e, l), combinesmall 8 (combine (Hashtbl.hash e) hl))
+	let hl = hash_term_array l in
+	(* since the array have been hashed in place : *)
+	(t, combinesmall 8 (combine (Hashtbl.hash e) hl))
       | Const c ->
 	(Const (sh_con c), combinesmall 9 (Hashtbl.hash c))
       | Ind ((kn,i) as ind) ->
@@ -1312,27 +1313,25 @@ let hcons_term (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
       | Case (ci,p,c,bl) ->
 	let p, hp = sh_rec p
 	and c, hc = sh_rec c in
-	let bl, hbl = hash_term_array  bl in
+	let hbl = hash_term_array bl in
 	let hbl = combine (combine hc hp) hbl in
 	(Case (sh_ci ci, p, c, bl), combinesmall 11 hbl)
       | Fix (ln,(lna,tl,bl)) ->
-	let bl, hbl = hash_term_array  bl in
-	let tl, htl = hash_term_array  tl in
-	let h = combine hbl htl in
+	let hbl = hash_term_array  bl in
+	let htl = hash_term_array  tl in
 	Array.iteri (fun i x -> lna.(i) <- sh_na x) lna;
-	(Fix (ln,(lna, tl, bl)),
-	 combinesmall 13 (combine (Hashtbl.hash lna) h))
+	(* since the three arrays have been hashed in place : *)
+	(t, combinesmall 13 (combine (Hashtbl.hash lna) (combine hbl htl)))
       | CoFix(ln,(lna,tl,bl)) ->
-	let bl, hbl = hash_term_array bl in
-	let tl, htl = hash_term_array tl in
-	let h = combine hbl htl in
+	let hbl = hash_term_array bl in
+	let htl = hash_term_array tl in
 	Array.iteri (fun i x -> lna.(i) <- sh_na x) lna;
-	(CoFix (ln, (lna, tl, bl)),
-	 combinesmall 14 (combine (Hashtbl.hash lna) h))
+	(* since the three arrays have been hashed in place : *)
+	(t, combinesmall 14 (combine (Hashtbl.hash lna) (combine hbl htl)))
       | Meta n ->
-	(Meta n, combinesmall 15 n)
+	(t, combinesmall 15 n)
       | Rel n ->
-	(Rel n, combinesmall 16 n)
+	(t, combinesmall 16 n)
 
   and sh_rec t =
     let (y, h) = hash_term t in
