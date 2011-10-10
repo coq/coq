@@ -755,6 +755,22 @@ let pr_decl ((id,b,_),ok) =
   | Some c -> str (if ok then "(" else "{") ++ pr_id id ++ str ":=" ++
       print_constr c ++ str (if ok then ")" else "}")
 
+let pr_evar_source = function
+  | QuestionMark _ -> str "underscore"
+  | CasesType -> str "pattern-matching return predicate"
+  | BinderType (Name id) -> str "type of " ++ Nameops.pr_id id
+  | BinderType Anonymous -> str "type of anonymous binder"
+  | ImplicitArg (c,(n,ido),b) ->
+      let id = Option.get ido in
+      str "parameter " ++ pr_id id ++ spc () ++ str "of" ++
+      spc () ++ Nametab.pr_global_env Idset.empty c
+  | InternalHole -> str "internal placeholder"
+  | TomatchTypeParameter (ind,n) ->
+      nth n ++ str " argument of type " ++ print_constr (mkInd ind)
+  | GoalEvar -> str "goal evar"
+  | ImpossibleCase -> str "type of impossible pattern-matching clause"
+  | MatchingVar _ -> str "matching variable"
+
 let pr_evar_info evi =
   let phyps =
     try
@@ -767,7 +783,10 @@ let pr_evar_info evi =
       | Evar_empty -> mt ()
       | Evar_defined c -> spc() ++ str"=> "  ++ print_constr c
   in
-  hov 2 (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]")
+  let src = str "(" ++ pr_evar_source (snd evi.evar_source) ++ str ")" in
+  hov 2
+    (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]" ++
+       spc() ++ src)
 
 let compute_evar_dependency_graph (sigma:evar_map) =
   (* Compute the map binding ev to the evars whose body depends on ev *)
