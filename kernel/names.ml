@@ -336,7 +336,7 @@ module Hdir = Hashcons.Make(
   struct
     type t = dir_path
     type u = identifier -> identifier
-    let hash_sub hident d = List.map hident d
+    let hash_sub hident d = list_smartmap hident d
     let rec equal d1 d2 = match (d1,d2) with
       | [],[] -> true
       | id1::d1,id2::d2 -> id1 == id2 & equal d1 d2
