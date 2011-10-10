@@ -227,17 +227,17 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 
     | Flexible ev1, MaybeFlexible flex2 ->
 	let f1 i =
-	  if
-	    is_unification_pattern_evar env ev1 l1 (applist appr2) &
-	    not (occur_evar (fst ev1) (applist appr2))
-	  then
+          match is_unification_pattern env term1 l1 (applist appr2) with
+          | Some l1' ->
 	    (* Miller-Pfenning's patterns unification *)
 	    (* Preserve generality (except that CCI has no eta-conversion) *)
 	    let t2 = nf_evar evd (applist appr2) in
-	    let t2 = solve_pattern_eqn env l1 t2 in
+	    let t2 = solve_pattern_eqn env l1' t2 in
 	    solve_simple_eqn (evar_conv_x ts) env evd
 	      (position_problem true pbty,ev1,t2)
-	  else if
+          | None -> (i,false)
+        and f2 i =
+	  if
             List.length l1 <= List.length l2
 	  then
 	    (* Try first-order unification *)
@@ -250,27 +250,27 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
                   (fun i -> evar_conv_x ts env i CONV) l1 rest2);
                (fun i -> evar_conv_x ts env i pbty term1 (applist(term2,deb2)))]
           else (i,false)
-	and f2 i =
+	and f3 i =
 	  match eval_flexible_term ts env flex2 with
 	    | Some v2 ->
 		evar_eqappr_x ts env i pbty appr1 (evar_apprec ts env i l2 v2)
 	    | None -> (i,false)
 	in
-	ise_try evd [f1; f2]
+	ise_try evd [f1; f2; f3]
 
     | MaybeFlexible flex1, Flexible ev2 ->
 	let f1 i =
-	  if
-	    is_unification_pattern_evar env ev2 l2 (applist appr1) &
-	    not (occur_evar (fst ev2) (applist appr1))
-	  then
+	  match is_unification_pattern env term2 l2 (applist appr1) with
+          | Some l1' ->
 	    (* Miller-Pfenning's patterns unification *)
 	    (* Preserve generality (except that CCI has no eta-conversion) *)
 	    let t1 = nf_evar evd (applist appr1) in
 	    let t1 = solve_pattern_eqn env l2 t1 in
 	    solve_simple_eqn (evar_conv_x ts) env evd
 	      (position_problem false pbty,ev2,t1)
-	  else if
+          | None -> (i,false)
+        and f2 i =
+          if
        	    List.length l2 <= List.length l1
 	  then
 	    (* Try first-order unification *)
@@ -282,13 +282,13 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
                   (fun i -> evar_conv_x ts env i CONV) rest1 l2);
                (fun i -> evar_conv_x ts env i pbty (applist(term1,deb1)) term2)]
           else (i,false)
-	and f2 i =
+	and f3 i =
 	  match eval_flexible_term ts env flex1 with
 	    | Some v1 ->
 		evar_eqappr_x ts env i pbty (evar_apprec ts env i l1 v1) appr2
 	    | None -> (i,false)
 	in
-	ise_try evd [f1; f2]
+	ise_try evd [f1; f2; f3]
 
     | MaybeFlexible flex1, MaybeFlexible flex2 -> begin
         match kind_of_term flex1, kind_of_term flex2 with
@@ -358,36 +358,32 @@ and evar_eqappr_x ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	     evar_conv_x ts (push_rel (na,None,c) env) i CONV c'1 c'2)]
 
     | Flexible ev1, (Rigid _ | PseudoRigid _) ->
-	if
-	  is_unification_pattern_evar env ev1 l1 (applist appr2) &
-	  not (occur_evar (fst ev1) (applist appr2))
-	then
+	(match is_unification_pattern env term1 l1 (applist appr2) with
+        | Some l1 ->
 	  (* Miller-Pfenning's pattern unification *)
 	  (* Preserve generality thanks to eta-conversion) *)
 	  let t2 = nf_evar evd (applist appr2) in
 	  let t2 = solve_pattern_eqn env l1 t2 in
 	  solve_simple_eqn (evar_conv_x ts) env evd
 	    (position_problem true pbty,ev1,t2)
-	else
+        | None ->
 	  (* Postpone the use of an heuristic *)
 	  add_conv_pb (pbty,env,applist appr1,applist appr2) evd,
-	  true
+	  true)
 
     | (Rigid _ | PseudoRigid _), Flexible ev2 ->
-	if
-	  is_unification_pattern_evar env ev2 l2 (applist appr1) &
-	  not (occur_evar (fst ev2) (applist appr1))
-	then
+	(match is_unification_pattern env term2 l2 (applist appr1) with
+        | Some l2 ->
 	  (* Miller-Pfenning's pattern unification *)
 	  (* Preserve generality thanks to eta-conversion) *)
 	  let t1 = nf_evar evd (applist appr1) in
 	  let t1 = solve_pattern_eqn env l2 t1 in
 	  solve_simple_eqn (evar_conv_x ts) env evd
 	    (position_problem false pbty,ev2,t1)
-	else
+        | None ->
 	  (* Postpone the use of an heuristic *)
 	  add_conv_pb (pbty,env,applist appr1,applist appr2) evd,
-	  true
+	  true)
 
     | MaybeFlexible flex1, (Rigid _ | PseudoRigid _) ->
 	let f3 i =

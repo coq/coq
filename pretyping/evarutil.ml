@@ -166,74 +166,110 @@ let new_evar_instance sign evd typ ?(src=(dummy_loc,InternalHole)) ?filter insta
    dependencies in variables are canonically associated to the most ancient
    variable in its family of aliased variables *)
 
-let compute_aliases sign =
+let compute_var_aliases sign =
   List.fold_right (fun (id,b,c) aliases ->
     match b with
     | Some t ->
-	(match kind_of_term t with
-	| Var id' ->
-	    let id'' = try Idmap.find id' aliases with Not_found -> id' in
-	    Idmap.add id id'' aliases
-	| _ -> aliases)
-    | None -> aliases) sign Idmap.empty
+        let aliases_of_id = match kind_of_term t with
+	| Var id' -> (try Idmap.find id' aliases with Not_found -> [])
+	| _ -> [] in
+	Idmap.add id (aliases_of_id@[t]) aliases
+    | None -> aliases)
+    sign Idmap.empty
 
-let alias_of_var id aliases = try Idmap.find id aliases with Not_found -> id
+let compute_rel_aliases var_aliases rels =
+  snd (List.fold_right (fun (_,b,t) (n,aliases) ->
+    (n-1,
+     match b with
+     | Some t ->
+         let aliases_of_n = match kind_of_term t with
+	 | Var id' -> (try Idmap.find id' var_aliases with Not_found -> [])
+         | Rel p -> (try Intmap.find (p+n) aliases with Not_found -> [])
+         | _ -> [] in
+	 Intmap.add n (aliases_of_n@[lift n t]) aliases
+     | None -> aliases))
+      rels (List.length rels,Intmap.empty))
 
 let make_alias_map env =
-  let var_aliases = compute_aliases (named_context env) in
-  let rels = rel_context env in
-  let rel_aliases = 
-    snd (List.fold_right (fun (_,b,t) (n,aliases) ->
-      (n-1,
-      match b with
-	| Some t when isRel t or isVar t -> Intmap.add n (lift n t) aliases
-	| _ -> aliases)) rels (List.length rels,Intmap.empty)) in
+  (* We compute the chain of aliases for each var and rel *)
+  let var_aliases = compute_var_aliases (named_context env) in
+  let rel_aliases = compute_rel_aliases var_aliases (rel_context env) in
   (var_aliases,rel_aliases)
 
-let expand_var_once aliases x = match kind_of_term x with
-  | Rel n -> Intmap.find n (snd aliases)
-  | Var id -> mkVar (Idmap.find id (fst aliases))
-  | _ -> raise Not_found
+let get_alias_chain_of aliases x = match kind_of_term x with
+  | Rel n -> (try Intmap.find n (snd aliases) with Not_found -> [])
+  | Var id -> (try Idmap.find id (fst aliases) with Not_found -> [])
+  | _ -> []
 
-let rec expand_var_at_least_once aliases x =
-  let t = expand_var_once aliases x in
-  try expand_var_at_least_once aliases t
-  with Not_found -> t
+let normalize_alias_opt aliases x =
+  match get_alias_chain_of aliases x with
+  | []  -> None
+  | a::_ when isRel a || isVar a -> Some a (* Oldest alias is var/rel *)
+  | [a] -> None       (* Only one alias but not to var/rel *)
+  | _::a::_ -> Some a (* Last alias not to var/rel, but penultimate must be ok*)
 
-let expand_var aliases x =
-  try expand_var_at_least_once aliases x with Not_found -> x
+let normalize_alias aliases x =
+  match normalize_alias_opt aliases x with
+  | Some x -> x
+  | None -> x
 
-let expand_var_opt aliases x =
-  try Some (expand_var_at_least_once aliases x) with Not_found -> None
+let expand_alias aliases x =
+  match get_alias_chain_of aliases x with
+  | []  -> x
+  | a::_ -> x
+
+let normalize_alias_var var_aliases id =
+  destVar (normalize_alias (var_aliases,Intmap.empty) (mkVar id))
 
 let extend_alias (_,b,_) (var_aliases,rel_aliases) =
   let rel_aliases =
-    Intmap.fold (fun n c -> Intmap.add (n+1) (lift 1 c))
+    Intmap.fold (fun n l -> Intmap.add (n+1) (List.map (lift 1) l))
       rel_aliases Intmap.empty in
   let rel_aliases =
     match b with
-    | Some t when isRel t or isVar t -> Intmap.add 1 (lift 1 t) rel_aliases
-    | _ -> rel_aliases in
+    | Some t ->
+        let aliases = match kind_of_term t with
+	| Var id' -> (try Idmap.find id' var_aliases with Not_found -> [])
+        | Rel p -> (try Intmap.find (p+1) rel_aliases with Not_found -> [])
+        | _ -> [] in 
+	Intmap.add 1 (aliases@[lift 1 t]) rel_aliases
+    | None -> rel_aliases in
   (var_aliases, rel_aliases)
+
+let rec expansions_of_var aliases x =
+  match get_alias_chain_of aliases x with
+  | a::l when not (isVar a or isRel a) -> x :: List.rev l
+  | l -> x :: List.rev l
 
 let rec expand_vars_in_term_using aliases t = match kind_of_term t with
   | Rel _ | Var _ ->
-      expand_var aliases t
+      normalize_alias aliases t
   | _ ->
       map_constr_with_full_binders
 	extend_alias expand_vars_in_term_using aliases t
 
 let expand_vars_in_term env = expand_vars_in_term_using (make_alias_map env)
 
-let rec expansions_of_var aliases x =
-  try
-    let t = expand_var_once aliases x in
-    t :: expansions_of_var aliases t
-  with Not_found ->
-    [x]
-
-let expand_full_opt aliases y =
-  try expand_var_opt aliases y with Not_found -> None
+let free_vars_and_rels_up_alias_expansion aliases c =
+  let acc1 = ref Intset.empty and acc2 = ref Idset.empty in
+  let rec frec (aliases,depth) c = match kind_of_term c with
+    | Rel _ | Var _ ->
+      let c = expand_alias aliases c in
+        (match kind_of_term c with
+        | Var id -> acc2 := Idset.add id !acc2
+        | Rel n -> if n >= depth+1 then acc1 := Intset.add (n-depth) !acc1
+        | _ -> 
+            (* not optimal: would need sharing if alias occurs more than once *)
+            frec (aliases,depth) c)
+    | Const _ | Ind _ | Construct _ ->
+        acc2 := List.fold_right Idset.add (vars_of_global (Global.env()) c) !acc2
+    | _ ->
+        iter_constr_with_full_binders
+          (fun d (aliases,depth) -> (extend_alias d aliases,depth+1))
+          frec (aliases,depth) c
+  in
+  frec (aliases,0) c;
+  (!acc1,!acc2)
 
 (* Knowing that [Gamma |- ev : T] and that [ev] is applied to [args],
  * [make_projectable_subst ev args] builds the substitution [Gamma:=args].
@@ -247,7 +283,7 @@ let expand_full_opt aliases y =
 
 let make_projectable_subst aliases sigma evi args =
   let sign = evar_filtered_context evi in
-  let evar_aliases = compute_aliases sign in
+  let evar_aliases = compute_var_aliases sign in
   let (_,full_subst,cstr_subst) =
     List.fold_right
       (fun (id,b,c) (args,all,cstrs) ->
@@ -261,21 +297,21 @@ let make_projectable_subst aliases sigma evi args =
 		  let l = try Constrmap.find cstr cstrs with Not_found -> [] in
 		  Constrmap.add cstr ((args,id)::l) cstrs
 	      | _ -> cstrs in
-	    (rest,Idmap.add id [a,expand_full_opt aliases a,id] all,cstrs)
+	    (rest,Idmap.add id [a,normalize_alias_opt aliases a,id] all,cstrs)
 	| Some c, a::rest ->
 	    let a = whd_evar sigma a in
 	    (match kind_of_term c with
 	    | Var id' ->
-		let idc = alias_of_var id' evar_aliases in
+		let idc = normalize_alias_var evar_aliases id' in
 		let sub = try Idmap.find idc all with Not_found -> [] in
 		if List.exists (fun (c,_,_) -> eq_constr a c) sub then
 		  (rest,all,cstrs)
 		else
 		  (rest,
-		   Idmap.add idc ((a,expand_full_opt aliases a,id)::sub) all,
+		   Idmap.add idc ((a,normalize_alias_opt aliases a,id)::sub) all,
 		   cstrs)
 	    | _ ->
-		(rest,Idmap.add id [a,expand_full_opt aliases a,id] all,cstrs))
+		(rest,Idmap.add id [a,normalize_alias_opt aliases a,id] all,cstrs))
 	| _ -> anomaly "Instance does not match its signature")
       sign (array_rev_to_list args,Idmap.empty,Constrmap.empty) in
   (full_subst,cstr_subst)
@@ -666,12 +702,12 @@ let rec assoc_up_to_alias sigma aliases y yc = function
 	if l <> [] then assoc_up_to_alias sigma aliases y yc l
 	else
 	  (* Last chance, we reason up to alias conversion *)
-	  match (if c == c' then cc else expand_full_opt aliases c') with
+	  match (if c == c' then cc else normalize_alias_opt aliases c') with
 	  | Some cc when eq_constr yc cc -> id
 	  | _ -> if eq_constr yc c then id else raise Not_found
 
 let rec find_projectable_vars with_evars aliases sigma y subst =
-  let yc = expand_var aliases y in
+  let yc = normalize_alias aliases y in
   let is_projectable idc idcl subst' =
     (* First test if some [id] aliased to [idc] is bound to [y] in [subst] *)
     try
@@ -1249,18 +1285,14 @@ let whd_head_evar_stack sigma c =
 
 let whd_head_evar sigma c = applist (whd_head_evar_stack sigma c)
 
-(* Check if an applied evar "?X[args] l" is a Miller's pattern; note
-   that we don't care whether args itself contains Rel's or even Rel's
-   distinct from the ones in l *)
-
-let rec expand_and_check_vars env = function
+let rec expand_and_check_vars aliases = function
   | [] -> []
   | a::l ->
       if isRel a or isVar a then
-	let l = expand_and_check_vars env l in
-	match expand_var_opt env a with
-	| None -> a :: l
-	| Some a' when isRel a' or isVar a' -> list_add_set a' l
+	let l = expand_and_check_vars aliases l in
+	match get_alias_chain_of aliases a with
+	| [] -> a :: l
+	| a'::_ when isRel a' or isVar a' -> a' :: l
 	| _ -> raise Exit
       else
 	raise Exit
@@ -1280,49 +1312,54 @@ let rec constr_list_distinct l =
     | [] -> true
   in loop l
 
-let is_unification_pattern_evar env (_,args) l t =
-  List.for_all (fun x -> isRel x || isVar x) l (* common failure case *)
-  &&
+let get_actual_deps aliases l t =
+  if occur_meta_or_existential t then
+    (* Probably no restrictions on allowed vars in presence of evars *)
+    l
+  else
+    (* Probably strong restrictions coming from t being evar-closed *)
+    let (fv_rels,fv_ids) = free_vars_and_rels_up_alias_expansion aliases t in
+    List.filter (fun c ->
+      match kind_of_term c with
+      | Var id -> Idset.mem id fv_ids
+      | Rel n -> Intset.mem n fv_rels
+      | _ -> assert false) l
+
+(* Check if an applied evar "?X[args] l" is a Miller's pattern *)
+
+let find_unification_pattern_args env args l t =
+  if List.for_all (fun x -> isRel x || isVar x) l (* common failure case *) then
     let aliases = make_alias_map env in
     let l' = Array.to_list args @ l in
-    let l'' = try Some (expand_and_check_vars aliases l') with Exit -> None in
-    match l'' with
-    | Some l ->
-	let deps =
-	  if occur_meta_or_existential t then
-	    (* Probably no restrictions on allowed vars in presence of evars *)
-	    l
-	  else
-	    (* Probably strong restrictions coming from t being evar-closed *)
-	    let t = expand_vars_in_term_using aliases t in
-	    let fv_rels = free_rels t in
-	    let fv_ids = global_vars env t in
-	    List.filter (fun c ->
-	      match kind_of_term c with
-	      | Var id -> List.mem id fv_ids
-	      | Rel n -> Intset.mem n fv_rels
-	      | _ -> assert false) l in
-	constr_list_distinct deps
-    | None -> false
-
-let is_unification_pattern (env,nb) f l t =
-  match kind_of_term f with
-    | Meta _ ->
-	let dummy_ev = (f,[||]) in
-	is_unification_pattern_evar env dummy_ev (Array.to_list l) t
-    | Evar ev ->
-	is_unification_pattern_evar env ev (Array.to_list l) t
+    match (try Some (expand_and_check_vars aliases l') with Exit -> None) with
+    | Some l when constr_list_distinct (get_actual_deps aliases l t) ->
+        Some (list_skipn (Array.length args) l)
     | _ ->
-	false
+      None
+  else
+    None
 
-(* From a unification problem "?X l1 = term1 l2" such that l1 is made
-   of distinct rel's, build "\x1...xn.(term1 l2)" (patterns unification) *)
-(* NB: does not work when (term1 l2) contains metas because metas
+let is_unification_pattern env f l t =
+  match kind_of_term f with
+    | Meta m ->
+        (match find_unification_pattern_args env [||] l t with
+        | Some _ as x when not (dependent f t) -> x
+        | _ -> None)
+    | Evar (evk,args) ->
+        (match find_unification_pattern_args env args l t with
+        | Some _ as x when not (occur_evar evk t) -> x
+        | _ -> None)
+    | _ ->
+	None
+
+(* From a unification problem "?X l = c", build "\x1...xn.(term1 l2)"
+   (pattern unification). It is assumed that l is made of rel's that
+   are distinct and not bound to aliases. *)
+(* It is also assumed that c does not contain metas because metas
    *implicitly* depend on Vars but lambda abstraction will not reflect this
    dependency: ?X x = ?1 (?1 is a meta) will return \_.?1 while it should
    return \y. ?1{x\y} (non constant function if ?1 depends on x) (BB) *)
-let solve_pattern_eqn env l1 c =
-  let l1 = List.map (expand_var (make_alias_map env)) l1 in
+let solve_pattern_eqn env l c =
   let c' = List.fold_right (fun a c ->
     let c' = subst_term (lift 1 a) (lift 1 c) in
     match kind_of_term a with
@@ -1330,7 +1367,7 @@ let solve_pattern_eqn env l1 c =
       | Rel n -> let (na,_,t) = lookup_rel n env in mkLambda (na,lift n t,c')
       | Var id -> let (id,_,t) = lookup_named id env in mkNamedLambda id t c'
       | _ -> assert false)
-    l1 c in
+    l c in
   (* Warning: we may miss some opportunity to eta-reduce more since c'
      is not in normal form *)
   whd_eta c'

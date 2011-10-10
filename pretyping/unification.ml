@@ -112,17 +112,29 @@ let pose_all_metas_as_evars env evd t =
 let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst) =
   match kind_of_term f with
     | Meta k ->
-	let c = solve_pattern_eqn env (Array.to_list l) c in
+	let sigma,c = pose_all_metas_as_evars env sigma c in
+	let c = solve_pattern_eqn env l c in
 	let pb = (Conv,TypeNotProcessed) in
 	  if noccur_between 1 nb c then
             sigma,(k,lift (-nb) c,pb)::metasubst,evarsubst
-	  else error_cannot_unify_local env sigma (mkApp (f, l),c,c)
+	  else error_cannot_unify_local env sigma (applist (f, l),c,c)
     | Evar ev ->
 	let sigma,c = pose_all_metas_as_evars env sigma c in
-	sigma,metasubst,(env,ev,solve_pattern_eqn env (Array.to_list l) c)::evarsubst
+	sigma,metasubst,(env,ev,solve_pattern_eqn env l c)::evarsubst
     | _ -> assert false
 
 let push d (env,n) = (push_rel_assum d env,n+1)
+
+(* Hack to propagate data from an ocaml when clause to the actual branch code *)
+(* of a pattern-matching clause *)
+
+let whenmem = ref []
+
+let store mem = function
+  | Some l -> whenmem := l; true
+  | None -> false
+
+let restore mem = !mem
 
 (*******************************)
 
@@ -415,18 +427,16 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	       reduce curenvnb pb b substn cM cN)
 
 	| App (f1,l1), _ when
-	    (isMeta f1 && use_metas_pattern_unification flags (snd curenvnb) l1
+	    (isMeta f1 && use_metas_pattern_unification flags nb l1
              || use_evars_pattern_unification flags && isAllowedEvar flags f1) &
-	    is_unification_pattern curenvnb f1 l1 cN &
-	    not (dependent f1 cN) ->
-	      solve_pattern_eqn_array curenvnb f1 l1 cN substn
+	    store whenmem (is_unification_pattern curenv f1 (Array.to_list l1) cN) ->
+	      solve_pattern_eqn_array curenvnb f1 (restore whenmem) cN substn
 
 	| _, App (f2,l2) when
-	    (isMeta f2 && use_metas_pattern_unification flags (snd curenvnb) l2
+	    (isMeta f2 && use_metas_pattern_unification flags nb l2
              || use_evars_pattern_unification flags && isAllowedEvar flags f2) &
-	    is_unification_pattern curenvnb f2 l2 cM &
-	    not (dependent f2 cM) ->
-	      solve_pattern_eqn_array curenvnb f2 l2 cM substn
+	    store whenmem (is_unification_pattern curenv f2 (Array.to_list l2) cM) ->
+	      solve_pattern_eqn_array curenvnb f2 (restore whenmem) cM substn
 
 	| App (f1,l1), App (f2,l2) ->
 	    let len1 = Array.length l1
@@ -460,6 +470,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 		  let (f2,l2) =
 		    match kind_of_term cN with App (f,l) -> (f,l) | _ -> (cN,[||]) in
 		    expand curenvnb pb b substn cM f1 l1 cN f2 l2
+
 
   and reduce curenvnb pb b (sigma, metas, evars as substn) cM cN =
     if use_full_betaiota flags && not (subterm_restriction b flags) then
