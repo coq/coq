@@ -165,29 +165,22 @@ module EvarInfoMap = struct
   (*******************************************************************)
   (* Formerly Instantiate module *)
 
-  let is_id_inst inst =
-    let is_id (id,c) = match kind_of_term c with
-      | Var id' -> id = id'
-      | _ -> false
-    in
-      List.for_all is_id inst
-
-  (* Vérifier que les instances des let-in sont compatibles ?? *)
-  let instantiate_sign_including_let sign args =
+  (* Note: let-in contributes to the instance *)
+  let make_evar_instance sign args =
     let rec instrec = function
-      | ((id,b,_) :: sign, c::args) -> (id,c) :: (instrec (sign,args))
-      | ([],[])                        -> []
-      | ([],_) | (_,[]) ->
-	  anomaly "Signature and its instance do not match"
+      | (id,_,_) :: sign, c::args ->
+          (match kind_of_term c with
+            | Var id' when id = id' -> instrec (sign,args)
+            | _ -> (id,c) :: instrec (sign,args))
+      | (id,_,_) :: sign, c::args -> (id,c) :: instrec (sign,args)
+      | [],[]                     -> []
+      | [],_ | _,[] -> anomaly "Signature and its instance do not match"
     in
       instrec (sign,args)
 
   let instantiate_evar sign c args =
-    let inst = instantiate_sign_including_let sign args in
-      if is_id_inst inst then
-	c
-      else
-	replace_vars inst c
+    let inst = make_evar_instance sign args in
+    if inst = [] then c else replace_vars inst c
 
   (* Existentials. *)
 
