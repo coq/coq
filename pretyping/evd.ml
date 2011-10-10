@@ -825,9 +825,9 @@ let pr_evar_map_t depth sigma =
   in evs ++ svs ++ cs
 
 let print_env_short env =
-  let pr_body = function None -> mt () | Some b -> str " := " ++ print_constr b in
-  let pr_named_decl (n, b, _) = pr_id n ++ pr_body b in
-  let pr_rel_decl (n, b, _) = pr_name n ++ pr_body b in
+  let pr_body n = function None -> pr_name n | Some b -> str "(" ++ pr_name n ++ str " := " ++ print_constr b ++ str ")" in
+  let pr_named_decl (n, b, _) = pr_body (Name n) b in
+  let pr_rel_decl (n, b, _) = pr_body n b in
   let nc = List.rev (named_context env) in
   let rc = List.rev (rel_context env) in
     str "[" ++ prlist_with_sep pr_spc pr_named_decl nc ++ str "]" ++ spc () ++

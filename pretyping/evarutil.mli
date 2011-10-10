@@ -52,11 +52,15 @@ val make_pure_subst : evar_info -> constr array -> (identifier * constr) list
 
 (** {6 Instantiate evars} *)
 
+type conv_fun =
+  env ->  evar_map -> conv_pb -> constr -> constr -> evar_map * bool
+
 (** [evar_define choose env ev c] try to instantiate [ev] with [c] (typed in [env]),
    possibly solving related unification problems, possibly leaving open
    some problems that cannot be solved in a unique way (except if choose is
    true); fails if the instance is not valid for the given [ev] *)
-val evar_define : ?choose:bool -> env -> existential -> constr -> evar_map -> evar_map
+val evar_define : conv_fun -> ?choose:bool -> env -> evar_map -> 
+  existential -> constr -> evar_map
 
 (** {6 Evars/Metas switching...} *)
 
@@ -78,14 +82,11 @@ val whd_head_evar :  evar_map -> constr -> constr
 
 val is_ground_term :  evar_map -> constr -> bool
 val is_ground_env  :  evar_map -> env -> bool
-val solve_refl :
-  (env ->  evar_map -> conv_pb -> constr -> constr -> evar_map * bool)
-  -> env ->  evar_map -> existential_key -> constr array -> constr array ->
-    evar_map
-val solve_simple_eqn :
-  (env ->  evar_map -> conv_pb -> constr -> constr -> evar_map * bool)
-  -> ?choose:bool -> env ->  evar_map -> bool option * existential * constr ->
-    evar_map * bool
+val solve_refl : conv_fun -> env ->  evar_map -> 
+  existential_key -> constr array -> constr array -> evar_map
+val solve_simple_eqn : conv_fun -> ?choose:bool -> env ->  evar_map ->
+  bool option * existential * constr -> evar_map * bool
+val reconsider_conv_pbs : conv_fun -> evar_map -> evar_map * bool
 
 (** [check_evars env initial_sigma extended_sigma c] fails if some
    new unresolved evar remains in [c] *)
@@ -202,6 +203,6 @@ val push_rel_context_to_named_context : Environ.env -> types ->
 
 val generalize_evar_over_rels : evar_map -> existential -> types * constr list
 
-val check_evar_instance : evar_map -> existential_key -> 
-  (env ->  evar_map -> conv_pb -> constr -> constr -> evar_map * bool) -> evar_map
+val check_evar_instance : evar_map -> existential_key -> constr -> conv_fun ->
+  evar_map
 
