@@ -1340,6 +1340,10 @@ let hcons_term (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
     (H.may_add_and_get h y, h)
 
   in
+  (* Make sure our statically allocated Rels (1 to 16) are considered
+     as canonical, and hence hash-consed to themselves *)
+  ignore (hash_term_array rels);
+
   fun t -> fst (sh_rec t)
 
 (* Exported hashing fonction on constr, used mainly in plugins.
