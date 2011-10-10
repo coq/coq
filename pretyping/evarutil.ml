@@ -391,77 +391,68 @@ let check_restricted_occur evd refine env filter constr =
   let res = aux 0 constr in
     Array.to_list filter, res
 
+(* We have a unification problem Σ; Γ |- ?e[u1..uq] = ty : s where ?e is not
+ * defined in Σ but yet known to be definable in some context x1:T1..xq:Tq.
+ * [declare_dangling_evar ... Γ Σ c ty (x1:T1..xq:Tq) .. (u1..uq) (x1..xq)]
+ * declares x1:T1..xq:Tq |- ?e : s such that ?e[u1..uq] = ty holds.
+ *)
+
+let define_evar_from_virtual_equation define_fun env evd t_in_env sign filter inst_in_env
+    inst_in_sign =
+  let ty_t_in_env = Retyping.get_type_of env evd t_in_env in
+  let evd,evar_in_env = new_evar_instance sign evd ty_t_in_env ~filter inst_in_env in
+  let t_in_env = whd_evar evd t_in_env in
+  let evd = define_fun env evd (destEvar evar_in_env) t_in_env in
+  let evar_in_sign = mkEvar (fst (destEvar evar_in_env), Array.of_list inst_in_sign) in
+  (evd,whd_evar evd evar_in_sign)
+
 (* We have x1..xq |- ?e1 : τ and had to solve something like
  * Σ; Γ |- ?e1[u1..uq] = (...\y1 ... \yk ... c), where c is typically some
  * ?e2[v1..vn], hence flexible. We had to go through k binders and now
- * virtually have x1..xq, y1..yk | ?e1' : τ' and the equation
+ * virtually have x1..xq, y1'..yk' | ?e1' : τ' and the equation
  * Γ, y1..yk |- ?e1'[u1..uq y1..yk] = c.
- * What we do is to formally introduce ?e1' in context x1..xq, Γ, y1..yk,
- * but forbidding it to use the variables of Γ (otherwise said,
- * Γ is here only for ensuring the correct typing of ?e1').
+ * [extend_evar Γ evd k (?e1[u1..uq]) c] extend Σ with the declaration of ?e1'
+ * and returns both its instance ?e1'[x1..xq y1..yk] in an extension of the
+ * context of e1 so that e1 can be instantiated by
+ * (...\y1' ... \yk' ... ?e1'[x1..xq y1'..yk']),
+ * and the instance ?e1'[u1..uq y1..yk] so that the remaining equation
+ * ?e1'[u1..uq y1..yk] = c can be registered
  *
- * In fact, we optimize a little and try to compute a maximum
- * common subpart of x1..xq and Γ. This is done by detecting the
- * longest subcontext x1..xp such that Γ = x1'..xp' z1..zm and
- * u1..up = x1'..xp'.
- *
- * At the end, we return ?e1'[x1..xn z1..zm y1..yk] so that ?e1 can be
- * instantiated by (...\y1 ... \yk ... ?e1'[x1..xn z1..zm y1..yk]) and the
- * new problem is Σ; Γ, y1..yk |- ?e1'[u1..un z1..zm y1..yk] = c,
- * making the z1..zm unavailable.
- *
- * This is what [extend_evar Γ evd k (?e1[u1..uq]) c] does.
+ * Note that, because invert_definition does not check types, we need to
+ * guess the types of y1'..yn' by inverting the types of y1..yn along the
+ * substitution u1..uq.
  *)
 
-let shrink_context env subst ty =
-  let rev_named_sign = List.rev (named_context env) in
-  let rel_sign = rel_context env in
-  (* We merge the contexts (optimization) *)
-  let rec shrink_rel i subst rel_subst rev_rel_sign =
-    match subst,rev_rel_sign with
-    | (id,c)::subst,_::rev_rel_sign when isRel c && destRel c = i ->
-	shrink_rel (i-1) subst (mkVar id::rel_subst) rev_rel_sign
-    | _ ->
-	substl_rel_context rel_subst (List.rev rev_rel_sign),
-	substl rel_subst ty
+let materialize_evar define_fun env evd k (evk1,args1) ty =
+  let evi1 = Evd.find_undefined evd evk1 in
+  let env1,rel_sign = env_rel_context_chop k env in
+  let sign1 = evar_hyps evi1 in
+  let ids1 = List.map pi1 (named_context_of_val sign1) in
+  let (sign2,filter2,inst2_in_env,inst2_in_sign,_,evd,_) =
+    List.fold_right (fun (na,b,t_in_env as d) (sign,filter,inst_in_env,inst_in_sign,env,evd,avoid) ->
+      match b with
+      | None ->
+          let id = next_name_away na avoid in
+          let evd,t_in_sign =
+            define_evar_from_virtual_equation define_fun env evd t_in_env
+              sign filter inst_in_env inst_in_sign in
+          (push_named_context_val (id,None,t_in_sign) sign,true::filter,
+           (mkRel 1)::(List.map (lift 1) inst_in_env),(mkVar id)::inst_in_sign,
+           push_rel d env,evd,id::avoid)
+      | Some b ->
+          (sign,filter,inst_in_env,inst_in_sign,
+           push_rel d env,evd,avoid))
+      rel_sign
+      (sign1,evar_filter evi1,Array.to_list args1,
+       List.map mkVar ids1,env1,evd,ids1)
   in
-  let rec shrink_named subst named_subst rev_named_sign =
-    match subst,rev_named_sign with
-    | (id,c)::subst,(id',b',t')::rev_named_sign when isVar c && destVar c = id' ->
-	shrink_named subst ((id',mkVar id)::named_subst) rev_named_sign
-    | _::_, [] ->
-	let nrel = List.length rel_sign in
-	let rel_sign, ty = shrink_rel nrel subst [] (List.rev rel_sign) in
-	[], map_rel_context (replace_vars named_subst) rel_sign,
-	replace_vars named_subst ty
-    | _ ->
-	map_named_context (replace_vars named_subst) (List.rev rev_named_sign),
-	rel_sign, ty
-  in
-  shrink_named subst [] rev_named_sign
-
-let extend_evar env evdref k (evk1,args1) ty =
-  let overwrite_first v1 v2 =
-    let v = Array.copy v1 in
-    let n = Array.length v - Array.length v2 in
-    for i = 0 to Array.length v2 - 1 do v.(n+i) <- v2.(i) done;
-    v in
-  let evi1 = Evd.find_undefined !evdref evk1 in
-  let named_sign',rel_sign',ty =
-    if k = 0 then [], [], ty
-    else shrink_context env (List.rev (make_pure_subst evi1 args1)) ty in
-  let extenv =
-    List.fold_right push_rel rel_sign'
-      (List.fold_right push_named named_sign' (evar_unfiltered_env evi1)) in
-  let nb_to_hide = rel_context_length rel_sign' - k in
-  let rel_filter = list_map_i (fun i _ -> i > nb_to_hide) 1 rel_sign' in
-  let named_filter1 = List.map (fun _ -> true) (evar_context evi1) in
-  let named_filter2 = List.map (fun _ -> false) named_sign' in
-  let filter = rel_filter@named_filter2@named_filter1 in
-  let evar1' = e_new_evar evdref extenv ~filter:filter ty in
-  let evk1',args1'_in_env = destEvar evar1' in
-  let args1'_in_extenv = Array.map (lift k) (overwrite_first args1'_in_env args1) in
-  (evar1',(evk1',args1'_in_extenv))
+  let evd,ev2ty_in_sign =
+    define_evar_from_virtual_equation define_fun env evd ty
+      sign2 filter2 inst2_in_env inst2_in_sign in
+  let evd,ev2_in_sign =
+    new_evar_instance sign2 evd ev2ty_in_sign ~filter:filter2 inst2_in_sign in
+  let ev2_in_env = (fst (destEvar ev2_in_sign), Array.of_list inst2_in_env) in
+  (evd, ev2_in_sign, ev2_in_env)
 
 let subfilter env ccl filter newfilter args =
   let vars = collect_vars ccl in
@@ -1104,11 +1095,12 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
 	   assert !progress;
 	   (* Make the virtual left evar real *)
 	   let ty = get_type_of env' !evdref t in
-	   let (evar'',ev'') = extend_evar env' evdref k ev ty in
-	     (try 
+	   let (evd,evar'',ev'') =
+             materialize_evar (evar_define conv_algo) env' !evdref k ev ty in
+	     (try
 		let evd =
 		  (* Try to project (a restriction of) the left evar ... *)
-		  try solve_evar_evar_l2r (evar_define conv_algo) env' !evdref ev'' ev'
+		  try solve_evar_evar_l2r (evar_define conv_algo) env' evd ev'' ev'
 		  with CannotProject projs'' ->
 		    (* ... or postpone the problem *)
 		    postpone_evar_evar env' evd projs'' ev'' projs' ev'

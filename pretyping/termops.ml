@@ -623,7 +623,8 @@ let my_prefix_application eq_fun (k,c) (by_c : constr) (t : constr) =
     | _ -> None
 
 (* Recognizing occurrences of a given subterm in a term: [subst_term c t]
-   substitutes [(Rel 1)] for all occurrences of term [c] in a term [t] *)
+   substitutes [(Rel 1)] for all occurrences of term [c] in a term [t];
+   works if [c] has rels *)
 
 let subst_term_gen eq_fun c t =
   let rec substrec (k,c as kc) t =
@@ -636,10 +637,11 @@ let subst_term_gen eq_fun c t =
   in
   substrec (1,c) t
 
+let subst_term = subst_term_gen eq_constr
+
 (* Recognizing occurrences of a given subterm in a term :
    [replace_term c1 c2 t] substitutes [c2] for all occurrences of
-   term [c1] in a term [t] *)
-(*i Meme remarque : a priori [c] n'est pas forcement clos i*)
+   term [c1] in a term [t]; works if [c1] and [c2] have rels *)
 
 let replace_term_gen eq_fun c by_c in_t =
   let rec substrec (k,c as kc) t =
@@ -651,8 +653,6 @@ let replace_term_gen eq_fun c by_c in_t =
 	substrec kc t)
   in
   substrec (0,c) in_t
-
-let subst_term = subst_term_gen eq_constr
 
 let replace_term = replace_term_gen eq_constr
 
@@ -1068,7 +1068,7 @@ let on_judgment_value f j = { j with uj_val = f j.uj_val }
 let on_judgment_type f j = { j with uj_type = f j.uj_type }
 
 (* Cut a context ctx in 2 parts (ctx1,ctx2) with ctx1 containing k
-     variables *)
+     variables; skips let-in's *)
 let context_chop k ctx =
   let rec chop_aux acc = function
     | (0, l2) -> (List.rev acc, l2)
@@ -1076,6 +1076,13 @@ let context_chop k ctx =
     | (n, (h::t)) -> chop_aux (h::acc) (pred n, t)
     | (_, []) -> anomaly "context_chop"
   in chop_aux [] (k,ctx)
+
+(* Do not skip let-in's *)
+let env_rel_context_chop k env =
+  let rels = rel_context env in
+  let ctx1,ctx2 = list_chop k rels in
+  push_rel_context ctx2 (reset_with_named_context (named_context_val env) env),
+  ctx1
 
 (*******************************************)
 (* Functions to deal with impossible cases *)
