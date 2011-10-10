@@ -83,11 +83,6 @@ type constant_def =
   | Def of constr_substituted
   | OpaqueDef of lazy_constr
 
-let subst_constant_def sub = function
-  | Undef inl -> Undef inl
-  | Def c -> Def (subst_constr_subst sub c)
-  | OpaqueDef lc -> OpaqueDef (subst_lazy_constr sub lc)
-
 type constant_body = {
     const_hyps : section_context; (* New: younger hyp at top *)
     const_body : constant_def;
@@ -108,8 +103,7 @@ let is_opaque cb = match cb.const_body with
   | OpaqueDef _ -> true
   | Undef _ | Def _ -> false
 
-(*s Inductive types (internal representation with redundant
-    information). *)
+(* Substitutions of [constant_body] *)
 
 let subst_rel_declaration sub (id,copt,t as x) =
   let copt' = Option.smartmap (subst_mps sub) copt in
@@ -117,6 +111,69 @@ let subst_rel_declaration sub (id,copt,t as x) =
   if copt == copt' & t == t' then x else (id,copt',t')
 
 let subst_rel_context sub = list_smartmap (subst_rel_declaration sub)
+
+(* TODO: these substitution functions could avoid duplicating things
+   when the substitution have preserved all the fields *)
+
+let subst_const_type sub arity =
+  if is_empty_subst sub then arity
+  else match arity with
+    | NonPolymorphicType s -> NonPolymorphicType (subst_mps sub s)
+    | PolymorphicArity (ctx,s) -> PolymorphicArity (subst_rel_context sub ctx,s)
+
+let subst_const_def sub = function
+  | Undef inl -> Undef inl
+  | Def c -> Def (subst_constr_subst sub c)
+  | OpaqueDef lc -> OpaqueDef (subst_lazy_constr sub lc)
+
+let subst_const_body sub cb = {
+  const_hyps = (assert (cb.const_hyps=[]); []);
+  const_body = subst_const_def sub cb.const_body;
+  const_type = subst_const_type sub cb.const_type;
+  const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
+  const_constraints = cb.const_constraints}
+
+(* Hash-consing of [constant_body] *)
+
+let hcons_rel_decl ((n,oc,t) as d) =
+  let n' = hcons_name n
+  and oc' = Option.smartmap hcons_constr oc
+  and t' = hcons_types t
+  in if n' == n && oc' == oc && t' == t then d else (n',oc',t')
+
+let hcons_rel_context l = list_smartmap hcons_rel_decl l
+
+let hcons_polyarity ar =
+  { poly_param_levels =
+      list_smartmap (Option.smartmap hcons_univ) ar.poly_param_levels;
+    poly_level = hcons_univ ar.poly_level }
+
+let hcons_const_type = function
+  | NonPolymorphicType t ->
+    NonPolymorphicType (hcons_constr t)
+  | PolymorphicArity (ctx,s) ->
+    PolymorphicArity (hcons_rel_context ctx, hcons_polyarity s)
+
+let hcons_const_def = function
+  | Undef inl -> Undef inl
+  | Def l_constr ->
+    let constr = force l_constr in
+    Def (from_val (hcons_constr constr))
+  | OpaqueDef lc ->
+    if lazy_constr_is_val lc then
+      let constr = force_opaque lc in
+      OpaqueDef (opaque_from_val (hcons_constr constr))
+    else OpaqueDef lc
+
+let hcons_const_body cb =
+  { cb with
+    const_body = hcons_const_def cb.const_body;
+    const_type = hcons_const_type cb.const_type;
+    const_constraints = hcons_constraints cb.const_constraints }
+
+
+(*s Inductive types (internal representation with redundant
+    information). *)
 
 type recarg =
   | Norec
@@ -256,22 +313,7 @@ type mutual_inductive_body = {
 
   }
 
-let subst_arity sub arity =
-  if is_empty_subst sub then arity
-  else match arity with
-    | NonPolymorphicType s -> NonPolymorphicType (subst_mps sub s)
-    | PolymorphicArity (ctx,s) -> PolymorphicArity (subst_rel_context sub ctx,s)
-	
-(* TODO: should be changed to non-coping after Term.subst_mps *)
-let subst_const_body sub cb = {
-  const_hyps = (assert (cb.const_hyps=[]); []);
-  const_body = subst_constant_def sub cb.const_body;
-  const_type = subst_arity sub cb.const_type;
-  const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
-  (*const_type_code = Cemitcodes.subst_to_patch sub cb.const_type_code;*)
-  const_constraints = cb.const_constraints}
-
-let subst_arity sub = function
+let subst_indarity sub = function
 | Monomorphic s ->
     Monomorphic {
       mind_user_arity = subst_mps sub s.mind_user_arity;
@@ -285,7 +327,7 @@ let subst_mind_packet sub mbp =
     mind_typename = mbp.mind_typename;
     mind_nf_lc = array_smartmap (subst_mps sub) mbp.mind_nf_lc;
     mind_arity_ctxt = subst_rel_context sub mbp.mind_arity_ctxt;
-    mind_arity = subst_arity sub mbp.mind_arity;
+    mind_arity = subst_indarity sub mbp.mind_arity;
     mind_user_lc = array_smartmap (subst_mps sub) mbp.mind_user_lc;
     mind_nrealargs = mbp.mind_nrealargs;
     mind_nrealargs_ctxt = mbp.mind_nrealargs_ctxt;
@@ -294,7 +336,6 @@ let subst_mind_packet sub mbp =
     mind_nb_constant = mbp.mind_nb_constant;
     mind_nb_args = mbp.mind_nb_args;
     mind_reloc_tbl = mbp.mind_reloc_tbl }
-
 
 let subst_mind sub mib =
   { mind_record = mib.mind_record ;
@@ -308,6 +349,26 @@ let subst_mind sub mib =
     mind_packets = array_smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_constraints = mib.mind_constraints  }
 
+let hcons_indarity = function
+  | Monomorphic a ->
+    Monomorphic { mind_user_arity = hcons_constr a.mind_user_arity;
+		  mind_sort = hcons_sorts a.mind_sort }
+  | Polymorphic a -> Polymorphic (hcons_polyarity a)
+
+let hcons_mind_packet oib =
+ { oib with
+   mind_typename = hcons_ident oib.mind_typename;
+   mind_arity_ctxt = hcons_rel_context oib.mind_arity_ctxt;
+   mind_arity = hcons_indarity oib.mind_arity;
+   mind_consnames = array_smartmap hcons_ident oib.mind_consnames;
+   mind_user_lc = array_smartmap hcons_types oib.mind_user_lc;
+   mind_nf_lc = array_smartmap hcons_types oib.mind_nf_lc }
+
+let hcons_mind mib =
+  { mib with
+    mind_packets = array_smartmap hcons_mind_packet mib.mind_packets;
+    mind_params_ctxt = hcons_rel_context mib.mind_params_ctxt;
+    mind_constraints = hcons_constraints mib.mind_constraints }
 
 (*s Modules: signature component specifications, module types, and
   module declarations *)

@@ -861,3 +861,30 @@ module Huniv =
 let hcons_univlevel = Hashcons.simple_hcons Hunivlevel.f Names.hcons_dirpath
 let hcons_univ = Hashcons.simple_hcons Huniv.f hcons_univlevel
 
+module Hconstraint =
+  Hashcons.Make(
+    struct
+      type t = univ_constraint
+      type u = universe_level -> universe_level
+      let hash_sub hul (l1,k,l2) = (hul l1, k, hul l2)
+      let equal (l1,k,l2) (l1',k',l2') =
+	l1 == l1' && k = k' && l2 == l2'
+      let hash = Hashtbl.hash
+    end)
+
+module Hconstraints =
+  Hashcons.Make(
+    struct
+      type t = constraints
+      type u = univ_constraint -> univ_constraint
+      let hash_sub huc s =
+	Constraint.fold (fun x -> Constraint.add (huc x)) s Constraint.empty
+      let equal s s' =
+	list_for_all2eq (==)
+	  (Constraint.elements s)
+	  (Constraint.elements s')
+      let hash = Hashtbl.hash
+    end)
+
+let hcons_constraint = Hashcons.simple_hcons Hconstraint.f hcons_univlevel
+let hcons_constraints = Hashcons.simple_hcons Hconstraints.f hcons_constraint

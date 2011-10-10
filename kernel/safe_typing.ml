@@ -255,37 +255,14 @@ type global_declaration =
   | ConstantEntry of constant_entry
   | GlobalRecipe of Cooking.recipe
 
-let hcons_const_type = function
-  | NonPolymorphicType t ->
-      NonPolymorphicType (hcons_constr t)
-  | PolymorphicArity (ctx,s) ->
-      PolymorphicArity (map_rel_context hcons_constr ctx,s)
-
-let hcons_const_body = function
-  | Undef inl -> Undef inl
-  | Def l_constr ->
-    let constr = Declarations.force l_constr in
-    Def (Declarations.from_val (hcons_constr constr))
-  | OpaqueDef lc ->
-    if lazy_constr_is_val lc then
-      let constr = Declarations.force_opaque lc in
-      OpaqueDef (Declarations.opaque_from_val (hcons_constr constr))
-    else OpaqueDef lc
-
-let hcons_constant_body cb =
-  { cb with
-    const_body = hcons_const_body cb.const_body;
-    const_type = hcons_const_type cb.const_type }
-
 let add_constant dir l decl senv =
   check_label l senv;
   let kn = make_con senv.modinfo.modpath dir l in
-  let cb =
-    match decl with
-      | ConstantEntry ce -> translate_constant senv.env kn ce
-      | GlobalRecipe r ->
-	  let cb = translate_recipe senv.env kn r in
-	    if dir = empty_dirpath then hcons_constant_body cb else cb
+  let cb = match decl with
+    | ConstantEntry ce -> translate_constant senv.env kn ce
+    | GlobalRecipe r ->
+      let cb = translate_recipe senv.env kn r in
+      if dir = empty_dirpath then hcons_const_body cb else cb
   in
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
   let senv'' = match cb.const_body with
@@ -310,6 +287,7 @@ let add_mind dir l mie senv =
        all labels *)
   let kn = make_mind senv.modinfo.modpath dir l in
   let mib = translate_mind senv.env kn mie in
+  let mib = if mib.mind_hyps <> [] then mib else hcons_mind mib in
   let senv' = add_field (l,SFBmind mib) (I kn) senv in
   kn, senv'
 

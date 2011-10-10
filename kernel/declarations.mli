@@ -62,8 +62,6 @@ type constant_def =
   | Def of constr_substituted
   | OpaqueDef of lazy_constr
 
-val subst_constant_def : substitution -> constant_def -> constant_def
-
 type constant_body = {
     const_hyps : section_context; (** New: younger hyp at top *)
     const_body : constant_def;
@@ -71,6 +69,7 @@ type constant_body = {
     const_body_code : to_patch_substituted;
     const_constraints : constraints }
 
+val subst_const_def : substitution -> constant_def -> constant_def
 val subst_const_body : substitution -> constant_body -> constant_body
 
 (** Is there a actual body in const_body or const_body_opaque ? *)
@@ -233,3 +232,13 @@ and module_type_body =
       typ_constraints : constraints;
       (** quotiented set of equivalent constant and inductive name  *)
       typ_delta :delta_resolver}
+
+
+(** Hash-consing *)
+
+(** Here, strictly speaking, we don't perform true hash-consing
+    of the structure, but simply hash-cons all inner constr
+    and other known elements *)
+
+val hcons_const_body : constant_body -> constant_body
+val hcons_mind : mutual_inductive_body -> mutual_inductive_body

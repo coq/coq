@@ -105,3 +105,4 @@ val dump_universes :
 
 val hcons_univlevel : universe_level -> universe_level
 val hcons_univ : universe -> universe
+val hcons_constraints : constraints -> constraints
