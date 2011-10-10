@@ -160,7 +160,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 	in
 	let app, ty_constr = instance_constructor k subst in
 	let termtype = it_mkProd_or_LetIn ty_constr (ctx' @ ctx) in
-	let term = Termops.it_mkLambda_or_LetIn app (ctx' @ ctx) in
+	let term = Termops.it_mkLambda_or_LetIn (Option.get app) (ctx' @ ctx) in
 	  term, termtype
     | Inr def ->
 	let termtype = it_mkProd_or_LetIn cty ctx in
