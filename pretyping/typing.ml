@@ -227,4 +227,6 @@ let solve_evars env evd c =
   let evdref = ref evd in
   let c = (execute env evdref c).uj_val in
   (* side-effect on evdref *)
-  nf_evar !evdref c
+  !evdref, nf_evar !evdref c
+
+let _ = Evarconv.set_solve_evars solve_evars

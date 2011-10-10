@@ -27,7 +27,7 @@ val check   : env -> evar_map -> constr -> types -> unit
 val meta_type : evar_map -> metavariable -> types
 
 (** Solve existential variables using typing *)
-val solve_evars : env -> evar_map -> constr -> constr
+val solve_evars : env -> evar_map -> constr -> evar_map * constr
 
 (** Raise an error message if incorrect elimination for this inductive *)
 (** (first constr is term to match, second is return predicate) *)

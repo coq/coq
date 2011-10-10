@@ -100,6 +100,10 @@ val is_unification_pattern_evar : env -> existential -> constr list ->
   constr -> bool
 val is_unification_pattern : env * int -> constr -> constr array ->
   constr -> bool
+
+val evar_absorb_arguments : env -> evar_map -> existential -> constr list ->
+  evar_map * existential
+
 val solve_pattern_eqn : env -> constr list -> constr -> constr
 
 (** The following functions return the set of evars immediately

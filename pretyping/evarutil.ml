@@ -1582,6 +1582,15 @@ let define_evar_as_lambda env evd (evk,args) =
   let evbody = mkEvar (fst (destEvar body), evbodyargs) in
   evd,mkLambda (na, dom, evbody)
 
+let rec evar_absorb_arguments env evd (evk,args as ev) = function
+  | [] -> evd,ev
+  | a::l ->
+      (* TODO: optimize and avoid introducing intermediate evars *)
+      let evd,lam = define_pure_evar_as_lambda env evd evk in
+      let _,_,body = destLambda lam in
+      let evk = fst (destEvar body) in
+      evar_absorb_arguments env evd (evk, array_cons a args) l
+
 (* Refining an evar to a sort *)
 
 let define_evar_as_sort evd (ev,args) =

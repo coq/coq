@@ -567,6 +567,118 @@ let choose_less_dependent_instance evk evd term args =
   if subst' = [] then error "Too complex unification problem." else
   Evd.define evk (mkVar (fst (List.hd subst'))) evd
 
+let apply_on_subterm f c t =
+  let rec applyrec (k,c as kc) t =
+    (* By using eq_constr, we make an approximation, for instance, we *)
+    (* could also be interested in finding a term u convertible to t *)
+    (* such that c occurs in u *)
+    if eq_constr c t then f k
+    else
+      map_constr_with_binders_left_to_right (fun d (k,c) -> (k+1,lift 1 c))
+	applyrec kc t
+  in
+  applyrec (0,c) t
+
+let filter_possible_projections c args =
+  let fv1 = free_rels c in
+  let fv2 = collect_vars c in
+  List.map (fun a ->
+    a == c ||
+    (* Here we make an approximation, for instance, we could also be *)
+    (* interested in finding a term u convertible to c such that a occurs *)
+    (* in u *)
+    isRel a && Intset.mem (destRel a) fv1 ||
+    isVar a && Idset.mem (destVar a) fv2)
+    args
+
+let initial_evar_data evi =
+  let ids = List.map pi1 (evar_context evi) in
+  (evar_filter evi, List.map mkVar ids)
+
+let solve_evars = ref (fun _ -> failwith "solve_evars not installed")
+let set_solve_evars f = solve_evars := f
+
+(* We solve the problem env_rhs |- ?e[u1..un] = rhs knowing env_ev |- ev : ty
+ * by looking for a maximal well-typed abtraction over u1..un in rhs
+ *
+ * We first build \x1..\xn.C[e11..e1p1,..,en1..enpn] where all occurrences of
+ * u1..un have been replaced by evars eij (in practice, this is a bit more
+ * complicated as shown above since each eij depends on x1..xi-1 and because
+ * occurrences of u1..ui can occur in the types of xi+1..xn).
+ *
+ * Then, we use typing to infer the relations between the different
+ * occurrences. If some occurrence is still unconstrained after typing,
+ * we instantiate successively the unresolved occurrences of un by xn,
+ * of un-1 by xn-1, etc [the idea comes from Chung-Kil Hur, that he
+ * used for his Heq plugin; extensions to several arguments based on a
+ * proposition from Dan Grayson]
+ *)
+
+let second_order_matching ts env_rhs evd (evk,args) rhs =
+  try
+  let args = Array.to_list args in
+  let evi = Evd.find_undefined evd evk in
+  let sign = evar_hyps evi in
+  let ctxt = named_context_of_val sign in
+  let filter = evar_filter evi in
+  let instance = List.map mkVar (List.map pi1 ctxt) in
+  let rec set_holes evd subst rhs = function
+  | (id,_,t)::ctxt, c::l ->
+      let ty = Retyping.get_type_of env_rhs evd c in
+      let evd,b = evar_conv_x ts env_rhs evd CUMUL ty (replace_vars subst t) in
+      if not b then raise Exit;
+      let subst = (id,c)::subst in
+      let evd,evoccs,rhs = set_holes evd subst rhs (ctxt,l) in
+      let evs = ref [] in
+      let evdref = ref evd in
+      let filter = List.map2 (&&) filter (filter_possible_projections c args) in
+      let set_var k =
+        let evd,ev = new_evar_instance sign !evdref t ~filter instance in
+        evdref := evd;
+        evs := fst (destEvar ev)::!evs;
+        ev in
+      let rhs = apply_on_subterm set_var c rhs in
+      (!evdref, (id,c,!evs)::evoccs, rhs)
+  | [],[] ->
+      (evd, [], rhs)
+  | _ ->
+      anomaly "Signature and instance do not match" in
+
+  let evd,evoccs,rhs = set_holes evd [] rhs (ctxt,args) in
+
+  (* We instantiate the evars of which the value is forced by typing *)
+  let evd,rhs =
+    try !solve_evars env_rhs evd rhs
+    with e when Pretype_errors.precatchable_exception e ->
+      (* Could not revert all subterms *)
+      raise Exit in
+
+  let rec abstract_free_holes evd = function
+  | (id,c,evs)::l ->
+      let rec force_instantiation evd = function
+      | evk::evs ->
+          let evd =
+            if is_undefined evd evk then
+              (* We force abstraction over this unconstrained occurrence *)
+              (* and we use typing to propagate this instantiation *)
+              (* This is an arbitrary choice *)
+              let evd = Evd.define evk (mkVar id) evd in
+              let evd,b = reconsider_conv_pbs (evar_conv_x ts) evd in
+              if b then evd else error "Cannot find an instance for ..."
+            else
+              evd
+          in
+          force_instantiation evd evs
+      | [] ->
+          abstract_free_holes evd l
+      in
+      force_instantiation evd evs
+  | [] ->
+      Evd.define evk rhs evd in
+
+  abstract_free_holes evd evoccs, true
+  with Exit -> evd, false
+
 let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   let t1 = apprec_nohdbeta ts env evd (whd_head_evar evd t1) in
   let t2 = apprec_nohdbeta ts env evd (whd_head_evar evd t2) in
@@ -589,6 +701,14 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   | _,Evar ev2 when List.length l2 <= List.length l1 ->
       (* On "u u1 .. u(n+p) = ?n t1 .. tn", try first-order unification *)
       first_order_unification ts env evd (ev2,l2) appr1
+  | Evar ev1,_ ->
+      (* Try second-order pattern-matching *)
+      let evd,ev1 = evar_absorb_arguments env evd ev1 l1 in
+      second_order_matching ts env evd ev1 (applist appr2)
+  | _,Evar ev2 ->
+      (* Try second-order pattern-matching *)
+      let evd,ev2 = evar_absorb_arguments env evd ev2 l2 in
+      second_order_matching ts env evd ev2 (applist appr1)
   | _ ->
       (* Some head evar have been instantiated, or unknown kind of problem *)
       evar_conv_x ts env evd pbty t1 t2

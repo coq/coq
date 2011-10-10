@@ -39,3 +39,5 @@ val check_conv_record : constr * types list -> constr * types list ->
     (constr list * types list) *
     (constr list * types list) * constr *
     (int * constr)
+
+val set_solve_evars : (env -> evar_map -> constr -> evar_map * constr) -> unit
