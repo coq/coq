@@ -236,7 +236,7 @@ Program Definition complement_proper
     intuition.
   Qed.
  
-Hint Extern 1 (Proper (_ ==> _ ==> _) (complement _)) => 
+Hint Extern 1 (Proper _ (complement _)) => 
   apply @complement_proper : typeclass_instances.
 
 (** The [inverse] too, actually the [flip] instance is a bit more general. *)
@@ -250,7 +250,7 @@ Program Definition flip_proper
     apply mor ; auto.
   Qed.
 
-Hint Extern 1 (Proper (_ ==> _ ==> _) (flip _)) => 
+Hint Extern 1 (Proper _ (flip _)) => 
   apply @flip_proper : typeclass_instances.
 
 (** Every Transitive relation gives rise to a binary morphism on [impl],
