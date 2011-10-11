@@ -33,16 +33,16 @@ val elim_no_delta_flags : unify_flags
 
 (** The "unique" unification fonction *)
 val w_unify :
-  env -> conv_pb -> ?flags:unify_flags -> constr -> constr -> evar_map -> evar_map
+  env -> evar_map -> conv_pb -> ?flags:unify_flags -> constr -> constr -> evar_map
 
 (** [w_unify_to_subterm env (c,t) m] performs unification of [c] with a
    subterm of [t]. Constraints are added to [m] and the matched
    subterm of [t] is also returned. *)
 val w_unify_to_subterm :
-  env -> ?flags:unify_flags -> constr * constr -> evar_map -> evar_map * constr
+  env -> evar_map -> ?flags:unify_flags -> constr * constr -> evar_map * constr
 
 val w_unify_to_subterm_all :
-  env -> ?flags:unify_flags -> constr * constr -> evar_map -> (evar_map * constr) list
+  env -> evar_map -> ?flags:unify_flags -> constr * constr -> (evar_map * constr) list
 
 val w_unify_meta_types : env -> ?flags:unify_flags -> evar_map -> evar_map
 

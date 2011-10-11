@@ -131,8 +131,8 @@ let instantiate_lemma_all frzevars env sigma gl c ty l l2r concl =
   in
   let flags = make_flags frzevars sigma rewrite_unif_flags eqclause in
   let occs =
-    Unification.w_unify_to_subterm_all ~flags env
-      ((if l2r then c1 else c2),concl) eqclause.evd
+    Unification.w_unify_to_subterm_all ~flags env eqclause.evd
+      ((if l2r then c1 else c2),concl)
   in List.map try_occ occs
 
 let instantiate_lemma env sigma gl c ty l l2r concl =

@@ -1704,7 +1704,7 @@ let default_matching_flags sigma = {
 let make_pattern_test env sigma0 (sigma,c) =
   let flags = default_matching_flags sigma0 in
   let matching_fun t =
-    try let sigma = w_unify env Reduction.CONV ~flags c t sigma in Some(sigma,t)
+    try let sigma = w_unify env sigma Reduction.CONV ~flags c t in Some(sigma,t)
     with _ -> raise NotUnifiable in
   let merge_fun c1 c2 =
     match c1, c2 with
@@ -3531,6 +3531,6 @@ let unify ?(state=full_transparent_state) x y gl =
 	modulo_delta = state;
 	modulo_conv_on_closed_terms = Some state}
     in
-    let evd = w_unify (pf_env gl) Reduction.CONV ~flags x y (project gl)
+    let evd = w_unify (pf_env gl) (project gl) Reduction.CONV ~flags x y
     in tclEVARS evd gl
   with _ -> tclFAIL 0 (str"Not unifiable") gl

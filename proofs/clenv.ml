@@ -267,7 +267,7 @@ let clenv_dependent ce = clenv_dependent_gen false ce
 
 let clenv_unify ?(flags=default_unify_flags) cv_pb t1 t2 clenv =
   { clenv with
-      evd = w_unify ~flags clenv.env cv_pb t1 t2 clenv.evd }
+      evd = w_unify ~flags clenv.env clenv.evd cv_pb t1 t2 }
 
 let clenv_unify_meta_types ?(flags=default_unify_flags) clenv =
   { clenv with evd = w_unify_meta_types ~flags:flags clenv.env clenv.evd }

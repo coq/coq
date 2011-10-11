@@ -1021,7 +1021,7 @@ module Strategies =
 	  with _ -> error "fold: the term is not unfoldable !"
 	in
 	  try
-	    let sigma = Unification.w_unify env CONV ~flags:Unification.elim_flags unfolded t sigma in
+	    let sigma = Unification.w_unify env sigma CONV ~flags:Unification.elim_flags unfolded t in
 	    let c' = Evarutil.nf_evar sigma c in
 	      Some (Some { rew_car = ty; rew_from = t; rew_to = c';
 			   rew_prf = RewCast DEFAULTcast; 
@@ -1771,13 +1771,13 @@ let unification_rewrite flags l2r c1 c2 cl car rel but gl =
       (* ~flags:(false,true) to allow to mark occurrences that must not be
          rewritten simply by replacing them with let-defined definitions
          in the context *)
-      Unification.w_unify_to_subterm ~flags:rewrite_unif_flags env ((if l2r then c1 else c2),but) cl.evd
+      Unification.w_unify_to_subterm ~flags:rewrite_unif_flags env cl.evd ((if l2r then c1 else c2),but)
     with
 	Pretype_errors.PretypeError _ ->
 	  (* ~flags:(true,true) to make Ring work (since it really
              exploits conversion) *)
 	  Unification.w_unify_to_subterm ~flags:flags
-	    env ((if l2r then c1 else c2),but) cl.evd
+	    env cl.evd ((if l2r then c1 else c2),but)
   in
   let evd' = Typeclasses.resolve_typeclasses ~fail:false env evd' in
   let cl' = {cl with evd = evd'} in

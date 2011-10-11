@@ -370,8 +370,8 @@ let find_subsubgoal c ctyp skip submetas gls =
     let se = Stack.pop stack in
       try
 	let unifier =
-	  Unification.w_unify env Reduction.CUMUL ~flags:Unification.elim_flags
-	    ctyp se.se_type se.se_evd in
+	  Unification.w_unify env se.se_evd Reduction.CUMUL
+	    ~flags:Unification.elim_flags ctyp se.se_type in
 	  if n <= 0 then
 	      {se with
 		 se_evd=meta_assign se.se_meta

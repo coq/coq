@@ -2,6 +2,8 @@
 = CHANGES BETWEEN COQ V8.3 AND COQ V8.4 =
 =========================================
 
+** Functions in unification.ml have now the evar_map coming just after the env
+
 ** Removal of Tacinterp.constr_of_id **
 
 Use instead either global_reference or construct_reference in constrintern.ml.
