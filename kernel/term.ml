@@ -325,6 +325,7 @@ let isRel c = match kind_of_term c with Rel _ -> true | _ -> false
 
 (* Tests if a variable *)
 let isVar c = match kind_of_term c with Var _ -> true | _ -> false
+let isVarId id c = match kind_of_term c with Var id' -> id = id' | _ -> false
 
 (* Tests if an inductive *)
 let isInd c = match kind_of_term c with Ind _ -> true | _ -> false

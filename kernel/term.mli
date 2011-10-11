@@ -230,6 +230,7 @@ val kind_of_type : types -> (constr, types) kind_of_type
 
 val isRel  : constr -> bool
 val isVar  : constr -> bool
+val isVarId  : identifier -> constr -> bool
 val isInd  : constr -> bool
 val isEvar : constr -> bool
 val isMeta : constr -> bool

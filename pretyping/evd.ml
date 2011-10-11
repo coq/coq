@@ -168,12 +168,9 @@ module EvarInfoMap = struct
   (* Note: let-in contributes to the instance *)
   let make_evar_instance sign args =
     let rec instrec = function
-      | (id,_,_) :: sign, c::args ->
-          (match kind_of_term c with
-            | Var id' when id = id' -> instrec (sign,args)
-            | _ -> (id,c) :: instrec (sign,args))
+      | (id,_,_) :: sign, c::args when isVarId id c -> instrec (sign,args)
       | (id,_,_) :: sign, c::args -> (id,c) :: instrec (sign,args)
-      | [],[]                     -> []
+      | [],[] -> []
       | [],_ | _,[] -> anomaly "Signature and its instance do not match"
     in
       instrec (sign,args)
