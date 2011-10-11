@@ -33,7 +33,6 @@ module Deltamap = struct
   let empty = MPmap.empty, KNmap.empty
   let add_kn kn hint (mm,km) = (mm,KNmap.add kn hint km)
   let add_mp mp mp' (mm,km) = (MPmap.add mp mp' mm, km)
-  let remove_mp mp (mm,km) = (MPmap.remove mp mm, km)
   let find_mp mp map = MPmap.find mp (fst map)
   let find_kn kn map = KNmap.find kn (snd map)
   let mem_mp mp map = MPmap.mem mp (fst map)
@@ -112,9 +111,6 @@ let mind_in_delta mind resolver = kn_in_delta (user_mind mind) resolver
 
 let delta_of_mp resolve mp =
  try Deltamap.find_mp mp resolve with Not_found -> mp
-
-let remove_mp_delta_resolver resolver mp =
-  Deltamap.remove_mp mp resolver
 
 let rec find_prefix resolve mp =
   let rec sub_mp = function

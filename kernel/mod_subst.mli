@@ -55,10 +55,6 @@ val delta_of_mp : delta_resolver -> module_path -> module_path
 (** Extract the set of inlined constant in the resolver *)
 val inline_of_delta : int option -> delta_resolver -> (int * kernel_name) list
 
-(** remove_mp is used for the computation of a resolver induced by Include P *)
-val remove_mp_delta_resolver : delta_resolver -> module_path -> delta_resolver
-
-
 (** mem tests *)
 val mp_in_delta : module_path -> delta_resolver -> bool
 
