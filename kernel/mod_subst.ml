@@ -147,6 +147,9 @@ let gen_of_delta resolve x kn fix_can =
     if kn == new_kn then x else fix_can new_kn
   with _ -> x
 
+let constant_of_delta_kn resolve kn =
+  gen_of_delta resolve (constant_of_kn kn) kn (constant_of_kn_equiv kn)
+
 let constant_of_delta resolve con =
   let kn = user_con con in
   gen_of_delta resolve con kn (constant_of_kn_equiv kn)
@@ -154,6 +157,9 @@ let constant_of_delta resolve con =
 let constant_of_delta2 resolve con =
   let kn, kn' = canonical_con con, user_con con in
   gen_of_delta resolve con kn (constant_of_kn_equiv kn')
+
+let mind_of_delta_kn resolve kn =
+  gen_of_delta resolve (mind_of_kn kn) kn (mind_of_kn_equiv kn)
 
 let mind_of_delta resolve mind =
   let kn = user_mind mind in

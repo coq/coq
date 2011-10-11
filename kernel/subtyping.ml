@@ -163,7 +163,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   (* the inductive types and constructors types have to be convertible *)
   check (fun mib -> mib.mind_nparams) (fun x -> InductiveParamsNumberField x);
 
-  begin  
+  begin
   match mind_of_delta reso2 kn2  with
       | kn2' when kn2=kn2' -> ()
       | kn2' -> 

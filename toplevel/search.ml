@@ -65,14 +65,14 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
 	     fn (VarRef id) env typ
 	 with Not_found -> (* we are in a section *) ())
     | "CONSTANT" ->
-	let cst = Global.constant_of_delta(constant_of_kn kn) in
+	let cst = Global.constant_of_delta_kn kn in
 	let typ = Typeops.type_of_constant env cst in
         if refopt = None
 	  || head_const typ = constr_of_global (Option.get refopt)
 	then
 	  fn (ConstRef cst) env typ
     | "INDUCTIVE" ->
-	let mind = Global.mind_of_delta(mind_of_kn kn) in
+	let mind = Global.mind_of_delta_kn kn in
         let mib = Global.lookup_mind mind in
         (match refopt with
 	  | Some (IndRef ((kn',tyi) as ind)) when eq_mind mind kn' ->

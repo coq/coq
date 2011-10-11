@@ -475,18 +475,10 @@ let end_module l restype senv =
      let new_name = match elem with
        | SFBconst _ ->
 	   let kn = make_kn mp_sup empty_dirpath l in
-	   let con = constant_of_kn_equiv kn
-	     (canonical_con
-		(constant_of_delta resolver (constant_of_kn kn)))
-	   in
-	   C con
+	   C (constant_of_delta_kn resolver kn)
        | SFBmind _ ->
 	   let kn = make_kn mp_sup empty_dirpath l in
-	   let mind = mind_of_kn_equiv kn
-	     (canonical_mind
-		(mind_of_delta resolver (mind_of_kn kn)))
-	   in
-	   I mind
+	   I (mind_of_delta_kn resolver kn)
        | SFBmodule _ -> M
        | SFBmodtype _ -> MT (MPdot(senv.modinfo.modpath, l))
      in

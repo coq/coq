@@ -103,13 +103,13 @@ type constant_declaration = constant_entry * logical_kind
 let load_constant i ((sp,kn),(_,_,kind)) =
   if Nametab.exists_cci sp then
     alreadydeclared (pr_id (basename sp) ++ str " already exists");
-  let con = Global.constant_of_delta (constant_of_kn kn) in
+  let con = Global.constant_of_delta_kn kn in
   Nametab.push (Nametab.Until i) sp (ConstRef con);
   add_constant_kind con kind
 
 (* Opening means making the name without its module qualification available *)
 let open_constant i ((sp,kn),_) =
-  let con = Global.constant_of_delta (constant_of_kn kn) in
+  let con = Global.constant_of_delta_kn kn in
     Nametab.push (Nametab.Exactly i) sp (ConstRef con)
 
 let exists_name id =
@@ -162,7 +162,7 @@ let inConstant =
 
 let declare_constant_common id dhyps (cd,kind) =
   let (sp,kn) = add_leaf id (inConstant (cd,dhyps,kind)) in
-  let c = Global.constant_of_delta (constant_of_kn kn) in
+  let c = Global.constant_of_delta_kn kn in
   declare_constant_implicits c;
   Heads.declare_head (EvalConstRef c);
   Notation.declare_ref_arguments_scope (ConstRef c);
@@ -184,7 +184,7 @@ let declare_inductive_argument_scopes kn mie =
 
 let inductive_names sp kn mie =
   let (dp,_) = repr_path sp in
-  let kn = Global.mind_of_delta (mind_of_kn kn) in
+  let kn = Global.mind_of_delta_kn kn in
   let names, _ =
     List.fold_left
       (fun (names, n) ind ->
@@ -225,7 +225,7 @@ let cache_inductive ((sp,kn),(dhyps,mie)) =
 
 
 let discharge_inductive ((sp,kn),(dhyps,mie)) =
-  let mind = (Global.mind_of_delta (mind_of_kn kn)) in
+  let mind = Global.mind_of_delta_kn kn in
   let mie = Global.lookup_mind mind in
   let repl = replacement_context () in
   let sechyps = section_segment_of_mutual_inductive mind in
@@ -261,7 +261,7 @@ let declare_mind isrecord mie =
     | ind::_ -> ind.mind_entry_typename
     | [] -> anomaly "cannot declare an empty list of inductives" in
   let (sp,kn as oname) = add_leaf id (inInductive ([],mie)) in
-  let mind = (Global.mind_of_delta (mind_of_kn kn)) in
+  let mind = Global.mind_of_delta_kn kn in
   declare_mib_implicits mind;
   declare_inductive_argument_scopes mind mie;
   !xml_declare_inductive (isrecord,oname);

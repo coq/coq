@@ -44,8 +44,10 @@ val subst_dom_codom_delta_resolver :
   substitution -> delta_resolver -> delta_resolver
 
 (** *_of_delta return the associated name of arg2 in arg1   *)
+val constant_of_delta_kn : delta_resolver -> kernel_name -> constant
 val constant_of_delta : delta_resolver -> constant -> constant
 
+val mind_of_delta_kn : delta_resolver -> kernel_name -> mutual_inductive
 val mind_of_delta : delta_resolver -> mutual_inductive -> mutual_inductive
 
 val delta_of_mp : delta_resolver -> module_path -> module_path

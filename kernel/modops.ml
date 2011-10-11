@@ -264,18 +264,13 @@ let add_retroknowledge mp =
 let rec add_signature mp sign resolver env = 
   let add_one env (l,elem) =
     let kn = make_kn mp empty_dirpath l in
-    let con = constant_of_kn kn in
-    let mind = mind_of_kn kn in
-      match elem with
-	| SFBconst cb -> 
-	    let con =  constant_of_delta resolver con in
-	      Environ.add_constant con cb env
-	| SFBmind mib -> 
-	    let mind =  mind_of_delta resolver mind in
-	    Environ.add_mind mind mib env
-	| SFBmodule mb -> add_module mb env
-	      (* adds components as well *)
-	| SFBmodtype mtb -> Environ.add_modtype mtb.typ_mp mtb env
+    match elem with
+      | SFBconst cb ->
+	Environ.add_constant (constant_of_delta_kn resolver kn) cb env
+      | SFBmind mib ->
+	Environ.add_mind (mind_of_delta_kn resolver kn) mib env
+      | SFBmodule mb -> add_module mb env (* adds components as well *)
+      | SFBmodtype mtb -> Environ.add_modtype mtb.typ_mp mtb env
   in
     List.fold_left add_one env sign
 
@@ -293,8 +288,8 @@ let strengthen_const mp_from l cb resolver =
   match cb.const_body with
     | Def _ -> cb
     | _ ->
-      let con = make_con mp_from empty_dirpath l in
-      let con = constant_of_delta resolver con in
+      let kn = make_kn mp_from empty_dirpath l in
+      let con = constant_of_delta_kn resolver kn in
       { cb with
 	const_body = Def (Declarations.from_val (mkConst con));
 	const_body_code = Cemitcodes.from_val (Cbytegen.compile_alias con)
@@ -379,10 +374,9 @@ let inline_delta_resolver env inl mp mbid mtb delta =
     | [] -> delta
     | (lev,kn)::r ->
 	let kn = replace_mp_in_kn (MPbound mbid) mp kn in
-	let con = constant_of_kn kn in
-	let con' = constant_of_delta delta con in
+	let con = constant_of_delta_kn delta kn in
 	try
-	  let constant = lookup_constant con' env in
+	  let constant = lookup_constant con env in
 	  let l = make_inline delta r in
 	  match constant.const_body with
 	    | Undef _ | OpaqueDef _ -> l
@@ -432,17 +426,18 @@ and strengthen_and_subst_struct
 	  l,SFBconst (strengthen_const mp_from l
 			(subst_const_body subst cb) resolver)
 	in
-	let con = make_con mp_from empty_dirpath l in
 	let resolve_out,rest' =
 	  strengthen_and_subst_struct rest subst
 	    mp_alias mp_from mp_to alias incl resolver in
-	  if incl then
+	if incl then
 	    (* If we are performing an inclusion we need to add
 	       the fact that the constant mp_to.l is \Delta-equivalent
 	       to resolver(mp_from.l) *)
-	    let old_name = constant_of_delta resolver con in
-	    (add_constant_delta_resolver
-	      (constant_of_kn_equiv (make_kn mp_to empty_dirpath l) (canonical_con old_name)) 
+	  let kn_from = make_kn mp_from empty_dirpath l in
+	  let kn_to = make_kn mp_to empty_dirpath l in
+	  let old_name = constant_of_delta_kn resolver kn_from in
+	  (add_constant_delta_resolver
+	      (constant_of_kn_equiv kn_to (canonical_con old_name))
 	      resolve_out),
 	item'::rest'
 	  else
@@ -453,17 +448,19 @@ and strengthen_and_subst_struct
     | (l,SFBmind mib) :: rest ->
 	(*Same as constant*)
 	let item' = l,SFBmind (subst_mind subst mib) in
-	let mind = make_mind mp_from empty_dirpath l in
 	let resolve_out,rest' =
 	  strengthen_and_subst_struct rest subst
 	    mp_alias mp_from mp_to alias incl resolver in
-	  if incl then
-	    let old_name =  mind_of_delta resolver mind in 
-	    (add_mind_delta_resolver
-	      (mind_of_kn_equiv (make_kn mp_to empty_dirpath l) (canonical_mind old_name)) resolve_out),
-	item'::rest'
-	  else
-	    resolve_out,item'::rest'
+	if incl then
+	  let kn_from = make_kn mp_from empty_dirpath l in
+	  let kn_to = make_kn mp_to empty_dirpath l in
+	  let old_name = mind_of_delta_kn resolver kn_from in
+	  (add_mind_delta_resolver
+	     (mind_of_kn_equiv kn_to (canonical_mind old_name))
+	     resolve_out),
+	  item'::rest'
+	else
+	  resolve_out,item'::rest'
     | (l,SFBmodule mb) :: rest ->
 	let mp_from' = MPdot (mp_from,l) in
 	let mp_to' = MPdot(mp_to,l) in

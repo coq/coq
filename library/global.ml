@@ -119,15 +119,19 @@ let lookup_mind kn = lookup_mind kn (env())
 let lookup_module mp = lookup_module mp (env())
 let lookup_modtype kn = lookup_modtype kn (env())
 
-let constant_of_delta con = 
+let constant_of_delta_kn kn =
   let resolver,resolver_param = (delta_of_senv !global_env) in
+  (* TODO : are resolver and resolver_param orthogonal ?
+     the effect of resolver is lost if resolver_param isn't
+     trivial at that spot. *)
     Mod_subst.constant_of_delta resolver_param
-      (Mod_subst.constant_of_delta resolver con)
+      (Mod_subst.constant_of_delta_kn resolver kn)
 
-let mind_of_delta mind = 
+let mind_of_delta_kn kn =
   let resolver,resolver_param = (delta_of_senv !global_env) in
+  (* TODO idem *)
     Mod_subst.mind_of_delta resolver_param
-      (Mod_subst.mind_of_delta resolver mind)
+      (Mod_subst.mind_of_delta_kn resolver kn)
 
 let exists_label id = exists_label id !global_env
 

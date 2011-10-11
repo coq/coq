@@ -559,8 +559,7 @@ let lookup_eliminator ind_sp s =
   (* Try first to get an eliminator defined in the same section as the *)
   (* inductive type *)
   try
-    let cst =Global.constant_of_delta
-      (make_con mp dp (label_of_id id)) in
+    let cst =Global.constant_of_delta_kn (make_kn mp dp (label_of_id id)) in
     let _ = Global.lookup_constant cst in
       mkConst cst
   with Not_found ->

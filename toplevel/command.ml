@@ -332,7 +332,7 @@ let extract_mutual_inductive_declaration_components indl =
 let declare_mutual_inductive_with_eliminations isrecord mie impls =
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let (_,kn) = declare_mind isrecord mie in
-  let mind = Global.mind_of_delta (mind_of_kn kn) in
+  let mind = Global.mind_of_delta_kn kn in
   list_iter_i (fun i (indimpls, constrimpls) ->
 		   let ind = (mind,i) in
 		     Autoinstance.search_declaration (IndRef ind);

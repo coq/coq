@@ -845,7 +845,7 @@ let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
   (* Undo the simulated interactive building of the module *)
   (* and declare the module as a whole *)
   Summary.unfreeze_summaries fs;
-  let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
+  let mp = mp_of_kn (Lib.make_kn id) in
   let inl = if inl_expr = None then None else inl_res in (*PLTODO *)
   let mp_env,resolver = Global.add_module id entry inl in
 
