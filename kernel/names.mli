@@ -9,7 +9,6 @@
 (** {6 Identifiers } *)
 
 type identifier
-type name = Name of identifier | Anonymous
 
 (** Parsing and printing of identifiers *)
 val string_of_id : identifier -> string
@@ -25,7 +24,14 @@ module Idmap  : sig
   val exists : (identifier -> 'a -> bool) -> 'a t -> bool
   val singleton : key -> 'a -> 'a t
 end
+
+(** {6 Various types based on identifiers } *)
+
+type name = Name of identifier | Anonymous
+type variable = identifier
+
 (** {6 Directory paths = section names paths } *)
+
 type module_ident = identifier
 module ModIdmap : Map.S with type key = module_ident
 
@@ -65,7 +71,6 @@ type mod_bound_id
 val make_mbid : dir_path -> identifier -> mod_bound_id
 val repr_mbid : mod_bound_id -> int * identifier * dir_path
 val id_of_mbid : mod_bound_id -> identifier
-val label_of_mbid : mod_bound_id -> label
 val debug_string_of_mbid : mod_bound_id -> string
 val string_of_mbid : mod_bound_id -> string
 
@@ -74,9 +79,7 @@ val string_of_mbid : mod_bound_id -> string
 type module_path =
   | MPfile of dir_path
   | MPbound of mod_bound_id
- (** | MPapp of module_path * module_path  very soon *)
   | MPdot of module_path * label
-
 
 val check_bound_mp : module_path -> bool
 
@@ -114,7 +117,6 @@ module KNmap  : Map.S with type key = kernel_name
 
 (** {6 Specific paths for declarations } *)
 
-type variable = identifier
 type constant
 type mutual_inductive
 
@@ -196,7 +198,7 @@ type evaluable_global_reference =
 val eq_egr : evaluable_global_reference ->  evaluable_global_reference
   -> bool
 
-(** Hash-consing *)
+(** {6 Hash-consing } *)
 
 val hcons_string : string -> string
 val hcons_ident : identifier -> identifier
