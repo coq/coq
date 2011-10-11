@@ -114,6 +114,22 @@ let exists_label l senv = Labset.mem l senv.labset
 let check_label l senv =
   if exists_label l senv then error_existing_label l
 
+let check_labels ls senv =
+  Labset.iter (fun l -> check_label l senv) ls
+
+let labels_of_mib mib =
+  let add,get =
+    let labels = ref Labset.empty in
+    (fun id -> labels := Labset.add (label_of_id id) !labels),
+    (fun () -> !labels)
+  in
+  let visit_mip mip =
+    add mip.mind_typename;
+    Array.iter add mip.mind_consnames
+  in
+  Array.iter visit_mip mib.mind_packets;
+  get ()
+
 (* a small hack to avoid variants and an unused case in all functions *)
 let rec empty_environment =
   { old = empty_environment;
@@ -156,6 +172,11 @@ type generic_name =
   | M
 
 let add_field ((l,sfb) as field) gn senv =
+  let labels = match sfb with
+    | SFBmind mib -> labels_of_mib mib
+    | _ -> Labset.singleton l
+  in
+  check_labels labels senv;
   let senv = add_constraints (constraints_of_sfb sfb) senv in
   let env' = match sfb, gn with
     | SFBconst cb, C con -> Environ.add_constant con cb senv.env
@@ -166,7 +187,7 @@ let add_field ((l,sfb) as field) gn senv =
   in
   { senv with
     env = env';
-    labset = Labset.add l senv.labset;
+    labset = Labset.union labels senv.labset;
     revstruct = field :: senv.revstruct }
 
 (* Applying a certain function to the resolver of a safe environment *)
@@ -256,7 +277,6 @@ type global_declaration =
   | GlobalRecipe of Cooking.recipe
 
 let add_constant dir l decl senv =
-  check_label l senv;
   let kn = make_con senv.modinfo.modpath dir l in
   let cb = match decl with
     | ConstantEntry ce -> translate_constant senv.env kn ce
@@ -282,9 +302,6 @@ let add_mind dir l mie senv =
   if l <> label_of_id id then
     anomaly ("the label of inductive packet and its first inductive"^
 	     " type do not match");
-  check_label l senv;
-    (* TODO: when we will allow reorderings we will have to verify
-       all labels *)
   let kn = make_mind senv.modinfo.modpath dir l in
   let mib = translate_mind senv.env kn mie in
   let mib = if mib.mind_hyps <> [] then mib else hcons_mind mib in
@@ -294,7 +311,6 @@ let add_mind dir l mie senv =
 (* Insertion of module types *)
 
 let add_modtype l mte inl senv =
-  check_label l senv;
   let mp = MPdot(senv.modinfo.modpath, l) in
   let mtb = translate_module_type senv.env mp inl mte  in
   let senv' = add_field (l,SFBmodtype mtb) (MT mp) senv in
@@ -308,7 +324,6 @@ let full_add_module mb senv =
 (* Insertion of modules *)
 
 let add_module l me inl senv =
-  check_label l senv;
   let mp = MPdot(senv.modinfo.modpath, l) in
   let mb = translate_module senv.env mp inl me in
   let senv' = add_field (l,SFBmodule mb) M senv in
@@ -471,7 +486,6 @@ let end_module l restype senv =
    let senv = update_resolver (add_delta_resolver resolver) senv
    in
    let add senv ((l,elem) as field) =
-     check_label l senv;
      let new_name = match elem with
        | SFBconst _ ->
 	   let kn = make_kn mp_sup empty_dirpath l in
