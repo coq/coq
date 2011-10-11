@@ -50,7 +50,7 @@ let e_judge_of_apply env evdref funj argjv =
   in
   apply_rec 1 funj.uj_type (Array.to_list argjv)
 
-let check_branch_types env evdref ind cj (lfj,explft) =
+let e_check_branch_types env evdref ind cj (lfj,explft) =
   if Array.length lfj <> Array.length explft then
     error_number_branches env cj (Array.length explft);
   for i = 0 to Array.length explft - 1 do
@@ -58,13 +58,51 @@ let check_branch_types env evdref ind cj (lfj,explft) =
       error_ill_formed_branch env cj.uj_val (ind,i+1) lfj.(i).uj_type explft.(i)
   done
 
+let rec max_sort l =
+  if List.mem InType l then InType else
+  if List.mem InSet l then InSet else InProp
+
+let e_is_correct_arity env evdref c pj ind specif params =
+  let arsign = make_arity_signature env true (make_ind_family (ind,params)) in
+  let allowed_sorts = elim_sorts specif in
+  let error () = error_elim_arity env ind allowed_sorts c pj None in
+  let rec srec env pt ar =
+    let pt' = whd_betadeltaiota env !evdref pt in
+    match kind_of_term pt', ar with
+    | Prod (na1,a1,t), (_,None,a1')::ar' ->
+        if not (Evarconv.e_cumul env evdref a1 a1') then error ();
+        srec (push_rel (na1,None,a1) env) t ar'
+    | Sort s, [] ->
+        if not (List.mem (family_of_sort s) allowed_sorts) then error ()
+    | Evar (ev,_), [] ->
+        let s = Termops.new_sort_in_family (max_sort allowed_sorts) in
+        evdref := Evd.define ev (mkSort s) !evdref
+    | _, (_,Some _,_ as d)::ar' ->
+        srec (push_rel d env) (lift 1 pt') ar'
+    | _ ->
+        error ()
+  in
+  srec env pj.uj_type (List.rev arsign)
+
+let e_type_case_branches env evdref (ind,largs) pj c =
+  let specif = lookup_mind_specif env ind in
+  let nparams = inductive_params specif in
+  let (params,realargs) = list_chop nparams largs in
+  let p = pj.uj_val in
+  let univ = e_is_correct_arity env evdref c pj ind specif params in
+  let lc = build_branches_type ind specif params p in
+  let n = (snd specif).Declarations.mind_nrealargs_ctxt in
+  let ty =
+    whd_betaiota !evdref (Reduction.betazeta_appvect (n+1) p (Array.of_list (realargs@[c]))) in
+  (lc, ty, univ)
+
 let e_judge_of_case env evdref ci pj cj lfj =
   let indspec =
     try find_mrectype env !evdref cj.uj_type
     with Not_found -> error_case_not_inductive env cj in
   let _ = check_case_info env (fst indspec) ci in
-  let (bty,rslty,univ) = type_case_branches env indspec pj cj.uj_val in
-  check_branch_types env evdref (fst indspec) cj (lfj,bty);
+  let (bty,rslty,univ) = e_type_case_branches env evdref indspec pj cj.uj_val in
+  e_check_branch_types env evdref (fst indspec) cj (lfj,bty);
   { uj_val  = mkCase (ci, pj.uj_val, cj.uj_val, Array.map j_val lfj);
     uj_type = rslty }
 
