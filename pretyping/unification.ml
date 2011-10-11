@@ -64,6 +64,14 @@ let abstract_list_all env evd typ c l =
   with UserError _ | Type_errors.TypeError _ ->
     error_cannot_find_well_typed_abstraction env evd p l
 
+let abstract_list_all_with_dependencies env evd typ c l =
+  let evd,ev = new_evar evd env typ in
+  let evd,ev' = evar_absorb_arguments env evd (destEvar ev) l in
+  let evd,b =
+    Evarconv.second_order_matching empty_transparent_state env evd ev' c in
+  if b then nf_evar evd (existential_value evd (destEvar ev))
+  else error "Cannot find a well-typed abstraction."
+
 (**)
 
 (* A refinement of [conv_pb]: the integers tells how many arguments
@@ -1124,16 +1132,24 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
   let pred = abstract_list_all env evd' typp typ cllist in
   w_merge env false flags (evd',[p,pred,(Conv,TypeProcessed)],[])
 
-let w_unify2 env evd flags cv_pb ty1 ty2 =
+let secondOrderDependentAbstraction env evd flags typ (p, oplist) =
+  let typp = Typing.meta_type evd p in
+  let pred = abstract_list_all_with_dependencies env evd typp typ oplist in
+  w_merge env false flags (evd,[p,pred,(Conv,TypeProcessed)],[])
+
+let secondOrderAbstractionAlgo dep =
+  if dep then secondOrderDependentAbstraction else secondOrderAbstraction
+
+let w_unify2 env evd flags dep cv_pb ty1 ty2 =
   let c1, oplist1 = whd_stack evd ty1 in
   let c2, oplist2 = whd_stack evd ty2 in
   match kind_of_term c1, kind_of_term c2 with
     | Meta p1, _ ->
         (* Find the predicate *)
-        secondOrderAbstraction env evd flags ty2 (p1,oplist1)
+        secondOrderAbstractionAlgo dep env evd flags ty2 (p1,oplist1)
     | _, Meta p2 ->
         (* Find the predicate *)
-        secondOrderAbstraction env evd flags ty1 (p2, oplist2)
+        secondOrderAbstractionAlgo dep env evd flags ty1 (p2, oplist2)
     | _ -> error "w_unify2"
 
 (* The unique unification algorithm works like this: If the pattern is
@@ -1167,19 +1183,24 @@ let w_unify env evd cv_pb ?(flags=default_unify_flags) ty1 ty2 =
 	      w_typed_unify_list env evd flags hd1 l1 hd2 l2
 	    with ex when precatchable_exception ex ->
 	      try
-		w_unify2 env evd flags cv_pb ty1 ty2
+		w_unify2 env evd flags false cv_pb ty1 ty2
 	      with PretypeError (env,_,NoOccurrenceFound _) as e -> raise e)
 
       (* Second order case *)
       | (Meta _, true, _, _ | _, _, Meta _, true) ->
 	  (try
-	      w_unify2 env evd flags cv_pb ty1 ty2
+	      w_unify2 env evd flags false cv_pb ty1 ty2
 	    with PretypeError (env,_,NoOccurrenceFound _) as e -> raise e
 	      | ex when precatchable_exception ex ->
 		  try
 		    w_typed_unify_list env evd flags hd1 l1 hd2 l2
 		  with ex' when precatchable_exception ex' ->
-		    raise ex)
+                    (* Last chance, use pattern-matching with typed
+                       dependencies (done late for compatibility) *)
+	            try
+	              w_unify2 env evd flags true cv_pb ty1 ty2
+		    with ex' when precatchable_exception ex' ->
+		      raise ex)
 
       (* General case: try first order *)
       | _ -> w_typed_unify env evd cv_pb flags ty1 ty2

@@ -594,13 +594,14 @@ let initial_evar_data evi =
 let solve_evars = ref (fun _ -> failwith "solve_evars not installed")
 let set_solve_evars f = solve_evars := f
 
-(* We solve the problem env_rhs |- ?e[u1..un] = rhs knowing env_ev |- ev : ty
+(* We solve the problem env_rhs |- ?e[u1..un] = rhs knowing
+ * x1:T1 .. xn:Tn |- ev : ty
  * by looking for a maximal well-typed abtraction over u1..un in rhs
  *
- * We first build \x1..\xn.C[e11..e1p1,..,en1..enpn] where all occurrences of
- * u1..un have been replaced by evars eij (in practice, this is a bit more
- * complicated as shown above since each eij depends on x1..xi-1 and because
- * occurrences of u1..ui can occur in the types of xi+1..xn).
+ * We first build C[e11..e1p1,..,en1..enpn] obtained from rhs by replacing
+ * all occurrences of u1..un by evars eij of type Ti' where itself Ti' has
+ * been obtained from the type of ui by also replacing all occurrences of
+ * u1..ui-1 by evars.
  *
  * Then, we use typing to infer the relations between the different
  * occurrences. If some occurrence is still unconstrained after typing,
@@ -614,53 +615,61 @@ let second_order_matching ts env_rhs evd (evk,args) rhs =
   try
   let args = Array.to_list args in
   let evi = Evd.find_undefined evd evk in
-  let sign = evar_hyps evi in
+  let env_evar = evar_env evi in
+  let sign = named_context_val env_evar in
   let ctxt = named_context_of_val sign in
   let filter = evar_filter evi in
   let instance = List.map mkVar (List.map pi1 ctxt) in
-  let rec set_holes evd subst rhs = function
-  | (id,_,t)::ctxt, c::l ->
-      let ty = Retyping.get_type_of env_rhs evd c in
-      let evd,b = evar_conv_x ts env_rhs evd CUMUL ty (replace_vars subst t) in
-      if not b then raise Exit;
-      let subst = (id,c)::subst in
-      let evd,evoccs,rhs = set_holes evd subst rhs (ctxt,l) in
-      let evs = ref [] in
-      let evdref = ref evd in
-      let filter = List.map2 (&&) filter (filter_possible_projections c args) in
-      let set_var k =
-        let evd,ev = new_evar_instance sign !evdref t ~filter instance in
-        evdref := evd;
-        evs := fst (destEvar ev)::!evs;
-        ev in
-      let rhs = apply_on_subterm set_var c rhs in
-      (!evdref, (id,c,!evs)::evoccs, rhs)
-  | [],[] ->
-      (evd, [], rhs)
-  | _ ->
-      anomaly "Signature and instance do not match" in
 
-  let evd,evoccs,rhs = set_holes evd [] rhs (ctxt,args) in
+  let rec make_subst = function
+  | (id,_,t)::ctxt, c::l when isVarId id c -> make_subst (ctxt,l)
+  | (id,_,t)::ctxt, c::l ->
+      let evs = ref [] in
+      let filter = List.map2 (&&) filter (filter_possible_projections c args) in
+      let ty = Retyping.get_type_of env_rhs evd c in
+      (id,t,c,ty,evs,filter) :: make_subst (ctxt,l)
+  | [], [] -> []
+  | _ -> anomaly "Signature and instance do not match" in
+
+  let rec set_holes evdref rhs = function
+  | (id,_,c,cty,evsref,filter)::subst ->
+      let set_var k =
+        let evty = set_holes evdref cty subst in
+        let evd,ev = new_evar_instance sign !evdref evty ~filter instance in
+        evdref := evd;
+        evsref := (fst (destEvar ev),evty)::!evsref;
+        ev in
+      set_holes evdref (apply_on_subterm set_var c rhs) subst
+  | [] -> rhs in
+
+  let subst = make_subst (ctxt,args) in
+
+  let evdref = ref evd in
+  let rhs = set_holes evdref rhs subst in
+  let evd = !evdref in
 
   (* We instantiate the evars of which the value is forced by typing *)
   let evd,rhs =
-    try !solve_evars env_rhs evd rhs
+    try !solve_evars env_evar evd rhs
     with e when Pretype_errors.precatchable_exception e ->
       (* Could not revert all subterms *)
       raise Exit in
 
   let rec abstract_free_holes evd = function
-  | (id,c,evs)::l ->
+  | (id,idty,c,_,evsref,_)::l ->
       let rec force_instantiation evd = function
-      | evk::evs ->
+      | (evk,evty)::evs ->
           let evd =
             if is_undefined evd evk then
               (* We force abstraction over this unconstrained occurrence *)
               (* and we use typing to propagate this instantiation *)
               (* This is an arbitrary choice *)
               let evd = Evd.define evk (mkVar id) evd in
+              let evd,b = evar_conv_x ts env_evar evd CUMUL idty evty in
+              if not b then error "Cannot find an instance";
               let evd,b = reconsider_conv_pbs (evar_conv_x ts) evd in
-              if b then evd else error "Cannot find an instance for ..."
+              if not b then error "Cannot find an instance";
+              evd
             else
               evd
           in
@@ -668,11 +677,11 @@ let second_order_matching ts env_rhs evd (evk,args) rhs =
       | [] ->
           abstract_free_holes evd l
       in
-      force_instantiation evd evs
+      force_instantiation evd !evsref
   | [] ->
       Evd.define evk rhs evd in
 
-  abstract_free_holes evd evoccs, true
+  abstract_free_holes evd subst, true
   with Exit -> evd, false
 
 let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =

@@ -145,3 +145,42 @@ Proof.
   intros.
   rewrite H with (f:=f0).
 Abort.
+
+(* Three tests provided by Dan Grayson as part of a custom patch he
+   made for a more powerful "destruct" for handling Voevodsky's
+   Univalent Foundations. The test checks if second-order matching in
+   tactic unification is able to guess by itself on which dependent
+   terms to abstract so that the elimination predicate is well-typed *)
+
+Definition test1 (X : Type) (x : X) (fxe : forall x1 : X, identity x1 x1) :
+  identity (fxe x) (fxe x).
+Proof. destruct (fxe x). apply identity_refl. Defined.
+
+(* a harder example *)
+
+Definition UU := Type .
+Inductive paths {T:Type}(t:T): T -> UU := idpath: paths t t.
+Inductive foo (X0:UU) (x0:X0) : forall (X:UU)(x:X), UU := newfoo : foo x0 x0.
+Definition idonfoo {X0:UU} {x0:X0} {X1:UU} {x1:X1} : foo x0 x1 -> foo x0 x1.
+Proof. intros t. exact t. Defined.
+
+Lemma test2 (T:UU) (t:T) (k : foo t t) : paths k (idonfoo k).
+Proof.
+  destruct k.
+  apply idpath.
+Defined.
+
+(* an example with two constructors *)
+
+Inductive foo' (X0:UU) (x0:X0) : forall (X:UU)(x:X), UU :=
+| newfoo1 : foo' x0 x0
+| newfoo2 : foo' x0 x0 .
+Definition idonfoo' {X0:UU} {x0:X0} {X1:UU} {x1:X1} :
+  foo' x0 x1 -> foo' x0 x1.
+Proof. intros t. exact t. Defined.
+Lemma test3 (T:UU) (t:T) (k : foo' t t) : paths k (idonfoo' k).
+Proof.
+  destruct k.
+  apply idpath.
+  apply idpath.
+Defined.

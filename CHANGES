@@ -50,6 +50,11 @@ Tactics
   This pseudo-database "nocore" can also be used with trivial and eauto.
 - Tactics "set", "destruct" and "induction" accepts incomplete terms and
   use the goal to complete the pattern assuming it is no ambiguous.
+- When used on arguments with a dependent type, tactics such as
+  "destruct", "induction", "case", "elim", etc. now try to abstract
+  automatically the dependencies over the arguments of the types
+  (based on initial ideas from Chung-Kil Hur, extension to nested
+   dependencies suggested by Dan Grayson)
 
 Vernacular commands
 
