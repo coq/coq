@@ -341,12 +341,15 @@ fi
 
 MAKE=`which ${makecmd:-make}`
 if [ "$MAKE" != "" ]; then
-  MAKEVERSION=`$MAKE -v | head -1`
-  case $MAKEVERSION in
-    "GNU Make 3.8"[12])
-      echo "You have GNU Make >= 3.81. Good!";;
-    *)
+  MAKEVERSION=`$MAKE -v | head -1 | cut -d" " -f3`
+  MAKEVERSIONMAJOR=`echo $MAKEVERSION | cut -d. -f1`
+  MAKEVERSIONMINOR=`echo $MAKEVERSION | cut -d. -f2`
+  if [ "$MAKEVERSIONMAJOR" -eq 3 -a "$MAKEVERSIONMINOR" -ge 81 ]; then
+      echo "You have GNU Make $MAKEVERSION. Good!"
+  else
       OK="no"
+      #Extra support for local installation of make 3.81
+      #will be useless when make >= 3.81 will be standard
       if [ -x ./make ]; then
 	  MAKEVERSION=`./make -v | head -1`
 	  if [ "$MAKEVERSION" = "GNU Make 3.81" ]; then OK="yes"; fi
@@ -366,9 +369,9 @@ if [ "$MAKE" != "" ]; then
       else
 	  echo "You have locally installed GNU Make 3.81. Good!"
       fi
-  esac
+  fi
 else
-  echo "Cannot find GNU Make 3.81."
+  echo "Cannot find GNU Make >= 3.81."
 fi
 
 # Browser command
