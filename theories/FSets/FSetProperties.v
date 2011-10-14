@@ -335,6 +335,14 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
 
   Section Fold.
 
+  (** Alternative specification via [fold_right] *)
+
+  Lemma fold_spec_right (s:t)(A:Type)(i:A)(f : elt -> A -> A) :
+    fold f s i = List.fold_right f i (rev (elements s)).
+  Proof.
+   rewrite fold_1. symmetry. apply fold_left_rev_right.
+  Qed.
+
   Notation NoDup := (NoDupA E.eq).
   Notation InA := (InA E.eq).
 
@@ -351,8 +359,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
      P s (fold f s i).
   Proof.
   intros A P f i s Pempty Pstep.
-  rewrite fold_1, <- fold_left_rev_right.
-  set (l:=rev (elements s)).
+  rewrite fold_spec_right. set (l:=rev (elements s)).
   assert (Pstep' : forall x a s' s'', InA x l -> ~In x s' -> Add x s' s'' ->
            P s' a -> P s'' (f x a)).
    intros; eapply Pstep; eauto.
@@ -424,8 +431,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
      R (fold f s i) (fold g s j).
   Proof.
   intros A B R f g i j s Rempty Rstep.
-  do 2 rewrite fold_1, <- fold_left_rev_right.
-  set (l:=rev (elements s)).
+  rewrite 2 fold_spec_right. set (l:=rev (elements s)).
   assert (Rstep' : forall x a b, InA x l -> R a b -> R (f x a) (g x b)) by
     (intros; apply Rstep; auto; rewrite elements_iff, <- InA_rev; auto with *).
   clearbody l; clear Rstep s.
@@ -483,8 +489,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   split; intros.
   rewrite elements_iff; do 2 rewrite InA_alt.
   split; destruct 1; generalize (In_rev (elements s) x0); exists x0; intuition.
-  rewrite fold_left_rev_right.
-  apply fold_1.
+  apply fold_spec_right.
   Qed.
 
   (** An alternate (and previous) specification for [fold] was based on
@@ -1086,8 +1091,7 @@ Module OrdProperties (M:S).
    Above x s -> Add x s s' -> eqA (fold f s' i) (f x (fold f s i)).
   Proof.
   intros.
-  do 2 rewrite M.fold_1.
-  do 2 rewrite <- fold_left_rev_right.
+  rewrite 2 fold_spec_right.
   change (f x (fold_right f i (rev (elements s)))) with
     (fold_right f i (rev (x::nil)++rev (elements s))).
   apply (@fold_right_eqlistA E.t E.eq A eqA st); auto.
@@ -1103,11 +1107,11 @@ Module OrdProperties (M:S).
    Below x s -> Add x s s' -> eqA (fold f s' i) (fold f s (f x i)).
   Proof.
   intros.
-  do 2 rewrite M.fold_1.
+  rewrite 2 M.fold_1.
   set (g:=fun (a : A) (e : elt) => f e a).
   change (eqA (fold_left g (elements s') i) (fold_left g (x::elements s) i)).
   unfold g.
-  do 2 rewrite <- fold_left_rev_right.
+  rewrite <- 2 fold_left_rev_right.
   apply (@fold_right_eqlistA E.t E.eq A eqA st); auto.
   apply eqlistA_rev.
   apply elements_Add_Below; auto.
@@ -1124,8 +1128,7 @@ Module OrdProperties (M:S).
   Lemma fold_equal :
    forall i s s', s[=]s' -> eqA (fold f s i) (fold f s' i).
   Proof.
-  intros; do 2 rewrite M.fold_1.
-  do 2 rewrite <- fold_left_rev_right.
+  intros. rewrite 2 fold_spec_right.
   apply (@fold_right_eqlistA E.t E.eq A eqA st); auto.
   apply eqlistA_rev.
   apply sort_equivlistA_eqlistA; auto with set.

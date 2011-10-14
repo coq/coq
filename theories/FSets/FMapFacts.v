@@ -832,8 +832,11 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   (** * Conversions between maps and association lists. *)
 
+  Definition uncurry {U V W : Type} (f : U -> V -> W) : U*V -> W :=
+   fun p => f (fst p) (snd p).
+
   Definition of_list (l : list (key*elt)) :=
-    List.fold_right (fun p => add (fst p) (snd p)) (empty _) l.
+    List.fold_right (uncurry (@add _)) (empty _) l.
 
   Definition to_list := elements.
 
@@ -843,6 +846,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Proof.
   induction l as [|(k',e') l IH]; simpl; intros k e Hnodup.
   rewrite empty_mapsto_iff, InA_nil; intuition.
+  unfold uncurry; simpl.
   inversion_clear Hnodup as [| ? ? Hnotin Hnodup'].
   specialize (IH k e Hnodup'); clear Hnodup'.
   rewrite add_mapsto_iff, InA_cons, <- IH.
@@ -859,6 +863,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Proof.
   induction l as [|(k',e') l IH]; simpl; intros k Hnodup.
   apply empty_o.
+  unfold uncurry; simpl.
   inversion_clear Hnodup as [| ? ? Hnotin Hnodup'].
   specialize (IH k Hnodup'); clear Hnodup'.
   rewrite add_o, IH.
@@ -881,6 +886,14 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
 
   (** * Fold *)
 
+  (** Alternative specification via [fold_right] *)
+
+  Lemma fold_spec_right m (A:Type)(i:A)(f : key -> elt -> A -> A) :
+    fold f m i = List.fold_right (uncurry f) i (rev (elements m)).
+  Proof.
+   rewrite fold_1. symmetry. apply fold_left_rev_right.
+  Qed.
+
   (** ** Induction principles about fold contributed by S. Lescuyer *)
 
   (** In the following lemma, the step hypothesis is deliberately restricted
@@ -895,8 +908,8 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
       P m (fold f m i).
   Proof.
   intros A P f i m Hempty Hstep.
-  rewrite fold_1, <- fold_left_rev_right.
-  set (F:=fun (y : key * elt) (x : A) => f (fst y) (snd y) x).
+  rewrite fold_spec_right.
+  set (F:=uncurry f).
   set (l:=rev (elements m)).
   assert (Hstep' : forall k e a m' m'', InA eqke (k,e) l -> ~In k m' ->
              Add k e m' m'' -> P m' a -> P m'' (F (k,e) a)).
@@ -981,8 +994,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
      R (fold f m i) (fold g m j).
   Proof.
   intros A B R f g i j m Rempty Rstep.
-  do 2 rewrite fold_1, <- fold_left_rev_right.
-  set (l:=rev (elements m)).
+  rewrite 2 fold_spec_right. set (l:=rev (elements m)).
   assert (Rstep' : forall k e a b, InA eqke (k,e) l ->
     R a b -> R (f k e a) (g k e b)) by
     (intros; apply Rstep; auto; rewrite elements_mapsto_iff, <- InA_rev; auto with *).
@@ -1097,14 +1109,15 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Lemma fold_Equal : forall m1 m2 i, Equal m1 m2 ->
    eqA (fold f m1 i) (fold f m2 i).
   Proof.
-  intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
+  intros.
+  rewrite 2 fold_spec_right.
   assert (NoDupA eqk (rev (elements m1))) by (auto with *).
   assert (NoDupA eqk (rev (elements m2))) by (auto with *).
   apply fold_right_equivlistA_restr with (R:=complement eqk)(eqA:=eqke);
    auto with *.
   intros (k1,e1) (k2,e2) (Hk,He) a1 a2 Ha; simpl in *; apply Comp; auto.
   unfold complement, eq_key, eq_key_elt; repeat red. intuition eauto.
-  intros (k,e) (k',e'); unfold eq_key; simpl; auto.
+  intros (k,e) (k',e'); unfold eq_key, uncurry; simpl; auto.
   rewrite <- NoDupA_altdef; auto.
   intros (k,e).
   rewrite 2 InA_rev, <- 2 elements_mapsto_iff, 2 find_mapsto_iff, H;
@@ -1114,8 +1127,9 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Lemma fold_Add : forall m1 m2 k e i, ~In k m1 -> Add k e m1 m2 ->
    eqA (fold f m2 i) (f k e (fold f m1 i)).
   Proof.
-  intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
-  set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
+  intros.
+  rewrite 2 fold_spec_right.
+  set (f':=uncurry f).
   change (f k e (fold_right f' i (rev (elements m1))))
    with (f' (k,e) (fold_right f' i (rev (elements m1)))).
   assert (NoDupA eqk (rev (elements m1))) by (auto with *).
@@ -1124,7 +1138,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
    (R:=complement eqk)(eqA:=eqke)(eqB:=eqA); auto with *.
   intros (k1,e1) (k2,e2) (Hk,He) a a' Ha; unfold f'; simpl in *. apply Comp; auto.
   unfold complement, eq_key_elt, eq_key; repeat red; intuition eauto.
-  unfold f'; intros (k1,e1) (k2,e2); unfold eq_key; simpl; auto.
+  unfold f'; intros (k1,e1) (k2,e2); unfold eq_key, uncurry; simpl; auto.
   rewrite <- NoDupA_altdef; auto.
   rewrite InA_rev, <- elements_mapsto_iff by (auto with *). firstorder.
   intros (a,b).
@@ -2128,8 +2142,7 @@ Module OrdProperties (M:S).
    eqA (fold f m1 i) (fold f m2 i).
   Proof.
   intros m1 m2 A eqA st f i Hf Heq.
-  do 2 rewrite fold_1.
-  do 2 rewrite <- fold_left_rev_right.
+  rewrite 2 fold_spec_right.
   apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
   intros (k,e) (k',e') (Hk,He) a a' Ha; simpl in *; apply Hf; auto.
   apply eqlistA_rev. apply elements_Equal_eqlistA. auto.
@@ -2140,8 +2153,7 @@ Module OrdProperties (M:S).
    Above x m1 -> Add x e m1 m2 ->
    eqA (fold f m2 i) (f x e (fold f m1 i)).
   Proof.
-  intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
-  set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
+  intros. rewrite 2 fold_spec_right. set (f':=uncurry f).
   transitivity (fold_right f' i (rev (elements m1 ++ (x,e)::nil))).
   apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
   intros (k1,e1) (k2,e2) (Hk,He) a1 a2 Ha; unfold f'; simpl in *. apply P; auto.
@@ -2156,8 +2168,7 @@ Module OrdProperties (M:S).
    Below x m1 -> Add x e m1 m2 ->
    eqA (fold f m2 i) (fold f m1 (f x e i)).
   Proof.
-  intros; do 2 rewrite fold_1; do 2 rewrite <- fold_left_rev_right.
-  set (f':=fun y x0 => f (fst y) (snd y) x0) in *.
+  intros. rewrite 2 fold_spec_right. set (f':=uncurry f).
   transitivity (fold_right f' i (rev (((x,e)::nil)++elements m1))).
   apply fold_right_eqlistA with (eqA:=eqke) (eqB:=eqA); auto.
   intros (k1,e1) (k2,e2) (Hk,He) a1 a2 Ha; unfold f'; simpl in *; apply P; auto.
