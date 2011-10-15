@@ -202,3 +202,7 @@ let pf_e gl s =
 open Toplevel
 let go = loop
 
+let _ =
+ print_string
+   ("\n\tOcaml toplevel with Coq printers and utilities (use go();; to exit)\n\n");
+ flush_all()
