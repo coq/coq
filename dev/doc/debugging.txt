@@ -11,6 +11,12 @@ Debugging from Coq toplevel using Caml trace mechanism
   6. Test your Coq command and observe the result of tracing your functions
   7. Freely switch from Coq to Ocaml toplevels with 'Drop.' and 'go();;'
 
+  You can avoid typing #use "include" (or "base_include") after Drop
+  by adding the following lines in your $HOME/.ocamlinit :
+
+   if Filename.basename Sys.argv.(0) = "coqtop.byte"
+   then ignore (Toploop.use_silently Format.std_formatter "include")
+
   Hints: To remove high-level pretty-printing features (coercions,
   notations, ...), use "Set Printing All". It will affect the #trace
   printers too.
