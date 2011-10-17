@@ -113,6 +113,7 @@ let pp_transparent_state s = pp (pr_transparent_state s)
 (* proof printers *)
 let ppmetas metas = pp(pr_metaset metas)
 let ppevm evd = pp(pr_evar_map (Some 2) evd)
+let ppevmfull evd = pp(pr_evar_map None evd)
 let ppevmall evd = pp(pr_evar_map None evd)
 let pr_existentialset evars =
   prlist_with_sep spc pr_meta (ExistentialSet.elements evars)
