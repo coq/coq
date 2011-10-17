@@ -132,7 +132,7 @@ let canonical_path_name p =
 (* All subdirectories, recursively *)
 
 let exists_dir dir =
-  try let _ = opendir dir in true with Unix_error _ -> false
+  try let _ = closedir (opendir dir) in true with Unix_error _ -> false
 
 let skipped_dirnames = ref ["CVS"; "_darcs"]
 
