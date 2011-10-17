@@ -170,10 +170,12 @@ let compute_var_aliases sign =
   List.fold_right (fun (id,b,c) aliases ->
     match b with
     | Some t ->
-        let aliases_of_id = match kind_of_term t with
-	| Var id' -> (try Idmap.find id' aliases with Not_found -> [])
-	| _ -> [] in
-	Idmap.add id (aliases_of_id@[t]) aliases
+        (match kind_of_term t with
+        | Var id' ->
+            let aliases_of_id =
+              try Idmap.find id' aliases with Not_found -> [] in
+            Idmap.add id (aliases_of_id@[t]) aliases
+	| _ -> aliases)
     | None -> aliases)
     sign Idmap.empty
 
@@ -182,13 +184,19 @@ let compute_rel_aliases var_aliases rels =
     (n-1,
      match b with
      | Some t ->
-         let aliases_of_n = match kind_of_term t with
-	 | Var id' -> (try Idmap.find id' var_aliases with Not_found -> [])
-         | Rel p -> (try Intmap.find (p+n) aliases with Not_found -> [])
-         | _ -> [] in
-	 Intmap.add n (aliases_of_n@[lift n t]) aliases
+         (match kind_of_term t with
+         | Var id' ->
+             let aliases_of_n =
+               try Idmap.find id' var_aliases with Not_found -> [] in
+             Intmap.add n (aliases_of_n@[t]) aliases
+         | Rel p ->
+             let aliases_of_n =
+               try Intmap.find (p+n) aliases with Not_found -> [] in
+             Intmap.add n (aliases_of_n@[mkRel (p+n)]) aliases
+         | _ ->
+           aliases)
      | None -> aliases))
-      rels (List.length rels,Intmap.empty))
+         rels (List.length rels,Intmap.empty))
 
 let make_alias_map env =
   (* We compute the chain of aliases for each var and rel *)
@@ -204,19 +212,12 @@ let get_alias_chain_of aliases x = match kind_of_term x with
 let normalize_alias_opt aliases x =
   match get_alias_chain_of aliases x with
   | []  -> None
-  | a::_ when isRel a || isVar a -> Some a (* Oldest alias is var/rel *)
-  | [a] -> None       (* Only one alias but not to var/rel *)
-  | _::a::_ -> Some a (* Last alias not to var/rel, but penultimate must be ok*)
+  | a::_ -> Some a
 
 let normalize_alias aliases x =
   match normalize_alias_opt aliases x with
-  | Some x -> x
+  | Some a -> a
   | None -> x
-
-let expand_alias aliases x =
-  match get_alias_chain_of aliases x with
-  | []  -> x
-  | a::_ -> x
 
 let normalize_alias_var var_aliases id =
   destVar (normalize_alias (var_aliases,Intmap.empty) (mkVar id))
@@ -228,18 +229,22 @@ let extend_alias (_,b,_) (var_aliases,rel_aliases) =
   let rel_aliases =
     match b with
     | Some t ->
-        let aliases = match kind_of_term t with
-	| Var id' -> (try Idmap.find id' var_aliases with Not_found -> [])
-        | Rel p -> (try Intmap.find (p+1) rel_aliases with Not_found -> [])
-        | _ -> [] in 
-	Intmap.add 1 (aliases@[lift 1 t]) rel_aliases
+        (match kind_of_term t with
+        | Var id' ->
+            let aliases_of_binder =
+              try Idmap.find id' var_aliases with Not_found -> [] in
+	    Intmap.add 1 (aliases_of_binder@[t]) rel_aliases
+        | Rel p ->
+            let aliases_of_binder =
+              try Intmap.find (p+1) rel_aliases with Not_found -> [] in
+	    Intmap.add 1 (aliases_of_binder@[mkRel (p+1)]) rel_aliases
+        | _ ->
+          rel_aliases)
     | None -> rel_aliases in
   (var_aliases, rel_aliases)
 
 let rec expansions_of_var aliases x =
-  match get_alias_chain_of aliases x with
-  | a::l when not (isVar a or isRel a) -> x :: List.rev l
-  | l -> x :: List.rev l
+  x :: List.rev (get_alias_chain_of aliases x)
 
 let rec expand_vars_in_term_using aliases t = match kind_of_term t with
   | Rel _ | Var _ ->
@@ -254,7 +259,7 @@ let free_vars_and_rels_up_alias_expansion aliases c =
   let acc1 = ref Intset.empty and acc2 = ref Idset.empty in
   let rec frec (aliases,depth) c = match kind_of_term c with
     | Rel _ | Var _ ->
-      let c = expand_alias aliases c in
+      let c = normalize_alias aliases c in
         (match kind_of_term c with
         | Var id -> acc2 := Idset.add id !acc2
         | Rel n -> if n >= depth+1 then acc1 := Intset.add (n-depth) !acc1
@@ -1289,11 +1294,7 @@ let rec expand_and_check_vars aliases = function
   | [] -> []
   | a::l ->
       if isRel a or isVar a then
-	let l = expand_and_check_vars aliases l in
-	match get_alias_chain_of aliases a with
-	| [] -> a :: l
-	| a'::_ when isRel a' or isVar a' -> a' :: l
-	| _ -> raise Exit
+        normalize_alias aliases a :: expand_and_check_vars aliases l
       else
 	raise Exit
 
@@ -1364,8 +1365,11 @@ let solve_pattern_eqn env l c =
     let c' = subst_term (lift 1 a) (lift 1 c) in
     match kind_of_term a with
       (* Rem: if [a] links to a let-in, do as if it were an assumption *)
-      | Rel n -> let (na,_,t) = lookup_rel n env in mkLambda (na,lift n t,c')
-      | Var id -> let (id,_,t) = lookup_named id env in mkNamedLambda id t c'
+      | Rel n ->
+          let d = map_rel_declaration (lift n) (lookup_rel n env) in
+          mkLambda_or_LetIn  d c'
+      | Var id ->
+          let d = lookup_named id env in mkNamedLambda_or_LetIn d c'
       | _ -> assert false)
     l c in
   (* Warning: we may miss some opportunity to eta-reduce more since c'
