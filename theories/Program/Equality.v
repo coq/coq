@@ -28,7 +28,7 @@ Hint Extern 10 => is_ground_goal ; progress exfalso : exfalso.
 Definition block {A : Type} (a : A) := a.
 
 Ltac block_goal := match goal with [ |- ?T ] => change (block T) end.
-Ltac unblock_goal := unfold block in *.
+Ltac unblock_goal := cbv beta delta [block]. 
 
 (** Notation for heterogenous equality. *)
 
@@ -411,26 +411,26 @@ Ltac depind id := do_depind ltac:(fun hyp => do_ind hyp) id.
 
 (** A variant where generalized variables should be given by the user. *)
 
-Ltac do_depelim' tac H :=
-  (try intros until H) ; block_goal ; generalize_eqs H ; tac H ; simplify_dep_elim ; 
+Ltac do_depelim' rev tac H :=
+  (try intros until H) ; block_goal ; rev H ; generalize_eqs H ; tac H ; simplify_dep_elim ; 
     simplify_IH_hyps ; unblock_goal.
 
 (** Calls [destruct] on the generalized hypothesis, results should be similar to inversion.
    By default, we don't try to generalize the hyp by its variable indices.  *)
 
 Tactic Notation "dependent" "destruction" ident(H) := 
-  do_depelim' ltac:(fun hyp => do_case hyp) H.
+  do_depelim' ltac:(fun hyp => idtac) ltac:(fun hyp => do_case hyp) H.
 
 Tactic Notation "dependent" "destruction" ident(H) "using" constr(c) := 
-  do_depelim' ltac:(fun hyp => destruct hyp using c) H.
+  do_depelim' ltac:(fun hyp => idtac) ltac:(fun hyp => destruct hyp using c) H.
 
 (** This tactic also generalizes the goal by the given variables before the elimination. *)
 
 Tactic Notation "dependent" "destruction" ident(H) "generalizing" ne_hyp_list(l) := 
-  do_depelim' ltac:(fun hyp => revert l ; do_case hyp) H.
+  do_depelim' ltac:(fun hyp => revert l) ltac:(fun hyp => do_case hyp) H.
 
 Tactic Notation "dependent" "destruction" ident(H) "generalizing" ne_hyp_list(l) "using" constr(c) := 
-  do_depelim' ltac:(fun hyp => revert l ; destruct hyp using c) H.
+  do_depelim' ltac:(fun hyp => revert l) ltac:(fun hyp => destruct hyp using c) H.
 
 (** Then we have wrappers for usual calls to induction. One can customize the induction tactic by 
    writting another wrapper calling do_depelim. We suppose the hyp has to be generalized before
@@ -445,7 +445,7 @@ Tactic Notation "dependent" "induction" ident(H) "using" constr(c) :=
 (** This tactic also generalizes the goal by the given variables before the induction. *)
 
 Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) := 
-  do_depelim' ltac:(fun hyp => generalize l ; clear l ; do_ind hyp) H.
+  do_depelim' ltac:(fun hyp => revert l) ltac:(fun hyp => do_ind hyp) H.
 
 Tactic Notation "dependent" "induction" ident(H) "generalizing" ne_hyp_list(l) "using" constr(c) := 
-  do_depelim' ltac:(fun hyp => generalize l ; clear l ; induction hyp using c) H.
+  do_depelim' ltac:(fun hyp => revert l) ltac:(fun hyp => induction hyp using c) H.
