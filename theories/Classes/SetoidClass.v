@@ -69,7 +69,7 @@ Notation " x =/= y " := (complement equiv x y) (at level 70, no associativity) :
 (** Use the [clsubstitute] command which substitutes an equality in every hypothesis. *)
 
 Ltac clsubst H :=
-  match type of H with
+  lazymatch type of H with
     ?x == ?y => substitute H ; clear H x
   end.
 

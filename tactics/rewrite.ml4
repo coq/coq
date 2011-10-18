@@ -1401,7 +1401,7 @@ let clsubstitute o c =
       (fun cl ->
 	match cl with
 	  | Some id when is_tac id -> tclIDTAC
-	  | _ -> tclTRY (cl_rewrite_clause c o all_occurrences cl))
+	  | _ -> cl_rewrite_clause c o all_occurrences cl)
 
 TACTIC EXTEND substitute
 | [ "substitute" orient(o) glob_constr_with_bindings(c) ] -> [ clsubstitute o c ]
