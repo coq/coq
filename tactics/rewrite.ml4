@@ -385,7 +385,7 @@ let unify_eqn env sigma hypinfo t =
     let res =
       if l2r then (prf, (car, rel, c1, c2))
       else
-	try (mkApp (get_symmetric_proof env Evd.empty car rel,
+	try (mkApp (get_symmetric_proof env env'.evd car rel,
 		   [| c1 ; c2 ; prf |]),
 	    (car, rel, c2, c1))
 	with Not_found ->
