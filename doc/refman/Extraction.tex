@@ -334,7 +334,7 @@ As an example of translation to a non-inductive datatype, let's turn
 {\tt nat} into Ocaml's {\tt int} (see caveat above):
 \begin{coq_example}
 Extract Inductive nat => int [ "0" "succ" ]
- "(fun fO fS n => if n=0 then fO () else fS (n-1))".
+ "(fun fO fS n -> if n=0 then fO () else fS (n-1))".
 \end{coq_example}
 
 \asubsection{Avoiding conflicts with existing filenames}
