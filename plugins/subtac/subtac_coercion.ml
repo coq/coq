@@ -141,7 +141,7 @@ module Coercion = struct
 		let restargs = lift_args 1
 		  (List.rev (Array.to_list (Array.sub l (succ i) (len - (succ i)))))
 		in
-		let args = List.rev (restargs @ mkRel 1 :: lift_args 1 tele) in
+		let args = List.rev (restargs @ mkRel 1 :: List.map (lift 1) tele) in
 		let pred = mkLambda (n, eqT, applistc (lift 1 c) args) in
 		let eq = mkApp (delayed_force eq_ind, [| eqT; hdx; hdy |]) in
 		let evar = make_existential loc env isevars eq in
