@@ -210,7 +210,7 @@ open Auto
 
 let extend_with_auto_hints l seq gl=
   let seqref=ref seq in
-  let f p_a_t =
+  let f (_, p_a_t) =
     match p_a_t.code with
 	Res_pf (c,_) | Give_exact c
       | Res_pf_THEN_trivial_fail (c,_) ->
@@ -220,7 +220,7 @@ let extend_with_auto_hints l seq gl=
 	       seqref:=add_formula Hint gr typ !seqref gl
 	   with Not_found->())
       | _-> () in
-  let g _ l=List.iter f l in
+  let g _ l = List.iter f l in
   let h dbname=
     let hdb=
       try

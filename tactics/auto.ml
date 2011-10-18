@@ -55,7 +55,7 @@ type auto_tactic =
   | Extern     of glob_tactic_expr       (* Hint Extern *)
 
 type pri_auto_tactic = {
-  pri  : int;            (* A number between 0 and 4, 4 = lower priority *)
+  pri  : int;            (* A number lower is higher priority *)
   pat  : constr_pattern option; (* A pattern for the concl of the Goal *)
   name  : global_reference option; (* A potential name to refer to the hint *) 
   code : auto_tactic     (* the tactic to apply when the concl matches pat *)
@@ -63,7 +63,12 @@ type pri_auto_tactic = {
 
 type hint_entry = global_reference option * pri_auto_tactic
 
-let pri_order {pri=pri1} {pri=pri2} = pri1 <= pri2
+let pri_order_int (id1, {pri=pri1}) (id2, {pri=pri2}) =
+  let d = pri1 - pri2 in
+    if d == 0 then id2 - id1
+    else d
+
+let pri_order t1 t2 = pri_order_int t1 t2 <= 0
 
 let insert v l =
   let rec insrec = function
@@ -87,7 +92,8 @@ let insert v l =
      - un discrimination net borné (Btermdn.t) constitué de tous les
        patterns de la seconde liste de tactiques *)
 
-type stored_data = pri_auto_tactic
+type stored_data = int * pri_auto_tactic 
+    (* First component is the index of insertion in the table, to keep most recent first semantics. *)
 
 let auto_tactic_ord code1 code2 =
   match code1, code2 with
@@ -101,25 +107,16 @@ let auto_tactic_ord code1 code2 =
   | Extern t1, Extern t2 -> Pervasives.compare t1 t2
   | _ -> Pervasives.compare code1 code2
 
-let pri_auto_tactic_ord
-    {pri=pri1; pat=pat1; name=name1; code=code1}
-    {pri=pri2; pat=pat2; name=name2; code=code2} =
-  let r = pri1 - pri2 in
-  if r <> 0 then r else
-  let r = Pervasives.compare pat1 pat2 in (* there should be an equality on constr_pattern *)
-  if r <> 0 then r else
-  auto_tactic_ord code1 code2
-
 module Bounded_net = Btermdn.Make(struct
 				    type t = stored_data
-				    let compare = pri_auto_tactic_ord
+				    let compare = pri_order_int
 				  end)
 
 type search_entry = stored_data list * stored_data list * Bounded_net.t
 
 let empty_se = ([],[],Bounded_net.create ())
 
-let eq_pri_auto_tactic x y =
+let eq_pri_auto_tactic (_, x) (_, y) =
   if x.pri = y.pri && x.pat = y.pat then
     match x.code,y.code with
       | Res_pf(cstr,_),Res_pf(cstr1,_) -> 
@@ -140,13 +137,14 @@ let add_tac pat t st (l,l',dn) =
   | None -> if not (List.exists (eq_pri_auto_tactic t) l) then (insert t l, l', dn) else (l, l', dn)
   | Some pat -> if not (List.exists (eq_pri_auto_tactic t) l') then (l, insert t l', Bounded_net.add st dn (pat,t)) else (l, l', dn)
 
-let rebuild_dn st (l,l',dn) =
-  (l, l', List.fold_left (fun dn t -> Bounded_net.add (Some st) dn (Option.get t.pat, t))
+let rebuild_dn st ((l,l',dn) : search_entry) =
+  (l, l', List.fold_left (fun dn (id, t) -> Bounded_net.add (Some st) dn (Option.get t.pat, (id, t)))
     (Bounded_net.create ()) l')
+
 
 let lookup_tacs (hdc,c) st (l,l',dn) =
   let l'  = List.map snd (Bounded_net.lookup st dn c) in
-  let sl' = Sort.list pri_order l' in
+  let sl' = List.stable_sort pri_order_int l' in
     Sort.merge pri_order l sl'
 
 module Constr_map = Map.Make(RefOrdered)
@@ -161,6 +159,7 @@ module Hint_db = struct
   type t = {
     hintdb_state : Names.transparent_state;
     hintdb_unfolds : Idset.t * Cset.t;
+    mutable hintdb_max_id : int;
     use_dn : bool;
     hintdb_map : search_entry Constr_map.t;
     (* A list of unindexed entries starting with an unfoldable constant
@@ -168,8 +167,12 @@ module Hint_db = struct
     hintdb_nopat : (global_reference option * stored_data) list
   }
 
+  let next_hint_id t = 
+    let h = t.hintdb_max_id in t.hintdb_max_id <- succ t.hintdb_max_id; h
+
   let empty st use_dn = { hintdb_state = st;
 			  hintdb_unfolds = (Idset.empty, Cset.empty);
+			  hintdb_max_id = 0;
 			  use_dn = use_dn;
 			  hintdb_map = Constr_map.empty;
 			  hintdb_nopat = [] }
@@ -179,16 +182,16 @@ module Hint_db = struct
     with Not_found -> empty_se
 
   let map_none db =
-    Sort.merge pri_order (List.map snd db.hintdb_nopat) []
-
+    List.map snd (Sort.merge pri_order (List.map snd db.hintdb_nopat) [])
+    
   let map_all k db =
     let (l,l',_) = find k db in
-      Sort.merge pri_order (List.map snd db.hintdb_nopat @ l) l'
+      List.map snd (Sort.merge pri_order (List.map snd db.hintdb_nopat @ l) l')
 
   let map_auto (k,c) db =
     let st = if db.use_dn then Some db.hintdb_state else None in
     let l' = lookup_tacs (k,c) st (find k db) in
-      Sort.merge pri_order (List.map snd db.hintdb_nopat) l'
+      List.map snd (Sort.merge pri_order (List.map snd db.hintdb_nopat) l')
 
   let is_exact = function
     | Give_exact _ -> true
@@ -198,7 +201,8 @@ module Hint_db = struct
     | Unfold_nth _ -> true
     | _ -> false
 
-  let addkv gr v db =
+  let addkv gr id v db =
+    let idv = id, v in
     let k = match gr with
       | Some gr -> if db.use_dn && is_transparent_gr db.hintdb_state gr &&
 	  is_unfold v.code then None else Some gr
@@ -208,19 +212,19 @@ module Hint_db = struct
     let pat = if not db.use_dn && is_exact v.code then None else v.pat in
       match k with
       | None ->
-	  if not (List.exists (fun (_, v') -> v = v') db.hintdb_nopat) then
-	    { db with hintdb_nopat = (gr,v) :: db.hintdb_nopat }
+	  if not (List.exists (fun (_, (_, v')) -> v = v') db.hintdb_nopat) then
+	    { db with hintdb_nopat = (gr,idv) :: db.hintdb_nopat }
 	  else db
       | Some gr ->
 	  let oval = find gr db in
-	    { db with hintdb_map = Constr_map.add gr (add_tac pat v dnst oval) db.hintdb_map }
+	    { db with hintdb_map = Constr_map.add gr (add_tac pat idv dnst oval) db.hintdb_map }
 
   let rebuild_db st' db =
     let db' =
       { db with hintdb_map = Constr_map.map (rebuild_dn st') db.hintdb_map;
 	hintdb_state = st'; hintdb_nopat = [] }
     in
-      List.fold_left (fun db (gr,v) -> addkv gr v db) db' db.hintdb_nopat
+      List.fold_left (fun db (gr,(id,v)) -> addkv gr id v db) db' db.hintdb_nopat
 
   let add_one (k,v) db =
     let st',db,rebuild =
@@ -236,7 +240,7 @@ module Hint_db = struct
       | _ -> db.hintdb_state, db, false
     in
     let db = if db.use_dn && rebuild then rebuild_db st' db else db
-    in addkv k v db
+    in addkv k (next_hint_id db) v db
 
   let add_list l db = List.fold_right add_one l db
 
@@ -247,7 +251,7 @@ module Hint_db = struct
       else rebuild_dn st (sl1', sl2', dn)
 
   let remove_list grs db =
-    let filter h = match h.name with None -> true | Some gr -> not (List.mem gr grs) in
+    let filter (_, h) = match h.name with None -> true | Some gr -> not (List.mem gr grs) in
     let hintmap = Constr_map.map (remove_he db.hintdb_state filter) db.hintdb_map in
     let hintnopat = list_smartfilter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
@@ -365,10 +369,10 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri ?name (c,cty) =
 	    warn (str "the hint: eapply " ++ pr_lconstr c ++
 	    str " will only be used by eauto");
           (Some hd,
-            { pri = (match pri with None -> nb_hyp cty + nmiss | Some p -> p);
-              pat = Some pat;
-	      name = name;
-              code = ERes_pf(c,{ce with env=empty_env}) })
+           { pri = (match pri with None -> nb_hyp cty + nmiss | Some p -> p);
+             pat = Some pat;
+	     name = name;
+             code = ERes_pf(c,{ce with env=empty_env}) })
         end
     | _ -> failwith "make_apply_entry"
 
@@ -421,10 +425,10 @@ let make_trivial env sigma ?name c =
   let hd = head_of_constr_reference (fst (head_constr t)) in
   let ce = mk_clenv_from dummy_goal (c,t) in
   (Some hd, { pri=1;
-         pat = Some (snd (Pattern.pattern_of_constr sigma (clenv_type ce)));
-	 name = name;
-         code=Res_pf_THEN_trivial_fail(c,{ce with env=empty_env}) })
-
+              pat = Some (snd (Pattern.pattern_of_constr sigma (clenv_type ce)));
+	      name = name;
+              code=Res_pf_THEN_trivial_fail(c,{ce with env=empty_env}) })
+  
 open Vernacexpr
 
 (**************************************************************************)
@@ -746,8 +750,8 @@ let pr_autotactic =
   | Extern tac ->
       (str "(external) " ++ Pptactic.pr_glob_tactic (Global.env()) tac)
 
-let pr_hint v =
-  (pr_autotactic v.code ++ str"(" ++ int v.pri ++ str")" ++ spc ())
+let pr_hint (id, v) =
+  (pr_autotactic v.code ++ str"(level " ++ int v.pri ++ str", id " ++ int id ++ str ")" ++ spc ())
 
 let pr_hint_list hintlist =
   (str "  " ++ hov 0 (prlist pr_hint hintlist) ++ fnl ())
@@ -762,7 +766,7 @@ let pr_hint_list_for_head c =
   let dbs = Hintdbmap.to_list !searchtable in
   let valid_dbs =
     map_succeed
-      (fun (name,db) -> (name,db,Hint_db.map_all c db))
+      (fun (name,db) -> (name,db, List.map (fun v -> 0, v) (Hint_db.map_all c db)))
       dbs
   in
   if valid_dbs = [] then
@@ -789,6 +793,7 @@ let pr_hint_term cl =
 	    else Hint_db.map_auto (hd, applist (hdc,args))
 	with Bound -> Hint_db.map_none
       in
+      let fn db = List.map (fun x -> 0, x) (fn db) in
 	map_succeed (fun (name, db) -> (name, db, fn db)) dbs
     in
       if valid_dbs = [] then
@@ -857,7 +862,7 @@ let print_searchtable () =
 (*          tactics with a trace mechanism for automatic search           *)
 (**************************************************************************)
 
-let priority l = List.filter (fun (_,hint) -> hint.pri = 0) l
+let priority l = List.filter (fun (_, hint) -> hint.pri = 0) l
 
 (* tell auto not to reuse already instantiated metas in unification (for
    compatibility, since otherwise, apply succeeds oftener) *)
@@ -986,7 +991,7 @@ let rec trivial_fail_db mod_delta db_list local_db gl =
   in
   tclFIRST
     (assumption::intro_tac::
-     (List.map tclCOMPLETE
+     (List.map (fun tac -> tclCOMPLETE tac)
        (trivial_resolve mod_delta db_list local_db (pf_concl gl)))) gl
 
 and my_find_search_nodelta db_list local_db hdc concl =
@@ -1028,20 +1033,23 @@ and my_find_search_delta db_list local_db hdc concl =
 	  in List.map (fun x -> (Some flags,x)) l)
       	(local_db::db_list)
 
-and tac_of_hint db_list local_db concl (flags, {pat=p; code=t}) =
-  match t with
-  | Res_pf (c,cl) -> unify_resolve_gen flags (c,cl)
-  | ERes_pf _ -> (fun gl -> error "eres_pf")
-  | Give_exact c  -> exact_check c
-  | Res_pf_THEN_trivial_fail (c,cl) ->
+and tac_of_hint db_list local_db concl (flags, ({pat=p; code=t})) =
+  let tactic = 
+    match t with
+    | Res_pf (c,cl) -> unify_resolve_gen flags (c,cl)
+    | ERes_pf _ -> (fun gl -> error "eres_pf")
+    | Give_exact c  -> exact_check c
+    | Res_pf_THEN_trivial_fail (c,cl) ->
       tclTHEN
         (unify_resolve_gen flags (c,cl))
         (trivial_fail_db (flags <> None) db_list local_db)
-  | Unfold_nth c -> (fun gl ->
-      if exists_evaluable_reference (pf_env gl) c then
-	tclPROGRESS (h_reduce (Unfold [all_occurrences_expr,c]) onConcl) gl
-      else tclFAIL 0 (str"Unbound reference") gl)
-  | Extern tacast -> conclPattern concl p tacast
+    | Unfold_nth c -> 
+      (fun gl ->
+       if exists_evaluable_reference (pf_env gl) c then
+	 tclPROGRESS (h_reduce (Unfold [all_occurrences_expr,c]) onConcl) gl
+       else tclFAIL 0 (str"Unbound reference") gl)
+    | Extern tacast -> conclPattern concl p tacast
+  in tactic
 
 and trivial_resolve mod_delta db_list local_db cl =
   try
