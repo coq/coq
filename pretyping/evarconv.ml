@@ -728,6 +728,11 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       (* Some head evar have been instantiated, or unknown kind of problem *)
       evar_conv_x ts env evd pbty t1 t2
 
+let check_problems_are_solved env evd =
+  match snd (extract_all_conv_pbs evd) with
+  | (pbty,env,t1,t2)::_ -> Pretype_errors.error_cannot_unify env evd (t1, t2)
+  | _ -> ()
+
 let consider_remaining_unif_problems ?(ts=full_transparent_state) env evd =
   let (evd,pbs) = extract_all_conv_pbs evd in
   let heuristic_solved_evd = List.fold_left
@@ -735,7 +740,8 @@ let consider_remaining_unif_problems ?(ts=full_transparent_state) env evd =
       let evd', b = apply_conversion_problem_heuristic ts env evd pbty t1 t2 in
 	if b then evd' else Pretype_errors.error_cannot_unify env evd (t1, t2))
     evd pbs in
-    Evd.fold_undefined (fun ev ev_info evd' -> match ev_info.evar_source with
+  check_problems_are_solved env heuristic_solved_evd;
+  Evd.fold_undefined (fun ev ev_info evd' -> match ev_info.evar_source with
 			  |_,ImpossibleCase -> 
 			     Evd.define ev (j_type (coq_unit_judge ())) evd'
 			  |_ -> evd') heuristic_solved_evd heuristic_solved_evd
