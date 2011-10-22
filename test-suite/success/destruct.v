@@ -89,3 +89,7 @@ Goal (exists x, x=0 /\ True) -> True.
 destruct 1 as (_,(_,x)); exact x.
 Abort.
 
+Goal let T:=nat in forall (x:nat) (f:T -> nat), f x = 0.
+intros.
+destruct (f _). (* This was failing in at least r14571 *)
+Abort.
