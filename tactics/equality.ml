@@ -568,7 +568,7 @@ let discriminable env sigma t1 t2 =
 
 let injectable env sigma t1 t2 =
     match find_positions env sigma t1 t2 with
-    | Inl _ | Inr [] -> false
+    | Inl _ | Inr [] | Inr [([],_,_)] -> false
     | Inr _ -> true
 
 
@@ -1112,6 +1112,8 @@ let injEq ipats (eq,_,(t,t1,t2) as u) eq_clause =
     | Inr [] ->
 	errorlabstrm "Equality.inj"
 	   (str"Nothing to do, it is an equality between convertible terms.")
+    | Inr [([],_,_)] when Flags.version_strictly_greater Flags.V8_3 ->
+        errorlabstrm "Equality.inj" (str"Nothing to inject.")
     | Inr posns ->
 (* Est-ce utile à partir du moment où les arguments projetés subissent "nf" ?
 	let t1 = try_delta_expand env sigma t1 in

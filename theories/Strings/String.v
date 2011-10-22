@@ -250,12 +250,12 @@ case H0; simpl in |- *; auto.
 case m; simpl in |- *; auto.
 case (index 0 s1 s2'); intros; discriminate.
 intros m'; generalize (Rec 0 m' s1); case (index 0 s1 s2'); auto.
-intros x H H0 H1; apply H; injection H1; intros H2; injection H2; auto.
+intros x H H0 H1; apply H; injection H1; auto.
 intros; discriminate.
 intros n'; case m; simpl in |- *; auto.
 case (index n' s1 s2'); intros; discriminate.
 intros m'; generalize (Rec n' m' s1); case (index n' s1 s2'); auto.
-intros x H H1; apply H; injection H1; intros H2; injection H2; auto.
+intros x H H1; apply H; injection H1; auto.
 intros; discriminate.
 Qed.
 
@@ -288,7 +288,7 @@ intros x H H0 H1 p; try case p; simpl in |- *; auto.
 intros H2 H3; red in |- *; intros H4; case H0.
 intros H5 H6; absurd (false = true); auto with bool.
 intros n0 H2 H3; apply H; auto.
-injection H1; intros H4; injection H4; auto.
+injection H1; auto.
 apply Le.le_O_n.
 apply Lt.lt_S_n; auto.
 intros; discriminate.
@@ -298,7 +298,7 @@ intros m'; generalize (Rec n' m' s1); case (index n' s1 s2'); auto.
 intros x H H0 p; case p; simpl in |- *; auto.
 intros H1; inversion H1; auto.
 intros n0 H1 H2; apply H; auto.
-injection H0; intros H3; injection H3; auto.
+injection H0; auto.
 apply Le.le_S_n; auto.
 apply Lt.lt_S_n; auto.
 intros; discriminate.

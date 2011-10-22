@@ -55,6 +55,8 @@ Tactics
   automatically the dependencies over the arguments of the types
   (based on initial ideas from Chung-Kil Hur, extension to nested
    dependencies suggested by Dan Grayson)
+- Tactic "injection" now failing on an equality showing no constructors while
+  it was formerly generalizing again the goal over the given equality.
 
 Vernacular commands
 
