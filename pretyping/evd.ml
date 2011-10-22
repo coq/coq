@@ -753,7 +753,7 @@ let pr_evar_source = function
   | ImplicitArg (c,(n,ido),b) ->
       let id = Option.get ido in
       str "parameter " ++ pr_id id ++ spc () ++ str "of" ++
-      spc () ++ Nametab.pr_global_env Idset.empty c
+      spc () ++ print_constr (constr_of_global c)
   | InternalHole -> str "internal placeholder"
   | TomatchTypeParameter (ind,n) ->
       nth n ++ str " argument of type " ++ print_constr (mkInd ind)
