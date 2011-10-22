@@ -112,11 +112,8 @@ let resolve_evars env evdref fail_evar resolve_classes =
 	     with e -> if fail_evar then raise e else !evdref)
 
 let solve_remaining_evars fail_evar use_classes hook env initial_sigma (evd,c) =
-  let evdref =
-    if use_classes then
-      ref (Typeclasses.resolve_typeclasses ~split:true ~fail:fail_evar env evd)
-    else
-      ref evd in
+  let evdref = ref evd in
+  resolve_evars env evdref fail_evar use_classes;
   let rec proc_rec c =
     let c = Reductionops.whd_evar !evdref c in
     match kind_of_term c with
