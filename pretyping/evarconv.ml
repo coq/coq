@@ -684,6 +684,10 @@ let second_order_matching ts env_rhs evd (evk,args) rhs =
   abstract_free_holes evd subst, true
   with Exit -> evd, false
 
+let second_order_matching_with_args ts env evd ev l t =
+  let evd,ev = evar_absorb_arguments env evd ev l in
+  second_order_matching ts env evd ev t
+
 let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   let t1 = apprec_nohdbeta ts env evd (whd_head_evar evd t1) in
   let t2 = apprec_nohdbeta ts env evd (whd_head_evar evd t2) in
@@ -702,18 +706,24 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       choose_less_dependent_instance evk2 evd term1 args2, true
   | Evar ev1,_ when List.length l1 <= List.length l2 ->
       (* On "?n t1 .. tn = u u1 .. u(n+p)", try first-order unification *)
-      first_order_unification ts env evd (ev1,l1) appr2
+      (* and otherwise second-order matching *)
+      ise_try evd
+        [(fun evd -> first_order_unification ts env evd (ev1,l1) appr2);
+         (fun evd ->
+           second_order_matching_with_args ts env evd ev1 l1 (applist appr2))]
   | _,Evar ev2 when List.length l2 <= List.length l1 ->
       (* On "u u1 .. u(n+p) = ?n t1 .. tn", try first-order unification *)
-      first_order_unification ts env evd (ev2,l2) appr1
+      (* and otherwise second-order matching *)
+      ise_try evd
+        [(fun evd -> first_order_unification ts env evd (ev2,l2) appr1);
+         (fun evd ->
+           second_order_matching_with_args ts env evd ev2 l2 (applist appr1))]
   | Evar ev1,_ ->
       (* Try second-order pattern-matching *)
-      let evd,ev1 = evar_absorb_arguments env evd ev1 l1 in
-      second_order_matching ts env evd ev1 (applist appr2)
+      second_order_matching_with_args ts env evd ev1 l1 (applist appr2)
   | _,Evar ev2 ->
       (* Try second-order pattern-matching *)
-      let evd,ev2 = evar_absorb_arguments env evd ev2 l2 in
-      second_order_matching ts env evd ev2 (applist appr1)
+      second_order_matching_with_args ts env evd ev2 l2 (applist appr1)
   | _ ->
       (* Some head evar have been instantiated, or unknown kind of problem *)
       evar_conv_x ts env evd pbty t1 t2
