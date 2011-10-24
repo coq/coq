@@ -45,6 +45,11 @@ let e_judge_of_apply env evdref funj argjv =
 	   apply_rec (n+1) (subst1 hj.uj_val c2) restjl
 	 else
 	   error_cant_apply_bad_type env (n,c1, hj.uj_type) funj argjv
+      | Evar ev ->
+	  let (evd',t) = Evarutil.define_evar_as_product !evdref ev in
+          evdref := evd';
+          let (_,_,c2) = destProd t in
+	  apply_rec (n+1) (subst1 hj.uj_val c2) restjl
       | _ ->
 	  error_cant_apply_not_functional env funj argjv
   in
@@ -260,6 +265,12 @@ let sort_of env evd c =
   a.utj_type
 
 (* Try to solve the existential variables by typing *)
+
+let e_type_of env evd c =
+  let evdref = ref evd in
+  let j = execute env evdref c in
+  (* side-effect on evdref *)
+  !evdref, Termops.refresh_universes j.uj_type
 
 let solve_evars env evd c =
   let evdref = ref evd in
