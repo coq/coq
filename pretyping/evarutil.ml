@@ -1102,10 +1102,13 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
       | NotUniqueInType ty ->
 	  if not !progress then raise NotEnoughInformationToProgress;
 	  (* No unique projection but still restrict to where it is possible *)
+          (* materializing is necessary, but is restricting useful? *)
+	  let (evd,_,ev') =
+            materialize_evar (evar_define conv_algo) env !evdref 0 ev ty in
 	  let ts = expansions_of_var aliases t in
 	  let test c = isEvar c or List.mem c ts in
 	  let filter = array_map_to_list test argsv in
-	  let evarenv,src,filter,_ = restrict_hyps ~refine:true !evdref evk filter in
+	  let evarenv,src,filter,_ = restrict_hyps ~refine:true evd (fst ev') filter in
 	  let args' = filter_along (fun x -> x) filter argsv in
 	  let evd,evar = new_evar !evdref evarenv ~src ~filter ty in
 	  let evk',_ = destEvar evar in

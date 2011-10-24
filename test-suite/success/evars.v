@@ -258,3 +258,11 @@ Abort.
 (* Regression test *)
 
 Definition fo : option nat -> nat := option_rec _ (fun a => 0) 0.
+
+(* This example revealed an incorrect evar restriction at some time
+   around October 2011 *)
+
+Goal forall (A:Type) (a:A) (P:forall A, A -> Prop), (P A a) /\ (P A a).
+intros.
+refine ((fun H => conj (proj1 H) (proj2 H)) _).
+Abort.
