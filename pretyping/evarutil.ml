@@ -151,10 +151,6 @@ let new_untyped_evar =
  *------------------------------------*)
 
 let new_evar_instance sign evd typ ?(src=(dummy_loc,InternalHole)) ?filter instance =
-  let instance =
-    match filter with
-    | None -> instance
-    | Some filter -> snd (list_filter2 (fun b c -> b) (filter,instance)) in
   assert
     (let ctxt = named_context_of_val sign in
      list_distinct (ids_of_named_context ctxt));
@@ -380,6 +376,10 @@ let push_rel_context_to_named_context env typ =
 
 let new_evar evd env ?(src=(dummy_loc,InternalHole)) ?filter typ =
   let sign,typ',instance = push_rel_context_to_named_context env typ in
+  let instance =
+    match filter with
+    | None -> instance
+    | Some filter -> snd (list_filter2 (fun b c -> b) (filter,instance)) in
   new_evar_instance sign evd typ' ~src:src ?filter instance
 
   (* The same using side-effect *)
@@ -432,9 +432,9 @@ let check_restricted_occur evd refine env filter constr =
   let res = aux 0 constr in
     Array.to_list filter, res
 
-(* We have a unification problem Σ; Γ |- ?e[u1..uq] = ty : s where ?e is not
- * defined in Σ but yet known to be definable in some context x1:T1..xq:Tq.
- * [declare_dangling_evar ... Γ Σ c ty (x1:T1..xq:Tq) .. (u1..uq) (x1..xq)]
+(* We have a unification problem Σ; Γ |- ?e[u1..uq] = ty : s where ?e is not yet
+ * declared in Σ but yet known to be declarable in some context x1:T1..xq:Tq.
+ * [define_evar_from_virtual_equation ... Γ Σ c ty (x1:T1..xq:Tq) .. (u1..uq) (x1..xq)]
  * declares x1:T1..xq:Tq |- ?e : s such that ?e[u1..uq] = ty holds.
  *)
 
@@ -452,9 +452,9 @@ let define_evar_from_virtual_equation define_fun env evd t_in_env sign filter in
  * ?e2[v1..vn], hence flexible. We had to go through k binders and now
  * virtually have x1..xq, y1'..yk' | ?e1' : τ' and the equation
  * Γ, y1..yk |- ?e1'[u1..uq y1..yk] = c.
- * [extend_evar Γ evd k (?e1[u1..uq]) c] extend Σ with the declaration of ?e1'
- * and returns both its instance ?e1'[x1..xq y1..yk] in an extension of the
- * context of e1 so that e1 can be instantiated by
+ * [materialize_evar Γ evd k (?e1[u1..uq]) c] extends Σ with the declaration
+ * of ?e1' and returns both its instance ?e1'[x1..xq y1..yk] in an extension
+ * of the context of e1 so that e1 can be instantiated by
  * (...\y1' ... \yk' ... ?e1'[x1..xq y1'..yk']),
  * and the instance ?e1'[u1..uq y1..yk] so that the remaining equation
  * ?e1'[u1..uq y1..yk] = c can be registered
@@ -468,7 +468,10 @@ let materialize_evar define_fun env evd k (evk1,args1) ty =
   let evi1 = Evd.find_undefined evd evk1 in
   let env1,rel_sign = env_rel_context_chop k env in
   let sign1 = evar_hyps evi1 in
+  let filter1 = evar_filter evi1 in
   let ids1 = List.map pi1 (named_context_of_val sign1) in
+  let inst_in_sign =
+    List.map mkVar (snd (list_filter2 (fun b id -> b) (filter1,ids1))) in
   let (sign2,filter2,inst2_in_env,inst2_in_sign,_,evd,_) =
     List.fold_right (fun (na,b,t_in_env as d) (sign,filter,inst_in_env,inst_in_sign,env,evd,avoid) ->
       match b with
@@ -484,8 +487,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty =
           (sign,filter,inst_in_env,inst_in_sign,
            push_rel d env,evd,avoid))
       rel_sign
-      (sign1,evar_filter evi1,Array.to_list args1,
-       List.map mkVar ids1,env1,evd,ids1)
+      (sign1,filter1,Array.to_list args1,inst_in_sign,env1,evd,ids1)
   in
   let evd,ev2ty_in_sign =
     define_evar_from_virtual_equation define_fun env evd ty

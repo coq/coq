@@ -617,7 +617,7 @@ let second_order_matching ts env_rhs evd (evk,args) rhs =
   let evi = Evd.find_undefined evd evk in
   let env_evar = evar_env evi in
   let sign = named_context_val env_evar in
-  let ctxt = named_context_of_val sign in
+  let ctxt = evar_filtered_context evi in
   let filter = evar_filter evi in
   let instance = List.map mkVar (List.map pi1 ctxt) in
 
@@ -635,6 +635,7 @@ let second_order_matching ts env_rhs evd (evk,args) rhs =
   | (id,_,c,cty,evsref,filter)::subst ->
       let set_var k =
         let evty = set_holes evdref cty subst in
+        let instance = snd (list_filter2 (fun b c -> b) (filter,instance)) in
         let evd,ev = new_evar_instance sign !evdref evty ~filter instance in
         evdref := evd;
         evsref := (fst (destEvar ev),evty)::!evsref;
