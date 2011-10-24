@@ -295,7 +295,9 @@ let subst_con0 sub con =
   let dup con = con, mkConst con in
   let side,con',resolve = gen_subst_mp rebuild_con sub mp1 mp2 in
   match constant_of_delta_with_inline resolve con' with
-    | Some t -> con', t
+    | Some t ->
+      (* In case of inlining, discard the canonical part (cf #2608) *)
+      constant_of_kn (user_con con'), t
     | None ->
       let con'' = match side with
 	| User -> constant_of_delta resolve con'
