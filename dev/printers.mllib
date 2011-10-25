@@ -66,6 +66,7 @@ Lib
 Goptions
 Decls
 Heads
+Assumptions
 Termops
 Namegen
 Evd

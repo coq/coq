@@ -197,22 +197,6 @@ let update_resolver f senv =
   { senv with modinfo = { mi with resolver = f mi.resolver }}
 
 
-(*spiwack: functions for safe retroknowledge *)
-
-(* terms which are closed under the environnement env, i.e
-   terms which only depends on constant who are themselves closed *)
-let closed env term =
-  ContextObjectMap.is_empty (assumptions full_transparent_state env term)
-
-(* the set of safe terms in an environement any recursive set of
-   terms who are known not to prove inconsistent statement. It should
-   include at least all the closed terms. But it could contain other ones
-   like the axiom of excluded middle for instance *)
-let safe =
-  closed
-
-
-
 (* universal lifting, used for the "get" operations mostly *)
 let retroknowledge f senv =
   Environ.retroknowledge f (env_of_senv senv)
