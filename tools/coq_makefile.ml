@@ -245,7 +245,8 @@ let clean sds sps =
   print "clean:\n";
   print "\trm -f *~ Makefile-localvars.gen\n";
   if !some_mlfile || !some_mlifile || !some_ml4file || !some_mllibfile then begin
-    print "\trm -f $(CMOFILES) $(CMIFILES) $(CMXFILES) $(CMAFILES) $(CMXAFILES) $(CMXSFILES) $(OFILES)\n";
+    print "\trm -f $(ALLCMOFILES) $(CMIFILES) $(CMAFILES)\n";
+    print "\trm -f $(ALLCMOFILES:.cmo=.cmx) $(CMXAFILES) $(CMXSFILES) $(ALLCMOFILES:.cmo=.o) $(CMXAFILES:.cmxa=.a)\n";
     print "\trm -f $(MLFILES:.ml=.ml.d) $(MLIFILES:.mli=.mli.d) $(ML4FILES:.ml4=.ml4.d) $(MLLIBFILES:.mllib=.mllib.d)\n";
   end;
   if !some_vfile then
@@ -271,13 +272,6 @@ let clean sds sps =
   print "\t@echo CAMLC =\t$(CAMLC)\n\t@echo CAMLOPTC =\t$(CAMLOPTC)\n\t@echo PP =\t$(PP)\n\t@echo COQFLAGS =\t$(COQFLAGS)\n\n"
 
 let header_includes () = ()
-
-let footer_includes () =
-  if !some_vfile then print "-include $(VFILES:.v=.v.d)\n.SECONDARY: $(VFILES:.v=.v.d)\n\n";
-  if !some_mlfile then print "-include $(MLFILES:.ml=.ml.d)\n.SECONDARY: $(MLFILES:.ml=.ml.d)\n\n";
-  if !some_mlifile then print "-include $(MLIFILES:.mli=.mli.d)\n.SECONDARY: $(MLIFILES:.mli=.mli.d)\n\n";
-  if !some_ml4file then print "-include $(ML4FILES:.ml4=.ml4.d)\n.SECONDARY: $(ML4FILES:.ml4=.ml4.d)\n\n";
-  if !some_mllibfile then print "-include $(MLLIBFILES:.mllib=.mllib.d)\n.SECONDARY: $(MLLIBFILES:.mllib=.mllib.d)\n\n"
 
 let implicit () =
   let mli_rules () =
@@ -410,6 +404,7 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles) other_targets inc
     |[] -> ()
     |l ->
       print "VFILES:="; print_list "\\\n  " l; print "\n";
+      print "\n-include $(VFILES:.v=.v.d)\n.SECONDARY: $(VFILES:.v=.v.d)\n\n";
       print "VOFILES:=$(VFILES:.v=.vo)\n";
       classify_files_by_root "VOFILES" l inc;
       print "GLOBFILES:=$(VFILES:.v=.glob)\n";
@@ -422,28 +417,34 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles) other_targets inc
     |[],[] -> []
     |[],ml ->
       print "MLFILES:="; print_list "\\\n  " ml; print "\n";
-      print "CMOFILES:=$(MLFILES:.ml=.cmo)\n";
+      print "\n-include $(MLFILES:.ml=.ml.d)\n.SECONDARY: $(MLFILES:.ml=.ml.d)\n\n";
+      print "ALLCMOFILES:=$(MLFILES:.ml=.cmo)\n";
       ml
     |ml4,[] ->
       print "ML4FILES:="; print_list "\\\n  " ml4; print "\n";
-      print "CMOFILES:=$(ML4FILES:.ml4=.cmo)\n";
+      print "\n-include $(ML4FILES:.ml4=.ml4.d)\n.SECONDARY: $(ML4FILES:.ml4=.ml4.d)\n\n";
+      print "ALLCMOFILES:=$(ML4FILES:.ml4=.cmo)\n";
       ml4
     |ml4,ml ->
       print "ML4FILES:="; print_list "\\\n  " ml4; print "\n";
+      print "\n-include $(ML4FILES:.ml4=.ml4.d)\n.SECONDARY: $(ML4FILES:.ml4=.ml4.d)\n\n";
       print "MLFILES:="; print_list "\\\n  " ml; print "\n";
-      print "CMOFILES:=$(ML4FILES:.ml4=.cmo) $(MLFILES:.ml=.cmo)\n";
+      print "\n-include $(MLFILES:.ml=.ml.d)\n.SECONDARY: $(MLFILES:.ml=.ml.d)\n\n";
+      print "ALLCMOFILES:=$(ML4FILES:.ml4=.cmo) $(MLFILES:.ml=.cmo)\n";
       ml@ml4 in
+  print "CMOFILES=$(filter-out $(addsuffix .cmo,$(foreach lib,$(MLLIBFILES:.mllib=_MLLIB_DEPENDENCIES),$($(lib)))),$(ALLCMOFILES))\n";
   begin match mlsfiles with
     |[] -> ()
     |l ->
       classify_files_by_root "CMOFILES" l inc;
-      print "CMXFILES:=$(CMOFILES:.cmo=.cmx)\n";
-      print "OFILES:=$(CMXFILES:.cmx=.o)\n";
+      print "CMXFILES=$(CMOFILES:.cmo=.cmx)\n";
+      print "OFILES=$(CMXFILES:.cmx=.o)\n";
   end;
   begin match mllibfiles with
     |[] -> ()
     |l ->
       print "MLLIBFILES:="; print_list "\\\n  " l; print "\n";
+      print "\n-include $(MLLIBFILES:.mllib=.mllib.d)\n.SECONDARY: $(MLLIBFILES:.mllib=.mllib.d)\n\n";
       print "CMAFILES:=$(MLLIBFILES:.mllib=.cma)\n";
       print "CMXAFILES:=$(CMAFILES:.cma=.cmxa)\n";
   end;
@@ -451,6 +452,7 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles) other_targets inc
     |[] -> ()
     |l ->
       print "MLIFILES:="; print_list "\\\n  " l; print "\n";
+      print "\n-include $(MLIFILES:.mli=.mli.d)\n.SECONDARY: $(MLIFILES:.mli=.mli.d)\n\n";
   end;
   begin match mlifiles,mlfiles with
     |[],[] -> ()
@@ -458,10 +460,10 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles) other_targets inc
        print "CMIFILES:=$(MLIFILES:.mli=.cmi)\n";
 	classify_files_by_root "CMIFILES" l inc;
     |[],l ->
-      print "CMIFILES:=$(CMOFILES:.cmo=.cmi)\n";
+      print "CMIFILES=$(ALLCMOFILES:.cmo=.cmi)\n";
       classify_files_by_root "CMIFILES" l inc;
     |l1,l2 ->
-      print "CMIFILES:=$(sort $(CMOFILES:.cmo=.cmi) $(MLIFILES:.mli=.cmi))\n";
+      print "CMIFILES=$(sort $(ALLCMOFILES:.cmo=.cmi) $(MLIFILES:.mli=.cmi))\n";
       classify_files_by_root "CMIFILES" (l1@l2) inc;
   end;
   begin match mllibfiles,mlsfiles with
@@ -470,10 +472,10 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles) other_targets inc
       print "CMXSFILES:=$(CMXAFILES:.cmxa=.cmxs)\n";
       classify_files_by_root "CMXSFILES" l inc;
     |[],l ->
-      print "CMXSFILES:=$(CMXFILES:.cmx=.cmxs)\n";
+      print "CMXSFILES=$(CMXFILES:.cmx=.cmxs)\n";
       classify_files_by_root "CMXSFILES" l inc;
     |l1,l2 ->
-      print "CMXSFILES:=$(CMXFILES:.cmx=.cmxs) $(CMXAFILES:.cmxa=.cmxs)\n";
+      print "CMXSFILES=$(CMXFILES:.cmx=.cmxs) $(CMXAFILES:.cmxa=.cmxs)\n";
       classify_files_by_root "CMXSFILES" (l1@l2) inc;
   end;
   print "\nall: ";
@@ -617,7 +619,6 @@ let do_makefile args =
   if is_install then install targets inc;
   clean sds sps;
   make_makefile sds;
-  footer_includes ();
   warning ();
   if not (makefile = None) then close_out !output_channel;
   exit 0
