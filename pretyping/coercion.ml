@@ -242,7 +242,14 @@ module Default = struct
   let inh_conv_coerce_rigid_to = inh_conv_coerce_to_gen true
 
 
-    let inh_conv_coerces_to loc env (evd : evar_map) t (abs, t') = evd
+    let inh_conv_coerces_to loc env (evd : evar_map) t (abs, t') =
+      if abs = None then
+	try
+	  fst (inh_conv_coerce_to_fail loc env evd true None t t')
+	with NoCoercion ->
+	  evd (* Maybe not enough information to unify *)
+      else
+        evd
       (* Still problematic, as it changes unification
       let nabsinit, nabs =
 	match abs with

@@ -1655,13 +1655,15 @@ let prepare_predicate loc typing_fun sigma env tomatchs sign tycon pred =
     (* Some type annotation *)
     | Some rtntyp, _ ->
       (* We extract the signature of the arity *)
-      let env = List.fold_right push_rels arsign env in
+      let envar = List.fold_right push_rels arsign env in
       let sigma, newt = new_sort_variable sigma in
       let evdref = ref sigma in
-      let predcclj = typing_fun (mk_tycon (mkSort newt)) env evdref rtntyp in
+      let predcclj = typing_fun (mk_tycon (mkSort newt)) envar evdref rtntyp in
       let sigma = Option.cata (fun tycon ->
-          let tycon = lift_tycon_type (List.length arsign) tycon in
-          Coercion.inh_conv_coerces_to loc env !evdref predcclj.uj_val tycon)
+          let na = (Name (id_of_string "x"),KnownNotDep) in
+          let tms = List.map (fun tm -> Pushed(tm,[],na)) tomatchs in
+          let predinst = extract_predicate [] predcclj.uj_val tms in
+          Coercion.inh_conv_coerces_to loc env !evdref predinst tycon)
         !evdref tycon in
       let predccl = (j_nf_evar sigma predcclj).uj_val in
       [sigma, KnownDep, predccl]
