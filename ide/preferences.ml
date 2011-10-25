@@ -586,30 +586,30 @@ let configure ?(apply=(fun () -> ())) () =
 (* ATTENTION !!!!! L'onglet Fonts doit etre en premier pour eviter un bug !!!!
    (shame on Benjamin) *)
   let cmds =
-    [Section("Fonts",
+    [Section("Fonts", Some `SELECT_FONT,
 	     [config_font]);
-     Section("Files",
+     Section("Files", Some `DIRECTORY,
 	     [global_auto_revert;global_auto_revert_delay;
 	      auto_save; auto_save_delay; (* auto_save_name*)
 	      encodings;
 	     ]);
-     Section("Project",
+     Section("Project", Some (`STOCK "gtk-page-setup"),
 	     [project_file_name;read_project;
 	     ]);
 (*
      Section("Appearance",
 	     config_appearance);
 *)
-     Section("Externals",
+     Section("Externals", None,
 	     [cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc; cmd_print;
 	      cmd_editor;
 	      cmd_browse;doc_url;library_url]);
-     Section("Tactics Wizard",
+     Section("Tactics Wizard", None,
 	     [automatic_tactics]);
-     Section("Shortcuts",
+     Section("Shortcuts", Some `PREFERENCES,
 	     [modifiers_valid; modifier_for_tactics;
 	      modifier_for_templates; modifier_for_display; modifier_for_navigation]);
-     Section("Misc",
+     Section("Misc", Some `ADD,
 	     misc)]
   in
 (*

@@ -32,10 +32,10 @@ type parameter_kind;;
 
 (** This type represents the structure of the configuration window. *)
 type configuration_structure =
-  | Section of string * parameter_kind list
-       (** label of the section, parameters *)
-  | Section_list of string * configuration_structure list
-       (** label of the section, list of the sub sections *)
+  | Section of string * GtkStock.id option * parameter_kind list
+       (** label of the section, icon, parameters *)
+  | Section_list of string * GtkStock.id option * configuration_structure list
+       (** label of the section, icon, list of the sub sections *)
 ;;
 
 (** To indicate what button pushed the user when the window is closed. *)

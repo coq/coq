@@ -928,6 +928,7 @@ class configuration_box (tt : GData.tooltips) conf_struct =
   let main_box = GPack.hbox () in
 
   let columns = new GTree.column_list in
+  let icon_col = columns#add GtkStock.conv in
   let label_col = columns#add Gobject.Data.string in
   let box_col = columns#add Gobject.Data.caml in
   let () = columns#lock () in
@@ -942,6 +943,10 @@ class configuration_box (tt : GData.tooltips) conf_struct =
   let _ = selection#set_mode `SINGLE in
 
   let menu_box = GPack.vbox ~packing:pane#pack2 () in
+
+  let renderer = (GTree.cell_renderer_pixbuf [], ["stock-id", icon_col]) in
+  let col = GTree.view_column ~renderer () in
+  let _ = view#append_column col in
 
   let renderer = (GTree.cell_renderer_text [], ["text", label_col]) in
   let col = GTree.view_column ~renderer () in
@@ -1010,16 +1015,20 @@ class configuration_box (tt : GData.tooltips) conf_struct =
     | None -> tree#append ()
     | Some parent -> tree#append ~parent ()
     in
-    let (label, apply) = match conf_struct with
-    | Section (label, param_list) ->
+    let (label, icon, apply) = match conf_struct with
+    | Section (label, icon, param_list) ->
       let params = List.map (make_param box) param_list in
       let apply () = List.iter (fun param -> param#apply) params in
-      (label, apply)
-    | Section_list (label, struct_list) ->
+      (label, icon, apply)
+    | Section_list (label, icon, struct_list) ->
       let apply () = () in
-      (label, apply)
+      (label, icon, apply)
     in
     let () = tree#set new_iter label_col label in
+    let () = match icon with
+    | None -> ()
+    | Some icon -> tree#set new_iter icon_col icon
+    in
     let () = tree#set new_iter box_col box in
     apply
   in

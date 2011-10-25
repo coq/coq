@@ -27,8 +27,8 @@ type parameter_kind = Configwin_types.parameter_kind
 
 type configuration_structure =
     Configwin_types.configuration_structure =
-    Section of string * parameter_kind list
-  | Section_list of string * configuration_structure list
+    Section of string * GtkStock.id option * parameter_kind list
+  | Section_list of string * GtkStock.id option * configuration_structure list
 
 type return_button =
     Configwin_types.return_button =
