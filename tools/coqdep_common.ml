@@ -230,18 +230,14 @@ let traite_fichier_mllib md ext =
   try
     let chan = open_in (md ^ ext) in
     let list = mllib_list (Lexing.from_channel chan) in
-    let a_faire = ref "" in
-    let a_faire_opt = ref "" in
-    List.iter
-      (fun str -> match search_ml_known str with
+    List.fold_left
+      (fun a_faire str -> match search_ml_known str with
 	 | Some mldir ->
 	     let file = file_name str mldir in
-	     a_faire := !a_faire^" "^file^".cmo";
-	     a_faire_opt := !a_faire_opt^" "^file^".cmx"
-	 | None -> ()) list;
-    (!a_faire, !a_faire_opt)
+	     a_faire^" "^file
+	 | None -> a_faire) "" list
   with
-    | Sys_error _ -> ("","")
+    | Sys_error _ -> ""
     | Syntax_error (i,j) ->
 	Printf.eprintf "File \"%s%s\", characters %i-%i:\nError: Syntax error\n"
 	  md ext i j;
@@ -374,10 +370,11 @@ let mL_dependencies () =
   List.iter
     (fun (name,dirname) ->
        let fullname = file_name name dirname in
-       let (dep,dep_opt) = traite_fichier_mllib fullname ".mllib" in
+       let dep = traite_fichier_mllib fullname ".mllib" in
        let efullname = escape fullname in
-       printf "%s.cma:%s\n" efullname dep;
-       printf "%s.cmxa %s.cmxs:%s\n" efullname efullname dep_opt;
+       printf "%s_MLLIB_DEPENDENCIES:=%s\n" efullname dep;
+       printf "%s.cma:$(addsuffix .cmo,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname;
+       printf "%s.cmxa %s.cmxs:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname efullname;
        flush stdout)
     (List.rev !mllibAccu)
 
