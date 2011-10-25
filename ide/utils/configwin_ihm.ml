@@ -922,106 +922,152 @@ class ['a] list_param_box (param : 'a list_param) (tt:GData.tooltips) =
       param.list_value <- !listref
   end ;;
 
-(** This class is used to build a box from a configuration structure
-   and adds the page to the given notebook. *)
-class configuration_box (tt:GData.tooltips) conf_struct (notebook : GPack.notebook) =
-  (* we build different widgets, according to the conf_struct parameter *)
-  let main_box = GPack.vbox () in
-  let (label, child_boxes) =
-    match conf_struct with
-      Section (label, param_list) ->
-	let f parameter =
-	  match parameter with
-	    String_param p ->
-	      let box = new string_param_box p tt in
-	      let _ = main_box#pack ~expand: false ~padding: 2 box#box in
-	      box
-	  | Combo_param p ->
-	      let box = new combo_param_box p tt in
-	      let _ = main_box#pack ~expand: false ~padding: 2 box#box in
-	      box
-	  | Text_param p ->
-	      let box = new text_param_box p tt in
-	      let _ = main_box#pack ~expand: p.string_expand ~padding: 2 box#box in
-	      box
-	  | Bool_param p ->
-	      let box = new bool_param_box p tt in
-	      let _ = main_box#pack ~expand: false ~padding: 2 box#box in
-	      box
-	  | Filename_param p ->
-	      let box = new filename_param_box p tt in
-	      let _ = main_box#pack ~expand: false ~padding: 2 box#box in
-	      box
-	  | List_param f ->
-	      let box = f tt in
-	      let _ = main_box#pack ~expand: true ~padding: 2 box#box in
-	      box
-	  | Custom_param p ->
-	      let box = new custom_param_box p tt in
-	      let _ = main_box#pack ~expand: p.custom_expand ~padding: 2 box#box in
-	      box
-	  | Color_param p ->
-	      let box = new color_param_box p tt in
-	      let _ = main_box#pack ~expand: false ~padding: 2 box#box in
-	      box
-	  | Font_param p ->
-	      let box = new font_param_box p tt in
-	      let _ = main_box#pack ~expand: false ~padding: 2 box#box in
-	      box
-	  | Date_param p ->
-	      let box = new date_param_box p tt in
-	      let _ = main_box#pack ~expand: false ~padding: 2 box#box in
-	      box
-	  | Hotkey_param p ->
-	      let box = new hotkey_param_box p tt in
-	      let _ = main_box#pack ~expand: false ~padding: 2 box#box in
-	      box
-	  | Modifiers_param p ->
-	      let box = new modifiers_param_box p in
-	      let _ = main_box#pack ~expand: false ~padding: 2 box#box in
-		box
-	  | Html_param p ->
-	      let box = new html_param_box p tt in
-	      let _ = main_box#pack ~expand: p.string_expand ~padding: 2 box#box in
-	      box
-	in
-	let list_children_boxes = List.map f param_list in
+(** This class creates a configuration box from a configuration structure *)
+class configuration_box (tt : GData.tooltips) conf_struct =
 
-	(label, list_children_boxes)
+  let main_box = GPack.hbox () in
 
+  let columns = new GTree.column_list in
+  let label_col = columns#add Gobject.Data.string in
+  let box_col = columns#add Gobject.Data.caml in
+  let () = columns#lock () in
+
+  let pane = GPack.paned `HORIZONTAL ~packing:main_box#add () in
+
+  (* Tree view part *)
+  let scroll = GBin.scrolled_window ~hpolicy:`NEVER ~packing:pane#pack1 () in
+  let tree = GTree.tree_store columns in
+  let view = GTree.view ~model:tree ~headers_visible:false ~packing:scroll#add_with_viewport () in
+  let selection = view#selection in
+  let _ = selection#set_mode `SINGLE in
+
+  let menu_box = GPack.vbox ~packing:pane#pack2 () in
+
+  let renderer = (GTree.cell_renderer_text [], ["text", label_col]) in
+  let col = GTree.view_column ~renderer () in
+  let _ = view#append_column col in
+
+  let make_param (main_box : #GPack.box) = function
+  | String_param p ->
+    let box = new string_param_box p tt in
+    let _ = main_box#pack ~expand: false ~padding: 2 box#box in
+    box
+  | Combo_param p ->
+    let box = new combo_param_box p tt in
+    let _ = main_box#pack ~expand: false ~padding: 2 box#box in
+    box
+  | Text_param p ->
+    let box = new text_param_box p tt in
+    let _ = main_box#pack ~expand: p.string_expand ~padding: 2 box#box in
+    box
+  | Bool_param p ->
+    let box = new bool_param_box p tt in
+    let _ = main_box#pack ~expand: false ~padding: 2 box#box in
+    box
+  | Filename_param p ->
+    let box = new filename_param_box p tt in
+    let _ = main_box#pack ~expand: false ~padding: 2 box#box in
+    box
+  | List_param f ->
+    let box = f tt in
+    let _ = main_box#pack ~expand: true ~padding: 2 box#box in
+    box
+  | Custom_param p ->
+    let box = new custom_param_box p tt in
+    let _ = main_box#pack ~expand: p.custom_expand ~padding: 2 box#box in
+    box
+  | Color_param p ->
+    let box = new color_param_box p tt in
+    let _ = main_box#pack ~expand: false ~padding: 2 box#box in
+    box
+  | Font_param p ->
+    let box = new font_param_box p tt in
+    let _ = main_box#pack ~expand: false ~padding: 2 box#box in
+    box
+  | Date_param p ->
+    let box = new date_param_box p tt in
+    let _ = main_box#pack ~expand: false ~padding: 2 box#box in
+    box
+  | Hotkey_param p ->
+    let box = new hotkey_param_box p tt in
+    let _ = main_box#pack ~expand: false ~padding: 2 box#box in
+    box
+  | Modifiers_param p ->
+    let box = new modifiers_param_box p in
+    let _ = main_box#pack ~expand: false ~padding: 2 box#box in
+    box
+  | Html_param p ->
+    let box = new html_param_box p tt in
+    let _ = main_box#pack ~expand: p.string_expand ~padding: 2 box#box in
+    box
+  in
+
+  (* Populate the tree *)
+
+  let rec make_tree iter conf_struct =
+    let box = GPack.vbox ~packing:menu_box#add ~show:false () in
+    let new_iter = match iter with
+    | None -> tree#append ()
+    | Some parent -> tree#append ~parent ()
+    in
+    let (label, apply) = match conf_struct with
+    | Section (label, param_list) ->
+      let params = List.map (make_param box) param_list in
+      let apply () = List.iter (fun param -> param#apply) params in
+      (label, apply)
     | Section_list (label, struct_list) ->
-	let wnote = GPack.notebook
-            (*homogeneous_tabs: true*)
-	    ~scrollable: true
-	    ~show_tabs: true
-	    ~tab_border: 3
-	    ~packing: (main_box#pack ~expand: true)
-	    ()
-	in
-	(* we create all the children boxes *)
-	let f structure =
-	  let new_box = new configuration_box tt structure wnote in
-	  new_box
-	in
-	let list_child_boxes = List.map f struct_list in
-	(label, list_child_boxes)
-
-  in
-  let page_label = GMisc.label ~text: label () in
-  let _ = notebook#append_page
-      ~tab_label: page_label#coerce
-      main_box#coerce
+      let apply () = () in
+      (label, apply)
+    in
+    let () = tree#set new_iter label_col label in
+    let () = tree#set new_iter box_col box in
+    apply
   in
 
-  object (self)
-    (** This method returns the main box ready to be packed. *)
-    method box = main_box#coerce
-    (** This method make the new values of the paramters applied, recursively in
-       all boxes.*)
-    method apply =
-      List.iter (fun box -> box#apply) child_boxes
+  let fold accu conf_struct =
+    let apply = make_tree None conf_struct in
+    fun () -> accu (); apply ()
+  in
+
+  let apply = List.fold_left fold (fun () -> ()) conf_struct in
+
+  (* Dealing with signals *)
+
+  let current_prop = ref None in
+
+  let select_iter iter =
+    let () = match !current_prop with
+    | None -> ()
+    | Some box -> box#misc#hide ()
+    in
+    let box = tree#get ~row:iter ~column:box_col in
+    let () = box#misc#show () in
+    current_prop := Some box
+  in
+
+  let when_selected () =
+    let rows = selection#get_selected_rows in
+    match rows with
+    | [] -> ()
+    | row :: _ ->
+      let iter = tree#get_iter row in
+      select_iter iter
+  in
+
+  let _ = selection#connect#changed ~callback:when_selected in
+
+  let _ = match tree#get_iter_first with
+  | None -> ()
+  | Some iter -> select_iter iter
+  in
+
+  object
+
+    method box = main_box
+
+    method apply = apply ()
+
   end
-;;
 
 (** Create a vbox with the list of given configuration structure list,
    and the given list of buttons (defined by their label and callback).
@@ -1029,24 +1075,12 @@ class configuration_box (tt:GData.tooltips) conf_struct (notebook : GPack.notebo
    of each parameter is called.
 *)
 let tabbed_box conf_struct_list buttons tooltips =
-  let vbox = GPack.vbox () in
-  let wnote = GPack.notebook
-      (*homogeneous_tabs: true*)
-      ~scrollable: true
-      ~show_tabs: true
-      ~tab_border: 3
-      ~packing: (vbox#pack ~expand: true)
-      ()
+  let param_box =
+       new configuration_box tooltips conf_struct_list
   in
-  let list_param_box =
-    List.map
-      (fun conf_struct -> new configuration_box tooltips conf_struct wnote)
-      conf_struct_list
+  let f_apply () = param_box#apply
   in
-  let f_apply () =
-    List.iter (fun param_box -> param_box#apply) list_param_box  ;
-  in
-  let hbox_buttons = GPack.hbox ~packing: (vbox#pack ~expand: false ~padding: 4) () in
+  let hbox_buttons = GPack.hbox ~packing: (param_box#box#pack ~expand: false ~padding: 4) () in
   let rec iter_buttons ?(grab=false) = function
       [] ->
         ()
@@ -1063,14 +1097,14 @@ let tabbed_box conf_struct_list buttons tooltips =
   in
   iter_buttons ~grab: true buttons;
 
-  vbox
+  param_box#box
 
 (** This function takes a configuration structure list and creates a window
    to configure the various parameters. *)
 let edit ?(with_apply=true)
     ?(apply=(fun () -> ()))
     title ?(width=400) ?(height=400)
-    conf_struct_list =
+    conf_struct =
   let dialog = GWindow.dialog
     ~position:`CENTER
     ~modal: true ~title: title
@@ -1078,47 +1112,34 @@ let edit ?(with_apply=true)
     ()
   in
   let tooltips = GData.tooltips () in
-  let wnote = GPack.notebook
-    (*homogeneous_tabs: true*)
-    ~scrollable: true
-    ~show_tabs: true
-    ~tab_border: 3
-    ~packing: (dialog#vbox#pack ~expand: true)
-    ()
+
+  let config_box = new configuration_box tooltips conf_struct in
+
+  let _ = dialog#vbox#add config_box#box#coerce in
+
+  if with_apply then
+    dialog#add_button Configwin_messages.mApply `APPLY;
+
+  dialog#add_button Configwin_messages.mOk `OK;
+  dialog#add_button Configwin_messages.mCancel `CANCEL;
+
+  let destroy () =
+    tooltips#destroy () ;
+    dialog#destroy ();
   in
-  let list_param_box =
-    List.map
-      (fun conf_struct -> new configuration_box tooltips conf_struct wnote)
-      conf_struct_list
+  let rec iter rep =
+    try
+      match dialog#run () with
+        | `APPLY  -> config_box#apply; iter Return_apply
+        | `OK -> config_box#apply; destroy (); Return_ok
+        | _ -> destroy (); rep
+    with
+        Failure s ->
+          GToolbox.message_box ~title:"Error" s; iter rep
+      | e ->
+          GToolbox.message_box ~title:"Error" (Printexc.to_string e); iter rep
   in
-
-    if with_apply then
-      dialog#add_button Configwin_messages.mApply `APPLY;
-
-    dialog#add_button Configwin_messages.mOk `OK;
-    dialog#add_button Configwin_messages.mCancel `CANCEL;
-
-    let f_apply () =
-      List.iter (fun param_box -> param_box#apply) list_param_box  ;
-      apply ()
-    in
-    let destroy () =
-      tooltips#destroy () ;
-      dialog#destroy ();
-    in
-    let rec iter rep =
-      try
-	match dialog#run () with
-	  | `APPLY  -> f_apply (); iter Return_apply
-	  | `OK -> f_apply (); destroy (); Return_ok
-	  | _ -> destroy (); rep
-      with
-	  Failure s ->
-	    GToolbox.message_box ~title:"Error" s; iter rep
-	| e ->
-	    GToolbox.message_box ~title:"Error" (Printexc.to_string e); iter rep
-    in
-      iter Return_cancel
+    iter Return_cancel
 
 (** Create a vbox with the list of given parameters. *)
 let box param_list tt =
