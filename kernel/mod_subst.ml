@@ -396,7 +396,9 @@ let subst_con sub con =
 		  let con = constant_of_delta2 resolve con' in
 		con,mkConst con
 	    end
-	  | Some t -> con',t
+	  | Some t ->
+	    (* In case of inlining, discard the canonical part (cf #2608) *)
+	    constant_of_kn (user_con con'), t
     with No_subst -> con , mkConst con 
  
 
