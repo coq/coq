@@ -464,8 +464,11 @@ let define_evar_from_virtual_equation define_fun env evd t_in_env sign filter in
  * substitution u1..uq.
  *)
 
-let materialize_evar_from_sign define_fun env evd k sign1 filter1 args1 ty =
+let materialize_evar define_fun env evd k (evk1,args1) ty =
+  let evi1 = Evd.find_undefined evd evk1 in
   let env1,rel_sign = env_rel_context_chop k env in
+  let sign1 = evar_hyps evi1 in
+  let filter1 = evar_filter evi1 in
   let ids1 = List.map pi1 (named_context_of_val sign1) in
   let inst_in_sign =
     List.map mkVar (snd (list_filter2 (fun b id -> b) (filter1,ids1))) in
@@ -484,7 +487,7 @@ let materialize_evar_from_sign define_fun env evd k sign1 filter1 args1 ty =
           (sign,filter,inst_in_env,inst_in_sign,
            push_rel d env,evd,avoid))
       rel_sign
-      (sign1,filter1,args1,inst_in_sign,env1,evd,ids1)
+      (sign1,filter1,Array.to_list args1,inst_in_sign,env1,evd,ids1)
   in
   let evd,ev2ty_in_sign =
     define_evar_from_virtual_equation define_fun env evd ty
@@ -493,11 +496,6 @@ let materialize_evar_from_sign define_fun env evd k sign1 filter1 args1 ty =
     new_evar_instance sign2 evd ev2ty_in_sign ~filter:filter2 inst2_in_sign in
   let ev2_in_env = (fst (destEvar ev2_in_sign), Array.of_list inst2_in_env) in
   (evd, ev2_in_sign, ev2_in_env)
-
-let materialize_evar define_fun env evd k (evk1,args1) ty =
-  let evi1 = Evd.find_undefined evd evk1 in
-  materialize_evar_from_sign define_fun env evd k
-    (evar_hyps evi1) (evar_filter evi1) (Array.to_list args1) ty
 
 let subfilter env ccl filter newfilter args =
   let vars = collect_vars ccl in
