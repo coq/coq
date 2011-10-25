@@ -82,7 +82,9 @@ let kind_of_head env t =
         match pi2 (lookup_named id env) with
         | Some c -> aux k l c b
         | None -> NotImmediatelyComputableHead)
-  | Const cst -> on_subterm k l b (constant_head cst)
+  | Const cst ->
+      (try on_subterm k l b (constant_head cst)
+       with Not_found -> assert false)
   | Construct _ | CoFix _ ->
       if b then NotImmediatelyComputableHead else ConstructorHead
   | Sort _ | Ind _ | Prod _ -> RigidHead RigidType
