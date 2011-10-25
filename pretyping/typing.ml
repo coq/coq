@@ -33,6 +33,14 @@ let inductive_type_knowing_parameters env ind jl =
   let paramstyp = Array.map (fun j -> j.uj_type) jl in
   Inductive.type_of_inductive_knowing_parameters env mip paramstyp
 
+let e_type_judgment env evdref j =
+  match kind_of_term (whd_betadeltaiota env !evdref j.uj_type) with
+    | Sort s -> {utj_val = j.uj_val; utj_type = s }
+    | Evar ev ->
+        let (evd,s) = Evarutil.define_evar_as_sort !evdref ev in
+        evdref := evd; { utj_val = j.uj_val; utj_type = s }
+    | _ -> error_not_type env j
+
 let e_judge_of_apply env evdref funj argjv =
   let rec apply_rec n typ = function
   | [] ->
@@ -204,23 +212,23 @@ let rec execute env evdref cstr =
 
     | Lambda (name,c1,c2) ->
         let j = execute env evdref c1 in
-	let var = type_judgment env j in
+	let var = e_type_judgment env evdref j in
 	let env1 = push_rel (name,None,var.utj_val) env in
         let j' = execute env1 evdref c2 in
         judge_of_abstraction env1 name var j'
 
     | Prod (name,c1,c2) ->
         let j = execute env evdref c1 in
-        let varj = type_judgment env j in
+        let varj = e_type_judgment env evdref j in
 	let env1 = push_rel (name,None,varj.utj_val) env in
         let j' = execute env1 evdref c2 in
-        let varj' = type_judgment env1 j' in
+        let varj' = e_type_judgment env1 evdref j' in
 	judge_of_product env name varj varj'
 
      | LetIn (name,c1,c2,c3) ->
         let j1 = execute env evdref c1 in
         let j2 = execute env evdref c2 in
-        let j2 = type_judgment env j2 in
+        let j2 = e_type_judgment env evdref j2 in
         let _ =  judge_of_cast env j1 DEFAULTcast j2 in
         let env1 = push_rel (name,Some j1.uj_val,j2.utj_val) env in
         let j3 = execute env1 evdref c3 in
@@ -229,7 +237,7 @@ let rec execute env evdref cstr =
     | Cast (c,k,t) ->
         let cj = execute env evdref c in
         let tj = execute env evdref t in
-	let tj = type_judgment env tj in
+	let tj = e_type_judgment env evdref tj in
         e_judge_of_cast env evdref cj k tj
 
 and execute_recdef env evdref (names,lar,vdef) =
@@ -260,8 +268,9 @@ let type_of env evd c =
 (* Sort of a type *)
 
 let sort_of env evd c =
-  let j = execute env (ref evd) c in
-  let a = type_judgment env j in
+  let evdref = ref evd in
+  let j = execute env evdref c in
+  let a = e_type_judgment env evdref j in
   a.utj_type
 
 (* Try to solve the existential variables by typing *)
