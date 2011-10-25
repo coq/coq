@@ -351,8 +351,10 @@ let variables opt (args,defs) =
 
 let parameters () =
   print "NOARG: all\n\n# \n";
-  print "# This Makefile may take COQBIN as argument passed as environment variables:\n";
-  print "#  to specify the directory where Coq binaries resides;\n";
+  print "# This Makefile may take arguments passed as environment variables:\n";
+  print "# COQBIN to specify the directory where Coq binaries resides;\n";
+  print "# ZDEBUG/COQDEBUG to specify debug flags for ocamlc&ocamlopt/coqc;\n";
+  print "# DSTROOT to specify a prefix to install path.\n";
   print "Makefile-localvars.gen:\n\t$(COQBIN)coqtop -config > $@\n\n";
   print "-include Makefile-localvars.gen\n.SECONDARY: Makefile-localvars.gen\n\n"
 
