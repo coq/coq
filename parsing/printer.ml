@@ -499,14 +499,26 @@ let pr_prim_rule = function
 let prterm = pr_lconstr
 
 
-(* spiwack: printer function for sets of Environ.assumption.
-            It is used primarily by the Print Assumption command. *)
+(* Printer function for sets of Assumptions.assumptions.
+   It is used primarily by the Print Assumptions command. *)
+
+open Assumptions
+
 let pr_assumptionset env s =
-  if (Environ.ContextObjectMap.is_empty s) then
-    str "Closed under the global context"
+  if ContextObjectMap.is_empty s then
+    str "Closed under the global context" ++ fnl()
   else
+    let safe_pr_constant env kn =
+      try pr_constant env kn
+      with Not_found ->
+	let mp,_,lab = repr_con kn in
+	str (string_of_mp mp ^ "." ^ string_of_label lab)
+    in
+    let safe_pr_ltype typ =
+      try str " : " ++ pr_ltype typ with _ -> mt ()
+    in
     let (vars,axioms,opaque) =
-      Environ.ContextObjectMap.fold (fun t typ r ->
+      ContextObjectMap.fold (fun t typ r ->
 	let (v,a,o) = r in
 	match t with
 	| Variable id -> (  Some (
@@ -521,9 +533,8 @@ let pr_assumptionset env s =
 	| Axiom kn    -> ( v ,
 			     Some (
 			      Option.default (fnl ()) a
-			   ++ (pr_constant env kn)
-	                   ++ str " : "
-	                   ++ pr_ltype typ
+			   ++ safe_pr_constant env kn
+	                   ++ safe_pr_ltype typ
 	                   ++ fnl ()
 			     )
 			 , o
@@ -531,9 +542,8 @@ let pr_assumptionset env s =
 	| Opaque kn    -> ( v , a ,
 			     Some (
 			      Option.default (fnl ()) o
-			   ++ (pr_constant env kn)
-	                   ++ str " : "
-	                   ++ pr_ltype typ
+			   ++ safe_pr_constant env kn
+	                   ++ safe_pr_ltype typ
 	                   ++ fnl ()
 			     )
 			 )
