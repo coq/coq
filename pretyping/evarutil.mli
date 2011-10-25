@@ -62,6 +62,16 @@ type conv_fun =
 val evar_define : conv_fun -> ?choose:bool -> env -> evar_map -> 
   existential -> constr -> evar_map
 
+val materialize_evar_from_sign :
+  (env -> evar_map -> existential -> constr -> evar_map) ->
+  env -> evar_map -> int ->
+  named_context_val -> bool list -> constr list -> types ->
+  evar_map * constr * existential
+
+val solve_evar_evar :
+  (env -> evar_map -> existential -> constr -> evar_map) ->
+  env -> evar_map -> existential -> existential -> evar_map
+
 (** {6 Evars/Metas switching...} *)
 
 (** [evars_to_metas] generates new metavariables for each non dependent

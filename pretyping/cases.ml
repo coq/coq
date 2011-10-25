@@ -1298,6 +1298,10 @@ let adjust_to_extended_env_and_remove_deps env extenv subst t =
 let push_binder d (k,env,subst) =
   (k+1,push_rel d env,List.map (fun (na,u,d) -> (na,lift 1 u,d)) subst)
 
+let rec list_assoc_in_triple x = function
+    [] -> raise Not_found
+  | (a,b,_)::l -> if compare a x = 0 then b else list_assoc_in_triple x l
+
 (* Let vijk and ti be a set of dependent terms and T a type, all
  * defined in some environment env. The vijk and ti are supposed to be
  * instances for variables aijk and bi.
@@ -1323,20 +1327,33 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
      by an evar that may depend (and only depend) on the corresponding
      convertible subterms of the substitution *)
   let rec aux (k,env,subst as x) t =
-    if isRel t && pi2 (lookup_rel (destRel t) env) <> None then
-      map_constr_with_full_binders push_binder aux x t
-    else
+    let t = whd_evar !evdref t in match kind_of_term t with
+    | Rel n when pi2 (lookup_rel n env) <> None ->
+        map_constr_with_full_binders push_binder aux x t
+    | Evar ev ->
+        let ty = get_type_of env sigma t in
+        let inst =
+	  list_map_i
+	    (fun i _ ->
+              try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
+              1 (rel_context env) in
+        let ev = e_new_evar evdref env ~src:(loc, CasesType) ty in
+        evdref := add_conv_pb (Reduction.CONV,env,substl inst ev,t) !evdref;
+        ev
+    | _ ->
     let good = List.filter (fun (_,u,_) -> is_conv_leq env sigma t u) subst in
     if good <> [] then
-      let u = pi3 (List.hd good) in
-      let ty = aux x (get_type_of env sigma t) in
+      let u = pi3 (List.hd good) in (* u is in extenv *)
       let vl = List.map pi1 good in
+      let ty = lift (-k) (aux x (get_type_of env !evdref t)) in
+      let depvl = free_rels ty in
       let inst =
 	list_map_i
 	  (fun i _ -> if List.mem i vl then u else mkRel i) 1
 	  (rel_context extenv) in
       let rel_filter =
-	List.map (fun a -> not (isRel a) or dependent a u) inst in
+	List.map (fun a -> not (isRel a) || dependent a u
+                           || Intset.mem (destRel a) depvl) inst in
       let named_filter =
 	List.map (fun (id,_,_) -> dependent (mkVar id) u)
 	  (named_context extenv) in
@@ -1350,17 +1367,22 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
   aux (0,extenv,subst0) t0
 
 let build_tycon loc env tycon_env subst tycon extenv evdref t =
-  let t = match t with
+  let t,tt = match t with
     | None ->
 	(* This is the situation we are building a return predicate and
            we are in an impossible branch *)
 	let n = rel_context_length (rel_context env) in
 	let n' = rel_context_length (rel_context tycon_env) in
+        let tt = new_Type () in
 	let impossible_case_type =
-	  e_new_evar evdref env ~src:(loc,ImpossibleCase) (new_Type ()) in
-	lift (n'-n) impossible_case_type
-    | Some t -> abstract_tycon loc tycon_env evdref subst tycon extenv t in
-  get_judgment_of extenv !evdref t
+	  e_new_evar evdref env ~src:(loc,ImpossibleCase) tt in
+	(lift (n'-n) impossible_case_type, tt)
+    | Some t ->
+        let t = abstract_tycon loc tycon_env evdref subst tycon extenv t in
+        let evd,tt = Typing.e_type_of extenv !evdref t in
+        evdref := evd;
+        (t,tt) in
+  { uj_val = t; uj_type = tt }
 
 (* For a multiple pattern-matching problem Xi on t1..tn with return
  * type T, [build_inversion_problem Gamma Sigma (t1..tn) T] builds a return
