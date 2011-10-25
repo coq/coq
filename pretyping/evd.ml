@@ -91,6 +91,19 @@ module ExistentialSet = Intset
 (* This exception is raised by *.existential_value *)
 exception NotInstantiatedEvar
 
+(* Note: let-in contributes to the instance *)
+let make_evar_instance sign args =
+  let rec instrec = function
+    | (id,_,_) :: sign, c::args when isVarId id c -> instrec (sign,args)
+    | (id,_,_) :: sign, c::args -> (id,c) :: instrec (sign,args)
+    | [],[] -> []
+    | [],_ | _,[] -> anomaly "Signature and its instance do not match"
+  in
+    instrec (sign,args)
+
+let instantiate_evar sign c args =
+  let inst = make_evar_instance sign args in
+  if inst = [] then c else replace_vars inst c
 
 module EvarInfoMap = struct
   type t = evar_info ExistentialMap.t * evar_info ExistentialMap.t
@@ -164,20 +177,6 @@ module EvarInfoMap = struct
 
   (*******************************************************************)
   (* Formerly Instantiate module *)
-
-  (* Note: let-in contributes to the instance *)
-  let make_evar_instance sign args =
-    let rec instrec = function
-      | (id,_,_) :: sign, c::args when isVarId id c -> instrec (sign,args)
-      | (id,_,_) :: sign, c::args -> (id,c) :: instrec (sign,args)
-      | [],[] -> []
-      | [],_ | _,[] -> anomaly "Signature and its instance do not match"
-    in
-      instrec (sign,args)
-
-  let instantiate_evar sign c args =
-    let inst = make_evar_instance sign args in
-    if inst = [] then c else replace_vars inst c
 
   (* Existentials. *)
 

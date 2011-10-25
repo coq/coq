@@ -432,10 +432,10 @@ let check_restricted_occur evd refine env filter constr =
   let res = aux 0 constr in
     Array.to_list filter, res
 
-(* We have a unification problem Σ; Γ |- ?e[u1..uq] = ty : s where ?e is not yet
+(* We have a unification problem Σ; Γ |- ?e[u1..uq] = t : s where ?e is not yet
  * declared in Σ but yet known to be declarable in some context x1:T1..xq:Tq.
- * [define_evar_from_virtual_equation ... Γ Σ c ty (x1:T1..xq:Tq) .. (u1..uq) (x1..xq)]
- * declares x1:T1..xq:Tq |- ?e : s such that ?e[u1..uq] = ty holds.
+ * [define_evar_from_virtual_equation ... Γ Σ t (x1:T1..xq:Tq) .. (u1..uq) (x1..xq)]
+ * declares x1:T1..xq:Tq |- ?e : s such that ?e[u1..uq] = t holds.
  *)
 
 let define_evar_from_virtual_equation define_fun env evd t_in_env sign filter inst_in_env
@@ -452,7 +452,7 @@ let define_evar_from_virtual_equation define_fun env evd t_in_env sign filter in
  * ?e2[v1..vn], hence flexible. We had to go through k binders and now
  * virtually have x1..xq, y1'..yk' | ?e1' : τ' and the equation
  * Γ, y1..yk |- ?e1'[u1..uq y1..yk] = c.
- * [materialize_evar Γ evd k (?e1[u1..uq]) c] extends Σ with the declaration
+ * [materialize_evar Γ evd k (?e1[u1..uq]) τ'] extends Σ with the declaration
  * of ?e1' and returns both its instance ?e1'[x1..xq y1..yk] in an extension
  * of the context of e1 so that e1 can be instantiated by
  * (...\y1' ... \yk' ... ?e1'[x1..xq y1'..yk']),
@@ -464,7 +464,7 @@ let define_evar_from_virtual_equation define_fun env evd t_in_env sign filter in
  * substitution u1..uq.
  *)
 
-let materialize_evar define_fun env evd k (evk1,args1) ty =
+let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   let evi1 = Evd.find_undefined evd evk1 in
   let env1,rel_sign = env_rel_context_chop k env in
   let sign1 = evar_hyps evi1 in
@@ -490,7 +490,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty =
       (sign1,filter1,Array.to_list args1,inst_in_sign,env1,evd,ids1)
   in
   let evd,ev2ty_in_sign =
-    define_evar_from_virtual_equation define_fun env evd ty
+    define_evar_from_virtual_equation define_fun env evd ty_in_env
       sign2 filter2 inst2_in_env inst2_in_sign in
   let evd,ev2_in_sign =
     new_evar_instance sign2 evd ev2ty_in_sign ~filter:filter2 inst2_in_sign in
@@ -1103,8 +1103,10 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
 	  if not !progress then raise NotEnoughInformationToProgress;
 	  (* No unique projection but still restrict to where it is possible *)
           (* materializing is necessary, but is restricting useful? *)
+          let sign = evar_filtered_context evi in
+          let ty' = instantiate_evar sign ty (Array.to_list argsv) in
 	  let (evd,_,ev') =
-            materialize_evar (evar_define conv_algo) env !evdref 0 ev ty in
+            materialize_evar (evar_define conv_algo) env !evdref 0 ev ty' in
 	  let ts = expansions_of_var aliases t in
 	  let test c = isEvar c or List.mem c ts in
 	  let filter = array_map_to_list test argsv in

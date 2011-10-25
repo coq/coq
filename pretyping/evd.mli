@@ -175,6 +175,8 @@ val existential_value : evar_map -> existential -> constr
 val existential_type : evar_map -> existential -> types
 val existential_opt_value : evar_map -> existential -> constr option
 
+val instantiate_evar : named_context -> constr -> constr list -> constr
+
 (** Assume empty universe constraints in [evar_map] and [conv_pbs] *)
 val subst_evar_defs_light : substitution -> evar_map -> evar_map
 
