@@ -218,12 +218,6 @@ GEXTEND Gram
       (* This is used in quotations *)
       | id = METAIDENT -> MetaId (loc,id) ] ]
   ;
-  (* A number or a quotation meta-variable *)
-  num_or_meta:
-    [ [ n = integer -> AI n
-      |	id = METAIDENT -> MetaId (loc,id)
-      ] ]
-  ;
   open_constr:
     [ [ c = constr -> ((),c) ] ]
   ;
@@ -638,9 +632,9 @@ GEXTEND Gram
       | "exists"; bll = LIST1 opt_bindings SEP "," -> TacSplit (false,true,bll)
       | IDENT "eexists"; bll = LIST1 opt_bindings SEP "," ->
 	  TacSplit (true,true,bll)
-      | IDENT "constructor"; n = num_or_meta; l = with_bindings ->
+      | IDENT "constructor"; n = nat_or_var; l = with_bindings ->
 	  TacConstructor (false,n,l)
-      | IDENT "econstructor"; n = num_or_meta; l = with_bindings ->
+      | IDENT "econstructor"; n = nat_or_var; l = with_bindings ->
 	  TacConstructor (true,n,l)
       | IDENT "constructor"; t = OPT tactic -> TacAnyConstructor (false,t)
       | IDENT "econstructor"; t = OPT tactic -> TacAnyConstructor (true,t)

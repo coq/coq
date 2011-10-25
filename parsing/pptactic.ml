@@ -788,7 +788,7 @@ and pr_atom1 = function
   | TacAnyConstructor (ev,None) as t -> pr_atom0 t
   | TacConstructor (ev,n,l) ->
       hov 1 (str (with_evars ev "constructor") ++
-             pr_or_metaid pr_intarg n ++ pr_bindings l)
+             pr_or_var pr_intarg n ++ pr_bindings l)
 
   (* Conversion *)
   | TacReduce (r,h) ->

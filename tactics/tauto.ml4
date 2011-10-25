@@ -152,10 +152,12 @@ let flatten_contravariant_disj ist =
 	let hyp = valueIn (VConstr ([],hyp)) in
 	iter_tac (list_map_i (fun i arg ->
 	  let typ = valueIn (VConstr ([],mkArrow arg c)) in
+	  let i = Tacexpr.Integer i in
 	  <:tactic<
             let typ := $typ in
             let hyp := $hyp in
-	    assert typ by (intro; apply hyp; constructor $i; assumption)
+	    let i := $i in
+	    assert typ by (intro; apply hyp; constructor i; assumption)
 	  >>) 1 args) <:tactic< let hyp := $hyp in clear hyp >>
       else
 	<:tactic<fail>>

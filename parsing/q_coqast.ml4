@@ -381,7 +381,7 @@ let rec mlexpr_of_atomic_tactic = function
   | Tacexpr.TacAnyConstructor (ev,t) ->
       <:expr< Tacexpr.TacAnyConstructor $mlexpr_of_bool ev$ $mlexpr_of_option mlexpr_of_tactic t$>>
   | Tacexpr.TacConstructor (ev,n,l) ->
-      let n = mlexpr_of_or_metaid mlexpr_of_int n in
+      let n = mlexpr_of_or_var mlexpr_of_int n in
       <:expr< Tacexpr.TacConstructor $mlexpr_of_bool ev$ $n$ $mlexpr_of_binding_kind l$>>
 
   (* Conversion *)

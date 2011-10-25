@@ -111,9 +111,9 @@ let h_any_constructor t =
   abstract_tactic (TacAnyConstructor t) (any_constructor t)
 *)
 let h_constructor ev n l =
-  abstract_tactic (TacConstructor(ev,AI n,l))(constructor_tac ev None n l)
+  abstract_tactic (TacConstructor(ev,ArgArg n,l))(constructor_tac ev None n l)
 let h_one_constructor n =
-  abstract_tactic (TacConstructor(false,AI n,NoBindings)) (one_constructor n NoBindings)
+  abstract_tactic (TacConstructor(false,ArgArg n,NoBindings)) (one_constructor n NoBindings)
 let h_simplest_left   = h_left false NoBindings
 let h_simplest_right  = h_right false NoBindings
 

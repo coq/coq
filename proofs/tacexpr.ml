@@ -191,7 +191,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_atomic_tactic_expr =
   | TacRight of evars_flag * 'constr bindings
   | TacSplit of evars_flag * split_flag * 'constr bindings list
   | TacAnyConstructor of evars_flag * 'tac option
-  | TacConstructor of evars_flag * int or_metaid * 'constr bindings
+  | TacConstructor of evars_flag * int or_var * 'constr bindings
 
   (* Conversion *)
   | TacReduce of ('constr,'cst,'pat) red_expr_gen * 'id gclause

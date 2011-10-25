@@ -762,7 +762,7 @@ let rec intern_atomic lf ist x =
   | TacRight (ev,bl) -> TacRight (ev,intern_bindings ist bl)
   | TacSplit (ev,b,bll) -> TacSplit (ev,b,List.map (intern_bindings ist) bll)
   | TacAnyConstructor (ev,t) -> TacAnyConstructor (ev,Option.map (intern_tactic ist) t)
-  | TacConstructor (ev,n,bl) -> TacConstructor (ev,n,intern_bindings ist bl)
+  | TacConstructor (ev,n,bl) -> TacConstructor (ev,intern_or_var ist n,intern_bindings ist bl)
 
   (* Conversion *)
   | TacReduce (r,cl) ->
@@ -2323,7 +2323,7 @@ and interp_atomic ist gl tac =
         (Tactics.any_constructor ev (Option.map (interp_tactic ist) t))
   | TacConstructor (ev,n,bl) ->
       let sigma, bl = interp_bindings ist env sigma bl in
-      tclWITHHOLES ev (h_constructor ev (skip_metaid n)) sigma bl
+      tclWITHHOLES ev (h_constructor ev (interp_int_or_var ist n)) sigma bl
 
   (* Conversion *)
   | TacReduce (r,cl) ->
