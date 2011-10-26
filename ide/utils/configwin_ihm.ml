@@ -29,6 +29,12 @@ open Configwin_types
 
 module O = Config_file
 
+class type widget =
+  object
+    method box : GObj.widget
+    method apply : unit -> unit
+  end
+
 let file_html_config = Filename.concat Configwin_messages.home ".configwin_html"
 
 let debug = false
@@ -1007,50 +1013,61 @@ class configuration_box (tt : GData.tooltips) conf_struct =
     box
   in
 
+  let set_icon iter = function
+  | None -> ()
+  | Some icon -> tree#set iter icon_col icon
+  in
+
   (* Populate the tree *)
 
   let rec make_tree iter conf_struct =
+    (* box is not shown at first *)
     let box = GPack.vbox ~packing:menu_box#add ~show:false () in
     let new_iter = match iter with
     | None -> tree#append ()
     | Some parent -> tree#append ~parent ()
     in
-    let (label, icon, apply) = match conf_struct with
+    match conf_struct with
     | Section (label, icon, param_list) ->
       let params = List.map (make_param box) param_list in
-      let apply () = List.iter (fun param -> param#apply) params in
-      (label, icon, apply)
+      let widget =
+        object
+          method box = box#coerce
+          method apply () = List.iter (fun param -> param#apply) params
+        end
+      in
+      let () = tree#set new_iter label_col label in
+      let () = set_icon new_iter icon in
+      let () = tree#set new_iter box_col widget in
+      ()
     | Section_list (label, icon, struct_list) ->
-      let apply () = () in
-      (label, icon, apply)
-    in
-    let () = tree#set new_iter label_col label in
-    let () = match icon with
-    | None -> ()
-    | Some icon -> tree#set new_iter icon_col icon
-    in
-    let () = tree#set new_iter box_col box in
-    apply
+      let widget =
+        object
+      (* Section_list does not contain any effect widget, so we do not have to
+         apply anything. *)
+          method apply () = ()
+          method box = box#coerce
+        end
+      in
+      let () = tree#set new_iter label_col label in
+      let () = set_icon new_iter icon in
+      let () = tree#set new_iter box_col widget in
+      List.iter (make_tree (Some new_iter)) struct_list
   in
 
-  let fold accu conf_struct =
-    let apply = make_tree None conf_struct in
-    fun () -> accu (); apply ()
-  in
-
-  let apply = List.fold_left fold (fun () -> ()) conf_struct in
+  let () = List.iter (make_tree None) conf_struct in
 
   (* Dealing with signals *)
 
-  let current_prop = ref None in
+  let current_prop : widget option ref = ref None in
 
   let select_iter iter =
     let () = match !current_prop with
     | None -> ()
-    | Some box -> box#misc#hide ()
+    | Some box -> box#box#misc#hide ()
     in
     let box = tree#get ~row:iter ~column:box_col in
-    let () = box#misc#show () in
+    let () = box#box#misc#show () in
     current_prop := Some box
   in
 
@@ -1063,6 +1080,8 @@ class configuration_box (tt : GData.tooltips) conf_struct =
       select_iter iter
   in
 
+  (* Focus on a box when selected *)
+
   let _ = selection#connect#changed ~callback:when_selected in
 
   let _ = match tree#get_iter_first with
@@ -1074,7 +1093,12 @@ class configuration_box (tt : GData.tooltips) conf_struct =
 
     method box = main_box
 
-    method apply = apply ()
+    method apply =
+      let foreach _ iter =
+        let widget = tree#get ~row:iter ~column:box_col in
+        widget#apply(); false
+      in
+      tree#foreach foreach
 
   end
 
