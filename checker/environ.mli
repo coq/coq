@@ -69,5 +69,6 @@ val add_modtype :
   module_path -> Declarations.module_type_body -> env -> env
 val shallow_add_module :
   module_path -> Declarations.module_body -> env -> env
+val shallow_remove_module : module_path -> env -> env
 val lookup_module : module_path -> env -> Declarations.module_body
 val lookup_modtype : module_path -> env -> Declarations.module_type_body

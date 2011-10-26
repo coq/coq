@@ -13,6 +13,9 @@ open Declarations
 open Environ
 (*i*)
 
+(** Invariant: the first [module_type_body] is now supposed to be
+    known by [env] *)
+
 val check_subtypes : env -> module_type_body -> module_type_body -> unit
 
 
