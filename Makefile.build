@@ -340,14 +340,14 @@ install-ide-byte:
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQIDEBYTE) $(FULLBINDIR)
 	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA) \
-	  `cat $(IDECMA:.cma=.mllib.d) | tr ' ' '\n' | sed -n -e "/\.cmo/s/\.cmo/\.cmi/p"`
+	  $(foreach lib,$(IDECMA:.cma=_MLLIB_DEPENDENCIES),$(addsuffix .cmi,$($(lib))))
 	cd $(FULLBINDIR); ln -sf coqide.byte$(EXE) coqide$(EXE)
 
 install-ide-opt:
 	$(MKDIR) $(FULLBINDIR)
 	$(INSTALLBIN) $(COQIDEOPT) $(FULLBINDIR)
 	$(INSTALLSH) $(FULLCOQLIB) $(IDECMA) $(IDECMA:.cma=.cmxa) $(IDECMA:.cma=.a) \
-	  `cat $(IDECMA:.cma=.mllib.d) | tr ' ' '\n' | sed -n -e "/\.cmo/s/\.cmo/\.cmi/p"`
+	  $(foreach lib,$(IDECMA:.cma=_MLLIB_DEPENDENCIES),$(addsuffix .cmi,$($(lib))))
 	cd $(FULLBINDIR); ln -sf coqide.opt$(EXE) coqide$(EXE)
 
 install-ide-files:
@@ -622,7 +622,7 @@ install-library:
 	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG) $(LINKCMO) $(GRAMMARCMA)
 	# reconstitute the list of core .cmi
 	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG:.cmo=.cmi) \
-          `cat $(CORECMA:.cma=.mllib.d) $(PLUGINSCMA:.cma=.mllib.d) | tr ' ' '\n' | sed -n -e "/\.cmo/s/\.cmo/\.cmi/p"`
+	  $(foreach lib,$(CORECMA:.cma=_MLLIB_DEPENDENCIES) $(PLUGINSCMA:.cma=_MLLIB_DEPENDENCIES),$(addsuffix .cmi,$($(lib))))
 ifeq ($(BEST),opt)
 	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)
 	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG:.cmo=.cmx) $(CONFIG:.cmo=.o) $(LINKCMO:.cma=.cmxa) $(LINKCMO:.cma=.a)
@@ -684,7 +684,7 @@ mli-doc:: $(DOCMLIS:.mli=.cmi)
 	$(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -dot-types -o $@ $< 
 
 OCAMLDOC_MLLIBD = $(OCAMLDOC) -rectypes $(MLINCLUDES) $(ODOCDOTOPTS) -o $@ \
-  `cat $| | tr ' ' '\n' | sed -n -e "/\.cmo/s/\.cmo/\.ml/p"`
+  $(foreach lib,$(|:.mllib.d=_MLLIB_DEPENDENCIES),$(addsuffix .ml,$($(lib))))
 
 %.dot: | %.mllib.d
 	$(OCAMLDOC_MLLIBD)
