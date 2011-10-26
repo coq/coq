@@ -152,7 +152,6 @@ val lookup_modtype : module_path -> env -> module_type_body
 
 (** {5 Universe constraints } *)
 
-val set_universes   :   Univ.universes -> env -> env
 val add_constraints : Univ.constraints -> env -> env
 
 val set_engagement : engagement -> env -> env

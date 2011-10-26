@@ -195,11 +195,6 @@ let add_mind kn mib env =
   { env with env_globals = new_globals }
 
 (* Universe constraints *)
-let set_universes g env =
-  if env.env_stratification.env_universes == g then env
-  else
-    { env with env_stratification =
-      { env.env_stratification with env_universes = g } }
 
 let add_constraints c env =
   if c == empty_constraint then
