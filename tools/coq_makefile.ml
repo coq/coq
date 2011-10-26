@@ -243,7 +243,6 @@ let make_makefile sds =
 
 let clean sds sps =
   print "clean:\n";
-  print "\trm -f *~ Makefile-localvars.gen\n";
   if !some_mlfile || !some_mlifile || !some_ml4file || !some_mllibfile then begin
     print "\trm -f $(ALLCMOFILES) $(CMIFILES) $(CMAFILES)\n";
     print "\trm -f $(ALLCMOFILES:.cmo=.cmx) $(CMXAFILES) $(CMXSFILES) $(ALLCMOFILES:.cmo=.o) $(CMXAFILES:.cmxa=.a)\n";
@@ -268,7 +267,7 @@ let clean sds sps =
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) archclean)\n")
     sds;
   print "\n\n";
-  print "printenv: Makefile-localvars.gen\n\t@cat $^\n";
+  print "printenv:\n\t@$(COQBIN)coqtop -config\n";
   print "\t@echo CAMLC =\t$(CAMLC)\n\t@echo CAMLOPTC =\t$(CAMLOPTC)\n\t@echo PP =\t$(PP)\n\t@echo COQFLAGS =\t$(COQFLAGS)\n\n"
 
 let header_includes () = ()
@@ -354,9 +353,11 @@ let parameters () =
   print "# This Makefile may take arguments passed as environment variables:\n";
   print "# COQBIN to specify the directory where Coq binaries resides;\n";
   print "# ZDEBUG/COQDEBUG to specify debug flags for ocamlc&ocamlopt/coqc;\n";
-  print "# DSTROOT to specify a prefix to install path.\n";
-  print "Makefile-localvars.gen:\n\t$(COQBIN)coqtop -config > $@\n\n";
-  print "-include Makefile-localvars.gen\n.SECONDARY: Makefile-localvars.gen\n\n"
+  print "# DSTROOT to specify a prefix to install path.\n\n";
+  print "# Here is a hack to make $(eval $(shell works:\n";
+  print "define donewline\n\n\nendef\n";
+  print "includecmdwithout@ = $(eval $(subst @,$(donewline),$(shell { $(1) | tr '\\n' '@'; })))\n";
+  print "$(call includecmdwithout@,$(COQBIN)coqtop -config)\n\n"
 
 let include_dirs (inc_i,inc_r) =
   let parse_includes l = List.map (fun (x,_) -> "-I " ^ x) l in
