@@ -7,7 +7,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Require Import Utf8_core.
+Require Export Utf8_core.
 
 (* Arithmetic *)
 Notation "x ≤ y" := (le x y) (at level 70, no associativity).
