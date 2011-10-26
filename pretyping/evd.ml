@@ -110,6 +110,8 @@ module EvarInfoMap = struct
 
   let empty = ExistentialMap.empty, ExistentialMap.empty
 
+  let is_empty (d,u) = ExistentialMap.is_empty d && ExistentialMap.is_empty u
+
   let has_undefined (_,u) = not (ExistentialMap.is_empty u)
 
   let to_list (def,undef) =
@@ -206,6 +208,7 @@ end
 module EvarMap = struct
   type t = EvarInfoMap.t * (Univ.UniverseLSet.t * Univ.universes)
   let empty = EvarInfoMap.empty, (Univ.UniverseLSet.empty, Univ.initial_universes)
+  let is_empty (sigma,_) = EvarInfoMap.is_empty sigma
   let has_undefined (sigma,_) = EvarInfoMap.has_undefined sigma
   let add (sigma,sm) k v = (EvarInfoMap.add sigma k v, sm)
   let add_undefined (sigma,sm) k v = (EvarInfoMap.add_undefined sigma k v, sm)
@@ -370,7 +373,7 @@ let add_constraints d e = {d with evars= EvarMap.add_constraints d.evars e}
 
 (* evar_map are considered empty disregarding histories *)
 let is_empty d =
-  d.evars = EvarMap.empty &&
+  EvarMap.is_empty d.evars &&
   d.conv_pbs = [] &&
   Metamap.is_empty d.metas
 
@@ -385,7 +388,7 @@ let subst_evar_info s evi =
       evar_body = subst_evb evi.evar_body }
 
 let subst_evar_defs_light sub evd =
-  assert (Univ.initial_universes = (snd (snd evd.evars)));
+  assert (Univ.is_initial_universes (snd (snd evd.evars)));
   assert (evd.conv_pbs = []);
   { evd with
       metas = Metamap.map (map_clb (subst_mps sub)) evd.metas;
@@ -809,7 +812,7 @@ let pr_evar_map_t depth sigma =
 	     h 0 (str(string_of_existential ev) ++
                     str"==" ++ pr_evar_info evi)) l) in
   let evs =
-    if evars = EvarInfoMap.empty then mt ()
+    if EvarInfoMap.is_empty evars then mt ()
     else
       match depth with
       | None ->
@@ -827,7 +830,7 @@ let pr_evar_map_t depth sigma =
       h 0 (prlist_with_sep pr_fnl 
 	     (fun u -> Univ.pr_uni_level u) (Univ.UniverseLSet.elements uvs))++fnl()
   and cs =
-    if univs = Univ.initial_universes then mt ()
+    if Univ.is_initial_universes univs then mt ()
     else str"UNIVERSES:"++brk(0,1)++
       h 0 (Univ.pr_universes univs)++fnl()
   in evs ++ svs ++ cs
@@ -858,12 +861,12 @@ let pr_evar_map_constraints evd =
 
 let pr_evar_map allevars evd =
   let pp_evm =
-    if evd.evars = EvarMap.empty then mt() else
+    if EvarMap.is_empty evd.evars then mt() else
       pr_evar_map_t allevars evd++fnl() in
   let cstrs = if evd.conv_pbs = [] then mt() else
     str"CONSTRAINTS:"++brk(0,1)++pr_constraints evd.conv_pbs++fnl() in
   let pp_met =
-    if evd.metas = Metamap.empty then mt() else
+    if Metamap.is_empty evd.metas then mt() else
       str"METAS:"++brk(0,1)++pr_meta_map evd.metas in
   v 0 (pp_evm ++ cstrs ++ pp_met)
 

@@ -171,6 +171,7 @@ let is_univ_variable = function
 let type1_univ = Max ([], [UniverseLevel.Set])
 
 let initial_universes = UniverseLMap.empty
+let is_initial_universes = UniverseLMap.is_empty
 
 (* Every UniverseLevel.t has a unique canonical arc representative *)
 
@@ -485,6 +486,8 @@ module Constraint = Set.Make(
 type constraints = Constraint.t
 
 let empty_constraint = Constraint.empty
+let is_empty_constraint = Constraint.is_empty
+
 let union_constraints = Constraint.union
 
 type constraint_function =

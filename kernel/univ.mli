@@ -47,6 +47,7 @@ val check_eq : check_function
 
 (** The empty graph of universes *)
 val initial_universes : universes
+val is_initial_universes : universes -> bool
 
 (** {6 Constraints. } *)
 
@@ -54,6 +55,8 @@ type constraints
 
 val empty_constraint : constraints
 val union_constraints : constraints -> constraints -> constraints
+
+val is_empty_constraint : constraints -> bool
 
 type constraint_function = universe -> universe -> constraints -> constraints
 

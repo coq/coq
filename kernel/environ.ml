@@ -197,7 +197,7 @@ let add_mind kn mib env =
 (* Universe constraints *)
 
 let add_constraints c env =
-  if c == empty_constraint then
+  if is_empty_constraint c then
     env
   else
     let s = env.env_stratification in
