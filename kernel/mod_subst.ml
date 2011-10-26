@@ -75,121 +75,11 @@ let empty_subst = Umap.empty
 
 let is_empty_subst = Umap.is_empty
 
-let add_mbid mbid mp resolve = Umap.add_mbi mbid (mp,resolve)
-let add_mp mp1 mp2 resolve = Umap.add_mp mp1 (mp2,resolve)
-
-let map_mbid mbid mp resolve = add_mbid mbid mp resolve empty_subst
-let map_mp mp1 mp2 resolve = add_mp mp1 mp2 resolve empty_subst
-
-let add_inline_delta_resolver con lev =
-  Deltamap.add_kn (user_con con) (Inline (lev,None))
-
-let add_inline_constr_delta_resolver con lev cstr =
-  Deltamap.add_kn (user_con con) (Inline (lev, Some cstr))
-
-let add_constant_delta_resolver con =
-  Deltamap.add_kn (user_con con) (Equiv (canonical_con con))
-
-let add_mind_delta_resolver mind =
-  Deltamap.add_kn (user_mind mind) (Equiv (canonical_mind mind))
-
-let add_mp_delta_resolver mp1 mp2 =
-  Deltamap.add_mp mp1 mp2
-
-let mp_in_delta mp =
-  Deltamap.mem_mp mp
-
-let kn_in_delta kn resolver =
-  try
-    match Deltamap.find_kn kn resolver with
-      | Equiv _ -> true
-      | Inline _ -> false
-  with Not_found -> false
-
-let con_in_delta con resolver = kn_in_delta (user_con con) resolver
-let mind_in_delta mind resolver = kn_in_delta (user_mind mind) resolver
-
-let delta_of_mp resolve mp =
- try Deltamap.find_mp mp resolve with Not_found -> mp
-
-let rec find_prefix resolve mp =
-  let rec sub_mp = function
-    | MPdot(mp,l) as mp_sup ->
-	(try Deltamap.find_mp mp_sup resolve
-	 with Not_found -> MPdot(sub_mp mp,l))
-    | p -> Deltamap.find_mp p resolve
-  in
-  try sub_mp mp with Not_found -> mp
-
-exception Change_equiv_to_inline of (int * constr)
-
-let solve_delta_kn resolve kn =
-  try
-    match Deltamap.find_kn kn resolve with
-      | Equiv kn1 -> kn1
-      | Inline (lev, Some c) ->	raise (Change_equiv_to_inline (lev,c))
-      | Inline (_, None) -> raise Not_found
-  with Not_found ->
-    let mp,dir,l = repr_kn kn in
-    let new_mp = find_prefix resolve mp in
-    if mp == new_mp then
-      kn
-    else
-      make_kn new_mp dir l
-
-let gen_of_delta resolve x kn fix_can =
-  try
-    let new_kn = solve_delta_kn resolve kn in
-    if kn == new_kn then x else fix_can new_kn
-  with _ -> x
-
-let constant_of_delta_kn resolve kn =
-  gen_of_delta resolve (constant_of_kn kn) kn (constant_of_kn_equiv kn)
-
-let constant_of_delta resolve con =
-  let kn = user_con con in
-  gen_of_delta resolve con kn (constant_of_kn_equiv kn)
-
-let constant_of_delta2 resolve con =
-  let kn, kn' = canonical_con con, user_con con in
-  gen_of_delta resolve con kn (constant_of_kn_equiv kn')
-
-let mind_of_delta_kn resolve kn =
-  gen_of_delta resolve (mind_of_kn kn) kn (mind_of_kn_equiv kn)
-
-let mind_of_delta resolve mind =
-  let kn = user_mind mind in
-  gen_of_delta resolve mind kn (mind_of_kn_equiv kn)
-
-let mind_of_delta2 resolve mind =
-  let kn, kn' = canonical_mind mind, user_mind mind in
-  gen_of_delta resolve mind kn (mind_of_kn_equiv kn')
-
-let inline_of_delta inline resolver =
-  match inline with
-    | None -> []
-    | Some inl_lev ->
-      let extract kn hint l =
-	match hint with
-	  | Inline (lev,_) -> if lev <= inl_lev then (lev,kn)::l else l
-	  | _ -> l
-      in
-      Deltamap.fold_kn extract resolver []
-
-let find_inline_of_delta kn resolve =
-  match Deltamap.find_kn kn resolve with
-    | Inline (_,o) -> o
-    | _ -> raise Not_found
-
-let constant_of_delta_with_inline resolve con =
-  let kn1,kn2 = canonical_con con,user_con con in
-  try find_inline_of_delta kn2 resolve
-  with Not_found ->
-    try find_inline_of_delta kn1 resolve
-    with Not_found -> None
+(* <debug> *)
 
 let string_of_hint = function
-  | Inline _ -> "inline"
+  | Inline (_,Some _) -> "inline(Some _)"
+  | Inline _ -> "inline()"
   | Equiv kn -> string_of_kn kn
 
 let debug_string_of_delta resolve =
@@ -222,6 +112,119 @@ let debug_pr_subst sub =
 			      spc () ++ str "[" ++ str s3 ++ str "]")
   in
   str "{" ++ hov 2 (prlist_with_sep pr_comma f l) ++ str "}"
+
+(* </debug> *)
+
+(** Extending a [delta_resolver] *)
+
+let add_inline_delta_resolver kn (lev,oc) = Deltamap.add_kn kn (Inline (lev,oc))
+
+let add_kn_delta_resolver kn kn' = Deltamap.add_kn kn (Equiv kn')
+
+let add_mp_delta_resolver mp1 mp2 = Deltamap.add_mp mp1 mp2
+
+(** Extending a [substitution *)
+
+let add_mbid mbid mp resolve s = Umap.add_mbi mbid (mp,resolve) s
+let add_mp mp1 mp2 resolve s = Umap.add_mp mp1 (mp2,resolve) s
+
+let map_mbid mbid mp resolve = add_mbid mbid mp resolve empty_subst
+let map_mp mp1 mp2 resolve = add_mp mp1 mp2 resolve empty_subst
+
+let mp_in_delta mp = Deltamap.mem_mp mp
+
+let kn_in_delta kn resolver =
+  try
+    match Deltamap.find_kn kn resolver with
+      | Equiv _ -> true
+      | Inline _ -> false
+  with Not_found -> false
+
+let con_in_delta con resolver = kn_in_delta (user_con con) resolver
+let mind_in_delta mind resolver = kn_in_delta (user_mind mind) resolver
+
+let mp_of_delta resolve mp =
+ try Deltamap.find_mp mp resolve with Not_found -> mp
+
+let rec find_prefix resolve mp =
+  let rec sub_mp = function
+    | MPdot(mp,l) as mp_sup ->
+	(try Deltamap.find_mp mp_sup resolve
+	 with Not_found -> MPdot(sub_mp mp,l))
+    | p -> Deltamap.find_mp p resolve
+  in
+  try sub_mp mp with Not_found -> mp
+
+exception Change_equiv_to_inline of (int * constr)
+
+let solve_delta_kn resolve kn =
+  try
+    match Deltamap.find_kn kn resolve with
+      | Equiv kn1 -> kn1
+      | Inline (lev, Some c) ->	raise (Change_equiv_to_inline (lev,c))
+      | Inline (_, None) -> raise Not_found
+  with Not_found ->
+    let mp,dir,l = repr_kn kn in
+    let new_mp = find_prefix resolve mp in
+    if mp == new_mp then
+      kn
+    else
+      make_kn new_mp dir l
+
+let kn_of_delta resolve kn =
+  try solve_delta_kn resolve kn
+  with _ -> kn
+
+let constant_of_delta_kn resolve kn =
+  constant_of_kn_equiv kn (kn_of_delta resolve kn)
+
+let gen_of_delta resolve x kn fix_can =
+  try
+    let new_kn = solve_delta_kn resolve kn in
+    if kn == new_kn then x else fix_can new_kn
+  with _ -> x
+
+let constant_of_delta resolve con =
+  let kn = user_con con in
+  gen_of_delta resolve con kn (constant_of_kn_equiv kn)
+
+let constant_of_delta2 resolve con =
+  let kn, kn' = canonical_con con, user_con con in
+  gen_of_delta resolve con kn (constant_of_kn_equiv kn')
+
+let mind_of_delta_kn resolve kn =
+  mind_of_kn_equiv kn (kn_of_delta resolve kn)
+
+let mind_of_delta resolve mind =
+  let kn = user_mind mind in
+  gen_of_delta resolve mind kn (mind_of_kn_equiv kn)
+
+let mind_of_delta2 resolve mind =
+  let kn, kn' = canonical_mind mind, user_mind mind in
+  gen_of_delta resolve mind kn (mind_of_kn_equiv kn')
+
+let inline_of_delta inline resolver =
+  match inline with
+    | None -> []
+    | Some inl_lev ->
+      let extract kn hint l =
+	match hint with
+	  | Inline (lev,_) -> if lev <= inl_lev then (lev,kn)::l else l
+	  | _ -> l
+      in
+      Deltamap.fold_kn extract resolver []
+
+let find_inline_of_delta kn resolve =
+  match Deltamap.find_kn kn resolve with
+    | Inline (_,o) -> o
+    | _ -> raise Not_found
+
+let constant_of_delta_with_inline resolve con =
+  let kn1,kn2 = canonical_con con,user_con con in
+  try find_inline_of_delta kn2 resolve
+  with Not_found ->
+    try find_inline_of_delta kn1 resolve
+    with Not_found -> None
 
 let subst_mp0 sub mp = (* 's like subst *)
  let rec aux mp =

@@ -271,7 +271,7 @@ let add_constant dir l decl senv =
   let senv' = add_field (l,SFBconst cb) (C kn) senv in
   let senv'' = match cb.const_body with
     | Undef (Some lev) ->
-      update_resolver (add_inline_delta_resolver kn lev) senv'
+      update_resolver (add_inline_delta_resolver (user_con kn) (lev,None)) senv'
     | _ -> senv'
   in
   kn, senv''

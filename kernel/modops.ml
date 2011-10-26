@@ -145,7 +145,7 @@ let check_modpath_equiv env mp1 mp2 =
   if mp1=mp2 then () else
     let mb1=lookup_module  mp1 env in
     let mb2=lookup_module mp2 env in
-      if (delta_of_mp mb1.mod_delta mp1)=(delta_of_mp mb2.mod_delta mp2)
+      if (mp_of_delta mb1.mod_delta mp1)=(mp_of_delta mb2.mod_delta mp2)
       then ()
       else error_not_equal_modpaths mp1 mp2
 	
@@ -382,7 +382,7 @@ let inline_delta_resolver env inl mp mbid mtb delta =
 	    | Undef _ | OpaqueDef _ -> l
 	    | Def body ->
 	      let constr = Declarations.force body in
-	      add_inline_constr_delta_resolver con lev constr l
+	      add_inline_delta_resolver kn (lev, Some constr) l
 	with Not_found ->
 	  error_no_such_label_sub (con_label con)
 	    (string_of_mp (con_modpath con))
@@ -435,16 +435,14 @@ and strengthen_and_subst_struct
 	       to resolver(mp_from.l) *)
 	  let kn_from = make_kn mp_from empty_dirpath l in
 	  let kn_to = make_kn mp_to empty_dirpath l in
-	  let old_name = constant_of_delta_kn resolver kn_from in
-	  (add_constant_delta_resolver
-	      (constant_of_kn_equiv kn_to (canonical_con old_name))
-	      resolve_out),
-	item'::rest'
-	  else
+	  let old_name = kn_of_delta resolver kn_from in
+	  (add_kn_delta_resolver kn_to old_name resolve_out),
+	  item'::rest'
+	else
 	    (*In this case the fact that the constant mp_to.l is 
 	      \Delta-equivalent to resolver(mp_from.l) is already known
 	       because resolve_out contains mp_to maps to resolver(mp_from)*)
-	    resolve_out,item'::rest'
+	  resolve_out,item'::rest'
     | (l,SFBmind mib) :: rest ->
 	(*Same as constant*)
 	let item' = l,SFBmind (subst_mind subst mib) in
@@ -454,10 +452,8 @@ and strengthen_and_subst_struct
 	if incl then
 	  let kn_from = make_kn mp_from empty_dirpath l in
 	  let kn_to = make_kn mp_to empty_dirpath l in
-	  let old_name = mind_of_delta_kn resolver kn_from in
-	  (add_mind_delta_resolver
-	     (mind_of_kn_equiv kn_to (canonical_mind old_name))
-	     resolve_out),
+	  let old_name = kn_of_delta resolver kn_from in
+	  (add_kn_delta_resolver kn_to old_name resolve_out),
 	  item'::rest'
 	else
 	  resolve_out,item'::rest'
@@ -506,7 +502,7 @@ let strengthen_and_subst_mb mb mp include_b =
 	  let mb_is_an_alias = mp_in_delta mb.mod_mp mb.mod_delta in
 	    (*if mb.mod_mp is an alias then the strengthening is useless 
 	      (i.e. it is already done)*)
-	  let mp_alias = delta_of_mp mb.mod_delta mb.mod_mp in
+	  let mp_alias = mp_of_delta mb.mod_delta mb.mod_mp in
 	  let subst_resolver = map_mp mb.mod_mp mp empty_delta_resolver in
 	  let new_resolver = 
 	    add_mp_delta_resolver mp mp_alias
