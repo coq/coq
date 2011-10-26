@@ -62,6 +62,7 @@ let basename_noext filename =
 let mlAccu  = ref ([] : (string * string * dir) list)
 and mliAccu = ref ([] : (string * dir) list)
 and mllibAccu = ref ([] : (string * dir) list)
+and mlpackAccu = ref ([] : (string * dir) list)
 
 (** Coq files specifies on the command line:
     - first string is the full filename, with only its extension removed
@@ -107,6 +108,7 @@ let mkknown () =
 let add_ml_known, iter_ml_known, search_ml_known = mkknown ()
 let add_mli_known, iter_mli_known, search_mli_known = mkknown ()
 let add_mllib_known, _, search_mllib_known = mkknown ()
+let add_mlpack_known, _, search_mlpack_known = mkknown ()
 
 let vKnown = (Hashtbl.create 19 : (string list, string) Hashtbl.t)
 let coqlibKnown = (Hashtbl.create 19 : (string list, unit) Hashtbl.t)
@@ -226,22 +228,27 @@ let traite_fichier_ML md ext =
     | Some dep -> soustraite_fichier_ML dep md ext
     | None -> autotraite_fichier_ML md ext
 
-let traite_fichier_mllib md ext =
+let traite_fichier_modules md ext =
   try
     let chan = open_in (md ^ ext) in
     let list = mllib_list (Lexing.from_channel chan) in
     List.fold_left
-      (fun a_faire str -> match search_ml_known str with
-	 | Some mldir ->
-	     let file = file_name str mldir in
-	     a_faire^" "^file
-	 | None -> a_faire) "" list
+      (fun a_faire str -> match search_mlpack_known str with
+	| Some mldir ->
+	  let file = file_name str mldir in
+	  a_faire^" "^file
+	| None ->
+	  match search_ml_known str with
+	    | Some mldir ->
+	      let file = file_name str mldir in
+	      a_faire^" "^file
+	    | None -> a_faire) "" list
   with
     | Sys_error _ -> ""
     | Syntax_error (i,j) ->
-	Printf.eprintf "File \"%s%s\", characters %i-%i:\nError: Syntax error\n"
-	  md ext i j;
-	exit 1
+      Printf.eprintf "File \"%s%s\", characters %i-%i:\nError: Syntax error\n"
+	md ext i j;
+      exit 1
 
 
 (* Makefile's escaping rules are awful: $ is escaped by doubling and
@@ -326,9 +333,12 @@ let traite_fichier_Coq verbose f =
 		  match search_mllib_known s with
 		    | Some mldir -> declare ".cma" mldir s
 		    | None ->
-			match search_ml_known s with
-			  | Some mldir -> declare ".cmo" mldir s
-			  | None -> warning_declare f str
+		      match search_mlpack_known s with
+			| Some mldir -> declare ".cmo" mldir s
+			| None ->
+			  match search_ml_known s with
+			    | Some mldir -> declare ".cmo" mldir s
+			    | None -> warning_declare f str
 		end
 	      in List.iter decl sl
 	  | Load str ->
@@ -370,13 +380,23 @@ let mL_dependencies () =
   List.iter
     (fun (name,dirname) ->
        let fullname = file_name name dirname in
-       let dep = traite_fichier_mllib fullname ".mllib" in
+       let dep = traite_fichier_modules fullname ".mllib" in
        let efullname = escape fullname in
        printf "%s_MLLIB_DEPENDENCIES:=%s\n" efullname dep;
        printf "%s.cma:$(addsuffix .cmo,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname;
        printf "%s.cmxa %s.cmxs:$(addsuffix .cmx,$(%s_MLLIB_DEPENDENCIES))\n" efullname efullname efullname;
        flush stdout)
-    (List.rev !mllibAccu)
+    (List.rev !mllibAccu);
+  List.iter
+    (fun (name,dirname) ->
+       let fullname = file_name name dirname in
+       let dep = traite_fichier_modules fullname ".mlpack" in
+       let efullname = escape fullname in
+       printf "%s_MLPACK_DEPENDENCIES:=%s\n" efullname dep;
+       printf "%s.cmo:$(addsuffix .cmo,$(%s_MLPACK_DEPENDENCIES))\n" efullname efullname;
+       printf "%s.cmx %s.cmxs:$(addsuffix .cmx,$(%s_MLPACK_DEPENDENCIES))\n" efullname efullname efullname;
+       flush stdout)
+    (List.rev !mlpackAccu)
 
 let coq_dependencies () =
   List.iter
@@ -395,7 +415,7 @@ let rec suffixes = function
   | dir::suffix as l -> l::suffixes suffix
 
 let add_known phys_dir log_dir f =
-  match get_extension f [".v";".ml";".mli";".ml4";".mllib"] with
+  match get_extension f [".v";".ml";".mli";".ml4";".mllib";".mlpack"] with
     | (basename,".v") ->
 	let name = log_dir@[basename] in
 	let file = phys_dir//basename in
@@ -405,6 +425,7 @@ let add_known phys_dir log_dir f =
     | (basename,(".ml"|".ml4")) -> add_ml_known basename (Some phys_dir)
     | (basename,".mli") -> add_mli_known basename (Some phys_dir)
     | (basename,".mllib") -> add_mllib_known basename (Some phys_dir)
+    | (basename,".mlpack") -> add_mlpack_known basename (Some phys_dir)
     | _ -> ()
 
 (* Visits all the directories under [dir], including [dir],
@@ -457,7 +478,7 @@ let rec treat_file old_dirname old_name =
 	     while true do treat_file (Some newdirname) (readdir dir) done
 	   with End_of_file -> closedir dir)
     | S_REG ->
-	(match get_extension name [".v";".ml";".mli";".ml4";".mllib"] with
+	(match get_extension name [".v";".ml";".mli";".ml4";".mllib";".mlpack"] with
 	   | (base,".v") ->
 	       let name = file_name base dirname
 	       and absname = absolute_file_name base dirname in
@@ -465,5 +486,6 @@ let rec treat_file old_dirname old_name =
 	   | (base,(".ml"|".ml4" as ext)) -> addQueue mlAccu (base,ext,dirname)
 	   | (base,".mli") -> addQueue mliAccu (base,dirname)
 	   | (base,".mllib") -> addQueue mllibAccu (base,dirname)
+	   | (base,".mlpack") -> addQueue mlpackAccu (base,dirname)
 	   | _ -> ())
     | _ -> ()
