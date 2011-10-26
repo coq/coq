@@ -22,22 +22,24 @@ open Mod_subst
 
 (** Auto and related automation tactics *)
 
-type auto_tactic =
-  | Res_pf     of constr * clausenv    (** Hint Apply *)
-  | ERes_pf    of constr * clausenv    (** Hint EApply *)
+type 'a auto_tactic =
+  | Res_pf     of constr * 'a    (** Hint Apply *)
+  | ERes_pf    of constr * 'a    (** Hint EApply *)
   | Give_exact of constr
-  | Res_pf_THEN_trivial_fail of constr * clausenv (** Hint Immediate *)
+  | Res_pf_THEN_trivial_fail of constr * 'a (** Hint Immediate *)
   | Unfold_nth of evaluable_global_reference          (** Hint Unfold *)
   | Extern     of Tacexpr.glob_tactic_expr   (** Hint Extern *)
 
 open Glob_term
 
-type pri_auto_tactic = {
+type 'a gen_auto_tactic = {
   pri   : int;            (** A number between 0 and 4, 4 = lower priority *)
   pat   : constr_pattern option; (** A pattern for the concl of the Goal *)
-  name  : global_reference option; (** A potential name to refer to the hint *) 
-  code  : auto_tactic;    (** the tactic to apply when the concl matches pat *)
+  name  : global_reference option; (** A potential name to refer to the hint *)
+  code  : 'a auto_tactic; (** the tactic to apply when the concl matches pat *)
 }
+
+type pri_auto_tactic = clausenv gen_auto_tactic
 
 type stored_data = int * pri_auto_tactic
 
@@ -45,7 +47,7 @@ type search_entry
 
 (** The head may not be bound. *)
 
-type hint_entry = global_reference option * pri_auto_tactic
+type hint_entry = global_reference option * types gen_auto_tactic
 
 module Hint_db :
   sig
@@ -231,7 +233,7 @@ val gen_trivial : open_constr list -> hint_db_name list option -> tactic
 val full_trivial : open_constr list -> tactic
 val h_trivial : open_constr list -> hint_db_name list option -> tactic
 
-val pr_autotactic : auto_tactic -> Pp.std_ppcmds
+val pr_autotactic : 'a auto_tactic -> Pp.std_ppcmds
 
 (** {6 The following is not yet up to date -- Papageno. } *)
 

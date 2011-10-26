@@ -46,22 +46,24 @@ open Mod_subst
 (*            The Type of Constructions Autotactic Hints                    *)
 (****************************************************************************)
 
-type auto_tactic =
-  | Res_pf     of constr * clausenv (* Hint Apply *)
-  | ERes_pf    of constr * clausenv (* Hint EApply *)
+type 'a auto_tactic =
+  | Res_pf     of constr * 'a (* Hint Apply *)
+  | ERes_pf    of constr * 'a (* Hint EApply *)
   | Give_exact of constr
-  | Res_pf_THEN_trivial_fail of constr * clausenv (* Hint Immediate *)
+  | Res_pf_THEN_trivial_fail of constr * 'a (* Hint Immediate *)
   | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
   | Extern     of glob_tactic_expr       (* Hint Extern *)
 
-type pri_auto_tactic = {
+type 'a gen_auto_tactic = {
   pri  : int;            (* A number lower is higher priority *)
   pat  : constr_pattern option; (* A pattern for the concl of the Goal *)
-  name  : global_reference option; (* A potential name to refer to the hint *) 
-  code : auto_tactic     (* the tactic to apply when the concl matches pat *)
+  name  : global_reference option; (* A potential name to refer to the hint *)
+  code : 'a auto_tactic     (* the tactic to apply when the concl matches pat *)
 }
 
-type hint_entry = global_reference option * pri_auto_tactic
+type pri_auto_tactic = clausenv gen_auto_tactic
+
+type hint_entry = global_reference option * types gen_auto_tactic
 
 let pri_order_int (id1, {pri=pri1}) (id2, {pri=pri2}) =
   let d = pri1 - pri2 in
@@ -92,7 +94,7 @@ let insert v l =
      - un discrimination net borné (Btermdn.t) constitué de tous les
        patterns de la seconde liste de tactiques *)
 
-type stored_data = int * pri_auto_tactic 
+type stored_data = int * pri_auto_tactic
     (* First component is the index of insertion in the table, to keep most recent first semantics. *)
 
 let auto_tactic_ord code1 code2 =
@@ -153,6 +155,23 @@ let is_transparent_gr (ids, csts) = function
   | VarRef id -> Idpred.mem id ids
   | ConstRef cst -> Cpred.mem cst csts
   | IndRef _ | ConstructRef _ -> false
+
+let dummy_goal = Goal.V82.dummy_goal
+
+let translate_hint (go,p) =
+  let mk_clenv (c,t) =
+    let cl = mk_clenv_from dummy_goal (c,t) in {cl with env = empty_env }
+  in
+  let code = match p.code with
+    | Res_pf (c,t) -> Res_pf (c, mk_clenv (c,t))
+    | ERes_pf (c,t) -> ERes_pf (c, mk_clenv (c,t))
+    | Res_pf_THEN_trivial_fail (c,t) ->
+      Res_pf_THEN_trivial_fail (c, mk_clenv (c,t))
+    | Give_exact c -> Give_exact c
+    | Unfold_nth e -> Unfold_nth e
+    | Extern t -> Extern t
+  in
+  (go,{ p with code = code })
 
 module Hint_db = struct
 
@@ -226,7 +245,8 @@ module Hint_db = struct
     in
       List.fold_left (fun db (gr,(id,v)) -> addkv gr id v db) db' db.hintdb_nopat
 
-  let add_one (k,v) db =
+  let add_one kv db =
+    let (k,v) = translate_hint kv in
     let st',db,rebuild =
       match v.code with
       | Unfold_nth egr ->
@@ -326,8 +346,6 @@ let try_head_pattern c =
   try head_pattern_bound c
   with BoundPattern -> error "Bound head variable."
 
-let dummy_goal = Goal.V82.dummy_goal
-
 let name_of_constr c = try Some (global_of_constr c) with Not_found -> None
 
 let make_exact_entry sigma pri ?name (c,cty) =
@@ -362,7 +380,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri ?name (c,cty) =
           { pri = (match pri with None -> nb_hyp cty | Some p -> p);
             pat = Some pat;
 	    name = name;
-            code = Res_pf(c,{ce with env=empty_env}) })
+            code = Res_pf(c,cty) })
 	else begin
 	  if not eapply then failwith "make_apply_entry";
           if verbose then
@@ -372,7 +390,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri ?name (c,cty) =
            { pri = (match pri with None -> nb_hyp cty + nmiss | Some p -> p);
              pat = Some pat;
 	     name = name;
-             code = ERes_pf(c,{ce with env=empty_env}) })
+             code = ERes_pf(c,cty) })
         end
     | _ -> failwith "make_apply_entry"
 
@@ -427,7 +445,7 @@ let make_trivial env sigma ?name c =
   (Some hd, { pri=1;
               pat = Some (snd (Pattern.pattern_of_constr sigma (clenv_type ce)));
 	      name = name;
-              code=Res_pf_THEN_trivial_fail(c,{ce with env=empty_env}) })
+              code=Res_pf_THEN_trivial_fail(c,t) })
   
 open Vernacexpr
 
@@ -463,10 +481,11 @@ let remove_hints dbname hintlist grs =
   let db' = Hint_db.remove_list grs db in
     searchtable_add (dbname, db')
 
-type hint_action = | CreateDB of bool * transparent_state
-		   | AddTransparency of evaluable_global_reference list * bool
-		   | AddHints of (global_reference option * pri_auto_tactic) list
-		   | RemoveHints of global_reference list
+type hint_action =
+  | CreateDB of bool * transparent_state
+  | AddTransparency of evaluable_global_reference list * bool
+  | AddHints of hint_entry list
+  | RemoveHints of global_reference list
 
 let cache_autohint (_,(local,name,hints)) =
   match hints with
@@ -480,8 +499,7 @@ let forward_subst_tactic =
 
 let set_extern_subst_tactic f = forward_subst_tactic := f
 
-let subst_autohint (subst,(local,name,hintlist as obj)) = 
-  let trans_clenv clenv = Clenv.subst_clenv subst clenv in
+let subst_autohint (subst,(local,name,hintlist as obj)) =
   let subst_key gr =
     let (lab'', elab') = subst_global subst gr in
     let gr' =
@@ -491,55 +509,35 @@ let subst_autohint (subst,(local,name,hintlist as obj)) =
   in
   let subst_hint (k,data as hint) =
     let k' = Option.smartmap subst_key k in
-    let data' = match data.code with
-      | Res_pf (c, clenv) ->
-	  let c' = subst_mps subst c in
-	  let clenv' = trans_clenv clenv in
-	  let pat' = Option.smartmap (subst_pattern subst) data.pat in
-	    if c==c' && clenv'==clenv && pat'==data.pat then data else
-	      {data with
-		 pat=pat';
-		 code=Res_pf (c', clenv')}
-      | ERes_pf (c, clenv) ->
-	  let c' = subst_mps subst c in
-	  let clenv' = trans_clenv clenv in
-	  let pat' = Option.smartmap (subst_pattern subst) data.pat in
-	    if c==c' && clenv'==clenv && pat'==data.pat then data else
-	      {data with
-		 pat=pat';
-		 code=ERes_pf (c', clenv')}
+    let pat' = Option.smartmap (subst_pattern subst) data.pat in
+    let code' = match data.code with
+      | Res_pf (c,t) ->
+          let c' = subst_mps subst c in
+          let t' = subst_mps subst t in
+          if c==c' && t'==t then data.code else Res_pf (c', t')
+      | ERes_pf (c,t) ->
+          let c' = subst_mps subst c in
+          let t' = subst_mps subst t in
+          if c==c' && t'==t then data.code else ERes_pf (c',t')
       | Give_exact c ->
-	  let c' = subst_mps subst c in
-	  let pat' = Option.smartmap (subst_pattern subst) data.pat in
-	    if c==c' && pat'==data.pat then data else
-	      {data with
-		 pat=pat';
-		 code=(Give_exact c')}
-      | Res_pf_THEN_trivial_fail (c, clenv) ->
-	  let c' = subst_mps subst c in
-	  let clenv' = trans_clenv clenv in
-	  let pat' = Option.smartmap (subst_pattern subst) data.pat in
-	    if c==c' && clenv'==clenv && pat'==data.pat then data else
-	      {data with
-		 pat=pat';
-		 code=Res_pf_THEN_trivial_fail (c',clenv')}
+          let c' = subst_mps subst c in
+          if c==c' then data.code else Give_exact c'
+      | Res_pf_THEN_trivial_fail (c,t) ->
+          let c' = subst_mps subst c in
+          let t' = subst_mps subst t in
+          if c==c' && t==t' then data.code else Res_pf_THEN_trivial_fail (c',t')
       | Unfold_nth ref ->
           let ref' = subst_evaluable_reference subst ref in
-	  let pat' = Option.smartmap (subst_pattern subst) data.pat in
-           if ref==ref' && pat'==data.pat then data else
-	     {data with
-		pat=pat';
-		code=(Unfold_nth ref')}
+          if ref==ref' then data.code else Unfold_nth ref'
       | Extern tac ->
 	  let tac' = !forward_subst_tactic subst tac in
-	  let pat' = Option.smartmap (subst_pattern subst) data.pat in
-	    if tac==tac' && pat'==data.pat then data else
-	      {data with
-		 pat=pat';
-		 code=(Extern tac')}
+	  if tac==tac' then data.code else Extern tac'
     in
-      if k' == k && data' == data then hint else
-	(k',data')
+    let data' =
+      if data.pat==pat' && data.code==code' then data
+      else { data with pat = pat'; code = code' }
+    in
+    if k' == k && data' == data then hint else (k',data')
   in
     match hintlist with
     | CreateDB _ -> obj
