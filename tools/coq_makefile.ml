@@ -17,6 +17,7 @@ let some_mlfile = ref false
 let some_mlifile = ref false
 let some_ml4file = ref false
 let some_mllibfile = ref false
+let some_mlpackfile = ref false
 
 let print x = output_string !output_channel x
 let printf x = Printf.fprintf !output_channel x
@@ -204,23 +205,24 @@ let install_doc some_vfiles some_mlifiles (_,inc_r) =
 	   end in
       print "\n"
 
-let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles),_,sds) inc =
+let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) inc =
   let not_empty = function |[] -> false |_::_ -> true in
-  let cmfiles = mlfiles@ml4files in
-  let allcmfiles = cmfiles@mllibfiles in
-    if (not_empty allcmfiles) then begin
+  let cmofiles = mlpackfiles@mlfiles@ml4files in
+  let cmifiles = mlifiles@cmofiles in
+  let cmxsfiles = cmofiles@mllibfiles in
+    if (not_empty cmxsfiles) then begin
       print "install-natdynlink:\n";
-      install_include_by_root "COQLIB" "CMXSFILES" allcmfiles inc;
+      install_include_by_root "COQLIB" "CMXSFILES" cmxsfiles inc;
       print "\n";
     end;
     print "install:";
-    if (not_empty allcmfiles) then print "$(if ifeq '$(HASNATDYNLINK)' 'true',install-natdynlink)";
+    if (not_empty cmxsfiles) then print "$(if ifeq '$(HASNATDYNLINK)' 'true',install-natdynlink)";
     print "\n";
     if not_empty vfiles then install_include_by_root "COQLIB" "VOFILES" vfiles inc;
-    if (not_empty cmfiles) then begin
-      install_include_by_root "COQLIB" "CMOFILES" cmfiles inc;
-      install_include_by_root "COQLIB" "CMIFILES" cmfiles inc;
-    end;
+    if (not_empty cmofiles) then
+      install_include_by_root "COQLIB" "CMOFILES" cmofiles inc;
+    if (not_empty cmifiles) then
+      install_include_by_root "COQLIB" "CMIFILES" cmifiles inc;
     if (not_empty mllibfiles) then
       install_include_by_root "COQLIB" "CMAFILES" mllibfiles inc;
     List.iter
@@ -243,10 +245,10 @@ let make_makefile sds =
 
 let clean sds sps =
   print "clean:\n";
-  if !some_mlfile || !some_mlifile || !some_ml4file || !some_mllibfile then begin
+  if !some_mlfile || !some_mlifile || !some_ml4file || !some_mllibfile || !some_mlpackfile then begin
     print "\trm -f $(ALLCMOFILES) $(CMIFILES) $(CMAFILES)\n";
     print "\trm -f $(ALLCMOFILES:.cmo=.cmx) $(CMXAFILES) $(CMXSFILES) $(ALLCMOFILES:.cmo=.o) $(CMXAFILES:.cmxa=.a)\n";
-    print "\trm -f $(MLFILES:.ml=.ml.d) $(MLIFILES:.mli=.mli.d) $(ML4FILES:.ml4=.ml4.d) $(MLLIBFILES:.mllib=.mllib.d)\n";
+    print "\trm -f $(addsuffix .d,$(MLFILES) $(MLIFILES) $(ML4FILES) $(MLLIBFILES) $(MLPACKFILES))\n";
   end;
   if !some_vfile then
     print "\trm -f $(VOFILES) $(VIFILES) $(GFILES) $(VFILES:.v=.v.d)\n";
@@ -295,6 +297,12 @@ let implicit () =
     print "%.cmxs: %.cmxa\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -linkall -shared -o $@ $<\n\n";
     print "%.mllib.d: %.mllib\n";
     print "\t$(COQDEP) -slash $(COQLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
+  let mlpack_rules () =
+    print "%.cmo: | %.mlpack\n\t$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
+    print "%.cmx: | %.mlpack\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -pack -o $@ $^\n\n";
+    print "%.mlpack.d: %.mlpack\n";
+    print "\t$(COQDEP) -slash $(COQLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
+in
   let v_rules () =
     print "%.vo %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.vi: %.v\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
@@ -311,6 +319,7 @@ let implicit () =
     if !some_mlfile then ml_rules ();
     if !some_mlfile || !some_ml4file then cmxs_rules ();
     if !some_mllibfile then mllib_rules ();
+    if !some_mlpackfile then mlpack_rules ();
     if !some_vfile then v_rules ()
 
 let variables opt (args,defs) =
@@ -402,12 +411,26 @@ let subdirs sds =
 	:: "depend" :: "html" :: sds);
     print "\n\n"
 
-let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles) other_targets inc =
+let forpacks =
+  List.iter (fun it ->
+    let h = Filename.chop_extension it in
+    printf "$(addsuffix .cmx,$(filter $(basename $(MLFILES)),$(%s_MLPACK_DEPENDENCIES))): %%.cmx: %%.ml\n" h;
+    printf "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -for-pack %s $<\n\n" (String.capitalize (Filename.basename h));
+    printf "$(addsuffix .cmx,$(filter $(basename $(ML4FILES)),$(%s_MLPACK_DEPENDENCIES))): %%.cmx: %%.ml4\n" h;
+    printf "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -for-pack %s $(PP) -impl $<\n\n" (String.capitalize (Filename.basename h))
+  )
+
+let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other_targets inc =
+  let decl_var var = function
+    |[] -> ()
+    |l ->
+      printf "%s:=" var; print_list "\\\n  " l; print "\n";
+      printf "\n-include $(addsuffix .d,$(%s))\n.SECONDARY: $(addsuffix .d,$(%s))\n\n" var var
+  in
+  decl_var "VFILES" vfiles;
   begin match vfiles with
     |[] -> ()
     |l ->
-      print "VFILES:="; print_list "\\\n  " l; print "\n";
-      print "\n-include $(VFILES:.v=.v.d)\n.SECONDARY: $(VFILES:.v=.v.d)\n\n";
       print "VOFILES:=$(VFILES:.v=.vo)\n";
       classify_files_by_root "VOFILES" l inc;
       print "GLOBFILES:=$(VFILES:.v=.glob)\n";
@@ -416,26 +439,33 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles) other_targets inc
       print "HTMLFILES:=$(VFILES:.v=.html)\n";
       print "GHTMLFILES:=$(VFILES:.v=.g.html)\n"
   end;
-  let mlsfiles = match ml4files,mlfiles with
-    |[],[] -> []
-    |[],ml ->
-      print "MLFILES:="; print_list "\\\n  " ml; print "\n";
-      print "\n-include $(MLFILES:.ml=.ml.d)\n.SECONDARY: $(MLFILES:.ml=.ml.d)\n\n";
+  decl_var "ML4FILES" ml4files;
+  decl_var "MLFILES" mlfiles;
+  decl_var "MLPACKFILES" mlpackfiles;
+  decl_var "MLLIBFILES" mllibfiles;
+  decl_var "MLIFILES" mlifiles;
+  let mlsfiles = match ml4files,mlfiles,mlpackfiles with
+    |[],[],[] -> []
+    |[],[],_ -> Printf.eprintf "Mlpack cannot work without ml[4]?"; []
+    |[],ml,[] ->
       print "ALLCMOFILES:=$(MLFILES:.ml=.cmo)\n";
       ml
-    |ml4,[] ->
-      print "ML4FILES:="; print_list "\\\n  " ml4; print "\n";
-      print "\n-include $(ML4FILES:.ml4=.ml4.d)\n.SECONDARY: $(ML4FILES:.ml4=.ml4.d)\n\n";
+    |ml4,[],[] ->
       print "ALLCMOFILES:=$(ML4FILES:.ml4=.cmo)\n";
       ml4
-    |ml4,ml ->
-      print "ML4FILES:="; print_list "\\\n  " ml4; print "\n";
-      print "\n-include $(ML4FILES:.ml4=.ml4.d)\n.SECONDARY: $(ML4FILES:.ml4=.ml4.d)\n\n";
-      print "MLFILES:="; print_list "\\\n  " ml; print "\n";
-      print "\n-include $(MLFILES:.ml=.ml.d)\n.SECONDARY: $(MLFILES:.ml=.ml.d)\n\n";
+    |ml4,ml,[] ->
       print "ALLCMOFILES:=$(ML4FILES:.ml4=.cmo) $(MLFILES:.ml=.cmo)\n";
-      ml@ml4 in
-  print "CMOFILES=$(filter-out $(addsuffix .cmo,$(foreach lib,$(MLLIBFILES:.mllib=_MLLIB_DEPENDENCIES),$($(lib)))),$(ALLCMOFILES))\n";
+      List.rev_append ml ml4
+    |[],ml,mlpack ->
+      print "ALLCMOFILES:=$(MLFILES:.ml=.cmo) $(MLPACKFILES:.mlpack=.cmo)\n";
+      List.rev_append mlpack ml
+    |ml4,[],mlpack ->
+      print "ALLCMOFILES:=$(ML4FILES:.ml4=.cmo) $(MLPACKFILES:.mlpack=.cmo)\n";
+      List.rev_append mlpack ml4
+    |ml4,ml,mlpack ->
+      print "ALLCMOFILES:=$(ML4FILES:.ml4=.cmo) $(MLFILES:.ml=.cmo) $(MLPACKFILES:.mlpack=.cmo)\n";
+      List.rev_append mlpack (List.rev_append ml ml4) in
+  print "CMOFILES=$(filter-out $(addsuffix .cmo,$(foreach lib,$(MLLIBFILES:.mllib=_MLLIB_DEPENDENCIES) $(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES),$($(lib)))),$(ALLCMOFILES))\n";
   begin match mlsfiles with
     |[] -> ()
     |l ->
@@ -446,19 +476,11 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles) other_targets inc
   begin match mllibfiles with
     |[] -> ()
     |l ->
-      print "MLLIBFILES:="; print_list "\\\n  " l; print "\n";
-      print "\n-include $(MLLIBFILES:.mllib=.mllib.d)\n.SECONDARY: $(MLLIBFILES:.mllib=.mllib.d)\n\n";
       print "CMAFILES:=$(MLLIBFILES:.mllib=.cma)\n";
 	classify_files_by_root "CMAFILES" l inc;
       print "CMXAFILES:=$(CMAFILES:.cma=.cmxa)\n";
   end;
-  begin match mlifiles with
-    |[] -> ()
-    |l ->
-      print "MLIFILES:="; print_list "\\\n  " l; print "\n";
-      print "\n-include $(MLIFILES:.mli=.mli.d)\n.SECONDARY: $(MLIFILES:.mli=.mli.d)\n\n";
-  end;
-  begin match mlifiles,mlfiles with
+  begin match mlifiles,mlsfiles with
     |[],[] -> ()
     |l,[] ->
        print "CMIFILES:=$(MLIFILES:.mli=.cmi)\n";
@@ -484,9 +506,10 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles) other_targets inc
   end;
   print "\nall: ";
   if !some_vfile then print "$(VOFILES) ";
-  if !some_mlfile || !some_ml4file then print "$(CMOFILES) ";
+  if !some_mlfile || !some_ml4file || !some_mlpackfile then print "$(CMOFILES) ";
   if !some_mllibfile then print "$(CMAFILES) ";
-  if !some_mlfile || !some_ml4file || !some_mllibfile then print "$(if ifeq '$(HASNATDYNLINK)' 'true',$(CMXSFILES)) ";
+  if !some_mlfile || !some_ml4file || !some_mllibfile || !some_mlpackfile
+  then print "$(if ifeq '$(HASNATDYNLINK)' 'true',$(CMXSFILES)) ";
   print_list "\\\n  " other_targets; print "\n\n";
   if !some_mlifile then
     begin
@@ -517,11 +540,12 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles) other_targets inc
       print "\n"
     end
 
-let all_target (vfiles, mlfiles, sps, sds) inc =
+let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
   let special_targets = List.filter (fun (n,_,_) -> not (is_genrule n)) sps in
   let other_targets = List.map (function x,_,_ -> x) special_targets @ sds in
   section "Definition of the \"all\" target.";
   main_targets vfiles mlfiles other_targets inc;
+  forpacks mlpackfiles;
   custom sps;
   subdirs sds
 
@@ -550,20 +574,22 @@ let command_line args =
   print_list args;
   print "\n#\n\n"
 
-let ensure_root_dir (v,(mli,ml4,ml,mllib),_,_) ((i_inc,r_inc) as l) =
+let ensure_root_dir (v,(mli,ml4,ml,mllib,mlpack),_,_) ((i_inc,r_inc) as l) =
   let here = Sys.getcwd () in
   let not_tops =List.for_all (fun s -> s <> Filename.basename s) in
   if List.exists (fun (_,x) -> x = here) i_inc
     or List.exists (fun (_,_,x) -> is_prefix x here) r_inc
-    or (not_tops v && not_tops mli && not_tops ml4 && not_tops ml && not_tops mllib) then
+    or (not_tops v && not_tops mli && not_tops ml4 && not_tops ml
+	&& not_tops mllib && not_tops mlpack) then
     l
   else
     ((".",here)::i_inc,r_inc)
 
-let warn_install_at_root_directory (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles),_,_) (inc_i,inc_r) =
+let warn_install_at_root_directory
+    (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,_) (inc_i,inc_r) =
   let inc_r_top = List.filter (fun (_,ldir,_) -> ldir = "") inc_r in
   let inc_top = List.map (fun (p,_,_) -> p) inc_r_top in
-  let files = vfiles @ mlifiles @ ml4files @ mlfiles @ mllibfiles in
+  let files = vfiles @ mlifiles @ ml4files @ mlfiles @ mllibfiles @ mlpackfiles in
   if inc_r = [] || List.exists (fun f -> List.mem (Filename.dirname f) inc_top) files
   then
     Printf.eprintf "Warning: install target will copy files at the first level of the coq contributions installation directory; option -R %sis recommended\n"
@@ -588,21 +614,23 @@ let do_makefile args =
   let (project_file,makefile,is_install,opt),l =
     try Project_file.process_cmd_line Filename.current_dir_name (None,None,true,true) [] args
     with Project_file.Parsing_error -> usage () in
-  let (v_f,(mli_f,ml4_f,ml_f,mllib_f),sps,sds as targets), inc, defs =
+  let (v_f,(mli_f,ml4_f,ml_f,mllib_f,mlpack_f),sps,sds as targets), inc, defs =
     Project_file.split_arguments l in
 
   let () = match project_file with |None -> () |Some f -> make_name := f in
   let () = match makefile with
     |None -> ()
     |Some f -> makefile_name := f; output_channel := open_out f in
-  has_file some_vfile v_f; has_file some_mlifile mli_f; has_file some_mlfile ml_f;
-  has_file some_ml4file ml4_f; has_file some_mllibfile mllib_f;
+  has_file some_vfile v_f; has_file some_mlifile mli_f;
+  has_file some_mlfile ml_f; has_file some_ml4file ml4_f;
+  has_file some_mllibfile mllib_f; has_file some_mlpackfile mlpack_f;
   let check_dep f =
     if Filename.check_suffix f ".v" then some_vfile := true
     else if (Filename.check_suffix f ".mli") then some_mlifile := true
     else if (Filename.check_suffix f ".ml4") then some_ml4file := true
     else if (Filename.check_suffix f ".ml") then some_mlfile := true
     else if (Filename.check_suffix f ".mllib") then some_mllibfile := true
+    else if (Filename.check_suffix f ".mlpack") then some_mlpackfile := true
   in
   List.iter (fun (_,dependencies,_) ->
     List.iter check_dep (Str.split (Str.regexp "[ \t]+") dependencies)) sps;

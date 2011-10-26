@@ -3,6 +3,7 @@ type target =
   | MLI of string (* MLI file : foo.mli -> (MLI "foo.mli") *)
   | ML4 of string (* ML4 file : foo.ml4 -> (ML4 "foo.ml4") *)
   | MLLIB of string (* MLLIB file : foo.mllib -> (MLLIB "foo.mllib") *)
+  | MLPACK of string (* MLLIB file : foo.mlpack -> (MLLIB "foo.mlpack") *)
   | V of string  (* V file : foo.v -> (V "foo") *)
   | Arg of string
   | Special of string * string * string (* file, dependencies, command *)
@@ -94,6 +95,7 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
 	  else if (Filename.check_suffix f ".ml4") then ML4 f
 	  else if (Filename.check_suffix f ".mli") then MLI f
 	  else if (Filename.check_suffix f ".mllib") then MLLIB f
+	  else if (Filename.check_suffix f ".mlpack") then MLPACK f
 	  else Subdir f) :: l) r
 
 let rec post_canonize f =
@@ -102,19 +104,26 @@ let rec post_canonize f =
     if dir = Filename.current_dir_name then f else post_canonize dir
   else f
 
-(* Return: ((v,(mli,ml4,ml,mllib),special,subdir),(i_inc,r_inc),(args,defs)) *)
+(* Return: ((v,(mli,ml4,ml,mllib,mlpack),special,subdir),(i_inc,r_inc),(args,defs)) *)
 let split_arguments =
   let rec aux = function
   | V n :: r ->
 	let (v,m,o,s),i,d = aux r in ((Minilib.remove_path_dot n::v,m,o,s),i,d)
   | ML n :: r ->
-      let (v,(mli,ml4,ml,mllib),o,s),i,d = aux r in ((v,(mli,ml4,Minilib.remove_path_dot n::ml,mllib),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
+      ((v,(mli,ml4,Minilib.remove_path_dot n::ml,mllib,mlpack),o,s),i,d)
   | MLI n :: r ->
-      let (v,(mli,ml4,ml,mllib),o,s),i,d = aux r in ((v,(Minilib.remove_path_dot n::mli,ml4,ml,mllib),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
+      ((v,(Minilib.remove_path_dot n::mli,ml4,ml,mllib,mlpack),o,s),i,d)
   | ML4 n :: r ->
-      let (v,(mli,ml4,ml,mllib),o,s),i,d = aux r in ((v,(mli,Minilib.remove_path_dot n::ml4,ml,mllib),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
+      ((v,(mli,Minilib.remove_path_dot n::ml4,ml,mllib,mlpack),o,s),i,d)
   | MLLIB n :: r ->
-      let (v,(mli,ml4,ml,mllib),o,s),i,d = aux r in ((v,(mli,ml4,ml,Minilib.remove_path_dot n::mllib),o,s),i,d)
+      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
+      ((v,(mli,ml4,ml,Minilib.remove_path_dot n::mllib,mlpack),o,s),i,d)
+  | MLPACK n :: r ->
+      let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
+      ((v,(mli,ml4,ml,mllib,Minilib.remove_path_dot n::mlpack),o,s),i,d)
   | Special (n,dep,c) :: r ->
       let (v,m,o,s),i,d = aux r in ((v,m,(n,dep,c)::o,s),i,d)
   | Subdir n :: r ->
@@ -129,7 +138,7 @@ let split_arguments =
       let t,i,(args,defs) = aux r in (t,i,(args,(v,def)::defs))
   | Arg a :: r ->
       let t,i,(args,defs) = aux r in (t,i,(a::args,defs))
-  | [] -> ([],([],[],[],[]),[],[]),([],[]),([],[])
+  | [] -> ([],([],[],[],[],[]),[],[]),([],[]),([],[])
   in aux
 
 let read_project_file f =
