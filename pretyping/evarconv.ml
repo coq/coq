@@ -686,8 +686,11 @@ let second_order_matching ts env_rhs evd (evk,args) rhs =
   with Exit -> evd, false
 
 let second_order_matching_with_args ts env evd ev l t =
+(*
   let evd,ev = evar_absorb_arguments env evd ev l in
   second_order_matching ts env evd ev t
+*)
+  (evd,false)
 
 let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   let t1 = apprec_nohdbeta ts env evd (whd_head_evar evd t1) in
