@@ -448,6 +448,7 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles) other_targets inc
       print "MLLIBFILES:="; print_list "\\\n  " l; print "\n";
       print "\n-include $(MLLIBFILES:.mllib=.mllib.d)\n.SECONDARY: $(MLLIBFILES:.mllib=.mllib.d)\n\n";
       print "CMAFILES:=$(MLLIBFILES:.mllib=.cma)\n";
+	classify_files_by_root "CMAFILES" l inc;
       print "CMXAFILES:=$(CMAFILES:.cma=.cmxa)\n";
   end;
   begin match mlifiles with
