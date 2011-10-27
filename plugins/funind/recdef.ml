@@ -1109,7 +1109,11 @@ let (value_f:constr list -> global_reference -> constr) =
 	  al
       )
     in
-    let fun_body =
+    let context = List.map
+      (fun (x, c) -> Name x, None, c) (List.combine rev_x_id_l (List.rev al))
+    in
+    let env = Environ.push_rel_context context (Global.env ()) in
+    let glob_body =
       GCases
 	(d0,RegularStyle,None,
 	 [GApp(d0, GRef(d0,fterm), List.rev_map (fun x_id -> GVar(d0, x_id)) rev_x_id_l),
@@ -1121,19 +1125,8 @@ let (value_f:constr list -> global_reference -> constr) =
 			       Anonymous)],
 	  GVar(d0,v_id)])
     in
-    let value =
-      List.fold_left2
-	(fun acc x_id a ->
-	   GLambda
-      	     (d0, Name x_id, Explicit, GDynamic(d0, constr_in a),
-	      acc
-	     )
-	)
-	fun_body
-	rev_x_id_l
-	(List.rev al)
-    in
-    understand Evd.empty (Global.env()) value;;
+    let body = understand Evd.empty env glob_body in
+    it_mkLambda_or_LetIn body context
 
 let (declare_fun : identifier -> logical_kind -> constr -> global_reference) =
   fun f_id kind value ->
