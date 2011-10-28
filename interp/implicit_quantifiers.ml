@@ -182,7 +182,7 @@ let generalizable_vars_of_glob_constr ?(bound=Idset.empty) ?(allowed=Idset.empty
 	array_fold_left_i vars_fix vs idl
     | GCast (loc,c,k) -> let v = vars bound vs c in
 	(match k with CastConv (_,t) -> vars bound v t | _ -> v)
-    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GDynamic _) -> vs
+    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> vs
 
   and vars_pattern bound vs (loc,idl,p,c) =
     let bound' = List.fold_right Idset.add idl bound  in

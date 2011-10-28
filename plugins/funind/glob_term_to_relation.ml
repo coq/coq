@@ -585,7 +585,6 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		*)
 		let f_res = build_entry_lc env funnames args_res.to_avoid f in
 		combine_results combine_app f_res  args_res
-	    | GDynamic _ ->error "Not handled GDynamic"
 	    | GCast(_,b,_) ->
 		(* for an applied cast we just trash the cast part
 		   and restart the work.
@@ -698,7 +697,6 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
     | GRec _ -> error "Not handled GRec"
     | GCast(_,b,_) ->
 	build_entry_lc env funnames  avoid b
-    | GDynamic _ -> error "Not handled GDynamic"
 and build_entry_lc_from_case env funname make_discr
     (el:tomatch_tuples)
     (brl:Glob_term.cases_clauses) avoid :
@@ -1213,7 +1211,7 @@ let rec compute_cst_params relnames params = function
 		 discriminitation ones *)
   | GSort _ -> params
   | GHole _ -> params
-  | GIf _ | GRec _ | GCast _ | GDynamic _  ->
+  | GIf _ | GRec _ | GCast _ ->
       raise (UserError("compute_cst_params", str "Not handled case"))
 and compute_cst_params_from_app acc (params,rtl) =
   match params,rtl with

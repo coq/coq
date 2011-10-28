@@ -189,7 +189,7 @@ let rec is_rec names =
   let check_id id names =  Idset.mem id names in
   let rec lookup names = function
     | GVar(_,id) -> check_id id names
-    | GRef _ | GEvar _ | GPatVar _ | GSort _ |  GHole _ | GDynamic _ -> false
+    | GRef _ | GEvar _ | GPatVar _ | GSort _ |  GHole _ -> false
     | GCast(_,b,_) -> lookup names b
     | GRec _ -> error "GRec not handled"
     | GIf(_,b,_,lhs,rhs) ->
@@ -764,7 +764,6 @@ let rec add_args id new_args b =
   | CGeneralization _ -> anomaly "add_args : CGeneralization"
   | CPrim _ -> b
   | CDelimiters _ -> anomaly "add_args : CDelimiters"
-  | CDynamic _ -> anomaly "add_args : CDynamic"
 exception Stop of  Topconstr.constr_expr
 
 

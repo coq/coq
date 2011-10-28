@@ -200,9 +200,9 @@ let compare_glob_constr f add t1 t2 = match t1,t2 with
   | GSort (_,s1), GSort (_,s2) -> s1 = s2
   | GLetIn (_,na1,b1,c1), GLetIn (_,na2,b2,c2) when na1 = na2 ->
       on_true_do (f b1 b2 & f c1 c2) add na1
-  | (GCases _ | GRec _ | GDynamic _
+  | (GCases _ | GRec _
     | GPatVar _ | GEvar _ | GLetTuple _ | GIf _ | GCast _),_
-  | _,(GCases _ | GRec _ | GDynamic _
+  | _,(GCases _ | GRec _
       | GPatVar _ | GEvar _ | GLetTuple _ | GIf _ | GCast _)
       -> error "Unsupported construction in recursive notations."
   | (GRef _ | GVar _ | GApp _ | GLambda _ | GProd _
@@ -321,7 +321,7 @@ let aconstr_and_vars_of_glob_constr a =
   | GHole (_,w) -> AHole w
   | GRef (_,r) -> ARef r
   | GPatVar (_,(_,n)) -> APatVar n
-  | GDynamic _ | GEvar _ ->
+  | GEvar _ ->
       error "Existential variables not allowed in notations."
 
   in
@@ -728,7 +728,7 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
        [(Name id',Explicit,None,GHole(dummy_loc,Evd.BinderType (Name id')))])
        (mkGApp dummy_loc b1 (GVar (dummy_loc,id'))) b2
 
-  | (GDynamic _ | GRec _ | GEvar _), _
+  | (GRec _ | GEvar _), _
   | _,_ -> raise No_match
 
 and match_in u = match_ true u
@@ -870,7 +870,6 @@ type constr_expr =
   | CGeneralization of loc * binding_kind * abstraction_kind option * constr_expr
   | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
-  | CDynamic of loc * Dyn.t
 
 and fix_expr =
     identifier located * (identifier located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr
@@ -936,7 +935,6 @@ let constr_loc = function
   | CGeneralization (loc,_,_,_) -> loc
   | CPrim (loc,_) -> loc
   | CDelimiters (loc,_,_) -> loc
-  | CDynamic _ -> dummy_loc
 
 let cases_pattern_expr_loc = function
   | CPatAlias (loc,_,_) -> loc
@@ -1032,7 +1030,7 @@ let fold_constr_expr_with_binders g f n acc = function
       List.fold_left (fun acc bl -> fold_local_binders g f n acc (CHole (dummy_loc,None)) bl) acc bll
   | CGeneralization (_,_,_,c) -> f n acc c
   | CDelimiters (loc,_,a) -> f n acc a
-  | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CDynamic _  | CRef _ ->
+  | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CRef _ ->
       acc
   | CRecord (loc,_,l) -> List.fold_left (fun acc (id, c) -> f n acc c) acc l
   | CCases (loc,sty,rtnpo,al,bl) ->
@@ -1190,7 +1188,7 @@ let map_constr_expr_with_binders g f e = function
   | CGeneralization (loc,b,a,c) -> CGeneralization (loc,b,a,f e c)
   | CDelimiters (loc,s,a) -> CDelimiters (loc,s,f e a)
   | CHole _ | CEvar _ | CPatVar _ | CSort _
-  | CPrim _ | CDynamic _ | CRef _ as x -> x
+  | CPrim _ | CRef _ as x -> x
   | CRecord (loc,p,l) -> CRecord (loc,p,List.map (fun (id, c) -> (id, f e c)) l)
   | CCases (loc,sty,rtnpo,a,bl) ->
       (* TODO: apply g on the binding variables in pat... *)

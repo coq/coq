@@ -71,7 +71,6 @@ type glob_constr =
   | GSort of loc * glob_sort
   | GHole of (loc * Evd.hole_kind)
   | GCast of loc * glob_constr * glob_constr cast_type
-  | GDynamic of loc * Dyn.t
 
 and glob_decl = name * binding_kind * glob_constr option * glob_constr
 

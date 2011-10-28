@@ -741,8 +741,6 @@ let rec extern inctx scopes vars r =
   | GCast (loc,c, CastCoerce) ->
       CCast (loc,sub_extern true scopes vars c, CastCoerce)
 
-  | GDynamic (loc,d) -> CDynamic (loc,d)
-
 and extern_typ (_,scopes) =
   extern true (Some Notation.type_scope,scopes)
 

@@ -1351,8 +1351,6 @@ let internalize sigma globalenv env allow_patvar lvar c =
     | CCast (loc, c1, CastCoerce) ->
 	GCast (loc,intern env c1, CastCoerce)
 
-    | CDynamic (loc,d) -> GDynamic (loc,d)
-
   and intern_type env = intern (set_type_scope env)
 
   and intern_local_binder env bind =

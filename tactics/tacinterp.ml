@@ -154,9 +154,6 @@ let valueOut = function
   | ast ->
     anomalylabstrm "valueOut" (str "Not a Dynamic ast: ")
 
-(* To embed constr *)
-let constrIn t = CDynamic (dummy_loc,constr_in t)
-
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 let atomic_mactab = ref Idmap.empty
 let add_primitive_tactic s tac =

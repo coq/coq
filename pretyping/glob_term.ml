@@ -67,7 +67,6 @@ type glob_constr =
   | GSort of loc * glob_sort
   | GHole of (loc * hole_kind)
   | GCast of loc * glob_constr * glob_constr cast_type
-  | GDynamic of loc * Dyn.t
 
 and glob_decl = name * binding_kind * glob_constr option * glob_constr
 
@@ -144,7 +143,7 @@ let map_glob_constr_left_to_right f = function
       let comp1 = f c in
       let comp2 = match k with CastConv (k,t) -> CastConv (k, f t) | x -> x in
       GCast (loc,comp1,comp2)
-  | (GVar _ | GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GDynamic _) as x -> x
+  | (GVar _ | GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) as x -> x
 
 let map_glob_constr = map_glob_constr_left_to_right
 
@@ -183,7 +182,6 @@ let map_glob_constr_with_binders_loc loc g f e = function
   | GRef (_,x) -> GRef (loc,x)
   | GEvar (_,x,l) -> GEvar (loc,x,l)
   | GPatVar (_,x) -> GPatVar (loc,x)
-  | GDynamic (_,x) -> GDynamic (loc,x)
 *)
 
 let fold_glob_constr f acc =
@@ -206,7 +204,7 @@ let fold_glob_constr f acc =
 	    fold (Option.fold_left fold acc bbd) bty)) acc bl in
 	Array.fold_left fold (Array.fold_left fold acc tyl) bv
     | GCast (_,c,k) -> fold (match k with CastConv (_, t) -> fold acc t | CastCoerce -> acc) c
-    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GDynamic _) -> acc
+    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> acc
 
   and fold_pattern acc (_,idl,p,c) = fold acc c
 
@@ -245,7 +243,7 @@ let occur_glob_constr id =
           occur_fix bl)
           idl bl tyl bv)
     | GCast (loc,c,k) -> (occur c) or (match k with CastConv (_, t) -> occur t | CastCoerce -> false)
-    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GDynamic _) -> false
+    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> false
 
   and occur_pattern (loc,idl,p,c) = not (List.mem id idl) & (occur c)
 
@@ -303,7 +301,7 @@ let free_glob_vars  =
 	array_fold_left_i vars_fix vs idl
     | GCast (loc,c,k) -> let v = vars bounded vs c in
 	(match k with CastConv (_,t) -> vars bounded v t | _ -> v)
-    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _ | GDynamic _) -> vs
+    | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> vs
 
   and vars_pattern bounded vs (loc,idl,p,c) =
     let bounded' = List.fold_right Idset.add idl bounded  in
@@ -336,7 +334,6 @@ let loc_of_glob_constr = function
   | GSort (loc,_) -> loc
   | GHole (loc,_) -> loc
   | GCast (loc,_,_) -> loc
-  | GDynamic (loc,_) -> loc
 
 (**********************************************************************)
 (* Conversion from glob_constr to cases pattern, if possible            *)

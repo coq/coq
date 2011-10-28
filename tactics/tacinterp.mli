@@ -49,7 +49,6 @@ val tactic_out : Dyn.t -> (interp_sign -> glob_tactic_expr)
 val tacticIn : (interp_sign -> raw_tactic_expr) -> raw_tactic_expr
 val globTacticIn : (interp_sign -> glob_tactic_expr) -> raw_tactic_expr
 val valueIn : value -> raw_tactic_arg
-val constrIn : constr -> constr_expr
 
 (** Sets the debugger mode *)
 val set_debug : debug_info -> unit

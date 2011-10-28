@@ -165,7 +165,6 @@ type constr_expr =
   | CGeneralization of loc * binding_kind * abstraction_kind option * constr_expr
   | CPrim of loc * prim_token
   | CDelimiters of loc * string * constr_expr
-  | CDynamic of loc * Dyn.t
 
 and fix_expr =
     identifier located * (identifier located option * recursion_order_expr) * local_binder list * constr_expr * constr_expr
