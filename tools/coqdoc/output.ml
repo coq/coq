@@ -45,6 +45,7 @@ let is_keyword =
       "Implicit Arguments"; "Add"; "Strict";
       "Typeclasses"; "Instance"; "Global Instance"; "Class"; "Instantiation";
       "subgoal";
+      "Opaque"; "Transparent";
       (* Program *)
       "Program Definition"; "Program Example"; "Program Fixpoint"; "Program Lemma";
       "Obligation"; "Obligations"; "Solve"; "using"; "Next Obligation"; "Next";
