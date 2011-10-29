@@ -1395,7 +1395,10 @@ let build_tycon loc env tycon_env subst tycon extenv evdref t =
 	  e_new_evar evdref env ~src:(loc,ImpossibleCase) (new_Type ()) in
 	lift (n'-n) impossible_case_type
     | Some t -> abstract_tycon loc tycon_env evdref subst tycon extenv t in
-  get_judgment_of extenv !evdref t
+  try get_judgment_of extenv !evdref t
+  with Not_found | Anomaly _ ->
+    (* Quick workaround to acknowledge failure to build a well-typed pred *)
+    error "Unable to infer a well-typed return clause."
 
 (* For a multiple pattern-matching problem Xi on t1..tn with return
  * type T, [build_inversion_problem Gamma Sigma (t1..tn) T] builds a return
