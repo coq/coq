@@ -31,8 +31,6 @@ let noglob () = glob_output := NoGlob
 
 let dump_to_stdout () = glob_output := StdOut; glob_file := Pervasives.stdout
 
-let multi_dump () = !glob_output = MultFiles
-
 let dump_to_dotglob f = glob_output := MultFiles
 
 let dump_into_file f = glob_output := File f; open_glob_file f
@@ -40,6 +38,23 @@ let dump_into_file f = glob_output := File f; open_glob_file f
 let dump_string s =
   if dump () then Pervasives.output_string !glob_file s
 
+let start_dump_glob vfile =
+  match !glob_output with
+  | MultFiles ->
+      open_glob_file (Filename.chop_extension vfile ^ ".glob");
+      output_string !glob_file "DIGEST ";
+      output_string !glob_file (Digest.to_hex (Digest.file vfile));
+      output_char !glob_file '\n'
+  | File f ->
+      open_glob_file f;
+      output_string !glob_file "DIGEST NO\n"
+  | NoGlob | StdOut ->
+      ()
+
+let end_dump_glob () =
+  match !glob_output with
+  | MultFiles | File _ -> close_glob_file ()
+  | NoGlob | StdOut -> ()
 
 let previous_state = ref MultFiles
 let pause () = previous_state := !glob_output; glob_output := NoGlob

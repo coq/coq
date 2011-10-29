@@ -52,7 +52,7 @@ val add_external_library : string -> coq_module -> unit
 
 (*s Read globalizations from a file (produced by coqc -dump-glob) *)
 
-val read_glob : string -> unit
+val read_glob : Digest.t option -> string -> unit
 
 (*s Indexes *)
 

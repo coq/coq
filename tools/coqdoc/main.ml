@@ -447,13 +447,13 @@ let gen_mult_files l =
     end
       (* Rq: pour latex et texmacs, une toc ou un index séparé n'a pas de sens... *)
 
-let read_glob_file x =
-  try Index.read_glob x
-  with Sys_error s ->
-    eprintf "Warning: %s (links will not be available)\n" s
+let read_glob_file vfile f =
+  try Index.read_glob vfile f
+  with Sys_error s -> eprintf "Warning: %s (links will not be available)\n" s
 
 let read_glob_file_of = function
-  | Vernac_file (f,_) -> read_glob_file (Filename.chop_extension f ^ ".glob")
+  | Vernac_file (f,_) ->
+      read_glob_file (Some f) (Filename.chop_extension f ^ ".glob")
   | Latex_file _ -> ()
 
 let index_module = function
@@ -475,7 +475,7 @@ let produce_document l =
   (match !Cdglobals.glob_source with
     | NoGlob -> ()
     | DotGlob -> List.iter read_glob_file_of l
-    | GlobFile f -> read_glob_file f);
+    | GlobFile f -> read_glob_file None f);
   List.iter index_module l;
   match !out_to with
     | StdOut ->

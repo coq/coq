@@ -321,8 +321,27 @@ let type_of_string = function
   | "sec" -> Section
   | s -> raise (Invalid_argument ("type_of_string:" ^ s))
 
-let read_glob f =
+let ill_formed_glob_file f =
+  eprintf "Warning: ill-formed file %s (links will not be available)\n" f
+let outdated_glob_file f =
+  eprintf "Warning: %s not consistent with corresponding .v file (links will not be available)\n" f
+
+let correct_file vfile f c =
+  let s = input_line c in
+  if String.length s < 7 || String.sub s 0 7 <> "DIGEST " then
+    (ill_formed_glob_file f; false)
+  else
+    let s = String.sub s 7 (String.length s - 7) in
+    match vfile, s with
+    | None, "NO" -> true
+    | Some _, "NO" -> ill_formed_glob_file f; false
+    | None, _ -> ill_formed_glob_file f; false
+    | Some vfile, s ->
+        s = Digest.to_hex (Digest.file vfile) || (outdated_glob_file f; false)
+
+let read_glob vfile f =
   let c = open_in f in
+  if correct_file vfile f c then
   let cur_mod = ref "" in
   try
     while true do

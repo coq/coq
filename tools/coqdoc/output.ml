@@ -177,11 +177,20 @@ module Latex = struct
 
   let push_in_preamble s = Queue.add s preamble
 
+  let utf8x_extra_support () =
+    printf "\n";
+    printf "%%Warning: tipa declares many non-standard macros used by utf8x to\n";
+    printf "%%interpret utf8 characters but extra packages might have to be added\n";
+    printf "%%(e.g. \"textgreek\" for Greek letters not already in tipa).\n";
+    printf "%%Use coqdoc's option -p to add new packages.\n";
+    printf "\\usepackage{tipa}\n";
+    printf "\n"
+
   let header () =
     if !header_trailer then begin
       printf "\\documentclass[12pt]{report}\n";
       if !inputenc != "" then printf "\\usepackage[%s]{inputenc}\n" !inputenc;
-      if !inputenc = "utf8x" then printf "\\usepackage{tipa}\n";
+      if !inputenc = "utf8x" then utf8x_extra_support ();
       printf "\\usepackage[T1]{fontenc}\n";
       printf "\\usepackage{fullpage}\n";
       printf "\\usepackage{coqdoc}\n";

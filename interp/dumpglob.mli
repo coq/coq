@@ -9,8 +9,10 @@
 val open_glob_file : string -> unit
 val close_glob_file : unit -> unit
 
+val start_dump_glob : string -> unit
+val end_dump_glob : unit -> unit
+
 val dump : unit -> bool
-val multi_dump : unit -> bool
 
 val noglob : unit -> unit
 val dump_to_stdout : unit -> unit
