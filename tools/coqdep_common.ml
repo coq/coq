@@ -115,6 +115,10 @@ let coqlibKnown = (Hashtbl.create 19 : (string list, unit) Hashtbl.t)
 
 let clash_v = ref ([]: (string list * string list) list)
 
+let error_cannot_parse s (i,j) =
+  Printf.eprintf "File \"%s\", characters %i-%i: Syntax error\n" s i j;
+  exit 1
+
 let warning_module_notfound f s =
   eprintf "*** Warning: in file %s, library " f;
   eprintf "%s.v is required and has not been found in loadpath!\n"
@@ -123,12 +127,12 @@ let warning_module_notfound f s =
 
 let warning_notfound f s =
   eprintf "*** Warning: in file %s, the file " f;
-  eprintf "%s.v is required and has not been found !\n" s;
+  eprintf "%s.v is required and has not been found!\n" s;
   flush stderr
 
 let warning_declare f s =
   eprintf "*** Warning: in file %s, declared ML module " f;
-  eprintf "%s has not been found !\n" s;
+  eprintf "%s has not been found!\n" s;
   flush stderr
 
 let warning_clash file dir =
@@ -245,11 +249,7 @@ let traite_fichier_modules md ext =
 	    | None -> a_faire) "" list
   with
     | Sys_error _ -> ""
-    | Syntax_error (i,j) ->
-      Printf.eprintf "File \"%s%s\", characters %i-%i:\nError: Syntax error\n"
-	md ext i j;
-      exit 1
-
+    | Syntax_error (i,j) -> error_cannot_parse (md^ext) (i,j)
 
 (* Makefile's escaping rules are awful: $ is escaped by doubling and
    other special characters are escaped by backslash prefixing while
@@ -350,9 +350,10 @@ let traite_fichier_Coq verbose f =
                   printf " %s.v" (canonize file_str)
                 with Not_found -> ()
        	      end
+          | AddLoadPath _ | AddRecLoadPath _ -> (* TODO *) ()
       done
-    with Fin_fichier -> ();
-      close_in chan
+    with Fin_fichier -> close_in chan
+       | Syntax_error (i,j) -> close_in chan; error_cannot_parse f (i,j)
   with Sys_error _ -> ()
 
 

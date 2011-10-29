@@ -13,11 +13,15 @@
 
   type mL_token = Use_module of string
 
+  type qualid = string list
+
   type coq_token =
-    | Require of string list list
+    | Require of qualid list
     | RequireString of string
-    | Declare of string list
+    | Declare of string list (* Names are assumed to be uncapitalized *)
     | Load of string
+    | AddLoadPath of string
+    | AddRecLoadPath of string * qualid
 
   let comment_depth = ref 0
 
@@ -27,11 +31,24 @@
   let module_current_name = ref []
   let module_names = ref []
   let ml_module_name = ref ""
+  let loadpath = ref ""
 
   let mllist = ref ([] : string list)
 
   let field_name s = String.sub s 1 (String.length s - 1)
 
+  let unquote_string s =
+    String.sub s 1 (String.length s - 2)
+
+  let unquote_vfile_string s =
+    let f = unquote_string s in
+    if check_suffix f ".v" then chop_suffix f ".v" else f
+
+  let backtrack lexbuf = lexbuf.lex_curr_pos <- lexbuf.lex_start_pos;
+    lexbuf.lex_curr_p <- lexbuf.lex_start_p
+
+  let syntax_error lexbuf =
+    raise (Syntax_error (Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf))
 }
 
 let space = [' ' '\t' '\n' '\r']
@@ -39,31 +56,71 @@ let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255']
 let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
 let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
-let coq_ident = ['a'-'z' '_' '0'-'9' 'A'-'Z']+
-let coq_field = '.'['a'-'z' '_' '0'-'9' 'A'-'Z']+
 let caml_up_ident = uppercase identchar*
 let caml_low_ident = lowercase identchar*
+
+let coq_firstchar =
+  (* This is only an approximation, refer to lib/util.ml for correct def *)
+  ['A'-'Z' 'a'-'z' '_'] |
+  (* superscript 1 *)
+  '\194' '\185' |
+  (* utf-8 latin 1 supplement *)
+  '\195' ['\128'-'\150'] | '\195' ['\152'-'\182'] | '\195' ['\184'-'\191'] |
+  (* utf-8 letters *)
+  '\206' (['\145'-'\161'] | ['\163'-'\187'])
+  '\226' ('\130' [ '\128'-'\137' ] (* subscripts *)
+    | '\129' [ '\176'-'\187' ] (* superscripts *)
+    | '\132' ['\128'-'\191'] | '\133' ['\128'-'\143'])
+let coq_identchar = coq_firstchar | ['\'' '0'-'9']
+let coq_ident = coq_firstchar coq_identchar*
+let coq_field = '.' coq_ident
+
 let dot = '.' ( space+ | eof)
 
 rule coq_action = parse
   | "Require" space+
-      { module_names := []; opened_file lexbuf }
+      { require_file lexbuf }
   | "Require" space+ "Export" space+
-      { module_names := []; opened_file lexbuf}
+      { require_file lexbuf}
   | "Require" space+ "Import" space+
-      { module_names := []; opened_file lexbuf}
+      { require_file lexbuf}
   | "Local"? "Declare" space+ "ML" space+ "Module" space+
       { mllist := []; modules lexbuf}
   | "Load" space+
       { load_file lexbuf }
-  | "\""
-      { string lexbuf; coq_action lexbuf}
-  | "(*" (* "*)" *)
+  | "Add" space+ "LoadPath" space+
+      { add_loadpath lexbuf }
+  | space+
+      { coq_action lexbuf }
+  | "(*"
       { comment_depth := 1; comment lexbuf; coq_action lexbuf }
   | eof
       { raise Fin_fichier}
   | _
-      { coq_action lexbuf }
+      { skip_to_dot lexbuf; coq_action lexbuf }
+
+and add_loadpath = parse
+  | "(*"
+      { comment_depth := 1; comment lexbuf; add_loadpath lexbuf }
+  | space+
+      { add_loadpath lexbuf }
+  | eof
+      { syntax_error lexbuf }
+  | '"' [^ '"']* '"' (*'"'*)
+      { loadpath := unquote_string (lexeme lexbuf);
+        add_loadpath_as lexbuf }
+
+and add_loadpath_as = parse
+  | "(*"
+      { comment_depth := 1; comment lexbuf; add_loadpath_as lexbuf }
+  | space+
+      { add_loadpath_as lexbuf }
+  | "as"
+      { let qid = coq_qual_id lexbuf in
+        skip_to_dot lexbuf;
+        AddRecLoadPath (!loadpath,qid) }
+  | dot
+      { AddLoadPath !loadpath }
 
 and caml_action = parse
   | space +
@@ -130,7 +187,8 @@ and comment = parse
       { comment lexbuf }
   | eof
       { raise Fin_fichier }
-  | _ { comment lexbuf }
+  | _
+      { comment lexbuf }
 
 and string = parse
   | '"' (* '"' *)
@@ -149,69 +207,108 @@ and string = parse
 and load_file = parse
   | '"' [^ '"']* '"' (*'"'*)
       { let s = lexeme lexbuf in
-	let f = String.sub s 1 (String.length s - 2) in
-	skip_to_dot lexbuf;
-	Load (if check_suffix f ".v" then chop_suffix f ".v" else f) }
+	parse_dot lexbuf;
+	Load (unquote_vfile_string s) }
   | coq_ident
       { let s = lexeme lexbuf in skip_to_dot lexbuf; Load s }
   | eof
-      { raise Fin_fichier }
+      { syntax_error lexbuf }
   | _
-      { load_file lexbuf }
+      { syntax_error lexbuf }
+
+and require_file = parse
+  | "(*"
+      { comment_depth := 1; comment lexbuf; require_file lexbuf }
+  | space+
+      { require_file lexbuf }
+  | coq_ident
+      { module_current_name := [Lexing.lexeme lexbuf];
+        module_names := [coq_qual_id_tail lexbuf];
+        let qid = coq_qual_id_list lexbuf in
+        parse_dot lexbuf;
+        Require qid }
+  | '"' [^'"']* '"' (*'"'*)
+      { let s = Lexing.lexeme lexbuf in
+        parse_dot lexbuf;
+        RequireString (unquote_vfile_string s) }
+  | eof
+      { syntax_error lexbuf }
+  | _
+      { syntax_error lexbuf }
 
 and skip_to_dot = parse
   | dot { () }
-  | eof { () }
+  | eof { syntax_error lexbuf }
   | _   { skip_to_dot lexbuf }
 
-and opened_file = parse
-  | "(*" (* "*)" *) { comment_depth := 1; comment lexbuf; opened_file lexbuf }
+and parse_dot = parse
+  | dot { () }
+  | eof { syntax_error lexbuf }
+  | _ { syntax_error lexbuf }
+
+and coq_qual_id = parse
+  | "(*"
+      { comment_depth := 1; comment lexbuf; coq_qual_id lexbuf }
   | space+
-      	       	{ opened_file lexbuf }
+      { coq_qual_id lexbuf }
   | coq_ident
-       	       	{ module_current_name := [Lexing.lexeme lexbuf];
-                  opened_file_fields lexbuf }
+      { module_current_name := [Lexing.lexeme lexbuf];
+        coq_qual_id_tail lexbuf }
+  | eof
+      { syntax_error lexbuf }
+  | _
+      { backtrack lexbuf;
+        let qid = List.rev !module_current_name in
+        module_current_name := [];
+        qid }
 
-  | '"' [^'"']* '"'   { (*'"'*)
-                        let lex = Lexing.lexeme lexbuf in
-      	       	       	let str = String.sub lex 1 (String.length lex - 2) in
-                        let str =
-                          if Filename.check_suffix str ".v" then
-                            Filename.chop_suffix str ".v"
-                          else str in
-			RequireString str }
-  | eof         { raise Fin_fichier }
-  | _           { opened_file lexbuf }
-
-and opened_file_fields = parse
-  | "(*" (* "*)" *)
-                { comment_depth := 1; comment lexbuf;
-                  opened_file_fields lexbuf }
+and coq_qual_id_tail = parse
+  | "(*"
+      { comment_depth := 1; comment lexbuf; coq_qual_id_tail lexbuf }
   | space+
-                { opened_file_fields lexbuf }
+      { coq_qual_id_tail lexbuf }
   | coq_field
-                { module_current_name :=
-                    field_name (Lexing.lexeme lexbuf) :: !module_current_name;
-                  opened_file_fields lexbuf }
-  | coq_ident   { module_names :=
-                    List.rev !module_current_name :: !module_names;
-                  module_current_name := [Lexing.lexeme lexbuf];
-                  opened_file_fields lexbuf }
-  | dot         { module_names :=
-                    List.rev !module_current_name :: !module_names;
-                  Require (List.rev !module_names) }
-  | eof         { raise Fin_fichier }
-  | _           { opened_file_fields lexbuf }
+      { module_current_name :=
+          field_name (Lexing.lexeme lexbuf) :: !module_current_name;
+        coq_qual_id_tail lexbuf }
+  | eof
+      { syntax_error lexbuf }
+  | _
+      { backtrack lexbuf;
+        let qid = List.rev !module_current_name in
+        module_current_name := [];
+        qid }
+
+and coq_qual_id_list = parse
+  | "(*"
+      { comment_depth := 1; comment lexbuf; coq_qual_id_list lexbuf }
+  | space+
+      { coq_qual_id_list lexbuf }
+  | coq_ident
+      { module_current_name := [Lexing.lexeme lexbuf];
+        module_names := coq_qual_id_tail lexbuf :: !module_names;
+        coq_qual_id_list lexbuf
+      }
+  | eof
+      { syntax_error lexbuf }
+  | _
+      { backtrack lexbuf;
+        List.rev !module_names }
 
 and modules = parse
-  | space+              { modules lexbuf }
-  | "(*" (* "*)" *)	{ comment_depth := 1; comment lexbuf;
-      	       	       	  modules lexbuf }
+  | space+
+      { modules lexbuf }
+  | "(*"
+      { comment_depth := 1; comment lexbuf;
+        modules lexbuf }
   | '"' [^'"']* '"'
-        { let lex = (Lexing.lexeme lexbuf) in
-	  let str = String.sub lex 1 (String.length lex - 2) in
-	    mllist := str :: !mllist; modules lexbuf}
-  | _   { (Declare (List.rev !mllist)) }
+      { let lex = (Lexing.lexeme lexbuf) in
+	let str = String.sub lex 1 (String.length lex - 2) in
+	mllist := str :: !mllist; modules lexbuf}
+  | eof
+      { syntax_error lexbuf }
+  | _
+      { (Declare (List.rev !mllist)) }
 
 and qual_id = parse
   | '.' [^ '.' '(' '['] {
@@ -225,8 +322,7 @@ and mllib_list = parse
   | "*predef*" { mllib_list lexbuf }
   | space+ { mllib_list lexbuf }
   | eof { [] }
-  | _ { raise (Syntax_error (Lexing.lexeme_start lexbuf,
-			     Lexing.lexeme_end lexbuf)) }
+  | _ { syntax_error lexbuf }
 
 and ocamldep_parse = parse
   | [^ ':' ]* ':' { mllib_list lexbuf }

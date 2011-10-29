@@ -8,11 +8,15 @@
 
 type mL_token = Use_module of string
 
+type qualid = string list
+
 type coq_token =
-    Require of string list list
+    Require of qualid list
   | RequireString of string
   | Declare of string list
   | Load of string
+  | AddLoadPath of string
+  | AddRecLoadPath of string * qualid
 
 exception Fin_fichier
 exception Syntax_error of int * int
