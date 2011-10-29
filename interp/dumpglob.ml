@@ -110,9 +110,14 @@ let remove_sections dir =
     (* Theorem/Lemma outside its outer section of definition *)
     dir
 
+let interval loc =
+  let loc1,loc2 = Util.unloc loc in
+  loc1, loc2-1
+
 let dump_ref loc filepath modpath ident ty =
-  dump_string (Printf.sprintf "R%d %s %s %s %s\n"
-		  (fst (Util.unloc loc)) filepath modpath ident ty)
+  let bl,el = interval loc in
+  dump_string (Printf.sprintf "R%d:%d %s %s %s %s\n"
+		  bl el filepath modpath ident ty)
 
 let add_glob_gen loc sp lib_dp ty =
   if dump () then
@@ -144,12 +149,14 @@ let add_glob_kn loc kn =
 let dump_binding loc id = ()
 
 let dump_definition (loc, id) sec s =
-  dump_string (Printf.sprintf "%s %d %s %s\n" s (fst (Util.unloc loc))
+  let bl,el = interval loc in
+  dump_string (Printf.sprintf "%s %d:%d %s %s\n" s bl el
 			(Names.string_of_dirpath (Lib.current_dirpath sec)) (Names.string_of_id id))
 
 let dump_reference loc modpath ident ty =
-  dump_string (Printf.sprintf "R%d %s %s %s %s\n"
-		  (fst (Util.unloc loc)) (Names.string_of_dirpath (Lib.library_dp ())) modpath ident ty)
+  let bl,el = interval loc in
+  dump_string (Printf.sprintf "R%d:%d %s %s %s %s\n"
+		  bl el (Names.string_of_dirpath (Lib.library_dp ())) modpath ident ty)
 
 let dump_constraint ((loc, n), _, _) sec ty =
   match n with
@@ -167,18 +174,21 @@ let dump_modref loc mp ty =
     let l = if l = [] then l else Util.list_drop_last l in
     let fp = Names.string_of_dirpath dp in
     let mp = Names.string_of_dirpath (Names.make_dirpath l) in
-      dump_string (Printf.sprintf "R%d %s %s %s %s\n"
-		      (fst (Util.unloc loc)) fp mp "<>" ty)
+    let bl,el = interval loc in
+      dump_string (Printf.sprintf "R%d:%d %s %s %s %s\n"
+		      bl el fp mp "<>" ty)
 
 let dump_moddef loc mp ty =
   if dump () then
+    let bl,el = interval loc in
     let (dp, l) = Lib.split_modpath mp in
     let mp = Names.string_of_dirpath (Names.make_dirpath l) in
-      dump_string (Printf.sprintf "%s %d %s %s\n" ty (fst (Util.unloc loc)) "<>" mp)
+      dump_string (Printf.sprintf "%s %d:%d %s %s\n" ty bl el "<>" mp)
 
 let dump_libref loc dp ty =
-  dump_string (Printf.sprintf "R%d %s <> <> %s\n"
-		  (fst (Util.unloc loc)) (Names.string_of_dirpath dp) ty)
+  let bl,el = interval loc in
+  dump_string (Printf.sprintf "R%d:%d %s <> <> %s\n"
+		  bl el (Names.string_of_dirpath dp) ty)
 
 let cook_notation df sc =
   (* We encode notations so that they are space-free and still human-readable *)

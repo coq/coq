@@ -61,8 +61,10 @@ let full_ident sp id =
   then id
   else ""
 
-let add_def loc ty sp id =
-  Hashtbl.add reftable (!current_library, loc) (Def (full_ident sp id, ty));
+let add_def loc1 loc2 ty sp id =
+  for loc = loc1 to loc2 do
+    Hashtbl.add reftable (!current_library, loc) (Def (full_ident sp id, ty))
+  done;
   Hashtbl.add deftable id (Ref (!current_library, full_ident sp id, ty))
 
 let add_ref m loc m' sp id ty =
@@ -341,16 +343,16 @@ let read_glob f =
 		    for loc=loc1 to loc2 do
 		      add_ref !cur_mod loc lib_dp sp id (type_of_string ty)
 		    done)
-	       with _ ->
-	       try
-		Scanf.sscanf s "R%d %s %s %s %s"
-		  (fun loc lib_dp sp id ty ->
-		    add_ref !cur_mod loc lib_dp sp id (type_of_string ty))
 	       with _ -> ())
 	  | _ ->
-	      try Scanf.sscanf s "%s %d %s %s"
-		(fun ty loc sp id -> add_def loc (type_of_string ty) sp id)
+	      try Scanf.sscanf s "not %d %s %s"
+		(fun loc sp id -> add_def loc loc (type_of_string "not") sp id)
+	      with Scanf.Scan_failure _ ->
+	      try Scanf.sscanf s "%s %d:%d %s %s"
+		(fun ty loc1 loc2 sp id ->
+                  add_def loc1 loc2 (type_of_string ty) sp id)
 	      with Scanf.Scan_failure _ -> ()
+
       end
     done; assert false
   with End_of_file ->
