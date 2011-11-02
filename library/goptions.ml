@@ -94,7 +94,7 @@ module MakeTable =
 	    if p' == p then obj else
 	      (f,p')
 	in
-        let inGo =
+        let inGo : option_mark * A.t -> obj =
           Libobject.declare_object {(Libobject.default_object nick) with
                 Libobject.load_function = load_options;
 		Libobject.open_function = load_options;

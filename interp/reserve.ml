@@ -37,7 +37,7 @@ let cache_reserved_type (_,(id,t)) =
   reserve_table := Idmap.add id t !reserve_table;
   reserve_revtable := Gmapl.add key (t,id) !reserve_revtable
 
-let in_reserved =
+let in_reserved : identifier * aconstr -> obj =
   declare_object {(default_object "RESERVED-TYPE") with
     cache_function = cache_reserved_type }
 

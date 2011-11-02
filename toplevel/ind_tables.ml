@@ -51,7 +51,7 @@ let discharge_scheme (_,(kind,l)) =
   Some (kind,Array.map (fun (ind,const) ->
     (Lib.discharge_inductive ind,Lib.discharge_con const)) l)
 
-let inScheme =
+let inScheme : string * (inductive * constant) array -> obj =
   declare_object {(default_object "SCHEME") with
                     cache_function = cache_scheme;
                     load_function = (fun _ -> cache_scheme);

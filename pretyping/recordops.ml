@@ -43,6 +43,12 @@ type struc_typ = {
 let structure_table = ref (Indmap.empty : struc_typ Indmap.t)
 let projection_table = ref Cmap.empty
 
+(* TODO: could be unify struc_typ and struc_tuple ? in particular,
+   is the inductive always (fst constructor) ? It seems so... *)
+
+type struc_tuple =
+    inductive * constructor * (name * bool) list * constant option list
+
 let load_structure i (_,(ind,id,kl,projs)) =
   let n = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
   let struc =
@@ -75,7 +81,7 @@ let discharge_structure (_,(ind,id,kl,projs)) =
   Some (Lib.discharge_inductive ind, discharge_constructor id, kl,
         List.map (Option.map Lib.discharge_con) projs)
 
-let inStruc =
+let inStruc : struc_tuple -> obj =
   declare_object {(default_object "STRUCTURE") with
     cache_function = cache_structure;
     load_function = load_structure;
@@ -134,7 +140,7 @@ open Libobject
 let load_method (_,(ty,id)) =
   meth_dnet := MethodsDnet.add ty id !meth_dnet
 
-let in_method =
+let in_method : constr * MethodsDnet.ident -> obj =
   declare_object
     { (default_object "RECMETHODS") with
 	load_function = (fun _ -> load_method);
@@ -289,7 +295,7 @@ let subst_canonical_structure (subst,(cst,ind as obj)) =
 let discharge_canonical_structure (_,(cst,ind)) =
   Some (Lib.discharge_con cst,Lib.discharge_inductive ind)
 
-let inCanonStruc =
+let inCanonStruc : constant * inductive -> obj =
   declare_object {(default_object "CANONICAL-STRUCTURE") with
     open_function = open_canonical_structure;
     cache_function = cache_canonical_structure;

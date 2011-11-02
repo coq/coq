@@ -438,7 +438,7 @@ let subst_th (subst,th) =
       ring_post_tac = posttac' }
 
 
-let theory_to_obj =
+let theory_to_obj : ring_info -> obj =
   let cache_th (name,th) = add_entry name th in
   declare_object
     {(default_object "tactic-new-ring-theory") with
@@ -1014,7 +1014,7 @@ let subst_th (subst,th) =
       field_pre_tac = pretac';
       field_post_tac = posttac' }
 
-let ftheory_to_obj =
+let ftheory_to_obj : field_info -> obj =
   let cache_th (name,th) = add_field_entry name th in
   declare_object
     {(default_object "tactic-new-field-theory") with

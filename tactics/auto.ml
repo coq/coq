@@ -487,6 +487,8 @@ type hint_action =
   | AddHints of hint_entry list
   | RemoveHints of global_reference list
 
+type hint_obj = bool * string * hint_action  (* locality, name, action *)
+
 let cache_autohint (_,(local,name,hints)) =
   match hints with
   | CreateDB (b, st) -> searchtable_add (name, Hint_db.empty st b)
@@ -556,7 +558,7 @@ let subst_autohint (subst,(local,name,hintlist as obj)) =
 let classify_autohint ((local,name,hintlist) as obj) =
   if local or hintlist = (AddHints []) then Dispose else Substitute obj
 
-let inAutoHint =
+let inAutoHint : hint_obj -> obj =
   declare_object {(default_object "AUTOHINT") with
                     cache_function = cache_autohint;
 		    load_function = (fun _ -> cache_autohint);

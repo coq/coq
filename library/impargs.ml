@@ -548,7 +548,11 @@ let rebuild_implicits (req,l) =
 let classify_implicits (req,_ as obj) =
   if req = ImplLocal then Dispose else Substitute obj
 
-let inImplicits =
+type implicits_obj =
+    implicit_discharge_request *
+      (global_reference * implicits_list list) list
+
+let inImplicits : implicits_obj -> obj =
   declare_object {(default_object "IMPLICITS") with
     cache_function = cache_implicits;
     load_function = load_implicits;

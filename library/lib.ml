@@ -539,7 +539,7 @@ let close_section () =
 (*****************)
 (* Backtracking. *)
 
-let (inLabel,outLabel) =
+let (inLabel : int -> obj), (outLabel : obj -> int) =
   declare_object_full {(default_object "DOT") with
 				classify_function = (fun _ -> Dispose)}
 

@@ -210,7 +210,7 @@ let rebuild_class cl =
       set_typeclass_transparency cst false false; cl
   with _ -> cl
 
-let class_input =
+let class_input : typeclass -> obj =
   declare_object
     { (default_object "type classes state") with
       cache_function = cache_class;
@@ -282,7 +282,7 @@ let load_instance (_, (action, inst) as ai) =
   if action = AddInstance then
     add_instance_hint inst.is_impl (is_local inst) inst.is_pri
 
-let instance_input =
+let instance_input : instance_action * instance -> obj =
   declare_object
     { (default_object "type classes instances state") with
       cache_function = cache_instance;

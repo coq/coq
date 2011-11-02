@@ -117,7 +117,7 @@ let discharge_scope (_,(local,_,_ as o)) =
 let classify_scope (local,_,_ as o) =
   if local then Dispose else Substitute o
 
-let inScope =
+let inScope : bool * bool * scope_elem -> obj =
   declare_object {(default_object "SCOPE") with
       cache_function = cache_scope;
       open_function = open_scope;
@@ -520,7 +520,11 @@ let rebuild_arguments_scope (req,r,l,_) =
 	let l1,_ = list_chop (List.length l' - List.length l) l' in
 	(req,r,l1@l,cls)
 
-let inArgumentsScope =
+type arguments_scope_obj =
+    arguments_scope_discharge_request * global_reference *
+      scope_name option list * Classops.cl_typ option list
+
+let inArgumentsScope : arguments_scope_obj -> obj =
   declare_object {(default_object "ARGUMENTS-SCOPE") with
       cache_function = cache_arguments_scope;
       load_function = load_arguments_scope;

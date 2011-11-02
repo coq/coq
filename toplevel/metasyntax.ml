@@ -32,7 +32,7 @@ open Nameops
 
 let cache_token (_,s) = add_keyword s
 
-let inToken =
+let inToken : string -> obj =
   declare_object {(default_object "TOKEN") with
        open_function = (fun i o -> if i=1 then cache_token o);
        cache_function = cache_token;
@@ -70,7 +70,12 @@ let subst_tactic_parule subst (key,n,p,(d,tac)) =
 let subst_tactic_notation (subst,(pa,pp)) =
   (subst_tactic_parule subst pa,pp)
 
-let inTacticGrammar =
+type tactic_grammar_obj =
+    (string * int * grammar_prod_item list *
+       (dir_path * Tacexpr.glob_tactic_expr))
+    * (string * Genarg.argument_type list * (int * Pptactic.grammar_terminals))
+
+let inTacticGrammar : tactic_grammar_obj -> obj =
   declare_object {(default_object "TacticGrammar") with
        open_function = (fun i o -> if i=1 then cache_tactic_notation o);
        cache_function = cache_tactic_notation;
@@ -710,7 +715,13 @@ let subst_syntax_extension (subst,(local,sy)) =
 let classify_syntax_definition (local,_ as o) =
   if local then Dispose else Substitute o
 
-let inSyntaxExtension =
+type syntax_extension_obj =
+    bool *
+      (notation_var_internalization_type list * Notation.level *
+         notation * notation_grammar * unparsing list)
+      list
+
+let inSyntaxExtension : syntax_extension_obj -> obj =
   declare_object {(default_object "SYNTAX-EXTENSION") with
        open_function = (fun i o -> if i=1 then cache_syntax_extension o);
        cache_function = cache_syntax_extension;
@@ -962,7 +973,11 @@ let subst_notation (subst,(lc,scope,pat,b,ndf)) =
 let classify_notation (local,_,_,_,_ as o) =
   if local then Dispose else Substitute o
 
-let inNotation =
+type notation_obj =
+    bool * scope_name option * interpretation * bool *
+      (notation * notation_location)
+
+let inNotation : notation_obj -> obj =
   declare_object {(default_object "NOTATION") with
        open_function = open_notation;
        cache_function = cache_notation;
@@ -1138,7 +1153,7 @@ let subst_scope_command (subst,(scope,o as x)) = match o with
       scope, ScopeClasses cl'
   | _ -> x
 
-let inScopeCommand =
+let inScopeCommand : scope_name * scope_command -> obj =
   declare_object {(default_object "DELIMITERS") with
       cache_function = cache_scope_command;
       open_function = open_scope_command;

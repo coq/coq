@@ -296,7 +296,7 @@ let cache_ml_module_object (_,{mnames=mnames}) =
 let classify_ml_module_object ({mlocal=mlocal} as o) =
   if mlocal then Dispose else Substitute o
 
-let inMLModule =
+let inMLModule : ml_module_object -> obj =
   declare_object {(default_object "ML-MODULE") with
                     load_function = (fun _ -> cache_ml_module_object);
                     cache_function = cache_ml_module_object;

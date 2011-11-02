@@ -262,7 +262,7 @@ let subst_th (subst,(c,th as obj)) =
       (c',th')
 
 
-let theory_to_obj =
+let theory_to_obj : constr * theory -> obj =
   let cache_th (_,(c, th)) = theories_map_add (c,th) in
   declare_object {(default_object "tactic-ring-theory") with
 		    open_function = (fun i o -> if i=1 then cache_th o);

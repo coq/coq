@@ -2844,7 +2844,7 @@ let subst_md (subst,(local,defs)) =
 let classify_md (local,defs as o) =
   if local then Dispose else Substitute o
 
-let inMD =
+let inMD : bool * (tacdef_kind * glob_tactic_expr) list -> obj =
   declare_object {(default_object "TAC-DEFINITION") with
      cache_function  = cache_md;
      load_function   = load_md;

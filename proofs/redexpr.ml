@@ -86,7 +86,10 @@ let discharge_strategy (_,(local,obj)) =
   if local then None else
   map_strategy disch_ref obj
 
-let inStrategy =
+type strategy_obj =
+    bool * (Conv_oracle.level * evaluable_global_reference list) list
+
+let inStrategy : strategy_obj -> obj =
   declare_object {(default_object "STRATEGY") with
                     cache_function = (fun (_,obj) -> cache_strategy obj);
 		    load_function = (fun _ (_,obj) -> cache_strategy obj);
@@ -212,7 +215,7 @@ let subst_red_expr subs e =
     (Pattern.subst_pattern subs)
     e
 
-let inReduction =
+let inReduction : bool * string * red_expr -> obj =
   declare_object
     {(default_object "REDUCTION") with
        cache_function = (fun (_,(_,s,e)) -> decl_red_expr s e);

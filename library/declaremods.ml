@@ -179,14 +179,21 @@ let check_sub mtb sub_mtb_l =
    environment. *)
 
 let check_subtypes mp sub_mtb_l =
-  let mb = Global.lookup_module mp in
+  let mb =
+    try Global.lookup_module mp
+    with Not_found -> assert false
+  in
   let mtb = Modops.module_type_of_module None mb in
   check_sub mtb sub_mtb_l
 
 (* Same for module type [mp] *)
 
 let check_subtypes_mt mp sub_mtb_l =
-  check_sub (Global.lookup_modtype mp) sub_mtb_l
+  let mtb =
+    try Global.lookup_modtype mp
+    with Not_found -> assert false
+  in
+  check_sub mtb sub_mtb_l
 
 (* Create a functor type entry *)
 
@@ -274,42 +281,26 @@ let conv_names_do_module exists what iter_objects i
    functions can be called only once (and "end_mod*" set the flag to
    false then)
 *)
-let cache_module ((sp,kn),(entry,substobjs)) =
+let cache_module ((sp,kn),substobjs) =
   let dir,mp = dir_of_sp sp, mp_of_kn kn in
     do_module false "cache" load_objects 1 dir mp substobjs []
-    
-(* TODO: This check is not essential *)
-let check_empty s = function
-     | None -> ()
-     | Some _ ->
-	 anomaly ("We should never have full info in " ^ s^"!")
-
 
 (* When this function is called the module itself is already in the
    environment. This function loads its objects only *)
 
-let load_module i (oname,(entry,substobjs)) =
-  (* TODO: This check is not essential *)
-  check_empty "load_module" entry;
+let load_module i (oname,substobjs) =
   conv_names_do_module false "load" load_objects i oname substobjs
 
-
-let open_module i (oname,(entry,substobjs)) =
-  (* TODO: This check is not essential *)
-  check_empty "open_module" entry;
+let open_module i (oname,substobjs) =
   conv_names_do_module true "open" open_objects i oname substobjs
 
+let subst_module (subst,(mbids,mp,objs)) =
+  (mbids,subst_mp subst mp, subst_objects subst objs)
 
+let classify_module substobjs = Substitute substobjs
 
-let subst_module (subst,(entry,(mbids,mp,objs))) =
-  check_empty "subst_module" entry;
-    (None,(mbids,subst_mp subst mp, subst_objects subst objs))
-
-
-let classify_module (_,substobjs) =
-  Substitute (None,substobjs)
-
-let (in_module,out_module) =
+let (in_module : substitutive_objects -> obj),
+    (out_module : obj -> substitutive_objects) =
   declare_object_full {(default_object "MODULE") with
     cache_function = cache_module;
     load_function = load_module;
@@ -337,7 +328,7 @@ let open_keep i ((sp,kn),seg) =
   let dirpath,mp = dir_of_sp sp, mp_of_kn kn in
     open_objects i (dirpath,(mp,empty_dirpath)) seg
 
-let in_modkeep =
+let in_modkeep : lib_objects -> obj =
   declare_object {(default_object "MODULE KEEP OBJECTS") with
     cache_function = cache_keep;
     load_function = load_keep;
@@ -369,6 +360,7 @@ let _ = Summary.declare_summary "MODTYPE-INFO"
 let cache_modtype ((sp,kn),(entry,modtypeobjs,sub_mty_l)) =
   let mp = mp_of_kn kn in
 
+  (* We enrich the global environment *)
   let _ =
     match entry with
       | None ->
@@ -392,7 +384,7 @@ let cache_modtype ((sp,kn),(entry,modtypeobjs,sub_mty_l)) =
 
 
 let load_modtype i ((sp,kn),(entry,modtypeobjs,_)) =
-  check_empty "load_modtype" entry;
+  assert (entry = None);
 
   if Nametab.exists_modtype sp then
     errorlabstrm "cache_modtype"
@@ -404,7 +396,7 @@ let load_modtype i ((sp,kn),(entry,modtypeobjs,_)) =
 
 
 let open_modtype i ((sp,kn),(entry,_,_)) =
-  check_empty "open_modtype" entry;
+  assert (entry = None);
 
   if
     try Nametab.locate_modtype (qualid_of_path sp) <> (mp_of_kn kn)
@@ -416,15 +408,18 @@ let open_modtype i ((sp,kn),(entry,_,_)) =
   Nametab.push_modtype (Nametab.Exactly i) sp (mp_of_kn kn)
 
 let subst_modtype (subst,(entry,(mbids,mp,objs),_)) =
-  check_empty "subst_modtype" entry;
+  assert (entry = None);
   (entry,(mbids,subst_mp subst mp,subst_objects subst objs),[])
-
 
 let classify_modtype (_,substobjs,_) =
   Substitute (None,substobjs,[])
 
+type modtype_obj =
+    (module_struct_entry * Entries.inline) option (* will be None in vo *)
+    * substitutive_objects
+    * module_type_body list
 
-let in_modtype =
+let in_modtype : modtype_obj -> obj =
     declare_object {(default_object "MODULE TYPE") with
       cache_function = cache_modtype;
       open_function = open_modtype;
@@ -432,35 +427,27 @@ let in_modtype =
       subst_function = subst_modtype;
       classify_function = classify_modtype }
 
-let rec replace_module_object idl ( mbids, mp, lib_stack) (mbids2,mp2,objs) mp1=
-  if mbids<>[] then 
-    error "Unexpected functor objects"
-  else
-    let rec replace_idl = function 
-      | _,[] -> [] 
-      | id::idl,(id',obj)::tail when id = id' ->
-	  if object_tag obj = "MODULE" then
-           (match idl with
-               [] -> (id, in_module 
-			(None,(mbids,(MPdot(mp,label_of_id id)),subst_objects 
-				 (map_mp mp1 (MPdot(mp,label_of_id id)) empty_delta_resolver) objs)))::tail
-             | _ ->
-               let (_,substobjs) = out_module obj in
-                let substobjs' = replace_module_object idl substobjs 
-		  (mbids2,mp2,objs) mp in
-                  (id, in_module (None,substobjs'))::tail
-           )
-	  else error "MODULE expected!"
-      | idl,lobj::tail -> lobj::replace_idl (idl,tail)
-    in
-      (mbids, mp, replace_idl (idl,lib_stack))
+let rec replace_module_object idl (mbids,mp,lib_stack) (mbids2,mp2,objs) mp1 =
+  if mbids<>[] then anomaly "Unexpected functor objects";
+  let rec replace_idl = function
+    | _,[] -> []
+    | id::idl,(id',obj)::tail when id = id' ->
+      if object_tag obj <> "MODULE" then anomaly "MODULE expected!";
+      let substobjs =
+	if idl = [] then
+	  let mp' = MPdot(mp, label_of_id id) in
+	  mbids, mp', subst_objects (map_mp mp1 mp' empty_delta_resolver) objs
+	else
+	  replace_module_object idl (out_module obj) (mbids2,mp2,objs) mp
+      in
+      (id, in_module substobjs)::tail
+    | idl,lobj::tail -> lobj::replace_idl (idl,tail)
+  in
+  (mbids, mp, replace_idl (idl,lib_stack))
 
-let discr_resolver mb  = 
-     match mb.mod_type with
-	SEBstruct _ -> 
-	  Some mb.mod_delta
-      | _ -> (*case mp is a functor *)
-	  None
+let discr_resolver mb = match mb.mod_type with
+  | SEBstruct _ -> Some mb.mod_delta
+  | _ -> None (* when mp is a functor *)
 
 (* Small function to avoid module typing during substobjs retrivial  *)
 let rec get_objs_modtype_application env = function
@@ -622,7 +609,7 @@ let end_module () =
     | Some mp_from,(mbids,_,objs) ->
 	(mbids,mp,subst_objects (map_mp mp_from mp resolver) objs) 
   in
-  let node = in_module (None,substobjs) in
+  let node = in_module substobjs in
   let objects =
     if keep = [] || mbids <> [] then
       special@[node]   (* no keep objects or we are defining a functor *)
@@ -859,7 +846,7 @@ let declare_module_ interp_modtype interp_modexpr id args res mexpr_o fs =
   reset_scope_subst ();
   ignore (add_leaf
 	    id
-	    (in_module (Some (entry), substobjs)));
+	    (in_module substobjs));
   mmp
 
 (* Include *)
@@ -887,32 +874,33 @@ let lift_oname (sp,kn) =
   let dir,_ = Libnames.repr_path sp in
     (dir,mp)
 
-let cache_include (oname,((me,is_mod),(mbis,mp1,objs))) =
+let cache_include (oname,(me,(mbis,mp1,objs))) =
   let dir,mp1 = lift_oname oname in
   let prefix = (dir,(mp1,empty_dirpath)) in
     load_objects 1 prefix objs;
-    open_objects 1 prefix objs 
-    
-let load_include  i (oname,((me,is_mod),(mbis,mp1,objs))) =
+    open_objects 1 prefix objs
+
+let load_include  i (oname,(me,(mbis,mp1,objs))) =
   let dir,mp1 = lift_oname oname in
   let prefix = (dir,(mp1,empty_dirpath)) in
     load_objects i prefix objs
-      
-      
-let open_include i (oname,((me,is_mod),(mbis,mp1,objs))) =
+
+let open_include i (oname,(me,(mbis,mp1,objs))) =
   let dir,mp1 = lift_oname oname in
   let prefix = (dir,(mp1,empty_dirpath)) in
     open_objects i prefix objs
-          
-let subst_include (subst,((me,is_mod),substobj)) =
+
+let subst_include (subst,(me,substobj)) =
   let (mbids,mp,objs) = substobj in
   let substobjs = (mbids,subst_mp subst mp,subst_objects subst objs) in
-    ((subst_inc_expr subst me,is_mod),substobjs)
-      
-let classify_include ((me,is_mod),substobjs) =
-  Substitute ((me,is_mod),substobjs)
+    (subst_inc_expr subst me,substobjs)
 
-let (in_include,out_include) =
+let classify_include (me,substobjs) = Substitute (me,substobjs)
+
+type include_obj = module_struct_entry * substitutive_objects
+
+let (in_include : include_obj -> obj),
+    (out_include : obj -> include_obj) =
   declare_object_full {(default_object "INCLUDE") with
     cache_function = cache_include;
     load_function = load_include;
@@ -987,8 +975,7 @@ let declare_one_include_inner annot (me,is_mod) =
   let substobjs = (mbids,mp1,
 		   subst_objects (map_mp mp mp1 resolver) objs) in
   reset_scope_subst ();
-  ignore (add_leaf id
-	    (in_include ((me,is_mod), substobjs)))
+  ignore (add_leaf id (in_include (me, substobjs)))
 
 let declare_one_include interp_struct (me_ast,annot) =
   declare_one_include_inner annot

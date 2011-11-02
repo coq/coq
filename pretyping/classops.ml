@@ -405,7 +405,10 @@ let discharge_coercion (_,(coe,stre,isid,cls,clt,ps)) =
 let classify_coercion (coe,stre,isid,cls,clt,ps as obj) =
   if stre = Local then Dispose else Substitute obj
 
-let inCoercion =
+type coercion_obj =
+  coe_typ * Decl_kinds.locality * bool * cl_typ * cl_typ * int
+
+let inCoercion : coercion_obj -> obj =
   declare_object {(default_object "COERCION") with
     open_function = open_coercion;
     load_function = load_coercion;

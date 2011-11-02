@@ -300,7 +300,7 @@ let subst_import (_,o) = o
 let classify_import (_,export as obj) =
   if export then Substitute obj else Dispose
 
-let in_import =
+let in_import : dir_path * bool -> obj =
   declare_object {(default_object "IMPORT LIBRARY") with
        cache_function = cache_import;
        open_function = open_import;
@@ -498,7 +498,7 @@ let rec_intern_library_from_file idopt f =
 
 type library_reference = dir_path list * bool option
 
-let register_library (dir,m) =
+let register_library m =
   Declaremods.register_library
     m.library_name
     m.library_compiled
@@ -526,7 +526,9 @@ let discharge_require (_,o) = Some o
 
 (* open_function is never called from here because an Anticipate object *)
 
-let in_require =
+type require_obj = library_t list * dir_path list * bool option
+
+let in_require : require_obj -> obj =
   declare_object {(default_object "REQUIRE") with
        cache_function = cache_require;
        load_function = load_require;
@@ -541,7 +543,8 @@ let xml_require = ref (fun d -> ())
 let set_xml_require f = xml_require := f
 
 let require_library_from_dirpath modrefl export =
-  let needed = List.rev (List.fold_left rec_intern_library [] modrefl) in
+  let needed = List.fold_left rec_intern_library [] modrefl in
+  let needed = List.rev_map snd needed in
   let modrefl = List.map fst modrefl in
     if Lib.is_module_or_modtype () then
       begin
@@ -561,7 +564,7 @@ let require_library qidl export =
 
 let require_library_from_file idopt file export =
   let modref,needed = rec_intern_library_from_file idopt file in
-  let needed = List.rev needed in
+  let needed = List.rev_map snd needed in
   if Lib.is_module_or_modtype () then begin
     add_anonymous_leaf (in_require (needed,[modref],None));
     Option.iter (fun exp -> add_anonymous_leaf (in_import (modref,exp)))

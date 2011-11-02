@@ -167,7 +167,9 @@ let discharge_head (_,(ref,k)) =
 let rebuild_head (ref,k) =
   (ref, compute_head ref)
 
-let inHead =
+type head_obj = evaluable_global_reference * head_approximation
+
+let inHead : head_obj -> obj =
   declare_object {(default_object "HEAD") with
     cache_function = cache_head;
     load_function = load_head;

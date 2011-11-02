@@ -25,8 +25,10 @@ type struc_typ = {
   s_PROJKIND : (name * bool) list;
   s_PROJ : constant option list }
 
-val declare_structure :
-  inductive * constructor * (name * bool) list * constant option list -> unit
+type struc_tuple =
+    inductive * constructor * (name * bool) list * constant option list
+
+val declare_structure : struc_tuple -> unit
 
 (** [lookup_structure isp] returns the struc_typ associated to the
    inductive path [isp] if it corresponds to a structure, otherwise

@@ -78,7 +78,10 @@ let discharge_variable (_,o) = match o with
   | Inr (id,_) -> Some (Inl (variable_constraints id))
   | Inl _ -> Some o
 
-let inVariable =
+type variable_obj =
+    (Univ.constraints, identifier * variable_declaration) union
+
+let inVariable : variable_obj -> obj =
   declare_object { (default_object "VARIABLE") with
     cache_function = cache_variable;
     discharge_function = discharge_variable;
@@ -151,7 +154,10 @@ let dummy_constant (ce,_,mk) = dummy_constant_entry,[],mk
 
 let classify_constant cst = Substitute (dummy_constant cst)
 
-let inConstant =
+type constant_obj =
+    global_declaration * Dischargedhypsmap.discharged_hyps * logical_kind
+
+let inConstant : constant_obj -> obj =
   declare_object { (default_object "CONSTANT") with
     cache_function = cache_constant;
     load_function = load_constant;
@@ -246,7 +252,9 @@ let dummy_inductive_entry (_,m) = ([],{
   mind_entry_finite = true;
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds })
 
-let inInductive =
+type inductive_obj = Dischargedhypsmap.discharged_hyps * mutual_inductive_entry
+
+let inInductive : inductive_obj -> obj =
   declare_object {(default_object "INDUCTIVE") with
     cache_function = cache_inductive;
     load_function = load_inductive;
