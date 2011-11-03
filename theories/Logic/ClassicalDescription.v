@@ -16,13 +16,11 @@
 
 Set Implicit Arguments.
 
-Require Export Classical.
+Require Export Classical.   (* Axiomatize classical reasoning *)
+Require Export Description. (* Axiomatize constructive form of Church's iota *)
 Require Import ChoiceFacts.
 
 Notation Local inhabited A := A (only parsing).
-
-Axiom constructive_definite_description :
-  forall (A : Type) (P : A->Prop), (exists! x : A, P x) -> { x : A | P x }.
 
 (** The idea for the following proof comes from [ChicliPottierSimpson02] *)
 

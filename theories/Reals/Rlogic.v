@@ -41,6 +41,7 @@ Variable P : nat -> Prop.
 Hypothesis HP : forall n, {P n} + {~P n}.
 
 Let ge_fun_sums_ge_lemma : (forall (m n : nat) (f : nat -> R), (lt m n) -> (forall i : nat, 0 <= f i) -> sum_f_R0 f m <= sum_f_R0 f n).
+Proof.
 intros m n f mn fpos.
 replace (sum_f_R0 f m) with (sum_f_R0 f m + 0) by ring.
 rewrite (tech2 f m n mn).
@@ -52,6 +53,7 @@ apply (Rplus_le_compat _ _ _ _ IHn0 (fpos (S (m + S n0)%nat))).
 Qed.
 
 Let ge_fun_sums_ge : (forall (m n : nat) (f : nat -> R), (le m n) -> (forall i : nat, 0 <= f i) -> sum_f_R0 f m <= sum_f_R0 f n).
+Proof.
 intros m n f mn pos.
  elim (le_lt_or_eq _ _ mn).
  intro; apply ge_fun_sums_ge_lemma; assumption.
@@ -61,6 +63,7 @@ Qed.
 Let f:=fun n => (if HP n then (1/2)^n else 0)%R.
 
 Lemma cauchy_crit_geometric_dec_fun : Cauchy_crit_series f.
+Proof.
 intros e He.
 assert (X:(Pser (fun n:nat => 1) (1/2) (/ (1 - (1/2))))%R).
  apply GP_infinite.
@@ -233,10 +236,11 @@ fourier.
 Qed.
 
 Lemma sig_forall_dec :  {n | ~P n}+{forall n, P n}.
+Proof.
 destruct forall_dec.
  right; assumption.
 left.
-apply constructive_indefinite_description_nat; auto.
+apply constructive_indefinite_ground_description_nat; auto.
  clear - HP.
  firstorder.
 apply Classical_Pred_Type.not_all_ex_not.
@@ -255,6 +259,7 @@ principle also derive [up] and its [specification] *)
 
 Theorem not_not_archimedean :
   forall r : R, ~ (forall n : nat, (INR n <= r)%R).
+Proof.
 intros r H.
 set (E := fun r => exists n : nat, r = INR n).
 assert (exists x : R, E x) by

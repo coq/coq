@@ -8,17 +8,18 @@
 
 (*i $Id: ConstructiveEpsilon.v 12112 2009-04-28 15:47:34Z herbelin $ i*)
 
-(** This module proves the constructive description schema, which
-infers the sigma-existence (i.e., [Set]-existence) of a witness to a
-predicate from the regular existence (i.e., [Prop]-existence). One
-requires that the underlying set is countable and that the predicate
-is decidable. *)
+(** This provides with a proof of the constructive form of definite
+and indefinite descriptions for Sigma^0_1-formulas (hereafter called
+"small" formulas), which infers the sigma-existence (i.e.,
+[Type]-existence) of a witness to a decidable predicate over a
+countable domain from the regular existence (i.e.,
+[Prop]-existence). *)
 
 (** Coq does not allow case analysis on sort [Prop] when the goal is in
-[Set]. Therefore, one cannot eliminate [exists n, P n] in order to
+not in [Prop]. Therefore, one cannot eliminate [exists n, P n] in order to
 show [{n : nat | P n}]. However, one can perform a recursion on an
 inductive predicate in sort [Prop] so that the returning type of the
-recursion is in [Set]. This trick is described in Coq'Art book, Sect.
+recursion is in [Type]. This trick is described in Coq'Art book, Sect.
 14.2.3 and 15.4. In particular, this trick is used in the proof of
 [Fix_F] in the module Coq.Init.Wf. There, recursion is done on an
 inductive predicate [Acc] and the resulting type is in [Type].
@@ -39,7 +40,7 @@ For the first one we provide explicit and short proof terms. *)
 
 (* Direct version *)
 
-Section ConstructiveIndefiniteDescription_Direct.
+Section ConstructiveIndefiniteGroundDescription_Direct.
 
 Variable P : nat -> Prop.
 
@@ -77,11 +78,11 @@ Fixpoint linear_search m (b : before_witness m) : {n : nat | P n} :=
     | right no => linear_search (S m) (inv_before_witness m b no)
   end.
 
-Definition constructive_indefinite_description_nat :
+Definition constructive_indefinite_ground_description_nat :
   (exists n, P n) -> {n:nat | P n} :=
   fun e => linear_search O (let (n, p) := e in O_witness n (stop n p)).
 
-End ConstructiveIndefiniteDescription_Direct.
+End ConstructiveIndefiniteGroundDescription_Direct.
 
 (************************************************************************)
 
@@ -89,7 +90,7 @@ End ConstructiveIndefiniteDescription_Direct.
 
 Require Import Arith.
 
-Section ConstructiveIndefiniteDescription_Acc.
+Section ConstructiveIndefiniteGroundDescription_Acc.
 
 Variable P : nat -> Prop.
 
@@ -149,40 +150,40 @@ destruct (IH y Ryx) as [n Hn].
 exists n; assumption.
 Defined.
 
-Theorem constructive_indefinite_description_nat_Acc :
+Theorem constructive_indefinite_ground_description_nat_Acc :
   (exists n : nat, P n) -> {n : nat | P n}.
 Proof.
 intros H; apply acc_implies_P_eventually.
 apply P_eventually_implies_acc_ex; assumption.
 Defined.
 
-End ConstructiveIndefiniteDescription_Acc.
+End ConstructiveIndefiniteGroundDescription_Acc.
 
 (************************************************************************)
 
-Section ConstructiveEpsilon_nat.
+Section ConstructiveGroundEpsilon_nat.
 
 Variable P : nat -> Prop.
 
 Hypothesis P_decidable : forall x : nat, {P x} + {~ P x}.
 
-Definition constructive_epsilon_nat (E : exists n : nat, P n) : nat
-  := proj1_sig (constructive_indefinite_description_nat P P_decidable E).
+Definition constructive_ground_epsilon_nat (E : exists n : nat, P n) : nat
+  := proj1_sig (constructive_indefinite_ground_description_nat P P_decidable E).
 
-Definition constructive_epsilon_spec_nat (E : (exists n, P n)) : P (constructive_epsilon_nat E)
-  := proj2_sig (constructive_indefinite_description_nat P P_decidable E).
+Definition constructive_ground_epsilon_spec_nat (E : (exists n, P n)) : P (constructive_ground_epsilon_nat E)
+  := proj2_sig (constructive_indefinite_ground_description_nat P P_decidable E).
 
-End ConstructiveEpsilon_nat.
+End ConstructiveGroundEpsilon_nat.
 
 (************************************************************************)
 
-Section ConstructiveEpsilon.
+Section ConstructiveGroundEpsilon.
 
 (** For the current purpose, we say that a set [A] is countable if
 there are functions [f : A -> nat] and [g : nat -> A] such that [g] is
 a left inverse of [f]. *)
 
-Variable A : Set.
+Variable A : Type.
 Variable f : A -> nat.
 Variable g : nat -> A.
 
@@ -199,24 +200,43 @@ Proof.
 intro n; unfold P'; destruct (P_decidable (g n)); auto.
 Defined.
 
-Lemma constructive_indefinite_description : (exists x : A, P x) -> {x : A | P x}.
+Lemma constructive_indefinite_ground_description : (exists x : A, P x) -> {x : A | P x}.
 Proof.
 intro H. assert (H1 : exists n : nat, P' n).
 destruct H as [x Hx]. exists (f x); unfold P'. rewrite gof_eq_id; assumption.
-apply (constructive_indefinite_description_nat P' P'_decidable)  in H1.
+apply (constructive_indefinite_ground_description_nat P' P'_decidable)  in H1.
 destruct H1 as [n Hn]. exists (g n); unfold P' in Hn; assumption.
 Defined.
 
-Lemma constructive_definite_description : (exists! x : A, P x) -> {x : A | P x}.
+Lemma constructive_definite_ground_description : (exists! x : A, P x) -> {x : A | P x}.
 Proof.
-  intros; apply constructive_indefinite_description; firstorder.
+  intros; apply constructive_indefinite_ground_description; firstorder.
 Defined.
 
-Definition constructive_epsilon (E : exists x : A, P x) : A
-  := proj1_sig (constructive_indefinite_description E).
+Definition constructive_ground_epsilon (E : exists x : A, P x) : A
+  := proj1_sig (constructive_indefinite_ground_description E).
 
-Definition constructive_epsilon_spec (E : (exists x, P x)) : P (constructive_epsilon E)
-  := proj2_sig (constructive_indefinite_description E).
+Definition constructive_ground_epsilon_spec (E : (exists x, P x)) : P (constructive_ground_epsilon E)
+  := proj2_sig (constructive_indefinite_ground_description E).
 
-End ConstructiveEpsilon.
+End ConstructiveGroundEpsilon.
 
+(* begin hide *)
+(* Compatibility: the qualificative "ground" was absent from the initial
+names of the results in this file but this had introduced confusion
+with the similarly named statement in Description.v *)
+Notation constructive_indefinite_description_nat :=
+  constructive_indefinite_ground_description_nat (only parsing).
+Notation constructive_epsilon_spec_nat :=
+  constructive_ground_epsilon_spec_nat (only parsing).
+Notation constructive_epsilon_nat :=
+  constructive_ground_epsilon_nat (only parsing).
+Notation constructive_indefinite_description :=
+  constructive_indefinite_ground_description (only parsing).
+Notation constructive_definite_description :=
+  constructive_definite_ground_description (only parsing).
+Notation constructive_epsilon_spec :=
+  constructive_ground_epsilon_spec (only parsing).
+Notation constructive_epsilon :=
+  constructive_ground_epsilon (only parsing).
+(* end hide *)
