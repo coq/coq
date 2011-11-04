@@ -1063,13 +1063,11 @@ and trivial_resolve mod_delta db_list local_db cl =
 	    (my_find_search mod_delta db_list local_db head cl))
   with Not_found -> []
 
-(** Two ways to disable the use of the "core" database:
-    - Via the optional argument : use_core_db=false
-      This is kept for compatibility with the rippling plugin.
-    - By passing "nocore" amongst the databases *)
+(** The use of the "core" database can be de-activated by passing
+    "nocore" amongst the databases. *)
 
-let make_db_list ?(use_core_db=true) dbnames =
-  let use_core = use_core_db && not (List.mem "nocore" dbnames) in
+let make_db_list dbnames =
+  let use_core = not (List.mem "nocore" dbnames) in
   let dbnames = list_remove "nocore" dbnames in
   let dbnames = if use_core then "core"::dbnames else dbnames in
   let lookup db =
@@ -1184,13 +1182,13 @@ let search = search_gen 0
 
 let default_search_depth = ref 5
 
-let delta_auto ?(use_core_db=true) mod_delta n lems dbnames gl =
-  let db_list = make_db_list ~use_core_db dbnames in
+let delta_auto mod_delta n lems dbnames gl =
+  let db_list = make_db_list dbnames in
   tclTRY (search n mod_delta db_list (make_local_hint_db false lems gl)) gl
 
-let auto ?(use_core_db=true) = delta_auto ~use_core_db false
+let auto = delta_auto false
 
-let new_auto ?(use_core_db=true) = delta_auto ~use_core_db true
+let new_auto = delta_auto true
 
 let default_auto = auto !default_search_depth [] []
 

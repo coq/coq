@@ -194,18 +194,16 @@ val conclPattern : constr -> constr_pattern option -> Tacexpr.glob_tactic_expr -
 
 (** The Auto tactic *)
 
-(** Two ways to disable the use of the "core" database:
-    - Via the optional argument : use_core_db=false
-      This is kept for compatibility with the rippling plugin.
-    - By passing "nocore" amongst the databases *)
+(** The use of the "core" database can be de-activated by passing
+    "nocore" amongst the databases. *)
 
-val make_db_list : ?use_core_db:bool -> hint_db_name list -> hint_db list
+val make_db_list : hint_db_name list -> hint_db list
 
-val auto : ?use_core_db:bool -> int -> open_constr list -> hint_db_name list -> tactic
+val auto : int -> open_constr list -> hint_db_name list -> tactic
 
 (** Auto with more delta. *)
 
-val new_auto : ?use_core_db:bool -> int -> open_constr list -> hint_db_name list -> tactic
+val new_auto : int -> open_constr list -> hint_db_name list -> tactic
 
 (** auto with default search depth and with the hint database "core" *)
 val default_auto : tactic
