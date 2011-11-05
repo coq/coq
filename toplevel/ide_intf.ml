@@ -22,14 +22,14 @@ type verbose = bool
 type 'a call =
   | Interp of raw * verbose * string
   | Rewind of int
-  | Goals
+  | Goal
   | Status
   | InLoadPath of string
   | MkCases of string
 
 let interp (r,b,s) : string call = Interp (r,b,s)
 let rewind i : int call = Rewind i
-let goals : goals call = Goals
+let goals : goals call = Goal
 let status : string call = Status
 let inloadpath s : bool call = InLoadPath s
 let mkcases s : string list list call = MkCases s
@@ -56,7 +56,7 @@ let abstract_eval_call handler explain_exn c =
     let res = match c with
       | Interp (r,b,s) -> Obj.magic (handler.interp (r,b,s))
       | Rewind i -> Obj.magic (handler.rewind i)
-      | Goals -> Obj.magic (handler.goals ())
+      | Goal -> Obj.magic (handler.goals ())
       | Status -> Obj.magic (handler.status ())
       | InLoadPath s -> Obj.magic (handler.inloadpath s)
       | MkCases s -> Obj.magic (handler.mkcases s)
@@ -73,7 +73,7 @@ let pr_call = function
     let verb = if b then "" else "SILENT" in
     "INTERP"^raw^verb^" ["^s^"]"
   | Rewind i -> "REWIND "^(string_of_int i)
-  | Goals -> "GOALS"
+  | Goal -> "GOALS"
   | Status -> "STATUS"
   | InLoadPath s -> "INLOADPATH "^s
   | MkCases s -> "MKCASES "^s
@@ -87,11 +87,24 @@ let pr_value v = pr_value_gen (fun _ -> "") v
 let pr_string s = "["^s^"]"
 let pr_bool b = if b then "true" else "false"
 
+let pr_mkcases l =
+  let l = List.map (String.concat " ") l in
+  "[" ^ String.concat " | " l ^ "]"
+
+let pr_goals = function
+| Message s -> "Message: " ^ s
+| Goals gl ->
+  let pr_menu (s, _) = s in
+  let pr_goal (hyps, goal) =
+    "[" ^ String.concat "; " (List.map pr_menu hyps) ^ " |- " ^ pr_menu goal ^ "]"
+  in
+  String.concat " " (List.map pr_goal gl)
+
 let pr_full_value call value =
   match call with
     | Interp _ -> pr_value_gen pr_string (Obj.magic value)
     | Rewind i -> pr_value_gen string_of_int (Obj.magic value)
-    | Goals -> pr_value value (* TODO *)
+    | Goal -> pr_value_gen pr_goals (Obj.magic value)
     | Status -> pr_value_gen pr_string (Obj.magic value)
     | InLoadPath s -> pr_value_gen pr_bool (Obj.magic value)
-    | MkCases s -> pr_value value (* TODO *)
+    | MkCases s -> pr_value_gen pr_mkcases (Obj.magic value)
