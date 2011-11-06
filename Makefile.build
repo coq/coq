@@ -540,7 +540,7 @@ $(COQDOC): $(COQDOCCMO:.cmo=$(BESTOBJ))
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqtop -ideslave
 
-$(FAKEIDE): toplevel/ide_intf$(BESTOBJ) tools/fake_ide$(BESTOBJ)
+$(FAKEIDE): toplevel/utils/xml_lexer$(BESTOBJ) toplevel/utils/xml_parser$(BESTOBJ) toplevel/utils/xml_utils$(BESTOBJ) toplevel/ide_intf$(BESTOBJ) tools/fake_ide$(BESTOBJ)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,unix)
 
