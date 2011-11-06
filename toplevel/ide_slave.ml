@@ -518,6 +518,8 @@ let pr_debug s =
   if !Flags.debug then Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
 let loop () =
+  let p = Xml_parser.make () in
+  let () = Xml_parser.check_eof p false in
   init_signal_handler ();
   catch_break := false;
   (* ensure we have a command separator object (DOT) so that the first
@@ -525,15 +527,21 @@ let loop () =
   Lib.mark_end_of_command();
   try
     while true do
-      let q = (Marshal.from_channel: in_channel -> 'a Ide_intf.call) stdin in
+      let xml_query = Xml_parser.parse p (Xml_parser.SChannel stdin) in
+      let q = Ide_intf.to_call xml_query in
       pr_debug ("<-- " ^ Ide_intf.pr_call q);
       let r = eval_call q in
       pr_debug ("--> " ^ Ide_intf.pr_full_value q r);
-      Marshal.to_channel !orig_stdout r []; flush !orig_stdout
+      let xml_answer = Ide_intf.of_answer q r in
+      Xml_utils.print_xml !orig_stdout xml_answer;
+      flush !orig_stdout
     done
   with e ->
     let msg = Printexc.to_string e in
     let r = Ide_intf.Fail (None, "Fatal exception in coqtop:\n" ^ msg) in
     pr_debug ("==> " ^ Ide_intf.pr_value r);
-    (try Marshal.to_channel !orig_stdout r []; flush !orig_stdout with _ -> ());
+    (try
+      Xml_utils.print_xml !orig_stdout (Ide_intf.of_value (fun _ -> assert false) r);
+      flush !orig_stdout
+    with _ -> ());
     exit 1

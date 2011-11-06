@@ -12,10 +12,16 @@ exception Comment
 
 let coqtop = ref (stdin, stdout)
 
+let p = Xml_parser.make ()
+let () = Xml_parser.check_eof p false
+
 let eval_call (call:'a Ide_intf.call) =
   prerr_endline (Ide_intf.pr_call call);
-  Marshal.to_channel (snd !coqtop) call []; flush (snd !coqtop);
-  let res = ((Marshal.from_channel (fst !coqtop)) : 'a Ide_intf.value) in
+  let xml_query = Ide_intf.of_call call in
+  Xml_utils.print_xml (snd !coqtop) xml_query;
+  flush (snd !coqtop);
+  let xml_answer = Xml_parser.parse p (Xml_parser.SChannel (fst !coqtop)) in
+  let res = Ide_intf.to_answer xml_answer in
   prerr_endline (Ide_intf.pr_full_value call res);
   match res with Ide_intf.Fail _ -> exit 1 | _ -> ()
 

@@ -199,10 +199,14 @@ let kill_coqtop coqtop =
 
 (** Cf [Ide_intf] for more details *)
 
+let p = Xml_parser.make ()
+let () = Xml_parser.check_eof p false
+
 let eval_call coqtop (c:'a Ide_intf.call) =
-  Marshal.to_channel coqtop.cin c [];
+  Xml_utils.print_xml coqtop.cin (Ide_intf.of_call c);
   flush coqtop.cin;
-  (Marshal.from_channel: in_channel -> 'a Ide_intf.value) coqtop.cout
+  let xml = Xml_parser.parse p (Xml_parser.SChannel coqtop.cout) in
+  (Ide_intf.to_answer xml : 'a Ide_intf.value)
 
 let interp coqtop ?(raw=false) ?(verbose=true) s =
   eval_call coqtop (Ide_intf.interp (raw,verbose,s))
