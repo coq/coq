@@ -1708,8 +1708,8 @@ let letin_tac_gen with_eq name c ty occs gl =
   tclTHENLIST
     [ convert_concl_no_check newcl DEFAULTcast;
       intro_gen dloc (IntroMustBe id) lastlhyp true false;
-      eq_tac;
-      tclMAP convert_hyp_no_check depdecls ] gl
+      tclMAP convert_hyp_no_check depdecls;
+      eq_tac ] gl
 
 let letin_tac with_eq name c ty occs =
   letin_tac_gen with_eq name c ty (occs,true)
