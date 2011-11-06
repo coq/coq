@@ -8,6 +8,10 @@
 
 (** * Interface of calls to Coq by CoqIde *)
 
+open Xml_parser
+
+type xml = Xml_parser.xml
+
 type 'a menu = 'a * (string * string) list
 
 type goals =
@@ -64,6 +68,106 @@ let abstract_eval_call handler explain_exn c =
   with e ->
     let (l,str) = explain_exn e in
     Fail (l,str)
+
+(** * XML data marshalling *)
+
+exception Marshal_error
+
+let massoc x l =
+  try List.assoc x l
+  with Not_found -> raise Marshal_error
+
+let pcdata = function
+| PCData s -> s
+| _ -> raise Marshal_error
+
+let singleton = function
+| [x] -> x
+| _ -> raise Marshal_error
+
+let bool_arg tag b = if b then [tag, ""] else []
+
+let of_bool b =
+  if b then Element ("bool", ["val", "true"], [])
+  else Element ("bool", ["val", "false"], [])
+
+let to_bool = function
+| Element ("bool", attrs, []) ->
+  let ans = massoc "val" attrs in
+  begin match ans with
+  | "true" -> true
+  | "false" -> false
+  | _ -> raise Marshal_error
+  end
+| _ -> raise Marshal_error
+
+let of_list f l =
+  Element ("list", [], List.map f l)
+
+let to_list f = function
+| Element ("list", [], l) ->
+  List.map f l
+| _ -> raise Marshal_error
+
+let of_value f = function
+| Good x -> Element ("value", ["val", "good"], [f x])
+| Fail (loc, msg) ->
+  let loc = match loc with
+  | None -> []
+  | Some (s, e) -> [("loc_s", string_of_int s); ("loc_e", string_of_int e)]
+  in
+  Element ("value", ["val", "fail"] @ loc, [])
+
+let to_value f = function
+| Element ("value", attrs, l) ->
+  let ans = massoc "val" attrs in
+  if ans = "good" then Good (f (singleton l))
+  else if ans = "fail" then
+    let loc =
+      try
+        let loc_s = int_of_string (List.assoc "loc_s" attrs) in
+        let loc_e = int_of_string (List.assoc "loc_e" attrs) in
+        Some (loc_s, loc_e)
+      with _ -> None
+    in
+    let msg = pcdata (singleton l) in
+    Fail (loc, msg)
+  else raise Marshal_error
+| _ -> raise Marshal_error
+
+let of_call = function
+| Interp (raw, vrb, cmd) ->
+  let flags = (bool_arg "raw" raw) @ (bool_arg "verbose" vrb) in
+  Element ("call", ("val", "interp") :: flags, [PCData cmd])
+| Rewind n ->
+  Element ("call", ("val", "rewind") :: ["steps", string_of_int n], [])
+| Goal ->
+  Element ("call", ["val", "goal"], [])
+| Status ->
+  Element ("call", ["val", "status"], [])
+| InLoadPath file ->
+  Element ("call", ["val", "inloadpath"], [PCData file])
+| MkCases ind ->
+  Element ("call", ["val", "mkcases"], [PCData ind])
+
+let to_call = function
+| Element ("call", attrs, l) ->
+  let ans = massoc "val" attrs in
+  begin match ans with
+  | "interp" ->
+    let raw = List.mem_assoc "raw" attrs in
+    let vrb = List.mem_assoc "verbose" attrs in
+    Interp (raw, vrb, pcdata (singleton l))
+  | "rewind" ->
+    let steps = int_of_string (massoc "steps" attrs) in
+    Rewind steps
+  | "goal" -> Goal
+  | "status" -> Status
+  | "inloadpath" -> InLoadPath (pcdata (singleton l))
+  | "mkcases" -> MkCases (pcdata (singleton l))
+  | _ -> raise Marshal_error
+  end
+| _ -> raise Marshal_error
 
 (** * Debug printing *)
 

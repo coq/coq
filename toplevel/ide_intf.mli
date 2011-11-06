@@ -8,6 +8,8 @@
 
 (** * Interface of CoqIde calls to Coq *)
 
+type xml = Xml_parser.xml
+
 type 'a menu = 'a * (string * string) list
 
 type goals =
@@ -75,6 +77,19 @@ type handler = {
 val abstract_eval_call :
   handler -> (exn -> location * string) ->
   'a call -> 'a value
+
+(** * XML data marshalling *)
+
+exception Marshal_error
+
+val of_list : ('a -> xml) -> 'a list -> xml
+val to_list : (xml -> 'a) -> xml -> 'a list
+
+val of_value : ('a -> xml) -> 'a value -> xml
+val to_value : (xml -> 'a) -> xml -> 'a value
+
+val of_call : 'a call -> xml
+val to_call : xml -> 'a call
 
 (** * Debug printing *)
 
