@@ -116,7 +116,7 @@ let of_value f = function
   | None -> []
   | Some (s, e) -> [("loc_s", string_of_int s); ("loc_e", string_of_int e)]
   in
-  Element ("value", ["val", "fail"] @ loc, [])
+  Element ("value", ["val", "fail"] @ loc, [PCData msg])
 
 let to_value f = function
 | Element ("value", attrs, l) ->
@@ -168,6 +168,66 @@ let to_call = function
   | _ -> raise Marshal_error
   end
 | _ -> raise Marshal_error
+
+let of_string s = Element ("string", [], [PCData s])
+
+let to_string = function
+| Element ("string", [], [PCData s]) -> s
+| _ -> raise Marshal_error
+
+let of_int i = Element ("int", [], [PCData (string_of_int i)])
+
+let to_int = function
+| Element ("int", [], [PCData s]) -> int_of_string s
+| _ -> raise Marshal_error
+
+let of_pair f g (x, y) = Element ("pair", [], [f x; g y])
+
+let to_pair f g = function
+| Element ("pair", [], [x; y]) -> (f x, g y)
+| _ -> raise Marshal_error
+
+let of_goals = function
+| Message s ->
+  Element ("goals", ["val", "message"], [of_string s])
+| Goals l ->
+  let of_string_menu = of_pair of_string (of_list (of_pair of_string of_string)) in
+  let xml = of_list (of_pair (of_list of_string_menu) of_string_menu) l in
+  Element ("goals", ["val", "goals"], [xml])
+
+let to_goals = function
+| Element ("goals", ["val", "message"], [s]) -> Message (to_string s)
+| Element ("goals", ["val", "goals"], [xml]) ->
+  let to_string_menu = to_pair to_string (to_list (to_pair to_string to_string)) in
+  let ans = to_list (to_pair (to_list to_string_menu) to_string_menu) xml in
+  Goals ans
+| _ -> raise Marshal_error
+
+let of_answer (q : 'a call) (r : 'a value) =
+  let convert = match q with
+  | Interp _ -> Obj.magic (of_string : string -> xml)
+  | Rewind _ -> Obj.magic (of_int : int -> xml)
+  | Goal -> Obj.magic (of_goals : goals -> xml)
+  | Status -> Obj.magic (of_string : string -> xml)
+  | InLoadPath _ -> Obj.magic (of_bool : bool -> xml)
+  | MkCases _ -> Obj.magic (of_list (of_list of_string) : string list list -> xml)
+  in
+  of_value convert r
+
+let to_answer xml =
+  let rec convert elt = match elt with
+  | Element (tpe, attrs, l) ->
+    begin match tpe with
+    | "string" -> Obj.magic (to_string elt)
+    | "int" -> Obj.magic (to_int elt)
+    | "goals" -> Obj.magic (to_goals elt)
+    | "bool" -> Obj.magic (to_bool elt)
+    | "list" -> Obj.magic (to_list convert elt)
+    | _ -> raise Marshal_error
+    end
+  | _ -> raise Marshal_error
+  in
+  to_value convert xml
 
 (** * Debug printing *)
 

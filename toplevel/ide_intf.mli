@@ -82,6 +82,18 @@ val abstract_eval_call :
 
 exception Marshal_error
 
+val of_bool : bool -> xml
+val to_bool : xml -> bool
+
+val of_string : string -> xml
+val to_string : xml -> string
+
+val of_int : int -> xml
+val to_int : xml -> int
+
+val of_pair : ('a -> xml) -> ('b -> xml) -> ('a * 'b) -> xml
+val to_pair : (xml -> 'a) -> (xml -> 'b) -> xml -> ('a * 'b)
+
 val of_list : ('a -> xml) -> 'a list -> xml
 val to_list : (xml -> 'a) -> xml -> 'a list
 
@@ -90,6 +102,12 @@ val to_value : (xml -> 'a) -> xml -> 'a value
 
 val of_call : 'a call -> xml
 val to_call : xml -> 'a call
+
+val of_goals : goals -> xml
+val to_goals : xml -> goals
+
+val of_answer : 'a call -> 'a value -> xml
+val to_answer : xml -> 'a value
 
 (** * Debug printing *)
 
