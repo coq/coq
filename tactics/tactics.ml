@@ -1768,8 +1768,8 @@ let letin_tac_gen with_eq name (sigmac,c) test ty occs gl =
   tclTHENLIST
     [ convert_concl_no_check newcl DEFAULTcast;
       intro_gen dloc (IntroMustBe id) lastlhyp true false;
-      eq_tac;
-      tclMAP convert_hyp_no_check depdecls ] gl
+      tclMAP convert_hyp_no_check depdecls;
+      eq_tac ] gl
 
 let make_eq_test c = (make_eq_test c,fun _ -> c)
 
