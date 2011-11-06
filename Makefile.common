@@ -76,8 +76,8 @@ CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 SRCDIRS:=\
   config 	tools 		tools/coqdoc 	scripts		lib \
   kernel	kernel/byterun	library 	proofs 		tactics \
-  pretyping	interp		toplevel 	parsing 	ide/utils \
-  ide		\
+  pretyping	interp		toplevel/utils	toplevel 	parsing 	\
+  ide/utils	ide		\
   $(addprefix plugins/, \
     omega	romega 		micromega 	quote		ring	dp \
     setoid_ring xml 		extraction 	fourier \
