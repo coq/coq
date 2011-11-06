@@ -16,7 +16,7 @@ All files of the "Coq proof assistant" in directories or sub-directories of
   scripts states tactics test-suite theories tools toplevel
 
 are distributed under the terms of the GNU Lesser General Public License 
-Version 2.1 (see file LICENSE). These files are COPYRIGHT 1999-2010,
+Version 2.1 (see file LICENSE). These files are COPYRIGHT 1999-2011,
 The Coq development team, CNRS, INRIA and Université Paris Sud.
 
 Files from the directory doc are distributed as indicated in file doc/LICENCE.
