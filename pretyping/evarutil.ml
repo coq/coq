@@ -1335,30 +1335,39 @@ let get_actual_deps aliases l t =
 
 (* Check if an applied evar "?X[args] l" is a Miller's pattern *)
 
-let find_unification_pattern_args env args l t =
+let find_unification_pattern_args env l t =
   if List.for_all (fun x -> isRel x || isVar x) l (* common failure case *) then
     let aliases = make_alias_map env in
-    let l' = Array.to_list args @ l in
-    match (try Some (expand_and_check_vars aliases l') with Exit -> None) with
-    | Some l when constr_list_distinct (get_actual_deps aliases l t) ->
-        Some (list_skipn (Array.length args) l)
-    | _ ->
-      None
+    match (try Some (expand_and_check_vars aliases l) with Exit -> None) with
+    | Some l as x when constr_list_distinct (get_actual_deps aliases l t) -> x
+    | _ -> None
   else
     None
 
-let is_unification_pattern env f l t =
+let is_unification_pattern_meta env nb m l t =
+  (* Variables from context and rels > nb are implicitly all there *)
+  (* so we need to be a rel <= nb *)
+  if List.for_all (fun x -> isRel x && destRel x <= nb) l then
+    match find_unification_pattern_args env l t with
+    | Some _ as x when not (dependent (mkMeta m) t) -> x
+    | _ -> None
+  else
+    None
+
+let is_unification_pattern_evar env (evk,args) l t =
+  if List.for_all (fun x -> isRel x || isVar x) l (* common failure case *) then
+    let n = Array.length args in
+    match find_unification_pattern_args env (Array.to_list args @ l) t with
+    | Some l when not (occur_evar evk t) -> Some (list_skipn n l)
+    | _ -> None
+  else
+    None
+
+let is_unification_pattern (env,nb) f l t =
   match kind_of_term f with
-    | Meta m ->
-        (match find_unification_pattern_args env [||] l t with
-        | Some _ as x when not (dependent f t) -> x
-        | _ -> None)
-    | Evar (evk,args) ->
-        (match find_unification_pattern_args env args l t with
-        | Some _ as x when not (occur_evar evk t) -> x
-        | _ -> None)
-    | _ ->
-	None
+  | Meta m -> is_unification_pattern_meta env nb m l t
+  | Evar ev -> is_unification_pattern_evar env ev l t
+  | _ -> None
 
 (* From a unification problem "?X l = c", build "\x1...xn.(term1 l2)"
    (pattern unification). It is assumed that l is made of rel's that

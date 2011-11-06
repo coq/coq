@@ -118,4 +118,14 @@ Axiom s : forall (A B : Type) (p : A * B), p = (fst p, snd p).
 Definition P := (nat * nat)%type.
 Goal forall x:P, x = x.
 intros. rewrite s.
+Abort.
+
+(* Test second-order unification and failure of pattern-unification *)
+
+Goal forall (P: forall Y, Y -> Prop) Y a, Y = nat -> (True -> P Y a) -> False.
+intros.
+(* The next line used to succeed between June and November 2011 *)
+(* causing ill-typed rewriting *)
+Fail rewrite H in H0.
+Abort.
 

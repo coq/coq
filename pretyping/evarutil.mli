@@ -96,7 +96,10 @@ val define_evar_as_product : evar_map -> existential -> evar_map * types
 val define_evar_as_lambda : env -> evar_map -> existential -> evar_map * types
 val define_evar_as_sort : evar_map -> existential -> evar_map * sorts
 
-val is_unification_pattern : env -> constr -> constr list ->
+val is_unification_pattern_evar : env -> existential -> constr list ->
+  constr -> constr list option
+
+val is_unification_pattern : env * int -> constr -> constr list ->
   constr -> constr list option
 
 val evar_absorb_arguments : env -> evar_map -> existential -> constr list ->
