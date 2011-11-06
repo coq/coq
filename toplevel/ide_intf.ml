@@ -85,6 +85,11 @@ let singleton = function
 | [x] -> x
 | _ -> raise Marshal_error
 
+let raw_string = function
+| [] -> ""
+| [PCData s] -> s
+| _ -> raise Marshal_error
+
 let bool_arg tag b = if b then [tag, ""] else []
 
 let of_bool b =
@@ -130,7 +135,7 @@ let to_value f = function
         Some (loc_s, loc_e)
       with _ -> None
     in
-    let msg = pcdata (singleton l) in
+    let msg = raw_string l in
     Fail (loc, msg)
   else raise Marshal_error
 | _ -> raise Marshal_error
@@ -157,14 +162,14 @@ let to_call = function
   | "interp" ->
     let raw = List.mem_assoc "raw" attrs in
     let vrb = List.mem_assoc "verbose" attrs in
-    Interp (raw, vrb, pcdata (singleton l))
+    Interp (raw, vrb, raw_string l)
   | "rewind" ->
     let steps = int_of_string (massoc "steps" attrs) in
     Rewind steps
   | "goal" -> Goal
   | "status" -> Status
-  | "inloadpath" -> InLoadPath (pcdata (singleton l))
-  | "mkcases" -> MkCases (pcdata (singleton l))
+  | "inloadpath" -> InLoadPath (raw_string l)
+  | "mkcases" -> MkCases (raw_string l)
   | _ -> raise Marshal_error
   end
 | _ -> raise Marshal_error
@@ -172,7 +177,7 @@ let to_call = function
 let of_string s = Element ("string", [], [PCData s])
 
 let to_string = function
-| Element ("string", [], [PCData s]) -> s
+| Element ("string", [], l) -> raw_string l
 | _ -> raise Marshal_error
 
 let of_int i = Element ("int", [], [PCData (string_of_int i)])
@@ -189,14 +194,14 @@ let to_pair f g = function
 
 let of_goals = function
 | Message s ->
-  Element ("goals", ["val", "message"], [of_string s])
+  Element ("goals", ["val", "message"], [PCData s])
 | Goals l ->
   let of_string_menu = of_pair of_string (of_list (of_pair of_string of_string)) in
   let xml = of_list (of_pair (of_list of_string_menu) of_string_menu) l in
   Element ("goals", ["val", "goals"], [xml])
 
 let to_goals = function
-| Element ("goals", ["val", "message"], [s]) -> Message (to_string s)
+| Element ("goals", ["val", "message"], l) -> Message (raw_string l)
 | Element ("goals", ["val", "goals"], [xml]) ->
   let to_string_menu = to_pair to_string (to_list (to_pair to_string to_string)) in
   let ans = to_list (to_pair (to_list to_string_menu) to_string_menu) xml in
