@@ -672,14 +672,14 @@ let rec subst_glob_constr subst raw =
 
 (* Utilities to transform kernel cases to simple pattern-matching problem *)
 
-let simple_cases_matrix_of_branches ind brns brs =
-  list_map2_i (fun i n b ->
+let simple_cases_matrix_of_branches ind brs =
+  List.map (fun (i,n,b) ->
       let nal,c = it_destRLambda_or_LetIn_names n b in
       let mkPatVar na = PatVar (dummy_loc,na) in
       let p = PatCstr (dummy_loc,(ind,i+1),List.map mkPatVar nal,Anonymous) in
       let ids = map_succeed Nameops.out_name nal in
       (dummy_loc,ids,[p],c))
-    0 brns brs
+    brs
 
 let return_type_of_predicate ind nparams nrealargs_ctxt pred =
   let nal,p = it_destRLambda_or_LetIn_names (nrealargs_ctxt+1) pred in

@@ -85,11 +85,6 @@ let build_lambda toabstract stk (m : constr) =
   in
   buildrec m 1 stk
 
-let same_case_structure (_,cs1,ind,_) ci2 br1 br2 =
-  match ind with
-  | Some ind -> ind = ci2.ci_ind
-  | None -> cs1 = ci2.ci_cstr_ndecls
-
 let rec list_insert f a = function
   | [] -> [a]
   | b::l when f a b -> a::b::l
@@ -223,11 +218,18 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
             raise PatternMatchingFailure
 
       | PCase (ci1,p1,a1,br1), Case (ci2,p2,a2,br2) ->
-	  if same_case_structure ci1 ci2 br1 br2 then
-  	    array_fold_left2 (sorec stk)
-	      (sorec stk (sorec stk subst a1 a2) p1 p2) br1 br2
-          else
-            raise PatternMatchingFailure
+	  let n2 = Array.length br2 in
+	  if (ci1.cip_ind <> None && ci1.cip_ind <> Some ci2.ci_ind) ||
+	     (not ci1.cip_extensible && List.length br1 <> n2)
+	  then raise PatternMatchingFailure;
+	  let chk_branch subst (j,n,c) =
+	    (* (ind,j+1) is normally known to be a correct constructor
+	       and br2 a correct match over the same inductive *)
+	    assert (j < n2);
+	    sorec stk subst c br2.(j)
+	  in
+	  let chk_head = sorec stk (sorec stk subst a1 a2) p1 p2 in
+	  List.fold_left chk_branch chk_head br1
 
       |	PFix c1, Fix _ when eq_constr (mkFix c1) cT -> subst
       |	PCoFix c1, CoFix _ when eq_constr (mkCoFix c1) cT -> subst

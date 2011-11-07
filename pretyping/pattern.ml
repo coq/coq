@@ -26,6 +26,12 @@ type extended_patvar_map = (patvar * constr_under_binders) list
 
 (* Patterns *)
 
+type case_info_pattern =
+    { cip_style : case_style;
+      cip_ind : inductive option;
+      cip_ind_args : (int * int) option; (** number of params and args *)
+      cip_extensible : bool (** does this match end with _ => _ ? *) }
+
 type constr_pattern =
   | PRef of global_reference
   | PVar of identifier
@@ -39,8 +45,8 @@ type constr_pattern =
   | PSort of glob_sort
   | PMeta of patvar option
   | PIf of constr_pattern * constr_pattern * constr_pattern
-  | PCase of (case_style * int array * inductive option * (int * int) option)
-      * constr_pattern * constr_pattern * constr_pattern array
+  | PCase of case_info_pattern * constr_pattern * constr_pattern *
+      (int * int * constr_pattern) list (** constructor index, nb of args *)
   | PFix of fixpoint
   | PCoFix of cofixpoint
 
@@ -55,7 +61,8 @@ let rec occur_meta_pattern = function
       (occur_meta_pattern c1) or (occur_meta_pattern c2)
   | PCase(_,p,c,br) ->
       (occur_meta_pattern p) or
-      (occur_meta_pattern c) or (array_exists occur_meta_pattern br)
+      (occur_meta_pattern c) or
+      (List.exists (fun (_,_,p) -> occur_meta_pattern p) br)
   | PMeta _ | PSoApp _ -> true
   | PEvar _ | PVar _ | PRef _ | PRel _ | PSort _ | PFix _ | PCoFix _ -> false
 
@@ -122,11 +129,17 @@ let pattern_of_constr sigma t =
           | GoalEvar -> PEvar (evk,Array.map pattern_of_constr ctxt)
           | _ -> PMeta None)
     | Case (ci,p,a,br) ->
-	let cip = ci.ci_pp_info in
-	let no = Some (ci.ci_npar,cip.ind_nargs) in
-	PCase ((cip.style,ci.ci_cstr_ndecls,Some ci.ci_ind,no),
-	       pattern_of_constr p,pattern_of_constr a,
-	       Array.map pattern_of_constr br)
+        let cip =
+	  { cip_style = ci.ci_pp_info.style;
+	    cip_ind = Some ci.ci_ind;
+	    cip_ind_args = Some (ci.ci_npar, ci.ci_pp_info.ind_nargs);
+	    cip_extensible = false }
+	in
+	let branch_of_constr i c =
+	  (i, ci.ci_cstr_ndecls.(i), pattern_of_constr c)
+	in
+	PCase (cip, pattern_of_constr p, pattern_of_constr a,
+	       Array.to_list (Array.mapi branch_of_constr br))
     | Fix f -> PFix f
     | CoFix f -> PCoFix f in
   let p = pattern_of_constr t in
@@ -143,7 +156,8 @@ let map_pattern_with_binders g f l = function
   | PProd (n,a,b) -> PProd (n,f l a,f (g n l) b)
   | PLetIn (n,a,b) -> PLetIn (n,f l a,f (g n l) b)
   | PIf (c,b1,b2) -> PIf (f l c,f l b1,f l b2)
-  | PCase (ci,po,p,pl) -> PCase (ci,f l po,f l p,Array.map (f l) pl)
+  | PCase (ci,po,p,pl) ->
+    PCase (ci,f l po,f l p, List.map (fun (i,n,c) -> (i,n,f l c)) pl)
   (* Non recursive *)
   | (PVar _ | PEvar _ | PRel _ | PRef _  | PSort _  | PMeta _
   (* Bound to terms *)
@@ -225,14 +239,20 @@ let rec subst_pattern subst pat =
       let c2' = subst_pattern subst c2 in
 	if c' == c && c1' == c1 && c2' == c2 then pat else
 	  PIf (c',c1',c2')
-  | PCase ((a,b,ind,n as cs),typ,c,branches) ->
+  | PCase (cip,typ,c,branches) ->
+      let ind = cip.cip_ind in
       let ind' = Option.smartmap (Inductiveops.subst_inductive subst) ind in
+      let cip' = if ind' == ind then cip else { cip with cip_ind = ind' } in
       let typ' = subst_pattern subst typ in
       let c' = subst_pattern subst c in
-      let branches' = array_smartmap (subst_pattern subst) branches in
-      let cs' = if ind == ind' then cs else (a,b,ind',n) in
-	if typ' == typ && c' == c && branches' == branches then pat else
-	  PCase(cs',typ', c', branches')
+      let subst_branch ((i,n,c) as br) =
+	let c' = subst_pattern subst c in
+	if c' == c then br else (i,n,c')
+      in
+      let branches' = list_smartmap subst_branch branches in
+      if cip' == cip && typ' == typ && c' == c && branches' == branches
+      then pat
+      else PCase(cip', typ', c', branches')
   | PFix fixpoint ->
       let cstr = mkFix fixpoint in
       let fixpoint' = destFix (subst_mps subst cstr) in
@@ -246,6 +266,8 @@ let rec subst_pattern subst pat =
 
 let mkPLambda na b = PLambda(na,PMeta None,b)
 let rev_it_mkPLambda = List.fold_right mkPLambda
+
+let err loc pp = user_err_loc (loc,"pattern_of_glob_constr", pp)
 
 let rec pat_of_raw metas vars = function
   | GVar (_,id) ->
@@ -287,52 +309,65 @@ let rec pat_of_raw metas vars = function
   | GLetTuple (loc,nal,(_,None),b,c) ->
       let mkGLambda c na = GLambda (loc,na,Explicit,GHole (loc,Evd.InternalHole),c) in
       let c = List.fold_left mkGLambda c nal in
-      PCase ((LetStyle,[|1|],None,None),PMeta None,pat_of_raw metas vars b,
-             [|pat_of_raw metas vars c|])
-  | GCases (loc,sty,p,[c,(na,indnames)],brs) ->
-      let pred,ind_nargs, ind = match p,indnames with
-	| Some p, Some (_,ind,n,nal) ->
-	    rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas vars p)),
-	    Some (n,List.length nal),Some ind
-	| _ -> PMeta None, None, None in
-      let ind = match ind with Some _ -> ind | None ->
-	match brs with
-	  | (_,_,[PatCstr(_,(ind,_),_,_)],_)::_ -> Some ind
-	  | _ -> None in
-      let cbrs =
-	Array.init (List.length brs) (pat_of_glob_branch loc metas vars ind brs)
+      let cip =
+	{ cip_style = LetStyle;
+	  cip_ind = None;
+	  cip_ind_args = None;
+	  cip_extensible = false }
       in
-      let cstr_nargs,brs = (Array.map fst cbrs, Array.map snd cbrs) in
-      PCase ((sty,cstr_nargs,ind,ind_nargs), pred,
-             pat_of_raw metas vars c, brs)
+      PCase (cip, PMeta None, pat_of_raw metas vars b,
+             [0,1,pat_of_raw metas vars c])
+  | GCases (loc,sty,p,[c,(na,indnames)],brs) ->
+      let get_ind = function
+	| (_,_,[PatCstr(_,(ind,_),_,_)],_)::_ -> Some ind
+	| _ -> None
+      in
+      let ind_nargs,ind = match indnames with
+	| Some (_,ind,n,nal) -> Some (n,List.length nal), Some ind
+	| None -> None, get_ind brs
+      in
+      let ext,brs = pats_of_glob_branches loc metas vars ind brs
+      in
+      let pred = match p,indnames with
+	| Some p, Some (_,_,_,nal) ->
+	  rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas vars p))
+	| _ -> PMeta None
+      in
+      let info =
+	{ cip_style = sty;
+	  cip_ind = ind;
+	  cip_ind_args = ind_nargs;
+	  cip_extensible = ext }
+      in
+      (* Nota : when we have a non-trivial predicate,
+	 the inductive type is known. Same when we have at least
+	 one non-trivial branch. These facts are used in [Constrextern]. *)
+      PCase (info, pred, pat_of_raw metas vars c, brs)
 
-  | r ->
-      let loc = loc_of_glob_constr r in
-      user_err_loc (loc,"pattern_of_glob_constr", Pp.str"Non supported pattern.")
+  | r -> err (loc_of_glob_constr r) (Pp.str "Non supported pattern.")
 
-and pat_of_glob_branch loc metas vars ind brs i =
-  let bri = List.filter
-    (function
-        (_,_,[PatCstr(_,c,lv,Anonymous)],_) -> snd c = i+1
-      | (loc,_,_,_) ->
-          user_err_loc (loc,"pattern_of_glob_constr",
-                        Pp.str "Non supported pattern.")) brs in
-  match bri with
-    | [(_,_,[PatCstr(_,(indsp,_),lv,_)],br)] ->
-	if ind <> None & ind <> Some indsp then
-          user_err_loc (loc,"pattern_of_glob_constr",
-            Pp.str "All constructors must be in the same inductive type.");
-        let lna =
-          List.map
-            (function PatVar(_,na) -> na
-              | PatCstr(loc,_,_,_) ->
-                  user_err_loc (loc,"pattern_of_glob_constr",
-                                Pp.str "Non supported pattern.")) lv in
-        let vars' = List.rev lna @ vars in
-	List.length lv, rev_it_mkPLambda lna (pat_of_raw metas vars' br)
-    | _ -> user_err_loc (loc,"pattern_of_glob_constr",
-                         str "No unique branch for " ++ int (i+1) ++
-                         str"-th constructor.")
+and pats_of_glob_branches loc metas vars ind brs =
+  let get_arg = function
+    | PatVar(_,na) -> na
+    | PatCstr(loc,_,_,_) -> err loc (Pp.str "Non supported pattern.")
+  in
+  let rec get_pat indexes = function
+    | [] -> false, []
+    | [(_,_,[PatVar(_,Anonymous)],GHole _)] -> true, [] (* ends with _ => _ *)
+    | (_,_,[PatCstr(_,(indsp,j),lv,_)],br) :: brs ->
+      if ind <> None && ind <> Some indsp then
+        err loc (Pp.str "All constructors must be in the same inductive type.");
+      if Intset.mem (j-1) indexes then
+	err loc
+          (str "No unique branch for " ++ int j ++ str"-th constructor.");
+      let lna = List.map get_arg lv in
+      let vars' = List.rev lna @ vars in
+      let pat = rev_it_mkPLambda lna (pat_of_raw metas vars' br) in
+      let ext,pats = get_pat (Intset.add (j-1) indexes) brs in
+      ext, ((j-1, List.length lv, pat) :: pats)
+    | (loc,_,_,_) :: _ -> err loc (Pp.str "Non supported pattern.")
+  in
+  get_pat Intset.empty brs
 
 let pattern_of_glob_constr c =
   let metas = ref [] in

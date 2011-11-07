@@ -60,6 +60,12 @@ type extended_patvar_map = (patvar * constr_under_binders) list
 
 (** {5 Patterns} *)
 
+type case_info_pattern =
+    { cip_style : case_style;
+      cip_ind : inductive option;
+      cip_ind_args : (int * int) option; (** number of params and args *)
+      cip_extensible : bool (** does this match end with _ => _ ? *) }
+
 type constr_pattern =
   | PRef of global_reference
   | PVar of identifier
@@ -73,10 +79,13 @@ type constr_pattern =
   | PSort of glob_sort
   | PMeta of patvar option
   | PIf of constr_pattern * constr_pattern * constr_pattern
-  | PCase of (case_style * int array * inductive option * (int * int) option)
-      * constr_pattern * constr_pattern * constr_pattern array
+  | PCase of case_info_pattern * constr_pattern * constr_pattern *
+      (int * int * constr_pattern) list (** index of constructor, nb of args *)
   | PFix of fixpoint
   | PCoFix of cofixpoint
+
+(** Nota : in a [PCase], the array of branches might be shorter than
+    expected, denoting the use of a final "_ => _" branch *)
 
 (** {5 Functions on patterns} *)
 

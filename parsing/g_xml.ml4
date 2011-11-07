@@ -170,9 +170,10 @@ let rec interp_xml_constr = function
       let ind = get_xml_inductive al in
       let p = interp_xml_patternsType x in
       let tm = interp_xml_inductiveTerm y in
-      let brs = List.map interp_xml_pattern yl in
-      let brns = Array.to_list (compute_branches_lengths ind) in
-      let mat = simple_cases_matrix_of_branches ind brns brs in
+      let vars = compute_branches_lengths ind in
+      let brs = list_map_i (fun i c -> (i,vars.(i),interp_xml_pattern c)) 0 yl
+      in
+      let mat = simple_cases_matrix_of_branches ind brs in
       let nparams,n = compute_inductive_nargs ind in
       let nal,rtn = return_type_of_predicate ind nparams n p in
       GCases (loc,RegularStyle,rtn,[tm,nal],mat)

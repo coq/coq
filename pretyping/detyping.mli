@@ -51,7 +51,7 @@ val synthetize_type : unit -> bool
 
 val it_destRLambda_or_LetIn_names : int -> glob_constr -> name list * glob_constr
 val simple_cases_matrix_of_branches :
-  inductive -> int list -> glob_constr list -> cases_clauses
+  inductive -> (int * int * glob_constr) list -> cases_clauses
 val return_type_of_predicate :
   inductive -> int -> int -> glob_constr -> predicate_pattern * glob_constr option
 

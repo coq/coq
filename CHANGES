@@ -20,6 +20,10 @@ Specification language and notations
 - Structure/Record printing can be disable by "Unset Printing Records".
   In addition, it can be controlled on type by type basis using
   "Add Printing Record" or "Add Printing Constructor".
+- In a pattern containing a "match", a final "| _ => _" branch could be used
+  now instead of enumerating all remaining constructors. Moreover, the pattern
+  "match _ with _ => _ end" now allows to match any "match". A "in" annotation
+  can also be added to restrict to a precise inductive type.
 
 Tactics
 

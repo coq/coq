@@ -911,6 +911,10 @@ let extern_sort s = extern_glob_sort (detype_sort s)
 (******************************************************************)
 (* Main translation function from pattern -> constr_expr *)
 
+let any_any_branch =
+  (* | _ => _ *)
+  (loc,[],[PatVar (loc,Anonymous)],GHole (loc,Evd.InternalHole))
+
 let rec glob_of_pat env = function
   | PRef ref -> GRef (loc,ref)
   | PVar id -> GVar (loc,id)
@@ -938,22 +942,25 @@ let rec glob_of_pat env = function
   | PIf (c,b1,b2) ->
       GIf (loc, glob_of_pat env c, (Anonymous,None),
            glob_of_pat env b1, glob_of_pat env b2)
-  | PCase ((LetStyle,[|n|],ind,None),PMeta None,tm,[|b|]) ->
+  | PCase ({cip_style=LetStyle; cip_ind_args=None},PMeta None,tm,[(0,n,b)]) ->
       let nal,b = it_destRLambda_or_LetIn_names n (glob_of_pat env b) in
       GLetTuple (loc,nal,(Anonymous,None),glob_of_pat env tm,b)
-  | PCase (_,PMeta None,tm,[||]) ->
-      GCases (loc,RegularStyle,None,[glob_of_pat env tm,(Anonymous,None)],[])
-  | PCase ((_,cstr_nargs,indo,ind_nargs),p,tm,bv) ->
-      let brs = Array.to_list (Array.map (glob_of_pat env) bv) in
-      let brns = Array.to_list cstr_nargs in
-        (* ind is None only if no branch and no return type *)
-      let ind = Option.get indo in
-      let mat = simple_cases_matrix_of_branches ind brns brs in
-      let indnames,rtn =
-	if p = PMeta None then (Anonymous,None),None
-	else
-	  let nparams,n = Option.get ind_nargs in
-	  return_type_of_predicate ind nparams n (glob_of_pat env p) in
+  | PCase (info,p,tm,bl) ->
+      let mat = match bl, info.cip_ind with
+	| [], _ -> []
+	| _, Some ind ->
+	  let bl' = List.map (fun (i,n,c) -> (i,n,glob_of_pat env c)) bl in
+	  simple_cases_matrix_of_branches ind bl'
+	| _, None -> anomaly "PCase with some branches but unknown inductive"
+      in
+      let mat = if info.cip_extensible then mat @ [any_any_branch] else mat
+      in
+      let indnames,rtn = match p, info.cip_ind, info.cip_ind_args with
+	| PMeta None, _, _ -> (Anonymous,None),None
+	| _, Some ind, Some (nparams,nargs) ->
+	  return_type_of_predicate ind nparams nargs (glob_of_pat env p)
+	| _ -> anomaly "PCase with non-trivial predicate but unknown inductive"
+      in
       GCases (loc,RegularStyle,rtn,[glob_of_pat env tm,indnames],mat)
   | PFix f -> Detyping.detype false [] env (mkFix f)
   | PCoFix c -> Detyping.detype false [] env (mkCoFix c)
