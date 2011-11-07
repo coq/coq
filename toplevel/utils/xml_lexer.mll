@@ -144,7 +144,7 @@ rule token = parse
 			Buffer.add_string tmp (entity lexbuf);
 			PCData (pcdata lexbuf)
 		}
-	| space* pcchar+
+	| (space | newline | break)* pcchar+
 		{
 			last_pos := lexeme_start lexbuf;
 			Buffer.reset tmp;
