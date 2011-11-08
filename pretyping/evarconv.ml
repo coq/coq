@@ -618,7 +618,7 @@ let set_solve_evars f = solve_evars := f
  * proposition from Dan Grayson]
  *)
 
-let second_order_matching ts env_rhs evd (evk,args) rhs =
+let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
   try
   let args = Array.to_list args in
   let evi = Evd.find_undefined evd evk in
@@ -629,18 +629,26 @@ let second_order_matching ts env_rhs evd (evk,args) rhs =
   let instance = List.map mkVar (List.map pi1 ctxt) in
 
   let rec make_subst = function
-  | (id,_,t)::ctxt, c::l when isVarId id c -> make_subst (ctxt,l)
-  | (id,_,t)::ctxt, c::l ->
+  | (id,_,t)::ctxt, c::l, occs::occsl when isVarId id c ->
+      if occs<>None then
+        error "Cannot force abstraction on identity instance."
+      else
+        make_subst (ctxt,l,occsl)
+  | (id,_,t)::ctxt, c::l, occs::occsl ->
       let evs = ref [] in
       let filter = List.map2 (&&) filter (filter_possible_projections c args) in
       let ty = Retyping.get_type_of env_rhs evd c in
-      (id,t,c,ty,evs,filter) :: make_subst (ctxt,l)
-  | [], [] -> []
-  | _ -> anomaly "Signature and instance do not match" in
+      (id,t,c,ty,evs,filter,occs) :: make_subst (ctxt,l,occsl)
+  | [], [], [] -> []
+  | _ -> anomaly "Signature, instance and occurrences list do not match" in
 
   let rec set_holes evdref rhs = function
-  | (id,_,c,cty,evsref,filter)::subst ->
+  | (id,_,c,cty,evsref,filter,occs)::subst ->
       let set_var k =
+        match occs with
+        | Some (false,[]) -> mkVar id
+        | Some _ -> error "Selection of specific occurrences not supported"
+        | None ->
         let evty = set_holes evdref cty subst in
         let instance = snd (list_filter2 (fun b c -> b) (filter,instance)) in
         let evd,ev = new_evar_instance sign !evdref evty ~filter instance in
@@ -650,7 +658,7 @@ let second_order_matching ts env_rhs evd (evk,args) rhs =
       set_holes evdref (apply_on_subterm set_var c rhs) subst
   | [] -> rhs in
 
-  let subst = make_subst (ctxt,args) in
+  let subst = make_subst (ctxt,args,argoccs) in
 
   let evdref = ref evd in
   let rhs = set_holes evdref rhs subst in
@@ -664,7 +672,7 @@ let second_order_matching ts env_rhs evd (evk,args) rhs =
       raise Exit in
 
   let rec abstract_free_holes evd = function
-  | (id,idty,c,_,evsref,_)::l ->
+  | (id,idty,c,_,evsref,_,_)::l ->
       let rec force_instantiation evd = function
       | (evk,evty)::evs ->
           let evd =
@@ -695,7 +703,8 @@ let second_order_matching ts env_rhs evd (evk,args) rhs =
 let second_order_matching_with_args ts env evd ev l t =
 (*
   let evd,ev = evar_absorb_arguments env evd ev l in
-  second_order_matching ts env evd ev t
+  let argoccs = array_map_to_list (fun _ -> None) (snd ev) in
+  second_order_matching ts env evd ev argoccs t
 *)
   (evd,false)
 

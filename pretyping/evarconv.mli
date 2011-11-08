@@ -10,6 +10,7 @@ open Names
 open Term
 open Sign
 open Environ
+open Termops
 open Reductionops
 open Evd
 
@@ -43,4 +44,4 @@ val check_conv_record : constr * types list -> constr * types list ->
 val set_solve_evars : (env -> evar_map -> constr -> evar_map * constr) -> unit
 
 val second_order_matching : transparent_state -> env -> evar_map -> 
-  existential -> constr -> evar_map * bool
+  existential -> occurrences option list -> constr -> evar_map * bool

@@ -64,11 +64,16 @@ let abstract_list_all env evd typ c l =
   with UserError _ | Type_errors.TypeError _ ->
     error_cannot_find_well_typed_abstraction env evd p l
 
+let set_occurrences_of_last_arg args =
+  Some all_occurrences :: List.tl (array_map_to_list (fun _ -> None) args)
+
 let abstract_list_all_with_dependencies env evd typ c l =
   let evd,ev = new_evar evd env typ in
   let evd,ev' = evar_absorb_arguments env evd (destEvar ev) l in
+  let argoccs = set_occurrences_of_last_arg (snd ev') in
   let evd,b =
-    Evarconv.second_order_matching empty_transparent_state env evd ev' c in
+    Evarconv.second_order_matching empty_transparent_state
+      env evd ev' argoccs c in
   if b then nf_evar evd (existential_value evd (destEvar ev))
   else error "Cannot find a well-typed abstraction."
 
