@@ -24,7 +24,7 @@
 #install_printer  (* identifier *) ppidset;;
 #install_printer  (* Intset.t *) ppintset;;
 #install_printer  (* label *) pplab;;
-#install_printer  (* mod_self_id *) ppmsid;;
+(*#install_printer  (* mod_self_id *) ppmsid;;*)
 #install_printer  (* mod_bound_id *) ppmbid;;
 #install_printer  (* dir_path *) ppdir;;
 #install_printer  (* module_path *) ppmp;;
