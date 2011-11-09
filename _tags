@@ -79,5 +79,6 @@
 "tools": include
 "tools/coqdoc": include
 "toplevel": include
+"toplevel/utils": include
 
 <plugins/**>: include
