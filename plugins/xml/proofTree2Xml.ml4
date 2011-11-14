@@ -14,11 +14,6 @@
 
 let prooftreedtdname = "http://mowgli.cs.unibo.it/dtd/prooftree.dtd";;
 
-let std_ppcmds_to_string s =
-   Pp.msg_with Format.str_formatter s;
-   Format.flush_str_formatter ()
-;;
-
 let idref_of_id id = "v" ^ id;;
 
 (* Transform a constr to an Xml.token Stream.t *)
@@ -156,7 +151,7 @@ Pp.ppnl (Pp.(++) (Pp.str
         | _ ->
          (****** la tactique employee *)
 	 let prtac = Pptactic.pr_tactic (Global.env()) in
-         let tac = std_ppcmds_to_string (prtac tactic_expr) in
+         let tac = Pp.string_of_ppcmds (prtac tactic_expr) in
          let tacname= first_word tac in
          let of_attribute = ("name",tacname)::("script",tac)::of_attribute in
 

@@ -346,13 +346,12 @@ let do_replace_lb lb_scheme_key aavoid narg gls p q =
         with Not_found ->
           (* spiwack: the format of this error message should probably
 	              be improved. *)
-          let err_msg = msg_with Format.str_formatter
+          let err_msg = string_of_ppcmds
 	                              (str "Leibniz->boolean:" ++
                                        str "You have to declare the" ++
 				       str "decidability over " ++
 				       Printer.pr_constr type_of_pq ++
-				       str " first.");
-	                Format.flush_str_formatter ()
+				       str " first.")
           in
           error err_msg
     in let lb_args = Array.append (Array.append
@@ -404,13 +403,12 @@ let do_replace_bl bl_scheme_key ind gls aavoid narg lft rgt =
                with Not_found ->
 		 (* spiwack: the format of this error message should probably
 	                     be improved. *)
-		 let err_msg = msg_with Format.str_formatter
+		 let err_msg = string_of_ppcmds
 	                                (str "boolean->Leibniz:" ++
                                          str "You have to declare the" ++
 			   	         str "decidability over " ++
 				         Printer.pr_constr tt1 ++
-				         str " first.");
- 	                       Format.flush_str_formatter ()
+				         str " first.")
 		 in
 		 error err_msg
                in let bl_args =

@@ -352,10 +352,6 @@ let rewind count =
 
 (** Goal display *)
 
-let string_of_ppcmds c =
-  Pp.msg_with Format.str_formatter c;
-  Format.flush_str_formatter ()
-
 let hyp_next_tac sigma env (id,_,ast) =
   let id_s = Names.string_of_id id in
   let type_s = string_of_ppcmds (pr_ltype_env env ast) in

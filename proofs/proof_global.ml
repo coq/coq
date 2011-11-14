@@ -179,10 +179,9 @@ let check_no_pending_proof () =
   if not (there_are_pending_proofs ()) then
     ()
   else begin
-    pp_with Format.str_formatter
+    Util.error (Pp.string_of_ppcmds
       (str"Proof editing in progress" ++ (msg_proofs false) ++ fnl() ++
-       str"Use \"Abort All\" first or complete proof(s).")   ;
-    Util.error (Format.flush_str_formatter ())
+       str"Use \"Abort All\" first or complete proof(s)."))
   end
 
 

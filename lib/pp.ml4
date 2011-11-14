@@ -332,3 +332,7 @@ let msgnl x = msgnl_with !std_ft x
 let msgerr x = msg_with !err_ft x
 let msgerrnl x = msgnl_with !err_ft x
 let msg_warning x = msg_warning_with !err_ft x
+
+let string_of_ppcmds c =
+  msg_with Format.str_formatter c;
+  Format.flush_str_formatter ()

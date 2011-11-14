@@ -112,3 +112,5 @@ val msgnl : std_ppcmds -> unit
 val msgerr : std_ppcmds -> unit
 val msgerrnl : std_ppcmds -> unit
 val msg_warning : std_ppcmds -> unit
+
+val string_of_ppcmds : std_ppcmds -> string
