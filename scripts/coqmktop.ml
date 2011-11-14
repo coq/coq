@@ -50,6 +50,7 @@ let opt        = ref false
 let full       = ref false
 let top        = ref false
 let echo       = ref false
+let no_start   = ref false
 
 let src_dirs () =
   [ []; ["kernel";"byterun"]; [ "config" ]; [ "toplevel" ] ]
@@ -171,12 +172,14 @@ let parse_args () =
     | ("-noassert"|"-compact"|"-g"|"-p"|"-thread"|"-dtypes" as o) :: rem ->
         parse (o::op,fl) rem
     | ("-h"|"--help") :: _ -> usage ()
+    | ("-no-start") :: rem -> no_start:=true; parse (op, fl) rem
     | f :: rem ->
 	if Filename.check_suffix f ".ml"
 	  or Filename.check_suffix f ".cmx"
 	  or Filename.check_suffix f ".cmo"
 	  or Filename.check_suffix f ".cmxa"
-	  or Filename.check_suffix f ".cma" then
+	  or Filename.check_suffix f ".cma"
+	  or Filename.check_suffix f ".c" then
 	    parse (op,f::fl) rem
 	else begin
 	  prerr_endline ("Don't know what to do with " ^ f);
@@ -238,6 +241,7 @@ let create_tmp_main_file modules =
     (* Initializes the kind of loading *)
     output_string oc (declare_loading_string());
     (* Start the toplevel loop *)
+    if not !no_start then
     output_string oc "Coqtop.start();;\n";
     close_out oc;
     main_name

@@ -11,4 +11,6 @@
    state, load the files given on the command line, load the ressource file,
    produce the output state if any, and finally will launch [Toplevel.loop]. *)
 
+val init_toplevel : string list -> unit
+
 val start : unit -> unit
