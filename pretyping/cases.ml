@@ -1233,7 +1233,7 @@ and match_current pb tomatch =
 	  Typing.check_allowed_sort pb.env !(pb.evdref) mind current pred;
 	  let inst = List.map mkRel deps in
 	  { uj_val = applist (case, inst);
-	    uj_type = substl inst typ }
+	    uj_type = prod_applist typ inst }
 
 and compile_branch current names deps pb arsign eqn cstr =
   let sign, pb = build_branch current deps names pb arsign eqn cstr in
