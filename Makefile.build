@@ -441,6 +441,11 @@ reals: $(REALSVO)
 setoids: $(SETOIDSVO)
 sorting: $(SORTINGVO)
 numbers: $(NUMBERSVO)
+unicode: $(UNICODEVO)
+classes: $(CLASSESVO)
+program: $(PROGRAMVO)
+structures: $(STRUCTURESVO)
+vectors: $(VECTORSVO)
 
 noreal: logic arith bool zarith qarith lists sets fsets relations \
 	wellfounded setoids sorting
