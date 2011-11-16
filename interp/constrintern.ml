@@ -865,7 +865,7 @@ let find_constructor ref f aliases pats scopes =
 	   if List.length pats < nvars then error_not_enough_arguments loc;
 	   let pats1,pats2 = list_chop nvars pats in
 	   let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) vars pats1 in
-	   let idspl1 = List.map (subst_cases_pattern loc (alias_of aliases) f (subst,[]) scopes) args in
+	   let idspl1 = List.map (subst_cases_pattern loc Anonymous f (subst,[]) scopes) args in
 	   cstr, idspl1, pats2
        | _ -> raise Not_found)
 
