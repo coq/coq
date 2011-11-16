@@ -921,7 +921,7 @@ let known_dependent (_,dep) = (dep = KnownDep)
 
 let expand_arg tms (p,ccl) ((_,t),_,na) =
   let k = length_of_tomatch_type_sign na t in
-  (p+k,liftn_predicate (k-1) p ccl tms)
+  (p+k,liftn_predicate (k-1) (p+1) ccl tms)
 
 let adjust_impossible_cases pb pred tomatch submat =
   if submat = [] then
