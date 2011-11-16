@@ -106,13 +106,13 @@ let push_rels vars env = List.fold_right push_rel vars env
 (* We have x1:t1...xn:tn,xi':ti,y1..yk |- c and re-generalize
    over xi:ti to get x1:t1...xn:tn,xi':ti,y1..yk |- c[xi:=xi'] *)
 
-let regeneralize_rel i k j = if j = i+k then k+1 else j
+let relocate_rel n1 n2 k j = if j = n1+k then n2+k else j
 
-let rec regeneralize_index i k t = match kind_of_term t with
-  | Rel j when j = i+k -> mkRel (k+1)
-  | Rel j when j < i+k -> t
-  | Rel j when j > i+k -> t
-  | _ -> map_constr_with_binders succ (regeneralize_index i) k t
+let rec relocate_index n1 n2 k t = match kind_of_term t with
+  | Rel j when j = n1+k -> mkRel (n2+k)
+  | Rel j when j < n1+k -> t
+  | Rel j when j > n1+k -> t
+  | _ -> map_constr_with_binders succ (relocate_index n1 n2) k t
 
 type alias_constr =
   | DepAlias
@@ -582,26 +582,31 @@ let find_dependencies_signature deps_in_rhs typs =
    and xn:Tn has just been regeneralized into x:Tn so that the terms
    to match are now to be considered in the context xp:Tp,...,x1:T1,x:Tn |-.
 
-   [regeneralize_index_tomatch n tomatch] updates t1..tq so that
-   former references to xn are now references to x. Note that t1..tq
-   are already adjusted to the context xp:Tp,...,x1:T1,x:Tn |-. *)
+   [relocate_index_tomatch n 1 tomatch] updates t1..tq so that
+   former references to xn1 are now references to x. Note that t1..tq
+   are already adjusted to the context xp:Tp,...,x1:T1,x:Tn |-.
 
-let regeneralize_index_tomatch n =
+   [relocate_index_tomatch 1 n tomatch] will go the way back.
+ *)
+
+let relocate_index_tomatch n1 n2 =
   let rec genrec depth = function
   | [] ->
       []
   | Pushed ((c,tm),l,dep) :: rest ->
-      let c = regeneralize_index n depth c in
-      let tm = map_tomatch_type (regeneralize_index n depth) tm in
-      let l = List.map (regeneralize_rel n depth) l in
+      let c = relocate_index n1 n2 depth c in
+      let tm = map_tomatch_type (relocate_index n1 n2 depth) tm in
+      let l = List.map (relocate_rel n1 n2 depth) l in
       Pushed ((c,tm),l,dep) :: genrec depth rest
   | Alias (c1,c2,d,t) :: rest ->
-      Alias (regeneralize_index n depth c1,c2,d,t) :: genrec depth rest
+      Alias (relocate_index n1 n2 depth c1,c2,d,t) :: genrec depth rest
   | Abstract (i,d) :: rest ->
-      let i = regeneralize_rel n depth i in
-      Abstract (i,map_rel_declaration (regeneralize_index n depth) d)
+      let i = relocate_rel n1 n2 depth i in
+      Abstract (i,map_rel_declaration (relocate_index n1 n2 depth) d)
       :: genrec (depth+1) rest in
   genrec 0
+
+(* [replace_tomatch n c tomatch] replaces [Rel n] by [c] in [tomatch] *)
 
 let rec replace_term n c k t =
   if isRel t && destRel t = n+k then lift k c
@@ -835,7 +840,7 @@ let liftn_predicate n = map_predicate (liftn n)
 
 let lift_predicate n = liftn_predicate n 1
 
-let regeneralize_index_predicate n = map_predicate (regeneralize_index n) 0
+let regeneralize_index_predicate n = map_predicate (relocate_index n 1) 0
 
 let substnl_predicate sigma = map_predicate (substnl sigma)
 
@@ -907,7 +912,7 @@ let abstract_predicate env sigma indf cur (names,(nadep,_)) tms ccl =
   let tms = lift_tomatch_stack n tms in
   let tms =
     match kind_of_term cur with
-      | Rel i -> regeneralize_index_tomatch (i+n) tms
+      | Rel i -> relocate_index_tomatch (i+n) 1 tms
       | _ -> (* Initial case *) tms in
   let sign = List.map2 (fun na (_,c,t) -> (na,c,t)) (nadep::names) sign in
   let ccl = if nadep <> Anonymous then ccl else lift_predicate 1 ccl tms in
@@ -1019,6 +1024,41 @@ let adjust_predicate_from_tomatch tomatch (current,typ as ct) pb =
   | _ ->
       pb, (ct,deps,dep)
 
+(* Remove commutative cuts that turn out to be non-dependent after
+   some evars have been instantiated *)
+
+let ungeneralize_branch n (sign,body) cs =
+  match kind_of_term body with
+  | Lambda (_,_,c) | LetIn (_,_,_,c) ->
+      (sign,subst1 (mkRel (n+cs.cs_nargs)) c)
+  | Case _ ->
+      (* Typically case of a match *)
+      (* Not clear what to do; is it avoidable? should we go down the match? *)
+      (sign,applist (body,[mkRel (n+cs.cs_nargs)]))
+  | _ -> assert false
+
+let postprocess_dependencies evd current brs tomatch pred deps cs =
+  let rec aux k brs tomatch pred tocheck deps = match deps, tomatch with
+  | [], _ -> brs,tomatch,pred,[]
+  | n::deps, Abstract (i,d) :: tomatch ->
+      let d = map_rel_declaration (nf_evar evd) d in
+      if List.exists (fun c -> dependent_decl (lift k c) d) tocheck then
+        (* The dependency is real *)
+        let brs,tomatch,pred,inst = aux (k+1) brs tomatch pred (mkRel n::tocheck) deps in
+        let inst = if pi2 d = None then mkRel n::inst else inst in
+        brs, Abstract (i,d) :: tomatch, pred, inst
+      else
+        (* Finally, no dependency remains, so, we can replace the generalized *)
+        (* terms by its actual value in both the remaining terms to match and *)
+        (* the bodies of the Case *)
+        let pred = lift_predicate (-1) pred tomatch in
+        let tomatch = relocate_index_tomatch 1 (n+1) tomatch in
+        let tomatch = lift_tomatch_stack (-1) tomatch in
+        let brs = array_map2 (ungeneralize_branch n) brs cs in
+        aux k brs tomatch pred tocheck deps
+  | _ -> assert false
+  in aux 0 brs tomatch pred [current] deps
+
 (************************************************************************)
 (* Sorting equations by constructor *)
 
@@ -1077,7 +1117,7 @@ let rec generalize_problem names pb = function
       let d = on_pi3 (whd_betaiota !(pb.evdref)) d in (* for better rendering *)
       let pb' = generalize_problem names pb l in
       let tomatch = lift_tomatch_stack 1 pb'.tomatch in
-      let tomatch = regeneralize_index_tomatch (i+1) tomatch in
+      let tomatch = relocate_index_tomatch (i+1) 1 tomatch in
       { pb' with
 	  tomatch = Abstract (i,d) :: tomatch;
           pred = generalize_predicate names i d pb'.tomatch pb'.pred  }
@@ -1236,25 +1276,26 @@ and match_current pb tomatch =
 	  let pb = generalize_problem (names,dep) pb deps in
 
 	  (* We compile branches *)
-	  let brs = array_map2 (compile_branch current (names,dep) deps pb arsign) eqns cstrs in
-
+	  let brvals = array_map2 (compile_branch current (names,dep) deps pb arsign) eqns cstrs in
 	  (* We build the (elementary) case analysis *)
-	  let brvals = Array.map (fun (v,_) -> v) brs in
+          let brvals,tomatch,pred,inst =
+            postprocess_dependencies !(pb.evdref) current
+              brvals pb.tomatch pb.pred deps cstrs in
+          let brvals = Array.map (fun (sign,body) ->
+            it_mkLambda_or_LetIn body sign) brvals in
 	  let (pred,typ) =
 	    find_predicate pb.caseloc pb.env pb.evdref
-	      pb.pred current indt (names,dep) pb.tomatch in
+	      pred current indt (names,dep) tomatch in
 	  let ci = make_case_info pb.env mind pb.casestyle in
 	  let pred = nf_betaiota !(pb.evdref) pred in
 	  let case = mkCase (ci,pred,current,brvals) in
 	  Typing.check_allowed_sort pb.env !(pb.evdref) mind current pred;
-	  let inst = List.map mkRel deps in
 	  { uj_val = applist (case, inst);
 	    uj_type = prod_applist typ inst }
 
-and compile_branch current names deps pb arsign eqn cstr =
-  let sign, pb = build_branch current deps names pb arsign eqn cstr in
-  let j = compile pb in
-  (it_mkLambda_or_LetIn j.uj_val sign, j.uj_type)
+and compile_branch current names deps pb arsign eqns cstr =
+  let sign, pb = build_branch current deps names pb arsign eqns cstr in
+  sign, (compile pb).uj_val
 
 (* Abstract over a declaration before continuing splitting *)
 and compile_generalization pb i d rest =
