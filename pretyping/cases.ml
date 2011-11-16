@@ -875,10 +875,8 @@ let generalize_predicate (names,(nadep,_)) ny d tms ccl =
 
 let rec extract_predicate l ccl = function
   | Alias (deppat,nondeppat,_,_)::tms ->
-      let tms' = match kind_of_term nondeppat with
-        | Rel i -> replace_tomatch i deppat tms
-        | _ -> (* initial terms are not dependent *) tms in
-      extract_predicate l ccl tms'
+      (* substitution already done in build_branch *)
+      extract_predicate l ccl tms
   | Abstract d'::tms ->
       let d' = map_rel_declaration (lift (List.length l)) d' in
       substl l (mkProd_or_LetIn d' (extract_predicate [] ccl tms))
@@ -1107,6 +1105,10 @@ let build_branch current deps (realnames,dep) pb arsign eqns const_info =
   (* into  "Gamma; typs; curalias |- tms" *)
   let tomatch = lift_tomatch_stack const_info.cs_nargs pb.tomatch in
 
+  let tomatch = match kind_of_term current with
+    | Rel i -> replace_tomatch (i+const_info.cs_nargs) ci tomatch
+    | _ -> (* non-rel initial term *) tomatch in
+
   let pred_is_not_dep =
     noccur_predicate_between 1 (List.length realnames + 1) pb.pred tomatch in
 
@@ -1224,21 +1226,11 @@ and compile_generalization pb d rest =
   { uj_val = mkLambda_or_LetIn d j.uj_val;
     uj_type = mkProd_or_LetIn d j.uj_type }
 
-and compile_alias pb (deppat,nondeppat,d,t) rest =
+and compile_alias pb aliases rest =
   let history = simplify_history pb.history in
-  let sign, newenv, mat =
-    insert_aliases pb.env !(pb.evdref) (deppat,nondeppat,d,t) pb.mat in
+  let sign, newenv, mat = insert_aliases pb.env !(pb.evdref) aliases pb.mat in
   let n = List.length sign in
-
-  (* We had Gamma1; x:current; Gamma2 |- tomatch(x) and we rebind x to get *)
-  (* Gamma1; x:current; Gamma2; typs; x':=curalias |- tomatch(x') *)
   let tomatch = lift_tomatch_stack n rest in
-  let tomatch = match kind_of_term nondeppat with
-    | Rel i ->
-	if n = 1 then regeneralize_index_tomatch (i+n) tomatch
-	else replace_tomatch i deppat tomatch
-    | _ -> (* initial terms are not dependent *) tomatch in
-
   let pb =
     {pb with
        env = newenv;
