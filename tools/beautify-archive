@@ -47,6 +47,6 @@ for i in $vfiles; do
   mv -u -f $NEWARCHIVE/$i $i
 done
 echo -------- Beautification completed -------------------------------------
-echo Old files are in directory '"$OLDARCHIVE"'
+echo Old files are in directory '"'$OLDARCHIVE'"'
 echo New files are in current directory
-echo You can now remove the beautification directory '"$NEWARCHIVE"'
+echo You can now remove the beautification directory '"'$NEWARCHIVE'"'
