@@ -873,20 +873,23 @@ let generalize_predicate (names,(nadep,_)) ny d tms ccl =
   let ccl = lift_predicate 1 ccl tms in
   regeneralize_index_predicate (ny+p+1) ccl tms
 
-let rec extract_predicate l ccl = function
-  | Alias (deppat,nondeppat,_,_)::tms ->
-      (* substitution already done in build_branch *)
-      extract_predicate l ccl tms
-  | Abstract d'::tms ->
-      let d' = map_rel_declaration (lift (List.length l)) d' in
-      substl l (mkProd_or_LetIn d' (extract_predicate [] ccl tms))
+let rec extract_predicate ccl = function
+   | Alias (deppat,nondeppat,_,_)::tms ->
+       (* substitution already done in build_branch *)
+      extract_predicate ccl tms
+  | Abstract d::tms ->
+      mkProd_or_LetIn d (extract_predicate ccl tms)
   | Pushed ((cur,NotInd _),_,(dep,_))::tms ->
-      extract_predicate (if dep<>Anonymous then cur::l else l) ccl tms
+      let tms = if dep<>Anonymous then lift_tomatch_stack 1 tms else tms in
+      let pred = extract_predicate ccl tms in
+      if dep<>Anonymous then subst1 cur pred else pred
   | Pushed ((cur,IsInd (_,IndType(_,realargs),_)),_,(dep,_))::tms ->
-      let l = List.rev realargs@l in
-      extract_predicate (if dep<>Anonymous then cur::l else l) ccl tms
+      let k = if dep<>Anonymous then 1 else 0 in
+      let tms = lift_tomatch_stack (List.length realargs + k) tms in
+      let pred = extract_predicate ccl tms in
+      substl (if dep<>Anonymous then cur::realargs else realargs) pred
   | [] ->
-      substl l ccl
+      ccl
 
 let abstract_predicate env sigma indf cur (names,(nadep,_)) tms ccl =
   let sign = make_arity_signature env true indf in
@@ -899,7 +902,7 @@ let abstract_predicate env sigma indf cur (names,(nadep,_)) tms ccl =
       | _ -> (* Initial case *) tms in
   let sign = List.map2 (fun na (_,c,t) -> (na,c,t)) (nadep::names) sign in
   let ccl = if nadep <> Anonymous then ccl else lift_predicate 1 ccl tms in
-  let pred = extract_predicate [] ccl tms in
+  let pred = extract_predicate ccl tms in
   it_mkLambda_or_LetIn_name env pred sign
 
 let known_dependent (_,dep) = (dep = KnownDep)
