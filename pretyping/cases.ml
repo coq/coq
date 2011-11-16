@@ -236,11 +236,12 @@ let push_history_pattern n current cont =
 
 (* A pattern-matching problem has the following form:
 
-   env, evd |- <pred> Cases tomatch of mat end
+   env, evd |- match terms_to_tomatch return pred with mat end
 
-  where tomatch is some sequence of "instructions" (t1  ... tn)
+  where terms_to_match is some sequence of "instructions" (t1 ... tp)
 
   and mat is some matrix
+
    (p11 ... p1n -> rhs1)
    (    ...            )
    (pm1 ... pmn -> rhsm)
@@ -248,16 +249,22 @@ let push_history_pattern n current cont =
   Terms to match: there are 3 kinds of instructions
 
   - "Pushed" terms to match are typed in [env]; these are usually just
-    Rel(n) except for the initial terms given by user and typed in [env]
-  - "Abstract" instructions means an abstraction has to be inserted in the
+    Rel(n) except for the initial terms given by user; in Pushed ((c,tm),deps,na),
+    [c] is the reference to the term (which is a Rel or an initial term), [tm] is
+    its type (telling whether we know if it is an inductive type or not),
+    [deps] is the list of terms to abstract before matching on [c] (these are
+    rels too)
+  - "Abstract" instructions means that an abstraction has to be inserted in the
     current branch to build (this means a pattern has been detected dependent
-    in another one and generalisation is necessary to ensure well-typing)
+    in another one and a generalization is necessary to ensure well-typing)
+    Abstract instructions extend the [env] in which the other instructions
+    are typed
   - "Alias" instructions means an alias has to be inserted (this alias
     is usually removed at the end, except when its type is not the
     same as the type of the matched term from which it comes -
     typically because the inductive types are "real" parameters)
 
-  Right-hand-sides:
+  Right-hand sides:
 
   They consist of a raw term to type in an environment specific to the
   clause they belong to: the names of declarations are those of the
@@ -653,8 +660,14 @@ let lift_tomatch_stack n = liftn_tomatch_stack n 1
    and [match y with (S (S n)) => n | n => n end] into
    [match y with O => y | (S n0) => match n0 with O => y | (S n) => n end end]
 
-  i.e. user names should be preserved and created names should not
-  interfere with user names *)
+   i.e. user names should be preserved and created names should not
+   interfere with user names
+
+   The exact names here are not important for typing (because they are
+   put in pb.env and not in the rhs.rhs_env of branches. However,
+   whether a name is Anonymous or not may have an effect on whether a
+   generalization is done or not.
+ *)
 
 let merge_name get_name obj = function
   | Anonymous -> get_name obj
@@ -687,6 +700,10 @@ let get_names env sign eqns =
 
 (************************************************************************)
 (* Recovering names for variables pushed to the rhs' environment *)
+(* We just factorized a match over a matrix of equations         *)
+(* "C xi1 .. xin as xi" as a single match over "C y1 .. yn as y" *)
+(* We now replace the names y1 .. yn y by the actual names       *)
+(* xi1 .. xin xi to be found in the i-th clause of the matrix    *)
 
 let recover_alias_names get_name = List.map2 (fun x (_,c,t) ->(get_name x,c,t))
 
@@ -765,8 +782,8 @@ Assume the types in the branches are the following
 
 Assume the type of the global case expression is Gamma |- T
 
-The predicate has the form phi = [y1..yq][z:I(y1..yq)]? and must satisfy
-the following n+1 equations:
+The predicate has the form phi = [y1..yq][z:I(y1..yq)]psi and it has to
+satisfy the following n+1 equations:
 
   Gamma, x11...x1p1 |- (phi u11..u1q (C1 x11..x1p1))  =  T1
    ...
@@ -776,11 +793,11 @@ the following n+1 equations:
 Some hints:
 
 - Clearly, if xij occurs in Ti, then, a "match z with (Ci xi1..xipi)
-  => ..."  or a "psi(yk)", with psi extracting xij from uik, should be
+  => ... end"  or a "psi(yk)", with psi extracting xij from uik, should be
   inserted somewhere in Ti.
 
-- If T is undefined, an easy solution is to insert a "match z with (Ci
-  xi1..xipi) => ..." in front of each Ti
+- If T is undefined, an easy solution is to insert a "match z with
+  (Ci xi1..xipi) => ... end" in front of each Ti
 
 - Otherwise, T1..Tn and T must be step by step unified, if some of them
   diverge, then try to replace the diverging subterm by one of y1..yq or z.
@@ -841,6 +858,19 @@ let generalize_predicate (names,(nadep,_)) ny d tms ccl =
   let ccl = lift_predicate 1 ccl tms in
   regeneralize_index_predicate (ny+p+1) ccl tms
 
+(*****************************************************************************)
+(* We just matched over cur:ind(realargs) in the following matching problem  *)
+(*                                                                           *)
+(*   env |- match cur tms return ccl with ... end                            *)
+(*                                                                           *)
+(* and we want to build the predicate corresponding to the individual        *)
+(* matching over cur                                                         *)
+(*                                                                           *)
+(*    pred = fun X:realargstyps x:ind(X)] PI tms.ccl                         *)
+(*                                                                           *)
+(* where pred is computed by abstract_predicate and PI tms.ccl by            *)
+(* extract_predicate                                                         *)
+(*****************************************************************************)
 let rec extract_predicate l ccl = function
   | Alias (deppat,nondeppat,_,_)::tms ->
       let tms' = match kind_of_term nondeppat with
@@ -909,39 +939,54 @@ let adjust_impossible_cases pb pred tomatch submat =
     submat
 
 (*****************************************************************************)
-(* pred = [X:=realargs;x:=c]P types the following problem:                   *)
+(* Let  pred = PI [X;x:I(X)]. PI tms. P  be a typing predicate for the       *)
+(* following pattern-matching problem:                                       *)
 (*                                                                           *)
-(*  Gamma |- match Pushed(c:I(realargs)) rest with...end: pred               *)
+(*  Gamma |- match Pushed(c:I(V)) as x in I(X), tms return pred with...end   *)
 (*                                                                           *)
 (* where the branch with constructor Ci:(x1:T1)...(xn:Tn)->I(realargsi)      *)
-(* is considered. Assume each Ti is some Ii(argsi).                          *)
-(* We let e=Ci(x1,...,xn) and replace pred by                                *)
+(* is considered. Assume each Ti is some Ii(argsi) with Ti:PI Ui. sort_i     *)
+(* We let subst = X:=realargsi;x:=Ci(x1,...,xn) and replace pred by          *)
 (*                                                                           *)
-(* pred' = [X1:=rargs1,x1:=x1']...[Xn:=rargsn,xn:=xn'](P[X:=realargsi;x:=e]) *)
+(* pred' = PI [X1:Ui;x1:I1(X1)]...[Xn:Un;xn:In(Xn)]. (PI tms. P)[subst]      *)
 (*                                                                           *)
-(* s.t Gamma,x1'..xn' |- match Pushed(x1')..Pushed(xn') rest with..end :pred'*)
+(* s.t. the following well-typed sub-pattern-matching problem is obtained    *)
+(*                                                                           *)
+(* Gamma,x'1..x'n |-                                                         *)
+(*   match                                                                   *)
+(*      Pushed(x'1) as x1 in I(X1),                                          *)
+(*      ..,                                                                  *)
+(*      Pushed(x'n) as xn in I(Xn),                                          *)
+(*      tms                                                                  *)
+(*      return pred'                                                         *)
+(*   with .. end                                                             *)
 (*                                                                           *)
 (*****************************************************************************)
 let specialize_predicate newtomatchs (names,(depna,_)) arsign cs tms ccl =
-  (* Assume some gamma st: gamma, (X,x:=realargs,copt), tms |- ccl *)
+  (* Assume some gamma st: gamma |- PI [X,x:I(X)]. PI tms. ccl *)
   let nrealargs = List.length names in
   let k = nrealargs + (if depna<>Anonymous then 1 else 0) in
-  (* We adjust pred st: gamma, x1..xn, (X,x:=realargs,copt), tms |- ccl' *)
+  (* We adjust pred st: gamma, x1..xn |- PI [X,x:I(X)]. PI tms. ccl' *)
+  (* so that x can later be instantiated by Ci(x1..xn) *)
+  (* and X by the realargs for Ci *)
   let n = cs.cs_nargs in
   let ccl' = liftn_predicate n (k+1) ccl tms in
-  let argsi =
+  (* We prepare the substitution of X and x:I(X) *)
+  let realargsi =
     if nrealargs <> 0 then
       adjust_subst_to_rel_context arsign (Array.to_list cs.cs_concl_realargs)
     else
       [] in
-  let copti = if depna<>Anonymous then Some (build_dependent_constructor cs) else None in
-  (* The substituends argsi, copti are all defined in gamma, x1...xn *)
-  (* We need _parallel_ bindings to get gamma, x1...xn, tms |- ccl'' *)
+  let copti =
+    if depna<>Anonymous then Some (build_dependent_constructor cs) else None in
+  (* The substituends realargsi, copti are all defined in gamma, x1...xn *)
+  (* We need _parallel_ bindings to get gamma, x1...xn |- PI tms. ccl'' *)
+  (* Note: applying the substitution in tms is not important (is it sure?) *)
   let ccl'' =
-    whd_betaiota Evd.empty (subst_predicate (argsi, copti) ccl' tms) in
-  (* We adjust ccl st: gamma, x1..xn, x1..xn, tms |- ccl'' so as *)
+    whd_betaiota Evd.empty (subst_predicate (realargsi, copti) ccl' tms) in
+  (* We adjust ccl st: gamma, x'1..x'n, x1..xn, tms |- ccl'' *)
   let ccl''' = liftn_predicate n (n+1) ccl'' tms in
-  (* We adjust ccl so that gamma,x1..xn |- [X1,x1:=R1,x1]..[Xn,xn:=Rn,xn]pred'''*)
+  (* We finally get gamma,x'1..x'n,x |- [X1;x1:I(X1)]..[Xn;xn:I(Xn)]pred'''*)
   snd (List.fold_left (expand_arg tms) (1,ccl''') newtomatchs)
 
 let find_predicate loc env evdref p current (IndType (indf,realargs)) dep tms =
@@ -1039,9 +1084,9 @@ let shift_problem ((current,t),_,(nadep,_)) pb =
      history = push_history_pattern 0 AliasLeaf pb.history;
      mat = List.map remove_current_pattern pb.mat }
 
-(* Building the sub-pattern-matching problem for a given branch *)
+(* Build the sub-pattern-matching problem for a given branch "C x1..xn as x" *)
 let build_branch current deps (realnames,dep) pb arsign eqns const_info =
-  (* We remember that we descend through a constructor *)
+  (* We remember that we descend through constructor C *)
   let alias_type =
     if Array.length const_info.cs_concl_realargs = 0
       & not (known_dependent dep) & deps = []
@@ -1055,12 +1100,20 @@ let build_branch current deps (realnames,dep) pb arsign eqns const_info =
       (AliasConstructor const_info.cs_cstr)
       pb.history in
 
-  (* We find matching clauses *)
+  (* We prepare the matching on x1:T1 .. xn:Tn using some heuristic to *)
+  (* build the name x1..xn from the names present in the equations *)
+  (* that had matched constructor C *)
   let cs_args = const_info.cs_args in
   let names = get_names pb.env cs_args eqns in
+
+  (* We build the matrix obtained by expanding the matching on *)
+  (* "C x1..xn as x" followed by a residual matching on eqn into *)
+  (* a matching on "x1 .. xn eqn" *)
   let submat = List.map (fun (tms,eqn) -> prepend_pattern tms eqn) eqns in
   let typs = List.map2 (fun (_,c,t) na -> (na,c,t)) cs_args names in
 
+  (* We compute over which of x(i+1)..xn and x matching on xi will need a *)
+  (* generalization *)
   let dep_sign =
     find_dependencies_signature
       (dependencies_in_rhs const_info.cs_nargs current pb.tomatch eqns)
@@ -1248,7 +1301,7 @@ let matx_of_eqns env tomatchl eqns =
 (***************** Building an inversion predicate ************************)
 
 (* Let "match t1 in I1 u11..u1n_1 ... tm in Im um1..umn_m with ... end : T"
-   be a pattern-matching problem. We assume that the each uij can be
+   be a pattern-matching problem. We assume that each uij can be
    decomposed under the form pij(vij1..vijq_ij) where pij(aij1..aijq_ij)
    is a pattern depending on some variables aijk and the vijk are
    instances of these variables.  We also assume that each ti has the
@@ -1548,14 +1601,6 @@ let extract_arity_signature env0 tomatchl tmsign =
 		      anomaly "Ill-formed 'in' clause in cases";
 		  List.rev realnal
 	      | None -> list_make nrealargs_ctxt Anonymous in
-(* 	  let na =  *)
-(* 	    match na with  *)
-(* 	      | Name _ -> na *)
-(* 	      | Anonymous -> *)
-(* 		  match kind_of_term term with *)
-(* 		    | Rel n -> pi1 (lookup_rel n (Environ.rel_context env0)) *)
-(* 		    | _ -> Anonymous *)
-(* 	  in *)
 	  (na,None,build_dependent_inductive env0 indf')
 	  ::(List.map2 (fun x (_,c,t) ->(x,c,t)) realnal arsign) in
   let rec buildrec n = function

@@ -71,7 +71,7 @@ let env_nf_betaiotaevar sigma env =
     (fun d e ->
       push_rel (map_rel_declaration (Reductionops.nf_betaiota sigma) d) e) env
 
-(* This simplify the typing context of Cases clauses *)
+(* This simplifies the typing context of Cases clauses *)
 (* hope it does not disturb other typing contexts *)
 let contract env lc =
   let l = ref [] in

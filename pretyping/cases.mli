@@ -46,17 +46,6 @@ val error_wrong_predicate_arity_loc : loc -> env -> constr -> constr -> constr -
 val error_needs_inversion : env -> constr -> types -> 'a
 
 (** {6 Compilation primitive. } *)
-type alias_constr =
-  | DepAlias
-  | NonDepAlias
-type dep_status = KnownDep | KnownNotDep | DepUnknown
-type tomatch_type =
-  | IsInd of types * inductive_type * name list
-  | NotInd of constr option * types
-type tomatch_status =
-  | Pushed of ((constr * tomatch_type) * int list * (name * dep_status))
-  | Alias of (constr * constr * alias_constr * constr)
-  | Abstract of rel_declaration
 
 module type S = sig
   val compile_cases :
