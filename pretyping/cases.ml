@@ -166,7 +166,7 @@ type tomatch_type =
 type tomatch_status =
   | Pushed of ((constr * tomatch_type) * int list * (name * dep_status))
   | Alias of (constr * constr * alias_constr * constr)
-  | Abstract of rel_declaration
+  | Abstract of int * rel_declaration
 
 type tomatch_stack = tomatch_status list
 
@@ -540,7 +540,7 @@ let dependent_decl a = function
 
 let rec dep_in_tomatch n = function
   | (Pushed _ | Alias _) :: l -> dep_in_tomatch n l
-  | Abstract d :: l -> dependent_decl (mkRel n) d or dep_in_tomatch (n+1) l
+  | Abstract (_,d) :: l -> dependent_decl (mkRel n) d or dep_in_tomatch (n+1) l
   | [] -> false
 
 let dependencies_in_rhs nargs current tms eqns =
@@ -594,8 +594,9 @@ let regeneralize_index_tomatch n =
       Pushed ((c,tm),l,dep) :: genrec depth rest
   | Alias (c1,c2,d,t) :: rest ->
       Alias (regeneralize_index n depth c1,c2,d,t) :: genrec depth rest
-  | Abstract d :: rest ->
-      Abstract (map_rel_declaration (regeneralize_index n depth) d)
+  | Abstract (i,d) :: rest ->
+      let i = regeneralize_rel n depth i in
+      Abstract (i,map_rel_declaration (regeneralize_index n depth) d)
       :: genrec (depth+1) rest in
   genrec 0
 
@@ -617,8 +618,8 @@ let replace_tomatch n c =
       Pushed ((b,tm),l,dep) :: replrec depth rest
   | Alias (c1,c2,d,t) :: rest ->
       Alias (replace_term n c depth c1,c2,d,t) :: replrec depth rest
-  | Abstract d :: rest ->
-      Abstract (map_rel_declaration (replace_term n c depth) d)
+  | Abstract (i,d) :: rest ->
+      Abstract (i,map_rel_declaration (replace_term n c depth) d)
       :: replrec (depth+1) rest in
   replrec 0
 
@@ -639,8 +640,9 @@ let rec liftn_tomatch_stack n depth = function
   | Alias (c1,c2,d,t)::rest ->
       Alias (liftn n depth c1,liftn n depth c2,d,liftn n depth t)
       ::(liftn_tomatch_stack n depth rest)
-  | Abstract d::rest ->
-      Abstract (map_rel_declaration (liftn n depth) d)
+  | Abstract (i,d)::rest ->
+      let i = if i<depth then i else i+n in
+      Abstract (i,map_rel_declaration (liftn n depth) d)
       ::(liftn_tomatch_stack n (depth+1) rest)
 
 let lift_tomatch_stack n = liftn_tomatch_stack n 1
@@ -761,6 +763,12 @@ let insert_aliases env sigma alias eqns =
   let eqns = list_map3 (insert_aliases_eqn sign1) eqnsnames alias_rests eqns in
   sign2, env, eqns
 
+let push_generalized_decl_eqn env n (na,c,t) eqn =
+  let na = match na with
+  | Anonymous -> Anonymous
+  | Name id -> pi1 (Environ.lookup_rel n eqn.rhs.rhs_env) in
+  push_rels_eqn [(na,c,t)] eqn
+
 (**********************************************************************)
 (* Functions to deal with elimination predicate *)
 
@@ -875,7 +883,7 @@ let rec extract_predicate ccl = function
   | Alias (deppat,nondeppat,_,_)::tms ->
       (* substitution already done in build_branch *)
       extract_predicate ccl tms
-  | Abstract d::tms ->
+  | Abstract (i,d)::tms ->
       mkProd_or_LetIn d (extract_predicate ccl tms)
   | Pushed ((cur,NotInd _),_,(dep,_))::tms ->
       let tms = if dep<>Anonymous then lift_tomatch_stack 1 tms else tms in
@@ -1068,7 +1076,7 @@ let rec generalize_problem names pb = function
       let tomatch = lift_tomatch_stack 1 pb'.tomatch in
       let tomatch = regeneralize_index_tomatch (i+1) tomatch in
       { pb' with
-	  tomatch = Abstract d :: tomatch;
+	  tomatch = Abstract (i,d) :: tomatch;
           pred = generalize_predicate names i d pb'.tomatch pb'.pred  }
 
 (* No more patterns: typing the right-hand side of equations *)
@@ -1197,7 +1205,7 @@ let rec compile pb =
   match pb.tomatch with
     | (Pushed cur)::rest -> match_current { pb with tomatch = rest } cur
     | (Alias x)::rest -> compile_alias pb x rest
-    | (Abstract d)::rest -> compile_generalization pb d rest
+    | (Abstract (i,d))::rest -> compile_generalization pb i d rest
     | [] -> build_leaf pb
 
 (* Case splitting *)
@@ -1243,12 +1251,13 @@ and compile_branch current names deps pb arsign eqn cstr =
   let j = compile pb in
   (it_mkLambda_or_LetIn j.uj_val sign, j.uj_type)
 
-and compile_generalization pb d rest =
+(* Abstract over a declaration before continuing splitting *)
+and compile_generalization pb i d rest =
   let pb =
     { pb with
        env = push_rel d pb.env;
        tomatch = rest;
-       mat = List.map (push_rels_eqn [d]) pb.mat } in
+       mat = List.map (push_generalized_decl_eqn pb.env i d) pb.mat } in
   let j = compile pb in
   { uj_val = mkLambda_or_LetIn d j.uj_val;
     uj_type = mkProd_or_LetIn d j.uj_type }
