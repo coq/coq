@@ -409,15 +409,14 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
      the first pattern type and forget about the others *)
   let typ,names =
     match typ with IsInd(t,_,names) -> t,Some names | NotInd(_,t) -> t,None in
-  let typ =
+  let tmtyp =
     try try_find_ind pb.env !(pb.evdref) typ names
     with Not_found -> NotInd (None,typ) in
-  let tomatch = ((current,typ),deps,dep) in
-  match typ with
+  match tmtyp with
   | NotInd (None,typ) ->
       let tm1 = List.map (fun eqn -> List.hd eqn.patterns) pb.mat in
       (match find_row_ind tm1 with
-	| None -> tomatch
+	| None -> (current,tmtyp)
 	| Some (_,(ind,_)) ->
 	    let indt = inductive_template pb.evdref pb.env None ind in
 	    let current =
@@ -429,9 +428,8 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
 		(evd_comb2 (Coercion.inh_conv_coerce_to dummy_loc pb.env)
 		  pb.evdref (make_judge current typ) (mk_tycon_type indt)).uj_val in
 	    let sigma =  !(pb.evdref) in
-	    let typ = try_find_ind pb.env sigma indt names in
-	    ((current,typ),deps,dep))
-  | _ -> tomatch
+	    (current,try_find_ind pb.env sigma indt names))
+  | _ -> (current,tmtyp)
 
 let type_of_tomatch = function
   | IsInd (t,_,_) -> t
@@ -982,14 +980,18 @@ let find_predicate loc env evdref p current (IndType (indf,realargs)) dep tms =
   (pred, whd_betaiota !evdref
            (applist (pred, realargs@[current])), new_Type ())
 
-let adjust_predicate_from_tomatch ((_,oldtyp),_,(nadep,_)) typ pb =
+(* Take into account that a type has been discovered to be inductive, leading
+   to more dependencies in the predicate if the type has indices *)
+let adjust_predicate_from_tomatch tomatch (current,typ as ct) pb =
+  let ((_,oldtyp),deps,((nadep,_) as dep)) = tomatch in
   match typ, oldtyp with
   | IsInd (_,_,names), NotInd _ ->
       let k = if nadep <> Anonymous then 2 else 1 in
       let n = List.length names in
-      { pb with	pred = liftn_predicate n k pb.pred pb.tomatch }
+      { pb with pred = liftn_predicate n k pb.pred pb.tomatch },
+      (ct,List.map (fun i -> if i >= k then i+n else i) deps,dep)
   | _ ->
-      pb
+      pb, (ct,deps,dep)
 
 (************************************************************************)
 (* Sorting equations by constructor *)
@@ -1171,20 +1173,22 @@ let rec compile pb =
     | (Abstract d)::rest -> compile_generalization pb d rest
     | [] -> build_leaf pb
 
+(* Case splitting *)
 and match_current pb tomatch =
-  let ((current,typ),deps,dep as ct) = adjust_tomatch_to_pattern pb tomatch in
-  let pb = adjust_predicate_from_tomatch tomatch typ pb in
+  let tm = adjust_tomatch_to_pattern pb tomatch in
+  let pb,tomatch = adjust_predicate_from_tomatch tomatch tm pb in
+  let ((current,typ),deps,dep) = tomatch in
   match typ with
     | NotInd (_,typ) ->
 	check_all_variables typ pb.mat;
-	compile (shift_problem ct pb)
+	compile (shift_problem tomatch pb)
     | IsInd (_,(IndType(indf,realargs) as indt),names) ->
 	let mind,_ = dest_ind_family indf in
 	let cstrs = get_constructors pb.env indf in
 	let arsign, _ = get_arity pb.env indf in
 	let eqns,onlydflt = group_equations pb mind current cstrs pb.mat in
 	if (Array.length cstrs <> 0 or pb.mat <> []) & onlydflt  then
-	  compile (shift_problem ct pb)
+	  compile (shift_problem tomatch pb)
 	else
           let _constraints = Array.map (solve_constraints indt) cstrs in
 
