@@ -550,29 +550,32 @@ let dependencies_in_rhs nargs current tms eqns =
 
 (* Computing the matrix of dependencies *)
 
-(* We are in context d1...dn |- and [find_dependencies k 1 nextlist]
-   computes for declaration [k+1] in which of declarations in
-   [nextlist] (which corresponds to d(k+2)...dn) it depends;
-   declarations are expressed by index, e.g. in dependency list
-   [n-2;1], [1] points to [dn] and [n-2] to [d3] *)
+(* [find_dependency_list tmi [d(i+1);...;dn]] computes in which
+   declarations [d(i+1);...;dn] the term [tmi] is dependent in.
 
-let rec find_dependency_list k n = function
+   [find_dependencies_signature (used1,...,usedn) ((tm1,d1),...,(tmn,dn))]
+   returns [(deps1,...,depsn)] where [depsi] is a subset of n,..,i+1
+   denoting in which of the d(i+1)...dn, the term tmi is dependent.
+   Dependencies are expressed by index, e.g. in dependency list
+   [n-2;1], [1] points to [dn] and [n-2] to [d3]
+*)
+
+let rec find_dependency_list tm = function
   | [] -> []
   | (used,tdeps,d)::rest ->
-      let deps = find_dependency_list k (n+1) rest in
-      if used && dependent_decl (mkRel n) d
+      let deps = find_dependency_list tm rest in
+      if used && dependent_decl tm d
       then list_add_set (List.length rest + 1) (list_union deps tdeps)
       else deps
 
-let find_dependencies is_dep_or_cstr_in_rhs d (k,nextlist) =
-  let deps = find_dependency_list k 1 nextlist in
+let find_dependencies is_dep_or_cstr_in_rhs (tm,d) nextlist =
+  let deps = find_dependency_list tm nextlist in
   if is_dep_or_cstr_in_rhs || deps <> []
-  then (k-1,(true ,deps,d)::nextlist)
-  else (k-1,(false,[]  ,d)::nextlist)
+  then ((true ,deps,d)::nextlist)
+  else ((false,[]  ,d)::nextlist)
 
 let find_dependencies_signature deps_in_rhs typs =
-  let k = List.length deps_in_rhs in
-  let _,l = List.fold_right2 find_dependencies deps_in_rhs typs (k,[]) in
+  let l = List.fold_right2 find_dependencies deps_in_rhs typs [] in
   List.map (fun (_,deps,_) -> deps) l
 
 (* Assume we had terms t1..tq to match in a context xp:Tp,...,x1:T1 |-
@@ -1121,12 +1124,15 @@ let build_branch current deps (realnames,dep) pb arsign eqns const_info =
   let submat = List.map (fun (tms,eqn) -> prepend_pattern tms eqn) eqns in
   let typs = List.map2 (fun (_,c,t) na -> (na,c,t)) cs_args names in
 
+  let typs' =
+    list_map_i (fun i d -> (mkRel i,map_rel_declaration (lift i) d)) 1 typs in
+
   (* We compute over which of x(i+1)..xn and x matching on xi will need a *)
   (* generalization *)
   let dep_sign =
     find_dependencies_signature
       (dependencies_in_rhs const_info.cs_nargs current pb.tomatch eqns)
-      (List.rev typs) in
+      (List.rev typs') in
 
   (* The dependent term to subst in the types of the remaining UnPushed
      terms is relative to the current context enriched by topushs *)
@@ -1146,9 +1152,8 @@ let build_branch current deps (realnames,dep) pb arsign eqns const_info =
     noccur_predicate_between 1 (List.length realnames + 1) pb.pred tomatch in
 
   let typs' =
-    list_map2_i
-      (fun i d deps ->
-        let (na,c,t) = map_rel_declaration (lift i) d in
+    List.map2
+      (fun (tm,(na,c,t)) deps ->
 	let dep = match dep with
 	  | Name _ as na',k -> (if na <> Anonymous then na else na'),k
 	  | Anonymous,KnownNotDep ->
@@ -1157,8 +1162,8 @@ let build_branch current deps (realnames,dep) pb arsign eqns const_info =
 	      else
 		(force_name na,KnownDep)
 	  | _,_ -> anomaly "Inconsistent dependency" in
-	((mkRel i, NotInd (c,t)),deps,dep))
-      1 typs (List.rev dep_sign) in
+	((tm,NotInd(c,t)),deps,dep))
+      typs' (List.rev dep_sign) in
 
   let pred =
     specialize_predicate typs' (realnames,dep) arsign const_info tomatch pb.pred in
@@ -1496,22 +1501,23 @@ let build_inversion_problem loc env sigma tms t =
   let patl,sign,(subst,avoid) = aux 0 env [] tms ([],avoid0) in
   let n = List.length sign in
 
-  let decls = List.rev sign in
+  let decls =
+    list_map_i (fun i d -> (mkRel i,map_rel_declaration (lift i) d)) 1 sign in
+  let decls = List.rev decls in
   let dep_sign = find_dependencies_signature (list_make n true) decls in
 
-  let (pb_env,_),sub_tms =
-    list_fold_map (fun (env,i) (deps,(na,b,t as d)) ->
+  let pb_env = push_rels sign env in
+  let sub_tms =
+    List.map2 (fun deps (tm,(na,b,t)) ->
       let typ =
-	if b<>None then NotInd(None,t) else
-	  try try_find_ind env sigma t None
+	if b<>None then NotInd (None,t) else
+	  try try_find_ind pb_env sigma t None
 	  with Not_found -> NotInd (None,t) in
-      let ty = lift_tomatch_type (n-i) typ in
       let na_dep =
 	if deps = [] then (Anonymous,KnownNotDep) else (force_name na,KnownDep)
       in
-      let tm = Pushed ((mkRel (n-i),ty),deps,na_dep) in
-      ((push_rel d env,i+1),tm))
-      (env,0) (List.combine dep_sign decls) in
+      Pushed ((tm,typ),deps,na_dep))
+      dep_sign decls in
   let subst = List.map (fun (na,t) -> (na,lift n t)) subst in
   (* [eqn1] is the first clause of the auxiliary pattern-matching that
      serves as skeleton for the return type: [patl] is the
@@ -1562,23 +1568,15 @@ let build_inversion_problem loc env sigma tms t =
 (* realargs and terms to match *)
 let build_initial_predicate knowndep allnames pred =
   let nar = List.fold_left (fun n names -> List.length names + n) 0 allnames in
-  let rec buildrec n pred nal = function
-    | [] -> List.rev nal,pred
-    | names::lnames ->
-        let names' = List.tl names in
-        let n' = n + List.length names' in
-        let pred, p =
-          if dependent (mkRel (nar-n')) pred then pred, 1
-          else liftn (-1) (nar-n') pred, 0 in
-        let na =
-          if p=1 then
-            let na = List.hd names in
-            ((if na = Anonymous then
-              (* can happen if evars occur in the return clause *)
-              Name (id_of_string "x") (*Hum*)
-            else na),knowndep)
-          else (Anonymous,KnownNotDep) in
-        buildrec (n'+1) pred (na::nal) lnames
+  let rec buildrec n pred deps = function
+    | [] -> List.rev deps,pred
+    | (na::realnames)::lnames ->
+        let n' = n + List.length realnames in
+        let pred, dep =
+          if dependent (mkRel (nar-n')) pred then pred, (force_name na,knowndep)
+          else liftn (-1) (nar-n') pred, (Anonymous,KnownNotDep) in
+        buildrec (n'+1) pred (dep::deps) lnames
+    | _ -> assert false
   in buildrec 0 pred [] allnames
 
 let extract_arity_signature env0 tomatchl tmsign =
