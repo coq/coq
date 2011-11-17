@@ -727,7 +727,7 @@ let unfold_match env sigma sk app =
 let is_rew_cast = function RewCast _ -> true | _ -> false
 
 let coerce env avoid cstr res = 
-  let prf, rel = get_rew_prf res, get_rew_rel res in
+  let rel, prf = get_rew_prf res in
     apply_constraint env avoid res.rew_car rel prf cstr res
 
 let subterm all flags (s : strategy) : strategy =
