@@ -995,6 +995,12 @@ and intern_genarg ist x =
       | None ->
           lookup_genarg_glob s ist x
 
+let intern_pure_tactic ist a =
+  match intern_tactic ist a with
+  | TacArg (TacCall _ | TacExternal _ | Reference _ | TacDynamic _ | Tacexp _) as a -> a
+  | TacArg _ | TacFun _ -> error "Tactic expected."
+  | a -> a
+
 (************* End globalization ************)
 
 (***************************************************************************)
