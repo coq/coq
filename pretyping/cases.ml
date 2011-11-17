@@ -884,6 +884,7 @@ let rec extract_predicate ccl = function
       let pred = extract_predicate ccl tms in
       if dep<>Anonymous then subst1 cur pred else pred
   | Pushed ((cur,IsInd (_,IndType(_,realargs),_)),_,(dep,_))::tms ->
+      let realargs = List.rev realargs in
       let k = if dep<>Anonymous then 1 else 0 in
       let tms = lift_tomatch_stack (List.length realargs + k) tms in
       let pred = extract_predicate ccl tms in
