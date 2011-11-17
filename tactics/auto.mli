@@ -32,16 +32,20 @@ type 'a auto_tactic =
 
 open Glob_term
 
+type hints_path_atom = 
+  | PathHints of global_reference list
+  | PathAny
+
 type 'a gen_auto_tactic = {
   pri   : int;            (** A number between 0 and 4, 4 = lower priority *)
   pat   : constr_pattern option; (** A pattern for the concl of the Goal *)
-  name  : global_reference option; (** A potential name to refer to the hint *)
+  name  : hints_path_atom; (** A potential name to refer to the hint *) 
   code  : 'a auto_tactic; (** the tactic to apply when the concl matches pat *)
 }
 
 type pri_auto_tactic = clausenv gen_auto_tactic
 
-type stored_data = int * pri_auto_tactic
+type stored_data = int * clausenv gen_auto_tactic
 
 type search_entry
 
@@ -49,23 +53,39 @@ type search_entry
 
 type hint_entry = global_reference option * types gen_auto_tactic
 
+type hints_path =
+  | PathAtom of hints_path_atom
+  | PathStar of hints_path
+  | PathSeq of hints_path * hints_path
+  | PathOr of hints_path * hints_path
+  | PathEmpty
+  | PathEpsilon
+
+val normalize_path : hints_path -> hints_path
+val path_matches : hints_path -> hints_path_atom list -> bool
+val path_derivate : hints_path -> hints_path_atom -> hints_path
+val pp_hints_path : hints_path -> Pp.std_ppcmds
+
 module Hint_db :
   sig
     type t
     val empty : transparent_state -> bool -> t
     val find : global_reference -> t -> search_entry
-    val map_none : t ->pri_auto_tactic list
+    val map_none : t -> pri_auto_tactic list
     val map_all : global_reference -> t -> pri_auto_tactic list
     val map_auto : global_reference * constr -> t -> pri_auto_tactic list
     val add_one : hint_entry -> t -> t
     val add_list : (hint_entry) list -> t -> t
     val remove_one : global_reference -> t -> t
     val remove_list : global_reference list -> t -> t
-    val iter : (global_reference option -> stored_data list -> unit) -> t -> unit
+    val iter : (global_reference option -> pri_auto_tactic list -> unit) -> t -> unit
 
     val use_dn : t -> bool
     val transparent_state : t -> transparent_state
     val set_transparent_state : t -> transparent_state -> t
+
+    val add_cut : hints_path -> t -> t
+    val cut : t -> hints_path
 
     val unfolds : t -> Idset.t * Cset.t
   end
@@ -75,8 +95,9 @@ type hint_db_name = string
 type hint_db = Hint_db.t
 
 type hints_entry =
-  | HintsResolveEntry of (int option * bool * global_reference option * constr) list
-  | HintsImmediateEntry of (global_reference option * constr) list
+  | HintsResolveEntry of (int option * bool * hints_path_atom * constr) list
+  | HintsImmediateEntry of (hints_path_atom * constr) list
+  | HintsCutEntry of hints_path
   | HintsUnfoldEntry of evaluable_global_reference list
   | HintsTransparencyEntry of evaluable_global_reference list * bool
   | HintsExternEntry of
@@ -119,7 +140,7 @@ val print_hint_db : Hint_db.t -> unit
    [c] is the term given as an exact proof to solve the goal;
    [ctyp] is the type of [c]. *)
 
-val make_exact_entry : evar_map -> int option -> ?name:global_reference -> constr * constr -> hint_entry
+val make_exact_entry : evar_map -> int option -> ?name:hints_path_atom -> constr * constr -> hint_entry
 
 (** [make_apply_entry (eapply,hnf,verbose) pri (c,cty)].
    [eapply] is true if this hint will be used only with EApply;
@@ -129,7 +150,7 @@ val make_exact_entry : evar_map -> int option -> ?name:global_reference -> const
    [cty] is the type of [c]. *)
 
 val make_apply_entry :
-  env -> evar_map -> bool * bool * bool -> int option -> ?name:global_reference -> 
+  env -> evar_map -> bool * bool * bool -> int option -> ?name:hints_path_atom -> 
   constr * constr -> hint_entry
 
 (** A constr which is Hint'ed will be:
@@ -140,7 +161,7 @@ val make_apply_entry :
          has missing arguments. *)
 
 val make_resolves :
-  env -> evar_map -> bool * bool * bool -> int option -> ?name:global_reference -> 
+  env -> evar_map -> bool * bool * bool -> int option -> ?name:hints_path_atom -> 
   constr -> hint_entry list
 
 (** [make_resolve_hyp hname htyp].

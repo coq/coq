@@ -136,7 +136,8 @@ let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) =
         if is_verbose () & Pfedit.refining () then
           msgerrnl (str"Warning: Variable " ++ pr_id ident ++
           str" is not visible from current goals");
-        VarRef ident
+	let r = VarRef ident in
+	  Typeclasses.declare_instance None true r; r
     | (Global|Local) ->
         let kn =
           declare_constant ident (ParameterEntry (c,nl), IsAssumption kind) in
@@ -147,8 +148,10 @@ let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) =
           msg_warning (pr_id ident ++ str" is declared as a parameter" ++
           str" because it is at a global level");
 	Autoinstance.search_declaration (ConstRef kn);
-        gr in
-  if is_coe then Class.try_add_new_coercion r local
+	Typeclasses.declare_instance None false gr;
+        gr 
+  in
+    if is_coe then Class.try_add_new_coercion r local
 
 let declare_assumptions_hook = ref ignore
 let set_declare_assumptions_hook = (:=) declare_assumptions_hook

@@ -499,3 +499,55 @@ END
 TACTIC EXTEND convert_concl_no_check
 | ["convert_concl_no_check" constr(x) ] -> [ convert_concl_no_check x DEFAULTcast ]
 END
+
+
+let pr_hints_path_atom prc _ _ a =
+  match a with
+  | PathAny -> str"."
+  | PathHints grs ->
+    prlist_with_sep pr_spc Printer.pr_global grs
+
+ARGUMENT EXTEND hints_path_atom
+  TYPED AS hints_path_atom
+  PRINTED BY pr_hints_path_atom
+| [ global_list(g) ] -> [ PathHints (List.map Nametab.global g) ]
+| [ "*" ] -> [ PathAny ]
+END
+
+let pr_hints_path prc prx pry c =
+  let rec aux = function
+  | PathAtom a -> pr_hints_path_atom prc prx pry a
+  | PathStar p -> str"(" ++ aux p ++ str")*"
+  | PathSeq (p, p') -> aux p ++ spc () ++ aux p'
+  | PathOr (p, p') -> str "(" ++ aux p ++ str"|" ++ aux p' ++ str")"
+  | PathEmpty -> str"ø"
+  | PathEpsilon -> str"ε"
+  in aux c
+
+ARGUMENT EXTEND hints_path
+  TYPED AS hints_path
+  PRINTED BY pr_hints_path
+| [ "(" hints_path(p) ")"  ] -> [ p ]
+| [ "!" hints_path(p)  ] -> [ PathStar p ]
+| [ "emp" ] -> [ PathEmpty ]
+| [ "eps" ] -> [ PathEpsilon ]
+| [ hints_path_atom(a) ] -> [ PathAtom a ]
+| [ hints_path(p) "|" hints_path(q) ] -> [ PathOr (p, q) ]
+| [ hints_path(p) ";" hints_path(q) ] -> [ PathSeq (p, q) ]
+END
+
+let pr_hintbases _prc _prlc _prt = Pptactic.pr_hintbases
+
+ARGUMENT EXTEND opthints
+  TYPED AS preident_list_opt
+  PRINTED BY pr_hintbases
+| [ ":" ne_preident_list(l) ] -> [ Some l ]
+| [ ] -> [ None ]
+END
+
+VERNAC COMMAND EXTEND HintCut
+| [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> [
+  let entry = HintsCutEntry p in
+    Auto.add_hints (Vernacexpr.use_section_locality ()) 
+      (match dbnames with None -> ["core"] | Some l -> l) entry ]
+END

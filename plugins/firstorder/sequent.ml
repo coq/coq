@@ -210,7 +210,7 @@ open Auto
 
 let extend_with_auto_hints l seq gl=
   let seqref=ref seq in
-  let f (_, p_a_t) =
+  let f p_a_t =
     match p_a_t.code with
 	Res_pf (c,_) | Give_exact c
       | Res_pf_THEN_trivial_fail (c,_) ->

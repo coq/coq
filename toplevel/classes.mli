@@ -32,7 +32,7 @@ val declare_class : reference -> unit
 
 (** Instance declaration *)
 
-val declare_instance : bool -> reference -> unit
+val existing_instance : bool -> reference -> unit
 
 val declare_instance_constant :
   typeclass ->
@@ -72,5 +72,3 @@ val context : local_binder list -> unit
 (** Forward ref for refine *)
 
 val refine_ref : (open_constr -> Proof_type.tactic) ref
-
-val build_subclasses : env -> evar_map -> constr -> constr list

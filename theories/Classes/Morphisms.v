@@ -408,41 +408,45 @@ Class PartialApplication.
 CoInductive normalization_done : Prop := did_normalization.
 
 Ltac partial_application_tactic :=
-  let rec do_partial_apps H m :=
+  let rec do_partial_apps H m cont := 
     match m with
-      | ?m' ?x => class_apply @Reflexive_partial_app_morphism ; [do_partial_apps H m'|clear H]
-      | _ => idtac
+      | ?m' ?x => class_apply @Reflexive_partial_app_morphism ; 
+        [(do_partial_apps H m' ltac:idtac)|clear H]
+      | _ => cont
     end
   in
-  let rec do_partial H ar m :=
+  let rec do_partial H ar m := 
     match ar with
-      | 0 => do_partial_apps H m
+      | 0%nat => do_partial_apps H m ltac:(fail 1)
       | S ?n' =>
         match m with
           ?m' ?x => do_partial H n' m'
         end
     end
   in
-  let on_morphism m :=
-    let m' := fresh in head_of_constr m' m ;
-    let n := fresh in evar (n:nat) ;
-    let v := eval compute in n in clear n ;
-    let H := fresh in
-      assert(H:Params m' v) by typeclasses eauto ;
-      let v' := eval compute in v in subst m';
-      do_partial H v' m
- in
+  let params m sk fk :=
+    (let m' := fresh in head_of_constr m' m ;
+     let n := fresh in evar (n:nat) ;
+     let v := eval compute in n in clear n ;
+      let H := fresh in
+        assert(H:Params m' v) by typeclasses eauto ;
+          let v' := eval compute in v in subst m';
+            (sk H v' || fail 1))
+    || fk
+  in
+  let on_morphism m cont :=
+    params m ltac:(fun H n => do_partial H n m)
+      ltac:(cont)
+  in
   match goal with
     | [ _ : normalization_done |- _ ] => fail 1
     | [ _ : @Params _ _ _ |- _ ] => fail 1
     | [ |- @Proper ?T _ (?m ?x) ] =>
       match goal with
-        | [ _ : PartialApplication |- _ ] =>
-          class_apply @Reflexive_partial_app_morphism
-        | _ =>
-          on_morphism (m x) ||
-            (class_apply @Reflexive_partial_app_morphism ;
-              [ pose Build_PartialApplication | idtac ])
+        | [ H : PartialApplication |- _ ] =>
+          class_apply @Reflexive_partial_app_morphism; [|clear H]
+        | _ => on_morphism (m x)
+          ltac:(class_apply @Reflexive_partial_app_morphism)
       end
   end.
 
@@ -471,7 +475,7 @@ Qed.
 
 Lemma inverse_arrow `(NA : Normalizes A R (inverse R'''), NB : Normalizes B R' (inverse R'')) :
   Normalizes (A -> B) (R ==> R') (inverse (R''' ==> R'')%signature).
-Proof. unfold Normalizes in *. intros.
+Proof. unfold Normalizes in *. intros. 
   rewrite NA, NB. firstorder.
 Qed.
 

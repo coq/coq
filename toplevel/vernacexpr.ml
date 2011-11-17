@@ -165,10 +165,11 @@ type simple_binder = lident list  * constr_expr
 type class_binder = lident * constr_expr list
 type 'a with_coercion = coercion_flag * 'a
 type 'a with_notation = 'a * decl_notation list
+type 'a with_priority = 'a * int option
 type constructor_expr = (lident * constr_expr) with_coercion
 type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
-  | RecordDecl of lident option * local_decl_expr with_coercion with_notation list
+  | RecordDecl of lident option * local_decl_expr with_coercion with_priority with_notation list
 type inductive_expr =
   lident with_coercion * local_binder list * constr_expr option * inductive_kind *
     constructor_list_or_record_decl_expr

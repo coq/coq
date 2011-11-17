@@ -34,7 +34,7 @@ let subst_hint subst hint =
   let typ' = subst_mps subst hint.rew_type in
   let pat' = subst_mps subst hint.rew_pat in
   let t' = Tacinterp.subst_tactic subst hint.rew_tac in
-    if hint.rew_lemma == cst' && hint.rew_tac == t' then hint else
+    if hint.rew_lemma == cst' && hint.rew_type == typ' && hint.rew_tac == t' then hint else
       { hint with
 	rew_lemma = cst'; rew_type = typ';
 	rew_pat = pat';	rew_tac = t' }

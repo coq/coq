@@ -146,7 +146,7 @@ let rec e_trivial_fail_db db_list local_db goal =
 	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
           (e_trivial_fail_db db_list
 	      (Hint_db.add_list hintl local_db) g'))) ::
-    (List.map (fun (x,_,_,_) -> x) (e_trivial_resolve db_list local_db (pf_concl goal)))
+    (List.map (fun (x,_,_,_,_) -> x) (e_trivial_resolve db_list local_db (pf_concl goal)))
   in 
   tclFIRST (List.map tclCOMPLETE tacl) goal 
 
@@ -166,7 +166,7 @@ and e_my_find_search db_list local_db hdc complete concl =
       (local_db::db_list)
   in
   let tac_of_hint =
-    fun (flags, {pri=b; pat = p; code=t}) ->
+    fun (flags, {pri = b; pat = p; code = t; name = name}) ->
       let tac =
 	match t with
 	  | Res_pf (term,cl) -> with_prods nprods (term,cl) (unify_resolve flags)
@@ -177,14 +177,16 @@ and e_my_find_search db_list local_db hdc complete concl =
 	        (if complete then tclIDTAC else e_trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> tclWEAK_PROGRESS (unfold_in_concl [all_occurrences,c])
 	  | Extern tacast -> 
-	    tclTHEN
-	      (fun gl -> Refiner.tclEVARS (mark_unresolvables (project gl)) gl)
+(* 	    tclTHEN *)
+(* 	      (fun gl -> Refiner.tclEVARS (mark_unresolvables (project gl)) gl) *)
 	      (conclPattern concl p tacast)
       in
       let tac = if complete then tclCOMPLETE tac else tac in
 	match t with
-	| Extern _ -> (tac,b,true,lazy (pr_autotactic t))
-	| _ -> (tac,b,false,lazy (pr_autotactic t))
+	| Extern _ -> (tac,b,true, name, lazy (pr_autotactic t))
+	| _ -> 
+(* 	  let tac gl = with_pattern (pf_env gl) (project gl) flags p concl tac gl in *)
+	    (tac,b,false, name, lazy (pr_autotactic t))
   in List.map tac_of_hint hintl
 
 and e_trivial_resolve db_list local_db gl =
@@ -212,7 +214,9 @@ let pr_ev evs ev = Printer.pr_constr_env (Goal.V82.env evs ev) (Evarutil.nf_evar
 let pr_depth l = prlist_with_sep (fun () -> str ".") pr_int (List.rev l)
 
 type autoinfo = { hints : Auto.hint_db; is_evar: existential_key option;
-		  only_classes: bool; auto_depth: int list; auto_last_tac: std_ppcmds Lazy.t}
+		  only_classes: bool; auto_depth: int list; auto_last_tac: std_ppcmds Lazy.t;
+		  auto_path : global_reference option list;
+		  auto_cut : hints_path }
 type autogoal = goal * autoinfo
 type 'ans fk = unit -> 'ans
 type ('a,'ans) sk = 'a -> 'ans fk -> 'ans
@@ -239,24 +243,35 @@ let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
   let keep = not only_classes || is_class in
     if keep then 
       let c = mkVar id in
+      let name = PathHints [VarRef id] in
       let hints =
 	if is_class then
-	  let hints = build_subclasses env sigma (mkVar id) in
-	    list_map_append
-	      (make_resolves env sigma (true,false,Flags.is_verbose()) None) hints
+	  let hints = build_subclasses ~check:false env sigma (VarRef id) None in
+	    (list_map_append
+	       (fun (pri, c) -> make_resolves env sigma 
+		  (true,false,Flags.is_verbose()) pri c) 
+	       hints)
 	else []
       in
-	hints @ map_succeed 
-	  (fun f -> try f (c,cty) with UserError _ -> failwith "") 
-	[make_exact_entry sigma pri; make_apply_entry env sigma flags pri]
+        (hints @ map_succeed 
+	 (fun f -> try f (c,cty) with UserError _ -> failwith "") 
+	 [make_exact_entry ~name sigma pri; make_apply_entry ~name env sigma flags pri])
     else []
 
 let pf_filtered_hyps gls = 
   Goal.V82.hyps gls.Evd.sigma (sig_it gls)
 
 let make_hints g st only_classes sign =
-  let hintlist = list_map_append 
-    (pf_apply make_resolve_hyp g st (true,false,false) only_classes None) sign
+  let paths, hintlist = 
+    List.fold_left 
+    (fun (paths, hints) hyp ->
+     if is_section_variable (pi1 hyp) then (paths, hints)
+     else
+       let path, hint = 		    
+	 PathEmpty, pf_apply make_resolve_hyp g st (true,false,false) only_classes None hyp
+       in
+	 (PathOr (paths, path), hint @ hints))
+    (PathEmpty, []) sign
   in Hint_db.add_list hintlist (Hint_db.empty st true)
     
 let make_autogoal_hints = 
@@ -289,17 +304,10 @@ let intro_tac : atac =
       in {it = gls'; sigma = s})
 
 let normevars_tac : atac = 
-  { skft = fun sk fk {it = gl; sigma = s} ->
-    let gl', sigma' = Goal.V82.nf_evar s (fst gl) in
-      sk {it = [gl', snd gl]; sigma = sigma'} fk }
-
-  (* lift_tactic tclNORMEVAR *)
-  (*   (fun {it = gls; sigma = s} info -> *)
-  (*     let gls' = *)
-  (* 	List.map (fun g' -> *)
-  (* 	  (g', { info with auto_last_tac = str"NORMEVAR" })) gls *)
-  (*     in {it = gls'; sigma = s}) *)
-
+  { skft = fun sk fk {it = (gl, info); sigma = s} ->
+    let gl', sigma' = Goal.V82.nf_evar s gl in
+    let info' = { info with auto_last_tac = lazy (str"normevars") } in
+      sk {it = [gl', info']; sigma = sigma'} fk }
 
 (* Ordering of states is lexicographic on the number of remaining goals. *)
 let compare (pri, _, _, res) (pri', _, _, res') =
@@ -319,20 +327,21 @@ let hints_tac hints =
       let tacgl = {it = gl; sigma = s} in
       let poss = e_possible_resolve hints info.hints concl in
       let rec aux i foundone = function
-	| (tac, _, b, pp) :: tl ->
+	| (tac, _, b, name, pp) :: tl ->
+	  let derivs = path_derivate info.auto_cut name in
 	  let res = 
-	    try Some (tac tacgl) 
+            try
+		if path_matches derivs [] then None else Some (tac tacgl)
 	    with e when catchable e -> None 
 	  in
 	    (match res with
-	       | None -> 
-		 aux i foundone tl
+	       | None -> aux i foundone tl
 	       | Some {it = gls; sigma = s'} ->
 	    	   if !typeclasses_debug then
 		     msgnl (pr_depth (i :: info.auto_depth) ++ str": " ++ Lazy.force pp
 			    ++ str" on" ++ spc () ++ pr_ev s gl);
 		   let fk =
-		     (fun () -> (* if !typeclasses_debug then msgnl (str"backtracked after " ++ pp); *)
+		     (fun () -> if !typeclasses_debug then msgnl (str"backtracked after " ++ Lazy.force pp);
 			aux (succ i) true tl)
 		   in
 		   let sgls =
@@ -349,7 +358,7 @@ let hints_tac hints =
 		       | None -> gls', s'
 		       | Some (evgls, s') ->
 			 (* Reorder with dependent subgoals. *)
-			 (List.map (fun (ev, x) -> Some ev, x) evgls @ gls', s')
+			 (gls' @ List.map (fun (ev, x) -> Some ev, x) evgls, s')
 		   in
 		   let gls' = list_map_i
 		     (fun j (evar, g) ->
@@ -360,7 +369,8 @@ let hints_tac hints =
 			      if b && not (Environ.eq_named_context_val (Goal.V82.hyps s' g) (Goal.V82.hyps s' gl))
 			      then make_autogoal_hints info.only_classes
 				~st:(Hint_db.transparent_state info.hints) {it = g; sigma = s'}
-			      else info.hints }
+			      else info.hints;
+			      auto_cut = derivs }
 			in g, info) 1 newgls in
 		   let glsv = {it = gls'; sigma = s'} in
 		     sk glsv fk)
@@ -372,9 +382,14 @@ let hints_tac hints =
 	  fk ()
     in aux 1 false poss }
 
-let dependent only_classes evd oev concl =
-  if oev <> None then true
-  else not (Intset.is_empty (Evarutil.evars_of_term concl))
+let isProp env sigma concl = 
+  let ty = Retyping.get_type_of env sigma concl in
+    kind_of_term ty = Sort (Prop Null)
+
+let needs_backtrack only_classes env evd oev concl =
+  if oev = None || isProp env evd concl then
+    not (Intset.is_empty (Evarutil.evars_of_term concl))
+  else true
 
 let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk =
   let rec aux s (acc : autogoal list list) fk = function
@@ -386,11 +401,15 @@ let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk
 	       (fun {it=gls';sigma=s'} fk' ->
 		  let needs_backtrack = 
 		    if gls' = [] then
- 		      dependent info.only_classes s' info.is_evar (Goal.V82.concl s gl)
+ 		      needs_backtrack info.only_classes
+		        (Goal.V82.env s gl) s' info.is_evar (Goal.V82.concl s gl)
 		    else true
 		  in
-		  let fk'' = if not needs_backtrack then
-		    (if !typeclasses_debug then msgnl (str"no backtrack on " ++ pr_ev s gl); fk) else fk' 
+		  let fk'' = 
+		    if not needs_backtrack then
+		      (if !typeclasses_debug then msgnl (str"no backtrack on " ++ pr_ev s gl ++ 
+							 str " after " ++ Lazy.force info.auto_last_tac); fk) 
+		    else fk' 
 		  in aux s' (gls'::acc) fk'' gls)
 	       fk {it = (gl,info); sigma = s})
     | [] -> Some (List.rev acc, s, fk)
@@ -425,14 +444,20 @@ let rec fix_limit limit (t : 'a tac) : 'a tac =
   if limit = 0 then fail_tac 
   else then_tac t { skft = fun sk fk -> (fix_limit (pred limit) t).skft sk fk }
     
-let make_autogoal ?(only_classes=true) ?(st=full_transparent_state) ev g =
+let make_autogoal ?(only_classes=true) ?(st=full_transparent_state) cut ev g =
   let hints = make_autogoal_hints only_classes ~st g in
     (g.it, { hints = hints ; is_evar = ev; 
-	     only_classes = only_classes; auto_depth = []; auto_last_tac = lazy (mt()) })
+	     only_classes = only_classes; auto_depth = []; auto_last_tac = lazy (str"none");
+	     auto_path = []; auto_cut = cut })
       
-let make_autogoals ?(only_classes=true) ?(st=full_transparent_state) gs evm' =
+
+let cut_of_hints h =
+  List.fold_left (fun cut db -> PathOr (Hint_db.cut db, cut)) PathEmpty h
+
+let make_autogoals ?(only_classes=true) ?(st=full_transparent_state) hints gs evm' =
+  let cut = cut_of_hints hints in
   { it = list_map_i (fun i g -> 
-    let (gl, auto) = make_autogoal ~only_classes ~st (Some (fst g)) {it = snd g; sigma = evm'} in
+    let (gl, auto) = make_autogoal ~only_classes ~st cut (Some (fst g)) {it = snd g; sigma = evm'} in
       (gl, { auto with auto_depth = [i]})) 1 gs; sigma = evm' }
 
 let get_result r = 
@@ -440,11 +465,11 @@ let get_result r =
   | None -> None
   | Some (gls, fk) -> Some (gls.sigma,fk)
 	
-let run_on_evars ?(only_classes=true) ?(st=full_transparent_state) p evm tac =
+let run_on_evars ?(only_classes=true) ?(st=full_transparent_state) p evm hints tac =
   match evars_to_goals p evm with
   | None -> None (* This happens only because there's no evar having p *)
   | Some (goals, evm') ->
-      let res = run_list_tac tac p goals (make_autogoals ~only_classes ~st goals evm') in
+      let res = run_list_tac tac p goals (make_autogoals ~only_classes ~st hints goals evm') in
 	match get_result res with
 	| None -> raise Not_found
 	| Some (evm', fk) -> Some (evars_reset_evd ~with_conv_pbs:true evm' evm, fk)
@@ -458,7 +483,7 @@ let eauto_tac ?limit hints =
   | Some limit -> fix_limit limit (eauto_tac hints)
       
 let eauto ?(only_classes=true) ?st ?limit hints g =
-  let gl = { it = make_autogoal ~only_classes ?st None g; sigma = project g } in
+  let gl = { it = make_autogoal ~only_classes ?st (cut_of_hints hints) None g; sigma = project g } in
     match run_tac (eauto_tac ?limit hints) gl with
     | None -> raise Not_found
     | Some {it = goals; sigma = s} ->
@@ -467,7 +492,7 @@ let eauto ?(only_classes=true) ?st ?limit hints g =
 let real_eauto st ?limit hints p evd =
   let rec aux evd fails =
     let res, fails =
-      try run_on_evars ~st p evd (eauto_tac ?limit hints), fails
+      try run_on_evars ~st p evd hints (eauto_tac ?limit hints), fails
       with Not_found ->
 	List.fold_right (fun fk (res, fails) ->
 	  match res with

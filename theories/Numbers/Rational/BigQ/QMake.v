@@ -94,6 +94,7 @@ Module Make (N:NType)(Z:ZType)(Import NZ:NType_ZType N Z) <: QType.
   Z.spec_gcd N.spec_gcd Zgcd_Zabs Zgcd_1
   spec_Z_of_N spec_Zabs_N
  : nz.
+
  Ltac nzsimpl := autorewrite with nz in *.
 
  Ltac qsimpl := try red; unfold to_Q; simpl; intros;

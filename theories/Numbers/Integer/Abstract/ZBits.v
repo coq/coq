@@ -51,6 +51,8 @@ Qed.
 Definition b2z (b:bool) := if b then 1 else 0.
 Local Coercion b2z : bool >-> t.
 
+Instance b2z_wd : Proper (Logic.eq ==> eq) b2z := _.
+
 Lemma exists_div2 a : exists a' (b:bool), a == 2*a' + b.
 Proof.
  elim (Even_or_Odd a); [intros (a',H)| intros (a',H)].
@@ -84,8 +86,8 @@ Qed.
 
 Lemma testbit_spec' a n : 0<=n -> a.[n] == (a / 2^n) mod 2.
 Proof.
- intro Hn. revert a. apply le_ind with (4:=Hn).
- solve_proper.
+ intro Hn. revert a. apply le_ind with (4:=Hn). 
+   solve_proper.
  intros a. nzsimpl.
  destruct (exists_div2 a) as (a' & b & H). rewrite H at 1.
  rewrite testbit_0_r. apply mod_unique with a'; trivial.

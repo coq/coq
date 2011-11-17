@@ -599,8 +599,12 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	  (pretype_type empty_valcon env evdref lvar c).utj_val 
     in
       if resolve_classes then
-	evdref := Typeclasses.resolve_typeclasses ~onlyargs:false
-	  ~split:true ~fail:fail_evar env !evdref;
+	(try 
+	   evdref := Typeclasses.resolve_typeclasses ~onlyargs:true
+	     ~split:true ~fail:true env !evdref;
+	   evdref := Typeclasses.resolve_typeclasses ~onlyargs:false
+	     ~split:true ~fail:false env !evdref
+	 with e -> if fail_evar then raise e else ());
       evdref := consider_remaining_unif_problems env !evdref;
       let c = if expand_evar then nf_evar !evdref c' else c' in
       if fail_evar then check_evars env Evd.empty !evdref c;

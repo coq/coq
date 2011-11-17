@@ -290,15 +290,15 @@ let implicits_of_context ctx =
     in ExplByPos (i, explname), (true, true, true))
     1 (List.rev (Anonymous :: (List.map pi1 ctx)))
 
-let declare_instance_cst glob con =
+let declare_instance_cst glob con pri =
   let instance = Typeops.type_of_constant (Global.env ()) con in
   let _, r = decompose_prod_assum instance in
     match class_of_constr r with
-      | Some (_, (tc, _)) -> add_instance (new_instance tc None glob (ConstRef con))
+      | Some (_, (tc, _)) -> add_instance (new_instance tc pri glob (ConstRef con))
       | None -> errorlabstrm "" (Pp.strbrk "Constant does not build instances of a declared type class.")
 
 let declare_class finite def infer id idbuild paramimpls params arity fieldimpls fields
-    ?(kind=StructureComponent) ?name is_coe coers sign =
+    ?(kind=StructureComponent) ?name is_coe coers priorities sign =
   let fieldimpls =
     (* Make the class and all params implicits in the projections *)
     let ctx_impls = implicits_of_context params in
@@ -334,13 +334,15 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 	Impargs.declare_manual_implicits false (ConstRef proj_cst) [List.hd fieldimpls];
 	Classes.set_typeclass_transparency (EvalConstRef cst) false false;
 	if infer then Evd.fold (fun ev evi _ -> Recordops.declare_method (ConstRef cst) ev sign) sign ();
-	cref, [Name proj_name, List.hd coers, Some proj_cst]
+	let sub = if List.hd coers then Some (List.hd priorities) else None in
+	  cref, [Name proj_name, sub, Some proj_cst]
     | _ ->
 	let idarg = Namegen.next_ident_away (snd id) (Termops.ids_of_context (Global.env())) in
 	let ind = declare_structure BiFinite infer (snd id) idbuild paramimpls
-	  params (Option.cata (fun x -> x) (Termops.new_Type ()) arity) fieldimpls fields
+	  params (Option.default (Termops.new_Type ()) arity) fieldimpls fields
 	  ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields) sign
 	in
+	let coers = List.map2 (fun coe pri -> if coe then Some pri else None) coers priorities in
 	  IndRef ind, (list_map3 (fun (id, _, _) b y -> (id, b, y))
 			 (List.rev fields) coers (Recordops.lookup_projections ind))
   in
@@ -357,9 +359,9 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
       cl_props = fields;
       cl_projs = projs }
   in
-    List.iter2 (fun p sub ->
-      if sub then match p with (_, _, Some p) -> declare_instance_cst true p | _ -> ())
-      k.cl_projs coers;
+(*     list_iter3 (fun p sub pri -> *)
+(*       if sub then match p with (_, _, Some p) -> declare_instance_cst true p pri | _ -> ()) *)
+(*       k.cl_projs coers priorities; *)
   add_class k; impl
 
 let interp_and_check_sort sort =
@@ -376,6 +378,7 @@ open Autoinstance
    list telling if the corresponding fields must me declared as coercion *)
 let definition_structure (kind,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
   let cfs,notations = List.split cfs in
+  let cfs,priorities = List.split cfs in
   let coers,fs = List.split cfs in
   let extract_name acc = function
       Vernacexpr.AssumExpr((_,Name id),_) -> id::acc
@@ -383,6 +386,8 @@ let definition_structure (kind,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuil
     | _ -> acc in
   let allnames =  idstruc::(List.fold_left extract_name [] fs) in
   if not (list_distinct allnames) then error "Two objects have the same name";
+  if not (kind = Class false) && List.exists ((<>) None) priorities then
+    error "Priorities only allowed for type class substructures";
   (* Now, younger decl in params and fields is on top *)
   let sc = interp_and_check_sort s in
   let implpars, params, implfs, fields =
@@ -392,7 +397,7 @@ let definition_structure (kind,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuil
     match kind with
     | Class def ->
 	let gr = declare_class finite def infer (loc,idstruc) idbuild
-	  implpars params sc implfs fields is_coe coers sign in
+	  implpars params sc implfs fields is_coe coers priorities sign in
 	if infer then search_record declare_class_instance gr sign;
 	gr
     | _ ->

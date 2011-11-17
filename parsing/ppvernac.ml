@@ -429,7 +429,7 @@ let pr_constrarg c = spc () ++ pr_constr c in
 let pr_lconstrarg c = spc () ++ pr_lconstr c in
 let pr_intarg n = spc () ++ int n in
 (* let pr_lident_constr sep (i,c) = pr_lident i ++ sep ++ pr_constrarg c in *)
-let pr_record_field (x, ntn) =
+let pr_record_field ((x, pri), ntn) =
   let prx = match x with
     | (oc,AssumExpr (id,t)) ->
 	hov 1 (pr_lname id ++
@@ -443,7 +443,8 @@ let pr_record_field (x, ntn) =
       | None ->
           hov 1 (pr_lname id ++ str" :=" ++ spc() ++
                     pr_lconstr b)) in
-    prx ++ prlist (pr_decl_notation pr_constr) ntn
+  let prpri = match pri with None -> mt() | Some i -> str "| " ++ int i in
+    prx ++ prpri ++ prlist (pr_decl_notation pr_constr) ntn
 in
 let pr_record_decl b c fs =
     pr_opt pr_lident c ++ str"{"  ++

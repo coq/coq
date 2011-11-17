@@ -285,7 +285,7 @@ Section Z_2nZ.
 
  (* ** Record of operators on 2 words *)
 
- Global Instance mk_zn2z_ops : ZnZ.Ops (zn2z t) :=
+ Global Instance mk_zn2z_ops : ZnZ.Ops (zn2z t) | 1 :=
   ZnZ.MkOps _ww_digits _ww_zdigits
     to_Z ww_of_pos head0 tail0
     W0 ww_1 ww_Bm1
@@ -305,7 +305,7 @@ Section Z_2nZ.
     sqrt2
     sqrt.
 
- Global Instance mk_zn2z_ops_karatsuba : ZnZ.Ops (zn2z t) :=
+ Global Instance mk_zn2z_ops_karatsuba : ZnZ.Ops (zn2z t) | 2 :=
    ZnZ.MkOps _ww_digits _ww_zdigits
     to_Z ww_of_pos head0 tail0
     W0 ww_1 ww_Bm1

@@ -332,7 +332,8 @@ GEXTEND Gram
 *)
   (* ... with coercions *)
   record_field:
-    [ [ bd = record_binder; ntn = decl_notation -> bd,ntn ] ]
+  [ [ bd = record_binder; pri = OPT [ "|"; n = natural -> n ];
+      ntn = decl_notation -> (bd,pri),ntn ] ]
   ;
   record_binder_body:
     [ [ l = binders; oc = of_type_with_opt_coercion;

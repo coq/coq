@@ -286,7 +286,7 @@ let project_hint pri l2r c =
   let c = Reductionops.whd_beta Evd.empty (mkApp (c,Termops.extended_rel_vect 0 sign)) in
   let c = it_mkLambda_or_LetIn
     (mkApp (p,[|mkArrow a (lift 1 b);mkArrow b (lift 1 a);c|])) sign in
-  (pri,true,None,c)
+  (pri,true,Auto.PathAny,c)
 
 let add_hints_iff l2r lc n bl =
   Auto.add_hints true bl

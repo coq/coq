@@ -48,6 +48,9 @@ Qed.
 Definition b2n (b:bool) := if b then 1 else 0.
 Local Coercion b2n : bool >-> t.
 
+Instance b2n_proper : Proper (Logic.eq ==> eq) b2n.
+Proof. solve_proper. Qed.
+
 Lemma exists_div2 a : exists a' (b:bool), a == 2*a' + b.
 Proof.
  elim (Even_or_Odd a); [intros (a',H)| intros (a',H)].

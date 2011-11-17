@@ -37,10 +37,11 @@ let set_typeclass_transparency c local b =
 let _ =
   Typeclasses.register_add_instance_hint
     (fun inst local pri ->
+     let path = try Auto.PathHints [global_of_constr inst] with _ -> Auto.PathAny in
       Flags.silently (fun () ->
 	Auto.add_hints local [typeclasses_db]
 	  (Auto.HintsResolveEntry
-	     [pri, false, Some inst, constr_of_global inst])) ());
+	     [pri, false, path, inst])) ());
   Typeclasses.register_set_typeclass_transparency set_typeclass_transparency;
   Typeclasses.register_classes_transparent_state 
     (fun () -> Auto.Hint_db.transparent_state (Auto.searchtable_map typeclasses_db))
@@ -53,7 +54,7 @@ let declare_class g =
 		      Pp.str"Unsupported class type, only constants and inductives are allowed")
     
 (** TODO: add subinstances *)
-let declare_instance glob g =
+let existing_instance glob g =
   let c = global g in
   let instance = Typing.type_of (Global.env ()) Evd.empty (constr_of_global c) in
   let _, r = decompose_prod_assum instance in
@@ -100,10 +101,9 @@ open Pp
 let ($$) g f = fun x -> g (f x)
 
 let instance_hook k pri global imps ?hook cst =
-  let inst = Typeclasses.new_instance k pri global cst in
-    Impargs.maybe_declare_manual_implicits false cst ~enriching:false imps;
-    Typeclasses.add_instance inst;
-    (match hook with Some h -> h cst | None -> ())
+  Impargs.maybe_declare_manual_implicits false cst ~enriching:false imps;
+  Typeclasses.declare_instance pri (not global) cst;
+  (match hook with Some h -> h cst | None -> ())
 
 let declare_instance_constant k pri global imps ?hook id term termtype =
   let cdecl =
@@ -283,29 +283,7 @@ let named_of_rel_context l =
 
 let string_of_global r =
  string_of_qualid (Nametab.shortest_qualid_of_global Idset.empty r)
-
-let rec build_subclasses env sigma c =
-  let ty = Retyping.get_type_of env sigma c in
-    match class_of_constr ty with
-    | None -> []
-    | Some (rels, (tc, args)) ->
-	let projs = list_map_filter 
-	  (fun (n, b, proj) ->
-	     if b then Option.map (fun p -> Nameops.out_name n, mkConst p) proj
-	     else None) tc.cl_projs 
-	in
-	let instapp = appvectc c (Termops.extended_rel_vect 0 rels) in
-	let projargs = Array.of_list (args @ [instapp]) in
-	let declare_proj (n, p) =
-	  let body = it_mkLambda_or_LetIn (mkApp (p, projargs)) rels in
-	    body :: build_subclasses env sigma body
-	in list_map_append declare_proj projs
-	     
-let declare_subclasses constr =
-  let hints = build_subclasses (Global.env ()) Evd.empty constr in
-  let entry = List.map (fun c -> (None, false, None, c)) hints in
-    Auto.add_hints true (* local *) [typeclasses_db] (Auto.HintsResolveEntry entry)
-
+      
 let context l =
   let env = Global.env() in
   let evars = ref Evd.empty in
@@ -332,7 +310,6 @@ let context l =
 	   match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls
       in
 	Command.declare_assumption false (Local (* global *), Definitional) t
-	  [] impl (* implicit *) None (* inline *) (dummy_loc, id);
-	declare_subclasses (mkVar id))
+	  [] impl (* implicit *) None (* inline *) (dummy_loc, id))
   in List.iter fn (List.rev ctx)
        

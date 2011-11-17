@@ -179,9 +179,8 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
   Evarutil.check_evars env Evd.empty !evars termtype;
   let hook vis gr =
     let cst = match gr with ConstRef kn -> kn | _ -> assert false in
-    let inst = Typeclasses.new_instance k pri global (ConstRef cst) in
       Impargs.declare_manual_implicits false gr ~enriching:false [imps];
-      Typeclasses.add_instance inst
+      Typeclasses.declare_instance pri (not global) (ConstRef cst)
   in
   let evm = Subtac_utils.evars_of_term !evars Evd.empty term in
   let obls, _, constr, typ = Eterm.eterm_obligations env id !evars evm 0 term termtype in

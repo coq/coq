@@ -35,5 +35,5 @@ val declare_structure : Decl_kinds.recursivity_kind ->
 
 val definition_structure :
   inductive_kind * Decl_kinds.recursivity_kind * bool(**infer?*)* lident with_coercion * local_binder list *
-  (local_decl_expr with_coercion with_notation) list *
+  (local_decl_expr with_coercion with_priority with_notation) list *
   identifier * constr_expr option -> global_reference
