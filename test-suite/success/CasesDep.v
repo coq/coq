@@ -513,3 +513,16 @@ Definition test (s:step E E) :=
 Inductive K : nat -> Type := KC : forall (p q:nat), K p.
 
 Definition get : K O -> nat := fun x => match x with KC p q => q end.
+
+(* Checking correct order of substitution of realargs *)
+(* (was broken from revision 14664 to 14669) *)
+(* Example extracted from contrib CoLoR *)
+
+Inductive EQ : nat -> nat -> Prop := R x y : EQ x y.
+
+Check fun e t (d1 d2:EQ e t) =>
+      match d1 in EQ e1 t1, d2 in EQ e2 t2 return
+        (e1,t1) = (e2,t2) -> (e1,t1) = (e,t) -> 0=0
+      with
+      | R _ _, R _ _ => fun _ _ => eq_refl
+      end.
