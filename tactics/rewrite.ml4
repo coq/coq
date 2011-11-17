@@ -532,7 +532,7 @@ type rewrite_proof =
   | RewPrf of constr * constr
   | RewCast of cast_kind
 
-let get_rew_rel = function RewPrf (rel, prf) -> Some rel | _ -> None
+let get_opt_rew_rel = function RewPrf (rel, prf) -> Some rel | _ -> None
 
 type rewrite_result_info = {
   rew_car : constr;
@@ -546,6 +546,10 @@ type rewrite_result = rewrite_result_info option
 
 type strategy = Environ.env -> identifier list -> constr -> types ->
   constr option -> evars -> rewrite_result option
+
+let get_rew_rel r = match r.rew_prf with
+  | RewPrf (rel, prf) -> rel
+  | RewCast c -> mkApp (Coqlib.build_coq_eq (), [| r.rew_car; r.rew_from; r.rew_to |])
 
 let get_rew_prf r = match r.rew_prf with
   | RewPrf (rel, prf) -> prf 
@@ -574,7 +578,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' cstr evars 
     let morphargs', morphobjs' = array_chop first args' in
     let appm = mkApp(m, morphargs) in
     let appmtype = Typing.type_of env (goalevars evars) appm in
-    let cstrs = List.map (Option.map (fun r -> r.rew_car, get_rew_rel r.rew_prf)) (Array.to_list morphobjs') in
+    let cstrs = List.map (Option.map (fun r -> r.rew_car, get_opt_rew_rel r.rew_prf)) (Array.to_list morphobjs') in
       (* Desired signature *)
     let evars, appmtype', signature, sigargs = 
       build_signature evars env appmtype cstrs cstr
@@ -721,6 +725,10 @@ let unfold_match env sigma sk app =
 
 let is_rew_cast = function RewCast _ -> true | _ -> false
 
+let coerce env avoid cstr res = 
+  let prf, rel = get_rew_prf res, get_rew_rel res in
+    apply_constraint env avoid res.rew_car rel prf cstr res
+
 let subterm all flags (s : strategy) : strategy =
   let rec aux env avoid t ty cstr evars =
     let cstr' = Option.map (fun c -> (ty, Some c)) cstr in
@@ -859,7 +867,8 @@ let subterm all flags (s : strategy) : strategy =
 	  let c' = s env avoid c cty cstr' evars in
 	    (match c' with
 	    | Some (Some r) ->
-		Some (Some (make_leibniz_proof (mkCase (ci, lift 1 p, mkRel 1, Array.map (lift 1) brs)) ty r))
+		let res = make_leibniz_proof (mkCase (ci, lift 1 p, mkRel 1, Array.map (lift 1) brs)) ty r in
+		  Some (Some (coerce env avoid cstr res))
 	    | x ->
 		if array_for_all ((=) 0) ci.ci_cstr_ndecls then
 		  let cstr = Some (mkApp (Lazy.force coq_eq, [| ty |])) in
@@ -895,7 +904,7 @@ let one_subterm = subterm false default_flags
     Not tail-recursive. *)
 
 let transitivity env avoid (res : rewrite_result_info) (next : strategy) : rewrite_result option =
-  match next env avoid res.rew_to res.rew_car (get_rew_rel res.rew_prf) res.rew_evars with
+  match next env avoid res.rew_to res.rew_car (get_opt_rew_rel res.rew_prf) res.rew_evars with
   | None -> None
   | Some None -> Some (Some res)
   | Some (Some res') ->
@@ -1053,7 +1062,8 @@ let rewrite_with flags c left2right loccs : strategy =
 
 let apply_strategy (s : strategy) env avoid concl cstr evars =
   let res =
-    s env avoid concl (Typing.type_of env (goalevars evars) concl)
+    s env avoid
+ concl (Typing.type_of env (goalevars evars) concl)
       (Option.map snd cstr) evars
   in
     match res with
