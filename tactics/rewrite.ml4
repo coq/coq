@@ -552,10 +552,11 @@ let get_rew_rel r = match r.rew_prf with
   | RewCast c -> mkApp (Coqlib.build_coq_eq (), [| r.rew_car; r.rew_from; r.rew_to |])
 
 let get_rew_prf r = match r.rew_prf with
-  | RewPrf (rel, prf) -> prf 
+  | RewPrf (rel, prf) -> rel, prf 
   | RewCast c ->
-      mkCast (mkApp (Coqlib.build_coq_eq_refl (), [| r.rew_car; r.rew_from |]),
-	     c, mkApp (Coqlib.build_coq_eq (), [| r.rew_car; r.rew_from; r.rew_to |]))
+    let rel = mkApp (Coqlib.build_coq_eq (), [| r.rew_car |]) in
+      rel, mkCast (mkApp (Coqlib.build_coq_eq_refl (), [| r.rew_car; r.rew_from |]),
+		   c, mkApp (rel, [| r.rew_from; r.rew_to |]))
 
 let resolve_subrelation env avoid car rel prf rel' res =
   if eq_constr rel rel' then res
@@ -606,7 +607,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' cstr evars 
 		  let evars, proof = proper_proof env evars carrier relation x in
 		    [ proof ; x ; x ] @ acc, subst, evars, sigargs, x :: typeargs'
 	      | Some r ->
-		  [ get_rew_prf r; r.rew_to; x ] @ acc, subst, evars, sigargs, r.rew_to :: typeargs')
+		  [ snd (get_rew_prf r); r.rew_to; x ] @ acc, subst, evars, sigargs, r.rew_to :: typeargs')
 	  | None ->
 	      if y <> None then error "Cannot rewrite the argument of a dependent function";
 	      x :: acc, x :: subst, evars, sigargs, x :: typeargs')
@@ -803,7 +804,7 @@ let subterm all flags (s : strategy) : strategy =
 		    in 
 		      match prf with
 		      | RewPrf (rel, prf) ->
-			  Some (Some (apply_constraint env avoid res.rew_car rel prf cstr res))
+			Some (Some (apply_constraint env avoid res.rew_car rel prf cstr res))
 		      | _ -> Some (Some res)
 	    else rewrite_args None
 	      
@@ -865,35 +866,43 @@ let subterm all flags (s : strategy) : strategy =
 	  let cty = Typing.type_of env (goalevars evars) c in
 	  let cstr' = Some (mkApp (Lazy.force coq_eq, [| cty |])) in
 	  let c' = s env avoid c cty cstr' evars in
-	    (match c' with
+	  let res = 
+	    match c' with
 	    | Some (Some r) ->
 		let res = make_leibniz_proof (mkCase (ci, lift 1 p, mkRel 1, Array.map (lift 1) brs)) ty r in
 		  Some (Some (coerce env avoid cstr res))
 	    | x ->
-		if array_for_all ((=) 0) ci.ci_cstr_ndecls then
-		  let cstr = Some (mkApp (Lazy.force coq_eq, [| ty |])) in
-		  let found, brs' = Array.fold_left (fun (found, acc) br ->
-		    if found <> None then (found, fun x -> lift 1 br :: acc x)
-		    else
-		      match s env avoid br ty cstr evars with
-		      | Some (Some r) -> (Some r, fun x -> mkRel 1 :: acc x)
-		      | _ -> (None, fun x -> lift 1 br :: acc x))
-		    (None, fun x -> []) brs
-		  in
-		    match found with
-		    | Some r ->
-			let ctxc = mkCase (ci, lift 1 p, lift 1 c, Array.of_list (List.rev (brs' x))) in
-			  Some (Some (make_leibniz_proof ctxc ty r))
-		    | None -> x
-		else
-		  match try Some (fold_match env (goalevars evars) t) with Not_found -> None with
+	      if array_for_all ((=) 0) ci.ci_cstr_ndecls then
+		let cstr = Some (mkApp (Lazy.force coq_eq, [| ty |])) in
+		let found, brs' = Array.fold_left 
+		  (fun (found, acc) br ->
+		   if found <> None then (found, fun x -> lift 1 br :: acc x)
+		   else
+		     match s env avoid br ty cstr evars with
+		     | Some (Some r) -> (Some r, fun x -> mkRel 1 :: acc x)
+		     | _ -> (None, fun x -> lift 1 br :: acc x))
+		  (None, fun x -> []) brs
+		in
+		  match found with
+		  | Some r ->
+		    let ctxc = mkCase (ci, lift 1 p, lift 1 c, Array.of_list (List.rev (brs' x))) in
+		      Some (Some (make_leibniz_proof ctxc ty r))
 		  | None -> x
-		  | Some (cst, _, t') ->
-		      match aux env avoid t' ty cstr evars with
-		      | Some (Some prf) -> Some (Some { prf with
-			  rew_from = t; rew_to = unfold_match env (goalevars evars) cst prf.rew_to })
-		      | x' -> x)
-
+	      else
+		match try Some (fold_match env (goalevars evars) t) with Not_found -> None with
+		| None -> x
+		| Some (cst, _, t') ->
+		  match aux env avoid t' ty cstr evars with
+		  | Some (Some prf) -> 
+		    Some (Some { prf with
+				 rew_from = t; rew_to = unfold_match env (goalevars evars) cst prf.rew_to })
+		  | x' -> x
+	  in 
+	    (match res with
+	     | Some (Some r) ->  
+	       let rel, prf = get_rew_prf r in
+		 Some (Some (apply_constraint env avoid r.rew_car rel prf cstr r))
+	     | x -> x)
       | _ -> None
   in aux
 
