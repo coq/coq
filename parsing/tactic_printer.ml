@@ -16,7 +16,7 @@ open Logic
 open Printer
 
 let pr_tactic = function
-  | TacArg (Tacexp t) ->
+  | TacArg (_,Tacexp t) ->
       (*top tactic from tacinterp*)
       Pptactic.pr_glob_tactic (Global.env()) t
   | t ->

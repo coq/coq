@@ -20,7 +20,7 @@ open Tok
 let fail_default_value = ArgArg 0
 
 let arg_of_expr = function
-    TacArg a -> a
+    TacArg (loc,a) -> a
   | e -> Tacexp (e:raw_tactic_expr)
 
 (* Tactics grammar rules *)
@@ -85,20 +85,20 @@ GEXTEND Gram
       | IDENT "fail"; n = [ n = int_or_var -> n | -> fail_default_value ];
 	  l = LIST0 message_token -> TacFail (n,l)
       | IDENT "external"; com = STRING; req = STRING; la = LIST1 tactic_arg ->
-	  TacArg (TacExternal (loc,com,req,la))
+	  TacArg (loc,TacExternal (loc,com,req,la))
       | st = simple_tactic -> TacAtom (loc,st)
-      | a = may_eval_arg -> TacArg(a)
+      | a = may_eval_arg -> TacArg(loc,a)
       | IDENT "constr"; ":"; id = METAIDENT ->
-          TacArg(MetaIdArg (loc,false,id))
+          TacArg(loc,MetaIdArg (loc,false,id))
       | IDENT "constr"; ":"; c = Constr.constr ->
-          TacArg(ConstrMayEval(ConstrTerm c))
+          TacArg(loc,ConstrMayEval(ConstrTerm c))
       | IDENT "ipattern"; ":"; ipat = simple_intropattern ->
-	  TacArg(IntroPattern ipat)
+	  TacArg(loc,IntroPattern ipat)
       | r = reference; la = LIST0 tactic_arg ->
-          TacArg(TacCall (loc,r,la)) ]
+          TacArg(loc,TacCall (loc,r,la)) ]
     | "0"
       [ "("; a = tactic_expr; ")" -> a
-      | a = tactic_atom -> TacArg a ] ]
+      | a = tactic_atom -> TacArg (loc,a) ] ]
   ;
   (* binder_tactic: level 5 of tactic_expr *)
   binder_tactic:

@@ -474,4 +474,4 @@ let tactics_tac s =
   lazy(make_kn (MPfile contrib_tactics_path) (make_dirpath []) (mk_label s))
 
 let tactics_call tac args =
-  TacArg(TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force (tactics_tac tac)),args))
+  TacArg(dummy_loc,TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force (tactics_tac tac)),args))

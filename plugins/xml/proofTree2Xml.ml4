@@ -144,7 +144,7 @@ Pp.ppnl (Pp.(++) (Pp.str
          Proof2aproof.ProofTreeHash.find proof_tree_to_flattened_proof_tree node
         in begin
         match tactic_expr with
-        | T.TacArg (T.Tacexp _) ->
+        | T.TacArg (_,T.Tacexp _) ->
             (* We don't need to keep the level of abstraction introduced at *)
             (* user-level invocation of tactic... (see Tacinterp.hide_interp)*)
             aux flat_proof old_hyps

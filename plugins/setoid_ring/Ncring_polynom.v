@@ -23,7 +23,7 @@ Context (C R:Type) `{Rh:Ring_morphism C R}.
 
 Variable phiCR_comm: forall (c:C)(x:R), x * [c] == [c] * x.
 
- Ltac rsimpl := repeat (gen_rewrite || phiCR_comm).
+ Ltac rsimpl := repeat (gen_rewrite || rewrite phiCR_comm).
  Ltac add_push := gen_add_push .
 
 (* Definition of non commutative multivariable polynomials 
@@ -298,7 +298,7 @@ reflexivity.
   induction P;simpl;intros.  rewrite ring_morphism_mul.
 try reflexivity.
   simpl. Esimpl.  rewrite IHP1;rewrite IHP2;rsimpl. 
-  repeat rewrite  phiCR_comm. Esimpl.  Qed.
+  Qed.
 
  Lemma PmulC_ok : forall c P l, (PmulC P c)@l ==  P@l * [c].
  Proof.

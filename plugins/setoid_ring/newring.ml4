@@ -164,11 +164,11 @@ let decl_constant na c =
 
 (* Calling a global tactic *)
 let ltac_call tac (args:glob_tactic_arg list) =
-  TacArg(TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force tac),args))
+  TacArg(dummy_loc,TacCall(dummy_loc, ArgArg(dummy_loc, Lazy.force tac),args))
 
 (* Calling a locally bound tactic *)
 let ltac_lcall tac args =
-  TacArg(TacCall(dummy_loc, ArgVar(dummy_loc, id_of_string tac),args))
+  TacArg(dummy_loc,TacCall(dummy_loc, ArgVar(dummy_loc, id_of_string tac),args))
 
 let ltac_letin (x, e1) e2 =
   TacLetIn(false,[(dummy_loc,id_of_string x),e1],e2)
@@ -624,23 +624,23 @@ let interp_cst_tac env sigma rk kind (zero,one,add,mul,opp) cst_tac =
         (match rk, opp, kind with
             Abstract, None, _ ->
               let t = ArgArg(dummy_loc,Lazy.force ltac_inv_morphN) in
-              TacArg(TacCall(dummy_loc,t,List.map carg [zero;one;add;mul]))
+              TacArg(dummy_loc,TacCall(dummy_loc,t,List.map carg [zero;one;add;mul]))
           | Abstract, Some opp, Some _ ->
               let t = ArgArg(dummy_loc, Lazy.force ltac_inv_morphZ) in
-              TacArg(TacCall(dummy_loc,t,List.map carg [zero;one;add;mul;opp]))
+              TacArg(dummy_loc,TacCall(dummy_loc,t,List.map carg [zero;one;add;mul;opp]))
           | Abstract, Some opp, None ->
               let t = ArgArg(dummy_loc, Lazy.force ltac_inv_morphNword) in
               TacArg
-                (TacCall(dummy_loc,t,List.map carg [zero;one;add;mul;opp]))
+                (dummy_loc,TacCall(dummy_loc,t,List.map carg [zero;one;add;mul;opp]))
           | Computational _,_,_ ->
               let t = ArgArg(dummy_loc, Lazy.force ltac_inv_morph_gen) in
               TacArg
-                (TacCall(dummy_loc,t,List.map carg [zero;one;zero;one]))
+                (dummy_loc,TacCall(dummy_loc,t,List.map carg [zero;one;zero;one]))
           | Morphism mth,_,_ ->
               let (_,czero,cone,_,_,_,_,_,_) = dest_morph env sigma mth in
               let t = ArgArg(dummy_loc, Lazy.force ltac_inv_morph_gen) in
               TacArg
-                (TacCall(dummy_loc,t,List.map carg [zero;one;czero;cone])))
+                (dummy_loc,TacCall(dummy_loc,t,List.map carg [zero;one;czero;cone])))
 
 let make_hyp env c =
   let t = Retyping.get_type_of env Evd.empty c in
@@ -657,7 +657,7 @@ let interp_power env pow =
   match pow with
   | None ->
       let t = ArgArg(dummy_loc, Lazy.force ltac_inv_morph_nothing) in
-      (TacArg(TacCall(dummy_loc,t,[])), lapp coq_None [|carrier|])
+      (TacArg(dummy_loc,TacCall(dummy_loc,t,[])), lapp coq_None [|carrier|])
   | Some (tac, spec) ->
       let tac =
         match tac with

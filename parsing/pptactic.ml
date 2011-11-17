@@ -479,7 +479,7 @@ let pr_funvar = function
 
 let pr_let_clause k pr (id,(bl,t)) =
   hov 0 (str k ++ pr_lident id ++ prlist pr_funvar bl ++
-         str " :=" ++ brk (1,1) ++ pr (TacArg t))
+         str " :=" ++ brk (1,1) ++ pr (TacArg (dummy_loc,t)))
 
 let pr_let_clauses recflag pr = function
   | hd::tl ->
@@ -922,20 +922,20 @@ let rec pr_tac inherited tac =
       latom
   | TacAtom (loc,t) ->
       pr_with_comments loc (hov 1 (pr_atom1 t)), ltatom
-  | TacArg(Tacexp e) -> pr_tac_level (latom,E) e, latom
-  | TacArg(ConstrMayEval (ConstrTerm c)) ->
+  | TacArg(_,Tacexp e) -> pr_tac_level (latom,E) e, latom
+  | TacArg(_,ConstrMayEval (ConstrTerm c)) ->
       str "constr:" ++ pr_constr c, latom
-  | TacArg(ConstrMayEval c) ->
+  | TacArg(_,ConstrMayEval c) ->
       pr_may_eval pr_constr pr_lconstr pr_cst pr_pat c, leval
-  | TacArg(TacFreshId l) -> str "fresh" ++ pr_fresh_ids l, latom
-  | TacArg(Integer n) -> int n, latom
-  | TacArg(TacCall(loc,f,[])) -> pr_ref f, latom
-  | TacArg(TacCall(loc,f,l)) ->
+  | TacArg(_,TacFreshId l) -> str "fresh" ++ pr_fresh_ids l, latom
+  | TacArg(_,Integer n) -> int n, latom
+  | TacArg(_,TacCall(loc,f,[])) -> pr_ref f, latom
+  | TacArg(_,TacCall(loc,f,l)) ->
       pr_with_comments loc
         (hov 1 (pr_ref f ++ spc () ++
          prlist_with_sep spc pr_tacarg l)),
       lcall
-  | TacArg a -> pr_tacarg a, latom
+  | TacArg (_,a) -> pr_tacarg a, latom
   in
   if prec_less prec inherited then strm
   else str"(" ++ strm ++ str")"
@@ -954,7 +954,7 @@ and pr_tacarg = function
       str "external" ++ spc() ++ qs com ++ spc() ++ qs req ++
       spc() ++ prlist_with_sep spc pr_tacarg la
   | (TacCall _|Tacexp _|Integer _) as a ->
-      str "ltac:" ++ pr_tac (latom,E) (TacArg a)
+      str "ltac:" ++ pr_tac (latom,E) (TacArg (dummy_loc,a))
 
 in (pr_tac, pr_match_rule)
 

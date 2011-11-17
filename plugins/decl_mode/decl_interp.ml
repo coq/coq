@@ -27,7 +27,7 @@ let intern_justification_items globs =
   Option.map (List.map (intern_constr globs))
 
 let intern_justification_method globs =
-  Option.map (intern_tactic globs)
+  Option.map (intern_pure_tactic globs)
 
 let intern_statement intern_it globs st =
   {st_label=st.st_label;

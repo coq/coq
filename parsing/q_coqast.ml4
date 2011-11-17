@@ -465,9 +465,9 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
       <:expr< Tacexpr.TacFun
         ($mlexpr_of_list mlexpr_of_ident_option idol$,
          $mlexpr_of_tactic body$) >>
-  | Tacexpr.TacArg (Tacexpr.MetaIdArg (_,true,id)) -> anti loc id
-  | Tacexpr.TacArg t ->
-      <:expr< Tacexpr.TacArg $mlexpr_of_tactic_arg t$ >>
+  | Tacexpr.TacArg (_,Tacexpr.MetaIdArg (_,true,id)) -> anti loc id
+  | Tacexpr.TacArg (_,t) ->
+      <:expr< Tacexpr.TacArg $dloc$ $mlexpr_of_tactic_arg t$ >>
   | Tacexpr.TacComplete t ->
       <:expr< Tacexpr.TacComplete $mlexpr_of_tactic t$ >>
   | _ -> failwith "Quotation of tactic expressions: TODO"

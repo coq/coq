@@ -240,7 +240,7 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr =
   | TacMatch of lazy_flag * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr * ('pat,('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr) match_rule list
   | TacMatchGoal of lazy_flag * direction_flag * ('pat,('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr) match_rule list
   | TacFun of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_fun_ast
-  | TacArg of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg
+  | TacArg of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg located
 
 and ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_fun_ast =
   identifier option list * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr

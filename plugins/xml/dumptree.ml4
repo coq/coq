@@ -42,7 +42,7 @@ let thin_sign osign sign =
 ;;
 
 let pr_tactic_xml = function
-  | TacArg (Tacexp t) -> str "<tactic cmd=\"" ++ xmlstream (Pptactic.pr_glob_tactic (Global.env()) t) ++ str "\"/>"
+  | TacArg (_,Tacexp t) -> str "<tactic cmd=\"" ++ xmlstream (Pptactic.pr_glob_tactic (Global.env()) t) ++ str "\"/>"
   | t -> str "<tactic cmd=\"" ++ xmlstream (Pptactic.pr_tactic (Global.env()) t) ++ str "\"/>"
 ;;
 
