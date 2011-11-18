@@ -110,6 +110,7 @@ val pr_concl               : int -> evar_map -> goal -> std_ppcmds
 
 val pr_open_subgoals       : unit -> std_ppcmds
 val pr_nth_open_subgoal    : int -> std_ppcmds
+val pr_evar                : (evar * evar_info) -> std_ppcmds
 val pr_evars_int           : int -> (evar * evar_info) list -> std_ppcmds
 
 val pr_prim_rule           : prim_rule -> std_ppcmds

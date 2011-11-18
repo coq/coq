@@ -294,6 +294,12 @@ let pr_evgl_sign gl =
   let pc = pr_lconstr gl.evar_concl in
   hov 0 (str"[" ++ ps ++ spc () ++ str"|- "  ++ pc ++ str"]" ++ spc () ++ warn)
 
+(* Print an existential variable *)
+
+let pr_evar (ev, evd) =
+  let pegl = pr_evgl_sign evd in
+  (hov 0 (str (string_of_existential ev)  ++ str " : " ++ pegl))
+
 (* Print an enumerated list of existential variables *)
 let rec pr_evars_int i = function
   | [] -> (mt ())
