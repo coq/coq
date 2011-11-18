@@ -36,7 +36,7 @@ let hook_tag_cb tag menu_content sel_cb hover_cb =
 
 let mode_tactic sel_cb (proof:GText.view) = function
   | [] -> assert false
-  | (hyps,(cur_goal,cur_goal_menu))::rem_goals ->
+  | { Ide_intf.goal_hyp = hyps; Ide_intf.goal_ccl = cur_goal; } :: rem_goals ->
       let on_hover sel_start sel_stop =
         proof#buffer#remove_tag
           ~start:proof#buffer#start_iter
@@ -50,10 +50,16 @@ let mode_tactic sel_cb (proof:GText.view) = function
       in
       let goals_cnt = List.length rem_goals + 1 in
       let head_str = Printf.sprintf "%d subgoal%s\n" goals_cnt (if 1 < goals_cnt then "" else "s") in
-      let insert_hyp (h,menu) =
-        let tag = proof#buffer#create_tag [] in
-        hook_tag_cb tag menu sel_cb on_hover;
-        proof#buffer#insert ~tags:[tag] (h^"\n")
+      (* FIXME : add menu entries *)
+      let insert_hyp h =
+        let menu = [] in
+        let tags = if menu <> [] then
+          let tag = proof#buffer#create_tag [] in
+          hook_tag_cb tag menu sel_cb on_hover;
+          [tag]
+          else []
+        in
+        proof#buffer#insert ~tags (h^"\n")
       in
       let insert_goal g menu index total =
         let tags = if menu <> [] then
@@ -68,8 +74,10 @@ let mode_tactic sel_cb (proof:GText.view) = function
       in
       proof#buffer#insert head_str;
       List.iter insert_hyp hyps;
-      insert_goal cur_goal cur_goal_menu 1 goals_cnt;
-      Minilib.list_fold_left_i (fun i _ (_,(g,_)) -> insert_goal g [] i goals_cnt) 2 () rem_goals;
+      (* FIXME : add menu entries *)
+      insert_goal cur_goal [] 1 goals_cnt;
+      let fold_goal i _ { Ide_intf.goal_ccl = g } = insert_goal g [] i goals_cnt in
+      Minilib.list_fold_left_i fold_goal 2 () rem_goals;
       ignore(proof#buffer#place_cursor  
         ~where:((proof#buffer#get_iter_at_mark `INSERT)#backward_lines (3*goals_cnt - 2)));
       ignore(proof#scroll_to_mark `INSERT)
@@ -77,10 +85,10 @@ let mode_tactic sel_cb (proof:GText.view) = function
 
 let mode_cesar (proof:GText.view) = function
   | [] -> assert false
-  | (hyps,(cur_goal,cur_goal_menu))::_ ->
+  | { Ide_intf.goal_hyp = hyps; Ide_intf.goal_ccl = cur_goal; } :: _ ->
       proof#buffer#insert "    *** Declarative Mode ***\n";
       List.iter
-        (fun (hyp,_) -> proof#buffer#insert (hyp^"\n"))
+        (fun hyp -> proof#buffer#insert (hyp^"\n"))
         hyps;
       proof#buffer#insert "______________________________________\n";
       proof#buffer#insert ("thesis := \n "^cur_goal^"\n");

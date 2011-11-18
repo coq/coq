@@ -432,10 +432,12 @@ let goals () =
           string_of_ppcmds (pr_ltype_env_at_top env norm_constr) in
         let process_hyp h_env d acc =
           let d = Term.map_named_declaration (Reductionops.nf_evar sigma) d in
-          (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in
+          (string_of_ppcmds (pr_var_decl h_env d)) :: acc in
+(*           (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in *)
         let hyps =
-          List.rev (Environ.fold_named_context process_hyp env ~init:[]) in
-        (hyps,(ccl,concl_next_tac sigma g))
+          List.rev (Environ.fold_named_context process_hyp env ~init: []) in
+        { Ide_intf.goal_hyp = hyps; Ide_intf.goal_ccl = ccl }
+(*         hyps,(ccl,concl_next_tac sigma g)) *)
       in
       Ide_intf.Goals (List.map process_goal all_goals)
     end

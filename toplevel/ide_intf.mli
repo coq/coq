@@ -10,11 +10,14 @@
 
 type xml = Xml_parser.xml
 
-type 'a menu = 'a * (string * string) list
+type goal = {
+  goal_hyp : string list;
+  goal_ccl : string;
+}
 
 type goals =
   | Message of string
-  | Goals of ((string menu) list * string menu) list
+  | Goals of goal list
 
 type 'a call
 

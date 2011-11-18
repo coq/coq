@@ -14,9 +14,14 @@ type xml = Xml_parser.xml
 
 type 'a menu = 'a * (string * string) list
 
+type goal = {
+  goal_hyp : string list;
+  goal_ccl : string;
+}
+
 type goals =
   | Message of string
-  | Goals of ((string menu) list * string menu) list
+  | Goals of goal list
 
 (** We use phantom types and GADT to protect ourselves against wild casts *)
 
@@ -192,20 +197,30 @@ let to_pair f g = function
 | Element ("pair", [], [x; y]) -> (f x, g y)
 | _ -> raise Marshal_error
 
+let of_goal g =
+  let hyp = of_list of_string g.goal_hyp in
+  let ccl = of_string g.goal_ccl in
+  Element ("goal", [], [hyp; ccl])
+
+let to_goal = function
+| Element ("goal", [], [hyp; ccl]) ->
+  let hyp = to_list to_string hyp in
+  let ccl = to_string ccl in
+  { goal_hyp = hyp; goal_ccl = ccl }
+| _ -> raise Marshal_error
+
 let of_goals = function
 | Message s ->
   Element ("goals", ["val", "message"], [PCData s])
 | Goals l ->
-  let of_string_menu = of_pair of_string (of_list (of_pair of_string of_string)) in
-  let xml = of_list (of_pair (of_list of_string_menu) of_string_menu) l in
+  let xml = of_list of_goal l in
   Element ("goals", ["val", "goals"], [xml])
 
 let to_goals = function
 | Element ("goals", ["val", "message"], l) -> Message (raw_string l)
 | Element ("goals", ["val", "goals"], [xml]) ->
-  let to_string_menu = to_pair to_string (to_list (to_pair to_string to_string)) in
-  let ans = to_list (to_pair (to_list to_string_menu) to_string_menu) xml in
-  Goals ans
+  let l = to_list to_goal xml in
+  Goals l
 | _ -> raise Marshal_error
 
 let of_answer (q : 'a call) (r : 'a value) =
@@ -263,8 +278,8 @@ let pr_mkcases l =
 let pr_goals = function
 | Message s -> "Message: " ^ s
 | Goals gl ->
-  let pr_menu (s, _) = s in
-  let pr_goal (hyps, goal) =
+  let pr_menu s = s in
+  let pr_goal { goal_hyp = hyps; goal_ccl = goal } =
     "[" ^ String.concat "; " (List.map pr_menu hyps) ^ " |- " ^ pr_menu goal ^ "]"
   in
   String.concat " " (List.map pr_goal gl)
