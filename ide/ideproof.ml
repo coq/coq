@@ -34,7 +34,7 @@ let hook_tag_cb tag menu_content sel_cb hover_cb =
                      hover_cb start stop; false
                  | _ -> false))
 
-let mode_tactic sel_cb (proof:GText.view) = function
+let mode_tactic sel_cb (proof:GText.view) goals hints = match goals with
   | [] -> assert false
   | { Ide_intf.goal_hyp = hyps; Ide_intf.goal_ccl = cur_goal; } :: rem_goals ->
       let on_hover sel_start sel_stop =
@@ -49,35 +49,48 @@ let mode_tactic sel_cb (proof:GText.view) = function
         proof#buffer#apply_tag ~start:sel_start ~stop:sel_stop Tags.Proof.highlight
       in
       let goals_cnt = List.length rem_goals + 1 in
-      let head_str = Printf.sprintf "%d subgoal%s\n" goals_cnt (if 1 < goals_cnt then "" else "s") in
-      (* FIXME : add menu entries *)
-      let insert_hyp h =
-        let menu = [] in
-        let tags = if menu <> [] then
+      let head_str = Printf.sprintf
+        "%d subgoal%s\n" goals_cnt (if 1 < goals_cnt then "" else "s")
+      in
+      let goal_str index total = Printf.sprintf
+        "\n______________________________________(%d/%d)\n" index total
+      in
+      (* Insert current goal and its hypotheses *)
+      let hyps_hints, goal_hints = match hints with
+      | None -> [], []
+      | Some (hl, h) -> (hl, h)
+      in
+      let rec insert_hyp hints hs = match hs with
+      | [] -> ()
+      | hyp :: hs ->
+        let tags, rem_hints = match hints with
+        | [] -> [], []
+        | hint :: hints ->
           let tag = proof#buffer#create_tag [] in
-          hook_tag_cb tag menu sel_cb on_hover;
+          let () = hook_tag_cb tag hint sel_cb on_hover in
+          [tag], hints
+        in
+        let () = proof#buffer#insert ~tags (hyp ^ "\n") in
+        insert_hyp rem_hints hs
+      in
+      let () = proof#buffer#insert head_str in
+      let () = insert_hyp hyps_hints hyps in
+      let () =
+        let tags = if goal_hints <> [] then
+          let tag = proof#buffer#create_tag [] in
+          let () = hook_tag_cb tag goal_hints sel_cb on_hover in
           [tag]
           else []
         in
-        proof#buffer#insert ~tags (h^"\n")
+        proof#buffer#insert (goal_str 1 goals_cnt);
+        proof#buffer#insert ~tags (cur_goal ^ "\n")
       in
-      let insert_goal g menu index total =
-        let tags = if menu <> [] then
-          let tag = proof#buffer#create_tag [] in
-          hook_tag_cb tag menu sel_cb on_hover;
-          [tag]
-          else []
-        in
-        proof#buffer#insert (Printf.sprintf
-                               "\n______________________________________(%d/%d)\n" index total);
-        proof#buffer#insert ~tags (g^"\n")
+      (* Insert remaining goals (no hypotheses) *)
+      let fold_goal i _ { Ide_intf.goal_ccl = g } =
+        proof#buffer#insert (goal_str i goals_cnt);
+        proof#buffer#insert (g ^ "\n")
       in
-      proof#buffer#insert head_str;
-      List.iter insert_hyp hyps;
-      (* FIXME : add menu entries *)
-      insert_goal cur_goal [] 1 goals_cnt;
-      let fold_goal i _ { Ide_intf.goal_ccl = g } = insert_goal g [] i goals_cnt in
-      Minilib.list_fold_left_i fold_goal 2 () rem_goals;
+      let () = Minilib.list_fold_left_i fold_goal 2 () rem_goals in
       ignore(proof#buffer#place_cursor  
         ~where:((proof#buffer#get_iter_at_mark `INSERT)#backward_lines (3*goals_cnt - 2)));
       ignore(proof#scroll_to_mark `INSERT)
@@ -94,7 +107,7 @@ let mode_cesar (proof:GText.view) = function
       proof#buffer#insert ("thesis := \n "^cur_goal^"\n");
       ignore (proof#scroll_to_iter (proof#buffer#get_iter_at_mark `INSERT))
 
-let display mode (view:GText.view) goals =
+let display mode (view:GText.view) goals hints =
   view#buffer#set_text "";
   match goals with
     | Ide_intf.No_current_proof -> ()
@@ -115,4 +128,4 @@ let display mode (view:GText.view) goals =
       in
       List.iter iter el
     | Ide_intf.Goals g ->
-      mode view g
+      mode view g hints

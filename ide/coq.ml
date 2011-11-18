@@ -214,6 +214,7 @@ let rewind coqtop i = eval_call coqtop (Ide_intf.rewind i)
 let inloadpath coqtop s = eval_call coqtop (Ide_intf.inloadpath s)
 let mkcases coqtop s = eval_call coqtop (Ide_intf.mkcases s)
 let status coqtop = eval_call coqtop Ide_intf.status
+let hints coqtop = eval_call coqtop Ide_intf.hints
 
 module PrintOpt =
 struct

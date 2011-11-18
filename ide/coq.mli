@@ -50,6 +50,7 @@ val interp :
 val rewind : coqtop -> int -> int Ide_intf.value
 val status : coqtop -> Ide_intf.status Ide_intf.value
 val goals : coqtop -> Ide_intf.goals Ide_intf.value
+val hints : coqtop -> (Ide_intf.hint list * Ide_intf.hint) option Ide_intf.value
 val inloadpath : coqtop -> string -> bool Ide_intf.value
 val mkcases : coqtop -> string -> string list list Ide_intf.value
 

@@ -833,9 +833,13 @@ object(self)
           | Ide_intf.Fail (l,str) ->
             self#set_message ("Error in coqtop :\n"^str)
           | Ide_intf.Good goals ->
+            let hints = match Coq.hints !mycoqtop with
+            | Ide_intf.Fail (_, _) -> None
+            | Ide_intf.Good hints -> hints
+            in
             Ideproof.display
               (Ideproof.mode_tactic menu_callback)
-              proof_view goals
+              proof_view goals hints
       with
         | e -> prerr_endline (Printexc.to_string e)
     end
@@ -2924,9 +2928,6 @@ let read_coqide_args argv =
       if coqtop = "" then filter_coqtop prog project_files out args
       else
 	(output_string stderr "Error: multiple -coqtop options"; exit 1)
-    | "-debug" :: args ->
-      Ideutils.debug := true;
-      filter_coqtop coqtop project_files ("-debug"::out) args
     | "-f" :: file :: args ->
 	filter_coqtop coqtop
 	  ((Minilib.canonical_path_name (Filename.dirname file),
