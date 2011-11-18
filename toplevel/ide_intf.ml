@@ -14,6 +14,11 @@ type xml = Xml_parser.xml
 
 type 'a menu = 'a * (string * string) list
 
+type status = {
+  status_path : string option;
+  status_proofname : string option;
+}
+
 type goal = {
   goal_hyp : string list;
   goal_ccl : string;
@@ -42,7 +47,7 @@ type 'a call =
 let interp (r,b,s) : string call = Interp (r,b,s)
 let rewind i : int call = Rewind i
 let goals : goals call = Goal
-let status : string call = Status
+let status : status call = Status
 let inloadpath s : bool call = InLoadPath s
 let mkcases s : string list list call = MkCases s
 
@@ -58,7 +63,7 @@ type handler = {
   interp : raw * verbose * string -> string;
   rewind : int -> int;
   goals : unit -> goals;
-  status : unit -> string;
+  status : unit -> status;
   inloadpath : string -> bool;
   mkcases : string -> string list list;
 }
@@ -182,6 +187,15 @@ let to_call = function
   end
 | _ -> raise Marshal_error
 
+let of_option f = function
+| None -> Element ("option", ["val", "none"], [])
+| Some x -> Element ("option", ["val", "some"], [f x])
+
+let to_option f = function
+| Element ("option", ["val", "none"], []) -> None
+| Element ("option", ["val", "some"], [x]) -> Some (f x)
+| _ -> raise Marshal_error
+
 let of_string s = Element ("string", [], [PCData s])
 
 let to_string = function
@@ -198,6 +212,18 @@ let of_pair f g (x, y) = Element ("pair", [], [f x; g y])
 
 let to_pair f g = function
 | Element ("pair", [], [x; y]) -> (f x, g y)
+| _ -> raise Marshal_error
+
+let of_status s =
+  let of_so = of_option of_string in
+  Element ("status", [], [of_so s.status_path; of_so s.status_proofname])
+
+let to_status = function
+| Element ("status", [], [path; name]) ->
+  {
+    status_path = to_option to_string path;
+    status_proofname = to_option to_string name;
+  }
 | _ -> raise Marshal_error
 
 let of_goal g =
@@ -248,7 +274,7 @@ let of_answer (q : 'a call) (r : 'a value) =
   | Interp _ -> Obj.magic (of_string : string -> xml)
   | Rewind _ -> Obj.magic (of_int : int -> xml)
   | Goal -> Obj.magic (of_goals : goals -> xml)
-  | Status -> Obj.magic (of_string : string -> xml)
+  | Status -> Obj.magic (of_status : status -> xml)
   | InLoadPath _ -> Obj.magic (of_bool : bool -> xml)
   | MkCases _ -> Obj.magic (of_list (of_list of_string) : string list list -> xml)
   in
@@ -261,6 +287,7 @@ let to_answer xml =
     | "string" -> Obj.magic (to_string elt)
     | "int" -> Obj.magic (to_int elt)
     | "goals" -> Obj.magic (to_goals elt)
+    | "status" -> Obj.magic (to_status elt)
     | "bool" -> Obj.magic (to_bool elt)
     | "list" -> Obj.magic (to_list convert elt)
     | _ -> raise Marshal_error
@@ -291,6 +318,17 @@ let pr_value v = pr_value_gen (fun _ -> "") v
 let pr_string s = "["^s^"]"
 let pr_bool b = if b then "true" else "false"
 
+let pr_status s =
+  let path = match s.status_path with
+  | None -> "no path; "
+  | Some p -> "path = " ^ p ^ "; "
+  in
+  let name = match s.status_proofname with
+  | None -> "no proof;"
+  | Some n -> "proof = " ^ n ^ ";"
+  in
+  "Status: " ^ path ^ name
+
 let pr_mkcases l =
   let l = List.map (String.concat " ") l in
   "[" ^ String.concat " | " l ^ "]"
@@ -309,9 +347,9 @@ let pr_goals = function
 
 let pr_full_value call value =
   match call with
-    | Interp _ -> pr_value_gen pr_string (Obj.magic value)
-    | Rewind i -> pr_value_gen string_of_int (Obj.magic value)
-    | Goal -> pr_value_gen pr_goals (Obj.magic value)
-    | Status -> pr_value_gen pr_string (Obj.magic value)
-    | InLoadPath s -> pr_value_gen pr_bool (Obj.magic value)
-    | MkCases s -> pr_value_gen pr_mkcases (Obj.magic value)
+    | Interp _ -> pr_value_gen pr_string (Obj.magic value : string value)
+    | Rewind i -> pr_value_gen string_of_int (Obj.magic value : int value)
+    | Goal -> pr_value_gen pr_goals (Obj.magic value : goals value)
+    | Status -> pr_value_gen pr_status (Obj.magic value : status value)
+    | InLoadPath s -> pr_value_gen pr_bool (Obj.magic value : bool value)
+    | MkCases s -> pr_value_gen pr_mkcases (Obj.magic value : string list list value)

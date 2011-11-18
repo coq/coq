@@ -48,7 +48,7 @@ val interrupter : (int -> unit) ref
 val interp :
   coqtop -> ?raw:bool -> ?verbose:bool -> string -> string Ide_intf.value
 val rewind : coqtop -> int -> int Ide_intf.value
-val status : coqtop -> string Ide_intf.value
+val status : coqtop -> Ide_intf.status Ide_intf.value
 val goals : coqtop -> Ide_intf.goals Ide_intf.value
 val inloadpath : coqtop -> string -> bool Ide_intf.value
 val mkcases : coqtop -> string -> string list list Ide_intf.value

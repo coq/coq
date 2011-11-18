@@ -15,6 +15,11 @@ type goal = {
   goal_ccl : string;
 }
 
+type status = {
+  status_path : string option;
+  status_proofname : string option;
+}
+
 type goals =
   | No_current_proof
   | Proof_completed
@@ -50,7 +55,7 @@ val rewind : int -> int call
 val goals : goals call
 
 (** The status, for instance "Ready in SomeSection, proving Foo" *)
-val status : string call
+val status : status call
 
 (** Is a directory part of Coq's loadpath ? *)
 val inloadpath : string -> bool call
@@ -75,7 +80,7 @@ type handler = {
   interp : raw * verbose * string -> string;
   rewind : int -> int;
   goals : unit -> goals;
-  status : unit -> string;
+  status : unit -> status;
   inloadpath : string -> bool;
   mkcases : string -> string list list;
 }

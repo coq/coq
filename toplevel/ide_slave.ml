@@ -447,16 +447,15 @@ let status () =
   let path =
     let l = Names.repr_dirpath (Lib.cwd ()) in
     let l = snd (Util.list_sep_last l) in
-    if l = [] then "" else
-      (" in "^Names.string_of_dirpath (Names.make_dirpath l))
+    if l = [] then None
+    else Some (Names.string_of_dirpath (Names.make_dirpath l))
   in
   let proof =
     try
-      ", proving " ^ (Names.string_of_id (Pfedit.get_current_proof_name ()))
-    with _ -> ""
+      Some (Names.string_of_id (Pfedit.get_current_proof_name ()))
+    with _ -> None
   in
-  "Ready"^path^proof
-
+  { Ide_intf.status_path = path; Ide_intf.status_proofname = proof }
 
 (** Grouping all call handlers together + error handling *)
 

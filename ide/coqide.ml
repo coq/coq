@@ -2179,11 +2179,21 @@ let main files =
         let av = current.analyzed_view in
         ignore (f av);
         pop_info ();
-        push_info
-          (match Coq.status !(current.toplvl) with
-            | Ide_intf.Fail (l,str) ->
-	      "Oops, problem while fetching coq status."
-            | Ide_intf.Good str -> str)
+        let msg = match Coq.status !(current.toplvl) with
+        | Ide_intf.Fail (l, str) ->
+          "Oops, problem while fetching coq status."
+        | Ide_intf.Good status ->
+          let path = match status.Ide_intf.status_path with
+          | None -> ""
+          | Some p -> " in " ^ p
+          in
+          let name = match status.Ide_intf.status_proofname with
+          | None -> ""
+          | Some n -> ", proving " ^ n
+          in
+          "Ready" ^ path ^ name
+        in
+        push_info msg
       )
       [session_notebook#current_term]
   in
