@@ -135,6 +135,18 @@ val declare_string_option: string option_sig -> string write_function
 
 (** {6 Special functions supposed to be used only in vernacentries.ml } *)
 
+type 'a option_state = {
+  opt_sync  : bool;
+  opt_name  : string;
+  opt_key   : option_name;
+  opt_value : 'a;
+}
+
+type option_value =
+  | BoolValue   of bool
+  | IntValue    of int option
+  | StringValue of string
+
 val get_string_table :
   option_name ->
     < add : string -> unit;

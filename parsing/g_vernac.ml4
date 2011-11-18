@@ -799,7 +799,7 @@ GEXTEND Gram
       | IDENT "Ltac"; qid = global -> LocateTactic qid ] ]
   ;
   option_value:
-    [ [ n  = integer   -> IntValue n
+    [ [ n  = integer   -> IntValue (Some n)
       | s  = STRING    -> StringValue s ] ]
   ;
   option_ref_value:

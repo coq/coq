@@ -164,7 +164,9 @@ let pr_printoption table b =
 
 let pr_set_option a b =
   let pr_opt_value = function
-    | IntValue n -> spc() ++ int n
+    | IntValue None -> assert false
+    (* This should not happen because of the grammar *)
+    | IntValue (Some n) -> spc() ++ int n
     | StringValue s -> spc() ++ str s
     | BoolValue b -> mt()
   in pr_printoption a None ++ pr_opt_value b

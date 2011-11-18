@@ -27,11 +27,18 @@ let nickname table = String.concat " " table
 let error_undeclared_key key =
   error ((nickname key)^": no table or option of this type")
 
-type value =
+type 'a option_state = {
+  opt_sync  : bool;
+  opt_name  : string;
+  opt_key   : option_name;
+  opt_value : 'a;
+}
+
+type option_value =
   | BoolValue   of bool
   | IntValue    of int option
   | StringValue of string
-  | IdentValue  of global_reference
+(*   | IdentValue  of global_reference *)
 
 (****************************************************************************)
 (* 1- Tables                                                                *)
@@ -204,7 +211,7 @@ type 'a option_sig = {
   optread  : unit -> 'a;
   optwrite : 'a -> unit }
 
-type option_type = bool * (unit -> value) -> (value -> unit)
+type option_type = bool * (unit -> option_value) -> (option_value -> unit)
 
 module OptionMap =
   Map.Make (struct  type t = option_name let compare = compare end)
@@ -348,7 +355,7 @@ let msg_option_value (name,v) =
     | IntValue (Some n) -> int n
     | IntValue None   -> str "undefined"
     | StringValue s   -> str s
-    | IdentValue r    -> pr_global_env Idset.empty r
+(*     | IdentValue r    -> pr_global_env Idset.empty r *)
 
 let print_option_value key =
   let (name,(_,read,_,_,_)) = get_option key in

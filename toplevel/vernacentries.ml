@@ -997,7 +997,7 @@ let vernac_set_opacity local str =
 
 let vernac_set_option locality key = function
   | StringValue s -> set_string_option_value_gen locality key s
-  | IntValue n -> set_int_option_value_gen locality key (Some n)
+  | IntValue n -> set_int_option_value_gen locality key n
   | BoolValue b -> set_bool_option_value_gen locality key b
 
 let vernac_unset_option locality key =
