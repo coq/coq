@@ -125,7 +125,8 @@ type rec_flag       = bool (* true = Rec;           false = NoRec          *)
 type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
 type opacity_flag   = bool (* true = Opaque;        false = Transparent    *)
 type locality_flag  = bool (* true = Local;         false = Global         *)
-type coercion_flag  = bool (* true = AddCoercion;   false = NoCoercion     *)
+type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
+type instance_flag  = bool option (* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)
 type export_flag    = bool (* true = Export;        false = Import         *)
 type specif_flag    = bool (* true = Specification; false = Implementation *)
 type inductive_flag = Decl_kinds.recursivity_kind
@@ -164,12 +165,13 @@ type decl_notation = lstring * constr_expr * scope_name option
 type simple_binder = lident list  * constr_expr
 type class_binder = lident * constr_expr list
 type 'a with_coercion = coercion_flag * 'a
+type 'a with_instance = instance_flag * 'a
 type 'a with_notation = 'a * decl_notation list
 type 'a with_priority = 'a * int option
 type constructor_expr = (lident * constr_expr) with_coercion
 type constructor_list_or_record_decl_expr =
   | Constructors of constructor_expr list
-  | RecordDecl of lident option * local_decl_expr with_coercion with_priority with_notation list
+  | RecordDecl of lident option * local_decl_expr with_instance with_priority with_notation list
 type inductive_expr =
   lident with_coercion * local_binder list * constr_expr option * inductive_kind *
     constructor_list_or_record_decl_expr

@@ -20,7 +20,7 @@ open Libnames
 
 val declare_projections :
   inductive -> ?kind:Decl_kinds.definition_object_kind -> ?name:identifier ->
-  bool list -> manual_explicitation list list -> rel_context ->
+  coercion_flag list -> manual_explicitation list list -> rel_context ->
   (name * bool) list * constant option list
 
 val declare_structure : Decl_kinds.recursivity_kind ->
@@ -35,5 +35,5 @@ val declare_structure : Decl_kinds.recursivity_kind ->
 
 val definition_structure :
   inductive_kind * Decl_kinds.recursivity_kind * bool(**infer?*)* lident with_coercion * local_binder list *
-  (local_decl_expr with_coercion with_priority with_notation) list *
+  (local_decl_expr with_instance with_priority with_notation) list *
   identifier * constr_expr option -> global_reference

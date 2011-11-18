@@ -415,7 +415,8 @@ let vernac_inductive finite infer indl =
   | [ ( id , bl , c , Class true, Constructors [l]), _ ] ->
       let f =
 	let (coe, ((loc, id), ce)) = l in
-	  (((coe, AssumExpr ((loc, Name id), ce)), None), [])
+	let coe' = if coe then Some false else None in
+	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
       in vernac_record (Class true) finite infer id bl c None [f]
   | [ ( id , bl , c , Class true, _), _ ] ->
       Util.error "Definitional classes must have a single method"

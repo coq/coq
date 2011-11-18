@@ -428,18 +428,22 @@ let make_pr_vernac pr_constr pr_lconstr =
 let pr_constrarg c = spc () ++ pr_constr c in
 let pr_lconstrarg c = spc () ++ pr_lconstr c in
 let pr_intarg n = spc () ++ int n in
-(* let pr_lident_constr sep (i,c) = pr_lident i ++ sep ++ pr_constrarg c in *)
+let pr_oc = function 
+    None -> str" :"
+  | Some true -> str" :>"
+  | Some false -> str" :>>"
+in
 let pr_record_field ((x, pri), ntn) =
   let prx = match x with
     | (oc,AssumExpr (id,t)) ->
 	hov 1 (pr_lname id ++
-		  (if oc then str" :>" else str" :") ++ spc() ++
-		  pr_lconstr_expr t)
+	       pr_oc oc ++ spc() ++
+	       pr_lconstr_expr t)
     | (oc,DefExpr(id,b,opt)) -> (match opt with
       | Some t ->
           hov 1 (pr_lname id ++
-                    (if oc then str" :>" else str" :") ++ spc() ++
-                    pr_lconstr_expr t ++ str" :=" ++ pr_lconstr b)
+                 pr_oc oc ++ spc() ++
+                 pr_lconstr_expr t ++ str" :=" ++ pr_lconstr b)
       | None ->
           hov 1 (pr_lname id ++ str" :=" ++ spc() ++
                     pr_lconstr b)) in

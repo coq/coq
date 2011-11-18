@@ -334,7 +334,7 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 	Impargs.declare_manual_implicits false (ConstRef proj_cst) [List.hd fieldimpls];
 	Classes.set_typeclass_transparency (EvalConstRef cst) false false;
 	if infer then Evd.fold (fun ev evi _ -> Recordops.declare_method (ConstRef cst) ev sign) sign ();
-	let sub = if List.hd coers then Some (List.hd priorities) else None in
+	let sub = match List.hd coers with Some b -> Some ((if b then Backward else Forward), List.hd priorities) | None -> None in
 	  cref, [Name proj_name, sub, Some proj_cst]
     | _ ->
 	let idarg = Namegen.next_ident_away (snd id) (Termops.ids_of_context (Global.env())) in
@@ -342,7 +342,10 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 	  params (Option.default (Termops.new_Type ()) arity) fieldimpls fields
 	  ~kind:Method ~name:idarg false (List.map (fun _ -> false) fields) sign
 	in
-	let coers = List.map2 (fun coe pri -> if coe then Some pri else None) coers priorities in
+	let coers = List.map2 (fun coe pri -> 
+			       Option.map (fun b -> if b then Backward, pri else Forward, pri) coe) 
+	  coers priorities 
+	in
 	  IndRef ind, (list_map3 (fun (id, _, _) b y -> (id, b, y))
 			 (List.rev fields) coers (Recordops.lookup_projections ind))
   in
@@ -374,8 +377,9 @@ let interp_and_check_sort sort =
 open Vernacexpr
 open Autoinstance
 
-(* [fs] corresponds to fields and [ps] to parameters; [coers] is a boolean
-   list telling if the corresponding fields must me declared as coercion *)
+(* [fs] corresponds to fields and [ps] to parameters; [coers] is a
+   list telling if the corresponding fields must me declared as coercions 
+   or subinstances *)
 let definition_structure (kind,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuild,s) =
   let cfs,notations = List.split cfs in
   let cfs,priorities = List.split cfs in
@@ -404,6 +408,7 @@ let definition_structure (kind,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuil
 	let arity = Option.default (Termops.new_Type ()) sc in
 	let implfs = List.map
 	  (fun impls -> implpars @ Impargs.lift_implicits (succ (List.length params)) impls) implfs in
-	let ind = declare_structure finite infer idstruc idbuild implpars params arity implfs fields is_coe coers sign in
+	let ind = declare_structure finite infer idstruc idbuild implpars params arity implfs 
+	  fields is_coe (List.map (fun coe -> coe <> None) coers) sign in
 	if infer then search_record declare_record_instance (ConstructRef (ind,1)) sign;
 	IndRef ind

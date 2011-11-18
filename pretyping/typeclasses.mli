@@ -18,6 +18,8 @@ open Mod_subst
 open Topconstr
 open Util
 
+type direction = Forward | Backward
+
 (** This module defines type-classes *)
 type typeclass = {
   (** The class implementation: a record parameterized by the context with defs in it or a definition if
@@ -36,7 +38,7 @@ type typeclass = {
       Some may be undefinable due to sorting restrictions or simply undefined if 
       no name is provided. The [int option option] indicates subclasses whose hint has
       the given priority. *)
-  cl_projs : (name * int option option * constant option) list;
+  cl_projs : (name * (direction * int option) option * constant option) list;
 }
 
 type instance

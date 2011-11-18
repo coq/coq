@@ -344,12 +344,12 @@ GEXTEND Gram
       | l = binders; ":="; b = lconstr -> fun id ->
          match b with
 	 | CCast(_,b, Glob_term.CastConv (_, t)) ->
-	     (false,DefExpr(id,mkCLambdaN loc l b,Some (mkCProdN loc l t)))
+	     (None,DefExpr(id,mkCLambdaN loc l b,Some (mkCProdN loc l t)))
          | _ ->
-	     (false,DefExpr(id,mkCLambdaN loc l b,None)) ] ]
+	     (None,DefExpr(id,mkCLambdaN loc l b,None)) ] ]
   ;
   record_binder:
-    [ [ id = name -> (false,AssumExpr(id,CHole (loc, None)))
+    [ [ id = name -> (None,AssumExpr(id,CHole (loc, None)))
       | id = name; f = record_binder_body -> f id ] ]
   ;
   assum_list:
@@ -360,13 +360,13 @@ GEXTEND Gram
   ;
   simple_assum_coe:
     [ [ idl = LIST1 identref; oc = of_type_with_opt_coercion; c = lconstr ->
-        (oc,(idl,c)) ] ]
+        (oc <> None,(idl,c)) ] ]
   ;
 
   constructor_type:
     [[ l = binders;
       t= [ coe = of_type_with_opt_coercion; c = lconstr ->
-	            fun l id -> (coe,(id,mkCProdN loc l c))
+	            fun l id -> (coe <> None,(id,mkCProdN loc l c))
             |  ->
 		 fun l id -> (false,(id,mkCProdN loc l (CHole (loc, None)))) ]
 	 -> t l
@@ -377,9 +377,11 @@ GEXTEND Gram
     [ [ id = identref; c=constructor_type -> c id ] ]
   ;
   of_type_with_opt_coercion:
-    [ [ ":>" -> true
-      | ":"; ">" -> true
-      | ":" -> false ] ]
+    [ [ ":>>" -> Some false
+    | ":>" -> Some true
+    | ":"; ">" -> Some true
+    | ":"; ">"; ">" -> Some false
+    | ":" -> None ] ]
   ;
 END
 

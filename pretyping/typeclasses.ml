@@ -47,6 +47,7 @@ let resolve_one_typeclass env evm t =
   !solve_instanciation_problem env evm t
 
 type rels = constr list
+type direction = Forward | Backward
 
 (* This module defines type-classes *)
 type typeclass = {
@@ -60,7 +61,7 @@ type typeclass = {
   cl_props : rel_context;
 
   (* The method implementaions as projections. *)
-  cl_projs : (name * int option option * constant option) list;
+  cl_projs : (name * (direction * int option) option * constant option) list;
 }
 
 module Gmap = Fmap.Make(RefOrdered)
@@ -251,7 +252,8 @@ let build_subclasses ~check env sigma glob pri =
 	  (fun (n, b, proj) ->
 	   match b with 
 	   | None -> None
-	   | Some pri' ->
+	   | Some (Backward, _) -> None
+	   | Some (Forward, pri') ->
 	     let proj = Option.get proj in
 	     let body = it_mkLambda_or_LetIn (mkApp (mkConst proj, projargs)) rels in
 	       if check && check_instance env sigma body then None
@@ -363,6 +365,16 @@ let declare_instance pri local glob =
 (* 	Auto.add_hints local [typeclasses_db]  *)
 (* 	(Auto.HintsCutEntry (PathSeq (PathStar (PathAtom PathAny), path))) *)
     | None -> ()
+
+let add_class cl =
+  add_class cl;
+  List.iter (fun (n, inst, body) ->
+	     match inst with
+	     | Some (Backward, pri) ->
+	       declare_instance pri false (ConstRef (Option.get body))
+	     | _ -> ())
+  cl.cl_projs
+
 
 open Declarations
 
