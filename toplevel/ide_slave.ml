@@ -485,11 +485,12 @@ let eval_call c =
     Ide_intf.goals = interruptible goals;
     Ide_intf.status = interruptible status;
     Ide_intf.inloadpath = interruptible inloadpath;
-    Ide_intf.mkcases = interruptible Vernacentries.make_cases }
+    Ide_intf.mkcases = interruptible Vernacentries.make_cases;
+    Ide_intf.handle_exn = handle_exn; }
   in
   (* If the messages of last command are still there, we remove them *)
   ignore (read_stdout ());
-  Ide_intf.abstract_eval_call handler handle_exn c
+  Ide_intf.abstract_eval_call handler c
 
 
 (** The main loop *)
@@ -504,6 +505,9 @@ let eval_call c =
 let pr_debug s =
   if !Flags.debug then Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
+let fail err =
+  Ide_intf.of_value (fun _ -> assert false) (Ide_intf.Fail (None, err))
+
 let loop () =
   let p = Xml_parser.make () in
   let () = Xml_parser.check_eof p false in
@@ -514,21 +518,30 @@ let loop () =
   Lib.mark_end_of_command();
   try
     while true do
-      let xml_query = Xml_parser.parse p (Xml_parser.SChannel stdin) in
-      let q = Ide_intf.to_call xml_query in
-      pr_debug ("<-- " ^ Ide_intf.pr_call q);
-      let r = eval_call q in
-      pr_debug ("--> " ^ Ide_intf.pr_full_value q r);
-      let xml_answer = Ide_intf.of_answer q r in
+      let xml_answer =
+        try
+          let xml_query = Xml_parser.parse p (Xml_parser.SChannel stdin) in
+          let q = Ide_intf.to_call xml_query in
+          let () = pr_debug ("<-- " ^ Ide_intf.pr_call q) in
+          let r = eval_call q in
+          let () = pr_debug ("--> " ^ Ide_intf.pr_full_value q r) in
+          Ide_intf.of_answer q r
+        with
+        | Xml_parser.Error (err, loc) ->
+          let msg = "Syntax error in query: " ^ Xml_parser.error_msg err in
+          fail msg
+        | Ide_intf.Marshal_error ->
+          fail "Incorrect query."
+      in
       Xml_utils.print_xml !orig_stdout xml_answer;
       flush !orig_stdout
     done
   with e ->
     let msg = Printexc.to_string e in
-    let r = Ide_intf.Fail (None, "Fatal exception in coqtop:\n" ^ msg) in
-    pr_debug ("==> " ^ Ide_intf.pr_value r);
+    let r = "Fatal exception in coqtop:\n" ^ msg in
+    pr_debug ("==> " ^ r);
     (try
-      Xml_utils.print_xml !orig_stdout (Ide_intf.of_value (fun _ -> assert false) r);
+      Xml_utils.print_xml !orig_stdout (fail r);
       flush !orig_stdout
     with _ -> ());
     exit 1

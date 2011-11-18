@@ -66,9 +66,10 @@ type handler = {
   status : unit -> status;
   inloadpath : string -> bool;
   mkcases : string -> string list list;
+  handle_exn : exn -> location * string;
 }
 
-let abstract_eval_call handler explain_exn c =
+let abstract_eval_call handler c =
   try
     let res = match c with
       | Interp (r,b,s) -> Obj.magic (handler.interp (r,b,s))
@@ -79,7 +80,7 @@ let abstract_eval_call handler explain_exn c =
       | MkCases s -> Obj.magic (handler.mkcases s)
     in Good res
   with e ->
-    let (l,str) = explain_exn e in
+    let (l, str) = handler.handle_exn e in
     Fail (l,str)
 
 (** * XML data marshalling *)

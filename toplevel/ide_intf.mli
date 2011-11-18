@@ -83,11 +83,10 @@ type handler = {
   status : unit -> status;
   inloadpath : string -> bool;
   mkcases : string -> string list list;
+  handle_exn : exn -> location * string;
 }
 
-val abstract_eval_call :
-  handler -> (exn -> location * string) ->
-  'a call -> 'a value
+val abstract_eval_call : handler -> 'a call -> 'a value
 
 (** * XML data marshalling *)
 
