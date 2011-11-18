@@ -31,6 +31,8 @@ type goals =
   | Uninstantiated_evars of string list
   | Goals of goal list
 
+type hint = (string * string) list
+
 (** We use phantom types and GADT to protect ourselves against wild casts *)
 
 type raw = bool
@@ -40,6 +42,7 @@ type 'a call =
   | Interp of raw * verbose * string
   | Rewind of int
   | Goal
+  | Hints
   | Status
   | InLoadPath of string
   | MkCases of string
@@ -47,6 +50,7 @@ type 'a call =
 let interp (r,b,s) : string call = Interp (r,b,s)
 let rewind i : int call = Rewind i
 let goals : goals call = Goal
+let hints : (hint list * hint) option call = Hints
 let status : status call = Status
 let inloadpath s : bool call = InLoadPath s
 let mkcases s : string list list call = MkCases s
@@ -63,6 +67,7 @@ type handler = {
   interp : raw * verbose * string -> string;
   rewind : int -> int;
   goals : unit -> goals;
+  hints : unit -> (hint list * hint) option;
   status : unit -> status;
   inloadpath : string -> bool;
   mkcases : string -> string list list;
@@ -75,6 +80,7 @@ let abstract_eval_call handler c =
       | Interp (r,b,s) -> Obj.magic (handler.interp (r,b,s))
       | Rewind i -> Obj.magic (handler.rewind i)
       | Goal -> Obj.magic (handler.goals ())
+      | Hints -> Obj.magic (handler.hints ())
       | Status -> Obj.magic (handler.status ())
       | InLoadPath s -> Obj.magic (handler.inloadpath s)
       | MkCases s -> Obj.magic (handler.mkcases s)
@@ -162,6 +168,8 @@ let of_call = function
   Element ("call", ("val", "rewind") :: ["steps", string_of_int n], [])
 | Goal ->
   Element ("call", ["val", "goal"], [])
+| Hints ->
+  Element ("call", ["val", "hints"], [])
 | Status ->
   Element ("call", ["val", "status"], [])
 | InLoadPath file ->
@@ -184,6 +192,7 @@ let to_call = function
   | "status" -> Status
   | "inloadpath" -> InLoadPath (raw_string l)
   | "mkcases" -> MkCases (raw_string l)
+  | "hints" -> Hints
   | _ -> raise Marshal_error
   end
 | _ -> raise Marshal_error
@@ -270,11 +279,16 @@ let to_goals = function
   Goals l
 | _ -> raise Marshal_error
 
+let of_hints =
+  let of_hint = of_list (of_pair of_string of_string) in
+  of_option (of_pair (of_list of_hint) of_hint)
+
 let of_answer (q : 'a call) (r : 'a value) =
   let convert = match q with
   | Interp _ -> Obj.magic (of_string : string -> xml)
   | Rewind _ -> Obj.magic (of_int : int -> xml)
   | Goal -> Obj.magic (of_goals : goals -> xml)
+  | Hints -> Obj.magic (of_hints : (hint list * hint) option -> xml)
   | Status -> Obj.magic (of_status : status -> xml)
   | InLoadPath _ -> Obj.magic (of_bool : bool -> xml)
   | MkCases _ -> Obj.magic (of_list (of_list of_string) : string list list -> xml)
@@ -291,6 +305,8 @@ let to_answer xml =
     | "status" -> Obj.magic (to_status elt)
     | "bool" -> Obj.magic (to_bool elt)
     | "list" -> Obj.magic (to_list convert elt)
+    | "option" -> Obj.magic (to_option convert elt)
+    | "pair" -> Obj.magic (to_pair convert convert elt)
     | _ -> raise Marshal_error
     end
   | _ -> raise Marshal_error
@@ -306,6 +322,7 @@ let pr_call = function
     "INTERP"^raw^verb^" ["^s^"]"
   | Rewind i -> "REWIND "^(string_of_int i)
   | Goal -> "GOALS"
+  | Hints -> "HINTS"
   | Status -> "STATUS"
   | InLoadPath s -> "INLOADPATH "^s
   | MkCases s -> "MKCASES "^s
@@ -351,6 +368,7 @@ let pr_full_value call value =
     | Interp _ -> pr_value_gen pr_string (Obj.magic value : string value)
     | Rewind i -> pr_value_gen string_of_int (Obj.magic value : int value)
     | Goal -> pr_value_gen pr_goals (Obj.magic value : goals value)
+    | Hints -> pr_value value
     | Status -> pr_value_gen pr_status (Obj.magic value : status value)
     | InLoadPath s -> pr_value_gen pr_bool (Obj.magic value : bool value)
     | MkCases s -> pr_value_gen pr_mkcases (Obj.magic value : string list list value)

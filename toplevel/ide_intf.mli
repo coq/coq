@@ -27,6 +27,8 @@ type goals =
   | Uninstantiated_evars of string list
   | Goals of goal list
 
+type hint = (string * string) list
+
 type 'a call
 
 type raw = bool
@@ -54,6 +56,10 @@ val rewind : int -> int call
 (** Fetching the list of current goals *)
 val goals : goals call
 
+(** Retrieving the tactics applicable to the current goal. [None] if there is 
+    no proof in progress. *)
+val hints : (hint list * hint) option call
+
 (** The status, for instance "Ready in SomeSection, proving Foo" *)
 val status : status call
 
@@ -80,6 +86,7 @@ type handler = {
   interp : raw * verbose * string -> string;
   rewind : int -> int;
   goals : unit -> goals;
+  hints : unit -> (hint list * hint) option;
   status : unit -> status;
   inloadpath : string -> bool;
   mkcases : string -> string list list;

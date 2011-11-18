@@ -435,6 +435,20 @@ let goals () =
     Ide_intf.Goals (List.map (process_goal sigma) all_goals)
   with Proof_global.NoCurrentProof -> Ide_intf.No_current_proof
 
+let hints () =
+  try
+    let pfts = Proof_global.give_me_the_proof () in
+    let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
+    match all_goals with
+    | [] -> None
+    | g :: _ ->
+      let env = Goal.V82.env sigma g in
+      let hint_goal = concl_next_tac sigma g in
+      let get_hint_hyp env d accu = hyp_next_tac sigma env d :: accu in
+      let hint_hyps = List.rev (Environ.fold_named_context get_hint_hyp env ~init: []) in
+      Some (hint_hyps, hint_goal)
+  with Proof_global.NoCurrentProof -> None
+
 (** Other API calls *)
 
 let inloadpath dir =
@@ -483,6 +497,7 @@ let eval_call c =
     Ide_intf.interp = interruptible interp;
     Ide_intf.rewind = interruptible rewind;
     Ide_intf.goals = interruptible goals;
+    Ide_intf.hints = interruptible hints;
     Ide_intf.status = interruptible status;
     Ide_intf.inloadpath = interruptible inloadpath;
     Ide_intf.mkcases = interruptible Vernacentries.make_cases;
