@@ -29,7 +29,7 @@ let set_location = ref  (function s -> failwith "not ready")
 
 let pbar = GRange.progress_bar ~pulse_step:0.2 ()
 
-let debug = Flags.debug
+let debug = ref (false)
 
 let prerr_endline s =
   if !debug then try prerr_endline s;flush stderr with _ -> ()

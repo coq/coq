@@ -2914,6 +2914,9 @@ let read_coqide_args argv =
       if coqtop = "" then filter_coqtop prog project_files out args
       else
 	(output_string stderr "Error: multiple -coqtop options"; exit 1)
+    | "-debug" :: args ->
+      Ideutils.debug := true;
+      filter_coqtop coqtop project_files ("-debug"::out) args
     | "-f" :: file :: args ->
 	filter_coqtop coqtop
 	  ((Minilib.canonical_path_name (Filename.dirname file),
