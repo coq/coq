@@ -400,6 +400,20 @@ let concl_next_tac sigma concl =
     "right"
   ])
 
+let process_goal sigma g =
+  let env = Goal.V82.env sigma g in
+  let ccl =
+    let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
+    string_of_ppcmds (pr_ltype_env_at_top env norm_constr) in
+  let process_hyp h_env d acc =
+    let d = Term.map_named_declaration (Reductionops.nf_evar sigma) d in
+    (string_of_ppcmds (pr_var_decl h_env d)) :: acc in
+(*           (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in *)
+  let hyps =
+    List.rev (Environ.fold_named_context process_hyp env ~init: []) in
+  { Ide_intf.goal_hyp = hyps; Ide_intf.goal_ccl = ccl }
+(*         hyps,(ccl,concl_next_tac sigma g)) *)
+
 let goals () =
   try
     let pfts =
@@ -408,42 +422,18 @@ let goals () =
   let { Evd.it=all_goals ; sigma=sigma } = Proof.V82.subgoals pfts in
   if all_goals = [] then
     begin
-      Ide_intf.Message (string_of_ppcmds (
-        let { Evd.it = bgoals ; sigma = sigma } = Proof.V82.background_subgoals pfts in
-        match bgoals with
-          | [] ->
-              let exl = Evarutil.non_instantiated sigma in
-              (str (if exl = [] then "Proof Completed." else
-                      "No more subgoals but non-instantiated existential variables:") ++
-               (fnl ()) ++ (pr_evars_int 1 exl))
-          | _ ->
-              Util.list_fold_left_i
-                (fun i a g ->
-                   a ++ (Printer.pr_concl i sigma g) ++ (spc ())) 1
-                (str "This subproof is complete, but there are still unfocused goals:" ++ (fnl ()))
-                bgoals))
+      let { Evd.it = bgoals ; sigma = sigma } = Proof.V82.background_subgoals pfts in
+      if bgoals = [] then
+        let exl = Evarutil.non_instantiated sigma in
+        if exl = [] then Ide_intf.Proof_completed
+        else
+          let el = List.map (fun evar -> string_of_ppcmds (pr_evar evar)) exl in
+          Ide_intf.Uninstantiated_evars el
+      else Ide_intf.Unfocused_goals (List.map (process_goal sigma) bgoals)
     end
   else
-    begin
-      let process_goal g =
-        let env = Goal.V82.env sigma g in
-        let ccl =
-          let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
-          string_of_ppcmds (pr_ltype_env_at_top env norm_constr) in
-        let process_hyp h_env d acc =
-          let d = Term.map_named_declaration (Reductionops.nf_evar sigma) d in
-          (string_of_ppcmds (pr_var_decl h_env d)) :: acc in
-(*           (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in *)
-        let hyps =
-          List.rev (Environ.fold_named_context process_hyp env ~init: []) in
-        { Ide_intf.goal_hyp = hyps; Ide_intf.goal_ccl = ccl }
-(*         hyps,(ccl,concl_next_tac sigma g)) *)
-      in
-      Ide_intf.Goals (List.map process_goal all_goals)
-    end
-  with Proof_global.NoCurrentProof ->
-    Ide_intf.Message "" (* quick hack to have a clean message screen *)
-
+    Ide_intf.Goals (List.map (process_goal sigma) all_goals)
+  with Proof_global.NoCurrentProof -> Ide_intf.No_current_proof
 
 (** Other API calls *)
 

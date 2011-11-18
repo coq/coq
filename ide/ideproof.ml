@@ -97,7 +97,22 @@ let mode_cesar (proof:GText.view) = function
 let display mode (view:GText.view) goals =
   view#buffer#set_text "";
   match goals with
-    | Ide_intf.Message msg ->
+    | Ide_intf.No_current_proof -> ()
+    | Ide_intf.Proof_completed ->
+      view#buffer#insert "Proof Completed."
+    | Ide_intf.Unfocused_goals l ->
+      view#buffer#insert "This subproof is complete, but there are still unfocused goals:\n\n";
+      let iter goal =
+        let msg = Printf.sprintf "%s\n" goal.Ide_intf.goal_ccl in
         view#buffer#insert msg
+      in
+      List.iter iter l
+    | Ide_intf.Uninstantiated_evars el ->
+      view#buffer#insert "No more subgoals but non-instantiated existential variables:\n\n";
+      let iter evar =
+        let msg = Printf.sprintf "%s\n" evar in
+        view#buffer#insert msg
+      in
+      List.iter iter el
     | Ide_intf.Goals g ->
-        mode view g
+      mode view g

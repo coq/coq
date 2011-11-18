@@ -16,7 +16,10 @@ type goal = {
 }
 
 type goals =
-  | Message of string
+  | No_current_proof
+  | Proof_completed
+  | Unfocused_goals of goal list
+  | Uninstantiated_evars of string list
   | Goals of goal list
 
 type 'a call

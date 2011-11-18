@@ -20,7 +20,10 @@ type goal = {
 }
 
 type goals =
-  | Message of string
+  | No_current_proof
+  | Proof_completed
+  | Unfocused_goals of goal list
+  | Uninstantiated_evars of string list
   | Goals of goal list
 
 (** We use phantom types and GADT to protect ourselves against wild casts *)
@@ -210,14 +213,31 @@ let to_goal = function
 | _ -> raise Marshal_error
 
 let of_goals = function
-| Message s ->
-  Element ("goals", ["val", "message"], [PCData s])
+| No_current_proof ->
+  Element ("goals", ["val", "no_current_proof"], [])
+| Proof_completed ->
+  Element ("goals", ["val", "proof_completed"], [])
+| Unfocused_goals l ->
+  let xml = of_list of_goal l in
+  Element ("goals", ["val", "unfocused_goals"], [xml])
+| Uninstantiated_evars el ->
+  let xml = of_list of_string el in
+  Element ("goals", ["val", "uninstantiated_evars"], [xml])
 | Goals l ->
   let xml = of_list of_goal l in
   Element ("goals", ["val", "goals"], [xml])
 
 let to_goals = function
-| Element ("goals", ["val", "message"], l) -> Message (raw_string l)
+| Element ("goals", ["val", "no_current_proof"], []) ->
+  No_current_proof
+| Element ("goals", ["val", "proof_completed"], []) ->
+  Proof_completed
+| Element ("goals", ["val", "unfocused_goals"], [xml]) ->
+  let l = to_list to_goal xml in
+  Unfocused_goals l
+| Element ("goals", ["val", "uninstantiated_evars"], [xml]) ->
+  let l = to_list to_string xml in
+  Uninstantiated_evars l
 | Element ("goals", ["val", "goals"], [xml]) ->
   let l = to_list to_goal xml in
   Goals l
@@ -276,7 +296,10 @@ let pr_mkcases l =
   "[" ^ String.concat " | " l ^ "]"
 
 let pr_goals = function
-| Message s -> "Message: " ^ s
+| No_current_proof -> "No current proof."
+| Proof_completed -> "Proof completed."
+| Unfocused_goals gl -> Printf.sprintf "Still %i unfocused goals." (List.length gl)
+| Uninstantiated_evars el -> Printf.sprintf "Still %i uninstantiated evars." (List.length el)
 | Goals gl ->
   let pr_menu s = s in
   let pr_goal { goal_hyp = hyps; goal_ccl = goal } =
