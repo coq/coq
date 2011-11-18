@@ -378,10 +378,11 @@ GEXTEND Gram
   ;
   of_type_with_opt_coercion:
     [ [ ":>>" -> Some false
-    | ":>" -> Some true
-    | ":"; ">" -> Some true
-    | ":"; ">"; ">" -> Some false
-    | ":" -> None ] ]
+	| ":>"; ">" -> Some false
+	| ":>" -> Some true
+	| ":"; ">"; ">" -> Some false
+	| ":"; ">" -> Some true
+	| ":" -> None ] ]
   ;
 END
 
