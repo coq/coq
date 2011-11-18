@@ -241,7 +241,7 @@ let check_instance env sigma c =
 
 let build_subclasses ~check env sigma glob pri =
   let rec aux pri c =
-    let ty = Retyping.get_type_of env sigma c in
+    let ty = Evarutil.nf_evar sigma (Retyping.get_type_of env sigma c) in
       match class_of_constr ty with
       | None -> []
       | Some (rels, (tc, args)) ->
