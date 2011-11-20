@@ -2347,8 +2347,8 @@ Depending on your configuration, use either one of these two methods
 \begin{itemize}
 
 \item Insert \texttt{gtk-key-theme-name = "Emacs"}
-    in your \texttt{.coqide-gtk2rc} file. It may be in the current dir
-    or in \verb#$HOME# dir. This is done by default.
+    in your \texttt{coqide-gtk2rc} file. It should be in
+    \verb#$XDG_CONFIG_DIRS/coq# dir. This is done by default.
 
 \item If in Gnome, run the gnome configuration editor (\texttt{gconf-editor})
 and set key \texttt{gtk-key-theme} to \texttt{Emacs} in the category
@@ -2416,7 +2416,7 @@ xmodmap -e "keycode  26 = e E F14 F14"
 \verb=bind "F13" {"insert-at-cursor" ("=$\forall$\verb=")}=\\
 \verb=bind "F14" {"insert-at-cursor" ("=$\exists$\verb=")}=
 
-	to your "binding "text"" section in \verb#.coqiderc-gtk2rc.#
+	to your "binding "text"" section in \verb#coqiderc-gtk2rc#.
 	The last arguments to {\tt bind} between "" are
         the UTF-8 encodings for 0x2200 and 0x2203.
 	You can compute these encodings using the lablgtk2 toplevel with
@@ -2430,8 +2430,8 @@ Glib.Utf8.from_unichar 0x2200;;
 \Question{How to customize the shortcuts for menus?}
  Two solutions are offered:
 \begin{itemize}
-\item Edit \$HOME/.coqide.keys by hand or
-\item Add "gtk-can-change-accels = 1" in your .coqide-gtk2rc file. Then
+\item Edit \$XDG_CONFIG_HOME/coq/coqide.keys (\$HOME/.config/coq/coqide.keys) by hand or
+\item Add "gtk-can-change-accels = 1" in your coqide-gtk2rc file. Then
     from \CoqIde, you may select a menu entry and press the desired 
     shortcut. 
 \end{itemize}
@@ -2451,9 +2451,9 @@ Glib.Utf8.from_unichar 0x2200;;
 Some users may experiment problems with unwanted automatic
 templates while using Coqide. This is due to a change in the
 modifiers keys available through GTK. The straightest way to get
-rid of the problem is to edit by hand your .coqiderc (either
-\verb|/home/<user>/.coqiderc| under Linux, or \\
-\verb|C:\Documents and Settings\<user>\.coqiderc| under Windows) 
+rid of the problem is to edit by hand your coqiderc (either
+\verb|/home/<user>/.config/coq/coqiderc| under Linux, or \\
+\verb|C:\Documents and Settings\<user>\.config\coq\coqiderc| under Windows) 
     and replace any occurence of \texttt{MOD4} by \texttt{MOD1}.
 
 

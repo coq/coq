@@ -70,7 +70,13 @@ let subst_command_placeholder s t =
 let home =
   try Sys.getenv "HOME" with Not_found ->
     try (Sys.getenv "HOMEDRIVE")^(Sys.getenv "HOMEPATH") with Not_found ->
-      try Sys.getenv "USERPROFILE" with Not_found -> "."
+      try Sys.getenv "USERPROFILE" with Not_found -> Filename.current_dir_name
+
+let xdg_config_home =
+  try
+    Filename.concat (Sys.getenv "XDG_CONFIG_HOME") "coq"
+  with Not_found ->
+    Filename.concat home "/.config/coq"
 
 let coqlib = ref ""
 let coqtop_path = ref ""

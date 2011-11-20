@@ -191,11 +191,14 @@ CoqIDE
 
 - Coqide now runs coqtop as separated process, making it more robust:
   coqtop subprocess can be interrupted, or even killed and relaunched
-  (cf button "Restart Coq", ex-"Go to Start"). For allowing such interrupts,
-  the Windows version of coqide now requires Windows >= XP SP1.
+  (cf button "Restart Coq", ex-"Go to Start"). For allowing such
+  interrupts, the Windows version of coqide now requires Windows >= XP
+  SP1.
 - The Coqide parsing of sentences has be reworked and now supports
   tactic delimitation via { }.
 - Coqide now accepts the Abort command (wish #2357).
+- Preference files have moved to $XDG_CONFIG_HOME/coq and accelerators
+  are not stored in a list anymore.
 
 Tools
 
@@ -208,7 +211,7 @@ Tools
   * More variables are given by coqtop -config, others are defined only if the
     users doesn't have defined them elsewhere. Consequently, generated makefile
     should work directly on any architecture.
-  * Packager can take advantage of $(DSTROOT) introduction
+  * Packagers can take advantage of $(DSTROOT) introduction
 
 Changes from V8.2 to V8.3
 =========================

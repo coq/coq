@@ -10,9 +10,9 @@
 open Configwin
 open Printf
 
-let pref_file = Filename.concat Minilib.home ".coqiderc"
+let pref_file = Filename.concat Minilib.xdg_config_home "coqiderc"
 
-let accel_file = Filename.concat Minilib.home ".coqide.keys"
+let accel_file = Filename.concat Minilib.xdg_config_home "coqide.keys"
 
 let mod_to_str (m:Gdk.Tags.modifier) =
   match m with
@@ -168,6 +168,8 @@ let contextual_menus_on_goal = ref (fun x -> ())
 let resize_window = ref (fun () -> ())
 
 let save_pref () =
+  if not (Sys.file_exists Minilib.xdg_config_home)
+  then Unix.mkdir Minilib.xdg_config_home 0o700;
   (try GtkData.AccelMap.save accel_file
   with _ -> ());
   let p = !current in

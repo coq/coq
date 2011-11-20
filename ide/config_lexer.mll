@@ -25,7 +25,7 @@ rule prefs m = parse
   |ignore* (ident as id) ignore* '=' { let conf = str_list [] lexbuf in
 				 prefs (Stringmap.add id conf m) lexbuf }
   | _     { let c = lexeme_start lexbuf in
-	      eprintf ".coqiderc: invalid character (%d)\n@." c;
+	      eprintf "coqiderc: invalid character (%d)\n@." c;
 	      prefs m lexbuf }
   | eof   { m }
 
@@ -41,7 +41,7 @@ and string = parse
   | '"'  { Buffer.add_char string_buffer '"' }
   | '\\' '"' | _
          { Buffer.add_string string_buffer (lexeme lexbuf); string lexbuf }
-  | eof  { eprintf ".coqiderc: unterminated string\n@." }
+  | eof  { eprintf "coqiderc: unterminated string\n@." }
 
 {
 
