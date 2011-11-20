@@ -303,7 +303,7 @@ COQIDEFLAGS=-thread $(COQIDEINCLUDES)
 
 .SUFFIXES:.vo
 
-IDEFILES=ide/coq.png ide/.coqide-gtk2rc
+IDEFILES=ide/coq.png ide/coqide-gtk2rc
 
 coqide-binaries: coqide-$(HASCOQIDE)
 coqide-no:

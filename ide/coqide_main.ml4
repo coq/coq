@@ -73,9 +73,9 @@ let () =
   Minilib.coqlib := Coq.check_coqlib args;
   Coqide.sup_args := args;
   Coqide.ignore_break ();
-    GtkMain.Rc.add_default_file (Ideutils.lib_ide_file ".coqide-gtk2rc");
+    GtkMain.Rc.add_default_file (Ideutils.lib_ide_file "coqide-gtk2rc");
     (try
-	 GtkMain.Rc.add_default_file (Filename.concat Minilib.home ".coqide-gtk2rc");
+	 GtkMain.Rc.add_default_file (Filename.concat Minilib.xdg_config_home "coqide-gtk2rc");
      with Not_found -> ());
     ignore (GtkMain.Main.init ());
     initmac () ;

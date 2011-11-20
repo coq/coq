@@ -1,5 +1,5 @@
-# Some default functions for CoqIde. You may copy the file in your HOME and
-# edit as you want. See 
+# Some default functions for CoqIde. You may copy the file in $XDG_CONFIG_HOME
+# ($HOME/.config/coq/) and edit as you want. See 
 # http://developer.gnome.org/doc/API/2.0/gtk/gtk-Resource-Files.html
 # for a complete set of options
 # To set the font of the text windows, edit the .coqiderc file through the menus.
