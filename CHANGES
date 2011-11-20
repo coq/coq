@@ -199,8 +199,8 @@ CoqIDE
 
 Tools
 
-- Coq now searches directories specified in COQPATH and user-contribs before
- the standard library.
+- Coq now searches directories specified in COQPATH, $XDG_DATA_HOME/coq,
+  $XDG_DATA_DIRS/coq, and user-contribs before the standard library.
 - coq_makefile major cleanup.
   * mli taken into account, ml not preproccessed anymore, ml4 work
   * mlihtml generates doc of mli, install-doc install the html doc in DOCDIR

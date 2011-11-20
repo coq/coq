@@ -51,11 +51,26 @@ let path_to_list p =
   let sep = if Sys.os_type = "Win32" then ';' else ':' in
     Util.split_string_at sep p
 
-let coqpath () =
+let xdg_data_home =
+  Filename.concat
+    (System.getenv_else "XDG_DATA_HOME" (Filename.concat System.home ".local/share"))
+    "coq"
+
+let xdg_data_dirs =
+  try
+    List.map (fun dir -> Filename.concat dir "coq") (path_to_list (Sys.getenv "XDG_DATA_DIRS"))
+  with Not_found -> [ "/usr/local/share/coq"; "/usr/share/coq" ]
+
+let xdg_dirs =
+  let dirs = xdg_data_home :: xdg_data_dirs
+  in
+  List.rev (List.filter Sys.file_exists dirs)
+
+let coqpath =
   try
     let path = Sys.getenv "COQPATH" in
-      List.rev (path_to_list path)
-  with _ -> []
+      List.rev (List.filter Sys.file_exists (path_to_list path))
+  with Not_found -> []
 
 let rec which l f =
   match l with
@@ -89,7 +104,6 @@ let camllib () =
     let _,res = System.run_command (fun x -> x) (fun _ -> ()) com in
     Util.strip res
 
-(* TODO : essayer aussi camlbin *)
 let camlp4bin () =
   if !Flags.camlp4bin_spec then !Flags.camlp4bin else
     if !Flags.boot then Coq_config.camlp4bin else

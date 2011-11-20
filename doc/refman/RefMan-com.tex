@@ -82,6 +82,11 @@ only for developers that are writing their own tactics and are using
 (defined at installation time). So these variables are useful only if
 you move the \Coq\ binaries and library after installation.
 
+Coq will also honor \verb:$XDG_DATA_HOME: and \verb:$XDG_DATA_DIRS: (see
+\{http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html}).
+Coq adds \verb:${XDG_DATA_HOME}/coq: and \verb:${XDG_DATA_DIRS}/coq: to its
+search path.
+
 \section[Options]{Options\index{Options of the command line}
 \label{vmoption}
 \label{coqoptions}}

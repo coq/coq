@@ -102,7 +102,8 @@ let set_rec_include d p =
 let init_load_path () =
   let coqlib = Envars.coqlib () in
   let user_contrib = coqlib/"user-contrib" in
-  let coqpath = Envars.coqpath () in
+  let xdg_dirs = Envars.xdg_dirs in
+  let coqpath = Envars.coqpath in
   let plugins = coqlib/"plugins" in
   (* NOTE: These directories are searched from last to first *)
   (* first standard library *)
@@ -112,6 +113,8 @@ let init_load_path () =
   (* then user-contrib *)
   if Sys.file_exists user_contrib then
     add_rec_path ~unix_path:user_contrib ~coq_root:Check.default_root_prefix;
+  (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME *)
+  List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Check.default_root_prefix) xdg_dirs;
   (* then directories in COQPATH *)
   List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Check.default_root_prefix) coqpath;
   (* then current directory *)

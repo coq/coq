@@ -200,8 +200,8 @@ let coqdep () =
     add_rec_dir add_coqlib_known (coqlib//"plugins") ["Coq"];
     let user = coqlib//"user-contrib" in
     if Sys.file_exists user then add_rec_dir add_coqlib_known user [];
-    let coqpath = Envars.coqpath () in
-    List.iter (fun s -> add_rec_dir add_coqlib_known s []) coqpath;
+    List.iter (fun s -> add_rec_dir add_coqlib_known s []) Envars.xdg_dirs;
+    List.iter (fun s -> add_rec_dir add_coqlib_known s []) Envars.coqpath;
   end;
   List.iter (fun (f,d) -> add_mli_known f d) !mliAccu;
   List.iter (fun (f,d) -> add_mllib_known f d) !mllibAccu;
