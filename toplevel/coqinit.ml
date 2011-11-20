@@ -15,13 +15,13 @@ let (/) = Filename.concat
 let set_debug () = Flags.debug := true
 
 (* Loading of the ressource file.
-   rcfile is either $HOME/.coqrc.VERSION, or $HOME/.coqrc if the first one
+   rcfile is either $XDG_CONFIG_HOME/.coqrc.VERSION, or $XDG_CONFIG_HOME/.coqrc if the first one
   does not exist. *)
 
-let rcfile = ref (home/".coqrc")
+let rcfile = ref (Envars.xdg_config_home/"coqrc")
 let rcfile_specified = ref false
 let set_rcfile s = rcfile := s; rcfile_specified := true
-let set_rcuser s = rcfile := ("~"^s)/".coqrc"
+let set_rcuser s = rcfile := ("~"^s)^"/.config/coq/coqrc"
 
 let load_rc = ref true
 let no_load_rc () = load_rc := false
@@ -40,7 +40,7 @@ let load_rcfile() =
       else ()
 	(*
 	Flags.if_verbose
-	  mSGNL (str ("No .coqrc or .coqrc."^Coq_config.version^
+	  mSGNL (str ("No coqrc or coqrc."^Coq_config.version^
 			 " found. Skipping rcfile loading."))
 	*)
     with e ->

@@ -33,7 +33,7 @@ let home =
       try Sys.getenv "USERPROFILE" with Not_found ->
 	warning ("Cannot determine user home directory, using '.' .");
 	flush_all ();
-	"."
+	Filename.current_dir_name
 
 let safe_getenv n = safe_getenv_def n ("$"^n)
 

@@ -56,6 +56,11 @@ let xdg_data_home =
     (System.getenv_else "XDG_DATA_HOME" (Filename.concat System.home ".local/share"))
     "coq"
 
+let xdg_config_home =
+  Filename.concat
+    (System.getenv_else "XDG_CONFIG_HOME" (Filename.concat System.home ".config"))
+    "coq"
+
 let xdg_data_dirs =
   try
     List.map (fun dir -> Filename.concat dir "coq") (path_to_list (Sys.getenv "XDG_DATA_DIRS"))
