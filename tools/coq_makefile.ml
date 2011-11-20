@@ -132,7 +132,7 @@ let classify_files_by_root var files (inc_i,inc_r) =
 	  inc_r;
     end
 
-let install_include_by_root path_var files_var files (inc_i,inc_r) =
+let install_include_by_root files_var files (inc_i,inc_r) =
   try
     (* All files caught by a -R . option (assuming it is the only one) *)
     let ldir = match inc_r with
@@ -142,8 +142,8 @@ let install_include_by_root path_var files_var files (inc_i,inc_r) =
 	   out in
     let pdir = physical_dir_of_logical_dir ldir in
       printf "\tfor i in $(%s); do \\\n" files_var;
-      printf "\t install -d `dirname $(DSTROOT)$(%s)user-contrib/%s/$$i`; \\\n" path_var pdir;
-      printf "\t install $$i $(DSTROOT)$(%s)user-contrib/%s/$$i; \\\n" path_var pdir;
+      printf "\t install -d `dirname $(DSTROOT)$(COQLIBINSTALL)/%s/$$i`; \\\n" pdir;
+      printf "\t install $$i $(DSTROOT)$(COQLIBINSTALL)/%s/$$i; \\\n" pdir;
       printf "\tdone\n"
   with Not_found ->
     let absdir_of_files = List.rev_map
@@ -152,9 +152,9 @@ let install_include_by_root path_var files_var files (inc_i,inc_r) =
     let has_inc_i_files =
       List.exists (fun (_,a) -> List.mem a absdir_of_files) inc_i in
     let install_inc_i d =
-      printf "\tinstall -d $(DSTROOT)$(%s)user-contrib/%s; \\\n" path_var d;
+      printf "\tinstall -d $(DSTROOT)$(COQLIBINSTALL)/%s; \\\n" d;
       printf "\tfor i in $(%sINC); do \\\n" files_var;
-      printf "\t install $$i $(DSTROOT)$(%s)user-contrib/%s/`basename $$i`; \\\n" path_var d;
+      printf "\t install $$i $(DSTROOT)$(COQLIBINSTALL)/%s/`basename $$i`; \\\n" d;
       printf "\tdone\n"
     in
       if inc_r = [] then
@@ -171,8 +171,8 @@ let install_include_by_root path_var files_var files (inc_i,inc_r) =
 			 if has_inc_r_files then
 			   begin
 			     printf "\tcd %s; for i in $(%s%d); do \\\n" pdir files_var i;
-			     printf "\t install -d `dirname $(DSTROOT)$(%s)user-contrib/%s/$$i`; \\\n" path_var pdir';
-			     printf "\t install $$i $(DSTROOT)$(%s)user-contrib/%s/$$i; \\\n" path_var pdir';
+			     printf "\t install -d `dirname $(DSTROOT)$(COQLIBINSTALL)/%s/$$i`; \\\n" pdir';
+			     printf "\t install $$i $(DSTROOT)$(COQLIBINSTALL)/%s/$$i; \\\n" pdir';
 			     printf "\tdone\n";
 			   end;
 			 if has_inc_i_files then install_inc_i pdir'
@@ -180,9 +180,9 @@ let install_include_by_root path_var files_var files (inc_i,inc_r) =
 
 let install_doc some_vfiles some_mlifiles (_,inc_r) =
   let install_one_kind kind dir =
-    printf "\tinstall -d $(DSTROOT)$(DOCDIR)user-contrib/%s/%s\n" dir kind;
+    printf "\tinstall -d $(DSTROOT)$(COQDOCINSTALL)/%s/%s\n" dir kind;
     printf "\tfor i in %s/*; do \\\n" kind;
-    printf "\t install $$i $(DSTROOT)$(DOCDIR)user-contrib/%s/$$i;\\\n" dir;
+    printf "\t install $$i $(DSTROOT)$(COQDOCINSTALL)/%s/$$i;\\\n" dir;
     print "\tdone\n" in
     print "install-doc:\n";
     let () = match inc_r with
@@ -212,19 +212,19 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
   let cmxsfiles = cmofiles@mllibfiles in
     if (not_empty cmxsfiles) then begin
       print "install-natdynlink:\n";
-      install_include_by_root "COQLIB" "CMXSFILES" cmxsfiles inc;
+      install_include_by_root "CMXSFILES" cmxsfiles inc;
       print "\n";
     end;
     print "install:";
     if (not_empty cmxsfiles) then print "$(if ifeq '$(HASNATDYNLINK)' 'true',install-natdynlink)";
     print "\n";
-    if not_empty vfiles then install_include_by_root "COQLIB" "VOFILES" vfiles inc;
+    if not_empty vfiles then install_include_by_root "VOFILES" vfiles inc;
     if (not_empty cmofiles) then
-      install_include_by_root "COQLIB" "CMOFILES" cmofiles inc;
+      install_include_by_root "CMOFILES" cmofiles inc;
     if (not_empty cmifiles) then
-      install_include_by_root "COQLIB" "CMIFILES" cmifiles inc;
+      install_include_by_root "CMIFILES" cmifiles inc;
     if (not_empty mllibfiles) then
-      install_include_by_root "COQLIB" "CMAFILES" mllibfiles inc;
+      install_include_by_root "CMAFILES" mllibfiles inc;
     List.iter
       (fun x ->
 	 printf "\t(cd %s; $(MAKE) DSTROOT=$(DSTROOT) INSTALLDEFAULTROOT=$(INSTALLDEFAULTROOT)/%s install)\n" x x)
@@ -355,6 +355,10 @@ let variables opt (args,defs) =
     print "CAMLP4EXTEND?=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
     print "CAMLP4OPTIONS?=\n";
     print "PP?=-pp \"$(CAMLP4BIN)$(CAMLP4)o -I $(CAMLLIB) -I . $(COQSRCLIBS) $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl\"\n";
+    print "\n";
+    section "Install Paths";
+    print "COQLIBINSTALL=${COQLIB}/user-contrib\n";
+    print "COQDOCINSTALL=${DOCDIR}/user-contrib\n";
     print "\n"
 
 let parameters () =
