@@ -197,21 +197,25 @@ CoqIDE
 - The Coqide parsing of sentences has be reworked and now supports
   tactic delimitation via { }.
 - Coqide now accepts the Abort command (wish #2357).
+- Coqide can read coq_makefile files as "project file" and use it to
+  set automatically options to send to coqtop.
 - Preference files have moved to $XDG_CONFIG_HOME/coq and accelerators
-  are not stored in a list anymore.
+  are not stored as a list anymore.
 
 Tools
 
 - Coq now searches directories specified in COQPATH, $XDG_DATA_HOME/coq,
   $XDG_DATA_DIRS/coq, and user-contribs before the standard library.
+- Coq rc file has moved to $XDG_CONFIG_HOME/coq.
 - coq_makefile major cleanup.
-  * mli taken into account, ml not preproccessed anymore, ml4 work
+  * mli/mlpack/mllib taken into account, ml not preproccessed anymore, ml4 work
   * mlihtml generates doc of mli, install-doc install the html doc in DOCDIR
     with the same policy as vo in COQLIB
   * More variables are given by coqtop -config, others are defined only if the
     users doesn't have defined them elsewhere. Consequently, generated makefile
     should work directly on any architecture.
-  * Packagers can take advantage of $(DSTROOT) introduction
+  * Packagers can take advantage of $(DSTROOT) introduction.
+  * -arg option allows to send option as argument to coqc.
 
 Changes from V8.2 to V8.3
 =========================
