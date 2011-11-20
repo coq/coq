@@ -143,7 +143,7 @@ let install_include_by_root files_var files (inc_i,inc_r) =
     let pdir = physical_dir_of_logical_dir ldir in
       printf "\tfor i in $(%s); do \\\n" files_var;
       printf "\t install -d `dirname $(DSTROOT)$(COQLIBINSTALL)/%s/$$i`; \\\n" pdir;
-      printf "\t install $$i $(DSTROOT)$(COQLIBINSTALL)/%s/$$i; \\\n" pdir;
+      printf "\t install -m 0644 $$i $(DSTROOT)$(COQLIBINSTALL)/%s/$$i; \\\n" pdir;
       printf "\tdone\n"
   with Not_found ->
     let absdir_of_files = List.rev_map
@@ -154,7 +154,7 @@ let install_include_by_root files_var files (inc_i,inc_r) =
     let install_inc_i d =
       printf "\tinstall -d $(DSTROOT)$(COQLIBINSTALL)/%s; \\\n" d;
       printf "\tfor i in $(%sINC); do \\\n" files_var;
-      printf "\t install $$i $(DSTROOT)$(COQLIBINSTALL)/%s/`basename $$i`; \\\n" d;
+      printf "\t install -m 0644 $$i $(DSTROOT)$(COQLIBINSTALL)/%s/`basename $$i`; \\\n" d;
       printf "\tdone\n"
     in
       if inc_r = [] then
@@ -172,7 +172,7 @@ let install_include_by_root files_var files (inc_i,inc_r) =
 			   begin
 			     printf "\tcd %s; for i in $(%s%d); do \\\n" pdir files_var i;
 			     printf "\t install -d `dirname $(DSTROOT)$(COQLIBINSTALL)/%s/$$i`; \\\n" pdir';
-			     printf "\t install $$i $(DSTROOT)$(COQLIBINSTALL)/%s/$$i; \\\n" pdir';
+			     printf "\t install -m 0644 $$i $(DSTROOT)$(COQLIBINSTALL)/%s/$$i; \\\n" pdir';
 			     printf "\tdone\n";
 			   end;
 			 if has_inc_i_files then install_inc_i pdir'
@@ -182,7 +182,7 @@ let install_doc some_vfiles some_mlifiles (_,inc_r) =
   let install_one_kind kind dir =
     printf "\tinstall -d $(DSTROOT)$(COQDOCINSTALL)/%s/%s\n" dir kind;
     printf "\tfor i in %s/*; do \\\n" kind;
-    printf "\t install $$i $(DSTROOT)$(COQDOCINSTALL)/%s/$$i;\\\n" dir;
+    printf "\t install -m 0644 $$i $(DSTROOT)$(COQDOCINSTALL)/%s/$$i;\\\n" dir;
     print "\tdone\n" in
     print "install-doc:\n";
     let () = match inc_r with
