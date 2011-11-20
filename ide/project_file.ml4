@@ -12,6 +12,10 @@ type target =
   | Include of string
   | RInclude of string * string (* -R physicalpath logicalpath *)
 
+type install =
+  | NoInstall
+  | TraditionalInstall
+  | UserInstall
 
 exception Parsing_error
 let rec parse_string = parser
@@ -51,8 +55,19 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
     Minilib.safe_prerr_endline "Please now use \"-arg -impredicative-set\" instead of \"-impredicative-set\" alone to be more uniform.";
     process_cmd_line orig_dir opts (Arg "-impredicative_set" :: l) r
   | "-no-install" :: r ->
-    if not install then Minilib.safe_prerr_endline "Warning: -no-install sets more than once.";
-    process_cmd_line orig_dir (project_file,makefile,false,opt) l r
+    Minilib.safe_prerr_endline "Option -no-install is deprecated. Use \"-install none\" instead";
+    process_cmd_line orig_dir (project_file,makefile,NoInstall,opt) l r
+  | "-install" :: d :: r ->
+    if install <> TraditionalInstall then Minilib.safe_prerr_endline "Warning: -install sets more than once.";
+    let install =
+      match d with
+	| "user" -> UserInstall
+	| "none" -> NoInstall
+	| "global" -> TraditionalInstall
+	| _ -> Minilib.safe_prerr_endline (String.concat "" ["Warning: invalid option '"; d; "' passed to -install."]);
+          install
+    in
+    process_cmd_line orig_dir (project_file,makefile,install,opt) l r
   | "-custom" :: com :: dependencies :: file :: r ->
     process_cmd_line orig_dir opts (Special (file,dependencies,com) :: l) r
   | "-I" :: d :: r ->
@@ -80,7 +95,7 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
 	let () = match makefile with
 	  |None -> ()
 	  |Some f ->
-	     Minilib.safe_prerr_endline ("Warning: Only one output file in genererated. "^f^" will not.")
+	     Minilib.safe_prerr_endline ("Warning: Only one output file is genererated. "^f^" will not be.")
 	in process_cmd_line orig_dir (project_file,Some file,install,opt) l r
       end
   | v :: "=" :: def :: r ->
@@ -143,7 +158,7 @@ let split_arguments =
 
 let read_project_file f =
   split_arguments
-    (snd (process_cmd_line (Filename.dirname f) (Some f, None, false, true) [] (parse f)))
+    (snd (process_cmd_line (Filename.dirname f) (Some f, None, NoInstall, true) [] (parse f)))
 
 let args_from_project file project_files default_name =
   let is_f = Minilib.same_file file in
