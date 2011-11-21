@@ -543,7 +543,7 @@ Type
    end).
 
 (* Nested Cases: the SYNTH of the Cases on n used to make Multcase believe
- * it has to synthtize the predicate on O (which he can't)
+ * it has to synthesize the predicate on O (which he can't)
  *)
 Type
   match 0 as n return match n with
@@ -611,31 +611,52 @@ Type
    | Consn n a (Consn m b l) => n + m
    end).
 
-(*
-Type [A:Set][n:nat][l:(Listn A n)]
-                   <[_:nat](Listn A O)>Cases l of
-                         (Niln  as b) => b
-                      | (Consn  n a (Niln  as b))=> (Niln A)
-                      | (Consn  n a (Consn m b l)) => (Niln A)
-                      end.
+(* This example was deactivated in Cristina's code
 
-Type [A:Set][n:nat][l:(Listn A n)]
-                    Cases l of
-                         (Niln  as b) => b
-                      | (Consn  n a (Niln  as b))=> (Niln A)
-                      | (Consn  n a (Consn m b l)) => (Niln A)
-                      end.
+Type
+  (fun (A:Set) (n:nat) (l:Listn A n) =>
+    match l return Listn A O with
+      | Niln  as b => b
+      | Consn  n a (Niln  as b) => (Niln A)
+      | Consn  n a (Consn m b l) => (Niln A)
+    end).
 *)
-(******** This example rises an error unconstrained_variables!
-Type [A:Set][n:nat][l:(Listn A n)]
-                    Cases l of
-                         (Niln  as b) => (Consn A O O b)
-                      | ((Consn  n a Niln) as L) =>  L
-                      | (Consn  n a _)  =>  (Consn A O O (Niln A))
-                      end.
+
+(* This one is (still) failing: too weak unification
+
+Type
+  (fun (A:Set) (n:nat) (l:Listn A n) =>
+    match l with
+      | Niln  as b => b
+      | Consn  n a (Niln  as b) => (Niln A)
+      | Consn  n a (Consn m b l) => (Niln A)
+    end).
+*)
+
+(* This one is failing: alias L not chosen of the right type
+
+Type
+  (fun (A:Set) (n:nat) (l:Listn A n) =>
+    match l return Listn A (S 0) with
+      | Niln  as b => Consn A O O b
+      | Consn n a Niln as L => L
+      | Consn n a _ => Consn A O O (Niln A)
+    end).
+*)
+
+(******** This example (still) failed
+
+Type
+  (fun (A:Set) (n:nat) (l:Listn A n) =>
+    match l return Listn A (S 0) with
+      | Niln  as b => Consn A O O b
+      | Consn n a Niln as L => L
+      | Consn n a _ => Consn A O O (Niln A)
+    end).
+
 **********)
 
-(* To test tratement of as-patterns in depth *)
+(* To test treatment of as-patterns in depth *)
 Type
   (fun (A : Set) (l : List A) =>
    match l with
@@ -1064,7 +1085,7 @@ Type
    | Consn n a (Consn m b l) => fun _ : nat => n + m
    end).
 
-(* Alsos tests for multiple _ patterns *)
+(* Also tests for multiple _ patterns *)
 Type
   (fun (A : Set) (n : nat) (l : Listn A n) =>
    match l in (Listn _ n) return (Listn A n) with
@@ -1072,14 +1093,14 @@ Type
    | Consn _ _ _ as b => b
    end).
 
-(** Horrible error message!
+(** This one was said to raised once an "Horrible error message!" *)
 
-Type [A:Set][n:nat][l:(Listn A n)]
-                        Cases l of
-                        (Niln as b) => b
-                      | ((Consn _ _ _ ) as b)=>  b
-                      end.
-******)
+Type
+  (fun (A:Set) (n:nat) (l:Listn A n) =>
+   match l with
+   | Niln as b => b
+   | Consn _ _ _  as b =>  b
+   end).
 
 Type
   match niln in (listn n) return (listn n) with
