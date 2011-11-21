@@ -26,6 +26,28 @@ Fixpoint foldrn (n : nat) (bs : listn B n) {struct bs} : C :=
   end.
 End Folding.
 
+(** Testing post-processing of nested dependencies *)
+
+Check fun x:{x|x=0}*nat+nat => match x with
+      | inl ((exist 0 eq_refl),0) => None
+      | _ => Some 0
+      end.
+
+Check fun x:{_:{x|x=0}|True}+nat => match x with
+      | inl (exist (exist 0 eq_refl) I) => None
+      | _ => Some 0
+      end.
+
+Check fun x:{_:{x|x=0}|True}+nat => match x with
+      | inl (exist (exist 0 eq_refl) I) => None
+      | _ => Some 0
+      end.
+
+Check fun x:{_:{x|x=0}|True}+nat => match x return option nat with
+      | inl (exist (exist 0 eq_refl) I) => None
+      | _ => Some 0
+      end.
+
 (* -------------------------------------------------------------------- *)
 (*   Example to test patterns matching on dependent families            *)
 (* This exemple extracted from the developement done by Nacira Chabane  *)

@@ -1002,23 +1002,43 @@ let mkSpecialLetIn orig (na,b,t) isdeppred c =
 (* Remove commutative cuts that turn out to be non-dependent after
    some evars have been instantiated *)
 
-let ungeneralize_branch n (sign,body) cs =
+let rec ungeneralize n ng body =
   match kind_of_term body with
-  | Lambda (_,_,c) | LetIn (_,_,_,c) ->
-      (sign,subst1 (mkRel (n+cs.cs_nargs)) c)
-  | Case _ ->
-      (* Typically case of a match *)
-      (* Not clear what to do; is it avoidable? should we go down the match? *)
-      (sign,applist (body,[mkRel (n+cs.cs_nargs)]))
+  | Lambda (_,_,c) when ng = 0 ->
+      subst1 (mkRel n) c
+  | Lambda (na,t,c) ->
+      (* We traverse an inner generalization *)
+      mkLambda (na,t,ungeneralize (n+1) (ng-1) c)
+  | LetIn (na,b,t,c) ->
+      (* We traverse an alias *)
+      mkLetIn (na,b,t,ungeneralize (n+1) ng c)
+  | Case (ci,p,c,brs) ->
+      (* We traverse a split *)
+      let p =
+        let sign,p = decompose_lam_assum p in
+        let sign2,p = decompose_prod_n_assum ng p in
+        let p = prod_applist p [mkRel (n+List.length sign+ng)] in
+        it_mkLambda_or_LetIn (it_mkProd_or_LetIn p sign2) sign in
+      mkCase (ci,p,c,array_map2 (fun q c ->
+        let sign,b = decompose_lam_n_assum q c in
+        it_mkLambda_or_LetIn (ungeneralize (n+q) ng b) sign)
+        ci.ci_cstr_ndecls brs)
+  | App (f,args) ->
+      (* We traverse an inner generalization *)
+      assert (isCase f);
+      mkApp (ungeneralize n (ng+Array.length args) f,args)
   | _ -> assert false
+
+let ungeneralize_branch n (sign,body) cs =
+  (sign,ungeneralize (n+cs.cs_nargs) 0 body)
 
 let postprocess_dependencies evd current brs tomatch pred deps cs =
   let rec aux k brs tomatch pred tocheck deps = match deps, tomatch with
   | [], _ -> brs,tomatch,pred,[]
   | n::deps, Abstract (i,d) :: tomatch ->
       let d = map_rel_declaration (nf_evar evd) d in
-      if List.exists (fun c -> dependent_decl (lift k c) d) tocheck then
-        (* The dependency is real *)
+      if List.exists (fun c -> dependent_decl (lift k c) d) tocheck || pi2 d <> None then
+        (* Dependency in the current term to match and its dependencies is real *)
         let brs,tomatch,pred,inst = aux (k+1) brs tomatch pred (mkRel n::tocheck) deps in
         let inst = if pi2 d = None then mkRel n::inst else inst in
         brs, Abstract (i,d) :: tomatch, pred, inst
