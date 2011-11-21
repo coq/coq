@@ -119,6 +119,11 @@ let print_impargs_list prefix l =
 	    then print_one_impargs_list imps
 	    else [str "No implicit arguments"]))])]) l)
 
+let print_renames_list prefix l =
+  if l = [] then [prefix] else
+  [add_colon prefix ++ str "Arguments are renamed to " ++
+    hv 2 (prlist_with_sep pr_comma (fun x -> x) (List.map pr_name l))]
+
 let need_expansion impl ref =
   let typ = Global.type_of_global ref in
   let ctx = (prod_assum typ) in
@@ -231,6 +236,8 @@ let print_opacity ref =
 let print_name_infos ref =
   let impls = implicits_of_global ref in
   let scopes = Notation.find_arguments_scope ref in
+  let renames =
+    try List.hd (Arguments_renaming.arguments_names ref) with Not_found -> [] in
   let type_info_for_implicit =
     if need_expansion (select_impargs_size 0 impls) ref then
       (* Need to reduce since implicits are computed with products flattened *)
@@ -239,6 +246,7 @@ let print_name_infos ref =
     else
       [] in
   type_info_for_implicit @
+  print_renames_list (mt()) renames @
   print_impargs_list (mt()) impls @
   print_argument_scopes (mt()) scopes
 
@@ -262,6 +270,12 @@ let print_inductive_implicit_args =
   print_args_data_of_inductive_ids
     implicits_of_global (fun l -> positions_of_implicits l <> [])
     print_impargs_list
+
+let print_inductive_renames =
+  print_args_data_of_inductive_ids
+    (fun r -> try List.hd (Arguments_renaming.arguments_names r) with _ -> [])
+    ((<>) Anonymous)
+    print_renames_list
 
 let print_inductive_argument_scopes =
   print_args_data_of_inductive_ids
@@ -380,7 +394,8 @@ let gallina_print_inductive sp =
   let mipv = mib.mind_packets in
   pr_mutual_inductive_body env sp mib ++ fnl () ++
   with_line_skip
-    (print_inductive_implicit_args sp mipv @
+    (print_inductive_renames sp mipv @
+     print_inductive_implicit_args sp mipv @
      print_inductive_argument_scopes sp mipv)
 
 let print_named_decl id =

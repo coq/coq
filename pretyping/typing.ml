@@ -17,6 +17,7 @@ open Inductive
 open Inductiveops
 open Typeops
 open Evd
+open Arguments_renaming
 
 let meta_type evd mv =
   let ty =
@@ -159,13 +160,13 @@ let rec execute env evdref cstr =
         judge_of_variable env id
 
     | Const c ->
-        make_judge cstr (type_of_constant env c)
+        make_judge cstr (rename_type_of_constant env c)
 
     | Ind ind ->
-	make_judge cstr (type_of_inductive env ind)
+	make_judge cstr (rename_type_of_inductive env ind)
 
     | Construct cstruct ->
-	make_judge cstr (type_of_constructor env cstruct)
+	make_judge cstr (rename_type_of_constructor env cstruct)
 
     | Case (ci,p,c,lf) ->
         let cj = execute env evdref c in

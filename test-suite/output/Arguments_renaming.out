@@ -1,0 +1,104 @@
+@eq_refl
+     : forall (B : Type) (y : B), y = y
+eq_refl
+     : forall x : nat, x = x
+Inductive eq (A : Type) (x : A) : A -> Prop :=  eq_refl : x = x
+
+For eq_refl: Arguments are renamed to B, y
+For eq: Argument A is implicit and maximally inserted
+For eq_refl, when applied to no arguments:
+  Arguments B, y are implicit and maximally inserted
+For eq_refl, when applied to 1 argument:
+  Argument B is implicit
+For eq: Argument scopes are [type_scope _ _]
+For eq_refl: Argument scopes are [type_scope _]
+eq_refl : forall (A : Type) (x : A), x = x
+
+Arguments are renamed to B, y
+When applied to no arguments:
+  Arguments B, y are implicit and maximally inserted
+When applied to 1 argument:
+  Argument B is implicit
+Argument scopes are [type_scope _]
+Expands to: Constructor Coq.Init.Logic.eq_refl
+Inductive myEq (B : Type) (x : A) : A -> Prop :=  myrefl : B -> myEq B x x
+
+For myrefl: Arguments are renamed to C, x, _
+For myrefl: Argument C is implicit and maximally inserted
+For myEq: Argument scopes are [type_scope _ _]
+For myrefl: Argument scopes are [type_scope _ _]
+myrefl : forall (B : Type) (x : A), B -> myEq B x x
+
+Arguments are renamed to C, x, _
+Argument C is implicit and maximally inserted
+Argument scopes are [type_scope _ _]
+Expands to: Constructor Top.Test1.myrefl
+myplus = 
+fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
+  match n with
+  | 0 => m
+  | S n' => S (myplus T t n' m)
+  end
+     : forall T : Type, T -> nat -> nat -> nat
+
+Arguments are renamed to Z, t, n, m
+Argument Z is implicit and maximally inserted
+Argument scopes are [type_scope _ nat_scope nat_scope]
+myplus : forall T : Type, T -> nat -> nat -> nat
+
+Arguments are renamed to Z, t, n, m
+Argument Z is implicit and maximally inserted
+Argument scopes are [type_scope _ nat_scope nat_scope]
+The simpl tactic unfolds myplus
+  when the 2nd and 3rd arguments evaluate to a constructor 
+myplus is transparent
+Expands to: Constant Top.Test1.myplus
+myplus
+     : forall Z : Type, Z -> nat -> nat -> nat
+Inductive myEq (A B : Type) (x : A) : A -> Prop :=
+    myrefl : B -> myEq A B x x
+
+For myrefl: Arguments are renamed to A, C, x, _
+For myrefl: Argument C is implicit and maximally inserted
+For myEq: Argument scopes are [type_scope type_scope _ _]
+For myrefl: Argument scopes are [type_scope type_scope _ _]
+myrefl : forall (A B : Type) (x : A), B -> myEq A B x x
+
+Arguments are renamed to A, C, x, _
+Argument C is implicit and maximally inserted
+Argument scopes are [type_scope type_scope _ _]
+Expands to: Constructor Top.myrefl
+myrefl
+     : forall (A C : Type) (x : A), C -> myEq A C x x
+myplus = 
+fix myplus (T : Type) (t : T) (n m : nat) {struct n} : nat :=
+  match n with
+  | 0 => m
+  | S n' => S (myplus T t n' m)
+  end
+     : forall T : Type, T -> nat -> nat -> nat
+
+Arguments are renamed to Z, t, n, m
+Argument Z is implicit and maximally inserted
+Argument scopes are [type_scope _ nat_scope nat_scope]
+myplus : forall T : Type, T -> nat -> nat -> nat
+
+Arguments are renamed to Z, t, n, m
+Argument Z is implicit and maximally inserted
+Argument scopes are [type_scope _ nat_scope nat_scope]
+The simpl tactic unfolds myplus
+  when the 2nd and 3rd arguments evaluate to a constructor 
+myplus is transparent
+Expands to: Constant Top.myplus
+myplus
+     : forall Z : Type, Z -> nat -> nat -> nat
+The command has indeed failed with message:
+=> Error: All arguments lists must declare the same names
+The command has indeed failed with message:
+=> Error: The following arguments are not declared: x
+The command has indeed failed with message:
+=> Error: Arguments names must be distinct
+The command has indeed failed with message:
+=> Error: Argument z is anonymous and cannot be declared implicit
+The command has indeed failed with message:
+=> Error: Extra argument y

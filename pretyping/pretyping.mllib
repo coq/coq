@@ -11,6 +11,7 @@ Evarutil
 Term_dnet
 Recordops
 Evarconv
+Arguments_renaming
 Typing
 Glob_term
 Pattern

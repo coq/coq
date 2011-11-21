@@ -80,6 +80,7 @@ Evarutil
 Term_dnet
 Recordops
 Evarconv
+Arguments_renaming
 Typing
 Pattern
 Matching

@@ -768,23 +768,42 @@ let vernac_declare_arguments local r l nargs flags =
   let names, rest = List.hd names, List.tl names in
   if List.exists ((<>) names) rest then
     error "All arguments lists must declare the same names";
+  if not (Util.list_distinct (List.filter ((<>) Anonymous) names)) then
+    error "Arguments names must be distinct";
+  let sr = smart_global r in
   let inf_names =
-    Impargs.compute_implicits_names (Global.env())
-      (Global.type_of_global (smart_global r)) in
+    Impargs.compute_implicits_names (Global.env()) (Global.type_of_global sr) in
   let string_of_name = function Anonymous -> "_" | Name id -> string_of_id id in
-  let rec check ld li = match ld, li with
+  let rec check li ld = match li, ld with
     | [], [] -> ()
-    | [], l -> error ("The following arguments are not declared: " ^
+    | [], x::_ -> error ("Extra argument " ^ string_of_name x)
+    | l, [] -> error ("The following arguments are not declared: " ^
        (String.concat ", " (List.map string_of_name l)))
-    | x::_, [] -> error ("Extra argument " ^ string_of_name x)
-    | Name x::_, Name y::_ when x <> y -> error ("The declared name " ^
-        string_of_id x ^ " and the inferred one " ^ string_of_id y ^
-        " are different")
-    | _::ld, _::li -> check ld li in
-  if names <> [] then check names inf_names;
-  let implicits = List.map (Util.list_map_filter (function
-    | (Anonymous, _,_,_,_) | (_,_,_, false, _) -> None
-    | (Name id, _,_, true, max) -> Some (ExplByName id,max,false))) l in
+    | _::li, _::ld -> check li ld in
+  if names <> [] then
+    List.iter (fun l -> check inf_names l) (names :: rest);
+  let some_renaming_specified, implicits =
+    if names = [] then false, [[]] else
+    let never_implicit x =
+      not (List.exists (List.exists (fun (y, _,_, b, _) -> b && y = x)) l) in
+    Util.list_fold_map (fun sr il ->
+      let sr', impl = Util.list_fold_map (fun b -> function
+        | (Anonymous, _,_, true, _), _ ->
+            error "Implicit arguments must have a name"
+        | (Name x,_,_,false,_),Name y when x <> y && never_implicit (Name x)->
+            error ("Reanaming a non implicit argument " ^ string_of_id y ^
+              " to " ^ string_of_id x)
+        | (Name x, _,_, true, _), Anonymous ->
+            error ("Argument "^string_of_id x^" is anonymous and cannot be"^
+              " declared implicit")
+        | (Name iid, _,_, true, max), Name id ->
+           b || iid <> id, Some (ExplByName id, max, false)
+        | _ -> b, None)
+        false (List.combine il inf_names) in
+      sr || sr', Util.list_map_filter (fun x -> x) impl)
+      false l in
+  if some_renaming_specified then
+    Arguments_renaming.rename_arguments local sr (names :: rest);
   (* All other infos are in the first item of l *)
   let l = List.hd l in
   let some_implicits_specified = implicits <> [[]] in
@@ -810,7 +829,7 @@ let vernac_declare_arguments local r l nargs flags =
     | [] -> [] | _ :: tl -> narrow tl in
   let flags = narrow flags in
   if rargs <> [] || nargs >= 0 || flags <> [] then
-    match smart_global r with
+    match sr with
     | ConstRef _ as c ->
        Tacred.set_simpl_behaviour local c (rargs, nargs, flags)
     | _ -> error "Simpl behaviour can be declared for constants only"
@@ -1096,7 +1115,7 @@ let vernac_check_may_eval redexp glopt rc =
   let j =
     try
       Evarutil.check_evars env sigma sigma' c;
-      Typeops.typing env c
+      Arguments_renaming.rename_typing env c
     with P.PretypeError (_,_,P.UnsolvableImplicit _)
       | Compat.Loc.Exc_located (_,P.PretypeError (_,_,P.UnsolvableImplicit _)) ->
       Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c) in
