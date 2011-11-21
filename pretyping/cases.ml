@@ -254,12 +254,12 @@ let push_history_pattern n current cont =
     its type (telling whether we know if it is an inductive type or not),
     [deps] is the list of terms to abstract before matching on [c] (these are
     rels too)
-  - "Abstract" instructions means that an abstraction has to be inserted in the
+  - "Abstract" instructions mean that an abstraction has to be inserted in the
     current branch to build (this means a pattern has been detected dependent
     in another one and a generalization is necessary to ensure well-typing)
     Abstract instructions extend the [env] in which the other instructions
     are typed
-  - "Alias" instructions means an alias has to be inserted (this alias
+  - "Alias" instructions mean an alias has to be inserted (this alias
     is usually removed at the end, except when its type is not the
     same as the type of the matched term from which it comes -
     typically because the inductive types are "real" parameters)
@@ -1063,15 +1063,6 @@ let postprocess_dependencies evd current brs tomatch pred deps cs =
 (************************************************************************)
 (* Sorting equations by constructor *)
 
-type inversion_problem =
-  (* the discriminating arg in some Ind and its order in Ind *)
-  | Incompatible of int * (int * int)
-  | Constraints of (int * constr) list
-
-let solve_constraints constr_info indt =
-  (* TODO *)
-  Constraints []
-
 let rec irrefutable env = function
   | PatVar (_,name) -> true
   | PatCstr (_,cstr,args,_) ->
@@ -1237,11 +1228,11 @@ let build_branch current deps (realnames,dep) pb arsign eqns const_info =
 (**********************************************************************
  INVARIANT:
 
-  pb = { env, subst, tomatch, mat, ...}
+  pb = { env, pred, tomatch, mat, ...}
   tomatch = list of Pushed (c:T) or Abstract (na:T) or Alias (c:T)
 
-  "Pushed" terms and types are relative to env
-  "Abstract" types are relative to env enriched by the previous terms to match
+  all terms and types in Pushed, Abstract and Alias are relative to env
+  enriched by the Abstract coming before
 
 *)
 
@@ -1271,8 +1262,6 @@ and match_current pb tomatch =
 	if (Array.length cstrs <> 0 or pb.mat <> []) & onlydflt  then
 	  compile (shift_problem tomatch pb)
 	else
-          let _constraints = Array.map (solve_constraints indt) cstrs in
-
 	  (* We generalize over terms depending on current term to match *)
 	  let pb = generalize_problem (names,dep) pb deps in
 
