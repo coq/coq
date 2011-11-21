@@ -652,7 +652,7 @@ Add Relation key E.eq
  transitivity proved by E.eq_trans
  as KeySetoid.
 
-Implicit Arguments Equal [[elt]].
+Arguments Equal {elt} m m'.
 
 Add Parametric Relation (elt : Type) : (t elt) Equal
  reflexivity proved by (@Equal_refl elt)

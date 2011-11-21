@@ -38,10 +38,10 @@ Inductive sigT2 (A:Type) (P Q:A -> Type) : Type :=
 
 (* Notations *)
 
-Arguments Scope sig [type_scope type_scope].
-Arguments Scope sig2 [type_scope type_scope type_scope].
-Arguments Scope sigT [type_scope type_scope].
-Arguments Scope sigT2 [type_scope type_scope type_scope].
+Arguments sig (A P)%type.
+Arguments sig2 (A P Q)%type.
+Arguments sigT (A P)%type.
+Arguments sigT2 (A P Q)%type.
 
 Notation "{ x  |  P }" := (sig (fun x => P)) : type_scope.
 Notation "{ x  |  P  & Q }" := (sig2 (fun x => P) (fun x => Q)) : type_scope.
@@ -126,8 +126,8 @@ Inductive sumbool (A B:Prop) : Set :=
 
 Add Printing If sumbool.
 
-Implicit Arguments left [[A] [B]] [A].
-Implicit Arguments right [[A] [B]] [B].
+Arguments left {A B} _, [A] B _.
+Arguments right {A B} _ , A [B] _.
 
 (** [sumor] is an option type equipped with the justification of why
     it may not be a regular value *)
@@ -139,8 +139,8 @@ Inductive sumor (A:Type) (B:Prop) : Type :=
 
 Add Printing If sumor.
 
-Implicit Arguments inleft [[A] [B]] [A].
-Implicit Arguments inright [[A] [B]] [B].
+Arguments inleft {A B} _ , [A] B _.
+Arguments inright {A B} _ , A [B] _.
 
 (** Various forms of the axiom of choice for specifications *)
 
@@ -208,11 +208,11 @@ Definition Exc := option.
 Definition value := Some.
 Definition error := @None.
 
-Implicit Arguments error [A].
+Arguments error [A].
 
 Definition except := False_rec. (* for compatibility with previous versions *)
 
-Implicit Arguments except [P].
+Arguments except [P] _.
 
 Theorem absurd_set : forall (A:Prop) (C:Set), A -> ~ A -> C.
 Proof.

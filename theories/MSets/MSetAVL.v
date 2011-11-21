@@ -375,7 +375,7 @@ Fixpoint fold (A : Type) (f : elt -> A -> A)(s : t) : A -> A :=
   | Leaf => a
   | Node l x r _ => fold f r (f x (fold f l a))
  end.
-Implicit Arguments fold [A].
+Arguments fold [A] f s _.
 
 
 (** ** Subset *)

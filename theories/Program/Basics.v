@@ -17,7 +17,7 @@
 
 (** The polymorphic identity function is defined in [Datatypes]. *)
 
-Implicit Arguments id [[A]].
+Arguments id {A} x.
 
 (** Function composition. *)
 
@@ -53,5 +53,5 @@ Definition apply {A B} (f : A -> B) (x : A) := f x.
 
 (** Curryfication of [prod] is defined in [Logic.Datatypes]. *)
 
-Implicit Arguments prod_curry [[A] [B] [C]].
-Implicit Arguments prod_uncurry [[A] [B] [C]].
+Arguments prod_curry   {A B C} f p.
+Arguments prod_uncurry {A B C} f x y.

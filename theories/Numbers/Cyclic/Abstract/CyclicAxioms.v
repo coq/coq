@@ -204,7 +204,7 @@ Module ZnZ.
 
  End Specs.
 
- Implicit Arguments Specs [[t]].
+ Arguments Specs {t} ops.
 
  (** Generic construction of double words *)
 

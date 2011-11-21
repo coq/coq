@@ -23,7 +23,7 @@ Include NStrongRecProp N.
 Definition if_zero (A : Type) (a b : A) (n : N.t) : A :=
   recursion a (fun _ _ => b) n.
 
-Implicit Arguments if_zero [A].
+Arguments if_zero [A] a b n.
 
 Instance if_zero_wd (A : Type) :
  Proper (Logic.eq ==> Logic.eq ==> N.eq ==> Logic.eq) (@if_zero A).

@@ -55,8 +55,8 @@ Definition respectful {A B : Type}
 
 Delimit Scope signature_scope with signature.
 
-Arguments Scope Proper [type_scope signature_scope].
-Arguments Scope respectful [type_scope type_scope signature_scope signature_scope].
+Arguments Proper {A}%type R%signature m.
+Arguments respectful {A B}%type (R R')%signature _ _.
 
 Module ProperNotations.
 
@@ -121,7 +121,7 @@ Definition forall_relation {A : Type} {B : A -> Type}
  (sig : forall a, relation (B a)) : relation (forall x, B x) :=
  fun f g => forall a, sig a (f a) (g a).
 
-Arguments Scope forall_relation [type_scope type_scope signature_scope].
+Arguments forall_relation {A B}%type sig%signature _ _.
 
 (** Non-dependent pointwise lifting *)
 

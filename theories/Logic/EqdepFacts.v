@@ -107,8 +107,8 @@ Section Dependent_Equality.
 
 End Dependent_Equality.
 
-Implicit Arguments eq_dep [U P].
-Implicit Arguments eq_dep1 [U P].
+Arguments eq_dep  [U P] p x q _.
+Arguments eq_dep1 [U P] p x q y.
 
 (** Dependent equality is equivalent to equality on dependent pairs *)
 
@@ -412,5 +412,5 @@ Notation inj_pairT2 := inj_pair2.
 
 End EqdepTheory.
 
-Implicit Arguments eq_dep [].
-Implicit Arguments eq_dep1 [].
+Arguments eq_dep  U P p x q _ : clear implicits.
+Arguments eq_dep1 U P p x q y : clear implicits.

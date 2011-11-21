@@ -445,7 +445,7 @@ Qed.
 
 Definition recursion (A : Type) (a : A) (f : NN.t -> A -> A) (n : NN.t) :=
   Nrect (fun _ => A) a (fun n a => f (NN.of_N n) a) (NN.to_N n).
-Implicit Arguments recursion [A].
+Arguments recursion [A] a f n.
 
 Instance recursion_wd (A : Type) (Aeq : relation A) :
  Proper (Aeq ==> (eq==>Aeq==>Aeq) ==> eq ==> Aeq) (@recursion A).

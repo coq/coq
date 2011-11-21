@@ -94,3 +94,6 @@ For eq_refl, when applied to 1 argument:
   Argument A is implicit and maximally inserted
 For eq: Argument scopes are [type_scope _ _]
 For eq_refl: Argument scopes are [type_scope _]
+Warning: Implicit Arguments is deprecated; use Arguments instead
+Warning: Implicit Arguments is deprecated; use Arguments instead
+Warning: Implicit Arguments is deprecated; use Arguments instead

@@ -54,3 +54,8 @@ negb'' : bool -> bool
 
 negb'' is transparent
 Expands to: Constant Top.negb''
+Warning: Arguments Scope is deprecated; use Arguments instead
+Warning: Arguments Scope is deprecated; use Arguments instead
+Warning: Arguments Scope is deprecated; use Arguments instead
+Warning: Arguments Scope is deprecated; use Arguments instead
+Warning: Arguments Scope is deprecated; use Arguments instead

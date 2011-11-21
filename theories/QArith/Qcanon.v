@@ -18,7 +18,7 @@ Record Qc : Set := Qcmake { this :> Q ; canon : Qred this = this }.
 
 Delimit Scope Qc_scope with Qc.
 Bind Scope Qc_scope with Qc.
-Arguments Scope Qcmake [Q_scope].
+Arguments Qcmake this%Q _.
 Open Scope Qc_scope.
 
 Lemma Qred_identity :
@@ -69,7 +69,7 @@ Proof.
 Qed.
 
 Definition Q2Qc (q:Q) : Qc := Qcmake (Qred q) (Qred_involutive q).
-Arguments Scope Q2Qc [Q_scope].
+Arguments Q2Qc q%Q.
 Notation " !! " := Q2Qc : Qc_scope.
 
 Lemma Qc_is_canon : forall q q' : Qc, q == q' -> q = q'.

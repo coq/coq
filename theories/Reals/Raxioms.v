@@ -111,7 +111,7 @@ Fixpoint INR (n:nat) : R :=
   | S O => 1
   | S n => INR n + 1
   end.
-Arguments Scope INR [nat_scope].
+Arguments INR n%nat.
 
 
 (**********************************************************)
@@ -125,7 +125,7 @@ Definition IZR (z:Z) : R :=
   | Zpos n => INR (nat_of_P n)
   | Zneg n => - INR (nat_of_P n)
   end.
-Arguments Scope IZR [Z_scope].
+Arguments IZR z%Z.
 
 (**********************************************************)
 (** *    [R] Archimedean                                  *)

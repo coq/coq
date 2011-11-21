@@ -42,8 +42,8 @@ Record Delta A := { pi1:A; pi2:A; eq:pi1=pi2 }.
 
 Definition delta {A} (a:A) := {|pi1 := a; pi2 := a; eq := eq_refl a |}.
 
-Implicit Arguments pi1 [[A]].
-Implicit Arguments pi2 [[A]].
+Arguments pi1 {A} _.
+Arguments pi2 {A} _.
 
 Lemma diagonal_projs_same_behavior : forall A (x:Delta A), pi1 x = pi2 x.
 Proof.

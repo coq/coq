@@ -44,8 +44,8 @@ Local Open Scope bigZ_scope.
 
 Notation bigZ := BigZ.t.
 Bind Scope bigZ_scope with bigZ BigZ.t BigZ.t_.
-Arguments Scope BigZ.Pos [bigN_scope].
-Arguments Scope BigZ.Neg [bigN_scope].
+Arguments BigZ.Pos _%bigN.
+Arguments BigZ.Neg _%bigN.
 Local Notation "0" := BigZ.zero : bigZ_scope.
 Local Notation "1" := BigZ.one : bigZ_scope.
 Local Notation "2" := BigZ.two : bigZ_scope.

@@ -53,7 +53,7 @@ Section Zn2Z.
 
 End Zn2Z.
 
-Implicit Arguments W0 [znz].
+Arguments W0 [znz].
 
 (** From a cyclic representation [w], we iterate the [zn2z] construct
     [n] times, gaining the type of binary trees of depth at most [n],

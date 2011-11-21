@@ -124,7 +124,7 @@ Proof.
   exact (Z_div_mod a b Hb).
 Qed.
 
-Implicit Arguments Zdiv_eucl_exist.
+Arguments Zdiv_eucl_exist : default implicits.
 
 
 (** Uniqueness theorems *)
@@ -679,7 +679,7 @@ Proof.
   rewrite Z.abs_neq; [ assumption | omega ].
 Qed.
 
-Implicit Arguments Zdiv_eucl_extended.
+Arguments Zdiv_eucl_extended : default implicits.
 
 (** * Division and modulo in Z agree with same in nat: *)
 

@@ -84,7 +84,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Section A.
   Variable A:Type.
 
-  Implicit Arguments Leaf [A].
+  Arguments Leaf [A].
 
   Definition empty : t A := Leaf.
 
@@ -814,7 +814,7 @@ Module PositiveMap <: S with Module E:=PositiveOrderedTypeBits.
   Variable A B C : Type.
   Variable f : option A -> option B -> option C.
 
-  Implicit Arguments Leaf [A].
+  Arguments Leaf [A].
 
   Fixpoint xmap2_l (m : t A) : t C :=
       match m with

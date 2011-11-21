@@ -73,7 +73,7 @@ zenon.
 Inductive IN (A:Set) : A -> list A -> Prop :=
   | IN1 : forall x l, IN A x (x::l)
   | IN2: forall x l, IN A x l -> forall y, IN A x (y::l).
-Implicit Arguments IN [A].
+Arguments IN [A] _ _.
 
 Goal forall x, forall (l:list nat), IN x l -> IN x (1%nat::l).
   zenon.

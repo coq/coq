@@ -111,7 +111,7 @@ Fixpoint Zlength_aux (acc:Z) (A:Type) (l:list A) : Z :=
   end.
 
 Definition Zlength := Zlength_aux 0.
-Implicit Arguments Zlength [A].
+Arguments Zlength [A] l.
 
 Section Zlength_properties.
 
@@ -146,6 +146,6 @@ Section Zlength_properties.
 
 End Zlength_properties.
 
-Implicit Arguments Zlength_correct [A].
-Implicit Arguments Zlength_cons [A].
-Implicit Arguments Zlength_nil_inv [A].
+Arguments Zlength_correct [A] l.
+Arguments Zlength_cons [A] x l.
+Arguments Zlength_nil_inv [A] l _.

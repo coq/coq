@@ -28,15 +28,15 @@ Definition inv_fct f (x:R) : R := / f x.
 
 Delimit Scope Rfun_scope with F.
 
-Arguments Scope plus_fct [Rfun_scope Rfun_scope R_scope].
-Arguments Scope mult_fct [Rfun_scope Rfun_scope R_scope].
-Arguments Scope minus_fct [Rfun_scope Rfun_scope R_scope].
-Arguments Scope div_fct [Rfun_scope Rfun_scope R_scope].
-Arguments Scope inv_fct [Rfun_scope R_scope].
-Arguments Scope opp_fct [Rfun_scope R_scope].
-Arguments Scope mult_real_fct [R_scope Rfun_scope R_scope].
-Arguments Scope div_real_fct [R_scope Rfun_scope R_scope].
-Arguments Scope comp [Rfun_scope Rfun_scope R_scope].
+Arguments plus_fct (f1 f2)%F x%R.
+Arguments mult_fct (f1 f2)%F x%R.
+Arguments minus_fct (f1 f2)%F x%R.
+Arguments div_fct (f1 f2)%F x%R.
+Arguments inv_fct f%F x%R.
+Arguments opp_fct f%F x%R.
+Arguments mult_real_fct a%R f%F x%R.
+Arguments div_real_fct a%R f%F x%R.
+Arguments comp (f1 f2)%F x%R.
 
 Infix "+" := plus_fct : Rfun_scope.
 Notation "- x" := (opp_fct x) : Rfun_scope.
@@ -74,8 +74,8 @@ Definition constant_D_eq f (D:R -> Prop) (c:R) : Prop :=
 Definition continuity_pt f (x0:R) : Prop := continue_in f no_cond x0.
 Definition continuity f : Prop := forall x:R, continuity_pt f x.
 
-Arguments Scope continuity_pt [Rfun_scope R_scope].
-Arguments Scope continuity [Rfun_scope].
+Arguments continuity_pt f%F x0%R.
+Arguments continuity f%F.
 
 (**********)
 Lemma continuity_pt_plus :
@@ -274,12 +274,12 @@ Definition derivable f := forall x:R, derivable_pt f x.
 Definition derive_pt f (x:R) (pr:derivable_pt f x) := proj1_sig pr.
 Definition derive f (pr:derivable f) (x:R) := derive_pt f x (pr x).
 
-Arguments Scope derivable_pt_lim [Rfun_scope R_scope].
-Arguments Scope derivable_pt_abs [Rfun_scope R_scope R_scope].
-Arguments Scope derivable_pt [Rfun_scope R_scope].
-Arguments Scope derivable [Rfun_scope].
-Arguments Scope derive_pt [Rfun_scope R_scope _].
-Arguments Scope derive [Rfun_scope _].
+Arguments derivable_pt_lim f%F x%R l.
+Arguments derivable_pt_abs f%F (x l)%R.
+Arguments derivable_pt f%F x%R.
+Arguments derivable f%F.
+Arguments derive_pt f%F x%R pr.
+Arguments derive f%F pr x.
 
 Definition antiderivative f (g:R -> R) (a b:R) : Prop :=
   (forall x:R,

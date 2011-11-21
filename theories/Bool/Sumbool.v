@@ -66,4 +66,4 @@ Definition bool_of_sumbool :
   intros A B H.
   elim H; intro; [exists true | exists false]; assumption.
 Defined.
-Implicit Arguments bool_of_sumbool.
+Arguments bool_of_sumbool : default implicits.

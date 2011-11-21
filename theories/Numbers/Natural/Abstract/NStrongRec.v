@@ -190,7 +190,7 @@ Qed.
 End FixPoint.
 End StrongRecursion.
 
-Implicit Arguments strong_rec [A].
+Arguments strong_rec [A] a f n.
 
 End NStrongRecProp.
 

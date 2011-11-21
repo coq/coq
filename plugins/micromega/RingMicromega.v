@@ -308,7 +308,7 @@ Definition map_option (A B:Type) (f : A -> option B) (o : option A) : option B :
     | Some x => f x
   end.
 
-Implicit Arguments map_option [A B].
+Arguments map_option [A B] f o.
 
 Definition map_option2 (A B C : Type) (f : A -> B -> option C)
   (o: option A) (o': option B) : option C :=
@@ -318,7 +318,7 @@ Definition map_option2 (A B C : Type) (f : A -> B -> option C)
     | Some x , Some x' => f x x'
   end.
 
-Implicit Arguments map_option2 [A B C].
+Arguments map_option2 [A B C] f o o'.
 
 Definition Rops_wd := mk_reqe rplus rtimes ropp req
                        sor.(SORplus_wd)

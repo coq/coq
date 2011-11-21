@@ -748,7 +748,7 @@ rewrite filter_In in H; destruct H.
 eapply SortA_InfA_InA; eauto.
 Qed.
 
-Implicit Arguments eq [ [A] ].
+Arguments eq {A} x _.
 
 Lemma filter_InA : forall f, Proper (eqA==>eq) f ->
  forall l x, InA x (List.filter f l) <-> InA x l /\ f x = true.

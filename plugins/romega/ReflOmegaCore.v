@@ -868,11 +868,11 @@ Inductive term : Set :=
   | Tvar : nat -> term.
 
 Delimit Scope romega_scope with term.
-Arguments Scope Tint [Int_scope].
-Arguments Scope Tplus [romega_scope romega_scope].
-Arguments Scope Tmult [romega_scope romega_scope].
-Arguments Scope Tminus [romega_scope romega_scope].
-Arguments Scope Topp [romega_scope romega_scope].
+Arguments Tint _%I.
+Arguments Tplus (_ _)%term.
+Arguments Tmult (_ _)%term.
+Arguments Tminus (_ _)%term.
+Arguments Topp _%term.
 
 Infix "+" := Tplus : romega_scope.
 Infix "*" := Tmult : romega_scope.

@@ -705,7 +705,7 @@ pr
 
  End SameLevel.
 
- Implicit Arguments same_level [res].
+ Arguments same_level [res] f x y.
 
  Theorem spec_same_level_dep :
   forall res

@@ -20,9 +20,9 @@ Inductive Compare (X : Type) (lt eq : X -> X -> Prop) (x y : X) : Type :=
   | EQ : eq x y -> Compare lt eq x y
   | GT : lt y x -> Compare lt eq x y.
 
-Implicit Arguments LT [X lt eq x y].
-Implicit Arguments EQ [X lt eq x y].
-Implicit Arguments GT [X lt eq x y].
+Arguments LT [X lt eq x y] _.
+Arguments EQ [X lt eq x y] _.
+Arguments GT [X lt eq x y] _.
 
 Module Type MiniOrderedType.
 

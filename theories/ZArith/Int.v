@@ -27,7 +27,7 @@ Module Type Int.
   Parameter int : Set.
 
   Parameter i2z : int -> Z.
-  Arguments Scope i2z [ Int_scope ].
+  Arguments i2z _%I.
 
   Parameter _0 : int.
   Parameter _1 : int.

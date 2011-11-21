@@ -18,15 +18,15 @@ Notation " () " := tt.
 
 (** Set maximally inserted implicit arguments for standard definitions. *)
 
-Implicit Arguments Some [[A]].
-Implicit Arguments None [[A]].
+Arguments Some {A} _.
+Arguments None {A}.
 
-Implicit Arguments pair [[A] [B]].
-Implicit Arguments fst [[A] [B]].
-Implicit Arguments snd [[A] [B]].
+Arguments pair {A B} _ _.
+Arguments fst {A B} _.
+Arguments snd {A B} _.
 
-Implicit Arguments nil [[A]].
-Implicit Arguments cons [[A]].
+Arguments nil {A}.
+Arguments cons {A} _ _.
 
 Require List.
 Export List.ListNotations.

@@ -73,7 +73,7 @@ case_eq (form_eq p1 q1);clean.
 intros e1 e2;generalize (IHp1 _ e1) (IHp2 _ e2);congruence.
 Qed.
 
-Implicit Arguments form_eq_refl [p q].
+Arguments form_eq_refl [p q] _.
 
 Section with_env.
 
@@ -161,7 +161,7 @@ intros hyps F p g e; apply project_In.
 apply get_In with p;assumption.
 Qed.
 
-Implicit Arguments project [hyps p g].
+Arguments project [hyps] F [p g] _.
 
 Inductive proof:Set :=
   Ax : positive -> proof

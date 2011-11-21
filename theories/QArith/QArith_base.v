@@ -18,7 +18,7 @@ Record Q : Set := Qmake {Qnum : Z; Qden : positive}.
 
 Delimit Scope Q_scope with Q.
 Bind Scope Q_scope with Q.
-Arguments Scope Qmake [Z_scope positive_scope].
+Arguments Qmake _%Z _%positive.
 Open Scope Q_scope.
 Ltac simpl_mult := repeat rewrite Zpos_mult_morphism.
 
@@ -27,7 +27,7 @@ Ltac simpl_mult := repeat rewrite Zpos_mult_morphism.
 Notation "a # b" := (Qmake a b) (at level 55, no associativity) : Q_scope.
 
 Definition inject_Z (x : Z) := Qmake x 1.
-Arguments Scope inject_Z [Z_scope].
+Arguments inject_Z x%Z.
 
 Notation QDen p := (Zpos (Qden p)).
 Notation " 0 " := (0#1) : Q_scope.

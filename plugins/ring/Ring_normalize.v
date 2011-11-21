@@ -746,11 +746,11 @@ Qed.
 (* End properties. *)
 End semi_rings.
 
-Implicit Arguments Cons_varlist.
-Implicit Arguments Cons_monom.
-Implicit Arguments SPconst.
-Implicit Arguments SPplus.
-Implicit Arguments SPmult.
+Arguments Cons_varlist : default implicits.
+Arguments Cons_monom : default implicits.
+Arguments SPconst : default implicits.
+Arguments SPplus : default implicits.
+Arguments SPmult : default implicits.
 
 Section rings.
 

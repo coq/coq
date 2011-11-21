@@ -351,7 +351,7 @@ Definition relation_equivalence {A : Type} : relation (relation A) :=
 Class subrelation {A:Type} (R R' : relation A) : Prop :=
   is_subrelation : @predicate_implication (A::A::Tnil) R R'.
 
-Implicit Arguments subrelation [[A]].
+Arguments subrelation {A} R R'.
 
 Definition relation_conjunction {A} (R : relation A) (R' : relation A) : relation A :=
   @predicate_intersection (A::A::Tnil) R R'.

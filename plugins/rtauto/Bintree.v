@@ -34,7 +34,7 @@ match n with O => Some x
 | S m => Lget A m q
 end end .
 
-Implicit Arguments Lget [A].
+Arguments Lget [A] n l.
 
 Lemma map_app : forall (A B:Set) (f:A -> B) l m,
 List.map  f (l ++ m) = List.map  f  l ++ List.map  f  m.
@@ -288,34 +288,34 @@ Qed.
 
 End Store.
 
-Implicit Arguments PNone [A].
-Implicit Arguments PSome [A].
+Arguments PNone [A].
+Arguments PSome [A] _.
 
-Implicit Arguments Tempty [A].
-Implicit Arguments Branch0 [A].
-Implicit Arguments Branch1 [A].
+Arguments Tempty [A].
+Arguments Branch0 [A] _ _.
+Arguments Branch1 [A] _ _ _.
 
-Implicit Arguments Tget [A].
-Implicit Arguments Tadd [A].
+Arguments Tget [A] p T.
+Arguments Tadd [A] p a T.
 
-Implicit Arguments Tget_Tempty [A].
-Implicit Arguments Tget_Tadd [A].
+Arguments Tget_Tempty [A] p.
+Arguments Tget_Tadd [A] i j a T.
 
-Implicit Arguments mkStore [A].
-Implicit Arguments index [A].
-Implicit Arguments contents [A].
+Arguments mkStore [A] index contents.
+Arguments index [A] s.
+Arguments contents [A] s.
 
-Implicit Arguments empty [A].
-Implicit Arguments get [A].
-Implicit Arguments push [A].
+Arguments empty [A].
+Arguments get [A] i S.
+Arguments push [A] a S.
 
-Implicit Arguments get_empty [A].
-Implicit Arguments get_push_Full [A].
+Arguments get_empty [A] i.
+Arguments get_push_Full [A] i a S _.
 
-Implicit Arguments Full [A].
-Implicit Arguments F_empty [A].
-Implicit Arguments F_push [A].
-Implicit Arguments In [A].
+Arguments Full [A] _.
+Arguments F_empty [A].
+Arguments F_push [A] a S _.
+Arguments In [A] x S F.
 
 Section Map.
 
@@ -367,8 +367,8 @@ Defined.
 
 End Map.
 
-Implicit Arguments Tmap [A B].
-Implicit Arguments map [A B].
-Implicit Arguments Full_map [A B f].
+Arguments Tmap [A B] f T.
+Arguments map [A B] f S.
+Arguments Full_map [A B f] S _.
 
 Notation "hyps \ A" := (push A hyps) (at level 72,left associativity).

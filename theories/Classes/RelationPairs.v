@@ -15,27 +15,25 @@ Require Import Relations Morphisms.
     fix the simpl tactic, since "simpl fst" would be refused for
     the moment.
 
-Implicit Arguments fst [[A] [B]].
-Implicit Arguments snd [[A] [B]].
-Implicit Arguments pair [[A] [B]].
+Arguments fst {A B}.
+Arguments snd {A B}.
+Arguments pair {A B}.
 
 /NB *)
 
 Local Notation Fst := (@fst _ _).
 Local Notation Snd := (@snd _ _).
 
-Arguments Scope relation_conjunction
- [type_scope signature_scope signature_scope].
-Arguments Scope relation_equivalence
- [type_scope signature_scope signature_scope].
-Arguments Scope subrelation [type_scope signature_scope signature_scope].
-Arguments Scope Reflexive [type_scope signature_scope].
-Arguments Scope Irreflexive [type_scope signature_scope].
-Arguments Scope Symmetric [type_scope signature_scope].
-Arguments Scope Transitive [type_scope signature_scope].
-Arguments Scope PER [type_scope signature_scope].
-Arguments Scope Equivalence [type_scope signature_scope].
-Arguments Scope StrictOrder [type_scope signature_scope].
+Arguments relation_conjunction A%type (R R')%signature _ _.
+Arguments relation_equivalence A%type (_ _)%signature.
+Arguments subrelation A%type (R R')%signature.
+Arguments Reflexive A%type R%signature.
+Arguments Irreflexive A%type R%signature.
+Arguments Symmetric A%type R%signature.
+Arguments Transitive A%type R%signature.
+Arguments PER A%type R%signature.
+Arguments Equivalence A%type R%signature.
+Arguments StrictOrder A%type R%signature.
 
 Generalizable Variables A B RA RB Ri Ro f.
 

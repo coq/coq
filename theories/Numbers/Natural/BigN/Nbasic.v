@@ -16,12 +16,12 @@ Require Import DoubleBase.
 Require Import CyclicAxioms.
 Require Import DoubleCyclic.
 
-Implicit Arguments mk_zn2z_ops [t].
-Implicit Arguments mk_zn2z_ops_karatsuba [t].
-Implicit Arguments mk_zn2z_specs [t ops].
-Implicit Arguments mk_zn2z_specs_karatsuba [t ops].
-Implicit Arguments ZnZ.digits [t].
-Implicit Arguments ZnZ.zdigits [t].
+Arguments mk_zn2z_ops [t] ops.
+Arguments mk_zn2z_ops_karatsuba [t] ops.
+Arguments mk_zn2z_specs [t ops] specs.
+Arguments mk_zn2z_specs_karatsuba [t ops] specs.
+Arguments ZnZ.digits [t] Ops.
+Arguments ZnZ.zdigits [t] Ops.
 
 Lemma Pshiftl_nat_Zpower : forall n p,
   Zpos (Pos.shiftl_nat p n) = Zpos p * 2 ^ Z.of_nat n.
@@ -230,8 +230,8 @@ Fixpoint extend_tr (n : nat) {struct n}: (word w (S (n + m))) :=
 
 End ExtendMax.
 
-Implicit Arguments extend_tr[w m].
-Implicit Arguments castm[w m n].
+Arguments extend_tr [w m] v n.
+Arguments castm     [w m n] H x.
 
 
 

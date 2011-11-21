@@ -27,8 +27,8 @@ Inductive positive : Set :=
 
 Delimit Scope positive_scope with positive.
 Bind Scope positive_scope with positive.
-Arguments Scope xO [positive_scope].
-Arguments Scope xI [positive_scope].
+Arguments xO _%positive.
+Arguments xI _%positive.
 
 (** [N] is a datatype representing natural numbers in a binary way,
     by extending the [positive] datatype with a zero.
@@ -41,7 +41,7 @@ Inductive N : Set :=
 
 Delimit Scope N_scope with N.
 Bind Scope N_scope with N.
-Arguments Scope Npos [positive_scope].
+Arguments Npos _%positive.
 
 (** [Z] is a datatype representing the integers in a binary way.
     An integer is either zero or a strictly positive number
@@ -57,5 +57,5 @@ Inductive Z : Set :=
 
 Delimit Scope Z_scope with Z.
 Bind Scope Z_scope with Z.
-Arguments Scope Zpos [positive_scope].
-Arguments Scope Zneg [positive_scope].
+Arguments Zpos _%positive.
+Arguments Zneg _%positive.

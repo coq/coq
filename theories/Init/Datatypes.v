@@ -137,7 +137,7 @@ Inductive nat : Set :=
 
 Delimit Scope nat_scope with nat.
 Bind Scope nat_scope with nat.
-Arguments Scope S [nat_scope].
+Arguments S _%nat.
 
 
 (********************************************************************)
@@ -149,7 +149,7 @@ Inductive option (A:Type) : Type :=
   | Some : A -> option A
   | None : option A.
 
-Implicit Arguments None [A].
+Arguments None [A].
 
 Definition option_map (A B:Type) (f:A->B) o :=
   match o with
@@ -165,8 +165,8 @@ Inductive sum (A B:Type) : Type :=
 
 Notation "x + y" := (sum x y) : type_scope.
 
-Implicit Arguments inl [[A] [B]] [A].
-Implicit Arguments inr [[A] [B]] [B].
+Arguments inl {A B} _ , [A] B _.
+Arguments inr {A B} _ , A [B] _.
 
 (** [prod A B], written [A * B], is the product of [A] and [B];
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
@@ -179,7 +179,7 @@ Add Printing Let prod.
 Notation "x * y" := (prod x y) : type_scope.
 Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) : core_scope.
 
-Implicit Arguments pair [[A] [B]].
+Arguments pair {A B} _ _.
 
 Section projections.
   Variables A B : Type.
@@ -221,7 +221,7 @@ Inductive list (A : Type) : Type :=
  | nil : list A
  | cons : A -> list A -> list A.
 
-Implicit Arguments nil [A].
+Arguments nil [A].
 Infix "::" := cons (at level 60, right associativity) : list_scope.
 Delimit Scope list_scope with list.
 Bind Scope list_scope with list.
@@ -330,9 +330,9 @@ Inductive identity (A:Type) (a:A) : A -> Type :=
   identity_refl : identity a a.
 Hint Resolve identity_refl: core.
 
-Implicit Arguments identity_ind [A].
-Implicit Arguments identity_rec [A].
-Implicit Arguments identity_rect [A].
+Arguments identity_ind [A] a P f y i.
+Arguments identity_rec [A] a P f y i.
+Arguments identity_rect [A] a P f y i.
 
 (** Identity type *)
 

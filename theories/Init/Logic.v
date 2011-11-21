@@ -62,8 +62,8 @@ Inductive or (A B:Prop) : Prop :=
 
 where "A \/ B" := (or A B) : type_scope.
 
-Implicit Arguments or_introl [A B] [A].
-Implicit Arguments or_intror [A B] [B].
+Arguments or_introl [A B] _, [A] B _.
+Arguments or_intror [A B] _, A [B] _.
 
 (** [iff A B], written [A <-> B], expresses the equivalence of [A] and [B] *)
 
@@ -270,12 +270,12 @@ Notation "x = y" := (x = y :>_) : type_scope.
 Notation "x <> y  :> T" := (~ x = y :>T) : type_scope.
 Notation "x <> y" := (x <> y :>_) : type_scope.
 
-Implicit Arguments eq [[A]].
-Implicit Arguments eq_refl [[A] [x]] [A].
+Arguments eq {A} x _.
+Arguments eq_refl {A x} , [A] x.
 
-Implicit Arguments eq_ind [A].
-Implicit Arguments eq_rec [A].
-Implicit Arguments eq_rect [A].
+Arguments eq_ind [A] x P _ y _.
+Arguments eq_rec [A] x P _ y _.
+Arguments eq_rect [A] x P _ y _.
 
 Hint Resolve I conj or_introl or_intror eq_refl: core.
 Hint Resolve ex_intro ex_intro2: core.

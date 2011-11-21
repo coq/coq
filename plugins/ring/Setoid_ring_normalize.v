@@ -1011,11 +1011,11 @@ Qed.
 
 End semi_setoid_rings.
 
-Implicit Arguments Cons_varlist.
-Implicit Arguments Cons_monom.
-Implicit Arguments SetSPconst.
-Implicit Arguments SetSPplus.
-Implicit Arguments SetSPmult.
+Arguments Cons_varlist : default implicits.
+Arguments Cons_monom : default implicits.
+Arguments SetSPconst : default implicits.
+Arguments SetSPplus : default implicits.
+Arguments SetSPmult : default implicits.
 
 
 

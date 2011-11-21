@@ -437,7 +437,7 @@ Module WRaw2SetsOn (E:DecidableType)(M:WRawSets E) <: WSetsOn E.
 
  Record t_ := Mkt {this :> M.t; is_ok : M.Ok this}.
  Definition t := t_.
- Implicit Arguments Mkt [ [is_ok] ].
+ Arguments Mkt this {is_ok}.
  Hint Resolve is_ok : typeclass_instances.
 
  Definition In (x : elt)(s : t) := M.In x s.(this).
