@@ -24,6 +24,9 @@ Specification language and notations
   now instead of enumerating all remaining constructors. Moreover, the pattern
   "match _ with _ => _ end" now allows to match any "match". A "in" annotation
   can also be added to restrict to a precise inductive type.
+- Pattern-matching compilation algorithm: in "match x, y with ... end",
+  possible dependencies of x (or of the indices of its type) in the type
+  of y are now taken into account.
 
 Tactics
 
