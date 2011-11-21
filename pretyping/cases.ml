@@ -146,13 +146,9 @@ type tomatch_stack = tomatch_status list
 
 (* We keep a constr for aliases and a cases_pattern for error message *)
 
-type alias_builder =
-  | AliasLeaf
-  | AliasConstructor of constructor
-
 type pattern_history =
   | Top
-  | MakeAlias of alias_builder * pattern_continuation
+  | MakeConstructor of constructor * pattern_continuation
 
 and pattern_continuation =
   | Continuation of int * cases_pattern list * pattern_history
@@ -178,10 +174,7 @@ let rec glob_pattern_of_partial_history args2 = function
 
 and build_glob_pattern args = function
   | Top -> args
-  | MakeAlias (AliasLeaf, rh) ->
-      assert (args = []);
-      glob_pattern_of_partial_history [PatVar (dummy_loc, Anonymous)] rh
-  | MakeAlias (AliasConstructor pci, rh) ->
+  | MakeConstructor (pci, rh) ->
       glob_pattern_of_partial_history
 	[PatCstr (dummy_loc, pci, args, Anonymous)] rh
 
@@ -189,24 +182,22 @@ let complete_history = glob_pattern_of_partial_history []
 
 (* This is to build glued pattern-matching history and alias bodies *)
 
-let rec simplify_history = function
-  | Continuation (0, l, Top) -> Result (List.rev l)
-  | Continuation (0, l, MakeAlias (f, rh)) ->
-      let pargs = List.rev l in
-      let pat = match f with
-	| AliasConstructor pci ->
-	    PatCstr (dummy_loc,pci,pargs,Anonymous)
-	| AliasLeaf ->
-	    assert (l = []);
-	    PatVar (dummy_loc, Anonymous) in
-      feed_history pat rh
-  | h -> h
+let rec pop_history_pattern = function
+  | Continuation (0, l, Top) ->
+      Result (List.rev l)
+  | Continuation (0, l, MakeConstructor (pci, rh)) ->
+      feed_history (PatCstr (dummy_loc,pci,List.rev l,Anonymous)) rh
+  | _ ->
+      anomaly "Constructor not yet filled with its arguments"
+
+let pop_history h =
+  feed_history (PatVar (dummy_loc, Anonymous)) h
 
 (* Builds a continuation expecting [n] arguments and building [ci] applied
    to this [n] arguments *)
 
-let push_history_pattern n current cont =
-  Continuation (n, [], MakeAlias (current, cont))
+let push_history_pattern n pci cont =
+  Continuation (n, [], MakeConstructor (pci, cont))
 
 (* A pattern-matching problem has the following form:
 
@@ -726,9 +717,12 @@ let push_generalized_decl_eqn env n (na,c,t) eqn =
   | Name id -> pi1 (Environ.lookup_rel n eqn.rhs.rhs_env) in
   push_rels_eqn [(na,c,t)] eqn
 
+let pop_alias_eqn eqn =
+  { eqn with alias_stack = List.tl eqn.alias_stack }
+
 let push_alias_eqn alias eqn =
   let aliasname = List.hd eqn.alias_stack in
-  let eqn = { eqn with alias_stack = List.tl eqn.alias_stack } in
+  let eqn = pop_alias_eqn eqn in
   let alias = set_declaration_name aliasname alias in
   push_rels_eqn [alias] eqn
 
@@ -1120,9 +1114,7 @@ let build_leaf pb =
 let build_branch current deps (realnames,curname) pb arsign eqns const_info =
   (* We remember that we descend through constructor C *)
   let history =
-    push_history_pattern const_info.cs_nargs
-      (AliasConstructor const_info.cs_cstr)
-      pb.history in
+    push_history_pattern const_info.cs_nargs const_info.cs_cstr pb.history in
 
   (* We prepare the matching on x1:T1 .. xn:Tn using some heuristic to *)
   (* build the name x1..xn from the names present in the equations *)
@@ -1219,9 +1211,9 @@ let build_branch current deps (realnames,curname) pb arsign eqns const_info =
 (* Main compiling descent *)
 let rec compile pb =
   match pb.tomatch with
-    | (Pushed cur)::rest -> match_current { pb with tomatch = rest } cur
-    | (Alias x)::rest -> compile_alias pb x rest
-    | (Abstract (i,d))::rest -> compile_generalization pb i d rest
+    | (Pushed cur) :: rest -> match_current { pb with tomatch = rest } cur
+    | (Alias x) :: rest -> compile_alias pb x rest
+    | (Abstract (i,d)) :: rest -> compile_generalization pb i d rest
     | [] -> build_leaf pb
 
 (* Case splitting *)
@@ -1272,7 +1264,7 @@ and shift_problem ((current,t),_,na) pb =
        env = push_rel (na,Some current,ty) pb.env;
        tomatch = tomatch;
        pred = lift_predicate 1 pred tomatch;
-       history = simplify_history (push_history_pattern 0 AliasLeaf pb.history);
+       history = pop_history pb.history;
        mat = List.map (push_current_pattern (current,ty)) pb.mat } in
   let j = compile pb in
   { uj_val = subst1 current j.uj_val;
@@ -1300,7 +1292,7 @@ and compile_alias pb (orig,(_,ci,_ as alias),isdeppred) rest =
        env = push_rel alias pb.env;
        tomatch = lift_tomatch_stack 1 rest;
        pred = lift_predicate 1 pb.pred pb.tomatch;
-       history = simplify_history pb.history;
+       history = pop_history_pattern pb.history;
        mat = List.map (push_alias_eqn alias) pb.mat } in
   let j = compile pb in
   { uj_val = mkSpecialLetIn orig alias isdeppred j.uj_val;
