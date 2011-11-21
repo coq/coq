@@ -270,9 +270,6 @@ let parse_args arglist =
     | "-init-file" :: f :: rem -> set_rcfile f; parse rem
     | "-init-file" :: []       -> usage ()
 
-    | "-user" :: u :: rem -> set_rcuser u; parse rem
-    | "-user" :: []       -> usage ()
-
     | "-notactics" :: rem ->
 	warning "Obsolete option \"-notactics\".";
 	remove_top_ml (); parse rem

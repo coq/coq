@@ -53,7 +53,6 @@ let print_usage_channel co command =
 \n\
 \n  -q                     skip loading of rcfile\
 \n  -init-file f           set the rcfile to f\
-\n  -user u                use the rcfile of user u\
 \n  -batch                 batch mode (exits just after arguments parsing)\
 \n  -boot                  boot mode (implies -q and -batch)\
 \n  -emacs                 tells Coq it is executed under Emacs\

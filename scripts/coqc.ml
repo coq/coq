@@ -131,7 +131,7 @@ let parse_args () =
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
     | ("-outputstate"|"-inputstate"|"-is"
       |"-load-vernac-source"|"-l"|"-load-vernac-object"
-      |"-load-ml-source"|"-require"|"-load-ml-object"|"-user"
+      |"-load-ml-source"|"-require"|"-load-ml-object"
       |"-init-file"|"-dump-glob"|"-compat"|"-coqlib" as o) :: rem ->
 	begin
 	  match rem with
