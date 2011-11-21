@@ -1522,6 +1522,7 @@ let build_inversion_problem loc env sigma tms t =
 	let pat,acc = make_patvar t acc in
 	let indf' = lift_inductive_family n indf in
 	let sign = make_arity_signature env true indf' in
+	let sign = recover_alias_names alias_of_pat (pat :: List.rev patl) sign in
 	let p = List.length realargs in
 	let env' = push_rels sign env in
 	let patl',acc_sign,acc = aux (n+p+1) env' (sign@acc_sign) tms acc in
