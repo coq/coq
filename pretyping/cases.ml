@@ -851,7 +851,7 @@ let rec extract_predicate ccl = function
       (* substitution already done in build_branch *)
       extract_predicate ccl tms
   | Abstract (i,d)::tms ->
-      mkProd_or_LetIn d (extract_predicate ccl tms)
+      mkProd_wo_LetIn d (extract_predicate ccl tms)
   | Pushed ((cur,NotInd _),_,na)::tms ->
       let tms = if na<>Anonymous then lift_tomatch_stack 1 tms else tms in
       let pred = extract_predicate ccl tms in
@@ -1300,7 +1300,7 @@ and compile_generalization pb i d rest =
        mat = List.map (push_generalized_decl_eqn pb.env i d) pb.mat } in
   let j = compile pb in
   { uj_val = mkLambda_or_LetIn d j.uj_val;
-    uj_type = mkProd_or_LetIn d j.uj_type }
+    uj_type = mkProd_wo_LetIn d j.uj_type }
 
 and compile_alias pb (orig,(_,ci,_ as alias),isdeppred) rest =
   let pb =
