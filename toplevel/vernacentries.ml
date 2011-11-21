@@ -763,6 +763,59 @@ let vernac_declare_implicits local r = function
       Impargs.declare_manual_implicits local (smart_global r) ~enriching:false
 	(List.map (List.map (fun (ex,b,f) -> ex, (b,true,f))) imps)
 
+let vernac_declare_arguments local r l nargs flags =
+  let names = List.map (List.map (fun (id, _,_,_,_) -> id)) l in
+  let names, rest = List.hd names, List.tl names in
+  if List.exists ((<>) names) rest then
+    error "All arguments lists must declare the same names";
+  let inf_names =
+    Impargs.compute_implicits_names (Global.env())
+      (Global.type_of_global (smart_global r)) in
+  let string_of_name = function Anonymous -> "_" | Name id -> string_of_id id in
+  let rec check ld li = match ld, li with
+    | [], [] -> ()
+    | [], l -> error ("The following arguments are not declared: " ^
+       (String.concat ", " (List.map string_of_name l)))
+    | x::_, [] -> error ("Extra argument " ^ string_of_name x)
+    | Name x::_, Name y::_ when x <> y -> error ("The declared name " ^
+        string_of_id x ^ " and the inferred one " ^ string_of_id y ^
+        " are different")
+    | _::ld, _::li -> check ld li in
+  if names <> [] then check names inf_names;
+  let implicits = List.map (Util.list_map_filter (function
+    | (Anonymous, _,_,_,_) | (_,_,_, false, _) -> None
+    | (Name id, _,_, true, max) -> Some (ExplByName id,max,false))) l in
+  (* All other infos are in the first item of l *)
+  let l = List.hd l in
+  let some_implicits_specified = implicits <> [[]] in
+  let scopes = List.map (function
+    | (_,_, None,_,_) -> None
+    | (_,_, Some (o, k), _,_) -> 
+        try Some(ignore(Notation.find_scope k); k)
+        with _ -> Some (Notation.find_delimiters_scope o k)) l in
+  let some_scopes_specified = List.exists ((<>) None) scopes in
+  let rargs =
+    Util.list_map_filter (function (n, true) -> Some n | _ -> None)
+      (Util.list_map_i (fun i (_, b, _,_,_) -> i, b) 0 l) in
+  if some_scopes_specified || List.mem `ClearScopes flags then
+    vernac_arguments_scope local r scopes;
+  if not some_implicits_specified && List.mem `DefaultImplicits flags then
+    vernac_declare_implicits local r []
+  else if some_implicits_specified || List.mem `ClearImplicits flags then
+    vernac_declare_implicits local r implicits;
+  if nargs >= 0 && nargs < List.fold_left max 0 rargs then
+    error "The \"/\" option must be places after the last \"!\"";
+  let rec narrow = function
+    | #Tacred.simpl_flag as x :: tl -> x :: narrow tl
+    | [] -> [] | _ :: tl -> narrow tl in
+  let flags = narrow flags in
+  if rargs <> [] || nargs >= 0 || flags <> [] then
+    match smart_global r with
+    | ConstRef _ as c ->
+       Tacred.set_simpl_behaviour local c (rargs, nargs, flags)
+    | _ -> error "Simpl behaviour can be declared for constants only"
+;;
+
 let vernac_reserve bl =
   let sb_decl = (fun (idl,c) ->
     let t = Constrintern.interp_type Evd.empty (Global.env()) c in
@@ -1377,6 +1430,7 @@ let interp c = match c with
   | VernacHints (local,dbnames,hints) -> vernac_hints local dbnames hints
   | VernacSyntacticDefinition (id,c,l,b) ->vernac_syntactic_definition id c l b
   | VernacDeclareImplicits (local,qid,l) ->vernac_declare_implicits local qid l
+  | VernacArguments (local, qid, l, narg, flags) -> vernac_declare_arguments local qid l narg flags 
   | VernacReserve bl -> vernac_reserve bl
   | VernacGeneralizable (local,gen) -> vernac_generalizable local gen
   | VernacSetOpacity (local,qidl) -> vernac_set_opacity local qidl

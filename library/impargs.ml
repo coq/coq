@@ -246,6 +246,10 @@ let compute_auto_implicits env flags enriching t =
   if enriching then compute_implicits_flags env flags true t
   else compute_implicits_gen false false false true true env t
 
+let compute_implicits_names env t =
+  let _, impls = compute_implicits_gen false false false false true env t in
+  List.map fst impls
+
 (* Extra information about implicit arguments *)
 
 type maximal_insertion = bool (* true = maximal contextual insertion *)

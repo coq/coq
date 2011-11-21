@@ -1,0 +1,93 @@
+minus : nat -> nat -> nat
+
+Argument scopes are [nat_scope nat_scope]
+The simpl tactic unfolds minus avoiding to expose match constructs
+minus is transparent
+Expands to: Constant Coq.Init.Peano.minus
+minus : nat -> nat -> nat
+
+Argument scopes are [nat_scope nat_scope]
+The simpl tactic unfolds minus when applied to 1 argument
+  avoiding to expose match constructs
+minus is transparent
+Expands to: Constant Coq.Init.Peano.minus
+minus : nat -> nat -> nat
+
+Argument scopes are [nat_scope nat_scope]
+The simpl tactic unfolds minus
+  when the 1st argument evaluates to a constructor and
+  when applied to 1 argument avoiding to expose match constructs
+minus is transparent
+Expands to: Constant Coq.Init.Peano.minus
+minus : nat -> nat -> nat
+
+Argument scopes are [nat_scope nat_scope]
+The simpl tactic unfolds minus
+  when the 1st and 2nd arguments evaluate to a constructor and
+  when applied to 2 arguments 
+minus is transparent
+Expands to: Constant Coq.Init.Peano.minus
+minus : nat -> nat -> nat
+
+Argument scopes are [nat_scope nat_scope]
+The simpl tactic unfolds minus
+  when the 1st and 2nd arguments evaluate to a constructor 
+minus is transparent
+Expands to: Constant Coq.Init.Peano.minus
+pf :
+forall D1 C1 : Type,
+(D1 -> C1) -> forall D2 C2 : Type, (D2 -> C2) -> D1 * D2 -> C1 * C2
+
+Arguments D2, C2 are implicit
+Arguments D1, C1 are implicit and maximally inserted
+Argument scopes are [foo_scope type_scope _ _ _ _ _]
+The simpl tactic never unfolds pf
+pf is transparent
+Expands to: Constant Top.pf
+fcomp : forall A B C : Type, (B -> C) -> (A -> B) -> A -> C
+
+Arguments A, B, C are implicit and maximally inserted
+Argument scopes are [type_scope type_scope type_scope _ _ _]
+The simpl tactic unfolds fcomp when applied to 6 arguments 
+fcomp is transparent
+Expands to: Constant Top.fcomp
+volatile : nat -> nat
+
+Argument scope is [nat_scope]
+The simpl tactic always unfolds volatile
+volatile is transparent
+Expands to: Constant Top.volatile
+f : T1 -> T2 -> nat -> unit -> nat -> nat
+
+Argument scopes are [_ _ nat_scope _ nat_scope]
+f is transparent
+Expands to: Constant Top.S1.S2.f
+f : T1 -> T2 -> nat -> unit -> nat -> nat
+
+Argument scopes are [_ _ nat_scope _ nat_scope]
+The simpl tactic unfolds f
+  when the 3rd, 4th and 5th arguments evaluate to a constructor 
+f is transparent
+Expands to: Constant Top.S1.S2.f
+f : forall T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
+
+Argument T2 is implicit
+Argument scopes are [type_scope _ _ nat_scope _ nat_scope]
+The simpl tactic unfolds f
+  when the 4th, 5th and 6th arguments evaluate to a constructor 
+f is transparent
+Expands to: Constant Top.S1.f
+f : forall T1 T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
+
+Arguments T1, T2 are implicit
+Argument scopes are [type_scope type_scope _ _ nat_scope _ nat_scope]
+The simpl tactic unfolds f
+  when the 5th, 6th and 7th arguments evaluate to a constructor 
+f is transparent
+Expands to: Constant Top.f
+f : forall T1 T2 : Type, T1 -> T2 -> nat -> unit -> nat -> nat
+
+The simpl tactic unfolds f
+  when the 5th, 6th and 7th arguments evaluate to a constructor 
+f is transparent
+Expands to: Constant Top.f

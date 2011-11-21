@@ -48,6 +48,8 @@ val open_close_scope :
 val empty_scope_stack : scopes
 val push_scope : scope_name -> scopes -> scopes
 
+val find_scope : scope_name -> scope
+
 (** Declare delimiters for printing *)
 
 val declare_delimiters : scope_name -> delimiters -> unit

@@ -581,10 +581,59 @@ GEXTEND Gram
 
       | IDENT "Existing"; IDENT "Class"; is = global -> VernacDeclareClass is
 
+      (* Arguments *)
+      | IDENT "Arguments"; qid = smart_global; 
+        impl = LIST1 [ l = LIST0
+        [ item = argument_spec ->
+            let id, r, s = item in [`Id (id,r,s,false,false)]
+        | "/" -> [`Slash]
+        | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
+            let f x = match sc, x with
+            | None, x -> x | x, None -> Option.map (fun y -> loc, y) x
+            | Some _, Some _ -> error "scope declared twice" in
+            List.map (fun (id,r,s) -> `Id(id,r,f s,false,false)) items
+        | "["; items = LIST1 argument_spec; "]"; sc = OPT scope ->
+            let f x = match sc, x with
+            | None, x -> x | x, None -> Option.map (fun y -> loc, y) x
+            | Some _, Some _ -> error "scope declared twice" in
+            List.map (fun (id,r,s) -> `Id(id,r,f s,true,false)) items
+        | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope ->
+            let f x = match sc, x with
+            | None, x -> x | x, None -> Option.map (fun y -> loc, y) x
+            | Some _, Some _ -> error "scope declared twice" in
+            List.map (fun (id,r,s) -> `Id(id,r,f s,true,true)) items
+        ] -> l ] SEP ",";
+        mods = OPT [ ":"; l = LIST1 arguments_modifier SEP "," -> l ] ->
+         let mods = match mods with None -> [] | Some l -> List.flatten l in
+         let impl = List.map List.flatten impl in
+         let rec aux n (narg, impl) = function
+           | `Id x :: tl -> aux (n+1) (narg, impl@[x]) tl
+           | `Slash :: tl -> aux (n+1) (n, impl) tl
+           | [] -> narg, impl in
+         let nargs, impl = List.split (List.map (aux 0 (-1, [])) impl) in
+         let nargs, rest = List.hd nargs, List.tl nargs in
+         if List.exists ((<>) nargs) rest then
+           error "All arguments lists must have the same length";
+         let err_incompat x y =
+           error ("Options \""^x^"\" and \""^y^"\" are incompatible") in
+         if nargs > 0 && List.mem `SimplNeverUnfold mods then
+           err_incompat "simpl never" "/";
+         if List.mem `SimplNeverUnfold mods &&
+            List.mem `SimplDontExposeCase mods then
+           err_incompat "simpl never" "simpl nomatch";
+         VernacArguments (use_section_locality(), qid, impl, nargs, mods)
+
+     (* moved there so that camlp5 factors it with the previous rule *)
+     | IDENT "Arguments"; IDENT "Scope"; qid = smart_global;
+       "["; scl = LIST0 [ "_" -> None | sc = IDENT -> Some sc ]; "]" ->
+         warning "Arguments Scope is deprecated; use Arguments instead";
+	 VernacArgumentsScope (use_section_locality (),qid,scl)
+
       (* Implicit *)
       | IDENT "Implicit"; IDENT "Arguments"; qid = smart_global;
 	   pos = LIST0 [ "["; l = LIST0 implicit_name; "]" ->
 	     List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
+	   warning "Implicit Arguments is deprecated; use Arguments instead";
 	   VernacDeclareImplicits (use_section_locality (),qid,pos)
 
       | IDENT "Implicit"; "Type"; bl = reserv_list ->
@@ -601,12 +650,32 @@ GEXTEND Gram
 		  idl = LIST1 identref -> Some idl ] ->
 	     VernacGeneralizable (use_non_locality (), gen) ] ]
   ;
+  arguments_modifier:
+    [ [ IDENT "simpl"; IDENT "nomatch" -> [`SimplDontExposeCase]
+      | IDENT "simpl"; IDENT "never" -> [`SimplNeverUnfold]
+      | IDENT "default"; IDENT "implicits" -> [`DefaultImplicits]
+      | IDENT "clear"; IDENT "implicits" -> [`ClearImplicits]
+      | IDENT "clear"; IDENT "scopes" -> [`ClearScopes]
+      | IDENT "clear"; IDENT "scopes"; IDENT "and"; IDENT "implicits" ->
+          [`ClearImplicits; `ClearScopes]
+      | IDENT "clear"; IDENT "implicits"; IDENT "and"; IDENT "scopes" ->
+          [`ClearImplicits; `ClearScopes]
+      ] ]
+  ;
   implicit_name:
     [ [ "!"; id = ident -> (id, false, true)
     | id = ident -> (id,false,false)
     | "["; "!"; id = ident; "]" -> (id,true,true)
     | "["; id = ident; "]" -> (id,true, false) ] ]
   ;
+  scope:
+    [ [ "%"; key = IDENT -> key ] ]
+  ;
+  argument_spec: [
+       [ b = OPT "!"; id = name ; s = OPT scope ->
+       snd id, b <> None, Option.map (fun x -> loc, x) s
+    ]
+  ];
   strategy_level:
     [ [ IDENT "expand" -> Conv_oracle.Expand
       | IDENT "opaque" -> Conv_oracle.Opaque
@@ -901,10 +970,6 @@ GEXTEND Gram
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with";
        refl = LIST1 class_rawexpr -> VernacBindScope (sc,refl)
 
-     | IDENT "Arguments"; IDENT "Scope"; qid = smart_global;
-       "["; scl = LIST0 opt_scope; "]" ->
-	 VernacArgumentsScope (use_section_locality (),qid,scl)
-
      | IDENT "Infix"; local = obsolete_locality;
 	 op = ne_lstring; ":="; p = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
@@ -969,9 +1034,6 @@ GEXTEND Gram
       | IDENT "binder" -> ETBinder true
       | IDENT "closed"; IDENT "binder" -> ETBinder false
     ] ]
-  ;
-  opt_scope:
-    [ [ "_" -> None | sc = IDENT -> Some sc ] ]
   ;
   production_item:
     [ [ s = ne_string -> TacTerm s

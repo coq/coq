@@ -165,6 +165,7 @@ let rec attribute_of_vernac_command = function
   | VernacHints _ -> []
   | VernacSyntacticDefinition _ -> []
   | VernacDeclareImplicits _ -> []
+  | VernacArguments _ -> [] 
   | VernacDeclareReduction _ -> []
   | VernacReserve _ -> []
   | VernacGeneralizable _ -> []
