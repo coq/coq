@@ -1528,7 +1528,10 @@ let build_inversion_problem loc env sigma tms t =
 	let patl',acc_sign,acc = aux (n+p+1) env' (sign@acc_sign) tms acc in
 	patl@pat::patl',acc_sign,acc
     | (t, NotInd (bo,typ)) :: tms ->
-	aux n env acc_sign tms acc in
+      let pat,acc = make_patvar t acc in
+      let d = (alias_of_pat pat,None,t) in
+      let patl,acc_sign,acc = aux (n+1) (push_rel d env) (d::acc_sign) tms acc in
+      pat::patl,acc_sign,acc in
   let avoid0 = ids_of_context env in
   (* [patl] is a list of patterns revealing the substructure of
      constructors present in the constraints on the type of the
