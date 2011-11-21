@@ -15,6 +15,7 @@ open Closure
 open Glob_term
 open Termops
 open Pattern
+open Libnames
 
 type reduction_tactic_error =
     InvalidAbstraction of env * constr * (env * Type_errors.type_error)
@@ -42,6 +43,14 @@ val red_product : reduction_function
 
 (** Red (raise Redelimination if nothing reducible) *)
 val try_red_product : reduction_function
+
+(** Tune the behaviour of simpl for the given constant name *)
+type simpl_flag = [ `SimplDontExposeCase | `SimplNeverUnfold ]
+
+val set_simpl_behaviour :
+  bool -> global_reference -> (int list * int * simpl_flag list) -> unit
+val get_simpl_behaviour :
+  global_reference -> (int list * int * simpl_flag list) option
 
 (** Simpl *)
 val simpl : reduction_function
@@ -85,10 +94,10 @@ val reduce_to_quantified_ind : env ->  evar_map -> types -> inductive * types
 (** [reduce_to_quantified_ref env sigma ref t] try to put [t] in the form
    [t'=(x1:A1)..(xn:An)(ref args)] and fails with user error if not possible *)
 val reduce_to_quantified_ref :
-  env ->  evar_map -> Libnames.global_reference -> types -> types
+  env ->  evar_map -> global_reference -> types -> types
 
 val reduce_to_atomic_ref :
-  env ->  evar_map -> Libnames.global_reference -> types -> types
+  env ->  evar_map -> global_reference -> types -> types
 
 val contextually : bool -> occurrences * constr_pattern ->
   (patvar_map -> reduction_function) -> reduction_function
