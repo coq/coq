@@ -23,6 +23,7 @@ val subst_command_placeholder : string -> string -> string
 
 val home : string
 val xdg_config_home : string
+val xdg_config_dirs : string list
 
 val coqlib : string ref
 val coqtop_path : string ref

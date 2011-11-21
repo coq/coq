@@ -1,4 +1,3 @@
-
 (************************************************************************)
 (*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
 (* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
@@ -224,8 +223,10 @@ let save_pref () =
     Config_lexer.print_file pref_file
 
 let load_pref () =
-  GtkData.AccelMap.load (Filename.concat !Minilib.coqlib "ide/default_accel_map");
-  GtkData.AccelMap.load accel_file;
+  let accel_dir = List.find
+    (fun x -> Sys.file_exists (Filename.concat x "coqide.keys"))
+    Minilib.xdg_config_dirs in
+  GtkData.AccelMap.load (Filename.concat accel_dir "coqide.keys");
   let p = !current in
 
     let m = Config_lexer.load_file pref_file in
