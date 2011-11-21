@@ -347,7 +347,7 @@ let isLambda c = match kind_of_term c with | Lambda _ -> true | _ -> false
 (* Destructs the let [x:=b:t1]t2 *)
 let destLetIn c = match kind_of_term c with
   | LetIn (x,b,t1,t2) -> (x,b,t1,t2)
-  | _ -> invalid_arg "destProd"
+  | _ -> invalid_arg "destLetIn"
 
 let isLetIn c =  match kind_of_term c with LetIn _ -> true | _ -> false
 
