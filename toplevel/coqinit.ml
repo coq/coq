@@ -18,7 +18,8 @@ let set_debug () = Flags.debug := true
    rcfile is either $XDG_CONFIG_HOME/.coqrc.VERSION, or $XDG_CONFIG_HOME/.coqrc if the first one
   does not exist. *)
 
-let rcfile = ref (Envars.xdg_config_home/"coqrc")
+let rcdefaultname = "coqrc"
+let rcfile = ref ""
 let rcfile_specified = ref false
 let set_rcfile s = rcfile := s; rcfile_specified := true
 
@@ -32,11 +33,14 @@ let load_rcfile() =
         if file_readable_p !rcfile then
           Vernac.load_vernac false !rcfile
         else raise (Sys_error ("Cannot read rcfile: "^ !rcfile))
-      else if file_readable_p (!rcfile^"."^Coq_config.version) then
-        Vernac.load_vernac false (!rcfile^"."^Coq_config.version)
-      else if file_readable_p !rcfile then
-        Vernac.load_vernac false !rcfile
-      else ()
+      else try let inferedrc = List.find file_readable_p [
+	Envars.xdg_config_home/rcdefaultname^"."^Coq_config.version;
+	Envars.xdg_config_home/rcdefaultname;
+	System.home/"."^rcdefaultname^"."^Coq_config.version;
+	System.home/"."^rcdefaultname;
+      ] in
+        Vernac.load_vernac false inferedrc
+	with Not_found -> ()
 	(*
 	Flags.if_verbose
 	  mSGNL (str ("No coqrc or coqrc."^Coq_config.version^
