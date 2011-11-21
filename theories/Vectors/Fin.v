@@ -31,10 +31,7 @@ Definition case0 P (p: t 0): P p :=
 Definition caseS (P: forall {n}, t (S n) -> Type)
   (P1: forall n, @P n F1) (PS : forall {n} (p: t n), P (FS p))
   {n} (p: t (S n)): P p :=
-  match p as p0 in t n0
-  return match n0 as nn return t nn -> Type with
-    |0 => fun _ => @ID |S n' => fun p' => P p'
-  end p0 with
+  match p with
   |F1 k => P1 k
   |FS k pp => PS pp
   end.
@@ -43,10 +40,7 @@ Definition rectS (P: forall {n}, t (S n) -> Type)
   (P1: forall n, @P n F1) (PS : forall {n} (p: t (S n)), P p -> P (FS p)):
   forall {n} (p: t (S n)), P p :=
 fix rectS_fix {n} (p: t (S n)): P p:=
-  match p as p0 in t n0
-  return match n0 as nn return t nn -> Type with
-    |0 => fun _ => @ID |S n' => fun p' => P p'
-  end p0 with
+  match p with
   |F1 k => P1 k
   |FS 0 pp => case0 (fun f => P (FS f)) pp
   |FS (S k) pp => PS pp (rectS_fix pp)

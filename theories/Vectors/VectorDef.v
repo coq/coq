@@ -44,10 +44,10 @@ Definition rectS {A} (P:forall {n}, t A (S n) -> Type)
  |cons a 0 v =>
    match v as vnn in t _ nn
        return
-         match nn as nnn return t A nnn -> Type with
-         |0 => fun vm => P (a :: vm)
-         |S _ => fun _ => ID
-         end vnn
+         match nn,vnn with
+         |0,vm =>  P (a :: vm)
+         |S _,_ => ID
+         end
      with
      |nil => bas a
      |_ :: _ => @id
@@ -70,12 +70,10 @@ match v1 as v1' in t _ n1
      end
   |h1 :: t1 => fun v2 =>
     match v2 as v2' in t _ n2
-      return match n2 as n2'
-        return t B n2' -> Type with
-        |0 => fun _ => @ID
-        |S n' => fun v2 => forall t1' : t A n',
-          P (h1 :: t1') v2
-        end v2' with
+      return match n2, v2' with
+        |0, _ => ID
+        |S n', v2 => forall t1' : t A n', P (h1 :: t1') v2
+        end with
       |[] => @id
       |h2 :: t2 => fun t1' =>
         rect (rect2_fix t1' t2) h1 h2
