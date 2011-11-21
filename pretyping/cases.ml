@@ -140,6 +140,7 @@ type tomatch_type =
 type tomatch_status =
   | Pushed of ((constr * tomatch_type) * int list * name)
   | Alias of (constr * rel_declaration * bool Lazy.t)
+  | NonDepAlias
   | Abstract of int * rel_declaration
 
 type tomatch_stack = tomatch_status list
@@ -228,6 +229,9 @@ let push_history_pattern n pci cont =
     is usually removed at the end, except when its type is not the
     same as the type of the matched term from which it comes -
     typically because the inductive types are "real" parameters)
+  - "NonDepAlias" instructions mean the completion of a matching over
+    a term to match as for Alias but without inserting this alias
+    because there is no dependency in it
 
   Right-hand sides:
 
@@ -513,7 +517,7 @@ let dependent_decl a = function
   | (na,Some c,t) -> dependent a t || dependent a c
 
 let rec dep_in_tomatch n = function
-  | (Pushed _ | Alias _) :: l -> dep_in_tomatch n l
+  | (Pushed _ | Alias _ | NonDepAlias) :: l -> dep_in_tomatch n l
   | Abstract (_,d) :: l -> dependent_decl (mkRel n) d or dep_in_tomatch (n+1) l
   | [] -> false
 
@@ -576,6 +580,8 @@ let relocate_index_tomatch n1 n2 =
       let d = map_rel_declaration (relocate_index n1 n2 depth) d in
       (* [c] is out of relocation scope *)
       Alias (c,d,p) :: genrec depth rest
+  | NonDepAlias :: rest ->
+      NonDepAlias :: genrec depth rest
   | Abstract (i,d) :: rest ->
       let i = relocate_rel n1 n2 depth i in
       Abstract (i,map_rel_declaration (relocate_index n1 n2 depth) d)
@@ -604,6 +610,8 @@ let replace_tomatch n c =
       let d = map_rel_declaration (replace_term n c depth) d in
       (* [c] is out of replacement scope *)
       Alias (b,d,p) :: replrec depth rest
+  | NonDepAlias  :: rest ->
+      NonDepAlias :: replrec depth rest
   | Abstract (i,d) :: rest ->
       Abstract (i,map_rel_declaration (replace_term n c depth) d)
       :: replrec (depth+1) rest in
@@ -626,6 +634,8 @@ let rec liftn_tomatch_stack n depth = function
   | Alias (c,d,p)::rest ->
       Alias (liftn n depth c,map_rel_declaration (liftn n depth) d,p)
       ::(liftn_tomatch_stack n depth rest)
+  | NonDepAlias  :: rest ->
+      NonDepAlias :: liftn_tomatch_stack n depth rest
   | Abstract (i,d)::rest ->
       let i = if i<depth then i else i+n in
       Abstract (i,map_rel_declaration (liftn n depth) d)
@@ -717,12 +727,12 @@ let push_generalized_decl_eqn env n (na,c,t) eqn =
   | Name id -> pi1 (Environ.lookup_rel n eqn.rhs.rhs_env) in
   push_rels_eqn [(na,c,t)] eqn
 
-let pop_alias_eqn eqn =
+let drop_alias_eqn eqn =
   { eqn with alias_stack = List.tl eqn.alias_stack }
 
 let push_alias_eqn alias eqn =
   let aliasname = List.hd eqn.alias_stack in
-  let eqn = pop_alias_eqn eqn in
+  let eqn = drop_alias_eqn eqn in
   let alias = set_declaration_name aliasname alias in
   push_rels_eqn [alias] eqn
 
@@ -778,7 +788,7 @@ let rec map_predicate f k ccl = function
   | Pushed ((_,tm),_,na) :: rest ->
       let k' = length_of_tomatch_type_sign na tm in
       map_predicate f (k+k') ccl rest
-  | Alias _ :: rest ->
+  | (Alias _ | NonDepAlias) :: rest ->
       map_predicate f k ccl rest
   | Abstract _ :: rest ->
       map_predicate f (k+1) ccl rest
@@ -837,7 +847,7 @@ let generalize_predicate (names,na) ny d tms ccl =
 (* extract_predicate                                                         *)
 (*****************************************************************************)
 let rec extract_predicate ccl = function
-  | Alias _::tms ->
+  | (Alias _ | NonDepAlias)::tms ->
       (* substitution already done in build_branch *)
       extract_predicate ccl tms
   | Abstract (i,d)::tms ->
@@ -888,7 +898,7 @@ let adjust_impossible_cases pb pred tomatch submat =
       (* we add an "assert false" case *)
       let pats = List.map (fun _ -> PatVar (dummy_loc,Anonymous)) tomatch in
       let aliasnames =
-	map_succeed (function Alias _ -> Anonymous | _ -> failwith"") tomatch
+	map_succeed (function Alias _ | NonDepAlias -> Anonymous | _ -> failwith"") tomatch
       in
       [ { patterns = pats;
           rhs = { rhs_env = pb.env;
@@ -1178,10 +1188,15 @@ let build_branch current deps (realnames,curname) pb arsign eqns const_info =
       List.map (lift const_info.cs_nargs) const_info.cs_params),
       const_info.cs_concl_realargs) in
 
-  let cur_alias = lift const_info.cs_nargs current in
-  let lazy_dep_pred = lazy (is_dep_pred (List.length realnames) pb) in
-  let alias = Alias (cur_alias,(aliasname,Some ci,ind),lazy_dep_pred) in
-  let tomatch = List.rev_append (alias::currents) tomatch in
+  let alias =
+    if aliasname = Anonymous then
+      NonDepAlias
+    else
+      let cur_alias = lift const_info.cs_nargs current in
+      let lazy_dep_pred = lazy (is_dep_pred (List.length realnames) pb) in
+      Alias (cur_alias,(aliasname,Some ci,ind),lazy_dep_pred) in
+
+  let tomatch = List.rev_append (alias :: currents) tomatch in
 
   let submat = adjust_impossible_cases pb pred tomatch submat in
   if submat = [] then
@@ -1200,7 +1215,7 @@ let build_branch current deps (realnames,curname) pb arsign eqns const_info =
  INVARIANT:
 
   pb = { env, pred, tomatch, mat, ...}
-  tomatch = list of Pushed (c:T) or Abstract (na:T) or Alias (c:T)
+  tomatch = list of Pushed (c:T), Abstract (na:T), Alias (c:T) or NonDepAlias
 
   all terms and types in Pushed, Abstract and Alias are relative to env
   enriched by the Abstract coming before
@@ -1211,9 +1226,10 @@ let build_branch current deps (realnames,curname) pb arsign eqns const_info =
 (* Main compiling descent *)
 let rec compile pb =
   match pb.tomatch with
-    | (Pushed cur) :: rest -> match_current { pb with tomatch = rest } cur
-    | (Alias x) :: rest -> compile_alias pb x rest
-    | (Abstract (i,d)) :: rest -> compile_generalization pb i d rest
+    | Pushed cur :: rest -> match_current { pb with tomatch = rest } cur
+    | Alias x :: rest -> compile_alias pb x rest
+    | NonDepAlias :: rest -> compile_non_dep_alias pb rest
+    | Abstract (i,d) :: rest -> compile_generalization pb i d rest
     | [] -> build_leaf pb
 
 (* Case splitting *)
@@ -1297,6 +1313,14 @@ and compile_alias pb (orig,(_,ci,_ as alias),isdeppred) rest =
   let j = compile pb in
   { uj_val = mkSpecialLetIn orig alias isdeppred j.uj_val;
     uj_type = subst1 (Option.get ci) j.uj_type }
+
+and compile_non_dep_alias pb rest =
+  let pb =
+    { pb with
+       tomatch = rest;
+       history = pop_history_pattern pb.history;
+       mat = List.map drop_alias_eqn pb.mat } in
+  compile pb
 
 (* pour les alias des initiaux, enrichir les env de ce qu'il faut et
 substituer après par les initiaux *)
