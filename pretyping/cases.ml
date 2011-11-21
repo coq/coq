@@ -114,10 +114,6 @@ let rec relocate_index n1 n2 k t = match kind_of_term t with
   | Rel j when j > n1+k -> t
   | _ -> map_constr_with_binders succ (relocate_index n1 n2) k t
 
-type alias_constr =
-  | DepAlias
-  | NonDepAlias
-
 (**********************************************************************)
 (* Structures used in compiling pattern-matching *)
 
@@ -136,15 +132,13 @@ type 'a equation =
 
 type 'a matrix = 'a equation list
 
-type dep_status = KnownDep | KnownNotDep | DepUnknown
-
 (* 1st argument of IsInd is the original ind before extracting the summary *)
 type tomatch_type =
   | IsInd of types * inductive_type * name list
   | NotInd of constr option * types
 
 type tomatch_status =
-  | Pushed of ((constr * tomatch_type) * int list * (name * dep_status))
+  | Pushed of ((constr * tomatch_type) * int list * name)
   | Alias of (constr * rel_declaration * bool Lazy.t)
   | Abstract of int * rel_declaration
 
@@ -582,11 +576,11 @@ let relocate_index_tomatch n1 n2 =
   let rec genrec depth = function
   | [] ->
       []
-  | Pushed ((c,tm),l,dep) :: rest ->
+  | Pushed ((c,tm),l,na) :: rest ->
       let c = relocate_index n1 n2 depth c in
       let tm = map_tomatch_type (relocate_index n1 n2 depth) tm in
       let l = List.map (relocate_rel n1 n2 depth) l in
-      Pushed ((c,tm),l,dep) :: genrec depth rest
+      Pushed ((c,tm),l,na) :: genrec depth rest
   | Alias (c,d,p) :: rest ->
       let d = map_rel_declaration (relocate_index n1 n2 depth) d in
       (* [c] is out of relocation scope *)
@@ -603,18 +597,18 @@ let rec replace_term n c k t =
   if isRel t && destRel t = n+k then lift k c
   else map_constr_with_binders succ (replace_term n c) k t
 
-let length_of_tomatch_type_sign (dep,_) = function
-  | NotInd _ -> if dep<>Anonymous then 1 else 0
-  | IsInd (_,_,names) -> List.length names + if dep<>Anonymous then 1 else 0
+let length_of_tomatch_type_sign na = function
+  | NotInd _ -> if na<>Anonymous then 1 else 0
+  | IsInd (_,_,names) -> List.length names + if na<>Anonymous then 1 else 0
 
 let replace_tomatch n c =
   let rec replrec depth = function
   | [] -> []
-  | Pushed ((b,tm),l,dep) :: rest ->
+  | Pushed ((b,tm),l,na) :: rest ->
       let b = replace_term n c depth b in
       let tm = map_tomatch_type (replace_term n c depth) tm in
       List.iter (fun i -> if i=n+depth then anomaly "replace_tomatch") l;
-      Pushed ((b,tm),l,dep) :: replrec depth rest
+      Pushed ((b,tm),l,na) :: replrec depth rest
   | Alias (b,d,p) :: rest ->
       let d = map_rel_declaration (replace_term n c depth) d in
       (* [c] is out of replacement scope *)
@@ -633,11 +627,11 @@ let replace_tomatch n c =
 
 let rec liftn_tomatch_stack n depth = function
   | [] -> []
-  | Pushed ((c,tm),l,dep)::rest ->
+  | Pushed ((c,tm),l,na)::rest ->
       let c = liftn n depth c in
       let tm = liftn_tomatch_type n depth tm in
       let l = List.map (fun i -> if i<depth then i else i+n) l in
-      Pushed ((c,tm),l,dep)::(liftn_tomatch_stack n depth rest)
+      Pushed ((c,tm),l,na)::(liftn_tomatch_stack n depth rest)
   | Alias (c,d,p)::rest ->
       Alias (liftn n depth c,map_rel_declaration (liftn n depth) d,p)
       ::(liftn_tomatch_stack n depth rest)
@@ -787,8 +781,8 @@ Some hints:
 
 let rec map_predicate f k ccl = function
   | [] -> f k ccl
-  | Pushed ((_,tm),_,dep) :: rest ->
-      let k' = length_of_tomatch_type_sign dep tm in
+  | Pushed ((_,tm),_,na) :: rest ->
+      let k' = length_of_tomatch_type_sign na tm in
       map_predicate f (k+k') ccl rest
   | Alias _ :: rest ->
       map_predicate f k ccl rest
@@ -829,8 +823,8 @@ let specialize_predicate_var (cur,typ,dep) tms ccl =
 (* We first need to lift t(x) s.t. it is typed in Gamma, X:=rargs, x'        *)
 (* then we have to replace x by x' in t(x) and y by y' in P                  *)
 (*****************************************************************************)
-let generalize_predicate (names,(nadep,_)) ny d tms ccl =
-  if nadep=Anonymous then anomaly "Undetected dependency";
+let generalize_predicate (names,na) ny d tms ccl =
+  if na=Anonymous then anomaly "Undetected dependency";
   let p = List.length names + 1 in
   let ccl = lift_predicate 1 ccl tms in
   regeneralize_index_predicate (ny+p+1) ccl tms
@@ -854,20 +848,20 @@ let rec extract_predicate ccl = function
       extract_predicate ccl tms
   | Abstract (i,d)::tms ->
       mkProd_or_LetIn d (extract_predicate ccl tms)
-  | Pushed ((cur,NotInd _),_,(dep,_))::tms ->
-      let tms = if dep<>Anonymous then lift_tomatch_stack 1 tms else tms in
+  | Pushed ((cur,NotInd _),_,na)::tms ->
+      let tms = if na<>Anonymous then lift_tomatch_stack 1 tms else tms in
       let pred = extract_predicate ccl tms in
-      if dep<>Anonymous then subst1 cur pred else pred
-  | Pushed ((cur,IsInd (_,IndType(_,realargs),_)),_,(dep,_))::tms ->
+      if na<>Anonymous then subst1 cur pred else pred
+  | Pushed ((cur,IsInd (_,IndType(_,realargs),_)),_,na)::tms ->
       let realargs = List.rev realargs in
-      let k = if dep<>Anonymous then 1 else 0 in
+      let k = if na<>Anonymous then 1 else 0 in
       let tms = lift_tomatch_stack (List.length realargs + k) tms in
       let pred = extract_predicate ccl tms in
-      substl (if dep<>Anonymous then cur::realargs else realargs) pred
+      substl (if na<>Anonymous then cur::realargs else realargs) pred
   | [] ->
       ccl
 
-let abstract_predicate env sigma indf cur (names,(nadep,_)) tms ccl =
+let abstract_predicate env sigma indf cur (names,na) tms ccl =
   let sign = make_arity_signature env true indf in
   (* n is the number of real args + 1 *)
   let n = List.length sign in
@@ -876,12 +870,10 @@ let abstract_predicate env sigma indf cur (names,(nadep,_)) tms ccl =
     match kind_of_term cur with
       | Rel i -> relocate_index_tomatch (i+n) 1 tms
       | _ -> (* Initial case *) tms in
-  let sign = List.map2 (fun na (_,c,t) -> (na,c,t)) (nadep::names) sign in
-  let ccl = if nadep <> Anonymous then ccl else lift_predicate 1 ccl tms in
+  let sign = List.map2 (fun na (_,c,t) -> (na,c,t)) (na::names) sign in
+  let ccl = if na <> Anonymous then ccl else lift_predicate 1 ccl tms in
   let pred = extract_predicate ccl tms in
   it_mkLambda_or_LetIn_name env pred sign
-
-let known_dependent (_,dep) = (dep = KnownDep)
 
 (* [expand_arg] is used by [specialize_predicate]
    if Yk denotes [Xk;xk] or [Xk],
@@ -941,7 +933,7 @@ let adjust_impossible_cases pb pred tomatch submat =
 (*   with .. end                                                             *)
 (*                                                                           *)
 (*****************************************************************************)
-let specialize_predicate newtomatchs (names,(depna,_)) arsign cs tms ccl =
+let specialize_predicate newtomatchs (names,depna) arsign cs tms ccl =
   (* Assume some gamma st: gamma |- PI [X,x:I(X)]. PI tms. ccl *)
   let nrealargs = List.length names in
   let k = nrealargs + (if depna<>Anonymous then 1 else 0) in
@@ -976,15 +968,15 @@ let find_predicate loc env evdref p current (IndType (indf,realargs)) dep tms =
 (* Take into account that a type has been discovered to be inductive, leading
    to more dependencies in the predicate if the type has indices *)
 let adjust_predicate_from_tomatch tomatch (current,typ as ct) pb =
-  let ((_,oldtyp),deps,((nadep,_) as dep)) = tomatch in
+  let ((_,oldtyp),deps,na) = tomatch in
   match typ, oldtyp with
   | IsInd (_,_,names), NotInd _ ->
-      let k = if nadep <> Anonymous then 2 else 1 in
+      let k = if na <> Anonymous then 2 else 1 in
       let n = List.length names in
       { pb with pred = liftn_predicate n k pb.pred pb.tomatch },
-      (ct,List.map (fun i -> if i >= k then i+n else i) deps,dep)
+      (ct,List.map (fun i -> if i >= k then i+n else i) deps,na)
   | _ ->
-      pb, (ct,deps,dep)
+      pb, (ct,deps,na)
 
 (* Decide what to do with an alias *)
 
@@ -1105,7 +1097,7 @@ let build_leaf pb =
   j_nf_evar !(pb.evdref) j
 
 (* Build the sub-pattern-matching problem for a given branch "C x1..xn as x" *)
-let build_branch current deps (realnames,dep) pb arsign eqns const_info =
+let build_branch current deps (realnames,curname) pb arsign eqns const_info =
   (* We remember that we descend through constructor C *)
   let history =
     push_history_pattern const_info.cs_nargs
@@ -1156,19 +1148,15 @@ let build_branch current deps (realnames,dep) pb arsign eqns const_info =
   let typs' =
     List.map2
       (fun (tm,(na,c,t)) deps ->
-	let dep = match dep with
-	  | Name _ as na',k -> (if na <> Anonymous then na else na'),k
-	  | Anonymous,KnownNotDep ->
-	      if deps = [] && pred_is_not_dep then
-		(Anonymous,KnownNotDep)
-	      else
-		(force_name na,KnownDep)
-	  | _,_ -> anomaly "Inconsistent dependency" in
-	((tm,NotInd(c,t)),deps,dep))
+	let na = match curname with
+	| Name _ -> (if na <> Anonymous then na else curname)
+	| Anonymous ->
+	    if deps = [] && pred_is_not_dep then Anonymous else force_name na in
+	((tm,NotInd(c,t)),deps,na))
       typs' (List.rev dep_sign) in
 
   let pred =
-    specialize_predicate typs' (realnames,dep) arsign const_info tomatch pb.pred in
+    specialize_predicate typs' (realnames,curname) arsign const_info tomatch pb.pred in
 
   let currents = List.map (fun x -> Pushed x) typs' in
 
@@ -1255,13 +1243,13 @@ and match_current pb tomatch =
 	    uj_type = prod_applist typ inst }
 
 (* Building the sub-problem when all patterns are variables *)
-and shift_problem ((current,t),_,(nadep,_)) pb =
+and shift_problem ((current,t),_,na) pb =
   let ty = type_of_tomatch t in
   let tomatch = lift_tomatch_stack 1 pb.tomatch in
-  let pred = specialize_predicate_var (current,t,nadep) pb.tomatch pb.pred in
+  let pred = specialize_predicate_var (current,t,na) pb.tomatch pb.pred in
   let pb =
     { pb with
-       env = push_rel (nadep,Some current,ty) pb.env;
+       env = push_rel (na,Some current,ty) pb.env;
        tomatch = tomatch;
        pred = lift_predicate 1 pred tomatch;
        history = simplify_history (push_history_pattern 0 AliasLeaf pb.history);
@@ -1529,10 +1517,8 @@ let build_inversion_problem loc env sigma tms t =
 	if b<>None then NotInd (None,t) else
 	  try try_find_ind pb_env sigma t None
 	  with Not_found -> NotInd (None,t) in
-      let na_dep =
-	if deps = [] then (Anonymous,KnownNotDep) else (force_name na,KnownDep)
-      in
-      Pushed ((tm,typ),deps,na_dep))
+      let na = if deps = [] then Anonymous else force_name na in
+      Pushed ((tm,typ),deps,na))
       dep_sign decls in
   let subst = List.map (fun (na,t) -> (na,lift n t)) subst in
   (* [eqn1] is the first clause of the auxiliary pattern-matching that
@@ -1582,15 +1568,15 @@ let build_inversion_problem loc env sigma tms t =
 
 (* Here, [pred] is assumed to be in the context built from all *)
 (* realargs and terms to match *)
-let build_initial_predicate knowndep allnames pred =
+let build_initial_predicate allnames pred =
   let nar = List.fold_left (fun n names -> List.length names + n) 0 allnames in
   let rec buildrec n pred deps = function
     | [] -> List.rev deps,pred
     | (na::realnames)::lnames ->
         let n' = n + List.length realnames in
         let pred, dep =
-          if dependent (mkRel (nar-n')) pred then pred, (force_name na,knowndep)
-          else liftn (-1) (nar-n') pred, (Anonymous,KnownNotDep) in
+          if dependent (mkRel (nar-n')) pred then pred, force_name na
+          else liftn (-1) (nar-n') pred, Anonymous in
         buildrec (n'+1) pred (dep::deps) lnames
     | _ -> assert false
   in buildrec 0 pred [] allnames
@@ -1707,7 +1693,7 @@ let prepare_predicate loc typing_fun sigma env tomatchs sign tycon pred =
           prepare_predicate_from_arsign_tycon loc tomatchs sign arsign t in
 	(* Second strategy: we build an "inversion" predicate *)
 	let sigma2,pred2 = build_inversion_problem loc env sigma tomatchs t in
-	[sigma, KnownDep, pred1; sigma2, DepUnknown, pred2]
+	[sigma, pred1; sigma2, pred2]
     | None, _ ->
 	(* No dependent type constraint, or no constraints at all: *)
 	(* we use two strategies *)
@@ -1718,7 +1704,7 @@ let prepare_predicate loc typing_fun sigma env tomatchs sign tycon pred =
 	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
 	(* Second strategy: we directly use the evar as a non dependent pred *)
         let pred2 = lift (List.length names) t in
-	[sigma1, DepUnknown, pred1; sigma, KnownNotDep, pred2]
+	[sigma1, pred1; sigma, pred2]
     (* Some type annotation *)
     | Some rtntyp, _ ->
       (* We extract the signature of the arity *)
@@ -1727,17 +1713,17 @@ let prepare_predicate loc typing_fun sigma env tomatchs sign tycon pred =
       let evdref = ref sigma in
       let predcclj = typing_fun (mk_tycon (mkSort newt)) envar evdref rtntyp in
       let sigma = Option.cata (fun tycon ->
-          let na = (Name (id_of_string "x"),KnownNotDep) in
+          let na = Name (id_of_string "x") in
           let tms = List.map (fun tm -> Pushed(tm,[],na)) tomatchs in
           let predinst = extract_predicate predcclj.uj_val tms in
           Coercion.inh_conv_coerces_to loc env !evdref predinst tycon)
         !evdref tycon in
       let predccl = (j_nf_evar sigma predcclj).uj_val in
-      [sigma, KnownDep, predccl]
+      [sigma, predccl]
   in
   List.map
-    (fun (sigma,dep,pred) ->
-      let (nal,pred) = build_initial_predicate dep names pred in
+    (fun (sigma,pred) ->
+      let (nal,pred) = build_initial_predicate names pred in
       sigma,nal,pred)
     preds
 
