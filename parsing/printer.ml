@@ -29,6 +29,8 @@ open Store.Field
 
 let emacs_str s =
   if !Flags.print_emacs then s else ""
+let delayed_emacs_cmd s =
+  if !Flags.print_emacs then s () else str ""
 
 (**********************************************************************)
 (** Terms                                                             *)
@@ -323,8 +325,28 @@ let default_pr_subgoal n sigma =
   in
   prrec n
 
+let emacs_print_dependent_evars sigma seeds =
+  let evars () =
+    let evars = Evarutil.evars_of_evars_in_types_of_list sigma seeds in
+    let evars =
+      Intmap.fold begin fun e i s ->
+	let e' = str (string_of_existential e) in
+	match i with
+	| None -> s ++ e' ++ str " open,"
+	| Some i ->
+	  s ++ e' ++ str " using " ++
+	    Intset.fold begin fun d s ->
+	      str (string_of_existential d) ++ str " " ++ s
+	    end i (str "")
+      end evars (str "")
+    in
+    str "(dependent evars: " ++ evars ++ str ")" ++ fnl ()
+  in
+  delayed_emacs_cmd evars
+
 (* Print open subgoals. Checks for uninstantiated existential variables *)
-let default_pr_subgoals close_cmd sigma = function
+(* spiwack: [seeds] is for printing dependent evars in emacs mode. *)
+let default_pr_subgoals close_cmd sigma seeds = function
   | [] ->
       begin
 	match close_cmd with
@@ -342,7 +364,10 @@ let default_pr_subgoals close_cmd sigma = function
       end
   | [g] ->
       let pg = default_pr_goal { it = g ; sigma = sigma } in
-      v 0 (str ("1 "^"subgoal") ++ pr_goal_tag g ++ cut () ++ pg)
+      v 0 (
+	emacs_print_dependent_evars sigma seeds ++
+	str ("1 "^"subgoal") ++ pr_goal_tag g ++ cut () ++ pg
+      )
   | g1::rest ->
       let rec pr_rec n = function
         | [] -> (mt ())
@@ -353,16 +378,19 @@ let default_pr_subgoals close_cmd sigma = function
       in
       let pg1 = default_pr_goal { it = g1 ; sigma = sigma } in
       let prest = pr_rec 2 rest in
-      v 0 (int(List.length rest+1) ++ str" subgoals" ++
-             str (emacs_str ", subgoal 1") ++ pr_goal_tag g1 ++ cut ()
-	   ++ pg1 ++ prest ++ fnl ())
+      v 0 (
+	emacs_print_dependent_evars sigma seeds ++
+	int(List.length rest+1) ++ str" subgoals" ++
+          str (emacs_str ", subgoal 1") ++ pr_goal_tag g1 ++ cut ()
+	++ pg1 ++ prest ++ fnl ()
+      )
 
 (**********************************************************************)
 (* Abstraction layer                                                  *)
 
 
 type printer_pr = {
- pr_subgoals            : string option -> evar_map -> goal list -> std_ppcmds;
+ pr_subgoals            : string option -> evar_map -> evar list -> goal list -> std_ppcmds;
  pr_subgoal             : int -> evar_map -> goal list -> std_ppcmds;
  pr_goal                : goal sigma -> std_ppcmds;
 }
@@ -387,11 +415,12 @@ let pr_goal     x = !printer_pr.pr_goal     x
 let pr_open_subgoals () =
   let p = Proof_global.give_me_the_proof () in
   let { Evd.it = goals ; sigma = sigma } = Proof.V82.subgoals p in
+  let seeds = Proof.V82.top_evars p in
   begin match goals with
   | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
             begin match bgoals with
-	    | [] -> pr_subgoals None sigma goals
-	    | _ -> pr_subgoals None bsigma bgoals ++ fnl () ++ fnl () ++
+	    | [] -> pr_subgoals None sigma seeds goals
+	    | _ -> pr_subgoals None bsigma seeds bgoals ++ fnl () ++ fnl () ++
 		      str"This subproof is complete, but there are still unfocused goals:"
 		(* spiwack: to stay compatible with the proof general and coqide,
 		    I use print the message after the goal. It would be better to have
@@ -401,7 +430,7 @@ let pr_open_subgoals () =
 		    instead. But it doesn't quite work.
 		*)
 	    end
-  | _ -> pr_subgoals None sigma goals
+  | _ -> pr_subgoals None sigma seeds goals
   end
 
 let pr_nth_open_subgoal n =

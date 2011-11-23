@@ -200,6 +200,9 @@ module V82 : sig
   val goals : proofview -> Goal.goal list Evd.sigma
 
   val top_goals : proofview -> Goal.goal list Evd.sigma
+  
+  (* returns the existential variable used to start the proof *)
+  val top_evars : proofview -> Evd.evar list
     
   (* Implements the Existential command *)
   val instantiate_evar : int -> Topconstr.constr_expr -> proofview -> proofview

@@ -171,6 +171,9 @@ module V82 : sig
   val depth : proof -> int 
 
   val top_goal : proof -> Goal.goal Evd.sigma
+  
+  (* returns the existential variable used to start the proof *)
+  val top_evars : proof -> Evd.evar list
 
   (* Implements the Existential command *)
   val instantiate_evar : int -> Topconstr.constr_expr -> proof -> unit

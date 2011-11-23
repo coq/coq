@@ -435,6 +435,9 @@ module V82 = struct
     in
     { Evd.it=List.hd gls ; sigma=sigma }
 
+  let top_evars p =
+    Proofview.V82.top_evars p.state.proofview
+
   let instantiate_evar n com pr =
     let starting_point = save_state pr in
     let sp = pr.state.proofview in

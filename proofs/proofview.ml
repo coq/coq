@@ -484,6 +484,12 @@ module V82 = struct
     let goals = List.map (fun (t,_) -> Goal.V82.build (fst (Term.destEvar t))) initial in
     { Evd.it = goals ; sigma=solution }
 
+  let top_evars { initial=initial } =
+    let evars_of_initial (c,_) =
+      Util.Intset.elements (Evarutil.evars_of_term c)
+    in
+    List.flatten (List.map evars_of_initial initial)
+
   let instantiate_evar n com pv =
     let (evk,_) = 
       let evl = Evarutil.non_instantiated pv.solution in
