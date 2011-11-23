@@ -1461,6 +1461,47 @@ let evars_of_term c =
   in
   evrec Intset.empty c
 
+(* spiwack: a few functions to gather the existential variables
+   that occur in the types of goals present or past. *)
+let add_evars_of_evars_of_term acc evm c =
+  let evars = evars_of_term c in
+  Intset.fold begin fun e r ->
+    let body = (Evd.find evm e).evar_body in
+    let subevars =
+      match body with
+      | Evar_empty -> None
+      | Evar_defined c' -> Some (evars_of_term c')
+    in
+    Intmap.add e subevars r
+  end evars acc
+
+let evars_of_evars_of_term = add_evars_of_evars_of_term Intmap.empty
+
+let add_evars_of_evars_in_type acc evm e =
+  let evi = Evd.find evm e in
+  let acc_with_concl = add_evars_of_evars_of_term acc evm evi.evar_concl in
+  let hyps = Environ.named_context_of_val evi.evar_hyps in
+  List.fold_left begin fun r (_,b,t) ->
+    let r = add_evars_of_evars_of_term r evm t in
+    match b with
+    | None -> r
+    | Some b -> add_evars_of_evars_of_term r evm b
+  end acc_with_concl hyps
+
+let rec add_evars_of_evars_in_types_of_set acc evm s =
+  Intset.fold begin fun e r ->
+    let r = add_evars_of_evars_in_type r evm e in
+    match (Evd.find evm e).evar_body with
+    | Evar_empty -> r
+    | Evar_defined b -> add_evars_of_evars_in_types_of_set r evm (evars_of_term b)
+  end s acc
+
+let evars_of_evars_in_types_of_list evm l =
+  let set_of_l = List.fold_left (fun x y -> Intset.add y x) Intset.empty l in
+  add_evars_of_evars_in_types_of_set Intmap.empty evm set_of_l
+
+(* /spiwack *)
+
 let evars_of_named_context nc =
   List.fold_right (fun (_, b, t) s ->
     Option.fold_left (fun s t ->

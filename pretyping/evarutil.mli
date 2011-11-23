@@ -110,9 +110,24 @@ val solve_pattern_eqn : env -> constr list -> constr -> constr
 (** The following functions return the set of evars immediately
     contained in the object, including defined evars *)
 
+
 val evars_of_term : constr -> Intset.t
+
+(** returns the evars contained in the term associated with
+    the evars they contain themselves in their body, if any.
+    If the evar has no body, [None] is associated to it. *)
+val evars_of_evars_of_term : evar_map -> constr -> (Intset.t option) Intmap.t
 val evars_of_named_context : named_context -> Intset.t
 val evars_of_evar_info : evar_info -> Intset.t
+
+(** returns the evars which can be found in the typing context of the argument evars,
+    in the same format as {!evars_of_evars_of_term}.
+    It explores recursively the evars in the body of the argument evars -- but does
+    not return them. *)
+(* spiwack: tongue in cheek: it should have been called
+    [evars_of_evars_in_types_of_list_and_recursively_in_bodies] *)
+val evars_of_evars_in_types_of_list : evar_map -> evar list -> (Intset.t option) Intmap.t
+
 
 (** The following functions return the set of undefined evars
     contained in the object, the defined evars being traversed.
