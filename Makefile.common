@@ -221,8 +221,8 @@ INITPLUGINSBEST:=$(if $(OPT),$(INITPLUGINSOPT),$(INITPLUGINS))
 LINKCMO:=$(CONFIG) $(CORECMA) $(STATICPLUGINS)
 LINKCMX:=$(CONFIG:.cmo=.cmx) $(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cma=.cmxa)
 
-IDEDEPS:=$(CONFIG) lib/flags.cmo toplevel/utils/xml_lexer.cmo toplevel/utils/xml_parser.cmo \
-  toplevel/utils/xml_utils.cmo toplevel/ide_intf.cmo
+IDEDEPS:=$(CONFIG) lib/flags.cmo lib/xml_lexer.cmo lib/xml_parser.cmo \
+  lib/xml_utils.cmo toplevel/ide_intf.cmo
 IDECMA:=ide/ide.cma
 
 LINKIDE:=$(IDEDEPS) $(IDECMA) ide/coqide_main.ml
