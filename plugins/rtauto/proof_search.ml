@@ -47,6 +47,7 @@ let pruning = ref true
 
 let opt_pruning=
   {optsync=true;
+   optdepr=false;
    optname="Rtauto Pruning";
    optkey=["Rtauto";"Pruning"];
    optread=(fun () -> !pruning);

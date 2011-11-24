@@ -241,6 +241,7 @@ let verbose = ref false
 
 let opt_verbose=
   {optsync=true;
+   optdepr=false;
    optname="Rtauto Verbose";
    optkey=["Rtauto";"Verbose"];
    optread=(fun () -> !verbose);
@@ -252,6 +253,7 @@ let check = ref false
 
 let opt_check=
   {optsync=true;
+   optdepr=false;
    optname="Rtauto Check";
    optkey=["Rtauto";"Check"];
    optread=(fun () -> !check);
