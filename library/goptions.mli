@@ -140,17 +140,19 @@ val declare_string_option: string option_sig -> string write_function
 
 (** {6 Special functions supposed to be used only in vernacentries.ml } *)
 
-type 'a option_state = {
-  opt_sync  : bool;
-  opt_name  : string;
-  opt_key   : option_name;
-  opt_value : 'a;
-}
+module OptionMap : Map.S with type key = option_name
 
 type option_value =
   | BoolValue   of bool
   | IntValue    of int option
   | StringValue of string
+
+type option_state = {
+  opt_sync  : bool;
+  opt_depr  : bool;
+  opt_name  : string;
+  opt_value : option_value;
+}
 
 val get_string_table :
   option_name ->
@@ -179,5 +181,6 @@ val set_string_option_value : option_name -> string -> unit
 
 val print_option_value : option_name -> unit
 
+val get_tables : unit -> option_state OptionMap.t
 val print_tables : unit -> unit
 

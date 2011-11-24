@@ -27,18 +27,17 @@ let nickname table = String.concat " " table
 let error_undeclared_key key =
   error ((nickname key)^": no table or option of this type")
 
-type 'a option_state = {
-  opt_sync  : bool;
-  opt_name  : string;
-  opt_key   : option_name;
-  opt_value : 'a;
-}
-
 type option_value =
   | BoolValue   of bool
   | IntValue    of int option
   | StringValue of string
-(*   | IdentValue  of global_reference *)
+
+type option_state = {
+  opt_sync  : bool;
+  opt_depr  : bool;
+  opt_name  : string;
+  opt_value : option_value;
+}
 
 (****************************************************************************)
 (* 1- Tables                                                                *)
@@ -369,6 +368,19 @@ let print_option_value key =
 	msg (str ("Current value of "^name^" is ") ++
 	     msg_option_value (name,s) ++ fnl ())
 
+
+let get_tables () =
+  let tables = !value_tab in
+  let fold key (name, depr, (sync,read,_,_,_)) accu =
+    let state = {
+      opt_sync = sync;
+      opt_name = name;
+      opt_depr = depr;
+      opt_value = read ();
+    } in
+    OptionMap.add key state accu
+  in
+  OptionMap.fold fold tables OptionMap.empty
 
 let print_tables () =
   let print_option key name value depr =
