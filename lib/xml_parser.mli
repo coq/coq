@@ -103,12 +103,6 @@ val check_eof : t -> bool -> unit
  of xml document source to parse its contents into an Xml data structure. *)
 val parse :  t -> source -> xml
 
-(** When several PCData elements are separed by a \n (or \r\n), you can
- either split the PCData in two distincts PCData or merge them with \n
- as seperator into one PCData. The default behavior is to concat the
- PCData, but this can be changed for a given parser with this flag. *)
-val concat_pcdata : t -> bool -> unit
-
 (**/**)
 
 (* internal usage only... *)

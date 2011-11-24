@@ -72,6 +72,18 @@ exception NoMoreData
 let xml_error = ref (fun _ -> assert false)
 let file_not_found = ref (fun _ -> assert false)
 
+let is_blank s =
+  let len = String.length s in
+  let break = ref true in
+  let i = ref 0 in
+  while !break && !i < len do
+    let c = s.[!i] in
+    (* no '\r' because we replaced them in the lexer *)
+    if c = ' ' || c = '\n' || c = '\t' then incr i
+    else break := false
+  done;
+  !i = len
+
 let _raises e f =
 	xml_error := e;
 	file_not_found := f
@@ -95,11 +107,18 @@ let pop s =
 let push t s =
 	Stack.push t s.stack
 
+let canonicalize l =
+  let has_elt = List.exists (function Element _ -> true | _ -> false) l in
+  if has_elt then List.filter (function PCData s -> not (is_blank s) | _ -> true) l
+  else l
+
 let rec read_node s =
 	match pop s with
 	| Xml_lexer.PCData s -> PCData s
 	| Xml_lexer.Tag (tag, attr, true) -> Element (tag, attr, [])
-	| Xml_lexer.Tag (tag, attr, false) -> Element (tag, attr, read_elems ~tag s)
+	| Xml_lexer.Tag (tag, attr, false) ->
+          let elements = read_elems ~tag s in
+          Element (tag, attr, canonicalize elements)
 	| t ->
 		push t s;
 		raise NoMoreData
@@ -107,13 +126,14 @@ and
 	read_elems ?tag s =
 		let elems = ref [] in
 		(try
-			while true do
-				match s.xparser.concat_pcdata , read_node s , !elems with
-				| true , PCData c , (PCData c2) :: q ->
-					elems := PCData (sprintf "%s\n%s" c2 c) :: q
-				| _ , x , l ->
-					elems := x :: l
-			done
+                  while true do
+                    let node = read_node s in
+                    match node, !elems with
+                    | PCData c , (PCData c2) :: q ->
+                      elems := PCData (c2 ^ c) :: q
+                    | _, l ->
+                      elems := node :: l
+                  done
 		with
 			NoMoreData -> ());
 		match pop s with

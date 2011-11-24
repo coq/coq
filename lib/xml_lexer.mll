@@ -92,15 +92,10 @@ let entitychar = ['A'-'Z' 'a'-'z']
 let pcchar = [^ '\r' '\n' '<' '>' '&']
 
 rule token = parse
-	| newline
+	| newline | (newline break) | break
 		{
 			newline lexbuf;
-			token lexbuf
-		}
-	| (space | break) +
-		{
-			last_pos := lexeme_end lexbuf;
-			token lexbuf
+                        PCData "\n"
 		}
 	| "<!--"
 		{
@@ -144,7 +139,7 @@ rule token = parse
 			Buffer.add_string tmp (entity lexbuf);
 			PCData (pcdata lexbuf)
 		}
-	| (space | newline | break)* pcchar+
+	| pcchar+
 		{
 			last_pos := lexeme_start lexbuf;
 			Buffer.reset tmp;
@@ -156,18 +151,18 @@ rule token = parse
 		{ error lexbuf ENodeExpected }
 
 and ignore_spaces = parse
-	| newline
+        | newline | (newline break) | break
 		{
 			newline lexbuf;
 			ignore_spaces lexbuf
 		}
-	| (space | break) +
+	| space +
 		{ ignore_spaces lexbuf }
 	| ""
 		{ () }
 
 and comment = parse
-    | newline
+        | newline | (newline break) | break
 		{
 			newline lexbuf;
 			comment lexbuf
@@ -180,7 +175,7 @@ and comment = parse
 		{ comment lexbuf }
 
 and header = parse
-    | newline
+        | newline | (newline break) | break
 		{
 			newline lexbuf;
 			header lexbuf
@@ -190,7 +185,7 @@ and header = parse
 	| eof
 		{ error lexbuf ECloseExpected }
 	| _
-		{ header lexbuf }		
+		{ header lexbuf }
 
 and pcdata = parse
 	| pcchar+
