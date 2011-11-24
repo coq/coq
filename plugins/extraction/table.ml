@@ -398,6 +398,7 @@ let my_bool_option name initval =
   let access = fun () -> !flag in
   let _ = declare_bool_option
     {optsync = true;
+     optdepr = false;
      optname = "Extraction "^name;
      optkey = ["Extraction"; name];
      optread = access;
@@ -470,6 +471,7 @@ let optims () = !opt_flag_ref
 
 let _ = declare_bool_option
 	  {optsync = true;
+           optdepr = false;
 	   optname = "Extraction Optimize";
 	   optkey = ["Extraction"; "Optimize"];
 	   optread = (fun () -> !int_flag_ref <> 0);
@@ -477,6 +479,7 @@ let _ = declare_bool_option
 
 let _ = declare_int_option
           { optsync = true;
+            optdepr = false;
             optname = "Extraction Flag";
             optkey = ["Extraction";"Flag"];
             optread = (fun _ -> Some !int_flag_ref);

@@ -175,6 +175,7 @@ open Goptions
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "pattern-unification for existential variables in tactics";
       optkey   = ["Tactic";"Evars";"Pattern";"Unification"];
       optread  = (fun () -> !global_evars_pattern_unification_flag);
@@ -183,6 +184,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "pattern-unification for existential variables in tactics";
       optkey   = ["Tactic";"Pattern";"Unification"];
       optread  = (fun () -> !global_evars_pattern_unification_flag);

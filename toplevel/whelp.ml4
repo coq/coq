@@ -38,6 +38,7 @@ open Goptions
 let _ =
   declare_string_option
     { optsync  = false;
+      optdepr  = false;
       optname  = "Whelp server";
       optkey   = ["Whelp";"Server"];
       optread  = (fun () -> !whelp_server_name);
@@ -46,6 +47,7 @@ let _ =
 let _ =
   declare_string_option
     { optsync  = false;
+      optdepr  = false;
       optname  = "Whelp getter";
       optkey   = ["Whelp";"Getter"];
       optread  = (fun () -> !getter_server_name);

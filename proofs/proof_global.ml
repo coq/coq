@@ -45,6 +45,7 @@ let default_proof_mode = ref standard
 let _ =
   Goptions.declare_string_option {Goptions.
     optsync = true ;
+    optdepr = false;
     optname = "default proof mode" ;
     optkey = ["Default";"Proof";"Mode"] ;
     optread = begin fun () -> 
@@ -386,6 +387,7 @@ module Bullet = struct
   let _ =
     Goptions.declare_string_option {Goptions.
       optsync = true;
+      optdepr = false;
       optname = "bullet behavior";
       optkey = ["Bullet";"Behavior"];
       optread = begin fun () ->

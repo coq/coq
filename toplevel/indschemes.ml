@@ -47,6 +47,7 @@ let elim_flag = ref true
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "automatic declaration of induction schemes";
       optkey   = ["Elimination";"Schemes"];
       optread  = (fun () -> !elim_flag) ;
@@ -56,6 +57,7 @@ let case_flag = ref true
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "automatic declaration of case analysis schemes";
       optkey   = ["Case";"Analysis";"Schemes"];
       optread  = (fun () -> !case_flag) ;
@@ -65,6 +67,7 @@ let eq_flag = ref false
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "automatic declaration of boolean equality";
       optkey   = ["Boolean";"Equality";"Schemes"];
       optread  = (fun () -> !eq_flag) ;
@@ -72,6 +75,7 @@ let _ =
 let _ = (* compatibility *)
   declare_bool_option
     { optsync  = true;
+      optdepr  = true;
       optname  = "automatic declaration of boolean equality";
       optkey   = ["Equality";"Scheme"];
       optread  = (fun () -> !eq_flag) ;
@@ -83,6 +87,7 @@ let eq_dec_flag = ref false
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "automatic declaration of decidable equality";
       optkey   = ["Decidable";"Equality";"Schemes"];
       optread  = (fun () -> !eq_dec_flag) ;
@@ -92,6 +97,7 @@ let rewriting_flag = ref false
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  ="automatic declaration of rewriting schemes for equality types";
       optkey   = ["Rewriting";"Schemes"];
       optread  = (fun () -> !rewriting_flag) ;

@@ -117,8 +117,13 @@ module MakeRefTable :
 
 type 'a option_sig = {
   optsync    : bool;
+  (** whether the option is synchronous w.r.t to the section/module system. *)
+  optdepr    : bool;
+  (** whether the option is DEPRECATED *)
   optname    : string;
+  (** a short string describing the option *)
   optkey     : option_name;
+  (** the low-level name of this option *)
   optread    : unit -> 'a;
   optwrite   : 'a -> unit
 }

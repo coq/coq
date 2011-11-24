@@ -61,6 +61,7 @@ let default_timeout = ref None
 let _ =
   Goptions.declare_int_option
     { Goptions.optsync  = true;
+      Goptions.optdepr  = false;
       Goptions.optname  = "the default timeout";
       Goptions.optkey   = ["Default";"Timeout"];
       Goptions.optread  = (fun () -> !default_timeout);

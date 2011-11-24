@@ -116,6 +116,7 @@ let force_wildcard () = !wildcard_value
 
 let _ = declare_bool_option
 	  { optsync  = true;
+            optdepr  = false;
 	    optname  = "forced wildcard";
 	    optkey   = ["Printing";"Wildcard"];
 	    optread  = force_wildcard;
@@ -126,6 +127,7 @@ let synthetize_type () = !synth_type_value
 
 let _ = declare_bool_option
 	  { optsync  = true;
+            optdepr  = false;
 	    optname  = "pattern matching return type synthesizability";
 	    optkey   = ["Printing";"Synth"];
 	    optread  = synthetize_type;
@@ -136,6 +138,7 @@ let reverse_matching () = !reverse_matching_value
 
 let _ = declare_bool_option
 	  { optsync  = true;
+            optdepr  = false;
 	    optname  = "pattern-matching reversibility";
 	    optkey   = ["Printing";"Matching"];
 	    optread  = reverse_matching;

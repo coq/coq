@@ -41,6 +41,7 @@ let get_strictness,set_strictness =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "strict mode";
       optkey   = ["Strict";"Proofs"];
       optread  = get_strictness;

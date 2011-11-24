@@ -853,6 +853,7 @@ let make_silent_if_not_pcoq b =
 let _ =
   declare_bool_option
     { optsync  = false;
+      optdepr  = false;
       optname  = "silent";
       optkey   = ["Silent"];
       optread  = is_silent;
@@ -861,6 +862,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "implicit arguments";
       optkey   = ["Implicit";"Arguments"];
       optread  = Impargs.is_implicit_args;
@@ -869,6 +871,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "strict implicit arguments";
       optkey   = ["Strict";"Implicit"];
       optread  = Impargs.is_strict_implicit_args;
@@ -877,6 +880,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "strong strict implicit arguments";
       optkey   = ["Strongly";"Strict";"Implicit"];
       optread  = Impargs.is_strongly_strict_implicit_args;
@@ -885,6 +889,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "contextual implicit arguments";
       optkey   = ["Contextual";"Implicit"];
       optread  = Impargs.is_contextual_implicit_args;
@@ -893,6 +898,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "implicit status of reversible patterns";
       optkey   = ["Reversible";"Pattern";"Implicit"];
       optread  = Impargs.is_reversible_pattern_implicit_args;
@@ -901,6 +907,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "maximal insertion of implicit";
       optkey   = ["Maximal";"Implicit";"Insertion"];
       optread  = Impargs.is_maximal_implicit_args;
@@ -909,6 +916,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "automatic introduction of variables";
       optkey   = ["Automatic";"Introduction"];
       optread  = Flags.is_auto_intros;
@@ -917,6 +925,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "coercion printing";
       optkey   = ["Printing";"Coercions"];
       optread  = (fun () -> !Constrextern.print_coercions);
@@ -925,6 +934,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "printing of existential variable instances";
       optkey   = ["Printing";"Existential";"Instances"];
       optread  = (fun () -> !Constrextern.print_evar_arguments);
@@ -932,6 +942,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "implicit arguments printing";
       optkey   = ["Printing";"Implicit"];
       optread  = (fun () -> !Constrextern.print_implicits);
@@ -940,6 +951,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "implicit arguments defensive printing";
       optkey   = ["Printing";"Implicit";"Defensive"];
       optread  = (fun () -> !Constrextern.print_implicits_defensive);
@@ -948,6 +960,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "projection printing using dot notation";
       optkey   = ["Printing";"Projections"];
       optread  = (fun () -> !Constrextern.print_projections);
@@ -956,6 +969,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "notations printing";
       optkey   = ["Printing";"Notations"];
       optread  = (fun () -> not !Constrextern.print_no_symbol);
@@ -964,6 +978,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "raw printing";
       optkey   = ["Printing";"All"];
       optread  = (fun () -> !Flags.raw_print);
@@ -972,6 +987,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "record printing";
       optkey   = ["Printing";"Records"];
       optread  = (fun () -> !Flags.record_print);
@@ -980,6 +996,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "use of virtual machine inside the kernel";
       optkey   = ["Virtual";"Machine"];
       optread  = (fun () -> Vconv.use_vm ());
@@ -988,6 +1005,7 @@ let _ =
 let _ =
   declare_int_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "the level of inling duging functor application";
       optkey   = ["Inline";"Level"];
       optread  = (fun () -> Some (Flags.get_inline_level ()));
@@ -998,6 +1016,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "use of boxed values";
       optkey   = ["Boxed";"Values"];
       optread  = (fun _ -> not (Vm.transp_values ()));
@@ -1009,6 +1028,7 @@ let _ =
 let _ =
   declare_int_option
     { optsync  = false;
+      optdepr  = true;
       optname  = "the undo limit (OBSOLETE)";
       optkey   = ["Undo"];
       optread  = (fun _ -> None);
@@ -1017,6 +1037,7 @@ let _ =
 let _ =
   declare_int_option
     { optsync  = false;
+      optdepr  = false;
       optname  = "the hypotheses limit";
       optkey   = ["Hyps";"Limit"];
       optread  = Flags.print_hyps_limit;
@@ -1025,6 +1046,7 @@ let _ =
 let _ =
   declare_int_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "the printing depth";
       optkey   = ["Printing";"Depth"];
       optread  = Pp_control.get_depth_boxes;
@@ -1033,6 +1055,7 @@ let _ =
 let _ =
   declare_int_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "the printing width";
       optkey   = ["Printing";"Width"];
       optread  = Pp_control.get_margin;
@@ -1041,6 +1064,7 @@ let _ =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "printing of universes";
       optkey   = ["Printing";"Universes"];
       optread  = (fun () -> !Constrextern.print_universes);
@@ -1052,6 +1076,7 @@ let vernac_debug b =
 let _ =
   declare_bool_option
     { optsync  = false;
+      optdepr  = false;
       optname  = "Ltac debug";
       optkey   = ["Ltac";"Debug"];
       optread  = (fun () -> get_debug () <> Tactic_debug.DebugOff);

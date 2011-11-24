@@ -310,6 +310,7 @@ let end_autoinstance () =
 let _ =
   Goptions.declare_bool_option
     { Goptions.optsync=true;
+      Goptions.optdepr=false;
       Goptions.optkey=["Autoinstance"];
       Goptions.optname="automatic typeclass instance recognition";
       Goptions.optread=(fun () -> !autoinstance_opt);

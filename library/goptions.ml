@@ -206,6 +206,7 @@ module MakeRefTable =
 
 type 'a option_sig = {
   optsync  : bool;
+  optdepr  : bool;
   optname  : string;
   optkey   : option_name;
   optread  : unit -> 'a;
@@ -235,7 +236,7 @@ open Libobject
 open Lib
 
 let declare_option cast uncast
-  { optsync=sync; optname=name; optkey=key; optread=read; optwrite=write } =
+  { optsync=sync; optdepr=depr; optname=name; optkey=key; optread=read; optwrite=write } =
   check_key key;
   let default = read() in
   (* spiwack: I use two spaces in the nicknames of "local" and "global" objects.
@@ -274,7 +275,7 @@ let declare_option cast uncast
   let cwrite v = write (uncast v) in
   let clwrite v = lwrite (uncast v) in
   let cgwrite v = gwrite (uncast v) in
-  value_tab := OptionMap.add key (name,(sync,cread,cwrite,clwrite,cgwrite)) !value_tab;
+  value_tab := OptionMap.add key (name, depr, (sync,cread,cwrite,clwrite,cgwrite)) !value_tab;
   write
 
 type 'a write_function = 'a -> unit
@@ -297,7 +298,7 @@ let declare_string_option =
 (* Setting values of options *)
 
 let set_option_value locality check_and_cast key v =
-  let (name,(_,read,write,lwrite,gwrite)) =
+  let (name, depr, (_,read,write,lwrite,gwrite)) =
     try get_option key
     with Not_found -> error ("There is no option "^(nickname key)^".")
   in
@@ -358,7 +359,7 @@ let msg_option_value (name,v) =
 (*     | IdentValue r    -> pr_global_env Idset.empty r *)
 
 let print_option_value key =
-  let (name,(_,read,_,_,_)) = get_option key in
+  let (name, depr, (_,read,_,_,_)) = get_option key in
   let s = read () in
   match s with
     | BoolValue b ->
@@ -370,24 +371,23 @@ let print_option_value key =
 
 
 let print_tables () =
+  let print_option key name value depr =
+    let msg = str ("  "^(nickname key)^": ") ++ msg_option_value (name, value) in
+    if depr then msg ++ str " [DEPRECATED]" ++ fnl ()
+    else msg ++ fnl ()
+  in
   msg
     (str "Synchronous options:" ++ fnl () ++
      OptionMap.fold
-       (fun key (name,(sync,read,_,_,_)) p ->
-	  if sync then
-	    p ++ str ("  "^(nickname key)^": ") ++
-	    msg_option_value (name,read()) ++ fnl ()
-	  else
-	    p)
+       (fun key (name, depr, (sync,read,_,_,_)) p ->
+	  if sync then p ++ print_option key name (read ()) depr
+	  else p)
        !value_tab (mt ()) ++
      str "Asynchronous options:" ++ fnl () ++
      OptionMap.fold
-       (fun key (name,(sync,read,_,_,_)) p ->
-	  if sync then
-	    p
-	  else
-	    p ++ str ("  "^(nickname key)^": ") ++
-            msg_option_value (name,read()) ++ fnl ())
+       (fun key (name, depr, (sync,read,_,_,_)) p ->
+	  if sync then p
+	  else p ++ print_option key name (read ()) depr)
        !value_tab (mt ()) ++
      str "Tables:" ++ fnl () ++
      List.fold_right

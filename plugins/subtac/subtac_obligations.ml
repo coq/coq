@@ -82,6 +82,7 @@ open Goptions
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "transparency of Program obligations";
       optkey   = ["Transparent";"Obligations"];
       optread  = get_proofs_transparency;
@@ -98,6 +99,7 @@ open Goptions
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "Hidding of Program obligations";
       optkey   = ["Hide";"Obligations"];
       optread  = get_hide_obligations;

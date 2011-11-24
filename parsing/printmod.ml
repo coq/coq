@@ -28,6 +28,7 @@ let short = ref false
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "short module printing";
       optkey   = ["Short";"Module";"Printing"];
       optread  = (fun () -> !short) ;

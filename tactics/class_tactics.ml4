@@ -694,6 +694,7 @@ let get_typeclasses_debug () = !typeclasses_debug
 let set_typeclasses_debug =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "debug output for typeclasses proof search";
       optkey   = ["Typeclasses";"Debug"];
       optread  = get_typeclasses_debug;
@@ -708,6 +709,7 @@ let get_typeclasses_depth () = !typeclasses_depth
 let set_typeclasses_depth =
   declare_int_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "depth for typeclasses proof search";
       optkey   = ["Typeclasses";"Depth"];
       optread  = get_typeclasses_depth;

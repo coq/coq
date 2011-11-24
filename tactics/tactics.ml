@@ -72,6 +72,7 @@ let use_dependent_propositions_elimination () =
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "dependent-propositions-elimination tactic";
       optkey   = ["Dependent";"Propositions";"Elimination"];
       optread  = (fun () -> !dependent_propositions_elimination) ;

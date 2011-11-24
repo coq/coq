@@ -28,6 +28,7 @@ let debug f x =
 let _=
   let gdopt=
     { optsync=true;
+      optdepr=false;
       optname="Congruence Verbose";
       optkey=["Congruence";"Verbose"];
       optread=(fun ()-> !cc_verbose);

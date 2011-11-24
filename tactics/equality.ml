@@ -56,6 +56,7 @@ open Goptions
 let _ =
   declare_bool_option
     { optsync  = true;
+      optdepr  = false;
       optname  = "automatic introduction of hypotheses by discriminate";
       optkey   = ["Discriminate";"Introduction"];
       optread  = (fun () -> !discriminate_introduction);
