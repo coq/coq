@@ -415,7 +415,7 @@ let vernac_inductive finite infer indl =
   | [ ( id , bl , c , Class true, Constructors [l]), _ ] ->
       let f =
 	let (coe, ((loc, id), ce)) = l in
-	let coe' = if coe then Some false else None in
+	let coe' = if coe then Some true else None in
 	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
       in vernac_record (Class true) finite infer id bl c None [f]
   | [ ( id , bl , c , Class true, _), _ ] ->
