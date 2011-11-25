@@ -221,9 +221,3 @@ let to_string_fmt x =
 	let s = Buffer.contents tmp in
 	Buffer.reset tmp;
 	s
-
-;;
-Xml_parser._raises (fun x p -> 
-	(* local cast : Xml.error_msg -> error_msg *)
-	Error (x, pos p))
-	(fun f -> File_not_found f);;

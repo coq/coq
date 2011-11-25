@@ -102,8 +102,3 @@ val check_eof : t -> bool -> unit
 (** Once the parser is configurated, you can run the parser on a any kind
  of xml document source to parse its contents into an Xml data structure. *)
 val parse :  t -> source -> xml
-
-(**/**)
-
-(* internal usage only... *)
-val _raises : (error_msg -> Lexing.lexbuf -> exn) -> (string -> exn) -> unit

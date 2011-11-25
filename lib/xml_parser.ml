@@ -144,7 +144,13 @@ and
 			| None -> raise (Internal_error EOFExpected)
 			| Some s -> raise (Internal_error (EndOfTagExpected s))
 
-let read_xml s = read_node s
+let rec read_xml s =
+  let node = read_node s in
+  match node with
+  | Element _ -> node
+  | PCData c ->
+    if is_blank c then read_xml s
+    else raise (Xml_lexer.Error Xml_lexer.ENodeExpected)
 
 let convert = function
 	| Xml_lexer.EUnterminatedComment -> UnterminatedComment
@@ -225,3 +231,8 @@ let pos source =
                 emin = min;
                 emax = max;
         }
+
+let () = _raises (fun x p -> 
+        (* local cast : Xml.error_msg -> error_msg *)
+        Error (x, pos p))
+        (fun f -> File_not_found f)
