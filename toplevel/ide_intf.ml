@@ -21,14 +21,20 @@ type 'a call =
   | Goal
   | Hints
   | Status
+  | GetOptions
+  | SetOptions of (option_name * option_value) list
   | InLoadPath of string
   | MkCases of string
+
+(** The actual calls *)
 
 let interp (r,b,s) : string call = Interp (r,b,s)
 let rewind i : int call = Rewind i
 let goals : goals call = Goal
 let hints : (hint list * hint) option call = Hints
 let status : status call = Status
+let get_options : (option_name * option_state) list call = GetOptions
+let set_options l : unit call = SetOptions l
 let inloadpath s : bool call = InLoadPath s
 let mkcases s : string list list call = MkCases s
 
@@ -42,6 +48,8 @@ let abstract_eval_call handler c =
       | Goal -> Obj.magic (handler.goals ())
       | Hints -> Obj.magic (handler.hints ())
       | Status -> Obj.magic (handler.status ())
+      | GetOptions -> Obj.magic (handler.get_options ())
+      | SetOptions opts -> Obj.magic (handler.set_options opts)
       | InLoadPath s -> Obj.magic (handler.inloadpath s)
       | MkCases s -> Obj.magic (handler.mkcases s)
     in Good res
@@ -53,9 +61,21 @@ let abstract_eval_call handler c =
 
 exception Marshal_error
 
+(** Utility functions *)
+
 let massoc x l =
   try List.assoc x l
   with Not_found -> raise Marshal_error
+
+let constructor t c args = Element (t, ["val", c], args)
+
+let do_match constr t mf = match constr with
+| Element (s, attrs, args) ->
+  if s = t then
+    let c = massoc "val" attrs in
+    mf c args
+  else raise Marshal_error
+| _ -> raise Marshal_error
 
 let pcdata = function
 | PCData s -> s
@@ -72,19 +92,17 @@ let raw_string = function
 
 let bool_arg tag b = if b then [tag, ""] else []
 
-let of_bool b =
-  if b then Element ("bool", ["val", "true"], [])
-  else Element ("bool", ["val", "false"], [])
+(** Base types *)
 
-let to_bool = function
-| Element ("bool", attrs, []) ->
-  let ans = massoc "val" attrs in
-  begin match ans with
+let of_bool b =
+  if b then constructor "bool" "true" []
+  else constructor "bool" "false" []
+
+let to_bool xml = do_match xml "bool"
+  (fun s _ -> match s with
   | "true" -> true
   | "false" -> false
-  | _ -> raise Marshal_error
-  end
-| _ -> raise Marshal_error
+  | _ -> raise Marshal_error)
 
 let of_list f l =
   Element ("list", [], List.map f l)
@@ -92,6 +110,69 @@ let of_list f l =
 let to_list f = function
 | Element ("list", [], l) ->
   List.map f l
+| _ -> raise Marshal_error
+
+let of_option f = function
+| None -> Element ("option", ["val", "none"], [])
+| Some x -> Element ("option", ["val", "some"], [f x])
+
+let to_option f = function
+| Element ("option", ["val", "none"], []) -> None
+| Element ("option", ["val", "some"], [x]) -> Some (f x)
+| _ -> raise Marshal_error
+
+let of_string s = Element ("string", [], [PCData s])
+
+let to_string = function
+| Element ("string", [], l) -> raw_string l
+| _ -> raise Marshal_error
+
+let of_int i = Element ("int", [], [PCData (string_of_int i)])
+
+let to_int = function
+| Element ("int", [], [PCData s]) -> int_of_string s
+| _ -> raise Marshal_error
+
+let of_pair f g (x, y) = Element ("pair", [], [f x; g y])
+
+let to_pair f g = function
+| Element ("pair", [], [x; y]) -> (f x, g y)
+| _ -> raise Marshal_error
+
+(** More elaborate types *)
+
+let of_option_value = function
+| IntValue i ->
+  constructor "option_value" "intvalue" [of_option of_int i]
+| BoolValue b ->
+  constructor "option_value" "boolvalue" [of_bool b]
+| StringValue s ->
+  constructor "option_value" "stringvalue" [of_string s]
+
+let to_option_value xml = do_match xml "option_value"
+  (fun s args -> match s with
+  | "intvalue" -> IntValue (to_option to_int (singleton args))
+  | "boolvalue" -> BoolValue (to_bool (singleton args))
+  | "stringvalue" -> StringValue (to_string (singleton args))
+  | _ -> raise Marshal_error
+  )
+
+let of_option_state s =
+  Element ("option_state", [], [
+    of_bool s.opt_sync;
+    of_bool s.opt_depr;
+    of_string s.opt_name;
+    of_option_value s.opt_value]
+  )
+
+let to_option_state xml = function
+| Element ("option_state", [], [sync; depr; name; value]) ->
+  {
+    opt_sync = to_bool sync;
+    opt_depr = to_bool depr;
+    opt_name = to_string name;
+    opt_value = to_option_value value;
+  }
 | _ -> raise Marshal_error
 
 let of_value f = function
@@ -132,6 +213,11 @@ let of_call = function
   Element ("call", ["val", "hints"], [])
 | Status ->
   Element ("call", ["val", "status"], [])
+| GetOptions ->
+  Element ("call", ["val", "getoptions"], [])
+| SetOptions opts ->
+  let args = List.map (of_pair (of_list of_string) of_option_value) opts in
+  Element ("call", ["val", "setoptions"], args)
 | InLoadPath file ->
   Element ("call", ["val", "inloadpath"], [PCData file])
 | MkCases ind ->
@@ -150,38 +236,15 @@ let to_call = function
     Rewind steps
   | "goal" -> Goal
   | "status" -> Status
+  | "getoptions" -> GetOptions
+  | "setoptions" ->
+    let args = List.map (to_pair (to_list to_string) to_option_value) l in
+    SetOptions args
   | "inloadpath" -> InLoadPath (raw_string l)
   | "mkcases" -> MkCases (raw_string l)
   | "hints" -> Hints
   | _ -> raise Marshal_error
   end
-| _ -> raise Marshal_error
-
-let of_option f = function
-| None -> Element ("option", ["val", "none"], [])
-| Some x -> Element ("option", ["val", "some"], [f x])
-
-let to_option f = function
-| Element ("option", ["val", "none"], []) -> None
-| Element ("option", ["val", "some"], [x]) -> Some (f x)
-| _ -> raise Marshal_error
-
-let of_string s = Element ("string", [], [PCData s])
-
-let to_string = function
-| Element ("string", [], l) -> raw_string l
-| _ -> raise Marshal_error
-
-let of_int i = Element ("int", [], [PCData (string_of_int i)])
-
-let to_int = function
-| Element ("int", [], [PCData s]) -> int_of_string s
-| _ -> raise Marshal_error
-
-let of_pair f g (x, y) = Element ("pair", [], [f x; g y])
-
-let to_pair f g = function
-| Element ("pair", [], [x; y]) -> (f x, g y)
 | _ -> raise Marshal_error
 
 let of_status s =
@@ -250,6 +313,8 @@ let of_answer (q : 'a call) (r : 'a value) =
   | Goal -> Obj.magic (of_goals : goals -> xml)
   | Hints -> Obj.magic (of_hints : (hint list * hint) option -> xml)
   | Status -> Obj.magic (of_status : status -> xml)
+  | GetOptions -> Obj.magic (of_list (of_pair (of_list of_string) of_option_state) : (option_name * option_state) list -> xml)
+  | SetOptions _ -> Obj.magic (fun _ -> Element ("unit", [], []))
   | InLoadPath _ -> Obj.magic (of_bool : bool -> xml)
   | MkCases _ -> Obj.magic (of_list (of_list of_string) : string list list -> xml)
   in
@@ -259,14 +324,17 @@ let to_answer xml =
   let rec convert elt = match elt with
   | Element (tpe, attrs, l) ->
     begin match tpe with
+    | "unit" -> Obj.magic ()
     | "string" -> Obj.magic (to_string elt)
     | "int" -> Obj.magic (to_int elt)
-    | "goals" -> Obj.magic (to_goals elt)
     | "status" -> Obj.magic (to_status elt)
     | "bool" -> Obj.magic (to_bool elt)
     | "list" -> Obj.magic (to_list convert elt)
     | "option" -> Obj.magic (to_option convert elt)
     | "pair" -> Obj.magic (to_pair convert convert elt)
+    | "goals" -> Obj.magic (to_goals elt)
+    | "option_value" -> Obj.magic (to_option_value elt)
+    | "option_state" -> Obj.magic (to_option_state elt)
     | _ -> raise Marshal_error
     end
   | _ -> raise Marshal_error
@@ -274,6 +342,28 @@ let to_answer xml =
   to_value convert xml
 
 (** * Debug printing *)
+
+let pr_option_value = function
+| IntValue None -> "none"
+| IntValue (Some i) -> string_of_int i
+| StringValue s -> s
+| BoolValue b -> if b then "true" else "false"
+
+let rec pr_setoptions opts =
+  let map (key, v) =
+    let key = String.concat " " key in
+    key ^ " := " ^ (pr_option_value v)
+  in
+  String.concat "; " (List.map map opts)
+
+let pr_getoptions opts =
+  let map (key, s) =
+    let key = String.concat " " key in
+    s.opt_name
+(*     Printf.sprintf "%s: sync := %b; depr := %b; name := %s; value := %s" *)
+(*       key s.opt_sync s.opt_depr s.opt_name (*(pr_option_value s.opt_value)*) "" *)
+  in
+  "\n  " ^ String.concat "\n  " (List.map map opts)
 
 let pr_call = function
   | Interp (r,b,s) ->
@@ -284,6 +374,8 @@ let pr_call = function
   | Goal -> "GOALS"
   | Hints -> "HINTS"
   | Status -> "STATUS"
+  | GetOptions -> "GETOPTIONS"
+  | SetOptions l -> "SETOPTIONS" ^ " [" ^ pr_setoptions l ^ "]"
   | InLoadPath s -> "INLOADPATH "^s
   | MkCases s -> "MKCASES "^s
 
@@ -330,5 +422,7 @@ let pr_full_value call value =
     | Goal -> pr_value_gen pr_goals (Obj.magic value : goals value)
     | Hints -> pr_value value
     | Status -> pr_value_gen pr_status (Obj.magic value : status value)
+    | GetOptions -> pr_value_gen pr_getoptions (Obj.magic value : (option_name * option_state) list value)
+    | SetOptions _ -> pr_value value
     | InLoadPath s -> pr_value_gen pr_bool (Obj.magic value : bool value)
     | MkCases s -> pr_value_gen pr_mkcases (Obj.magic value : string list list value)

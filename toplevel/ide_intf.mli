@@ -51,6 +51,15 @@ val inloadpath : string -> bool call
     followed by enough pattern variables. *)
 val mkcases : string -> string list list call
 
+(** Retrieve the list of options of the current toplevel, together with their 
+    state. *)
+val get_options : (option_name * option_state) list call
+
+(** Set the options to the given value. Warning: this is not atomic, so whenever
+    the call fails, the option state can be messed up... This is the caller duty
+    to check that everything is correct. *)
+val set_options : (option_name * option_value) list -> unit call
+
 val abstract_eval_call : handler -> 'a call -> 'a value
 
 (** * XML data marshalling *)

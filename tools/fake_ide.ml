@@ -32,6 +32,8 @@ let commands =
     "INTERP", (fun s -> eval_call (Ide_intf.interp (false,true,s)));
     "REWIND", (fun s -> eval_call (Ide_intf.rewind (int_of_string s)));
     "GOALS", (fun _ -> eval_call Ide_intf.goals);
+    "HINTS", (fun _ -> eval_call Ide_intf.hints);
+    "GETOPTIONS", (fun _ -> eval_call Ide_intf.get_options);
     "STATUS", (fun _ -> eval_call Ide_intf.status);
     "INLOADPATH", (fun s -> eval_call (Ide_intf.inloadpath s));
     "MKCASES", (fun s -> eval_call (Ide_intf.mkcases s));

@@ -32,6 +32,20 @@ type goals =
 
 type hint = (string * string) list
 
+type option_name = Goptions.option_name
+
+type option_value = Goptions.option_value =
+  | BoolValue   of bool
+  | IntValue    of int option
+  | StringValue of string
+
+type option_state = Goptions.option_state = {
+  opt_sync  : bool;
+  opt_depr  : bool;
+  opt_name  : string;
+  opt_value : option_value;
+}
+
 (** * Coq answers to CoqIde *)
 
 type location = (int * int) option (* start and end of the error *)
@@ -48,6 +62,8 @@ type handler = {
   goals : unit -> goals;
   hints : unit -> (hint list * hint) option;
   status : unit -> status;
+  get_options : unit -> (option_name * option_state) list;
+  set_options : (option_name * option_value) list -> unit;
   inloadpath : string -> bool;
   mkcases : string -> string list list;
   handle_exn : exn -> location * string;

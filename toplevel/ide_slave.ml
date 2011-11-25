@@ -472,6 +472,19 @@ let status () =
   in
   { Interface.status_path = path; Interface.status_proofname = proof }
 
+let get_options () =
+  let table = Goptions.get_tables () in
+  let fold key state accu = (key, state) :: accu in
+  Goptions.OptionMap.fold fold table []
+
+let set_options options =
+  let iter (name, value) = match value with
+  | BoolValue b -> Goptions.set_bool_option_value name b
+  | IntValue i -> Goptions.set_int_option_value name i
+  | StringValue s -> Goptions.set_string_option_value name s
+  in
+  List.iter iter options
+
 (** Grouping all call handlers together + error handling *)
 
 let eval_call c =
@@ -501,6 +514,8 @@ let eval_call c =
     Interface.hints = interruptible hints;
     Interface.status = interruptible status;
     Interface.inloadpath = interruptible inloadpath;
+    Interface.get_options = interruptible get_options;
+    Interface.set_options = interruptible set_options;
     Interface.mkcases = interruptible Vernacentries.make_cases;
     Interface.handle_exn = handle_exn; }
   in
