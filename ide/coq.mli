@@ -46,13 +46,13 @@ val interrupter : (int -> unit) ref
 (** * Calls to Coqtop, cf [Ide_intf] for more details *)
 
 val interp :
-  coqtop -> ?raw:bool -> ?verbose:bool -> string -> string Ide_intf.value
-val rewind : coqtop -> int -> int Ide_intf.value
-val status : coqtop -> Ide_intf.status Ide_intf.value
-val goals : coqtop -> Ide_intf.goals Ide_intf.value
-val hints : coqtop -> (Ide_intf.hint list * Ide_intf.hint) option Ide_intf.value
-val inloadpath : coqtop -> string -> bool Ide_intf.value
-val mkcases : coqtop -> string -> string list list Ide_intf.value
+  coqtop -> ?raw:bool -> ?verbose:bool -> string -> string Interface.value
+val rewind : coqtop -> int -> int Interface.value
+val status : coqtop -> Interface.status Interface.value
+val goals : coqtop -> Interface.goals Interface.value
+val hints : coqtop -> (Interface.hint list * Interface.hint) option Interface.value
+val inloadpath : coqtop -> string -> bool Interface.value
+val mkcases : coqtop -> string -> string list list Interface.value
 
 (** A specialized version of [raw_interp] dedicated to
     set/unset options. *)
@@ -68,5 +68,5 @@ sig
   val existential : t
   val universes : t
 
-  val set : coqtop -> t -> bool -> unit Ide_intf.value
+  val set : coqtop -> t -> bool -> unit Interface.value
 end

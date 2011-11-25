@@ -6,33 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** * Interface of CoqIde calls to Coq *)
+(** * Applicative part of the interface of CoqIde calls to Coq *)
+
+open Interface
 
 type xml = Xml_parser.xml
 
-type goal = {
-  goal_hyp : string list;
-  goal_ccl : string;
-}
-
-type status = {
-  status_path : string option;
-  status_proofname : string option;
-}
-
-type goals =
-  | No_current_proof
-  | Proof_completed
-  | Unfocused_goals of goal list
-  | Uninstantiated_evars of string list
-  | Goals of goal list
-
-type hint = (string * string) list
-
 type 'a call
-
-type raw = bool
-type verbose = bool
 
 (** Running a command (given as a string).
     - The 1st flag indicates whether to use "raw" mode
@@ -71,57 +51,17 @@ val inloadpath : string -> bool call
     followed by enough pattern variables. *)
 val mkcases : string -> string list list call
 
-
-(** * Coq answers to CoqIde *)
-
-type location = (int * int) option (* start and end of the error *)
-
-type 'a value =
-  | Good of 'a
-  | Fail of (location * string)
-
-(** * The structure that coqtop should implement *)
-
-type handler = {
-  interp : raw * verbose * string -> string;
-  rewind : int -> int;
-  goals : unit -> goals;
-  hints : unit -> (hint list * hint) option;
-  status : unit -> status;
-  inloadpath : string -> bool;
-  mkcases : string -> string list list;
-  handle_exn : exn -> location * string;
-}
-
 val abstract_eval_call : handler -> 'a call -> 'a value
 
 (** * XML data marshalling *)
 
 exception Marshal_error
 
-val of_bool : bool -> xml
-val to_bool : xml -> bool
-
-val of_string : string -> xml
-val to_string : xml -> string
-
-val of_int : int -> xml
-val to_int : xml -> int
-
-val of_pair : ('a -> xml) -> ('b -> xml) -> ('a * 'b) -> xml
-val to_pair : (xml -> 'a) -> (xml -> 'b) -> xml -> ('a * 'b)
-
-val of_list : ('a -> xml) -> 'a list -> xml
-val to_list : (xml -> 'a) -> xml -> 'a list
-
 val of_value : ('a -> xml) -> 'a value -> xml
 val to_value : (xml -> 'a) -> xml -> 'a value
 
 val of_call : 'a call -> xml
 val to_call : xml -> 'a call
-
-val of_goals : goals -> xml
-val to_goals : xml -> goals
 
 val of_answer : 'a call -> 'a value -> xml
 val to_answer : xml -> 'a value

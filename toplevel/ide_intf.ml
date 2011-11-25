@@ -9,34 +9,11 @@
 (** * Interface of calls to Coq by CoqIde *)
 
 open Xml_parser
+open Interface
 
 type xml = Xml_parser.xml
 
-type 'a menu = 'a * (string * string) list
-
-type status = {
-  status_path : string option;
-  status_proofname : string option;
-}
-
-type goal = {
-  goal_hyp : string list;
-  goal_ccl : string;
-}
-
-type goals =
-  | No_current_proof
-  | Proof_completed
-  | Unfocused_goals of goal list
-  | Uninstantiated_evars of string list
-  | Goals of goal list
-
-type hint = (string * string) list
-
 (** We use phantom types and GADT to protect ourselves against wild casts *)
-
-type raw = bool
-type verbose = bool
 
 type 'a call =
   | Interp of raw * verbose * string
@@ -56,23 +33,6 @@ let inloadpath s : bool call = InLoadPath s
 let mkcases s : string list list call = MkCases s
 
 (** * Coq answers to CoqIde *)
-
-type location = (int * int) option (* start and end of the error *)
-
-type 'a value =
-  | Good of 'a
-  | Fail of (location * string)
-
-type handler = {
-  interp : raw * verbose * string -> string;
-  rewind : int -> int;
-  goals : unit -> goals;
-  hints : unit -> (hint list * hint) option;
-  status : unit -> status;
-  inloadpath : string -> bool;
-  mkcases : string -> string list list;
-  handle_exn : exn -> location * string;
-}
 
 let abstract_eval_call handler c =
   try

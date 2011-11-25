@@ -23,7 +23,7 @@ let eval_call (call:'a Ide_intf.call) =
   let xml_answer = Xml_parser.parse p (Xml_parser.SChannel (fst !coqtop)) in
   let res = Ide_intf.to_answer xml_answer in
   prerr_endline (Ide_intf.pr_full_value call res);
-  match res with Ide_intf.Fail _ -> exit 1 | _ -> ()
+  match res with Interface.Fail _ -> exit 1 | _ -> ()
 
 let commands =
   [ "INTERPRAWSILENT", (fun s -> eval_call (Ide_intf.interp (true,false,s)));

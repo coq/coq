@@ -103,9 +103,9 @@ object(self)
       try
         result#buffer#set_text
           (match Coq.interp coqtop ~raw:true phrase with
-             | Ide_intf.Fail (l,str) ->
+             | Interface.Fail (l,str) ->
                  ("Error while interpreting "^phrase^":\n"^str)
-             | Ide_intf.Good results ->
+             | Interface.Good results ->
                  ("Result for command " ^ phrase ^ ":\n" ^ results))
       with e ->
 	let s = Printexc.to_string e in

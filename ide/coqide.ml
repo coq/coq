@@ -343,9 +343,9 @@ let setopts ct opts v =
   List.fold_left
     (fun acc o ->
       match Coq.PrintOpt.set ct o v with
-        | Ide_intf.Good () -> acc
-        | Ide_intf.Fail lstr -> Ide_intf.Fail lstr
-    ) (Ide_intf.Good ()) opts
+        | Interface.Good () -> acc
+        | Interface.Fail lstr -> Interface.Fail lstr
+    ) (Interface.Good ()) opts
 
 (* Reset this to None on page change ! *)
 let (last_completion:(string*int*int*bool) option ref) = ref None
@@ -830,12 +830,12 @@ object(self)
           (fun _ _ -> ()) in
       try
         match Coq.goals !mycoqtop with
-          | Ide_intf.Fail (l,str) ->
+          | Interface.Fail (l,str) ->
             self#set_message ("Error in coqtop :\n"^str)
-          | Ide_intf.Good goals ->
+          | Interface.Good goals ->
             let hints = match Coq.hints !mycoqtop with
-            | Ide_intf.Fail (_, _) -> None
-            | Ide_intf.Good hints -> hints
+            | Interface.Fail (_, _) -> None
+            | Interface.Good hints -> hints
             in
             Ideproof.display
               (Ideproof.mode_tactic menu_callback)
@@ -878,8 +878,8 @@ object(self)
       (* It's important here to work with [ct] and not [!mycoqtop], otherwise
          we could miss a restart of coqtop and continue sending it orders. *)
       match Coq.interp ct ~verbose phrase with
-        | Ide_intf.Fail (l,str) -> sync display_error (l,str); None
-        | Ide_intf.Good msg -> sync display_output msg; Some Safe
+        | Interface.Fail (l,str) -> sync display_error (l,str); None
+        | Interface.Good msg -> sync display_output msg; Some Safe
           (* TODO: Restore someday the access to Decl_mode.get_damon_flag,
 	     and also detect the use of admit, and then return Unsafe *)
     with
@@ -1117,7 +1117,7 @@ object(self)
 	  else n_pop (pred n)
     in
     match Coq.rewind !mycoqtop n with
-      | Ide_intf.Good n ->
+      | Interface.Good n ->
 	n_pop n;
         sync (fun _ ->
           let start =
@@ -1130,7 +1130,7 @@ object(self)
           self#show_goals;
           self#clear_message;
           finish start) ()
-      | Ide_intf.Fail (l,str) ->
+      | Interface.Fail (l,str) ->
         sync self#set_message
           ("Error while backtracking :\n" ^ str ^ "\n" ^
 	   "CoqIDE and coqtop may be out of sync, you may want to use Restart.")
@@ -1265,16 +1265,16 @@ object(self)
 	let dir = Filename.dirname f in
 	let ct = !mycoqtop in
 	match Coq.inloadpath ct dir with
-	  | Ide_intf.Fail (_,str) ->
+	  | Interface.Fail (_,str) ->
 	    self#set_message
 	      ("Could not determine lodpath, this might lead to problems:\n"^str)
-	  | Ide_intf.Good true -> ()
-	  | Ide_intf.Good false ->
+	  | Interface.Good true -> ()
+	  | Interface.Good false ->
 	    let cmd = Printf.sprintf "Add LoadPath \"%s\". "  dir in
 	    match Coq.interp ct cmd with
-	      | Ide_intf.Fail (l,str) ->
+	      | Interface.Fail (l,str) ->
 		self#set_message ("Couln't add loadpath:\n"^str)
-	      | Ide_intf.Good _ -> ()
+	      | Interface.Good _ -> ()
   end
 
   method private electric_paren tag =
@@ -2184,14 +2184,14 @@ let main files =
         ignore (f av);
         pop_info ();
         let msg = match Coq.status !(current.toplvl) with
-        | Ide_intf.Fail (l, str) ->
+        | Interface.Fail (l, str) ->
           "Oops, problem while fetching coq status."
-        | Ide_intf.Good status ->
-          let path = match status.Ide_intf.status_path with
+        | Interface.Good status ->
+          let path = match status.Interface.status_path with
           | None -> ""
           | Some p -> " in " ^ p
           in
-          let name = match status.Ide_intf.status_proofname with
+          let name = match status.Interface.status_proofname with
           | None -> ""
           | Some n -> ", proving " ^ n
           in
@@ -2210,8 +2210,8 @@ let main files =
     let cur_ct = !(session_notebook#current_term.toplvl) in
     try
       match Coq.mkcases cur_ct w with
-        | Ide_intf.Fail _ -> raise Not_found
-        | Ide_intf.Good cases ->
+        | Interface.Fail _ -> raise Not_found
+        | Interface.Good cases ->
           let print_branch c l =
 	    Format.fprintf c " | @[<hov 1>%a@]=> _@\n"
 	      (print_list (fun c s -> Format.fprintf c "%s@ " s)) l

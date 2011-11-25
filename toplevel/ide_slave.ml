@@ -14,7 +14,7 @@ open Pp
 open Printer
 open Namegen
 
-(** Ide_slave : an implementation of [Ide_intf], i.e. mainly an interp
+(** Ide_slave : an implementation of [Interface], i.e. mainly an interp
     function and a rewind function. This specialized loop is triggered
     when the -ideslave option is passed to Coqtop. Currently CoqIDE is
     the only one using this mode, but we try here to be as generic as
@@ -412,7 +412,7 @@ let process_goal sigma g =
 (*           (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in *)
   let hyps =
     List.rev (Environ.fold_named_context process_hyp env ~init: []) in
-  { Ide_intf.goal_hyp = hyps; Ide_intf.goal_ccl = ccl }
+  { Interface.goal_hyp = hyps; Interface.goal_ccl = ccl }
 (*         hyps,(ccl,concl_next_tac sigma g)) *)
 
 let goals () =
@@ -426,15 +426,15 @@ let goals () =
       let { Evd.it = bgoals ; sigma = sigma } = Proof.V82.background_subgoals pfts in
       if bgoals = [] then
         let exl = Evarutil.non_instantiated sigma in
-        if exl = [] then Ide_intf.Proof_completed
+        if exl = [] then Interface.Proof_completed
         else
           let el = List.map (fun evar -> string_of_ppcmds (pr_evar evar)) exl in
-          Ide_intf.Uninstantiated_evars el
-      else Ide_intf.Unfocused_goals (List.map (process_goal sigma) bgoals)
+          Interface.Uninstantiated_evars el
+      else Interface.Unfocused_goals (List.map (process_goal sigma) bgoals)
     end
   else
-    Ide_intf.Goals (List.map (process_goal sigma) all_goals)
-  with Proof_global.NoCurrentProof -> Ide_intf.No_current_proof
+    Interface.Goals (List.map (process_goal sigma) all_goals)
+  with Proof_global.NoCurrentProof -> Interface.No_current_proof
 
 let hints () =
   try
@@ -470,7 +470,7 @@ let status () =
       Some (Names.string_of_id (Pfedit.get_current_proof_name ()))
     with _ -> None
   in
-  { Ide_intf.status_path = path; Ide_intf.status_proofname = proof }
+  { Interface.status_path = path; Interface.status_proofname = proof }
 
 (** Grouping all call handlers together + error handling *)
 
@@ -495,14 +495,14 @@ let eval_call c =
     r
   in
   let handler = {
-    Ide_intf.interp = interruptible interp;
-    Ide_intf.rewind = interruptible rewind;
-    Ide_intf.goals = interruptible goals;
-    Ide_intf.hints = interruptible hints;
-    Ide_intf.status = interruptible status;
-    Ide_intf.inloadpath = interruptible inloadpath;
-    Ide_intf.mkcases = interruptible Vernacentries.make_cases;
-    Ide_intf.handle_exn = handle_exn; }
+    Interface.interp = interruptible interp;
+    Interface.rewind = interruptible rewind;
+    Interface.goals = interruptible goals;
+    Interface.hints = interruptible hints;
+    Interface.status = interruptible status;
+    Interface.inloadpath = interruptible inloadpath;
+    Interface.mkcases = interruptible Vernacentries.make_cases;
+    Interface.handle_exn = handle_exn; }
   in
   (* If the messages of last command are still there, we remove them *)
   ignore (read_stdout ());
@@ -511,7 +511,7 @@ let eval_call c =
 
 (** The main loop *)
 
-(** Exceptions during eval_call should be converted into [Ide_intf.Fail]
+(** Exceptions during eval_call should be converted into [Interface.Fail]
     messages by [handle_exn] above. Otherwise, we die badly, after having
     tried to send a last message to the ide: trying to recover from errors
     with the current protocol would most probably bring desynchronisation
@@ -522,7 +522,7 @@ let pr_debug s =
   if !Flags.debug then Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
 let fail err =
-  Ide_intf.of_value (fun _ -> assert false) (Ide_intf.Fail (None, err))
+  Ide_intf.of_value (fun _ -> assert false) (Interface.Fail (None, err))
 
 let loop () =
   let p = Xml_parser.make () in

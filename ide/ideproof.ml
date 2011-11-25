@@ -36,7 +36,7 @@ let hook_tag_cb tag menu_content sel_cb hover_cb =
 
 let mode_tactic sel_cb (proof:GText.view) goals hints = match goals with
   | [] -> assert false
-  | { Ide_intf.goal_hyp = hyps; Ide_intf.goal_ccl = cur_goal; } :: rem_goals ->
+  | { Interface.goal_hyp = hyps; Interface.goal_ccl = cur_goal; } :: rem_goals ->
       let on_hover sel_start sel_stop =
         proof#buffer#remove_tag
           ~start:proof#buffer#start_iter
@@ -86,7 +86,7 @@ let mode_tactic sel_cb (proof:GText.view) goals hints = match goals with
         proof#buffer#insert ~tags (cur_goal ^ "\n")
       in
       (* Insert remaining goals (no hypotheses) *)
-      let fold_goal i _ { Ide_intf.goal_ccl = g } =
+      let fold_goal i _ { Interface.goal_ccl = g } =
         proof#buffer#insert (goal_str i goals_cnt);
         proof#buffer#insert (g ^ "\n")
       in
@@ -98,7 +98,7 @@ let mode_tactic sel_cb (proof:GText.view) goals hints = match goals with
 
 let mode_cesar (proof:GText.view) = function
   | [] -> assert false
-  | { Ide_intf.goal_hyp = hyps; Ide_intf.goal_ccl = cur_goal; } :: _ ->
+  | { Interface.goal_hyp = hyps; Interface.goal_ccl = cur_goal; } :: _ ->
       proof#buffer#insert "    *** Declarative Mode ***\n";
       List.iter
         (fun hyp -> proof#buffer#insert (hyp^"\n"))
@@ -110,22 +110,22 @@ let mode_cesar (proof:GText.view) = function
 let display mode (view:GText.view) goals hints =
   view#buffer#set_text "";
   match goals with
-    | Ide_intf.No_current_proof -> ()
-    | Ide_intf.Proof_completed ->
+    | Interface.No_current_proof -> ()
+    | Interface.Proof_completed ->
       view#buffer#insert "Proof Completed."
-    | Ide_intf.Unfocused_goals l ->
+    | Interface.Unfocused_goals l ->
       view#buffer#insert "This subproof is complete, but there are still unfocused goals:\n\n";
       let iter goal =
-        let msg = Printf.sprintf "%s\n" goal.Ide_intf.goal_ccl in
+        let msg = Printf.sprintf "%s\n" goal.Interface.goal_ccl in
         view#buffer#insert msg
       in
       List.iter iter l
-    | Ide_intf.Uninstantiated_evars el ->
+    | Interface.Uninstantiated_evars el ->
       view#buffer#insert "No more subgoals but non-instantiated existential variables:\n\n";
       let iter evar =
         let msg = Printf.sprintf "%s\n" evar in
         view#buffer#insert msg
       in
       List.iter iter el
-    | Ide_intf.Goals g ->
+    | Interface.Goals g ->
       mode view g hints

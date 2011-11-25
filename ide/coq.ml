@@ -206,7 +206,7 @@ let eval_call coqtop (c:'a Ide_intf.call) =
   Xml_utils.print_xml coqtop.cin (Ide_intf.of_call c);
   flush coqtop.cin;
   let xml = Xml_parser.parse p (Xml_parser.SChannel coqtop.cout) in
-  (Ide_intf.to_answer xml : 'a Ide_intf.value)
+  (Ide_intf.to_answer xml : 'a Interface.value)
 
 let interp coqtop ?(raw=false) ?(verbose=true) s =
   eval_call coqtop (Ide_intf.interp (raw,verbose,s))
@@ -237,22 +237,22 @@ struct
       (fun acc cmd -> 
          let str = (if value then "Set" else "Unset") ^ " Printing " ^ cmd ^ "." in
          match interp coqtop ~raw:true ~verbose:false str with
-           | Ide_intf.Good _ -> acc
-           | Ide_intf.Fail (l,errstr) ->  Ide_intf.Fail (l,"Could not eval \""^str^"\": "^errstr)
+           | Interface.Good _ -> acc
+           | Interface.Fail (l,errstr) ->  Interface.Fail (l,"Could not eval \""^str^"\": "^errstr)
       )
-      (Ide_intf.Good ())
+      (Interface.Good ())
       opt
 
   let enforce_hack coqtop = Hashtbl.fold
     (fun opt v acc ->
       match set coqtop opt v with
-        | Ide_intf.Good () -> Ide_intf.Good ()
-        | Ide_intf.Fail str -> Ide_intf.Fail str)
-    state_hack (Ide_intf.Good ())
+        | Interface.Good () -> Interface.Good ()
+        | Interface.Fail str -> Interface.Fail str)
+    state_hack (Interface.Good ())
 end
 
 let goals coqtop =
   match PrintOpt.enforce_hack coqtop with
-    | Ide_intf.Good () -> eval_call coqtop Ide_intf.goals
-    | Ide_intf.Fail str -> Ide_intf.Fail str
+    | Interface.Good () -> eval_call coqtop Ide_intf.goals
+    | Interface.Fail str -> Interface.Fail str
 
