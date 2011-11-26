@@ -48,6 +48,18 @@ Check fun x:{_:{x|x=0}|True}+nat => match x return option nat with
       | _ => Some 0
       end.
 
+  (* the next two examples were failing from r14703 (Nov 22 2011) to r14732 *)
+  (* due to a bug in dependencies postprocessing (revealed by CoLoR) *)
+
+Check fun x:{x:nat*nat|fst x = 0 & True} => match x return option nat with
+      | exist2 (x,y) eq_refl I => None
+      end.
+
+Check fun x:{_:{x:nat*nat|fst x = 0 & True}|True}+nat => match x return option nat with
+      | inl (exist (exist2 (x,y) eq_refl I) I) => None
+      | _ => Some 0
+      end.
+
 (* -------------------------------------------------------------------- *)
 (*   Example to test patterns matching on dependent families            *)
 (* This exemple extracted from the developement done by Nacira Chabane  *)

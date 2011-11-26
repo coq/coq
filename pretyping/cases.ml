@@ -1051,8 +1051,8 @@ let rec ungeneralize n ng body =
       mkApp (ungeneralize n (ng+Array.length args) f,args)
   | _ -> assert false
 
-let ungeneralize_branch n (sign,body) cs =
-  (sign,ungeneralize (n+cs.cs_nargs) 0 body)
+let ungeneralize_branch n k (sign,body) cs =
+  (sign,ungeneralize (n+cs.cs_nargs) k body)
 
 let postprocess_dependencies evd current brs tomatch pred deps cs =
   let rec aux k brs tomatch pred tocheck deps = match deps, tomatch with
@@ -1071,7 +1071,7 @@ let postprocess_dependencies evd current brs tomatch pred deps cs =
         let pred = lift_predicate (-1) pred tomatch in
         let tomatch = relocate_index_tomatch 1 (n+1) tomatch in
         let tomatch = lift_tomatch_stack (-1) tomatch in
-        let brs = array_map2 (ungeneralize_branch n) brs cs in
+        let brs = array_map2 (ungeneralize_branch n k) brs cs in
         aux k brs tomatch pred tocheck deps
   | _ -> assert false
   in aux 0 brs tomatch pred [current] deps
