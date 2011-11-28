@@ -476,6 +476,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	     ind_equiv = equiv }
     in
     add_ind kn mib i;
+    add_inductive_kind kn i.ind_kind;
     i
 
 (*s [extract_type_cons] extracts the type of an inductive
@@ -572,6 +573,8 @@ let rec extract_term env mle mlt c args =
     | LetIn (n, c1, t1, c2) ->
 	let id = id_of_name n in
 	let env' = push_rel (Name id, Some c1, t1) env in
+	(* We directly push the args inside the [LetIn].
+           TODO: the opt_let_app flag is supposed to prevent that *)
 	let args' = List.map (lift 1) args in
 	(try
 	  check_default env t1;
@@ -735,8 +738,8 @@ and extract_cons_app env mle mlt (((kn,i) as ip,j) as cp) args =
 	| Tglob (_,l) -> List.map type_simpl l
 	| _ -> assert false
       in
-      let info = {c_kind = mi.ind_kind; c_typs = typeargs} in
-      put_magic_if magic1 (MLcons (info, ConstructRef cp, mla))
+      let typ = Tglob(IndRef ip, typeargs) in
+      put_magic_if magic1 (MLcons (typ, ConstructRef cp, mla))
   in
   (* Different situations depending of the number of arguments: *)
   if la < params_nb then
@@ -800,22 +803,22 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
 	(* We suppress dummy arguments according to signature. *)
 	let ids,e = case_expunge s e in
 	let e' = handle_exn r (List.length s) (fun _ -> Anonymous) e in
-	(r, List.rev ids, e')
+	(List.rev ids, Pusual r, e')
       in
       if mi.ind_kind = Singleton then
 	begin
 	  (* Informative singleton case: *)
 	  (* [match c with C i -> t] becomes [let i = c' in t'] *)
 	  assert (br_size = 1);
-	  let (_,ids,e') = extract_branch 0 in
+	  let (ids,_,e') = extract_branch 0 in
 	  assert (List.length ids = 1);
 	  MLletin (tmp_id (List.hd ids),a,e')
 	end
       else
 	(* Standard case: we apply [extract_branch]. *)
 	let typs = List.map type_simpl (Array.to_list metas) in
-	let info = { m_kind = mi.ind_kind; m_typs = typs; m_same = BranchNone }
-	in MLcase (info, a, Array.init br_size extract_branch)
+	let typ = Tglob (IndRef ip,typs) in
+	MLcase (typ, a, Array.init br_size extract_branch)
 
 (*s Extraction of a (co)-fixpoint. *)
 

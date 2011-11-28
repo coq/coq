@@ -74,6 +74,14 @@ val lookup_type : constant -> ml_schema
 val add_ind : mutual_inductive -> mutual_inductive_body -> ml_ind -> unit
 val lookup_ind : mutual_inductive -> mutual_inductive_body * ml_ind
 
+val add_inductive_kind : mutual_inductive -> inductive_kind -> unit
+val is_coinductive : global_reference -> bool
+val is_coinductive_type : ml_type -> bool
+(* What are the fields of a record (empty for a non-record) *)
+val get_record_fields :
+  global_reference -> global_reference option list
+val record_fields_of_type : ml_type -> global_reference option list
+
 val add_recursors : Environ.env -> mutual_inductive -> unit
 val is_recursor : global_reference -> bool
 

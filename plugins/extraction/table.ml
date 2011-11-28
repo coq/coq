@@ -127,6 +127,39 @@ let add_ind kn mib ml_ind =
   inductives := Mindmap_env.add kn (mib,ml_ind) !inductives
 let lookup_ind kn = Mindmap_env.find kn !inductives
 
+let inductive_kinds =
+  ref (Mindmap_env.empty : inductive_kind Mindmap_env.t)
+let init_inductive_kinds () = inductive_kinds := Mindmap_env.empty
+let add_inductive_kind kn k =
+    inductive_kinds := Mindmap_env.add kn k !inductive_kinds
+let is_coinductive r =
+  let kn = match r with
+    | ConstructRef ((kn,_),_) -> kn
+    | IndRef (kn,_) -> kn
+    | _ -> assert false
+  in
+  try Mindmap_env.find kn !inductive_kinds = Coinductive
+  with Not_found -> false
+
+let is_coinductive_type = function
+  | Tglob (r,_) -> is_coinductive r
+  | _ -> false
+
+let get_record_fields r =
+  let kn = match r with
+    | ConstructRef ((kn,_),_) -> kn
+    | IndRef (kn,_) -> kn
+    | _ -> assert false
+  in
+  try match Mindmap_env.find kn !inductive_kinds with
+    | Record f -> f
+    | _ -> []
+  with Not_found -> []
+
+let record_fields_of_type = function
+  | Tglob (r,_) -> get_record_fields r
+  | _ -> []
+
 (*s Recursors table. *)
 
 (* NB: here we can use the equivalence between canonical
@@ -199,15 +232,26 @@ let library () = !library_ref
 (*s Printing. *)
 
 (* The following functions work even on objects not in [Global.env ()].
-   WARNING: for inductive objects, an extract_inductive must have been
-   done before. *)
+   Warning: for inductive objects, this only works if an [extract_inductive]
+   have been done earlier, otherwise we can only ask the Nametab about
+   currently visible objects. *)
 
-let safe_basename_of_global = function
-  | ConstRef kn -> let _,_,l = repr_con kn in id_of_label l
-  | IndRef (kn,i) -> (snd (lookup_ind kn)).ind_packets.(i).ip_typename
-  | ConstructRef ((kn,i),j) ->
-      (snd (lookup_ind kn)).ind_packets.(i).ip_consnames.(j-1)
-  | _ -> assert false
+let safe_basename_of_global r =
+  let last_chance r =
+    try Nametab.basename_of_global r
+    with Not_found ->
+      anomaly "Inductive object unknown to extraction and not globally visible"
+  in
+  match r with
+    | ConstRef kn -> id_of_label (con_label kn)
+    | IndRef (kn,0) -> id_of_label (mind_label kn)
+    | IndRef (kn,i) ->
+      (try (snd (lookup_ind kn)).ind_packets.(i).ip_typename
+       with Not_found -> last_chance r)
+    | ConstructRef ((kn,i),j) ->
+      (try (snd (lookup_ind kn)).ind_packets.(i).ip_consnames.(j-1)
+       with Not_found -> last_chance r)
+    | VarRef _ -> assert false
 
 let string_of_global r =
  try string_of_qualid (Nametab.shortest_qualid_of_global Idset.empty r)
@@ -731,8 +775,10 @@ let add_custom_match r s =
 
 let indref_of_match pv =
   if Array.length pv = 0 then raise Not_found;
-  match pv.(0) with
-    | (ConstructRef (ip,_), _, _) -> IndRef ip
+  let (_,pat,_) = pv.(0) in
+  match pat with
+    | Pusual (ConstructRef (ip,_)) -> IndRef ip
+    | Pcons (ConstructRef (ip,_),_) -> IndRef ip
     | _ -> raise Not_found
 
 let is_custom_match pv =
@@ -817,5 +863,6 @@ let extract_inductive r s l optstr =
 (*s Tables synchronization. *)
 
 let reset_tables () =
-  init_terms (); init_types (); init_inductives (); init_recursors ();
+  init_terms (); init_types (); init_inductives ();
+  init_inductive_kinds (); init_recursors ();
   init_projs (); init_axioms (); init_opaques (); reset_modfile ()

@@ -342,7 +342,7 @@ case H1.
 exact H0.
 intros.
 exact n.
-Qed.
+Defined.
 Extraction oups.
 (*
 let oups h0 =

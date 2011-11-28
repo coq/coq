@@ -85,7 +85,7 @@ let rec pp_expr env args =
 		    ++ spc () ++ hov 0 (pp_expr env' [] a2)))))
     | MLglob r ->
 	apply (pp_global Term r)
-    | MLcons (info,r,args') ->
+    | MLcons (_,r,args') ->
 	assert (args=[]);
 	let st =
 	  str "`" ++
@@ -93,9 +93,12 @@ let rec pp_expr env args =
 		 (if args' = [] then mt () else spc ()) ++
 		 prlist_with_sep spc (pp_cons_args env) args')
 	in
-	if info.c_kind = Coinductive then paren (str "delay " ++ st) else st
+	if is_coinductive r then paren (str "delay " ++ st) else st
+    | MLtuple _ -> error "Cannot handle tuples in Scheme yet."
+    | MLcase (_,_,pv) when not (is_regular_match pv) ->
+	error "Cannot handle general patterns in Scheme yet."
     | MLcase (_,t,pv) when is_custom_match pv ->
-	let mkfun (_,ids,e) =
+	let mkfun (ids,_,e) =
 	  if ids <> [] then named_lams (List.rev ids) e
 	  else dummy_lams (ast_lift 1 e) 1
 	in
@@ -105,9 +108,9 @@ let rec pp_expr env args =
 		(str (find_custom_match pv) ++ fnl () ++
 		 prvect (fun tr -> pp_expr env [] (mkfun tr) ++ fnl ()) pv
 		 ++ pp_expr env [] t)))
-     | MLcase (info,t, pv) ->
-	let e =
-	  if info.m_kind <> Coinductive then pp_expr env [] t
+    | MLcase (typ,t, pv) ->
+        let e =
+	  if not (is_coinductive_type typ) then pp_expr env [] t
 	  else paren (str "force" ++ spc () ++ pp_expr env [] t)
 	in
 	apply (v 3 (paren (str "match " ++ e ++ fnl () ++ pp_pat env pv)))
@@ -124,14 +127,18 @@ let rec pp_expr env args =
     | MLaxiom -> paren (str "error \"AXIOM TO BE REALIZED\"")
 
 and pp_cons_args env = function
-  | MLcons (info,r,args) when info.c_kind<>Coinductive ->
+  | MLcons (_,r,args) when is_coinductive r ->
       paren (pp_global Cons r ++
 	     (if args = [] then mt () else spc ()) ++
 	     prlist_with_sep spc (pp_cons_args env) args)
   | e -> str "," ++ pp_expr env [] e
 
-
-and pp_one_pat env (r,ids,t) =
+and pp_one_pat env (ids,p,t) =
+  let r = match p with
+    | Pusual r -> r
+    | Pcons (r,l) -> r (* cf. the check [is_regular_match] above *)
+    | _ -> assert false
+  in
   let ids,env' = push_vars (List.rev_map id_of_mlid ids) env in
   let args =
     if ids = [] then mt ()

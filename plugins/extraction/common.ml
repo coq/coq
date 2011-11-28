@@ -33,17 +33,41 @@ let is_mp_bound = function MPbound _ -> true | _ -> false
 
 let pp_par par st = if par then str "(" ++ st ++ str ")" else st
 
+(** [pp_apply] : a head part applied to arguments, possibly with parenthesis *)
+
 let pp_apply st par args = match args with
   | [] -> st
   | _  -> hov 2 (pp_par par (st ++ spc () ++ prlist_with_sep spc identity args))
+
+(** Same as [pp_apply], but with also protection of the head by parenthesis *)
+
+let pp_apply2 st par args =
+  let par' = args <> [] || par in
+  pp_apply (pp_par par' st) par args
 
 let pr_binding = function
   | [] -> mt ()
   | l  -> str " " ++ prlist_with_sep (fun () -> str " ") pr_id l
 
+let pp_tuple_light f = function
+  | [] -> mt ()
+  | [x] -> f true x
+  | l ->
+      pp_par true (prlist_with_sep (fun () -> str "," ++ spc ()) (f false) l)
+
+let pp_tuple f = function
+  | [] -> mt ()
+  | [x] -> f x
+  | l -> pp_par true (prlist_with_sep (fun () -> str "," ++ spc ()) f l)
+
+let pp_boxed_tuple f = function
+  | [] -> mt ()
+  | [x] -> f x
+  | l -> pp_par true (hov 0 (prlist_with_sep (fun () -> str "," ++ spc ()) f l))
+
 (** By default, in module Format, you can do horizontal placing of blocks
     even if they include newlines, as long as the number of chars in the
-    blocks are less that a line length. To avoid this awkward situation,
+    blocks is less that a line length. To avoid this awkward situation,
     we attach a big virtual size to [fnl] newlines. *)
 
 let fnl () = stras (1000000,"") ++ fnl ()
@@ -348,12 +372,13 @@ let ref_renaming_fun (k,r) =
   let l = mp_renaming mp in
   let l = if lang () <> Ocaml && not (modular ()) then [""] else l in
   let s =
+    let idg = safe_basename_of_global r in
     if l = [""] (* this happens only at toplevel of the monolithic case *)
     then
       let globs = Idset.elements (get_global_ids ()) in
-      let id = next_ident_away (kindcase_id k (safe_basename_of_global r)) globs in
+      let id = next_ident_away (kindcase_id k idg) globs in
       string_of_id id
-    else modular_rename k (safe_basename_of_global r)
+    else modular_rename k idg
   in
   add_global_ids (id_of_string s);
   s::l

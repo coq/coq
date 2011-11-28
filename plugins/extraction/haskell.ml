@@ -111,8 +111,8 @@ let expr_needs_par = function
 
 
 let rec pp_expr par env args =
-  let par' = args <> [] || par
-  and apply st = pp_apply st par args in
+  let apply st = pp_apply st par args
+  and apply2 st = pp_apply2 st par args in
   function
     | MLrel n ->
 	let id = get_db_name n env in apply (pr_id id)
@@ -123,7 +123,7 @@ let rec pp_expr par env args =
       	let fl,a' = collect_lams a in
 	let fl,env' = push_vars (List.map id_of_mlid fl) env in
 	let st = (pp_abst (List.rev fl) ++ pp_expr false env' [] a') in
-	apply (pp_par par' st)
+	apply2 st
     | MLletin (id,a1,a2) ->
 	let i,env' = push_vars [id_of_mlid id] env in
 	let pp_id = pr_id (List.hd i)
@@ -133,37 +133,42 @@ let rec pp_expr par env args =
 	  str "let {" ++ cut () ++
 	  hov 1 (pp_id ++ str " = " ++ pp_a1 ++ str "}")
 	in
-	apply
-	  (pp_par par'
-	     (hv 0 (hv 0 (hv 1 pp_def ++ spc () ++ str "in") ++
-		    spc () ++ hov 0 pp_a2)))
+	apply2 (hv 0 (hv 0 (hv 1 pp_def ++ spc () ++ str "in") ++
+		       spc () ++ hov 0 pp_a2))
     | MLglob r ->
 	apply (pp_global Term r)
-    | MLcons _ as c when is_native_char c -> assert (args=[]); pp_native_char c
-    | MLcons (_,r,[]) ->
-	assert (args=[]); pp_global Cons r
-    | MLcons (_,r,[a]) ->
-	assert (args=[]);
-	pp_par par (pp_global Cons r ++ spc () ++ pp_expr true env [] a)
-    | MLcons (_,r,args') ->
-	assert (args=[]);
-	pp_par par (pp_global Cons r ++ spc () ++
-		    prlist_with_sep spc (pp_expr true env []) args')
+    | MLcons (_,r,a) as c ->
+        assert (args=[]);
+        begin match a with
+	  | _ when is_native_char c -> pp_native_char c
+	  | [] -> pp_global Cons r
+	  | [a] ->
+	    pp_par par (pp_global Cons r ++ spc () ++ pp_expr true env [] a)
+	  | _ ->
+	    pp_par par (pp_global Cons r ++ spc () ++
+			prlist_with_sep spc (pp_expr true env []) a)
+	end
+    | MLtuple l ->
+        assert (args=[]);
+        pp_boxed_tuple (pp_expr true env []) l
     | MLcase (_,t, pv) when is_custom_match pv ->
-	let mkfun (_,ids,e) =
+        if not (is_regular_match pv) then
+	  error "Cannot mix yet user-given match and general patterns.";
+	let mkfun (ids,_,e) =
 	  if ids <> [] then named_lams (List.rev ids) e
 	  else dummy_lams (ast_lift 1 e) 1
 	in
-	apply
-	  (pp_par par'
-	     (hov 2
-		(str (find_custom_match pv) ++ fnl () ++
-		 prvect (fun tr -> pp_expr true env [] (mkfun tr) ++ fnl ()) pv
-		 ++ pp_expr true env [] t)))
-    | MLcase (info,t, pv) ->
-      	apply (pp_par par'
-		 (v 0 (str "case " ++ pp_expr false env [] t ++ str " of {" ++
-		       fnl () ++ pp_pat env info pv)))
+	let pp_branch tr = pp_expr true env [] (mkfun tr) ++ fnl () in
+	let inner =
+	  str (find_custom_match pv) ++ fnl () ++
+	  prvect pp_branch pv ++
+	  pp_expr true env [] t
+	in
+	apply2 (hov 2 inner)
+    | MLcase (typ,t,pv) ->
+        apply2
+	  (v 0 (str "case " ++ pp_expr false env [] t ++ str " of {" ++
+		fnl () ++ pp_pat env pv))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' i (Array.of_list (List.rev ids'),defs) args
@@ -176,44 +181,31 @@ let rec pp_expr par env args =
 	pp_apply (str "unsafeCoerce") par (pp_expr true env [] a :: args)
     | MLaxiom -> pp_par par (str "Prelude.error \"AXIOM TO BE REALIZED\"")
 
-and pp_pat env info pv =
-  let pp_one_pat (name,ids,t) =
-    let ids,env' = push_vars (List.rev_map id_of_mlid ids) env in
-    let par = expr_needs_par t in
-    hov 2 (str " " ++ pp_global Cons name ++
-	   (match ids with
-	      | [] -> mt ()
-	      | _  -> (str " " ++
-		       prlist_with_sep spc pr_id (List.rev ids))) ++
-	   str " ->" ++ spc () ++ pp_expr par env' [] t)
-  in
-  let factor_br, factor_set = try match info.m_same with
-    | BranchFun ints ->
-        let i = Intset.choose ints in
-	branch_as_fun info.m_typs pv.(i), ints
-    | BranchCst ints ->
-        let i = Intset.choose ints in
-        ast_pop (branch_as_cst pv.(i)), ints
-    | BranchNone -> MLdummy, Intset.empty
-  with _ -> MLdummy, Intset.empty
-  in
-  let last = Array.length pv - 1 in
+and pp_cons_pat par r ppl =
+  pp_par par
+    (pp_global Cons r ++ space_if (ppl<>[]) ++ prlist_with_sep spc identity ppl)
+
+and pp_gen_pat par ids env = function
+  | Pcons (r,l) -> pp_cons_pat par r (List.map (pp_gen_pat true ids env) l)
+  | Pusual r -> pp_cons_pat par r (List.map pr_id ids)
+  | Ptuple l -> pp_boxed_tuple (pp_gen_pat false ids env) l
+  | Pwild -> str "_"
+  | Prel n -> pr_id (get_db_name n env)
+
+and pp_one_pat env (ids,p,t) =
+  let ids',env' = push_vars (List.rev_map id_of_mlid ids) env in
+  hov 2 (str " " ++
+	 pp_gen_pat false (List.rev ids') env' p ++
+	 str " ->" ++ spc () ++
+	 pp_expr (expr_needs_par t) env' [] t)
+
+and pp_pat env pv =
   prvecti
-    (fun i x -> if Intset.mem i factor_set then mt () else
-       (pp_one_pat pv.(i) ++
-       if i = last && Intset.is_empty factor_set then str "}" else
-	 (str ";" ++ fnl ()))) pv
-  ++
-  if Intset.is_empty factor_set then mt () else
-  let par = expr_needs_par factor_br in
-  match info.m_same with
-    | BranchFun _ ->
-        let ids, env' = push_vars [anonymous_name] env in
-        hov 2 (str " " ++ pr_id (List.hd ids) ++ str " ->" ++ spc () ++
-	       pp_expr par env' [] factor_br ++ str "}")
-    | BranchCst _ ->
-        hov 2 (str " _ ->" ++ spc () ++ pp_expr par env [] factor_br ++ str "}")
-    | BranchNone -> mt ()
+    (fun i x ->
+       pp_one_pat env pv.(i) ++
+       if i = Array.length pv - 1 then str "}" else
+	 (str ";" ++ fnl ()))
+    pv
 
 (*s names of the functions ([ids]) are already pushed in [env],
     and passed here just for convenience. *)

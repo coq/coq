@@ -77,18 +77,26 @@ let type_iter_references do_type t =
     | _ -> ()
   in iter t
 
+let patt_iter_references do_cons p =
+  let rec iter = function
+    | Pcons (r,l) -> do_cons r; List.iter iter l
+    | Pusual r -> do_cons r
+    | Ptuple l -> List.iter iter l
+    | Prel _ | Pwild -> ()
+  in iter p
+
 let ast_iter_references do_term do_cons do_type a =
   let rec iter a =
     ast_iter iter a;
     match a with
       | MLglob r -> do_term r
-      | MLcons (i,r,_) ->
-	  if lang () = Ocaml then record_iter_references do_term i.c_kind;
-	  do_cons r
-      | MLcase (i,_,v) ->
-	  if lang () = Ocaml then record_iter_references do_term i.m_kind;
-	  Array.iter (fun (r,_,_) -> do_cons r) v
-      | _ -> ()
+      | MLcons (_,r,_) -> do_cons r
+      | MLcase (ty,_,v) ->
+	type_iter_references do_type ty;
+	Array.iter (fun (_,p,_) -> patt_iter_references do_cons p) v
+
+      | MLrel _ | MLlam _ | MLapp _ | MLletin _ | MLtuple _ | MLfix _ | MLexn _
+      | MLdummy | MLaxiom | MLmagic _ -> ()
   in iter a
 
 let ind_iter_references do_term do_cons do_type kn ind =
