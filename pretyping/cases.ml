@@ -139,7 +139,7 @@ type tomatch_type =
 
 type tomatch_status =
   | Pushed of ((constr * tomatch_type) * int list * name)
-  | Alias of (constr * rel_declaration * bool Lazy.t)
+  | Alias of (name * constr * (constr * types))
   | NonDepAlias
   | Abstract of int * rel_declaration
 
@@ -587,10 +587,9 @@ let relocate_index_tomatch n1 n2 =
       let tm = map_tomatch_type (relocate_index n1 n2 depth) tm in
       let l = List.map (relocate_rel n1 n2 depth) l in
       Pushed ((c,tm),l,na) :: genrec depth rest
-  | Alias (c,d,p) :: rest ->
-      let d = map_rel_declaration (relocate_index n1 n2 depth) d in
+  | Alias (na,c,d) :: rest ->
       (* [c] is out of relocation scope *)
-      Alias (c,d,p) :: genrec depth rest
+      Alias (na,c,map_pair (relocate_index n1 n2 depth) d) :: genrec depth rest
   | NonDepAlias :: rest ->
       NonDepAlias :: genrec depth rest
   | Abstract (i,d) :: rest ->
@@ -617,10 +616,9 @@ let replace_tomatch n c =
       let tm = map_tomatch_type (replace_term n c depth) tm in
       List.iter (fun i -> if i=n+depth then anomaly "replace_tomatch") l;
       Pushed ((b,tm),l,na) :: replrec depth rest
-  | Alias (b,d,p) :: rest ->
-      let d = map_rel_declaration (replace_term n c depth) d in
-      (* [c] is out of replacement scope *)
-      Alias (b,d,p) :: replrec depth rest
+  | Alias (na,b,d) :: rest ->
+      (* [b] is out of replacement scope *)
+      Alias (na,b,map_pair (replace_term n c depth) d) :: replrec depth rest
   | NonDepAlias  :: rest ->
       NonDepAlias :: replrec depth rest
   | Abstract (i,d) :: rest ->
@@ -642,8 +640,8 @@ let rec liftn_tomatch_stack n depth = function
       let tm = liftn_tomatch_type n depth tm in
       let l = List.map (fun i -> if i<depth then i else i+n) l in
       Pushed ((c,tm),l,na)::(liftn_tomatch_stack n depth rest)
-  | Alias (c,d,p)::rest ->
-      Alias (liftn n depth c,map_rel_declaration (liftn n depth) d,p)
+  | Alias (na,c,d)::rest ->
+      Alias (na,liftn n depth c,map_pair (liftn n depth) d)
       ::(liftn_tomatch_stack n depth rest)
   | NonDepAlias  :: rest ->
       NonDepAlias :: liftn_tomatch_stack n depth rest
@@ -1000,27 +998,6 @@ let adjust_predicate_from_tomatch tomatch (current,typ as ct) pb =
   | _ ->
       pb, (ct,deps,na)
 
-(* Decide what to do with an alias *)
-
-let is_dep_pred n pb =
-  (* Keep call to is_dep_pred lazy so that pb.evdref is fetched when really
-     needed, and hopefully with a maximum of information on evar resolution *)
-  let pred = nf_evar !(pb.evdref) pb.pred in
-  not (noccur_predicate_between 1 (n+1) pred pb.tomatch)
-
-let mkSpecialLetIn orig (na,b,t) isdeppred c =
-  if na = Anonymous || not (dependent (mkRel 1) c) then
-    lift (-1) c
-  else if Lazy.force isdeppred then
-    mkLetIn (na,Option.get b,t,c)
-  else
-    (* Brutal replacement by the non-dependent alias if atomic *)
-    (* Caution: is might violate typing if the alias is internally used *)
-    (* to type the right-hand side even though it does not occur in the *)
-    (* external type (e.g. with "f x refl" with "f:forall x,x=0 -> Prop" *)
-    (* and x aliased to 0 *)
-    if isRel orig then subst1 orig c else subst1 (Option.get b) c
-
 (* Remove commutative cuts that turn out to be non-dependent after
    some evars have been instantiated *)
 
@@ -1211,19 +1188,17 @@ let build_branch current realargs deps (realnames,curname) pb arsign eqns const_
 
   let currents = List.map (fun x -> Pushed x) typs' in
 
-  let ind =
-    appvect (
-      applist (mkInd (inductive_of_constructor const_info.cs_cstr),
-      List.map (lift const_info.cs_nargs) const_info.cs_params),
-      const_info.cs_concl_realargs) in
-
   let alias =
     if aliasname = Anonymous then
       NonDepAlias
     else
       let cur_alias = lift const_info.cs_nargs current in
-      let lazy_dep_pred = lazy (is_dep_pred (List.length realnames) pb) in
-      Alias (cur_alias,(aliasname,Some ci,ind),lazy_dep_pred) in
+      let ind =
+        appvect (
+          applist (mkInd (inductive_of_constructor const_info.cs_cstr),
+                   List.map (lift const_info.cs_nargs) const_info.cs_params),
+          const_info.cs_concl_realargs) in
+      Alias (aliasname,cur_alias,(ci,ind)) in
 
   let tomatch = List.rev_append (alias :: currents) tomatch in
 
@@ -1332,18 +1307,36 @@ and compile_generalization pb i d rest =
   { uj_val = mkLambda_or_LetIn d j.uj_val;
     uj_type = mkProd_wo_LetIn d j.uj_type }
 
-and compile_alias pb (orig,(_,ci,_ as alias),isdeppred) rest =
-  let pb =
-    { pb with
-       env = push_rel alias pb.env;
-       tomatch = lift_tomatch_stack 1 rest;
-       pred = lift_predicate 1 pb.pred pb.tomatch;
-       history = pop_history_pattern pb.history;
-       mat = List.map (push_alias_eqn alias) pb.mat } in
-  let j = compile pb in
-  { uj_val = mkSpecialLetIn orig alias isdeppred j.uj_val;
-    uj_type = subst1 (Option.get ci) j.uj_type }
+and compile_alias pb (na,orig,(expanded,expanded_typ)) rest =
+  let f c t =
+    let alias = (na,Some c,t) in
+    let pb =
+      { pb with
+         env = push_rel alias pb.env;
+         tomatch = lift_tomatch_stack 1 rest;
+         pred = lift_predicate 1 pb.pred pb.tomatch;
+         history = pop_history_pattern pb.history;
+         mat = List.map (push_alias_eqn alias) pb.mat } in
+    let j = compile pb in
+    { uj_val =
+        if isRel c or isVar c then subst1 c j.uj_val
+        else mkLetIn (na,c,t,j.uj_val);
+      uj_type = subst1 c j.uj_type } in
+  if isRel orig or isVar orig then
+    (* Try to compile first using non expanded alias *)
+    try f orig (Retyping.get_type_of pb.env !(pb.evdref) orig)
+    with e when precatchable_exception e ->
+    (* Try then to compile using expanded alias *)
+    f expanded expanded_typ
+  else
+    (* Try to compile first using expanded alias *)
+    try f expanded expanded_typ
+    with e when precatchable_exception e ->
+    (* Try then to compile using non expanded alias *)
+    f orig (Retyping.get_type_of pb.env !(pb.evdref) orig)
 
+
+(* Remember that a non-trivial pattern has been consumed *)
 and compile_non_dep_alias pb rest =
   let pb =
     { pb with

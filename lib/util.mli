@@ -61,6 +61,7 @@ exception Error_in_file of string * (bool * string * loc) * exn
 
 val on_fst : ('a -> 'b) -> 'a * 'c -> 'b * 'c
 val on_snd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
+val map_pair : ('a -> 'b) -> 'a * 'a -> 'b * 'b
 
 (** Going down pairs *)
 

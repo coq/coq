@@ -51,6 +51,7 @@ exception Error_in_file of string * (bool * string * loc) * exn
 
 let on_fst f (a,b) = (f a,b)
 let on_snd f (a,b) = (a,f b)
+let map_pair f (a,b) = (f a,f b)
 
 (* Mapping under pairs *)
 
