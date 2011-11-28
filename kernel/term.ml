@@ -1359,6 +1359,7 @@ let rec hash_constr t =
     | Lambda (_, t, c) -> combinesmall 5 (combine (hash_constr t) (hash_constr c))
     | LetIn (_, b, t, c) ->
       combinesmall 6 (combine3 (hash_constr b) (hash_constr t) (hash_constr c))
+    | App (c,l) when isCast c -> hash_constr (mkApp (pi1 (destCast c),l))
     | App (c,l) ->
       combinesmall 7 (combine (hash_term_array l) (hash_constr c))
     | Evar (e,l) ->
