@@ -1054,7 +1054,7 @@ let rec ungeneralize n ng body =
 let ungeneralize_branch n k (sign,body) cs =
   (sign,ungeneralize (n+cs.cs_nargs) k body)
 
-let postprocess_dependencies evd current brs tomatch pred deps cs =
+let postprocess_dependencies evd tocheck brs tomatch pred deps cs =
   let rec aux k brs tomatch pred tocheck deps = match deps, tomatch with
   | [], _ -> brs,tomatch,pred,[]
   | n::deps, Abstract (i,d) :: tomatch ->
@@ -1074,7 +1074,7 @@ let postprocess_dependencies evd current brs tomatch pred deps cs =
         let brs = array_map2 (ungeneralize_branch n k) brs cs in
         aux k brs tomatch pred tocheck deps
   | _ -> assert false
-  in aux 0 brs tomatch pred [current] deps
+  in aux 0 brs tomatch pred tocheck deps
 
 (************************************************************************)
 (* Sorting equations by constructor *)
@@ -1284,8 +1284,9 @@ and match_current pb tomatch =
 	  (* We compile branches *)
 	  let brvals = array_map2 (compile_branch current realargs (names,dep) deps pb arsign) eqns cstrs in
 	  (* We build the (elementary) case analysis *)
+          let depstocheck = current::binding_vars_of_inductive typ in
           let brvals,tomatch,pred,inst =
-            postprocess_dependencies !(pb.evdref) current
+            postprocess_dependencies !(pb.evdref) depstocheck
               brvals pb.tomatch pb.pred deps cstrs in
           let brvals = Array.map (fun (sign,body) ->
             it_mkLambda_or_LetIn body sign) brvals in
