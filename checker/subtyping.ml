@@ -343,7 +343,8 @@ and check_modtypes  env mtb1 mtb2 subst1 subst2 equiv =
 		(module_body_of_type (MPbound arg_id2) arg_t2) env 
 	      in
 	      let env = match body_t1 with
-		  SEBstruct str -> 
+		  SEBstruct str ->
+		    let env = shallow_remove_module mtb1.typ_mp env in
 		    add_module {mod_mp = mtb1.typ_mp;
 				mod_expr = None;
 				mod_type = body_t1;
@@ -363,10 +364,8 @@ and check_modtypes  env mtb1 mtb2 subst1 subst2 equiv =
 
 let check_subtypes env sup super =
   (*if sup<>super then*)
-  let env = add_module 
-    (module_body_of_type sup.typ_mp sup) env in
-    check_modtypes env (strengthen env sup sup.typ_mp) super empty_subst 
-      (map_mp super.typ_mp sup.typ_mp) false 
+  check_modtypes env (strengthen env sup sup.typ_mp) super empty_subst
+    (map_mp super.typ_mp sup.typ_mp) false
 
 let check_equal env sup super =
   (*if sup<>super then*)

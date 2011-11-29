@@ -255,18 +255,22 @@ and check_module env mp mb =
 	let sign = check_modexpr env mexpr mb.mod_mp mb.mod_delta in
 	let (_:struct_expr_body) =
 	  check_modtype env mb.mod_type mb.mod_mp mb.mod_delta in
-          check_subtypes env 
-	    {typ_mp=mp;
-	     typ_expr=sign;
-	     typ_expr_alg=None;
-	     typ_constraints=Univ.Constraint.empty;
-	     typ_delta = mb.mod_delta;}
-	    {typ_mp=mp;
-	     typ_expr=mb.mod_type;
-	     typ_expr_alg=None;
-	     typ_constraints=Univ.Constraint.empty;
-	     typ_delta = mb.mod_delta;};
-	  
+	let mtb1 =
+	  {typ_mp=mp;
+	   typ_expr=sign;
+	   typ_expr_alg=None;
+	   typ_constraints=Univ.Constraint.empty;
+	   typ_delta = mb.mod_delta;}
+	and mtb2 =
+	  {typ_mp=mp;
+	   typ_expr=mb.mod_type;
+	   typ_expr_alg=None;
+	   typ_constraints=Univ.Constraint.empty;
+	   typ_delta = mb.mod_delta;};
+	in
+	let env = add_module (module_body_of_type mp mtb1) env in
+	check_subtypes env mtb1 mtb2
+
 and check_structure_field env mp lab res = function
   | SFBconst cb ->
       let c = make_con mp empty_dirpath lab in

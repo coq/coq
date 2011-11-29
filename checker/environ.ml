@@ -196,6 +196,15 @@ let shallow_add_module mp mb env =
 	env_modules = new_mods } in
   { env with env_globals = new_globals }
 
+let shallow_remove_module mp env =
+  if not (MPmap.mem mp env.env_globals.env_modules) then
+    Printf.ksprintf anomaly "Module %s is unknown"
+      (string_of_mp mp);
+  let new_mods = MPmap.remove mp env.env_globals.env_modules in
+  let new_globals =
+    { env.env_globals with
+	env_modules = new_mods } in
+  { env with env_globals = new_globals }
 
 let lookup_module mp env =
   MPmap.find mp env.env_globals.env_modules
