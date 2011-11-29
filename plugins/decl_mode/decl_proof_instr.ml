@@ -465,17 +465,17 @@ let mk_stat_or_thesis info gls = function
       error "\"thesis for ...\" is not applicable here."
   | Thesis Plain -> pf_concl gls
 
-let just_tac _then cut info gls0 =
-  let items_tac gls =
+let just_tac _then cut info gls0 = 
+  let last_item = if _then then 
+      let last_id = try get_last (pf_env gls0) with Failure _ -> 
+		error "\"then\" and \"hence\" require at least one previous fact"  in
+		[mkVar last_id]
+	    else []  
+  in
+  let items_tac gls = 
     match cut.cut_by with
 	None -> tclIDTAC gls
-      | Some items ->
-	  let items_ =
-	    if _then then
-	      let last_id = get_last (pf_env gls) in
-		(mkVar last_id)::items
-	    else items
-	  in prepare_goal items_ gls in
+      | Some items -> prepare_goal (last_item@items) gls in
   let method_tac gls =
     match cut.cut_using with
         None ->
