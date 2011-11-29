@@ -175,7 +175,10 @@ is understood as
 \\
 \matchrule & ::= &
            {\cpattern} {\tt =>} {\tacexpr}\\
-& $|$ & {\tt context} {\zeroone{\ident}} {\tt [} {\cpattern} {\tt ]} {\tt =>} {\tacexpr}\\
+& $|$ & {\tt context} {\zeroone{\ident}} {\tt [} {\cpattern} {\tt ]}
+           {\tt =>} {\tacexpr}\\
+& $|$ & {\tt appcontext} {\zeroone{\ident}} {\tt [} {\cpattern} {\tt ]}
+           {\tt =>} {\tacexpr}\\
 & $|$ & {\tt \_ =>} {\tacexpr}\\
 \end{tabular}
 \end{centerframe}
@@ -547,6 +550,18 @@ then a no-matching-clause error is raised.
 \end{ErrMsgs}
 
 \begin{Variants}
+
+\item \index{lazymatch!in Ltac}
+\index{Ltac!lazymatch}
+Using {\tt lazymatch} instead of {\tt match} has an effect if the
+right-hand-side of a clause returns a tactic. With {\tt match}, the
+tactic is applied to the current goal (and the next clause is tried if
+it fails). With {\tt lazymatch}, the tactic is directly returned as
+the result of the whole {\tt lazymatch} block without being first
+tried to be applied to the goal. Typically, if the {\tt lazymatch}
+block is bound to some variable $x$ in a {\tt let in}, then tactic
+expression gets bound to the variable $x$.
+
 \item \index{context!in pattern}
 There is a special form of patterns to match a subterm against the
 pattern:
@@ -577,16 +592,21 @@ Goal True.
 f (3+4).
 \end{coq_example}
 
-\item \index{lazymatch!in Ltac}
-\index{Ltac!lazymatch}
-Using {\tt lazymatch} instead of {\tt match} has an effect if the
-right-hand-side of a clause returns a tactic. With {\tt match}, the
-tactic is applied to the current goal (and the next clause is tried if
-it fails). With {\tt lazymatch}, the tactic is directly returned as
-the result of the whole {\tt lazymatch} block without being first
-tried to be applied to the goal. Typically, if the {\tt lazymatch}
-block is bound to some variable $x$ in a {\tt let in}, then tactic
-expression gets bound to the variable $x$.
+\item \index{appcontext!in pattern}
+For historical reasons, {\tt context} considers $n$-ary applications
+such as {\tt (f 1 2)} as a whole, and not as a sequence of unary
+applications {\tt ((f 1) 2)}. Hence {\tt context [f ?x]} will fail
+to find a matching subterm in {\tt (f 1 2)}: if the pattern is a partial
+application, the matched subterms will be necessarily be
+applications with exactly the same number of arguments.
+Alternatively, one may now use the following variant of {\tt context}:
+\begin{quote}
+{\tt appcontext} {\ident} {\tt [} {\cpattern} {\tt ]}
+\end{quote}
+The behavior of {\tt appcontext} is the same as the one of {\tt
+  context}, except that a matching subterm could be a partial
+part of a longer application. For instance, in {\tt (f 1 2)},
+an {\tt appcontext [f ?x]} will find the matching subterm {\tt (f 1)}.
 
 \end{Variants}
 
