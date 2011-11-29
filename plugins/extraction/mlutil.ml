@@ -523,7 +523,7 @@ let has_deep_pattern br =
   array_exists (function (_,pat,_) -> deep pat) br
 
 let is_regular_match br =
-  if Array.length br <> 0 then false (* empty match becomes MLexn *)
+  if Array.length br = 0 then false (* empty match becomes MLexn *)
   else
     try
       let get_r (ids,pat,c) =
