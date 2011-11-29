@@ -613,6 +613,8 @@ let constr_ord_int f t1 t2 =
 	(f =? f) t1 t2 c1 c2
     | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) ->
 	((f =? f) ==? f) b1 b2 t1 t2 c1 c2
+    | App (c1,l1), _ when isCast c1 -> f (mkApp (pi1 (destCast c1),l1)) t2
+    | _, App (c2,l2) when isCast c2 -> f t1 (mkApp (pi1 (destCast c2),l2))
     | App (c1,l1), App (c2,l2) -> (f =? (array_compare f)) c1 c2 l1 l2
     | Evar (e1,l1), Evar (e2,l2) ->
 	((-) =? (array_compare f)) e1 e2 l1 l2
@@ -631,27 +633,7 @@ let constr_ord_int f t1 t2 =
     | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
 	((Pervasives.compare =? (array_compare f)) ==? (array_compare f))
 	ln1 ln2 tl1 tl2 bl1 bl2
-    | Var _, (Rel _)
-    | Meta _, (Rel _ | Var _)
-    | Evar _, (Rel _ | Var _ | Meta _)
-    | Sort _, (Rel _ | Var _ | Meta _ | Evar _)
-    | Prod _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _)
-    | Lambda _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _)
-    | LetIn _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _)
-    | App _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _)
-    | Const _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _)
-    | Ind _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _ | Const _)
-    | Construct _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _ | Const _ | Ind _)
-    | Case _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _ | Const _ | Ind _ | Construct _)
-    | Fix _, (Rel _ | Var _ | Meta _ | Evar _ | Sort _ | Prod _ | Lambda _ | LetIn _ | App _ | Const _ | Ind _ | Construct _ | Case _)
-    | CoFix _, _
-      -> -1
-    | Rel _, _ | Var _, _ | Meta _, _ | Evar _, _
-    | Sort _, _ | Prod _, _
-    | Lambda _, _ | LetIn _, _ | App _, _
-    | Const _, _ | Ind _, _ | Construct _, _
-    | Case _, _| Fix _, _
-      -> 1
+    | t1, t2 -> Pervasives.compare t1 t2
 
 let rec constr_ord m n=
   constr_ord_int constr_ord m n
