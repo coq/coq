@@ -359,11 +359,10 @@ let rec pr_setoptions opts =
 let pr_getoptions opts =
   let map (key, s) =
     let key = String.concat " " key in
-    s.opt_name
-(*     Printf.sprintf "%s: sync := %b; depr := %b; name := %s; value := %s" *)
-(*       key s.opt_sync s.opt_depr s.opt_name (*(pr_option_value s.opt_value)*) "" *)
+    Printf.sprintf "%s: sync := %b; depr := %b; name := %s; value := %s\n"
+      key s.opt_sync s.opt_depr s.opt_name (pr_option_value s.opt_value)
   in
-  "\n  " ^ String.concat "\n  " (List.map map opts)
+  "\n" ^ String.concat "" (List.map map opts)
 
 let pr_call = function
   | Interp (r,b,s) ->
