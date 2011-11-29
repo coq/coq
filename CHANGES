@@ -64,6 +64,8 @@ Tactics
    dependencies suggested by Dan Grayson)
 - Tactic "injection" now failing on an equality showing no constructors while
   it was formerly generalizing again the goal over the given equality.
+- In Ltac, the "context [...]" syntax has now a variant "appcontext [...]"
+  allowing to match partial applications in larger applications.
 
 Vernacular commands
 
