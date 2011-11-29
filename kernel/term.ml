@@ -613,10 +613,7 @@ let constr_ord_int f t1 t2 =
 	(f =? f) t1 t2 c1 c2
     | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) ->
 	((f =? f) ==? f) b1 b2 t1 t2 c1 c2
-    | App (_,_), App (_,_) ->
-	let c1,l1=decompose_app t1
-	and c2,l2=decompose_app t2 in
-	  (f =? (list_compare f)) c1 c2 l1 l2
+    | App (c1,l1), App (c2,l2) -> (f =? (array_compare f)) c1 c2 l1 l2
     | Evar (e1,l1), Evar (e2,l2) ->
 	((-) =? (array_compare f)) e1 e2 l1 l2
     | Const c1, Const c2 -> kn_ord (canonical_con c1) (canonical_con c2)
