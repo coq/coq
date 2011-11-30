@@ -224,7 +224,7 @@ struct
   let raw_matching = ["Printing"; "Matching"; "Synth"]
   let notations = ["Printing"; "Notations"]
   let all_basic = ["Printing"; "All"]
-  let existential = ["Printing"; "Existential Instances"]
+  let existential = ["Printing"; "Existential"; "Instances"]
   let universes = ["Printing"; "Universes"]
 
   let state_hack = Hashtbl.create 11
