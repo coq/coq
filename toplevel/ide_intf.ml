@@ -43,15 +43,15 @@ let mkcases s : string list list call = MkCases s
 let abstract_eval_call handler c =
   try
     let res = match c with
-      | Interp (r,b,s) -> Obj.magic (handler.interp (r,b,s))
-      | Rewind i -> Obj.magic (handler.rewind i)
-      | Goal -> Obj.magic (handler.goals ())
-      | Hints -> Obj.magic (handler.hints ())
-      | Status -> Obj.magic (handler.status ())
-      | GetOptions -> Obj.magic (handler.get_options ())
-      | SetOptions opts -> Obj.magic (handler.set_options opts)
-      | InLoadPath s -> Obj.magic (handler.inloadpath s)
-      | MkCases s -> Obj.magic (handler.mkcases s)
+      | Interp (r,b,s) -> Obj.magic (handler.interp (r,b,s) : string)
+      | Rewind i -> Obj.magic (handler.rewind i : int)
+      | Goal -> Obj.magic (handler.goals () : goals)
+      | Hints -> Obj.magic (handler.hints () : (hint list * hint) option)
+      | Status -> Obj.magic (handler.status () : status)
+      | GetOptions -> Obj.magic (handler.get_options () : (option_name * option_state) list)
+      | SetOptions opts -> Obj.magic (handler.set_options opts : unit)
+      | InLoadPath s -> Obj.magic (handler.inloadpath s : bool)
+      | MkCases s -> Obj.magic (handler.mkcases s : string list list)
     in Good res
   with e ->
     let (l, str) = handler.handle_exn e in
