@@ -165,7 +165,7 @@ let of_option_state s =
     of_option_value s.opt_value]
   )
 
-let to_option_state xml = function
+let to_option_state = function
 | Element ("option_state", [], [sync; depr; name; value]) ->
   {
     opt_sync = to_bool sync;
@@ -325,16 +325,16 @@ let to_answer xml =
   | Element (tpe, attrs, l) ->
     begin match tpe with
     | "unit" -> Obj.magic ()
-    | "string" -> Obj.magic (to_string elt)
-    | "int" -> Obj.magic (to_int elt)
-    | "status" -> Obj.magic (to_status elt)
-    | "bool" -> Obj.magic (to_bool elt)
-    | "list" -> Obj.magic (to_list convert elt)
-    | "option" -> Obj.magic (to_option convert elt)
-    | "pair" -> Obj.magic (to_pair convert convert elt)
-    | "goals" -> Obj.magic (to_goals elt)
-    | "option_value" -> Obj.magic (to_option_value elt)
-    | "option_state" -> Obj.magic (to_option_state elt)
+    | "string" -> Obj.magic (to_string elt : string)
+    | "int" -> Obj.magic (to_int elt : int)
+    | "status" -> Obj.magic (to_status elt : status)
+    | "bool" -> Obj.magic (to_bool elt : bool)
+    | "list" -> Obj.magic (to_list convert elt : 'a list)
+    | "option" -> Obj.magic (to_option convert elt : 'a option)
+    | "pair" -> Obj.magic (to_pair convert convert elt : ('a * 'b))
+    | "goals" -> Obj.magic (to_goals elt : goals)
+    | "option_value" -> Obj.magic (to_option_value elt : option_value)
+    | "option_state" -> Obj.magic (to_option_state elt : option_state)
     | _ -> raise Marshal_error
     end
   | _ -> raise Marshal_error
