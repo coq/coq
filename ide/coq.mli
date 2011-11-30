@@ -68,5 +68,5 @@ sig
   val existential : t
   val universes : t
 
-  val set : coqtop -> t -> bool -> unit Interface.value
+  val set : coqtop -> (t * bool) list -> unit
 end

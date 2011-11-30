@@ -219,40 +219,31 @@ let hints coqtop = eval_call coqtop Ide_intf.hints
 module PrintOpt =
 struct
   type t = string list
-  let implicit = ["Implicit"]
-  let coercions = ["Coercions"]
-  let raw_matching = ["Matching";"Synth"]
-  let notations = ["Notations"]
-  let all_basic = ["All"]
-  let existential = ["Existential Instances"]
-  let universes = ["Universes"]
+  let implicit = ["Printing"; "Implicit"]
+  let coercions = ["Printing"; "Coercions"]
+  let raw_matching = ["Printing"; "Matching"; "Synth"]
+  let notations = ["Printing"; "Notations"]
+  let all_basic = ["Printing"; "All"]
+  let existential = ["Printing"; "Existential Instances"]
+  let universes = ["Printing"; "Universes"]
 
   let state_hack = Hashtbl.create 11
   let _ = List.iter (fun opt -> Hashtbl.add state_hack opt false)
             [ implicit; coercions; raw_matching; notations; all_basic; existential; universes ]
 
-  let set coqtop opt value =
-    Hashtbl.replace state_hack opt value;
-    List.fold_left
-      (fun acc cmd -> 
-         let str = (if value then "Set" else "Unset") ^ " Printing " ^ cmd ^ "." in
-         match interp coqtop ~raw:true ~verbose:false str with
-           | Interface.Good _ -> acc
-           | Interface.Fail (l,errstr) ->  Interface.Fail (l,"Could not eval \""^str^"\": "^errstr)
-      )
-      (Interface.Good ())
-      opt
+  let set coqtop options =
+    let () = List.iter (fun (name, v) -> Hashtbl.replace state_hack name v) options in
+    let options = List.map (fun (name, v) -> (name, Interface.BoolValue v)) options in
+    match eval_call coqtop (Ide_intf.set_options options) with
+    | Interface.Good () -> ()
+    | _ -> raise (Failure "Cannot set options.")
 
-  let enforce_hack coqtop = Hashtbl.fold
-    (fun opt v acc ->
-      match set coqtop opt v with
-        | Interface.Good () -> Interface.Good ()
-        | Interface.Fail str -> Interface.Fail str)
-    state_hack (Interface.Good ())
+  let enforce_hack coqtop =
+    let elements = Hashtbl.fold (fun opt v acc -> (opt, v) :: acc) state_hack [] in
+    set coqtop elements
+
 end
 
 let goals coqtop =
-  match PrintOpt.enforce_hack coqtop with
-    | Interface.Good () -> eval_call coqtop Ide_intf.goals
-    | Interface.Fail str -> Interface.Fail str
-
+  let () = PrintOpt.enforce_hack coqtop in
+  eval_call coqtop Ide_intf.goals

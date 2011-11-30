@@ -340,12 +340,8 @@ let print_items = [
 ]
 
 let setopts ct opts v =
-  List.fold_left
-    (fun acc o ->
-      match Coq.PrintOpt.set ct o v with
-        | Interface.Good () -> acc
-        | Interface.Fail lstr -> Interface.Fail lstr
-    ) (Interface.Good ()) opts
+  let opts = List.map (fun o -> (o, v)) opts in
+  Coq.PrintOpt.set ct opts
 
 (* Reset this to None on page change ! *)
 let (last_completion:(string*int*int*bool) option ref) = ref None
@@ -1499,8 +1495,8 @@ let create_session file =
     proof#buffer#create_mark ~name:"end_of_conclusion" proof#buffer#start_iter in
   let _ =
     GtkBase.Widget.add_events proof#as_widget [`ENTER_NOTIFY;`POINTER_MOTION] in
-  let _ =
-    List.map (fun (opts,_,_,_,dflt) -> setopts !ct opts dflt) print_items in
+  let () =
+    List.iter (fun (opts,_,_,_,dflt) -> setopts !ct opts dflt) print_items in
   let _ = legacy_av#activate () in
   let _ =
     proof#event#connect#motion_notify ~callback:
@@ -2534,7 +2530,7 @@ let main files =
          GAction.add_toggle_action name ~active:dflt ~label
 	   ~accel:(!current.modifier_for_display^key)
           ~callback:(fun v -> do_or_activate (fun a ->
-            ignore (setopts !(session_notebook#current_term.toplvl) opts v#get_active);
+            let () = setopts !(session_notebook#current_term.toplvl) opts v#get_active in
             a#show_goals) ()) display_actions)
       print_items;
     GAction.add_actions compile_actions [
