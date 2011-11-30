@@ -421,7 +421,8 @@ GEXTEND Gram
       | IDENT "Include"; e = module_expr_inl; l = LIST0 ext_module_expr ->
 	  VernacInclude(e::l)
       | IDENT "Include"; "Type"; e = module_type_inl; l = LIST0 ext_module_type ->
-	  warning "Include Type is deprecated; use Include instead";
+	  Flags.if_verbose
+            msg_warning (str "Include Type is deprecated; use Include instead");
           VernacInclude(e::l) ] ]
   ;
   export_token:
