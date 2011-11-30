@@ -627,14 +627,16 @@ GEXTEND Gram
      (* moved there so that camlp5 factors it with the previous rule *)
      | IDENT "Arguments"; IDENT "Scope"; qid = smart_global;
        "["; scl = LIST0 [ "_" -> None | sc = IDENT -> Some sc ]; "]" ->
-         warning "Arguments Scope is deprecated; use Arguments instead";
+	   Flags.if_verbose
+             msg_warning (str "Arguments Scope is deprecated; use Arguments instead");
 	 VernacArgumentsScope (use_section_locality (),qid,scl)
 
       (* Implicit *)
       | IDENT "Implicit"; IDENT "Arguments"; qid = smart_global;
 	   pos = LIST0 [ "["; l = LIST0 implicit_name; "]" ->
 	     List.map (fun (id,b,f) -> (ExplByName id,b,f)) l ] ->
-	   warning "Implicit Arguments is deprecated; use Arguments instead";
+	   Flags.if_verbose
+             msg_warning (str "Implicit Arguments is deprecated; use Arguments instead");
 	   VernacDeclareImplicits (use_section_locality (),qid,pos)
 
       | IDENT "Implicit"; "Type"; bl = reserv_list ->
