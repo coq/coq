@@ -71,8 +71,7 @@ type ml_ind_packet = {
   ip_logical : bool;
   ip_sign : signature;
   ip_vars : identifier list;
-  ip_types : (ml_type list) array;
-  mutable ip_optim_id_ok : bool option
+  ip_types : (ml_type list) array
 }
 
 (* [ip_nparams] contains the number of parameters. *)

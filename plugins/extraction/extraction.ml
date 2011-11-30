@@ -351,10 +351,15 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
     if not (mib_equal mib mib0) then raise Not_found;
     ml_ind
   with Not_found ->
-    (* First, if this inductive is aliased via a Module, *)
-    (* we process the original inductive. *)
-    let equiv = 
-      if kn_ord (canonical_mind kn) (user_mind kn) = 0 then
+    (* First, if this inductive is aliased via a Module,
+       we process the original inductive if possible.
+       When at toplevel of the monolithic case, we cannot do much
+       (cf Vector and bug #2570) *)
+    let equiv =
+      if lang () <> Ocaml ||
+	 (not (modular ()) && at_toplevel (mind_modpath kn)) ||
+	 kn_ord (canonical_mind kn) (user_mind kn) = 0
+      then
 	NoEquiv
       else
 	begin
@@ -381,8 +386,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	     ip_logical = (not b);
 	     ip_sign = s;
 	     ip_vars = v;
-	     ip_types = t;
-	     ip_optim_id_ok = None })
+	     ip_types = t })
 	mib.mind_packets
     in
 
