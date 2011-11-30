@@ -1,3 +1,9 @@
+(* Before loading Program, check non-anomaly on missing library Program *)
+
+Fail Program Definition f n (e:n=n): {n|n=0} := match n,e with 0, refl => 0 | _, _ => 0 end.
+
+(* Then we test Program properly speaking *)
+
 Require Import Arith Program.
 Require Import ZArith Zwf.
 

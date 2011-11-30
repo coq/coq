@@ -73,7 +73,7 @@ let eqdep_ind_ref = init_reference [ "Logic";"Eqdep"] "eq_dep"
 let eqdep_intro_ref = init_reference [ "Logic";"Eqdep"] "eq_dep_intro"
 
 let jmeq_ind =
-  init_constant ["Logic";"JMeq"] "JMeq"
+  safe_init_constant ["Logic";"JMeq"] "JMeq"
 
 let jmeq_rec =
   init_constant ["Logic";"JMeq"] "JMeq_rec"
