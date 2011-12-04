@@ -171,7 +171,8 @@ let compute_var_aliases sign =
             let aliases_of_id =
               try Idmap.find id' aliases with Not_found -> [] in
             Idmap.add id (aliases_of_id@[t]) aliases
-	| _ -> aliases)
+	| _ ->
+            Idmap.add id [t] aliases)
     | None -> aliases)
     sign Idmap.empty
 
@@ -190,7 +191,7 @@ let compute_rel_aliases var_aliases rels =
                try Intmap.find (p+n) aliases with Not_found -> [] in
              Intmap.add n (aliases_of_n@[mkRel (p+n)]) aliases
          | _ ->
-           aliases)
+             Intmap.add n [lift n t] aliases)
      | None -> aliases))
          rels (List.length rels,Intmap.empty))
 
@@ -208,7 +209,9 @@ let get_alias_chain_of aliases x = match kind_of_term x with
 let normalize_alias_opt aliases x =
   match get_alias_chain_of aliases x with
   | []  -> None
-  | a::_ -> Some a
+  | a::_ when isRel a or isVar a -> Some a
+  | [_] -> None
+  | _::a::_ -> Some a
 
 let normalize_alias aliases x =
   match normalize_alias_opt aliases x with
@@ -235,12 +238,20 @@ let extend_alias (_,b,_) (var_aliases,rel_aliases) =
               try Intmap.find (p+1) rel_aliases with Not_found -> [] in
 	    Intmap.add 1 (aliases_of_binder@[mkRel (p+1)]) rel_aliases
         | _ ->
-          rel_aliases)
+            Intmap.add 1 [lift 1 t] rel_aliases)
     | None -> rel_aliases in
   (var_aliases, rel_aliases)
 
 let rec expansions_of_var aliases x =
-  x :: List.rev (get_alias_chain_of aliases x)
+  match get_alias_chain_of aliases x with
+  | [] -> [x]
+  | a::_ as l when isRel a || isVar a -> x :: List.rev l
+  | _::l -> x :: List.rev l
+
+let expansion_of_var aliases x =
+  match get_alias_chain_of aliases x with
+  | [] -> x
+  | a::_ -> a
 
 let rec expand_vars_in_term_using aliases t = match kind_of_term t with
   | Rel _ | Var _ ->
@@ -255,7 +266,7 @@ let free_vars_and_rels_up_alias_expansion aliases c =
   let acc1 = ref Intset.empty and acc2 = ref Idset.empty in
   let rec frec (aliases,depth) c = match kind_of_term c with
     | Rel _ | Var _ ->
-      let c = normalize_alias aliases c in
+      let c = expansion_of_var aliases c in
         (match kind_of_term c with
         | Var id -> acc2 := Idset.add id !acc2
         | Rel n -> if n >= depth+1 then acc1 := Intset.add (n-depth) !acc1
@@ -401,17 +412,6 @@ let generalize_evar_over_rels sigma (ev,args) =
 (*------------------------------------*
  * operations on the evar constraints *
  *------------------------------------*)
-
-(* Pb: defined Rels and Vars should not be considered as a pattern... *)
-(*
-let is_pattern inst =
-  let rec is_hopat l = function
-      [] -> true
-    | t :: tl ->
-        (isRel t or isVar t) && not (List.mem t l) && is_hopat (t::l) tl in
-  is_hopat [] (Array.to_list inst)
-*)
-
 
 exception IllTypedFilter
 
@@ -1333,6 +1333,15 @@ let get_actual_deps aliases l t =
       | Rel n -> Intset.mem n fv_rels
       | _ -> assert false) l
 
+let remove_instance_local_defs evd evk args =
+  let evi = Evd.find evd evk in
+  let rec aux = function
+  | (_,Some _,_)::sign, a::args -> aux (sign,args)
+  | (_,None,_)::sign, a::args -> a::aux (sign,args)
+  | [], [] -> []
+  | _ -> assert false in
+  aux (evar_filtered_context evi, args)
+
 (* Check if an applied evar "?X[args] l" is a Miller's pattern *)
 
 let find_unification_pattern_args env l t =
@@ -1354,19 +1363,20 @@ let is_unification_pattern_meta env nb m l t =
   else
     None
 
-let is_unification_pattern_evar env (evk,args) l t =
+let is_unification_pattern_evar env evd (evk,args) l t =
   if List.for_all (fun x -> isRel x || isVar x) l (* common failure case *) then
-    let n = Array.length args in
-    match find_unification_pattern_args env (Array.to_list args @ l) t with
+    let args = remove_instance_local_defs evd evk (Array.to_list args) in
+    let n = List.length args in
+    match find_unification_pattern_args env (args @ l) t with
     | Some l when not (occur_evar evk t) -> Some (list_skipn n l)
     | _ -> None
   else
     None
 
-let is_unification_pattern (env,nb) f l t =
+let is_unification_pattern (env,nb) evd f l t =
   match kind_of_term f with
   | Meta m -> is_unification_pattern_meta env nb m l t
-  | Evar ev -> is_unification_pattern_evar env ev l t
+  | Evar ev -> is_unification_pattern_evar env evd ev l t
   | _ -> None
 
 (* From a unification problem "?X l = c", build "\x1...xn.(term1 l2)"
@@ -1383,7 +1393,7 @@ let solve_pattern_eqn env l c =
       (* Rem: if [a] links to a let-in, do as if it were an assumption *)
       | Rel n ->
           let d = map_rel_declaration (lift n) (lookup_rel n env) in
-          mkLambda_or_LetIn  d c'
+          mkLambda_or_LetIn d c'
       | Var id ->
           let d = lookup_named id env in mkNamedLambda_or_LetIn d c'
       | _ -> assert false)

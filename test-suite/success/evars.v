@@ -266,3 +266,46 @@ Goal forall (A:Type) (a:A) (P:forall A, A -> Prop), (P A a) /\ (P A a).
 intros.
 refine ((fun H => conj (proj1 H) (proj2 H)) _).
 Abort.
+
+(* The argument of e below failed to be inferred from r14219 (Oct 2011) to *)
+(* r14753 after the restrictions made on detecting Miller's pattern in the *)
+(* presence of alias, only the second-order unification procedure was *)
+(* able to solve this problem but it was deactivated for 8.4 in r14219 *)
+
+Definition k0
+  (e:forall P : nat -> Prop, (exists n : nat, P n) -> nat)
+  (j : forall a, exists n : nat, n = a) o :=
+ match o with (* note: match introduces an alias! *)
+ | Some a => e _ (j a)
+ | None => O
+ end.
+
+Definition k1
+  (e:forall P : nat -> Prop, (exists n : nat, P n) -> nat)
+  (j : forall a, exists n : nat, n = a) a (b:=a) := e _ (j a).
+
+Definition k2
+  (e:forall P : nat -> Prop, (exists n : nat, P n) -> nat)
+  (j : forall a, exists n : nat, n = a) a (b:=a) := e _ (j b).
+
+(* Other examples about aliases involved in pattern unification *)
+
+Definition k3
+  (e:forall P : nat -> Prop, (exists n : nat, P n) -> nat)
+  (j : forall a, exists n : nat, let a' := a in n = a') a (b:=a) := e _ (j b).
+
+Definition k4
+  (e:forall P : nat -> Prop, (exists n : nat, P n) -> nat)
+  (j : forall a, exists n : nat, let a' := S a in n = a') a (b:=a) := e _ (j b).
+
+Definition k5
+  (e:forall P : nat -> Prop, (exists n : nat, P n) -> nat)
+  (j : forall a, let a' := S a in exists n : nat, n = a') a (b:=a) := e _ (j b).
+
+Definition k6
+  (e:forall P : nat -> Prop, (exists n : nat, P n) -> nat)
+  (j : forall a, exists n : nat, let n' := S n in n' = a) a (b:=a) := e _ (j b).
+
+Definition k7
+  (e:forall P : nat -> Prop, (exists n : nat, let n' := n in P n') -> nat)
+  (j : forall a, exists n : nat, n = a) a (b:=a) := e _ (j b).

@@ -443,13 +443,13 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	| App (f1,l1), _ when
 	    (isMeta f1 && use_metas_pattern_unification flags nb l1
              || use_evars_pattern_unification flags && isAllowedEvar flags f1) &
-	    store whenmem (is_unification_pattern curenvnb f1 (Array.to_list l1) cN) ->
+	    store whenmem (is_unification_pattern curenvnb sigma f1 (Array.to_list l1) cN) ->
 	      solve_pattern_eqn_array curenvnb f1 (restore whenmem) cN substn
 
 	| _, App (f2,l2) when
 	    (isMeta f2 && use_metas_pattern_unification flags nb l2
              || use_evars_pattern_unification flags && isAllowedEvar flags f2) &
-	    store whenmem (is_unification_pattern curenvnb f2 (Array.to_list l2) cM) ->
+	    store whenmem (is_unification_pattern curenvnb sigma f2 (Array.to_list l2) cM) ->
 	      solve_pattern_eqn_array curenvnb f2 (restore whenmem) cM substn
 
 	| App (f1,l1), App (f2,l2) ->

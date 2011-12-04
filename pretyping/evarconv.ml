@@ -228,7 +228,7 @@ and evar_eqappr_x ?(rhs_is_stuck_proj = false)
 
     | Flexible ev1, MaybeFlexible flex2 ->
 	let f1 i =
-          match is_unification_pattern_evar env ev1 l1 (applist appr2) with
+          match is_unification_pattern_evar env evd ev1 l1 (applist appr2) with
           | Some l1' ->
 	    (* Miller-Pfenning's patterns unification *)
 	    (* Preserve generality (except that CCI has no eta-conversion) *)
@@ -261,7 +261,7 @@ and evar_eqappr_x ?(rhs_is_stuck_proj = false)
 
     | MaybeFlexible flex1, Flexible ev2 ->
 	let f1 i =
-	  match is_unification_pattern_evar env ev2 l2 (applist appr1) with
+	  match is_unification_pattern_evar env evd ev2 l2 (applist appr1) with
           | Some l1' ->
 	    (* Miller-Pfenning's patterns unification *)
 	    (* Preserve generality (except that CCI has no eta-conversion) *)
@@ -361,7 +361,7 @@ and evar_eqappr_x ?(rhs_is_stuck_proj = false)
 	     evar_conv_x ts (push_rel (na,None,c) env) i CONV c'1 c'2)]
 
     | Flexible ev1, (Rigid _ | PseudoRigid _) ->
-	(match is_unification_pattern_evar env ev1 l1 (applist appr2) with
+	(match is_unification_pattern_evar env evd ev1 l1 (applist appr2) with
         | Some l1 ->
 	  (* Miller-Pfenning's pattern unification *)
 	  (* Preserve generality thanks to eta-conversion) *)
@@ -375,7 +375,7 @@ and evar_eqappr_x ?(rhs_is_stuck_proj = false)
 	  true)
 
     | (Rigid _ | PseudoRigid _), Flexible ev2 ->
-	(match is_unification_pattern_evar env ev2 l2 (applist appr1) with
+	(match is_unification_pattern_evar env evd ev2 l2 (applist appr1) with
         | Some l2 ->
 	  (* Miller-Pfenning's pattern unification *)
 	  (* Preserve generality thanks to eta-conversion) *)
