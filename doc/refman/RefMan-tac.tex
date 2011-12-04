@@ -478,7 +478,7 @@ Section~\ref{pattern} to transform the goal so that it gets the form
   {\bindinglist$_1$}} {\tt ,} \ldots {\tt ,} {\term$_n$} \zeroone{{\tt with}
   {\bindinglist$_n$}}
 
-  This summarizes the different syntaxes for {\tt apply}.
+  This summarizes the different syntaxes for {\tt apply} and {\tt eapply}.
 
 \item {\tt lapply {\term}} \tacindex{lapply} 
 
@@ -536,29 +536,29 @@ non dependent premises of the type of {\term}.
 
 This applies each of {\term} in sequence in {\ident}.
 
-\item {\tt apply \nelist{{\term} {\bindinglist}}{,} in {\ident}}
+\item {\tt apply \nelist{{\term} with {\bindinglist}}{,} in {\ident}}
 
 This does the same but uses the bindings in each {\bindinglist} to 
 instantiate the parameters of the corresponding type of {\term}
 (see syntax of bindings in Section~\ref{Binding-list}).
 
-\item {\tt eapply \nelist{{\term} {\bindinglist}}{,} in {\ident}}
+\item {\tt eapply \nelist{{\term} with {\bindinglist}}{,} in {\ident}}
 \tacindex{eapply {\ldots} in}
 
-This works as {\tt apply \nelist{{\term} {\bindinglist}}{,} in
+This works as {\tt apply \nelist{{\term} with {\bindinglist}}{,} in
 {\ident}} but turns unresolved bindings into existential variables, if
 any, instead of failing.
 
-\item {\tt apply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}
+\item {\tt apply \nelist{{\term}{,} with {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}
 
-This works as {\tt apply \nelist{{\term}{,} {\bindinglist}}{,} in
+This works as {\tt apply \nelist{{\term}{,} with {\bindinglist}}{,} in
 {\ident}} then destructs the hypothesis {\ident} along
 {\disjconjintropattern} as {\tt destruct {\ident} as
 {\disjconjintropattern}} would.
 
-\item {\tt eapply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}
+\item {\tt eapply \nelist{{\term}{,} with {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}
 
-This works as {\tt apply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}} but using {\tt eapply}.
+This works as {\tt apply \nelist{{\term}{,} with {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}} but using {\tt eapply}.
 
 \item {\tt simple apply {\term} in {\ident}}
 \tacindex{simple apply {\ldots} in} 
@@ -573,11 +573,11 @@ conversion of {\tt f ?y} and {\tt O} where {\tt ?y} is a variable to
 instantiate.  Tactic {\tt simple apply {\term} in {\ident}} does not
 either traverse tuples as {\tt apply {\term} in {\ident}} does.
 
-\item {\tt simple apply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}\\
-{\tt simple eapply \nelist{{\term}{,} {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}}
+\item {\tt \zeroone{simple} apply \nelist{{\term} \zeroone{with {\bindinglist}}}{,} in {\ident} \zeroone{as {\disjconjintropattern}}}\\
+{\tt \zeroone{simple} eapply \nelist{{\term} \zeroone{with {\bindinglist}}}{,} in {\ident} \zeroone{as {\disjconjintropattern}}}
 
-This are the general forms of {\tt simple apply {\term} in {\ident}} and 
-{\tt simple eapply {\term} in {\ident}}.
+This summarizes the different syntactic variants of {\tt apply {\term}
+  in {\ident}} and {\tt eapply {\term} in {\ident}}.
 \end{Variants}
 
 \subsection{{\tt set ( {\ident} {\tt :=} {\term} \tt )}
@@ -1067,7 +1067,6 @@ different forms:
   type are required.
 
   \ErrMsg \errindex{Not the right number of missing arguments}
-
 \end{itemize}
 
 \subsection{Occurrences sets and occurrences clauses}
@@ -1601,13 +1600,13 @@ equivalent to {\tt intros; apply ci}.
   disjunction $A\lor B$. Then, they are respectively equivalent to {\tt
     constructor 1} and {\tt constructor 2}.
   
-\item {\tt left \bindinglist}\\
-      {\tt right \bindinglist}\\
-      {\tt split \bindinglist}
+\item {\tt left with \bindinglist}\\
+      {\tt right with \bindinglist}\\
+      {\tt split with \bindinglist}
   
   As soon as the inductive type has the right number of constructors,
-    these expressions are equivalent to the corresponding {\tt
-    constructor $i$ with \bindinglist}.
+    these expressions are equivalent to calling {\tt
+    constructor $i$ with \bindinglist} for the appropriate $i$.
 
 \item \texttt{econstructor}\tacindex{econstructor}\\
       \texttt{eexists}\tacindex{eexists}\\
