@@ -108,6 +108,7 @@ val occur_var_in_decl :
 val free_rels : constr -> Intset.t
 val dependent : constr -> constr -> bool
 val dependent_no_evar : constr -> constr -> bool
+val count_occurrences : constr -> constr -> int
 val collect_metas : constr -> int list
 val collect_vars : constr -> Idset.t (** for visible vars only *)
 val occur_term : constr -> constr -> bool (** Synonymous

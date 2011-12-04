@@ -576,6 +576,25 @@ let dependent_main noevar m t =
 let dependent = dependent_main false
 let dependent_no_evar = dependent_main true
 
+let count_occurrences m t =
+  let n = ref 0 in
+  let rec countrec m t =
+    if eq_constr m t then
+      incr n
+    else
+      match kind_of_term m, kind_of_term t with
+	| App (fm,lm), App (ft,lt) when Array.length lm < Array.length lt ->
+	    countrec m (mkApp (ft,Array.sub lt 0 (Array.length lm)));
+	    Array.iter (countrec m)
+	      (Array.sub lt
+		(Array.length lm) ((Array.length lt) - (Array.length lm)))
+	| _, Cast (c,_,_) when isMeta c -> ()
+	| _, Evar _ -> ()
+	| _ -> iter_constr_with_binders (lift 1) countrec m t
+  in
+  countrec m t;
+  !n
+
 (* Synonymous *)
 let occur_term = dependent
 

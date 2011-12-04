@@ -1319,8 +1319,10 @@ and compile_alias pb (na,orig,(expanded,expanded_typ)) rest =
          mat = List.map (push_alias_eqn alias) pb.mat } in
     let j = compile pb in
     { uj_val =
-        if isRel c or isVar c then subst1 c j.uj_val
-        else mkLetIn (na,c,t,j.uj_val);
+        if isRel c || isVar c || count_occurrences (mkRel 1) j.uj_val <= 1 then
+          subst1 c j.uj_val
+        else
+          mkLetIn (na,c,t,j.uj_val);
       uj_type = subst1 c j.uj_type } in
   if isRel orig or isVar orig then
     (* Try to compile first using non expanded alias *)
