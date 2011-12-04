@@ -15,6 +15,9 @@ About plus_n_O.
 Implicit Arguments le_S [[n] m].
 Print le_S.
 
+Arguments le_S {n} [m] _. (* Test new syntax *)
+Print le_S.
+
 About comparison.
 Print comparison.
 
@@ -24,8 +27,15 @@ Implicit Arguments bar [x].
 About bar.
 Print bar.
 
+Arguments bar [x]. (* Test new syntax *)
+About bar.
+Print bar.
+
 About Peano. (* Module *)
 About existS2. (* Notation *)
 
 Implicit Arguments eq_refl [[A] [x]] [[A]].
+Print eq_refl.
+
+Arguments eq_refl {A} {x}, {A} x. (* Test new syntax *)
 Print eq_refl.

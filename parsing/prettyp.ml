@@ -120,7 +120,7 @@ let print_impargs_list prefix l =
 	    else [str "No implicit arguments"]))])]) l)
 
 let print_renames_list prefix l =
-  if l = [] then [prefix] else
+  if l = [] then [] else
   [add_colon prefix ++ str "Arguments are renamed to " ++
     hv 2 (prlist_with_sep pr_comma (fun x -> x) (List.map pr_name l))]
 

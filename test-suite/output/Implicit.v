@@ -36,7 +36,7 @@ Check map id (1::nil).
 
 Definition id' (A:Type) (x:A) := x.
 
-Implicit Arguments id' [[A]].
+Arguments id' {A} x.
 
 Check map id' (1::nil).
 
