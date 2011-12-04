@@ -1,0 +1,6 @@
+P = 
+fun e : option L => match e with
+                    | Some cl => Some cl
+                    | None => None
+                    end
+     : option L -> option L
