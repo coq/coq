@@ -1299,11 +1299,12 @@ let whd_head_evar sigma c = applist (whd_head_evar_stack sigma c)
 
 let rec expand_and_check_vars aliases = function
   | [] -> []
-  | a::l ->
-      if isRel a or isVar a then
-        normalize_alias aliases a :: expand_and_check_vars aliases l
-      else
-	raise Exit
+  | a::l when isRel a or isVar a ->
+      let a = expansion_of_var aliases a in
+      if isRel a or isVar a then a :: expand_and_check_vars aliases l
+      else raise Exit
+  | _ ->
+      raise Exit
 
 module Constrhash = Hashtbl.Make
   (struct type t = constr
