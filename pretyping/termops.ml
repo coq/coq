@@ -148,9 +148,14 @@ let set_module m = current_module := m*)
 
 let new_univ_level =
   let univ_gen = ref 0 in
+  Summary.declare_summary "Universe counter"
+    { Summary.freeze_function = (fun () -> !univ_gen);
+      Summary.unfreeze_function = (fun n -> univ_gen := n);
+      Summary.init_function = (fun () -> univ_gen := 0) };
   (fun sp ->
     incr univ_gen;
     Univ.make_universe_level (Lib.library_dp(),!univ_gen))
+
 let new_univ () = Univ.make_universe (new_univ_level ())
 let new_Type () = mkType (new_univ ())
 let new_Type_sort () = Type (new_univ ())
