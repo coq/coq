@@ -774,32 +774,57 @@ To bind a delimiting key to a scope, use the command
 \end{quote}
 
 \subsubsection{Binding arguments of a constant to an interpretation scope
-\comindex{Arguments Scope}}
+\comindex{Arguments}}
 
 It is possible to set in advance that some arguments of a given
 constant have to be interpreted in a given scope. The command is
 \begin{quote}
-{\tt Arguments Scope} {\qualid} {\tt [ \nelist{\optscope}{} ]}
+{\tt Arguments} {\qualid} \nelist{\name {\tt \%}\scope}{}
 \end{quote}
-where the list is a list made either of {\tt \_} or of a scope name.
-Each scope in the list is bound to the corresponding parameter of
-{\qualid} in order.  When interpreting a term, if some of the
+where the list is the list of the arguments of {\qualid} eventually
+annotated with their {\scope}. Grouping round parentheses can
+be used to decorate multiple arguments with the same scope.
+{\scope} can be either a scope name or its delimiting key. For example
+the following command puts the first two arguments of {\tt plus\_fct}
+in the scope delimited by the key {\tt F} ({\tt Rfun\_scope}) and the
+last argument in the scope delimited by the key {\tt R} ({\tt R\_scope}).
+
+\begin{coq_example*}
+Arguments plus_fct (f1 f2)%F x%R.
+\end{coq_example*}
+
+The {\tt Arguments} command accepts scopes decoration to all grouping
+parentheses. In the following example arguments {\tt A} and {\tt B} 
+are marked as maximally inserted implicit arguments and are
+put into the {\tt type\_scope} scope.
+
+\begin{coq_example*}
+Arguments respectful {A B}%type (R R')%signature _ _.
+\end{coq_example*}
+
+When interpreting a term, if some of the
 arguments of {\qualid} are built from a notation, then this notation
 is interpreted in the scope stack extended by the scopes bound (if any)
 to these arguments.
 
-\begin{Variants}
-\item {\tt Global Arguments Scope} {\qualid} {\tt [ \nelist{\optscope}{} ]}
+Arguments scopes can be cleared with the following command:
 
-This behaves like {\tt Arguments Scope} {\qualid} {\tt [
-\nelist{\optscope}{} ]} but survives when a section is closed instead
+\begin{quote}
+{\tt Arguments {\qualid} : clear scopes}
+\end{quote}
+
+\begin{Variants}
+\item {\tt Global Arguments} {\qualid} \nelist{\name {\tt \%}\scope}{}
+
+This behaves like {\tt Arguments} {\qualid} \nelist{\name {\tt \%}\scope}{}
+but survives when a section is closed instead
 of stopping working at section closing. Without the {\tt Global} modifier,
 the effect of the command stops when the section it belongs to ends.
 
-\item {\tt Local Arguments Scope} {\qualid} {\tt [ \nelist{\optscope}{} ]}
+\item {\tt Local Arguments} {\qualid} \nelist{\name {\tt \%}\scope}{}
 
-This behaves like {\tt Arguments Scope} {\qualid} {\tt [
-    \nelist{\optscope}{} ]} but does not survive modules and files.
+This behaves like {\tt Arguments} {\qualid} \nelist{\name {\tt \%}\scope}{}
+but does not survive modules and files.
 Without the {\tt Local} modifier, the effect of the command is
 visible from within other modules or files.
 
