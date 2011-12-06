@@ -1484,7 +1484,7 @@ let create_session file =
 	|Subst_args -> Project_file.args_from_project the_file !custom_project_files !current.project_file_name
   in
   let ct = ref (Coq.spawn_coqtop coqtop_args) in
-  let command = new Command_windows.command_window !ct current in
+  let command = new Command_windows.command_window ct current in
   let legacy_av = new analyzed_view script proof message stack ct file in
   let () = legacy_av#update_stats in
   let _ =
