@@ -466,7 +466,8 @@ let implicits_of_global ref =
        | _ -> imp in
       List.map2 (fun (t, il) rl -> t, List.map2 rename il rl) l rename_l
     with Not_found -> l
-    | Invalid_argument _ -> anomaly "renaming implicits"
+    | Invalid_argument _ ->
+        anomaly "renamings list and implicits list have different lenghts"
   with Not_found -> [DefaultImpArgs,[]]
 
 let cache_implicits_decl (ref,imps) =

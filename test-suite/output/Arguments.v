@@ -14,7 +14,7 @@ Delimit Scope foo_scope with F.
 Arguments pf {D1%F C1%type} f [D2 C2] g x : simpl never.
 About pf.
 Definition fcomp A B C f (g : A -> B) (x : A) : C := f (g x).
-Arguments fcomp {A B C}%type_scope f g x /.
+Arguments fcomp {_ _ _}%type_scope f g x /.
 About fcomp.
 Definition volatile := fun x : nat => x.
 Arguments volatile /.

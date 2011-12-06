@@ -780,30 +780,35 @@ let vernac_declare_arguments local r l nargs flags =
     | l, [] -> error ("The following arguments are not declared: " ^
        (String.concat ", " (List.map string_of_name l)))
     | _::li, _::ld -> check li ld in
-  if names <> [] then
+  if l <> [[]] then
     List.iter (fun l -> check inf_names l) (names :: rest);
+  (* we interpret _ as the inferred names *)
+  let l = if l = [[]] then l else
+    let name_anons = function
+      | (Anonymous, a,b,c,d), Name id -> Name id, a,b,c,d
+      | x, _ -> x in
+    List.map (fun ns -> List.map name_anons (List.combine ns inf_names)) l in
+  let names_decl = List.map (List.map (fun (id, _,_,_,_) -> id)) l in
+  let some_renaming_specified =
+    try Arguments_renaming.arguments_names sr <> names_decl
+    with Not_found -> false in
   let some_renaming_specified, implicits =
-    if names = [] then false, [[]] else
-    let never_implicit x =
-      not (List.exists (List.exists (fun (y, _,_, b, _) -> b && y = x)) l) in
+    if l = [[]] then false, [[]] else
     Util.list_fold_map (fun sr il ->
       let sr', impl = Util.list_fold_map (fun b -> function
-        | (Anonymous, _,_, true, _), _ ->
-            error "Implicit arguments must have a name"
-        | (Name x,_,_,false,_),Name y when x <> y && never_implicit (Name x)->
-            error ("Reanaming a non implicit argument " ^ string_of_id y ^
-              " to " ^ string_of_id x)
+        | (Anonymous, _,_, true, max), Name id -> assert false
         | (Name x, _,_, true, _), Anonymous ->
-            error ("Argument "^string_of_id x^" is anonymous and cannot be"^
-              " declared implicit")
+            error ("Argument "^string_of_id x^" cannot be declared implicit")
         | (Name iid, _,_, true, max), Name id ->
            b || iid <> id, Some (ExplByName id, max, false)
         | _ -> b, None)
-        false (List.combine il inf_names) in
+        sr (List.combine il inf_names) in
       sr || sr', Util.list_map_filter (fun x -> x) impl)
-      false l in
+      some_renaming_specified l in
   if some_renaming_specified then
-    Arguments_renaming.rename_arguments local sr (names :: rest);
+    if not (List.mem `Rename flags) then
+      error "to rename arguments the \"rename\" flag must be specified"
+    else Arguments_renaming.rename_arguments local sr names_decl;
   (* All other infos are in the first item of l *)
   let l = List.hd l in
   let some_implicits_specified = implicits <> [[]] in
