@@ -1367,6 +1367,55 @@ by {\tt plus' := plus} is possibly unfolded and reused in the
 recursive calls, but a constant such as {\tt succ := plus (S O)} is
 never unfolded.
 
+The behaviour of {\tt simpl} can be tuned using the {\tt Arguments} vernacular
+command as follows:
+\begin{itemize}
+\item
+A constant can be marked to be never unfolded by {\tt simpl}:
+\begin{coq_example*}
+Arguments minus x y : simpl never
+\end{coq_example*}
+After that command an expression like {\tt (minus (S x) y)} is left untouched by
+the {\tt simpl} tactic.
+\item
+A constant can be marked to be unfolded only if applied to enough arguments.
+The number of arguments required can be specified using
+the {\tt /} symbol in the arguments list of the {\tt Arguments} vernacular
+command.
+\begin{coq_example*}
+Definition fcomp A B C f (g : A -> B) (x : A) : C := f (g x).
+Notation "f \o g" := (fcomp f g) (at level 50).
+Arguments fcomp {A B C} f g x /.
+\end{coq_example*}
+After that command the expression {\tt (f \verb+\+o g)} is left untouched by 
+{\tt simpl} while {\tt ((f \verb+\+o g) t)} is reduced to {\tt (f (g t))}.
+The same mechanism can be used to make a constant volatile, i.e. always 
+unfolded by {\tt simpl}.
+\begin{coq_example*}
+Definition volatile := fun x : nat => x.
+Arguments volatile / x.
+\end{coq_example*}
+\item
+A constant can be marked to be unfolded only if an entire set of arguments
+evaluates to a constructor. The {\tt !} symbol can be used to mark such
+arguments.
+\begin{coq_example*}
+Arguments minus !x !y.
+\end{coq_example*}
+After that command, the expression {\tt (minus (S x) y)} is left untouched by
+{\tt simpl}, while {\tt (minus (S x) (S y))} is reduced to {\tt (minus x y)}.
+\item
+A special heuristic to determine if a constant has to be unfolded can be
+activated with the following command:
+\begin{coq_example*}
+Arguments minus x y : simpl nomatch
+\end{coq_example*}
+The heuristic avoids to perform a simplification step that would
+expose a {\tt match} construct in head position. For example the
+expression {\tt (minus (S (S x)) (S y))} is simplified to
+{\tt (minus (S x) y)} even if an extra simplification is possible.
+\end{itemize}
+
 \tacindex{simpl \dots\ in}
 \begin{Variants}
 \item {\tt simpl {\term}}
