@@ -167,24 +167,27 @@ let pure_sublevels level symbs =
     symbs
 
 let extend_constr (entry,level) (n,assoc) mkact forpat rules =
-  List.iter (fun pt ->
+  List.fold_left (fun nb pt ->
   let symbs = make_constr_prod_item assoc n forpat pt in
   let pure_sublevels = pure_sublevels level symbs in
   let needed_levels = register_empty_levels forpat pure_sublevels in
   let pos,p4assoc,name,reinit = find_position forpat assoc level in
+  let nb_decls = List.length needed_levels + 1 in
   List.iter (prepare_empty_levels forpat) needed_levels;
-  grammar_extend entry reinit (pos,[(name, p4assoc, [symbs, mkact pt])])) rules
+  grammar_extend entry reinit (pos,[(name, p4assoc, [symbs, mkact pt])]);
+  nb_decls) 0 rules
 
 let extend_constr_notation (n,assoc,ntn,rules) =
   (* Add the notation in constr *)
   let mkact loc env = CNotation (loc,ntn,env) in
   let e = interp_constr_entry_key false (ETConstr (n,())) in
-  extend_constr e (ETConstr(n,()),assoc) (make_constr_action mkact) false rules;
+  let nb = extend_constr e (ETConstr(n,()),assoc) (make_constr_action mkact) false rules in
   (* Add the notation in cases_pattern *)
   let mkact loc env = CPatNotation (loc,ntn,env) in
   let e = interp_constr_entry_key true (ETConstr (n,())) in
-  extend_constr e (ETConstr (n,()),assoc) (make_cases_pattern_action mkact)
-    true rules
+  let nb' = extend_constr e (ETConstr (n,()),assoc) (make_cases_pattern_action mkact)
+    true rules in
+  nb+nb'
 
 (**********************************************************************)
 (** Making generic actions in type generic_argument                   *)
@@ -273,7 +276,8 @@ let add_tactic_entry (key,lev,prods,tac) =
 	(TacAtom(loc,TacAlias(loc,s,l,tac)):raw_tactic_expr) in
       make_rule univ (mkact key tac) make_prod_item prods in
   synchronize_level_positions ();
-  grammar_extend entry None (pos,[(None, None, List.rev [rules])])
+  grammar_extend entry None (pos,[(None, None, List.rev [rules])]);
+  1
 
 (**********************************************************************)
 (** State of the grammar extensions                                   *)
@@ -290,17 +294,17 @@ type all_grammar_command =
       (string * int * grammar_prod_item list *
          (dir_path * Tacexpr.glob_tactic_expr))
 
-let (grammar_state : all_grammar_command list ref) = ref []
+let (grammar_state : (int * all_grammar_command) list ref) = ref []
 
 let extend_grammar gram =
-  (match gram with
+  let nb = match gram with
   | Notation (_,_,a) -> extend_constr_notation a
-  | TacticGrammar g -> add_tactic_entry g);
-  grammar_state := gram :: !grammar_state
+  | TacticGrammar g -> add_tactic_entry g in
+  grammar_state := (nb,gram) :: !grammar_state
 
 let recover_notation_grammar ntn prec =
   let l = map_succeed (function
-    | Notation (prec',vars,(_,_,ntn',_ as x)) when prec = prec' & ntn = ntn' ->
+    | _, Notation (prec',vars,(_,_,ntn',_ as x)) when prec = prec' & ntn = ntn' ->
 	 vars, x
     | _ ->
 	 failwith "") !grammar_state in
@@ -320,11 +324,7 @@ let factorize_grams l1 l2 =
   if l1 == l2 then ([], [], l1) else list_share_tails l1 l2
 
 let number_of_entries gcl =
-  List.fold_left
-    (fun n -> function
-      | Notation _ -> n + 2 (* 1 for operconstr, 1 for pattern *)
-      | TacticGrammar _ -> n + 1)
-    0 gcl
+  List.fold_left (fun n (p,_) -> n + p) 0 gcl
 
 let unfreeze (grams, lex) =
   let (undo, redo, common) = factorize_grams !grammar_state grams in
@@ -333,7 +333,7 @@ let unfreeze (grams, lex) =
   remove_levels n;
   grammar_state := common;
   Lexer.unfreeze lex;
-  List.iter extend_grammar (List.rev redo)
+  List.iter extend_grammar (List.rev (List.map snd redo))
 
 let init_grammar () =
   remove_grammars (number_of_entries !grammar_state);
