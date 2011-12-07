@@ -55,23 +55,16 @@ Definition rect2 (P: forall {n} (a b: t n), Type)
 fix rect2_fix {n} (a: t n): forall (b: t n), P a b :=
 match a with
   |F1 m => fun (b: t (S m)) => match b as b' in t n'
-                   return match n' as n0
-                          return t n0 -> Type with
-                            |0 => fun _ => @ID
-                            |S n0 => fun b0 => P F1 b0
-                          end b' with
+                   return match n',b' with
+                            |0,_ => @ID
+                            |S n0,b0 => P F1 b0
+                          end with
                      |F1 m' => H0 m'
                      |FS m' b' => H1 b'
                    end
-  |FS m a' => fun (b: t (S m)) => match b as b' in t n'
-                      return match n' as n0
-                             return t n0 -> Type with
-                               |0 => fun _ => @ID
-                               |S n0 => fun b0 =>
-                                 forall (a0: t n0), P (FS a0) b0
-                             end b' with
-                         |F1 m' => fun aa => H2 aa
-                         |FS m' b' => fun aa => HS aa b' (rect2_fix aa b')
+  |FS m a' => fun (b: t (S m)) => match b with
+                         |F1 m' => fun aa: t m' => H2 aa
+                         |FS m' b' => fun aa: t m' => HS aa b' (rect2_fix aa b')
                        end a'
 end.
 End SCHEMES.
@@ -123,8 +116,7 @@ Fixpoint weak {m}{n} p (f : t m -> t n) :
   t (p + m) -> t (p + n) :=
 match p as p' return t (p' + m) -> t (p' + n) with
   |0 => f
-  |S p' => fun x => match x in t n0 return
-     match n0 with |0 => @ID |S n0' => n0' = p' + m -> t (S p' + n) end with
+  |S p' => fun x => match x with
      |F1 n' => fun eq : n' = p' + m => F1
      |FS n' y => fun eq : n' = p' + m => FS (weak p' f (eq_rect _ t y _ eq))
   end (eq_refl _)
@@ -149,8 +141,8 @@ Definition L_R {m} n (p : t m) : t (n + m).
 induction n.
   exact p.
   exact ((fix LS k (p: t k) :=
-    match p in t n0 return t (S n0) with
-      |F1 _ => F1
+    match p with
+      |F1 k' => @F1 (S k')
       |FS _ p' => FS (LS _ p')
     end) _ IHn).
 Defined.

@@ -69,11 +69,7 @@ match v1 as v1' in t _ n1
        |_ :: _ => @id
      end
   |h1 :: t1 => fun v2 =>
-    match v2 as v2' in t _ n2
-      return match n2, v2' with
-        |0, _ => ID
-        |S n', v2 => forall t1' : t A n', P (h1 :: t1') v2
-        end with
+    match v2 with
       |[] => @id
       |h2 :: t2 => fun t1' =>
         rect (rect2_fix t1' t2) h1 h2
@@ -128,9 +124,9 @@ Definition nth_order {A} {n} (v: t A n) {p} (H: p < n) :=
 
 (** Put [a] at the p{^ th} place of [v] *)
 Fixpoint replace {A n} (v : t A n) (p: Fin.t n) (a : A) {struct p}: t A n :=
-  match p in Fin.t j return t A j -> t A j with
+  match p with
   |Fin.F1 k => fun v': t A (S k) => caseS (fun n _ => t A (S n)) (fun h _ t => a :: t) v'
-  |Fin.FS k p' => fun v': t A (S k) =>
+  |Fin.FS k p' => fun v' =>
     (caseS (fun n _ => Fin.t n -> t A (S n)) (fun h _ t p2 => h :: (replace t p2 a)) v') p'
   end v.
 
