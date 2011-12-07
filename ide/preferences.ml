@@ -37,7 +37,7 @@ let string_of_project_behavior = function
 
 let project_behavior_of_string s =
   if s = "taken instead of arguments" then Subst_args
-  else if s = "appened to arguments" then Append_args
+  else if s = "appended to arguments" then Append_args
   else Ignore_args
 
 type pref =
