@@ -1,7 +1,6 @@
 \renewcommand{\@meta}{
 \begin{rawhtml}
 <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-<title>Reference Manual | The Coq Proof Assistant</title>
 
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon" />
 <style type="text/css" media="all">@import "http://coq.inria.fr/modules/node/node.css";</style>
