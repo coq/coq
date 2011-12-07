@@ -375,8 +375,8 @@ let load_coercion _ o =
   then
     cache_coercion o
 
-let open_coercion _ o =
-  if not
+let open_coercion i o =
+  if i = 1 && not
     (!automatically_import_coercions || Flags.version_less_or_equal Flags.V8_2)
   then
     cache_coercion o

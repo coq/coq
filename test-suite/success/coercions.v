@@ -81,3 +81,11 @@ Coercion irrelevent := (fun _ => I) : True -> car (Build_Setoid True).
 
 Definition ClaimB := forall (X Y:Setoid) (f: extSetoid X Y) (x:X), f x= f x.
 
+(* Check that coercions are made visible only when modules are imported *)
+
+Module A.
+  Module B. Coercion b2n (b:bool) := if b then 0 else 1. End B.
+  Fail Check S true.
+End A.
+Import A.
+Fail Check S true.
