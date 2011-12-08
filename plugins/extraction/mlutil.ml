@@ -116,6 +116,9 @@ let put_magic_if b a = if b && lang () <> Scheme then MLmagic a else a
 
 let put_magic p a = if needs_magic p && lang () <> Scheme then MLmagic a else a
 
+let not_generalizable = function
+  | MLapp _ -> true
+  | _ -> false (* TODO, this is just an approximation *)
 
 (*S ML type env. *)
 
@@ -1011,10 +1014,18 @@ let kill_some_lams bl (ids,c) =
 let kill_dummy_lams c =
   let ids,c = collect_lams c in
   let bl = List.map sign_of_id ids in
-  if (List.mem Keep bl) && (List.exists isKill bl) then
-    let ids',c = kill_some_lams bl (ids,c) in
-    ids, named_lams ids' c
-  else raise Impossible
+  if not (List.mem Keep bl) then raise Impossible;
+  let rec fst_kill n = function
+    | [] -> raise Impossible
+    | Kill _ :: bl -> n
+    | Keep :: bl -> fst_kill (n+1) bl
+  in
+  let skip = max 0 ((fst_kill 0 bl) - 1) in
+  let ids_skip, ids = list_chop skip ids in
+  let _, bl = list_chop skip bl in
+  let c = named_lams ids_skip c in
+  let ids',c = kill_some_lams bl (ids,c) in
+  ids, named_lams ids' c
 
 (*s [eta_expansion_sign] takes a function [fun idn ... id1 -> c]
    and a signature [s] and builds a eta-long version. *)
@@ -1055,21 +1066,26 @@ let term_expunge s (ids,c) =
       MLlam (Dummy, ast_lift 1 c)
     else named_lams ids c
 
-(*s [kill_dummy_args ids t0 t] looks for occurences of [t0] in [t] and
-  purge the args of [t0] corresponding to a [dummy_name].
+(*s [kill_dummy_args ids r t] looks for occurences of [MLrel r] in [t] and
+  purge the args of [MLrel r] corresponding to a [dummy_name].
   It makes eta-expansion if needed. *)
 
-let kill_dummy_args ids t0 t =
+let kill_dummy_args ids r t =
   let m = List.length ids in
   let bl = List.rev_map sign_of_id ids in
+  let rec found n = function
+    | MLrel r' when r' = r + n -> true
+    | MLmagic e -> found n e
+    | _ -> false
+  in
   let rec killrec n = function
-    | MLapp(e, a) when e = ast_lift n t0 ->
+    | MLapp(e, a) when found n e ->
 	let k = max 0 (m - (List.length a)) in
 	let a = List.map (killrec n) a in
 	let a = List.map (ast_lift k) a in
 	let a = select_via_bl bl (a @ (eta_args k)) in
 	named_lams (list_firstn k ids) (MLapp (ast_lift k e, a))
-    | e when e = ast_lift n t0 ->
+    | e when found n e ->
 	let a = select_via_bl bl (eta_args m) in
 	named_lams ids (MLapp (ast_lift m e, a))
     | e -> ast_map_lift killrec n e
@@ -1081,28 +1097,28 @@ let rec kill_dummy = function
   | MLfix(i,fi,c) ->
       (try
 	 let ids,c = kill_dummy_fix i c in
-	 ast_subst (MLfix (i,fi,c)) (kill_dummy_args ids (MLrel 1) (MLrel 1))
+	 ast_subst (MLfix (i,fi,c)) (kill_dummy_args ids 1 (MLrel 1))
        with Impossible -> MLfix (i,fi,Array.map kill_dummy c))
   | MLapp (MLfix (i,fi,c),a) ->
       let a = List.map kill_dummy a in
       (try
 	 let ids,c = kill_dummy_fix i c in
 	 let fake = MLapp (MLrel 1, List.map (ast_lift 1) a) in
-	 let fake' = kill_dummy_args ids (MLrel 1) fake in
+	 let fake' = kill_dummy_args ids 1 fake in
 	 ast_subst (MLfix (i,fi,c)) fake'
        with Impossible -> MLapp(MLfix(i,fi,Array.map kill_dummy c),a))
   | MLletin(id, MLfix (i,fi,c),e) ->
       (try
 	 let ids,c = kill_dummy_fix i c in
-	 let e = kill_dummy (kill_dummy_args ids (MLrel 1) e) in
+	 let e = kill_dummy (kill_dummy_args ids 1 e) in
 	 MLletin(id, MLfix(i,fi,c),e)
       with Impossible ->
 	MLletin(id, MLfix(i,fi,Array.map kill_dummy c),kill_dummy e))
   | MLletin(id,c,e) ->
       (try
 	 let ids,c = kill_dummy_lams (kill_dummy_hd c) in
-	 let e = kill_dummy (kill_dummy_args ids (MLrel 1) e) in
-	 let c = eta_red (kill_dummy c) in
+	 let e = kill_dummy (kill_dummy_args ids 1 e) in
+	 let c = kill_dummy c in
 	 if is_atomic c then ast_subst c e else MLletin (id, c, e)
        with Impossible -> MLletin(id,kill_dummy c,kill_dummy e))
   | a -> ast_map kill_dummy a
@@ -1114,8 +1130,8 @@ and kill_dummy_hd = function
   | MLletin(id,c,e) ->
       (try
 	 let ids,c = kill_dummy_lams (kill_dummy_hd c) in
-	 let e = kill_dummy_hd (kill_dummy_args ids (MLrel 1) e) in
-	 let c = eta_red (kill_dummy c) in
+	 let e = kill_dummy_hd (kill_dummy_args ids 1 e) in
+	 let c = kill_dummy c in
 	 if is_atomic c then ast_subst c e else MLletin (id, c, e)
        with Impossible -> MLletin(id,kill_dummy c,kill_dummy_hd e))
   | a -> a
@@ -1125,7 +1141,7 @@ and kill_dummy_fix i c =
   let ids,ci = kill_dummy_lams (kill_dummy_hd c.(i)) in
   let c = Array.copy c in c.(i) <- ci;
   for j = 0 to (n-1) do
-    c.(j) <- kill_dummy (kill_dummy_args ids (MLrel (n-i)) c.(j))
+    c.(j) <- kill_dummy (kill_dummy_args ids (n-i) c.(j))
   done;
   ids,c
 

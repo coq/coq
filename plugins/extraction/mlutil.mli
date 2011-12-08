@@ -27,6 +27,8 @@ val needs_magic : ml_type * ml_type -> bool
 val put_magic_if : bool -> ml_ast -> ml_ast
 val put_magic : ml_type * ml_type -> ml_ast -> ml_ast
 
+val not_generalizable : ml_ast -> bool
+
 (*s ML type environment. *)
 
 module Mlenv : sig
