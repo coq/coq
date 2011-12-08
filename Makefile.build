@@ -621,6 +621,14 @@ install-tools::
 	$(INSTALLLIB) tools/coqdoc/coqdoc.css tools/coqdoc/coqdoc.sty $(FULLCOQLIB)/tools/coqdoc
 	$(INSTALLBIN) $(TOOLS) $(FULLBINDIR)
 
+# The list of .cmi to install, including the ones obtained
+# from .mli without .ml, and the ones obtained from .ml without .mli
+
+INSTALLCMI = $(sort \
+	$(CONFIG:.cmo=.cmi) \
+	$(filter-out checker/% ide/% tools/%, $(MLIFILES:.mli=.cmi)) \
+	$(foreach lib,$(CORECMA) $(PLUGINSCMA), $(addsuffix .cmi,$($(lib:.cma=_MLLIB_DEPENDENCIES)))))
+
 install-library:
 	$(MKDIR) $(FULLCOQLIB)
 	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILES) $(PLUGINS) $(PLUGINSOPT)
@@ -629,9 +637,7 @@ install-library:
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
 	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
 	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG) $(LINKCMO) $(GRAMMARCMA)
-	# reconstitute the list of core .cmi
-	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG:.cmo=.cmi) \
-	  $(foreach lib,$(CORECMA:.cma=_MLLIB_DEPENDENCIES) $(PLUGINSCMA:.cma=_MLLIB_DEPENDENCIES),$(addsuffix .cmi,$($(lib))))
+	$(INSTALLSH)  $(FULLCOQLIB) $(INSTALLCMI)
 ifeq ($(BEST),opt)
 	$(INSTALLLIB) $(LIBCOQRUN) $(FULLCOQLIB)
 	$(INSTALLSH)  $(FULLCOQLIB) $(CONFIG:.cmo=.cmx) $(CONFIG:.cmo=.o) $(LINKCMO:.cma=.cmxa) $(LINKCMO:.cma=.a)
