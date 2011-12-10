@@ -566,7 +566,11 @@ let rec extract_term env mle mlt c args =
 	  let a = new_meta () in
 	  let c1' = extract_term env mle a c1 [] in
 	  (* The type of [c1'] is generalized and stored in [mle]. *)
-	  let mle' = Mlenv.push_gen mle a in
+	  let mle' =
+	    if not_generalizable c1'
+	    then Mlenv.push_type mle a
+	    else Mlenv.push_gen mle a
+	  in
 	  MLletin (Id id, c1', extract_term env' mle' mlt c2 args')
 	with NotDefault d ->
 	  let mle' = Mlenv.push_std_type mle (Tdummy d) in
