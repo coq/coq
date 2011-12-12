@@ -101,6 +101,7 @@ Module System
   The level of a parameter can be fixed by "Parameter Inline(30) foo".
   When levels aren't given, the default value is 100. One can also use
   the flag "Set Inline Level ..." to set a level. TODO: DOC!
+- Print Assumptions should now handle correctly opaque modules (#2168)
 - Print Module (Type) now tries to print more details, such as types and
   bodies of the module elements. Note that Print Module Type could be
   used on a module to display only its interface. The option
@@ -166,6 +167,7 @@ Internal infrastructure
 - Opaque proofs are now loaded lazily by default. This allows to be almost as
   fast as -dont-load-proofs, while being safer (no creation of axioms) and
   avoiding feature restrictions (Print and Print Assumptions work ok).
+- Revised hash-consing code allowing more sharing of memory
 - Experimental support added for camlp4 (the one provided alongside ocaml),
   simply pass option -usecamlp4 to ./configure. By default camlp5 is used.
 - Revised build system: no more stages in Makefile thanks to some recursive
@@ -191,6 +193,7 @@ Extraction
   extraction to optimize singleton container types. DOC TODO
 - The extraction now identifies and properly rejects a particular case of
   universe polymorphism it cannot handle yet (the pair (I,I) being Prop).
+- Support of anonymous fields in record (#2555).
 
 CoqIDE
 
@@ -199,6 +202,10 @@ CoqIDE
   (cf button "Restart Coq", ex-"Go to Start"). For allowing such
   interrupts, the Windows version of coqide now requires Windows >= XP
   SP1.
+- The communication between CoqIDE and Coqtop is now done via a dialect
+  of XML (DOC TODO).
+- The backtrack engine of CoqIDE has been reworked, it now used the
+  "Backtrack" command similarly to ProofGeneral.
 - The Coqide parsing of sentences has be reworked and now supports
   tactic delimitation via { }.
 - Coqide now accepts the Abort command (wish #2357).
