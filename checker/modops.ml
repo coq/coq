@@ -111,7 +111,7 @@ and add_module mb env =
       | _ -> anomaly "Modops:the evaluation of the structure failed "
 
 
-let strengthen_const env mp_from l cb resolver = 
+let strengthen_const mp_from l cb resolver =
   match cb.const_opaque, cb.const_body with
   | false, Some _ -> cb
   | true, Some _ 
@@ -126,14 +126,14 @@ let strengthen_const env mp_from l cb resolver =
 	}
 	  
 
-let rec strengthen_mod env mp_from mp_to mb = 
+let rec strengthen_mod mp_from mp_to mb =
   if Declarations.mp_in_delta mb.mod_mp mb.mod_delta then
     mb 
   else
     match mb.mod_type with
      | SEBstruct (sign) -> 
 	 let resolve_out,sign_out = 
-	   strengthen_sig env mp_from sign mp_to mb.mod_delta in
+	   strengthen_sig mp_from sign mp_to mb.mod_delta in
 	   { mb with
 	       mod_expr = Some (SEBident mp_to);
 	       mod_type = SEBstruct(sign_out);
@@ -145,60 +145,49 @@ let rec strengthen_mod env mp_from mp_to mb =
      | SEBfunctor _ -> mb
      | _ -> anomaly "Modops:the evaluation of the structure failed "
 	 
-and strengthen_sig env mp_from sign mp_to resolver =
+and strengthen_sig mp_from sign mp_to resolver =
   match sign with
     | [] -> empty_delta_resolver,[]
     | (l,SFBconst cb) :: rest ->
-	let item' = 
-	  l,SFBconst (strengthen_const env mp_from l cb resolver) in
-	let resolve_out,rest' =
-	  strengthen_sig env mp_from rest mp_to resolver in
-	  resolve_out,item'::rest'
+	let item' = l,SFBconst (strengthen_const mp_from l cb resolver) in
+	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
+	resolve_out,item'::rest'
     | (_,SFBmind _ as item):: rest ->
-	let resolve_out,rest' = 
-	  strengthen_sig env mp_from rest mp_to resolver in
-	  resolve_out,item::rest'
+	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
+	resolve_out,item::rest'
     | (l,SFBmodule mb) :: rest ->
 	let mp_from' = MPdot (mp_from,l) in
-	let mp_to' = MPdot(mp_to,l) in 
-	let mb_out = 
-	  strengthen_mod env mp_from' mp_to' mb in
+	let mp_to' = MPdot(mp_to,l) in
+	let mb_out = strengthen_mod mp_from' mp_to' mb in
 	let item' = l,SFBmodule (mb_out) in
-	let env' = add_module mb_out env in
-	let resolve_out,rest' = 
-	  strengthen_sig env' mp_from rest mp_to resolver in
-	  resolve_out
-	  (*add_delta_resolver resolve_out mb.mod_delta*),
-	item':: rest'
-    | (l,SFBmodtype mty as item) :: rest -> 
-	let env' = add_modtype 
-	  (MPdot(mp_from,l)) mty env
-	in
-	let resolve_out,rest' = 
-	  strengthen_sig env' mp_from rest mp_to resolver in
-	  resolve_out,item::rest'
-    
-let strengthen env mtb mp = 
+	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
+	resolve_out, item'::rest'
+    | (l,SFBmodtype mty as item) :: rest ->
+	let resolve_out,rest' = strengthen_sig mp_from rest mp_to resolver in
+	resolve_out, item::rest'
+
+let strengthen mtb mp =
     match mtb.typ_expr with
-      | SEBstruct (sign) -> 
+      | SEBstruct (sign) ->
 	  let resolve_out,sign_out =
-	    strengthen_sig env mtb.typ_mp sign mp mtb.typ_delta in
-	    {mtb with
-	       typ_expr = SEBstruct(sign_out);
-	       typ_delta = resolve_out(*add_delta_resolver mtb.typ_delta
+	    strengthen_sig mtb.typ_mp sign mp mtb.typ_delta
+	  in
+	  {mtb with
+	    typ_expr = SEBstruct(sign_out);
+	    typ_delta = resolve_out(*add_delta_resolver mtb.typ_delta
 		(add_mp_delta_resolver mtb.typ_mp mp resolve_out)*)}
       | SEBfunctor _ -> mtb
       | _ -> anomaly "Modops:the evaluation of the structure failed "
 
-let subst_and_strengthen mb mp env =
-  strengthen_mod env mb.mod_mp mp 
+let subst_and_strengthen mb mp =
+  strengthen_mod mb.mod_mp mp
     (subst_module (map_mp mb.mod_mp mp) mb)
 
 
-let module_type_of_module env mp mb =
+let module_type_of_module mp mb =
   match mp with
       Some mp ->
-	strengthen env {
+	strengthen {
 	  typ_mp = mp;
 	  typ_expr = mb.mod_type;
 	  typ_expr_alg = None;

@@ -22,7 +22,7 @@ open Environ
 (* make the envirconment entry out of type *)
 val module_body_of_type : module_path -> module_type_body -> module_body
 
-val module_type_of_module : env -> module_path option -> module_body ->
+val module_type_of_module : module_path option -> module_body ->
   module_type_body
 
 val destr_functor :
@@ -35,9 +35,9 @@ val add_module : module_body ->  env -> env
 
 val check_modpath_equiv : env -> module_path -> module_path -> unit
 
-val strengthen : env -> module_type_body -> module_path -> module_type_body
+val strengthen : module_type_body -> module_path -> module_type_body
 
-val subst_and_strengthen : module_body -> module_path -> env -> module_body 
+val subst_and_strengthen : module_body -> module_path -> module_body
 
 val error_incompatible_modtypes :
   module_type_body -> module_type_body -> 'a
