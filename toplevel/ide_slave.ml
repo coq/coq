@@ -204,7 +204,7 @@ let rec attribute_of_vernac_command = function
   | VernacUnfocus -> [SolveCommand]
   | VernacShow _ -> [OtherStatePreservingCommand]
   | VernacCheckGuard -> [OtherStatePreservingCommand]
-  | VernacProof (Tacexpr.TacId []) -> [OtherStatePreservingCommand]
+  | VernacProof (None, None) -> [OtherStatePreservingCommand]
   | VernacProof _ -> []
 
   | VernacProofMode _ -> []

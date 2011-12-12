@@ -82,6 +82,10 @@ val run_tactic : unit Proofview.tactic -> unit
 (** Sets the tactic to be used when a tactic line is closed with [...] *)
 val set_endline_tactic : unit Proofview.tactic -> unit
 
+(** Sets the section variables assumed by the proof *)
+val set_used_variables : Names.identifier list -> unit
+val get_used_variables : unit -> Sign.section_context option
+
 (** Appends the endline tactic of the current proof to a tactic. *)
 val with_end_tac : unit Proofview.tactic -> unit Proofview.tactic
 

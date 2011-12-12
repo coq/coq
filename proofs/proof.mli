@@ -129,6 +129,9 @@ val get_proof_info : proof -> Store.t
 
 val set_proof_info : Store.t -> proof -> unit
 
+(* Sets the section variables assumed by the proof *)
+val set_used_variables : Sign.section_context -> proof -> unit
+val get_used_variables : proof -> Sign.section_context option
 
 (*** Endline tactic ***)
 

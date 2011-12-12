@@ -325,7 +325,8 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
 	let body = it_mkLambda_or_LetIn (mkApp (constr_of_global gr, [|make|])) binders_rel in
 	let ty = it_mkProd_or_LetIn top_arity binders_rel in
 	let ce =
-	  { const_entry_body = Evarutil.nf_evar !isevars body;
+          { const_entry_body = Evarutil.nf_evar !isevars body;
+            const_entry_secctx = None;
 	    const_entry_type = Some ty;
 	    const_entry_opaque = false }
 	in 

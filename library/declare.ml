@@ -148,7 +148,7 @@ let discharge_constant ((sp,kn),(cdt,dhyps,kind)) =
   Some (GlobalRecipe recipe,(discharged_hyps kn sechyps)@dhyps,kind)
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_constant_entry = ConstantEntry (ParameterEntry (mkProp,None))
+let dummy_constant_entry = ConstantEntry (ParameterEntry (None,mkProp,None))
 
 let dummy_constant (ce,_,mk) = dummy_constant_entry,[],mk
 

@@ -1647,6 +1647,7 @@ let declare_projection n instance_id r =
   let typ = it_mkProd_or_LetIn typ ctx in
   let cst =
     { const_entry_body = term;
+      const_entry_secctx = None;
       const_entry_type = Some typ;
       const_entry_opaque = false }
   in
@@ -1713,7 +1714,7 @@ let add_morphism_infer glob m n =
   let instance = build_morphism_signature m in
     if Lib.is_modtype () then
       let cst = Declare.declare_constant ~internal:Declare.KernelSilent instance_id
-				(Entries.ParameterEntry (instance,None), Decl_kinds.IsAssumption Decl_kinds.Logical)
+				(Entries.ParameterEntry (None,instance,None), Decl_kinds.IsAssumption Decl_kinds.Logical)
       in
 	add_instance (Typeclasses.new_instance (Lazy.force proper_class) None glob (ConstRef cst));
 	declare_projection n instance_id (ConstRef cst)

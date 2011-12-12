@@ -119,6 +119,7 @@ type proof_state = {
 
 type proof_info = {
   mutable endline_tactic : unit Proofview.tactic ;
+  mutable section_vars : Sign.section_context option;
   initial_conclusions : Term.types list
 }
 
@@ -218,6 +219,11 @@ let _unfocus pr =
   let (_,_,fc) = pop_focus pr in
   pr.state <- { pr.state with proofview = Proofview.unfocus fc pr.state.proofview }
 
+
+let set_used_variables l p =
+  p.info.section_vars <- Some l
+
+let get_used_variables p = p.info.section_vars
 
 (*** Endline tactic ***)
 
@@ -364,7 +370,8 @@ let start goals =
       undo_stack = [] ;
       transactions = [] ;
       info = { endline_tactic = Proofview.tclUNIT ();
-	       initial_conclusions = List.map snd goals }
+               initial_conclusions = List.map snd goals;
+               section_vars = None }
     }
   in
   _focus end_of_stack (Obj.repr ()) 1 (List.length goals) pr;

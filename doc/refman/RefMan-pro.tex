@@ -133,6 +133,24 @@ one gulp, as a proof term (see Section~\ref{exact}).
 
 \SeeAlso {\tt Proof with {\tac}.} in Section~\ref{ProofWith}.
 
+\subsection[\tt Proof using {\ident$_1$ \dots {\ident$_n$}}.]
+{\tt Proof using {\ident$_1$ \dots {\ident$_n$}}.
+\comindex{Proof using} \label{ProofUsing}}
+
+This command applies in proof editing mode. 
+It declares the set of section variables (see~\ref{Variable}) 
+used by the proof. At {\tt Qed} time, the system will assert that 
+the set of section variables actually used in the proof is a subset of
+the declared one.
+
+The set of declared variables is closed under type dependency.
+For example if {\tt T} is variable and {\tt a} is a variable of
+type {\tt T}, the commands {\tt Proof using a} and
+{\tt Proof using T a} are actually equivalent.
+
+\variant {\tt Proof using {\ident$_1$ \dots {\ident$_n$}} with {\tac}.} 
+in Section~\ref{ProofWith}.
+
 \subsection[\tt Abort.]{\tt Abort.\comindex{Abort}}
 
 This command cancels the current proof development, switching back to

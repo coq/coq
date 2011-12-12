@@ -381,6 +381,7 @@ let generate_functional_principle
 	(*       Pp.msgnl (str "new principle := " ++ pr_lconstr value); *)
 	let ce =
 	  { const_entry_body = value;
+            const_entry_secctx = None;
 	    const_entry_type = None;
 	    const_entry_opaque = false }
 	in

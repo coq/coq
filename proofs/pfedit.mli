@@ -154,6 +154,12 @@ val get_all_proof_names : unit -> identifier list
 val set_end_tac : tactic -> unit
 
 (** {6 ... } *)
+(** [set_used_variables l] declares that section variables [l] will be
+    used in the proof *)
+val set_used_variables : identifier list -> unit
+val get_used_variables : unit -> Sign.section_context option
+
+(** {6 ... } *)
 (** [solve_nth n tac] applies tactic [tac] to the [n]th subgoal of the
    current focused proof or raises a UserError if no proof is focused or
    if there is no [n]th subgoal *)

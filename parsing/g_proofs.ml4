@@ -34,9 +34,15 @@ GEXTEND Gram
   ;
   command:
     [ [ IDENT "Goal"; c = lconstr -> VernacGoal c
-      | IDENT "Proof" -> VernacProof (Tacexpr.TacId [])
-      | IDENT "Proof"; "with"; ta = tactic -> VernacProof ta
+      | IDENT "Proof" -> VernacProof (None,None)
       | IDENT "Proof" ; IDENT "Mode" ; mn = string -> VernacProofMode mn
+      | IDENT "Proof"; "with"; ta = tactic; 
+        l = OPT [ "using"; l = LIST0 identref  -> l ] ->
+          VernacProof (Some ta, l)
+      | IDENT "Proof"; "using"; l = LIST0 identref; 
+        ta = OPT [ "with"; ta = tactic -> ta ] ->
+          VernacProof (ta,Some l)
+      | IDENT "Proof"; c = lconstr -> VernacExactProof c
       | IDENT "Abort" -> VernacAbort None
       | IDENT "Abort"; IDENT "All" -> VernacAbortAll
       | IDENT "Abort"; id = identref -> VernacAbort (Some id)
@@ -56,7 +62,6 @@ GEXTEND Gram
       | IDENT "Resume" -> VernacResume None
       | IDENT "Resume"; id = identref -> VernacResume (Some id)
       | IDENT "Restart" -> VernacRestart
-      | IDENT "Proof"; c = lconstr -> VernacExactProof c
       | IDENT "Undo" -> VernacUndo 1
       | IDENT "Undo"; n = natural -> VernacUndo n
       | IDENT "Undo"; IDENT "To"; n = natural -> VernacUndoTo n

@@ -62,7 +62,7 @@ let red_constant_entry n ce = function
   | Some red ->
       let body = ce.const_entry_body in
       { ce with const_entry_body =
-	under_binders (Global.env()) (fst (reduction_of_red_expr red)) n body }
+        under_binders (Global.env()) (fst (reduction_of_red_expr red)) n body }
 
 let interp_definition bl red_option c ctypopt =
   let env = Global.env() in
@@ -77,6 +77,7 @@ let interp_definition bl red_option c ctypopt =
 	check_evars env Evd.empty !evdref body;
 	imps1@(Impargs.lift_implicits nb_args imps2),
 	{ const_entry_body = body;
+          const_entry_secctx = None;
 	  const_entry_type = None;
           const_entry_opaque = false }
     | Some ctyp ->
@@ -88,6 +89,7 @@ let interp_definition bl red_option c ctypopt =
 	check_evars env Evd.empty !evdref typ;
 	imps1@(Impargs.lift_implicits nb_args imps2),
 	{ const_entry_body = body;
+          const_entry_secctx = None;
 	  const_entry_type = Some typ;
           const_entry_opaque = false }
   in
@@ -112,7 +114,7 @@ let declare_definition ident (local,k) ce imps hook =
   let r = match local with
     | Local when Lib.sections_are_opened () ->
         let c =
-          SectionLocalDef(ce.const_entry_body,ce.const_entry_type,false) in
+          SectionLocalDef(ce.const_entry_body ,ce.const_entry_type,false) in
         let _ = declare_variable ident (Lib.cwd(),c,IsDefinition k) in
         definition_message ident;
         if Pfedit.refining () then
@@ -140,7 +142,8 @@ let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) =
 	  Typeclasses.declare_instance None true r; r
     | (Global|Local) ->
         let kn =
-          declare_constant ident (ParameterEntry (c,nl), IsAssumption kind) in
+          declare_constant ident 
+            (ParameterEntry (None,c,nl), IsAssumption kind) in
 	let gr = ConstRef kn in
 	  maybe_declare_manual_implicits false gr imps;
         assumption_message ident;
@@ -474,6 +477,7 @@ let build_fix_type (_,ctx) ccl = it_mkProd_or_LetIn ccl ctx
 let declare_fix kind f def t imps =
   let ce = {
     const_entry_body = def;
+    const_entry_secctx = None;
     const_entry_type = Some t;
     const_entry_opaque = false }
   in

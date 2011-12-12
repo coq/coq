@@ -125,6 +125,7 @@ let define internal id c =
   let kn = fd id
     (DefinitionEntry
       { const_entry_body = c;
+        const_entry_secctx = None;
         const_entry_type = None;
         const_entry_opaque = false },
       Decl_kinds.IsDefinition Scheme) in

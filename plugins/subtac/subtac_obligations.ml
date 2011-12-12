@@ -248,6 +248,7 @@ let declare_definition prg =
   let (local, kind) = prg.prg_kind in
   let ce =
     { const_entry_body = body;
+      const_entry_secctx = None;
       const_entry_type = Some typ;
       const_entry_opaque = false }
   in
@@ -347,6 +348,7 @@ let declare_obligation prg obl body =
       let opaque = if get_proofs_transparency () then false else opaque in
       let ce = 
 	{ const_entry_body = body;
+          const_entry_secctx = None;
 	  const_entry_type = Some ty;
 	  const_entry_opaque = opaque }
       in
@@ -661,8 +663,8 @@ let admit_obligations n =
 	match x.obl_body with
 	| None ->
             let x = subst_deps_obl obls x in
-	    let kn = Declare.declare_constant x.obl_name (ParameterEntry (x.obl_type,None),
-							 IsAssumption Conjectural) 
+	    let kn = Declare.declare_constant x.obl_name 
+              (ParameterEntry (None, x.obl_type,None), IsAssumption Conjectural)
 	    in
 	      assumption_message x.obl_name;
 	      obls.(i) <- { x with obl_body = Some (mkConst kn) }

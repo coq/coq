@@ -357,7 +357,7 @@ type vernac_expr =
   | VernacEndSubproof
   | VernacShow of showable
   | VernacCheckGuard
-  | VernacProof of raw_tactic_expr
+  | VernacProof of raw_tactic_expr option * lident list option
   | VernacProofMode of string
   (* Toplevel control *)
   | VernacToplevelControl of exn

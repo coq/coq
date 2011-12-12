@@ -91,6 +91,11 @@ let set_end_tac tac =
   let tac = Proofview.V82.tactic tac in
   Proof_global.set_endline_tactic tac
 
+let set_used_variables l =
+  Proof_global.set_used_variables l
+let get_used_variables () =
+  Proof_global.get_used_variables ()
+
 exception NoSuchGoal
 let _ = Errors.register_handler begin function
   | NoSuchGoal -> Util.error "No such goal."

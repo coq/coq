@@ -158,6 +158,7 @@ let definition_message id =
 
 let save with_clean id const (locality,kind) hook =
   let {const_entry_body = pft;
+       const_entry_secctx = _;
        const_entry_type = tpo;
        const_entry_opaque = opacity } = const in
   let l,r = match locality with

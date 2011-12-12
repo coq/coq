@@ -267,6 +267,16 @@ let set_endline_tactic tac =
   let p = give_me_the_proof () in
   Proof.set_endline_tactic tac p
 
+let set_used_variables l =
+  let p = give_me_the_proof () in
+  let env = Global.env () in
+  let ids = List.fold_right Idset.add l Idset.empty in
+  let ctx = Environ.keep_hyps env ids in
+  Proof.set_used_variables ctx p
+
+let get_used_variables () =
+  Proof.get_used_variables (give_me_the_proof ())
+
 let with_end_tac tac =
   let p = give_me_the_proof () in
   Proof.with_end_tac p tac
@@ -278,9 +288,11 @@ let close_proof () =
     let id = get_current_proof_name () in
     let p = give_me_the_proof () in
     let proofs_and_types = Proof.return p in
+    let section_vars = Proof.get_used_variables p in
     let entries = List.map
-      (fun (c,t) -> { Entries.const_entry_body = c ;
-                      const_entry_type  = Some t;
+      (fun (c,t) -> { Entries.const_entry_body = c;
+                      const_entry_secctx = section_vars;
+                      const_entry_type = Some t;
 		      const_entry_opaque = true })
       proofs_and_types
     in

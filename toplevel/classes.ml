@@ -110,6 +110,7 @@ let declare_instance_constant k pri global imps ?hook id term termtype =
     let kind = IsDefinition Instance in
     let entry =
       { const_entry_body   = term;
+        const_entry_secctx = None;
 	const_entry_type   = Some termtype;
 	const_entry_opaque = false }
     in DefinitionEntry entry, kind
@@ -182,7 +183,8 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	in
 	Evarutil.check_evars env Evd.empty !evars termtype;
 	let cst = Declare.declare_constant ~internal:Declare.KernelSilent id
-	  (Entries.ParameterEntry (termtype,None), Decl_kinds.IsAssumption Decl_kinds.Logical)
+	  (Entries.ParameterEntry 
+            (None,termtype,None), Decl_kinds.IsAssumption Decl_kinds.Logical)
 	in instance_hook k None global imps ?hook (ConstRef cst); id
       end
     else
@@ -297,7 +299,7 @@ let context l =
   let fn (id, _, t) =
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
       let cst = Declare.declare_constant ~internal:Declare.KernelSilent id
-	(ParameterEntry (t,None), IsAssumption Logical)
+	(ParameterEntry (None,t,None), IsAssumption Logical)
       in
 	match class_of_constr t with
 	| Some (rels, (tc, args) as _cl) ->

@@ -199,7 +199,7 @@ let save_remaining_recthms (local,kind) body opaq i (id,(t_i,(_,imps))) =
           (Local,VarRef id,imps)
       | Global ->
           let k = IsAssumption Conjectural in
-          let kn = declare_constant id (ParameterEntry (t_i,None), k) in
+          let kn = declare_constant id (ParameterEntry (None,t_i,None), k) in
           (Global,ConstRef kn,imps))
   | Some body ->
       let k = logical_kind_of_goal_kind kind in
@@ -215,6 +215,7 @@ let save_remaining_recthms (local,kind) body opaq i (id,(t_i,(_,imps))) =
       | Global ->
           let const =
             { const_entry_body = body_i;
+              const_entry_secctx = None;
               const_entry_type = Some t_i;
               const_entry_opaque = opaq } in
           let kn = declare_constant id (DefinitionEntry const, k) in
@@ -328,8 +329,9 @@ let start_proof_com kind thms hook =
 
 let admit () =
   let (id,k,typ,hook) = Pfedit.current_proof_statement () in
+  let e = Pfedit.get_used_variables(), typ, None in
   let kn =
-    declare_constant id (ParameterEntry (typ,None),IsAssumption Conjectural) in
+    declare_constant id (ParameterEntry e,IsAssumption Conjectural) in
   Pfedit.delete_current_proof ();
   assumption_message id;
   hook Global (ConstRef kn)
