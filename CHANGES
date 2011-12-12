@@ -1,3 +1,40 @@
+Changes from V8.3pl2 to V8.3pl3
+===============================
+
+General
+
+- #2411 (Axiom / Hypothesis / Variable allowed again during proofs)
+- #2603 (verify that all names of an inductive block aren't already used)
+
+Modules
+
+- #2608 (better handling of inlining and aliases, avoiding a Not_found)
+- #2168 (Print Assumption now support opaque modules)
+- #2609 (avoid adding twice a module in the environment in coqchk)
+
+Tactics
+
+- #2467, #2464 (fixes for fsetdec)
+- Document the "appcontext" variant of "context" that better handles
+  partial applications.
+
+Coqide
+
+- #2363 (fix the command separator for external commands)
+- #2499 (fix remove_current_view_page)
+- #2357 (allow the use of Abort)
+
+Extraction
+
+- #2540 (global references should be indexed on their user parts)
+- #2556 (support of records with anonymous fields)
+- #2565 (typo in the documentation)
+- #2570 (avoid internal eta-reduction)
+- #2552 (For Haskell, type signature for __ and unsafeCoerce)
+- For Haskell, avoid some sources of useless unsafeCoerce
+- Forbid Prop-universe-polymorphism of inductive when extracting
+  to ocaml, otherwise things may fail badly (report by S. Glondu).
+
 Changes from V8.3pl1 to V8.3pl2
 ===============================
 
