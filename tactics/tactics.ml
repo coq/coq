@@ -2411,6 +2411,7 @@ let abstract_args gl generalize_vars dep id defined f args =
     in
     let argty = pf_type_of gl arg in
     let argty = refresh_universes_strict argty in 
+    let ty = refresh_universes_strict ty in
     let lenctx = List.length ctx in
     let liftargty = lift lenctx argty in
     let leq = constr_cmp Reduction.CUMUL liftargty ty in
