@@ -247,3 +247,7 @@ end
 let goals coqtop =
   let () = PrintOpt.enforce_hack coqtop in
   eval_call coqtop Ide_intf.goals
+
+let evars coqtop =
+  let () = PrintOpt.enforce_hack coqtop in
+  eval_call coqtop Ide_intf.evars

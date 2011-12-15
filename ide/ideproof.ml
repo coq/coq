@@ -107,25 +107,31 @@ let mode_cesar (proof:GText.view) = function
       proof#buffer#insert ("thesis := \n "^cur_goal^"\n");
       ignore (proof#scroll_to_iter (proof#buffer#get_iter_at_mark `INSERT))
 
-let display mode (view:GText.view) goals hints =
-  view#buffer#set_text "";
+let display mode (view:GText.view) goals hints evars =
+  let () = view#buffer#set_text "" in
   match goals with
-    | Interface.No_current_proof -> ()
-    | Interface.Proof_completed ->
-      view#buffer#insert "Proof Completed."
-    | Interface.Unfocused_goals l ->
-      view#buffer#insert "This subproof is complete, but there are still unfocused goals:\n\n";
-      let iter goal =
-        let msg = Printf.sprintf "%s\n" goal.Interface.goal_ccl in
-        view#buffer#insert msg
-      in
-      List.iter iter l
-    | Interface.Uninstantiated_evars el ->
+  | None -> ()
+    (* No proof in progress *)
+  | Some { Interface.fg_goals = []; Interface.bg_goals = [] } ->
+    (* A proof has been finished, but not concluded *)
+    begin match evars with
+    | Some evs when evs <> [] ->
       view#buffer#insert "No more subgoals but non-instantiated existential variables:\n\n";
       let iter evar =
-        let msg = Printf.sprintf "%s\n" evar in
+        let msg = Printf.sprintf "%s\n" evar.Interface.evar_info in
         view#buffer#insert msg
       in
-      List.iter iter el
-    | Interface.Goals g ->
-      mode view g hints
+      List.iter iter evs
+    | _ ->
+      view#buffer#insert "Proof Completed."
+    end
+  | Some { Interface.fg_goals = []; Interface.bg_goals = bg } ->
+    (* No foreground proofs, but still unfocused ones *)
+    view#buffer#insert "This subproof is complete, but there are still unfocused goals:\n\n";
+    let iter goal =
+      let msg = Printf.sprintf "%s\n" goal.Interface.goal_ccl in
+      view#buffer#insert msg
+    in
+    List.iter iter bg
+  | Some { Interface.fg_goals = fg } ->
+    mode view fg hints

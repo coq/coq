@@ -417,24 +417,23 @@ let process_goal sigma g =
 
 let goals () =
   try
-    let pfts =
-      Proof_global.give_me_the_proof ()
-    in
-  let { Evd.it=all_goals ; sigma=sigma } = Proof.V82.subgoals pfts in
-  if all_goals = [] then
-    begin
-      let { Evd.it = bgoals ; sigma = sigma } = Proof.V82.background_subgoals pfts in
-      if bgoals = [] then
-        let exl = Evarutil.non_instantiated sigma in
-        if exl = [] then Interface.Proof_completed
-        else
-          let el = List.map (fun evar -> string_of_ppcmds (pr_evar evar)) exl in
-          Interface.Uninstantiated_evars el
-      else Interface.Unfocused_goals (List.map (process_goal sigma) bgoals)
-    end
-  else
-    Interface.Goals (List.map (process_goal sigma) all_goals)
-  with Proof_global.NoCurrentProof -> Interface.No_current_proof
+    let pfts = Proof_global.give_me_the_proof () in
+    let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
+    let fg = List.map (process_goal sigma) all_goals in
+    let { Evd.it = bgoals ; sigma = sigma } = Proof.V82.background_subgoals pfts in
+    let bg = List.map (process_goal sigma) bgoals in
+    Some { Interface.fg_goals = fg; Interface.bg_goals = bg; }
+  with Proof_global.NoCurrentProof -> None
+
+let evars () =
+  try
+    let pfts = Proof_global.give_me_the_proof () in
+    let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
+    let exl = Evarutil.non_instantiated sigma in
+    let map_evar ev = { Interface.evar_info = string_of_ppcmds (pr_evar ev); } in
+    let el = List.map map_evar exl in
+    Some el
+  with Proof_global.NoCurrentProof -> None
 
 let hints () =
   try
@@ -511,6 +510,7 @@ let eval_call c =
     Interface.interp = interruptible interp;
     Interface.rewind = interruptible rewind;
     Interface.goals = interruptible goals;
+    Interface.evars = interruptible evars;
     Interface.hints = interruptible hints;
     Interface.status = interruptible status;
     Interface.inloadpath = interruptible inloadpath;

@@ -33,8 +33,9 @@ val interp : raw * verbose * string -> string call
     interpreted successfully (and not yet undone) will fail. *)
 val rewind : int -> int call
 
-(** Fetching the list of current goals *)
-val goals : goals call
+(** Fetching the list of current goals. Return [None] if no proof is in 
+    progress, [Some gl] otherwise. *)
+val goals : goals option call
 
 (** Retrieving the tactics applicable to the current goal. [None] if there is 
     no proof in progress. *)
@@ -50,6 +51,10 @@ val inloadpath : string -> bool call
     For each branch of the match, we list the constructor name
     followed by enough pattern variables. *)
 val mkcases : string -> string list list call
+
+(** Retrieve the list of unintantiated evars in the current proof. [None] if no
+    proof is in progress. *)
+val evars : evar list option call
 
 (** Retrieve the list of options of the current toplevel, together with their 
     state. *)

@@ -19,6 +19,7 @@ type 'a call =
   | Interp of raw * verbose * string
   | Rewind of int
   | Goal
+  | Evars
   | Hints
   | Status
   | GetOptions
@@ -30,7 +31,8 @@ type 'a call =
 
 let interp (r,b,s) : string call = Interp (r,b,s)
 let rewind i : int call = Rewind i
-let goals : goals call = Goal
+let goals : goals option call = Goal
+let evars : evar list option call = Evars
 let hints : (hint list * hint) option call = Hints
 let status : status call = Status
 let get_options : (option_name * option_state) list call = GetOptions
@@ -45,7 +47,8 @@ let abstract_eval_call handler c =
     let res = match c with
       | Interp (r,b,s) -> Obj.magic (handler.interp (r,b,s) : string)
       | Rewind i -> Obj.magic (handler.rewind i : int)
-      | Goal -> Obj.magic (handler.goals () : goals)
+      | Goal -> Obj.magic (handler.goals () : goals option)
+      | Evars -> Obj.magic (handler.evars () : evar list option)
       | Hints -> Obj.magic (handler.hints () : (hint list * hint) option)
       | Status -> Obj.magic (handler.status () : status)
       | GetOptions -> Obj.magic (handler.get_options () : (option_name * option_state) list)
@@ -209,6 +212,8 @@ let of_call = function
   Element ("call", ("val", "rewind") :: ["steps", string_of_int n], [])
 | Goal ->
   Element ("call", ["val", "goal"], [])
+| Evars ->
+  Element ("call", ["val", "evars"], [])
 | Hints ->
   Element ("call", ["val", "hints"], [])
 | Status ->
@@ -235,6 +240,7 @@ let to_call = function
     let steps = int_of_string (massoc "steps" attrs) in
     Rewind steps
   | "goal" -> Goal
+  | "evars" -> Evars
   | "status" -> Status
   | "getoptions" -> GetOptions
   | "setoptions" ->
@@ -259,6 +265,13 @@ let to_status = function
   }
 | _ -> raise Marshal_error
 
+let of_evar s =
+  Element ("evar", [], [PCData s.evar_info])
+
+let to_evar = function
+| Element ("evar", [], data) -> { evar_info = raw_string data; }
+| _ -> raise Marshal_error
+
 let of_goal g =
   let hyp = of_list of_string g.goal_hyp in
   let ccl = of_string g.goal_ccl in
@@ -271,35 +284,16 @@ let to_goal = function
   { goal_hyp = hyp; goal_ccl = ccl }
 | _ -> raise Marshal_error
 
-let of_goals = function
-| No_current_proof ->
-  Element ("goals", ["val", "no_current_proof"], [])
-| Proof_completed ->
-  Element ("goals", ["val", "proof_completed"], [])
-| Unfocused_goals l ->
-  let xml = of_list of_goal l in
-  Element ("goals", ["val", "unfocused_goals"], [xml])
-| Uninstantiated_evars el ->
-  let xml = of_list of_string el in
-  Element ("goals", ["val", "uninstantiated_evars"], [xml])
-| Goals l ->
-  let xml = of_list of_goal l in
-  Element ("goals", ["val", "goals"], [xml])
+let of_goals g =
+  let fg = of_list of_goal g.fg_goals in
+  let bg = of_list of_goal g.bg_goals in
+  Element ("goals", [], [fg; bg])
 
 let to_goals = function
-| Element ("goals", ["val", "no_current_proof"], []) ->
-  No_current_proof
-| Element ("goals", ["val", "proof_completed"], []) ->
-  Proof_completed
-| Element ("goals", ["val", "unfocused_goals"], [xml]) ->
-  let l = to_list to_goal xml in
-  Unfocused_goals l
-| Element ("goals", ["val", "uninstantiated_evars"], [xml]) ->
-  let l = to_list to_string xml in
-  Uninstantiated_evars l
-| Element ("goals", ["val", "goals"], [xml]) ->
-  let l = to_list to_goal xml in
-  Goals l
+| Element ("goals", [], [fg; bg]) ->
+  let fg = to_list to_goal fg in
+  let bg = to_list to_goal bg in
+  { fg_goals = fg; bg_goals = bg; }
 | _ -> raise Marshal_error
 
 let of_hints =
@@ -310,7 +304,8 @@ let of_answer (q : 'a call) (r : 'a value) =
   let convert = match q with
   | Interp _ -> Obj.magic (of_string : string -> xml)
   | Rewind _ -> Obj.magic (of_int : int -> xml)
-  | Goal -> Obj.magic (of_goals : goals -> xml)
+  | Goal -> Obj.magic (of_option of_goals : goals option -> xml)
+  | Evars -> Obj.magic (of_option (of_list of_evar) : evar list option -> xml)
   | Hints -> Obj.magic (of_hints : (hint list * hint) option -> xml)
   | Status -> Obj.magic (of_status : status -> xml)
   | GetOptions -> Obj.magic (of_list (of_pair (of_list of_string) of_option_state) : (option_name * option_state) list -> xml)
@@ -333,6 +328,7 @@ let to_answer xml =
     | "option" -> Obj.magic (to_option convert elt : 'a option)
     | "pair" -> Obj.magic (to_pair convert convert elt : ('a * 'b))
     | "goals" -> Obj.magic (to_goals elt : goals)
+    | "evar" -> Obj.magic (to_evar elt : evar)
     | "option_value" -> Obj.magic (to_option_value elt : option_value)
     | "option_state" -> Obj.magic (to_option_state elt : option_state)
     | _ -> raise Marshal_error
@@ -371,6 +367,7 @@ let pr_call = function
     "INTERP"^raw^verb^" ["^s^"]"
   | Rewind i -> "REWIND "^(string_of_int i)
   | Goal -> "GOALS"
+  | Evars -> "EVARS"
   | Hints -> "HINTS"
   | Status -> "STATUS"
   | GetOptions -> "GETOPTIONS"
@@ -402,23 +399,33 @@ let pr_mkcases l =
   let l = List.map (String.concat " ") l in
   "[" ^ String.concat " | " l ^ "]"
 
+let pr_goals_aux g =
+  if g.fg_goals = [] then
+    if g.bg_goals = [] then "Proof completed."
+    else Printf.sprintf "Still %i unfocused goals." (List.length g.bg_goals)
+  else
+    let pr_menu s = s in
+    let pr_goal { goal_hyp = hyps; goal_ccl = goal } =
+      "[" ^ String.concat "; " (List.map pr_menu hyps) ^ " |- " ^ pr_menu goal ^ "]"
+    in
+    String.concat " " (List.map pr_goal g.fg_goals)
+
 let pr_goals = function
-| No_current_proof -> "No current proof."
-| Proof_completed -> "Proof completed."
-| Unfocused_goals gl -> Printf.sprintf "Still %i unfocused goals." (List.length gl)
-| Uninstantiated_evars el -> Printf.sprintf "Still %i uninstantiated evars." (List.length el)
-| Goals gl ->
-  let pr_menu s = s in
-  let pr_goal { goal_hyp = hyps; goal_ccl = goal } =
-    "[" ^ String.concat "; " (List.map pr_menu hyps) ^ " |- " ^ pr_menu goal ^ "]"
-  in
-  String.concat " " (List.map pr_goal gl)
+| None -> "No proof in progress."
+| Some g -> pr_goals_aux g
+
+let pr_evar ev = "[" ^ ev.evar_info ^ "]"
+
+let pr_evars = function
+| None -> "No proof in progress."
+| Some evars -> String.concat " " (List.map pr_evar evars)
 
 let pr_full_value call value =
   match call with
     | Interp _ -> pr_value_gen pr_string (Obj.magic value : string value)
     | Rewind i -> pr_value_gen string_of_int (Obj.magic value : int value)
-    | Goal -> pr_value_gen pr_goals (Obj.magic value : goals value)
+    | Goal -> pr_value_gen pr_goals (Obj.magic value : goals option value)
+    | Evars -> pr_value_gen pr_evars (Obj.magic value : evar list option value)
     | Hints -> pr_value value
     | Status -> pr_value_gen pr_status (Obj.magic value : status value)
     | GetOptions -> pr_value_gen pr_getoptions (Obj.magic value : (option_name * option_state) list value)

@@ -825,17 +825,23 @@ object(self)
         else
           (fun _ _ -> ()) in
       try
-        match Coq.goals !mycoqtop with
-          | Interface.Fail (l,str) ->
+        begin match Coq.goals !mycoqtop with
+          | Interface.Fail (l, str) ->
             self#set_message ("Error in coqtop :\n"^str)
           | Interface.Good goals ->
-            let hints = match Coq.hints !mycoqtop with
-            | Interface.Fail (_, _) -> None
-            | Interface.Good hints -> hints
-            in
-            Ideproof.display
-              (Ideproof.mode_tactic menu_callback)
-              proof_view goals hints
+            begin match Coq.evars !mycoqtop with
+            | Interface.Fail (l, str) ->
+              self#set_message ("Error in coqtop :\n"^str)
+            | Interface.Good evs ->
+              let hints = match Coq.hints !mycoqtop with
+              | Interface.Fail (_, _) -> None
+              | Interface.Good hints -> hints
+              in
+              Ideproof.display
+                (Ideproof.mode_tactic menu_callback)
+                proof_view goals hints evs
+            end
+        end
       with
         | e -> prerr_endline (Printexc.to_string e)
     end

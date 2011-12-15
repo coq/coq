@@ -49,7 +49,8 @@ val interp :
   coqtop -> ?raw:bool -> ?verbose:bool -> string -> string Interface.value
 val rewind : coqtop -> int -> int Interface.value
 val status : coqtop -> Interface.status Interface.value
-val goals : coqtop -> Interface.goals Interface.value
+val goals : coqtop -> Interface.goals option Interface.value
+val evars : coqtop -> Interface.evar list option Interface.value
 val hints : coqtop -> (Interface.hint list * Interface.hint) option Interface.value
 val inloadpath : coqtop -> string -> bool Interface.value
 val mkcases : coqtop -> string -> string list list Interface.value
