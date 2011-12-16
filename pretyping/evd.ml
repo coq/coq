@@ -49,6 +49,7 @@ type evar_info = {
   evar_body : evar_body;
   evar_filter : bool list;
   evar_source : hole_kind located;
+  evar_candidates : constr list option; (* if not None, list of allowed instances *)
   evar_extra : Store.t }
 
 let make_evar hyps ccl = {
@@ -57,6 +58,7 @@ let make_evar hyps ccl = {
   evar_body = Evar_empty;
   evar_filter = List.map (fun _ -> true) (named_context_of_val hyps);
   evar_source = (dummy_loc,InternalHole);
+  evar_candidates = None;
   evar_extra = Store.empty
 }
 
@@ -429,7 +431,7 @@ let define evk body evd =
 	| [] ->  evd.last_mods
         | _ -> ExistentialSet.add evk evd.last_mods }
 
-let evar_declare hyps evk ty ?(src=(dummy_loc,InternalHole)) ?filter evd =
+let evar_declare hyps evk ty ?(src=(dummy_loc,InternalHole)) ?filter ?candidates evd =
   let filter =
     if filter = None then
       List.map (fun _ -> true) (named_context_of_val hyps)
@@ -445,6 +447,7 @@ let evar_declare hyps evk ty ?(src=(dummy_loc,InternalHole)) ?filter evd =
        evar_body = Evar_empty;
        evar_filter = filter;
        evar_source = src;
+       evar_candidates = candidates;
        evar_extra = Store.empty } }
 
 let is_defined_evar evd (evk,_) = EvarMap.is_defined evd.evars evk

@@ -28,11 +28,13 @@ val new_untyped_evar : unit -> existential_key
 
 (** {6 Creating a fresh evar given their type and context} *)
 val new_evar :
-  evar_map -> env -> ?src:loc * hole_kind -> ?filter:bool list -> types -> evar_map * constr
+  evar_map -> env -> ?src:loc * hole_kind -> ?filter:bool list ->
+  ?candidates:constr list -> types -> evar_map * constr
 
 (** the same with side-effects *)
 val e_new_evar :
-  evar_map ref -> env -> ?src:loc * hole_kind -> ?filter:bool list -> types -> constr
+  evar_map ref -> env -> ?src:loc * hole_kind -> ?filter:bool list ->
+  ?candidates:constr list -> types -> constr
 
 (** Create a new Type existential variable, as we keep track of 
     them during type-checking and unification. *)
@@ -46,7 +48,7 @@ val new_type_evar :
    of [inst] are typed in the occurrence context and their type (seen
    as a telescope) is [sign] *)
 val new_evar_instance :
- named_context_val -> evar_map -> types -> ?src:loc * hole_kind -> ?filter:bool list -> constr list -> evar_map * constr
+ named_context_val -> evar_map -> types -> ?src:loc * hole_kind -> ?filter:bool list -> ?candidates:constr list -> constr list -> evar_map * constr
 
 val make_pure_subst : evar_info -> constr array -> (identifier * constr) list
 
@@ -219,7 +221,7 @@ val clear_hyps_in_evi : evar_map ref -> named_context_val -> types ->
   identifier list -> named_context_val * types
 
 val push_rel_context_to_named_context : Environ.env -> types ->
-  named_context_val * types * constr list
+  named_context_val * types * constr list * constr list
 
 val generalize_evar_over_rels : evar_map -> existential -> types * constr list
 

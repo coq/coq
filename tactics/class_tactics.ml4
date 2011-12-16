@@ -542,7 +542,7 @@ let evar_dependencies evm p =
     evm ()
 
 let resolve_one_typeclass env ?(sigma=Evd.empty) gl =
-  let nc, gl, subst = Evarutil.push_rel_context_to_named_context env gl in
+  let nc, gl, subst, _ = Evarutil.push_rel_context_to_named_context env gl in
   let (gl,t,sigma) = 
     Goal.V82.mk_goal sigma nc gl Store.empty in
   let gls = { it = gl ; sigma = sigma } in

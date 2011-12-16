@@ -500,6 +500,7 @@ module V82 = struct
 	                                                        (Environ.named_context_of_val hyps);
 		     Evd.evar_body = Evd.Evar_empty; 
 		     Evd.evar_source = (Util.dummy_loc,Evd.GoalEvar);
+		     Evd.evar_candidates = None;
 		     Evd.evar_extra = extra }
     in
     let evi = Typeclasses.mark_unresolvable evi in

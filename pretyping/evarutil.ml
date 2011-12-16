@@ -158,12 +158,12 @@ let new_untyped_evar =
  * functional operations on evar sets *
  *------------------------------------*)
 
-let new_evar_instance sign evd typ ?(src=(dummy_loc,InternalHole)) ?filter instance =
+let new_evar_instance sign evd typ ?(src=(dummy_loc,InternalHole)) ?filter ?candidates instance =
   assert
     (let ctxt = named_context_of_val sign in
      list_distinct (ids_of_named_context ctxt));
   let newevk = new_untyped_evar() in
-  let evd = evar_declare sign newevk typ ~src:src ?filter evd in
+  let evd = evar_declare sign newevk typ ~src:src ?filter ?candidates evd in
   (evd,mkEvar (newevk,Array.of_list instance))
 
 (* Expand rels and vars that are bound to other rels or vars so that
@@ -388,22 +388,23 @@ let push_rel_context_to_named_context env typ =
 	let d = (id,Option.map (substl subst) c,substl subst t) in
 	(mkVar id :: subst, id::avoid, push_named d env))
       (rel_context env) ~init:([], ids, env) in
-  (named_context_val env, substl subst typ, inst_rels@inst_vars)
+  (named_context_val env, substl subst typ, inst_rels@inst_vars, subst)
 
 (* [new_evar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 
-let new_evar evd env ?(src=(dummy_loc,InternalHole)) ?filter typ =
-  let sign,typ',instance = push_rel_context_to_named_context env typ in
+let new_evar evd env ?(src=(dummy_loc,InternalHole)) ?filter ?candidates typ =
+  let sign,typ',instance,subst = push_rel_context_to_named_context env typ in
+  let candidates = Option.map (List.map (substl subst)) candidates in
   let instance =
     match filter with
     | None -> instance
     | Some filter -> snd (list_filter2 (fun b c -> b) (filter,instance)) in
-  new_evar_instance sign evd typ' ~src:src ?filter instance
+  new_evar_instance sign evd typ' ~src:src ?filter ?candidates instance
 
   (* The same using side-effect *)
-let e_new_evar evdref env ?(src=(dummy_loc,InternalHole)) ?filter ty =
-  let (evd',ev) = new_evar !evdref env ~src:src ?filter ty in
+let e_new_evar evdref env ?(src=(dummy_loc,InternalHole)) ?filter ?candidates ty =
+  let (evd',ev) = new_evar !evdref env ~src:src ?filter ?candidates ty in
   evdref := evd';
   ev
 
@@ -919,6 +920,7 @@ let do_restrict_hyps evd evk projs =
 (* [postpone_evar_term] postpones an equation of the form ?e[σ] = c *)
 
 let postpone_evar_term env evd (evk,argsv) rhs =
+  assert (isVar rhs or isRel rhs);
   let rhs = expand_vars_in_term env rhs in
   let evi = Evd.find evd evk in
   let evd,evk,args =
@@ -1054,6 +1056,35 @@ let solve_refl conv_algo env evd evk argsv1 argsv2 =
   let pb = (Reduction.CONV,env,mkEvar(evk,argsv1),mkEvar(evk,argsv2)) in
     Evd.add_conv_pb pb evd
 
+(* If the evar can be instantiated by a finite set of candidates known
+   in advance, we check which of them apply *)
+
+exception NoCandidates
+
+let solve_candidates conv_algo env evd (evk,argsv as ev) rhs =
+  let evi = Evd.find evd evk in
+  let args = Array.to_list argsv in
+  match evi.evar_candidates with
+  | None -> raise NoCandidates
+  | Some l ->
+      let l' = list_map_filter (fun c ->
+        let c' = instantiate_evar (evar_filtered_context evi) c args in
+        let evd, b = conv_algo env evd Reduction.CONV c' rhs in
+        if b then Some (c,evd) else None) l in
+      match l' with
+      | [] -> error_cannot_unify env evd (mkEvar ev, rhs)
+      | [c,evd] -> Evd.define evk c evd
+      | l when List.length l < List.length l' ->
+          let candidates = List.map fst l in
+          let filter = evar_filter evi in
+          let sign = evar_hyps evi in
+          let ids = List.map pi1 (named_context_of_val sign) in
+          let inst_in_sign =
+            List.map mkVar (snd (list_filter2 (fun b id -> b) (filter,ids))) in
+          let evd,evar = new_evar_instance (evar_hyps evi) evd (evar_concl evi)
+            ~filter ~candidates inst_in_sign in
+          Evd.define evk evar evd
+      | l -> evd
 
 (* We try to instantiate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times
@@ -1202,6 +1233,8 @@ and evar_define conv_algo ?(choose=false) env evd (evk,argsv as ev) rhs =
       if evk = evk2 then solve_refl conv_algo env evd evk argsv argsv2
       else solve_evar_evar (evar_define conv_algo) env evd ev ev2
   | _ ->
+  try solve_candidates conv_algo env evd ev rhs
+  with NoCandidates ->
   try
     let (evd',body) = invert_definition conv_algo choose env evd ev rhs in
     if occur_meta body then error "Meta cannot occur in evar body.";

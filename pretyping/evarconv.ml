@@ -764,7 +764,11 @@ let consider_remaining_unif_problems ?(ts=full_transparent_state) env evd =
   Evd.fold_undefined (fun ev ev_info evd' -> match ev_info.evar_source with
 			  |_,ImpossibleCase -> 
 			     Evd.define ev (j_type (coq_unit_judge ())) evd'
-			  |_ -> evd') heuristic_solved_evd heuristic_solved_evd
+			  |_ ->
+                             match ev_info.evar_candidates with
+                             | Some (a::l) -> Evd.define ev a evd'
+                             | Some [] -> error "Unsolvable existential variables"
+                             | None -> evd') heuristic_solved_evd heuristic_solved_evd
 
 (* Main entry points *)
 

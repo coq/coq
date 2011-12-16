@@ -1489,9 +1489,9 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
 	List.map (fun (id,_,_) -> dependent (mkVar id) u)
 	  (named_context extenv) in
       let filter = rel_filter@named_filter in
+      let candidates = u :: List.map mkRel vl in
       let ev =
-	e_new_evar evdref extenv ~src:(loc, CasesType) ~filter:filter ty in
-      evdref := add_conv_pb (Reduction.CONV,extenv,substl inst ev,u) !evdref;
+	e_new_evar evdref extenv ~src:(loc, CasesType) ~filter ~candidates ty in
       lift k ev
     else
       map_constr_with_full_binders push_binder aux x t in

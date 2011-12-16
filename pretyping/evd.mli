@@ -117,6 +117,7 @@ type evar_info = {
   evar_body : evar_body;
   evar_filter : bool list;
   evar_source : hole_kind located;
+  evar_candidates : constr list option;
   evar_extra : Store.t }
 
 val eq_evar_info : evar_info -> evar_info -> bool
@@ -195,7 +196,7 @@ val defined_evars : evar_map -> evar_map
 val fold_undefined : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 val evar_declare :
   named_context_val -> evar -> types -> ?src:loc * hole_kind ->
-      ?filter:bool list -> evar_map -> evar_map
+      ?filter:bool list -> ?candidates:constr list -> evar_map -> evar_map
 val evar_source : existential_key -> evar_map -> hole_kind located
 
 (* spiwack: this function seems to somewhat break the abstraction. 
