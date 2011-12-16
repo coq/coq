@@ -100,8 +100,7 @@ GEXTEND Gram
   ;
   tactic_mode:
   [ [ gln = OPT[n=natural; ":" -> n];
-      tac = subgoal_command -> tac gln 
-    | tac = subgoal_command -> tac None ] ]
+      tac = subgoal_command -> tac gln ] ]
   ;
 
   subprf:
