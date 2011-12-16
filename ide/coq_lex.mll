@@ -170,7 +170,8 @@ and sentence initial stamp = parse
     }
   | dot_sep { Lexing.lexeme_start lexbuf } (* The usual "." terminator *)
   | undotted_sep {
-      (* Separators like { or } are only active at the start of a sentence *)
+      (* Separators like { or } and bullets * - + are only active
+	 at the start of a sentence *)
       if initial then Lexing.lexeme_start lexbuf
       else sentence false stamp lexbuf
     }
@@ -179,7 +180,7 @@ and sentence initial stamp = parse
        sentence initial stamp lexbuf
     }
   | _ {
-      (* Any other characters (for instance bullets "-" "*" "+") *)
+      (* Any other characters *)
       sentence false stamp lexbuf
     }
   | eof { raise Unterminated }
