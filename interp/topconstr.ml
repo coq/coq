@@ -620,6 +620,18 @@ let match_alist match_fun metas sigma rest x iter termin lassoc =
   let l,sigma = aux sigma [] rest in
   (pi1 sigma, (x,if lassoc then l else List.rev l)::pi2 sigma, pi3 sigma)
 
+let does_not_come_from_already_eta_expanded_var =
+  (* This is hack to avoid looping on a rule with rhs of the form *)
+  (* "?f (fun ?x => ?g)" since otherwise, matching "F H" expands in *)
+  (* "F (fun x => H x)" and "H x" is recursively matched against the same *)
+  (* rule, giving "H (fun x' => x x')" and so on. *)
+  (* Ideally, we would need the type of the expression to know which of *)
+  (* the arguments applied to it can be eta-expanded without looping. *)
+  (* The following test is then an approximation of what can be done *)
+  (* optimally (whether other looping situations can occur remains to be *)
+  (* checked). *)
+  function GVar _ -> false | _ -> true
+
 let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
   match (a1,a2) with
 
@@ -663,7 +675,8 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
 	else if n1 > n2 then
 	  let l11,l12 = list_chop (n1-n2) l1 in GApp (loc,f1,l11),l12, f2,l2
 	else f1,l1, f2, l2 in
-      List.fold_left2 (match_in u alp metas)
+      let may_use_eta = does_not_come_from_already_eta_expanded_var f1 in
+      List.fold_left2 (match_ may_use_eta u alp metas)
         (match_in u alp metas sigma f1 f2) l1 l2
   | GLambda (_,na1,_,t1,b1), ALambda (na2,t2,b2) ->
      match_binders u alp metas na1 na2 (match_in u alp metas sigma t1 t2) b1 b2
