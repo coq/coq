@@ -139,7 +139,7 @@ GEXTEND Gram
   GLOBAL: proof_mode ;
 
   proof_mode: LAST
-    [ [ c=G_vernac.subgoal_command -> c (Some 1) None ] ]
+    [ [ c=G_vernac.subgoal_command -> c (Some 1) ] ]
   ;
 END  
 

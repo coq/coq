@@ -754,14 +754,8 @@ let rec pr_vernac = function
       hov 2 (str"Include " ++
 	     prlist_with_sep (fun () -> str " <+ ") pr_m mexprs)
   (* Solving *)
-  | VernacSolve (i,b,tac,deftac) ->
+  | VernacSolve (i,tac,deftac) ->
       (if i = 1 then mt() else int i ++ str ": ") ++
-      begin match b with
-      | None -> mt ()
-      | Some Dash -> str"-"
-      | Some Star -> str"*"
-      | Some Plus -> str"+"
-      end ++
       pr_raw_tactic tac
       ++ (try if deftac then str ".." else mt ()
       with UserError _|Loc.Exc_located _ -> mt())
@@ -979,6 +973,11 @@ let rec pr_vernac = function
       str "Proof using" ++spc()++ prlist pr_lident l ++ spc() ++
       str "with" ++ spc() ++pr_raw_tactic te
   | VernacProofMode s -> str ("Proof Mode "^s)
+  | VernacBullet b -> begin match b with
+      | Dash -> str"-"
+      | Star -> str"*"
+      | Plus -> str"+"
+  end ++ spc()
   | VernacSubproof None -> str "BeginSubproof"
   | VernacSubproof (Some i) -> str "BeginSubproof " ++ pr_int i
   | VernacEndSubproof -> str "EndSubproof"

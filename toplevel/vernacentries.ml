@@ -645,12 +645,11 @@ let command_focus = Proof.new_focus_kind ()
 let focus_command_cond = Proof.no_cond command_focus
 
 
-let vernac_solve n bullet tcom b =
+let vernac_solve n tcom b =
   if not (refining ()) then
     error "Unknown command of the non proof-editing mode.";
   let p = Proof_global.give_me_the_proof () in
   Proof.transaction p begin fun () ->
-    Option.iter (Proof_global.Bullet.put p) bullet ;
     solve_nth n (Tacinterp.hide_interp tcom None) ~with_end_tac:b;
     (* in case a strict subtree was completed,
        go back to the top of the prooftree *)
@@ -1367,6 +1366,15 @@ let vernac_end_subproof () =
   let p = Proof_global.give_me_the_proof () in
   Proof.unfocus subproof_kind p ; print_subgoals ()
 
+
+let vernac_bullet (bullet:Proof_global.Bullet.t) =
+  let p = Proof_global.give_me_the_proof () in
+  Proof.transaction p 
+    (fun () -> Proof_global.Bullet.put p bullet);
+  (* Makes the focus visible in emacs by re-printing the goal. *)
+  if !Flags.print_emacs then print_subgoals ();;
+
+
 let vernac_show = function
   | ShowGoal goalref ->
       if !pcoq <> None then (Option.get !pcoq).show_goal goalref
@@ -1459,7 +1467,7 @@ let interp c = match c with
   | VernacDeclareClass id -> vernac_declare_class id
 
   (* Solving *)
-  | VernacSolve (n,bullet,tac,b) -> vernac_solve n bullet tac b
+  | VernacSolve (n,tac,b) -> vernac_solve n tac b
   | VernacSolveExistential (n,c) -> vernac_solve_existential n c
 
   (* Auxiliary file and library management *)
@@ -1519,6 +1527,7 @@ let interp c = match c with
   | VernacBacktrack (snum,pnum,naborts) -> vernac_backtrack snum pnum naborts
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()
+  | VernacBullet b -> vernac_bullet b
   | VernacSubproof n -> vernac_subproof n
   | VernacEndSubproof -> vernac_end_subproof ()
   | VernacShow s -> vernac_show s

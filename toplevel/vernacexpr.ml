@@ -284,7 +284,7 @@ type vernac_expr =
 
   (* Solving *)
 
-  | VernacSolve of int * bullet option * raw_tactic_expr * bool
+  | VernacSolve of int * raw_tactic_expr * bool
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)
@@ -353,6 +353,7 @@ type vernac_expr =
   | VernacBacktrack of int*int*int
   | VernacFocus of int option
   | VernacUnfocus
+  | VernacBullet of bullet
   | VernacSubproof of int option
   | VernacEndSubproof
   | VernacShow of showable
