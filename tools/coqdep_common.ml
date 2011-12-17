@@ -404,7 +404,7 @@ let coq_dependencies () =
     (fun (name,_) ->
        let ename = escape name in
        let glob = if !option_noglob then "" else " "^ename^".glob" in
-       printf "%s%s%s: %s.v" ename !suffixe glob ename;
+       printf "%s%s%s %s.v.beautified: %s.v" ename !suffixe glob ename ename;
        traite_fichier_Coq true (name ^ ".v");
        printf "\n";
        flush stdout)
