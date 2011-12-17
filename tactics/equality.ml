@@ -87,6 +87,7 @@ let rewrite_unif_flags = {
   Unification.use_metas_eagerly_in_conv_on_closed_terms = true;
   Unification.modulo_delta = empty_transparent_state;
   Unification.modulo_delta_types = empty_transparent_state;
+  Unification.check_applied_meta_types = true;
   Unification.resolve_evars = true;
   Unification.use_pattern_unification = true;
   Unification.use_meta_bound_pattern_unification = true;
@@ -154,6 +155,7 @@ let rewrite_conv_closed_unif_flags = {
 
   Unification.modulo_delta = empty_transparent_state;
   Unification.modulo_delta_types = full_transparent_state;
+  Unification.check_applied_meta_types = true;
   Unification.resolve_evars = false;
   Unification.use_pattern_unification = true;
     (* To rewrite "?n x y" in "y+x=0" when ?n is *)

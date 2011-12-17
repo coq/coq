@@ -15,6 +15,7 @@ type unify_flags = {
   use_metas_eagerly_in_conv_on_closed_terms : bool;
   modulo_delta : Names.transparent_state;
   modulo_delta_types : Names.transparent_state;
+  check_applied_meta_types : bool;
   resolve_evars : bool;
   use_pattern_unification : bool;
   use_meta_bound_pattern_unification : bool;

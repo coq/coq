@@ -202,6 +202,10 @@ type unify_flags = {
 
   modulo_delta_types : Names.transparent_state;
 
+  check_applied_meta_types : bool;
+    (* This controls whether meta's applied to arguments have their *)
+    (* type unified with the type of their instance *)
+
   resolve_evars : bool;
     (* This says if type classes instances resolution must be used to infer *)
     (* the remaining evars *)
@@ -241,6 +245,7 @@ let default_unify_flags = {
   use_metas_eagerly_in_conv_on_closed_terms = true;
   modulo_delta = full_transparent_state;
   modulo_delta_types = full_transparent_state;
+  check_applied_meta_types = true;
   resolve_evars = false;
   use_pattern_unification = true;
   use_meta_bound_pattern_unification = true;
@@ -261,6 +266,7 @@ let default_no_delta_unify_flags = {
   use_metas_eagerly_in_conv_on_closed_terms = true;
   modulo_delta = empty_transparent_state;
   modulo_delta_types = full_transparent_state;
+  check_applied_meta_types = false;
   resolve_evars = false;
   use_pattern_unification = false;
   use_meta_bound_pattern_unification = true;
@@ -281,6 +287,7 @@ let elim_flags = {
   use_metas_eagerly_in_conv_on_closed_terms = true;
   modulo_delta = full_transparent_state;
   modulo_delta_types = full_transparent_state;
+  check_applied_meta_types = true;
   resolve_evars = false;
   use_pattern_unification = true;
   use_meta_bound_pattern_unification = true;
@@ -296,6 +303,7 @@ let elim_no_delta_flags = {
   use_metas_eagerly_in_conv_on_closed_terms = true;
   modulo_delta = empty_transparent_state;
   modulo_delta_types = full_transparent_state;
+  check_applied_meta_types = false;
   resolve_evars = false;
   use_pattern_unification = false;
   use_meta_bound_pattern_unification = true;
@@ -371,7 +379,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
             if k1 = k2 then substn else
 	    let stM,stN = extract_instance_status pb in
             let (sigma,metasubst,evarsubst) =
-              if wt then
+              if wt && flags.check_applied_meta_types then
                 let tyM = subst_metas metasubst (Typing.meta_type sigma k1) in
                 let tyN = subst_metas metasubst (Typing.meta_type sigma k2) in
                 unirec_rec curenvnb CONV true false substn tyM tyN
@@ -381,7 +389,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	    else sigma,(k2,cM,stM)::metasubst,evarsubst
 	| Meta k, _ when not (dependent cM cN) ->
             let (sigma,metasubst,evarsubst) =
-              if wt then
+              if wt && flags.check_applied_meta_types then
                 let tyM = subst_metas metasubst (Typing.meta_type sigma k) in
                 let tyN = subst_metas metasubst (get_type_of curenv sigma cN) in
                 unirec_rec curenvnb CONV true false substn tyM tyN
@@ -397,7 +405,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	    else error_cannot_unify_local curenv sigma (m,n,cN)
 	| _, Meta k when not (dependent cN cM) ->
             let (sigma,metasubst,evarsubst) =
-              if wt then
+              if wt && flags.check_applied_meta_types then
                 let tyM = subst_metas metasubst (get_type_of curenv sigma cM) in
                 let tyN = subst_metas metasubst (Typing.meta_type sigma k) in
                 unirec_rec curenvnb CONV true false substn tyM tyN

@@ -1021,6 +1021,7 @@ let auto_unif_flags = {
   use_metas_eagerly_in_conv_on_closed_terms = false;
   modulo_delta = empty_transparent_state;
   modulo_delta_types = full_transparent_state;
+  check_applied_meta_types = false;
   resolve_evars = true;
   use_pattern_unification = false;
   use_meta_bound_pattern_unification = true;
