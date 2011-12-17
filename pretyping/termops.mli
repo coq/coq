@@ -229,6 +229,8 @@ val decompose_app_vect : constr -> constr * constr array
 
 val adjust_app_list_size : constr -> constr list -> constr -> constr list ->
   (constr * constr list * constr * constr list)
+val adjust_app_array_size : constr -> constr array -> constr -> constr array ->
+  (constr * constr array * constr * constr array)
 
 (** name contexts *)
 type names_context = name list

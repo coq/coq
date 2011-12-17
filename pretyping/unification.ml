@@ -137,17 +137,6 @@ let solve_pattern_eqn_array (env,nb) f l c (sigma,metasubst,evarsubst) =
 
 let push d (env,n) = (push_rel_assum d env,n+1)
 
-(* Hack to propagate data from an ocaml when clause to the actual branch code *)
-(* of a pattern-matching clause *)
-
-let whenmem = ref []
-
-let store mem = function
-  | Some l -> whenmem := l; true
-  | None -> false
-
-let restore mem = !mem
-
 (*******************************)
 
 (* Unification à l'ordre 0 de m et n: [unify_0 env sigma cv_pb m n]
@@ -371,10 +360,9 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
     and cN = Evarutil.whd_head_evar sigma curn in
       match (kind_of_term cM,kind_of_term cN) with
 	| Meta k1, Meta k2 ->
+            if k1 = k2 then substn else
 	    let stM,stN = extract_instance_status pb in
-	    if k2 < k1
-	    then sigma,(k1,cN,stN)::metasubst,evarsubst
-	    else if k1 = k2 then substn
+	    if k2 < k1 then sigma,(k1,cN,stN)::metasubst,evarsubst
 	    else sigma,(k2,cM,stM)::metasubst,evarsubst
 	| Meta k, _ when not (dependent cM cN) ->
 	    (* Here we check that [cN] does not contain any local variables *)
@@ -440,51 +428,60 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	     with ex when precatchable_exception ex ->
 	       reduce curenvnb pb b substn cM cN)
 
-	| App (f1,l1), _ when
+	| App (f1,l1), _ when 
 	    (isMeta f1 && use_metas_pattern_unification flags nb l1
-             || use_evars_pattern_unification flags && isAllowedEvar flags f1) &
-	    store whenmem (is_unification_pattern curenvnb sigma f1 (Array.to_list l1) cN) ->
-	      solve_pattern_eqn_array curenvnb f1 (restore whenmem) cN substn
+            || use_evars_pattern_unification flags && isAllowedEvar flags f1) ->
+            (match
+                is_unification_pattern curenvnb sigma f1 (Array.to_list l1) cN
+             with
+             | None ->
+                 (match kind_of_term cN with
+                 | App (f2,l2) -> unify_app curenvnb pb b substn cM f1 l1 cN f2 l2
+                 | _ -> unify_not_same_head curenvnb pb b substn cM cN)
+             | Some l ->
+                 solve_pattern_eqn_array curenvnb f1 l cN substn)
 
 	| _, App (f2,l2) when
 	    (isMeta f2 && use_metas_pattern_unification flags nb l2
-             || use_evars_pattern_unification flags && isAllowedEvar flags f2) &
-	    store whenmem (is_unification_pattern curenvnb sigma f2 (Array.to_list l2) cM) ->
-	      solve_pattern_eqn_array curenvnb f2 (restore whenmem) cM substn
+            || use_evars_pattern_unification flags && isAllowedEvar flags f2) ->
+            (match
+                is_unification_pattern curenvnb sigma f2 (Array.to_list l2) cM
+             with
+             | None ->
+                 (match kind_of_term cM with
+                 | App (f1,l1) -> unify_app curenvnb pb b substn cM f1 l1 cN f2 l2
+                 | _ -> unify_not_same_head curenvnb pb b substn cM cN)
+             | Some l ->
+	         solve_pattern_eqn_array curenvnb f2 l cM substn)
 
 	| App (f1,l1), App (f2,l2) ->
-	    let len1 = Array.length l1
-	    and len2 = Array.length l2 in
-	      (try
-		  let (f1,l1,f2,l2) =
-		    if len1 = len2 then (f1,l1,f2,l2)
-		    else if len1 < len2 then
-		      let extras,restl2 = array_chop (len2-len1) l2 in
-		      (f1, l1, appvect (f2,extras), restl2)
-		    else
-		      let extras,restl1 = array_chop (len1-len2) l1 in
-		      (appvect (f1,extras), restl1, f2, l2) in
-		  array_fold_left2 (unirec_rec curenvnb CONV true)
-		    (unirec_rec curenvnb CONV true substn f1 f2) l1 l2
-		with ex when precatchable_exception ex ->
-		  try reduce curenvnb pb b substn cM cN
-		  with ex when precatchable_exception ex ->
-		    try expand curenvnb pb b substn cM f1 l1 cN f2 l2
-		    with ex when precatchable_exception ex ->
-		      canonical_projections curenvnb pb b cM cN substn)
+            unify_app curenvnb pb b substn cM f1 l1 cN f2 l2
 
 	| _ ->
-	    try canonical_projections curenvnb pb b cM cN substn
-	    with ex when precatchable_exception ex ->
-              if constr_cmp cv_pb cM cN then substn else
- 		try reduce curenvnb pb b substn cM cN
-		with ex when precatchable_exception ex ->
-		  let (f1,l1) =
-		    match kind_of_term cM with App (f,l) -> (f,l) | _ -> (cM,[||]) in
-		  let (f2,l2) =
-		    match kind_of_term cN with App (f,l) -> (f,l) | _ -> (cN,[||]) in
-		    expand curenvnb pb b substn cM f1 l1 cN f2 l2
+            unify_not_same_head curenvnb pb b substn cM cN
 
+  and unify_app curenvnb pb b substn cM f1 l1 cN f2 l2 =
+    try
+      array_fold_left2 (unirec_rec curenvnb CONV true)
+	(unirec_rec curenvnb CONV true substn f1 f2) l1 l2
+    with ex when precatchable_exception ex ->
+    try reduce curenvnb pb b substn cM cN
+    with ex when precatchable_exception ex ->
+    try expand curenvnb pb b substn cM f1 l1 cN f2 l2
+    with ex when precatchable_exception ex ->
+    canonical_projections curenvnb pb b cM cN substn
+
+  and unify_not_same_head curenvnb pb b substn cM cN =
+    try canonical_projections curenvnb pb b cM cN substn
+    with ex when precatchable_exception ex ->
+    if constr_cmp cv_pb cM cN then substn else
+    try reduce curenvnb pb b substn cM cN
+    with ex when precatchable_exception ex ->
+    let (f1,l1) =
+      match kind_of_term cM with App (f,l) -> (f,l) | _ -> (cM,[||]) in
+    let (f2,l2) =
+      match kind_of_term cN with App (f,l) -> (f,l) | _ -> (cN,[||]) in
+    expand curenvnb pb b substn cM f1 l1 cN f2 l2
 
   and reduce curenvnb pb b (sigma, metas, evars as substn) cM cN =
     if use_full_betaiota flags && not (subterm_restriction b flags) then
