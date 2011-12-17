@@ -25,6 +25,11 @@ Inductive even: Z -> Prop :=
 with odd: Z -> Prop :=
 | odd_succ: forall n, even (n - 1) -> odd n.
 
+(* Check printing of fix *)
+Ltac f id1 id2 := fix id1 2 with (id2 n (H:odd n) {struct H} : n >= 1).
+Print Ltac f.
+
+(* Incidentally check use of fix in proofs *)
 Lemma even_pos_odd_pos: forall n, even n -> n >= 0.
 Proof.
 fix even_pos_odd_pos 2 with (odd_pos_even_pos n (H:odd n) {struct H} : n >= 1).
@@ -37,5 +42,6 @@ fix even_pos_odd_pos 2 with (odd_pos_even_pos n (H:odd n) {struct H} : n >= 1).
  destruct H.
   apply even_pos_odd_pos in H.
   omega.
-Show Script.
 Qed.
+
+

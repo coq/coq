@@ -1,6 +1,4 @@
-intro H; split; [ a H | e H ].
-
-intros; match goal with
-        | |- context [if ?X then _ else _] => case X
-        end; trivial.
-
+Ltac f H := split; [ a H | e H ]
+Ltac g := match goal with
+          | |- context [if ?X then _ else _] => case X
+          end
