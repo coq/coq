@@ -274,7 +274,7 @@ let clean sds sps =
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) archclean)\n")
     sds;
-  print "\n\n";
+  print "\n";
   print "printenv:\n\t@$(COQBIN)coqtop -config\n";
   print "\t@echo CAMLC =\t$(CAMLC)\n\t@echo CAMLOPTC =\t$(CAMLOPTC)\n\t@echo PP =\t$(PP)\n\t@echo COQFLAGS =\t$(COQFLAGS)\n";
   print "\t@echo COQLIBINSTALL =\t$(COQLIBINSTALL)\n\t@echo COQDOCINSTALL =\t$(COQDOCINSTALL)\n\n"
@@ -282,6 +282,7 @@ let clean sds sps =
 let header_includes () = ()
 
 let implicit () =
+    section "Implicit rules.";
   let mli_rules () =
     print "%.cmi: %.mli\n\t$(CAMLC) $(ZDEBUG) $(ZFLAGS) $<\n\n";
     print "%.mli.d: %.mli\n";
@@ -334,7 +335,6 @@ let variables is_install opt (args,defs) =
     section "Variables definitions.";
     List.iter var_aux defs;
     print "\n";
-    print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n";
     if not opt then
       print "override OPT:=-byte\n"
     else
@@ -348,12 +348,23 @@ let variables is_install opt (args,defs) =
 	  print "\n";
     end;
     (* Coq executables and relative variables *)
+    if !some_vfile then begin
     print "COQFLAGS?=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
     print "COQC?=$(COQBIN)coqc\n";
     print "COQDEP?=$(COQBIN)coqdep -c\n";
     print "GALLINA?=$(COQBIN)gallina\n";
-    print "COQDOC?=$(COQBIN)coqdoc\n";
+    print "COQDOC?=$(COQBIN)coqdoc\n\n";
+    end;
     (* Caml executables and relative variables *)
+    if !some_ml4file || !some_mlfile || !some_mlifile then begin
+    print "COQSRCLIBS?=-I $(COQLIB)kernel -I $(COQLIB)lib \\
+  -I $(COQLIB)library -I $(COQLIB)parsing \\
+  -I $(COQLIB)pretyping -I $(COQLIB)interp \\
+  -I $(COQLIB)proofs -I $(COQLIB)tactics \\
+  -I $(COQLIB)toplevel";
+    List.iter (fun c -> print " \\
+  -I $(COQLIB)plugins/"; print c) Coq_config.plugins_dirs; print "\n";
+    print "ZFLAGS=$(OCAMLLIBS) $(COQSRCLIBS) -I $(CAMLP4LIB)\n\n";
     print "CAMLC?=$(OCAMLC) -c -rectypes\n";
     print "CAMLOPTC?=$(OCAMLOPT) -c -rectypes\n";
     print "CAMLLINK?=$(OCAMLC) -rectypes\n";
@@ -361,12 +372,12 @@ let variables is_install opt (args,defs) =
     print "GRAMMARS?=grammar.cma\n";
     print "CAMLP4EXTEND?=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
     print "CAMLP4OPTIONS?=\n";
-    print "PP?=-pp \"$(CAMLP4BIN)$(CAMLP4)o -I $(CAMLLIB) -I . $(COQSRCLIBS) $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl\"\n";
-    print "\n";
+    print "PP?=-pp \"$(CAMLP4BIN)$(CAMLP4)o -I $(CAMLLIB) -I . $(COQSRCLIBS) $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl\"\n\n";
+    end;
     match is_install with
       | Project_file.NoInstall -> ()
       | Project_file.UnspecInstall ->
-        section "Install Paths";
+        section "Install Paths.";
 	print "ifdef USERINSTALL\n";
         print "XDG_DATA_HOME?=$(HOME)/.local/share\n";
         print "COQLIBINSTALL=$(XDG_DATA_HOME)/coq\n";
@@ -376,12 +387,12 @@ let variables is_install opt (args,defs) =
         print "COQDOCINSTALL=${DOCDIR}user-contrib\n";
 	print "endif\n\n"
       | Project_file.TraditionalInstall ->
-          section "Install Paths";
+          section "Install Paths.";
           print "COQLIBINSTALL=${COQLIB}user-contrib\n";
           print "COQDOCINSTALL=${DOCDIR}user-contrib\n";
           print "\n"
       | Project_file.UserInstall ->
-          section "Install Paths";
+          section "Install Paths.";
           print "XDG_DATA_HOME?=$(HOME)/.local/share\n";
           print "COQLIBINSTALL=$(XDG_DATA_HOME)/coq\n";
           print "COQDOCINSTALL=$(XDG_DATA_HOME)/doc/coq\n";
@@ -409,16 +420,13 @@ let include_dirs (inc_i,inc_r) =
   let str_i' = parse_includes inc_i' in
   let str_r = parse_rec_includes inc_r in
     section "Libraries definitions.";
-    print "OCAMLLIBS?="; print_list "\\\n  " str_i; print "\n";
-    print "COQSRCLIBS?=-I $(COQLIB)kernel -I $(COQLIB)lib \\
-  -I $(COQLIB)library -I $(COQLIB)parsing \\
-  -I $(COQLIB)pretyping -I $(COQLIB)interp \\
-  -I $(COQLIB)proofs -I $(COQLIB)tactics \\
-  -I $(COQLIB)toplevel";
-    List.iter (fun c -> print " \\
-  -I $(COQLIB)plugins/"; print c) Coq_config.plugins_dirs; print "\n";
-    print "COQLIBS?="; print_list "\\\n  " str_i'; print " "; print_list "\\\n  " str_r; print "\n";
-    print "COQDOCLIBS?=";   print_list "\\\n  " str_r; print "\n\n"
+    if !some_ml4file || !some_mlfile || !some_mlifile then begin
+      print "OCAMLLIBS?="; print_list "\\\n  " str_i; print "\n";
+    end;
+    if !some_vfile then begin
+      print "COQLIBS?="; print_list "\\\n  " str_i'; print " "; print_list "\\\n  " str_r; print "\n";
+      print "COQDOCLIBS?=";   print_list "\\\n  " str_r; print "\n\n";
+    end
 
 let custom sps =
   let pr_path (file,dependencies,com) =
@@ -433,22 +441,17 @@ let subdirs sds =
     print s; print ":\n\tcd "; print s; print " ; $(MAKE) all\n\n"
   in
     if sds <> [] then section "Subdirectories.";
-    List.iter pr_subdir sds;
-    section "Special targets.";
-    print ".PHONY: ";
-    print_list " "
-      ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install"
-	:: "userinstall" :: "depend" :: "html" :: sds);
-    print "\n\n"
+    List.iter pr_subdir sds
 
-let forpacks =
+let forpacks l =
+  let () = if l <> [] then section "Ad-hoc implicit rules for mlpack." in
   List.iter (fun it ->
     let h = Filename.chop_extension it in
     printf "$(addsuffix .cmx,$(filter $(basename $(MLFILES)),$(%s_MLPACK_DEPENDENCIES))): %%.cmx: %%.ml\n" h;
     printf "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -for-pack %s $<\n\n" (String.capitalize (Filename.basename h));
     printf "$(addsuffix .cmx,$(filter $(basename $(ML4FILES)),$(%s_MLPACK_DEPENDENCIES))): %%.cmx: %%.ml4\n" h;
     printf "\t$(CAMLOPTC) $(ZDEBUG) $(ZFLAGS) -for-pack %s $(PP) -impl $<\n\n" (String.capitalize (Filename.basename h))
-  )
+  ) l
 
 let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other_targets inc =
   let decl_var var = function
@@ -457,6 +460,7 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
       printf "%s:=" var; print_list "\\\n  " l; print "\n";
       printf "\n-include $(addsuffix .d,$(%s))\n.SECONDARY: $(addsuffix .d,$(%s))\n\n" var var
   in
+  section "Files dispatching.";
   decl_var "VFILES" vfiles;
   begin match vfiles with
     |[] -> ()
@@ -495,10 +499,10 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
     |ml4,ml,mlpack ->
       print "ALLCMOFILES:=$(ML4FILES:.ml4=.cmo) $(MLFILES:.ml=.cmo) $(MLPACKFILES:.mlpack=.cmo)\n";
       List.rev_append mlpack (List.rev_append ml ml4) in
-  print "CMOFILES=$(filter-out $(addsuffix .cmo,$(foreach lib,$(MLLIBFILES:.mllib=_MLLIB_DEPENDENCIES) $(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES),$($(lib)))),$(ALLCMOFILES))\n";
   begin match mlsfiles with
     |[] -> ()
     |l ->
+  print "CMOFILES=$(filter-out $(addsuffix .cmo,$(foreach lib,$(MLLIBFILES:.mllib=_MLLIB_DEPENDENCIES) $(MLPACKFILES:.mlpack=_MLPACK_DEPENDENCIES),$($(lib)))),$(ALLCMOFILES))\n";
       classify_files_by_root "CMOFILES" l inc;
       print "CMXFILES=$(CMOFILES:.cmo=.cmx)\n";
       print "OFILES=$(CMXFILES:.cmx=.o)\n";
@@ -534,7 +538,9 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
       print "CMXSFILES=$(CMXFILES:.cmx=.cmxs) $(CMXAFILES:.cmxa=.cmxs)\n";
       classify_files_by_root "CMXSFILES" (l1@l2) inc;
   end;
-  print "\nall: ";
+  print "\n";
+  section "Definition of the toplevel targets.";
+  print "all: ";
   if !some_vfile then print "$(VOFILES) ";
   if !some_mlfile || !some_ml4file || !some_mlpackfile then print "$(CMOFILES) ";
   if !some_mllibfile then print "$(CMAFILES) ";
@@ -573,11 +579,15 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
 let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
   let special_targets = List.filter (fun (n,_,_) -> not (is_genrule n)) sps in
   let other_targets = List.map (function x,_,_ -> x) special_targets @ sds in
-  section "Definition of the \"all\" target.";
   main_targets vfiles mlfiles other_targets inc;
-  forpacks mlpackfiles;
-  custom sps;
-  subdirs sds
+    print ".PHONY: ";
+    print_list " "
+      ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install"
+	:: "userinstall" :: "depend" :: "html" :: sds);
+    print "\n\n";
+    custom sps;
+    subdirs sds;
+    forpacks mlpackfiles
 
 let banner () =
   print (Printf.sprintf
@@ -676,11 +686,12 @@ let do_makefile args =
   include_dirs inc;
   variables is_install opt defs;
   all_target targets inc;
-  implicit ();
+  section "Special targets.";
   standard opt;
   install targets inc is_install;
   clean sds sps;
   make_makefile sds;
+  implicit ();
   warning ();
   if not (makefile = None) then close_out !output_channel;
   exit 0
