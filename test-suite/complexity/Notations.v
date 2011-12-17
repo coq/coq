@@ -7,4 +7,4 @@ Notation "'bind' x <- y ; z" :=(y (fun x => z)) (at level 99, x at
 
 Definition f (g : (nat -> nat) -> nat) := g (fun x => 0).
 
-Check (fun g => f g).
+Time Check (fun g => f g).
