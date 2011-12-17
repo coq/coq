@@ -775,18 +775,18 @@ let vernac_declare_arguments local r l nargs flags =
   let names = List.map (List.map (fun (id, _,_,_,_) -> id)) l in
   let names, rest = List.hd names, List.tl names in
   if List.exists ((<>) names) rest then
-    error "All arguments lists must declare the same names";
+    error "All arguments lists must declare the same names.";
   if not (Util.list_distinct (List.filter ((<>) Anonymous) names)) then
-    error "Arguments names must be distinct";
+    error "Arguments names must be distinct.";
   let sr = smart_global r in
   let inf_names =
     Impargs.compute_implicits_names (Global.env()) (Global.type_of_global sr) in
   let string_of_name = function Anonymous -> "_" | Name id -> string_of_id id in
   let rec check li ld = match li, ld with
     | [], [] -> ()
-    | [], x::_ -> error ("Extra argument " ^ string_of_name x)
+    | [], x::_ -> error ("Extra argument " ^ string_of_name x ^ ".")
     | l, [] -> error ("The following arguments are not declared: " ^
-       (String.concat ", " (List.map string_of_name l)))
+       (String.concat ", " (List.map string_of_name l)) ^ ".")
     | _::li, _::ld -> check li ld in
   if l <> [[]] then
     List.iter (fun l -> check inf_names l) (names :: rest);
@@ -806,7 +806,7 @@ let vernac_declare_arguments local r l nargs flags =
       let sr', impl = Util.list_fold_map (fun b -> function
         | (Anonymous, _,_, true, max), Name id -> assert false
         | (Name x, _,_, true, _), Anonymous ->
-            error ("Argument "^string_of_id x^" cannot be declared implicit")
+            error ("Argument "^string_of_id x^" cannot be declared implicit.")
         | (Name iid, _,_, true, max), Name id ->
            b || iid <> id, Some (ExplByName id, max, false)
         | _ -> b, None)
@@ -815,7 +815,7 @@ let vernac_declare_arguments local r l nargs flags =
       some_renaming_specified l in
   if some_renaming_specified then
     if not (List.mem `Rename flags) then
-      error "to rename arguments the \"rename\" flag must be specified"
+      error "To rename arguments the \"rename\" flag must be specified."
     else Arguments_renaming.rename_arguments local sr names_decl;
   (* All other infos are in the first item of l *)
   let l = List.hd l in
@@ -836,7 +836,7 @@ let vernac_declare_arguments local r l nargs flags =
   else if some_implicits_specified || List.mem `ClearImplicits flags then
     vernac_declare_implicits local r implicits;
   if nargs >= 0 && nargs < List.fold_left max 0 rargs then
-    error "The \"/\" option must be places after the last \"!\"";
+    error "The \"/\" option must be placed after the last \"!\".";
   let rec narrow = function
     | #Tacred.simpl_flag as x :: tl -> x :: narrow tl
     | [] -> [] | _ :: tl -> narrow tl in
@@ -845,8 +845,7 @@ let vernac_declare_arguments local r l nargs flags =
     match sr with
     | ConstRef _ as c ->
        Tacred.set_simpl_behaviour local c (rargs, nargs, flags)
-    | _ -> error "Simpl behaviour can be declared for constants only"
-;;
+    | _ -> errorlabstrm "" (strbrk "Modifiers of the behavior of the simpl tactic are relevant for constants only.")
 
 let vernac_reserve bl =
   let sb_decl = (fun (idl,c) ->
@@ -1372,7 +1371,7 @@ let vernac_bullet (bullet:Proof_global.Bullet.t) =
   Proof.transaction p 
     (fun () -> Proof_global.Bullet.put p bullet);
   (* Makes the focus visible in emacs by re-printing the goal. *)
-  if !Flags.print_emacs then print_subgoals ();;
+  if !Flags.print_emacs then print_subgoals ()
 
 
 let vernac_show = function

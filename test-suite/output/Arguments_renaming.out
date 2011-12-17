@@ -1,5 +1,5 @@
 The command has indeed failed with message:
-=> Error: to rename arguments the "rename" flag must be specified
+=> Error: To rename arguments the "rename" flag must be specified.
 @eq_refl
      : forall (B : Type) (y : B), y = y
 eq_refl
@@ -95,12 +95,12 @@ Expands to: Constant Top.myplus
 myplus
      : forall Z : Type, Z -> nat -> nat -> nat
 The command has indeed failed with message:
-=> Error: All arguments lists must declare the same names
+=> Error: All arguments lists must declare the same names.
 The command has indeed failed with message:
-=> Error: The following arguments are not declared: x
+=> Error: The following arguments are not declared: x.
 The command has indeed failed with message:
-=> Error: Arguments names must be distinct
+=> Error: Arguments names must be distinct.
 The command has indeed failed with message:
-=> Error: Argument z cannot be declared implicit
+=> Error: Argument z cannot be declared implicit.
 The command has indeed failed with message:
-=> Error: Extra argument y
+=> Error: Extra argument y.
