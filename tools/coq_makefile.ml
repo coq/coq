@@ -257,7 +257,7 @@ let clean sds sps =
     print "\trm -f $(addsuffix .d,$(MLFILES) $(MLIFILES) $(ML4FILES) $(MLLIBFILES) $(MLPACKFILES))\n";
   end;
   if !some_vfile then
-    print "\trm -f $(VOFILES) $(VIFILES) $(GFILES) $(VFILES:.v=.v.d)\n";
+    print "\trm -f $(VOFILES) $(VIFILES) $(GFILES) $(VFILES:.v=.v.d) $(VFILES:=.beautified) $(VFILES:=.old)\n";
   print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) all-mli.tex\n";
   print "\t- rm -rf html mlihtml\n";
   List.iter
@@ -320,7 +320,8 @@ in
     print "%.g.tex: %.v\n\t$(COQDOC) -latex -g $< -o $@\n\n";
     print "%.g.html: %.v %.glob\n\t$(COQDOC) -html -g $< -o $@\n\n";
     print "%.v.d: %.v\n";
-    print "\t$(COQDEP) -slash $(COQLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n"
+    print "\t$(COQDEP) -slash $(COQLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
+    print "%.v.beautified:\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) -beautify $*\n\n"
   in
     if !some_mlifile then mli_rules ();
     if !some_ml4file then ml4_rules ();
@@ -577,6 +578,10 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
       print "\t$(COQDOC) -toc -pdf -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $^`\n\n";
       print "validate: $(VOFILES)\n";
       print "\t$(COQCHK) $(COQCHKFLAGS) $(COQLIBS) $(notdir $(^:.vo=))\n\n";
+      print "beautify: $(VFILES:=.beautified)\n";
+      print "\tfor file in $^; do mv $${file%.beautified} $${file%beautified}old && mv $${file} $${file%.beautified}; done\n";
+      print "\t@echo \'Do not do \"make clean\" until you are sure that everything went well!\'\n";
+      print "\t@echo \'If there were a problem, execute \"for file in $$(find . -name \\*.v.old -print); do mv $${file} $${file%.old}; done\" in your shell/'\n\n"
     end
 
 let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
