@@ -2872,12 +2872,22 @@ let inMD : bool * (tacdef_kind * glob_tactic_expr) list -> obj =
      subst_function = subst_md;
      classify_function = classify_md}
 
+let rec split_ltac_fun = function
+  | TacFun (l,t) -> (l,t)
+  | t -> ([],t)
+
+let pr_ltac_fun_arg = function
+  | None -> spc () ++ str "_"
+  | Some id -> spc () ++ pr_id id
+
 let print_ltac id =
  try
   let kn = Nametab.locate_tactic id in
-  let t = lookup kn in
-   str "Ltac" ++ spc() ++ pr_qualid id ++ str " :=" ++ spc() ++
-    Pptactic.pr_glob_tactic (Global.env ()) t
+  let l,t = split_ltac_fun (lookup kn) in
+  hv 2 (
+    hov 2 (str "Ltac" ++ spc() ++ pr_qualid id ++
+           prlist pr_ltac_fun_arg l ++ spc () ++ str ":=")
+    ++ spc() ++ Pptactic.pr_glob_tactic (Global.env ()) t)
  with
   Not_found ->
    errorlabstrm "print_ltac"

@@ -906,8 +906,8 @@ let rec pr_tac inherited tac =
              pr_tac (lorelse,E) t2),
       lorelse
   | TacFail (n,l) ->
-      str "fail" ++ (if n=ArgArg 0 then mt () else pr_arg (pr_or_var int) n) ++
-      prlist (pr_arg (pr_message_token pr_ident)) l, latom
+      hov 1 (str "fail" ++ (if n=ArgArg 0 then mt () else pr_arg (pr_or_var int) n) ++
+      prlist (pr_arg (pr_message_token pr_ident)) l), latom
   | TacFirst tl ->
       str "first" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet
   | TacSolve tl ->
