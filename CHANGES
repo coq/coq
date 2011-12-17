@@ -226,7 +226,8 @@ Tools
   * More variables are given by coqtop -config, others are defined only if the
     users doesn't have defined them elsewhere. Consequently, generated makefile
     should work directly on any architecture.
-  * Packagers can take advantage of $(DSTROOT) introduction.
+  * Packagers can take advantage of $(DSTROOT) introduction. Installation can
+    be made in $XDG_DATA_HOME/coq.
   * -arg option allows to send option as argument to coqc.
 
 Changes from V8.2 to V8.3

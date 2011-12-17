@@ -68,9 +68,9 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml[i4]?] ... [file.mllib]
 [-byte]: compile with byte-code version of coq
 [-opt]: compile with native-code version of coq
 [-arg opt]: send option \"opt\" to coqc
-[-install opt]: where opt is \"user\" to install into user directory,
+[-install opt]: where opt is \"user\" to force install into user directory,
   \"none\" to build a makefile with no install target or
-  \"global\" to install in $COQLIB directory (default behavior)
+  \"global\" to force install in $COQLIB directory
 [-f file]: take the contents of file as arguments
 [-o file]: output should go in file file
 	Output file outside the current directory is forbidden.
@@ -207,7 +207,11 @@ let install_doc some_vfiles some_mlifiles (_,inc_r) =
 	   end in
       print "\n"
 
-let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) inc =
+let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) inc = function
+  |Project_file.NoInstall -> ()
+  |is_install ->
+    let () = if is_install = Project_file.UnspecInstall then
+	print "userinstall:\n\t+$(MAKE) USERINSTALL=true install\n\n" in
   let not_empty = function |[] -> false |_::_ -> true in
   let cmofiles = mlpackfiles@mlfiles@ml4files in
   let cmifiles = mlifiles@cmofiles in
@@ -272,7 +276,8 @@ let clean sds sps =
     sds;
   print "\n\n";
   print "printenv:\n\t@$(COQBIN)coqtop -config\n";
-  print "\t@echo CAMLC =\t$(CAMLC)\n\t@echo CAMLOPTC =\t$(CAMLOPTC)\n\t@echo PP =\t$(PP)\n\t@echo COQFLAGS =\t$(COQFLAGS)\n\n"
+  print "\t@echo CAMLC =\t$(CAMLC)\n\t@echo CAMLOPTC =\t$(CAMLOPTC)\n\t@echo PP =\t$(PP)\n\t@echo COQFLAGS =\t$(COQFLAGS)\n";
+  print "\t@echo COQLIBINSTALL =\t$(COQLIBINSTALL)\n\t@echo COQDOCINSTALL =\t$(COQDOCINSTALL)\n\n"
 
 let header_includes () = ()
 
@@ -360,10 +365,20 @@ let variables is_install opt (args,defs) =
     print "\n";
     match is_install with
       | Project_file.NoInstall -> ()
+      | Project_file.UnspecInstall ->
+        section "Install Paths";
+	print "ifdef USERINSTALL\n";
+        print "XDG_DATA_HOME?=$(HOME)/.local/share\n";
+        print "COQLIBINSTALL=$(XDG_DATA_HOME)/coq\n";
+        print "COQDOCINSTALL=$(XDG_DATA_HOME)/doc/coq\n";
+	print "else\n";
+        print "COQLIBINSTALL=${COQLIB}user-contrib\n";
+        print "COQDOCINSTALL=${DOCDIR}user-contrib\n";
+	print "endif\n\n"
       | Project_file.TraditionalInstall ->
           section "Install Paths";
-          print "COQLIBINSTALL=${COQLIB}/user-contrib\n";
-          print "COQDOCINSTALL=${DOCDIR}/user-contrib\n";
+          print "COQLIBINSTALL=${COQLIB}user-contrib\n";
+          print "COQDOCINSTALL=${DOCDIR}user-contrib\n";
           print "\n"
       | Project_file.UserInstall ->
           section "Install Paths";
@@ -373,7 +388,7 @@ let variables is_install opt (args,defs) =
           print "\n"
 
 let parameters () =
-  print "NOARG: all\n\n# \n";
+  print ".DEFAULT_GOAL := all\n\n# \n";
   print "# This Makefile may take arguments passed as environment variables:\n";
   print "# COQBIN to specify the directory where Coq binaries resides;\n";
   print "# ZDEBUG/COQDEBUG to specify debug flags for ocamlc&ocamlopt/coqc;\n";
@@ -422,8 +437,8 @@ let subdirs sds =
     section "Special targets.";
     print ".PHONY: ";
     print_list " "
-      ("NOARG" :: "all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install"
-	:: "depend" :: "html" :: sds);
+      ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install"
+	:: "userinstall" :: "depend" :: "html" :: sds);
     print "\n\n"
 
 let forpacks =
@@ -627,7 +642,7 @@ let do_makefile args =
     |[] -> var := false
     |_::_ -> var := true in
   let (project_file,makefile,is_install,opt),l =
-    try Project_file.process_cmd_line Filename.current_dir_name (None,None,Project_file.TraditionalInstall,true) [] args
+    try Project_file.process_cmd_line Filename.current_dir_name (None,None,Project_file.UnspecInstall,true) [] args
     with Project_file.Parsing_error -> usage () in
   let (v_f,(mli_f,ml4_f,ml_f,mllib_f,mlpack_f),sps,sds as targets), inc, defs =
     Project_file.split_arguments l in
@@ -663,7 +678,7 @@ let do_makefile args =
   all_target targets inc;
   implicit ();
   standard opt;
-  if is_install <> Project_file.NoInstall then install targets inc;
+  install targets inc is_install;
   clean sds sps;
   make_makefile sds;
   warning ();

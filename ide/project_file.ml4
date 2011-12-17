@@ -16,6 +16,7 @@ type install =
   | NoInstall
   | TraditionalInstall
   | UserInstall
+  | UnspecInstall
 
 exception Parsing_error
 let rec parse_string = parser
@@ -58,7 +59,7 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
     Minilib.safe_prerr_endline "Option -no-install is deprecated. Use \"-install none\" instead";
     process_cmd_line orig_dir (project_file,makefile,NoInstall,opt) l r
   | "-install" :: d :: r ->
-    if install <> TraditionalInstall then Minilib.safe_prerr_endline "Warning: -install sets more than once.";
+    if install <> UnspecInstall then Minilib.safe_prerr_endline "Warning: -install sets more than once.";
     let install =
       match d with
 	| "user" -> UserInstall
