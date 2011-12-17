@@ -804,8 +804,8 @@ let alias_of = function
   | (id::_,_) -> Name id
 
 let message_redundant_alias (id1,id2) =
-  if_verbose warning
-   ("Alias variable "^(string_of_id id1)^" is merged with "^(string_of_id id2))
+  if_warn msg_warning
+    (str "Alias variable " ++ pr_id id1 ++ str " is merged with " ++ pr_id id2)
 
 (* Expanding notations *)
 
@@ -933,7 +933,7 @@ let maybe_constructor ref f aliases env =
     | InternalizationError _ -> VarPat (find_pattern_variable ref)
       (* patt var also exists globally but does not satisfy preconditions *)
     | (Environ.NotEvaluableConst _ | Not_found) ->
-        if_verbose msg_warning (str "pattern " ++ pr_reference ref ++
+        if_warn msg_warning (str "pattern " ++ pr_reference ref ++
               str " is understood as a pattern variable");
         VarPat (find_pattern_variable ref)
 

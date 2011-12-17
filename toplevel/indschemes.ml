@@ -128,7 +128,7 @@ let alarm what internal msg =
   | KernelVerbose 
   | KernelSilent ->
     (if debug then
-      Flags.if_verbose Pp.msg_warning
+      Flags.if_warn Pp.msg_warning
 	(hov 0 msg ++ fnl () ++ what ++ str " not defined."))
   | _ -> errorlabstrm "" msg
 

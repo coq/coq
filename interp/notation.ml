@@ -71,7 +71,7 @@ let init_scope_map () =
 let declare_scope scope =
   try let _ = Gmap.find scope !scope_map in ()
   with Not_found ->
-(*    Flags.if_verbose message ("Creating scope "^scope);*)
+(*    Flags.if_warn message ("Creating scope "^scope);*)
     scope_map := Gmap.add scope empty_scope !scope_map
 
 let find_scope scope =
@@ -151,15 +151,15 @@ let declare_delimiters scope key =
     | None -> scope_map := Gmap.add scope newsc !scope_map
     | Some oldkey when oldkey = key -> ()
     | Some oldkey ->
-	Flags.if_verbose warning
-	  ("overwriting previous delimiting key "^oldkey^" in scope "^scope);
+	Flags.if_warn msg_warning
+	  (str ("Overwriting previous delimiting key "^oldkey^" in scope "^scope));
 	scope_map := Gmap.add scope newsc !scope_map
   end;
   try
     let oldscope = Gmap.find key !delimiters_map in
     if oldscope = scope then ()
     else begin
-      Flags.if_verbose warning ("Hiding binding of key "^key^" to "^oldscope);
+      Flags.if_warn msg_warning (str ("Hiding binding of key "^key^" to "^oldscope));
       delimiters_map := Gmap.add key scope !delimiters_map
     end
   with Not_found -> delimiters_map := Gmap.add key scope !delimiters_map

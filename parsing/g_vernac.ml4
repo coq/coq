@@ -130,14 +130,14 @@ END
 
 let test_plurial_form = function
   | [(_,([_],_))] ->
-      Flags.if_verbose warning
-   "Keywords Variables/Hypotheses/Parameters expect more than one assumption"
+      Flags.if_verbose msg_warning
+   (str "Keywords Variables/Hypotheses/Parameters expect more than one assumption")
   | _ -> ()
 
 let test_plurial_form_types = function
   | [([_],_)] ->
-      Flags.if_verbose warning
-   "Keywords Implicit Types expect more than one type"
+      Flags.if_verbose msg_warning
+   (str "Keywords Implicit Types expect more than one type")
   | _ -> ()
 
 (* Gallina declarations *)

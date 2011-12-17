@@ -124,13 +124,13 @@ let find_mutually_recursive_statements thms =
 	  assert (rest=[]);
           (* One occ. of common coind ccls and no common inductive hyps *)
 	  if common_same_indhyp <> [] then
-	    if_verbose warning "Assuming mutual coinductive statements.";
+	    if_verbose msgnl (str "Assuming mutual coinductive statements.");
 	  flush_all ();
           indccl, true, []
       | [], _::_ ->
 	  if same_indccl <> [] &&
 	     list_distinct (List.map pi1 (List.hd same_indccl)) then
-	    if_verbose warn (strbrk "Coinductive statements do not follow the order of definition, assume the proof to be by induction."); flush_all ();
+	    if_verbose msgnl (strbrk "Coinductive statements do not follow the order of definition, assuming the proof to be by induction."); flush_all ();
           let possible_guards = List.map (List.map pi3) inds_hyps in
 	  (* assume the largest indices as possible *)
 	  list_last common_same_indhyp, false, possible_guards

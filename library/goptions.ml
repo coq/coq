@@ -335,12 +335,12 @@ let set_int_option_value_gen locality =
   set_option_value locality check_int_value
 let set_bool_option_value_gen locality key v =
   try set_option_value locality check_bool_value key v
-  with UserError (_,s) -> Flags.if_verbose msg_warning s
+  with UserError (_,s) -> Flags.if_warn msg_warning s
 let set_string_option_value_gen locality =
   set_option_value locality check_string_value
 let unset_option_value_gen locality key =
   try set_option_value locality check_unset_value key ()
-  with UserError (_,s) -> Flags.if_verbose msg_warning s
+  with UserError (_,s) -> Flags.if_warn msg_warning s
 
 let set_int_option_value = set_int_option_value_gen None
 let set_bool_option_value = set_bool_option_value_gen None

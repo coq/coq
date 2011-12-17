@@ -118,7 +118,7 @@ let declare_definition ident (local,k) ce imps hook =
         let _ = declare_variable ident (Lib.cwd(),c,IsDefinition k) in
         definition_message ident;
         if Pfedit.refining () then
-          Flags.if_verbose msg_warning
+          Flags.if_warn msg_warning
 	    (str"Local definition " ++ pr_id ident ++
              str" is not visible from current goals");
         VarRef ident
@@ -445,7 +445,7 @@ let check_mutuality env isfix fixl =
   let po = partial_order preorder in
   match List.filter (function (_,Inr _) -> true | _ -> false) po with
     | (x,Inr xge)::(y,Inr yge)::rest ->
-	if_verbose msg_warning (non_full_mutual_message x xge y yge isfix rest)
+	if_warn msg_warning (non_full_mutual_message x xge y yge isfix rest)
     | _ -> ()
 
 type structured_fixpoint_expr = {

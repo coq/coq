@@ -108,9 +108,9 @@ struct
 	      | Absolute (n,_) ->
 		  (* This is an absolute name, we must keep it
 		     otherwise it may become unaccessible forever *)
-		  Flags.if_verbose
-		    warning ("Trying to mask the absolute name \""
-			     ^ U.to_string n ^ "\"!");
+		  Flags.if_warn
+		    msg_warning (str ("Trying to mask the absolute name \""
+			     ^ U.to_string n ^ "\"!"));
 		  current
 	      | Nothing
 	      | Relative _ -> Relative (uname,o)
@@ -131,7 +131,7 @@ struct
 		   become unaccessible forever *)
 		(* But ours is also absolute! This is an error! *)
 		error ("Cannot mask the absolute name \""
-  		       ^ U.to_string uname' ^ "\"!")
+		       ^ U.to_string uname' ^ "\"!")
 	  | Nothing
 	  | Relative _ -> Absolute (uname,o), dirmap
 
@@ -148,9 +148,9 @@ let rec push_exactly uname o level (current,dirmap) = function
 	      | Absolute (n,_) ->
 		  (* This is an absolute name, we must keep it
 		     otherwise it may become unaccessible forever *)
-		  Flags.if_verbose
-		    warning ("Trying to mask the absolute name \""
-  			     ^ U.to_string n ^ "\"!");
+		  Flags.if_warn
+		    msg_warning (str ("Trying to mask the absolute name \""
+			     ^ U.to_string n ^ "\"!"));
 		  current
 	      | Nothing
 	      | Relative _ -> Relative (uname,o)
