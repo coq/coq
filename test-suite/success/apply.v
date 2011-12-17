@@ -397,3 +397,21 @@ intro x;
 apply x.
 
 *)
+
+Section A.
+
+Variable map : forall (T1 T2 : Type) (f : T1 -> T2) (t11 t12 : T1),
+  identity (f t11) (f t12).
+
+Variable mapfuncomp : forall (X Y Z : Type) (f : X -> Y) (g : Y -> Z) (x x' : X),
+  identity (map Y Z g (f x) (f x')) (map X Z (fun x0 : X => g (f x0)) x x').
+
+Goal forall X:Type, forall Y:Type, forall f:X->Y, forall x : X, forall x' : X, 
+  forall g : Y -> X,
+  let gf := (fun x : X => g (f x)) : X -> X in
+   identity (map Y X g (f x) (f x')) (map X X gf x x').
+intros.
+apply mapfuncomp.
+Abort.
+
+End A.

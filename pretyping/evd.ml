@@ -689,7 +689,7 @@ let rec list_assoc_in_triple x = function
 
 let subst_defined_metas bl c =
   let rec substrec c = match kind_of_term c with
-    | Meta i -> substrec (list_assoc_in_triple i bl)
+    | Meta i -> substrec (list_assoc_snd_in_triple i bl)
     | _ -> map_constr substrec c
   in try Some (substrec c) with Not_found -> None
 

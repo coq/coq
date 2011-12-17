@@ -604,6 +604,10 @@ let rec list_remove_assoc_in_triple x = function
   | [] -> []
   | (y,_,_ as z)::l -> if x = y then l else z::list_remove_assoc_in_triple x l
 
+let rec list_assoc_snd_in_triple x = function
+    [] -> raise Not_found
+  | (a,b,_)::l -> if compare a x = 0 then b else list_assoc_snd_in_triple x l
+
 let list_add_set x l = if List.mem x l then l else x::l
 
 let list_eq_set l1 l2 =
