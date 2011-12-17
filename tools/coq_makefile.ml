@@ -350,10 +350,12 @@ let variables is_install opt (args,defs) =
     (* Coq executables and relative variables *)
     if !some_vfile then begin
     print "COQFLAGS?=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
+    print "COQCHKFLAGS?=-silent -o\n";
     print "COQC?=$(COQBIN)coqc\n";
     print "COQDEP?=$(COQBIN)coqdep -c\n";
     print "GALLINA?=$(COQBIN)gallina\n";
-    print "COQDOC?=$(COQBIN)coqdoc\n\n";
+    print "COQDOC?=$(COQBIN)coqdoc\n";
+    print "COQCHK?=$(COQBIN)coqchk\n\n";
     end;
     (* Caml executables and relative variables *)
     if !some_ml4file || !some_mlfile || !some_mlifile then begin
@@ -566,14 +568,15 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
       print "\t- mkdir -p html\n";
       print "\t$(COQDOC) -toc -html -g $(COQDOCLIBS) -d html $(VFILES)\n\n";
       print "all.ps: $(VFILES)\n";
-      print "\t$(COQDOC) -toc -ps $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+      print "\t$(COQDOC) -toc -ps $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $^`\n\n";
       print "all-gal.ps: $(VFILES)\n";
-      print "\t$(COQDOC) -toc -ps -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+      print "\t$(COQDOC) -toc -ps -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $^`\n\n";
       print "all.pdf: $(VFILES)\n";
-      print "\t$(COQDOC) -toc -pdf $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+      print "\t$(COQDOC) -toc -pdf $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $^`\n\n";
       print "all-gal.pdf: $(VFILES)\n";
-      print "\t$(COQDOC) -toc -pdf -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
-      print "\n"
+      print "\t$(COQDOC) -toc -pdf -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $^`\n\n";
+      print "validate: $(VOFILES)\n";
+      print "\t$(COQCHK) $(COQCHKFLAGS) $(COQLIBS) $(notdir $(^:.vo=))\n\n";
     end
 
 let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
@@ -583,7 +586,7 @@ let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
     print ".PHONY: ";
     print_list " "
       ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install"
-	:: "userinstall" :: "depend" :: "html" :: sds);
+	:: "userinstall" :: "depend" :: "html" :: "validate" :: sds);
     print "\n\n";
     custom sps;
     subdirs sds;
