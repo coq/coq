@@ -511,7 +511,7 @@ pr "
  solve_eval.
  destruct x as [ | xh xl ].
   simpl. unfold eval. rewrite make_op_S. rewrite nmake_op_S. auto.
- fold word in *.
+ simpl word in xh, xl |- *.
  unfold to_Z in *. rewrite make_op_WW.
  unfold eval in *. rewrite nmake_WW.
  f_equal; auto.
