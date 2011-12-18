@@ -322,17 +322,18 @@ let declare_uninterpretation rule (metas,c as pat) =
   let (key,n) = aconstr_key c in
   notations_key_table := Gmapl.add key (rule,pat,n) !notations_key_table
 
-let rec find_interpretation find = function
+let rec find_interpretation ntn find = function
   | [] -> raise Not_found
-  | sce :: scopes ->
-      let sc,sco = match sce with
-	| Scope sc -> sc, Some sc
-	| SingleNotation _ -> default_scope, None in
-      try
-	let (pat,df) = find sc in
-	pat,(df,sco)
-      with Not_found ->
-	find_interpretation find scopes
+  | Scope scope :: scopes ->
+      (try let (pat,df) = find scope in pat,(df,Some scope)
+       with Not_found -> find_interpretation ntn find scopes)
+  | SingleNotation ntn'::scopes when ntn' = ntn ->
+      (try let (pat,df) = find default_scope in pat,(df,None)
+       with Not_found ->
+         (* e.g. because single notation only for constr, not cases_pattern *)
+         find_interpretation ntn find scopes)
+  | SingleNotation _::scopes ->
+      find_interpretation ntn find scopes
 
 let find_notation ntn sc =
   Gmap.find ntn (find_scope sc).notations
@@ -355,7 +356,8 @@ let find_prim_token g loc p sc =
 
 let interp_prim_token_gen g loc p local_scopes =
   let scopes = make_current_scopes local_scopes in
-  try find_interpretation (find_prim_token g loc p) scopes
+  let p_as_ntn = try notation_of_prim_token p with Not_found -> "" in
+  try find_interpretation p_as_ntn (find_prim_token g loc p) scopes
   with Not_found ->
     user_err_loc (loc,"interp_prim_token",
     (match p with
@@ -370,7 +372,7 @@ let interp_prim_token_cases_pattern loc p name =
 
 let rec interp_notation loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in
-  try find_interpretation (find_notation ntn) scopes
+  try find_interpretation ntn (find_notation ntn) scopes
   with Not_found ->
     user_err_loc
     (loc,"",str ("Unknown interpretation for notation \""^ntn^"\"."))

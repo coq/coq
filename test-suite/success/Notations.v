@@ -75,3 +75,14 @@ End B.
 
 (* Should succeed *)
 Definition n := 5 * 5.
+
+(* Check that lonely notations (here FOO) do not modify the visibility
+   of scoped interpretations (bug #2634 fixed in r14819) *)
+
+Notation "x ++++ y" := (mult x y) (at level 40).
+Notation "x ++++ y" := (plus x y) : A_scope.
+Open Scope A_scope.
+Notation "'FOO' x" := (S x) (at level 40).
+Goal (2 ++++ 3) = 5.
+reflexivity.
+Abort.
