@@ -1813,7 +1813,9 @@ let main files =
     ~title:"CoqIde" ()
   in
   (try
-     let icon_image = lib_ide_file "coq.png" in
+     let icon_image = Filename.concat (List.find
+       (fun x -> Sys.file_exists (Filename.concat x "coq.png"))
+       Minilib.xdg_data_dirs) "coq.png" in
      let icon = GdkPixbuf.from_file icon_image in
      w#set_icon (Some icon)
    with _ -> ());
@@ -2828,7 +2830,9 @@ let main files =
     if Glib.Utf8.validate initial_string then
       b#insert ~iter:b#start_iter initial_string;
     (try
-       let image = lib_ide_file "coq.png" in
+       let image = Filename.concat (List.find
+	 (fun x -> Sys.file_exists (Filename.concat x "coq.png"))
+	 Minilib.xdg_data_dirs) "coq.png" in
        let startup_image = GdkPixbuf.from_file image in
        b#insert ~iter:b#start_iter "\n\n";
        b#insert_pixbuf ~iter:b#start_iter ~pixbuf:startup_image;
@@ -2838,7 +2842,9 @@ let main files =
 
   let about (b:GText.buffer) =
     (try
-       let image = lib_ide_file "coq.png" in
+       let image = Filename.concat (List.find
+	 (fun x -> Sys.file_exists (Filename.concat x "coq.png"))
+	 Minilib.xdg_data_dirs) "coq.png" in
        let startup_image = GdkPixbuf.from_file image in
        b#insert ~iter:b#start_iter "\n\n";
        b#insert_pixbuf ~iter:b#start_iter ~pixbuf:startup_image;

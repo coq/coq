@@ -34,9 +34,6 @@ let debug = ref (false)
 let prerr_endline s =
   if !debug then try prerr_endline s;flush stderr with _ -> ()
 
-let lib_ide_file f =
-  Filename.concat (Filename.concat !Minilib.coqlib "ide") f
-
 let get_insert input_buffer = input_buffer#get_iter_at_mark `INSERT
 
 let is_char_start c = let code = Char.code c in code < 0x80 || code >= 0xc0
@@ -295,34 +292,36 @@ let doc_url () =
 
 let url_for_keyword =
   let ht = Hashtbl.create 97 in
-  lazy (
-  begin try
-    let cin =
-      try open_in (lib_ide_file "index_urls.txt")
+    lazy (
+      begin try
+	let cin =
+	  try let index_urls = Filename.concat (List.find
+            (fun x -> Sys.file_exists (Filename.concat x "index_urls.txt"))
+	    Minilib.xdg_config_dirs) "index_urls.txt" in
+	    open_in index_urls
+	  with Not_found ->
+	    let doc_url = doc_url () in
+	    let n = String.length doc_url in
+	      if n > 8 && String.sub doc_url 0 7 = "file://" then
+		open_in (String.sub doc_url 7 (n-7) ^ "index_urls.txt")
+	      else
+		raise Exit
+	in
+	  try while true do
+	    let s = input_line cin in
+	      try
+		let i = String.index s ',' in
+		let k = String.sub s 0 i in
+		let u = String.sub s (i + 1) (String.length s - i - 1) in
+		  Hashtbl.add ht k u
+	      with _ ->
+		Minilib.safe_prerr_endline "Warning: Cannot parse documentation index file."
+	  done with End_of_file ->
+	    close_in cin
       with _ ->
-	let doc_url = doc_url () in
-	let n = String.length doc_url in
-	if n > 8 && String.sub doc_url 0 7 = "file://" then
-	  open_in (String.sub doc_url 7 (n-7) ^ "index_urls.txt")
-	else
-	  raise Exit
-    in
-    try while true do
-      let s = input_line cin in
-      try
-	let i = String.index s ',' in
-	let k = String.sub s 0 i in
-	let u = String.sub s (i + 1) (String.length s - i - 1) in
-	Hashtbl.add ht k u
-      with _ ->
-	Minilib.safe_prerr_endline "Warning: Cannot parse documentation index file."
-    done with End_of_file ->
-      close_in cin
-  with _ ->
-    Minilib.safe_prerr_endline "Warning: Cannot find documentation index file."
-  end;
-  Hashtbl.find ht : string -> string)
-
+	Minilib.safe_prerr_endline "Warning: Cannot find documentation index file."
+      end;
+      Hashtbl.find ht : string -> string)
 
 let browse_keyword f text =
   try let u = Lazy.force url_for_keyword text in browse f (doc_url() ^ u)

@@ -330,8 +330,6 @@ $(COQIDE):
 .PHONY: install-coqide install-ide-no install-ide-byte install-ide-opt
 .PHONY: install-ide-files install-ide-info install-im
 
-FULLIDELIB=$(FULLCOQLIB)/ide
-
 install-coqide:: install-ide-$(HASCOQIDE) install-ide-files install-ide-info
 
 install-ide-no:
@@ -351,23 +349,15 @@ install-ide-opt:
 	cd $(FULLBINDIR); ln -sf coqide.opt$(EXE) coqide$(EXE)
 
 install-ide-files:
-	$(MKDIR) $(FULLIDELIB)
-	$(INSTALLLIB) ide/coq.png $(FULLIDELIB)
+	$(MKDIR) $(FULLDATADIR)
+	$(INSTALLLIB) ide/coq.png $(FULLDATADIR)
 	$(MKDIR) $(FULLCONFIGDIR)
 	$(INSTALLLIB) ide/coqide-gtk2rc $(FULLCONFIGDIR)
 	if [ $(IDEOPTINT) = QUARTZ ] ; then $(INSTALLLIB) ide/mac_default_accel_map $(FULLCONFIGDIR)/coqide.keys ; fi
 
 install-ide-info:
-	$(MKDIR) $(FULLIDELIB)
-	$(INSTALLLIB) ide/FAQ $(FULLIDELIB)
-
-# IM files
-
-IMFILES=$(addprefix ide/uim/, coqide.scm coqide-rules.scm coqide-custom.scm)
-
-install-im:
-	$(INSTALLLIB) $(IMFILES) $(UIMSCRIPTDIR)
-	uim-module-manager --register coqide
+	$(MKDIR) $(FULLDOCDIR)
+	$(INSTALLLIB) ide/FAQ $(FULLDOCDIR)/FAQ-CoqIde
 
 ###########################################################################
 # tests
@@ -580,6 +570,7 @@ ifdef COQINSTALLPREFIX
 FULLBINDIR=$(BINDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLCOQLIB=$(COQLIBINSTALL:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLCONFIGDIR=$(CONFIGDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
+FULLDATADIR=$(DATADIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLMANDIR=$(MANDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLEMACSLIB=$(EMACSLIB:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
 FULLCOQDOCDIR=$(COQDOCDIR:"$(OLDROOT)%="$(COQINSTALLPREFIX)%)
@@ -588,6 +579,7 @@ else
 FULLBINDIR=$(BINDIR)
 FULLCOQLIB=$(COQLIBINSTALL)
 FULLCONFIGDIR=$(CONFIGDIR)
+FULLDATADIR=$(DATADIR)
 FULLMANDIR=$(MANDIR)
 FULLEMACSLIB=$(EMACSLIB)
 FULLCOQDOCDIR=$(COQDOCDIR)

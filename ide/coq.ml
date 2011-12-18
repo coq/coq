@@ -85,32 +85,6 @@ let check_connection args =
       List.iter Minilib.safe_prerr_endline lines;
       exit 1
 
-(** It is tempting to merge the following function with the previous one,
-    but check_connection fails if no initial.coq is found, while
-    check_coqlib doesn't check that. *)
-
-let check_coqlib args =
-  try
-    let argstr = String.concat " " (List.map Filename.quote args) in
-    let cmd = Filename.quote !Minilib.coqtop_path ^ " " ^ argstr ^ " -where" in
-    let ic = Unix.open_process_in cmd in
-    let lines = read_all_lines ic in
-    match Unix.close_process_in ic with
-    | Unix.WEXITED 0 ->
-      (match lines with
-	| [coqlib] -> coqlib
-	| _ -> raise (Coqtop_output lines))
-    | _ -> raise (Coqtop_output lines)
-  with
-    | End_of_file ->
-      Minilib.safe_prerr_endline "Cannot start connection with coqtop";
-      exit 1
-    | Coqtop_output lines ->
-      Minilib.safe_prerr_endline "Connection with coqtop failed:";
-      List.iter Minilib.safe_prerr_endline lines;
-      exit 1
-
-
 (** * The structure describing a coqtop sub-process *)
 
 type coqtop = {

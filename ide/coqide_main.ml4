@@ -70,7 +70,6 @@ let () =
   let files = Coqide.process_argv argl in
   let args = List.filter (fun x -> not (List.mem x files)) (List.tl argl) in
   Coq.check_connection args;
-  Minilib.coqlib := Coq.check_coqlib args;
   Coqide.sup_args := args;
   Coqide.ignore_break ();
   (try
