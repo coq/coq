@@ -25,14 +25,6 @@ open Retyping
 open Coercion.Default
 open Recordops
 
-let subst_metas bl c =
-  let rec substrec c = match kind_of_term c with
-    | Meta i ->
-        (try substrec (list_assoc_snd_in_triple i bl) with Not_found -> c)
-    | _ ->
-        map_constr substrec c in
-  substrec c
-
 let occur_meta_or_undefined_evar evd c =
   let rec occrec c = match kind_of_term c with
     | Meta _ -> raise Occur
@@ -370,6 +362,18 @@ let isAllowedEvar flags c = match kind_of_term c with
   | Evar (evk,_) -> not (ExistentialSet.mem evk flags.frozen_evars)
   | _ -> false
 
+let check_compatibility env (sigma,metasubst,evarsubst) tyM tyN =
+  match subst_defined_metas metasubst tyM with
+  | None -> ()
+  | Some m ->
+  match subst_defined_metas metasubst tyN with
+  | None -> ()
+  | Some n ->
+      if not (is_trans_fconv CONV full_transparent_state env sigma m n)
+         && is_ground_term sigma m && is_ground_term sigma n
+      then
+	error_cannot_unify env sigma (m,n)
+
 let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flags m n =
   let rec unirec_rec (curenv,nb as curenvnb) pb b wt ((sigma,metasubst,evarsubst) as substn) curm curn =
     let cM = Evarutil.whd_head_evar sigma curm
@@ -378,23 +382,17 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	| Meta k1, Meta k2 ->
             if k1 = k2 then substn else
 	    let stM,stN = extract_instance_status pb in
-            let (sigma,metasubst,evarsubst) =
-              if wt && flags.check_applied_meta_types then
-                let tyM = subst_metas metasubst (Typing.meta_type sigma k1) in
-                let tyN = subst_metas metasubst (Typing.meta_type sigma k2) in
-                unirec_rec curenvnb CONV true false substn tyM tyN
-              else
-                substn in
+            if wt && flags.check_applied_meta_types then
+              (let tyM = Typing.meta_type sigma k1 in
+               let tyN = Typing.meta_type sigma k2 in
+               check_compatibility curenv substn tyM tyN);
 	    if k2 < k1 then sigma,(k1,cN,stN)::metasubst,evarsubst
 	    else sigma,(k2,cM,stM)::metasubst,evarsubst
 	| Meta k, _ when not (dependent cM cN) ->
-            let (sigma,metasubst,evarsubst) =
-              if wt && flags.check_applied_meta_types then
-                let tyM = subst_metas metasubst (Typing.meta_type sigma k) in
-                let tyN = subst_metas metasubst (get_type_of curenv sigma cN) in
-                unirec_rec curenvnb CONV true false substn tyM tyN
-              else
-                substn in
+            if wt && flags.check_applied_meta_types then
+              (let tyM = Typing.meta_type sigma k in
+               let tyN = get_type_of curenv sigma cN in
+               check_compatibility curenv substn tyM tyN);
 	    (* Here we check that [cN] does not contain any local variables *)
 	    if nb = 0 then
               sigma,(k,cN,snd (extract_instance_status pb))::metasubst,evarsubst
@@ -404,13 +402,10 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
               evarsubst)
 	    else error_cannot_unify_local curenv sigma (m,n,cN)
 	| _, Meta k when not (dependent cN cM) ->
-            let (sigma,metasubst,evarsubst) =
-              if wt && flags.check_applied_meta_types then
-                let tyM = subst_metas metasubst (get_type_of curenv sigma cM) in
-                let tyN = subst_metas metasubst (Typing.meta_type sigma k) in
-                unirec_rec curenvnb CONV true false substn tyM tyN
-              else
-                substn in
+            if wt && flags.check_applied_meta_types then
+              (let tyM = get_type_of curenv sigma cM in
+               let tyN = Typing.meta_type sigma k in
+               check_compatibility curenv substn tyM tyN);
 	    (* Here we check that [cM] does not contain any local variables *)
 	    if nb = 0 then
               (sigma,(k,cM,fst (extract_instance_status pb))::metasubst,evarsubst)
