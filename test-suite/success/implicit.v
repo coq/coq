@@ -120,3 +120,7 @@ Check C2 eq_refl.
 
 Inductive I3 {A} (x:=0) (a:A) : forall {n:nat}, Prop :=
  | C3 : I3 a (n:=0).
+
+(* Check global implicit declaration over ref not in section *)
+
+Section D. Global Arguments eq [A] _ _. End D.
