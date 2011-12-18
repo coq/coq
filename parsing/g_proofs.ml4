@@ -88,7 +88,7 @@ GEXTEND Gram
       | IDENT "Show"; IDENT "Match"; id = identref -> VernacShow (ShowMatch id)
       | IDENT "Show"; IDENT "Thesis" -> VernacShow ShowThesis
       | IDENT "Guarded" -> VernacCheckGuard
-(* Hints for Auto and EAuto *)
+      (* Hints for Auto and EAuto *)
       | IDENT "Create"; IDENT "HintDb" ;
 	  id = IDENT ; b = [ "discriminated" -> true | -> false ] ->
 	    VernacCreateHintDb (use_module_locality (), id, b)
@@ -97,18 +97,12 @@ GEXTEND Gram
       | IDENT "Hint"; local = obsolete_locality; h = hint;
 	  dbnames = opt_hintbases ->
 	  VernacHints (enforce_module_locality local,dbnames, h)
-
-(* Declare "Resolve" directly so as to be able to later extend with
-   "Resolve ->" and "Resolve <-" *)
+      (* Declare "Resolve" explicitly so as to be able to later extend with
+         "Resolve ->" and "Resolve <-" *)
       | IDENT "Hint"; IDENT "Resolve"; lc = LIST1 constr; n = OPT natural;
 	  dbnames = opt_hintbases ->
 	  VernacHints (use_module_locality (),dbnames,
 	    HintsResolve (List.map (fun x -> (n, true, x)) lc))
-
-(*This entry is not commented, only for debug*)
-      | IDENT "PrintConstr"; c = constr ->
-	  VernacExtend ("PrintConstr",
-	    [Genarg.in_gen Genarg.rawwit_constr c])
       ] ];
 
   obsolete_locality:
