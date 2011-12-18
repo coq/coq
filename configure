@@ -46,9 +46,10 @@ usage () {
     echo "-bindir"
     echo "-libdir"
     echo "-configdir"
+    echo "-datadir"
     echo "-mandir"
     echo "-docdir"
-    printf "\tSpecifies where to install bin/lib/man/doc files resp.\n"
+    printf "\tSpecifies where to install bin/lib/config/data/man/doc files resp.\n"
     echo "-emacslib"
     echo "-emacs"
     printf "\tSpecifies where emacs files are to be installed\n"
@@ -131,6 +132,7 @@ prefix_spec=no
 bindir_spec=no
 libdir_spec=no
 configdir_spec=no
+datadir_spec=no
 mandir_spec=no
 docdir_spec=no
 emacslib_spec=no
@@ -182,6 +184,9 @@ while : ; do
 		      shift;;
     -configdir|--configdir) configdir_spec=yes
                       configdir="$2"
+		      shift;;
+    -datadir|--datadir) datadir_spec=yes
+                      datadir="$2"
 		      shift;;
     -mandir|--mandir) mandir_spec=yes
                       mandir="$2"
@@ -736,6 +741,7 @@ case $ARCH$CYGWIN in
 	 bindir_def='C:\coq\bin'
 	 libdir_def='C:\coq\lib'
 	 configdir_def='C:\coq\config'
+	 datadir_def='C:\coq\data'
 	 mandir_def='C:\coq\man'
 	 docdir_def='C:\coq\doc'
 	 emacslib_def='C:\coq\emacs'
@@ -744,7 +750,8 @@ case $ARCH$CYGWIN in
 	 bindir_def=/usr/local/bin
 	 libdir_def=/usr/local/lib/coq
 	 configdir_def=/etc/xdg/coq
-	 mandir_def=/usr/local/man
+	 datadir_def=/usr/local/share/coq
+	 mandir_def=/usr/local/share/man
 	 docdir_def=/usr/local/share/doc/coq
 	 emacslib_def=/usr/local/share/emacs/site-lisp
          coqdocdir_def=/usr/local/share/texmf/tex/latex/misc;;
@@ -791,7 +798,7 @@ case $configdir_spec/$local in
     yes/*) CONFIGDIR=$configdir;;
     */true) CONFIGDIR=$COQTOP/ide
         configdir_spec=yes;;
-    *)  printf "Where should I install the Coqide conguration files [$configdir_def]? "
+    *)  printf "Where should I install the Coqide configuration files [$configdir_def]? "
         read CONFIGDIR
 	case $CONFIGDIR in
 	    "") CONFIGDIR=$configdir_def;;
@@ -804,9 +811,28 @@ case $configdir_spec in
     *) CONFIGDIR_OPTION="None";;
 esac
 
+case $datadir_spec/$prefix_spec/$local in
+    yes/*/*) DATADIR=$datadir;;
+    */yes/*) DATADIR=$prefix/share/coq;;
+    */*/true) DATADIR=$COQTOP/ide
+        datadir_spec=yes;;
+    *)  printf "Where should I install the Coqide data files [$datadir_def]? "
+        read DATADIR
+	case $DATADIR in
+	    "") DATADIR=$datadir_def;;
+	    *) datadir_spec=yes;;
+	esac;;
+esac
+
+case $datadir_spec in
+    yes) DATADIR_OPTION="Some \"$DATADIR\"";;
+    *) DATADIR_OPTION="None";;
+esac
+
+
 case $mandir_spec/$prefix_spec/$local in
     yes/*/*) MANDIR=$mandir;;
-    */yes/*) MANDIR=$prefix/man ;;
+    */yes/*) MANDIR=$prefix/share/man ;;
     */*/true) MANDIR=$COQTOP/man ;;
     *)  printf "Where should I install the Coq man pages [$mandir_def]? "
         read MANDIR
@@ -933,6 +959,7 @@ echo "  Paths for true installation:"
 echo "    binaries      will be copied in $BINDIR"
 echo "    library       will be copied in $LIBDIR"
 echo "    config files  will be copied in $CONFIGDIR"
+echo "    data files    will be copied in $DATADIR"
 echo "    man pages     will be copied in $MANDIR"
 echo "    documentation will be copied in $DOCDIR"
 echo "    emacs mode    will be copied in $EMACSLIB"
@@ -1003,6 +1030,7 @@ case $ARCH in
 	COQSRC=`cygpath -m $COQSRC |sed -e 's|\\\|\\\\\\\|g'`
 	LIBDIR=`echo $LIBDIR |sed -e 's|\\\|\\\\\\\|g'`
 	CONFIGDIR=`echo $CONFIGDIR |sed -e 's|\\\|\\\\\\\|g'`
+	DATADIR=`echo $DATADIR |sed -e 's|\\\|\\\\\\\|g'`
 	CAMLBIN=`echo $CAMLBIN |sed -e 's|\\\|\\\\\\\|g'`
 	CAMLLIB=`echo $CAMLLIB |sed -e 's|\\\|\\\\\\\|g'`
 	MANDIR=`echo $MANDIR |sed -e 's|\\\|\\\\\\\|g'`
@@ -1039,6 +1067,7 @@ let local = $local
 let coqrunbyteflags = "$COQRUNBYTEFLAGS"
 let coqlib = $LIBDIR_OPTION
 let configdir = $CONFIGDIR_OPTION
+let datadir = $DATADIR_OPTION
 let docdir = "$DOCDIR"
 let ocaml = "$ocamlexec"
 let ocamlc = "$bytecamlc"
@@ -1113,6 +1142,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|BINDIRDIRECTORY|$BINDIR|" \
     -e "s|COQLIBDIRECTORY|$LIBDIR|" \
     -e "s|CONFIGDIRDIRECTORY|$CONFIGDIR|" \
+    -e "s|DATADIRDIRECTORY|$DATADIR|" \
     -e "s|BUILDLDPATH=|$BUILDLDPATH|" \
     -e "s|MANDIRDIRECTORY|$MANDIR|" \
     -e "s|DOCDIRDIRECTORY|$DOCDIR|" \
