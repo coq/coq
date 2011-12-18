@@ -332,15 +332,16 @@ let emacs_print_dependent_evars sigma seeds =
       Intmap.fold begin fun e i s ->
 	let e' = str (string_of_existential e) in
 	match i with
-	| None -> s ++ e' ++ str " open,"
+	| None -> s ++ str" " ++ e' ++ str " open,"
 	| Some i ->
-	  s ++ e' ++ str " using " ++
+	  s ++ str " " ++ e' ++ str " using " ++
 	    Intset.fold begin fun d s ->
 	      str (string_of_existential d) ++ str " " ++ s
-	    end i (str "")
+	    end i (str ",")
       end evars (str "")
     in
-    str "(dependent evars: " ++ evars ++ str ")" ++ fnl ()
+    cut () ++ 
+    str "(dependent evars:" ++ evars ++ str ")" ++ fnl ()
   in
   delayed_emacs_cmd evars
 
@@ -365,8 +366,8 @@ let default_pr_subgoals close_cmd sigma seeds = function
   | [g] ->
       let pg = default_pr_goal { it = g ; sigma = sigma } in
       v 0 (
-	emacs_print_dependent_evars sigma seeds ++
 	str ("1 "^"subgoal") ++ pr_goal_tag g ++ cut () ++ pg
+	++ emacs_print_dependent_evars sigma seeds
       )
   | g1::rest ->
       let rec pr_rec n = function
@@ -379,10 +380,10 @@ let default_pr_subgoals close_cmd sigma seeds = function
       let pg1 = default_pr_goal { it = g1 ; sigma = sigma } in
       let prest = pr_rec 2 rest in
       v 0 (
-	emacs_print_dependent_evars sigma seeds ++
 	int(List.length rest+1) ++ str" subgoals" ++
           str (emacs_str ", subgoal 1") ++ pr_goal_tag g1 ++ cut ()
 	++ pg1 ++ prest ++ fnl ()
+	++ emacs_print_dependent_evars sigma seeds
       )
 
 (**********************************************************************)
