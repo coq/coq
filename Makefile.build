@@ -638,6 +638,7 @@ endif
 # it with libraries
 	-$(MKDIR) $(FULLCOQLIB)/plugins/micromega
 	$(INSTALLBIN) $(CSDPCERT) $(FULLCOQLIB)/plugins/micromega
+	rm -f $(FULLCOQLIB)/revision
 	-$(INSTALLLIB) revision $(FULLCOQLIB)
 
 install-library-light:
@@ -645,6 +646,7 @@ install-library-light:
 	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILESLIGHT) $(INITPLUGINS) $(INITPLUGINSOPT)
 	$(MKDIR) $(FULLCOQLIB)/states
 	$(INSTALLLIB) states/*.coq $(FULLCOQLIB)/states
+	rm -f $(FULLCOQLIB)/revision
 	-$(INSTALLLIB) revision $(FULLCOQLIB)
 
 install-coq-info: install-coq-manpages install-emacs install-latex
