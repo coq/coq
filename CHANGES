@@ -32,7 +32,7 @@ Tactics
 
 - New proof engine.
 - Scripts can now be structured thanks to bullets - * + and to subgoal
-  delimitation via { }. Note : for use with ProofGeneral, a cvs version of
+  delimitation via { }. Note: for use with ProofGeneral, a cvs version of
   ProofGeneral no older than mid-July 2011 is currently required. DOC TODO.
 - Support for tactical "info" is suspended.
 - Support for command "Show Script" is suspended.
@@ -66,6 +66,9 @@ Tactics
   it was formerly generalizing again the goal over the given equality.
 - In Ltac, the "context [...]" syntax has now a variant "appcontext [...]"
   allowing to match partial applications in larger applications.
+- When applying destruct or inversion on a fixpoint hiding an inductive
+  type, recursive calls to the fixpoint now remain folded by default (rare
+  source of incompatibility generally solvable by adding a call to simpl).
 
 Vernacular commands
 
