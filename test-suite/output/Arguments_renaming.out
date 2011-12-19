@@ -1,5 +1,7 @@
 The command has indeed failed with message:
 => Error: To rename arguments the "rename" flag must be specified.
+The command has indeed failed with message:
+=> Error: To rename arguments the "rename" flag must be specified.
 @eq_refl
      : forall (B : Type) (y : B), y = y
 eq_refl

@@ -809,6 +809,7 @@ let vernac_declare_arguments local r l nargs flags =
             error ("Argument "^string_of_id x^" cannot be declared implicit.")
         | (Name iid, _,_, true, max), Name id ->
            b || iid <> id, Some (ExplByName id, max, false)
+        | (Name iid, _,_, _, _), Name id -> b || iid <> id, None
         | _ -> b, None)
         sr (List.combine il inf_names) in
       sr || sr', Util.list_map_filter (fun x -> x) impl)
