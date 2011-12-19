@@ -357,11 +357,13 @@ let default_pr_subgoals close_cmd sigma seeds = function
 	| None ->
 	    let exl = Evarutil.non_instantiated sigma in
 	      if exl = [] then
-		(str"No more subgoals." ++ fnl ())
+		(str"No more subgoals." ++ fnl ()
+		 ++ emacs_print_dependent_evars sigma seeds)
 	      else
 		let pei = pr_evars_int 1 exl in
 		  (str "No more subgoals but non-instantiated existential " ++
-		     str "variables:" ++ fnl () ++ (hov 0 pei))
+		     str "variables:" ++ fnl () ++ (hov 0 pei)
+		   ++ emacs_print_dependent_evars sigma seeds)
       end
   | [g] ->
       let pg = default_pr_goal { it = g ; sigma = sigma } in
@@ -442,8 +444,12 @@ let pr_nth_open_subgoal n =
 let pr_goal_by_id id =
   let p = Proof_global.give_me_the_proof () in
   let g = Goal.get_by_uid id in
+  let pr gs = 
+    v 0 (str ("goal / evar " ^ id ^ " is:") ++ cut ()
+	 ++ pr_goal gs)
+  in
   try
-    Proof.in_proof p (fun sigma -> pr_goal {it=g;sigma=sigma})
+    Proof.in_proof p (fun sigma -> pr {it=g;sigma=sigma})
   with Not_found -> error "Invalid goal identifier."
 
 (* Elementary tactics *)
