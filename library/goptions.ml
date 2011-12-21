@@ -17,27 +17,17 @@ open Term
 open Nametab
 open Mod_subst
 
+open Goptionstyp
+
+type option_name = Goptionstyp.option_name
+
 (****************************************************************************)
 (* 0- Common things                                                         *)
-
-type option_name = string list
 
 let nickname table = String.concat " " table
 
 let error_undeclared_key key =
   error ((nickname key)^": no table or option of this type")
-
-type option_value =
-  | BoolValue   of bool
-  | IntValue    of int option
-  | StringValue of string
-
-type option_state = {
-  opt_sync  : bool;
-  opt_depr  : bool;
-  opt_name  : string;
-  opt_value : option_value;
-}
 
 (****************************************************************************)
 (* 1- Tables                                                                *)

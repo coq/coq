@@ -134,7 +134,7 @@ type onlyparsing_flag = bool (* true = Parse only;  false = Print also     *)
 type infer_flag     = bool (* true = try to Infer record; false = nothing  *)
 type full_locality_flag = bool option (* true = Local; false = Global      *)
 
-type option_value = Goptions.option_value =
+type option_value = Goptionstyp.option_value =
   | BoolValue of bool
   | IntValue of int option
   | StringValue of string
