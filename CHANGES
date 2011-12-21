@@ -3,7 +3,7 @@ Changes from V8.3 to V8.4
 
 Logic
 
-- Standard eta-conversion now supported (dependent product only). (DOC TO DO)
+- Standard eta-conversion now supported (dependent product only) (DOC TO DO).
 - Guard condition improvement: subterm property is propagated through beta-redex
   blocked by pattern-matching, as in "(match v with C .. => fun x => u end) x";
   this allows for instance to use "rewrite ... in ..." without breaking
@@ -20,10 +20,6 @@ Specification language and notations
 - Structure/Record printing can be disable by "Unset Printing Records".
   In addition, it can be controlled on type by type basis using
   "Add Printing Record" or "Add Printing Constructor".
-- In a pattern containing a "match", a final "| _ => _" branch could be used
-  now instead of enumerating all remaining constructors. Moreover, the pattern
-  "match _ with _ => _ end" now allows to match any "match". A "in" annotation
-  can also be added to restrict to a precise inductive type.
 - Pattern-matching compilation algorithm: in "match x, y with ... end",
   possible dependencies of x (or of the indices of its type) in the type
   of y are now taken into account.
@@ -33,10 +29,10 @@ Tactics
 - New proof engine.
 - Scripts can now be structured thanks to bullets - * + and to subgoal
   delimitation via { }. Note: for use with ProofGeneral, a cvs version of
-  ProofGeneral no older than mid-July 2011 is currently required. DOC TODO.
+  Proof General no older than mid-July 2011 is currently required (DOC TODO).
 - Support for tactical "info" is suspended.
 - Support for command "Show Script" is suspended.
-- New tactics constr_eq, is_evar and has_evar.
+- New tactics constr_eq, is_evar and has_evar for use in Ltac (DOC TODO).
 - Removed the two-argument variant of "decide equality".
 - New experimental tactical "timeout <n> <tac>". Since <n> is a time
   in second for the moment, this feature should rather be avoided
@@ -49,7 +45,7 @@ Tactics
   ?f x y = g(x,y) (compatibility ensured by using
   "Unset Tactic Pattern Unification"). It also supports (full) betaiota.
 - Tactic autorewrite does no longer instantiate pre-existing
-  existential variables (theoretical source of possible incompatibility).
+  existential variables (theoretical source of possible incompatibilities).
 - Tactic "dependent rewrite" now supports equality in "sig".
 - Tactic omega now understands Zpred (wish #1912) and can prove any goal
   from a context containing an arithmetical contradiction (wish #2236).
@@ -69,6 +65,10 @@ Tactics
 - When applying destruct or inversion on a fixpoint hiding an inductive
   type, recursive calls to the fixpoint now remain folded by default (rare
   source of incompatibility generally solvable by adding a call to simpl).
+- In an ltac pattern containing a "match", a final "| _ => _" branch could be
+  used now instead of enumerating all remaining constructors. Moreover, the
+  pattern "match _ with _ => _ end" now allows to match any "match". A "in"
+  annotation can also be added to restrict to a precise inductive type.
 
 Vernacular commands
 
@@ -78,7 +78,8 @@ Vernacular commands
 - New command "Add/Remove Search Blacklist <substring> ..." :
   a Search or SearchAbout or similar query will never mention lemmas
   whose qualified names contain any of the declared substrings.
-  The default blacklisted substrings are "_admitted" "_subproof" "Private_". DOC TODO
+  The default blacklisted substrings are "_admitted" "_subproof" "Private_"
+  (DOC TODO).
 - When the output file of "Print Universes" ends in ".dot" or ".gv",
   the universe graph is printed in the DOT language, and can be
   processed by Graphviz tools.
@@ -90,6 +91,12 @@ Vernacular commands
   to avoid conversion at Qed time to go into a very long computation.
 - New command "Show Goal ident" to display the statement of a goal, even
   a closed one (available from Proof General).
+- Command "Proof" accept a new modifier "using" to force generalization
+  over a given list of section variables at section ending (DOC TODO).
+- New command "Arguments" generalizing "Implicit Arguments" and
+  "Arguments Scope" and that also allows to rename the parameters of a
+  definition and to force some arguments of a definition to be
+  constructors before tactic "simpl" accepts to unfold this definition.
 
 Module System
 
@@ -103,8 +110,8 @@ Module System
   are lower or equal than XX will be inlined.
   The level of a parameter can be fixed by "Parameter Inline(30) foo".
   When levels aren't given, the default value is 100. One can also use
-  the flag "Set Inline Level ..." to set a level. TODO: DOC!
-- Print Assumptions should now handle correctly opaque modules (#2168)
+  the flag "Set Inline Level ..." to set a level (DOC TODO).
+- Print Assumptions should now handle correctly opaque modules (#2168).
 - Print Module (Type) now tries to print more details, such as types and
   bodies of the module elements. Note that Print Module Type could be
   used on a module to display only its interface. The option
@@ -155,15 +162,15 @@ Libraries
   may introduce incompatibilities. In particular, the order of the arguments
   for BigN.shiftl and BigN.shiftr is now reversed: the number to shift now
   comes first. By default, the power function now takes two BigN.
-- Creation of Vector, an independant library for list indiced by their length.
-  Vectors' names overwrite lists' one so you shouldn't "Import" the library.
-  All old names change: functions' name become the CaML one and for example
-  Vcons become Vector.cons. You can use notations by importing
+- Creation of Vector, an independant library for lists indiced by their length.
+  Vectors' names overwrite lists' one so you should not "Import" the library.
+  All old names change: functions' name follows the ocaml names and, for example,
+  Vcons becomes Vector.cons. You can get [..;..;..]-style notations by importing
   Vector.VectorNotations.
 - Removal of TheoryList. Requiring List instead should work most of the time.
 - New syntax "rew Heq in H" and "rew <- Heq in H" for eq_rect and 
   eq_rect_r (available by importing module EqNotations).
-- Wf.iter_nat is now Peano.nat_iter (with an implicit type argument)
+- Wf.iter_nat is now Peano.nat_iter (with an implicit type argument).
 
 Internal infrastructure
 
@@ -178,8 +185,8 @@ Internal infrastructure
   for both make and ocamlbuild, etc.
 - Support of cross-compilation via mingw from unix toward Windows,
   contact P. Letouzey for more informations.
-- new Makefile rules mli-doc to make html of mli in dev/doc/html and
-  full-stdlib to get a HUGE pdf with all the stdlib.
+- New Makefile rules mli-doc to make html of mli in dev/doc/html and
+  full-stdlib to get a (huge) pdf reflecting the whole standard library.
 
 Extraction
 
@@ -190,10 +197,10 @@ Extraction
 - The pretty-printer for Haskell now produces layout-independant code
 - A new command "Separate Extraction cst1 cst2 ..." that mixes a
   minimal extracted environment a la "Recursive Extraction" and the
-  production of several files (one per coq source) a la "Extraction Library".
-  DOC TODO.
+  production of several files (one per coq source) a la "Extraction Library"
+  (DOC TODO).
 - New option "Set/Unset Extraction KeepSingleton" for preventing the
-  extraction to optimize singleton container types. DOC TODO
+  extraction to optimize singleton container types (DOC TODO).
 - The extraction now identifies and properly rejects a particular case of
   universe polymorphism it cannot handle yet (the pair (I,I) being Prop).
 - Support of anonymous fields in record (#2555).
@@ -207,8 +214,8 @@ CoqIDE
   SP1.
 - The communication between CoqIDE and Coqtop is now done via a dialect
   of XML (DOC TODO).
-- The backtrack engine of CoqIDE has been reworked, it now used the
-  "Backtrack" command similarly to ProofGeneral.
+- The backtrack engine of CoqIDE has been reworked, it now uses the
+  "Backtrack" command similarly to Proof General.
 - The Coqide parsing of sentences has be reworked and now supports
   tactic delimitation via { }.
 - Coqide now accepts the Abort command (wish #2357).
@@ -222,15 +229,15 @@ Tools
 - Coq now searches directories specified in COQPATH, $XDG_DATA_HOME/coq,
   $XDG_DATA_DIRS/coq, and user-contribs before the standard library.
 - Coq rc file has moved to $XDG_CONFIG_HOME/coq.
-- coq_makefile major cleanup.
-  * mli/mlpack/mllib taken into account, ml not preproccessed anymore, ml4 work
+- Major changes to coq_makefile:
+  * mli/mlpack/mllib taken into account, ml not preproccessed anymore, ml4 work;
   * mlihtml generates doc of mli, install-doc install the html doc in DOCDIR
-    with the same policy as vo in COQLIB
+    with the same policy as vo in COQLIB;
   * More variables are given by coqtop -config, others are defined only if the
     users doesn't have defined them elsewhere. Consequently, generated makefile
-    should work directly on any architecture.
+    should work directly on any architecture;
   * Packagers can take advantage of $(DSTROOT) introduction. Installation can
-    be made in $XDG_DATA_HOME/coq.
+    be made in $XDG_DATA_HOME/coq;
   * -arg option allows to send option as argument to coqc.
 
 Changes from V8.2 to V8.3
