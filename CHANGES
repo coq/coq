@@ -1,10 +1,18 @@
 Changes from V8.3pl2 to V8.3pl3
 ===============================
 
+The following (non exhaustive) list of bugs have been fixed:
+
 General
 
 - #2411 (Axiom / Hypothesis / Variable allowed again during proofs)
 - #2603 (verify that all names of an inductive block aren't already used)
+- #1804 (pattern-matching compilation bug with highly nested sigma-types)
+- #2615 (anomaly in inferring pattern-matching return type)
+- #2504 (bug in computing universe of polymorphic inductive types)
+- #2407 (stack overflow in Function)
+- #2181 (unnamed but dependent fields in Classes)
+- bug with modules in virtual machine
 
 Modules
 
@@ -17,6 +25,7 @@ Tactics
 - #2467, #2464 (fixes for fsetdec)
 - Document the "appcontext" variant of "context" that better handles
   partial applications.
+- #2640 (ltac anomaly in expecting a tactic and finding a definition)
 
 Coqide
 
@@ -34,6 +43,12 @@ Extraction
 - For Haskell, avoid some sources of useless unsafeCoerce
 - Forbid Prop-universe-polymorphism of inductive when extracting
   to ocaml, otherwise things may fail badly (report by S. Glondu).
+
+Coqdoc
+
+- #2606 (bad processing of coq escaped in comments)
+- #2423 (handling of -R in coqdoc)
+- fixing garbage when using some greek letters as identifier names
 
 Changes from V8.3pl1 to V8.3pl2
 ===============================
