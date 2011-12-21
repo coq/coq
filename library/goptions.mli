@@ -51,12 +51,7 @@ open Term
 open Nametab
 open Mod_subst
 
-(** {6 Things common to tables and options. } *)
-
-(** The type of table/option keys *)
-type option_name = string list
-
-val error_undeclared_key : option_name -> 'a
+type option_name = Goptionstyp.option_name
 
 (** {6 Tables. } *)
 
@@ -142,18 +137,6 @@ val declare_string_option: string option_sig -> string write_function
 
 module OptionMap : Map.S with type key = option_name
 
-type option_value =
-  | BoolValue   of bool
-  | IntValue    of int option
-  | StringValue of string
-
-type option_state = {
-  opt_sync  : bool;
-  opt_depr  : bool;
-  opt_name  : string;
-  opt_value : option_value;
-}
-
 val get_string_table :
   option_name ->
     < add : string -> unit;
@@ -181,6 +164,7 @@ val set_string_option_value : option_name -> string -> unit
 
 val print_option_value : option_name -> unit
 
-val get_tables : unit -> option_state OptionMap.t
+val get_tables : unit -> Goptionstyp.option_state OptionMap.t
 val print_tables : unit -> unit
 
+val error_undeclared_key : option_name -> 'a
