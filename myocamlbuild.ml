@@ -432,12 +432,18 @@ let extra_rules () = begin
 
   let coq_build_dep f build =
     (** NB: this relies on coqdep producing a single Makefile line
-	for one .v file, with some specific shape : *)
-    match string_list_of_file (f^".v.depends") with
-      | vo::vg::v::deps when vo=f^".vo" && vg=f^".glob:" && v=f^".v" ->
-	  let d = List.map (fun x -> [x]) deps in
-	  List.iter Outcome.ignore_good (build d)
-      | _ -> failwith ("Something wrong with dependencies of "^f^".v")
+	for one .v file, with some specific shape "f.vo ...: f.v deps.vo ..." *)
+    let src = f^".v" in
+    let depends = f^".v.depends" in
+    let rec get_deps keep = function
+      | [] -> []
+      | d::deps when d = src -> get_deps keep deps
+      | d::deps when keep -> [d] :: get_deps keep deps
+      | d::deps -> get_deps (String.contains d ':') deps
+    in
+    let d = get_deps false (string_list_of_file depends) in
+    List.iter Outcome.ignore_good (build d)
+
   in
 
   let coq_v_rule d init =
