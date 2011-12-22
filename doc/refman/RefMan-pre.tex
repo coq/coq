@@ -673,7 +673,7 @@ Yves Bertot, Jean-Christophe Filliâtre, Pierre Courtieu and
 Julien Forest acted as maintainers of features they implemented in
 previous versions of Coq.
 
-Julien Narboux contributed to CoqIDE.
+Julien Narboux contributed to {\CoqIDE}.
 Nicolas Tabareau made the adaptation of the interface of the old
 ``setoid rewrite'' tactic to the new version. Lionel Mamane worked on
 the interaction between Coq and its external interfaces. With Samuel
@@ -750,7 +750,7 @@ standard and more robust basis.
 Though invisible from outside, Arnaud Spiwack improved the general
 process of management of existential variables. Pierre Letouzey and
 Stéphane Glondu improved the compilation scheme of the Coq archive.
-Vincent Gross provided support to CoqIDE. Jean-Marc Notin provided
+Vincent Gross provided support to {\CoqIDE}. Jean-Marc Notin provided
 support for benchmarking and archiving.
 
 Many users helped by reporting problems, providing patches, suggesting
@@ -765,6 +765,149 @@ Pierce for the excellent teaching materials they provided.
 
 \begin{flushright}
 Paris, April 2010\\
+Hugo Herbelin\\
+\end{flushright}
+
+\section*{Credits: version 8.4}
+
+{\Coq} version 8.4 contains the result of three long-term projects: a
+new modular library of arithmetic by Pierre Letouzey, a new proof
+engine by Arnaud Spiwack and a new communication protocol for {\CoqIDE}
+by Vincent Gross.
+
+The new modular library of arithmetic extends, generalizes and
+unifies the existing libraries on Peano arithmetic (types {\tt nat},
+{\tt N} and {\tt BigN}), positive arithmetic (type {\tt positive}),
+integer arithmetic ({\tt Z} and {\tt BigZ}) and machine word
+arithmetic (type {\tt Int31}). It provides with unified notations
+(e.g. systematic use of {\tt add} and {\tt mul} for denoting the
+addition and multiplication operators), systematic and generic
+development of operators and properties of these operators for all the
+types mentioned above, including gcd, pcm, power, square root, base 2
+logarithm, division, modulo, bitwise operations, logical shifts,
+comparisons, iterators, ...
+
+The most visible feature of the new proof engine is the support for
+structured scripts (bullets and proof brackets) but, even if yet not
+user-available, the new engine also provides the basis for refining
+existential variables using tactics, for applying tactics to several
+goals simultaneously, for reordering goals, all features which are
+planned for the next release.
+
+Before version 8.4, {\CoqIDE} was linked to {\Coq} with the graphical
+interface living in a separate thread. From version 8.4, {\CoqIDE} is a
+separate process communicating with {\Coq} through a textual
+channel. This allows for a more robust interfacing, the ability to
+interrupt {\Coq} without interrupting the interface, and the ability to
+manage several sessions in parallel. Relying on the infrastructure
+work made by Vincent Gross, Pierre Letouzey, Pierre Boutillier and
+Pierre-Marie P\'edrot contributed many various refinements of {\CoqIDE}.
+
+{\Coq} 8.4 also comes with a bunch of many various smaller-scale changes
+and improvements regarding the different components of the system.
+
+The underlying logic has been extended with $\eta$-conversion thanks
+to Hugo Herbelin, St\'ephane Glondu and Benjamin Gr\'egoire. The
+addition of $\eta$-conversion is justified by the confidence that the
+formulation of the Calculus of Inductive Constructions based on typed
+equality (such as the one considered in Lee and Werner to build a
+set-theoretic model of CIC~\cite{LeeWerner11}) is applicable to the
+concrete implementation of {\Coq}.
+
+The underlying logic benefited also from a refinement of the guard
+condition for fixpoints by Pierre Boutillier, the point being that it
+is safe to propagate the information about structurally smaller
+arguments through $\beta$-redexes that are blocked by the
+``match'' construction (blocked commutative cuts).
+
+Relying on the added permissiveness of the guard condition, Hugo
+Herbelin could extend the pattern-matching compilation algorithm
+so that matching over a sequence of terms involving
+dependencies of a term or of the indices of the type of a term in the
+type of other terms is systematically supported.
+
+Regarding the high-level specification language, Pierre Boutillier
+introduced the ability to give implicit arguments to anonymous
+functions, Hugo Herbelin introduced the ability to define notations
+with several binders (e.g. \verb=exists x y z, P=), Matthieu Sozeau
+made the type classes inference mechanism more robust and predictable,
+Enrico Tassi introduced a command {\tt Arguments} that generalizes
+{\tt Implicit Arguments} and {\tt Arguments Scope} for assigning
+various properties to arguments of constants. Various improvements in
+the type inference algorithm were provided by Matthieu Sozeau and Hugo
+Herbelin with contributions from Enrico Tassi.
+
+Regarding tactics, Hugo Herbelin introduced support for referring to
+expressions occurring in the goal by pattern in tactics such as {\tt
+  set} or {\tt destruct}. Hugo Herbelin also relied on ideas from
+Chung-Kil Hur's {\tt Heq} plugin to introduce automatic computation of
+occurrences to generalize when using {\tt destruct} and {\tt
+  induction} on types with indices.  St\'ephane Glondu introduced new
+tactics {\tt constr\_eq}, {\tt is\_evar} and {\tt has\_evar} to be
+used when writing complex tactics.  Enrico Tassi added support to
+fine-tuning the behavior of {\tt simpl}. Enrico Tassi added the
+ability to specify over which variables of a section a lemma has
+to be exactly generalized.  Pierre Letouzey added a tactic {\tt
+  timeout} and the interruptibility of {\tt vm\_compute}.  Bug fixes
+and miscellaneous improvements of the tactic language came from Hugo
+Herbelin, Pierre Letouzey and Matthieu Sozeau.
+
+Regarding decision tactics, Lo\"ic Pottier maintained {\tt Nsatz},
+moving in particular to a type-class based reification of goals while
+Fr\'ed\'eric Besson maintained {\tt Micromega}, adding in particular
+support for division.
+
+Regarding vernacular commands, St\'ephane Glondu provided new commands
+to analyze the structure of type universes.
+
+Regarding libraries, a new library about lists of a given length
+(called vectors) has been provided by Pierre Boutillier.
+
+Pierre Corbineau maintained the C-zar proof mode. 
+
+Bruno Barras and Benjamin Gr\'egoire maintained the call-by-value
+reduction machines.
+
+The extraction mechanism benefited from several improvements provided by
+Pierre Letouzey.
+
+Pierre Letouzey maintained the module system, with contributions from
+\'Elie Soubiran.
+
+Julien Forest maintained the {\tt Function} command.
+
+Matthieu Sozeau maintained the setoid rewriting mechanism.
+
+{\Coq} related tools have been upgraded too. In particular, {\tt
+  coq\_makefile} has been largely revised by Pierre Boutillier.
+
+Bruno Barras and Pierre Letouzey maintained the {\tt coqchk} checker.
+
+Pierre Courtieu and Arnaud Spiwack contributed new features for using
+{\Coq} through Proof General.
+
+Under the hood, the {\Coq} architecture benefited from improvements in
+terms of efficiency and robustness thanks to Pierre Letouzey and Yann
+R\'egis-Gianas with contributions from St\'ephane Glondu and Matthias
+Puech. The build system is maintained by Pierre Letouzey with
+contributions from St\'ephane Glondu and Pierre Boutillier.
+
+The general maintenance was done by Hugo Herbelin, Pierre Letouzey,
+Pierre Boutillier and St\'ephane Glondu with local contributions from
+Guillaume Melquiond and Julien Narboux.
+
+Packaging tools were provided by Pierre Letouzey (Windows), Pierre
+Boutillier (MacOS), St\'ephane Glondu (Debian). Releasing, testing and
+benchmarking support was provided by Jean-Marc Notin.
+
+Many suggestions for improvements were motivated by feedback from
+users, on either the bug tracker or the coq-club mailing list. Special
+thanks are going to the users who contributed patches, starting with
+Tom Prince. Other patch contributors include C\'edric Auger, David Baelde,
+Dan Grayson and Marc Lasson.
+
+\begin{flushright}
+Paris, December 2011\\
 Hugo Herbelin\\
 \end{flushright}
 
