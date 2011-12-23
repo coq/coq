@@ -285,7 +285,7 @@ let extra_rules () = begin
   flag_and_dep ["p4mod"; "use_compat5b"] (P "tools/compat5b.cmo");
 
   if w32 then begin
-    flag ["p4mod"] (A "-DWin32");
+    flag ["p4mod"] (A "-DWIN32");
     dep ["ocaml"; "link"; "ide"] ["ide/ide_win32_stubs.o"];
   end;
 
