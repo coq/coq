@@ -9,7 +9,7 @@
 VERSION=8.4beta
 VOMAGIC=08400
 STATEMAGIC=58400
-DATE=`LANG=C date +"%B %Y"`
+DATE="December 2011"
 
 # Create the bin/ directory if non-existent
 test -d bin || mkdir bin
