@@ -106,6 +106,7 @@ The following people have contributed to the development of different versions
 of the Coq Proof assistant during the indicated time:
 
   Bruno Barras (INRIA, 1995-now)
+  Pierre Boutillier (INRIA-PPS, 2010-now)
   Jacek Chrzaszcz (LRI, 1998-2003)
   Thierry Coquand (INRIA, 1985-1989)
   Pierre Corbineau (LRI, 2003-2005, Nijmegen, 2005-2008, Grenoble 1, 2008-now)
@@ -118,10 +119,12 @@ of the Coq Proof assistant during the indicated time:
   Amy Felty (INRIA, 1993)
   Jean-Christophe Filliâtre (ENS Lyon, 1994-1997, LRI, 1997-now)
   Eduardo Giménez (ENS Lyon, 1993-1996, INRIA, 1997-1998)
+  Stéphane Glondu (INRIA-PPS, 2007-now)
   Benjamin Grégoire (INRIA, 2003-now)
   Hugo Herbelin (INRIA, 1996-now)
   Gérard Huet (INRIA, 1985-1997)
-  Pierre Letouzey (LRI, 2000-2004 & PPS, 2005-now)
+  Pierre Letouzey (LRI, 2000-2004, PPS, 2005-2008, INRIA-PPS, 2009-now)
+  Patrick Loiseleur (Paris Sud, 1997-1999)
   Evgeny Makarov (INRIA, 2007)
   Pascal Manoury (INRIA, 1993)
   Micaela Mayero (INRIA, 1997-2002)
@@ -132,9 +135,11 @@ of the Coq Proof assistant during the indicated time:
   Julien Narboux (INRIA, 2005-2006, Strasbourg, 2007-now)
   Jean-Marc Notin (CNRS, 2006-now)
   Catherine Parent-Vigouroux (ENS Lyon, 1992-1995)
-  Patrick Loiseleur (Paris Sud, 1997-1999)
   Christine Paulin-Mohring (INRIA, 1985-1989, ENS Lyon, 1989-1997, 
                             LRI, 1997-now)
+  Pierre-Marie Pédrot (INRIA-PPS, 2011-now)
+  Matthias Puech (INRIA-Bologna, 2008-now)
+  Yann Régis-Gianas (INRIA-PPS, 2009-now)
   Clément Renard (INRIA, 2001-2004)
   Claudio Sacerdoti Coen (INRIA, 2004-2005)
   Amokrane Saïbi (INRIA, 1993-1998)
@@ -142,6 +147,7 @@ of the Coq Proof assistant during the indicated time:
   Élie Soubiran (INRIA, 2007-now)
   Matthieu Sozeau (INRIA, 2005-now)
   Arnaud Spiwack (INRIA, 2006-now)
+  Enrico Tassi (INRIA, 2011-now)
   Benjamin Werner (INRIA, 1989-1994)
 
 ***************************************************************************
