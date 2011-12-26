@@ -43,8 +43,8 @@ remember: ``garbage in, garbage out''.
 \Coq\ material is quoted between the
 delimiters \texttt{[} and \texttt{]}. Square brackets may be nested,
 the inner ones being understood as being part of the quoted code (thus
-you can quote a term like $[x:T]u$ by writing
-\texttt{[[x:T]u]}). Inside quotations, the code is pretty-printed in
+you can quote a term like \texttt{fun x => u} by writing
+\texttt{[fun x => u]}). Inside quotations, the code is pretty-printed in
 the same way as it is in code parts.
 
 Pre-formatted vernacular is enclosed by \texttt{[[} and
@@ -63,7 +63,7 @@ or
 (** printing \emph{token} $...\LaTeX\ math...$ #...HTML...# *)
 \end{alltt}
 It gives the \LaTeX\ and HTML texts to be produced for the given \Coq\
-token. One of the \LaTeX\ or HTML text may be ommitted, causing the
+token. One of the \LaTeX\ or HTML text may be omitted, causing the
 default pretty-printing to be used for this token.
 
 The printing for one token can be removed with
@@ -94,7 +94,7 @@ Any of these can be overwritten or suppressed using the
 Important note: the recognition of tokens is done by a (ocaml)lex
 automaton and thus applies the longest-match rule. For instance,
 \verb!->~! is recognized as a single token, where \Coq\ sees two
-tokens. It is the responsability of the user to insert space between
+tokens. It is the responsibility of the user to insert space between
 tokens \emph{or} to give pretty-printing rules for the possible
 combinations, e.g. 
 \begin{verbatim}
@@ -153,7 +153,7 @@ emphasis.  Usually, these are spaces or punctuation.
     This sentence contains some _emphasized text_.
 \end{verbatim}
 
-\paragraph{Escapings to \LaTeX\ and HTML.}
+\paragraph{Escaping to \LaTeX\ and HTML.}
 Pure \LaTeX\ or HTML material can be inserted using the following
 escape sequences:
 \begin{itemize}
@@ -318,7 +318,7 @@ suffix \verb!.tex!.
 \item[\texttt{\mm{}files-from }\textit{file}] ~\par
 
   Read file names to process in file `\textit{file}' as if they were
-  given on the command line. Useful for program sources splitted in
+  given on the command line. Useful for program sources split up into
   several directories.
   
 \item[\texttt{-q}, \texttt{\mm{}quiet}] ~\par
