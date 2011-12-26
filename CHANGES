@@ -69,6 +69,11 @@ Tactics
   used now instead of enumerating all remaining constructors. Moreover, the
   pattern "match _ with _ => _ end" now allows to match any "match". A "in"
   annotation can also be added to restrict to a precise inductive type.
+- The behavior of "simpl" can be tuned using the "Arguments" vernacular.
+  In particular constants can be marked so that they are always/never unfolded
+  by "simpl", or unfolded only when a set of arguments evaluates to a
+  constructor. Last one can mark a constant so that it is unfolded only if the
+  simplified term does not expose a match in head position.
 
 Vernacular commands
 
@@ -95,8 +100,7 @@ Vernacular commands
   over a given list of section variables at section ending (DOC TODO).
 - New command "Arguments" generalizing "Implicit Arguments" and
   "Arguments Scope" and that also allows to rename the parameters of a
-  definition and to force some arguments of a definition to be
-  constructors before tactic "simpl" accepts to unfold this definition.
+  definition and to tune the behavior of the tactic "simpl".
 
 Module System
 
