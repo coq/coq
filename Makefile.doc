@@ -255,12 +255,12 @@ ifdef QUICK
 doc/stdlib/FullLibrary.coqdoc.tex:
 	$(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
             -R theories Coq $(THEORIESVO:.vo=.v) > $@
-	sed -i "" -e 's///g' $@
+	sed -i.tmp -e 's///g' $@ && rm $@.tmp
 else
 doc/stdlib/FullLibrary.coqdoc.tex: $(COQDOC) $(THEORIESVO)
 	$(COQDOC) -q -boot --gallina --body-only --latex --stdout --utf8 \
             -R theories Coq $(THEORIESVO:.vo=.v) > $@
-	sed -i "" -e 's///g' $@
+	sed -i.tmp -e 's///g' $@ && rm $@.tmp
 endif
 
 doc/stdlib/FullLibrary.dvi: $(DOCCOMMON) doc/stdlib/FullLibrary.coqdoc.tex doc/stdlib/FullLibrary.tex

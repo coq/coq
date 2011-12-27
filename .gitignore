@@ -79,6 +79,9 @@ doc/stdlib/Library.out
 doc/stdlib/Library.pdf
 doc/stdlib/Library.ps
 doc/stdlib/Library.coqdoc.tex
+doc/stdlib/FullLibrary.pdf
+doc/stdlib/FullLibrary.ps
+doc/stdlib/FullLibrary.coqdoc.tex
 doc/stdlib/html/
 doc/stdlib/index-body.html
 doc/stdlib/index-list.html
