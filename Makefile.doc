@@ -12,7 +12,7 @@
 ######################################################################
 
 .PHONY: doc doc-html doc-pdf doc-ps refman refman-quick tutorial
-.PHONY: stdlib full-stdlib faq rectutorial
+.PHONY: stdlib full-stdlib faq rectutorial refman-html-dir
 
 INDEXURLS:=doc/refman/html/index_urls.txt
 
@@ -126,7 +126,9 @@ doc/refman/styles.hva: doc/common/styles/html/$(HTMLSTYLE)/styles.hva
 INDEXES:= doc/refman/html/command-index.html doc/refman/html/tactic-index.html
 ALLINDEXES:= doc/refman/html/index.html $(INDEXES)
 
-$(ALLINDEXES): doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
+$(ALLINDEXES): refman-html-dir
+
+refman-html-dir: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
 	       doc/refman/cover.html doc/refman/styles.hva doc/refman/index.html
 	- rm -rf doc/refman/html
 	$(MKDIR) doc/refman/html
