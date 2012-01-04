@@ -18,6 +18,7 @@ open Summary
 open Glob_term
 open Topconstr
 open Ppextend
+open Reductionops
 (*i*)
 
 (*s A scope is a set of notations; it includes
@@ -469,6 +470,17 @@ let compute_arguments_scope_full t =
 
 let compute_arguments_scope t = fst (compute_arguments_scope_full t)
 
+let check_arguments_scope_size ref scl =
+  let ty = Global.type_of_global ref in
+  let n = List.length scl in
+  try ignore (splay_prod_n (Global.env()) Evd.empty n ty)
+  with Invalid_argument _ ->
+    let n' = List.length (fst (splay_prod (Global.env()) Evd.empty ty)) in
+    errorlabstrm ""
+      (str "Found scopes for " ++ int n ++ str (plural n " argument") ++
+       str " while at most " ++ int n' ++
+       str (if n' = 1 then " was" else " were") ++ str " expected.")
+
 (** When merging scope list, we give priority to the first one (computed
     by substitution), using the second one (user given or earlier automatic)
     as fallback *)
@@ -543,6 +555,7 @@ let declare_arguments_scope_gen req r (scl,cls) =
 let declare_arguments_scope local ref scl =
   let req =
     if is_local local ref then ArgsScopeNoDischarge else ArgsScopeManual in
+  check_arguments_scope_size ref scl;
   declare_arguments_scope_gen req ref (scl,[])
 
 let find_arguments_scope r =
