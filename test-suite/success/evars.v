@@ -309,3 +309,61 @@ Definition k6
 Definition k7
   (e:forall P : nat -> Prop, (exists n : nat, let n' := n in P n') -> nat)
   (j : forall a, exists n : nat, n = a) a (b:=a) := e _ (j b).
+
+(* An example that uses materialize_evar under binders *)
+(* Extracted from bigop.v in the mathematical components library *)
+
+Section Bigop.
+
+Variable bigop : forall R I: Type,
+  R -> (R -> R -> R) -> list I -> (I->Prop) -> (I -> R) -> R.
+
+Hypothesis eq_bigr :
+forall (R : Type) (idx : R) (op : R -> R -> R)
+       (I : Type) (r : list I) (P : I -> Prop) (F1 F2 : I -> R),
+       (forall i : I, P i -> F1 i = F2 i) ->
+       bigop R I idx op r (fun i : I => P i) (fun i : I => F1 i) = idx.
+
+Hypothesis big_tnth :
+forall (R : Type) (idx : R) (op : R -> R -> R)
+     (I : Type) (r : list I) (P : I -> Prop) (F : I -> R),
+     bigop R I idx op r (fun i : I => P i) (fun i : I => F i) = idx.
+
+Hypothesis big_tnth_with_letin :
+forall (R : Type) (idx : R) (op : R -> R -> R)
+     (I : Type) (r : list I) (P : I -> Prop) (F : I -> R),
+     bigop R I idx op r (fun i : I => let i:=i in P i) (fun i : I => F i) = idx.
+
+Variable R : Type.
+Variable idx : R.
+Variable op : R -> R -> R.
+Variable I : Type.
+Variable J : Type.
+Variable rI : list I.
+Variable rJ : list J.
+Variable xQ : J -> Prop.
+Variable P : I -> Prop.
+Variable Q : I -> J -> Prop.
+Variable F : I -> J -> R.
+
+(* Check unification under binders *)
+
+Check (eq_bigr _ _ _ _ _ _ _ _ (fun _ _ => big_tnth _ _ _ _ rI _ _))
+  : (bigop R J idx op rJ
+        (fun j : J => let k:=j in xQ k)
+        (fun j : J => let k:=j in 
+         bigop R I idx
+           op rI
+           (fun i : I => P i /\ Q i k) (fun i : I => let k:=j in F i k))) = idx.
+
+(* Check also with let-in *)
+
+Check (eq_bigr _ _ _ _ _ _ _ _ (fun _ _ => big_tnth_with_letin _ _ _ _ rI _ _))
+  : (bigop R J idx op rJ
+        (fun j : J => let k:=j in xQ k)
+        (fun j : J => let k:=j in 
+         bigop R I idx
+           op rI
+           (fun i : I => P i /\ Q i k) (fun i : I => let k:=j in F i k))) = idx.
+
+End Bigop.
