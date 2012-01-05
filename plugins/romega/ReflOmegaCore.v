@@ -872,7 +872,7 @@ Arguments Scope Tint [Int_scope].
 Arguments Scope Tplus [romega_scope romega_scope].
 Arguments Scope Tmult [romega_scope romega_scope].
 Arguments Scope Tminus [romega_scope romega_scope].
-Arguments Scope Topp [romega_scope romega_scope].
+Arguments Scope Topp [romega_scope].
 
 Infix "+" := Tplus : romega_scope.
 Infix "*" := Tmult : romega_scope.
