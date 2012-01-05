@@ -731,9 +731,13 @@ let apply_scope_env env = function
   | [] -> {env with tmp_scope = None}, []
   | sc::scl -> {env with tmp_scope = sc}, scl
 
-let rec simple_adjust_scopes n = function
-  | [] -> if n=0 then [] else None :: simple_adjust_scopes (n-1) []
-  | sc::scopes -> assert (n>0); sc :: simple_adjust_scopes (n-1) scopes
+let rec simple_adjust_scopes n scopes =
+  (* Note: they can be less scopes than arguments but also more scopes *)
+  (* than arguments because extra scopes are used in the presence of *)
+  (* coercions to funclass *)
+  if n=0 then [] else match scopes with
+  | [] -> None :: simple_adjust_scopes (n-1) []
+  | sc::scopes -> sc :: simple_adjust_scopes (n-1) scopes
 
 let find_remaining_constructor_scopes pl1 pl2 (ind,j as cstr) =
   let (mib,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
