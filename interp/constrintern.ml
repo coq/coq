@@ -693,9 +693,10 @@ let apply_scope_env (ids,unb,_,scopes) = function
   | [] -> (ids,unb,None,scopes), []
   | sc::scl -> (ids,unb,sc,scopes), scl
 
-let rec simple_adjust_scopes n = function
-  | [] -> if n=0 then [] else None :: simple_adjust_scopes (n-1) []
-  | sc::scopes -> assert (n>0); sc :: simple_adjust_scopes (n-1) scopes
+let rec simple_adjust_scopes n scopes =
+  if n=0 then [] else match scopes with
+  | [] -> None :: simple_adjust_scopes (n-1) []
+  | sc::scopes -> sc :: simple_adjust_scopes (n-1) scopes
 
 let find_remaining_constructor_scopes pl1 pl2 (ind,j as cstr) =
   let (mib,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
