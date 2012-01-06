@@ -239,6 +239,11 @@ let set_proof_mode mn =
   end pr ;
   set_proof_mode m id
 
+exception AlreadyExists
+let _ = Errors.register_handler begin function
+  | AlreadyExists -> Util.error "Already editing something of that name."
+  | _ -> raise Errors.Unhandled
+end
 (* [start_proof s str env t hook tac] starts a proof of name [s] and
     conclusion [t]; [hook] is optionally a function to be applied at
     proof end (e.g. to declare the built constructions as a coercion
@@ -248,7 +253,11 @@ let set_proof_mode mn =
     It raises exception [ProofInProgress] if there is a proof being
     currently edited. *)
 let start_proof  id str goals ?(compute_guard=[]) hook =
-  (* arnaud: ajouter une vérification pour la présence de id dans le proof_global *)
+  begin
+    List.iter begin fun (id_ex,_) ->
+      if Names.id_ord id id_ex = 0 then raise AlreadyExists
+    end !current_proof
+  end;
   let p = Proof.start goals in
   add id { strength=str ; 
 	        compute_guard=compute_guard ; 
