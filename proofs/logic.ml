@@ -685,12 +685,8 @@ let prim_refiner r sigma goal =
           ([gl], sigma)
 
     | Change_evars ->
-	(* spiwack: a priori [Change_evars] is now devoid of operational content.
-	    The new proof engine keeping the evar_map up to date at all time.
-	    As a compatibility mesure I leave the rule. 
-	    It is possible that my assumption is wrong and some uses of 
-	    [Change_evars] are not subsumed by the new engine. In which
-	    case something has to be done here. (Feb. 2010) *)
+	(* Normalises evars in goals. Used by instantiate. *)
+        let (goal,sigma) = Goal.V82.nf_evar sigma goal in
 	([goal],sigma)
 
 (************************************************************************)

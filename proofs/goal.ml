@@ -563,7 +563,7 @@ module V82 = struct
     let new_sigma = Evd.add Evd.empty evk new_evi in
     { Evd.it = build evk ; sigma = new_sigma }
 
-  (* Used by the typeclasses *)
+  (* Used by the compatibility layer and typeclasses *)
   let nf_evar sigma gl =
     let evi = content sigma gl in
     let evi = Evarutil.nf_evar_info sigma evi in
