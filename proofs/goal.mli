@@ -234,7 +234,7 @@ module V82 : sig
  (* Used for congruence closure *)
   val new_goal_with : Evd.evar_map -> goal ->  Environ.named_context_val -> goal Evd.sigma 
 
-  (* Used by the typeclasses *)
+  (* Used by the compatibility layer and typeclasses *)
   val nf_evar : Evd.evar_map -> goal -> goal * Evd.evar_map
 
   (* Goal represented as a type, doesn't take into account section variables *)
