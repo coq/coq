@@ -474,7 +474,7 @@ let remove_zeros zero lci =
 	done;
 	!lcr)
       lr in
-  info ("unuseful spolynomials: "
+  info ("useless spolynomials: "
 	^string_of_int (m-List.length lr)^"\n");
   info ("useful spolynomials: "
 	^string_of_int (List.length lr)^"\n");
