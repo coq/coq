@@ -1,3 +1,4 @@
+btauto/btauto_plugin.cma
 field/field_plugin.cma
 setoid_ring/newring_plugin.cma
 extraction/extraction_plugin.cma

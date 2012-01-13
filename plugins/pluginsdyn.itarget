@@ -1,3 +1,4 @@
+btauto/btauto_plugin.cmxs
 field/field_plugin.cmxs
 setoid_ring/newring_plugin.cmxs
 extraction/extraction_plugin.cmxs

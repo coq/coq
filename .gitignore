@@ -137,6 +137,7 @@ plugins/xml/dumptree.ml
 plugins/xml/xmlentries.ml
 plugins/extraction/g_extraction.ml
 plugins/rtauto/g_rtauto.ml
+plugins/btauto/g_btauto.ml
 plugins/romega/g_romega.ml
 plugins/setoid_ring/newring.ml
 plugins/firstorder/g_ground.ml
