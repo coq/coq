@@ -81,6 +81,13 @@ split.
   now destruct 1; symmetry; apply beq_nat_refl.
 Qed.
 
+Program Instance Decidable_le_nat : forall (x y : nat), Decidable (x <= y) := {
+  Decidable_witness := leb x y
+}.
+Next Obligation.
+apply leb_iff.
+Qed.
+
 Program Instance Decidable_eq_Z : forall (x y : Z), Decidable (eq x y) := {
   Decidable_witness := Zeq_bool x y
 }.
