@@ -191,6 +191,7 @@ docclean:
 	rm -f doc/common/version.tex
 	rm -f doc/refman/styles.hva doc/refman/cover.html doc/refman/Reference-Manual.html
 	rm -f doc/coq.tex
+	rm -f doc/refman/styles.hva doc/refman/cover.html 
 
 archclean: clean-ide optclean voclean
 	rm -rf _build myocamlbuild_config.ml
