@@ -895,7 +895,9 @@ struct
   let parse_expr parse_constant parse_exp ops_spec env term =
     if debug
     then (Pp.pp (Pp.str "parse_expr: ");
-          Pp.pp_flush ();Pp.pp (Printer.prterm term); Pp.pp_flush ());
+          Pp.pp (Printer.prterm term);
+          Pp.pp (Pp.str "\n");
+          Pp.pp_flush ());
 
 (*
     let constant_or_variable env term =
@@ -1009,10 +1011,12 @@ struct
     if debug
     then (Pp.pp_flush ();
           Pp.pp (Pp.str "rconstant: ");
-          Pp.pp (Printer.prterm  term); Pp.pp_flush ());
+          Pp.pp (Printer.prterm  term);
+          Pp.pp (Pp.str "\n");
+          Pp.pp_flush ());
     let res = rconstant term in
       if debug then 
-	(Printf.printf "rconstant -> %a" pp_Rcst res ; flush stdout) ; 
+	(Printf.printf "rconstant -> %a\n" pp_Rcst res ; flush stdout) ;
       res
 
 
@@ -1052,6 +1056,7 @@ struct
    then (Pp.pp_flush ();
          Pp.pp (Pp.str "parse_arith: ");
          Pp.pp (Printer.prterm  cstr);
+         Pp.pp (Pp.str "\n");
          Pp.pp_flush ());
    match kind_of_term cstr with
     | App(op,args) ->
