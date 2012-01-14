@@ -97,6 +97,9 @@ clean:
 	  -name '*.stamp' -o -name '*.vo' -o -name '*.log' \
 	\) -print0 | xargs -0 rm -f
 
+distclean: clean
+	$(HIDE)find . -name '*.log' -print0 | xargs -0 rm -f
+
 #######################################################################
 # Per-subsystem targets
 #######################################################################
