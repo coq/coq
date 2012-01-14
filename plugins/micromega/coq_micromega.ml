@@ -993,8 +993,12 @@ struct
         else raise ParseError
     | App(op,args) -> 
 	begin
-	  try 
-	    (assoc_const   op rconst_assoc) (rconstant args.(0)) (rconstant args.(1))
+	  try
+            (* the evaluation order is important in the following *)
+            let f = assoc_const op rconst_assoc in
+            let a = rconstant args.(0) in
+            let b = rconstant args.(1) in
+            f a b
 	  with
 	      ParseError -> 
 		match op with
