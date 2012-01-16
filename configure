@@ -795,10 +795,15 @@ case $libdir_spec in
     *) LIBDIR_OPTION="None";;
 esac
 
-case $configdir_spec/$local in
-    yes/*) CONFIGDIR=$configdir;;
-    */true) CONFIGDIR=$COQTOP/ide
-        configdir_spec=yes;;
+case $configdir_spec/$prefix_spec/$local in
+    yes/*/*) CONFIGDIR=$configdir;;
+    */yes/*) configdir_spec=yes
+	case $ARCH in
+	    win32) CONFIGDIR=$prefix/config;;
+            *) CONFIGDIR=$prefix/etc/xdg/coq;;
+	esac;;
+    */*/true) CONFIGDIR=$COQTOP/ide
+    configdir_spec=yes;;
     *)  printf "Where should I install the Coqide configuration files [$configdir_def]? "
         read CONFIGDIR
 	case $CONFIGDIR in
