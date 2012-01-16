@@ -98,7 +98,7 @@ val match_aconstr : bool -> glob_constr -> interpretation ->
       (glob_decl list * subscopes) list
 
 val match_aconstr_cases_pattern :  cases_pattern -> interpretation ->
-      (cases_pattern * subscopes) list * (cases_pattern list * subscopes) list
+      ((cases_pattern * subscopes) list * (cases_pattern list * subscopes) list) * (cases_pattern list)
 
 (** Substitution of kernel names in interpretation data                *)
 

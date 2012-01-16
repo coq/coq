@@ -321,99 +321,110 @@ let mkPat loc qid l =
   (* Normally irrelevant test with v8 syntax, but let's do it anyway *)
   if l = [] then CPatAtom (loc,Some qid) else CPatCstr (loc,qid,l)
 
+let add_patt_for_params (ind,k) l =
+    Util.list_addn (Inductiveops.inductive_nparams ind) (CPatAtom (dummy_loc,None)) l
+
+let pattern_printable_in_both_syntax (ind,_ as c) =
+  let impl_st = extract_impargs_data (implicits_of_global (ConstructRef c)) in
+  let nb_params = Inductiveops.inductive_nparams ind in
+  List.exists (fun (_,impls) ->
+    (List.length impls >= nb_params) &&
+      let params,args = Util.list_chop nb_params impls in
+      (List.for_all is_status_implicit params)&&(List.for_all (fun x -> not (is_status_implicit x)) args)
+  ) impl_st
+
  (* Better to use extern_glob_constr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
   try
     if !Flags.raw_print or !print_no_symbol then raise No_match;
     let (na,sc,p) = uninterp_prim_token_cases_pattern pat in
     match availability_of_prim_token p sc scopes with
-    | None -> raise No_match
-    | Some key ->
-      let loc = cases_pattern_loc pat in
-      insert_pat_alias loc (insert_pat_delimiters loc (CPatPrim(loc,p)) key) na
+      | None -> raise No_match
+      | Some key ->
+	let loc = cases_pattern_loc pat in
+	insert_pat_alias loc (insert_pat_delimiters loc (CPatPrim(loc,p)) key) na
   with No_match ->
-  try
-    if !Flags.raw_print or !print_no_symbol then raise No_match;
-    extern_symbol_pattern scopes vars pat
-      (uninterp_cases_pattern_notations pat)
-  with No_match ->
-  match pat with
-  | PatVar (loc,Name id) -> CPatAtom (loc,Some (Ident (loc,id)))
-  | PatVar (loc,Anonymous) -> CPatAtom (loc, None)
-  | PatCstr(loc,cstrsp,args,na) ->
-      let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
-      let p =
-	try
-          if !Flags.raw_print then raise Exit;
-	  let projs = Recordops.lookup_projections (fst cstrsp) in
-	  let rec ip projs args acc =
-	    match projs with
-	      | [] -> acc
-	      | None :: q -> ip q args acc
-	      | Some c :: q ->
-		  match args with
-		    | [] -> raise No_match
-		    | CPatAtom(_, None) :: tail -> ip q tail acc
-			(* we don't want to have 'x = _' in our patterns *)
-		    | head :: tail -> ip q tail
+    try
+      if !Flags.raw_print or !print_no_symbol then raise No_match;
+      extern_symbol_pattern scopes vars pat
+	(uninterp_cases_pattern_notations pat)
+    with No_match ->
+      match pat with
+	| PatVar (loc,Name id) -> CPatAtom (loc,Some (Ident (loc,id)))
+	| PatVar (loc,Anonymous) -> CPatAtom (loc, None)
+	| PatCstr(loc,cstrsp,args,na) ->
+	  let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
+	  let p =
+	    try
+              if !Flags.raw_print then raise Exit;
+	      let projs = Recordops.lookup_projections (fst cstrsp) in
+	      let rec ip projs args acc =
+		match projs with
+		  | [] -> acc
+		  | None :: q -> ip q args acc
+		  | Some c :: q ->
+		    match args with
+		      | [] -> raise No_match
+		      | CPatAtom(_, None) :: tail -> ip q tail acc
+		    (* we don't want to have 'x = _' in our patterns *)
+		      | head :: tail -> ip q tail
 		        ((extern_reference loc Idset.empty (ConstRef c), head) :: acc)
-	    in
-	  CPatRecord(loc, List.rev (ip projs args []))
-	with
-	  Not_found | No_match | Exit ->
-	    CPatCstr (loc, extern_reference loc vars (ConstructRef cstrsp), args) in
-      insert_pat_alias loc p na
+	      in
+	      CPatRecord(loc, List.rev (ip projs args []))
+	    with
+		Not_found | No_match | Exit ->
+		  if pattern_printable_in_both_syntax cstrsp
+		  then CPatCstr (loc, extern_reference loc vars (ConstructRef cstrsp), args)
+		  else CPatCstrExpl (loc, extern_reference loc vars (ConstructRef cstrsp), add_patt_for_params cstrsp args) in
+	  insert_pat_alias loc p na
 
 and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
     try
       match t,n with
-      | PatCstr (loc,(ind,_),l,na), n when n = Some 0 or n = None or 
-	 n = Some(fst(Global.lookup_inductive ind)).Declarations.mind_nparams ->
-        (* Abbreviation for the constructor name only *)
-	(match keyrule with
-        | NotationRule (sc,ntn) -> raise No_match
-        | SynDefRule kn ->
-	    let qid = Qualid (loc, shortest_qualid_of_syndef vars kn) in
-	    let l = List.map (extern_cases_pattern_in_scope allscopes vars) l in
-	    insert_pat_alias loc (mkPat loc qid l) na)
-      | PatCstr (_,f,l,_), Some n when List.length l > n ->
-	  raise No_match
-      | PatCstr (loc,_,_,na),_ ->
-	(* Try matching ... *)
-	let subst,substlist = match_aconstr_cases_pattern t pat in
-	(* Try availability of interpretation ... *)
-	let p = match keyrule with
-          | NotationRule (sc,ntn) ->
-	      (match availability_of_notation (sc,ntn) allscopes with
-                  (* Uninterpretation is not allowed in current context *)
-              | None -> raise No_match
-                  (* Uninterpretation is allowed in current context *)
-	      | Some (scopt,key) ->
-	          let scopes' = Option.List.cons scopt scopes in
-	          let l =
-		    List.map (fun (c,(scopt,scl)) ->
-		      extern_cases_pattern_in_scope (scopt,scl@scopes') vars c)
-                      subst in
-		  let ll =
-		    List.map (fun (c,(scopt,scl)) ->
-		      let subscope = (scopt,scl@scopes') in
-		      List.map (extern_cases_pattern_in_scope subscope vars) c)
-                      substlist in
-		  insert_pat_delimiters loc
-		    (make_pat_notation loc ntn (l,ll)) key)
-          | SynDefRule kn ->
+	| PatCstr (loc,_,_,na),_ ->
+	  (* Try matching ... *)
+	  let (subst,substlist),more_args = match_aconstr_cases_pattern t pat in
+	  (* Try availability of interpretation ... *)
+	  let p = match keyrule with
+            | NotationRule (sc,ntn) ->
+	      begin match more_args with
+		|_::_ ->
+		  (* Parser and Constrintern do not understand a notation for
+		     partially applied constructor. *)
+		  raise No_match
+		|[] ->
+		  match availability_of_notation (sc,ntn) allscopes with
+		    (* Uninterpretation is not allowed in current context *)
+		    | None -> raise No_match
+		    (* Uninterpretation is allowed in current context *)
+		    | Some (scopt,key) ->
+	              let scopes' = Option.List.cons scopt scopes in
+	              let l =
+			List.map (fun (c,(scopt,scl)) ->
+			  extern_cases_pattern_in_scope (scopt,scl@scopes') vars c)
+			  subst in
+		      let ll =
+			List.map (fun (c,(scopt,scl)) ->
+			  let subscope = (scopt,scl@scopes') in
+			  List.map (extern_cases_pattern_in_scope subscope vars) c)
+			  substlist in
+		      insert_pat_delimiters loc
+			(make_pat_notation loc ntn (l,ll)) key
+	      end
+            | SynDefRule kn ->
 	      let qid = Qualid (loc, shortest_qualid_of_syndef vars kn) in
-	      let l =
-		List.map (fun (c,(scopt,scl)) ->
-                  extern_cases_pattern_in_scope (scopt,scl@scopes) vars c) 
+	      let l1 =
+		List.rev_map (fun (c,(scopt,scl)) ->
+                  extern_cases_pattern_in_scope (scopt,scl@scopes) vars c)
                   subst in
+	      let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
               assert (substlist = []);
-	      mkPat loc qid l in
-	insert_pat_alias loc p na
-      | PatVar (loc,Anonymous),_ -> CPatAtom (loc, None)
-      | PatVar (loc,Name id),_ -> CPatAtom (loc, Some (Ident (loc,id)))
+	      mkPat loc qid (List.rev_append l1 l2) in
+	  insert_pat_alias loc p na
+	| PatVar (loc,Anonymous),_ -> CPatAtom (loc, None)
+	| PatVar (loc,Name id),_ -> CPatAtom (loc, Some (Ident (loc,id)))
     with
 	No_match -> extern_symbol_pattern allscopes vars t rules
 

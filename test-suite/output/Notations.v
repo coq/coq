@@ -244,7 +244,7 @@ Check (fun x => match x with SOME2 x => x | NONE2 => 0 end).
 
 Notation NONE3 := @None.
 Notation SOME3 := @Some.     
-Check (fun x => match x with SOME3 x => x | NONE3 => 0 end).
+Check (fun x => match x with SOME3 _ x => x | NONE3 _ => 0 end).
 
 (* Check correct matching of "Type" in notations. Of course the
    notation denotes a term that will be reinterpreted with a different

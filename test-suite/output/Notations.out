@@ -116,8 +116,8 @@ fun x : option Z => match x with
                     end
      : option Z -> Z
 fun x : option Z => match x with
-                    | SOME3 x0 => x0
-                    | NONE3 => 0
+                    | SOME3 _ x0 => x0
+                    | NONE3 _ => 0
                     end
      : option Z -> Z
 s

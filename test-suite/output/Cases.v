@@ -34,6 +34,18 @@ Fixpoint foo (A:Type) (l:list A) : option A :=
 
 Print foo.
 
+(* Accept and use notation with binded parameters *)
+
+Inductive I (A: Type) : Type := C : A -> I A.
+Notation "x <: T" := (C T x) (at level 38).
+
+Definition uncast A (x : I A) :=
+match x with
+ | x <: _ => x
+end.
+
+Print uncast.
+
 (* Do not duplicate the matched term *)
 
 Axiom A : nat -> bool.

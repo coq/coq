@@ -27,5 +27,12 @@ fix foo (A : Type) (l : list A) {struct l} : option A :=
      : forall A : Type, list A -> option A
 
 Argument scopes are [type_scope list_scope]
+uncast = 
+fun (A : Type) (x : I A) => match x with
+                            | x0 <: _ => x0
+                            end
+     : forall A : Type, I A -> A
+
+Argument scopes are [type_scope _]
 foo' = if A 0 then true else false
      : bool

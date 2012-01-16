@@ -157,10 +157,10 @@ let error_bad_inductive_type loc =
   user_err_loc (loc,"",str
     "This should be an inductive type applied to names or \"_\".")
 
-let error_inductive_parameter_not_implicit loc =
+let error_parameter_not_implicit loc =
   user_err_loc (loc,"", str
-   ("The parameters of inductive types do not bind in\n"^
-    "the 'return' clauses; they must be replaced by '_' in the 'in' clauses."))
+   "The parameters do not bind in patterns;" ++ spc () ++ str
+    "they must be replaced by '_'.")
 
 (**********************************************************************)
 (* Pre-computing the implicit arguments and arguments scopes needed   *)
@@ -740,10 +740,8 @@ let rec simple_adjust_scopes n scopes =
   | sc::scopes -> sc :: simple_adjust_scopes (n-1) scopes
 
 let find_remaining_constructor_scopes pl1 pl2 (ind,j as cstr) =
-  let (mib,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
-  let npar = mib.Declarations.mind_nparams in
-  snd (list_chop (npar + List.length pl1)
-    (simple_adjust_scopes (npar + List.length pl1 + List.length pl2)
+  snd (list_chop (List.length pl1)
+    (simple_adjust_scopes (List.length pl1 + List.length pl2)
       (find_arguments_scope (ConstructRef cstr))))
 
 (**********************************************************************)
@@ -789,12 +787,15 @@ let check_or_pat_variables loc ids idsl =
     user_err_loc (loc, "", str
     "The components of this disjunctive pattern must bind the same variables.")
 
-let check_constructor_length env loc cstr pl pl0 =
+(** @param with_params says if _ for params were asked to the user.
+    @return if letin are included *)
+let check_constructor_length env loc cstr with_params pl pl0 =
+  let nargs = Inductiveops.mis_constructor_nargs cstr in
   let n = List.length pl + List.length pl0 in
-  let nargs = Inductiveops.constructor_nrealargs env cstr in
-  let nhyps = Inductiveops.constructor_nrealhyps env cstr in
-  if n <> nargs && n <> nhyps (* i.e. with let's *) then
-    error_wrong_numarg_constructor_loc loc env cstr nargs
+  if n = nargs then false else
+    (n = (fst (Inductiveops.inductive_nargs (fst cstr))) + Inductiveops.constructor_nrealhyps cstr) ||
+      (error_wrong_numarg_constructor_loc loc env cstr
+	 (if with_params then nargs else nargs - (Inductiveops.inductive_nparams (fst cstr))))
 
 (* Manage multiple aliases *)
 
@@ -816,18 +817,6 @@ let message_redundant_alias (id1,id2) =
 let error_invalid_pattern_notation loc =
   user_err_loc (loc,"",str "Invalid notation for pattern.")
 
-let chop_aconstr_constructor loc (ind,k) args =
-  if List.length args = 0 then (* Tolerance for a @id notation *) args else
-    begin
-      let mib,_ = Global.lookup_inductive ind in
-      let nparams = mib.Declarations.mind_nparams in
-      if nparams > List.length args then error_invalid_pattern_notation loc;
-      let params,args = list_chop nparams args in
-      List.iter (function AHole _ -> ()
-	| _ -> error_invalid_pattern_notation loc) params;
-      args
-    end
-
 let rec subst_pat_iterator y t (subst,p) = match p with
   | PatVar (_,id) as x ->
       if id = Name y then t else [subst,x]
@@ -835,6 +824,18 @@ let rec subst_pat_iterator y t (subst,p) = match p with
       let l' = List.map (fun a -> (subst_pat_iterator y t ([],a))) l in
       let pl = simple_product_of_cases_patterns l' in
       List.map (fun (subst',pl) -> subst'@subst,PatCstr (loc,id,pl,alias)) pl
+
+(** @raise NotEnoughArguments only in the case of [subst_cases_pattern] thanks to
+    preconditions in other cases. *)
+let chop_params_pattern loc (ind,_) args with_letin =
+  let nparams = if with_letin
+    then fst (Inductiveops.inductive_nargs ind)
+    else Inductiveops.inductive_nparams ind in
+  if nparams > List.length args then error_not_enough_arguments loc;
+  let params,args = list_chop nparams args in
+  List.iter (function PatVar(_,Anonymous) -> ()
+    | PatVar (loc',_) | PatCstr(loc',_,_,_) -> error_parameter_not_implicit loc') params;
+  args
 
 let subst_cases_pattern loc alias intern fullsubst env a =
   let rec aux alias (subst,substlist as fullsubst) = function
@@ -859,11 +860,10 @@ let subst_cases_pattern loc alias intern fullsubst env a =
   | ARef (ConstructRef c) ->
       ([],[[], PatCstr (loc,c, [], alias)])
   | AApp (ARef (ConstructRef cstr),args) ->
-      let args = chop_aconstr_constructor loc cstr args in
       let idslpll = List.map (aux Anonymous fullsubst) args in
       let ids',pll = product_of_cases_patterns [] idslpll in
       let pl' = List.map (fun (asubst,pl) ->
-        asubst,PatCstr (loc,cstr,pl,alias)) pll in
+        asubst,PatCstr (loc,cstr,chop_params_pattern loc cstr pl false,alias)) pll in
 	ids', pl'
   | AList (x,_,iter,terminator,lassoc) ->
       (try
@@ -890,36 +890,41 @@ type pattern_qualid_kind =
       ((identifier * identifier) list * cases_pattern) list) list
   | VarPat of identifier
 
-let find_constructor ref f aliases pats env =
+let find_constructor add_params ref f aliases pats env =
+  let add_params (ind,_ as c) = match add_params with
+    |Some nb_args -> let nb = if nb_args = Inductiveops.constructor_nrealhyps c
+      then fst (Inductiveops.inductive_nargs ind)
+      else Inductiveops.inductive_nparams ind in
+      Util.list_make nb ([],[([],PatVar(dummy_loc,Anonymous))])
+    |None -> [] in
   let (loc,qid) = qualid_of_reference ref in
   let gref =
     try locate_extended qid
     with Not_found -> raise (InternalizationError (loc,NotAConstructor ref)) in
   match gref with
-  | SynDef sp ->
+    | SynDef sp ->
       let (vars,a) = Syntax_def.search_syntactic_definition sp in
       (match a with
-       | ARef (ConstructRef cstr) ->
-	   assert (vars=[]);
-	   cstr, [], pats
-       | AApp (ARef (ConstructRef cstr),args) ->
-	   let args = chop_aconstr_constructor loc cstr args in
-	   let nvars = List.length vars in
-	   if List.length pats < nvars then error_not_enough_arguments loc;
-	   let pats1,pats2 = list_chop nvars pats in
-	   let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) vars pats1 in
-	   let idspl1 = List.map (subst_cases_pattern loc Anonymous f (subst,[]) env) args in
-	   cstr, idspl1, pats2
-       | _ -> raise Not_found)
+	| ARef (ConstructRef cstr) ->
+	  assert (vars=[]);
+	  cstr,add_params cstr, pats
+	| AApp (ARef (ConstructRef cstr),args) ->
+	  let nvars = List.length vars in
+	  if List.length pats < nvars then error_not_enough_arguments loc;
+	  let pats1,pats2 = list_chop nvars pats in
+	  let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) vars pats1 in
+	  let idspl1 = List.map (subst_cases_pattern loc Anonymous f (subst,[]) env) args in
+	  cstr, idspl1, pats2
+	| _ -> raise Not_found)
 
-  | TrueGlobal r ->
+    | TrueGlobal r ->
       let rec unf = function
         | ConstRef cst ->
-	    let v = Environ.constant_value (Global.env()) cst in
-	    unf (global_of_constr v)
+	  let v = Environ.constant_value (Global.env()) cst in
+	  unf (global_of_constr v)
         | ConstructRef cstr ->
-	    Dumpglob.add_glob loc r;
-	    cstr, [], pats
+	  Dumpglob.add_glob loc r;
+	  cstr, add_params cstr, pats
         | _ -> raise Not_found
       in unf r
 
@@ -929,20 +934,20 @@ let find_pattern_variable = function
 
 let maybe_constructor ref f aliases env =
   try
-    let c,idspl1,pl2 = find_constructor ref f aliases [] env in
+    let c,idspl1,pl2 = find_constructor (Some 0) ref f aliases [] env in
     assert (pl2 = []);
     ConstrPat (c,idspl1)
   with
-      (* patt var does not exists globally *)
+    (* patt var does not exists globally *)
     | InternalizationError _ -> VarPat (find_pattern_variable ref)
-      (* patt var also exists globally but does not satisfy preconditions *)
+    (* patt var also exists globally but does not satisfy preconditions *)
     | (Environ.NotEvaluableConst _ | Not_found) ->
-        if_warn msg_warning (str "pattern " ++ pr_reference ref ++
-              str " is understood as a pattern variable");
-        VarPat (find_pattern_variable ref)
+      if_warn msg_warning (str "pattern " ++ pr_reference ref ++
+			     str " is understood as a pattern variable");
+      VarPat (find_pattern_variable ref)
 
-let mustbe_constructor loc ref f aliases patl env =
-  try find_constructor ref f aliases patl env
+let mustbe_constructor loc add_params ref f aliases patl env =
+  try find_constructor add_params ref f aliases patl env
   with (Environ.NotEvaluableConst _ | Not_found) ->
     raise (InternalizationError (loc,NotAConstructor ref))
 
@@ -1037,6 +1042,13 @@ let sort_fields mode loc l completer =
 
 let rec intern_cases_pattern genv env (ids,asubst as aliases) pat =
   let intern_pat = intern_cases_pattern genv in
+  let intern_cstr_with_all_args loc c with_letin idslpl1 pl2 =
+    let argscs2 = find_remaining_constructor_scopes idslpl1 pl2 c in
+    let idslpl2 = List.map2 (fun x -> intern_pat {env with tmp_scope = x} ([],[])) argscs2 pl2 in
+    let (ids',pll) = product_of_cases_patterns ids (idslpl1@idslpl2) in
+    let pl' = List.map (fun (asubst,pl) ->
+      (asubst, PatCstr (loc,c,chop_params_pattern loc c pl with_letin,alias_of aliases))) pll in
+    ids',pl' in
   match pat with
   | CPatAlias (loc, p, id) ->
       let aliases' = merge_aliases aliases id in
@@ -1049,15 +1061,14 @@ let rec intern_cases_pattern genv env (ids,asubst as aliases) pat =
 	    | Some (_, head, pl) -> CPatCstr(loc, head, pl)
 	  in
 	intern_pat env aliases self_patt
-  | CPatCstr (loc, head, pl) | CPatCstrExpl (loc, head, pl) ->
-      let c,idslpl1,pl2 = mustbe_constructor loc head intern_pat aliases pl env in
-      check_constructor_length genv loc c idslpl1 pl2;
-      let argscs2 = find_remaining_constructor_scopes idslpl1 pl2 c in
-      let idslpl2 = List.map2 (fun x -> intern_pat {env with tmp_scope = x} ([],[])) argscs2 pl2 in
-      let (ids',pll) = product_of_cases_patterns ids (idslpl1@idslpl2) in
-      let pl' = List.map (fun (asubst,pl) ->
-        (asubst, PatCstr (loc,c,pl,alias_of aliases))) pll in
-      ids',pl'
+  | CPatCstr (loc, head, pl) ->
+      let c,idslpl1,pl2 = mustbe_constructor loc (Some (List.length pl)) head intern_pat aliases pl env in
+      let with_letin = check_constructor_length genv loc c false idslpl1 pl2 in
+      intern_cstr_with_all_args loc c with_letin idslpl1 pl2
+  | CPatCstrExpl (loc, head, pl) ->
+      let c,idslpl1,pl2 = mustbe_constructor loc None head intern_pat aliases pl env in
+      let with_letin = check_constructor_length genv loc c true idslpl1 pl2 in
+      intern_cstr_with_all_args loc c with_letin idslpl1 pl2
   | CPatNotation (loc,"- _",([CPatPrim(_,Numeral p)],[]))
       when Bigint.is_strictly_pos p ->
       intern_pat env aliases (CPatPrim(loc,Numeral(Bigint.neg p)))
@@ -1085,10 +1096,8 @@ let rec intern_cases_pattern genv env (ids,asubst as aliases) pat =
   | CPatAtom (loc, Some head) ->
       (match maybe_constructor head intern_pat aliases env with
 	 | ConstrPat (c,idspl) ->
-	     check_constructor_length genv loc c idspl [];
-	     let (ids',pll) = product_of_cases_patterns ids idspl in
-	     (ids,List.map (fun (asubst,pl) ->
-	       (asubst, PatCstr (loc,c,pl,alias_of aliases))) pll)
+	   let with_letin = check_constructor_length genv loc c false idspl [] in
+	   intern_cstr_with_all_args loc c with_letin idspl []
 	 | VarPat id ->
 	     let ids,asubst = merge_aliases aliases id in
 	     (ids,[asubst, PatVar (loc,alias_of (ids,asubst))]))
@@ -1399,7 +1408,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	    | GRef (loc,IndRef ind) -> (loc,ind,[])
 	    | GApp (loc,GRef (_,IndRef ind),l) -> (loc,ind,l)
 	    | _ -> error_bad_inductive_type (loc_of_glob_constr t) in
-	let nparams, nrealargs = inductive_nargs globalenv ind in
+	let nparams, nrealargs = inductive_nargs_env globalenv ind in
 	let nindargs = nparams + nrealargs in
 	if List.length l <> nindargs then
 	  error_wrong_numarg_inductive_loc loc globalenv ind nindargs;
@@ -1409,7 +1418,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	  | c -> user_err_loc (loc_of_glob_constr c,"",str "Not a name.")) l in
 	let parnal,realnal = list_chop nparams nal in
 	if List.exists (fun (_,na) -> na <> Anonymous) parnal then
-	  error_inductive_parameter_not_implicit loc;
+	  error_parameter_not_implicit loc;
 	realnal, Some (loc,ind,nparams,List.map snd realnal)
     | None ->
 	[], None in
