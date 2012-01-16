@@ -42,7 +42,7 @@ type t
                 and the {!Xml.error_pos} can be used to retreive the document
                 location where the error occured at.}
         {li {!Xml.File_not_found} is raised when and error occured while
-                opening a file with the {!Xml.parse_file} function.
+                opening a file with the {!Xml.parse_file} function.}
         }
  *)
 
