@@ -1654,7 +1654,7 @@ let extract_arity_signature env0 tomatchl tmsign =
       | IsInd (term,IndType(indf,realargs),_) ->
           let indf' = lift_inductive_family n indf in
 	  let (ind,_) = dest_ind_family indf' in
-	  let nparams_ctxt,nrealargs_ctxt = inductive_nargs env0 ind in
+	  let nparams_ctxt,nrealargs_ctxt = inductive_nargs_env env0 ind in
 	  let arsign = fst (get_arity env0 indf') in
 	  let realnal =
 	    match t with

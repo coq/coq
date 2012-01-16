@@ -133,7 +133,7 @@ let compute_branches_lengths ind =
   mip.Declarations.mind_consnrealdecls
 
 let compute_inductive_nargs ind =
-  Inductiveops.inductive_nargs (Global.env()) ind
+  Inductiveops.inductive_nargs ind
 
 (* Interpreting constr as a glob_constr *)
 

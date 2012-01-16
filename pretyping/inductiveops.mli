@@ -51,7 +51,10 @@ val mis_is_recursive :
 val mis_nf_constructor_type :
   inductive * mutual_inductive_body * one_inductive_body -> int -> constr
 
-(** Extract information from an inductive name *)
+(** {6 Extract information from an inductive name}
+
+
+Functions without env lookup in the globalenv. *)
 
 (** Arity of constructors excluding parameters and local defs *)
 val mis_constr_nargs : inductive -> int array
@@ -59,12 +62,23 @@ val mis_constr_nargs_env : env -> inductive -> int array
 
 val nconstructors : inductive -> int
 
-(** Return the lengths of parameters signature and real arguments signature *)
-val inductive_nargs : env -> inductive -> int * int
+(** @return the lengths of parameters signature and real arguments signature
+    with letin *)
+val inductive_nargs : inductive -> int * int
+val inductive_nargs_env : env -> inductive -> int * int
 
+(** @return nb of params without letin *)
+val inductive_nparams : inductive -> int
+
+(** @return param + args without letin *)
+val mis_constructor_nargs : constructor -> int
 val mis_constructor_nargs_env : env -> constructor -> int
+
+(** @return args without letin *)
 val constructor_nrealargs : env -> constructor -> int
-val constructor_nrealhyps : env -> constructor -> int
+
+(** @return args with letin *)
+val constructor_nrealhyps : constructor -> int
 
 val get_full_arity_sign : env -> inductive -> rel_context
 
