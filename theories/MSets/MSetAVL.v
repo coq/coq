@@ -333,28 +333,25 @@ Definition elements := elements_aux nil.
 
 (** ** Filter *)
 
-Fixpoint filter_acc (f:elt->bool) acc s := match s with
-  | Leaf => acc
-  | Node l x r h =>
-     filter_acc f (filter_acc f (if f x then add x acc else acc) l) r
+Fixpoint filter (f:elt->bool) s := match s with
+  | Leaf => Leaf
+  | Node l x r _ =>
+    let l' := filter f l in
+    let r' := filter f r in
+    if f x then join l' x r' else concat l' r'
  end.
-
-Definition filter f := filter_acc f Leaf.
-
 
 (** ** Partition *)
 
-Fixpoint partition_acc (f:elt->bool)(acc : t*t)(s : t) : t*t :=
+Fixpoint partition (f:elt->bool)(s : t) : t*t :=
   match s with
-   | Leaf => acc
+   | Leaf => (Leaf, Leaf)
    | Node l x r _ =>
-      let (acct,accf) := acc in
-      partition_acc f
-        (partition_acc f
-           (if f x then (add x acct, accf) else (acct, add x accf)) l) r
+      let (l1,l2) := partition f l in
+      let (r1,r2) := partition f r in
+      if f x then (join l1 x r1, concat l2 r2)
+      else (concat l1 r1, join l2 x r2)
   end.
-
-Definition partition f := partition_acc f (Leaf,Leaf).
 
 (** ** [for_all] and [exists] *)
 
@@ -576,6 +573,7 @@ Module Import MX := OrderedTypeFacts X.
 (** * Automation and dedicated tactics *)
 
 Scheme tree_ind := Induction for tree Sort Prop.
+Scheme bst_ind := Induction for bst Sort Prop.
 
 Local Hint Resolve MX.eq_refl MX.eq_trans MX.lt_trans @ok.
 Local Hint Immediate MX.eq_sym.
@@ -1376,137 +1374,74 @@ Qed.
 
 (** * Filter *)
 
-Lemma filter_spec' : forall s x acc f,
- Proper (X.eq==>eq) f ->
- (InT x (filter_acc f acc s) <-> InT x acc \/ InT x s /\ f x = true).
-Proof.
- induction s; simpl; intros.
- intuition_in.
- rewrite IHs2, IHs1 by (destruct (f t0); auto).
- case_eq (f t0); intros.
- rewrite add_spec'; auto.
- intuition_in.
- rewrite (H _ _ H2).
- intuition.
- intuition_in.
- rewrite (H _ _ H2) in H3.
- rewrite H0 in H3; discriminate.
-Qed.
-
-Instance filter_ok' : forall s acc f `(Ok s, Ok acc),
- Ok (filter_acc f acc s).
-Proof.
- induction s; simpl; auto.
- intros. inv.
- destruct (f t0); auto with *.
-Qed.
-
 Lemma filter_spec : forall s x f,
  Proper (X.eq==>eq) f ->
  (InT x (filter f s) <-> InT x s /\ f x = true).
 Proof.
- unfold filter; intros; rewrite filter_spec'; intuition_in.
+ induction s as [ |l Hl x0 r Hr]; intros x f Hf; simpl.
+ - intuition_in.
+ - case_eq (f x0); intros Hx0.
+   * rewrite join_spec, Hl, Hr; intuition_in.
+     now setoid_replace x with x0.
+   * rewrite concat_spec, Hl, Hr; intuition_in.
+     assert (f x = f x0) by auto. congruence.
 Qed.
 
-Instance filter_ok s f `(Ok s) : Ok (filter f s).
+Lemma filter_weak_spec : forall s x f,
+ InT x (filter f s) -> InT x s.
 Proof.
- unfold filter; intros; apply filter_ok'; auto.
+ induction s as [ |l Hl x0 r Hr]; intros x f; simpl.
+ - trivial.
+ - destruct (f x0).
+   * rewrite join_spec; intuition_in; eauto.
+   * rewrite concat_spec; intuition_in; eauto.
+Qed.
+
+Instance filter_ok s f `(H : Ok s) : Ok (filter f s).
+Proof.
+ induction H as [ | x l r h Hl Hfl Hr Hfr Hlt Hgt ].
+ - constructor.
+ - simpl.
+   assert (lt_tree x (filter f l)) by (eauto using filter_weak_spec).
+   assert (gt_tree x (filter f r)) by (eauto using filter_weak_spec).
+   destruct (f x); eauto using concat_ok, join_ok.
 Qed.
 
 
 (** * Partition *)
 
-Lemma partition_spec1' : forall s acc f,
- Proper (X.eq==>eq) f -> forall x : elt,
- InT x (partition_acc f acc s)#1 <->
- InT x acc#1 \/ InT x s /\ f x = true.
+Lemma partition_spec1' s f : (partition f s)#1 = filter f s.
 Proof.
- induction s; simpl; intros.
- intuition_in.
- destruct acc as [acct accf]; simpl in *.
- rewrite IHs2 by
-  (destruct (f t0); auto; apply partition_acc_avl_1; simpl; auto).
- rewrite IHs1 by (destruct (f t0); simpl; auto).
- case_eq (f t0); simpl; intros.
- rewrite add_spec'; auto.
- intuition_in.
- rewrite (H _ _ H2).
- intuition.
- intuition_in.
- rewrite (H _ _ H2) in H3.
- rewrite H0 in H3; discriminate.
+ induction s as [ | l Hl x r Hr h ]; simpl.
+ - trivial.
+ - rewrite <- Hl, <- Hr.
+   now destruct (partition f l), (partition f r), (f x).
 Qed.
 
-Lemma partition_spec2' : forall s acc f,
- Proper (X.eq==>eq) f -> forall x : elt,
- InT x (partition_acc f acc s)#2 <->
- InT x acc#2 \/ InT x s /\ f x = false.
+Lemma partition_spec2' s f :
+ (partition f s)#2 = filter (fun x => negb (f x)) s.
 Proof.
- induction s; simpl; intros.
- intuition_in.
- destruct acc as [acct accf]; simpl in *.
- rewrite IHs2 by
-  (destruct (f t0); auto; apply partition_acc_avl_2; simpl; auto).
- rewrite IHs1 by (destruct (f t0); simpl; auto).
- case_eq (f t0); simpl; intros.
- intuition.
- intuition_in.
- rewrite (H _ _ H2) in H3.
- rewrite H0 in H3; discriminate.
- rewrite add_spec'; auto.
- intuition_in.
- rewrite (H _ _ H2).
- intuition.
+ induction s as [ | l Hl x r Hr h ]; simpl.
+ - trivial.
+ - rewrite <- Hl, <- Hr.
+   now destruct (partition f l), (partition f r), (f x).
 Qed.
 
-Lemma partition_spec1 : forall s f,
+Lemma partition_spec1 s f :
  Proper (X.eq==>eq) f ->
  Equal (partition f s)#1 (filter f s).
-Proof.
- unfold partition; intros s f P x.
- rewrite partition_spec1', filter_spec; simpl; intuition_in.
-Qed.
+Proof. now rewrite partition_spec1'. Qed.
 
-Lemma partition_spec2 : forall s f,
+Lemma partition_spec2 s f :
  Proper (X.eq==>eq) f ->
  Equal (partition f s)#2 (filter (fun x => negb (f x)) s).
-Proof.
- unfold partition; intros s f P x.
- rewrite partition_spec2', filter_spec; simpl; intuition_in.
- rewrite H1; auto.
- right; split; auto.
- rewrite negb_true_iff in H1; auto.
- intros u v H; rewrite H; auto.
-Qed.
-
-Instance partition_ok1' : forall s acc f `(Ok s, Ok acc#1),
- Ok (partition_acc f acc s)#1.
-Proof.
- induction s; simpl; auto.
- destruct acc as [acct accf]; simpl in *.
- intros. inv.
- destruct (f t0); auto.
- apply IHs2; simpl; auto.
- apply IHs1; simpl; auto with *.
-Qed.
-
-Instance partition_ok2' : forall s acc f `(Ok s, Ok acc#2),
- Ok (partition_acc f acc s)#2.
-Proof.
- induction s; simpl; auto.
- destruct acc as [acct accf]; simpl in *.
- intros. inv.
- destruct (f t0); auto.
- apply IHs2; simpl; auto.
- apply IHs1; simpl; auto with *.
-Qed.
+Proof. now rewrite partition_spec2'. Qed.
 
 Instance partition_ok1 s f `(Ok s) : Ok (partition f s)#1.
-Proof. apply partition_ok1'; auto. Qed.
+Proof. rewrite partition_spec1'; now apply filter_ok. Qed.
 
 Instance partition_ok2 s f `(Ok s) : Ok (partition f s)#2.
-Proof. apply partition_ok2'; auto. Qed.
-
+Proof. rewrite partition_spec2'; now apply filter_ok. Qed.
 
 
 (** * [for_all] and [exists] *)
