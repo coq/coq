@@ -221,7 +221,6 @@ cleanconfig:
 	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-v7 ide/undo.mli
 
 distclean: clean cleanconfig
-	$(MAKE) -C test-suite distclean
 
 voclean:
 	rm -f states/*.coq
