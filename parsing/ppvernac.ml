@@ -292,28 +292,6 @@ let pr_binders_arg =
 let pr_and_type_binders_arg bl =
   pr_binders_arg bl
 
-let names_of_binder = function
-  | LocalRawAssum (nal,_,_) -> nal
-  | LocalRawDef (_,_) -> []
-
-let pr_guard_annot bl (n,ro) =
-  match n with
-  | None -> mt ()
-  | Some (loc, id) ->
-      match (ro : Topconstr.recursion_order_expr) with
-      | CStructRec ->
-          let ids = List.flatten (List.map names_of_binder bl) in
-	  if List.length ids > 1 then
-	    spc() ++ str "{struct " ++ pr_id id ++ str"}"
-	  else mt()
-      | CWfRec c ->
-	  spc() ++ str "{wf " ++ pr_lconstr_expr c ++ spc() ++
-	  pr_id id ++ str"}"
-      | CMeasureRec (m,r) ->
-	  spc() ++ str "{measure " ++ pr_lconstr_expr m ++ spc() ++
-	  pr_id id ++ (match r with None -> mt() | Some r -> str" on " ++
-	    pr_lconstr_expr r) ++ str"}"
-
 let pr_onescheme (idop,schem) =
   match schem with
   | InductionScheme (dep,ind,s) ->
@@ -419,7 +397,7 @@ let pr_statement head (id,(bl,c,guard)) =
   hov 1
     (head ++ spc() ++ pr_lident (Option.get id) ++ spc() ++
     (match bl with [] -> mt() | _ -> pr_binders bl ++ spc()) ++
-    pr_opt (pr_guard_annot bl) guard ++
+    pr_opt (pr_guard_annot pr_lconstr_expr bl) guard ++
     str":" ++ pr_spc_lconstr c)
 
 (**************************************)
@@ -635,10 +613,10 @@ let rec pr_vernac = function
   | VernacFixpoint recs ->
       let pr_onerec = function
         | ((loc,id),ro,bl,type_,def),ntn ->
-            let annot = pr_guard_annot bl ro in
-            pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
+            let annot = pr_guard_annot pr_lconstr_expr bl ro in
+            pr_id id ++ pr_binders_arg bl ++ annot
             ++ pr_type_option (fun c -> spc() ++ pr_lconstr_expr c) type_
-            ++ pr_opt (fun def -> str" :=" ++ brk(1,2) ++ pr_lconstr def) def ++
+            ++ pr_opt (fun def -> str":=" ++ brk(1,2) ++ pr_lconstr def) def ++
 	    prlist (pr_decl_notation pr_constr) ntn
       in
       hov 0 (str "Fixpoint" ++ spc() ++
@@ -806,8 +784,8 @@ let rec pr_vernac = function
       pr_hints local dbnames h pr_constr pr_constr_pattern_expr
   | VernacSyntacticDefinition (id,(ids,c),local,onlyparsing) ->
       hov 2
-        (pr_locality local ++ str"Notation " ++ pr_lident id ++
-	 prlist_with_sep spc pr_id ids ++ str" :=" ++ pr_constrarg c ++
+        (pr_locality local ++ str"Notation " ++ pr_lident id ++ spc () ++
+	 prlist (fun x -> spc() ++ pr_id x) ids ++ str":=" ++ pr_constrarg c ++
          pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
   | VernacDeclareImplicits (local,q,[]) ->
       hov 2 (pr_section_locality local ++ str"Implicit Arguments" ++ spc() ++ 

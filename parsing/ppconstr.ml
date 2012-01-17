@@ -233,11 +233,13 @@ let surround_implicit k p =
       str"`" ++ (surround_impl b' p)
 
 let pr_binder many pr (nal,k,t) =
-  match t with
-  | CHole _ -> prlist_with_sep spc pr_lname nal
-  | _ ->
-    let s = prlist_with_sep spc pr_lname nal ++ str" : " ++ pr t in
-      hov 1 (if many then surround_binder k s else surround_implicit k s)
+      match t with
+	| CHole _ ->
+	  let s = prlist_with_sep spc pr_lname nal in
+	  hov 1 (surround_implicit k s)
+	| _ ->
+	  let s = prlist_with_sep spc pr_lname nal ++ str" : " ++ pr t in
+	  hov 1 (if many then surround_binder k s else surround_implicit k s)
 
 let pr_binder_among_many pr_c = function
   | LocalRawAssum (nal,k,t) ->
@@ -323,19 +325,27 @@ let pr_recursive_decl pr pr_dangling dangling_with_for id bl annot t c =
   pr_opt_type_spc pr t ++ str " :=" ++
   pr_sep_com (fun () -> brk(1,2)) (pr_body ltop) c
 
-let pr_fixdecl pr prd dangling_with_for ((_,id),(n,ro),bl,t,c) =
-  let annot =
-    match ro with
-	CStructRec ->
-	  if List.length bl > 1 && n <> None then
-	    spc() ++ str "{struct " ++ pr_id (snd (Option.get n)) ++ str"}"
-	  else mt()
-      | CWfRec c ->
-	  spc () ++ str "{wf " ++ pr lsimple c ++ pr_id (snd (Option.get n)) ++ str"}"
-      | CMeasureRec (m,r) ->
-	  spc () ++ str "{measure " ++ pr lsimple m ++ pr_id (snd (Option.get n)) ++
-	    (match r with None -> mt() | Some r -> str" on " ++ pr lsimple r) ++ str"}"
-  in
+let pr_guard_annot pr_aux bl (n,ro) =
+  match n with
+    | None -> mt ()
+    | Some (loc, id) ->
+      match (ro : Topconstr.recursion_order_expr) with
+	| CStructRec ->
+	  let names_of_binder = function
+	    | LocalRawAssum (nal,_,_) -> nal
+	    | LocalRawDef (_,_) -> []
+	  in let ids = List.flatten (List.map names_of_binder bl) in
+	     if List.length ids > 1 then
+	       spc() ++ str "{struct " ++ pr_id id ++ str"}"
+	     else mt()
+	| CWfRec c ->
+	  spc() ++ str "{wf " ++ pr_aux c ++ spc() ++ pr_id id ++ str"}"
+	| CMeasureRec (m,r) ->
+	  spc() ++ str "{measure " ++ pr_aux m ++ spc() ++ pr_id id++
+	    (match r with None -> mt() | Some r -> str" on " ++ pr_aux r) ++ str"}"
+
+let pr_fixdecl pr prd dangling_with_for ((_,id),ro,bl,t,c) =
+  let annot = pr_guard_annot (pr lsimple) bl ro in
     pr_recursive_decl pr prd dangling_with_for id bl annot t c
 
 let pr_cofixdecl pr prd dangling_with_for ((_,id),bl,t,c) =

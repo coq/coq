@@ -51,12 +51,16 @@ val pr_with_occurrences :
   ('a -> std_ppcmds) -> 'a with_occurrences -> std_ppcmds
 val pr_red_expr :
   ('a -> std_ppcmds) * ('a -> std_ppcmds) * ('b -> std_ppcmds) * ('c -> std_ppcmds) ->
-    ('a,'b,'c) red_expr_gen -> std_ppcmds
+  ('a,'b,'c) red_expr_gen -> std_ppcmds
 val pr_may_eval :
   ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
   ('c -> std_ppcmds) -> ('a,'b,'c) may_eval -> std_ppcmds
 
 val pr_glob_sort : glob_sort -> std_ppcmds
+val pr_guard_annot : (constr_expr -> std_ppcmds) ->
+  local_binder list ->
+  ('a * Names.identifier) option * recursion_order_expr ->
+  std_ppcmds
 
 val pr_binders : local_binder list -> std_ppcmds
 val pr_constr_pattern_expr : constr_pattern_expr -> std_ppcmds
