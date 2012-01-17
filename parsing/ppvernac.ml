@@ -975,4 +975,6 @@ and pr_extend s cl =
 
 in pr_vernac
 
+let pr_vernac_body v = make_pr_vernac pr_constr_expr pr_lconstr_expr v
+
 let pr_vernac v = make_pr_vernac pr_constr_expr pr_lconstr_expr v ++ sep_end ()

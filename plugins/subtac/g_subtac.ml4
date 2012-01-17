@@ -69,7 +69,6 @@ GEXTEND Gram
 
   END
 
-
 type 'a gallina_loc_argtype = (Vernacexpr.vernac_expr located, 'a) Genarg.abstract_argument_type
 
 let (wit_subtac_gallina_loc : Genarg.tlevel gallina_loc_argtype),
@@ -164,3 +163,28 @@ VERNAC COMMAND EXTEND Subtac_Show_Preterm
 | [ "Preterm" "of" ident(name) ] -> [ Subtac_obligations.show_term (Some name) ]
 | [ "Preterm" ] -> [ Subtac_obligations.show_term None ]
 END
+
+open Pp
+
+(* Declare a printer for the content of [Program] *)
+let () =
+  let printer _ _ _ expr = Ppvernac.pr_vernac_body (snd expr) in
+  (* should not happen *)
+  let dummy _ _ _ expr = assert false in
+  Pptactic.declare_extra_genarg_pprule
+    (rawwit_subtac_gallina_loc, printer)
+    (globwit_subtac_gallina_loc, dummy)
+    (wit_subtac_gallina_loc, dummy)
+
+(* Declare a printer for the content of Program tactics *)
+let () =
+  let printer _ _ _ = function
+  | None -> mt ()
+  | Some tac -> str "with" ++ spc () ++ Pptactic.pr_raw_tactic (Global.env ()) tac
+  in
+  (* should not happen *)
+  let dummy _ _ _ expr = assert false in
+  Pptactic.declare_extra_genarg_pprule
+    (rawwit_subtac_withtac, printer)
+    (globwit_subtac_withtac, dummy)
+    (wit_subtac_withtac, dummy)

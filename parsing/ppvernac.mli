@@ -23,4 +23,8 @@ open Topconstr
 
 val sep_end : unit -> std_ppcmds
 
+(** Prints a vernac expression *)
+val pr_vernac_body : vernac_expr -> std_ppcmds
+
+(** Prints a vernac expression and closes it with a dot. *)
 val pr_vernac : vernac_expr -> std_ppcmds
