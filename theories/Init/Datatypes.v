@@ -72,7 +72,7 @@ Hint Resolve andb_prop: bool.
 Lemma andb_true_intro :
   forall b1 b2:bool, b1 = true /\ b2 = true -> andb b1 b2 = true.
 Proof.
-  destruct b1; destruct b2; simpl in |- *; tauto || auto with bool.
+  destruct b1; destruct b2; simpl in |- *; intros [? ?]; assumption.
 Qed.
 Hint Resolve andb_true_intro: bool.
 

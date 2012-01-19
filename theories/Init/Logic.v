@@ -92,6 +92,36 @@ End Equivalence.
 
 Hint Unfold iff: extcore.
 
+(** Backward direction of the equivalences above does not need assumptions *)
+
+Theorem and_iff_compat_l : forall A B C : Prop,
+  (B <-> C) -> (A /\ B <-> A /\ C).
+Proof.
+  intros ? ? ? [Hl Hr]; split; intros [? ?]; (split; [ assumption | ]);
+  [apply Hl | apply Hr]; assumption.
+Qed.
+
+Theorem and_iff_compat_r : forall A B C : Prop,
+  (B <-> C) -> (B /\ A <-> C /\ A).
+Proof.
+  intros ? ? ? [Hl Hr]; split; intros [? ?]; (split; [ | assumption ]);
+  [apply Hl | apply Hr]; assumption.
+Qed.
+
+Theorem or_iff_compat_l : forall A B C : Prop,
+  (B <-> C) -> (A \/ B <-> A \/ C).
+Proof.
+  intros ? ? ? [Hl Hr]; split; (intros [?|?]; [left; assumption| right]);
+  [apply Hl | apply Hr]; assumption.
+Qed.
+
+Theorem or_iff_compat_r : forall A B C : Prop,
+  (B <-> C) -> (B \/ A <-> C \/ A).
+Proof.
+  intros ? ? ? [Hl Hr]; split; (intros [?|?]; [left| right; assumption]);
+  [apply Hl | apply Hr]; assumption.
+Qed.
+
 (** Some equivalences *)
 
 Theorem neg_false : forall A : Prop, ~ A <-> (A <-> False).
@@ -104,73 +134,62 @@ Qed.
 Theorem and_cancel_l : forall A B C : Prop,
   (B -> A) -> (C -> A) -> ((A /\ B <-> A /\ C) <-> (B <-> C)).
 Proof.
-  intros; tauto.
+  intros A B C Hl Hr.
+  split; [ | apply and_iff_compat_l]; intros [HypL HypR]; split; intros.
+  + apply HypL; split; [apply Hl | ]; assumption.
+  + apply HypR; split; [apply Hr | ]; assumption.
 Qed.
 
 Theorem and_cancel_r : forall A B C : Prop,
   (B -> A) -> (C -> A) -> ((B /\ A <-> C /\ A) <-> (B <-> C)).
 Proof.
-  intros; tauto.
+  intros A B C Hl Hr.
+  split; [ | apply and_iff_compat_r]; intros [HypL HypR]; split; intros.
+  + apply HypL; split; [ | apply Hl ]; assumption.
+  + apply HypR; split; [ | apply Hr ]; assumption.
 Qed.
 
 Theorem and_comm : forall A B : Prop, A /\ B <-> B /\ A.
 Proof.
-  intros; tauto.
+  intros; split; intros [? ?]; split; assumption.
 Qed.
 
 Theorem and_assoc : forall A B C : Prop, (A /\ B) /\ C <-> A /\ B /\ C.
 Proof.
-  intros; tauto.
+  intros; split; [ intros [[? ?] ?]| intros [? [? ?]]]; repeat split; assumption.
 Qed.
 
 Theorem or_cancel_l : forall A B C : Prop,
   (B -> ~ A) -> (C -> ~ A) -> ((A \/ B <-> A \/ C) <-> (B <-> C)).
 Proof.
-  intros; tauto.
+  intros ? ? ? Fl Fr; split; [ | apply or_iff_compat_l]; intros [Hl Hr]; split; intros.
+  { destruct Hl; [ right | destruct Fl | ]; assumption. }
+  { destruct Hr; [ right | destruct Fr | ]; assumption. }
 Qed.
 
 Theorem or_cancel_r : forall A B C : Prop,
   (B -> ~ A) -> (C -> ~ A) -> ((B \/ A <-> C \/ A) <-> (B <-> C)).
 Proof.
-  intros; tauto.
+  intros ? ? ? Fl Fr; split; [ | apply or_iff_compat_r]; intros [Hl Hr]; split; intros.
+  { destruct Hl; [ left | | destruct Fl ]; assumption. }
+  { destruct Hr; [ left | | destruct Fr ]; assumption. }
 Qed.
 
 Theorem or_comm : forall A B : Prop, (A \/ B) <-> (B \/ A).
 Proof.
-  intros; tauto.
+  intros; split; (intros [? | ?]; [ right | left ]; assumption).
 Qed.
 
 Theorem or_assoc : forall A B C : Prop, (A \/ B) \/ C <-> A \/ B \/ C.
 Proof.
-  intros; tauto.
+  intros; split; [ intros [[?|?]|?]| intros [?|[?|?]]].
+  + left; assumption.
+  + right; left; assumption.
+  + right; right; assumption.
+  + left; left; assumption.
+  + left; right; assumption.
+  + right; assumption.
 Qed.
-
-(** Backward direction of the equivalences above does not need assumptions *)
-
-Theorem and_iff_compat_l : forall A B C : Prop,
-  (B <-> C) -> (A /\ B <-> A /\ C).
-Proof.
-  intros; tauto.
-Qed.
-
-Theorem and_iff_compat_r : forall A B C : Prop,
-  (B <-> C) -> (B /\ A <-> C /\ A).
-Proof.
-  intros; tauto.
-Qed.
-
-Theorem or_iff_compat_l : forall A B C : Prop,
-  (B <-> C) -> (A \/ B <-> A \/ C).
-Proof.
-  intros; tauto.
-Qed.
-
-Theorem or_iff_compat_r : forall A B C : Prop,
-  (B <-> C) -> (B \/ A <-> C \/ A).
-Proof.
-  intros; tauto.
-Qed.
-
 Lemma iff_and : forall A B : Prop, (A <-> B) -> (A -> B) /\ (B -> A).
 Proof.
   intros A B []; split; trivial.
@@ -178,7 +197,7 @@ Qed.
 
 Lemma iff_to_and : forall A B : Prop, (A <-> B) <-> (A -> B) /\ (B -> A).
 Proof.
-  intros; tauto.
+  intros; split; intros [Hl Hr]; (split; intros; [ apply Hl | apply Hr]); assumption.
 Qed.
 
 (** [(IF_then_else P Q R)], written [IF P then Q else R] denotes
@@ -474,7 +493,7 @@ Declare Right Step eq_trans.
 
 Lemma iff_stepl : forall A B C : Prop, (A <-> B) -> (A <-> C) -> (C <-> B).
 Proof.
-  intros; tauto.
+  intros ? ? ? [? ?] [? ?]; split; intros; auto.
 Qed.
 
 Declare Left Step iff_stepl.
