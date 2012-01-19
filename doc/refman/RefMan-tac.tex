@@ -3664,6 +3664,23 @@ congruence.
     described above.
 \end{ErrMsgs}
 
+\subsection{\tt btauto
+\tacindex{btauto}
+\label{btauto}}
+
+The tactic \texttt{btauto} implements a reflexive solver for boolean tautologies. It
+solves goals of the form {\tt t = u} where {\tt t} and {\tt u} are constructed
+over the following grammar:
+
+$$\mathtt{t} ::= x \mid \mathtt{true} \mid \mathtt{false}\mid \mathtt{orb\ t_1\ t_2}
+\mid \mathtt{andb\ t_1\ t_2} \mid\mathtt{xorb\ t_1\ t_2} \mid\mathtt{negb\ t}
+\mid\mathtt{if\ t_1\ then\ t_2\ else\ t_3}
+$$
+
+Whenever the formula supplied is not a tautology, it also provides a counter-example.
+
+Internally, it uses a system very similar to the one of the {\tt ring} tactic.
+
 \subsection{\tt omega
 \tacindex{omega}
 \label{omega}}

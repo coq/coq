@@ -1,3 +1,10 @@
+Changes from V8.4
+=================
+
+Tactics
+
+- Tactics btauto, a reflexive boolean tautology solver.
+
 Changes from V8.3 to V8.4
 =========================
 
