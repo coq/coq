@@ -324,6 +324,21 @@ let mkPat loc qid l =
 let add_patt_for_params (ind,k) l =
     Util.list_addn (Inductiveops.inductive_nparams ind) (CPatAtom (dummy_loc,None)) l
 
+let drop_implicits_in_patt c args =
+  let impl_st = extract_impargs_data (implicits_of_global (ConstructRef c)) in
+  let rec impls_fit l = function
+    |[],t -> Some (List.rev_append l t)
+    |_,[] -> None
+    |h::t,CPatAtom(_,None)::tt when is_status_implicit h -> impls_fit l (t,tt)
+    |h::_,_ when is_status_implicit h -> None
+    |_::t,hh::tt -> impls_fit (hh::l) (t,tt)
+  in let rec aux = function
+    |[] -> None
+    |(_,imps)::t -> match impls_fit [] (imps,args) with
+	|None -> aux t
+	|x -> x
+     in aux impl_st
+
 let pattern_printable_in_both_syntax (ind,_ as c) =
   let impl_st = extract_impargs_data (implicits_of_global (ConstructRef c)) in
   let nb_params = Inductiveops.inductive_nparams ind in
@@ -373,10 +388,16 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 	      CPatRecord(loc, List.rev (ip projs args []))
 	    with
 		Not_found | No_match | Exit ->
-		  if pattern_printable_in_both_syntax cstrsp
-		  then CPatCstr (loc, extern_reference loc vars (ConstructRef cstrsp), args)
-		  else CPatCstrExpl (loc, extern_reference loc vars (ConstructRef cstrsp), add_patt_for_params cstrsp args) in
-	  insert_pat_alias loc p na
+		  if !Topconstr.oldfashion_patterns then
+		    if pattern_printable_in_both_syntax cstrsp
+		    then CPatCstr (loc, extern_reference loc vars (ConstructRef cstrsp), args)
+		    else CPatCstrExpl (loc, extern_reference loc vars (ConstructRef cstrsp), add_patt_for_params cstrsp args)
+		  else
+		    let full_args = add_patt_for_params cstrsp args in
+		    match drop_implicits_in_patt cstrsp full_args with
+		      |Some true_args -> CPatCstr (loc, extern_reference loc vars (ConstructRef cstrsp), true_args)
+		      |None -> CPatCstrExpl (loc, extern_reference loc vars (ConstructRef cstrsp), full_args)
+	  in insert_pat_alias loc p na
 
 and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match

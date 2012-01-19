@@ -750,10 +750,10 @@ let find_remaining_constructor_scopes pl1 pl2 (ind,j as cstr) =
 let product_of_cases_patterns ids idspl =
   List.fold_right (fun (ids,pl) (ids',ptaill) ->
     (ids@ids',
-    (* Cartesian prod of the or-pats for the nth arg and the tail args *)
-    List.flatten (
-    List.map (fun (subst,p) ->
-      List.map (fun (subst',ptail) -> (subst@subst',p::ptail)) ptaill) pl)))
+     (* Cartesian prod of the or-pats for the nth arg and the tail args *)
+     List.flatten (
+       List.map (fun (subst,p) ->
+	 List.map (fun (subst',ptail) -> (subst@subst',p::ptail)) ptaill) pl)))
     idspl (ids,[[],[]])
 
 let simple_product_of_cases_patterns pl =
@@ -796,6 +796,23 @@ let check_constructor_length env loc cstr with_params pl pl0 =
     (n = (fst (Inductiveops.inductive_nargs (fst cstr))) + Inductiveops.constructor_nrealhyps cstr) ||
       (error_wrong_numarg_constructor_loc loc env cstr
 	 (if with_params then nargs else nargs - (Inductiveops.inductive_nparams (fst cstr))))
+
+let add_implicits_check_constructor_length env loc c idslpl1 pl2 =
+  let nargs = Inductiveops.mis_constructor_nargs c in
+  let len_pl1 = List.length idslpl1 in
+  let impls_st = implicits_of_global (ConstructRef c) in
+  let impl_list = if len_pl1 = 0
+    then select_impargs_size (List.length pl2) impls_st
+    else snd (list_chop len_pl1 (select_stronger_impargs impls_st)) in
+  let remaining_args = List.fold_left (fun i x -> if is_status_implicit x then i else succ i) in
+  let rec aux i = function
+    |[],l -> let args_len = List.length l + List.length impl_list + len_pl1 in
+	     if args_len = nargs then l
+	     else error_wrong_numarg_constructor_loc loc env c (nargs - List.length impl_list + i)
+    |imp::q,l when is_status_implicit imp -> CPatAtom(loc,None):: aux i (q,l)
+    |il,[] -> error_wrong_numarg_constructor_loc loc env c (remaining_args (len_pl1+i) il)
+    |_::q,hh::tt -> hh::aux (succ i) (q,tt)
+  in aux 0 (impl_list,pl2)
 
 (* Manage multiple aliases *)
 
@@ -932,9 +949,9 @@ let find_pattern_variable = function
   | Ident (loc,id) -> id
   | Qualid (loc,_) as x -> raise (InternalizationError(loc,NotAConstructor x))
 
-let maybe_constructor ref f aliases env =
+let maybe_constructor add_params ref f aliases env =
   try
-    let c,idspl1,pl2 = find_constructor (Some 0) ref f aliases [] env in
+    let c,idspl1,pl2 = find_constructor add_params ref f aliases [] env in
     assert (pl2 = []);
     ConstrPat (c,idspl1)
   with
@@ -1062,9 +1079,14 @@ let rec intern_cases_pattern genv env (ids,asubst as aliases) pat =
 	  in
 	intern_pat env aliases self_patt
   | CPatCstr (loc, head, pl) ->
-      let c,idslpl1,pl2 = mustbe_constructor loc (Some (List.length pl)) head intern_pat aliases pl env in
-      let with_letin = check_constructor_length genv loc c false idslpl1 pl2 in
-      intern_cstr_with_all_args loc c with_letin idslpl1 pl2
+      if !Topconstr.oldfashion_patterns then
+	let c,idslpl1,pl2 = mustbe_constructor loc (Some (List.length pl)) head intern_pat aliases pl env in
+	let with_letin = check_constructor_length genv loc c false idslpl1 pl2 in
+	intern_cstr_with_all_args loc c with_letin idslpl1 pl2
+      else
+	let c,idslpl1,pl2 = mustbe_constructor loc None head intern_pat aliases pl env in
+	let pl2' = add_implicits_check_constructor_length genv loc c idslpl1 pl2 in
+	intern_cstr_with_all_args loc c false idslpl1 pl2'
   | CPatCstrExpl (loc, head, pl) ->
       let c,idslpl1,pl2 = mustbe_constructor loc None head intern_pat aliases pl env in
       let with_letin = check_constructor_length genv loc c true idslpl1 pl2 in
@@ -1094,10 +1116,15 @@ let rec intern_cases_pattern genv env (ids,asubst as aliases) pat =
       intern_pat {env with scopes=find_delimiters_scope loc key::env.scopes;
 		    tmp_scope = None} aliases e
   | CPatAtom (loc, Some head) ->
-      (match maybe_constructor head intern_pat aliases env with
+      (match maybe_constructor (if !Topconstr.oldfashion_patterns then Some 0 else None)
+	  head intern_pat aliases env with
 	 | ConstrPat (c,idspl) ->
-	   let with_letin = check_constructor_length genv loc c false idspl [] in
-	   intern_cstr_with_all_args loc c with_letin idspl []
+	   if !Topconstr.oldfashion_patterns then
+	     let with_letin = check_constructor_length genv loc c false idspl [] in
+	     intern_cstr_with_all_args loc c with_letin idspl []
+	   else
+	     let pl2 = add_implicits_check_constructor_length genv loc c idspl [] in
+	     intern_cstr_with_all_args loc c false idspl pl2
 	 | VarPat id ->
 	     let ids,asubst = merge_aliases aliases id in
 	     (ids,[asubst, PatVar (loc,alias_of (ids,asubst))]))

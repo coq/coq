@@ -916,6 +916,16 @@ and typeclass_context = typeclass_constraint list
 
 type constr_pattern_expr = constr_expr
 
+let oldfashion_patterns = ref (true)
+let write_oldfashion_patterns = Goptions.declare_bool_option {
+  Goptions.optsync = true; Goptions.optdepr = false;
+  Goptions.optname =
+    "Constructors in atterns require all their arguments but no parameters instead of explicit parameters and arguments";
+  Goptions.optkey = ["Asymmetric";"Patterns"];
+  Goptions.optread = (fun () -> !oldfashion_patterns);
+  Goptions.optwrite = (fun a -> oldfashion_patterns:=a);
+}
+
 (***********************)
 (* For binders parsing *)
 

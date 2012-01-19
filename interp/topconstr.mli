@@ -193,6 +193,8 @@ and typeclass_context = typeclass_constraint list
 
 type constr_pattern_expr = constr_expr
 
+val oldfashion_patterns : bool ref
+
 (** Utilities on constr_expr                                           *)
 
 val constr_loc : constr_expr -> loc
