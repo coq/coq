@@ -1557,8 +1557,23 @@ but succeeds in
 Check Prop = nat.
 \end{coq_example*}
 
+\subsection{Deactivation of implicit arguments for parsing}
+\comindex{Set Parsing Explicit}
+\comindex{Unset Parsing Explicit}
 
+Use of implicit arguments can be deactivated by issuing the command:
+\begin{quote}
+{\tt Set Parsing Explicit.}
+\end{quote}
 
+In this case, all arguments of constants, inductive types,
+constructors, etc, including the arguments declared as implicit, have
+to be given as if none arguments were implicit. By symmetry, this also
+affects printing. To restore parsing and normal printing of implicit
+arguments, use:
+\begin{quote}
+{\tt Set Parsing Explicit.}
+\end{quote}
 
 \subsection{Canonical structures
 \comindex{Canonical Structure}}

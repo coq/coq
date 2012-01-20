@@ -1217,7 +1217,6 @@ let internalize sigma globalenv env allow_patvar lvar c =
     | CRef ref as x ->
 	let (c,imp,subscopes,l),_ =
 	  intern_applied_reference intern env (Environ.named_context globalenv) lvar [] ref in
-        assert (l=[]);
 	(match intern_impargs c env imp subscopes l with
            | [] -> c
            | l -> GApp (constr_loc x, c, l))
