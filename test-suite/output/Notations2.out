@@ -46,3 +46,7 @@ match n with
 | plus2 _ :: _ => 2
 end
      : list(nat) -> nat
+# x : nat => x
+     : nat -> nat
+# _ : nat => 2
+     : nat -> nat
