@@ -71,6 +71,12 @@ let rec drop_spaces inst i =
   if String.length inst > i && inst.[i] = ' ' then drop_spaces inst (i+1)
   else i
 
+let possibly_unquote s =
+  if String.length s >= 2 & s.[0] = '"' & s.[String.length s - 1] = '"' then
+    String.sub s 1 (String.length s - 2)
+  else
+    s
+
 (* (Re-)initialize debugger *)
 let db_initialize () =
   skip:=0;skipped:=0;breakpoint:=None
@@ -86,7 +92,7 @@ let run_com inst =
         if num<0 then raise (Invalid_argument "run_com");
         skip:=num;skipped:=0
       else
-        breakpoint:=Some s
+        breakpoint:=Some (possibly_unquote s)
     else
       raise (Invalid_argument "run_com")
   else
