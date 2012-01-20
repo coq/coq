@@ -69,7 +69,7 @@ let default_command_entry =
 
 let no_hook _ _ = ()
 GEXTEND Gram
-  GLOBAL: vernac gallina_ext locality tactic_mode noedit_mode subprf subgoal_command;
+  GLOBAL: vernac gallina_ext tactic_mode noedit_mode subprf subgoal_command;
   vernac: FIRST
     [ [ IDENT "Time"; v = vernac -> VernacTime v
       | IDENT "Timeout"; n = natural; v = vernac -> VernacTimeout(n,v)

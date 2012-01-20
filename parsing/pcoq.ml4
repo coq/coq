@@ -419,7 +419,6 @@ module Vernac_ =
     let vernac = gec_vernac "Vernac.vernac"
     let vernac_eoi = eoi_entry vernac
     let rec_definition = gec_vernac "Vernac.rec_definition"
-    let locality = gec_vernac "locality"
     (* Main vernac entry *)
     let main_entry = Gram.entry_create "vernac"
 
