@@ -34,6 +34,9 @@ type debug_info =
 val debug_prompt :
   int -> goal sigma -> glob_tactic_expr -> (debug_info -> 'a) -> 'a
 
+(** Initializes debugger *)
+val db_initialize : unit -> unit
+
 (** Prints a constr *)
 val db_constr : debug_info -> env -> constr -> unit
 
@@ -72,3 +75,7 @@ val explain_logic_error_no_anomaly : (exn -> Pp.std_ppcmds) ref
 
 (** Prints a logic failure message for a rule *)
 val db_logic_failure : debug_info -> exn -> unit
+
+(** Prints a logic failure message for a rule *)
+val db_breakpoint : debug_info ->
+  identifier Util.located message_token list -> unit
