@@ -13,6 +13,11 @@ Vernacular commands
 - New command "Set Parsing Explicit" for deactivating parsing (and printing)
   of implicit arguments (useful for teaching).
 
+Tactics
+
+- New command "r string" that interprets "idtac string" as a breakpoint
+  and jumps to its next use in Ltac debugger.
+
 Changes from V8.3 to V8.4beta
 =============================
 

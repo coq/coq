@@ -1769,7 +1769,9 @@ and eval_tactic ist = function
 	catch_error (push_trace(loc,call)ist.trace) tac gl
   | TacFun _ | TacLetIn _ -> assert false
   | TacMatchGoal _ | TacMatch _ -> assert false
-  | TacId s -> fun gl -> tclIDTAC_MESSAGE (interp_message_nl ist gl s) gl
+  | TacId s -> fun gl ->
+      let res = tclIDTAC_MESSAGE (interp_message_nl ist gl s) gl in
+      db_breakpoint ist.debug s; res
   | TacFail (n,s) -> fun gl -> tclFAIL (interp_int_or_var ist n) (interp_message ist gl s) gl
   | TacProgress tac -> tclPROGRESS (interp_tactic ist tac)
   | TacAbstract (tac,ido) ->
@@ -2488,6 +2490,7 @@ let interp_tac_gen lfun avoid_ids debug t gl =
       gsigma = project gl; genv = pf_env gl } t) gl
 
 let eval_tactic t gls =
+  db_initialize ();
   interp_tactic { lfun=[]; avoid_ids=[]; debug=get_debug(); trace=[] }
     t gls
 
