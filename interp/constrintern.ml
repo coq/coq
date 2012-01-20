@@ -166,6 +166,8 @@ let error_inductive_parameter_not_implicit loc =
 (* Pre-computing the implicit arguments and arguments scopes needed   *)
 (* for interpretation *)
 
+let parsing_explicit = ref false
+
 let empty_internalization_env = Idmap.empty
 
 let compute_explicitable_implicit imps = function
@@ -1294,7 +1296,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
                 find_appl_head_data c, args
             | x -> (intern env f,[],[],[]), args in
 	let args =
-	  intern_impargs c env impargs args_scopes (merge_impargs l args) in
+          intern_impargs c env impargs args_scopes (merge_impargs l args) in
 	check_projection isproj (List.length args) c;
 	(match c with
           (* Now compact "(f args') args" *)
@@ -1451,6 +1453,12 @@ let internalize sigma globalenv env allow_patvar lvar c =
   and intern_impargs c env l subscopes args =
     let l = select_impargs_size (List.length args) l in
     let eargs, rargs = extract_explicit_arg l args in
+    if !parsing_explicit then
+      if eargs <> [] then
+        error "Arguments given by name or position not supported in explicit mode."
+      else
+        intern_args env subscopes rargs
+    else
     let rec aux n impl subscopes eargs rargs =
       let (enva,subscopes') = apply_scope_env env subscopes in
       match (impl,rargs) with

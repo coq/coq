@@ -178,5 +178,8 @@ val interp_aconstr : ?impls:internalization_env ->
   (identifier * identifier) list -> constr_expr ->
   (identifier * (subscopes * notation_var_internalization_type)) list * aconstr
 
+(** Globalization options *)
+val parsing_explicit : bool ref
+
 (** Globalization leak for Grammar *)
 val for_grammar : ('a -> 'b) -> 'a -> 'b

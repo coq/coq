@@ -447,6 +447,7 @@ let is_needed_for_correct_partial_application tail imp =
 (* Implicit args indexes are in ascending order *)
 (* inctx is useful only if there is a last argument to be deduced from ctxt *)
 let explicitize loc inctx impl (cf,f) args =
+  let impl = if !Constrintern.parsing_explicit then [] else impl in
   let n = List.length args in
   let rec exprec q = function
     | a::args, imp::impl when is_status_implicit imp ->
@@ -482,7 +483,9 @@ let explicitize loc inctx impl (cf,f) args =
 	if args = [] then f else CApp (loc, (None, f), args)
 
 let extern_global loc impl f =
-  if impl <> [] & List.for_all is_status_implicit impl then
+  if not !Constrintern.parsing_explicit &&
+     impl <> [] && List.for_all is_status_implicit impl
+  then
     CAppExpl (loc, (None, f), [])
   else
     CRef f
@@ -491,7 +494,7 @@ let extern_app loc inctx impl (cf,f) args =
   if args = [] (* maybe caused by a hidden coercion *) then
     extern_global loc impl f
   else
-  if
+  if not !Constrintern.parsing_explicit &&
     ((!Flags.raw_print or
       (!print_implicits & not !print_implicits_explicit_args)) &
      List.exists is_status_implicit impl)

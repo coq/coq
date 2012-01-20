@@ -105,12 +105,12 @@ Notation
 Dumpglob
 Reserve
 Impargs
-Constrextern
 Syntax_def
 Implicit_quantifiers
 Smartlocate
 Constrintern
 Modintern
+Constrextern
 Tacexpr
 Proof_type
 Goal
