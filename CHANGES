@@ -5,8 +5,16 @@ Tactics
 
 - Tactics btauto, a reflexive boolean tautology solver.
 
-Changes from V8.3 to V8.4
-=========================
+Changes from V8.4beta to V8.4
+=============================
+
+Vernacular commands
+
+- New command "Set Parsing Explicit" for deactivating parsing (and printing)
+  of implicit arguments (useful for teaching).
+
+Changes from V8.3 to V8.4beta
+=============================
 
 Logic
 
