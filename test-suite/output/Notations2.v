@@ -83,3 +83,13 @@ Notation "'mylet' f [ x ; .. ; y ]  :=  t 'in' u":=
 
 Check mylet f [x;y;z;(a:bool)] := x+y+z+1 in f 0 1 2.
 *)
+
+(* Check notations for functional terms which do not necessarily
+   depend on their parameter *)
+(* Old request mentioned again on coq-club 20/1/2012 *)
+
+Notation "#  x : T => t" := (fun x : T => t)
+  (at level 0, t at level 200, x ident).
+
+Check # x : nat => x.
+Check # _ : nat => 2.

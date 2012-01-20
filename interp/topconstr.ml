@@ -564,8 +564,11 @@ let match_opt f sigma t1 t2 = match (t1,t2) with
   | _ -> raise No_match
 
 let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
-  | (Name id1,Name id2) when List.mem id2 (fst metas) ->
-      alp, bind_env alp sigma id2 (GVar (dummy_loc,id1))
+  | (_,Name id2) when List.mem id2 (fst metas) ->
+      let rhs = match na1 with
+      | Name id1 -> GVar (dummy_loc,id1)
+      | Anonymous -> GHole (dummy_loc,Evd.InternalHole) in
+      alp, bind_env alp sigma id2 rhs
   | (Name id1,Name id2) -> (id1,id2)::alp,sigma
   | (Anonymous,Anonymous) -> alp,sigma
   | _ -> raise No_match
