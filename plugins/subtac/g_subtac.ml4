@@ -52,8 +52,8 @@ GEXTEND Gram
   GLOBAL: subtac_gallina_loc typeclass_constraint subtac_withtac;
 
   subtac_gallina_loc:
-    [ [ g = Vernac.gallina -> loc, g
-    | g = Vernac.gallina_ext -> loc, g ] ]
+    [ [ Vernac.locality; g = Vernac.gallina -> loc, g
+    | Vernac.locality; g = Vernac.gallina_ext -> loc, g ] ]
     ;
 
   subtac_withtac:

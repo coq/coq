@@ -237,6 +237,8 @@ module Vernac_ :
     val vernac : vernac_expr Gram.entry
     val rec_definition : (fixpoint_expr * decl_notation list) Gram.entry
     val vernac_eoi : vernac_expr Gram.entry
+    (* FIXME: hack to handle locality in Program *)
+    val locality : unit Gram.entry
   end
 
 (** The main entry: reads an optional vernac command *)
