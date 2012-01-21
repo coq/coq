@@ -59,8 +59,7 @@ default its home directory \verb!/.config! and \verb:xxx: is the version
 number (e.g. 8.3).  If this file is not found, then the file
 \verb:$XDG_CONFIG_HOME/coqrc: is searched. You can also specify an
 arbitrary name for the resource file (see option \verb:-init-file:
-below), or the name of another user to load the resource file of someone
-else (see option \verb:-user:).
+below).
 
 
 This file may contain, for instance, \verb:Add LoadPath: commands to add
@@ -74,7 +73,7 @@ option \verb:-q:.
 There are four environment variables used by the \Coq\ system.
 \verb:$COQBIN: for the directory where the binaries are,
 \verb:$COQLIB: for the directory where the standard library is,
-\verb:$COQPATH: for a list of directories seperated by \verb|:|
+\verb:$COQPATH: for a list of directories separated by \verb|:|
 (\verb|;| on windows) to add to the load path, and
 \verb:$COQTOP: for the directory of the sources. The latter is useful
 only for developers that are writing their own tactics and are using
@@ -96,86 +95,52 @@ The following command-line options are recognized by the commands {\tt
   coqc} and {\tt coqtop}, unless stated otherwise:
 
 \begin{description}
-\item[{\tt -byte}]\ 
+\item[{\tt -I} {\em directory}, {\tt -include} {\em directory}[ {\tt -as} {\em dirpath}]]\ 
 
-  Run the byte-code version of \Coq{}.
-
-\item[{\tt -opt}]\ 
-
-  Run the native-code version of \Coq{}.
-
-\item[{\tt -I} {\em directory}, {\tt -include} {\em directory}]\ 
-
-  Add physical path {\em directory} to the list of directories where to
-  look for a file and bind it to the empty logical directory. The
-  subdirectory structure of {\em directory} is recursively available
-  from {\Coq} using absolute names (see Section~\ref{LongNames}).
-
-\item[{\tt -I} {\em directory} {\tt -as} {\em dirpath}]\ 
-
-  Add physical path {\em directory} to the list of directories where to
-  look for a file and bind it to the logical directory {\dirpath}.  The
-  subdirectory structure of {\em directory} is recursively available
-  from {\Coq} using absolute names extending the {\dirpath} prefix.
+Add physical path {\em directory} to the list of directories where to look for a
+file and bind it to the empty logical directory/the logical directory {\em
+  dirpath}. The sub-directory structure of {\em directory} is recursively available
+from {\Coq} using absolute names (extending the {\dirpath} prefix) (see
+Section~\ref{LongNames}).
 
   \SeeAlso {\tt Add LoadPath} in Section~\ref{AddLoadPath} and logical
   paths in Section~\ref{Libraries}.
 
-\item[{\tt -R} {\em directory} {\dirpath}, {\tt -R} {\em directory} {\tt -as} {\dirpath}]\
+\item[{\tt -R} {\em directory} {\dirpath}, {\tt -R} {\em directory} [{\tt -as} {\dirpath}]]\
 
   Do as {\tt -I} {\em directory} {\tt -as} {\dirpath} but make the
-  subdirectory structure of {\em directory} recursively visible so
+  sub-directory structure of {\em directory} recursively visible so
   that the recursive contents of physical {\em directory} is available
   from {\Coq} using short or partially qualified names.
   
   \SeeAlso {\tt Add Rec LoadPath} in Section~\ref{AddRecLoadPath} and logical
   paths in Section~\ref{Libraries}.
 
-\item[{\tt -top} {\dirpath}]\ 
+\item[{\tt -top} {\dirpath}, {\tt -notop}]\ 
 
-  This sets the toplevel module name to {\dirpath} instead of {\tt
-  Top}. Not valid for {\tt coqc}.
-
-\item[{\tt -notop} {\dirpath}]\ 
-
-  This sets the toplevel module name to the empty logical dirpath. Not
-  valid for {\tt coqc}.
+  This sets the toplevel module name to {\dirpath}/the empty logical path instead
+  of {\tt Top}. Not valid for {\tt coqc}.
 
 \item[{\tt -exclude-dir} {\em subdirectory}]\ 
 
-  This tells to exclude any subdirectory named {\em subdirectory}
+  This tells to exclude any sub-directory named {\em subdirectory}
   while processing option {\tt -R}. Without this option only the
-  conventional version control management subdirectories named {\tt
+  conventional version control management sub-directories named {\tt
   CVS} and {\tt \_darcs} are excluded.
 
-\item[{\tt -is} {\em file}, {\tt -inputstate} {\em file}]\ 
+\item[{\tt -is} {\em file}, {\tt -inputstate} {\em file}, {\tt -outputstate} {\em file}]\ 
 
-  Cause \Coq~to use the state put in the file {\em file} as its input
-  state. The default state is {\em initial.coq}.
-  Mainly useful to build the standard input state.
+  Load at the beginning/Dump at the end a \Coq{} state from the file {\em file}.
 
-\item[{\tt -outputstate} {\em file}]\ 
-
-  Cause \Coq~to dump its state to file {\em file}.coq just after finishing
-  parsing and evaluating all the arguments from the command line.
+  Incompatible with some not purely functional aspect of the code 
 
 \item[{\tt -nois}]\ 
 
-  Cause \Coq~to begin with an empty state. Mainly useful to build the
-  standard input state.
+  Cause \Coq~to begin with an empty state.
 
-%Obsolete?
-%
-%\item[{\tt -notactics}]\ 
-%
-%  Forbid the dynamic loading of tactics in the bytecode version of {\Coq}.
+\item[{\tt -init-file} {\em file}, {\tt -q}]\ 
 
-\item[{\tt -init-file} {\em file}]\ 
-
-  Take {\em file} as the resource file.
-
-\item[{\tt -q}]\ 
-
+  Take {\em file} as the resource file. /
   Cause \Coq~not to load the resource file.
 
 \item[{\tt -load-ml-source} {\em file}]\ 
@@ -186,50 +151,33 @@ The following command-line options are recognized by the commands {\tt
 
   Load the Caml object file {\em file}.
 
-\item[{\tt -l} {\em file}, {\tt -load-vernac-source} {\em file}]\ 
+\item[{\tt -l[v]} {\em file}, {\tt -load-vernac-source[-verbose]} {\em file}]\ 
 
-  Load \Coq~file {\em file}{\tt .v}
-
-\item[{\tt -lv} {\em file}, {\tt -load-vernac-source-verbose} {\em file}]\ 
-
-  Load \Coq~file {\em file}{\tt .v} with 
-  a copy of the contents of the file on standard input.
+  Load \Coq~file {\em file}{\tt .v} optionally with copy it contents on the
+  standard input.
 
 \item[{\tt -load-vernac-object} {\em file}]\ 
 
   Load \Coq~compiled file {\em file}{\tt .vo}
 
-%\item[{\tt -preload} {\em file}]\ \\
-%Add {\em file}{\tt .vo} to the files to be loaded and opened
-%before making the initial state.
-%
 \item[{\tt -require} {\em file}]\ 
 
   Load \Coq~compiled file {\em file}{\tt .vo} and import it ({\tt
     Require} {\em file}).
 
-\item[{\tt -compile} {\em file}]\ 
+\item[{\tt -compile} {\em file},{\tt -compile-verbose} {\em file}, {\tt -batch}]\ 
 
-  This compiles file {\em file}{\tt .v} into {\em file}{\tt .vo}.
-  This option implies options {\tt -batch} and {\tt -silent}. It is
-  only available for {\tt coqtop}.
+  {\tt coqtop} options only used internally by {\tt coqc}.
 
-\item[{\tt -compile-verbose} {\em file}]\ 
-
-  This compiles file {\em file}{\tt .v} into {\em file}{\tt .vo} with
-  a copy of the contents of the file on standard input.
-  This option implies options {\tt -batch} and {\tt -silent}. It is
-  only available for {\tt coqtop}.
+  This compiles file {\em file}{\tt .v} into {\em file}{\tt .vo} without/with a
+  copy of the contents of the file on standard input.  This option implies options
+  {\tt -batch} (exit just after arguments parsing). It is only
+  available for {\tt coqtop}.
 
 \item[{\tt -verbose}]\ 
 
   This option is only for {\tt coqc}. It tells to compile the file with
   a copy of its contents on standard input.
-
-\item[{\tt -batch}]\ 
-
-  Batch mode : exit just after arguments parsing. This option is only
-  used by {\tt coqc}.
 
 %Mostly unused in the code
 %\item[{\tt -debug}]\ 
@@ -241,13 +189,23 @@ The following command-line options are recognized by the commands {\tt
   This option is for use with {\tt coqc}. It tells \Coq\ to export on
   the standard output the content of the compiled file into XML format.
 
+\item[{\tt -with-geoproof} (yes|no)]\ 
+
+  Activate or not special functions for Geoproof within Coqide (default is yes).
+
+\item[{\tt -beautify}]\ 
+
+  While compiling {\em file}, pretty prints each command just after having parsing
+  it in {\em file}{\tt .beautified} in order to get old-fashion
+  syntax/definitions/notations.
+
 \item[{\tt -quality}]
 
   Improve the legibility of the proof terms produced by some tactics.
 
-\item[{\tt -emacs}]\ 
+\item[{\tt -emacs}, {\tt -ide-slave}]\ 
 
-  Tells \Coq\ it is executed under Emacs.
+  Start a special main loop to communicate with ide.
 
 \item[{\tt -impredicative-set}]\ 
 
@@ -256,11 +214,16 @@ The following command-line options are recognized by the commands {\tt
   some standard axioms of classical mathematics such as the functional
   axiom of choice or the principle of description
 
-\item[{\tt -dump-glob} {\em file}]\
+\item[{\tt -compat} {\em version}] \null
+
+  Attempt to maintain some of the incompatible changes in their {\em version}
+  behavior.
+
+\item[{\tt -dump-glob} {\em file}]\ 
 
   This dumps references for global names in file {\em file}
   (to be used by coqdoc, see~\ref{coqdoc})
- 
+
 \item[{\tt -dont-load-proofs}]\ 
 
   Warning: this is an unsafe mode.
@@ -283,6 +246,8 @@ The following command-line options are recognized by the commands {\tt
   Proofs of opaque theorems are loaded in memory as soon as the
   corresponding {\tt Require} is done. This used to be Coq's default behavior.
 
+\item[{\tt -no-hash-consing}] \null
+
 \item[{\tt -vm}]\ 
 
   This activates the use of the bytecode-based conversion algorithm
@@ -290,18 +255,20 @@ The following command-line options are recognized by the commands {\tt
 
 \item[{\tt -image} {\em file}]\ 
 
-  This option sets the binary image to be used to be {\em file}
+  This option sets the binary image to be used by {\tt coqc} to be {\em file}
   instead of the standard one. Not of general use.
 
 \item[{\tt -bindir} {\em directory}]\ 
 
   Set for {\tt coqc} the directory containing \Coq\ binaries.
   It is equivalent to do \texttt{export COQBIN=}{\em directory}
-  before lauching {\tt coqc}.
+  before launching {\tt coqc}.
 
-\item[{\tt -where}]\ 
+\item[{\tt -where}, {\tt -config}, {\tt -filteropts}]\ 
 
-  Print the \Coq's standard library location and exit.
+  Print the \Coq's standard library location or \Coq's binaries, dependencies,
+  libraries locations or the list of command line arguments that {\tt coqtop} has
+  recognize as options and exit.
 
 \item[{\tt -v}]\ 
 
