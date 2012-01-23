@@ -354,7 +354,12 @@ let init arglist =
 let init_toplevel = init
 
 let start () =
-  init_toplevel (List.tl (Array.to_list Sys.argv));
+  let () = init_toplevel (List.tl (Array.to_list Sys.argv)) in
+  (* In batch mode, Coqtop has already exited at this point. In interactive one,
+     dump glob is nothing but garbage ...  *)
+  let () = if Dumpglob.dump () then
+    let () = if_verbose warning "Dumpglob cannot be used in interactive mode." in
+    Dumpglob.noglob () in
   if !ide_slave then
     Ide_slave.loop ()
   else
