@@ -48,12 +48,30 @@ open Prim
 open Constr
 let sigref = mkRefC (Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Init.Specif.sig"))
 
+let enforce_locality arg =
+  let flag = !Vernacexpr.locality_flag in
+  match flag with
+  | None -> (* no locality flag set for now *)
+    Vernacexpr.locality_flag := arg
+  | Some _ -> (* a locality flag has been set, we cannot redefine it *)
+    begin match arg with
+    | None -> ()
+    | Some _ -> error "A locality flag has already been set."
+    end
+
 GEXTEND Gram
   GLOBAL: subtac_gallina_loc typeclass_constraint subtac_withtac;
 
+  (* FIXME : Program should be handled at a higher level in rule hierarchy. *)
+  subtac_locality:
+    [ [ IDENT "Local" -> enforce_locality (Some (loc, true))
+      | IDENT "Global" -> enforce_locality (Some (loc, false))
+      | -> enforce_locality None ] ]
+  ;
+
   subtac_gallina_loc:
-    [ [ g = Vernac.gallina -> loc, g
-    | g = Vernac.gallina_ext -> loc, g ] ]
+    [ [ subtac_locality; g = Vernac.gallina -> loc, g
+    | subtac_locality; g = Vernac.gallina_ext -> loc, g ] ]
     ;
 
   subtac_withtac:
