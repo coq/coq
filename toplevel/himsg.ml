@@ -696,8 +696,14 @@ let explain_no_instance env (_,id) l =
   str "applied to arguments" ++ spc () ++
     prlist_with_sep pr_spc (pr_lconstr_env env) l
 
+let is_goal_evar evi = match evi.evar_source with (_, GoalEvar) -> true | _ -> false
+
 let pr_constraints printenv env evm =
   let evm = Evd.undefined_evars (Evarutil.nf_evar_map_undefined evm) in
+  let evm = fold_undefined 
+    (fun ev evi evm' -> 
+       if is_goal_evar evi then Evd.remove evm' ev else evm') evm evm
+  in
   let l = Evd.to_list evm in
   let (ev, evi) = List.hd l in
     if List.for_all (fun (ev', evi') ->
