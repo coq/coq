@@ -197,14 +197,14 @@ Qed.
 Lemma Zquot2_quot n : Z.quot2 n = n ÷ 2.
 Proof.
  assert (AUX : forall m, 0 < m -> Z.quot2 m = m ÷ 2).
-  BeginSubproof.
+  {
    intros m Hm.
    apply Z.quot_unique with (if Z.odd m then Z.sgn m else 0).
    now apply Z.lt_le_incl.
    rewrite Z.sgn_pos by trivial.
    destruct (Z.odd m); now split.
    apply Zquot2_odd_eqn.
-  EndSubproof.
+  }
  destruct (Z.lt_trichotomy 0 n) as [POS|[NUL|NEG]].
  - now apply AUX.
  - now subst.
