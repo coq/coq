@@ -644,13 +644,8 @@ let rec pr_vernac = function
   (* Gallina extensions *)
   | VernacBeginSection id -> hov 2 (str"Section" ++ spc () ++ pr_lident id)
   | VernacEndSegment id -> hov 2 (str"End" ++ spc() ++ pr_lident id)
-  | VernacRequire (exp,spe,l) -> hov 2
+  | VernacRequire (exp, l) -> hov 2
       (str "Require" ++ spc() ++ pr_require_token exp ++
-      (match spe with
-      |	None -> mt()
-      |	Some flag ->
-          (if flag then str"Specification" else str"Implementation") ++
-          spc ()) ++
       prlist_with_sep sep pr_module l)
   | VernacImport (f,l) ->
       (if f then str"Export" else str"Import") ++ spc() ++
@@ -732,13 +727,8 @@ let rec pr_vernac = function
       str"Existential " ++ int i ++ pr_lconstrarg c
 
   (* Auxiliary file and library management *)
-  | VernacRequireFrom (exp,spe,f) -> hov 2
-      (str"Require" ++ spc() ++ pr_require_token exp ++
-      (match spe with
-        | None -> mt()
-        | Some false -> str"Implementation" ++ spc()
-        | Some true -> str"Specification" ++ spc ()) ++
-      qs f)
+  | VernacRequireFrom (exp, f) -> hov 2
+      (str "Require" ++ spc() ++ pr_require_token exp ++ qs f)
   | VernacAddLoadPath (fl,s,d) -> hov 2
       (str"Add" ++
        (if fl then str" Rec " else spc()) ++

@@ -128,7 +128,6 @@ type locality_flag  = bool (* true = Local;         false = Global         *)
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
 type instance_flag  = bool option (* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)
 type export_flag    = bool (* true = Export;        false = Import         *)
-type specif_flag    = bool (* true = Specification; false = Implementation *)
 type inductive_flag = Decl_kinds.recursivity_kind
 type onlyparsing_flag = bool (* true = Parse only;  false = Print also     *)
 type infer_flag     = bool (* true = try to Infer record; false = nothing  *)
@@ -249,7 +248,7 @@ type vernac_expr =
   | VernacBeginSection of lident
   | VernacEndSegment of lident
   | VernacRequire of
-      export_flag option * specif_flag option * lreference list
+      export_flag option * lreference list
   | VernacImport of export_flag * lreference list
   | VernacCanonical of reference or_by_notation
   | VernacCoercion of locality * reference or_by_notation *
@@ -288,7 +287,7 @@ type vernac_expr =
   | VernacSolveExistential of int * constr_expr
 
   (* Auxiliary file and library management *)
-  | VernacRequireFrom of export_flag option * specif_flag option * string
+  | VernacRequireFrom of export_flag option * string
   | VernacAddLoadPath of rec_flag * string * dir_path option
   | VernacRemoveLoadPath of string
   | VernacAddMLPath of rec_flag * string

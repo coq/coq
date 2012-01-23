@@ -409,9 +409,9 @@ GEXTEND Gram
 
       (* Requiring an already compiled module *)
       | IDENT "Require"; export = export_token; qidl = LIST1 global ->
-          VernacRequire (export, None, qidl)
+          VernacRequire (export, qidl)
       | IDENT "Require"; export = export_token; filename = ne_string ->
-	  VernacRequireFrom (export, None, filename)
+	  VernacRequireFrom (export, filename)
       | IDENT "Import"; qidl = LIST1 global -> VernacImport (false,qidl)
       | IDENT "Export"; qidl = LIST1 global -> VernacImport (true,qidl)
       | IDENT "Include"; e = module_expr_inl; l = LIST0 ext_module_expr ->

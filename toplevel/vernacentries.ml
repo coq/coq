@@ -599,7 +599,7 @@ let vernac_end_segment (_,id as lid) =
 
 (* Libraries *)
 
-let vernac_require import _ qidl =
+let vernac_require import qidl =
   let qidl = List.map qualid_of_reference qidl in
   let modrefl = Flags.silently (List.map Library.try_locate_qualified_library) qidl in
   if Dumpglob.dump () then
@@ -686,7 +686,7 @@ let vernac_set_used_variables l =
 (*****************************)
 (* Auxiliary file management *)
 
-let vernac_require_from export spec filename =
+let vernac_require_from export filename =
   Library.require_library_from_file None
     (System.expand_path_macros filename)
     export
@@ -1463,7 +1463,7 @@ let interp c = match c with
 
   | VernacEndSegment lid -> vernac_end_segment lid
 
-  | VernacRequire (export,spec,qidl) -> vernac_require export spec qidl
+  | VernacRequire (export, qidl) -> vernac_require export qidl
   | VernacImport (export,qidl) -> vernac_import export qidl
   | VernacCanonical qid -> vernac_canonical qid
   | VernacCoercion (str,r,s,t) -> vernac_coercion str r s t
@@ -1481,7 +1481,7 @@ let interp c = match c with
   | VernacSolveExistential (n,c) -> vernac_solve_existential n c
 
   (* Auxiliary file and library management *)
-  | VernacRequireFrom (exp,spec,f) -> vernac_require_from exp spec f
+  | VernacRequireFrom (exp, f) -> vernac_require_from exp f
   | VernacAddLoadPath (isrec,s,alias) -> vernac_add_loadpath isrec s alias
   | VernacRemoveLoadPath s -> vernac_remove_loadpath s
   | VernacAddMLPath (isrec,s) -> vernac_add_ml_path isrec s
