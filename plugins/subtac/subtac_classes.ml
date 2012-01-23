@@ -108,7 +108,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 	  Namegen.next_global_ident_away i (Termops.ids_of_context env)
   in
   let env' = push_rel_context ctx env in
-  evars := Evarutil.nf_evar_map !evars;
+  evars := Typeclasses.mark_resolvables (Evarutil.nf_evar_map !evars);
   evars := resolve_typeclasses ~onlyargs:false ~fail:true env !evars;
   let sigma =  !evars in
   let subst = List.map (Evarutil.nf_evar sigma) subst in
