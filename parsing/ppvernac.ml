@@ -137,11 +137,12 @@ let pr_search a b pr_p = match a with
   | SearchAbout sl -> str"SearchAbout" ++ spc() ++ str "[" ++ prlist_with_sep spc pr_search_about sl ++ str "]" ++ pr_in_out_modules b
 
 let pr_locality_full = function
-  | None -> mt()
-  | Some true -> str"Local "
-  | Some false -> str"Global "
-let pr_locality local = if local then str "Local " else str ""
-let pr_non_locality local = if local then str "" else str "Global "
+  | None -> mt ()
+  | Some true -> str "Local" ++ spc ()
+  | Some false -> str "Global "++ spc ()
+
+let pr_locality local = if local then str "Local" ++ spc () else mt ()
+let pr_non_locality local = if local then mt () else str "Global" ++ spc ()
 let pr_section_locality local =
   if Lib.sections_are_opened () && not local then str "Global "
   else if not (Lib.sections_are_opened ()) && local then str "Local "
@@ -836,10 +837,10 @@ let rec pr_vernac = function
 		    str (if List.length idl > 1 then "s " else " ") ++
 		      prlist_with_sep spc pr_lident idl)
   | VernacSetOpacity(b,[k,l]) when k=Conv_oracle.transparent ->
-      hov 1 (str"Transparent" ++ pr_non_locality b ++
+      hov 1 (pr_non_locality b ++ str "Transparent" ++
              spc() ++ prlist_with_sep sep pr_smart_global l)
   | VernacSetOpacity(b,[Conv_oracle.Opaque,l]) ->
-      hov 1 (str"Opaque" ++ pr_non_locality b ++
+      hov 1 (pr_non_locality b ++ str "Opaque" ++
              spc() ++ prlist_with_sep sep pr_smart_global l)
   | VernacSetOpacity (local,l) ->
       let pr_lev = function
@@ -850,7 +851,7 @@ let rec pr_vernac = function
       let pr_line (l,q) =
         hov 2 (pr_lev l ++ spc() ++
                str"[" ++ prlist_with_sep sep pr_smart_global q ++ str"]") in
-      hov 1 (pr_non_locality local ++ str"Strategy" ++ spc() ++
+      hov 1 (pr_locality local ++ str "Strategy" ++ spc() ++
              hv 0 (prlist_with_sep sep pr_line l))
   | VernacUnsetOption (l,na) ->
       hov 1 (pr_locality_full l ++ str"Unset" ++ spc() ++ pr_printoption na None)
