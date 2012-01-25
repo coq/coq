@@ -81,8 +81,8 @@ let typecheck_params_and_fields id t ps nots fs =
   let newps = Evarutil.nf_rel_context_evar sigma newps in
   let newfs = Evarutil.nf_rel_context_evar sigma newfs in
   let ce t = Evarutil.check_evars env0 Evd.empty evars t in
-    List.iter (fun (n, b, t) -> Option.iter ce b; ce t) newps;
-    List.iter (fun (n, b, t) -> Option.iter ce b; ce t) newfs;
+    List.iter (fun (n, b, t) -> Option.iter ce b; ce t) (List.rev newps);
+    List.iter (fun (n, b, t) -> Option.iter ce b; ce t) (List.rev newfs);
     imps, newps, impls, newfs
 
 let degenerate_decl (na,b,t) =
