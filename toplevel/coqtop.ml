@@ -326,6 +326,7 @@ let init arglist =
       if_verbose print_header ();
       init_load_path ();
       inputstate ();
+      Mltop.init_known_plugins ();
       set_vm_opt ();
       engage ();
       if (not !batch_mode|| !compile_list=[]) && Global.env_is_empty() then

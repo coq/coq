@@ -235,9 +235,24 @@ let add_known_module mname =
 let module_is_known mname =
   Stringset.mem (String.capitalize mname) !known_loaded_modules
 
+let known_loaded_plugins = ref Stringmap.empty
+
+let init_ml_object mname =
+  try Stringmap.find mname !known_loaded_plugins ()
+  with Not_found -> ()
+
 let load_ml_object mname fname=
   dir_ml_load fname;
-  add_known_module mname
+  add_known_module mname;
+  init_ml_object mname
+
+let add_known_plugin init name =
+  let name = String.capitalize name in
+  add_known_module name;
+  known_loaded_plugins := Stringmap.add name init !known_loaded_plugins
+
+let init_known_plugins () =
+  Stringmap.iter (fun _ f -> f()) !known_loaded_plugins
 
 (* Summary of declared ML Modules *)
 
@@ -260,7 +275,8 @@ let unfreeze_ml_modules x =
            load_ml_object mname fname
          else
 	   errorlabstrm "Mltop.unfreeze_ml_modules"
-             (str"Loading of ML object file forbidden in a native Coq.");
+             (str"Loading of ML object file forbidden in a native Coq.")
+       else init_ml_object mname;
        add_loaded_module mname)
     x
 
@@ -290,7 +306,8 @@ let cache_ml_module_object (_,{mnames=mnames}) =
 	     raise e
 	 else
 	     (if_verbose msgnl (str" failed]");
-	      error ("Dynamic link not supported (module "^name^")")))
+	      error ("Dynamic link not supported (module "^name^")"))
+       else init_ml_object mname)
     mnames
 
 let classify_ml_module_object ({mlocal=mlocal} as o) =
