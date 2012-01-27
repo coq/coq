@@ -53,7 +53,7 @@ let is_global id =
 let is_constructor id =
   try
     match locate (qualid_of_ident id) with
-      | ConstructRef _ as ref -> not (is_imported_ref ref)
+      | ConstructRef _ -> true
       | _ -> false
   with Not_found ->
     false
