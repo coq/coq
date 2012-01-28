@@ -1,5 +1,11 @@
 Require Import Coq.Program.Program Coq.Program.Equality.
 
+Goal forall (H: forall n m : nat, n = m -> n = 0) x, x = tt.
+intros.
+dependent destruction x.
+reflexivity.
+Qed.
+
 Variable A : Set.
 
 Inductive vector : nat -> Type := vnil : vector 0 | vcons : A -> forall {n}, vector n -> vector (S n).
@@ -83,6 +89,7 @@ Proof with simpl in * ; eqns ; eauto with lambda.
 
   intro. eapply app...
 Defined.
+
 
 Lemma exchange : forall Γ Δ α β τ, term (Γ, α, β ; Δ) τ -> term (Γ, β, α ; Δ) τ.
 Proof with simpl in * ; eqns ; eauto.
