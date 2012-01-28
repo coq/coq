@@ -100,7 +100,7 @@ let iter_tac tacl =
 
 let is_conj ist =
   let ind = assoc_var "X1" ist in
-    if (not binary_mode || is_binary ind) (* && not (is_record ind) *)
+    if (not binary_mode || is_binary ind) && not (is_record ind)
       && is_conjunction ~strict:strict_in_hyp_and_ccl ind
     then
       <:tactic<idtac>>

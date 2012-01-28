@@ -115,6 +115,12 @@ Section Respecting.
 
   Next Obligation.
   Proof.
+    unfold respecting in *. program_simpl. transitivity (y y0); auto. symmetry; apply H. reflexivity.
+  Qed.
+
+
+  Next Obligation.
+  Proof.
     unfold respecting in *. program_simpl. transitivity (y y0); auto. apply H0. reflexivity.
   Qed.
 
@@ -122,10 +128,13 @@ End Respecting.
 
 (** The default equivalence on function spaces, with higher-priority than [eq]. *)
 
+Hint Extern 0 => reflexivity : relations.
+Hint Extern 1 => solve [symmetry; auto] : relations.
+
 Program Instance pointwise_equivalence {A} `(eqb : Equivalence B eqB) :
   Equivalence (pointwise_relation A eqB) | 9.
 
   Next Obligation.
   Proof.
-    transitivity (y a) ; auto.
+    transitivity (y a); auto with relations.
   Qed.
