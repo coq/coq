@@ -158,7 +158,7 @@ type ('a,'b,'c) red_expr_gen =
   | Fold of 'a list
   | Pattern of 'a with_occurrences list
   | ExtraRedExpr of string
-  | CbvVm
+  | CbvVm of 'c with_occurrences option
 
 type ('a,'b,'c) may_eval =
   | ConstrTerm of 'a

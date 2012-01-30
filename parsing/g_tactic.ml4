@@ -334,7 +334,7 @@ GEXTEND Gram
       | IDENT "cbv"; s = strategy_flag -> Cbv s
       | IDENT "lazy"; s = strategy_flag -> Lazy s
       | IDENT "compute"; delta = delta_flag -> Cbv (all_with delta)
-      | IDENT "vm_compute" -> CbvVm
+      | IDENT "vm_compute"; po = OPT pattern_occ -> CbvVm po
       | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl
       | IDENT "pattern"; pl = LIST1 pattern_occ SEP"," -> Pattern pl ] ]
@@ -347,7 +347,7 @@ GEXTEND Gram
       | IDENT "cbv"; s = strategy_flag -> Cbv s
       | IDENT "lazy"; s = strategy_flag -> Lazy s
       | IDENT "compute"; delta = delta_flag -> Cbv (all_with delta)
-      | IDENT "vm_compute" -> CbvVm
+      | IDENT "vm_compute"; po = OPT pattern_occ -> CbvVm po
       | IDENT "unfold"; ul = LIST1 unfold_occ -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl
       | IDENT "pattern"; pl = LIST1 pattern_occ SEP"," -> Pattern pl

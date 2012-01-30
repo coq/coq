@@ -174,7 +174,7 @@ let mlexpr_of_red_expr = function
   | Glob_term.Pattern l ->
       let f = mlexpr_of_list mlexpr_of_occ_constr in
       <:expr< Glob_term.Pattern $f l$ >>
-  | Glob_term.CbvVm -> <:expr< Glob_term.CbvVm >>
+  | Glob_term.CbvVm o -> <:expr< Glob_term.CbvVm $mlexpr_of_option mlexpr_of_occ_constr o$ >>
   | Glob_term.ExtraRedExpr s ->
       <:expr< Glob_term.ExtraRedExpr $mlexpr_of_string s$ >>
 

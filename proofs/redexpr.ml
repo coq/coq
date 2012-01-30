@@ -191,7 +191,16 @@ let rec reduction_of_red_expr = function
 	(try reduction_of_red_expr (Stringmap.find s !red_expr_tab)
 	 with Not_found ->
 	   error("unknown user-defined reduction \""^s^"\"")))
-  | CbvVm -> (cbv_vm ,VMcast)
+  | CbvVm (Some lp) ->
+    let b = is_reference (snd lp) in
+    let lp = out_with_occurrences lp in
+    let vmfun _ env map c =
+      let tpe = Retyping.get_type_of env map c in
+      Vnorm.cbv_vm env c tpe
+    in
+    let redfun = contextually b lp vmfun in
+    (redfun, VMcast)
+  | CbvVm None -> (cbv_vm, VMcast)
 
 
 let subst_flags subs flags =
