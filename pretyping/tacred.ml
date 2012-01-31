@@ -916,7 +916,7 @@ let unfoldoccs env sigma ((nowhere_except_in,locs as plocs),name) c =
       error ((string_of_evaluable_ref env name)^" does not occur.");
     let rest = List.filter (fun o -> o >= nbocc) locs in
     if rest <> [] then error_invalid_occurrence rest;
-    nf_betaiota sigma uc
+    nf_betaiotazeta sigma uc
 
 (* Unfold reduction tactic: *)
 let unfoldn loccname env sigma c =

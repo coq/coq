@@ -527,6 +527,7 @@ let clos_norm_flags flgs env sigma t =
 
 let nf_beta = clos_norm_flags Closure.beta empty_env
 let nf_betaiota = clos_norm_flags Closure.betaiota empty_env
+let nf_betaiotazeta = clos_norm_flags Closure.betaiotazeta empty_env
 let nf_betadeltaiota env sigma =
   clos_norm_flags Closure.betadeltaiota env sigma
 
