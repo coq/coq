@@ -32,7 +32,7 @@ Lemma Inf_lt : forall l x y, lt x y -> Inf y l -> Inf x l.
 Proof. exact (InfA_ltA lt_strorder). Qed.
 
 Lemma Inf_eq : forall l x y, eq x y -> Inf y l -> Inf x l.
-Proof. exact (InfA_eqA eq_equiv lt_compat). Qed.
+Proof. exact (InfA_eqA eq_equiv lt_strorder lt_compat). Qed.
 
 Lemma Sort_Inf_In : forall l x a, Sort l -> Inf a l -> In x l -> lt a x.
 Proof. exact (SortA_InfA_InA eq_equiv lt_strorder lt_compat). Qed.

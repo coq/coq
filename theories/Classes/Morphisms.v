@@ -146,13 +146,6 @@ Program Instance respectful_per `(PER A R, PER B R') : PER (R ==> R').
   Next Obligation.
   Proof with auto.
     assert(R x0 x0).
-    transitivity y0... symmetry... 
-    symmetry... apply H1. now symmetry.
-  Qed.
-
-  Next Obligation.
-  Proof with auto.
-    assert(R x0 x0).
     transitivity y0... symmetry...
     transitivity (y x0)...
   Qed.

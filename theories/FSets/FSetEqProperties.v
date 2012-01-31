@@ -920,6 +920,8 @@ Lemma sum_compat :
   forall s, (forall x, In x s -> f x=g x) -> sum f s=sum g s.
 intros.
 unfold sum; apply (fold_compat _ (@Logic.eq nat)); auto with *.
+intros x x' Hx y y' Hy. rewrite Hx, Hy; auto.
+intros x x' Hx y y' Hy. rewrite Hx, Hy; auto.
 Qed.
 
 End Sum.

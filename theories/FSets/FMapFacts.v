@@ -18,12 +18,11 @@ Require Export FMapInterface.
 Set Implicit Arguments.
 Unset Strict Implicit.
 
+Hint Extern 1 (Equivalence _) => constructor; congruence.
+
 (** * Facts about weak maps *)
 
 Module WFacts_fun (E:DecidableType)(Import M:WSfun E).
-
-Module UEq := Equalities.UpdateEq(E)(E).
-Import UEq.
 
 Notation eq_dec := E.eq_dec.
 Definition eqb x y := if eq_dec x y then true else false.
@@ -1185,7 +1184,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
     Equal m m' -> cardinal m = cardinal m'.
   Proof.
   intros; do 2 rewrite cardinal_fold.
-  apply fold_Equal with (eqA:=eq); compute; auto. apply _.
+  apply fold_Equal with (eqA:=eq); compute; auto.
   Qed.
 
   Lemma cardinal_1 : forall m : t elt, Empty m -> cardinal m = 0.
@@ -1198,7 +1197,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   Proof.
   intros; do 2 rewrite cardinal_fold.
   change S with ((fun _ _ => S) x e).
-  apply fold_Add with (eqA:=eq); compute; auto. apply _.
+  apply fold_Add with (eqA:=eq); compute; auto.
   Qed.
 
   Lemma cardinal_inv_1 : forall m : t elt,
@@ -1545,7 +1544,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
   setoid_replace (fold f m 0) with (fold f m1 (fold f m2 0)).
   rewrite <- cardinal_fold.
   apply fold_rel with (R:=fun u v => u = v + cardinal m2); simpl; auto.
-  apply Partition_fold with (eqA:=eq); repeat red; auto. apply _.
+  apply Partition_fold with (eqA:=eq); repeat red; auto.
   Qed.
 
   Lemma Partition_partition : forall m m1 m2, Partition m m1 m2 ->
@@ -1695,7 +1694,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
  Proof.
   intros m1 m1' Hm1 m2 m2' Hm2.
   setoid_replace (update m1 m2) with (update m1' m2); unfold update.
-  apply fold_Equal with (eqA:=Equal); auto. apply _.
+  apply fold_Equal with (eqA:=Equal); auto.
   intros k k' Hk e e' He m m' Hm; rewrite Hk,He,Hm; red; auto.
   intros k k' e e' i Hneq x.
   rewrite !add_o; do 2 destruct eq_dec; auto. elim Hneq; eauto.
@@ -1713,7 +1712,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
    intros k e i i' H Hii' x.
    pattern (mem k m2); rewrite Hm2. (* UGLY, see with Matthieu *)
    destruct mem; rewrite Hii'; auto.
-  apply fold_Equal with (eqA:=Equal); auto. apply _.
+  apply fold_Equal with (eqA:=Equal); auto.
    intros k k' Hk e e' He m m' Hm; simpl in *.
    pattern (mem k m2); rewrite Hk. (* idem *)
    destruct mem; rewrite ?Hk,?He,Hm; red; auto.
@@ -1732,7 +1731,7 @@ Module WProperties_fun (E:DecidableType)(M:WSfun E).
    intros k e i i' H Hii' x.
    pattern (mem k m2); rewrite Hm2. (* idem *)
    destruct mem; simpl; rewrite Hii'; auto.
-  apply fold_Equal with (eqA:=Equal); auto. apply _.
+  apply fold_Equal with (eqA:=Equal); auto.
    intros k k' Hk e e' He m m' Hm; simpl in *.
    pattern (mem k m2); rewrite Hk. (* idem *)
    destruct mem; simpl; rewrite ?Hk,?He,Hm; red; auto.
