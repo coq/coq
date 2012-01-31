@@ -43,6 +43,7 @@ end
 open Glob_term
 open SubtacGram
 open Util
+open Tok
 open Pcoq
 open Prim
 open Constr

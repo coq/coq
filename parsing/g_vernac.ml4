@@ -813,7 +813,7 @@ GEXTEND Gram
     [ [ IDENT "Eval"; r = Tactic.red_expr; "in"; c = lconstr ->
           fun g -> VernacCheckMayEval (Some r, g, c)
       | IDENT "Compute"; c = lconstr ->
-	  fun g -> VernacCheckMayEval (Some Glob_term.CbvVm None, g, c)
+	  fun g -> VernacCheckMayEval (Some (Glob_term.CbvVm None), g, c)
       | IDENT "Check"; c = lconstr ->
 	  fun g -> VernacCheckMayEval (None, g, c) ] ]
   ;
