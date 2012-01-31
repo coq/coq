@@ -68,6 +68,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/Epsilon.v
     theories/Logic/IndefiniteDescription.v
     theories/Logic/FunctionalExtensionality.v
+    theories/Logic/ExtensionalityFacts.v
   </dd>
     
   <dt> <b>Structures</b>:
@@ -395,6 +396,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Classes/SetoidClass.v
     theories/Classes/SetoidDec.v
     theories/Classes/RelationPairs.v
+    theories/Classes/DecidableClass.v
   </dd>
 
   <dt> <b>Setoids</b>:
@@ -413,6 +415,16 @@ through the <tt>Require Import</tt> command.</p>
     theories/Lists/StreamMemo.v
     theories/Lists/ListTactics.v
   </dd>
+
+  <dt> <b>Vectors</b>:
+    Dependent datastructures storing their length
+  </dt>
+    <dd>
+      theories/Vectors/Fin.v
+      theories/Vectors/VectorDef.v
+      theories/Vectors/VectorSpec.v
+      (theories/Vectors/Vector.v)
+    </dd>
 
   <dt> <b>Sorting</b>:
     Axiomatizations of sorts
