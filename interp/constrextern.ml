@@ -140,14 +140,19 @@ let extern_evar loc n l =
 let debug_global_reference_printer =
   ref (fun _ -> failwith "Cannot print a global reference")
 
+let in_debugger = ref false
+
 let set_debug_global_reference_printer f =
+  in_debugger := true;
   debug_global_reference_printer := f
 
 let extern_reference loc vars r =
-  try Qualid (loc,shortest_qualid_of_global vars r)
-  with Not_found ->
-    (* happens in debugger *)
+  if !in_debugger then
+    (* Debugger does not have the tables of global reference at hand *)
     !debug_global_reference_printer loc r
+  else
+    Qualid (loc,shortest_qualid_of_global vars r)
+
 
 (************************************************************************)
 (* Equality up to location (useful for translator v8) *)
@@ -344,7 +349,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
       let p =
 	try
-          if !Flags.raw_print then raise Exit;
+          if !in_debugger || !Flags.raw_print then raise Exit;
 	  let projs = Recordops.lookup_projections (fst cstrsp) in
 	  let rec ip projs args acc =
 	    match projs with
