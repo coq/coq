@@ -588,4 +588,11 @@ through the <tt>Require Import</tt> command.</p>
     theories/Program/Combinators.v
   </dd>
 
+  <dt> <b>Unicode</b>:
+    Unicode-based notations
+  </dt>
+  <dd>
+    theories/Unicode/Utf8_core.v
+    theories/Unicode/Utf8.v
+  </dd>
 </dl>

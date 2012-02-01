@@ -218,7 +218,7 @@ doc/stdlib/index-body.html: $(COQDOC) $(THEORIESVO)
 endif
 
 doc/stdlib/index-list.html: doc/stdlib/index-list.html.template doc/stdlib/make-library-index
-	./doc/stdlib/make-library-index doc/stdlib/index-list.html
+	./doc/stdlib/make-library-index doc/stdlib/index-list.html doc/stdlib/hidden-files
 
 doc/stdlib/html/index.html: doc/stdlib/index-list.html doc/stdlib/index-body.html doc/stdlib/index-trailer.html
 	cat doc/stdlib/index-list.html > $@
