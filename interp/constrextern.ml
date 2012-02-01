@@ -143,7 +143,6 @@ let debug_global_reference_printer =
 let in_debugger = ref false
 
 let set_debug_global_reference_printer f =
-  in_debugger := true;
   debug_global_reference_printer := f
 
 let extern_reference loc vars r =

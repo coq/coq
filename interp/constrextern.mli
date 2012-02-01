@@ -53,6 +53,7 @@ val print_projections : bool ref
 (** Debug printing options *)
 val set_debug_global_reference_printer :
   (loc -> global_reference -> reference) -> unit
+val in_debugger : bool ref
 
 (** This governs printing of implicit arguments. If [with_implicits] is
    on and not [with_arguments] then implicit args are printed prefixed
