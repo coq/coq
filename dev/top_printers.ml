@@ -487,5 +487,9 @@ let short_string_of_ref loc = function
         [id_of_label (pi3 (repr_mind kn));id_of_string ("_"^string_of_int i)]
         (id_of_string ("_"^string_of_int j))
 
+(* Anticipate that printers can be used from ocamldebug and that 
+   pretty-printer should not make calls to the global env since ocamldebug
+   runs in a different process and does not have the proper env at hand *)
+let _ = Constrextern.in_debugger := true
 let _ = Constrextern.set_debug_global_reference_printer
   (if !rawdebug then raw_string_of_ref else short_string_of_ref)

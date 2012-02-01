@@ -199,6 +199,11 @@ let current_goal () = get_nth_goal 1;;
 let pf_e gl s = 
   Constrintern.interp_constr (project gl) (pf_env gl) (parse_constr s);;
 
+(* Set usual printing since the global env is available from the tracer *)
+let _ = Constrextern.in_debugger := false
+let _ = Constrextern.set_debug_global_reference_printer
+  (fun loc r -> Libnames.Qualid (loc,Nametab.shortest_qualid_of_global Idset.empty r));;
+
 open Toplevel
 let go = loop
 
