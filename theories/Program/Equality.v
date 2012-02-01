@@ -389,7 +389,7 @@ Ltac unblock_dep_elim :=
   match goal with
     | |- block ?T => 
       match T with context [ block _ ] => 
-        unfold block at 1 ; intros ; unblock_goal
+        change T ; intros ; unblock_goal
       end
     | _ => unblock_goal
   end.
