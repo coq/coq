@@ -82,6 +82,8 @@ Tactics
 - When applying destruct or inversion on a fixpoint hiding an inductive
   type, recursive calls to the fixpoint now remain folded by default (rare
   source of incompatibility generally solvable by adding a call to simpl).
+- The behavior of the simpl tactic can be tuned using the new "Arguments"
+  vernacular.
 
 Vernacular commands
 
@@ -103,6 +105,7 @@ Vernacular commands
   to avoid conversion at Qed time to go into a very long computation.
 - New command "Show Goal ident" to display the statement of a goal, even
   a closed one (available from Proof General).
+- New command "Arguments" subsuming "Implicit Arguments" and "Arguments Scope".
 
 Module System
 
