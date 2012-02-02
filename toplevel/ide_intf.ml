@@ -255,13 +255,25 @@ let to_call = function
 
 let of_status s =
   let of_so = of_option of_string in
-  Element ("status", [], [of_so s.status_path; of_so s.status_proofname])
+  let of_sl = of_list of_string in
+  Element ("status", [],
+    [
+      of_sl s.status_path;
+      of_so s.status_proofname;
+      of_sl s.status_allproofs;
+      of_int s.status_statenum;
+      of_int s.status_proofnum;
+    ]
+  )
 
 let to_status = function
-| Element ("status", [], [path; name]) ->
+| Element ("status", [], [path; name; prfs; snum; pnum]) ->
   {
-    status_path = to_option to_string path;
+    status_path = to_list to_string path;
     status_proofname = to_option to_string name;
+    status_allproofs = to_list to_string prfs;
+    status_statenum = to_int snum;
+    status_proofnum = to_int pnum;
   }
 | _ -> raise Marshal_error
 
@@ -385,9 +397,9 @@ let pr_string s = "["^s^"]"
 let pr_bool b = if b then "true" else "false"
 
 let pr_status s =
-  let path = match s.status_path with
-  | None -> "no path; "
-  | Some p -> "path = " ^ p ^ "; "
+  let path =
+    let l = String.concat "." s.status_path in
+    "path=" ^ l ^ ";"
   in
   let name = match s.status_proofname with
   | None -> "no proof;"

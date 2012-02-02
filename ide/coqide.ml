@@ -2192,8 +2192,8 @@ let main files =
           "Oops, problem while fetching coq status."
         | Interface.Good status ->
           let path = match status.Interface.status_path with
-          | None -> ""
-          | Some p -> " in " ^ p
+          | [] | _ :: [] -> "" (* Drop the topmost level, usually "Top" *)
+          | _ :: l -> " in " ^ String.concat "." l
           in
           let name = match status.Interface.status_proofname with
           | None -> ""

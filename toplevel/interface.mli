@@ -27,10 +27,16 @@ type evar = {
 }
 
 type status = {
-  status_path : string option;
+  status_path : string list;
   (** Module path of the current proof *)
   status_proofname : string option;
-  (** Current proof name. [None] if no proof is in progress *)
+  (** Current proof name. [None] if no focussed proof is in progress *)
+  status_allproofs : string list;
+  (** List of all pending proofs. Order is not significant *)
+  status_statenum : int;
+  (** A unique id describing the state of coqtop *)
+  status_proofnum : int;
+  (** An id describing the state of the current proof. *)
 }
 
 type goals = {
