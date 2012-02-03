@@ -896,6 +896,20 @@ let build_and_l l =
   let conj_constr = coq_conj () in
   let mk_and p1 p2 =
     Term.mkApp(and_constr,[|p1;p2|]) in
+  let rec is_well_founded t = 
+    match kind_of_term t with 
+      | Prod(_,_,t') -> is_well_founded t'
+      | App(_,_) -> 
+	let (f,_) = decompose_app t in 
+	eq_constr f (well_founded ())
+      | _ -> assert false
+  in
+  let compare t1 t2 = 
+    let b1,b2= is_well_founded t1,is_well_founded t2 in 
+    if (b1&&b2) || not (b1 || b2) then 0
+    else if b1 && not b2 then 1 else -1
+  in
+  let l = List.sort compare l in 
   let rec f  = function
     | [] -> failwith "empty list of subgoals!"
     | [p] -> p,tclIDTAC,1
