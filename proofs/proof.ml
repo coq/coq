@@ -72,7 +72,10 @@ module Cond = struct
      - [Loose] that the condition is not quite met
        but authorises to unfocus provided a condition
        of a previous focus on the stack is (strictly)
-       met.
+       met. [Loose] focuses are those, like bullets,
+       which do not have a closing command and
+       are hence closed by unfocusing actions unrelated
+       to their focus_kind.
   *)
   let bool b =
     if b then fun _ _ -> Strict
@@ -359,6 +362,7 @@ let no_focused_goal p =
 
 (*** Proof Creation/Termination ***)
 
+(* [end_of_stack] is unfocused by return to close every loose focus. *)
 let end_of_stack_kind = new_focus_kind ()
 let end_of_stack = done_cond end_of_stack_kind
 
