@@ -68,8 +68,8 @@ module Cond = struct
   (* first attempt at an algebra of condition *)
   (* semantics:
      - [Cannot] means that the condition is not met
-     - [Strict] that the condition is meant
-     - [Loose] that the condition is not quite meant
+     - [Strict] that the condition is met
+     - [Loose] that the condition is not quite met
        but authorises to unfocus provided a condition
        of a previous focus on the stack is (strictly)
        met.
