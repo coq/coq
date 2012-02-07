@@ -12,6 +12,8 @@ Vernacular commands
 
 - New command "Set Parsing Explicit" for deactivating parsing (and printing)
   of implicit arguments (useful for teaching).
+- New command "Grab Existential Variables" to transform the unresolved evars at
+  the end of a proof into goals.
 
 Tactics
 

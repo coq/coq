@@ -216,7 +216,14 @@ existential variables remain. To instantiate existential variables
 during proof edition, you should use the tactic {\tt instantiate}.
 
 \SeeAlso {\tt instantiate (\num:= \term).} in Section~\ref{instantiate}.
+\SeeAlso {\tt Grab Existential Variables.} below.
 
+\subsection[\tt Grab Existential Variables.]{\tt Grab Existential Variables.\comindex{Grab Existential Variables}
+\label{GrabEvars}}
+
+This command can be run when a proof has no more goal to be solved but has remaining
+uninstantiated existential variables. It takes every uninstantiated existential variable
+and turns it into a goal.
 
 %%%%%%%%
 \section{Navigation in the proof tree}
