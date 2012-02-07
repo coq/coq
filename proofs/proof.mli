@@ -151,7 +151,7 @@ val run_tactic : Environ.env -> unit Proofview.tactic -> proof -> unit
    a focusing command and a tactic. Transactions are such that if
    any of the atomic action fails, the whole transaction fails.
 
-   During a transaction, the undo visible undo stack is constituted only
+   During a transaction, the visible undo stack is constituted only
    of the actions performed done during the transaction.
 
    [transaction p f] can be called on an [f] using, itself, [transaction p].*)
