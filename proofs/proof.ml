@@ -445,14 +445,22 @@ module V82 = struct
   let top_evars p =
     Proofview.V82.top_evars p.state.proofview
 
-  let instantiate_evar n com pr =
-    let starting_point = save_state pr in
-    let sp = pr.state.proofview in
-    try
-      let new_proofview = Proofview.V82.instantiate_evar n com sp in
-      pr.state <- { pr.state with proofview = new_proofview };
-      push_undo starting_point pr
-    with e -> 
-      restore_state starting_point pr;
-      raise e
+  let grab_evars p =
+    if not (is_done p) then
+      raise UnfinishedProof
+    else
+      save p;
+      p.state <- { p.state with proofview = Proofview.V82.grab p.state.proofview }
+    
+
+    let instantiate_evar n com pr =
+      let starting_point = save_state pr in
+      let sp = pr.state.proofview in
+      try
+	let new_proofview = Proofview.V82.instantiate_evar n com sp in
+	pr.state <- { pr.state with proofview = new_proofview };
+	push_undo starting_point pr
+      with e -> 
+	restore_state starting_point pr;
+	raise e
 end
