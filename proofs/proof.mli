@@ -178,6 +178,10 @@ module V82 : sig
   (* returns the existential variable used to start the proof *)
   val top_evars : proof -> Evd.evar list
 
+  (* Turns the unresolved evars into goals.
+     Raises [UnfinishedProof] if there are still unsolved goals. *)
+  val grab_evars : proof -> unit
+
   (* Implements the Existential command *)
   val instantiate_evar : int -> Topconstr.constr_expr -> proof -> unit
 end

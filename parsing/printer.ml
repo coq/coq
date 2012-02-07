@@ -363,7 +363,8 @@ let default_pr_subgoals close_cmd sigma seeds = function
 		let pei = pr_evars_int 1 exl in
 		  (str "No more subgoals but non-instantiated existential " ++
 		     str "variables:" ++ fnl () ++ (hov 0 pei)
-		   ++ emacs_print_dependent_evars sigma seeds)
+		   ++ emacs_print_dependent_evars sigma seeds ++ fnl () ++
+                   str "You can use Grab Existential Variables.")
       end
   | [g] ->
       let pg = default_pr_goal { it = g ; sigma = sigma } in

@@ -475,6 +475,17 @@ module V82 = struct
   let has_unresolved_evar pv =
     Evd.has_undefined pv.solution
 
+  (* Main function in the implementation of Grab Existential Variables.*)
+  let grab pv =
+    let goals =
+      List.map begin fun (e,_) ->
+	Goal.build e
+      end (Evd.undefined_list pv.solution)
+    in
+    { pv with comb = goals }
+      
+    
+
   (* Returns the open goals of the proofview together with the evar_map to 
      interprete them. *)
   let goals { comb = comb ; solution = solution } = 

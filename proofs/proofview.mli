@@ -195,6 +195,11 @@ module V82 : sig
 
   val has_unresolved_evar : proofview -> bool
 
+  (* Main function in the implementation of Grab Existential Variables.
+     Resets the proofview's goals so that it contains all unresolved evars
+     (in chronological order of insertion). *)
+  val grab : proofview -> proofview
+
   (* Returns the open goals of the proofview together with the evar_map to 
      interprete them. *)
   val goals : proofview -> Goal.goal list Evd.sigma
