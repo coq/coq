@@ -1867,7 +1867,8 @@ let setoid_proof gl ty fn fallback =
   let env = pf_env gl in
     try
       let rel, args = decompose_app_rel env (project gl) (pf_concl gl) in
-      let evm, car = project gl, pf_type_of gl args.(0) in
+      let evm = project gl in
+      let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.type_of env evm rel)))) in
 	fn env evm car rel gl
     with e ->
       try fallback gl
