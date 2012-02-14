@@ -656,6 +656,7 @@ GEXTEND Gram
       | IDENT "clear"; IDENT "implicits" -> [`ClearImplicits]
       | IDENT "clear"; IDENT "scopes" -> [`ClearScopes]
       | IDENT "rename" -> [`Rename]
+      | IDENT "extra"; IDENT "scopes" -> [`ExtraScopes]
       | IDENT "clear"; IDENT "scopes"; IDENT "and"; IDENT "implicits" ->
           [`ClearImplicits; `ClearScopes]
       | IDENT "clear"; IDENT "implicits"; IDENT "and"; IDENT "scopes" ->

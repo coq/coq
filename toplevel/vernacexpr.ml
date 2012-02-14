@@ -317,7 +317,7 @@ type vernac_expr =
       (explicitation * bool * bool) list list
   | VernacArguments of locality_flag * reference or_by_notation * 
       ((name * bool * (loc * string) option * bool * bool) list) list *
-      int * [ `SimplDontExposeCase | `SimplNeverUnfold | `Rename
+      int * [ `SimplDontExposeCase | `SimplNeverUnfold | `Rename | `ExtraScopes
             | `ClearImplicits | `ClearScopes | `DefaultImplicits ] list
   | VernacArgumentsScope of locality_flag * reference or_by_notation *
       scope_name option list
