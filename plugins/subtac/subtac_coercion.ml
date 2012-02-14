@@ -27,6 +27,9 @@ open Subtac_errors
 open Eterm
 open Pp
 
+let app_opt env evars f t =
+  Tacred.simpl env !evars (app_opt f t)
+
 let pair_of_array a = (a.(0), a.(1))
 let make_name s = Name (id_of_string s)
 
@@ -90,15 +93,16 @@ module Coercion = struct
       liftrec (List.length sign) sign
 
   let rec mu env isevars t =
-    let isevars = ref isevars in
     let rec aux v =
       let v = hnf env isevars v in
       match disc_subset v with
 	  Some (u, p) ->
 	    let f, ct = aux u in
+	    let p = hnf env isevars p in
 	      (Some (fun x ->
-		       app_opt f (mkApp ((delayed_force sig_).proj1,
-					 [| u; p; x |]))),
+		       app_opt env isevars 
+		         f (mkApp ((delayed_force sig_).proj1,
+				 [| u; p; x |]))),
 	       ct)
 	| None -> (None, v)
     in aux t
@@ -167,7 +171,7 @@ module Coercion = struct
 	      let env' = push_rel (name', None, a') env in
 	      let c1 = coerce_unify env' (lift 1 a') (lift 1 a) in
 		(* env, x : a' |- c1 : lift 1 a' > lift 1 a *)
-	      let coec1 = app_opt c1 (mkRel 1) in
+	      let coec1 = app_opt env' isevars c1 (mkRel 1) in
 		(* env, x : a' |- c1[x] : lift 1 a *)
 	      let c2 = coerce_unify env' (subst1 coec1 (liftn 1 2 b)) b' in
 		(* env, x : a' |- c2 : b[c1[x]/x]] > b' *)
@@ -177,7 +181,7 @@ module Coercion = struct
 		    Some
 		      (fun f ->
 			mkLambda (name', a',
-				 app_opt c2
+				 app_opt env' isevars c2
 				   (mkApp (Term.lift 1 f, [| coec1 |])))))
 
 	  | App (c, l), App (c', l') ->
@@ -220,9 +224,9 @@ module Coercion = struct
 				     Some
 				       (fun x ->
 					  let x, y =
-					    app_opt c1 (mkApp (existS.proj1,
+					    app_opt env' isevars c1 (mkApp (existS.proj1,
 							       [| a; pb; x |])),
-					    app_opt c2 (mkApp (existS.proj2,
+					    app_opt env' isevars c2 (mkApp (existS.proj2,
 							       [| a; pb; x |]))
 					  in
 					    mkApp (existS.intro, [| a'; pb'; x ; y |]))
@@ -240,9 +244,9 @@ module Coercion = struct
 				     Some
 				       (fun x ->
 					  let x, y =
-					    app_opt c1 (mkApp (prod.proj1,
+					    app_opt env isevars c1 (mkApp (prod.proj1,
 							       [| a; b; x |])),
-					    app_opt c2 (mkApp (prod.proj2,
+					    app_opt env isevars c2 (mkApp (prod.proj2,
 							       [| a; b; x |]))
 					  in
 					    mkApp (prod.intro, [| a'; b'; x ; y |]))
@@ -276,7 +280,7 @@ module Coercion = struct
 	  Some (u, p) ->
 	    let c = coerce_unify env u y in
 	    let f x =
-	      app_opt c (mkApp ((delayed_force sig_).proj1,
+	      app_opt env isevars c (mkApp ((delayed_force sig_).proj1,
 				[| u; p; x |]))
 	    in Some f
 	| None ->
@@ -285,7 +289,7 @@ module Coercion = struct
 		  let c = coerce_unify env x u in
 		    Some
 		      (fun x ->
-			 let cx = app_opt c x in
+			 let cx = app_opt env isevars c x in
 			 let evar = make_existential loc env isevars (mkApp (p, [| cx |]))
 			 in
 			   (mkApp
@@ -300,7 +304,8 @@ module Coercion = struct
   let coerce_itf loc env isevars v t c1 =
     let evars = ref isevars in
     let coercion = coerce loc env evars t c1 in
-      !evars, Option.map (app_opt coercion) v
+    let t = Option.map (app_opt env evars coercion) v in
+      !evars, t
 
   (* Taken from pretyping/coercion.ml *)
 
@@ -354,23 +359,25 @@ module Coercion = struct
     with _ -> anomaly "apply_coercion"
 
   let inh_app_fun env isevars j =
-    let t = whd_betadeltaiota env ( isevars) j.uj_type in
+    let isevars = ref isevars in
+    let t = whd_betadeltaiota env !isevars j.uj_type in
       match kind_of_term t with
-	| Prod (_,_,_) -> (isevars,j)
-	| Evar ev when not (is_defined_evar isevars ev) ->
-	    let (isevars',t) = define_evar_as_product isevars ev in
+	| Prod (_,_,_) -> (!isevars,j)
+	| Evar ev when not (is_defined_evar !isevars ev) ->
+	    let (isevars',t) = define_evar_as_product !isevars ev in
 	      (isevars',{ uj_val = j.uj_val; uj_type = t })
 	| _ ->
        	    (try
       	       let t,p =
-		 lookup_path_to_fun_from env ( isevars) j.uj_type in
-		 (isevars,apply_coercion env ( isevars) p j t)
+		 lookup_path_to_fun_from env !isevars j.uj_type in
+		 (!isevars,apply_coercion env !isevars p j t)
 	     with Not_found ->
 	       try
 		 let coercef, t = mu env isevars t in
-		   (isevars, { uj_val = app_opt coercef j.uj_val; uj_type = t })
+		 let res = { uj_val = app_opt env isevars coercef j.uj_val; uj_type = t } in
+		   (!isevars, res)
 	       with NoSubtacCoercion | NoCoercion ->
-		 (isevars,j))
+		 (!isevars,j))
 
   let inh_tosort_force loc env isevars j =
     try
@@ -391,15 +398,19 @@ module Coercion = struct
 	    inh_tosort_force loc env isevars j
 
   let inh_coerce_to_base loc env isevars j =
-    let typ = whd_betadeltaiota env ( isevars) j.uj_type in
+    let isevars = ref isevars in
+    let typ = whd_betadeltaiota env !isevars j.uj_type in
     let ct, typ' = mu env isevars typ in
-      isevars, { uj_val = app_opt ct j.uj_val;
-		 uj_type = typ' }
+    let res =
+      { uj_val = app_opt env isevars ct j.uj_val;
+	uj_type = typ' }
+    in !isevars, res
 
   let inh_coerce_to_prod loc env isevars t =
-    let typ = whd_betadeltaiota env ( isevars) (snd t) in
+    let isevars = ref isevars in
+    let typ = whd_betadeltaiota env !isevars (snd t) in
     let _, typ' = mu env isevars typ in
-      isevars, (fst t, typ')
+      !isevars, (fst t, typ')
 
   let inh_coerce_to_fail env evd rigidonly v t c1 =
     if rigidonly & not (Heads.is_rigid env c1 && Heads.is_rigid env t)
