@@ -772,8 +772,10 @@ let vernac_declare_implicits local r = function
 	(List.map (List.map (fun (ex,b,f) -> ex, (b,true,f))) imps)
 
 let vernac_declare_arguments local r l nargs flags =
+  let extra_scope_flag = List.mem `ExtraScopes flags in
   let names = List.map (List.map (fun (id, _,_,_,_) -> id)) l in
   let names, rest = List.hd names, List.tl names in
+  let scopes = List.map (List.map (fun (_,_, s, _,_) -> s)) l in
   if List.exists ((<>) names) rest then
     error "All arguments lists must declare the same names.";
   if not (Util.list_distinct (List.filter ((<>) Anonymous) names)) then
@@ -782,14 +784,26 @@ let vernac_declare_arguments local r l nargs flags =
   let inf_names =
     Impargs.compute_implicits_names (Global.env()) (Global.type_of_global sr) in
   let string_of_name = function Anonymous -> "_" | Name id -> string_of_id id in
-  let rec check li ld = match li, ld with
-    | [], [] -> ()
-    | [], x::_ -> error ("Extra argument " ^ string_of_name x ^ ".")
-    | l, [] -> error ("The following arguments are not declared: " ^
+  let rec check li ld ls = match li, ld, ls with
+    | [], [], [] -> ()
+    | [], Anonymous::ld, (Some _)::ls when extra_scope_flag -> check li ld ls
+    | [], _::_, (Some _)::ls when extra_scope_flag ->
+       error "Extra notation scopes can be set on anonymous arguments only"
+    | [], x::_, _ -> error ("Extra argument " ^ string_of_name x ^ ".")
+    | l, [], _ -> error ("The following arguments are not declared: " ^
        (String.concat ", " (List.map string_of_name l)) ^ ".")
-    | _::li, _::ld -> check li ld in
+    | _::li, _::ld, _::ls -> check li ld ls 
+    | _ -> assert false in
   if l <> [[]] then
-    List.iter (fun l -> check inf_names l) (names :: rest);
+    List.iter2 (fun l -> check inf_names l) (names :: rest) scopes;
+  (* we take extra scopes apart, and we check they are consistent *)
+  let l, scopes = 
+    let scopes, rest = List.hd scopes, List.tl scopes in
+    if List.exists (List.exists ((<>) None)) rest then
+      error "Notation scopes can be given only once";
+    if not extra_scope_flag then l, scopes else
+    let l, _ = List.split (List.map (list_chop (List.length inf_names)) l) in
+    l, scopes in
   (* we interpret _ as the inferred names *)
   let l = if l = [[]] then l else
     let name_anons = function
@@ -822,10 +836,10 @@ let vernac_declare_arguments local r l nargs flags =
   let l = List.hd l in
   let some_implicits_specified = implicits <> [[]] in
   let scopes = List.map (function
-    | (_,_, None,_,_) -> None
-    | (_,_, Some (o, k), _,_) -> 
+    | None -> None
+    | Some (o, k) -> 
         try Some(ignore(Notation.find_scope k); k)
-        with _ -> Some (Notation.find_delimiters_scope o k)) l in
+        with _ -> Some (Notation.find_delimiters_scope o k)) scopes in
   let some_scopes_specified = List.exists ((<>) None) scopes in
   let rargs =
     Util.list_map_filter (function (n, true) -> Some n | _ -> None)

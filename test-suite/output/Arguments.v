@@ -38,3 +38,15 @@ End S1.
 About f.
 Arguments f : clear implicits and scopes.
 About f.
+Record r := { pi :> nat -> bool -> unit }.
+Notation "$" := 3 (only parsing) : foo_scope.
+Notation "$" := true (only parsing) : bar_scope.
+Delimit Scope bar_scope with B.
+Arguments pi _ _%F _%B. 
+Check (forall w : r, pi w $ $ = tt).
+Fail Check (forall w : r, w $ $ = tt).
+Axiom w : r.
+Arguments w  _%F _%B : extra scopes.
+Check (w $ $ = tt).
+Fail Arguments w  _%F _%B.
+

@@ -852,6 +852,7 @@ let rec pr_vernac = function
         | `SimplNeverUnfold -> str "simpl never"
         | `DefaultImplicits -> str "default implicits"
         | `Rename -> str "rename"
+        | `ExtraScopes -> str "extra scopes"
         | `ClearImplicits -> str "clear implicits"
         | `ClearScopes -> str "clear scopes")
         mods)

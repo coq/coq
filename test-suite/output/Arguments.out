@@ -91,3 +91,11 @@ The simpl tactic unfolds f
   when the 5th, 6th and 7th arguments evaluate to a constructor 
 f is transparent
 Expands to: Constant Top.f
+forall w : r, w 3 true = tt
+     : Prop
+The command has indeed failed with message:
+=> Error: Unknown interpretation for notation "$".
+w 3 true = tt
+     : Prop
+The command has indeed failed with message:
+=> Error: Extra argument _.
