@@ -110,7 +110,6 @@ module Coercion = struct
   and coerce loc env isevars (x : Term.constr) (y : Term.constr)
       : (Term.constr -> Term.constr) option
       =
-    let x = nf_evar ( !isevars) x and y = nf_evar ( !isevars) y in
     let rec coerce_unify env x y =
       let x = hnf env isevars x and y = hnf env isevars y in
 	try
@@ -383,7 +382,7 @@ module Coercion = struct
     try
       let t,p = lookup_path_to_sort_from env ( isevars) j.uj_type in
       let j1 = apply_coercion env ( isevars) p j t in
-	(isevars,type_judgment env (j_nf_evar ( isevars) j1))
+	(isevars, type_judgment env (j_nf_evar ( isevars) j1))
     with Not_found ->
       error_not_a_type_loc loc env ( isevars) j
 
@@ -467,8 +466,7 @@ module Coercion = struct
 	  let (evd', val') =
 	    try
 	      inh_conv_coerce_to_fail loc env evd rigidonly
-		(Some (nf_evar evd cj.uj_val))
-		(nf_evar evd cj.uj_type) (nf_evar evd t)
+		(Some cj.uj_val) cj.uj_type t
 	    with NoCoercion ->
 	      let sigma =  evd in
 		try
