@@ -445,12 +445,12 @@ let deps_remaining obls deps =
       else x :: acc)
     deps []
 
-let has_dependencies obls n =
-  let res = ref false in
+let dependencies obls n =
+  let res = ref Intset.empty in
     Array.iteri
       (fun i obl ->
 	if i <> n && Intset.mem n obl.obl_deps then
-	  res := true)
+	  res := Intset.add i !res)
       obls;
     !res
 
@@ -502,8 +502,9 @@ let rec solve_obligation prg num tac =
 		in
 		  match res with
 		  | Remain n when n > 0 ->
-		      if has_dependencies obls num then
-			ignore(auto_solve_obligations (Some prg.prg_name) None)
+		      let deps = dependencies obls num in
+			if deps <> Intset.empty then
+			  ignore(auto_solve_obligations (Some prg.prg_name) None ~oblset:deps)
 		  | _ -> ());
 	    trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
 		      Subtac_utils.my_print_constr (Global.env ()) obl.obl_type);
@@ -553,14 +554,18 @@ and solve_obligation_by_tac prg obls i tac =
 	| Util.Anomaly _ as e -> raise e
 	| e -> false
 
-and solve_prg_obligations prg tac =
+and solve_prg_obligations prg ?oblset tac =
   let obls, rem = prg.prg_obligations in
   let rem = ref rem in
   let obls' = Array.copy obls in
+  let p = match oblset with
+    | None -> (fun _ -> true)
+    | Some s -> (fun i -> Intset.mem i s)
+  in
   let _ =
     Array.iteri (fun i x ->
-		   if solve_obligation_by_tac prg obls' i tac then
-		     decr rem)
+		 if p i && solve_obligation_by_tac prg obls' i tac then
+		   decr rem)
       obls'
   in
     update_obls prg obls' !rem
@@ -582,9 +587,9 @@ and try_solve_obligation n prg tac =
 and try_solve_obligations n tac =
   try ignore (solve_obligations n tac) with NoObligations _ -> ()
 
-and auto_solve_obligations n tac : progress =
+and auto_solve_obligations n ?oblset tac : progress =
   Flags.if_verbose msgnl (str "Solving obligations automatically...");
-  try solve_prg_obligations (get_prog_err n) tac with NoObligations _ -> Dependent
+  try solve_prg_obligations (get_prog_err n) ?oblset tac with NoObligations _ -> Dependent
 
 open Pp
 let show_obligations_of_prg ?(msg=true) prg =
