@@ -445,16 +445,16 @@ esac
 CAMLVERSION=`"$bytecamlc" -version`
 
 case $CAMLVERSION in
-    1.*|2.*|3.0*)
+    1.*|2.*|3.0*|3.10*|3.11.[01])
 	echo "Your version of Objective-Caml is $CAMLVERSION."
 	if [ "$force_caml_version" = "yes" ]; then
 	    echo "*Warning* You are compiling Coq with an outdated version of Objective-Caml."
 	else
-	    echo "          You need Objective-Caml 3.10.0 or later."
+	    echo "          You need Objective-Caml 3.11.2 or later."
 	    echo "          Configuration script failed!"
 	    exit 1
 	fi;;
-    3.1*)
+    3.11.2|3.12*)
 	CAMLP4COMPAT="-loc loc" 
 	echo "You have Objective-Caml $CAMLVERSION. Good!";;
     *)
