@@ -38,7 +38,7 @@ THE COQ CLUB.
    discuss questions about the Coq system and related topics. The submission
    address is:
 
-	coq-club@coq.inria.fr
+	coq-club@inria.fr
 
    The topics to be discussed in the club should include:
 
@@ -55,7 +55,7 @@ THE COQ CLUB.
 
    To be added to, or removed from, the mailing list, please write to:
 
-	coq-club-request@coq.inria.fr
+	coq-club-request@inria.fr
 
    Please use also this address for any questions/suggestions about the
    Coq Club. It might sometimes take a few days before your messages get
@@ -67,7 +67,7 @@ BUGS REPORT.
 
    Send your bug reports by filling a form at
 
-        http://logical.saclay.inria.fr/coq-bugs
+        http://coq.inria.fr/bugs
 
    To be effective, bug reports should mention the Caml version used
    to compile and run Coq, the Coq version (coqtop -v), the configuration

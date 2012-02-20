@@ -39,9 +39,9 @@ WHAT DO YOU NEED ?
 
      urpmi coq
 
-   Should you need or prefer to compile Coq V8.2 yourself, you need:
+   Should you need or prefer to compile Coq V8.4 yourself, you need:
 
-     - Objective Caml version 3.10.0 or later
+     - Objective Caml version 3.11.2 or later
        (available at http://caml.inria.fr/)
 
      - Camlp5 (version <= 4.08, or 5.* transitional)
@@ -87,7 +87,7 @@ QUICK INSTALLATION PROCEDURE.
 INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 =================================================
 
-1- Check that you have the Objective Caml compiler version 3.10.0 (or later)
+1- Check that you have the Objective Caml compiler version 3.11.2 (or later)
    installed on your computer and that "ocamlmktop" and "ocamlc" (or
    its native code version "ocamlc.opt") lie in a directory which is present
    in your $PATH environment variable. 
