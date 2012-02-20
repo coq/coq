@@ -107,9 +107,11 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 	let i = Nameops.add_suffix (Classes.id_of_class k) "_instance_0" in
 	  Namegen.next_global_ident_away i (Termops.ids_of_context env)
   in
-  let env' = push_rel_context ctx env in
   evars := Typeclasses.mark_resolvables (Evarutil.nf_evar_map !evars);
   evars := resolve_typeclasses ~onlyargs:false ~fail:true env !evars;
+  let ctx = Evarutil.nf_rel_context_evar !evars ctx 
+  and ctx' = Evarutil.nf_rel_context_evar !evars ctx' in
+  let env' = push_rel_context ctx env in
   let sigma =  !evars in
   let subst = List.map (Evarutil.nf_evar sigma) subst in
   let props =
@@ -157,6 +159,8 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 	    Inl (type_ctx_instance evars (push_rel_context ctx' env') k.cl_props props subst)
   in	  
   evars := Evarutil.nf_evar_map !evars;
+  evars := Typeclasses.mark_resolvables !evars;
+  evars := resolve_typeclasses ~onlyargs:true ~fail:true env !evars;
   let term, termtype =
     match subst with
     | Inl subst ->

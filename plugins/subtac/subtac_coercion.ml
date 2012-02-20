@@ -28,7 +28,7 @@ open Eterm
 open Pp
 
 let app_opt env evars f t =
-  Tacred.simpl env !evars (app_opt f t)
+  whd_betaiota !evars (app_opt f t)
 
 let pair_of_array a = (a.(0), a.(1))
 let make_name s = Name (id_of_string s)
@@ -83,7 +83,8 @@ module Coercion = struct
       | Type _, Prop Null -> Prop Null
       | _, Type _ -> s2
 
-  let hnf env isevars c = whd_betadeltaiota env ( !isevars) c
+  let hnf env isevars c = whd_betadeltaiota env isevars c
+  let hnf_nodelta env evars c = whd_betaiota evars c
 
   let lift_args n sign =
     let rec liftrec k = function
@@ -94,15 +95,15 @@ module Coercion = struct
 
   let rec mu env isevars t =
     let rec aux v =
-      let v = hnf env isevars v in
+      let v = hnf env !isevars v in
       match disc_subset v with
 	  Some (u, p) ->
 	    let f, ct = aux u in
-	    let p = hnf env isevars p in
+	    let p = hnf env !isevars p in
 	      (Some (fun x ->
-		       app_opt env isevars 
-		         f (mkApp ((delayed_force sig_).proj1,
-				 [| u; p; x |]))),
+		     app_opt env isevars 
+		     f (mkApp ((delayed_force sig_).proj1,
+			       [| u; p; x |]))),
 	       ct)
 	| None -> (None, v)
     in aux t
@@ -111,7 +112,7 @@ module Coercion = struct
       : (Term.constr -> Term.constr) option
       =
     let rec coerce_unify env x y =
-      let x = hnf env isevars x and y = hnf env isevars y in
+      let x = hnf env !isevars x and y = hnf env !isevars y in
 	try
 	  isevars := the_conv_x_leq env x y !isevars;
 	  None
@@ -359,7 +360,7 @@ module Coercion = struct
 
   let inh_app_fun env isevars j =
     let isevars = ref isevars in
-    let t = whd_betadeltaiota env !isevars j.uj_type in
+    let t = hnf env !isevars j.uj_type in
       match kind_of_term t with
 	| Prod (_,_,_) -> (!isevars,j)
 	| Evar ev when not (is_defined_evar !isevars ev) ->
@@ -387,7 +388,7 @@ module Coercion = struct
       error_not_a_type_loc loc env ( isevars) j
 
   let inh_coerce_to_sort loc env isevars j =
-    let typ = whd_betadeltaiota env ( isevars) j.uj_type in
+    let typ = hnf env isevars j.uj_type in
       match kind_of_term typ with
 	| Sort s -> (isevars,{ utj_val = j.uj_val; utj_type = s })
 	| Evar ev when not (is_defined_evar isevars ev) ->
@@ -398,7 +399,7 @@ module Coercion = struct
 
   let inh_coerce_to_base loc env isevars j =
     let isevars = ref isevars in
-    let typ = whd_betadeltaiota env !isevars j.uj_type in
+    let typ = hnf env !isevars j.uj_type in
     let ct, typ' = mu env isevars typ in
     let res =
       { uj_val = app_opt env isevars ct j.uj_val;
@@ -407,7 +408,7 @@ module Coercion = struct
 
   let inh_coerce_to_prod loc env isevars t =
     let isevars = ref isevars in
-    let typ = whd_betadeltaiota env !isevars (snd t) in
+    let typ = hnf env !isevars (snd t) in
     let _, typ' = mu env isevars typ in
       !isevars, (fst t, typ')
 
@@ -462,22 +463,23 @@ module Coercion = struct
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
   let inh_conv_coerce_to_gen rigidonly loc env evd cj ((n, t) as _tycon) =
     match n with
-	None ->
-	  let (evd', val') =
-	    try
-	      inh_conv_coerce_to_fail loc env evd rigidonly
-		(Some cj.uj_val) cj.uj_type t
-	    with NoCoercion ->
-	      let sigma =  evd in
-		try
-		  coerce_itf loc env evd (Some cj.uj_val) cj.uj_type t
-		with NoSubtacCoercion ->
-		  error_actual_type_loc loc env sigma cj t
-	  in
-	  let val' = match val' with Some v -> v | None -> assert(false) in
-	    (evd',{ uj_val = val'; uj_type = t })
-      | Some (init, cur) ->
-	  (evd, cj)
+    | None ->
+      let cj = { cj with uj_type = hnf_nodelta env evd cj.uj_type } 
+      and t = hnf_nodelta env evd t in
+      let (evd', val') =
+	try
+	  inh_conv_coerce_to_fail loc env evd rigidonly
+	  (Some cj.uj_val) cj.uj_type t
+	with NoCoercion ->
+	(try
+	   coerce_itf loc env evd (Some cj.uj_val) cj.uj_type t
+	 with NoSubtacCoercion ->
+	   error_actual_type_loc loc env evd cj t)
+      in
+      let val' = match val' with Some v -> v | None -> assert(false) in
+	(evd',{ uj_val = val'; uj_type = t })
+    | Some (init, cur) ->
+      (evd, cj)
 
   let inh_conv_coerce_to = inh_conv_coerce_to_gen false
   let inh_conv_coerce_rigid_to = inh_conv_coerce_to_gen true

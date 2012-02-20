@@ -323,7 +323,9 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
  	    else tycon
 	  in
 	    match ty with
-	    | Some (_, t) when Subtac_coercion.disc_subset t = None -> ty
+	    | Some (_, t) ->
+	      if Subtac_coercion.disc_subset (whd_betadeltaiota env !evdref t) = None then ty
+	      else None
 	    | _ -> None
 	in
 	let fj = pretype ftycon env evdref lvar f in
