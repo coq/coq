@@ -893,7 +893,9 @@ object(self)
     try
       let start = grab_sentence_start start self#get_start_of_input in
       let stop = grab_sentence_stop start in
-      if is_sentence_end stop#backward_char then Some (start,stop)
+      (* Is this phrase non-empty and complete ? *)
+      if stop#compare start > 0 && is_sentence_end stop#backward_char
+      then Some (start,stop)
       else None
     with Not_found -> None
 
