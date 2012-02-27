@@ -206,7 +206,9 @@ let rec vernac_com interpfun (loc,com) =
 
     | VernacFail v ->
 	if not !just_parsing then begin try
-	  interp v; raise HasNotFailed
+	  (* If the command actually works, ignore its effects on the state *)
+	  States.with_state_protection
+	    (fun v -> interp v; raise HasNotFailed) v
 	with e -> match real_error e with
 	  | HasNotFailed ->
 	      errorlabstrm "Fail" (str "The command has not failed !")
