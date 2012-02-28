@@ -260,12 +260,15 @@ type order = EQ | LT | LE | NLE
 
 (** [compare_neq] : is [arcv] in the transitive upward closure of [arcu] ?
 
-  We try to avoid visiting unneeded parts of this transitive closure,
-  by stopping as soon as [arcv] is encountered. During the recursive
-  traversal, [lt_done] and [le_done] are universes we have already
-  visited, they do not contain [arcv]. The 3rd arg is
-  [(lt_todo,le_todo)], two lists of universes not yet considered,
-  known to be above [arcu], strictly or not.
+  If [arcv] is encountered in a LT part, we could directly answer
+  without visiting unneeded parts of this transitive closure.
+  If [arcv] is encountered in a LE part, we could only change the
+  default answer (1st arg [c]) from NLE to LE, since a strict
+  constraint may appear later. During the recursive traversal,
+  [lt_done] and [le_done] are universes we have already visited,
+  they do not contain [arcv]. The 4rd arg is [(lt_todo,le_todo)],
+  two lists of universes not yet considered, known to be above [arcu],
+  strictly or not.
 
   We use depth-first search, but the presence of [arcv] in [new_lt]
   is checked as soon as possible : this seems to be slightly faster
@@ -273,30 +276,33 @@ type order = EQ | LT | LE | NLE
 *)
 
 let compare_neq g arcu arcv =
-  let rec cmp lt_done le_done = function
-  | [],[] -> NLE
+  let rec cmp c lt_done le_done = function
+  | [],[] -> c
   | arc::lt_todo, le_todo ->
     if List.memq arc lt_done then
-      cmp lt_done le_done (lt_todo,le_todo)
+      cmp c lt_done le_done (lt_todo,le_todo)
     else
       let lt_new = can g (arc.lt@arc.le) in
       if List.memq arcv lt_new then LT
-      else cmp (arc::lt_done) le_done (lt_new@lt_todo,le_todo)
+      else cmp c (arc::lt_done) le_done (lt_new@lt_todo,le_todo)
   | [], arc::le_todo ->
-    if arc == arcv then LE
-    (* No need to continue inspecting universes above arc:
-       if arcv is strictly above arc, then we would have a cycle *)
+    if arc == arcv then
+      (* No need to continue inspecting universes above arc:
+	 if arcv is strictly above arc, then we would have a cycle.
+         But we cannot answer LE yet, a stronger constraint may
+	 come later from [le_todo]. *)
+      cmp LE lt_done le_done ([],le_todo)
     else
       if (List.memq arc lt_done) || (List.memq arc le_done) then
-	cmp lt_done le_done ([],le_todo)
+	cmp c lt_done le_done ([],le_todo)
       else
 	let lt_new = can g arc.lt in
 	if List.memq arcv lt_new then LT
 	else
 	  let le_new = can g arc.le in
-	  cmp lt_done (arc::le_done) (lt_new, le_new@le_todo)
+	  cmp c lt_done (arc::le_done) (lt_new, le_new@le_todo)
   in
-  cmp [] [] ([],[arcu])
+  cmp NLE [] [] ([],[arcu])
 
 let compare g arcu arcv =
   if arcu == arcv then EQ else compare_neq g arcu arcv
