@@ -232,18 +232,19 @@ let rec (find_call_occs : int -> int -> constr -> constr ->
   | Rel(v) -> if v > nb_lam then error "find_call_occs : Rel" else ((fun l -> expr),[])
   | Var(_) when eq_constr expr f -> errorlabstrm "recdef" (str "Partial application of function " ++ Printer.pr_lconstr expr ++ str " in its body is not allowed while using Function")
   | Var(id) -> (fun l -> expr), []
-  | Meta(_) -> error "find_call_occs : Meta"
-  | Evar(_) -> error "find_call_occs : Evar"
+  | Meta(_) -> error "Found a metavariable. Can not treat such a term" 
+  | Evar(_) -> error "Found an evar. Can not treat such a term"
   | Sort(_)  -> (fun l -> expr), []
   | Cast(b,_,_) -> find_call_occs nb_arg nb_lam f b
-  | Prod(_,_,_) -> error "find_call_occs : Prod"
+  | Prod(na,t,b) -> 
+    error "Found a product. Can not treat such a term"
   | Lambda(na,t,b) ->
       begin
 	match find_call_occs nb_arg (succ nb_lam) f b with
 	  | _, [] ->  (* Lambda are authorized as long as they do not contain
 			 recursives calls *)
 	      (fun l -> expr),[]
-	  | _ ->  error "find_call_occs : Lambda"
+	  | _ ->  error "Found a lambda which body contains a recursive call. Such terms are not allowed"
       end
   | LetIn(na,v,t,b) ->
       begin
@@ -254,7 +255,7 @@ let rec (find_call_occs : int -> int -> constr -> constr ->
 	      ((fun  l -> mkLetIn(na,v,t,cf l)),l)
 	  | (cf,(_::_ as l)),(_,[]) ->
 	      ((fun l -> mkLetIn(na,cf l,t,b)), l)
-	  | _ -> error "find_call_occs : LetIn"
+	  | _ -> error "Found a letin with recursive calls in both variable value and body. Such terms are not allowed."
       end
   | Const(_) -> (fun l -> expr), []
   | Ind(_) -> (fun l -> expr), []
@@ -263,8 +264,8 @@ let rec (find_call_occs : int -> int -> constr -> constr ->
       (match find_call_occs nb_arg nb_lam f a with
 	cf, (arg1::args) -> (fun l -> mkCase(i, t, (cf l), r)),(arg1::args)
       | _ -> (fun l -> expr),[])
-  | Fix(_) -> error "find_call_occs : Fix"
-  | CoFix(_) -> error "find_call_occs : CoFix";;
+  | Fix(_) -> error "Found a local fixpoint. Can not treat such a term"
+  | CoFix(_) -> error "Found a local cofixpoint : CoFix";;
 
 let coq_constant s =
   Coqlib.gen_constant_in_modules "RecursiveDefinition"
