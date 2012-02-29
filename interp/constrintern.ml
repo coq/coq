@@ -1586,17 +1586,17 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	let (match_to_do,nal) =
 	  let rec canonize_args case_rel_ctxt arg_pats forbidden_names match_acc var_acc =
 	    let add_name l = function
-	      |Anonymous -> l
-	      |Name y -> (y,PatVar(loc,x)) :: l in
+	      |_,Anonymous -> l
+	      |loc,(Name y as x) -> (y,PatVar(loc,x)) :: l in
 	    match case_rel_ctxt,arg_pats with
 	      (* LetIn in the rel_context *)
 	      |(_,Some _,_)::t, l ->
 		canonize_args t l forbidden_names match_acc var_acc
 	      |[],[] ->
-		(add_name match_acc (snd na), var_acc)
+		(add_name match_acc na, var_acc)
 	      |_::t,PatVar (loc,x)::tt ->
 		canonize_args t tt forbidden_names
-		  (add_name match_acc x) ((loc,x)::var_acc)
+		  (add_name match_acc (loc,x)) ((loc,x)::var_acc)
 	      |(cano_name,_,ty)::t,c::tt ->
 		let fresh =
 		  Namegen.next_name_away_with_default_using_types "iV" cano_name forbidden_names ty in
