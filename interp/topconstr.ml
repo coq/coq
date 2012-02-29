@@ -30,6 +30,7 @@ type aconstr =
   | ARef of global_reference
   | AVar of identifier
   | AApp of aconstr * aconstr list
+  | AHole of Evd.hole_kind
   | AList of identifier * identifier * aconstr * aconstr * bool
   (* Part only in glob_constr *)
   | ALambda of name * aconstr * aconstr
@@ -45,7 +46,6 @@ type aconstr =
       (name * aconstr option * aconstr) list array * aconstr array *
       aconstr array
   | ASort of glob_sort
-  | AHole of Evd.hole_kind
   | APatVar of patvar
   | ACast of aconstr * aconstr cast_type
 
@@ -877,7 +877,7 @@ type constr_expr =
       (constr_expr * explicitation located option) list
   | CRecord of loc * constr_expr option * (reference * constr_expr) list
   | CCases of loc * case_style * constr_expr option *
-      (constr_expr * (name located option * constr_expr option)) list *
+      (constr_expr * (name located option * cases_pattern_expr option)) list *
       (loc * cases_pattern_expr list located list * constr_expr) list
   | CLetTuple of loc * name located list * (name located option * constr_expr option) *
       constr_expr * constr_expr
@@ -989,16 +989,14 @@ let local_binders_loc bll =
   join_loc (local_binder_loc (List.hd bll)) (local_binder_loc (list_last bll))
 
 let ids_of_cases_indtype =
-  let add_var ids = function CRef (Ident (_,id)) -> id::ids | _ -> ids in
-  let rec vars_of = function
+  let rec vars_of ids = function
     (* We deal only with the regular cases *)
-    | CApp (_,_,l) -> List.fold_left add_var [] (List.map fst l)
-    | CNotation (_,_,(l,[],[]))
+    | (CPatCstr (_,_,l)|CPatCstrExpl (_, _, l)|CPatNotation (_,_,(l,[]))) -> List.fold_left vars_of [] l
     (* assume the ntn is applicative and does not instantiate the head !! *)
-    | CAppExpl (_,_,l) -> List.fold_left add_var [] l
-    | CDelimiters(_,_,c) -> vars_of c
-    | _ -> [] in
-  vars_of
+    | CPatDelimiters(_,_,c) -> vars_of ids c
+    | CPatAtom (_, Some (Libnames.Ident (_, x))) -> x::ids
+    | _ -> ids in
+  vars_of []
 
 let ids_of_cases_tomatch tms =
   List.fold_right

@@ -371,7 +371,7 @@ let pr_asin pr (na,indnalopt) =
     | None -> mt ()) ++
   (match indnalopt with
     | None -> mt ()
-    | Some t -> spc () ++ str "in " ++ pr lsimple t)
+    | Some t -> spc () ++ str "in " ++ pr_patt lsimple t)
 
 let pr_case_item pr (tm,asin) =
   hov 0 (pr (lcast,E) tm ++ pr_asin pr asin)

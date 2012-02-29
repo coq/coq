@@ -705,29 +705,26 @@ let rec extern inctx scopes vars r =
       CLambdaN (loc,[(dummy_loc,na)::idl,Default bk,t],c)
 
   | GCases (loc,sty,rtntypopt,tml,eqns) ->
-      let vars' =
-	List.fold_right (name_fold Idset.add)
-	  (cases_predicate_names tml) vars in
-      let rtntypopt' = Option.map (extern_typ scopes vars') rtntypopt in
-      let tml = List.map (fun (tm,(na,x)) ->
-        let na' = match na,tm with
-            Anonymous, GVar (_,id) when
-              rtntypopt<>None & occur_glob_constr id (Option.get rtntypopt)
-              -> Some (dummy_loc,Anonymous)
-          | Anonymous, _ -> None
-          | Name id, GVar (_,id') when id=id' -> None
-          | Name _, _ -> Some (dummy_loc,na) in
-	(sub_extern false scopes vars tm,
-	(na',Option.map (fun (loc,ind,n,nal) ->
-	  let params = list_tabulate
-	    (fun _ -> GHole (dummy_loc,Evd.InternalHole)) n in
-	  let args = List.map (function
-	    | Anonymous -> GHole (dummy_loc,Evd.InternalHole)
-	    | Name id -> GVar (dummy_loc,id)) nal in
-	  let t = GApp (dummy_loc,GRef (dummy_loc,IndRef ind),params@args) in
-	  (extern_typ scopes vars t)) x))) tml in
-      let eqns = List.map (extern_eqn inctx scopes vars) eqns in
-      CCases (loc,sty,rtntypopt',tml,eqns)
+    let vars' =
+      List.fold_right (name_fold Idset.add)
+	(cases_predicate_names tml) vars in
+    let rtntypopt' = Option.map (extern_typ scopes vars') rtntypopt in
+    let tml = List.map (fun (tm,(na,x)) ->
+      let na' = match na,tm with
+          Anonymous, GVar (_,id) when
+	      rtntypopt<>None & occur_glob_constr id (Option.get rtntypopt)
+	      -> Some (dummy_loc,Anonymous)
+        | Anonymous, _ -> None
+        | Name id, GVar (_,id') when id=id' -> None
+        | Name _, _ -> Some (dummy_loc,na) in
+      (sub_extern false scopes vars tm,
+       (na',Option.map (fun (loc,ind,n,nal) ->
+	 let params = list_tabulate
+	   (fun _ -> CPatAtom (dummy_loc,None)) n in
+	 let args = List.map (fun x -> CPatAtom (dummy_loc, match x with Anonymous -> None | Name id -> Some (Ident (dummy_loc,id)))) nal in
+	 CPatCstr (dummy_loc, extern_reference loc vars (IndRef ind),params@args)) x))) tml in
+    let eqns = List.map (extern_eqn inctx scopes vars) eqns in
+    CCases (loc,sty,rtntypopt',tml,eqns)
 
   | GLetTuple (loc,nal,(na,typopt),tm,b) ->
       CLetTuple (loc,List.map (fun na -> (dummy_loc,na)) nal,

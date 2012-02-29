@@ -243,7 +243,7 @@ GEXTEND Gram
       | "let"; "'"; p=pattern; ":="; c1 = operconstr LEVEL "200";
 	  rt = case_type; "in"; c2 = operconstr LEVEL "200" ->
 	    CCases (loc, LetPatternStyle, Some rt, [(c1, (aliasvar p, None))], [(loc, [(loc, [p])], c2)])
-      | "let"; "'"; p=pattern; "in"; t = operconstr LEVEL "200";
+      | "let"; "'"; p=pattern; "in"; t = pattern LEVEL "200";
 	  ":="; c1 = operconstr LEVEL "200"; rt = case_type;
           "in"; c2 = operconstr LEVEL "200" ->
 	    CCases (loc, LetPatternStyle, Some rt, [(c1, (aliasvar p, Some t))], [(loc, [(loc, [p])], c2)])
@@ -294,7 +294,7 @@ GEXTEND Gram
   ;
   pred_pattern:
     [ [ ona = OPT ["as"; id=name -> id];
-        ty = OPT ["in"; t=lconstr -> t] -> (ona,ty) ] ]
+        ty = OPT ["in"; t=pattern -> t] -> (ona,ty) ] ]
   ;
   case_type:
     [ [ "return"; ty = operconstr LEVEL "100" -> ty ] ]
