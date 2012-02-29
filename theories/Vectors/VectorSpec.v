@@ -16,6 +16,12 @@ Require Fin.
 Require Import VectorDef.
 Import VectorNotations.
 
+Definition cons_inj A a1 a2 n (v1 v2 : t A n)
+ (eq : a1 :: v1 = a2 :: v2) : a1 = a2 /\ v1 = v2 :=
+   match eq in _ = x return caseS _ (fun a2' _ v2' => fun v1' => a1 = a2' /\ v1' = v2') x v1
+   with | eq_refl => conj eq_refl eq_refl
+   end.
+
 (** Lemmas are done for functions that use [Fin.t] but thanks to [Peano_dec.le_unique], all
 is true for the one that use [lt] *)
 

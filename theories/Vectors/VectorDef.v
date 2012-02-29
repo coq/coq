@@ -40,17 +40,17 @@ Definition rectS {A} (P:forall {n}, t A (S n) -> Type)
  (rect: forall a {n} (v: t A (S n)), P v -> P (a :: v)) :=
  fix rectS_fix {n} (v: t A (S n)) : P v :=
  match v with
- |nil => @id
+ |nil => fun devil => False_rect (@ID) devil
  |cons a 0 v =>
    match v as vnn in t _ nn
        return
          match nn,vnn with
          |0,vm =>  P (a :: vm)
-         |S _,_ => ID
+         |S _,_ => _
          end
      with
      |nil => bas a
-     |_ :: _ => @id
+     |_ :: _ => fun devil => False_rect (@ID) devil
      end
  |cons a (S nn') v => rect a v (rectS_fix v)
  end.
@@ -66,11 +66,11 @@ match v1 as v1' in t _ n1
   |[] => fun v2 =>
      match v2 with
        |[] => bas
-       |_ :: _ => @id
+       |_ :: _ => fun devil => False_rect (@ID) devil
      end
   |h1 :: t1 => fun v2 =>
     match v2 with
-      |[] => @id
+      |[] => fun devil => False_rect (@ID) devil
       |h2 :: t2 => fun t1' =>
         rect (rect2_fix t1' t2) h1 h2
     end t1
@@ -83,10 +83,10 @@ match v with
 end.
 
 (** A vector of length [S _] is [cons] *)
-Definition caseS {A} (P : forall n, t A (S n) -> Type)
-  (H : forall h {n} t, @P n (h :: t)) {n} v : P n v :=
-match v with
-  |[] => @id (* Why needed ? *)
+Definition caseS {A} (P : forall {n}, t A (S n) -> Type)
+  (H : forall h {n} t, @P n (h :: t)) {n} (v: t A (S n)) : P v :=
+match v as v' in t _ m return match m, v' with |0, _ => False -> True |S _, v0 => P v' end with
+  |[] => fun devil => False_rect _ devil (* subterm !!! *)
   |h :: t => H h t
 end.
 End SCHEMES.
@@ -111,11 +111,12 @@ Fixpoint const {A} (a:A) (n:nat) :=
 
 Computational behavior of this function should be the same as
 ocaml function. *)
-Fixpoint nth {A} {m} (v' : t A m) (p : Fin.t m) {struct p} : A :=
+Definition nth {A} := 
+fix nth_fix {m} (v' : t A m) (p : Fin.t m) {struct v'} : A :=
 match p in Fin.t m' return t A m' -> A with
  |Fin.F1 q => fun v => caseS (fun n v' => A) (fun h n t => h) v
  |Fin.FS q p' => fun v => (caseS (fun n v' => Fin.t n -> A)
-   (fun h n t p0 => nth t p0) v) p'
+   (fun h n t p0 => nth_fix t p0) v) p'
 end v'.
 
 (** An equivalent definition of [nth]. *)

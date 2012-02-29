@@ -14,7 +14,7 @@ Require Arith_base.
 the n-uplet and [FS] set (n-1)-uplet of all the element but the first.
 
    Author: Pierre Boutillier
-   Institution: PPS, INRIA 12/2010
+   Institution: PPS, INRIA 12/2010-01/2012
 *)
 
 Inductive t : nat -> Set :=
@@ -68,6 +68,13 @@ match a with
                        end a'
 end.
 End SCHEMES.
+
+Definition FS_inj {n} (x y: t n) (eq: FS x = FS y): x = y :=
+match eq in _ = a return
+  match a as a' in t m return match m with |0 => Prop |S n' => t n' -> Prop end
+  with @F1 _ =>  fun _ => True |@FS _ y => fun x' => x' = y end x with
+  eq_refl => eq_refl
+end.
 
 (** [to_nat f] = p iff [f] is the p{^ th} element of [fin m]. *)
 Fixpoint to_nat {m} (n : t m) : {i | i < m} :=
@@ -167,6 +174,7 @@ end.
 
 Lemma depair_sanity {m n} (o : t m) (p : t n) :
   proj1_sig (to_nat (depair o p)) = n * (proj1_sig (to_nat o)) + (proj1_sig (to_nat p)).
+Proof.
 induction o ; simpl.
   rewrite L_sanity. now rewrite Mult.mult_0_r.
 
