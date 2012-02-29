@@ -588,15 +588,15 @@ let rec reflexivity_with_destruct_cases g =
     )
   in
   (tclFIRST
-    [ reflexivity;
-      tclTHEN (tclPROGRESS discr_inject) (destruct_case ());
+    [ observe_tac "reflexivity_with_destruct_cases : reflexivity" reflexivity;
+      observe_tac "reflexivity_with_destruct_cases : destruct_case" ((destruct_case ()));
       (*  We reach this point ONLY if
 	  the same value is matched (at least) two times
 	  along binding path.
 	  In this case, either we have a discriminable hypothesis and we are done,
 	  either at least an injectable one and we do the injection before continuing
       *)
-      tclTHEN (tclPROGRESS discr_inject ) reflexivity_with_destruct_cases
+      observe_tac "reflexivity_with_destruct_cases : others" (tclTHEN (tclPROGRESS discr_inject ) reflexivity_with_destruct_cases)
     ])
     g
 
