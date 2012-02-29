@@ -497,7 +497,7 @@ let set_options options =
 let eval_call c =
   let rec handle_exn e =
     catch_break := false;
-    let pr_exn e = string_of_ppcmds (Errors.print e) in
+    let pr_exn e = (read_stdout ())^("\n"^(string_of_ppcmds (Errors.print e))) in
     match e with
       | Vernacexpr.Drop -> None, "Drop is not allowed by coqide!"
       | Vernacexpr.Quit -> None, "Quit is not allowed by coqide!"
