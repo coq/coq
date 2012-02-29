@@ -1453,27 +1453,54 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	  intern env app
 	end
     | CCases (loc, sty, rtnpo, tms, eqns) ->
-        let tms,env' = List.fold_right
-          (fun citm (inds,env) ->
-	    let (tm,ind),nal = intern_case_item env citm in
-	    (tm,ind)::inds,List.fold_left (push_name_env lvar (Variable,[],[],[])) (reset_hidden_inductive_implicit_test env) nal)
-	  tms ([],env) in
-        let rtnpo = Option.map (intern_type env') rtnpo in
+      let as_in_vars = List.fold_left (fun acc (_,(na,inb)) ->
+	Option.fold_left (fun x tt -> List.fold_right Idset.add (ids_of_cases_indtype tt) x)
+	  (Option.fold_left (fun x (_,y) -> match y with | Name y' -> Idset.add y' x |_ -> x) acc na)
+	  inb) Idset.empty tms in
+      (* as, in & return vars *)
+      let forbidden_vars = Option.cata Topconstr.free_vars_of_constr_expr as_in_vars rtnpo in
+      let tms,match_from_in = List.fold_right
+	(fun citm (inds,matchs) ->
+	  let ((tm,ind),match_td) = intern_case_item env forbidden_vars citm in
+	  (tm,ind)::inds, List.rev_append match_td matchs) tms ([],[]) in
+      let env' = Idset.fold
+	(fun var bli -> push_name_env lvar (Variable,[],[],[]) bli (dummy_loc,Name var))
+	as_in_vars (reset_hidden_inductive_implicit_test env) in
+      (* PatVars before a real pattern do not need to be matched *)
+      let stripped_match_from_in = let rec aux = function
+	|[] -> []
+	|(_,PatVar _) :: q -> aux q
+	|l -> l
+				   in aux match_from_in in
+        let rtnpo = match stripped_match_from_in with
+	  | [] -> Option.map (intern_type env') rtnpo (* Only PatVar in "in" clauses *)
+	  | l -> let thevars,thepats=List.split l in
+		 Some (
+		   GCases(dummy_loc,Term.RegularStyle,Some (GSort (dummy_loc,GType None)), (* "return Type" *)
+			  List.map (fun id -> GVar (dummy_loc,id),(Name id,None)) thevars, (* "match v1,..,vn" *)
+			  [dummy_loc,[],thepats, (* "|p1,..,pn" *)
+			   Option.cata (intern_type env') (GHole(dummy_loc,Evd.CasesType)) rtnpo; (* "=> P" is there were a P "=> _" else *)
+			   dummy_loc,[],list_make (List.length thepats) (PatVar(dummy_loc,Anonymous)), (* "|_,..,_" *)
+			   GHole(dummy_loc,Evd.CasesType) (* "=> _" *)]))
+	in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
 	GCases (loc, sty, rtnpo, tms, List.flatten eqns')
     | CLetTuple (loc, nal, (na,po), b, c) ->
 	let env' = reset_tmp_scope env in
-        let ((b',(na',_)),ids) = intern_case_item env' (b,(na,None)) in
-        let p' = Option.map (fun p ->
-          let env'' = List.fold_left (push_name_env lvar (Variable,[],[],[])) env ids in
-	  intern_type env'' p) po in
+	(* "in" is None so no match to add *)
+        let ((b',(na',_)),_) = intern_case_item env' Idset.empty (b,(na,None)) in
+        let p' = Option.map (fun u ->
+	  let env'' = push_name_env lvar (Variable,[],[],[]) (reset_hidden_inductive_implicit_test env')
+	    (dummy_loc,na') in
+	  intern_type env'' u) po in
         GLetTuple (loc, List.map snd nal, (na', p'), b',
                    intern (List.fold_left (push_name_env lvar (Variable,[],[],[])) (reset_hidden_inductive_implicit_test env) nal) c)
     | CIf (loc, c, (na,po), b1, b2) ->
-	let env' = reset_tmp_scope env in
-        let ((c',(na',_)),ids) = intern_case_item env' (c,(na,None)) in
-        let p' = Option.map (fun p ->
-          let env'' = List.fold_left (push_name_env lvar (Variable,[],[],[])) (reset_hidden_inductive_implicit_test env) ids in
+      let env' = reset_tmp_scope env in
+      let ((c',(na',_)),_) = intern_case_item env' Idset.empty (c,(na,None)) in (* no "in" no match to ad too *)
+      let p' = Option.map (fun p ->
+          let env'' = push_name_env lvar (Variable,[],[],[]) (reset_hidden_inductive_implicit_test env)
+	    (dummy_loc,na') in
 	  intern_type env'' p) po in
         GIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole (loc, k) ->
@@ -1524,25 +1551,56 @@ let internalize sigma globalenv env allow_patvar lvar c =
       let rhs' = intern {env with ids = env_ids} rhs in
       (loc,eqn_ids,pl,rhs')) pll
 
-  and intern_case_item env (tm,(na,t)) =
+  and intern_case_item env forbidden_names_for_gen (tm,(na,t)) =
+    (*the "match" part *)
     let tm' = intern env tm in
-    let ids,typ = match t with
-    | Some t ->
-	let tids = ids_of_cases_indtype t in
-	let tids = List.fold_right Idset.add tids Idset.empty in
-	let nparams,(ind,l) = intern_ind_pattern globalenv {env with ids = tids; tmp_scope = None} t in
-	let nal = List.map (function
-	  | PatVar (loc,x) -> loc,x
-	  | c -> user_err_loc (cases_pattern_loc c,"",str "Not a name.")) l in
-	nal, Some (cases_pattern_expr_loc t,ind,nparams,List.map snd nal)
-    | None ->
-	[], None in
+    (* the "as" part *)
     let na = match tm', na with
       | GVar (loc,id), None when Idset.mem id env.ids -> loc,Name id
       | GRef (loc, VarRef id), None -> loc,Name id
       | _, None -> dummy_loc,Anonymous
       | _, Some (loc,na) -> loc,na in
-    (tm',(snd na,typ)), na::ids
+    (* the "in" part *)
+    let match_td,typ = match t with
+    | Some t ->
+	let tids = ids_of_cases_indtype t in
+	let tids = List.fold_right Idset.add tids Idset.empty in
+	let nparams,(ind,l) = intern_ind_pattern globalenv {env with ids = tids; tmp_scope = None} t in
+	(* for "in Vect n", we answer (nothing to match above, abstract over
+	   "n")=([],[(loc,"n")])
+
+	   for "in Vect (S n)", we answer ((match over "m", relevant branch is "S
+	   n"), abstract over "m") = ([("m","S n")],[(loc,"m")]) where "m" is
+	   generated from the canonical name of the inductive and outside of
+	   {forbidden_names_for_gen} *)
+	let (match_to_do,nal) =
+	  let rec canonize_args case_rel_ctxt arg_pats forbidden_names match_acc var_acc =
+	    let add_name l = function
+	      |Anonymous -> l
+	      |Name y -> (y,PatVar(loc,x)) :: l in
+	    match case_rel_ctxt,arg_pats with
+	      (* LetIn in the rel_context *)
+	      |(_,Some _,_)::t, l ->
+		canonize_args t l forbidden_names match_acc var_acc
+	      |[],[] ->
+		(add_name match_acc (snd na), var_acc)
+	      |_::t,PatVar (loc,x)::tt ->
+		canonize_args t tt forbidden_names
+		  (add_name match_acc x) ((loc,x)::var_acc)
+	      |(cano_name,_,ty)::t,c::tt ->
+		let fresh =
+		  Namegen.next_name_away_with_default_using_types "iV" cano_name forbidden_names ty in
+		canonize_args t tt (fresh::forbidden_names)
+		  ((fresh,c)::match_acc) ((cases_pattern_loc c,Name fresh)::var_acc)
+	      |_ -> assert false in
+	  let (mib,mip) = Inductive.lookup_mind_specif globalenv ind in
+	  let _,args_rel =
+	    list_chop (List.length (mib.Declarations.mind_params_ctxt)) mip.Declarations.mind_arity_ctxt in
+	  canonize_args args_rel l (Idset.elements forbidden_names_for_gen) [] [] in
+	match_to_do, Some (cases_pattern_expr_loc t,ind,nparams,List.rev_map snd nal)
+    | None ->
+      [], None in
+    (tm',(snd na,typ)), match_td
 
   and iterate_prod loc2 env bk ty body nal =
     let rec default env bk = function
