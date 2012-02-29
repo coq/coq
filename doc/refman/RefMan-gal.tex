@@ -311,7 +311,7 @@ called \CIC). The formal presentation of {\CIC} is given in Chapter
 {\annotation} & ::= & {\tt \{ struct} {\ident} {\tt \}} \\ 
 &&\\
 {\caseitem} & ::= & {\term} \zeroone{{\tt as} \name}
-     \zeroone{{\tt in} \term} \\
+     \zeroone{{\tt in} \pattern} \\
 &&\\
 {\ifitem} & ::= & \zeroone{{\tt as} {\name}} {\returntype} \\
 &&\\
@@ -322,6 +322,8 @@ called \CIC). The formal presentation of {\CIC} is given in Chapter
 {\multpattern} & ::= & \nelist{\pattern}{\tt ,}\\
 &&\\
 {\pattern} & ::= & {\qualid} \nelist{\pattern}{}  \\
+ & $|$ & {\tt @} {\qualid} \sequence{\pattern}{} \\
+
  & $|$ & {\pattern} {\tt as} {\ident}             \\
  & $|$ & {\pattern} {\tt \%} {\ident}         \\
  & $|$ & {\qualid}                              \\

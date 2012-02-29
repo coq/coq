@@ -23,6 +23,16 @@ open Nametab
 open Notation
 open Inductiveops
 
+(** constr_expr -> glob_constr translation:
+    - it adds holes for implicit arguments
+    - it remplaces notations by their value (scopes stuff are here)
+    - it recognizes global vars from local ones
+    - it prepares pattern maching problems (a pattern becomes a tree where nodes
+    are constructor/variable pairs and leafs are variables)
+
+    All that at once, fasten your seatbelt!
+*)
+
 (* To interpret implicits and arg scopes of variables in inductive
    types and recursive definitions and of projection names in records *)
 
@@ -1204,7 +1214,7 @@ let rec intern_ind_pattern genv env pat =
     let idslpl2 = List.map2 (fun x -> intern_cases_pattern genv {env with tmp_scope = x} ([],[])) argscs2 pl2 in
     match product_of_cases_patterns [] (idslpl1@idslpl2) with
       |_,[_,pl] ->
-	(c,chop_params_pattern loc (c,42) pl false)
+	(c,chop_params_pattern loc (c,42) (* 42 is because of function cares about inductive but takes a constructor *) pl false)
       |_ -> error_bad_inductive_type loc
   in
   match pat with
@@ -1595,7 +1605,8 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	      |_ -> assert false in
 	  let (mib,mip) = Inductive.lookup_mind_specif globalenv ind in
 	  let _,args_rel =
-	    list_chop (List.length (mib.Declarations.mind_params_ctxt)) mip.Declarations.mind_arity_ctxt in
+	    list_chop (List.length (mib.Declarations.mind_params_ctxt))
+	      (List.rev mip.Declarations.mind_arity_ctxt) in
 	  canonize_args args_rel l (Idset.elements forbidden_names_for_gen) [] [] in
 	match_to_do, Some (cases_pattern_expr_loc t,ind,nparams,List.rev_map snd nal)
     | None ->

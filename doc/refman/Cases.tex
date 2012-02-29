@@ -131,7 +131,9 @@ Fixpoint even (n:nat) : bool :=
 This is compiled into:
 
 \begin{coq_example}
+Unset Printing Matching.
 Print even.
+Set Printing Matching.
 \end{coq_example}
 
 In the previous examples patterns do not conflict with, but
@@ -234,9 +236,9 @@ Definition filter_some_square_corners (p:nat*nat) : nat*nat :=
 \end{coq_example}
 
 \asection{About patterns of parametric types}
-When matching objects of a parametric type, constructors in patterns
-{\em do not expect} the parameter arguments. Their value is deduced
-during expansion.
+\paragraph{Parameters in patterns}
+When matching objects of a parametric type, parameters do not bind in patterns.
+They must be substituted by ``\_''.
 Consider for example the type of polymorphic lists:
 
 \begin{coq_example}
@@ -251,8 +253,8 @@ We can check the function {\em tail}:
 Check
   (fun l:List nat =>
      match l with
-     | nil => nil nat
-     | cons _ l' => l'
+     | nil _ => nil nat
+     | cons _ _ l' => l'
      end).
 \end{coq_example}
 
@@ -262,7 +264,7 @@ When we use parameters in patterns there is an error message:
 \begin{coq_eval}
 Set Printing Depth 50.
 (********** The following is not correct and should produce **********)
-(******** Error: The constructor cons expects 2 arguments ************)
+(******** Error: Parameters do not bind ... ************)
 \end{coq_eval}
 \begin{coq_example}
 Check
@@ -273,7 +275,31 @@ Check
      end).
 \end{coq_example}
 
+\paragraph{Implicit arguments in patterns}
+By default, implicit arguments are omitted in patterns. So we write:
 
+\begin{coq_example}
+Arguments nil [A].
+Arguments cons [A] _ _.
+Check
+  (fun l:List nat =>
+     match l with
+     | nil => nil
+     | cons _ l' => l'
+     end).
+\end{coq_example}
+
+But the possibility to use all the arguments is given by ``{\tt @}'' implicit
+explicitations (as for terms~\ref{Implicits-explicitation}).
+
+\begin{coq_example}
+Check
+  (fun l:List nat =>
+     match l with
+     | @nil _ => @nil nat
+     | @cons _ _ l' => l'
+     end).
+\end{coq_example}
 
 \asection{Matching objects of dependent types}
 The previous examples illustrate pattern matching on objects of
@@ -384,6 +410,7 @@ it is the expansion algorithm that cares to relate them. \\
 %
 
 \asubsection{When the elimination predicate must be provided}
+\paragraph{Dependent pattern matching}
 The examples  given so far do not need an explicit elimination predicate
  because all the rhs have the same type and the
 strategy succeeds to synthesize it.
@@ -417,15 +444,15 @@ and bounded in the property $Q$ in the \kw{return} clause. The
 parameters of the inductive definitions should not be mentioned and
 are replaced by \kw{\_}.
 
-Recall that a list of patterns is also a pattern. So, when
-we destructure several terms at the same time and the branches have
-different type  we need to provide
-the elimination predicate for this multiple pattern. 
-It is done using the same scheme, each term may be associated to an
-\kw{as} and \kw{in} clause in order to introduce a dependent product.
+\paragraph{Multiple dependent pattern matching}
+Recall that a list of patterns is also a pattern. So, when we destructure several
+terms at the same time and the branches have different types we need to provide the
+elimination predicate for this multiple pattern. It is done using the same
+scheme, each term may be associated to an \kw{as} and \kw{in} clause in order to
+introduce a dependent product.
 
-For example, an equivalent definition for \texttt{concat} (even though the matching on the second term is trivial) would have
-been:
+For example, an equivalent definition for \texttt{concat} (even though the
+matching on the second term is trivial) would have been:
 
 \begin{coq_example}
 Reset concat.
@@ -437,35 +464,72 @@ Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
   end.
 \end{coq_example}
 
+Even without real matching over the second term, this construction can be used to
+keep types linked.  If {\tt a} and {\tt b} are two {\tt listn} of the same length,
+by writing
+\begin{coq_eval}
+  Unset Printing Matching.
+\end{coq_eval}
+\begin{coq_example}
+Check (fun n (a b: listn n) => match a,b with
+ |niln,b0 => tt
+ |consn n' a y, bS => tt
+end).
+\end{coq_example}
+\begin{coq_eval}
+  Set Printing Matching.
+\end{coq_eval}
+
+I have a copy of {\tt b} in type {\tt listn 0} resp {\tt listn (S n')}.
+
 % Notice that this time, the predicate \texttt{[n,\_:nat](listn (plus n
 %   m))}  is binary because we
 % destructure both \texttt{l} and \texttt{l'} whose types have arity one.
 % In general, if we destructure the terms $e_1\ldots e_n$
 % the predicate will be of arity $m$ where $m$ is the sum of the
-% number of dependencies of the type of $e_1, e_2,\ldots e_n$ 
+% number of dependencies of the type of $e_1, e_2,\ldots e_n$
 % (the $\lambda$-abstractions
 % should correspond from left to right to each dependent argument of the
 % type of $e_1\ldots e_n$).
-When the arity of the predicate (i.e. number of abstractions) is not
-correct Coq raises an error message. For example:
+% When the arity of the predicate (i.e. number of abstractions) is not
+% correct Coq raises an error message. For example:
 
-% Test failure
-\begin{coq_eval}
-Reset concat.
-Set Printing Depth 50.
-(********** The following is not correct and should produce ***********)
-(** Error: the term l' has type listn m while it is expected to have **)
-(** type listn (?31 + ?32)                                           **)
-\end{coq_eval}
+% % Test failure
+% \begin{coq_eval}
+% Reset concat.
+% Set Printing Depth 50.
+% (********** The following is not correct and should produce ***********)
+% (** Error: the term l' has type listn m while it is expected to have **)
+% (** type listn (?31 + ?32)                                           **)
+% \end{coq_eval}
+% \begin{coq_example}
+% Fixpoint concat
+%  (n:nat) (l:listn n) (m:nat)
+%  (l':listn m) {struct l} : listn (n + m) :=
+%   match l, l' with
+%   | niln, x => x
+%   | consn n' a y, x => consn (n' + m) a (concat n' y m x)
+%   end.
+% \end{coq_example}
+
+\paragraph{Patterns in {\tt in}}
+If the type of the matched term is more precise than an inductive applied to
+variables, arguments of the inductive in the {\tt in} branch can be more
+complicated patterns than a variable.
+
+Moreover, constructors whose type do not follow the same pattern will become
+impossible branch. In impossible branch, you can answer anything but {\tt
+  False\_rect unit} has the advantage to be subterm of anything.
+
+To be concrete: the tail function can be written:
 \begin{coq_example}
-Fixpoint concat
- (n:nat) (l:listn n) (m:nat)
- (l':listn m) {struct l} : listn (n + m) :=
-  match l, l' with
-  | niln, x => x
-  | consn n' a y, x => consn (n' + m) a (concat n' y m x)
-  end.
+  Definition tail n (v: listn (S n)) :=
+    match v in listn (S m) return listn m with
+      | niln => False_rect unit
+      | consn n' a y => y
+    end.
 \end{coq_example}
+and {\tt tail n v} will be subterm of {\tt v}.
 
 \asection{Using pattern matching to write proofs}
 In all the previous examples the elimination predicate does not depend
@@ -530,11 +594,10 @@ beginning with a \texttt{match} construction.
 \asection{Pattern-matching on inductive objects involving local
 definitions}
 
-If local definitions occur in the type of a constructor, then there
-are two ways to match on this constructor. Either the local
-definitions are skipped and matching is done only on the true arguments
-of the constructors, or the bindings for local definitions can also
-be caught in the matching.
+If local definitions occur in the type of a constructor, then there are two ways
+to match on this constructor. Either the local definitions are skipped and
+matching is done only on the true arguments of the constructors, or the bindings
+for local definitions can also be caught in the matching.
 
 Example.
 
@@ -565,12 +628,18 @@ But in this example, it is.
 Fixpoint length' n (l:list n) {struct l} : nat :=
   match l with
   | nil => 0
-  | cons _ m l0 => S (length' m l0)
+  | @cons _ m l0 => S (length' m l0)
   end.
 \end{coq_example}
 
-\Rem for a given matching clause, either none of the local
-definitions or all of them can be caught.
+\Rem for a given matching clause, either none of the local definitions or all of
+them can be caught.
+
+\Rem you can only catch {\tt let} bindings in mode where you bind all variables and so you
+have to use @ syntax.
+
+\Rem this feature is incoherent with the fact that parameters cannot be caught and
+consequently is somehow hidden. For example, there is no mention of it in error messages.
 
 \asection{Pattern-matching and coercions}
 
