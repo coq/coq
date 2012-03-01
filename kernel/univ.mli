@@ -91,6 +91,10 @@ val subst_large_constraints :
 
 val no_upper_constraints : universe -> constraints -> bool
 
+(** Is u mentionned in v (or equals to v) ? *)
+
+val univ_depends : universe -> universe -> bool
+
 (** {6 Pretty-printing of universes. } *)
 
 val pr_uni_level : universe_level -> Pp.std_ppcmds

@@ -403,21 +403,6 @@ let arity_of_case_predicate env (ind,params) dep k =
 (* Inferring the sort of parameters of a polymorphic inductive type
    knowing the sort of the conclusion *)
 
-(* Check if u (sort of a parameter) appears in the sort of the
-   inductive (is). This is done by trying to enforce u > u' >= is
-   in the empty univ graph. If an inconsistency appears, then
-   is depends on u. *)
-let is_constrained is u =
-  try
-    let u' = fresh_local_univ() in
-    let _ =
-      merge_constraints
-        (enforce_geq u (super u')
-          (enforce_geq u' is empty_constraint))
-        initial_universes in
-    false
-  with UniverseInconsistency _ -> true
-
 (* Compute the inductive argument types: replace the sorts
    that appear in the type of the inductive by the sort of the
    conclusion, and the other ones by fresh universes. *)
@@ -429,7 +414,9 @@ let rec instantiate_universes env scl is = function
   | (na,None,ty)::sign, Some u::exp ->
       let ctx,_ = Reduction.dest_arity env ty in
       let s =
-        if is_constrained is u then
+	(* Does the sort of parameter [u] appear in (or equal)
+           the sort of inductive [is] ? *)
+        if univ_depends u is then
           scl (* constrained sort: replace by scl *)
         else
           (* unconstriained sort: replace by fresh universe *)

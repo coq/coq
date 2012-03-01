@@ -801,6 +801,14 @@ let no_upper_constraints u cst =
   | Atom u -> Constraint.for_all (fun (u1,_,_) -> u1 <> u) cst
   | Max _ -> anomaly "no_upper_constraints"
 
+(* Is u mentionned in v (or equals to v) ? *)
+
+let univ_depends u v =
+  match u, v with
+    | Atom u, Atom v -> u = v
+    | Atom u, Max (gel,gtl) -> List.mem u gel || List.mem u gtl
+    | _ -> anomaly "univ_depends given a non-atomic 1st arg"
+
 (* Pretty-printing *)
 
 let pr_arc = function
