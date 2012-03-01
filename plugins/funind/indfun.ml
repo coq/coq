@@ -262,20 +262,27 @@ let warning_error names e =
   let e = Cerrors.process_vernac_interp_error e in
   let e_explain e =
     match e with
-      | ToShow e -> spc () ++ Errors.print e
-      | _ -> if do_observe () then (spc () ++ Errors.print e) else mt ()
+      | ToShow e -> 
+	let e = Cerrors.process_vernac_interp_error e in
+	spc () ++ Errors.print e
+      | _ -> 
+	if do_observe () 
+	then 
+	  let e = Cerrors.process_vernac_interp_error e in 
+	  (spc () ++ Errors.print e) 
+	else mt ()
   in
   match e with
     | Building_graph e ->
-	Pp.msg_warning
-	  (str "Cannot define graph(s) for " ++
-	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
-	     e_explain e)
+      Pp.msg_warning
+	(str "Cannot define graph(s) for " ++
+	   h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
+	   e_explain e)
     | Defining_principle e ->
-	Pp.msg_warning
-	  (str "Cannot define principle(s) for "++
-	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
-	     e_explain e)
+      Pp.msg_warning
+	(str "Cannot define principle(s) for "++
+	   h 1 (prlist_with_sep (fun _ -> str","++spc ()) Ppconstr.pr_id names) ++
+	   e_explain e)
     | _ -> raise e
 
 let error_error names e =

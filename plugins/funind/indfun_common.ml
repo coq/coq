@@ -1,8 +1,8 @@
 open Names
 open Pp
-
 open Libnames
-
+open Refiner
+open Hiddentac 
 let mk_prefix pre id = id_of_string (pre^(string_of_id id))
 let mk_rel_id = mk_prefix "R_"
 let mk_correct_id id = Nameops.add_suffix (mk_rel_id id) "_correct"
@@ -475,8 +475,7 @@ let function_debug_sig =
 let _ = declare_bool_option function_debug_sig
 
 
-let do_observe () =
-  !function_debug = true
+let do_observe () = !function_debug 
 
 
 
@@ -521,3 +520,26 @@ let jmeq_refl () =
     Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
     init_constant ["Logic";"JMeq"] "JMeq_refl"
   with e -> raise (ToShow e)
+
+let h_intros l =
+  tclMAP h_intro l
+
+let h_id = id_of_string "h"
+let hrec_id = id_of_string "hrec"
+let well_founded = function () -> (coq_constant "well_founded")
+let acc_rel = function () -> (coq_constant "Acc")
+let acc_inv_id = function () -> (coq_constant "Acc_inv")
+let well_founded_ltof = function () ->  (Coqlib.coq_constant "" ["Arith";"Wf_nat"] "well_founded_ltof")
+let ltof_ref = function  () -> (find_reference ["Coq";"Arith";"Wf_nat"] "ltof")
+
+let evaluable_of_global_reference r = (* Tacred.evaluable_of_global_reference (Global.env ()) *)
+  match r with
+      ConstRef sp -> EvalConstRef sp
+    | VarRef id -> EvalVarRef id
+    | _ -> assert false;;
+
+let list_rewrite (rev:bool) (eqs: (constr*bool) list) =
+  tclREPEAT
+    (List.fold_right
+       (fun (eq,b) i -> tclORELSE ((if b then Equality.rewriteLR else Equality.rewriteRL) eq) i)
+       (if rev then (List.rev eqs) else eqs) (tclFAIL 0 (mt())));;

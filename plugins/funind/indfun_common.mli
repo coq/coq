@@ -112,3 +112,14 @@ exception Defining_principle of exn
 exception ToShow of exn
 
 val is_strict_tcc : unit -> bool
+
+val h_intros: Names.identifier list -> Proof_type.tactic
+val h_id :  Names.identifier
+val hrec_id :  Names.identifier
+val acc_inv_id :  Term.constr Util.delayed
+val ltof_ref : Libnames.global_reference Util.delayed
+val well_founded_ltof : Term.constr Util.delayed
+val acc_rel : Term.constr Util.delayed
+val well_founded : Term.constr Util.delayed
+val evaluable_of_global_reference : Libnames.global_reference -> Names.evaluable_global_reference 
+val list_rewrite : bool -> (Term.constr*bool) list -> Proof_type.tactic

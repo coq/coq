@@ -17,7 +17,7 @@ open Libnames
 
 let msgnl = Pp.msgnl
 
-
+(*
 let observe strm =
   if do_observe ()
   then Pp.msgnl strm
@@ -46,12 +46,57 @@ let observe_tac_stream s tac g =
   else tac g
 
 let observe_tac s tac g = observe_tac_stream (str s) tac g
+  *)
 
-(* let tclTRYD tac =  *)
-(*   if  !Flags.debug  || do_observe () *)
-(*   then (fun g -> try (\* do_observe_tac ""  *\)tac g with _ -> tclIDTAC g) *)
-(*   else tac *)
 
+let debug_queue = Stack.create ()
+
+let rec print_debug_queue b e = 
+  if  not (Stack.is_empty debug_queue) 
+  then
+    begin
+      let lmsg,goal = Stack.pop debug_queue in 
+      if b then 
+	Pp.msgnl (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
+      else
+	begin
+	  Pp.msgnl (str " from " ++ lmsg ++ str " on goal " ++ goal);
+	end;
+      print_debug_queue false e;
+    end
+
+let observe strm =
+  if do_observe ()
+  then Pp.msgnl strm
+  else ()
+
+let do_observe_tac s tac g = 
+  let goal = Printer.pr_goal g in
+  let lmsg = (str "observation : ") ++ s in 
+  Stack.push (lmsg,goal) debug_queue;
+  try 
+    let v = tac g in 
+    ignore(Stack.pop debug_queue);
+    v
+  with e -> 
+    begin 
+      if not (Stack.is_empty debug_queue)
+      then
+	begin 
+	  let e : exn = Cerrors.process_vernac_interp_error e in
+	  print_debug_queue true e
+	end
+      ; 
+      raise e
+    end
+
+let observe_tac_stream s tac g =
+  if do_observe ()
+  then do_observe_tac s tac g
+  else tac g
+
+let observe_tac s = observe_tac_stream (str s)
+  
 
 let list_chop ?(msg="") n l =
   try
@@ -812,20 +857,20 @@ let build_proof
 	  | Rel _ -> anomaly "Free var in goal conclusion !"
   and build_proof do_finalize dyn_infos g =
 (*     observe (str "proving with "++Printer.pr_lconstr dyn_infos.info++ str " on goal " ++ pr_gls g); *)
-    observe_tac "build_proof" (build_proof_aux do_finalize dyn_infos) g
+    observe_tac_stream (str "build_proof with " ++ Printer.pr_lconstr dyn_infos.info ) (build_proof_aux do_finalize dyn_infos) g
   and build_proof_args do_finalize dyn_infos (* f_args'  args *) :tactic =
     fun g ->
       let (f_args',args) = dyn_infos.info in
       let tac : tactic =
 	fun g ->
-	match args with
-	  | []  ->
+	  match args with
+	    | []  ->
 	      do_finalize {dyn_infos with info = f_args'} g
-	  | arg::args ->
-(* 		observe (str "build_proof_args with arg := "++ pr_lconstr_env (pf_env g) arg++ *)
-(* 			fnl () ++  *)
-(* 			pr_goal (Tacmach.sig_it g) *)
-(* 			); *)
+	    | arg::args ->
+	      (* 		observe (str "build_proof_args with arg := "++ pr_lconstr_env (pf_env g) arg++ *)
+	      (* 			fnl () ++  *)
+	      (* 			pr_goal (Tacmach.sig_it g) *)
+	      (* 			); *)
 	      let do_finalize dyn_infos =
 		let new_arg = dyn_infos.info in
 		(* 		tclTRYD *)
@@ -839,14 +884,14 @@ let build_proof
 		g
       in
       (* observe_tac "build_proof_args" *) (tac ) g
-   in
-   let do_finish_proof dyn_infos =
-     (* tclTRYD *) (clean_goal_with_heq
-      ptes_infos
-      finish_proof dyn_infos)
   in
-  (* observe_tac "build_proof" *)
-    (build_proof (clean_goal_with_heq ptes_infos do_finish_proof) dyn_infos)
+  let do_finish_proof dyn_infos =
+     (* tclTRYD *) (clean_goal_with_heq
+		      ptes_infos
+		      finish_proof dyn_infos)
+  in
+    (* observe_tac "build_proof" *)
+  (build_proof (clean_goal_with_heq ptes_infos do_finish_proof) dyn_infos)
 
 
 
@@ -1339,15 +1384,13 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 
 
 (* Proof of principles of general functions *)
-let h_id = Recdef.h_id
-and hrec_id = Recdef.hrec_id
-and acc_inv_id = Recdef.acc_inv_id
-and ltof_ref = Recdef.ltof_ref
-and acc_rel = Recdef.acc_rel
-and well_founded = Recdef.well_founded
-and h_intros = Recdef.h_intros
-and list_rewrite = Recdef.list_rewrite
-and evaluable_of_global_reference = Recdef.evaluable_of_global_reference
+(* let  hrec_id =  Recdef.hrec_id *)
+(* and acc_inv_id = Recdef.acc_inv_id *)
+(* and ltof_ref = Recdef.ltof_ref *)
+(* and acc_rel = Recdef.acc_rel *)
+(* and well_founded = Recdef.well_founded *)
+(* and list_rewrite = Recdef.list_rewrite *)
+(* and evaluable_of_global_reference = Recdef.evaluable_of_global_reference *)
 
 
 
@@ -1443,7 +1486,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 		  );
 		  observe_tac "rew_and_finish"
 		    (tclTHENLIST
-		       [tclTRY(Recdef.list_rewrite false (List.map mkVar eqs));
+		       [tclTRY(list_rewrite false (List.map (fun v -> (mkVar v,true)) eqs));
 			observe_tac "rewrite_eqs_in_eqs" (rewrite_eqs_in_eqs eqs);
 			 (observe_tac "finishing using"
 			   (
