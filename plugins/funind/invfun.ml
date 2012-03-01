@@ -69,6 +69,11 @@ let do_observe_tac s tac g =
     raise e;;
 
 
+let observe_tac_strm s tac g =
+  if do_observe ()
+  then do_observe_tac s tac g
+  else tac g
+
 let observe_tac s tac g =
   if do_observe ()
   then do_observe_tac (str s) tac g
@@ -241,6 +246,258 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
        that is~:
        \[fun (x_1:t_1)\ldots(x_n:t_n)=> fun  fv => fun res => res = fv \rightarrow graph\ x_1\ldots x_n\ res\]
     *)
+    (* we the get the definition of the graphs block *)
+    let graph_ind = destInd graphs_constr.(i) in
+    let kn = fst graph_ind in
+    let mib,_ = Global.lookup_inductive graph_ind in
+    (* and the principle to use in this lemma in $\zeta$ normal form *)
+    let f_principle,princ_type = schemes.(i) in
+    let princ_type =  nf_zeta princ_type in
+    let princ_infos = Tactics.compute_elim_sig princ_type in
+    (* The number of args of the function is then easilly computable *)
+    let nb_fun_args = nb_prod (pf_concl g)  - 2  in
+    let args_names = generate_fresh_id (id_of_string "x") [] nb_fun_args in
+    let ids = args_names@(pf_ids_of_hyps g) in
+    (* Since we cannot ensure that the funcitonnal principle is defined in the
+       environement and due to the bug #1174, we will need to pose the principle
+       using a name
+    *)
+    let principle_id = Namegen.next_ident_away_in_goal (id_of_string "princ") ids in
+    let ids = principle_id :: ids in
+    (* We get the branches of the principle *)
+    let branches = List.rev princ_infos.branches in
+    (* and built the intro pattern for each of them *)
+    let intro_pats =
+      List.map
+	(fun (_,_,br_type) ->
+	   List.map
+	     (fun id -> dummy_loc, Genarg.IntroIdentifier id)
+	     (generate_fresh_id (id_of_string "y") ids (List.length (fst (decompose_prod_assum br_type))))
+	)
+	branches
+    in
+    (* before building the full intro pattern for the principle *)
+    let eq_ind = Coqlib.build_coq_eq () in
+    let eq_construct = mkConstruct((destInd eq_ind),1) in
+    (* The next to referencies will be used to find out which constructor to apply in each branch *)
+    let ind_number = ref 0
+    and min_constr_number = ref 0 in
+    (* The tactic to prove the ith branch of the principle *)
+    let prove_branche i g =
+      (* We get the identifiers of this branch *)
+      (*
+	let this_branche_ids =
+	List.fold_right
+	(fun (_,pat) acc ->
+	     match pat with
+	       | Genarg.IntroIdentifier id -> Idset.add id acc
+	| _ -> anomaly "Not an identifier"
+	)
+	(List.nth intro_pats (pred i))
+	Idset.empty
+      in
+	let pre_args g =
+	List.fold_right
+	  (fun (id,b,t) pre_args ->
+	    if Idset.mem id this_branche_ids
+	    then
+	      match b with
+		| None -> id::pre_args
+		| Some b -> pre_args
+	    else pre_args
+	  )
+	  (pf_hyps g)
+	  ([])
+      in
+      let pre_args g = List.rev (pre_args g) in 
+      let pre_tac g =
+	List.fold_right
+	  (fun (id,b,t) pre_tac ->
+	     if Idset.mem id this_branche_ids
+	     then
+	       match b with
+		 | None -> pre_tac
+		 | Some b ->
+		   tclTHEN (h_reduce (Glob_term.Unfold([Glob_term.all_occurrences_expr,EvalVarRef id])) allHyps) pre_tac
+	     else pre_tac
+	  )
+	  (pf_hyps g)
+	  tclIDTAC
+      in
+*)     
+      let pre_args =
+      	List.fold_right
+      	  (fun (_,pat) acc ->
+      	     match pat with
+      	       | Genarg.IntroIdentifier id -> id::acc
+      	       | _ -> anomaly "Not an identifier"
+      	  )
+      	  (List.nth intro_pats (pred i))
+      	  []
+      in
+      (* and get the real args of the branch by unfolding the defined constant *)
+      (*
+	 We can then recompute the arguments of the constructor.
+	 For each [hid] introduced by this branch, if [hid] has type
+	 $forall res, res=fv -> graph.(j)\ x_1\ x_n res$ the corresponding arguments of the constructor are
+	 [ fv (hid fv (refl_equal fv)) ].
+	 If [hid] has another type the corresponding argument of the constructor is [hid]
+      *)
+      let constructor_args g =
+	List.fold_right
+	  (fun hid acc ->
+	     let type_of_hid = pf_type_of g (mkVar hid) in
+	     match kind_of_term type_of_hid with
+	       | Prod(_,_,t') ->
+		   begin
+		     match kind_of_term t' with
+		       | Prod(_,t'',t''') ->
+			   begin
+			     match kind_of_term t'',kind_of_term t''' with
+			       | App(eq,args), App(graph',_)
+				   when
+				     (eq_constr eq eq_ind) &&
+				       array_exists  (eq_constr graph') graphs_constr ->
+				   (args.(2)::(mkApp(mkVar hid,[|args.(2);(mkApp(eq_construct,[|args.(0);args.(2)|]))|]))
+				    ::acc)
+			       | _ -> mkVar hid ::  acc
+			   end
+		       | _ -> mkVar hid :: acc
+		   end
+	       | _ -> mkVar hid :: acc
+	  ) pre_args []
+      in
+      (* in fact we must also add the parameters to the constructor args *)
+      let constructor_args g =
+	let params_id = fst (list_chop princ_infos.nparams args_names) in
+	(List.map mkVar params_id)@((constructor_args g))
+      in
+      (* We then get the constructor corresponding to this branch and
+	 modifies the references has needed i.e.
+	 if the constructor is the last one of the current inductive then
+	 add one the number of the inductive to take and add the number of constructor of the previous
+	 graph to the minimal constructor number
+      *)
+      let constructor =
+	let constructor_num = i - !min_constr_number in
+	let length = Array.length (mib.Declarations.mind_packets.(!ind_number).Declarations.mind_consnames) in
+	if constructor_num <= length
+	then
+	  begin
+	    (kn,!ind_number),constructor_num
+	  end
+	else
+	  begin
+	    incr ind_number;
+	    min_constr_number := !min_constr_number + length ;
+	    (kn,!ind_number),1
+	  end
+      in
+      (* we can then build the final proof term *)
+      let app_constructor g = applist((mkConstruct(constructor)),constructor_args g) in
+      (* an apply the tactic *)
+      let res,hres =
+	match generate_fresh_id (id_of_string "z") (ids(* @this_branche_ids *)) 2 with
+	  | [res;hres] -> res,hres
+	  | _ -> assert false
+      in
+      (* observe (str "constructor := " ++ Printer.pr_lconstr_env (pf_env g) app_constructor); *)
+      (
+	tclTHENSEQ
+	  [
+	    observe_tac("h_intro_patterns ")  (let l = (List.nth intro_pats (pred i)) in 
+					       match l with 
+						 | [] -> tclIDTAC 
+						 | _ -> h_intro_patterns l);
+	    (* unfolding of all the defined variables introduced by this branch *)
+	    (* observe_tac "unfolding" pre_tac; *)
+	    (* $zeta$ normalizing of the conclusion *)
+	    h_reduce
+	      (Glob_term.Cbv
+		 { Glob_term.all_flags with
+		     Glob_term.rDelta = false ;
+		     Glob_term.rConst = []
+		 }
+	      )
+	      onConcl;
+	    observe_tac ("toto ") tclIDTAC;
+    
+	    (* introducing the the result of the graph and the equality hypothesis *)
+	    observe_tac "introducing" (tclMAP h_intro [res;hres]);
+	    (* replacing [res] with its value *)
+	    observe_tac "rewriting res value" (Equality.rewriteLR (mkVar hres));
+	    (* Conclusion *)
+	    observe_tac "exact" (fun g -> h_exact (app_constructor g) g)  
+	  ]
+      )
+	g
+    in
+    (* end of branche proof *)
+    let lemmas =
+      Array.map
+	(fun (_,(ctxt,concl)) ->
+	   match ctxt with
+	     | [] | [_] | [_;_] -> anomaly "bad context"
+	     | hres::res::(x,_,t)::ctxt ->
+		 Termops.it_mkLambda_or_LetIn
+		   (Termops.it_mkProd_or_LetIn concl [hres;res])
+		   ((x,None,t)::ctxt)
+	)
+	lemmas_types_infos
+    in
+    let param_names = fst (list_chop princ_infos.nparams args_names) in
+    let params = List.map mkVar param_names in
+    let lemmas = Array.to_list (Array.map (fun c -> applist(c,params)) lemmas) in
+    (* The bindings of the principle
+       that is the params of the principle and the different lemma types
+    *)
+    let bindings =
+      let params_bindings,avoid =
+	List.fold_left2
+	  (fun (bindings,avoid) (x,_,_) p ->
+	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
+	     (*(dummy_loc,Glob_term.NamedHyp id,p)*)p::bindings,id::avoid
+	  )
+	  ([],pf_ids_of_hyps g)
+	  princ_infos.params
+	  (List.rev params)
+      in
+      let lemmas_bindings =
+	List.rev (fst  (List.fold_left2
+	  (fun (bindings,avoid) (x,_,_) p ->
+	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
+	     (*(dummy_loc,Glob_term.NamedHyp id,(nf_zeta p))*) (nf_zeta p)::bindings,id::avoid)
+	  ([],avoid)
+	  princ_infos.predicates
+	  (lemmas)))
+      in
+      (* Glob_term.ExplicitBindings *) (params_bindings@lemmas_bindings)
+    in
+    tclTHENSEQ
+      [ 
+	observe_tac "principle" (assert_by
+	  (Name principle_id)
+	  princ_type
+	  (h_exact f_principle));
+	observe_tac "intro args_names" (tclMAP h_intro args_names);
+	(* observe_tac "titi" (pose_proof (Name (id_of_string "__")) (Reductionops.nf_beta Evd.empty  ((mkApp (mkVar principle_id,Array.of_list bindings))))); *)
+	observe_tac "idtac" tclIDTAC;
+	tclTHEN_i
+	  (observe_tac "functional_induction" (
+	    apply (mkApp (mkVar principle_id,Array.of_list bindings))
+	   ))
+	  (fun i g -> observe_tac ("proving branche "^string_of_int i) (prove_branche i) g )
+      ]
+      g
+
+
+(*
+let prove_fun_correct functional_induction funs_constr graphs_constr schemes lemmas_types_infos i : tactic =
+  fun g ->
+    (* first of all we recreate the lemmas types to be used as predicates of the induction principle
+       that is~:
+       \[fun (x_1:t_1)\ldots(x_n:t_n)=> fun  fv => fun res => res = fv \rightarrow graph\ x_1\ldots x_n\ res\]
+    *)
     let lemmas =
       Array.map
 	(fun (_,(ctxt,concl)) ->
@@ -315,7 +572,6 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 		     (pre_args,
 		      tclTHEN (h_reduce (Glob_term.Unfold([Glob_term.all_occurrences_expr,EvalVarRef id])) allHyps) pre_tac
 		     )
-
 	     else (pre_args,pre_tac)
 	  )
 	  (pf_hyps g)
@@ -326,7 +582,6 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	 For each [hid] introduced by this branch, if [hid] has type
 	 $forall res, res=fv -> graph.(j)\ x_1\ x_n res$ the corresponding arguments of the constructor are
 	 [ fv (hid fv (refl_equal fv)) ].
-
 	 If [hid] has another type the corresponding argument of the constructor is [hid]
       *)
       let constructor_args =
@@ -459,6 +714,8 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	  (fun i g -> observe_tac ("proving branche "^string_of_int i) (prove_branche i) g )
       ]
       g
+*)
+
 
 (* [generalize_dependent_of x hyp g]
    generalize every hypothesis which depends of [x] but [hyp]
@@ -494,7 +751,20 @@ and intros_with_rewrite_aux : tactic =
 		      then
 			let id = pf_get_new_id (id_of_string "y") g  in
 			tclTHENSEQ [ h_intro id; thin [id]; intros_with_rewrite ] g
-
+		      else if isVar args.(1) && (Environ.evaluable_named (destVar args.(1)) (pf_env g)) 
+		      then tclTHENSEQ[
+			unfold_in_concl [(Termops.all_occurrences, Names.EvalVarRef (destVar args.(1)))];
+			tclMAP (fun id -> tclTRY(unfold_in_hyp [(Termops.all_occurrences, Names.EvalVarRef (destVar args.(1)))] ((destVar args.(1)),Termops.InHyp) )) 
+			  (pf_ids_of_hyps g);
+			intros_with_rewrite
+		      ] g
+		      else if isVar args.(2) && (Environ.evaluable_named (destVar args.(2)) (pf_env g)) 
+		      then tclTHENSEQ[
+			unfold_in_concl [(Termops.all_occurrences, Names.EvalVarRef (destVar args.(2)))];
+			tclMAP (fun id -> tclTRY(unfold_in_hyp [(Termops.all_occurrences, Names.EvalVarRef (destVar args.(2)))] ((destVar args.(2)),Termops.InHyp) )) 
+			  (pf_ids_of_hyps g);
+			intros_with_rewrite
+		      ] g
 		      else if isVar args.(1)
 		      then
 			let id = pf_get_new_id (id_of_string "y") g  in
@@ -719,7 +989,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	(* we expand the definition of the function *)
         observe_tac "rewrite_tac" (rewrite_tac this_ind_number this_branche_ids);
 	(* introduce hypothesis with some rewrite *)
-        observe_tac "intros_with_rewrite" intros_with_rewrite;
+        observe_tac "intros_with_rewrite (all)" intros_with_rewrite;
 	(* The proof is (almost) complete *)
         observe_tac "reflexivity" (reflexivity_with_destruct_cases)
       ]
