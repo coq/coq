@@ -39,7 +39,7 @@ type aconstr =
   | ABinderList of identifier * identifier * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
   | ACases of case_style * aconstr option *
-      (aconstr * (name * (inductive * int * name list) option)) list *
+      (aconstr * (name * (inductive * name list) option)) list *
       (cases_pattern list * aconstr) list
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
   | AIf of aconstr * (name * aconstr option) * aconstr * aconstr
@@ -123,10 +123,10 @@ let glob_constr_of_aconstr_with_binders loc g f e = function
       let e',tml' = List.fold_right (fun (tm,(na,t)) (e',tml') ->
 	let e',t' = match t with
 	| None -> e',None
-	| Some (ind,npar,nal) ->
+	| Some (ind,nal) ->
 	  let e',nal' = List.fold_right (fun na (e',nal) ->
 	      let e',na' = g e' na in e',na'::nal) nal (e',[]) in
-	  e',Some (loc,ind,npar,nal') in
+	  e',Some (loc,ind,nal') in
 	let e',na' = g e' na in
 	(e',(f e tm,(na',t'))::tml')) tml (e,[]) in
       let fold (idl,e) na = let (e,na) = g e na in ((name_cons na idl,e),na) in
@@ -298,8 +298,8 @@ let aconstr_and_vars_of_glob_constr a =
         List.map (fun (tm,(na,x)) ->
 	  add_name found na;
 	  Option.iter
-	    (fun (_,_,_,nl) -> List.iter (add_name found) nl) x;
-          (aux tm,(na,Option.map (fun (_,ind,n,nal) -> (ind,n,nal)) x))) tml,
+	    (fun (_,_,nl) -> List.iter (add_name found) nl) x;
+          (aux tm,(na,Option.map (fun (_,ind,nal) -> (ind,nal)) x))) tml,
         List.map f eqnl)
   | GLetTuple (loc,nal,(na,po),b,c) ->
       add_name found na;
@@ -440,9 +440,9 @@ let rec subst_aconstr subst bound raw =
       and rl' = list_smartmap
         (fun (a,(n,signopt) as x) ->
 	  let a' = subst_aconstr subst bound a in
-	  let signopt' = Option.map (fun ((indkn,i),n,nal as z) ->
+	  let signopt' = Option.map (fun ((indkn,i),nal as z) ->
 	    let indkn' = subst_ind subst indkn in
-	    if indkn == indkn' then z else ((indkn',i),n,nal)) signopt in
+	    if indkn == indkn' then z else ((indkn',i),nal)) signopt in
 	  if a' == a && signopt' == signopt then x else (a',(n,signopt')))
         rl
       and branches' = list_smartmap
@@ -520,11 +520,11 @@ let abstract_return_type_context pi mklam tml rtno =
     rtno
 
 let abstract_return_type_context_glob_constr =
-  abstract_return_type_context (fun (_,_,_,nal) -> nal)
+  abstract_return_type_context (fun (_,_,nal) -> nal)
     (fun na c -> GLambda(dummy_loc,na,Explicit,GHole(dummy_loc,Evd.InternalHole),c))
 
 let abstract_return_type_context_aconstr =
-  abstract_return_type_context pi3
+  abstract_return_type_context snd
     (fun na c -> ALambda(na,AHole Evd.InternalHole,c))
 
 exception No_match

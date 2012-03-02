@@ -727,7 +727,7 @@ let rec extern inctx scopes vars r =
         | Name id, GVar (_,id') when id=id' -> None
         | Name _, _ -> Some (dummy_loc,na) in
       (sub_extern false scopes vars tm,
-       (na',Option.map (fun (loc,ind,_,nal) ->
+       (na',Option.map (fun (loc,ind,nal) ->
 	 let args = List.map (fun x -> CPatAtom (dummy_loc, match x with Anonymous -> None | Name id -> Some (Ident (dummy_loc,id)))) nal in
 	 let full_args = add_patt_for_params ind args in
 	 let c = extern_reference loc vars (IndRef ind) in
@@ -1011,8 +1011,8 @@ let rec glob_of_pat env = function
       in
       let indnames,rtn = match p, info.cip_ind, info.cip_ind_args with
 	| PMeta None, _, _ -> (Anonymous,None),None
-	| _, Some ind, Some (nparams,nargs) ->
-	  return_type_of_predicate ind nparams nargs (glob_of_pat env p)
+	| _, Some ind, Some nargs ->
+	  return_type_of_predicate ind nargs (glob_of_pat env p)
 	| _ -> anomaly "PCase with non-trivial predicate but unknown inductive"
       in
       GCases (loc,RegularStyle,rtn,[glob_of_pat env tm,indnames],mat)

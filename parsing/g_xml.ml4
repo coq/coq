@@ -176,7 +176,7 @@ let rec interp_xml_constr = function
       in
       let mat = simple_cases_matrix_of_branches ind brs in
       let nparams,n = compute_inductive_nargs ind in
-      let nal,rtn = return_type_of_predicate ind nparams n p in
+      let nal,rtn = return_type_of_predicate ind n p in
       GCases (loc,RegularStyle,rtn,[tm,nal],mat)
   | XmlTag (loc,"MUTIND",al,[]) ->
       GRef (loc, IndRef (get_xml_inductive al))

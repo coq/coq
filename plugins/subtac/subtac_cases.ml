@@ -363,7 +363,7 @@ let unify_tomatch_with_patterns isevars env loc typ pats =
 
 let find_tomatch_tycon isevars env loc = function
   (* Try if some 'in I ...' is present and can be used as a constraint *)
-  | Some (_,ind,_,_) -> mk_tycon (inductive_template isevars env loc ind)
+  | Some (_,ind,_) -> mk_tycon (inductive_template isevars env loc ind)
   | None -> empty_tycon
 
 let coerce_row typing_fun isevars env pats (tomatch,(_,indopt)) =
@@ -1414,7 +1414,7 @@ let extract_arity_signature env0 tomatchl tmsign =
       | NotInd (bo,typ) ->
 	  (match t with
 	    | None -> [na,Option.map (lift n) bo,lift n typ]
-	    | Some (loc,_,_,_) ->
+	    | Some (loc,_,_) ->
  	    user_err_loc (loc,"",
 	    str "Unexpected type annotation for a term of non inductive type"))
       | IsInd (_,IndType(indf,realargs)) ->
@@ -1423,11 +1423,10 @@ let extract_arity_signature env0 tomatchl tmsign =
 	  let nrealargs = List.length realargs in
 	  let realnal =
 	    match t with
-	      | Some (loc,ind',nparams,realnal) ->
+	      | Some (loc,ind',realnal) ->
 		  if ind <> ind' then
 		    user_err_loc (loc,"",str "Wrong inductive type");
-		  if List.length params <> nparams
-		    or nrealargs <> List.length realnal then
+		  if nrealargs <> List.length realnal then
 		      anomaly "Ill-formed 'in' clause in cases";
 		  List.rev realnal
 	      | None -> list_tabulate (fun _ -> Anonymous) nrealargs in
@@ -1448,7 +1447,7 @@ let extract_arity_signatures env0 tomatchl tmsign =
       | NotInd (bo,typ) ->
 	  (match t with
 	    | None -> [na,bo,typ]
-	    | Some (loc,_,_,_) ->
+	    | Some (loc,_,_) ->
  	    user_err_loc (loc,"",
 	    str "Unexpected type annotation for a term of non inductive type"))
       | IsInd (_,IndType(indf,realargs)) ->
@@ -1456,11 +1455,10 @@ let extract_arity_signatures env0 tomatchl tmsign =
 	  let nrealargs = List.length realargs in
 	  let realnal =
 	    match t with
-	      | Some (loc,ind',nparams,realnal) ->
+	      | Some (loc,ind',realnal) ->
 		  if ind <> ind' then
 		    user_err_loc (loc,"",str "Wrong inductive type");
-		  if List.length params <> nparams
-		    or nrealargs <> List.length realnal then
+		  if nrealargs <> List.length realnal then
 		      anomaly "Ill-formed 'in' clause in cases";
 		  List.rev realnal
 	      | None -> list_tabulate (fun _ -> Anonymous) nrealargs in

@@ -35,7 +35,7 @@ type aconstr =
   | ABinderList of identifier * identifier * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
   | ACases of case_style * aconstr option *
-      (aconstr * (name * (inductive * int * name list) option)) list *
+      (aconstr * (name * (inductive * name list) option)) list *
       (cases_pattern list * aconstr) list
   | ALetTuple of name list * (name * aconstr option) * aconstr * aconstr
   | AIf of aconstr * (name * aconstr option) * aconstr * aconstr

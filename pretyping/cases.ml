@@ -331,7 +331,7 @@ let unify_tomatch_with_patterns evdref env loc typ pats realnames =
 
 let find_tomatch_tycon evdref env loc = function
   (* Try if some 'in I ...' is present and can be used as a constraint *)
-  | Some (_,ind,_,realnal) ->
+  | Some (_,ind,realnal) ->
       mk_tycon (inductive_template evdref env loc ind),Some (List.rev realnal)
   | None ->
       empty_tycon,None
@@ -1358,7 +1358,7 @@ substituer après par les initiaux *)
 (* builds the matrix of equations testing that each eqn has n patterns
  * and linearizing the _ patterns.
  * Syntactic correctness has already been done in astterm *)
-let matx_of_eqns env tomatchl eqns =
+let matx_of_eqns env eqns =
   let build_eqn (loc,ids,lpat,rhs) =
     let initial_lpat,initial_rhs = lpat,rhs in
     let initial_rhs = rhs in
@@ -1650,7 +1650,7 @@ let extract_arity_signature env0 tomatchl tmsign =
       | NotInd (bo,typ) ->
 	  (match t with
 	    | None -> [na,Option.map (lift n) bo,lift n typ]
-	    | Some (loc,_,_,_) ->
+	    | Some (loc,_,_) ->
  	    user_err_loc (loc,"",
 	    str"Unexpected type annotation for a term of non inductive type."))
       | IsInd (term,IndType(indf,realargs),_) ->
@@ -1660,11 +1660,10 @@ let extract_arity_signature env0 tomatchl tmsign =
 	  let arsign = fst (get_arity env0 indf') in
 	  let realnal =
 	    match t with
-	      | Some (loc,ind',nparams,realnal) ->
+	      | Some (loc,ind',realnal) ->
 		  if ind <> ind' then
 		    user_err_loc (loc,"",str "Wrong inductive type.");
-		  if nparams_ctxt <> nparams
-		    or nrealargs_ctxt <> List.length realnal then
+		  if nrealargs_ctxt <> List.length realnal then
 		      anomaly "Ill-formed 'in' clause in cases";
 		  List.rev realnal
 	      | None -> list_make nrealargs_ctxt Anonymous in
@@ -1794,7 +1793,7 @@ let prepare_predicate loc typing_fun sigma env tomatchs arsign tycon pred =
 let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, eqns) =
 
   (* We build the matrix of patterns and right-hand side *)
-  let matx = matx_of_eqns env tomatchl eqns in
+  let matx = matx_of_eqns env eqns in
 
   (* We build the vector of terms to match consistently with the *)
   (* constructors found in patterns *)

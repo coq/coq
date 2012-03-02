@@ -306,7 +306,7 @@ let it_destRLambda_or_LetIn_names n c =
   in aux n [] c
 
 let detype_case computable detype detype_eqns testdep avoid data p c bl =
-  let (indsp,st,nparams,consnargsl,k) = data in
+  let (indsp,st,consnargsl,k) = data in
   let synth_type = synthetize_type () in
   let tomatch = detype c in
   let alias, aliastyp, pred=
@@ -323,7 +323,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
 	      | _ -> Anonymous, typ in
 	    let aliastyp =
 	      if List.for_all ((=) Anonymous) nl then None
-	      else Some (dl,indsp,nparams,nl) in
+	      else Some (dl,indsp,nl) in
             n, aliastyp, Some typ
   in
   let constructs = Array.init (Array.length bl) (fun i -> (indsp,i+1)) in
@@ -411,7 +411,7 @@ let rec detype (isgoal:bool) avoid env t =
 	detype_case comp (detype isgoal avoid env)
 	  (detype_eqns isgoal avoid env ci comp)
 	  is_nondep_branch avoid
-	  (ci.ci_ind,ci.ci_pp_info.style,ci.ci_npar,
+	  (ci.ci_ind,ci.ci_pp_info.style,
 	   ci.ci_cstr_ndecls,ci.ci_pp_info.ind_nargs)
 	  (Some p) c bl
     | Fix (nvn,recdef) -> detype_fix isgoal avoid env nvn recdef
@@ -611,9 +611,9 @@ let rec subst_glob_constr subst raw =
         let a' = subst_glob_constr subst a in
         let (n,topt) = x in
         let topt' = Option.smartmap
-          (fun (loc,(sp,i),x,y as t) ->
+          (fun (loc,(sp,i),y as t) ->
             let sp' = subst_ind subst sp in
-            if sp == sp' then t else (loc,(sp',i),x,y)) topt in
+            if sp == sp' then t else (loc,(sp',i),y)) topt in
         if a == a' && topt == topt' then y else (a',(n,topt'))) rl
       and branches' = list_smartmap
 			(fun (loc,idl,cpl,r as branch) ->
@@ -685,6 +685,6 @@ let simple_cases_matrix_of_branches ind brs =
       (dummy_loc,ids,[p],c))
     brs
 
-let return_type_of_predicate ind nparams nrealargs_ctxt pred =
+let return_type_of_predicate ind nrealargs_ctxt pred =
   let nal,p = it_destRLambda_or_LetIn_names (nrealargs_ctxt+1) pred in
-  (List.hd nal, Some (dummy_loc, ind, nparams, List.tl nal)), Some p
+  (List.hd nal, Some (dummy_loc, ind, List.tl nal)), Some p

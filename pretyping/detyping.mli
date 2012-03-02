@@ -32,7 +32,7 @@ val detype_case :
   (constructor array -> int array -> 'a array ->
     (loc * identifier list * cases_pattern list * glob_constr) list) ->
   ('a -> int -> bool) ->
-  identifier list -> inductive * case_style * int * int array * int ->
+  identifier list -> inductive * case_style * int array * int ->
     'a option -> 'a -> 'a array -> glob_constr
 
 val detype_sort : sorts -> glob_sort
@@ -54,7 +54,7 @@ val it_destRLambda_or_LetIn_names : int -> glob_constr -> name list * glob_const
 val simple_cases_matrix_of_branches :
   inductive -> (int * int * glob_constr) list -> cases_clauses
 val return_type_of_predicate :
-  inductive -> int -> int -> glob_constr -> predicate_pattern * glob_constr option
+  inductive -> int -> glob_constr -> predicate_pattern * glob_constr option
 
 module PrintingInductiveMake :
   functor (Test : sig

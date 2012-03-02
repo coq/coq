@@ -79,7 +79,7 @@ and fix_kind =
   | GCoFix of int
 
 and predicate_pattern =
-    name * (loc * inductive * int * name list) option
+    name * (loc * inductive * name list) option
 
 and tomatch_tuple = (glob_constr * predicate_pattern)
 
@@ -92,7 +92,7 @@ and cases_clauses = cases_clause list
 let cases_predicate_names tml =
   List.flatten (List.map (function
     | (tm,(na,None)) -> [na]
-    | (tm,(na,Some (_,_,_,nal))) -> na::nal) tml)
+    | (tm,(na,Some (_,_,nal))) -> na::nal) tml)
 
 let mkGApp loc p t =
   match p with

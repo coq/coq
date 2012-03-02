@@ -82,9 +82,8 @@ and fix_kind =
   | GCoFix of int
 
 and predicate_pattern =
-    name * (loc * inductive * int * name list) option
-      (** [(na,id)] = "as 'na' in 'id'" where if [id] is [Some(l,I,k,args)], [k]
-	  is the number of parameter of [I]. *)
+    name * (loc * inductive * name list) option
+      (** [(na,id)] = "as 'na' in 'id'" where if [id] is [Some(l,I,k,args)]. *)
 
 and tomatch_tuple = (glob_constr * predicate_pattern)
 

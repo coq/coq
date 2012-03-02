@@ -63,7 +63,7 @@ type extended_patvar_map = (patvar * constr_under_binders) list
 type case_info_pattern =
     { cip_style : case_style;
       cip_ind : inductive option;
-      cip_ind_args : (int * int) option; (** number of params and args *)
+      cip_ind_args : int option; (** number of params and args *)
       cip_extensible : bool (** does this match end with _ => _ ? *) }
 
 type constr_pattern =

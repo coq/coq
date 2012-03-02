@@ -30,7 +30,7 @@ type extended_patvar_map = (patvar * constr_under_binders) list
 type case_info_pattern =
     { cip_style : case_style;
       cip_ind : inductive option;
-      cip_ind_args : (int * int) option; (** number of params and args *)
+      cip_ind_args : int option; (** number of args *)
       cip_extensible : bool (** does this match end with _ => _ ? *) }
 
 type constr_pattern =
@@ -133,7 +133,7 @@ let pattern_of_constr sigma t =
         let cip =
 	  { cip_style = ci.ci_pp_info.style;
 	    cip_ind = Some ci.ci_ind;
-	    cip_ind_args = Some (ci.ci_npar, ci.ci_pp_info.ind_nargs);
+	    cip_ind_args = Some (ci.ci_pp_info.ind_nargs);
 	    cip_extensible = false }
 	in
 	let branch_of_constr i c =
@@ -324,13 +324,13 @@ let rec pat_of_raw metas vars = function
 	| _ -> None
       in
       let ind_nargs,ind = match indnames with
-	| Some (_,ind,n,nal) -> Some (n,List.length nal), Some ind
+	| Some (_,ind,nal) -> Some (List.length nal), Some ind
 	| None -> None, get_ind brs
       in
       let ext,brs = pats_of_glob_branches loc metas vars ind brs
       in
       let pred = match p,indnames with
-	| Some p, Some (_,_,_,nal) ->
+	| Some p, Some (_,_,nal) ->
 	  rev_it_mkPLambda nal (mkPLambda na (pat_of_raw metas vars p))
 	| _ -> PMeta None
       in
