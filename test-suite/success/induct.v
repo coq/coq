@@ -25,7 +25,7 @@ Check
  fun (P : forall A : Type, let B := A in A -> Type) (f : P True I) (A : Type) =>
    let B := A in
      fun (a : A) (e : eq1 A a) =>
-       match e in (eq1 A0 B0 a0) return (P A0 a0) with
+       match e in (eq1 A0 a0) return (P A0 a0) with
        | refl1 => f
        end.
 

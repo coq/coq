@@ -107,6 +107,8 @@ let mis_constr_nargs_env env (kn,i) =
   let recargs = dest_subterms mip.mind_recargs in
   Array.map List.length recargs
 
+(* Arity of constructors excluding local defs *)
+
 let mis_constructor_nargs (indsp,j) =
   let (mib,mip) = Global.lookup_inductive indsp in
   recarg_length mip.mind_recargs j + mib.mind_nparams
@@ -115,6 +117,17 @@ let mis_constructor_nargs_env env ((kn,i),j) =
   let mib = Environ.lookup_mind kn env in
   let mip = mib.mind_packets.(i) in
   recarg_length mip.mind_recargs j + mib.mind_nparams
+
+(* Arity of constructors with arg and defs *)
+
+let mis_constructor_nhyps (indsp,j) =
+  let (mib,mip) = Global.lookup_inductive indsp in
+   mip.mind_consnrealdecls.(j-1) + rel_context_length (mib.mind_params_ctxt)
+
+let mis_constructor_nhyps_env env ((kn,i),j) =
+  let mib = Environ.lookup_mind kn env in
+  let mip = mib.mind_packets.(i) in
+   mip.mind_consnrealdecls.(j-1) + rel_context_length (mib.mind_params_ctxt)
 
 let constructor_nrealargs env (ind,j) =
   let (_,mip) = Inductive.lookup_mind_specif env ind in
@@ -131,6 +144,16 @@ let get_full_arity_sign env ind =
 let nconstructors ind =
   let (mib,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
   Array.length mip.mind_consnames
+
+let mis_constructor_has_local_defs (indsp,j) =
+  let (mib,mip) = Global.lookup_inductive indsp in
+  mip.mind_consnrealdecls.(j-1) + rel_context_length (mib.mind_params_ctxt)
+  <> recarg_length mip.mind_recargs j + mib.mind_nparams
+
+let inductive_has_local_defs ind =
+  let (mib,mip) = Global.lookup_inductive ind in
+  rel_context_length (mib.mind_params_ctxt) + mip.mind_nrealargs_ctxt
+  <> mib.mind_nparams + mip.mind_nrealargs
 
 (* Length of arity (w/o local defs) *)
 

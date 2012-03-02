@@ -74,11 +74,19 @@ val inductive_nparams : inductive -> int
 val mis_constructor_nargs : constructor -> int
 val mis_constructor_nargs_env : env -> constructor -> int
 
+(** @return param + args with letin *)
+val mis_constructor_nhyps : constructor -> int
+val mis_constructor_nhyps_env : env -> constructor -> int
+
 (** @return args without letin *)
 val constructor_nrealargs : env -> constructor -> int
 
 (** @return args with letin *)
 val constructor_nrealhyps : constructor -> int
+
+(** Is there local defs in params or args ? *)
+val mis_constructor_has_local_defs : constructor -> bool
+val inductive_has_local_defs : inductive -> bool
 
 val get_full_arity_sign : env -> inductive -> rel_context
 

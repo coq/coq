@@ -831,12 +831,16 @@ let add_implicits_check_constructor_length env loc c idslpl1 pl2 =
   add_implicits_check_length nargs impls_st len_pl1 pl2
     (error_wrong_numarg_constructor_loc loc env c)
 
+(** @return if the letin are include *)
 let check_ind_length env loc ind pl pl0 =
   let (mib,mip) = Global.lookup_inductive ind in
   let nparams = mib.Declarations.mind_nparams in
   let nargs = mip.Declarations.mind_nrealargs + nparams in
   let n = List.length pl + List.length pl0 in
-  if n = nargs then nparams else
+  if n = nargs then false else
+    let nparams', nrealargs' = inductive_nargs_env env ind in
+    let nargs' = nrealargs' + nparams' in
+    n = nargs' ||
       (error_wrong_numarg_inductive_loc loc env ind nargs)
 
 let add_implicits_check_ind_length env loc c idslpl1 pl2 =
@@ -845,7 +849,7 @@ let add_implicits_check_ind_length env loc c idslpl1 pl2 =
   let nargs = mip.Declarations.mind_nrealargs + nparams in
   let len_pl1 = List.length idslpl1 in
   let impls_st = implicits_of_global (IndRef c) in
-  nparams, add_implicits_check_length nargs impls_st len_pl1 pl2
+  add_implicits_check_length nargs impls_st len_pl1 pl2
     (error_wrong_numarg_inductive_loc loc env c)
 (* Manage multiple aliases *)
 
@@ -877,7 +881,7 @@ let rec subst_pat_iterator y t (subst,p) = match p with
 
 (** @raise NotEnoughArguments only in the case of [subst_cases_pattern] thanks to
     preconditions in other cases. *)
-let chop_params_pattern loc (ind,_) args with_letin =
+let chop_params_pattern loc ind args with_letin =
   let nparams = if with_letin
     then fst (Inductiveops.inductive_nargs ind)
     else Inductiveops.inductive_nparams ind in
@@ -913,7 +917,7 @@ let subst_cases_pattern loc alias intern fullsubst env a =
       let idslpll = List.map (aux Anonymous fullsubst) args in
       let ids',pll = product_of_cases_patterns [] idslpll in
       let pl' = List.map (fun (asubst,pl) ->
-        asubst,PatCstr (loc,cstr,chop_params_pattern loc cstr pl false,alias)) pll in
+        asubst,PatCstr (loc,cstr,chop_params_pattern loc (fst cstr) pl false,alias)) pll in
 	ids', pl'
   | AList (x,_,iter,terminator,lassoc) ->
       (try
@@ -947,14 +951,14 @@ let subst_ind_pattern loc intern_ind_patt intern (subst,_ as fullsubst) env = fu
 	  anomaly ("Unbound pattern notation variable: "^(string_of_id id))
       end
   | ARef (IndRef c) ->
-      Inductiveops.inductive_nparams c, (c, [])
+      false, (c, [])
   | AApp (ARef (IndRef ind),args) ->
       let idslpll = List.map (subst_cases_pattern loc Anonymous intern fullsubst env) args in
       begin
 	match product_of_cases_patterns [] idslpll with
 	  |_,[_,pl]->
-	    let pl' = chop_params_pattern loc (ind,42) pl false in
-            Inductiveops.inductive_nparams ind, (ind,pl')
+	    let pl' = chop_params_pattern loc ind pl false in
+            false, (ind,pl')
 	  |_ ->  error_invalid_pattern_notation loc
       end
   | t -> error_invalid_pattern_notation loc
@@ -1135,7 +1139,7 @@ let rec intern_cases_pattern genv env (ids,asubst as aliases) pat =
     let idslpl2 = List.map2 (fun x -> intern_pat {env with tmp_scope = x} ([],[])) argscs2 pl2 in
     let (ids',pll) = product_of_cases_patterns ids (idslpl1@idslpl2) in
     let pl' = List.map (fun (asubst,pl) ->
-      (asubst, PatCstr (loc,c,chop_params_pattern loc c pl with_letin,alias_of aliases))) pll in
+      (asubst, PatCstr (loc,c,chop_params_pattern loc (fst c) pl with_letin,alias_of aliases))) pll in
     ids',pl' in
   match pat with
   | CPatAlias (loc, p, id) ->
@@ -1215,18 +1219,18 @@ let rec intern_ind_pattern genv env pat =
     let idslpl2 = List.map2 (fun x -> intern_cases_pattern genv {env with tmp_scope = x} ([],[])) argscs2 pl2 in
     match product_of_cases_patterns [] (idslpl1@idslpl2) with
       |_,[_,pl] ->
-	(c,chop_params_pattern loc (c,42) (* 42 is because of function cares about inductive but takes a constructor *) pl false)
+	(c,chop_params_pattern loc c pl false)
       |_ -> error_bad_inductive_type loc
   in
   match pat with
     | CPatCstr (loc, head, pl) ->
       let c,idslpl1,pl2 = mustbe_inductive loc head (intern_cases_pattern genv) pl env in
-      let nargs,pl2' = add_implicits_check_ind_length genv loc c idslpl1 pl2 in
-      nargs,intern_ind_with_all_args loc c idslpl1 pl2'
+      let pl2' = add_implicits_check_ind_length genv loc c idslpl1 pl2 in
+      false,intern_ind_with_all_args loc c idslpl1 pl2'
     | CPatCstrExpl (loc, head, pl) ->
       let c,idslpl1,pl2 = mustbe_inductive loc head (intern_cases_pattern genv) pl env in
-      let nargs = check_ind_length genv loc c idslpl1 pl2 in
-      nargs,intern_ind_with_all_args loc c idslpl1 pl2
+      let with_letin = check_ind_length genv loc c idslpl1 pl2 in
+      with_letin,intern_ind_with_all_args loc c idslpl1 pl2
     | CPatNotation (_,"( _ )",([a],[])) ->
       intern_ind_pattern genv env a
     | CPatNotation (loc, ntn, fullargs) ->
@@ -1236,17 +1240,15 @@ let rec intern_ind_pattern genv env pat =
       Dumpglob.dump_notation_location (patntn_loc loc fullargs ntn) ntn df;
       let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids' args in
       let substlist = List.map2 (fun (id,scl) a -> (id,(a,scl))) idsl' argsl in
-      let ids'',pl =
 	subst_ind_pattern loc (intern_ind_pattern genv) (intern_cases_pattern genv) (subst,substlist)
 	  env c
-      in ids'', pl
     | CPatDelimiters (loc, key, e) ->
       intern_ind_pattern genv {env with scopes=find_delimiters_scope loc key::env.scopes;
 	tmp_scope = None} e
     | CPatAtom (loc, Some head) ->
       let c,idslpl1,pl2 = mustbe_inductive loc head (intern_cases_pattern genv) [] env in
-      let nargs = check_ind_length genv loc c idslpl1 pl2 in
-      nargs,intern_ind_with_all_args loc c idslpl1 pl2
+      let with_letin = check_ind_length genv loc c idslpl1 pl2 in
+      with_letin,intern_ind_with_all_args loc c idslpl1 pl2
     | x -> error_bad_inductive_type (cases_pattern_expr_loc x)
 
 (**********************************************************************)
@@ -1470,13 +1472,14 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	  inb) Idset.empty tms in
       (* as, in & return vars *)
       let forbidden_vars = Option.cata Topconstr.free_vars_of_constr_expr as_in_vars rtnpo in
-      let tms,match_from_in = List.fold_right
-	(fun citm (inds,matchs) ->
-	  let ((tm,ind),match_td) = intern_case_item env forbidden_vars citm in
-	  (tm,ind)::inds, List.rev_append match_td matchs) tms ([],[]) in
+      let tms,ex_ids,match_from_in = List.fold_right
+	(fun citm (inds,ex_ids,matchs) ->
+	  let ((tm,ind),extra_id,match_td) = intern_case_item env forbidden_vars citm in
+	  (tm,ind)::inds, Option.fold_right Idset.add extra_id ex_ids, List.rev_append match_td matchs)
+	    tms ([],Idset.empty,[]) in
       let env' = Idset.fold
 	(fun var bli -> push_name_env lvar (Variable,[],[],[]) bli (dummy_loc,Name var))
-	as_in_vars (reset_hidden_inductive_implicit_test env) in
+	(Idset.union ex_ids as_in_vars) (reset_hidden_inductive_implicit_test env) in
       (* PatVars before a real pattern do not need to be matched *)
       let stripped_match_from_in = let rec aux = function
 	|[] -> []
@@ -1499,7 +1502,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
     | CLetTuple (loc, nal, (na,po), b, c) ->
 	let env' = reset_tmp_scope env in
 	(* "in" is None so no match to add *)
-        let ((b',(na',_)),_) = intern_case_item env' Idset.empty (b,(na,None)) in
+        let ((b',(na',_)),_,_) = intern_case_item env' Idset.empty (b,(na,None)) in
         let p' = Option.map (fun u ->
 	  let env'' = push_name_env lvar (Variable,[],[],[]) (reset_hidden_inductive_implicit_test env')
 	    (dummy_loc,na') in
@@ -1508,7 +1511,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
                    intern (List.fold_left (push_name_env lvar (Variable,[],[],[])) (reset_hidden_inductive_implicit_test env) nal) c)
     | CIf (loc, c, (na,po), b1, b2) ->
       let env' = reset_tmp_scope env in
-      let ((c',(na',_)),_) = intern_case_item env' Idset.empty (c,(na,None)) in (* no "in" no match to ad too *)
+      let ((c',(na',_)),_,_) = intern_case_item env' Idset.empty (c,(na,None)) in (* no "in" no match to ad too *)
       let p' = Option.map (fun p ->
           let env'' = push_name_env lvar (Variable,[],[],[]) (reset_hidden_inductive_implicit_test env)
 	    (dummy_loc,na') in
@@ -1566,19 +1569,20 @@ let internalize sigma globalenv env allow_patvar lvar c =
     (*the "match" part *)
     let tm' = intern env tm in
     (* the "as" part *)
-    let na = match tm', na with
-      | GVar (loc,id), None when Idset.mem id env.ids -> loc,Name id
-      | GRef (loc, VarRef id), None -> loc,Name id
-      | _, None -> dummy_loc,Anonymous
-      | _, Some (loc,na) -> loc,na in
+    let extra_id,na = match tm', na with
+      | GVar (loc,id), None when Idset.mem id env.ids -> Some id,(loc,Name id)
+      | GRef (loc, VarRef id), None -> Some id,(loc,Name id)
+      | _, None -> None,(dummy_loc,Anonymous)
+      | _, Some (loc,na) -> None,(loc,na) in
     (* the "in" part *)
     let match_td,typ = match t with
     | Some t ->
 	let tids = ids_of_cases_indtype t in
 	let tids = List.fold_right Idset.add tids Idset.empty in
-	let nparams,(ind,l) = intern_ind_pattern globalenv {env with ids = tids; tmp_scope = None} t in
-	(* for "in Vect n", we answer (nothing to match above, abstract over
-	   "n")=([],[(loc,"n")])
+	let with_letin,(ind,l) = intern_ind_pattern globalenv {env with ids = tids; tmp_scope = None} t in
+	let (mib,mip) = Inductive.lookup_mind_specif globalenv ind in
+	let nparams = (List.length (mib.Declarations.mind_params_ctxt)) in
+	(* for "in Vect n", we answer (["n","n"],[(loc,"n")])
 
 	   for "in Vect (S n)", we answer ((match over "m", relevant branch is "S
 	   n"), abstract over "m") = ([("m","S n")],[(loc,"m")]) where "m" is
@@ -1591,8 +1595,8 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	      |loc,(Name y as x) -> (y,PatVar(loc,x)) :: l in
 	    match case_rel_ctxt,arg_pats with
 	      (* LetIn in the rel_context *)
-	      |(_,Some _,_)::t, l ->
-		canonize_args t l forbidden_names match_acc var_acc
+	      |(_,Some _,_)::t, l when not with_letin ->
+		canonize_args t l forbidden_names match_acc ((dummy_loc,Anonymous)::var_acc)
 	      |[],[] ->
 		(add_name match_acc na, var_acc)
 	      |_::t,PatVar (loc,x)::tt ->
@@ -1604,15 +1608,13 @@ let internalize sigma globalenv env allow_patvar lvar c =
 		canonize_args t tt (fresh::forbidden_names)
 		  ((fresh,c)::match_acc) ((cases_pattern_loc c,Name fresh)::var_acc)
 	      |_ -> assert false in
-	  let (mib,mip) = Inductive.lookup_mind_specif globalenv ind in
 	  let _,args_rel =
-	    list_chop (List.length (mib.Declarations.mind_params_ctxt))
-	      (List.rev mip.Declarations.mind_arity_ctxt) in
+	    list_chop nparams (List.rev mip.Declarations.mind_arity_ctxt) in
 	  canonize_args args_rel l (Idset.elements forbidden_names_for_gen) [] [] in
 	match_to_do, Some (cases_pattern_expr_loc t,ind,nparams,List.rev_map snd nal)
     | None ->
       [], None in
-    (tm',(snd na,typ)), match_td
+    (tm',(snd na,typ)), extra_id, match_td
 
   and iterate_prod loc2 env bk ty body nal =
     let rec default env bk = function

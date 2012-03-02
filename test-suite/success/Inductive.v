@@ -17,7 +17,7 @@ Check
  fun (P : forall A : Type, let B := A in A -> Type) (f : P True I) (A : Type) =>
    let B := A in
      fun (a : A) (e : eq1 A a) =>
-       match e in (eq1 A0 B0 a0) return (P A0 a0) with
+       match e in (@eq1 A0 B0 a0) return (P A0 a0) with
        | refl1 => f
        end.
 
@@ -37,7 +37,7 @@ Check
    fun (x y : E -> F) (P : forall c : C, A C D x y c -> Type)
      (f : forall z : C, P z (I C D x y z)) (y0 : C)
      (a : A C D x y y0) =>
-   match a as a0 in (A _ _ _ _ _ _ y1) return (P y1 a0) with
+   match a as a0 in (A _ _ _ _ y1) return (P y1 a0) with
    | I x0 => f x0
    end).
 

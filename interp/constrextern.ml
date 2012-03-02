@@ -326,11 +326,11 @@ let mkPat loc qid l =
   (* Normally irrelevant test with v8 syntax, but let's do it anyway *)
   if l = [] then CPatAtom (loc,Some qid) else CPatCstr (loc,qid,l)
 
-let add_patt_for_params (ind,k) l =
-    Util.list_addn (Inductiveops.inductive_nparams ind) (CPatAtom (dummy_loc,None)) l
+let add_patt_for_params ind l =
+    Util.list_addn (fst (Inductiveops.inductive_nargs ind)) (CPatAtom (dummy_loc,None)) l
 
-let drop_implicits_in_patt c args =
-  let impl_st = extract_impargs_data (implicits_of_global (ConstructRef c)) in
+let drop_implicits_in_patt ind args =
+  let impl_st = extract_impargs_data (implicits_of_global (IndRef ind)) in
   let rec impls_fit l = function
     |[],t -> Some (List.rev_append l t)
     |_,[] -> None
@@ -355,6 +355,14 @@ let pattern_printable_in_both_syntax (ind,_ as c) =
 
  (* Better to use extern_glob_constr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
+  (* pboutill: There are letins in pat which is incompatible with notations and
+     not explicit application. *)
+  match pat with
+    | PatCstr(loc,cstrsp,args,na) when Inductiveops.mis_constructor_has_local_defs cstrsp ->
+      let c = extern_reference loc Idset.empty (ConstructRef cstrsp) in
+      let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
+      CPatCstrExpl (loc, c, add_patt_for_params (fst cstrsp) args)
+    | _ ->
   try
     if !Flags.raw_print or !print_no_symbol then raise No_match;
     let (na,sc,p) = uninterp_prim_token_cases_pattern pat in
@@ -398,10 +406,10 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 		  if !Topconstr.oldfashion_patterns then
 		    if pattern_printable_in_both_syntax cstrsp
 		    then CPatCstr (loc, c, args)
-		    else CPatCstrExpl (loc, c, add_patt_for_params cstrsp args)
+		    else CPatCstrExpl (loc, c, add_patt_for_params (fst cstrsp) args)
 		  else
-		    let full_args = add_patt_for_params cstrsp args in
-		    match drop_implicits_in_patt cstrsp full_args with
+		    let full_args = add_patt_for_params (fst cstrsp) args in
+		    match drop_implicits_in_patt (fst cstrsp) full_args with
 		      |Some true_args -> CPatCstr (loc, c, true_args)
 		      |None -> CPatCstrExpl (loc, c, full_args)
 	  in insert_pat_alias loc p na
@@ -719,11 +727,18 @@ let rec extern inctx scopes vars r =
         | Name id, GVar (_,id') when id=id' -> None
         | Name _, _ -> Some (dummy_loc,na) in
       (sub_extern false scopes vars tm,
-       (na',Option.map (fun (loc,ind,n,nal) ->
-	 let params = list_tabulate
-	   (fun _ -> CPatAtom (dummy_loc,None)) n in
+       (na',Option.map (fun (loc,ind,_,nal) ->
 	 let args = List.map (fun x -> CPatAtom (dummy_loc, match x with Anonymous -> None | Name id -> Some (Ident (dummy_loc,id)))) nal in
-	 CPatCstr (dummy_loc, extern_reference loc vars (IndRef ind),params@args)) x))) tml in
+	 let full_args = add_patt_for_params ind args in
+	 let c = extern_reference loc vars (IndRef ind) in
+	 (* pboutill: There are letins in full_args which is incompatible with not
+	    explicit application. *)
+	 if Inductiveops.inductive_has_local_defs ind
+	 then CPatCstrExpl (dummy_loc, c, full_args)
+	 else match drop_implicits_in_patt ind full_args with
+	   |Some true_args -> CPatCstr (dummy_loc, c, true_args)
+	   |None -> CPatCstrExpl (dummy_loc, c, full_args)
+	) x))) tml in
     let eqns = List.map (extern_eqn inctx scopes vars) eqns in
     CCases (loc,sty,rtntypopt',tml,eqns)
 
