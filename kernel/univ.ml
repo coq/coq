@@ -491,7 +491,13 @@ let enforce_constraint cst g =
 module Constraint = Set.Make(
   struct
     type t = univ_constraint
-    let compare = Pervasives.compare
+    let compare (u,c,v) (u',c',v') =
+      let i = Pervasives.compare c c' in
+      if i <> 0 then i
+      else
+	let i' = UniverseLevel.compare u u' in
+	if i' <> 0 then i'
+	else UniverseLevel.compare v v'
   end)
 
 type constraints = Constraint.t
