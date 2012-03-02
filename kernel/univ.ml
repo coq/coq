@@ -234,10 +234,13 @@ type order = EQ | LT | LE | NLE
 
 (** [compare_neq] : is [arcv] in the transitive upward closure of [arcu] ?
 
+  In [strict] mode, we fully distinguish between LE and LT, while in
+  non-strict mode, we simply answer LE for both situations.
+
   If [arcv] is encountered in a LT part, we could directly answer
   without visiting unneeded parts of this transitive closure.
-  If [arcv] is encountered in a LE part, we could only change the
-  default answer (1st arg [c]) from NLE to LE, since a strict
+  In [strict] mode, if [arcv] is encountered in a LE part, we could only
+  change the default answer (1st arg [c]) from NLE to LE, since a strict
   constraint may appear later. During the recursive traversal,
   [lt_done] and [le_done] are universes we have already visited,
   they do not contain [arcv]. The 4rd arg is [(lt_todo,le_todo)],
@@ -249,7 +252,7 @@ type order = EQ | LT | LE | NLE
   on a test.
 *)
 
-let compare_neq g arcu arcv =
+let compare_neq strict g arcu arcv =
   let rec cmp c lt_done le_done = function
   | [],[] -> c
   | arc::lt_todo, le_todo ->
@@ -257,7 +260,8 @@ let compare_neq g arcu arcv =
       cmp c lt_done le_done (lt_todo,le_todo)
     else
       let lt_new = can g (arc.lt@arc.le) in
-      if List.memq arcv lt_new then LT
+      if List.memq arcv lt_new then
+	if strict then LT else LE
       else cmp c (arc::lt_done) le_done (lt_new@lt_todo,le_todo)
   | [], arc::le_todo ->
     if arc == arcv then
@@ -265,13 +269,14 @@ let compare_neq g arcu arcv =
 	 if arcv is strictly above arc, then we would have a cycle.
          But we cannot answer LE yet, a stronger constraint may
 	 come later from [le_todo]. *)
-      cmp LE lt_done le_done ([],le_todo)
+      if strict then cmp LE lt_done le_done ([],le_todo) else LE
     else
       if (List.memq arc lt_done) || (List.memq arc le_done) then
 	cmp c lt_done le_done ([],le_todo)
       else
 	let lt_new = can g arc.lt in
-	if List.memq arcv lt_new then LT
+	if List.memq arcv lt_new then
+	  if strict then LT else LE
 	else
 	  let le_new = can g arc.le in
 	  cmp c lt_done (arc::le_done) (lt_new, le_new@le_todo)
@@ -281,7 +286,14 @@ let compare_neq g arcu arcv =
 let compare g u v =
   let arcu = repr g u
   and arcv = repr g v in
-  if arcu == arcv then EQ else compare_neq g arcu arcv
+  if arcu == arcv then EQ else compare_neq true g arcu arcv
+
+let is_leq g u v =
+  let arcu = repr g u
+  and arcv = repr g v in
+  arcu == arcv || (compare_neq false g arcu arcv = LE)
+
+let is_lt g u v = (compare g u v = LT)
 
 (* Invariants : compare(u,v) = EQ <=> compare(v,u) = EQ
                 compare(u,v) = LT or LE => compare(v,u) = NLE
@@ -318,11 +330,11 @@ let rec check_eq g u v =
 let compare_greater g strict u v =
   let g = declare_univ u g in
   let g = declare_univ v g in
-  if not strict && compare_eq g v Set then true else
-  match compare g v u with
-    | (EQ|LE) -> not strict
-    | LT -> true
-    | NLE -> false
+  if strict then
+    is_lt g v u
+  else
+    compare_eq g v Set || is_leq g v u
+
 (*
 let compare_greater g strict u v =
   let b = compare_greater g strict u v in
@@ -346,9 +358,7 @@ let setlt g u v =
   enter_arc {arcu with lt=v::arcu.lt} g
 
 (* checks that non-redundant *)
-let setlt_if g u v = match compare g u v with
-  | LT -> g
-  | _ -> setlt g u v
+let setlt_if g u v = if is_lt g u v then g else setlt g u v
 
 (* setleq : universe_level -> universe_level -> unit *)
 (* forces u >= v *)
@@ -358,9 +368,7 @@ let setleq g u v =
 
 
 (* checks that non-redundant *)
-let setleq_if g u v = match compare g u v with
-  | NLE -> setleq g u v
-  | _ -> g
+let setleq_if g u v = if is_leq g u v then g else setleq g u v
 
 (* merge : universe_level -> universe_level -> unit *)
 (* we assume  compare(u,v) = LE *)
@@ -404,14 +412,12 @@ let error_inconsistency o u v = raise (UniverseInconsistency (o,Atom u,Atom v))
 let enforce_univ_leq u v g =
   let g = declare_univ u g in
   let g = declare_univ v g in
-  match compare g u v with
-    | NLE ->
-	(match compare g v u with
-           | LT -> error_inconsistency Le u v
-           | LE -> merge g v u
-           | NLE -> setleq g u v
-           | EQ -> anomaly "Univ.compare")
-    | _ -> g
+  if is_leq g u v then g
+  else match compare g v u with
+    | LT -> error_inconsistency Le u v
+    | LE -> merge g v u
+    | NLE -> setleq g u v
+    | EQ -> anomaly "Univ.compare"
 
 (* enforc_univ_eq : universe_level -> universe_level -> unit *)
 (* enforc_univ_eq u v will force u=v if possible, will fail otherwise *)
@@ -438,9 +444,8 @@ let enforce_univ_lt u v g =
     | LE -> setlt g u v
     | EQ -> error_inconsistency Lt u v
     | NLE ->
-	(match compare g v u with
-           | NLE -> setlt g u v
-           | _ -> error_inconsistency Lt u v)
+      if is_leq g v u then error_inconsistency Lt u v
+      else setlt g u v
 
 (* Constraints and sets of consrtaints. *)
 
