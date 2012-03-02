@@ -16,6 +16,7 @@
 
 open Pp
 open Flags
+open Errors
 open Util
 open Names
 open Declarations

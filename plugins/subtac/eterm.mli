@@ -11,6 +11,7 @@ open Tacmach
 open Term
 open Evd
 open Names
+open Pp
 open Util
 open Tacinterp
 

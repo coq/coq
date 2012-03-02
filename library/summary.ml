@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Pp
+open Errors
 open Util
 
 type 'a summary_declaration = {

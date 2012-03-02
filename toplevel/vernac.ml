@@ -10,6 +10,7 @@
 
 open Pp
 open Lexer
+open Errors
 open Util
 open Flags
 open System
@@ -22,7 +23,7 @@ open Compat
    Use the module Coqtoplevel, which catches these exceptions
    (the exceptions are explained only at the toplevel). *)
 
-exception DuringCommandInterp of Util.loc * exn
+exception DuringCommandInterp of Pp.loc * exn
 
 exception HasNotFailed
 

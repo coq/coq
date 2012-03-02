@@ -8,6 +8,7 @@
 
 (*i camlp4deps: "tools/compat5b.cmo" i*)
 
+open Pp
 open Util
 open Genarg
 open Q_util
@@ -79,7 +80,7 @@ EXTEND
   rule:
     [ [ "["; s = STRING; l = LIST0 args; "]"; "->"; "["; e = Pcaml.expr; "]"
         ->
-      if s = "" then Util.user_err_loc (loc,"",Pp.str"Command name is empty.");
+      if s = "" then Errors.user_err_loc (loc,"",Pp.str"Command name is empty.");
       (Some s,l,<:expr< fun () -> $e$ >>)
       | "[" ; "-" ; l = LIST1 args ; "]" ; "->" ; "[" ; e = Pcaml.expr ; "]" ->
 	  (None,l,<:expr< fun () -> $e$ >>)

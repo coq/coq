@@ -11,6 +11,7 @@
      Zenon)
 *)
 
+open Errors
 open Util
 open Pp
 open Libobject

@@ -10,6 +10,7 @@
    decidable equality, created by Vincent Siles, Oct 2007 *)
 
 open Tacmach
+open Errors
 open Util
 open Flags
 open Decl_kinds

@@ -11,6 +11,7 @@ open Declarations
 open Names
 open Libnames
 open Pp
+open Errors
 open Util
 open Miniml
 open Table

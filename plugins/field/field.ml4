@@ -15,6 +15,7 @@ open Tacinterp
 open Tacmach
 open Term
 open Typing
+open Errors
 open Util
 open Vernacinterp
 open Vernacexpr

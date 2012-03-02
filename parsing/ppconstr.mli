@@ -14,6 +14,7 @@ open Pcoq
 open Glob_term
 open Topconstr
 open Names
+open Errors
 open Util
 open Genarg
 

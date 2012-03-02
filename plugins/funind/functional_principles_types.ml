@@ -1,4 +1,5 @@
 open Printer
+open Errors
 open Util
 open Term
 open Namegen
@@ -304,7 +305,7 @@ let defined () =
     Lemmas.save_named false
   with
     | UserError("extract_proof",msg) ->
-	Util.errorlabstrm
+	Errors.errorlabstrm
 	  "defined"
 	  ((try
 	      str "On goal : " ++ fnl () ++  pr_open_subgoals () ++ fnl ()
@@ -659,9 +660,9 @@ let build_scheme fas =
 	      try
 		match Nametab.global f with
 		  | Libnames.ConstRef c -> c
-		  | _ -> Util.error "Functional Scheme can only be used with functions"
+		  | _ -> Errors.error "Functional Scheme can only be used with functions"
 	      with Not_found ->
-	      	Util.error ("Cannot find "^ Libnames.string_of_reference f)
+	      	Errors.error ("Cannot find "^ Libnames.string_of_reference f)
 	    in
 	    (f_as_constant,sort)
 	 )
@@ -692,7 +693,7 @@ let build_case_scheme fa =
   let funs =  (fun (_,f,_) ->
 		 try Libnames.constr_of_global (Nametab.global f)
 		 with Not_found ->
-		   Util.error ("Cannot find "^ Libnames.string_of_reference f)) fa in
+		   Errors.error ("Cannot find "^ Libnames.string_of_reference f)) fa in
   let first_fun = destConst  funs in
 
   let funs_mp,funs_dp,_ = Names.repr_con first_fun in

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Util
+open Errors
 open Names
 open Libnames
 open Glob_term
@@ -130,7 +130,7 @@ type cases_pattern_expr =
   | CPatOr of loc * cases_pattern_expr list
   | CPatNotation of loc * notation * cases_pattern_notation_substitution
   | CPatPrim of loc * prim_token
-  | CPatRecord of Util.loc * (reference * cases_pattern_expr) list
+  | CPatRecord of loc * (reference * cases_pattern_expr) list
   | CPatDelimiters of loc * string * cases_pattern_expr
 
 and cases_pattern_notation_substitution =
@@ -267,6 +267,6 @@ type module_ast =
   | CMwith of loc * module_ast * with_declaration_ast
 
 val ntn_loc :
-  Util.loc -> constr_notation_substitution -> string -> (int * int) list
+  loc -> constr_notation_substitution -> string -> (int * int) list
 val patntn_loc :
-  Util.loc -> cases_pattern_notation_substitution -> string -> (int * int) list
+  loc -> cases_pattern_notation_substitution -> string -> (int * int) list

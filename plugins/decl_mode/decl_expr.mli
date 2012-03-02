@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Util
+open Pp
 open Tacexpr
 
 type 'it statement =

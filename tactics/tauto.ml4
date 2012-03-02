@@ -17,6 +17,7 @@ open Proof_type
 open Tacticals
 open Tacinterp
 open Tactics
+open Errors
 open Util
 open Genarg
 

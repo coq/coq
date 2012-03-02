@@ -9,6 +9,7 @@
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
 open Pp
+open Errors
 open Util
 open Names
 open Nameops

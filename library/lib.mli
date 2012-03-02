@@ -154,9 +154,9 @@ val close_section : unit -> unit
 (** {6 Backtracking (undo). } *)
 
 val reset_to : Libnames.object_name -> unit
-val reset_name : Names.identifier Util.located -> unit
-val remove_name : Names.identifier Util.located -> unit
-val reset_mod : Names.identifier Util.located -> unit
+val reset_name : Names.identifier Pp.located -> unit
+val remove_name : Names.identifier Pp.located -> unit
+val reset_mod : Names.identifier Pp.located -> unit
 
 (** [back n] resets to the place corresponding to the {% $ %}n{% $ %}-th call of
    [mark_end_of_command] (counting backwards) *)

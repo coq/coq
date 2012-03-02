@@ -22,7 +22,7 @@ let (extern_state,intern_state) =
     extern_intern Coq_config.state_magic_number ".coq" in
   (fun s ->
     if !Flags.load_proofs <> Flags.Force then
-      Util.error "Write State only works with option -force-load-proofs";
+      Errors.error "Write State only works with option -force-load-proofs";
     raw_extern s (freeze())),
   (fun s ->
     unfreeze

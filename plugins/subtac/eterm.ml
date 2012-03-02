@@ -11,6 +11,7 @@ open Names
 open Evd
 open List
 open Pp
+open Errors
 open Util
 open Subtac_utils
 open Proof_type

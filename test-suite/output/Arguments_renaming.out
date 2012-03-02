@@ -53,8 +53,8 @@ myplus : forall T : Type, T -> nat -> nat -> nat
 Arguments are renamed to Z, t, n, m
 Argument Z is implicit and maximally inserted
 Argument scopes are [type_scope _ nat_scope nat_scope]
-The simpl tactic unfolds myplus
-  when the 2nd and 3rd arguments evaluate to a constructor 
+The simpl tactic unfolds myplus when the 2nd and
+  3rd arguments evaluate to a constructor 
 myplus is transparent
 Expands to: Constant Top.Test1.myplus
 myplus
@@ -90,8 +90,8 @@ myplus : forall T : Type, T -> nat -> nat -> nat
 Arguments are renamed to Z, t, n, m
 Argument Z is implicit and maximally inserted
 Argument scopes are [type_scope _ nat_scope nat_scope]
-The simpl tactic unfolds myplus
-  when the 2nd and 3rd arguments evaluate to a constructor 
+The simpl tactic unfolds myplus when the 2nd and
+  3rd arguments evaluate to a constructor 
 myplus is transparent
 Expands to: Constant Top.myplus
 myplus

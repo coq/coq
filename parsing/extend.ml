@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Compat
+open Errors
 open Util
 
 (** Entry keys for constr notations *)

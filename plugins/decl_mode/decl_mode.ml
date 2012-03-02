@@ -9,6 +9,7 @@
 open Names
 open Term
 open Evd
+open Errors
 open Util
 
 

@@ -46,15 +46,15 @@ let pr_open_subgoals () =
 *)
 
 let pr_proof_instr instr = 
-  Util.anomaly "Cannot print a proof_instr"
+  Errors.anomaly "Cannot print a proof_instr"
     (* arnaud: Il nous faut quelque chose de type extr_genarg_printer si on veut aller
                      dans cette direction
        Ppdecl_proof.pr_proof_instr (Global.env()) instr
     *)
 let pr_raw_proof_instr instr =
-  Util.anomaly "Cannot print a raw proof_instr"
+  Errors.anomaly "Cannot print a raw proof_instr"
 let pr_glob_proof_instr instr =
-  Util.anomaly "Cannot print a non-interpreted proof_instr"
+  Errors.anomaly "Cannot print a non-interpreted proof_instr"
 
 let interp_proof_instr _ { Evd.it = gl ; sigma = sigma }=
   Decl_interp.interp_proof_instr 
@@ -65,7 +65,7 @@ let interp_proof_instr _ { Evd.it = gl ; sigma = sigma }=
 let vernac_decl_proof () = 
   let pf = Proof_global.give_me_the_proof () in
   if Proof.is_done pf then 
-    Util.error "Nothing left to prove here."
+    Errors.error "Nothing left to prove here."
   else
     Proof.transaction pf begin fun () ->
       Decl_proof_instr.go_to_proof_mode () ;

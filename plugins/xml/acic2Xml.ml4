@@ -21,7 +21,7 @@ let typesdtdname = "http://mowgli.cs.unibo.it/dtd/cictypes.dtd";;
 
 let rec find_last_id =
  function
-    [] -> Util.anomaly "find_last_id: empty list"
+    [] -> Errors.anomaly "find_last_id: empty list"
   | [id,_,_] -> id
   | _::tl -> find_last_id tl
 ;;

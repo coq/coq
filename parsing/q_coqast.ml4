@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Util
+open Pp
 open Names
 open Libnames
 open Q_util
@@ -24,7 +24,7 @@ let anti loc x =
 (* We don't give location for tactic quotation! *)
 let loc = dummy_loc
 
-let dloc = <:expr< Util.dummy_loc >>
+let dloc = <:expr< Pp.dummy_loc >>
 
 let mlexpr_of_ident id =
   <:expr< Names.id_of_string $str:Names.string_of_id id$ >>

@@ -5,6 +5,7 @@ open Term
 open Glob_term
 open Libnames
 open Indfun_common
+open Errors
 open Util
 open Glob_termops
 
@@ -977,8 +978,8 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		      ((Util.list_chop nparam args'))
 		    in
 		    let rt_typ =
-		       GApp(Util.dummy_loc,
-			    GRef (Util.dummy_loc,Libnames.IndRef ind),
+		       GApp(Pp.dummy_loc,
+			    GRef (Pp.dummy_loc,Libnames.IndRef ind),
 			    (List.map
 			      (fun p -> Detyping.detype false []
 				 (Termops.names_of_rel_context env)

@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Pp
+open Errors
 open Util
 open Names
 open Proof_type
@@ -102,7 +103,7 @@ val intern_constr_with_bindings :
   glob_constr_and_expr * glob_constr_and_expr Glob_term.bindings
 
 val intern_hyp :
-  glob_sign -> identifier Util.located -> identifier Util.located
+  glob_sign -> identifier Pp.located -> identifier Pp.located
 
 val subst_genarg :
   substitution -> glob_generic_argument -> glob_generic_argument

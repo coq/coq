@@ -14,6 +14,7 @@
 (* Revisions by Bruno Barras, Hugo Herbelin, Pierre Letouzey *)
 
 open Pp
+open Errors
 open Util
 
 (* Universes are stratified by a partial ordering $\le$.
@@ -817,9 +818,9 @@ let pr_arc = function
   | _, Canonical {univ=u; lt=lt; le=le} ->
       pr_uni_level u ++ str " " ++
       v 0
-        (prlist_with_sep pr_spc (fun v -> str "< " ++ pr_uni_level v) lt ++
+        (pr_sequence (fun v -> str "< " ++ pr_uni_level v) lt ++
 	 (if lt <> [] & le <> [] then spc () else mt()) ++
-         prlist_with_sep pr_spc (fun v -> str "<= " ++ pr_uni_level v) le) ++
+         pr_sequence (fun v -> str "<= " ++ pr_uni_level v) le) ++
       fnl ()
   | u, Equiv v ->
       pr_uni_level u  ++ str " = " ++ pr_uni_level v ++ fnl ()

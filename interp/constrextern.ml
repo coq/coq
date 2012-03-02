@@ -8,6 +8,7 @@
 
 (*i*)
 open Pp
+open Errors
 open Util
 open Univ
 open Names

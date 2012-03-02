@@ -10,7 +10,7 @@
 
 open Extrawit
 open Compat
-open Util
+open Pp
 
 let mlexpr_of_list f l =
   List.fold_right
@@ -64,6 +64,6 @@ let rec mlexpr_of_prod_entry_key = function
   | Pcoq.Aself -> <:expr< Pcoq.Aself >>
   | Pcoq.Anext -> <:expr< Pcoq.Anext >>
   | Pcoq.Atactic n -> <:expr< Pcoq.Atactic $mlexpr_of_int n$ >>
-  | Pcoq.Agram s -> Util.anomaly "Agram not supported"
+  | Pcoq.Agram s -> Errors.anomaly "Agram not supported"
   | Pcoq.Aentry ("",s) -> <:expr< Pcoq.Agram (Pcoq.Gram.Entry.obj $lid:s$) >>
   | Pcoq.Aentry (u,s) -> <:expr< Pcoq.Aentry $str:u$ $str:s$ >>

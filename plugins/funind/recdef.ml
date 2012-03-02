@@ -17,6 +17,7 @@ open Pp
 open Names
 open Libnames
 open Nameops
+open Errors
 open Util
 open Closure
 open RedFlags
@@ -1273,7 +1274,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
   let sign = initialize_named_context_for_proof () in
   let na = next_global_ident_away name [] in
   if Termops.occur_existential gls_type then
-    Util.error "\"abstract\" cannot handle existentials";
+    Errors.error "\"abstract\" cannot handle existentials";
   let hook _ _ =
     let opacity =
       let na_ref = Libnames.Ident (dummy_loc,na) in
@@ -1553,7 +1554,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       hook 
   with e ->
     begin
-      ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ());
+      ignore(try Vernacentries.vernac_reset_name (Pp.dummy_loc,functional_id) with _ -> ());
 (*       anomaly "Cannot create termination Lemma" *)
       raise e
     end

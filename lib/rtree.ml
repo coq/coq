@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Errors
 open Util
 
 
@@ -173,11 +174,11 @@ let rec pp_tree prl t =
     | Node(lab,[||]) -> hov 2 (str"("++prl lab++str")")
     | Node(lab,v) ->
         hov 2 (str"("++prl lab++str","++brk(1,0)++
-               Util.prvect_with_sep Util.pr_comma (pp_tree prl) v++str")")
+               prvect_with_sep pr_comma (pp_tree prl) v++str")")
     | Rec(i,v) ->
         if Array.length v = 0 then str"Rec{}"
         else if Array.length v = 1 then
           hov 2 (str"Rec{"++pp_tree prl v.(0)++str"}")
         else
           hov 2 (str"Rec{"++int i++str","++brk(1,0)++
-                 Util.prvect_with_sep Util.pr_comma (pp_tree prl) v++str"}")
+                 prvect_with_sep pr_comma (pp_tree prl) v++str"}")

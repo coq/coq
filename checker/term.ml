@@ -8,6 +8,7 @@
 
 (* This module instantiates the structure of generic deBruijn terms to Coq *)
 
+open Errors
 open Util
 open Pp
 open Names

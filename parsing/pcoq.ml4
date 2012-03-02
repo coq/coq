@@ -9,6 +9,7 @@
 open Pp
 open Compat
 open Tok
+open Errors
 open Util
 open Names
 open Extend

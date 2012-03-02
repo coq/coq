@@ -6,47 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-open Pp
-open Compat
-
-(* Errors *)
-
-exception Anomaly of string * std_ppcmds  (* System errors *)
-let anomaly string = raise (Anomaly(string, str string))
-let anomalylabstrm string pps = raise (Anomaly(string,pps))
-
-exception UserError of string * std_ppcmds (* User errors *)
-let error string = raise (UserError("_", str string))
-let errorlabstrm l pps = raise (UserError(l,pps))
-
-exception AlreadyDeclared of std_ppcmds (* for already declared Schemes *)
-let alreadydeclared pps = raise (AlreadyDeclared(pps))
-
-let todo s = prerr_string ("TODO: "^s^"\n")
-
-exception Timeout
-
-type loc = Loc.t
-let dummy_loc = Loc.ghost
-let join_loc = Loc.merge
-let make_loc = make_loc
-let unloc = unloc
-
-(* raising located exceptions *)
-type 'a located = loc * 'a
-let anomaly_loc (loc,s,strm) = Loc.raise loc (Anomaly (s,strm))
-let user_err_loc (loc,s,strm) = Loc.raise loc (UserError (s,strm))
-let invalid_arg_loc (loc,s) = Loc.raise loc (Invalid_argument s)
-
-let located_fold_left f x (_,a) = f x a
-let located_iter2 f (_,a) (_,b) = f a b
-let down_located f (_,a) = f a
-
-(* Like Exc_located, but specifies the outermost file read, the filename
-   associated to the location of the error, and the error itself. *)
-
-exception Error_in_file of string * (bool * string * loc) * exn
-
 (* Mapping under pairs *)
 
 let on_fst f (a,b) = (f a,b)
@@ -319,40 +278,39 @@ let next_utf8 s i =
 
 (* Check the well-formedness of an identifier *)
 
-let check_initial handle j n s =
+let initial_refutation j n s =
   match classify_unicode n with
-  | UnicodeLetter -> ()
+  | UnicodeLetter -> None
   | _ ->
       let c = String.sub s 0 j in
-      handle ("Invalid character '"^c^"' at beginning of identifier \""^s^"\".")
+      Some ("Invalid character '"^c^"' at beginning of identifier \""^s^"\".")
 
-let check_trailing handle i j n s =
+let trailing_refutation i j n s =
   match classify_unicode n with
-  | UnicodeLetter | UnicodeIdentPart -> ()
+  | UnicodeLetter | UnicodeIdentPart -> None
   | _ ->
       let c = String.sub s i j in
-      handle ("Invalid character '"^c^"' in identifier \""^s^"\".")
+      Some ("Invalid character '"^c^"' in identifier \""^s^"\".")
 
-let check_ident_gen handle s =
-  let i = ref 0 in
-  if s <> ".." then try
+let ident_refutation s =
+  if s = ".." then None else try
     let j, n = next_utf8 s 0 in
-    check_initial handle j n s;
-    i := !i + j;
-    try
-      while true do
-	let j, n = next_utf8 s !i in
-	check_trailing handle !i j n s;
-	i := !i + j
-      done
-    with End_of_input -> ()
+      match initial_refutation j n s with
+	|None ->
+	   begin try
+	     let rec aux i =
+	       let j, n = next_utf8 s i in
+		 match trailing_refutation i j n s with
+		   |None -> aux (i + j)
+		   |x -> x
+	     in aux j
+	   with End_of_input -> None
+	   end
+	|x -> x
   with
-  | End_of_input -> error "The empty string is not an identifier."
-  | UnsupportedUtf8 -> error (s^": unsupported character in utf8 sequence.")
-  | Invalid_argument _ -> error (s^": invalid utf8 sequence.")
-
-let check_ident_soft = check_ident_gen warning
-let check_ident = check_ident_gen error
+  | End_of_input -> Some "The empty string is not an identifier."
+  | UnsupportedUtf8 -> Some (s^": unsupported character in utf8 sequence.")
+  | Invalid_argument _ -> Some (s^": invalid utf8 sequence.")
 
 let lowercase_unicode =
   let tree = Segmenttree.make Unicodetable.to_lower in
@@ -1287,102 +1245,6 @@ let map_succeed f =
     |  h::t -> try (let x = f h in x :: map_f t) with Failure _ -> map_f t
   in
   map_f
-
-(* Pretty-printing *)
-
-let pr_spc = spc
-let pr_fnl = fnl
-let pr_int = int
-let pr_str = str
-let pr_comma () = str "," ++ spc ()
-let pr_semicolon () = str ";" ++ spc ()
-let pr_bar () = str "|" ++ spc ()
-let pr_arg pr x = spc () ++ pr x
-let pr_opt pr = function None -> mt () | Some x -> pr_arg pr x
-let pr_opt_no_spc pr = function None -> mt () | Some x -> pr x
-
-let nth n = str (ordinal n)
-
-(* [prlist pr [a ; ... ; c]] outputs [pr a ++ ... ++ pr c] *)
-
-let rec prlist elem l = match l with
-  | []   -> mt ()
-  | h::t -> Stream.lapp (fun () -> elem h) (prlist elem t)
-
-(* unlike all other functions below, [prlist] works lazily.
-   if a strict behavior is needed, use [prlist_strict] instead.
-   evaluation is done from left to right. *)
-
-let rec prlist_strict elem l = match l with
-  | []   -> mt ()
-  | h::t ->
-      let e = elem h in let r = prlist_strict elem t in e++r
-
-(* [prlist_with_sep sep pr [a ; ... ; c]] outputs
-   [pr a ++ sep() ++ ... ++ sep() ++ pr c] *)
-
-let rec prlist_with_sep sep elem l = match l with
-  | []   -> mt ()
-  | [h]  -> elem h
-  | h::t ->
-      let e = elem h and s = sep() and r = prlist_with_sep sep elem t in
-      e ++ s ++ r
-
-(* Print sequence of objects separated by space (unless an element is empty) *)
-
-let rec pr_sequence elem = function
-  | []   -> mt ()
-  | [h]  -> elem h
-  | h::t ->
-      let e = elem h and r = pr_sequence elem t in
-      if e = mt () then r else e ++ spc () ++ r
-
-(* [pr_enum pr [a ; b ; ... ; c]] outputs
-   [pr a ++ str "," ++ pr b ++ str "," ++ ... ++ str "and" ++ pr c] *)
-
-let pr_enum pr l =
-  let c,l' = list_sep_last l in
-  prlist_with_sep pr_comma pr l' ++
-  (if l'<>[] then str " and" ++ spc () else mt()) ++ pr c
-
-let pr_vertical_list pr = function
-  | [] -> str "none" ++ fnl ()
-  | l -> fnl () ++ str "  " ++ hov 0 (prlist_with_sep pr_fnl pr l) ++ fnl ()
-
-(* [prvecti_with_sep sep pr [|a0 ; ... ; an|]] outputs
-   [pr 0 a0 ++ sep() ++ ... ++ sep() ++ pr n an] *)
-
-let prvecti_with_sep sep elem v =
-  let rec pr i =
-    if i = 0 then
-      elem 0 v.(0)
-    else
-      let r = pr (i-1) and s = sep () and e = elem i v.(i) in
-      r ++ s ++ e
-  in
-  let n = Array.length v in
-  if n = 0 then mt () else pr (n - 1)
-
-(* [prvecti pr [|a0 ; ... ; an|]] outputs [pr 0 a0 ++ ... ++ pr n an] *)
-
-let prvecti elem v = prvecti_with_sep mt elem v
-
-(* [prvect_with_sep sep pr [|a ; ... ; c|]] outputs
-   [pr a ++ sep() ++ ... ++ sep() ++ pr c] *)
-
-let prvect_with_sep sep elem v = prvecti_with_sep sep (fun _ -> elem) v
-
-(* [prvect pr [|a ; ... ; c|]] outputs [pr a ++ ... ++ pr c] *)
-
-let prvect elem v = prvect_with_sep mt elem v
-
-let pr_located pr (loc,x) =
-  if Flags.do_beautify() && loc<>dummy_loc then
-    let (b,e) = unloc loc in
-    comment b ++ pr x ++ comment e
-  else pr x
-
-let surround p = hov 1 (str"(" ++ p ++ str")")
 
 (*s Memoization *)
 

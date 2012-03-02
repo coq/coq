@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Names
+open Errors
 open Util
 open Sign
 open Term

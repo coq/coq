@@ -6,10 +6,35 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
+open Compat
 open Pp
 
-(* spiwack: it might be reasonable to decide and move the declarations
-   of Anomaly and so on to this module so as not to depend on Util. *)
+(* Errors *)
+
+exception Anomaly of string * std_ppcmds  (* System errors *)
+let anomaly string = raise (Anomaly(string, str string))
+let anomalylabstrm string pps = raise (Anomaly(string,pps))
+
+exception UserError of string * std_ppcmds (* User errors *)
+let error string = raise (UserError("_", str string))
+let errorlabstrm l pps = raise (UserError(l,pps))
+
+exception AlreadyDeclared of std_ppcmds (* for already declared Schemes *)
+let alreadydeclared pps = raise (AlreadyDeclared(pps))
+
+let todo s = prerr_string ("TODO: "^s^"\n")
+
+(* raising located exceptions *)
+let anomaly_loc (loc,s,strm) = Loc.raise loc (Anomaly (s,strm))
+let user_err_loc (loc,s,strm) = Loc.raise loc (UserError (s,strm))
+let invalid_arg_loc (loc,s) = Loc.raise loc (Invalid_argument s)
+
+(* Like Exc_located, but specifies the outermost file read, the filename
+   associated to the location of the error, and the error itself. *)
+
+exception Error_in_file of string * (bool * string * loc) * exn
+
+exception Timeout
 
 let handle_stack = ref []
 
@@ -38,7 +63,7 @@ let where s =
   if !Flags.debug then str ("in "^s^":") ++ spc () else mt ()
 
 let raw_anomaly e = match e with
-  | Util.Anomaly (s,pps) -> where s ++ pps ++ str "."
+  | Anomaly (s,pps) -> where s ++ pps ++ str "."
   | Assert_failure _ | Match_failure _ -> str (Printexc.to_string e ^ ".")
   | _ -> str ("Uncaught exception " ^ Printexc.to_string e ^ ".")
 
@@ -62,7 +87,7 @@ let print_no_anomaly e = print_gen (fun e -> raise e) !handle_stack e
 (** Predefined handlers **)
 
 let _ = register_handler begin function
-  | Util.UserError(s,pps) -> hov 0 (str "Error: " ++ where s ++ pps)
+  | UserError(s,pps) -> hov 0 (str "Error: " ++ where s ++ pps)
   | _ -> raise Unhandled
 end
 

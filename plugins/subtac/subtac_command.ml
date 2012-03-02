@@ -9,6 +9,7 @@ open Pp
 open Glob_term
 open Sign
 open Tacred
+open Errors
 open Util
 open Names
 open Nameops

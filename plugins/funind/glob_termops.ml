@@ -1,5 +1,6 @@
 open Pp
 open Glob_term
+open Errors
 open Util
 open Names
 (* Ocaml 3.06 Map.S does not handle is_empty *)

@@ -111,7 +111,7 @@ let int31_of_pos_bigint dloc n =
   GApp (dloc, ref_construct, List.rev (args 31 n))
 
 let error_negative dloc =
-  Util.user_err_loc (dloc, "interp_int31", Pp.str "int31 are only non-negative numbers.")
+  Errors.user_err_loc (dloc, "interp_int31", Pp.str "int31 are only non-negative numbers.")
 
 let interp_int31 dloc n =
   if is_pos_or_zero n then
@@ -143,7 +143,7 @@ let uninterp_int31 i =
 let _ = Notation.declare_numeral_interpreter int31_scope
   (int31_path, int31_module)
   interp_int31
-  ([GRef (Util.dummy_loc, int31_construct)],
+  ([GRef (Pp.dummy_loc, int31_construct)],
    uninterp_int31,
    true)
 
@@ -201,7 +201,7 @@ let bigN_of_pos_bigint dloc n =
   result hght (word_of_pos_bigint dloc hght n)
 
 let bigN_error_negative dloc =
-  Util.user_err_loc (dloc, "interp_bigN", Pp.str "bigN are only non-negative numbers.")
+  Errors.user_err_loc (dloc, "interp_bigN", Pp.str "bigN are only non-negative numbers.")
 
 let interp_bigN dloc n =
   if is_pos_or_zero n then
@@ -257,7 +257,7 @@ let uninterp_bigN rc =
 let bigN_list_of_constructors =
   let rec build i =
     if less_than i (add_1 n_inlined) then
-      GRef (Util.dummy_loc, bigN_constructor i)::(build (add_1 i))
+      GRef (Pp.dummy_loc, bigN_constructor i)::(build (add_1 i))
     else
       []
   in
@@ -303,8 +303,8 @@ let uninterp_bigZ rc =
 let _ = Notation.declare_numeral_interpreter bigZ_scope
   (bigZ_path, bigZ_module)
   interp_bigZ
-  ([GRef (Util.dummy_loc, bigZ_pos);
-    GRef (Util.dummy_loc, bigZ_neg)],
+  ([GRef (Pp.dummy_loc, bigZ_pos);
+    GRef (Pp.dummy_loc, bigZ_neg)],
    uninterp_bigZ,
    true)
 
@@ -324,5 +324,5 @@ let uninterp_bigQ rc =
 let _ = Notation.declare_numeral_interpreter bigQ_scope
   (bigQ_path, bigQ_module)
   interp_bigQ
-  ([GRef (Util.dummy_loc, bigQ_z)], uninterp_bigQ,
+  ([GRef (Pp.dummy_loc, bigQ_z)], uninterp_bigQ,
    true)

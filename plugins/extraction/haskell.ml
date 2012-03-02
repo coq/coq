@@ -9,6 +9,7 @@
 (*s Production of Haskell syntax. *)
 
 open Pp
+open Errors
 open Util
 open Names
 open Nameops

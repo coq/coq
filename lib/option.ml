@@ -153,6 +153,13 @@ module List =
   let rec flatten = function
     | x::l -> cons x (flatten l)
     | [] -> []
+
+  let rec find f = function
+    |[] -> None
+    |h :: t -> match f h with
+	 |None -> find f t
+	 |x -> x
+
 end
 
 

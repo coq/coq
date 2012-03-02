@@ -12,6 +12,7 @@
 (* This module provides the main functions for type-checking module
    declarations *)
 
+open Errors
 open Util
 open Names
 open Univ

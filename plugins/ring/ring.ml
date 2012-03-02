@@ -9,6 +9,7 @@
 (* ML part of the Ring tactic *)
 
 open Pp
+open Errors
 open Util
 open Flags
 open Term

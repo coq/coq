@@ -8,6 +8,7 @@
 
 open Compat
 open Pp
+open Errors
 open Util
 open Names
 open Nameops
@@ -48,7 +49,7 @@ open Pretype_errors
 let rec catchable_exception = function
   | Loc.Exc_located(_,e) -> catchable_exception e
   | LtacLocated(_,e) -> catchable_exception e
-  | Util.UserError _ | TypeError _ | PretypeError (_,_,TypingError _)
+  | Errors.UserError _ | TypeError _ | PretypeError (_,_,TypingError _)
   | RefinerError _ | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _ | PretypeError (_,_,VarNotFound _)
   (* reduction errors *)
@@ -179,7 +180,7 @@ let reorder_context env sign ord =
             errorlabstrm "reorder_context"
               (str "Cannot move declaration " ++ pr_id top ++ spc() ++
               str "before " ++
-              prlist_with_sep pr_spc pr_id
+              pr_sequence pr_id
                 (Idset.elements (Idset.inter h
                   (global_vars_set_of_decl env d))));
           step ord' expected ctxt_head mh (d::ctxt_tail)

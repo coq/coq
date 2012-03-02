@@ -16,6 +16,8 @@ open Evd
 open Environ
 open Nametab
 open Mod_subst
+open Errors
+open Pp
 open Util
 open Typeclasses_errors
 open Typeclasses
@@ -132,7 +134,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	  (fun avoid (clname, (id, _, t)) ->
 	    match clname with
 	    | Some (cl, b) ->
-		let t = CHole (Util.dummy_loc, None) in
+		let t = CHole (Pp.dummy_loc, None) in
 		  t, avoid
 	    | None -> failwith ("new instance: under-applied typeclass"))
 	  cl
@@ -224,7 +226,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 			    k.cl_projs;
 			  c :: props, rest'
 		      with Not_found ->
-			(CHole (Util.dummy_loc, None) :: props), rest
+			(CHole (Pp.dummy_loc, None) :: props), rest
 		    else props, rest)
 		  ([], props) k.cl_props
 	      in

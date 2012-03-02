@@ -9,6 +9,7 @@
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
 open Pp
+open Errors
 open Util
 open Names
 open Nameops
@@ -505,7 +506,7 @@ let pr_hints_path_atom prc _ _ a =
   match a with
   | PathAny -> str"."
   | PathHints grs ->
-    prlist_with_sep pr_spc Printer.pr_global grs
+    pr_sequence Printer.pr_global grs
 
 ARGUMENT EXTEND hints_path_atom
   TYPED AS hints_path_atom

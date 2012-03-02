@@ -1,4 +1,4 @@
-open Util
+open Pp
 open Names
 open Term
 open Glob_term

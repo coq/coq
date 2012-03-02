@@ -84,9 +84,9 @@ val alpha_rt : Names.identifier list -> glob_constr -> glob_constr
 
 (* same as alpha_rt but for case branches *)
 val alpha_br : Names.identifier list ->
-    Util.loc * Names.identifier list * Glob_term.cases_pattern list *
+    Pp.loc * Names.identifier list * Glob_term.cases_pattern list *
     Glob_term.glob_constr ->
-    Util.loc * Names.identifier list * Glob_term.cases_pattern list *
+    Pp.loc * Names.identifier list * Glob_term.cases_pattern list *
     Glob_term.glob_constr
 
 

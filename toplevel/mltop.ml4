@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Errors
 open Util
 open Pp
 open Flags
@@ -326,10 +327,10 @@ let declare_ml_modules local l =
 let print_ml_path () =
   let l = !coq_mlpath_copy in
   ppnl (str"ML Load Path:" ++ fnl () ++ str"  " ++
-          hv 0 (prlist_with_sep pr_fnl pr_str l))
+          hv 0 (prlist_with_sep fnl str l))
 
 	  (* Printing of loaded ML modules *)
 
 let print_ml_modules () =
   let l = get_loaded_modules () in
-  pp (str"Loaded ML Modules: " ++ pr_vertical_list pr_str l)
+  pp (str"Loaded ML Modules: " ++ pr_vertical_list str l)

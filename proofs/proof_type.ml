@@ -12,7 +12,7 @@ open Evd
 open Names
 open Libnames
 open Term
-open Util
+open Pp
 open Tacexpr
 (* open Decl_expr *)
 open Glob_term

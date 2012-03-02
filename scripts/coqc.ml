@@ -151,7 +151,7 @@ let parse_args () =
 
     | ("-where") :: _ ->
 	(try print_endline (Envars.coqlib ())
-	 with Util.UserError(_,pps) -> Pp.msgerrnl (Pp.hov 0 pps));
+	 with Errors.UserError(_,pps) -> Pp.msgerrnl (Pp.hov 0 pps));
 	exit 0
 
     | ("-config" | "--config") :: _ -> Usage.print_config (); exit 0

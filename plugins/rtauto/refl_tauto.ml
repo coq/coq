@@ -8,6 +8,7 @@
 
 module Search = Explore.Make(Proof_search)
 
+open Errors
 open Util
 open Term
 open Names

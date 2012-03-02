@@ -8,6 +8,7 @@
 
 open Compat
 open Pp
+open Errors
 open Util
 open Indtypes
 open Type_errors

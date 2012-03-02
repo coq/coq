@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Pp
+open Errors
 open Util
 open Names
 open Libnames
@@ -148,7 +149,7 @@ let subst_projection fid l c =
 	    | NoProjection (Name id) -> bad_projs := id :: !bad_projs; mkRel k
 	    | NoProjection Anonymous ->
                 errorlabstrm "" (str "Field " ++ pr_id fid ++
-                  str " depends on the " ++ str (ordinal (k-depth-1)) ++ str
+                  str " depends on the " ++ pr_nth (k-depth-1) ++ str
                   " field which has no name.")
         else
 	  mkRel (k-lv)

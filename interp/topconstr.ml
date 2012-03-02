@@ -8,6 +8,7 @@
 
 (*i*)
 open Pp
+open Errors
 open Util
 open Names
 open Nameops
@@ -857,7 +858,7 @@ type cases_pattern_expr =
   | CPatOr of loc * cases_pattern_expr list
   | CPatNotation of loc * notation * cases_pattern_notation_substitution
   | CPatPrim of loc * prim_token
-  | CPatRecord of Util.loc * (reference * cases_pattern_expr) list
+  | CPatRecord of loc * (reference * cases_pattern_expr) list
   | CPatDelimiters of loc * string * cases_pattern_expr
 
 and cases_pattern_notation_substitution =
@@ -1272,8 +1273,8 @@ type module_ast =
 (* and which are then occupied by proper symbols of the notation (or spaces) *)
 
 let locs_of_notation loc locs ntn =
-  let (bl,el) = Util.unloc loc in
-  let locs =  List.map Util.unloc locs in
+  let (bl,el) = unloc loc in
+  let locs =  List.map unloc locs in
   let rec aux pos = function
     | [] -> if pos = el then [] else [(pos,el-1)]
     | (ba,ea)::l ->if pos = ba then aux ea l else (pos,ba-1)::aux ea l

@@ -6,56 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
-open Compat
-
 (** This module contains numerous utility functions on strings, lists,
    arrays, etc. *)
-
-(** {6 ... } *)
-(** Errors. [Anomaly] is used for system errors and [UserError] for the
-   user's ones. *)
-
-exception Anomaly of string * std_ppcmds
-val anomaly : string -> 'a
-val anomalylabstrm : string -> std_ppcmds -> 'a
-
-exception UserError of string * std_ppcmds
-val error : string -> 'a
-val errorlabstrm : string -> std_ppcmds -> 'a
-
-exception AlreadyDeclared of std_ppcmds
-val alreadydeclared : std_ppcmds -> 'a
-
-(** [todo] is for running of an incomplete code its implementation is
-   "do nothing" (or print a message), but this function should not be
-   used in a released code *)
-
-val todo : string -> unit
-
-exception Timeout
-
-type loc = Loc.t
-
-type 'a located = loc * 'a
-
-val unloc : loc -> int * int
-val make_loc : int * int -> loc
-val dummy_loc : loc
-val join_loc : loc -> loc -> loc
-
-val anomaly_loc : loc * string * std_ppcmds -> 'a
-val user_err_loc : loc * string * std_ppcmds -> 'a
-val invalid_arg_loc : loc * string -> 'a
-val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
-val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
-val down_located : ('a -> 'b) -> 'a located -> 'b
-
-(** Like [Exc_located], but specifies the outermost file read, the
-   input buffer associated to the location of the error (or the module name
-   if boolean is true), and the error itself. *)
-
-exception Error_in_file of string * (bool * string * loc) * exn
 
 (** Mapping under pairs *)
 
@@ -86,6 +38,7 @@ val is_letter : char -> bool
 val is_digit : char -> bool
 val is_ident_tail : char -> bool
 val is_blank : char -> bool
+val next_utf8 : string -> int -> int * int
 
 (** {6 Strings. } *)
 
@@ -108,9 +61,8 @@ type utf8_status = UnicodeLetter | UnicodeIdentPart | UnicodeSymbol
 
 exception UnsupportedUtf8
 
+val ident_refutation : string -> string option
 val classify_unicode : int -> utf8_status
-val check_ident : string -> unit
-val check_ident_soft : string -> unit
 val lowercase_first_char_utf8 : string -> string
 val ascii_of_ident : string -> string
 
@@ -335,39 +287,6 @@ val interval : int -> int -> int list
    [Failure _] otherwise behaves as [List.map f l] *)
 
 val map_succeed : ('a -> 'b) -> 'a list -> 'b list
-
-(** {6 Pretty-printing. } *)
-
-val pr_spc : unit -> std_ppcmds
-val pr_fnl : unit -> std_ppcmds
-val pr_int : int -> std_ppcmds
-val pr_str : string -> std_ppcmds
-val pr_comma : unit -> std_ppcmds
-val pr_semicolon : unit -> std_ppcmds
-val pr_bar : unit -> std_ppcmds
-val pr_arg : ('a -> std_ppcmds) -> 'a -> std_ppcmds
-val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
-val pr_opt_no_spc : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
-val nth : int -> std_ppcmds
-
-val prlist : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
-
-(** unlike all other functions below, [prlist] works lazily.
-   if a strict behavior is needed, use [prlist_strict] instead. *)
-val prlist_strict :  ('a -> std_ppcmds) -> 'a list -> std_ppcmds
-val prlist_with_sep :
-   (unit -> std_ppcmds) -> ('b -> std_ppcmds) -> 'b list -> std_ppcmds
-val prvect : ('a -> std_ppcmds) -> 'a array -> std_ppcmds
-val prvecti : (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
-val prvect_with_sep :
-   (unit -> std_ppcmds) -> ('a -> std_ppcmds) -> 'a array -> std_ppcmds
-val prvecti_with_sep :
-   (unit -> std_ppcmds) -> (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
-val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
-val pr_enum : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
-val pr_located : ('a -> std_ppcmds) -> 'a located -> std_ppcmds
-val pr_sequence : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
-val surround : std_ppcmds -> std_ppcmds
 
 (** {6 Memoization. } *)
 

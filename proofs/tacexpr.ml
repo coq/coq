@@ -11,6 +11,8 @@ open Topconstr
 open Libnames
 open Nametab
 open Glob_term
+open Errors
+open Pp
 open Util
 open Genarg
 open Pattern

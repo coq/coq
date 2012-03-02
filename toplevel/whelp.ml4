@@ -10,7 +10,7 @@
 
 open Flags
 open Pp
-open Util
+open Errors
 open System
 open Names
 open Term

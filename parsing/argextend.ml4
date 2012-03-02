@@ -14,8 +14,8 @@ open Egrammar
 open Pcoq
 open Compat
 
-let loc = Util.dummy_loc
-let default_loc = <:expr< Util.dummy_loc >>
+let loc = Pp.dummy_loc
+let default_loc = <:expr< Pp.dummy_loc >>
 
 let rec make_rawwit loc = function
   | BoolArgType -> <:expr< Genarg.rawwit_bool >>
@@ -203,8 +203,8 @@ let declare_vernac_argument loc s pr cl =
 	(None, [(None, None, $rules$)]);
       Pptactic.declare_extra_genarg_pprule
         ($rawwit$, $pr_rules$)
-        ($globwit$, fun _ _ _ _ -> Util.anomaly "vernac argument needs not globwit printer")
-        ($wit$, fun _ _ _ _ -> Util.anomaly "vernac argument needs not wit printer") }
+        ($globwit$, fun _ _ _ _ -> Errors.anomaly "vernac argument needs not globwit printer")
+        ($wit$, fun _ _ _ _ -> Errors.anomaly "vernac argument needs not wit printer") }
       >> ]
 
 open Vernacexpr

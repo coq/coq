@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Term
+open Errors
 open Util
 open Formula
 open Unify
@@ -235,7 +236,7 @@ let print_cmap map=
   let print_entry c l s=
     let xc=Constrextern.extern_constr false (Global.env ()) c in
       str "| " ++
-      Util.prlist Printer.pr_global l ++
+      prlist Printer.pr_global l ++
       str " : " ++
       Ppconstr.pr_constr_expr xc ++
       cut () ++

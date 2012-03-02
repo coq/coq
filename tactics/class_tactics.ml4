@@ -9,6 +9,7 @@
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
 open Pp
+open Errors
 open Util
 open Names
 open Nameops
@@ -212,7 +213,7 @@ let nb_empty_evars s =
 
 let pr_ev evs ev = Printer.pr_constr_env (Goal.V82.env evs ev) (Evarutil.nf_evar evs (Goal.V82.concl evs ev))
 
-let pr_depth l = prlist_with_sep (fun () -> str ".") pr_int (List.rev l)
+let pr_depth l = prlist_with_sep (fun () -> str ".") int (List.rev l)
 
 type autoinfo = { hints : Auto.hint_db; is_evar: existential_key option;
 		  only_classes: bool; auto_depth: int list; auto_last_tac: std_ppcmds Lazy.t;
@@ -744,7 +745,7 @@ ARGUMENT EXTEND debug TYPED AS bool PRINTED BY pr_debug
 END
 
 let pr_depth _prc _prlc _prt = function
-    Some i -> Util.pr_int i
+    Some i -> Pp.int i
   | None -> Pp.mt()
 
 ARGUMENT EXTEND depth TYPED AS int option PRINTED BY pr_depth

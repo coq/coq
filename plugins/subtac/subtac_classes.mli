@@ -16,6 +16,7 @@ open Environ
 open Nametab
 open Mod_subst
 open Topconstr
+open Errors
 open Util
 open Typeclasses
 open Implicit_quantifiers

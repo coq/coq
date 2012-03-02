@@ -11,6 +11,7 @@
 (*i*)
 open Pcoq
 open Pp
+open Errors
 open Util
 open Names
 open Coqlib
@@ -20,6 +21,7 @@ open Bigint
 open Coqlib
 open Notation
 open Pp
+open Errors
 open Util
 open Names
 (*i*)

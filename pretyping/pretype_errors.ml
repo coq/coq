@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Compat
+open Errors
 open Util
 open Names
 open Sign
@@ -43,8 +44,8 @@ type pretype_error =
 exception PretypeError of env * Evd.evar_map * pretype_error
 
 let precatchable_exception = function
-  | Util.UserError _ | TypeError _ | PretypeError _
-  | Loc.Exc_located(_,(Util.UserError _ | TypeError _ |
+  | Errors.UserError _ | TypeError _ | PretypeError _
+  | Loc.Exc_located(_,(Errors.UserError _ | TypeError _ |
     Nametab.GlobalizationError _ | PretypeError _)) -> true
   | _ -> false
 

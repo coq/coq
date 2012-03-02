@@ -9,6 +9,7 @@
 (* Printers for the ocaml toplevel. *)
 
 open System
+open Errors
 open Util
 open Pp
 open Names
@@ -131,7 +132,7 @@ let pppftreestate p = pp(print_pftreestate p)
 
 (* let pr_glls glls = *)
 (*   hov 0 (pr_evar_defs (sig_sig glls) ++ fnl () ++ *)
-(*          prlist_with_sep pr_fnl db_pr_goal (sig_it glls)) *)
+(*          prlist_with_sep fnl db_pr_goal (sig_it glls)) *)
 
 (* let ppsigmagoal g = pp(pr_goal (sig_it g)) *)
 (* let prgls gls = pp(pr_gls gls) *)

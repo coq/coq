@@ -14,6 +14,7 @@
 (* Initial author: Arnaud Spiwack
    Module-traversing code: Pierre Letouzey *)
 
+open Errors
 open Util
 open Names
 open Sign

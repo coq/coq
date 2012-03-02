@@ -16,6 +16,7 @@ open Evd
 open Environ
 open Nametab
 open Mod_subst
+open Errors
 open Util
 open Typeclasses_errors
 open Libobject

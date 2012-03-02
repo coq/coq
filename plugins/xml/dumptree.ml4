@@ -128,7 +128,7 @@ let pr_goal_xml sigma g =
 ;;
 
 let print_proof_xml () =
-  Util.anomaly "Dump Tree command not supported in this version."
+  Errors.anomaly "Dump Tree command not supported in this version."
 
 
 VERNAC COMMAND EXTEND DumpTree

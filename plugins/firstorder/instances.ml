@@ -10,6 +10,8 @@ open Formula
 open Sequent
 open Unify
 open Rules
+open Pp
+open Errors
 open Util
 open Term
 open Glob_term

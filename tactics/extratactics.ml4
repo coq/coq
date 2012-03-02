@@ -17,6 +17,7 @@ open Names
 open Tacexpr
 open Glob_term
 open Tactics
+open Errors
 open Util
 open Evd
 open Equality
@@ -60,7 +61,7 @@ END
 
 let induction_arg_of_quantified_hyp = function
   | AnonHyp n -> ElimOnAnonHyp n
-  | NamedHyp id -> ElimOnIdent (Util.dummy_loc,id)
+  | NamedHyp id -> ElimOnIdent (Pp.dummy_loc,id)
 
 (* Versions *_main must come first!! so that "1" is interpreted as a
    ElimOnAnonHyp and not as a "constr", and "id" is interpreted as a

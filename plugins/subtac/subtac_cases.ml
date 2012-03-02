@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Cases
+open Errors
 open Util
 open Names
 open Nameops

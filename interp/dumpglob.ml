@@ -124,7 +124,7 @@ let remove_sections dir =
     dir
 
 let interval loc =
-  let loc1,loc2 = Util.unloc loc in
+  let loc1,loc2 = Pp.unloc loc in
   loc1, loc2-1
 
 let dump_ref loc filepath modpath ident ty =
@@ -143,7 +143,7 @@ let add_glob_gen loc sp lib_dp ty =
       dump_ref loc filepath modpath ident ty
 
 let add_glob loc ref =
-  if dump () && loc <> Util.dummy_loc then
+  if dump () && loc <> Pp.dummy_loc then
     let sp = Nametab.path_of_global ref in
     let lib_dp = Lib.library_part ref in
     let ty = type_of_global_ref ref in
@@ -154,7 +154,7 @@ let mp_of_kn kn =
     Names.MPdot (mp,l)
 
 let add_glob_kn loc kn =
-  if dump () && loc <> Util.dummy_loc then
+  if dump () && loc <> Pp.dummy_loc then
     let sp = Nametab.path_of_syndef kn in
     let lib_dp = Lib.dp_of_mp (mp_of_kn kn) in
       add_glob_gen loc sp lib_dp "syndef"
@@ -237,7 +237,7 @@ let cook_notation df sc =
 
 let dump_notation (loc,(df,_)) sc sec =
   (* We dump the location of the opening '"' *)
-  dump_string (Printf.sprintf "not %d %s %s\n" (fst (Util.unloc loc))
+  dump_string (Printf.sprintf "not %d %s %s\n" (fst (Pp.unloc loc))
     (Names.string_of_dirpath (Lib.current_dirpath sec)) (cook_notation df sc))
 
 let dump_notation_location posl df (((path,secpath),_),sc) =

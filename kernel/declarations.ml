@@ -21,6 +21,7 @@
    global constants/axioms, mutual inductive definitions and the
    module system *)
 
+open Errors
 open Util
 open Names
 open Univ

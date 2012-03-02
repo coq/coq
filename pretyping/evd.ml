@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Pp
+open Errors
 open Util
 open Names
 open Nameops
@@ -761,7 +762,7 @@ let pr_evar_source = function
       spc () ++ print_constr (constr_of_global c)
   | InternalHole -> str "internal placeholder"
   | TomatchTypeParameter (ind,n) ->
-      nth n ++ str " argument of type " ++ print_constr (mkInd ind)
+      pr_nth n ++ str " argument of type " ++ print_constr (mkInd ind)
   | GoalEvar -> str "goal evar"
   | ImpossibleCase -> str "type of impossible pattern-matching clause"
   | MatchingVar _ -> str "matching variable"
@@ -770,7 +771,7 @@ let pr_evar_info evi =
   let phyps =
     try
       let decls = List.combine (evar_context evi) (evar_filter evi) in
-      prlist_with_sep pr_spc pr_decl (List.rev decls)
+      prlist_with_sep spc pr_decl (List.rev decls)
     with Invalid_argument _ -> str "Ill-formed filtered context" in
   let pty = print_constr evi.evar_concl in
   let pb =
@@ -810,7 +811,7 @@ let evar_dependency_closure n sigma =
 let pr_evar_map_t depth sigma =
   let (evars,(uvs,univs)) = sigma.evars in
   let pr_evar_list l =
-    h 0 (prlist_with_sep pr_fnl
+    h 0 (prlist_with_sep fnl
 	   (fun (ev,evi) ->
 	     h 0 (str(string_of_existential ev) ++
                     str"==" ++ pr_evar_info evi)) l) in
@@ -830,7 +831,7 @@ let pr_evar_map_t depth sigma =
   and svs =
     if Univ.UniverseLSet.is_empty uvs then mt ()
     else str"UNIVERSE VARIABLES:"++brk(0,1)++
-      h 0 (prlist_with_sep pr_fnl 
+      h 0 (prlist_with_sep fnl
 	     (fun u -> Univ.pr_uni_level u) (Univ.UniverseLSet.elements uvs))++fnl()
   and cs =
     if Univ.is_initial_universes univs then mt ()
@@ -844,12 +845,12 @@ let print_env_short env =
   let pr_rel_decl (n, b, _) = pr_body n b in
   let nc = List.rev (named_context env) in
   let rc = List.rev (rel_context env) in
-    str "[" ++ prlist_with_sep pr_spc pr_named_decl nc ++ str "]" ++ spc () ++
-    str "[" ++ prlist_with_sep pr_spc pr_rel_decl rc ++ str "]"
+    str "[" ++ pr_sequence pr_named_decl nc ++ str "]" ++ spc () ++
+    str "[" ++ pr_sequence pr_rel_decl rc ++ str "]"
 
 let pr_constraints pbs =
   h 0
-    (prlist_with_sep pr_fnl 
+    (prlist_with_sep fnl
        (fun (pbty,env,t1,t2) ->
 	  print_env_short env ++ spc () ++ str "|-" ++ spc () ++
 	    print_constr t1 ++ spc() ++
@@ -859,7 +860,7 @@ let pr_constraints pbs =
 	    spc() ++ print_constr t2) pbs)
 
 let pr_evar_map_constraints evd =
-  if evd.conv_pbs = [] then mt() 
+  if evd.conv_pbs = [] then mt()
   else pr_constraints evd.conv_pbs++fnl()
 
 let pr_evar_map allevars evd =
@@ -874,4 +875,4 @@ let pr_evar_map allevars evd =
   v 0 (pp_evm ++ cstrs ++ pp_met)
 
 let pr_metaset metas =
-  str "[" ++ prlist_with_sep spc pr_meta (Metaset.elements metas) ++ str "]"
+  str "[" ++ pr_sequence pr_meta (Metaset.elements metas) ++ str "]"

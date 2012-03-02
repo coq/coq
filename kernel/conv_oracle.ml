@@ -44,7 +44,7 @@ let set_strategy k l =
       cst_opacity :=
       if l=default then Cmap.remove c !cst_opacity
       else Cmap.add c l !cst_opacity
-  | RelKey _ -> Util.error "set_strategy: RelKey"
+  | RelKey _ -> Errors.error "set_strategy: RelKey"
 
 let get_transp_state () =
   (Idmap.fold

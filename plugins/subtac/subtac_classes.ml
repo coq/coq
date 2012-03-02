@@ -22,6 +22,7 @@ open Typeclasses
 open Typeclasses_errors
 open Decl_kinds
 open Entries
+open Errors
 open Util
 
 module SPretyping = Subtac_pretyping.Pretyping
@@ -71,8 +72,8 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 		let t =
 		  if b then
 		    let _k = class_info cl in
-		      CHole (Util.dummy_loc, Some Evd.InternalHole)
-		  else CHole (Util.dummy_loc, None)
+		      CHole (Pp.dummy_loc, Some Evd.InternalHole)
+		  else CHole (Pp.dummy_loc, None)
 		in t, avoid
 	    | None -> failwith ("new instance: under-applied typeclass"))
 	  cl
@@ -149,7 +150,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 		      k.cl_projs;
 		    c :: props, rest'
 		with Not_found ->
-		  (CHole (Util.dummy_loc, None) :: props), rest
+		  (CHole (Pp.dummy_loc, None) :: props), rest
 	      else props, rest)
 	    ([], props) k.cl_props
 	in

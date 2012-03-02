@@ -12,16 +12,16 @@
    Raises [End_of_file] if EOF (or Ctrl-D) is reached. *)
 
 val parse_sentence : Pcoq.Gram.parsable * in_channel option ->
- Util.loc * Vernacexpr.vernac_expr
+ Pp.loc * Vernacexpr.vernac_expr
 
 (** Reads and executes vernac commands from a stream.
    The boolean [just_parsing] disables interpretation of commands. *)
 
-exception DuringCommandInterp of Util.loc * exn
+exception DuringCommandInterp of Pp.loc * exn
 exception End_of_input
 
 val just_parsing : bool ref
-val eval_expr : Util.loc * Vernacexpr.vernac_expr -> unit
+val eval_expr : Pp.loc * Vernacexpr.vernac_expr -> unit
 val raw_do_vernac : Pcoq.Gram.parsable -> unit
 
 (** Set XML hooks *)

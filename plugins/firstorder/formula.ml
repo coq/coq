@@ -12,6 +12,7 @@ open Term
 open Termops
 open Reductionops
 open Tacmach
+open Errors
 open Util
 open Declarations
 open Libnames

@@ -8,6 +8,7 @@
 
 open Pp
 open Compat
+open Errors
 open Util
 open Pcoq
 open Extend

@@ -10,6 +10,9 @@
 
 type identifier
 
+val check_ident : string -> unit
+val check_ident_soft : string -> unit
+
 (** Parsing and printing of identifiers *)
 val string_of_id : identifier -> string
 val id_of_string : string -> identifier

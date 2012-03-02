@@ -1,4 +1,5 @@
 open Printer
+open Errors
 open Util
 open Term
 open Namegen
@@ -1048,7 +1049,7 @@ let do_replace params rec_arg_num rev_args_id f fun_num all_funs g =
 		{finfos with
 		   equation_lemma = Some (match Nametab.locate (qualid_of_ident equation_lemma_id) with
 					      ConstRef c -> c
-					    | _ -> Util.anomaly "Not a constant"
+					    | _ -> Errors.anomaly "Not a constant"
 					 )
 		}
 	  | _ -> ()

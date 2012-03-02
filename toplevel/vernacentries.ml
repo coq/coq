@@ -9,6 +9,7 @@
 (* Concrete syntax of the mathematical vernacular MV V2.6 *)
 
 open Pp
+open Errors
 open Util
 open Flags
 open Names
@@ -65,7 +66,7 @@ let show_proof () =
   (* spiwack: this would probably be cooler with a bit of polishing. *)
   let p = Proof_global.give_me_the_proof () in
   let pprf = Proof.partial_proof p in
-  msgnl (Util.prlist_with_sep Pp.fnl Printer.pr_constr pprf)
+  msgnl (Pp.prlist_with_sep Pp.fnl Printer.pr_constr pprf)
 
 let show_node () =
   (* spiwack: I'm have little clue what this function used to do. I deactivated it, 
@@ -163,7 +164,7 @@ let print_loadpath dir =
     | Some dir -> List.filter (fun (s,l) -> is_dirpath_prefix_of dir l) l in
   msgnl (Pp.t (str "Logical Path:                 " ++
 		 tab () ++ str "Physical path:" ++ fnl () ++
-		 prlist_with_sep pr_fnl print_path_entry l))
+		 prlist_with_sep fnl print_path_entry l))
 
 let print_modules () =
   let opened = Library.opened_libraries ()
@@ -419,14 +420,14 @@ let vernac_inductive finite infer indl =
 	  (((coe', AssumExpr ((loc, Name id), ce)), None), [])
       in vernac_record (Class true) finite infer id bl c None [f]
   | [ ( id , bl , c , Class true, _), _ ] ->
-      Util.error "Definitional classes must have a single method"
+      Errors.error "Definitional classes must have a single method"
   | [ ( id , bl , c , Class false, Constructors _), _ ] ->
-      Util.error "Inductive classes not supported"
+      Errors.error "Inductive classes not supported"
   | [ ( _ , _ , _ , _, RecordDecl _ ) , _ ] ->
-      Util.error "where clause not supported for (co)inductive records"
+      Errors.error "where clause not supported for (co)inductive records"
   | _ -> let unpack = function
       | ( (_, id) , bl , c , _ , Constructors l ) , ntn  -> ( id , bl , c , l ) , ntn
-      | _ -> Util.error "Cannot handle mutually (co)inductive records."
+      | _ -> Errors.error "Cannot handle mutually (co)inductive records."
     in
     let indl = List.map unpack indl in
     do_mutual_inductive indl (recursivity_flag_of_kind finite)
@@ -1416,7 +1417,7 @@ let vernac_show = function
   | ShowExistentials -> show_top_evars ()
   | ShowTree -> show_prooftree ()
   | ShowProofNames ->
-      msgnl (prlist_with_sep pr_spc pr_id (Pfedit.get_all_proof_names()))
+      msgnl (pr_sequence pr_id (Pfedit.get_all_proof_names()))
   | ShowIntros all -> show_intro all
   | ShowMatch id -> show_match id
   | ShowThesis -> show_thesis ()

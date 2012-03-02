@@ -9,6 +9,7 @@
 open Pp
 open Names
 open Namegen
+open Errors
 open Util
 open Tacexpr
 open Glob_term
@@ -133,7 +134,7 @@ let rec pr_raw_generic prc prlc prtac prpat prref (x:Genarg.rlevel Genarg.generi
   match Genarg.genarg_tag x with
   | BoolArgType -> str (if out_gen rawwit_bool x then "true" else "false")
   | IntArgType -> int (out_gen rawwit_int x)
-  | IntOrVarArgType -> pr_or_var pr_int (out_gen rawwit_int_or_var x)
+  | IntOrVarArgType -> pr_or_var int (out_gen rawwit_int_or_var x)
   | StringArgType -> str "\"" ++ str (out_gen rawwit_string x) ++ str "\""
   | PreIdentArgType -> str (out_gen rawwit_pre_ident x)
   | IntroPatternArgType -> pr_intro_pattern (out_gen rawwit_intro_pattern x)
@@ -176,7 +177,7 @@ let rec pr_glob_generic prc prlc prtac prpat x =
   match Genarg.genarg_tag x with
   | BoolArgType -> str (if out_gen globwit_bool x then "true" else "false")
   | IntArgType -> int (out_gen globwit_int x)
-  | IntOrVarArgType -> pr_or_var pr_int (out_gen globwit_int_or_var x)
+  | IntOrVarArgType -> pr_or_var int (out_gen globwit_int_or_var x)
   | StringArgType -> str "\"" ++ str (out_gen globwit_string x) ++ str "\""
   | PreIdentArgType -> str (out_gen globwit_pre_ident x)
   | IntroPatternArgType -> pr_intro_pattern (out_gen globwit_intro_pattern x)
@@ -222,7 +223,7 @@ let rec pr_generic prc prlc prtac prpat x =
   match Genarg.genarg_tag x with
   | BoolArgType -> str (if out_gen wit_bool x then "true" else "false")
   | IntArgType -> int (out_gen wit_int x)
-  | IntOrVarArgType -> pr_or_var pr_int (out_gen wit_int_or_var x)
+  | IntOrVarArgType -> pr_or_var int (out_gen wit_int_or_var x)
   | StringArgType -> str "\"" ++ str (out_gen wit_string x) ++ str "\""
   | PreIdentArgType -> str (out_gen wit_pre_ident x)
   | IntroPatternArgType -> pr_intro_pattern (out_gen wit_intro_pattern x)
@@ -423,8 +424,8 @@ let pr_orient b = if b then mt () else str " <-"
 
 let pr_multi = function
   | Precisely 1 -> mt ()
-  | Precisely n -> pr_int n ++ str "!"
-  | UpTo n -> pr_int n ++ str "?"
+  | Precisely n -> int n ++ str "!"
+  | UpTo n -> int n ++ str "?"
   | RepeatStar -> str "?"
   | RepeatPlus -> str "!"
 

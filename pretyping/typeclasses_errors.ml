@@ -17,6 +17,7 @@ open Nametab
 open Mod_subst
 open Topconstr
 open Compat
+open Pp
 open Util
 open Libnames
 (*i*)

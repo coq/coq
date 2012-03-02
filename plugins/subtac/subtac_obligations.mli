@@ -1,4 +1,5 @@
 open Names
+open Pp
 open Util
 open Libnames
 open Evd

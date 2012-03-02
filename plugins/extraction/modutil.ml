@@ -10,6 +10,7 @@ open Names
 open Declarations
 open Environ
 open Libnames
+open Errors
 open Util
 open Miniml
 open Table

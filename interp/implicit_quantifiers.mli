@@ -16,7 +16,7 @@ open Nametab
 open Mod_subst
 open Glob_term
 open Topconstr
-open Util
+open Pp
 open Libnames
 open Typeclasses
 

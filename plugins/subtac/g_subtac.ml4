@@ -14,7 +14,8 @@
 
 
 open Flags
-open Util
+open Errors
+open Pp
 open Names
 open Nameops
 open Vernacentries

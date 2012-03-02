@@ -11,6 +11,7 @@ open Summary
 open Libobject
 open Entries
 open Decl_kinds
+open Errors
 open Util
 open Evd
 open Declare
@@ -18,7 +19,7 @@ open Proof_type
 open Compat
 
 let ppwarn cmd = Pp.warn (str"Program:" ++ cmd)
-let pperror cmd = Util.errorlabstrm "Program" cmd
+let pperror cmd = Errors.errorlabstrm "Program" cmd
 let error s = pperror (str s)
 
 let reduce c =
@@ -551,7 +552,7 @@ and solve_obligation_by_tac prg obls i tac =
 	| Loc.Exc_located(_, Refiner.FailError (_, s))
 	| Refiner.FailError (_, s) ->
 	    user_err_loc (fst obl.obl_location, "solve_obligation", Lazy.force s)
-	| Util.Anomaly _ as e -> raise e
+	| Errors.Anomaly _ as e -> raise e
 	| e -> false
 
 and solve_prg_obligations prg ?oblset tac =

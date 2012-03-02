@@ -111,7 +111,7 @@ let focus_sublist i j l =
     try 
       Util.list_chop (j-i+1) sub_right 
     with Failure "list_chop" -> 
-      Util.errorlabstrm "nth_unproven" (Pp.str"No such unproven subgoal")
+      Errors.errorlabstrm "nth_unproven" (Pp.str"No such unproven subgoal")
   in
   (sub, (left,right))
 
@@ -280,7 +280,7 @@ let tclFOCUS i j t env = { go = fun sk fk step ->
     is used otherwise. *)
 exception SizeMismatch
 let _ = Errors.register_handler begin function
-  | SizeMismatch -> Util.error "Incorrect number of goals."
+  | SizeMismatch -> Errors.error "Incorrect number of goals."
   | _ -> raise Errors.Unhandled
 end
 (* spiwack: we use an parametrised function to generate the dispatch tacticals.
@@ -316,7 +316,7 @@ let rec tclDISPATCHGEN null join tacs env = { go = fun sk fk step ->
     on with these exceptions. Does not catch anomalies. *)
 let purify t = 
   let t' env = { go = fun sk fk step -> try (t env).go (fun x -> sk (Util.Inl x)) fk step
-     	                                                     with Util.Anomaly _ as e -> raise e
+     	                                                     with Errors.Anomaly _ as e -> raise e
 							           | e -> sk (Util.Inr e) fk step
 	       }
   in
@@ -400,7 +400,7 @@ let rec tclGOALBINDU s k =
 open Pretype_errors
 let rec catchable_exception = function
   | Loc.Exc_located(_,e) -> catchable_exception e
-  | Util.UserError _
+  | Errors.UserError _
   | Type_errors.TypeError _ | PretypeError (_,_,TypingError _)
   | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _ | PretypeError (_,_,VarNotFound _)
@@ -505,9 +505,9 @@ module V82 = struct
     let (evk,_) = 
       let evl = Evarutil.non_instantiated pv.solution in
      if (n <= 0) then
-	Util.error "incorrect existential variable index"
+	Errors.error "incorrect existential variable index"
       else if List.length evl < n then
-	  Util.error "not so many uninstantiated existential variables"
+	  Errors.error "not so many uninstantiated existential variables"
       else
 	List.nth evl (n-1) 
     in

@@ -14,6 +14,8 @@
    Corbineau, Feb 2008 *)
 (* Turned into an abstract compilation unit by Matthieu Sozeau, March 2006 *)
 
+open Pp
+open Errors
 open Util
 open Names
 open Term

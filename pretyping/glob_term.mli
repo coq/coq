@@ -12,7 +12,8 @@
    and notations are done, but coercions, inference of implicit
    arguments and pattern-matching compilation are not. *)
 
-open Util
+open Errors
+open Pp
 open Names
 open Sign
 open Term

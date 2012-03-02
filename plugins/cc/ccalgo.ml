@@ -9,6 +9,7 @@
 (* This file implements the basic congruence-closure algorithm by *)
 (* Downey,Sethi and Tarjan. *)
 
+open Errors
 open Util
 open Pp
 open Goptions

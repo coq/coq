@@ -62,10 +62,10 @@ let h_generalize cl =
 let h_generalize_dep c =
   abstract_tactic (TacGeneralizeDep c) (generalize_dep c)
 let h_let_tac b na c cl =
-  let with_eq = if b then None else Some (true,(dummy_loc,IntroAnonymous)) in
+  let with_eq = if b then None else Some (true,(Pp.dummy_loc,IntroAnonymous)) in
   abstract_tactic (TacLetTac (na,c,cl,b)) (letin_tac with_eq na c None cl)
 let h_let_pat_tac b na c cl =
-  let with_eq = if b then None else Some (true,(dummy_loc,IntroAnonymous)) in
+  let with_eq = if b then None else Some (true,(Pp.dummy_loc,IntroAnonymous)) in
   abstract_tactic (TacLetTac (na,snd c,cl,b))
     (letin_pat_tac with_eq na c None cl)
 
@@ -130,8 +130,8 @@ let h_transitivity c =
   abstract_tactic (TacTransitivity c)
     (intros_transitivity c)
 
-let h_simplest_apply c = h_apply false false [dummy_loc,(c,NoBindings)]
-let h_simplest_eapply c = h_apply false true [dummy_loc,(c,NoBindings)]
+let h_simplest_apply c = h_apply false false [Pp.dummy_loc,(c,NoBindings)]
+let h_simplest_eapply c = h_apply false true [Pp.dummy_loc,(c,NoBindings)]
 let h_simplest_elim c   = h_elim false (c,NoBindings) None
 let h_simplest_case   c = h_case false (c,NoBindings)
 

@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Term
+open Errors
 open Util
 open Formula
 open Tacmach

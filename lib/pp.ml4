@@ -7,12 +7,13 @@
 (************************************************************************)
 
 open Pp_control
+open Compat
 
 (* This should not be used outside of this file. Use
    Flags.print_emacs instead. This one is updated when reading
    command line options. This was the only way to make [Pp] depend on
-   an option without creating a circularity: [Flags. -> [Util] ->
-   [Pp] -> [Flags. *)
+   an option without creating a circularity: [Flags] -> [Util] ->
+   [Pp] -> [Flags] *)
 let print_emacs = ref false
 let make_pp_emacs() = print_emacs:=true
 let make_pp_nonemacs() = print_emacs:=false
@@ -336,3 +337,104 @@ let msg_warning x = msg_warning_with !err_ft x
 let string_of_ppcmds c =
   msg_with Format.str_formatter c;
   Format.flush_str_formatter ()
+
+(* Locations management *)
+type loc = Loc.t
+let dummy_loc = Loc.ghost
+let join_loc = Loc.merge
+let make_loc = make_loc
+let unloc = unloc
+
+type 'a located = loc * 'a
+let located_fold_left f x (_,a) = f x a
+let located_iter2 f (_,a) (_,b) = f a b
+let down_located f (_,a) = f a
+
+
+(* Copy paste from Util *)
+
+let pr_comma () = str "," ++ spc ()
+let pr_semicolon () = str ";" ++ spc ()
+let pr_bar () = str "|" ++ spc ()
+let pr_arg pr x = spc () ++ pr x
+let pr_opt pr = function None -> mt () | Some x -> pr_arg pr x
+let pr_opt_no_spc pr = function None -> mt () | Some x -> pr x
+
+let pr_nth n =
+  int n ++ str (match n mod 10 with 1 -> "st" | 2 -> "nd" | 3 -> "rd" | _ -> "th")
+
+(* [prlist pr [a ; ... ; c]] outputs [pr a ++ ... ++ pr c] *)
+
+let rec prlist elem l = match l with
+  | []   -> mt ()
+  | h::t -> Stream.lapp (fun () -> elem h) (prlist elem t)
+
+(* unlike all other functions below, [prlist] works lazily.
+   if a strict behavior is needed, use [prlist_strict] instead.
+   evaluation is done from left to right. *)
+
+let prlist_sep_lastsep no_empty sep lastsep elem =
+  let rec start = function
+    |[] -> mt ()
+    |[e] -> elem e
+    |h::t -> let e = elem h in
+	if no_empty && e = mt () then start t else
+	  let rec aux = function
+	    |[] -> mt ()
+	    |h::t ->
+	       let e = elem h and r = aux t in
+		 if no_empty && e = mt () then r else
+		   if r = mt ()
+		   then let s = lastsep () in s ++ e
+		   else let s = sep () in s ++ e ++ r
+	  in let r = aux t in e ++ r
+  in start
+
+let prlist_strict pr l = prlist_sep_lastsep true mt mt pr l
+(* [prlist_with_sep sep pr [a ; ... ; c]] outputs
+   [pr a ++ sep() ++ ... ++ sep() ++ pr c] *)
+let prlist_with_sep sep pr l = prlist_sep_lastsep false sep sep pr l
+(* Print sequence of objects separated by space (unless an element is empty) *)
+let pr_sequence pr l = prlist_sep_lastsep true spc spc pr l
+(* [pr_enum pr [a ; b ; ... ; c]] outputs
+   [pr a ++ str "," ++ pr b ++ str "," ++ ... ++ str "and" ++ pr c] *)
+let pr_enum pr l = prlist_sep_lastsep true pr_comma (fun () -> str " and" ++ spc ()) pr l
+
+let pr_vertical_list pr = function
+  | [] -> str "none" ++ fnl ()
+  | l -> fnl () ++ str "  " ++ hov 0 (prlist_with_sep fnl pr l) ++ fnl ()
+
+(* [prvecti_with_sep sep pr [|a0 ; ... ; an|]] outputs
+   [pr 0 a0 ++ sep() ++ ... ++ sep() ++ pr n an] *)
+
+let prvecti_with_sep sep elem v =
+  let rec pr i =
+    if i = 0 then
+      elem 0 v.(0)
+    else
+      let r = pr (i-1) and s = sep () and e = elem i v.(i) in
+      r ++ s ++ e
+  in
+  let n = Array.length v in
+  if n = 0 then mt () else pr (n - 1)
+
+(* [prvecti pr [|a0 ; ... ; an|]] outputs [pr 0 a0 ++ ... ++ pr n an] *)
+
+let prvecti elem v = prvecti_with_sep mt elem v
+
+(* [prvect_with_sep sep pr [|a ; ... ; c|]] outputs
+   [pr a ++ sep() ++ ... ++ sep() ++ pr c] *)
+
+let prvect_with_sep sep elem v = prvecti_with_sep sep (fun _ -> elem) v
+
+(* [prvect pr [|a ; ... ; c|]] outputs [pr a ++ ... ++ pr c] *)
+
+let prvect elem v = prvect_with_sep mt elem v
+
+let pr_located pr (loc,x) =
+  if Flags.do_beautify() && loc<>dummy_loc then
+    let (b,e) = unloc loc in
+    comment b ++ pr x ++ comment e
+  else pr x
+
+let surround p = hov 1 (str"(" ++ p ++ str")")

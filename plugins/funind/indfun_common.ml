@@ -54,7 +54,7 @@ let locate_with_msg msg f x =
   try
     f x
   with
-    | Not_found -> raise (Util.UserError("", msg))
+    | Not_found -> raise (Errors.UserError("", msg))
     | e -> raise e
 
 
@@ -79,7 +79,7 @@ let chop_rlambda_n  =
 	  | Glob_term.GLambda(_,name,k,t,b) -> chop_lambda_n ((name,t,false)::acc) (n-1) b
 	  | Glob_term.GLetIn(_,name,v,b) -> chop_lambda_n ((name,v,true)::acc) (n-1) b
 	  | _ ->
-	      raise (Util.UserError("chop_rlambda_n",
+	      raise (Errors.UserError("chop_rlambda_n",
 				    str "chop_rlambda_n: Not enough Lambdas"))
   in
   chop_lambda_n []
@@ -91,7 +91,7 @@ let chop_rprod_n  =
       else
 	match rt with
 	  | Glob_term.GProd(_,name,k,t,b) -> chop_prod_n ((name,t)::acc) (n-1) b
-	  | _ -> raise (Util.UserError("chop_rprod_n",str "chop_rprod_n: Not enough products"))
+	  | _ -> raise (Errors.UserError("chop_rprod_n",str "chop_rprod_n: Not enough products"))
   in
   chop_prod_n []
 
@@ -112,10 +112,10 @@ let list_add_set_eq eq_fun x l =
 
 let const_of_id id =
   let _,princ_ref =
-    qualid_of_reference (Libnames.Ident (Util.dummy_loc,id))
+    qualid_of_reference (Libnames.Ident (Pp.dummy_loc,id))
   in
   try Nametab.locate_constant princ_ref
-  with Not_found -> Util.error ("cannot find "^ string_of_id id)
+  with Not_found -> Errors.error ("cannot find "^ string_of_id id)
 
 let def_of_const t =
    match (Term.kind_of_term t) with
@@ -361,7 +361,7 @@ let pr_info f_info =
 
 let pr_table tb =
   let l = Cmap.fold (fun k v acc -> v::acc) tb [] in
-  Util.prlist_with_sep fnl pr_info l
+  Pp.prlist_with_sep fnl pr_info l
 
 let in_Function : function_info -> Libobject.obj =
   Libobject.declare_object
@@ -397,7 +397,7 @@ let _ =
 
 let find_or_none id =
   try Some
-    (match Nametab.locate (qualid_of_ident id) with ConstRef c -> c | _ -> Util.anomaly "Not a constant"
+    (match Nametab.locate (qualid_of_ident id) with ConstRef c -> c | _ -> Errors.anomaly "Not a constant"
     )
   with Not_found -> None
 
@@ -425,7 +425,7 @@ let add_Function is_general f =
   and prop_lemma = find_or_none (Nameops.add_suffix f_id "_ind")
   and graph_ind =
     match Nametab.locate (qualid_of_ident (mk_rel_id f_id))
-    with | IndRef ind -> ind | _ -> Util.anomaly "Not an inductive"
+    with | IndRef ind -> ind | _ -> Errors.anomaly "Not an inductive"
   in
   let finfos =
     { function_constant = f;

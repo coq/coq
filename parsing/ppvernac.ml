@@ -11,6 +11,7 @@ open Names
 open Nameops
 open Nametab
 open Compat
+open Errors
 open Util
 open Extend
 open Vernacexpr
@@ -928,7 +929,7 @@ let rec pr_vernac = function
   | VernacProof (None, None) -> str "Proof"
   | VernacProof (None, Some l) -> str "Proof using" ++spc()++ prlist pr_lident l
   | VernacProof (Some te, None) -> str "Proof with" ++ spc() ++ pr_raw_tactic te
-  | VernacProof (Some te, Some l) -> 
+  | VernacProof (Some te, Some l) ->
       str "Proof using" ++spc()++ prlist pr_lident l ++ spc() ++
       str "with" ++ spc() ++pr_raw_tactic te
   | VernacProofMode s -> str ("Proof Mode "^s)
@@ -938,7 +939,7 @@ let rec pr_vernac = function
       | Plus -> str"+"
   end ++ spc()
   | VernacSubproof None -> str "BeginSubproof"
-  | VernacSubproof (Some i) -> str "BeginSubproof " ++ pr_int i
+  | VernacSubproof (Some i) -> str "BeginSubproof " ++ int i
   | VernacEndSubproof -> str "EndSubproof"
 
 and pr_extend s cl =

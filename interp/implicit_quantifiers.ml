@@ -15,6 +15,7 @@ open Evd
 open Environ
 open Nametab
 open Mod_subst
+open Errors
 open Util
 open Glob_term
 open Topconstr

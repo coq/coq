@@ -25,10 +25,10 @@ let pr_binding prc = function
 let pr_bindings prc prlc = function
   | Glob_term.ImplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
-      Util.prlist_with_sep spc prc l
+      pr_sequence prc l
   | Glob_term.ExplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
-        Util.prlist_with_sep spc (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
+        pr_sequence (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
   | Glob_term.NoBindings -> mt ()
 
 let pr_with_bindings prc prlc (c,bl) =
@@ -111,7 +111,7 @@ TACTIC EXTEND snewfunind
 END
 
 
-let pr_constr_coma_sequence prc _ _ = Util.prlist_with_sep Util.pr_comma prc
+let pr_constr_coma_sequence prc _ _ = prlist_with_sep pr_comma prc
 
 ARGUMENT EXTEND constr_coma_sequence'
   TYPED AS constr_list
@@ -180,12 +180,12 @@ let warning_error names e =
     | Building_graph e ->
 	Pp.msg_warning
 	  (str "Cannot define graph(s) for " ++
-	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Libnames.pr_reference names) ++
+	     h 1 (pr_enum Libnames.pr_reference names) ++
 	     if do_observe () then (spc () ++ Errors.print e) else mt ())
     | Defining_principle e ->
 	Pp.msg_warning
 	  (str "Cannot define principle(s) for "++
-	     h 1 (prlist_with_sep (fun _ -> str","++spc ()) Libnames.pr_reference names) ++
+	     h 1 (pr_enum Libnames.pr_reference names) ++
 	     if do_observe () then Errors.print e else mt ())
     | _ -> raise e
 
@@ -207,7 +207,7 @@ VERNAC COMMAND EXTEND NewFunctionalScheme
 		    ;
 		    try Functional_principles_types.build_scheme fas
 		    with Functional_principles_types.No_graph_found ->
-		      Util.error ("Cannot generate induction principle(s)")
+		      Errors.error ("Cannot generate induction principle(s)")
     		      | e ->
 			  let names = List.map (fun (_,na,_) -> na) fas in
 			  warning_error names e
@@ -377,7 +377,7 @@ let finduction (oid:identifier option) (heuristic: fapp_info list -> fapp_info l
   let info_list = find_fapp test g in
   let ordered_info_list = heuristic info_list in
   prlistconstr (List.map (fun x -> applist (x.fname,x.largs)) ordered_info_list);
-  if List.length ordered_info_list = 0 then Util.error "function not found in goal\n";
+  if List.length ordered_info_list = 0 then Errors.error "function not found in goal\n";
   let taclist: Proof_type.tactic list =
     List.map
       (fun info ->
@@ -419,7 +419,7 @@ TACTIC EXTEND finduction
     ["finduction" ident(id) natural_opt(oi)] ->
       [
 	match oi with
-	  | Some(n) when n<=0 -> Util.error "numerical argument must be > 0"
+	  | Some(n) when n<=0 -> Errors.error "numerical argument must be > 0"
 	  | _ ->
 	      let heuristic = chose_heuristic oi in
 	      finduction (Some id) heuristic tclIDTAC
@@ -458,19 +458,19 @@ VERNAC COMMAND EXTEND MergeFunind
       "with" "(" ident(id2) ne_ident_list(cl2)  ")" "using" ident(id) ] ->
      [
        let f1 = Constrintern.interp_constr Evd.empty (Global.env())
-	 (CRef (Libnames.Ident (Util.dummy_loc,id1))) in
+	 (CRef (Libnames.Ident (Pp.dummy_loc,id1))) in
        let f2 = Constrintern.interp_constr Evd.empty (Global.env())
-	 (CRef (Libnames.Ident (Util.dummy_loc,id2))) in
+	 (CRef (Libnames.Ident (Pp.dummy_loc,id2))) in
        let f1type = Typing.type_of (Global.env()) Evd.empty f1 in
        let f2type = Typing.type_of (Global.env()) Evd.empty f2 in
        let ar1 = List.length (fst (decompose_prod f1type)) in
        let ar2 = List.length (fst (decompose_prod f2type)) in
        let _ =
 	 if ar1 <> List.length cl1 then
-	   Util.error ("not the right number of arguments for " ^ string_of_id id1) in
+	   Errors.error ("not the right number of arguments for " ^ string_of_id id1) in
        let _ =
 	 if ar2 <> List.length cl2 then
-	   Util.error ("not the right number of arguments for " ^ string_of_id id2) in
+	   Errors.error ("not the right number of arguments for " ^ string_of_id id2) in
        Merge.merge id1 id2 (Array.of_list cl1) (Array.of_list cl2)  id
      ]
 END

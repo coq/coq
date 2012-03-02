@@ -8,6 +8,7 @@
 
 (* Reserved names *)
 
+open Errors
 open Util
 open Pp
 open Names

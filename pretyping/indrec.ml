@@ -11,6 +11,7 @@
 (* This file builds various inductive schemes *)
 
 open Pp
+open Errors
 open Util
 open Names
 open Libnames

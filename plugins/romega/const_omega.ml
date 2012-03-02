@@ -39,7 +39,7 @@ let destructurate t =
     | Term.Var id,[] -> Kvar(Names.string_of_id id)
     | Term.Prod (Names.Anonymous,typ,body), [] -> Kimp(typ,body)
     | Term.Prod (Names.Name _,_,_),[] ->
-	Util.error "Omega: Not a quantifier-free goal"
+	Errors.error "Omega: Not a quantifier-free goal"
     | _ -> Kufo
 
 exception Destruct

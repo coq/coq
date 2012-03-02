@@ -53,7 +53,7 @@ let constr_to_xml obj sigma env =
     in
      Acic2Xml.print_term ids_to_inner_sorts annobj
    with e ->
-    Util.anomaly
+    Errors.anomaly
      ("Problem during the conversion of constr into XML: " ^
       Printexc.to_string e)
 (* CSC: debugging stuff

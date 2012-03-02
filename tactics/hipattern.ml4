@@ -9,6 +9,7 @@
 (*i camlp4deps: "parsing/grammar.cma parsing/q_constr.cmo" i*)
 
 open Pp
+open Errors
 open Util
 open Names
 open Nameops

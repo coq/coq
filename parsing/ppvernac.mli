@@ -12,6 +12,7 @@ open Vernacexpr
 open Names
 open Nameops
 open Nametab
+open Errors
 open Util
 open Ppconstr
 open Pptactic

@@ -100,6 +100,8 @@ module List : sig
   (** [List.flatten l] is the list of all the [y]s such that [l] contains
       [Some y] (in the same order). *)
   val flatten : 'a option list -> 'a list
+
+  val find : ('a -> 'b option) -> 'a list -> 'b option
 end
 
 

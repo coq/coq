@@ -35,7 +35,7 @@ val check_no_pending_proof : unit -> unit
 val get_current_proof_name : unit -> Names.identifier
 val get_all_proof_names : unit -> Names.identifier list
 
-val discard : Names.identifier Util.located -> unit
+val discard : Names.identifier Pp.located -> unit
 val discard_current : unit -> unit
 val discard_all : unit -> unit
 

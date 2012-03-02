@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Pp
+open Errors
 open Util
 open Names
 open Nameops
@@ -170,7 +171,7 @@ let raw_search_rewrite extra_filter display_function pattern =
     display_function gref_eq
 
 let raw_search_by_head extra_filter display_function pattern =
-  Util.todo "raw_search_by_head"
+  Errors.todo "raw_search_by_head"
 
 let name_of_reference ref = string_of_id (basename_of_global ref)
 

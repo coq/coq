@@ -13,13 +13,13 @@ open Term
 open Names
 open Pattern
 open Q_util
-open Util
+open Pp
 open Compat
 open Pcaml
 open PcamlSig
 
 let loc = dummy_loc
-let dloc = <:expr< Util.dummy_loc >>
+let dloc = <:expr< Pp.dummy_loc >>
 
 let apply_ref f l =
   <:expr<

@@ -38,7 +38,7 @@ let guess_coqlib () =
         in
         if Sys.file_exists (Filename.concat coqlib file)
         then coqlib
-        else Util.error "cannot guess a path for Coq libraries; please use -coqlib option")
+        else Errors.error "cannot guess a path for Coq libraries; please use -coqlib option")
 
 let coqlib () =
   if !Flags.coqlib_spec then !Flags.coqlib else

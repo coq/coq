@@ -13,6 +13,7 @@
 (* This file registers properties of records: projections and
    canonical structures *)
 
+open Errors
 open Util
 open Pp
 open Names

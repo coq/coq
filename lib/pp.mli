@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Pp_control
+open Compat
 
 (** Modify pretty printing functions behavior for emacs ouput (special
    chars inserted at some places). This function should called once in
@@ -114,3 +115,45 @@ val msgerrnl : std_ppcmds -> unit
 val msg_warning : std_ppcmds -> unit
 
 val string_of_ppcmds : std_ppcmds -> string
+
+(** {6 Location management. } *)
+
+type loc = Loc.t
+val unloc : loc -> int * int
+val make_loc : int * int -> loc
+val dummy_loc : loc
+val join_loc : loc -> loc -> loc
+
+type 'a located = loc * 'a
+val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
+val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
+val down_located : ('a -> 'b) -> 'a located -> 'b
+
+(** {6 Util copy/paste. } *)
+
+val pr_comma : unit -> std_ppcmds
+val pr_semicolon : unit -> std_ppcmds
+val pr_bar : unit -> std_ppcmds
+val pr_arg : ('a -> std_ppcmds) -> 'a -> std_ppcmds
+val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
+val pr_opt_no_spc : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
+val pr_nth : int -> std_ppcmds
+
+val prlist : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+
+(** unlike all other functions below, [prlist] works lazily.
+   if a strict behavior is needed, use [prlist_strict] instead. *)
+val prlist_strict :  ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+val prlist_with_sep :
+   (unit -> std_ppcmds) -> ('b -> std_ppcmds) -> 'b list -> std_ppcmds
+val prvect : ('a -> std_ppcmds) -> 'a array -> std_ppcmds
+val prvecti : (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
+val prvect_with_sep :
+   (unit -> std_ppcmds) -> ('a -> std_ppcmds) -> 'a array -> std_ppcmds
+val prvecti_with_sep :
+   (unit -> std_ppcmds) -> (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
+val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
+val pr_enum : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+val pr_located : ('a -> std_ppcmds) -> 'a located -> std_ppcmds
+val pr_sequence : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+val surround : std_ppcmds -> std_ppcmds

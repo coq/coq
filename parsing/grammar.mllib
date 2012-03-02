@@ -2,13 +2,13 @@ Coq_config
 
 Profile
 Pp_control
-Pp
 Compat
 Flags
+Pp
 Segmenttree
 Unicodetable
-Util
 Errors
+Util
 Bigint
 Dyn
 Hashcons

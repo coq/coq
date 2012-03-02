@@ -30,7 +30,7 @@ val glob : constr_expr Pcoq.Gram.entry
 
 type 'id gen_place= ('id * hyp_location_flag,unit) location
 
-type loc_place = identifier Util.located gen_place
+type loc_place = identifier Pp.located gen_place
 type place = identifier gen_place
 
 val rawwit_hloc : loc_place raw_abstract_argument_type
@@ -38,10 +38,10 @@ val wit_hloc : place typed_abstract_argument_type
 val hloc : loc_place Pcoq.Gram.entry
 val pr_hloc : loc_place -> Pp.std_ppcmds
 
-val in_arg_hyp:  (Names.identifier Util.located list option * bool)  Pcoq.Gram.entry
-val rawwit_in_arg_hyp : (Names.identifier Util.located list option * bool) raw_abstract_argument_type
+val in_arg_hyp:  (Names.identifier Pp.located list option * bool)  Pcoq.Gram.entry
+val rawwit_in_arg_hyp : (Names.identifier Pp.located list option * bool) raw_abstract_argument_type
 val wit_in_arg_hyp : (Names.identifier list option * bool) typed_abstract_argument_type
-val raw_in_arg_hyp_to_clause : (Names.identifier Util.located list option * bool) -> Tacticals.clause
+val raw_in_arg_hyp_to_clause : (Names.identifier Pp.located list option * bool) -> Tacticals.clause
 val glob_in_arg_hyp_to_clause :  (Names.identifier list option * bool)  -> Tacticals.clause
 val pr_in_arg_hyp : (Names.identifier list option * bool) -> Pp.std_ppcmds
 

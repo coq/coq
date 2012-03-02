@@ -26,6 +26,7 @@ open Ccalgo
 open Tacinterp
 open Ccproof
 open Pp
+open Errors
 open Util
 open Format
 
@@ -410,7 +411,7 @@ let cc_tactic depth additionnal_terms gls=
 		       begin
 			 str "\"congruence with (" ++
 			 prlist_with_sep
-			   (fun () -> str ")" ++ pr_spc () ++ str "(")
+			   (fun () -> str ")" ++ spc () ++ str "(")
 			   (Termops.print_constr_env (pf_env gls))
 			   terms_to_complete ++
 			 str ")\","

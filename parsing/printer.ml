@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Pp
+open Errors
 open Util
 open Names
 open Nameops
@@ -505,17 +506,17 @@ let pr_prim_rule = function
        ++ pr_id id ++ str" (type of "  ++ pr_id id ++ str ")")
 
   | Thin ids ->
-      (str"clear "  ++ prlist_with_sep pr_spc pr_id ids)
+      (str"clear "  ++ pr_sequence pr_id ids)
 
   | ThinBody ids ->
-      (str"clearbody "  ++ prlist_with_sep pr_spc pr_id ids)
+      (str"clearbody "  ++ pr_sequence pr_id ids)
 
   | Move (withdep,id1,id2) ->
       (str (if withdep then "dependent " else "") ++
 	 str"move "  ++ pr_id id1 ++ pr_move_location pr_id id2)
 
   | Order ord ->
-      (str"order "  ++ prlist_with_sep pr_spc pr_id ord)
+      (str"order "  ++ pr_sequence pr_id ord)
 
   | Rename (id1,id2) ->
       (str "rename " ++ pr_id id1 ++ str " into " ++ pr_id id2)

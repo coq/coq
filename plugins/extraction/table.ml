@@ -15,6 +15,7 @@ open Summary
 open Libobject
 open Goptions
 open Libnames
+open Errors
 open Util
 open Pp
 open Miniml
@@ -337,7 +338,7 @@ let warning_both_mod_and_cst q mp r =
 
 let error_axiom_scheme r i =
   err (str "The type scheme axiom " ++ spc () ++
-       safe_pr_global r ++ spc () ++ str "needs " ++ pr_int i ++
+       safe_pr_global r ++ spc () ++ str "needs " ++ int i ++
        str " type variable(s).")
 
 let check_inside_module () =

@@ -11,6 +11,7 @@
  *)
 
 open Pp
+open Errors
 open Util
 open Names
 open Nameops
@@ -152,7 +153,7 @@ let print_argument_scopes prefix = function
   | l when not (List.for_all ((=) None) l) ->
      [add_colon prefix ++ hov 2 (str"Argument scopes are" ++ spc() ++
       str "[" ++
-      prlist_with_sep spc (function Some sc -> str sc | None -> str "_") l ++
+      pr_sequence (function Some sc -> str sc | None -> str "_") l ++
       str "]")]
   | _  -> []
 
@@ -168,12 +169,7 @@ let print_simpl_behaviour ref =
      let pp_nomatch = spc() ++ if nomatch then
        str "avoiding to expose match constructs" else str"" in
      let pp_recargs = spc() ++ str "when the " ++
-       let rec aux = function
-         | [] -> mt()
-         | [x] -> str (ordinal (x+1))
-         | [x;y] -> str (ordinal (x+1)) ++ str " and " ++ str (ordinal (y+1))
-         | x::tl -> str (ordinal (x+1)) ++ str ", " ++ aux tl in
-       aux recargs ++ str (plural (List.length recargs) " argument") ++
+       pr_enum (fun x -> pr_nth (x+1)) recargs ++ str (plural (List.length recargs) " argument") ++
        str (plural (if List.length recargs >= 2 then 1 else 2) " evaluate") ++
        str " to a constructor" in
      let pp_nargs =
@@ -722,13 +718,13 @@ let print_path ((i,j),p) =
 let _ = Classops.install_path_printer print_path
 
 let print_graph () =
-  prlist_with_sep pr_fnl print_path (inheritance_graph())
+  prlist_with_sep fnl print_path (inheritance_graph())
 
 let print_classes () =
-  prlist_with_sep pr_spc pr_class (classes())
+  pr_sequence pr_class (classes())
 
 let print_coercions () =
-  prlist_with_sep pr_spc print_coercion_value (coercions())
+  pr_sequence print_coercion_value (coercions())
 
 let index_of_class cl =
   try
@@ -751,7 +747,7 @@ let print_path_between cls clt =
   print_path ((i,j),p)
 
 let print_canonical_projections () =
-  prlist_with_sep pr_fnl
+  prlist_with_sep fnl
     (fun ((r1,r2),o) -> pr_cs_pattern r2 ++
     str " <- " ++
     pr_global r1 ++ str " ( " ++ pr_lconstr o.o_DEF ++ str " )")

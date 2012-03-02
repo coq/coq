@@ -8,6 +8,7 @@
 
 open Compat
 open Pp
+open Errors
 open Util
 open Term
 open Termops

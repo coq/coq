@@ -5,6 +5,8 @@ open Libnames
 open Coqlib
 open Term
 open Names
+open Errors
+open Pp
 open Util
 
 let ($) f x = f x
@@ -426,7 +428,7 @@ let pr_meta_map evd =
   in
   prlist pr_meta_binding ml
 
-let pr_idl idl = prlist_with_sep pr_spc pr_id idl
+let pr_idl idl = pr_sequence pr_id idl
 
 let pr_evar_info evi =
   let phyps =
@@ -443,14 +445,14 @@ let pr_evar_info evi =
 
 let pr_evar_map sigma =
   h 0
-    (prlist_with_sep pr_fnl
+    (prlist_with_sep fnl
       (fun (ev,evi) ->
         h 0 (str(string_of_existential ev)++str"=="++ pr_evar_info evi))
       (to_list sigma))
 
 let pr_constraints pbs =
   h 0
-    (prlist_with_sep pr_fnl (fun (pbty,t1,t2) ->
+    (prlist_with_sep fnl (fun (pbty,t1,t2) ->
       Termops.print_constr t1 ++ spc() ++
       str (match pbty with
 	| Reduction.CONV -> "=="

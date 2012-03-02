@@ -11,6 +11,7 @@
 open Libnames
 open Tactics
 open Indfun_common
+open Errors
 open Util
 open Topconstr
 open Vernacexpr

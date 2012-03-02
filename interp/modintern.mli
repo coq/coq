@@ -9,7 +9,7 @@
 open Declarations
 open Environ
 open Entries
-open Util
+open Pp
 open Libnames
 open Names
 open Topconstr

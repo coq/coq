@@ -7,6 +7,7 @@
 (************************************************************************)
 open Tacexpr
 open Declarations
+open Errors
 open Util
 open Names
 open Term
@@ -29,10 +30,10 @@ let pr_binding prc  =
 let pr_bindings prc prlc = function
   | Glob_term.ImplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
-      Util.prlist_with_sep spc prc l
+      pr_sequence prc l
   | Glob_term.ExplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
-        Util.prlist_with_sep spc (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
+        pr_sequence (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
   | Glob_term.NoBindings -> mt ()
 
 
@@ -1142,7 +1143,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 
       mk_correct_id f_id
     in
-     ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,first_lemma_id) with _ -> ());
+     ignore(try Vernacentries.vernac_reset_name (Pp.dummy_loc,first_lemma_id) with _ -> ());
     raise e
 
 
@@ -1239,7 +1240,7 @@ let invfun qhyp f  =
   let f =
     match f with
       | ConstRef f -> f
-      | _ -> raise (Util.UserError("",str "Not a function"))
+      | _ -> raise (Errors.UserError("",str "Not a function"))
   in
   try
     let finfos = find_Function_infos f in

@@ -78,4 +78,4 @@ val db_logic_failure : debug_info -> exn -> unit
 
 (** Prints a logic failure message for a rule *)
 val db_breakpoint : debug_info ->
-  identifier Util.located message_token list -> unit
+  identifier Pp.located message_token list -> unit

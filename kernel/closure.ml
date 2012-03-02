@@ -19,6 +19,7 @@
 (* This file implements a lazy reduction for the Calculus of Inductive
    Constructions *)
 
+open Errors
 open Util
 open Pp
 open Term

@@ -127,7 +127,7 @@ END
 
 type 'id gen_place= ('id * hyp_location_flag,unit) location
 
-type loc_place = identifier Util.located gen_place
+type loc_place = identifier Pp.located gen_place
 type place = identifier gen_place
 
 let pr_gen_place pr_id = function
@@ -166,11 +166,11 @@ ARGUMENT EXTEND hloc
   |  [ "in" "|-" "*" ] ->
     [ ConclLocation () ]
 | [ "in" ident(id) ] ->
-    [ HypLocation ((Util.dummy_loc,id),InHyp) ]
+    [ HypLocation ((Pp.dummy_loc,id),InHyp) ]
 | [ "in" "(" "Type" "of" ident(id) ")" ] ->
-    [ HypLocation ((Util.dummy_loc,id),InHypTypeOnly) ]
+    [ HypLocation ((Pp.dummy_loc,id),InHypTypeOnly) ]
 | [ "in" "(" "Value" "of" ident(id) ")" ] ->
-    [ HypLocation ((Util.dummy_loc,id),InHypValueOnly) ]
+    [ HypLocation ((Pp.dummy_loc,id),InHypValueOnly) ]
 
  END
 
@@ -203,7 +203,7 @@ let pr_in_hyp  pr_id (lo,concl) :  Pp.std_ppcmds =
     | None,false -> str "in" ++ spc () ++ str "*" ++ spc () ++ str "|-"
     | Some l,_ ->
 	str "in" ++
-	  Util.prlist (fun id -> spc () ++ pr_id id) l ++
+	  pr_sequence pr_id l ++
 	  match concl with
 	    | true -> spc () ++ str "|-" ++ spc () ++ str "*"
 	    | _ -> mt ()
@@ -214,7 +214,7 @@ let pr_in_arg_hyp _ _ _ = pr_in_hyp (fun (_,id) -> Ppconstr.pr_id id)
 let pr_in_arg_hyp_typed  _ _  _  = pr_in_hyp Ppconstr.pr_id
 
 
-let pr_var_list_gen pr_id = Util.prlist_with_sep (fun () -> str ",") pr_id
+let pr_var_list_gen pr_id = Pp.prlist_with_sep (fun () -> str ",") pr_id
 
 let pr_var_list_typed _ _ _ =  pr_var_list_gen Ppconstr.pr_id
 

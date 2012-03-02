@@ -3,7 +3,7 @@
 
   open Lexing
   open Pp
-  open Util
+  open Errors
   open Names
   open Tacmach
   open Dp_why

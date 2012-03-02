@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Pp
+open Errors
 open Util
 open Sign
 open Evd
@@ -66,7 +67,7 @@ let rec print_proof sigma osign pf =
 	   spc () ++ str" BY " ++
 	   hov 0 (pr_rule r) ++ fnl () ++
 	   str"  " ++
-	   hov 0 (prlist_with_sep pr_fnl (print_proof sigma hyps) spfl))
+	   hov 0 (prlist_with_sep fnl (print_proof sigma hyps) spfl))
 
 let pr_change sigma gl =
   str"change " ++
@@ -110,11 +111,11 @@ let print_script ?(nochange=true) sigma pf =
 	  end
     | Some(Daimon,spfl) ->
 	((if nochange then (mt ()) else (pr_change sigma pf.goal ++ fnl ())) ++
-	   prlist_with_sep pr_fnl print_prf spfl )
+	   prlist_with_sep fnl print_prf spfl )
     | Some(rule,spfl) ->
 	((if nochange then (mt ()) else (pr_change sigma pf.goal ++ fnl ())) ++
 	   pr_rule_dot_fnl rule ++
-	   prlist_with_sep pr_fnl print_prf spfl ) in
+	   prlist_with_sep fnl print_prf spfl ) in
   print_prf pf
 
 (* printed by Show Script command *)
@@ -140,7 +141,7 @@ let print_treescript ?(nochange=true) sigma pf =
 	end
     | Some(Daimon,spfl) ->
 	(if nochange then mt () else pr_change sigma pf.goal ++ fnl ()) ++
-	prlist_with_sep pr_fnl (print_script ~nochange sigma) spfl
+	prlist_with_sep fnl (print_script ~nochange sigma) spfl
     | Some(r,spfl) ->
         let indent = if List.length spfl >= 2 then 1 else 0 in
         (if nochange then mt () else pr_change sigma pf.goal ++ fnl ()) ++
@@ -162,7 +163,7 @@ let rec print_info_script sigma osign pf =
 		      print_info_script sigma
 		      (Environ.named_context_of_val sign) pf1)
              | _ -> (str"." ++ fnl () ++
-                       prlist_with_sep pr_fnl
+                       prlist_with_sep fnl
                          (print_info_script sigma
 			    (Environ.named_context_of_val sign)) spfl))
 

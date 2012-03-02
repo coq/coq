@@ -8,6 +8,7 @@
 
 (* Recursive polynomials: R[x1]...[xn]. *)
 open Utile
+open Errors
 open Util
 
 (* 1. Coefficients: R *)

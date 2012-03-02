@@ -9,6 +9,7 @@
 (** This module is about the low-level declaration of logical objects *)
 
 open Pp
+open Errors
 open Util
 open Names
 open Libnames
@@ -277,7 +278,7 @@ let declare_mind isrecord mie =
 
 (* Declaration messages *)
 
-let pr_rank i = str (ordinal (i+1))
+let pr_rank i = pr_nth (i+1)
 
 let fixpoint_message indexes l =
   Flags.if_verbose msgnl (match l with

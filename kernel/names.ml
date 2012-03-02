@@ -19,11 +19,15 @@
    Élie Soubiran, ... *)
 
 open Pp
+open Errors
 open Util
 
 (** {6 Identifiers } *)
 
 type identifier = string
+
+let check_ident_soft x = Option.iter Pp.warning (ident_refutation x)
+let check_ident x = Option.iter Errors.error (ident_refutation x)
 
 let id_of_string s = check_ident_soft s; String.copy s
 let string_of_id id = String.copy id

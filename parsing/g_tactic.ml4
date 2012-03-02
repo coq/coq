@@ -8,6 +8,7 @@
 
 open Pp
 open Pcoq
+open Errors
 open Util
 open Tacexpr
 open Glob_term
@@ -117,7 +118,7 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
 
 let mk_cofix_tac (loc,id,bl,ann,ty) =
   let _ = Option.map (fun (aloc,_) ->
-    Util.user_err_loc
+    Errors.user_err_loc
       (aloc,"Constr:mk_cofix_tac",
        Pp.str"Annotation forbidden in cofix expression.")) ann in
   (id,CProdN(loc,bl,ty))

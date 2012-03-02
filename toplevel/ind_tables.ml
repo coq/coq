@@ -18,6 +18,7 @@ open Libobject
 open Nameops
 open Declarations
 open Term
+open Errors
 open Util
 open Declare
 open Entries

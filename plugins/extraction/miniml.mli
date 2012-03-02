@@ -9,6 +9,7 @@
 (*s Target language for extraction: a core ML called MiniML. *)
 
 open Pp
+open Errors
 open Util
 open Names
 open Libnames

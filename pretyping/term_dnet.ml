@@ -7,6 +7,7 @@
 (************************************************************************)
 
 (*i*)
+open Errors
 open Util
 open Term
 open Sign
@@ -304,7 +305,7 @@ struct
   let rec pr_term_pattern p =
     (fun pr_t -> function
        | Term t -> pr_t t
-       | Meta m -> str"["++Util.pr_int (Obj.magic m)++str"]"
+       | Meta m -> str"["++Pp.int (Obj.magic m)++str"]"
     ) (pr_dconstr pr_term_pattern) p
 
   let search_pat cpat dpat dn (up,plug) =

@@ -20,7 +20,7 @@ open Quote
 open Ring
 open Mutils
 open Glob_term
-open Util
+open Errors
 
 let out_arg = function
   | ArgVar _ -> anomaly "Unevaluated or_var variable"

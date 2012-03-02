@@ -9,6 +9,7 @@
 (* Created by Hugo Herbelin from contents related to lemma proofs in
    file command.ml, Aug 2009 *)
 
+open Errors
 open Util
 open Flags
 open Pp

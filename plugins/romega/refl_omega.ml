@@ -6,6 +6,7 @@
 
  *************************************************************************)
 
+open Errors
 open Util
 open Const_omega
 module OmegaSolver = Omega.MakeOmegaSolver (Bigint)
@@ -450,7 +451,7 @@ let rec scalar n = function
  | Omult(t1,Oint x) ->
      do_list [Lazy.force coq_c_mult_assoc_reduced], Omult(t1,Oint (n*x))
  | Omult(t1,t2) ->
-     Util.error "Omega: Can't solve a goal with non-linear products"
+     Errors.error "Omega: Can't solve a goal with non-linear products"
  | (Oatom _ as t) -> do_list [], Omult(t,Oint n)
  | Oint i -> do_list [Lazy.force coq_c_reduce],Oint(n*i)
  | (Oufo _ as t)-> do_list [], Oufo (Omult(t,Oint n))
@@ -469,7 +470,7 @@ let rec negate = function
  | Omult(t1,Oint x) ->
      do_list [Lazy.force coq_c_opp_mult_r], Omult(t1,Oint (Bigint.neg x))
  | Omult(t1,t2) ->
-     Util.error "Omega: Can't solve a goal with non-linear products"
+     Errors.error "Omega: Can't solve a goal with non-linear products"
  | (Oatom _ as t) ->
      do_list [Lazy.force coq_c_opp_one], Omult(t,Oint(negone))
  | Oint i -> do_list [Lazy.force coq_c_reduce] ,Oint(Bigint.neg i)
@@ -541,7 +542,7 @@ let shrink_pair f1 f2 =
        Lazy.force coq_c_red4, Omult(Oatom v,Oplus(c1,c2))
    | t1,t2 ->
        oprint stdout t1; print_newline (); oprint stdout t2; print_newline ();
-       flush Pervasives.stdout; Util.error "shrink.1"
+       flush Pervasives.stdout; Errors.error "shrink.1"
   end
 
 (* \subsection{Calcul d'une sous formule constante} *)
@@ -555,9 +556,9 @@ let reduce_factor = function
       let rec compute = function
           Oint n -> n
 	| Oplus(t1,t2) -> compute t1 + compute t2
-	| _ -> Util.error "condense.1" in
+	| _ -> Errors.error "condense.1" in
 	[Lazy.force coq_c_reduce], Omult(Oatom v,Oint(compute c))
-  | t -> Util.error "reduce_factor.1"
+  | t -> Errors.error "reduce_factor.1"
 
 (* \subsection{Réordonnancement} *)
 
@@ -1291,7 +1292,7 @@ let total_reflexive_omega_tactic gl =
   let systems_list = destructurate_hyps full_reified_goal in
   if !debug then display_systems systems_list;
   resolution env full_reified_goal systems_list gl
-  with NO_CONTRADICTION -> Util.error "ROmega can't solve this system"
+  with NO_CONTRADICTION -> Errors.error "ROmega can't solve this system"
 
 
 (*i let tester = Tacmach.hide_atomic_tactic "TestOmega" test_tactic i*)

@@ -7,7 +7,8 @@
 (************************************************************************)
 
 open Compat
-open Util
+open Errors
+open Pp
 open Names
 open Topconstr
 open Pcoq

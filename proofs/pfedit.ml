@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Pp
+open Errors
 open Util
 open Names
 open Nameops
@@ -79,7 +80,7 @@ let cook_proof hook =
   hook prf;
   match Proof_global.close_proof () with
   | (i,([e],cg,str,h)) -> (i,(e,cg,str,h))
-  | _ -> Util.anomaly "Pfedit.cook_proof: more than one proof term."
+  | _ -> Errors.anomaly "Pfedit.cook_proof: more than one proof term."
 
 let xml_cook_proof = ref (fun _ -> ())
 let set_xml_cook_proof f = xml_cook_proof := f
@@ -98,7 +99,7 @@ let get_used_variables () =
 
 exception NoSuchGoal
 let _ = Errors.register_handler begin function
-  | NoSuchGoal -> Util.error "No such goal."
+  | NoSuchGoal -> Errors.error "No such goal."
   | _ -> raise Errors.Unhandled
 end
 let get_nth_V82_goal i =
@@ -112,11 +113,11 @@ let get_goal_context_gen i =
   try
     let { it=goal ; sigma=sigma } =  get_nth_V82_goal i in
     (sigma, Refiner.pf_env { it=goal ; sigma=sigma })
-  with Proof_global.NoCurrentProof -> Util.error "No focused proof."
+  with Proof_global.NoCurrentProof -> Errors.error "No focused proof."
 
 let get_goal_context i =
   try get_goal_context_gen i
-  with NoSuchGoal -> Util.error "No such goal."
+  with NoSuchGoal -> Errors.error "No such goal."
 
 let get_current_goal_context () =
   try get_goal_context_gen 1
@@ -128,7 +129,7 @@ let get_current_goal_context () =
 let current_proof_statement () =
   match Proof_global.V82.get_current_initial_conclusions () with
     | (id,([concl],strength,hook)) -> id,strength,concl,hook
-    | _ -> Util.anomaly "Pfedit.current_proof_statement: more than one statement"
+    | _ -> Errors.anomaly "Pfedit.current_proof_statement: more than one statement"
 
 let solve_nth ?(with_end_tac=false) gi tac = 
   try 
@@ -140,10 +141,10 @@ let solve_nth ?(with_end_tac=false) gi tac =
     in
     Proof_global.run_tactic (Proofview.tclFOCUS gi gi tac) 
   with 
-    | Proof_global.NoCurrentProof  -> Util.error "No focused proof"
+    | Proof_global.NoCurrentProof  -> Errors.error "No focused proof"
     | Proofview.IndexOutOfRange | Failure "list_chop" -> 
 	let msg = str "No such goal: " ++ int gi ++ str "." in
-	Util.errorlabstrm "" msg
+	Errors.errorlabstrm "" msg
 
 let by = solve_nth 1
 

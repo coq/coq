@@ -15,7 +15,8 @@ open Environ
 open Nametab
 open Mod_subst
 open Topconstr
-open Util
+open Errors
+open Pp
 open Libnames
 
 type contexts = Parameters | Properties

@@ -12,6 +12,7 @@
 (* This module provides the main entry points for type-checking basic
    declarations *)
 
+open Errors
 open Util
 open Names
 open Univ

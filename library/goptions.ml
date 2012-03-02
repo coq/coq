@@ -9,6 +9,7 @@
 (* This module manages customization parameters at the vernacular level     *)
 
 open Pp
+open Errors
 open Util
 open Libobject
 open Names

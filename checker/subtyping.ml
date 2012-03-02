@@ -7,6 +7,7 @@
 (************************************************************************)
 
 (*i*)
+open Errors
 open Util
 open Names
 open Univ
@@ -261,7 +262,7 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
 		let c2 = force_constr lc2 in
 		check_conv conv env c1 c2))
       | IndType ((kn,i),mind1) ->
-	  ignore (Util.error (
+	  ignore (Errors.error (
 		    "The kernel does not recognize yet that a parameter can be " ^
 		      "instantiated by an inductive type. Hint: you can rename the " ^
 		      "inductive type and give a definition to map the old name to the new " ^
@@ -272,7 +273,7 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
       let typ2 = Typeops.type_of_constant_type env cb2.const_type in
        check_conv conv_leq env arity1 typ2
    | IndConstr (((kn,i),j) as cstr,mind1) ->
-      ignore (Util.error (
+      ignore (Errors.error (
        "The kernel does not recognize yet that a parameter can be " ^
        "instantiated by a constructor. Hint: you can rename the " ^
        "constructor and give a definition to map the old name to the new " ^

@@ -7,6 +7,7 @@ open Evd
 open Decl_kinds
 open Topconstr
 open Glob_term
+open Errors
 open Util
 open Evarutil
 open Names

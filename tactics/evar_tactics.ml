@@ -7,7 +7,8 @@
 (************************************************************************)
 
 open Term
-open Util
+open Pp
+open Errors
 open Evar_refiner
 open Tacmach
 open Tacexpr

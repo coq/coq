@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Pp
+open Errors
 open Util
 open Names
 open Nameops
@@ -268,7 +269,7 @@ let path_derivate hp hint = normalize_path (path_derivate hp hint)
 
 let rec pp_hints_path = function
   | PathAtom (PathAny) -> str"."
-  | PathAtom (PathHints grs) -> prlist_with_sep pr_spc pr_global grs
+  | PathAtom (PathHints grs) -> pr_sequence pr_global grs
   | PathStar p -> str "(" ++ pp_hints_path p ++ str")*"
   | PathSeq (p, p') -> pp_hints_path p ++ str" ; " ++ pp_hints_path p'
   | PathOr (p, p') -> 
@@ -960,7 +961,7 @@ let print_applicable_hint () =
   let pts = get_pftreestate () in
   let glss = Proof.V82.subgoals pts in
   match glss.Evd.it with
-  | [] -> Util.error "No focused goal."
+  | [] -> Errors.error "No focused goal."
   | g::_ ->
     let gl = { Evd.it = g; sigma = glss.Evd.sigma } in
     print_hint_term (pf_concl gl)

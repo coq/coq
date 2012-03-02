@@ -102,7 +102,7 @@ end
 exception CannotUnfocusThisWay
 let _ = Errors.register_handler begin function
   | CannotUnfocusThisWay ->
-    Util.error "This proof is focused, but cannot be unfocused this way"
+    Errors.error "This proof is focused, but cannot be unfocused this way"
   | _ -> raise Errors.Unhandled
 end
 
@@ -184,7 +184,7 @@ let push_focus cond inf context pr =
 
 exception FullyUnfocused
 let _ = Errors.register_handler begin function
-  | FullyUnfocused -> Util.error "The proof is not focused"
+  | FullyUnfocused -> Errors.error "The proof is not focused"
   | _ -> raise Errors.Unhandled
 end
 (* An auxiliary function to read the kind of the next focusing step *)
@@ -211,7 +211,7 @@ let push_undo save pr =
 (* Auxiliary function to pop and read a [save_state] from the undo stack. *)
 exception EmptyUndoStack
 let _ = Errors.register_handler begin function
-  | EmptyUndoStack -> Util.error "Cannot undo: no more undo information"
+  | EmptyUndoStack -> Errors.error "Cannot undo: no more undo information"
   | _ -> raise Errors.Unhandled
 end
 let pop_undo pr =
@@ -387,8 +387,8 @@ let start goals =
 exception UnfinishedProof
 exception HasUnresolvedEvar
 let _ = Errors.register_handler begin function
-  | UnfinishedProof -> Util.error "Some goals have not been solved."
-  | HasUnresolvedEvar -> Util.error "Some existential variables are uninstantiated."
+  | UnfinishedProof -> Errors.error "Some goals have not been solved."
+  | HasUnresolvedEvar -> Errors.error "Some existential variables are uninstantiated."
   | _ -> raise Errors.Unhandled
 end
 let return p =

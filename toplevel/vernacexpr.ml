@@ -7,6 +7,8 @@
 (************************************************************************)
 
 open Compat
+open Errors
+open Pp
 open Util
 open Names
 open Tacexpr

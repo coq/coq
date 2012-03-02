@@ -9,6 +9,7 @@
 (*i camlp4deps: "tools/compat5b.cmo" i*)
 
 open Util
+open Pp
 open Genarg
 open Q_util
 open Q_coqast
@@ -196,7 +197,7 @@ EXTEND
         let t, g = interp_entry_name false None e sep in
         GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
       | s = STRING ->
-	if s = "" then Util.user_err_loc (loc,"",Pp.str "Empty terminal.");
+	if s = "" then Errors.user_err_loc (loc,"",Pp.str "Empty terminal.");
         GramTerminal s
     ] ]
   ;

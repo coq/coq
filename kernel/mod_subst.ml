@@ -14,6 +14,7 @@
    substitution in module constructions *)
 
 open Pp
+open Errors
 open Util
 open Names
 open Term

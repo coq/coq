@@ -32,7 +32,7 @@ let proof_modes = Hashtbl.create 6
 let find_proof_mode n =
   try Hashtbl.find proof_modes n
   with Not_found ->
-    Util.error (Format.sprintf "No proof mode named \"%s\"." n)
+    Errors.error (Format.sprintf "No proof mode named \"%s\"." n)
 
 let register_proof_mode ({ name = n } as m) = Hashtbl.add proof_modes n m
 (* initial mode: standard mode *)
@@ -48,10 +48,10 @@ let _ =
     optdepr = false;
     optname = "default proof mode" ;
     optkey = ["Default";"Proof";"Mode"] ;
-    optread = begin fun () -> 
-                               let { name = name } = !default_proof_mode in name 
+    optread = begin fun () ->
+                               let { name = name } = !default_proof_mode in name
                      end;
-    optwrite = begin fun n -> 
+    optwrite = begin fun n ->
                                 default_proof_mode := find_proof_mode n
                       end
   }
@@ -63,14 +63,14 @@ type nproof = identifier*Proof.proof
 
 (* Extra info on proofs. *)
 type lemma_possible_guards = int list list
-type proof_info = { 
+type proof_info = {
   strength : Decl_kinds.goal_kind ;
-  compute_guard :  lemma_possible_guards; 
+  compute_guard :  lemma_possible_guards;
   hook :Tacexpr.declaration_hook ;
   mode : proof_mode
 }
 
-(* Invariant: a proof is at most in one of current_proof and suspended. And the 
+(* Invariant: a proof is at most in one of current_proof and suspended. And the
    domain of proof_info is the union of that of current_proof and suspended.*)
 (* The head of [!current_proof] is the actual current proof, the other ones are to
     be resumed when the current proof is closed, aborted or suspended. *)
@@ -82,15 +82,15 @@ let proof_info = ref (Idmap.empty : proof_info Idmap.t)
 let current_proof_mode = ref !default_proof_mode
 
 (* combinators for proof modes *)
-let update_proof_mode () = 
+let update_proof_mode () =
   match !current_proof with
-  | (id,_)::_ ->  
+  | (id,_)::_ ->
       let { mode = m } = Idmap.find id !proof_info in
       !current_proof_mode.reset ();
       current_proof_mode := m;
       !current_proof_mode.set ()
-  | _ -> 
-      !current_proof_mode.reset (); 
+  | _ ->
+      !current_proof_mode.reset ();
       current_proof_mode := standard
 
 (* combinators for the current_proof and suspended lists *)
@@ -99,10 +99,10 @@ let push a l = l := a::!l;
 
 exception NoSuchProof
 let _ = Errors.register_handler begin function
-  | NoSuchProof -> Util.error "No such proof."
+  | NoSuchProof -> Errors.error "No such proof."
   | _ -> raise Errors.Unhandled
 end
-let rec extract id l = 
+let rec extract id l =
   let rec aux = function
     | ((id',_) as np)::l when id_ord id id' = 0 -> (np,l)
     | np::l -> let (np', l) = aux l in (np' , np::l)
@@ -115,13 +115,13 @@ let rec extract id l =
 
 exception NoCurrentProof
 let _ = Errors.register_handler begin function
-  | NoCurrentProof -> Util.error "No focused proof (No proof-editing in progress)."
+  | NoCurrentProof -> Errors.error "No focused proof (No proof-editing in progress)."
   | _ -> raise Errors.Unhandled
 end
 let extract_top l =
   match !l with
   | np::l' -> l := l' ; update_proof_mode (); np
-  | [] -> raise NoCurrentProof	
+  | [] -> raise NoCurrentProof
 let find_top l =
   match !l with
   | np::_ -> np
@@ -134,7 +134,7 @@ let rotate_top l1 l2 =
 let rotate_find id l1 l2 =
   let np = extract id l1 in
   push np l2
-  
+
 
 (* combinators for the proof_info map *)
 let add id info m =
@@ -148,7 +148,7 @@ let get_all_proof_names () =
     List.map fst !current_proof @
     List.map fst !suspended
 
-let give_me_the_proof () = 
+let give_me_the_proof () =
   snd (find_top current_proof)
 
 let get_current_proof_name () =
@@ -157,14 +157,14 @@ let get_current_proof_name () =
 (* spiwack: it might be considered to move error messages away.
     Or else to remove special exceptions from Proof_global.
     Arguments for the former: there is no reason Proof_global is only
-    accessed directly through vernacular commands. Error message should be 
+    accessed directly through vernacular commands. Error message should be
    pushed to external layers, and so we should be able to have a finer
    control on error message on complex actions. *)
 let msg_proofs use_resume =
   match get_all_proof_names () with
     | [] -> (spc () ++ str"(No proof-editing in progress).")
     | l ->  (str"." ++ fnl () ++ str"Proofs currently edited:" ++ spc () ++
-               (Util.prlist_with_sep Util.pr_spc Nameops.pr_id l) ++
+               (pr_sequence Nameops.pr_id l) ++
 	       str"." ++
                (if use_resume then (fnl () ++ str"Use \"Resume\" first.")
               	else (mt ()))
@@ -173,14 +173,14 @@ let msg_proofs use_resume =
 
 let there_is_a_proof () = !current_proof <> []
 let there_are_suspended_proofs () = !suspended <> []
-let there_are_pending_proofs () = 
-  there_is_a_proof () || 
+let there_are_pending_proofs () =
+  there_is_a_proof () ||
   there_are_suspended_proofs ()
-let check_no_pending_proof () = 
+let check_no_pending_proof () =
   if not (there_are_pending_proofs ()) then
     ()
   else begin
-    Util.error (Pp.string_of_ppcmds
+    Errors.error (Pp.string_of_ppcmds
       (str"Proof editing in progress" ++ (msg_proofs false) ++ fnl() ++
        str"Use \"Abort All\" first or complete proof(s)."))
   end
@@ -196,24 +196,24 @@ let resume id =
   rotate_find id suspended current_proof
 
 let discard_gen id =
-  try 
+  try
     ignore (extract id current_proof);
     remove id proof_info
   with NoSuchProof -> ignore (extract id suspended)
 
-let discard (loc,id) = 
+let discard (loc,id) =
   try
     discard_gen id
   with NoSuchProof ->
-    Util.user_err_loc
+    Errors.user_err_loc
       (loc,"Pfedit.delete_proof",str"No such proof" ++ msg_proofs false)
 
 let discard_current () =
   let (id,_) = extract_top current_proof in
   remove id proof_info
- 
+
 let discard_all () =
-  current_proof := []; 
+  current_proof := [];
   suspended := [];
   proof_info := Idmap.empty
 
@@ -222,7 +222,7 @@ let discard_all () =
 (* Core component.
     No undo handling.
     Applies to proof [id], and proof mode [m]. *)
-let set_proof_mode m id = 
+let set_proof_mode m id =
   let info = Idmap.find id !proof_info in
   let info = { info with mode = m } in
   proof_info := Idmap.add id info !proof_info;
@@ -241,7 +241,7 @@ let set_proof_mode mn =
 
 exception AlreadyExists
 let _ = Errors.register_handler begin function
-  | AlreadyExists -> Util.error "Already editing something of that name."
+  | AlreadyExists -> Errors.error "Already editing something of that name."
   | _ -> raise Errors.Unhandled
 end
 (* [start_proof s str env t hook tac] starts a proof of name [s] and
@@ -259,14 +259,14 @@ let start_proof  id str goals ?(compute_guard=[]) hook =
     end !current_proof
   end;
   let p = Proof.start goals in
-  add id { strength=str ; 
-	        compute_guard=compute_guard ; 
+  add id { strength=str ;
+	        compute_guard=compute_guard ;
 		hook=hook ;
 	        mode = ! default_proof_mode } proof_info ;
   push (id,p) current_proof
 
 (* arnaud: à enlever *)
-let run_tactic tac = 
+let run_tactic tac =
   let p = give_me_the_proof () in
   let env = Global.env () in
   Proof.run_tactic env tac p
@@ -293,7 +293,7 @@ let with_end_tac tac =
 let close_proof () =
   (* spiwack: for now close_proof doesn't actually discard the proof, it is done
       by [Command.save]. *)
-  try 
+  try
     let id = get_current_proof_name () in
     let p = give_me_the_proof () in
     let proofs_and_types = Proof.return p in
@@ -309,11 +309,11 @@ let close_proof () =
       Idmap.find id !proof_info
     in
     (id, (entries,cg,str,hook))
-  with 
+  with
     |  Proof.UnfinishedProof ->
-	 Util.error "Attempt to save an incomplete proof"
+	 Errors.error "Attempt to save an incomplete proof"
     | Proof.HasUnresolvedEvar ->
-	Util.error "Attempt to save a proof with existential variables still non-instantiated"
+	Errors.error "Attempt to save a proof with existential variables still non-instantiated"
 
 
 (**********************************************************)
@@ -392,7 +392,7 @@ module Bullet = struct
 	  while bul <> pop p do () done;
 	  push bul p
 	end
-      else 
+      else
 	push bul p
 
     let strict = {
@@ -404,7 +404,7 @@ module Bullet = struct
 
   (* Current bullet behavior, controled by the option *)
   let current_behavior = ref Strict.strict
-    
+
   let _ =
     Goptions.declare_string_option {Goptions.
       optsync = true;
@@ -428,7 +428,7 @@ module V82 = struct
   let get_current_initial_conclusions () =
     let p = give_me_the_proof () in
     let id = get_current_proof_name () in
-    let { strength=str ; hook=hook } = 
+    let { strength=str ; hook=hook } =
       Idmap.find id !proof_info
     in
     (id,(Proof.V82.get_initial_conclusions p, str, hook))

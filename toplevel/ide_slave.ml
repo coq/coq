@@ -9,6 +9,7 @@
 open Vernacexpr
 open Names
 open Compat
+open Errors
 open Util
 open Pp
 open Printer
@@ -274,7 +275,7 @@ let compute_reset_info () =
 
 let coqide_cmd_checks (loc,ast) =
   let user_error s =
-    raise (Loc.Exc_located (loc, Util.UserError ("CoqIde", str s)))
+    raise (Loc.Exc_located (loc, Errors.UserError ("CoqIde", str s)))
   in
   if is_vernac_debug_command ast then
     user_error "Debug mode not available within CoqIDE";
@@ -504,7 +505,7 @@ let eval_call c =
       | Vernac.DuringCommandInterp (_,inner) -> handle_exn inner
       | Error_in_file (_,_,inner) -> None, pr_exn inner
       | Loc.Exc_located (loc, inner) when loc = dummy_loc -> None, pr_exn inner
-      | Loc.Exc_located (loc, inner) -> Some (Util.unloc loc), pr_exn inner
+      | Loc.Exc_located (loc, inner) -> Some (Pp.unloc loc), pr_exn inner
       | e -> None, pr_exn e
   in
   let interruptible f x =

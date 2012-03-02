@@ -16,6 +16,7 @@ open Tacinterp
 open Tactics
 open Term
 open Termops
+open Errors
 open Util
 open Glob_term
 open Vernacinterp
@@ -203,7 +204,7 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl gl =
 	*)
 	gen_auto_multi_rewrite conds tac_main lbas cl gl
     | _ ->
-	    Util.errorlabstrm "autorewrite"
+	    Errors.errorlabstrm "autorewrite"
 	      (strbrk "autorewrite .. in .. using can only be used either with a unique hypothesis or on the conclusion.")
 
 (* Functions necessary to the library object declaration *)

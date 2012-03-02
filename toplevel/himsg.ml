@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Pp
+open Errors
 open Util
 open Flags
 open Names
@@ -176,8 +177,8 @@ let explain_cant_apply_bad_type env sigma (n,exptyp,actualtyp) rator randl =
   let pr,prt = pr_ljudge_env env rator in
   let term_string1 = str (plural nargs "term") in
   let term_string2 =
-    if nargs>1 then str "The " ++ nth n ++ str " term" else str "This term" in
-  let appl = prvect_with_sep pr_fnl
+    if nargs>1 then str "The " ++ pr_nth n ++ str " term" else str "This term" in
+  let appl = prvect_with_sep fnl
 	       (fun c ->
 		  let pc,pct = pr_ljudge_env env c in
 		  hov 2 (pc ++ spc () ++ str ": " ++ pct)) randl
@@ -199,7 +200,7 @@ let explain_cant_apply_not_functional env sigma rator randl =
 (*  let pe = pr_ne_context_of (str "in environment") env in*)
   let pr = pr_lconstr_env env rator.uj_val in
   let prt = pr_lconstr_env env rator.uj_type in
-  let appl = prvect_with_sep pr_fnl
+  let appl = prvect_with_sep fnl
 	       (fun c ->
 		  let pc = pr_lconstr_env env c.uj_val in
 		  let pct = pr_lconstr_env env c.uj_type in
@@ -233,7 +234,7 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
   let prt_name i =
     match names.(i) with
         Name id -> str "Recursive definition of " ++ pr_id id
-      | Anonymous -> str "The " ++ nth i ++ str " definition" in
+      | Anonymous -> str "The " ++ pr_nth i ++ str " definition" in
 
   let st = match err with
 
@@ -248,18 +249,18 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
       let called =
         match names.(j) with
             Name id -> pr_id id
-          | Anonymous -> str "the " ++ nth i ++ str " definition" in
+          | Anonymous -> str "the " ++ pr_nth i ++ str " definition" in
       let pr_db x = quote (pr_db env x) in
       let vars =
         match (lt,le) with
             ([],[]) -> assert false
           | ([],[x]) -> str "a subterm of " ++ pr_db x
           | ([],_) -> str "a subterm of the following variables: " ++
-              prlist_with_sep pr_spc pr_db le
+              pr_sequence pr_db le
           | ([x],_) -> pr_db x
           | _ ->
               str "one of the following variables: " ++
-              prlist_with_sep pr_spc pr_db lt in
+              pr_sequence pr_db lt in
       str "Recursive call to " ++ called ++ spc () ++
       strbrk "has principal argument equal to" ++ spc () ++
       pr_lconstr_env arg_env arg ++ strbrk " instead of " ++ vars
@@ -268,7 +269,7 @@ let explain_ill_formed_rec_body env err names i fixenv vdefj =
       let called =
         match names.(j) with
             Name id -> pr_id id
-          | Anonymous -> str "the " ++ nth i ++ str " definition" in
+          | Anonymous -> str "the " ++ pr_nth i ++ str " definition" in
      str "Recursive call to " ++ called ++ str " has not enough arguments"
 
   (* CoFixpoint guard errors *)
@@ -317,7 +318,7 @@ let explain_ill_typed_rec_body env sigma i names vdefj vargs =
   let pvd,pvdt = pr_ljudge_env env (vdefj.(i)) in
   let pv = pr_lconstr_env env vargs.(i) in
   str "The " ++
-  (if Array.length vdefj = 1 then mt () else nth (i+1) ++ spc ()) ++
+  (if Array.length vdefj = 1 then mt () else pr_nth (i+1) ++ spc ()) ++
   str "recursive definition" ++ spc () ++ pvd ++ spc () ++
   str "has type" ++ spc () ++ pvdt ++ spc () ++
   str "while it should be" ++ spc () ++ pv ++ str "."
@@ -363,7 +364,7 @@ let explain_hole_kind env evi = function
 	      pr_ne_context_of (str " in environment:"++ fnl ()) (mt ()) env)
 	(mt ()) evi
   | TomatchTypeParameter (tyi,n) ->
-      str "the " ++ nth n ++
+      str "the " ++ pr_nth n ++
       str " argument of the inductive type (" ++ pr_inductive env tyi ++
       str ") of this term"
   | GoalEvar ->
@@ -694,7 +695,7 @@ let pr_constr_exprs exprs =
 let explain_no_instance env (_,id) l =
   str "No instance found for class " ++ Nameops.pr_id id ++ spc () ++
   str "applied to arguments" ++ spc () ++
-    prlist_with_sep pr_spc (pr_lconstr_env env) l
+    pr_sequence (pr_lconstr_env env) l
 
 let is_goal_evar evi = match evi.evar_source with (_, GoalEvar) -> true | _ -> false
 
@@ -830,7 +831,7 @@ let error_bad_ind_parameters env c n v1 v2  =
   let pv1 = pr_lconstr_env env v1 in
   let pv2 = pr_lconstr_env env v2 in
   str "Last occurrence of " ++ pv2 ++ str " must have " ++ pv1 ++
-  str " as " ++ nth n ++ str " argument in " ++ brk(1,1) ++ pc ++ str "."
+  str " as " ++ pr_nth n ++ str " argument in " ++ brk(1,1) ++ pc ++ str "."
 
 let error_same_names_types id =
   str "The name" ++ spc () ++ pr_id id ++ spc () ++
@@ -944,14 +945,14 @@ let explain_unused_clause env pats =
 (* Without localisation
   let s = if List.length pats > 1 then "s" else "" in
   (str ("Unused clause with pattern"^s) ++ spc () ++
-    hov 0 (prlist_with_sep pr_spc pr_cases_pattern pats) ++ str ")")
+    hov 0 (pr_sequence pr_cases_pattern pats) ++ str ")")
 *)
   str "This clause is redundant."
 
 let explain_non_exhaustive env pats =
   str "Non exhaustive pattern-matching: no clause found for " ++
   str (plural (List.length pats) "pattern") ++
-  spc () ++ hov 0 (prlist_with_sep pr_spc pr_cases_pattern pats)
+  spc () ++ hov 0 (pr_sequence pr_cases_pattern pats)
 
 let explain_cannot_infer_predicate env typs =
   let env = make_all_name_different env in
@@ -960,7 +961,7 @@ let explain_cannot_infer_predicate env typs =
     str "For " ++ pr_lconstr_env env cstr ++ str ": " ++ pr_lconstr_env env typ
   in
   str "Unable to unify the types found in the branches:" ++
-  spc () ++ hov 0 (prlist_with_sep pr_fnl pr_branch (Array.to_list typs))
+  spc () ++ hov 0 (prlist_with_sep fnl pr_branch (Array.to_list typs))
 
 let explain_pattern_matching_error env = function
   | BadPattern (c,t) ->
