@@ -27,7 +27,6 @@ let safety_tag = function
 class type analyzed_views=
 object
   val mutable act_id : GtkSignal.id option
-  val mutable deact_id : GtkSignal.id option
   val input_buffer : GText.buffer
   val input_view : Undo.undoable_view
   val last_array : string array
@@ -65,7 +64,6 @@ object
   method backtrack_to : GText.iter -> unit
   method backtrack_to_no_lock : GText.iter -> unit
   method clear_message : unit
-  method disconnected_keypress_handler : GdkEvent.Key.t -> bool
   method find_phrase_starting_at :
     GText.iter -> (GText.iter * GText.iter) option
   method get_insert : GText.iter
@@ -1219,22 +1217,6 @@ object(self)
     let state = GdkEvent.Key.state k in
     begin
       match  state with
-        | l when List.mem `MOD1 l ->
-          let k = GdkEvent.Key.keyval k in
-          if GdkKeysyms._Return=k
-          then ignore(
-            if (input_buffer#insert_interactive "\n") then
-              begin
-                let i= self#get_insert#backward_word_start in
-                prerr_endline "active_kp_hf: Placing cursor";
-                self#process_until_iter_or_error i
-              end);
-          true
-        | l when List.mem `CONTROL l ->
-          let k = GdkEvent.Key.keyval k in
-          if GdkKeysyms._Break=k
-          then break ();
-          false
         | l ->
           if GdkEvent.Key.keyval k = GdkKeysyms._Tab then begin
             prerr_endline "active_kp_handler for Tab";
@@ -1243,18 +1225,6 @@ object(self)
           end else false
     end
 
-
-  method disconnected_keypress_handler k =
-    match GdkEvent.Key.state k with
-      | l when List.mem `CONTROL l ->
-        let k = GdkEvent.Key.keyval k in
-        if GdkKeysyms._c=k
-        then break ();
-        false
-      | l -> false
-
-
-  val mutable deact_id = None
   val mutable act_id = None
 
   method activate () = if not is_active then begin
