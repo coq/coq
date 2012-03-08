@@ -1267,14 +1267,14 @@ object(self)
           | l when List.mem `MOD1 l ->
               let k = GdkEvent.Key.keyval k in
                 if GdkKeysyms._Return=k
-                then ignore(
+                then let _ =
                   if (input_buffer#insert_interactive "\n") then
                     begin
                       let i= self#get_insert#backward_word_start in
                         prerr_endline "active_kp_hf: Placing cursor";
                         self#process_until_iter_or_error i
-                    end);
-                true
+                    end in
+		     true else false
           | l when List.mem `CONTROL l ->
               let k = GdkEvent.Key.keyval k in
                 if GdkKeysyms._Break=k
