@@ -100,7 +100,7 @@ let rec list_try_compile f = function
   | h::t ->
       try f h
       with UserError _ | TypeError _ | PretypeError _
-	| Stdpp.Exc_located (_,(UserError _ | TypeError _ | PretypeError _)) ->
+	| Compat.Exc_located (_,(UserError _ | TypeError _ | PretypeError _)) ->
 	    list_try_compile f t
 
 let force_name =

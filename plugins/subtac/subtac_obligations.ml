@@ -485,8 +485,8 @@ and solve_obligation_by_tac prg obls i tac =
 	      true
 	  else false
 	with
-	| Stdpp.Exc_located(_, Proof_type.LtacLocated (_, Refiner.FailError (_, s)))
-	| Stdpp.Exc_located(_, Refiner.FailError (_, s))
+	| Compat.Exc_located(_, Proof_type.LtacLocated (_, Refiner.FailError (_, s)))
+	| Compat.Exc_located(_, Refiner.FailError (_, s))
 	| Refiner.FailError (_, s) ->
 	    user_err_loc (fst obl.obl_source, "solve_obligation", Lazy.force s)
 	| e -> false

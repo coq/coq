@@ -1057,7 +1057,7 @@ let cl_rewrite_clause_aux ?(abs=None) strat goal_meta clause gl =
 	      else tclIDTAC
 	    in tclTHENLIST [evartac; rewtac] gl
 	  with
-	  | Stdpp.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
+	  | Compat.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
 	  | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
 	      Refiner.tclFAIL_lazy 0
 		(lazy (str"setoid rewrite failed: unable to satisfy the rewriting constraints."

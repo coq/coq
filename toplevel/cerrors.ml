@@ -81,7 +81,7 @@ let rec explain_exn_default_aux anomaly_string report_fn = function
       hov 0 (str "Syntax error: Undefined token.")
   | Lexer.Error (Bad_token s) ->
       hov 0 (str "Syntax error: Bad token" ++ spc () ++ str s ++ str ".")
-  | Stdpp.Exc_located (loc,exc) ->
+  | Compat.Exc_located (loc,exc) ->
       hov 0 ((if loc = dummy_loc then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
                ++ explain_exn_default_aux anomaly_string report_fn exc)
@@ -156,8 +156,8 @@ let rec process_vernac_interp_error = function
   | Proof_type.LtacLocated (s,exc) ->
       EvaluatedError (hov 0 (Himsg.explain_ltac_call_trace s ++ fnl()),
         Some (process_vernac_interp_error exc))
-  | Stdpp.Exc_located (loc,exc) ->
-      Stdpp.Exc_located (loc,process_vernac_interp_error exc)
+  | Compat.Exc_located (loc,exc) ->
+      Compat.Exc_located (loc,process_vernac_interp_error exc)
   | exc ->
       exc
 

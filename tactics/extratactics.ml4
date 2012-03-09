@@ -580,7 +580,7 @@ let hResolve id c occ t gl =
     try 
       Pretyping.Default.understand sigma env t_hole
     with 
-    | Stdpp.Exc_located (loc,Pretype_errors.PretypeError (_, Pretype_errors.UnsolvableImplicit _)) -> 
+    | Compat.Exc_located (loc,Pretype_errors.PretypeError (_, Pretype_errors.UnsolvableImplicit _)) -> 
         resolve_hole (subst_hole_with_term (fst (unloc loc)) c_raw t_hole)
   in
   let t_constr = resolve_hole (subst_var_with_hole occ id t_raw) in

@@ -112,7 +112,7 @@ let is_in_proof_mode () =
     | _ -> true
 
 let user_error_loc l s =
-  raise (Stdpp.Exc_located (l, Util.UserError ("CoqIde", s)))
+  raise (Compat.Exc_located (l, Util.UserError ("CoqIde", s)))
 
 type printing_state = {
   mutable printing_implicit : bool;
@@ -443,7 +443,7 @@ let interp_and_replace s =
 let rec is_pervasive_exn = function
   | Out_of_memory | Stack_overflow | Sys.Break -> true
   | Error_in_file (_,_,e) -> is_pervasive_exn e
-  | Stdpp.Exc_located (_,e) -> is_pervasive_exn e
+  | Compat.Exc_located (_,e) -> is_pervasive_exn e
   | DuringCommandInterp (_,e) -> is_pervasive_exn e
   | _ -> false
 
@@ -456,7 +456,7 @@ let print_toplevel_error exc =
   in
   let (loc,exc) =
     match exc with
-      | Stdpp.Exc_located (loc, ie) -> (Some loc),ie
+      | Compat.Exc_located (loc, ie) -> (Some loc),ie
       | Error_in_file (s, (_,fname, loc), ie) -> None, ie
       | _ -> dloc,exc
   in
