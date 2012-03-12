@@ -512,7 +512,9 @@ type constraint_function =
     universe -> universe -> constraints -> constraints
 
 let constraint_add_leq v u c =
-  if v = UniverseLevel.Set then c else Constraint.add (v,Le,u) c
+  (* We just discard trivial constraints like Set<=u or u<=u *)
+  if v = UniverseLevel.Set || UniverseLevel.compare v u = 0 then c
+  else Constraint.add (v,Le,u) c
 
 let enforce_geq u v c =
   match u, v with
@@ -524,7 +526,9 @@ let enforce_geq u v c =
 
 let enforce_eq u v c =
   match (u,v) with
-    | Atom u, Atom v -> Constraint.add (u,Eq,v) c
+    | Atom u, Atom v ->
+      (* We discard trivial constraints like u=u *)
+      if UniverseLevel.compare u v = 0 then c else Constraint.add (u,Eq,v) c
     | _ -> anomaly "A universe comparison can only happen between variables"
 
 let merge_constraints c g =
