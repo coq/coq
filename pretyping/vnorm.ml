@@ -109,7 +109,7 @@ let build_branches_type env (mind,_ as _ind) mib mip params dep p =
      a 0) et les lambda correspondant aux realargs *)
   let build_one_branch i cty =
     let typi = type_constructor mind mib cty params in
-    let decl,indapp = Term.decompose_prod typi in
+    let decl,indapp = decompose_prod_assum typi in
     let ind,cargs = find_rectype_a env indapp in
     let nparams = Array.length params in
     let carity = snd (rtbl.(i)) in
@@ -193,11 +193,8 @@ and nf_stk env c t stk  =
       let bsw = branch_of_switch (nb_rel env) sw in
       let mkbranch i (n,v) =
 	let decl,codom = btypes.(i) in
-	let env =
-	  List.fold_right
-	    (fun (name,t) env -> push_rel (name,None,t) env) decl env in
-	let b = nf_val env v codom in
-	compose_lam decl b
+	let b = nf_val (push_rel_context decl env) v codom in
+	it_mkLambda_or_LetIn b decl
       in
       let branchs = Array.mapi mkbranch bsw in
       let tcase = build_case_type dep p realargs c in
