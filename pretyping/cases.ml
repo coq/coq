@@ -102,9 +102,6 @@ let msg_may_need_inversion () =
 let make_anonymous_patvars n =
   list_make n (PatVar (dummy_loc,Anonymous))
 
-(* Environment management *)
-let push_rels vars env = List.fold_right push_rel vars env
-
 (* We have x1:t1...xn:tn,xi':ti,y1..yk |- c and re-generalize
    over xi:ti to get x1:t1...xn:tn,xi':ti,y1..yk |- c[xi:=xi'] *)
 
@@ -724,7 +721,8 @@ let recover_initial_subpattern_names = List.map2 set_declaration_name
 let recover_alias_names get_name = List.map2 (fun x (_,c,t) ->(get_name x,c,t))
 
 let push_rels_eqn sign eqn =
-  {eqn with rhs = {eqn.rhs with rhs_env = push_rels sign eqn.rhs.rhs_env} }
+  {eqn with
+     rhs = {eqn.rhs with rhs_env = push_rel_context sign eqn.rhs.rhs_env} }
 
 let push_rels_eqn_with_names sign eqn =
   let subpats = List.rev (list_firstn (List.length sign) eqn.patterns) in
@@ -1140,7 +1138,7 @@ let build_branch current realargs deps (realnames,curname) pb arsign eqns const_
   let typs' =
     list_map_i (fun i d -> (mkRel i,map_rel_declaration (lift i) d)) 1 typs in
 
-  let extenv = push_rels typs pb.env in
+  let extenv = push_rel_context typs pb.env in
 
   let typs' =
     List.map (fun (c,d) ->
@@ -1551,7 +1549,7 @@ let build_inversion_problem loc env sigma tms t =
 	let sign = make_arity_signature env true indf' in
 	let sign = recover_alias_names alias_of_pat (pat :: List.rev patl) sign in
 	let p = List.length realargs in
-	let env' = push_rels sign env in
+	let env' = push_rel_context sign env in
 	let patl',acc_sign,acc = aux (n+p+1) env' (sign@acc_sign) tms acc in
 	patl@pat::patl',acc_sign,acc
     | (t, NotInd (bo,typ)) :: tms ->
@@ -1575,7 +1573,7 @@ let build_inversion_problem loc env sigma tms t =
   let decls =
     list_map_i (fun i d -> (mkRel i,map_rel_declaration (lift i) d)) 1 sign in
 
-  let pb_env = push_rels sign env in
+  let pb_env = push_rel_context sign env in
   let decls =
     List.map (fun (c,d) -> (c,extract_inductive_data pb_env sigma d,d)) decls in
 
@@ -1768,7 +1766,7 @@ let prepare_predicate loc typing_fun sigma env tomatchs arsign tycon pred =
     (* Some type annotation *)
     | Some rtntyp, _ ->
       (* We extract the signature of the arity *)
-      let envar = List.fold_right push_rels arsign env in
+      let envar = List.fold_right push_rel_context arsign env in
       let sigma, newt = new_sort_variable sigma in
       let evdref = ref sigma in
       let predcclj = typing_fun (mk_tycon (mkSort newt)) envar evdref rtntyp in
