@@ -100,6 +100,7 @@ let map_named_val f (ctxt,ctxtv) =
 let empty_named_context = empty_named_context
 
 let push_named = push_named
+let push_named_context = List.fold_right push_named
 let push_named_context_val = push_named_context_val
 
 let val_of_named_context ctxt =

@@ -75,7 +75,6 @@ let interp_definition bl red_option c ctypopt =
       None ->
 	let c, imps2 = interp_constr_evars_impls ~impls ~evdref ~fail_evar:false env_bl c in
 	let body = nf_evar !evdref (it_mkLambda_or_LetIn c ctx) in
-	check_evars env Evd.empty !evdref body;
 	imps1@(Impargs.lift_implicits nb_args imps2),
 	{ const_entry_body = body;
           const_entry_secctx = None;
@@ -86,15 +85,19 @@ let interp_definition bl red_option c ctypopt =
 	let c, imps2 = interp_casted_constr_evars_impls ~impls ~evdref ~fail_evar:false env_bl c ty in
 	let body = nf_evar !evdref (it_mkLambda_or_LetIn c ctx) in
 	let typ = nf_evar !evdref (it_mkProd_or_LetIn ty ctx) in
-	check_evars env Evd.empty !evdref body;
-	check_evars env Evd.empty !evdref typ;
 	imps1@(Impargs.lift_implicits nb_args imps2),
 	{ const_entry_body = body;
           const_entry_secctx = None;
 	  const_entry_type = Some typ;
           const_entry_opaque = false }
   in
-  red_constant_entry (rel_context_length ctx) ce red_option, imps
+  red_constant_entry (rel_context_length ctx) ce red_option, !evdref, imps
+
+let check_definition (ce, evd, imps) =
+  let env = Global.env () in
+    check_evars env Evd.empty evd ce.const_entry_body;
+    Option.iter (check_evars env Evd.empty evd) ce.const_entry_type;
+    ce
 
 let declare_global_definition ident ce local k imps =
   let kn = declare_constant ident (DefinitionEntry ce,IsDefinition k) in
@@ -126,6 +129,25 @@ let declare_definition ident (local,k) ce imps hook =
     | (Global|Local) ->
         declare_global_definition ident ce local k imps in
   hook local r
+
+let _ = Obligations.declare_definition_ref := declare_definition
+
+let do_definition ident k bl red_option c ctypopt hook =
+  let (ce, evd, imps as def) = interp_definition bl red_option c ctypopt in
+    if Flags.is_program_mode () then
+      let env = Global.env () in
+      let c = ce.const_entry_body in
+      let typ = match ce.const_entry_type with 
+	| Some t -> t
+	| None -> Retyping.get_type_of env evd c
+      in 
+      let evm = Obligations.non_instanciated_map env (ref evd) evd in
+      let obls, _, c, cty = 
+	Obligations.eterm_obligations env ident evd evm 0 c typ
+      in
+	ignore(Obligations.add_definition ident ~term:c cty ~implicits:imps ~kind:k ~hook obls)
+    else let ce = check_definition def in
+      declare_definition ident k ce imps hook
 
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
@@ -488,6 +510,8 @@ let declare_fix kind f def t imps =
   maybe_declare_manual_implicits false gr imps;
   gr
 
+let _ = Obligations.declare_fix_ref := declare_fix
+
 let prepare_recursive_declaration fixnames fixtypes fixdefs =
   let defs = List.map (subst_vars (List.rev fixnames)) fixdefs in
   let names = List.map (fun id -> Name id) fixnames in
@@ -522,14 +546,17 @@ let tactics_module = subtac_dir @ ["Tactics"]
 let init_reference dir s () = Coqlib.gen_reference "Command" dir s
 let init_constant dir s () = Coqlib.gen_constant "Command" dir s
 let make_ref l s = init_reference l s
+let fix_proto = init_constant tactics_module "fix_proto"
 let fix_sub_ref = make_ref fixsub_module "Fix_sub"
 let measure_on_R_ref = make_ref fixsub_module "MR"
 let well_founded = init_constant ["Init"; "Wf"] "well_founded"
 let mkSubset name typ prop =
   mkApp ((delayed_force build_sigma).typ,
 	 [| typ; mkLambda (name, typ, prop) |])
-
 let sigT = Lazy.lazy_from_fun build_sigma_type
+
+let make_qref s = Qualid (dummy_loc, qualid_of_string s)
+let lt_ref = make_qref "Init.Peano.lt"
 
 let rec telescope = function
   | [] -> assert false
@@ -691,7 +718,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
   let evars, _, evars_def, evars_typ = 
     Obligations.eterm_obligations env recname !isevars evm 0 fullcoqc fullctyp 
   in
-    Obligations.add_definition recname ~term:evars_def evars_typ evars ~hook
+    ignore(Obligations.add_definition recname ~term:evars_def evars_typ evars ~hook)
 
 
 let interp_recursive isfix fixl notations =
@@ -705,7 +732,20 @@ let interp_recursive isfix fixl notations =
   let fixccls = List.map2 (interp_fix_ccl evdref) fixctxs fixl in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let fixtypes = List.map (nf_evar !evdref) fixtypes in
-  let env_rec = push_named_types env fixnames fixtypes in
+  let rec_sign =
+    List.fold_left2 
+      (fun env' id t ->
+	 if Flags.is_program_mode () then
+	   let sort = Retyping.get_type_of env !evdref t in
+	   let fixprot =
+	     try mkApp (delayed_force fix_proto, [|sort; t|])
+	     with e -> t
+	   in
+	     (id,None,fixprot) :: env'
+	 else (id,None,t) :: env')
+      [] fixnames fixtypes
+  in
+  let env_rec = push_named_context rec_sign env in
 
   (* Get interpretation metadatas *)
   let impls = compute_internalization_env env Recursive fixnames fixtypes fiximps in
@@ -722,20 +762,23 @@ let interp_recursive isfix fixl notations =
   let fixdefs = List.map (Option.map (nf_evar evd)) fixdefs in
   let fixtypes = List.map (nf_evar evd) fixtypes in
   let fixctxnames = List.map (fun (_,ctx) -> List.map pi1 ctx) fixctxs in
+
+  (* Build the fix declaration block *)
+  (env,rec_sign,evd), (fixnames,fixdefs,fixtypes), list_combine3 fixctxnames fiximps fixannots
+
+let check_recursive isfix ((env,rec_sign,evd),(fixnames,fixdefs,fixtypes),info) =
   let evd = Typeclasses.resolve_typeclasses ~onlyargs:false ~fail:true env evd in
-  List.iter (Option.iter (check_evars env_rec Evd.empty evd)) fixdefs;
+  List.iter (Option.iter (check_evars (push_named_context rec_sign env) Evd.empty evd)) fixdefs;
   List.iter (check_evars env Evd.empty evd) fixtypes;
   if not (List.mem None fixdefs) then begin
     let fixdefs = List.map Option.get fixdefs in
     check_mutuality env isfix (List.combine fixnames fixdefs)
   end;
+  ((fixnames,fixdefs,fixtypes),info)
 
-  (* Build the fix declaration block *)
-  (fixnames,fixdefs,fixtypes), list_combine3 fixctxnames fiximps fixannots
-
-let interp_fixpoint = interp_recursive true
-let interp_cofixpoint = interp_recursive false
-
+let interp_fixpoint l ntns = check_recursive true (interp_recursive true l ntns)
+let interp_cofixpoint l ntns = check_recursive false (interp_recursive false l ntns)
+    
 let declare_fixpoint ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
   if List.mem None fixdefs then
     (* Some bodies to define by proof *)
@@ -803,7 +846,93 @@ let extract_cofixpoint_components l =
     {fix_name = id; fix_annot = None; fix_binders = bl; fix_body = def; fix_type = typ}) fixl,
   List.flatten ntnl
 
+let check_program_evars env initial_sigma evd c =
+  let sigma =  evd in
+  let c = nf_evar sigma c in
+  let rec proc_rec c =
+    match kind_of_term c with
+      | Evar (evk,args) ->
+          assert (Evd.mem sigma evk);
+	  if not (Evd.mem initial_sigma evk) then
+            let (loc,k) = Evd.evar_source evk evd in
+	      (match k with
+	      | Evd.QuestionMark _
+	      | Evd.ImplicitArg (_, _, false) -> ()
+	      | _ ->
+		  let evi = nf_evar_info sigma (Evd.find sigma evk) in
+		    Pretype_errors.error_unsolvable_implicit loc env sigma evi k None)
+      | _ -> iter_constr proc_rec c
+  in proc_rec c
+
+let out_def = function
+  | Some def -> def
+  | None -> error "Program Fixpoint needs defined bodies."
+
+let do_program_recursive fixkind fixl ntns =
+  let isfix = fixkind <> Obligations.IsCoFixpoint in
+  let (env, rec_sign, evd), fix, info = 
+    interp_recursive isfix fixl ntns 
+  in
+    (* Program-specific code *)
+    (* Get the interesting evars, those that were not instanciated *)
+  let evd = Typeclasses.resolve_typeclasses ~onlyargs:true ~fail:true env evd in
+    (* Solve remaining evars *)
+  let rec collect_evars id def typ imps =
+    (* Generalize by the recursive prototypes  *)
+    let def =
+      Termops.it_mkNamedLambda_or_LetIn def rec_sign
+    and typ =
+      Termops.it_mkNamedProd_or_LetIn typ rec_sign
+    in
+    let evars, _, def, typ = 
+      Obligations.eterm_obligations env id evd (Evd.undefined_evars evd)
+	(List.length rec_sign) 
+	(nf_evar evd def) (nf_evar evd typ)
+    in (id, def, typ, imps, evars)
+  in
+  let (fixnames,fixdefs,fixtypes) = fix in
+  let fiximps = List.map pi2 info in
+  let fixdefs = List.map Option.get fixdefs in
+  let defs = list_map4 collect_evars fixnames fixdefs fixtypes fiximps in
+    if isfix then begin
+      let possible_indexes = List.map compute_possible_guardness_evidences info in
+      let fixdecls = Array.of_list (List.map (fun x -> Name x) fixnames),
+	Array.of_list fixtypes,
+	Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
+      in
+      let indexes = 
+	Pretyping.search_guard dummy_loc (Global.env ()) possible_indexes fixdecls in
+	list_iter_i (fun i _ -> Inductive.check_fix env ((indexes,i),fixdecls)) fixl
+    end;
+    Obligations.add_mutual_definitions defs ntns fixkind
+
+let do_program_fixpoint l =
+  let g = List.map (fun ((_,wf,_,_,_),_) -> wf) l in
+    match g, l with
+    | [(n, CWfRec r)], [(((_,id),_,bl,typ,def),ntn)] ->
+	let recarg = 
+	  match n with
+	  | Some n -> mkIdentC (snd n)
+	  | None ->
+	      errorlabstrm "do_program_fixpoint"
+		(str "Recursive argument required for well-founded fixpoints")
+	in build_wellfounded (id, n, bl, typ, out_def def) r recarg ntn
+	     
+    | [(n, CMeasureRec (m, r))], [(((_,id),_,bl,typ,def),ntn)] ->
+	build_wellfounded (id, n, bl, typ, out_def def)
+	  (Option.default (CRef lt_ref) r) m ntn
+	  
+    | _, _ when List.for_all (fun (n, ro) -> ro = CStructRec) g ->
+	let fixl,ntns = extract_fixpoint_components true l in
+	let fixkind = Obligations.IsFixpoint g in
+	  do_program_recursive fixkind fixl ntns
+
+    | _, _ ->
+	errorlabstrm "do_program_fixpoint"
+	  (str "Well-founded fixpoints not allowed in mutually recursive blocks")
+
 let do_fixpoint l =
+  if Flags.is_program_mode () then do_program_fixpoint l else
   let fixl,ntns = extract_fixpoint_components true l in
   let fix = interp_fixpoint fixl ntns in
   let possible_indexes =
@@ -812,4 +941,8 @@ let do_fixpoint l =
 
 let do_cofixpoint l =
   let fixl,ntns = extract_cofixpoint_components l in
-  declare_cofixpoint (interp_cofixpoint fixl ntns) ntns
+    if Flags.is_program_mode () then
+      do_program_recursive Obligations.IsCoFixpoint fixl ntns
+    else
+      let cofix = interp_cofixpoint fixl ntns in
+	declare_cofixpoint cofix ntns

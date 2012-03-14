@@ -55,7 +55,7 @@ val jmeq_refl : unit -> Term.constr
 val new_save_named : bool -> unit
 
 val save : bool -> identifier ->  Entries.definition_entry  -> Decl_kinds.goal_kind ->
-  Tacexpr.declaration_hook -> unit
+  unit Tacexpr.declaration_hook -> unit
 
 (* [get_proof_clean do_reduce] : returns the proof name, definition, kind and hook and
    abort the proof
@@ -63,7 +63,7 @@ val save : bool -> identifier ->  Entries.definition_entry  -> Decl_kinds.goal_k
 val get_proof_clean : bool ->
   Names.identifier *
     (Entries.definition_entry * Decl_kinds.goal_kind *
-       Tacexpr.declaration_hook)
+      unit Tacexpr.declaration_hook)
 
 
 

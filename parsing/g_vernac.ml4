@@ -80,7 +80,9 @@ GEXTEND Gram
   vernac_aux:
     (* Better to parse "." here: in case of failure (e.g. in coerce_to_var), *)
     (* "." is still in the stream and discard_to_dot works correctly         *)
-    [ [ g = gallina; "." -> g
+    [ [ IDENT "Program"; g = gallina; "." -> program_flag := true; g
+      | IDENT "Program"; g = gallina_ext; "." -> program_flag := true; g
+      | g = gallina; "." -> g
       | g = gallina_ext; "." -> g
       | c = command; "." -> c
       | c = syntax; "." -> c

@@ -128,7 +128,8 @@ type verbose_flag   = bool (* true = Verbose;       false = Silent         *)
 type opacity_flag   = bool (* true = Opaque;        false = Transparent    *)
 type locality_flag  = bool (* true = Local;         false = Global         *)
 type coercion_flag  = bool (* true = AddCoercion    false = NoCoercion     *)
-type instance_flag  = bool option (* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)
+type instance_flag  = bool option
+  (* Some true = Backward instance; Some false = Forward instance, None = NoInstance *)
 type export_flag    = bool (* true = Export;        false = Import         *)
 type inductive_flag = Decl_kinds.recursivity_kind
 type onlyparsing_flag = bool (* true = Parse only;  false = Print also     *)
@@ -481,3 +482,16 @@ let enforce_module_locality local =
 
 (**********************************************************************)
 
+(**********************************************************************)
+(* Managing the Program extension. *)
+
+let program_flag = ref false
+let with_program_flag m = 
+  if Flags.is_program_mode () then
+    (program_flag := false; m ())
+  else if !program_flag then 
+    (Flags.program_mode := true; 
+     m ();
+     Flags.program_mode := false;
+     program_flag := false)
+      

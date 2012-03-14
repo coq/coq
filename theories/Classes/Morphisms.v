@@ -224,7 +224,7 @@ Hint Extern 4 (subrelation (inverse _) _) =>
   class_apply @subrelation_symmetric : typeclass_instances.
 
 (** The complement of a relation conserves its proper elements. *)
-
+Set Printing All.
 Program Definition complement_proper
   `(mR : Proper (A -> A -> Prop) (RA ==> RA ==> iff) R) :
   Proper (RA ==> RA ==> iff) (complement R) := _.

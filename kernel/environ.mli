@@ -81,6 +81,7 @@ val map_named_val :
    (constr -> constr) -> named_context_val -> named_context_val
 
 val push_named : named_declaration -> env -> env
+val push_named_context : named_context -> env -> env
 val push_named_context_val  :
     named_declaration -> named_context_val -> named_context_val
 

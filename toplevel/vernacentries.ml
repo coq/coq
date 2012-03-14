@@ -343,8 +343,7 @@ let vernac_definition (local,k) (loc,id as lid) def hook =
           | Some r ->
 	      let (evc,env)= get_current_context () in
  		Some (interp_redexp env evc r) in
-	let ce,imps = interp_definition bl red_option c typ_opt in
-	declare_definition id (local,k) ce imps hook)
+	do_definition id (local,k) bl red_option c typ_opt hook)
 
 let vernac_start_proof kind l lettop hook =
   if Dumpglob.dump () then
@@ -1578,5 +1577,12 @@ let interp c = match c with
   (* Extensions *)
   | VernacExtend (opn,args) -> Vernacinterp.call (opn,args)
 
-let interp c = interp c ; check_locality ()
+let interp c = 
+  let mode = Flags.is_program_mode () in
+  let flag = mode || !program_flag in
+    Flags.program_mode := flag;
+    interp c; check_locality ();
+    program_flag := false;
+    Flags.program_mode := mode
+  (* with_program_flag (fun () -> interp c ; check_locality ()) *)
 

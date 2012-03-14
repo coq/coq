@@ -79,14 +79,14 @@ Qed.
 (* Somewhat trivial definition, but not unfolded automatically hence we can match on [match_eq ?A ?B ?x ?f]
    in tactics. *)
 
-Definition match_eq (A B : Type) (x : A) (fn : forall (y : A | y = x), B) : B :=
+Definition match_eq (A B : Type) (x : A) (fn : {y : A | y = x} -> B) : B :=
   fn (exist _ x eq_refl).
 
 (* This is what we want to be able to do: replace the originaly matched object by a new,
    propositionally equal one. If [fn] works on [x] it should work on any [y | y = x]. *)
 
-Lemma match_eq_rewrite : forall (A B : Type) (x : A) (fn : forall (y : A | y = x), B)
-  (y : A | y = x),
+Lemma match_eq_rewrite : forall (A B : Type) (x : A) (fn : {y : A | y = x} -> B)
+  (y : {y:A | y = x}),
   match_eq A B x fn = fn y.
 Proof.
   intros.

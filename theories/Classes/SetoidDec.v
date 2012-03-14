@@ -108,7 +108,7 @@ Program Instance prod_eqdec `(! EqDec (eq_setoid A), ! EqDec (eq_setoid B))
       else in_right
     else in_right.
 
-  Solve Obligations using unfold complement ; program_simpl.
+  Solve Obligations with unfold complement ; program_simpl.
 
 (** Objects of function spaces with countable domains like bool
   have decidable equality. *)
@@ -121,7 +121,7 @@ Program Instance bool_function_eqdec `(! EqDec (eq_setoid A))
       else in_right
     else in_right.
 
-  Solve Obligations using try red ; unfold equiv, complement ; program_simpl.
+  Solve Obligations with try red ; unfold equiv, complement ; program_simpl.
 
   Next Obligation.
   Proof.

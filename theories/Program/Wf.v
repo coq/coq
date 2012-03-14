@@ -35,11 +35,11 @@ Section Well_founded.
   Hypothesis
     F_ext :
     forall (x:A) (f g:forall y:{y:A | R y x}, P (`y)),
-      (forall (y : A | R y x), f y = g y) -> F_sub x f = F_sub x g.
+      (forall y:{y : A | R y x}, f y = g y) -> F_sub x f = F_sub x g.
 
   Lemma Fix_F_eq :
     forall (x:A) (r:Acc R x),
-      F_sub x (fun (y:A|R y x) => Fix_F_sub (`y) (Acc_inv r (proj2_sig y))) = Fix_F_sub x r.
+      F_sub x (fun y:{y:A | R y x} => Fix_F_sub (`y) (Acc_inv r (proj2_sig y))) = Fix_F_sub x r.
   Proof.
     destruct r using Acc_inv_dep; auto.
   Qed.
@@ -50,7 +50,7 @@ Section Well_founded.
     rewrite (proof_irrelevance (Acc R x) r s) ; auto.
   Qed.
 
-  Lemma Fix_eq : forall x:A, Fix_sub x = F_sub x (fun (y:A|R y x) => Fix_sub (proj1_sig y)).
+  Lemma Fix_eq : forall x:A, Fix_sub x = F_sub x (fun y:{ y:A | R y x} => Fix_sub (proj1_sig y)).
   Proof.
     intro x; unfold Fix_sub in |- *.
     rewrite <- (Fix_F_eq ).
@@ -62,7 +62,7 @@ Section Well_founded.
     forall x : A,
       Fix_sub x =
       let f_sub := F_sub in
-        f_sub x (fun (y : A | R y x) => Fix_sub (`y)).
+        f_sub x (fun y: {y : A | R y x} => Fix_sub (`y)).
     exact Fix_eq.
   Qed.
 
@@ -231,10 +231,10 @@ Module WfExtensionality.
   Program Lemma fix_sub_eq_ext :
     forall (A : Type) (R : A -> A -> Prop) (Rwf : well_founded R)
       (P : A -> Type)
-      (F_sub : forall x : A, (forall (y : A | R y x), P y) -> P x),
+      (F_sub : forall x : A, (forall y:{y : A | R y x}, P y) -> P x),
       forall x : A,
         Fix_sub A R Rwf P F_sub x =
-          F_sub x (fun (y : A | R y x) => Fix_sub A R Rwf P F_sub y).
+          F_sub x (fun y:{y : A | R y x} => Fix_sub A R Rwf P F_sub y).
   Proof.
     intros ; apply Fix_eq ; auto.
     intros.

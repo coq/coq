@@ -81,7 +81,7 @@ SRCDIRS:=\
   $(addprefix plugins/, \
     omega	romega 		micromega 	quote		ring	dp \
     setoid_ring xml 		extraction 	fourier \
-    cc 		funind 		firstorder 	field 		subtac \
+    cc 		funind 		firstorder 	field \
     rtauto 	nsatz           syntax          decl_mode	btauto)
 
 # Order is relevent here because kernel and checker contain files
@@ -184,7 +184,6 @@ EXTRACTIONCMA:=plugins/extraction/extraction_plugin.cma
 FUNINDCMA:=plugins/funind/recdef_plugin.cma
 FOCMA:=plugins/firstorder/ground_plugin.cma
 CCCMA:=plugins/cc/cc_plugin.cma
-SUBTACCMA:=plugins/subtac/subtac_plugin.cma
 BTAUTOCMA:=plugins/btauto/btauto_plugin.cma
 RTAUTOCMA:=plugins/rtauto/rtauto_plugin.cma
 NATSYNTAXCMA:=plugins/syntax/nat_syntax_plugin.cma
@@ -199,13 +198,13 @@ DECLMODECMA:=plugins/decl_mode/decl_mode_plugin.cma
 PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) $(DECLMODECMA) \
         $(QUOTECMA) $(RINGCMA) $(NEWRINGCMA) $(DPCMA) $(FIELDCMA) \
         $(FOURIERCMA) $(EXTRACTIONCMA) $(XMLCMA) \
-        $(CCCMA)  $(FOCMA) $(SUBTACCMA) $(RTAUTOCMA) $(BTAUTOCMA) \
+        $(CCCMA)  $(FOCMA) $(RTAUTOCMA) $(BTAUTOCMA) \
         $(FUNINDCMA) $(NSATZCMA) $(NATSYNTAXCMA) $(OTHERSYNTAXCMA)
 
 ifneq ($(HASNATDYNLINK),false)
  STATICPLUGINS:=
  INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) $(DPCMA) \
-	$(XMLCMA) $(FUNINDCMA) $(SUBTACCMA) $(NATSYNTAXCMA)
+	$(XMLCMA) $(FUNINDCMA) $(NATSYNTAXCMA)
  INITPLUGINSOPT:=$(INITPLUGINS:.cma=.cmxs)
  PLUGINS:=$(PLUGINSCMA)
  PLUGINSOPT:=$(PLUGINSCMA:.cma=.cmxs)

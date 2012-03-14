@@ -32,10 +32,14 @@ val set_declare_assumptions_hook : (types -> unit) -> unit
 
 val interp_definition :
   local_binder list -> red_expr option -> constr_expr ->
-  constr_expr option -> definition_entry * Impargs.manual_implicits
+  constr_expr option -> definition_entry * Evd.evar_map * Impargs.manual_implicits
 
-val declare_definition : identifier -> locality * definition_object_kind ->
+val declare_definition : identifier -> definition_kind ->
   definition_entry -> Impargs.manual_implicits -> 'a declaration_hook -> 'a
+
+val do_definition : identifier -> definition_kind ->
+  local_binder list -> red_expr option -> constr_expr ->
+  constr_expr option -> unit declaration_hook -> unit
 
 (** {6 Parameters/Assumptions} *)
 
