@@ -183,8 +183,6 @@ let inh_conv_coerce_to_tycon loc env evdref j = function
   | None -> j
   | Some t -> evd_comb2 (Coercion.inh_conv_coerce_to loc env) evdref j t
 
-let push_rels vars env = List.fold_right push_rel vars env
-
 (* used to enforce a name in Lambda when the type constraints itself
    is named, hence possibly dependent *)
 
@@ -208,7 +206,6 @@ let pretype_id loc env sigma (lvar,unbndltacvars) id =
   (* Look for the binder of [id] *)
   try
     let (n,_,typ) = lookup_rel_id id (rel_context env) in
->>>>>>> Second step of integration of Program:
       { uj_val  = mkRel n; uj_type = lift n typ }
   with Not_found ->
     (* Check if [id] is an ltac variable *)
@@ -507,7 +504,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 			    int cs.cs_nargs ++ str " variables.");
 	  let fsign = List.map2 (fun na (_,c,t) -> (na,c,t))
             (List.rev nal) cs.cs_args in
-	  let env_f = push_rels fsign env in
+	  let env_f = push_rel_context fsign env in
 	    (* Make dependencies from arity signature impossible *)
 	  let arsgn =
 	    let arsgn,_ = get_arity env indf in
@@ -519,7 +516,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 	  let nar = List.length arsgn in
 	    (match po with
 	     | Some p ->
-		 let env_p = push_rels psign env in
+		 let env_p = push_rel_context psign env in
 		 let pj = pretype_type empty_valcon env_p evdref lvar p in
 		 let ccl = nf_evar !evdref pj.utj_val in
 		 let psign = make_arity_signature env true indf in (* with names *)
@@ -581,7 +578,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 	let psign = (na,None,build_dependent_inductive env indf)::arsgn in
 	let pred,p = match po with
 	  | Some p ->
-	      let env_p = push_rels psign env in
+	      let env_p = push_rel_context psign env in
 	      let pj = pretype_type empty_valcon env_p evdref lvar p in
 	      let ccl = nf_evar !evdref pj.utj_val in
 	      let pred = it_mkLambda_or_LetIn ccl psign in
@@ -610,7 +607,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
                    | Anonymous -> (Name (id_of_string "H"), b, t))
 		cs.cs_args
 	  in
-	  let env_c = push_rels csgn env in
+	  let env_c = push_rel_context csgn env in
 	  let bj = pretype (mk_tycon pi) env_c evdref lvar b in
 	    it_mkLambda_or_LetIn bj.uj_val cs.cs_args in
 	let b1 = f cstrs.(0) b1 in

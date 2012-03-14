@@ -1857,7 +1857,7 @@ let constr_of_pat env isevars arsign pat avoid =
 		   typ env (substl args liftt, []) ua avoid
 	       in
 	       let args' = arg' :: List.map (lift n') args in
-	       let env' = push_rels sign' env in
+	       let env' = push_rel_context sign' env in
 		 (pat' :: patargs, args', sign' @ sign, env', n' + n, succ m, avoid))
 	    ci.cs_args (List.rev args) ([], [], [], env, 0, 0, avoid)
 	in
@@ -1877,8 +1877,8 @@ let constr_of_pat env isevars arsign pat avoid =
 		let avoid = id :: avoid in
 		let sign, i, avoid =
 		  try
-		    let env = push_rels sign env in
-		    isevars := the_conv_x_leq (push_rels sign env)
+		    let env = push_rel_context sign env in
+		    isevars := the_conv_x_leq (push_rel_context sign env)
 		      (lift (succ m) ty) (lift 1 apptype) !isevars;
 		    let eq_t = mk_eq (lift (succ m) ty)
 		      (mkRel 1) (* alias *)
@@ -2048,7 +2048,7 @@ let constrs_of_pats typing_fun env isevars eqns tomatchs sign neqs arity =
 	   let eqs_rels, arity = decompose_prod_n_assum neqs arity in
 	     eqs_rels @ neqs_rels @ rhs_rels', arity
 	 in
-	 let rhs_env = push_rels rhs_rels' env in
+	 let rhs_env = push_rel_context rhs_rels' env in
 	 let j = typing_fun (mk_tycon tycon) rhs_env eqn.rhs.it in
 	 let bbody = it_mkLambda_or_LetIn j.uj_val rhs_rels'
 	 and btype = it_mkProd_or_LetIn j.uj_type rhs_rels' in
@@ -2254,7 +2254,7 @@ let compile_program_cases loc style (typing_function, evdref) tycon env
   in
   let matx = List.rev matx in
   let _ = assert(len = List.length lets) in
-  let env = push_rels lets env in
+  let env = push_rel_context lets env in
   let matx = List.map (fun eqn -> { eqn with rhs = { eqn.rhs with rhs_env = env } }) matx in
   let tomatchs = List.map (fun (x, y) -> lift len x, lift_tomatch_type len y) tomatchs in
   let args = List.rev_map (lift len) args in
