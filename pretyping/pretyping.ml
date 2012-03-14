@@ -138,7 +138,6 @@ let solve_remaining_evars fail_evar use_classes hook env initial_sigma (evd,c) =
   (* Side-effect *)
   !evdref,c
 
-<<<<<<< HEAD
 (* Allow references to syntaxically inexistent variables (i.e., if applied on an inductive) *)
 let allow_anonymous_refs = ref false
 

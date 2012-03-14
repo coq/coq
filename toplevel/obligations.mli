@@ -92,7 +92,7 @@ val add_mutual_definitions :
   notations ->
   fixpoint_kind -> unit
 
-val subtac_obligation : int * Names.identifier option * Topconstr.constr_expr option ->
+val obligation : int * Names.identifier option * Topconstr.constr_expr option ->
   Tacexpr.raw_tactic_expr option -> unit
 
 val next_obligation : Names.identifier option -> Tacexpr.raw_tactic_expr option -> unit

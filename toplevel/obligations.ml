@@ -804,7 +804,7 @@ let rec solve_obligation prg num tac =
       | l -> pperror (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
 		      ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) l))
 
-and subtac_obligation (user_num, name, typ) tac =
+and obligation (user_num, name, typ) tac =
   let num = pred user_num in
   let prg = get_prog_err name in
   let obls, rem = prg.prg_obligations in
