@@ -19,4 +19,3 @@ open Evarutil
 (*i*)
 
 (*s Compilation of pattern-matching, subtac style. *)
-module Cases_F(C : Coercion.S) : Cases.S

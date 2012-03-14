@@ -14,7 +14,7 @@ open Tacinterp
 open Tacmach
 open Decl_expr
 open Decl_mode
-open Pretyping.Default
+open Pretyping
 open Glob_term
 open Term
 open Pp

@@ -49,7 +49,7 @@ let rec substitterm prof t by_t in_u =
 
 let lift_ldecl n ldecl = List.map (fun (x,y) -> x,lift n y) ldecl
 
-let understand = Pretyping.Default.understand Evd.empty (Global.env())
+let understand = Pretyping.understand Evd.empty (Global.env())
 
 (** Operations on names and identifiers *)
 let id_of_name = function

@@ -154,7 +154,7 @@ module Refinable = struct
     let my_type = Retyping.get_type_of env !rdefs t in
     let j = Environ.make_judge t my_type in
     let (new_defs,j') =
-      Coercion.Default.inh_conv_coerce_to (Pp.dummy_loc) env !rdefs j typ
+      Coercion.inh_conv_coerce_to (Pp.dummy_loc) env !rdefs j typ
     in
     rdefs := new_defs;
     j'.Environ.uj_val
@@ -219,7 +219,7 @@ module Refinable = struct
     (* call to [understand_tcc_evars] returns a constr with undefined evars
        these evars will be our new goals *)
     let open_constr =
-      Pretyping.Default.understand_tcc_evars ~resolve_classes rdefs env tycon rawc
+      Pretyping.understand_tcc_evars ~resolve_classes rdefs env tycon rawc
     in
       ignore(update_handle handle init_defs !rdefs);
       open_constr

@@ -345,7 +345,6 @@ let prepare_predicate_from_arsign_tycon loc env evm tomatchs arsign c =
 	ignore(Typing.sort_of env' evm pred); pred
     with _ -> lift nar c
 
-module Cases_F(Coercion : Coercion.S) : S = struct
 
 let inh_coerce_to_ind isevars env ty tyi =
   let expected_typ = inductive_template isevars env None tyi in
@@ -1481,8 +1480,6 @@ let inh_conv_coerce_to_tycon loc env isevars j tycon =
           j
     | None -> j
 
-let out_ind = function IsInd (_, IndType(x, y)) -> (x, y) | _ -> assert(false)
-
 let string_of_name name =
   match name with
     | Anonymous -> "anonymous"
@@ -1919,7 +1916,7 @@ let prepare_predicate_from_rettyp loc typing_fun isevars env tomatchs sign tycon
 		in Some (build_initial_predicate true allnames pred)
 	    | None -> None
 
-let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constraint) env (predopt, tomatchl, eqns) =
+let compile_program_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constraint) env (predopt, tomatchl, eqns) =
 
   let typing_fun tycon env = typing_fun tycon env isevars in
 
@@ -2016,6 +2013,3 @@ let compile_cases loc style (typing_fun, isevars) (tycon : Evarutil.type_constra
 	(* We check for unused patterns *)
 	List.iter (check_unused_pattern env) matx;
 	inh_conv_coerce_to_tycon loc env isevars j tycon
-
-end
-

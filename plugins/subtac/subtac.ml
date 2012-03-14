@@ -142,6 +142,7 @@ let subtac (loc, command) =
 	    (fun _ _ -> ())
       | DefineBody (bl, _, c, tycon) ->
 	  ignore(Subtac_pretyping.subtac_proof defkind hook env isevars id bl c tycon))
+
   | VernacFixpoint l ->
       List.iter (fun ((lid, _, _, _, _), _) ->
 	check_fresh lid;
@@ -176,9 +177,6 @@ let subtac (loc, command) =
       if Dumpglob.dump () then
 	List.iter (fun ((lid, _, _, _), _) -> Dumpglob.dump_definition lid false "cofix") l;
       ignore(Subtac_command.build_corecursive l)
-
-  (*| VernacEndProof e ->
-    subtac_end_proof e*)
 
   | _ -> user_err_loc (loc,"", str ("Invalid Program command"))
   with
@@ -227,3 +225,5 @@ let subtac (loc, command) =
   | e -> 
       (*       msg_warning (str "Uncaught exception: " ++ Errors.print e); *)
       raise e
+
+let subtac c = Program.with_program subtac c

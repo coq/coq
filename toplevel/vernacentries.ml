@@ -1026,6 +1026,15 @@ let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
+      optname  = "use of the program extension";
+      optkey   = ["Program"];
+      optread  = (fun () -> !Flags.program_mode);
+      optwrite = (fun b -> Flags.program_mode:=b) }
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
       optname  = "use of virtual machine inside the kernel";
       optkey   = ["Virtual";"Machine"];
       optread  = (fun () -> Vconv.use_vm ());

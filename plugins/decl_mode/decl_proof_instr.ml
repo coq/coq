@@ -1289,7 +1289,7 @@ let understand_my_constr c gls =
   let nc = names_of_rel_context env in
   let rawc = Detyping.detype false [] nc c in
   let rec frob = function GEvar _ -> GHole (dummy_loc,QuestionMark Expand) | rc ->  map_glob_constr frob rc in
-    Pretyping.Default.understand_tcc (sig_sig gls) env ~expected_type:(pf_concl gls) (frob rawc)
+    Pretyping.understand_tcc (sig_sig gls) env ~expected_type:(pf_concl gls) (frob rawc)
 
 let my_refine c gls =
   let oc = understand_my_constr c gls in

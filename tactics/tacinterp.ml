@@ -44,7 +44,6 @@ open Printer
 open Inductiveops
 open Syntax_def
 open Pretyping
-open Pretyping.Default
 open Extrawit
 open Pcoq
 open Compat

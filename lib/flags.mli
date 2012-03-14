@@ -47,6 +47,9 @@ val if_verbose : ('a -> unit) -> 'a -> unit
 val make_auto_intros : bool -> unit
 val is_auto_intros : unit -> bool
 
+val program_mode : bool ref
+val is_program_mode : unit -> bool
+
 val make_warn : bool -> unit
 val if_warn : ('a -> unit) -> 'a -> unit
 

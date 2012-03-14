@@ -25,10 +25,8 @@ open Entries
 open Errors
 open Util
 
-module SPretyping = Subtac_pretyping.Pretyping
-
 let interp_constr_evars_gen evdref env ?(impls=Constrintern.empty_internalization_env) kind c =
-  SPretyping.understand_tcc_evars evdref env kind
+  understand_tcc_evars evdref env kind
     (intern_gen (kind=IsType) ~impls !evdref env c)
 
 let interp_casted_constr_evars evdref env ?(impls=Constrintern.empty_internalization_env) c typ =
@@ -36,13 +34,13 @@ let interp_casted_constr_evars evdref env ?(impls=Constrintern.empty_internaliza
 
 let interp_context_evars evdref env params =
   let impls_env, bl = Constrintern.interp_context_gen
-    (fun env t -> SPretyping.understand_tcc_evars evdref env IsType t)
-    (SPretyping.understand_judgment_tcc evdref) !evdref env params in bl
+    (fun env t -> understand_tcc_evars evdref env IsType t)
+    (understand_judgment_tcc evdref) !evdref env params in bl
 
 let interp_type_evars_impls ~evdref ?(impls=empty_internalization_env) env c =
   let c = intern_gen true ~impls !evdref env c in
   let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:true c in
-    SPretyping.understand_tcc_evars ~fail_evar:false evdref env IsType c, imps
+    understand_tcc_evars ~fail_evar:false evdref env IsType c, imps
 
 let type_ctx_instance evars env ctx inst subst =
   let rec aux (subst, instctx) l = function

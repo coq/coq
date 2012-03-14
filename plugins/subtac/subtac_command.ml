@@ -41,7 +41,6 @@ open Notation
 open Evd
 open Evarutil
 
-module SPretyping = Subtac_pretyping.Pretyping
 open Subtac_utils
 open Pretyping
 open Subtac_obligations
@@ -56,7 +55,7 @@ let interp_gen kind isevars env
                ?(impls=Constrintern.empty_internalization_env) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
   let c' = Constrintern.intern_gen (kind=IsType) ~impls ~allow_patvar ~ltacvars ( !isevars) env c in
-  let c' = SPretyping.understand_tcc_evars isevars env kind c' in
+  let c' = understand_tcc_evars isevars env kind c' in
     evar_nf isevars c'
 
 let interp_constr isevars env c =
@@ -74,12 +73,12 @@ let interp_casted_constr_evars isevars env ?(impls=Constrintern.empty_internaliz
 let interp_open_constr isevars env c =
     msgnl (str "Pretyping " ++ my_print_constr_expr c);
   let c = Constrintern.intern_constr ( !isevars) env c in
-  let c' = SPretyping.understand_tcc_evars isevars env (OfType None) c in
+  let c' = understand_tcc_evars isevars env (OfType None) c in
     evar_nf isevars c'
 
 let interp_constr_judgment isevars env c =
   let j =
-    SPretyping.understand_judgment_tcc isevars env
+    understand_judgment_tcc isevars env
       (Constrintern.intern_constr ( !isevars) env c)
   in
     { uj_val = evar_nf isevars j.uj_val; uj_type = evar_nf isevars j.uj_type }
@@ -94,7 +93,7 @@ let locate_if_isevar loc na = function
 
 let interp_binder sigma env na t =
   let t = Constrintern.intern_gen true ( !sigma) env t in
-    SPretyping.understand_tcc_evars sigma env IsType (locate_if_isevar (loc_of_glob_constr t) na t)
+    understand_tcc_evars sigma env IsType (locate_if_isevar (loc_of_glob_constr t) na t)
 
 let interp_context_evars evdref env params =
   let int_env, bl = Constrintern.intern_context false !evdref env Constrintern.empty_internalization_env params in
@@ -104,7 +103,7 @@ let interp_context_evars evdref env params =
 	match b with
 	    None ->
 	      let t' = locate_if_isevar (loc_of_glob_constr t) na t in
-	      let t = SPretyping.understand_tcc_evars evdref env IsType t' in
+	      let t = understand_tcc_evars evdref env IsType t' in
 	      let d = (na,None,t) in
 	      let impls =
 		if k = Implicit then
@@ -114,7 +113,7 @@ let interp_context_evars evdref env params =
 	      in
 		(push_rel d env, d::params, succ n, impls)
 	  | Some b ->
-	      let c = SPretyping.understand_judgment_tcc evdref env b in
+	      let c = understand_judgment_tcc evdref env b in
 	      let d = (na, Some c.uj_val, c.uj_type) in
 		(push_rel d env,d::params, succ n, impls))
       (env,[],1,[]) (List.rev bl)

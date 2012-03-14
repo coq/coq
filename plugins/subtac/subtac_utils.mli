@@ -79,7 +79,6 @@ val trace : std_ppcmds -> unit
 val wf_relations : (constr, constr delayed) Hashtbl.t
 
 type binders = local_binder list
-val app_opt : ('a -> 'a) option -> 'a -> 'a
 val print_args : env -> constr array -> std_ppcmds
 val make_existential : loc -> ?opaque:obligation_definition_status ->
   env -> evar_map ref -> types -> constr

@@ -36,8 +36,6 @@ open Printer
 open Subtac_errors
 open Eterm
 
-module Pretyping = Subtac_pretyping_F.SubtacPretyping_F(Subtac_coercion.Coercion)
-
 open Pretyping
 
 let _ = Pretyping.allow_anonymous_refs := true

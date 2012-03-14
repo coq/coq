@@ -1211,6 +1211,11 @@ let iterate_for a b f x =
   let rec iterate i v = if i > b then v else iterate (succ i) (f i v) in
   iterate a x
 
+let app_opt f x =
+  match f with
+  | Some f -> f x
+  | None -> x
+
 (* Delayed computations *)
 
 type 'a delayed = unit -> 'a

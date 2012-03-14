@@ -26,7 +26,7 @@ open Pretype_errors
 open Evarutil
 open Unification
 open Mod_subst
-open Coercion.Default
+open Coercion
 
 (* Abbreviations *)
 

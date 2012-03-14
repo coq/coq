@@ -36,7 +36,6 @@ open Pfedit
 open Topconstr
 open Glob_term
 open Pretyping
-open Pretyping.Default
 open Safe_typing
 open Constrintern
 open Hiddentac

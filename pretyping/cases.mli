@@ -48,13 +48,10 @@ val error_needs_inversion : env -> constr -> types -> 'a
 
 (** {6 Compilation primitive. } *)
 
-module type S = sig
-  val compile_cases :
-    loc -> case_style ->
-    (type_constraint -> env -> evar_map ref -> glob_constr -> unsafe_judgment) * evar_map ref ->
-    type_constraint ->
-    env -> glob_constr option * tomatch_tuples * cases_clauses ->
-    unsafe_judgment
-end
+val compile_cases :
+  loc -> case_style ->
+  (type_constraint -> env -> evar_map ref -> glob_constr -> unsafe_judgment) * evar_map ref ->
+  type_constraint ->
+  env -> glob_constr option * tomatch_tuples * cases_clauses ->
+  unsafe_judgment
 
-module Cases_F(C : Coercion.S) : S

@@ -8,8 +8,6 @@ open Topconstr
 open Implicit_quantifiers
 open Impargs
 
-module Pretyping : Pretyping.S
-
 val interp :
     Environ.env ->
     Evd.evar_map ref ->

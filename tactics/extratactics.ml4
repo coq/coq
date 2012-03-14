@@ -588,7 +588,7 @@ let hResolve id c occ t gl =
   let t_raw = Detyping.detype true env_ids env_names t in 
   let rec resolve_hole t_hole =
     try 
-      Pretyping.Default.understand sigma env t_hole
+      Pretyping.understand sigma env t_hole
     with 
     | Loc.Exc_located (loc,Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _)) ->
         resolve_hole (subst_hole_with_term (fst (unloc loc)) c_raw t_hole)

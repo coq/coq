@@ -41,7 +41,7 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
     error "Instantiate called on already-defined evar";
   let env = Evd.evar_env evi in
   let sigma',typed_c =
-    try Pretyping.Default.understand_ltac true sigma env ltac_var
+    try Pretyping.understand_ltac true sigma env ltac_var
 	  (Pretyping.OfType (Some evi.evar_concl)) rawc
     with _ ->
       let loc = Glob_term.loc_of_glob_constr rawc in

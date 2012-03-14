@@ -23,7 +23,7 @@ open Glob_term
 open Evarutil
 open Pretype_errors
 open Retyping
-open Coercion.Default
+open Coercion
 open Recordops
 
 let occur_meta_or_undefined_evar evd c =

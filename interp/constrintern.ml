@@ -1742,7 +1742,7 @@ let interp_gen kind sigma env
                ?(impls=empty_internalization_env) ?(allow_patvar=false) ?(ltacvars=([],[]))
                c =
   let c = intern_gen (kind=IsType) ~impls ~allow_patvar ~ltacvars sigma env c in
-    Default.understand_gen kind sigma env c
+    understand_gen kind sigma env c
 
 let interp_constr sigma env c =
   interp_gen (OfType None) sigma env c
@@ -1754,7 +1754,7 @@ let interp_casted_constr sigma env ?(impls=empty_internalization_env) c typ =
   interp_gen (OfType (Some typ)) sigma env ~impls c
 
 let interp_open_constr sigma env c =
-  Default.understand_tcc sigma env (intern_constr sigma env c)
+  understand_tcc sigma env (intern_constr sigma env c)
 
 let interp_open_constr_patvar sigma env c =
   let raw = intern_gen false sigma env c ~allow_patvar:true in
@@ -1772,10 +1772,10 @@ let interp_open_constr_patvar sigma env c =
 	)
     | _ -> map_glob_constr patvar_to_evar r in
   let raw = patvar_to_evar raw in
-  Default.understand_tcc !sigma env raw
+    understand_tcc !sigma env raw
 
 let interp_constr_judgment sigma env c =
-  Default.understand_judgment sigma env (intern_constr sigma env c)
+  understand_judgment sigma env (intern_constr sigma env c)
 
 let interp_constr_evars_gen_impls ?evdref ?(fail_evar=true)
     env ?(impls=empty_internalization_env) kind c =
@@ -1787,7 +1787,7 @@ let interp_constr_evars_gen_impls ?evdref ?(fail_evar=true)
   let istype = kind = IsType in
   let c = intern_gen istype ~impls !evdref env c in
   let imps = Implicit_quantifiers.implicits_of_glob_constr ~with_products:istype c in
-    Default.understand_tcc_evars ~fail_evar evdref env kind c, imps
+    understand_tcc_evars ~fail_evar evdref env kind c, imps
 
 let interp_casted_constr_evars_impls ?evdref ?(fail_evar=true)
     env ?(impls=empty_internalization_env) c typ =
@@ -1801,7 +1801,7 @@ let interp_constr_evars_impls ?evdref ?(fail_evar=true) env ?(impls=empty_intern
 
 let interp_constr_evars_gen evdref env ?(impls=empty_internalization_env) kind c =
   let c = intern_gen (kind=IsType) ~impls !evdref env c in
-    Default.understand_tcc_evars evdref env kind c
+    understand_tcc_evars evdref env kind c
 
 let interp_casted_constr_evars evdref env ?(impls=empty_internalization_env) c typ =
   interp_constr_evars_gen evdref env ~impls (OfType (Some typ)) c
@@ -1836,12 +1836,12 @@ let interp_aconstr ?(impls=empty_internalization_env) vars recvars a =
 let interp_binder sigma env na t =
   let t = intern_gen true sigma env t in
   let t' = locate_if_isevar (loc_of_glob_constr t) na t in
-  Default.understand_type sigma env t'
+  understand_type sigma env t'
 
 let interp_binder_evars evdref env na t =
   let t = intern_gen true !evdref env t in
   let t' = locate_if_isevar (loc_of_glob_constr t) na t in
-  Default.understand_tcc_evars evdref env IsType t'
+  understand_tcc_evars evdref env IsType t'
 
 open Environ
 open Term
@@ -1886,10 +1886,10 @@ let interp_context_gen understand_type understand_judgment ?(global_level=false)
     int_env, interp_rawcontext_gen understand_type understand_judgment env bl
 
 let interp_context ?(global_level=false) ?(impl_env=empty_internalization_env) sigma env params =
-  interp_context_gen (Default.understand_type sigma)
-    (Default.understand_judgment sigma) ~global_level ~impl_env sigma env params
+  interp_context_gen (understand_type sigma)
+    (understand_judgment sigma) ~global_level ~impl_env sigma env params
 
 let interp_context_evars ?(global_level=false) ?(impl_env=empty_internalization_env) evdref env params =
-  interp_context_gen (fun env t -> Default.understand_tcc_evars evdref env IsType t)
-    (Default.understand_judgment_tcc evdref) ~global_level ~impl_env !evdref env params
+  interp_context_gen (fun env t -> understand_tcc_evars evdref env IsType t)
+    (understand_judgment_tcc evdref) ~global_level ~impl_env !evdref env params
 
