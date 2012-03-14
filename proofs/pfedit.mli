@@ -78,7 +78,7 @@ type lemma_possible_guards = Proof_global.lemma_possible_guards
 val start_proof :
   identifier -> goal_kind -> named_context_val -> constr ->
   ?init_tac:tactic -> ?compute_guard:lemma_possible_guards -> 
-  declaration_hook -> unit
+  unit declaration_hook -> unit
 
 (** [restart_proof ()] restarts the current focused proof from the beginning
    or fails if no proof is focused *)
@@ -112,7 +112,7 @@ val suspend_proof : unit -> unit
 val cook_proof : (Proof.proof -> unit) ->
   identifier *
     (Entries.definition_entry * lemma_possible_guards * goal_kind *
-     declaration_hook)
+     unit declaration_hook)
 
 (** To export completed proofs to xml *)
 val set_xml_cook_proof : (goal_kind * Proof.proof -> unit) -> unit
@@ -136,7 +136,7 @@ val get_current_goal_context : unit -> Evd.evar_map * env
 (** [current_proof_statement] *)
 
 val current_proof_statement :
-  unit -> identifier * goal_kind * types * declaration_hook
+  unit -> identifier * goal_kind * types * unit declaration_hook
 
 (** {6 ... } *)
 (** [get_current_proof_name ()] return the name of the current focused

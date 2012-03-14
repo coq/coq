@@ -1,10 +1,7 @@
 Subtac_utils
 Eterm
 Subtac_errors
-Subtac_coercion
 Subtac_obligations
-Subtac_cases
-Subtac_pretyping_F
 Subtac_pretyping
 Subtac_command
 Subtac_classes

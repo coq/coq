@@ -119,73 +119,10 @@ let interp_context_evars evdref env params =
       (env,[],1,[]) (List.rev bl)
   in (env, par), impls
 
-(* try to find non recursive definitions *)
-
-let list_chop_hd i l = match list_chop i l with
-  | (l1,x::l2) -> (l1,x,l2)
-  | (x :: [], l2) -> ([], x, [])
-  | _ -> assert(false)
-
-let collect_non_rec env =
-  let rec searchrec lnonrec lnamerec ldefrec larrec nrec =
-    try
-      let i =
-        list_try_find_i
-          (fun i f ->
-             if List.for_all (fun (_, def) -> not (Termops.occur_var env f def)) ldefrec
-             then i else failwith "try_find_i")
-          0 lnamerec
-      in
-      let (lf1,f,lf2) = list_chop_hd i lnamerec in
-      let (ldef1,def,ldef2) = list_chop_hd i ldefrec in
-      let (lar1,ar,lar2) = list_chop_hd i larrec in
-      let newlnv =
-	try
-	  match list_chop i nrec with
-            | (lnv1,_::lnv2) -> (lnv1@lnv2)
-	    | _ -> [] (* nrec=[] for cofixpoints *)
-        with Failure "list_chop" -> []
-      in
-      searchrec ((f,def,ar)::lnonrec)
-	(lf1@lf2) (ldef1@ldef2) (lar1@lar2) newlnv
-    with Failure "try_find_i" ->
-      (List.rev lnonrec,
-       (Array.of_list lnamerec, Array.of_list ldefrec,
-        Array.of_list larrec, Array.of_list nrec))
-  in
-  searchrec []
-
-let list_of_local_binders l =
-  let rec aux acc = function
-      Topconstr.LocalRawDef (n, c) :: tl -> aux ((n, Some c, None) :: acc) tl
-    | Topconstr.LocalRawAssum (nl, k, c) :: tl ->
-	aux (List.fold_left (fun acc n -> (n, None, Some c) :: acc) acc nl) tl
-    | [] -> List.rev acc
-  in aux [] l
-
-let lift_binders k n l =
-  let rec aux n = function
-    | (id, t, c) :: tl -> (id, Option.map (liftn k n) t, liftn k n c) :: aux (pred n) tl
-    | [] -> []
-  in aux n l
-
-let rec gen_rels = function
-    0 -> []
-  | n -> mkRel n :: gen_rels (pred n)
-
-let split_args n rel = match list_chop ((List.length rel) - n) rel with
-    (l1, x :: l2) -> l1, x, l2
-  | _ -> assert(false)
 
 open Coqlib
 
 let sigT = Lazy.lazy_from_fun build_sigma_type
-let sigT_info = lazy
-  { ci_ind       = destInd (Lazy.force sigT).typ;
-    ci_npar      = 2;
-    ci_cstr_ndecls = [|2|];
-    ci_pp_info   =  { ind_nargs = 0; style = LetStyle }
-  }
 
 let rec telescope = function
   | [] -> assert false

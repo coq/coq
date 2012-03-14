@@ -509,6 +509,191 @@ let compute_possible_guardness_evidences (ids,_,na) =
 type recursive_preentry =
   identifier list * constr option list * types list
 
+(* Wellfounded definition *)
+
+open Coqlib
+
+let contrib_name = "Program"
+let subtac_dir = [contrib_name]
+let fixsub_module = subtac_dir @ ["Wf"]
+let utils_module = subtac_dir @ ["Utils"]
+let tactics_module = subtac_dir @ ["Tactics"]
+
+let init_reference dir s () = Coqlib.gen_reference "Command" dir s
+let init_constant dir s () = Coqlib.gen_constant "Command" dir s
+let make_ref l s = init_reference l s
+let fix_sub_ref = make_ref fixsub_module "Fix_sub"
+let measure_on_R_ref = make_ref fixsub_module "MR"
+let well_founded = init_constant ["Init"; "Wf"] "well_founded"
+let mkSubset name typ prop =
+  mkApp ((delayed_force build_sigma).typ,
+	 [| typ; mkLambda (name, typ, prop) |])
+
+let sigT = Lazy.lazy_from_fun build_sigma_type
+
+let rec telescope = function
+  | [] -> assert false
+  | [(n, None, t)] -> t, [n, Some (mkRel 1), t], mkRel 1
+  | (n, None, t) :: tl ->
+      let ty, tys, (k, constr) =
+	List.fold_left
+	  (fun (ty, tys, (k, constr)) (n, b, t) ->
+	    let pred = mkLambda (n, t, ty) in
+	    let sigty = mkApp ((Lazy.force sigT).typ, [|t; pred|]) in
+	    let intro = mkApp ((Lazy.force sigT).intro, [|lift k t; lift k pred; mkRel k; constr|]) in
+	      (sigty, pred :: tys, (succ k, intro)))
+	  (t, [], (2, mkRel 1)) tl
+      in
+      let (last, subst) = List.fold_right2
+	(fun pred (n, b, t) (prev, subst) ->
+	  let proj1 = applistc (Lazy.force sigT).proj1 [t; pred; prev] in
+	  let proj2 = applistc (Lazy.force sigT).proj2 [t; pred; prev] in
+	    (lift 1 proj2, (n, Some proj1, t) :: subst))
+	(List.rev tys) tl (mkRel 1, [])
+      in ty, ((n, Some last, t) :: subst), constr
+
+  | (n, Some b, t) :: tl -> let ty, subst, term = telescope tl in
+      ty, ((n, Some b, t) :: subst), lift 1 term
+
+let nf_evar_context isevars ctx =
+  List.map (fun (n, b, t) ->
+    (n, Option.map (Evarutil.nf_evar isevars) b, Evarutil.nf_evar isevars t)) ctx
+
+let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
+  Coqlib.check_required_library ["Coq";"Program";"Wf"];
+  let sigma = Evd.empty in
+  let isevars = ref (Evd.create_evar_defs sigma) in
+  let env = Global.env() in
+  let _, ((env', binders_rel), impls) = interp_context_evars isevars env bl in
+  let len = List.length binders_rel in
+  let top_env = push_rel_context binders_rel env in
+  let top_arity = interp_type_evars isevars top_env arityc in
+  let full_arity = it_mkProd_or_LetIn top_arity binders_rel in
+  let argtyp, letbinders, make = telescope binders_rel in
+  let argname = id_of_string "recarg" in
+  let arg = (Name argname, None, argtyp) in
+  let binders = letbinders @ [arg] in
+  let binders_env = push_rel_context binders_rel env in
+  let rel, _ = interp_constr_evars_impls ~evdref:isevars env r in
+  let relty = Typing.type_of env !isevars rel in
+  let relargty =
+    let error () =
+      user_err_loc (constr_loc r,
+		    "Command.build_wellfounded",
+		    Printer.pr_constr_env env rel ++ str " is not an homogeneous binary relation.")
+    in
+      try
+	let ctx, ar = Reductionops.splay_prod_n env !isevars 2 relty in
+	  match ctx, kind_of_term ar with
+	  | [(_, None, t); (_, None, u)], Sort (Prop Null)
+	      when Reductionops.is_conv env !isevars t u -> t
+	  | _, _ -> error ()
+      with _ -> error ()
+  in
+  let measure = interp_casted_constr_evars isevars binders_env measure relargty in
+  let wf_rel, wf_rel_fun, measure_fn =
+    let measure_body, measure =
+      it_mkLambda_or_LetIn measure letbinders,
+      it_mkLambda_or_LetIn measure binders
+    in
+    let comb = constr_of_global (delayed_force measure_on_R_ref) in
+    let wf_rel = mkApp (comb, [| argtyp; relargty; rel; measure |]) in
+    let wf_rel_fun x y =
+      mkApp (rel, [| subst1 x measure_body;
+ 		     subst1 y measure_body |])
+    in wf_rel, wf_rel_fun, measure
+  in
+  let wf_proof = mkApp (delayed_force well_founded, [| argtyp ; wf_rel |]) in
+  let argid' = id_of_string (string_of_id argname ^ "'") in
+  let wfarg len = (Name argid', None,
+  		   mkSubset (Name argid') argtyp
+		    (wf_rel_fun (mkRel 1) (mkRel (len + 1))))
+  in
+  let intern_bl = wfarg 1 :: [arg] in
+  let _intern_env = push_rel_context intern_bl env in
+  let proj = (delayed_force build_sigma).Coqlib.proj1 in
+  let wfargpred = mkLambda (Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel 3)) in
+  let projection = (* in wfarg :: arg :: before *)
+    mkApp (proj, [| argtyp ; wfargpred ; mkRel 1 |])
+  in
+  let top_arity_let = it_mkLambda_or_LetIn top_arity letbinders in
+  let intern_arity = substl [projection] top_arity_let in
+  (* substitute the projection of wfarg for something,
+     now intern_arity is in wfarg :: arg *)
+  let intern_fun_arity_prod = it_mkProd_or_LetIn intern_arity [wfarg 1] in
+  let intern_fun_binder = (Name (add_suffix recname "'"), None, intern_fun_arity_prod) in
+  let curry_fun =
+    let wfpred = mkLambda (Name argid', argtyp, wf_rel_fun (mkRel 1) (mkRel (2 * len + 4))) in
+    let arg = mkApp ((delayed_force build_sigma).intro, [| argtyp; wfpred; lift 1 make; mkRel 1 |]) in
+    let app = mkApp (mkRel (2 * len + 2 (* recproof + orig binders + current binders *)), [| arg |]) in
+    let rcurry = mkApp (rel, [| measure; lift len measure |]) in
+    let lam = (Name (id_of_string "recproof"), None, rcurry) in
+    let body = it_mkLambda_or_LetIn app (lam :: binders_rel) in
+    let ty = it_mkProd_or_LetIn (lift 1 top_arity) (lam :: binders_rel) in
+      (Name recname, Some body, ty)
+  in
+  let fun_bl = intern_fun_binder :: [arg] in
+  let lift_lets = Termops.lift_rel_context 1 letbinders in
+  let intern_body =
+    let ctx = (Name recname, None, pi3 curry_fun) :: binders_rel in
+    let (r, l, impls, scopes) =
+      Constrintern.compute_internalization_data env
+	Constrintern.Recursive full_arity impls 
+    in
+    let newimpls = Idmap.singleton recname
+      (r, l, impls @ [(Some (id_of_string "recproof", Impargs.Manual, (true, false)))],
+       scopes @ [None]) in
+      interp_casted_constr_evars isevars ~impls:newimpls
+	(push_rel_context ctx env) body (lift 1 top_arity)
+  in
+  let intern_body_lam = it_mkLambda_or_LetIn intern_body (curry_fun :: lift_lets @ fun_bl) in
+  let prop = mkLambda (Name argname, argtyp, top_arity_let) in
+  let def =
+    mkApp (constr_of_global (delayed_force fix_sub_ref),
+	  [| argtyp ; wf_rel ;
+	     Evarutil.e_new_evar isevars env 
+	       ~src:(dummy_loc, Evd.QuestionMark (Evd.Define false)) wf_proof;
+	     prop ; intern_body_lam |])
+  in
+  let _ = isevars := Evarutil.nf_evar_map !isevars in
+  let binders_rel = nf_evar_context !isevars binders_rel in
+  let binders = nf_evar_context !isevars binders in
+  let top_arity = Evarutil.nf_evar !isevars top_arity in
+  let hook, recname, typ = 
+    if List.length binders_rel > 1 then
+      let name = add_suffix recname "_func" in
+      let hook l gr = 
+	let body = it_mkLambda_or_LetIn (mkApp (constr_of_global gr, [|make|])) binders_rel in
+	let ty = it_mkProd_or_LetIn top_arity binders_rel in
+	let ce =
+          { const_entry_body = Evarutil.nf_evar !isevars body;
+            const_entry_secctx = None;
+	    const_entry_type = Some ty;
+	    const_entry_opaque = false }
+	in 
+	let c = Declare.declare_constant recname (DefinitionEntry ce, IsDefinition Definition) in
+	let gr = ConstRef c in
+	  if Impargs.is_implicit_args () || impls <> [] then
+	    Impargs.declare_manual_implicits false gr [impls]
+      in
+      let typ = it_mkProd_or_LetIn top_arity binders in
+	hook, name, typ
+    else 
+      let typ = it_mkProd_or_LetIn top_arity binders_rel in
+      let hook l gr = 
+	if Impargs.is_implicit_args () || impls <> [] then
+	  Impargs.declare_manual_implicits false gr [impls]
+      in hook, recname, typ
+  in
+  let fullcoqc = Evarutil.nf_evar !isevars def in
+  let fullctyp = Evarutil.nf_evar !isevars typ in
+  let evm = Obligations.non_instanciated_map env isevars !isevars in
+  let evars, _, evars_def, evars_typ = 
+    Obligations.eterm_obligations env recname !isevars evm 0 fullcoqc fullctyp 
+  in
+    Obligations.add_definition recname ~term:evars_def evars_typ evars ~hook
+
+
 let interp_recursive isfix fixl notations =
   let env = Global.env() in
   let fixnames = List.map (fun fix -> fix.fix_name) fixl in

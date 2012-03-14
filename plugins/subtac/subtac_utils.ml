@@ -15,7 +15,6 @@ let ($) f x = f x
 (* Library linking *)
 
 let contrib_name = "Program"
-
 let subtac_dir = [contrib_name]
 let fixsub_module = subtac_dir @ ["Wf"]
 let utils_module = subtac_dir @ ["Utils"]
@@ -26,16 +25,18 @@ let init_reference dir s () = gen_reference contrib_name dir s
 let safe_init_constant md name () =
   check_required_library ("Coq"::md);
   init_constant md name ()
+let fix_proto = safe_init_constant tactics_module "fix_proto"
+let hide_obligation = safe_init_constant tactics_module "obligation"
 
 let ex_pi1 = init_constant utils_module "ex_pi1"
 let ex_pi2 = init_constant utils_module "ex_pi2"
 
 let make_ref l s = init_reference l s
+let fix_sub_ref = make_ref fixsub_module "Fix_sub"
+let measure_on_R_ref = make_ref fixsub_module "MR"
 let well_founded_ref = make_ref ["Init";"Wf"] "Well_founded"
 let acc_ref = make_ref  ["Init";"Wf"] "Acc"
 let acc_inv_ref = make_ref  ["Init";"Wf"] "Acc_inv"
-let fix_sub_ref = make_ref fixsub_module "Fix_sub"
-let measure_on_R_ref = make_ref fixsub_module "MR"
 let fix_measure_sub_ref = make_ref fixsub_module "Fix_measure_sub"
 let refl_ref = make_ref ["Init";"Logic"] "refl_equal"
 
@@ -55,7 +56,6 @@ let build_sig () =
 let sig_ = build_sig
 
 let fix_proto = safe_init_constant tactics_module "fix_proto"
-
 let hide_obligation = safe_init_constant tactics_module "obligation"
 
 let eq_ind = init_constant ["Init"; "Logic"] "eq"

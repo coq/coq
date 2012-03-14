@@ -20,16 +20,16 @@ val set_start_hook : (types -> unit) -> unit
 
 val start_proof : identifier -> goal_kind -> types ->
   ?init_tac:tactic -> ?compute_guard:lemma_possible_guards -> 
-    declaration_hook -> unit
+   unit declaration_hook -> unit
 
 val start_proof_com : goal_kind ->
   (lident option * (local_binder list * constr_expr * (lident option * recursion_order_expr) option)) list ->
-  declaration_hook -> unit
+  unit declaration_hook -> unit
 
 val start_proof_with_initialization : 
   goal_kind -> (bool * lemma_possible_guards * tactic list option) option ->
   (identifier * (types * (name list * Impargs.manual_explicitation list))) list
-  -> int list option -> declaration_hook -> unit
+  -> int list option -> unit declaration_hook -> unit
 
 (** A hook the next three functions pass to cook_proof *)
 val set_save_hook : (Proof.proof -> unit) -> unit

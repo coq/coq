@@ -343,4 +343,4 @@ type 'a glob_abstract_argument_type = ('a,glevel) abstract_argument_type
 
 type 'a typed_abstract_argument_type = ('a,tlevel) abstract_argument_type
 
-type declaration_hook = locality -> global_reference -> unit
+type 'a declaration_hook = locality -> global_reference -> 'a

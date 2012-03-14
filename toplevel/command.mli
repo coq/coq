@@ -35,7 +35,7 @@ val interp_definition :
   constr_expr option -> definition_entry * Impargs.manual_implicits
 
 val declare_definition : identifier -> locality * definition_object_kind ->
-  definition_entry -> Impargs.manual_implicits -> declaration_hook -> unit
+  definition_entry -> Impargs.manual_implicits -> 'a declaration_hook -> 'a
 
 (** {6 Parameters/Assumptions} *)
 

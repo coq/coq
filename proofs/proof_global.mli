@@ -57,7 +57,7 @@ val start_proof : Names.identifier ->
                           Decl_kinds.goal_kind ->
                           (Environ.env * Term.types) list  ->
                           ?compute_guard:lemma_possible_guards -> 
-                          Tacexpr.declaration_hook -> 
+                          unit Tacexpr.declaration_hook -> 
                           unit
 
 val close_proof : unit -> 
@@ -65,7 +65,7 @@ val close_proof : unit ->
                           (Entries.definition_entry list * 
 			    lemma_possible_guards * 
 			    Decl_kinds.goal_kind * 
-			    Tacexpr.declaration_hook)
+			    unit Tacexpr.declaration_hook)
 
 exception NoSuchProof
 
@@ -133,5 +133,5 @@ module Bullet : sig
 end
 
 module V82 : sig
-  val get_current_initial_conclusions : unit -> Names.identifier *(Term.types list * Decl_kinds.goal_kind * Tacexpr.declaration_hook)
+  val get_current_initial_conclusions : unit -> Names.identifier *(Term.types list * Decl_kinds.goal_kind * unit Tacexpr.declaration_hook)
 end
