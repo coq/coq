@@ -59,7 +59,7 @@ val understand_tcc_evars : ?fail_evar:bool -> ?resolve_classes:bool ->
     constraint : tell if interpreted as a possibly constrained term or a type
 *)
 
-val understand_ltac :
+val understand_ltac : ?resolve_classes:bool ->
   bool -> evar_map -> env -> ltac_var_map ->
   typing_constraint -> glob_constr -> pure_open_constr
 

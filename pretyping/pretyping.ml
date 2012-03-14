@@ -138,6 +138,7 @@ let solve_remaining_evars fail_evar use_classes hook env initial_sigma (evd,c) =
   (* Side-effect *)
   !evdref,c
 
+<<<<<<< HEAD
 (* Allow references to syntaxically inexistent variables (i.e., if applied on an inductive) *)
 let allow_anonymous_refs = ref false
 
@@ -736,8 +737,8 @@ let understand sigma env ?expected_type:exptyp c =
 let understand_type sigma env c =
   snd (ise_pretype_gen true true true sigma env ([],[]) IsType c)
 
-let understand_ltac expand_evar sigma env lvar kind c =
-  ise_pretype_gen expand_evar false false sigma env lvar kind c
+let understand_ltac ?(resolve_classes=false) expand_evar sigma env lvar kind c =
+  ise_pretype_gen expand_evar false resolve_classes sigma env lvar kind c
 
 let understand_tcc ?(resolve_classes=true) sigma env ?expected_type:exptyp c =
   ise_pretype_gen true false resolve_classes sigma env ([],[]) (OfType exptyp) c
