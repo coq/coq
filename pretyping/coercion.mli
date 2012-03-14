@@ -39,22 +39,22 @@ module type S = sig
 
   (** [inh_coerce_to_prod env isevars t] coerces [t] to a product type *)
   val inh_coerce_to_prod : loc ->
-    env -> evar_map -> type_constraint_type -> evar_map * type_constraint_type
+    env -> evar_map -> types -> evar_map * types
 
   (** [inh_conv_coerce_to loc env isevars j t] coerces [j] to an object of type
      [t]; i.e. it inserts a coercion into [j], if needed, in such a way [t] and
      [j.uj_type] are convertible; it fails if no coercion is applicable *)
   val inh_conv_coerce_to : loc ->
-    env -> evar_map -> unsafe_judgment -> type_constraint_type -> evar_map * unsafe_judgment
+    env -> evar_map -> unsafe_judgment -> types -> evar_map * unsafe_judgment
 
   val inh_conv_coerce_rigid_to : loc ->
-    env -> evar_map -> unsafe_judgment -> type_constraint_type -> evar_map * unsafe_judgment
+    env -> evar_map -> unsafe_judgment -> types -> evar_map * unsafe_judgment
 
   (** [inh_conv_coerces_to loc env isevars t t'] checks if an object of type [t]
      is coercible to an object of type [t'] adding evar constraints if needed;
      it fails if no coercion exists *)
   val inh_conv_coerces_to : loc ->
-    env -> evar_map -> types -> type_constraint_type -> evar_map
+    env -> evar_map -> types -> types -> evar_map
 
   (** [inh_pattern_coerce_to loc env isevars pat ind1 ind2] coerces the Cases
      pattern [pat] typed in [ind1] into a pattern typed in [ind2];

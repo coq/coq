@@ -413,7 +413,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps) =
 		current
 	      else
 		(evd_comb2 (Coercion.inh_conv_coerce_to dummy_loc pb.env)
-		  pb.isevars (make_judge current typ) (mk_tycon_type indt)).uj_val in
+		  pb.isevars (make_judge current typ) indt).uj_val in
 	    let sigma =  !(pb.isevars) in
 	    let typ = IsInd (indt,find_rectype pb.env sigma indt) in
 	    ((current,typ),deps))

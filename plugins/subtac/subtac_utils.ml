@@ -114,7 +114,7 @@ let my_print_env = Termops.print_env
 let my_print_glob_constr = Printer.pr_glob_constr_env
 let my_print_evardefs = Evd.pr_evar_map None
 
-let my_print_tycon_type = Evarutil.pr_tycon_type
+let my_print_tycon = Evarutil.pr_tycon
 
 let debug_level = 2
 

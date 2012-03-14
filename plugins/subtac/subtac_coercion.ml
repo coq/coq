@@ -409,9 +409,9 @@ module Coercion = struct
 
   let inh_coerce_to_prod loc env isevars t =
     let isevars = ref isevars in
-    let typ = hnf env !isevars (snd t) in
+    let typ = hnf env !isevars t in
     let _, typ' = mu env isevars typ in
-      !isevars, (fst t, typ')
+      !isevars, typ'
 
   let inh_coerce_to_fail env evd rigidonly v t c1 =
     if rigidonly & not (Heads.is_rigid env c1 && Heads.is_rigid env t)
@@ -462,50 +462,30 @@ module Coercion = struct
     | _ -> raise NoCoercion
 
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-  let inh_conv_coerce_to_gen rigidonly loc env evd cj ((n, t) as _tycon) =
-    match n with
-    | None ->
-      let cj = { cj with uj_type = hnf_nodelta env evd cj.uj_type } 
-      and t = hnf_nodelta env evd t in
-      let (evd', val') =
-	try
-	  inh_conv_coerce_to_fail loc env evd rigidonly
+  let inh_conv_coerce_to_gen rigidonly loc env evd cj t =
+    let cj = { cj with uj_type = hnf_nodelta env evd cj.uj_type } 
+    and t = hnf_nodelta env evd t in
+    let (evd', val') =
+      try
+	inh_conv_coerce_to_fail loc env evd rigidonly
 	  (Some cj.uj_val) cj.uj_type t
-	with NoCoercion ->
+      with NoCoercion ->
 	(try
 	   coerce_itf loc env evd (Some cj.uj_val) cj.uj_type t
 	 with NoSubtacCoercion ->
 	   error_actual_type_loc loc env evd cj t)
-      in
-      let val' = match val' with Some v -> v | None -> assert(false) in
-	(evd',{ uj_val = val'; uj_type = t })
-    | Some (init, cur) ->
-      (evd, cj)
-
+    in
+    let val' = match val' with Some v -> v | None -> assert(false) in
+      (evd',{ uj_val = val'; uj_type = t })
+	
   let inh_conv_coerce_to = inh_conv_coerce_to_gen false
   let inh_conv_coerce_rigid_to = inh_conv_coerce_to_gen true
 
-  let inh_conv_coerces_to loc env isevars t ((abs, t') as _tycon) =
-    let nabsinit, nabs =
-      match abs with
-	  None -> 0, 0
-	| Some (init, cur) -> init, cur
-    in
-      try
-	let rels, rng = Reductionops.splay_prod_n env ( isevars) nabs t in
-	(* The final range free variables must have been replaced by evars, we accept only that evars
-	   in rng are applied to free vars. *)
-	if noccur_with_meta 1 (succ nabs) rng then (
-	  let env', t, t' =
-	    let env' = push_rel_context rels env in
-	      env', rng, lift nabs t'
-	  in
-	    try
-	      fst (try inh_conv_coerce_to_fail loc env' isevars false None t t'
-		   with NoCoercion ->
-		     coerce_itf loc env' isevars None t t')
-	    with NoSubtacCoercion ->
-	      error_cannot_coerce env' isevars (t, t'))
-	else isevars
-      with _ -> isevars
+
+  let inh_conv_coerces_to loc env evd t t' =
+    try
+      fst (inh_conv_coerce_to_fail loc env evd true None t t')
+    with NoCoercion ->
+      evd (* Maybe not enough information to unify *)
+
 end

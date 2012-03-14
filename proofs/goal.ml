@@ -153,9 +153,8 @@ module Refinable = struct
         and add the new evars to it. *)
     let my_type = Retyping.get_type_of env !rdefs t in
     let j = Environ.make_judge t my_type in
-    let tycon = Evarutil.mk_tycon_type typ in
     let (new_defs,j') =
-      Coercion.Default.inh_conv_coerce_to (Pp.dummy_loc) env !rdefs j tycon
+      Coercion.Default.inh_conv_coerce_to (Pp.dummy_loc) env !rdefs j typ
     in
     rdefs := new_defs;
     j'.Environ.uj_val

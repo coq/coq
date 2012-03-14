@@ -390,7 +390,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
 		current
 	      else
 		(evd_comb2 (Coercion.inh_conv_coerce_to dummy_loc pb.env)
-		  pb.evdref (make_judge current typ) (mk_tycon_type indt)).uj_val in
+		  pb.evdref (make_judge current typ) indt).uj_val in
 	    let sigma =  !(pb.evdref) in
 	    (current,try_find_ind pb.env sigma indt names))
   | _ -> (current,tmtyp)
@@ -1743,7 +1743,7 @@ let prepare_predicate loc typing_fun sigma env tomatchs arsign tycon pred =
   let preds =
     match pred, tycon with
     (* No type annotation *)
-    | None, Some (None, t) when not (noccur_with_meta 0 max_int t) ->
+    | None, Some t when not (noccur_with_meta 0 max_int t) ->
 	(* If the tycon is not closed w.r.t real variables, we try *)
         (* two different strategies *)
 	(* First strategy: we abstract the tycon wrt to the dependencies *)
@@ -1756,8 +1756,8 @@ let prepare_predicate loc typing_fun sigma env tomatchs arsign tycon pred =
 	(* No dependent type constraint, or no constraints at all: *)
 	(* we use two strategies *)
         let sigma,t = match tycon with
-	| Some (None, t) -> sigma,t
-	| _ -> new_type_evar sigma env ~src:(loc, CasesType) in
+	| Some t -> sigma,t
+	| None -> new_type_evar sigma env ~src:(loc, CasesType) in
         (* First strategy: we build an "inversion" predicate *)
 	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
 	(* Second strategy: we directly use the evar as a non dependent pred *)
@@ -1770,12 +1770,13 @@ let prepare_predicate loc typing_fun sigma env tomatchs arsign tycon pred =
       let sigma, newt = new_sort_variable sigma in
       let evdref = ref sigma in
       let predcclj = typing_fun (mk_tycon (mkSort newt)) envar evdref rtntyp in
-      let sigma = Option.cata (fun tycon ->
-          let na = Name (id_of_string "x") in
-          let tms = List.map (fun tm -> Pushed(tm,[],na)) tomatchs in
-          let predinst = extract_predicate predcclj.uj_val tms in
-          Coercion.inh_conv_coerces_to loc env !evdref predinst tycon)
-        !evdref tycon in
+      let sigma = !evdref in
+      (* let sigma = Option.cata (fun tycon -> *)
+      (*     let na = Name (id_of_string "x") in *)
+      (*     let tms = List.map (fun tm -> Pushed(tm,[],na)) tomatchs in *)
+      (*     let predinst = extract_predicate predcclj.uj_val tms in *)
+      (*     Coercion.inh_conv_coerce_to loc env !evdref predinst tycon) *)
+      (*   !evdref tycon in *)
       let predccl = (j_nf_evar sigma predcclj).uj_val in
       [sigma, predccl]
   in

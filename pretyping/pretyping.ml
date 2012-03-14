@@ -219,6 +219,8 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   (* Allow references to syntaxically inexistent variables (i.e., if applied on an inductive) *)
   let allow_anonymous_refs = ref false
 
+  let program_mode = ref false
+
   let evd_comb0 f evdref =
     let (evd',x) = f !evdref in
       evdref := evd';
@@ -355,16 +357,16 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | GPatVar (loc,(someta,n)) ->
 	let ty =
           match tycon with
-            | Some (None, ty) -> ty
-            | None | Some _ -> new_type_evar evdref env loc in
+            | Some ty -> ty
+            | None -> new_type_evar evdref env loc in
         let k = MatchingVar (someta,n) in
 	{ uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
 
     | GHole (loc,k) ->
 	let ty =
           match tycon with
-            | Some (None, ty) -> ty
-            | None | Some _ ->
+            | Some ty -> ty
+            | None ->
 		new_type_evar evdref env loc in
 	  { uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
 
@@ -438,27 +440,58 @@ module Pretyping_F (Coercion : Coercion.S) = struct
     | GApp (loc,f,args) ->
 	let fj = pretype empty_tycon env evdref lvar f in
  	let floc = loc_of_glob_constr f in
-	let rec apply_rec env n resj = function
+	let length = List.length args in
+	let candargs =
+	  (* Bidirectional typechecking hint: 
+	     parameters of a constructor are completely determined
+	     by a typing constraint *)
+	  if !program_mode && length > 0 && isConstruct fj.uj_val then
+	    match tycon with
+	    | None -> []
+	    | Some ty ->
+	  	let (ind, i) = destConstruct fj.uj_val in
+	  	let npars = inductive_nparams ind in
+	  	  if npars = 0 then []
+	  	  else
+	  	    try
+	  	      (* Does not treat partially applied constructors. *)
+	  	      let IndType (indf, args) = find_rectype env !evdref ty in
+	  	      let (ind',pars) = dest_ind_family indf in
+	  		if ind = ind' then pars
+	  		else (* Let the usual code throw an error *) []
+	  	    with Not_found -> []
+ 	  else []
+	in
+	let rec apply_rec env n resj candargs = function
 	  | [] -> resj
 	  | c::rest ->
 	      let argloc = loc_of_glob_constr c in
 	      let resj = evd_comb1 (Coercion.inh_app_fun env) evdref resj in
               let resty = whd_betadeltaiota env !evdref resj.uj_type in
       		match kind_of_term resty with
-		  | Prod (na,c1,c2) ->
-		      let hj = pretype (mk_tycon c1) env evdref lvar c in
-		      let value, typ = applist (j_val resj, [j_val hj]), subst1 hj.uj_val c2 in
-			apply_rec env (n+1)
-			  { uj_val = value;
-			    uj_type = typ }
-			  rest
+		| Prod (na,c1,c2) ->
+		    let hj = pretype (mk_tycon c1) env evdref lvar c in
+		    let candargs, ujval =
+		      match candargs with
+		      | [] -> [], j_val hj
+		      | arg :: args -> 
+			  if e_conv env evdref (j_val hj) arg then
+			    args, nf_evar !evdref (j_val hj)
+			  else [], j_val hj
+		    in
+		    let value, typ = applist (j_val resj, [ujval]), subst1 ujval c2 in
+		      apply_rec env (n+1)
+			{ uj_val = value;
+			  uj_type = typ }
+			candargs rest
+
 		  | _ ->
 		      let hj = pretype empty_tycon env evdref lvar c in
 			error_cant_apply_not_functional_loc
 			  (join_loc floc argloc) env !evdref
 	      		  resj [hj]
 	in
-	let resj = apply_rec env 1 fj args in
+	let resj = apply_rec env 1 fj candargs args in
 	let resj =
 	  match evar_kind_of_term !evdref resj.uj_val with
 	  | App (f,args) ->
@@ -612,8 +645,8 @@ module Pretyping_F (Coercion : Coercion.S) = struct
 	        pred, typ
 	    | None ->
 		let p = match tycon with
-		  | Some (None, ty) -> ty
-		  | None | Some _ -> new_type_evar evdref env loc
+		  | Some ty -> ty
+		  | None -> new_type_evar evdref env loc
 		in
 		  it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
 	  let pred = nf_evar !evdref pred in

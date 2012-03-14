@@ -54,22 +54,22 @@ module type S = sig
 
   (* [inh_coerce_to_prod env evars t] coerces [t] to a product type *)
   val inh_coerce_to_prod : loc ->
-    env -> evar_map -> type_constraint_type -> evar_map * type_constraint_type
+    env -> evar_map -> types -> evar_map * types
 
   (* [inh_conv_coerce_to loc env evd j t] coerces [j] to an object of type
      [t]; i.e. it inserts a coercion into [j], if needed, in such a way [t] and
      [j.uj_type] are convertible; it fails if no coercion is applicable *)
   val inh_conv_coerce_to : loc ->
-    env -> evar_map -> unsafe_judgment -> type_constraint_type -> evar_map * unsafe_judgment
+    env -> evar_map -> unsafe_judgment -> types -> evar_map * unsafe_judgment
 
   val inh_conv_coerce_rigid_to : loc ->
-    env -> evar_map -> unsafe_judgment -> type_constraint_type -> evar_map * unsafe_judgment
+    env -> evar_map -> unsafe_judgment -> types -> evar_map * unsafe_judgment
 
-  (* [inh_conv_coerces_to loc env evd t t'] checks if an object of type [t]
+  (** [inh_conv_coerces_to loc env isevars t t'] checks if an object of type [t]
      is coercible to an object of type [t'] adding evar constraints if needed;
      it fails if no coercion exists *)
   val inh_conv_coerces_to : loc ->
-    env -> evar_map -> types -> type_constraint_type -> evar_map
+    env -> evar_map -> types -> types -> evar_map
 
   (* [inh_pattern_coerce_to loc env evd pat ind1 ind2] coerces the Cases
      pattern [pat] typed in [ind1] into a pattern typed in [ind2];
@@ -223,63 +223,27 @@ module Default = struct
     | _ -> raise NoCoercion
 
   (* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
-  let inh_conv_coerce_to_gen rigidonly loc env evd cj (n, t) =
-    match n with
-	None ->
-	  let (evd', val') =
-	    try
-	      inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
-	    with NoCoercion ->
-	      let evd = saturate_evd env evd in
-		try
-		  inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
-		with NoCoercion ->
-		  error_actual_type_loc loc env evd cj t
-	  in
-	  let val' = match val' with Some v -> v | None -> assert(false) in
-	    (evd',{ uj_val = val'; uj_type = t })
-      | Some (init, cur) -> (evd, cj)
+  let inh_conv_coerce_to_gen rigidonly loc env evd cj t =
+    let (evd', val') =
+      try
+	inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
+      with NoCoercion ->
+	let evd = saturate_evd env evd in
+	  try
+	    inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
+	  with NoCoercion ->
+	    error_actual_type_loc loc env evd cj t
+    in
+    let val' = match val' with Some v -> v | None -> assert(false) in
+      (evd',{ uj_val = val'; uj_type = t })
 
   let inh_conv_coerce_to = inh_conv_coerce_to_gen false
   let inh_conv_coerce_rigid_to = inh_conv_coerce_to_gen true
 
-
-    let inh_conv_coerces_to loc env (evd : evar_map) t (abs, t') =
-      if abs = None then
-	try
-	  fst (inh_conv_coerce_to_fail loc env evd true None t t')
-	with NoCoercion ->
-	  evd (* Maybe not enough information to unify *)
-      else
-        evd
-      (* Still problematic, as it changes unification
-      let nabsinit, nabs =
-	match abs with
-	    None -> 0, 0
-	  | Some (init, cur) -> init, cur
-      in
-	try
-	  let (rels, rng) =
-	    (* a little more effort to get products is needed *)
-	    try decompose_prod_n nabs t
-	    with _ ->
-	      if !Flags.debug then
-		msg_warning (str "decompose_prod_n failed");
-	      raise (Invalid_argument "Coercion.inh_conv_coerces_to")
-	  in
-	    (* The final range free variables must have been replaced by evars, we accept only that evars
-	       in rng are applied to free vars. *)
-	    if noccur_with_meta 0 (succ nabsinit) rng then (
-	      let env', t, t' =
-		let env' = List.fold_right (fun (n, t) env -> push_rel (n, None, t) env) rels env in
-		  env', rng, lift nabs t'
-	      in
-		try
-		  pi1 (inh_conv_coerce_to_fail loc env' evd None t t')
-		with NoCoercion ->
-		  evd) (* Maybe not enough information to unify *)
-	      (*let sigma =  evd in
-		error_cannot_coerce env' sigma (t, t'))*)
-	    else evd
-	with Invalid_argument _ -> evd	  *)
+  let inh_conv_coerces_to loc env evd t t' =
+    try
+      fst (inh_conv_coerce_to_fail loc env evd true None t t')
+    with NoCoercion ->
+      evd (* Maybe not enough information to unify *)
+    
 end

@@ -78,8 +78,8 @@ end.
 
 (** [to_nat f] = p iff [f] is the p{^ th} element of [fin m]. *)
 Fixpoint to_nat {m} (n : t m) : {i | i < m} :=
-  match n in t k return {i | i< k} with
-    |F1 j => exist (fun i => i< S j) 0 (Lt.lt_0_Sn j)
+  match n with
+    |F1 j => exist _ 0 (Lt.lt_0_Sn j)
     |FS _ p => match to_nat p with |exist i P => exist _ (S i) (Lt.lt_n_S _ _ P) end
   end.
 
@@ -87,7 +87,7 @@ Fixpoint to_nat {m} (n : t m) : {i | i < m} :=
 p >= n else *)
 Fixpoint of_nat (p n : nat) : (t n) + { exists m, p = n + m } :=
   match n with
-   |0 => inright _ (ex_intro (fun x => p = 0 + x) p (@eq_refl _ p))
+   |0 => inright _ (ex_intro _ p eq_refl)
    |S n' => match p with
       |0 => inleft _ (F1)
       |S p' => match of_nat p' n' with

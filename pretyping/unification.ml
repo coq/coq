@@ -795,8 +795,7 @@ let try_to_coerce env evd c cty tycon =
     (evd',j'.uj_val)
 
 let w_coerce_to_type env evd c cty mvty =
-  let evd,mvty = pose_all_metas_as_evars env evd mvty in
-  let tycon = mk_tycon_type mvty in
+  let evd,tycon = pose_all_metas_as_evars env evd mvty in
     try try_to_coerce env evd c cty tycon
     with e when precatchable_exception e ->
     (* inh_conv_coerce_rigid_to should have reasoned modulo reduction

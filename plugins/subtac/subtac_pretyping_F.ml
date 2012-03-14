@@ -177,13 +177,9 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     in
       match tycon with
       | None -> evd,(Anonymous,None,None)
-      | Some (abs, c) ->
-	  (match abs with
-	   | None ->
-	       let evd', (n, dom, rng) = real_split evd c in
-		 evd', (n, mk_tycon dom, mk_tycon rng)
-	   | Some (init, cur) ->
-	       evd, (Anonymous, None, Some (Some (init, succ cur), c)))
+      | Some c ->
+	  let evd', (n, dom, rng) = real_split evd c in
+	    evd', (n, mk_tycon dom, mk_tycon rng)
 	    
 	    
   (* [pretype tycon env evdref lvar lmeta cstr] attempts to type [cstr] *)
@@ -222,8 +218,8 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     | GHole (loc,k) ->
 	let ty =
           match tycon with
-            | Some (None, ty) -> ty
-            | None | Some _ ->
+            | Some ty -> ty
+            | None ->
 		e_new_evar evdref env ~src:(loc, InternalHole) (Termops.new_Type ()) in
 	  { uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
 
@@ -312,43 +308,52 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 	inh_conv_coerce_to_tycon loc env evdref s' tycon
 
     | GApp (loc,f,args) ->
-	let length = List.length args in
-	let ftycon =
-	  let ty =
-	    if length > 0 then
-	      match tycon with
-	      | None -> None
-	      | Some (None, ty) -> mk_abstr_tycon length ty
-	      | Some (Some (init, cur), ty) ->
-		  Some (Some (length + init, length + cur), ty)
- 	    else tycon
-	  in
-	    match ty with
-	    | Some (_, t) ->
-	      if Subtac_coercion.disc_subset (whd_betadeltaiota env !evdref t) = None then ty
-	      else None
-	    | _ -> None
-	in
-	let fj = pretype ftycon env evdref lvar f in
+	let fj = pretype empty_tycon env evdref lvar f in
  	let floc = loc_of_glob_constr f in
-	let rec apply_rec env n resj tycon = function
+	let length = List.length args in
+	let candargs =
+	  (* Bidirectional typechecking hint: 
+	     parameters of a constructor are completely determined
+	     by a typing constraint *)
+	  if length > 0 && isConstruct fj.uj_val then
+	    match tycon with
+	    | None -> []
+	    | Some ty -> 
+		let (ind, i) = destConstruct fj.uj_val in
+		let npars = inductive_nparams ind in
+		  if npars = 0 then []
+		  else
+		    try 
+		      (* Does not treat partially applied constructors. *)
+		      let IndType (indf, args) = find_rectype env !evdref ty in
+		      let (ind',pars) = dest_ind_family indf in
+			if ind = ind' then pars
+			else (* Let the usual code throw an error *) []
+		    with Not_found -> []
+ 	  else []
+	in
+	let rec apply_rec env n resj candargs = function
 	  | [] -> resj
 	  | c::rest ->
 	      let argloc = loc_of_glob_constr c in
 	      let resj = evd_comb1 (Coercion.inh_app_fun env) evdref resj in
               let resty = whd_betadeltaiota env !evdref resj.uj_type in
       		match kind_of_term resty with
-		  | Prod (na,c1,c2) ->
-		      Option.iter (fun ty -> evdref :=
-			Coercion.inh_conv_coerces_to loc env !evdref resty ty) tycon;
-		      let evd, (_, _, tycon) = split_tycon loc env !evdref tycon in
-		      evdref := evd;
-		      let hj = pretype (mk_tycon c1) env evdref lvar c in
-		      let value, typ = applist (j_val resj, [j_val hj]), subst1 hj.uj_val c2 in
-			apply_rec env (n+1)
+		| Prod (na,c1,c2) ->
+		    let hj = pretype (mk_tycon c1) env evdref lvar c in
+		    let candargs, ujval =
+		      match candargs with
+		      | [] -> [], j_val hj
+		      | arg :: args -> 
+			  if e_conv env evdref (j_val hj) arg then
+			    args, nf_evar !evdref (j_val hj)
+			  else [], j_val hj
+		    in
+		    let value, typ = applist (j_val resj, [ujval]), subst1 ujval c2 in
+		      apply_rec env (n+1)
 			{ uj_val = value;
 			  uj_type = typ }
-			  (Option.map (fun (abs, c) -> abs, c) tycon) rest
+			candargs rest
 
 		  | _ ->
 		      let hj = pretype empty_tycon env evdref lvar c in
@@ -356,7 +361,7 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 			  (join_loc floc argloc) env !evdref
 	      		  resj [hj]
 	in
-	let resj = apply_rec env 1 fj ftycon args in
+	let resj = apply_rec env 1 fj candargs args in
 	let resj =
 	  match kind_of_term (whd_evar !evdref resj.uj_val) with
 	  | App (f,args) when isInd f or isConst f ->
@@ -503,8 +508,8 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
 		  jtyp.uj_val, jtyp.uj_type
 	    | None ->
 		let p = match tycon with
-		  | Some (None, ty) -> ty
-		  | None | Some _ ->
+		  | Some ty -> ty
+		  | None ->
                       e_new_evar evdref env ~src:(loc,InternalHole) (Termops.new_Type ())
 		in
 		  it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in

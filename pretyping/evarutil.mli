@@ -146,16 +146,11 @@ val undefined_evars_of_evar_info : evar_map -> evar_info -> Intset.t
 
 val judge_of_new_Type : evar_map -> evar_map * unsafe_judgment
 
-type type_constraint_type = (int * int) option * constr
-type type_constraint = type_constraint_type option
-
+type type_constraint = types option
 type val_constraint = constr option
 
 val empty_tycon : type_constraint
-val mk_tycon_type : constr -> type_constraint_type
-val mk_abstr_tycon_type : int -> constr -> type_constraint_type
 val mk_tycon : constr -> type_constraint
-val mk_abstr_tycon : int -> constr -> type_constraint
 val empty_valcon : val_constraint
 val mk_valcon : constr -> val_constraint
 
@@ -164,10 +159,6 @@ val split_tycon :
     evar_map * (name * type_constraint * type_constraint)
 
 val valcon_of_tycon : type_constraint -> val_constraint
-
-val lift_abstr_tycon_type : int -> type_constraint_type -> type_constraint_type
-
-val lift_tycon_type : int -> type_constraint_type -> type_constraint_type
 val lift_tycon : int -> type_constraint -> type_constraint
 
 (***********************************************************)
@@ -202,7 +193,6 @@ val expand_vars_in_term : env -> constr -> constr
 
 (** {6 debug pretty-printer:} *)
 
-val pr_tycon_type : env -> type_constraint_type -> Pp.std_ppcmds
 val pr_tycon : env -> type_constraint -> Pp.std_ppcmds
 
 

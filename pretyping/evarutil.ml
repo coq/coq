@@ -1632,8 +1632,7 @@ open Glob_term
 
 (* Operations on value/type constraints *)
 
-type type_constraint_type = (int * int) option * constr
-type type_constraint = type_constraint_type option
+type type_constraint = types option
 
 type val_constraint = constr option
 
@@ -1654,21 +1653,14 @@ type val_constraint = constr option
 (* The empty type constraint *)
 let empty_tycon = None
 
-let mk_tycon_type c = (None, c)
-let mk_abstr_tycon_type n c = (Some (n, n), c) (* First component is initial abstraction, second
-						  is current abstraction *)
-
 (* Builds a type constraint *)
-let mk_tycon ty = Some (mk_tycon_type ty)
-
-let mk_abstr_tycon n ty = Some (mk_abstr_tycon_type n ty)
+let mk_tycon ty = Some ty
 
 (* Constrains the value of a type *)
 let empty_valcon = None
 
 (* Builds a value constraint *)
 let mk_valcon c = Some c
-
 
 let new_type_evar ?src ?filter evd env =
   let evd', s = new_sort_variable evd in
@@ -1765,10 +1757,6 @@ let judge_of_new_Type evd =
    constraint on its domain and codomain. If the input constraint is
    an evar instantiate it with the product of 2 new evars. *)
 
-let unlift_tycon init cur c =
-  if cur = 1 then None, c
-  else Some (init, pred cur), c
-
 let split_tycon loc env evd tycon =
   let rec real_split evd c =
     let t = whd_betadeltaiota env evd c in
@@ -1785,35 +1773,13 @@ let split_tycon loc env evd tycon =
   in
     match tycon with
       | None -> evd,(Anonymous,None,None)
-      | Some (abs, c) ->
-	  (match abs with
-	       None ->
-		 let evd', (n, dom, rng) = real_split evd c in
-		   evd', (n, mk_tycon dom, mk_tycon rng)
-	     | Some (init, cur) ->
-		 evd, (Anonymous, None, Some (unlift_tycon init cur c)))
+      | Some c ->
+	  let evd', (n, dom, rng) = real_split evd c in
+	    evd', (n, mk_tycon dom, mk_tycon rng)
 
-let valcon_of_tycon x =
-  match x with
-    | Some (None, t) -> Some t
-    | _ -> None
-
-let lift_abstr_tycon_type n (abs, t) =
-  match abs with
-      None -> raise (Invalid_argument "lift_abstr_tycon_type: not an abstraction")
-    | Some (init, abs) ->
-	let abs' = abs + n in
-	  if abs' < 0 then raise (Invalid_argument "lift_abstr_tycon_type")
-	  else (Some (init, abs'), t)
-
-let lift_tycon_type n (abs, t) = (abs, lift n t)
-let lift_tycon n = Option.map (lift_tycon_type n)
-
-let pr_tycon_type env (abs, t) =
-  match abs with
-      None -> Termops.print_constr_env env t
-    | Some (init, cur) -> str "Abstract (" ++ int init ++ str ","  ++ int cur ++ str ") " ++ Termops.print_constr_env env t
+let valcon_of_tycon x = x
+let lift_tycon n = Option.map (lift n)
 
 let pr_tycon env = function
     None -> str "None"
-  | Some t -> pr_tycon_type env t
+  | Some t -> Termops.print_constr_env env t
