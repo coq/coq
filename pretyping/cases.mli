@@ -55,3 +55,65 @@ val compile_cases :
   env -> glob_constr option * tomatch_tuples * cases_clauses ->
   unsafe_judgment
 
+val constr_of_pat : 
+           Environ.env ->
+           Evd.evar_map ref ->
+           Term.rel_declaration list ->
+           Glob_term.cases_pattern ->
+           Names.identifier list ->
+           Glob_term.cases_pattern *
+           (Term.rel_declaration list * Term.constr *
+            (Term.types * Term.constr list) * Glob_term.cases_pattern) *
+           Names.identifier list
+
+type 'a rhs =
+    { rhs_env    : env;
+      rhs_vars   : identifier list;
+      avoid_ids  : identifier list;
+      it         : 'a option}
+
+type 'a equation =
+    { patterns     : cases_pattern list;
+      rhs          : 'a rhs;
+      alias_stack  : name list;
+      eqn_loc      : loc;
+      used         : bool ref }
+
+type 'a matrix = 'a equation list
+
+(* 1st argument of IsInd is the original ind before extracting the summary *)
+type tomatch_type =
+  | IsInd of types * inductive_type * name list
+  | NotInd of constr option * types
+
+type tomatch_status =
+  | Pushed of ((constr * tomatch_type) * int list * name)
+  | Alias of (name * constr * (constr * types))
+  | NonDepAlias
+  | Abstract of int * rel_declaration
+
+type tomatch_stack = tomatch_status list
+
+(* We keep a constr for aliases and a cases_pattern for error message *)
+
+type pattern_history =
+  | Top
+  | MakeConstructor of constructor * pattern_continuation
+
+and pattern_continuation =
+  | Continuation of int * cases_pattern list * pattern_history
+  | Result of cases_pattern list
+
+type 'a pattern_matching_problem =
+    { env       : env;
+      evdref    : evar_map ref;
+      pred      : constr;
+      tomatch   : tomatch_stack;
+      history   : pattern_continuation;
+      mat       : 'a matrix;
+      caseloc   : loc;
+      casestyle : case_style;
+      typing_function: type_constraint -> env -> evar_map ref -> 'a option -> unsafe_judgment }
+
+
+val compile : 'a pattern_matching_problem -> Environ.unsafe_judgment

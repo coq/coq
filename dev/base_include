@@ -71,15 +71,12 @@ open Pattern
 open Cbv
 open Classops
 open Pretyping
-open Pretyping.Default
-open Pretyping.Default.Cases
 open Cbv
 open Classops
 open Clenv
 open Clenvtac
 open Glob_term
 open Coercion
-open Coercion.Default
 open Recordops
 open Detyping
 open Reductionops

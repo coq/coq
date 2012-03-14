@@ -76,11 +76,11 @@ Instance  reify_mul (R:Type)
  : reify (mul:=op) (PEmul e1 e2) lvar (op t1 t2)|10.
 
 Instance  reify_mul_ext (R:Type) `{Ring R}
-  lvar z e2 t2 
+  lvar (z:Z) e2 t2 
  `{Ring (T:=R)}
  {_:reify e2 lvar t2}
  : reify (PEmul (PEc z) e2) lvar
-      (@multiplication Z _ _  z t2)|9.
+      (@multiplication Z _ _ z t2)|9.
 
 Instance  reify_sub (R:Type)
  e1 lvar t1 e2 t2 op

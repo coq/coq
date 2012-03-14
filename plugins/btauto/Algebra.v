@@ -135,6 +135,7 @@ Qed.
 Program Instance Decidable_null : forall p, Decidable (null p) := {
   Decidable_witness := match p with Cst false => true | _ => false end
 }.
+
 Next Obligation.
 split.
   destruct p as [[]|]; first [discriminate|constructor].

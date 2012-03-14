@@ -171,6 +171,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
   in
   let env' = push_rel_context ctx env in
   evars := Evarutil.nf_evar_map !evars;
+  evars := mark_resolvables !evars;
   evars := resolve_typeclasses env !evars;
   let sigma =  !evars in
   let subst = List.map (Evarutil.nf_evar sigma) subst in

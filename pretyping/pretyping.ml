@@ -315,6 +315,15 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
       let ftys = array_map2 (fun e a -> it_mkProd_or_LetIn a e) ctxtv lara in
       let nbfix = Array.length lar in
       let names = Array.map (fun id -> Name id) names in
+      let _ = 
+	match tycon with
+	| Some t -> 
+ 	    let fixi = match fixkind with
+	      | GFix (vn,i) -> i
+	      | GCoFix i -> i
+	    in e_conv env evdref ftys.(fixi) t
+	| None -> true
+      in
 	(* Note: bodies are not used by push_rec_types, so [||] is safe *)
       let newenv = push_rec_types (names,ftys,[||]) env in
       let vdefj =
@@ -341,11 +350,12 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 		 but doing it properly involves delta-reduction, and it finally
                  doesn't seem worth the effort (except for huge mutual
 		 fixpoints ?) *)
-	      let possible_indexes = Array.to_list (Array.mapi
-						      (fun i (n,_) -> match n with
-						       | Some n -> [n]
-						       | None -> list_map_i (fun i _ -> i) 0 ctxtv.(i))
-						      vn)
+	      let possible_indexes =
+		Array.to_list (Array.mapi
+				 (fun i (n,_) -> match n with
+				  | Some n -> [n]
+				  | None -> list_map_i (fun i _ -> i) 0 ctxtv.(i))
+				 vn)
 	      in
 	      let fixdecls = (names,ftys,fdefs) in
 	      let indexes = search_guard loc env possible_indexes fixdecls in
@@ -489,10 +499,12 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
       in
       let cstrs = get_constructors env indf in
 	if Array.length cstrs <> 1 then
-          user_err_loc (loc,"",str "Destructing let is only for inductive types with one constructor.");
+          user_err_loc (loc,"",str "Destructing let is only for inductive types" ++
+			str " with one constructor.");
 	let cs = cstrs.(0) in
 	  if List.length nal <> cs.cs_nargs then
-            user_err_loc (loc,"", str "Destructing let on this type expects " ++ int cs.cs_nargs ++ str " variables.");
+            user_err_loc (loc,"", str "Destructing let on this type expects " ++ 
+			    int cs.cs_nargs ++ str " variables.");
 	  let fsign = List.map2 (fun na (_,c,t) -> (na,c,t))
             (List.rev nal) cs.cs_args in
 	  let env_f = push_rels fsign env in
@@ -636,7 +648,8 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 		      with Reduction.NotConvertible -> 
 			error_actual_type_loc loc env !evdref cj tval 
 		    end
-                  else user_err_loc (loc,"",str "Cannot check cast with vm: unresolved arguments remain.")
+                  else user_err_loc (loc,"",str "Cannot check cast with vm: " ++
+				       str "unresolved arguments remain.")
 	      | _ -> inh_conv_coerce_to_tycon loc env evdref cj (mk_tycon tval)
 	    in
 	    let v = mkCast (cj.uj_val, k, tval) in
