@@ -75,14 +75,14 @@ type 'a gallina_loc_argtype = (Vernacexpr.vernac_expr located, 'a) Genarg.abstra
 let (wit_subtac_gallina_loc : Genarg.tlevel gallina_loc_argtype),
   (globwit_subtac_gallina_loc : Genarg.glevel gallina_loc_argtype),
   (rawwit_subtac_gallina_loc : Genarg.rlevel gallina_loc_argtype) =
-  Genarg.create_arg "subtac_gallina_loc"
+  Genarg.create_arg None "subtac_gallina_loc"
 
 type 'a withtac_argtype = (Tacexpr.raw_tactic_expr option, 'a) Genarg.abstract_argument_type
 
 let (wit_subtac_withtac : Genarg.tlevel withtac_argtype),
   (globwit_subtac_withtac : Genarg.glevel withtac_argtype),
   (rawwit_subtac_withtac : Genarg.rlevel withtac_argtype) =
-  Genarg.create_arg "subtac_withtac"
+  Genarg.create_arg None "subtac_withtac"
 
 VERNAC COMMAND EXTEND Subtac
 [ "Program" subtac_gallina_loc(g) ] -> [ Subtac.subtac g ]

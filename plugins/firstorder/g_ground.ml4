@@ -134,8 +134,6 @@ TACTIC EXTEND firstorder
 |   [ "firstorder" tactic_opt(t) firstorder_using(l)
        "with" ne_preident_list(l') ] ->
       [ gen_ground_tac true (Option.map eval_tactic t) l l' ]
-|   [ "firstorder" tactic_opt(t) ] ->
-      [ gen_ground_tac true (Option.map eval_tactic t) [] [] ]
 END
 
 TACTIC EXTEND gintuition
