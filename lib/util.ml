@@ -699,7 +699,7 @@ let list_split_when p =
   split_when_loop []
 
 (* [list_split_by p l] splits [l] into two lists [(l1,l2)] such that elements of
-   [l1] satisfy [p] and elements of [l2] do not *)
+   [l1] satisfy [p] and elements of [l2] do not; order is preserved *)
 let list_split_by p =
   let rec split_by_loop = function
   | []   -> ([],[])
@@ -857,6 +857,14 @@ let rec list_cartesians_filter op init ll =
 (* Drop the last element of a list *)
 
 let rec list_drop_last = function [] -> assert false | hd :: [] -> [] | hd :: tl -> hd :: list_drop_last tl
+
+(* Factorize lists of pairs according to the left argument *)
+let rec list_factorize_left = function
+  | (a,b)::l ->
+      let al,l' = list_split_by (fun (a',b) -> a=a') l in
+      (a,(b::List.map snd al)) :: list_factorize_left l'
+  | [] ->
+      []
 
 (* Arrays *)
 

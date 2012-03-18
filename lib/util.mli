@@ -191,6 +191,7 @@ val list_cartesians_filter :
   ('a -> 'b -> 'b option) -> 'b -> 'a list list -> 'b list
 
 val list_union_map : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
+val list_factorize_left : ('a * 'b) list -> ('a * 'b list) list
 
 (** {6 Arrays. } *)
 
