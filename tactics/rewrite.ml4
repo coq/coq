@@ -1366,7 +1366,7 @@ ARGUMENT EXTEND glob_constr_with_bindings
 END
 
 let _ =
-  (Genarg.create_arg "strategy" :
+  (Genarg.create_arg None "strategy" :
       ((strategy, Genarg.tlevel) Genarg.abstract_argument_type *
 	  (strategy, Genarg.glevel) Genarg.abstract_argument_type *
 	  (strategy, Genarg.rlevel) Genarg.abstract_argument_type))
@@ -1425,6 +1425,8 @@ let clsubstitute o c =
 	match cl with
 	  | Some id when is_tac id -> tclIDTAC
 	  | _ -> cl_rewrite_clause c o all_occurrences cl)
+
+open Extraargs
 
 TACTIC EXTEND substitute
 | [ "substitute" orient(o) glob_constr_with_bindings(c) ] -> [ clsubstitute o c ]
@@ -1537,7 +1539,7 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 type 'a binders_argtype = (local_binder list, 'a) Genarg.abstract_argument_type
 
 let _, _, rawwit_binders =
- (Genarg.create_arg "binders" :
+ (Genarg.create_arg None "binders" :
     Genarg.tlevel binders_argtype *
     Genarg.glevel binders_argtype *
     Genarg.rlevel binders_argtype)

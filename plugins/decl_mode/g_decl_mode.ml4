@@ -103,7 +103,7 @@ let proof_instr = Gram.entry_create "proofmode:instr"
 
 (* [Genarg.create_arg] creates a new embedding into Genarg. *)
 let (wit_proof_instr,globwit_proof_instr,rawwit_proof_instr) =
-  Genarg.create_arg "proof_instr"
+  Genarg.create_arg None "proof_instr"
 let _ = Tacinterp.add_interp_genarg "proof_instr"
   begin
   begin fun e x -> (* declares the globalisation function *)

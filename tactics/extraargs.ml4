@@ -287,13 +287,13 @@ let glob_in_arg_hyp_to_clause = gen_in_arg_hyp_to_clause (fun x -> x)
 (* spiwack argument for the commands of the retroknowledge *)
 
 let (wit_r_nat_field, globwit_r_nat_field, rawwit_r_nat_field) =
-  Genarg.create_arg "r_nat_field"
+  Genarg.create_arg None "r_nat_field"
 let (wit_r_n_field, globwit_r_n_field, rawwit_r_n_field) =
-  Genarg.create_arg "r_n_field"
+  Genarg.create_arg None "r_n_field"
 let (wit_r_int31_field, globwit_r_int31_field, rawwit_r_int31_field) =
-  Genarg.create_arg "r_int31_field"
+  Genarg.create_arg None "r_int31_field"
 let (wit_r_field, globwit_r_field, rawwit_r_field) =
-  Genarg.create_arg "r_field"
+  Genarg.create_arg None "r_field"
 
 (* spiwack: the print functions are incomplete, but I don't know what they are
 	used for *)

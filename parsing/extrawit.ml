@@ -16,12 +16,12 @@ open Genarg
 
 let tactic_main_level = 5
 
-let (wit_tactic0,globwit_tactic0,rawwit_tactic0) = create_arg "tactic0"
-let (wit_tactic1,globwit_tactic1,rawwit_tactic1) = create_arg "tactic1"
-let (wit_tactic2,globwit_tactic2,rawwit_tactic2) = create_arg "tactic2"
-let (wit_tactic3,globwit_tactic3,rawwit_tactic3) = create_arg "tactic3"
-let (wit_tactic4,globwit_tactic4,rawwit_tactic4) = create_arg "tactic4"
-let (wit_tactic5,globwit_tactic5,rawwit_tactic5) = create_arg "tactic5"
+let (wit_tactic0,globwit_tactic0,rawwit_tactic0) = create_arg None "tactic0"
+let (wit_tactic1,globwit_tactic1,rawwit_tactic1) = create_arg None "tactic1"
+let (wit_tactic2,globwit_tactic2,rawwit_tactic2) = create_arg None "tactic2"
+let (wit_tactic3,globwit_tactic3,rawwit_tactic3) = create_arg None "tactic3"
+let (wit_tactic4,globwit_tactic4,rawwit_tactic4) = create_arg None "tactic4"
+let (wit_tactic5,globwit_tactic5,rawwit_tactic5) = create_arg None "tactic5"
 
 let wit_tactic = function
   | 0 -> wit_tactic0

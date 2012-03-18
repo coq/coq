@@ -154,7 +154,7 @@ type 'a function_rec_definition_loc_argtype = ((Vernacexpr.fixpoint_expr * Verna
 let (wit_function_rec_definition_loc : Genarg.tlevel function_rec_definition_loc_argtype),
   (globwit_function_rec_definition_loc : Genarg.glevel function_rec_definition_loc_argtype),
   (rawwit_function_rec_definition_loc : Genarg.rlevel function_rec_definition_loc_argtype) =
-  Genarg.create_arg "function_rec_definition_loc"
+  Genarg.create_arg None "function_rec_definition_loc"
 VERNAC COMMAND EXTEND Function
    ["Function" ne_function_rec_definition_loc_list_sep(recsl,"with")] ->
 	[

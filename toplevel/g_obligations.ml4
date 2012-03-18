@@ -61,7 +61,7 @@ type 'a withtac_argtype = (Tacexpr.raw_tactic_expr option, 'a) Genarg.abstract_a
 let (wit_withtac : Genarg.tlevel withtac_argtype),
   (globwit_withtac : Genarg.glevel withtac_argtype),
   (rawwit_withtac : Genarg.rlevel withtac_argtype) =
-  Genarg.create_arg "withtac"
+  Genarg.create_arg None "withtac"
 
 open Obligations
 

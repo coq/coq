@@ -15,6 +15,7 @@ open Termops
 open Glob_term
 
 val rawwit_orient : bool raw_abstract_argument_type
+val globwit_orient : bool glob_abstract_argument_type
 val wit_orient : bool typed_abstract_argument_type
 val orient : bool Pcoq.Gram.entry
 val pr_orient : bool -> Pp.std_ppcmds
@@ -39,6 +40,7 @@ val hloc : loc_place Pcoq.Gram.entry
 val pr_hloc : loc_place -> Pp.std_ppcmds
 
 val in_arg_hyp:  (Names.identifier Pp.located list option * bool)  Pcoq.Gram.entry
+val globwit_in_arg_hyp : (Names.identifier Pp.located list option * bool) glob_abstract_argument_type
 val rawwit_in_arg_hyp : (Names.identifier Pp.located list option * bool) raw_abstract_argument_type
 val wit_in_arg_hyp : (Names.identifier list option * bool) typed_abstract_argument_type
 val raw_in_arg_hyp_to_clause : (Names.identifier Pp.located list option * bool) -> Tacticals.clause
