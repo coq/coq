@@ -33,23 +33,9 @@ END
 
 let pr_orient = pr_orient () () ()
 
-let pr_int_list_full _prc _prlc _prt l =
-  let rec aux = function
-    | i :: l -> Pp.int i ++ Pp.spc () ++ aux l
-    | [] -> Pp.mt()
-  in aux l
 
-ARGUMENT EXTEND int_nelist
-  PRINTED BY pr_int_list_full
-  RAW_TYPED AS int list
-  RAW_PRINTED BY pr_int_list_full
-  GLOB_TYPED AS int list
-  GLOB_PRINTED BY pr_int_list_full
-| [ integer(x) int_nelist(l) ] -> [x::l]
-| [ integer(x) ] -> [ [x] ]
-END
-
-let pr_int_list = pr_int_list_full () () ()
+let pr_int_list = Pp.pr_sequence Pp.int
+let pr_int_list_full _prc _prlc _prt l = pr_int_list l
 
 open Glob_term
 
@@ -93,7 +79,7 @@ ARGUMENT EXTEND occurrences
   GLOB_TYPED AS occurrences_or_var
   GLOB_PRINTED BY pr_occurrences
 
-| [ int_nelist(l) ] -> [ ArgArg l ]
+| [ ne_integer_list(l) ] -> [ ArgArg l ]
 | [ var(id) ] -> [ ArgVar id ]
 END
 
