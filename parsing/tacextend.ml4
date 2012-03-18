@@ -131,19 +131,27 @@ let make_one_printing_rule se (pt,e) =
 
 let make_printing_rule se = mlexpr_of_list (make_one_printing_rule se)
 
-let rec contains_epsilon = function
-  | List0ArgType _ -> true
-  | List1ArgType t -> contains_epsilon t
-  | OptArgType _ -> true
-  | PairArgType(t1,t2) -> contains_epsilon t1 && contains_epsilon t2
-  | ExtraArgType("hintbases") -> true
-  | _ -> false
-let is_atomic = function
-  | GramTerminal s :: l when
-      List.for_all (function
-          GramTerminal _ -> false
-	| GramNonTerminal(_,t,_,_) -> contains_epsilon t) l
-	-> [s]
+let rec contains_epsilon loc = function
+  | List0ArgType _ as t ->
+      <:expr< Genarg.in_gen $make_globwit loc t$ [] >>
+  | List1ArgType t' as t ->
+      <:expr< Genarg.in_gen $make_globwit loc t$
+         [out_gen $make_globwit loc t'$ $contains_epsilon loc t'$] >>
+  | OptArgType _ as t ->
+      <:expr< Genarg.in_gen $make_globwit loc t$ None >>
+(*  | PairArgType(t1,t2) -> contains_epsilon t1 && contains_epsilon t2*)
+  | ExtraArgType("hintbases") as t ->
+      <:expr< Genarg.in_gen $make_globwit loc t$ (Some []) >> (* fragile *)
+  | _ -> raise Exit
+
+let is_atomic loc = function
+  | GramTerminal s :: l ->
+     (try
+        let l = List.map (function
+          GramTerminal _ -> raise Exit
+	| GramNonTerminal(_,t,_,_) -> contains_epsilon loc t) l
+        in [<:expr< ($str:s$, $mlexpr_of_list (fun x -> x) l$) >>]
+      with Exit -> [])
   | _ -> []
 
 let declare_tactic loc s cl =
@@ -163,8 +171,8 @@ let declare_tactic loc s cl =
   in
   let hidden = if List.length cl = 1 then List.map hide_tac cl else [] in
   let atomic_tactics =
-    mlexpr_of_list mlexpr_of_string
-      (List.flatten (List.map (fun (al,_) -> is_atomic al) cl)) in
+    mlexpr_of_list (fun x -> x)
+      (List.flatten (List.map (fun (al,_) -> is_atomic loc al) cl)) in
   <:str_item<
     declare
       open Pcoq;
@@ -173,9 +181,9 @@ let declare_tactic loc s cl =
       try
         let _=Tacinterp.add_tactic $se$ (fun [ $list:make_clauses s cl$ ]) in
         List.iter
-          (fun s -> Tacinterp.add_primitive_tactic s
+          (fun (s,l) -> Tacinterp.add_primitive_tactic s
               (Tacexpr.TacAtom($default_loc$,
-                 Tacexpr.TacExtend($default_loc$,s,[]))))
+                 Tacexpr.TacExtend($default_loc$,$se$,l))))
           $atomic_tactics$
       with e -> Pp.pp (Cerrors.explain_exn e);
       Egrammar.extend_tactic_grammar $se$ $gl$;
