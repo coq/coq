@@ -49,8 +49,9 @@ Notice that the \verb!-byte! and \verb!-opt! options are still
 available with \verb!coqc!  and allow you to select the byte-code or
 native-code versions of the system.
 
+\section[Customization]{Customization at launch time}
 
-\section[Resource file]{Resource file\index{Resource file}}
+\subsection{By resource file\index{Resource file}}
 
 When \Coq\ is launched, with either {\tt coqtop} or {\tt coqc}, the
 resource file \verb:$XDG_CONFIG_HOME/coq/coqrc.xxx: is loaded, where
@@ -67,27 +68,19 @@ directories to the load path of \Coq.
 It is possible to skip the loading of the resource file with the
 option \verb:-q:.
 
-\section[Environment variables]{Environment variables\label{EnvVariables}
-\index{Environment variables}}
+\section{By environment variables\label{EnvVariables}
+\index{Environment variables}\label{envars}}
 
-There are four environment variables used by the \Coq\ system.
-\verb:$COQBIN: for the directory where the binaries are,
-\verb:$COQLIB: for the directory where the standard library is,
-\verb:$COQPATH: for a list of directories separated by \verb|:|
-(\verb|;| on windows) to add to the load path, and
-\verb:$COQTOP: for the directory of the sources. The latter is useful
-only for developers that are writing their own tactics and are using
-\texttt{coq\_makefile} (see \ref{Makefile}). If \verb:$COQBIN: or
-\verb:$COQLIB: are not defined, \Coq\ will use the default values
-(defined at installation time). So these variables are useful only if
-you move the \Coq\ binaries and library after installation.
+Load path can be specified to the \Coq\ system by setting up
+\verb:$COQPATH: environment variable. It is a list of directories separated by \verb|:|
+(\verb|;| on windows).
 
-Coq will also honor \verb:$XDG_DATA_HOME: and \verb:$XDG_DATA_DIRS: (see
+\Coq will also honour \verb:$XDG_DATA_HOME: and \verb:$XDG_DATA_DIRS: (see
 \url{http://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html}).
-Coq adds \verb:${XDG_DATA_HOME}/coq: and \verb:${XDG_DATA_DIRS}/coq: to its
+\Coq adds \verb:${XDG_DATA_HOME}/coq: and \verb:${XDG_DATA_DIRS}/coq: to its
 search path.
 
-\section[Options]{Options\index{Options of the command line}
+\subsection{By command line options\index{Options of the command line}
 \label{vmoption}
 \label{coqoptions}}
 
