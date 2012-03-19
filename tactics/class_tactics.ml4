@@ -635,6 +635,23 @@ let has_undefined p oevd evd =
     snd (p oevd ev evi))
     evd false
 
+(** Revert the resolvability status of evars after resolution,
+    potentially unprotecting some evars that were set unresolvable
+    just for this call to resolution. *)
+
+let revert_resolvability oevd evd = 
+  Evd.fold_undefined
+    (fun ev evi evm ->
+     try 
+       if not (Typeclasses.is_resolvable evi) then
+	 let evi' = Evd.find_undefined oevd ev in
+	   if Typeclasses.is_resolvable evi' then
+	     Evd.add evm ev (Typeclasses.mark_resolvable evi)
+	   else evm
+       else evm
+     with Not_found -> evm)
+  evd evd
+
 (** If [do_split] is [true], we try to separate the problem in
     several components and then solve them separately *)
 
@@ -645,7 +662,7 @@ let resolve_all_evars debug m env p oevd do_split fail =
   let in_comp comp ev = if do_split then Intset.mem ev comp else true
   in
   let rec docomp evd = function
-    | [] -> evd
+    | [] -> revert_resolvability oevd evd
     | comp :: comps ->
       let p = select_and_update_evars p oevd (in_comp comp) in
       try

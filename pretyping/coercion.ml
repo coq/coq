@@ -219,8 +219,11 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 			   let (evs, t) = Evarutil.define_evar_as_lambda env !isevars (k,args) in
 			     isevars := evs;
 			     let (n, dom, rng) = destLambda t in
-			     let (domk, args) = destEvar dom in
-			       isevars := define domk a !isevars;
+			     let dom = whd_evar !isevars dom in
+			       if isEvar dom then
+				 let (domk, args) = destEvar dom in
+				   isevars := define domk a !isevars;
+			       else ();
 			       t, rng
 		       | _ -> raise NoSubtacCoercion
 		     in
@@ -228,8 +231,7 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 		     let env' = push_rel (make_name "x", None, a) env in
 		     let c2 = coerce_unify env' b b' in
 		       match c1, c2 with
-		       None, None ->
-			 None
+		       | None, None -> None
 		       | _, _ ->
 			   Some
 			     (fun x ->

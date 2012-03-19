@@ -337,6 +337,8 @@ let coerce_row typing_fun evdref env pats (tomatch,(_,indopt)) =
   let loc = Some (loc_of_glob_constr tomatch) in
   let tycon,realnames = find_tomatch_tycon evdref env loc indopt in
   let j = typing_fun tycon env evdref tomatch in
+  let evd, j = Coercion.inh_coerce_to_base (loc_of_glob_constr tomatch) env !evdref j in
+  evdref := evd;
   let typ = nf_evar !evdref j.uj_type in
   let t =
     try try_find_ind env !evdref typ realnames

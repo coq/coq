@@ -15,7 +15,7 @@ Program Fixpoint check_n  (n : nat) (P : { i | i < n } -> bool) (p : nat)
 
 Require Import Omega.
 
-Solve Obligations using program_simpl ; auto with *; try omega.
+Solve Obligations with program_simpl ; auto with *; try omega.
 
 Next Obligation.
   apply H. simpl. omega.

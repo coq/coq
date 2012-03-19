@@ -46,6 +46,8 @@ open Pcoq
 open Prim
 open Constr
 
+let sigref = mkRefC (Qualid (Pp.dummy_loc, Libnames.qualid_of_string "Coq.Init.Specif.sig"))
+
 GEXTEND Gram
   GLOBAL: withtac;
 
@@ -53,6 +55,12 @@ GEXTEND Gram
     [ [ "with"; t = Tactic.tactic -> Some t
       | -> None ] ]
   ;
+
+  Constr.closed_binder:
+    [[ "("; id=Prim.name; ":"; t=Constr.lconstr; "|"; c=Constr.lconstr; ")" ->
+	  let typ = mkAppC (sigref, [mkLambdaC ([id], default_binder_kind, t, c)]) in
+          [LocalRawAssum ([id], default_binder_kind, typ)]
+    ] ];
   
   END
 

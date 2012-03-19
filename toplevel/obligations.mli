@@ -29,7 +29,7 @@ val declare_definition_ref :
      Entries.definition_entry -> Impargs.manual_implicits
        -> global_reference declaration_hook -> global_reference) ref
 
-val non_instanciated_map : env -> evar_map ref -> evar_map -> evar_map
+val check_evars : env -> evar_map -> unit
 
 val mkMetas : int -> constr list
 
@@ -38,7 +38,7 @@ val sort_dependencies : (int * evar_info * Intset.t) list -> (int * evar_info * 
 
 (* env, id, evars, number of function prototypes to try to clear from
    evars contexts, object and type *)
-val eterm_obligations : env -> identifier -> evar_map -> evar_map -> int ->
+val eterm_obligations : env -> identifier -> evar_map -> int ->
   ?status:obligation_definition_status -> constr -> types -> 
   (identifier * types * hole_kind located * obligation_definition_status * Intset.t * 
       tactic option) array
@@ -115,3 +115,5 @@ val admit_obligations : Names.identifier option -> unit
 exception NoObligations of Names.identifier option
 
 val explain_no_obligations : Names.identifier option -> Pp.std_ppcmds
+
+val set_program_mode : bool -> unit

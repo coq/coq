@@ -480,9 +480,10 @@ let mark_resolvability_undef b evi =
 
 let mark_resolvability b evi =
   assert (evi.evar_body = Evar_empty);
-  mark_resolvability_undef false evi
+  mark_resolvability_undef b evi
 
 let mark_unresolvable evi = mark_resolvability false evi
+let mark_resolvable evi = mark_resolvability true evi
 
 let mark_resolvability b sigma =
   Evd.fold_undefined (fun ev evi evs ->

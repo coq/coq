@@ -100,6 +100,6 @@ Next Obligation. simpl in *; intros.
   apply H. simpl. omega.
 Qed.
 
-Program Fixpoint check_n'  (n : nat) (m : nat | m = n) (p : nat) (q : nat | q = p)
+Program Fixpoint check_n'  (n : nat) (m : {m:nat | m = n}) (p : nat) (q:{q : nat | q = p})
   {measure (p - n) p} : nat :=
   _.

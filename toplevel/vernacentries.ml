@@ -1579,8 +1579,8 @@ let interp c = match c with
 
 let interp c = 
   let mode = Flags.is_program_mode () in
-  let flag = mode || !program_flag in
-    Flags.program_mode := flag;
+    (try Obligations.set_program_mode !program_flag
+     with e -> program_flag := false; raise e);
     interp c; check_locality ();
     program_flag := false;
     Flags.program_mode := mode

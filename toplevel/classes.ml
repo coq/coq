@@ -280,7 +280,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 		  match term with 
 		  | Some t -> 
 		      let obls, _, constr, typ = 
-			Obligations.eterm_obligations env id !evars evm 0 t termtype
+			Obligations.eterm_obligations env id !evars 0 t termtype
 		      in obls, Some constr, typ
 		  | None -> [||], None, termtype
 		in

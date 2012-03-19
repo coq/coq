@@ -44,17 +44,17 @@ let succfix (depth, fixrels) =
 
 let mkMetas n = list_tabulate (fun _ -> Evarutil.mk_new_meta ()) n
 
-let non_instanciated_map env evd evm =
-  List.fold_left
-    (fun evm (key, evi) ->
-       let (loc,k) = evar_source key !evd in
-	 match k with
-	 | QuestionMark _ -> Evd.add evm key evi
-	 | ImplicitArg (_,_,false) -> Evd.add evm key evi
-	 | _ ->
-	     Pretype_errors.error_unsolvable_implicit loc env
-	       evm (Evarutil.nf_evar_info evm evi) k None)
-    Evd.empty (Evarutil.non_instantiated evm)
+let check_evars env evm =
+  List.iter
+  (fun (key, evi) ->
+   let (loc,k) = evar_source key evm in
+     match k with
+     | QuestionMark _
+     | ImplicitArg (_,_,false) -> ()
+     | _ ->
+       Pretype_errors.error_unsolvable_implicit loc env
+         evm (Evarutil.nf_evar_info evm evi) k None)
+  (Evd.undefined_list evm)
 
 type oblinfo =
   { ev_name: int * identifier;
@@ -223,11 +223,12 @@ let map_evar_info f evi =
     evar_concl = f evi.evar_concl;
     evar_body = map_evar_body f evi.evar_body }
     
-let eterm_obligations env name isevars evm fs ?status t ty = 
+let eterm_obligations env name evm fs ?status t ty = 
   (* 'Serialize' the evars *)
   let nc = Environ.named_context env in
   let nc_len = Sign.named_context_length nc in
-  let evl = List.rev (to_list evm) in
+  let evm = Evarutil.nf_evar_map_undefined evm in
+  let evl = List.rev (Evarutil.non_instantiated evm) in
   let evl = List.map (fun (id, ev) -> (id, ev, evar_dependencies evm id)) evl in
   let sevl = sort_dependencies evl in
   let evl = List.map (fun (id, ev, _) -> id, ev) sevl in
@@ -250,7 +251,7 @@ let eterm_obligations env name isevars evm fs ?status t ty =
 	   | Some t -> t, trunc_named_context fs hyps, fs
 	   | None -> evtyp, hyps, 0
 	 in
-	 let loc, k = evar_source id isevars in
+	 let loc, k = evar_source id evm in
 	 let status = match k with QuestionMark o -> Some o | _ -> status in
 	 let status, chop = match status with
 	   | Some (Define true as stat) ->
@@ -984,3 +985,18 @@ let next_obligation n tac =
     try array_find (fun x ->  x.obl_body = None && deps_remaining obls x.obl_deps = []) obls
     with Not_found -> anomaly "Could not find a solvable obligation."
   in solve_obligation prg i tac
+
+
+let init_program () =
+  Coqlib.check_required_library ["Coq";"Init";"Datatypes"];
+  Coqlib.check_required_library ["Coq";"Init";"Specif"];
+  Coqlib.check_required_library ["Coq";"Program";"Tactics"]
+
+
+let set_program_mode c =
+  if c then
+    if !Flags.program_mode then ()
+    else begin
+      init_program ();
+      Flags.program_mode := true;
+    end
