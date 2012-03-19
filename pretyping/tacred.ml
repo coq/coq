@@ -577,7 +577,6 @@ let inSimplBehaviour = declare_object { (default_object "SIMPLBEHAVIOUR") with
 
 let set_simpl_behaviour local r (recargs, nargs, flags as req) =
   let nargs = if List.mem `SimplNeverUnfold flags then max_int else nargs in
-  let nargs = List.fold_left max nargs recargs in
   let behaviour = {
     b_nargs = nargs; b_recargs = recargs;
     b_dont_expose_case = List.mem `SimplDontExposeCase flags } in
@@ -615,6 +614,7 @@ let rec red_elim_const env sigma ref largs =
     match recargs ref with
     | None -> largs, false, false
     | Some (_,n) when nargs < n -> raise Redelimination
+    | Some (x::l,_) when nargs <= List.fold_left max x l -> raise Redelimination
     | Some (l,n) ->
         List.fold_left (fun stack i ->
           let arg = stack_nth stack i in
