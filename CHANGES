@@ -4,8 +4,11 @@ Changes from V8.4
 Tactics
 
 - Tactics btauto, a reflexive boolean tautology solver.
+
+Program
 - "Solve Obligations using" changed to "Solve Obligations with",
   consistent with "Proof with".
+- Program Lemma, Definition now respect automatic introduction.
 
 Changes from V8.4beta to V8.4
 =============================

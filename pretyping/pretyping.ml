@@ -385,6 +385,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 	  	else
 	  	  try
 	  	    (* Does not treat partially applied constructors. *)
+		    let ty = evd_comb1 (Coercion.inh_coerce_to_prod loc env) evdref ty in
 	  	    let IndType (indf, args) = find_rectype env !evdref ty in
 	  	    let (ind',pars) = dest_ind_family indf in
 	  	      if ind = ind' then pars
@@ -453,7 +454,8 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
       let j = pretype_type dom_valcon env evdref lvar c1 in
       let var = (name,None,j.utj_val) in
       let j' = pretype rng (push_rel var env) evdref lvar c2 in
-	judge_of_abstraction env (orelse_name name name') j j'
+      let resj = judge_of_abstraction env (orelse_name name name') j j' in
+	inh_conv_coerce_to_tycon loc env evdref resj tycon
 
   | GProd(loc,name,bk,c1,c2)        ->
       let j = pretype_type empty_valcon env evdref lvar c1 in
@@ -629,28 +631,30 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
   | GCast (loc,c,k) ->
       let cj =
 	match k with
-	CastCoerce ->
+	| CastCoerce ->
 	  let cj = pretype empty_tycon env evdref lvar c in
 	    evd_comb1 (Coercion.inh_coerce_to_base loc env) evdref cj
 	| CastConv (k,t) ->
-	    let tj = pretype_type empty_valcon env evdref lvar t in
- 	    let cj = pretype empty_tycon env evdref lvar c in
-	    let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tj.utj_val in
-	    let cj = match k with
-	      | VMcast ->
-                  if not (occur_existential cty || occur_existential tval) then
-		    begin 
-		      try 
-			ignore (Reduction.vm_conv Reduction.CUMUL env cty tval); cj
-		      with Reduction.NotConvertible -> 
-			error_actual_type_loc loc env !evdref cj tval 
-		    end
-                  else user_err_loc (loc,"",str "Cannot check cast with vm: " ++
-				       str "unresolved arguments remain.")
-	      | _ -> inh_conv_coerce_to_tycon loc env evdref cj (mk_tycon tval)
-	    in
-	    let v = mkCast (cj.uj_val, k, tval) in
-	      { uj_val = v; uj_type = tval }
+	  let tj = pretype_type empty_valcon env evdref lvar t in
+	  let tval = nf_evar !evdref tj.utj_val in
+	  let cj = match k with
+	    | VMcast ->
+ 	      let cj = pretype empty_tycon env evdref lvar c in
+	      let cty = nf_evar !evdref cj.uj_type and tval = nf_evar !evdref tj.utj_val in
+		if not (occur_existential cty || occur_existential tval) then
+		  begin 
+		    try 
+		      ignore (Reduction.vm_conv Reduction.CUMUL env cty tval); cj
+		    with Reduction.NotConvertible -> 
+		    error_actual_type_loc loc env !evdref cj tval 
+		  end
+		else user_err_loc (loc,"",str "Cannot check cast with vm: " ++
+				   str "unresolved arguments remain.")
+	    | _ -> 
+ 	      pretype (mk_tycon tval) env evdref lvar c
+	  in
+	  let v = mkCast (cj.uj_val, k, tval) in
+	    { uj_val = v; uj_type = tval }
       in inh_conv_coerce_to_tycon loc env evdref cj tycon
 
 (* [pretype_type valcon env evdref lvar c] coerces [c] into a type *)
