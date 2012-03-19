@@ -611,9 +611,9 @@ let dont_expose_case r =
 
 let rec red_elim_const env sigma ref largs =
   let nargs = stack_args_size largs in
-  let largs, unfold_anyway =
+  let largs, unfold_anyway, unfold_nonelim =
     match recargs ref with
-    | None -> largs, false
+    | None -> largs, false, false
     | Some (_,n) when nargs < n -> raise Redelimination
     | Some (l,n) ->
         List.fold_left (fun stack i ->
@@ -622,7 +622,8 @@ let rec red_elim_const env sigma ref largs =
           match kind_of_term (fst rarg) with
           | Construct _ -> stack_assign stack i (app_stack rarg)
           | _ -> raise Redelimination)
-        largs l, n >= 0 && l = [] && nargs >= n in
+        largs l, n >= 0 && l =  [] && nargs >= n, 
+                 n >= 0 && l <> [] && nargs >= n in
   try match reference_eval sigma env ref with
     | EliminationCases n when nargs >= n ->
 	let c = reference_value sigma env ref in
@@ -652,6 +653,9 @@ let rec red_elim_const env sigma ref largs =
 	(match reduce_fix_use_function env sigma f whfun (destFix d) lrest with
 	   | NotReducible -> raise Redelimination
 	   | Reduced (c,rest) -> (nf_beta sigma c, rest))
+    | NotAnElimination when unfold_nonelim -> 
+         let c = reference_value sigma env ref in
+         whd_betaiotazeta sigma (app_stack (c, largs)), empty_stack
     | _ -> raise Redelimination
     with Redelimination when unfold_anyway ->
        let c = reference_value sigma env ref in
