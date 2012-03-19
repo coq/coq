@@ -154,7 +154,7 @@ let possibly_empty_subentries loc (prods,act) =
     | _ -> assert false (* already filtered out *) in
   if has_extraarg prods then
     (* Needs a dynamic check *)
-    (true, <:expr< try Some $aux prods$ with Exit -> None >>)
+    (true, <:expr< try Some $aux prods$ with [ Exit -> None ] >>)
   else
     (* Static optimisation *)
     (false, aux prods)

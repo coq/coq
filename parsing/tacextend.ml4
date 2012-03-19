@@ -141,7 +141,7 @@ let rec possibly_empty_subentries loc = function
              raise Exit) prods in
         if has_extraarg prods then
           (true,<:expr< try Some $mlexpr_of_list (fun x -> x) l$
-                        with Failure "" -> $snd (aux rest)$ >>)
+                        with [ Failure "" -> $snd (aux rest)$ ] >>)
         else
           (true, <:expr< Some $mlexpr_of_list (fun x -> x) l$ >>)
       with Exit -> aux rest in
