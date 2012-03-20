@@ -666,6 +666,12 @@ let list_map_filter_i f =
 	match f i x with None -> l' | Some y -> y::l'
   in aux 0
 
+let list_filter_along f filter l =
+  snd (list_filter2 (fun b c -> f b) (filter,l))
+
+let list_filter_with filter l =
+  list_filter_along (fun x -> x) filter l
+
 let list_subset l1 l2 =
   let t2 = Hashtbl.create 151 in
   List.iter (fun x -> Hashtbl.add t2 x ()) l2;
@@ -1182,6 +1188,12 @@ let array_rev_to_list a =
   let rec tolist i res =
     if i >= Array.length a then res else tolist (i+1) (a.(i) :: res) in
   tolist 0 []
+
+let array_filter_along f filter v =
+  Array.of_list (list_filter_along f filter (Array.to_list v))
+
+let array_filter_with filter v =
+  Array.of_list (list_filter_with filter (Array.to_list v))
 
 (* Stream *)
 

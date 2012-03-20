@@ -87,6 +87,8 @@ val list_duplicates : 'a list -> 'a list
 val list_filter2 : ('a -> 'b -> bool) -> 'a list * 'b list -> 'a list * 'b list
 val list_map_filter : ('a -> 'b option) -> 'a list -> 'b list
 val list_map_filter_i : (int -> 'a -> 'b option) -> 'a list -> 'b list
+val list_filter_with : bool list -> 'a list -> 'a list
+val list_filter_along : ('a -> bool) -> 'a list -> 'b list -> 'b list
 
 (** [list_smartmap f [a1...an] = List.map f [a1...an]] but if for all i
    [ f ai == ai], then [list_smartmap f l==l] *)
@@ -244,6 +246,8 @@ val array_fold_map2' :
 val array_distinct : 'a array -> bool
 val array_union_map : ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
 val array_rev_to_list : 'a array -> 'a list
+val array_filter_along : ('a -> bool) -> 'a list -> 'b array -> 'b array
+val array_filter_with : bool list -> 'a array -> 'a array
 
 (** {6 Streams. } *)
 
