@@ -40,7 +40,7 @@ type unfocusable =
   | Strict
 type _focus_condition = 
     (_focus_kind -> Proofview.proofview -> unfocusable) *
-    (_focus_kind -> focus_info -> focus_info)
+    (_focus_kind -> bool)
 type 'a focus_condition = _focus_condition
 
 let next_kind = ref 0
@@ -49,13 +49,8 @@ let new_focus_kind () =
   incr next_kind;
   r
 
-(* Auxiliary function to define conditions:
-   [check kind1 kind2 inf] returns [inf] if [kind1] and [kind2] match.
-   Otherwise it raises [CheckNext] *)
-exception CheckNext
-(* no handler: confined to this module. *)
-let check kind1 kind2 inf =
-  if kind1=kind2 then inf else raise CheckNext
+(* Auxiliary function to define conditions. *)
+let check kind1 kind2 = kind1=kind2
 
 (* To be authorized to unfocus one must meet the condition prescribed by
     the action which focused.*)
@@ -116,7 +111,7 @@ let no_cond ?loose_end = no_cond_gen CannotUnfocusThisWay ?loose_end
 let done_cond_gen e ~loose_end k0 =
   (cloose loose_end (kind e k0)) &&& pdone e
 let done_cond_gen e ?(loose_end=false) k = done_cond_gen e ~loose_end k , check k
-let done_cond ?loose_end = no_cond_gen CannotUnfocusThisWay ?loose_end
+let done_cond ?loose_end = done_cond_gen CannotUnfocusThisWay ?loose_end
 
 
 (* Subpart of the type of proofs. It contains the parts of the proof which
@@ -342,23 +337,21 @@ let rec unfocus kind pr () =
 
 let unfocus kind pr =
   transaction pr (unfocus kind pr)
-      
-let get_at_point kind ((_,get),inf,_) = get kind inf
+
 exception NoSuchFocus
 (* no handler: should not be allowed to reach toplevel. *)
-exception GetDone of Obj.t
-(* no handler: confined to this module. *)
-let get_in_focus_stack kind stack =
-  try
-    List.iter begin fun pt ->
-      try 
-	raise (GetDone (get_at_point kind pt))
-      with CheckNext -> ()
-    end stack;
-    raise NoSuchFocus
-  with GetDone x -> x
+let rec get_in_focus_stack kind stack =
+  match stack with
+  | ((_,check),inf,_)::stack ->
+      if check kind then inf
+      else get_in_focus_stack kind stack
+  | [] -> raise NoSuchFocus
 let get_at_focus kind pr =
   Obj.magic (get_in_focus_stack kind pr.state.focus_stack)
+
+let is_last_focus kind pr =
+  let ((_,check),_,_) = List.hd pr.state.focus_stack in
+  check kind
 
 let no_focused_goal p =
   Proofview.finished p.state.proofview
