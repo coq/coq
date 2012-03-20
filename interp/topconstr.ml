@@ -903,6 +903,12 @@ let names_of_local_binders bl =
   List.flatten (List.map (function LocalRawAssum(l,_,_)->l|LocalRawDef(l,_)->[l]) bl)
 
 (**********************************************************************)
+(* Miscellaneous *)
+
+let error_invalid_pattern_notation loc =
+  user_err_loc (loc,"",str "Invalid notation for pattern.")
+
+(**********************************************************************)
 (* Functions on constr_expr *)
 
 let constr_loc = function

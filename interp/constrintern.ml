@@ -772,9 +772,6 @@ let message_redundant_alias (id1,id2) =
 
 (* Expanding notations *)
 
-let error_invalid_pattern_notation loc =
-  user_err_loc (loc,"",str "Invalid notation for pattern.")
-
 let chop_aconstr_constructor loc (ind,k) args =
   if List.length args = 0 then (* Tolerance for a @id notation *) args else
     begin
