@@ -51,7 +51,8 @@ open Genarg
 
 
 let compute_renamed_type gls c =
-  rename_bound_vars_as_displayed [] (pf_type_of gls c)
+  rename_bound_vars_as_displayed (*no avoid*) [] (*no rels*) []
+    (pf_type_of gls c)
 
 let qed () = Lemmas.save_named true
 let defined () = Lemmas.save_named false
