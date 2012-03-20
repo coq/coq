@@ -415,3 +415,17 @@ apply mapfuncomp.
 Abort.
 
 End A.
+
+(* Check "with" clauses refer to names as they are printed *)
+
+Definition hide p := forall n:nat, p = n.
+
+Goal forall n, (forall n, n=0) -> hide n -> n=0.
+unfold hide.
+intros n H H'.
+(* H is displayed as (forall n, n=0) *)
+apply H with (n:=n).
+Undo.
+(* H' is displayed as (forall n0, n=n0) *)
+apply H' with (n0:=0).
+Qed.

@@ -406,7 +406,7 @@ let process_goal sigma g =
   let env = Goal.V82.env sigma g in
   let ccl =
     let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
-    string_of_ppcmds (pr_ltype_env_at_top env norm_constr) in
+    string_of_ppcmds (pr_goal_concl_style_env env norm_constr) in
   let process_hyp h_env d acc =
     let d = Term.map_named_declaration (Reductionops.nf_evar sigma) d in
     (string_of_ppcmds (pr_var_decl h_env d)) :: acc in
