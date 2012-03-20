@@ -86,3 +86,11 @@ Notation "'FOO' x" := (S x) (at level 40).
 Goal (2 ++++ 3) = 5.
 reflexivity.
 Abort.
+
+(* Check correct failure handling when a non-constructor notation is
+   used in cases pattern (bug #2724 in 8.3 and 8.4beta) *)
+
+Notation "'FORALL'  x .. y , P" := (forall x, .. (forall y, P) ..)
+  (at level 200, x binder, y binder, right associativity) : type_scope.
+
+Fail Check fun x => match x with S (FORALL x, _) => 0 end.
