@@ -61,3 +61,5 @@ val add_syntactic_definition : identifier -> identifier list * constr_expr ->
 val print_grammar : string -> unit
 
 val check_infix_modifiers : syntax_modifier list -> unit
+
+val with_syntax_protection : ('a -> 'b) -> 'a -> 'b

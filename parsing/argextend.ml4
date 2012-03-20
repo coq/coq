@@ -107,28 +107,17 @@ let rec make_wit loc = function
         value wit = $lid:"wit_"^s$;
       end in WIT.wit >>
 
-let possibly_empty_subentries prods =
-  try
-    Some (List.fold_right (fun e l -> match e with
-    | GramNonTerminal(_,(List0ArgType _| OptArgType _),_,_) ->
-        (* This parses epsilon *) l
-    | GramNonTerminal(_,ExtraArgType s,_,_) ->
-        (* This parses epsilon if s parses it *) s::l
-    | GramTerminal _ | GramNonTerminal(_,_,_,_) ->
-        (* This does not parse epsilon *)
-        (* Not meaningful to have Pair in prods nor to have empty *)
-        (* entries in Lst1 productions *)
-        raise Exit) prods [])
-  with Exit -> None
-
 let has_extraarg =
   List.exists (function GramNonTerminal(_,ExtraArgType _,_,_) -> true | _ -> false)
 
-let statically_known_possibly_empty (prods,_) =
+let statically_known_possibly_empty s (prods,_) =
   List.for_all (function
-    | GramNonTerminal(_,(OptArgType _|List0ArgType _|ExtraArgType _),_,_) ->
-        (* Opt and List0 parses the empty string and for ExtraArg we don't know *)
-        (* (we'll have to test dynamically *)
+    | GramNonTerminal(_,ExtraArgType s',_,_) ->
+        (* For ExtraArg we don't know (we'll have to test dynamically) *)
+        (* unless it is a recursive call *)
+        s <> s'
+    | GramNonTerminal(_,(OptArgType _|List0ArgType _),_,_) ->
+        (* Opt and List0 parses the empty string *)
         true
     | _ ->
         (* This consumes a token for sure *) false)
@@ -140,7 +129,7 @@ let possibly_empty_subentries loc (prods,act) =
     | Some id ->
         let s = Names.string_of_id id in <:expr< let $lid:s$ = $v$ in $e$ >> in
   let rec aux = function
-    | [] -> <:expr< $act$ >>
+    | [] -> <:expr< let loc = $default_loc$ in let _ = loc = loc in $act$ >>
     | GramNonTerminal(_,OptArgType _,_,p) :: tl ->
         bind_name p <:expr< None >> (aux tl)
     | GramNonTerminal(_,List0ArgType _,_,p) :: tl ->
@@ -148,19 +137,22 @@ let possibly_empty_subentries loc (prods,act) =
     | GramNonTerminal(_,(ExtraArgType _ as t),_,p) :: tl ->
         (* We check at runtime if extraarg s parses "epsilon" *)
         let s = match p with None -> "_" | Some id -> Names.string_of_id id in
-        <:expr< let $lid:s$ = match Genarg.default_empty_value $make_globwit loc t$ with
+        <:expr< let $lid:s$ = match Genarg.default_empty_value $make_rawwit loc t$ with
           [ None -> raise Exit
           | Some v -> v ] in $aux tl$ >>
     | _ -> assert false (* already filtered out *) in
   if has_extraarg prods then
-    (* Needs a dynamic check *)
-    (true, <:expr< try Some $aux prods$ with [ Exit -> None ] >>)
+    (* Needs a dynamic check; catch all exceptions if ever some rhs raises *)
+    (* an exception rather than returning a value; *)
+    (* declares loc because some code can refer to it; *)
+    (* ensures loc is used to avoid "unused variable" warning *)
+    (true, <:expr< try Some $aux prods$ with [ _ -> None ] >>)
   else
     (* Static optimisation *)
     (false, aux prods)
 
-let make_possibly_empty_subentries loc cl =
-  let cl = List.filter statically_known_possibly_empty cl in
+let make_possibly_empty_subentries loc s cl =
+  let cl = List.filter (statically_known_possibly_empty s) cl in
   if cl = [] then
     <:expr< None >>
   else
@@ -226,7 +218,7 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   let rawwit = <:expr< $lid:"rawwit_"^s$ >> in
   let globwit = <:expr< $lid:"globwit_"^s$ >> in
   let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
-  let default_value = <:expr< $make_possibly_empty_subentries loc cl$ >> in
+  let default_value = <:expr< $make_possibly_empty_subentries loc s cl$ >> in
   declare_str_items loc
    [ <:str_item<
       value ($lid:"wit_"^s$, $lid:"globwit_"^s$, $lid:"rawwit_"^s$) =
