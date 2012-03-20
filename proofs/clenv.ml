@@ -501,8 +501,8 @@ let make_clenv_binding_gen hyps_only n env sigma (c,t) = function
       let clause = mk_clenv_from_env env sigma n (c,t) in
       clenv_constrain_dep_args hyps_only largs clause
   | ExplicitBindings lbind ->
-      let clause = mk_clenv_from_env env sigma n 
-	(c,rename_bound_vars_as_displayed [] t) 
+      let clause = mk_clenv_from_env env sigma n
+	(c,rename_bound_vars_as_displayed [] [] t)
       in clenv_match_args lbind clause
   | NoBindings ->
       mk_clenv_from_env env sigma n (c,t)

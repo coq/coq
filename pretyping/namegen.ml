@@ -233,22 +233,27 @@ let make_all_name_different env =
    looks for name of same base with lower available subscript beyond current
    subscript *)
 
-let visibly_occur_id id c =
-  let rec occur c = match kind_of_term c with
+let occur_rel p env id =
+  try lookup_name_of_rel p env = Name id
+  with Not_found -> false (* Unbound indice : may happen in debug *)
+
+let visibly_occur_id id (nenv,c) =
+  let rec occur n c = match kind_of_term c with
     | Const _ | Ind _ | Construct _ | Var _
 	  when shortest_qualid_of_global Idset.empty (global_of_constr c)
 	    = qualid_of_ident id -> raise Occur
-    | _ -> iter_constr occur c
+    | Rel p when p>n & occur_rel (p-n) nenv id -> raise Occur
+    | _ -> iter_constr_with_binders succ occur n c
   in
-  try occur c; false
+  try occur 1 c; false
   with Occur -> true
     | Not_found -> false (* Happens when a global is not in the env *)
 
-let next_ident_away_for_default_printing t id avoid =
-  let bad id = List.mem id avoid or visibly_occur_id id t in
+let next_ident_away_for_default_printing env_t id avoid =
+  let bad id = List.mem id avoid or visibly_occur_id id env_t in
   next_ident_away_from id bad
 
-let next_name_away_for_default_printing t na avoid =
+let next_name_away_for_default_printing env_t na avoid =
   let id = match na with
   | Name id   -> id
   | Anonymous ->
@@ -256,7 +261,7 @@ let next_name_away_for_default_printing t na avoid =
       (* taken into account by the function compute_displayed_name_in; *)
       (* just in case, invent a valid name *)
       id_of_string "H" in
-  next_ident_away_for_default_printing t id avoid
+  next_ident_away_for_default_printing env_t id avoid
 
 (**********************************************************************)
 (* Displaying terms avoiding bound variables clashes *)
@@ -279,13 +284,13 @@ let next_name_away_for_default_printing t na avoid =
 type renaming_flags =
   | RenamingForCasesPattern
   | RenamingForGoal
-  | RenamingElsewhereFor of constr
+  | RenamingElsewhereFor of (name list * constr)
 
 let next_name_for_display flags =
   match flags with
   | RenamingForCasesPattern -> next_name_away_in_cases_pattern
   | RenamingForGoal -> next_name_away_in_goal
-  | RenamingElsewhereFor t -> next_name_away_for_default_printing t
+  | RenamingElsewhereFor env_t -> next_name_away_for_default_printing env_t
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
 let compute_displayed_name_in flags avoid na c =
@@ -307,16 +312,20 @@ let compute_displayed_let_name_in flags avoid na c =
   let fresh_id = next_name_for_display flags na avoid in
   (Name fresh_id, fresh_id::avoid)
 
-let rec rename_bound_vars_as_displayed avoid c =
-  let rec rename avoid c =
+let rec rename_bound_vars_as_displayed avoid env c =
+  let rec rename avoid env c =
     match kind_of_term c with
     | Prod (na,c1,c2)  ->
-	let na',avoid' = compute_displayed_name_in (RenamingElsewhereFor c2) avoid na c2 in
-	mkProd (na', c1, rename avoid' c2)
+	let na',avoid' =
+          compute_displayed_name_in
+            (RenamingElsewhereFor (env,c2)) avoid na c2 in
+	mkProd (na', c1, rename avoid' (add_name na' env) c2)
     | LetIn (na,c1,t,c2) ->
-	let na',avoid' = compute_displayed_let_name_in (RenamingElsewhereFor c2) avoid na c2 in
-	mkLetIn (na',c1,t, rename avoid' c2)
-    | Cast (c,k,t) -> mkCast (rename avoid c, k,t)
+	let na',avoid' =
+          compute_displayed_let_name_in
+            (RenamingElsewhereFor (env,c2)) avoid na c2 in
+	mkLetIn (na',c1,t, rename avoid' (add_name na' env) c2)
+    | Cast (c,k,t) -> mkCast (rename avoid env c, k,t)
     | _ -> c
   in
-  rename avoid c
+  rename avoid env c

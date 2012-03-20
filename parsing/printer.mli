@@ -26,7 +26,6 @@ open Tacexpr
 (** Terms *)
 
 val pr_lconstr_env         : env -> constr -> std_ppcmds
-val pr_lconstr_env_at_top  : env -> constr -> std_ppcmds
 val pr_lconstr             : constr -> std_ppcmds
 
 val pr_constr_env          : env -> constr -> std_ppcmds
@@ -44,7 +43,7 @@ val pr_constr_under_binders      : constr_under_binders -> std_ppcmds
 val pr_lconstr_under_binders_env : env -> constr_under_binders -> std_ppcmds
 val pr_lconstr_under_binders     : constr_under_binders -> std_ppcmds
 
-val pr_ltype_env_at_top    : env -> types -> std_ppcmds
+val pr_goal_concl_style_env : env -> types -> std_ppcmds
 val pr_ltype_env           : env -> types -> std_ppcmds
 val pr_ltype               : types -> std_ppcmds
 

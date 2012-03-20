@@ -36,13 +36,19 @@ let delayed_emacs_cmd s =
 (**********************************************************************)
 (** Terms                                                             *)
 
-  (* [at_top] means ids of env must be avoided in bound variables *)
-let pr_constr_core at_top env t =
-  pr_constr_expr (extern_constr at_top env t)
-let pr_lconstr_core at_top env t =
-  pr_lconstr_expr (extern_constr at_top env t)
+(* [goal_concl_style] means that all names of goal/section variables
+   and all names of rel variables (if any) in the given env and all short
+   names of global definitions of the current module must be avoided while
+   printing bound variables.
+   Otherwise, short names of global definitions are printed qualified
+   and only names of goal/section variables and rel names that do
+   _not_ occur in the scope of the binder to be printed are avoided. *)
 
-let pr_lconstr_env_at_top env = pr_lconstr_core true env
+let pr_constr_core goal_concl_style env t =
+  pr_constr_expr (extern_constr goal_concl_style env t)
+let pr_lconstr_core goal_concl_style env t =
+  pr_lconstr_expr (extern_constr goal_concl_style env t)
+
 let pr_lconstr_env env = pr_lconstr_core false env
 let pr_constr_env env = pr_constr_core false env
 
@@ -69,12 +75,12 @@ let pr_lconstr_under_binders_env = pr_constr_under_binders_env_gen pr_lconstr_en
 let pr_constr_under_binders c = pr_constr_under_binders_env (Global.env()) c
 let pr_lconstr_under_binders c = pr_lconstr_under_binders_env (Global.env()) c
 
-let pr_type_core at_top env t =
-  pr_constr_expr (extern_type at_top env t)
-let pr_ltype_core at_top env t =
-  pr_lconstr_expr (extern_type at_top env t)
+let pr_type_core goal_concl_style env t =
+  pr_constr_expr (extern_type goal_concl_style env t)
+let pr_ltype_core goal_concl_style env t =
+  pr_lconstr_expr (extern_type goal_concl_style env t)
 
-let pr_ltype_env_at_top env = pr_ltype_core true env
+let pr_goal_concl_style_env env = pr_ltype_core true env
 let pr_ltype_env env = pr_ltype_core false env
 let pr_type_env env = pr_type_core false env
 
@@ -263,7 +269,7 @@ let default_pr_goal gs =
   let preamb,thesis,penv,pc =
     mt (), mt (),
     pr_context_of env,
-    pr_ltype_env_at_top env (Goal.V82.concl sigma g)
+    pr_goal_concl_style_env env (Goal.V82.concl sigma g)
   in
     preamb ++
     str"  " ++ hv 0 (penv ++ fnl () ++
@@ -280,7 +286,7 @@ let pr_goal_tag g =
 let pr_concl n sigma g =
   let (g,sigma) = Goal.V82.nf_evar sigma g in
   let env = Goal.V82.env sigma g in
-  let pc = pr_ltype_env_at_top env (Goal.V82.concl sigma g) in
+  let pc = pr_goal_concl_style_env env (Goal.V82.concl sigma g) in
     str (emacs_str "")  ++
       str "subgoal " ++ int n ++ pr_goal_tag g ++
       str " is:" ++ cut () ++ str" "  ++ pc

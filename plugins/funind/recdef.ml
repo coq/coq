@@ -128,7 +128,8 @@ let pf_get_new_ids idl g =
     []
 
 let compute_renamed_type gls c =
-  rename_bound_vars_as_displayed [] (pf_type_of gls c)
+  rename_bound_vars_as_displayed (*no avoid*) [] (*no rels*) []
+    (pf_type_of gls c)
 let h'_id = id_of_string "h'"
 let heq_id = id_of_string "Heq"
 let teq_id = id_of_string "teq"

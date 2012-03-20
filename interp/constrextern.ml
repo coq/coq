@@ -943,21 +943,30 @@ let extern_glob_type vars c =
 
 let loc = dummy_loc (* for constr and pattern, locations are lost *)
 
-let extern_constr_gen at_top scopt env t =
-  let avoid = if at_top then ids_of_context env else [] in
-  let r = Detyping.detype at_top avoid (names_of_rel_context env) t in
+let extern_constr_gen goal_concl_style scopt env t =
+  (* "goal_concl_style" means do alpha-conversion using the "goal" convention *)
+  (* i.e.: avoid using the names of goal/section/rel variables and the short *)
+  (* names of global definitions of current module when computing names for *)
+  (* bound variables. *)
+  (* Not "goal_concl_style" means do alpha-conversion avoiding only *)
+  (* those goal/section/rel variables that occurs in the subterm under *)
+  (* consideration; see namegen.ml for further details *)
+  let avoid = if goal_concl_style then ids_of_context env else [] in
+  let rel_env_names = names_of_rel_context env in
+  let r = Detyping.detype goal_concl_style avoid rel_env_names t in
   let vars = vars_of_env env in
   extern false (scopt,[]) vars r
 
-let extern_constr_in_scope at_top scope env t =
-  extern_constr_gen at_top (Some scope) env t
+let extern_constr_in_scope goal_concl_style scope env t =
+  extern_constr_gen goal_concl_style (Some scope) env t
 
-let extern_constr at_top env t =
-  extern_constr_gen at_top None env t
+let extern_constr goal_concl_style env t =
+  extern_constr_gen goal_concl_style None env t
 
-let extern_type at_top env t =
-  let avoid = if at_top then ids_of_context env else [] in
-  let r = Detyping.detype at_top avoid (names_of_rel_context env) t in
+let extern_type goal_concl_style env t =
+  let avoid = if goal_concl_style then ids_of_context env else [] in
+  let rel_env_names = names_of_rel_context env in
+  let r = Detyping.detype goal_concl_style avoid rel_env_names t in
   extern_glob_type (vars_of_env env) r
 
 let extern_sort s = extern_glob_sort (detype_sort s)

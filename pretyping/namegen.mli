@@ -70,7 +70,7 @@ val set_reserved_typed_name : (types -> name) -> unit
 type renaming_flags =
   | RenamingForCasesPattern (** avoid only global constructors *)
   | RenamingForGoal (** avoid all globals (as in intro) *)
-  | RenamingElsewhereFor of constr
+  | RenamingElsewhereFor of (name list * constr)
 
 val make_all_name_different : env -> env
 
@@ -80,4 +80,5 @@ val compute_and_force_displayed_name_in :
   renaming_flags -> identifier list -> name -> constr -> name * identifier list
 val compute_displayed_let_name_in :
   renaming_flags -> identifier list -> name -> constr -> name * identifier list
-val rename_bound_vars_as_displayed : identifier list -> types -> types
+val rename_bound_vars_as_displayed :
+  identifier list -> name list -> types -> types
