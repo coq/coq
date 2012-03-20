@@ -1523,6 +1523,7 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
 	  evdref := evd;
 	  evar'')
     | _ ->
+        progress := true;
 	match
 	  let c,args = decompose_app_vect t in
 	  match kind_of_term c with
@@ -1532,16 +1533,30 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
             (*  possible inversions; we do not treat overlap with a possible *)
             (*  alternative inversion of the subterms of the constructor, etc)*)
 	    (match find_projectable_constructor env evd cstr k args cstr_subst with
-	     | [id] -> Some (mkVar id)
+	     | _::_ as l -> Some (List.map mkVar l)
 	     | _ -> None)
 	  | _ -> None
 	with
-	| Some c -> c
+	| Some l ->
+            let ty = get_type_of env' !evdref t in
+            let candidates =
+              try
+                let t =
+                  map_constr_with_full_binders (fun d (env,k) -> push_rel d env, k+1)
+	            imitate envk t in
+                t::l
+              with _ -> l in
+            (match candidates with
+            | [x] -> x
+            | _ ->
+	      let (evd,evar'',ev'') =
+                materialize_evar (evar_define conv_algo) env' !evdref k ev ty in
+              evdref := restrict_evar evd (fst ev'') None (Some candidates);
+              evar'')
 	| None ->
-	  progress := true;
 	  (* Evar/Rigid problem (or assimilated if not normal): we "imitate" *)
-	  map_constr_with_full_binders (fun d (env,k) -> push_rel d env, k+1)
-	    imitate envk t in
+	    map_constr_with_full_binders (fun d (env,k) -> push_rel d env, k+1)
+	      imitate envk t in
 
   let rhs = whd_beta evd rhs (* heuristic *) in
   let body = imitate (env,0) rhs in
