@@ -178,3 +178,5 @@ val declare_notation_printing_rule : notation -> unparsing_rule -> unit
 val find_notation_printing_rule : notation -> unparsing_rule
 
 (** Rem: printing rules for primitive token are canonical *)
+
+val with_notation_protection : ('a -> 'b) -> 'a -> 'b

@@ -72,3 +72,5 @@ val get_extend_vernac_grammars :
 val recover_notation_grammar :
   notation -> (precedence * tolerability list) ->
   notation_var_internalization_type list * notation_grammar
+
+val with_grammar_rule_protection : ('a -> 'b) -> 'a -> 'b

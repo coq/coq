@@ -78,6 +78,8 @@ type glob_sign = {
   gsigma : Evd.evar_map;
   genv : Environ.env }
 
+val fully_empty_glob_sign : glob_sign
+
 val add_interp_genarg :
   string ->
     (glob_sign -> raw_generic_argument -> glob_generic_argument) *

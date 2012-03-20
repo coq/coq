@@ -132,10 +132,12 @@ let rec possibly_empty_subentries loc = function
                              OptArgType _|
                              ExtraArgType _ as t),_,_)->
             (* This possibly parses epsilon *)
-            let globwit = make_globwit loc t in
-            <:expr< match Genarg.default_empty_value $globwit$ with
+            let rawwit = make_rawwit loc t in
+            <:expr< match Genarg.default_empty_value $rawwit$ with
                     [ None -> failwith ""
-                    | Some v -> Genarg.in_gen $globwit$ v ] >>
+                    | Some v ->
+                        Tacinterp.intern_genarg Tacinterp.fully_empty_glob_sign
+                          (Genarg.in_gen $rawwit$ v) ] >>
         | GramTerminal _ | GramNonTerminal(_,_,_,_) ->
             (* This does not parse epsilon (this Exit is static time) *)
              raise Exit) prods in

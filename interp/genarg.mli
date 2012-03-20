@@ -257,7 +257,7 @@ val app_pair :
 
 (** create a new generic type of argument: force to associate
    unique ML types at each of the three levels *)
-val create_arg : 'globa option ->
+val create_arg : 'rawa option ->
     string ->
       ('a,tlevel) abstract_argument_type
       * ('globa,glevel) abstract_argument_type
@@ -314,4 +314,4 @@ type an_arg_of_this_type
 val in_generic :
   argument_type -> an_arg_of_this_type -> 'co generic_argument
 
-val default_empty_value : ('a,glevel) abstract_argument_type -> 'a option
+val default_empty_value : ('a,rlevel) abstract_argument_type -> 'a option

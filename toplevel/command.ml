@@ -273,7 +273,7 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
   let mldatas = List.map2 (mk_mltype_data evdref env_params params) arities indnames in
 
   let constructors =
-    States.with_state_protection (fun () ->
+    Metasyntax.with_syntax_protection (fun () ->
      (* Temporary declaration of notations and scopes *)
      List.iter (Metasyntax.set_notation_for_interpretation impls) notations;
      (* Interpret the constructor types *)
@@ -753,7 +753,7 @@ let interp_recursive isfix fixl notations =
 
   (* Interp bodies with rollback because temp use of notations/implicit *)
   let fixdefs =
-    States.with_state_protection (fun () ->
+    Metasyntax.with_syntax_protection (fun () ->
       List.iter (Metasyntax.set_notation_for_interpretation impls) notations;
       list_map3 (interp_fix_body evdref env_rec impls) fixctxs fixl fixccls)
       () in

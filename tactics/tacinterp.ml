@@ -2487,6 +2487,10 @@ let make_empty_glob_sign () =
   { ltacvars = ([],[]); ltacrecvars = [];
     gsigma = Evd.empty; genv = Global.env() }
 
+let fully_empty_glob_sign =
+  { ltacvars = ([],[]); ltacrecvars = [];
+    gsigma = Evd.empty; genv = Environ.empty_env }
+
 (* Initial call for interpretation *)
 let interp_tac_gen lfun avoid_ids debug t gl =
   interp_tactic { lfun=lfun; avoid_ids=avoid_ids; debug=debug; trace=[] }
