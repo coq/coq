@@ -451,11 +451,11 @@ let is_instance = function
       is_class (IndRef ind)
   | _ -> false
 
-let is_implicit_arg k =
-  match k with
-      ImplicitArg (ref, (n, id), b) -> true
-    | InternalHole -> true
-    | _ -> false
+let is_implicit_arg k = k <> GoalEvar
+  (* match k with *)
+  (*     ImplicitArg (ref, (n, id), b) -> true *)
+  (*   | InternalHole -> true *)
+  (*   | _ -> false *)
 
 
 (* To embed a boolean for resolvability status.
@@ -500,6 +500,6 @@ let has_typeclasses evd =
 
 let solve_instanciations_problem = ref (fun _ _ _ _ _ -> assert false)
 
-let resolve_typeclasses ?(onlyargs=false) ?(split=true) ?(fail=true) env evd =
+let resolve_typeclasses ?(with_goals=false) ?(split=true) ?(fail=true) env evd =
   if not (has_typeclasses evd) then evd
-  else !solve_instanciations_problem env evd onlyargs split fail
+  else !solve_instanciations_problem env evd with_goals split fail

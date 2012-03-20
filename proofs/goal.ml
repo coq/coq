@@ -162,8 +162,8 @@ module Refinable = struct
   (* spiwack: it is not very fine grain since it solves all typeclasses holes,
       not only those containing the current goal, or a given term. But it
       seems to fit our needs so far. *)
-  let resolve_typeclasses ?onlyargs ?split ?(fail=false) () env rdefs _ _ =
-    rdefs:=Typeclasses.resolve_typeclasses ?onlyargs ?split ~fail env !rdefs;
+  let resolve_typeclasses ?with_goals ?split ?(fail=false) () env rdefs _ _ =
+    rdefs:=Typeclasses.resolve_typeclasses ?with_goals ?split ~fail env !rdefs;
     ()
 
 

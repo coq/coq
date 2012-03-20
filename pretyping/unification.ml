@@ -966,7 +966,7 @@ let check_types env flags (sigma,_,_ as subst) m n =
 
 let try_resolve_typeclasses env evd flags m n =
   if flags.resolve_evars then
-    try Typeclasses.resolve_typeclasses ~onlyargs:false ~split:false
+    try Typeclasses.resolve_typeclasses ~with_goals:false ~split:false
 	  ~fail:true env evd
     with e when Typeclasses_errors.unsatisfiable_exception e ->
       error_cannot_unify env evd (m, n)

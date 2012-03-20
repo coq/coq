@@ -323,7 +323,7 @@ let coerce_itf loc env isevars v t c1 =
 
 let saturate_evd env evd =
   Typeclasses.resolve_typeclasses
-    ~onlyargs:true ~split:true ~fail:false env evd
+    ~with_goals:false ~split:true ~fail:false env evd
 
 (* appliquer le chemin de coercions p à hj *)
 let apply_coercion env sigma p hj typ_cl =

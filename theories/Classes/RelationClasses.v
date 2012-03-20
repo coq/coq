@@ -316,7 +316,8 @@ Notation "∙⊥∙" := false_predicate : predicate_scope.
 
 (** Predicate equivalence is an equivalence, and predicate implication defines a preorder. *)
 
-Program Instance predicate_equivalence_equivalence : Equivalence (@predicate_equivalence l).
+Program Instance predicate_equivalence_equivalence : 
+  Equivalence (@predicate_equivalence l).
 
   Next Obligation.
     induction l ; firstorder.
