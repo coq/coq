@@ -779,10 +779,18 @@ let pr_evar_info evi =
       | Evar_empty -> mt ()
       | Evar_defined c -> spc() ++ str"=> "  ++ print_constr c
   in
+  let candidates =
+    match evi.evar_body, evi.evar_candidates with
+      | Evar_empty, Some l ->
+           spc () ++ str "{" ++
+           prlist_with_sep (fun () -> str "|") print_constr l ++ str "}"
+      | _ ->
+          mt ()
+  in
   let src = str "(" ++ pr_evar_source (snd evi.evar_source) ++ str ")" in
   hov 2
     (str"["  ++ phyps ++ spc () ++ str"|- "  ++ pty ++ pb ++ str"]" ++
-       spc() ++ src)
+       candidates ++ spc() ++ src)
 
 let compute_evar_dependency_graph (sigma:evar_map) =
   (* Compute the map binding ev to the evars whose body depends on ev *)

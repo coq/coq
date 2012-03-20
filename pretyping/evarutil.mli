@@ -17,6 +17,9 @@ open Evd
 open Environ
 open Reductionops
 
+val restrict_upon_filter :  Evd.evar_map ->
+           Evd.evar -> (constr -> bool) -> constr list -> bool list option
+
 (** {5 This modules provides useful functions for unification modulo evars } *)
 
 (** {6 Metas} *)
@@ -86,7 +89,7 @@ val whd_head_evar :  evar_map -> constr -> constr
 
 val is_ground_term :  evar_map -> constr -> bool
 val is_ground_env  :  evar_map -> env -> bool
-val solve_refl : conv_fun -> env ->  evar_map -> 
+val solve_refl : ?can_drop:bool -> conv_fun -> env ->  evar_map ->
   existential_key -> constr array -> constr array -> evar_map
 val solve_simple_eqn : conv_fun -> ?choose:bool -> env ->  evar_map ->
   bool option * existential * constr -> evar_map * bool
