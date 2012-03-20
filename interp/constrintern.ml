@@ -868,9 +868,6 @@ let message_redundant_alias (id1,id2) =
 
 (* Expanding notations *)
 
-let error_invalid_pattern_notation loc =
-  user_err_loc (loc,"",str "Invalid notation for pattern.")
-
 let rec subst_pat_iterator y t (subst,p) = match p with
   | PatVar (_,id) as x ->
       if id = Name y then t else [subst,x]

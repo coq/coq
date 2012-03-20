@@ -270,3 +270,7 @@ val ntn_loc :
   loc -> constr_notation_substitution -> string -> (int * int) list
 val patntn_loc :
   loc -> cases_pattern_notation_substitution -> string -> (int * int) list
+
+(** For cases pattern parsing errors *)
+
+val error_invalid_pattern_notation : Pp.loc -> 'a

@@ -107,11 +107,14 @@ let make_constr_action
   in
   make ([],[],[]) (List.rev pil)
 
+let check_cases_pattern_env loc (env,envlist,hasbinders) =
+  if hasbinders then error_invalid_pattern_notation loc else (env,envlist)
+
 let make_cases_pattern_action
   (f : loc -> cases_pattern_notation_substitution -> cases_pattern_expr) pil =
-  let rec make (env,envlist as fullenv) = function
+  let rec make (env,envlist,hasbinders as fullenv) = function
   | [] ->
-      Gram.action (fun loc -> f loc fullenv)
+      Gram.action (fun loc -> f loc (check_cases_pattern_env loc fullenv))
   | (GramConstrTerminal _ | GramConstrNonTerminal (_,None)) :: tl ->
       (* parse a non-binding item *)
       Gram.action (fun _ -> make fullenv tl)
@@ -119,28 +122,37 @@ let make_cases_pattern_action
       (* parse a binding non-terminal *)
     (match typ with
     | ETConstr _ -> (* pattern non-terminal *)
-        Gram.action (fun (v:cases_pattern_expr) -> make (v::env,envlist) tl)
+        Gram.action (fun (v:cases_pattern_expr) ->
+          make (v::env, envlist, hasbinders) tl)
     | ETReference ->
         Gram.action (fun (v:reference) ->
-	  make (CPatAtom (dummy_loc,Some v) :: env, envlist) tl)
+	  make (CPatAtom (dummy_loc,Some v) :: env, envlist, hasbinders) tl)
     | ETName ->
         Gram.action (fun (na:name located) ->
-	  make (cases_pattern_expr_of_name na :: env, envlist) tl)
+	  make (cases_pattern_expr_of_name na :: env, envlist, hasbinders) tl)
     | ETBigint ->
         Gram.action (fun (v:Bigint.bigint) ->
-	  make (CPatPrim (dummy_loc,Numeral v) :: env, envlist) tl)
+	  make (CPatPrim (dummy_loc,Numeral v) :: env, envlist, hasbinders) tl)
     | ETConstrList (_,_) ->
         Gram.action  (fun (vl:cases_pattern_expr list) ->
-	  make (env, vl :: envlist) tl)
-    | (ETPattern | ETBinderList _ | ETBinder _ | ETOther _) ->
-	failwith "Unexpected entry of type cases pattern or other")
+	  make (env, vl :: envlist, hasbinders) tl)
+    | ETBinder _ | ETBinderList (true,_) ->
+	Gram.action (fun (v:local_binder list) ->
+	  make (env, envlist, hasbinders) tl)
+    | ETBinderList (false,_) ->
+	Gram.action (fun (v:local_binder list list) ->
+	  make (env, envlist, true) tl)
+    | (ETPattern | ETOther _) ->
+        anomaly "Unexpected entry of type cases pattern or other")
   | GramConstrListMark (n,b) :: tl ->
       (* Rebuild expansions of ConstrList *)
       let heads,env = list_chop n env in
-      if b then make (env,(heads@List.hd envlist)::List.tl envlist) tl
-      else make (env,heads::envlist) tl
+      if b then
+        make (env,(heads@List.hd envlist)::List.tl envlist,hasbinders) tl
+      else
+        make (env,heads::envlist,hasbinders) tl
   in
-  make ([],[]) (List.rev pil)
+  make ([],[],false) (List.rev pil)
 
 let rec make_constr_prod_item assoc from forpat = function
   | GramConstrTerminal tok :: l ->
