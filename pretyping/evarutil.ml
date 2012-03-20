@@ -704,11 +704,11 @@ let is_unification_pattern_meta env nb m l t =
     None
 
 let is_unification_pattern_evar env evd (evk,args) l t =
-  if List.for_all (fun x -> isRel x || isVar x) l (* common failure case *) then
+  if List.for_all (fun x -> isRel x || isVar x) l & not (occur_evar evk t) then
     let args = remove_instance_local_defs evd evk (Array.to_list args) in
     let n = List.length args in
     match find_unification_pattern_args env (args @ l) t with
-    | Some l when not (occur_evar evk t) -> Some (list_skipn n l)
+    | Some l -> Some (list_skipn n l)
     | _ -> None
   else
     None
@@ -1285,14 +1285,40 @@ let restrict_candidates conv_algo env evd filter1 (evk1,argsv1) (evk2,argsv2) =
 
 exception CannotProject of bool list option
 
-let has_constrainable_free_vars evd aliases k (fv_rels,fv_ids) t =
-  match kind_of_term (expansion_of_var aliases t) with
+(* Assume that FV(?n[x1:=t1..xn:=tn]) belongs to some set U.
+   Can ?n be instantiated by a term u depending essentially on xi such that the
+   FV(u[x1:=t1..xn:=tn]) are in the set U?
+   - If ti is a variable, it has to be in U.
+   - If ti is a constructor, its parameters cannot be erased even if u
+     matches on it, so we have to discard ti if the parameters
+     contain variables not in U.
+   - If ti is rigid, we have to discard it if it contains variables in U.
+
+  Note: when restricting as part of an equation ?n[x1:=t1..xn:=tn] = ?m[...]
+  then, occurrences of ?m in the ti can be seen, like variables, as occurrences
+  of subterms to eventually discard so as to be allowed to keep ti.
+*)
+
+let rec is_constrainable_in k (ev,(fv_rels,fv_ids) as g) t =
+  let f,args = decompose_app_vect t in
+  match kind_of_term f with
+  | Construct (ind,_) ->
+      let params,_ = array_chop (Inductiveops.inductive_nparams ind) args in
+      array_for_all (is_constrainable_in k g) params
+  | Ind _ -> array_for_all (is_constrainable_in k g) args
+  | Prod (_,t1,t2) -> is_constrainable_in k g t1 && is_constrainable_in k g t2
+  | Evar (ev',_) -> ev' <> ev (*If ev' needed, one may also try to restrict it*)
   | Var id -> Idset.mem id fv_ids
   | Rel n -> n <= k || Intset.mem n fv_rels
-  | _ ->
-      (* TODO: try to see if evars in t can be restricted so that the free
-         vars of t are in fvs and return false if impossible *)
-      true
+  | Sort _ -> true
+  | _ -> (* We don't try to be more clever *) true
+
+let has_constrainable_free_vars evd aliases k ev (fv_rels,fv_ids as fvs) t =
+  let t = expansion_of_var aliases t in
+  match kind_of_term t with
+  | Var id -> Idset.mem id fv_ids
+  | Rel n -> n <= k || Intset.mem n fv_rels
+  | _ -> is_constrainable_in k (ev,fvs) t
 
 exception EvarSolvedOnTheFly of evar_map * constr
 
@@ -1300,7 +1326,8 @@ let project_evar_on_evar g env evd aliases k2 (evk1,argsv1 as ev1) (evk2,argsv2 
   (* Apply filtering on ev1 so that fvs(ev1) are in fvs(ev2). *)
   let fvs2 = free_vars_and_rels_up_alias_expansion aliases (mkEvar ev2) in
   let filter1 = restrict_upon_filter evd evk1
-    (has_constrainable_free_vars evd aliases k2 fvs2) (Array.to_list argsv1) in
+    (has_constrainable_free_vars evd aliases k2 evk2 fvs2)
+    (Array.to_list argsv1) in
   (* Only try pruning on variable substitutions, postpone otherwise. *)
   (* Rules out non-linear instances. *)
   if is_unification_pattern_pure_evar env evd ev2 (mkEvar ev1) then
