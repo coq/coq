@@ -195,7 +195,7 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
           evar_eqappr_x ts env evd pbty
             (decompose_app term1) (decompose_app term2)
 
-and evar_eqappr_x ?(rhs_is_stuck_proj = false)
+and evar_eqappr_x ?(rhs_is_already_stuck = false)
   ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
   (* Evar must be undefined since we have flushed evars *)
   match (flex_kind_of_term term1 l1, flex_kind_of_term term2 l2) with
@@ -324,13 +324,25 @@ and evar_eqappr_x ?(rhs_is_stuck_proj = false)
           (* heuristic: unfold second argument first, exception made
              if the first argument is a beta-redex (expand a constant
              only if necessary) or the second argument is potentially
-             usable as a canonical projection *)
-          let rhs_is_stuck_proj =
-            rhs_is_stuck_proj || is_open_canonical_projection env i appr2 in
-	  if isLambda flex1 || rhs_is_stuck_proj then
+             usable as a canonical projection or canonical value *)
+          let rec is_unnamed (hd, args) = match kind_of_term hd with
+            | (Var _|Construct _|Ind _|Const _|Prod _|Sort _) -> false
+            | (Case _|Fix _|CoFix _|Meta _|Rel _)-> true
+            | Evar _ -> false (* immediate solution without Canon Struct *)
+            | Lambda _ -> assert(args = []); true
+            | LetIn (_,b,_,c) -> 
+                is_unnamed (evar_apprec ts env i args (subst1 b c))
+            | App _| Cast _ -> assert false in
+          let rhs_is_stuck_and_unnamed () =
+            match eval_flexible_term ts env flex2 with
+            | None -> false
+            | Some v2 -> is_unnamed (evar_apprec ts env i l2 v2) in
+          let rhs_is_already_stuck =
+            rhs_is_already_stuck || rhs_is_stuck_and_unnamed () in
+	  if isLambda flex1 || rhs_is_already_stuck then
 	    match eval_flexible_term ts env flex1 with
 	    | Some v1 ->
-		evar_eqappr_x ~rhs_is_stuck_proj 
+		evar_eqappr_x ~rhs_is_already_stuck 
                   ts env i pbty (evar_apprec ts env i l1 v1) appr2
 	    | None ->
 		match eval_flexible_term ts env flex2 with
@@ -544,7 +556,7 @@ and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) 
     (fun i -> evar_conv_x trs env i CONV c1 (applist (c,(List.rev ks))));
     (fun i -> ise_list2 i (fun i -> evar_conv_x trs env i CONV) ts ts1)]
 
-(* getting rid of the optional argument rhs_is_stuck_proj *)
+(* getting rid of the optional argument rhs_is_already_stuck *)
 let evar_eqappr_x ts env evd pbty appr1 appr2 =
   evar_eqappr_x ts env evd pbty appr1 appr2
 
