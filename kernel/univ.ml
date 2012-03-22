@@ -33,25 +33,33 @@ module UniverseLevel = struct
 
   type t =
     | Set
-    | Level of Names.dir_path * int
+    | Level of int * Names.dir_path
 
-  (* A specialized comparison function: we compare the [int] part
-     first (this property is used by the [check_sorted] function
-     below). This way, most of the time, the [dir_path] part is not
-     considered. *)
+  (* A specialized comparison function: we compare the [int] part first.
+     This way, most of the time, the [dir_path] part is not considered.
+
+     Normally, placing the [int] first in the pair above in enough in Ocaml,
+     but to be sure, we write below our own comparison function.
+
+     Note: this property is used by the [check_sorted] function below. *)
 
   let compare u v = match u,v with
     | Set, Set -> 0
     | Set, _ -> -1
     | _, Set -> 1
-    | Level (dp1, i1), Level (dp2, i2) ->
+    | Level (i1, dp1), Level (i2, dp2) ->
       if i1 < i2 then -1
       else if i1 > i2 then 1
       else compare dp1 dp2
 
+  let equal u v = match u,v with
+    | Set, Set -> true
+    | Level (i1, dp1), Level (i2, dp2) -> i1 = i2 && dp1 = dp2
+    | _ -> false
+
   let to_string = function
     | Set -> "Set"
-    | Level (d,n) -> Names.string_of_dirpath d^"."^string_of_int n
+    | Level (n,d) -> Names.string_of_dirpath d^"."^string_of_int n
 end
 
 module UniverseLMap = Map.Make (UniverseLevel)
@@ -77,7 +85,7 @@ type universe =
   | Atom of UniverseLevel.t
   | Max of UniverseLevel.t list * UniverseLevel.t list
 
-let make_universe_level (m,n) = UniverseLevel.Level (m,n)
+let make_universe_level (m,n) = UniverseLevel.Level (n,m)
 let make_universe l = Atom l
 let make_univ c = Atom (make_universe_level c)
 
@@ -114,7 +122,7 @@ let super = function
 let sup u v =
   match u,v with
     | Atom u, Atom v ->
-	if UniverseLevel.compare u v = 0 then Atom u else Max ([u;v],[])
+	if UniverseLevel.equal u v then Atom u else Max ([u;v],[])
     | u, Max ([],[]) -> u
     | Max ([],[]), v -> v
     | Atom u, Max (gel,gtl) -> Max (list_add_set u gel,gtl)
@@ -513,7 +521,7 @@ type constraint_function =
 
 let constraint_add_leq v u c =
   (* We just discard trivial constraints like Set<=u or u<=u *)
-  if v = UniverseLevel.Set || UniverseLevel.compare v u = 0 then c
+  if v = UniverseLevel.Set || UniverseLevel.equal v u then c
   else Constraint.add (v,Le,u) c
 
 let enforce_geq u v c =
@@ -528,7 +536,7 @@ let enforce_eq u v c =
   match (u,v) with
     | Atom u, Atom v ->
       (* We discard trivial constraints like u=u *)
-      if UniverseLevel.compare u v = 0 then c else Constraint.add (u,Eq,v) c
+      if UniverseLevel.equal u v then c else Constraint.add (u,Eq,v) c
     | _ -> anomaly "A universe comparison can only happen between variables"
 
 let merge_constraints c g =
@@ -676,7 +684,7 @@ let bellman_ford bottom g =
 let sort_universes orig =
   let mp = Names.make_dirpath [Names.id_of_string "Type"] in
   let rec make_level accu g i =
-    let type0 = UniverseLevel.Level (mp, i) in
+    let type0 = UniverseLevel.Level (i, mp) in
     let distances = bellman_ford type0 g in
     let accu, continue = UniverseLMap.fold (fun u x (accu, continue) ->
       let continue = continue || x < 0 in
@@ -713,7 +721,7 @@ let sort_universes orig =
   let max, levels = make_level UniverseLMap.empty orig 0 in
   (* defensively check that the result makes sense *)
   check_sorted orig levels;
-  let types = Array.init (max+1) (fun x -> UniverseLevel.Level (mp, x)) in
+  let types = Array.init (max+1) (fun x -> UniverseLevel.Level (x, mp)) in
   let g = UniverseLMap.map (fun x -> Equiv types.(x)) levels in
   let g =
     let rec aux i g =
@@ -734,7 +742,7 @@ let sort_universes orig =
 (* Temporary inductive type levels *)
 
 let fresh_level =
-  let n = ref 0 in fun () -> incr n; UniverseLevel.Level (Names.make_dirpath [],!n)
+  let n = ref 0 in fun () -> incr n; UniverseLevel.Level (!n, Names.make_dirpath [])
 
 let fresh_local_univ () = Atom (fresh_level ())
 
@@ -864,10 +872,10 @@ module Hunivlevel =
       type u = Names.dir_path -> Names.dir_path
       let hash_sub hdir = function
 	| UniverseLevel.Set -> UniverseLevel.Set
-	| UniverseLevel.Level (d,n) -> UniverseLevel.Level (hdir d,n)
+	| UniverseLevel.Level (n,d) -> UniverseLevel.Level (n,hdir d)
       let equal l1 l2 = match l1,l2 with
 	| UniverseLevel.Set, UniverseLevel.Set -> true
-	| UniverseLevel.Level (d,n), UniverseLevel.Level (d',n') ->
+	| UniverseLevel.Level (n,d), UniverseLevel.Level (n',d') ->
 	  n == n' && d == d'
 	| _ -> false
       let hash = Hashtbl.hash
