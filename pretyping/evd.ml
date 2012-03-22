@@ -539,11 +539,11 @@ let set_leq_sort ({evars = (sigma, (us, sm))} as d) s1 s2 =
 	  else (raise (Univ.UniverseInconsistency (Univ.Le, u1, u2)))
      | Type u, Prop c -> 
 	  if c = Pos then 
-	    add_constraints d (Univ.enforce_geq Univ.type0_univ u Univ.empty_constraint)
+	    add_constraints d (Univ.enforce_leq u Univ.type0_univ Univ.empty_constraint)
 	  else raise (Univ.UniverseInconsistency (Univ.Le, u1, u2))
       | _, Type u ->
 	  if is_univ_var_or_set u then
-	    add_constraints d (Univ.enforce_geq u2 u1 Univ.empty_constraint)
+	    add_constraints d (Univ.enforce_leq u1 u2 Univ.empty_constraint)
 	  else raise (Univ.UniverseInconsistency (Univ.Le, u1, u2))
 
 let is_univ_level_var us u =

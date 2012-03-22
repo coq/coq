@@ -194,7 +194,7 @@ let sort_cmp pb s0 s1 cuniv =
 	assert (is_univ_variable u2);
 	(match pb with
            | CONV -> enforce_eq u1 u2 cuniv
-	   | CUMUL -> enforce_geq u2 u1 cuniv)
+	   | CUMUL -> enforce_leq u1 u2 cuniv)
     | (_, _) -> raise NotConvertible
 
 

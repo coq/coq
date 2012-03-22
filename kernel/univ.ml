@@ -335,12 +335,24 @@ let is_lt g arcu arcv = (compare g arcu arcv = LT)
    Adding u>v is consistent iff compare(v,u) = NLE
     and then it is redundant iff compare(u,v) = LT *)
 
-(** * Universe checks [check_eq] and [check_geq], used in coqchk *)
+(** * Universe checks [check_eq] and [check_leq], used in coqchk *)
 
-let compare_eq g u v =
+(** First, checks on universe levels *)
+
+let check_equal g u v =
   let g, arcu = safe_repr g u in
   let _, arcv = safe_repr g v in
   arcu == arcv
+
+let check_smaller g strict u v =
+  let g, arcu = safe_repr g u in
+  let g, arcv = safe_repr g v in
+  if strict then
+    is_lt g arcu arcv
+  else
+    arcu == snd (safe_repr g UniverseLevel.Set) || is_leq g arcu arcv
+
+(** Then, checks on universes *)
 
 type check_function = universes -> universe -> universe -> bool
 
@@ -350,36 +362,22 @@ let incl_list cmp l1 l2 =
 let compare_list cmp l1 l2 =
   incl_list cmp l1 l2 && incl_list cmp l2 l1
 
-let rec check_eq g u v =
-  match (u,v) with
-    | Atom ul, Atom vl -> compare_eq g ul vl
+let check_eq g u v =
+  match u,v with
+    | Atom ul, Atom vl -> check_equal g ul vl
     | Max(ule,ult), Max(vle,vlt) ->
         (* TODO: remove elements of lt in le! *)
-        compare_list (compare_eq g) ule vle &&
-        compare_list (compare_eq g) ult vlt
+        compare_list (check_equal g) ule vle &&
+        compare_list (check_equal g) ult vlt
     | _ -> anomaly "check_eq" (* not complete! (Atom(u) = Max([u],[]) *)
 
-let compare_greater g strict u v =
-  let g, arcu = safe_repr g u in
-  let g, arcv = safe_repr g v in
-  if strict then
-    is_lt g arcv arcu
-  else
-    arcv == snd (safe_repr g UniverseLevel.Set) || is_leq g arcv arcu
-
-(*
-let compare_greater g strict u v =
-  let b = compare_greater g strict u v in
-  ppnl(str (if b then if strict then ">" else ">=" else "NOT >="));
-  b
-*)
-let check_geq g u v =
-  match u, v with
-    | Atom ul, Atom vl -> compare_greater g false ul vl
-    | Atom ul, Max(le,lt) ->
-        List.for_all (fun vl -> compare_greater g false ul vl) le &&
-        List.for_all (fun vl -> compare_greater g true ul vl) lt
-    | _ -> anomaly "check_greater"
+let check_leq g u v =
+  match u,v with
+    | Atom ul, Atom vl -> check_smaller g false ul vl
+    | Max(le,lt), Atom vl ->
+        List.for_all (fun ul -> check_smaller g false ul vl) le &&
+        List.for_all (fun ul -> check_smaller g true ul vl) lt
+    | _ -> anomaly "check_leq"
 
 (** Enforcing new constraints : [setlt], [setleq], [merge], [merge_disc] *)
 
@@ -524,12 +522,12 @@ let constraint_add_leq v u c =
   if v = UniverseLevel.Set || UniverseLevel.equal v u then c
   else Constraint.add (v,Le,u) c
 
-let enforce_geq u v c =
+let enforce_leq u v c =
   match u, v with
-  | Atom u, Atom v -> constraint_add_leq v u c
-  | Atom u, Max (gel,gtl) ->
-      let d = List.fold_right (fun v -> constraint_add_leq v u) gel c in
-      List.fold_right (fun v -> Constraint.add (v,Lt,u)) gtl d
+  | Atom u, Atom v -> constraint_add_leq u v c
+  | Max (gel,gtl), Atom v ->
+      let d = List.fold_right (fun u -> constraint_add_leq u v) gel c in
+      List.fold_right (fun u -> Constraint.add (u,Lt,v)) gtl d
   | _ -> anomaly "A universe bound can only be a variable"
 
 let enforce_eq u v c =

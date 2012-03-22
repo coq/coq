@@ -177,9 +177,9 @@ let check_predicativity env s small level =
       Type u, _ ->
         let u' = fresh_local_univ () in
         let cst =
-          merge_constraints (enforce_geq u' u empty_constraint)
+          merge_constraints (enforce_leq u u' empty_constraint)
             (universes env) in
-        if not (check_geq cst u' level) then
+        if not (check_leq cst level u') then
           failwith "impredicative Type inductive type"
     | Prop Pos, Some ImpredicativeSet -> ()
     | Prop Pos, _ ->

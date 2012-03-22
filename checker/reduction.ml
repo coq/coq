@@ -154,7 +154,7 @@ let sort_cmp univ pb s0 s1 =
         if not
 	  (match pb with
             | CONV -> check_eq univ u1 u2
-	    | CUMUL -> check_geq univ u2 u1)
+	    | CUMUL -> check_leq univ u1 u2)
         then raise NotConvertible
     | (_, _) -> raise NotConvertible
 

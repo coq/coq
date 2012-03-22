@@ -42,7 +42,7 @@ val sup   : universe -> universe -> universe
 type universes
 
 type check_function = universes -> universe -> universe -> bool
-val check_geq : check_function
+val check_leq : check_function
 val check_eq : check_function
 
 (** The empty graph of universes *)
@@ -60,7 +60,7 @@ val is_empty_constraint : constraints -> bool
 
 type constraint_function = universe -> universe -> constraints -> constraints
 
-val enforce_geq : constraint_function
+val enforce_leq : constraint_function
 val enforce_eq : constraint_function
 
 (** {6 ... } *)

@@ -256,7 +256,7 @@ let refresh_arity env ar =
   match hd with
       Sort (Type u) when not (is_univ_variable u) ->
         let u' = fresh_local_univ() in
-        let env' = add_constraints (enforce_geq u' u empty_constraint) env in
+        let env' = add_constraints (enforce_leq u u' empty_constraint) env in
         env', mkArity (ctxt,Type u')
     | _ -> env, ar
 

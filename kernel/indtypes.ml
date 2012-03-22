@@ -263,9 +263,9 @@ let typecheck_inductive env mie =
 	  (* conclusions of the parameters *)
           (* We enforce [u >= lev] in case [lev] has a strict upper *)
           (* constraints over [u] *)
-	  Inr (param_ccls, lev), enforce_geq u lev cst
+	  Inr (param_ccls, lev), enforce_leq lev u cst
       | Type u (* Not an explicit occurrence of Type *) ->
-	  Inl (info,full_arity,s), enforce_geq u lev cst
+	  Inl (info,full_arity,s), enforce_leq lev u cst
       | Prop Pos when engagement env <> Some ImpredicativeSet ->
 	  (* Predicative set: check that the content is indeed predicative *)
 	  if not (is_type0m_univ lev) & not (is_type0_univ lev) then

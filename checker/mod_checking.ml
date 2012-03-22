@@ -22,7 +22,7 @@ let refresh_arity ar =
       Sort (Type u) when not (Univ.is_univ_variable u) ->
         let u' = Univ.fresh_local_univ() in
         mkArity (ctxt,Type u'),
-        Univ.enforce_geq u' u Univ.empty_constraint
+        Univ.enforce_leq u u' Univ.empty_constraint
     | _ -> ar, Univ.empty_constraint
 
 let check_constant_declaration env kn cb =
