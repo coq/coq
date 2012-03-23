@@ -1,3 +1,5 @@
+Module Type LocalNat.
+
 Inductive nat : Set :=
  | O : nat
  | S : nat->nat.
@@ -5,7 +7,8 @@ Check nat.
 Check O.
 Check S.
 
-Reset nat.
+End LocalNat.
+
 Print nat.
 
 
@@ -477,10 +480,10 @@ Qed.
 
 
 
-(*
 
-Check (fun (P:Prop->Prop)(p: ex_Prop P) =>
+Fail Check (fun (P:Prop->Prop)(p: ex_Prop P) =>
       match p with exP_intro X HX => X end).
+(*
 Error:
 Incorrect elimination of "p" in the inductive type
 "ex_Prop", the return type has sort "Type" while it should be
@@ -489,12 +492,11 @@ Incorrect elimination of "p" in the inductive type
 Elimination of an inductive object of sort "Prop"
 is not allowed on a predicate in sort "Type"
 because proofs can be eliminated only to build proofs
-
 *)
 
-(*
-Check (match prop_inject with (prop_intro P p) => P end).
 
+Fail Check (match prop_inject with (prop_intro p) => p end).
+(*
 Error:
 Incorrect elimination of "prop_inject" in the inductive type
 "prop", the return type has sort "Type" while it should be
@@ -503,13 +505,12 @@ Incorrect elimination of "prop_inject" in the inductive type
 Elimination of an inductive object of sort "Prop"
 is not allowed on a predicate in sort "Type"
 because proofs can be eliminated only to build proofs
-
 *)
 Print prop_inject.
 
 (*
 prop_inject =
-prop_inject = prop_intro prop (fun H : prop => H)
+prop_inject = prop_intro prop
      : prop
 *)
 
@@ -520,25 +521,23 @@ Inductive  typ : Type :=
 Definition typ_inject: typ.
 split.
 exact typ.
+Fail Defined.
 (*
-Defined.
-
 Error: Universe Inconsistency.
 *)
 Abort.
-(*
 
-Inductive aSet : Set :=
+Fail Inductive aSet : Set :=
   aSet_intro: Set -> aSet.
-
-
+(*
 User error: Large non-propositional inductive types must be in Type
-
 *)
 
 Inductive ex_Set  (P : Set -> Prop) : Type :=
   exS_intro : forall X : Set, P X -> ex_Set P.
 
+
+Module Type Version1.
 
 Inductive comes_from_the_left (P Q:Prop): P \/ Q -> Prop :=
   c1 : forall p, comes_from_the_left P Q (or_introl (A:=P) Q p).
@@ -553,21 +552,15 @@ Goal ~(comes_from_the_left _ _ (or_intror True I)).
  *)
 Abort.
 
-Reset comes_from_the_left.
+End Version1.
 
-(*
-
-
-
-
-
-
- Definition comes_from_the_left (P Q:Prop)(H:P \/ Q): Prop :=
+Fail Definition comes_from_the_left (P Q:Prop)(H:P \/ Q): Prop :=
   match H with
          |  or_introl p => True
          |  or_intror q => False
   end.
 
+(*
 Error:
 Incorrect elimination of "H" in the inductive type
 "or", the return type has sort "Type" while it should be
@@ -576,7 +569,6 @@ Incorrect elimination of "H" in the inductive type
 Elimination of an inductive object of sort "Prop"
 is not allowed on a predicate in sort "Type"
 because proofs can be eliminated only to build proofs
-
 *)
 
 Definition comes_from_the_left_sumbool
@@ -737,6 +729,7 @@ Fixpoint plus'' (n p:nat) {struct n} : nat :=
           | S m => plus'' m (S p)
  end.
 
+Module Type even_test_v1.
 
 Fixpoint even_test (n:nat) : bool :=
   match n
@@ -745,8 +738,9 @@ Fixpoint even_test (n:nat) : bool :=
      | S (S p) => even_test p
   end.
 
+End even_test_v1.
 
-Reset even_test.
+Module even_test_v2.
 
 Fixpoint even_test (n:nat) : bool :=
   match n
@@ -761,11 +755,7 @@ with odd_test (n:nat) : bool :=
      | S p => even_test p
  end.
 
-
-
 Eval simpl in even_test.
-
-
 
 Eval simpl in (fun x : nat => even_test x).
 
@@ -773,6 +763,8 @@ Eval simpl in (fun x : nat => plus 5 x).
 Eval simpl in (fun x : nat => even_test (plus 5 x)).
 
 Eval simpl in (fun x : nat => even_test (plus x 5)).
+
+End even_test_v2.
 
 
 Section Principle_of_Induction.
@@ -866,14 +858,13 @@ Print Acc.
 
 Require Import Minus.
 
-(*
-Fixpoint div (x y:nat){struct x}: nat :=
+Fail Fixpoint div (x y:nat){struct x}: nat :=
  if eq_nat_dec x 0
   then 0
   else if eq_nat_dec y 0
        then x
        else S (div (x-y) y).
-
+(*
 Error:
 Recursive definition of div is ill-formed.
 In environment
@@ -971,19 +962,15 @@ Proof.
  intros A v;inversion v.
 Abort.
 
-(*
- Lemma Vector.t0_is_vnil_aux : forall (A:Set)(n:nat)(v:Vector.t A n),
-                                  n= 0 -> v = Vnil A.
 
-Toplevel input, characters 40281-40287
-> Lemma Vector.t0_is_vnil_aux : forall (A:Set)(n:nat)(v:Vector.t A n),                                    n= 0 -> v = Vnil A.
->                                                                                                                 ^^^^^^
+Fail Lemma vector0_is_vnil_aux : forall (A:Set)(n:nat)(v:Vector.t A n),
+                                  n= 0 -> v = Vector.nil A.
+(*
 Error: In environment
 A : Set
 n : nat
 v : Vector.t A n
-e : n = 0
-The term "Vnil A" has type "Vector.t A 0" while it is expected to have type
+The term "[]" has type "Vector.t A 0" while it is expected to have type
  "Vector.t A n"
 *)
  Require Import JMeq.

@@ -97,13 +97,14 @@ Qed.
 
 (* Check use of unification of bindings types in specialize *)
 
+Module Type Test.
 Variable P : nat -> Prop.
 Variable L : forall (l : nat), P l -> P l.
 Goal P 0 -> True.
 intros.
 specialize L with (1:=H).
 Abort.
-Reset P.
+End Test.
 
 (* Two examples that show that hnf_constr is used when unifying types
    of bindings (a simplification of a script from Field_Theory) *)
