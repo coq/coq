@@ -743,45 +743,70 @@ This command gives the status of the \Coq\ module {\dirpath}. It tells if the
 module is loaded and if not searches in the load path for a module
 of logical name {\dirpath}.
 
-\section{States and Reset}
+\section{Backtracking}
+
+The backtracking commands described in this section can only be used
+interactively, they cannot be part of a vernacular file loaded via
+{\tt Load} or compiled by {\tt coqc}.
 
 \subsection[\tt Reset \ident.]{\tt Reset \ident.\comindex{Reset}}
 This command removes all the objects in the environment since \ident\ 
 was introduced, including \ident. \ident\ may be the name of a defined
-or declared object as well as the name of a section.  One cannot reset
+or declared object as well as the name of a section. One cannot reset
 over the name of a module or of an object inside a module.
 
 \begin{ErrMsgs}
 \item \ident: \errindex{no such entry}
 \end{ErrMsgs}
 
+\begin{Variants}
+ \item {\tt Reset Initial.}\comindex{Reset Initial}\\
+   Goes back to the initial state, just after the start of the
+   interactive session.
+\end{Variants}
+
 \subsection[\tt Back.]{\tt Back.\comindex{Back}}
 
 This commands undoes all the effects of the last vernacular
-command. This does not include commands that only access to the
-environment like those described in the previous sections of this
-chapter (for instance {\tt Require} and {\tt Load} can be undone, but
-not {\tt Check} and {\tt Locate}). Commands read from a vernacular
-file are considered as a single command.
+command. Commands read from a vernacular file via a {\tt Load} are
+considered as a single command. Proof managment commands
+are also handled by this command (see Chapter~\ref{Proof-handling}).
+For that, {\tt Back} may have to undo more than one command in order
+to reach a state where the proof managment information is available.
+For instance, when the last command is a {\tt Qed}, the managment
+information about the closed proof has been discarded. In this case,
+{\tt Back} will then undo all the proof steps up to the statement of
+this proof.
 
 \begin{Variants}
 \item {\tt Back $n$} \\
-  Undoes $n$ vernacular commands.
+  Undoes $n$ vernacular commands. As for {\tt Back}, some extra
+  commands may be undone in order to reach an adequate state.
+  For instance {\tt Back n} will not re-enter a closed proof,
+  but rather go just before that proof.
 \end{Variants}
 
 \begin{ErrMsgs}
-\item \errindex{Reached begin of command history} \\
-  Happens when there is vernacular command to undo.
+\item \errindex{Invalid backtrack} \\
+  The user wants to undo more commands than available in the history.
 \end{ErrMsgs}
 
-\subsection[\tt Backtrack $\num_1$ $\num_2$ $\num_3$.]{\tt Backtrack $\num_1$ $\num_2$ $\num_3$.\comindex{Backtrack}}
+\subsection[\tt BackTo $\num$.]{\tt BackTo $\num$.\comindex{BackTo}}
+\label{sec:statenums}
 
-This command is dedicated for the use in graphical interfaces.  It
-allows to backtrack to a particular \emph{global} state, i.e.
-typically a state corresponding to a previous line in a script. A
-global state includes declaration environment but also proof
-environment (see Chapter~\ref{Proof-handling}). The three numbers
-$\num_1$, $\num_2$ and $\num_3$ represent the following:
+This command brings back the system to the state labelled $\num$,
+forgetting the effect of all commands executed after this state.
+The state label is an integer which grows after each successful command.
+It is displayed in the prompt when in \texttt{-emacs} mode.
+Just as {\tt Back} (see above), the {\tt BackTo} command now handles
+proof states. For that, it may have to undo some
+extra commands and end on a state $\num' \leq \num$ if necessary.
+
+\begin{Variants}
+\item {\tt Backtrack $\num_1$ $\num_2$ $\num_3$}.\comindex{Backtrack}\\
+  {\tt Backtrack} is a \emph{deprecated} form of {\tt BackTo} which
+  allows to explicitely manipulate the proof environment. The three
+  numbers $\num_1$, $\num_2$ and $\num_3$ represent the following:
 \begin{itemize}
 \item $\num_3$: Number of \texttt{Abort} to perform, i.e. the number
   of currently opened nested proofs that must be canceled (see
@@ -789,73 +814,16 @@ $\num_1$, $\num_2$ and $\num_3$ represent the following:
 \item $\num_2$: \emph{Proof state number} to unbury once aborts have
   been done. Coq will compute the number of \texttt{Undo} to perform
   (see Chapter~\ref{Proof-handling}).
-\item $\num_1$: Environment state number to unbury, Coq will compute
-  the number of \texttt{Back} to perform.
+\item $\num_1$: State label to reach, as for {\tt BackTo}.
 \end{itemize}
-
-
-\subsubsection{How to get state numbers?}
-\label{sec:statenums}
-
-
-Notice that when in \texttt{-emacs} mode, \Coq\ displays the current
-proof and environment state numbers in the prompt. More precisely the
-prompt in \texttt{-emacs} mode is the following:
-
-\verb!<prompt>! \emph{$id_i$} \verb!<! $\num_1$
-\verb!|! $id_1$\verb!|!$id_2$\verb!|!\dots\verb!|!$id_n$
-\verb!|! $\num_2$ \verb!< </prompt>!
-
-Where:
-
-\begin{itemize}
-\item \emph{$id_i$} is the name of the current proof (if there is
-  one, otherwise \texttt{Coq} is displayed, see
-Chapter~\ref{Proof-handling}).
-\item $\num_1$ is the environment state number after the last
-  command.
-\item $\num_2$ is the proof state number after the last
-  command.
-\item $id_1$ $id_2$ {\dots} $id_n$ are the currently opened proof names
-  (order not significant).
-\end{itemize}
-
-It is then possible to compute the \texttt{Backtrack} command to
-unbury the state corresponding to a particular prompt. For example,
-suppose the current prompt is:
-
-\verb!<! goal4 \verb!<! 35
-\verb!|!goal1\verb!|!goal4\verb!|!goal3\verb!|!goal2\verb!|! 
-\verb!|!8 \verb!< </prompt>!
-
-and we want to backtrack to a state labeled by:
-
-\verb!<! goal2 \verb!<! 32
-\verb!|!goal1\verb!|!goal2
-\verb!|!12 \verb!< </prompt>!
-
-We have to perform \verb!Backtrack 32 12 2! , i.e. perform 2
-\texttt{Abort}s (to cancel goal4 and goal3), then rewind proof until
-state 12 and finally go back to environment state 32.
-
-\begin{Variants}
-\item {\tt BackTo n}. \comindex{BackTo}\\
-  Is a more basic form of \texttt{Backtrack} where only the first
-  argument (global environment number) is given, no \texttt{abort} and
-  no \texttt{Undo} is performed.
 \end{Variants}
 
-\subsection[\tt Restore State \str.]{\tt Restore State \str.\comindex{Restore State}}
-  Restores the state contained in the file \str.
+\begin{ErrMsgs}
+\item \errindex{Invalid backtrack} \\
+  The destination state label is unknown.
+\end{ErrMsgs}
 
-\begin{Variants}
-\item {\tt Restore State \ident}\\
- Equivalent to {\tt Restore State "}{\ident}{\tt .coq"}.
-\item {\tt Reset Initial.}\comindex{Reset Initial}\\ 
-  Goes back to the initial state (like after the command {\tt coqtop},
-  when the interactive session began). This command is only available
-  interactively.
-\end{Variants}
+\section{State files}
 
 \subsection[\tt Write State \str.]{\tt Write State \str.\comindex{Write State}}
 Writes the current state into a file \str{} for
@@ -866,6 +834,14 @@ use in a further session. This file can be given as the {\tt
 \item {\tt Write State \ident}\\
  Equivalent to {\tt Write State "}{\ident}{\tt .coq"}.
  The state is saved in the current directory (see Section~\ref{Pwd}).
+\end{Variants}
+
+\subsection[\tt Restore State \str.]{\tt Restore State \str.\comindex{Restore State}}
+  Restores the state contained in the file \str.
+
+\begin{Variants}
+\item {\tt Restore State \ident}\\
+ Equivalent to {\tt Restore State "}{\ident}{\tt .coq"}.
 \end{Variants}
 
 \section{Quitting and debugging}

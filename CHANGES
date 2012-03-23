@@ -1,14 +1,29 @@
 Changes from V8.4
 =================
 
+Vernacular commands
+
+- Undo and UndoTo are now handling the proof states. They may
+  perform some extra steps of backtrack to avoid states where
+  the proof state is unavailable (typically a closed proof).
+- The commands Suspend and Resume have been removed.
+- A basic Show Script has been reintroduced (no indentation).
+
 Tactics
 
 - Tactics btauto, a reflexive boolean tautology solver.
 
 Program
+
 - "Solve Obligations using" changed to "Solve Obligations with",
   consistent with "Proof with".
 - Program Lemma, Definition now respect automatic introduction.
+
+CoqIDE
+
+- Coqide now supports the Restart command, and Undo (with a warning).
+  Better support for Abort.
+
 
 Changes from V8.4beta to V8.4
 =============================
