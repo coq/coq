@@ -293,7 +293,7 @@ let new_pure_evar evd sign ?(src=default_source) ?filter ?candidates typ =
   (evd,newevk)
 
 let new_evar_instance sign evd typ ?src ?filter ?candidates instance =
-  assert (not !Flags.debug &&
+  assert (not !Flags.debug ||
             list_distinct (ids_of_named_context (named_context_of_val sign)));
   let evd,newevk = new_pure_evar evd sign ?src ?filter ?candidates typ in
   (evd,mkEvar (newevk,Array.of_list instance))
