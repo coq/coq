@@ -62,17 +62,6 @@ val add_leaves : Names.identifier -> Libobject.obj list -> Libnames.object_name
 
 val add_frozen_state : unit -> unit
 
-(** Adds a "dummy" entry in lib_stk with a unique new label number. *)
-val mark_end_of_command : unit -> unit
-
-(** Returns the current label number *)
-val current_command_label : unit -> int
-
-(** [reset_label n] resets [lib_stk] to the label n registered by
-   [mark_end_of_command()]. It forgets the label and anything
-   registered after it. The label should be strictly in the past. *)
-val reset_label : int -> unit
-
 (** {6 ... } *)
 (** The function [contents_after] returns the current library segment,
   starting from a given section path. If not given, the entire segment
@@ -151,15 +140,28 @@ val remove_section_part : Libnames.global_reference -> Names.dir_path
 val open_section : Names.identifier -> unit
 val close_section : unit -> unit
 
-(** {6 Backtracking (undo). } *)
+(** {6 Backtracking } *)
 
-val reset_to : Libnames.object_name -> unit
-val reset_name : Names.identifier Pp.located -> unit
-val reset_mod : Names.identifier Pp.located -> unit
+(** NB: The next commands are low-level ones, do not use them directly
+    otherwise the command history stack in [Backtrack] will be out-of-sync.
+    Also note that [reset_initial] is now [reset_label first_command_label] *)
 
-(** [back n] resets to the place corresponding to the {% $ %}n{% $ %}-th call of
-   [mark_end_of_command] (counting backwards) *)
-val back : int -> unit
+(** Adds a "dummy" entry in lib_stk with a unique new label number. *)
+val mark_end_of_command : unit -> unit
+
+(** Returns the current label number *)
+val current_command_label : unit -> int
+
+(** The first label number *)
+val first_command_label : int
+
+(** [reset_label n] resets [lib_stk] to the label n registered by
+   [mark_end_of_command()]. It forgets anything registered after
+   this label. The label should be strictly in the past. *)
+val reset_label : int -> unit
+
+(** search the label registered immediately before adding some definition *)
+val label_before_name : Names.identifier Pp.located -> int
 
 (** {6 We can get and set the state of the operations (used in [States]). } *)
 
@@ -169,10 +171,6 @@ val freeze : unit -> frozen
 val unfreeze : frozen -> unit
 
 val init : unit -> unit
-
-val declare_initial_state : unit -> unit
-val reset_initial : unit -> unit
-
 
 (** XML output hooks *)
 val set_xml_open_section : (Names.identifier -> unit) -> unit

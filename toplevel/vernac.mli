@@ -21,7 +21,14 @@ exception DuringCommandInterp of Pp.loc * exn
 exception End_of_input
 
 val just_parsing : bool ref
-val eval_expr : Pp.loc * Vernacexpr.vernac_expr -> unit
+
+(** [eval_expr] executes one vernacular command. By default the command is
+   considered as non-state-preserving, in which case we add it to the
+   Backtrack stack (triggering a save of a frozen state and the generation
+   of a new state label). An example of state-preserving command is one coming
+   from the query panel of Coqide. *)
+
+val eval_expr : ?preserving:bool -> Pp.loc * Vernacexpr.vernac_expr -> unit
 val raw_do_vernac : Pcoq.Gram.parsable -> unit
 
 (** Set XML hooks *)

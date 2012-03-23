@@ -368,9 +368,6 @@ let do_vernac () =
 
 let rec loop () =
   Sys.catch_break true;
-  (* ensure we have a command separator object (DOT) so that the first
-     command can be reseted. *)
-  Lib.mark_end_of_command();
   try
     reset_input_buffer stdin top_buffer;
     while true do do_vernac() done

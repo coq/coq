@@ -1143,7 +1143,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 
       mk_correct_id f_id
     in
-     ignore(try Vernacentries.vernac_reset_name (Pp.dummy_loc,first_lemma_id) with _ -> ());
+    (try Backtrack.reset_name (Pp.dummy_loc,first_lemma_id) with _ -> ());
     raise e
 
 

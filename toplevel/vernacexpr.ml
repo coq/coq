@@ -367,6 +367,26 @@ type vernac_expr =
 
 and located_vernac_expr = loc * vernac_expr
 
+
+(** Categories of [vernac_expr] *)
+
+let rec strip_vernac = function
+  | VernacTime c | VernacTimeout(_,c) | VernacFail c -> strip_vernac c
+  | c -> c (* TODO: what about VernacList ? *)
+
+let rec is_navigation_vernac = function
+  | VernacResetInitial
+  | VernacResetName _
+  | VernacBacktrack _
+  | VernacBackTo _
+  | VernacBack _ -> true
+  | c -> is_deep_navigation_vernac c
+
+and is_deep_navigation_vernac = function
+  | VernacTime c | VernacTimeout (_,c) | VernacFail c -> is_navigation_vernac c
+  | VernacList l -> List.exists (fun (_,c) -> is_navigation_vernac c) l
+  | _ -> false
+
 (* Locating errors raised just after the dot is parsed but before the
    interpretation phase *)
 

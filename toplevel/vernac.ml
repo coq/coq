@@ -52,6 +52,8 @@ let real_error = function
   | Error_in_file (_, _, e) -> e
   | e -> e
 
+let user_error loc s = Errors.user_err_loc (loc,"_",str s)
+
 (** Timeout handling *)
 
 (** A global default timeout, controled by option "Set Default Timeout n".
@@ -167,7 +169,7 @@ let pr_new_syntax loc ocom =
   States.unfreeze fs;
   Format.set_formatter_out_channel stdout
 
-let rec vernac_com interpfun (loc,com) =
+let rec vernac_com interpfun checknav (loc,com) =
   let rec interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = expand_path_macros fname in
@@ -205,8 +207,10 @@ let rec vernac_com interpfun (loc,com) =
 
     | VernacList l -> List.iter (fun (_,v) -> interp v) l
 
+    | v when !just_parsing -> ()
+
     | VernacFail v ->
-	if not !just_parsing then begin try
+	begin try
 	  (* If the command actually works, ignore its effects on the state *)
 	  States.with_state_protection
 	    (fun v -> interp v; raise HasNotFailed) v
@@ -222,22 +226,17 @@ let rec vernac_com interpfun (loc,com) =
 	end
 
     | VernacTime v ->
-	if not !just_parsing then begin
 	  let tstart = System.get_time() in
           interp v;
 	  let tend = System.get_time() in
           msgnl (str"Finished transaction in " ++
                    System.fmt_time_difference tstart tend)
-	end
 
     | VernacTimeout(n,v) ->
-	if not !just_parsing then begin
 	  current_timeout := Some n;
 	  interp v
-	end
 
     | v ->
-        if not !just_parsing then
 	  let psh = default_set_timeout () in
 	  try
             States.with_heavy_rollback interpfun
@@ -246,6 +245,7 @@ let rec vernac_com interpfun (loc,com) =
 	  with e -> restore_timeout psh; raise e
   in
     try
+      checknav loc com;
       current_timeout := !default_timeout;
       if do_beautify () then pr_new_syntax loc (Some com);
       interp com
@@ -259,13 +259,17 @@ and read_vernac_file verbosely s =
     if verbosely then Vernacentries.interp
     else Flags.silently Vernacentries.interp
   in
+  let checknav loc cmd =
+    if is_navigation_vernac cmd then
+	user_error loc "Navigation commands forbidden in files"
+  in
   let (in_chan, fname, input) =
     open_file_twice_if verbosely s in
   try
     (* we go out of the following infinite loop when a End_of_input is
      * raised, which means that we raised the end of the file being loaded *)
     while true do
-      vernac_com interpfun (parse_sentence input);
+      vernac_com interpfun checknav (parse_sentence input);
       pp_flush ()
     done
   with e ->   (* whatever the exception *)
@@ -276,15 +280,21 @@ and read_vernac_file verbosely s =
           if do_beautify () then pr_new_syntax (make_loc (max_int,max_int)) None
       | _ -> raise_with_file fname e
 
+(** [eval_expr : ?preserving:bool -> Pp.loc * Vernacexpr.vernac_expr -> unit]
+   It executes one vernacular command. By default the command is
+   considered as non-state-preserving, in which case we add it to the
+   Backtrack stack (triggering a save of a frozen state and the generation
+   of a new state label). An example of state-preserving command is one coming
+   from the query panel of Coqide. *)
 
-(* eval_expr : Util.loc * Vernacexpr.vernac_expr -> unit
- * execute one vernacular command. Marks the end of the command in the lib_stk
- * with a new label to make vernac undoing easier. Also freeze state to speed up
- * backtracking. *)
-let eval_expr last =
-  vernac_com Vernacentries.interp last;
-  Lib.add_frozen_state();
-  Lib.mark_end_of_command()
+let checknav loc ast =
+  if is_deep_navigation_vernac ast then
+    user_error loc "Navigation commands forbidden in nested commands"
+
+let eval_expr ?(preserving=false) loc_ast =
+  vernac_com Vernacentries.interp checknav loc_ast;
+  if not preserving && not (is_navigation_vernac (snd loc_ast)) then
+    Backtrack.mark_command (snd loc_ast)
 
 (* raw_do_vernac : Pcoq.Gram.parsable -> unit
  * vernac_step . parse_sentence *)

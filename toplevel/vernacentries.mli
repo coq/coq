@@ -51,13 +51,22 @@ val abort_refine : ('a -> unit) -> 'a -> unit;;
 
 val interp : Vernacexpr.vernac_expr -> unit
 
-val vernac_reset_name : identifier Pp.located -> unit
+(** Print subgoals when the verbose flag is on.
+    Meant to be used inside vernac commands from plugins. *)
 
-val vernac_backtrack : int -> int -> int -> unit
-
-(* Print subgoals when the verbose flag is on. Meant to be used inside
-    vernac commands from plugins. *)
 val print_subgoals : unit -> unit
+
+(** The printing of goals via [print_subgoals] or during
+    [interp] can be controlled by the following flag.
+    Used for instance by coqide, since it has its own
+    goal-fetching mechanism. *)
+
+val enable_goal_printing : bool ref
+
+(** Should Qed try to display the proof script ?
+    True by default, but false in ProofGeneral and coqIDE *)
+
+val qed_display_script : bool ref
 
 (** Prepare a "match" template for a given inductive type.
     For each branch of the match, we list the constructor name

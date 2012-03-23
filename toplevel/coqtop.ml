@@ -248,10 +248,13 @@ let parse_args arglist =
     | "-compat" :: []       -> usage ()
 
     | "-vm" :: rem -> use_vm := true; parse rem
-    | "-emacs" :: rem -> Flags.print_emacs := true; Pp.make_pp_emacs(); parse rem
+    | "-emacs" :: rem ->
+	Flags.print_emacs := true; Pp.make_pp_emacs();
+	Vernacentries.qed_display_script := false;
+	parse rem
     | "-emacs-U" :: rem ->
 	warning "Obsolete option \"-emacs-U\", use -emacs instead.";	
-	Flags.print_emacs := true; Pp.make_pp_emacs(); parse rem
+	parse ("-emacs" :: rem)
 
     | "-unicode" :: rem -> add_require "Utf8_core"; parse rem
 
@@ -351,7 +354,8 @@ let init arglist =
        Pp.ppnl (with_option raw_print Prettyp.print_full_pure_context ());
      Profile.print_profile ();
      exit 0);
-  Lib.declare_initial_state ()
+  (* We initialize the command history stack with a first entry *)
+  Backtrack.mark_command Vernacexpr.VernacNop
 
 let init_toplevel = init
 

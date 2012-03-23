@@ -21,12 +21,6 @@ open Namegen
     the only one using this mode, but we try here to be as generic as
     possible, so this may change in the future... *)
 
-
-(** Comment the next line for displaying some more debug messages *)
-
-let prerr_endline _ = ()
-
-
 (** Signal handling: we postpone ^C during input and output phases,
     but make it directly raise a Sys.Break during evaluation of the request. *)
 
@@ -74,281 +68,55 @@ let coqide_known_option table = List.mem table [
   ["Printing";"Existential";"Instances"];
   ["Printing";"Universes"]]
 
-type command_attribute =
-    NavigationCommand | QueryCommand | DebugCommand | KnownOptionCommand
-    | OtherStatePreservingCommand | GoalStartingCommand | SolveCommand
-    | ProofEndingCommand
+let is_known_option cmd = match cmd with
+  | VernacSetOption (_,o,BoolValue true)
+  | VernacUnsetOption (_,o) -> coqide_known_option o
+  | _ -> false
 
-let rec attribute_of_vernac_command = function
-  (* Control *)
-  | VernacTime com -> attribute_of_vernac_command com
-  | VernacTimeout(_,com) -> attribute_of_vernac_command com
-  | VernacFail com -> attribute_of_vernac_command com
-  | VernacList _ -> [] (* unsupported *)
-  | VernacLoad _ -> []
+let is_debug cmd = match cmd with
+  | VernacSetOption (_,["Ltac";"Debug"], _) -> true
+  | _ -> false
 
-  (* Syntax *)
-  | VernacTacticNotation _ -> []
-  | VernacSyntaxExtension _ -> []
-  | VernacDelimiters _ -> []
-  | VernacBindScope _ -> []
-  | VernacOpenCloseScope _ -> []
-  | VernacArgumentsScope _ -> []
-  | VernacInfix _ -> []
-  | VernacNotation _ -> []
+let is_query cmd = match cmd with
+  | VernacChdir None
+  | VernacMemOption _
+  | VernacPrintOption _
+  | VernacCheckMayEval _
+  | VernacGlobalCheck _
+  | VernacPrint _
+  | VernacSearch _
+  | VernacLocate _ -> true
+  | _ -> false
 
-  (* Gallina *)
-  | VernacDefinition (_,_,DefineBody _,_) -> []
-  | VernacDefinition (_,_,ProveBody _,_) -> [GoalStartingCommand]
-  | VernacStartTheoremProof _ -> [GoalStartingCommand]
-  | VernacEndProof _ -> [ProofEndingCommand]
-  | VernacExactProof _ -> [ProofEndingCommand]
-
-  | VernacAssumption _ -> []
-  | VernacInductive _ -> []
-  | VernacFixpoint _ -> []
-  | VernacCoFixpoint _ -> []
-  | VernacScheme _ -> []
-  | VernacCombinedScheme _ -> []
-
-  (* Modules *)
-  | VernacDeclareModule _ -> []
-  | VernacDefineModule _  -> []
-  | VernacDeclareModuleType _ -> []
-  | VernacInclude _ -> []
-
-  (* Gallina extensions *)
-  | VernacBeginSection _ -> []
-  | VernacEndSegment _ -> []
-  | VernacRequire _ -> []
-  | VernacImport _ -> []
-  | VernacCanonical _ -> []
-  | VernacCoercion _ -> []
-  | VernacIdentityCoercion _ -> []
-
-  (* Type classes *)
-  | VernacInstance _ -> []
-  | VernacContext _ -> []
-  | VernacDeclareInstances _ -> []
-  | VernacDeclareClass _ -> []
-
-  (* Solving *)
-  | VernacSolve _ -> [SolveCommand]
-  | VernacSolveExistential _ -> [SolveCommand]
-
-  (* Auxiliary file and library management *)
-  | VernacRequireFrom _ -> []
-  | VernacAddLoadPath _ -> []
-  | VernacRemoveLoadPath _ -> []
-  | VernacAddMLPath _ -> []
-  | VernacDeclareMLModule _ -> []
-  | VernacChdir o ->
-    (* TODO: [Chdir d] is currently not undo-able (not stored in coq state).
-       But if we register [Chdir] in the state, loading [initial.coq] will
-       wrongly cd to the compile-time directory at each coqtop launch. *)
-    if o = None then [QueryCommand] else []
-
-  (* State management *)
-  | VernacWriteState _ -> []
-  | VernacRestoreState _ -> []
-
-  (* Resetting *)
-  | VernacResetName _ -> [NavigationCommand]
-  | VernacResetInitial -> [NavigationCommand]
-  | VernacBack _ -> [NavigationCommand]
-  | VernacBackTo _ -> [NavigationCommand]
-
-  (* Commands *)
-  | VernacDeclareTacticDefinition _ -> []
-  | VernacCreateHintDb _ -> []
-  | VernacRemoveHints _ -> []
-  | VernacHints _ -> []
-  | VernacSyntacticDefinition _ -> []
-  | VernacDeclareImplicits _ -> []
-  | VernacArguments _ -> [] 
-  | VernacDeclareReduction _ -> []
-  | VernacReserve _ -> []
-  | VernacGeneralizable _ -> []
-  | VernacSetOpacity _ -> []
-  | VernacSetOption (_,["Ltac";"Debug"], _) -> [DebugCommand]
-  | VernacSetOption (_,o,BoolValue true) | VernacUnsetOption (_,o) ->
-      if coqide_known_option o then [KnownOptionCommand] else []
-  | VernacSetOption _ -> []
-  | VernacRemoveOption _ -> []
-  | VernacAddOption _ -> []
-  | VernacMemOption _ -> [QueryCommand]
-
-  | VernacPrintOption _ -> [QueryCommand]
-  | VernacCheckMayEval _ -> [QueryCommand]
-  | VernacGlobalCheck _ -> [QueryCommand]
-  | VernacPrint _ -> [QueryCommand]
-  | VernacSearch _ -> [QueryCommand]
-  | VernacLocate _ -> [QueryCommand]
-
-  | VernacComments _ -> [OtherStatePreservingCommand]
-  | VernacNop -> [OtherStatePreservingCommand]
-
-  (* Proof management *)
-  | VernacGoal _ -> [GoalStartingCommand]
-
-  | VernacAbort _ -> []
-  | VernacAbortAll -> [NavigationCommand]
-  | VernacRestart -> [NavigationCommand]
-  | VernacUndo _ -> [NavigationCommand]
-  | VernacUndoTo _ -> [NavigationCommand]
-  | VernacBacktrack _ -> [NavigationCommand]
-
-  | VernacFocus _ -> [SolveCommand]
-  | VernacUnfocus -> [SolveCommand]
-  | VernacShow _ -> [OtherStatePreservingCommand]
-  | VernacCheckGuard -> [OtherStatePreservingCommand]
-  | VernacProof (None, None) -> [OtherStatePreservingCommand]
-  | VernacProof _ -> []
-
-  | VernacProofMode _ -> []
-  | VernacBullet _ -> [SolveCommand]
-  | VernacSubproof _ -> [SolveCommand]
-  | VernacEndSubproof -> [SolveCommand]
-
-  (* Toplevel control *)
-  | VernacToplevelControl _ -> []
-
-  (* Extensions *)
-  | VernacExtend ("Subtac_Obligations", _) -> [GoalStartingCommand]
-  | VernacExtend _ -> []
-
-let is_vernac_navigation_command com =
-  List.mem NavigationCommand (attribute_of_vernac_command com)
-
-let is_vernac_query_command com =
-  List.mem QueryCommand (attribute_of_vernac_command com)
-
-let is_vernac_known_option_command com =
-  List.mem KnownOptionCommand (attribute_of_vernac_command com)
-
-let is_vernac_debug_command com =
-  List.mem DebugCommand (attribute_of_vernac_command com)
-
-let is_vernac_goal_printing_command com =
-  let attribute = attribute_of_vernac_command com in
-  List.mem GoalStartingCommand attribute or
-    List.mem SolveCommand attribute
-
-let is_vernac_state_preserving_command com =
-  let attribute = attribute_of_vernac_command com in
-  List.mem OtherStatePreservingCommand attribute or
-    List.mem QueryCommand attribute
-
-let is_vernac_tactic_command com =
-  List.mem SolveCommand (attribute_of_vernac_command com)
-
-let is_vernac_proof_ending_command com =
-  List.mem ProofEndingCommand (attribute_of_vernac_command com)
-
-
-(** Command history stack
-
-    We maintain a stack of the past states of the system. Each
-    successfully interpreted command adds a [reset_info] element
-    to this stack, storing what were the (label / open proofs /
-    current proof depth) just _before_ the interpretation of this
-    command. A label is just an integer (cf. BackTo and Bactrack
-    vernac commands).
-*)
-
-type reset_info = { label : int; proofs : identifier list; depth : int }
-
-let com_stk = Stack.create ()
-
-let compute_reset_info () =
-  { label = Lib.current_command_label ();
-    proofs = Pfedit.get_all_proof_names ();
-    depth = max 0 (Pfedit.current_proof_depth ()) }
-
-
-(** Interpretation (cf. [Ide_intf.interp]) *)
+let is_undo cmd = match cmd with
+  | VernacUndo _ | VernacUndoTo _ -> true
+  | _ -> false
 
 (** Check whether a command is forbidden by CoqIDE *)
 
 let coqide_cmd_checks (loc,ast) =
-  let user_error s =
-    raise (Loc.Exc_located (loc, Errors.UserError ("CoqIde", str s)))
-  in
-  if is_vernac_debug_command ast then
+  let user_error s = Errors.user_err_loc (loc, "CoqIde", str s) in
+  if is_debug ast then
     user_error "Debug mode not available within CoqIDE";
-  if is_vernac_navigation_command ast then
-    user_error "Use CoqIDE navigation instead";
-  if is_vernac_known_option_command ast then
+  if is_known_option ast then
     user_error "Use CoqIDE display menu instead";
-  if is_vernac_query_command ast then
+  if is_navigation_vernac ast then
+    user_error "Use CoqIDE navigation instead";
+  if is_undo ast then
+    msgerrnl (str "Warning: rather use CoqIDE navigation instead");
+  if is_query ast then
     msgerrnl (str "Warning: query commands should not be inserted in scripts")
 
-let raw_eval_expr = Vernac.eval_expr
-
-let eval_expr loc_ast =
-  let rewind_info = compute_reset_info () in
-  raw_eval_expr loc_ast;
-  Stack.push rewind_info com_stk
+(** Interpretation (cf. [Ide_intf.interp]) *)
 
 let interp (raw,verbosely,s) =
-  if not raw then (prerr_endline "Starting interp..."; prerr_endline s);
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
   let loc_ast = Vernac.parse_sentence (pa,None) in
   if not raw then coqide_cmd_checks loc_ast;
-  (* We run tactics silently, since we will query the goal state later.
-     Otherwise, we honor the IDE verbosity flag. *)
-  Flags.make_silent
-    (is_vernac_goal_printing_command (snd loc_ast) || not verbosely);
-  if raw then raw_eval_expr loc_ast else eval_expr loc_ast;
+  Flags.make_silent (not verbosely);
+  Vernac.eval_expr ~preserving:raw loc_ast;
   Flags.make_silent true;
-  if not raw then prerr_endline ("...Done with interp of : "^s);
   read_stdout ()
-
-
-(** Backtracking (cf. [Ide_intf.rewind]).
-    We now rely on the [Backtrack] command just as ProofGeneral. *)
-
-let rewind count =
-  if count = 0 then 0
-  else
-    let current_proofs = Pfedit.get_all_proof_names ()
-    in
-    (* 1) First, let's pop the history stack exactly [count] times.
-       NB: Normally, the IDE will not rewind by more than the numbers
-       of already interpreted commands, hence no risk of [Stack.Empty].
-    *)
-    let initial_target =
-      for i = 1 to count - 1 do ignore (Stack.pop com_stk) done;
-      Stack.pop com_stk
-    in
-    (* 2) Backtrack by enough additional steps to avoid re-opening proofs.
-       Typically, when a Qed has been crossed, we backtrack to the proof start.
-       NB: We cannot reach the empty stack, since the oldest [reset_info]
-       in the history cannot have opened proofs.
-    *)
-    let already_opened p = List.mem p current_proofs in
-    let rec extra_back n target =
-      if List.for_all already_opened target.proofs then n,target
-      else extra_back (n+1) (Stack.pop com_stk)
-    in
-    let extra_count, target = extra_back 0 initial_target
-    in
-    (* 3) Now that [target.proofs] is a subset of the opened proofs before
-       the rewind, we simply abort the extra proofs (if any).
-       NB: It is critical here that proofs are nested in a regular way.
-       (i.e. no Resume or Suspend, as enforced above). This way, we can simply
-       count the extra proofs to abort instead of taking care of their names.
-    *)
-    let naborts = List.length current_proofs - List.length target.proofs
-    in
-    (* 4) We are now ready to call [Backtrack] *)
-    prerr_endline ("Rewind to state "^string_of_int target.label^
-		   ", proof depth "^string_of_int target.depth^
-		   ", num of aborts "^string_of_int naborts);
-    Vernacentries.vernac_backtrack target.label target.depth naborts;
-    Lib.mark_end_of_command (); (* We've short-circuited Vernac.eval_expr *)
-    extra_count
-
 
 (** Goal display *)
 
@@ -514,7 +282,7 @@ let eval_call c =
   in
   let handler = {
     Interface.interp = interruptible interp;
-    Interface.rewind = interruptible rewind;
+    Interface.rewind = interruptible Backtrack.back;
     Interface.goals = interruptible goals;
     Interface.evars = interruptible evars;
     Interface.hints = interruptible hints;
@@ -550,9 +318,9 @@ let loop () =
   let () = Xml_parser.check_eof p false in
   init_signal_handler ();
   catch_break := false;
-  (* ensure we have a command separator object (DOT) so that the first
-     command can be reseted. *)
-  Lib.mark_end_of_command();
+  (* We'll handle goal fetching and display in our own way *)
+  Vernacentries.enable_goal_printing := false;
+  Vernacentries.qed_display_script := false;
   try
     while true do
       let xml_answer =

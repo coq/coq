@@ -126,7 +126,9 @@ val current_proof_statement :
 
 val get_current_proof_name : unit -> identifier
 
-(** [get_all_proof_names ()] returns the list of all pending proof names *)
+(** [get_all_proof_names ()] returns the list of all pending proof names.
+    The first name is the current proof, the other names may come in
+    any order. *)
 
 val get_all_proof_names : unit -> identifier list
 
