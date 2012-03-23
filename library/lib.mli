@@ -155,7 +155,6 @@ val close_section : unit -> unit
 
 val reset_to : Libnames.object_name -> unit
 val reset_name : Names.identifier Pp.located -> unit
-val remove_name : Names.identifier Pp.located -> unit
 val reset_mod : Names.identifier Pp.located -> unit
 
 (** [back n] resets to the place corresponding to the {% $ %}n{% $ %}-th call of

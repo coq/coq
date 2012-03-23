@@ -302,7 +302,6 @@ type vernac_expr =
   | VernacRestoreState of string
 
   (* Resetting *)
-  | VernacRemoveName of lident
   | VernacResetName of lident
   | VernacResetInitial
   | VernacBack of int

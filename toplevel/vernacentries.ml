@@ -1511,7 +1511,6 @@ let interp c = match c with
   | VernacRestoreState s -> vernac_restore_state s
 
   (* Resetting *)
-  | VernacRemoveName id -> Lib.remove_name id
   | VernacResetName id -> vernac_reset_name id
   | VernacResetInitial -> vernac_reset_initial ()
   | VernacBack n -> vernac_back n
