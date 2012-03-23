@@ -86,24 +86,6 @@ val start_proof :
 val restart_proof : unit -> unit
 
 (** {6 ... } *)
-(** [resume_last_proof ()] focus on the last unfocused proof or fails
-   if there is no suspended proofs *)
-
-val resume_last_proof : unit -> unit
-
-(** [resume_proof name] focuses on the proof of name [name] or
-   raises [NoSuchProof] if no proof has name [name]. 
-
-    It doesn't [suspend_proof ()] before. *)
-
-val resume_proof : identifier located -> unit
-
-(** [suspend_proof ()] unfocuses the current focused proof or
-   failed with [UserError] if no proof is currently focused *)
-
-val suspend_proof : unit -> unit
-
-(** {6 ... } *)
 (** [cook_proof opacity] turns the current proof (assumed completed) into
     a constant with its name, kind and possible hook (see [start_proof]);
     it fails if there is no current proof of if it is not completed;

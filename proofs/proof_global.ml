@@ -70,12 +70,10 @@ type proof_info = {
   mode : proof_mode
 }
 
-(* Invariant: a proof is at most in one of current_proof and suspended. And the
-   domain of proof_info is the union of that of current_proof and suspended.*)
-(* The head of [!current_proof] is the actual current proof, the other ones are to
-    be resumed when the current proof is closed, aborted or suspended. *)
+(* Invariant: the domain of proof_info is current_proof.*)
+(* The head of [!current_proof] is the actual current proof, the other ones are
+   to be resumed when the current proof is closed or aborted. *)
 let current_proof = ref ([]:nproof list)
-let suspended = ref ([] : nproof list)
 let proof_info = ref (Idmap.empty : proof_info Idmap.t)
 
 (* Current proof_mode, for bookkeeping *)
@@ -93,7 +91,7 @@ let update_proof_mode () =
       !current_proof_mode.reset ();
       current_proof_mode := standard
 
-(* combinators for the current_proof and suspended lists *)
+(* combinators for the current_proof lists *)
 let push a l = l := a::!l;
   update_proof_mode ()
 
@@ -145,8 +143,7 @@ let remove id m =
 (*** Proof Global manipulation ***)
 
 let get_all_proof_names () =
-    List.map fst !current_proof @
-    List.map fst !suspended
+    List.map fst !current_proof
 
 let give_me_the_proof () =
   snd (find_top current_proof)
@@ -160,53 +157,33 @@ let get_current_proof_name () =
     accessed directly through vernacular commands. Error message should be
    pushed to external layers, and so we should be able to have a finer
    control on error message on complex actions. *)
-let msg_proofs use_resume =
+let msg_proofs () =
   match get_all_proof_names () with
     | [] -> (spc () ++ str"(No proof-editing in progress).")
     | l ->  (str"." ++ fnl () ++ str"Proofs currently edited:" ++ spc () ++
-               (pr_sequence Nameops.pr_id l) ++
-	       str"." ++
-               (if use_resume then (fnl () ++ str"Use \"Resume\" first.")
-              	else (mt ()))
-	    )
-
+               (pr_sequence Nameops.pr_id l) ++ str".")
 
 let there_is_a_proof () = !current_proof <> []
-let there_are_suspended_proofs () = !suspended <> []
-let there_are_pending_proofs () =
-  there_is_a_proof () ||
-  there_are_suspended_proofs ()
+let there_are_pending_proofs () = there_is_a_proof ()
 let check_no_pending_proof () =
   if not (there_are_pending_proofs ()) then
     ()
   else begin
     Errors.error (Pp.string_of_ppcmds
-      (str"Proof editing in progress" ++ (msg_proofs false) ++ fnl() ++
+      (str"Proof editing in progress" ++ msg_proofs () ++ fnl() ++
        str"Use \"Abort All\" first or complete proof(s)."))
   end
 
-
-let suspend () =
-  rotate_top current_proof suspended
-
-let resume_last () =
-  rotate_top suspended current_proof
-
-let resume id =
-  rotate_find id suspended current_proof
-
 let discard_gen id =
-  try
-    ignore (extract id current_proof);
-    remove id proof_info
-  with NoSuchProof -> ignore (extract id suspended)
+  ignore (extract id current_proof);
+  remove id proof_info
 
 let discard (loc,id) =
   try
     discard_gen id
   with NoSuchProof ->
     Errors.user_err_loc
-      (loc,"Pfedit.delete_proof",str"No such proof" ++ msg_proofs false)
+      (loc,"Pfedit.delete_proof",str"No such proof" ++ msg_proofs ())
 
 let discard_current () =
   let (id,_) = extract_top current_proof in
@@ -214,7 +191,6 @@ let discard_current () =
 
 let discard_all () =
   current_proof := [];
-  suspended := [];
   proof_info := Idmap.empty
 
 (* [set_proof_mode] sets the proof mode to be used after it's called. It is

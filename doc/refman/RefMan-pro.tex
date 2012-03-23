@@ -34,9 +34,6 @@ isomorphism} \cite{How80,Bar91,Gir89,Hue89}, \Coq~ stores proofs as
 terms of {\sc Cic}. Those terms are called {\em proof
   terms}\index{Proof term}.
 
-It is possible to edit several proofs in parallel: see Section
-\ref{Resume}.
-
 \ErrMsg When one attempts to use a proof editing command out of the
 proof editing mode, \Coq~ raises the error message : \errindex{No focused
   proof}.
@@ -172,35 +169,6 @@ proof was edited.
   Aborts all current goals, switching back to the \Coq\ toplevel.
 
 \end{Variants}
-
-%%%%
-\subsection[\tt Suspend.]{\tt Suspend.\comindex{Suspend}}
-
-This command applies in proof editing mode. It switches back to the
-\Coq\ toplevel, but without canceling the current proofs.
-
-%%%%
-\subsection[\tt Resume.]{\tt Resume.\comindex{Resume}\label{Resume}}
-
-This commands switches back to the editing of the last edited proof.
-
-\begin{ErrMsgs}
-\item \errindex{No proof-editing in progress}
-\end{ErrMsgs}
-
-\begin{Variants}
-
-\item {\tt Resume {\ident}.}
-
-  Restarts the editing of the proof named {\ident}. This can be used
-  to navigate between currently edited proofs.
-
-\end{Variants}
-
-\begin{ErrMsgs}
-\item \errindex{No such proof}
-\end{ErrMsgs}
-
 
 %%%%
 \subsection[\tt Existential {\num} := {\term}.]{\tt Existential  {\num} := {\term}.\comindex{Existential}

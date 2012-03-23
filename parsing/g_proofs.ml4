@@ -58,9 +58,6 @@ GEXTEND Gram
       | IDENT "Defined" -> VernacEndProof (Proved (false,None))
       |	IDENT "Defined"; id=identref ->
 	  VernacEndProof (Proved (false,Some (id,None)))
-      | IDENT "Suspend" -> VernacSuspend
-      | IDENT "Resume" -> VernacResume None
-      | IDENT "Resume"; id = identref -> VernacResume (Some id)
       | IDENT "Restart" -> VernacRestart
       | IDENT "Undo" -> VernacUndo 1
       | IDENT "Undo"; n = natural -> VernacUndo n

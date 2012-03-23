@@ -348,8 +348,6 @@ type vernac_expr =
   | VernacAbort of lident option
   | VernacAbortAll
   | VernacRestart
-  | VernacSuspend
-  | VernacResume of lident option
   | VernacUndo of int
   | VernacUndoTo of int
   | VernacBacktrack of int*int*int

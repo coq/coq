@@ -442,11 +442,9 @@ let rec pr_vernac = function
   (* Proof management *)
   | VernacAbortAll -> str "Abort All"
   | VernacRestart -> str"Restart"
-  | VernacSuspend -> str"Suspend"
   | VernacUnfocus -> str"Unfocus"
   | VernacGoal c -> str"Goal" ++ pr_lconstrarg c
   | VernacAbort id -> str"Abort" ++ pr_opt pr_lident id
-  | VernacResume id -> str"Resume" ++ pr_opt pr_lident id
   | VernacUndo i -> if i=1 then str"Undo" else str"Undo" ++ pr_intarg i
   | VernacUndoTo i -> str"Undo" ++ spc() ++ str"To" ++ pr_intarg i
   | VernacBacktrack (i,j,k) ->

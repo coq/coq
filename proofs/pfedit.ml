@@ -69,10 +69,6 @@ let start_proof id str hyps c ?init_tac ?compute_guard hook =
 
 let restart_proof () = undo_todepth 1
 
-let resume_last_proof () = Proof_global.resume_last ()
-let resume_proof (_,id) = Proof_global.resume id
-let suspend_proof ()  =  Proof_global.suspend ()
-
 let cook_proof hook =
   let prf = Proof_global.give_me_the_proof () in
   hook prf;

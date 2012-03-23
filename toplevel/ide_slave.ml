@@ -195,8 +195,6 @@ let rec attribute_of_vernac_command = function
   | VernacAbort _ -> []
   | VernacAbortAll -> [NavigationCommand]
   | VernacRestart -> [NavigationCommand]
-  | VernacSuspend -> [NavigationCommand]
-  | VernacResume _ -> [NavigationCommand]
   | VernacUndo _ -> [NavigationCommand]
   | VernacUndoTo _ -> [NavigationCommand]
   | VernacBacktrack _ -> [NavigationCommand]
@@ -338,7 +336,7 @@ let rewind count =
     in
     (* 3) Now that [target.proofs] is a subset of the opened proofs before
        the rewind, we simply abort the extra proofs (if any).
-       NB: It is critical here that proofs are nested in a regular way
+       NB: It is critical here that proofs are nested in a regular way.
        (i.e. no Resume or Suspend, as enforced above). This way, we can simply
        count the extra proofs to abort instead of taking care of their names.
     *)

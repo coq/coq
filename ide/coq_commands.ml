@@ -127,7 +127,6 @@ let commands = [
      "Show Script";
      "Show Tree";*)
      "Structure";
-     (* "Suspend"; *)
      "Syntactic Definition";
      "Syntax";];
   [
