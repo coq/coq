@@ -136,6 +136,16 @@ let whd_head_evar_stack sigma c =
 
 let whd_head_evar sigma c = applist (whd_head_evar_stack sigma c)
 
+let noccur_evar evd evk c =
+  let rec occur_rec c = match kind_of_term c with
+  | Evar (evk',_ as ev') ->
+      (match safe_evar_value evd ev' with
+       | Some c -> occur_rec c
+       | None -> if evk = evk' then raise Occur)
+  | _ -> iter_constr occur_rec c
+  in
+  try occur_rec c; true with Occur -> false
+
 (**********************)
 (* Creating new metas *)
 (**********************)
@@ -704,7 +714,7 @@ let is_unification_pattern_meta env nb m l t =
     None
 
 let is_unification_pattern_evar env evd (evk,args) l t =
-  if List.for_all (fun x -> isRel x || isVar x) l & not (occur_evar evk t) then
+  if List.for_all (fun x -> isRel x || isVar x) l & noccur_evar evd evk t then
     let args = remove_instance_local_defs evd evk (Array.to_list args) in
     let n = List.length args in
     match find_unification_pattern_args env (args @ l) t with
@@ -1078,8 +1088,10 @@ let invert_arg_from_subst evd aliases k0 subst_in_env_extended_with_k_binders c_
 let invert_arg evd aliases k evk subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders =
   let res = invert_arg_from_subst evd aliases k subst_in_env_extended_with_k_binders c_in_env_extended_with_k_binders in
   match res with
-  | Invertible (UniqueProjection (c,_)) when occur_evar evk c -> CannotInvert
-  | _ -> res
+  | Invertible (UniqueProjection (c,_)) when not (noccur_evar evd evk c) ->
+      CannotInvert
+  | _ ->
+      res
 
 let effective_projections =
   map_succeed (function Invertible c -> c | _ -> failwith"")
@@ -1320,6 +1332,19 @@ let has_constrainable_free_vars evd aliases k ev (fv_rels,fv_ids as fvs) t =
   | Rel n -> n <= k || Intset.mem n fv_rels
   | _ -> is_constrainable_in k (ev,fvs) t
 
+let ensure_evar_independent g env evd (evk1,argsv1 as ev1) (evk2,argsv2 as ev2)=
+  let filter1 =
+    restrict_upon_filter evd evk1 (noccur_evar evd evk2) (Array.to_list argsv1)
+  in
+  let candidates1 = restrict_candidates g env evd filter1 ev1 ev2 in
+  let evd,(evk1,_ as ev1) = do_restrict_hyps evd ev1 filter1 candidates1 in
+  let filter2 =
+    restrict_upon_filter evd evk2 (noccur_evar evd evk1) (Array.to_list argsv2)
+  in
+  let candidates2 = restrict_candidates g env evd filter2 ev2 ev1 in
+  let evd,ev2 = do_restrict_hyps evd ev2 filter2 candidates2 in
+  evd,ev1,ev2
+
 exception EvarSolvedOnTheFly of evar_map * constr
 
 let project_evar_on_evar g env evd aliases k2 (evk1,argsv1 as ev1) (evk2,argsv2 as ev2) =
@@ -1350,13 +1375,17 @@ let solve_evar_evar_l2r f g env evd aliases ev1 (evk2,_ as ev2) =
   with EvarSolvedOnTheFly (evd,c) ->
     f env evd ev2 c
 
-let solve_evar_evar f g env evd (evk1,args1 as ev1) (evk2,args2 as ev2) =
+let solve_evar_evar ?(force=false) f g env evd (evk1,args1 as ev1) (evk2,args2 as ev2) =
   if are_canonical_instances args1 args2 env then
     (* If instances are canonical, we solve the problem in linear time *)
     let sign = evar_filtered_context (Evd.find evd evk2) in
-    let subst = List.map (fun (id,_,_) -> mkVar id) sign in
-    Evd.define evk2 (mkEvar(evk1,Array.of_list subst)) evd
+    let id_inst = list_map_to_array (fun (id,_,_) -> mkVar id) sign in
+    Evd.define evk2 (mkEvar(evk1,id_inst)) evd
   else
+    let evd,ev1,ev2 =
+      (* If an evar occurs in the instance of the other evar and the
+         use of an heuristic is forced, we restrict *)
+      if force then ensure_evar_independent g env evd ev1 ev2 else (evd,ev1,ev2) in
     let aliases = make_alias_map env in
     try solve_evar_evar_l2r f g env evd aliases ev1 ev2
     with CannotProject filter1 ->
@@ -1599,8 +1628,11 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
 and evar_define conv_algo ?(choose=false) env evd (evk,argsv as ev) rhs =
   match kind_of_term rhs with
   | Evar (evk2,argsv2 as ev2) ->
-      if evk = evk2 then solve_refl conv_algo env evd evk argsv argsv2
-      else solve_evar_evar (evar_define conv_algo) conv_algo env evd ev ev2
+      if evk = evk2 then
+        solve_refl ~can_drop:choose conv_algo env evd evk argsv argsv2
+      else
+        solve_evar_evar ~force:choose
+          (evar_define conv_algo) conv_algo env evd ev ev2
   | _ ->
   try solve_candidates conv_algo env evd ev rhs
   with NoCandidates ->

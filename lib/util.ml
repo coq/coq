@@ -457,6 +457,9 @@ let list_map4 f l1 l2 l3 l4 =
   in
   map (l1,l2,l3,l4)
 
+let list_map_to_array f l =
+  Array.of_list (List.map f l)
+
 let rec list_smartfilter f l = match l with
     [] -> l
   | h::tl ->

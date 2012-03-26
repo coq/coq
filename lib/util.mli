@@ -101,6 +101,7 @@ val list_map3 :
   ('a -> 'b -> 'c -> 'd) -> 'a list -> 'b list -> 'c list -> 'd list
 val list_map4 :
   ('a -> 'b -> 'c -> 'd -> 'e) -> 'a list -> 'b list -> 'c list -> 'd list -> 'e list
+val list_map_to_array : ('a -> 'b) -> 'a list -> 'b array
 val list_filter_i :
   (int -> 'a -> bool) -> 'a list -> 'a list
 

@@ -743,6 +743,9 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   | Evar (evk1,args1), Evar (evk2,args2) when evk1 = evk2 ->
       let f env evd pbty x y = (evd,is_trans_fconv pbty ts env evd x y) in
       solve_refl ~can_drop:true f env evd evk1 args1 args2, true
+  | Evar ev1, Evar ev2 ->
+      solve_evar_evar ~force:true
+        (evar_define (evar_conv_x ts)) (evar_conv_x ts) env evd ev1 ev2, true
   | Evar ev1,_ when List.length l1 <= List.length l2 ->
       (* On "?n t1 .. tn = u u1 .. u(n+p)", try first-order unification *)
       (* and otherwise second-order matching *)

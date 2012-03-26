@@ -367,3 +367,15 @@ Check (eq_bigr _ _ _ _ _ _ _ _ (fun _ _ => big_tnth_with_letin _ _ _ _ rI _ _))
            (fun i : I => P i /\ Q i k) (fun i : I => let k:=j in F i k))) = idx.
 
 End Bigop.
+
+(* Check the use of (at least) an heuristic to solve problems of the form
+   "?x[t] = ?y" where ?y occurs in t without easily knowing if ?y can
+   eventually be erased in t *)
+
+Section evar_evar_occur.
+  Variable id : nat -> nat.
+  Variable f : forall x, id x = 0 -> id x = 0 -> x = 1 /\ x = 2.
+  Variable g : forall y, id y = 0 /\ id y = 0.
+  (* Still evars in the resulting type, but constraints should be solved *)
+  Check match g _ with conj a b => f _ a b end.
+End evar_evar_occur.
