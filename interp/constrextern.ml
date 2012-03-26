@@ -768,7 +768,7 @@ and factorize_prod scopes vars aty c =
 and factorize_lambda inctx scopes vars aty c =
   try
     if !Flags.raw_print or !print_no_symbol then raise No_match;
-    ([],extern_symbol scopes vars c (uninterp_notations c))
+    ([],extern_symbol (Some Notation.type_scope,snd scopes) vars c (uninterp_notations c))
   with No_match -> match c with
   | GLambda (loc,na,bk,ty,c)
       when same aty (extern_typ scopes vars (anonymize_if_reserved na ty))
