@@ -17,7 +17,9 @@ Notation "∃  x .. y , P" := (exists x, .. (exists y, P) ..)
 
 Notation "x ∨ y" := (x \/ y) (at level 85, right associativity) : type_scope.
 Notation "x ∧ y" := (x /\ y) (at level 80, right associativity) : type_scope.
-Notation "x → y" := (x -> y) (at level 90, right associativity): type_scope.
+Notation "x → y" := (x -> y)
+  (at level 90, y at level 200, right associativity): type_scope.
+
 Notation "x ↔ y" := (x <-> y) (at level 95, no associativity): type_scope.
 Notation "¬ x" := (~x) (at level 75, right associativity) : type_scope.
 Notation "x ≠ y" := (x <> y) (at level 70) : type_scope.
