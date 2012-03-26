@@ -1,3 +1,21 @@
+Changes from V8.3pl3 to V8.3pl4
+===============================
+
+Bug fixes:
+
+- #2724 (using notations with binders in cases patterns was provoking an anomaly)
+- #2723 (alpha-conversion bug #2723 introduced in r12485-12486)
+- #2732 (anomaly when using the tolerance for writing "f atomic_tac"
+    as a short-hand for "f ltac:(atomic_tac)")
+- #2729 (vm_compute: function used to decompose constructors did not handle let-ins)
+- #2728 (compatibility with camlp5 6.05)
+- #2682 (Fail discard the effects of a successful command)
+- #2703 (Undetected universe inconsistency)
+- #2667 (Coq crashes when "Arguments Scope" has too many parameters)
+- Compilation of coqide under MacOS with gtk >= 2.24.11
+- Coqdoc: Fixing missing newline when using "Proof term."
+
+
 Changes from V8.3pl2 to V8.3pl3
 ===============================
 
