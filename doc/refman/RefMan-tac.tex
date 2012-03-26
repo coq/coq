@@ -1004,6 +1004,22 @@ equal modulo alpha conversion and casts.
 
 \ErrMsg \errindex{Not equal}
 
+\subsection{\tt unify \term$_1$ \term$_2$
+\tacindex{unify}
+\label{unify}}
+
+This tactic applies to any goal. It checks whether its arguments are
+unifiable, potentially instantiating existential variables.
+
+\ErrMsg \errindex{Not unifiable}
+
+\begin{Variants}
+\item {\tt unify \term$_1$ \term$_2$ with \ident}
+
+  Unification takes the transparency information defined in the
+  hint database {\tt \ident} into account (see Section~\ref{HintTransparency}).
+\end{Variants}
+
 \subsection{\tt is\_evar \term
 \tacindex{is\_evar}
 \label{isevar}}

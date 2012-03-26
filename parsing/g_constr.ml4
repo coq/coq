@@ -95,15 +95,21 @@ let impl_ident_head =
 	      | _ -> err ())
 	| _ -> err ())
 
-let ident_colon =
-  Gram.Entry.of_parser "ident_colon"
+let name_colon =
+  Gram.Entry.of_parser "name_colon"
     (fun strm ->
       match get_tok (stream_nth 0 strm) with
 	| IDENT s ->
             (match get_tok (stream_nth 1 strm) with
               | KEYWORD ":" ->
                   stream_njunk 2 strm;
-                  Names.id_of_string s
+                  Name (Names.id_of_string s)
+              | _ -> err ())
+	| KEYWORD "_" ->
+          (match get_tok (stream_nth 1 strm) with
+              | KEYWORD ":" ->
+                  stream_njunk 2 strm;
+                  Anonymous
               | _ -> err ())
         | _ -> err ())
 
@@ -421,8 +427,8 @@ GEXTEND Gram
     [ [ "!" ; c = operconstr LEVEL "200" -> (loc, Anonymous), true, c
       | "{"; id = name; "}"; ":" ; expl = [ "!" -> true | -> false ] ; c = operconstr LEVEL "200" ->
 	  id, expl, c
-      | iid=ident_colon ; expl = [ "!" -> true | -> false ] ; c = operconstr LEVEL "200" ->
-	  (loc, Name iid), expl, c
+      | iid=name_colon ; expl = [ "!" -> true | -> false ] ; c = operconstr LEVEL "200" ->
+	  (loc, iid), expl, c
       | c = operconstr LEVEL "200" ->
 	  (loc, Anonymous), false, c
     ] ]

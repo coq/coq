@@ -132,18 +132,29 @@ let rec chop_product n t =
       | Prod (_, _, b) ->  if noccurn 1 b then chop_product (pred n) (Termops.pop b) else None
       | _ -> None
 
-let evar_dependencies evm ev =
+let evars_of_evar_info evi =
+  Intset.union (Evarutil.evars_of_term evi.evar_concl)
+    (Intset.union
+	(match evi.evar_body with
+	| Evar_empty -> Intset.empty
+	| Evar_defined b -> Evarutil.evars_of_term b)
+	(Evarutil.evars_of_named_context (evar_filtered_context evi)))
+
+let evar_dependencies evm oev =
   let one_step deps =
     Intset.fold (fun ev s ->
       let evi = Evd.find evm ev in
-	Intset.union (Evarutil.evars_of_evar_info evi) s)
+      let deps' = evars_of_evar_info evi in
+	if Intset.mem oev deps' then
+	  raise (Invalid_argument ("Ill-formed evar map: cycle detected for evar " ^ string_of_int oev))
+	else Intset.union deps' s)
       deps deps
   in
   let rec aux deps =
     let deps' = one_step deps in
       if Intset.equal deps deps' then deps
       else aux deps'
-  in aux (Intset.singleton ev)
+  in aux (Intset.singleton oev)
       
 let move_after (id, ev, deps as obl) l = 
   let rec aux restdeps = function

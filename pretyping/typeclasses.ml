@@ -473,18 +473,23 @@ let is_resolvable evi =
   assert (evi.evar_body = Evar_empty);
   Option.default true (resolvable.get evi.evar_extra)
 
-let mark_unresolvable_undef evi =
-  let t = resolvable.set false evi.evar_extra in
+let mark_resolvability_undef b evi =
+  let t = resolvable.set b evi.evar_extra in
   { evi with evar_extra = t }
 
-let mark_unresolvable evi =
+let mark_resolvability b evi =
   assert (evi.evar_body = Evar_empty);
-  mark_unresolvable_undef evi
+  mark_resolvability_undef false evi
 
-let mark_unresolvables sigma =
+let mark_unresolvable evi = mark_resolvability false evi
+
+let mark_resolvability b sigma =
   Evd.fold_undefined (fun ev evi evs ->
-    Evd.add evs ev (mark_unresolvable_undef evi))
+    Evd.add evs ev (mark_resolvability_undef b evi))
     sigma (Evd.defined_evars sigma)
+
+let mark_unresolvables sigma = mark_resolvability false sigma
+let mark_resolvables sigma = mark_resolvability true sigma
 
 let has_typeclasses evd =
   Evd.fold_undefined (fun ev evi has -> has ||

@@ -627,7 +627,7 @@ let rec pr_vernac = function
         let (_,_,_,k,_),_ = List.hd l in
 	match k with Record -> "Record" | Structure -> "Structure"
 	  | Inductive_kw -> "Inductive" | CoInductive -> "CoInductive"
-	  | Class b -> if b then "Definitional Class" else "Class" in
+	  | Class _ -> "Class" in
       hov 1 (pr_oneind key (List.hd l)) ++
       (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
 
@@ -690,34 +690,23 @@ let rec pr_vernac = function
 	spc() ++ str":" ++ spc() ++ pr_class_rawexpr c1 ++ spc() ++ str">->" ++
 	spc() ++ pr_class_rawexpr c2)
 
-
-(*   | VernacClass (id, par, ar, sup, props) -> *)
-(*       hov 1 ( *)
-(* 	str"Class" ++ spc () ++ pr_lident id ++ *)
-(* (\* 	  prlist_with_sep (spc) (pr_lident_constr (spc() ++ str ":" ++ spc())) par ++  *\) *)
-(* 	  pr_and_type_binders_arg par ++ *)
-(* 	  (match ar with Some ar -> spc () ++ str":" ++ spc() ++ pr_glob_sort (snd ar) | None -> mt()) ++ *)
-(* 	  spc () ++ str":=" ++ spc () ++ *)
-(* 	  prlist_with_sep (fun () -> str";" ++ spc())  *)
-(* 	  (fun (lid,oc,c) -> pr_lident_constr ((if oc then str" :>" else str" :") ++ spc()) (lid,c)) props ) *)
-
  | VernacInstance (abst,glob, sup, (instid, bk, cl), props, pri) ->
      hov 1 (
        pr_non_locality (not glob) ++
        (if abst then str"Declare " else mt ()) ++
-       str"Instance" ++ spc () ++
-	 pr_and_type_binders_arg sup ++
-	 str"=>" ++ spc () ++
-	 (match snd instid with Name id -> pr_lident (fst instid, id) ++ spc () ++ str":" ++ spc () | Anonymous -> mt ()) ++
-	 pr_constr_expr cl ++ spc () ++
+       str"Instance" ++ 
+       (match snd instid with Name id -> spc () ++ pr_lident (fst instid, id) ++ spc () | 
+	Anonymous -> mt ()) ++
+       pr_and_type_binders_arg sup ++
+       str":" ++ spc () ++	 
+       pr_constr_expr cl ++ spc () ++
 	 (match props with
 	  | Some p -> spc () ++ str":=" ++ spc () ++ pr_constr_expr p
 	  | None -> mt()))
 
  | VernacContext l ->
      hov 1 (
-       str"Context" ++ spc () ++ str"[" ++ spc () ++
-	 pr_and_type_binders_arg l ++ spc () ++ str "]")
+       str"Context" ++ spc () ++ pr_and_type_binders_arg l)
 
 
  | VernacDeclareInstances (glob, ids) ->

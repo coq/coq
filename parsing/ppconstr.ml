@@ -223,14 +223,14 @@ let surround_binder k p =
   match k with
   | Default b -> hov 1 (surround_impl b p)
   | Generalized (b, b', t) ->
-      hov 1 (surround_impl b' (surround_impl b p))
+      hov 1 (str"`" ++ (surround_impl b' p))
 
 let surround_implicit k p =
   match k with
   | Default Explicit -> p
   | Default Implicit -> (str"{" ++ p ++ str"}")
   | Generalized (b, b', t) ->
-      surround_impl b' (surround_impl b p)
+      str"`" ++ (surround_impl b' p)
 
 let pr_binder many pr (nal,k,t) =
   match t with

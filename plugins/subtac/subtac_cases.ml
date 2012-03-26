@@ -1845,7 +1845,7 @@ let build_dependent_signature env evars avoid tomatchs arsign =
 			 refl_arg :: refl_args,
 			 pred slift,
 			 (Name id, b, t) :: argsign'))
-		   (env, 0, [], [], slift, []) args argsign
+		   (env, neqs, [], [], slift, []) args argsign
 	       in
 	       let eq = mk_JMeq
 		 (lift (nargeqs + slift) appt)

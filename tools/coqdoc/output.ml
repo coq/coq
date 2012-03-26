@@ -29,14 +29,14 @@ let build_table l =
 
 let is_keyword =
   build_table
-    [ "AddPath"; "Axiom"; "Abort"; "Chapter"; "Check"; "Coercion"; "CoFixpoint";
+    [ "About"; "AddPath"; "Axiom"; "Abort"; "Chapter"; "Check"; "Coercion"; "Compute"; "CoFixpoint";
       "CoInductive"; "Corollary"; "Defined"; "Definition"; "End"; "Eval"; "Example";
-      "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Goal"; "Hint";
+      "Export"; "Fact"; "Fix"; "Fixpoint"; "Function"; "Generalizable"; "Global"; "Grammar"; "Goal"; "Hint";
       "Hypothesis"; "Hypotheses";
       "Resolve"; "Unfold"; "Immediate"; "Extern"; "Implicit"; "Import"; "Inductive";
       "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Ltac";
       "Module"; "Module Type"; "Declare Module"; "Include";
-      "Mutual"; "Parameter"; "Parameters"; "Print"; "Proof"; "Proof with"; "Qed";
+      "Mutual"; "Parameter"; "Parameters"; "Print"; "Printing"; "Proof"; "Proof with"; "Qed";
       "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme";
       "Induction"; "for"; "Sort"; "Section"; "Show"; "Structure"; "Syntactic"; "Syntax"; "Tactic"; "Theorem";
       "Set"; "Types"; "Undo"; "Unset"; "Variable"; "Variables"; "Context";
@@ -44,7 +44,7 @@ let is_keyword =
       "Delimit"; "Bind"; "Open"; "Scope"; "Inline";
       "Implicit Arguments"; "Add"; "Strict";
       "Typeclasses"; "Instance"; "Global Instance"; "Class"; "Instantiation";
-      "subgoal";
+      "subgoal"; "vm_compute";
       "Opaque"; "Transparent";
       (* Program *)
       "Program Definition"; "Program Example"; "Program Fixpoint"; "Program Lemma";

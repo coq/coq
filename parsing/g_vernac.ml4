@@ -143,7 +143,7 @@ let test_plurial_form_types = function
 (* Gallina declarations *)
 GEXTEND Gram
   GLOBAL: gallina gallina_ext thm_token def_body of_type_with_opt_coercion
-    typeclass_constraint record_field decl_notation rec_definition;
+    record_field decl_notation rec_definition;
 
   gallina:
       (* Definition, Theorem, Variable, Axiom, ... *)

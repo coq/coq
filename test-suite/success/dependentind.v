@@ -1,5 +1,11 @@
 Require Import Coq.Program.Program Coq.Program.Equality.
 
+Goal forall (H: forall n m : nat, n = m -> n = 0) x, x = tt.
+intros.
+dependent destruction x.
+reflexivity.
+Qed.
+
 Variable A : Set.
 
 Inductive vector : nat -> Type := vnil : vector 0 | vcons : A -> forall {n}, vector n -> vector (S n).
@@ -84,6 +90,29 @@ Proof with simpl in * ; eqns ; eauto with lambda.
   intro. eapply app...
 Defined.
 
+Lemma weakening_ctx : forall Γ Δ τ, Γ ; Δ ⊢ τ ->
+  forall Δ', Γ ; Δ' ; Δ ⊢ τ.
+Proof with simpl in * ; eqns ; eauto with lambda.
+  intros Γ Δ τ H.
+
+  dependent induction H.
+
+  destruct Δ as [|Δ τ'']...
+  induction Δ'...
+
+  destruct Δ as [|Δ τ'']...
+  induction Δ'...
+
+  destruct Δ as [|Δ τ'']...
+    apply abs.
+    specialize (IHterm Γ (empty, τ))...
+
+    apply abs.
+    specialize (IHterm Γ (Δ, τ'', τ))...
+
+  intro. eapply app...
+Defined.
+
 Lemma exchange : forall Γ Δ α β τ, term (Γ, α, β ; Δ) τ -> term (Γ, β, α ; Δ) τ.
 Proof with simpl in * ; eqns ; eauto.
   intros until 1.
@@ -104,6 +133,8 @@ Proof with simpl in * ; eqns ; eauto.
 
   eapply app...
 Defined.
+
+
 
 (** Example by Andrew Kenedy, uses simplification of the first component of dependent pairs. *)
 

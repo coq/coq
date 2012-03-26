@@ -257,7 +257,7 @@ let decompose_applied_relation env sigma flags orig (c,l) left2right =
   let ctype = Typing.type_of env sigma c' in
   let find_rel ty =
     let eqclause = Clenv.make_clenv_binding_env_apply env sigma None (c',ty) l in
-    let (equiv, args) = decompose_app_rel env sigma (Clenv.clenv_type eqclause) in
+    let (equiv, args) = decompose_app_rel env eqclause.evd (Clenv.clenv_type eqclause) in
     let c1 = args.(0) and c2 = args.(1) in 
     let ty1, ty2 =
       Typing.type_of env eqclause.evd c1, Typing.type_of env eqclause.evd c2
@@ -1869,7 +1869,8 @@ let setoid_proof gl ty fn fallback =
   let env = pf_env gl in
     try
       let rel, args = decompose_app_rel env (project gl) (pf_concl gl) in
-      let evm, car = project gl, pf_type_of gl args.(0) in
+      let evm = project gl in
+      let car = pi3 (List.hd (fst (Reduction.dest_prod env (Typing.type_of env evm rel)))) in
 	fn env evm car rel gl
     with e ->
       try fallback gl

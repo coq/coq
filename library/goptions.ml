@@ -247,6 +247,7 @@ let declare_option cast uncast
       declare_object {(default_object ("G  "^nickname key)) with
 		       cache_function = (fun (_,v) -> write v);
 		       classify_function = (fun v -> Substitute v);
+		       subst_function = (fun (_,v) -> v);
 		       discharge_function = (fun (_,v) -> Some v);
 		       load_function = (fun _ (_,v) -> write v)}
     in

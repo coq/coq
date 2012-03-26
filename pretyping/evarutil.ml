@@ -1049,15 +1049,17 @@ let solve_refl conv_algo env evd evk argsv1 argsv2 =
   if array_equal eq_constr argsv1 argsv2 then evd else
   let evi = Evd.find_undefined evd evk in
   (* Filter and restrict if needed *)
-  let evd,evk,args =
+  let evd,evk',args =
     restrict_upon_filter evd evi evk
       (fun (a1,a2) -> snd (conv_algo env evd Reduction.CONV a1 a2))
       (List.combine (Array.to_list argsv1) (Array.to_list argsv2)) in
-  (* Leave a unification problem *)
-  let args1,args2 = List.split args in
-  let argsv1 = Array.of_list args1 and argsv2 = Array.of_list args2 in
-  let pb = (Reduction.CONV,env,mkEvar(evk,argsv1),mkEvar(evk,argsv2)) in
-    Evd.add_conv_pb pb evd
+    if evk <> evk' then
+      (* Leave a unification problem if necessary *)
+      let args1,args2 = List.split args in
+      let argsv1 = Array.of_list args1 and argsv2 = Array.of_list args2 in
+      let pb = (Reduction.CONV,env,mkEvar(evk',argsv1),mkEvar(evk',argsv2)) in
+	Evd.add_conv_pb pb evd
+    else evd
 
 (* If the evar can be instantiated by a finite set of candidates known
    in advance, we check which of them apply *)
