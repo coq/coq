@@ -971,7 +971,7 @@ GEXTEND Gram
 	 VernacDelimiters (sc,key)
 
      | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with";
-       refl = LIST1 class_rawexpr -> VernacBindScope (sc,refl)
+       refl = LIST1 smart_global -> VernacBindScope (sc,refl)
 
      | IDENT "Infix"; local = obsolete_locality;
 	 op = ne_lstring; ":="; p = constr;

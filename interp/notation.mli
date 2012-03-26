@@ -146,7 +146,13 @@ val declare_arguments_scope :
 
 val find_arguments_scope : global_reference -> scope_name option list
 
-val declare_class_scope : scope_name -> Classops.cl_typ -> unit
+type scope_class
+
+val scope_class_of_reference : global_reference -> scope_class
+val subst_scope_class :
+  Mod_subst.substitution -> scope_class -> scope_class option
+
+val declare_scope_class : scope_name -> scope_class -> unit
 val declare_ref_arguments_scope : global_reference -> unit
 
 val compute_arguments_scope : Term.types -> scope_name option list
@@ -163,6 +169,7 @@ val make_notation_key : symbol list -> notation
 val decompose_notation_key : notation -> symbol list
 
 (** Prints scopes (expects a pure aconstr printer) *)
+val pr_scope_class : scope_class -> std_ppcmds
 val pr_scope : (glob_constr -> std_ppcmds) -> scope_name -> std_ppcmds
 val pr_scopes : (glob_constr -> std_ppcmds) -> std_ppcmds
 val locate_notation : (glob_constr -> std_ppcmds) -> notation ->

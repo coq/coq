@@ -502,7 +502,7 @@ let rec pr_vernac = function
       spc() ++ str "with " ++ str key
   | VernacBindScope (sc,cll) ->
       str"Bind Scope" ++ spc () ++ str sc ++
-      spc() ++ str "with " ++ prlist_with_sep spc pr_class_rawexpr cll
+      spc() ++ str "with " ++ prlist_with_sep spc pr_smart_global cll
   | VernacArgumentsScope (local,q,scl) -> let pr_opt_scope = function
       |	None -> str"_"
       |	Some sc -> str sc in

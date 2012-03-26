@@ -30,6 +30,9 @@ CoqIDE
 - Coqide now supports the Restart command, and Undo (with a warning).
   Better support for Abort.
 
+Notations
+
+- "Bind Scope" can no longer bind "Funclass" and "Sortclass".
 
 Changes from V8.4beta to V8.4
 =============================

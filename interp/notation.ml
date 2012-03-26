@@ -434,24 +434,31 @@ let isAVar_or_AHole = function AVar _ | AHole _ -> true | _ -> false
 (**********************************************************************)
 (* Mapping classes to scopes *)
 
-open Classops
+type scope_class = ScopeRef of global_reference | ScopeSort
 
-let class_scope_map = ref (Gmap.empty : (cl_typ,scope_name) Gmap.t)
+let scope_class_of_reference x = ScopeRef x
+
+let compute_scope_class t =
+  let t', _ = Reductionops.whd_betaiotazeta_stack Evd.empty t in
+  match kind_of_term t' with
+  | Var _ | Const _ | Ind _ -> ScopeRef (global_of_constr t')
+  | Sort _ -> ScopeSort
+  |  _ -> raise Not_found
+
+let scope_class_map = ref (Gmap.empty : (scope_class,scope_name) Gmap.t)
 
 let _ =
-  class_scope_map := Gmap.add CL_SORT "type_scope" Gmap.empty
+  scope_class_map := Gmap.add ScopeSort "type_scope" Gmap.empty
 
-let declare_class_scope sc cl =
-  class_scope_map := Gmap.add cl sc !class_scope_map
+let declare_scope_class sc cl =
+  scope_class_map := Gmap.add cl sc !scope_class_map
 
-let find_class_scope cl =
-  Gmap.find cl !class_scope_map
+let find_scope_class cl =
+  Gmap.find cl !scope_class_map
 
-let find_class_scope_opt = function
+let find_scope_class_opt = function
   | None -> None
-  | Some cl -> try Some (find_class_scope cl) with Not_found -> None
-
-let find_class t = fst (find_class_type Evd.empty t)
+  | Some cl -> try Some (find_scope_class cl) with Not_found -> None
 
 (**********************************************************************)
 (* Special scopes associated to arguments of a global reference *)
@@ -459,13 +466,13 @@ let find_class t = fst (find_class_type Evd.empty t)
 let rec compute_arguments_classes t =
   match kind_of_term (Reductionops.whd_betaiotazeta Evd.empty t) with
     | Prod (_,t,u) ->
-	let cl = try Some (find_class t) with Not_found -> None in
+	let cl = try Some (compute_scope_class t) with Not_found -> None in
 	cl :: compute_arguments_classes u
     | _ -> []
 
 let compute_arguments_scope_full t =
   let cls = compute_arguments_classes t in
-  let scs = List.map find_class_scope_opt cls in
+  let scs = List.map find_scope_class_opt cls in
   scs, cls
 
 let compute_arguments_scope t = fst (compute_arguments_scope_full t)
@@ -494,12 +501,23 @@ let load_arguments_scope _ (_,(_,r,scl,cls)) =
 let cache_arguments_scope o =
   load_arguments_scope 1 o
 
+let subst_scope_class subst cs = match cs with
+  | ScopeSort -> Some cs
+  | ScopeRef t ->
+      let (t',c) = subst_global subst t in
+      if t == t' then Some cs
+      else try Some (compute_scope_class c) with Not_found -> None
+
 let subst_arguments_scope (subst,(req,r,scl,cls)) =
   let r' = fst (subst_global subst r) in
-  let subst_cl cl =
-    try Option.smartmap (subst_cl_typ subst) cl with Not_found -> None in
+  let subst_cl ocl = match ocl with
+    | None -> ocl
+    | Some cl ->
+        match subst_scope_class subst cl with
+        | Some cl'  as ocl' when cl' != cl -> ocl'
+        | _ -> ocl in
   let cls' = list_smartmap subst_cl cls in
-  let scl' = merge_scope (List.map find_class_scope_opt cls') scl in
+  let scl' = merge_scope (List.map find_scope_class_opt cls') scl in
   let scl'' = List.map (Option.map Declaremods.subst_scope) scl' in
   (ArgsScopeNoDischarge,r',scl'',cls')
 
@@ -525,7 +543,7 @@ let rebuild_arguments_scope (req,r,l,_) =
 
 type arguments_scope_obj =
     arguments_scope_discharge_request * global_reference *
-      scope_name option list * Classops.cl_typ option list
+      scope_name option list * scope_class option list
 
 let inArgumentsScope : arguments_scope_obj -> obj =
   declare_object {(default_object "ARGUMENTS-SCOPE") with
@@ -600,14 +618,18 @@ let pr_delimiters_info = function
   | Some key -> str "Delimiting key is " ++ str key
 
 let classes_of_scope sc =
-  Gmap.fold (fun cl sc' l -> if sc = sc' then cl::l else l) !class_scope_map []
+  Gmap.fold (fun cl sc' l -> if sc = sc' then cl::l else l) !scope_class_map []
+
+let pr_scope_class = function
+  | ScopeSort -> str "Sort"
+  | ScopeRef t -> pr_global_env Idset.empty t
 
 let pr_scope_classes sc =
   let l = classes_of_scope sc in
   if l = [] then mt()
   else
     hov 0 (str ("Bound to class"^(if List.tl l=[] then "" else "es")) ++
-      spc() ++ prlist_with_sep spc pr_class l) ++ fnl()
+      spc() ++ prlist_with_sep spc pr_scope_class l) ++ fnl()
 
 let pr_notation_info prglob ntn c =
   str "\"" ++ str ntn ++ str "\" := " ++
@@ -789,7 +811,7 @@ let find_notation_printing_rule ntn =
 let freeze () =
  (!scope_map, !notation_level_map, !scope_stack, !arguments_scope,
   !delimiters_map, !notations_key_table, !printing_rules,
-  !class_scope_map)
+  !scope_class_map)
 
 let unfreeze (scm,nlm,scs,asc,dlm,fkm,pprules,clsc) =
   scope_map := scm;
@@ -799,7 +821,7 @@ let unfreeze (scm,nlm,scs,asc,dlm,fkm,pprules,clsc) =
   arguments_scope := asc;
   notations_key_table := fkm;
   printing_rules := pprules;
-  class_scope_map := clsc
+  scope_class_map := clsc
 
 let init () =
   init_scope_map ();
@@ -811,7 +833,7 @@ let init () =
   delimiters_map := Gmap.empty;
   notations_key_table := Gmapl.empty;
   printing_rules := Gmap.empty;
-  class_scope_map := Gmap.add CL_SORT "type_scope" Gmap.empty
+  scope_class_map := Gmap.add ScopeSort "type_scope" Gmap.empty
 
 let _ =
   declare_summary "symbols"

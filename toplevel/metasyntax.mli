@@ -35,7 +35,7 @@ val add_notation : locality_flag -> constr_expr ->
 (** Declaring delimiter keys and default scopes *)
 
 val add_delimiters : scope_name -> string -> unit
-val add_class_scope : scope_name -> Classops.cl_typ -> unit
+val add_class_scope : scope_name -> scope_class list -> unit
 
 (** Add only the interpretation of a notation that already has pa/pp rules *)
 

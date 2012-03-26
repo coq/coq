@@ -1145,7 +1145,7 @@ let add_infix local ((loc,inf),modifiers) pr sc =
 (**********************************************************************)
 (* Delimiters and classes bound to scopes                             *)
 
-type scope_command = ScopeDelim of string | ScopeClasses of Classops.cl_typ
+type scope_command = ScopeDelim of string | ScopeClasses of scope_class list
 
 let load_scope_command _ (_,(scope,dlm)) =
   Notation.declare_scope scope
@@ -1154,7 +1154,7 @@ let open_scope_command i (_,(scope,o)) =
   if i=1 then
     match o with
     | ScopeDelim dlm -> Notation.declare_delimiters scope dlm
-    | ScopeClasses cl -> Notation.declare_class_scope scope cl
+    | ScopeClasses cl -> List.iter (Notation.declare_scope_class scope) cl
 
 let cache_scope_command o =
   load_scope_command 1 o;
@@ -1162,7 +1162,10 @@ let cache_scope_command o =
 
 let subst_scope_command (subst,(scope,o as x)) = match o with
   | ScopeClasses cl ->
-      let cl' = Classops.subst_cl_typ subst cl in if cl'==cl then x else
+      let cl' = list_map_filter (subst_scope_class subst) cl in
+      let cl' =
+        if List.length cl = List.length cl' && List.for_all2 (==) cl cl' then cl
+        else cl' in
       scope, ScopeClasses cl'
   | _ -> x
 

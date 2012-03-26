@@ -802,10 +802,13 @@ put into the {\tt type\_scope} scope.
 Arguments respectful {A B}%type (R R')%signature _ _.
 \end{coq_example*}
 
-When interpreting a term, if some of the
-arguments of {\qualid} are built from a notation, then this notation
-is interpreted in the scope stack extended by the scopes bound (if any)
-to these arguments.
+When interpreting a term, if some of the arguments of {\qualid} are
+built from a notation, then this notation is interpreted in the scope
+stack extended by the scope bound (if any) to this argument. The
+effect of the scope is limited to the argument itself. It does not propagate 
+to subterms but the subterms that, after interpretation of the
+notation, turn to be themselves arguments of a reference are
+interpreted accordingly to the arguments scopes bound to this reference.
 
 Arguments scopes can be cleared with the following command:
 
@@ -830,7 +833,6 @@ visible from within other modules or files.
 
 \end{Variants}
 
-
 \SeeAlso The command to show the scopes bound to the arguments of a
 function is described in Section~\ref{About}.
 
@@ -838,20 +840,23 @@ function is described in Section~\ref{About}.
 
 When an interpretation scope is naturally associated to a type
 (e.g. the scope of operations on the natural numbers), it may be
-convenient to bind it to this type. The effect of this is that any
-argument of a function that syntactically expects a parameter of this
-type is interpreted using scope. More precisely, it applies only if
-this argument is built from a notation, and if so, this notation is
-interpreted in the scope stack extended by this particular scope.  It
-does not apply to the subterms of this notation (unless the
-interpretation of the notation itself expects arguments of the same
-type that would trigger the same scope).
+convenient to bind it to this type. When a scope {\scope} is bound to
+a type {\type}, any new function defined later on gets its arguments
+of type {\type} interpreted by default in scope {\scope} (this default
+behavior can however be overwritten by explicitly using the command
+{\tt Arguments}).
 
-\comindex{Bind Scope}
-More generally, any {\class} (see Chapter~\ref{Coercions-full}) can be
-bound to an interpretation scope. The command to do it is
+Whether the argument of a function has some type {\type} is determined
+statically. For instance, if {\tt f} is a polymorphic function of type
+{\tt forall X:Type, X -> X} and type {\tt t} is bound to a scope
+{\scope}, then {\tt a} of type {\tt t} in {\tt f~t~a} is not
+recognized as an argument to be interpreted in scope {\scope}.
+
+\comindex{Bind Scope} 
+Any global reference can be bound by default to an
+interpretation scope. The command to do it is
 \begin{quote}
-{\tt Bind Scope} {\scope} \texttt{with} {\class}
+{\tt Bind Scope} {\scope} \texttt{with} {\qualid}
 \end{quote}
 
 \Example

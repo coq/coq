@@ -225,7 +225,7 @@ type vernac_expr =
   | VernacSyntaxExtension of locality_flag * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of (locality_flag * bool * scope_name)
   | VernacDelimiters of scope_name * string
-  | VernacBindScope of scope_name * class_rawexpr list
+  | VernacBindScope of scope_name * reference or_by_notation list
   | VernacInfix of locality_flag * (lstring * syntax_modifier list) *
       constr_expr * scope_name option
   | VernacNotation of

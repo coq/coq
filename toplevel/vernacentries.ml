@@ -59,6 +59,9 @@ let cl_of_qualid = function
   | SortClass -> Classops.CL_SORT
   | RefClass r -> Class.class_of_global (Smartlocate.smart_global r)
 
+let scope_class_of_qualid qid =
+  Notation.scope_class_of_reference (Smartlocate.smart_global qid)
+
 (*******************)
 (* "Show" commands *)
 
@@ -320,7 +323,7 @@ let vernac_syntax_extension = Metasyntax.add_syntax_extension
 let vernac_delimiters = Metasyntax.add_delimiters
 
 let vernac_bind_scope sc cll =
-  List.iter (fun cl -> Metasyntax.add_class_scope sc (cl_of_qualid cl)) cll
+  Metasyntax.add_class_scope sc (List.map scope_class_of_qualid cll)
 
 let vernac_open_close_scope = Notation.open_close_scope
 
