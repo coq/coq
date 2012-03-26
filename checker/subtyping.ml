@@ -29,15 +29,18 @@ type namedobject =
   | Constant of constant_body
   | IndType of inductive * mutual_inductive_body
   | IndConstr of constructor * mutual_inductive_body
+
+type namedmodule =
   | Module of module_body
   | Modtype of module_type_body
 
 (* adds above information about one mutual inductive: all types and
    constructors *)
 
-let add_nameobjects_of_mib ln mib map =
-  let add_nameobjects_of_one j oib map =
-    let ip = (ln,j) in
+let add_mib_nameobjects mp l mib map =
+  let ind = make_mind mp empty_dirpath l in
+  let add_mip_nameobjects j oib map =
+    let ip = (ind,j) in
     let map =
       array_fold_right_i
       (fun i id map ->
@@ -47,22 +50,32 @@ let add_nameobjects_of_mib ln mib map =
     in
       Labmap.add (label_of_id oib.mind_typename) (IndType (ip, mib)) map
   in
-    array_fold_right_i add_nameobjects_of_one mib.mind_packets map
+    array_fold_right_i add_mip_nameobjects mib.mind_packets map
 
 
-(* creates namedobject map for the whole signature *)
+(* creates (namedobject/namedmodule) map for the whole signature *)
 
-let make_label_map mp list =
+type labmap = { objs : namedobject Labmap.t; mods : namedmodule Labmap.t }
+
+let empty_labmap = { objs = Labmap.empty; mods = Labmap.empty }
+
+let get_obj mp map l =
+  try Labmap.find l map.objs
+  with Not_found -> error_no_such_label_sub l mp
+
+let get_mod mp map l =
+  try Labmap.find l map.mods
+  with Not_found -> error_no_such_label_sub l mp
+
+let make_labmap mp list =
   let add_one (l,e) map =
-   let add_map obj = Labmap.add l obj map in
    match e with
-    | SFBconst cb -> add_map (Constant cb)
-    | SFBmind mib ->
-       add_nameobjects_of_mib (make_mind mp empty_dirpath l) mib map
-    | SFBmodule mb -> add_map (Module mb)
-    | SFBmodtype mtb -> add_map (Modtype mtb)
+    | SFBconst cb -> { map with objs = Labmap.add l (Constant cb) map.objs }
+    | SFBmind mib -> { map with objs = add_mib_nameobjects mp l mib map.objs }
+    | SFBmodule mb -> { map with mods = Labmap.add l (Module mb) map.mods }
+    | SFBmodtype mtb -> { map with mods = Labmap.add l (Modtype mtb) map.mods }
   in
-    List.fold_right add_one list Labmap.empty
+  List.fold_right add_one list empty_labmap
 
 
 let check_conv_error error f env a1 a2 =
@@ -283,7 +296,6 @@ let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =
       let ty1 = type_of_constructor cstr (mind1,mind1.mind_packets.(i)) in
       let ty2 = Typeops.type_of_constant_type env cb2.const_type in
        check_conv conv env ty1 ty2
-   | _ -> error ()
 
 let rec check_modules  env msb1 msb2 subst1 subst2 =
   let mty1 = module_type_of_module None msb1 in
@@ -292,29 +304,25 @@ let rec check_modules  env msb1 msb2 subst1 subst2 =
  
 
 and check_signatures env mp1 sig1 sig2 subst1 subst2 = 
-  let map1 = make_label_map mp1 sig1 in
+  let map1 = make_labmap mp1 sig1 in
   let check_one_body  (l,spec2) =
-    let info1 =
-      try
-	Labmap.find l map1
-      with
-	  Not_found -> error_no_such_label_sub l mp1
-    in
       match spec2 with
 	| SFBconst cb2 ->
-	    check_constant  env mp1 l info1 cb2 spec2 subst1 subst2
+	    check_constant  env mp1 l (get_obj mp1 map1 l)
+	      cb2 spec2 subst1 subst2
 	| SFBmind mib2 ->
-	    check_inductive env mp1 l info1 mib2 spec2 subst1 subst2
+	    check_inductive env mp1 l (get_obj mp1 map1 l)
+	      mib2 spec2 subst1 subst2
 	| SFBmodule msb2 ->
 	    begin
-	      match info1 with
+	      match get_mod mp1 map1 l with
 		| Module msb -> check_modules env msb msb2 
 		    subst1 subst2
 		| _ -> error_not_match l spec2
 	    end
 	| SFBmodtype mtb2 ->
 	    let mtb1 =
-	      match info1 with
+	      match get_mod mp1 map1 l with
 		| Modtype mtb -> mtb
 		| _ -> error_not_match l spec2
 	    in

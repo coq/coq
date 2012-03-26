@@ -54,10 +54,14 @@ let path_of_mexpr = function
   | SEBident mp -> mp
   | _ -> raise Not_path
 
-let rec list_split_assoc k rev_before = function
+let is_modular = function
+  | SFBmodule _ | SFBmodtype _ -> true
+  | SFBconst _ | SFBmind _ -> false
+
+let rec list_split_assoc ((k,m) as km) rev_before = function
   | [] -> raise Not_found
-  | (k',b)::after when k=k' -> rev_before,b,after
-  | h::tail -> list_split_assoc k (h::rev_before) tail
+  | (k',b)::after when k=k' && is_modular b = m -> rev_before,b,after
+  | h::tail -> list_split_assoc km (h::rev_before) tail
 
 let check_definition_sub env cb1 cb2 =
   let check_type env t1 t2 =
@@ -132,38 +136,35 @@ let lookup_modtype mp env =
 
 let rec check_with env mtb with_decl mp=
   match with_decl with
-    | With_definition_body _ ->
-	check_with_aux_def env mtb with_decl mp;
+    | With_definition_body (idl,c) ->
+	check_with_def env mtb (idl,c) mp;
 	mtb
-    | With_module_body _ ->
-	check_with_aux_mod env mtb with_decl mp;
+    | With_module_body (idl,mp1) ->
+	check_with_mod env mtb (idl,mp1) mp;
 	mtb
 
-and check_with_aux_def env mtb with_decl mp =
+and check_with_def env mtb (idl,c) mp =
   let sig_b = match mtb with
     | SEBstruct(sig_b) ->
 	sig_b
     | _ -> error_signature_expected mtb
   in
-  let id,idl = match with_decl with
-    | With_definition_body (id::idl,_) | With_module_body (id::idl,_) ->
-                                           id,idl
-    | With_definition_body ([],_) | With_module_body ([],_) -> assert false
+  let id,idl = match idl with
+    | [] -> assert false
+    | id::idl -> id,idl
   in
   let l = label_of_id id in
     try
-      let rev_before,spec,after = list_split_assoc l [] sig_b in
+      let rev_before,spec,after = list_split_assoc (l,(idl<>[])) [] sig_b in
       let before = List.rev rev_before in
       let env' = Modops.add_signature mp before empty_delta_resolver env in
-	match with_decl with
-          | With_definition_body ([],_) -> assert false
-	  | With_definition_body ([id],c) ->
+      if idl = [] then
 	      let cb = match spec with
 		  SFBconst cb -> cb
 		| _ -> error_not_a_constant l
 	      in
               check_definition_sub env' c cb
-	  | With_definition_body (_::_,_) ->
+      else
 	      let old = match spec with
 		  SFBmodule msb -> msb
 		| _ -> error_not_a_module l
@@ -171,49 +172,36 @@ and check_with_aux_def env mtb with_decl mp =
 		begin
 		  match old.mod_expr with
                     | None ->
-			let new_with_decl = match with_decl with
-			    With_definition_body (_,c) ->
-                              With_definition_body (idl,c)
-			  | With_module_body (_,c) ->
-                              With_module_body (idl,c) in
-			  check_with_aux_def env' old.mod_type new_with_decl (MPdot(mp,l))
+		        check_with_def env' old.mod_type (idl,c) (MPdot(mp,l))
                     | Some msb ->
 			error_a_generative_module_expected l
 		end
-	  | _ -> anomaly "Modtyping:incorrect use of with"
     with
 	Not_found -> error_no_such_label l
       | Reduction.NotConvertible -> error_with_incorrect l
 
-and check_with_aux_mod env mtb with_decl mp =
+and check_with_mod env mtb (idl,mp1) mp =
   let sig_b =
     match mtb with
     | SEBstruct(sig_b) ->
 	sig_b
     | _ -> error_signature_expected mtb in
-  let id,idl = match with_decl with
-    | With_definition_body (id::idl,_) | With_module_body (id::idl,_) ->
-        id,idl
-    | With_definition_body ([],_) | With_module_body ([],_) -> assert false
+  let id,idl = match idl with
+    | [] -> assert false
+    | id::idl -> id,idl
   in
   let l = label_of_id id in
     try
-      let rev_before,spec,after = list_split_assoc l [] sig_b in
+      let rev_before,spec,after = list_split_assoc (l,false) [] sig_b in
       let before = List.rev rev_before in
-      let rec mp_rec = function
-	| [] -> mp
-	| i::r -> MPdot(mp_rec r,label_of_id i)
-      in
       let env' = Modops.add_signature mp before empty_delta_resolver env in
-	match with_decl with
-          | With_module_body ([],_) -> assert false
-	  | With_module_body ([id], mp1) ->
+      if idl = [] then
 	      let _ = match spec with
 		  SFBmodule msb -> msb
 		| _ -> error_not_a_module l
 	      in
 	      let (_:module_body) = (lookup_module mp1 env) in ()
-        | With_module_body (_::_,mp) ->
+      else
 	    let old = match spec with
 		SFBmodule msb -> msb
 	      | _ -> error_not_a_module l
@@ -221,17 +209,11 @@ and check_with_aux_mod env mtb with_decl mp =
 	      begin
 		match old.mod_expr with
                     None ->
-                      let new_with_decl = match with_decl with
-			  With_definition_body (_,c) ->
-			    With_definition_body (idl,c)
-			| With_module_body (_,c) ->
-                            With_module_body (idl,c) in
-		 	check_with_aux_mod env'
-			  old.mod_type new_with_decl (MPdot(mp,l))
+		      check_with_mod env'
+			  old.mod_type (idl,mp1) (MPdot(mp,l))
                   | Some msb ->
                       error_a_generative_module_expected l
               end
-	| _ -> anomaly "Modtyping:incorrect use of with"
     with
 	Not_found -> error_no_such_label l
       | Reduction.NotConvertible -> error_with_incorrect l

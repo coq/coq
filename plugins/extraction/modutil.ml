@@ -195,6 +195,15 @@ let signature_of_structure s =
 
 (*s Searching one [ml_decl] in a [ml_structure] by its [global_reference] *)
 
+let is_modular = function
+  | SEdecl _ -> false
+  | SEmodule _ | SEmodtype _ -> true
+
+let rec search_structure l m = function
+  | [] -> raise Not_found
+  | (lab,d)::_ when lab=l && is_modular d = m -> d
+  | _::fields -> search_structure l m fields
+
 let get_decl_in_structure r struc =
   try
     let base_mp,ll = labels_of_ref r in
@@ -203,7 +212,7 @@ let get_decl_in_structure r struc =
     let rec go ll sel = match ll with
       | [] -> assert false
       | l :: ll ->
-	  match List.assoc l sel with
+	  match search_structure l (ll<>[]) sel with
 	    | SEdecl d -> d
 	    | SEmodtype m -> assert false
 	    | SEmodule m ->
