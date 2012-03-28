@@ -92,6 +92,10 @@ type pref =
       mutable lax_syntax : bool;
       mutable vertical_tabs : bool;
       mutable opposite_tabs : bool;
+
+      mutable processing_color : string;
+      mutable processed_color : string;
+
 }
 
 let use_default_doc_url = "(automatic)"
@@ -153,6 +157,10 @@ let (current:pref ref) =
     lax_syntax = true;
     vertical_tabs = false;
     opposite_tabs = false;
+
+    processing_color = "light green";
+    processed_color = "light blue";
+
   }
 
 
@@ -220,6 +228,8 @@ let save_pref () =
     add "lax_syntax" [string_of_bool p.lax_syntax] ++
     add "vertical_tabs" [string_of_bool p.vertical_tabs] ++
     add "opposite_tabs" [string_of_bool p.opposite_tabs] ++
+    add "processing_color" [p.processing_color] ++
+    add "processed_color" [p.processed_color] ++
     Config_lexer.print_file pref_file
 
 let load_pref () =
@@ -293,6 +303,8 @@ let load_pref () =
     set_bool "lax_syntax" (fun v -> np.lax_syntax <- v);
     set_bool "vertical_tabs" (fun v -> np.vertical_tabs <- v);
     set_bool "opposite_tabs" (fun v -> np.opposite_tabs <- v);
+    set_hd "processing_color" (fun v -> np.processing_color <- v);
+    set_hd "processed_color" (fun v -> np.processed_color <- v);
     current := np
 (*
     Format.printf "in load_pref: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
@@ -325,7 +337,7 @@ let configure ?(apply=(fun () -> ())) () =
     let w = GMisc.font_selection () in
     w#set_preview_text
       "Goal (∃n : nat, n ≤ 0)∧(∀x,y,z, x∈y⋃z↔x∈y∨x∈z).";
-    box#pack w#coerce;
+    box#pack ~expand:true w#coerce;
     ignore (w#misc#connect#realize
 	      ~callback:(fun () -> w#set_font_name
 			   (Pango.Font.to_string !current.text_font)));
@@ -341,6 +353,43 @@ let configure ?(apply=(fun () -> ())) () =
 	 !change_font !current.text_font)
       true
   in
+
+  let config_color =
+    let box = GPack.hbox () in
+    let table = GPack.table
+      ~row_spacings:5
+      ~col_spacings:5
+      ~border_width:2
+      ~packing:(box#pack ~expand:true) ()
+    in
+    let processed_label = GMisc.label
+      ~text:"Background color of processed text"
+      ~packing:(table#attach ~expand:`X ~left:0 ~top:0) ()
+    in
+    let processing_label = GMisc.label
+      ~text:"Background color of text being processed"
+      ~packing:(table#attach ~expand:`X ~left:0 ~top:1) ()
+    in
+    let () = processed_label#set_xalign 0. in
+    let () = processing_label#set_xalign 0. in
+    let processed_button = GButton.color_button
+      ~color:(Tags.get_processed_color ())
+      ~packing:(table#attach ~left:1 ~top:0) ()
+    in
+    let processing_button = GButton.color_button
+      ~color:(Tags.get_processing_color ())
+      ~packing:(table#attach ~left:1 ~top:1) ()
+    in
+    let label = "Color configuration" in
+    let callback () =
+      !current.processing_color <- Tags.string_of_color processing_button#color;
+      !current.processed_color <- Tags.string_of_color processed_button#color;
+      Tags.set_processing_color processing_button#color;
+      Tags.set_processed_color processed_button#color
+    in
+    custom ~label box callback true
+  in
+
 (*
   let show_toolbar =
     bool
@@ -591,6 +640,7 @@ let configure ?(apply=(fun () -> ())) () =
   let cmds =
     [Section("Fonts", Some `SELECT_FONT,
 	     [config_font]);
+     Section("Colors", Some `SELECT_COLOR, [config_color]);
      Section("Files", Some `DIRECTORY,
 	     [global_auto_revert;global_auto_revert_delay;
 	      auto_save; auto_save_delay; (* auto_save_name*)

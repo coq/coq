@@ -2183,6 +2183,7 @@ let main files =
 	     true))
   in reset_auto_save_timer (); (* to enable statup preferences timer *)
 (* end Preferences *)
+
   let do_or_activate f () =
     do_if_not_computing "do_or_activate"
       (fun current ->
@@ -2867,6 +2868,12 @@ let main files =
   (*
 
   *)
+(* Begin Color configuration *)
+
+  Tags.set_processing_color (Tags.color_of_string !current.processing_color);
+  Tags.set_processed_color (Tags.color_of_string !current.processed_color);
+
+(* End of color configuration *)
   resize_window := (fun () ->
     w#resize
       ~width:!current.window_width

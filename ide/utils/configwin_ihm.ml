@@ -1022,7 +1022,7 @@ class configuration_box (tt : GData.tooltips) conf_struct =
 
   let rec make_tree iter conf_struct =
     (* box is not shown at first *)
-    let box = GPack.vbox ~packing:menu_box#add ~show:false () in
+    let box = GPack.vbox ~packing:(menu_box#pack ~expand:true) ~show:false () in
     let new_iter = match iter with
     | None -> tree#append ()
     | Some parent -> tree#append ~parent ()
