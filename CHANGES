@@ -12,6 +12,13 @@ Vernacular commands
 Tactics
 
 - Tactics btauto, a reflexive boolean tautology solver.
+- Still no general "info" tactical, but new specific tactics
+  info_auto, info_eauto, info_trivial which provides information
+  on the proofs found by auto/eauto/trivial. Display of these
+  details could also be activated by Set Info Auto/Eauto/Trivial.
+- Details on everything tried by auto/eauto/trivial during
+  a proof search could be obtained by "debug auto", "debug eauto",
+  "debug trivial" or by a global "Set Debug Auto/Eauto/Trivial".
 
 Program
 

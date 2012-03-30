@@ -114,6 +114,9 @@ val msgerr : std_ppcmds -> unit
 val msgerrnl : std_ppcmds -> unit
 val msg_warning : std_ppcmds -> unit
 
+(** Same specific display in emacs as warning, but without the "Warning:" **)
+val msg_debug : std_ppcmds -> unit
+
 val string_of_ppcmds : std_ppcmds -> string
 
 (** {6 Location management. } *)

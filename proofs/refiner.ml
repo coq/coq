@@ -416,10 +416,6 @@ let tclEVARS sigma gls = tclIDTAC {gls with sigma=sigma}
 let pp_info = ref (fun _ _ _ -> assert false)
 let set_info_printer f = pp_info := f
 
-let tclINFO (tac : tactic) gls =
-  msgnl (hov 0 (str "Warning: info is currently not working"));
-  tac gls
-
 (* Check that holes in arguments have been resolved *)
 
 let check_evars env sigma extsigma gl =

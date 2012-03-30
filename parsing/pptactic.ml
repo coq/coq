@@ -516,6 +516,11 @@ let pr_auto_using prc = function
   | l -> spc () ++
       hov 2 (str "using" ++ spc () ++ prlist_with_sep pr_comma prc l)
 
+let string_of_debug = function
+  | Off -> ""
+  | Debug -> "debug "
+  | Info -> "info_"
+
 let pr_then () = str ";"
 
 let ltop = (5,E)
@@ -624,8 +629,8 @@ let rec pr_atom0 = function
   | TacAssumption -> str "assumption"
   | TacAnyConstructor (false,None) -> str "constructor"
   | TacAnyConstructor (true,None) -> str "econstructor"
-  | TacTrivial ([],Some []) -> str "trivial"
-  | TacAuto (None,[],Some []) -> str "auto"
+  | TacTrivial (d,[],Some []) -> str (string_of_debug d ^ "trivial")
+  | TacAuto (d,None,[],Some []) -> str (string_of_debug d ^ "auto")
   | TacReflexivity -> str "reflexivity"
   | TacClear (true,[]) -> str "clear"
   | t -> str "(" ++ pr_atom1 t ++ str ")"
@@ -738,16 +743,18 @@ and pr_atom1 = function
       hov 1 (str "lapply" ++ pr_constrarg c)
 
   (* Automation tactics *)
-  | TacTrivial ([],Some []) as x -> pr_atom0 x
-  | TacTrivial (lems,db) ->
-      hov 0 (str "trivial" ++
+  | TacTrivial (_,[],Some []) as x -> pr_atom0 x
+  | TacTrivial (d,lems,db) ->
+      hov 0 (str (string_of_debug d ^ "trivial") ++
              pr_auto_using pr_constr lems ++ pr_hintbases db)
-  | TacAuto (None,[],Some []) as x -> pr_atom0 x
-  | TacAuto (n,lems,db) ->
-      hov 0 (str "auto" ++ pr_opt (pr_or_var int) n ++
+  | TacAuto (_,None,[],Some []) as x -> pr_atom0 x
+  | TacAuto (d,n,lems,db) ->
+      hov 0 (str (string_of_debug d ^ "auto") ++
+	     pr_opt (pr_or_var int) n ++
              pr_auto_using pr_constr lems ++ pr_hintbases db)
-  | TacDAuto (n,p,lems) ->
-      hov 1 (str "auto" ++ pr_opt (pr_or_var int) n ++ str "decomp" ++
+  | TacDAuto (d,n,p,lems) ->
+      hov 1 (str (string_of_debug d ^ "auto") ++
+	     pr_opt (pr_or_var int) n ++ str "decomp" ++
              pr_opt int p ++ pr_auto_using pr_constr lems)
 
   (* Context management *)

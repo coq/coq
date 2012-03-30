@@ -137,7 +137,6 @@ val tclTIMEOUT       : int -> tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
 val tclNOTSAMEGOAL   : tactic -> tactic
-val tclINFO          : tactic -> tactic
 
 (** [tclIFTHENELSE tac1 tac2 tac3 gls] first applies [tac1] to [gls] then,
    if it succeeds, applies [tac2] to the resulting subgoals,

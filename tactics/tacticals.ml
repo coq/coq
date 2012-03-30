@@ -54,7 +54,6 @@ let tclREPEAT_MAIN   = Refiner.tclREPEAT_MAIN
 let tclFIRST         = Refiner.tclFIRST
 let tclSOLVE         = Refiner.tclSOLVE
 let tclTRY           = Refiner.tclTRY
-let tclINFO          = Refiner.tclINFO
 let tclCOMPLETE      = Refiner.tclCOMPLETE
 let tclAT_LEAST_ONCE = Refiner.tclAT_LEAST_ONCE
 let tclFAIL          = Refiner.tclFAIL

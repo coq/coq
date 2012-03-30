@@ -46,7 +46,6 @@ val tclREPEAT_MAIN   : tactic -> tactic
 val tclFIRST         : tactic list -> tactic
 val tclSOLVE         : tactic list -> tactic
 val tclTRY           : tactic -> tactic
-val tclINFO          : tactic -> tactic
 val tclCOMPLETE      : tactic -> tactic
 val tclAT_LEAST_ONCE : tactic -> tactic
 val tclFAIL          : int -> std_ppcmds -> tactic

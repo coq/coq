@@ -435,6 +435,16 @@ GEXTEND Gram
     [ [ "using"; l = LIST1 constr SEP "," -> l
       | -> [] ] ]
   ;
+  trivial:
+    [ [ IDENT "trivial" -> Off
+      | IDENT "info_trivial" -> Info
+      | IDENT "debug"; IDENT "trivial" -> Debug ] ]
+  ;
+  auto:
+    [ [ IDENT "auto" -> Off
+      | IDENT "info_auto" -> Info
+      | IDENT "debug"; IDENT "auto" -> Debug ] ]
+  ;
   eliminator:
     [ [ "using"; el = constr_with_bindings -> el ] ]
   ;
@@ -597,15 +607,13 @@ GEXTEND Gram
         -> TacDecompose (l,c)
 
       (* Automation tactic *)
-      | IDENT "trivial"; lems = auto_using; db = hintbases ->
-	  TacTrivial (lems,db)
-      | IDENT "auto"; n = OPT int_or_var; lems = auto_using; db = hintbases ->
-	  TacAuto (n,lems,db)
-
-      | IDENT "auto"; IDENT "decomp"; p = OPT natural;
-          lems = auto_using -> TacDAuto (None,p,lems)
-      | IDENT "auto"; n = OPT int_or_var; IDENT "decomp"; p = OPT natural;
-          lems = auto_using -> TacDAuto (n,p,lems)
+      | d = trivial; lems = auto_using; db = hintbases -> TacTrivial (d,lems,db)
+      | d = auto; n = OPT int_or_var; lems = auto_using; db = hintbases ->
+          TacAuto (d,n,lems,db)
+      | d = auto; IDENT "decomp"; p = OPT natural; lems = auto_using ->
+          TacDAuto (d,None,p,lems)
+      | d = auto; n = OPT int_or_var; IDENT "decomp"; p = OPT natural;
+          lems = auto_using -> TacDAuto (d,n,p,lems)
 
       (* Context management *)
       | IDENT "clear"; "-"; l = LIST1 id_or_meta -> TacClear (true, l)

@@ -510,8 +510,8 @@ let pp_gl gl= cut () ++
 
 let pp =
   function
-      Incomplete(gl,ctx) -> msgnl (pp_gl gl)
-    | _ -> msg (str "<complete>")
+      Incomplete(gl,ctx) -> pp_gl gl ++ fnl ()
+    | _ -> str "<complete>"
 
 let pp_info () =
   let count_info =

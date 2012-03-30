@@ -29,6 +29,8 @@ type split_flag = bool     (* true = exists           false = split *)
 type hidden_flag = bool    (* true = internal use     false = user-level *)
 type letin_flag = bool     (* true = use local def    false = use Leibniz *)
 
+type debug = Debug | Info | Off (* for trivial / auto / eauto ... *)
+
 type glob_red_flag =
   | FBeta
   | FIota
@@ -173,9 +175,9 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_atomic_tactic_expr =
   | TacLApply of 'constr
 
   (* Automation tactics *)
-  | TacTrivial of 'constr list * string list option
-  | TacAuto of int or_var option * 'constr list * string list option
-  | TacDAuto of int or_var option * int option * 'constr list
+  | TacTrivial of debug * 'constr list * string list option
+  | TacAuto of debug * int or_var option * 'constr list * string list option
+  | TacDAuto of debug * int or_var option * int option * 'constr list
 
   (* Context management *)
   | TacClear of bool * 'id list
