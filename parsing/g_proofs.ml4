@@ -68,6 +68,7 @@ GEXTEND Gram
       | IDENT "Focus" -> VernacFocus None
       | IDENT "Focus"; n = natural -> VernacFocus (Some n)
       | IDENT "Unfocus" -> VernacUnfocus
+      | IDENT "Unfocused" -> VernacUnfocused
       | IDENT "BeginSubproof" -> VernacSubproof None
       | IDENT "BeginSubproof"; n = natural -> VernacSubproof (Some n)
       | IDENT "EndSubproof" -> VernacEndSubproof
