@@ -432,7 +432,7 @@ let pr_open_subgoals () =
             begin match bgoals with
 	    | [] -> pr_subgoals None sigma seeds goals
 	    | _ -> pr_subgoals None bsigma seeds bgoals ++ fnl () ++ fnl () ++
-		      str"This subproof is complete, but there are still unfocused goals:"
+		      str"This subproof is complete, but there are still unfocused goals." ++ fnl ()
 		(* spiwack: to stay compatible with the proof general and coqide,
 		    I use print the message after the goal. It would be better to have
 		    something like:
