@@ -632,11 +632,6 @@ let rec pr_atom0 = function
 
   (* Main tactic printer *)
 and pr_atom1 = function
-  | TacAutoTDB _ | TacDestructHyp _ | TacDestructConcl
-  | TacSuperAuto _ | TacExtend (_,
-    ("GTauto"|"GIntuition"|"TSimplif"|
-     "LinearIntuition"),_) ->
-      errorlabstrm "Obsolete V8" (str "Tactic is not ported to V8.0")
   | TacExtend (loc,s,l) ->
       pr_with_comments loc (pr_extend 1 s l)
   | TacAlias (loc,s,l,_) ->

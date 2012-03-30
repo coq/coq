@@ -205,11 +205,7 @@ let pr_hints local db h pr_c pr_pat =
 	let pat = match c with None -> mt () | Some pat -> pr_pat pat in
           str "Extern" ++ spc() ++ int n ++ spc() ++ pat ++ str" =>" ++
           spc() ++ pr_raw_tactic tac
-    | HintsDestruct(name,i,loc,c,tac) ->
-        str "Destruct " ++ pr_id name ++ str" :=" ++ spc() ++
-        hov 0 (int i ++ spc() ++ pr_destruct_location loc ++ spc() ++
-               pr_c c ++ str " =>") ++ spc() ++
-        pr_raw_tactic tac in
+  in
   hov 2 (str"Hint "++pr_locality local ++ pph ++ opth)
 
 let pr_with_declaration pr_c = function

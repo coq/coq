@@ -787,8 +787,6 @@ type hints_entry =
   | HintsTransparencyEntry of evaluable_global_reference list * bool
   | HintsExternEntry of
       int * (patvar list * constr_pattern) option * glob_tactic_expr
-  | HintsDestructEntry of identifier * int * (bool,unit) location *
-      (patvar list * constr_pattern) * glob_tactic_expr
 
 let h = id_of_string "H"
 
@@ -859,9 +857,6 @@ let interp_hints h =
       let pat =	Option.map fp patcom in
       let tacexp = !forward_intern_tac (match pat with None -> [] | Some (l, _) -> l) tacexp in
       HintsExternEntry (pri, pat, tacexp)
-  | HintsDestruct(na,pri,loc,pat,code) ->
-      let (l,_ as pat) = fp pat in
-      HintsDestructEntry (na,pri,loc,pat,!forward_intern_tac l code)
 
 let add_hints local dbnames0 h =
   if List.mem "nocore" dbnames0 then
@@ -877,10 +872,6 @@ let add_hints local dbnames0 h =
       add_transparency lhints b local dbnames
   | HintsExternEntry (pri, pat, tacexp) ->
       add_externs pri pat tacexp local dbnames
-  | HintsDestructEntry (na,pri,loc,pat,code) ->
-      if dbnames0<>[] then
-        warn (str"Database selection not implemented for destruct hints");
-      Dhyp.add_destructor_hint local na loc pat pri code
 
 (**************************************************************************)
 (*                    Functions for printing the hints                    *)
@@ -1392,87 +1383,3 @@ let default_dauto = dauto (None,None) []
 let h_dauto (n,p) lems =
   Refiner.abstract_tactic (TacDAuto (inj_or_var n,p,List.map snd lems))
     (dauto (n,p) lems)
-
-(***************************************)
-(*** A new formulation of Auto *********)
-(***************************************)
-
-let make_resolve_any_hyp env sigma (id,_,ty) =
-  let ents =
-    map_succeed
-      (fun f -> f (mkVar id,ty))
-      [make_exact_entry sigma None; make_apply_entry env sigma (true,true,false) None]
-  in
-  ents
-
-type autoArguments =
-  | UsingTDB
-  | Destructing
-
-let compileAutoArg contac = function
-  | Destructing ->
-      (function g ->
-         let ctx = pf_hyps g in
-	 tclFIRST
-           (List.map
-              (fun (id,_,typ) ->
-                let cl = (strip_prod_assum typ) in
-                 if Hipattern.is_conjunction cl
-		 then
-		   tclTHENSEQ [simplest_elim (mkVar id); clear [id]; contac]
-                 else
-		   tclFAIL 0 (pr_id id ++ str" is not a conjunction"))
-	     ctx) g)
-  | UsingTDB ->
-      (tclTHEN
-         (Tacticals.tryAllHypsAndConcl
-            (function
-               | Some id -> Dhyp.h_destructHyp false id
-               | None    -> Dhyp.h_destructConcl))
-         contac)
-
-let compileAutoArgList contac = List.map (compileAutoArg contac)
-
-let rec super_search n db_list local_db argl gl =
-  if n = 0 then error "BOUND 2";
-  tclFIRST
-    (assumption
-     ::
-     tclTHEN intro
-        (fun g ->
-	   let hintl = pf_apply make_resolve_any_hyp g (pf_last_hyp g) in
-	   super_search n db_list (Hint_db.add_list hintl local_db)
-	     argl g)
-     ::
-     List.map (fun ntac ->
-            tclTHEN ntac
-              (super_search (n-1) db_list local_db argl))
-         (possible_resolve false db_list local_db (pf_concl gl))
-      @
-      compileAutoArgList (super_search (n-1) db_list local_db argl) argl) gl
-
-let search_superauto n to_add argl g =
-  let sigma =
-    List.fold_right
-      (fun (id,c) -> add_named_decl (id, None, pf_type_of g c))
-      to_add empty_named_context in
-  let db0 = list_map_append (make_resolve_hyp (pf_env g) (project g)) sigma in
-  let db = Hint_db.add_list db0 (make_local_hint_db false [] g) in
-  super_search n [Hintdbmap.find "core" !searchtable] db argl g
-
-let superauto n to_add argl  =
-  tclTRY (tclCOMPLETE (search_superauto n to_add argl))
-
-let interp_to_add gl r =
-  let r = locate_global_with_alias (qualid_of_reference r) in
-  let id = basename_of_global r in
-  (next_ident_away id (pf_ids_of_hyps gl), constr_of_global r)
-
-let gen_superauto nopt l a b gl =
-  let n = match nopt with Some n -> n | None -> !default_search_depth in
-  let al = (if a then [Destructing] else [])@(if b then [UsingTDB] else []) in
-  superauto n (List.map (interp_to_add gl) l) al gl
-
-let h_superauto no l a b =
-  Refiner.abstract_tactic (TacSuperAuto (no,l,a,b)) (gen_superauto no l a b)
-

@@ -10,7 +10,6 @@ Elimschemes
 Tactics
 Hiddentac
 Elim
-Dhyp
 Auto
 Equality
 Contradiction

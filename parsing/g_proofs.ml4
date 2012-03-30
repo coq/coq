@@ -23,11 +23,6 @@ let thm_token = G_vernac.thm_token
 GEXTEND Gram
   GLOBAL: command;
 
-  destruct_location :
-  [ [ IDENT "Conclusion"  -> Tacexpr.ConclLocation ()
-    | discard = [ IDENT "Discardable" -> true | -> false ]; "Hypothesis"
-	-> Tacexpr.HypLocation discard ] ]
-  ;
   opt_hintbases:
   [ [ -> []
     | ":"; l = LIST1 [id = IDENT -> id ] -> l ] ]
@@ -115,14 +110,7 @@ GEXTEND Gram
       | IDENT "Constructors"; lc = LIST1 global -> HintsConstructors lc
       | IDENT "Extern"; n = natural; c = OPT constr_pattern ; "=>";
           tac = tactic ->
-	  HintsExtern (n,c,tac)
-      | IDENT "Destruct";
-          id = ident; ":=";
-          pri = natural;
-          dloc = destruct_location;
-          hyptyp = constr_pattern;
-          "=>"; tac = tactic ->
-            HintsDestruct(id,pri,dloc,hyptyp,tac) ] ]
+	  HintsExtern (n,c,tac) ] ]
     ;
   constr_body:
     [ [ ":="; c = lconstr -> c

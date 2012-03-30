@@ -602,13 +602,6 @@ GEXTEND Gram
       | IDENT "auto"; n = OPT int_or_var; lems = auto_using; db = hintbases ->
 	  TacAuto (n,lems,db)
 
-(* Obsolete since V8.0
-      | IDENT "autotdb"; n = OPT natural -> TacAutoTDB n
-      | IDENT "cdhyp"; id = identref -> TacDestructHyp (true,id)
-      | IDENT "dhyp";  id = identref -> TacDestructHyp (false,id)
-      | IDENT "dconcl"  -> TacDestructConcl
-      | IDENT "superauto"; l = autoargs -> TacSuperAuto l
-*)
       | IDENT "auto"; IDENT "decomp"; p = OPT natural;
           lems = auto_using -> TacDAuto (None,p,lems)
       | IDENT "auto"; n = OPT int_or_var; IDENT "decomp"; p = OPT natural;

@@ -116,8 +116,6 @@ type hints_expr =
   | HintsTransparency of reference list * bool
   | HintsConstructors of reference list
   | HintsExtern of int * constr_expr option * raw_tactic_expr
-  | HintsDestruct of identifier *
-      int * (bool,unit) location * constr_expr * raw_tactic_expr
 
 type search_restriction =
   | SearchInside of reference list

@@ -103,8 +103,6 @@ type hints_entry =
   | HintsTransparencyEntry of evaluable_global_reference list * bool
   | HintsExternEntry of
       int * (patvar list * constr_pattern) option * Tacexpr.glob_tactic_expr
-  | HintsDestructEntry of identifier * int * (bool,unit) Tacexpr.location *
-      (patvar list * constr_pattern) * Tacexpr.glob_tactic_expr
 
 val searchtable_map : hint_db_name -> hint_db
 
@@ -255,7 +253,7 @@ val h_trivial : open_constr list -> hint_db_name list option -> tactic
 
 val pr_autotactic : 'a auto_tactic -> Pp.std_ppcmds
 
-(** {6 The following is not yet up to date -- Papageno. } *)
+(** Destructing Auto *)
 
 (** DAuto *)
 val dauto : int option * int option -> open_constr list -> tactic
@@ -264,16 +262,6 @@ val default_dauto : tactic
 
 val h_dauto : int option * int option -> open_constr list -> tactic
 
-(** SuperAuto *)
-
-type autoArguments =
-  | UsingTDB
-  | Destructing
-
-(*
-val superauto : int -> (identifier * constr) list -> autoArguments list -> tactic
-*)
-
-val h_superauto : int option -> reference list -> bool -> bool -> tactic
+(** Hook for changing the initialization of auto *)
 
 val add_auto_init : (unit -> unit) -> unit

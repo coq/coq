@@ -718,10 +718,6 @@ let rec intern_atomic lf ist x =
   | TacAuto (n,lems,l) ->
       TacAuto (Option.map (intern_or_var ist) n,
         List.map (intern_constr ist) lems,l)
-  | TacAutoTDB n -> TacAutoTDB n
-  | TacDestructHyp (b,id) -> TacDestructHyp(b,intern_hyp ist id)
-  | TacDestructConcl -> TacDestructConcl
-  | TacSuperAuto (n,l,b1,b2) -> TacSuperAuto (n,l,b1,b2)
   | TacDAuto (n,p,lems) ->
       TacDAuto (Option.map (intern_or_var ist) n,p,
         List.map (intern_constr ist) lems)
@@ -2285,10 +2281,6 @@ and interp_atomic ist gl tac =
       Auto.h_auto (Option.map (interp_int_or_var ist) n)
 	(interp_auto_lemmas ist env sigma lems)
 	(Option.map (List.map (interp_hint_base ist)) l)
-  | TacAutoTDB n -> Dhyp.h_auto_tdb n
-  | TacDestructHyp (b,id) -> Dhyp.h_destructHyp b (interp_hyp ist gl id)
-  | TacDestructConcl -> Dhyp.h_destructConcl
-  | TacSuperAuto (n,l,b1,b2) -> Auto.h_superauto n l b1 b2
   | TacDAuto (n,p,lems) ->
       Auto.h_dauto (Option.map (interp_int_or_var ist) n,p)
       (interp_auto_lemmas ist env sigma lems)
@@ -2656,10 +2648,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Automation tactics *)
   | TacTrivial (lems,l) -> TacTrivial (List.map (subst_glob_constr subst) lems,l)
   | TacAuto (n,lems,l) -> TacAuto (n,List.map (subst_glob_constr subst) lems,l)
-  | TacAutoTDB n -> TacAutoTDB n
-  | TacDestructHyp (b,id) -> TacDestructHyp(b,id)
-  | TacDestructConcl -> TacDestructConcl
-  | TacSuperAuto (n,l,b1,b2) -> TacSuperAuto (n,l,b1,b2)
   | TacDAuto (n,p,lems) -> TacDAuto (n,p,List.map (subst_glob_constr subst) lems)
 
   (* Derived basic tactics *)
@@ -3004,4 +2992,3 @@ let _ = Auto.set_extern_intern_tac
     Flags.with_option strict_check
     (intern_pure_tactic {(make_empty_glob_sign()) with ltacvars=(l,[])}))
 let _ = Auto.set_extern_subst_tactic subst_tactic
-let _ = Dhyp.set_extern_interp eval_tactic
