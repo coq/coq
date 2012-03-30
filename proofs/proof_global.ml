@@ -363,9 +363,14 @@ module Bullet = struct
     let bullet_kind = (Proof.new_focus_kind () : t list Proof.focus_kind)
     let bullet_cond = Proof.done_cond ~loose_end:true bullet_kind
 
+    (* spiwack: as it is bullets are reset (locally) by *any* non-bullet focusing command
+       experience will tell if this is the right discipline of if we want to be finer and
+       reset them only for a choice of bullets. *)
     let get_bullets pr =
-      try Proof.get_at_focus bullet_kind pr
-      with Proof.NoSuchFocus -> []
+      if Proof.is_last_focus bullet_kind pr then
+	Proof.get_at_focus bullet_kind pr
+      else
+	[]
 
     let has_bullet bul pr =
       let rec has_bullet = function

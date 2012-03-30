@@ -120,6 +120,9 @@ val unfocus : 'a focus_kind -> proof -> unit
 exception NoSuchFocus
 val get_at_focus : 'a focus_kind -> proof -> 'a
 
+(* [is_last_focus k] check if the most recent focus is of kind [k] *)
+val is_last_focus : 'a focus_kind -> proof -> bool
+
 (* returns [true] if there is no goal under focus. *)
 val no_focused_goal : proof -> bool
 
