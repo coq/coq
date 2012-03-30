@@ -35,7 +35,7 @@ type _focus_kind = int
 type 'a focus_kind = _focus_kind
 type focus_info = Obj.t
 type unfocusable =
-  | Cannot
+  | Cannot of exn
   | Loose
   | Strict
 type _focus_condition = 
@@ -77,34 +77,46 @@ module Cond = struct
        are hence closed by unfocusing actions unrelated
        to their focus_kind.
   *)
-  let bool b =
+  let bool e b =
     if b then fun _ _ -> Strict
-    else fun _ _ -> Cannot
+    else fun _ _ -> Cannot e
   let loose c k p = match c k p with
-    | Cannot -> Loose
+    | Cannot _ -> Loose
     | c -> c
   let cloose l c =
     if l then loose c
     else c
   let (&&&) c1 c2 k p=
     match c1 k p , c2 k p with
-    | Cannot , _ 
-    | _ , Cannot -> Cannot
+    | Cannot e , _ 
+    | _ , Cannot e -> Cannot e
     | Strict, Strict -> Strict
     | _ , _ -> Loose
-  let kind k0 k p = bool (k0=k) k p 
-  let pdone k p = bool (Proofview.finished p) k p
+  let kind e k0 k p = bool e (k0=k) k p 
+  let pdone e k p = bool e (Proofview.finished p) k p
+end
+
+
+(* Unfocus command.
+   Fails if the proof is not focused. *)
+exception CannotUnfocusThisWay
+let _ = Errors.register_handler begin function
+  | CannotUnfocusThisWay ->
+    Util.error "This proof is focused, but cannot be unfocused this way"
+  | _ -> raise Errors.Unhandled
 end
 
 open Cond
-let no_cond ~loose_end k0 =
-  cloose loose_end (kind k0)
-let no_cond ?(loose_end=false) k = no_cond ~loose_end k , check k
+let no_cond_gen e ~loose_end k0 =
+  cloose loose_end (kind e k0)
+let no_cond_gen e ?(loose_end=false) k = no_cond_gen e ~loose_end k , check k
+let no_cond ?loose_end = no_cond_gen CannotUnfocusThisWay ?loose_end
 (* [done_cond] checks that the unfocusing command uses the right [focus_kind]
     and that the focused proofview is complete. *)
-let done_cond ~loose_end k0 =
-  (cloose loose_end (kind k0)) &&& pdone
-let done_cond ?(loose_end=false) k = done_cond ~loose_end k , check k
+let done_cond_gen e ~loose_end k0 =
+  (cloose loose_end (kind e k0)) &&& pdone e
+let done_cond_gen e ?(loose_end=false) k = done_cond_gen e ~loose_end k , check k
+let done_cond ?loose_end = no_cond_gen CannotUnfocusThisWay ?loose_end
 
 
 (* Subpart of the type of proofs. It contains the parts of the proof which
@@ -312,20 +324,11 @@ let focus cond inf i pr =
   save pr;
   _focus cond (Obj.repr inf) i i pr
 
-(* Unfocus command.
-   Fails if the proof is not focused. *)
-exception CannotUnfocusThisWay
-let _ = Errors.register_handler begin function
-  | CannotUnfocusThisWay ->
-    Util.error "This proof is focused, but cannot be unfocused this way"
-  | _ -> raise Errors.Unhandled
-end
-
 let rec unfocus kind pr () =
   let starting_point = save_state pr in
   let cond = cond_of_focus pr in
   match fst cond kind pr.state.proofview with
-  | Cannot -> raise CannotUnfocusThisWay
+  | Cannot e -> raise e
   | Strict -> 
     (_unfocus pr;
      push_undo starting_point pr)
@@ -364,7 +367,7 @@ let no_focused_goal p =
 
 (* [end_of_stack] is unfocused by return to close every loose focus. *)
 let end_of_stack_kind = new_focus_kind ()
-let end_of_stack = done_cond end_of_stack_kind
+let end_of_stack = done_cond_gen FullyUnfocused end_of_stack_kind
 
 let start goals =
   let pr = 
