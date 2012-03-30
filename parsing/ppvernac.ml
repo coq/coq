@@ -439,6 +439,7 @@ let rec pr_vernac = function
   | VernacAbortAll -> str "Abort All"
   | VernacRestart -> str"Restart"
   | VernacUnfocus -> str"Unfocus"
+  | VernacUnfocused -> str"Unfocused"
   | VernacGoal c -> str"Goal" ++ pr_lconstrarg c
   | VernacAbort id -> str"Abort" ++ pr_opt pr_lident id
   | VernacUndo i -> if i=1 then str"Undo" else str"Undo" ++ pr_intarg i

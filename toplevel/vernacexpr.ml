@@ -350,6 +350,7 @@ type vernac_expr =
   | VernacBacktrack of int*int*int
   | VernacFocus of int option
   | VernacUnfocus
+  | VernacUnfocused
   | VernacBullet of bullet
   | VernacSubproof of int option
   | VernacEndSubproof

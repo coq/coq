@@ -259,13 +259,13 @@ let save pr =
   push_undo (save_state pr) pr
 
 (* This function restores a state, presumably from the top of the undo stack. *)
-let restore_state save pr = 
+let restore_state save pr =
   match save with
   | State save -> pr.state <- save
   | Effect undo -> undo ()
 
 (* Interpretes the Undo command. *)
-let undo pr = 
+let undo pr =
   (* On a single line, since the effects commute *)
   restore_state (pop_undo pr) pr
 
@@ -362,8 +362,10 @@ let no_focused_goal p =
 let end_of_stack_kind = new_focus_kind ()
 let end_of_stack = done_cond_gen FullyUnfocused end_of_stack_kind
 
+let unfocused = is_last_focus end_of_stack_kind
+
 let start goals =
-  let pr = 
+  let pr =
     { state = { proofview = Proofview.init goals ;
 	        focus_stack = [] ;
 	        intel = Store.empty} ;

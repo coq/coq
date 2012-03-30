@@ -114,6 +114,9 @@ exception CannotUnfocusThisWay
      is not met. *)
 val unfocus : 'a focus_kind -> proof -> unit
 
+(* [unfocused p] returns [true] when [p] is fully unfocused. *)
+val unfocused : proof -> bool
+
 (* [get_at_focus k] gets the information stored at the closest focus point
     of kind [k].
     Raises [NoSuchFocus] if there is no focus point of kind [k]. *)

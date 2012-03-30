@@ -1412,6 +1412,15 @@ let vernac_unfocus () =
   let p = Proof_global.give_me_the_proof () in
   Proof.unfocus command_focus p; print_subgoals ()
 
+(* Checks that a proof is fully unfocused. Raises an error if not. *)
+let vernac_unfocused () =
+  let p = Proof_global.give_me_the_proof () in
+  if Proof.unfocused p then
+    msg (str"The proof is indeed fully unfocused.")
+  else
+    error "The proof is not fully unfocused."
+
+
 (* BeginSubproof / EndSubproof. 
     BeginSubproof (vernac_subproof) focuses on the first goal, or the goal
     given as argument.
@@ -1591,6 +1600,7 @@ let interp c = match c with
   | VernacBacktrack (snum,pnum,naborts) -> vernac_backtrack snum pnum naborts
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()
+  | VernacUnfocused -> vernac_unfocused ()
   | VernacBullet b -> vernac_bullet b
   | VernacSubproof n -> vernac_subproof n
   | VernacEndSubproof -> vernac_end_subproof ()
