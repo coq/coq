@@ -104,7 +104,7 @@ let interp_elimination_sort = function
 
 let resolve_evars env evdref fail_evar resolve_classes =
   if resolve_classes then
-    evdref := (Typeclasses.resolve_typeclasses ~onlyargs:false
+    evdref := (Typeclasses.resolve_typeclasses ~with_goals:false
 		 ~split:true ~fail:fail_evar env !evdref);
   (* Resolve eagerly, potentially making wrong choices *)
   evdref := (try consider_remaining_unif_problems
@@ -160,13 +160,14 @@ sig
 
      In [understand_ltac expand_evars sigma env ltac_env constraint c],
 
+     resolve_classes : launch typeclass resolution after typechecking.
      expand_evars : expand inferred evars by their value if any
      sigma : initial set of existential variables (typically dependent subgoals)
      ltac_env : partial substitution of variables (used for the tactic language)
      constraint : tell if interpreted as a possibly constrained term or a type
   *)
 
-  val understand_ltac :
+  val understand_ltac : ?resolve_classes:bool ->
     bool -> evar_map -> env -> ltac_var_map ->
     typing_constraint -> glob_constr -> pure_open_constr
 
@@ -762,8 +763,8 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   let understand_type sigma env c =
     snd (ise_pretype_gen true true true sigma env ([],[]) IsType c)
 
-  let understand_ltac expand_evar sigma env lvar kind c =
-    ise_pretype_gen expand_evar false false sigma env lvar kind c
+  let understand_ltac ?(resolve_classes=false) expand_evar sigma env lvar kind c =
+    ise_pretype_gen expand_evar false resolve_classes sigma env lvar kind c
 
   let understand_tcc ?(resolve_classes=true) sigma env ?expected_type:exptyp c =
     ise_pretype_gen true false resolve_classes sigma env ([],[]) (OfType exptyp) c

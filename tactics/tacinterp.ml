@@ -1256,7 +1256,8 @@ let interp_gen kind ist allow_patvar expand_evar fail_evar use_classes env sigma
   in
   let trace = push_trace (dloc,LtacConstrInterp (c,vars)) ist.trace in
   let evdc =
-    catch_error trace (understand_ltac expand_evar sigma env vars kind) c in
+    catch_error trace 
+      (understand_ltac ~resolve_classes:use_classes expand_evar sigma env vars kind) c in
   let (evd,c) =
     if expand_evar then
       solve_remaining_evars fail_evar use_classes
@@ -1278,8 +1279,8 @@ let interp_type = interp_constr_gen IsType
 let interp_open_constr_gen kind ist =
   interp_gen kind ist false true false false
 
-let interp_open_constr ccl =
-  interp_open_constr_gen (OfType ccl)
+let interp_open_constr ccl ist =
+  interp_gen (OfType ccl) ist false true false (ccl<>None)
 
 let interp_pure_open_constr ist =
   interp_gen (OfType None) ist false false false false
@@ -2263,7 +2264,7 @@ and interp_atomic ist gl tac =
   | TacLetTac (na,c,clp,b) ->
       let clp = interp_clause ist gl clp in
       if clp = nowhere then
-        (* We try to fully-typechect the term *)
+        (* We try to fully typecheck the term *)
         h_let_tac b (interp_fresh_name ist env na)
           (pf_interp_constr ist gl c) clp
       else

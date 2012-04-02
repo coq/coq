@@ -58,13 +58,14 @@ sig
 
      In [understand_ltac expand_evars sigma env ltac_env constraint c],
 
+     resolve_classes : launch typeclass resolution after typechecking.
      expand_evars : expand inferred evars by their value if any
      sigma : initial set of existential variables (typically dependent subgoals)
      ltac_env : partial substitution of variables (used for the tactic language)
      constraint : tell if interpreted as a possibly constrained term or a type
   *)
 
-  val understand_ltac :
+  val understand_ltac : ?resolve_classes:bool ->
     bool -> evar_map -> env -> ltac_var_map ->
     typing_constraint -> glob_constr -> pure_open_constr
 

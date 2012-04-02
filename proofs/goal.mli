@@ -72,7 +72,7 @@ module Refinable : sig
   (* [with_type c typ] constrains term [c] to have type [typ].  *)
   val with_type : Term.constr -> Term.types -> Term.constr sensitive
 
-  val resolve_typeclasses : ?onlyargs:bool -> ?split:bool -> ?fail:bool -> unit -> unit sensitive
+  val resolve_typeclasses : ?with_goals:bool -> ?split:bool -> ?fail:bool -> unit -> unit sensitive
 
 
   (* [constr_of_raw h check_type resolve_classes] is a pretyping function.

@@ -597,9 +597,9 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     in
       if resolve_classes then
 	(try 
-	   evdref := Typeclasses.resolve_typeclasses ~onlyargs:true
+	   evdref := Typeclasses.resolve_typeclasses ~with_goals:false
 	     ~split:true ~fail:true env !evdref;
-	   evdref := Typeclasses.resolve_typeclasses ~onlyargs:false
+	   evdref := Typeclasses.resolve_typeclasses ~with_goals:true
 	     ~split:true ~fail:false env !evdref
 	 with e -> if fail_evar then raise e else ());
       evdref := consider_remaining_unif_problems env !evdref;
@@ -644,8 +644,8 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
   let understand_type sigma env c =
     snd (ise_pretype_gen true false true sigma env ([],[]) IsType c)
 
-  let understand_ltac expand_evar sigma env lvar kind c =
-    ise_pretype_gen expand_evar false true sigma env lvar kind c
+  let understand_ltac ?(resolve_classes=false) expand_evar sigma env lvar kind c =
+    ise_pretype_gen expand_evar false resolve_classes sigma env lvar kind c
 
   let understand_tcc ?(resolve_classes=true) sigma env ?expected_type:exptyp c =
     ise_pretype_gen true false resolve_classes sigma env ([],[]) (OfType exptyp) c

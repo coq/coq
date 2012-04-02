@@ -458,7 +458,7 @@ let interp_recursive fixkind l =
   (* Instantiate evars and check all are resolved *)
   let evd = Evarconv.consider_remaining_unif_problems env_rec !evdref in
   let evd = Typeclasses.resolve_typeclasses
-    ~onlyargs:true ~split:true ~fail:false env_rec evd
+    ~with_goals:false ~split:true ~fail:false env_rec evd
   in
   let evd = Evarutil.nf_evar_map evd in
   let fixdefs = List.map (nf_evar evd) fixdefs in
