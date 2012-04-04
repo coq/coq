@@ -158,8 +158,8 @@ let (current:pref ref) =
     vertical_tabs = false;
     opposite_tabs = false;
 
-    processing_color = "light green";
-    processed_color = "light blue";
+    processed_color = "light green";
+    processing_color = "light blue";
 
   }
 
