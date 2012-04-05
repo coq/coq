@@ -509,15 +509,25 @@ let expand_vars_in_term env = expand_vars_in_term_using (make_alias_map env)
 
 let free_vars_and_rels_up_alias_expansion aliases c =
   let acc1 = ref Intset.empty and acc2 = ref Idset.empty in
-  let rec frec (aliases,depth) c = match kind_of_term c with
-    | Rel _ | Var _ ->
+  let cache_rel = ref Intset.empty and cache_var = ref Idset.empty in
+  let is_in_cache depth = function
+    | Rel n -> Intset.mem (n-depth) !cache_rel
+    | Var s -> Idset.mem s !cache_var
+    | _ -> false in
+  let put_in_cache depth = function
+    | Rel n -> cache_rel := Intset.add (n-depth) !cache_rel
+    | Var s -> cache_var := Idset.add s !cache_var
+    | _ -> () in
+  let rec frec (aliases,depth) c =
+    match kind_of_term c with
+    | Rel _ | Var _ as ck ->
+      if is_in_cache depth ck then () else begin
+      put_in_cache depth ck;
       let c = expansion_of_var aliases c in
-        (match kind_of_term c with
+        match kind_of_term c with
         | Var id -> acc2 := Idset.add id !acc2
         | Rel n -> if n >= depth+1 then acc1 := Intset.add (n-depth) !acc1
-        | _ -> 
-            (* not optimal: would need sharing if alias occurs more than once *)
-            frec (aliases,depth) c)
+        | _ -> frec (aliases,depth) c end
     | Const _ | Ind _ | Construct _ ->
         acc2 := List.fold_right Idset.add (vars_of_global (Global.env()) c) !acc2
     | _ ->
