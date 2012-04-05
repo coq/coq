@@ -89,3 +89,45 @@ Module A.
 End A.
 Import A.
 Fail Check S true.
+
+(* Tests after the inheritance condition constraint is relaxed *)
+
+Inductive list (A : Type) : Type := 
+  nil : list A | cons : A -> list A -> list A.
+Inductive vect (A : Type) : nat -> Type :=
+  vnil : vect A 0 | vcons : forall n, A -> vect A n -> vect A (1+n).
+Fixpoint size A (l : list A) : nat := match l with nil => 0 | cons _ tl => 1+size _ tl end.
+
+Section test_non_unif_but_complete.
+Fixpoint l2v A (l : list A) : vect A (size A l) :=
+  match l as l return vect A (size A l) with
+  | nil => vnil A
+  | cons x xs => vcons A (size A xs) x (l2v A xs)
+  end.
+
+Local Coercion l2v : list >-> vect.
+Check (fun l : list nat =>  (l : vect _ _)).
+
+End test_non_unif_but_complete.
+
+Section what_we_could_do.
+Variables T1 T2 : Type.
+Variable c12 : T1 -> T2.
+
+Class coercion (A B : Type) : Type := cast : A -> B.
+Instance atom : coercion T1 T2 := c12.
+Instance pair A B C D (c1 : coercion A B) (c2 : coercion C D) : coercion (A * C) (B * D) :=
+  fun x => (c1 (fst x), c2 (snd x)).
+
+Fixpoint l2v2 {A B} {c : coercion A B} (l : list A) : (vect B (size A l)) := 
+  match l as l return vect B (size A l) with
+  | nil => vnil B
+  | cons x xs => vcons _ _ (c x) (l2v2 xs) end.
+
+Local Coercion l2v2 : list >-> vect.
+
+(* This shows that there is still something to do to take full profit
+   of coercions *)
+Fail Check (fun l : list (T1 * T1) => (l : vect _ _)).
+Check (fun l : list (T1 * T1) => (l2v2 l : vect _ _)).
+Section what_we_could_do.
