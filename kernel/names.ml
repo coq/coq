@@ -32,7 +32,10 @@ let check_ident x = Option.iter Errors.error (ident_refutation x)
 let id_of_string s = check_ident_soft s; String.copy s
 let string_of_id id = String.copy id
 
-let id_ord = Pervasives.compare
+let id_ord (x:string) (y:string) =
+  if x == y
+  then 0
+  else Pervasives.compare x y
 
 module IdOrdered =
   struct
@@ -77,7 +80,7 @@ let empty_dirpath = []
 
 let string_of_dirpath = function
   | [] -> "<>"
-  | sl -> String.concat "." (List.map string_of_id (List.rev sl))
+  | sl -> String.concat "." (List.rev_map string_of_id sl)
 
 (** {6 Unique names for bound modules } *)
 
@@ -91,7 +94,10 @@ let string_of_uid (i,s,p) =
 
 module Umap = Map.Make(struct
 			 type t = uniq_ident
-			 let compare = Pervasives.compare
+			 let compare x y =
+                           if x == y
+                           then 0
+                           else Pervasives.compare x y
 		       end)
 
 type mod_bound_id = uniq_ident
@@ -132,7 +138,9 @@ let rec string_of_mp = function
   | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l
 
 (** we compare labels first if both are MPdots *)
-let rec mp_ord mp1 mp2 = match (mp1,mp2) with
+let rec mp_ord mp1 mp2 =
+  if mp1 == mp2 then 0
+  else match (mp1,mp2) with
     MPdot(mp1,l1), MPdot(mp2,l2) ->
       let c = Pervasives.compare l1 l2 in
 	if c<>0 then
@@ -175,6 +183,9 @@ let string_of_kn (mp,dir,l) =
 let pr_kn kn = str (string_of_kn kn)
 
 let kn_ord kn1 kn2 =
+  if kn1 == kn2 then
+    0
+  else
     let mp1,dir1,l1 = kn1 in
     let mp2,dir2,l2 = kn2 in
     let c = Pervasives.compare l1 l2 in
@@ -342,6 +353,7 @@ module Hname = Hashcons.Make(
       | Name id -> Name (hident id)
       | n -> n
     let equal n1 n2 =
+      n1 == n2 ||
       match (n1,n2) with
 	| (Name id1, Name id2) -> id1 == id2
         | (Anonymous,Anonymous) -> true
@@ -354,7 +366,9 @@ module Hdir = Hashcons.Make(
     type t = dir_path
     type u = identifier -> identifier
     let hash_sub hident d = list_smartmap hident d
-    let rec equal d1 d2 = match (d1,d2) with
+    let rec equal d1 d2 =
+      (d1==d2) ||
+      match (d1,d2) with
       | [],[] -> true
       | id1::d1,id2::d2 -> id1 == id2 & equal d1 d2
       | _ -> false
@@ -366,7 +380,9 @@ module Huniqid = Hashcons.Make(
     type t = uniq_ident
     type u = (identifier -> identifier) * (dir_path -> dir_path)
     let hash_sub (hid,hdir) (n,s,dir) = (n,hid s,hdir dir)
-    let equal (n1,s1,dir1) (n2,s2,dir2) = n1 = n2 && s1 == s2 && dir1 == dir2
+    let equal ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
+      (x == y) ||
+      (n1 = n2 && s1 == s2 && dir1 == dir2)
     let hash = Hashtbl.hash
   end)
 
@@ -379,7 +395,9 @@ module Hmod = Hashcons.Make(
       | MPfile dir -> MPfile (hdir dir)
       | MPbound m -> MPbound (huniqid m)
       | MPdot (md,l) -> MPdot (hash_sub hfuns md, hstr l)
-    let rec equal d1 d2 = match (d1,d2) with
+    let rec equal d1 d2 =
+      d1 == d2 ||
+      match (d1,d2) with
       | MPfile dir1, MPfile dir2 -> dir1 == dir2
       | MPbound m1, MPbound m2 -> m1 == m2
       | MPdot (mod1,l1), MPdot (mod2,l2) -> l1 == l2 && equal mod1 mod2
@@ -466,10 +484,11 @@ type inv_rel_key = int (* index in the [rel_context] part of environment
 type id_key = inv_rel_key tableKey
 
 let eq_id_key ik1 ik2 =
-  match ik1,ik2 with
+  (ik1 == ik2) ||
+  (match ik1,ik2 with
     ConstKey (_,kn1),
       ConstKey (_,kn2) -> kn1=kn2
-    | a,b -> a=b
+    | a,b -> a=b)
 
 let eq_con_chk (kn1,_) (kn2,_) = kn1=kn2
 let eq_mind_chk (kn1,_) (kn2,_) = kn1=kn2

@@ -29,6 +29,8 @@ open Util
    union-find algorithm. The assertions $<$ and $\le$ are represented by
    adjacency lists *)
 
+let compare_ints (x:int) (y:int) = Pervasives.compare x y
+
 module UniverseLevel = struct
 
   type t =
@@ -43,14 +45,17 @@ module UniverseLevel = struct
 
      Note: this property is used by the [check_sorted] function below. *)
 
-  let compare u v = match u,v with
+  let compare u v =
+    if u == v then 0
+    else
+    (match u,v with
     | Set, Set -> 0
     | Set, _ -> -1
     | _, Set -> 1
     | Level (i1, dp1), Level (i2, dp2) ->
       if i1 < i2 then -1
       else if i1 > i2 then 1
-      else compare dp1 dp2
+      else compare dp1 dp2)
 
   let equal u v = match u,v with
     | Set, Set -> true
@@ -360,7 +365,8 @@ let incl_list cmp l1 l2 =
   List.for_all (fun x1 -> List.exists (fun x2 -> cmp x1 x2) l2) l1
 
 let compare_list cmp l1 l2 =
-  incl_list cmp l1 l2 && incl_list cmp l2 l1
+  (l1 == l2)
+  || (incl_list cmp l1 l2 && incl_list cmp l2 l1)
 
 let check_eq g u v =
   match u,v with
@@ -871,7 +877,9 @@ module Hunivlevel =
       let hash_sub hdir = function
 	| UniverseLevel.Set -> UniverseLevel.Set
 	| UniverseLevel.Level (n,d) -> UniverseLevel.Level (n,hdir d)
-      let equal l1 l2 = match l1,l2 with
+      let equal l1 l2 =
+        l1 == l2 ||
+        match l1,l2 with
 	| UniverseLevel.Set, UniverseLevel.Set -> true
 	| UniverseLevel.Level (n,d), UniverseLevel.Level (n',d') ->
 	  n == n' && d == d'
@@ -888,6 +896,7 @@ module Huniv =
 	| Atom u -> Atom (hdir u)
 	| Max (gel,gtl) -> Max (List.map hdir gel, List.map hdir gtl)
       let equal u v =
+        u == v ||
 	match u, v with
 	  | Atom u, Atom v -> u == v
 	  | Max (gel,gtl), Max (gel',gtl') ->

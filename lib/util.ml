@@ -125,9 +125,9 @@ let parse_loadpath s =
     invalid_arg "parse_loadpath: find an empty dir in loadpath";
   l
 
-module Stringset = Set.Make(struct type t = string let compare = compare end)
+module Stringset = Set.Make(struct type t = string let compare (x:t) (y:t) = compare x y end)
 
-module Stringmap = Map.Make(struct type t = string let compare = compare end)
+module Stringmap = Map.Make(struct type t = string let compare (x:t) (y:t) = compare x y end)
 
 type utf8_status = UnicodeLetter | UnicodeIdentPart | UnicodeSymbol
 
@@ -349,6 +349,7 @@ let ascii_of_ident s =
 (* Lists *)
 
 let rec list_compare cmp l1 l2 =
+  if l1 == l2 then 0 else
   match l1,l2 with
       [], [] -> 0
     | _::_, [] -> 1
@@ -359,6 +360,7 @@ let rec list_compare cmp l1 l2 =
 	   | c -> c)
 
 let rec list_equal cmp l1 l2 =
+  l1 == l2 ||
   match l1, l2 with
     | [], [] -> true
     | x1 :: l1, x2 :: l2 ->
@@ -1249,9 +1251,9 @@ let delayed_force f = f ()
 
 type ('a,'b) union = Inl of 'a | Inr of 'b
 
-module Intset = Set.Make(struct type t = int let compare = compare end)
+module Intset = Set.Make(struct type t = int let compare (x:t) (y:t) = compare x y end)
 
-module Intmap = Map.Make(struct type t = int let compare = compare end)
+module Intmap = Map.Make(struct type t = int let compare (x:t) (y:t) = compare x y end)
 
 let intmap_in_dom x m =
   try let _ = Intmap.find x m in true with Not_found -> false
