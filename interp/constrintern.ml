@@ -421,12 +421,12 @@ let intern_local_binder_aux ?(global_level=false) intern intern_type lvar (env,b
   | LocalRawAssum(nal,bk,ty) ->
       (match bk with
       | Default k ->
-          let (loc,na) = List.hd nal in
-	  (* TODO: fail if several names with different implicit types *)
-	  let ty = locate_if_isevar loc na (intern_type env ty) in
+	  let ty = intern_type env ty in
+          let impls = impls_type_list ty in
 	    List.fold_left
-	     (fun (env,bl) na ->
-	       (push_name_env lvar (impls_type_list ty) env na,(snd na,k,None,ty)::bl))
+	     (fun (env,bl) (loc,na as locna) ->
+	       (push_name_env lvar impls env locna,
+                (na,k,None,locate_if_isevar loc na ty)::bl))
 	      (env,bl) nal
       | Generalized (b,b',t) ->
 	  let env, b = intern_generalized_binder ~global_level intern_type lvar env bl (List.hd nal) b b' t ty in
@@ -465,12 +465,12 @@ let iterate_binder intern lvar (env,bl) = function
       let intern_type env = intern (set_type_scope env) in
       (match bk with
       | Default k ->
-          let (loc,na) = List.hd nal in
-	  (* TODO: fail if several names with different implicit types *)
 	  let ty = intern_type env ty in
-	  let ty = locate_if_isevar loc na ty in
+          let impls = impls_type_list ty in
 	  List.fold_left
-	    (fun (env,bl) na -> (push_name_env lvar (impls_type_list ty) env na,(snd na,k,None,ty)::bl))
+	    (fun (env,bl) (loc,na as locna) ->
+              (push_name_env lvar impls env locna,
+               (na,k,None,locate_if_isevar loc na ty)::bl))
 	    (env,bl) nal
       | Generalized (b,b',t) ->
 	  let env, b = intern_generalized_binder intern_type lvar env bl (List.hd nal) b b' t ty in
@@ -1614,13 +1614,16 @@ let internalize sigma globalenv env allow_patvar lvar c =
     (tm',(snd na,typ)), extra_id, match_td
 
   and iterate_prod loc2 env bk ty body nal =
-    let rec default env bk = function
-    | (loc1,na as locna)::nal ->
-	if nal <> [] then check_capture loc1 ty na;
-	let ty = locate_if_isevar loc1 na (intern_type env ty) in
-	let body = default (push_name_env lvar (impls_type_list ty) env locna) bk nal in
-	  GProd (join_loc loc1 loc2, na, bk, ty, body)
-    | [] -> intern_type env body
+    let default env bk = function
+    | (loc1,na)::nal' as nal ->
+	if nal' <> [] then check_capture loc1 ty na;
+        let ty = intern_type env ty in
+        let impls = impls_type_list ty in
+	let env = List.fold_left (push_name_env lvar impls) env nal in
+        List.fold_right (fun (loc,na) c ->
+          GProd (join_loc loc loc2, na, bk, locate_if_isevar loc na ty, c))
+          nal (intern_type env body)
+    | [] -> assert false
     in
       match bk with
 	| Default b -> default env b nal
@@ -1630,13 +1633,16 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	      it_mkGProd ibind body
 
   and iterate_lam loc2 env bk ty body nal =
-    let rec default env bk = function
-      | (loc1,na as locna)::nal ->
-	  if nal <> [] then check_capture loc1 ty na;
-	  let ty = locate_if_isevar loc1 na (intern_type env ty) in
-	  let body = default (push_name_env lvar (impls_type_list ty) env locna) bk nal in
-	    GLambda (join_loc loc1 loc2, na, bk, ty, body)
-      | [] -> intern env body
+    let default env bk = function
+    | (loc1,na)::nal' as nal ->
+        if nal' <> [] then check_capture loc1 ty na;
+        let ty = intern_type env ty in
+        let impls = impls_type_list ty in
+	let env = List.fold_left (push_name_env lvar impls) env nal in
+        List.fold_right (fun (loc,na) c ->
+          GLambda (join_loc loc loc2, na, bk, locate_if_isevar loc na ty, c))
+          nal (intern env body)
+    | [] -> assert false
     in match bk with
       | Default b -> default env b nal
       | Generalized (b, b', t) ->

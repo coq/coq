@@ -240,7 +240,7 @@ Definition all (A:Type) (P:A -> Prop) := forall x:A, P x.
 
 Notation "'exists' x .. y , p" := (ex (fun x => .. (ex (fun y => p)) ..))
   (at level 200, x binder, right associativity,
-   format "'[' 'exists'  '/  ' x .. y ,  '/  ' p ']'")
+   format "'[' 'exists'  '/  ' x  ..  y ,  '/  ' p ']'")
   : type_scope.
 
 Notation "'exists2' x , p & q" := (ex2 (fun x => p) (fun x => q))
@@ -423,7 +423,7 @@ Definition uniqueness (A:Type) (P:A->Prop) := forall x y, P x -> P y -> x = y.
 Notation "'exists' ! x .. y , p" :=
   (ex (unique (fun x => .. (ex (unique (fun y => p))) ..)))
   (at level 200, x binder, right associativity,
-   format "'[' 'exists'  !  '/  ' x .. y ,  '/  ' p ']'")
+   format "'[' 'exists'  !  '/  ' x  ..  y ,  '/  ' p ']'")
   : type_scope.
 
 Lemma unique_existence : forall (A:Type) (P:A->Prop),
