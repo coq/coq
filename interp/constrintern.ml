@@ -101,7 +101,7 @@ let global_reference_in_absolute_module dir id =
 (* Internalization errors                                             *)
 
 type internalization_error =
-  | VariableCapture of identifier
+  | VariableCapture of identifier * identifier
   | WrongExplicitImplicit
   | IllegalMetavariable
   | NotAConstructor of reference
@@ -112,8 +112,9 @@ type internalization_error =
 
 exception InternalizationError of loc * internalization_error
 
-let explain_variable_capture id =
-  str "The variable " ++ pr_id id ++ str " occurs in its type"
+let explain_variable_capture id id' =
+  pr_id id ++ str " is dependent in the type of " ++ pr_id id' ++
+  strbrk ": cannot interpret both of them with the same type"
 
 let explain_wrong_explicit_implicit =
   str "Found an explicitly given implicit argument but was expecting" ++
@@ -154,7 +155,7 @@ let explain_bad_explicitation_number n po =
 
 let explain_internalization_error e =
   let pp = match e with
-  | VariableCapture id -> explain_variable_capture id
+  | VariableCapture (id,id') -> explain_variable_capture id id'
   | WrongExplicitImplicit -> explain_wrong_explicit_implicit
   | IllegalMetavariable -> explain_illegal_metavariable
   | NotAConstructor ref -> explain_not_a_constructor ref
@@ -349,8 +350,8 @@ let impls_term_list ?(args = []) =
 
 (* Check if in binder "(x1 x2 .. xn : t)", none of x1 .. xn-1 occurs in t *)
 let rec check_capture ty = function
-  | (loc,Name id)::_::_ when occur_var_constr_expr id ty ->
-      raise (InternalizationError (loc,VariableCapture id))
+  | (loc,Name id)::(_,Name id')::_ when occur_glob_constr id ty ->
+      raise (InternalizationError (loc,VariableCapture (id,id')))
   | _::nal ->
       check_capture ty nal
   | [] ->
@@ -424,8 +425,8 @@ let intern_assumption intern lvar env nal bk ty =
   let intern_type env = intern (set_type_scope env) in
   match bk with
   | Default k ->
-      check_capture ty nal;
       let ty = intern_type env ty in
+      check_capture ty nal;
       let impls = impls_type_list ty in
       List.fold_left
 	(fun (env, bl) (loc, na as locna) ->
@@ -1815,12 +1816,15 @@ let my_intern_constr sigma env lvar acc c =
 let my_intern_type sigma env lvar acc c = my_intern_constr sigma env lvar (set_type_scope acc) c
 
 let intern_context global_level sigma env impl_env params =
+  try
   let lvar = (([],[]), []) in
   let lenv, bl = List.fold_left
 	    (intern_local_binder_aux ~global_level (my_intern_constr sigma env lvar) lvar)
 	    ({ids = extract_ids env; unb = false;
 	      tmp_scope = None; scopes = []; impls = impl_env}, []) params in
   (lenv.impls, List.map snd bl)
+  with InternalizationError (loc,e) ->
+    user_err_loc (loc,"internalize", explain_internalization_error e)
 
 let interp_rawcontext_gen understand_type understand_judgment env bl =
   let (env, par, _, impls) =
