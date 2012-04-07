@@ -34,6 +34,11 @@ let mk_cast = function
     (c,(_,None)) -> c
   | (c,(_,Some ty)) -> CCast(join_loc (constr_loc c) (constr_loc ty), c, CastConv (DEFAULTcast, ty))
 
+let binders_of_names l =
+  List.map (fun (loc, na) ->
+    LocalRawAssum ([loc, na], Default Explicit,
+		   CHole (loc, Some (Evd.BinderType na)))) l
+
 let binders_of_lidents l =
   List.map (fun (loc, id) ->
     LocalRawAssum ([loc, Name id], Default Rawterm.Explicit,
@@ -389,8 +394,7 @@ GEXTEND Gram
           [LocalRawAssum (id::idl,Default Explicit,c)]
 	(* binders factorized with open binder *)
       | id = name; idl = LIST0 name; bl = binders ->
-          let t = CHole (loc, Some (Evd.BinderType (snd id))) in
-          LocalRawAssum (id::idl,Default Explicit,t)::bl
+          binders_of_names (id::idl) @ bl
       | id1 = name; ".."; id2 = name ->
           [LocalRawAssum ([id1;(loc,Name ldots_var);id2],
 	                  Default Explicit,CHole (loc,None))]

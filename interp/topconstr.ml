@@ -241,7 +241,7 @@ let compare_recursive_parts found f (iterator,subc) =
   | RLambda (_,Name x,_,t_x,c), RLambda (_,Name y,_,t_y,term)
   | RProd (_,Name x,_,t_x,c), RProd (_,Name y,_,t_y,term) ->
       (* We found a binding position where it differs *)
-      check_is_hole y t_x;
+      check_is_hole x t_x;
       check_is_hole y t_y;
       !diff = None && (diff := Some (x,y,None); aux c term)
   | _ ->
