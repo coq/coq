@@ -25,6 +25,11 @@ Remove Printing Let prod.
 Check match (0,0,0) with (x,y,z) => x+y+z end.
 Check let '(a,b,c) := ((2,3),4) in a.
 
+(* Check printing of notations with mixed reserved binders (see bug #2571) *)
+
+Implicit Type myx : bool.
+Check exists myx y, myx = y.
+
 (* Test notation for anonymous functions up to eta-expansion *)
 
 Check fun P:nat->nat->Prop => fun x:nat => ex (P x). 
