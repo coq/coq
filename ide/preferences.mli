@@ -60,6 +60,9 @@ type pref =
       mutable lax_syntax : bool;
       mutable vertical_tabs : bool;
       mutable opposite_tabs : bool;
+
+      mutable processing_color : string;
+      mutable processed_color : string;
     }
 
 val save_pref : unit -> unit
