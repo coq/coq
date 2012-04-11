@@ -1525,9 +1525,15 @@ let create_session file =
   script#buffer#place_cursor ~where:(script#buffer#start_iter);
   proof#misc#set_can_focus true;
   message#misc#set_can_focus true;
+  (* setting fonts *)
   script#misc#modify_font !current.text_font;
   proof#misc#modify_font !current.text_font;
   message#misc#modify_font !current.text_font;
+  (* setting colors *)
+  script#misc#modify_base [`NORMAL, `NAME !current.background_color];
+  proof#misc#modify_base [`NORMAL, `NAME !current.background_color];
+  message#misc#modify_base [`NORMAL, `NAME !current.background_color];
+
   { tab_label=basename;
     filename=begin match file with None -> "" |Some f -> f end;
     script=script;
@@ -2803,6 +2809,16 @@ let main files =
           msg_v#misc#modify_font fd
         )
 	session_notebook#pages;
+    );
+  change_background_color :=
+    (fun clr ->
+      List.iter
+        (fun {script=view; proof_view=prf_v; message_view=msg_v} ->
+          view#misc#modify_base [`NORMAL, `COLOR clr];
+          prf_v#misc#modify_base [`NORMAL, `COLOR clr];
+          msg_v#misc#modify_base [`NORMAL, `COLOR clr]
+        )
+        session_notebook#pages;
     );
   let about_full_string =
     "\nCoq is developed by the Coq Development Team\

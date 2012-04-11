@@ -23,16 +23,6 @@ binding "text" {
 class "GtkTextView" binding "text"
 
 
-style "views" {
-base[NORMAL] = "CornSilk"
-# bg_pixmap[NORMAL] = "background.jpg"
-}
-class "GtkTextView" style "views"
-
-widget "*.*.*.*.*.ScriptWindow" style "views"
-widget "*.*.*.*.GoalWindow" style "views"
-widget "*.*.*.*.MessageWindow" style "views"
-
 gtk-font-name = "Sans 12"
 
 style "location" {
