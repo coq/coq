@@ -361,7 +361,7 @@ let configure ?(apply=(fun () -> ())) () =
   in
 
   let config_color =
-    let box = GPack.hbox () in
+    let box = GPack.vbox () in
     let table = GPack.table
       ~row_spacings:5
       ~col_spacings:5
@@ -395,6 +395,16 @@ let configure ?(apply=(fun () -> ())) () =
       ~color:(Tags.get_processing_color ())
       ~packing:(table#attach ~left:1 ~top:2) ()
     in
+    let reset_button = GButton.button
+      ~label:"Reset"
+      ~packing:box#pack ()
+    in
+    let reset_cb () =
+      background_button#set_color (Tags.color_of_string "cornsilk");
+      processing_button#set_color (Tags.color_of_string "light blue");
+      processed_button#set_color (Tags.color_of_string "light green");
+    in
+    let _ = reset_button#connect#clicked ~callback:reset_cb in
     let label = "Color configuration" in
     let callback () =
       !current.background_color <- Tags.string_of_color background_button#color;
