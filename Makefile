@@ -193,7 +193,7 @@ docclean:
 	rm -f doc/coq.tex
 
 archclean: clean-ide optclean voclean
-	rm -rf _build myocamlbuild_config.ml
+	rm -rf _build
 	rm -f $(ALLSTDLIB).*
 
 optclean:
@@ -218,7 +218,7 @@ depclean:
 	find . $(FIND_VCS_CLAUSE) '(' -name '*.d' ')' -print | xargs rm -f
 
 cleanconfig:
-	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-v7 ide/undo.mli
+	rm -f config/Makefile config/coq_config.ml myocamlbuild_config.ml dev/ocamldebug-v7 ide/undo.mli
 
 distclean: clean cleanconfig
 

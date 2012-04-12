@@ -26,7 +26,7 @@ open Libobject
 val require_library : qualid located list -> bool option -> unit
 val require_library_from_dirpath : (dir_path * string) list -> bool option -> unit
 val require_library_from_file :
-  identifier option -> System.physical_path -> bool option -> unit
+  identifier option -> CUnix.physical_path -> bool option -> unit
 
 (** {6 ... } *)
 (** Open a module (or a library); if the boolean is true then it's also
@@ -63,12 +63,12 @@ val set_xml_require : (dir_path -> unit) -> unit
     system; to each load path is associated a Coq [dir_path] (the "logical"
     path of the physical path) *)
 
-val get_load_paths : unit -> System.physical_path list
-val get_full_load_paths : unit -> (System.physical_path * dir_path) list
-val add_load_path : bool -> System.physical_path * dir_path -> unit
-val remove_load_path : System.physical_path -> unit
-val find_logical_path : System.physical_path -> dir_path
-val is_in_load_paths : System.physical_path -> bool
+val get_load_paths : unit -> CUnix.physical_path list
+val get_full_load_paths : unit -> (CUnix.physical_path * dir_path) list
+val add_load_path : bool -> CUnix.physical_path * dir_path -> unit
+val remove_load_path : CUnix.physical_path -> unit
+val find_logical_path : CUnix.physical_path -> dir_path
+val is_in_load_paths : CUnix.physical_path -> bool
 
 (** {6 Locate a library in the load paths } *)
 exception LibUnmappedDir
@@ -76,7 +76,7 @@ exception LibNotFound
 type library_location = LibLoaded | LibInPath
 
 val locate_qualified_library :
-  bool -> qualid -> library_location * dir_path * System.physical_path
+  bool -> qualid -> library_location * dir_path * CUnix.physical_path
 val try_locate_qualified_library : qualid located -> dir_path * string
 
 (** {6 Statistics: display the memory use of a library. } *)

@@ -49,15 +49,15 @@ type goals = {
 type hint = (string * string) list
 (** A list of tactics applicable and their appearance *)
 
-type option_name = Goptionstyp.option_name
+type option_name = string list
 
-type option_value = Goptionstyp.option_value =
+type option_value =
   | BoolValue   of bool
   | IntValue    of int option
   | StringValue of string
 
 (** Summary of an option status *)
-type option_state = Goptionstyp.option_state = {
+type option_state = {
   opt_sync  : bool;
   (** Whether an option is synchronous *)
   opt_depr  : bool;

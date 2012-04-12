@@ -172,7 +172,7 @@ let pr_new_syntax loc ocom =
 let rec vernac_com interpfun checknav (loc,com) =
   let rec interp = function
     | VernacLoad (verbosely, fname) ->
-	let fname = expand_path_macros fname in
+	let fname = Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) fname in
         (* translator state *)
         let ch = !chan_beautify in
         let cs = Lexer.com_state() in
@@ -184,13 +184,13 @@ let rec vernac_com interpfun checknav (loc,com) =
 	    begin
               let _,f = find_file_in_path ~warn:(Flags.is_verbose())
 		(Library.get_load_paths ())
-		(make_suffix fname ".v") in
+		(CUnix.make_suffix fname ".v") in
 		chan_beautify := open_out (f^beautify_suffix);
 		Pp.comments := []
             end;
           begin
 	    try
-	      read_vernac_file verbosely (make_suffix fname ".v");
+	      read_vernac_file verbosely (CUnix.make_suffix fname ".v");
               if !Flags.beautify_file then close_out !chan_beautify;
               chan_beautify := ch;
               Lexer.restore_com_state cs;
@@ -228,7 +228,7 @@ let rec vernac_com interpfun checknav (loc,com) =
     | VernacTime v ->
 	  let tstart = System.get_time() in
           interp v;
-	  let tend = System.get_time() in
+	  let tend = get_time() in
           msgnl (str"Finished transaction in " ++
                    System.fmt_time_difference tstart tend)
 

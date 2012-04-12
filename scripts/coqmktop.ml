@@ -56,7 +56,7 @@ let src_dirs () =
   [ []; ["kernel";"byterun"]; [ "config" ]; [ "toplevel" ] ]
 
 let includes () =
-  let coqlib = Envars.coqlib () in
+  let coqlib = Envars.coqlib Errors.error in
   let camlp4lib = Envars.camlp4lib () in
     List.fold_right
       (fun d l -> "-I" :: ("\"" ^ List.fold_left Filename.concat coqlib d ^ "\"") :: l)

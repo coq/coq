@@ -219,7 +219,7 @@ let hints () =
 (** Other API calls *)
 
 let inloadpath dir =
-  Library.is_in_load_paths (System.physical_path_of_string dir)
+  Library.is_in_load_paths (CUnix.physical_path_of_string dir)
 
 let status () =
   (** We remove the initial part of the current [dir_path]
@@ -295,7 +295,7 @@ let eval_call c =
   in
   (* If the messages of last command are still there, we remove them *)
   ignore (read_stdout ());
-  Ide_intf.abstract_eval_call handler c
+  Serialize.abstract_eval_call handler c
 
 
 (** The main loop *)
@@ -311,7 +311,7 @@ let pr_debug s =
   if !Flags.debug then Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
 let fail err =
-  Ide_intf.of_value (fun _ -> assert false) (Interface.Fail (None, err))
+  Serialize.of_value (fun _ -> assert false) (Interface.Fail (None, err))
 
 let loop () =
   let p = Xml_parser.make () in
@@ -326,16 +326,16 @@ let loop () =
       let xml_answer =
         try
           let xml_query = Xml_parser.parse p (Xml_parser.SChannel stdin) in
-          let q = Ide_intf.to_call xml_query in
-          let () = pr_debug ("<-- " ^ Ide_intf.pr_call q) in
+          let q = Serialize.to_call xml_query in
+          let () = pr_debug ("<-- " ^ Serialize.pr_call q) in
           let r = eval_call q in
-          let () = pr_debug ("--> " ^ Ide_intf.pr_full_value q r) in
-          Ide_intf.of_answer q r
+          let () = pr_debug ("--> " ^ Serialize.pr_full_value q r) in
+          Serialize.of_answer q r
         with
         | Xml_parser.Error (err, loc) ->
           let msg = "Syntax error in query: " ^ Xml_parser.error_msg err in
           fail msg
-        | Ide_intf.Marshal_error ->
+        | Serialize.Marshal_error ->
           fail "Incorrect query."
       in
       Xml_utils.print_xml !orig_stdout xml_answer;

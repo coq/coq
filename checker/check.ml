@@ -54,7 +54,7 @@ type library_disk = {
 
 type library_t = {
   library_name : compilation_unit_name;
-  library_filename : System.physical_path;
+  library_filename : CUnix.physical_path;
   library_compiled : Safe_typing.compiled_library;
   library_deps : (compilation_unit_name * Digest.t) list;
   library_digest : Digest.t }
@@ -114,7 +114,7 @@ let check_one_lib admit (dir,m) =
 
 type logical_path = dir_path
 
-let load_paths = ref ([],[] : System.physical_path list * logical_path list)
+let load_paths = ref ([],[] : CUnix.physical_path list * logical_path list)
 
 let get_load_paths () = fst !load_paths
 

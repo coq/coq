@@ -43,7 +43,7 @@ let (/) = Filename.concat
 
 let get_version_date () =
   try
-    let coqlib = Envars.coqlib () in
+    let coqlib = Envars.coqlib error in
     let ch = open_in (Filename.concat coqlib "revision") in
     let ver = input_line ch in
     let rev = input_line ch in
@@ -101,7 +101,7 @@ let set_rec_include d p =
 
 (* Initializes the LoadPath *)
 let init_load_path () =
-  let coqlib = Envars.coqlib () in
+  let coqlib = Envars.coqlib error in
   let user_contrib = coqlib/"user-contrib" in
   let xdg_dirs = Envars.xdg_dirs in
   let coqpath = Envars.coqpath in
@@ -115,7 +115,8 @@ let init_load_path () =
   if Sys.file_exists user_contrib then
     add_rec_path ~unix_path:user_contrib ~coq_root:Check.default_root_prefix;
   (* then directories in XDG_DATA_DIRS and XDG_DATA_HOME *)
-  List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Check.default_root_prefix) xdg_dirs;
+  List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Check.default_root_prefix)
+    (xdg_dirs ~warn:(fun x -> msg_warning (str x)));
   (* then directories in COQPATH *)
   List.iter (fun s -> add_rec_path ~unix_path:s ~coq_root:Check.default_root_prefix) coqpath;
   (* then current directory *)
@@ -309,7 +310,7 @@ let parse_args argv =
     | "-debug" :: rem -> set_debug (); parse rem
 
     | "-where" :: _ ->
-        print_endline (Envars.coqlib ()); exit 0
+        print_endline (Envars.coqlib error); exit 0
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
 

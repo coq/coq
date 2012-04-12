@@ -27,9 +27,7 @@
 
 (** An Xml node is either
         [Element (tag-name, attributes, children)] or [PCData text] *)
-type xml = 
-        | Element of (string * (string * string) list * xml list)
-        | PCData of string
+type xml = Serialize.xml
 
 (** Abstract type for an Xml parser. *)
 type t

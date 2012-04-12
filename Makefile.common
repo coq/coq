@@ -12,14 +12,8 @@
 # Executables
 ###########################################################################
 
-COQMKTOPBYTE:=bin/coqmktop.byte$(EXE)
-COQMKTOPOPT:=bin/coqmktop.opt$(EXE)
-BESTCOQMKTOP:=bin/coqmktop.$(BEST)$(EXE)
 COQMKTOP:=bin/coqmktop$(EXE) 
 
-COQCBYTE:=bin/coqc.byte$(EXE)
-COQCOPT:=bin/coqc.opt$(EXE)
-BESTCOQC:=bin/coqc.$(BEST)$(EXE)
 COQC:=bin/coqc$(EXE)
 
 COQTOPBYTE:=bin/coqtop.byte$(EXE)
@@ -66,6 +60,7 @@ OPT:=
 endif
 
 BESTOBJ:=$(if $(OPT),.cmx,.cmo)
+BESTLIB:=$(if $(OPT),.cmxa,.cma)
 
 COQBINARIES:= $(COQMKTOP) $(COQC) \
   $(COQTOPBYTE) $(if $(OPT),$(COQTOPOPT)) $(COQTOPEXE) \
@@ -152,8 +147,6 @@ COQRUN := coqrun
 LIBCOQRUN:=kernel/byterun/lib$(COQRUN).a
 DLLCOQRUN:=$(dir $(LIBCOQRUN))dll$(COQRUN)$(DLLEXT)
 
-CONFIG:=config/coq_config.cmo
-
 BYTERUN:=$(addprefix kernel/byterun/, \
   coq_fix_code.o coq_memory.o coq_values.o coq_interp.o )
 
@@ -162,10 +155,10 @@ BYTERUN:=$(addprefix kernel/byterun/, \
 # respecting this order is useful for developers that want to load or link
 # the libraries directly
 
-CORECMA:=lib/lib.cma kernel/kernel.cma library/library.cma \
+CORECMA:=lib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
         pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
         parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
-        parsing/highparsing.cma tactics/hightactics.cma 
+        parsing/highparsing.cma tactics/hightactics.cma
 
 GRAMMARCMA:=parsing/grammar.cma
 
@@ -218,28 +211,26 @@ endif
 
 INITPLUGINSBEST:=$(if $(OPT),$(INITPLUGINSOPT),$(INITPLUGINS))
 
-LINKCMO:=$(CONFIG) $(CORECMA) $(STATICPLUGINS)
-LINKCMX:=$(CONFIG:.cmo=.cmx) $(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cma=.cmxa)
+LINKCMO:=$(CORECMA) $(STATICPLUGINS)
+LINKCMX:=$(CORECMA:.cma=.cmxa) $(STATICPLUGINS:.cma=.cmxa)
 
-IDEDEPS:=$(CONFIG) lib/flags.cmo lib/xml_lexer.cmo lib/xml_parser.cmo \
-  lib/xml_utils.cmo toplevel/ide_intf.cmo
+IDEDEPS:=lib/clib.cma lib/xml_lexer.cmo lib/xml_parser.cmo \
+  lib/xml_utils.cmo
 IDECMA:=ide/ide.cma
 
 LINKIDE:=$(IDEDEPS) $(IDECMA) ide/coqide_main.ml
-LINKIDEOPT:=$(IDEOPTDEPS) $(IDEDEPS:.cmo=.cmx) $(IDECMA:.cma=.cmxa) ide/coqide_main_opt.ml
+LINKIDEOPT:=$(IDEOPTDEPS) $(patsubst %.cma,%.cmxa,$(IDEDEPS:.cmo=.cmx)) $(IDECMA:.cma=.cmxa) ide/coqide_main_opt.ml
 
 # modules known by the toplevel of Coq
 
-OBJSMOD:=Coq_config $(shell cat $(CORECMA:.cma=.mllib))
+OBJSMOD:=$(shell cat $(CORECMA:.cma=.mllib))
 
 IDEMOD:=$(shell cat ide/ide.mllib)
 
 # coqmktop, coqc
 
-COQENVCMO:=$(CONFIG) \
-  lib/pp_control.cmo lib/compat.cmo lib/flags.cmo lib/pp.cmo \
-  lib/segmenttree.cmo lib/unicodetable.cmo lib/errors.cmo lib/util.cmo lib/system.cmo \
-  lib/envars.cmo
+COQENVCMO:=lib/clib.cma\
+  lib/pp_control.cmo lib/compat.cmo lib/pp.cmo lib/errors.cmo
 
 COQMKTOPCMO:=$(COQENVCMO) scripts/tolink.cmo scripts/coqmktop.cmo
 
@@ -255,7 +246,7 @@ DEBUGPRINTERS:=dev/top_printers.cmo dev/vm_printers.cmo dev/printers.cma
 
 COQDEPCMO:=$(COQENVCMO) tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coqdep.cmo
 
-COQDOCCMO:=$(CONFIG) $(addprefix tools/coqdoc/, \
+COQDOCCMO:=lib/clib.cma $(addprefix tools/coqdoc/, \
   cdglobals.cmo alpha.cmo index.cmo tokens.cmo output.cmo cpretty.cmo main.cmo )
 
 ###########################################################################

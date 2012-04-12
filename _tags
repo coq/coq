@@ -2,9 +2,9 @@
 ## tags for binaries
 
 <scripts/coqmktop.{native,byte}> : use_str, use_unix, use_dynlink, use_camlpX
-<scripts/coqc.{native,byte}> : use_unix, use_dynlink, use_camlpX
+<scripts/coqc.{native,byte}> : use_str, use_unix, use_dynlink, use_camlpX
 <tools/coqdep_boot.{native,byte}> : use_unix
-<tools/coqdep.{native,byte}> : use_unix, use_dynlink, use_camlpX
+<tools/coqdep.{native,byte}> : use_str, use_unix, use_dynlink, use_camlpX
 <tools/coq_tex.{native,byte}> : use_str
 <tools/coq_makefile.{native,byte}> : use_str, use_unix
 <tools/coqdoc/main.{native,byte}> : use_str
@@ -27,6 +27,7 @@
 "toplevel/mltop.ml4": is_mltop
 
 "toplevel/whelp.ml4": use_grammar
+"toplevel/g_obligations.ml4": use_grammar
 "tactics/extraargs.ml4": use_grammar
 "tactics/extratactics.ml4": use_grammar
 "tactics/class_tactics.ml4": use_grammar
@@ -46,7 +47,6 @@
 "parsing/pcoq.ml4": use_compat5
 "plugins/decl_mode/g_decl_mode.ml4": use_compat5
 "plugins/funind/g_indfun.ml4": use_compat5
-"plugins/subtac/g_subtac.ml4": use_compat5
 
 "parsing/argextend.ml4": use_compat5b
 "parsing/q_constr.ml4": use_compat5b

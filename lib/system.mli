@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** System utilities *)
+(** {5 Coqtop specific system utilities} *)
 
 (** {6 Files and load paths} *)
 
@@ -14,32 +14,17 @@
     given by the user. For efficiency, we keep the full path (field
     [directory]), the root path and the path relative to the root. *)
 
-type physical_path = string
-type load_path = physical_path list
-
-val canonical_path_name : string -> string
-
 val exclude_search_in_dirname : string -> unit
 
-val all_subdirs : unix_path:string -> (physical_path * string list) list
-val is_in_path : load_path -> string -> bool
+val all_subdirs : unix_path:string -> (CUnix.physical_path * string list) list
+val is_in_path : CUnix.load_path -> string -> bool
 val is_in_system_path : string -> bool
-val where_in_path : ?warn:bool -> load_path -> string -> physical_path * string
-
-val physical_path_of_string : string -> physical_path
-val string_of_physical_path : physical_path -> string
-
-val make_suffix : string -> string -> string
-val file_readable_p : string -> bool
-
-val expand_path_macros : string -> string
-val getenv_else : string -> string -> string
-val home : string
+val where_in_path : ?warn:bool -> CUnix.load_path -> string -> CUnix.physical_path * string
 
 val exists_dir : string -> bool
 
 val find_file_in_path :
-  ?warn:bool -> load_path -> string -> physical_path * string
+  ?warn:bool -> CUnix.load_path -> string -> CUnix.physical_path * string
 
 (** {6 I/O functions } *)
 (** Generic input and output functions, parameterized by a magic number
@@ -55,22 +40,13 @@ val raw_extern_intern : int -> string ->
   (string -> string * out_channel) * (string -> in_channel)
 
 val extern_intern : ?warn:bool -> int -> string ->
-  (string -> 'a -> unit) * (load_path -> string -> 'a)
+  (string -> 'a -> unit) * (CUnix.load_path -> string -> 'a)
 
 val with_magic_number_check : ('a -> 'b) -> 'a -> 'b
 
 (** {6 Sending/receiving once with external executable } *)
 
 val connect : (out_channel -> unit) -> (in_channel -> 'a) -> string -> 'a
-
-(** {6 Executing commands } *)
-(** [run_command converter f com] launches command [com], and returns
-    the contents of stdout and stderr that have been processed with
-    [converter]; the processed contents of stdout and stderr is also
-    passed to [f] *)
-
-val run_command : (string -> string) -> (string -> unit) -> string ->
-  Unix.process_status * string
 
 (** {6 Time stamps.} *)
 

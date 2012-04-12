@@ -18,7 +18,7 @@
  *)
 
 open Printf
-open Xml_parser
+open Serialize
 
 exception Not_element of xml
 exception Not_pcdata of xml

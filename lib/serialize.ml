@@ -8,10 +8,11 @@
 
 (** * Interface of calls to Coq by CoqIde *)
 
-open Xml_parser
 open Interface
 
-type xml = Xml_parser.xml
+type xml =
+        | Element of (string * (string * string) list * xml list)
+        | PCData of string
 
 (** We use phantom types and GADT to protect ourselves against wild casts *)
 

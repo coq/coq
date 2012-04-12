@@ -1,4 +1,5 @@
 load_printer "gramlib.cma"
+load_printer "str.cma"
 load_printer "printers.cma"
 
 install_printer Top_printers.ppid

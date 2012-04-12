@@ -10,7 +10,9 @@
 
 open Interface
 
-type xml = Xml_parser.xml
+type xml =
+        | Element of (string * (string * string) list * xml list)
+        | PCData of string
 
 type 'a call
 

@@ -104,7 +104,7 @@ let _build = Options.build_dir
 (** Abbreviations about files *)
 
 let core_libs =
-  ["lib/lib"; "kernel/kernel"; "library/library";
+  ["lib/clib"; "lib/lib"; "kernel/kernel"; "library/library";
    "pretyping/pretyping"; "interp/interp";  "proofs/proofs";
    "parsing/parsing"; "tactics/tactics"; "toplevel/toplevel";
    "parsing/highparsing"; "tactics/hightactics"]
@@ -381,8 +381,8 @@ let extra_rules () = begin
        let core_mods = String.concat " " (List.map cat core_mllib) in
        let core_cmas = String.concat " " core_cma in
        Echo (["let copts = \"-cclib -lcoqrun\"\n";
-	      "let core_libs = \"coq_config.cmo "^core_cmas^"\"\n";
-	      "let core_objs = \"Coq_config "^core_mods^"\"\n"],
+	      "let core_libs = \""^core_cmas^"\"\n";
+	      "let core_objs = \""^core_mods^"\"\n"],
 	     tolink));
 
 (** For windows, building coff object file from a .rc (for the icon) *)
@@ -407,8 +407,8 @@ let extra_rules () = begin
   let () =
     let fo = coqtop^".native" and fb = coqtop^".byte" in
     let depsall = (if w32 then [w32ico] else [])@[coqmktop_boot;libcoqrun] in
-    let depso = "coq_config.cmx" :: core_cmxa in
-    let depsb = "coq_config.cmo" :: core_cma in
+    let depso =  core_cmxa in
+    let depsb =  core_cma in
     let w32flag =
       if not w32 then N else S ([A"-camlbin";A w32bin;A "-ccopt";P w32ico])
     in

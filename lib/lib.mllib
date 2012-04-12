@@ -3,17 +3,12 @@ Xml_parser
 Xml_utils
 Pp_control
 Compat
-Flags
 Pp
-Segmenttree
-Unicodetable
 Errors
-Util
 Bigint
 Hashcons
 Dyn
 System
-Envars
 Gmap
 Fset
 Fmap

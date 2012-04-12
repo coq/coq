@@ -19,9 +19,9 @@ type compiled_library
 
 val set_engagement : Declarations.engagement -> unit
 val import         :
-  System.physical_path -> compiled_library -> Digest.t -> unit
+  CUnix.physical_path -> compiled_library -> Digest.t -> unit
 val unsafe_import  :
-  System.physical_path -> compiled_library -> Digest.t -> unit
+  CUnix.physical_path -> compiled_library -> Digest.t -> unit
 
 (** Store the body of modules' opaque constants inside a table. 
 

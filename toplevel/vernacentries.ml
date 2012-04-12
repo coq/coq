@@ -708,33 +708,35 @@ let vernac_set_used_variables l =
 
 let vernac_require_from export filename =
   Library.require_library_from_file None
-    (System.expand_path_macros filename)
+    (Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) filename)
     export
 
 let vernac_add_loadpath isrec pdir ldiropt =
-  let pdir = System.expand_path_macros pdir in
+  let pdir = Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) pdir in
   let alias = match ldiropt with
     | None -> Nameops.default_root_prefix
     | Some ldir -> ldir in
   (if isrec then Mltop.add_rec_path else Mltop.add_path) ~unix_path:pdir ~coq_root:alias
 
 let vernac_remove_loadpath path =
-  Library.remove_load_path (System.expand_path_macros path)
+  Library.remove_load_path (Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) path)
 
   (* Coq syntax for ML or system commands *)
 
 let vernac_add_ml_path isrec path =
   (if isrec then Mltop.add_rec_ml_dir else Mltop.add_ml_dir)
-    (System.expand_path_macros path)
+    (Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) path)
 
 let vernac_declare_ml_module local l =
-  Mltop.declare_ml_modules local (List.map System.expand_path_macros l)
+  Mltop.declare_ml_modules local (List.map
+				    (Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)))
+				    l)
 
 let vernac_chdir = function
   | None -> message (Sys.getcwd())
   | Some path ->
       begin
-	try Sys.chdir (System.expand_path_macros path)
+	try Sys.chdir (Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) path)
 	with Sys_error str -> warning ("Cd failed: " ^ str)
       end;
       if_verbose message (Sys.getcwd())

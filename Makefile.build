@@ -199,14 +199,14 @@ coqlight: theories-light tools coqbinaries
 
 states:: states/initial.coq
 
-$(COQTOPOPT): $(BESTCOQMKTOP) $(LINKCMX) $(LIBCOQRUN)
+$(COQTOPOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(BESTCOQMKTOP) -boot -opt $(OPTFLAGS) -o $@
+	$(HIDE)$(COQMKTOP) -boot -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
-$(COQTOPBYTE): $(BESTCOQMKTOP) $(LINKCMO) $(LIBCOQRUN)
+$(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(BESTCOQMKTOP) -boot -top $(BYTEFLAGS) -o $@
+	$(HIDE)$(COQMKTOP) -boot -top $(BYTEFLAGS) -o $@
 
 $(COQTOPEXE): $(ORDER_ONLY_SEP) $(BESTCOQTOP)
 	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)
@@ -228,19 +228,10 @@ $(CHICKENBYTE): checker/check.cma checker/main.ml
 $(CHICKEN): $(ORDER_ONLY_SEP) $(BESTCHICKEN)
 	cd bin && ln -sf coqchk.$(BEST)$(EXE) coqchk$(EXE)
 
-# coqmktop 
-
-$(COQMKTOPBYTE): $(COQMKTOPCMO)
-	$(SHOW)'OCAMLC -o $@'	
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ $(SYSCMA) $^ $(OSDEPLIBS)
-
-$(COQMKTOPOPT): $(COQMKTOPCMO:.cmo=.cmx)
-	$(SHOW)'OCAMLOPT -o $@'	
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ $(SYSCMXA) $^ $(OSDEPLIBS)
-	$(STRIP) $@
-
-$(COQMKTOP): $(ORDER_ONLY_SEP) $(BESTCOQMKTOP)
-	cd bin; ln -sf coqmktop.$(BEST)$(EXE) coqmktop$(EXE)
+# coqmktop
+$(COQMKTOP): $(patsubst %.cma,%$(BESTLIB),$(COQMKTOPCMO:.cmo=$(BESTOBJ)))
+	$(SHOW)'OCAMLBEST -o $@'
+	$(HIDE)$(call bestocaml, $(OSDEPLIBS), $(SYSMOD))
 
 scripts/tolink.ml: Makefile.build Makefile.common
 	$(SHOW)"ECHO... >" $@
@@ -249,18 +240,9 @@ scripts/tolink.ml: Makefile.build Makefile.common
 	$(HIDE)echo "let core_objs = \""$(OBJSMOD)"\"" >> $@
 
 # coqc
-
-$(COQCBYTE): $(COQCCMO) | $(COQTOPBYTE)
-	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ $(SYSCMA) $^ $(OSDEPLIBS)
-
-$(COQCOPT): $(COQCCMO:.cmo=.cmx) | $(COQTOPOPT)
-	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -o $@ $(SYSCMXA) $^ $(OSDEPLIBS)
-	$(STRIP) $@
-
-$(COQC): $(ORDER_ONLY_SEP) $(BESTCOQC) 
-	cd bin; ln -sf coqc.$(BEST)$(EXE) coqc$(EXE)
+$(COQC):  $(patsubst %.cma,%$(BESTLIB),$(COQCCMO:.cmo=$(BESTOBJ)))
+	$(SHOW)'OCAMLBEST -o $@'
+	$(HIDE)$(call bestocaml, $(OSDEPLIBS), $(SYSMOD))
 
 # target for libraries
 
@@ -395,7 +377,7 @@ test-suite: world $(ALLSTDLIB).v
 .PHONY: lib kernel byterun library proofs tactics interp parsing pretyping
 .PHONY: highparsing toplevel hightactics
 
-lib: lib/lib.cma
+lib: lib/clib.cma lib/lib.cma
 kernel: kernel/kernel.cma
 byterun: $(BYTERUN)
 library: library/library.cma
@@ -514,7 +496,7 @@ $(COQDEPBOOT): $(COQDEPBOOTSRC)
 
 # the full coqdep
 
-$(COQDEP): $(COQDEPCMO:.cmo=$(BESTOBJ))
+$(COQDEP): $(patsubst %.cma,%$(BESTLIB),$(COQDEPCMO:.cmo=$(BESTOBJ)))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml, $(OSDEPLIBS), $(SYSMOD))
 
@@ -534,14 +516,14 @@ $(COQWC): tools/coqwc$(BESTOBJ)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,)
 
-$(COQDOC): $(COQDOCCMO:.cmo=$(BESTOBJ))
+$(COQDOC): $(patsubst %.cma,%$(BESTLIB),$(COQDOCCMO:.cmo=$(BESTOBJ)))
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,str unix)
 
 # fake_ide : for debugging or test-suite purpose, a fake ide simulating
 # a connection to coqtop -ideslave
 
-$(FAKEIDE): lib/xml_lexer$(BESTOBJ) lib/xml_parser$(BESTOBJ) lib/xml_utils$(BESTOBJ) toplevel/ide_intf$(BESTOBJ) tools/fake_ide$(BESTOBJ)
+$(FAKEIDE): lib/xml_lexer$(BESTOBJ) lib/xml_parser$(BESTOBJ) lib/xml_utils$(BESTOBJ) lib/serialize$(BESTOBJ) tools/fake_ide$(BESTOBJ)
 	$(SHOW)'OCAMLBEST -o $@'
 	$(HIDE)$(call bestocaml,,unix)
 

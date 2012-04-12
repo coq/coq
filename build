@@ -1,15 +1,13 @@
 #!/bin/sh
 
-FLAGS=
+FLAGS="-j 2"
 OCAMLBUILD=ocamlbuild
-CFG=config/coq_config.ml
 MYCFG=myocamlbuild_config.ml
 
 export CAML_LD_LIBRARY_PATH=`pwd`/_build/kernel/byterun
 
 check_config() {
- [ -f $CFG ] || (echo "please run ./configure first"; exit 1)
- [ -L $MYCFG ] || ln -sf $CFG $MYCFG
+ [ -f $MYCFG ] || (echo "please run ./configure first"; exit 1)
 }
 
 ocb() { $OCAMLBUILD $FLAGS $*; }
@@ -17,7 +15,7 @@ ocb() { $OCAMLBUILD $FLAGS $*; }
 rule() {
   check_config
   case $1 in
-    clean)  ocb -clean && rm -rf bin/* && rm -f $MYCFG;;
+    clean)  ocb -clean && rm -rf bin/*;;
     all)    ocb coq.otarget;;
     win32)  ocb coq-win32.otarget;;
     *)      ocb $1;;

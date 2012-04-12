@@ -150,8 +150,7 @@ let parse_args () =
 	parse (cfiles,o::args) rem
 
     | ("-where") :: _ ->
-	(try print_endline (Envars.coqlib ())
-	 with Errors.UserError(_,pps) -> Pp.msgerrnl (Pp.hov 0 pps));
+	print_endline (Envars.coqlib (fun x -> x));
 	exit 0
 
     | ("-config" | "--config") :: _ -> Usage.print_config (); exit 0

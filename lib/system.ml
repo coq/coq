@@ -13,123 +13,6 @@ open Errors
 open Util
 open Unix
 
-(* Expanding shell variables and home-directories *)
-
-let safe_getenv_def var def =
-  try
-    Sys.getenv var
-  with Not_found ->
-    warning ("Environment variable "^var^" not found: using '"^def^"' .");
-    flush_all ();
-    def
-
-let getenv_else s dft = try Sys.getenv s with Not_found -> dft
-
-(* On win32, the home directory is probably not in $HOME, but in
-   some other environment variable *)
-
-let home =
-  try Sys.getenv "HOME" with Not_found ->
-    try (Sys.getenv "HOMEDRIVE")^(Sys.getenv "HOMEPATH") with Not_found ->
-      try Sys.getenv "USERPROFILE" with Not_found ->
-	warning ("Cannot determine user home directory, using '.' .");
-	flush_all ();
-	Filename.current_dir_name
-
-let safe_getenv n = safe_getenv_def n ("$"^n)
-
-let rec expand_atom s i =
-  let l = String.length s in
-  if i<l && (is_digit s.[i] or is_letter s.[i] or s.[i] = '_')
-  then expand_atom s (i+1)
-  else i
-
-let rec expand_macros s i =
-  let l = String.length s in
-  if i=l then s else
-    match s.[i] with
-      | '$' ->
-	  let n = expand_atom s (i+1) in
-	  let v = safe_getenv (String.sub s (i+1) (n-i-1)) in
-	  let s = (String.sub s 0 i)^v^(String.sub s n (l-n)) in
-	  expand_macros s (i + String.length v)
-      | '~' when i = 0 ->
-	  let n = expand_atom s (i+1) in
-	  let v =
-	    if n=i+1 then home
-	    else (getpwnam (String.sub s (i+1) (n-i-1))).pw_dir
-	  in
-	  let s = v^(String.sub s n (l-n)) in
-	  expand_macros s (String.length v)
-      | c -> expand_macros s (i+1)
-
-let expand_path_macros s = expand_macros s 0
-
-(* Files and load path. *)
-
-type physical_path = string
-type load_path = physical_path list
-
-let physical_path_of_string s = s
-let string_of_physical_path p = p
-
-(* 
- * Split a path into a list of directories. A one-liner with Str, but Coq
- * doesn't seem to use this library at all, so here is a slighly longer version.
- *)
-
-let lpath_from_path path path_separator =
-  let n = String.length path in
-  let rec aux i l =
-    if i < n then
-      let j =
-        try String.index_from path i path_separator
-        with Not_found -> n
-      in
-      let dir = String.sub path i (j-i) in
-      aux (j+1) (dir::l)
-    else
-      l
-  in List.rev (aux 0 [])
-
-(* Hints to partially detects if two paths refer to the same repertory *)
-let rec remove_path_dot p =
-  let curdir = Filename.concat Filename.current_dir_name "" in (* Unix: "./" *)
-  let n = String.length curdir in
-  let l = String.length p in
-  if l > n && String.sub p 0 n = curdir then
-    let n' =
-      let sl = String.length Filename.dir_sep in
-      let i = ref n in
-	while !i <= l - sl && String.sub p !i sl = Filename.dir_sep do i := !i + sl done; !i in
-    remove_path_dot (String.sub p n' (l - n'))
-  else
-    p
-
-let strip_path p =
-  let cwd = Filename.concat (Sys.getcwd ()) "" in (* Unix: "`pwd`/" *)
-  let n = String.length cwd in
-  let l = String.length p in
-  if l > n && String.sub p 0 n = cwd then
-    let n' =
-      let sl = String.length Filename.dir_sep in
-      let i = ref n in
-	while !i <= l - sl && String.sub p !i sl = Filename.dir_sep do i := !i + sl done; !i in
-    remove_path_dot (String.sub p n' (l - n'))
-  else
-    remove_path_dot p
-
-let canonical_path_name p =
-  let current = Sys.getcwd () in
-  try
-    Sys.chdir p;
-    let p' = Sys.getcwd () in
-    Sys.chdir current;
-    p'
-  with Sys_error _ ->
-    (* We give up to find a canonical name and just simplify it... *)
-    strip_path p
-
 (* All subdirectories, recursively *)
 
 let exists_dir dir =
@@ -212,16 +95,10 @@ let is_in_path lpath filename =
 let path_separator = if Sys.os_type = "Unix" then ':' else ';'
 
 let is_in_system_path filename =
-  let path = try Sys.getenv "PATH" 
+  let path = try Sys.getenv "PATH"
              with Not_found -> error "system variable PATH not found" in
-  let lpath = lpath_from_path path path_separator in
+  let lpath = CUnix.path_to_list path in
   is_in_path lpath filename
-
-let make_suffix name suffix =
-  if Filename.check_suffix name suffix then name else (name ^ suffix)
-
-let file_readable_p name =
-  try access name [R_OK];true with Unix_error (_, _, _) -> false
 
 let open_trapping_failure name =
   try open_out_bin name with _ -> error ("Can't open " ^ name)
@@ -240,7 +117,7 @@ exception Bad_magic_number of string
 
 let raw_extern_intern magic suffix =
   let extern_state name =
-    let filename = make_suffix name suffix in
+    let filename = CUnix.make_suffix name suffix in
     let channel = open_trapping_failure filename in
     output_binary_int channel magic;
     filename,channel
@@ -265,7 +142,7 @@ let extern_intern ?(warn=true) magic suffix =
     with Sys_error s -> error ("System error: " ^ s)
   and intern_state paths name =
     try
-      let _,filename = find_file_in_path ~warn paths (make_suffix name suffix) in
+      let _,filename = find_file_in_path ~warn paths (CUnix.make_suffix name suffix) in
       let channel = raw_intern filename in
       let v = marshal_in channel in
       close_in channel;
@@ -279,7 +156,7 @@ let with_magic_number_check f a =
   try f a
   with Bad_magic_number fname ->
     errorlabstrm "with_magic_number_check"
-    (str"File " ++ str fname ++ strbrk" has bad magic number." ++ spc () ++ 
+    (str"File " ++ str fname ++ strbrk" has bad magic number." ++ spc () ++
     strbrk "It is corrupted or was compiled with another version of Coq.")
 
 (* Communication through files with another executable *)
@@ -317,26 +194,6 @@ let connect writefun readfun com =
   unlink tmp_from;
   unlink tmp_to;
   a
-
-let run_command converter f c =
-  let result = Buffer.create 127 in
-  let cin,cout,cerr = Unix.open_process_full c (Unix.environment ()) in
-  let buff = String.make 127 ' ' in
-  let buffe = String.make 127 ' ' in
-  let n = ref 0 in
-  let ne = ref 0 in
-
-  while n:= input cin buff 0 127 ; ne := input cerr buffe 0 127 ;
-    !n+ !ne <> 0
-  do
-    let r = converter (String.sub buff 0 !n) in
-    f r;
-    Buffer.add_string result r;
-    let r = converter (String.sub buffe 0 !ne) in
-    f r;
-    Buffer.add_string result r
-  done;
-  (Unix.close_process_full (cin,cout,cerr),  Buffer.contents result)
 
 (* Time stamps. *)
 

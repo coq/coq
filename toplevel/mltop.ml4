@@ -10,7 +10,7 @@ open Errors
 open Util
 open Pp
 open Flags
-open System
+open CUnix
 open Libobject
 open Library
 open System

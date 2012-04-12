@@ -9,8 +9,52 @@
 (* This file gathers environment variables needed by Coq to run (such
    as coqlib) *)
 
+let getenv_else s dft = try Sys.getenv s with Not_found -> dft ()
+
+let safe_getenv warning n = getenv_else n (fun () ->
+  let () = warning ("Environment variable "^n^" not found: using '$"^n^"' .")
+  in ("$"^n))
+
+(* Expanding shell variables and home-directories *)
+
+(* On win32, the home directory is probably not in $HOME, but in
+   some other environment variable *)
+
+let home ~warn =
+  getenv_else "HOME" (fun () ->
+    try (Sys.getenv "HOMEDRIVE")^(Sys.getenv "HOMEPATH") with Not_found ->
+      getenv_else "USERPROFILE" (fun () ->
+	warn ("Cannot determine user home directory, using '.' .");
+	Filename.current_dir_name))
+
+let expand_path_macros ~warn s =
+  let rec expand_atom s i =
+    let l = String.length s in
+    if i<l && (Util.is_digit s.[i] or Util.is_letter s.[i] or s.[i] = '_')
+    then expand_atom s (i+1)
+    else i in
+  let rec expand_macros s i =
+    let l = String.length s in
+    if i=l then s else
+      match s.[i] with
+	| '$' ->
+	  let n = expand_atom s (i+1) in
+	  let v = safe_getenv warn (String.sub s (i+1) (n-i-1)) in
+	  let s = (String.sub s 0 i)^v^(String.sub s n (l-n)) in
+	  expand_macros s (i + String.length v)
+	| '~' when i = 0 ->
+	  let n = expand_atom s (i+1) in
+	  let v =
+	    if n=i+1 then home ~warn
+	    else (Unix.getpwnam (String.sub s (i+1) (n-i-1))).Unix.pw_dir
+	  in
+	  let s = v^(String.sub s n (l-n)) in
+	  expand_macros s (String.length v)
+	| c -> expand_macros s (i+1)
+  in expand_macros s 0
+
 let coqbin =
-  System.canonical_path_name (Filename.dirname Sys.executable_name)
+  CUnix.canonical_path_name (Filename.dirname Sys.executable_name)
 
 (* The following only makes sense when executables are running from
    source tree (e.g. during build or in local mode). *)
@@ -21,14 +65,14 @@ let coqroot = Filename.dirname coqbin
 
 let _ =
   if Coq_config.arch = "win32" then
-    Unix.putenv "PATH" (coqbin ^ ";" ^ System.getenv_else "PATH" "")
+    Unix.putenv "PATH" (coqbin ^ ";" ^ getenv_else "PATH" (fun () -> ""))
 
 let reldir instdir testfile oth =
   let rpath = if Coq_config.local then [] else instdir in
   let out = List.fold_left Filename.concat coqroot rpath in
   if Sys.file_exists (Filename.concat out testfile) then out else oth ()
 
-let guess_coqlib () =
+let guess_coqlib fail =
   let file = "states/initial.coq" in
     reldir (if Coq_config.arch = "win32" then ["lib"] else ["lib";"coq"]) file
       (fun () ->
@@ -38,11 +82,11 @@ let guess_coqlib () =
         in
         if Sys.file_exists (Filename.concat coqlib file)
         then coqlib
-        else Errors.error "cannot guess a path for Coq libraries; please use -coqlib option")
+        else fail "cannot guess a path for Coq libraries; please use -coqlib option")
 
-let coqlib () =
+let coqlib ~fail =
   if !Flags.coqlib_spec then !Flags.coqlib else
-    (if !Flags.boot then coqroot else guess_coqlib ())
+    (if !Flags.boot then coqroot else guess_coqlib fail)
 
 let docdir () =
   reldir (if Coq_config.arch = "win32" then ["doc"] else ["share";"doc";"coq"]) "html" (fun () -> Coq_config.docdir)
@@ -51,14 +95,14 @@ let path_to_list p =
   let sep = if Sys.os_type = "Win32" then ';' else ':' in
     Util.split_string_at sep p
 
-let xdg_data_home =
+let xdg_data_home warning =
   Filename.concat
-    (System.getenv_else "XDG_DATA_HOME" (Filename.concat System.home ".local/share"))
+    (getenv_else "XDG_DATA_HOME" (fun () -> Filename.concat (home warning) ".local/share"))
     "coq"
 
-let xdg_config_home =
+let xdg_config_home ~warn =
   Filename.concat
-    (System.getenv_else "XDG_CONFIG_HOME" (Filename.concat System.home ".config"))
+    (getenv_else "XDG_CONFIG_HOME" (fun () -> Filename.concat (home ~warn) ".config"))
     "coq"
 
 let xdg_data_dirs =
@@ -67,8 +111,8 @@ let xdg_data_dirs =
   with Not_found -> "/usr/local/share/coq" :: "/usr/share/coq"
     :: (match Coq_config.datadir with |None -> [] |Some datadir -> [datadir])
 
-let xdg_dirs =
-  let dirs = xdg_data_home :: xdg_data_dirs
+let xdg_dirs ~warn =
+  let dirs = xdg_data_home warn :: xdg_data_dirs
   in
   List.rev (List.filter Sys.file_exists dirs)
 
@@ -107,7 +151,7 @@ let camllib () =
   else
     let camlbin = camlbin () in
     let com = (Filename.concat camlbin "ocamlc") ^ " -where" in
-    let _,res = System.run_command (fun x -> x) (fun _ -> ()) com in
+    let _,res = CUnix.run_command (fun x -> x) (fun _ -> ()) com in
     Util.strip res
 
 let camlp4bin () =
@@ -123,7 +167,7 @@ let camlp4lib () =
   else
     let camlp4bin = camlp4bin () in
     let com = (Filename.concat camlp4bin Coq_config.camlp4) ^ " -where" in
-    let _,res = System.run_command (fun x -> x) (fun _ -> ()) com in
+    let _,res = CUnix.run_command (fun x -> x) (fun _ -> ()) com in
     Util.strip res
 
 

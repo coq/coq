@@ -18,9 +18,9 @@ open Term
 open Nametab
 open Mod_subst
 
-open Goptionstyp
+open Interface
 
-type option_name = Goptionstyp.option_name
+type option_name = Interface.option_name
 
 (****************************************************************************)
 (* 0- Common things                                                         *)

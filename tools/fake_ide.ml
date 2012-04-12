@@ -15,28 +15,28 @@ let coqtop = ref (stdin, stdout)
 let p = Xml_parser.make ()
 let () = Xml_parser.check_eof p false
 
-let eval_call (call:'a Ide_intf.call) =
-  prerr_endline (Ide_intf.pr_call call);
-  let xml_query = Ide_intf.of_call call in
+let eval_call (call:'a Serialize.call) =
+  prerr_endline (Serialize.pr_call call);
+  let xml_query = Serialize.of_call call in
   Xml_utils.print_xml (snd !coqtop) xml_query;
   flush (snd !coqtop);
   let xml_answer = Xml_parser.parse p (Xml_parser.SChannel (fst !coqtop)) in
-  let res = Ide_intf.to_answer xml_answer in
-  prerr_endline (Ide_intf.pr_full_value call res);
+  let res = Serialize.to_answer xml_answer in
+  prerr_endline (Serialize.pr_full_value call res);
   match res with Interface.Fail _ -> exit 1 | _ -> ()
 
 let commands =
-  [ "INTERPRAWSILENT", (fun s -> eval_call (Ide_intf.interp (true,false,s)));
-    "INTERPRAW", (fun s -> eval_call (Ide_intf.interp (true,true,s)));
-    "INTERPSILENT", (fun s -> eval_call (Ide_intf.interp (false,false,s)));
-    "INTERP", (fun s -> eval_call (Ide_intf.interp (false,true,s)));
-    "REWIND", (fun s -> eval_call (Ide_intf.rewind (int_of_string s)));
-    "GOALS", (fun _ -> eval_call Ide_intf.goals);
-    "HINTS", (fun _ -> eval_call Ide_intf.hints);
-    "GETOPTIONS", (fun _ -> eval_call Ide_intf.get_options);
-    "STATUS", (fun _ -> eval_call Ide_intf.status);
-    "INLOADPATH", (fun s -> eval_call (Ide_intf.inloadpath s));
-    "MKCASES", (fun s -> eval_call (Ide_intf.mkcases s));
+  [ "INTERPRAWSILENT", (fun s -> eval_call (Serialize.interp (true,false,s)));
+    "INTERPRAW", (fun s -> eval_call (Serialize.interp (true,true,s)));
+    "INTERPSILENT", (fun s -> eval_call (Serialize.interp (false,false,s)));
+    "INTERP", (fun s -> eval_call (Serialize.interp (false,true,s)));
+    "REWIND", (fun s -> eval_call (Serialize.rewind (int_of_string s)));
+    "GOALS", (fun _ -> eval_call Serialize.goals);
+    "HINTS", (fun _ -> eval_call Serialize.hints);
+    "GETOPTIONS", (fun _ -> eval_call Serialize.get_options);
+    "STATUS", (fun _ -> eval_call Serialize.status);
+    "INLOADPATH", (fun s -> eval_call (Serialize.inloadpath s));
+    "MKCASES", (fun s -> eval_call (Serialize.mkcases s));
     "#", (fun _ -> raise Comment);
   ]
 

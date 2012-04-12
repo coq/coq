@@ -20,7 +20,7 @@ open Coqinit
 
 let get_version_date () =
   try
-    let coqlib = Envars.coqlib () in
+    let coqlib = Envars.coqlib Errors.error in
     let ch = open_in (Filename.concat coqlib "revision") in
     let ver = input_line ch in
     let rev = input_line ch in
@@ -80,7 +80,7 @@ let set_rec_include d p =
 
 let load_vernacular_list = ref ([] : (string * bool) list)
 let add_load_vernacular verb s =
-  load_vernacular_list := ((make_suffix s ".v"),verb) :: !load_vernacular_list
+  load_vernacular_list := ((CUnix.make_suffix s ".v"),verb) :: !load_vernacular_list
 let load_vernacular () =
   List.iter
     (fun (s,b) ->
@@ -261,7 +261,7 @@ let parse_args arglist =
     | "-coqlib" :: d :: rem -> Flags.coqlib_spec:=true; Flags.coqlib:=d; parse rem
     | "-coqlib" :: [] -> usage ()
 
-    | "-where" :: _ -> print_endline (Envars.coqlib ()); exit (if !filter_opts then 2 else 0)
+    | "-where" :: _ -> print_endline (Envars.coqlib Errors.error); exit (if !filter_opts then 2 else 0)
 
     | ("-config"|"--config") :: _ -> Usage.print_config (); exit (if !filter_opts then 2 else 0)
 

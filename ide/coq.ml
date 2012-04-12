@@ -176,19 +176,19 @@ let kill_coqtop coqtop =
 let p = Xml_parser.make ()
 let () = Xml_parser.check_eof p false
 
-let eval_call coqtop (c:'a Ide_intf.call) =
-  Xml_utils.print_xml coqtop.cin (Ide_intf.of_call c);
+let eval_call coqtop (c:'a Serialize.call) =
+  Xml_utils.print_xml coqtop.cin (Serialize.of_call c);
   flush coqtop.cin;
   let xml = Xml_parser.parse p (Xml_parser.SChannel coqtop.cout) in
-  (Ide_intf.to_answer xml : 'a Interface.value)
+  (Serialize.to_answer xml : 'a Interface.value)
 
 let interp coqtop ?(raw=false) ?(verbose=true) s =
-  eval_call coqtop (Ide_intf.interp (raw,verbose,s))
-let rewind coqtop i = eval_call coqtop (Ide_intf.rewind i)
-let inloadpath coqtop s = eval_call coqtop (Ide_intf.inloadpath s)
-let mkcases coqtop s = eval_call coqtop (Ide_intf.mkcases s)
-let status coqtop = eval_call coqtop Ide_intf.status
-let hints coqtop = eval_call coqtop Ide_intf.hints
+  eval_call coqtop (Serialize.interp (raw,verbose,s))
+let rewind coqtop i = eval_call coqtop (Serialize.rewind i)
+let inloadpath coqtop s = eval_call coqtop (Serialize.inloadpath s)
+let mkcases coqtop s = eval_call coqtop (Serialize.mkcases s)
+let status coqtop = eval_call coqtop Serialize.status
+let hints coqtop = eval_call coqtop Serialize.hints
 
 module PrintOpt =
 struct
@@ -208,7 +208,7 @@ struct
   let set coqtop options =
     let () = List.iter (fun (name, v) -> Hashtbl.replace state_hack name v) options in
     let options = List.map (fun (name, v) -> (name, Interface.BoolValue v)) options in
-    match eval_call coqtop (Ide_intf.set_options options) with
+    match eval_call coqtop (Serialize.set_options options) with
     | Interface.Good () -> ()
     | _ -> raise (Failure "Cannot set options.")
 
@@ -220,8 +220,8 @@ end
 
 let goals coqtop =
   let () = PrintOpt.enforce_hack coqtop in
-  eval_call coqtop Ide_intf.goals
+  eval_call coqtop Serialize.goals
 
 let evars coqtop =
   let () = PrintOpt.enforce_hack coqtop in
-  eval_call coqtop Ide_intf.evars
+  eval_call coqtop Serialize.evars
