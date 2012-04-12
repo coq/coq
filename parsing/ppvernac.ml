@@ -969,9 +969,9 @@ let rec pr_vernac = function
       | Star -> str"*"
       | Plus -> str"+"
   end ++ spc()
-  | VernacSubproof None -> str "BeginSubproof"
+  | VernacSubproof None -> str "{"
   | VernacSubproof (Some i) -> str "BeginSubproof " ++ pr_int i
-  | VernacEndSubproof -> str "EndSubproof"
+  | VernacEndSubproof -> str "}"
 
 and pr_extend s cl =
   let pr_arg a =
