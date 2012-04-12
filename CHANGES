@@ -3,6 +3,11 @@ Changes from V8.4beta to V8.4
 
 Vernacular commands
 
+- Undo and UndoTo are now handling the proof states. They may
+  perform some extra steps of backtrack to avoid states where
+  the proof state is unavailable (typically a closed proof).
+- The commands Suspend and Resume have been removed.
+- A basic Show Script has been reintroduced (no indentation).
 - New command "Set Parsing Explicit" for deactivating parsing (and printing)
   of implicit arguments (useful for teaching).
 - New command "Grab Existential Variables" to transform the unresolved evars at
@@ -12,6 +17,11 @@ Tactics
 
 - New command "r string" that interprets "idtac string" as a breakpoint
   and jumps to its next use in Ltac debugger.
+
+CoqIDE
+
+- Coqide now supports the Restart command, and Undo (with a warning).
+  Better support for Abort.
 
 Changes from V8.3 to V8.4beta
 =============================
