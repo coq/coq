@@ -123,7 +123,6 @@ open Decl_mode
 open Auto
 open Autorewrite
 open Contradiction
-open Dhyp
 open Eauto
 open Elim
 open Equality
