@@ -53,7 +53,7 @@ let mode_tactic sel_cb (proof:GText.view) goals hints = match goals with
         "%d subgoal%s\n" goals_cnt (if 1 < goals_cnt then "" else "s")
       in
       let goal_str index total = Printf.sprintf
-        "\n______________________________________(%d/%d)\n" index total
+        "______________________________________(%d/%d)\n" index total
       in
       (* Insert current goal and its hypotheses *)
       let hyps_hints, goal_hints = match hints with
