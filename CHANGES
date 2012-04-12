@@ -1,6 +1,23 @@
 Changes from V8.4
 =================
 
+Tactics
+
+- Tactics btauto, a reflexive boolean tautology solver.
+
+Program
+
+- "Solve Obligations using" changed to "Solve Obligations with",
+  consistent with "Proof with".
+- Program Lemma, Definition now respect automatic introduction.
+
+Notations
+
+- "Bind Scope" can no longer bind "Funclass" and "Sortclass".
+
+Changes from V8.4beta to V8.4
+=============================
+
 Vernacular commands
 
 - Undo and UndoTo are now handling the proof states. They may
@@ -8,10 +25,13 @@ Vernacular commands
   the proof state is unavailable (typically a closed proof).
 - The commands Suspend and Resume have been removed.
 - A basic Show Script has been reintroduced (no indentation).
+- New command "Set Parsing Explicit" for deactivating parsing (and printing)
+  of implicit arguments (useful for teaching).
+- New command "Grab Existential Variables" to transform the unresolved evars at
+  the end of a proof into goals.
 
 Tactics
 
-- Tactics btauto, a reflexive boolean tautology solver.
 - Still no general "info" tactical, but new specific tactics
   info_auto, info_eauto, info_trivial which provides information
   on the proofs found by auto/eauto/trivial. Display of these
@@ -19,12 +39,8 @@ Tactics
 - Details on everything tried by auto/eauto/trivial during
   a proof search could be obtained by "debug auto", "debug eauto",
   "debug trivial" or by a global "Set Debug Auto/Eauto/Trivial".
-
-Program
-
-- "Solve Obligations using" changed to "Solve Obligations with",
-  consistent with "Proof with".
-- Program Lemma, Definition now respect automatic introduction.
+- New command "r string" that interprets "idtac string" as a breakpoint
+  and jumps to its next use in Ltac debugger.
 
 Module System
 
@@ -36,25 +52,6 @@ CoqIDE
 
 - Coqide now supports the Restart command, and Undo (with a warning).
   Better support for Abort.
-
-Notations
-
-- "Bind Scope" can no longer bind "Funclass" and "Sortclass".
-
-Changes from V8.4beta to V8.4
-=============================
-
-Vernacular commands
-
-- New command "Set Parsing Explicit" for deactivating parsing (and printing)
-  of implicit arguments (useful for teaching).
-- New command "Grab Existential Variables" to transform the unresolved evars at
-  the end of a proof into goals.
-
-Tactics
-
-- New command "r string" that interprets "idtac string" as a breakpoint
-  and jumps to its next use in Ltac debugger.
 
 Changes from V8.3 to V8.4beta
 =============================
