@@ -94,8 +94,6 @@ module Error = struct
 	 | UnsupportedUnicode x ->
 	     Printf.sprintf "Unsupported Unicode character (0x%x)" x)
 
-  let print ppf x = Format.fprintf ppf "%s@." (to_string x)
-
 end
 open Error
 

@@ -45,8 +45,6 @@ let match_keyword kwd = function
   | KEYWORD kwd' when kwd = kwd' -> true
   | _ -> false
 
-let print ppf tok = Format.fprintf ppf "%s" (to_string tok)
-
 (** For camlp5, conversion from/to [Plexing.pattern],
     and a match function analoguous to [Plexing.default_match] *)
 

@@ -21,7 +21,6 @@ type t =
 
 val extract_string : t -> string
 val to_string : t -> string
-val print : Format.formatter -> t -> unit
 val match_keyword : string -> t -> bool
 (** for camlp5 *)
 val of_pattern : string*string -> t

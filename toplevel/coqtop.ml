@@ -29,7 +29,7 @@ let get_version_date () =
 
 let print_header () =
   let (ver,rev) = (get_version_date ()) in
-    Printf.printf "Welcome to Coq %s (%s)\n" ver rev;
+    pp (str "Welcome to Coq "++ str ver ++ str " (" ++ str rev ++ str ")\n");
     flush stdout
 
 let output_context = ref false
@@ -38,7 +38,7 @@ let memory_stat = ref false
 
 let print_memory_stat () =
   if !memory_stat then
-    Format.printf "total heap size = %d kbytes\n" (heap_size_kb ())
+    pp (str "total heap size = " ++ int (heap_size_kb ()) ++ str " kbytes" ++ fnl ())
 
 let _ = at_exit print_memory_stat
 
