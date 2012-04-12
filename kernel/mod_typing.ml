@@ -35,10 +35,14 @@ let rec mp_from_mexpr = function
   | MSEfunctor (_,_,expr) -> mp_from_mexpr expr
   | MSEwith (expr,_) -> mp_from_mexpr expr
 
-let rec list_split_assoc k rev_before = function
+let is_modular = function
+  | SFBmodule _ | SFBmodtype _ -> true
+  | SFBconst _ | SFBmind _ -> false
+
+let rec list_split_assoc ((k,m) as km) rev_before = function
   | [] -> raise Not_found
-  | (k',b)::after when k=k' -> rev_before,b,after
-  | h::tail -> list_split_assoc k (h::rev_before) tail
+  | (k',b)::after when k=k' && is_modular b = m -> rev_before,b,after
+  | h::tail -> list_split_assoc km (h::rev_before) tail
 
 let discr_resolver env mtb =
      match mtb.typ_expr with
@@ -54,35 +58,34 @@ let rec rebuild_mp mp l =
 	
 let rec check_with env sign with_decl alg_sign mp equiv = 
   let sign,wd,equiv,cst= match with_decl with
-    | With_Definition (id,_) ->
-	let sign,cb,cst = check_with_aux_def env sign with_decl mp equiv in
-	  sign,With_definition_body(id,cb),equiv,cst
-    | With_Module (id,mp1) -> 
-	let sign,equiv,cst = 
-	  check_with_aux_mod env sign with_decl mp equiv in
-	  sign,With_module_body(id,mp1),equiv,cst in
+    | With_Definition (idl,c) ->
+	let sign,cb,cst = check_with_def env sign (idl,c) mp equiv in
+	sign,With_definition_body(idl,cb),equiv,cst
+    | With_Module (idl,mp1) ->
+	let sign,equiv,cst = check_with_mod env sign (idl,mp1) mp equiv in
+	sign,With_module_body(idl,mp1),equiv,cst
+  in
     if alg_sign = None then
       sign,None,equiv,cst
     else
       sign,Some (SEBwith(Option.get(alg_sign),wd)),equiv,cst
 	    
-and check_with_aux_def env sign with_decl mp equiv = 
+and check_with_def env sign (idl,c) mp equiv =
   let sig_b = match sign with 
     | SEBstruct(sig_b) -> sig_b
     | _ -> error_signature_expected sign
   in
-  let id,idl = match with_decl with
-    | With_Definition (id::idl,_) | With_Module (id::idl,_) -> id,idl
-    | With_Definition ([],_) | With_Module ([],_) -> assert false
+  let id,idl = match idl with
+    | [] -> assert false
+    | id::idl -> id,idl
   in
   let l = label_of_id id in
     try
-      let rev_before,spec,after = list_split_assoc l [] sig_b in
+      let rev_before,spec,after = list_split_assoc (l,(idl<>[])) [] sig_b in
       let before = List.rev rev_before in
       let env' = Modops.add_signature mp before equiv env in
-	match with_decl with
-          | With_Definition ([],_) -> assert false
-	  | With_Definition ([id],c) ->
+      if idl = [] then
+	      (* Toplevel definition *)
 	      let cb = match spec with
 		| SFBconst cb -> cb
 		| _ -> error_not_a_constant l
@@ -115,8 +118,9 @@ and check_with_aux_def env sign with_decl mp equiv =
 		    Cemitcodes.from_val (compile_constant_body env' def);
 		  const_constraints = cst }
 	      in
-	      SEBstruct(before@((l,SFBconst(cb'))::after)),cb',cst
-	  | With_Definition (_::_,c) ->
+	      SEBstruct(before@(l,SFBconst(cb'))::after),cb',cst
+      else
+	      (* Definition inside a sub-module *)
 	      let old = match spec with
 		| SFBmodule msb -> msb
 		| _ -> error_not_a_module (string_of_label l)
@@ -124,43 +128,36 @@ and check_with_aux_def env sign with_decl mp equiv =
 		begin
 		  match old.mod_expr with
                     | None ->
-			let new_with_decl = With_Definition (idl,c) in 
 			let sign,cb,cst = 
-			  check_with_aux_def env' old.mod_type new_with_decl 
+			  check_with_def env' old.mod_type (idl,c)
 			    (MPdot(mp,l)) old.mod_delta in
 			let new_spec = SFBmodule({old with
 						    mod_type = sign;
 						    mod_type_alg = None}) in
-			  SEBstruct(before@((l,new_spec)::after)),cb,cst
+			  SEBstruct(before@(l,new_spec)::after),cb,cst
                     | Some msb ->
 			error_generative_module_expected l
 		end
-	  | _ -> anomaly "Modtyping:incorrect use of with"
     with
       | Not_found -> error_no_such_label l
       | Reduction.NotConvertible -> error_incorrect_with_constraint l
 
-and check_with_aux_mod env sign with_decl mp equiv = 
+and check_with_mod env sign (idl,mp1) mp equiv = 
   let sig_b = match sign with 
     | SEBstruct(sig_b) ->sig_b
     | _ -> error_signature_expected sign
   in
-  let id,idl = match with_decl with
-    | With_Definition (id::idl,_) | With_Module (id::idl,_) -> id,idl
-    | With_Definition ([],_) | With_Module ([],_) -> assert false
+  let id,idl = match idl with
+    | [] -> assert false
+    | id::idl -> id,idl
   in
   let l = label_of_id id in
     try
-      let rev_before,spec,after = list_split_assoc l [] sig_b in
+      let rev_before,spec,after = list_split_assoc (l,true) [] sig_b in
       let before = List.rev rev_before in
-      let rec mp_rec = function
-	| [] -> mp
-	| i::r -> MPdot(mp_rec r,label_of_id i)
-      in
       let env' = Modops.add_signature mp before equiv env in
-	match with_decl with
-          | With_Module ([],_) -> assert false
-	  | With_Module ([id], mp1) ->
+      if idl = [] then
+	      (* Toplevel module definition *)
 	      let old = match spec with
 		  SFBmodule msb -> msb
 		| _ -> error_not_a_module (string_of_label l)
@@ -194,7 +191,8 @@ and check_with_aux_mod env sign with_decl mp equiv =
 	      let id_subst = map_mp (MPdot(mp,l)) (MPdot(mp,l)) new_mb.mod_delta in
 		SEBstruct(before@(l,new_spec)::subst_signature id_subst after),
 	      add_delta_resolver equiv new_mb.mod_delta,cst
-          | With_Module (idc,mp1) -> 
+      else
+	      (* Module definition of a sub-module *)
 	      let old = match spec with
 		  SFBmodule msb -> msb
 		| _ -> error_not_a_module (string_of_label l)
@@ -202,10 +200,9 @@ and check_with_aux_mod env sign with_decl mp equiv =
 	      begin
 		match old.mod_expr with
 		    None ->
-		      let new_with_decl = With_Module (idl,mp1) in
 		      let sign,equiv',cst =
-			check_with_aux_mod env'
-			  old.mod_type new_with_decl (MPdot(mp,l)) old.mod_delta in
+			check_with_mod env'
+			  old.mod_type (idl,mp1) (MPdot(mp,l)) old.mod_delta in
 		      let new_equiv = add_delta_resolver equiv equiv' in
 		      let new_spec = SFBmodule {old with 
 						  mod_type = sign;
@@ -223,7 +220,6 @@ and check_with_aux_mod env sign with_decl mp equiv =
 		  | _ ->
 		      error_generative_module_expected l
               end
-	  | _ -> anomaly "Modtyping:incorrect use of with"
     with
 	Not_found -> error_no_such_label l
       | Reduction.NotConvertible -> error_incorrect_with_constraint l
@@ -368,7 +364,7 @@ let rec add_struct_expr_constraints env = function
 
   | SEBstruct (structure_body) ->
       List.fold_left
-        (fun env (l,item) -> add_struct_elem_constraints env item)
+        (fun env (_,item) -> add_struct_elem_constraints env item)
         env
         structure_body
 
@@ -413,7 +409,7 @@ let rec struct_expr_constraints cst = function
 
   | SEBstruct (structure_body) ->
       List.fold_left
-        (fun cst (l,item) -> struct_elem_constraints cst item)
+        (fun cst (_,item) -> struct_elem_constraints cst item)
         cst
         structure_body
 

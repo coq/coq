@@ -155,7 +155,9 @@ let factor_fix env l cb msb =
 	 function
 	   | (l,SFBconst cb') ->
 	       let check' = check_fix env cb' (j+1) in
-	       if not (fst check = fst check' && prec_declaration_equal (snd check) (snd check')) then raise Impossible;
+	       if not (fst check = fst check' &&
+		   prec_declaration_equal (snd check) (snd check'))
+	       then raise Impossible;
 	       labels.(j+1) <- l;
 	   | _ -> raise Impossible) msb';
     labels, recd, msb''
@@ -196,13 +198,14 @@ let rec msid_of_seb = function
   | SEBwith (seb,_) -> msid_of_seb seb
   | _ -> assert false
 
-let env_for_mtb_with env mp seb idl =
+let env_for_mtb_with_def env mp seb idl =
   let sig_b = match seb with
     | SEBstruct(sig_b) -> sig_b
     | _ -> assert false
   in
   let l = label_of_id (List.hd idl) in
-  let before = fst (list_split_when (fun (l',_) -> l=l') sig_b) in
+  let spot = function (l',SFBconst _) -> l = l' | _ -> false in
+  let before = fst (list_split_when spot sig_b) in
   Modops.add_signature mp before empty_delta_resolver env
 
 (* From a [structure_body] (i.e. a list of [structure_field_body])
@@ -241,7 +244,7 @@ let rec extract_sfb_spec env mp = function
 and extract_seb_spec env mp1 (seb,seb_alg) = match seb_alg with
   | SEBident mp -> Visit.add_mp_all mp; MTident mp
   | SEBwith(seb',With_definition_body(idl,cb))->
-      let env' = env_for_mtb_with env (msid_of_seb seb') seb idl in
+      let env' = env_for_mtb_with_def env (msid_of_seb seb') seb idl in
       let mt = extract_seb_spec env mp1 (seb,seb') in
       (match extract_with_type env' cb with (* cb peut contenir des kn  *)
 	 | None -> mt

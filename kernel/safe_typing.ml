@@ -101,7 +101,8 @@ type safe_environment =
     { old : safe_environment;
       env : env;
       modinfo : module_info;
-      labset : Labset.t;
+      modlabels : Labset.t;
+      objlabels : Labset.t;
       revstruct : structure_body;
       univ : Univ.constraints;
       engagement : engagement option;
@@ -109,13 +110,16 @@ type safe_environment =
       loads : (module_path * module_body) list;
       local_retroknowledge : Retroknowledge.action list}
 
-let exists_label l senv = Labset.mem l senv.labset
+let exists_modlabel l senv = Labset.mem l senv.modlabels
+let exists_objlabel l senv = Labset.mem l senv.objlabels
 
-let check_label l senv =
-  if exists_label l senv then error_existing_label l
+let check_modlabel l senv =
+  if exists_modlabel l senv then error_existing_label l
+let check_objlabel l senv =
+  if exists_objlabel l senv then error_existing_label l
 
-let check_labels ls senv =
-  Labset.iter (fun l -> check_label l senv) ls
+let check_objlabels ls senv =
+  Labset.iter (fun l -> check_objlabel l senv) ls
 
 let labels_of_mib mib =
   let add,get =
@@ -140,7 +144,8 @@ let rec empty_environment =
       variant = NONE;
       resolver = empty_delta_resolver;
       resolver_of_param = empty_delta_resolver};
-    labset = Labset.empty;
+    modlabels = Labset.empty;
+    objlabels = Labset.empty;
     revstruct = [];
     univ = Univ.empty_constraint;
     engagement = None;
@@ -172,11 +177,15 @@ type generic_name =
   | M
 
 let add_field ((l,sfb) as field) gn senv =
-  let labels = match sfb with
-    | SFBmind mib -> labels_of_mib mib
-    | _ -> Labset.singleton l
+  let mlabs,olabs = match sfb with
+    | SFBmind mib ->
+      let l = labels_of_mib mib in
+      check_objlabels l senv; (Labset.empty,l)
+    | SFBconst _ ->
+      check_objlabel l senv; (Labset.empty, Labset.singleton l)
+    | SFBmodule _ | SFBmodtype _ ->
+      check_modlabel l senv; (Labset.singleton l, Labset.empty)
   in
-  check_labels labels senv;
   let senv = add_constraints (constraints_of_sfb sfb) senv in
   let env' = match sfb, gn with
     | SFBconst cb, C con -> Environ.add_constant con cb senv.env
@@ -187,7 +196,8 @@ let add_field ((l,sfb) as field) gn senv =
   in
   { senv with
     env = env';
-    labset = Labset.union labels senv.labset;
+    modlabels = Labset.union mlabs senv.modlabels;
+    objlabels = Labset.union olabs senv.objlabels;
     revstruct = field :: senv.revstruct }
 
 (* Applying a certain function to the resolver of a safe environment *)
@@ -320,7 +330,7 @@ let add_module l me inl senv =
 (* Interactive modules *)
 
 let start_module l senv =
-  check_label l senv;
+  check_modlabel l senv;
  let mp = MPdot(senv.modinfo.modpath, l) in
  let modinfo = { modpath = mp;
 		 label = l;
@@ -331,7 +341,8 @@ let start_module l senv =
    mp, { old = senv;
 	 env = senv.env;
 	 modinfo = modinfo;
-	 labset = Labset.empty;
+	 modlabels = Labset.empty;
+	 objlabels = Labset.empty;
 	 revstruct = [];
          univ = Univ.empty_constraint;
          engagement = None;
@@ -415,7 +426,8 @@ let end_module l restype senv =
     mp,resolver,{ old = oldsenv.old;
 		  env = newenv;
 		  modinfo = modinfo;
-		  labset = Labset.add l oldsenv.labset;
+		  modlabels = Labset.add l oldsenv.modlabels;
+		  objlabels = oldsenv.objlabels;
 		  revstruct = (l,SFBmodule mb)::oldsenv.revstruct;
 		  univ = Univ.union_constraints senv'.univ oldsenv.univ;
 		  (* engagement is propagated to the upper level *)
@@ -510,7 +522,8 @@ let add_module_parameter mbid mte inl senv =
 				   variant = new_variant;
 				   resolver_of_param = add_delta_resolver
 			      resolver_of_param senv.modinfo.resolver_of_param};
-		     labset = senv.labset;
+		     modlabels = senv.modlabels;
+		     objlabels = senv.objlabels;
 		     revstruct = [];
 		     univ = senv.univ;
 		     engagement = senv.engagement;
@@ -522,7 +535,7 @@ let add_module_parameter mbid mte inl senv =
 (* Interactive module types *)
 
 let start_modtype l senv =
-  check_label l senv;
+  check_modlabel l senv;
  let mp = MPdot(senv.modinfo.modpath, l) in
  let modinfo = { modpath = mp;
 		 label = l;
@@ -533,7 +546,8 @@ let start_modtype l senv =
   mp, { old = senv;
 	env = senv.env;
 	modinfo = modinfo;
-	labset = Labset.empty;
+	modlabels = Labset.empty;
+	objlabels = Labset.empty;
 	revstruct = [];
         univ = Univ.empty_constraint;
         engagement = None;
@@ -584,7 +598,8 @@ let end_modtype l senv =
     mp, { old = oldsenv.old;
 	  env = newenv;
 	  modinfo = oldsenv.modinfo;
-	  labset = Labset.add l oldsenv.labset;
+	  modlabels = Labset.add l oldsenv.modlabels;
+	  objlabels = oldsenv.objlabels;
 	  revstruct = (l,SFBmodtype mtb)::oldsenv.revstruct;
           univ = Univ.union_constraints senv.univ oldsenv.univ;
           engagement = senv.engagement;
@@ -643,7 +658,8 @@ let start_library dir senv =
   mp, { old = senv;
 	env = senv.env;
 	modinfo = modinfo;
-	labset = Labset.empty;
+	modlabels = Labset.empty;
+	objlabels = Labset.empty;
 	revstruct = [];
         univ = Univ.empty_constraint;
         engagement = None;

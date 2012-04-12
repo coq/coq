@@ -138,7 +138,7 @@ val typing : safe_environment -> constr -> judgment
 
 (** {7 Query } *)
 
-val exists_label : label -> safe_environment -> bool
+val exists_objlabel : label -> safe_environment -> bool
 
 (*spiwack: safe retroknowledge functionalities *)
 

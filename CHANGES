@@ -18,6 +18,12 @@ Tactics
 - New command "r string" that interprets "idtac string" as a breakpoint
   and jumps to its next use in Ltac debugger.
 
+Module System
+
+- The names of modules (and module types) are now in a fully separated
+  namespace from ordinary definitions : "Definition E:=0. Module E. End E."
+  is now accepted.
+
 CoqIDE
 
 - Coqide now supports the Restart command, and Undo (with a warning).
