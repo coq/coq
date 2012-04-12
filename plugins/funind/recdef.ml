@@ -1022,7 +1022,6 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 			  (eapply_with_bindings (mkVar (List.nth !lid !h_num), NoBindings))
 			  e_assumption;
 		      Eauto.eauto_with_bases
-			false
 			(true,5)
 			[Evd.empty,delayed_force refl_equal]
 			[Auto.Hint_db.empty empty_transparent_state false]

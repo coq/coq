@@ -1371,7 +1371,7 @@ let prove_with_tcc tcc_lemma_constr eqs : tactic =
 (* 		 let ids = List.filter (fun id -> not (List.mem id ids)) ids' in  *)
 (* 		 rewrite *)
 (* 	      ) *)
-	      Eauto.gen_eauto false (false,5) [] (Some [])
+	      Eauto.gen_eauto (false,5) [] (Some [])
 	    ]
 	    gls
 
@@ -1449,7 +1449,6 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 			   (
 			    tclCOMPLETE(
 				    Eauto.eauto_with_bases
-				      false
 				      (true,5)
 				      [Evd.empty,Lazy.force refl_equal]
 				      [Auto.Hint_db.empty empty_transparent_state false]

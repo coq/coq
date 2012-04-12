@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Format
+open Pp
 
 (*s Definition of a search problem. *)
 
@@ -14,20 +14,20 @@ module type SearchProblem = sig
   type state
   val branching : state -> state list
   val success : state -> bool
-  val pp : state -> unit
+  val pp : state -> std_ppcmds
 end
 
 module Make = functor(S : SearchProblem) -> struct
 
   type position = int list
 
-  let pp_position p =
+  let msg_with_position p pp =
     let rec pp_rec = function
-      | [] -> ()
-      | [i] -> printf "%d" i
-      | i :: l -> pp_rec l; printf ".%d" i
+      | [] -> mt ()
+      | [i] -> int i
+      | i :: l -> pp_rec l ++ str "." ++ int i
     in
-    open_hbox (); pp_rec p; close_box ()
+    msg_debug (h 0 (pp_rec p) ++ pp)
 
   (*s Depth first search. *)
 
@@ -40,7 +40,7 @@ module Make = functor(S : SearchProblem) -> struct
 
   let debug_depth_first s =
     let rec explore p s =
-      pp_position p; S.pp s;
+      msg_with_position p (S.pp s);
       if S.success s then s else explore_many 1 p (S.branching s)
     and explore_many i p = function
       | [] -> raise Not_found
@@ -83,7 +83,7 @@ module Make = functor(S : SearchProblem) -> struct
 	  explore q
       | s :: l ->
 	  let ps = i::p in
-	  pp_position ps; S.pp s;
+	  msg_with_position ps (S.pp s);
 	  if S.success s then s else enqueue (succ i) p (push (ps,s) q) l
     in
     enqueue 1 [] empty [s]

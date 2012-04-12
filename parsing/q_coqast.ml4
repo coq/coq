@@ -273,6 +273,11 @@ let mlexpr_of_message_token = function
   | Tacexpr.MsgInt n -> <:expr< Tacexpr.MsgInt $mlexpr_of_int n$ >>
   | Tacexpr.MsgIdent id -> <:expr< Tacexpr.MsgIdent $mlexpr_of_hyp id$ >>
 
+let mlexpr_of_debug = function
+  | Tacexpr.Off -> <:expr< Tacexpr.Off >>
+  | Tacexpr.Debug -> <:expr< Tacexpr.Debug >>
+  | Tacexpr.Info -> <:expr< Tacexpr.Info >>
+
 let rec mlexpr_of_atomic_tactic = function
   (* Basic tactics *)
   | Tacexpr.TacIntroPattern pl ->
@@ -399,15 +404,17 @@ let rec mlexpr_of_atomic_tactic = function
   | Tacexpr.TacTransitivity c -> <:expr< Tacexpr.TacTransitivity $mlexpr_of_option mlexpr_of_constr c$ >>
 
   (* Automation tactics *)
-  | Tacexpr.TacAuto (n,lems,l) ->
+  | Tacexpr.TacAuto (debug,n,lems,l) ->
+      let d = mlexpr_of_debug debug in
       let n = mlexpr_of_option (mlexpr_of_or_var mlexpr_of_int) n in
       let lems = mlexpr_of_list mlexpr_of_constr lems in
       let l = mlexpr_of_option (mlexpr_of_list mlexpr_of_string) l in
-      <:expr< Tacexpr.TacAuto $n$ $lems$ $l$ >>
-  | Tacexpr.TacTrivial (lems,l) ->
+      <:expr< Tacexpr.TacAuto $d$ $n$ $lems$ $l$ >>
+  | Tacexpr.TacTrivial (debug,lems,l) ->
+      let d = mlexpr_of_debug debug in
       let l = mlexpr_of_option (mlexpr_of_list mlexpr_of_string) l in
       let lems = mlexpr_of_list mlexpr_of_constr lems in
-      <:expr< Tacexpr.TacTrivial $lems$ $l$ >>
+      <:expr< Tacexpr.TacTrivial $d$ $lems$ $l$ >>
 
   | _ -> failwith "Quotation of atomic tactic expressions: TODO"
 

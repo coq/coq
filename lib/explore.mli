@@ -27,7 +27,7 @@ module type SearchProblem = sig
 
   val success : state -> bool
 
-  val pp : state -> unit
+  val pp : state -> Pp.std_ppcmds
 
 end
 

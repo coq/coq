@@ -175,8 +175,8 @@ let _ =
         "intros", TacIntroPattern [];
         "assumption", TacAssumption;
         "cofix", TacCofix None;
-        "trivial", TacTrivial ([],None);
-        "auto", TacAuto(None,[],None);
+        "trivial", TacTrivial (Off,[],None);
+        "auto", TacAuto(Off,None,[],None);
         "left", TacLeft(false,NoBindings);
         "eleft", TacLeft(true,NoBindings);
         "right", TacRight(false,NoBindings);
@@ -713,12 +713,12 @@ let rec intern_atomic lf ist x =
                  (clause_app (intern_hyp_location ist) cls),b)
 
   (* Automation tactics *)
-  | TacTrivial (lems,l) -> TacTrivial (List.map (intern_constr ist) lems,l)
-  | TacAuto (n,lems,l) ->
-      TacAuto (Option.map (intern_or_var ist) n,
+  | TacTrivial (d,lems,l) -> TacTrivial (d,List.map (intern_constr ist) lems,l)
+  | TacAuto (d,n,lems,l) ->
+      TacAuto (d,Option.map (intern_or_var ist) n,
         List.map (intern_constr ist) lems,l)
-  | TacDAuto (n,p,lems) ->
-      TacDAuto (Option.map (intern_or_var ist) n,p,
+  | TacDAuto (d,n,p,lems) ->
+      TacDAuto (d,Option.map (intern_or_var ist) n,p,
         List.map (intern_constr ist) lems)
 
   (* Derived basic tactics *)
@@ -1781,14 +1781,6 @@ and eval_tactic ist = function
   | TacDo (n,tac) -> tclDO (interp_int_or_var ist n) (interp_tactic ist tac)
   | TacTimeout (n,tac) -> tclTIMEOUT (interp_int_or_var ist n) (interp_tactic ist tac)
   | TacTry tac -> tclTRY (interp_tactic ist tac)
-  | TacInfo tac ->
-      let t = (interp_tactic ist tac) in
-	tclINFO
-	  begin
-	    match tac with
-		TacAtom (_,_) -> t
-	      | _ -> abstract_tactic_expr (TacArg (dloc,Tacexp tac)) t
-	  end
   | TacRepeat tac -> tclREPEAT (interp_tactic ist tac)
   | TacOrelse (tac1,tac2) ->
         tclORELSE (interp_tactic ist tac1) (interp_tactic ist tac2)
@@ -1796,6 +1788,12 @@ and eval_tactic ist = function
   | TacSolve l -> tclSOLVE (List.map (interp_tactic ist) l)
   | TacComplete tac -> tclCOMPLETE (interp_tactic ist tac)
   | TacArg a -> interp_tactic ist (TacArg a)
+  | TacInfo tac ->
+      msg_warning
+	(str "The general \"info\" tactic is currently not working.\n" ++
+	 str "Some specific verbose tactics may exist instead, such as\n" ++
+	 str "info_trivial, info_auto, info_eauto.");
+      eval_tactic ist tac
 
 and force_vrec ist gl = function
   | VRec (lfun,body) -> val_interp {ist with lfun = !lfun} gl body
@@ -2269,16 +2267,16 @@ and interp_atomic ist gl tac =
           (interp_pure_open_constr ist env sigma c) clp
 
   (* Automation tactics *)
-  | TacTrivial (lems,l) ->
-      Auto.h_trivial
+  | TacTrivial (debug,lems,l) ->
+      Auto.h_trivial ~debug
 	(interp_auto_lemmas ist env sigma lems)
 	(Option.map (List.map (interp_hint_base ist)) l)
-  | TacAuto (n,lems,l) ->
-      Auto.h_auto (Option.map (interp_int_or_var ist) n)
+  | TacAuto (debug,n,lems,l) ->
+      Auto.h_auto ~debug (Option.map (interp_int_or_var ist) n)
 	(interp_auto_lemmas ist env sigma lems)
 	(Option.map (List.map (interp_hint_base ist)) l)
-  | TacDAuto (n,p,lems) ->
-      Auto.h_dauto (Option.map (interp_int_or_var ist) n,p)
+  | TacDAuto (debug,n,p,lems) ->
+      Auto.h_dauto ~debug (Option.map (interp_int_or_var ist) n,p)
       (interp_auto_lemmas ist env sigma lems)
 
   (* Derived basic tactics *)
@@ -2641,9 +2639,9 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacLetTac (id,c,clp,b) -> TacLetTac (id,subst_glob_constr subst c,clp,b)
 
   (* Automation tactics *)
-  | TacTrivial (lems,l) -> TacTrivial (List.map (subst_glob_constr subst) lems,l)
-  | TacAuto (n,lems,l) -> TacAuto (n,List.map (subst_glob_constr subst) lems,l)
-  | TacDAuto (n,p,lems) -> TacDAuto (n,p,List.map (subst_glob_constr subst) lems)
+  | TacTrivial (d,lems,l) -> TacTrivial (d,List.map (subst_glob_constr subst) lems,l)
+  | TacAuto (d,n,lems,l) -> TacAuto (d,n,List.map (subst_glob_constr subst) lems,l)
+  | TacDAuto (d,n,p,lems) -> TacDAuto (d,n,p,List.map (subst_glob_constr subst) lems)
 
   (* Derived basic tactics *)
   | TacSimpleInductionDestruct (isrec,h) as x -> x
