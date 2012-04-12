@@ -152,7 +152,6 @@ let rec attribute_of_vernac_command = function
   | VernacRestoreState _ -> []
 
   (* Resetting *)
-  | VernacRemoveName _ -> [NavigationCommand]
   | VernacResetName _ -> [NavigationCommand]
   | VernacResetInitial -> [NavigationCommand]
   | VernacBack _ -> [NavigationCommand]

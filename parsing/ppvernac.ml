@@ -492,7 +492,6 @@ let rec pr_vernac = function
   | VernacCheckGuard -> str"Guarded"
 
   (* Resetting *)
-  | VernacRemoveName id -> str"Remove" ++ spc() ++ pr_lident id
   | VernacResetName id -> str"Reset" ++ spc() ++ pr_lident id
   | VernacResetInitial -> str"Reset Initial"
   | VernacBack i -> if i=1 then str"Back" else str"Back" ++ pr_intarg i
