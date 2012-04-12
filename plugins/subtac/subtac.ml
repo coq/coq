@@ -82,11 +82,9 @@ let start_proof_com env isevars sopt kind (bl,t) hook =
       Impargs.declare_manual_implicits (loc = Local) gr ~enriching:true [imps];
       hook loc gr)
 
-let print_subgoals () = Flags.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
-
 let start_proof_and_print env isevars idopt k t hook =
   start_proof_com env isevars idopt k t hook;
-  print_subgoals ()
+  Vernacentries.print_subgoals ()
 
 let _ = Detyping.set_detype_anonymous (fun loc n -> GVar (loc, id_of_string ("Anonymous_REL_" ^ string_of_int n)))
 

@@ -1394,6 +1394,7 @@ let nf_betaiotazeta = (* Reductionops.local_strong Reductionops.whd_betaiotazeta
 
 let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num eq
     generate_induction_principle using_lemmas : unit =
+  let previous_label = Lib.current_command_label () in
   let function_type = interp_constr Evd.empty (Global.env()) type_of_f in
   let env = push_named (function_name,None,function_type) (Global.env()) in
   (* Pp.msgnl (str "function type := " ++ Printer.pr_lconstr function_type);  *)
@@ -1445,7 +1446,6 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
 	  then pperrnl (str "Cannot create equation Lemma " ++ Errors.print e)
 	  else anomaly "Cannot create equation Lemma"
 	  ;
-(* 	  ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ()); *)
 	  stop := true;
 	end
     end;
@@ -1477,10 +1477,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       hook
   with e ->
     begin
-      ignore(try Vernacentries.vernac_reset_name (Util.dummy_loc,functional_id) with _ -> ());
-(*       anomaly "Cannot create termination Lemma" *)
+      (try ignore (Backtrack.backto previous_label) with _ -> ());
+      (*       anomaly "Cannot create termination Lemma" *)
       raise e
     end
-
-
-

@@ -73,8 +73,9 @@ let show_node () =
   ()
 
 let show_script () =
-  (* spiwack: show_script is currently not working *)
-  ()
+  let prf = Pfedit.get_current_proof_name () in
+  let cmds = Backtrack.get_script prf in
+  msgnl (Util.prlist_with_sep Pp.fnl Ppvernac.pr_vernac cmds)
 
 let show_thesis () =
      msgnl (anomaly "TODO" )
@@ -91,7 +92,16 @@ let show_prooftree () =
   (* Spiwack: proof tree is currently not working *)
   ()
 
-let print_subgoals () = if_verbose (fun () -> msg (pr_open_subgoals ())) ()
+let enable_goal_printing = ref true
+
+let print_subgoals () =
+  if !enable_goal_printing && is_verbose ()
+  then msg (pr_open_subgoals ())
+
+let try_print_subgoals () =
+  Pp.flush_all();
+  try print_subgoals () with Proof_global.NoCurrentProof | UserError _ -> ()
+
 
   (* Simulate the Intro(s) tactic *)
 
@@ -357,14 +367,21 @@ let vernac_start_proof kind l lettop hook =
 	(str "Let declarations can only be used in proof editing mode.");
   start_proof_and_print (Global, Proof kind) l hook
 
+let qed_display_script = ref true
+
 let vernac_end_proof = function
-  | Admitted -> admit ()
+  | Admitted ->
+    Backtrack.mark_unreachable [Pfedit.get_current_proof_name ()];
+    admit ()
   | Proved (is_opaque,idopt) ->
-    if not !Flags.print_emacs then if_verbose show_script ();
-    match idopt with
+    let prf = Pfedit.get_current_proof_name () in
+    if is_verbose () && !qed_display_script then (show_script (); msg (fnl()));
+    begin match idopt with
     | None -> save_named is_opaque
     | Some ((_,id),None) -> save_anonymous is_opaque id
     | Some ((_,id),Some kind) -> save_anonymous_with_strength kind is_opaque id
+    end;
+    Backtrack.mark_unreachable [prf]
 
   (* A stupid macro that should be replaced by ``Exact c. Save.'' all along
      the theories [??] *)
@@ -732,19 +749,6 @@ let vernac_write_state file = abort_refine States.extern_state file
 
 let vernac_restore_state file = abort_refine States.intern_state file
 
-
-(*************)
-(* Resetting *)
-
-let vernac_reset_name id = abort_refine Lib.reset_name id
-
-let vernac_reset_initial () = abort_refine Lib.reset_initial ()
-
-let vernac_back n = Lib.back n
-
-let vernac_backto n = Lib.reset_label n
-
-(* see also [vernac_backtrack] which combines undoing and resetting *)
 (************)
 (* Commands *)
 
@@ -1310,15 +1314,54 @@ let vernac_locate = function
   | LocateTactic qid -> print_located_tactic qid
   | LocateFile f -> locate_file f
 
+(****************)
+(* Backtracking *)
+
+(** NB: these commands are now forbidden in non-interactive use,
+    e.g. inside VernacLoad, VernacList, ... *)
+
+let vernac_backto lbl =
+  try
+    let lbl' = Backtrack.backto lbl in
+    if lbl <> lbl' then
+      Pp.msg_warning
+	(str "Actually back to state "++ Pp.int lbl' ++ str ".");
+    try_print_subgoals ()
+  with Backtrack.Invalid -> error "Invalid backtrack."
+
+let vernac_back n =
+  try
+    let extra = Backtrack.back n in
+    if extra <> 0 then
+      Pp.msg_warning
+	(str "Actually back by " ++ Pp.int (extra+n) ++ str " steps.");
+    try_print_subgoals ()
+  with Backtrack.Invalid -> error "Invalid backtrack."
+
+let vernac_reset_name id =
+  try Backtrack.reset_name id; try_print_subgoals ()
+  with Backtrack.Invalid -> error "Invalid Reset."
+
+let vernac_reset_initial () = Backtrack.reset_initial ()
+
+(* For compatibility with ProofGeneral: *)
+
+let vernac_backtrack snum pnum naborts =
+  Backtrack.backtrack snum pnum naborts;
+  try_print_subgoals ()
+
+
 (********************)
 (* Proof management *)
 
 let vernac_abort = function
   | None ->
+      Backtrack.mark_unreachable [Pfedit.get_current_proof_name ()];
       delete_current_proof ();
       if_verbose message "Current goal aborted";
       if !pcoq <> None then (Option.get !pcoq).abort ""
   | Some id ->
+      Backtrack.mark_unreachable [snd id];
       delete_proof id;
       let s = string_of_id (snd id) in
       if_verbose message ("Goal "^s^" aborted");
@@ -1326,37 +1369,30 @@ let vernac_abort = function
 
 let vernac_abort_all () =
   if refining() then begin
+    Backtrack.mark_unreachable (Pfedit.get_all_proof_names ());
     delete_all_proofs ();
     message "Current goals aborted"
   end else
     error "No proof-editing in progress."
 
-let vernac_restart () = restart_proof(); print_subgoals ()
-
-  (* Proof switching *)
+let vernac_restart () =
+  Backtrack.mark_unreachable [Pfedit.get_current_proof_name ()];
+  restart_proof(); print_subgoals ()
 
 let vernac_undo n =
-  undo n;
+  let d = Pfedit.current_proof_depth () - n in
+  Backtrack.mark_unreachable ~after:d [Pfedit.get_current_proof_name ()];
+  Pfedit.undo n; print_subgoals ()
+
+let vernac_undoto n =
+  Backtrack.mark_unreachable ~after:n [Pfedit.get_current_proof_name ()];
+  Pfedit.undo_todepth n;
   print_subgoals ()
-
-(* backtrack with [naborts] abort, then undo_todepth to [pnum], then
-   back-to state number [snum]. This allows to backtrack proofs and
-   state with one command (easier for proofgeneral). *)
-let vernac_backtrack snum pnum naborts =
-  for i = 1 to naborts do vernac_abort None done;
-  undo_todepth pnum;
-  vernac_backto snum;
-  Pp.flush_all();
-  (* there may be no proof in progress, even if no abort *)
-  (try print_subgoals () with Proof_global.NoCurrentProof | UserError _ -> ())
-
 
 let vernac_focus gln =
   let p = Proof_global.give_me_the_proof () in
-  match gln with
-    | None -> Proof.focus focus_command_cond () 1 p; print_subgoals ()
-    | Some n -> Proof.focus focus_command_cond () n p; print_subgoals ()
-
+  let n = match gln with None -> 1 | Some n -> n in
+  Proof.focus focus_command_cond () n p; print_subgoals ()
 
   (* Unfocuses one step in the focus stack. *)
 let vernac_unfocus () =
@@ -1547,7 +1583,7 @@ let interp c = match c with
   | VernacAbortAll -> vernac_abort_all ()
   | VernacRestart -> vernac_restart ()
   | VernacUndo n -> vernac_undo n
-  | VernacUndoTo n -> undo_todepth n
+  | VernacUndoTo n -> vernac_undoto n
   | VernacBacktrack (snum,pnum,naborts) -> vernac_backtrack snum pnum naborts
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()

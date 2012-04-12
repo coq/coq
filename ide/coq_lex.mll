@@ -24,7 +24,7 @@
     let one_word_commands =
       [ "Add" ; "Check"; "Eval"; "Extraction" ;
 	"Load" ; "Undo"; "Goal";
-	"Proof" ; "Print";"Save" ;
+	"Proof" ; "Print";"Save" ; "Restart";
 	"End" ; "Section"; "Chapter"; "Transparent"; "Opaque"; "Comments" ]
     in
     let one_word_declarations =
