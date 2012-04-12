@@ -10,6 +10,7 @@
 
 (** Notations for propositional connectives *)
 
+Reserved Notation "x -> y" (at level 90, right associativity, y at level 200).
 Reserved Notation "x <-> y" (at level 95, no associativity).
 Reserved Notation "x /\ y" (at level 80, right associativity).
 Reserved Notation "x \/ y" (at level 85, right associativity).

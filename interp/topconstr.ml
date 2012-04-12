@@ -869,7 +869,6 @@ type constr_expr =
   | CRef of reference
   | CFix of loc * identifier located * fix_expr list
   | CCoFix of loc * identifier located * cofix_expr list
-  | CArrow of loc * constr_expr * constr_expr
   | CProdN of loc * (name located list * binder_kind * constr_expr) list * constr_expr
   | CLambdaN of loc * (name located list * binder_kind * constr_expr) list * constr_expr
   | CLetIn of loc * name located * constr_expr * constr_expr
@@ -955,7 +954,6 @@ let constr_loc = function
   | CRef (Qualid (loc,_)) -> loc
   | CFix (loc,_,_) -> loc
   | CCoFix (loc,_,_) -> loc
-  | CArrow (loc,_,_) -> loc
   | CProdN (loc,_,_) -> loc
   | CLambdaN (loc,_,_) -> loc
   | CLetIn (loc,_,_,_) -> loc
@@ -1053,7 +1051,6 @@ let rec fold_local_binders g f n acc b = function
       f n acc b
 
 let fold_constr_expr_with_binders g f n acc = function
-  | CArrow (loc,a,b) -> f n (f n acc a) b
   | CAppExpl (loc,(_,_),l) -> List.fold_left (f n) acc l
   | CApp (loc,(_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
   | CProdN (_,l,b) | CLambdaN (_,l,b) -> fold_constr_expr_binders g f n acc b l
@@ -1207,7 +1204,6 @@ let map_local_binders f g e bl =
   (e, List.rev rbl)
 
 let map_constr_expr_with_binders g f e = function
-  | CArrow (loc,a,b) -> CArrow (loc,f e a,f e b)
   | CAppExpl (loc,r,l) -> CAppExpl (loc,r,List.map (f e) l)
   | CApp (loc,(p,a),l) ->
       CApp (loc,(p,f e a),List.map (fun (a,i) -> (f e a,i)) l)

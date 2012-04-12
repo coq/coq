@@ -135,8 +135,6 @@ let rec mlexpr_of_constr = function
   | Topconstr.CRef r -> <:expr< Topconstr.CRef $mlexpr_of_reference r$ >>
   | Topconstr.CFix (loc,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Topconstr.CCoFix (loc,_,_) -> failwith "mlexpr_of_constr: TODO"
-  | Topconstr.CArrow (loc,a,b) ->
-  <:expr< Topconstr.CArrow $dloc$ $mlexpr_of_constr a$ $mlexpr_of_constr b$ >>
   | Topconstr.CProdN (loc,l,a) -> <:expr< Topconstr.CProdN $dloc$ $mlexpr_of_list
       (mlexpr_of_triple (mlexpr_of_list (mlexpr_of_pair (fun _ -> dloc) mlexpr_of_name)) mlexpr_of_binder_kind mlexpr_of_constr) l$ $mlexpr_of_constr a$ >>
   | Topconstr.CLambdaN (loc,l,a) -> <:expr< Topconstr.CLambdaN $dloc$ $mlexpr_of_list (mlexpr_of_triple (mlexpr_of_list (mlexpr_of_pair (fun _ -> dloc) mlexpr_of_name)) mlexpr_of_binder_kind mlexpr_of_constr) l$ $mlexpr_of_constr a$ >>

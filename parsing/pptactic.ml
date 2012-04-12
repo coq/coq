@@ -296,10 +296,6 @@ let strip_prod_binders_expr n ty =
 	  let bll = List.map (fun (x, _, y) -> x, y) bll in
             if nb >= n then (List.rev (bll@acc)), a
             else strip_ty (bll@acc) (n-nb) a
-      | Topconstr.CArrow(_,a,b) ->
-          if n=1 then
-            (List.rev (([(dummy_loc,Anonymous)],a)::acc), b)
-          else strip_ty (([(dummy_loc,Anonymous)],a)::acc) (n-1) b
       | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 

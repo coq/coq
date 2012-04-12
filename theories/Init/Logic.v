@@ -8,7 +8,9 @@
 
 Set Implicit Arguments.
 
-Require Import Notations.
+Require Export Notations.
+
+Notation "A -> B" := (forall (_ : A), B) : type_scope.
 
 (** * Propositional connectives *)
 

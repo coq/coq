@@ -141,7 +141,6 @@ type constr_expr =
   | CRef of reference
   | CFix of loc * identifier located * fix_expr list
   | CCoFix of loc * identifier located * cofix_expr list
-  | CArrow of loc * constr_expr * constr_expr
   | CProdN of loc * (name located list * binder_kind * constr_expr) list * constr_expr
   | CLambdaN of loc * (name located list * binder_kind * constr_expr) list * constr_expr
   | CLetIn of loc * name located * constr_expr * constr_expr

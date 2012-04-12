@@ -194,9 +194,6 @@ let rec check_same_type ty1 ty2 =
         check_same_type a1 a2;
         check_same_type b1 b2)
         fl1 fl2
-  | CArrow(_,a1,b1), CArrow(_,a2,b2) ->
-      check_same_type a1 a2;
-      check_same_type b1 b2
   | CProdN(_,bl1,a1), CProdN(_,bl2,a2) ->
       List.iter2 check_same_binder bl1 bl2;
       check_same_type a1 a2
@@ -694,10 +691,6 @@ let rec extern inctx scopes vars r =
 	 | _       ->
 	     explicitize loc inctx [] (None,sub_extern false scopes vars f)
                (List.map (sub_extern true scopes vars) args))
-
-  | GProd (loc,Anonymous,_,t,c) ->
-      (* Anonymous product are never factorized *)
-      CArrow (loc,extern_typ scopes vars t, extern_typ scopes vars c)
 
   | GLetIn (loc,na,t,c) ->
       CLetIn (loc,(loc,na),sub_extern false scopes vars t,

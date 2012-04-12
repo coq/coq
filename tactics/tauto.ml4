@@ -172,10 +172,10 @@ let flatten_contravariant_disj ist =
 let not_dep_intros ist =
   <:tactic<
   repeat match goal with
-  | |- (?X1 -> ?X2) => intro
+  | |- (forall (_: ?X1), ?X2) => intro
   | |- (Coq.Init.Logic.not _)   => unfold Coq.Init.Logic.not at 1
   | H:(Coq.Init.Logic.not _)|-_    => unfold Coq.Init.Logic.not at 1 in H
-  | H:(Coq.Init.Logic.not _)->_|-_    => unfold Coq.Init.Logic.not at 1 in H
+  | H:forall (_: Coq.Init.Logic.not _), _|-_    => unfold Coq.Init.Logic.not at 1 in H
   end >>
 
 let axioms ist =
@@ -204,25 +204,25 @@ let simplif ist =
         | id: (Coq.Init.Logic.iff _ _) |- _ => elim id; do 2 intro; clear id
         | id: (Coq.Init.Logic.not _) |- _ => red in id
         | id: ?X1 |- _ => $t_is_disj; elim id; intro; clear id
-        | id0: ?X1 -> ?X2, id1: ?X1|- _ =>
+        | id0: (forall (_: ?X1), ?X2), id1: ?X1|- _ =>
 	    (* generalize (id0 id1); intro; clear id0 does not work
 	       (see Marco Maggiesi's bug PR#301)
 	    so we instead use Assert and exact. *)
 	    assert X2; [exact (id0 id1) | clear id0]
-        | id: ?X1 -> ?X2|- _ =>
+        | id: forall (_ : ?X1), ?X2|- _ =>
           $t_is_unit_or_eq; cut X2;
 	    [ intro; clear id
-	    | (* id : ?X1 -> ?X2 |- ?X2 *)
+	    | (* id : forall (_: ?X1), ?X2 |- ?X2 *)
 	      cut X1; [exact id| constructor 1; fail]
 	    ]
-        | id: ?X1 -> ?X2|- _ =>
+        | id: forall (_ : ?X1), ?X2|- _ =>
           $t_flatten_contravariant_conj
 	  (* moved from "id:(?A/\?B)->?X2|-" to "?A->?B->?X2|-" *)
-        | id: (Coq.Init.Logic.iff ?X1 ?X2) -> ?X3|- _ =>
-          assert ((X1 -> X2) -> (X2 -> X1) -> X3)
+        | id: forall (_: Coq.Init.Logic.iff ?X1 ?X2), ?X3|- _ =>
+          assert (forall (_: forall _:X1, X2), forall (_: forall _: X2, X1), X3)
 	    by (do 2 intro; apply id; split; assumption);
             clear id
-        | id: ?X1 -> ?X2|- _ =>
+        | id: forall (_:?X1), ?X2|- _ =>
           $t_flatten_contravariant_disj
 	  (* moved from "id:(?A\/?B)->?X2|-" to "?A->?X2,?B->?X2|-" *)
         | |- ?X1 => $t_is_conj; split
@@ -240,10 +240,10 @@ let rec tauto_intuit t_reduce solver ist =
   <:tactic<
    ($t_simplif;$t_axioms
    || match reverse goal with
-      | id:(?X1 -> ?X2)-> ?X3|- _ =>
+      | id:forall(_: forall (_: ?X1), ?X2), ?X3|- _ =>
 	  cut X3;
 	    [ intro; clear id; $t_tauto_intuit
-	    | cut (X1 -> X2);
+	    | cut (forall (_: X1), X2);
 		[ exact id
 		| generalize (fun y:X2 => id (fun x:X1 => y)); intro; clear id;
 		  solve [ $t_tauto_intuit ]]]
@@ -252,7 +252,7 @@ let rec tauto_intuit t_reduce solver ist =
       end
     ||
     (* NB: [|- _ -> _] matches any product *)
-    match goal with | |- _ -> _ => intro; $t_tauto_intuit
+    match goal with | |- forall (_ : _),  _ => intro; $t_tauto_intuit
     |  |- _  => $t_reduce;$t_solver
     end
     ||

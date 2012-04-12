@@ -309,7 +309,6 @@ let rename na na' t c =
     | _ -> (na',t,c)
 
 let split_product na' = function
-  | CArrow (loc,t,c) -> (na',t,c)
   | CProdN (loc,[[na],bk,t],c) -> rename na na' t c
   | CProdN (loc,([na],bk,t)::bl,c) -> rename na na' t (CProdN(loc,bl,c))
   | CProdN (loc,(na::nal,bk,t)::bl,c) ->
@@ -428,10 +427,6 @@ let pr pr sep inherited a =
              pr_recursive
               (pr_cofixdecl (pr mt) (pr_dangling_with_for mt pr)) (snd id) cofix),
       lfix
-  | CArrow (_,a,b) ->
-      hov 0 (pr mt (larrow,L) a ++ str " ->" ++
-             pr (fun () ->brk(1,0)) (-larrow,E) b),
-      larrow
   | CProdN _ ->
       let (bl,a) = extract_prod_binders a in
       hov 0 (

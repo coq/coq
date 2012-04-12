@@ -1385,8 +1385,6 @@ let internalize sigma globalenv env allow_patvar lvar c =
               Array.map (fun (bl,_,_) -> List.map snd bl) idl,
               Array.map (fun (_,ty,_) -> ty) idl,
               Array.map (fun (_,_,bd) -> bd) idl)
-    | CArrow (loc,c1,c2) ->
-        GProd (loc, Anonymous, Explicit, intern_type env c1, intern_type env c2)
     | CProdN (loc,[],c2) ->
         intern_type env c2
     | CProdN (loc,(nal,bk,ty)::bll,c2) ->

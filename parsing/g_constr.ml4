@@ -170,9 +170,7 @@ GEXTEND Gram
       | c1 = operconstr; ":>" ->
                  CCast(loc,c1, CastCoerce) ]
     | "99" RIGHTA [ ]
-    | "90" RIGHTA
-      [ c1 = operconstr; "->"; c2 = binder_constr -> CArrow(loc,c1,c2)
-      | c1 = operconstr; "->"; c2 = SELF -> CArrow(loc,c1,c2)]
+    | "90" RIGHTA [ ]
     | "10" LEFTA
       [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(None,f),args)
       | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args)

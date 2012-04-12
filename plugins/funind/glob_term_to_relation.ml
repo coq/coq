@@ -1256,11 +1256,10 @@ let rec rebuild_return_type rt =
   match rt with
     | Topconstr.CProdN(loc,n,t') ->
 	Topconstr.CProdN(loc,n,rebuild_return_type t')
-    | Topconstr.CArrow(loc,t,t') ->
-	Topconstr.CArrow(loc,t,rebuild_return_type t')
     | Topconstr.CLetIn(loc,na,t,t') ->
 	Topconstr.CLetIn(loc,na,t,rebuild_return_type t')
-    | _ -> Topconstr.CArrow(dummy_loc,rt,Topconstr.CSort(dummy_loc,GType None))
+    | _ -> Topconstr.CProdN(dummy_loc,[[dummy_loc,Names.Anonymous],Topconstr.Default Glob_term.Explicit,rt],
+			    Topconstr.CSort(dummy_loc,GType None))
 
 
 let do_build_inductive

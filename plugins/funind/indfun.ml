@@ -549,14 +549,6 @@ let decompose_prod_n_assum_constr_expr =
 	  (List.rev (Topconstr.LocalRawAssum(nal_keep,bk,nal_type)::acc),
 	   Topconstr.CLambdaN(lambda_loc,(nal_expr,bk,nal_type)::bl,e')
 	  )
-      | Topconstr.CArrow(_,premisse,concl) -> 
-	(* let _ = Pp.msgnl (str "arrow case") in  *)
-	decompose_prod_n_assum_constr_expr 
-	  (Topconstr.LocalRawAssum([dummy_loc,Names.Anonymous],
-				   Topconstr.Default Lib.Explicit,premisse)
-	  ::acc)
-	  (pred n)
-	  concl
       | Topconstr.CLetIn(_, na,nav,e') -> 
 	decompose_prod_n_assum_constr_expr 
 	  (Topconstr.LocalRawDef(na,nav)::acc) (pred n) e'
@@ -565,12 +557,14 @@ let decompose_prod_n_assum_constr_expr =
   decompose_prod_n_assum_constr_expr []
 
 open Topconstr
-    
-let id_of_name = function 
-  | Name id -> id 
-  | _ -> assert false
 
- let rec rebuild_bl (aux,assoc) bl typ = 
+let rec make_assoc = List.fold_left2 (fun l a b ->
+match a, b with
+  |(_,Name na), (_, Name id) -> (na, id)::l
+  |_,_ -> l
+)
+
+let rec rebuild_bl (aux,assoc) bl typ = 
 	match bl,typ with 
 	  | [], _ -> (List.rev aux,replace_vars_constr_expr assoc typ,assoc)
 	  | (Topconstr.LocalRawAssum(nal,bk,_))::bl',typ -> 
@@ -582,17 +576,13 @@ let id_of_name = function
       and rebuild_nal (aux,assoc) bk bl' nal lnal typ = 
 	match nal,typ with 
 	  | [], _ -> rebuild_bl (aux,assoc) bl' typ
-	  | na::nal,CArrow(_,nat,typ') -> 
-	    rebuild_nal 
-	      ((LocalRawAssum([na],bk,replace_vars_constr_expr assoc nat))::aux,assoc) 
-	      bk bl' nal (pred lnal) typ'
 	  | _,CProdN(_,[],typ) -> rebuild_nal (aux,assoc) bk bl' nal lnal typ
 	  | _,CProdN(_,(nal',bk',nal't)::rest,typ') -> 
 	    let lnal' = List.length nal' in 
 	    if lnal' >= lnal 
 	    then 
 	      let old_nal',new_nal' = list_chop lnal nal' in 
-	      rebuild_bl ((LocalRawAssum(nal,bk,replace_vars_constr_expr assoc nal't)::aux),(List.rev_append (List.combine (List.map id_of_name (List.map snd old_nal'))  (List.map id_of_name (List.map snd nal))) assoc)) bl' 
+	      rebuild_bl ((LocalRawAssum(nal,bk,replace_vars_constr_expr assoc nal't)::aux),(make_assoc assoc old_nal' nal)) bl' 
 		(if new_nal' = [] && rest = []
 		 then  typ' 
 		 else if new_nal' = [] 
@@ -600,7 +590,7 @@ let id_of_name = function
 		 else CProdN(dummy_loc,((new_nal',bk',nal't)::rest),typ'))
 	    else 
 	      let captured_nal,non_captured_nal = list_chop lnal' nal in 
-	      rebuild_nal ((LocalRawAssum(captured_nal,bk,replace_vars_constr_expr assoc nal't)::aux), (List.rev_append (List.combine (List.map id_of_name (List.map snd captured_nal)) ((List.map id_of_name (List.map snd nal)))) assoc))
+	      rebuild_nal ((LocalRawAssum(captured_nal,bk,replace_vars_constr_expr assoc nal't)::aux), (make_assoc assoc nal' captured_nal))
 		bk bl' non_captured_nal (lnal - lnal') (CProdN(dummy_loc,rest,typ'))
 	  | _ -> assert false
 
@@ -711,8 +701,6 @@ let rec add_args id new_args b =
 	| _ -> b
       end
   | CFix  _  | CCoFix _ -> anomaly "add_args : todo"
-  | CArrow(loc,b1,b2) ->
-      CArrow(loc,add_args id new_args  b1, add_args id new_args b2)
   | CProdN(loc,nal,b1) ->
       CProdN(loc,
 	     List.map (fun (nal,k,b2) -> (nal,k,add_args id new_args b2)) nal,
@@ -779,8 +767,6 @@ let rec chop_n_arrow n t =
   then t (* If we have already removed all the arrows then return the type *)
   else (* If not we check the form of [t] *)
     match t with
-      | Topconstr.CArrow(_,_,t) ->  (* If we have an arrow, we discard it and recall [chop_n_arrow] *)
-	  chop_n_arrow (n-1) t
       | Topconstr.CProdN(_,nal_ta',t') -> (* If we have a forall, to result are possible :
 					     either we need to discard more than the number of arrows contained
 					     in this product declaration then we just recall [chop_n_arrow] on
