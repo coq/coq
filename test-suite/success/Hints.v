@@ -16,11 +16,6 @@ Hint Immediate refl_equal sym_equal: foo.
 Hint Unfold fst sym_equal.
 Hint Unfold fst sym_equal: foo.
 
-(* What's this stranged syntax ? *)
-Hint Destruct h6 := 4 Conclusion (_ <= _) => fun H => apply H.
-Hint Destruct h7 := 4 Discardable Hypothesis (_ <= _) => fun H => apply H.
-Hint Destruct h8 := 4 Hypothesis (_ <= _) => fun H => apply H.
-
 (* Checks that local names are accepted *)
 Section A.
   Remark Refl : forall (A : Set) (x : A), x = x.
