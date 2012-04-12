@@ -836,9 +836,7 @@ and we want to backtrack to a state labeled by:
 
 We have to perform \verb!Backtrack 32 12 2! , i.e. perform 2
 \texttt{Abort}s (to cancel goal4 and goal3), then rewind proof until
-state 12 and finally go back to environment state 32. Notice that this
-supposes that proofs are nested in a regular way (no \texttt{Resume} or
-\texttt{Suspend} commands).
+state 12 and finally go back to environment state 32.
 
 \begin{Variants}
 \item {\tt BackTo n}. \comindex{BackTo}\\

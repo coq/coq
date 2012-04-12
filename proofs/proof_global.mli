@@ -69,12 +69,6 @@ val close_proof : unit ->
 
 exception NoSuchProof
 
-val suspend : unit -> unit
-val resume_last : unit -> unit
-
-val resume : Names.identifier -> unit
-(** @raise NoSuchProof if it doesn't find one. *)
-
 (** Runs a tactic on the current proof. Raises [NoCurrentProof] is there is 
    no current proof. *)
 val run_tactic : unit Proofview.tactic -> unit
