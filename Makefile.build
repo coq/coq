@@ -96,7 +96,7 @@ $(OCAMLOPT) $(OPTFLAGS) -o $@ $(1) $(addsuffix .cmxa,$(2)) $^ && $(STRIP) $@,\
 $(OCAMLC) $(BYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $(1) $(addsuffix .cma,$(2)) $^)
 endef
 
-CAMLP4DEPS=`sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*@\1@p' $<`
+CAMLP4DEPS=$(shell sed -n -e 's@^(\*.*camlp4deps: "\(.*\)".*@\1@p' $(1) \#))
 ifeq ($(CAMLP4),camlp5)
 CAMLP4USE=pa_extend.cmo q_MLast.cmo pa_macro.cmo -D$(CAMLVERSION)
 else
@@ -882,7 +882,7 @@ plugins/%_mod.ml: plugins/%.mllib
 %.ml: %.ml4 | %.ml4.d tools/compat5.cmo tools/compat5b.cmo
 	$(SHOW)'CAMLP4O   $<'
 	$(HIDE)\
-	DEPS=$(CAMLP4DEPS); \
+	DEPS="$(call CAMLP4DEPS,$<)"; \
 	if ls $${DEPS} > /dev/null 2>&1; then \
 	$(CAMLP4O) $(PR_O) -I $(CAMLLIB) tools/compat5.cmo $${DEPS} $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@; \
 	else echo $< : Dependency $${DEPS} not ready yet; false; fi
@@ -906,7 +906,7 @@ endif
 
 %.ml4.d: $(D_DEPEND_BEFORE_SRC) %.ml4
 	$(SHOW)'CAMLP4DEPS $<'
-	$(HIDE)echo "$*.ml: $(if $(NO_RECOMPILE_ML4),$(ORDER_ONLY_SEP)) $(CAMLP4DEPS)" $(TOTARGET)
+	$(HIDE)echo "$*.ml: $(if $(NO_RECOMPILE_ML4),$(ORDER_ONLY_SEP)) $(call CAMLP4DEPS,$<)" $(TOTARGET)
 
 # We now use coqdep_boot to wrap around ocamldep -modules, since it is aware
 # of .ml4 files
@@ -953,8 +953,13 @@ checker/%.mllib.d: $(D_DEPEND_BEFORE_SRC) checker/%.mllib $(D_DEPEND_AFTER_SRC) 
 # this sets up developper supporting stuff
 ###########################################################################
 
-.PHONY: devel
+.PHONY: devel otags
 devel: $(DEBUGPRINTERS)
+
+otags:
+	otags $(MLIFILES) $(MLSTATICFILES) \
+	$(foreach i,$(ML4FILES),-pc -pa tools/compat5.cmo -pa op -pa g -pa m -pa rq $(patsubst %,-pa %,$(call CAMLP4DEPS,$i)) -impl $i)
+
 
 ###########################################################################
 
