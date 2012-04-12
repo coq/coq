@@ -222,7 +222,7 @@ Definition Dposint := Build_DSetoid Set_of_posint Eq_posint_deci.
  de l'arite de chaque operateur *)
 
 
-Section Sig.
+Module Sig.
 
 Record Signature : Type :=
   {Sigma : DSetoid; Arity : Map (Set_of Sigma) (Set_of Dposint)}.
@@ -277,7 +277,7 @@ Type
   | _, _ => False
   end.
 
-
+Module Type Version1.
 
 Definition equalT (t1 t2 : TERM) : Prop :=
   match t1, t2 with
@@ -294,11 +294,14 @@ Definition EqListT (n1 : posint) (l1 : LTERM n1) (n2 : posint)
   | _, _ => False
   end.
 
+End Version1.
 
-Reset equalT.
+
 (* ------------------------------------------------------------------*)
 (*          Initial exemple (without patterns)                       *)
 (*-------------------------------------------------------------------*)
+
+Module Version2.
 
 Fixpoint equalT (t1 : TERM) : TERM -> Prop :=
   match t1 return (TERM -> Prop) with
@@ -347,11 +350,13 @@ Fixpoint equalT (t1 : TERM) : TERM -> Prop :=
       end
   end.
 
+End Version2.
 
 (* ---------------------------------------------------------------- *)
 (*                Version with simple patterns                      *)
 (* ---------------------------------------------------------------- *)
-Reset equalT.
+
+Module Version3.
 
 Fixpoint equalT (t1 : TERM) : TERM -> Prop :=
   match t1 with
@@ -388,8 +393,9 @@ Fixpoint equalT (t1 : TERM) : TERM -> Prop :=
       end
   end.
 
+End Version3.
 
-Reset equalT.
+Module Version4.
 
 Fixpoint equalT (t1 : TERM) : TERM -> Prop :=
   match t1 with
@@ -423,10 +429,13 @@ Fixpoint equalT (t1 : TERM) : TERM -> Prop :=
       end
   end.
 
+End Version4.
+
 (* ---------------------------------------------------------------- *)
 (*                  Version with multiple patterns                  *)
 (* ---------------------------------------------------------------- *)
-Reset equalT.
+
+Module Version5.
 
 Fixpoint equalT (t1 t2 : TERM) {struct t1} : Prop :=
   match t1, t2 with
@@ -445,6 +454,7 @@ Fixpoint equalT (t1 t2 : TERM) {struct t1} : Prop :=
   | _, _ => False
   end.
 
+End Version5.
 
 (* ------------------------------------------------------------------ *)
 

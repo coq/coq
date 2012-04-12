@@ -19,14 +19,16 @@ red in H.
 (* next tactic was failing wrt bug #1325 because type-checking the goal
    detected a syntactically different type for the section variable H *)
 case 0.
-Reset A.
+Abort.
+End A.
 
 (* Variant with polymorphic inductive types for bug #1325 *)
 
-Section A.
+Section B.
 Variable H:not True.
 Inductive I (n:nat) : Type := C : H=H -> I n.
 Goal I 0.
 red in H.
 case 0.
-Reset A.
+Abort.
+End B.

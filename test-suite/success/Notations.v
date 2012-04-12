@@ -17,10 +17,12 @@ Check (nat |= nat --> nat).
 (* Check that first non empty definition at an empty level can be of any
    associativity *)
 
-Definition marker := O.
+Module Type v1.
 Notation "x +1" := (S x) (at level 8, left associativity).
-Reset marker.
+End v1.
+Module Type v2.
 Notation "x +1" := (S x) (at level 8, right associativity).
+End v2.
 
 (* Check that empty levels (here 8 and 2 in pattern) are added in the
    right order *)
