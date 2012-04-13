@@ -54,7 +54,7 @@ Section WfLexicographic_Product.
     subst x1.
     apply IHAcc0.
     elim inj_pair2 with A B x y' x0; assumption.
-  Qed.
+  Defined.
 
   Theorem wf_lexprod :
     well_founded leA ->
@@ -65,7 +65,7 @@ Section WfLexicographic_Product.
     apply acc_A_B_lexprod; auto with sets; intros.
     red in wfB.
     auto with sets.
-  Qed.
+  Defined.
 
 
 End WfLexicographic_Product.
@@ -88,7 +88,7 @@ Section Wf_Symmetric_Product.
     inversion_clear H5; auto with sets.
     apply IHAcc; auto.
     apply Acc_intro; trivial.
-  Qed.
+  Defined.
 
 
   Lemma wf_symprod :
@@ -97,7 +97,7 @@ Section Wf_Symmetric_Product.
     red in |- *.
     destruct a.
     apply Acc_symprod; auto with sets.
-  Qed.
+  Defined.
 
 End Wf_Symmetric_Product.
 
@@ -128,7 +128,7 @@ Section Swap.
 
     apply sp_noswap.
     apply left_sym; auto with sets.
-  Qed.
+  Defined.
 
 
   Lemma Acc_swapprod :
@@ -156,7 +156,7 @@ Section Swap.
     apply right_sym; auto with sets.
 
     auto with sets.
-  Qed.
+  Defined.
 
 
   Lemma wf_swapprod : well_founded R -> well_founded SwapProd.
@@ -164,6 +164,6 @@ Section Swap.
     red in |- *.
     destruct a; intros.
     apply Acc_swapprod; auto with sets.
-  Qed.
+  Defined.
 
 End Swap.
