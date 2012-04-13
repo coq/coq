@@ -263,7 +263,7 @@ let declare_structure finite infer id idbuild paramimpls params arity fieldimpls
   begin match  finite with
   | BiFinite ->
       if Termops.dependent (mkRel (nparams+1)) (it_mkProd_or_LetIn mkProp fields) then
-	error "Records declared with the keyword Record or Structure cannot be recursive. Maybe you meant to define an Inductive or CoInductive record."
+	error "Records declared with the keyword Record or Structure cannot be recursive. You can, however, define recursive records using the Inductive or CoInductive command."
   | _ -> ()
   end;
   let mie =
