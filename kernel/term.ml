@@ -322,6 +322,7 @@ let isCast c = match kind_of_term c with Cast _ -> true | _ -> false
 
 (* Tests if a de Bruijn index *)
 let isRel c = match kind_of_term c with Rel _ -> true | _ -> false
+let isRelN n c = match kind_of_term c with Rel n' -> n = n' | _ -> false
 
 (* Tests if a variable *)
 let isVar c = match kind_of_term c with Var _ -> true | _ -> false

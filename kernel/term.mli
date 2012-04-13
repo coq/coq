@@ -229,8 +229,9 @@ val kind_of_type : types -> (constr, types) kind_of_type
 (** {6 Simple term case analysis. } *)
 
 val isRel  : constr -> bool
+val isRelN : int -> constr -> bool
 val isVar  : constr -> bool
-val isVarId  : identifier -> constr -> bool
+val isVarId : identifier -> constr -> bool
 val isInd  : constr -> bool
 val isEvar : constr -> bool
 val isMeta : constr -> bool

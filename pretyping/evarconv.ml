@@ -794,12 +794,12 @@ let the_conv_x_leq ?(ts=full_transparent_state) env t1 t2 evd =
       (evd', true) -> evd'
     | _ -> raise Reduction.NotConvertible
 
-let e_conv ?(ts=full_transparent_state) env evd t1 t2 =
-  match evar_conv_x ts env !evd CONV t1 t2 with
-      (evd',true) -> evd := evd'; true
+let e_conv ?(ts=full_transparent_state) env evdref t1 t2 =
+  match evar_conv_x ts env !evdref CONV t1 t2 with
+      (evd',true) -> evdref := evd'; true
     | _ -> false
 
-let e_cumul ?(ts=full_transparent_state) env evd t1 t2 =
-  match evar_conv_x ts env !evd CUMUL t1 t2 with
-      (evd',true) -> evd := evd'; true
+let e_cumul ?(ts=full_transparent_state) env evdref t1 t2 =
+  match evar_conv_x ts env !evdref CUMUL t1 t2 with
+      (evd',true) -> evdref := evd'; true
     | _ -> false
