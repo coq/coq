@@ -42,6 +42,13 @@ Tactics
 - New command "r string" that interprets "idtac string" as a breakpoint
   and jumps to its next use in Ltac debugger.
 
+Libraries
+
+- MSetRBT : a new implementation of MSets via Red-Black trees (initial
+  contribution by Andrew Appel).
+- MSetAVL : for maximal sharing with the new MSetRBT, the argument order
+  of Node has changed (this should be transparent to regular MSets users). 
+
 Module System
 
 - The names of modules (and module types) are now in a fully separated

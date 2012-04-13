@@ -466,7 +466,9 @@ through the <tt>Require Import</tt> command.</p>
     theories/MSets/MSetEqProperties.v
     theories/MSets/MSetWeakList.v
     theories/MSets/MSetList.v
+    theories/MSets/MSetGenTree.v
     theories/MSets/MSetAVL.v
+    theories/MSets/MSetRBT.v
     theories/MSets/MSetPositive.v
     theories/MSets/MSetToFiniteSet.v
     (theories/MSets/MSets.v)
