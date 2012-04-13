@@ -119,8 +119,8 @@ let (current:pref ref) =
     read_project = Ignore_args;
     project_file_name = "_CoqProject";
 
-    encoding_use_locale = true;
-    encoding_use_utf8 = false;
+    encoding_use_locale = Sys.os_type <> "Win32" ;
+    encoding_use_utf8 = Sys.os_type = "Win32" ;
     encoding_manual = "ISO_8859-1";
 
     automatic_tactics = ["trivial"; "tauto"; "auto"; "omega";

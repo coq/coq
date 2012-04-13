@@ -388,7 +388,7 @@ fi
 
 if [ "$browser_spec" = "no" ]; then
     case $ARCH in
-        win32) BROWSER='C:\PROGRA~1\INTERN~1\IEXPLORE %s' ;;
+        win32) BROWSER='start %s' ;;
 	Darwin) BROWSER='open %s' ;;
         *) BROWSER='firefox -remote "OpenURL(%s,new-tab)" || firefox %s &' ;;
     esac
