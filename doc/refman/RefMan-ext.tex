@@ -5,6 +5,8 @@ the Gallina's syntax.
 
 \section{Record types
 \comindex{Record}
+\comindex{Inductive}
+\comindex{CoInductive}
 \label{Record}}
 
 The \verb+Record+ construction is a macro allowing the definition of
@@ -20,9 +22,12 @@ construction allows to define ``signatures''.
 {\sentence} & ++= & {\record}\\
   & & \\
 {\record} & ::= &
-   {\tt Record} {\ident} \zeroone{\binders} \zeroone{{\tt :} {\sort}} \verb.:=. \\
+   {\recordkw} {\ident} \zeroone{\binders} \zeroone{{\tt :} {\sort}} \verb.:=. \\
 && ~~~~\zeroone{\ident}
        \verb!{! \zeroone{\nelist{\field}{;}} \verb!}! \verb:.:\\
+  & & \\
+{\recordkw} & ::= &
+   {\tt Record} $|$ {\tt Inductive} $|$ {\tt CoInductive}\\
   & & \\
 {\field} & ::= & {\name} \zeroone{\binders} : {\type} [ {\tt where} {\it notation} ] \\
  & $|$ & {\name} \zeroone{\binders} {\typecstr} := {\term}
@@ -149,6 +154,13 @@ Eval compute in half.(Rat_bottom_cond).
 Reset Initial.
 \end{coq_eval}
 
+Records defined  with the {\tt Record}  keyword are not  allowed to be
+recursive (references  to the record's name  in the type  of its field
+raises an  error). To define recursive  records, one can  use the {\tt
+  Inductive} and {\tt CoInductive} keywords, resulting in an inductive
+or  co-inductive record.  A  \emph{caveat}, however,  is that  records
+cannot appear in mutually inductive (or co-inductive) definitions.
+
 \begin{Warnings}
 \item {\tt Warning: {\ident$_i$} cannot be defined.}
 
@@ -167,10 +179,16 @@ Reset Initial.
 
 \begin{ErrMsgs}
 
-\item \errindex{A record cannot be recursive}
+\item \errindex{Records declared with the keyword Record or Structure cannot be recursive.}
 
-  The record name {\ident} appears in the type of its fields.
-  
+  The record name {\ident} appears in the type of its fields, but uses
+  the keyword  {\tt Record}. Use  the keyword {\tt Inductive}  or {\tt
+    CoInductive} instead.
+\item \errindex{Cannot handle mutually (co)inductive records.}
+
+  Records  cannot  be  defined  as  part  of  mutually  inductive  (or
+  co-inductive) definitions,  whether with records only  or mixed with
+  standard definitions.
 \item During the definition of the one-constructor inductive
   definition, all the errors of inductive definitions, as described in
   Section~\ref{gal_Inductive_Definitions}, may also occur.
