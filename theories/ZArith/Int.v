@@ -16,28 +16,29 @@
 
 Require Import ZArith.
 Delimit Scope Int_scope with I.
-
+Local Open Scope Int_scope.
 
 (** * a specification of integers *)
 
 Module Type Int.
 
-  Open Scope Int_scope.
+  Parameter t : Set.
+  Bind Scope Int_scope with t.
 
-  Parameter int : Set.
+  (** For compatibility *)
+  Definition int := t.
 
-  Parameter i2z : int -> Z.
-  Arguments i2z _%I.
+  Parameter i2z : t -> Z.
 
-  Parameter _0 : int.
-  Parameter _1 : int.
-  Parameter _2 : int.
-  Parameter _3 : int.
-  Parameter plus : int -> int -> int.
-  Parameter opp : int -> int.
-  Parameter minus : int -> int -> int.
-  Parameter mult : int -> int -> int.
-  Parameter max : int -> int -> int.
+  Parameter _0 : t.
+  Parameter _1 : t.
+  Parameter _2 : t.
+  Parameter _3 : t.
+  Parameter plus : t -> t -> t.
+  Parameter opp : t -> t.
+  Parameter minus : t -> t -> t.
+  Parameter mult : t -> t -> t.
+  Parameter max : t -> t -> t.
 
   Notation "0" := _0 : Int_scope.
   Notation "1" := _1 : Int_scope.
@@ -54,10 +55,10 @@ Module Type Int.
 
   Notation "x == y" := (i2z x = i2z y)
     (at level 70, y at next level, no associativity) : Int_scope.
-  Notation "x <= y" := (Zle (i2z x) (i2z y)): Int_scope.
-  Notation "x < y" := (Zlt (i2z x) (i2z y)) : Int_scope.
-  Notation "x >= y" := (Zge (i2z x) (i2z y)) : Int_scope.
-  Notation "x > y" := (Zgt (i2z x) (i2z y)): Int_scope.
+  Notation "x <= y" := (i2z x <= i2z y)%Z : Int_scope.
+  Notation "x < y" := (i2z x < i2z y)%Z : Int_scope.
+  Notation "x >= y" := (i2z x >= i2z y)%Z : Int_scope.
+  Notation "x > y" := (i2z x > i2z y)%Z : Int_scope.
   Notation "x <= y <= z" := (x <= y /\ y <= z) : Int_scope.
   Notation "x <= y < z" := (x <= y /\ y < z) : Int_scope.
   Notation "x < y < z" := (x < y /\ y < z) : Int_scope.
@@ -65,41 +66,39 @@ Module Type Int.
 
   (** Some decidability fonctions (informative). *)
 
-  Axiom gt_le_dec : forall x y: int, {x > y} + {x <= y}.
-  Axiom ge_lt_dec :  forall x y : int, {x >= y} + {x < y}.
-  Axiom eq_dec : forall x y : int, { x == y } + {~ x==y }.
+  Axiom gt_le_dec : forall x y : t, {x > y} + {x <= y}.
+  Axiom ge_lt_dec :  forall x y : t, {x >= y} + {x < y}.
+  Axiom eq_dec : forall x y : t, { x == y } + {~ x==y }.
 
   (** Specifications *)
 
   (** First, we ask [i2z] to be injective. Said otherwise, our ad-hoc equality
       [==] and the generic [=] are in fact equivalent. We define [==]
-      nonetheless since the translation to [Z] for using automatic tactic is easier. *)
+      nonetheless since the translation to [Z] for using automatic tactic
+      is easier. *)
 
-  Axiom i2z_eq : forall n p : int, n == p -> n = p.
+  Axiom i2z_eq : forall n p : t, n == p -> n = p.
 
    (** Then, we express the specifications of the above parameters using their
        Z counterparts. *)
 
-  Open Scope Z_scope.
-  Axiom i2z_0 : i2z _0 = 0.
-  Axiom i2z_1 : i2z _1 = 1.
-  Axiom i2z_2 : i2z _2 = 2.
-  Axiom i2z_3 : i2z _3 = 3.
-  Axiom i2z_plus : forall n p, i2z (n + p) = i2z n + i2z p.
-  Axiom i2z_opp : forall n, i2z (-n) = -i2z n.
-  Axiom i2z_minus : forall n p, i2z (n - p) = i2z n - i2z p.
-  Axiom i2z_mult : forall n p, i2z (n * p) = i2z n * i2z p.
-  Axiom i2z_max : forall n p, i2z (max n p) = Zmax (i2z n) (i2z p).
+  Axiom i2z_0 : i2z _0 = 0%Z.
+  Axiom i2z_1 : i2z _1 = 1%Z.
+  Axiom i2z_2 : i2z _2 = 2%Z.
+  Axiom i2z_3 : i2z _3 = 3%Z.
+  Axiom i2z_plus : forall n p, i2z (n + p) = (i2z n + i2z p)%Z.
+  Axiom i2z_opp : forall n, i2z (-n) = (-i2z n)%Z.
+  Axiom i2z_minus : forall n p, i2z (n - p) = (i2z n - i2z p)%Z.
+  Axiom i2z_mult : forall n p, i2z (n * p) = (i2z n * i2z p)%Z.
+  Axiom i2z_max : forall n p, i2z (max n p) = Z.max (i2z n) (i2z p).
 
 End Int.
 
 
 (** * Facts and  tactics using [Int] *)
 
-Module MoreInt (I:Int).
-  Import I.
-
-  Open Scope Int_scope.
+Module MoreInt (Import I:Int).
+  Local Notation int := I.t.
 
   (** A magic (but costly) tactic that goes from [int] back to the [Z]
       friendly world ... *)
@@ -108,13 +107,14 @@ Module MoreInt (I:Int).
     i2z_0 i2z_1 i2z_2 i2z_3 i2z_plus i2z_opp i2z_minus i2z_mult i2z_max : i2z.
 
   Ltac i2z := match goal with
-		| H : (eq (A:=int) ?a ?b) |- _ =>
-		  generalize (f_equal i2z H);
-		    try autorewrite with i2z; clear H; intro H; i2z
-		| |- (eq (A:=int) ?a ?b) => apply (i2z_eq a b); try autorewrite with i2z; i2z
-		| H : _ |- _ => progress autorewrite with i2z in H; i2z
-		| _ => try autorewrite with i2z
-	      end.
+    | H : ?a = ?b |- _ =>
+      generalize (f_equal i2z H);
+	try autorewrite with i2z; clear H; intro H; i2z
+    | |- ?a = ?b =>
+      apply (i2z_eq a b); try autorewrite with i2z; i2z
+    | H : _ |- _ => progress autorewrite with i2z in H; i2z
+    | _ => try autorewrite with i2z
+  end.
 
   (** A reflexive version of the [i2z] tactic *)
 
@@ -124,14 +124,14 @@ Module MoreInt (I:Int).
       Anyhow, [i2z_refl] is enough for applying [romega]. *)
 
   Ltac i2z_gen := match goal with
-    | |- (eq (A:=int) ?a ?b) => apply (i2z_eq a b); i2z_gen
-    | H : (eq (A:=int) ?a ?b) |- _ =>
+    | |- ?a = ?b => apply (i2z_eq a b); i2z_gen
+    | H : ?a = ?b |- _ =>
        generalize (f_equal i2z H); clear H; i2z_gen
-    | H : (eq (A:=Z) ?a ?b) |- _ => revert H; i2z_gen
-    | H : (Zlt ?a ?b) |- _ => revert H; i2z_gen
-    | H : (Zle ?a ?b) |- _ => revert H; i2z_gen
-    | H : (Zgt ?a ?b) |- _ => revert H; i2z_gen
-    | H : (Zge ?a ?b) |- _ => revert H; i2z_gen
+    | H : eq (A:=Z) ?a ?b |- _ => revert H; i2z_gen
+    | H : Z.lt ?a ?b |- _ => revert H; i2z_gen
+    | H : Z.le ?a ?b |- _ => revert H; i2z_gen
+    | H : Z.gt ?a ?b |- _ => revert H; i2z_gen
+    | H : Z.ge ?a ?b |- _ => revert H; i2z_gen
     | H : _ -> ?X |- _ =>
       (* A [Set] or [Type] part cannot be dealt with easily
          using the [ExprP] datatype. So we forget it, leaving
@@ -201,11 +201,11 @@ Module MoreInt (I:Int).
 
     with z2ez trm :=
     match constr:trm with
-      | (?x+?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EZplus ex ey)
-      | (?x-?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EZminus ex ey)
-      | (?x*?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EZmult ex ey)
-      | (Zmax ?x ?y) => let ex := z2ez x with ey := z2ez y in constr:(EZmax ex ey)
-      | (-?x)%Z =>  let ex := z2ez x in constr:(EZopp ex)
+      | (?x + ?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EZplus ex ey)
+      | (?x - ?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EZminus ex ey)
+      | (?x * ?y)%Z => let ex := z2ez x with ey := z2ez y in constr:(EZmult ex ey)
+      | (Z.max ?x ?y) => let ex := z2ez x with ey := z2ez y in constr:(EZmax ex ey)
+      | (- ?x)%Z =>  let ex := z2ez x in constr:(EZopp ex)
       | i2z ?x => let ex := i2ei x in constr:(EZofI ex)
       | ?x => constr:(EZraw x)
     end.
@@ -360,8 +360,9 @@ End MoreInt.
 (** It's always nice to know that our [Int] interface is realizable :-) *)
 
 Module Z_as_Int <: Int.
-  Open Scope Z_scope.
-  Definition int := Z.
+  Local Open Scope Z_scope.
+  Definition t := Z.
+  Definition int := t.
   Definition _0 := 0.
   Definition _1 := 1.
   Definition _2 := 2.
@@ -380,10 +381,9 @@ Module Z_as_Int <: Int.
   Lemma i2z_1 : i2z _1 = 1.  Proof. auto. Qed.
   Lemma i2z_2 : i2z _2 = 2.  Proof. auto. Qed.
   Lemma i2z_3 : i2z _3 = 3.  Proof. auto. Qed.
-  Lemma i2z_plus : forall n p, i2z (n + p) = i2z n + i2z p.  Proof. auto. Qed.
-  Lemma i2z_opp : forall n, i2z (- n)  = - i2z n.  Proof. auto. Qed.
-  Lemma i2z_minus : forall n p, i2z (n - p)  = i2z n - i2z p.  Proof. auto. Qed.
-  Lemma i2z_mult : forall n p, i2z (n * p)  = i2z n * i2z p.  Proof. auto. Qed.
-  Lemma i2z_max : forall n p, i2z (max n p) = Zmax (i2z n) (i2z p). Proof. auto. Qed.
+  Lemma i2z_plus n p : i2z (n + p) = i2z n + i2z p.  Proof. auto. Qed.
+  Lemma i2z_opp n : i2z (- n) = - i2z n.  Proof. auto. Qed.
+  Lemma i2z_minus n p : i2z (n - p) = i2z n - i2z p.  Proof. auto. Qed.
+  Lemma i2z_mult n p : i2z (n * p) = i2z n * i2z p.  Proof. auto. Qed.
+  Lemma i2z_max n p : i2z (max n p) = Zmax (i2z n) (i2z p). Proof. auto. Qed.
 End Z_as_Int.
-
