@@ -213,7 +213,7 @@ endif
 	mv doc/stdlib/html/index.html doc/stdlib/html/genindex.html
 
 doc/stdlib/index-list.html: doc/stdlib/index-list.html.template doc/stdlib/make-library-index
-	./doc/stdlib/make-library-index doc/stdlib/index-list.html
+	./doc/stdlib/make-library-index doc/stdlib/index-list.html doc/stdlib/hidden-files
 
 doc/stdlib/html/index.html: doc/stdlib/html/genindex.html doc/stdlib/index-list.html
 	cat doc/common/styles/html/$(HTMLSTYLE)/header.html doc/stdlib/index-list.html > $@

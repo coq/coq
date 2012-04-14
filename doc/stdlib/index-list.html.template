@@ -56,6 +56,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Logic/Epsilon.v
     theories/Logic/IndefiniteDescription.v
     theories/Logic/FunctionalExtensionality.v
+    theories/Logic/ExtensionalityFacts.v
   </dd>
     
   <dt> <b>Structures</b>:
@@ -172,6 +173,8 @@ through the <tt>Require Import</tt> command.</p>
     theories/ZArith/Zpow_def.v
     theories/ZArith/Zpow_alt.v
     theories/ZArith/Zpower.v
+    theories/ZArith/ZOdiv_def.v
+    theories/ZArith/ZOdiv.v
     theories/ZArith/Zdiv.v
     theories/ZArith/Zquot.v
     theories/ZArith/Zeuclid.v
@@ -402,6 +405,16 @@ through the <tt>Require Import</tt> command.</p>
     theories/Lists/ListTactics.v
   </dd>
 
+  <dt> <b>Vectors</b>:
+    Dependent datastructures storing their length
+  </dt>
+  <dd>
+    theories/Vectors/Fin.v
+    theories/Vectors/VectorDef.v
+    theories/Vectors/VectorSpec.v
+    (theories/Vectors/Vector.v)
+  </dd>
+
   <dt> <b>Sorting</b>:
     Axiomatizations of sorts
   </dt>
@@ -566,4 +579,11 @@ through the <tt>Require Import</tt> command.</p>
     theories/Program/Combinators.v
   </dd>
 
+  <dt> <b>Unicode</b>:
+    Unicode-based notations
+  </dt>
+  <dd>
+    theories/Unicode/Utf8_core.v
+    theories/Unicode/Utf8.v
+  </dd>
 </dl>
