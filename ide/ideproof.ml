@@ -76,14 +76,15 @@ let mode_tactic sel_cb (proof:GText.view) goals hints = match goals with
       let () = proof#buffer#insert head_str in
       let () = insert_hyp hyps_hints hyps in
       let () =
-        let tags = if goal_hints <> [] then
+        let tags = Tags.Proof.goal :: if goal_hints <> [] then
           let tag = proof#buffer#create_tag [] in
           let () = hook_tag_cb tag goal_hints sel_cb on_hover in
           [tag]
           else []
         in
         proof#buffer#insert (goal_str 1 goals_cnt);
-        proof#buffer#insert ~tags (cur_goal ^ "\n")
+        proof#buffer#insert ~tags cur_goal;
+	proof#buffer#insert "\n"
       in
       (* Insert remaining goals (no hypotheses) *)
       let fold_goal i _ { Interface.goal_ccl = g } =
@@ -91,10 +92,11 @@ let mode_tactic sel_cb (proof:GText.view) goals hints = match goals with
         proof#buffer#insert (g ^ "\n")
       in
       let () = Minilib.list_fold_left_i fold_goal 2 () rem_goals in
-      ignore(proof#buffer#place_cursor  
-        ~where:((proof#buffer#get_iter_at_mark `INSERT)#backward_lines (3*goals_cnt - 2)));
-      ignore(proof#scroll_to_mark `INSERT)
 
+      ignore(proof#buffer#place_cursor
+               ~where:(proof#buffer#end_iter#backward_to_tag_toggle
+			 (Some Tags.Proof.goal)));
+      ignore(proof#scroll_to_mark ~use_align:true ~yalign:0.95 `INSERT)
 
 let mode_cesar (proof:GText.view) = function
   | [] -> assert false
