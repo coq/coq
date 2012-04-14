@@ -40,6 +40,18 @@ let project_behavior_of_string s =
   else if s = "appended to arguments" then Append_args
   else Ignore_args
 
+type inputenc = Elocale | Eutf8 | Emanual of string
+
+let string_of_inputenc = function
+  |Elocale -> "UTF-8"
+  |Eutf8 -> "LOCALE"
+  |Emanual s -> s
+
+let inputenc_of_string s =
+      (if s = "UTF-8" then Eutf8
+       else if s = "LOCALE" then Elocale
+       else Emanual s)
+
 type pref =
     {
       mutable cmd_coqc : string;
@@ -57,9 +69,7 @@ type pref =
       mutable read_project : project_behavior;
       mutable project_file_name : string;
 
-      mutable encoding_use_locale : bool;
-      mutable encoding_use_utf8 : bool;
-      mutable encoding_manual : string;
+      mutable encoding : inputenc;
 
       mutable automatic_tactics : string list;
       mutable cmd_print : string;
@@ -119,9 +129,7 @@ let (current:pref ref) =
     read_project = Ignore_args;
     project_file_name = "_CoqProject";
 
-    encoding_use_locale = Sys.os_type <> "Win32" ;
-    encoding_use_utf8 = Sys.os_type = "Win32" ;
-    encoding_manual = "ISO_8859-1";
+    encoding = if Sys.os_type = "Win32" then Eutf8 else Elocale;
 
     automatic_tactics = ["trivial"; "tauto"; "auto"; "omega";
 			 "auto with *"; "intuition" ];
@@ -202,9 +210,7 @@ let save_pref () =
     add "project_options" [string_of_project_behavior p.read_project] ++
     add "project_file_name" [p.project_file_name] ++
 
-    add "encoding_use_locale" [string_of_bool p.encoding_use_locale] ++
-    add "encoding_use_utf8" [string_of_bool p.encoding_use_utf8] ++
-    add "encoding_manual" [p.encoding_manual] ++
+    add "encoding" [string_of_inputenc p.encoding] ++
 
     add "automatic_tactics" p.automatic_tactics ++
     add "cmd_print" [p.cmd_print] ++
@@ -264,9 +270,7 @@ let load_pref () =
     set_bool "auto_save" (fun v -> np.auto_save <- v);
     set_int "auto_save_delay" (fun v -> np.auto_save_delay <- v);
     set_pair "auto_save_name" (fun v1 v2 -> np.auto_save_name <- (v1,v2));
-    set_bool "encoding_use_locale" (fun v -> np.encoding_use_locale <- v);
-    set_bool "encoding_use_utf8" (fun v -> np.encoding_use_utf8 <- v);
-    set_hd "encoding_manual" (fun v -> np.encoding_manual <- v);
+    set_hd "encoding_manual" (fun v -> np.encoding <- (inputenc_of_string v));
     set_hd "project_options"
       (fun v -> np.read_project <- (project_behavior_of_string v));
     set_hd "project_file_name" (fun v -> np.project_file_name <- v);
@@ -513,23 +517,13 @@ let configure ?(apply=(fun () -> ())) () =
   let encodings =
     combo
       "File charset encoding "
-      ~f:(fun s ->
-	    match s with
-	    | "UTF-8" ->
-		!current.encoding_use_utf8 <- true;
-		!current.encoding_use_locale <- false
-	    | "LOCALE" ->
-		!current.encoding_use_utf8 <- false;
-		!current.encoding_use_locale <- true
-	    | _ ->
-		!current.encoding_use_utf8 <- false;
-		!current.encoding_use_locale <- false;
-		!current.encoding_manual <- s;
-	 )
+      ~f:(fun s -> !current.encoding <- (inputenc_of_string s))
       ~new_allowed: true
-      ["UTF-8";"LOCALE";!current.encoding_manual]
-      (if !current.encoding_use_utf8 then "UTF-8"
-       else if !current.encoding_use_locale then "LOCALE" else !current.encoding_manual)
+      ("UTF-8"::"LOCALE":: match !current.encoding with
+	|Emanual s -> [s]
+	|_ -> []
+      )
+      (string_of_inputenc !current.encoding)
   in
   let read_project =
     combo

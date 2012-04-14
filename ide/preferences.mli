@@ -7,6 +7,7 @@
 (************************************************************************)
 
 type project_behavior = Ignore_args | Append_args | Subst_args
+type inputenc = Elocale | Eutf8 | Emanual of string
 
 type pref =
     {
@@ -25,9 +26,7 @@ type pref =
       mutable read_project : project_behavior;
       mutable project_file_name : string;
 
-      mutable encoding_use_locale : bool;
-      mutable encoding_use_utf8 : bool;
-      mutable encoding_manual : string;
+      mutable encoding : inputenc;
 
       mutable automatic_tactics : string list;
       mutable cmd_print : string;
