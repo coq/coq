@@ -633,7 +633,7 @@ Lemma prime_mult :
   forall p:Z, prime p -> forall a b:Z, (p | a * b) -> (p | a) \/ (p | b).
 Proof.
   intro p; simple induction 1; intros.
-  case (Zdivide_dec p a); nintuition.
+  case (Zdivide_dec p a); intuition.
   right; apply Gauss with a; auto with zarith.
 Qed.
 
