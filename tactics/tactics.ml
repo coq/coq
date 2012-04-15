@@ -552,7 +552,7 @@ let depth_of_quantified_hypothesis red h gl =
 	  str".")
 
 let intros_until_gen red h g =
-  tclDO (depth_of_quantified_hypothesis red h g) intro g
+  tclDO (depth_of_quantified_hypothesis red h g) (if red then introf else intro) g
 
 let intros_until_id id = intros_until_gen true (NamedHyp id)
 let intros_until_n_gen red n = intros_until_gen red (AnonHyp n)
