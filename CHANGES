@@ -15,8 +15,8 @@ Notations
 
 - "Bind Scope" can no longer bind "Funclass" and "Sortclass".
 
-Changes from V8.4beta to V8.4
-=============================
+Changes from V8.4beta to V8.4beta2
+==================================
 
 Vernacular commands
 
@@ -44,15 +44,15 @@ Tactics
 
 Libraries
 
-- MSetRBT : a new implementation of MSets via Red-Black trees (initial
+- MSetRBT: a new implementation of MSets via Red-Black trees (initial
   contribution by Andrew Appel).
-- MSetAVL : for maximal sharing with the new MSetRBT, the argument order
+- MSetAVL: for maximal sharing with the new MSetRBT, the argument order
   of Node has changed (this should be transparent to regular MSets users). 
 
 Module System
 
 - The names of modules (and module types) are now in a fully separated
-  namespace from ordinary definitions : "Definition E:=0. Module E. End E."
+  namespace from ordinary definitions: "Definition E:=0. Module E. End E."
   is now accepted.
 
 CoqIDE
