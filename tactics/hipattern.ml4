@@ -81,9 +81,9 @@ let has_nodep_prod = has_nodep_prod_after 0
 
 (* style: None = record; Some false = conjunction; Some true = strict conj *)
 
-let match_with_one_constructor style allow_rec t =
+let match_with_one_constructor style onlybinary allow_rec t =
   let (hdapp,args) = decompose_app t in
-  match kind_of_term hdapp with
+  let res = match kind_of_term hdapp with
   | Ind ind ->
       let (mib,mip) = Global.lookup_inductive ind in
       if (Array.length mip.mind_consnames = 1)
@@ -110,22 +110,25 @@ let match_with_one_constructor style allow_rec t =
 	      None
       else
 	None
+  | _ -> None in
+  match res with
+  | Some (hdapp,args) when not onlybinary || List.length args = 2 -> res
   | _ -> None
 
-let match_with_conjunction ?(strict=false) t =
-  match_with_one_constructor (Some strict) false t
+let match_with_conjunction ?(strict=false) ?(onlybinary=false) t =
+  match_with_one_constructor (Some strict) onlybinary false t
 
 let match_with_record t =
-  match_with_one_constructor None false t
+  match_with_one_constructor None false false t
 
-let is_conjunction ?(strict=false) t =
-  op2bool (match_with_conjunction ~strict t)
+let is_conjunction ?(strict=false) ?(onlybinary=false) t =
+  op2bool (match_with_conjunction ~strict ~onlybinary t)
 
 let is_record t =
   op2bool (match_with_record t)
 
 let match_with_tuple t =
-  let t = match_with_one_constructor None true t in
+  let t = match_with_one_constructor None false true t in
   Option.map (fun (hd,l) ->
     let ind = destInd hd in
     let (mib,mip) = Global.lookup_inductive ind in
@@ -146,14 +149,15 @@ let test_strict_disjunction n lc =
     | [_,None,c] -> isRel c && destRel c = (n - i)
     | _ -> false) 0 lc
 
-let match_with_disjunction ?(strict=false) t =
+let match_with_disjunction ?(strict=false) ?(onlybinary=false) t =
   let (hdapp,args) = decompose_app t in
-  match kind_of_term hdapp with
+  let res = match kind_of_term hdapp with
   | Ind ind  ->
       let car = mis_constr_nargs ind in
       let (mib,mip) = Global.lookup_inductive ind in
-      if array_for_all (fun ar -> ar = 1) car &&
-	not (mis_is_recursive (ind,mib,mip))
+      if array_for_all (fun ar -> ar = 1) car
+	&& not (mis_is_recursive (ind,mib,mip))
+        && (mip.mind_nrealargs = 0)
       then
 	if strict then
 	  if test_strict_disjunction mib.mind_nparams mip.mind_nf_lc then
@@ -167,10 +171,13 @@ let match_with_disjunction ?(strict=false) t =
 	  Some (hdapp,Array.to_list cargs)
       else
 	None
+  | _ -> None in
+  match res with
+  | Some (hdapp,args) when not onlybinary || List.length args = 2 -> res
   | _ -> None
 
-let is_disjunction ?(strict=false) t =
-  op2bool (match_with_disjunction ~strict t)
+let is_disjunction ?(strict=false) ?(onlybinary=false) t =
+  op2bool (match_with_disjunction ~strict ~onlybinary t)
 
 (* An empty type is an inductive type, possible with indices, that has no
    constructors *)

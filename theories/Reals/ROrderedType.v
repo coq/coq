@@ -15,7 +15,7 @@ Local Open Scope R_scope.
 Lemma Req_dec : forall r1 r2:R, {r1 = r2} + {r1 <> r2}.
 Proof.
   intros; generalize (total_order_T r1 r2) Rlt_dichotomy_converse;
-    intuition eauto 3.
+    intuition eauto.
 Qed.
 
 Definition Reqb r1 r2 := if Req_dec r1 r2 then true else false.

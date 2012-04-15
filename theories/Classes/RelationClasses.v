@@ -130,7 +130,7 @@ Tactic Notation "apply" "*" constr(t) :=
 
 Ltac simpl_relation :=
   unfold flip, impl, arrow ; try reduce ; program_simpl ;
-    try ( solve [ intuition ]).
+    try ( solve [ dintuition ]).
 
 Local Obligation Tactic := simpl_relation.
 

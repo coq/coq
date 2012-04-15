@@ -519,7 +519,7 @@ Proof.
 intros. rewrite eq_option_alt. intro e.
 rewrite <- find_mapsto_iff, elements_mapsto_iff.
 unfold eqb.
-rewrite <- findA_NoDupA; intuition; try apply elements_3w; eauto.
+rewrite <- findA_NoDupA; dintuition; try apply elements_3w; eauto.
 Qed.
 
 Lemma elements_b : forall m x,
@@ -679,8 +679,8 @@ Add Parametric Morphism elt : (@Empty elt)
  with signature Equal ==> iff as Empty_m.
 Proof.
 unfold Empty; intros m m' Hm; intuition.
-rewrite <-Hm in H0; eauto.
-rewrite Hm in H0; eauto.
+rewrite <-Hm in H0; eapply H, H0.
+rewrite Hm in H0; eapply H, H0.
 Qed.
 
 Add Parametric Morphism elt : (@is_empty elt)
@@ -1872,13 +1872,7 @@ Module OrdProperties (M:S).
     add_mapsto_iff by (auto with *).
   unfold O.eqke, O.ltk; simpl.
   destruct (E.compare t0 x); intuition.
-  right; split; auto; ME.order.
-  ME.order.
-  elim H.
-  exists e0; apply MapsTo_1 with t0; auto.
-  right; right; split; auto; ME.order.
-  ME.order.
-  right; split; auto; ME.order.
+  elim H; exists e0; apply MapsTo_1 with t0; auto.
   Qed.
 
   Lemma elements_Add_Above : forall m m' x e,

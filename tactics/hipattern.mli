@@ -53,13 +53,13 @@ val is_non_recursive_type         : testing_function
 
 (** Non recursive type with no indices and exactly one argument for each
    constructor; canonical definition of n-ary disjunction if strict *)
-val match_with_disjunction : ?strict:bool -> (constr * constr list) matching_function
-val is_disjunction         : ?strict:bool -> testing_function
+val match_with_disjunction : ?strict:bool -> ?onlybinary:bool -> (constr * constr list) matching_function
+val is_disjunction         : ?strict:bool -> ?onlybinary:bool -> testing_function
 
 (** Non recursive tuple (one constructor and no indices) with no inner
    dependencies; canonical definition of n-ary conjunction if strict *)
-val match_with_conjunction : ?strict:bool -> (constr * constr list) matching_function
-val is_conjunction         : ?strict:bool -> testing_function
+val match_with_conjunction : ?strict:bool -> ?onlybinary:bool -> (constr * constr list) matching_function
+val is_conjunction         : ?strict:bool -> ?onlybinary:bool -> testing_function
 
 (** Non recursive tuple, possibly with inner dependencies *)
 val match_with_record      : (constr * constr list) matching_function

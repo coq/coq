@@ -41,6 +41,16 @@ Tactics
   "debug trivial" or by a global "Set Debug Auto/Eauto/Trivial".
 - New command "r string" that interprets "idtac string" as a breakpoint
   and jumps to its next use in Ltac debugger.
+- Tactic "tauto" was exceptionally able to destruct other connectives
+  than the binary connectives "and", "or", "prod", "sum", "iff".  This
+  non-uniform behavior has been fixed (bug #2680) and tauto is
+  slightly weaker. On the opposite side, new tactic "dtauto" is able
+  to destruct any record-like inductive types, superseding the old
+  version of "tauto".
+- Similarly, "intuition" has been made more uniform and, where it now
+  fails, "dintuition" can be used. Moreover, both of them are now only
+  lazily unfolding the occurrences of "not" in goal. Some extra
+  "unfold not in *" might have to be added for compatibility.
 
 Libraries
 

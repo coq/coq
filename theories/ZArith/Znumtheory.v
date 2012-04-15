@@ -575,30 +575,29 @@ Lemma prime_divisors :
   forall p:Z,
     prime p -> forall a:Z, (a | p) -> a = -1 \/ a = 1 \/ a = p \/ a = - p.
 Proof.
-  simple induction 1; intros.
+  destruct 1; intros.
   assert
     (a = - p \/ - p < a < -1 \/ a = -1 \/ a = 0 \/ a = 1 \/ 1 < a < p \/ a = p).
-  assert (Zabs a <= Zabs p). apply Zdivide_bounds; [ assumption | omega ].
-  generalize H3.
-  pattern (Zabs a) in |- *; apply Zabs_ind; pattern (Zabs p) in |- *;
-    apply Zabs_ind; intros; omega.
+  { assert (Zabs a <= Zabs p) as H2.
+      apply Zdivide_bounds; [ assumption | omega ].
+    revert H2.
+    pattern (Zabs a); apply Zabs_ind; pattern (Zabs p); apply Zabs_ind;
+    intros; omega. }
   intuition idtac.
   (* -p < a < -1 *)
-  absurd (rel_prime (- a) p); intuition.
-  inversion H3.
-  assert (- a | - a); auto with zarith.
-  assert (- a | p); auto with zarith.
-  generalize (H8 (- a) H9 H10); intuition idtac.
-  generalize (Zdivide_1 (- a) H11); intuition.
+  - absurd (rel_prime (- a) p); intuition.
+    inversion H2.
+    assert (- a | - a) by auto with zarith.
+    assert (- a | p) by auto with zarith.
+    apply H7, Zdivide_1 in H8; intuition.
   (* a = 0 *)
-  inversion H2. subst a; omega.
+  - inversion H1. subst a; omega.
   (* 1 < a < p *)
-  absurd (rel_prime a p); intuition.
-  inversion H3.
-  assert (a | a); auto with zarith.
-  assert (a | p); auto with zarith.
-  generalize (H8 a H9 H10); intuition idtac.
-  generalize (Zdivide_1 a H11); intuition.
+  - absurd (rel_prime a p); intuition.
+    inversion H2.
+    assert (a | a) by auto with zarith.
+    assert (a | p) by auto with zarith.
+    apply H7, Zdivide_1 in H8; intuition.
 Qed.
 
 (** A prime number is relatively prime with any number it does not divide *)
@@ -606,11 +605,10 @@ Qed.
 Lemma prime_rel_prime :
   forall p:Z, prime p -> forall a:Z, ~ (p | a) -> rel_prime p a.
 Proof.
-  simple induction 1; intros.
-  constructor; intuition.
-  elim (prime_divisors p H x H3); intuition; subst; auto with zarith.
-  absurd (p | a); auto with zarith.
-  absurd (p | a); intuition.
+  intros; constructor; intros; auto with zarith.
+  apply prime_divisors in H1; intuition; subst; auto with zarith.
+  - absurd (p | a); auto with zarith.
+  - absurd (p | a); intuition.
 Qed.
 
 Hint Resolve prime_rel_prime: zarith.
@@ -635,7 +633,7 @@ Lemma prime_mult :
   forall p:Z, prime p -> forall a b:Z, (p | a * b) -> (p | a) \/ (p | b).
 Proof.
   intro p; simple induction 1; intros.
-  case (Zdivide_dec p a); intuition.
+  case (Zdivide_dec p a); nintuition.
   right; apply Gauss with a; auto with zarith.
 Qed.
 

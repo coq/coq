@@ -28,22 +28,30 @@ let assoc_var s ist =
 
 (** Parametrization of tauto *)
 
+type tauto_flags = {
+
 (* Whether conjunction and disjunction are restricted to binary connectives *)
-(* (this is the compatibility mode) *)
-let binary_mode = true
+  binary_mode : bool;
+
+(* Whether compatibility for buggy detection of binary connective is on *)
+  binary_mode_bugged_detection : bool;
 
 (* Whether conjunction and disjunction are restricted to the connectives *)
 (* having the structure of "and" and "or" (up to the choice of sorts) in *)
-(* contravariant position in an hypothesis (this is the compatibility mode) *)
-let strict_in_contravariant_hyp = true
+(* contravariant position in an hypothesis *)
+  strict_in_contravariant_hyp : bool;
 
 (* Whether conjunction and disjunction are restricted to the connectives *)
 (* having the structure of "and" and "or" (up to the choice of sorts) in *)
 (* an hypothesis and in the conclusion *)
-let strict_in_hyp_and_ccl = false
+  strict_in_hyp_and_ccl : bool;
 
 (* Whether unit type includes equality types *)
-let strict_unit = false
+  strict_unit : bool;
+
+(* Whether inner unfolding is allowed *)
+  inner_unfolding : bool
+}
 
 (* Whether inner iff are unfolded *)
 let iff_unfolding = ref false
@@ -70,8 +78,8 @@ let is_empty ist =
 
 (* Strictly speaking, this exceeds the propositional fragment as it
    matches also equality types (and solves them if a reflexivity) *)
-let is_unit_or_eq ist =
-  let test = if strict_unit then is_unit_type else is_unit_or_eq_type in
+let is_unit_or_eq flags ist =
+  let test = if flags.strict_unit then is_unit_type else is_unit_or_eq_type in
   if test (assoc_var "X1" ist) then
     <:tactic<idtac>>
   else
@@ -85,13 +93,13 @@ let is_record t =
 	    mib.Declarations.mind_record
       | _ -> false
 
-let is_binary t =
+let bugged_is_binary t =
   isApp t &&
   let (hdapp,args) = decompose_app t in
     match (kind_of_term hdapp) with
     | Ind ind  ->
         let (mib,mip) = Global.lookup_inductive ind in
-	  mib.Declarations.mind_nparams = 2
+         mib.Declarations.mind_nparams = 2
     | _ -> false
 
 let iter_tac tacl =
@@ -99,70 +107,72 @@ let iter_tac tacl =
 
 (** Dealing with conjunction *)
 
-let is_conj ist =
+let is_conj flags ist =
   let ind = assoc_var "X1" ist in
-    if (not binary_mode || is_binary ind) (* && not (is_record ind) *)
-      && is_conjunction ~strict:strict_in_hyp_and_ccl ind
+    if (not flags.binary_mode_bugged_detection || bugged_is_binary ind) &&
+       is_conjunction
+         ~strict:flags.strict_in_hyp_and_ccl
+         ~onlybinary:flags.binary_mode ind
     then
       <:tactic<idtac>>
     else
       <:tactic<fail>>
 
-let flatten_contravariant_conj ist =
+let flatten_contravariant_conj flags ist =
   let typ = assoc_var "X1" ist in
   let c = assoc_var "X2" ist in
   let hyp = assoc_var "id" ist in
-  match match_with_conjunction ~strict:strict_in_contravariant_hyp typ with
+  match match_with_conjunction
+          ~strict:flags.strict_in_contravariant_hyp
+          ~onlybinary:flags.binary_mode typ
+  with
   | Some (_,args) ->
-      let i = List.length args in
-      if not binary_mode || i = 2 then
-	let newtyp = valueIn (VConstr ([],List.fold_right mkArrow args c)) in
-	let hyp = valueIn (VConstr ([],hyp)) in
-	let intros =
-	  iter_tac (List.map (fun _ -> <:tactic< intro >>) args)
-	  <:tactic< idtac >> in
-	<:tactic<
-          let newtyp := $newtyp in
-          let hyp := $hyp in
-	  assert newtyp by ($intros; apply hyp; split; assumption);
-	  clear hyp
-	>>
-      else
-	<:tactic<fail>>
+      let newtyp = valueIn (VConstr ([],List.fold_right mkArrow args c)) in
+      let hyp = valueIn (VConstr ([],hyp)) in
+      let intros =
+	iter_tac (List.map (fun _ -> <:tactic< intro >>) args)
+	<:tactic< idtac >> in
+      <:tactic<
+        let newtyp := $newtyp in
+        let hyp := $hyp in
+	assert newtyp by ($intros; apply hyp; split; assumption);
+	clear hyp
+      >>
   | _ ->
       <:tactic<fail>>
 
 (** Dealing with disjunction *)
 
-let is_disj ist =
+let is_disj flags ist =
   let t = assoc_var "X1" ist in
-  if (not binary_mode || is_binary t) &&
-    is_disjunction ~strict:strict_in_hyp_and_ccl t
+  if (not flags.binary_mode_bugged_detection || bugged_is_binary t) &&
+     is_disjunction
+       ~strict:flags.strict_in_hyp_and_ccl
+       ~onlybinary:flags.binary_mode t
   then
     <:tactic<idtac>>
   else
     <:tactic<fail>>
 
-let flatten_contravariant_disj ist =
+let flatten_contravariant_disj flags ist =
   let typ = assoc_var "X1" ist in
   let c = assoc_var "X2" ist in
   let hyp = assoc_var "id" ist in
-  match match_with_disjunction ~strict:strict_in_contravariant_hyp typ with
+  match match_with_disjunction
+          ~strict:flags.strict_in_contravariant_hyp
+          ~onlybinary:flags.binary_mode
+          typ with
   | Some (_,args) ->
-      let i = List.length args in
-      if not binary_mode || i = 2 then
-	let hyp = valueIn (VConstr ([],hyp)) in
-	iter_tac (list_map_i (fun i arg ->
-	  let typ = valueIn (VConstr ([],mkArrow arg c)) in
-	  let i = Tacexpr.Integer i in
-	  <:tactic<
-            let typ := $typ in
-            let hyp := $hyp in
-	    let i := $i in
-	    assert typ by (intro; apply hyp; constructor i; assumption)
-	  >>) 1 args) <:tactic< let hyp := $hyp in clear hyp >>
-      else
-	<:tactic<fail>>
+      let hyp = valueIn (VConstr ([],hyp)) in
+      iter_tac (list_map_i (fun i arg ->
+	let typ = valueIn (VConstr ([],mkArrow arg c)) in
+	let i = Tacexpr.Integer i in
+	<:tactic<
+          let typ := $typ in
+          let hyp := $hyp in
+	  let i := $i in
+	  assert typ by (intro; apply hyp; constructor i; assumption)
+	>>) 1 args) <:tactic< let hyp := $hyp in clear hyp >>
   | _ ->
       <:tactic<fail>>
 
@@ -173,13 +183,11 @@ let not_dep_intros ist =
   <:tactic<
   repeat match goal with
   | |- (forall (_: ?X1), ?X2) => intro
-  | |- (Coq.Init.Logic.not _)   => unfold Coq.Init.Logic.not at 1
-  | H:(Coq.Init.Logic.not _)|-_    => unfold Coq.Init.Logic.not at 1 in H
-  | H:forall (_: Coq.Init.Logic.not _), _|-_    => unfold Coq.Init.Logic.not at 1 in H
+  | |- (Coq.Init.Logic.not _) => unfold Coq.Init.Logic.not at 1; intro
   end >>
 
-let axioms ist =
-  let t_is_unit_or_eq = tacticIn is_unit_or_eq
+let axioms flags ist =
+  let t_is_unit_or_eq = tacticIn (is_unit_or_eq flags)
   and t_is_empty = tacticIn is_empty in
     <:tactic<
     match reverse goal with
@@ -189,12 +197,12 @@ let axioms ist =
     end >>
 
 
-let simplif ist =
-  let t_is_unit_or_eq = tacticIn is_unit_or_eq
-  and t_is_conj = tacticIn is_conj
-  and t_flatten_contravariant_conj = tacticIn flatten_contravariant_conj
-  and t_flatten_contravariant_disj = tacticIn flatten_contravariant_disj
-  and t_is_disj = tacticIn is_disj
+let simplif flags ist =
+  let t_is_unit_or_eq = tacticIn (is_unit_or_eq flags)
+  and t_is_conj = tacticIn (is_conj flags)
+  and t_flatten_contravariant_conj = tacticIn (flatten_contravariant_conj flags)
+  and t_flatten_contravariant_disj = tacticIn (flatten_contravariant_disj flags)
+  and t_is_disj = tacticIn (is_disj flags)
   and t_not_dep_intros = tacticIn not_dep_intros in
   <:tactic<
     $t_not_dep_intros;
@@ -231,11 +239,11 @@ let simplif ist =
         end;
         $t_not_dep_intros) >>
 
-let rec tauto_intuit t_reduce solver ist =
-  let t_axioms = tacticIn axioms
-  and t_simplif = tacticIn simplif
-  and t_is_disj = tacticIn is_disj
-  and t_tauto_intuit = tacticIn (tauto_intuit t_reduce solver) in
+let rec tauto_intuit flags t_reduce solver ist =
+  let t_axioms = tacticIn (axioms flags)
+  and t_simplif = tacticIn (simplif flags)
+  and t_is_disj = tacticIn (is_disj flags)
+  and t_tauto_intuit = tacticIn (tauto_intuit flags t_reduce solver) in
   let t_solver = globTacticIn (fun _ist -> solver) in
   <:tactic<
    ($t_simplif;$t_axioms
@@ -247,6 +255,10 @@ let rec tauto_intuit t_reduce solver ist =
 		[ exact id
 		| generalize (fun y:X2 => id (fun x:X1 => y)); intro; clear id;
 		  solve [ $t_tauto_intuit ]]]
+      | id:forall (_:not ?X1), ?X3|- _ =>
+	  cut X3;
+	    [ intro; clear id; $t_tauto_intuit
+	    | cut (not X1); [ exact id | clear id; intro; solve [$t_tauto_intuit ]]]
       | |- ?X1 =>
           $t_is_disj; solve [left;$t_tauto_intuit | right;$t_tauto_intuit]
       end
@@ -267,11 +279,13 @@ let reduction_not _ist =
 
 let t_reduction_not = tacticIn reduction_not
 
-let intuition_gen tac =
-  interp (tacticIn (tauto_intuit t_reduction_not tac))
+let intuition_gen flags tac =
+  let t_reduce =
+    if flags.inner_unfolding then t_reduction_not else  <:tactic<idtac>> in
+  interp (tacticIn (tauto_intuit flags t_reduce tac))
 
-let tauto_intuitionistic g =
-  try intuition_gen <:tactic<fail>> g
+let tauto_intuitionistic flags g =
+  try intuition_gen flags <:tactic<fail>> g
   with
     Refiner.FailError _ | UserError _ ->
       errorlabstrm "tauto" (str "tauto failed.")
@@ -280,26 +294,69 @@ let coq_nnpp_path =
   let dir = List.map id_of_string ["Classical_Prop";"Logic";"Coq"] in
   Libnames.make_path (make_dirpath dir) (id_of_string "NNPP")
 
-let tauto_classical nnpp g =
-  try tclTHEN (apply nnpp) tauto_intuitionistic g
+let tauto_classical flags nnpp g =
+  try tclTHEN (apply nnpp) (tauto_intuitionistic flags) g
   with UserError _ -> errorlabstrm "tauto" (str "Classical tauto failed.")
 
-let tauto g =
+let tauto_gen flags g =
   try
     let nnpp = constr_of_global (Nametab.global_of_path coq_nnpp_path) in
     (* try intuitionistic version first to avoid an axiom if possible *)
-    tclORELSE tauto_intuitionistic (tauto_classical nnpp) g
+    tclORELSE (tauto_intuitionistic flags) (tauto_classical flags nnpp) g
   with Not_found ->
-    tauto_intuitionistic g
-
+    tauto_intuitionistic flags g
 
 let default_intuition_tac = <:tactic< auto with * >>
+
+(* This is the uniform mode dealing with ->, not, iff and types isomorphic to
+   /\ and *, \/ and +, False and Empty_set, True and unit, _and_ eq-like types;
+   not and iff are unfolded only if necessary *)
+let tauto_uniform_unit_flags = {
+  binary_mode = true;
+  binary_mode_bugged_detection = false;
+  strict_in_contravariant_hyp = true;
+  strict_in_hyp_and_ccl = true;
+  strict_unit = false;
+  inner_unfolding = false
+}
+
+(* This is the compatibility mode (not used) *)
+let tauto_legacy_flags = {
+  binary_mode = true;
+  binary_mode_bugged_detection = true;
+  strict_in_contravariant_hyp = true;
+  strict_in_hyp_and_ccl = false;
+  strict_unit = false;
+  inner_unfolding = true
+}
+
+(* This is the improved mode *)
+let tauto_power_flags = {
+  binary_mode = false; (* support n-ary connectives *)
+  binary_mode_bugged_detection = false;
+  strict_in_contravariant_hyp = false; (* supports non-regular connectives *)
+  strict_in_hyp_and_ccl = false;
+  strict_unit = false;
+  inner_unfolding = false
+}
+
+let tauto = tauto_gen tauto_uniform_unit_flags
+let dtauto = tauto_gen tauto_power_flags
 
 TACTIC EXTEND tauto
 | [ "tauto" ] -> [ tauto ]
 END
 
+TACTIC EXTEND dtauto
+| [ "dtauto" ] -> [ dtauto ]
+END
+
 TACTIC EXTEND intuition
-| [ "intuition" ] -> [ intuition_gen default_intuition_tac ]
-| [ "intuition" tactic(t) ] -> [ intuition_gen t ]
+| [ "intuition" ] -> [ intuition_gen tauto_uniform_unit_flags default_intuition_tac ]
+| [ "intuition" tactic(t) ] -> [ intuition_gen tauto_uniform_unit_flags t ]
+END
+
+TACTIC EXTEND dintuition
+| [ "dintuition" ] -> [ intuition_gen tauto_power_flags default_intuition_tac ]
+| [ "dintuition" tactic(t) ] -> [ intuition_gen tauto_power_flags t ]
 END
