@@ -61,7 +61,7 @@ type utf8_status = UnicodeLetter | UnicodeIdentPart | UnicodeSymbol
 
 exception UnsupportedUtf8
 
-val ident_refutation : string -> string option
+val ident_refutation : string -> (bool * string) option
 val classify_unicode : int -> utf8_status
 val lowercase_first_char_utf8 : string -> string
 val ascii_of_ident : string -> string

@@ -26,8 +26,12 @@ open Util
 
 type identifier = string
 
-let check_ident_soft x = Option.iter Pp.warning (ident_refutation x)
-let check_ident x = Option.iter Errors.error (ident_refutation x)
+let check_ident_soft x =
+  Option.iter (fun (fatal,x) ->
+      if fatal then error x else Pp.msg_warning (str x))
+    (ident_refutation x)
+let check_ident x =
+  Option.iter (fun (_,x) -> Errors.error x) (ident_refutation x)
 
 let id_of_string s = check_ident_soft s; String.copy s
 let string_of_id id = String.copy id

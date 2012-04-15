@@ -283,14 +283,14 @@ let initial_refutation j n s =
   | UnicodeLetter -> None
   | _ ->
       let c = String.sub s 0 j in
-      Some ("Invalid character '"^c^"' at beginning of identifier \""^s^"\".")
+      Some (false,"Invalid character '"^c^"' at beginning of identifier \""^s^"\".")
 
 let trailing_refutation i j n s =
   match classify_unicode n with
   | UnicodeLetter | UnicodeIdentPart -> None
   | _ ->
       let c = String.sub s i j in
-      Some ("Invalid character '"^c^"' in identifier \""^s^"\".")
+      Some (false,"Invalid character '"^c^"' in identifier \""^s^"\".")
 
 let ident_refutation s =
   if s = ".." then None else try
@@ -308,9 +308,9 @@ let ident_refutation s =
 	   end
 	|x -> x
   with
-  | End_of_input -> Some "The empty string is not an identifier."
-  | UnsupportedUtf8 -> Some (s^": unsupported character in utf8 sequence.")
-  | Invalid_argument _ -> Some (s^": invalid utf8 sequence.")
+  | End_of_input -> Some (true,"The empty string is not an identifier.")
+  | UnsupportedUtf8 -> Some (true,s^": unsupported character in utf8 sequence.")
+  | Invalid_argument _ -> Some (true,s^": invalid utf8 sequence.")
 
 let lowercase_unicode =
   let tree = Segmenttree.make Unicodetable.to_lower in
