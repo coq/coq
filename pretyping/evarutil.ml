@@ -1190,7 +1190,7 @@ let restrict_hyps evd evk filter candidates =
     let typablefilter = closure_of_filter evd evk filter in
     (typablefilter,candidates)
 
-exception EvarSolvedWhileRestricting of evar_map
+exception EvarSolvedWhileRestricting of evar_map * constr
 
 let do_restrict_hyps evd (evk,args as ev) filter candidates =
   let filter,candidates = match filter with
@@ -1198,7 +1198,9 @@ let do_restrict_hyps evd (evk,args as ev) filter candidates =
   | Some filter -> restrict_hyps evd evk filter candidates in
   match candidates,filter with
   | Some [], _ -> error "Not solvable."
-  | Some [nc],_ -> raise (EvarSolvedWhileRestricting (Evd.define evk nc evd))
+  | Some [nc],_ ->
+      let evd = Evd.define evk nc evd in
+      raise (EvarSolvedWhileRestricting (evd,whd_evar evd (mkEvar ev)))
   | None, None -> evd,ev
   | _ -> restrict_applied_evar evd ev filter candidates
 
@@ -1240,12 +1242,12 @@ let postpone_evar_evar f env evd filter1 ev1 filter2 ev2 =
     try
       let evd,ev2' = do_restrict_hyps evd ev2 filter2 None in
       add_conv_pb (Reduction.CONV,env,mkEvar ev1',mkEvar ev2') evd
-    with EvarSolvedWhileRestricting evd ->
+    with EvarSolvedWhileRestricting (evd,ev2) ->
       (* ev2 solved on the fly *)
-      f env evd ev1' (mkEvar ev2)
-  with EvarSolvedWhileRestricting evd ->
+      f env evd ev1' ev2
+  with EvarSolvedWhileRestricting (evd,ev1) ->
     (* ev1 solved on the fly *)
-    f env evd ev2 (mkEvar ev1)
+    f env evd ev2 ev1
 
 (* [solve_evar_evar f Γ Σ ?e1[u1..un] ?e2[v1..vp]] applies an heuristic
  * to solve the equation Σ; Γ ⊢ ?e1[u1..un] = ?e2[v1..vp]:
@@ -1371,8 +1373,8 @@ let project_evar_on_evar g env evd aliases k2 (evk1,argsv1 as ev1) (evk2,argsv2 
       let evd,(evk1',args1) = do_restrict_hyps evd ev1 filter1 candidates1 in
       evd,mkEvar (evk1',invert_invertible_arg evd aliases k2 ev2 args1)
     with
-    | EvarSolvedWhileRestricting evd ->
-        raise (EvarSolvedOnTheFly (evd,mkEvar ev1))
+    | EvarSolvedWhileRestricting (evd,ev1) ->
+        raise (EvarSolvedOnTheFly (evd,ev1))
     | DoesNotPreserveCandidateRestriction | NotEnoughInformationToInvert ->
         raise (CannotProject filter1)
   else
