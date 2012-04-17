@@ -24,6 +24,10 @@ Tactics
   "debug trivial" or by a global "Set Debug Auto/Eauto/Trivial".
 - New command "r string" that interprets "idtac string" as a breakpoint
   and jumps to its next use in Ltac debugger.
+- Tactics from the Dp plugin (simplify, ergo, yices, cvc3, z3, cvcl,
+  harvey, zenon, gwhy) have been removed, since Why2 has not been
+  maintained for the last few years. The Why3 plugin should be a suitable
+  replacement in most cases.
 
 Libraries
 
