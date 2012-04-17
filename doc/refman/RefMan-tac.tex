@@ -37,18 +37,114 @@ extends the folklore notion of tactical) to combine those atomic
 tactics. This chapter is devoted to atomic tactics. The tactic
 language will be described in Chapter~\ref{TacticLanguage}.
 
-%\section{Invocation of tactics
-%\label{tactic-syntax}
-%\index{tactic@{\tac}}}
+\section{Invocation of tactics
+\label{tactic-syntax}
+\index{tactic@{\tac}}}
 
-%A tactic is applied as an ordinary command. If the tactic does not
-%address the first subgoal, the command may be preceded by the wished
-%subgoal number as shown below:
+A tactic is applied as an ordinary command. If the tactic does not
+address the first subgoal, the command may be preceded by the wished
+subgoal number as shown below:
 
-%\begin{tabular}{lcl}
-%{\commandtac} & ::= & {\num} {\tt :} {\tac} {\tt .}\\
-% & $|$ & {\tac} {\tt .}
-%\end{tabular}
+\begin{tabular}{lcl}
+{\commandtac} & ::= & {\num} {\tt :} {\tac} {\tt .}\\
+ & $|$ & {\tac} {\tt .}
+\end{tabular}
+
+\subsection{Bindings list
+\index{Binding list}
+\label{Binding-list}}
+
+Tactics that take a term as argument may also support a bindings list, so
+as to instantiate some parameters of the term by name or position.
+The general form of a term equipped with a bindings list is {\tt
+{\term} with {\bindinglist}} where {\bindinglist} may be of two
+different forms:
+
+\begin{itemize}
+\item In a bindings list of the form {\tt (\vref$_1$ := \term$_1$)
+  \dots\ (\vref$_n$ := \term$_n$)}, {\vref} is either an {\ident} or a
+  {\num}. The references are determined according to the type of
+  {\term}. If \vref$_i$ is an identifier, this identifier has to be
+  bound in the type of {\term} and the binding provides the tactic
+  with an instance for the parameter of this name.  If \vref$_i$ is
+  some number $n$, this number denotes the $n$-th non dependent
+  premise of the {\term}, as determined by the type of {\term}.
+
+  \ErrMsg \errindex{No such binder}
+
+\item A bindings list can also be a simple list of terms {\tt
+  \term$_1$ \dots\term$_n$}. In that case the references to
+  which these terms correspond are determined by the tactic. In case
+  of {\tt induction}, {\tt destruct}, {\tt elim} and {\tt case} (see
+  Section~\ref{elim}) the terms have to provide instances for all the
+  dependent products in the type of \term\ while in the case of {\tt
+  apply}, or of {\tt constructor} and its variants, only instances for
+  the dependent products which are not bound in the conclusion of the
+  type are required.
+
+  \ErrMsg \errindex{Not the right number of missing arguments}
+\end{itemize}
+
+\subsection{Occurrences sets and occurrences clauses}
+\label{Occurrences clauses}
+\index{Occurrences clauses}
+
+An occurrences clause is a modifier to some tactics that obeys the
+following syntax:
+
+\begin{tabular}{lcl}
+{\occclause} & ::= & {\tt in} {\occgoalset} \\
+{\occgoalset} & ::= &
+    \zeroone{{\ident$_1$} \zeroone{\atoccurrences} {\tt ,} \\
+&   & {\dots} {\tt ,}\\
+&   & {\ident$_m$} \zeroone{\atoccurrences}}\\
+&   & \zeroone{{\tt |-} \zeroone{{\tt *} \zeroone{\atoccurrences}}}\\
+& | &
+    {\tt *} {\tt |-} \zeroone{{\tt *} \zeroone{\atoccurrences}}\\
+& | &
+    {\tt *}\\
+{\atoccurrences} & ::= & {\tt at} {\occlist}\\
+{\occlist} & ::= & \zeroone{{\tt -}} {\num$_1$} \dots\ {\num$_n$}
+\end{tabular}
+
+The role of an occurrence clause is to select a set of occurrences of
+a {\term} in a goal. In the first case, the {{\ident$_i$}
+\zeroone{{\tt at} {\num$_1^i$} \dots\ {\num$_{n_i}^i$}}} parts
+indicate that occurrences have to be selected in the hypotheses named
+{\ident$_i$}.  If no numbers are given for hypothesis {\ident$_i$},
+then all occurrences of {\term} in the hypothesis are selected. If
+numbers are given, they refer to occurrences of {\term} when the term
+is printed using option {\tt Set Printing All} (see
+Section~\ref{SetPrintingAll}), counting from left to right. In
+particular, occurrences of {\term} in implicit arguments (see
+Section~\ref{Implicit Arguments}) or coercions (see
+Section~\ref{Coercions}) are counted.
+
+If a minus sign is given between {\tt at} and the list of occurrences,
+it negates the condition so that the clause denotes all the occurrences except
+the ones explicitly mentioned after the minus sign.
+
+As an exception to the left-to-right order, the occurrences in the
+{\tt return} subexpression of a {\tt match} are considered {\em
+before} the occurrences in the matched term.
+
+In the second case, the {\tt *} on the left of {\tt |-} means that
+all occurrences of {\term} are selected in every hypothesis.
+
+In the first and second case, if {\tt *} is mentioned on the right of
+{\tt |-}, the occurrences of the conclusion of the goal have to be
+selected. If some numbers are given, then only the occurrences denoted
+by these numbers are selected. In no numbers are given, all
+occurrences of {\term} in the goal are selected.
+
+Finally, the last notation is an abbreviation for {\tt * |- *}. Note
+also that {\tt |-} is optional in the first case when no {\tt *} is
+given.
+
+Here are some tactics that understand occurrences clauses:
+{\tt set}, {\tt remember}, {\tt induction}, {\tt destruct}.
+
+\SeeAlso~Sections~\ref{tactic:set}, \ref{Tac-induction}, \ref{SetPrintingAll}.
 
 \section{Applying theorems}
 
@@ -95,10 +191,37 @@ subgoal is proved. Otherwise, it fails.
 \subsection[refine]{\tt refine \term
 \tacindex{refine}
 \label{refine}
+\label{refine-example}
 \index{?@{\texttt{?}}}}
 
-This tactic allows to give an exact proof but still with some
-holes. The holes are noted ``\texttt{\_}''.
+This tactic applies to any goal. It behaves like {\tt exact} with a big
+difference: the user can leave some holes (denoted by \texttt{\_} or
+{\tt (\_:}{\it type}{\tt )}) in the term. {\tt refine} will generate as
+many subgoals as there are holes in the term. The type of holes must be
+either synthesized by the system or declared by an
+explicit cast like \verb|(_:nat->Prop)|. This low-level
+tactic can be useful to advanced users.
+
+\Example
+
+\begin{coq_example*}
+Inductive Option : Set :=
+  | Fail : Option
+  | Ok : bool -> Option.
+\end{coq_example}
+\begin{coq_example}
+Definition get : forall x:Option, x <> Fail -> bool.
+refine
+ (fun x:Option =>
+    match x return x <> Fail -> bool with
+    | Fail => _
+    | Ok b => fun _ => b
+    end).
+intros; absurd (Fail = Fail); trivial.
+\end{coq_example}
+\begin{coq_example*}
+Defined.
+\end{coq_example*}
 
 \begin{ErrMsgs}
 \item \errindex{invalid argument}:
@@ -112,8 +235,6 @@ holes. The holes are noted ``\texttt{\_}''.
   there is a hole in the term you gave
   which type cannot be inferred. Put a cast around it.
 \end{ErrMsgs}
-
-An example of use is given in Section~\ref{refine-example}.
 
 \subsection[apply]{\tt apply \term
 \tacindex{apply}
@@ -241,7 +362,7 @@ Section~\ref{pattern} to transform the goal so that it gets the form
 \end{Variants}
 
 \subsection[apply in]{{\tt apply {\term} in {\ident}}
-\tacindex{apply \ldots\ in}}
+\tacindex{apply \dots\ in}}
 
 This tactic applies to any goal.  The argument {\term} is a term
 well-formed in the local context and the argument {\ident} is an
@@ -286,7 +407,7 @@ instantiate the parameters of the corresponding type of {\term}
 (see syntax of bindings in Section~\ref{Binding-list}).
 
 \item {\tt eapply \nelist{{\term} with {\bindinglist}}{,} in {\ident}}
-\tacindex{eapply {\ldots} in}
+\tacindex{eapply \dots\ in}
 
 This works as {\tt apply \nelist{{\term} with {\bindinglist}}{,} in
 {\ident}} but turns unresolved bindings into existential variables, if
@@ -304,8 +425,8 @@ This works as {\tt apply \nelist{{\term}{,} with {\bindinglist}}{,} in
 This works as {\tt apply \nelist{{\term}{,} with {\bindinglist}}{,} in {\ident} as {\disjconjintropattern}} but using {\tt eapply}.
 
 \item {\tt simple apply {\term} in {\ident}}
-\tacindex{simple apply {\ldots} in}
-\tacindex{simple eapply {\ldots} in}
+\tacindex{simple apply \dots\ in}
+\tacindex{simple eapply \dots\ in}
 
 This behaves like {\tt apply {\term} in {\ident}} but it reasons
 modulo conversion only on subterms that contain no variables to
@@ -543,18 +664,18 @@ This extension of the tactic {\tt intros} combines introduction of
 variables or hypotheses and case analysis. An {\em introduction pattern} is
 either:
 \begin{itemize}
-\item A {\em naming introduction pattern}, i.e. either one of:
+\item a {\em naming introduction pattern}, i.e. either one of:
   \begin{itemize}
   \item the pattern \texttt{?}
   \item the pattern \texttt{?\ident}
   \item an identifier
   \end{itemize}
-\item A {\em disjunctive/conjunctive introduction pattern}, i.e. either one of:
+\item a {\em disjunctive/conjunctive introduction pattern}, i.e. either one of:
   \begin{itemize}
   \item a disjunction of lists of patterns:
-  {\tt [$p_{11}$ {\ldots} $p_{1m_1}$ | {\ldots} | $p_{11}$ {\ldots} $p_{nm_n}$]}
-  \item a conjunction of patterns: {\tt (} $p_1$ {\tt ,} {\ldots} {\tt ,} $p_n$ {\tt )}
-  \item a list of patterns {\tt (} $p_1$\ {\tt \&}\ {\ldots}\ {\tt \&}\ $p_n$ {\tt )}
+  {\tt [$p_{11}$ \dots\ $p_{1m_1}$ | \dots\ | $p_{11}$ \dots\ $p_{nm_n}$]}
+  \item a conjunction of patterns: {\tt ($p_1$ , \dots\ , $p_n$)}
+  \item a list of patterns {\tt ($p_1$ \&\ \dots\ \&\ $p_n$)}
    for sequence of right-associative binary constructs
   \end{itemize}
 \item the wildcard: {\tt \_}
@@ -573,16 +694,16 @@ introduction pattern $p$:
 \item introduction on \texttt{\ident} behaves as described in
   Section~\ref{intro};
 \item introduction over a disjunction of list of patterns {\tt
-  [$p_{11}$ {\ldots} $p_{1m_1}$ | {\ldots} | $p_{11}$ {\ldots}
-    $p_{nm_n}$]} expects the product to be over an inductive type
+  [$p_{11}$ \dots\ $p_{1m_1}$ | \dots\ | $p_{11}$ \dots\ $p_{nm_n}$]}
+  expects the product to be over an inductive type
   whose number of constructors is $n$ (or more generally over a type
   of conclusion an inductive type built from $n$ constructors,
-  e.g. {\tt C -> A$\backslash$/B if $n=2$}): it destructs the introduced
+  e.g. {\tt C -> A\textbackslash/B if $n=2$}): it destructs the introduced
   hypothesis as {\tt destruct} (see Section~\ref{destruct}) would and
   applies on each generated subgoal the corresponding tactic;
   \texttt{intros}~$p_{i1}$ {\ldots} $p_{im_i}$; if the disjunctive
   pattern is part of a sequence of patterns and is not the last
-  pattern of the sequence, then {\Coq} completes the pattern so as all
+  pattern of the sequence, then {\Coq} completes the pattern so that all
   the argument of the constructors of the inductive type are
   introduced (for instance, the list of patterns {\tt [$\;$|$\;$] H}
   applied on goal {\tt forall x:nat, x=0 -> 0=x} behaves the same as
@@ -595,7 +716,7 @@ introduction pattern $p$:
   of the constructor of $I$ (observe that {\tt ($p_1$, {\ldots},
   $p_n$)} is an alternative notation for {\tt [$p_1$ {\ldots}
   $p_n$]});
-\item introduction via {\tt ( $p_1$ \& \ldots \& $p_n$ )}
+\item introduction via {\tt ($p_1$ \& \dots\ \& $p_n$)}
   is a shortcut for introduction via
   {\tt ($p_1$,(\ldots,(\dots,$p_n$)\ldots))}; it expects the
   hypothesis to be a sequence of right-associative binary inductive
@@ -616,6 +737,16 @@ introduction pattern $p$:
   if moreover the term to substitute is a variable, the hypothesis is
   removed.
 \end{itemize}
+
+\Example
+
+\begin{coq_example}
+Lemma intros_test : forall A B C:Prop, A \/ B /\ C -> (A -> C) -> C.
+intros A B C [a| [_ c]] f.
+apply (f a).
+exact c.
+Qed.
+\end{coq_example}
 
 \Rem {\tt intros $p_1~\ldots~p_n$} is not equivalent to \texttt{intros
   $p_1$;\ldots; intros $p_n$} for the following reasons:
@@ -639,14 +770,6 @@ Show 2.
 \end{coq_example}
 
 \end{itemize}
-
-\begin{coq_example}
-Lemma intros_test : forall A B C:Prop, A \/ B /\ C -> (A -> C) -> C.
-intros A B C [a| [_ c]] f.
-apply (f a).
-exact c.
-Qed.
-\end{coq_example}
 
 \subsection[clear]{\tt clear {\ident}
 \tacindex{clear}
@@ -1095,6 +1218,62 @@ relies on unproved subgoals, one can use the command {\tt Print
 Assumptions} (see Section~\ref{PrintAssumptions}). Admitted subgoals
 have names of the form {\ident}\texttt{\_admitted} possibly followed
 by a number.
+
+\subsection[absurd]{\tt absurd \term
+\tacindex{absurd}
+\label{absurd}}
+
+This tactic applies to any goal. The argument {\term} is any
+proposition {\tt P} of type {\tt Prop}. This tactic applies {\tt
+  False} elimination, that is it deduces the current goal from {\tt
+  False}, and generates as subgoals {\tt $\sim$P} and {\tt P}. It is
+very useful in proofs by cases, where some cases are impossible. In
+most cases, \texttt{P} or $\sim$\texttt{P} is one of the hypotheses of
+the local context.
+
+\subsection[contradiction]{\tt contradiction
+\label{contradiction}
+\tacindex{contradiction}}
+
+This tactic applies to any goal. The {\tt contradiction} tactic
+attempts to find in the current context (after all {\tt intros}) one
+hypothesis which is equivalent to {\tt False}. It permits to prune
+irrelevant cases. This tactic is a macro for the tactics sequence
+{\tt intros; elimtype False; assumption}.
+
+\begin{ErrMsgs}
+\item \errindex{No such assumption}
+\end{ErrMsgs}
+
+\begin{Variants}
+\item {\tt contradiction \ident}
+
+The proof of {\tt False} is searched in the hypothesis named \ident.
+\end{Variants}
+
+\subsection[contradict]{\tt contradict \ident}
+\label{contradict}
+\tacindex{contradict}
+
+This tactic allows to manipulate negated hypothesis and goals. The
+name \ident\ should correspond to a hypothesis. With
+{\tt contradict H}, the current goal and context is transformed in
+the following way:
+\begin{itemize}
+\item  {\tt H:$\neg$A $\vd$  B} \ becomes \ {\tt $\vd$ A}
+\item  {\tt H:$\neg$A $\vd$ $\neg$B} \  becomes \ {\tt H: B $\vd$  A }
+\item  {\tt H: A $\vd$  B} \ becomes \ {\tt $\vd$ $\neg$A}
+\item  {\tt H: A $\vd$ $\neg$B} \ becomes \ {\tt H: B $\vd$ $\neg$A}
+\end{itemize}
+
+\subsection{\tt exfalso}
+\label{exfalso}
+\tacindex{exfalso}
+
+This tactic implements the ``ex falso quodlibet'' logical principle:
+an elimination of {\tt False} is performed on the current goal, and the
+user is then required to prove that {\tt False} is indeed provable in
+the current context. This tactic is a macro for {\tt elimtype False}.
 
 \section{Case analysis and induction
 \label{Tac-induction}}
@@ -1667,6 +1846,374 @@ details.
 
 \end{Variants}
 
+\subsection[discriminate]{\tt discriminate {\term}
+\label{discriminate}
+\tacindex{discriminate}
+\tacindex{ediscriminate}}
+
+This tactic proves any goal from an assumption stating that two
+structurally different terms of an inductive set are equal. For
+example, from {\tt (S (S O))=(S O)} we can derive by absurdity any
+proposition.
+
+The argument {\term} is assumed to be a proof of a statement
+of conclusion {\tt{\term$_1$} = {\term$_2$}} with {\term$_1$} and
+{\term$_2$} being elements of an inductive set.  To build the proof,
+the tactic traverses the normal forms\footnote{Reminder: opaque
+  constants will not be expanded by $\delta$ reductions} of
+{\term$_1$} and {\term$_2$} looking for a couple of subterms {\tt u}
+and {\tt w} ({\tt u} subterm of the normal form of {\term$_1$} and
+{\tt w} subterm of the normal form of {\term$_2$}), placed at the same
+positions and whose head symbols are two different constructors. If
+such a couple of subterms exists, then the proof of the current goal
+is completed, otherwise the tactic fails.
+
+\Rem The syntax {\tt discriminate {\ident}} can be used to refer to a
+hypothesis quantified in the goal. In this case, the quantified
+hypothesis whose name is {\ident} is first introduced in the local
+context using \texttt{intros until \ident}.
+
+\begin{ErrMsgs}
+\item \errindex{No primitive equality found}
+\item \errindex{Not a discriminable equality}
+\end{ErrMsgs}
+
+\begin{Variants}
+\item \texttt{discriminate} \num
+
+  This does the same thing as \texttt{intros until \num} followed by
+  \texttt{discriminate \ident} where {\ident} is the identifier for
+  the last introduced hypothesis.
+
+\item \texttt{discriminate} {\term} {\tt with} {\bindinglist}
+
+  This does the same thing as \texttt{discriminate {\term}} but using
+the given bindings to instantiate parameters or hypotheses of {\term}.
+
+\item \texttt{ediscriminate} \num\\
+      \texttt{ediscriminate} {\term} \zeroone{{\tt with} {\bindinglist}}
+
+  This works the same as {\tt discriminate} but if the type of {\term},
+  or the type of the hypothesis referred to by {\num}, has uninstantiated
+  parameters, these parameters are left as existential variables.
+
+\item \texttt{discriminate}
+
+  This behaves like {\tt discriminate {\ident}} if {\ident} is the
+  name of an hypothesis to which {\tt discriminate} is applicable; if
+  the current goal is of the form {\term$_1$} {\tt <>} {\term$_2$},
+  this behaves as {\tt intro {\ident}; injection {\ident}}.
+
+  \begin{ErrMsgs}
+  \item \errindex{No discriminable equalities} \\
+  occurs when the goal does not verify the expected preconditions.
+  \end{ErrMsgs}
+\end{Variants}
+
+\subsection[injection]{\tt injection {\term}
+\label{injection}
+\tacindex{injection}
+\tacindex{einjection}}
+
+The {\tt injection} tactic is based on the fact that constructors of
+inductive sets are injections. That means that if $c$ is a constructor
+of an inductive set, and if $(c~\vec{t_1})$ and $(c~\vec{t_2})$ are two
+terms that are equal then $~\vec{t_1}$ and $~\vec{t_2}$ are equal
+too.
+
+If {\term} is a proof of a statement of conclusion
+ {\tt {\term$_1$} = {\term$_2$}},
+then {\tt injection} applies injectivity as deep as possible to
+derive the equality of all the subterms of {\term$_1$} and {\term$_2$}
+placed in the same positions. For example, from {\tt (S
+  (S n))=(S (S (S m)))} we may derive {\tt n=(S m)}.  To use this
+tactic {\term$_1$} and {\term$_2$} should be elements of an inductive
+set and they should be neither explicitly equal, nor structurally
+different. We mean by this that, if {\tt n$_1$} and {\tt n$_2$} are
+their respective normal forms, then:
+\begin{itemize}
+\item {\tt n$_1$} and {\tt n$_2$} should not be syntactically equal,
+\item there must not exist any pair of subterms {\tt u} and {\tt w},
+  {\tt u} subterm of {\tt n$_1$} and {\tt w} subterm of {\tt n$_2$} ,
+  placed in the same positions and having different constructors as
+  head symbols.
+\end{itemize}
+If these conditions are satisfied, then, the tactic derives the
+equality of all the subterms of {\term$_1$} and {\term$_2$} placed in
+the same positions and puts them as antecedents of the current goal.
+
+\Example Consider the following goal:
+
+\begin{coq_example*}
+Inductive list : Set :=
+  | nil : list
+  | cons : nat -> list -> list.
+Variable P : list -> Prop.
+\end{coq_example*}
+\begin{coq_eval}
+Lemma ex :
+ forall (l:list) (n:nat), P nil -> cons n l = cons 0 nil -> P l.
+intros l n H H0.
+\end{coq_eval}
+\begin{coq_example}
+Show.
+injection H0.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+Beware that \texttt{injection} yields always an equality in a sigma type
+whenever the injected object has a dependent type.
+
+\Rem There is a special case for dependent pairs. If we have a decidable
+equality over the type of the first argument, then it is safe to do
+the projection on the second one, and so {\tt injection} will work fine.
+To define such an equality, you have to use the {\tt Scheme} command
+(see \ref{Scheme}).
+
+\Rem If some quantified hypothesis of the goal is named {\ident}, then
+{\tt injection {\ident}} first introduces the hypothesis in the local
+context using \texttt{intros until \ident}.
+
+\begin{ErrMsgs}
+\item \errindex{Not a projectable equality but a discriminable one}
+\item \errindex{Nothing to do, it is an equality between convertible terms}
+\item \errindex{Not a primitive equality}
+\end{ErrMsgs}
+
+\begin{Variants}
+\item \texttt{injection} \num{}
+
+  This does the same thing as \texttt{intros until \num} followed by
+\texttt{injection \ident} where {\ident} is the identifier for the last
+introduced hypothesis.
+
+\item \texttt{injection} \term{} {\tt with} {\bindinglist}
+
+  This does the same as \texttt{injection {\term}} but using
+  the given bindings to instantiate parameters or hypotheses of {\term}.
+
+\item \texttt{einjection} \num\\
+      \texttt{einjection} \term{} \zeroone{{\tt with} {\bindinglist}}
+
+  This works the same as {\tt injection} but if the type of {\term},
+  or the type of the hypothesis referred to by {\num}, has uninstantiated
+  parameters, these parameters are left as existential variables.
+
+\item{\tt injection}
+
+  If the current goal is of the form {\term$_1$} {\tt <>} {\term$_2$},
+  this behaves as {\tt intro {\ident}; injection {\ident}}.
+
+  \ErrMsg \errindex{goal does not satisfy the expected preconditions}
+
+\item \texttt{injection} \term{} \zeroone{{\tt with} {\bindinglist}} \texttt{as} \nelist{\intropattern}{}\\
+\texttt{injection} \num{} \texttt{as} {\intropattern} {\ldots} {\intropattern}\\
+\texttt{injection} \texttt{as} {\intropattern} {\ldots} {\intropattern}\\
+\texttt{einjection} \term{} \zeroone{{\tt with} {\bindinglist}} \texttt{as} \nelist{\intropattern}{}\\
+\texttt{einjection} \num{} \texttt{as} {\intropattern} {\ldots} {\intropattern}\\
+\texttt{einjection} \texttt{as} {\intropattern} {\ldots} {\intropattern}\\
+\tacindex{injection \dots\ as}
+
+These variants apply \texttt{intros} \nelist{\intropattern}{} after
+the call to \texttt{injection} or \texttt{einjection}.
+
+\end{Variants}
+
+\subsection[inversion]{\tt inversion {\ident}
+\tacindex{inversion}}
+
+Let the type of {\ident} in the local context be $(I~\vec{t})$,
+where $I$ is a (co)inductive predicate. Then,
+\texttt{inversion} applied to \ident~ derives for each possible
+constructor $c_i$ of $(I~\vec{t})$, {\bf all} the necessary
+conditions that should hold for the instance $(I~\vec{t})$ to be
+proved by $c_i$.
+
+\Rem If {\ident} does not denote a hypothesis in the local context
+but refers to a hypothesis quantified in the goal, then the
+latter is first introduced in the local context using
+\texttt{intros until \ident}.
+
+\begin{Variants}
+\item \texttt{inversion} \num
+
+  This does the same thing as \texttt{intros until \num} then
+  \texttt{inversion \ident} where {\ident} is the identifier for the
+  last introduced hypothesis.
+
+\item \tacindex{inversion\_clear} \texttt{inversion\_clear} \ident
+
+  This behaves as \texttt{inversion} and then erases \ident~ from the
+  context.
+
+\item \tacindex{inversion \dots\ as} \texttt{inversion} {\ident} \texttt{as} {\intropattern}
+
+  This behaves as \texttt{inversion} but using names in
+  {\intropattern} for naming hypotheses. The {\intropattern} must have
+  the form {\tt [} $p_{11}$ \ldots $p_{1n_1}$ {\tt |} {\ldots} {\tt |}
+  $p_{m1}$ \ldots $p_{mn_m}$ {\tt ]} with $m$ being the number of
+  constructors of the type of {\ident}. Be careful that the list must
+  be of length $m$ even if {\tt inversion} discards some cases (which
+  is precisely one of its roles): for the discarded cases, just use an
+  empty list (i.e. $n_i=0$).
+
+  The arguments of the $i^{th}$ constructor and the
+  equalities that {\tt inversion} introduces in the context of the
+  goal corresponding to the $i^{th}$ constructor, if it exists, get
+  their names from the list $p_{i1}$ \ldots $p_{in_i}$ in order. If
+  there are not enough names, {\tt induction} invents names for the
+  remaining variables to introduce. In case an equation splits into
+  several equations (because {\tt inversion} applies {\tt injection}
+  on the equalities it generates), the corresponding name $p_{ij}$ in
+  the list must be replaced by a sublist of the form {\tt [$p_{ij1}$
+  \ldots $p_{ijq}$]} (or, equivalently, {\tt ($p_{ij1}$,
+  \ldots, $p_{ijq}$)}) where $q$ is the number of subequalities
+  obtained from splitting the original equation. Here is an example.
+
+\begin{coq_eval}
+Require Import List.
+\end{coq_eval}
+
+\begin{coq_example}
+Inductive contains0 : list nat -> Prop :=
+  | in_hd : forall l, contains0 (0 :: l)
+  | in_tl : forall l b, contains0 l -> contains0 (b :: l).
+Goal forall l:list nat, contains0 (1 :: l) -> contains0 l.
+intros l H; inversion H as [ | l' p Hl' [Heqp Heql'] ].
+\end{coq_example}
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\item \texttt{inversion} {\num} {\tt as} {\intropattern}
+
+  This allows to name the hypotheses introduced by
+  \texttt{inversion} {\num} in the context.
+
+\item \tacindex{inversion\_clear \dots\ as} \texttt{inversion\_clear}
+  {\ident} {\tt as} {\intropattern}
+
+  This allows to name the hypotheses introduced by
+  \texttt{inversion\_clear} in the context.
+
+\item \tacindex{inversion \dots\ in} \texttt{inversion } {\ident}
+  \texttt{in} \ident$_1$ \dots\ \ident$_n$
+
+  Let \ident$_1$ \dots\ \ident$_n$, be identifiers in the local context. This
+  tactic behaves as generalizing \ident$_1$ \dots\ \ident$_n$, and
+  then performing \texttt{inversion}.
+
+\item \tacindex{inversion \dots\ as \dots\ in} \texttt{inversion }
+  {\ident} {\tt as} {\intropattern} \texttt{in} \ident$_1$ \dots\
+  \ident$_n$
+
+  This allows to name the hypotheses introduced in the context by
+  \texttt{inversion} {\ident} \texttt{in} \ident$_1$ \dots\
+  \ident$_n$.
+
+\item \tacindex{inversion\_clear \dots\ in} \texttt{inversion\_clear}
+  {\ident} \texttt{in} \ident$_1$ \ldots \ident$_n$
+
+  Let \ident$_1$ \dots\ \ident$_n$, be identifiers in the local context. This
+  tactic behaves as generalizing \ident$_1$ \dots\ \ident$_n$, and
+  then performing {\tt inversion\_clear}.
+
+\item \tacindex{inversion\_clear \dots\ as \dots\ in}
+  \texttt{inversion\_clear} {\ident} \texttt{as} {\intropattern}
+  \texttt{in} \ident$_1$ \ldots \ident$_n$
+
+  This allows to name the hypotheses introduced in the context by
+  \texttt{inversion\_clear} {\ident} \texttt{in} \ident$_1$ \ldots
+  \ident$_n$.
+
+\item \tacindex{dependent inversion} \texttt{dependent inversion}
+  {\ident}
+
+  That must be used when \ident\ appears in the current goal.  It acts
+  like \texttt{inversion} and then substitutes \ident\ for the
+  corresponding term in the goal.
+
+\item \tacindex{dependent inversion \dots\ as } \texttt{dependent
+    inversion} {\ident} \texttt{as} {\intropattern}
+
+  This allows to name the hypotheses introduced in the context by
+  \texttt{dependent inversion} {\ident}.
+
+\item \tacindex{dependent inversion\_clear} \texttt{dependent
+    inversion\_clear} {\ident}
+
+  Like \texttt{dependent inversion}, except that {\ident} is cleared
+  from the local context.
+
+\item \tacindex{dependent inversion\_clear \dots\ as}
+  \texttt{dependent inversion\_clear} {\ident}\texttt{as} {\intropattern}
+
+  This allows to name the hypotheses introduced in the context by
+  \texttt{dependent inversion\_clear} {\ident}.
+
+\item \tacindex{dependent inversion \dots\ with} \texttt{dependent
+    inversion } {\ident} \texttt{ with } \term
+
+  This variant allows you to specify the generalization of the goal. It
+  is useful when the system fails to generalize the goal automatically. If
+  {\ident} has type $(I~\vec{t})$ and $I$ has type
+  $forall (\vec{x}:\vec{T}), s$,   then \term~  must be of type
+  $I:forall (\vec{x}:\vec{T}), I~\vec{x}\to s'$ where $s'$ is the
+  type of the goal.
+
+\item \tacindex{dependent inversion \dots\ as \dots\ with}
+  \texttt{dependent inversion } {\ident} \texttt{as} {\intropattern}
+  \texttt{ with } \term
+
+  This allows to name the hypotheses introduced in the context by
+  \texttt{dependent inversion } {\ident} \texttt{ with } \term.
+
+\item \tacindex{dependent inversion\_clear \dots\ with}
+  \texttt{dependent inversion\_clear } {\ident} \texttt{ with } \term
+
+  Like \texttt{dependent inversion \dots\ with} but clears {\ident} from
+  the local context.
+
+\item \tacindex{dependent inversion\_clear \dots\ as \dots\ with}
+  \texttt{dependent inversion\_clear } {\ident} \texttt{as}
+  {\intropattern} \texttt{ with } \term
+
+  This allows to name the hypotheses introduced in the context by
+  \texttt{dependent inversion\_clear } {\ident} \texttt{ with } \term.
+
+\item \tacindex{simple inversion} \texttt{simple inversion} {\ident}
+
+  It is a very primitive inversion tactic that derives all the necessary
+  equalities  but it does not simplify the  constraints as
+  \texttt{inversion} does.
+
+\item \tacindex{simple inversion \dots\ as} \texttt{simple inversion}
+  {\ident} \texttt{as} {\intropattern}
+
+  This allows to name the hypotheses introduced in the context by
+  \texttt{simple inversion}.
+
+\item \tacindex{inversion \dots\ using} \texttt{inversion} \ident
+  \texttt{ using} \ident$'$
+
+  Let {\ident} have type $(I~\vec{t})$ ($I$ an inductive
+  predicate) in the local context, and \ident$'$ be a (dependent) inversion
+  lemma. Then, this tactic refines the current goal with the specified
+  lemma.
+
+\item \tacindex{inversion \dots\ using \dots\ in} \texttt{inversion}
+  {\ident} \texttt{using} \ident$'$ \texttt{in} \ident$_1$\dots\ \ident$_n$
+
+  This tactic behaves as generalizing \ident$_1$\dots\ \ident$_n$,
+  then doing \texttt{inversion} {\ident} \texttt{using} \ident$'$.
+
+\end{Variants}
+
+\SeeAlso~\ref{inversion-examples} for detailed examples
+
 \subsection[fix]{\tt fix {\ident} {\num}
 \tacindex{fix}
 \label{tactic:fix}}
@@ -1905,161 +2452,6 @@ This tactic applies to any goal. It checks whether its argument is a
 variable or hypothesis in the current goal context or in the opened sections.
 
 \ErrMsg \errindex{Not a variable or hypothesis}
-
-\subsection{Bindings list
-\index{Binding list}
-\label{Binding-list}}
-
-Tactics that take a term as argument may also support a bindings list, so
-as to instantiate some parameters of the term by name or position.
-The general form of a term equipped with a bindings list is {\tt
-{\term} with {\bindinglist}} where {\bindinglist} may be of two
-different forms:
-
-\begin{itemize}
-\item In a bindings list of the form {\tt (\vref$_1$ := \term$_1$)
-  \dots\ (\vref$_n$ := \term$_n$)}, {\vref} is either an {\ident} or a
-  {\num}. The references are determined according to the type of
-  {\term}. If \vref$_i$ is an identifier, this identifier has to be
-  bound in the type of {\term} and the binding provides the tactic
-  with an instance for the parameter of this name.  If \vref$_i$ is
-  some number $n$, this number denotes the $n$-th non dependent
-  premise of the {\term}, as determined by the type of {\term}.
-
-  \ErrMsg \errindex{No such binder}
-
-\item A bindings list can also be a simple list of terms {\tt
-  \term$_1$ \dots\term$_n$}. In that case the references to
-  which these terms correspond are determined by the tactic. In case
-  of {\tt induction}, {\tt destruct}, {\tt elim} and {\tt case} (see
-  Section~\ref{elim}) the terms have to provide instances for all the
-  dependent products in the type of \term\ while in the case of {\tt
-  apply}, or of {\tt constructor} and its variants, only instances for
-  the dependent products which are not bound in the conclusion of the
-  type are required.
-
-  \ErrMsg \errindex{Not the right number of missing arguments}
-\end{itemize}
-
-\subsection{Occurrences sets and occurrences clauses}
-\label{Occurrences clauses}
-\index{Occurrences clauses}
-
-An occurrences clause is a modifier to some tactics that obeys the
-following syntax:
-
-$\!\!\!$\begin{tabular}{lcl}
-{\occclause} & ::= & {\tt in} {\occgoalset} \\
-{\occgoalset} & ::= &
-    \zeroone{{\ident$_1$} \zeroone{\atoccurrences} {\tt ,} \\
-&   & {\dots} {\tt ,}\\
-&   & {\ident$_m$} \zeroone{\atoccurrences}}\\
-&   & \zeroone{{\tt |-} \zeroone{{\tt *} \zeroone{\atoccurrences}}}\\
-& | &
-    {\tt *} {\tt |-} \zeroone{{\tt *} \zeroone{\atoccurrences}}\\
-& | &
-    {\tt *}\\
-{\atoccurrences} & ::= & {\tt at} {\occlist}\\
-{\occlist} & ::= & \zeroone{{\tt -}} {\num$_1$} \dots\ {\num$_n$}
-\end{tabular}
-
-The role of an occurrence clause is to select a set of occurrences of
-a {\term} in a goal. In the first case, the {{\ident$_i$}
-\zeroone{{\tt at} {\num$_1^i$} \dots\ {\num$_{n_i}^i$}}} parts
-indicate that occurrences have to be selected in the hypotheses named
-{\ident$_i$}.  If no numbers are given for hypothesis {\ident$_i$},
-then all occurrences of {\term} in the hypothesis are selected. If
-numbers are given, they refer to occurrences of {\term} when the term
-is printed using option {\tt Set Printing All} (see
-Section~\ref{SetPrintingAll}), counting from left to right. In
-particular, occurrences of {\term} in implicit arguments (see
-Section~\ref{Implicit Arguments}) or coercions (see
-Section~\ref{Coercions}) are counted.
-
-If a minus sign is given between {\tt at} and the list of occurrences,
-it negates the condition so that the clause denotes all the occurrences except
-the ones explicitly mentioned after the minus sign.
-
-As an exception to the left-to-right order, the occurrences in the
-{\tt return} subexpression of a {\tt match} are considered {\em
-before} the occurrences in the matched term.
-
-In the second case, the {\tt *} on the left of {\tt |-} means that
-all occurrences of {\term} are selected in every hypothesis.
-
-In the first and second case, if {\tt *} is mentioned on the right of
-{\tt |-}, the occurrences of the conclusion of the goal have to be
-selected. If some numbers are given, then only the occurrences denoted
-by these numbers are selected. In no numbers are given, all
-occurrences of {\term} in the goal are selected.
-
-Finally, the last notation is an abbreviation for {\tt * |- *}. Note
-also that {\tt |-} is optional in the first case when no {\tt *} is
-given.
-
-Here are some tactics that understand occurrences clauses:
-{\tt set}, {\tt remember}, {\tt induction}, {\tt destruct}.
-
-\SeeAlso~Sections~\ref{tactic:set}, \ref{Tac-induction}, \ref{SetPrintingAll}.
-
-
-\section{Negation and contradiction}
-
-\subsection{\tt absurd \term
-\tacindex{absurd}
-\label{absurd}}
-
-This tactic applies to any goal. The argument {\term} is any
-proposition {\tt P} of type {\tt Prop}. This tactic applies {\tt
-  False} elimination, that is it deduces the current goal from {\tt
-  False}, and generates as subgoals {\tt $\sim$P} and {\tt P}. It is
-very useful in proofs by cases, where some cases are impossible. In
-most cases, \texttt{P} or $\sim$\texttt{P} is one of the hypotheses of
-the local context.
-
-\subsection{\tt contradiction
-\label{contradiction}
-\tacindex{contradiction}}
-
-This tactic applies to any goal. The {\tt contradiction} tactic
-attempts to find in the current context (after all {\tt intros}) one
-hypothesis which is equivalent to {\tt False}. It permits to prune
-irrelevant cases. This tactic is a macro for the tactics sequence
-{\tt intros; elimtype False; assumption}.
-
-\begin{ErrMsgs}
-\item \errindex{No such assumption}
-\end{ErrMsgs}
-
-\begin{Variants}
-\item {\tt contradiction \ident}
-
-The proof of {\tt False} is searched in the hypothesis named \ident.
-\end{Variants}
-
-\subsection {\tt contradict \ident}
-\label{contradict}
-\tacindex{contradict}
-
-This tactic allows to manipulate negated hypothesis and goals. The
-name \ident\ should correspond to a hypothesis. With
-{\tt contradict H}, the current goal and context is transformed in
-the following way:
-\begin{itemize}
-\item  {\tt H:$\neg$A $\vd$  B} \ becomes \ {\tt $\vd$ A}
-\item  {\tt H:$\neg$A $\vd$ $\neg$B} \  becomes \ {\tt H: B $\vd$  A }
-\item  {\tt H: A $\vd$  B} \ becomes \ {\tt $\vd$ $\neg$A}
-\item  {\tt H: A $\vd$ $\neg$B} \ becomes \ {\tt H: B $\vd$ $\neg$A}
-\end{itemize}
-
-\subsection{\tt exfalso}
-\label{exfalso}
-\tacindex{exfalso}
-
-This tactic implements the ``ex falso quodlibet'' logical principle:
-an elimination of {\tt False} is performed on the current goal, and the
-user is then required to prove that {\tt False} is indeed provable in
-the current context. This tactic is a macro for {\tt elimtype False}.
 
 \section{Conversion tactics
 \index{Conversion tactics}
@@ -2743,181 +3135,6 @@ of an inductive datatype. If $G$ is the current goal, it leaves the sub-goals
 of \term$_1$ and \term$_2$ must satisfy the same restrictions as in the tactic
 \texttt{decide equality}.
 
-\subsection{\tt discriminate {\term}
-\label{discriminate}
-\tacindex{discriminate}
-\tacindex{ediscriminate}}
-
-This tactic proves any goal from an assumption stating that two
-structurally different terms of an inductive set are equal. For
-example, from {\tt (S (S O))=(S O)} we can derive by absurdity any
-proposition.
-
-The argument {\term} is assumed to be a proof of a statement
-of conclusion {\tt{\term$_1$} = {\term$_2$}} with {\term$_1$} and
-{\term$_2$} being elements of an inductive set.  To build the proof,
-the tactic traverses the normal forms\footnote{Reminder: opaque
-  constants will not be expanded by $\delta$ reductions} of
-{\term$_1$} and {\term$_2$} looking for a couple of subterms {\tt u}
-and {\tt w} ({\tt u} subterm of the normal form of {\term$_1$} and
-{\tt w} subterm of the normal form of {\term$_2$}), placed at the same
-positions and whose head symbols are two different constructors. If
-such a couple of subterms exists, then the proof of the current goal
-is completed, otherwise the tactic fails.
-
-\Rem The syntax {\tt discriminate {\ident}} can be used to refer to a
-hypothesis quantified in the goal. In this case, the quantified
-hypothesis whose name is {\ident} is first introduced in the local
-context using \texttt{intros until \ident}.
-
-\begin{ErrMsgs}
-\item \errindex{No primitive equality found}
-\item \errindex{Not a discriminable equality}
-\end{ErrMsgs}
-
-\begin{Variants}
-\item \texttt{discriminate} \num
-
-  This does the same thing as \texttt{intros until \num} followed by
-  \texttt{discriminate \ident} where {\ident} is the identifier for
-  the last introduced hypothesis.
-
-\item \texttt{discriminate} {\term} {\tt with} {\bindinglist}
-
-  This does the same thing as \texttt{discriminate {\term}} but using
-the given bindings to instantiate parameters or hypotheses of {\term}.
-
-\item \texttt{ediscriminate} \num\\
-      \texttt{ediscriminate} {\term} \zeroone{{\tt with} {\bindinglist}}
-
-  This works the same as {\tt discriminate} but if the type of {\term},
-  or the type of the hypothesis referred to by {\num}, has uninstantiated
-  parameters, these parameters are left as existential variables.
-
-\item \texttt{discriminate}
-
-  This behaves like {\tt discriminate {\ident}} if {\ident} is the
-  name of an hypothesis to which {\tt discriminate} is applicable; if
-  the current goal is of the form {\term$_1$} {\tt <>} {\term$_2$},
-  this behaves as {\tt intro {\ident}; injection {\ident}}.
-
-  \begin{ErrMsgs}
-  \item \errindex{No discriminable equalities} \\
-  occurs when the goal does not verify the expected preconditions.
-  \end{ErrMsgs}
-\end{Variants}
-
-\subsection{\tt injection {\term}
-\label{injection}
-\tacindex{injection}
-\tacindex{einjection}}
-
-The {\tt injection} tactic is based on the fact that constructors of
-inductive sets are injections. That means that if $c$ is a constructor
-of an inductive set, and if $(c~\vec{t_1})$ and $(c~\vec{t_2})$ are two
-terms that are equal then $~\vec{t_1}$ and $~\vec{t_2}$ are equal
-too.
-
-If {\term} is a proof of a statement of conclusion
- {\tt {\term$_1$} = {\term$_2$}},
-then {\tt injection} applies injectivity as deep as possible to
-derive the equality of all the subterms of {\term$_1$} and {\term$_2$}
-placed in the same positions. For example, from {\tt (S
-  (S n))=(S (S (S m)))} we may derive {\tt n=(S m)}.  To use this
-tactic {\term$_1$} and {\term$_2$} should be elements of an inductive
-set and they should be neither explicitly equal, nor structurally
-different. We mean by this that, if {\tt n$_1$} and {\tt n$_2$} are
-their respective normal forms, then:
-\begin{itemize}
-\item {\tt n$_1$} and {\tt n$_2$} should not be syntactically equal,
-\item there must not exist any pair of subterms {\tt u} and {\tt w},
-  {\tt u} subterm of {\tt n$_1$} and {\tt w} subterm of {\tt n$_2$} ,
-  placed in the same positions and having different constructors as
-  head symbols.
-\end{itemize}
-If these conditions are satisfied, then, the tactic derives the
-equality of all the subterms of {\term$_1$} and {\term$_2$} placed in
-the same positions and puts them as antecedents of the current goal.
-
-\Example Consider the following goal:
-
-\begin{coq_example*}
-Inductive list : Set :=
-  | nil : list
-  | cons : nat -> list -> list.
-Variable P : list -> Prop.
-\end{coq_example*}
-\begin{coq_eval}
-Lemma ex :
- forall (l:list) (n:nat), P nil -> cons n l = cons 0 nil -> P l.
-intros l n H H0.
-\end{coq_eval}
-\begin{coq_example}
-Show.
-injection H0.
-\end{coq_example}
-\begin{coq_eval}
-Abort.
-\end{coq_eval}
-
-Beware that \texttt{injection} yields always an equality in a sigma type
-whenever the injected object has a dependent type.
-
-\Rem There is a special case for dependent pairs. If we have a decidable
-equality over the type of the first argument, then it is safe to do
-the projection on the second one, and so {\tt injection} will work fine.
-To define such an equality, you have to use the {\tt Scheme} command
-(see \ref{Scheme}).
-
-\Rem If some quantified hypothesis of the goal is named {\ident}, then
-{\tt injection {\ident}} first introduces the hypothesis in the local
-context using \texttt{intros until \ident}.
-
-\begin{ErrMsgs}
-\item \errindex{Not a projectable equality but a discriminable one}
-\item \errindex{Nothing to do, it is an equality between convertible terms}
-\item \errindex{Not a primitive equality}
-\end{ErrMsgs}
-
-\begin{Variants}
-\item \texttt{injection} \num{}
-
-  This does the same thing as \texttt{intros until \num} followed by
-\texttt{injection \ident} where {\ident} is the identifier for the last
-introduced hypothesis.
-
-\item \texttt{injection} \term{} {\tt with} {\bindinglist}
-
-  This does the same as \texttt{injection {\term}} but using
-  the given bindings to instantiate parameters or hypotheses of {\term}.
-
-\item \texttt{einjection} \num\\
-      \texttt{einjection} \term{} \zeroone{{\tt with} {\bindinglist}}
-
-  This works the same as {\tt injection} but if the type of {\term},
-  or the type of the hypothesis referred to by {\num}, has uninstantiated
-  parameters, these parameters are left as existential variables.
-
-\item{\tt injection}
-
-  If the current goal is of the form {\term$_1$} {\tt <>} {\term$_2$},
-  this behaves as {\tt intro {\ident}; injection {\ident}}.
-
-  \ErrMsg \errindex{goal does not satisfy the expected preconditions}
-
-\item \texttt{injection} \term{} \zeroone{{\tt with} {\bindinglist}} \texttt{as} \nelist{\intropattern}{}\\
-\texttt{injection} \num{} \texttt{as} {\intropattern} {\ldots} {\intropattern}\\
-\texttt{injection} \texttt{as} {\intropattern} {\ldots} {\intropattern}\\
-\texttt{einjection} \term{} \zeroone{{\tt with} {\bindinglist}} \texttt{as} \nelist{\intropattern}{}\\
-\texttt{einjection} \num{} \texttt{as} {\intropattern} {\ldots} {\intropattern}\\
-\texttt{einjection} \texttt{as} {\intropattern} {\ldots} {\intropattern}\\
-\tacindex{injection \ldots{} as}
-
-These variants apply \texttt{intros} \nelist{\intropattern}{} after
-the call to \texttt{injection} or \texttt{einjection}.
-
-\end{Variants}
-
 \subsection{\tt simplify\_eq {\term}
 \tacindex{simplify\_eq}
 \tacindex{esimplify\_eq}
@@ -2981,199 +3198,6 @@ right to left.
 
 \section{Inversion
 \label{inversion}}
-
-\subsection{\tt inversion {\ident}
-\tacindex{inversion}}
-
-Let the type of \ident~ in the local context be $(I~\vec{t})$,
-where $I$ is a (co)inductive predicate. Then,
-\texttt{inversion} applied to \ident~ derives for each possible
-constructor $c_i$ of $(I~\vec{t})$, {\bf all} the necessary
-conditions that should hold for the instance $(I~\vec{t})$ to be
-proved by $c_i$.
-
-\Rem If {\ident} does not denote a hypothesis in the local context
-but refers to a hypothesis quantified in the goal, then the
-latter is first introduced in the local context using
-\texttt{intros until \ident}.
-
-\begin{Variants}
-\item \texttt{inversion} \num
-
-  This does the same thing as \texttt{intros until \num} then
-  \texttt{inversion \ident} where {\ident} is the identifier for the
-  last introduced hypothesis.
-
-\item \tacindex{inversion\_clear} \texttt{inversion\_clear} \ident
-
-  This behaves as \texttt{inversion} and then erases \ident~ from the
-  context.
-
-\item \tacindex{inversion \dots\ as} \texttt{inversion} {\ident} \texttt{as} {\intropattern}
-
-  This behaves as \texttt{inversion} but using names in
-  {\intropattern} for naming hypotheses. The {\intropattern} must have
-  the form {\tt [} $p_{11}$ \ldots $p_{1n_1}$ {\tt |} {\ldots} {\tt |}
-  $p_{m1}$ \ldots $p_{mn_m}$ {\tt ]} with $m$ being the number of
-  constructors of the type of {\ident}. Be careful that the list must
-  be of length $m$ even if {\tt inversion} discards some cases (which
-  is precisely one of its roles): for the discarded cases, just use an
-  empty list (i.e. $n_i=0$).
-
-  The arguments of the $i^{th}$ constructor and the
-  equalities that {\tt inversion} introduces in the context of the
-  goal corresponding to the $i^{th}$ constructor, if it exists, get
-  their names from the list $p_{i1}$ \ldots $p_{in_i}$ in order. If
-  there are not enough names, {\tt induction} invents names for the
-  remaining variables to introduce. In case an equation splits into
-  several equations (because {\tt inversion} applies {\tt injection}
-  on the equalities it generates), the corresponding name $p_{ij}$ in
-  the list must be replaced by a sublist of the form {\tt [$p_{ij1}$
-  \ldots $p_{ijq}$]} (or, equivalently, {\tt ($p_{ij1}$,
-  \ldots, $p_{ijq}$)}) where $q$ is the number of subequalities
-  obtained from splitting the original equation. Here is an example.
-
-\begin{coq_eval}
-Require Import List.
-\end{coq_eval}
-
-\begin{coq_example}
-Inductive contains0 : list nat -> Prop :=
-  | in_hd : forall l, contains0 (0 :: l)
-  | in_tl : forall l b, contains0 l -> contains0 (b :: l).
-Goal forall l:list nat, contains0 (1 :: l) -> contains0 l.
-intros l H; inversion H as [ | l' p Hl' [Heqp Heql'] ].
-\end{coq_example}
-
-\begin{coq_eval}
-Abort.
-\end{coq_eval}
-
-\item \texttt{inversion} {\num} {\tt as} {\intropattern}
-
-  This allows to name the hypotheses introduced by
-  \texttt{inversion} {\num} in the context.
-
-\item \tacindex{inversion\_cleardots\ as} \texttt{inversion\_clear}
-  {\ident} {\tt as} {\intropattern}
-
-  This allows to name the hypotheses introduced by
-  \texttt{inversion\_clear} in the context.
-
-\item \tacindex{inversion \dots\ in} \texttt{inversion } {\ident}
-  \texttt{in} \ident$_1$ \dots\ \ident$_n$
-
-  Let \ident$_1$ \dots\ \ident$_n$, be identifiers in the local context. This
-  tactic behaves as generalizing \ident$_1$ \dots\ \ident$_n$, and
-  then performing \texttt{inversion}.
-
-\item \tacindex{inversion \dots\ as \dots\ in} \texttt{inversion }
-  {\ident} {\tt as} {\intropattern} \texttt{in} \ident$_1$ \dots\
-  \ident$_n$
-
-  This allows to name the hypotheses introduced in the context by
-  \texttt{inversion} {\ident} \texttt{in} \ident$_1$ \dots\
-  \ident$_n$.
-
-\item \tacindex{inversion\_clear \dots\ in} \texttt{inversion\_clear}
-  {\ident} \texttt{in} \ident$_1$ \ldots \ident$_n$
-
-  Let \ident$_1$ \dots\ \ident$_n$, be identifiers in the local context. This
-  tactic behaves as generalizing \ident$_1$ \dots\ \ident$_n$, and
-  then performing {\tt inversion\_clear}.
-
-\item \tacindex{inversion\_clear \dots\ as \dots\ in}
-  \texttt{inversion\_clear} {\ident} \texttt{as} {\intropattern}
-  \texttt{in} \ident$_1$ \ldots \ident$_n$
-
-  This allows to name the hypotheses introduced in the context by
-  \texttt{inversion\_clear} {\ident} \texttt{in} \ident$_1$ \ldots
-  \ident$_n$.
-
-\item \tacindex{dependent inversion} \texttt{dependent inversion}
-  {\ident}
-
-  That must be used when \ident\ appears in the current goal.  It acts
-  like \texttt{inversion} and then substitutes \ident\ for the
-  corresponding term in the goal.
-
-\item \tacindex{dependent inversion \dots\ as } \texttt{dependent
-    inversion} {\ident} \texttt{as} {\intropattern}
-
-  This allows to name the hypotheses introduced in the context by
-  \texttt{dependent inversion} {\ident}.
-
-\item \tacindex{dependent inversion\_clear} \texttt{dependent
-    inversion\_clear} {\ident}
-
-  Like \texttt{dependent inversion}, except that {\ident} is cleared
-  from the local context.
-
-\item \tacindex{dependent inversion\_clear \dots\ as}
-  \texttt{dependent inversion\_clear} {\ident}\texttt{as} {\intropattern}
-
-  This allows to name the hypotheses introduced in the context by
-  \texttt{dependent inversion\_clear} {\ident}.
-
-\item \tacindex{dependent inversion \dots\ with} \texttt{dependent
-    inversion } {\ident} \texttt{ with } \term
-
-  This variant allows you to specify the generalization of the goal. It
-  is useful when the system fails to generalize the goal automatically. If
-  {\ident} has type $(I~\vec{t})$ and $I$ has type
-  $forall (\vec{x}:\vec{T}), s$,   then \term~  must be of type
-  $I:forall (\vec{x}:\vec{T}), I~\vec{x}\to s'$ where $s'$ is the
-  type of the goal.
-
-\item \tacindex{dependent inversion \dots\ as \dots\ with}
-  \texttt{dependent inversion } {\ident} \texttt{as} {\intropattern}
-  \texttt{ with } \term
-
-  This allows to name the hypotheses introduced in the context by
-  \texttt{dependent inversion } {\ident} \texttt{ with } \term.
-
-\item \tacindex{dependent inversion\_clear \dots\ with}
-  \texttt{dependent inversion\_clear } {\ident} \texttt{ with } \term
-
-  Like \texttt{dependent inversion \dots\ with} but clears {\ident} from
-  the local context.
-
-\item \tacindex{dependent inversion\_clear \dots\ as \dots\ with}
-  \texttt{dependent inversion\_clear } {\ident} \texttt{as}
-  {\intropattern} \texttt{ with } \term
-
-  This allows to name the hypotheses introduced in the context by
-  \texttt{dependent inversion\_clear } {\ident} \texttt{ with } \term.
-
-\item \tacindex{simple inversion} \texttt{simple inversion} {\ident}
-
-  It is a very primitive inversion tactic that derives all the necessary
-  equalities  but it does not simplify the  constraints as
-  \texttt{inversion} does.
-
-\item \tacindex{simple inversion \dots\ as} \texttt{simple inversion}
-  {\ident} \texttt{as} {\intropattern}
-
-  This allows to name the hypotheses introduced in the context by
-  \texttt{simple inversion}.
-
-\item \tacindex{inversion \dots\ using} \texttt{inversion} \ident
-  \texttt{ using} \ident$'$
-
-  Let {\ident} have type $(I~\vec{t})$ ($I$ an inductive
-  predicate) in the local context, and \ident$'$ be a (dependent) inversion
-  lemma. Then, this tactic refines the current goal with the specified
-  lemma.
-
-\item \tacindex{inversion \dots\ using \dots\ in} \texttt{inversion}
-  {\ident} \texttt{using} \ident$'$ \texttt{in} \ident$_1$\dots\ \ident$_n$
-
-  This tactic behaves as generalizing \ident$_1$\dots\ \ident$_n$,
-  then doing \texttt{inversion} {\ident} \texttt{using} \ident$'$.
-
-\end{Variants}
-
-\SeeAlso~\ref{inversion-examples} for detailed examples
 
 \subsection{\tt Derive Inversion {\ident} with
   ${\tt forall (}\vec{x}{\tt :}\vec{T}{\tt),} I~\vec{t}$ Sort \sort
@@ -3920,7 +3944,7 @@ in case the DT is not used). The new implementation enabled by
 the {\tt discriminated} option makes use of DTs in all cases and takes
 transparency information into account. However, the order in which hints
 are retrieved from the DT may differ from the order in which they were
-inserted, making this implementation observationaly different from the
+inserted, making this implementation observationally different from the
 legacy one.
 
 \begin{Variants}
