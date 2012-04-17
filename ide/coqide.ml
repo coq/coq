@@ -1806,12 +1806,6 @@ let forbid_quit_to_save () =
 	else false)
 
 let main files =
-  (* Statup preferences *)
-  begin
-    try load_pref ()
-    with e ->
-      flash_info ("Could not load preferences ("^Printexc.to_string e^").");
-  end;
 
   (* Main window *)
   let w = GWindow.window
@@ -2946,32 +2940,22 @@ let rec check_for_geoproof_input () =
     in the path. Note that the -coqtop option to coqide allows to override
     this default coqtop path *)
 
-let default_coqtop_path () =
-  let prog = Sys.executable_name in
-  try
-    let pos = String.length prog - 6 in
-    let i = Str.search_backward (Str.regexp_string "coqide") prog pos in
-    String.blit "coqtop" 0 prog i 6;
-    prog
-  with _ -> "coqtop"
-
 let read_coqide_args argv =
   let rec filter_coqtop coqtop project_files out = function
     | "-coqtop" :: prog :: args ->
-      if coqtop = "" then filter_coqtop prog project_files out args
+      if coqtop = None then filter_coqtop (Some prog) project_files out args
       else
-	(output_string stderr "Error: multiple -coqtop options"; exit 1)
+       (output_string stderr "Error: multiple -coqtop options"; exit 1)
     | "-f" :: file :: args ->
 	filter_coqtop coqtop
 	  ((Minilib.canonical_path_name (Filename.dirname file),
 	    Project_file.read_project_file file) :: project_files) out args
     | "-f" :: [] -> output_string stderr "Error: missing project file name"; exit 1
     | arg::args -> filter_coqtop coqtop project_files (arg::out) args
-    | [] -> ((if coqtop = "" then default_coqtop_path () else coqtop),
-	     List.rev project_files,List.rev out)
+    | [] -> (coqtop,List.rev project_files,List.rev out)
   in
-  let coqtop,project_files,argv = filter_coqtop "" [] [] argv in
-    Minilib.coqtop_path := coqtop;
+  let coqtop,project_files,argv = filter_coqtop None [] [] argv in
+    Ideutils.custom_coqtop := coqtop;
     custom_project_files := project_files;
   argv
 

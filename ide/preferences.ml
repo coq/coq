@@ -43,8 +43,8 @@ let project_behavior_of_string s =
 type inputenc = Elocale | Eutf8 | Emanual of string
 
 let string_of_inputenc = function
-  |Elocale -> "UTF-8"
-  |Eutf8 -> "LOCALE"
+  |Elocale -> "LOCALE"
+  |Eutf8 -> "UTF-8"
   |Emanual s -> s
 
 let inputenc_of_string s =
@@ -54,6 +54,7 @@ let inputenc_of_string s =
 
 type pref =
     {
+      mutable cmd_coqtop : string option;
       mutable cmd_coqc : string;
       mutable cmd_make : string;
       mutable cmd_coqmakefile : string;
@@ -113,6 +114,7 @@ let use_default_doc_url = "(automatic)"
 
 let (current:pref ref) =
   ref {
+    cmd_coqtop = None;
     cmd_coqc = "coqc";
     cmd_make = "make";
     cmd_coqmakefile = "coq_makefile -o makefile *.v";
@@ -196,6 +198,7 @@ let save_pref () =
     let add = Minilib.Stringmap.add in
     let (++) x f = f x in
     Minilib.Stringmap.empty ++
+    add "cmd_coqtop" (match p.cmd_coqtop with | None -> [] | Some v-> [v]) ++
     add "cmd_coqc" [p.cmd_coqc] ++
     add "cmd_make" [p.cmd_make] ++
     add "cmd_coqmakefile" [p.cmd_coqmakefile] ++
@@ -260,6 +263,8 @@ let load_pref () =
     let set_command_with_pair_compat k f =
       set k (function [v1;v2] -> f (v1^"%s"^v2) | [v] -> f v | _ -> raise Exit)
     in
+    let set_option k f = set k (fun v -> f (match v with |[] -> None |h::_ ->  Some h)) in
+    set_option "cmd_coqtop" (fun v -> np.cmd_coqtop <- v);
     set_hd "cmd_coqc" (fun v -> np.cmd_coqc <- v);
     set_hd "cmd_make" (fun v -> np.cmd_make <- v);
     set_hd "cmd_coqmakefile" (fun v -> np.cmd_coqmakefile <- v);
@@ -321,6 +326,10 @@ let load_pref () =
 *)
 
 let configure ?(apply=(fun () -> ())) () =
+  let cmd_coqtop =
+    string
+      ~f:(fun s -> !current.cmd_coqtop <- if s = "AUTO" then None else Some s)
+      "       coqtop" (match !current.cmd_coqtop with |None -> "AUTO" | Some x -> x) in
   let cmd_coqc =
     string
       ~f:(fun s -> !current.cmd_coqc <- s)
@@ -675,9 +684,8 @@ let configure ?(apply=(fun () -> ())) () =
 	     config_appearance);
 *)
      Section("Externals", None,
-	     [cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc; cmd_print;
-	      cmd_editor;
-	      cmd_browse;doc_url;library_url]);
+	     [cmd_coqtop;cmd_coqc;cmd_make;cmd_coqmakefile; cmd_coqdoc;
+	      cmd_print;cmd_editor;cmd_browse;doc_url;library_url]);
      Section("Tactics Wizard", None,
 	     [automatic_tactics]);
      Section("Shortcuts", Some `PREFERENCES,

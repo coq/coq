@@ -54,23 +54,46 @@ let rec read_all_lines in_chan =
     arg::(read_all_lines in_chan)
   with End_of_file -> []
 
-let filter_coq_opts args =
+let rec filter_coq_opts args =
+  let coqprog = coqtop_path () in
+  let asks_for_coqtop () =
+    let pb_mes = GWindow.message_dialog ~message:"Fail to load coqtop. Reset the preference to default ?"
+      ~message_type:`QUESTION ~buttons:GWindow.Buttons.yes_no () in
+    match pb_mes#run () with
+      | `YES ->
+ 	let () = !Preferences.current.Preferences.cmd_coqtop  <- None in
+	    let () = custom_coqtop := None in
+	let () = pb_mes#destroy () in
+	filter_coq_opts args
+      | `DELETE_EVENT | `NO ->
+	let () = pb_mes#destroy () in
+	let cmd_sel = GWindow.file_selection ~title:"Coqtop to execute (edit your preference then)"
+	  ~filename:coqprog ~urgency_hint:true () in
+	match cmd_sel#run () with
+	  | `OK ->
+	    let () = custom_coqtop := (Some cmd_sel#filename) in
+	    let () = cmd_sel#destroy () in
+	    filter_coq_opts args
+	  | `HELP -> exit 0
+	  | `CANCEL | `DELETE_EVENT -> exit 0
+  in
   let argstr = String.concat " " (List.map Filename.quote args) in
-  let cmd = Filename.quote !Minilib.coqtop_path ^" -nois -filteropts " ^ argstr in
-  let oc,ic,ec = Unix.open_process_full cmd (Unix.environment ()) in
-  let filtered_args = read_all_lines oc in
-  let message = read_all_lines ec in
-  match Unix.close_process_full (oc,ic,ec) with
-    | Unix.WEXITED 0 -> true,filtered_args
-    | Unix.WEXITED 2 -> false,filtered_args
-    | _ -> false,message
+  let cmd = Filename.quote coqprog ^" -nois -filteropts " ^ argstr in
+  try
+    let oc,ic,ec = Unix.open_process_full cmd (Unix.environment ()) in
+    let filtered_args = read_all_lines oc in
+    match Unix.close_process_full (oc,ic,ec) with
+      | Unix.WEXITED 0 -> true,filtered_args
+      | Unix.WEXITED 2 -> false,filtered_args
+      | _ -> asks_for_coqtop ()
+  with Sys_error _ -> asks_for_coqtop ()
 
 exception Coqtop_output of string list
 
 let check_connection args =
   try
     let argstr = String.concat " " (List.map Filename.quote args) in
-    let cmd = Filename.quote !Minilib.coqtop_path ^ " -batch " ^ argstr in
+    let cmd = Filename.quote (coqtop_path ()) ^ " -batch " ^ argstr in
     let ic = Unix.open_process_in cmd in
     let lines = read_all_lines ic in
     match Unix.close_process_in ic with
@@ -139,7 +162,7 @@ let open_process_pid prog args =
 let spawn_coqtop sup_args =
   Mutex.lock toplvl_ctr_mtx;
   try
-    let prog = !Minilib.coqtop_path in
+    let prog = coqtop_path () in
     let args = Array.of_list (prog :: "-ideslave" :: sup_args) in
     let (pid,ic,oc) = open_process_pid prog args in
     incr toplvl_ctr;
