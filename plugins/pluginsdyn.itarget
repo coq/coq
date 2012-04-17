@@ -9,7 +9,6 @@ fourier/fourier_plugin.cmxs
 romega/romega_plugin.cmxs
 omega/omega_plugin.cmxs
 micromega/micromega_plugin.cmxs
-dp/dp_plugin.cmxs
 xml/xml_plugin.cmxs
 subtac/subtac_plugin.cmxs
 ring/ring_plugin.cmxs

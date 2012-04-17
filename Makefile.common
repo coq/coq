@@ -74,7 +74,7 @@ SRCDIRS:=\
   pretyping	interp		toplevel/utils	toplevel 	parsing 	\
   ide/utils	ide		\
   $(addprefix plugins/, \
-    omega	romega 		micromega 	quote		ring	dp \
+    omega	romega 		micromega 	quote		ring \
     setoid_ring xml 		extraction 	fourier \
     cc 		funind 		firstorder 	field \
     rtauto 	nsatz           syntax          decl_mode	btauto)
@@ -169,7 +169,6 @@ QUOTECMA:=plugins/quote/quote_plugin.cma
 RINGCMA:=plugins/ring/ring_plugin.cma
 NEWRINGCMA:=plugins/setoid_ring/newring_plugin.cma
 NSATZCMA:=plugins/nsatz/nsatz_plugin.cma
-DPCMA:=plugins/dp/dp_plugin.cma
 FIELDCMA:=plugins/field/field_plugin.cma
 XMLCMA:=plugins/xml/xml_plugin.cma
 FOURIERCMA:=plugins/fourier/fourier_plugin.cma
@@ -189,14 +188,14 @@ OTHERSYNTAXCMA:=$(addprefix plugins/syntax/, \
 DECLMODECMA:=plugins/decl_mode/decl_mode_plugin.cma
 
 PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) $(DECLMODECMA) \
-        $(QUOTECMA) $(RINGCMA) $(NEWRINGCMA) $(DPCMA) $(FIELDCMA) \
+        $(QUOTECMA) $(RINGCMA) $(NEWRINGCMA) $(FIELDCMA) \
         $(FOURIERCMA) $(EXTRACTIONCMA) $(XMLCMA) \
         $(CCCMA)  $(FOCMA) $(RTAUTOCMA) $(BTAUTOCMA) \
         $(FUNINDCMA) $(NSATZCMA) $(NATSYNTAXCMA) $(OTHERSYNTAXCMA)
 
 ifneq ($(HASNATDYNLINK),false)
  STATICPLUGINS:=
- INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) $(DPCMA) \
+ INITPLUGINS:=$(EXTRACTIONCMA) $(FOCMA) $(CCCMA) \
 	$(XMLCMA) $(FUNINDCMA) $(NATSYNTAXCMA)
  INITPLUGINSOPT:=$(INITPLUGINS:.cma=.cmxs)
  PLUGINS:=$(PLUGINSCMA)
@@ -305,7 +304,6 @@ NEWRINGVO:=$(call cat_vo_itarget, plugins/setoid_ring)
 NSATZVO:=$(call cat_vo_itarget, plugins/nsatz)
 FOURIERVO:=$(call cat_vo_itarget, plugins/fourier)
 FUNINDVO:=$(call cat_vo_itarget, plugins/funind)
-DPVO:=$(call cat_vo_itarget, plugins/dp)
 BTAUTOVO:=$(call cat_vo_itarget, plugins/btauto)
 RTAUTOVO:=$(call cat_vo_itarget, plugins/rtauto)
 EXTRACTIONVO:=$(call cat_vo_itarget, plugins/extraction)
@@ -314,7 +312,7 @@ CCVO:=
 
 PLUGINSVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
 	    $(XMLVO) $(FOURIERVO) $(CCVO) $(FUNINDVO) \
-	    $(RTAUTOVO) $(BTAUTOVO) $(NEWRINGVO) $(DPVO) $(QUOTEVO) \
+	    $(RTAUTOVO) $(BTAUTOVO) $(NEWRINGVO) $(QUOTEVO) \
             $(NSATZVO) $(EXTRACTIONVO)
 
 ALLVO:= $(THEORIESVO) $(PLUGINSVO)

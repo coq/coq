@@ -19,7 +19,6 @@ Declare ML Module "extraction_plugin".
 Declare ML Module "decl_mode_plugin".
 Declare ML Module "cc_plugin".
 Declare ML Module "ground_plugin".
-Declare ML Module "dp_plugin".
 Declare ML Module "recdef_plugin".
 Declare ML Module "xml_plugin".
 (* Default substrings not considered by queries like SearchAbout *)

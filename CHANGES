@@ -51,6 +51,10 @@ Tactics
   fails, "dintuition" can be used. Moreover, both of them are now only
   lazily unfolding the occurrences of "not" in goal. Some extra
   "unfold not in *" might have to be added for compatibility.
+- Tactics from the Dp plugin (simplify, ergo, yices, cvc3, z3, cvcl,
+  harvey, zenon, gwhy) have been removed, since Why2 has not been
+  maintained for the last few years. The Why3 plugin should be a suitable
+  replacement in most cases.
 
 Libraries
 
