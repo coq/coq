@@ -482,12 +482,12 @@ type structured_fixpoint_expr = {
 let interp_fix_context evdref env isfix fix =
   let before, after = if isfix then split_at_annot fix.fix_binders fix.fix_annot else [], fix.fix_binders in
   let impl_env, ((env', ctx), imps) = interp_context_evars evdref env before in
-  let _, ((env'', ctx'), imps') = interp_context_evars ~impl_env evdref env' after in
+  let impl_env', ((env'', ctx'), imps') = interp_context_evars ~impl_env evdref env' after in
   let annot = Option.map (fun _ -> List.length (assums_of_rel_context ctx)) fix.fix_annot in
-    ((env'', ctx' @ ctx), imps @ imps', annot)
-      
-let interp_fix_ccl evdref (env,_) fix =
-  interp_type_evars evdref env fix.fix_type
+    ((env'', ctx' @ ctx), (impl_env',imps @ imps'), annot)
+
+let interp_fix_ccl evdref impls (env,_) fix =
+  interp_type_evars_impls ~impls ~evdref ~fail_evar:false env fix.fix_type
 
 let interp_fix_body evdref env_rec impls (_,ctx) fix ccl =
   Option.map (fun body ->
@@ -727,13 +727,17 @@ let interp_recursive isfix fixl notations =
 
   (* Interp arities allowing for unresolved types *)
   let evdref = ref Evd.empty in
-  let fixctxs, fiximps, fixannots =
+  let fixctxs, fiximppairs, fixannots =
     list_split3 (List.map (interp_fix_context evdref env isfix) fixl) in
-  let fixccls = List.map2 (interp_fix_ccl evdref) fixctxs fixl in
+  let fixctximpenvs, fixctximps = List.split fiximppairs in
+  let fixccls,fixcclimps = List.split (list_map3 (interp_fix_ccl evdref) fixctximpenvs fixctxs fixl) in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let fixtypes = List.map (nf_evar !evdref) fixtypes in
+  let fiximps = list_map3
+    (fun ctximps cclimps (_,ctx) -> ctximps@(Impargs.lift_implicits (List.length ctx) cclimps))
+    fixctximps fixcclimps fixctxs in
   let rec_sign =
-    List.fold_left2 
+    List.fold_left2
       (fun env' id t ->
 	 if Flags.is_program_mode () then
 	   let sort = Retyping.get_type_of env !evdref t in
@@ -754,7 +758,9 @@ let interp_recursive isfix fixl notations =
   let fixdefs =
     Metasyntax.with_syntax_protection (fun () ->
       List.iter (Metasyntax.set_notation_for_interpretation impls) notations;
-      list_map3 (interp_fix_body evdref env_rec impls) fixctxs fixl fixccls)
+      list_map4
+	(fun fixctximpenv -> interp_fix_body evdref env_rec (Idmap.fold Idmap.add fixctximpenv impls))
+	fixctximpenvs fixctxs fixl fixccls)
       () in
 
   (* Instantiate evars and check all are resolved *)
