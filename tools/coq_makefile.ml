@@ -315,10 +315,10 @@ in
     print "%.vo %.glob: %.v\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.vi: %.v\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print "%.g: %.v\n\t$(GALLINA) $<\n\n";
-    print "%.tex: %.v\n\t$(COQDOC) -latex $< -o $@\n\n";
-    print "%.html: %.v %.glob\n\t$(COQDOC) -html $< -o $@\n\n";
-    print "%.g.tex: %.v\n\t$(COQDOC) -latex -g $< -o $@\n\n";
-    print "%.g.html: %.v %.glob\n\t$(COQDOC) -html -g $< -o $@\n\n";
+    print "%.tex: %.v\n\t$(COQDOC) $(COQDOCFLAGS) -latex $< -o $@\n\n";
+    print "%.html: %.v %.glob\n\t$(COQDOC) $(COQDOCFLAGS) -html $< -o $@\n\n";
+    print "%.g.tex: %.v\n\t$(COQDOC) $(COQDOCFLAGS) -latex -g $< -o $@\n\n";
+    print "%.g.html: %.v %.glob\n\t$(COQDOC)$(COQDOCFLAGS)  -html -g $< -o $@\n\n";
     print "%.v.d: %.v\n";
     print "\t$(COQDEP) -slash $(COQLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n";
     print "%.v.beautified:\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) -beautify $*\n\n"
@@ -349,11 +349,13 @@ let variables is_install opt (args,defs) =
 	  print "\n";
     end;
     (* Coq executables and relative variables *)
+    if !some_vfile || !some_mlpackfile || !some_mllibfile then
+      print "COQDEP?=$(COQBIN)coqdep -c\n";
     if !some_vfile then begin
     print "COQFLAGS?=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
     print "COQCHKFLAGS?=-silent -o\n";
+    print "COQDOCFLAGS?=-interpolate -utf8\n";
     print "COQC?=$(COQBIN)coqc\n";
-    print "COQDEP?=$(COQBIN)coqdep -c\n";
     print "GALLINA?=$(COQBIN)gallina\n";
     print "COQDOC?=$(COQBIN)coqdoc\n";
     print "COQCHK?=$(COQBIN)coqchk\n\n";
@@ -374,7 +376,7 @@ let variables is_install opt (args,defs) =
     print "CAMLOPTLINK?=$(OCAMLOPT) -rectypes\n";
     print "GRAMMARS?=grammar.cma\n";
     print "CAMLP4EXTEND?=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
-    print "CAMLP4OPTIONS?=\n";
+    print "CAMLP4OPTIONS?=-loc loc\n";
     print "PP?=-pp \"$(CAMLP4BIN)$(CAMLP4)o -I $(CAMLLIB) -I . $(COQSRCLIBS) $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl\"\n\n";
     end;
     match is_install with
@@ -564,18 +566,18 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
       print "gallina: $(GFILES)\n\n";
       print "html: $(GLOBFILES) $(VFILES)\n";
       print "\t- mkdir -p html\n";
-      print "\t$(COQDOC) -toc -html $(COQDOCLIBS) -d html $(VFILES)\n\n";
+      print "\t$(COQDOC) -toc $(COQDOCFLAGS) -html $(COQDOCLIBS) -d html $(VFILES)\n\n";
       print "gallinahtml: $(GLOBFILES) $(VFILES)\n";
       print "\t- mkdir -p html\n";
-      print "\t$(COQDOC) -toc -html -g $(COQDOCLIBS) -d html $(VFILES)\n\n";
+      print "\t$(COQDOC) -toc $(COQDOCFLAGS) -html -g $(COQDOCLIBS) -d html $(VFILES)\n\n";
       print "all.ps: $(VFILES)\n";
-      print "\t$(COQDOC) -toc -ps $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $^`\n\n";
+      print "\t$(COQDOC) -toc $(COQDOCFLAGS) -ps $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $^`\n\n";
       print "all-gal.ps: $(VFILES)\n";
-      print "\t$(COQDOC) -toc -ps -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $^`\n\n";
+      print "\t$(COQDOC) -toc $(COQDOCFLAGS) -ps -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $^`\n\n";
       print "all.pdf: $(VFILES)\n";
-      print "\t$(COQDOC) -toc -pdf $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $^`\n\n";
+      print "\t$(COQDOC) -toc $(COQDOCFLAGS) -pdf $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $^`\n\n";
       print "all-gal.pdf: $(VFILES)\n";
-      print "\t$(COQDOC) -toc -pdf -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $^`\n\n";
+      print "\t$(COQDOC) -toc $(COQDOCFLAGS) -pdf -g $(COQDOCLIBS) -o $@ `$(COQDEP) -sort -suffix .v $^`\n\n";
       print "validate: $(VOFILES)\n";
       print "\t$(COQCHK) $(COQCHKFLAGS) $(COQLIBS) $(notdir $(^:.vo=))\n\n";
       print "beautify: $(VFILES:=.beautified)\n";
