@@ -1727,6 +1727,9 @@ let apply_one_mhyp_context ist env gl lmatch (hypname,patv,pat) lhyps =
 (* misc *)
 
 let mk_constr_value ist gl c = VConstr ([],pf_interp_constr ist gl c)
+let mk_open_constr_value ist gl c = 
+  let (sigma,c_interp) = pf_apply (interp_open_constr None ist) gl c in
+  sigma,VConstr ([],c_interp)
 let mk_hyp_value ist gl c = VConstr ([],mkVar (interp_hyp ist gl c))
 let mk_int_or_var_value ist c = VInteger (interp_int_or_var ist c)
 
@@ -2391,6 +2394,7 @@ and interp_atomic ist gl tac =
       let args = List.map (interp_genarg ist gl) l in
       abstract_extended_tactic opn args (tac args)
   | TacAlias (loc,s,l,(_,body)) -> fun gl ->
+    let evdref = ref gl.sigma in
     let rec f x = match genarg_tag x with
     | IntArgType ->
         VInteger (out_gen globwit_int x)
@@ -2413,6 +2417,10 @@ and interp_atomic ist gl tac =
         VConstr ([],mkSort (interp_sort (out_gen globwit_sort x)))
     | ConstrArgType ->
         mk_constr_value ist gl (out_gen globwit_constr x)
+    | OpenConstrArgType false ->
+        let (sigma,v) = mk_open_constr_value ist gl (snd (out_gen globwit_open_constr x)) in
+	evdref := sigma;
+	v
     | ConstrMayEvalArgType ->
 	VConstr
           ([],interp_constr_may_eval ist gl (out_gen globwit_constr_may_eval x))
@@ -2471,6 +2479,7 @@ and interp_atomic ist gl tac =
     in
     let lfun = (List.map (fun (x,c) -> (x,f c)) l)@ist.lfun in
     let trace = push_trace (loc,LtacNotationCall s) ist.trace in
+    let gl = { gl with sigma = !evdref } in
     interp_tactic { ist with lfun=lfun; trace=trace } body gl
 
 let make_empty_glob_sign () =
