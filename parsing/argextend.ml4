@@ -202,9 +202,11 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
   let interp = match f with
     | None ->
 	<:expr< fun ist gl x ->
-          out_gen $make_wit loc globtyp$
-            (Tacinterp.interp_genarg ist gl
-               (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
+	  let (sigma,a_interp) =
+	    Tacinterp.interp_genarg ist gl
+               (Genarg.in_gen $make_globwit loc globtyp$ x)
+	  in
+          (sigma , out_gen $make_wit loc globtyp$ a_interp)>>
     | Some f -> <:expr< $lid:f$>> in
   let substitute = match h with
     | None ->
@@ -230,7 +232,8 @@ let declare_tactic_argument loc s (typ, pr, f, g, h) cl =
         ((fun e x ->
           (Genarg.in_gen $globwit$ ($glob$ e (out_gen $rawwit$ x)))),
         (fun ist gl x ->
-          (Genarg.in_gen $wit$ ($interp$ ist gl (out_gen $globwit$ x)))),
+	  let (sigma,a_interp) = $interp$ ist gl (out_gen $globwit$ x) in
+          (sigma , Genarg.in_gen $wit$ a_interp)),
         (fun subst x ->
           (Genarg.in_gen $globwit$ ($substitute$ subst (out_gen $globwit$ x)))));
       Compat.maybe_uncurry (Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.entry 'a))
