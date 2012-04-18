@@ -66,6 +66,8 @@ END
 
 let () =
   Coqide.ignore_break ();
+  ignore (GtkMain.Main.init ());
+  initmac () ;
   (try
      let gtkrcdir = List.find
        (fun x -> Sys.file_exists (Filename.concat x "coqide-gtk2rc"))
@@ -78,8 +80,6 @@ let () =
     with e ->
       Ideutils.flash_info ("Could not load preferences ("^Printexc.to_string e^").");
   end;
-  ignore (GtkMain.Main.init ());
-  initmac () ;
 (*    GtkData.AccelGroup.set_default_mod_mask
       (Some [`CONTROL;`SHIFT;`MOD1;`MOD3;`MOD4]);*)
     ignore (
