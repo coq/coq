@@ -78,47 +78,47 @@ See the man page of {\tt coqdep} for more details and options.
 \index{Makefile@{\tt Makefile}}
 \index{CoqMakefile@{\tt coq\_Makefile}}}
 
-When a proof development becomes large and is split into several files,
-it becomes crucial to use a tool like {\tt make} to compile \Coq\
-modules.
+When a proof development becomes large, is split into several files or contains
+Ocaml plugins, it becomes crucial to use a tool like {\tt make} to compile
+\Coq\ modules.
 
 The writing of a generic and complete {\tt Makefile} may be a tedious work
 and that's why \Coq\ provides a tool to automate its creation,
 {\tt coq\_makefile}.
 
-Arguments are explain by \texttt{\% coq\_makefile --help}.  They can be directly
-written in the command line but it is recommended to write them in a file (called
-for example {\tt Make}) and then call {\tt coq\_makefile -f Make -o
-  Makefile}. That means options are in {\tt Make} file and output is {\tt
-  Makefile} This way, {\tt Makefile} will be automatically regenerated if
-something changes in {\tt Make}.
+You can get a description of the arguments by the command \texttt{\% coq\_makefile
+  --help}.  Arguments can be directly written on the command line interface but it is recommended
+to write them in a file ({\tt \_CoqProject} by default) and then call {\tt
+  coq\_makefile -f \_CoqProject -o Makefile}. That means options are read from {\tt
+  \_CoqProject} and written in {\tt Makefile}. This way, {\tt Makefile} will be
+automagically regenerated when something changes in {\tt \_CoqProject}.
 
 The first time you use this tool, you may be happy with:
 \begin{quotation}
 \texttt{\% \{ echo '-R .} {\em MyFancyLib} \texttt{' ; find -name '*.v' -print \} >
-  Make \&\& coq\_makefile -f Make -o Makefile}
+  \_CoqProject \&\& coq\_makefile -f \_CoqProject -o Makefile}
 \end{quotation}
 
-To customize things afterwards, remember:
+To customize things further, remember the following:
 \begin{itemize}
-\item Coq files must end in {\tt .v}, caml modules in {\tt .ml4} if they
-  require camlp preproccessing (and in {\tt .ml} otherwise), and caml module signatures in {\tt
-    .mli}.
-\item If you give a directory directly as argument, it is because you provide a
-  Makefile for it in it.
-\item {\tt -R} option is for Coq, {\tt -I} for caml. The same directory can
+\item \Coq files must end in {\tt .v}, \ocaml modules in {\tt .ml4} if they
+  require camlp preproccessing (and in {\tt .ml} otherwise), and \ocaml module
+  signatures in {\tt .mli}.
+\item Whenever a directory is passed as argument, any inner {\tt Makefile} will be
+  recursively called.
+\item {\tt -R} option is for \Coq, {\tt -I} for \ocaml. The same directory can be
   ``included'' by both.
-  Using {\tt -R} option gives a right logical path and a correct installation
+
+  Using {\tt -R} option gives a correct logical path and a correct installation
   emplacement to your coq files.
-\item If your files depend on an external library that isn't install somewhere
-  looked by coqc, use {\tt OTHERFLAGS = '-R path/to/lib lib\_name'} option in your {\tt
-    Make} but don't do {\tt -R \dots} directly, the {\em make clean} command would
-  erase it!
+\item If your files depend on an external library, never use {\tt -R \dots} to
+  include it in the path, the {\em make clean} command would erase it! Take
+  advantage of the \verb:COQPATH: variable (see \ref{envars}) instead if
+  necessary.
 \end{itemize}
 
-\Warning To compile a project containing \ocaml{} files you must keep
-the sources of \Coq{} somewhere and have an environment variable named
-\texttt{COQTOP} that points to that directory.
+Under normal circumstances, the only other variable that you may use is
+\verb:$COQBIN: to specify the directory where the binaries are.
 
 \section[Documenting \Coq\ files with coqdoc]{Documenting \Coq\ files with coqdoc\label{coqdoc}
 \index{Coqdoc@{\sf coqdoc}}}
@@ -142,7 +142,7 @@ after each phrase.
 
 Starting with a file {\em file}{\tt.tex} containing \Coq\ phrases,
 the {\tt coq-tex} filter produces a file named {\em file}{\tt.v.tex} with
-the \Coq\ outcome. 
+the \Coq\ outcome.
 
 There are options to produce the \Coq\ parts in smaller font, italic,
 between horizontal rules, etc.
