@@ -1825,9 +1825,9 @@ let main files =
   let vbox = GPack.vbox ~homogeneous:false ~packing:w#add () in
 
   let new_f _ =
-    match select_file_for_save ~title:"Create file" () with
-      | None -> ()
-      | Some f -> do_load f
+    let session = create_session None in
+    let index = session_notebook#append_term session in
+    session_notebook#goto_page index
   in
   let load_f _ =
     match select_file_for_open ~title:"Load file" () with
