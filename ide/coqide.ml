@@ -2459,6 +2459,16 @@ let main files =
         ~callback:(fun _ -> session_notebook#previous_page ());
       GAction.add_action "Next tab" ~label:"_Next tab" ~accel:("<SHIFT>Right") ~stock:`GO_FORWARD
         ~callback:(fun _ -> session_notebook#next_page ());
+      GAction.add_toggle_action "Show Toolbar" ~label:"Show _Toolbar"
+        ~active:(!current.show_toolbar) ~callback:
+        (fun _ -> !current.show_toolbar <- not !current.show_toolbar;
+           !refresh_toolbar_hook ());
+      GAction.add_toggle_action "Show Query Pane" ~label:"Show _Query Pane"
+        ~callback:(fun _ -> let ccw = session_notebook#current_term.command in
+                     if ccw#frame#misc#visible
+                     then ccw#frame#misc#hide ()
+                     else ccw#frame#misc#show ())
+        ~accel:"Escape";
     ];
     List.iter
       (fun (opts,name,label,key,dflt) ->
@@ -2560,16 +2570,6 @@ let main files =
     ];
     GAction.add_actions windows_actions [
       GAction.add_action "Windows" ~label:"_Windows";
-      GAction.add_toggle_action "Show/Hide Query Pane" ~label:"Show/Hide _Query Pane"
-	~callback:(fun _ -> let ccw = session_notebook#current_term.command in
-		     if ccw#frame#misc#visible
-		     then ccw#frame#misc#hide ()
-		     else ccw#frame#misc#show ())
-	~accel:"Escape";
-      GAction.add_toggle_action "Show/Hide Toolbar" ~label:"Show/Hide _Toolbar"
-	~active:(!current.show_toolbar) ~callback:
-	(fun _ -> !current.show_toolbar <- not !current.show_toolbar;
-	   !show_toolbar !current.show_toolbar);
       GAction.add_action "Detach View" ~label:"Detach _View"
 	~callback:(fun _ -> do_if_not_computing "detach view"
 		     (function {script=v;analyzed_view=av} ->
@@ -2633,9 +2633,6 @@ let main files =
 	~tooltips:true tbar in
     let toolbar = new GObj.widget tbar in
     vbox#pack toolbar;
-
-    show_toolbar :=
-      (fun b -> if b then toolbar#misc#show () else toolbar#misc#hide ());
 
     ignore (w#event#connect#delete ~callback:(fun _ -> quit_f (); true));
 
@@ -2799,9 +2796,14 @@ let main files =
   (* Progress Bar *)
   lower_hbox#pack pbar#coerce;
   pbar#set_text "CoqIde started";
-  (* XXX *)
-  change_font :=
-    (fun fd ->
+
+  (* Initializing hooks *)
+
+  refresh_toolbar_hook :=
+    (fun () -> if !current.show_toolbar then toolbar#misc#show () else toolbar#misc#hide ());
+  refresh_font_hook :=
+    (fun () ->
+      let fd = !current.text_font in
       List.iter
 	(fun {script=view; proof_view=prf_v; message_view=msg_v} ->
           view#misc#modify_font fd;
@@ -2810,8 +2812,9 @@ let main files =
         )
 	session_notebook#pages;
     );
-  change_background_color :=
-    (fun clr ->
+  refresh_background_color_hook :=
+    (fun () ->
+      let clr = Tags.color_of_string !current.background_color in
       List.iter
         (fun {script=view; proof_view=prf_v; message_view=msg_v} ->
           view#misc#modify_base [`NORMAL, `COLOR clr];
@@ -2820,6 +2823,12 @@ let main files =
         )
         session_notebook#pages;
     );
+  resize_window_hook := (fun () ->
+    w#resize
+      ~width:!current.window_width
+      ~height:!current.window_height);
+  refresh_tabs_hook := update_notebook_pos;
+
   let about_full_string =
     "\nCoq is developed by the Coq Development Team\
      \n(INRIA - CNRS - LIX - LRI - PPS)\
@@ -2890,10 +2899,6 @@ let main files =
   Tags.set_processed_color (Tags.color_of_string !current.processed_color);
 
 (* End of color configuration *)
-  resize_window := (fun () ->
-    w#resize
-      ~width:!current.window_width
-      ~height:!current.window_height);
   ignore(nb#connect#switch_page
 	   ~callback:
 	   (fun i ->
@@ -2917,7 +2922,7 @@ let main files =
       session_notebook#goto_page index;
     end;
   initial_about session_notebook#current_term.proof_view#buffer;
-  !show_toolbar !current.show_toolbar;
+  !refresh_toolbar_hook ();
   session_notebook#current_term.script#misc#grab_focus ();;
 
 (* This function check every half of second if GeoProof has send

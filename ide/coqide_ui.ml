@@ -59,7 +59,10 @@ let init () =
   <menu name='View' action='View'>
     <menuitem action='Previous tab' />
     <menuitem action='Next tab' />
-    <separator />
+    <separator/>
+    <menuitem action='Show Toolbar' />
+    <menuitem action='Show Query Pane' />
+    <separator/>
     <menuitem action='Display implicit arguments' />
     <menuitem action='Display coercions' />
     <menuitem action='Display raw matching expressions' />
@@ -120,8 +123,6 @@ let init () =
     <menuitem action='Make makefile' />
   </menu>
   <menu action='Windows'>
-    <menuitem action='Show/Hide Query Pane' />
-    <menuitem action='Show/Hide Toolbar' />
     <menuitem action='Detach View' />
   </menu>
   <menu name='Help' action='Help'>
