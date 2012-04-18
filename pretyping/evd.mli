@@ -149,6 +149,8 @@ val is_empty : evar_map -> bool
     there are uninstantiated evars in [sigma]. *)
 val has_undefined : evar_map -> bool
 
+(** [add sigma ev info] adds [ev] with evar info [info] in sigma.
+    Precondition: ev must not preexist in [sigma]. *)
 val add : evar_map -> evar -> evar_info -> evar_map
 
 val find : evar_map -> evar -> evar_info
