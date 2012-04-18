@@ -2330,13 +2330,13 @@ let main files =
   in
 
   let file_actions = GAction.action_group ~name:"File" () in
-  let export_actions = GAction.action_group ~name:"Export" () in
   let edit_actions = GAction.action_group ~name:"Edit" () in
+  let view_actions = GAction.action_group ~name:"View" () in
+  let export_actions = GAction.action_group ~name:"Export" () in
   let navigation_actions = GAction.action_group ~name:"Navigation" () in
   let tactics_actions = GAction.action_group ~name:"Tactics" () in
   let templates_actions = GAction.action_group ~name:"Templates" () in
   let queries_actions = GAction.action_group ~name:"Queries" () in
-  let display_actions = GAction.action_group ~name:"Display" () in
   let compile_actions = GAction.action_group ~name:"Compile" () in
   let windows_actions = GAction.action_group ~name:"Windows" () in
   let help_actions = GAction.action_group ~name:"Help" () in
@@ -2453,6 +2453,21 @@ let main files =
 	end;
 	reset_revert_timer ()) ~stock:`PREFERENCES;
       (* GAction.add_action "Save preferences" ~label:"_Save preferences" ~callback:(fun _ -> save_pref ()); *) ];
+    GAction.add_actions view_actions [
+      GAction.add_action "View" ~label:"_View";
+      GAction.add_action "Previous tab" ~label:"_Previous tab" ~accel:("<SHIFT>Left") ~stock:`GO_BACK
+        ~callback:(fun _ -> session_notebook#previous_page ());
+      GAction.add_action "Next tab" ~label:"_Next tab" ~accel:("<SHIFT>Right") ~stock:`GO_FORWARD
+        ~callback:(fun _ -> session_notebook#next_page ());
+    ];
+    List.iter
+      (fun (opts,name,label,key,dflt) ->
+         GAction.add_toggle_action name ~active:dflt ~label
+           ~accel:(!current.modifier_for_display^key)
+          ~callback:(fun v -> do_or_activate (fun a ->
+            let () = setopts !(session_notebook#current_term.toplvl) opts v#get_active in
+            a#show_goals) ()) view_actions)
+      print_items;
     GAction.add_actions navigation_actions [
       GAction.add_action "Navigation" ~label:"_Navigation";
       GAction.add_action "Forward" ~label:"_Forward" ~stock:`GO_DOWN
@@ -2535,15 +2550,6 @@ let main files =
       query_shortcut "Locate" None;
       query_shortcut "Whelp Locate" None;
     ];
-    GAction.add_action "Display" ~label:"_Display" display_actions;
-    List.iter
-      (fun (opts,name,label,key,dflt) ->
-         GAction.add_toggle_action name ~active:dflt ~label
-	   ~accel:(!current.modifier_for_display^key)
-          ~callback:(fun v -> do_or_activate (fun a ->
-            let () = setopts !(session_notebook#current_term.toplvl) opts v#get_active in
-            a#show_goals) ()) display_actions)
-      print_items;
     GAction.add_actions compile_actions [
       GAction.add_action "Compile" ~label:"_Compile";
       GAction.add_action "Compile buffer" ~label:"_Compile buffer" ~callback:compile_f;
@@ -2611,11 +2617,11 @@ let main files =
     Coqide_ui.ui_m#insert_action_group file_actions 0;
     Coqide_ui.ui_m#insert_action_group export_actions 0;
     Coqide_ui.ui_m#insert_action_group edit_actions 0;
+    Coqide_ui.ui_m#insert_action_group view_actions 0;
     Coqide_ui.ui_m#insert_action_group navigation_actions 0;
     Coqide_ui.ui_m#insert_action_group tactics_actions 0;
     Coqide_ui.ui_m#insert_action_group templates_actions 0;
     Coqide_ui.ui_m#insert_action_group queries_actions 0;
-    Coqide_ui.ui_m#insert_action_group display_actions 0;
     Coqide_ui.ui_m#insert_action_group compile_actions 0;
     Coqide_ui.ui_m#insert_action_group windows_actions 0;
     Coqide_ui.ui_m#insert_action_group help_actions 0;
