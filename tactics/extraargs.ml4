@@ -58,6 +58,8 @@ let interp_occs ist gl l =
     | ArgVar (_,id as locid) ->
 	(try int_list_of_VList (List.assoc id ist.lfun)
 	  with Not_found | CannotCoerceTo _ -> [interp_int ist locid])
+let interp_occs ist gl l =
+  Tacmach.project gl , interp_occs ist gl l
 
 let glob_occs ist l = l
 
@@ -89,7 +91,7 @@ let pr_gen prc _prlc _prtac c = prc c
 
 let pr_globc _prc _prlc _prtac (_,glob) = Printer.pr_glob_constr glob
 
-let interp_glob ist gl (t,_) = (ist,t)
+let interp_glob ist gl (t,_) = Tacmach.project gl , (ist,t)
 
 let glob_glob = Tacinterp.intern_constr
 
@@ -135,6 +137,9 @@ let intern_place ist = function
 let interp_place ist gl = function
     ConclLocation () -> ConclLocation ()
   | HypLocation (id,hl) -> HypLocation (interp_hyp ist gl id,hl)
+
+let interp_place ist gl p =
+  Tacmach.project gl , interp_place ist gl p
 
 let subst_place subst pl = pl
 

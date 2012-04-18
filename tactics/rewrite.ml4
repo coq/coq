@@ -1344,7 +1344,7 @@ type glob_constr_with_bindings_sign = interp_sign * glob_constr_and_expr with_bi
 let pr_glob_constr_with_bindings_sign _ _ _ (ge : glob_constr_with_bindings_sign) = Printer.pr_glob_constr (fst (fst (snd ge)))
 let pr_glob_constr_with_bindings _ _ _ (ge : glob_constr_with_bindings) = Printer.pr_glob_constr (fst (fst ge))
 let pr_constr_expr_with_bindings prc _ _ (ge : constr_expr_with_bindings) = prc (fst ge)
-let interp_glob_constr_with_bindings ist gl c = (ist, c)
+let interp_glob_constr_with_bindings ist gl c = Tacmach.project gl , (ist, c)
 let glob_glob_constr_with_bindings ist l = Tacinterp.intern_constr_with_bindings ist l
 let subst_glob_constr_with_bindings s c = subst_glob_with_bindings s c
 
@@ -1375,7 +1375,7 @@ let _ =
 
 let pr_strategy _ _ _ (s : strategy) = Pp.str "<strategy>"
 
-let interp_strategy ist gl c = c
+let interp_strategy ist gl c = project gl , c
 let glob_strategy ist l = l
 let subst_strategy evm l = l
 
@@ -1406,10 +1406,11 @@ ARGUMENT EXTEND rewstrategy TYPED AS strategy
   | [ "choice" rewstrategy(h) rewstrategy(h') ] -> [ Strategies.choice h h' ]
   | [ "old_hints" preident(h) ] -> [ Strategies.old_hints h ]
   | [ "hints" preident(h) ] -> [ Strategies.hints h ]
-  | [ "terms" constr_list(h) ] -> [ fun env avoid t ty cstr evars -> 
+  | [ "terms" constr_list(h) ] -> [ fun env avoid t ty cstr evars ->
       Strategies.lemmas rewrite_unif_flags (interp_constr_list env (goalevars evars) h) env avoid t ty cstr evars ]
-  | [ "eval" red_expr(r) ] -> [ fun env avoid t ty cstr evars -> 
-      Strategies.reduce (Tacinterp.interp_redexp env (goalevars evars) r) env avoid t ty cstr evars ]
+  | [ "eval" red_expr(r) ] -> [ fun env avoid t ty cstr evars ->
+      let (sigma,r_interp) = Tacinterp.interp_redexp env (goalevars evars) r in
+      Strategies.reduce r_interp env avoid t ty cstr (sigma,cstrevars evars) ]
   | [ "fold" constr(c) ] -> [ Strategies.fold c ]
 END
 

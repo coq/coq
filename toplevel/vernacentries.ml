@@ -355,7 +355,7 @@ let vernac_definition (local,k) (loc,id as lid) def hook =
           | None -> None
           | Some r ->
 	      let (evc,env)= get_current_context () in
- 		Some (interp_redexp env evc r) in
+ 		Some (snd (interp_redexp env evc r)) in
 	do_definition id (local,k) bl red_option c typ_opt hook)
 
 let vernac_start_proof kind l lettop hook =
@@ -1205,13 +1205,14 @@ let vernac_check_may_eval redexp glopt rc =
 	if !pcoq <> None then (Option.get !pcoq).print_check env j
 	else msg (print_judgment env j)
     | Some r ->
-	let redfun = fst (reduction_of_red_expr (interp_redexp env sigma' r)) in
+        let (sigma',r_interp) = interp_redexp env sigma' r in
+	let redfun = fst (reduction_of_red_expr r_interp) in
 	if !pcoq <> None
 	then (Option.get !pcoq).print_eval redfun env sigma' rc j
 	else msg (print_eval redfun env sigma' rc j)
 
 let vernac_declare_reduction locality s r =
-  declare_red_expr locality s (interp_redexp (Global.env()) Evd.empty r)
+  declare_red_expr locality s (snd (interp_redexp (Global.env()) Evd.empty r))
 
   (* The same but avoiding the current goal context if any *)
 let vernac_global_check c =

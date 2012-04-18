@@ -111,6 +111,7 @@ let _ = Tacinterp.add_interp_genarg "proof_instr"
       (Decl_interp.intern_proof_instr e (Genarg.out_gen rawwit_proof_instr x))
   end,
   begin fun ist gl x -> (* declares the interpretation function *)
+    Tacmach.project gl ,
     Genarg.in_gen wit_proof_instr 
       (interp_proof_instr ist gl (Genarg.out_gen globwit_proof_instr x))
   end,
