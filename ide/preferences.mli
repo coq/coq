@@ -61,6 +61,7 @@ type pref =
       mutable vertical_tabs : bool;
       mutable opposite_tabs : bool;
 
+      mutable background_color : string;
       mutable processing_color : string;
       mutable processed_color : string;
     }
@@ -72,7 +73,8 @@ val current : pref ref
 
 val configure : ?apply:(unit -> unit) -> unit -> unit
 
-val change_font : ( Pango.font_description -> unit) ref
+val change_font : (Pango.font_description -> unit) ref
+val change_background_color : (Gdk.color -> unit) ref
 val show_toolbar : (bool -> unit) ref
 val auto_complete : (bool -> unit) ref
 val resize_window : (unit -> unit) ref
