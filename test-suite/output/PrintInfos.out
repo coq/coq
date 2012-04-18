@@ -37,10 +37,11 @@ When applied to no arguments:
 When applied to 1 argument:
   Argument A is implicit
 plus = 
-fix plus (n m : nat) : nat := match n with
-                              | 0 => m
-                              | S p => S (plus p m)
-                              end
+fix plus (n m : nat) {struct n} : nat :=
+  match n with
+  | 0 => m
+  | S p => S (plus p m)
+  end
      : nat -> nat -> nat
 
 Argument scopes are [nat_scope nat_scope]
