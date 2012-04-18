@@ -118,8 +118,8 @@ let (current:pref ref) =
     read_project = Ignore_args;
     project_file_name = "_CoqProject";
 
-    encoding_use_locale = true;
-    encoding_use_utf8 = false;
+    encoding_use_locale = Sys.os_type <> "Win32" ;
+    encoding_use_utf8 = Sys.os_type = "Win32" ;
     encoding_manual = "ISO_8859-1";
 
     automatic_tactics = ["trivial"; "tauto"; "auto"; "omega";
@@ -668,7 +668,7 @@ let configure ?(apply=(fun () -> ())) () =
 (*
   Format.printf "before edit: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
 *)
-  let x = edit ~apply ~width:500 "Customizations" cmds in
+  let x = edit ~apply ~width:640 "Customizations" cmds in
 (*
   Format.printf "after edit: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
 *)
