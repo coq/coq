@@ -2466,7 +2466,7 @@ and interp_atomic ist gl tac =
     | ExtraArgType _ | BindingsArgType
     | OptArgType _ | PairArgType _
     | List0ArgType _ | List1ArgType _
-	-> error "This generic type is not supported in alias."
+	-> error "This argument type is not supported in tactic notations."
 
     in
     let lfun = (List.map (fun (x,c) -> (x,f c)) l)@ist.lfun in
