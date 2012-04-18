@@ -200,6 +200,19 @@ let evars_to_metas sigma (emap, c) =
   let emap = nf_evar_map_undefined emap in
   let sigma',emap' = push_dependent_evars sigma emap in
   let sigma',emap' = push_duplicated_evars sigma' emap' c in
+  (* if an evar has been instantiated in [emap] (as part of typing [c])
+     then it is instantiated in [sigma]. *)
+  let repair_evars sigma emap =
+    fold_undefined begin fun ev _ sigma' ->
+      try
+	let info = find emap ev in
+	match evar_body info with
+	| Evar_empty -> sigma'
+	| Evar_defined body -> define ev body sigma'
+      with Not_found -> sigma'
+    end sigma sigma
+  in
+  let sigma' = repair_evars sigma' emap in
   let change_exist evar =
     let ty = nf_betaiota emap (existential_type emap evar) in
     let n = new_meta() in
