@@ -48,9 +48,6 @@ val pf_type_of            : goal sigma -> constr -> types
 val pf_check_type         : goal sigma -> constr -> types -> unit
 val pf_hnf_type_of        : goal sigma -> constr -> types
 
-val pf_interp_constr      : goal sigma -> Topconstr.constr_expr -> constr
-val pf_interp_type        : goal sigma -> Topconstr.constr_expr -> types
-
 val pf_get_hyp            : goal sigma -> identifier -> named_declaration
 val pf_get_hyp_typ        : goal sigma -> identifier -> types
 
