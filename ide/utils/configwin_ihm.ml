@@ -1136,12 +1136,12 @@ let tabbed_box conf_struct_list buttons tooltips =
    to configure the various parameters. *)
 let edit ?(with_apply=true)
     ?(apply=(fun () -> ()))
-    title ?(width=400) ?(height=400)
+    title ?width ?height
     conf_struct =
   let dialog = GWindow.dialog
     ~position:`CENTER
     ~modal: true ~title: title
-    ~height ~width
+    ?height ?width
     ()
   in
   let tooltips = GData.tooltips () in

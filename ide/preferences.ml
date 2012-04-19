@@ -694,7 +694,7 @@ let configure ?(apply=(fun () -> ())) () =
 (*
   Format.printf "before edit: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
 *)
-  let x = edit ~apply ~width:640 "Customizations" cmds in
+  let x = edit ~apply "Customizations" cmds in
 (*
   Format.printf "after edit: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
 *)

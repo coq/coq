@@ -60,9 +60,9 @@ let html = Configwin_ihm.html
 
 let edit
     ?(apply=(fun () -> ()))
-    title ?(width=400) ?(height=400)
+    title ?width ?height
     conf_struct_list =
-  Configwin_ihm.edit ~with_apply: true ~apply title ~width ~height conf_struct_list
+  Configwin_ihm.edit ~with_apply: true ~apply title ?width ?height conf_struct_list
 
 let get = Configwin_ihm.edit ~with_apply: false ~apply: (fun () -> ())
 
