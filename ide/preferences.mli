@@ -11,6 +11,7 @@ type inputenc = Elocale | Eutf8 | Emanual of string
 
 type pref =
     {
+      mutable cmd_coqtop : string option;
       mutable cmd_coqc : string;
       mutable cmd_make : string;
       mutable cmd_coqmakefile : string;

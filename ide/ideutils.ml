@@ -252,6 +252,24 @@ let stock_to_widget ?(size=`DIALOG) s =
   in img#set_stock s;
   img#coerce
 
+let custom_coqtop = ref None
+
+let coqtop_path () =
+  let file = match !custom_coqtop with
+    | Some s -> s
+    | None ->
+      match !current.cmd_coqtop with
+	| Some s -> s
+	| None ->
+	  let prog = String.copy Sys.executable_name in
+	  try
+	    let pos = String.length prog - 6 in
+	    let i = Str.search_backward (Str.regexp_string "coqide") prog pos in
+	    String.blit "coqtop" 0 prog i 6;
+	    prog
+	  with Not_found -> "coqtop"
+  in file
+
 let rec print_list print fmt = function
   | [] -> ()
   | [x] -> print fmt x

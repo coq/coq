@@ -52,6 +52,12 @@ val print_list : (formatter -> 'a -> unit) -> formatter -> 'a list -> unit
 
 val run_command : (string -> unit) -> string -> Unix.process_status*string
 
+val custom_coqtop : string option ref
+(* @return command to call coqtop
+   - custom_coqtop if set
+   - from the prefs is set
+   - try to infer it else *)
+val coqtop_path : unit -> string
 
 
 val status : GMisc.statusbar

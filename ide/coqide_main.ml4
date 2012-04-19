@@ -65,21 +65,21 @@ let () =
 END
 
 let () =
-  let argl = Array.to_list Sys.argv in
-  let argl = Coqide.read_coqide_args argl in
-  let files = Coqide.process_argv argl in
-  let args = List.filter (fun x -> not (List.mem x files)) (List.tl argl) in
-  Coq.check_connection args;
-  Coqide.sup_args := args;
   Coqide.ignore_break ();
+  ignore (GtkMain.Main.init ());
+  initmac () ;
   (try
      let gtkrcdir = List.find
        (fun x -> Sys.file_exists (Filename.concat x "coqide-gtk2rc"))
        Minilib.xdg_config_dirs in
      GtkMain.Rc.add_default_file (Filename.concat gtkrcdir "coqide-gtk2rc");
    with Not_found -> ());
-  ignore (GtkMain.Main.init ());
-  initmac () ;
+  (* Statup preferences *)
+  begin
+    try Preferences.load_pref ()
+    with e ->
+      Ideutils.flash_info ("Could not load preferences ("^Printexc.to_string e^").");
+  end;
 (*    GtkData.AccelGroup.set_default_mod_mask
       (Some [`CONTROL;`SHIFT;`MOD1;`MOD3;`MOD4]);*)
     ignore (
@@ -89,7 +89,13 @@ let () =
 		  if level land Glib.Message.log_level `WARNING <> 0
 		  then Printf.eprintf "Warning: %s\n" msg
 		  else failwith ("Coqide internal error: " ^ msg)));
-    Coqide.main files;
+  let argl = Array.to_list Sys.argv in
+  let argl = Coqide.read_coqide_args argl in
+  let files = Coqide.process_argv argl in
+  let args = List.filter (fun x -> not (List.mem x files)) (List.tl argl) in
+  Coq.check_connection args;
+  Coqide.sup_args := args;
+  Coqide.main files;
     if !Coq_config.with_geoproof then ignore (Thread.create Coqide.check_for_geoproof_input ());
     macready (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar") (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar/Edit/Prefs")
              (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar/Help/Abt");
