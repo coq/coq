@@ -2804,24 +2804,24 @@ let main files =
   refresh_font_hook :=
     (fun () ->
       let fd = !current.text_font in
-      List.iter
-	(fun {script=view; proof_view=prf_v; message_view=msg_v} ->
-          view#misc#modify_font fd;
-          prf_v#misc#modify_font fd;
-          msg_v#misc#modify_font fd
-        )
-	session_notebook#pages;
+      let iter_page p =
+        p.script#misc#modify_font fd;
+        p.proof_view#misc#modify_font fd;
+        p.message_view#misc#modify_font fd;
+        p.command#refresh_font ()
+      in
+      List.iter iter_page session_notebook#pages;
     );
   refresh_background_color_hook :=
     (fun () ->
       let clr = Tags.color_of_string !current.background_color in
-      List.iter
-        (fun {script=view; proof_view=prf_v; message_view=msg_v} ->
-          view#misc#modify_base [`NORMAL, `COLOR clr];
-          prf_v#misc#modify_base [`NORMAL, `COLOR clr];
-          msg_v#misc#modify_base [`NORMAL, `COLOR clr]
-        )
-        session_notebook#pages;
+      let iter_page p =
+        p.script#misc#modify_base [`NORMAL, `COLOR clr];
+        p.proof_view#misc#modify_base [`NORMAL, `COLOR clr];
+        p.message_view#misc#modify_base [`NORMAL, `COLOR clr];
+        p.command#refresh_color ()
+      in
+      List.iter iter_page session_notebook#pages;
     );
   resize_window_hook := (fun () ->
     w#resize
