@@ -100,6 +100,18 @@ let restore_timeout = function
     (* restore handler *)
     Sys.set_signal Sys.sigalrm psh
 
+
+(* Open an utf-8 encoded file and skip the byte-order mark if any *)
+
+let open_utf8_file_in fname =
+  let is_bom s =
+    Char.code s.[0] = 0xEF && Char.code s.[1] = 0xBB && Char.code s.[2] = 0xBF
+  in
+  let in_chan = open_in fname in
+  let s = "   " in
+  if input in_chan s 0 3 < 3 || not (is_bom s) then seek_in in_chan 0;
+  in_chan
+
 (* Opening and closing a channel. Open it twice when verbose: the first
    channel is used to read the commands, and the second one to print them.
    Note: we could use only one thanks to seek_in, but seeking on and on in
@@ -109,8 +121,9 @@ let open_file_twice_if verbosely fname =
   let paths = Library.get_load_paths () in
   let _,longfname =
     find_file_in_path ~warn:(Flags.is_verbose()) paths fname in
-  let in_chan = open_in longfname in
-  let verb_ch = if verbosely then Some (open_in longfname) else None in
+  let in_chan = open_utf8_file_in longfname in
+  let verb_ch =
+    if verbosely then Some (open_utf8_file_in longfname) else None in
   let po = Pcoq.Gram.parsable (Stream.of_channel in_chan) in
   (in_chan, longfname, (po, verb_ch))
 
@@ -330,5 +343,3 @@ let compile verbosely f =
   if !Flags.xml_export then !xml_end_library ();
   Dumpglob.end_dump_glob ();
   Library.save_library_to ldir (long_f_dot_v ^ "o")
-
-
