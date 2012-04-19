@@ -125,7 +125,7 @@ let display mode (view:GText.view) goals hints evars =
       in
       List.iter iter evs
     | _ ->
-      view#buffer#insert "Proof Completed."
+      view#buffer#insert "No more subgoals."
     end
   | Some { Interface.fg_goals = []; Interface.bg_goals = bg } ->
     (* No foreground proofs, but still unfocused ones *)
