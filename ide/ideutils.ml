@@ -63,28 +63,25 @@ let print_id id =
 let do_convert s =
   Utf8_convert.f
     (if Glib.Utf8.validate s then begin
-       prerr_endline "Input is UTF-8";s
-     end else
-       let from_loc () =
-	 let _,char_set = Glib.Convert.get_charset () in
-	 flash_info
-	   ("Converting from locale ("^char_set^")");
-	 Glib.Convert.convert_with_fallback ~to_codeset:"UTF-8" ~from_codeset:char_set s
-       in
-       let from_manual () =
-	 flash_info
-	   ("Converting from "^ !current.encoding_manual);
-	 Glib.Convert.convert s ~to_codeset:"UTF-8" ~from_codeset:!current.encoding_manual
-       in
-       if !current.encoding_use_utf8 || !current.encoding_use_locale then begin
-	 try
-	   from_loc ()
-	 with _ -> from_manual ()
-       end else begin
-	 try
-	   from_manual ()
-	 with _ -> from_loc ()
-       end)
+      prerr_endline "Input is UTF-8";s
+    end else
+	let from_loc () =
+	  let _,char_set = Glib.Convert.get_charset () in
+	  flash_info
+	    ("Converting from locale ("^char_set^")");
+	  Glib.Convert.convert_with_fallback ~to_codeset:"UTF-8" ~from_codeset:char_set s
+	in
+	let from_manual enc =
+	  flash_info
+	    ("Converting from "^ enc);
+	  Glib.Convert.convert s ~to_codeset:"UTF-8" ~from_codeset:enc
+	in
+	match !current.encoding with
+	  |Preferences.Eutf8 | Preferences.Elocale -> from_loc ()
+	  |Emanual enc ->
+	    try
+	      from_manual enc
+	    with _ -> from_loc ())
 
 let try_convert s =
   try
@@ -96,18 +93,21 @@ Please choose a correct encoding in the preference panel.*)";;
 
 let try_export file_name s =
   try let s =
-    try if !current.encoding_use_utf8 then begin
-      (prerr_endline "UTF-8 is enforced" ;s)
-    end else if !current.encoding_use_locale then begin
-      let is_unicode,char_set = Glib.Convert.get_charset () in
-      if is_unicode then
-	(prerr_endline "Locale is UTF-8" ;s)
-      else
-	(prerr_endline ("Locale is "^char_set);
-	 Glib.Convert.convert_with_fallback ~from_codeset:"UTF-8" ~to_codeset:char_set s)
-    end else
-      (prerr_endline ("Manual charset is "^ !current.encoding_manual);
-       Glib.Convert.convert_with_fallback ~from_codeset:"UTF-8" ~to_codeset:!current.encoding_manual s)
+    try match !current.encoding with
+      |Eutf8 -> begin
+	(prerr_endline "UTF-8 is enforced" ;s)
+      end
+      |Elocale -> begin
+	let is_unicode,char_set = Glib.Convert.get_charset () in
+	if is_unicode then
+	  (prerr_endline "Locale is UTF-8" ;s)
+	else
+	  (prerr_endline ("Locale is "^char_set);
+	   Glib.Convert.convert_with_fallback ~from_codeset:"UTF-8" ~to_codeset:char_set s)
+      end
+      |Emanual enc ->
+	(prerr_endline ("Manual charset is "^ enc);
+       Glib.Convert.convert_with_fallback ~from_codeset:"UTF-8" ~to_codeset:enc s)
     with e -> (prerr_endline ("Error ("^(Printexc.to_string e)^") in transcoding: falling back to UTF-8") ;s)
   in
   let oc = open_out file_name in
