@@ -56,6 +56,19 @@ let init () =
     <separator />
     <menuitem name='Prefs' action='Preferences' />
   </menu>
+  <menu name='View' action='View'>
+    <menuitem action='Previous tab' />
+    <menuitem action='Next tab' />
+    <separator />
+    <menuitem action='Display implicit arguments' />
+    <menuitem action='Display coercions' />
+    <menuitem action='Display raw matching expressions' />
+    <menuitem action='Display notations' />
+    <menuitem action='Display all basic low-level contents' />
+    <menuitem action='Display existential variable instances' />
+    <menuitem action='Display universe levels' />
+    <menuitem action='Display all low-level contents' />
+  </menu>
   <menu action='Navigation'>
     <menuitem action='Forward' />
     <menuitem action='Backward' />
@@ -99,16 +112,6 @@ let init () =
     <menuitem action='About' />
     <menuitem action='Locate' />
     <menuitem action='Whelp Locate' />
-  </menu>
-  <menu action='Display'>
-    <menuitem action='Display implicit arguments' />
-    <menuitem action='Display coercions' />
-    <menuitem action='Display raw matching expressions' />
-    <menuitem action='Display notations' />
-    <menuitem action='Display all basic low-level contents' />
-    <menuitem action='Display existential variable instances' />
-    <menuitem action='Display universe levels' />
-    <menuitem action='Display all low-level contents' />
   </menu>
   <menu action='Compile'>
     <menuitem action='Compile buffer' />
