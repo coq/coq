@@ -13,6 +13,7 @@ class command_window coqtop current =
 		 ~position:`CENTER
 		 ~title:"CoqIde queries" ~show:false ()
   in *)
+  let views = ref [] in
   let frame = GBin.frame ~label:"Command Pane" ~shadow_type:`IN () in
   let _ = frame#misc#hide () in
   let _ = GtkData.AccelGroup.create () in
@@ -49,12 +50,17 @@ class command_window coqtop current =
       ()
   in
 
+  let remove_cb () =
+    let index = notebook#current_page in
+    let () = notebook#remove_page index in
+    views := Minilib.list_filter_i (fun i x -> i <> index) !views
+  in
   let _ =
     toolbar#insert_button
       ~tooltip:"Delete Page"
       ~text:"Delete Page"
       ~icon:(Ideutils.stock_to_widget `DELETE)
-      ~callback:(fun () -> notebook#remove_page notebook#current_page)
+      ~callback:remove_cb
       ()
   in
 object(self)
@@ -63,14 +69,14 @@ object(self)
 
   val new_page_menu = new_page_menu
   val notebook = notebook
+
   method frame = frame
   method new_command ?command ?term () =
-    let appendp x = ignore (notebook#append_page x) in
     let frame = GBin.frame
 		  ~shadow_type:`ETCHED_OUT
-		  ~packing:appendp
 		  ()
     in
+    let _ = notebook#append_page frame#coerce in
     notebook#goto_page (notebook#page_num frame#coerce);
     let vbox = GPack.vbox ~homogeneous:false ~packing:frame#add () in
     let hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
@@ -91,7 +97,10 @@ object(self)
 	~packing:(vbox#pack ~fill:true ~expand:true) () in
     let ok_b = GButton.button ~label:"Ok" ~packing:(hbox#pack ~expand:false) () in
     let result = GText.view ~packing:r_bin#add () in
+    let () = views := !views @ [result] in
     result#misc#modify_font !current.Preferences.text_font;
+    let clr = Tags.color_of_string !current.Preferences.background_color in
+    result#misc#modify_base [`NORMAL, `COLOR clr];
     result#misc#set_can_focus true; (* false causes problems for selection *)
     result#set_editable false;
     let callback () =
@@ -133,6 +142,15 @@ object(self)
     ignore (entry#connect#activate ~callback);
     ignore (combo#entry#connect#activate ~callback);
     self#frame#misc#show ()
+
+  method refresh_font () =
+    let iter view = view#misc#modify_font !current.Preferences.text_font in
+    List.iter iter !views
+
+  method refresh_color () =
+    let clr = Tags.color_of_string !current.Preferences.background_color in
+    let iter view = view#misc#modify_base [`NORMAL, `COLOR clr] in
+    List.iter iter !views
 
   initializer
     ignore (new_page_menu#connect#clicked ~callback:self#new_command);

@@ -11,4 +11,6 @@ class command_window :
   object
     method new_command : ?command:string -> ?term:string -> unit -> unit
     method frame : GBin.frame
+    method refresh_font : unit -> unit
+    method refresh_color : unit -> unit
   end
