@@ -84,6 +84,7 @@ object
   method reset_initial : unit
   method force_reset_initial : unit
   method set_message : string -> unit
+  method raw_coq_query : string -> unit
   method show_goals : unit
   method show_goals_full : unit
   method undo_last_step : unit
@@ -888,6 +889,25 @@ object(self)
       | End_of_file -> (* Coqtop has died, let's trigger a reset_initial. *)
         raise RestartCoqtop
       | e -> sync display_error (None, Printexc.to_string e); None
+
+  (* This method is intended to perform stateless commands *)
+  method raw_coq_query phrase =
+    let () = prerr_endline "raw_coq_query starting now" in
+    let display_error s =
+      if not (Glib.Utf8.validate s) then
+        flash_info "This error is so nasty that I can't even display it."
+      else begin
+        self#insert_message s;
+        message_view#misc#draw None
+      end
+    in
+    try
+      match Coq.interp !mycoqtop ~raw:true ~verbose:false phrase with
+      | Interface.Fail (_, err) -> sync display_error err
+      | Interface.Good msg -> sync self#insert_message msg
+    with
+    | End_of_file -> raise RestartCoqtop
+    | e -> sync display_error (Printexc.to_string e)
 
   method find_phrase_starting_at (start:GText.iter) =
     try
@@ -2365,10 +2385,18 @@ let main files =
     ~accel:(!current.modifier_for_tactics^sc)
     ~callback:(do_if_active (fun a -> a#insert_command
 			       ("progress "^s^".\n") (s^".\n"))) in
-  let query_shortcut s accel = GAction.add_action s ~label:("_"^s) ?accel
-    ~callback:(fun _ -> let term = get_current_word () in
-		 session_notebook#current_term.command#new_command ~command:s ~term ())
-  in let add_complex_template (name, label, text, offset, len, key) =
+  let query_callback command _ =
+    let word = get_current_word () in
+    if not (word = "") then
+      let term = session_notebook#current_term in
+      let query = command ^ " " ^ word ^ "." in
+      term.message_view#buffer#set_text "";
+      term.analyzed_view#raw_coq_query query
+  in
+  let query_shortcut s accel =
+    GAction.add_action s ~label:("_"^s) ?accel ~callback:(query_callback s)
+  in
+  let add_complex_template (name, label, text, offset, len, key) =
     (* Templates/Lemma *)
     let callback _ =
       let {script = view } = session_notebook#current_term in
