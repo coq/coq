@@ -57,7 +57,6 @@ type pref =
 *)
       mutable auto_complete : bool;
       mutable stop_before : bool;
-      mutable lax_syntax : bool;
       mutable vertical_tabs : bool;
       mutable opposite_tabs : bool;
 
@@ -73,10 +72,11 @@ val current : pref ref
 
 val configure : ?apply:(unit -> unit) -> unit -> unit
 
-val change_font : (Pango.font_description -> unit) ref
-val change_background_color : (Gdk.color -> unit) ref
-val show_toolbar : (bool -> unit) ref
-val auto_complete : (bool -> unit) ref
-val resize_window : (unit -> unit) ref
+(* Hooks *)
+val refresh_font_hook : (unit -> unit) ref
+val refresh_background_color_hook : (unit -> unit) ref
+val refresh_toolbar_hook : (unit -> unit) ref
+val resize_window_hook : (unit -> unit) ref
+val refresh_tabs_hook : (unit -> unit) ref
 
 val use_default_doc_url : string

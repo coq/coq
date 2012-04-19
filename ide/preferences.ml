@@ -10,7 +10,6 @@ open Configwin
 open Printf
 
 let pref_file = Filename.concat Minilib.xdg_config_home "coqiderc"
-
 let accel_file = Filename.concat Minilib.xdg_config_home "coqide.keys"
 
 let get_config_file name =
@@ -66,6 +65,17 @@ let inputenc_of_string s =
        else if s = "LOCALE" then Elocale
        else Emanual s)
 
+
+(** Hooks *)
+
+let refresh_font_hook = ref (fun () -> ())
+let refresh_background_color_hook = ref (fun () -> ())
+let refresh_toolbar_hook = ref (fun () -> ())
+let auto_complete_hook = ref (fun x -> ())
+let contextual_menus_on_goal_hook = ref (fun x -> ())
+let resize_window_hook = ref (fun () -> ())
+let refresh_tabs_hook = ref (fun () -> ())
+
 type pref =
     {
       mutable cmd_coqtop : string option;
@@ -114,7 +124,6 @@ type pref =
 *)
       mutable auto_complete : bool;
       mutable stop_before : bool;
-      mutable lax_syntax : bool;
       mutable vertical_tabs : bool;
       mutable opposite_tabs : bool;
 
@@ -179,7 +188,6 @@ let (current:pref ref) =
 *)
     auto_complete = false;
     stop_before = true;
-    lax_syntax = true;
     vertical_tabs = false;
     opposite_tabs = false;
 
@@ -188,19 +196,6 @@ let (current:pref ref) =
     processing_color = "light blue";
 
   }
-
-
-let change_font = ref (fun f -> ())
-
-let change_background_color = ref (fun clr -> ())
-
-let show_toolbar = ref (fun x -> ())
-
-let auto_complete = ref (fun x -> ())
-
-let contextual_menus_on_goal = ref (fun x -> ())
-
-let resize_window = ref (fun () -> ())
 
 let save_pref () =
   if not (Sys.file_exists Minilib.xdg_config_home)
@@ -251,7 +246,6 @@ let save_pref () =
     add "query_window_width" [string_of_int p.query_window_width] ++
     add "auto_complete" [string_of_bool p.auto_complete] ++
     add "stop_before" [string_of_bool p.stop_before] ++
-    add "lax_syntax" [string_of_bool p.lax_syntax] ++
     add "vertical_tabs" [string_of_bool p.vertical_tabs] ++
     add "opposite_tabs" [string_of_bool p.opposite_tabs] ++
     add "background_color" [p.background_color] ++
@@ -324,7 +318,6 @@ let load_pref () =
     set_int "query_window_height" (fun v -> np.query_window_height <- v);
     set_bool "auto_complete" (fun v -> np.auto_complete <- v);
     set_bool "stop_before" (fun v -> np.stop_before <- v);
-    set_bool "lax_syntax" (fun v -> np.lax_syntax <- v);
     set_bool "vertical_tabs" (fun v -> np.vertical_tabs <- v);
     set_bool "opposite_tabs" (fun v -> np.opposite_tabs <- v);
     set_hd "background_color" (fun v -> np.background_color <- v);
@@ -379,7 +372,7 @@ let configure ?(apply=(fun () -> ())) () =
 (*
 	 Format.printf "in config_font: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
 *)
-	 !change_font !current.text_font)
+	 !refresh_font_hook ())
       true
   in
 
@@ -433,7 +426,7 @@ let configure ?(apply=(fun () -> ())) () =
       !current.background_color <- Tags.string_of_color background_button#color;
       !current.processing_color <- Tags.string_of_color processing_button#color;
       !current.processed_color <- Tags.string_of_color processed_button#color;
-      !change_background_color background_button#color;
+      !refresh_background_color_hook ();
       Tags.set_processing_color processing_button#color;
       Tags.set_processed_color processed_button#color
     in
@@ -468,7 +461,7 @@ let configure ?(apply=(fun () -> ())) () =
     bool
       ~f:(fun s ->
 	    !current.auto_complete <- s;
-	    !auto_complete s)
+	    !auto_complete_hook s)
       "Auto Complete" !current.auto_complete
   in
 
@@ -515,21 +508,15 @@ let configure ?(apply=(fun () -> ())) () =
       "Stop interpreting before the current point" !current.stop_before
   in
 
-  let lax_syntax =
-    bool
-      ~f:(fun s -> !current.lax_syntax <- s)
-      "Relax read-only constraint at end of command" !current.lax_syntax
-  in
-
   let vertical_tabs =
     bool
-      ~f:(fun s -> !current.vertical_tabs <- s)
+      ~f:(fun s -> !current.vertical_tabs <- s; !refresh_tabs_hook ())
       "Vertical tabs" !current.vertical_tabs
   in
 
   let opposite_tabs =
     bool
-      ~f:(fun s -> !current.opposite_tabs <- s)
+      ~f:(fun s -> !current.opposite_tabs <- s; !refresh_tabs_hook ())
       "Tabs on opposite side" !current.opposite_tabs
   in
 
@@ -668,11 +655,11 @@ let configure ?(apply=(fun () -> ())) () =
     bool
       ~f:(fun s ->
 	    !current.contextual_menus_on_goal <- s;
-	    !contextual_menus_on_goal s)
+	    !contextual_menus_on_goal_hook s)
       "Contextual menus on goal" !current.contextual_menus_on_goal
   in
 
-  let misc = [contextual_menus_on_goal;auto_complete;stop_before;lax_syntax;
+  let misc = [contextual_menus_on_goal;auto_complete;stop_before;
               vertical_tabs;opposite_tabs] in
 
 (* ATTENTION !!!!! L'onglet Fonts doit etre en premier pour eviter un bug !!!!
