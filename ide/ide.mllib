@@ -9,7 +9,7 @@ Configwin
 Editable_cells
 Config_parser
 Tags
-Typed_notebook
+Wg_Notebook
 Config_lexer
 Utf8_convert
 Preferences
@@ -21,6 +21,6 @@ Gtk_parsing
 Undo
 Coq
 Coq_commands
-Command_windows
+Wg_Command
 Coqide_ui
 Coqide

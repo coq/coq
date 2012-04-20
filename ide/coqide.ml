@@ -102,7 +102,7 @@ type viewable_script =
      message_view : GText.view;
      analyzed_view : analyzed_views;
      toplvl : Coq.coqtop ref;
-     command : Command_windows.command_window;
+     command : Wg_Command.command_window;
     }
 
 let kill_session s =
@@ -159,7 +159,7 @@ let build_session s =
   (Some session_tab#coerce,None,session_paned#coerce)
 
 let session_notebook =
-  Typed_notebook.create build_session kill_session
+  Wg_Notebook.create build_session kill_session
     ~border_width:2 ~show_border:false ~scrollable:true ()
 
 let cb = GData.clipboard Gdk.Atom.primary
@@ -1512,7 +1512,7 @@ let create_session file =
 	|Subst_args -> Project_file.args_from_project the_file !custom_project_files !current.project_file_name
   in
   let ct = ref (Coq.spawn_coqtop coqtop_args) in
-  let command = new Command_windows.command_window ct current in
+  let command = new Wg_Command.command_window ct current in
   let legacy_av = new analyzed_view script proof message stack ct file in
   let () = legacy_av#update_stats in
   let _ =
