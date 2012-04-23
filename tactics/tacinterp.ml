@@ -717,9 +717,6 @@ let rec intern_atomic lf ist x =
   | TacAuto (d,n,lems,l) ->
       TacAuto (d,Option.map (intern_or_var ist) n,
         List.map (intern_constr ist) lems,l)
-  | TacDAuto (d,n,p,lems) ->
-      TacDAuto (d,Option.map (intern_or_var ist) n,p,
-        List.map (intern_constr ist) lems)
 
   (* Derived basic tactics *)
   | TacSimpleInductionDestruct (isrec,h) ->
@@ -2409,9 +2406,6 @@ and interp_atomic ist gl tac =
       Auto.h_auto ~debug (Option.map (interp_int_or_var ist) n)
 	(interp_auto_lemmas ist env sigma lems)
 	(Option.map (List.map (interp_hint_base ist)) l)
-  | TacDAuto (debug,n,p,lems) ->
-      Auto.h_dauto ~debug (Option.map (interp_int_or_var ist) n,p)
-      (interp_auto_lemmas ist env sigma lems)
 
   (* Derived basic tactics *)
   | TacSimpleInductionDestruct (isrec,h) ->
@@ -2850,7 +2844,6 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Automation tactics *)
   | TacTrivial (d,lems,l) -> TacTrivial (d,List.map (subst_glob_constr subst) lems,l)
   | TacAuto (d,n,lems,l) -> TacAuto (d,n,List.map (subst_glob_constr subst) lems,l)
-  | TacDAuto (d,n,p,lems) -> TacDAuto (d,n,p,List.map (subst_glob_constr subst) lems)
 
   (* Derived basic tactics *)
   | TacSimpleInductionDestruct (isrec,h) as x -> x

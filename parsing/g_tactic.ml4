@@ -609,10 +609,6 @@ GEXTEND Gram
       | d = trivial; lems = auto_using; db = hintbases -> TacTrivial (d,lems,db)
       | d = auto; n = OPT int_or_var; lems = auto_using; db = hintbases ->
           TacAuto (d,n,lems,db)
-      | d = auto; IDENT "decomp"; p = OPT natural; lems = auto_using ->
-          TacDAuto (d,None,p,lems)
-      | d = auto; n = OPT int_or_var; IDENT "decomp"; p = OPT natural;
-          lems = auto_using -> TacDAuto (d,n,p,lems)
 
       (* Context management *)
       | IDENT "clear"; "-"; l = LIST1 id_or_meta -> TacClear (true, l)
