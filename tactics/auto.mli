@@ -264,17 +264,6 @@ val h_trivial : ?debug:Tacexpr.debug ->
 
 val pr_autotactic : 'a auto_tactic -> Pp.std_ppcmds
 
-(** Destructing Auto *)
-
-(** DAuto *)
-val dauto :  ?debug:Tacexpr.debug ->
-  int option * int option -> open_constr list -> tactic
-val default_search_decomp : int ref
-val default_dauto : tactic
-
-val h_dauto : ?debug:Tacexpr.debug ->
-  int option * int option -> open_constr list -> tactic
-
 (** Hook for changing the initialization of auto *)
 
 val add_auto_init : (unit -> unit) -> unit

@@ -1405,51 +1405,23 @@ let decomp_empty_term dbg (id,_,typc) gl =
 let extend_local_db gl decl db =
   Hint_db.add_list (make_resolve_hyp (pf_env gl) (project gl) decl) db
 
-(* Try to decompose hypothesis [decl] into atomic components of a
-   conjunction with maximum depth [p] (or solve the goal from an
-   empty type) then call the continuation tactic with hint db extended
-   with the obtained not-further-decomposable hypotheses *)
+(* Introduce an hypothesis, then call the continuation tactic [kont]
+   with the hint db extended with the so-obtained hypothesis *)
 
-let rec decomp_and_register_decl dbg p kont (id,_,_ as decl) db gl =
-  if p = 0 then
-    kont (extend_local_db gl decl db) gl
-  else
-    tclORELSE0
-      (decomp_empty_term dbg decl)
-      (decomp_unary_term_then dbg decl (intros_decomp dbg (p-1) kont [] db)
-	(kont (extend_local_db gl decl db))) gl
+let intro_register dbg kont db =
+  tclTHEN (dbg_intro dbg)
+    (onLastDecl (fun decl gl -> kont (extend_local_db gl decl db) gl))
 
-(* Introduce [n] hypotheses, then decompose then with maximum depth [p] and
-   call the continuation tactic [kont] with the hint db extended
-   with the so-obtained not-further-decomposable hypotheses *)
-
-and intros_decomp dbg p kont decls db n =
-  if n = 0 then
-    decomp_and_register_decls dbg p kont decls db
-  else
-    tclTHEN (dbg_intro dbg) (onLastDecl (fun d ->
-      (intros_decomp dbg p kont (d::decls) db (n-1))))
-
-(* Decompose hypotheses [hyps] with maximum depth [p] and
-   call the continuation tactic [kont] with the hint db extended
-   with the so-obtained not-further-decomposable hypotheses *)
-
-and decomp_and_register_decls dbg p kont decls =
-  List.fold_left (decomp_and_register_decl dbg p) kont decls
-
-
-(* decomp is an natural number giving an indication on decomposition
-   of conjunction in hypotheses, 0 corresponds to no decomposition *)
 (* n is the max depth of search *)
 (* local_db contains the local Hypotheses *)
 
 exception Uplift of tactic list
 
-let search_gen d p n mod_delta db_list local_db =
+let search d n mod_delta db_list local_db =
   let rec search d n local_db =
     if n=0 then (fun gl -> error "BOUND 2") else
       tclORELSE0 (dbg_assumption d)
-	(tclORELSE0 (intros_decomp d p (search d n) [] local_db 1)
+	(tclORELSE0 (intro_register d (search d n) local_db)
 	   (fun gl ->
 	     let d' = incr_dbg d in
 	     tclFIRST
@@ -1458,8 +1430,6 @@ let search_gen d p n mod_delta db_list local_db =
 		  (possible_resolve d mod_delta db_list local_db (pf_concl gl))) gl))
   in
   search d n local_db
-
-let search dbg = search_gen dbg 0
 
 let default_search_depth = ref 5
 
@@ -1499,35 +1469,3 @@ let inj_or_var = Option.map (fun n -> ArgArg n)
 let h_auto ?(debug=Off) n lems l =
   Refiner.abstract_tactic (TacAuto (debug,inj_or_var n,List.map snd lems,l))
     (gen_auto ~debug n lems l)
-
-(**************************************************************************)
-(*                  The "destructing Auto" from Eduardo                   *)
-(**************************************************************************)
-
-(* Depth of search after decomposition of hypothesis, by default
-   one look for an immediate solution *)
-let default_search_decomp = ref 20
-
-let destruct_auto d p lems n gl =
-  decomp_and_register_decls d p (fun local_db gl ->
-    search_gen d p n false (List.map searchtable_map ["core";"extcore"])
-      (add_hint_lemmas false lems local_db gl) gl)
-    (pf_hyps gl)
-    (Hint_db.empty empty_transparent_state false)
-    gl
-
-let dautomatic ?(debug=Off) des_opt lems n =
-  let d = mk_auto_dbg debug in
-  tclTRY_dbg d (destruct_auto d des_opt lems n)
-
-let dauto ?(debug=Off) (n,p) lems =
-  let p = match p with Some p -> p | None -> !default_search_decomp in
-  let n = match n with Some n -> n | None -> !default_search_depth in
-  dautomatic ~debug p lems n
-
-let default_dauto = dauto (None,None) []
-
-let h_dauto ?(debug=Off) (n,p) lems =
-  Refiner.abstract_tactic
-    (TacDAuto (debug,inj_or_var n,p,List.map snd lems))
-    (dauto ~debug (n,p) lems)

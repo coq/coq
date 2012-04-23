@@ -177,7 +177,6 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_atomic_tactic_expr =
   (* Automation tactics *)
   | TacTrivial of debug * 'constr list * string list option
   | TacAuto of debug * int or_var option * 'constr list * string list option
-  | TacDAuto of debug * int or_var option * int option * 'constr list
 
   (* Context management *)
   | TacClear of bool * 'id list

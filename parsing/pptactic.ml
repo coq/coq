@@ -748,10 +748,6 @@ and pr_atom1 = function
       hov 0 (str (string_of_debug d ^ "auto") ++
 	     pr_opt (pr_or_var int) n ++
              pr_auto_using pr_constr lems ++ pr_hintbases db)
-  | TacDAuto (d,n,p,lems) ->
-      hov 1 (str (string_of_debug d ^ "auto") ++
-	     pr_opt (pr_or_var int) n ++ str "decomp" ++
-             pr_opt int p ++ pr_auto_using pr_constr lems)
 
   (* Context management *)
   | TacClear (true,[]) as t -> pr_atom0 t

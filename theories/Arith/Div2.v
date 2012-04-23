@@ -11,7 +11,7 @@ Require Import Plus.
 Require Import Compare_dec.
 Require Import Even.
 
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 Implicit Type n : nat.
 
@@ -69,24 +69,24 @@ Proof.
     (* S n *) inversion_clear H. apply even_div2 in H0 as <-. trivial.
 Qed.
 
-Lemma div2_even : forall n, div2 n = div2 (S n) -> even n
-with div2_odd : forall n, S (div2 n) = div2 (S n) -> odd n.
+Lemma div2_even n : div2 n = div2 (S n) -> even n
+with div2_odd n : S (div2 n) = div2 (S n) -> odd n.
 Proof.
-  destruct n; intro H.
-    (* 0 *) constructor.
-    (* S n *) constructor. apply div2_odd. rewrite H. trivial.
-  destruct n; intro H.
-    (* 0 *) discriminate.
-    (* S n *) constructor. apply div2_even. injection H as <-. trivial.
+{ destruct n; intro H.
+  - constructor.
+  - constructor. apply div2_odd. rewrite H. trivial. }
+{ destruct n; intro H.
+  - discriminate.
+  - constructor. apply div2_even. injection H as <-. trivial. }
 Qed.
 
 Hint Resolve even_div2 div2_even odd_div2 div2_odd: arith.
 
-Lemma even_odd_div2 :
-  forall n,
-    (even n <-> div2 n = div2 (S n)) /\ (odd n <-> S (div2 n) = div2 (S n)).
+Lemma even_odd_div2 n :
+ (even n <-> div2 n = div2 (S n)) /\
+ (odd n <-> S (div2 n) = div2 (S n)).
 Proof.
-  auto decomp using div2_odd, div2_even, odd_div2, even_div2.
+ split; split; auto using div2_odd, div2_even, odd_div2, even_div2.
 Qed.
 
 
