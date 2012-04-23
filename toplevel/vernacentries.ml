@@ -745,14 +745,13 @@ let vernac_chdir = function
 (********************)
 (* State management *)
 
-let abort_refine f x =
-  if Pfedit.refining() then delete_all_proofs ();
-  f x
-  (* used to be: error "Must save or abort current goal first" *)
+let vernac_write_state file =
+  Pfedit.delete_all_proofs ();
+  States.extern_state file
 
-let vernac_write_state file = abort_refine States.extern_state file
-
-let vernac_restore_state file = abort_refine States.intern_state file
+let vernac_restore_state file =
+  Pfedit.delete_all_proofs ();
+  States.intern_state file
 
 (************)
 (* Commands *)
