@@ -1,0 +1,319 @@
+(************************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team     *)
+(* <O___,, *   INRIA - CNRS - LIX - LRI - PPS - Copyright 1999-2010     *)
+(*   \VV/  **************************************************************)
+(*    //   *      This file is distributed under the terms of the       *)
+(*         *       GNU Lesser General Public License Version 2.1        *)
+(************************************************************************)
+
+type mode =
+| Find
+| Replace
+
+class finder (view : GText.view) =
+
+  let widget = GPack.vbox () in
+  (* Find part *)
+  let find_box = GPack.hbox ~packing:widget#add () in
+  let _ =
+    GMisc.label ~text:"Find:"
+      ~xalign:1.0
+      ~packing:find_box#pack ()
+  in
+  let find_entry = GEdit.entry
+    ~editable:true
+    ~packing:(find_box#pack ~expand:true)
+    ()
+  in
+  let next_button =
+    GButton.button
+      ~label:"_Next"
+      ~use_mnemonic:true
+(*       ~stock:`GO_DOWN *)
+      ~packing:find_box#pack
+      ()
+  in
+  let previous_button =
+    GButton.button
+      ~label:"_Previous"
+      ~use_mnemonic:true
+(*       ~stock:`GO_UP *)
+      ~packing:find_box#pack
+      ()
+  in
+  (* Find and replace part *)
+  let replace_box = GPack.table
+    ~columns:4 ~rows:2
+    ~homogeneous:false ~packing:widget#add () in
+  let _ =
+    GMisc.label ~text:"Find:"
+      ~xalign:1.0
+      ~packing:(replace_box#attach ~left:0 ~top:0 ~fill:`X) ()
+  in
+  let _ =
+    GMisc.label ~text:"Replace:"
+      ~xalign:1.0
+      ~packing:(replace_box#attach ~left:0 ~top:1 ~fill:`X) ()
+  in
+  let r_find_entry = GEdit.entry
+    ~editable:true
+    ~packing:(replace_box#attach ~left:1 ~top:0 ~expand:`X ~fill:`X)
+    ()
+  in
+  let r_replace_entry = GEdit.entry
+    ~editable:true
+    ~packing:(replace_box#attach ~left:1 ~top:1 ~expand:`X ~fill:`X)
+    ()
+  in
+  let r_next_button =
+    GButton.button
+      ~label:"_Next" ~use_mnemonic:true
+      ~packing:(replace_box#attach ~left:2 ~top:0)
+      ()
+  in
+  let r_previous_button =
+    GButton.button
+      ~label:"_Previous" ~use_mnemonic:true
+      ~packing:(replace_box#attach ~left:3 ~top:0)
+      ()
+  in
+  let r_replace_button =
+    GButton.button
+      ~label:"_Replace" ~use_mnemonic:true
+      ~packing:(replace_box#attach ~left:2 ~top:1)
+      ()
+  in
+  let r_replace_all_button =
+    GButton.button
+      ~label:"Replace _All" ~use_mnemonic:true
+      ~packing:(replace_box#attach ~left:3 ~top:1)
+      ()
+  in
+
+  object (self)
+    val mutable last_found = None
+    val mutable mode = Find
+
+    method coerce = widget#coerce
+
+    method private get_selected_word () =
+      let start = view#buffer#get_iter `INSERT in
+      let stop = view#buffer#get_iter `SEL_BOUND in
+      view#buffer#get_text ~start ~stop ()
+
+    method private may_replace () =
+      let search = self#search_text in
+      (search <> "") && (search = self#get_selected_word ())
+
+    method replace () =
+      if self#may_replace () then
+        let _ = view#buffer#delete_selection () in
+        let _ = view#buffer#insert_interactive r_replace_entry#text in
+        self#find_forward ()
+      else self#find_forward ()
+
+    method replace_all () =
+      let rec replace_at (iter : GText.iter) =
+        let found = iter#forward_search self#search_text in
+        match found with
+        | None -> ()
+        | Some (start, stop) ->
+          let () = Printf.printf "%i-%i\n%!" start#offset stop#offset in
+          let start_mark = view#buffer#create_mark start in
+          let stop_mark = view#buffer#create_mark stop in
+          let _ = view#buffer#delete_interactive ~start ~stop () in
+          let iter = view#buffer#get_iter_at_mark (`MARK start_mark) in
+          let _ = view#buffer#insert_interactive ~iter r_replace_entry#text in
+          let next = view#buffer#get_iter_at_mark (`MARK stop_mark) in
+          let () = view#buffer#delete_mark (`MARK start_mark) in
+          let () = view#buffer#delete_mark (`MARK stop_mark) in
+          replace_at next
+      in
+      replace_at view#buffer#start_iter
+
+    method private set_not_found () =
+      find_entry#misc#modify_base [`NORMAL, `NAME "#F7E6E6"];
+      r_find_entry#misc#modify_base [`NORMAL, `NAME "#F7E6E6"];
+
+    method private set_found () =
+      find_entry#misc#modify_base [`NORMAL, `NAME "#BAF9CE"];
+      r_find_entry#misc#modify_base [`NORMAL, `NAME "#BAF9CE"]
+
+    method private set_normal () =
+      find_entry#misc#modify_base [`NORMAL, `NAME "white"];
+      r_find_entry#misc#modify_base [`NORMAL, `NAME "white"]
+
+    method private find_from backward (starti : GText.iter) text =
+      let found =
+        if backward then
+          starti#backward_search text
+        else
+          starti#forward_search text
+      in
+      match found with
+      | None ->
+        if not backward && not (starti#equal view#buffer#start_iter) then
+          self#find_from backward view#buffer#start_iter text
+        else if backward && not (starti#equal view#buffer#end_iter) then
+          self#find_from backward view#buffer#end_iter text
+        else
+          self#set_not_found ()
+      | Some (start, stop) ->
+        let _ = view#buffer#select_range start stop in
+        let scroll = `MARK (view#buffer#create_mark stop) in
+        let _ = view#scroll_to_mark ~use_align:false scroll in
+        self#set_found ()
+
+    method find_forward () =
+      let starti = view#buffer#get_iter `SEL_BOUND in
+      self#find_from false starti self#search_text
+
+    method find_backward () =
+      let starti = view#buffer#get_iter `INSERT in
+      self#find_from true starti self#search_text
+
+    method private search_text = match mode with
+    | Find -> find_entry#text
+    | Replace -> r_find_entry#text
+
+    method hide () =
+      widget#misc#hide ();
+      view#coerce#misc#grab_focus ()
+
+    method show_find () =
+      mode <- Find;
+      let search =
+        if self#coerce#misc#visible then
+          r_find_entry#text
+        else
+          self#get_selected_word ()
+      in
+      self#set_normal ();
+      find_entry#set_text search;
+      widget#misc#show ();
+      find_box#misc#show ();
+      replace_box#misc#hide ();
+      find_entry#misc#grab_focus ()
+
+    method show_replace () =
+      mode <- Replace;
+      let search =
+        if self#coerce#misc#visible then
+          find_entry#text
+        else
+          self#get_selected_word ()
+      in
+      self#set_normal ();
+      r_find_entry#set_text search;
+      widget#misc#show ();
+      find_box#misc#hide ();
+      replace_box#misc#show ();
+      r_find_entry#misc#grab_focus ()
+
+    initializer
+      let _ = self#hide () in
+      let _ = next_button#connect#clicked self#find_forward in
+      let _ = previous_button#connect#clicked self#find_backward in
+      let _ = r_next_button#connect#clicked self#find_forward in
+      let _ = r_previous_button#connect#clicked self#find_backward in
+      let _ = r_replace_button#connect#clicked self#replace in
+      let _ = r_replace_all_button#connect#clicked self#replace_all in
+(*      let insert_cb _ ~pos = self#find_forward () in
+      let delete_cb ~start ~stop = self#find_backward () in*)
+(*      let _ = find_entry#connect#insert_text ~callback:insert_cb in
+      let _ = find_entry#connect#delete_text ~callback:delete_cb in*)
+(*       let _ = find_again_button#connect#clicked find_again in *)
+(*       let _ = close_find_button#connect#clicked close_find in *)
+(*       let _ = replace_find_button#connect#clicked do_replace_find in *)
+(*       let _ = find_backwards_check#connect#clicked click_on_backward in *)
+(*       let _ = find_entry#connect#changed do_find in *)
+      ()
+
+  end
+
+(* let find_box = GPack.table
+  ~columns:3 ~rows:5
+  ~col_spacings:10 ~row_spacings:10 ~border_width:10
+  ~homogeneous:false ~packing:find_w#add () in
+
+let _ =
+  GMisc.label ~text:"Find:"
+    ~xalign:1.0
+    ~packing:(find_box#attach ~left:0 ~top:0 ~fill:`X) ()
+in
+let _ =
+  GMisc.label ~text:"Replace with:"
+    ~xalign:1.0
+    ~packing:(find_box#attach ~left:0 ~top:1 ~fill:`X) ()
+in *)
+(* let _ =
+    GButton.check_button
+    ~label:"case sensitive"
+    ~active:true
+    ~packing: (find_box#attach ~left:1 ~top:2)
+    ()
+    in
+*)
+(* let find_backwards_check =
+  GButton.check_button
+    ~label:"search backwards"
+    ~active:!search_backward
+    ~packing: (find_box#attach ~left:1 ~top:3)
+    ()
+in
+let close_find_button =
+  GButton.button
+    ~label:"Close"
+    ~packing: (find_box#attach ~left:2 ~top:2)
+    ()
+in
+let replace_find_button =
+  GButton.button
+    ~label:"Replace and find"
+    ~packing: (find_box#attach ~left:2 ~top:1)
+    ()
+in
+let find_again_button =
+  GButton.button
+    ~label:"_Find again"
+    ~packing: (find_box#attach ~left:2 ~top:0)
+    ()
+in*)
+
+(*let key_find ev =
+  let s = GdkEvent.Key.state ev and k = GdkEvent.Key.keyval ev in
+  if k = GdkKeysyms._Escape then
+    begin
+      let (v,b,_,stop) = last_find () in
+      find_w#misc#hide();
+      v#coerce#misc#grab_focus();
+      true
+    end
+  else if k = GdkKeysyms._Escape then
+    begin
+      close_find();
+      true
+    end
+  else if k = GdkKeysyms._Return ||
+          List.mem `CONTROL s && k = GdkKeysyms._f then
+    begin
+      find_again ();
+      true
+    end
+  else if List.mem `CONTROL s && k = GdkKeysyms._b then
+    begin
+      find_backwards_check#set_active (not !search_backward);
+      true
+    end
+  else false (* to let default callback execute *)
+
+in *)
+
+(* let find_f ~backward () =
+  let save_dir = !search_backward in
+  search_backward := backward;
+  find_w#show ();
+  find_w#present ();
+  find_entry#misc#grab_focus ();
+  search_backward := save_dir 
+*)

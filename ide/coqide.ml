@@ -103,6 +103,7 @@ type viewable_script =
      analyzed_view : analyzed_views;
      toplvl : Coq.coqtop ref;
      command : Wg_Command.command_window;
+     finder : Wg_Find.finder;
     }
 
 let kill_session s =
@@ -111,8 +112,11 @@ let kill_session s =
 
 let build_session s =
   let session_paned = GPack.paned `VERTICAL () in
+  let session_box =
+    GPack.vbox ~packing:(session_paned#pack1 ~shrink:false ~resize:true) ()
+  in
   let eval_paned = GPack.paned `HORIZONTAL ~border_width:5
-    ~packing:(session_paned#pack1 ~shrink:false ~resize:true) () in
+    ~packing:(session_box#pack ~expand:true) () in
   let script_frame = GBin.frame ~shadow_type:`IN
     ~packing:eval_paned#add1 () in
   let script_scroll = GBin.scrolled_window ~vpolicy:`AUTOMATIC ~hpolicy:`AUTOMATIC
@@ -148,6 +152,7 @@ let build_session s =
 	   old_paned_height := paned_height;
 	 )))
   in
+  session_box#pack s.finder#coerce;
   session_paned#pack2 ~shrink:false ~resize:false (s.command#frame#coerce);
   script_scroll#add s.script#coerce;
   proof_scroll#add s.proof_view#coerce;
@@ -594,7 +599,6 @@ object(self)
   val mutable last_modification_time = 0.
   val mutable last_auto_save_time = 0.
   val mutable detached_views = []
-  val mutable find_forward_instead_of_backward = false
 
   val mutable auto_complete_on = !current.auto_complete
   val hidden_proofs = Hashtbl.create 32
@@ -1513,6 +1517,7 @@ let create_session file =
   in
   let ct = ref (Coq.spawn_coqtop coqtop_args) in
   let command = new Wg_Command.command_window ct current in
+  let finder = new Wg_Find.finder (script :> GText.view) in
   let legacy_av = new analyzed_view script proof message stack ct file in
   let () = legacy_av#update_stats in
   let _ =
@@ -1562,7 +1567,8 @@ let create_session file =
     analyzed_view=legacy_av;
     encoding="";
     toplvl=ct;
-    command=command
+    command=command;
+    finder=finder;
   }
 
 (* XXX - to be used later
@@ -1966,214 +1972,6 @@ let main files =
     | Some av -> av#set_auto_complete b
     | None -> ());
   *)
-
-(* begin of find/replace mechanism *)
-  let last_found = ref None in
-  let search_backward = ref false in
-  let find_w = GWindow.window
-    (* ~wm_class:"CoqIde" ~wm_name:"CoqIde" *)
-    (* ~allow_grow:true ~allow_shrink:true *)
-    (* ~width:!current.window_width ~height:!current.window_height *)
-    ~position:`CENTER
-    ~title:"CoqIde search/replace" ()
-  in
-  let find_box = GPack.table
-    ~columns:3 ~rows:5
-    ~col_spacings:10 ~row_spacings:10 ~border_width:10
-    ~homogeneous:false ~packing:find_w#add () in
-
-  let _ =
-    GMisc.label ~text:"Find:"
-      ~xalign:1.0
-      ~packing:(find_box#attach ~left:0 ~top:0 ~fill:`X) ()
-  in
-  let find_entry = GEdit.entry
-    ~editable: true
-    ~packing: (find_box#attach ~left:1 ~top:0 ~expand:`X)
-    ()
-  in
-  let _ =
-    GMisc.label ~text:"Replace with:"
-      ~xalign:1.0
-      ~packing:(find_box#attach ~left:0 ~top:1 ~fill:`X) ()
-  in
-  let replace_entry = GEdit.entry
-    ~editable: true
-    ~packing: (find_box#attach ~left:1 ~top:1 ~expand:`X)
-    ()
-  in
-  (* let _ =
-     GButton.check_button
-     ~label:"case sensitive"
-     ~active:true
-     ~packing: (find_box#attach ~left:1 ~top:2)
-     ()
-     in
-  *)
-  let find_backwards_check =
-    GButton.check_button
-      ~label:"search backwards"
-      ~active:!search_backward
-      ~packing: (find_box#attach ~left:1 ~top:3)
-      ()
-  in
-  let close_find_button =
-    GButton.button
-      ~label:"Close"
-      ~packing: (find_box#attach ~left:2 ~top:2)
-      ()
-  in
-  let replace_find_button =
-    GButton.button
-      ~label:"Replace and find"
-      ~packing: (find_box#attach ~left:2 ~top:1)
-      ()
-  in
-  let find_again_button =
-    GButton.button
-      ~label:"_Find again"
-      ~packing: (find_box#attach ~left:2 ~top:0)
-      ()
-  in
-  let last_find () =
-    let v = session_notebook#current_term.script in
-    let b = v#buffer in
-    let start,stop =
-      match !last_found with
-	| None -> let i = b#get_iter_at_mark `INSERT in (i,i)
-	| Some(start,stop) ->
-	  let start = b#get_iter_at_mark start
-	  and stop = b#get_iter_at_mark stop
-	  in
-	  b#remove_tag Tags.Script.found ~start ~stop;
-	  last_found:=None;
-	  start,stop
-    in
-    (v,b,start,stop)
-  in
-  let do_replace () =
-    let v = session_notebook#current_term.script in
-    let b = v#buffer in
-    match !last_found with
-      | None -> ()
-      | Some(start,stop) ->
-	let start = b#get_iter_at_mark start
-	and stop = b#get_iter_at_mark stop
-	in
-	b#delete ~start ~stop;
-	b#insert ~iter:start replace_entry#text;
-	last_found:=None
-  in
-  let find_from (v : Undo.undoable_view)
-      (b : GText.buffer) (starti : GText.iter) text =
-    prerr_endline ("Searching for " ^ text);
-    match (if !search_backward then starti#backward_search text
-      else starti#forward_search text)
-    with
-      | None -> ()
-      | Some(start,stop) ->
-	b#apply_tag Tags.Script.found ~start ~stop;
-	let start = `MARK (b#create_mark start)
-	and stop = `MARK (b#create_mark stop)
-	in
-	v#scroll_to_mark ~use_align:false ~yalign:0.75 ~within_margin:0.25
-	  stop;
-	last_found := Some(start,stop)
-  in
-  let do_find () =
-    let (v,b,starti,_) = last_find () in
-    find_from v b starti find_entry#text
-  in
-  let do_replace_find () =
-    do_replace();
-    do_find()
-  in
-  let close_find () =
-    let (v,b,_,stop) = last_find () in
-    b#place_cursor ~where:stop;
-    find_w#misc#hide();
-    v#coerce#misc#grab_focus()
-  in
-  to_do_on_page_switch :=
-    (fun i -> if find_w#misc#visible then close_find())::
-    !to_do_on_page_switch;
-  let find_again () =
-    let (v,b,start,_) = last_find () in
-    let start =
-      if !search_backward
-      then start#backward_chars 1
-      else start#forward_chars 1
-    in
-    find_from v b start find_entry#text
-  in
-  let click_on_backward () =
-    search_backward := not !search_backward
-  in
-  let key_find ev =
-    let s = GdkEvent.Key.state ev and k = GdkEvent.Key.keyval ev in
-    if k = GdkKeysyms._Escape then
-      begin
-	let (v,b,_,stop) = last_find () in
-	find_w#misc#hide();
-	v#coerce#misc#grab_focus();
-	true
-      end
-    else if k = GdkKeysyms._Escape then
-      begin
-	close_find();
-	true
-      end
-    else if k = GdkKeysyms._Return ||
-	   List.mem `CONTROL s && k = GdkKeysyms._f then
-      begin
-	find_again ();
-	true
-      end
-    else if List.mem `CONTROL s && k = GdkKeysyms._b then
-      begin
-	find_backwards_check#set_active (not !search_backward);
-	true
-      end
-    else false (* to let default callback execute *)
-  in
-  let find_f ~backward () =
-    let save_dir = !search_backward in
-    search_backward := backward;
-    find_w#show ();
-    find_w#present ();
-    find_entry#misc#grab_focus ();
-    search_backward := save_dir
-  in
-  let _ = find_again_button#connect#clicked find_again in
-  let _ = close_find_button#connect#clicked close_find in
-  let _ = replace_find_button#connect#clicked do_replace_find in
-  let _ = find_backwards_check#connect#clicked click_on_backward in
-  let _ = find_entry#connect#changed do_find in
-  let _ = find_entry#event#connect#key_press ~callback:key_find in
-  let _ = find_w#event#connect#delete ~callback:(fun _ -> find_w#misc#hide(); true) in
-  (*
-    let search_if = edit_f#add_item "Search _forward"
-    ~key:GdkKeysyms._greater
-    in
-    let search_ib = edit_f#add_item "Search _backward"
-    ~key:GdkKeysyms._less
-    in
-  *)
-  (*
-    let complete_i = edit_f#add_item "_Complete"
-    ~key:GdkKeysyms._comma
-    ~callback:
-    (do_if_not_computing
-    (fun b ->
-    let v = session_notebook#current_term.analyzed_view
-
-    in v#complete_at_offset
-    ((v#view#buffer#get_iter `SEL_BOUND)#offset)
-    ))
-    in
-    complete_i#misc#set_state `INSENSITIVE;
-  *)
-(* end of find/replace mechanism *)
 (* begin Preferences *)
   let reset_revert_timer () =
     disconnect_revert_timer ();
@@ -2458,8 +2256,16 @@ let main files =
                    session_notebook#current_term.script#as_view
                    ~sgn:GtkText.View.S.paste_clipboard
              with _ -> prerr_endline "EMIT PASTE FAILED") ~stock:`PASTE;
-      GAction.add_action "Find in buffer" ~label:"_Find in buffer" ~callback:(fun _ -> find_f ~backward:false ()) ~stock:`FIND;
-      GAction.add_action "Find backwards" ~label:"Find _backwards" ~callback:(fun _ -> find_f ~backward:true ()) ~accel:"<Ctrl>b";
+      GAction.add_action "Find" ~label:"_Find" ~stock:`FIND ~accel:"<Ctrl>F"
+        ~callback:(fun _ -> session_notebook#current_term.finder#show_find ());
+      GAction.add_action "Find Next" ~label:"Find _Next" ~stock:`GO_DOWN ~accel:"F3"
+        ~callback:(fun _ -> session_notebook#current_term.finder#find_forward ());
+      GAction.add_action "Find Previous" ~label:"Find _Previous" ~stock:`GO_UP ~accel:"<Shift>F3"
+        ~callback:(fun _ -> session_notebook#current_term.finder#find_backward ());
+      GAction.add_action "Replace" ~label:"_Replace" ~stock:`FIND_AND_REPLACE ~accel:"<Ctrl>R"
+        ~callback:(fun _ -> session_notebook#current_term.finder#show_replace ());
+     GAction.add_action "Close Find" ~accel:"Escape"
+        ~callback:(fun _ -> session_notebook#current_term.finder#hide ());
       GAction.add_action "Complete Word" ~label:"Complete Word" ~callback:(fun _ ->
 	     ignore (
 	       let av = session_notebook#current_term.analyzed_view in
@@ -2496,7 +2302,7 @@ let main files =
                      if ccw#frame#misc#visible
                      then ccw#frame#misc#hide ()
                      else ccw#frame#misc#show ())
-        ~accel:"Escape";
+        ~accel:"<Alt>Escape";
     ];
     List.iter
       (fun (opts,name,label,key,dflt) ->
@@ -2670,150 +2476,6 @@ let main files =
   let nb = session_notebook in
   let lower_hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
   lower_hbox#pack ~expand:true status#coerce;
-  let search_lbl = GMisc.label ~text:"Search:"
-    ~show:false
-    ~packing:(lower_hbox#pack ~expand:false) ()
-  in
-  let search_history = ref [] in
-  let (search_input,_) = GEdit.combo_box_entry_text ~strings:!search_history ~show:false
-    ~packing:(lower_hbox#pack ~expand:false) ()
-  in
-  let ready_to_wrap_search = ref false in
-
-  let start_of_search = ref None in
-  let start_of_found = ref None in
-  let end_of_found = ref None in
-  let search_forward = ref true in
-  let matched_word = ref None in
-
-  let memo_search () =
-    matched_word := Some search_input#entry#text
-  in
-  let end_search () =
-    prerr_endline "End Search";
-    memo_search ();
-    let v = session_notebook#current_term.script in
-    v#buffer#move_mark `SEL_BOUND ~where:(v#buffer#get_iter_at_mark `INSERT);
-    v#coerce#misc#grab_focus ();
-    search_input#entry#set_text "";
-    search_lbl#misc#hide ();
-    search_input#misc#hide ()
-  in
-  let end_search_focus_out () =
-    prerr_endline "End Search(focus out)";
-    memo_search ();
-    let v = session_notebook#current_term.script in
-    v#buffer#move_mark `SEL_BOUND ~where:(v#buffer#get_iter_at_mark `INSERT);
-    search_input#entry#set_text "";
-    search_lbl#misc#hide ();
-    search_input#misc#hide ()
-  in
-  ignore (search_input#entry#connect#activate ~callback:end_search);
-  ignore (search_input#entry#event#connect#key_press
-	    ~callback:(fun k -> let kv = GdkEvent.Key.keyval k in
-				if
-				  kv = GdkKeysyms._Right
-				  || kv = GdkKeysyms._Up
-				    || kv = GdkKeysyms._Left
-				      || (kv = GdkKeysyms._g
-					 && (List.mem `CONTROL (GdkEvent.Key.state k)))
-				then end_search ();
-				false));
-  ignore (search_input#entry#event#connect#focus_out
-	    ~callback:(fun _ -> end_search_focus_out (); false));
-  to_do_on_page_switch :=
-    (fun i ->
-      start_of_search := None;
-      ready_to_wrap_search:=false)::!to_do_on_page_switch;
-
-  (* TODO : make it work !!! *)
-  let rec search_f () =
-    search_lbl#misc#show ();
-    search_input#misc#show ();
-
-    prerr_endline "search_f called";
-    if !start_of_search = None then begin
-      (* A full new search is starting *)
-      start_of_search :=
-	Some (session_notebook#current_term.script#buffer#create_mark
-		(session_notebook#current_term.script#buffer#get_iter_at_mark `INSERT));
-      start_of_found := !start_of_search;
-      end_of_found := !start_of_search;
-      matched_word := Some "";
-    end;
-    let txt = search_input#entry#text in
-    let v = session_notebook#current_term.script in
-    let iit = v#buffer#get_iter_at_mark `SEL_BOUND
-    and insert_iter = v#buffer#get_iter_at_mark `INSERT
-    in
-    prerr_endline ("SELBOUND="^(string_of_int iit#offset));
-    prerr_endline ("INSERT="^(string_of_int insert_iter#offset));
-
-    (match
-	if !search_forward then iit#forward_search txt
-	else let npi = iit#forward_chars (Glib.Utf8.length txt) in
-	     match
-	       (npi#offset = (v#buffer#get_iter_at_mark `INSERT)#offset),
-	       (let t = iit#get_text ~stop:npi in
-		flash_info (t^"\n"^txt);
-		t = txt)
-	     with
-	       | true,true ->
-		 (flash_info "T,T";iit#backward_search txt)
-	       | false,true -> flash_info "F,T";Some (iit,npi)
-	       | _,false ->
-		 (iit#backward_search txt)
-
-     with
-       | None ->
-	 if !ready_to_wrap_search then begin
-	   ready_to_wrap_search := false;
-	   flash_info "Search wrapped";
-	   v#buffer#place_cursor
-	     ~where:(if !search_forward then v#buffer#start_iter else
-		 v#buffer#end_iter);
-	   search_f ()
-	 end else begin
-	   if !search_forward then flash_info "Search at end"
-	   else flash_info "Search at start";
-	   ready_to_wrap_search := true
-	 end
-       | Some (start,stop) ->
-	 prerr_endline "search: before moving marks";
-	 prerr_endline ("SELBOUND="^(string_of_int (v#buffer#get_iter_at_mark `SEL_BOUND)#offset));
-	 prerr_endline ("INSERT="^(string_of_int (v#buffer#get_iter_at_mark `INSERT)#offset));
-
-	 v#buffer#move_mark `SEL_BOUND ~where:start;
-	 v#buffer#move_mark `INSERT ~where:stop;
-	 prerr_endline "search: after moving marks";
-	 prerr_endline ("SELBOUND="^(string_of_int (v#buffer#get_iter_at_mark `SEL_BOUND)#offset));
-	 prerr_endline ("INSERT="^(string_of_int (v#buffer#get_iter_at_mark `INSERT)#offset));
-	 v#scroll_to_mark `SEL_BOUND
-    )
-  in
-  ignore (search_input#entry#event#connect#key_release
-	    ~callback:
-	    (fun ev ->
-	      if GdkEvent.Key.keyval ev = GdkKeysyms._Escape then begin
-		let v = session_notebook#current_term.script in
-		(match !start_of_search with
-		  | None ->
-		    prerr_endline "search_key_rel: Placing sel_bound";
-		    v#buffer#move_mark
-		      `SEL_BOUND
-		      ~where:(v#buffer#get_iter_at_mark `INSERT)
-		  | Some mk -> let it = v#buffer#get_iter_at_mark
-				 (`MARK mk) in
-			       prerr_endline "search_key_rel: Placing cursor";
-			       v#buffer#place_cursor ~where:it;
-			       start_of_search := None
-		);
-		search_input#entry#set_text "";
-		v#coerce#misc#grab_focus ();
-	      end;
-	      false
-	    ));
-  ignore (search_input#entry#connect#changed ~callback:search_f);
   push_info "Ready";
   (* Location display *)
   let l = GMisc.label

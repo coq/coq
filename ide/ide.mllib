@@ -10,6 +10,7 @@ Editable_cells
 Config_parser
 Tags
 Wg_Notebook
+Wg_Find
 Config_lexer
 Utf8_convert
 Preferences

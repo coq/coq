@@ -20,6 +20,7 @@ let list_items menu li =
 
 let init () =
   let theui = Printf.sprintf "<ui>
+<accelerator action='Close Find' />
 <menubar name='CoqIde MenuBar'>
   <menu action='File'>
     <menuitem action='New' />
@@ -48,8 +49,10 @@ let init () =
     <menuitem action='Copy' />
     <menuitem action='Paste' />
     <separator />
-    <menuitem action='Find in buffer' />
-    <menuitem action='Find backwards' />
+    <menuitem action='Find' />
+    <menuitem action='Find Next' />
+    <menuitem action='Find Previous' />
+    <menuitem action='Replace' />
     <menuitem action='Complete Word' />
     <separator />
     <menuitem action='External editor' />

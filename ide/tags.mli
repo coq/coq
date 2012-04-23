@@ -24,6 +24,7 @@ sig
   val folded : GText.tag
   val paren : GText.tag
   val sentence : GText.tag
+  val replaced : GText.tag
 end
 
 module Proof :
