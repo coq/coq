@@ -118,7 +118,6 @@ class finder (view : GText.view) =
         match found with
         | None -> ()
         | Some (start, stop) ->
-          let () = Printf.printf "%i-%i\n%!" start#offset stop#offset in
           let start_mark = view#buffer#create_mark start in
           let stop_mark = view#buffer#create_mark stop in
           let _ = view#buffer#delete_interactive ~start ~stop () in
@@ -218,102 +217,6 @@ class finder (view : GText.view) =
       let _ = r_previous_button#connect#clicked self#find_backward in
       let _ = r_replace_button#connect#clicked self#replace in
       let _ = r_replace_all_button#connect#clicked self#replace_all in
-(*      let insert_cb _ ~pos = self#find_forward () in
-      let delete_cb ~start ~stop = self#find_backward () in*)
-(*      let _ = find_entry#connect#insert_text ~callback:insert_cb in
-      let _ = find_entry#connect#delete_text ~callback:delete_cb in*)
-(*       let _ = find_again_button#connect#clicked find_again in *)
-(*       let _ = close_find_button#connect#clicked close_find in *)
-(*       let _ = replace_find_button#connect#clicked do_replace_find in *)
-(*       let _ = find_backwards_check#connect#clicked click_on_backward in *)
-(*       let _ = find_entry#connect#changed do_find in *)
       ()
 
   end
-
-(* let find_box = GPack.table
-  ~columns:3 ~rows:5
-  ~col_spacings:10 ~row_spacings:10 ~border_width:10
-  ~homogeneous:false ~packing:find_w#add () in
-
-let _ =
-  GMisc.label ~text:"Find:"
-    ~xalign:1.0
-    ~packing:(find_box#attach ~left:0 ~top:0 ~fill:`X) ()
-in
-let _ =
-  GMisc.label ~text:"Replace with:"
-    ~xalign:1.0
-    ~packing:(find_box#attach ~left:0 ~top:1 ~fill:`X) ()
-in *)
-(* let _ =
-    GButton.check_button
-    ~label:"case sensitive"
-    ~active:true
-    ~packing: (find_box#attach ~left:1 ~top:2)
-    ()
-    in
-*)
-(* let find_backwards_check =
-  GButton.check_button
-    ~label:"search backwards"
-    ~active:!search_backward
-    ~packing: (find_box#attach ~left:1 ~top:3)
-    ()
-in
-let close_find_button =
-  GButton.button
-    ~label:"Close"
-    ~packing: (find_box#attach ~left:2 ~top:2)
-    ()
-in
-let replace_find_button =
-  GButton.button
-    ~label:"Replace and find"
-    ~packing: (find_box#attach ~left:2 ~top:1)
-    ()
-in
-let find_again_button =
-  GButton.button
-    ~label:"_Find again"
-    ~packing: (find_box#attach ~left:2 ~top:0)
-    ()
-in*)
-
-(*let key_find ev =
-  let s = GdkEvent.Key.state ev and k = GdkEvent.Key.keyval ev in
-  if k = GdkKeysyms._Escape then
-    begin
-      let (v,b,_,stop) = last_find () in
-      find_w#misc#hide();
-      v#coerce#misc#grab_focus();
-      true
-    end
-  else if k = GdkKeysyms._Escape then
-    begin
-      close_find();
-      true
-    end
-  else if k = GdkKeysyms._Return ||
-          List.mem `CONTROL s && k = GdkKeysyms._f then
-    begin
-      find_again ();
-      true
-    end
-  else if List.mem `CONTROL s && k = GdkKeysyms._b then
-    begin
-      find_backwards_check#set_active (not !search_backward);
-      true
-    end
-  else false (* to let default callback execute *)
-
-in *)
-
-(* let find_f ~backward () =
-  let save_dir = !search_backward in
-  search_backward := backward;
-  find_w#show ();
-  find_w#present ();
-  find_entry#misc#grab_focus ();
-  search_backward := save_dir 
-*)
