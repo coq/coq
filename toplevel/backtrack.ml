@@ -167,7 +167,7 @@ let reset_initial () =
   let init_label = Lib.first_command_label in
   if Lib.current_command_label () = init_label then ()
   else begin
-    if Pfedit.refining() then Pfedit.delete_all_proofs ();
+    Pfedit.delete_all_proofs ();
     Lib.reset_label init_label;
     Stack.clear history;
     Stack.push

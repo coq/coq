@@ -23,13 +23,6 @@ val show_node : unit -> unit
    in the context of the current goal, as for instance in pcoq *)
 val get_current_context_of_args : int option -> Evd.evar_map * Environ.env
 
-(*i
-
-(** this function is used to analyse the extra arguments in search commands.
-   It is used in pcoq. *) (*i anciennement: inside_outside i*)
-val interp_search_restriction : search_restriction -> dir_path list * bool
-i*)
-
 type pcoq_hook = {
   start_proof : unit -> unit;
   solve : int -> unit;
@@ -44,10 +37,7 @@ type pcoq_hook = {
 
 val set_pcoq_hook : pcoq_hook -> unit
 
-(** This function makes sure that the function given in argument is preceded
-   by a command aborting all proofs if necessary.
-   It is used in pcoq. *)
-val abort_refine : ('a -> unit) -> 'a -> unit;;
+(** The main interpretation function of vernacular expressions *)
 
 val interp : Vernacexpr.vernac_expr -> unit
 
