@@ -10,7 +10,6 @@ romega/romega_plugin.cma
 omega/omega_plugin.cma
 micromega/micromega_plugin.cma
 xml/xml_plugin.cma
-subtac/subtac_plugin.cma
 ring/ring_plugin.cma
 cc/cc_plugin.cma
 nsatz/nsatz_plugin.cma

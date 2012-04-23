@@ -10,7 +10,6 @@ romega/romega_plugin.cmxa
 omega/omega_plugin.cmxa
 micromega/micromega_plugin.cmxa
 xml/xml_plugin.cmxa
-subtac/subtac_plugin.cmxa
 ring/ring_plugin.cmxa
 cc/cc_plugin.cmxa
 nsatz/nsatz_plugin.cmxa
