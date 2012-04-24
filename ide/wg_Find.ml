@@ -118,7 +118,6 @@ class finder (view : GText.view) =
         match found with
         | None -> ()
         | Some (start, stop) ->
-          let () = Printf.printf "%i-%i\n%!" start#offset stop#offset in
           let start_mark = view#buffer#create_mark start in
           let stop_mark = view#buffer#create_mark ~left_gravity:false stop in
           let _ = view#buffer#delete_interactive ~start ~stop () in
