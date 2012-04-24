@@ -148,9 +148,9 @@ Here are some tactics that understand occurrences clauses:
 
 \section{Applying theorems}
 
-\subsection[exact]{\tt exact \term
+\subsection{\tt exact \term}
 \tacindex{exact}
-\label{exact}}
+\label{exact}
 
 This tactic applies to any goal. It gives directly the exact proof
 term of the goal. Let {\T} be our goal, let {\tt p} be a term of type
@@ -168,8 +168,8 @@ convertible (see Section~\ref{conv-rules}).
 
 \end{Variants}
 
-\subsection[assumption]{{\tt assumption}
-\tacindex{assumption}}
+\subsection{\tt assumption}
+\tacindex{assumption}
 
 This tactic looks in the local context for an
 hypothesis which type is equal to the goal.  If it is the case, the
@@ -188,11 +188,11 @@ subgoal is proved. Otherwise, it fails.
 
 \end{Variants}
 
-\subsection[refine]{\tt refine \term
+\subsection{\tt refine \term}
 \tacindex{refine}
 \label{refine}
 \label{refine-example}
-\index{?@{\texttt{?}}}}
+\index{?@{\texttt{?}}}
 
 This tactic applies to any goal. It behaves like {\tt exact} with a big
 difference: the user can leave some holes (denoted by \texttt{\_} or
@@ -236,9 +236,9 @@ Defined.
   which type cannot be inferred. Put a cast around it.
 \end{ErrMsgs}
 
-\subsection[apply]{\tt apply \term
+\subsection{\tt apply \term}
 \tacindex{apply}
-\label{apply}}
+\label{apply}
 
 This tactic applies to any goal.  The argument {\term} is a term
 well-formed in the local context.  The tactic {\tt apply} tries to
@@ -318,9 +318,6 @@ Section~\ref{pattern} to transform the goal so that it gets the form
   where $n$ is a number.  The instantiation is intended to be found
   later in the proof.
 
-  An example of use of {\tt eapply} is given in
-  Section~\ref{eapply-example}.
-
 \item {\tt simple apply {\term}} \tacindex{simple apply}
 
   This behaves like {\tt apply} but it reasons modulo conversion only
@@ -361,8 +358,95 @@ Section~\ref{pattern} to transform the goal so that it gets the form
 
 \end{Variants}
 
-\subsection[apply in]{{\tt apply {\term} in {\ident}}
-\tacindex{apply \dots\ in}}
+\Example
+Assume we have a relation on {\tt nat} which is transitive:
+\label{eapply-example}
+
+\begin{coq_example*}
+Variable R : nat -> nat -> Prop.
+Hypothesis Rtrans : forall x y z:nat, R x y -> R y z -> R x z.
+Variables n m p : nat.
+Hypothesis Rnm : R n m.
+Hypothesis Rmp : R m p.
+\end{coq_example*}
+
+Consider the goal {\tt (R n p)} provable using the transitivity of
+{\tt R}:
+
+\begin{coq_example*}
+Goal R n p.
+\end{coq_example*}
+
+The direct application of {\tt Rtrans} with {\tt apply} fails because
+no value for {\tt y} in {\tt Rtrans} is found by {\tt apply}:
+
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is not correct and should produce **********)
+(**** Error: generated subgoal (R n ?17) has metavariables in it *****)
+\end{coq_eval}
+\begin{coq_example}
+apply Rtrans.
+\end{coq_example}
+
+A solution is to rather apply {\tt (Rtrans n m p)}.
+
+\begin{coq_example}
+apply (Rtrans n m p).
+\end{coq_example}
+
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+
+More elegantly, {\tt apply Rtrans with (y:=m)} allows to only mention
+the unknown {\tt m}:
+
+\begin{coq_example}
+  apply Rtrans with (y := m).
+\end{coq_example}
+
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+
+Another solution is to mention the proof of {\tt (R x y)} in {\tt
+Rtrans}...
+
+\begin{coq_example}
+  apply Rtrans with (1 := Rnm).
+\end{coq_example}
+
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+
+... or the proof of {\tt (R y z)}:
+
+\begin{coq_example}
+  apply Rtrans with (2 := Rmp).
+\end{coq_example}
+
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+
+On the opposite, one can use {\tt eapply} which postpone the problem
+of finding {\tt m}. Then one can apply the hypotheses {\tt Rnm} and {\tt
+Rmp}. This instantiates the existential variable and completes the proof.
+
+\begin{coq_example}
+eapply Rtrans.
+apply Rnm.
+apply Rmp.
+\end{coq_example}
+
+\begin{coq_eval}
+Reset R.
+\end{coq_eval}
+
+\subsection{\tt apply {\term} in {\ident}}
+\tacindex{apply \dots\ in}
 
 This tactic applies to any goal.  The argument {\term} is a term
 well-formed in the local context and the argument {\ident} is an
@@ -444,9 +528,9 @@ This summarizes the different syntactic variants of {\tt apply {\term}
   in {\ident}} and {\tt eapply {\term} in {\ident}}.
 \end{Variants}
 
-\subsection[constructor]{\tt constructor \num
+\subsection{\tt constructor \num}
 \label{constructor}
-\tacindex{constructor}}
+\tacindex{constructor}
 
 This tactic applies to a goal such that the head of its conclusion is
 an inductive constant (say {\tt I}).  The argument {\num} must be less
@@ -526,9 +610,9 @@ equivalent to {\tt intros; apply ci}.
 
 \section{Managing the local context}
 
-\subsection[intro]{\tt intro
+\subsection{\tt intro}
 \tacindex{intro}
-\label{intro}}
+\label{intro}
 
 This tactic applies to a goal that is either a product or starts with
 a let binder. If the goal is a product, the tactic implements the
@@ -653,9 +737,9 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
 
 \end{Variants}
 
-\subsection[intros]{\tt intros {\intropattern} {\ldots} {\intropattern}
+\subsection{\tt intros {\intropattern} {\ldots} {\intropattern}}
 \label{intros-pattern}
-\tacindex{intros \intropattern}}
+\tacindex{intros \intropattern}
 \index{Introduction patterns}
 \index{Naming introduction patterns}
 \index{Disjunctive/conjunctive introduction patterns}
@@ -771,9 +855,9 @@ Show 2.
 
 \end{itemize}
 
-\subsection[clear]{\tt clear {\ident}
+\subsection{\tt clear \ident}
 \tacindex{clear}
-\label{clear}}
+\label{clear}
 
 This tactic erases the hypothesis named {\ident} in the local context
 of the current goal. Then {\ident} is no more displayed and no more
@@ -817,9 +901,9 @@ usable in the proof development.
     used in the hypothesis}
 \end{ErrMsgs}
 
-\subsection[revert]{\tt revert  \ident$_1$ \dots\ \ident$_n$
+\subsection{\tt revert \ident$_1$ \dots\ \ident$_n$}
 \tacindex{revert}
-\label{revert}}
+\label{revert}
 
 This applies to any goal with variables \ident$_1$ \dots\ \ident$_n$.
 It moves the hypotheses (possibly defined) to the goal, if this respects
@@ -838,9 +922,9 @@ dependencies. This tactic is the inverse of {\tt intro}.
 
 \end{Variants}
 
-\subsection[move]{\tt move {\ident$_1$} after {\ident$_2$}
+\subsection{\tt move {\ident$_1$} after {\ident$_2$}}
 \tacindex{move}
-\label{move}}
+\label{move}
 
 This moves the hypothesis named {\ident$_1$} in the local context
 after the hypothesis named {\ident$_2$}.
@@ -881,8 +965,8 @@ This moves {\ident} at the bottom of the local context (at the end of the contex
 
 \end{ErrMsgs}
 
-\subsection[rename]{\tt rename {\ident$_1$} into {\ident$_2$}
-\tacindex{rename}}
+\subsection{\tt rename {\ident$_1$} into {\ident$_2$}}
+\tacindex{rename}
 
 This renames hypothesis {\ident$_1$} into {\ident$_2$} in the current
 context\footnote{but it does not rename the hypothesis in the
@@ -905,11 +989,9 @@ Is equivalent to the sequence of the corresponding atomic {\tt rename}.
 
 \end{ErrMsgs}
 
-\subsection[set]{{\tt set ( {\ident} {\tt :=} {\term} \tt )}
+\subsection{\tt set ( {\ident} {\tt :=} {\term} \tt )}
 \label{tactic:set}
 \tacindex{set}
-\tacindex{pose}
-\tacindex{remember}}
 
 This replaces {\term} by {\ident} in the conclusion or in the
 hypotheses of the current goal and adds the new definition {\ident
@@ -946,7 +1028,7 @@ Section~\ref{Occurrences clauses}.
 
   These are the general forms which combine the previous possibilities.
 
-\item {\tt remember {\term} {\tt as} {\ident}}
+\item {\tt remember {\term} {\tt as} {\ident}}\tacindex{remember}
 
   This behaves as {\tt set (} {\ident} := {\term} {\tt ) in *} and using a
   logical (Leibniz's) equality instead of a local definition.
@@ -956,7 +1038,7 @@ Section~\ref{Occurrences clauses}.
   This is a more general form of {\tt remember} that remembers the
   occurrences of {\term} specified by an occurrences set.
 
-\item {\tt pose ( {\ident} := {\term} )}
+\item {\tt pose ( {\ident} := {\term} )}\tacindex{pose}
 
   This adds the local definition {\ident} := {\term} to the current
   context without performing any replacement in the goal or in the
@@ -975,9 +1057,9 @@ Section~\ref{Occurrences clauses}.
 
 \end{Variants}
 
-\subsection[decompose]{\tt decompose [ {\qualid$_1$} \dots\ {\qualid$_n$} ] \term
+\subsection{\tt decompose [ {\qualid$_1$} \dots\ {\qualid$_n$} ] \term}
 \label{decompose}
-\tacindex{decompose}}
+\tacindex{decompose}
 
 This tactic allows to recursively decompose a
 complex proposition in order to obtain atomic ones.
@@ -1010,8 +1092,8 @@ Qed.
 
 \section{Controlling the proof flow}
 
-\subsection[assert]{{\tt assert ( {\ident} : {\form} \tt )}
-\tacindex{assert}}
+\subsection{\tt assert ( {\ident} : {\form} \tt )}
+\tacindex{assert}
 
 This tactic applies to any goal. {\tt assert (H : U)} adds a new
 hypothesis of name \texttt{H} asserting \texttt{U} to the current goal
@@ -1108,9 +1190,9 @@ in the list of subgoals remaining to prove.
 
 \end{Variants}
 
-\subsection[generalize]{\tt generalize \term
+\subsection{\tt generalize \term}
 \tacindex{generalize}
-\label{generalize}}
+\label{generalize}
 
 This tactic applies to any goal. It generalizes the conclusion w.r.t.
 one subterm of it. For example:
@@ -1167,17 +1249,17 @@ where $G'$ is obtained from $G$ by replacing all occurrences of $t$ by
 
 \end{Variants}
 
-\subsection[evar]{\tt evar (\ident:\term)
+\subsection{\tt evar (\ident:\term)}
 \tacindex{evar}
-\label{evar}}
+\label{evar}
 
 The {\tt evar} tactic creates a new local definition named \ident\ with
 type \term\ in the context. The body of this binding is a fresh
 existential variable.
 
-\subsection[instantiate]{\tt instantiate (\num:= \term)
+\subsection{\tt instantiate (\num:= \term)}
 \tacindex{instantiate}
-\label{instantiate}}
+\label{instantiate}
 
 The {\tt instantiate} tactic allows to refine (see Section~\ref{refine})
 an existential variable
@@ -1207,9 +1289,9 @@ a hypothesis or in the body or the type of a local definition.
 
 \end{Variants}
 
-\subsection[admit]{\tt admit
+\subsection{\tt admit}
 \tacindex{admit}
-\label{admit}}
+\label{admit}
 
 The {\tt admit} tactic ``solves'' the current subgoal by an
 axiom. This typically allows to temporarily skip a subgoal so as to
@@ -1219,9 +1301,9 @@ Assumptions} (see Section~\ref{PrintAssumptions}). Admitted subgoals
 have names of the form {\ident}\texttt{\_admitted} possibly followed
 by a number.
 
-\subsection[absurd]{\tt absurd \term
+\subsection{\tt absurd \term}
 \tacindex{absurd}
-\label{absurd}}
+\label{absurd}
 
 This tactic applies to any goal. The argument {\term} is any
 proposition {\tt P} of type {\tt Prop}. This tactic applies {\tt
@@ -1231,9 +1313,9 @@ very useful in proofs by cases, where some cases are impossible. In
 most cases, \texttt{P} or $\sim$\texttt{P} is one of the hypotheses of
 the local context.
 
-\subsection[contradiction]{\tt contradiction
+\subsection{\tt contradiction}
 \label{contradiction}
-\tacindex{contradiction}}
+\tacindex{contradiction}
 
 This tactic applies to any goal. The {\tt contradiction} tactic
 attempts to find in the current context (after all {\tt intros}) one
@@ -1251,7 +1333,7 @@ irrelevant cases. This tactic is a macro for the tactics sequence
 The proof of {\tt False} is searched in the hypothesis named \ident.
 \end{Variants}
 
-\subsection[contradict]{\tt contradict \ident}
+\subsection{\tt contradict \ident}
 \label{contradict}
 \tacindex{contradict}
 
@@ -1282,8 +1364,8 @@ The tactics presented in this section implement induction or case
 analysis on inductive or co-inductive objects (see
 Section~\ref{Cic-inductive-definitions}).
 
-\subsection[destruct]{\tt destruct \term
-\tacindex{destruct}}
+\subsection{\tt destruct \term}
+\tacindex{destruct}
 \label{destruct}
 
 This tactic applies to any goal. The argument {\term} must be of
@@ -1434,8 +1516,8 @@ syntax {\tt destruct ({\num})} (not very interesting anyway).
 
 \end{Variants}
 
-\subsection[induction]{\tt induction \term
-\tacindex{induction}}
+\subsection{\tt induction \term}
+\tacindex{induction}
 
 This tactic applies to any goal. The argument {\term} must be of
 inductive type and the tactic {\tt induction} generates subgoals,
@@ -1651,8 +1733,9 @@ instantiate premises of the type of {\term$_2$}.
 %\subsection[\tt FixPoint \dots]{\tt FixPoint \dots\tacindex{Fixpoint}}
 %Not yet documented.
 
-\subsection[double induction]{\tt double induction \ident$_1$ \ident$_2$}
-%\tacindex{double induction}}
+\subsection{\tt double induction \ident$_1$ \ident$_2$}
+\tacindex{double induction}
+
 This tactic is deprecated and should be replaced by {\tt induction \ident$_1$; induction \ident$_2$} (or {\tt induction \ident$_1$; destruct \ident$_2$} depending on the exact needs).
 
 %% This tactic applies to any goal. If the variables {\ident$_1$} and
@@ -1685,9 +1768,9 @@ This tactic is deprecated and should be replaced by {\tt induction
 
 \end{Variant}
 
-\subsection[dependent induction]{\tt dependent induction \ident
-  \tacindex{dependent induction}
-  \label{DepInduction}}
+\subsection{\tt dependent induction \ident}
+\tacindex{dependent induction}
+\label{DepInduction}
 
 The \emph{experimental} tactic \texttt{dependent induction} performs
 induction-inversion on an instantiated inductive predicate.
@@ -1765,9 +1848,9 @@ defined in the same file:
 A larger example of dependent induction and an explanation of the
 underlying technique are developed in section~\ref{dependent-induction-example}.
 
-\subsection[functional induction]{\tt functional induction (\qualid\ \term$_1$ \dots\ \term$_n$).
+\subsection{\tt functional induction (\qualid\ \term$_1$ \dots\ \term$_n$)}
 \tacindex{functional induction}
-\label{FunInduction}}
+\label{FunInduction}
 
 The \emph{experimental} tactic \texttt{functional induction} performs
 case analysis and induction following the definition of a function. It
@@ -1846,10 +1929,10 @@ details.
 
 \end{Variants}
 
-\subsection[discriminate]{\tt discriminate {\term}
+\subsection{\tt discriminate \term}
 \label{discriminate}
 \tacindex{discriminate}
-\tacindex{ediscriminate}}
+
 
 This tactic proves any goal from an assumption stating that two
 structurally different terms of an inductive set are equal. For
@@ -1890,7 +1973,7 @@ context using \texttt{intros until \ident}.
   This does the same thing as \texttt{discriminate {\term}} but using
 the given bindings to instantiate parameters or hypotheses of {\term}.
 
-\item \texttt{ediscriminate} \num\\
+\item \texttt{ediscriminate} \num\tacindex{ediscriminate}\\
       \texttt{ediscriminate} {\term} \zeroone{{\tt with} {\bindinglist}}
 
   This works the same as {\tt discriminate} but if the type of {\term},
@@ -1910,10 +1993,9 @@ the given bindings to instantiate parameters or hypotheses of {\term}.
   \end{ErrMsgs}
 \end{Variants}
 
-\subsection[injection]{\tt injection {\term}
+\subsection{\tt injection \term}
 \label{injection}
 \tacindex{injection}
-\tacindex{einjection}}
 
 The {\tt injection} tactic is based on the fact that constructors of
 inductive sets are injections. That means that if $c$ is a constructor
@@ -1994,7 +2076,7 @@ introduced hypothesis.
   This does the same as \texttt{injection {\term}} but using
   the given bindings to instantiate parameters or hypotheses of {\term}.
 
-\item \texttt{einjection} \num\\
+\item \texttt{einjection} \num\tacindex{einjection}\\
       \texttt{einjection} \term{} \zeroone{{\tt with} {\bindinglist}}
 
   This works the same as {\tt injection} but if the type of {\term},
@@ -2021,8 +2103,8 @@ the call to \texttt{injection} or \texttt{einjection}.
 
 \end{Variants}
 
-\subsection[inversion]{\tt inversion {\ident}
-\tacindex{inversion}}
+\subsection{\tt inversion \ident}
+\tacindex{inversion}
 
 Let the type of {\ident} in the local context be $(I~\vec{t})$,
 where $I$ is a (co)inductive predicate. Then,
@@ -2214,9 +2296,9 @@ Abort.
 
 \SeeAlso~\ref{inversion-examples} for detailed examples
 
-\subsection[fix]{\tt fix {\ident} {\num}
+\subsection{\tt fix {\ident} {\num}}
 \tacindex{fix}
-\label{tactic:fix}}
+\label{tactic:fix}
 
 This tactic is a primitive tactic to start a proof by induction. In
 general, it is easier to rely on higher-level induction tactics such
@@ -2256,9 +2338,9 @@ system tries to guess itself what they are).
 
 \end{Variants}
 
-\subsection[cofix]{\tt cofix {\ident}
+\subsection{\tt cofix \ident}
 \tacindex{cofix}
-\label{tactic:cofix}}
+\label{tactic:cofix}
 
 This tactic starts a proof by coinduction. The identifier {\ident} is
 the name given to the coinduction hypothesis.  Like in a {\tt cofix}
@@ -3198,44 +3280,6 @@ right to left.
 
 \section{Inversion
 \label{inversion}}
-
-\subsection{\tt Derive Inversion {\ident} with
-  ${\tt forall (}\vec{x}{\tt :}\vec{T}{\tt),} I~\vec{t}$ Sort \sort
-\label{Derive-Inversion}
-\comindex{Derive Inversion}}
-
-This command generates an inversion principle for the
-\texttt{inversion \dots\ using} tactic.
-Let $I$ be an inductive predicate and $\vec{x}$ the variables
-occurring in $\vec{t}$. This command generates and stocks the
-inversion lemma for the sort \sort~ corresponding to the instance
-$forall (\vec{x}:\vec{T}), I~\vec{t}$ with the name {\ident} in the {\bf
-global} environment. When applied it is equivalent to have inverted
-the instance with the tactic {\tt inversion}.
-
-\begin{Variants}
-\item \texttt{Derive Inversion\_clear} {\ident} \texttt{with}
-  \comindex{Derive Inversion\_clear}
-  $forall (\vec{x}:\vec{T}), I~\vec{t}$ \texttt{Sort} \sort~ \\
-  \index{Derive Inversion\_clear \dots\ with}
-  When applied it is equivalent to having
-  inverted the instance with the tactic \texttt{inversion}
-  replaced by the tactic \texttt{inversion\_clear}.
-\item \texttt{Derive Dependent Inversion} {\ident} \texttt{with}
-  $forall (\vec{x}:\vec{T}), I~\vec{t}$ \texttt{Sort} \sort~\\
-  \comindex{Derive Dependent Inversion}
-  When applied it is equivalent to having
-  inverted the instance with the tactic \texttt{dependent inversion}.
-\item \texttt{Derive Dependent Inversion\_clear} {\ident} \texttt{with}
-  $forall (\vec{x}:\vec{T}), I~\vec{t}$ \texttt{Sort} \sort~\\
-  \comindex{Derive Dependent Inversion\_clear}
-  When applied it is equivalent to having
-  inverted the instance with the tactic \texttt{dependent inversion\_clear}.
-\end{Variants}
-
-\SeeAlso \ref{inversion-examples} for examples
-
-
 
 \subsection[\tt functional inversion \ident]{\tt functional inversion \ident\label{sec:functional-inversion}}
 
@@ -4358,119 +4402,6 @@ exists (n // m).
 
 The tactic {\tt exists (n // m)} did not fail. The hole was solved by
 {\tt assumption} so that it behaved as {\tt exists (quo n m H)}.
-
-\section{Generation of induction principles with {\tt Scheme}
-\label{Scheme}
-\index{Schemes}
-\comindex{Scheme}}
-
-The {\tt Scheme} command is a high-level tool for generating
-automatically (possibly mutual) induction principles for given types
-and sorts.  Its syntax follows the schema:
-\begin{quote}
-{\tt Scheme {\ident$_1$} := Induction for \ident'$_1$ Sort {\sort$_1$} \\
-  with\\
-  \mbox{}\hspace{0.1cm} \dots\\
-        with {\ident$_m$} := Induction for {\ident'$_m$} Sort
-        {\sort$_m$}}
-\end{quote}
-where \ident'$_1$ \dots\ \ident'$_m$ are different inductive type
-identifiers belonging to the same package of mutual inductive
-definitions. This command generates {\ident$_1$}\dots{} {\ident$_m$}
-to be mutually recursive definitions. Each term {\ident$_i$} proves a
-general principle of mutual induction for objects in type {\term$_i$}.
-
-\begin{Variants}
-\item {\tt Scheme {\ident$_1$} := Minimality for \ident'$_1$ Sort {\sort$_1$} \\
-    with\\
-    \mbox{}\hspace{0.1cm} \dots\ \\
-    with {\ident$_m$} := Minimality for {\ident'$_m$} Sort
-    {\sort$_m$}}
-
-  Same as before but defines a non-dependent elimination principle more
-  natural in case of inductively defined relations.
-
-\item {\tt Scheme Equality for \ident$_1$\comindex{Scheme Equality}}
-
-  Tries to generate a boolean equality and a proof of the
-  decidability of the usual equality. If \ident$_i$ involves
-  some other inductive types, their equality has to be defined first.
-
-\item {\tt Scheme Induction for \ident$_1$ Sort {\sort$_1$} \\
-  with\\
-  \mbox{}\hspace{0.1cm} \dots\\
-        with Induction for {\ident$_m$} Sort
-        {\sort$_m$}}
-
-  If you do not provide the name of the schemes, they will be automatically
-  computed from the sorts involved (works also with Minimality).
-
-\end{Variants}
-
-\SeeAlso Section~\ref{Scheme-examples}
-
-\subsection{Automatic declaration of schemes}
-\comindex{Set Equality Schemes}
-\comindex{Set Elimination Schemes}
-It is possible to deactivate the automatic declaration of the induction
- principles when defining a new inductive type  with the
- {\tt Unset Elimination Schemes} command. It may be
-reactivated at any time with {\tt Set Elimination Schemes}.
-\\
-
-You can also activate the automatic declaration of those boolean equalities
-(see the second variant of {\tt Scheme})  with the {\tt Set Equality Schemes}
- command. However you have to be careful with this option since
-\Coq~ may now reject well-defined inductive types because it cannot compute
-a boolean equality for them.
-
-\subsection{\tt Combined Scheme\label{CombinedScheme}
-\comindex{Combined Scheme}}
-The {\tt Combined Scheme} command is a tool for combining
-induction principles generated by the {\tt Scheme} command.
-Its syntax follows the schema :
-
-\noindent
-{\tt Combined Scheme {\ident$_0$} from {\ident$_1$}, .., {\ident$_n$}}\\
-\ident$_1$ \ldots \ident$_n$ are different inductive principles that must belong to
-the same package of mutual inductive principle definitions. This command
-generates {\ident$_0$} to be the conjunction of the principles: it is
-built from the common premises of the principles and concluded by the
-conjunction of their conclusions.
-
-\SeeAlso Section~\ref{CombinedScheme-examples}
-
-\section{Generation of induction principles with {\tt Functional Scheme}
-\label{FunScheme}
-\comindex{Functional Scheme}}
-
-The {\tt Functional Scheme} command is a high-level experimental
-tool for generating automatically induction principles
-corresponding to (possibly mutually recursive) functions.  Its
-syntax follows the schema:
-\begin{quote}
-{\tt Functional Scheme {\ident$_1$} := Induction for \ident'$_1$ Sort {\sort$_1$} \\
-  with\\
-  \mbox{}\hspace{0.1cm} \dots\ \\
-        with {\ident$_m$} := Induction for {\ident'$_m$} Sort
-        {\sort$_m$}}
-\end{quote}
-where \ident'$_1$ \dots\ \ident'$_m$ are different mutually defined function
-names (they must be in the same order as when they were defined).
-This command generates the induction principles
-\ident$_1$\dots\ident$_m$, following the recursive structure and case
-analyses of the functions \ident'$_1$ \dots\ \ident'$_m$.
-
-
-\paragraph{\texttt{Functional Scheme}}
-There is a difference between obtaining an induction scheme by using
-\texttt{Functional Scheme} on a function defined by \texttt{Function}
-or not. Indeed \texttt{Function} generally produces smaller
-principles, closer to the definition written by the user.
-
-
-\SeeAlso Section~\ref{FunScheme-examples}
-
 
 \section{Simple tactic macros
 \index{Tactic macros}
