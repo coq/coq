@@ -389,8 +389,7 @@ let inh_coerce_to_sort loc env evd j =
 let inh_coerce_to_base loc env evd j =
   if Flags.is_program_mode () then
     let isevars = ref evd in
-    let typ = hnf env !isevars j.uj_type in
-    let ct, typ' = mu env isevars typ in
+    let ct, typ' = mu env isevars j.uj_type in
     let res =
       { uj_val = app_opt env isevars ct j.uj_val;
 	uj_type = typ' }
@@ -400,8 +399,7 @@ let inh_coerce_to_base loc env evd j =
 let inh_coerce_to_prod loc env evd t =
   if Flags.is_program_mode () then
     let isevars = ref evd in
-    let typ = hnf env !isevars t in
-    let _, typ' = mu env isevars typ in
+    let _, typ' = mu env isevars t in
       !isevars, typ'
   else (evd, t)
 
