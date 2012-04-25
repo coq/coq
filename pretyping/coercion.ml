@@ -104,11 +104,11 @@ let lift_args n sign =
 
 let rec mu env isevars t =
   let rec aux v =
-    let v = hnf env !isevars v in
-      match disc_subset v with
+    let v' = hnf env !isevars v in
+      match disc_subset v' with
       Some (u, p) ->
 	let f, ct = aux u in
-	let p = hnf env !isevars p in
+	let p = hnf_nodelta env !isevars p in
 	  (Some (fun x ->
 		   app_opt env isevars 
 		     f (mkApp (delayed_force sig_proj1,
