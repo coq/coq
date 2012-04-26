@@ -1620,12 +1620,15 @@ let interp c = match c with
   (* Extensions *)
   | VernacExtend (opn,args) -> Vernacinterp.call (opn,args)
 
-let interp c = 
+let interp c =
   let mode = Flags.is_program_mode () in
-    (try Obligations.set_program_mode !program_flag
-     with e -> program_flag := false; raise e);
+  let isprogcmd = !Flags.program_cmd in
+  Flags.program_cmd := false;
+  Obligations.set_program_mode isprogcmd;
+  try
     interp c; check_locality ();
-    program_flag := false;
     Flags.program_mode := mode
-  (* with_program_flag (fun () -> interp c ; check_locality ()) *)
+  with e ->
+    Flags.program_mode := mode;
+    raise e
 

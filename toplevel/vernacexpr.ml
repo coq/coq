@@ -495,19 +495,3 @@ let use_module_locality () =
 
 let enforce_module_locality local =
   make_module_locality (enforce_locality_full local)
-
-(**********************************************************************)
-
-(**********************************************************************)
-(* Managing the Program extension. *)
-
-let program_flag = ref false
-let with_program_flag m = 
-  if Flags.is_program_mode () then
-    (program_flag := false; m ())
-  else if !program_flag then 
-    (Flags.program_mode := true; 
-     m ();
-     Flags.program_mode := false;
-     program_flag := false)
-      
