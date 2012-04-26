@@ -17,7 +17,6 @@ open Flags
 open Util
 open Names
 open Nameops
-open Vernacentries
 open Reduction
 open Term
 open Libnames
@@ -61,7 +60,7 @@ GEXTEND Gram
 	  let typ = mkAppC (sigref, [mkLambdaC ([id], default_binder_kind, t, c)]) in
           [LocalRawAssum ([id], default_binder_kind, typ)]
     ] ];
-  
+
   END
 
 type 'a withtac_argtype = (Tacexpr.raw_tactic_expr option, 'a) Genarg.abstract_argument_type
@@ -74,15 +73,15 @@ let (wit_withtac : Genarg.tlevel withtac_argtype),
 open Obligations
 
 VERNAC COMMAND EXTEND Obligations
-| [ "Obligation" integer(num) "of" ident(name) ":" lconstr(t) withtac(tac) ] -> 
+| [ "Obligation" integer(num) "of" ident(name) ":" lconstr(t) withtac(tac) ] ->
     [ obligation (num, Some name, Some t) tac ]
-| [ "Obligation" integer(num) "of" ident(name) withtac(tac) ] -> 
+| [ "Obligation" integer(num) "of" ident(name) withtac(tac) ] ->
     [ obligation (num, Some name, None) tac ]
-| [ "Obligation" integer(num) ":" lconstr(t) withtac(tac) ] -> 
+| [ "Obligation" integer(num) ":" lconstr(t) withtac(tac) ] ->
     [ obligation (num, None, Some t) tac ]
-| [ "Obligation" integer(num) withtac(tac) ] -> 
+| [ "Obligation" integer(num) withtac(tac) ] ->
     [ obligation (num, None, None) tac ]
-| [ "Next" "Obligation" "of" ident(name) withtac(tac) ] -> 
+| [ "Next" "Obligation" "of" ident(name) withtac(tac) ] ->
     [ next_obligation (Some name) tac ]
 | [ "Next" "Obligation" withtac(tac) ] -> [ next_obligation None tac ]
 END
@@ -117,7 +116,7 @@ VERNAC COMMAND EXTEND Admit_Obligations
 
 VERNAC COMMAND EXTEND Set_Solver
 | [ "Obligation" "Tactic" ":=" tactic(t) ] -> [
-    set_default_tactic 
+    set_default_tactic
       (Vernacexpr.use_section_locality ())
       (Tacinterp.glob_tactic t) ]
 END
