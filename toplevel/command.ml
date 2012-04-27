@@ -85,7 +85,11 @@ let interp_definition bl red_option c ctypopt =
 	let c, imps2 = interp_casted_constr_evars_impls ~impls ~evdref ~fail_evar:false env_bl c ty in
 	let body = nf_evar !evdref (it_mkLambda_or_LetIn c ctx) in
 	let typ = nf_evar !evdref (it_mkProd_or_LetIn ty ctx) in
-	imps1@(Impargs.lift_implicits nb_args imps2),
+	(* Check that all implicit arguments inferable from the term is inferable from the type *)
+	if not (try List.for_all (fun (key,va) -> List.assoc key impsty = va) imps2 with Not_found -> false)
+	then warn (str "Implicit arguments declaration relies on type." ++
+		     spc () ++ str "The term declares more implicits than the type here.");
+	imps1@(Impargs.lift_implicits nb_args impsty),
 	{ const_entry_body = body;
           const_entry_secctx = None;
 	  const_entry_type = Some typ;

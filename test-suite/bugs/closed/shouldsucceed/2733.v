@@ -1,5 +1,8 @@
 Unset Asymmetric Patterns.
 
+Definition goodid : forall {A} (x: A), A := fun A x => x.
+Definition wrongid : forall A (x: A), A := fun {A} x => x.
+
 Inductive ty := N | B.
 
 Inductive alt_list : ty -> ty -> Type :=
@@ -21,4 +24,5 @@ alt_list t1 t3 :=
   | Bcons b l1 => fun _ l2 => Bcons b (app (@P) l1 l2)
   end.
 
-Check (fun {t t'} (l: alt_list t t') => app trullynul l nil).
+Check (fun {t t'} (l: alt_list t t') =>
+ app trullynul (goodid l) (wrongid _ nil)).
