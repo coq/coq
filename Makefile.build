@@ -285,7 +285,7 @@ COQIDEFLAGS=-thread $(COQIDEINCLUDES)
 
 .SUFFIXES:.vo
 
-IDEFILES=ide/coq.png ide/coqide-gtk2rc ide/mac_default_accel_map
+IDEFILES=ide/coq.png ide/mac_default_accel_map
 
 coqide-binaries: coqide-$(HASCOQIDE)
 coqide-no:
@@ -338,7 +338,7 @@ install-ide-files:
 	$(MKDIR) $(FULLDATADIR)
 	$(INSTALLLIB) ide/coq.png $(FULLDATADIR)
 	$(MKDIR) $(FULLCONFIGDIR)
-	$(INSTALLLIB) ide/coqide-gtk2rc $(FULLCONFIGDIR)
+	$(INSTALLLIB) $(FULLCONFIGDIR)
 	if [ $(IDEOPTINT) = QUARTZ ] ; then $(INSTALLLIB) ide/mac_default_accel_map $(FULLCONFIGDIR)/coqide.keys ; fi
 
 install-ide-info:

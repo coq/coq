@@ -67,13 +67,7 @@ END
 let () =
   Coqide.ignore_break ();
   ignore (GtkMain.Main.init ());
-  initmac () ;
-  (try
-     let gtkrcdir = List.find
-       (fun x -> Sys.file_exists (Filename.concat x "coqide-gtk2rc"))
-       Minilib.xdg_config_dirs in
-     GtkMain.Rc.add_default_file (Filename.concat gtkrcdir "coqide-gtk2rc");
-   with Not_found -> ());
+  initmac ();
   (* Statup preferences *)
   begin
     try Preferences.load_pref ()
