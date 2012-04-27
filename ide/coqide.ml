@@ -2229,13 +2229,13 @@ let main files =
                    session_notebook#current_term.script#as_view
                    ~sgn:GtkText.View.S.paste_clipboard
              with _ -> prerr_endline "EMIT PASTE FAILED") ~stock:`PASTE;
-      GAction.add_action "Find" ~label:"_Find" ~stock:`FIND ~accel:"<Ctrl>F"
+      GAction.add_action "Find" ~stock:`FIND
         ~callback:(fun _ -> session_notebook#current_term.finder#show_find ());
       GAction.add_action "Find Next" ~label:"Find _Next" ~stock:`GO_DOWN ~accel:"F3"
         ~callback:(fun _ -> session_notebook#current_term.finder#find_forward ());
       GAction.add_action "Find Previous" ~label:"Find _Previous" ~stock:`GO_UP ~accel:"<Shift>F3"
         ~callback:(fun _ -> session_notebook#current_term.finder#find_backward ());
-      GAction.add_action "Replace" ~label:"_Replace" ~stock:`FIND_AND_REPLACE ~accel:"<Ctrl>R"
+      GAction.add_action "Replace" ~stock:`FIND_AND_REPLACE
         ~callback:(fun _ -> session_notebook#current_term.finder#show_replace ());
      GAction.add_action "Close Find" ~accel:"Escape"
         ~callback:(fun _ -> session_notebook#current_term.finder#hide ());
@@ -2258,7 +2258,7 @@ let main files =
 	  try configure ~apply:update_notebook_pos ()
 	  with _ -> flash_info "Cannot save preferences"
 	end;
-	reset_revert_timer ()) ~stock:`PREFERENCES;
+	reset_revert_timer ()) ~accel:"<Ctrl>," ~stock:`PREFERENCES;
       (* GAction.add_action "Save preferences" ~label:"_Save preferences" ~callback:(fun _ -> save_pref ()); *) ];
     GAction.add_actions view_actions [
       GAction.add_action "View" ~label:"_View";
