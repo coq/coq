@@ -295,14 +295,14 @@ coqide-files: $(IDEFILES)
 
 $(COQIDEOPT): $(LINKIDEOPT) | $(COQTOPOPT)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) $(IDEOPTFLAGS) -o $@ unix.cmxa threads.cmxa lablgtk.cmxa\
-		 gtkThread.cmx str.cmxa $(LINKIDEOPT)
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) $(IDEOPTFLAGS) -o $@ unix.cmxa threads.cmxa\
+	         lablgtk.cmxa lablgtksourceview2.cmxa gtkThread.cmx str.cmxa $(LINKIDEOPT)
 	$(STRIP) $@
 
 $(COQIDEBYTE): $(LINKIDE) | $(COQTOPBYTE)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma gtkThread.cmo\
-		str.cma $(COQRUNBYTEFLAGS) $(LINKIDE)
+	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma\
+	        lablgtksourceview2.cma gtkThread.cmo str.cma $(COQRUNBYTEFLAGS) $(LINKIDE)
 
 $(COQIDE):
 	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)

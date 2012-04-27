@@ -629,14 +629,15 @@ if [ "$coqide_spec" = "yes" -a "$COQIDE" = "no" ]; then
 else
     case $lablgtkdir_spec in
 	no) 
-	    if [ -f "${CAMLLIB}/lablgtk2/glib.mli" ]; then
+	    if [ -f "${CAMLLIB}/lablgtk2/gSourceView2.mli" ]; then
 		lablgtkdir=${CAMLLIB}/lablgtk2
-	    elif [ -f "${CAMLLIB}/site-lib/lablgtk2/glib.mli" ]; then
+	    elif [ -f "${CAMLLIB}/site-lib/lablgtk2/gSourceView2.mli" ]; then
 		lablgtkdir=${CAMLLIB}/site-lib/lablgtk2
 	    fi;;
 	yes)
-	    if [ ! -f "$lablgtkdir/glib.mli" ]; then
-		echo "Incorrect LablGtk2 library (glib.mli not found)."
+	    if [ ! -f "$lablgtkdir/gSourceView2.mli" ]; then
+		echo "Incorrect LablGtk2 library (gSourceView2.mli not found)."
+		echo "Make sure that the GtkSourceView bindings are available."
 		echo "Configuration script failed!"
 		exit 1
 	    fi;;
@@ -986,22 +987,6 @@ if test "$coq_debug_flag" = "-g" ; then
       $OCAMLDEBUGCOQ.template > $OCAMLDEBUGCOQ
   chmod a-w,a+x $OCAMLDEBUGCOQ
 fi
-
-####################################################
-# Fixing lablgtk types (before/after 2.6.0) 
-####################################################
-
-if [ ! "$COQIDE" = "no" ]; then 
-    if grep "class view " "$lablgtkdir/gText.mli" | grep -q "\[>" ; then
-       if grep -q "?accepts_tab:bool" "$lablgtkdir/gText.mli" ; then
-        cp -f ide/undo_lablgtk_ge212.mli ide/undo.mli
-       else
-	cp -f ide/undo_lablgtk_ge26.mli ide/undo.mli
-       fi
-    else
-	cp -f ide/undo_lablgtk_lt26.mli ide/undo.mli
-    fi
-fi  
 
 ##############################################
 # Creation of configuration files

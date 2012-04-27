@@ -104,11 +104,6 @@ tools/coqdep_lexer.ml
 tools/coqdoc/cpretty.ml
 lib/xml_lexer.ml
 
-# .mly files
-
-ide/config_parser.ml
-ide/config_parser.mli
-
 # .ml4 files
 
 g_*.ml
@@ -147,7 +142,6 @@ ide/coqide_main_opt.ml
 
 # other auto-generated files
 
-ide/undo.mli
 toplevel/mltop.optml
 toplevel/mltop.byteml
 kernel/byterun/coq_jumptbl.h
