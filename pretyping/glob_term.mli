@@ -25,7 +25,7 @@ open Nametab
      locs here refers to the ident's location, not whole pat *)
 type cases_pattern =
   | PatVar of loc * name
-  | PatCstr of loc * constructor * cases_pattern list * name 
+  | PatCstr of loc * constructor * cases_pattern list * name
       (** [PatCstr(p,C,l,x)] = "|'C' 'l' as 'x'" *)
 
 val cases_pattern_loc : cases_pattern -> loc
@@ -90,7 +90,7 @@ and tomatch_tuple = (glob_constr * predicate_pattern)
 and tomatch_tuples = tomatch_tuple list
 
 and cases_clause = (loc * identifier list * cases_pattern list * glob_constr)
-(** [(p,il,cl,t)] = "|'cl' as 'il' => 't'" *)
+(** [(p,il,cl,t)] = "|'cl' => 't'" where FV(t) \subset il *)
 
 and cases_clauses = cases_clause list
 

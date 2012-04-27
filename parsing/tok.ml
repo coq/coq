@@ -45,6 +45,10 @@ let match_keyword kwd = function
   | KEYWORD kwd' when kwd = kwd' -> true
   | _ -> false
 
+(* Needed to fix Camlp4 signature.
+ Cannot use Pp because of silly Tox -> Compat -> Pp dependency *)
+let print ppf tok = Format.pp_print_string ppf (to_string tok)
+
 (** For camlp5, conversion from/to [Plexing.pattern],
     and a match function analoguous to [Plexing.default_match] *)
 
