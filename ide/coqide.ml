@@ -2258,7 +2258,7 @@ let main files =
 	  try configure ~apply:update_notebook_pos ()
 	  with _ -> flash_info "Cannot save preferences"
 	end;
-	reset_revert_timer ()) ~accel:"<Ctrl>," ~stock:`PREFERENCES;
+	reset_revert_timer ()) ~accel:"<Ctrl>comma" ~stock:`PREFERENCES;
       (* GAction.add_action "Save preferences" ~label:"_Save preferences" ~callback:(fun _ -> save_pref ()); *) ];
     GAction.add_actions view_actions [
       GAction.add_action "View" ~label:"_View";
