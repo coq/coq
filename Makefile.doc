@@ -11,7 +11,7 @@
 ### General rules
 ######################################################################
 
-.PHONY: doc doc-html doc-pdf doc-ps refman tutorial stdlib faq rectutorial
+.PHONY: doc doc-html doc-pdf doc-ps refman tutorial stdlib faq rectutorial refman-html-dir
 
 doc: refman faq tutorial rectutorial stdlib ide/index_urls.txt
 
@@ -117,7 +117,9 @@ doc/refman/cover.html: doc/common/styles/html/$(HTMLSTYLE)/cover.html
 doc/refman/styles.hva: doc/common/styles/html/$(HTMLSTYLE)/styles.hva
 	$(INSTALLLIB) $< doc/refman
 
-doc/refman/html/index.html: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
+doc/refman/html/index.html: refman-html-dir
+
+refman-html-dir: doc/refman/Reference-Manual.html $(REFMANPNGFILES) \
                         doc/refman/cover.html doc/refman/styles.hva doc/refman/index.html
 	- rm -rf doc/refman/html
 	$(MKDIR) doc/refman/html
