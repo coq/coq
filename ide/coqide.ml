@@ -515,42 +515,28 @@ let rec grab_ending_dot (start:GText.iter) =
 
 (** Retag a zone that has been edited *)
 
-let tag_on_insert =
-  (* possible race condition here : editing two buffers with a timedelta smaller
-   * than 1.5s might break the error recovery mechanism. *)
-  let skip_last = ref (ref true) in (* ref to the mutable flag created on last call *)
-  fun buffer ->
-    try
-      (* the start of the non-locked zone *)
-      let soi = buffer#get_iter_at_mark (`NAME "start_of_input") in
-      (* the inserted zone is between [prev_insert] and [insert] *)
-      let insert = buffer#get_iter_at_mark `INSERT in
-      let prev_insert = buffer#get_iter_at_mark (`NAME "prev_insert") in
-      (* [prev_insert] is normally always before [insert] even when deleting.
-	 Let's check this nonetheless *)
-      let prev_insert =
-	if insert#compare prev_insert < 0 then insert else prev_insert
-      in
-      let start = grab_sentence_start prev_insert soi in
-      (** The status of "{" "}" as sentence delimiters is too fragile.
-	  We retag up to the next "." instead. *)
-      let stop = grab_ending_dot insert in
-      let skip_curr = ref true in (* shall the callback be skipped ? by default yes*)
-      (!skip_last) := true; (* skip the previously created callback *)
-      skip_last := skip_curr;
-      try split_slice_lax buffer start stop
-      with Coq_lex.Unterminated ->
-        skip_curr := false;
-	let callback () =
-	  if not !skip_curr then begin
-	    try split_slice_lax buffer start buffer#end_iter
-	    with Coq_lex.Unterminated -> ()
-	  end; false
-	in
-	ignore (Glib.Timeout.add ~ms:1500 ~callback)
-    with Not_found ->
-      let err_pos = buffer#get_iter_at_mark (`NAME "start_of_input") in
-      buffer#apply_tag Tags.Script.error ~start:err_pos ~stop:err_pos#forward_char
+let tag_on_insert buffer =
+  try
+    (* the start of the non-locked zone *)
+    let soi = buffer#get_iter_at_mark (`NAME "start_of_input") in
+    (* the inserted zone is between [prev_insert] and [insert] *)
+    let insert = buffer#get_iter_at_mark `INSERT in
+    let prev_insert = buffer#get_iter_at_mark (`NAME "prev_insert") in
+    (* [prev_insert] is normally always before [insert] even when deleting.
+      Let's check this nonetheless *)
+    let prev_insert =
+      if insert#compare prev_insert < 0 then insert else prev_insert
+    in
+    let start = grab_sentence_start prev_insert soi in
+    (** The status of "{" "}" as sentence delimiters is too fragile.
+        We retag up to the next "." instead. *)
+    let stop = grab_ending_dot insert in
+    try split_slice_lax buffer start stop
+    with Coq_lex.Unterminated -> ()
+  with Not_found ->
+    (* This is raised by [grab_sentence_start] *)
+    let err_pos = buffer#get_iter_at_mark (`NAME "start_of_input") in
+    buffer#apply_tag Tags.Script.error ~start:err_pos ~stop:err_pos#forward_char
 
 let force_retag buffer =
   try split_slice_lax buffer buffer#start_iter buffer#end_iter
