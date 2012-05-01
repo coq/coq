@@ -24,27 +24,9 @@ let safety_tag = function
   | Safe -> Tags.Script.processed
   | Unsafe -> Tags.Script.unjustified
 
-class type analyzed_views=
+class type _analyzed_view =
 object
-  val mutable act_id : GtkSignal.id option
-  val mutable deact_id : GtkSignal.id option
-  val input_buffer : GText.buffer
-  val input_view : Undo.undoable_view
-  val last_array : string array
-  val mutable last_index : bool
-  val message_buffer : GText.buffer
-  val message_view : GText.view
-  val proof_buffer : GText.buffer
-  val proof_view : GText.view
-  val cmd_stack : ide_info Stack.t
-  val mycoqtop : Coq.coqtop ref
-  val mutable is_active : bool
-  val mutable read_only : bool
-  val mutable filename : string option
-  val mutable stats : Unix.stats option
-  val mutable detached_views : GWindow.window list
   method without_auto_complete : 'a 'b. ('a -> 'b) -> 'a -> 'b
-  method set_auto_complete : bool -> unit
 
   method kill_detached_views : unit -> unit
   method add_detached_view : GWindow.window -> unit
@@ -57,27 +39,16 @@ object
   method auto_save : unit
   method save : string -> bool
   method save_as : string -> bool
-  method read_only : bool
-  method set_read_only : bool -> unit
-  method is_active : bool
-  method activate : unit -> unit
-  method active_keypress_handler : GdkEvent.Key.t -> bool
-  method backtrack_to : GText.iter -> unit
-  method backtrack_to_no_lock : GText.iter -> unit
   method clear_message : unit
-  method find_phrase_starting_at :
-    GText.iter -> (GText.iter * GText.iter) option
   method get_insert : GText.iter
   method get_start_of_input : GText.iter
   method go_to_insert : unit
-  method indent_current_line : unit
   method go_to_next_occ_of_cur_word : unit
   method go_to_prev_occ_of_cur_word : unit
   method insert_command : string -> string -> unit
   method tactic_wizard : string list -> unit
   method insert_message : string -> unit
   method process_next_phrase : bool -> unit
-  method process_until_iter_or_error : GText.iter -> unit
   method process_until_end_or_error : unit
   method recenter_insert : unit
   method reset_initial : unit
@@ -85,7 +56,6 @@ object
   method set_message : string -> unit
   method raw_coq_query : string -> unit
   method show_goals : unit
-  method show_goals_full : unit
   method undo_last_step : unit
   method help_for_keyword : unit -> unit
   method complete_at_offset : int -> bool
@@ -95,11 +65,9 @@ end
 type viewable_script =
     {script : Undo.undoable_view;
      tab_label : GMisc.label;
-     mutable filename : string;
-     mutable encoding : string;
      proof_view : GText.view;
      message_view : GText.view;
-     analyzed_view : analyzed_views;
+     analyzed_view : _analyzed_view;
      toplvl : Coq.coqtop ref;
      command : Wg_Command.command_window;
      finder : Wg_Find.finder;
@@ -167,8 +135,6 @@ let session_notebook =
     ~border_width:2 ~show_border:false ~scrollable:true ()
 
 let cb = GData.clipboard Gdk.Atom.primary
-
-let last_cb_content = ref ""
 
 let update_notebook_pos () =
   let pos =
@@ -578,7 +544,6 @@ object(self)
   val cmd_stack = _cs
   val mycoqtop = _ct
   val mutable is_active = false
-  val mutable read_only = false
   val mutable filename = _fn
   val mutable stats = None
   val mutable last_modification_time = 0.
@@ -590,7 +555,7 @@ object(self)
 
   method private toggle_auto_complete =
     auto_complete_on <- not auto_complete_on
-  method set_auto_complete t = auto_complete_on <- t
+  method private set_auto_complete t = auto_complete_on <- t
   method without_auto_complete : 'a 'b. ('a -> 'b) -> 'a -> 'b = fun f x ->
     let old = auto_complete_on in
     self#set_auto_complete false;
@@ -716,9 +681,6 @@ object(self)
         | _ -> false
     else self#save f
 
-  method set_read_only b = read_only<-b
-  method read_only = read_only
-  method is_active = is_active
   method insert_message s =
     message_buffer#insert s;
     message_view#misc#draw None
@@ -747,7 +709,7 @@ object(self)
               `INSERT)
 
 
-  method indent_current_line =
+  method private indent_current_line =
     let get_nb_space it =
       let it = it#copy in
       let nb_sep = ref 0 in
@@ -805,7 +767,7 @@ object(self)
 
   val mutable full_goal_done = true
 
-  method show_goals_full =
+  method show_goals =
     if not full_goal_done then
       proof_view#buffer#set_text "";
     begin
@@ -835,8 +797,6 @@ object(self)
       with
         | e -> prerr_endline (Printexc.to_string e)
     end
-
-  method show_goals = self#show_goals_full
 
   method private send_to_coq ct verbose phrase show_output show_error localize =
     let display_output msg =
@@ -898,7 +858,7 @@ object(self)
     | End_of_file -> raise RestartCoqtop
     | e -> sync display_error (Printexc.to_string e)
 
-  method find_phrase_starting_at (start:GText.iter) =
+  method private find_phrase_starting_at (start:GText.iter) =
     try
       let start = grab_sentence_start start self#get_start_of_input in
       let stop = grab_sentence_stop start in
@@ -1040,7 +1000,7 @@ object(self)
           ();
         false
 
-  method process_until_iter_or_error stop =
+  method private process_until_iter_or_error stop =
     let stop' = `OFFSET stop#offset in
     let start = self#get_start_of_input#copy in
     let start' = `OFFSET start#offset in
@@ -1149,7 +1109,7 @@ object(self)
 	   "CoqIDE and coqtop may be out of sync, you may want to use Restart.")
 
   (* backtrack Coq to the phrase preceding iterator [i] *)
-  method backtrack_to_no_lock i =
+  method private backtrack_to_no_lock i =
     prerr_endline "Backtracking_to iter starts now.";
     full_goal_done <- false;
     (* pop Coq commands until we reach iterator [i] *)
@@ -1177,7 +1137,7 @@ object(self)
 	   "Please restart and report.");
     end
 
-  method backtrack_to i =
+  method private backtrack_to i =
     if Mutex.try_lock coq_may_stop then
       (push_info "Undoing...";
        self#backtrack_to_no_lock i; Mutex.unlock coq_may_stop;
@@ -1224,7 +1184,7 @@ object(self)
            self#insert_this_phrase_on_success true false false
              ("progress "^p^".\n") (p^".\n")) l)
 
-  method active_keypress_handler k =
+  method private active_keypress_handler k =
 (*     let state = GdkEvent.Key.state k in *)
     begin
       if GdkEvent.Key.keyval k = GdkKeysyms._Tab then
@@ -1240,7 +1200,7 @@ object(self)
   val mutable deact_id = None
   val mutable act_id = None
 
-  method activate () = if not is_active then begin
+  method private activate () = if not is_active then begin
     is_active <- true;
     act_id <- Some
       (input_view#event#connect#key_press ~callback:self#active_keypress_handler);
@@ -1422,6 +1382,7 @@ object(self)
                   prerr_endline "Should recenter : yes";
                   self#recenter_insert
                 end));
+    self#activate ();
 end
 
 let last_make = ref "";;
@@ -1489,7 +1450,6 @@ let create_session file =
     GtkBase.Widget.add_events proof#as_widget [`ENTER_NOTIFY;`POINTER_MOTION] in
   let () =
     List.iter (fun (opts,_,_,_,dflt) -> setopts !ct opts dflt) print_items in
-  let _ = legacy_av#activate () in
   let _ =
     proof#event#connect#motion_notify ~callback:
       (fun e ->
@@ -1519,12 +1479,10 @@ let create_session file =
   message#misc#modify_base [`NORMAL, `NAME !current.background_color];
 
   { tab_label=basename;
-    filename=begin match file with None -> "" |Some f -> f end;
     script=script;
     proof_view=proof;
     message_view=message;
     analyzed_view=legacy_av;
-    encoding="";
     toplvl=ct;
     command=command;
     finder=finder;
