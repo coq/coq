@@ -74,7 +74,7 @@ type pref =
 val save_pref : unit -> unit
 val load_pref : unit -> unit
 
-val current : pref ref
+val current : pref
 
 val configure : ?apply:(unit -> unit) -> unit -> unit
 

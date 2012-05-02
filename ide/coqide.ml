@@ -138,7 +138,7 @@ let cb = GData.clipboard Gdk.Atom.primary
 
 let update_notebook_pos () =
   let pos =
-    match !current.vertical_tabs, !current.opposite_tabs with
+    match current.vertical_tabs, current.opposite_tabs with
       | false, false -> `TOP
       | false, true  -> `BOTTOM
       | true , false -> `LEFT
@@ -532,7 +532,7 @@ object(self)
   val mutable last_auto_save_time = 0.
   val mutable detached_views = []
 
-  val mutable auto_complete_on = !current.auto_complete
+  val mutable auto_complete_on = current.auto_complete
   val hidden_proofs = Hashtbl.create 32
 
   method private toggle_auto_complete =
@@ -597,7 +597,7 @@ object(self)
                 flash_info "Could not overwrite file"
             | _ ->
               prerr_endline "Auto revert set to false";
-              !current.global_auto_revert <- false;
+              current.global_auto_revert <- false;
               disconnect_revert_timer ()
         else do_revert ()
       end
@@ -620,9 +620,9 @@ object(self)
       | None -> None
       | Some f ->
         let dir = Filename.dirname f in
-        let base = (fst !current.auto_save_name) ^
+        let base = (fst current.auto_save_name) ^
           (Filename.basename f) ^
-          (snd !current.auto_save_name)
+          (snd current.auto_save_name)
         in Some (Filename.concat dir base)
 
   method private need_auto_save =
@@ -753,7 +753,7 @@ object(self)
     if not full_goal_done then
       proof_view#buffer#set_text "";
     begin
-      let menu_callback = if !current.contextual_menus_on_goal then
+      let menu_callback = if current.contextual_menus_on_goal then
           (fun s () -> ignore (self#insert_this_phrase_on_success
                                  true true false ("progress "^s) s))
         else
@@ -991,7 +991,7 @@ object(self)
       input_view#set_editable false) ();
     push_info "Coq is computing";
     let get_current () =
-      if !current.stop_before then
+      if current.stop_before then
         match self#find_phrase_starting_at self#get_start_of_input with
           | None -> self#get_start_of_input
           | Some (_, stop2) -> stop2
@@ -1360,16 +1360,17 @@ let search_next_error () =
 (**********************************************************************)
 
 let create_session file =
+  let script_buffer =
+    GSourceView2.source_buffer
+      ~tag_table:Tags.Script.table
+      ~highlight_matching_brackets:true
+      ?language:(lang_manager#language current.source_language)
+      ?style_scheme:(style_manager#style_scheme current.source_style)
+      ()
+  in
   let script =
     Undo.undoable_view
-      ~source_buffer:(GSourceView2.source_buffer
-			~tag_table:Tags.Script.table
-			~highlight_matching_brackets:true
-			?language:
-			  (Preferences.lang_manager#language !current.source_language)
-			?style_scheme:
-			  (Preferences.style_manager#style_scheme !current.source_style)
-			())
+      ~source_buffer:script_buffer
       ~show_line_numbers:true
       ~wrap_mode:`NONE () in
   let proof =
@@ -1387,14 +1388,14 @@ let create_session file =
   let stack = Stack.create () in
   let coqtop_args = match file with
     |None -> !sup_args
-    |Some the_file -> match !current.read_project with
+    |Some the_file -> match current.read_project with
 	|Ignore_args -> !sup_args
-	|Append_args -> (Project_file.args_from_project the_file !custom_project_files !current.project_file_name)
+	|Append_args -> (Project_file.args_from_project the_file !custom_project_files current.project_file_name)
 	   @(!sup_args)
-	|Subst_args -> Project_file.args_from_project the_file !custom_project_files !current.project_file_name
+	|Subst_args -> Project_file.args_from_project the_file !custom_project_files current.project_file_name
   in
   let ct = ref (Coq.spawn_coqtop coqtop_args) in
-  let command = new Wg_Command.command_window ct current in
+  let command = new Wg_Command.command_window ct in
   let finder = new Wg_Find.finder (script :> GText.view) in
   let legacy_av = new analyzed_view script proof message stack ct file in
   let () = legacy_av#update_stats in
@@ -1428,13 +1429,13 @@ let create_session file =
   proof#misc#set_can_focus true;
   message#misc#set_can_focus true;
   (* setting fonts *)
-  script#misc#modify_font !current.text_font;
-  proof#misc#modify_font !current.text_font;
-  message#misc#modify_font !current.text_font;
+  script#misc#modify_font current.text_font;
+  proof#misc#modify_font current.text_font;
+  message#misc#modify_font current.text_font;
   (* setting colors *)
-  script#misc#modify_base [`NORMAL, `NAME !current.background_color];
-  proof#misc#modify_base [`NORMAL, `NAME !current.background_color];
-  message#misc#modify_base [`NORMAL, `NAME !current.background_color];
+  script#misc#modify_base [`NORMAL, `NAME current.background_color];
+  proof#misc#modify_base [`NORMAL, `NAME current.background_color];
+  message#misc#modify_base [`NORMAL, `NAME current.background_color];
 
   { tab_label=basename;
     script=script;
@@ -1577,8 +1578,8 @@ let do_print session =
     |Some f_name ->  begin
       let cmd =
         local_cd f_name ^
-          !current.cmd_coqdoc ^ " -ps " ^ Filename.quote (Filename.basename f_name) ^
-          " | " ^ !current.cmd_print
+          current.cmd_coqdoc ^ " -ps " ^ Filename.quote (Filename.basename f_name) ^
+          " | " ^ current.cmd_print
       in
       let print_window = GWindow.window ~title:"Print" ~modal:true ~position:`CENTER ~wm_class:"CoqIDE" ~wm_name: "CoqIDE"  () in
       let vbox_print = GPack.vbox ~spacing:10 ~border_width:10 ~packing:print_window#add () in
@@ -1712,7 +1713,7 @@ let main files =
   let w = GWindow.window
     ~wm_class:"CoqIde" ~wm_name:"CoqIde"
     ~allow_grow:true ~allow_shrink:true
-    ~width:!current.window_width ~height:!current.window_height
+    ~width:current.window_width ~height:current.window_height
     ~title:"CoqIde" ()
   in
   (try
@@ -1815,7 +1816,7 @@ let main files =
             | _ -> assert false
         in
         let cmd =
-          local_cd f ^ !current.cmd_coqdoc ^ " --" ^ kind ^
+          local_cd f ^ current.cmd_coqdoc ^ " --" ^ kind ^
 	    " -o " ^ (Filename.quote output) ^ " " ^ (Filename.quote basef)
         in
         let s,_ = run_command av#insert_message cmd in
@@ -1837,7 +1838,7 @@ let main files =
   (*
     let toggle_auto_complete_i =
     edit_f#add_check_item "_Auto Completion"
-    ~active:!current.auto_complete
+    ~active:current.auto_complete
     ~callback:
     in
   *)
@@ -1850,9 +1851,9 @@ let main files =
 (* begin Preferences *)
   let reset_revert_timer () =
     disconnect_revert_timer ();
-    if !current.global_auto_revert then
+    if current.global_auto_revert then
       revert_timer := Some
-	(GMain.Timeout.add ~ms:!current.global_auto_revert_delay
+	(GMain.Timeout.add ~ms:current.global_auto_revert_delay
 	   ~callback:
 	   (fun () ->
 	     do_if_not_computing "revert" (sync revert_f) session_notebook#pages;
@@ -1867,9 +1868,9 @@ let main files =
 
   let reset_auto_save_timer () =
     disconnect_auto_save_timer ();
-    if !current.auto_save then
+    if current.auto_save then
       auto_save_timer := Some
-	(GMain.Timeout.add ~ms:!current.auto_save_delay
+	(GMain.Timeout.add ~ms:current.auto_save_delay
 	   ~callback:
 	   (fun () ->
 	     do_if_not_computing "autosave" (sync auto_save_f) session_notebook#pages;
@@ -1944,7 +1945,7 @@ let main files =
       | None ->
 	flash_info "Active buffer has no name"
       | Some f ->
-	let cmd = !current.cmd_coqc ^ " -I "
+	let cmd = current.cmd_coqc ^ " -I "
 	  ^ (Filename.quote (Filename.dirname f))
 	  ^ " " ^ (Filename.quote f) in
 	let s,res = run_command av#insert_message cmd in
@@ -1964,7 +1965,7 @@ let main files =
       | None ->
 	flash_info "Cannot make: this buffer has no name"
       | Some f ->
-	let cmd = local_cd f ^ !current.cmd_make in
+	let cmd = local_cd f ^ current.cmd_make in
 
 	(*
 	  save_f ();
@@ -1973,7 +1974,7 @@ let main files =
 	let s,res = run_command av#insert_message cmd in
 	last_make := res;
 	last_make_index := 0;
-	flash_info (!current.cmd_make ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
+	flash_info (current.cmd_make ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
   in
   let next_error _ =
     try
@@ -2016,10 +2017,10 @@ let main files =
       | None ->
 	flash_info "Cannot make makefile: this buffer has no name"
       | Some f ->
-	let cmd = local_cd f ^ !current.cmd_coqmakefile in
+	let cmd = local_cd f ^ current.cmd_coqmakefile in
 	let s,res = run_command av#insert_message cmd in
 	flash_info
-	  (!current.cmd_coqmakefile ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
+	  (current.cmd_coqmakefile ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
   in
 
   let file_actions = GAction.action_group ~name:"File" () in
@@ -2055,7 +2056,7 @@ let main files =
     ) l
   in
   let tactic_shortcut s sc = GAction.add_action s ~label:("_"^s)
-    ~accel:(!current.modifier_for_tactics^sc)
+    ~accel:(current.modifier_for_tactics^sc)
     ~callback:(do_if_active (fun a -> a#insert_command
 			       ("progress "^s^".\n") (s^".\n"))) in
   let query_callback command _ =
@@ -2081,7 +2082,7 @@ let main files =
 	view#buffer#move_mark `SEL_BOUND ~where:iter;
       end in
       match key with
-	|Some ac -> GAction.add_action name ~label ~callback ~accel:(!current.modifier_for_templates^ac)
+	|Some ac -> GAction.add_action name ~label ~callback ~accel:(current.modifier_for_templates^ac)
 	|None -> GAction.add_action name ~label ~callback ?accel:None
   in
     GAction.add_actions file_actions [
@@ -2152,7 +2153,7 @@ let main files =
 	  | None -> warning "Call to external editor available only on named files"
 	  | Some f ->
 	    save_f ();
-	    let com = Minilib.subst_command_placeholder !current.cmd_editor (Filename.quote f) in
+	    let com = Minilib.subst_command_placeholder current.cmd_editor (Filename.quote f) in
 	    let _ = run_command av#insert_message com in
 	    av#revert) ~stock:`EDIT;
       GAction.add_action "Preferences" ~callback:(fun _ ->
@@ -2169,8 +2170,8 @@ let main files =
       GAction.add_action "Next tab" ~label:"_Next tab" ~accel:("<Ctrl>Tab") ~stock:`GO_FORWARD
         ~callback:(fun _ -> session_notebook#next_page ());
       GAction.add_toggle_action "Show Toolbar" ~label:"Show _Toolbar"
-        ~active:(!current.show_toolbar) ~callback:
-        (fun _ -> !current.show_toolbar <- not !current.show_toolbar;
+        ~active:(current.show_toolbar) ~callback:
+        (fun _ -> current.show_toolbar <- not current.show_toolbar;
            !refresh_toolbar_hook ());
       GAction.add_toggle_action "Show Query Pane" ~label:"Show _Query Pane"
         ~callback:(fun _ -> let ccw = session_notebook#current_term.command in
@@ -2182,7 +2183,7 @@ let main files =
     List.iter
       (fun (opts,name,label,key,dflt) ->
          GAction.add_toggle_action name ~active:dflt ~label
-           ~accel:(!current.modifier_for_display^key)
+           ~accel:(current.modifier_for_display^key)
           ~callback:(fun v -> do_or_activate (fun a ->
             let () = setopts !(session_notebook#current_term.toplvl) opts v#get_active in
             a#show_goals) ()) view_actions)
@@ -2191,41 +2192,41 @@ let main files =
       GAction.add_action "Navigation" ~label:"_Navigation";
       GAction.add_action "Forward" ~label:"_Forward" ~stock:`GO_DOWN
 	~callback:(fun _ -> do_or_activate (fun a -> a#process_next_phrase true) ())
-	~tooltip:"Forward one command" ~accel:(!current.modifier_for_navigation^"Down");
+	~tooltip:"Forward one command" ~accel:(current.modifier_for_navigation^"Down");
       GAction.add_action "Backward" ~label:"_Backward" ~stock:`GO_UP
 	~callback:(fun _ -> do_or_activate (fun a -> a#undo_last_step) ())
-	~tooltip:"Backward one command" ~accel:(!current.modifier_for_navigation^"Up");
+	~tooltip:"Backward one command" ~accel:(current.modifier_for_navigation^"Up");
       GAction.add_action "Go to" ~label:"_Go to" ~stock:`JUMP_TO
 	~callback:(fun _ -> do_or_activate (fun a -> a#go_to_insert) ())
-	~tooltip:"Go to cursor" ~accel:(!current.modifier_for_navigation^"Right");
+	~tooltip:"Go to cursor" ~accel:(current.modifier_for_navigation^"Right");
       GAction.add_action "Start" ~label:"_Start" ~stock:`GOTO_TOP
 	~callback:(fun _ -> force_reset_initial ())
-	~tooltip:"Restart coq" ~accel:(!current.modifier_for_navigation^"Home");
+	~tooltip:"Restart coq" ~accel:(current.modifier_for_navigation^"Home");
       GAction.add_action "End" ~label:"_End" ~stock:`GOTO_BOTTOM
 	~callback:(fun _ -> do_or_activate (fun a -> a#process_until_end_or_error) ())
-	~tooltip:"Go to end" ~accel:(!current.modifier_for_navigation^"End");
+	~tooltip:"Go to end" ~accel:(current.modifier_for_navigation^"End");
       GAction.add_action "Interrupt" ~label:"_Interrupt" ~stock:`STOP
 	~callback:(fun _ -> break ()) ~tooltip:"Interrupt computations"
-	~accel:(!current.modifier_for_navigation^"Break");
+	~accel:(current.modifier_for_navigation^"Break");
 (* wait for this available in GtkSourceView !
       GAction.add_action "Hide" ~label:"_Hide" ~stock:`MISSING_IMAGE
 	~callback:(fun _ -> let sess = session_notebook#current_term in
 		     toggle_proof_visibility sess.script#buffer
 		       sess.analyzed_view#get_insert) ~tooltip:"Hide proof"
-	~accel:(!current.modifier_for_navigation^"h");*)
+	~accel:(current.modifier_for_navigation^"h");*)
       GAction.add_action "Previous" ~label:"_Previous" ~stock:`GO_BACK
 	~callback:(fun _ -> do_or_activate (fun a -> a#go_to_prev_occ_of_cur_word) ())
-	~tooltip:"Previous occurence" ~accel:(!current.modifier_for_navigation^"less");
+	~tooltip:"Previous occurence" ~accel:(current.modifier_for_navigation^"less");
       GAction.add_action "Next" ~label:"_Next" ~stock:`GO_FORWARD
 	~callback:(fun _ -> do_or_activate (fun a -> a#go_to_next_occ_of_cur_word) ())
-	~tooltip:"Next occurence" ~accel:(!current.modifier_for_navigation^"greater");
+	~tooltip:"Next occurence" ~accel:(current.modifier_for_navigation^"greater");
     ];
     GAction.add_actions tactics_actions [
       GAction.add_action "Try Tactics" ~label:"_Try Tactics";
       GAction.add_action "Wizard" ~tooltip:"Proof Wizard" ~label:"<Proof Wizard>"
 	~stock:`DIALOG_INFO ~callback:(do_if_active (fun a -> a#tactic_wizard
-						       !current.automatic_tactics))
-	~accel:(!current.modifier_for_tactics^"dollar");
+						       current.automatic_tactics))
+	~accel:(current.modifier_for_tactics^"dollar");
       tactic_shortcut "auto" "a";
       tactic_shortcut "auto with *" "asterisk";
       tactic_shortcut "eauto" "e";
@@ -2258,7 +2259,7 @@ let main files =
 			    "Scheme new_scheme := Induction for _ Sort _\
 \nwith _ := Induction for _ Sort _.\n",61,10, Some "S");
       GAction.add_action "match" ~label:"match ..." ~callback:match_callback
-	~accel:(!current.modifier_for_templates^"C");
+	~accel:(current.modifier_for_templates^"C");
     ];
     add_gen_actions "Template" templates_actions Coq_commands.commands;
     GAction.add_actions queries_actions [
@@ -2284,8 +2285,8 @@ let main files =
 	~callback:(fun _ -> do_if_not_computing "detach view"
 		     (function {script=v;analyzed_view=av} ->
 			let w = GWindow.window ~show:true
-			  ~width:(!current.window_width*2/3)
-			  ~height:(!current.window_height*2/3)
+			  ~width:(current.window_width*2/3)
+			  ~height:(current.window_height*2/3)
 			  ~position:`CENTER
 			  ~title:(match av#filename with
 				    | None -> "*Unnamed*"
@@ -2301,7 +2302,7 @@ let main files =
 			  ()
 			in
 			  nv#misc#modify_font
-			    !current.text_font;
+			    current.text_font;
 			  ignore (w#connect#destroy
 				    ~callback:
 				    (fun () -> av#remove_detached_view w));
@@ -2317,7 +2318,7 @@ let main files =
       GAction.add_action "Browse Coq Library" ~label:"Browse Coq _Library"
 	~callback:(fun _ ->
 		     let av = session_notebook#current_term.analyzed_view in
-		       browse av#insert_message !current.library_url);
+		       browse av#insert_message current.library_url);
       GAction.add_action "Help for keyword" ~label:"Help for _keyword"
 	~callback:(fun _ -> let av = session_notebook#current_term.analyzed_view in
 		     av#help_for_keyword ()) ~stock:`HELP;
@@ -2366,10 +2367,10 @@ let main files =
   (* Initializing hooks *)
 
   refresh_toolbar_hook :=
-    (fun () -> if !current.show_toolbar then toolbar#misc#show () else toolbar#misc#hide ());
+    (fun () -> if current.show_toolbar then toolbar#misc#show () else toolbar#misc#hide ());
   refresh_font_hook :=
     (fun () ->
-      let fd = !current.text_font in
+      let fd = current.text_font in
       let iter_page p =
         p.script#misc#modify_font fd;
         p.proof_view#misc#modify_font fd;
@@ -2380,7 +2381,7 @@ let main files =
     );
   refresh_background_color_hook :=
     (fun () ->
-      let clr = Tags.color_of_string !current.background_color in
+      let clr = Tags.color_of_string current.background_color in
       let iter_page p =
         p.script#misc#modify_base [`NORMAL, `COLOR clr];
         p.proof_view#misc#modify_base [`NORMAL, `COLOR clr];
@@ -2391,8 +2392,8 @@ let main files =
     );
   resize_window_hook := (fun () ->
     w#resize
-      ~width:!current.window_width
-      ~height:!current.window_height);
+      ~width:current.window_width
+      ~height:current.window_height);
   refresh_tabs_hook := update_notebook_pos;
 
   let about_full_string =
@@ -2461,8 +2462,8 @@ let main files =
   *)
 (* Begin Color configuration *)
 
-  Tags.set_processing_color (Tags.color_of_string !current.processing_color);
-  Tags.set_processed_color (Tags.color_of_string !current.processed_color);
+  Tags.set_processing_color (Tags.color_of_string current.processing_color);
+  Tags.set_processed_color (Tags.color_of_string current.processed_color);
 
 (* End of color configuration *)
   ignore(nb#connect#switch_page

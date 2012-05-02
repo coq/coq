@@ -7,7 +7,7 @@
 (************************************************************************)
 
 class command_window :
-  Coq.coqtop ref -> Preferences.pref ref ->
+  Coq.coqtop ref ->
   object
     method new_command : ?command:string -> ?term:string -> unit -> unit
     method frame : GBin.frame

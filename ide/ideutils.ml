@@ -76,7 +76,7 @@ let do_convert s =
 	    ("Converting from "^ enc);
 	  Glib.Convert.convert s ~to_codeset:"UTF-8" ~from_codeset:enc
 	in
-	match !current.encoding with
+	match current.encoding with
 	  |Preferences.Eutf8 | Preferences.Elocale -> from_loc ()
 	  |Emanual enc ->
 	    try
@@ -93,7 +93,7 @@ Please choose a correct encoding in the preference panel.*)";;
 
 let try_export file_name s =
   try let s =
-    try match !current.encoding with
+    try match current.encoding with
       |Eutf8 -> begin
 	(prerr_endline "UTF-8 is enforced" ;s)
       end
@@ -258,7 +258,7 @@ let coqtop_path () =
   let file = match !custom_coqtop with
     | Some s -> s
     | None ->
-      match !current.cmd_coqtop with
+      match current.cmd_coqtop with
 	| Some s -> s
 	| None ->
 	  let prog = String.copy Sys.executable_name in
@@ -296,7 +296,7 @@ let run_command f c =
   (Unix.close_process_full (cin,cout,cerr),  Buffer.contents result)
 
 let browse f url =
-  let com = Minilib.subst_command_placeholder !current.cmd_browse url in
+  let com = Minilib.subst_command_placeholder current.cmd_browse url in
   let _ = Unix.open_process_out com in ()
 (* This beautiful message will wait for twt ...
   if s = 127 then
@@ -304,10 +304,10 @@ let browse f url =
        "\"\ncheck your preferences for setting a valid browser command\n")
 *)
 let doc_url () =
-  if !current.doc_url = use_default_doc_url || !current.doc_url = "" then
+  if current.doc_url = use_default_doc_url || current.doc_url = "" then
     let addr = List.fold_left Filename.concat (Coq_config.docdir) ["html";"refman";"index.html"] in
     if Sys.file_exists addr then "file://"^addr else Coq_config.wwwrefman
-  else !current.doc_url
+  else current.doc_url
 
 let url_for_keyword =
   let ht = Hashtbl.create 97 in

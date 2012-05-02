@@ -144,8 +144,7 @@ type pref =
 
 let use_default_doc_url = "(automatic)"
 
-let (current:pref ref) =
-  ref {
+let current = {
     cmd_coqtop = None;
     cmd_coqc = "coqc";
     cmd_make = "make";
@@ -213,7 +212,7 @@ let save_pref () =
   if not (Sys.file_exists Minilib.xdg_config_home)
   then Unix.mkdir Minilib.xdg_config_home 0o700;
   let () = try GtkData.AccelMap.save accel_file with _ -> () in
-  let p = !current in
+  let p = current in
 
     let add = Minilib.Stringmap.add in
     let (++) x f = f x in
@@ -269,7 +268,7 @@ let save_pref () =
 
 let load_pref () =
   let () = try GtkData.AccelMap.load loaded_accel_file with _ -> () in
-  let p = !current in
+  let p = current in
 
     let m = Config_lexer.load_file loaded_pref_file in
     let np = { p with cmd_coqc = p.cmd_coqc } in
@@ -338,37 +337,36 @@ let load_pref () =
     set_bool "opposite_tabs" (fun v -> np.opposite_tabs <- v);
     set_hd "background_color" (fun v -> np.background_color <- v);
     set_hd "processing_color" (fun v -> np.processing_color <- v);
-    set_hd "processed_color" (fun v -> np.processed_color <- v);
-    current := np
+    set_hd "processed_color" (fun v -> np.processed_color <- v)
 (*
-    Format.printf "in load_pref: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
+    Format.printf "in load_pref: current.text_font = %s@." (Pango.Font.to_string current.text_font);
 *)
 
 let configure ?(apply=(fun () -> ())) () =
   let cmd_coqtop =
     string
-      ~f:(fun s -> !current.cmd_coqtop <- if s = "AUTO" then None else Some s)
-      "       coqtop" (match !current.cmd_coqtop with |None -> "AUTO" | Some x -> x) in
+      ~f:(fun s -> current.cmd_coqtop <- if s = "AUTO" then None else Some s)
+      "       coqtop" (match current.cmd_coqtop with |None -> "AUTO" | Some x -> x) in
   let cmd_coqc =
     string
-      ~f:(fun s -> !current.cmd_coqc <- s)
-      "       coqc"  !current.cmd_coqc in
+      ~f:(fun s -> current.cmd_coqc <- s)
+      "       coqc"  current.cmd_coqc in
   let cmd_make =
     string
-      ~f:(fun s -> !current.cmd_make <- s)
-      "       make" !current.cmd_make in
+      ~f:(fun s -> current.cmd_make <- s)
+      "       make" current.cmd_make in
   let cmd_coqmakefile =
     string
-      ~f:(fun s -> !current.cmd_coqmakefile <- s)
-      "coqmakefile" !current.cmd_coqmakefile in
+      ~f:(fun s -> current.cmd_coqmakefile <- s)
+      "coqmakefile" current.cmd_coqmakefile in
   let cmd_coqdoc =
     string
-      ~f:(fun s -> !current.cmd_coqdoc <- s)
-      "     coqdoc" !current.cmd_coqdoc in
+      ~f:(fun s -> current.cmd_coqdoc <- s)
+      "     coqdoc" current.cmd_coqdoc in
   let cmd_print =
     string
-      ~f:(fun s -> !current.cmd_print <- s)
-      "   Print ps" !current.cmd_print in
+      ~f:(fun s -> current.cmd_print <- s)
+      "   Print ps" current.cmd_print in
 
   let config_font =
     let box = GPack.hbox () in
@@ -378,15 +376,15 @@ let configure ?(apply=(fun () -> ())) () =
     box#pack ~expand:true w#coerce;
     ignore (w#misc#connect#realize
 	      ~callback:(fun () -> w#set_font_name
-			   (Pango.Font.to_string !current.text_font)));
+			   (Pango.Font.to_string current.text_font)));
     custom
       ~label:"Fonts for text"
       box
       (fun () ->
 	 let fd =  w#font_name in
-	 !current.text_font <- (Pango.Font.from_string fd) ;
+	 current.text_font <- (Pango.Font.from_string fd) ;
 (*
-	 Format.printf "in config_font: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
+	 Format.printf "in config_font: current.text_font = %s@." (Pango.Font.to_string current.text_font);
 *)
 	 !refresh_font_hook ())
       true
@@ -416,7 +414,7 @@ let configure ?(apply=(fun () -> ())) () =
     let () = processed_label#set_xalign 0. in
     let () = processing_label#set_xalign 0. in
     let background_button = GButton.color_button
-      ~color:(Tags.color_of_string (!current.background_color))
+      ~color:(Tags.color_of_string (current.background_color))
       ~packing:(table#attach ~left:1 ~top:0) ()
     in
     let processed_button = GButton.color_button
@@ -439,9 +437,9 @@ let configure ?(apply=(fun () -> ())) () =
     let _ = reset_button#connect#clicked ~callback:reset_cb in
     let label = "Color configuration" in
     let callback () =
-      !current.background_color <- Tags.string_of_color background_button#color;
-      !current.processing_color <- Tags.string_of_color processing_button#color;
-      !current.processed_color <- Tags.string_of_color processed_button#color;
+      current.background_color <- Tags.string_of_color background_button#color;
+      current.processing_color <- Tags.string_of_color processing_button#color;
+      current.processed_color <- Tags.string_of_color processed_button#color;
       !refresh_background_color_hook ();
       Tags.set_processing_color processing_button#color;
       Tags.set_processed_color processed_button#color
@@ -453,40 +451,40 @@ let configure ?(apply=(fun () -> ())) () =
   let show_toolbar =
     bool
       ~f:(fun s ->
-	    !current.show_toolbar <- s;
+	    current.show_toolbar <- s;
 	    !show_toolbar s)
-      "Show toolbar" !current.show_toolbar
+      "Show toolbar" current.show_toolbar
   in
   let window_height =
     string
-    ~f:(fun s -> !current.window_height <- (try int_of_string s with _ -> 600);
+    ~f:(fun s -> current.window_height <- (try int_of_string s with _ -> 600);
 	  !resize_window ();
        )
       "Window height"
-      (string_of_int !current.window_height)
+      (string_of_int current.window_height)
   in
   let window_width =
     string
-    ~f:(fun s -> !current.window_width <-
+    ~f:(fun s -> current.window_width <-
 	  (try int_of_string s with _ -> 800))
       "Window width"
-      (string_of_int !current.window_width)
+      (string_of_int current.window_width)
   in
 *)
   let auto_complete =
     bool
       ~f:(fun s ->
-	    !current.auto_complete <- s;
+	    current.auto_complete <- s;
 	    !auto_complete_hook s)
-      "Auto Complete" !current.auto_complete
+      "Auto Complete" current.auto_complete
   in
 
 (*  let use_utf8_notation =
     bool
       ~f:(fun b ->
-	    !current.use_utf8_notation <- b;
+	    current.use_utf8_notation <- b;
 	 )
-      "Use Unicode Notation: " !current.use_utf8_notation
+      "Use Unicode Notation: " current.use_utf8_notation
   in
 *)
 (*
@@ -494,120 +492,120 @@ let configure ?(apply=(fun () -> ())) () =
 *)
   let global_auto_revert =
     bool
-      ~f:(fun s -> !current.global_auto_revert <- s)
-      "Enable global auto revert" !current.global_auto_revert
+      ~f:(fun s -> current.global_auto_revert <- s)
+      "Enable global auto revert" current.global_auto_revert
   in
   let global_auto_revert_delay =
     string
-    ~f:(fun s -> !current.global_auto_revert_delay <-
+    ~f:(fun s -> current.global_auto_revert_delay <-
 	  (try int_of_string s with _ -> 10000))
       "Global auto revert delay (ms)"
-      (string_of_int !current.global_auto_revert_delay)
+      (string_of_int current.global_auto_revert_delay)
   in
 
   let auto_save =
     bool
-      ~f:(fun s -> !current.auto_save <- s)
-      "Enable auto save" !current.auto_save
+      ~f:(fun s -> current.auto_save <- s)
+      "Enable auto save" current.auto_save
   in
   let auto_save_delay =
     string
-    ~f:(fun s -> !current.auto_save_delay <-
+    ~f:(fun s -> current.auto_save_delay <-
 	  (try int_of_string s with _ -> 10000))
       "Auto save delay (ms)"
-      (string_of_int !current.auto_save_delay)
+      (string_of_int current.auto_save_delay)
   in
 
   let stop_before =
     bool
-      ~f:(fun s -> !current.stop_before <- s)
-      "Stop interpreting before the current point" !current.stop_before
+      ~f:(fun s -> current.stop_before <- s)
+      "Stop interpreting before the current point" current.stop_before
   in
 
   let vertical_tabs =
     bool
-      ~f:(fun s -> !current.vertical_tabs <- s; !refresh_tabs_hook ())
-      "Vertical tabs" !current.vertical_tabs
+      ~f:(fun s -> current.vertical_tabs <- s; !refresh_tabs_hook ())
+      "Vertical tabs" current.vertical_tabs
   in
 
   let opposite_tabs =
     bool
-      ~f:(fun s -> !current.opposite_tabs <- s; !refresh_tabs_hook ())
-      "Tabs on opposite side" !current.opposite_tabs
+      ~f:(fun s -> current.opposite_tabs <- s; !refresh_tabs_hook ())
+      "Tabs on opposite side" current.opposite_tabs
   in
 
   let encodings =
     combo
       "File charset encoding "
-      ~f:(fun s -> !current.encoding <- (inputenc_of_string s))
+      ~f:(fun s -> current.encoding <- (inputenc_of_string s))
       ~new_allowed: true
-      ("UTF-8"::"LOCALE":: match !current.encoding with
+      ("UTF-8"::"LOCALE":: match current.encoding with
 	|Emanual s -> [s]
 	|_ -> []
       )
-      (string_of_inputenc !current.encoding)
+      (string_of_inputenc current.encoding)
   in
 
   let source_style =
     combo "Highlighting style"
-      ~f:(fun s -> !current.source_style <- s) ~new_allowed:false
-      style_manager#style_scheme_ids !current.source_style
+      ~f:(fun s -> current.source_style <- s) ~new_allowed:false
+      style_manager#style_scheme_ids current.source_style
   in
 
   let read_project =
     combo
       "Project file options are"
-      ~f:(fun s -> !current.read_project <- project_behavior_of_string s)
+      ~f:(fun s -> current.read_project <- project_behavior_of_string s)
       ~editable:false
       [string_of_project_behavior Subst_args;
        string_of_project_behavior Append_args;
        string_of_project_behavior Ignore_args]
-      (string_of_project_behavior !current.read_project)
+      (string_of_project_behavior current.read_project)
   in
   let project_file_name =
     string "Default name for project file"
-      ~f:(fun s -> !current.project_file_name <- s)
-      !current.project_file_name
+      ~f:(fun s -> current.project_file_name <- s)
+      current.project_file_name
   in
   let help_string =
     "restart to apply"
   in
-  let the_valid_mod = str_to_mod_list !current.modifiers_valid in
+  let the_valid_mod = str_to_mod_list current.modifiers_valid in
   let modifier_for_tactics =
     modifiers
       ~allow:the_valid_mod
-      ~f:(fun l -> !current.modifier_for_tactics <- mod_list_to_str l)
+      ~f:(fun l -> current.modifier_for_tactics <- mod_list_to_str l)
       ~help:help_string
       "Modifiers for Tactics Menu"
-      (str_to_mod_list !current.modifier_for_tactics)
+      (str_to_mod_list current.modifier_for_tactics)
   in
   let modifier_for_templates =
     modifiers
       ~allow:the_valid_mod
-      ~f:(fun l -> !current.modifier_for_templates <- mod_list_to_str l)
+      ~f:(fun l -> current.modifier_for_templates <- mod_list_to_str l)
       ~help:help_string
       "Modifiers for Templates Menu"
-      (str_to_mod_list !current.modifier_for_templates)
+      (str_to_mod_list current.modifier_for_templates)
   in
   let modifier_for_navigation =
     modifiers
       ~allow:the_valid_mod
-      ~f:(fun l -> !current.modifier_for_navigation <- mod_list_to_str l)
+      ~f:(fun l -> current.modifier_for_navigation <- mod_list_to_str l)
       ~help:help_string
       "Modifiers for Navigation Menu"
-      (str_to_mod_list !current.modifier_for_navigation)
+      (str_to_mod_list current.modifier_for_navigation)
   in
   let modifier_for_display =
     modifiers
       ~allow:the_valid_mod
-      ~f:(fun l -> !current.modifier_for_display <- mod_list_to_str l)
+      ~f:(fun l -> current.modifier_for_display <- mod_list_to_str l)
       ~help:help_string
       "Modifiers for Display Menu"
-      (str_to_mod_list !current.modifier_for_display)
+      (str_to_mod_list current.modifier_for_display)
   in
   let modifiers_valid =
     modifiers
-      ~f:(fun l -> !current.modifiers_valid <- mod_list_to_str l)
+      ~f:(fun l -> current.modifiers_valid <- mod_list_to_str l)
       "Allowed modifiers"
       the_valid_mod
   in
@@ -616,11 +614,11 @@ let configure ?(apply=(fun () -> ())) () =
     combo
       ~help:"(%s for file name)"
       "External editor"
-      ~f:(fun s -> !current.cmd_editor <- s)
+      ~f:(fun s -> current.cmd_editor <- s)
       ~new_allowed: true
-      (predefined@[if List.mem !current.cmd_editor predefined then ""
-                   else !current.cmd_editor])
-      !current.cmd_editor
+      (predefined@[if List.mem current.cmd_editor predefined then ""
+                   else current.cmd_editor])
+      current.cmd_editor
   in
   let cmd_browse =
     let predefined = [
@@ -633,11 +631,11 @@ let configure ?(apply=(fun () -> ())) () =
     combo
       ~help:"(%s for url)"
       "Browser"
-      ~f:(fun s -> !current.cmd_browse <- s)
+      ~f:(fun s -> current.cmd_browse <- s)
       ~new_allowed: true
-      (predefined@[if List.mem !current.cmd_browse predefined then ""
-                   else !current.cmd_browse])
-      !current.cmd_browse
+      (predefined@[if List.mem current.cmd_browse predefined then ""
+                   else current.cmd_browse])
+      current.cmd_browse
   in
   let doc_url =
     let predefined = [
@@ -647,11 +645,11 @@ let configure ?(apply=(fun () -> ())) () =
     ] in
     combo
       "Manual URL"
-      ~f:(fun s -> !current.doc_url <- s)
+      ~f:(fun s -> current.doc_url <- s)
       ~new_allowed: true
-      (predefined@[if List.mem !current.doc_url predefined then ""
-                   else !current.doc_url])
-      !current.doc_url in
+      (predefined@[if List.mem current.doc_url predefined then ""
+                   else current.doc_url])
+      current.doc_url in
   let library_url =
     let predefined = [
       "file://"^(List.fold_left Filename.concat (Coq_config.docdir) ["html";"stdlib";""]);
@@ -659,27 +657,27 @@ let configure ?(apply=(fun () -> ())) () =
     ] in
     combo
       "Library URL"
-      ~f:(fun s -> !current.library_url <- s)
+      ~f:(fun s -> current.library_url <- s)
       ~new_allowed: true
-      (predefined@[if List.mem !current.library_url predefined then ""
-                   else !current.library_url])
-      !current.library_url
+      (predefined@[if List.mem current.library_url predefined then ""
+                   else current.library_url])
+      current.library_url
   in
   let automatic_tactics =
     strings
-      ~f:(fun l -> !current.automatic_tactics <- l)
+      ~f:(fun l -> current.automatic_tactics <- l)
       ~add:(fun () -> ["<edit me>"])
       "Wizard tactics to try in order"
-      !current.automatic_tactics
+      current.automatic_tactics
 
   in
 
   let contextual_menus_on_goal =
     bool
       ~f:(fun s ->
-	    !current.contextual_menus_on_goal <- s;
+	    current.contextual_menus_on_goal <- s;
 	    !contextual_menus_on_goal_hook s)
-      "Contextual menus on goal" !current.contextual_menus_on_goal
+      "Contextual menus on goal" current.contextual_menus_on_goal
   in
 
   let misc = [contextual_menus_on_goal;auto_complete;stop_before;
@@ -715,11 +713,11 @@ let configure ?(apply=(fun () -> ())) () =
 	     misc)]
   in
 (*
-  Format.printf "before edit: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
+  Format.printf "before edit: current.text_font = %s@." (Pango.Font.to_string current.text_font);
 *)
   let x = edit ~apply "Customizations" cmds in
 (*
-  Format.printf "after edit: current.text_font = %s@." (Pango.Font.to_string !current.text_font);
+  Format.printf "after edit: current.text_font = %s@." (Pango.Font.to_string current.text_font);
 *)
   match x with
     | Return_apply | Return_ok -> save_pref ()

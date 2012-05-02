@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Ideutils
+open Preferences
 
 (** * Version and date *)
 
@@ -61,7 +62,7 @@ let rec filter_coq_opts args =
       ~message_type:`QUESTION ~buttons:GWindow.Buttons.yes_no () in
     match pb_mes#run () with
       | `YES ->
- 	let () = !Preferences.current.Preferences.cmd_coqtop  <- None in
+ 	let () = current.cmd_coqtop  <- None in
 	    let () = custom_coqtop := None in
 	let () = pb_mes#destroy () in
 	filter_coq_opts args

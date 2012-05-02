@@ -6,7 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-class command_window coqtop current =
+open Preferences
+
+class command_window coqtop =
 (*  let window = GWindow.window
 		 ~allow_grow:true ~allow_shrink:true
 		 ~width:500 ~height:250
@@ -98,8 +100,8 @@ object(self)
     let ok_b = GButton.button ~label:"Ok" ~packing:(hbox#pack ~expand:false) () in
     let result = GText.view ~packing:r_bin#add () in
     let () = views := !views @ [result] in
-    result#misc#modify_font !current.Preferences.text_font;
-    let clr = Tags.color_of_string !current.Preferences.background_color in
+    result#misc#modify_font current.text_font;
+    let clr = Tags.color_of_string current.background_color in
     result#misc#modify_base [`NORMAL, `COLOR clr];
     result#misc#set_can_focus true; (* false causes problems for selection *)
     result#set_editable false;
@@ -144,11 +146,11 @@ object(self)
     self#frame#misc#show ()
 
   method refresh_font () =
-    let iter view = view#misc#modify_font !current.Preferences.text_font in
+    let iter view = view#misc#modify_font current.text_font in
     List.iter iter !views
 
   method refresh_color () =
-    let clr = Tags.color_of_string !current.Preferences.background_color in
+    let clr = Tags.color_of_string current.background_color in
     let iter view = view#misc#modify_base [`NORMAL, `COLOR clr] in
     List.iter iter !views
 
