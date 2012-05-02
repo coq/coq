@@ -392,43 +392,23 @@ let with_file handler name ~f =
 (* For find_phrase_starting_at *)
 exception Stop of int
 
-let tag_of_sort = function
-  | Coq_lex.Comment -> Tags.Script.comment
-  | Coq_lex.Keyword -> Tags.Script.kwd
-  | Coq_lex.Declaration -> Tags.Script.decl
-  | Coq_lex.ProofDeclaration -> Tags.Script.proof_decl
-  | Coq_lex.Qed -> Tags.Script.qed
-  | Coq_lex.String -> failwith "No tag"
-
-let apply_tag (buffer:GText.buffer) orig off_conv from upto sort =
-  try
-    let tag = tag_of_sort sort in
-    let start = orig#forward_chars (off_conv from) in
-    let stop = orig#forward_chars (off_conv upto) in
-    buffer#apply_tag ~start ~stop tag
-  with _ -> ()
-
-let remove_tags (buffer:GText.buffer) from upto =
-  List.iter (buffer#remove_tag ~start:from ~stop:upto)
-    [ Tags.Script.comment; Tags.Script.kwd; Tags.Script.decl;
-      Tags.Script.proof_decl; Tags.Script.qed ]
-
 (** Cut a part of the buffer in sentences and tag them.
     May raise [Coq_lex.Unterminated] when the zone ends with
     an unterminated sentence. *)
 
 let split_slice_lax (buffer:GText.buffer) from upto =
-  remove_tags buffer from upto;
+  buffer#remove_tag ~start:from ~stop:upto Tags.Script.comment_sentence;
   buffer#remove_tag ~start:from ~stop:upto Tags.Script.sentence;
   let slice = buffer#get_text ~start:from ~stop:upto () in
   let rec split_substring str =
     let off_conv = byte_offset_to_char_offset str in
     let slice_len = String.length str in
-    let end_off = Coq_lex.delimit_sentence (apply_tag buffer from off_conv) str
+    let is_comment,end_off = Coq_lex.delimit_sentence str
     in
     let start = from#forward_chars (off_conv end_off) in
     let stop = start#forward_char in
-    buffer#apply_tag ~start ~stop Tags.Script.sentence;
+    buffer#apply_tag ~start ~stop
+      (if is_comment then Tags.Script.comment_sentence else Tags.Script.sentence);
     let next = end_off + 1 in
     if next < slice_len then begin
       ignore (from#nocopy#forward_chars (off_conv next));
@@ -447,7 +427,7 @@ let rec backward_search cond (iter:GText.iter) =
   if iter#is_start || cond iter then iter
   else backward_search cond iter#backward_char
 
-let is_sentence_end s = s#has_tag Tags.Script.sentence
+let is_sentence_end s = s#has_tag Tags.Script.sentence || s#has_tag Tags.Script.comment_sentence
 let is_char s c = s#char = Char.code c
 
 (** Search backward the first character of a sentence, starting at [iter]
@@ -508,6 +488,7 @@ let force_retag buffer =
   try split_slice_lax buffer buffer#start_iter buffer#end_iter
   with Coq_lex.Unterminated -> ()
 
+(* GtkSource view should handle that one day !!!
 let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
   (* move back twice if not into proof_decl,
    * once if into proof_decl and back_char into_proof_decl,
@@ -527,6 +508,7 @@ let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
   else (
     buffer#apply_tag ~start:decl_start ~stop:decl_end Tags.Script.folded;
     buffer#apply_tag ~start:decl_end ~stop:prf_end Tags.Script.hidden)
+*)
 
 (** The arguments that will be passed to coqtop. No quoting here, since
     no /bin/sh when using create_process instead of open_process. *)
@@ -939,7 +921,7 @@ object(self)
     match sync get_next_phrase () with
       | None -> raise Unsuccessful
       | Some ((_,stop) as loc,phrase) ->
-	  if stop#backward_char#has_tag Tags.Script.comment
+	  if stop#backward_char#has_tag Tags.Script.comment_sentence
 	  then sync mark_processed Safe loc
           else try match self#send_to_coq ct verbosely phrase true true true with
             | Some safe -> sync mark_processed safe loc
@@ -1085,7 +1067,7 @@ object(self)
       else
 	let phrase = Stack.pop cmd_stack in
 	let stop = input_buffer#get_iter_at_mark phrase.stop in
-        if stop#backward_char#has_tag Tags.Script.comment
+        if stop#backward_char#has_tag Tags.Script.comment_sentence
 	  then n_pop n
 	  else n_pop (pred n)
     in
@@ -1120,7 +1102,7 @@ object(self)
         if i#compare stop >= 0 then n
 	else begin
 	  ignore (Stack.pop cmd_stack);
-          if stop#backward_char#has_tag Tags.Script.comment
+          if stop#backward_char#has_tag Tags.Script.comment_sentence
 	  then n_step n
 	  else n_step (succ n)
 	end
@@ -1158,7 +1140,7 @@ object(self)
           let phrase = Stack.pop cmd_stack in
 	  let stop = input_buffer#get_iter_at_mark phrase.stop in
 	  let count =
-	    if stop#backward_char#has_tag Tags.Script.comment then 0 else 1
+	    if stop#backward_char#has_tag Tags.Script.comment_sentence then 0 else 1
 	  in
 	  let finish where =
 	    input_buffer#place_cursor ~where;
@@ -2225,11 +2207,12 @@ let main files =
       GAction.add_action "Interrupt" ~label:"_Interrupt" ~stock:`STOP
 	~callback:(fun _ -> break ()) ~tooltip:"Interrupt computations"
 	~accel:(!current.modifier_for_navigation^"Break");
+(* wait for this available in GtkSourceView !
       GAction.add_action "Hide" ~label:"_Hide" ~stock:`MISSING_IMAGE
 	~callback:(fun _ -> let sess = session_notebook#current_term in
 		     toggle_proof_visibility sess.script#buffer
 		       sess.analyzed_view#get_insert) ~tooltip:"Hide proof"
-	~accel:(!current.modifier_for_navigation^"h");
+	~accel:(!current.modifier_for_navigation^"h");*)
       GAction.add_action "Previous" ~label:"_Previous" ~stock:`GO_BACK
 	~callback:(fun _ -> do_or_activate (fun a -> a#go_to_prev_occ_of_cur_word) ())
 	~tooltip:"Previous occurence" ~accel:(!current.modifier_for_navigation^"less");

@@ -9,19 +9,12 @@
 module Script :
 sig
   val table : GText.tag_table
-  val kwd : GText.tag
-  val qed : GText.tag
-  val decl : GText.tag
-  val proof_decl : GText.tag
-  val comment : GText.tag
-  val reserved : GText.tag
+  val comment_sentence : GText.tag
   val error : GText.tag
   val to_process : GText.tag
   val processed : GText.tag
   val unjustified : GText.tag
   val found : GText.tag
-  val hidden : GText.tag
-  val folded : GText.tag
   val sentence : GText.tag
 end
 

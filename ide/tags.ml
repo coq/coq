@@ -19,19 +19,12 @@ let processing_color = ref "light blue"
 module Script =
 struct
   let table = GText.tag_table ()
-  let kwd = make_tag table ~name:"kwd" [`FOREGROUND "blue"]
-  let qed = make_tag table ~name:"qed" [`FOREGROUND "blue"]
-  let decl = make_tag table ~name:"decl" [`FOREGROUND "orange red"]
-  let proof_decl = make_tag table ~name:"proof_decl" [`FOREGROUND "orange red"]
-  let comment = make_tag table ~name:"comment" [`FOREGROUND "brown"]
-  let reserved = make_tag table ~name:"reserved" [`FOREGROUND "dark red"]
+  let comment_sentence = make_tag table ~name:"comment_sentence" []
   let error = make_tag table ~name:"error" [`UNDERLINE `DOUBLE ; `FOREGROUND "red"]
   let to_process = make_tag table ~name:"to_process" [`BACKGROUND !processing_color ;`EDITABLE false]
   let processed = make_tag table ~name:"processed" [`BACKGROUND !processed_color;`EDITABLE false]
   let unjustified = make_tag table ~name:"unjustified" [`UNDERLINE `SINGLE; `FOREGROUND "red"; `BACKGROUND "gold";`EDITABLE false]
   let found = make_tag table ~name:"found" [`BACKGROUND "blue"; `FOREGROUND "white"]
-  let hidden = make_tag table ~name:"hidden" [`INVISIBLE true; `EDITABLE false]
-  let folded = make_tag table ~name:"locked" [`EDITABLE false; `BACKGROUND "light grey"]
   let sentence = make_tag table ~name:"sentence" []
 end
 module Proof =

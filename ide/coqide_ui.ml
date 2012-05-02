@@ -82,7 +82,6 @@ let init () =
     <menuitem action='Start' />
     <menuitem action='End' />
     <menuitem action='Interrupt' />
-    <menuitem action='Hide' />
     <menuitem action='Previous' />
     <menuitem action='Next' />
   </menu>
@@ -145,7 +144,6 @@ let init () =
   <toolitem action='Start' />
   <toolitem action='End' />
   <toolitem action='Interrupt' />
-  <toolitem action='Hide' />
   <toolitem action='Previous' />
   <toolitem action='Next' />
   <toolitem action='Wizard' />
