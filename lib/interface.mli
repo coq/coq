@@ -75,19 +75,3 @@ type location = (int * int) option (* start and end of the error *)
 type 'a value =
   | Good of 'a
   | Fail of (location * string)
-
-(** * The structure that coqtop should implement *)
-
-type handler = {
-  interp : raw * verbose * string -> string;
-  rewind : int -> int;
-  goals : unit -> goals option;
-  evars : unit -> evar list option;
-  hints : unit -> (hint list * hint) option;
-  status : unit -> status;
-  get_options : unit -> (option_name * option_state) list;
-  set_options : (option_name * option_value) list -> unit;
-  inloadpath : string -> bool;
-  mkcases : string -> string list list;
-  handle_exn : exn -> location * string;
-}
