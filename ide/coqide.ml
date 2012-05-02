@@ -1185,13 +1185,18 @@ object(self)
              ("progress "^p^".\n") (p^".\n")) l)
 
   method private active_keypress_handler k =
-(*     let state = GdkEvent.Key.state k in *)
     begin
       if GdkEvent.Key.keyval k = GdkKeysyms._Tab then
         begin
-          prerr_endline "active_kp_handler for Tab";
-          self#indent_current_line;
-          true
+          let state = GdkEvent.Key.state k in
+          let is_control = List.mem `CONTROL state in
+          if is_control then
+            begin
+            prerr_endline "active_kp_handler for Tab";
+            self#indent_current_line;
+            true
+            end
+          else false
         end
       else
         false
@@ -2206,9 +2211,9 @@ let main files =
       (* GAction.add_action "Save preferences" ~label:"_Save preferences" ~callback:(fun _ -> save_pref ()); *) ];
     GAction.add_actions view_actions [
       GAction.add_action "View" ~label:"_View";
-      GAction.add_action "Previous tab" ~label:"_Previous tab" ~accel:("<SHIFT>Left") ~stock:`GO_BACK
+      GAction.add_action "Previous tab" ~label:"_Previous tab" ~accel:("<Ctrl><Shift>Tab") ~stock:`GO_BACK
         ~callback:(fun _ -> session_notebook#previous_page ());
-      GAction.add_action "Next tab" ~label:"_Next tab" ~accel:("<SHIFT>Right") ~stock:`GO_FORWARD
+      GAction.add_action "Next tab" ~label:"_Next tab" ~accel:("<Ctrl>Tab") ~stock:`GO_FORWARD
         ~callback:(fun _ -> session_notebook#next_page ());
       GAction.add_toggle_action "Show Toolbar" ~label:"Show _Toolbar"
         ~active:(!current.show_toolbar) ~callback:
