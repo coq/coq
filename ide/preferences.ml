@@ -268,10 +268,9 @@ let save_pref () =
 
 let load_pref () =
   let () = try GtkData.AccelMap.load loaded_accel_file with _ -> () in
-  let p = current in
 
     let m = Config_lexer.load_file loaded_pref_file in
-    let np = { p with cmd_coqc = p.cmd_coqc } in
+    let np = current in
     let set k f = try let v = Minilib.Stringmap.find k m in f v with _ -> () in
     let set_hd k f = set k (fun v -> f (List.hd v)) in
     let set_bool k f = set_hd k (fun v -> f (bool_of_string v)) in
