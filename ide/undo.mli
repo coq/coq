@@ -8,7 +8,9 @@
 
 (* An undoable view class *)
 
-class undoable_view : GtkSourceView2_types.source_view Gtk.obj ->
+type source_view = [ Gtk.text_view | `sourceview ] Gtk.obj
+
+class undoable_view : source_view ->
 object
   inherit GSourceView2.source_view
   method undo : bool

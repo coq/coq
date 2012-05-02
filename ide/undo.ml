@@ -16,10 +16,12 @@ let neg act = match act with
   | Insert (s,i,l) -> Delete (s,i,l)
   | Delete (s,i,l) -> Insert (s,i,l)
 
-class undoable_view (tv:GtkSourceView2_types.source_view Gtk.obj) =
+type source_view = [ Gtk.text_view | `sourceview ] Gtk.obj
+
+class undoable_view (tv : source_view) =
   let undo_lock = ref true in
 object(self)
-  inherit GSourceView2.source_view tv as super
+  inherit GSourceView2.source_view (Gobject.unsafe_cast tv) as super
   val history = (Stack.create () : action Stack.t)
   val redo = (Queue.create () : action Queue.t)
   val nredo = (Stack.create () : action Stack.t)
@@ -170,6 +172,7 @@ let undoable_view ?(source_buffer:GSourceView2.source_buffer option)  ?draw_spac
 	  | None -> GtkSourceView2.SourceView.new_ ()
 	  | Some buf -> GtkSourceView2.SourceView.new_with_buffer
             (Gobject.try_cast buf#as_buffer "GtkSourceBuffer") in
+          let w = Gobject.unsafe_cast w in
 		   Gobject.set_params (Gobject.try_cast w "GtkSourceView") pl;
 		   Gaux.may (GtkSourceView2.SourceView.set_draw_spaces w) draw_spaces;
-		   ((new undoable_view w):undoable_view))))
+		   ((new undoable_view w) : undoable_view))))
