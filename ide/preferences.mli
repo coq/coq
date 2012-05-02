@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+val lang_manager : GSourceView2.source_language_manager
+val style_manager : GSourceView2.source_style_scheme_manager
+
 type project_behavior = Ignore_args | Append_args | Subst_args
 type inputenc = Elocale | Eutf8 | Emanual of string
 
@@ -16,6 +19,9 @@ type pref =
       mutable cmd_make : string;
       mutable cmd_coqmakefile : string;
       mutable cmd_coqdoc : string;
+
+      mutable source_language : string;
+      mutable source_style : string;
 
       mutable global_auto_revert : bool;
       mutable global_auto_revert_delay : int;

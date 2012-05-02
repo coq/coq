@@ -22,9 +22,7 @@ sig
   val found : GText.tag
   val hidden : GText.tag
   val folded : GText.tag
-  val paren : GText.tag
   val sentence : GText.tag
-  val replaced : GText.tag
 end
 
 module Proof :

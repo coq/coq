@@ -32,9 +32,7 @@ struct
   let found = make_tag table ~name:"found" [`BACKGROUND "blue"; `FOREGROUND "white"]
   let hidden = make_tag table ~name:"hidden" [`INVISIBLE true; `EDITABLE false]
   let folded = make_tag table ~name:"locked" [`EDITABLE false; `BACKGROUND "light grey"]
-  let paren = make_tag table ~name:"paren" [`BACKGROUND "purple"]
   let sentence = make_tag table ~name:"sentence" []
-  let replaced = make_tag table ~name:"replaced" [`BACKGROUND "green"]
 end
 module Proof =
 struct

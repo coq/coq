@@ -11,6 +11,12 @@ open Printf
 
 let pref_file = Filename.concat Minilib.xdg_config_home "coqiderc"
 let accel_file = Filename.concat Minilib.xdg_config_home "coqide.keys"
+let lang_manager = GSourceView2.source_language_manager ~default:true
+let () = lang_manager#set_search_path
+  (Minilib.xdg_data_dirs@lang_manager#search_path)
+let style_manager = GSourceView2.source_style_scheme_manager ~default:true
+let () = style_manager#set_search_path
+  (Minilib.xdg_data_dirs@style_manager#search_path)
 
 let get_config_file name =
   let find_config dir = Sys.file_exists (Filename.concat dir name) in
@@ -84,6 +90,9 @@ type pref =
       mutable cmd_coqmakefile : string;
       mutable cmd_coqdoc : string;
 
+      mutable source_language : string;
+      mutable source_style : string;
+
       mutable global_auto_revert : bool;
       mutable global_auto_revert_delay : int;
 
@@ -151,6 +160,9 @@ let (current:pref ref) =
     auto_save_delay = 10000;
     auto_save_name = "#","#";
 
+    source_language = "vernac";
+    source_style = "classic";
+
     read_project = Ignore_args;
     project_file_name = "_CoqProject";
 
@@ -211,6 +223,8 @@ let save_pref () =
     add "cmd_make" [p.cmd_make] ++
     add "cmd_coqmakefile" [p.cmd_coqmakefile] ++
     add "cmd_coqdoc" [p.cmd_coqdoc] ++
+    add "source_language" [p.source_language] ++
+    add "source_style" [p.source_style] ++
     add "global_auto_revert" [string_of_bool p.global_auto_revert] ++
     add "global_auto_revert_delay"
       [string_of_int p.global_auto_revert_delay] ++
@@ -273,6 +287,8 @@ let load_pref () =
     set_hd "cmd_make" (fun v -> np.cmd_make <- v);
     set_hd "cmd_coqmakefile" (fun v -> np.cmd_coqmakefile <- v);
     set_hd "cmd_coqdoc" (fun v -> np.cmd_coqdoc <- v);
+    set_hd "source_language" (fun v -> np.source_language <- v);
+    set_hd "source_style" (fun v -> np.source_style <- v);
     set_bool "global_auto_revert" (fun v -> np.global_auto_revert <- v);
     set_int "global_auto_revert_delay"
       (fun v -> np.global_auto_revert_delay <- v);
@@ -531,6 +547,13 @@ let configure ?(apply=(fun () -> ())) () =
       )
       (string_of_inputenc !current.encoding)
   in
+
+  let source_style =
+    combo "Highlighting style"
+      ~f:(fun s -> !current.source_style <- s) ~new_allowed:false
+      style_manager#style_scheme_ids !current.source_style
+  in
+
   let read_project =
     combo
       "Project file options are"
@@ -671,7 +694,7 @@ let configure ?(apply=(fun () -> ())) () =
      Section("Files", Some `DIRECTORY,
 	     [global_auto_revert;global_auto_revert_delay;
 	      auto_save; auto_save_delay; (* auto_save_name*)
-	      encodings;
+	      encodings;source_style;
 	     ]);
      Section("Project", Some (`STOCK "gtk-page-setup"),
 	     [project_file_name;read_project;

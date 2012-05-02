@@ -1229,38 +1229,6 @@ object(self)
 	      | Interface.Good _ -> ()
   end
 
-  method private electric_paren tag =
-    let oparen_code = Glib.Utf8.to_unichar "("  ~pos:(ref 0) in
-    let cparen_code = Glib.Utf8.to_unichar ")"  ~pos:(ref 0) in
-    ignore (input_buffer#connect#insert_text ~callback:
-              (fun it x ->
-                input_buffer#remove_tag
-                  ~start:input_buffer#start_iter
-                  ~stop:input_buffer#end_iter
-                  tag;
-                if x = "" then () else
-                  match x.[String.length x - 1] with
-                    | ')' ->
-                      let hit = self#get_insert in
-                      let count = ref 0 in
-                      if hit#nocopy#backward_find_char
-                        (fun c ->
-                          if c = oparen_code && !count = 0 then true
-                          else if c = cparen_code then
-                            (incr count;false)
-                          else if c = oparen_code then
-                            (decr count;false)
-                          else false
-                        )
-                      then
-                        begin
-                          prerr_endline "Found matching parenthesis";
-                          input_buffer#apply_tag tag ~start:hit ~stop:hit#forward_char
-                        end
-                      else ()
-                    | _ -> ())
-  )
-
   method help_for_keyword () =
     browse_keyword (self#insert_message) (get_current_word ())
 
@@ -1363,7 +1331,6 @@ object(self)
     ignore (input_buffer#add_selection_clipboard cb);
     ignore (proof_buffer#add_selection_clipboard cb);
     ignore (message_buffer#add_selection_clipboard cb);
-    self#electric_paren Tags.Script.paren;
     ignore (input_buffer#connect#after#mark_set
               ~callback:(fun it (m:Gtk.text_mark) ->
                 !set_location
@@ -1371,11 +1338,7 @@ object(self)
                      "Line: %5d Char: %3d" (self#get_insert#line + 1)
                      (self#get_insert#line_offset + 1));
                 match GtkText.Mark.get_name m  with
-                  | Some "insert" ->
-                    input_buffer#remove_tag
-                      ~start:input_buffer#start_iter
-                      ~stop:input_buffer#end_iter
-                      Tags.Script.paren;
+                  | Some "insert" -> ()
                   | Some s ->
                     prerr_endline (s^" moved")
                   | None -> () )
@@ -1417,7 +1380,15 @@ let search_next_error () =
 let create_session file =
   let script =
     Undo.undoable_view
-      ~source_buffer:(GSourceView2.source_buffer ~tag_table:Tags.Script.table ())
+      ~source_buffer:(GSourceView2.source_buffer
+			~tag_table:Tags.Script.table
+			~highlight_matching_brackets:true
+			?language:
+			  (Preferences.lang_manager#language !current.source_language)
+			?style_scheme:
+			  (Preferences.style_manager#style_scheme !current.source_style)
+			())
+      ~show_line_numbers:true
       ~wrap_mode:`NONE () in
   let proof =
     GText.view
