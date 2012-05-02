@@ -85,7 +85,7 @@ let xdg_config_home =
 let xdg_config_dirs =
   xdg_config_home :: (try
     List.map (fun dir -> Filename.concat dir "coq") (path_to_list (Sys.getenv "XDG_CONFIG_DIRS"))
-  with Not_found -> "/etc/xdg/coq"::(match Coq_config.configdir with |None -> [] |Some d -> [d]))
+  with Not_found -> ["/etc/xdg/coq"])@(match Coq_config.configdir with |None -> [] |Some d -> [d])
 
 let xdg_data_home =
   try
@@ -97,7 +97,7 @@ let xdg_data_dirs =
   xdg_data_home :: (try
     List.map (fun dir -> Filename.concat dir "coq") (path_to_list (Sys.getenv "XDG_DATA_DIRS"))
   with Not_found ->
-    "/usr/local/share/coq"::"/usr/share/coq"::(match Coq_config.datadir with |None -> [] |Some d -> [d]))
+    ["/usr/local/share/coq";"/usr/share/coq"])@(match Coq_config.datadir with |None -> [] |Some d -> [d])
 
 let coqtop_path = ref ""
 

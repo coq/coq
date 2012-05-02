@@ -106,10 +106,10 @@ let xdg_config_home ~warn =
     "coq"
 
 let xdg_data_dirs =
-  try
+  (try
     List.map (fun dir -> Filename.concat dir "coq") (path_to_list (Sys.getenv "XDG_DATA_DIRS"))
-  with Not_found -> "/usr/local/share/coq" :: "/usr/share/coq"
-    :: (match Coq_config.datadir with |None -> [] |Some datadir -> [datadir])
+  with Not_found -> ["/usr/local/share/coq";"/usr/share/coq"])
+    @ (match Coq_config.datadir with |None -> [] |Some datadir -> [datadir])
 
 let xdg_dirs ~warn =
   let dirs = xdg_data_home warn :: xdg_data_dirs
