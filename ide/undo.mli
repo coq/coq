@@ -8,28 +8,35 @@
 
 (* An undoable view class *)
 
-class undoable_view : ([> Gtk.text_view] as 'a) Gtk.obj ->
+class undoable_view : GtkSourceView2_types.source_view Gtk.obj ->
 object
-  inherit GText.view
-  val obj : 'a Gtk.obj
+  inherit GSourceView2.source_view
   method undo : bool
   method redo : bool
   method clear_undo : unit
 end
 
 val undoable_view :
-    ?buffer:GText.buffer ->
-    ?editable:bool ->
-    ?cursor_visible:bool ->
-    ?justification:GtkEnums.justification ->
-    ?wrap_mode:GtkEnums.wrap_mode ->
-    ?accepts_tab:bool ->
-    ?border_width:int ->
-    ?width:int ->
-    ?height:int ->
-    ?packing:(GObj.widget -> unit) ->
-    ?show:bool ->
-    unit ->
-  undoable_view
-
-
+           ?source_buffer:GSourceView2.source_buffer ->
+           ?draw_spaces:SourceView2Enums.source_draw_spaces_flags list ->
+           ?auto_indent:bool ->
+           ?highlight_current_line:bool ->
+           ?indent_on_tab:bool ->
+           ?indent_width:int ->
+           ?insert_spaces_instead_of_tabs:bool ->
+           ?right_margin_position:int ->
+           ?show_line_marks:bool ->
+           ?show_line_numbers:bool ->
+           ?show_right_margin:bool ->
+           ?smart_home_end:SourceView2Enums.source_smart_home_end_type ->
+           ?tab_width:int ->
+           ?editable:bool ->
+           ?cursor_visible:bool ->
+           ?justification:GtkEnums.justification ->
+           ?wrap_mode:GtkEnums.wrap_mode ->
+           ?accepts_tab:bool ->
+           ?border_width:int ->
+           ?width:int ->
+           ?height:int ->
+           ?packing:(GObj.widget -> unit) ->
+           ?show:bool -> unit -> undoable_view

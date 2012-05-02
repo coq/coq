@@ -1417,7 +1417,7 @@ let search_next_error () =
 let create_session file =
   let script =
     Undo.undoable_view
-      ~buffer:(GText.buffer ~tag_table:Tags.Script.table ())
+      ~source_buffer:(GSourceView2.source_buffer ~tag_table:Tags.Script.table ())
       ~wrap_mode:`NONE () in
   let proof =
     GText.view

@@ -16,10 +16,10 @@ let neg act = match act with
   | Insert (s,i,l) -> Delete (s,i,l)
   | Delete (s,i,l) -> Insert (s,i,l)
 
-class undoable_view (tv:[>Gtk.text_view] Gtk.obj) =
+class undoable_view (tv:GtkSourceView2_types.source_view Gtk.obj) =
   let undo_lock = ref true in
 object(self)
-  inherit GText.view tv as super
+  inherit GSourceView2.source_view tv as super
   val history = (Stack.create () : action Stack.t)
   val redo = (Queue.create () : action Queue.t)
   val nredo = (Stack.create () : action Stack.t)
@@ -162,14 +162,14 @@ object(self)
 	      ))
 end
 
-let undoable_view ?(buffer:GText.buffer option) =
-  GtkText.View.make_params []
-    ~cont:(GContainer.pack_container
-	     ~create:
-	     (fun pl -> let w = match buffer with
-	      | None -> GtkText.View.create []
-	      | Some b -> GtkText.View.create_with_buffer b#as_buffer
-	      in
-	      Gobject.set_params w pl; ((new undoable_view w):undoable_view)))
-
-
+let undoable_view ?(source_buffer:GSourceView2.source_buffer option)  ?draw_spaces =
+  GtkSourceView2.SourceView.make_params [] ~cont:(
+    GtkText.View.make_params ~cont:(
+      GContainer.pack_container ~create:
+	(fun pl -> let w = match source_buffer with
+	  | None -> GtkSourceView2.SourceView.new_ ()
+	  | Some buf -> GtkSourceView2.SourceView.new_with_buffer
+            (Gobject.try_cast buf#as_buffer "GtkSourceBuffer") in
+		   Gobject.set_params (Gobject.try_cast w "GtkSourceView") pl;
+		   Gaux.may (GtkSourceView2.SourceView.set_draw_spaces w) draw_spaces;
+		   ((new undoable_view w):undoable_view))))
