@@ -199,7 +199,29 @@ Proof.
  rewrite <- In_rev; auto.
 Qed.
 
+(** Some more facts about InA *)
 
+Lemma InA_singleton x y : InA x (y::nil) <-> eqA x y.
+Proof.
+ rewrite InA_cons, InA_nil; tauto.
+Qed.
+
+Lemma InA_double_head x y l :
+ InA x (y :: y :: l) <-> InA x (y :: l).
+Proof.
+ rewrite !InA_cons; tauto.
+Qed.
+
+Lemma InA_permute_heads x y z l :
+ InA x (y :: z :: l) <-> InA x (z :: y :: l).
+Proof.
+ rewrite !InA_cons; tauto.
+Qed.
+
+Lemma InA_app_idem x l : InA x (l ++ l) <-> InA x l.
+Proof.
+ rewrite InA_app_iff; tauto.
+Qed.
 
 Section NoDupA.
 
@@ -270,7 +292,56 @@ Proof.
  eapply NoDupA_split; eauto.
 Qed.
 
-Lemma equivlistA_NoDupA_split : forall l l1 l2 x y, eqA x y ->
+Lemma NoDupA_singleton x : NoDupA (x::nil).
+Proof.
+ repeat constructor. inversion 1.
+Qed.
+
+End NoDupA.
+
+Section EquivlistA.
+
+Global Instance equivlistA_cons_proper:
+ Proper (eqA ==> equivlistA ==> equivlistA) (@cons A).
+Proof.
+ intros ? ? E1 ? ? E2 ?; now rewrite !InA_cons, E1, E2.
+Qed.
+
+Global Instance equivlistA_app_proper:
+ Proper (equivlistA ==> equivlistA ==> equivlistA) (@app A).
+Proof.
+ intros ? ? E1 ? ? E2 ?. now rewrite !InA_app_iff, E1, E2.
+Qed.
+
+Lemma equivlistA_cons_nil x l : ~ equivlistA (x :: l) nil.
+Proof.
+ intros E. now eapply InA_nil, E, InA_cons_hd.
+Qed.
+
+Lemma equivlistA_nil_eq l : equivlistA l nil -> l = nil.
+Proof.
+ destruct l.
+ - trivial.
+ - intros H. now apply equivlistA_cons_nil in H.
+Qed.
+
+Lemma equivlistA_double_head x l : equivlistA (x :: x :: l) (x :: l).
+Proof.
+ intro. apply InA_double_head.
+Qed.
+
+Lemma equivlistA_permute_heads x y l :
+ equivlistA (x :: y :: l) (y :: x :: l).
+Proof.
+ intro. apply InA_permute_heads.
+Qed.
+
+Lemma equivlistA_app_idem l : equivlistA (l ++ l) l.
+Proof.
+ intro. apply InA_app_idem.
+Qed.
+
+Lemma equivlistA_NoDupA_split l l1 l2 x y : eqA x y ->
  NoDupA (x::l) -> NoDupA (l1++y::l2) ->
  equivlistA (x::l) (l1++y::l2) -> equivlistA l (l1++l2).
 Proof.
@@ -290,9 +361,7 @@ Proof.
  rewrite <-H,<-EQN; auto.
 Qed.
 
-End NoDupA.
-
-
+End EquivlistA.
 
 Section Fold.
 
@@ -785,8 +854,10 @@ Qed.
 End Filter.
 End Type_with_equality.
 
-
 Hint Constructors InA eqlistA NoDupA sort lelistA.
+
+Arguments equivlistA_cons_nil {A} eqA {eqA_equiv} x l _.
+Arguments equivlistA_nil_eq {A} eqA {eqA_equiv} l _.
 
 Section Find.
 
@@ -838,6 +909,117 @@ Qed.
 
 End Find.
 
+(** Permutations of list modulo a setoid equality. *)
+(** Section contributed by Robbert Krebbers (Nijmegen University). *)
+
+Section Permutation.
+Context {A : Type} (eqA : relation A) (e : Equivalence eqA).
+
+Inductive PermutationA : list A -> list A -> Prop :=
+  | permA_nil: PermutationA nil nil
+  | permA_skip x₁ x₂ l₁ l₂ :
+     eqA x₁ x₂ -> PermutationA l₁ l₂ -> PermutationA (x₁ :: l₁) (x₂ :: l₂)
+  | permA_swap x y l : PermutationA (y :: x :: l) (x :: y :: l)
+  | permA_trans l₁ l₂ l₃ :
+     PermutationA l₁ l₂ -> PermutationA l₂ l₃ -> PermutationA l₁ l₃.
+Local Hint Constructors PermutationA.
+
+Global Instance: Equivalence PermutationA.
+Proof.
+ constructor.
+ - intro l. induction l; intuition.
+ - intros l₁ l₂. induction 1; eauto. apply permA_skip; intuition.
+ - exact permA_trans.
+Qed.
+
+Global Instance PermutationA_cons :
+  Proper (eqA ==> PermutationA ==> PermutationA) (@cons A).
+Proof.
+ repeat intro. now apply permA_skip.
+Qed.
+
+Lemma PermutationA_app_head l₁ l₂ l :
+  PermutationA l₁ l₂ -> PermutationA (l ++ l₁) (l ++ l₂).
+Proof.
+ induction l; trivial; intros. apply permA_skip; intuition.
+Qed.
+
+Global Instance PermutationA_app :
+  Proper (PermutationA ==> PermutationA ==> PermutationA) (@app A).
+Proof.
+ intros l₁ l₂ Pl k₁ k₂ Pk.
+ induction Pl.
+ - easy.
+ - now apply permA_skip.
+ - etransitivity.
+   * rewrite <-!app_comm_cons. now apply permA_swap.
+   * rewrite !app_comm_cons. now apply PermutationA_app_head.
+ - do 2 (etransitivity; try eassumption).
+   apply PermutationA_app_head. now symmetry.
+Qed.
+
+Lemma PermutationA_app_tail l₁ l₂ l :
+  PermutationA l₁ l₂ -> PermutationA (l₁ ++ l) (l₂ ++ l).
+Proof.
+ intros E. now rewrite E.
+Qed.
+
+Lemma PermutationA_cons_append l x :
+  PermutationA (x :: l) (l ++ x :: nil).
+Proof.
+ induction l.
+ - easy.
+ - simpl. rewrite <-IHl. intuition.
+Qed.
+
+Lemma PermutationA_app_comm l₁ l₂ :
+  PermutationA (l₁ ++ l₂) (l₂ ++ l₁).
+Proof.
+ induction l₁.
+ - now rewrite app_nil_r.
+ - rewrite <-app_comm_cons, IHl₁, app_comm_cons.
+   now rewrite PermutationA_cons_append, <-app_assoc.
+Qed.
+
+Lemma PermutationA_cons_app l l₁ l₂ x :
+  PermutationA l (l₁ ++ l₂) -> PermutationA (x :: l) (l₁ ++ x :: l₂).
+Proof.
+ intros E. rewrite E.
+ now rewrite app_comm_cons, PermutationA_cons_append, <-app_assoc.
+Qed.
+
+Lemma PermutationA_middle l₁ l₂ x :
+  PermutationA (x :: l₁ ++ l₂) (l₁ ++ x :: l₂).
+Proof.
+ now apply PermutationA_cons_app.
+Qed.
+
+Lemma PermutationA_equivlistA l₁ l₂ :
+  PermutationA l₁ l₂ -> equivlistA eqA l₁ l₂.
+Proof.
+ induction 1.
+ - reflexivity.
+ - now apply equivlistA_cons_proper.
+ - now apply equivlistA_permute_heads.
+ - etransitivity; eassumption.
+Qed.
+
+Lemma NoDupA_equivlistA_PermutationA l₁ l₂ :
+  NoDupA eqA l₁ -> NoDupA eqA l₂ ->
+   equivlistA eqA l₁ l₂ -> PermutationA l₁ l₂.
+Proof.
+  intros Pl₁. revert l₂. induction Pl₁ as [|x l₁ E1].
+  - intros l₂ _ H₂. symmetry in H₂. now rewrite (equivlistA_nil_eq eqA).
+  - intros l₂ Pl₂ E2.
+    destruct (@InA_split _ eqA l₂ x) as [l₂h [y [l₂t [E3 ?]]]].
+    { rewrite <-E2. intuition. }
+    subst. transitivity (y :: l₁); [intuition |].
+    apply PermutationA_cons_app, IHPl₁.
+    now apply NoDupA_split with y.
+    apply equivlistA_NoDupA_split with x y; intuition.
+Qed.
+
+End Permutation.
 
 (** Compatibility aliases. [Proper] is rather to be used directly now.*)
 
@@ -852,4 +1034,3 @@ Definition compat_P {A} (eqA:A->A->Prop)(P:A->Prop) :=
 
 Definition compat_op {A B} (eqA:A->A->Prop)(eqB:B->B->Prop)(f:A->B->B) :=
  Proper (eqA==>eqB==>eqB) f.
-
