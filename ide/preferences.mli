@@ -69,6 +69,14 @@ type pref =
       mutable background_color : string;
       mutable processing_color : string;
       mutable processed_color : string;
+
+      mutable dynamic_word_wrap : bool;
+      mutable show_line_number : bool;
+      mutable auto_indent : bool;
+      mutable show_spaces : bool;
+      mutable spaces_instead_of_tabs : bool;
+      mutable tab_length : int;
+
     }
 
 val save_pref : unit -> unit
@@ -80,6 +88,7 @@ val configure : ?apply:(unit -> unit) -> unit -> unit
 
 (* Hooks *)
 val refresh_font_hook : (unit -> unit) ref
+val refresh_editor_hook : (unit -> unit) ref
 val refresh_style_hook : (unit -> unit) ref
 val refresh_background_color_hook : (unit -> unit) ref
 val refresh_toolbar_hook : (unit -> unit) ref

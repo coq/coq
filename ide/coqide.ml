@@ -2374,6 +2374,23 @@ let main files =
       let iter_page p = p.script#source_buffer#set_style_scheme style in
       List.iter iter_page session_notebook#pages;
     );
+  refresh_editor_hook :=
+    (fun () ->
+      let wrap_mode = if current.dynamic_word_wrap then `WORD else `NONE in
+      let show_spaces =
+        if current.show_spaces then [`SPACE; `TAB; `NBSP]
+        else []
+      in
+      let iter_page p =
+        p.script#set_wrap_mode wrap_mode;
+        p.script#set_show_line_numbers current.show_line_number;
+        p.script#set_auto_indent current.auto_indent;
+        p.script#set_draw_spaces show_spaces;
+        p.script#set_insert_spaces_instead_of_tabs current.spaces_instead_of_tabs;
+        p.script#set_tab_width current.tab_length;
+      in
+      List.iter iter_page session_notebook#pages;
+    );
   refresh_font_hook :=
     (fun () ->
       let fd = current.text_font in
@@ -2496,6 +2513,7 @@ let main files =
     end;
   initial_about session_notebook#current_term.proof_view#buffer;
   !refresh_toolbar_hook ();
+  !refresh_editor_hook ();
   session_notebook#current_term.script#misc#grab_focus ();;
 
 (* This function check every half of second if GeoProof has send

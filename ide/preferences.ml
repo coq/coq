@@ -76,6 +76,7 @@ let inputenc_of_string s =
 
 let refresh_font_hook = ref (fun () -> ())
 let refresh_style_hook = ref (fun () -> ())
+let refresh_editor_hook = ref (fun () -> ())
 let refresh_background_color_hook = ref (fun () -> ())
 let refresh_toolbar_hook = ref (fun () -> ())
 let auto_complete_hook = ref (fun x -> ())
@@ -140,6 +141,13 @@ type pref =
       mutable background_color : string;
       mutable processing_color : string;
       mutable processed_color : string;
+
+      mutable dynamic_word_wrap : bool;
+      mutable show_line_number : bool;
+      mutable auto_indent : bool;
+      mutable show_spaces : bool;
+      mutable spaces_instead_of_tabs : bool;
+      mutable tab_length : int;
 
 }
 
@@ -207,6 +215,12 @@ let current = {
     processed_color = "light green";
     processing_color = "light blue";
 
+    dynamic_word_wrap = false;
+    show_line_number = false;
+    auto_indent = false;
+    show_spaces = true;
+    spaces_instead_of_tabs = true;
+    tab_length = 2;
   }
 
 let save_pref () =
@@ -265,6 +279,12 @@ let save_pref () =
     add "background_color" [p.background_color] ++
     add "processing_color" [p.processing_color] ++
     add "processed_color" [p.processed_color] ++
+    add "dynamic_word_wrap" [string_of_bool p.dynamic_word_wrap] ++
+    add "show_line_number" [string_of_bool p.show_line_number] ++
+    add "auto_indent" [string_of_bool p.auto_indent] ++
+    add "show_spaces" [string_of_bool p.show_spaces] ++
+    add "spaces_instead_of_tabs" [string_of_bool p.spaces_instead_of_tabs] ++
+    add "tab_length" [string_of_int p.tab_length] ++
     Config_lexer.print_file pref_file
 
 let load_pref () =
@@ -337,10 +357,14 @@ let load_pref () =
     set_bool "opposite_tabs" (fun v -> np.opposite_tabs <- v);
     set_hd "background_color" (fun v -> np.background_color <- v);
     set_hd "processing_color" (fun v -> np.processing_color <- v);
-    set_hd "processed_color" (fun v -> np.processed_color <- v)
-(*
-    Format.printf "in load_pref: current.text_font = %s@." (Pango.Font.to_string current.text_font);
-*)
+    set_hd "processed_color" (fun v -> np.processed_color <- v);
+    set_bool "dynamic_word_wrap" (fun v -> np.dynamic_word_wrap <- v);
+    set_bool "show_line_number" (fun v -> np.show_line_number <- v);
+    set_bool "auto_indent" (fun v -> np.auto_indent <- v);
+    set_bool "show_spaces" (fun v -> np.show_spaces <- v);
+    set_bool "spaces_instead_of_tabs" (fun v -> np.spaces_instead_of_tabs <- v);
+    set_int "tab_length" (fun v -> np.tab_length <- v);
+    ()
 
 let configure ?(apply=(fun () -> ())) () =
   let cmd_coqtop =
@@ -443,6 +467,55 @@ let configure ?(apply=(fun () -> ())) () =
       !refresh_background_color_hook ();
       Tags.set_processing_color processing_button#color;
       Tags.set_processed_color processed_button#color
+    in
+    custom ~label box callback true
+  in
+
+  let config_editor =
+    let label = "Editor configuration" in
+    let box = GPack.vbox () in
+    let table = GPack.table
+      ~row_spacings:5
+      ~col_spacings:5
+      ~border_width:2
+      ~packing:(box#pack ~expand:true) ()
+    in
+    let row = ref 0 in
+    let gen_button text active =
+      let button = GButton.check_button
+        ~packing:(table#attach ~left:0 ~top:!row) ()
+      in
+      let _ = GMisc.label ~text ~xalign:0.
+        ~packing:(table#attach ~expand:`X ~left:1 ~top:!row) ()
+      in
+      let () = incr row in
+      let () = button#set_active active in
+      button
+    in
+    let wrap = gen_button "Dynamic word wrap" current.dynamic_word_wrap in
+    let line = gen_button "Show line number" current.show_line_number in
+    let auto_indent = gen_button "Auto indentation" current.auto_indent in
+    let show_spaces = gen_button "Show spaces" current.show_spaces in
+    let spaces_instead_of_tabs =
+      gen_button "Insert spaces instead of tabs"
+      current.spaces_instead_of_tabs
+    in
+(*     let lbox = GPack.hbox ~packing:box#pack () in *)
+(*     let _ = GMisc.label ~text:"Tab width" *)
+(*         ~xalign:0. *)
+(*         ~packing:(lbox#pack ~expand:true) () *)
+(*     in *)
+(*     let tab_width = GEdit.spin_button *)
+(*       ~digits:0 ~packing:lbox#pack () *)
+(*     in *)
+    let callback () =
+      current.dynamic_word_wrap <- wrap#active;
+      current.show_line_number <- line#active;
+      current.auto_indent <- auto_indent#active;
+      current.show_spaces <- show_spaces#active;
+      current.spaces_instead_of_tabs <- spaces_instead_of_tabs#active;
+(*       current.tab_length <- tab_width#value_as_int; *)
+      !refresh_editor_hook ()
     in
     custom ~label box callback true
   in
@@ -692,7 +765,8 @@ let configure ?(apply=(fun () -> ())) () =
   let cmds =
     [Section("Fonts", Some `SELECT_FONT,
 	     [config_font]);
-     Section("Colors", Some `SELECT_COLOR, [config_color;source_style]);
+     Section("Colors", Some `SELECT_COLOR, [config_color; source_style]);
+     Section("Editor", Some `EDIT, [config_editor]);
      Section("Files", Some `DIRECTORY,
 	     [global_auto_revert;global_auto_revert_delay;
 	      auto_save; auto_save_delay; (* auto_save_name*)
