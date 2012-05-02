@@ -285,7 +285,7 @@ COQIDEFLAGS=-thread $(COQIDEINCLUDES)
 
 .SUFFIXES:.vo
 
-IDEFILES=ide/coq.png ide/mac_default_accel_map
+IDEFILES=ide/coq.lang ide/coq_style.xml ide/coq.png ide/mac_default_accel_map
 
 coqide-binaries: coqide-$(HASCOQIDE)
 coqide-no:
@@ -336,7 +336,7 @@ endif
 
 install-ide-files:
 	$(MKDIR) $(FULLDATADIR)
-	$(INSTALLLIB) ide/coq.png $(FULLDATADIR)
+	$(INSTALLLIB) ide/coq.png ide/coq.lang ide/coq_style.xml $(FULLDATADIR)
 	$(MKDIR) $(FULLCONFIGDIR)
 	if [ $(IDEOPTINT) = QUARTZ ] ; then $(INSTALLLIB) ide/mac_default_accel_map $(FULLCONFIGDIR)/coqide.keys ; fi
 

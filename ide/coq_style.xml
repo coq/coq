@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<style-scheme id="coq_style" _name="Coq highlighting based on Ssr manual"
+	      parent-scheme="classic" version="1.0">
+<author>The Coq Dev Team</author>
+<_description>Coq/Ssreflect color scheme for the vernacular language</_description>
+
+<style name="coq:comment" foreground="#brown"/>
+<style name="coq:coqdoc" foreground="#brown" italic="true"/>
+<style name="coq:vernac-keyword" bold="true" foreground="#dark violet"/>
+<style name="coq:gallina-keyword" bold="true" foreground="#orange red"/>
+<style name="coq:identifier" foreground="#navy"/>
+<style name="coq:constr-keyword" foreground="#dark green"/>
+<style name="coq:constr-sort" foreground="#008080"/>
+</style-scheme>

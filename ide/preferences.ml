@@ -160,8 +160,8 @@ let (current:pref ref) =
     auto_save_delay = 10000;
     auto_save_name = "#","#";
 
-    source_language = "vernac";
-    source_style = "classic";
+    source_language = "coq";
+    source_style = "coq_style";
 
     read_project = Ignore_args;
     project_file_name = "_CoqProject";

@@ -145,6 +145,7 @@ Qed.
 [fin (n + m)]
 Really really ineficient !!! *)
 Definition L_R {m} n (p : t m) : t (n + m).
+Proof.
 induction n.
   exact p.
   exact ((fix LS k (p: t k) :=
