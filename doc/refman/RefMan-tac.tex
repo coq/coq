@@ -2118,6 +2118,10 @@ but refers to a hypothesis quantified in the goal, then the
 latter is first introduced in the local context using
 \texttt{intros until \ident}.
 
+\Rem As inversion proofs may be large in size, we recommend the user to
+stock the lemmas whenever the same instance needs to be inverted
+several times. See Section~\ref{Derive-Inversion}.
+
 \begin{Variants}
 \item \texttt{inversion} \num
 
@@ -2294,7 +2298,97 @@ Abort.
 
 \end{Variants}
 
-\SeeAlso~\ref{inversion-examples} for detailed examples
+\firstexample
+\example{Non-dependent inversion}
+\label{inversion-examples}
+
+Let us consider the relation \texttt{Le} over natural numbers and the
+following variables:
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{coq_example*}
+Inductive Le : nat -> nat -> Set :=
+  | LeO : forall n:nat, Le 0 n
+  | LeS : forall n m:nat, Le n m -> Le (S n) (S m).
+Variable P : nat -> nat -> Prop.
+Variable Q : forall n m:nat, Le n m -> Prop.
+\end{coq_example*}
+
+Let us consider the following goal:
+
+\begin{coq_eval}
+Lemma ex : forall n m:nat, Le (S n) m -> P n m.
+intros.
+\end{coq_eval}
+
+\begin{coq_example}
+Show.
+\end{coq_example}
+
+To prove the goal, we may need to reason by cases on \texttt{H} and to
+derive that \texttt{m} is necessarily of
+the form $(S~m_0)$ for certain $m_0$ and that $(Le~n~m_0)$.
+Deriving these conditions corresponds to prove that the
+only possible constructor of \texttt{(Le (S n) m)} is
+\texttt{LeS} and that we can invert the
+\texttt{->} in the type  of \texttt{LeS}.
+This inversion is possible because \texttt{Le} is the smallest set closed by
+the constructors \texttt{LeO} and \texttt{LeS}.
+
+\begin{coq_example}
+inversion_clear H.
+\end{coq_example}
+
+Note that \texttt{m} has been substituted in the goal for \texttt{(S m0)}
+and that the hypothesis \texttt{(Le n m0)} has been added to the
+context.
+
+Sometimes it is
+interesting to have the equality \texttt{m=(S m0)} in the
+context to use it after. In that case we can use \texttt{inversion} that
+does not clear the equalities:
+
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+
+\begin{coq_example}
+inversion H.
+\end{coq_example}
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\example{Dependent inversion}
+
+Let us consider the following goal:
+
+\begin{coq_eval}
+Lemma ex_dep : forall (n m:nat) (H:Le (S n) m), Q (S n) m H.
+intros.
+\end{coq_eval}
+
+\begin{coq_example}
+Show.
+\end{coq_example}
+
+As \texttt{H} occurs in the goal, we may want to reason by cases on its
+structure and so, we would like  inversion tactics to
+substitute \texttt{H} by the corresponding term in constructor form.
+Neither \texttt{Inversion} nor  {\tt Inversion\_clear} make such a
+substitution.
+To have such a behavior we use the dependent inversion tactics:
+
+\begin{coq_example}
+dependent inversion_clear H.
+\end{coq_example}
+
+Note that \texttt{H} has been substituted by \texttt{(LeS n m0 l)} and
+\texttt{m} by \texttt{(S m0)}.
 
 \subsection{\tt fix {\ident} {\num}}
 \tacindex{fix}

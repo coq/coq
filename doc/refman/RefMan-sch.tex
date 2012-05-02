@@ -1,4 +1,4 @@
-\chapter{Proof Schemes}
+\chapter{Proof schemes}
 
 \section{Generation of induction principles with {\tt Scheme}}
 \label{Scheme}
@@ -374,5 +374,45 @@ the instance with the tactic {\tt inversion}.
   inverted the instance with the tactic \texttt{dependent inversion\_clear}.
 \end{Variants}
 
-\SeeAlso \ref{inversion-examples} for examples.
+\Example
+
+Let us consider the relation \texttt{Le} over natural numbers and the
+following variable:
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\begin{coq_example*}
+Inductive Le : nat -> nat -> Set :=
+  | LeO : forall n:nat, Le 0 n
+  | LeS : forall n m:nat, Le n m -> Le (S n) (S m).
+Variable P : nat -> nat -> Prop.
+\end{coq_example*}
+
+To generate the inversion lemma for the instance
+\texttt{(Le (S n) m)} and the sort \texttt{Prop}, we do:
+
+\begin{coq_example*}
+Derive Inversion_clear leminv with (forall n m:nat, Le (S n) m) Sort Prop.
+\end{coq_example*}
+
+\begin{coq_example}
+Check leminv.
+\end{coq_example}
+
+Then we can use the proven inversion lemma:
+
+\begin{coq_eval}
+Lemma ex : forall n m:nat, Le (S n) m -> P n m.
+intros.
+\end{coq_eval}
+
+\begin{coq_example}
+Show.
+\end{coq_example}
+
+\begin{coq_example}
+inversion H using leminv.
+\end{coq_example}
 
