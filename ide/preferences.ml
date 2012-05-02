@@ -75,6 +75,7 @@ let inputenc_of_string s =
 (** Hooks *)
 
 let refresh_font_hook = ref (fun () -> ())
+let refresh_style_hook = ref (fun () -> ())
 let refresh_background_color_hook = ref (fun () -> ())
 let refresh_toolbar_hook = ref (fun () -> ())
 let auto_complete_hook = ref (fun x -> ())
@@ -546,8 +547,12 @@ let configure ?(apply=(fun () -> ())) () =
   in
 
   let source_style =
-    combo "Highlighting style"
-      ~f:(fun s -> current.source_style <- s) ~new_allowed:false
+    let f s =
+      current.source_style <- s;
+      !refresh_style_hook ()
+    in
+    combo "Highlighting style:"
+      ~f ~new_allowed:false
       style_manager#style_scheme_ids current.source_style
   in
 
@@ -687,11 +692,11 @@ let configure ?(apply=(fun () -> ())) () =
   let cmds =
     [Section("Fonts", Some `SELECT_FONT,
 	     [config_font]);
-     Section("Colors", Some `SELECT_COLOR, [config_color]);
+     Section("Colors", Some `SELECT_COLOR, [config_color;source_style]);
      Section("Files", Some `DIRECTORY,
 	     [global_auto_revert;global_auto_revert_delay;
 	      auto_save; auto_save_delay; (* auto_save_name*)
-	      encodings;source_style;
+	      encodings;
 	     ]);
      Section("Project", Some (`STOCK "gtk-page-setup"),
 	     [project_file_name;read_project;

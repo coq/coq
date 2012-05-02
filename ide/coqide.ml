@@ -2368,6 +2368,12 @@ let main files =
 
   refresh_toolbar_hook :=
     (fun () -> if current.show_toolbar then toolbar#misc#show () else toolbar#misc#hide ());
+  refresh_style_hook :=
+    (fun () ->
+      let style =  style_manager#style_scheme current.source_style in
+      let iter_page p = p.script#source_buffer#set_style_scheme style in
+      List.iter iter_page session_notebook#pages;
+    );
   refresh_font_hook :=
     (fun () ->
       let fd = current.text_font in
