@@ -370,7 +370,7 @@ simple apply H.
 \end{Variants}
 
 \Example
-Assume we have a relation on {\tt nat} which is transitive:
+Assume we have a transitive relation {\tt R} on {\tt nat}:
 \label{eapply-example}
 
 \begin{coq_eval}
@@ -472,16 +472,16 @@ Reset R.
 This tactic applies to any goal.  The argument {\term} is a term
 well-formed in the local context and the argument {\ident} is an
 hypothesis of the context.  The tactic {\tt apply {\term} in {\ident}}
-tries to match the conclusion of the type of {\ident} against a non
-dependent premise of the type of {\term}, trying them from right to
+tries to match the conclusion of the type of {\ident} against a
+non-dependent premise of the type of {\term}, trying them from right to
 left.  If it succeeds, the statement of hypothesis {\ident} is
 replaced by the conclusion of the type of {\term}. The tactic also
-returns as many subgoals as the number of other non dependent premises
-in the type of {\term} and of the non dependent premises of the type
+returns as many subgoals as the number of other non-dependent premises
+in the type of {\term} and of the non-dependent premises of the type
 of {\ident}.  If the conclusion of the type of {\term} does not match
 the goal {\em and} the conclusion is an inductive type isomorphic to a
 tuple type, then the tuple is (recursively) decomposed and the first
-component of the tuple of which a non dependent premise matches the
+component of the tuple of which a non-dependent premise matches the
 conclusion of the type of {\ident}. Tuples are decomposed in a
 width-first left-to-right order (for instance if the type of {\tt H1}
 is a \verb=A <-> B= statement, and the type of {\tt H2} is \verb=A=
@@ -536,9 +536,9 @@ This works as {\tt apply \nelist{{\term}{,} with {\bindinglist}}{,} in {\ident} 
 This behaves like {\tt apply {\term} in {\ident}} but it reasons
 modulo conversion only on subterms that contain no variables to
 instantiate. For instance, if {\tt id := fun x:nat => x} and {\tt H :
-  forall y, id y = y -> True} and {\tt H0 : O = O} then {\tt simple
+  forall y, id y = y -> True} and {\tt H0 :\ O = O} then {\tt simple
   apply H in H0} does not succeed because it would require the
-conversion of {\tt f ?y} and {\tt O} where {\tt ?y} is a variable to
+conversion of {\tt id ?1234} and {\tt O} where {\tt ?1234} is a variable to
 instantiate.  Tactic {\tt simple apply {\term} in {\ident}} does not
 either traverse tuples as {\tt apply {\term} in {\ident}} does.
 
@@ -553,8 +553,8 @@ This summarizes the different syntactic variants of {\tt apply {\term}
 \label{constructor}
 \tacindex{constructor}
 
-This tactic applies to a goal such that the head of its conclusion is
-an inductive constant (say {\tt I}).  The argument {\num} must be less
+This tactic applies to a goal such that its conclusion is
+an inductive type (say {\tt I}).  The argument {\num} must be less
 or equal to the numbers of constructor(s) of {\tt I}. Let {\tt ci} be
 the {\tt i}-th constructor of {\tt I}, then {\tt constructor i} is
 equivalent to {\tt intros; apply ci}.
@@ -568,7 +568,7 @@ equivalent to {\tt intros; apply ci}.
 \item \texttt{constructor}
 
   This tries \texttt{constructor 1} then \texttt{constructor 2},
-  \dots\ , then \texttt{constructor} \textit{n} where \textit{n} if
+  \dots\ , then \texttt{constructor} \textit{n} where \textit{n} is
   the number of constructors of the head of the goal.
 
 \item {\tt constructor \num~with} {\bindinglist}
@@ -587,14 +587,20 @@ equivalent to {\tt intros; apply ci}.
 
 \item {\tt split}\tacindex{split}
 
-  Applies if {\tt I} has only one constructor, typically in the case
-  of conjunction $A\land B$. Then, it is equivalent to {\tt constructor 1}.
+  This applies only if {\tt I} has a single constructor. It is then
+  equivalent to {\tt constructor 1}. It is typically used in the case
+  of a conjunction $A\land B$.
+
+  \ErrMsg \errindex{Not an inductive goal with 1 constructor}
 
 \item {\tt exists {\bindinglist}}\tacindex{exists}
 
-  Applies if {\tt I} has only one constructor, for instance in the
-  case of existential quantification $\exists x\cdot P(x)$.
-  Then, it is equivalent to {\tt intros; constructor 1 with \bindinglist}.
+  This applies only if {\tt I} has a single constructor. It is then
+  equivalent to {\tt intros; constructor 1 with \bindinglist}. It is
+  typically used in the case of an existential quantification $\exists
+  x, P(x)$.
+
+  \ErrMsg \errindex{Not an inductive goal with 1 constructor}
 
 \item {\tt exists \nelist{\bindinglist}{,}}
 
@@ -603,9 +609,12 @@ equivalent to {\tt intros; apply ci}.
 \item {\tt left}\tacindex{left}\\
       {\tt right}\tacindex{right}
 
-  Apply if {\tt I} has two constructors, for instance in the case of
+  These tactics apply only if {\tt I} has two constructors, for instance
+  in the case of a
   disjunction $A\lor B$. Then, they are respectively equivalent to {\tt
     constructor 1} and {\tt constructor 2}.
+
+  \ErrMsg \errindex{Not an inductive goal with 2 constructors}
 
 \item {\tt left with \bindinglist}\\
       {\tt right with \bindinglist}\\
@@ -619,7 +628,7 @@ equivalent to {\tt intros; apply ci}.
       \texttt{eexists}\tacindex{eexists}\\
       \texttt{esplit}\tacindex{esplit}\\
       \texttt{eleft}\tacindex{eleft}\\
-      \texttt{eright}\tacindex{eright}\\
+      \texttt{eright}\tacindex{eright}
 
   These tactics and their variants behave like \texttt{constructor},
   \texttt{exists}, \texttt{split}, \texttt{left}, \texttt{right} and
@@ -640,10 +649,10 @@ a let binder. If the goal is a product, the tactic implements the
 ``Lam''\index{Typing rules!Lam} rule given in
 Section~\ref{Typed-terms}\footnote{Actually, only the second subgoal will be
 generated since the other one can be automatically checked.}.  If the
-goal starts with a let binder then the tactic implements a mix of the
+goal starts with a let binder, then the tactic implements a mix of the
 ``Let''\index{Typing rules!Let} and ``Conv''\index{Typing rules!Conv}.
 
-If the current goal is a dependent product {\tt forall $x$:$T$, $U$} (resp {\tt
+If the current goal is a dependent product $\forall x:T,~U$ (resp {\tt
 let $x$:=$t$ in $U$}) then {\tt intro} puts {\tt $x$:$T$} (resp {\tt $x$:=$t$})
  in the local context.
 % Obsolete (quantified names already avoid hypotheses names):
@@ -654,12 +663,12 @@ The new subgoal is $U$.
 % If the {\tt x} has been renamed {\tt x}{\it n} then it is replaced
 % by {\tt x}{\it n} in {\tt U}.
 
-If the goal is a non dependent product {\tt $T$ -> $U$}, then it puts
+If the goal is a non-dependent product $T \to U$, then it puts
 in the local context either {\tt H}{\it n}{\tt :$T$} (if $T$ is of
 type {\tt Set} or {\tt Prop}) or {\tt X}{\it n}{\tt :$T$} (if the type
 of $T$ is {\tt Type}). The optional index {\it n} is such that {\tt
 H}{\it n} or {\tt X}{\it n} is a fresh identifier.
-In both cases the new subgoal is $U$.
+In both cases, the new subgoal is $U$.
 
 If the goal is neither a product nor starting with a let definition,
 the tactic {\tt intro} applies the tactic {\tt red} until the tactic
@@ -674,12 +683,12 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
 
 \item {\tt intros}\tacindex{intros}
 
-  Repeats {\tt intro} until it meets the head-constant. It never reduces
+  This repeats {\tt intro} until it meets the head-constant. It never reduces
   head-constants and it never fails.
 
 \item {\tt intro {\ident}}
 
-  Applies {\tt intro} but forces {\ident} to be the name of the
+  This applies {\tt intro} but forces {\ident} to be the name of the
   introduced hypothesis.
 
   \ErrMsg \errindex{name {\ident} is already used}
@@ -690,17 +699,17 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
 
 \item {\tt intros \ident$_1$ \dots\ \ident$_n$}
 
-  Is equivalent to the composed tactic {\tt intro \ident$_1$; \dots\ ;
+  This is equivalent to the composed tactic {\tt intro \ident$_1$; \dots\ ;
     intro \ident$_n$}.
 
   More generally, the \texttt{intros} tactic takes a pattern as
   argument in order to introduce names for components of an inductive
-  definition or to clear introduced hypotheses; This is explained
+  definition or to clear introduced hypotheses. This is explained
   in~\ref{intros-pattern}.
 
 \item {\tt intros until {\ident}} \tacindex{intros until}
 
-  Repeats {\tt intro} until it meets a premise of the goal having form
+  This repeats {\tt intro} until it meets a premise of the goal having form
   {\tt (} {\ident}~{\tt :}~{\term} {\tt )} and discharges the variable
   named {\ident} of the current goal.
 
@@ -708,7 +717,7 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
 
 \item {\tt intros until {\num}}  \tacindex{intros until}
 
-  Repeats {\tt intro} until the {\num}-th non-dependent product. For
+  This repeats {\tt intro} until the {\num}-th non-dependent product. For
   instance, on the subgoal %
   \verb+forall x y:nat, x=y -> y=x+ the tactic \texttt{intros until 1}
   is equivalent to \texttt{intros x y H}, as \verb+x=y -> y=x+ is the
@@ -721,7 +730,7 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
 
   \ErrMsg \errindex{No such hypothesis in current goal}
 
-  Happens when {\num} is 0 or is greater than the number of non-dependent
+  This happens when {\num} is 0 or is greater than the number of non-dependent
   products of the goal.
 
 \item {\tt intro after \ident} \tacindex{intro after}\\
@@ -729,7 +738,7 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
       {\tt intro at top} \tacindex{intro at top}\\
       {\tt intro at bottom} \tacindex{intro at bottom}
 
-  Applies {\tt intro} and moves the freshly introduced hypothesis
+  These tactics apply {\tt intro} and move the freshly introduced hypothesis
   respectively after the hypothesis \ident{}, before the hypothesis
   \ident{}, at the top of the local context, or at the bottom of the
   local context. All hypotheses on which the new hypothesis depends
@@ -737,24 +746,16 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
   hypotheses. Note that {\tt intro at bottom} is a synonym for {\tt
   intro} with no argument.
 
-\begin{ErrMsgs}
-\item \errindex{No product even after head-reduction}
-\item \errindex{No such hypothesis} : {\ident}
-\end{ErrMsgs}
+  \ErrMsg \errindex{No such hypothesis} : {\ident}
 
 \item {\tt intro \ident$_1$ after \ident$_2$}\\
       {\tt intro \ident$_1$ before \ident$_2$}\\
       {\tt intro \ident$_1$ at top}\\
       {\tt intro \ident$_1$ at bottom}
 
-  Behaves as previously but naming the introduced hypothesis
+  These tactics behave as previously but naming the introduced hypothesis
   \ident$_1$.  It is equivalent to {\tt intro \ident$_1$} followed by
   the appropriate call to {\tt move}~(see Section~\ref{move}).
-
-\begin{ErrMsgs}
-\item \errindex{No product even after head-reduction}
-\item \errindex{No such hypothesis} : {\ident}
-\end{ErrMsgs}
 
 \end{Variants}
 
@@ -787,10 +788,10 @@ either:
 \item the rewriting orientations: {\tt ->} or {\tt <-}
 \end{itemize}
 
-Assuming a goal of type {\tt $Q$ -> $P$} (non dependent product), or
-of type {\tt forall $x$:$T$, $P$} (dependent product), the behavior of
+Assuming a goal of type $Q \to P$ (non-dependent product), or
+of type $\forall x:T,~P$ (dependent product), the behavior of
 {\tt intros $p$} is defined inductively over the structure of the
-introduction pattern $p$:
+introduction pattern~$p$:
 \begin{itemize}
 \item introduction on \texttt{?} performs the introduction, and lets {\Coq}
   choose a fresh name for the variable;
@@ -829,7 +830,7 @@ introduction pattern $p$:
   hypothesis with type {\tt A\verb|/\|exists x, B\verb|/\|C\verb|/\|D} can be
   introduced via pattern {\tt (a \& x \& b \& c \& d)};
 \item introduction on the wildcard depends on whether the product is
-  dependent or not: in the non dependent case, it erases the
+  dependent or not: in the non-dependent case, it erases the
   corresponding hypothesis (i.e. it behaves as an {\tt intro} followed
   by a {\tt clear}, cf Section~\ref{clear}) while in the dependent
   case, it succeeds and erases the variable only if the wildcard is
@@ -881,12 +882,20 @@ Show 2.
 \label{clear}
 
 This tactic erases the hypothesis named {\ident} in the local context
-of the current goal. Then {\ident} is no more displayed and no more
+of the current goal. As a consequence, {\ident} is no more displayed and no more
 usable in the proof development.
+
+\begin{ErrMsgs}
+\item \errindex{No such hypothesis}
+\item \errindexbis{{\ident} is used in the conclusion}{is used in the
+    conclusion}
+\item \errindexbis{{\ident} is used in the hypothesis {\ident'}}{is
+    used in the hypothesis}
+\end{ErrMsgs}
 
 \begin{Variants}
 
-\item {\tt clear {\ident$_1$} {\ldots} {\ident$_n$}}
+\item {\tt clear {\ident$_1$} \dots\ {\ident$_n$}}
 
   This is equivalent to {\tt clear {\ident$_1$}. {\ldots} clear
     {\ident$_n$}.}
@@ -897,15 +906,17 @@ usable in the proof development.
   its body. Otherwise said, this tactic turns a definition into an
   assumption.
 
-\item \texttt{clear - {\ident$_1$} {\ldots} {\ident$_n$}}
+  \ErrMsg \errindexbis{{\ident} is not a local definition}{is not a local definition}
 
-  This tactic clears all hypotheses except the ones depending in
+\item \texttt{clear - {\ident$_1$} \dots\ {\ident$_n$}}
+
+  This tactic clears all the hypotheses except the ones depending in
   the hypotheses named {\ident$_1$} {\ldots} {\ident$_n$} and in the
   goal.
 
 \item \texttt{clear}
 
-  This tactic clears all hypotheses except the ones the goal depends on.
+  This tactic clears all the hypotheses except the ones the goal depends on.
 
 \item {\tt clear dependent \ident \tacindex{clear dependent}}
 
@@ -913,14 +924,6 @@ usable in the proof development.
  that depend on it.
 
 \end{Variants}
-
-\begin{ErrMsgs}
-\item \errindex{{\ident} not found}
-\item \errindexbis{{\ident} is used in the conclusion}{is used in the
-    conclusion}
-\item \errindexbis{{\ident} is used in the hypothesis {\ident'}}{is
-    used in the hypothesis}
-\end{ErrMsgs}
 
 \subsection{\tt revert \ident$_1$ \dots\ \ident$_n$}
 \tacindex{revert}
