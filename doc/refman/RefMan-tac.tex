@@ -6,15 +6,15 @@
 
 A deduction rule is a link between some (unique) formula, that we call
 the {\em conclusion} and (several) formulas that we call the {\em
-premises}. Indeed, a deduction rule can be read in two ways. The first
-one has the shape: {\it ``if I know this and this then I can deduce
+premises}. A deduction rule can be read in two ways. The first
+one says: {\it ``if I know this and this then I can deduce
 this''}. For instance, if I have a proof of $A$ and a proof of $B$
 then I have a proof of $A \land B$. This is forward reasoning from
 premises to conclusion. The other way says: {\it ``to prove this I
 have to prove this and this''}. For instance, to prove $A \land B$, I
 have to prove $A$ and I have to prove $B$. This is backward reasoning
-which proceeds from conclusion to premises. We say that the conclusion
-is {\em the goal}\index{goal} to prove and premises are {\em the
+from conclusion to premises. We say that the conclusion
+is the {\em goal}\index{goal} to prove and premises are the {\em
 subgoals}\index{subgoal}.  The tactics implement {\em backward
 reasoning}. When applied to a goal, a tactic replaces this goal with
 the subgoals it generates. We say that a tactic reduces a goal to its
@@ -32,7 +32,7 @@ used to reduce any goal. In other words, before applying a tactic to a
 given goal, the system checks that some {\em preconditions} are
 satisfied. If it is not the case, the tactic raises an error message.
 
-Tactics are build from atomic tactics and tactic expressions (which
+Tactics are built from atomic tactics and tactic expressions (which
 extends the folklore notion of tactical) to combine those atomic
 tactics. This chapter is devoted to atomic tactics. The tactic
 language will be described in Chapter~\ref{TacticLanguage}.
@@ -41,7 +41,7 @@ language will be described in Chapter~\ref{TacticLanguage}.
 \label{tactic-syntax}
 \index{tactic@{\tac}}}
 
-A tactic is applied as an ordinary command. If the tactic does not
+A tactic is applied as an ordinary command. If the tactic is not meant to
 address the first subgoal, the command may be preceded by the wished
 subgoal number as shown below:
 
@@ -73,13 +73,13 @@ different forms:
   \ErrMsg \errindex{No such binder}
 
 \item A bindings list can also be a simple list of terms {\tt
-  \term$_1$ \dots\term$_n$}. In that case the references to
+  \term$_1$ \dots\ \term$_n$}. In that case the references to
   which these terms correspond are determined by the tactic. In case
   of {\tt induction}, {\tt destruct}, {\tt elim} and {\tt case} (see
   Section~\ref{elim}) the terms have to provide instances for all the
   dependent products in the type of \term\ while in the case of {\tt
   apply}, or of {\tt constructor} and its variants, only instances for
-  the dependent products which are not bound in the conclusion of the
+  the dependent products that are not bound in the conclusion of the
   type are required.
 
   \ErrMsg \errindex{Not the right number of missing arguments}
@@ -112,7 +112,7 @@ a {\term} in a goal. In the first case, the {{\ident$_i$}
 \zeroone{{\tt at} {\num$_1^i$} \dots\ {\num$_{n_i}^i$}}} parts
 indicate that occurrences have to be selected in the hypotheses named
 {\ident$_i$}.  If no numbers are given for hypothesis {\ident$_i$},
-then all occurrences of {\term} in the hypothesis are selected. If
+then all the occurrences of {\term} in the hypothesis are selected. If
 numbers are given, they refer to occurrences of {\term} when the term
 is printed using option {\tt Set Printing All} (see
 Section~\ref{SetPrintingAll}), counting from left to right. In
@@ -164,7 +164,8 @@ convertible (see Section~\ref{conv-rules}).
 \begin{Variants}
   \item \texttt{eexact \term}\tacindex{eexact}
 
-    This tactic behaves like \texttt{exact} but is able to handle terms with meta-variables.
+    This tactic behaves like \texttt{exact} but is able to handle terms
+    and goals with meta-variables.
 
 \end{Variants}
 
@@ -196,7 +197,7 @@ subgoal is proved. Otherwise, it fails.
 
 This tactic applies to any goal. It behaves like {\tt exact} with a big
 difference: the user can leave some holes (denoted by \texttt{\_} or
-{\tt (\_:}{\it type}{\tt )}) in the term. {\tt refine} will generate as
+{\tt (\_:\type)}) in the term. {\tt refine} will generate as
 many subgoals as there are holes in the term. The type of holes must be
 either synthesized by the system or declared by an
 explicit cast like \verb|(_:nat->Prop)|. This low-level
@@ -225,7 +226,7 @@ Defined.
 
 \begin{ErrMsgs}
 \item \errindex{invalid argument}:
-  the tactic \texttt{refine} doesn't know what to do
+  the tactic \texttt{refine} does not know what to do
   with the term you gave.
 \item \texttt{Refine passed ill-formed term}: the term you gave is not
   a valid proof (not easy to debug in general).
@@ -244,7 +245,7 @@ This tactic applies to any goal.  The argument {\term} is a term
 well-formed in the local context.  The tactic {\tt apply} tries to
 match the current goal against the conclusion of the type of {\term}.
 If it succeeds, then the tactic returns as many subgoals as the number
-of non dependent premises of the type of {\term}. If the conclusion of
+of non-dependent premises of the type of {\term}. If the conclusion of
 the type of {\term} does not match the goal {\em and} the conclusion
 is an inductive type isomorphic to a tuple type, then each component
 of the tuple is recursively matched to the goal in the left-to-right
@@ -252,10 +253,10 @@ order.
 
 The tactic {\tt apply} relies on first-order unification with
 dependent types unless the conclusion of the type of {\term} is of the
-form {\tt ($P$~ $t_1$~\ldots ~$t_n$)} with $P$ to be instantiated.  In
+form {\tt ($P$ $t_1$ \dots\ $t_n$)} with $P$ to be instantiated.  In
 the latter case, the behavior depends on the form of the goal. If the
 goal is of the form {\tt (fun $x$ => $Q$)~$u_1$~\ldots~$u_n$} and the
-$t_i$ and $u_i$ unifies, then $P$ is taken to be (fun $x$ => $Q$).
+$t_i$ and $u_i$ unifies, then $P$ is taken to be {\tt (fun $x$ => $Q$)}.
 Otherwise, {\tt apply} tries to define $P$ by abstracting over
 $t_1$~\ldots ~$t_n$ in the goal. See {\tt pattern} in
 Section~\ref{pattern} to transform the goal so that it gets the form
@@ -310,8 +311,8 @@ Section~\ref{pattern} to transform the goal so that it gets the form
 
 \item {\tt eapply \term}\tacindex{eapply}\label{eapply}
 
-  The tactic {\tt eapply} behaves as {\tt apply} but does not fail
-  when no instantiation are deducible for some variables in the
+  The tactic {\tt eapply} behaves like {\tt apply} but it does not fail
+  when no instantiations are deducible for some variables in the
   premises.  Rather, it turns these variables into so-called
   existential variables which are variables still to instantiate. An
   existential variable is identified by a name of the form {\tt ?$n$}
@@ -322,15 +323,25 @@ Section~\ref{pattern} to transform the goal so that it gets the form
 
   This behaves like {\tt apply} but it reasons modulo conversion only
   on subterms that contain no variables to instantiate. For instance,
-  if {\tt id := fun x:nat => x} and {\tt H : forall y, id y = y} then
-  {\tt simple apply H} on goal {\tt O = O} does not succeed because it
-  would require the conversion of {\tt f ?y} and {\tt O} where {\tt
-  ?y} is a variable to instantiate. Tactic {\tt simple apply} does not
-  either traverse tuples as {\tt apply} does.
+  the following example does not succeed because it would require the
+  conversion of {\tt id ?1234} and {\tt O}.
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example*}
+Definition id (x : nat) := x.
+Hypothesis H : forall y, id y = y.
+Goal O = O.
+\end{coq_example*}
+\begin{coq_example}
+simple apply H.
+\end{coq_example}
 
   Because it reasons modulo a limited amount of conversion, {\tt
   simple apply} fails quicker than {\tt apply} and it is then
   well-suited for uses in used-defined tactics that backtrack often.
+  Moreover, it does not traverse tuples as {\tt apply} does.
 
 \item \zeroone{{\tt simple}} {\tt apply} {\term$_1$} \zeroone{{\tt with}
   {\bindinglist$_1$}} {\tt ,} \ldots {\tt ,} {\term$_n$} \zeroone{{\tt with}
@@ -362,6 +373,9 @@ Section~\ref{pattern} to transform the goal so that it gets the form
 Assume we have a relation on {\tt nat} which is transitive:
 \label{eapply-example}
 
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
 \begin{coq_example*}
 Variable R : nat -> nat -> Prop.
 Hypothesis Rtrans : forall x y z:nat, R x y -> R y z -> R x z.
@@ -380,16 +394,16 @@ Goal R n p.
 The direct application of {\tt Rtrans} with {\tt apply} fails because
 no value for {\tt y} in {\tt Rtrans} is found by {\tt apply}:
 
-\begin{coq_eval}
-Set Printing Depth 50.
-(********** The following is not correct and should produce **********)
-(**** Error: generated subgoal (R n ?17) has metavariables in it *****)
-\end{coq_eval}
+%\begin{coq_eval}
+%Set Printing Depth 50.
+%(********** The following is not correct and should produce **********)
+%(**** Error: generated subgoal (R n ?17) has metavariables in it *****)
+%\end{coq_eval}
 \begin{coq_example}
 apply Rtrans.
 \end{coq_example}
 
-A solution is to rather apply {\tt (Rtrans n m p)}.
+A solution is to apply {\tt (Rtrans n m p)} or {\tt (Rtrans n m)}.
 
 \begin{coq_example}
 apply (Rtrans n m p).
@@ -399,34 +413,41 @@ apply (Rtrans n m p).
 Undo.
 \end{coq_eval}
 
+Note that {\tt n} can be inferred from the goal, so the following would
+work too.
+
+\begin{coq_example*}
+apply (Rtrans _ m).
+\end{coq_example*}
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+
 More elegantly, {\tt apply Rtrans with (y:=m)} allows to only mention
 the unknown {\tt m}:
 
-\begin{coq_example}
-  apply Rtrans with (y := m).
-\end{coq_example}
-
+\begin{coq_example*}
+apply Rtrans with (y := m).
+\end{coq_example*}
 \begin{coq_eval}
 Undo.
 \end{coq_eval}
 
 Another solution is to mention the proof of {\tt (R x y)} in {\tt
-Rtrans}...
+Rtrans} \ldots
 
 \begin{coq_example}
-  apply Rtrans with (1 := Rnm).
+apply Rtrans with (1 := Rnm).
 \end{coq_example}
-
 \begin{coq_eval}
 Undo.
 \end{coq_eval}
 
-... or the proof of {\tt (R y z)}:
+\ldots or the proof of {\tt (R y z)}.
 
 \begin{coq_example}
-  apply Rtrans with (2 := Rmp).
+apply Rtrans with (2 := Rmp).
 \end{coq_example}
-
 \begin{coq_eval}
 Undo.
 \end{coq_eval}
@@ -989,7 +1010,7 @@ Is equivalent to the sequence of the corresponding atomic {\tt rename}.
 
 \end{ErrMsgs}
 
-\subsection{\tt set ( {\ident} {\tt :=} {\term} \tt )}
+\subsection{\tt set ( {\ident} := {\term} )}
 \label{tactic:set}
 \tacindex{set}
 
@@ -1005,35 +1026,34 @@ matching the pattern.
 
 \begin{Variants}
 
-\item {\tt set (} {\ident} {\tt :=} {\term} {\tt ) in {\occgoalset}}
+\item {\tt set ( {\ident} := {\term} ) in {\occgoalset}}
 
 This notation allows to specify which occurrences of {\term} have to
 be substituted in the context. The {\tt in {\occgoalset}} clause is an
 occurrence clause whose syntax and behavior is described in
 Section~\ref{Occurrences clauses}.
 
-\item {\tt set (} {\ident} \nelist{\binder}{} {\tt :=} {\term} {\tt )}
+\item {\tt set ( {\ident} \nelist{\binder}{} := {\term} )}
 
-  This is equivalent to {\tt set (} {\ident} {\tt :=} {\tt fun}
-  \nelist{\binder}{} {\tt =>} {\term} {\tt )}.
+  This is equivalent to {\tt set ( {\ident} := fun
+  \nelist{\binder}{} => {\term} )}.
 
-\item {\tt set } {\term}
+\item {\tt set \term}
 
   This behaves as {\tt set (} {\ident} := {\term} {\tt )} but {\ident}
   is generated by {\Coq}. This variant also supports an occurrence clause.
 
-\item {\tt set (} {\ident$_0$} \nelist{\binder}{} {\tt :=} {\term}
-      {\tt ) in {\occgoalset}}\\
+\item {\tt set ( {\ident$_0$} \nelist{\binder}{} := {\term} ) in {\occgoalset}}\\
       {\tt set {\term} in {\occgoalset}}
 
   These are the general forms which combine the previous possibilities.
 
-\item {\tt remember {\term} {\tt as} {\ident}}\tacindex{remember}
+\item {\tt remember {\term} as {\ident}}\tacindex{remember}
 
-  This behaves as {\tt set (} {\ident} := {\term} {\tt ) in *} and using a
+  This behaves as {\tt set ( {\ident} := {\term} ) in *} and using a
   logical (Leibniz's) equality instead of a local definition.
 
-\item {\tt remember {\term} {\tt as} {\ident} in {\occgoalset}}
+\item {\tt remember {\term} as {\ident} in {\occgoalset}}
 
   This is a more general form of {\tt remember} that remembers the
   occurrences of {\term} specified by an occurrences set.
@@ -1045,14 +1065,14 @@ Section~\ref{Occurrences clauses}.
   hypotheses. It is equivalent to {\tt set ( {\ident} {\tt :=}
   {\term} {\tt ) in |-}}.
 
-\item {\tt pose (} {\ident} \nelist{\binder}{} {\tt :=} {\term} {\tt )}
+\item {\tt pose ( {\ident} \nelist{\binder}{} := {\term} )}
 
   This is equivalent to {\tt pose (} {\ident} {\tt :=} {\tt fun}
   \nelist{\binder}{} {\tt =>} {\term} {\tt )}.
 
 \item{\tt pose {\term}}
 
-  This behaves as {\tt pose (} {\ident} := {\term} {\tt )} but
+  This behaves as {\tt pose ( {\ident} := {\term} )} but
   {\ident} is generated by {\Coq}.
 
 \end{Variants}
@@ -1092,7 +1112,7 @@ Qed.
 
 \section{Controlling the proof flow}
 
-\subsection{\tt assert ( {\ident} : {\form} \tt )}
+\subsection{\tt assert ( {\ident} :\ {\form} )}
 \tacindex{assert}
 
 This tactic applies to any goal. {\tt assert (H : U)} adds a new
@@ -1113,12 +1133,12 @@ in the list of subgoals remaining to prove.
 
 \item{\tt assert {\form}}
 
-  This behaves as {\tt assert (} {\ident} : {\form} {\tt )} but
+  This behaves as {\tt assert ( {\ident} :\ {\form} )} but
   {\ident} is generated by {\Coq}.
 
-\item{\tt assert (} {\ident} := {\term} {\tt )}
+\item{\tt assert ( {\ident} := {\term} )}
 
-  This behaves as {\tt assert ({\ident} : {\type});[exact
+  This behaves as {\tt assert ({\ident} :\ {\type});[exact
     {\term}|idtac]} where {\type} is the type of {\term}.
 
 \item {\tt cut {\form}}\tacindex{cut}
@@ -1140,7 +1160,7 @@ in the list of subgoals remaining to prove.
   If {\intropattern} is a naming introduction pattern (see
   Section~\ref{intros-pattern}), the hypothesis is named after this
   introduction pattern (in particular, if {\intropattern} is {\ident},
-  the tactic behaves like \texttt{assert ({\ident} : {\form})}).
+  the tactic behaves like \texttt{assert ({\ident} :\ {\form})}).
 
   If {\intropattern} is a disjunctive/conjunctive introduction
   pattern, the tactic behaves like \texttt{assert {\form}} then destructing the
@@ -1161,7 +1181,7 @@ in the list of subgoals remaining to prove.
   {\disjconjintropattern}\tacindex{pose proof}} behaves
   like \texttt{destruct {\term} as {\disjconjintropattern}}.
 
-\item {\tt specialize ({\ident} \term$_1$ {\ldots} \term$_n$)\tacindex{specialize}} \\
+\item {\tt specialize ({\ident} \term$_1$ \dots\ \term$_n$)\tacindex{specialize}} \\
       {\tt specialize {\ident} with \bindinglist}
 
       The tactic {\tt specialize} works on local hypothesis \ident.
@@ -1173,7 +1193,7 @@ in the list of subgoals remaining to prove.
       second form, all instantiation elements must be given, whereas
       in the first form the application to \term$_1$ {\ldots}
       \term$_n$ can be partial. The first form is equivalent to
-      {\tt assert (\ident':=\ident \term$_1$ {\ldots} \term$_n$);
+      {\tt assert (\ident' := {\ident} {\term$_1$} \dots\ \term$_n$);
            clear \ident; rename \ident' into \ident}.
 
       The name {\ident} can also refer to a global lemma or
@@ -1218,19 +1238,19 @@ where $G'$ is obtained from $G$ by replacing all occurrences of $t$ by
 \begin{Variants}
 \item {\tt generalize {\term$_1$ , \dots\ , \term$_n$}}
 
-  Is equivalent to {\tt generalize \term$_n$; \dots\ ; generalize
+  This is equivalent to {\tt generalize \term$_n$; \dots\ ; generalize
     \term$_1$}. Note that the sequence of \term$_i$'s are processed
   from $n$ to $1$.
 
 \item {\tt generalize {\term} at {\num$_1$ \dots\ \num$_i$}}
 
-  Is equivalent to {\tt generalize \term} but generalizing only over
+  This is equivalent to {\tt generalize \term} but it generalizes only over
   the specified occurrences of {\term} (counting from left to right on the
   expression printed using option {\tt Set Printing All}).
 
 \item {\tt generalize {\term} as {\ident}}
 
-  Is equivalent to {\tt generalize \term} but use {\ident} to name the
+  This is equivalent to {\tt generalize \term} but it uses {\ident} to name the
   generalized hypothesis.
 
 \item {\tt generalize {\term$_1$} at {\num$_{11}$ \dots\ \num$_{1i_1}$}
@@ -1244,12 +1264,12 @@ where $G'$ is obtained from $G$ by replacing all occurrences of $t$ by
 
 \item {\tt generalize dependent \term} \tacindex{generalize dependent}
 
-  This generalizes {\term} but also {\em all} hypotheses which depend
+  This generalizes {\term} but also {\em all} hypotheses that depend
   on {\term}. It clears the generalized hypotheses.
 
 \end{Variants}
 
-\subsection{\tt evar (\ident:\term)}
+\subsection{\tt evar ( {\ident} :\ {\term} )}
 \tacindex{evar}
 \label{evar}
 
@@ -1257,7 +1277,7 @@ The {\tt evar} tactic creates a new local definition named \ident\ with
 type \term\ in the context. The body of this binding is a fresh
 existential variable.
 
-\subsection{\tt instantiate (\num:= \term)}
+\subsection{\tt instantiate ( {\num} := {\term} )}
 \tacindex{instantiate}
 \label{instantiate}
 
@@ -1269,11 +1289,11 @@ the number of the existential variable since this number is different
 in every session.
 
 \begin{Variants}
-  \item {\tt instantiate (\num:=\term) in \ident}
+  \item {\tt instantiate ( {\num} := {\term} ) in \ident}
 
-  \item {\tt instantiate (\num:=\term) in (Value of \ident)}
+  \item {\tt instantiate ( {\num} := {\term} ) in ( Value of {\ident} )}
 
-  \item {\tt instantiate (\num:=\term) in (Type of \ident)}
+  \item {\tt instantiate ( {\num} := {\term} ) in ( Type of {\ident} )}
 
 These allow to refer respectively to existential variables occurring in
 a hypothesis or in the body or the type of a local definition.
