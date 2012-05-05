@@ -63,7 +63,7 @@ end
 
 
 type viewable_script =
-    {script : Undo.undoable_view;
+    {script : Wg_ScriptView.script_view;
      tab_label : GMisc.label;
      proof_view : GText.view;
      message_view : GText.view;
@@ -515,7 +515,7 @@ let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
 let custom_project_files = ref []
 let sup_args = ref []
 
-class analyzed_view (_script:Undo.undoable_view) (_pv:GText.view) (_mv:GText.view) _cs _ct _fn =
+class analyzed_view (_script:Wg_ScriptView.script_view) (_pv:GText.view) (_mv:GText.view) _cs _ct _fn =
 object(self)
   val input_view = _script
   val input_buffer = _script#buffer
@@ -1369,7 +1369,7 @@ let create_session file =
       ()
   in
   let script =
-    Undo.undoable_view
+    Wg_ScriptView.script_view
       ~source_buffer:script_buffer
       ~show_line_numbers:true
       ~wrap_mode:`NONE () in
@@ -1638,7 +1638,7 @@ let load_file handler f =
 	prerr_endline "Loading: highlight";
 	input_buffer#set_modified false;
 	prerr_endline "Loading: clear undo";
-	session.script#clear_undo;
+	session.script#clear_undo ();
 	prerr_endline "Loading: success"
       end
   with
@@ -2116,10 +2116,10 @@ let main files =
 	~callback:(fun _ -> do_if_not_computing "undo"
 		     (fun sess ->
 			ignore (sess.analyzed_view#without_auto_complete
-				  (fun () -> session_notebook#current_term.script#undo) ()))
+				  session_notebook#current_term.script#undo ()))
 		     [session_notebook#current_term]) ~stock:`UNDO;
-      GAction.add_action "Clear Undo Stack" ~label:"_Clear Undo Stack"
-	~callback:(fun _ -> ignore session_notebook#current_term.script#clear_undo);
+      GAction.add_action "Redo" ~stock:`REDO
+	~callback:(fun _ -> ignore (session_notebook#current_term.script#redo ()));
       GAction.add_action "Cut" ~callback:(fun _ -> GtkSignal.emit_unit
 					    (get_active_view_for_cp ())
 					    ~sgn:GtkText.View.S.cut_clipboard

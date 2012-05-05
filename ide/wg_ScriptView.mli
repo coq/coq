@@ -10,15 +10,15 @@
 
 type source_view = [ Gtk.text_view | `sourceview ] Gtk.obj
 
-class undoable_view : source_view ->
+class script_view : source_view ->
 object
   inherit GSourceView2.source_view
-  method undo : bool
-  method redo : bool
-  method clear_undo : unit
+  method undo : unit -> bool
+  method redo : unit -> bool
+  method clear_undo : unit -> unit
 end
 
-val undoable_view :
+val script_view :
            ?source_buffer:GSourceView2.source_buffer ->
            ?draw_spaces:SourceView2Enums.source_draw_spaces_flags list ->
            ?auto_indent:bool ->
@@ -41,4 +41,4 @@ val undoable_view :
            ?width:int ->
            ?height:int ->
            ?packing:(GObj.widget -> unit) ->
-           ?show:bool -> unit -> undoable_view
+           ?show:bool -> unit -> script_view

@@ -18,7 +18,7 @@ let neg act = match act with
 
 type source_view = [ Gtk.text_view | `sourceview ] Gtk.obj
 
-class undoable_view (tv : source_view) =
+class script_view (tv : source_view) =
   let undo_lock = ref true in
 object(self)
   inherit GSourceView2.source_view (Gobject.unsafe_cast tv) as super
@@ -51,9 +51,12 @@ object(self)
 
     end
 
-  method clear_undo = Stack.clear history; Stack.clear nredo; Queue.clear redo
+  method clear_undo () =
+    Stack.clear history;
+    Stack.clear nredo;
+    Queue.clear redo
 
-  method undo = if !undo_lock then begin
+  method undo () = if !undo_lock then begin
     undo_lock := false;
     prerr_endline "UNDO";
     try begin
@@ -84,7 +87,7 @@ object(self)
   end else
     (prerr_endline "UNDO DISCARDED"; true)
 
-  method redo = prerr_endline "REDO"; true
+  method redo () = prerr_endline "REDO"; true
   initializer
 (* INCORRECT: is called even while undoing...
    ignore (self#buffer#connect#mark_set
@@ -161,10 +164,14 @@ object(self)
 
 		 end*);
 		 self#dump_debug
-	      ))
+	      ));
+    (* Redirect the undo/redo signals of the underlying GtkSourceView *)
+    ignore (self#connect#undo (fun _ -> ignore (self#undo ()); GtkSignal.stop_emit()));
+    ignore (self#connect#redo (fun _ -> ignore (self#redo ()); GtkSignal.stop_emit()));
+
 end
 
-let undoable_view ?(source_buffer:GSourceView2.source_buffer option)  ?draw_spaces =
+let script_view ?(source_buffer:GSourceView2.source_buffer option)  ?draw_spaces =
   GtkSourceView2.SourceView.make_params [] ~cont:(
     GtkText.View.make_params ~cont:(
       GContainer.pack_container ~create:
@@ -175,4 +182,4 @@ let undoable_view ?(source_buffer:GSourceView2.source_buffer option)  ?draw_spac
           let w = Gobject.unsafe_cast w in
 		   Gobject.set_params (Gobject.try_cast w "GtkSourceView") pl;
 		   Gaux.may (GtkSourceView2.SourceView.set_draw_spaces w) draw_spaces;
-		   ((new undoable_view w) : undoable_view))))
+		   ((new script_view w) : script_view))))

@@ -43,7 +43,7 @@ let init () =
   </menu>
   <menu name='Edit' action='Edit'>
     <menuitem action='Undo' />
-    <menuitem action='Clear Undo Stack' />
+    <menuitem action='Redo' />
     <separator />
     <menuitem action='Cut' />
     <menuitem action='Copy' />
