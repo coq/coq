@@ -2378,14 +2378,16 @@ let main files =
     (fun () ->
       let wrap_mode = if current.dynamic_word_wrap then `WORD else `NONE in
       let show_spaces =
-        if current.show_spaces then [`SPACE; `TAB; `NBSP]
-        else []
+        if current.show_spaces then 0b1001011 (* SPACE, TAB, NBSP, TRAILING *)
+        else 0
       in
       let iter_page p =
         p.script#set_wrap_mode wrap_mode;
         p.script#set_show_line_numbers current.show_line_number;
         p.script#set_auto_indent current.auto_indent;
-        p.script#set_draw_spaces show_spaces;
+        (* Hack to handle missing binding in lablgtk *)
+        let conv = { Gobject.name = "draw-spaces"; Gobject.conv = Gobject.Data.int } in
+        Gobject.set conv p.script#as_widget show_spaces;
         p.script#set_insert_spaces_instead_of_tabs current.spaces_instead_of_tabs;
         p.script#set_tab_width current.tab_length;
       in
