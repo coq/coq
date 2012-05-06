@@ -19,153 +19,105 @@ let neg act = match act with
 type source_view = [ Gtk.text_view | `sourceview ] Gtk.obj
 
 class script_view (tv : source_view) =
-  let undo_lock = ref true in
-object(self)
+object (self)
   inherit GSourceView2.source_view (Gobject.unsafe_cast tv) as super
-  val history = (Stack.create () : action Stack.t)
-  val redo = (Queue.create () : action Queue.t)
-  val nredo = (Stack.create () : action Stack.t)
 
-  method private dump_debug =
+  val mutable history = []
+  val mutable redo = []
+
+  val undo_lock = Mutex.create ()
+
+  method private dump_debug () =
+    let iter = function
+    | Insert (s, p, l) ->
+      Printf.eprintf "Insert of '%s' at %d (length %d)\n" s p l
+    | Delete (s, p, l) ->
+      Printf.eprintf "Delete '%s' from %d (length %d)\n" s p l
+    in
     if false (* !debug *) then begin
-      prerr_endline "==========Stack top=============";
-      Stack.iter
-	(fun e -> match e with
-	   | Insert(s,p,l) ->
- 	       Printf.eprintf "Insert of '%s' at %d (length %d)\n" s p l
-	   | Delete(s,p,l) ->
-	       Printf.eprintf "Delete '%s' from %d (length %d)\n" s p l)
-	history;
-      Printf.eprintf "Stack size %d\n" (Stack.length history);
-      prerr_endline "==========Stack Bottom==========";
-      prerr_endline "==========Queue start=============";
-      Queue.iter
-	(fun e -> match e with
-	   | Insert(s,p,l) ->
- 	       Printf.eprintf "Insert of '%s' at %d (length %d)\n" s p l
-	   | Delete(s,p,l) ->
-	       Printf.eprintf "Delete '%s' from %d (length %d)\n" s p l)
-	redo;
-      Printf.eprintf "Stack size %d\n" (Queue.length redo);
-      prerr_endline "==========Queue End=========="
-
+      prerr_endline "==========Undo Stack top=============";
+      List.iter iter history;
+      Printf.eprintf "Stack size %d\n" (List.length history);
+      prerr_endline "==========Undo Stack Bottom==========";
+      prerr_endline "==========Redo Stack start=============";
+      List.iter iter redo;
+      Printf.eprintf "Stack size %d\n" (List.length redo);
+      prerr_endline "==========Redo Stack End=========="
     end
 
   method clear_undo () =
-    Stack.clear history;
-    Stack.clear nredo;
-    Queue.clear redo
+    history <- [];
+    redo <- []
 
-  method undo () = if !undo_lock then begin
-    undo_lock := false;
-    prerr_endline "UNDO";
-    try begin
-      let r =
-	match Stack.pop history with
-	  | Insert(s,p,l) as act ->
-	      let start = self#buffer#get_iter_at_char p in
-	      (self#buffer#delete_interactive
-		 ~start
-		 ~stop:(start#forward_chars l)
-		 ()) or
-	      (Stack.push act history; false)
-	  | Delete(s,p,l) as act ->
-	      let iter = self#buffer#get_iter_at_char p in
-	      (self#buffer#insert_interactive ~iter s) or
-	      (Stack.push act history; false)
-      in if r then begin
-	let act = Stack.pop history in
-	Queue.push act redo;
-	Stack.push act nredo
-      end;
-      undo_lock := true;
-      r
+  method private forward () =
+    match redo with
+    | [] -> ()
+    | action :: h ->
+      redo <- h;
+      history <- neg action :: history
+
+  method private backward () =
+    match history with
+    | [] -> ()
+    | action :: h ->
+      history <- h;
+      redo <- neg action :: redo
+
+  method private process_action = function
+  | [] -> false
+  | Insert (s, p, l) :: history ->
+    let start = self#buffer#get_iter_at_char p in
+    let stop = start#forward_chars l in
+    self#buffer#delete_interactive ~start ~stop ()
+  | Delete (s, p, l) :: history ->
+    let iter = self#buffer#get_iter_at_char p in
+    self#buffer#insert_interactive ~iter s
+
+  method undo () =
+    if Mutex.try_lock undo_lock then begin
+      prerr_endline "UNDO";
+      let effective = self#process_action history in
+      if effective then self#backward ();
+      Mutex.unlock undo_lock;
+      effective
+    end else
+      (prerr_endline "UNDO DISCARDED"; true)
+
+  method redo () =
+    if Mutex.try_lock undo_lock then begin
+      prerr_endline "REDO";
+      let effective = self#process_action redo in
+      if effective then self#forward ();
+      Mutex.unlock undo_lock;
+      effective
+    end else
+      (prerr_endline "REDO DISCARDED"; true)
+
+  method private handle_insert iter s =
+    if Mutex.try_lock undo_lock then begin
+      let action = Insert (s, iter#offset, Glib.Utf8.length s) in
+      history <- action :: history;
+      redo <- [];
+      self#dump_debug ();
+      Mutex.unlock undo_lock
     end
-    with Stack.Empty ->
-      undo_lock := true;
-      false
-  end else
-    (prerr_endline "UNDO DISCARDED"; true)
 
-  method redo () = prerr_endline "REDO"; true
+  method private handle_delete ~start ~stop =
+    if Mutex.try_lock undo_lock then begin
+      let start_offset = start#offset in
+      let stop_offset = stop#offset in
+      let s = self#buffer#get_text ~start ~stop () in
+      let action = Delete (s, start_offset, stop_offset - start_offset) in
+      history <- action :: history;
+      redo <- [];
+      self#dump_debug ();
+      Mutex.unlock undo_lock
+    end
+
   initializer
-(* INCORRECT: is called even while undoing...
-   ignore (self#buffer#connect#mark_set
-	      ~callback:
-	      (fun it tm -> if !undo_lock && not (Queue.is_empty redo) then begin
-		 Stack.iter (fun e -> Stack.push (neg e) history) nredo;
-		 Stack.clear nredo;
-		 Queue.iter (fun e -> Stack.push e history) redo;
-		 Queue.clear redo;
-	       end)
-	   );
-*)
-    ignore (self#buffer#connect#insert_text
-	      ~callback:
-	      (fun it s ->
-		 if !undo_lock && not (Queue.is_empty redo) then begin
-		   Stack.iter (fun e -> Stack.push (neg e) history) nredo;
-		   Stack.clear nredo;
-		   Queue.iter (fun e -> Stack.push e history) redo;
-		   Queue.clear redo;
-		 end;
-(*		 let pos = it#offset in
-		 if Stack.is_empty history or
-		   s=" " or s="\t" or s="\n" or
-					(match Stack.top history with
-					   | Insert(old,opos,olen) ->
-					       opos + olen <> pos
-					   | _ -> true)
-		 then *)
-		 Stack.push (Insert(s,it#offset,Glib.Utf8.length s)) history
-		 (*else begin
-		   match Stack.pop history with
-		     | Insert(olds,offset,len) ->
-			 Stack.push
-			 (Insert(olds^s,
-				 offset,
-				 len+(Glib.Utf8.length s)))
-			 history
-		     | _ -> assert false
-		   end*);
-		 self#dump_debug
-	      ));
-    ignore (self#buffer#connect#delete_range
-	      ~callback:
-	      (fun ~start ~stop ->
-		 if !undo_lock && not (Queue.is_empty redo) then begin
-		   Queue.iter (fun e -> Stack.push e history) redo;
-		   Queue.clear redo;
-		 end;
-		 let start_offset = start#offset in
-		 let stop_offset = stop#offset in
-		 let s = self#buffer#get_text ~start ~stop () in
-(*		 if Stack.is_empty history or (match Stack.top history with
-						 | Delete(old,opos,olen) ->
-						     olen=1 or opos <> start_offset
-						 | _ -> true
-					      )
-		 then
-*)		   Stack.push
-		     (Delete(s,
-			     start_offset,
-			     stop_offset - start_offset
-			    ))
-		     history
-	(*	 else begin
-		   match Stack.pop history with
-		     | Delete(olds,offset,len) ->
-			 Stack.push
-			 (Delete(olds^s,
-				 offset,
-				 len+(Glib.Utf8.length s)))
-			 history
-		     | _ -> assert false
-
-		 end*);
-		 self#dump_debug
-	      ));
-    (* Redirect the undo/redo signals of the underlying GtkSourceView *)
+    ignore (self#buffer#connect#insert_text ~callback:self#handle_insert);
+    ignore (self#buffer#connect#delete_range ~callback:self#handle_delete);
+    (* HACK: Redirect the undo/redo signals of the underlying GtkSourceView *)
     ignore (self#connect#undo (fun _ -> ignore (self#undo ()); GtkSignal.stop_emit()));
     ignore (self#connect#redo (fun _ -> ignore (self#redo ()); GtkSignal.stop_emit()));
 
