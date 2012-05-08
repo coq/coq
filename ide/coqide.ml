@@ -1603,6 +1603,7 @@ let forbid_quit_to_save () =
 
 let main files =
 
+  let data_dirs = Minilib.xdg_data_dirs () in
   (* Main window *)
   let w = GWindow.window
     ~wm_class:"CoqIde" ~wm_name:"CoqIde"
@@ -1613,10 +1614,13 @@ let main files =
   (try
      let icon_image = Filename.concat (List.find
        (fun x -> Sys.file_exists (Filename.concat x "coq.png"))
-       Minilib.xdg_data_dirs) "coq.png" in
+       data_dirs) "coq.png" in
      let icon = GdkPixbuf.from_file icon_image in
      w#set_icon (Some icon)
    with _ -> ());
+
+  let () = style_manager#set_search_path (data_dirs @ style_manager#search_path) in
+  let () = lang_manager#set_search_path (data_dirs @ lang_manager#search_path) in
 
   let vbox = GPack.vbox ~homogeneous:false ~packing:w#add () in
 
@@ -2252,7 +2256,7 @@ let main files =
     (fun () -> if current.show_toolbar then toolbar#misc#show () else toolbar#misc#hide ());
   refresh_style_hook :=
     (fun () ->
-      let style =  style_manager#style_scheme current.source_style in
+      let style = style_manager#style_scheme current.source_style in
       let iter_page p = p.script#source_buffer#set_style_scheme style in
       List.iter iter_page session_notebook#pages;
     );
@@ -2332,7 +2336,7 @@ let main files =
     (try
        let image = Filename.concat (List.find
 	 (fun x -> Sys.file_exists (Filename.concat x "coq.png"))
-	 Minilib.xdg_data_dirs) "coq.png" in
+	 data_dirs) "coq.png" in
        let startup_image = GdkPixbuf.from_file image in
        b#insert ~iter:b#start_iter "\n\n";
        b#insert_pixbuf ~iter:b#start_iter ~pixbuf:startup_image;
@@ -2344,7 +2348,7 @@ let main files =
     (try
        let image = Filename.concat (List.find
 	 (fun x -> Sys.file_exists (Filename.concat x "coq.png"))
-	 Minilib.xdg_data_dirs) "coq.png" in
+	 data_dirs) "coq.png" in
        let startup_image = GdkPixbuf.from_file image in
        b#insert ~iter:b#start_iter "\n\n";
        b#insert_pixbuf ~iter:b#start_iter ~pixbuf:startup_image;

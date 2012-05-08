@@ -9,28 +9,14 @@
 open Configwin
 open Printf
 
-let pref_file = Filename.concat Minilib.xdg_config_home "coqiderc"
-let accel_file = Filename.concat Minilib.xdg_config_home "coqide.keys"
 let lang_manager = GSourceView2.source_language_manager ~default:true
-let () = lang_manager#set_search_path
-  (Minilib.xdg_data_dirs@lang_manager#search_path)
 let style_manager = GSourceView2.source_style_scheme_manager ~default:true
-let () = style_manager#set_search_path
-  (Minilib.xdg_data_dirs@style_manager#search_path)
 
 let get_config_file name =
+  let config_dirs = Minilib.xdg_config_dirs () in
   let find_config dir = Sys.file_exists (Filename.concat dir name) in
-  let config_dir = List.find find_config Minilib.xdg_config_dirs in
+  let config_dir = List.find find_config config_dirs in
   Filename.concat config_dir name
-
-(* Small hack to handle v8.3 to v8.4 change in configuration file *)
-let loaded_pref_file =
-  try get_config_file "coqiderc"
-  with Not_found -> Filename.concat Minilib.home ".coqiderc"
-
-let loaded_accel_file =
-  try get_config_file "coqide.keys"
-  with Not_found -> Filename.concat Minilib.home ".coqide.keys"
 
 let mod_to_str (m:Gdk.Tags.modifier) =
   match m with
@@ -221,8 +207,11 @@ let current = {
   }
 
 let save_pref () =
-  if not (Sys.file_exists Minilib.xdg_config_home)
-  then Unix.mkdir Minilib.xdg_config_home 0o700;
+  let home = Minilib.xdg_config_home () in
+  let pref_file = Filename.concat home "coqiderc" in
+  let accel_file = Filename.concat home "coqide.keys" in
+  if not (Sys.file_exists home)
+  then Unix.mkdir home 0o700;
   let () = try GtkData.AccelMap.save accel_file with _ -> () in
   let p = current in
 
@@ -285,6 +274,22 @@ let save_pref () =
     Config_lexer.print_file pref_file
 
 let load_pref () =
+
+  (* Small hack to handle v8.3 to v8.4 change in configuration file *)
+  let loaded_pref_file =
+    try get_config_file "coqiderc"
+    with Not_found ->
+      let home = Minilib.home () in
+      Filename.concat home ".coqiderc"
+  in
+
+  let loaded_accel_file =
+    try get_config_file "coqide.keys"
+    with Not_found ->
+      let home = Minilib.home () in
+      Filename.concat home ".coqide.keys"
+  in
+
   let () = try GtkData.AccelMap.load loaded_accel_file with _ -> () in
 
     let m = Config_lexer.load_file loaded_pref_file in
@@ -621,6 +626,7 @@ let configure ?(apply=(fun () -> ())) () =
       current.source_style <- s;
       !refresh_style_hook ()
     in
+    let () = style_manager#force_rescan () in
     combo "Highlighting style:"
       ~f ~new_allowed:false
       style_manager#style_scheme_ids current.source_style
