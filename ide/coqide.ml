@@ -144,9 +144,6 @@ let update_notebook_pos () =
   in
   session_notebook#set_tab_pos pos
 
-let to_do_on_page_switch = ref []
-
-
 (** * Coqide's handling of signals *)
 
 (** We ignore Ctrl-C, and for most of the other catchable signals
@@ -465,7 +462,7 @@ let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
 let custom_project_files = ref []
 let sup_args = ref []
 
-class analyzed_view (_script:Wg_ScriptView.script_view) (_pv:GText.view) (_mv:GText.view) _cs _ct _fn =
+class analyzed_view (_script:Wg_ScriptView.script_view) (_pv:GText.view) (_mv:GText.view) _ct _fn =
 object(self)
   val input_view = _script
   val input_buffer = _script#buffer
@@ -473,7 +470,7 @@ object(self)
   val proof_buffer = _pv#buffer
   val message_view = _mv
   val message_buffer = _mv#buffer
-  val cmd_stack = _cs
+  val cmd_stack = Stack.create ()
   val mycoqtop = _ct
   val mutable is_active = false
   val mutable filename = _fn
@@ -612,8 +609,7 @@ object(self)
     message_view#misc#draw None
 
   method clear_message = message_buffer#set_text ""
-  val mutable last_index = true
-  val last_array = [|"";""|]
+
   method get_start_of_input =  input_buffer#get_iter_at_mark (`NAME "start_of_input")
 
   method get_insert = get_insert input_buffer
@@ -629,37 +625,6 @@ object(self)
         ~yalign:0.75
         ~within_margin:0.25)
               `INSERT)
-
-
-  method private indent_current_line =
-    let get_nb_space it =
-      let it = it#copy in
-      let nb_sep = ref 0 in
-      let continue = ref true in
-      while !continue do
-        if it#char = space then begin
-          incr nb_sep;
-          if not it#nocopy#forward_char then continue := false;
-        end else continue := false
-      done;
-      !nb_sep
-    in
-    let previous_line = self#get_insert in
-    if previous_line#nocopy#backward_line then begin
-      let previous_line_spaces = get_nb_space previous_line in
-      let current_line_start = self#get_insert#set_line_offset 0 in
-      let current_line_spaces = get_nb_space current_line_start in
-      if input_buffer#delete_interactive
-        ~start:current_line_start
-        ~stop:(current_line_start#forward_chars current_line_spaces)
-        ()
-      then
-        let current_line_start = self#get_insert#set_line_offset 0 in
-        input_buffer#insert
-          ~iter:current_line_start
-          (String.make previous_line_spaces ' ')
-    end
-
 
   method go_to_next_occ_of_cur_word =
     let cv = session_notebook#current_term in
@@ -1082,33 +1047,9 @@ object(self)
            self#insert_this_phrase_on_success true false false
              ("progress "^p^".\n") (p^".\n")) l)
 
-  method private active_keypress_handler k =
-    begin
-      if GdkEvent.Key.keyval k = GdkKeysyms._Tab then
-        begin
-          let state = GdkEvent.Key.state k in
-          let is_control = List.mem `CONTROL state in
-          if is_control then
-            begin
-            prerr_endline "active_kp_handler for Tab";
-            self#indent_current_line;
-            true
-            end
-          else false
-        end
-      else
-        false
-    end
-
-  val mutable deact_id = None
-  val mutable act_id = None
-
   method private activate () = if not is_active then begin
     is_active <- true;
-    act_id <- Some
-      (input_view#event#connect#key_press ~callback:self#active_keypress_handler);
     prerr_endline "CONNECTED active : ";
-    print_id (match act_id with Some x -> x | None -> assert false);
     match filename with
       | None -> ()
       | Some f ->
@@ -1286,7 +1227,6 @@ let create_session file =
 				      |None -> "*scratch*"
 				      |Some f -> (Glib.Convert.filename_to_utf8 (Filename.basename f))
 				   ) () in
-  let stack = Stack.create () in
   let coqtop_args = match file with
     |None -> !sup_args
     |Some the_file -> match current.read_project with
@@ -1298,7 +1238,7 @@ let create_session file =
   let ct = ref (Coq.spawn_coqtop coqtop_args) in
   let command = new Wg_Command.command_window ct in
   let finder = new Wg_Find.finder (script :> GText.view) in
-  let legacy_av = new analyzed_view script proof message stack ct file in
+  let legacy_av = new analyzed_view script proof message ct file in
   let () = legacy_av#update_stats in
   let _ =
     script#buffer#create_mark ~name:"start_of_input" script#buffer#start_iter in
@@ -2236,7 +2176,6 @@ let main files =
   (* The vertical Separator between Scripts and Goals *)
   vbox#pack ~expand:true session_notebook#coerce;
   update_notebook_pos ();
-  let nb = session_notebook in
   let lower_hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
   lower_hbox#pack ~expand:true status#coerce;
   push_info "Ready";
@@ -2375,13 +2314,7 @@ let main files =
   Tags.set_processed_color (Tags.color_of_string current.processed_color);
 
 (* End of color configuration *)
-  ignore(nb#connect#switch_page
-	   ~callback:
-	   (fun i ->
-	     prerr_endline ("switch_page: starts " ^ string_of_int i);
-	     List.iter (function f -> f i) !to_do_on_page_switch;
-	     prerr_endline "switch_page: success")
-  );
+
   if List.length files >=1 then
     begin
       List.iter (fun f ->
