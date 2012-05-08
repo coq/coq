@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Ideutils
 
 let underscore = Glib.Utf8.to_unichar "_" ~pos:(ref 0)
 let arobase = Glib.Utf8.to_unichar "@" ~pos:(ref 0)
@@ -21,14 +22,12 @@ let is_word_char c =
 
 
 let starts_word (it:GText.iter) =
-  prerr_endline ("Starts word ? '"^(Glib.Utf8.from_unichar it#char)^"'");
-  (not it#copy#nocopy#backward_char ||
-     (let c = it#backward_char#char in
-	not (is_word_char c)))
-
+  (it#is_start ||
+    (let c = it#backward_char#char in
+      not (is_word_char c)))
 
 let ends_word (it:GText.iter) =
-  (not it#copy#nocopy#forward_char ||
+  (it#is_end ||
      let c = it#forward_char#char in
        not (is_word_char c)
   )
@@ -55,7 +54,6 @@ let find_word_start (it:GText.iter) =
 	prerr_endline ("Word start at: "^(string_of_int it#offset));it)
   in
     step_to_start it#copy
-
 
 let find_word_end (it:GText.iter) =
   let rec step_to_end (it:GText.iter) =

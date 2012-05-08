@@ -16,6 +16,8 @@ object
   method undo : unit -> bool
   method redo : unit -> bool
   method clear_undo : unit -> unit
+  method auto_complete : bool
+  method set_auto_complete : bool -> unit
 end
 
 val script_view :

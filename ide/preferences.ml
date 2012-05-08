@@ -74,12 +74,9 @@ let inputenc_of_string s =
 
 (** Hooks *)
 
-let refresh_font_hook = ref (fun () -> ())
 let refresh_style_hook = ref (fun () -> ())
 let refresh_editor_hook = ref (fun () -> ())
-let refresh_background_color_hook = ref (fun () -> ())
 let refresh_toolbar_hook = ref (fun () -> ())
-let auto_complete_hook = ref (fun x -> ())
 let contextual_menus_on_goal_hook = ref (fun x -> ())
 let resize_window_hook = ref (fun () -> ())
 let refresh_tabs_hook = ref (fun () -> ())
@@ -410,7 +407,7 @@ let configure ?(apply=(fun () -> ())) () =
 (*
 	 Format.printf "in config_font: current.text_font = %s@." (Pango.Font.to_string current.text_font);
 *)
-	 !refresh_font_hook ())
+	 !refresh_editor_hook ())
       true
   in
 
@@ -464,7 +461,7 @@ let configure ?(apply=(fun () -> ())) () =
       current.background_color <- Tags.string_of_color background_button#color;
       current.processing_color <- Tags.string_of_color processing_button#color;
       current.processed_color <- Tags.string_of_color processed_button#color;
-      !refresh_background_color_hook ();
+      !refresh_editor_hook ();
       Tags.set_processing_color processing_button#color;
       Tags.set_processed_color processed_button#color
     in
@@ -548,7 +545,7 @@ let configure ?(apply=(fun () -> ())) () =
     bool
       ~f:(fun s ->
 	    current.auto_complete <- s;
-	    !auto_complete_hook s)
+	    !refresh_editor_hook ())
       "Auto Complete" current.auto_complete
   in
 

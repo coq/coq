@@ -16,10 +16,10 @@ Utf8_convert
 Preferences
 Project_file
 Ideutils
+Gtk_parsing
 Ideproof
 Wg_ScriptView
 Coq_lex
-Gtk_parsing
 Coq
 Coq_commands
 Wg_Command

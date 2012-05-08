@@ -26,7 +26,6 @@ let safety_tag = function
 
 class type _analyzed_view =
 object
-  method without_auto_complete : 'a 'b. ('a -> 'b) -> 'a -> 'b
 
   method kill_detached_views : unit -> unit
   method add_detached_view : GWindow.window -> unit
@@ -58,7 +57,6 @@ object
   method show_goals : unit
   method undo_last_step : unit
   method help_for_keyword : unit -> unit
-  method complete_at_offset : int -> bool
 end
 
 
@@ -314,53 +312,6 @@ let setopts ct opts v =
   let opts = List.map (fun o -> (o, v)) opts in
   Coq.PrintOpt.set ct opts
 
-(* Reset this to None on page change ! *)
-let (last_completion:(string*int*int*bool) option ref) = ref None
-
-let () = to_do_on_page_switch :=
-  (fun i -> last_completion := None)::!to_do_on_page_switch
-
-let rec complete input_buffer w (offset:int) =
-  match !last_completion with
-    | Some (lw,loffset,lpos,backward)
-	when lw=w && loffset=offset ->
-      begin
-	let iter = input_buffer#get_iter (`OFFSET lpos) in
-	if backward then
-	  match complete_backward w iter with
-	    | None ->
-	      last_completion :=
-		Some (lw,loffset,
-		      (find_word_end
-			 (input_buffer#get_iter (`OFFSET loffset)))#offset ,
-		      false);
-	      None
-	    | Some (ss,start,stop) as result ->
-	      last_completion :=
-		Some (w,offset,ss#offset,true);
-	      result
-	else
-	  match complete_forward w iter with
-	    | None ->
-	      last_completion := None;
-	      None
-	    | Some (ss,start,stop) as result ->
-	      last_completion :=
-		Some (w,offset,ss#offset,false);
-	      result
-      end
-    | _ -> begin
-      match complete_backward w (input_buffer#get_iter (`OFFSET offset)) with
-	| None ->
-	  last_completion :=
-	    Some (w,offset,(find_word_end (input_buffer#get_iter
-					     (`OFFSET offset)))#offset,false);
-	  complete input_buffer w offset
-	| Some (ss,start,stop) as result ->
-	  last_completion := Some (w,offset,ss#offset,true);
-	  result
-    end
-
 let get_current_word () =
   match session_notebook#current_term,cb#text with
     | {script=script; analyzed_view=av;},None ->
@@ -375,7 +326,6 @@ let get_current_word () =
       prerr_endline "Some selected";
       prerr_endline t;
       t
-
 
 let input_channel b ic =
   let buf = String.create 1024 and len = ref 0 in
@@ -532,18 +482,8 @@ object(self)
   val mutable last_auto_save_time = 0.
   val mutable detached_views = []
 
-  val mutable auto_complete_on = current.auto_complete
   val hidden_proofs = Hashtbl.create 32
 
-  method private toggle_auto_complete =
-    auto_complete_on <- not auto_complete_on
-  method private set_auto_complete t = auto_complete_on <- t
-  method without_auto_complete : 'a 'b. ('a -> 'b) -> 'a -> 'b = fun f x ->
-    let old = auto_complete_on in
-    self#set_auto_complete false;
-    let y = f x in
-    self#set_auto_complete old;
-    y
   method add_detached_view (w:GWindow.window) =
     detached_views <- w::detached_views
   method remove_detached_view (w:GWindow.window) =
@@ -849,30 +789,6 @@ object(self)
       then Some (start,stop)
       else None
     with Not_found -> None
-
-  method complete_at_offset (offset:int) =
-    prerr_endline ("Completion at offset : " ^ string_of_int offset);
-    let it () = input_buffer#get_iter (`OFFSET offset) in
-    let iit = it () in
-    let start = find_word_start iit in
-    if ends_word iit then
-      let w = input_buffer#get_text
-        ~start
-        ~stop:iit
-        ()
-      in
-      if String.length w <> 0 then begin
-        prerr_endline ("Completion of prefix : '" ^ w^"'");
-        match complete input_buffer w start#offset with
-          | None -> false
-          | Some (ss,start,stop) ->
-            let completion = input_buffer#get_text ~start ~stop () in
-            ignore (input_buffer#delete_selection ());
-            ignore (input_buffer#insert_interactive completion);
-            input_buffer#move_mark `SEL_BOUND ~where:(it())#backward_char;
-            true
-      end else false
-    else false
 
   method private process_one_phrase ct verbosely display_goals do_highlight =
     let get_next_phrase () =
@@ -1273,21 +1189,6 @@ object(self)
                   end
               )
     );
-    ignore (input_buffer#connect#after#insert_text
-              ~callback:(fun it s ->
-                if auto_complete_on &&
-                  String.length s = 1 && s <> " " && s <> "\n"
-                then
-                  let v = session_notebook#current_term.analyzed_view
-                  in
-                  let has_completed =
-                    v#complete_at_offset
-                      ((input_view#buffer#get_iter `SEL_BOUND)#offset)
-                  in
-                  if has_completed then
-                    input_buffer#move_mark `SEL_BOUND ~where:(input_buffer#get_iter `SEL_BOUND)#forward_char;
-              )
-    );
     ignore (input_buffer#connect#begin_user_action
 	      ~callback:(fun () ->
 		           let here = input_buffer#get_iter_at_mark `INSERT in
@@ -1428,14 +1329,6 @@ let create_session file =
   script#buffer#place_cursor ~where:(script#buffer#start_iter);
   proof#misc#set_can_focus true;
   message#misc#set_can_focus true;
-  (* setting fonts *)
-  script#misc#modify_font current.text_font;
-  proof#misc#modify_font current.text_font;
-  message#misc#modify_font current.text_font;
-  (* setting colors *)
-  script#misc#modify_base [`NORMAL, `NAME current.background_color];
-  proof#misc#modify_base [`NORMAL, `NAME current.background_color];
-  message#misc#modify_base [`NORMAL, `NAME current.background_color];
 
   { tab_label=basename;
     script=script;
@@ -1639,7 +1532,8 @@ let load_file handler f =
 	input_buffer#set_modified false;
 	prerr_endline "Loading: clear undo";
 	session.script#clear_undo ();
-	prerr_endline "Loading: success"
+	prerr_endline "Loading: success";
+        !refresh_editor_hook ();
       end
   with
     | e -> handler ("Load failed: "^(Printexc.to_string e))
@@ -1729,6 +1623,7 @@ let main files =
   let new_f _ =
     let session = create_session None in
     let index = session_notebook#append_term session in
+    !refresh_editor_hook ();
     session_notebook#goto_page index
   in
   let load_f _ =
@@ -1835,19 +1730,7 @@ let main files =
     then current.proof_view#as_view
     else current.message_view#as_view
   in
-  (*
-    let toggle_auto_complete_i =
-    edit_f#add_check_item "_Auto Completion"
-    ~active:current.auto_complete
-    ~callback:
-    in
-  *)
-  (*
-    auto_complete :=
-    (fun b -> match session_notebook#current_term.analyzed_view with
-    | Some av -> av#set_auto_complete b
-    | None -> ());
-  *)
+
 (* begin Preferences *)
   let reset_revert_timer () =
     disconnect_revert_timer ();
@@ -2115,8 +1998,7 @@ let main files =
       GAction.add_action "Undo" ~accel:"<Ctrl>u"
 	~callback:(fun _ -> do_if_not_computing "undo"
 		     (fun sess ->
-			ignore (sess.analyzed_view#without_auto_complete
-				  session_notebook#current_term.script#undo ()))
+			ignore (session_notebook#current_term.script#undo ()))
 		     [session_notebook#current_term]) ~stock:`UNDO;
       GAction.add_action "Redo" ~stock:`REDO
 	~callback:(fun _ -> ignore (session_notebook#current_term.script#redo ()));
@@ -2143,9 +2025,9 @@ let main files =
      GAction.add_action "Close Find" ~accel:"Escape"
         ~callback:(fun _ -> session_notebook#current_term.finder#hide ());
       GAction.add_action "Complete Word" ~label:"Complete Word" ~callback:(fun _ ->
-	     ignore (
-	       let av = session_notebook#current_term.analyzed_view in
-	       av#complete_at_offset (av#get_insert)#offset
+	     ignore ( ()
+(*	       let av = session_notebook#current_term.analyzed_view in
+	       av#complete_at_offset (av#get_insert)#offset*)
 	     )) ~accel:"<Ctrl>slash";
       GAction.add_action "External editor" ~label:"External editor" ~callback:(fun _ ->
 	let av = session_notebook#current_term.analyzed_view in
@@ -2381,37 +2263,35 @@ let main files =
         if current.show_spaces then 0b1001011 (* SPACE, TAB, NBSP, TRAILING *)
         else 0
       in
+      let fd = current.text_font in
+      let clr = Tags.color_of_string current.background_color in
+
       let iter_page p =
+        (* Editor settings *)
         p.script#set_wrap_mode wrap_mode;
         p.script#set_show_line_numbers current.show_line_number;
         p.script#set_auto_indent current.auto_indent;
+
         (* Hack to handle missing binding in lablgtk *)
         let conv = { Gobject.name = "draw-spaces"; Gobject.conv = Gobject.Data.int } in
         Gobject.set conv p.script#as_widget show_spaces;
+
         p.script#set_insert_spaces_instead_of_tabs current.spaces_instead_of_tabs;
         p.script#set_tab_width current.tab_length;
-      in
-      List.iter iter_page session_notebook#pages;
-    );
-  refresh_font_hook :=
-    (fun () ->
-      let fd = current.text_font in
-      let iter_page p =
+        p.script#set_auto_complete current.auto_complete;
+
+        (* Fonts *)
         p.script#misc#modify_font fd;
         p.proof_view#misc#modify_font fd;
         p.message_view#misc#modify_font fd;
-        p.command#refresh_font ()
-      in
-      List.iter iter_page session_notebook#pages;
-    );
-  refresh_background_color_hook :=
-    (fun () ->
-      let clr = Tags.color_of_string current.background_color in
-      let iter_page p =
+        p.command#refresh_font ();
+
+        (* Colors *)
         p.script#misc#modify_base [`NORMAL, `COLOR clr];
         p.proof_view#misc#modify_base [`NORMAL, `COLOR clr];
         p.message_view#misc#modify_base [`NORMAL, `COLOR clr];
         p.command#refresh_color ()
+
       in
       List.iter iter_page session_notebook#pages;
     );
@@ -2511,6 +2391,7 @@ let main files =
     begin
       let session = create_session None in
       let index = session_notebook#append_term session in
+      !refresh_editor_hook ();
       session_notebook#goto_page index;
     end;
   initial_about session_notebook#current_term.proof_view#buffer;
