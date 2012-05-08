@@ -80,35 +80,48 @@ type $(P~n)$ and consequently represent proofs of the formula
 
 \subsection[Sorts]{Sorts\label{Sorts}
 \index{Sorts}}
-Types are seen as terms of the language and then should belong to
-another type. The type of a type is always a constant of the language
-called a {\em sort}.
+When manipulated as terms, types have themselves a type which is called a sort.
 
-The two basic sorts in the language of \CIC\ are \Set\ and \Prop.
+There is an infinite well-founded typing hierarchy of sorts whose base
+sorts are {\Prop} and {\Set}.
 
-The sort \Prop\ intends to be the type of logical propositions.  If
-$M$ is a logical proposition then it denotes a class, namely the class
-of terms representing proofs of $M$. An object $m$ belonging to $M$
-witnesses the fact that $M$ is true.  An object of type \Prop\ is
-called a {\em proposition}.
+The sort {\Prop} intends to be the type of logical propositions. If
+$M$ is a logical proposition then it denotes the class of terms
+representing proofs of $M$. An object $m$ belonging to $M$ witnesses
+the fact that $M$ is provable. An object of type {\Prop} is called a
+proposition.
 
-The sort \Set\ intends to be the type of specifications. This includes
-programs and the usual sets such as booleans, naturals, lists
-etc.
+The sort {\Set} intends to be the type of small sets. This includes data
+types such as booleans and naturals, but also products, subsets, and
+function types over these data types.
 
-These sorts themselves can be manipulated as ordinary terms.
-Consequently sorts also should be given a type.  Because assuming
-simply that \Set\ has type \Set\ leads to an inconsistent theory, we
-have infinitely many sorts in the language of \CIC. These are, in
-addition to \Set\ and \Prop\, a hierarchy of universes \Type$(i)$
-for any integer $i$.  We call \Sort\ the set of sorts
-which is defined by:
+{\Prop} and {\Set} themselves can be manipulated as ordinary
+terms. Consequently they also have a type. Because assuming simply
+that {\Set} has type {\Set} leads to an inconsistent theory, the
+language of {\CIC} has infinitely many sorts. There are, in addition
+to {\Set} and {\Prop} a hierarchy of universes {\Type$(i)$} for any
+integer $i$.
+
+Like {\Set}, all of the sorts {\Type$(i)$} contain small sets such as
+booleans, natural numbers, as well as products, subsets and function
+types over small sets. But, unlike {\Set}, they also contain large
+sets, namely the sorts {\Set} and {\Type$(j)$} for $j<i$, and all
+products, subsets and function types over these sorts.
+
+Formally, we call {\Sort} the set of sorts which is defined by:
 \[\Sort \equiv \{\Prop,\Set,\Type(i)| i \in \NN\} \]
 \index{Type@{\Type}}
 \index{Prop@{\Prop}}
 \index{Set@{\Set}}
-The sorts enjoy the following properties: {\Prop:\Type(0)}, {\Set:\Type(0)} and
-  {\Type$(i)$:\Type$(i+1)$}.
+
+The sorts enjoy the following properties\footnote{In the Reference
+  Manual of versions of Coq prior to 8.4, the level of {\Type} typing
+  {\Prop} and {\Set} was numbered $0$. From Coq 8.4, it started to be
+  numbered $1$ so as to be able to leave room for re-interpreting
+  {\Set} in the hierarchy as {\Type$(0)$}. This change also put the
+  reference manual in accordance with the internal conventions adopted
+  in the implementation.}: {\Prop:\Type$(1)$}, {\Set:\Type$(1)$} and
+{\Type$(i)$:\Type$(i+1)$}.
 
 The user will never mention explicitly the index $i$ when referring to
 the universe \Type$(i)$. One only writes \Type. The
