@@ -472,7 +472,6 @@ object(self)
   val message_buffer = _mv#buffer
   val cmd_stack = Stack.create ()
   val mycoqtop = _ct
-  val mutable is_active = false
   val mutable filename = _fn
   val mutable stats = None
   val mutable last_modification_time = 0.
@@ -503,7 +502,7 @@ object(self)
         let do_revert () = begin
           push_info "Reverting buffer";
           try
-            if is_active then self#force_reset_initial;
+            self#force_reset_initial;
             let b = Buffer.create 1024 in
             with_file flash_info f ~f:(input_channel b);
             let s = try_convert (Buffer.contents b) in
@@ -908,6 +907,7 @@ object(self)
 
   method reset_initial =
     mycoqtop := Coq.respawn_coqtop !mycoqtop;
+    self#include_file_dir_in_path;
     sync (fun () ->
       Stack.iter
 	(function inf ->
@@ -1047,9 +1047,7 @@ object(self)
            self#insert_this_phrase_on_success true false false
              ("progress "^p^".\n") (p^".\n")) l)
 
-  method private activate () = if not is_active then begin
-    is_active <- true;
-    prerr_endline "CONNECTED active : ";
+  method private include_file_dir_in_path =
     match filename with
       | None -> ()
       | Some f ->
@@ -1066,7 +1064,6 @@ object(self)
 	      | Interface.Fail (l,str) ->
 		self#set_message ("Couln't add loadpath:\n"^str)
 	      | Interface.Good _ -> ()
-  end
 
   method help_for_keyword () =
     browse_keyword (self#insert_message) (get_current_word ())
@@ -1174,7 +1171,7 @@ object(self)
                   prerr_endline "Should recenter : yes";
                   self#recenter_insert
                 end));
-    self#activate ();
+    self#include_file_dir_in_path;
 end
 
 let last_make = ref "";;
