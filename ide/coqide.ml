@@ -10,9 +10,12 @@ open Preferences
 open Gtk_parsing
 open Ideutils
 
+type flag = [ `COMMENT | `UNSAFE ]
+
 type ide_info = {
   start : GText.mark;
   stop : GText.mark;
+  flags : flag list;
 }
 
 (** Have we used admit or declarative mode's daimon ?
@@ -44,7 +47,6 @@ object
   method go_to_insert : unit
   method go_to_next_occ_of_cur_word : unit
   method go_to_prev_occ_of_cur_word : unit
-  method insert_command : string -> string -> unit
   method tactic_wizard : string list -> unit
   method insert_message : string -> unit
   method process_next_phrase : bool -> unit
@@ -693,7 +695,6 @@ object(self)
           flash_info "This error is so nasty that I can't even display it."
         else begin
           self#insert_message s;
-          message_view#misc#draw None;
           if localize then
             (match loc with
               | None -> ()
@@ -754,7 +755,35 @@ object(self)
       else None
     with Not_found -> None
 
-  method private process_one_phrase ct verbosely display_goals do_highlight =
+(*  method private process_phrase verbosely =
+    prerr_endline "process_phrase starting now";
+    let get_next_phrase () =
+      self#find_phrase_starting_at self#get_start_of_input
+    in
+    let mark_processed start stop flags =
+      input_buffer#move_mark ~where:stop (`NAME "start_of_input");
+      let start_mark = input_buffer#create_mark start in
+      let stop_mark = input_buffer#create_mark stop in
+      let ide_payload = {
+        start = `MARK start_mark;
+        stop = `MARK stop_mark;
+        flags = flags;
+      } in
+      Stack.push ide_payload cmd_stack;
+      true
+    in
+    match sync get_next_phrase () with
+    | None -> false
+    | Some (start, stop) ->
+      let phrase = start#get_slice stop in
+      if stop#backward_char#has_tag Tags.Script.comment_sentence
+      then mark_processed start stop [ `COMMENT ]
+      else
+        match Coq.interp !mycoqtop ~verbose phrase with
+        | Interface.Fail (l, str) -> sync display_error (l, str)
+        | Interface.Good msg -> mark_processed start stop*)
+
+  method private process_one_phrase ct verbosely do_highlight =
     let get_next_phrase () =
       self#clear_message;
       prerr_endline "process_one_phrase starting now";
@@ -783,7 +812,7 @@ object(self)
         input_view#set_editable true;
         pop_info ();
       end in
-    let mark_processed safe (start,stop) =
+    let mark_processed safe (start, stop) =
       let b = input_buffer in
       b#move_mark ~where:stop (`NAME "start_of_input");
       b#apply_tag (safety_tag safe) ~start ~stop;
@@ -792,10 +821,12 @@ object(self)
           b#place_cursor ~where:stop;
           self#recenter_insert
         end;
-      let ide_payload = { start = `MARK (b#create_mark start);
-                          stop = `MARK (b#create_mark stop); } in
+      let ide_payload = {
+        start = `MARK (b#create_mark start);
+        stop = `MARK (b#create_mark stop);
+        flags = [];
+      } in
       Stack.push ide_payload cmd_stack;
-      if display_goals then self#show_goals;
       remove_tag (start,stop)
     in
     match sync get_next_phrase () with
@@ -810,7 +841,9 @@ object(self)
 	    | RestartCoqtop -> sync remove_tag loc; raise RestartCoqtop
 
   method process_next_phrase verbosely =
-    try self#process_one_phrase !mycoqtop verbosely true true
+    try
+      self#process_one_phrase !mycoqtop verbosely true;
+      self#show_goals;
     with Unsuccessful -> ()
 
   method private insert_this_phrase_on_success
@@ -825,8 +858,11 @@ object(self)
       input_buffer#apply_tag (safety_tag safe) ~start ~stop;
       if (self#get_insert#compare) stop <= 0 then
         input_buffer#place_cursor ~where:stop;
-      let ide_payload = { start = `MARK (input_buffer#create_mark start);
-                          stop = `MARK (input_buffer#create_mark stop); } in
+      let ide_payload = {
+        start = `MARK (input_buffer#create_mark start);
+        stop = `MARK (input_buffer#create_mark stop);
+        flags = [];
+      } in
       Stack.push ide_payload cmd_stack;
       self#show_goals;
        (*Auto insert save on success...
@@ -895,7 +931,7 @@ object(self)
     let ct = !mycoqtop in
     (try
        while stop#compare (get_current()) >= 0
-       do self#process_one_phrase ct false false false done
+       do self#process_one_phrase ct false false done
      with
        | Unsuccessful -> ()
        | RestartCoqtop -> unlock (); raise RestartCoqtop);
@@ -1034,10 +1070,6 @@ object(self)
        Mutex.unlock coq_may_stop)
     else prerr_endline "undo_last_step discarded"
 
-
-  method insert_command cp ip =
-    async(fun _ -> self#clear_message)();
-    ignore (self#insert_this_phrase_on_success true false false cp ip)
 
   method tactic_wizard l =
     async(fun _ -> self#clear_message)();
@@ -1881,8 +1913,7 @@ let main files =
   in
   let tactic_shortcut s sc = GAction.add_action s ~label:("_"^s)
     ~accel:(current.modifier_for_tactics^sc)
-    ~callback:(do_if_active (fun a -> a#insert_command
-			       ("progress "^s^".\n") (s^".\n"))) in
+    ~callback:(do_if_active (fun a -> a#tactic_wizard [s])) in
   let query_callback command _ =
     let word = get_current_word () in
     if not (word = "") then
