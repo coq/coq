@@ -60,7 +60,7 @@ Add Printing Let sigT2.
 
 (** Projections of [sig]
 
-    An element [y] of a subset [{x:A & (P x)}] is the pair of an [a]
+    An element [y] of a subset [{x:A | (P x)}] is the pair of an [a]
     of type [A] and of a proof [h] that [a] satisfies [P].  Then
     [(proj1_sig y)] is the witness [a] and [(proj2_sig y)] is the
     proof of [(P a)] *)
