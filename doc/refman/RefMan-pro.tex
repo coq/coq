@@ -234,7 +234,45 @@ This focuses the attention on the $\num^{th}$ subgoal to prove.
 \end{Variant}
 
 \subsection[\tt Unfocus.]{\tt Unfocus.\comindex{Unfocus}}
-Turns off the focus mode.
+This command restores to focus the goal that were suspended by the
+last {\tt Focus} command.
+
+\subsection[\tt Unfocused.]{\tt Unfocused.\comindex{Unfocused}}
+Succeeds in the proof is fully unfocused, fails is there are some
+goals out of focus.
+
+\subsection[\tt \{ \textrm{and} \}]{\tt \{ \textrm{and} \}\comindex{\{}\comindex{\}}}
+The command {\tt \{} (without a terminating period) focuses on the
+first goal, much like {\tt Focus.} does, however, the subproof can
+only be unfocused when it has been fully solved (\emph{i.e.} when
+there is no focused goal left). Unfocusing is then handled by {\tt \}}
+(again, without a terminating period). See also example in next section.
+
+\subsection[Bullets]{Bullets\comindex{+ (command)}\comindex{- (command)}\comindex{* (command)}\index{Bullets}}
+Alternatively to {\tt \{} and {\tt \}}, proofs can be structured with
+bullets. The use of a bullet for the first time focuses on the first
+goal, the same bullet cannot be used again until the subproof in
+completed, then it focuses on the next goal. Different bullets can be
+used to nest levels. The scope of bullet does not go beyond enclosing
+{\tt \{} and {\tt \}}, so bullets can be reused as further nesting
+level provided they are delimited by these. Available bullets are
+{\tt -}, {\tt +} and {\tt *} (without a terminating period).
+
+The following example script illustrates all these features:
+\begin{verbatim}
+Goal (((True/\True)/\True)/\True)/\True.
+Proof.
+  split.
+  - split.
+    + split.
+      * { split.
+         - trivial.
+         - trivial.
+        }
+      * trivial.
+    + trivial.
+  - trivial.
+\end{verbatim}
 
 
 \section{Requesting information}
