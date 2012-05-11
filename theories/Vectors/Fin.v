@@ -23,10 +23,7 @@ Inductive t : nat -> Set :=
 
 Section SCHEMES.
 Definition case0 P (p: t 0): P p :=
-  match p as p' in t n return
-    match n as n' return t n' -> Type
-  with |0 => fun f0 => P f0 |S _ => fun _ => @ID end p'
-  with |F1 _ => @id |FS _ _ => @id end.
+  match p with | F1 _ | FS _ _ => fun devil => False_rect (@ID) devil (* subterm !!! *) end.
 
 Definition caseS (P: forall {n}, t (S n) -> Type)
   (P1: forall n, @P n F1) (PS : forall {n} (p: t n), P (FS p))
@@ -54,11 +51,8 @@ Definition rect2 (P: forall {n} (a b: t n), Type)
     forall {n} (a b: t n), P a b :=
 fix rect2_fix {n} (a: t n): forall (b: t n), P a b :=
 match a with
-  |F1 m => fun (b: t (S m)) => match b as b' in t n'
-                   return match n',b' with
-                            |0,_ => @ID
-                            |S n0,b0 => P F1 b0
-                          end with
+  |F1 m => fun (b: t (S m)) => match b as b' in t (S n')
+                   return P F1 b' with
                      |F1 m' => H0 m'
                      |FS m' b' => H1 b'
                    end

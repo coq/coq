@@ -40,19 +40,13 @@ Definition rectS {A} (P:forall {n}, t A (S n) -> Type)
  (rect: forall a {n} (v: t A (S n)), P v -> P (a :: v)) :=
  fix rectS_fix {n} (v: t A (S n)) : P v :=
  match v with
- |nil => fun devil => False_rect (@ID) devil
  |cons a 0 v =>
-   match v as vnn in t _ nn
-       return
-         match nn,vnn with
-         |0,vm =>  P (a :: vm)
-         |S _,_ => _
-         end
-     with
+   match v with
      |nil => bas a
-     |_ :: _ => fun devil => False_rect (@ID) devil
-     end
+     |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
+   end
  |cons a (S nn') v => rect a v (rectS_fix v)
+ |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
  end.
 
 (** An induction scheme for 2 vectors of same length *)
@@ -66,13 +60,13 @@ match v1 as v1' in t _ n1
   |[] => fun v2 =>
      match v2 with
        |[] => bas
-       |_ :: _ => fun devil => False_rect (@ID) devil
+       |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
      end
   |h1 :: t1 => fun v2 =>
     match v2 with
-      |[] => fun devil => False_rect (@ID) devil
       |h2 :: t2 => fun t1' =>
         rect (rect2_fix t1' t2) h1 h2
+      |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
     end t1
 end.
 
@@ -80,14 +74,15 @@ end.
 Definition case0 {A} (P:t A 0 -> Type) (H:P (nil A)) v:P v :=
 match v with
   |[] => H
+  |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
 end.
 
 (** A vector of length [S _] is [cons] *)
 Definition caseS {A} (P : forall {n}, t A (S n) -> Type)
   (H : forall h {n} t, @P n (h :: t)) {n} (v: t A (S n)) : P v :=
-match v as v' in t _ m return match m, v' with |0, _ => False -> True |S _, v0 => P v' end with
-  |[] => fun devil => False_rect _ devil (* subterm !!! *)
+match v with
   |h :: t => H h t
+  |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
 end.
 End SCHEMES.
 
@@ -252,14 +247,14 @@ Eval cbv delta beta in rect2 (fun _ _ _ => C) c
 Definition fold_left2 {A B C: Type} (f : A -> B -> C -> A) :=
 fix fold_left2_fix (a : A) {n} (v : t B n) : t C n -> A :=
 match v in t _ n0 return t C n0 -> A with
-  |[] => fun w => match w in t _ n1
-    return match n1 with |0 => A |S _ => @ID end with
+  |[] => fun w => match w with
     |[] => a
-    |_ :: _ => @id end
-  |cons vh vn vt => fun w => match w in t _ n1
-    return match n1 with |0 => @ID |S n => t B n -> A end with
-    |[] => @id
-    |wh :: wt => fun vt' => fold_left2_fix (f a vh wh) vt' wt end vt
+    |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
+  end
+  |cons vh vn vt => fun w => match w with
+    |wh :: wt => fun vt' => fold_left2_fix (f a vh wh) vt' wt
+    |_ => fun devil => False_rect (@ID) devil (* subterm !!! *)
+  end vt
 end.
 
 End ITERATORS.
