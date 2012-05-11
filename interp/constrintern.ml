@@ -1480,7 +1480,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 			  [dummy_loc,[],thepats, (* "|p1,..,pn" *)
 			   Option.cata (intern_type env') (GHole(dummy_loc,Evd.CasesType)) rtnpo; (* "=> P" is there were a P "=> _" else *)
 			   dummy_loc,[],list_make (List.length thepats) (PatVar(dummy_loc,Anonymous)), (* "|_,..,_" *)
-			   GHole(dummy_loc,Evd.CasesType) (* "=> _" *)]))
+			   GHole(dummy_loc,Evd.ImpossibleCase) (* "=> _" *)]))
 	in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
 	GCases (loc, sty, rtnpo, tms, List.flatten eqns')
