@@ -53,6 +53,8 @@ let init_stdout,read_stdout =
              let r = Buffer.contents out_buff in
              Buffer.clear out_buff; r)
 
+let pr_debug s =
+  if !Flags.debug then Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
 (** Categories of commands *)
 
@@ -171,6 +173,7 @@ let concl_next_tac sigma concl =
 
 let process_goal sigma g =
   let env = Goal.V82.env sigma g in
+  let id = Goal.uid g in
   let ccl =
     let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
     string_of_ppcmds (pr_goal_concl_style_env env norm_constr) in
@@ -180,7 +183,7 @@ let process_goal sigma g =
 (*           (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in *)
   let hyps =
     List.rev (Environ.fold_named_context process_hyp env ~init: []) in
-  { Interface.goal_hyp = hyps; Interface.goal_ccl = ccl }
+  { Interface.goal_hyp = hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
 (*         hyps,(ccl,concl_next_tac sigma g)) *)
 
 let goals () =
@@ -254,11 +257,22 @@ let set_options options =
 
 (** Grouping all call handlers together + error handling *)
 
+exception Quit
+
 let eval_call c =
   let rec handle_exn e =
     catch_break := false;
     let pr_exn e = (read_stdout ())^("\n"^(string_of_ppcmds (Errors.print e))) in
     match e with
+      | Quit ->
+        (* Here we do send an acknowledgement message to prove everything went 
+          OK. *)
+        let dummy = Interface.Good () in
+        let xml_answer = Ide_intf.of_answer Ide_intf.quit dummy in
+        let () = Xml_utils.print_xml !orig_stdout xml_answer in
+        let () = flush !orig_stdout in
+        let () = pr_debug "Exiting gracefully." in
+        exit 0
       | Vernacexpr.Drop -> None, "Drop is not allowed by coqide!"
       | Vernacexpr.Quit -> None, "Quit is not allowed by coqide!"
       | Vernac.DuringCommandInterp (_,inner) -> handle_exn inner
@@ -275,17 +289,18 @@ let eval_call c =
     r
   in
   let handler = {
-    Interface.interp = interruptible interp;
-    Interface.rewind = interruptible Backtrack.back;
-    Interface.goals = interruptible goals;
-    Interface.evars = interruptible evars;
-    Interface.hints = interruptible hints;
-    Interface.status = interruptible status;
-    Interface.inloadpath = interruptible inloadpath;
-    Interface.get_options = interruptible get_options;
-    Interface.set_options = interruptible set_options;
-    Interface.mkcases = interruptible Vernacentries.make_cases;
-    Interface.handle_exn = handle_exn; }
+    Ide_intf.interp = interruptible interp;
+    Ide_intf.rewind = interruptible Backtrack.back;
+    Ide_intf.goals = interruptible goals;
+    Ide_intf.evars = interruptible evars;
+    Ide_intf.hints = interruptible hints;
+    Ide_intf.status = interruptible status;
+    Ide_intf.inloadpath = interruptible inloadpath;
+    Ide_intf.get_options = interruptible get_options;
+    Ide_intf.set_options = interruptible set_options;
+    Ide_intf.mkcases = interruptible Vernacentries.make_cases;
+    Ide_intf.quit = (fun () -> raise Quit);
+    Ide_intf.handle_exn = handle_exn; }
   in
   (* If the messages of last command are still there, we remove them *)
   ignore (read_stdout ());
@@ -300,9 +315,6 @@ let eval_call c =
     with the current protocol would most probably bring desynchronisation
     between coqtop and ide. With marshalling, reading an answer to
     a different request could hang the ide... *)
-
-let pr_debug s =
-  if !Flags.debug then Printf.eprintf "[pid %d] %s\n%!" (Unix.getpid ()) s
 
 let fail err =
   Ide_intf.of_value (fun _ -> assert false) (Interface.Fail (None, err))

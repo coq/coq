@@ -65,6 +65,26 @@ val get_options : (option_name * option_state) list call
     to check that everything is correct. *)
 val set_options : (option_name * option_value) list -> unit call
 
+(** Quit gracefully the interpreter. *)
+val quit : unit call
+
+(** The structure that coqtop should implement *)
+
+type handler = {
+  interp : raw * verbose * string -> string;
+  rewind : int -> int;
+  goals : unit -> goals option;
+  evars : unit -> evar list option;
+  hints : unit -> (hint list * hint) option;
+  status : unit -> status;
+  get_options : unit -> (option_name * option_state) list;
+  set_options : (option_name * option_value) list -> unit;
+  inloadpath : string -> bool;
+  mkcases : string -> string list list;
+  quit : unit -> unit;
+  handle_exn : exn -> location * string;
+}
+
 val abstract_eval_call : handler -> 'a call -> 'a value
 
 (** * XML data marshalling *)

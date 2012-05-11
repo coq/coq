@@ -26,6 +26,24 @@ type 'a call =
   | SetOptions of (option_name * option_value) list
   | InLoadPath of string
   | MkCases of string
+  | Quit
+
+(** The structure that coqtop should implement *)
+
+type handler = {
+  interp : raw * verbose * string -> string;
+  rewind : int -> int;
+  goals : unit -> goals option;
+  evars : unit -> evar list option;
+  hints : unit -> (hint list * hint) option;
+  status : unit -> status;
+  get_options : unit -> (option_name * option_state) list;
+  set_options : (option_name * option_value) list -> unit;
+  inloadpath : string -> bool;
+  mkcases : string -> string list list;
+  quit : unit -> unit;
+  handle_exn : exn -> location * string;
+}
 
 (** The actual calls *)
 
@@ -39,6 +57,7 @@ let get_options : (option_name * option_state) list call = GetOptions
 let set_options l : unit call = SetOptions l
 let inloadpath s : bool call = InLoadPath s
 let mkcases s : string list list call = MkCases s
+let quit : unit call = Quit
 
 (** * Coq answers to CoqIde *)
 
@@ -55,6 +74,7 @@ let abstract_eval_call handler c =
       | SetOptions opts -> Obj.magic (handler.set_options opts : unit)
       | InLoadPath s -> Obj.magic (handler.inloadpath s : bool)
       | MkCases s -> Obj.magic (handler.mkcases s : string list list)
+      | Quit -> Obj.magic (handler.quit () : unit)
     in Good res
   with e ->
     let (l, str) = handler.handle_exn e in
@@ -227,6 +247,8 @@ let of_call = function
   Element ("call", ["val", "inloadpath"], [PCData file])
 | MkCases ind ->
   Element ("call", ["val", "mkcases"], [PCData ind])
+| Quit ->
+  Element ("call", ["val", "quit"], [])
 
 let to_call = function
 | Element ("call", attrs, l) ->
@@ -249,6 +271,7 @@ let to_call = function
   | "inloadpath" -> InLoadPath (raw_string l)
   | "mkcases" -> MkCases (raw_string l)
   | "hints" -> Hints
+  | "quit" -> Quit
   | _ -> raise Marshal_error
   end
 | _ -> raise Marshal_error
@@ -275,13 +298,15 @@ let to_evar = function
 let of_goal g =
   let hyp = of_list of_string g.goal_hyp in
   let ccl = of_string g.goal_ccl in
-  Element ("goal", [], [hyp; ccl])
+  let id = of_string g.goal_id in
+  Element ("goal", [], [id; hyp; ccl])
 
 let to_goal = function
-| Element ("goal", [], [hyp; ccl]) ->
+| Element ("goal", [], [id; hyp; ccl]) ->
   let hyp = to_list to_string hyp in
   let ccl = to_string ccl in
-  { goal_hyp = hyp; goal_ccl = ccl }
+  let id = to_string id in
+  { goal_hyp = hyp; goal_ccl = ccl; goal_id = id; }
 | _ -> raise Marshal_error
 
 let of_goals g =
@@ -312,6 +337,7 @@ let of_answer (q : 'a call) (r : 'a value) =
   | SetOptions _ -> Obj.magic (fun _ -> Element ("unit", [], []))
   | InLoadPath _ -> Obj.magic (of_bool : bool -> xml)
   | MkCases _ -> Obj.magic (of_list (of_list of_string) : string list list -> xml)
+  | Quit -> Obj.magic (fun _ -> Element ("unit", [], []))
   in
   of_value convert r
 
@@ -374,6 +400,7 @@ let pr_call = function
   | SetOptions l -> "SETOPTIONS" ^ " [" ^ pr_setoptions l ^ "]"
   | InLoadPath s -> "INLOADPATH "^s
   | MkCases s -> "MKCASES "^s
+  | Quit -> "QUIT"
 
 let pr_value_gen pr = function
   | Good v -> "GOOD " ^ pr v
@@ -432,3 +459,4 @@ let pr_full_value call value =
     | SetOptions _ -> pr_value value
     | InLoadPath s -> pr_value_gen pr_bool (Obj.magic value : bool value)
     | MkCases s -> pr_value_gen pr_mkcases (Obj.magic value : string list list value)
+    | Quit -> pr_value value
