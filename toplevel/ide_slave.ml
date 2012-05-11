@@ -172,6 +172,7 @@ let concl_next_tac sigma concl =
 
 let process_goal sigma g =
   let env = Goal.V82.env sigma g in
+  let id = Goal.uid g in
   let ccl =
     let norm_constr = Reductionops.nf_evar sigma (Goal.V82.concl sigma g) in
     string_of_ppcmds (pr_goal_concl_style_env env norm_constr) in
@@ -181,7 +182,7 @@ let process_goal sigma g =
 (*           (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in *)
   let hyps =
     List.rev (Environ.fold_named_context process_hyp env ~init: []) in
-  { Interface.goal_hyp = hyps; Interface.goal_ccl = ccl }
+  { Interface.goal_hyp = hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
 (*         hyps,(ccl,concl_next_tac sigma g)) *)
 
 let goals () =

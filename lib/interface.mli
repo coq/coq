@@ -15,6 +15,8 @@ type verbose = bool
 
 (** The type of coqtop goals *)
 type goal = {
+  goal_id : string;
+  (** Unique goal identifier *)
   goal_hyp : string list;
   (** List of hypotheses *)
   goal_ccl : string;

@@ -311,13 +311,15 @@ let to_evar = function
 let of_goal g =
   let hyp = of_list of_string g.goal_hyp in
   let ccl = of_string g.goal_ccl in
-  Element ("goal", [], [hyp; ccl])
+  let id = of_string g.goal_id in
+  Element ("goal", [], [id; hyp; ccl])
 
 let to_goal = function
-| Element ("goal", [], [hyp; ccl]) ->
+| Element ("goal", [], [id; hyp; ccl]) ->
   let hyp = to_list to_string hyp in
   let ccl = to_string ccl in
-  { goal_hyp = hyp; goal_ccl = ccl }
+  let id = to_string id in
+  { goal_hyp = hyp; goal_ccl = ccl; goal_id = id; }
 | _ -> raise Marshal_error
 
 let of_goals g =
