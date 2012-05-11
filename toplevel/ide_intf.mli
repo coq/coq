@@ -77,6 +77,7 @@ type handler = {
   evars : unit -> evar list option;
   hints : unit -> (hint list * hint) option;
   status : unit -> status;
+  search : search_flags -> search_answer list;
   get_options : unit -> (option_name * option_state) list;
   set_options : (option_name * option_value) list -> unit;
   inloadpath : string -> bool;

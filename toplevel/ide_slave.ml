@@ -242,6 +242,82 @@ let status () =
   in
   { Interface.status_path = path; Interface.status_proofname = proof }
 
+(** This should be elsewhere... *)
+let search flags =
+  let env = Global.env () in
+  let rec extract_flags name tpe subtpe mods blacklist = function
+  | [] -> (name, tpe, subtpe, mods, blacklist)
+  | (Interface.Name_Pattern s, b) :: l ->
+    let regexp =
+      try Str.regexp s
+      with _ -> Util.error ("Invalid regexp: " ^ s)
+    in
+    extract_flags ((regexp, b) :: name) tpe subtpe mods blacklist l
+  | (Interface.Type_Pattern s, b) :: l ->
+    let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
+    let (_, pat) = Constrintern.intern_constr_pattern Evd.empty env constr in
+    extract_flags name ((pat, b) :: tpe) subtpe mods blacklist l
+  | (Interface.SubType_Pattern s, b) :: l ->
+    let constr = Pcoq.parse_string Pcoq.Constr.lconstr_pattern s in
+    let (_, pat) = Constrintern.intern_constr_pattern Evd.empty env constr in
+    extract_flags name tpe ((pat, b) :: subtpe) mods blacklist l
+  | (Interface.In_Module m, b) :: l ->
+    let path = String.concat "." m in
+    let m = Pcoq.parse_string Pcoq.Constr.global path in
+    let (_, qid) = Libnames.qualid_of_reference m in
+    let id =
+      try Nametab.full_name_module qid
+      with Not_found ->
+        Util.error ("Module " ^ path ^ " not found.")
+    in
+    extract_flags name tpe subtpe ((id, b) :: mods) blacklist l
+  | (Interface.Include_Blacklist, b) :: l ->
+    extract_flags name tpe subtpe mods b l
+  in
+  let (name, tpe, subtpe, mods, blacklist) =
+    extract_flags [] [] [] [] false flags
+  in
+  let filter_function ref env constr =
+    let id = Names.string_of_id (Nametab.basename_of_global ref) in
+    let path = Libnames.dirpath (Nametab.path_of_global ref) in
+    let toggle x b = if x then b else not b in
+    let match_name (regexp, flag) =
+      toggle (Str.string_match regexp id 0) flag
+    in
+    let match_type (pat, flag) =
+      toggle (Matching.is_matching pat constr) flag
+    in
+    let match_subtype (pat, flag) =
+      toggle (Matching.is_matching_appsubterm ~closed:false pat constr) flag
+    in
+    let match_module (mdl, flag) =
+      toggle (Libnames.is_dirpath_prefix_of mdl path) flag
+    in
+    let in_blacklist =
+      blacklist || (Search.filter_blacklist ref env constr)
+    in
+    List.for_all match_name name &&
+    List.for_all match_type tpe &&
+    List.for_all match_subtype subtpe &&
+    List.for_all match_module mods && in_blacklist
+  in
+  let ans = ref [] in
+  let print_function ref env constr =
+    let name = Names.string_of_id (Nametab.basename_of_global ref) in
+    let make_path = Names.string_of_id in
+    let path =
+      List.rev_map make_path (Names.repr_dirpath (Nametab.dirpath_of_global ref))
+    in
+    let answer = {
+      Interface.search_answer_full_path = path;
+      Interface.search_answer_base_name = name;
+      Interface.search_answer_type = string_of_ppcmds (pr_lconstr_env env constr);
+    } in
+    ans := answer :: !ans;
+  in
+  let () = Search.gen_filtered_search filter_function print_function in
+  !ans
+
 let get_options () =
   let table = Goptions.get_tables () in
   let fold key state accu = (key, state) :: accu in
@@ -302,6 +378,7 @@ let eval_call c =
     Ide_intf.evars = interruptible evars;
     Ide_intf.hints = interruptible hints;
     Ide_intf.status = interruptible status;
+    Ide_intf.search = interruptible search;
     Ide_intf.inloadpath = interruptible inloadpath;
     Ide_intf.get_options = interruptible get_options;
     Ide_intf.set_options = interruptible set_options;

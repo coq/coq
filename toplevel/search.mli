@@ -33,6 +33,8 @@ val search_about  :
 val filter_by_module_from_list :
   dir_path list * bool -> global_reference -> env -> 'a -> bool
 
+val filter_blacklist : global_reference -> env -> constr -> bool
+
 (** raw search functions can be used for various extensions.
    They are also used for pcoq. *)
 val gen_filtered_search : (global_reference -> env -> constr -> bool) ->
