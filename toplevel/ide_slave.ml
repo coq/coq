@@ -255,6 +255,13 @@ let set_options options =
   in
   List.iter iter options
 
+let about () = {
+  Interface.coqtop_version = Coq_config.version;
+  Interface.protocol_version = Ide_intf.protocol_version;
+  Interface.release_date = Coq_config.date;
+  Interface.compile_date = Coq_config.compile_date;
+}
+
 (** Grouping all call handlers together + error handling *)
 
 exception Quit
@@ -300,6 +307,7 @@ let eval_call c =
     Ide_intf.set_options = interruptible set_options;
     Ide_intf.mkcases = interruptible Vernacentries.make_cases;
     Ide_intf.quit = (fun () -> raise Quit);
+    Ide_intf.about = interruptible about;
     Ide_intf.handle_exn = handle_exn; }
   in
   (* If the messages of last command are still there, we remove them *)

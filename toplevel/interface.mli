@@ -64,6 +64,13 @@ type option_state = Goptionstyp.option_state = {
   (** The current value of the option *)
 }
 
+type coq_info = {
+  coqtop_version : string;
+  protocol_version : string;
+  release_date : string;
+  compile_date : string;
+}
+
 (** * Coq answers to CoqIde *)
 
 type location = (int * int) option (* start and end of the error *)
