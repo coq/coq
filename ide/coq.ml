@@ -83,10 +83,11 @@ let rec filter_coq_opts args =
   try
     let oc,ic,ec = Unix.open_process_full cmd (Unix.environment ()) in
     let filtered_args = read_all_lines oc in
+    let pbs_blabla = read_all_lines ec in
     match Unix.close_process_full (oc,ic,ec) with
       | Unix.WEXITED 0 -> true,filtered_args
-      | Unix.WEXITED 2 -> false,filtered_args
-      | _ -> asks_for_coqtop ()
+      | Unix.WEXITED 127 -> asks_for_coqtop ()
+      | _ -> false,filtered_args@pbs_blabla
   with Sys_error _ -> asks_for_coqtop ()
 
 exception Coqtop_output of string list

@@ -2401,6 +2401,9 @@ let read_coqide_args argv =
 	  ((Minilib.canonical_path_name (Filename.dirname file),
 	    Project_file.read_project_file file) :: project_files) out args
     | "-f" :: [] -> output_string stderr "Error: missing project file name"; exit 1
+    | "-coqtop" :: [] -> output_string stderr "Error: missing argument after -coqtop"; exit 1
+    | "-debug"::args -> Ideutils.debug := true;
+      filter_coqtop coqtop project_files ("-debug"::out) args
     | arg::args -> filter_coqtop coqtop project_files (arg::out) args
     | [] -> (coqtop,List.rev project_files,List.rev out)
   in
