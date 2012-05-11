@@ -93,6 +93,8 @@ usage () {
     printf "\tAdd profiling information in the Coq executables\n"
     echo "-annotate"
     printf "\tCompiles Coq with -dtypes option\n"
+    echo "-typerex"
+    printf "\tCompiles Coq using typerex wrapper\n"
     echo "-makecmd <command>"
     printf "\tName of GNU Make command.\n"
 }
@@ -109,12 +111,14 @@ ocamllexexec=ocamllex
 ocamlyaccexec=ocamlyacc
 ocamlmktopexec=ocamlmktop
 camlp4oexec=camlp4o
+default_typerex_wrapper="ocp-wrapper -save-types"
 
 
 coq_debug_flag=
 coq_debug_flag_opt=
 coq_profile_flag=
 coq_annotate_flag=
+coq_typerex_wrapper=
 best_compiler=opt
 cflags="-fno-defer-pop -Wall -Wno-unused"
 natdynlink=yes
@@ -272,6 +276,7 @@ while : ; do
     -debug|--debug) coq_debug_flag=-g;;
     -profile|--profile) coq_profile_flag=-p;;
     -annotate|--annotate) coq_annotate_flag=-dtypes;;
+    -typerex|--typerex) coq_typerex_wrapper=$default_typerex_wrapper;;
     -force-caml-version|--force-caml-version|-force-ocaml-version|--force-ocaml-version) 
           force_caml_version_spec=yes
 	  force_caml_version=yes;;
@@ -1157,6 +1162,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
     -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
     -e "s|CAMLANNOTATEFLAG|$coq_annotate_flag|" \
+    -e "s|TYPEREXCMD|$coq_typerex_wrapper|" \
     -e "s|CCOMPILEFLAGS|$cflags|" \
     -e "s|BESTCOMPILER|$best_compiler|" \
     -e "s|DLLEXTENSION|$DLLEXT|" \
