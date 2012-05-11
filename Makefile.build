@@ -318,7 +318,7 @@ $(COQIDEOPT): $(LINKIDEOPT) | $(COQTOPOPT)
 	$(STRIP) $@
 
 $(COQIDEBYTE): $(LINKIDE) | $(COQTOPBYTE)
-	$(SHOW)'OCAMLOPT -o $@'
+	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma gtkThread.cmo\
 		str.cma $(COQRUNBYTEFLAGS) $(LINKIDE)
 
