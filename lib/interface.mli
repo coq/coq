@@ -70,6 +70,28 @@ type option_state = {
   (** The current value of the option *)
 }
 
+type search_constraint =
+(** Whether the name satisfies a regexp (uses Ocaml Str syntax) *)
+| Name_Pattern of string
+(** Whether the object type satisfies a pattern *)
+| Type_Pattern of string
+(** Whether some subtype of object type satisfies a pattern *)
+| SubType_Pattern of string
+(** Whether the object pertains to a module *)
+| In_Module of string list
+(** Bypass the Search blacklist *)
+| Include_Blacklist
+
+(** A list of search constraints; the boolean flag is set to [false] whenever
+    the flag should be negated. *)
+type search_flags = (search_constraint * bool) list
+
+type search_answer = {
+  search_answer_full_path : string list;
+  search_answer_base_name : string;
+  search_answer_type : string;
+}
+
 type coq_info = {
   coqtop_version : string;
   protocol_version : string;
