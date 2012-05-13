@@ -6,8 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-class command_window :
-  Coq.coqtop ref ->
+class command_window : Coq.coqtop ->
   object
     method new_command : ?command:string -> ?term:string -> unit -> unit
     method frame : GBin.frame
