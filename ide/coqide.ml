@@ -52,8 +52,8 @@ object
   method process_next_phrase : Coq.handle -> bool -> unit
   method process_until_end_or_error : Coq.handle -> unit
   method recenter_insert : unit
-  method reset_initial : Coq.handle -> unit
-  method force_reset_initial : unit
+  method erroneous_reset_initial : Coq.handle -> unit
+  method requested_reset_initial : Coq.handle -> unit
   method set_message : string -> unit
   method raw_coq_query : Coq.handle -> string -> unit
   method show_goals : Coq.handle -> unit
@@ -186,16 +186,12 @@ let ignore_break () =
   Sys.set_signal Sys.sigint Sys.Signal_ignore
 
 
-(** * Locks *)
-
-(* To prevent Coq from interrupting during undoing...*)
-let coq_may_stop = Mutex.create ()
-
 exception Unsuccessful
 
 let force_reset_initial () =
   prerr_endline "Reset Initial";
-  session_notebook#current_term.analyzed_view#force_reset_initial
+  let term = session_notebook#current_term in
+  Coq.reset_coqtop term.toplvl term.analyzed_view#requested_reset_initial
 
 let break () =
   prerr_endline "User break received";
@@ -448,6 +444,10 @@ object(self)
   val message_buffer = _mv#buffer
   val cmd_stack = Stack.create ()
   val mycoqtop = _ct
+
+  (* To prevent Coq from interrupting during undoing...*)
+  val coq_may_stop = Mutex.create ()
+
   val mutable filename = _fn
   val mutable stats = None
   val mutable last_modification_time = 0.
@@ -478,7 +478,7 @@ object(self)
         let do_revert () = begin
           push_info "Reverting buffer";
           try
-            self#force_reset_initial;
+            Coq.reset_coqtop mycoqtop self#requested_reset_initial;
             let b = Buffer.create 1024 in
             with_file flash_info f ~f:(input_channel b);
             let s = try_convert (Buffer.contents b) in
@@ -904,7 +904,7 @@ object(self)
   method process_until_end_or_error handle =
       self#process_until_iter_or_error handle input_buffer#end_iter
 
-  method reset_initial handle =
+  method private generic_reset_initial handle =
     let start = input_buffer#start_iter in
     (* clear the stack *)
     Stack.clear cmd_stack;
@@ -914,15 +914,19 @@ object(self)
     input_buffer#remove_tag Tags.Script.unjustified start input_buffer#end_iter;
     input_buffer#remove_tag Tags.Script.to_process start input_buffer#end_iter;
     tag_on_insert (input_buffer :> GText.buffer);
-    (* clear the message view *)
+    (* clear the views *)
     self#clear_message;
+    proof_buffer#set_text "";
     (* apply the initial commands to coq *)
     self#include_file_dir_in_path handle;
+
+  method erroneous_reset_initial handle =
+    self#generic_reset_initial handle;
     (* warn the user *)
     warning "Coqtop died badly. Resetting."
 
-  method force_reset_initial =
-    Coq.reset_coqtop mycoqtop self#reset_initial
+  method requested_reset_initial handle =
+    self#generic_reset_initial handle
 
   (* Internal method for dialoging with coqtop about a backtrack.
      The ide's cmd_stack has already been cleared up to the desired point.
@@ -1226,7 +1230,7 @@ let create_session file =
   let command = new Wg_Command.command_window ct in
   let finder = new Wg_Find.finder (script :> GText.view) in
   let legacy_av = new analyzed_view script proof message ct file in
-  let () = reset := legacy_av#reset_initial in
+  let () = reset := legacy_av#erroneous_reset_initial in
   let () = legacy_av#update_stats in
   let _ =
     script#buffer#create_mark ~name:"start_of_input" script#buffer#start_iter in
