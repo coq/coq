@@ -76,6 +76,7 @@ type pref =
       mutable show_spaces : bool;
       mutable spaces_instead_of_tabs : bool;
       mutable tab_length : int;
+      mutable highlight_current_line : bool;
 
     }
 

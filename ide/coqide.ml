@@ -2211,6 +2211,7 @@ let main files =
         p.script#set_wrap_mode wrap_mode;
         p.script#set_show_line_numbers current.show_line_number;
         p.script#set_auto_indent current.auto_indent;
+        p.script#set_highlight_current_line current.highlight_current_line;
 
         (* Hack to handle missing binding in lablgtk *)
         let conv = { Gobject.name = "draw-spaces"; Gobject.conv = Gobject.Data.int } in

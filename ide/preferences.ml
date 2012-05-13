@@ -131,6 +131,7 @@ type pref =
       mutable show_spaces : bool;
       mutable spaces_instead_of_tabs : bool;
       mutable tab_length : int;
+      mutable highlight_current_line : bool;
 
 }
 
@@ -204,6 +205,7 @@ let current = {
     show_spaces = true;
     spaces_instead_of_tabs = true;
     tab_length = 2;
+    highlight_current_line = false;
   }
 
 let save_pref () =
@@ -271,6 +273,7 @@ let save_pref () =
     add "show_spaces" [string_of_bool p.show_spaces] ++
     add "spaces_instead_of_tabs" [string_of_bool p.spaces_instead_of_tabs] ++
     add "tab_length" [string_of_int p.tab_length] ++
+    add "highlight_current_line" [string_of_bool p.highlight_current_line] ++
     Config_lexer.print_file pref_file
 
 let load_pref () =
@@ -366,6 +369,7 @@ let load_pref () =
     set_bool "show_spaces" (fun v -> np.show_spaces <- v);
     set_bool "spaces_instead_of_tabs" (fun v -> np.spaces_instead_of_tabs <- v);
     set_int "tab_length" (fun v -> np.tab_length <- v);
+    set_bool "highlight_current_line" (fun v -> np.highlight_current_line <- v);
     ()
 
 let configure ?(apply=(fun () -> ())) () =
@@ -497,10 +501,15 @@ let configure ?(apply=(fun () -> ())) () =
     let wrap = gen_button "Dynamic word wrap" current.dynamic_word_wrap in
     let line = gen_button "Show line number" current.show_line_number in
     let auto_indent = gen_button "Auto indentation" current.auto_indent in
+    let auto_complete = gen_button "Auto completion" current.auto_complete in
     let show_spaces = gen_button "Show spaces" current.show_spaces in
     let spaces_instead_of_tabs =
       gen_button "Insert spaces instead of tabs"
       current.spaces_instead_of_tabs
+    in
+    let highlight_current_line =
+      gen_button "Highlight current line"
+      current.highlight_current_line
     in
 (*     let lbox = GPack.hbox ~packing:box#pack () in *)
 (*     let _ = GMisc.label ~text:"Tab width" *)
@@ -516,6 +525,8 @@ let configure ?(apply=(fun () -> ())) () =
       current.auto_indent <- auto_indent#active;
       current.show_spaces <- show_spaces#active;
       current.spaces_instead_of_tabs <- spaces_instead_of_tabs#active;
+      current.highlight_current_line <- highlight_current_line#active;
+      current.auto_complete <- auto_complete#active;
 (*       current.tab_length <- tab_width#value_as_int; *)
       !refresh_editor_hook ()
     in
@@ -546,14 +557,6 @@ let configure ?(apply=(fun () -> ())) () =
       (string_of_int current.window_width)
   in
 *)
-  let auto_complete =
-    bool
-      ~f:(fun s ->
-	    current.auto_complete <- s;
-	    !refresh_editor_hook ())
-      "Auto Complete" current.auto_complete
-  in
-
 (*  let use_utf8_notation =
     bool
       ~f:(fun b ->
@@ -760,7 +763,7 @@ let configure ?(apply=(fun () -> ())) () =
       "Contextual menus on goal" current.contextual_menus_on_goal
   in
 
-  let misc = [contextual_menus_on_goal;auto_complete;stop_before;
+  let misc = [contextual_menus_on_goal;stop_before;
               vertical_tabs;opposite_tabs] in
 
 (* ATTENTION !!!!! L'onglet Fonts doit etre en premier pour eviter un bug !!!!
