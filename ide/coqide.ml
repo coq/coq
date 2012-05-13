@@ -1199,11 +1199,6 @@ let create_session file =
       ?style_scheme:(style_manager#style_scheme current.source_style)
       ()
   in
-  let script =
-    Wg_ScriptView.script_view
-      ~source_buffer:script_buffer
-      ~show_line_numbers:true
-      ~wrap_mode:`NONE () in
   let proof =
     GText.view
       ~buffer:(GText.buffer ~tag_table:Tags.Proof.table ())
@@ -1227,6 +1222,11 @@ let create_session file =
   let reset = ref (fun _ -> ()) in
   let trigger handle = !reset handle in
   let ct = Coq.spawn_coqtop trigger coqtop_args in
+  let script =
+    Wg_ScriptView.script_view ct
+      ~source_buffer:script_buffer
+      ~show_line_numbers:true
+      ~wrap_mode:`NONE () in
   let command = new Wg_Command.command_window ct in
   let finder = new Wg_Find.finder (script :> GText.view) in
   let legacy_av = new analyzed_view script proof message ct file in

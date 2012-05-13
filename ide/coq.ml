@@ -327,6 +327,7 @@ let inloadpath coqtop s = eval_call coqtop (Serialize.inloadpath s)
 let mkcases coqtop s = eval_call coqtop (Serialize.mkcases s)
 let status coqtop = eval_call coqtop Serialize.status
 let hints coqtop = eval_call coqtop Serialize.hints
+let search coqtop flags = eval_call coqtop (Serialize.search flags)
 
 let unsafe_close coqtop =
   if Mutex.try_lock coqtop.lock then begin

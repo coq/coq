@@ -16,11 +16,11 @@ Utf8_convert
 Preferences
 Project_file
 Ideutils
+Coq
 Gtk_parsing
 Ideproof
 Wg_ScriptView
 Coq_lex
-Coq
 Coq_commands
 Wg_Command
 Coqide_ui

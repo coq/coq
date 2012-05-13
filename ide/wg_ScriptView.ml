@@ -42,7 +42,7 @@ end
 
 module Proposals = Set.Make(StringOrd)
 
-let get_completion (buffer : GText.buffer) w =
+let get_completion (buffer : GText.buffer) coqtop w =
   let rec get_aux accu (iter : GText.iter) =
     match iter#forward_search w with
     | None -> accu
@@ -55,9 +55,23 @@ let get_completion (buffer : GText.buffer) w =
           get_aux (Proposals.add proposal accu) stop
       else get_aux accu stop
   in
-  get_aux Proposals.empty buffer#start_iter
+  let get_semantic accu =
+    let ans = ref accu in
+    let flags = [Interface.Name_Pattern ("^" ^ w), true] in
+    let query handle = match Coq.search handle flags with
+    | Interface.Good l ->
+      let fold accu elt =
+        Proposals.add elt.Interface.search_answer_base_name accu
+      in
+      ans := (List.fold_left fold accu l)
+    | _ -> ()
+    in
+    Coq.try_grab coqtop query ignore;
+    !ans
+  in
+  get_semantic (get_aux Proposals.empty buffer#start_iter)
 
-class script_view (tv : source_view) =
+class script_view (tv : source_view) (ct : Coq.coqtop) =
 object (self)
   inherit GSourceView2.source_view (Gobject.unsafe_cast tv) as super
 
@@ -175,7 +189,7 @@ object (self)
           if (start#offset = off) && (0 <= is_substring prefix w) then
             Proposals.filter (fun p -> 0 < is_substring w p) proposals
           else
-            let ans = get_completion self#buffer w in
+            let ans = get_completion self#buffer ct w in
             let () = last_completion <- (start#offset, w, ans) in
             ans
         in
@@ -215,7 +229,7 @@ object (self)
 
 end
 
-let script_view ?(source_buffer:GSourceView2.source_buffer option)  ?draw_spaces =
+let script_view ct ?(source_buffer:GSourceView2.source_buffer option)  ?draw_spaces =
   GtkSourceView2.SourceView.make_params [] ~cont:(
     GtkText.View.make_params ~cont:(
       GContainer.pack_container ~create:
@@ -226,4 +240,4 @@ let script_view ?(source_buffer:GSourceView2.source_buffer option)  ?draw_spaces
           let w = Gobject.unsafe_cast w in
 		   Gobject.set_params (Gobject.try_cast w "GtkSourceView") pl;
 		   Gaux.may (GtkSourceView2.SourceView.set_draw_spaces w) draw_spaces;
-		   ((new script_view w) : script_view))))
+		   ((new script_view w ct) : script_view))))

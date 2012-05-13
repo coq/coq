@@ -69,6 +69,7 @@ let get_options : (option_name * option_state) list call = GetOptions
 let set_options l : unit call = SetOptions l
 let inloadpath s : bool call = InLoadPath s
 let mkcases s : string list list call = MkCases s
+let search flags : search_answer list call = Search flags
 let quit : unit call = Quit
 
 (** * Coq answers to CoqIde *)

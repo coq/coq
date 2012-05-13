@@ -58,6 +58,9 @@ val mkcases : string -> string list list call
     proof is in progress. *)
 val evars : evar list option call
 
+(** Search for objects satisfying the given search flags. *)
+val search : search_flags -> search_answer list call
+
 (** Retrieve the list of options of the current toplevel, together with their 
     state. *)
 val get_options : (option_name * option_state) list call
