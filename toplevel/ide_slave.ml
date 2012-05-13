@@ -261,6 +261,13 @@ let set_options options =
   in
   List.iter iter options
 
+let about () = {
+  Interface.coqtop_version = Coq_config.version;
+  Interface.protocol_version = Serialize.protocol_version;
+  Interface.release_date = Coq_config.date;
+  Interface.compile_date = Coq_config.compile_date;
+}
+
 (** Grouping all call handlers together + error handling *)
 
 exception Quit
@@ -306,6 +313,7 @@ let eval_call c =
     Serialize.set_options = interruptible set_options;
     Serialize.mkcases = interruptible Vernacentries.make_cases;
     Serialize.quit = (fun () -> raise Quit);
+    Serialize.about = interruptible about;
     Serialize.handle_exn = handle_exn; }
   in
   (* If the messages of last command are still there, we remove them *)

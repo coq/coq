@@ -6,6 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(** Protocol version of this file. This is the date of the last modification. *)
+
+(** WARNING: TO BE UPDATED WHEN MODIFIED! *)
+
+let protocol_version = "20120511"
+
 (** * Interface of calls to Coq by CoqIde *)
 
 open Interface
@@ -28,6 +34,7 @@ type 'a call =
   | InLoadPath of string
   | MkCases of string
   | Quit
+  | About
 
 (** The structure that coqtop should implement *)
 
@@ -43,6 +50,7 @@ type handler = {
   inloadpath : string -> bool;
   mkcases : string -> string list list;
   quit : unit -> unit;
+  about : unit -> coq_info;
   handle_exn : exn -> location * string;
 }
 
@@ -76,6 +84,7 @@ let abstract_eval_call handler c =
       | InLoadPath s -> Obj.magic (handler.inloadpath s : bool)
       | MkCases s -> Obj.magic (handler.mkcases s : string list list)
       | Quit -> Obj.magic (handler.quit () : unit)
+      | About -> Obj.magic (handler.about () : coq_info)
     in Good res
   with e ->
     let (l, str) = handler.handle_exn e in
@@ -250,6 +259,8 @@ let of_call = function
   Element ("call", ["val", "mkcases"], [PCData ind])
 | Quit ->
   Element ("call", ["val", "quit"], [])
+| About ->
+  Element ("call", ["val", "about"], [])
 
 let to_call = function
 | Element ("call", attrs, l) ->
@@ -273,6 +284,7 @@ let to_call = function
   | "mkcases" -> MkCases (raw_string l)
   | "hints" -> Hints
   | "quit" -> Quit
+  | "about" -> About
   | _ -> raise Marshal_error
   end
 | _ -> raise Marshal_error
@@ -334,6 +346,23 @@ let to_goals = function
   { fg_goals = fg; bg_goals = bg; }
 | _ -> raise Marshal_error
 
+let of_coq_info info =
+  let version = of_string info.coqtop_version in
+  let protocol = of_string info.protocol_version in
+  let release = of_string info.release_date in
+  let compile = of_string info.compile_date in
+  Element ("coq_info", [], [version; protocol; release; compile])
+
+let to_coq_info = function
+| Element ("coq_info", [], [version; protocol; release; compile]) ->
+  {
+    coqtop_version = to_string version;
+    protocol_version = to_string protocol;
+    release_date = to_string release;
+    compile_date = to_string compile;
+  }
+| _ -> raise Marshal_error
+
 let of_hints =
   let of_hint = of_list (of_pair of_string of_string) in
   of_option (of_pair (of_list of_hint) of_hint)
@@ -351,6 +380,7 @@ let of_answer (q : 'a call) (r : 'a value) =
   | InLoadPath _ -> Obj.magic (of_bool : bool -> xml)
   | MkCases _ -> Obj.magic (of_list (of_list of_string) : string list list -> xml)
   | Quit -> Obj.magic (fun _ -> Element ("unit", [], []))
+  | About -> Obj.magic (of_coq_info : coq_info -> xml)
   in
   of_value convert r
 
@@ -370,6 +400,7 @@ let to_answer xml =
     | "evar" -> Obj.magic (to_evar elt : evar)
     | "option_value" -> Obj.magic (to_option_value elt : option_value)
     | "option_state" -> Obj.magic (to_option_state elt : option_state)
+    | "coq_info" -> Obj.magic (to_coq_info elt : coq_info)
     | _ -> raise Marshal_error
     end
   | _ -> raise Marshal_error
@@ -414,6 +445,7 @@ let pr_call = function
   | InLoadPath s -> "INLOADPATH "^s
   | MkCases s -> "MKCASES "^s
   | Quit -> "QUIT"
+  | About -> "ABOUT"
 
 let pr_value_gen pr = function
   | Good v -> "GOOD " ^ pr v
@@ -473,3 +505,5 @@ let pr_full_value call value =
     | InLoadPath s -> pr_value_gen pr_bool (Obj.magic value : bool value)
     | MkCases s -> pr_value_gen pr_mkcases (Obj.magic value : string list list value)
     | Quit -> pr_value value
+    | About -> pr_value value
+

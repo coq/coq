@@ -84,10 +84,15 @@ type handler = {
   inloadpath : string -> bool;
   mkcases : string -> string list list;
   quit : unit -> unit;
+  about : unit -> coq_info;
   handle_exn : exn -> location * string;
 }
 
 val abstract_eval_call : handler -> 'a call -> 'a value
+
+(** * Protocol version *)
+
+val protocol_version : string
 
 (** * XML data marshalling *)
 
