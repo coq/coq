@@ -64,9 +64,10 @@ let string_map f s =
 let subst_command_placeholder s t =
   Str.global_replace (Str.regexp_string "%s") t s
 
-let path_to_list p =
-  let sep = Str.regexp (if Sys.os_type = "Win32" then ";" else ":") in
-    Str.split sep p
+(* Split the content of a variable such as $PATH in a list of directories.
+   The separators are either ":" in unix or ";" in win32 *)
+
+let path_to_list = Str.split (Str.regexp "[:;]")
 
 (* On win32, the home directory is probably not in $HOME, but in
    some other environment variable *)
@@ -76,28 +77,50 @@ let home =
     try (Sys.getenv "HOMEDRIVE")^(Sys.getenv "HOMEPATH") with Not_found ->
       try Sys.getenv "USERPROFILE" with Not_found -> Filename.current_dir_name
 
+let opt2list = function None -> [] | Some x -> [x]
+
+let rec lconcat = function
+  | [] -> assert false
+  | [x] -> x
+  | x::l -> Filename.concat x (lconcat l)
+
 let xdg_config_home =
   try
     Filename.concat (Sys.getenv "XDG_CONFIG_HOME") "coq"
   with Not_found ->
-    Filename.concat home "/.config/coq"
+    lconcat [home;".config";"coq"]
+
+let static_xdg_config_dirs =
+  if Sys.os_type = "Win32" then
+    let base = Filename.dirname (Filename.dirname Sys.executable_name) in
+    [Filename.concat base "config"]
+  else ["/etc/xdg/coq"]
 
 let xdg_config_dirs =
-  xdg_config_home :: (try
-    List.map (fun dir -> Filename.concat dir "coq") (path_to_list (Sys.getenv "XDG_CONFIG_DIRS"))
-  with Not_found -> ["/etc/xdg/coq"])@(match Coq_config.configdir with |None -> [] |Some d -> [d])
+  xdg_config_home ::
+    try
+      List.map (fun dir -> Filename.concat dir "coq")
+	(path_to_list (Sys.getenv "XDG_CONFIG_DIRS"))
+    with Not_found -> static_xdg_config_dirs @ opt2list Coq_config.configdir
 
 let xdg_data_home =
   try
     Filename.concat (Sys.getenv "XDG_DATA_HOME") "coq"
   with Not_found ->
-    Filename.concat home "/.local/share/coq"
+    lconcat [home;".local";"share";"coq"]
+
+let static_xdg_data_dirs =
+  if Sys.os_type = "Win32" then
+    let base = Filename.dirname (Filename.dirname Sys.executable_name) in
+    [Filename.concat base "share"]
+  else ["/usr/local/share/coq";"/usr/share/coq"]
 
 let xdg_data_dirs =
-  xdg_data_home :: (try
-    List.map (fun dir -> Filename.concat dir "coq") (path_to_list (Sys.getenv "XDG_DATA_DIRS"))
-  with Not_found ->
-    ["/usr/local/share/coq";"/usr/share/coq"])@(match Coq_config.datadir with |None -> [] |Some d -> [d])
+  xdg_data_home ::
+    try
+      List.map (fun dir -> Filename.concat dir "coq")
+	(path_to_list (Sys.getenv "XDG_DATA_DIRS"))
+    with Not_found -> static_xdg_data_dirs @ opt2list Coq_config.datadir
 
 let coqtop_path = ref ""
 
