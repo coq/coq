@@ -275,9 +275,17 @@ let rec print_list print fmt = function
   | [x] -> print fmt x
   | x :: r -> print fmt x; print_list print fmt r
 
+(* In win32, when a command-line is to be executed via cmd.exe
+   (i.e. Sys.command, Unix.open_process, ...), it cannot contain several
+   quoted "..." zones otherwise some quotes are lost. Solution: we re-quote
+   everything. Reference: http://ss64.com/nt/cmd.html *)
+
+let requote cmd = if Sys.os_type = "Win32" then "\""^cmd^"\"" else cmd
+
 (* TODO: allow to report output as soon as it comes (user-fiendlier
    for long commands like make...) *)
 let run_command f c =
+  let c = requote c in
   let result = Buffer.create 127 in
   let cin,cout,cerr = Unix.open_process_full c (Unix.environment ()) in
   let buff = String.make 127 ' ' in
