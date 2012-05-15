@@ -402,6 +402,15 @@ let extra_rules () = begin
   if w32 then flag ["link"; "ocaml"; "program"; "ide"]
     (S [A "-ccopt"; A "-link -Wl,-subsystem,windows"; P w32ico]);
 
+(** The mingw32-ocaml cross-compiler currently uses Filename.dir_sep="/".
+    Let's tweak that... *)
+
+  if w32 then begin
+    ocaml_lib "tools/win32hack";
+    List.iter (fun (_,s,_) -> tag_file (s^".native") ["use_win32hack"])
+      all_binaries
+  end;
+
 (** Coqtop *)
 
   let () =
