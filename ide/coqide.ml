@@ -2381,15 +2381,3 @@ let read_coqide_args argv =
     Ideutils.custom_coqtop := coqtop;
     custom_project_files := project_files;
   argv
-
-let process_argv argv =
-  try
-    let continue,filtered = Coq.filter_coq_opts (List.tl argv) in
-    if not continue then
-      (List.iter Minilib.safe_prerr_endline filtered; exit 0);
-    let opts = List.filter (fun arg -> String.get arg 0 == '-') filtered in
-    if opts <> [] then
-      (Minilib.safe_prerr_endline ("Illegal option: "^List.hd opts); exit 1);
-    filtered
-  with _ ->
-    (Minilib.safe_prerr_endline "coqtop choked on one of your option"; exit 1)

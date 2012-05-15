@@ -16,9 +16,6 @@ val sup_args : string list ref
     Minilib.coqtop_path accordingly *)
 val read_coqide_args : string list -> string list
 
-(** Ask coqtop the remaining options it doesn't recognize *)
-val process_argv : string list -> string list
-
 (** Prepare the widgets, load the given files in tabs *)
 val main : string list -> unit
 

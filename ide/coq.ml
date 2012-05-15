@@ -55,60 +55,104 @@ let rec read_all_lines in_chan =
     arg::(read_all_lines in_chan)
   with End_of_file -> []
 
+let fatal_error_popup msg =
+  let popup = GWindow.message_dialog ~buttons:GWindow.Buttons.ok
+    ~message_type:`ERROR ~message:msg ()
+  in ignore (popup#run ()); exit 1
+
+let final_info_popup small msg =
+  if small then
+    let popup = GWindow.message_dialog ~buttons:GWindow.Buttons.ok
+      ~message_type:`INFO ~message:msg ()
+    in
+    let _ = popup#run () in
+    exit 0
+  else
+    let popup = GWindow.dialog () in
+    let button = GButton.button ~label:"ok" ~packing:popup#action_area#add ()
+    in
+    let scroll = GBin.scrolled_window ~hpolicy:`NEVER ~vpolicy:`AUTOMATIC
+      ~packing:popup#vbox#add ~height:500 ()
+    in
+    let _ = GMisc.label ~text:msg ~packing:scroll#add_with_viewport () in
+    let _ = popup#connect#destroy ~callback:(fun _ -> exit 0) in
+    let _ = button#connect#clicked ~callback:(fun _ -> exit 0) in
+    let _ = popup#run () in
+    exit 0
+
+let connection_error cmd lines exn =
+  fatal_error_popup
+    ("Connection with coqtop failed!\n"^
+     "Command was: "^cmd^"\n"^
+     "Answer was: "^(String.concat "\n  " lines)^
+     "Exception was: "^Printexc.to_string exn)
+
+let display_coqtop_answer cmd lines =
+  final_info_popup (List.length lines < 30)
+    ("Coqtop exited\n"^
+     "Command was: "^cmd^"\n"^
+     "Answer was: "^(String.concat "\n  " lines))
+
+let check_remaining_opt arg =
+  if arg <> "" && arg.[0] = '-' then fatal_error_popup ("Illegal option: "^arg)
+
 let rec filter_coq_opts args =
-  let coqprog = coqtop_path () in
-  let asks_for_coqtop () =
-    let pb_mes = GWindow.message_dialog ~message:"Fail to load coqtop. Reset the preference to default ?"
-      ~message_type:`QUESTION ~buttons:GWindow.Buttons.yes_no () in
-    match pb_mes#run () with
-      | `YES ->
- 	let () = current.cmd_coqtop  <- None in
-	    let () = custom_coqtop := None in
-	let () = pb_mes#destroy () in
-	filter_coq_opts args
-      | `DELETE_EVENT | `NO ->
-	let () = pb_mes#destroy () in
-	let cmd_sel = GWindow.file_selection ~title:"Coqtop to execute (edit your preference then)"
-	  ~filename:coqprog ~urgency_hint:true () in
-	match cmd_sel#run () with
-	  | `OK ->
-	    let () = custom_coqtop := (Some cmd_sel#filename) in
-	    let () = cmd_sel#destroy () in
-	    filter_coq_opts args
-	  | `HELP -> exit 0
-	  | `CANCEL | `DELETE_EVENT -> exit 0
-  in
   let argstr = String.concat " " (List.map Filename.quote args) in
-  let cmd = Filename.quote coqprog ^" -nois -filteropts " ^ argstr in
+  let cmd = Filename.quote (coqtop_path ()) ^" -nois -filteropts " ^ argstr in
+  let filtered_args = ref [] in
+  let errlines = ref [] in
   try
     let oc,ic,ec = Unix.open_process_full cmd (Unix.environment ()) in
-    let filtered_args = read_all_lines oc in
-    let pbs_blabla = read_all_lines ec in
+    filtered_args := read_all_lines oc;
+    errlines := read_all_lines ec;
     match Unix.close_process_full (oc,ic,ec) with
-      | Unix.WEXITED 0 -> true,filtered_args
-      | Unix.WEXITED 127 -> asks_for_coqtop ()
-      | _ -> false,filtered_args@pbs_blabla
-  with Sys_error _ -> asks_for_coqtop ()
+      | Unix.WEXITED 0 ->
+	List.iter check_remaining_opt !filtered_args; !filtered_args
+      | Unix.WEXITED 127 -> asks_for_coqtop args
+      | _ -> display_coqtop_answer cmd (!filtered_args @ !errlines)
+  with Sys_error _ -> asks_for_coqtop args
+    | e -> connection_error cmd (!filtered_args @ !errlines) e
 
-exception Coqtop_output of string list
+and asks_for_coqtop args =
+  let pb_mes = GWindow.message_dialog
+    ~message:"Failed to load coqtop. Reset the preference to default ?"
+    ~message_type:`QUESTION ~buttons:GWindow.Buttons.yes_no () in
+  match pb_mes#run () with
+    | `YES ->
+      let () = current.cmd_coqtop  <- None in
+      let () = custom_coqtop := None in
+      let () = pb_mes#destroy () in
+      filter_coq_opts args
+    | `DELETE_EVENT | `NO ->
+      let () = pb_mes#destroy () in
+      let cmd_sel = GWindow.file_selection
+	~title:"Coqtop to execute (edit your preference then)"
+	~filename:(coqtop_path ()) ~urgency_hint:true () in
+      match cmd_sel#run () with
+	| `OK ->
+	  let () = custom_coqtop := (Some cmd_sel#filename) in
+	  let () = cmd_sel#destroy () in
+	  filter_coq_opts args
+	| `CANCEL | `DELETE_EVENT | `HELP -> exit 0
+
+exception WrongExitStatus of string
+
+let print_status = function
+  | Unix.WEXITED n -> "WEXITED "^string_of_int n
+  | Unix.WSIGNALED n -> "WSIGNALED "^string_of_int n
+  | Unix.WSTOPPED n -> "WSTOPPED "^string_of_int n
 
 let check_connection args =
+  let lines = ref [] in
+  let argstr = String.concat " " (List.map Filename.quote args) in
+  let cmd = Filename.quote (coqtop_path ()) ^ " -batch " ^ argstr in
   try
-    let argstr = String.concat " " (List.map Filename.quote args) in
-    let cmd = Filename.quote (coqtop_path ()) ^ " -batch " ^ argstr in
     let ic = Unix.open_process_in cmd in
-    let lines = read_all_lines ic in
+    lines := read_all_lines ic;
     match Unix.close_process_in ic with
-    | Unix.WEXITED 0 -> prerr_endline "coqtop seems ok"
-    | _ -> raise (Coqtop_output lines)
-  with
-    | End_of_file ->
-      Minilib.safe_prerr_endline "Cannot start connection with coqtop";
-      exit 1
-    | Coqtop_output lines ->
-      Minilib.safe_prerr_endline "Connection with coqtop failed:";
-      List.iter Minilib.safe_prerr_endline lines;
-      exit 1
+    | Unix.WEXITED 0 -> () (* coqtop seems ok *)
+    | st -> raise (WrongExitStatus (print_status st))
+  with e -> connection_error cmd !lines e
 
 (** Useful stuff *)
 

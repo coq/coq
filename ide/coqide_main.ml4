@@ -85,7 +85,7 @@ let () =
 		  else failwith ("Coqide internal error: " ^ msg)));
   let argl = Array.to_list Sys.argv in
   let argl = Coqide.read_coqide_args argl in
-  let files = Coqide.process_argv argl in
+  let files = Coq.filter_coq_opts (List.tl argl) in
   let args = List.filter (fun x -> not (List.mem x files)) (List.tl argl) in
   Coq.check_connection args;
   Coqide.sup_args := args;
