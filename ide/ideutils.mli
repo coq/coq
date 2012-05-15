@@ -73,3 +73,10 @@ val pbar : GRange.progress_bar
   returns an absolute filename equivalent to given filename
 *)
 val absolute_filename : string -> string
+
+(* In win32, when a command-line is to be executed via cmd.exe
+   (i.e. Sys.command, Unix.open_process, ...), it cannot contain several
+   quoted "..." zones otherwise some quotes are lost. Solution: we re-quote
+   everything. Reference: http://ss64.com/nt/cmd.html *)
+
+val requote : string -> string

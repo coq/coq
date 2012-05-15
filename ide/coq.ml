@@ -99,6 +99,7 @@ let check_remaining_opt arg =
 let rec filter_coq_opts args =
   let argstr = String.concat " " (List.map Filename.quote args) in
   let cmd = Filename.quote (coqtop_path ()) ^" -nois -filteropts " ^ argstr in
+  let cmd = requote cmd in
   let filtered_args = ref [] in
   let errlines = ref [] in
   try
@@ -146,6 +147,7 @@ let check_connection args =
   let lines = ref [] in
   let argstr = String.concat " " (List.map Filename.quote args) in
   let cmd = Filename.quote (coqtop_path ()) ^ " -batch " ^ argstr in
+  let cmd = requote cmd in
   try
     let ic = Unix.open_process_in cmd in
     lines := read_all_lines ic;
