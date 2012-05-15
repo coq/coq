@@ -995,6 +995,7 @@ Module OrdProperties (M:S).
    leb_1, gtb_1, (H0 a) by auto with *.
   intuition.
   destruct (E.compare a x); intuition.
+  fold (~E.lt a x); auto with *.
   Qed.
 
   Definition Above x s := forall y, In y s -> E.lt y x.

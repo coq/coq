@@ -48,10 +48,10 @@ type tauto_flags = {
 
 (* Whether unit type includes equality types *)
   strict_unit : bool;
-
-(* Whether inner unfolding is allowed *)
-  inner_unfolding : bool
 }
+
+(* Whether inner not are unfolded *)
+let negation_unfolding = ref true
 
 (* Whether inner iff are unfolded *)
 let iff_unfolding = ref false
@@ -63,7 +63,16 @@ let _ =
   declare_bool_option
     { optsync  = true;
       optdepr  = false;
-      optname  = "unfolding of iff and not in intuition";
+      optname  = "unfolding of not in intuition";
+      optkey   = ["Intuition";"Negation";"Unfolding"];
+      optread  = (fun () -> !negation_unfolding);
+      optwrite = (:=) negation_unfolding }
+
+let _ =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "unfolding of iff in intuition";
       optkey   = ["Intuition";"Iff";"Unfolding"];
       optread  = (fun () -> !iff_unfolding);
       optwrite = (:=) iff_unfolding }
@@ -271,18 +280,17 @@ let rec tauto_intuit flags t_reduce solver ist =
     $t_solver
    ) >>
 
-let reduction_not _ist =
-  if unfold_iff () then
-    <:tactic< unfold Coq.Init.Logic.not, Coq.Init.Logic.iff in * >>
-  else
-    <:tactic< unfold Coq.Init.Logic.not in * >>
+let reduction_not_iff _ist =
+  match !negation_unfolding, unfold_iff () with
+    | true, true -> <:tactic< unfold Coq.Init.Logic.not, Coq.Init.Logic.iff in * >>
+    | true, false -> <:tactic< unfold Coq.Init.Logic.not in * >>
+    | false, true -> <:tactic< unfold Coq.Init.Logic.iff in * >>
+    | false, false -> <:tactic< idtac >>
 
-let t_reduction_not = tacticIn reduction_not
+let t_reduction_not_iff = tacticIn reduction_not_iff
 
 let intuition_gen flags tac =
-  let t_reduce =
-    if flags.inner_unfolding then t_reduction_not else  <:tactic<idtac>> in
-  interp (tacticIn (tauto_intuit flags t_reduce tac))
+  interp (tacticIn (tauto_intuit flags t_reduction_not_iff tac))
 
 let tauto_intuitionistic flags g =
   try intuition_gen flags <:tactic<fail>> g
@@ -309,15 +317,14 @@ let tauto_gen flags g =
 let default_intuition_tac = <:tactic< auto with * >>
 
 (* This is the uniform mode dealing with ->, not, iff and types isomorphic to
-   /\ and *, \/ and +, False and Empty_set, True and unit, _and_ eq-like types;
-   not and iff are unfolded only if necessary *)
+   /\ and *, \/ and +, False and Empty_set, True and unit, _and_ eq-like types.
+   For the moment not and iff are still always unfolded. *)
 let tauto_uniform_unit_flags = {
   binary_mode = true;
   binary_mode_bugged_detection = false;
   strict_in_contravariant_hyp = true;
   strict_in_hyp_and_ccl = true;
-  strict_unit = false;
-  inner_unfolding = false
+  strict_unit = false
 }
 
 (* This is the compatibility mode (not used) *)
@@ -326,8 +333,7 @@ let tauto_legacy_flags = {
   binary_mode_bugged_detection = true;
   strict_in_contravariant_hyp = true;
   strict_in_hyp_and_ccl = false;
-  strict_unit = false;
-  inner_unfolding = true
+  strict_unit = false
 }
 
 (* This is the improved mode *)
@@ -336,8 +342,7 @@ let tauto_power_flags = {
   binary_mode_bugged_detection = false;
   strict_in_contravariant_hyp = false; (* supports non-regular connectives *)
   strict_in_hyp_and_ccl = false;
-  strict_unit = false;
-  inner_unfolding = false
+  strict_unit = false
 }
 
 let tauto = tauto_gen tauto_uniform_unit_flags

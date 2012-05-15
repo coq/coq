@@ -89,6 +89,7 @@ intentional type theory, Journal of Symbolic Logic 70(2):488-514, 2005.
 *)
 
 Set Implicit Arguments.
+Local Unset Intuition Negation Unfolding.
 
 (**********************************************************************)
 (** * Definitions *)

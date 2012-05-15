@@ -1871,8 +1871,9 @@ Module OrdProperties (M:S).
     find_mapsto_iff, (H0 t0), <- find_mapsto_iff,
     add_mapsto_iff by (auto with *).
   unfold O.eqke, O.ltk; simpl.
-  destruct (E.compare t0 x); intuition.
-  elim H; exists e0; apply MapsTo_1 with t0; auto.
+  destruct (E.compare t0 x); intuition; try fold (~E.eq x t0); auto.
+  - elim H; exists e0; apply MapsTo_1 with t0; auto.
+  - fold (~E.lt t0 x); auto.
   Qed.
 
   Lemma elements_Add_Above : forall m m' x e,
