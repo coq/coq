@@ -84,7 +84,7 @@ let connection_error cmd lines exn =
   fatal_error_popup
     ("Connection with coqtop failed!\n"^
      "Command was: "^cmd^"\n"^
-     "Answer was: "^(String.concat "\n  " lines)^
+     "Answer was: "^(String.concat "\n  " lines)^"\n"^
      "Exception was: "^Printexc.to_string exn)
 
 let display_coqtop_answer cmd lines =
