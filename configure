@@ -9,7 +9,7 @@
 VERSION=8.4beta
 VOMAGIC=08400
 STATEMAGIC=58400
-DATE=`LANG=C date +"%B %Y"`
+DATE=`LC_ALL=C LANG=C date +"%B %Y"`
 
 # Create the bin/ directory if non-existent
 test -d bin || mkdir bin
@@ -292,7 +292,7 @@ case $DATEPGM in
     "") echo "I can't find the program \"date\" in your path."
         echo "Please give me the current date"
 	read COMPILEDATE;;
-    *)  COMPILEDATE=`date +"%h %d %Y %H:%M:%S"`;;
+    *)  COMPILEDATE=`LC_ALL=C LANG=C date +"%h %d %Y %H:%M:%S"`;;
 esac
 
 # Architecture
