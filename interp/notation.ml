@@ -387,6 +387,9 @@ let uninterp_notations c =
 let uninterp_cases_pattern_notations c =
   Gmapl.find (cases_pattern_key c) !notations_key_table
 
+let uninterp_ind_pattern_notations ind =
+  Gmapl.find (RefKey (canonical_gr (IndRef ind))) !notations_key_table
+
 let availability_of_notation (ntn_scope,ntn) scopes =
   let f scope =
     Gmap.mem ntn (Gmap.find scope !scope_map).notations in
@@ -397,6 +400,20 @@ let uninterp_prim_token c =
     let (sc,numpr,_) =
       Hashtbl.find prim_token_key_table (glob_prim_constr_key c) in
     match numpr c with
+      | None -> raise No_match
+      | Some n -> (sc,n)
+  with Not_found -> raise No_match
+
+let uninterp_prim_token_ind_pattern ind args =
+  let ref = IndRef ind in
+  try
+    let (sc,numpr,b) = Hashtbl.find prim_token_key_table
+      (RefKey (canonical_gr ref)) in
+    if not b then raise No_match;
+    let args' = List.map
+      (fun x -> snd (glob_constr_of_closed_cases_pattern x)) args in
+    let ref = GRef (dummy_loc,ref) in
+    match numpr (GApp (dummy_loc,ref,args')) with
       | None -> raise No_match
       | Some n -> (sc,n)
   with Not_found -> raise No_match

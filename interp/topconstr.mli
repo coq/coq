@@ -100,6 +100,9 @@ val match_aconstr : bool -> glob_constr -> interpretation ->
 val match_aconstr_cases_pattern :  cases_pattern -> interpretation ->
       ((cases_pattern * subscopes) list * (cases_pattern list * subscopes) list) * (cases_pattern list)
 
+val match_aconstr_ind_pattern : inductive -> cases_pattern  list -> interpretation ->
+      ((cases_pattern * subscopes) list * (cases_pattern list * subscopes) list) * (cases_pattern list)
+
 (** Substitution of kernel names in interpretation data                *)
 
 val subst_interpretation : substitution -> interpretation -> interpretation
@@ -273,3 +276,5 @@ val patntn_loc :
 (** For cases pattern parsing errors *)
 
 val error_invalid_pattern_notation : Pp.loc -> 'a
+
+val add_patterns_for_params : inductive -> cases_pattern list -> cases_pattern list

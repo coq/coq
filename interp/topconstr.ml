@@ -786,7 +786,7 @@ let match_aconstr u c (metas,pat) =
     metas ([],[],[])
 
 (* Matching cases pattern *)
-let add_patterns_for_params (ind,k) l =
+let add_patterns_for_params ind l =
   let mib,_ = Global.lookup_inductive ind in
   let nparams = mib.Declarations.mind_nparams in
     Util.list_addn nparams (PatVar (dummy_loc,Anonymous)) l
@@ -800,10 +800,6 @@ let bind_env_cases_pattern (sigma,sigmalist,x as fullsigma) var v =
     (var,v)::sigma,sigmalist,x
 
 let rec match_cases_pattern metas sigma a1 a2 =
-  let match_cases_pattern_no_more_args metas sigma a1 a2 =
-    match match_cases_pattern metas sigma a1 a2 with
-      |out,[] -> out
-      |_ -> raise No_match in
  match (a1,a2) with
   | r1, AVar id2 when List.mem id2 metas -> (bind_env_cases_pattern sigma id2 r1),[]
   | PatVar (_,Anonymous), AHole _ -> sigma,[]
@@ -811,7 +807,7 @@ let rec match_cases_pattern metas sigma a1 a2 =
       sigma,largs
   | PatCstr (loc,(ind,_ as r1),args1,_), AApp (ARef (ConstructRef r2),l2)
       when r1 = r2 ->
-      let l1 = add_patterns_for_params r1 args1 in
+      let l1 = add_patterns_for_params (fst r1) args1 in
       let le2 = List.length l2 in
       if le2 > List.length l1
       then
@@ -823,17 +819,43 @@ let rec match_cases_pattern metas sigma a1 a2 =
       (match_alist (fun (metas,_) -> match_cases_pattern_no_more_args metas)
 	(metas,[]) (pi1 sigma,pi2 sigma,()) r1 x iter termin lassoc),[]
   | _ -> raise No_match
+and match_cases_pattern_no_more_args metas sigma a1 a2 =
+    match match_cases_pattern metas sigma a1 a2 with
+      |out,[] -> out
+      |_ -> raise No_match
+
+let match_ind_pattern metas sigma ind pats a2 =
+  match a2 with
+  | ARef (IndRef r2) when ind = r2 ->
+      sigma,pats
+  | AApp (ARef (IndRef r2),l2)
+      when ind = r2 ->
+      let le2 = List.length l2 in
+      if le2 > List.length pats
+      then
+	raise No_match
+      else
+	let l1',more_args = Util.list_chop le2 pats in
+	(List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),more_args
+  |_ -> raise No_match
+
+let reorder_canonically_substitution terms termlists metas =
+  List.fold_right (fun (x,(scl,typ)) (terms',termlists') ->
+    match typ with
+      | NtnTypeConstr -> ((List.assoc x terms, scl)::terms',termlists')
+      | NtnTypeConstrList -> (terms',(List.assoc x termlists,scl)::termlists')
+      | NtnTypeBinderList -> assert false)
+    metas ([],[])
 
 let match_aconstr_cases_pattern c (metas,pat) =
   let vars = List.map fst metas in
   let (terms,termlists,()),more_args = match_cases_pattern vars ([],[],()) c pat in
-  (* Reorder canonically the substitution *)
-  (List.fold_right (fun (x,(scl,typ)) (terms',termlists') ->
-    match typ with
-    | NtnTypeConstr -> ((List.assoc x terms, scl)::terms',termlists')
-    | NtnTypeConstrList -> (terms',(List.assoc x termlists,scl)::termlists')
-    | NtnTypeBinderList -> assert false)
-    metas ([],[])),more_args
+  reorder_canonically_substitution terms termlists metas,more_args
+
+let match_aconstr_ind_pattern ind args (metas,pat) =
+  let vars = List.map fst metas in
+  let (terms,termlists,()),more_args = match_ind_pattern vars ([],[],()) ind args pat in
+  reorder_canonically_substitution terms termlists metas,more_args
 
 (**********************************************************************)
 (*s Concrete syntax for terms *)

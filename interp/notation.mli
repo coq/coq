@@ -94,6 +94,8 @@ val uninterp_prim_token :
   glob_constr -> scope_name * prim_token
 val uninterp_prim_token_cases_pattern :
   cases_pattern -> name * scope_name * prim_token
+val uninterp_prim_token_ind_pattern :
+ inductive -> cases_pattern list -> scope_name * prim_token
 
 val availability_of_prim_token :
   prim_token -> scope_name -> local_scopes -> delimiters option option
@@ -118,6 +120,8 @@ val interp_notation : loc -> notation -> local_scopes ->
 val uninterp_notations : glob_constr ->
       (interp_rule * interpretation * int option) list
 val uninterp_cases_pattern_notations : cases_pattern ->
+      (interp_rule * interpretation * int option) list
+val uninterp_ind_pattern_notations : inductive ->
       (interp_rule * interpretation * int option) list
 
 (** Test if a notation is available in the scopes 
