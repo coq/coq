@@ -226,6 +226,33 @@ object (self)
     (* HACK: Redirect the undo/redo signals of the underlying GtkSourceView *)
     ignore (self#connect#undo (fun _ -> ignore (self#undo ()); GtkSignal.stop_emit()));
     ignore (self#connect#redo (fun _ -> ignore (self#redo ()); GtkSignal.stop_emit()));
+    (* HACK: Redirect the move_line signal of the underlying GtkSourceView *)
+    let move_line_marshal = GtkSignal.marshal2
+      Gobject.Data.boolean Gobject.Data.int "move_line_marshal"
+    in
+    let move_line_signal = {
+      GtkSignal.name = "move-lines";
+      classe = Obj.magic 0;
+      marshaller = move_line_marshal; }
+    in
+    let callback b i =
+      let rec start_line iter =
+        if iter#starts_line then iter
+        else start_line iter#backward_char
+      in
+      let iter = start_line (self#buffer#get_iter `INSERT) in
+      (* do we forward the signal? *)
+      let proceed =
+        if not b && i = 1 then
+          iter#editable true && iter#forward_line#editable true
+        else if not b && i = -1 then
+          iter#editable true && iter#backward_line#editable true
+        else false
+      in
+      if not proceed then GtkSignal.stop_emit ()
+    in
+    ignore(GtkSignal.connect ~sgn:move_line_signal ~callback obj);
+    ()
 
 end
 
