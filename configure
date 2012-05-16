@@ -748,7 +748,7 @@ case $ARCH$CYGWIN in
 	 bindir_def=${W32PREF}bin
 	 libdir_def=${W32PREF}lib
 	 configdir_def=${W32PREF}config
-	 datadir_def=${W32PREF}data
+	 datadir_def=${W32PREF}share
 	 mandir_def=${W32PREF}man
 	 docdir_def=${W32PREF}doc
 	 emacslib_def=${W32PREF}emacs
