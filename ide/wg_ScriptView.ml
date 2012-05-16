@@ -214,7 +214,7 @@ object (self)
       end
     end
 
-  method private may_auto_complete iter s =
+  method private may_auto_complete () =
     if auto_complete then self#do_auto_complete ()
 
   initializer
@@ -222,7 +222,7 @@ object (self)
     ignore (self#buffer#connect#insert_text ~callback:self#handle_insert);
     ignore (self#buffer#connect#delete_range ~callback:self#handle_delete);
     (* Install auto-completion *)
-    ignore (self#buffer#connect#after#insert_text ~callback:self#may_auto_complete);
+    ignore (self#buffer#connect#after#end_user_action ~callback:self#may_auto_complete);
     (* HACK: Redirect the undo/redo signals of the underlying GtkSourceView *)
     ignore (self#connect#undo (fun _ -> ignore (self#undo ()); GtkSignal.stop_emit()));
     ignore (self#connect#redo (fun _ -> ignore (self#redo ()); GtkSignal.stop_emit()));
