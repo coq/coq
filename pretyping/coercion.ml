@@ -110,7 +110,7 @@ module Default = struct
 
   let saturate_evd env evd =
     Typeclasses.resolve_typeclasses
-      ~with_goals:false ~split:true ~fail:false env evd
+      ~filter:Typeclasses.no_goals ~split:true ~fail:false env evd
 
   (* appliquer le chemin de coercions p à hj *)
   let apply_coercion env sigma p hj typ_cl =

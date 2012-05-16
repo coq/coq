@@ -161,12 +161,11 @@ let print_args env args =
   Array.fold_right (fun a acc -> my_print_constr env a ++ spc () ++ acc) args (str "")
 
 let make_existential loc ?(opaque = Define true) env isevars c =
-  let evar = Evarutil.e_new_evar isevars env ~src:(loc, QuestionMark opaque) c in
-  let (key, args) = destEvar evar in
-    (try trace (str "Constructed evar " ++ int key ++ str " applied to args: " ++
-		  print_args env args ++ str " for type: "++
-		  my_print_constr env c) with _ -> ());
-    evar
+  Evarutil.e_new_evar isevars env ~src:(loc, QuestionMark opaque) c
+
+let no_goals_or_obligations = function
+  | GoalEvar | QuestionMark _ -> false
+  | _ -> true
 
 let make_existential_expr loc env c =
   let key = Evarutil.new_untyped_evar () in

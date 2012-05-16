@@ -82,6 +82,7 @@ val app_opt : ('a -> 'a) option -> 'a -> 'a
 val print_args : env -> constr array -> std_ppcmds
 val make_existential : loc -> ?opaque:obligation_definition_status ->
   env -> evar_map ref -> types -> constr
+val no_goals_or_obligations : Typeclasses.evar_filter
 val make_existential_expr : loc -> 'a -> 'b -> constr_expr
 val string_of_hole_kind : hole_kind -> string
 val evars_of_term : evar_map -> evar_map -> constr -> evar_map

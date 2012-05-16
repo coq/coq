@@ -52,7 +52,7 @@ let type_ctx_instance evars env ctx inst subst =
 	| None -> interp_casted_constr_evars evars env (List.hd l) t', List.tl l
 	| Some b -> substl subst b, l
       in
-       evars := resolve_typeclasses ~with_goals:false ~fail:true env !evars;
+       evars := resolve_typeclasses ~filter:Subtac_utils.no_goals_or_obligations ~fail:true env !evars;
        let d = na, Some c', t' in
 	aux (c' :: subst, d :: instctx) l ctx
     | [] -> subst
@@ -107,7 +107,7 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 	let i = Nameops.add_suffix (Classes.id_of_class k) "_instance_0" in
 	  Namegen.next_global_ident_away i (Termops.ids_of_context env)
   in
-  evars := resolve_typeclasses ~with_goals:false ~fail:true env !evars;  
+  evars := resolve_typeclasses ~filter:Subtac_utils.no_goals_or_obligations ~fail:true env !evars;  
   let ctx = Evarutil.nf_rel_context_evar !evars ctx 
   and ctx' = Evarutil.nf_rel_context_evar !evars ctx' in
   let env' = push_rel_context ctx env in
@@ -158,7 +158,8 @@ let new_instance ?(global=false) ctx (instid, bk, cl) props ?(generalize=true) p
 	    Inl (type_ctx_instance evars (push_rel_context ctx' env') k.cl_props props subst)
   in	  
   evars := Evarutil.nf_evar_map !evars;
-  evars := resolve_typeclasses ~with_goals:false ~fail:true env !evars;
+  evars := resolve_typeclasses ~filter:Subtac_utils.no_goals_or_obligations ~fail:true env !evars;
+  evars := resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:false env !evars;
   let term, termtype =
     match subst with
     | Inl subst ->

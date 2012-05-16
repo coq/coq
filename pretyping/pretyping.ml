@@ -104,7 +104,7 @@ let interp_elimination_sort = function
 
 let resolve_evars env evdref fail_evar resolve_classes =
   if resolve_classes then
-    evdref := (Typeclasses.resolve_typeclasses ~with_goals:false
+    evdref := (Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals
 		 ~split:true ~fail:fail_evar env !evdref);
   (* Resolve eagerly, potentially making wrong choices *)
   evdref := (try consider_remaining_unif_problems

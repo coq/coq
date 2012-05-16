@@ -85,7 +85,12 @@ val mark_resolvable : evar_info -> evar_info
 val mark_unresolvables : evar_map -> evar_map
 val is_class_evar : evar_map -> evar_info -> bool
 
-val resolve_typeclasses : ?with_goals:bool -> ?split:bool -> ?fail:bool ->
+(** Filter which evars to consider for resolution. *)
+type evar_filter = hole_kind -> bool
+val no_goals : evar_filter
+val all_evars : evar_filter
+
+val resolve_typeclasses : ?filter:evar_filter -> ?split:bool -> ?fail:bool ->
   env -> evar_map -> evar_map
 val resolve_one_typeclass : env -> evar_map -> types -> open_constr
 
@@ -100,7 +105,7 @@ val register_remove_instance_hint : (global_reference -> unit) -> unit
 val add_instance_hint : constr -> bool -> int option -> unit
 val remove_instance_hint : global_reference -> unit
 
-val solve_instanciations_problem : (env -> evar_map -> bool -> bool -> bool -> evar_map) ref
+val solve_instanciations_problem : (env -> evar_map -> evar_filter -> bool -> bool -> evar_map) ref
 val solve_instanciation_problem : (env -> evar_map -> types -> open_constr) ref
 
 val declare_instance : int option -> bool -> global_reference -> unit

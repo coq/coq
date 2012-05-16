@@ -254,10 +254,10 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	in
 	let _ = 
 	  evars := Evarutil.nf_evar_map !evars;
-	  evars := Typeclasses.resolve_typeclasses ~with_goals:false ~fail:true
+	  evars := Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true
             env !evars;
 	  (* Try resolving fields that are typeclasses automatically. *)
-	  evars := Typeclasses.resolve_typeclasses ~with_goals:true ~fail:false
+	  evars := Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars ~fail:false
 	    env !evars
 	in
 	let termtype = Evarutil.nf_evar !evars termtype in

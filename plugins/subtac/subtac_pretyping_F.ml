@@ -597,9 +597,9 @@ module SubtacPretyping_F (Coercion : Coercion.S) = struct
     in
       if resolve_classes then
 	(try 
-	   evdref := Typeclasses.resolve_typeclasses ~with_goals:false
+	   evdref := Typeclasses.resolve_typeclasses ~filter:Subtac_utils.no_goals_or_obligations
 	     ~split:true ~fail:true env !evdref;
-	   evdref := Typeclasses.resolve_typeclasses ~with_goals:true
+	   evdref := Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
 	     ~split:true ~fail:false env !evdref
 	 with e -> if fail_evar then raise e else ());
       evdref := consider_remaining_unif_problems env !evdref;

@@ -492,6 +492,11 @@ let has_typeclasses evd =
 
 let solve_instanciations_problem = ref (fun _ _ _ _ _ -> assert false)
 
-let resolve_typeclasses ?(with_goals=false) ?(split=true) ?(fail=true) env evd =
+type evar_filter = hole_kind -> bool
+
+let no_goals = function GoalEvar -> false | _ -> true
+let all_evars _ = true
+
+let resolve_typeclasses ?(filter=no_goals) ?(split=true) ?(fail=true) env evd =
   if not (has_typeclasses evd) then evd
-  else !solve_instanciations_problem env evd with_goals split fail
+  else !solve_instanciations_problem env evd filter split fail
