@@ -21,11 +21,11 @@ val string_map : (char -> char) -> string -> string
 
 val subst_command_placeholder : string -> string -> string
 
-val home : unit -> string
-val xdg_config_home : unit -> string
-val xdg_config_dirs : unit -> string list
-val xdg_data_home : unit -> string
-val xdg_data_dirs : unit -> string list
+val home : string
+val xdg_config_home : string
+val xdg_config_dirs : string list
+val xdg_data_home : string
+val xdg_data_dirs : string list
 
 val coqtop_path : string ref
 

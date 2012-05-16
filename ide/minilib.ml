@@ -71,54 +71,33 @@ let path_to_list p =
 (* On win32, the home directory is probably not in $HOME, but in
    some other environment variable *)
 
-let home () =
+let home =
   try Sys.getenv "HOME" with Not_found ->
     try (Sys.getenv "HOMEDRIVE")^(Sys.getenv "HOMEPATH") with Not_found ->
       try Sys.getenv "USERPROFILE" with Not_found -> Filename.current_dir_name
 
-let xdg_config_home () =
+let xdg_config_home =
   try
     Filename.concat (Sys.getenv "XDG_CONFIG_HOME") "coq"
   with Not_found ->
-    let home_dir = home () in
-    Filename.concat home_dir "/.config/coq"
+    Filename.concat home "/.config/coq"
 
-let xdg_config_dirs () =
-  let config_home = xdg_config_home () in
-  let config_list =
-    try path_to_list (Sys.getenv "XDG_CONFIG_DIRS")
-    with Not_found -> ["/etc/xdg"]
-  in
-  let remaining =
-    List.map (fun dir -> Filename.concat dir "coq") config_list
-  in
-  let def = match Coq_config.configdir with
-  | None -> []
-  | Some d -> [d]
-  in
-  config_home :: remaining @ def
+let xdg_config_dirs =
+  xdg_config_home :: (try
+    List.map (fun dir -> Filename.concat dir "coq") (path_to_list (Sys.getenv "XDG_CONFIG_DIRS"))
+  with Not_found -> ["/etc/xdg/coq"])@(match Coq_config.configdir with |None -> [] |Some d -> [d])
 
-let xdg_data_home () =
+let xdg_data_home =
   try
     Filename.concat (Sys.getenv "XDG_DATA_HOME") "coq"
   with Not_found ->
-    let home_dir = home () in
-    Filename.concat home_dir "/.local/share/coq"
+    Filename.concat home "/.local/share/coq"
 
-let xdg_data_dirs () =
-  let data_home = xdg_data_home () in
-  let data_list =
-    try path_to_list (Sys.getenv "XDG_DATA_DIRS")
-    with Not_found -> ["/usr/local/share";"/usr/share"]
-  in
-  let remaining =
-    List.map (fun dir -> Filename.concat dir "coq") data_list
-  in
-  let def = match Coq_config.datadir with
-  | None -> []
-  | Some d -> [d]
-  in
-  data_home :: remaining @ def
+let xdg_data_dirs =
+  xdg_data_home :: (try
+    List.map (fun dir -> Filename.concat dir "coq") (path_to_list (Sys.getenv "XDG_DATA_DIRS"))
+  with Not_found ->
+    ["/usr/local/share/coq";"/usr/share/coq"])@(match Coq_config.datadir with |None -> [] |Some d -> [d])
 
 let coqtop_path = ref ""
 
