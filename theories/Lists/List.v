@@ -7,6 +7,7 @@
 (************************************************************************)
 
 Require Import Le Gt Minus Bool.
+Require Setoid.
 
 Set Implicit Arguments.
 
@@ -360,13 +361,12 @@ Section Elts.
 
   Lemma nth_in_or_default :
     forall (n:nat) (l:list A) (d:A), {In (nth n l d) l} + {nth n l d = d}.
-  (* Realizer nth_ok. Program_all. *)
   Proof.
-    intros n l d; generalize n; induction l; intro n0.
-    right; case n0; trivial.
-    case n0; simpl.
-    auto.
-    intro n1; elim (IHl n1); auto.
+    intros n l d; revert n; induction l.
+    - right; destruct n; trivial.
+    - intros [|n]; simpl.
+      * left; auto.
+      * destruct (IHl n); auto.
   Qed.
 
   Lemma nth_S_cons :
@@ -395,59 +395,132 @@ Section Elts.
     unfold nth_default; induction n; intros [ | ] ?; simpl; auto.
   Qed.
 
+  (** Results about [nth] *)
+
   Lemma nth_In :
     forall (n:nat) (l:list A) (d:A), n < length l -> In (nth n l d) l.
-
   Proof.
     unfold lt; induction n as [| n hn]; simpl.
-    destruct l; simpl; [ inversion 2 | auto ].
-    destruct l as [| a l hl]; simpl.
-    inversion 2.
-    intros d ie; right; apply hn; auto with arith.
+    - destruct l; simpl; [ inversion 2 | auto ].
+    - destruct l as [| a l hl]; simpl.
+      * inversion 2.
+      * intros d ie; right; apply hn; auto with arith.
+  Qed.
+
+  Lemma In_nth l x d : In x l ->
+    exists n, n < length l /\ nth n l d = x.
+  Proof.
+    induction l as [|a l IH].
+    - easy.
+    - intros [H|H].
+      * subst; exists 0; simpl; auto with arith.
+      * destruct (IH H) as (n & Hn & Hn').
+        exists (S n); simpl; auto with arith.
   Qed.
 
   Lemma nth_overflow : forall l n d, length l <= n -> nth n l d = d.
   Proof.
     induction l; destruct n; simpl; intros; auto.
-    inversion H.
-    apply IHl; auto with arith.
+    - inversion H.
+    - apply IHl; auto with arith.
   Qed.
 
   Lemma nth_indep :
     forall l n d d', n < length l -> nth n l d = nth n l d'.
   Proof.
-    induction l; simpl; intros; auto.
-    inversion H.
-    destruct n; simpl; auto with arith.
+    induction l.
+    - inversion 1.
+    - intros [|n] d d'; simpl; auto with arith.
   Qed.
 
   Lemma app_nth1 :
     forall l l' d n, n < length l -> nth n (l++l') d = nth n l d.
   Proof.
     induction l.
-    intros.
-    inversion H.
-    intros l' d n.
-    case n; simpl; auto.
-    intros; rewrite IHl; auto with arith.
+    - inversion 1.
+    - intros l' d [|n]; simpl; auto with arith.
   Qed.
 
   Lemma app_nth2 :
     forall l l' d n, n >= length l -> nth n (l++l') d = nth (n-length l) l' d.
   Proof.
-    induction l.
-    intros.
-    simpl.
-    destruct n; auto.
-    intros l' d n.
-    case n; simpl; auto.
-    intros.
-    inversion H.
-    intros.
-    rewrite IHl; auto with arith.
+    induction l; intros l' d [|n]; auto.
+    - inversion 1.
+    - intros; simpl; rewrite IHl; auto with arith.
   Qed.
 
+  Lemma nth_split n l d : n < length l ->
+    exists l1, exists l2, l = l1 ++ nth n l d :: l2 /\ length l1 = n.
+  Proof.
+    revert l.
+    induction n as [|n IH]; intros [|a l] H; try easy.
+    - exists nil; exists l; now simpl.
+    - destruct (IH l) as (l1 & l2 & Hl & Hl1); auto with arith.
+      exists (a::l1); exists l2; simpl; split; now f_equal.
+  Qed.
 
+  (** Results about [nth_error] *)
+
+  Lemma nth_error_In l n x : nth_error l n = Some x -> In x l.
+  Proof.
+    revert n. induction l as [|a l IH]; intros [|n]; simpl; try easy.
+    - injection 1; auto.
+    - eauto.
+  Qed.
+
+  Lemma In_nth_error l x : In x l -> exists n, nth_error l n = Some x.
+  Proof.
+    induction l as [|a l IH].
+    - easy.
+    - intros [H|H].
+      * subst; exists 0; simpl; auto with arith.
+      * destruct (IH H) as (n,Hn).
+        exists (S n); simpl; auto with arith.
+  Qed.
+
+  Lemma nth_error_None l n : nth_error l n = None <-> length l <= n.
+  Proof.
+    revert n. induction l; destruct n; simpl.
+    - split; auto.
+    - split; auto with arith.
+    - split; now auto with arith.
+    - rewrite IHl; split; auto with arith.
+  Qed.
+
+  Lemma nth_error_Some l n : nth_error l n <> None <-> n < length l.
+  Proof.
+   revert n. induction l; destruct n; simpl.
+    - split; [now destruct 1 | inversion 1].
+    - split; [now destruct 1 | inversion 1].
+    - split; now auto with arith.
+    - rewrite IHl; split; auto with arith.
+  Qed.
+
+  Lemma nth_error_split l n a : nth_error l n = Some a ->
+    exists l1, exists l2, l = l1 ++ a :: l2 /\ length l1 = n.
+  Proof.
+    revert l.
+    induction n as [|n IH]; intros [|x l] H; simpl in *; try easy.
+    - exists nil; exists l. injection H; clear H; intros; now subst.
+    - destruct (IH _ H) as (l1 & l2 & H1 & H2).
+      exists (x::l1); exists l2; simpl; split; now f_equal.
+  Qed.
+
+  Lemma nth_error_app1 l l' n : n < length l ->
+    nth_error (l++l') n = nth_error l n.
+  Proof.
+    revert l.
+    induction n; intros [|a l] H; auto; try solve [inversion H].
+    simpl in *. apply IHn. auto with arith.
+  Qed.
+
+  Lemma nth_error_app2 l l' n : length l <= n ->
+    nth_error (l++l') n = nth_error l' (n-length l).
+  Proof.
+    revert l.
+    induction n; intros [|a l] H; auto; try solve [inversion H].
+    simpl in *. apply IHn. auto with arith.
+  Qed.
 
 
   (*****************)
@@ -1535,6 +1608,47 @@ Section ReDun.
   destruct (IHl _ _ H1); auto.
   Qed.
 
+  (** Alternative characterisations of being without duplicates,
+      thanks to [nth_error] and [nth] *)
+
+  Lemma NoDup_nth_error l :
+    NoDup l <->
+    (forall i j, i<length l -> nth_error l i = nth_error l j -> i = j).
+  Proof.
+    split.
+    { intros H; induction H as [|a l Hal Hl IH]; intros i j Hi E.
+      - inversion Hi.
+      - destruct i, j; simpl in *; auto.
+        * elim Hal. eapply nth_error_In; eauto.
+        * elim Hal. eapply nth_error_In; eauto.
+        * f_equal. apply IH; auto with arith. }
+    { induction l as [|a l]; intros H; constructor.
+      * intro Ha. apply In_nth_error in Ha. destruct Ha as (n,Hn).
+        assert (n < length l) by (now rewrite <- nth_error_Some, Hn).
+        specialize (H 0 (S n)). simpl in H. discriminate H; auto with arith.
+      * apply IHl.
+        intros i j Hi E. apply eq_add_S, H; simpl; auto with arith. }
+  Qed.
+
+  Lemma NoDup_nth l d :
+    NoDup l <->
+    (forall i j, i<length l -> j<length l ->
+       nth i l d = nth j l d -> i = j).
+  Proof.
+    split.
+    { intros H; induction H as [|a l Hal Hl IH]; intros i j Hi Hj E.
+      - inversion Hi.
+      - destruct i, j; simpl in *; auto.
+        * elim Hal. subst a. apply nth_In; auto with arith.
+        * elim Hal. subst a. apply nth_In; auto with arith.
+        * f_equal. apply IH; auto with arith. }
+    { induction l as [|a l]; intros H; constructor.
+      * intro Ha. eapply In_nth in Ha. destruct Ha as (n & Hn & Hn').
+        specialize (H 0 (S n)). simpl in H. discriminate H; eauto with arith.
+      * apply IHl.
+        intros i j Hi Hj E. apply eq_add_S, H; simpl; auto with arith. }
+  Qed.
+
 End ReDun.
 
 
@@ -1576,6 +1690,23 @@ Section NatSeq.
     intros.
     rewrite IHlen.
     auto with arith.
+  Qed.
+
+  Lemma in_seq len start n :
+    In n (seq start len) <-> start <= n < start+len.
+  Proof.
+   revert start. induction len; simpl; intros.
+   - rewrite <- plus_n_O. split;[easy|].
+     intros (H,H'). apply (Lt.lt_irrefl _ (Lt.le_lt_trans _ _ _ H H')).
+   - rewrite IHlen, <- plus_n_Sm; simpl; split.
+     * intros [H|H]; subst; intuition auto with arith.
+     * intros (H,H'). destruct (Lt.le_lt_or_eq _ _ H); intuition.
+  Qed.
+
+  Lemma seq_NoDup len start : NoDup (seq start len).
+  Proof.
+   revert start; induction len; simpl; constructor; trivial.
+   rewrite in_seq. intros (H,_). apply (Lt.lt_irrefl _ H).
   Qed.
 
 End NatSeq.

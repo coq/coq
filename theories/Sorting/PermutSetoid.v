@@ -19,7 +19,7 @@ Require Import Omega Relations Multiset SetoidList.
     The relation between the two relations are in lemma
     [permutation_Permutation].
 
-    File [PermutEq] concerns Leibniz equality : it shows in particular
+    File [Permutation] concerns Leibniz equality : it shows in particular
     that [List.Permutation] and [permutation] are equivalent in this context.
 *)
 
