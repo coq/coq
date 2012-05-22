@@ -647,7 +647,7 @@ Proof.
 Qed.
 
 Global Instance InfA_compat : Proper (eqA==>eqlistA==>iff) InfA.
-Proof.
+Proof using eqA_equiv ltA_compat. (* and not ltA_strorder *)
  intros x x' Hxx' l l' Hll'.
  inversion_clear Hll'.
  intuition.
@@ -657,10 +657,9 @@ Proof.
 Qed.
 
 (** For compatibility, can be deduced from [InfA_compat] *)
-Lemma InfA_eqA :
- forall l x y, eqA x y -> InfA y l -> InfA x l.
-Proof.
- intros l x y H; rewrite H; auto.
+Lemma InfA_eqA l x y : eqA x y -> InfA y l -> InfA x l.
+Proof using eqA_equiv ltA_compat.
+ intros H; now rewrite H.
 Qed.
 Hint Immediate InfA_ltA InfA_eqA.
 
