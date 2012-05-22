@@ -87,7 +87,7 @@ Instance Permutation_Equivalence A : Equivalence (@Permutation A) | 10 := {
 Instance Permutation_cons A :
  Proper (Logic.eq ==> @Permutation A ==> @Permutation A) (@cons A).
 Proof.
-  repeat red; intros; subst; auto using perm_skip.
+  repeat intro; subst; auto using perm_skip.
 Qed.
 
 Section Permutation_properties.
@@ -108,7 +108,7 @@ Qed.
 Global Instance Permutation_in' :
  Proper (Logic.eq ==> @Permutation A ==> iff) (@In A).
 Proof.
- repeat red; intros; subst; eauto using Permutation_in.
+  repeat red; intros; subst; eauto using Permutation_in.
 Qed.
 
 Lemma Permutation_app_tail : forall (l l' tl : list A),
@@ -140,7 +140,7 @@ Qed.
 Global Instance Permutation_app' :
  Proper (@Permutation A ==> @Permutation A ==> @Permutation A) (@app A).
 Proof.
-  repeat red; intros; now apply Permutation_app.
+  repeat intro; now apply Permutation_app.
 Qed.
 
 Lemma Permutation_add_inside : forall a (l l' tl tl' : list A),
@@ -189,7 +189,7 @@ Qed.
 Global Instance Permutation_rev' :
  Proper (@Permutation A ==> @Permutation A) (@rev A).
 Proof.
-  repeat red; intros; now rewrite <- 2 Permutation_rev.
+  repeat intro; now rewrite <- 2 Permutation_rev.
 Qed.
 
 Theorem Permutation_length : forall (l l' : list A),
@@ -201,7 +201,7 @@ Qed.
 Global Instance Permutation_length' :
  Proper (@Permutation A ==> Logic.eq) (@length A).
 Proof.
-  repeat red; now apply Permutation_length.
+  exact Permutation_length.
 Qed.
 
 Theorem Permutation_ind_bis :
@@ -641,5 +641,4 @@ End Permutation_alt.
 
 (* begin hide *)
 Notation Permutation_app_swap := Permutation_app_comm (only parsing).
-Notation Permutation_map_aux_Proper := Permutation_map' (only parsing).
 (* end hide *)
