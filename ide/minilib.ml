@@ -79,48 +79,37 @@ let home =
 
 let opt2list = function None -> [] | Some x -> [x]
 
-let rec lconcat = function
-  | [] -> assert false
-  | [x] -> x
-  | x::l -> Filename.concat x (lconcat l)
+let (/) = Filename.concat
+
+let coqify d = d / "coq"
 
 let xdg_config_home =
-  try
-    Filename.concat (Sys.getenv "XDG_CONFIG_HOME") "coq"
-  with Not_found ->
-    lconcat [home;".config";"coq"]
+  coqify (try Sys.getenv "XDG_CONFIG_HOME" with Not_found -> home / ".config")
 
-let static_xdg_config_dirs =
-  if Sys.os_type = "Win32" then
-    let base = Filename.dirname (Filename.dirname Sys.executable_name) in
-    [Filename.concat base "config"]
-  else ["/etc/xdg/coq"]
+let relative_base =
+  Filename.dirname (Filename.dirname Sys.executable_name)
 
 let xdg_config_dirs =
-  xdg_config_home ::
-    try
-      List.map (fun dir -> Filename.concat dir "coq")
-	(path_to_list (Sys.getenv "XDG_CONFIG_DIRS"))
-    with Not_found -> static_xdg_config_dirs @ opt2list Coq_config.configdir
+  let sys_dirs =
+    try List.map coqify (path_to_list (Sys.getenv "XDG_CONFIG_DIRS"))
+    with
+      | Not_found when Sys.os_type = "Win32" -> [relative_base / "config"]
+      | Not_found -> ["/etc/xdg/coq"]
+  in
+  xdg_config_home :: sys_dirs @ opt2list Coq_config.configdir
 
 let xdg_data_home =
-  try
-    Filename.concat (Sys.getenv "XDG_DATA_HOME") "coq"
-  with Not_found ->
-    lconcat [home;".local";"share";"coq"]
-
-let static_xdg_data_dirs =
-  if Sys.os_type = "Win32" then
-    let base = Filename.dirname (Filename.dirname Sys.executable_name) in
-    [Filename.concat base "share"]
-  else ["/usr/local/share/coq";"/usr/share/coq"]
+  coqify
+    (try Sys.getenv "XDG_DATA_HOME" with Not_found -> home / ".local" / "share")
 
 let xdg_data_dirs =
-  xdg_data_home ::
-    try
-      List.map (fun dir -> Filename.concat dir "coq")
-	(path_to_list (Sys.getenv "XDG_DATA_DIRS"))
-    with Not_found -> static_xdg_data_dirs @ opt2list Coq_config.datadir
+  let sys_dirs =
+    try List.map coqify (path_to_list (Sys.getenv "XDG_DATA_DIRS"))
+    with
+      | Not_found when Sys.os_type = "Win32" -> [relative_base / "share"]
+      | Not_found -> ["/usr/local/share/coq";"/usr/share/coq"]
+  in
+  xdg_data_home :: sys_dirs @ opt2list Coq_config.datadir
 
 let coqtop_path = ref ""
 
