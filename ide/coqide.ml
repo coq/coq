@@ -157,7 +157,7 @@ let signals_to_crash = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup;
 
 let crash_save i =
   (*  ignore (Unix.sigprocmask Unix.SIG_BLOCK signals_to_crash);*)
-  Minilib.safe_prerr_endline "Trying to save all buffers in .crashcoqide files";
+  Minilib.log "Trying to save all buffers in .crashcoqide files";
   let count = ref 0 in
   List.iter
     (function {script=view; analyzed_view = av } ->
@@ -169,19 +169,19 @@ let crash_save i =
        in
        try
 	 if try_export filename (view#buffer#get_text ()) then
-	   Minilib.safe_prerr_endline ("Saved "^filename)
-	 else Minilib.safe_prerr_endline ("Could not save "^filename)
-       with _ -> Minilib.safe_prerr_endline ("Could not save "^filename))
+	   Minilib.log ("Saved "^filename)
+	 else Minilib.log ("Could not save "^filename)
+       with _ -> Minilib.log ("Could not save "^filename))
     )
     session_notebook#pages;
-  Minilib.safe_prerr_endline "Done. Please report.";
+  Minilib.log "Done. Please report.";
   if i <> 127 then exit i
 
 let ignore_break () =
   List.iter
     (fun i ->
       try Sys.set_signal i (Sys.Signal_handle crash_save)
-      with _ -> prerr_endline "Signal ignored (normal if Win32)")
+      with _ -> Minilib.log "Signal ignored (normal if Win32)")
     signals_to_crash;
   Sys.set_signal Sys.sigint Sys.Signal_ignore
 
@@ -189,24 +189,24 @@ let ignore_break () =
 exception Unsuccessful
 
 let force_reset_initial () =
-  prerr_endline "Reset Initial";
+  Minilib.log "Reset Initial";
   let term = session_notebook#current_term in
   Coq.reset_coqtop term.toplvl term.analyzed_view#requested_reset_initial
 
 let break () =
-  prerr_endline "User break received";
+  Minilib.log "User break received";
   Coq.break_coqtop session_notebook#current_term.toplvl
 
 let do_if_not_computing term text f =
   let threaded_task () =
-    let info () = prerr_endline ("Discarded query:" ^ text) in
+    let info () = Minilib.log ("Discarded query:" ^ text) in
     try Coq.try_grab term.toplvl f info
     with
     | e ->
       let msg = "Unknown error, please report:\n" ^ (Printexc.to_string e) in
       term.analyzed_view#set_message msg
   in
-  prerr_endline ("Launching thread " ^ text);
+  Minilib.log ("Launching thread " ^ text);
   ignore (Thread.create threaded_task ())
 
 let warning msg =
@@ -284,7 +284,7 @@ let setopts ct opts v =
 let get_current_word () =
   match session_notebook#current_term,cb#text with
     | {script=script; analyzed_view=av;},None ->
-      prerr_endline "None selected";
+      Minilib.log "None selected";
       let it = av#get_insert in
       let start = find_word_start it in
       let stop = find_word_end start in
@@ -292,8 +292,8 @@ let get_current_word () =
       script#buffer#move_mark `INSERT ~where:stop;
       script#buffer#get_text ~slice:true ~start ~stop ()
     | _,Some t ->
-      prerr_endline "Some selected";
-      prerr_endline t;
+      Minilib.log "Some selected";
+      Minilib.log t;
       t
 
 let input_channel b ic =
@@ -508,7 +508,7 @@ object(self)
             | 2 -> if self#save f then flash_info "Overwritten" else
                 flash_info "Could not overwrite file"
             | _ ->
-              prerr_endline "Auto revert set to false";
+              Minilib.log "Auto revert set to false";
               current.global_auto_revert <- false;
               disconnect_revert_timer ()
         else do_revert ()
@@ -548,7 +548,7 @@ object(self)
         | Some fn ->
           try
             last_auto_save_time <- Unix.time();
-            prerr_endline ("Autosave time : "^(string_of_float (Unix.time())));
+            Minilib.log ("Autosave time : "^(string_of_float (Unix.time())));
             if try_export fn (input_buffer#get_text ()) then begin
               flash_info ~delay:1000 "Autosaved"
             end
@@ -657,7 +657,7 @@ object(self)
             end
         end
       with
-        | e -> prerr_endline (Printexc.to_string e)
+        | e -> Minilib.log (Printexc.to_string e)
     end
 
   method private send_to_coq handle verbose phrase show_output show_error localize =
@@ -686,7 +686,7 @@ object(self)
         end
       end in
       full_goal_done <- false;
-      prerr_endline "Send_to_coq starting now";
+      Minilib.log "Send_to_coq starting now";
       (* It's important here to work with [ct] and not [!mycoqtop], otherwise
          we could miss a restart of coqtop and continue sending it orders. *)
       match Coq.interp handle ~verbose phrase with
@@ -697,7 +697,7 @@ object(self)
 
   (* This method is intended to perform stateless commands *)
   method raw_coq_query handle phrase =
-    let () = prerr_endline "raw_coq_query starting now" in
+    let () = Minilib.log "raw_coq_query starting now" in
     let display_error s =
       if not (Glib.Utf8.validate s) then
         flash_info "This error is so nasty that I can't even display it."
@@ -724,7 +724,7 @@ object(self)
     with Not_found -> None
 
 (*  method private process_phrase verbosely =
-    prerr_endline "process_phrase starting now";
+    Minilib.log "process_phrase starting now";
     let get_next_phrase () =
       self#find_phrase_starting_at self#get_start_of_input
     in
@@ -754,7 +754,7 @@ object(self)
   method private process_one_phrase handle verbosely do_highlight =
     let get_next_phrase () =
       self#clear_message;
-      prerr_endline "process_one_phrase starting now";
+      Minilib.log "process_one_phrase starting now";
       if do_highlight then begin
         push_info "Coq is computing";
         input_view#set_editable false;
@@ -767,12 +767,12 @@ object(self)
           end;
           None
         | Some(start,stop) ->
-          prerr_endline "process_one_phrase : to_process highlight";
+          Minilib.log "process_one_phrase : to_process highlight";
           if do_highlight then begin
             input_buffer#apply_tag Tags.Script.to_process ~start ~stop;
-            prerr_endline "process_one_phrase : to_process applied";
+            Minilib.log "process_one_phrase : to_process applied";
           end;
-          prerr_endline "process_one_phrase : getting phrase";
+          Minilib.log "process_one_phrase : getting phrase";
           Some((start,stop),start#get_slice ~stop) in
     let remove_tag (start,stop) =
       if do_highlight then begin
@@ -965,7 +965,7 @@ object(self)
 
   (* backtrack Coq to the phrase preceding iterator [i] *)
   method private backtrack_to_no_lock handle i =
-    prerr_endline "Backtracking_to iter starts now.";
+    Minilib.log "Backtracking_to iter starts now.";
     full_goal_done <- false;
     (* pop Coq commands until we reach iterator [i] *)
     let rec n_step n =
@@ -997,7 +997,7 @@ object(self)
       (push_info "Undoing...";
        self#backtrack_to_no_lock handle i; Mutex.unlock coq_may_stop;
        pop_info ())
-    else prerr_endline "backtrack_to : discarded (lock is busy)"
+    else Minilib.log "backtrack_to : discarded (lock is busy)"
 
   method go_to_insert handle =
     let point = self#get_insert in
@@ -1024,7 +1024,7 @@ object(self)
        );
        pop_info ();
        Mutex.unlock coq_may_stop)
-    else prerr_endline "undo_last_step discarded"
+    else Minilib.log "undo_last_step discarded"
 
 
   method tactic_wizard handle l =
@@ -1097,7 +1097,7 @@ object(self)
                 if (it#compare self#get_start_of_input)<0
                 then GtkSignal.stop_emit ();
                 if String.length s > 1 then
-                  (prerr_endline "insert_text: Placing cursor";input_buffer#place_cursor ~where:it)));
+                  (Minilib.log "insert_text: Placing cursor";input_buffer#place_cursor ~where:it)));
     ignore (input_buffer#connect#after#apply_tag
               ~callback:(fun tag ~start ~stop ->
                 if (start#compare self#get_start_of_input)>=0
@@ -1148,14 +1148,14 @@ object(self)
                 match GtkText.Mark.get_name m  with
                   | Some "insert" -> ()
                   | Some s ->
-                    prerr_endline (s^" moved")
+                    Minilib.log (s^" moved")
                   | None -> () )
     );
     ignore (input_buffer#connect#insert_text
               ~callback:(fun it s ->
-                prerr_endline "Should recenter ?";
+                Minilib.log "Should recenter ?";
                 if String.contains s '\n' then begin
-                  prerr_endline "Should recenter : yes";
+                  Minilib.log "Should recenter : yes";
                   self#recenter_insert
                 end));
     let callback () =
@@ -1431,7 +1431,7 @@ let do_print session =
 let load_file handler f =
   let f = CUnix.correct_path f (Sys.getcwd ()) in
   try
-    prerr_endline "Loading file starts";
+    Minilib.log "Loading file starts";
     let is_f = CUnix.same_file f in
       if not (Util.list_fold_left_i
 		(fun i found x -> if found then found else
@@ -1444,31 +1444,31 @@ let load_file handler f =
 			    else false))
               0 false session_notebook#pages)
       then begin
-	prerr_endline "Loading: must open";
+	Minilib.log "Loading: must open";
 	let b = Buffer.create 1024 in
-	prerr_endline "Loading: get raw content";
+	Minilib.log "Loading: get raw content";
 	with_file handler f ~f:(input_channel b);
-	prerr_endline "Loading: convert content";
+	Minilib.log "Loading: convert content";
 	let s = do_convert (Buffer.contents b) in
-	prerr_endline "Loading: create view";
+	Minilib.log "Loading: create view";
 	let session = create_session (Some f) in
-	prerr_endline "Loading: adding view";
+	Minilib.log "Loading: adding view";
 	let index = session_notebook#append_term session in
 	let av = session.analyzed_view in
-	prerr_endline "Loading: stats";
+	Minilib.log "Loading: stats";
 	av#update_stats;
 	let input_buffer = session.script#buffer in
-	prerr_endline "Loading: fill buffer";
+	Minilib.log "Loading: fill buffer";
 	input_buffer#set_text s;
 	input_buffer#place_cursor ~where:input_buffer#start_iter;
 	force_retag input_buffer;
-	prerr_endline ("Loading: switch to view "^ string_of_int index);
+	Minilib.log ("Loading: switch to view "^ string_of_int index);
 	session_notebook#goto_page index;
-	prerr_endline "Loading: highlight";
+	Minilib.log "Loading: highlight";
 	input_buffer#set_modified false;
-	prerr_endline "Loading: clear undo";
+	Minilib.log "Loading: clear undo";
 	session.script#clear_undo ();
-	prerr_endline "Loading: success";
+	Minilib.log "Loading: success";
         !refresh_editor_hook ();
       end
   with
@@ -1742,7 +1742,7 @@ let main files =
           Format.fprintf fmt "@[match var with@\n%aend@]@."
             (print_list print_branch) cases;
           let s = Buffer.contents b in
-          prerr_endline s;
+          Minilib.log s;
           let {script = view } = session_notebook#current_term in
           ignore (view#buffer#delete_selection ());
           let m = view#buffer#create_mark
@@ -1953,7 +1953,7 @@ let main files =
              try GtkSignal.emit_unit
                    session_notebook#current_term.script#as_view
                    ~sgn:GtkText.View.S.paste_clipboard
-             with _ -> prerr_endline "EMIT PASTE FAILED") ~stock:`PASTE;
+             with _ -> Minilib.log "EMIT PASTE FAILED") ~stock:`PASTE;
       GAction.add_action "Find" ~stock:`FIND
         ~callback:(fun _ -> session_notebook#current_term.finder#show_find ());
       GAction.add_action "Find Next" ~label:"Find _Next" ~stock:`GO_DOWN ~accel:"F3"

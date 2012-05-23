@@ -9,10 +9,16 @@
 (** Some excerpts of Util and similar files to avoid depending on them
     and hence on Compat and Camlp4 *)
 
+type level = [
+  | `DEBUG
+  | `INFO
+  | `NOTICE
+  | `WARNING
+  | `ERROR
+  | `FATAL ]
+
 (** debug printing *)
 val debug : bool ref
-val prerr_endline : string -> unit
 
-(** safe version of Pervasives.prerr_endline
-    (avoid exception in win32 without console) *)
-val safe_prerr_endline : string -> unit
+val log : ?level:level -> string -> unit
+

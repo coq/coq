@@ -293,11 +293,11 @@ let is_closed coqtop = coqtop.is_closed
 (** These are asynchronous signals *)
 let break_coqtop coqtop =
   try !interrupter coqtop.handle.pid
-  with _ -> prerr_endline "Error while sending Ctrl-C"
+  with _ -> Minilib.log "Error while sending Ctrl-C"
 
 let kill_coqtop coqtop =
   try !killer coqtop.handle.pid
-  with _ -> prerr_endline "Kill -9 failed. Process already terminated ?"
+  with _ -> Minilib.log "Kill -9 failed. Process already terminated ?"
 
 let unsafe_process coqtop f =
   coqtop.is_computing <- true;
@@ -363,7 +363,7 @@ let eval_call coqtop (c:'a Serialize.call) =
     let msg = Printf.sprintf "Error communicating with pid [%i]: %s"
       coqtop.pid (Printexc.to_string err)
     in
-    prerr_endline msg;
+    Minilib.log msg;
     raise DeadCoqtop
 
 let interp coqtop ?(raw=false) ?(verbose=true) s =

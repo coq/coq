@@ -30,7 +30,7 @@ let version = "1.2";;
 
 let html_config = "Configwin bindings configurator for html parameters"
 
-let home = Envars.home ~warn:Minilib.prerr_endline
+let home = Envars.home ~warn:Minilib.log
 
 let mCapture = "Capture";;
 let mType_key = "Type key" ;;

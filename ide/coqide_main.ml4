@@ -97,9 +97,9 @@ let () =
       try
 	GtkThread.main ()
       with
-	| Sys.Break -> Minilib.prerr_endline "Interrupted."
+	| Sys.Break -> Minilib.log "Interrupted."
 	| e ->
-	    Minilib.safe_prerr_endline
+	    Minilib.log
 	      ("CoqIde unexpected error:" ^ (Printexc.to_string e));
 	    Coqide.crash_save 127
     done

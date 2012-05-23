@@ -96,14 +96,14 @@ object (self)
       Printf.eprintf "Delete '%s' from %d (length %d)\n" s p l
     in
     if false (* !debug *) then begin
-      prerr_endline "==========Undo Stack top=============";
+      Minilib.log "==========Undo Stack top=============";
       List.iter iter history;
       Printf.eprintf "Stack size %d\n" (List.length history);
-      prerr_endline "==========Undo Stack Bottom==========";
-      prerr_endline "==========Redo Stack start=============";
+      Minilib.log "==========Undo Stack Bottom==========";
+      Minilib.log "==========Redo Stack start=============";
       List.iter iter redo;
       Printf.eprintf "Stack size %d\n" (List.length redo);
-      prerr_endline "==========Redo Stack End=========="
+      Minilib.log "==========Redo Stack End=========="
     end
 
   method clear_undo () =
@@ -136,23 +136,23 @@ object (self)
 
   method undo () =
     if Mutex.try_lock undo_lock then begin
-      prerr_endline "UNDO";
+      Minilib.log "UNDO";
       let effective = self#process_action history in
       if effective then self#backward ();
       Mutex.unlock undo_lock;
       effective
     end else
-      (prerr_endline "UNDO DISCARDED"; true)
+      (Minilib.log "UNDO DISCARDED"; true)
 
   method redo () =
     if Mutex.try_lock undo_lock then begin
-      prerr_endline "REDO";
+      Minilib.log "REDO";
       let effective = self#process_action redo in
       if effective then self#forward ();
       Mutex.unlock undo_lock;
       effective
     end else
-      (prerr_endline "REDO DISCARDED"; true)
+      (Minilib.log "REDO DISCARDED"; true)
 
   method private handle_insert iter s =
     if Mutex.try_lock undo_lock then begin
@@ -177,12 +177,12 @@ object (self)
 
   method private do_auto_complete () =
     let iter = self#buffer#get_iter `INSERT in
-    prerr_endline ("Completion at offset: " ^ string_of_int iter#offset);
+    Minilib.log ("Completion at offset: " ^ string_of_int iter#offset);
     let start = find_word_start iter in
     if ends_word iter#backward_char then begin
       let w = self#buffer#get_text ~start ~stop:iter () in
       if String.length w >= auto_complete_length then begin
-        prerr_endline ("Completion of prefix: '" ^ w ^ "'");
+        Minilib.log ("Completion of prefix: '" ^ w ^ "'");
         let (off, prefix, proposals) = last_completion in
         let new_proposals = 
         (* check whether we have the last request in cache *)

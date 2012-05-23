@@ -50,13 +50,13 @@ let byte_offset_to_char_offset s byte_offset =
   end
 
 let print_id id =
-  prerr_endline ("GOT sig id :"^(string_of_int (Obj.magic id)))
+  Minilib.log ("GOT sig id :"^(string_of_int (Obj.magic id)))
 
 
 let do_convert s =
   Utf8_convert.f
     (if Glib.Utf8.validate s then begin
-      prerr_endline "Input is UTF-8";s
+      Minilib.log "Input is UTF-8";s
     end else
 	let from_loc () =
 	  let _,char_set = Glib.Convert.get_charset () in
@@ -88,26 +88,26 @@ let try_export file_name s =
   try let s =
     try match current.encoding with
       |Eutf8 -> begin
-	(prerr_endline "UTF-8 is enforced" ;s)
+	(Minilib.log "UTF-8 is enforced" ;s)
       end
       |Elocale -> begin
 	let is_unicode,char_set = Glib.Convert.get_charset () in
 	if is_unicode then
-	  (prerr_endline "Locale is UTF-8" ;s)
+	  (Minilib.log "Locale is UTF-8" ;s)
 	else
-	  (prerr_endline ("Locale is "^char_set);
+	  (Minilib.log ("Locale is "^char_set);
 	   Glib.Convert.convert_with_fallback ~from_codeset:"UTF-8" ~to_codeset:char_set s)
       end
       |Emanual enc ->
-	(prerr_endline ("Manual charset is "^ enc);
+	(Minilib.log ("Manual charset is "^ enc);
        Glib.Convert.convert_with_fallback ~from_codeset:"UTF-8" ~to_codeset:enc s)
-    with e -> (prerr_endline ("Error ("^(Printexc.to_string e)^") in transcoding: falling back to UTF-8") ;s)
+    with e -> (Minilib.log ("Error ("^(Printexc.to_string e)^") in transcoding: falling back to UTF-8") ;s)
   in
   let oc = open_out file_name in
   output_string oc s;
   close_out oc;
   true
-  with e -> prerr_endline (Printexc.to_string e);false
+  with e -> Minilib.log (Printexc.to_string e);false
 
 let my_stat f = try Some (Unix.stat f) with _ -> None
 
@@ -227,16 +227,16 @@ let mutex text f =
     if Mutex.try_lock m
     then
       (try
-        prerr_endline ("Got lock on "^text);
+        Minilib.log ("Got lock on "^text);
         f x;
         Mutex.unlock m;
-        prerr_endline ("Released lock on "^text)
+        Minilib.log ("Released lock on "^text)
       with e ->
         Mutex.unlock m;
-        prerr_endline ("Released lock on "^text^" (on error)");
+        Minilib.log ("Released lock on "^text^" (on error)");
         raise e)
     else
-      prerr_endline
+      Minilib.log
         ("Discarded call for "^text^": computations ongoing")
 
 
@@ -314,11 +314,11 @@ let url_for_keyword =
 		let u = String.sub s (i + 1) (String.length s - i - 1) in
 		  Hashtbl.add ht k u
 	      with _ ->
-		Minilib.safe_prerr_endline "Warning: Cannot parse documentation index file."
+		Minilib.log "Warning: Cannot parse documentation index file."
 	  done with End_of_file ->
 	    close_in cin
       with _ ->
-	Minilib.safe_prerr_endline "Warning: Cannot find documentation index file."
+	Minilib.log "Warning: Cannot find documentation index file."
       end;
       Hashtbl.find ht : string -> string)
 

@@ -38,7 +38,7 @@ class type widget =
 let file_html_config = Filename.concat Configwin_messages.home ".configwin_html"
 
 let debug = false
-let dbg = if debug then prerr_endline else (fun _ -> ())
+let dbg s = if debug then Minilib.log s else ()
 
 (** Return the config group for the html config file,
    and the option for bindings. *)

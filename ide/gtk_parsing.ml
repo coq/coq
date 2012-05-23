@@ -45,25 +45,25 @@ let is_on_word_limit (it:GText.iter) = inside_word it || ends_word it
 
 let find_word_start (it:GText.iter) =
   let rec step_to_start it =
-    prerr_endline "Find word start";
+    Minilib.log "Find word start";
     if not it#nocopy#backward_char then
-      (prerr_endline "find_word_start: cannot backward"; it)
+      (Minilib.log "find_word_start: cannot backward"; it)
     else if is_word_char it#char
     then step_to_start it
     else (it#nocopy#forward_char;
-	prerr_endline ("Word start at: "^(string_of_int it#offset));it)
+	Minilib.log ("Word start at: "^(string_of_int it#offset));it)
   in
     step_to_start it#copy
 
 let find_word_end (it:GText.iter) =
   let rec step_to_end (it:GText.iter) =
-    prerr_endline "Find word end";
+    Minilib.log "Find word end";
     let c = it#char in
     if c<>0 && is_word_char c then (
       ignore (it#nocopy#forward_char);
       step_to_end it
     ) else (
-      prerr_endline ("Word end at: "^(string_of_int it#offset));
+      Minilib.log ("Word end at: "^(string_of_int it#offset));
       it)
   in
     step_to_end it#copy
@@ -76,11 +76,11 @@ let get_word_around (it:GText.iter) =
 
 
 let rec complete_backward w (it:GText.iter) =
-  prerr_endline "Complete backward...";
+  Minilib.log "Complete backward...";
   match it#backward_search w with
-    | None -> (prerr_endline "backward_search failed";None)
+    | None -> (Minilib.log "backward_search failed";None)
     | Some (start,stop) ->
-	prerr_endline ("complete_backward got a match:"^(string_of_int start#offset)^(string_of_int stop#offset));
+	Minilib.log ("complete_backward got a match:"^(string_of_int start#offset)^(string_of_int stop#offset));
 	if starts_word start then
 	  let ne = find_word_end stop in
 	    if ne#compare stop = 0
@@ -90,7 +90,7 @@ let rec complete_backward w (it:GText.iter) =
 
 
 let rec complete_forward w (it:GText.iter) =
-  prerr_endline "Complete forward...";
+  Minilib.log "Complete forward...";
   match it#forward_search w with
     | None -> None
     | Some (start,stop) ->

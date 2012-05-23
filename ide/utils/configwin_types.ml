@@ -52,7 +52,7 @@ let string_to_key s =
       | '4' -> `MOD4
       | '5' -> `MOD5
       | _ ->
-	  prerr_endline s;
+	  Minilib.log s;
 	  raise Not_found
       in
       mask := m :: !mask
@@ -65,7 +65,7 @@ let string_to_key s =
     !mask, List.assoc key name_to_keysym
   with
     e ->
-      prerr_endline s;
+      Minilib.log s;
       raise e
 
 let key_to_string (m, k) =
@@ -116,7 +116,7 @@ let value_to_key v =
   match v with
     Raw.String s -> string_to_key s
   | _ ->
-      prerr_endline "value_to_key";
+      Minilib.log "value_to_key";
       raise Not_found
 
 let key_to_value k =

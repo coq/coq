@@ -107,7 +107,7 @@ let key_press w ev =
 	  (fun h ->
 	    if h.cond () then
 	      try h.cback ()
-	      with e -> prerr_endline (Printexc.to_string e)
+	      with e -> Minilib.log (Printexc.to_string e)
 	    else ()
 	  )
 	  l;

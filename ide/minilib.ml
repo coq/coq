@@ -6,13 +6,18 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
+type level = [
+  | `DEBUG
+  | `INFO
+  | `NOTICE
+  | `WARNING
+  | `ERROR
+  | `FATAL ]
+
 (** Some excerpt of Util and similar files to avoid loading the whole
     module and its dependencies (and hence Compat and Camlp4) *)
 
-let debug = ref (false)
-
-let prerr_endline s =
-  if !debug then try prerr_endline s;flush stderr with _ -> ()
+let debug = ref false
 
 (* On a Win32 application with no console, writing to stderr raise
    a Sys_error "bad file descriptor", hence the "try" below.
@@ -20,5 +25,5 @@ let prerr_endline s =
    print in the response buffer.
 *)
 
-let safe_prerr_endline s =
-  try prerr_endline s;flush stderr with _ -> ()
+let log ?(level = `DEBUG) msg =
+  if !debug then try prerr_endline msg; flush stderr with _ -> ()

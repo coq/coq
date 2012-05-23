@@ -88,7 +88,7 @@ object(self)
     in
     let on_activate c () =
       if List.mem combo#entry#text Coq_commands.state_preserving then c ()
-      else prerr_endline "Not a state preserving command"
+      else Minilib.log "Not a state preserving command"
     in
     let entry = GEdit.entry ~packing:(hbox#pack ~expand:true) () in
     entry#misc#set_can_default true;
