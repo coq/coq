@@ -24,17 +24,6 @@ exception Not_element of xml
 exception Not_pcdata of xml
 exception No_attribute of string
 
-let default_parser = Xml_parser.make()
-
-let parse (p:Xml_parser.t) (source:Xml_parser.source) =
-	(* local cast Xml.xml -> xml *)
-	(Obj.magic Xml_parser.parse p source : xml)
-
-let parse_in ch = parse default_parser (Xml_parser.SChannel ch)
-let parse_string str = parse default_parser (Xml_parser.SString str)
-
-let parse_file f = parse default_parser (Xml_parser.SFile f)
-
 let tag = function
 	| Element (tag,_,_) -> tag
 	| x -> raise (Not_element x)

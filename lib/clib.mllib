@@ -3,6 +3,7 @@ Segmenttree
 Unicodetable
 Util
 Serialize
+Xml_utils
 Flags
 CUnix
 Envars

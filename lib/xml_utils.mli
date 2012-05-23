@@ -29,7 +29,7 @@
   {i (c)Copyright 2002-2003 Nicolas Cannasse}
 *)
 
-open Xml_parser
+open Serialize
 
 (** {6 Xml Functions} *)
 

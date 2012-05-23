@@ -248,6 +248,8 @@ COQDEPCMO:=$(COQENVCMO) tools/coqdep_lexer.cmo tools/coqdep_common.cmo tools/coq
 COQDOCCMO:=lib/clib.cma $(addprefix tools/coqdoc/, \
   cdglobals.cmo alpha.cmo index.cmo tokens.cmo output.cmo cpretty.cmo main.cmo )
 
+COQMAKEFILECMO:=lib/clib.cma ide/minilib.cmo ide/project_file.cmo tools/coq_makefile.cmo
+
 ###########################################################################
 # vo files
 ###########################################################################

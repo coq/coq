@@ -12,6 +12,11 @@ type physical_path = string
 type load_path = physical_path list
 
 val canonical_path_name : string -> string
+val remove_path_dot : string -> string
+val strip_path : string -> string
+(** correct_path f dir = dir/f if f is relative *)
+val correct_path : string -> string -> string
+
 
 val physical_path_of_string : string -> physical_path
 val string_of_physical_path : physical_path -> string
@@ -29,4 +34,7 @@ val file_readable_p : string -> bool
 
 val run_command : (string -> string) -> (string -> unit) -> string ->
   Unix.process_status * string
+
+(** checks if two file names refer to the same (existing) file *)
+val same_file : string -> string -> bool
 

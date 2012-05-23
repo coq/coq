@@ -81,9 +81,6 @@ val browser_cmd_fmt : string
 
 val is_standard_doc_url : string -> bool
 
-(** Substitute %s in the first chain by the second chain *)
-val subst_command_placeholder : string -> string -> string
-
 (** Options for specifying where coq librairies reside *)
 val coqlib_spec : bool ref
 val coqlib : string ref

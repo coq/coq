@@ -9,36 +9,10 @@
 (** Some excerpts of Util and similar files to avoid depending on them
     and hence on Compat and Camlp4 *)
 
-module Stringmap : Map.S with type key = string
-
-val list_fold_left_i : (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
-val list_map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
-val list_filter_i : (int -> 'a -> bool) -> 'a list -> 'a list
-val list_chop : int -> 'a list -> 'a list * 'a list
-val list_index0 : 'a -> 'a list -> int
-
-val string_map : (char -> char) -> string -> string
-
-val subst_command_placeholder : string -> string -> string
-
-val home : string
-val xdg_config_home : string
-val xdg_config_dirs : string list
-val xdg_data_home : string
-val xdg_data_dirs : string list
-
-val coqtop_path : string ref
+(** debug printing *)
+val debug : bool ref
+val prerr_endline : string -> unit
 
 (** safe version of Pervasives.prerr_endline
     (avoid exception in win32 without console) *)
 val safe_prerr_endline : string -> unit
-
-val remove_path_dot : string -> string
-val strip_path : string -> string
-val canonical_path_name : string -> string
-(** correct_path f dir = dir/f if f is relative *)
-val correct_path : string -> string -> string
-
-(** checks if two file names refer to the same (existing) file *)
-val same_file : string -> string -> bool
-

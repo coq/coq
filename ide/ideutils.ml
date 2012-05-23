@@ -29,14 +29,7 @@ let set_location = ref  (function s -> failwith "not ready")
 
 let pbar = GRange.progress_bar ~pulse_step:0.2 ()
 
-let debug = ref (false)
-
-let prerr_endline s =
-  if !debug then try prerr_endline s;flush stderr with _ -> ()
-
 let get_insert input_buffer = input_buffer#get_iter_at_mark `INSERT
-
-let is_char_start c = let code = Char.code c in code < 0x80 || code >= 0xc0
 
 let byte_offset_to_char_offset s byte_offset =
   if (byte_offset < String.length s) then begin
@@ -282,29 +275,8 @@ let rec print_list print fmt = function
 
 let requote cmd = if Sys.os_type = "Win32" then "\""^cmd^"\"" else cmd
 
-(* TODO: allow to report output as soon as it comes (user-fiendlier
-   for long commands like make...) *)
-let run_command f c =
-  let c = requote c in
-  let result = Buffer.create 127 in
-  let cin,cout,cerr = Unix.open_process_full c (Unix.environment ()) in
-  let buff = String.make 127 ' ' in
-  let buffe = String.make 127 ' ' in
-  let n = ref 0 in
-  let ne = ref 0 in
-  while n:= input cin buff 0 127 ; ne := input cerr buffe 0 127 ; !n+ !ne <> 0
-  do
-    let r = try_convert (String.sub buff 0 !n) in
-    f r;
-    Buffer.add_string result r;
-    let r = try_convert (String.sub buffe 0 !ne) in
-    f r;
-    Buffer.add_string result r
-  done;
-  (Unix.close_process_full (cin,cout,cerr),  Buffer.contents result)
-
 let browse f url =
-  let com = Minilib.subst_command_placeholder current.cmd_browse url in
+  let com = Util.subst_command_placeholder current.cmd_browse url in
   let _ = Unix.open_process_out com in ()
 (* This beautiful message will wait for twt ...
   if s = 127 then
@@ -324,7 +296,7 @@ let url_for_keyword =
 	let cin =
 	  try let index_urls = Filename.concat (List.find
             (fun x -> Sys.file_exists (Filename.concat x "index_urls.txt"))
-	    Minilib.xdg_config_dirs) "index_urls.txt" in
+	    (Envars.xdg_config_dirs flash_info)) "index_urls.txt" in
 	    open_in index_urls
 	  with Not_found ->
 	    let doc_url = doc_url () in
@@ -353,5 +325,3 @@ let url_for_keyword =
 let browse_keyword f text =
   try let u = Lazy.force url_for_keyword text in browse f (doc_url() ^ u)
   with Not_found -> f ("No documentation found for \""^text^"\".\n")
-
-let absolute_filename f = Minilib.correct_path f (Sys.getcwd ())

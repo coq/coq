@@ -55,7 +55,7 @@ class command_window coqtop =
   let remove_cb () =
     let index = notebook#current_page in
     let () = notebook#remove_page index in
-    views := Minilib.list_filter_i (fun i x -> i <> index) !views
+    views := Util.list_filter_i (fun i x -> i <> index) !views
   in
   let _ =
     toolbar#insert_button

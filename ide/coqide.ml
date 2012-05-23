@@ -1419,7 +1419,7 @@ let do_print session =
       let print_button  = GButton.button ~stock:`PRINT  ~label:"Print"  ~packing:hbox_print#add () in
       let callback_print () =
         let cmd = print_entry#text in
-        let s,_ = run_command av#insert_message cmd in
+        let s,_ = CUnix.run_command Ideutils.try_convert av#insert_message cmd in
         flash_info (cmd ^ if s = Unix.WEXITED 0 then " succeeded" else " failed");
         print_window#destroy ()
       in
@@ -1429,11 +1429,11 @@ let do_print session =
     end
 
 let load_file handler f =
-  let f = absolute_filename f in
+  let f = CUnix.correct_path f (Sys.getcwd ()) in
   try
     prerr_endline "Loading file starts";
-    let is_f = Minilib.same_file f in
-      if not (Minilib.list_fold_left_i
+    let is_f = CUnix.same_file f in
+      if not (Util.list_fold_left_i
 		(fun i found x -> if found then found else
                    let {analyzed_view=av} = x in
                      (match av#filename with
@@ -1549,7 +1549,7 @@ let main files =
   (try
      let icon_image = Filename.concat (List.find
        (fun x -> Sys.file_exists (Filename.concat x "coq.png"))
-       Minilib.xdg_data_dirs) "coq.png" in
+       (Envars.xdg_data_dirs Ideutils.flash_info)) "coq.png" in
      let icon = GdkPixbuf.from_file icon_image in
      w#set_icon (Some icon)
    with _ -> ());
@@ -1650,7 +1650,7 @@ let main files =
           local_cd f ^ current.cmd_coqdoc ^ " --" ^ kind ^
 	    " -o " ^ (Filename.quote output) ^ " " ^ (Filename.quote basef)
         in
-        let s,_ = run_command av#insert_message cmd in
+        let s,_ = CUnix.run_command Ideutils.try_convert av#insert_message cmd in
         flash_info (cmd ^
                       if s = Unix.WEXITED 0
                       then " succeeded"
@@ -1769,7 +1769,7 @@ let main files =
 	let cmd = current.cmd_coqc ^ " -I "
 	  ^ (Filename.quote (Filename.dirname f))
 	  ^ " " ^ (Filename.quote f) in
-	let s,res = run_command av#insert_message cmd in
+	let s,res = CUnix.run_command Ideutils.try_convert av#insert_message cmd in
 	if s = Unix.WEXITED 0 then
 	  flash_info (f ^ " successfully compiled")
 	else begin
@@ -1792,7 +1792,7 @@ let main files =
 	  save_f ();
 	*)
 	av#insert_message "Command output:\n";
-	let s,res = run_command av#insert_message cmd in
+	let s,res = CUnix.run_command Ideutils.try_convert av#insert_message cmd in
 	last_make := res;
 	last_make_index := 0;
 	flash_info (current.cmd_make ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
@@ -1839,7 +1839,7 @@ let main files =
 	flash_info "Cannot make makefile: this buffer has no name"
       | Some f ->
 	let cmd = local_cd f ^ current.cmd_coqmakefile in
-	let s,res = run_command av#insert_message cmd in
+	let s,res = CUnix.run_command Ideutils.try_convert av#insert_message cmd in
 	flash_info
 	  (current.cmd_coqmakefile ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
   in
@@ -1856,7 +1856,7 @@ let main files =
   let windows_actions = GAction.action_group ~name:"Windows" () in
   let help_actions = GAction.action_group ~name:"Help" () in
   let add_gen_actions menu_name act_grp l =
-    let no_under = Minilib.string_map (fun x -> if x = '_' then '-' else x) in
+    let no_under = Util.string_map (fun x -> if x = '_' then '-' else x) in
     let add_simple_template menu_name act_grp text =
       let text' =
 	let l = String.length text - 1 in
@@ -1975,8 +1975,8 @@ let main files =
 	  | None -> warning "Call to external editor available only on named files"
 	  | Some f ->
 	    save_f ();
-	    let com = Minilib.subst_command_placeholder current.cmd_editor (Filename.quote f) in
-	    let _ = run_command av#insert_message com in
+	    let com = Util.subst_command_placeholder current.cmd_editor (Filename.quote f) in
+	    let _ = CUnix.run_command Ideutils.try_convert av#insert_message com in
 	    av#revert) ~stock:`EDIT;
       GAction.add_action "Preferences" ~callback:(fun _ ->
 	begin
@@ -2272,7 +2272,7 @@ let main files =
     (try
        let image = Filename.concat (List.find
 	 (fun x -> Sys.file_exists (Filename.concat x "coq.png"))
-	 Minilib.xdg_data_dirs) "coq.png" in
+	 (Envars.xdg_data_dirs Ideutils.flash_info)) "coq.png" in
        let startup_image = GdkPixbuf.from_file image in
        b#insert ~iter:b#start_iter "\n\n";
        b#insert_pixbuf ~iter:b#start_iter ~pixbuf:startup_image;
@@ -2284,7 +2284,7 @@ let main files =
     (try
        let image = Filename.concat (List.find
 	 (fun x -> Sys.file_exists (Filename.concat x "coq.png"))
-	 Minilib.xdg_data_dirs) "coq.png" in
+	 (Envars.xdg_data_dirs Ideutils.flash_info)) "coq.png" in
        let startup_image = GdkPixbuf.from_file image in
        b#insert ~iter:b#start_iter "\n\n";
        b#insert_pixbuf ~iter:b#start_iter ~pixbuf:startup_image;
@@ -2367,11 +2367,11 @@ let read_coqide_args argv =
        (output_string stderr "Error: multiple -coqtop options"; exit 1)
     | "-f" :: file :: args ->
 	filter_coqtop coqtop
-	  ((Minilib.canonical_path_name (Filename.dirname file),
+	  ((CUnix.canonical_path_name (Filename.dirname file),
 	    Project_file.read_project_file file) :: project_files) out args
     | "-f" :: [] -> output_string stderr "Error: missing project file name"; exit 1
     | "-coqtop" :: [] -> output_string stderr "Error: missing argument after -coqtop"; exit 1
-    | "-debug"::args -> Ideutils.debug := true;
+    | "-debug"::args -> Minilib.debug := true;
       filter_coqtop coqtop project_files ("-debug"::out) args
     | arg::args -> filter_coqtop coqtop project_files (arg::out) args
     | [] -> (coqtop,List.rev project_files,List.rev out)

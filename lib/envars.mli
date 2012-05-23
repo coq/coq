@@ -18,7 +18,10 @@ val coqbin : string
 val coqroot : string
 (* coqpath is stored in reverse order, since that is the order it
  * gets added to the searc path *)
-val xdg_config_home : warn:(string -> unit) -> string
+val xdg_config_home : (string -> unit) -> string
+val xdg_data_home : (string -> unit) -> string
+val xdg_config_dirs : (string -> unit) -> string list
+val xdg_data_dirs : (string -> unit) -> string list
 val xdg_dirs : warn:(string -> unit) -> string list
 val coqpath : string list
 

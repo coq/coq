@@ -72,13 +72,13 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
   | "-custom" :: com :: dependencies :: file :: r ->
     process_cmd_line orig_dir opts (Special (file,dependencies,com) :: l) r
   | "-I" :: d :: r ->
-    process_cmd_line orig_dir opts ((Include (Minilib.correct_path d orig_dir)) :: l) r
+    process_cmd_line orig_dir opts ((Include (CUnix.correct_path d orig_dir)) :: l) r
   | "-R" :: p :: lp :: r ->
-    process_cmd_line orig_dir opts (RInclude (Minilib.correct_path p orig_dir,lp) :: l) r
+    process_cmd_line orig_dir opts (RInclude (CUnix.correct_path p orig_dir,lp) :: l) r
   | ("-I"|"-custom") :: _ ->
     raise Parsing_error
   | "-f" :: file :: r ->
-    let file = Minilib.remove_path_dot (Minilib.correct_path file orig_dir) in
+    let file = CUnix.remove_path_dot (CUnix.correct_path file orig_dir) in
     let () = match project_file with
       | None -> ()
       | Some _ -> Minilib.safe_prerr_endline
@@ -104,7 +104,7 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
   | "-arg" :: a :: r ->
     process_cmd_line orig_dir opts (Arg a :: l) r
   | f :: r ->
-      let f = Minilib.correct_path f orig_dir in
+      let f = CUnix.correct_path f orig_dir in
 	process_cmd_line orig_dir opts ((
           if Filename.check_suffix f ".v" then V f
 	  else if (Filename.check_suffix f ".ml") then ML f
@@ -124,32 +124,32 @@ let rec post_canonize f =
 let split_arguments =
   let rec aux = function
   | V n :: r ->
-	let (v,m,o,s),i,d = aux r in ((Minilib.remove_path_dot n::v,m,o,s),i,d)
+	let (v,m,o,s),i,d = aux r in ((CUnix.remove_path_dot n::v,m,o,s),i,d)
   | ML n :: r ->
       let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(mli,ml4,Minilib.remove_path_dot n::ml,mllib,mlpack),o,s),i,d)
+      ((v,(mli,ml4,CUnix.remove_path_dot n::ml,mllib,mlpack),o,s),i,d)
   | MLI n :: r ->
       let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(Minilib.remove_path_dot n::mli,ml4,ml,mllib,mlpack),o,s),i,d)
+      ((v,(CUnix.remove_path_dot n::mli,ml4,ml,mllib,mlpack),o,s),i,d)
   | ML4 n :: r ->
       let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(mli,Minilib.remove_path_dot n::ml4,ml,mllib,mlpack),o,s),i,d)
+      ((v,(mli,CUnix.remove_path_dot n::ml4,ml,mllib,mlpack),o,s),i,d)
   | MLLIB n :: r ->
       let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(mli,ml4,ml,Minilib.remove_path_dot n::mllib,mlpack),o,s),i,d)
+      ((v,(mli,ml4,ml,CUnix.remove_path_dot n::mllib,mlpack),o,s),i,d)
   | MLPACK n :: r ->
       let (v,(mli,ml4,ml,mllib,mlpack),o,s),i,d = aux r in
-      ((v,(mli,ml4,ml,mllib,Minilib.remove_path_dot n::mlpack),o,s),i,d)
+      ((v,(mli,ml4,ml,mllib,CUnix.remove_path_dot n::mlpack),o,s),i,d)
   | Special (n,dep,c) :: r ->
       let (v,m,o,s),i,d = aux r in ((v,m,(n,dep,c)::o,s),i,d)
   | Subdir n :: r ->
       let (v,m,o,s),i,d = aux r in ((v,m,o,n::s),i,d)
   | Include p :: r ->
-      let t,(i,r),d = aux r in (t,((Minilib.remove_path_dot (post_canonize p),
-				    Minilib.canonical_path_name p)::i,r),d)
+      let t,(i,r),d = aux r in (t,((CUnix.remove_path_dot (post_canonize p),
+				    CUnix.canonical_path_name p)::i,r),d)
   | RInclude (p,l) :: r ->
-      let t,(i,r),d = aux r in (t,(i,(Minilib.remove_path_dot (post_canonize p),l,
-				      Minilib.canonical_path_name p)::r),d)
+      let t,(i,r),d = aux r in (t,(i,(CUnix.remove_path_dot (post_canonize p),l,
+				      CUnix.canonical_path_name p)::r),d)
   | Def (v,def) :: r ->
       let t,i,(args,defs) = aux r in (t,i,(args,(v,def)::defs))
   | Arg a :: r ->
@@ -162,9 +162,9 @@ let read_project_file f =
     (snd (process_cmd_line (Filename.dirname f) (Some f, None, NoInstall, true) [] (parse f)))
 
 let args_from_project file project_files default_name =
-  let is_f = Minilib.same_file file in
+  let is_f = CUnix.same_file file in
   let contains_file dir =
-      List.exists (fun x -> is_f (Minilib.correct_path x dir))
+      List.exists (fun x -> is_f (CUnix.correct_path x dir))
   in
   let build_cmd_line i_inc r_inc args =
     List.fold_right (fun (_,i) o -> "-I" :: i :: o) i_inc

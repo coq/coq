@@ -97,17 +97,6 @@ let is_unsafe s = Stringset.mem s !unsafe_set
 
 (* Flags for external tools *)
 
-let subst_command_placeholder s t =
-  let buff = Buffer.create (String.length s + String.length t) in
-  let i = ref 0 in
-  while (!i < String.length s) do
-    if s.[!i] = '%' & !i+1 < String.length s & s.[!i+1] = 's'
-    then (Buffer.add_string buff t;incr i)
-    else Buffer.add_char buff s.[!i];
-    incr i
-  done;
-  Buffer.contents buff
-
 let browser_cmd_fmt =
  try
   let coq_netscape_remote_var = "COQREMOTEBROWSER" in

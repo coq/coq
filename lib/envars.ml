@@ -20,6 +20,15 @@ let safe_getenv warning n = getenv_else n (fun () ->
 (* On win32, the home directory is probably not in $HOME, but in
    some other environment variable *)
 
+let (/) = Filename.concat
+
+let coqify d = d / "coq"
+
+let relative_base =
+  Filename.dirname (Filename.dirname Sys.executable_name)
+
+let opt2list = function None -> [] | Some x -> [x]
+
 let home ~warn =
   getenv_else "HOME" (fun () ->
     try (Sys.getenv "HOMEDRIVE")^(Sys.getenv "HOMEPATH") with Not_found ->
@@ -96,25 +105,34 @@ let path_to_list p =
     Util.split_string_at sep p
 
 let xdg_data_home warning =
-  Filename.concat
-    (getenv_else "XDG_DATA_HOME" (fun () -> Filename.concat (home warning) ".local/share"))
-    "coq"
+  coqify
+    (getenv_else "XDG_DATA_HOME" (fun () -> (home warning) / ".local/share"))
 
-let xdg_config_home ~warn =
-  Filename.concat
-    (getenv_else "XDG_CONFIG_HOME" (fun () -> Filename.concat (home ~warn) ".config"))
-    "coq"
+let xdg_config_home warn =
+  coqify
+    (getenv_else "XDG_CONFIG_HOME" (fun () -> (home ~warn) / ".config"))
 
-let xdg_data_dirs =
-  (try
-    List.map (fun dir -> Filename.concat dir "coq") (path_to_list (Sys.getenv "XDG_DATA_DIRS"))
-  with Not_found -> ["/usr/local/share/coq";"/usr/share/coq"])
-    @ (match Coq_config.datadir with |None -> [] |Some datadir -> [datadir])
+let xdg_data_dirs warn =
+  let sys_dirs =
+    (try
+    List.map coqify (path_to_list (Sys.getenv "XDG_DATA_DIRS"))
+   with
+      | Not_found when Sys.os_type = "Win32" -> [relative_base / "share"]
+      | Not_found -> ["/usr/local/share/coq";"/usr/share/coq"])
+  in
+  xdg_data_home warn :: sys_dirs @ opt2list Coq_config.datadir
+
+let xdg_config_dirs warn =
+  let sys_dirs =
+    try List.map coqify (path_to_list (Sys.getenv "XDG_CONFIG_DIRS"))
+    with
+      | Not_found when Sys.os_type = "Win32" -> [relative_base / "config"]
+      | Not_found -> ["/etc/xdg/coq"]
+  in
+  xdg_config_home warn :: sys_dirs @ opt2list Coq_config.configdir
 
 let xdg_dirs ~warn =
-  let dirs = xdg_data_home warn :: xdg_data_dirs
-  in
-  List.rev (List.filter Sys.file_exists dirs)
+  List.filter Sys.file_exists (xdg_data_dirs warn)
 
 let coqpath =
   try

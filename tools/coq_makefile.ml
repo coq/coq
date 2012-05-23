@@ -111,7 +111,7 @@ let classify_files_by_root var files (inc_i,inc_r) =
   if not (List.exists (fun (pdir,_,_) -> pdir = ".") inc_r) then
     begin
       let absdir_of_files = List.rev_map
-	(fun x -> Minilib.canonical_path_name (Filename.dirname x))
+	(fun x -> CUnix.canonical_path_name (Filename.dirname x))
 	files in
 	(* files in scope of a -I option (assuming they are no overlapping) *)
       let has_inc_i = List.exists (fun (_,a) -> List.mem a absdir_of_files) inc_i in
@@ -149,7 +149,7 @@ let install_include_by_root files_var files (inc_i,inc_r) =
       printf "\tdone\n"
   with Not_found ->
     let absdir_of_files = List.rev_map
-      (fun x -> Minilib.canonical_path_name (Filename.dirname x))
+      (fun x -> CUnix.canonical_path_name (Filename.dirname x))
       files in
     let has_inc_i_files =
       List.exists (fun (_,a) -> List.mem a absdir_of_files) inc_i in

@@ -9,28 +9,28 @@
 open Configwin
 open Printf
 
-let pref_file = Filename.concat Minilib.xdg_config_home "coqiderc"
-let accel_file = Filename.concat Minilib.xdg_config_home "coqide.keys"
+let pref_file = Filename.concat (Envars.xdg_config_home Minilib.prerr_endline) "coqiderc"
+let accel_file = Filename.concat (Envars.xdg_config_home Minilib.prerr_endline) "coqide.keys"
 let lang_manager = GSourceView2.source_language_manager ~default:true
 let () = lang_manager#set_search_path
-  (Minilib.xdg_data_dirs@lang_manager#search_path)
+  ((Envars.xdg_data_dirs Minilib.prerr_endline)@lang_manager#search_path)
 let style_manager = GSourceView2.source_style_scheme_manager ~default:true
 let () = style_manager#set_search_path
-  (Minilib.xdg_data_dirs@style_manager#search_path)
+  ((Envars.xdg_data_dirs Minilib.prerr_endline)@style_manager#search_path)
 
 let get_config_file name =
   let find_config dir = Sys.file_exists (Filename.concat dir name) in
-  let config_dir = List.find find_config Minilib.xdg_config_dirs in
+  let config_dir = List.find find_config (Envars.xdg_config_dirs Minilib.prerr_endline) in
   Filename.concat config_dir name
 
 (* Small hack to handle v8.3 to v8.4 change in configuration file *)
 let loaded_pref_file =
   try get_config_file "coqiderc"
-  with Not_found -> Filename.concat Minilib.home ".coqiderc"
+  with Not_found -> Filename.concat (Envars.home Minilib.prerr_endline) ".coqiderc"
 
 let loaded_accel_file =
   try get_config_file "coqide.keys"
-  with Not_found -> Filename.concat Minilib.home ".coqide.keys"
+  with Not_found -> Filename.concat (Envars.home Minilib.prerr_endline) ".coqide.keys"
 
 let mod_to_str (m:Gdk.Tags.modifier) =
   match m with
@@ -223,14 +223,14 @@ let current = {
   }
 
 let save_pref () =
-  if not (Sys.file_exists Minilib.xdg_config_home)
-  then Unix.mkdir Minilib.xdg_config_home 0o700;
+  if not (Sys.file_exists (Envars.xdg_config_home Minilib.prerr_endline))
+  then Unix.mkdir (Envars.xdg_config_home Minilib.prerr_endline) 0o700;
   let () = try GtkData.AccelMap.save accel_file with _ -> () in
   let p = current in
 
-    let add = Minilib.Stringmap.add in
+    let add = Util.Stringmap.add in
     let (++) x f = f x in
-    Minilib.Stringmap.empty ++
+    Util.Stringmap.empty ++
     add "cmd_coqtop" (match p.cmd_coqtop with | None -> [] | Some v-> [v]) ++
     add "cmd_coqc" [p.cmd_coqc] ++
     add "cmd_make" [p.cmd_make] ++
@@ -292,7 +292,7 @@ let load_pref () =
 
     let m = Config_lexer.load_file loaded_pref_file in
     let np = current in
-    let set k f = try let v = Minilib.Stringmap.find k m in f v with _ -> () in
+    let set k f = try let v = Util.Stringmap.find k m in f v with _ -> () in
     let set_hd k f = set k (fun v -> f (List.hd v)) in
     let set_bool k f = set_hd k (fun v -> f (bool_of_string v)) in
     let set_int k f = set_hd k (fun v -> f (int_of_string v)) in

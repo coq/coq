@@ -34,7 +34,7 @@ let set_win32_path () =
 
 let reroute_stdout_stderr () =
   let out_descr =
-    if !Ideutils.debug then
+    if !Minilib.debug then
       Unix.descr_of_out_channel (snd (Filename.open_temp_file "coqide_" ".log"))
     else
       snd (Unix.pipe ())
@@ -97,7 +97,7 @@ let () =
       try
 	GtkThread.main ()
       with
-	| Sys.Break -> Ideutils.prerr_endline "Interrupted."
+	| Sys.Break -> Minilib.prerr_endline "Interrupted."
 	| e ->
 	    Minilib.safe_prerr_endline
 	      ("CoqIde unexpected error:" ^ (Printexc.to_string e));

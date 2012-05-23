@@ -91,7 +91,7 @@ let mode_tactic sel_cb (proof:GText.view) goals hints = match goals with
         proof#buffer#insert (goal_str i goals_cnt);
         proof#buffer#insert (g ^ "\n")
       in
-      let () = Minilib.list_fold_left_i fold_goal 2 () rem_goals in
+      let () = Util.list_fold_left_i fold_goal 2 () rem_goals in
 
       ignore(proof#buffer#place_cursor
                ~where:(proof#buffer#end_iter#backward_to_tag_toggle

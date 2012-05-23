@@ -67,6 +67,12 @@ let strip s =
   let a = lstrip_rec 0 and b = rstrip_rec (n-1) in
   String.sub s a (b-a+1)
 
+let string_map f s =
+  let l = String.length s in
+  let r = String.create l in
+  for i= 0 to (l - 1) do r.[i] <- f (s.[i]) done;
+  r
+
 let drop_simple_quotes s =
   let n = String.length s in
   if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' then String.sub s 1 (n-2) else s
@@ -124,6 +130,17 @@ let parse_loadpath s =
   if List.mem "" l then
     invalid_arg "parse_loadpath: find an empty dir in loadpath";
   l
+
+let subst_command_placeholder s t =
+  let buff = Buffer.create (String.length s + String.length t) in
+  let i = ref 0 in
+  while (!i < String.length s) do
+    if s.[!i] = '%' & !i+1 < String.length s & s.[!i+1] = 's'
+    then (Buffer.add_string buff t;incr i)
+    else Buffer.add_char buff s.[!i];
+    incr i
+  done;
+  Buffer.contents buff
 
 module Stringset = Set.Make(struct type t = string let compare (x:t) (y:t) = compare x y end)
 

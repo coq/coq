@@ -45,6 +45,7 @@ val next_utf8 : string -> int -> int * int
 val explode : string -> string list
 val implode : string list -> string
 val strip : string -> string
+val string_map : (char -> char) -> string -> string
 val drop_simple_quotes : string -> string
 val string_index_from : string -> int -> string -> int
 val string_string_contains : where:string -> what:string -> bool
@@ -52,6 +53,8 @@ val plural : int -> string -> string
 val ordinal : int -> string
 val split_string_at : char -> string -> string list
 
+(** Substitute %s in the first chain by the second chain *)
+val subst_command_placeholder : string -> string -> string
 val parse_loadpath : string -> string list
 
 module Stringset : Set.S with type elt = string
