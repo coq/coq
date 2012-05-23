@@ -4,6 +4,14 @@ Changes from V8.4
 Tactics
 
 - Tactics btauto, a reflexive boolean tautology solver.
+- Tactic "tauto" was exceptionally able to destruct other connectives
+  than the binary connectives "and", "or", "prod", "sum", "iff".  This
+  non-uniform behavior has been fixed (bug #2680) and tauto is
+  slightly weaker. On the opposite side, new tactic "dtauto" is able
+  to destruct any record-like inductive types, superseding the old
+  version of "tauto".
+- Similarly, "intuition" has been made more uniform and, where it now
+  fails, "dintuition" can be used.
 
 Program
 
@@ -20,7 +28,7 @@ Changes from V8.4beta to V8.4beta2
 
 Vernacular commands
 
-- Undo and UndoTo are now handling the proof states. They may
+- Back and BackTo are now handling the proof states. They may
   perform some extra steps of backtrack to avoid states where
   the proof state is unavailable (typically a closed proof).
 - The commands Suspend and Resume have been removed.
@@ -41,14 +49,6 @@ Tactics
   "debug trivial" or by a global "Set Debug Auto/Eauto/Trivial".
 - New command "r string" that interprets "idtac string" as a breakpoint
   and jumps to its next use in Ltac debugger.
-- Tactic "tauto" was exceptionally able to destruct other connectives
-  than the binary connectives "and", "or", "prod", "sum", "iff".  This
-  non-uniform behavior has been fixed (bug #2680) and tauto is
-  slightly weaker. On the opposite side, new tactic "dtauto" is able
-  to destruct any record-like inductive types, superseding the old
-  version of "tauto".
-- Similarly, "intuition" has been made more uniform and, where it now
-  fails, "dintuition" can be used.
 - Tactics from the Dp plugin (simplify, ergo, yices, cvc3, z3, cvcl,
   harvey, zenon, gwhy) have been removed, since Why2 has not been
   maintained for the last few years. The Why3 plugin should be a suitable
