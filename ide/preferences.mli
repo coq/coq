@@ -63,6 +63,7 @@ type pref =
 *)
       mutable auto_complete : bool;
       mutable stop_before : bool;
+      mutable reset_on_tab_switch : bool;
       mutable vertical_tabs : bool;
       mutable opposite_tabs : bool;
 

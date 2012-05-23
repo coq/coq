@@ -2169,6 +2169,9 @@ let main files =
 
     ignore (w#event#connect#delete ~callback:(fun _ -> quit_f (); true));
 
+  (* Reset on tab switch *)
+  ignore (session_notebook#connect#switch_page
+    (fun _ -> if current.reset_on_tab_switch then force_reset_initial ()));
   (* The vertical Separator between Scripts and Goals *)
   vbox#pack ~expand:true session_notebook#coerce;
   update_notebook_pos ();

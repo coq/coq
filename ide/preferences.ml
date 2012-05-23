@@ -132,6 +132,7 @@ type pref =
 *)
       mutable auto_complete : bool;
       mutable stop_before : bool;
+      mutable reset_on_tab_switch : bool;
       mutable vertical_tabs : bool;
       mutable opposite_tabs : bool;
 
@@ -206,6 +207,7 @@ let current = {
 *)
     auto_complete = false;
     stop_before = true;
+    reset_on_tab_switch = false;
     vertical_tabs = false;
     opposite_tabs = false;
 
@@ -273,6 +275,7 @@ let save_pref () =
     add "query_window_width" [string_of_int p.query_window_width] ++
     add "auto_complete" [string_of_bool p.auto_complete] ++
     add "stop_before" [string_of_bool p.stop_before] ++
+    add "reset_on_tab_switch" [string_of_bool p.reset_on_tab_switch] ++
     add "vertical_tabs" [string_of_bool p.vertical_tabs] ++
     add "opposite_tabs" [string_of_bool p.opposite_tabs] ++
     add "background_color" [p.background_color] ++
@@ -353,6 +356,7 @@ let load_pref () =
     set_int "query_window_height" (fun v -> np.query_window_height <- v);
     set_bool "auto_complete" (fun v -> np.auto_complete <- v);
     set_bool "stop_before" (fun v -> np.stop_before <- v);
+    set_bool "reset_on_tab_switch" (fun v -> np.reset_on_tab_switch <- v);
     set_bool "vertical_tabs" (fun v -> np.vertical_tabs <- v);
     set_bool "opposite_tabs" (fun v -> np.opposite_tabs <- v);
     set_hd "background_color" (fun v -> np.background_color <- v);
@@ -595,6 +599,12 @@ let configure ?(apply=(fun () -> ())) () =
       "Stop interpreting before the current point" current.stop_before
   in
 
+  let reset_on_tab_switch =
+    bool
+      ~f:(fun s -> current.reset_on_tab_switch <- s)
+      "Reset coqtop on tab switch" current.reset_on_tab_switch
+  in
+
   let vertical_tabs =
     bool
       ~f:(fun s -> current.vertical_tabs <- s; !refresh_tabs_hook ())
@@ -757,7 +767,7 @@ let configure ?(apply=(fun () -> ())) () =
       "Contextual menus on goal" current.contextual_menus_on_goal
   in
 
-  let misc = [contextual_menus_on_goal;stop_before;
+  let misc = [contextual_menus_on_goal;stop_before;reset_on_tab_switch;
               vertical_tabs;opposite_tabs] in
 
 (* ATTENTION !!!!! L'onglet Fonts doit etre en premier pour eviter un bug !!!!
