@@ -1241,8 +1241,11 @@ let create_session file =
   let _ =
     GtkBase.Widget.add_events proof#as_widget [`ENTER_NOTIFY;`POINTER_MOTION] in
   let () =
-    Coq.grab ct (fun handle ->
-    List.iter (fun (opts,_,_,_,dflt) -> setopts handle opts dflt) print_items) in
+    let fold accu (opts, _, _, _, dflt) =
+      List.fold_left (fun accu opt -> (opt, dflt) :: accu) accu opts
+    in
+    let options = List.fold_left fold [] print_items in
+    Coq.grab ct (fun handle -> Coq.PrintOpt.set handle options) in
   let _ =
     proof#event#connect#motion_notify ~callback:
       (fun e ->
