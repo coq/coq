@@ -3,7 +3,7 @@ Changes from V8.4beta to V8.4
 
 Vernacular commands
 
-- Undo and UndoTo are now handling the proof states. They may
+- Back and BackTo are now handling the proof states. They may
   perform some extra steps of backtrack to avoid states where
   the proof state is unavailable (typically a closed proof).
 - The commands Suspend and Resume have been removed.
