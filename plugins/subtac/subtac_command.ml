@@ -380,9 +380,16 @@ let rec unfold f b =
     | Some (x, b') -> x :: unfold f b'
     | None -> []
 
+
+let find_annot loc id ctx = 
+  try rel_index id ctx
+  with Not_found -> 
+  user_err_loc(loc,"",
+	       str "No parameter named " ++ Nameops.pr_id id ++ str".")
+
 let compute_possible_guardness_evidences (n,_) (_, fixctx) fixtype =
   match n with
-  | Some (loc, n) -> [rel_index n fixctx]
+  | Some (loc, id) -> [find_annot loc id fixctx]
   | None ->
       (* If recursive argument was not given by user, we try all args.
 	 An earlier approach was to look only for inductive arguments,
