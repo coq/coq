@@ -308,9 +308,6 @@ let with_file handler name ~f =
     try f ic; close_in ic with e -> close_in ic; raise e
   with Sys_error s -> handler s
 
-(* For find_phrase_starting_at *)
-exception Stop of int
-
 (** Cut a part of the buffer in sentences and tag them.
     May raise [Coq_lex.Unterminated] when the zone ends with
     an unterminated sentence. *)
@@ -635,7 +632,7 @@ object(self)
     begin
       let menu_callback = if current.contextual_menus_on_goal then
           (fun s () -> ignore (self#insert_this_phrase_on_success handle
-                                 true true false ("progress "^s) s))
+                                 true true ("progress "^s) s))
         else
           (fun _ _ -> ()) in
       try
@@ -660,29 +657,15 @@ object(self)
         | e -> Minilib.log (Printexc.to_string e)
     end
 
-  method private send_to_coq handle verbose phrase show_output show_error localize =
+  method private send_to_coq handle verbose phrase show_output show_error =
     let display_output msg =
       self#insert_message (if show_output then msg else "") in
-    let display_error (loc,s) =
+    let display_error (loc, s) =
       if show_error then begin
         if not (Glib.Utf8.validate s) then
           flash_info "This error is so nasty that I can't even display it."
         else begin
           self#insert_message s;
-          if localize then
-            (match loc with
-              | None -> ()
-              | Some (start,stop) ->
-                let convert_pos = byte_offset_to_char_offset phrase in
-                let start = convert_pos start in
-                let stop = convert_pos stop in
-                let i = self#get_start_of_input in
-                let starti = i#forward_chars start in
-                let stopi = i#forward_chars stop in
-                input_buffer#apply_tag Tags.Script.error
-                  ~start:starti
-                  ~stop:stopi;
-                input_buffer#place_cursor ~where:starti)
         end
       end in
       full_goal_done <- false;
@@ -701,10 +684,7 @@ object(self)
     let display_error s =
       if not (Glib.Utf8.validate s) then
         flash_info "This error is so nasty that I can't even display it."
-      else begin
-        self#insert_message s;
-        message_view#misc#draw None
-      end
+      else self#insert_message s;
     in
     try
       match Coq.interp handle ~raw:true ~verbose:false phrase with
@@ -723,97 +703,122 @@ object(self)
       else None
     with Not_found -> None
 
-(*  method private process_phrase verbosely =
-    Minilib.log "process_phrase starting now";
-    let get_next_phrase () =
-      self#find_phrase_starting_at self#get_start_of_input
-    in
-    let mark_processed start stop flags =
-      input_buffer#move_mark ~where:stop (`NAME "start_of_input");
-      let start_mark = input_buffer#create_mark start in
-      let stop_mark = input_buffer#create_mark stop in
-      let ide_payload = {
-        start = `MARK start_mark;
-        stop = `MARK stop_mark;
-        flags = flags;
-      } in
-      Stack.push ide_payload cmd_stack;
-      true
-    in
-    match sync get_next_phrase () with
-    | None -> false
-    | Some (start, stop) ->
-      let phrase = start#get_slice stop in
-      if stop#backward_char#has_tag Tags.Script.comment_sentence
-      then mark_processed start stop [ `COMMENT ]
-      else
-        match Coq.interp !mycoqtop ~verbose phrase with
-        | Interface.Fail (l, str) -> sync display_error (l, str)
-        | Interface.Good msg -> mark_processed start stop*)
+  method private fill_command_queue max_len max_iter queue =
+    let iter = ref self#get_start_of_input in
+    let len = ref 0 in
+    let break = ref true in
+    while (max_len < 0 || !len < max_len) && (!iter#compare max_iter < 0) && !break do
+      let opt_sentence = self#find_phrase_starting_at !iter in
+      match opt_sentence with
+      | None -> break := false
+      | Some (start, stop) ->
+        input_buffer#apply_tag Tags.Script.to_process ~start ~stop;
+        (* Check if this is a comment *)
+        let is_comment = stop#backward_char#has_tag Tags.Script.comment_sentence in
+        let flags = if is_comment then [`COMMENT] else [] in
+        let payload = {
+          start = `MARK (input_buffer#create_mark start);
+          stop = `MARK (input_buffer#create_mark stop);
+          flags = flags;
+        } in
+        Queue.push payload queue;
+        incr len;
+        iter := stop;
+    done;
 
-  method private process_one_phrase handle verbosely do_highlight =
-    let get_next_phrase () =
-      self#clear_message;
-      Minilib.log "process_one_phrase starting now";
-      if do_highlight then begin
-        push_info "Coq is computing";
-        input_view#set_editable false;
+  method private process_command_queue ?(verbose = false) queue handle =
+    let error = ref None in
+    let info = ref [] in
+    (* First, process until error *)
+    Minilib.log "Begin command processing";
+    while not (Queue.is_empty queue) && !error = None do
+      let sentence = Queue.peek queue in
+      (* If the line is not a comment, we interpret it. *)
+      if not (List.mem `COMMENT sentence.flags) then begin
+        let start = input_buffer#get_iter_at_mark sentence.start in
+        let stop = input_buffer#get_iter_at_mark sentence.stop in
+        let phrase = start#get_slice ~stop in
+        match Coq.interp handle ~verbose phrase with
+        | Interface.Fail (loc, msg) -> error := Some (phrase, loc, msg);
+        | Interface.Good msg -> info := msg :: !info
       end;
-      match self#find_phrase_starting_at self#get_start_of_input with
-        | None ->
-          if do_highlight then begin
-            input_view#set_editable true;
-            pop_info ();
-          end;
-          None
-        | Some(start,stop) ->
-          Minilib.log "process_one_phrase : to_process highlight";
-          if do_highlight then begin
-            input_buffer#apply_tag Tags.Script.to_process ~start ~stop;
-            Minilib.log "process_one_phrase : to_process applied";
-          end;
-          Minilib.log "process_one_phrase : getting phrase";
-          Some((start,stop),start#get_slice ~stop) in
-    let remove_tag (start,stop) =
-      if do_highlight then begin
+      (* If there is no error, then we mark it done *)
+      if !error = None then begin
+        (* We reget the iters here because Gtk is unable to warranty that they
+           were not modified meanwhile. Not really necessary but who knows... *)
+        let start = input_buffer#get_iter_at_mark sentence.start in
+        let stop = input_buffer#get_iter_at_mark sentence.stop in
+        input_buffer#move_mark ~where:stop (`NAME "start_of_input");
+        input_buffer#apply_tag Tags.Script.processed ~start ~stop;
         input_buffer#remove_tag Tags.Script.to_process ~start ~stop;
-        input_view#set_editable true;
-        pop_info ();
-      end in
-    let mark_processed safe (start, stop) =
-      let b = input_buffer in
-      b#move_mark ~where:stop (`NAME "start_of_input");
-      b#apply_tag (safety_tag safe) ~start ~stop;
-      if (self#get_insert#compare) stop <= 0 then
-        begin
-          b#place_cursor ~where:stop;
-          self#recenter_insert
-        end;
-      let ide_payload = {
-        start = `MARK (b#create_mark start);
-        stop = `MARK (b#create_mark stop);
-        flags = [];
-      } in
-      Stack.push ide_payload cmd_stack;
-      remove_tag (start,stop)
-    in
-    match sync get_next_phrase () with
-      | None -> raise Unsuccessful
-      | Some ((_,stop) as loc,phrase) ->
-	  if stop#backward_char#has_tag Tags.Script.comment_sentence
-	  then sync mark_processed Safe loc
-          else match self#send_to_coq handle verbosely phrase true true true with
-            | Some safe -> sync mark_processed safe loc
-            | None -> sync remove_tag loc; raise Unsuccessful
+        (* Discard the old stack info and put it were it belongs *)
+        ignore (Queue.pop queue);
+        Stack.push sentence cmd_stack;
+      end;
+    done;
+    (* Then clear all irrelevant commands *)
+    while not (Queue.is_empty queue) do
+      let sentence = Queue.pop queue in
+      let start = input_buffer#get_iter_at_mark sentence.start in
+      let stop = input_buffer#get_iter_at_mark sentence.stop in
+      input_buffer#remove_tag Tags.Script.to_process ~start ~stop;
+      input_buffer#delete_mark sentence.start;
+      input_buffer#delete_mark sentence.stop;
+    done;
+    (* Return the list of info messages and the error *)
+    (!info, !error)
 
-  method process_next_phrase handle verbosely =
-    try
-      self#process_one_phrase handle verbosely true;
-      self#show_goals handle
-    with Unsuccessful -> ()
+  method private show_error phrase loc msg = match loc with
+  | None -> ()
+  | Some (start, stop) ->
+    let soi = self#get_start_of_input in
+    let start = soi#forward_chars (byte_offset_to_char_offset phrase start) in
+    let stop = soi#forward_chars (byte_offset_to_char_offset phrase stop) in
+    input_buffer#apply_tag Tags.Script.error ~start ~stop;
+    input_buffer#place_cursor ~where:start;
+    self#set_message msg
+
+  method private process_until max_len max_iter handle verbose =
+    let queue = Queue.create () in
+    (* Lock everything and fill the waiting queue *)
+    push_info "Coq is computing";
+    self#clear_message;
+    input_view#set_editable false;
+    self#fill_command_queue max_len max_iter queue;
+    (* Now unlock and process asynchronously *)
+    input_view#set_editable true;
+    let (msg, error) = self#process_command_queue ~verbose queue handle in
+    pop_info ();
+    (* Display the goal and any error *)
+    self#show_goals handle;
+    match error with
+    | None ->
+      let msg = try List.hd msg with _ -> "" in
+      if verbose then self#set_message msg;
+      input_buffer#place_cursor self#get_start_of_input;
+      self#recenter_insert
+    | Some (phrase, loc, msg) ->
+      self#show_error phrase loc msg
+
+  method process_next_phrase handle verbose =
+    self#process_until 1 input_buffer#end_iter handle verbose
+
+  method private process_until_iter_or_error handle stop =
+    self#process_until (-1) stop handle false
+(* FIXME: restore the stop_before mechanism
+    let get_current () =
+      if current.stop_before then
+        match self#find_phrase_starting_at self#get_start_of_input with
+          | None -> self#get_start_of_input
+          | Some (_, stop2) -> stop2
+      else begin
+        self#get_start_of_input
+      end
+    in
+*)
 
   method private insert_this_phrase_on_success handle
-    show_output show_msg localize coqphrase insertphrase =
+    show_output show_msg coqphrase insertphrase =
     let mark_processed safe =
       let stop = self#get_start_of_input in
       if stop#starts_line then
@@ -831,75 +836,12 @@ object(self)
       } in
       Stack.push ide_payload cmd_stack;
       self#show_goals handle;
-       (*Auto insert save on success...
-	 try (match Coq.get_current_goals () with
-	 | [] ->
-	 (match self#send_to_coq "Save.\n" true true true with
-	 | Some ast ->
-	 begin
-	 let stop = self#get_start_of_input in
-	 if stop#starts_line then
-	 input_buffer#insert ~iter:stop "Save.\n"
-	 else input_buffer#insert ~iter:stop "\nSave.\n";
-	 let start = self#get_start_of_input in
-	 input_buffer#move_mark ~where:stop (`NAME"start_of_input");
-	 input_buffer#apply_tag_by_name "processed" ~start ~stop;
-	 if (self#get_insert#compare) stop <= 0 then
-	 input_buffer#place_cursor stop;
-	 let start_of_phrase_mark =
-	 `MARK (input_buffer#create_mark start) in
-	 let end_of_phrase_mark =
-	 `MARK (input_buffer#create_mark stop) in
-	 push_phrase
-	 reset_info start_of_phrase_mark end_of_phrase_mark ast
-	 end
-	 | None -> ())
-	 | _ -> ())
-	 with _ -> ()*) in
-      match self#send_to_coq handle false coqphrase show_output show_msg localize with
-      | Some safe -> sync mark_processed safe; true
-      | None ->
-        sync (fun _ -> self#insert_message ("Unsuccessfully tried: "^coqphrase)) ();
-        false
-
-  method private process_until_iter_or_error handle stop =
-    let stop' = `OFFSET stop#offset in
-    let start = self#get_start_of_input#copy in
-    let start' = `OFFSET start#offset in
-    sync (fun _ ->
-      input_buffer#apply_tag Tags.Script.to_process ~start ~stop;
-      input_view#set_editable false) ();
-    push_info "Coq is computing";
-    let get_current () =
-      if current.stop_before then
-        match self#find_phrase_starting_at self#get_start_of_input with
-          | None -> self#get_start_of_input
-          | Some (_, stop2) -> stop2
-      else begin
-        self#get_start_of_input
-      end
     in
-    let unlock () =
-      sync (fun _ ->
-	self#show_goals handle;
-	(* Start and stop might be invalid if an eol was added at eof *)
-	let start = input_buffer#get_iter start' in
-	let stop =  input_buffer#get_iter stop' in
-	input_buffer#remove_tag Tags.Script.to_process ~start ~stop;
-	input_view#set_editable true) ()
-    in
-    (* All the [process_one_phrase] below should be done with the same [ct]
-       instead of accessing multiple time [mycoqtop]. Otherwise a restart of
-       coqtop could go unnoticed, and the new coqtop could receive strange
-       things. *)
-    (try
-       while stop#compare (get_current()) >= 0
-       do self#process_one_phrase handle false false done
-     with
-       | Unsuccessful -> ()
-    );
-    unlock ();
-    pop_info()
+    match self#send_to_coq handle false coqphrase show_output show_msg with
+    | Some safe -> sync mark_processed safe; true
+    | None ->
+      sync (fun _ -> self#insert_message ("Unsuccessfully tried: "^coqphrase)) ();
+      false
 
   method process_until_end_or_error handle =
       self#process_until_iter_or_error handle input_buffer#end_iter
@@ -1026,13 +968,12 @@ object(self)
        Mutex.unlock coq_may_stop)
     else Minilib.log "undo_last_step discarded"
 
-
   method tactic_wizard handle l =
     async(fun _ -> self#clear_message) ();
     ignore
       (List.exists
          (fun p ->
-           self#insert_this_phrase_on_success handle true false false
+           self#insert_this_phrase_on_success handle true false
              ("progress "^p^".\n") (p^".\n")) l)
 
   method private include_file_dir_in_path handle =
