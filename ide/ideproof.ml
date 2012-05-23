@@ -50,7 +50,7 @@ let mode_tactic sel_cb (proof:GText.view) goals hints = match goals with
       in
       let goals_cnt = List.length rem_goals + 1 in
       let head_str = Printf.sprintf
-        "%d subgoal%s\n" goals_cnt (if 1 < goals_cnt then "" else "s")
+        "%d subgoal%s\n" goals_cnt (if 1 < goals_cnt then "s" else "")
       in
       let goal_str index total = Printf.sprintf
         "______________________________________(%d/%d)\n" index total
