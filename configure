@@ -532,7 +532,8 @@ esac
 # (this should become configurable some day)
 CAMLP4BIN=${CAMLBIN}
 
-if [ "$usecamlp5" = "yes" ]; then
+case $usecamlp5 in
+  yes)
     CAMLP4=camlp5
     CAMLP4MOD=gramlib
     if [ "$camlp5dir" != "" ]; then
@@ -551,38 +552,47 @@ if [ "$usecamlp5" = "yes" ]; then
         CAMLP4LIB=+site-lib/camlp5
 	FULLCAMLP4LIB=${CAMLLIB}/site-lib/camlp5
     else
-	echo "Objective Caml $CAMLVERSION found but no Camlp5 installed."
-	echo "Configuration script failed!"
-	exit 1
+	echo "No Camlp5 installation found. Looking for Camlp4 instead..."
+	usecamlp5=no
     fi
+esac
 
-    camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
-    case `$camlp4oexec -v 2>&1` in
+# If we're (still...) going to use Camlp5, let's check its version
+
+case $usecamlp5 in
+  yes)
+    camlp4oexec=`echo "$camlp4oexec" | tr 4 5`
+    case `"$camlp4oexec" -v 2>&1` in
 	*4.0*|*5.00*)
 	    echo "Camlp5 version < 5.01 not supported."
 	    echo "Configuration script failed!"
 	    exit 1;;
     esac
+esac
 
-else # let's use camlp4
+# We might now try to use Camlp4, either by explicit choice or
+# by lack of proper Camlp5 installation
+
+case $usecamlp5 in
+  no)
     CAMLP4=camlp4
     CAMLP4MOD=camlp4lib
     CAMLP4LIB=+camlp4
     FULLCAMLP4LIB=${CAMLLIB}/camlp4
 
     if [ ! -f "${FULLCAMLP4LIB}/${CAMLP4MOD}.cma" ]; then
-	echo "Objective Caml $CAMLVERSION found but no Camlp4 installed."
+	echo "No Camlp4 installation found."
 	echo "Configuration script failed!"
 	exit 1
     fi
 
     camlp4oexec=${camlp4oexec}rf
-    if [ "`$camlp4oexec 2>&1`" != "" ]; then
+    if [ "`"$camlp4oexec" 2>&1`" != "" ]; then
 	echo "Error: $camlp4oexec not found or not executable."
 	echo "Configuration script failed!"
 	exit 1
     fi
-fi
+esac
 
 # do we have a native compiler: test of ocamlopt and its version
 
