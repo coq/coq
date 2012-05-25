@@ -1928,9 +1928,9 @@ let main files =
       (* GAction.add_action "Save preferences" ~label:"_Save preferences" ~callback:(fun _ -> save_pref ()); *) ];
     GAction.add_actions view_actions [
       GAction.add_action "View" ~label:"_View";
-      GAction.add_action "Previous tab" ~label:"_Previous tab" ~accel:("<Ctrl><Shift>Tab") ~stock:`GO_BACK
+      GAction.add_action "Previous tab" ~label:"_Previous tab" ~accel:("<Alt>Left") ~stock:`GO_BACK
         ~callback:(fun _ -> session_notebook#previous_page ());
-      GAction.add_action "Next tab" ~label:"_Next tab" ~accel:("<Ctrl>Tab") ~stock:`GO_FORWARD
+      GAction.add_action "Next tab" ~label:"_Next tab" ~accel:("<Alt>Right") ~stock:`GO_FORWARD
         ~callback:(fun _ -> session_notebook#next_page ());
       GAction.add_toggle_action "Show Toolbar" ~label:"Show _Toolbar"
         ~active:(current.show_toolbar) ~callback:
