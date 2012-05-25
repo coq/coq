@@ -201,7 +201,7 @@ let install_doc some_vfiles some_mlifiles (_,inc_r) =
 	       if some_mlifiles then install_one_kind "mlihtml" rt;
 	   end else begin
 	     prerr_string "Warning: -R options don't have a correct common prefix,
- install-doc will put anything in $INSTALLDEFAULTROOT";
+ install-doc will put anything in $INSTALLDEFAULTROOT\n";
 	   if some_vfiles then install_one_kind "html" "$(INSTALLDEFAULTROOT)";
 	   if some_mlifiles then install_one_kind "mlihtml" "$(INSTALLDEFAULTROOT)";
 	   end in

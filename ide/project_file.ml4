@@ -54,7 +54,7 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
     process_cmd_line orig_dir (project_file,makefile,install,true) l r
   | "-impredicative-set" :: r ->
     Minilib.log "Please now use \"-arg -impredicative-set\" instead of \"-impredicative-set\" alone to be more uniform.";
-    process_cmd_line orig_dir opts (Arg "-impredicative_set" :: l) r
+    process_cmd_line orig_dir opts (Arg "-impredicative-set" :: l) r
   | "-no-install" :: r ->
     Minilib.log "Option -no-install is deprecated. Use \"-install none\" instead";
     process_cmd_line orig_dir (project_file,makefile,NoInstall,opt) l r

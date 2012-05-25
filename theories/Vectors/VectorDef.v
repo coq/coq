@@ -19,7 +19,7 @@ have to be the same. complain if you see mistakes ... *)
 Require Import Arith_base.
 Require Vectors.Fin.
 Import EqNotations.
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 (**
 A vector is a list of size n whose elements belong to a set A. *)
