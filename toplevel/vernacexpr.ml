@@ -377,10 +377,11 @@ let rec is_navigation_vernac = function
   | VernacBacktrack _
   | VernacBackTo _
   | VernacBack _ -> true
+  | VernacTime c -> is_navigation_vernac c (* Time Back* is harmless *)
   | c -> is_deep_navigation_vernac c
 
 and is_deep_navigation_vernac = function
-  | VernacTime c | VernacTimeout (_,c) | VernacFail c -> is_navigation_vernac c
+  | VernacTimeout (_,c) | VernacFail c -> is_navigation_vernac c
   | VernacList l -> List.exists (fun (_,c) -> is_navigation_vernac c) l
   | _ -> false
 
