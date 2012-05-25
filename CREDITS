@@ -65,7 +65,7 @@ plugins/subtac
 plugins/xml
   developed by Claudio Sacerdoti (Univ. Bologna, 2000-2005) 
   as part of the HELM and MoWGLI projects; extension by Cezary Kaliszyk as
-  part of the ProofWeb project (Radbout University at Nijmegen, 2008)
+  part of the ProofWeb project (Radboud University at Nijmegen, 2008)
 plugins/micromega
   developed by Frédéric Besson (IRISA/INRIA, 2006-2008), with some 
   extensions by Evgeny Makarov (INRIA, 2007); sum-of-squares solver and 
