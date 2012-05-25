@@ -394,7 +394,9 @@ let tag_on_insert buffer =
         We retag up to the next "." instead. *)
     let stop = grab_ending_dot insert in
     try split_slice_lax buffer start stop
-    with Coq_lex.Unterminated -> ()
+    with Coq_lex.Unterminated ->
+      try split_slice_lax buffer start buffer#end_iter
+      with Coq_lex.Unterminated -> ()
   with Not_found ->
     (* This is raised by [grab_sentence_start] *)
     let err_pos = buffer#get_iter_at_mark (`NAME "start_of_input") in
