@@ -246,7 +246,7 @@ let combine_params avoid fn applied needed =
 	    aux (t' :: ids) avoid' app need
 
       | (x,_) :: _, [] ->
-	  user_err_loc (Topconstr.constr_loc x,"",str "Typeclass does not expect more arguments")
+	  user_err_loc (Constrexpr_ops.constr_loc x,"",str "Typeclass does not expect more arguments")
   in aux [] avoid applied needed
 
 let combine_params_freevar =

@@ -34,7 +34,7 @@ open Refiner
 open Tacmach
 open Tactic_debug
 open Constrexpr
-open Topconstr
+open Constrexpr_ops
 open Term
 open Termops
 open Tacexpr

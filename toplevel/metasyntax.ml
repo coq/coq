@@ -13,9 +13,9 @@ open Errors
 open Util
 open Names
 open Constrexpr
+open Constrexpr_ops
 open Notation_term
 open Notation_ops
-open Topconstr
 open Ppextend
 open Extend
 open Libobject

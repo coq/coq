@@ -16,6 +16,7 @@ open Nameops
 open Libnames
 open Ppextend
 open Constrexpr
+open Constrexpr_ops
 open Topconstr
 open Term
 open Pattern

@@ -13,7 +13,7 @@ open Errors
 open Util
 open Names
 open Constrexpr
-open Topconstr
+open Constrexpr_ops
 open Extend
 open Vernacexpr
 open Locality

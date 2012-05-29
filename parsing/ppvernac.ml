@@ -23,7 +23,7 @@ open Pcoq
 open Libnames
 open Ppextend
 open Constrexpr
-open Topconstr
+open Constrexpr_ops
 open Decl_kinds
 open Tacinterp
 open Declaremods
@@ -753,7 +753,7 @@ let rec pr_vernac = function
 	++ (if redef then str" ::=" else str" :=") ++ brk(1,1) ++
 	let idl = List.map Option.get (List.filter (fun x -> not (x=None)) idl)in
         pr_raw_tactic_env
-	  (idl @ List.map Topconstr.coerce_reference_to_id
+	  (idl @ List.map coerce_reference_to_id
 	    (List.map (fun (x, _, _) -> x) (List.filter (fun (_, redef, _) -> not redef) l)))
 	  (Global.env())
 	  body in

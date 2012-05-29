@@ -21,7 +21,7 @@ open Reduction
 open Term
 open Libnames
 open Constrexpr
-open Topconstr
+open Constrexpr_ops
 
 (* We define new entries for programs, with the use of this module
  * Subtac. These entries are named Subtac.<foo>

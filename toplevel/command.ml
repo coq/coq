@@ -20,6 +20,7 @@ open Names
 open Libnames
 open Nameops
 open Constrexpr
+open Constrexpr_ops
 open Topconstr
 open Constrintern
 open Nametab

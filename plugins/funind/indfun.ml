@@ -130,9 +130,9 @@ let functional_induction with_clean c princl pat =
 
 let rec abstract_glob_constr c = function
   | [] -> c
-  | Constrexpr.LocalRawDef (x,b)::bl -> Topconstr.mkLetInC(x,b,abstract_glob_constr c bl)
+  | Constrexpr.LocalRawDef (x,b)::bl -> Constrexpr_ops.mkLetInC(x,b,abstract_glob_constr c bl)
   | Constrexpr.LocalRawAssum (idl,k,t)::bl ->
-      List.fold_right (fun x b -> Topconstr.mkLambdaC([x],k,t,b)) idl
+      List.fold_right (fun x b -> Constrexpr_ops.mkLambdaC([x],k,t,b)) idl
         (abstract_glob_constr c bl)
 
 let interp_casted_constr_with_implicits sigma env impls c  =
@@ -152,7 +152,7 @@ let build_newrecursive
   let (rec_sign,rec_impls) =
     List.fold_left
       (fun (env,impls) ((_,recname),bl,arityc,_) ->
-        let arityc = Topconstr.prod_constr_expr arityc bl in
+        let arityc = Constrexpr_ops.prod_constr_expr arityc bl in
         let arity = Constrintern.interp_type sigma env0 arityc in
 	let impl = Constrintern.compute_internalization_data env0 Constrintern.Recursive arity [] in
         (Environ.push_named (recname,None,arity) env, Idmap.add recname impl impls))
@@ -379,12 +379,12 @@ let generate_correction_proof_wf f_ref tcc_lemma_ref
 let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas args ret_type body
     pre_hook
     =
-  let type_of_f = Topconstr.prod_constr_expr ret_type args in
+  let type_of_f = Constrexpr_ops.prod_constr_expr ret_type args in
   let rec_arg_num =
     let names =
       List.map
 	snd
-	(Topconstr.names_of_local_assums args)
+	(Constrexpr_ops.names_of_local_assums args)
     in
     match wf_arg with
       | None ->
@@ -401,16 +401,16 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	 (List.map
 	    (function
 	       | _,Anonymous -> assert false
-	       | _,Name e -> (Topconstr.mkIdentC e)
+	       | _,Name e -> (Constrexpr_ops.mkIdentC e)
 	    )
-	    (Topconstr.names_of_local_assums args)
+	    (Constrexpr_ops.names_of_local_assums args)
 	 )
 	)
     in
-    Constrexpr.CApp (dummy_loc,(None,Topconstr.mkRefC (Qualid (dummy_loc,(qualid_of_string "Logic.eq")))),
+    Constrexpr.CApp (dummy_loc,(None,Constrexpr_ops.mkRefC (Qualid (dummy_loc,(qualid_of_string "Logic.eq")))),
 		    [(f_app_args,None);(body,None)])
   in
-  let eq = Topconstr.prod_constr_expr unbounded_eq args in
+  let eq = Constrexpr_ops.prod_constr_expr unbounded_eq args in
   let hook f_ref tcc_lemma_ref functional_ref eq_ref rec_arg_num rec_arg_type
       nb_args relation =
     try
@@ -469,25 +469,25 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 	  in
 	  let fun_from_mes =
 	    let applied_mes =
-	      Topconstr.mkAppC(wf_mes_expr,[Topconstr.mkIdentC wf_arg])    in
-	    Topconstr.mkLambdaC ([(dummy_loc,Name wf_arg)],Topconstr.default_binder_kind,wf_arg_type,applied_mes)
+	      Constrexpr_ops.mkAppC(wf_mes_expr,[Constrexpr_ops.mkIdentC wf_arg])    in
+	    Constrexpr_ops.mkLambdaC ([(dummy_loc,Name wf_arg)],Constrexpr_ops.default_binder_kind,wf_arg_type,applied_mes)
 	  in
 	  let wf_rel_from_mes =
-	    Topconstr.mkAppC(Topconstr.mkRefC  ltof,[wf_arg_type;fun_from_mes])
+	    Constrexpr_ops.mkAppC(Constrexpr_ops.mkRefC  ltof,[wf_arg_type;fun_from_mes])
 	  in
 	  wf_rel_from_mes,true
       | Some wf_rel_expr -> 
 	  let wf_rel_with_mes = 
 	    let a = Names.id_of_string "___a" in 
 	    let b = Names.id_of_string "___b" in 
-	    Topconstr.mkLambdaC(
+	    Constrexpr_ops.mkLambdaC(
 	      [dummy_loc,Name a;dummy_loc,Name b],
 	      Constrexpr.Default Explicit,
 	      wf_arg_type,
-	      Topconstr.mkAppC(wf_rel_expr,
+	      Constrexpr_ops.mkAppC(wf_rel_expr,
 			       [
-				Topconstr.mkAppC(wf_mes_expr,[Topconstr.mkIdentC a]);
-				Topconstr.mkAppC(wf_mes_expr,[Topconstr.mkIdentC b])
+				Constrexpr_ops.mkAppC(wf_mes_expr,[Constrexpr_ops.mkIdentC a]);
+				Constrexpr_ops.mkAppC(wf_mes_expr,[Constrexpr_ops.mkIdentC b])
 			       ])
 			      )
 	  in

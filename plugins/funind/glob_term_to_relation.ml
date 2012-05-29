@@ -1307,7 +1307,7 @@ let do_build_inductive
 	   else
 	     Constrexpr.CProdN
 	       (dummy_loc,
-		[[(dummy_loc,n)],Topconstr.default_binder_kind,Constrextern.extern_glob_constr Idset.empty t],
+		[[(dummy_loc,n)],Constrexpr_ops.default_binder_kind,Constrextern.extern_glob_constr Idset.empty t],
 		acc
 	       )
 	)
@@ -1373,7 +1373,7 @@ let do_build_inductive
 	 else
 	   Constrexpr.CProdN
 	   (dummy_loc,
-	   [[(dummy_loc,n)],Topconstr.default_binder_kind,Constrextern.extern_glob_constr Idset.empty t],
+	   [[(dummy_loc,n)],Constrexpr_ops.default_binder_kind,Constrextern.extern_glob_constr Idset.empty t],
 	    acc
 	   )
       )
@@ -1393,7 +1393,7 @@ let do_build_inductive
 	   Constrexpr.LocalRawDef((dummy_loc,n), Constrextern.extern_glob_constr Idset.empty t)
 	 else
 	 Constrexpr.LocalRawAssum
-	   ([(dummy_loc,n)], Topconstr.default_binder_kind, Constrextern.extern_glob_constr Idset.empty t)
+	   ([(dummy_loc,n)], Constrexpr_ops.default_binder_kind, Constrextern.extern_glob_constr Idset.empty t)
       )
       rels_params
   in

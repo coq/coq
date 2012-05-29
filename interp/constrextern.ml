@@ -22,6 +22,7 @@ open Environ
 open Libnames
 open Impargs
 open Constrexpr
+open Constrexpr_ops
 open Notation_term
 open Notation_ops
 open Topconstr

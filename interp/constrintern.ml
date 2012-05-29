@@ -22,6 +22,7 @@ open Patternops
 open Pretyping
 open Cases
 open Constrexpr
+open Constrexpr_ops
 open Notation_term
 open Notation_ops
 open Topconstr

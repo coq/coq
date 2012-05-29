@@ -26,7 +26,7 @@ open Decl_kinds
 open Indtypes
 open Type_errors
 open Constrexpr
-open Topconstr
+open Constrexpr_ops
 
 (********** definition d'un record (structure) **************)
 
