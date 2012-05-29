@@ -771,7 +771,7 @@ object(self)
     (!info, !error)
 
   method private show_error phrase loc msg = match loc with
-  | None -> ()
+  | None -> self#set_message msg
   | Some (start, stop) ->
     let soi = self#get_start_of_input in
     let start = soi#forward_chars (byte_offset_to_char_offset phrase start) in
