@@ -22,10 +22,6 @@ val dump_to_dotglob : unit -> unit
 val pause : unit -> unit
 val continue : unit -> unit
 
-type coqdoc_state = Lexer.location_table
-val coqdoc_freeze : unit -> coqdoc_state
-val coqdoc_unfreeze : coqdoc_state -> unit
-
 val add_glob : Pp.loc -> Globnames.global_reference -> unit
 val add_glob_kn : Pp.loc -> Names.kernel_name -> unit
 

@@ -197,41 +197,43 @@ let pr_new_syntax loc ocom =
   States.unfreeze fs;
   Format.set_formatter_out_channel stdout
 
+let save_translator_coqdoc () =
+  (* translator state *)
+  let ch = !chan_beautify in
+  let cl = !Pp.comments in
+  let cs = Lexer.com_state() in
+  (* end translator state *)
+  let coqdocstate = Lexer.location_table () in
+  ch,cl,cs,coqdocstate
+
+let restore_translator_coqdoc (ch,cl,cs,coqdocstate) =
+  if !Flags.beautify_file then close_out !chan_beautify;
+  chan_beautify := ch;
+  Pp.comments := cl;
+  Lexer.restore_com_state cs;
+  Lexer.restore_location_table coqdocstate
+
 let rec vernac_com interpfun checknav (loc,com) =
   let rec interp = function
     | VernacLoad (verbosely, fname) ->
 	let fname = Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) fname in
-        (* translator state *)
-        let ch = !chan_beautify in
-        let cs = Lexer.com_state() in
-        let cl = !Pp.comments in
-        (* end translator state *)
-        (* coqdoc state *)
-        let cds = Dumpglob.coqdoc_freeze() in
-          if !Flags.beautify_file then
-	    begin
-              let _,f = find_file_in_path ~warn:(Flags.is_verbose())
-		(Library.get_load_paths ())
-		(CUnix.make_suffix fname ".v") in
-		chan_beautify := open_out (f^beautify_suffix);
-		Pp.comments := []
-            end;
-          begin
-	    try
-	      read_vernac_file verbosely (CUnix.make_suffix fname ".v");
-              if !Flags.beautify_file then close_out !chan_beautify;
-              chan_beautify := ch;
-              Lexer.restore_com_state cs;
-              Pp.comments := cl;
-              Dumpglob.coqdoc_unfreeze cds
-	    with e ->
-	      if !Flags.beautify_file then close_out !chan_beautify;
-              chan_beautify := ch;
-              Lexer.restore_com_state cs;
-              Pp.comments := cl;
-              Dumpglob.coqdoc_unfreeze cds;
-	      raise e
-	  end
+	let st = save_translator_coqdoc () in
+	if !Flags.beautify_file then
+	  begin
+            let _,f = find_file_in_path ~warn:(Flags.is_verbose())
+	      (Library.get_load_paths ())
+	      (CUnix.make_suffix fname ".v") in
+	    chan_beautify := open_out (f^beautify_suffix);
+	    Pp.comments := []
+          end;
+	begin
+	  try
+	    read_vernac_file verbosely (CUnix.make_suffix fname ".v");
+	    restore_translator_coqdoc st
+	  with e ->
+	    restore_translator_coqdoc st;
+	    raise e
+	end
 
     | VernacList l -> List.iter (fun (_,v) -> interp v) l
 

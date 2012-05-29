@@ -109,11 +109,11 @@ let add_compile verbose s =
   compile_list := (verbose,s) :: !compile_list
 let compile_files () =
   let init_state = States.freeze() in
-  let coqdoc_init_state = Dumpglob.coqdoc_freeze () in
+  let coqdoc_init_state = Lexer.location_table () in
     List.iter
       (fun (v,f) ->
 	 States.unfreeze init_state;
-	 Dumpglob.coqdoc_unfreeze coqdoc_init_state;
+	 Lexer.restore_location_table coqdoc_init_state;
 	 if Flags.do_beautify () then
 	   with_option beautify_file (Vernac.compile v) f
 	 else

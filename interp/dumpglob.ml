@@ -60,11 +60,6 @@ let previous_state = ref MultFiles
 let pause () = previous_state := !glob_output; glob_output := NoGlob
 let continue () = glob_output := !previous_state
 
-type coqdoc_state = Lexer.location_table
-
-let coqdoc_freeze = Lexer.location_table
-let coqdoc_unfreeze = Lexer.restore_location_table
-
 open Decl_kinds
 
 let type_of_logical_kind = function
