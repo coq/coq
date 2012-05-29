@@ -1,4 +1,62 @@
 =========================================
+= CHANGES BETWEEN COQ V8.4 AND CQQ V8.5 =
+=========================================
+
+** Refactoring : more mli interfaces and simpler grammar.cma **
+
+- A new directory intf/ now contains mli-only interfaces :
+
+ Constrexpr : definition of constr_expr, was in Topconstr
+ Decl_kinds : now contains binding_kind = Explicit | Implicit
+ Evar_kinds : type Evar_kinds.t was previously Evd.hole_kind
+ Extend : was parsing/extend.mli
+ Genredexpr : regroup Glob_term.red_expr_gen and Tacexpr.glob_red_flag
+ Glob_term  : definition of glob_constr
+ Locus : definition of occurrences and stuff about clauses
+ Misctypes : intro_pattern_expr, glob_sort, cast_type, or_var, ...
+ Notation_term : contains notation_constr, was Topconstr.aconstr
+ Pattern : contains constr_pattern
+ Tacexpr : was tactics/tacexpr.ml
+ Vernacexpr : was toplevel/vernacexpr.ml
+
+- Many files have been divided :
+
+ vernacexpr: vernacexpr.mli + Locality
+ decl_kinds: decl_kinds.mli + Kindops
+ evd: evar_kinds.mli + evd
+ tacexpr: tacexpr.mli + tacops
+ glob_term: glob_term.mli + glob_ops + genredexpr.mli + redops
+ topconstr: constrexpr.mli + constrexpr_ops
+            + notation_expr.mli + notation_ops + topconstr
+ pattern: pattern.mli + patternops
+ libnames: libnames (qualid, reference) + globnames (global_reference)
+ egrammar: egramml + egramcoq
+
+- New utility files : miscops (cf. misctypes.mli) and
+  redops (cf genredexpr.mli).
+
+- Some other directory changes :
+  * grammar.cma and the source files specific to it are now in grammar/
+  * pretty-printing files are now in printing/
+
+- Inner-file changes :
+
+  * aconstr is now notation_constr, all constructors for this type
+    now start with a N instead of a A (e.g. NApp instead of AApp),
+    and functions about aconstr may have been renamed (e.g. match_aconstr
+    is now match_notation_constr).
+
+  * occurrences (now in Locus.mli) is now an algebraic type, with
+    - AllOccurrences instead of all_occurrences_expr = (false,[])
+    - (AllOccurrencesBut l) instead of (all_occurrences_expr_but l) = (false,l)
+    - NoOccurrences instead of no_occurrences_expr = (true,[])
+    - (OnlyOccurrences l) instead of (no_occurrences_expr_but l) = (true,l)
+
+  * move_location (now in Misctypes) has two new constructors
+    MoveFirst and MoveLast replacing (MoveToEnd false) and (MoveToEnd true)
+
+
+=========================================
 = CHANGES BETWEEN COQ V8.3 AND COQ V8.4 =
 =========================================
 

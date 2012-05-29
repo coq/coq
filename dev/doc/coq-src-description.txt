@@ -1,0 +1,122 @@
+
+Coq main source components (in link order)
+------------------------------------------
+
+clib : Basic files in lib/, such as util.ml
+lib : Other files in lib/
+kernel
+library
+pretyping
+interp
+proofs
+printing
+parsing
+tactics
+toplevel
+
+highparsing :
+
+ Files in parsing/ that cannot be linked too early.
+ Contains the grammar rules g_*.ml4
+
+hightactics :
+
+ Files in tactics/ that cannot be linked too early.
+ These are the .ml4 files that uses the EXTEND possibilities
+ provided by grammar.cma, for instance eauto.ml4.
+
+
+Special components
+------------------
+
+intf :
+
+ Contains mli-only interfaces, many of them providing a.s.t.
+ used for dialog bewteen coq components. Ex: Constrexpr.constr_expr
+ produced by parsing and transformed by interp.
+
+grammar :
+
+ Camlp4 syntax extensions. The file grammar/grammar.cma is used
+ to pre-process .ml4 files containing EXTEND constructions,
+ either TACTIC EXTEND, ARGUMENTS EXTEND or VERNAC ... EXTEND.
+ This grammar.cma incorporates many files from other directories
+ (mainly parsing/), plus some specific files in grammar/.
+ The other syntax extension grammar/q_constr.cmo is a addition to
+ grammar.cma with a constr PATTERN quotation.
+
+
+Hierarchy of A.S.T.
+-------------------
+
+*** Terms ***
+
+             ...          ...
+              |            /\
+    parsing   |            | printing
+              |            |
+              V            |
+           Constrexpr.constr_expr
+              |            /\
+ constrintern |            | constrextern
+  (in interp) |            | (in interp)
+globalization |            |
+              V            |
+           Glob_term.glob_constr
+              |            /\
+    pretyping |            | detyping
+              |            | (in pretyping)
+              V            |
+               Term.constr
+                 |     /\
+   safe_typing   |      |
+   (validation   |      |
+    by kernel)   |______|
+
+
+*** Patterns ***
+
+  |
+  | parsing
+  V
+constr_pattern_expr = constr_expr
+  |
+  | Constrintern.interp_constr_pattern (in interp)
+  | reverse way in Constrextern
+  V
+Pattern.constr_pattern
+  |
+  ---> used for instance by Matching.matches (in pretyping)
+
+
+*** Notations ***
+
+
+Notation_term.notation_constr
+
+Conversion from/to glob_constr in Notation_ops
+
+TODO...
+
+
+*** Tactics ***
+
+ |
+ | parsing
+ V
+Tacexpr.raw_tactic_expr
+ |
+ | Tacinterp.intern_pure_tactic (?)
+ V
+Tacexpr.glob_tactic_expr
+ |
+ | Tacinterp.eval_tactic (?)
+ V
+Proof_type.tactic
+
+TODO: check with Hugo
+
+
+*** Vernac expressions ***
+
+Vernacexpr.vernac_expr, produced by parsing, used in Vernacentries and Vernac

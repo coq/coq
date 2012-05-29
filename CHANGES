@@ -23,6 +23,13 @@ Notations
 
 - "Bind Scope" can no longer bind "Funclass" and "Sortclass".
 
+Internal Infrastructure
+
+- Many reorganisations in the ocaml source files. For instance,
+  many internal a.s.t. of Coq are now placed in mli files in
+  a new directory intf/, for instance constrexpr.mli or glob_term.mli.
+  More details in dev/doc/changes.
+
 Changes from V8.4beta to V8.4beta2
 ==================================
 
