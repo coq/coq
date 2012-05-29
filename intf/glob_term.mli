@@ -54,7 +54,10 @@ type glob_constr =
 
 and glob_decl = name * binding_kind * glob_constr option * glob_constr
 
-and fix_recursion_order = GStructRec | GWfRec of glob_constr | GMeasureRec of glob_constr * glob_constr option
+and fix_recursion_order =
+  | GStructRec
+  | GWfRec of glob_constr
+  | GMeasureRec of glob_constr * glob_constr option
 
 and fix_kind =
   | GFix of ((int option * fix_recursion_order) array * int)
