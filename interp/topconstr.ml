@@ -14,6 +14,7 @@ open Names
 open Nameops
 open Libnames
 open Glob_term
+open Glob_ops
 open Term
 open Mod_subst
 open Misctypes

@@ -15,7 +15,8 @@ Evarconv
 Arguments_renaming
 Typing
 Miscops
-Glob_term
+Glob_ops
+Redops
 Pattern
 Matching
 Tacred

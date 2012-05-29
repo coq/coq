@@ -17,6 +17,7 @@ open Nametab
 open Libnames
 open Summary
 open Glob_term
+open Glob_ops
 open Topconstr
 open Ppextend
 (*i*)

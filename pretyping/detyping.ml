@@ -18,6 +18,7 @@ open Inductiveops
 open Environ
 open Sign
 open Glob_term
+open Glob_ops
 open Nameops
 open Termops
 open Namegen

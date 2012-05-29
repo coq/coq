@@ -10,15 +10,13 @@ open Names
 open Topconstr
 open Libnames
 open Nametab
-open Glob_term
-open Errors
-open Pp
-open Util
+open Genredexpr
 open Genarg
 open Pattern
 open Decl_kinds
 open Misctypes
 open Locus
+open Pp
 
 type 'a or_metaid = AI of 'a | MetaId of loc * string
 
@@ -32,21 +30,6 @@ type hidden_flag = bool    (* true = internal use     false = user-level *)
 type letin_flag = bool     (* true = use local def    false = use Leibniz *)
 
 type debug = Debug | Info | Off (* for trivial / auto / eauto ... *)
-
-type glob_red_flag =
-  | FBeta
-  | FIota
-  | FZeta
-  | FConst of reference or_by_notation list
-  | FDeltaBut of reference or_by_notation list
-
-type 'a raw_hyp_location = 'a with_occurrences * hyp_location_flag
-
-type 'id move_location =
-  | MoveAfter of 'id
-  | MoveBefore of 'id
-  | MoveFirst
-  | MoveLast (* can be seen as "no move" when doing intro *)
 
 type 'a induction_arg =
   | ElimOnConstr of 'a

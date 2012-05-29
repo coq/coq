@@ -19,6 +19,7 @@ open Glob_term
 open Genarg
 open Nametab
 open Pattern
+open Misctypes
 (*i*)
 
 (* This module defines the structure of proof tree and the tactic type. So, it

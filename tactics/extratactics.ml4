@@ -16,6 +16,7 @@ open Mod_subst
 open Names
 open Tacexpr
 open Glob_term
+open Glob_ops
 open Tactics
 open Errors
 open Util

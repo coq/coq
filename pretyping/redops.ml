@@ -6,21 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
-open Topconstr
-open Libnames
-open Nametab
-open Glob_term
-open Errors
-open Util
-open Genarg
-open Pattern
-open Decl_kinds
-open Misctypes
-open Locus
-open Tacexpr
+open Genredexpr
 
-let make_red_flag =
+let make_red_flag l =
   let rec add_flag red = function
     | [] -> red
     | FBeta :: lf -> add_flag { red with rBeta = true } lf
@@ -28,24 +16,21 @@ let make_red_flag =
     | FZeta :: lf -> add_flag { red with rZeta = true } lf
     | FConst l :: lf ->
 	if red.rDelta then
-	  error
+	  Errors.error
 	    "Cannot set both constants to unfold and constants not to unfold";
-        add_flag { red with rConst = list_union red.rConst l } lf
+        add_flag { red with rConst = Util.list_union red.rConst l } lf
     | FDeltaBut l :: lf ->
 	if red.rConst <> [] & not red.rDelta then
-	  error
+	  Errors.error
 	    "Cannot set both constants to unfold and constants not to unfold";
         add_flag
-	  { red with rConst = list_union red.rConst l; rDelta = true }
+	  { red with rConst = Util.list_union red.rConst l; rDelta = true }
 	  lf
   in
   add_flag
     {rBeta = false; rIota = false; rZeta = false; rDelta = false; rConst = []}
+    l
 
-open Pp
 
-let pr_move_location pr_id = function
-  | MoveAfter id -> brk(1,1) ++ str "after " ++ pr_id id
-  | MoveBefore id -> brk(1,1) ++ str "before " ++ pr_id id
-  | MoveFirst -> str " at top"
-  | MoveLast -> str " at bottom"
+let all_flags =
+  {rBeta = true; rIota = true; rZeta = true; rDelta = true; rConst = []}

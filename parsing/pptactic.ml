@@ -23,6 +23,7 @@ open Printer
 open Misctypes
 open Locus
 open Decl_kinds
+open Genredexpr
 
 let pr_global x = Nametab.pr_global_env Idset.empty x
 
@@ -650,7 +651,7 @@ and pr_atom1 = function
   | TacIntroMove (None,MoveLast) as t -> pr_atom0 t
   | TacIntroMove (Some id,MoveLast) -> str "intro " ++ pr_id id
   | TacIntroMove (ido,hto) ->
-      hov 1 (str"intro" ++ pr_opt pr_id ido ++ Tacops.pr_move_location pr_ident hto)
+      hov 1 (str"intro" ++ pr_opt pr_id ido ++ Miscops.pr_move_location pr_ident hto)
   | TacAssumption as t -> pr_atom0 t
   | TacExact c -> hov 1 (str "exact" ++ pr_constrarg c)
   | TacExactNoCheck c -> hov 1 (str "exact_no_check" ++ pr_constrarg c)
@@ -764,7 +765,7 @@ and pr_atom1 = function
       assert b;
       hov 1
         (str "move" ++ brk (1,1) ++ pr_ident id1 ++
-	 Tacops.pr_move_location pr_ident id2)
+	 Miscops.pr_move_location pr_ident id2)
   | TacRename l ->
       hov 1
         (str "rename" ++ brk (1,1) ++

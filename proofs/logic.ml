@@ -27,6 +27,7 @@ open Type_errors
 open Retyping
 open Evarutil
 open Tacexpr
+open Misctypes
 
 type refiner_error =
 
@@ -264,7 +265,7 @@ let move_hyp with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
 	      (first, d::middle)
             else
 	      errorlabstrm "move_hyp" (str "Cannot move " ++ pr_id idfrom ++
-	        Tacops.pr_move_location pr_id hto ++
+	        Miscops.pr_move_location pr_id hto ++
 	        str (if toleft then ": it occurs in " else ": it depends on ")
 	        ++ pr_id hyp ++ str ".")
           else

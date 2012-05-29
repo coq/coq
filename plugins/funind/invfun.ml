@@ -415,10 +415,10 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	    (* observe_tac "unfolding" pre_tac; *)
 	    (* $zeta$ normalizing of the conclusion *)
 	    h_reduce
-	      (Glob_term.Cbv
-		 { Glob_term.all_flags with
-		     Glob_term.rDelta = false ;
-		     Glob_term.rConst = []
+	      (Genredexpr.Cbv
+		 { Redops.all_flags with
+		     Genredexpr.rDelta = false ;
+		     Genredexpr.rConst = []
 		 }
 	      )
 	      Locusops.onConcl;
@@ -804,9 +804,9 @@ and intros_with_rewrite_aux : tactic =
 		  | LetIn _ ->
 		      tclTHENSEQ[
 			h_reduce
-			  (Glob_term.Cbv
-			     {Glob_term.all_flags
-			      with Glob_term.rDelta = false;
+			  (Genredexpr.Cbv
+			     {Redops.all_flags
+			      with Genredexpr.rDelta = false;
 			     })
 			  Locusops.onConcl
 			;
@@ -819,9 +819,9 @@ and intros_with_rewrite_aux : tactic =
 	  | LetIn _ ->
 	      tclTHENSEQ[
 		h_reduce
-		  (Glob_term.Cbv
-		     {Glob_term.all_flags
-		      with Glob_term.rDelta = false;
+		  (Genredexpr.Cbv
+		     {Redops.all_flags
+		      with Genredexpr.rDelta = false;
 		     })
 		  Locusops.onConcl
 		;
@@ -958,9 +958,9 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	  Equality.rewriteLR (mkConst eq_lemma);
 	  (* Don't forget to $\zeta$ normlize the term since the principles have been $\zeta$-normalized *)
 	  h_reduce
-	    (Glob_term.Cbv
-	       {Glob_term.all_flags
-		with Glob_term.rDelta = false;
+	    (Genredexpr.Cbv
+	       {Redops.all_flags
+		with Genredexpr.rDelta = false;
 	       })
 	    Locusops.onConcl
 	  ;

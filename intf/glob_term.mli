@@ -6,22 +6,21 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(**Untyped intermediate terms, after constr_expr and before constr
+(** Untyped intermediate terms *)
+
+(** [glob_constr] comes after [constr_expr] and before [constr].
 
    Resolution of names, insertion of implicit arguments placeholder,
    and notations are done, but coercions, inference of implicit
    arguments and pattern-matching compilation are not. *)
 
-open Errors
 open Pp
 open Names
 open Sign
 open Term
 open Libnames
-open Nametab
 open Decl_kinds
 open Misctypes
-open Locus
 
 (**  The kind of patterns that occurs in "match ... with ... end"
 
@@ -30,8 +29,6 @@ type cases_pattern =
   | PatVar of loc * name
   | PatCstr of loc * constructor * cases_pattern list * name
       (** [PatCstr(p,C,l,x)] = "|'C' 'l' as 'x'" *)
-
-val cases_pattern_loc : cases_pattern -> loc
 
 type glob_constr =
   | GRef of (loc * global_reference)
@@ -43,7 +40,7 @@ type glob_constr =
   | GProd of loc * name * binding_kind * glob_constr * glob_constr
   | GLetIn of loc * name * glob_constr * glob_constr
   | GCases of loc * case_style * glob_constr option * tomatch_tuples * cases_clauses
-      (** [GCases(l,style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in 
+      (** [GCases(l,style,r,tur,cc)] = "match 'tur' return 'r' with 'cc'" (in
 	  [MatchStyle]) *)
 
   | GLetTuple of loc * name list * (name * glob_constr option) *
@@ -72,67 +69,6 @@ and tomatch_tuple = (glob_constr * predicate_pattern)
 and tomatch_tuples = tomatch_tuple list
 
 and cases_clause = (loc * identifier list * cases_pattern list * glob_constr)
-(** [(p,il,cl,t)] = "|'cl' => 't'" where FV(t) \subset il *)
+(** [(p,il,cl,t)] = "|'cl' as 'il' => 't'" *)
 
 and cases_clauses = cases_clause list
-
-val cases_predicate_names : tomatch_tuples -> name list
-
-(* Apply one argument to a glob_constr *)
-val mkGApp : loc -> glob_constr -> glob_constr -> glob_constr
-
-val map_glob_constr : (glob_constr -> glob_constr) -> glob_constr -> glob_constr
-
-(* Ensure traversal from left to right *)
-val map_glob_constr_left_to_right :
-  (glob_constr -> glob_constr) -> glob_constr -> glob_constr
-
-(*
-val map_glob_constr_with_binders_loc : loc ->
-  (identifier -> 'a -> identifier * 'a) ->
-  ('a -> glob_constr -> glob_constr) -> 'a -> glob_constr -> glob_constr
-*)
-
-val fold_glob_constr : ('a -> glob_constr -> 'a) -> 'a -> glob_constr -> 'a
-val iter_glob_constr : (glob_constr -> unit) -> glob_constr -> unit
-val occur_glob_constr : identifier -> glob_constr -> bool
-val free_glob_vars : glob_constr -> identifier list
-val loc_of_glob_constr : glob_constr -> loc
-
-(** Conversion from glob_constr to cases pattern, if possible
-    
-    Take the current alias as parameter, 
-    @raise Not_found if translation is impossible *)
-val cases_pattern_of_glob_constr : name -> glob_constr -> cases_pattern
-
-val glob_constr_of_closed_cases_pattern : cases_pattern -> name * glob_constr
-
-(** {6 Reduction expressions} *)
-
-type 'a glob_red_flag = {
-  rBeta : bool;
-  rIota : bool;
-  rZeta : bool;
-  rDelta : bool; (** true = delta all but rConst; false = delta only on rConst*)
-  rConst : 'a list
-}
-
-val all_flags : 'a glob_red_flag
-
-type ('a,'b,'c) red_expr_gen =
-  | Red of bool
-  | Hnf
-  | Simpl of 'c with_occurrences option
-  | Cbv of 'b glob_red_flag
-  | Lazy of 'b glob_red_flag
-  | Unfold of 'b with_occurrences list
-  | Fold of 'a list
-  | Pattern of 'a with_occurrences list
-  | ExtraRedExpr of string
-  | CbvVm of 'c with_occurrences option
-
-type ('a,'b,'c) may_eval =
-  | ConstrTerm of 'a
-  | ConstrEval of ('a,'b,'c) red_expr_gen * 'a
-  | ConstrContext of (loc * identifier) * 'a
-  | ConstrTypeOf of 'a

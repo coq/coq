@@ -3,6 +3,7 @@ open Pp
 open Names
 open Term
 open Glob_term
+open Glob_ops
 open Libnames
 open Indfun_common
 open Errors

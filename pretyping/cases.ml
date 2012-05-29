@@ -23,6 +23,7 @@ open Reductionops
 open Typeops
 open Type_errors
 open Glob_term
+open Glob_ops
 open Retyping
 open Pretype_errors
 open Evarutil

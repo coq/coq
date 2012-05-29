@@ -63,13 +63,12 @@ Evd
 Reductionops
 Inductiveops
 Miscops
-Glob_term
+Glob_ops
 Detyping
 Pattern
 Topconstr
 Genarg
 Ppextend
-Tacops
 Tok
 Lexer
 Extend
@@ -84,6 +83,7 @@ Argextend
 Tacextend
 Vernacextend
 
+Redops
 G_prim
 G_tactic
 G_ltac

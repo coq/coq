@@ -82,7 +82,7 @@ val intern_gen : bool -> evar_map -> env ->
 
 val intern_pattern : env -> cases_pattern_expr ->
   Names.identifier list *
-    ((Names.identifier * Names.identifier) list * Glob_term.cases_pattern) list
+    ((Names.identifier * Names.identifier) list * cases_pattern) list
 
 val intern_context : bool -> evar_map -> env -> internalization_env -> local_binder list -> internalization_env * glob_binder list
 

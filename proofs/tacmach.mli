@@ -19,6 +19,7 @@ open Tacexpr
 open Glob_term
 open Pattern
 open Locus
+open Misctypes
 
 (** Operations for handling terms under a local typing context. *)
 

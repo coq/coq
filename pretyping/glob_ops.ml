@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i*)
 open Errors
 open Pp
 open Util
@@ -18,57 +17,13 @@ open Nametab
 open Decl_kinds
 open Misctypes
 open Locus
-(*i*)
+open Glob_term
 
 (* Untyped intermediate terms, after ASTs and before constr. *)
-
-(* locs here refers to the ident's location, not whole pat *)
-(* the last argument of PatCstr is a possible alias ident for the pattern *)
-type cases_pattern =
-  | PatVar of loc * name
-  | PatCstr of loc * constructor * cases_pattern list * name
 
 let cases_pattern_loc = function
     PatVar(loc,_) -> loc
   | PatCstr(loc,_,_,_) -> loc
-
-type glob_constr =
-  | GRef of (loc * global_reference)
-  | GVar of (loc * identifier)
-  | GEvar of loc * existential_key * glob_constr list option
-  | GPatVar of loc * (bool * patvar) (* Used for patterns only *)
-  | GApp of loc * glob_constr * glob_constr list
-  | GLambda of loc * name * binding_kind * glob_constr * glob_constr
-  | GProd of loc * name * binding_kind * glob_constr * glob_constr
-  | GLetIn of loc * name * glob_constr * glob_constr
-  | GCases of loc * case_style * glob_constr option * tomatch_tuples * cases_clauses
-  | GLetTuple of loc * name list * (name * glob_constr option) *
-      glob_constr * glob_constr
-  | GIf of loc * glob_constr * (name * glob_constr option) * glob_constr * glob_constr
-  | GRec of loc * fix_kind * identifier array * glob_decl list array *
-      glob_constr array * glob_constr array
-  | GSort of loc * glob_sort
-  | GHole of (loc * Evar_kinds.t)
-  | GCast of loc * glob_constr * glob_constr cast_type
-
-and glob_decl = name * binding_kind * glob_constr option * glob_constr
-
-and fix_recursion_order = GStructRec | GWfRec of glob_constr | GMeasureRec of glob_constr * glob_constr option
-
-and fix_kind =
-  | GFix of ((int option * fix_recursion_order) array * int)
-  | GCoFix of int
-
-and predicate_pattern =
-    name * (loc * inductive * name list) option
-
-and tomatch_tuple = (glob_constr * predicate_pattern)
-
-and tomatch_tuples = tomatch_tuple list
-
-and cases_clause = (loc * identifier list * cases_pattern list * glob_constr)
-
-and cases_clauses = cases_clause list
 
 let cases_predicate_names tml =
   List.flatten (List.map (function
@@ -80,37 +35,37 @@ let mkGApp loc p t =
   | GApp (loc,f,l) -> GApp (loc,f,l@[t])
   | _ -> GApp (loc,p,[t])
 
-let map_glob_decl_left_to_right f (na,k,obd,ty) = 
+let map_glob_decl_left_to_right f (na,k,obd,ty) =
   let comp1 = Option.map f obd in
   let comp2 = f ty in
   (na,k,comp1,comp2)
 
 let map_glob_constr_left_to_right f = function
-  | GApp (loc,g,args) -> 
-      let comp1 = f g in 
-      let comp2 = Util.list_map_left f args in 
+  | GApp (loc,g,args) ->
+      let comp1 = f g in
+      let comp2 = Util.list_map_left f args in
       GApp (loc,comp1,comp2)
-  | GLambda (loc,na,bk,ty,c) -> 
-      let comp1 = f ty in 
-      let comp2 = f c in 
+  | GLambda (loc,na,bk,ty,c) ->
+      let comp1 = f ty in
+      let comp2 = f c in
       GLambda (loc,na,bk,comp1,comp2)
-  | GProd (loc,na,bk,ty,c) -> 
-      let comp1 = f ty in 
-      let comp2 = f c in 
+  | GProd (loc,na,bk,ty,c) ->
+      let comp1 = f ty in
+      let comp2 = f c in
       GProd (loc,na,bk,comp1,comp2)
-  | GLetIn (loc,na,b,c) -> 
-      let comp1 = f b in 
-      let comp2 = f c in 
+  | GLetIn (loc,na,b,c) ->
+      let comp1 = f b in
+      let comp2 = f c in
       GLetIn (loc,na,comp1,comp2)
   | GCases (loc,sty,rtntypopt,tml,pl) ->
-      let comp1 = Option.map f rtntypopt in 
+      let comp1 = Option.map f rtntypopt in
       let comp2 = Util.list_map_left (fun (tm,x) -> (f tm,x)) tml in
       let comp3 = Util.list_map_left (fun (loc,idl,p,c) -> (loc,idl,p,f c)) pl in
       GCases (loc,sty,comp1,comp2,comp3)
   | GLetTuple (loc,nal,(na,po),b,c) ->
       let comp1 = Option.map f po in
       let comp2 = f b in
-      let comp3 = f c in 
+      let comp3 = f c in
       GLetTuple (loc,nal,(na,comp1),comp2,comp3)
   | GIf (loc,c,(na,po),b1,b2) ->
       let comp1 = Option.map f po in
@@ -122,50 +77,13 @@ let map_glob_constr_left_to_right f = function
       let comp2 = Array.map f tyl in
       let comp3 = Array.map f bv in
       GRec (loc,fk,idl,comp1,comp2,comp3)
-  | GCast (loc,c,k) -> 
+  | GCast (loc,c,k) ->
       let comp1 = f c in
       let comp2 = Miscops.map_cast_type f k in
       GCast (loc,comp1,comp2)
   | (GVar _ | GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) as x -> x
 
 let map_glob_constr = map_glob_constr_left_to_right
-
-(*
-let name_app f e = function
-  | Name id -> let (id, e) = f id e in (Name id, e)
-  | Anonymous -> Anonymous, e
-
-let fold_ident g idl e =
-  let (idl,e) =
-    Array.fold_right
-      (fun id (idl,e) -> let id,e = g id e in (id::idl,e)) idl ([],e)
-  in (Array.of_list idl,e)
-
-let map_glob_constr_with_binders_loc loc g f e = function
-  | GVar (_,id) -> GVar (loc,id)
-  | GApp (_,a,args) -> GApp (loc,f e a, List.map (f e) args)
-  | GLambda (_,na,ty,c) ->
-      let na,e = name_app g e na in GLambda (loc,na,f e ty,f e c)
-  | GProd (_,na,ty,c) ->
-      let na,e = name_app g e na in GProd (loc,na,f e ty,f e c)
-  | GLetIn (_,na,b,c) ->
-      let na,e = name_app g e na in GLetIn (loc,na,f e b,f e c)
-  | GCases (_,tyopt,tml,pl) ->
-      (* We don't modify pattern variable since we don't traverse patterns *)
-      let g' id e = snd (g id e) in
-      let h (_,idl,p,c) = (loc,idl,p,f (List.fold_right g' idl e) c) in
-      GCases
-	(loc,Option.map (f e) tyopt,List.map (f e) tml, List.map h pl)
-  | GRec (_,fk,idl,tyl,bv) ->
-      let idl',e' = fold_ident g idl e in
-      GRec (loc,fk,idl',Array.map (f e) tyl,Array.map (f e') bv)
-  | GCast (_,c,t) -> GCast (loc,f e c,f e t)
-  | GSort (_,x) -> GSort (loc,x)
-  | GHole (_,x)  -> GHole (loc,x)
-  | GRef (_,x) -> GRef (loc,x)
-  | GEvar (_,x,l) -> GEvar (loc,x,l)
-  | GPatVar (_,x) -> GPatVar (loc,x)
-*)
 
 let fold_glob_constr f acc =
   let rec fold acc = function
@@ -347,35 +265,3 @@ let glob_constr_of_closed_cases_pattern = function
       na,glob_constr_of_closed_cases_pattern_aux (PatCstr (loc,cstr,l,Anonymous))
   | _ ->
       raise Not_found
-
-(**********************************************************************)
-(* Reduction expressions                                              *)
-
-type 'a glob_red_flag = {
-  rBeta : bool;
-  rIota : bool;
-  rZeta : bool;
-  rDelta : bool; (* true = delta all but rConst; false = delta only on rConst*)
-  rConst : 'a list
-}
-
-let all_flags =
-  {rBeta = true; rIota = true; rZeta = true; rDelta = true; rConst = []}
-
-type ('a,'b,'c) red_expr_gen =
-  | Red of bool
-  | Hnf
-  | Simpl of 'c with_occurrences option
-  | Cbv of 'b glob_red_flag
-  | Lazy of 'b glob_red_flag
-  | Unfold of 'b with_occurrences list
-  | Fold of 'a list
-  | Pattern of 'a with_occurrences list
-  | ExtraRedExpr of string
-  | CbvVm of 'c with_occurrences option
-
-type ('a,'b,'c) may_eval =
-  | ConstrTerm of 'a
-  | ConstrEval of ('a,'b,'c) red_expr_gen * 'a
-  | ConstrContext of (loc * identifier) * 'a
-  | ConstrTypeOf of 'a

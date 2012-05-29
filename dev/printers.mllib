@@ -73,7 +73,8 @@ Miscops
 Termops
 Namegen
 Evd
-Glob_term
+Glob_ops
+Redops
 Reductionops
 Inductiveops
 Retyping
@@ -115,7 +116,6 @@ Smartlocate
 Constrintern
 Modintern
 Constrextern
-Tacops
 Proof_type
 Goal
 Logic

@@ -27,6 +27,13 @@ type intro_pattern_expr =
   | IntroAnonymous
 and or_and_intro_pattern_expr = (Pp.loc * intro_pattern_expr) list list
 
+(** Move destination for hypothesis *)
+
+type 'id move_location =
+  | MoveAfter of 'id
+  | MoveBefore of 'id
+  | MoveFirst
+  | MoveLast (** can be seen as "no move" when doing intro *)
 
 (** Sorts *)
 

@@ -104,9 +104,9 @@ let functional_induction with_clean c princl pat =
 	    (Tacmach.pf_ids_of_hyps g)
 	in
 	let flag =
-	  Glob_term.Cbv
-	    {Glob_term.all_flags
-	     with Glob_term.rDelta = false;
+	  Genredexpr.Cbv
+	    {Redops.all_flags
+	     with Genredexpr.rDelta = false;
 	    }
 	in
 	Tacticals.tclTHEN

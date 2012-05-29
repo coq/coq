@@ -26,7 +26,7 @@ open Tactics
 open Pattern
 open Clenv
 open Auto
-open Glob_term
+open Genredexpr
 open Hiddentac
 open Tacexpr
 open Misctypes

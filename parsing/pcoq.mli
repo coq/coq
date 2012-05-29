@@ -18,6 +18,7 @@ open Tacexpr
 open Libnames
 open Compat
 open Misctypes
+open Genredexpr
 
 (** The parser of Coq *)
 

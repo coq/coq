@@ -39,12 +39,13 @@ open Pretyping
 open Safe_typing
 open Constrintern
 open Hiddentac
+open Misctypes
+open Genredexpr
 
 open Equality
 open Auto
 open Eauto
 
-open Misctypes
 open Indfun_common
 
 

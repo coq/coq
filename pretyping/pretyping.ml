@@ -42,6 +42,7 @@ open Recordops
 open Evarutil
 open Pretype_errors
 open Glob_term
+open Glob_ops
 open Evarconv
 open Pattern
 open Misctypes

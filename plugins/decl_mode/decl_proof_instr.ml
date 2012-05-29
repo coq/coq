@@ -19,6 +19,7 @@ open Decl_expr
 open Decl_mode
 open Decl_interp
 open Glob_term
+open Glob_ops
 open Names
 open Nameops
 open Declarations

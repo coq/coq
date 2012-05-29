@@ -108,17 +108,17 @@ let mlexpr_of_clause cl =
            Locus.concl_occs= $mlexpr_of_occs cl.Locus.concl_occs$} >>
 
 let mlexpr_of_red_flags {
-  Glob_term.rBeta = bb;
-  Glob_term.rIota = bi;
-  Glob_term.rZeta = bz;
-  Glob_term.rDelta = bd;
-  Glob_term.rConst = l
+  Genredexpr.rBeta = bb;
+  Genredexpr.rIota = bi;
+  Genredexpr.rZeta = bz;
+  Genredexpr.rDelta = bd;
+  Genredexpr.rConst = l
 } = <:expr< {
-  Glob_term.rBeta = $mlexpr_of_bool bb$;
-  Glob_term.rIota = $mlexpr_of_bool bi$;
-  Glob_term.rZeta = $mlexpr_of_bool bz$;
-  Glob_term.rDelta = $mlexpr_of_bool bd$;
-  Glob_term.rConst = $mlexpr_of_list (mlexpr_of_by_notation mlexpr_of_reference) l$
+  Genredexpr.rBeta = $mlexpr_of_bool bb$;
+  Genredexpr.rIota = $mlexpr_of_bool bi$;
+  Genredexpr.rZeta = $mlexpr_of_bool bz$;
+  Genredexpr.rDelta = $mlexpr_of_bool bd$;
+  Genredexpr.rConst = $mlexpr_of_list (mlexpr_of_by_notation mlexpr_of_reference) l$
 } >>
 
 let mlexpr_of_explicitation = function
@@ -162,25 +162,25 @@ let mlexpr_of_occ_constr =
   mlexpr_of_occurrences mlexpr_of_constr
 
 let mlexpr_of_red_expr = function
-  | Glob_term.Red b -> <:expr< Glob_term.Red $mlexpr_of_bool b$ >>
-  | Glob_term.Hnf -> <:expr< Glob_term.Hnf >>
-  | Glob_term.Simpl o -> <:expr< Glob_term.Simpl $mlexpr_of_option mlexpr_of_occ_constr o$ >>
-  | Glob_term.Cbv f ->
-      <:expr< Glob_term.Cbv $mlexpr_of_red_flags f$ >>
-  | Glob_term.Lazy f ->
-      <:expr< Glob_term.Lazy $mlexpr_of_red_flags f$ >>
-  | Glob_term.Unfold l ->
+  | Genredexpr.Red b -> <:expr< Genredexpr.Red $mlexpr_of_bool b$ >>
+  | Genredexpr.Hnf -> <:expr< Genredexpr.Hnf >>
+  | Genredexpr.Simpl o -> <:expr< Genredexpr.Simpl $mlexpr_of_option mlexpr_of_occ_constr o$ >>
+  | Genredexpr.Cbv f ->
+      <:expr< Genredexpr.Cbv $mlexpr_of_red_flags f$ >>
+  | Genredexpr.Lazy f ->
+      <:expr< Genredexpr.Lazy $mlexpr_of_red_flags f$ >>
+  | Genredexpr.Unfold l ->
       let f1 = mlexpr_of_by_notation mlexpr_of_reference in
       let f = mlexpr_of_list (mlexpr_of_occurrences f1) in
-      <:expr< Glob_term.Unfold $f l$ >>
-  | Glob_term.Fold l ->
-      <:expr< Glob_term.Fold $mlexpr_of_list mlexpr_of_constr l$ >>
-  | Glob_term.Pattern l ->
+      <:expr< Genredexpr.Unfold $f l$ >>
+  | Genredexpr.Fold l ->
+      <:expr< Genredexpr.Fold $mlexpr_of_list mlexpr_of_constr l$ >>
+  | Genredexpr.Pattern l ->
       let f = mlexpr_of_list mlexpr_of_occ_constr in
-      <:expr< Glob_term.Pattern $f l$ >>
-  | Glob_term.CbvVm o -> <:expr< Glob_term.CbvVm $mlexpr_of_option mlexpr_of_occ_constr o$ >>
-  | Glob_term.ExtraRedExpr s ->
-      <:expr< Glob_term.ExtraRedExpr $mlexpr_of_string s$ >>
+      <:expr< Genredexpr.Pattern $f l$ >>
+  | Genredexpr.CbvVm o -> <:expr< Genredexpr.CbvVm $mlexpr_of_option mlexpr_of_occ_constr o$ >>
+  | Genredexpr.ExtraRedExpr s ->
+      <:expr< Genredexpr.ExtraRedExpr $mlexpr_of_string s$ >>
 
 let rec mlexpr_of_argtype loc = function
   | Genarg.BoolArgType -> <:expr< Genarg.BoolArgType >>
@@ -210,15 +210,15 @@ let rec mlexpr_of_argtype loc = function
   | Genarg.ExtraArgType s -> <:expr< Genarg.ExtraArgType $str:s$ >>
 
 let rec mlexpr_of_may_eval f = function
-  | Glob_term.ConstrEval (r,c) ->
-      <:expr< Glob_term.ConstrEval $mlexpr_of_red_expr r$ $f c$ >>
-  | Glob_term.ConstrContext ((loc,id),c) ->
+  | Genredexpr.ConstrEval (r,c) ->
+      <:expr< Genredexpr.ConstrEval $mlexpr_of_red_expr r$ $f c$ >>
+  | Genredexpr.ConstrContext ((loc,id),c) ->
       let id = mlexpr_of_ident id in
-      <:expr< Glob_term.ConstrContext (loc,$id$) $f c$ >>
-  | Glob_term.ConstrTypeOf c ->
-      <:expr< Glob_term.ConstrTypeOf $mlexpr_of_constr c$ >>
-  | Glob_term.ConstrTerm c ->
-      <:expr< Glob_term.ConstrTerm $mlexpr_of_constr c$ >>
+      <:expr< Genredexpr.ConstrContext (loc,$id$) $f c$ >>
+  | Genredexpr.ConstrTypeOf c ->
+      <:expr< Genredexpr.ConstrTypeOf $mlexpr_of_constr c$ >>
+  | Genredexpr.ConstrTerm c ->
+      <:expr< Genredexpr.ConstrTerm $mlexpr_of_constr c$ >>
 
 let mlexpr_of_binding_kind = function
   | Misctypes.ExplicitBindings l ->
@@ -236,10 +236,10 @@ let mlexpr_of_constr_with_binding =
   mlexpr_of_pair mlexpr_of_constr mlexpr_of_binding_kind
 
 let mlexpr_of_move_location f = function
-  | Tacexpr.MoveAfter id -> <:expr< Tacexpr.MoveAfter $f id$ >>
-  | Tacexpr.MoveBefore id -> <:expr< Tacexpr.MoveBefore $f id$ >>
-  | Tacexpr.MoveFirst -> <:expr< Tacexpr.MoveFirst >>
-  | Tacexpr.MoveLast -> <:expr< Tacexpr.MoveLast >>
+  | Misctypes.MoveAfter id -> <:expr< Misctypes.MoveAfter $f id$ >>
+  | Misctypes.MoveBefore id -> <:expr< Misctypes.MoveBefore $f id$ >>
+  | Misctypes.MoveFirst -> <:expr< Misctypes.MoveFirst >>
+  | Misctypes.MoveLast -> <:expr< Misctypes.MoveLast >>
 
 let mlexpr_of_induction_arg = function
   | Tacexpr.ElimOnConstr c ->
@@ -487,7 +487,7 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
 and mlexpr_of_tactic_arg = function
   | Tacexpr.MetaIdArg (loc,true,id) -> anti loc id
   | Tacexpr.MetaIdArg (loc,false,id) ->
-      <:expr< Tacexpr.ConstrMayEval (Glob_term.ConstrTerm $anti loc id$) >>
+      <:expr< Tacexpr.ConstrMayEval (Genredexpr.ConstrTerm $anti loc id$) >>
   | Tacexpr.TacCall (loc,t,tl) ->
       <:expr< Tacexpr.TacCall $dloc$ $mlexpr_of_reference t$ $mlexpr_of_list mlexpr_of_tactic_arg tl$>>
   | Tacexpr.Tacexp t ->

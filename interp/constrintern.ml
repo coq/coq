@@ -16,6 +16,7 @@ open Namegen
 open Libnames
 open Impargs
 open Glob_term
+open Glob_ops
 open Pattern
 open Pretyping
 open Cases

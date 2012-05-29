@@ -18,6 +18,7 @@ open Errors
 open Util
 open Misctypes
 open Locus
+open Genredexpr
 
 val extract_lam_binders :
   constr_expr -> local_binder list * constr_expr

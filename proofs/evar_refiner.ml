@@ -44,7 +44,7 @@ let w_refine (evk,evi) (ltac_var,rawc) sigma =
     try Pretyping.understand_ltac ~resolve_classes:true true 
       sigma env ltac_var (Pretyping.OfType (Some evi.evar_concl)) rawc
     with _ ->
-      let loc = Glob_term.loc_of_glob_constr rawc in
+      let loc = Glob_ops.loc_of_glob_constr rawc in
       user_err_loc
         (loc,"",Pp.str ("Instance is not well-typed in the environment of " ^
 			string_of_existential evk))

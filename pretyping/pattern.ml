@@ -13,6 +13,7 @@ open Libnames
 open Nameops
 open Term
 open Glob_term
+open Glob_ops
 open Environ
 open Nametab
 open Pp

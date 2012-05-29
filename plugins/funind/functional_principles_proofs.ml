@@ -397,9 +397,9 @@ let isLetIn t =
 
 let h_reduce_with_zeta =
   h_reduce
-    (Glob_term.Cbv
-       {Glob_term.all_flags
-	with Glob_term.rDelta = false;
+    (Genredexpr.Cbv
+       {Redops.all_flags
+	with Genredexpr.rDelta = false;
        })
 
 

@@ -11,7 +11,7 @@ open Pcoq
 open Errors
 open Util
 open Tacexpr
-open Glob_term
+open Genredexpr
 open Genarg
 open Topconstr
 open Libnames
@@ -22,7 +22,7 @@ open Misctypes
 open Locus
 open Decl_kinds
 
-let all_with delta = Tacops.make_red_flag [FBeta;FIota;FZeta;delta]
+let all_with delta = Redops.make_red_flag [FBeta;FIota;FZeta;delta]
 
 let tactic_kw = [ "->"; "<-" ; "by" ]
 let _ = List.iter Lexer.add_keyword tactic_kw
@@ -327,7 +327,7 @@ GEXTEND Gram
     ] ]
   ;
   strategy_flag:
-    [ [ s = LIST1 red_flag -> Tacops.make_red_flag s
+    [ [ s = LIST1 red_flag -> Redops.make_red_flag s
       | d = delta_flag -> all_with d
     ] ]
   ;

@@ -15,7 +15,9 @@ open Libobject
 open Pattern
 open Matching
 open Pp
+open Genredexpr
 open Glob_term
+open Glob_ops
 open Sign
 open Tacred
 open Errors
@@ -172,7 +174,7 @@ let _ =
       [ "red", TacReduce(Red false,nocl);
         "hnf", TacReduce(Hnf,nocl);
         "simpl", TacReduce(Simpl None,nocl);
-        "compute", TacReduce(Cbv all_flags,nocl);
+        "compute", TacReduce(Cbv Redops.all_flags,nocl);
         "intro", TacIntroMove(None,MoveLast);
         "intros", TacIntroPattern [];
         "assumption", TacAssumption;

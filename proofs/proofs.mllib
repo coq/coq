@@ -3,7 +3,6 @@ Evar_refiner
 Proofview
 Proof
 Proof_global
-Tacops
 Proof_type
 Redexpr
 Logic

@@ -18,6 +18,7 @@ open Prim
 open Tactic
 open Tok
 open Misctypes
+open Genredexpr
 
 let fail_default_value = ArgArg 0
 

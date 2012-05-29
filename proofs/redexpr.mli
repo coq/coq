@@ -10,7 +10,7 @@ open Names
 open Term
 open Closure
 open Pattern
-open Glob_term
+open Genredexpr
 open Reductionops
 open Termops
 open Locus

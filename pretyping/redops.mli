@@ -6,9 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-val make_red_flag :
- Tacexpr.glob_red_flag list ->
- (Libnames.reference Misctypes.or_by_notation) Glob_term.glob_red_flag
+open Genredexpr
 
-val pr_move_location :
-  ('a -> Pp.std_ppcmds) -> 'a Tacexpr.move_location -> Pp.std_ppcmds
+val make_red_flag : 'a red_atom list -> 'a glob_red_flag
+
+val all_flags : 'a glob_red_flag

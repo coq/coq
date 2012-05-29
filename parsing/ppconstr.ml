@@ -18,12 +18,12 @@ open Ppextend
 open Topconstr
 open Term
 open Pattern
-open Glob_term
 open Constrextern
 open Termops
 open Decl_kinds
 open Misctypes
 open Locus
+open Genredexpr
 (*i*)
 
 let sep_v = fun _ -> str"," ++ spc()

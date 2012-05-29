@@ -25,6 +25,7 @@ open Tactics
 open Hiddentac
 open Genarg
 open Tacexpr
+open Misctypes
 
 let introElimAssumsThen tac ba =
   let nassums =

@@ -22,6 +22,7 @@ open Detyping
 open Tok
 open Misctypes
 open Decl_kinds
+open Genredexpr
 
 (* Generic xml parser without raw data *)
 
