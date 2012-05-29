@@ -11,20 +11,18 @@ open Names
 open Namegen
 open Errors
 open Util
-open Tacexpr
-open Glob_term
 open Constrexpr
+open Tacexpr
 open Genarg
 open Libnames
-open Pattern
 open Ppextend
-open Ppconstr
-open Printer
 open Misctypes
 open Miscops
 open Locus
 open Decl_kinds
 open Genredexpr
+open Ppconstr
+open Printer
 
 let pr_global x = Nametab.pr_global_env Idset.empty x
 
@@ -728,7 +726,7 @@ and pr_atom1 = function
       hov 1
         (str "double induction" ++
          pr_arg pr_quantified_hypothesis h1 ++
- 	 pr_arg pr_quantified_hypothesis h2)
+	 pr_arg pr_quantified_hypothesis h2)
   | TacDecomposeAnd c ->
       hov 1 (str "decompose record" ++ pr_constrarg c)
   | TacDecomposeOr c ->
@@ -1046,17 +1044,5 @@ let _ = Tactic_debug.set_match_pattern_printer
 
 let _ = Tactic_debug.set_match_rule_printer
   (fun rl ->
-    pr_match_rule false (pr_glob_tactic (Global.env())) 
+    pr_match_rule false (pr_glob_tactic (Global.env()))
       (fun (_,p) -> pr_constr_pattern p) rl)
-
-open Extrawit
-
-let pr_tac_polymorphic n _ _ prtac = prtac (n,E)
-
-let _ = for i=0 to 5 do
-  declare_extra_genarg_pprule
-  (rawwit_tactic i, pr_tac_polymorphic i)
-  (globwit_tactic i, pr_tac_polymorphic i)
-  (wit_tactic i, pr_tac_polymorphic i)
-done
-

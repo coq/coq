@@ -13,7 +13,6 @@ open Sign
 open Evd
 open Tacexpr
 open Proof_type
-open Logic
 open Printer
 
 let pr_tactic = function
@@ -62,7 +61,7 @@ let rec print_proof sigma osign pf =
     | None ->
 	hov 0 (pr_goal {sigma = sigma; it=pf.goal })
     | Some(r,spfl) ->
-    	hov 0
+	hov 0
 	  (hov 0 (pr_goal {sigma = sigma; it=pf.goal }) ++
 	   spc () ++ str" BY " ++
 	   hov 0 (pr_rule r) ++ fnl () ++
@@ -169,5 +168,3 @@ let rec print_info_script sigma osign pf =
 
 let format_print_info_script sigma osign pf =
   hov 0 (print_info_script sigma osign pf)
-
-

@@ -406,7 +406,7 @@ let make_pr_vernac pr_constr pr_lconstr =
 let pr_constrarg c = spc () ++ pr_constr c in
 let pr_lconstrarg c = spc () ++ pr_lconstr c in
 let pr_intarg n = spc () ++ int n in
-let pr_oc = function 
+let pr_oc = function
     None -> str" :"
   | Some true -> str" :>"
   | Some false -> str" :>>"
@@ -491,7 +491,7 @@ let rec pr_vernac = function
   (* Syntax *)
   | VernacTacticNotation (n,r,e) -> pr_grammar_tactic_rule n ("",r,e)
   | VernacOpenCloseScope (local,opening,sc) ->
-      pr_section_locality local ++ 
+      pr_section_locality local ++
       str (if opening then "Open " else "Close ") ++
       str "Scope" ++ spc() ++ str sc
   | VernacDelimiters (sc,key) ->
@@ -503,7 +503,7 @@ let rec pr_vernac = function
   | VernacArgumentsScope (local,q,scl) -> let pr_opt_scope = function
       |	None -> str"_"
       |	Some sc -> str sc in
-    pr_section_locality local ++ str"Arguments Scope" ++ spc() ++ 
+    pr_section_locality local ++ str"Arguments Scope" ++ spc() ++
     pr_smart_global q
     ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
   | VernacInfix (local,((_,s),mv),q,sn) -> (* A Verifier *)
@@ -663,11 +663,11 @@ let rec pr_vernac = function
      hov 1 (
        pr_non_locality (not glob) ++
        (if abst then str"Declare " else mt ()) ++
-       str"Instance" ++ 
-       (match snd instid with Name id -> spc () ++ pr_lident (fst instid, id) ++ spc () | 
+       str"Instance" ++
+       (match snd instid with Name id -> spc () ++ pr_lident (fst instid, id) ++ spc () |
 	Anonymous -> mt ()) ++
        pr_and_type_binders_arg sup ++
-       str":" ++ spc () ++	 
+       str":" ++ spc () ++
        pr_constr_expr cl ++ spc () ++
 	 (match props with
 	  | Some p -> spc () ++ str":=" ++ spc () ++ pr_constr_expr p
@@ -760,11 +760,11 @@ let rec pr_vernac = function
         (pr_locality local ++ str "Ltac " ++
         prlist_with_sep (fun () -> fnl() ++ str"with ") pr_tac_body l)
   | VernacCreateHintDb (local,dbname,b) ->
-      hov 1 (pr_locality local ++ str "Create HintDb " ++ 
+      hov 1 (pr_locality local ++ str "Create HintDb " ++
 		str dbname ++ (if b then str" discriminated" else mt ()))
   | VernacRemoveHints (local, dbnames, ids) ->
       hov 1 (pr_locality local ++ str "Remove Hints " ++
-	       prlist_with_sep spc (fun r -> pr_id (coerce_reference_to_id r)) ids ++ 
+	       prlist_with_sep spc (fun r -> pr_id (coerce_reference_to_id r)) ids ++
 	       pr_opt_hintbases dbnames)
   | VernacHints (local,dbnames,h) ->
       pr_hints local dbnames h pr_constr pr_constr_pattern_expr
@@ -774,10 +774,10 @@ let rec pr_vernac = function
 	 prlist (fun x -> spc() ++ pr_id x) ids ++ str":=" ++ pr_constrarg c ++
          pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
   | VernacDeclareImplicits (local,q,[]) ->
-      hov 2 (pr_section_locality local ++ str"Implicit Arguments" ++ spc() ++ 
+      hov 2 (pr_section_locality local ++ str"Implicit Arguments" ++ spc() ++
 	pr_smart_global q)
   | VernacDeclareImplicits (local,q,impls) ->
-      hov 1 (pr_section_locality local ++ str"Implicit Arguments " ++ 
+      hov 1 (pr_section_locality local ++ str"Implicit Arguments " ++
 	spc() ++ pr_smart_global q ++ spc() ++
 	prlist_with_sep spc (fun imps ->
 	  str"[" ++ prlist_with_sep sep pr_explanation imps ++ str"]")

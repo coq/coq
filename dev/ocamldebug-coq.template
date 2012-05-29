@@ -12,7 +12,7 @@ OCAMLDEBUG=$CAMLBIN/ocamldebug
 exec $OCAMLDEBUG \
 	-I $CAMLP4LIB \
 	-I $COQTOP \
-	-I $COQTOP/config \
+	-I $COQTOP/config -I $COQTOP/printing -I $COQTOP/grammar \
 	-I $COQTOP/lib -I $COQTOP/intf -I $COQTOP/kernel \
 	-I $COQTOP/library -I $COQTOP/pretyping -I $COQTOP/parsing \
         -I $COQTOP/interp -I $COQTOP/proofs -I $COQTOP/tactics \

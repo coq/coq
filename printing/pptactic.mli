@@ -8,15 +8,12 @@
 
 open Pp
 open Genarg
-open Tacexpr
-open Pretyping
-open Proof_type
 open Constrexpr
-open Glob_term
-open Pattern
+open Tacexpr
+open Proof_type
 open Ppextend
 open Environ
-open Evd
+open Pattern
 open Misctypes
 
 val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds

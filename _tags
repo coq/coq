@@ -73,6 +73,7 @@
 "parsing": include
 "plugins": include
 "pretyping": include
+"printing": include
 "proofs": include
 "scripts": include
 "states": include

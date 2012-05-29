@@ -71,8 +71,8 @@ CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 SRCDIRS:=\
   config 	tools 		tools/coqdoc 	scripts		lib \
   kernel	kernel/byterun	library 	proofs 		tactics \
-  pretyping	interp		toplevel/utils	toplevel 	parsing 	\
-  grammar 	intf            ide/utils	ide		\
+  pretyping	interp		toplevel/utils	toplevel 	parsing \
+  printing	grammar 	intf            ide/utils	ide	\
   $(addprefix plugins/, \
     omega	romega 		micromega 	quote		ring \
     setoid_ring xml 		extraction 	fourier \
@@ -157,8 +157,8 @@ BYTERUN:=$(addprefix kernel/byterun/, \
 
 CORECMA:=lib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
         pretyping/pretyping.cma interp/interp.cma proofs/proofs.cma \
-        parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
-        parsing/highparsing.cma tactics/hightactics.cma
+        printing/printing.cma parsing/parsing.cma tactics/tactics.cma \
+	toplevel/toplevel.cma parsing/highparsing.cma tactics/hightactics.cma
 
 GRAMMARCMA:=grammar/grammar.cma
 
@@ -346,7 +346,7 @@ MANPAGES:=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 OCAMLDOCDIR=dev/ocamldoc
 
 DOCMLIS=$(wildcard ./lib/*.mli ./intf/*.mli ./kernel/*.mli ./library/*.mli \
-	./pretyping/*.mli ./interp/*.mli \
+	./pretyping/*.mli ./interp/*.mli printing/*.mli \
 	./parsing/*.mli ./proofs/*.mli \
 	./tactics/*.mli ./toplevel/*.mli)
 

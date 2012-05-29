@@ -8,7 +8,6 @@
 
 open Pp
 open Errors
-open Util
 open Names
 open Declarations
 open Nameops

@@ -115,7 +115,7 @@ val pr_evars_int           : int -> (evar * evar_info) list -> std_ppcmds
 
 val pr_prim_rule           : prim_rule -> std_ppcmds
 
-(** Emacs/proof general support 
+(** Emacs/proof general support
    (emacs_str s) outputs
     - s if emacs mode,
     - nothing otherwise.

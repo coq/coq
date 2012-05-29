@@ -23,9 +23,9 @@ open Evd
 open Proof_type
 open Refiner
 open Pfedit
-open Ppconstr
 open Constrextern
 open Tacexpr
+open Ppconstr
 
 open Store.Field
 
@@ -324,11 +324,11 @@ let default_pr_subgoal n sigma =
   let rec prrec p = function
     | [] -> error "No such goal."
     | g::rest ->
-       	if p = 1 then
+	if p = 1 then
           let pg = default_pr_goal { sigma=sigma ; it=g } in
           v 0 (str "subgoal " ++ int n ++ pr_goal_tag g
 	       ++ str " is:" ++ cut () ++ pg)
-       	else
+	else
 	  prrec (p-1) rest
   in
   prrec n
@@ -348,7 +348,7 @@ let emacs_print_dependent_evars sigma seeds =
 	    end i (str ",")
       end evars (str "")
     in
-    cut () ++ 
+    cut () ++
     str "(dependent evars:" ++ evars ++ str ")" ++ fnl ()
   in
   delayed_emacs_cmd evars
@@ -437,7 +437,7 @@ let pr_open_subgoals () =
 		(* spiwack: to stay compatible with the proof general and coqide,
 		    I use print the message after the goal. It would be better to have
 		    something like:
- 		      str"This subproof is complete, but there are still unfocused goals:" 
+		      str"This subproof is complete, but there are still unfocused goals:"
 		      ++ fnl () ++ fnl () ++ pr_subgoals None bsigma bgoals
 		    instead. But it doesn't quite work.
 		*)
@@ -453,7 +453,7 @@ let pr_nth_open_subgoal n =
 let pr_goal_by_id id =
   let p = Proof_global.give_me_the_proof () in
   let g = Goal.get_by_uid id in
-  let pr gs = 
+  let pr gs =
     v 0 (str ("goal / evar " ^ id ^ " is:") ++ cut ()
 	 ++ pr_goal gs)
   in
@@ -604,9 +604,9 @@ let cmap_to_list m = Cmap.fold (fun k v acc -> v :: acc) m []
 
 open Typeclasses
 
-let pr_instance i = 
+let pr_instance i =
   pr_global (instance_impl i)
-    
+
 let pr_instance_gmap insts =
   prlist_with_sep fnl (fun (gr, insts) ->
     prlist_with_sep fnl pr_instance (cmap_to_list insts))

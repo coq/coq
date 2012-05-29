@@ -10,7 +10,6 @@
 open Errors
 open Util
 open Pp
-open Nametab
 open Names
 open Nameops
 open Libnames
@@ -19,9 +18,6 @@ open Constrexpr
 open Constrexpr_ops
 open Topconstr
 open Term
-open Pattern
-open Constrextern
-open Termops
 open Decl_kinds
 open Misctypes
 open Locus

@@ -10,12 +10,8 @@ open Pp
 open Environ
 open Term
 open Libnames
-open Pcoq
-open Glob_term
 open Constrexpr
 open Names
-open Errors
-open Util
 open Misctypes
 open Locus
 open Genredexpr

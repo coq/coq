@@ -12,7 +12,8 @@
 #directory "lib";;
 #directory "proofs";;
 #directory "tactics";;
-#directory "translate";;
+#directory "printing";;
+#directory "grammar";;
 #directory "intf";;
 
 #directory "+camlp4";; (* lazy solution: add both of camlp4/5 so that *)

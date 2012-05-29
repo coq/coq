@@ -26,13 +26,13 @@ open Environ
 open Declare
 open Impargs
 open Libobject
-open Printer
-open Printmod
 open Libnames
 open Globnames
 open Nametab
 open Recordops
 open Misctypes
+open Printer
+open Printmod
 
 type object_pr = {
   print_inductive           : mutual_inductive -> std_ppcmds;
@@ -440,7 +440,7 @@ let gallina_print_syntactic_def kn =
   hov 2
     (hov 4
        (str "Notation " ++ pr_qualid qid ++
-        prlist (fun id -> spc () ++ pr_id id) (List.map fst vars) ++ 
+        prlist (fun id -> spc () ++ pr_id id) (List.map fst vars) ++
         spc () ++ str ":=") ++
      spc () ++ Constrextern.without_symbols pr_glob_constr c) ++ fnl ()
 
@@ -783,4 +783,3 @@ let print_instances r =
   let env = Global.env () in
   let inst = instances r in
     prlist_with_sep fnl (pr_instance env) inst
-
