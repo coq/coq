@@ -6,16 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
-open Errors
-open Util
 open Names
-open Nameops
-open Nametab
 open Glob_term
 open Constrexpr
-open Term
-open Evd
 open Misctypes
 
 type argument_type =
@@ -54,8 +47,6 @@ type open_glob_constr = unit * glob_constr_and_expr
 
 type glob_constr_pattern_and_expr = glob_constr_and_expr * Pattern.constr_pattern
 
-type 'a with_ebindings = 'a * open_constr bindings
-
 (* Dynamics but tagged by a type expression *)
 
 type 'a generic_argument = argument_type * Obj.t
@@ -63,25 +54,6 @@ type 'a generic_argument = argument_type * Obj.t
 type rlevel
 type glevel
 type tlevel
-
-let rec pr_intro_pattern (_,pat) = match pat with
-  | IntroOrAndPattern pll -> pr_or_and_intro_pattern pll
-  | IntroWildcard -> str "_"
-  | IntroRewrite true -> str "->"
-  | IntroRewrite false -> str "<-"
-  | IntroIdentifier id -> pr_id id
-  | IntroFresh id -> str "?" ++ pr_id id
-  | IntroForthcoming true -> str "*"
-  | IntroForthcoming false -> str "**"
-  | IntroAnonymous -> str "?"
-
-and pr_or_and_intro_pattern = function
-  | [pl] ->
-      str "(" ++ hv 0 (prlist_with_sep pr_comma pr_intro_pattern pl) ++ str ")"
-  | pll ->
-      str "[" ++
-      hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
-      ++ str "]"
 
 let rawwit_bool = BoolArgType
 let globwit_bool = BoolArgType
@@ -240,7 +212,7 @@ type ('a,'b) abstract_argument_type = argument_type
 
 let create_arg v s =
   if List.mem_assoc s !dyntab then
-    anomaly ("Genarg.create: already declared generic argument " ^ s);
+    Errors.anomaly ("Genarg.create: already declared generic argument " ^ s);
   let t = ExtraArgType s in
   dyntab := (s,Option.map (in_gen t) v) :: !dyntab;
   (t,t,t)

@@ -53,6 +53,7 @@ open Pcoq
 open Compat
 open Evd
 open Misctypes
+open Miscops
 open Locus
 
 let safe_msgnl s =

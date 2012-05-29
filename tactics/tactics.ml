@@ -37,7 +37,6 @@ open Tacticals
 open Hipattern
 open Coqlib
 open Nametab
-open Genarg
 open Tacexpr
 open Decl_kinds
 open Evarutil
@@ -47,6 +46,7 @@ open Unification
 open Locus
 open Locusops
 open Misctypes
+open Miscops
 
 exception Bound
 

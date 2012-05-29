@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
 open Pp
 open Names
 open Term
@@ -30,11 +29,6 @@ type open_constr_expr = unit * constr_expr
 type open_glob_constr = unit * glob_constr_and_expr
 
 type glob_constr_pattern_and_expr = glob_constr_and_expr * constr_pattern
-
-type 'a with_ebindings = 'a * open_constr bindings
-
-val pr_intro_pattern : intro_pattern_expr located -> Pp.std_ppcmds
-val pr_or_and_intro_pattern : or_and_intro_pattern_expr -> Pp.std_ppcmds
 
 (** The route of a generic argument, from parsing to evaluation.
 In the following diagram, "object" can be tactic_expr, constr, tactic_arg, etc.

@@ -21,6 +21,7 @@ open Ppextend
 open Ppconstr
 open Printer
 open Misctypes
+open Miscops
 open Locus
 open Decl_kinds
 open Genredexpr
