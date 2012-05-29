@@ -39,9 +39,13 @@
 # File lists
 ###########################################################################
 
+# NB: due to limitations in Win32, please refrain using 'export' too much
+# to communicate between make sub-calls (in Win32, 8kb max per env variable,
+# 32kb total)
+
 # !! Before using FIND_VCS_CLAUSE, please read how you should in the !!
 # !! FIND_VCS_CLAUSE section of dev/doc/build-system.dev.txt         !!
-export FIND_VCS_CLAUSE:='(' \
+FIND_VCS_CLAUSE:='(' \
   -name '{arch}' -o \
   -name '.svn' -o \
   -name '_darcs' -o \
@@ -58,8 +62,8 @@ endef
 
 ## Files in the source tree
 
-export YACCFILES:=$(call find, '*.mly')
-export LEXFILES := $(call find, '*.mll')
+YACCFILES:=$(call find, '*.mly')
+LEXFILES := $(call find, '*.mll')
 export MLLIBFILES := $(call find, '*.mllib')
 export ML4FILES := $(call find, '*.ml4')
 export CFILES := $(call find, '*.c')
@@ -73,13 +77,13 @@ EXISTINGMLI := $(call find, '*.mli')
 
 ## Files that will be generated
 
-export GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) \
+GENML4FILES:= $(ML4FILES:.ml4=.ml)
+GENMLFILES:=$(LEXFILES:.mll=.ml) $(YACCFILES:.mly=.ml) \
   scripts/tolink.ml kernel/copcodes.ml
-export GENMLIFILES:=$(YACCFILES:.mly=.mli)
+GENMLIFILES:=$(YACCFILES:.mly=.mli)
+GENPLUGINSMOD:=$(filter plugins/%,$(MLLIBFILES:%.mllib=%_mod.ml))
 export GENHFILES:=kernel/byterun/coq_jumptbl.h
 export GENVFILES:=theories/Numbers/Natural/BigN/NMake_gen.v
-export GENPLUGINSMOD:=$(filter plugins/%,$(MLLIBFILES:%.mllib=%_mod.ml))
-export GENML4FILES:= $(ML4FILES:.ml4=.ml)
 export GENFILES:=$(GENMLFILES) $(GENMLIFILES) $(GENHFILES) $(GENVFILES) $(GENPLUGINSMOD)
 
 # NB: all files in $(GENFILES) can be created initially, while
@@ -92,12 +96,9 @@ define diff
  $(strip $(foreach f, $(1), $(if $(filter $(f),$(2)),,$f)))
 endef
 
-export MLSTATICFILES := \
- $(call diff, $(EXISTINGML), $(GENMLFILES) $(GENML4FILES) $(GENPLUGINSMOD))
-export MLFILES := \
- $(sort $(EXISTINGML) $(GENMLFILES) $(GENML4FILES) $(GENPLUGINSMOD))
+export MLEXTRAFILES := $(GENMLFILES) $(GENML4FILES) $(GENPLUGINSMOD)
+export MLSTATICFILES := $(call diff, $(EXISTINGML), $(MLEXTRAFILES))
 export MLIFILES := $(sort $(GENMLIFILES) $(EXISTINGMLI))
-export MLWITHOUTMLI := $(call diff, $(MLFILES), $(MLIFILES:.mli=.ml))
 
 include Makefile.common
 
@@ -276,3 +277,14 @@ ifdef COQ_CONFIGURED
 else
 	@echo "Please run ./configure first" >&2; exit 1
 endif
+
+# Useful to check that the exported variables are within the win32 limits
+
+printenv:
+	@env
+	@echo
+	@echo -n "Maxsize (win32 limit is 8k) : "
+	@env | wc -L
+	@echo -n "Total (win32 limit is 32k) : "
+	@env | wc -m
+
