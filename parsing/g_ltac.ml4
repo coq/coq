@@ -7,18 +7,16 @@
 (************************************************************************)
 
 open Pp
-open Util
 open Constrexpr
-open Glob_term
 open Tacexpr
 open Vernacexpr
 open Locality
-open Pcoq
-open Prim
-open Tactic
-open Tok
 open Misctypes
 open Genredexpr
+
+open Pcoq
+open Pcoq.Prim
+open Pcoq.Tactic
 
 let fail_default_value = ArgArg 0
 

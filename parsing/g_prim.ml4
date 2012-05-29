@@ -6,18 +6,15 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pcoq
 open Names
 open Libnames
-open Topconstr
-open Tok
-open Compat
+
+open Pcoq
+open Pcoq.Prim
 
 let prim_kw = ["{"; "}"; "["; "]"; "("; ")"; "'"]
 let _ = List.iter Lexer.add_keyword prim_kw
 
-open Prim
-open Nametab
 
 let local_make_qualid l id = make_qualid (make_dirpath l) id
 

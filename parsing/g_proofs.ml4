@@ -6,18 +6,16 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pcoq
-open Pp
-open Tactic
-open Util
-open Vernac_
 open Constrexpr
 open Vernacexpr
 open Locality
-open Prim
-open Constr
-open Tok
 open Misctypes
+
+open Pcoq
+open Pcoq.Tactic
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Vernac_
 
 let thm_token = G_vernac.thm_token
 
