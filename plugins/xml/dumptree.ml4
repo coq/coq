@@ -11,7 +11,7 @@
 
 (** Contributed by Cezary Kaliszyk, Radboud University Nijmegen *)
 
-(*i camlp4deps: "parsing/grammar.cma" i*)
+(*i camlp4deps: "grammar/grammar.cma" i*)
 open Tacexpr;;
 open Decl_mode;;
 open Printer;;

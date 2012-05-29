@@ -124,4 +124,3 @@ EXTEND
 open Coqlib
 let a = PATTERN [ match ?X with %path_of_S n => n | %path_of_O => ?X end ]
 *)
-

@@ -701,7 +701,7 @@ ml-doc:
 parsing/parsing.dot : | parsing/parsing.mllib.d parsing/highparsing.mllib.d
 	$(OCAMLDOC_MLLIBD)
 
-parsing/grammar.dot : | parsing/grammar.mllib.d
+grammar/grammar.dot : | grammar/grammar.mllib.d
 	$(OCAMLDOC_MLLIBD)
 
 tactics/tactics.dot: | tactics/tactics.mllib.d tactics/hightactics.mllib.d
@@ -724,7 +724,7 @@ dev/printers.cma: | dev/printers.mllib.d
 	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $^ -linkall -a -o $@
 
-parsing/grammar.cma: | parsing/grammar.mllib.d
+grammar/grammar.cma: | grammar/grammar.mllib.d
 	$(SHOW)'Testing $@'
 	@touch test.ml4
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) -I $(CAMLLIB) $^ -impl" -impl test.ml4 -o test-grammar

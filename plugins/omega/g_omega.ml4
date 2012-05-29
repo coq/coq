@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-(*i camlp4deps: "parsing/grammar.cma" i*)
+(*i camlp4deps: "grammar/grammar.cma" i*)
 
 open Coq_omega
 open Refiner

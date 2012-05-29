@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4deps: "parsing/grammar.cma" i*)
 open Tacexpr
 open Term
 open Namegen

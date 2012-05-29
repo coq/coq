@@ -278,8 +278,8 @@ let extra_rules () = begin
 	      T(tags_of_pathname ml4 ++ "p4option"); camlp4compat;
 	      A"-o"; Px ml; A"-impl"; P ml4]));
 
-  flag_and_dep ["p4mod"; "use_grammar"] (P "parsing/grammar.cma");
-  flag_and_dep ["p4mod"; "use_constr"] (P "parsing/q_constr.cmo");
+  flag_and_dep ["p4mod"; "use_grammar"] (P "grammar/grammar.cma");
+  flag_and_dep ["p4mod"; "use_constr"] (P "grammar/q_constr.cmo");
 
   flag_and_dep ["p4mod"; "use_compat5"] (P "tools/compat5.cmo");
   flag_and_dep ["p4mod"; "use_compat5b"] (P "tools/compat5b.cmo");

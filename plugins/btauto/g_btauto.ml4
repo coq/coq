@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4deps: "parsing/grammar.cma"  i*)
+(*i camlp4deps: "grammar/grammar.cma"  i*)
 
 TACTIC EXTEND btauto
 | [ "btauto" ] -> [ Refl_btauto.Btauto.tac ]

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i camlp4deps: "parsing/grammar.cma parsing/q_constr.cmo" i*)
+(*i camlp4deps: "grammar/grammar.cma grammar/q_constr.cmo" i*)
 
 open Pp
 open Errors

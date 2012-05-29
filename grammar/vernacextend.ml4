@@ -46,7 +46,7 @@ let make_fun_clauses loc s l =
 
 let mlexpr_of_clause =
   mlexpr_of_list
-    (fun (a,b,c) -> mlexpr_of_list make_prod_item 
+    (fun (a,b,c) -> mlexpr_of_list make_prod_item
        (Option.List.cons (Option.map (fun a -> GramTerminal a) a) b))
 
 let declare_command loc s nt cl =
@@ -68,7 +68,7 @@ EXTEND
     [ [ "VERNAC"; "COMMAND"; "EXTEND"; s = UIDENT;
         OPT "|"; l = LIST1 rule SEP "|";
         "END" ->
-         declare_command loc s <:expr<None>> l 
+         declare_command loc s <:expr<None>> l
       | "VERNAC"; nt = LIDENT ; "EXTEND"; s = UIDENT;
         OPT "|"; l = LIST1 rule SEP "|";
         "END" ->

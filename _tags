@@ -20,7 +20,7 @@
 
 ## tags for grammar.cm*
 
-<parsing/grammar.{cma,cmxa}> : use_unix
+<grammar/grammar.{cma,cmxa}> : use_unix
 
 ## tags for camlp4 files 
 
@@ -48,10 +48,10 @@
 "plugins/decl_mode/g_decl_mode.ml4": use_compat5
 "plugins/funind/g_indfun.ml4": use_compat5
 
-"parsing/argextend.ml4": use_compat5b
-"parsing/q_constr.ml4": use_compat5b
-"parsing/tacextend.ml4": use_compat5b
-"parsing/vernacextend.ml4": use_compat5b
+"grammar/argextend.ml4": use_compat5b
+"grammar/q_constr.ml4": use_compat5b
+"grammar/tacextend.ml4": use_compat5b
+"grammar/vernacextend.ml4": use_compat5b
 
 <plugins/**/*.ml4>: use_grammar
 
@@ -65,6 +65,7 @@
 "ide/utils": include
 "interp": include
 "intf": include
+"grammar": include
 "kernel": include
 "kernel/byterun": include
 "lib": include

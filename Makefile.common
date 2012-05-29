@@ -72,7 +72,7 @@ SRCDIRS:=\
   config 	tools 		tools/coqdoc 	scripts		lib \
   kernel	kernel/byterun	library 	proofs 		tactics \
   pretyping	interp		toplevel/utils	toplevel 	parsing 	\
-  intf          ide/utils	ide		\
+  grammar 	intf            ide/utils	ide		\
   $(addprefix plugins/, \
     omega	romega 		micromega 	quote		ring \
     setoid_ring xml 		extraction 	fourier \
@@ -160,7 +160,7 @@ CORECMA:=lib/clib.cma lib/lib.cma kernel/kernel.cma library/library.cma \
         parsing/parsing.cma tactics/tactics.cma toplevel/toplevel.cma \
         parsing/highparsing.cma tactics/hightactics.cma
 
-GRAMMARCMA:=parsing/grammar.cma
+GRAMMARCMA:=grammar/grammar.cma
 
 OMEGACMA:=plugins/omega/omega_plugin.cma
 ROMEGACMA:=plugins/romega/romega_plugin.cma
