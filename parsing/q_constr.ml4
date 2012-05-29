@@ -31,7 +31,7 @@ EXTEND
   GLOBAL: expr;
   expr:
     [ [ "PATTERN"; "["; c = constr; "]" ->
-      <:expr< snd (Pattern.pattern_of_glob_constr $c$) >> ] ]
+      <:expr< snd (Patternops.pattern_of_glob_constr $c$) >> ] ]
   ;
   sort:
     [ [ "Set"  -> GSet

@@ -24,6 +24,7 @@ open Tacmach
 open Evar_refiner
 open Tactics
 open Pattern
+open Patternops
 open Clenv
 open Auto
 open Glob_term

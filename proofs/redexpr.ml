@@ -223,7 +223,7 @@ let subst_red_expr subs e =
   subst_gen_red_expr
     (Mod_subst.subst_mps subs)
     (Mod_subst.subst_evaluable_reference subs)
-    (Pattern.subst_pattern subs)
+    (Patternops.subst_pattern subs)
     e
 
 let inReduction : bool * string * red_expr -> obj =

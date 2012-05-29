@@ -20,6 +20,7 @@ open Glob_term
 open Sign
 open Environ
 open Pattern
+open Patternops
 open Misctypes
 (*i*)
 

@@ -65,7 +65,6 @@ Inductiveops
 Miscops
 Glob_ops
 Detyping
-Pattern
 Topconstr
 Genarg
 Ppextend

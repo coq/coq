@@ -13,6 +13,7 @@ open Declarations
 open Entries
 open Libobject
 open Pattern
+open Patternops
 open Matching
 open Pp
 open Genredexpr

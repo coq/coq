@@ -20,39 +20,8 @@ open Pp
 open Mod_subst
 open Misctypes
 open Decl_kinds
-
-(* Metavariables *)
-
-type constr_under_binders = identifier list * constr
-
-type patvar_map = (patvar * constr) list
-type extended_patvar_map = (patvar * constr_under_binders) list
-
-(* Patterns *)
-
-type case_info_pattern =
-    { cip_style : case_style;
-      cip_ind : inductive option;
-      cip_ind_args : int option; (** number of args *)
-      cip_extensible : bool (** does this match end with _ => _ ? *) }
-
-type constr_pattern =
-  | PRef of global_reference
-  | PVar of identifier
-  | PEvar of existential_key * constr_pattern array
-  | PRel of int
-  | PApp of constr_pattern * constr_pattern array
-  | PSoApp of patvar * constr_pattern list
-  | PLambda of name * constr_pattern * constr_pattern
-  | PProd of name * constr_pattern * constr_pattern
-  | PLetIn of name * constr_pattern * constr_pattern
-  | PSort of glob_sort
-  | PMeta of patvar option
-  | PIf of constr_pattern * constr_pattern * constr_pattern
-  | PCase of case_info_pattern * constr_pattern * constr_pattern *
-      (int * int * constr_pattern) list (** constructor index, nb of args *)
-  | PFix of fixpoint
-  | PCoFix of cofixpoint
+open Pattern
+open Evd
 
 let rec occur_meta_pattern = function
   | PApp (f,args) ->
@@ -94,8 +63,6 @@ let head_of_constr_reference c = match kind_of_term c with
   | Var id -> VarRef id
   | _ -> anomaly "Not a rigid reference"
 
-open Evd
-
 let pattern_of_constr sigma t =
   let ctx = ref [] in
   let rec pattern_of_constr t =
@@ -111,7 +78,7 @@ let pattern_of_constr sigma t =
     | Prod (na,c,b)   -> PProd (na,pattern_of_constr c,pattern_of_constr b)
     | Lambda (na,c,b) -> PLambda (na,pattern_of_constr c,pattern_of_constr b)
     | App (f,a) ->
-        (match 
+        (match
           match kind_of_term f with
             Evar (evk,args as ev) ->
               (match snd (Evd.evar_source evk sigma) with
@@ -377,5 +344,5 @@ and pats_of_glob_branches loc metas vars ind brs =
 
 let pattern_of_glob_constr c =
   let metas = ref [] in
-  let p = pat_of_raw metas [] c in	
+  let p = pat_of_raw metas [] c in
   (!metas,p)

@@ -24,6 +24,7 @@ open Reductionops
 open Cbv
 open Glob_term
 open Pattern
+open Patternops
 open Matching
 open Locus
 

@@ -107,6 +107,7 @@ open Util
 open Names
 open Term
 open Pattern
+open Patternops
 open Matching
 open Tacmach
 open Tactics

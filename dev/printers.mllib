@@ -86,7 +86,7 @@ Recordops
 Evarconv
 Arguments_renaming
 Typing
-Pattern
+Patternops
 Matching
 Tacred
 Classops

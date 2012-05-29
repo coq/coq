@@ -18,6 +18,7 @@ open Impargs
 open Glob_term
 open Glob_ops
 open Pattern
+open Patternops
 open Pretyping
 open Cases
 open Constrexpr

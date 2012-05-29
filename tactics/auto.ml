@@ -22,6 +22,7 @@ open Evd
 open Reduction
 open Typing
 open Pattern
+open Patternops
 open Matching
 open Tacmach
 open Proof_type
@@ -485,7 +486,7 @@ let make_exact_entry sigma pri ?(name=PathAny) (c,cty) =
     match kind_of_term cty with
     | Prod _ -> failwith "make_exact_entry"
     | _ ->
-	let pat = snd (Pattern.pattern_of_constr sigma cty) in
+	let pat = snd (Patternops.pattern_of_constr sigma cty) in
 	let hd =
 	  try head_pattern_bound pat
 	  with BoundPattern -> failwith "make_exact_entry"
@@ -502,7 +503,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri ?(name=PathAny) (c,cty) 
     | Prod _ ->
         let ce = mk_clenv_from dummy_goal (c,cty) in
 	let c' = clenv_type (* ~reduce:false *) ce in
-	let pat = snd (Pattern.pattern_of_constr sigma c') in
+	let pat = snd (Patternops.pattern_of_constr sigma c') in
         let hd =
 	  try head_pattern_bound pat
           with BoundPattern -> failwith "make_apply_entry" in
@@ -576,7 +577,7 @@ let make_trivial env sigma ?(name=PathAny) c =
   let hd = head_of_constr_reference (fst (head_constr t)) in
   let ce = mk_clenv_from dummy_goal (c,t) in
   (Some hd, { pri=1;
-              pat = Some (snd (Pattern.pattern_of_constr sigma (clenv_type ce)));
+              pat = Some (snd (Patternops.pattern_of_constr sigma (clenv_type ce)));
 	      name = name;
               code=Res_pf_THEN_trivial_fail(c,t) })
   
