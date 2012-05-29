@@ -17,8 +17,6 @@ open Topconstr
 open Extend
 open Vernacexpr
 open Locality
-open Pcoq
-open Tactic
 open Decl_kinds
 open Genarg
 open Ppextend
@@ -26,10 +24,12 @@ open Goptions
 open Declaremods
 open Misctypes
 
-open Prim
-open Constr
-open Vernac_
-open Module
+open Pcoq
+open Pcoq.Tactic
+open Pcoq.Prim
+open Pcoq.Constr
+open Pcoq.Vernac_
+open Pcoq.Module
 
 let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:"; "where"; "at" ]
 let _ = List.iter Lexer.add_keyword vernac_kw
@@ -712,7 +712,11 @@ GEXTEND Gram
   GLOBAL: command check_command class_rawexpr;
 
   command:
-    [ [ IDENT "Comments"; l = LIST0 comment -> VernacComments l
+    [ [ IDENT "Ltac";
+        l = LIST1 tacdef_body SEP "with" ->
+          VernacDeclareTacticDefinition (use_module_locality (), true, l)
+
+      | IDENT "Comments"; l = LIST0 comment -> VernacComments l
 
       (* Hack! Should be in grammar_ext, but camlp4 factorize badly *)
       | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";

@@ -7,20 +7,20 @@
 (************************************************************************)
 
 open Pp
-open Pcoq
 open Errors
 open Util
 open Tacexpr
 open Genredexpr
-open Genarg
 open Constrexpr
 open Libnames
-open Termops
 open Tok
 open Compat
 open Misctypes
 open Locus
 open Decl_kinds
+
+open Pcoq
+
 
 let all_with delta = Redops.make_red_flag [FBeta;FIota;FZeta;delta]
 
@@ -121,7 +121,7 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
 
 let mk_cofix_tac (loc,id,bl,ann,ty) =
   let _ = Option.map (fun (aloc,_) ->
-    Errors.user_err_loc
+    user_err_loc
       (aloc,"Constr:mk_cofix_tac",
        Pp.str"Annotation forbidden in cofix expression.")) ann in
   (id,CProdN(loc,bl,ty))
@@ -163,7 +163,8 @@ let rec mkCLambdaN_simple_loc loc bll c =
 let mkCLambdaN_simple bl c =
   if bl=[] then c
   else
-    let loc = join_loc (fst (List.hd (pi1 (List.hd bl)))) (Topconstr.constr_loc c) in
+    let loc = join_loc (fst (List.hd (pi1 (List.hd bl)))) (Topconstr
+.constr_loc c) in
     mkCLambdaN_simple_loc loc bl c
 
 let loc_of_ne_list l = join_loc (fst (List.hd l)) (fst (list_last l))

@@ -10,7 +10,6 @@ open Pp
 open Constrexpr
 open Tacexpr
 open Vernacexpr
-open Locality
 open Misctypes
 open Genredexpr
 
@@ -27,7 +26,7 @@ let arg_of_expr = function
 (* Tactics grammar rules *)
 
 GEXTEND Gram
-  GLOBAL: tactic Vernac_.command tactic_expr binder_tactic tactic_arg
+  GLOBAL: tactic tacdef_body tactic_expr binder_tactic tactic_arg
           constr_may_eval;
 
   tactic_then_last:
@@ -222,10 +221,5 @@ GEXTEND Gram
   ;
   tactic:
     [ [ tac = tactic_expr -> tac ] ]
-  ;
-  Vernac_.command:
-    [ [ IDENT "Ltac";
-        l = LIST1 tacdef_body SEP "with" ->
-          VernacDeclareTacticDefinition (use_module_locality (), true, l) ] ]
   ;
   END

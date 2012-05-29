@@ -228,6 +228,7 @@ module Tactic :
     val binder_tactic : raw_tactic_expr Gram.entry
     val tactic : raw_tactic_expr Gram.entry
     val tactic_eoi : raw_tactic_expr Gram.entry
+    val tacdef_body : (reference * bool * raw_tactic_expr) Gram.entry
   end
 
 module Vernac_ :

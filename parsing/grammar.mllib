@@ -71,7 +71,6 @@ Ppextend
 Tok
 Lexer
 Extend
-Locality
 Extrawit
 Pcoq
 Q_util

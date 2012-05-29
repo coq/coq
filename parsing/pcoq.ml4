@@ -406,6 +406,9 @@ module Tactic =
     (* Main entry for quotations *)
     let tactic_eoi = eoi_entry tactic
 
+    (* For Ltac definition *)
+    let tacdef_body = Gram.entry_create "tactic:tacdef_body"
+
   end
 
 module Vernac_ =
