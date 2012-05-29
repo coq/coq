@@ -48,6 +48,8 @@ open Extrawit
 open Pcoq
 open Compat
 open Evd
+open Misctypes
+open Locus
 
 let safe_msgnl s =
     try msgnl s with e ->
@@ -164,7 +166,7 @@ let add_primitive_tactic s tac =
   atomic_mactab := Idmap.add id tac !atomic_mactab
 
 let _ =
-  let nocl = {onhyps=Some[];concl_occs=all_occurrences_expr} in
+  let nocl = {onhyps=Some[];concl_occs=AllOccurrences} in
   List.iter
       (fun (s,t) -> add_primitive_tactic s (TacAtom(dloc,t)))
       [ "red", TacReduce(Red false,nocl);
@@ -588,8 +590,9 @@ let intern_inversion_strength lf ist = function
       InversionUsing (intern_constr ist c, intern_hyp_list ist idl)
 
 (* Interprets an hypothesis name *)
-let intern_hyp_location ist (((b,occs),id),hl) =
-  (((b,List.map (intern_or_var ist) occs),intern_hyp_or_metaid ist id), hl)
+let intern_hyp_location ist ((occs,id),hl) =
+  ((Locusops.occurrences_map (List.map (intern_or_var ist)) occs,
+   intern_hyp_or_metaid ist id), hl)
 
 (* Reads a pattern *)
 let intern_pattern ist ?(as_type=false) lfun = function
@@ -764,8 +767,8 @@ let rec intern_atomic lf ist x =
   | TacChange (None,c,cl) ->
       TacChange (None,
         (if (cl.onhyps = None or cl.onhyps = Some []) &
-	    (cl.concl_occs = all_occurrences_expr or
-	     cl.concl_occs = no_occurrences_expr)
+	    (cl.concl_occs = AllOccurrences or
+	     cl.concl_occs = NoOccurrences)
          then intern_type ist c else intern_constr ist c),
 	clause_app (intern_hyp_location ist) cl)
   | TacChange (Some p,c,cl) ->
@@ -1179,8 +1182,8 @@ let interp_evaluable ist env = function
       interp_ltac_var (coerce_to_evaluable_ref env) ist (Some env) locid
 
 (* Interprets an hypothesis name *)
-let interp_occurrences ist (b,occs) =
-  (b,interp_int_or_var_list ist occs)
+let interp_occurrences ist occs =
+  Locusops.occurrences_map (interp_int_or_var_list ist) occs
 
 let interp_hyp_location ist gl ((occs,id),hl) =
   ((interp_occurrences ist occs,interp_hyp ist gl id),hl)
@@ -1347,8 +1350,8 @@ let interp_closed_typed_pattern_with_occurrences ist env sigma occl =
 
 let interp_constr_with_occurrences_and_name_as_list =
   interp_constr_in_compound_list
-    (fun c -> ((all_occurrences_expr,c),Anonymous))
-    (function ((occs,c),Anonymous) when occs = all_occurrences_expr -> c
+    (fun c -> ((AllOccurrences,c),Anonymous))
+    (function ((occs,c),Anonymous) when occs = AllOccurrences -> c
       | _ -> raise Not_found)
     (fun ist env sigma (occ_c,na) ->
       let (sigma,c_interp) = interp_constr_with_occurrences ist env sigma occ_c in
@@ -2390,7 +2393,7 @@ and interp_atomic ist gl tac =
 	(h_generalize_dep c_interp)
   | TacLetTac (na,c,clp,b) ->
       let clp = interp_clause ist gl clp in
-      if clp = nowhere then
+      if clp = Locusops.nowhere then
         (* We try to fully-typechect the term *)
 	let (sigma,c_interp) = pf_interp_constr ist gl c in
 	tclTHEN
@@ -2491,8 +2494,8 @@ and interp_atomic ist gl tac =
   | TacChange (None,c,cl) ->
       let (sigma,c_interp) =
 	if (cl.onhyps = None or cl.onhyps = Some []) &
-	    (cl.concl_occs = all_occurrences_expr or
-	     cl.concl_occs = no_occurrences_expr)
+	    (cl.concl_occs = AllOccurrences or
+	     cl.concl_occs = NoOccurrences)
 	 then pf_interp_type ist gl c
 	 else pf_interp_constr ist gl c
       in

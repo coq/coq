@@ -18,6 +18,9 @@ open Libnames
 open Termops
 open Tok
 open Compat
+open Misctypes
+open Locus
+open Decl_kinds
 
 let all_with delta = make_red_flag [FBeta;FIota;FZeta;delta]
 
@@ -166,17 +169,17 @@ let mkCLambdaN_simple bl c =
 let loc_of_ne_list l = join_loc (fst (List.hd l)) (fst (list_last l))
 
 let map_int_or_var f = function
-  | Glob_term.ArgArg x -> Glob_term.ArgArg (f x)
-  | Glob_term.ArgVar _ as y -> y
+  | ArgArg x -> ArgArg (f x)
+  | ArgVar _ as y -> y
 
-let all_concl_occs_clause = { onhyps=Some[]; concl_occs=all_occurrences_expr }
+let all_concl_occs_clause = { onhyps=Some[]; concl_occs=AllOccurrences }
 
 let has_no_specified_occs cl =
   (cl.onhyps = None || 
-    List.for_all (fun ((occs,_),_) -> occs = all_occurrences_expr)
+    List.for_all (fun ((occs,_),_) -> occs = AllOccurrences)
     (Option.get cl.onhyps))
-  && (cl.concl_occs = all_occurrences_expr 
-      || cl.concl_occs = no_occurrences_expr)
+  && (cl.concl_occs = AllOccurrences
+      || cl.concl_occs = NoOccurrences)
 
 let merge_occurrences loc cl = function
   | None ->
@@ -185,11 +188,11 @@ let merge_occurrences loc cl = function
 	user_err_loc (loc,"",str "Found an \"at\" clause without \"with\" clause.")
   | Some (occs,p) ->
       (Some p,
-      if occs = all_occurrences_expr then cl
+      if occs = AllOccurrences then cl
       else if cl = all_concl_occs_clause then { onhyps=Some[]; concl_occs=occs }
       else match cl.onhyps with
       | Some [(occs',id),l] when
-	  occs' = all_occurrences_expr && cl.concl_occs = no_occurrences_expr ->
+	  occs' = AllOccurrences && cl.concl_occs = NoOccurrences ->
 	  { cl with onhyps=Some[(occs,id),l] }
       | _ ->
 	  if has_no_specified_occs cl then
@@ -205,12 +208,12 @@ GEXTEND Gram
   simple_intropattern;
 
   int_or_var:
-    [ [ n = integer  -> Glob_term.ArgArg n
-      | id = identref -> Glob_term.ArgVar id ] ]
+    [ [ n = integer  -> ArgArg n
+      | id = identref -> ArgVar id ] ]
   ;
   nat_or_var:
-    [ [ n = natural  -> Glob_term.ArgArg n
-      | id = identref -> Glob_term.ArgVar id ] ]
+    [ [ n = natural  -> ArgArg n
+      | id = identref -> ArgVar id ] ]
   ;
   (* An identifier or a quotation meta-variable *)
   id_or_meta:
@@ -236,18 +239,18 @@ GEXTEND Gram
   ;
   conversion:
     [ [ c = constr -> (None, c)
-      | c1 = constr; "with"; c2 = constr -> (Some (all_occurrences_expr,c1),c2)
+      | c1 = constr; "with"; c2 = constr -> (Some (AllOccurrences,c1),c2)
       | c1 = constr; "at"; occs = occs_nums; "with"; c2 = constr ->
           (Some (occs,c1), c2) ] ]
   ;
   occs_nums:
-    [ [ nl = LIST1 nat_or_var -> no_occurrences_expr_but nl
+    [ [ nl = LIST1 nat_or_var -> OnlyOccurrences nl
       | "-"; n = nat_or_var; nl = LIST0 int_or_var ->
 	  (* have used int_or_var instead of nat_or_var for compatibility *)
-	   all_occurrences_expr_but (List.map (map_int_or_var abs) (n::nl)) ] ]
+	   AllOccurrencesBut (List.map (map_int_or_var abs) (n::nl)) ] ]
   ;
   occs:
-    [ [ "at"; occs = occs_nums -> occs | -> all_occurrences_expr ] ]
+    [ [ "at"; occs = occs_nums -> occs | -> AllOccurrences ] ]
   ;
   pattern_occ:
     [ [ c = constr; nl = occs -> (nl,c) ] ]
@@ -374,7 +377,7 @@ GEXTEND Gram
       | hl=LIST0 hypident_occ SEP","; "|-"; occs=concl_occ ->
           {onhyps=Some hl; concl_occs=occs}
       | hl=LIST0 hypident_occ SEP"," ->
-          {onhyps=Some hl; concl_occs=no_occurrences_expr} ] ]
+          {onhyps=Some hl; concl_occs=NoOccurrences} ] ]
   ;
   clause_dft_concl:
     [ [ "in"; cl = in_clause -> cl
@@ -383,14 +386,14 @@ GEXTEND Gram
   ;
   clause_dft_all:
     [ [ "in"; cl = in_clause -> cl
-      | -> {onhyps=None; concl_occs=all_occurrences_expr} ] ]
+      | -> {onhyps=None; concl_occs=AllOccurrences} ] ]
   ;
   opt_clause:
     [ [ "in"; cl = in_clause -> Some cl | -> None ] ]
   ;
   concl_occ:
     [ [ "*"; occs = occs -> occs
-      | -> no_occurrences_expr ] ]
+      | -> NoOccurrences ] ]
   ;
   in_hyp_list:
     [ [ "in"; idl = LIST1 id_or_meta -> idl
@@ -546,9 +549,9 @@ GEXTEND Gram
 	  TacMutualCofix (false,id,List.map mk_cofix_tac fd)
 
       | IDENT "pose"; (id,b) = bindings_with_parameters ->
-	  TacLetTac (Names.Name id,b,nowhere,true)
+	  TacLetTac (Names.Name id,b,Locusops.nowhere,true)
       | IDENT "pose"; b = constr; na = as_name ->
-	  TacLetTac (na,b,nowhere,true)
+	  TacLetTac (na,b,Locusops.nowhere,true)
       | IDENT "set"; (id,c) = bindings_with_parameters; p = clause_dft_concl ->
 	  TacLetTac (Names.Name id,c,p,true)
       | IDENT "set"; c = constr; na = as_name; p = clause_dft_concl ->
@@ -572,9 +575,9 @@ GEXTEND Gram
 
       | IDENT "cut"; c = constr -> TacCut c
       | IDENT "generalize"; c = constr ->
-	  TacGeneralize [((all_occurrences_expr,c),Names.Anonymous)]
+	  TacGeneralize [((AllOccurrences,c),Names.Anonymous)]
       | IDENT "generalize"; c = constr; l = LIST1 constr ->
-	  let gen_everywhere c = ((all_occurrences_expr,c),Names.Anonymous) in
+	  let gen_everywhere c = ((AllOccurrences,c),Names.Anonymous) in
           TacGeneralize (List.map gen_everywhere (c::l))
       | IDENT "generalize"; c = constr; lookup_at_as_coma; nl = occs;
           na = as_name;

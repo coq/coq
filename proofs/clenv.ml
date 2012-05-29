@@ -27,6 +27,7 @@ open Evarutil
 open Unification
 open Mod_subst
 open Coercion
+open Misctypes
 
 (* Abbreviations *)
 

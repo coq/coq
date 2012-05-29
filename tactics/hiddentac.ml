@@ -16,6 +16,8 @@ open Genarg
 open Tacexpr
 open Tactics
 open Util
+open Locus
+open Misctypes
 
 (* Basic tactics *)
 let h_intro_move x y =
@@ -57,7 +59,7 @@ let h_generalize_gen cl =
   abstract_tactic (TacGeneralize cl)
     (generalize_gen (List.map (on_fst Redexpr.out_with_occurrences) cl))
 let h_generalize cl =
-  h_generalize_gen (List.map (fun c -> ((all_occurrences_expr,c),Names.Anonymous))
+  h_generalize_gen (List.map (fun c -> ((AllOccurrences,c),Names.Anonymous))
     cl)
 let h_generalize_dep c =
   abstract_tactic (TacGeneralizeDep c) (generalize_dep c)

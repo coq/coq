@@ -29,6 +29,7 @@ open Inductiveops
 open Tactics
 open Tacticals
 open Ind_tables
+open Misctypes
 
 (**********************************************************************)
 (* Generic synthesis of boolean equality *)
@@ -80,21 +81,21 @@ let andb = fun _ -> (Coqlib.build_bool_type()).Coqlib.andb
 
 let induct_on c =
   new_induct false
-    [Tacexpr.ElimOnConstr (Evd.empty,(c,Glob_term.NoBindings))]
+    [Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
     None (None,None) None
 
 let destruct_on_using c id =
   new_destruct false
-    [Tacexpr.ElimOnConstr (Evd.empty,(c,Glob_term.NoBindings))]
+    [Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
     None
-    (None,Some (dl,Genarg.IntroOrAndPattern [
-                                    [dl,Genarg.IntroAnonymous];
-                                    [dl,Genarg.IntroIdentifier id]]))
+    (None,Some (dl,IntroOrAndPattern [
+                                    [dl,IntroAnonymous];
+                                    [dl,IntroIdentifier id]]))
     None
 
 let destruct_on c =
   new_destruct false
-    [Tacexpr.ElimOnConstr (Evd.empty,(c,Glob_term.NoBindings))]
+    [Tacexpr.ElimOnConstr (Evd.empty,(c,NoBindings))]
     None (None,None) None
 
 (* reconstruct the inductive with the correct deBruijn indexes *)
@@ -537,7 +538,7 @@ let compute_bl_tact bl_scheme_key ind lnamesparrec nparrec gsig =
                      tclTRY (
                       tclORELSE reflexivity (Equality.discr_tac false None)
                      );
-                     simpl_in_hyp (freshz,InHyp);
+                     simpl_in_hyp (freshz,Locus.InHyp);
 (*
 repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
 *)
@@ -549,11 +550,11 @@ repeat ( apply andb_prop in z;let z1:= fresh "Z" in destruct z as [z1 z]).
                            in
                             avoid := fresht::(!avoid);
                             (new_destruct false [Tacexpr.ElimOnConstr
-                                      (Evd.empty,((mkVar freshz,Glob_term.NoBindings)))]
+                                      (Evd.empty,((mkVar freshz,NoBindings)))]
                                   None
-                                  (None, Some (dl,Genarg.IntroOrAndPattern [[
-                                    dl,Genarg.IntroIdentifier fresht;
-                                    dl,Genarg.IntroIdentifier freshz]])) None) gl
+                                  (None, Some (dl,IntroOrAndPattern [[
+                                    dl,IntroIdentifier fresht;
+                                    dl,IntroIdentifier freshz]])) None) gl
                         ]);
 (*
   Ci a1 ... an = Ci b1 ... bn
@@ -667,7 +668,7 @@ let compute_lb_tact lb_scheme_key ind lnamesparrec nparrec gsig =
                      tclTRY (
                       tclORELSE reflexivity (Equality.discr_tac false None)
                      );
-                     Equality.inj [] false (mkVar freshz,Glob_term.NoBindings);
+                     Equality.inj [] false (mkVar freshz,NoBindings);
 		     intros; simpl_in_concl;
                      Auto.default_auto;
                      tclREPEAT (
@@ -837,10 +838,10 @@ let compute_dec_tact ind lnamesparrec nparrec gsig =
                   Auto.default_auto
 		]);
 	      Equality.general_rewrite_bindings_in true
-	                      all_occurrences true false
+	                      Locus.AllOccurrences true false
                               (List.hd !avoid)
                               ((mkVar (List.hd (List.tl !avoid))),
-                                Glob_term.NoBindings
+                                NoBindings
                               )
                               true;
               Equality.discr_tac false None

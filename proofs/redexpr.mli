@@ -13,6 +13,7 @@ open Pattern
 open Glob_term
 open Reductionops
 open Termops
+open Locus
 
 type red_expr =
     (constr, evaluable_global_reference, constr_pattern) red_expr_gen

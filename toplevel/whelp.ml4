@@ -26,6 +26,7 @@ open Pfedit
 open Refiner
 open Tacmach
 open Syntax_def
+open Misctypes
 
 (* Coq interface to the Whelp query engine developed at
    the University of Bologna *)
@@ -94,8 +95,8 @@ let url_paren f l = url_char '('; f l; url_char ')'
 let url_bracket f l = url_char '['; f l; url_char ']'
 
 let whelp_of_glob_sort = function
-  | GProp Null -> "Prop"
-  | GProp Pos -> "Set"
+  | GProp -> "Prop"
+  | GSet -> "Set"
   | GType _ -> "Type"
 
 let uri_int n = Buffer.add_string b (string_of_int n)
@@ -163,7 +164,7 @@ let rec uri_of_constr c =
   | GLetIn (_,na,b,c) ->
       url_string "let "; url_of_name na; url_string "\\def ";
       uri_of_constr b; url_string " in "; uri_of_constr c
-  | GCast (_,c, CastConv (_,t)) ->
+  | GCast (_,c, (CastConv t|CastVM t)) ->
       uri_of_constr c; url_string ":"; uri_of_constr t
   | GRec _ | GIf _ | GLetTuple _ | GCases _ ->
       error "Whelp does not support pattern-matching and (co-)fixpoint."

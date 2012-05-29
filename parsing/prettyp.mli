@@ -16,7 +16,7 @@ open Environ
 open Reductionops
 open Libnames
 open Nametab
-open Genarg
+open Misctypes
 
 (** A Pretty-Printer for the Calculus of Inductive Constructions. *)
 

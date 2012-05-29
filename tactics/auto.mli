@@ -20,6 +20,7 @@ open Evd
 open Libnames
 open Vernacexpr
 open Mod_subst
+open Misctypes
 
 (** Auto and related automation tactics *)
 

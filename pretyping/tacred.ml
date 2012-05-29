@@ -25,6 +25,7 @@ open Cbv
 open Glob_term
 open Pattern
 open Matching
+open Locus
 
 (* Errors *)
 
@@ -842,7 +843,8 @@ let matches_head c t =
     | App (f,_) -> matches c f
     | _ -> raise PatternMatchingFailure
 
-let contextually byhead ((nowhere_except_in,locs),c) f env sigma t =
+let contextually byhead (occs,c) f env sigma t =
+  let (nowhere_except_in,locs) = Locusops.convert_occs occs in
   let maxocc = List.fold_right max locs 0 in
   let pos = ref 1 in
   let rec traverse (env,c as envc) t =
@@ -913,15 +915,20 @@ let unfold env sigma name =
  * Unfolds the constant name in a term c following a list of occurrences occl.
  * at the occurrences of occ_list. If occ_list is empty, unfold all occurences.
  * Performs a betaiota reduction after unfolding. *)
-let unfoldoccs env sigma ((nowhere_except_in,locs as plocs),name) c =
-  if locs = [] then if nowhere_except_in then c else unfold env sigma name c
-  else
-    let (nbocc,uc) = substlin env name 1 plocs c in
+let unfoldoccs env sigma (occs,name) c =
+  let unfo nowhere_except_in locs =
+    let (nbocc,uc) = substlin env name 1 (nowhere_except_in,locs) c in
     if nbocc = 1 then
       error ((string_of_evaluable_ref env name)^" does not occur.");
     let rest = List.filter (fun o -> o >= nbocc) locs in
     if rest <> [] then error_invalid_occurrence rest;
     nf_betaiotazeta sigma uc
+  in
+  match occs with
+    | NoOccurrences -> c
+    | AllOccurrences -> unfold env sigma name c
+    | OnlyOccurrences l -> unfo true l
+    | AllOccurrencesBut l -> unfo false l
 
 (* Unfold reduction tactic: *)
 let unfoldn loccname env sigma c =

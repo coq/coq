@@ -21,6 +21,8 @@ open Genarg
 open Tacexpr
 open Termops
 open Glob_term
+open Locus
+open Misctypes
 
 (** Tacticals i.e. functions from tactics to tactics. *)
 
@@ -94,23 +96,9 @@ val onHyps      : (goal sigma -> named_context) ->
 
 (** {6 Tacticals applying to goal components } *)
 
-(** A [simple_clause] is a set of hypotheses, possibly extended with
-   the conclusion (conclusion is represented by None) *)
-
-type simple_clause = identifier option list
-
 (** A [clause] denotes occurrences and hypotheses in a
    goal; in particular, it can abstractly refer to the set of
    hypotheses independently of the effective contents of the current goal *)
-
-type clause = identifier gclause
-
-val simple_clause_of : clause -> goal sigma -> simple_clause
-
-val allHypsAndConcl : clause
-val allHyps         : clause
-val onHyp           : identifier -> clause
-val onConcl         : clause
 
 val tryAllHyps          : (identifier -> tactic) -> tactic
 val tryAllHypsAndConcl  : (identifier option -> tactic) -> tactic
@@ -120,36 +108,6 @@ val onAllHypsAndConcl   : (identifier option -> tactic) -> tactic
 
 val onClause   : (identifier option -> tactic) -> clause -> tactic
 val onClauseLR : (identifier option -> tactic) -> clause -> tactic
-
-(** {6 An intermediate form of occurrence clause with no mention of occurrences } *)
-
-(** A [hyp_location] is an hypothesis together with a position, in
-   body if any, in type or in both *)
-
-type hyp_location = identifier * hyp_location_flag
-
-(** A [goal_location] is either an hypothesis (together with a position, in
-   body if any, in type or in both) or the goal *)
-
-type goal_location = hyp_location option
-
-(** {6 A concrete view of occurrence clauses } *)
-
-(** [clause_atom] refers either to an hypothesis location (i.e. an
-   hypothesis with occurrences and a position, in body if any, in type
-   or in both) or to some occurrences of the conclusion *)
-
-type clause_atom =
-  | OnHyp of identifier * occurrences_expr * hyp_location_flag
-  | OnConcl of occurrences_expr
-
-(** A [concrete_clause] is an effective collection of
-  occurrences in the hypotheses and the conclusion *)
-
-type concrete_clause = clause_atom list
-
-(** This interprets an [clause] in a given [goal] context *)
-val concrete_clause_of : clause -> goal sigma -> concrete_clause
 
 (** {6 Elimination tacticals. } *)
 

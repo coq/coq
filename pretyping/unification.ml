@@ -25,6 +25,7 @@ open Pretype_errors
 open Retyping
 open Coercion
 open Recordops
+open Locus
 
 let occur_meta_or_undefined_evar evd c =
   let rec occrec c = match kind_of_term c with
@@ -56,7 +57,7 @@ let abstract_scheme env c l lname_typ =
 
 let abstract_list_all env evd typ c l =
   let ctxt,_ = splay_prod_n env evd (List.length l) typ in
-  let l_with_all_occs = List.map (function a -> (all_occurrences,a)) l in
+  let l_with_all_occs = List.map (function a -> (AllOccurrences,a)) l in
   let p = abstract_scheme env c l_with_all_occs ctxt in
   try
     if is_conv_leq env evd (Typing.type_of env evd p) typ then p
@@ -65,7 +66,7 @@ let abstract_list_all env evd typ c l =
     error_cannot_find_well_typed_abstraction env evd p l
 
 let set_occurrences_of_last_arg args =
-  Some all_occurrences :: List.tl (array_map_to_list (fun _ -> None) args)
+  Some AllOccurrences :: List.tl (array_map_to_list (fun _ -> None) args)
 
 let abstract_list_all_with_dependencies env evd typ c l =
   let evd,ev = new_evar evd env typ in

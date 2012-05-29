@@ -28,6 +28,8 @@ open Nametab
 open Notation
 open Reserve
 open Detyping
+open Misctypes
+open Decl_kinds
 (*i*)
 
 (* Translation from glob_constr to front constr *)
@@ -218,7 +220,7 @@ let rec check_same_type ty1 ty2 =
   | CHole _, CHole _ -> ()
   | CPatVar(_,i1), CPatVar(_,i2) when i1=i2 -> ()
   | CSort(_,s1), CSort(_,s2) when s1=s2 -> ()
-  | CCast(_,a1,CastConv (_,b1)), CCast(_,a2, CastConv(_,b2)) ->
+  | CCast(_,a1,(CastConv b1|CastVM b1)), CCast(_,a2,(CastConv b2|CastVM b2)) ->
       check_same_type a1 a2;
       check_same_type b1 b2
   | CCast(_,a1,CastCoerce), CCast(_,a2, CastCoerce) ->
@@ -644,7 +646,8 @@ let extern_optimal_prim_token scopes r r' =
 (* mapping glob_constr to constr_expr                                    *)
 
 let extern_glob_sort = function
-  | GProp _ as s -> s
+  | GProp -> GProp
+  | GSet -> GSet
   | GType (Some _) as s when !print_universes -> s
   | GType _ -> GType None
 
@@ -811,10 +814,9 @@ let rec extern inctx scopes vars r =
 
   | GHole (loc,e) -> CHole (loc, Some e)
 
-  | GCast (loc,c, CastConv (k,t)) ->
-      CCast (loc,sub_extern true scopes vars c, CastConv (k,extern_typ scopes vars t))
-  | GCast (loc,c, CastCoerce) ->
-      CCast (loc,sub_extern true scopes vars c, CastCoerce)
+  | GCast (loc,c, c') ->
+      CCast (loc,sub_extern true scopes vars c,
+	     Miscops.map_cast_type (extern_typ scopes vars) c')
 
 and extern_typ (_,scopes) =
   extern true (Some Notation.type_scope,scopes)

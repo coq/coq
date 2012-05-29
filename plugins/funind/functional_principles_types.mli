@@ -1,6 +1,6 @@
 open Names
 open Term
-
+open Misctypes
 
 val generate_functional_principle :
   (* do we accept interactive proving *)
@@ -27,8 +27,8 @@ val compute_new_princ_type_from_rel : constr array -> sorts array ->
 
 exception No_graph_found
 
-val make_scheme : (constant*Glob_term.glob_sort) list -> Entries.definition_entry list
+val make_scheme : (constant*glob_sort) list -> Entries.definition_entry list
 
-val build_scheme : (identifier*Libnames.reference*Glob_term.glob_sort) list ->  unit
-val build_case_scheme : (identifier*Libnames.reference*Glob_term.glob_sort)  ->  unit
+val build_scheme : (identifier*Libnames.reference*glob_sort) list ->  unit
+val build_case_scheme : (identifier*Libnames.reference*glob_sort)  ->  unit
 

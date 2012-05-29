@@ -19,22 +19,23 @@ open Indfun_common
 open Tacmach
 open Sign
 open Hiddentac
+open Misctypes
 
 (* Some pretty printing function for debugging purpose *)
 
 let pr_binding prc  =
   function
-    | loc, Glob_term.NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ Pp.cut () ++ prc c)
-    | loc, Glob_term.AnonHyp n, c -> hov 1 (int n ++ str " := " ++ Pp.cut () ++ prc c)
+    | loc, NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ Pp.cut () ++ prc c)
+    | loc, AnonHyp n, c -> hov 1 (int n ++ str " := " ++ Pp.cut () ++ prc c)
 
 let pr_bindings prc prlc = function
-  | Glob_term.ImplicitBindings l ->
+  | ImplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
       pr_sequence prc l
-  | Glob_term.ExplicitBindings l ->
+  | ExplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
         pr_sequence (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
-  | Glob_term.NoBindings -> mt ()
+  | NoBindings -> mt ()
 
 
 let pr_with_bindings prc prlc (c,bl) =
@@ -272,7 +273,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       List.map
 	(fun (_,_,br_type) ->
 	   List.map
-	     (fun id -> dummy_loc, Genarg.IntroIdentifier id)
+	     (fun id -> dummy_loc, IntroIdentifier id)
 	     (generate_fresh_id (id_of_string "y") ids (List.length (fst (decompose_prod_assum br_type))))
 	)
 	branches
@@ -319,7 +320,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	       match b with
 		 | None -> pre_tac
 		 | Some b ->
-		   tclTHEN (h_reduce (Glob_term.Unfold([Glob_term.all_occurrences_expr,EvalVarRef id])) allHyps) pre_tac
+		   tclTHEN (h_reduce (Glob_term.Unfold([Glob_term.AllOccurrences,EvalVarRef id])) allHyps) pre_tac
 	     else pre_tac
 	  )
 	  (pf_hyps g)
@@ -330,7 +331,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       	List.fold_right
       	  (fun (_,pat) acc ->
       	     match pat with
-      	       | Genarg.IntroIdentifier id -> id::acc
+	       | IntroIdentifier id -> id::acc
       	       | _ -> anomaly "Not an identifier"
       	  )
       	  (List.nth intro_pats (pred i))
@@ -420,7 +421,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 		     Glob_term.rConst = []
 		 }
 	      )
-	      onConcl;
+	      Locusops.onConcl;
 	    observe_tac ("toto ") tclIDTAC;
     
 	    (* introducing the the result of the graph and the equality hypothesis *)
@@ -571,7 +572,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 		 | None -> (id::pre_args,pre_tac)
 		 | Some b ->
 		     (pre_args,
-		      tclTHEN (h_reduce (Glob_term.Unfold([Glob_term.all_occurrences_expr,EvalVarRef id])) allHyps) pre_tac
+		      tclTHEN (h_reduce (Glob_term.Unfold([Glob_term.AllOccurrences,EvalVarRef id])) allHyps) pre_tac
 		     )
 	     else (pre_args,pre_tac)
 	  )
@@ -754,15 +755,15 @@ and intros_with_rewrite_aux : tactic =
 			tclTHENSEQ [ h_intro id; thin [id]; intros_with_rewrite ] g
 		      else if isVar args.(1) && (Environ.evaluable_named (destVar args.(1)) (pf_env g)) 
 		      then tclTHENSEQ[
-			unfold_in_concl [(Termops.all_occurrences, Names.EvalVarRef (destVar args.(1)))];
-			tclMAP (fun id -> tclTRY(unfold_in_hyp [(Termops.all_occurrences, Names.EvalVarRef (destVar args.(1)))] ((destVar args.(1)),Termops.InHyp) )) 
+			unfold_in_concl [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(1)))];
+			tclMAP (fun id -> tclTRY(unfold_in_hyp [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(1)))] ((destVar args.(1)),Locus.InHyp) ))
 			  (pf_ids_of_hyps g);
 			intros_with_rewrite
 		      ] g
 		      else if isVar args.(2) && (Environ.evaluable_named (destVar args.(2)) (pf_env g)) 
 		      then tclTHENSEQ[
-			unfold_in_concl [(Termops.all_occurrences, Names.EvalVarRef (destVar args.(2)))];
-			tclMAP (fun id -> tclTRY(unfold_in_hyp [(Termops.all_occurrences, Names.EvalVarRef (destVar args.(2)))] ((destVar args.(2)),Termops.InHyp) )) 
+			unfold_in_concl [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(2)))];
+			tclMAP (fun id -> tclTRY(unfold_in_hyp [(Locus.AllOccurrences, Names.EvalVarRef (destVar args.(2)))] ((destVar args.(2)),Locus.InHyp) ))
 			  (pf_ids_of_hyps g);
 			intros_with_rewrite
 		      ] g
@@ -797,7 +798,7 @@ and intros_with_rewrite_aux : tactic =
 		      Tauto.tauto g
 		  | Case(_,_,v,_) ->
 		      tclTHENSEQ[
-			h_case false (v,Glob_term.NoBindings);
+			h_case false (v,NoBindings);
 			intros_with_rewrite
 		      ] g
 		  | LetIn _ ->
@@ -807,7 +808,7 @@ and intros_with_rewrite_aux : tactic =
 			     {Glob_term.all_flags
 			      with Glob_term.rDelta = false;
 			     })
-			  onConcl
+			  Locusops.onConcl
 			;
 			intros_with_rewrite
 		      ] g
@@ -822,7 +823,7 @@ and intros_with_rewrite_aux : tactic =
 		     {Glob_term.all_flags
 		      with Glob_term.rDelta = false;
 		     })
-		  onConcl
+		  Locusops.onConcl
 		;
 		intros_with_rewrite
 	      ] g
@@ -834,7 +835,7 @@ let rec reflexivity_with_destruct_cases g =
       match kind_of_term (snd (destApp (pf_concl g))).(2) with
 	| Case(_,_,v,_) ->
 	    tclTHENSEQ[
-	      h_case false (v,Glob_term.NoBindings);
+	      h_case false (v,NoBindings);
 	      intros;
 	      observe_tac "reflexivity_with_destruct_cases" reflexivity_with_destruct_cases
 	    ]
@@ -961,12 +962,12 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	       {Glob_term.all_flags
 		with Glob_term.rDelta = false;
 	       })
-	    onConcl
+	    Locusops.onConcl
 	  ;
 	  h_generalize (List.map mkVar ids);
 	  thin ids
 	]
-      else unfold_in_concl [(Termops.all_occurrences, Names.EvalConstRef (destConst f))]
+      else unfold_in_concl [(Locus.AllOccurrences, Names.EvalConstRef (destConst f))]
     in
     (* The proof of each branche itself *)
     let ind_number = ref 0 in
@@ -1004,7 +1005,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
 	(h_generalize [mkApp(applist(graph_principle,params),Array.map (fun c -> applist(c,params)) lemmas)]);
 	h_intro graph_principle_id;
 	observe_tac "" (tclTHEN_i
-	  (observe_tac "elim" ((elim false (mkVar hres,Glob_term.NoBindings) (Some (mkVar graph_principle_id,Glob_term.NoBindings)))))
+	  (observe_tac "elim" ((elim false (mkVar hres,NoBindings) (Some (mkVar graph_principle_id,NoBindings)))))
 	  (fun i g -> observe_tac "prove_branche" (prove_branche i) g ))
       ]
       g
@@ -1056,7 +1057,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	       (fun entry ->
 		  (entry.Entries.const_entry_body, Option.get entry.Entries.const_entry_type )
 	       )
-	       (make_scheme (array_map_to_list (fun const -> const,Glob_term.GType None) funs))
+	       (make_scheme (array_map_to_list (fun const -> const,GType None) funs))
 	    )
     in
     let proving_tac =
@@ -1209,7 +1210,7 @@ let functional_inversion kn hid fconst f_correct : tactic =
 	  let pre_tac,f_args,res =
 	    match kind_of_term args.(1),kind_of_term args.(2) with
 	      | App(f,f_args),_ when eq_constr f fconst ->
-		  ((fun hid -> h_symmetry (onHyp hid)),f_args,args.(2))
+		  ((fun hid -> h_symmetry (Locusops.onHyp hid)),f_args,args.(2))
 	      |_,App(f,f_args) when eq_constr f fconst ->
 		 ((fun hid -> tclIDTAC),f_args,args.(1))
 	      | _ -> (fun hid -> tclFAIL 1 (mt ())),[||],args.(2)
@@ -1219,7 +1220,7 @@ let functional_inversion kn hid fconst f_correct : tactic =
 	    h_generalize [applist(f_correct,(Array.to_list f_args)@[res;mkVar hid])];
 	    thin [hid];
 	    h_intro hid;
-	    Inv.inv FullInversion None (Glob_term.NamedHyp hid);
+	    Inv.inv FullInversion None (NamedHyp hid);
 	    (fun g ->
 	       let new_ids = List.filter (fun id -> not (Idset.mem id old_ids)) (pf_ids_of_hyps g) in
 	       tclMAP (revert_graph kn pre_tac)  (hid::new_ids)  g

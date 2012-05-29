@@ -17,6 +17,7 @@ open Glob_term
 open Evd
 open Clenv
 open Termops
+open Misctypes
 
 (** Tactics for the interpreter. They left a trace in the proof tree
    when they are called. *)
@@ -53,12 +54,12 @@ val h_cofix           : identifier option -> tactic
 
 val h_cut             : constr -> tactic
 val h_generalize      : constr list -> tactic
-val h_generalize_gen  : (constr with_occurrences * name) list -> tactic
+val h_generalize_gen  : (constr Locus.with_occurrences * name) list -> tactic
 val h_generalize_dep  : constr -> tactic
 val h_let_tac         : letin_flag -> name -> constr ->
-                        Tacticals.clause -> tactic
+                        Locus.clause -> tactic
 val h_let_pat_tac     : letin_flag -> name -> evar_map * constr ->
-                        Tacticals.clause -> tactic
+                        Locus.clause -> tactic
 
 (** Derived basic tactics *)
 
@@ -69,17 +70,17 @@ val h_new_induction   : evars_flag ->
   (evar_map * constr with_bindings) induction_arg list ->
   constr with_bindings option ->
   intro_pattern_expr located option * intro_pattern_expr located option ->
-  Tacticals.clause option -> tactic
+  Locus.clause option -> tactic
 val h_new_destruct    : evars_flag ->
   (evar_map * constr with_bindings) induction_arg list ->
   constr with_bindings option ->
   intro_pattern_expr located option * intro_pattern_expr located option ->
-  Tacticals.clause option -> tactic
+  Locus.clause option -> tactic
 val h_induction_destruct : rec_flag -> evars_flag ->
   ((evar_map * constr with_bindings) induction_arg list *
    constr with_bindings option *
    (intro_pattern_expr located option * intro_pattern_expr located option)) list
-    * Tacticals.clause option -> tactic
+    * Locus.clause option -> tactic
 
 val h_specialize      : int option -> constr with_bindings -> tactic
 val h_lapply          : constr -> tactic
@@ -106,13 +107,13 @@ val h_simplest_right  : tactic
 
 
 (** Conversion *)
-val h_reduce          : Redexpr.red_expr -> Tacticals.clause -> tactic
+val h_reduce          : Redexpr.red_expr -> Locus.clause -> tactic
 val h_change          :
-  Pattern.constr_pattern option -> constr -> Tacticals.clause -> tactic
+  Pattern.constr_pattern option -> constr -> Locus.clause -> tactic
 
 (** Equivalence relations *)
 val h_reflexivity     : tactic
-val h_symmetry        : Tacticals.clause -> tactic
+val h_symmetry        : Locus.clause -> tactic
 val h_transitivity    : constr option -> tactic
 
 val h_simplest_apply  : constr -> tactic

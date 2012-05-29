@@ -17,6 +17,8 @@ open Environ
 open Nametab
 open Pp
 open Mod_subst
+open Misctypes
+open Decl_kinds
 
 (* Metavariables *)
 
@@ -100,7 +102,8 @@ let pattern_of_constr sigma t =
     | Rel n  -> PRel n
     | Meta n -> PMeta (Some (id_of_string ("META" ^ string_of_int n)))
     | Var id -> PVar id
-    | Sort (Prop c) -> PSort (GProp c)
+    | Sort (Prop Null) -> PSort GProp
+    | Sort (Prop Pos) -> PSort GSet
     | Sort (Type _) -> PSort (GType None)
     | Cast (c,_,_)      -> pattern_of_constr c
     | LetIn (na,c,_,b) -> PLetIn (na,pattern_of_constr c,pattern_of_constr b)

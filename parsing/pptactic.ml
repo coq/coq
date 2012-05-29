@@ -20,6 +20,9 @@ open Pattern
 open Ppextend
 open Ppconstr
 open Printer
+open Misctypes
+open Locus
+open Decl_kinds
 
 let pr_global x = Nametab.pr_global_env Idset.empty x
 
@@ -384,11 +387,11 @@ let pr_by_tactic prt = function
   | tac -> spc() ++ str "by " ++ prt tac
 
 let pr_hyp_location pr_id = function
-  | occs, Termops.InHyp -> spc () ++ pr_with_occurrences pr_id occs
-  | occs, Termops.InHypTypeOnly ->
+  | occs, InHyp -> spc () ++ pr_with_occurrences pr_id occs
+  | occs, InHypTypeOnly ->
       spc () ++
       pr_with_occurrences (fun id -> str "(type of " ++ pr_id id ++ str ")") occs
-  | occs, Termops.InHypValueOnly ->
+  | occs, InHypValueOnly ->
       spc () ++
       pr_with_occurrences (fun id -> str "(value of " ++ pr_id id ++ str ")") occs
 
@@ -403,17 +406,17 @@ let pr_in_hyp_as pr_id = function
   | Some (id,ipat) -> pr_simple_hyp_clause pr_id [id] ++ pr_as_ipat ipat
 
 let pr_clauses default_is_concl pr_id = function
-  | { onhyps=Some []; concl_occs=occs }
-      when occs = all_occurrences_expr & default_is_concl = Some true -> mt ()
-  | { onhyps=None; concl_occs=occs }
-      when occs = all_occurrences_expr & default_is_concl = Some false -> mt ()
+  | { onhyps=Some []; concl_occs=AllOccurrences }
+      when default_is_concl = Some true -> mt ()
+  | { onhyps=None; concl_occs=AllOccurrences }
+      when default_is_concl = Some false -> mt ()
   | { onhyps=None; concl_occs=occs } ->
-      if occs = no_occurrences_expr then pr_in (str " * |-")
+      if occs = NoOccurrences then pr_in (str " * |-")
       else pr_in (pr_with_occurrences (fun () -> str " *") (occs,()))
   | { onhyps=Some l; concl_occs=occs } ->
       pr_in
         (prlist_with_sep (fun () -> str",") (pr_hyp_location pr_id) l ++
-	 (if occs = no_occurrences_expr then mt ()
+	 (if occs = NoOccurrences then mt ()
 	  else pr_with_occurrences (fun () -> str" |- *") (occs,())))
 
 let pr_orient b = if b then mt () else str " <-"
@@ -690,7 +693,7 @@ and pr_atom1 = function
   | TacGeneralizeDep c ->
       hov 1 (str "generalize" ++ spc () ++ str "dependent" ++
              pr_constrarg c)
-  | TacLetTac (na,c,cl,true) when cl = nowhere ->
+  | TacLetTac (na,c,cl,true) when cl = Locusops.nowhere ->
       hov 1 (str "pose" ++ pr_pose pr_lconstr pr_constr na c)
   | TacLetTac (na,c,cl,b) ->
       hov 1 ((if b then str "set" else str "remember") ++

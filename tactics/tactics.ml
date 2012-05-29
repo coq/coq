@@ -44,6 +44,9 @@ open Evarutil
 open Indrec
 open Pretype_errors
 open Unification
+open Locus
+open Locusops
+open Misctypes
 
 exception Bound
 
@@ -56,7 +59,7 @@ let rec nb_prod x =
       | _ -> n
   in count 0 x
 
-let inj_with_occurrences e = (all_occurrences_expr,e)
+let inj_with_occurrences e = (AllOccurrences,e)
 
 let dloc = dummy_loc
 
@@ -228,11 +231,11 @@ let bind_change_occurrences occs = function
 
 let bind_red_expr_occurrences occs nbcl redexp =
   let has_at_clause = function
-    | Unfold l -> List.exists (fun (occl,_) -> occl <> all_occurrences_expr) l
-    | Pattern l -> List.exists (fun (occl,_) -> occl <> all_occurrences_expr) l
-    | Simpl (Some (occl,_)) -> occl <> all_occurrences_expr
+    | Unfold l -> List.exists (fun (occl,_) -> occl <> AllOccurrences) l
+    | Pattern l -> List.exists (fun (occl,_) -> occl <> AllOccurrences) l
+    | Simpl (Some (occl,_)) -> occl <> AllOccurrences
     | _ -> false in
-  if occs = all_occurrences_expr then
+  if occs = AllOccurrences then
     if nbcl > 1 && has_at_clause redexp then
       error_illegal_non_atomic_clause ()
     else
@@ -242,24 +245,24 @@ let bind_red_expr_occurrences occs nbcl redexp =
     | Unfold (_::_::_) ->
 	error_illegal_clause ()
     | Unfold [(occl,c)] ->
-	if occl <> all_occurrences_expr then
+	if occl <> AllOccurrences then
 	  error_illegal_clause ()
 	else
 	  Unfold [(occs,c)]
     | Pattern (_::_::_) ->
 	error_illegal_clause ()
     | Pattern [(occl,c)] ->
-	if occl <> all_occurrences_expr then
+	if occl <> AllOccurrences then
 	  error_illegal_clause ()
 	else
 	  Pattern [(occs,c)]
     | Simpl (Some (occl,c)) ->
-	if occl <> all_occurrences_expr then
+	if occl <> AllOccurrences then
 	  error_illegal_clause ()
 	else
 	  Simpl (Some (occs,c))
     | CbvVm (Some (occl,c)) ->
-        if occl <> all_occurrences_expr then
+        if occl <> AllOccurrences then
           error_illegal_clause ()
         else
           CbvVm (Some (occs,c))
@@ -312,7 +315,7 @@ let change_option occl t = function
   | None -> change_in_concl occl t
 
 let change chg c cls gl =
-  let cls = concrete_clause_of cls gl in
+  let cls = concrete_clause_of (fun () -> pf_ids_of_hyps gl) cls in
   tclMAP (function
     | OnHyp (id,occs,where) ->
        change_option (bind_change_occurrences occs chg) c (Some (id,where))
@@ -351,7 +354,7 @@ let reduction_clause redexp cl =
 	(None, bind_red_expr_occurrences occs nbcl redexp)) cl
 
 let reduce redexp cl goal =
-  let cl = concrete_clause_of cl goal in
+  let cl = concrete_clause_of (fun () -> pf_ids_of_hyps goal) cl in
   let redexps = reduction_clause redexp cl in
   let tac = tclMAP (fun (where,redexp) ->
     reduct_option (Redexpr.reduction_of_red_expr redexp) where) redexps in
@@ -362,8 +365,8 @@ let reduce redexp cl goal =
 (* Unfolding occurrences of a constant *)
 
 let unfold_constr = function
-  | ConstRef sp -> unfold_in_concl [all_occurrences,EvalConstRef sp]
-  | VarRef id -> unfold_in_concl [all_occurrences,EvalVarRef id]
+  | ConstRef sp -> unfold_in_concl [AllOccurrences,EvalConstRef sp]
+  | VarRef id -> unfold_in_concl [AllOccurrences,EvalVarRef id]
   | _ -> errorlabstrm "unfold_constr" (str "Cannot unfold a non-constant.")
 
 (*******************************************)
@@ -1548,7 +1551,7 @@ let generalize_dep ?(with_let=false) c gl =
       | _ -> None
     else None
   in
-  let cl'' = generalize_goal gl 0 ((all_occurrences,c,body),Anonymous) cl' in
+  let cl'' = generalize_goal gl 0 ((AllOccurrences,c,body),Anonymous) cl' in
   let args = Array.to_list (instance_from_named_context to_quantify_rev) in
   tclTHEN
     (apply_type cl'' (if body = None then c::args else args))
@@ -1566,7 +1569,7 @@ let generalize_gen lconstr =
     (occs,c,None),na) lconstr)
     
 let generalize l =
-  generalize_gen_let (List.map (fun c -> ((all_occurrences,c,None),Anonymous)) l)
+  generalize_gen_let (List.map (fun c -> ((AllOccurrences,c,None),Anonymous)) l)
 
 let pf_get_hyp_val gl id =
   let (_, b, _) = pf_get_hyp gl id in
@@ -1574,7 +1577,7 @@ let pf_get_hyp_val gl id =
 
 let revert hyps gl = 
   let lconstr = List.map (fun id -> 
-    ((all_occurrences, mkVar id, pf_get_hyp_val gl id), Anonymous)) 
+    ((AllOccurrences, mkVar id, pf_get_hyp_val gl id), Anonymous))
     hyps 
   in tclTHEN (generalize_gen_let lconstr) (clear hyps) gl
 
@@ -1621,15 +1624,16 @@ let out_arg = function
 let occurrences_of_hyp id cls =
   let rec hyp_occ = function
       [] -> None
-    | (((b,occs),id'),hl)::_ when id=id' -> Some ((b,List.map out_arg occs),hl)
+    | ((occs,id'),hl)::_ when id=id' ->
+        Some (occurrences_map (List.map out_arg) occs, hl)
     | _::l -> hyp_occ l in
   match cls.onhyps with
-      None -> Some (all_occurrences,InHyp)
+      None -> Some (AllOccurrences,InHyp)
     | Some l -> hyp_occ l
 
 let occurrences_of_goal cls =
-  if cls.concl_occs = no_occurrences_expr then None
-  else Some (on_snd (List.map out_arg) cls.concl_occs)
+  if cls.concl_occs = NoOccurrences then None
+  else Some (occurrences_map (List.map out_arg) cls.concl_occs)
 
 let in_every_hyp cls = (cls.onhyps=None)
 
@@ -1732,7 +1736,7 @@ let letin_abstract id c (test,out) (occs,check_occs) gl =
       | None -> depdecls
       | Some occ ->
           let newdecl = subst_closed_term_occ_decl_modulo occ test d in
-          if occ = (all_occurrences,InHyp) & eq_named_declaration d newdecl then
+          if occ = (AllOccurrences,InHyp) & eq_named_declaration d newdecl then
 	    if check_occs & not (in_every_hyp occs)
 	    then raise (RefinerError (DoesNotOccurIn (c,hyp)))
 	    else depdecls
@@ -3056,9 +3060,9 @@ let induction_without_atomization isrec with_evars elim names lid gl =
 let has_selected_occurrences = function
   | None -> false
   | Some cls ->
-      cls.concl_occs <> all_occurrences_expr ||
+      cls.concl_occs <> AllOccurrences ||
 	cls.onhyps <> None && List.exists (fun ((occs,_),hl) ->
-          occs <> all_occurrences_expr || hl <> InHyp) (Option.get cls.onhyps)
+          occs <> AllOccurrences || hl <> InHyp) (Option.get cls.onhyps)
 
 (* assume that no occurrences are selected *)
 let clear_unselected_context id inhyps cls gl =
@@ -3066,7 +3070,7 @@ let clear_unselected_context id inhyps cls gl =
   | None -> tclIDTAC gl
   | Some cls ->
       if occur_var (pf_env gl) id (pf_concl gl) &&
-	 cls.concl_occs = no_occurrences_expr
+	 cls.concl_occs = NoOccurrences
       then errorlabstrm ""
 	    (str "Conclusion must be mentioned: it depends on " ++ pr_id id
 	     ++ str ".");

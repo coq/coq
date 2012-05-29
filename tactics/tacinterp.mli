@@ -19,6 +19,7 @@ open Genarg
 open Topconstr
 open Mod_subst
 open Redexpr
+open Misctypes
 
 (** Values for interpretation *)
 type value =
@@ -101,8 +102,8 @@ val intern_constr :
   glob_sign -> constr_expr -> glob_constr_and_expr
 
 val intern_constr_with_bindings :
-  glob_sign -> constr_expr * constr_expr Glob_term.bindings ->
-  glob_constr_and_expr * glob_constr_and_expr Glob_term.bindings
+  glob_sign -> constr_expr * constr_expr bindings ->
+  glob_constr_and_expr * glob_constr_and_expr bindings
 
 val intern_hyp :
   glob_sign -> identifier Pp.located -> identifier Pp.located
@@ -114,7 +115,7 @@ val subst_glob_constr_and_expr :
   substitution -> glob_constr_and_expr -> glob_constr_and_expr
 
 val subst_glob_with_bindings :
-  substitution -> glob_constr_and_expr Glob_term.with_bindings -> glob_constr_and_expr Glob_term.with_bindings
+  substitution -> glob_constr_and_expr with_bindings -> glob_constr_and_expr with_bindings
 
 (** Interprets any expression *)
 val val_interp : interp_sign -> goal sigma -> glob_tactic_expr -> Evd.evar_map * value
@@ -132,10 +133,11 @@ val interp_tac_gen : (identifier * value) list -> identifier list ->
 
 val interp_hyp :  interp_sign -> goal sigma -> identifier located -> identifier
 
-val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map -> glob_constr_and_expr Glob_term.bindings -> Evd.evar_map * constr Glob_term.bindings
+val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map ->
+ glob_constr_and_expr bindings -> Evd.evar_map * constr bindings
 
-val interp_open_constr_with_bindings : interp_sign -> Environ.env -> Evd.evar_map -> 
-  glob_constr_and_expr Glob_term.with_bindings -> Evd.evar_map * constr Glob_term.with_bindings
+val interp_open_constr_with_bindings : interp_sign -> Environ.env -> Evd.evar_map ->
+  glob_constr_and_expr with_bindings -> Evd.evar_map * constr with_bindings
 
 (** Initial call for interpretation *)
 val glob_tactic : raw_tactic_expr -> glob_tactic_expr

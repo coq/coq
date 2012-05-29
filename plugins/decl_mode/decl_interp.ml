@@ -19,6 +19,8 @@ open Glob_term
 open Term
 open Pp
 open Compat
+open Decl_kinds
+open Misctypes
 
 (* INTERN *)
 
@@ -194,7 +196,7 @@ let abstract_one_hyp inject h glob =
 let glob_constr_of_hyps inject hyps head =
   List.fold_right (abstract_one_hyp inject) hyps head
 
-let glob_prop = GSort (dummy_loc,GProp Null)
+let glob_prop = GSort (dummy_loc,GProp)
 
 let rec match_hyps blend names constr = function
     [] -> [],substl names constr
@@ -345,13 +347,13 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
       glob_app(dummy_loc,rind,rparams@rparams_rec@dum_args) in
   let pat_vars,aliases,patt = interp_pattern env pat in
   let inject = function
-      Thesis (Plain) -> Glob_term.GSort(dummy_loc,GProp Null)
+      Thesis (Plain) -> Glob_term.GSort(dummy_loc,GProp)
     | Thesis (For rec_occ) ->
 	if not (List.mem rec_occ pat_vars) then
 	  errorlabstrm "suppose it is"
 	    (str "Variable " ++ Nameops.pr_id rec_occ ++
 	       str " does not occur in pattern.");
-	Glob_term.GSort(dummy_loc,GProp Null)
+	Glob_term.GSort(dummy_loc,GProp)
     | This (c,_) -> c in
   let term1 = glob_constr_of_hyps inject hyps glob_prop in
   let loc_ids,npatt =
@@ -361,7 +363,7 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
   let term2 =
     GLetIn(dummy_loc,Anonymous,
 	   GCast(dummy_loc,glob_of_pat npatt,
-		 CastConv (DEFAULTcast,app_ind)),term1) in
+		 CastConv app_ind),term1) in
   let term3=List.fold_right let_in_one_alias aliases term2 in
   let term4=List.fold_right prod_one_id loc_ids term3 in
   let term5=List.fold_right prod_one_hyp params term4 in

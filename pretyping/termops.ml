@@ -16,6 +16,7 @@ open Sign
 open Environ
 open Libnames
 open Nametab
+open Locus
 
 (* Sorts and sort family *)
 
@@ -692,15 +693,6 @@ let replace_term = replace_term_gen eq_constr
    occurrence except the ones in l and b=false, means all occurrences
    except the ones in l *)
 
-type hyp_location_flag = (* To distinguish body and type of local defs *)
-  | InHyp
-  | InHypTypeOnly
-  | InHypValueOnly
-
-type occurrences = bool * int list
-let all_occurrences = (false,[])
-let no_occurrences_in_set = (true,[])
-
 let error_invalid_occurrence l =
   let l = list_uniquize (List.sort Pervasives.compare l) in
   errorlabstrm ""
@@ -715,7 +707,7 @@ let pr_position (cl,pos) =
     | Some (id,InHypValueOnly) -> str " of the body of hypothesis " ++ pr_id id in
   int pos ++ clpos
 
-let error_cannot_unify_occurrences nested (cl2,pos2,t2) (cl1,pos1,t1) (nowhere_except_in,locs) =
+let error_cannot_unify_occurrences nested (cl2,pos2,t2) (cl1,pos1,t1) =
   let s = if nested then "Found nested occurrences of the pattern"
     else "Found incompatible occurrences of the pattern" in
   errorlabstrm ""
@@ -726,10 +718,6 @@ let error_cannot_unify_occurrences nested (cl2,pos2,t2) (cl1,pos1,t1) (nowhere_e
      quote (print_constr t1) ++ strbrk " at position " ++ 
      pr_position (cl1,pos1) ++ str ".")
 
-let is_selected pos (nowhere_except_in,locs) =
-  nowhere_except_in && List.mem pos locs ||
-  not nowhere_except_in && not (List.mem pos locs)
-
 exception NotUnifiable
 
 type 'a testing_function = {
@@ -739,7 +727,8 @@ type 'a testing_function = {
   mutable last_found : ((identifier * hyp_location_flag) option * int * constr) option
 }
 
-let subst_closed_term_occ_gen_modulo (nowhere_except_in,locs as plocs) test cl occ t =
+let subst_closed_term_occ_gen_modulo occs test cl occ t =
+  let (nowhere_except_in,locs) = Locusops.convert_occs occs in
   let maxocc = List.fold_right max locs 0 in
   let pos = ref occ in
   let nested = ref false in
@@ -749,12 +738,12 @@ let subst_closed_term_occ_gen_modulo (nowhere_except_in,locs as plocs) test cl o
       test.last_found <- Some (cl,!pos,t)
     with NotUnifiable ->
       let lastpos = Option.get test.last_found in
-      error_cannot_unify_occurrences !nested (cl,!pos,t) lastpos plocs in
+      error_cannot_unify_occurrences !nested (cl,!pos,t) lastpos in
   let rec substrec k t =
     if nowhere_except_in & !pos > maxocc then t else
     try
       let subst = test.match_fun t in
-      if is_selected !pos plocs then
+      if Locusops.is_selected !pos occs then
         (add_subst t subst; incr pos;
          (* Check nested matching subterms *)
          nested := true; ignore (subst_below k t); nested := false;
@@ -770,15 +759,15 @@ let subst_closed_term_occ_gen_modulo (nowhere_except_in,locs as plocs) test cl o
   let t' = substrec 1 t in
   (!pos, t')
 
-let is_nowhere (nowhere_except_in,locs) = nowhere_except_in && locs = [] 
-
 let check_used_occurrences nbocc (nowhere_except_in,locs) =
   let rest = List.filter (fun o -> o >= nbocc) locs in
   if rest <> [] then error_invalid_occurrence rest
 
-let proceed_with_occurrences f plocs x =
-  if is_nowhere plocs then (* optimization *) x else
-  begin
+let proceed_with_occurrences f occs x =
+  if occs = NoOccurrences then x
+  else begin
+    (* TODO FINISH ADAPTING WITH HUGO *)
+    let plocs = Locusops.convert_occs occs in
     assert (List.for_all (fun x -> x >= 0) (snd plocs));
     let (nbocc,x) = f 1 x in
     check_used_occurrences nbocc plocs;
@@ -792,16 +781,17 @@ let make_eq_test c = {
   last_found = None
 } 
 
-let subst_closed_term_occ_gen plocs pos c t =
-  subst_closed_term_occ_gen_modulo plocs (make_eq_test c) None pos t
+let subst_closed_term_occ_gen occs pos c t =
+  subst_closed_term_occ_gen_modulo occs (make_eq_test c) None pos t
 
-let subst_closed_term_occ plocs c t =
-  proceed_with_occurrences (fun occ -> subst_closed_term_occ_gen plocs occ c)
-    plocs t
-
-let subst_closed_term_occ_modulo plocs test cl t =
+let subst_closed_term_occ occs c t =
   proceed_with_occurrences
-    (subst_closed_term_occ_gen_modulo plocs test cl) plocs t
+    (fun occ -> subst_closed_term_occ_gen occs occ c)
+    occs t
+
+let subst_closed_term_occ_modulo occs test cl t =
+  proceed_with_occurrences
+    (subst_closed_term_occ_gen_modulo occs test cl) occs t
 
 let map_named_declaration_with_hyploc f hyploc acc (id,bodyopt,typ) =
   let f = f (Some (id,hyploc)) in

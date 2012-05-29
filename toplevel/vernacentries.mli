@@ -11,6 +11,7 @@ open Term
 open Vernacinterp
 open Vernacexpr
 open Topconstr
+open Misctypes
 
 (** Vernacular entries *)
 
@@ -28,7 +29,7 @@ type pcoq_hook = {
   solve : int -> unit;
   abort : string -> unit;
   search : searchable -> dir_path list * bool -> unit;
-  print_name : Libnames.reference Genarg.or_by_notation -> unit;
+  print_name : Libnames.reference or_by_notation -> unit;
   print_check : Environ.env -> Environ.unsafe_judgment -> unit;
   print_eval : Reductionops.reduction_function -> Environ.env -> Evd.evar_map -> constr_expr ->
     Environ.unsafe_judgment -> unit;

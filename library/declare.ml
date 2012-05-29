@@ -65,11 +65,11 @@ let cache_variable ((sp,_),o) =
   let impl,opaq,cst = match d with (* Fails if not well-typed *)
     | SectionLocalAssum (ty, impl) ->
         let cst = Global.push_named_assum (id,ty) in
-	let impl = if impl then Lib.Implicit else Lib.Explicit in
+	let impl = if impl then Implicit else Explicit in
 	impl, true, cst
     | SectionLocalDef (c,t,opaq) ->
         let cst = Global.push_named_def (id,c,t) in
-        Lib.Explicit, opaq, cst in
+        Explicit, opaq, cst in
   Nametab.push (Nametab.Until 1) (restrict_path 0 sp) (VarRef id);
   add_section_variable id impl;
   Dischargedhypsmap.set_discharged_hyps sp [];

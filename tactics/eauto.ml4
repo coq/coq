@@ -29,6 +29,9 @@ open Auto
 open Glob_term
 open Hiddentac
 open Tacexpr
+open Misctypes
+open Locus
+open Locusops
 
 let eauto_unif_flags = { auto_unif_flags with Unification.modulo_delta = full_transparent_state }
 
@@ -73,7 +76,7 @@ let prolog_tac l n gl =
   let l = List.map (prepare_hint (pf_env gl)) l in
   let n =
     match n with
-      |  ArgArg n -> n
+      | ArgArg n -> n
       | _ -> error "Prolog called with a non closed argument."
   in
   try (prolog l n gl)
@@ -134,7 +137,7 @@ and e_my_find_search db_list local_db hdc concl =
 	   | Res_pf_THEN_trivial_fail (term,cl) ->
                tclTHEN (unify_e_resolve st (term,cl))
 		 (e_trivial_fail_db db_list local_db)
-	   | Unfold_nth c -> h_reduce (Unfold [all_occurrences_expr,c]) onConcl
+	   | Unfold_nth c -> h_reduce (Unfold [AllOccurrences,c]) onConcl
 	   | Extern tacast -> conclPattern concl p tacast
        in
        (tac,lazy (pr_autotactic t)))
@@ -459,12 +462,12 @@ let autounfolds db occs =
       with Not_found -> errorlabstrm "autounfold" (str "Unknown database " ++ str dbname)
     in
     let (ids, csts) = Hint_db.unfolds db in
-      Cset.fold (fun cst -> cons (all_occurrences, EvalConstRef cst)) csts
-	(Idset.fold (fun id -> cons (all_occurrences, EvalVarRef id)) ids [])) db)
+      Cset.fold (fun cst -> cons (AllOccurrences, EvalConstRef cst)) csts
+	(Idset.fold (fun id -> cons (AllOccurrences, EvalVarRef id)) ids [])) db)
   in unfold_option unfolds
 
 let autounfold db cls gl =
-  let cls = concrete_clause_of cls gl in
+  let cls = concrete_clause_of (fun () -> pf_ids_of_hyps gl) cls in
   let tac = autounfolds db in
   tclMAP (function
     | OnHyp (id,occs,where) -> tac occs (Some (id,where))

@@ -17,6 +17,7 @@ open Topconstr
 open Tacexpr
 open Libnames
 open Compat
+open Misctypes
 
 (** The parser of Coq *)
 
@@ -220,7 +221,7 @@ module Tactic :
     val int_or_var : int or_var Gram.entry
     val red_expr : raw_red_expr Gram.entry
     val simple_tactic : raw_atomic_tactic_expr Gram.entry
-    val simple_intropattern : Genarg.intro_pattern_expr located Gram.entry
+    val simple_intropattern : intro_pattern_expr located Gram.entry
     val tactic_arg : raw_tactic_arg Gram.entry
     val tactic_expr : raw_tactic_expr Gram.entry
     val binder_tactic : raw_tactic_expr Gram.entry

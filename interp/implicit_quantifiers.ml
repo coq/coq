@@ -25,6 +25,7 @@ open Typeclasses_errors
 open Pp
 open Libobject
 open Nameops
+open Misctypes
 (*i*)
 
 let generalizable_table = ref Idpred.empty
@@ -182,7 +183,7 @@ let generalizable_vars_of_glob_constr ?(bound=Idset.empty) ?(allowed=Idset.empty
 	in
 	array_fold_left_i vars_fix vs idl
     | GCast (loc,c,k) -> let v = vars bound vs c in
-	(match k with CastConv (_,t) -> vars bound v t | _ -> v)
+	(match k with CastConv t | CastVM t -> vars bound v t | _ -> v)
     | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> vs
 
   and vars_pattern bound vs (loc,idl,p,c) =

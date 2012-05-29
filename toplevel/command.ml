@@ -31,6 +31,7 @@ open Evarutil
 open Evarconv
 open Notation
 open Indschemes
+open Misctypes
 
 let rec under_binders env f n c =
   if n = 0 then f env Evd.empty c else
@@ -351,7 +352,7 @@ let extract_params indl =
 let extract_inductive indl =
   List.map (fun ((_,indname),_,ar,lc) -> {
     ind_name = indname;
-    ind_arity = Option.cata (fun x -> x) (CSort (dummy_loc, Glob_term.GType None)) ar;
+    ind_arity = Option.cata (fun x -> x) (CSort (dummy_loc,GType None)) ar;
     ind_lc = List.map (fun (_,((_,id),t)) -> (id,t)) lc
   }) indl
 

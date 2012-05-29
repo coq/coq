@@ -7,6 +7,7 @@ open Indfun_common
 open Libnames
 open Glob_term
 open Declarations
+open Misctypes
 
 val do_generate_principle :  
   bool -> 
@@ -17,8 +18,8 @@ val do_generate_principle :
 val functional_induction :  
   bool ->
   Term.constr ->
-  (Term.constr * Term.constr Glob_term.bindings) option ->
-  Genarg.intro_pattern_expr Pp.located option ->
+  (Term.constr * Term.constr bindings) option ->
+  intro_pattern_expr Pp.located option ->
   Proof_type.goal Tacmach.sigma -> Proof_type.goal list Evd.sigma
 
 

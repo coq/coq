@@ -16,12 +16,7 @@ open Pattern
 open Topconstr
 open Term
 open Evd
-
-type 'a and_short_name = 'a * identifier located option
-
-type 'a or_by_notation =
-  | AN of 'a
-  | ByNotation of (loc * string * Notation.delimiters option)
+open Misctypes
 
 val loc_of_or_by_notation : ('a -> loc) -> 'a or_by_notation -> loc
 
@@ -36,16 +31,6 @@ type open_glob_constr = unit * glob_constr_and_expr
 type glob_constr_pattern_and_expr = glob_constr_and_expr * constr_pattern
 
 type 'a with_ebindings = 'a * open_constr bindings
-
-type intro_pattern_expr =
-  | IntroOrAndPattern of or_and_intro_pattern_expr
-  | IntroWildcard
-  | IntroRewrite of bool
-  | IntroIdentifier of identifier
-  | IntroFresh of identifier
-  | IntroForthcoming of bool
-  | IntroAnonymous
-and or_and_intro_pattern_expr = (loc * intro_pattern_expr) list list
 
 val pr_intro_pattern : intro_pattern_expr located -> Pp.std_ppcmds
 val pr_or_and_intro_pattern : or_and_intro_pattern_expr -> Pp.std_ppcmds

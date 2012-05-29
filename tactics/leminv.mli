@@ -4,6 +4,7 @@ open Term
 open Glob_term
 open Proof_type
 open Topconstr
+open Misctypes
 
 val lemInv_gen : quantified_hypothesis -> constr -> tactic
 val lemInvIn_gen : quantified_hypothesis -> constr -> identifier list -> tactic

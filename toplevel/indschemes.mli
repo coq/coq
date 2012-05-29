@@ -15,6 +15,7 @@ open Glob_term
 open Genarg
 open Vernacexpr
 open Ind_tables
+open Misctypes
 
 (** See also Auto_ind_decl, Indrec, Eqscheme, Ind_tables, ... *)
 

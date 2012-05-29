@@ -6,10 +6,13 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
-open Term
-open Proof_type
 open Misctypes
 
-val absurd                      : constr -> tactic
-val contradiction               : constr with_bindings option -> tactic
+val map_cast_type : ('a -> 'b) -> 'a cast_type -> 'b cast_type
+
+val smartmap_cast_type : ('a -> 'a) -> 'a cast_type -> 'a cast_type
+
+(** Printing of [intro_pattern] *)
+
+val pr_intro_pattern : intro_pattern_expr Pp.located -> Pp.std_ppcmds
+val pr_or_and_intro_pattern : or_and_intro_pattern_expr -> Pp.std_ppcmds

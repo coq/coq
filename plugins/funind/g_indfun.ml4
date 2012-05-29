@@ -17,19 +17,20 @@ open Genarg
 open Pcoq
 open Tacticals
 open Constr
+open Misctypes
 
 let pr_binding prc = function
-  | loc, Glob_term.NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ cut () ++ prc c)
-  | loc, Glob_term.AnonHyp n, c -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
+  | loc, NamedHyp id, c -> hov 1 (Ppconstr.pr_id id ++ str " := " ++ cut () ++ prc c)
+  | loc, AnonHyp n, c -> hov 1 (int n ++ str " := " ++ cut () ++ prc c)
 
 let pr_bindings prc prlc = function
-  | Glob_term.ImplicitBindings l ->
+  | ImplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
       pr_sequence prc l
-  | Glob_term.ExplicitBindings l ->
+  | ExplicitBindings l ->
       brk (1,1) ++ str "with" ++ brk (1,1) ++
         pr_sequence (fun b -> str"(" ++ pr_binding prlc b ++ str")") l
-  | Glob_term.NoBindings -> mt ()
+  | NoBindings -> mt ()
 
 let pr_with_bindings prc prlc (c,bl) =
   prc c ++ hv 0 (pr_bindings prc prlc bl)
@@ -308,7 +309,7 @@ let mkEq typ c1 c2 =
 let poseq_unsafe idunsafe cstr gl =
   let typ = Tacmach.pf_type_of gl cstr in
   tclTHEN
-    (Tactics.letin_tac None (Name idunsafe) cstr None allHypsAndConcl)
+    (Tactics.letin_tac None (Name idunsafe) cstr None Locusops.allHypsAndConcl)
     (tclTHENFIRST
       (Tactics.assert_tac Anonymous (mkEq typ (mkVar idunsafe) cstr))
       Tactics.reflexivity)

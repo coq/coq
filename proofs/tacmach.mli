@@ -18,6 +18,7 @@ open Redexpr
 open Tacexpr
 open Glob_term
 open Pattern
+open Locus
 
 (** Operations for handling terms under a local typing context. *)
 
@@ -71,7 +72,7 @@ val pf_nf_betaiota             : goal sigma -> constr -> constr
 val pf_reduce_to_quantified_ind : goal sigma -> types -> inductive * types
 val pf_reduce_to_atomic_ind     : goal sigma -> types -> inductive * types
 val pf_compute                 : goal sigma -> constr -> constr
-val pf_unfoldn    : (Termops.occurrences * evaluable_global_reference) list
+val pf_unfoldn    : (occurrences * evaluable_global_reference) list
         -> goal sigma -> constr -> constr
 
 val pf_const_value : goal sigma -> constant -> constr

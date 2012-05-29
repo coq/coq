@@ -8,9 +8,9 @@
 
 (** Informal mathematical status of declarations *)
 
-type locality =
-  | Local
-  | Global
+type locality = Local | Global
+
+type binding_kind = Explicit | Implicit
 
 type theorem_kind =
   | Theorem

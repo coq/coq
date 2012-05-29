@@ -3,6 +3,9 @@ open Glob_term
 open Errors
 open Util
 open Names
+open Decl_kinds
+open Misctypes
+
 (* Ocaml 3.06 Map.S does not handle is_empty *)
 let idmap_is_empty m = m = Idmap.empty
 
@@ -19,7 +22,7 @@ let mkGLetIn(n,t,b) = GLetIn(dummy_loc,n,t,b)
 let mkGCases(rto,l,brl) = GCases(dummy_loc,Term.RegularStyle,rto,l,brl)
 let mkGSort s = GSort(dummy_loc,s)
 let mkGHole () = GHole(dummy_loc,Evar_kinds.BinderType Anonymous)
-let mkGCast(b,t) = GCast(dummy_loc,b,CastConv (Term.DEFAULTcast,t))
+let mkGCast(b,t) = GCast(dummy_loc,b,CastConv t)
 
 (*
   Some basic functions to decompose glob_constrs
@@ -180,10 +183,9 @@ let change_vars =
       | GRec _ -> error "Local (co)fixes are not supported"
       | GSort _ -> rt
       | GHole _ -> rt
-      | GCast(loc,b,CastConv (k,t)) ->
-	  GCast(loc,change_vars mapping b, CastConv (k,change_vars mapping t))
-      | GCast(loc,b,CastCoerce) ->
-	  GCast(loc,change_vars mapping b,CastCoerce)
+      | GCast(loc,b,c) ->
+	  GCast(loc,change_vars mapping b,
+		Miscops.map_cast_type (change_vars mapping) c)
   and change_vars_br mapping ((loc,idl,patl,res) as br) =
     let new_mapping = List.fold_right Idmap.remove idl mapping in
     if idmap_is_empty new_mapping
@@ -360,10 +362,9 @@ let rec alpha_rt excluded rt =
     | GRec _ -> error "Not handled GRec"
     | GSort _ -> rt
     | GHole _ -> rt
-    | GCast (loc,b,CastConv (k,t)) ->
-	GCast(loc,alpha_rt excluded b,CastConv(k,alpha_rt excluded t))
-    | GCast (loc,b,CastCoerce) ->
-	GCast(loc,alpha_rt excluded b,CastCoerce)
+    | GCast (loc,b,c) ->
+	GCast(loc,alpha_rt excluded b,
+	      Miscops.map_cast_type (alpha_rt excluded) c)
     | GApp(loc,f,args) ->
 	GApp(loc,
 	     alpha_rt excluded f,
@@ -411,7 +412,7 @@ let is_free_in id =
     | GRec _ -> raise (UserError("",str "Not handled GRec"))
     | GSort _ -> false
     | GHole _ -> false
-    | GCast (_,b,CastConv (_,t)) -> is_free_in b || is_free_in t
+    | GCast (_,b,(CastConv t|CastVM t)) -> is_free_in b || is_free_in t
     | GCast (_,b,CastCoerce) -> is_free_in b
   and is_free_in_br (_,ids,_,rt) =
     (not (List.mem id ids)) && is_free_in rt
@@ -507,10 +508,9 @@ let replace_var_by_term x_id term =
       | GRec _ -> raise (UserError("",str "Not handled GRec"))
       | GSort _ -> rt
       | GHole _ -> rt
-      | GCast(loc,b,CastConv(k,t)) ->
-	  GCast(loc,replace_var_by_pattern b,CastConv(k,replace_var_by_pattern t))
-      | GCast(loc,b,CastCoerce) ->
-	  GCast(loc,replace_var_by_pattern b,CastCoerce)
+      | GCast(loc,b,c) ->
+	  GCast(loc,replace_var_by_pattern b,
+		Miscops.map_cast_type replace_var_by_pattern c)
   and replace_var_by_pattern_br ((loc,idl,patl,res) as br) =
     if List.exists (fun id -> id_ord id x_id == 0) idl
     then br
@@ -593,7 +593,7 @@ let ids_of_glob_constr c =
       | GLambda (loc,na,k,ty,c) -> idof na :: ids_of_glob_constr [] ty @ ids_of_glob_constr [] c @ acc
       | GProd (loc,na,k,ty,c) -> idof na :: ids_of_glob_constr [] ty @ ids_of_glob_constr [] c @ acc
       | GLetIn (loc,na,b,c) -> idof na :: ids_of_glob_constr [] b @ ids_of_glob_constr [] c @ acc
-      | GCast (loc,c,CastConv(k,t)) -> ids_of_glob_constr [] c @ ids_of_glob_constr [] t @ acc
+      | GCast (loc,c,(CastConv t|CastVM t)) -> ids_of_glob_constr [] c @ ids_of_glob_constr [] t @ acc
       | GCast (loc,c,CastCoerce) -> ids_of_glob_constr [] c @ acc
       | GIf (loc,c,(na,po),b1,b2) -> ids_of_glob_constr [] c @ ids_of_glob_constr [] b1 @ ids_of_glob_constr [] b2 @ acc
       | GLetTuple (_,nal,(na,po),b,c) ->
@@ -661,10 +661,9 @@ let zeta_normalize =
       | GRec _ -> raise (UserError("",str "Not handled GRec"))
       | GSort _ -> rt
       | GHole _ -> rt
-      | GCast(loc,b,CastConv(k,t)) ->
-	  GCast(loc,zeta_normalize_term b,CastConv(k,zeta_normalize_term t))
-      | GCast(loc,b,CastCoerce) ->
-	  GCast(loc,zeta_normalize_term b,CastCoerce)
+      | GCast(loc,b,c) ->
+	  GCast(loc,zeta_normalize_term b,
+                Miscops.map_cast_type zeta_normalize_term c)
   and zeta_normalize_br (loc,idl,patl,res) =
     (loc,idl,patl,zeta_normalize_term res)
   in
@@ -702,8 +701,9 @@ let expand_as =
 	  GIf(loc,expand_as map e,(na,Option.map (expand_as map) po),
 	      expand_as map br1, expand_as map br2)
       | GRec _ ->  error "Not handled GRec"
-      | GCast(loc,b,CastConv(kind,t)) -> GCast(loc,expand_as map b,CastConv(kind,expand_as map t))
-      | GCast(loc,b,CastCoerce) -> GCast(loc,expand_as map b,CastCoerce)
+      | GCast(loc,b,c) ->
+	  GCast(loc,expand_as map b,
+		Miscops.map_cast_type (expand_as map) c)
       | GCases(loc,sty,po,el,brl) ->
 	  GCases(loc, sty, Option.map (expand_as map) po, List.map (fun (rt,t) -> expand_as map rt,t) el,
 		List.map (expand_as_br map) brl)

@@ -21,6 +21,9 @@ open Pattern
 open Glob_term
 open Constrextern
 open Termops
+open Decl_kinds
+open Misctypes
+open Locus
 (*i*)
 
 let sep_v = fun _ -> str"," ++ spc()
@@ -110,8 +113,8 @@ let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
 let pr_universe = Univ.pr_uni
 
 let pr_glob_sort = function
-  | GProp Term.Null -> str "Prop"
-  | GProp Term.Pos -> str "Set"
+  | GProp -> str "Prop"
+  | GSet -> str "Set"
   | GType u -> hov 0 (str "Type" ++ pr_opt (pr_in_comment pr_universe) u)
 
 let pr_id = pr_id
@@ -253,7 +256,7 @@ let pr_binder_among_many pr_c = function
       pr_binder true pr_c (nal,k,t)
   | LocalRawDef (na,c) ->
       let c,topt = match c with
-        | CCast(_,c, CastConv (_,t)) -> c, t
+        | CCast(_,c, (CastConv t|CastVM t)) -> c, t
         | _ -> c, CHole (dummy_loc, None) in
       surround (pr_lname na ++ pr_opt_type pr_c topt ++
          str":=" ++ cut() ++ pr_c c)
@@ -530,13 +533,12 @@ let pr pr sep inherited a =
   | CEvar (_,n,l) -> pr_evar (pr mt) n l, latom
   | CPatVar (_,(_,p)) -> str "?" ++ pr_patvar p, latom
   | CSort (_,s) -> pr_glob_sort s, latom
-  | CCast (_,a,CastConv (k,b)) ->
-      let s = match k with VMcast -> "<:" | DEFAULTcast | REVERTcast -> ":" in
-      hv 0 (pr mt (lcast,L) a ++ cut () ++ str s ++ pr mt (-lcast,E) b),
-      lcast
-  | CCast (_,a,CastCoerce) ->
-      hv 0 (pr mt (lcast,L) a ++ cut () ++ str ":>"),
-      lcast
+  | CCast (_,a,b) ->
+      hv 0 (pr mt (lcast,L) a ++ cut () ++
+	    match b with
+	      | CastConv b -> str ":" ++ pr mt (-lcast,E) b
+	      | CastVM b -> str "<:" ++ pr mt (-lcast,E) b
+	      | CastCoerce -> str ":>"), lcast
   | CNotation (_,"( _ )",([t],[],[])) ->
       pr (fun()->str"(") (max_int,L) t ++ str")", latom
   | CNotation (_,s,env) ->
@@ -581,12 +583,15 @@ let pr_cases_pattern_expr = pr_patt ltop
 
 let pr_binders = pr_undelimited_binders spc (pr ltop)
 
-let pr_with_occurrences pr occs =
+let pr_with_occurrences pr (occs,c) =
   match occs with
-    ((false,[]),c) -> pr c
-  | ((nowhere_except_in,nl),c) ->
+    | AllOccurrences -> pr c
+    | NoOccurrences -> failwith "pr_with_occurrences: no occurrences"
+    | OnlyOccurrences nl ->
       hov 1 (pr c ++ spc() ++ str"at " ++
-        (if nowhere_except_in then mt() else str "- ") ++
+        hov 0 (prlist_with_sep spc (pr_or_var int) nl))
+    | AllOccurrencesBut nl ->
+      hov 1 (pr c ++ spc() ++ str"at - " ++
         hov 0 (prlist_with_sep spc (pr_or_var int) nl))
 
 let pr_red_flag pr r =

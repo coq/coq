@@ -34,6 +34,7 @@ open Redexpr
 open Syntax_def
 open Lemmas
 open Declaremods
+open Misctypes
 
 (* Pcoq hooks *)
 
@@ -42,7 +43,7 @@ type pcoq_hook = {
   solve : int -> unit;
   abort : string -> unit;
   search : searchable -> dir_path list * bool -> unit;
-  print_name : reference Genarg.or_by_notation -> unit;
+  print_name : reference or_by_notation -> unit;
   print_check : Environ.env -> Environ.unsafe_judgment -> unit;
   print_eval : Reductionops.reduction_function -> Environ.env -> Evd.evar_map -> constr_expr ->
     Environ.unsafe_judgment -> unit;
@@ -1319,8 +1320,8 @@ let vernac_search s r =
       Search.search_about (List.map (on_snd interp_search_about_item) sl) r
 
 let vernac_locate = function
-  | LocateTerm (Genarg.AN qid) -> msgnl (print_located_qualid qid)
-  | LocateTerm (Genarg.ByNotation (_,ntn,sc)) ->
+  | LocateTerm (AN qid) -> msgnl (print_located_qualid qid)
+  | LocateTerm (ByNotation (_,ntn,sc)) ->
       ppnl
         (Notation.locate_notation
           (Constrextern.without_symbols pr_lglob_constr) ntn sc)

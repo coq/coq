@@ -17,7 +17,7 @@ open Errors
 open Util
 open Names
 open Libnames
-open Genarg
+open Misctypes
 open Syntax_def
 open Topconstr
 

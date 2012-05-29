@@ -16,6 +16,7 @@ open Glob_term
 open Termops
 open Pattern
 open Libnames
+open Locus
 
 type reduction_tactic_error =
     InvalidAbstraction of env * constr * (env * Type_errors.type_error)

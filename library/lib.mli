@@ -176,10 +176,9 @@ val init : unit -> unit
 val set_xml_open_section : (Names.identifier -> unit) -> unit
 val set_xml_close_section : (Names.identifier -> unit) -> unit
 
-type binding_kind = Explicit | Implicit
-
 (** {6 Section management for discharge } *)
-type variable_info = Names.identifier * binding_kind * Term.constr option * Term.types
+type variable_info = Names.identifier * Decl_kinds.binding_kind *
+    Term.constr option * Term.types
 type variable_context = variable_info list
 
 val instance_from_variable_context : variable_context -> Names.identifier array
@@ -191,7 +190,7 @@ val section_segment_of_mutual_inductive: Names.mutual_inductive -> variable_cont
 val section_instance : Libnames.global_reference -> Names.identifier array
 val is_in_section : Libnames.global_reference -> bool
 
-val add_section_variable : Names.identifier -> binding_kind -> unit
+val add_section_variable : Names.identifier -> Decl_kinds.binding_kind -> unit
 
 val add_section_constant : Names.constant -> Sign.named_context -> unit
 val add_section_kn : Names.mutual_inductive -> Sign.named_context -> unit

@@ -21,6 +21,7 @@ open Closure
 open RedFlags
 open Libobject
 open Summary
+open Misctypes
 
 (* call by value normalisation function using the virtual machine *)
 let cbv_vm env _ c =
@@ -169,8 +170,8 @@ let out_arg = function
   | ArgVar _ -> anomaly "Unevaluated or_var variable"
   | ArgArg x -> x
 
-let out_with_occurrences ((b,l),c) =
-  ((b,List.map out_arg l), c)
+let out_with_occurrences (occs,c) =
+  (Locusops.occurrences_map (List.map out_arg) occs, c)
 
 let rec reduction_of_red_expr = function
   | Red internal ->

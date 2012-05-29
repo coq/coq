@@ -16,7 +16,7 @@ open Refiner
 open Proof_type
 open Evd
 open Sign
-open Termops
+open Locus
 
 (* The instantiate tactic *)
 
@@ -55,4 +55,4 @@ let let_evar name typ gls =
   let src = (dummy_loc,Evar_kinds.GoalEvar) in
   let sigma',evar = Evarutil.new_evar gls.sigma (pf_env gls) ~src typ in
   Refiner.tclTHEN (Refiner.tclEVARS sigma')
-    (Tactics.letin_tac None name evar None nowhere) gls
+    (Tactics.letin_tac None name evar None Locusops.nowhere) gls

@@ -8,6 +8,7 @@ open Indfun_common
 open Errors
 open Util
 open Glob_termops
+open Misctypes
 
 let observe strm =
   if do_observe ()
@@ -1258,7 +1259,8 @@ let rec rebuild_return_type rt =
 	Topconstr.CProdN(loc,n,rebuild_return_type t')
     | Topconstr.CLetIn(loc,na,t,t') ->
 	Topconstr.CLetIn(loc,na,t,rebuild_return_type t')
-    | _ -> Topconstr.CProdN(dummy_loc,[[dummy_loc,Names.Anonymous],Topconstr.Default Glob_term.Explicit,rt],
+    | _ -> Topconstr.CProdN(dummy_loc,[[dummy_loc,Names.Anonymous],
+				       Topconstr.Default Decl_kinds.Explicit,rt],
 			    Topconstr.CSort(dummy_loc,GType None))
 
 

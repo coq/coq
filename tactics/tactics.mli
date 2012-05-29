@@ -28,6 +28,8 @@ open Glob_term
 open Pattern
 open Termops
 open Unification
+open Misctypes
+open Locus
 
 (** Main tactics. *)
 

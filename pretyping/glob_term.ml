@@ -15,6 +15,9 @@ open Sign
 open Term
 open Libnames
 open Nametab
+open Decl_kinds
+open Misctypes
+open Locus
 (*i*)
 
 (* Untyped intermediate terms, after ASTs and before constr. *)
@@ -28,27 +31,6 @@ type cases_pattern =
 let cases_pattern_loc = function
     PatVar(loc,_) -> loc
   | PatCstr(loc,_,_,_) -> loc
-
-type patvar = identifier
-
-type glob_sort = GProp of Term.contents | GType of Univ.universe option
-
-type binding_kind = Lib.binding_kind = Explicit | Implicit
-
-type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
-
-type 'a explicit_bindings = (loc * quantified_hypothesis * 'a) list
-
-type 'a bindings =
-  | ImplicitBindings of 'a list
-  | ExplicitBindings of 'a explicit_bindings
-  | NoBindings
-
-type 'a with_bindings = 'a * 'a bindings
-
-type 'a cast_type =
-  | CastConv of cast_kind * 'a
-  | CastCoerce (* Cast to a base type (eg, an underlying inductive type) *)
 
 type glob_constr =
   | GRef of (loc * global_reference)
@@ -142,7 +124,7 @@ let map_glob_constr_left_to_right f = function
       GRec (loc,fk,idl,comp1,comp2,comp3)
   | GCast (loc,c,k) -> 
       let comp1 = f c in
-      let comp2 = match k with CastConv (k,t) -> CastConv (k, f t) | x -> x in
+      let comp2 = Miscops.map_cast_type f k in
       GCast (loc,comp1,comp2)
   | (GVar _ | GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) as x -> x
 
@@ -204,7 +186,7 @@ let fold_glob_constr f acc =
 	  (List.fold_left (fun acc (na,k,bbd,bty) ->
 	    fold (Option.fold_left fold acc bbd) bty)) acc bl in
 	Array.fold_left fold (Array.fold_left fold acc tyl) bv
-    | GCast (_,c,k) -> fold (match k with CastConv (_, t) -> fold acc t | CastCoerce -> acc) c
+    | GCast (_,c,k) -> fold (match k with CastConv t | CastVM t -> fold acc t | CastCoerce -> acc) c
     | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> acc
 
   and fold_pattern acc (_,idl,p,c) = fold acc c
@@ -243,7 +225,7 @@ let occur_glob_constr id =
                 (na=Name id or not(occur_fix bl)) in
           occur_fix bl)
           idl bl tyl bv)
-    | GCast (loc,c,k) -> (occur c) or (match k with CastConv (_, t) -> occur t | CastCoerce -> false)
+    | GCast (loc,c,k) -> (occur c) or (match k with CastConv t | CastVM t -> occur t | CastCoerce -> false)
     | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> false
 
   and occur_pattern (loc,idl,p,c) = not (List.mem id idl) & (occur c)
@@ -301,7 +283,7 @@ let free_glob_vars  =
 	in
 	array_fold_left_i vars_fix vs idl
     | GCast (loc,c,k) -> let v = vars bounded vs c in
-	(match k with CastConv (_,t) -> vars bounded v t | _ -> v)
+	(match k with CastConv t | CastVM t -> vars bounded v t | _ -> v)
     | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> vs
 
   and vars_pattern bounded vs (loc,idl,p,c) =
@@ -379,17 +361,6 @@ type 'a glob_red_flag = {
 
 let all_flags =
   {rBeta = true; rIota = true; rZeta = true; rDelta = true; rConst = []}
-
-type 'a or_var = ArgArg of 'a | ArgVar of identifier located
-
-type occurrences_expr = bool * int or_var list
-
-let all_occurrences_expr_but l = (false,l)
-let no_occurrences_expr_but l = (true,l)
-let all_occurrences_expr = (false,[])
-let no_occurrences_expr = (true,[])
-
-type 'a with_occurrences = occurrences_expr * 'a
 
 type ('a,'b,'c) red_expr_gen =
   | Red of bool

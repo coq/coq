@@ -17,6 +17,7 @@ open Pattern
 open Ppextend
 open Environ
 open Evd
+open Misctypes
 
 val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
 val pr_or_metaid : ('a -> std_ppcmds) -> 'a or_metaid -> std_ppcmds

@@ -18,6 +18,7 @@ open Declarations
 open Formula
 open Sequent
 open Libnames
+open Locus
 
 type seqtac= (Sequent.t -> tactic) -> Sequent.t -> tactic
 
@@ -203,8 +204,8 @@ let ll_forall_tac prod backtrack id continue seq=
 let constant str = Coqlib.gen_constant "User" ["Init";"Logic"] str
 
 let defined_connectives=lazy
-  [all_occurrences,EvalConstRef (destConst (constant "not"));
-   all_occurrences,EvalConstRef (destConst (constant "iff"))]
+  [AllOccurrences,EvalConstRef (destConst (constant "not"));
+   AllOccurrences,EvalConstRef (destConst (constant "iff"))]
 
 let normalize_evaluables=
   onAllHypsAndConcl

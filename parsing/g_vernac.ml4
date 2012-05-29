@@ -23,6 +23,7 @@ open Genarg
 open Ppextend
 open Goptions
 open Declaremods
+open Misctypes
 
 open Prim
 open Constr
@@ -240,7 +241,7 @@ GEXTEND Gram
   def_body:
     [ [ bl = binders; ":="; red = reduce; c = lconstr ->
       (match c with
-          CCast(_,c, Glob_term.CastConv (Term.DEFAULTcast,t)) -> DefineBody (bl, red, c, Some t)
+          CCast(_,c, CastConv t) -> DefineBody (bl, red, c, Some t)
         | _ -> DefineBody (bl, red, c, None))
     | bl = binders; ":"; t = lconstr; ":="; red = reduce; c = lconstr ->
 	DefineBody (bl, red, c, Some t)
@@ -343,7 +344,7 @@ GEXTEND Gram
 	   (oc,DefExpr (id,mkCLambdaN loc l b,Some (mkCProdN loc l t)))
       | l = binders; ":="; b = lconstr -> fun id ->
          match b with
-	 | CCast(_,b, Glob_term.CastConv (_, t)) ->
+	 | CCast(_,b, (CastConv t|CastVM t)) ->
 	     (None,DefExpr(id,mkCLambdaN loc l b,Some (mkCProdN loc l t)))
          | _ ->
 	     (None,DefExpr(id,mkCLambdaN loc l b,None)) ] ]
@@ -568,7 +569,7 @@ GEXTEND Gram
 	  VernacContext c
 
       | IDENT "Instance"; namesup = instance_name; ":";
-	 expl = [ "!" -> Glob_term.Implicit | -> Glob_term.Explicit ] ; t = operconstr LEVEL "200";
+	 expl = [ "!" -> Decl_kinds.Implicit | -> Decl_kinds.Explicit ] ; t = operconstr LEVEL "200";
 	 pri = OPT [ "|"; i = natural -> i ] ;
 	 props = [ ":="; "{"; r = record_declaration; "}" -> Some r |
 	     ":="; c = lconstr -> Some c | -> None ] ->
@@ -714,7 +715,7 @@ GEXTEND Gram
 
       (* Hack! Should be in grammar_ext, but camlp4 factorize badly *)
       | IDENT "Declare"; IDENT "Instance"; namesup = instance_name; ":";
-	 expl = [ "!" -> Glob_term.Implicit | -> Glob_term.Explicit ] ; t = operconstr LEVEL "200";
+	 expl = [ "!" -> Decl_kinds.Implicit | -> Decl_kinds.Explicit ] ; t = operconstr LEVEL "200";
 	 pri = OPT [ "|"; i = natural -> i ] ->
 	   VernacInstance (true, not (use_section_locality ()),
 			   snd namesup, (fst namesup, expl, t),

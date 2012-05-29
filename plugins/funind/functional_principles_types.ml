@@ -15,6 +15,7 @@ open Tacticals
 open Tactics
 open Indfun_common
 open Functional_principles_proofs
+open Misctypes
 
 exception Toberemoved_with_rel of int*constr
 exception Toberemoved
@@ -504,7 +505,7 @@ let get_funs_constant mp dp =
 exception No_graph_found
 exception Found_type of int
 
-let make_scheme (fas : (constant*Glob_term.glob_sort) list) : Entries.definition_entry list =
+let make_scheme (fas : (constant*glob_sort) list) : Entries.definition_entry list =
   let env = Global.env ()
   and sigma = Evd.empty in
   let funs = List.map fst fas in

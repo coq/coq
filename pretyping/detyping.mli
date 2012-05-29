@@ -15,6 +15,7 @@ open Environ
 open Glob_term
 open Termops
 open Mod_subst
+open Misctypes
 
 val subst_cases_pattern : substitution -> cases_pattern -> cases_pattern
 

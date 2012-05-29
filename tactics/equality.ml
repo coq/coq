@@ -45,6 +45,9 @@ open Clenvtac
 open Evd
 open Ind_tables
 open Eqschemes
+open Locus
+open Locusops
+open Misctypes
 
 (* Options *)
 
@@ -317,7 +320,7 @@ let rewrite_side_tac tac sidetac = side_tac tac (Option.map fst sidetac)
 
 let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
     ((c,l) : constr with_bindings) with_evars gl =
-  if occs <> all_occurrences then (
+  if occs <> AllOccurrences then (
     rewrite_side_tac (!general_rewrite_clause cls lft2rgt occs (c,l) ~new_goals:[]) tac gl)
   else
     let env = pf_env gl in
@@ -367,7 +370,7 @@ let general_rewrite_in l2r occs frzevars dep_proof_ok ?tac id c =
     frzevars dep_proof_ok ?tac (c,NoBindings)
 
 let general_multi_rewrite l2r with_evars ?tac c cl =
-  let occs_of = on_snd (List.fold_left
+  let occs_of = occurrences_map (List.fold_left
     (fun acc ->
       function ArgArg x -> x :: acc | ArgVar _ -> acc)
     [])
@@ -383,7 +386,7 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	      (general_rewrite_ebindings_in l2r (occs_of occs) false true ?tac id c with_evars)
 	      (do_hyps l)
 	in
-	if cl.concl_occs = no_occurrences_expr then do_hyps l else
+	if cl.concl_occs = NoOccurrences then do_hyps l else
 	  tclTHENFIRST
 	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) false true ?tac c with_evars)
 	   (do_hyps l)
@@ -394,7 +397,7 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	  | [] -> (fun gl -> error "Nothing to rewrite.")
 	  | id :: l ->
 	    tclIFTHENTRYELSEMUST
-	     (general_rewrite_ebindings_in l2r all_occurrences false true ?tac id c with_evars)
+	     (general_rewrite_ebindings_in l2r AllOccurrences false true ?tac id c with_evars)
 	     (do_hyps_atleastonce l)
 	in
 	let do_hyps gl =
@@ -404,7 +407,7 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	      Idset.fold (fun id l -> list_remove id l) ids_in_c (pf_ids_of_hyps gl)
 	  in do_hyps_atleastonce ids gl
 	in
-	if cl.concl_occs = no_occurrences_expr then do_hyps else
+	if cl.concl_occs = NoOccurrences then do_hyps else
 	  tclIFTHENTRYELSEMUST
 	   (general_rewrite_ebindings l2r (occs_of cl.concl_occs) false true ?tac c with_evars)
 	   do_hyps
@@ -431,8 +434,8 @@ let general_multi_multi_rewrite with_evars l cl tac =
     | (l2r,m,c)::l -> tclTHENFIRST (doN l2r c m) (loop l)
   in loop l
 
-let rewriteLR = general_rewrite true all_occurrences true true
-let rewriteRL = general_rewrite false all_occurrences true true
+let rewriteLR = general_rewrite true AllOccurrences true true
+let rewriteRL = general_rewrite false AllOccurrences true true
 
 (* Replacing tactics *)
 
@@ -1439,7 +1442,7 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) gl =
   tclTHENLIST
     ((if need_rewrite then
       [generalize abshyps;
-       general_rewrite dir all_occurrences true dep_proof_ok (mkVar hyp);
+       general_rewrite dir AllOccurrences true dep_proof_ok (mkVar hyp);
        thin dephyps;
        tclMAP introtac depdecls]
       else

@@ -20,6 +20,8 @@ open Libnames
 open Nametab
 open Detyping
 open Tok
+open Misctypes
+open Decl_kinds
 
 (* Generic xml parser without raw data *)
 
@@ -96,8 +98,8 @@ let inductive_of_cdata a = match global_of_cdata a with
 let ltacref_of_cdata (loc,a) = (loc,locate_tactic (uri_of_data a))
 
 let sort_of_cdata (loc,a) = match a with
-  | "Prop" -> GProp Null
-  | "Set" -> GProp Pos
+  | "Prop" -> GProp
+  | "Set" -> GSet
   | "Type" -> GType None
   | _ -> user_err_loc (loc,"",str "sort expected.")
 
@@ -191,7 +193,7 @@ let rec interp_xml_constr = function
       let ln,lc,lt = list_split3 (List.map interp_xml_CoFixFunction xl) in
       GRec (loc, GCoFix (get_xml_noFun al), Array.of_list ln, [||], Array.of_list lc, Array.of_list lt)
   | XmlTag (loc,"CAST",al,[x1;x2]) ->
-      GCast (loc, interp_xml_term x1, CastConv (DEFAULTcast, interp_xml_type x2))
+      GCast (loc, interp_xml_term x1, CastConv (interp_xml_type x2))
   | XmlTag (loc,"SORT",al,[]) ->
       GSort (loc, get_xml_sort al)
   | XmlTag (loc,s,_,_) ->

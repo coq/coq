@@ -395,14 +395,14 @@ let find_opening_node id =
    - the list of variables on which each inductive depends in this section
    - the list of substitution to do at section closing
 *)
-type binding_kind = Explicit | Implicit
 
-type variable_info = Names.identifier * binding_kind * Term.constr option * Term.types
+type variable_info = Names.identifier * Decl_kinds.binding_kind * Term.constr option * Term.types
 type variable_context = variable_info list
 type abstr_list = variable_context Names.Cmap.t * variable_context Names.Mindmap.t
 
 let sectab =
-  ref ([] : ((Names.identifier * binding_kind) list * Cooking.work_list * abstr_list) list)
+  ref ([] : ((Names.identifier * Decl_kinds.binding_kind) list *
+		Cooking.work_list * abstr_list) list)
 
 let add_section () =
   sectab := ([],(Names.Cmap.empty,Names.Mindmap.empty),(Names.Cmap.empty,Names.Mindmap.empty)) :: !sectab

@@ -37,6 +37,8 @@ open Command
 open Libnames
 open Evd
 open Compat
+open Locus
+open Misctypes
 
 let typeclasses_db = "typeclass_instances"
 let typeclasses_debug = ref false
@@ -177,7 +179,7 @@ and e_my_find_search db_list local_db hdc complete concl =
 	  | Res_pf_THEN_trivial_fail (term,cl) ->
               tclTHEN (with_prods nprods (term,cl) (unify_e_resolve flags))
 	        (if complete then tclIDTAC else e_trivial_fail_db db_list local_db)
-	  | Unfold_nth c -> tclWEAK_PROGRESS (unfold_in_concl [all_occurrences,c])
+	  | Unfold_nth c -> tclWEAK_PROGRESS (unfold_in_concl [AllOccurrences,c])
 	  | Extern tacast -> 
 (* 	    tclTHEN *)
 (* 	      (fun gl -> Refiner.tclEVARS (mark_unresolvables (project gl)) gl) *)
@@ -807,7 +809,7 @@ let rec head_of_constr t =
 TACTIC EXTEND head_of_constr
   [ "head_of_constr" ident(h) constr(c) ] -> [
     let c = head_of_constr c in
-      letin_tac None (Name h) c None allHyps
+      letin_tac None (Name h) c None Locusops.allHyps
   ]
 END
 

@@ -21,6 +21,7 @@ open Ring
 open Mutils
 open Glob_term
 open Errors
+open Misctypes
 
 let out_arg = function
   | ArgVar _ -> anomaly "Unevaluated or_var variable"

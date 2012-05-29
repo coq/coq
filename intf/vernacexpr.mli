@@ -9,7 +9,7 @@
 open Pp
 open Names
 open Tacexpr
-open Genarg
+open Misctypes
 open Topconstr
 open Decl_kinds
 open Libnames
@@ -133,7 +133,7 @@ type option_ref_value =
   | StringRefValue of string
   | QualidRefValue of reference
 
-type sort_expr = Glob_term.glob_sort
+type sort_expr = glob_sort
 
 type definition_expr =
   | ProveBody of local_binder list * constr_expr

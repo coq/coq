@@ -1,3 +1,4 @@
+Locusops
 Termops
 Evd
 Reductionops
@@ -13,6 +14,7 @@ Recordops
 Evarconv
 Arguments_renaming
 Typing
+Miscops
 Glob_term
 Pattern
 Matching

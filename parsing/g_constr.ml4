@@ -18,6 +18,8 @@ open Topconstr
 open Util
 open Tok
 open Compat
+open Misctypes
+open Decl_kinds
 
 let constr_kw =
   [ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "in"; "for";
@@ -29,7 +31,7 @@ let _ = List.iter Lexer.add_keyword constr_kw
 
 let mk_cast = function
     (c,(_,None)) -> c
-  | (c,(_,Some ty)) -> CCast(join_loc (constr_loc c) (constr_loc ty), c, CastConv (DEFAULTcast, ty))
+  | (c,(_,Some ty)) -> CCast(join_loc (constr_loc c) (constr_loc ty), c, CastConv ty)
 
 let binders_of_names l =
   List.map (fun (loc, na) ->
@@ -38,7 +40,7 @@ let binders_of_names l =
 
 let binders_of_lidents l =
   List.map (fun (loc, id) ->
-    LocalRawAssum ([loc, Name id], Default Glob_term.Explicit,
+    LocalRawAssum ([loc, Name id], Default Explicit,
 		  CHole (loc, Some (Evar_kinds.BinderType (Name id))))) l
 
 let mk_fixb (id,bl,ann,body,(loc,tyc)) =
@@ -144,8 +146,8 @@ GEXTEND Gram
     [ [ c = lconstr -> c ] ]
   ;
   sort:
-    [ [ "Set"  -> GProp Pos
-      | "Prop" -> GProp Null
+    [ [ "Set"  -> GSet
+      | "Prop" -> GProp
       | "Type" -> GType None ] ]
   ;
   lconstr:
@@ -160,13 +162,13 @@ GEXTEND Gram
       [ c = binder_constr -> c ]
     | "100" RIGHTA
       [ c1 = operconstr; "<:"; c2 = binder_constr ->
-                 CCast(loc,c1, CastConv (VMcast,c2))
+                 CCast(loc,c1, CastVM c2)
       | c1 = operconstr; "<:"; c2 = SELF ->
-                 CCast(loc,c1, CastConv (VMcast,c2))
+                 CCast(loc,c1, CastVM c2)
       | c1 = operconstr; ":";c2 = binder_constr ->
-                 CCast(loc,c1, CastConv (DEFAULTcast,c2))
+                 CCast(loc,c1, CastConv c2)
       | c1 = operconstr; ":"; c2 = SELF ->
-                 CCast(loc,c1, CastConv (DEFAULTcast,c2))
+                 CCast(loc,c1, CastConv c2)
       | c1 = operconstr; ":>" ->
                  CCast(loc,c1, CastCoerce) ]
     | "99" RIGHTA [ ]
@@ -410,7 +412,7 @@ GEXTEND Gram
       | "("; id=name; ":="; c=lconstr; ")" ->
           [LocalRawDef (id,c)]
       | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" ->
-          [LocalRawDef (id,CCast (join_loc (constr_loc t) loc,c, CastConv (DEFAULTcast,t)))]
+          [LocalRawDef (id,CCast (join_loc (constr_loc t) loc,c, CastConv t))]
       | "{"; id=name; "}" ->
           [LocalRawAssum ([id],Default Implicit,CHole (loc, None))]
       | "{"; id=name; idl=LIST1 name; ":"; c=lconstr; "}" ->

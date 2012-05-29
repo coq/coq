@@ -19,6 +19,9 @@ open Sign
 open Term
 open Libnames
 open Nametab
+open Decl_kinds
+open Misctypes
+open Locus
 
 (**  The kind of patterns that occurs in "match ... with ... end"
 
@@ -29,27 +32,6 @@ type cases_pattern =
       (** [PatCstr(p,C,l,x)] = "|'C' 'l' as 'x'" *)
 
 val cases_pattern_loc : cases_pattern -> loc
-
-type patvar = identifier
-
-type glob_sort = GProp of Term.contents | GType of Univ.universe option
-
-type binding_kind = Lib.binding_kind = Explicit | Implicit
-
-type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
-
-type 'a explicit_bindings = (loc * quantified_hypothesis * 'a) list
-
-type 'a bindings =
-  | ImplicitBindings of 'a list
-  | ExplicitBindings of 'a explicit_bindings
-  | NoBindings
-
-type 'a with_bindings = 'a * 'a bindings
-
-type 'a cast_type =
-  | CastConv of cast_kind * 'a
-  | CastCoerce (** Cast to a base type (eg, an underlying inductive type) *)
 
 type glob_constr =
   | GRef of (loc * global_reference)
@@ -136,17 +118,6 @@ type 'a glob_red_flag = {
 }
 
 val all_flags : 'a glob_red_flag
-
-type 'a or_var = ArgArg of 'a | ArgVar of identifier located
-
-type occurrences_expr = bool * int or_var list
-
-val all_occurrences_expr_but : int or_var list -> occurrences_expr
-val no_occurrences_expr_but : int or_var list -> occurrences_expr
-val all_occurrences_expr : occurrences_expr
-val no_occurrences_expr : occurrences_expr
-
-type 'a with_occurrences = occurrences_expr * 'a
 
 type ('a,'b,'c) red_expr_gen =
   | Red of bool

@@ -16,6 +16,8 @@ open Libnames
 open Glob_term
 open Term
 open Mod_subst
+open Misctypes
+open Decl_kinds
 (*i*)
 
 (**********************************************************************)
@@ -148,10 +150,7 @@ let glob_constr_of_aconstr_with_binders loc g f e = function
 	  (e,(na,Explicit,Option.map (f e) oc,f e b)))) e dll in
       let e',idl = array_fold_map (to_id g) e idl in
       GRec (loc,fk,idl,dll,Array.map (f e) tl,Array.map (f e') bl)
-  | ACast (c,k) -> GCast (loc,f e c,
-			  match k with
-			    | CastConv (k,t) -> CastConv (k,f e t)
-			    | CastCoerce -> CastCoerce)
+  | ACast (c,k) -> GCast (loc,f e c, Miscops.map_cast_type (f e) k)
   | ASort x -> GSort (loc,x)
   | AHole x  -> GHole (loc,x)
   | APatVar n -> GPatVar (loc,(false,n))
@@ -315,9 +314,7 @@ let aconstr_and_vars_of_glob_constr a =
 	   error "Binders marked as implicit not allowed in notations.";
 	 add_name found na; (na,Option.map aux oc,aux b))) dll in
       ARec (fk,idl,dll,Array.map aux tl,Array.map aux bl)
-  | GCast (_,c,k) -> ACast (aux c,
-			    match k with CastConv (k,t) -> CastConv (k,aux t)
-			      | CastCoerce -> CastCoerce)
+  | GCast (_,c,k) -> ACast (aux c,Miscops.map_cast_type aux k)
   | GSort (_,s) -> ASort s
   | GHole (_,w) -> AHole w
   | GRef (_,r) -> ARef r
@@ -495,16 +492,9 @@ let rec subst_aconstr subst bound raw =
 	  |Evar_kinds.ImpossibleCase |Evar_kinds.MatchingVar _) -> raw
 
   | ACast (r1,k) ->
-      match k with
-	  CastConv (k, r2) ->
-	    let r1' = subst_aconstr subst bound r1
-	    and r2' = subst_aconstr subst bound r2 in
-	      if r1' == r1 && r2' == r2 then raw else
-		ACast (r1',CastConv (k,r2'))
-	| CastCoerce ->
-	    let r1' = subst_aconstr subst bound r1 in
-	      if r1' == r1 then raw else
-		ACast (r1',CastCoerce)
+      let r1' = subst_aconstr subst bound r1 in
+      let k' = Miscops.smartmap_cast_type (subst_aconstr subst bound) k in
+      if r1' == r1 && k' == k then raw else ACast(r1',k')
 
 let subst_interpretation subst (metas,pat) =
   let bound = List.map fst metas in
@@ -728,7 +718,8 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
       let alp,sigma = array_fold_right2 (fun id1 id2 alsig ->
 	match_names metas alsig (Name id1) (Name id2)) idl1 idl2 (alp,sigma) in
       array_fold_left2 (match_in u alp metas) sigma bl1 bl2
-  | GCast(_,c1, CastConv(_,t1)), ACast(c2, CastConv (_,t2)) ->
+  | GCast(_,c1,CastConv t1), ACast (c2,CastConv t2)
+  | GCast(_,c1,CastVM t1), ACast (c2,CastVM t2) ->
       match_in u alp metas (match_in u alp metas sigma c1 c2) t1 t2
   | GCast(_,c1, CastCoerce), ACast(c2, CastCoerce) ->
       match_in u alp metas sigma c1 c2
@@ -1079,7 +1070,7 @@ let fold_constr_expr_with_binders g f n acc = function
   | CApp (loc,(_,t),l) -> List.fold_left (f n) (f n acc t) (List.map fst l)
   | CProdN (_,l,b) | CLambdaN (_,l,b) -> fold_constr_expr_binders g f n acc b l
   | CLetIn (_,na,a,b) -> fold_constr_expr_binders g f n acc b [[na],default_binder_kind,a]
-  | CCast (loc,a,CastConv(_,b)) -> f n (f n acc a) b
+  | CCast (loc,a,(CastConv b|CastVM b)) -> f n (f n acc a) b
   | CCast (loc,a,CastCoerce) -> f n acc a
   | CNotation (_,_,(l,ll,bll)) ->
       (* The following is an approximation: we don't know exactly if
@@ -1236,8 +1227,7 @@ let map_constr_expr_with_binders g f e = function
   | CLambdaN (loc,bl,b) ->
       let (e,bl) = map_binders f g e bl in CLambdaN (loc,bl,f e b)
   | CLetIn (loc,na,a,b) -> CLetIn (loc,na,f e a,f (name_fold g (snd na) e) b)
-  | CCast (loc,a,CastConv (k,b)) -> CCast (loc,f e a,CastConv(k, f e b))
-  | CCast (loc,a,CastCoerce) -> CCast (loc,f e a,CastCoerce)
+  | CCast (loc,a,c) -> CCast (loc,f e a, Miscops.map_cast_type (f e) c)
   | CNotation (loc,n,(l,ll,bll)) ->
       (* This is an approximation because we don't know what binds what *)
       CNotation (loc,n,(List.map (f e) l,List.map (List.map (f e)) ll,

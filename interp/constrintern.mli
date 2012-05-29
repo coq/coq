@@ -17,6 +17,8 @@ open Pattern
 open Topconstr
 open Termops
 open Pretyping
+open Misctypes
+open Decl_kinds
 
 (** Translation from front abstract syntax of term to untyped terms (glob_constr) *)
 

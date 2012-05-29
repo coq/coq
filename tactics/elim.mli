@@ -12,6 +12,7 @@ open Proof_type
 open Tacmach
 open Genarg
 open Tacticals
+open Misctypes
 
 (** Eliminations tactics. *)
 
@@ -30,5 +31,5 @@ val h_decompose       : inductive list -> constr -> tactic
 val h_decompose_or    : constr -> tactic
 val h_decompose_and   : constr -> tactic
 
-val double_ind : Glob_term.quantified_hypothesis -> Glob_term.quantified_hypothesis -> tactic
-val h_double_induction : Glob_term.quantified_hypothesis -> Glob_term.quantified_hypothesis->tactic
+val double_ind : quantified_hypothesis -> quantified_hypothesis -> tactic
+val h_double_induction : quantified_hypothesis -> quantified_hypothesis->tactic

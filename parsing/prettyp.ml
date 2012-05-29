@@ -31,6 +31,7 @@ open Printmod
 open Libnames
 open Nametab
 open Recordops
+open Misctypes
 
 type object_pr = {
   print_inductive           : mutual_inductive -> std_ppcmds;
@@ -644,11 +645,11 @@ let print_any_name = function
       "print_name" (pr_qualid qid ++ spc () ++ str "not a defined object.")
 
 let print_name = function
-  | Genarg.ByNotation (loc,ntn,sc) ->
+  | ByNotation (loc,ntn,sc) ->
       print_any_name
         (Term (Notation.interp_notation_as_global_reference loc (fun _ -> true)
                ntn sc))
-  | Genarg.AN ref ->
+  | AN ref ->
       print_any_name (locate_any_name ref)
 
 let print_opaque_name qid =
@@ -686,11 +687,11 @@ let print_about_any k =
       hov 0 (pr_located_qualid k) ++ fnl()
 
 let print_about = function
-  | Genarg.ByNotation (loc,ntn,sc) ->
+  | ByNotation (loc,ntn,sc) ->
       print_about_any
         (Term (Notation.interp_notation_as_global_reference loc (fun _ -> true)
                ntn sc))
-  | Genarg.AN ref ->
+  | AN ref ->
       print_about_any (locate_any_name ref)
 
 (* for debug *)

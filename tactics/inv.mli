@@ -10,7 +10,7 @@ open Pp
 open Names
 open Term
 open Tacmach
-open Genarg
+open Misctypes
 open Tacexpr
 open Glob_term
 

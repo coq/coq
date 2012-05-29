@@ -20,6 +20,7 @@ open Glob_term
 open Sign
 open Environ
 open Pattern
+open Misctypes
 (*i*)
 
 (* Given a term with second-order variables in it,
@@ -170,7 +171,9 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 
       | PRel n1, Rel n2 when n1 = n2 -> subst
 
-      | PSort (GProp c1), Sort (Prop c2) when c1 = c2 -> subst
+      | PSort GProp, Sort (Prop Null) -> subst
+
+      | PSort GSet, Sort (Prop Pos) -> subst
 
       | PSort (GType _), Sort (Type _) -> subst
 

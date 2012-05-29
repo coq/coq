@@ -16,7 +16,8 @@ open Topconstr
 open Names
 open Errors
 open Util
-open Genarg
+open Misctypes
+open Locus
 
 val extract_lam_binders :
   constr_expr -> local_binder list * constr_expr

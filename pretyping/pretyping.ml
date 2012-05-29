@@ -44,6 +44,7 @@ open Pretype_errors
 open Glob_term
 open Evarconv
 open Pattern
+open Misctypes
 
 type typing_constraint = OfType of types option | IsType
 type var_map = (identifier * constr_under_binders) list
@@ -95,12 +96,13 @@ let ((constr_in : constr -> Dyn.t),
 (** Miscellaneous interpretation functions *)
 
 let interp_sort = function
-  | GProp c -> Prop c
+  | GProp -> Prop Null
+  | GSet -> Prop Pos
   | GType _ -> new_Type_sort ()
 
 let interp_elimination_sort = function
-  | GProp Null -> InProp
-  | GProp Pos  -> InSet
+  | GProp -> InProp
+  | GSet  -> InSet
   | GType _ -> InType
 
 let resolve_evars env evdref fail_evar resolve_classes =
@@ -239,7 +241,8 @@ let pretype_ref evdref env ref =
     make_judge c (Retyping.get_type_of env Evd.empty c)
 
 let pretype_sort evdref = function
-  | GProp c -> judge_of_prop_contents c
+  | GProp -> judge_of_prop
+  | GSet -> judge_of_set
   | GType _ -> evd_comb0 judge_of_new_Type evdref
 
 exception Found of fixpoint
@@ -474,7 +477,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
   | GLetIn(loc,name,c1,c2)      ->
       let j =
 	match c1 with
-	| GCast (loc, c, CastConv (DEFAULTcast, t)) ->
+	| GCast (loc, c, CastConv t) ->
 	    let tj = pretype_type empty_valcon env evdref lvar t in
 	      pretype (mk_tycon tj.utj_val) env evdref lvar c
 	| _ -> pretype empty_tycon env evdref lvar c1
@@ -632,7 +635,8 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 	| CastCoerce ->
 	  let cj = pretype empty_tycon env evdref lvar c in
 	    evd_comb1 (Coercion.inh_coerce_to_base loc env) evdref cj
-	| CastConv (k,t) ->
+	| CastConv t | CastVM t ->
+	  let k = (match k with CastVM _ -> VMcast | _ -> DEFAULTcast) in
 	  let tj = pretype_type empty_valcon env evdref lvar t in
 	  let tval = nf_evar !evdref tj.utj_val in
 	  let cj = match k with

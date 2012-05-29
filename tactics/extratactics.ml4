@@ -22,6 +22,7 @@ open Util
 open Evd
 open Equality
 open Compat
+open Misctypes
 
 (**********************************************************************)
 (* admit, replace, discriminate, injection, simplify_eq               *)
@@ -230,24 +231,17 @@ let rewrite_star clause orient occs (sigma,c) (tac : glob_tactic_expr option) =
   Refiner. tclWITHHOLES false
     (general_rewrite_ebindings_clause clause orient occs ?tac:tac' true true (c,NoBindings)) sigma true
 
-let occurrences_of = function
-  | n::_ as nl when n < 0 -> (false,List.map abs nl)
-  | nl ->
-      if List.exists (fun n -> n < 0) nl then
-	error "Illegal negative occurrence number.";
-      (true,nl)
-
 TACTIC EXTEND rewrite_star
 | [ "rewrite" "*" orient(o) open_constr(c) "in" hyp(id) "at" occurrences(occ) by_arg_tac(tac) ] ->
     [ rewrite_star (Some id) o (occurrences_of occ) c tac ]
 | [ "rewrite" "*" orient(o) open_constr(c) "at" occurrences(occ) "in" hyp(id) by_arg_tac(tac) ] ->
     [ rewrite_star (Some id) o (occurrences_of occ) c tac ]
 | [ "rewrite" "*" orient(o) open_constr(c) "in" hyp(id) by_arg_tac(tac) ] ->
-    [ rewrite_star (Some id) o Termops.all_occurrences c tac ]
+    [ rewrite_star (Some id) o Locus.AllOccurrences c tac ]
 | [ "rewrite" "*" orient(o) open_constr(c) "at" occurrences(occ) by_arg_tac(tac) ] ->
     [ rewrite_star None o (occurrences_of occ) c tac ]
 | [ "rewrite" "*" orient(o) open_constr(c) by_arg_tac(tac) ] ->
-    [ rewrite_star None o Termops.all_occurrences c tac ]
+    [ rewrite_star None o Locus.AllOccurrences c tac ]
     END
 
 (**********************************************************************)
@@ -340,7 +334,7 @@ VERNAC COMMAND EXTEND DeriveInversionClear
   -> [ add_inversion_lemma_exn na c s false inv_clear_tac ]
 
 | [ "Derive" "Inversion_clear" ident(na) "with" constr(c) ]
-  -> [ add_inversion_lemma_exn na c (Glob_term.GProp Term.Null) false inv_clear_tac ]
+  -> [ add_inversion_lemma_exn na c GProp false inv_clear_tac ]
 END
 
 open Term
@@ -351,7 +345,7 @@ VERNAC COMMAND EXTEND DeriveInversion
   -> [ add_inversion_lemma_exn na c s false inv_tac ]
 
 | [ "Derive" "Inversion" ident(na) "with" constr(c) ]
-  -> [ add_inversion_lemma_exn na c (GProp Null) false inv_tac ]
+  -> [ add_inversion_lemma_exn na c GProp false inv_tac ]
 
 | [ "Derive" "Inversion" ident(na) hyp(id) ]
   -> [ inversion_lemma_from_goal 1 na id Term.prop_sort false inv_tac ]
@@ -660,7 +654,7 @@ exception Found of tactic
 
 let rewrite_except h g =
   tclMAP (fun id -> if id = h then tclIDTAC else 
-      tclTRY (Equality.general_rewrite_in true Termops.all_occurrences true true id (mkVar h) false))
+      tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences true true id (mkVar h) false))
     (Tacmach.pf_ids_of_hyps g) g
 
 
@@ -681,7 +675,7 @@ let  mkCaseEq a  : tactic =
          [Hiddentac.h_generalize [mkApp(delayed_force refl_equal, [| type_of_a; a|])];
           (fun g2 ->
 	    change_in_concl None
-	     (Tacred.pattern_occs [((false,[1]), a)] (Tacmach.pf_env g2) Evd.empty (Tacmach.pf_concl g2))
+	     (Tacred.pattern_occs [Locus.OnlyOccurrences [1], a] (Tacmach.pf_env g2) Evd.empty (Tacmach.pf_concl g2))
 		  g2);
 	  simplest_case a] g);;
 

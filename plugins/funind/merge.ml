@@ -23,6 +23,7 @@ open Declarations
 open Environ
 open Glob_term
 open Glob_termops
+open Decl_kinds
 
 (** {1 Utilities}  *)
 

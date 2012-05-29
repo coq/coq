@@ -42,6 +42,8 @@ open Printer
 open Declarations
 open Tacexpr
 open Mod_subst
+open Misctypes
+open Locus
 
 (****************************************************************************)
 (*            The Type of Constructions Autotactic Hints                    *)
@@ -1316,7 +1318,7 @@ and tac_of_hint dbg db_list local_db concl (flags, ({pat=p; code=t})) =
     | Unfold_nth c ->
       (fun gl ->
        if exists_evaluable_reference (pf_env gl) c then
-	 tclPROGRESS (h_reduce (Unfold [all_occurrences_expr,c]) onConcl) gl
+	 tclPROGRESS (h_reduce (Unfold [AllOccurrences,c]) Locusops.onConcl) gl
        else tclFAIL 0 (str"Unbound reference") gl)
     | Extern tacast -> conclPattern concl p tacast
   in

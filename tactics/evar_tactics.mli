@@ -9,7 +9,7 @@
 open Tacmach
 open Names
 open Tacexpr
-open Termops
+open Locus
 
 val instantiate : int -> Tacinterp.interp_sign * Glob_term.glob_constr ->
   (identifier * hyp_location_flag, unit) location -> tactic

@@ -1,4 +1,5 @@
 open Glob_term
+open Misctypes
 
 (* Ocaml 3.06 Map.S does not handle is_empty *)
 val idmap_is_empty : 'a Names.Idmap.t -> bool

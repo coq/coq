@@ -25,6 +25,8 @@ open Libnames
 open Nametab
 open Evd
 open Mod_subst
+open Misctypes
+open Decl_kinds
 
 let dl = dummy_loc
 
@@ -361,7 +363,8 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
       GCases (dl,tag,pred,[tomatch,(alias,aliastyp)],eqnl)
 
 let detype_sort = function
-  | Prop c -> GProp c
+  | Prop Null -> GProp
+  | Prop Pos -> GSet
   | Type u -> GType (Some u)
 
 type binder_kind = BProd | BLambda | BLetIn
@@ -391,7 +394,9 @@ let rec detype (isgoal:bool) avoid env t =
 	  GVar (dl, id))
     | Sort s -> GSort (dl,detype_sort s)
     | Cast (c1,k,c2) ->
-	GCast(dl,detype isgoal avoid env c1, CastConv (k, detype isgoal avoid env c2))
+        let d1 = detype isgoal avoid env c1 in
+	let d2 = detype isgoal avoid env c2 in
+	GCast(dl,d1,if k = VMcast then CastVM d2 else CastConv d2)
     | Prod (na,ty,c) -> detype_binder isgoal BProd avoid env na ty c
     | Lambda (na,ty,c) -> detype_binder isgoal BLambda avoid env na ty c
     | LetIn (na,b,_,c) -> detype_binder isgoal BLetIn avoid env na b c
@@ -668,14 +673,9 @@ let rec subst_glob_constr subst raw =
 		|Evar_kinds.ImpossibleCase |Evar_kinds.MatchingVar _)) -> raw
 
   | GCast (loc,r1,k) ->
-      (match k with
-	   CastConv (k,r2) ->
-	     let r1' = subst_glob_constr subst r1 and r2' = subst_glob_constr subst r2 in
-	       if r1' == r1 && r2' == r2 then raw else
-		 GCast (loc,r1', CastConv (k,r2'))
-	 | CastCoerce ->
-	     let r1' = subst_glob_constr subst r1 in
-	       if r1' == r1 then raw else GCast (loc,r1',k))
+      let r1' = subst_glob_constr subst r1 in
+      let k' = Miscops.smartmap_cast_type (subst_glob_constr subst) k in
+      if r1' == r1 && k' == k then raw else GCast (loc,r1',k')
 
 (* Utilities to transform kernel cases to simple pattern-matching problem *)
 

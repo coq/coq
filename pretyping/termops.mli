@@ -13,6 +13,7 @@ open Names
 open Term
 open Sign
 open Environ
+open Locus
 
 (** Universes *)
 val new_univ_level : unit -> Univ.universe_level
@@ -145,11 +146,6 @@ val subst_term : constr -> constr -> constr
 (** [replace_term d e c] replaces [d] by [e] in [c] *)
 val replace_term : constr -> constr -> constr -> constr
 
-(** In occurrences sets, false = everywhere except and true = nowhere except *)
-type occurrences = bool * int list
-val all_occurrences : occurrences
-val no_occurrences_in_set : occurrences
-
 (** [subst_closed_term_occ_gen occl n c d] replaces occurrences of closed [c] at
    positions [occl], counting from [n], by [Rel 1] in [d] *)
 val subst_closed_term_occ_gen :
@@ -160,11 +156,6 @@ val subst_closed_term_occ_gen :
     with NotUnifiable); a function for merging substitution (possibly
     failing with NotUnifiable) and an initial substitution are
     required too *)
-
-type hyp_location_flag = (** To distinguish body and type of local defs *)
-  | InHyp
-  | InHypTypeOnly
-  | InHypValueOnly
 
 type 'a testing_function = {
   match_fun : constr -> 'a;

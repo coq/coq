@@ -15,6 +15,7 @@ open Tacticals
 open Tactics
 open Indfun_common
 open Libnames
+open Misctypes
 
 let msgnl = Pp.msgnl
 
@@ -441,13 +442,8 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
 	 decompose_prod_n_assum (List.length context) reduced_type_of_hyp
       in
         tclTHENLIST
-	[
-	  h_reduce_with_zeta
-	    (Tacticals.onHyp hyp_id)
-	  ;
-	  scan_type new_context new_typ_of_hyp
-
-	]
+	[ h_reduce_with_zeta (Locusops.onHyp hyp_id);
+	  scan_type new_context new_typ_of_hyp ]
     else if isProd type_of_hyp
     then
       begin
@@ -688,13 +684,13 @@ let instanciate_hyps_with_args (do_prove:identifier list -> tactic) hyps args_id
   if args_id = []
   then
     tclTHENLIST [
-      tclMAP (fun hyp_id -> h_reduce_with_zeta (Tacticals.onHyp hyp_id)) hyps;
+      tclMAP (fun hyp_id -> h_reduce_with_zeta (Locusops.onHyp hyp_id)) hyps;
       do_prove hyps
     ]
   else
     tclTHENLIST
       [
-	tclMAP (fun hyp_id -> h_reduce_with_zeta (Tacticals.onHyp hyp_id)) hyps;
+	tclMAP (fun hyp_id -> h_reduce_with_zeta (Locusops.onHyp hyp_id)) hyps;
 	tclMAP instanciate_one_hyp hyps;
 	(fun g ->
 	   let all_g_hyps_id =
@@ -732,7 +728,7 @@ let build_proof
 		    [
 		      h_generalize (term_eq::(List.map mkVar dyn_infos.rec_hyps));
 		      thin dyn_infos.rec_hyps;
-		      pattern_option [(false,[1]),t] None;
+		      pattern_option [Locus.AllOccurrencesBut [1],t] None;
 		      (fun g -> observe_tac "toto" (
 			 tclTHENSEQ [h_simplest_case t;
 				     (fun g' ->
@@ -818,9 +814,10 @@ let build_proof
 
 		      tclTHENLIST
 			[tclMAP
-			   (fun hyp_id -> h_reduce_with_zeta (Tacticals.onHyp hyp_id))
+			   (fun hyp_id ->
+			     h_reduce_with_zeta (Locusops.onHyp hyp_id))
 			   dyn_infos.rec_hyps;
-			 h_reduce_with_zeta Tacticals.onConcl;
+			 h_reduce_with_zeta Locusops.onConcl;
 			 build_proof do_finalize new_infos
 			]
 			g
@@ -850,9 +847,9 @@ let build_proof
 
 	      tclTHENLIST
 		[tclMAP
-		   (fun hyp_id -> h_reduce_with_zeta (Tacticals.onHyp hyp_id))
+		   (fun hyp_id -> h_reduce_with_zeta (Locusops.onHyp hyp_id))
 		   dyn_infos.rec_hyps;
-		 h_reduce_with_zeta Tacticals.onConcl;
+		 h_reduce_with_zeta Locusops.onConcl;
 		 build_proof do_finalize new_infos
 		] g
 	  | Rel _ -> anomaly "Free var in goal conclusion !"
@@ -1010,7 +1007,7 @@ let generate_equation_lemma fnames f fun_num nb_params nb_args rec_args_num =
 	   let rec_id = pf_nth_hyp_id g 1 in
 	   tclTHENSEQ
 	     [(* observe_tac "generalize_non_dep in generate_equation_lemma" *) (generalize_non_dep rec_id);
-	      (* observe_tac "h_case" *) (h_case false (mkVar rec_id,Glob_term.NoBindings));
+	      (* observe_tac "h_case" *) (h_case false (mkVar rec_id,NoBindings));
 	      intros_reflexivity] g
 	)
       ]
@@ -1346,7 +1343,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		 in
 		 let fname = destConst (fst (decompose_app (List.hd (List.rev pte_args)))) in
 		 tclTHENSEQ
-		   [unfold_in_concl [(Termops.all_occurrences, Names.EvalConstRef fname)];
+		   [unfold_in_concl [(Locus.AllOccurrences, Names.EvalConstRef fname)];
 		    let do_prove =
 		      build_proof
 			interactive_proof
@@ -1442,12 +1439,12 @@ let backtrack_eqs_until_hrec hrec eqs : tactic =
 
 let build_clause eqs =
   {
-    Tacexpr.onhyps =
+    Locus.onhyps =
       Some (List.map
-	      (fun id -> (Glob_term.all_occurrences_expr, id), Termops.InHyp)
+	      (fun id -> (Locus.AllOccurrences, id), Locus.InHyp)
 	      eqs
 	   );
-    Tacexpr.concl_occs = Glob_term.no_occurrences_expr
+    Locus.concl_occs = Locus.NoOccurrences
   }
 
 let rec rewrite_eqs_in_eqs eqs =
@@ -1460,7 +1457,8 @@ let rec rewrite_eqs_in_eqs eqs =
 	       (fun id gl ->
 		  observe_tac
 		    (Format.sprintf "rewrite %s in %s " (string_of_id eq) (string_of_id id))
-		    (tclTRY (Equality.general_rewrite_in true Termops.all_occurrences true (* dep proofs also: *) true id (mkVar eq) false))
+		    (tclTRY (Equality.general_rewrite_in true Locus.AllOccurrences
+			       true (* dep proofs also: *) true id (mkVar eq) false))
 		    gl
 	       )
 	       eqs
@@ -1482,7 +1480,7 @@ let new_prove_with_tcc is_mes acc_inv hrec tcc_hyps eqs : tactic =
 		  (fun g ->
 		     if is_mes
 		     then
-		       unfold_in_concl [(Termops.all_occurrences, evaluable_of_global_reference (delayed_force ltof_ref))] g
+		       unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference (delayed_force ltof_ref))] g
 		     else tclIDTAC g
 		  );
 		  observe_tac "rew_and_finish"

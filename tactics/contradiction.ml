@@ -17,6 +17,7 @@ open Tactics
 open Coqlib
 open Reductionops
 open Glob_term
+open Misctypes
 
 (* Absurd *)
 

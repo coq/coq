@@ -38,6 +38,10 @@ open Command
 open Libnames
 open Evd
 open Compat
+open Misctypes
+open Locus
+open Locusops
+open Decl_kinds
 
 (** Typeclass-based generalized rewriting. *)
 
@@ -631,7 +635,7 @@ let apply_constraint env avoid car rel prf cstr res =
 let eq_env x y = x == y
 
 let apply_rule hypinfo loccs : strategy =
-  let (nowhere_except_in,occs) = loccs in
+  let (nowhere_except_in,occs) = convert_occs loccs in
   let is_occ occ =
     if nowhere_except_in then List.mem occ occs else not (List.mem occ occs) in
   let occ = ref 0 in
@@ -1007,7 +1011,7 @@ module Strategies =
 
     let lemmas flags cs : strategy =
       List.fold_left (fun tac (l,l2r) ->
-	choice tac (apply_lemma flags l l2r (false,[])))
+	choice tac (apply_lemma flags l l2r AllOccurrences))
 	fail cs
 
     let inj_open c = (Evd.empty,c)
@@ -1386,8 +1390,8 @@ ARGUMENT EXTEND rewstrategy TYPED AS strategy
     GLOBALIZED BY glob_strategy
     SUBSTITUTED BY subst_strategy
 
-    [ constr(c) ] -> [ apply_constr_expr c true all_occurrences ]
-  | [ "<-" constr(c) ] -> [ apply_constr_expr c false all_occurrences ]
+    [ constr(c) ] -> [ apply_constr_expr c true AllOccurrences ]
+  | [ "<-" constr(c) ] -> [ apply_constr_expr c false AllOccurrences ]
   | [ "subterms" rewstrategy(h) ] -> [ all_subterms h ]
   | [ "subterm" rewstrategy(h) ] -> [ one_subterm h ]
   | [ "innermost" rewstrategy(h) ] -> [ Strategies.innermost h ]
@@ -1425,7 +1429,7 @@ let clsubstitute o c =
       (fun cl ->
 	match cl with
 	  | Some id when is_tac id -> tclIDTAC
-	  | _ -> cl_rewrite_clause c o all_occurrences cl)
+	  | _ -> cl_rewrite_clause c o AllOccurrences cl)
 
 open Extraargs
 
@@ -1438,9 +1442,9 @@ END
 
 TACTIC EXTEND setoid_rewrite
    [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) ]
-   -> [ cl_rewrite_clause c o all_occurrences None ]
+   -> [ cl_rewrite_clause c o AllOccurrences None ]
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "in" hyp(id) ] ->
-      [ cl_rewrite_clause c o all_occurrences (Some id)]
+      [ cl_rewrite_clause c o AllOccurrences (Some id)]
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) ] ->
       [ cl_rewrite_clause c o (occurrences_of occ) None]
  | [ "setoid_rewrite" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id)] ->
@@ -1459,11 +1463,11 @@ TACTIC EXTEND GenRew
 | [ "rew" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) "in" hyp(id) ] ->
     [ cl_rewrite_clause_newtac_tac c o (occurrences_of occ) (Some id) ]
 | [ "rew" orient(o) glob_constr_with_bindings(c) "in" hyp(id) ] ->
-    [ cl_rewrite_clause_newtac_tac c o all_occurrences (Some id) ]
+    [ cl_rewrite_clause_newtac_tac c o AllOccurrences (Some id) ]
 | [ "rew" orient(o) glob_constr_with_bindings(c) "at" occurrences(occ) ] ->
     [ cl_rewrite_clause_newtac_tac c o (occurrences_of occ) None ]
 | [ "rew" orient(o) glob_constr_with_bindings(c) ] ->
-    [ cl_rewrite_clause_newtac_tac c o all_occurrences None ]
+    [ cl_rewrite_clause_newtac_tac c o AllOccurrences None ]
 END
 
 let mkappc s l = CAppExpl (dummy_loc,(None,(Libnames.Ident (dummy_loc,id_of_string s))),l)
@@ -1899,7 +1903,7 @@ let setoid_transitivity c gl =
       let proof = get_transitive_proof env evm car rel in
       match c with
       | None -> eapply proof
-      | Some c -> apply_with_bindings (proof,Glob_term.ImplicitBindings [ c ]))
+      | Some c -> apply_with_bindings (proof,ImplicitBindings [ c ]))
     (transitivity_red true c)
 
 let setoid_symmetry_in id gl =

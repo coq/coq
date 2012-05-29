@@ -33,6 +33,7 @@ open Printer
 open Declare
 open Decl_kinds
 open Entries
+open Misctypes
 
 (****************************************************************************)
 (* controlled reduction *)
@@ -102,7 +103,7 @@ let protect_tac map =
   Tactics.reduct_option (protect_red map,DEFAULTcast) None ;;
 
 let protect_tac_in map id =
-  Tactics.reduct_option (protect_red map,DEFAULTcast) (Some(id, Termops.InHyp));;
+  Tactics.reduct_option (protect_red map,DEFAULTcast) (Some(id, Locus.InHyp));;
 
 
 TACTIC EXTEND protect_fv

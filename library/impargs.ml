@@ -22,6 +22,7 @@ open Pp
 open Topconstr
 open Termops
 open Namegen
+open Decl_kinds
 
 (*s Flags governing the computation of implicit arguments *)
 
@@ -485,7 +486,9 @@ let subst_implicits (subst,(req,l)) =
   (ImplLocal,list_smartmap (subst_implicits_decl subst) l)
 
 let impls_of_context ctx =
-  List.rev_map (fun (id,impl,_,_) -> if impl = Lib.Implicit then Some (id, Manual, (true,true)) else None)
+  List.rev_map
+    (fun (id,impl,_,_) ->
+      if impl = Implicit then Some (id, Manual, (true,true)) else None)
     (List.filter (fun (_,_,b,_) -> b = None) ctx)
 
 let section_segment_of_reference = function

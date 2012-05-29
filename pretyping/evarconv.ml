@@ -662,7 +662,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
   | (id,_,c,cty,evsref,filter,occs)::subst ->
       let set_var k =
         match occs with
-        | Some (false,[]) -> mkVar id
+        | Some Locus.AllOccurrences -> mkVar id
         | Some _ -> error "Selection of specific occurrences not supported"
         | None ->
         let evty = set_holes evdref cty subst in

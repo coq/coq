@@ -17,6 +17,7 @@ open Locality
 open Prim
 open Constr
 open Tok
+open Misctypes
 
 let thm_token = G_vernac.thm_token
 
@@ -113,6 +114,6 @@ GEXTEND Gram
     ;
   constr_body:
     [ [ ":="; c = lconstr -> c
-      | ":"; t = lconstr; ":="; c = lconstr -> CCast(loc,c, Glob_term.CastConv (Term.DEFAULTcast,t)) ] ]
+      | ":"; t = lconstr; ":="; c = lconstr -> CCast(loc,c,CastConv t) ] ]
   ;
 END

@@ -34,7 +34,7 @@ open Typing
 open Pattern
 open Matching
 open Glob_term
-open Genarg
+open Misctypes
 open Tacexpr
 
 let collect_meta_variables c =

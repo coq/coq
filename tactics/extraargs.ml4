@@ -15,6 +15,8 @@ open Names
 open Tacexpr
 open Tacinterp
 open Termops
+open Misctypes
+open Locus
 
 (* Rewriting orientation *)
 
@@ -43,6 +45,14 @@ let pr_occurrences _prc _prlc _prt l =
   match l with
     | ArgArg x -> pr_int_list x
     | ArgVar (loc, id) -> Nameops.pr_id id
+
+let occurrences_of = function
+  | [] -> NoOccurrences
+  | n::_ as nl when n < 0 -> AllOccurrencesBut (List.map abs nl)
+  | nl ->
+      if List.exists (fun n -> n < 0) nl then
+        Errors.error "Illegal negative occurrence number.";
+      OnlyOccurrences nl
 
 let coerce_to_int = function
   | VInteger n -> n
@@ -259,16 +269,16 @@ END
 
 let pr_in_arg_hyp = pr_in_arg_hyp_typed () () ()
 
-let gen_in_arg_hyp_to_clause trad_id (hyps ,concl) : Tacticals.clause =
-  {Tacexpr.onhyps=
+let gen_in_arg_hyp_to_clause trad_id (hyps ,concl) : clause =
+  {onhyps=
    Option.map
      (fun l ->
 	List.map
-	  (fun id -> ( (all_occurrences_expr,trad_id id),InHyp))
+	  (fun id -> ( (AllOccurrences,trad_id id),InHyp))
 	  l
      )
      hyps;
-   Tacexpr.concl_occs = if concl then all_occurrences_expr else no_occurrences_expr}
+   concl_occs = if concl then AllOccurrences else NoOccurrences}
 
 
 let raw_in_arg_hyp_to_clause = gen_in_arg_hyp_to_clause snd

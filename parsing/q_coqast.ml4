@@ -51,18 +51,18 @@ let mlexpr_of_located f (loc,x) = <:expr< ($dloc$, $f x$) >>
 let mlexpr_of_loc loc = <:expr< $dloc$ >>
 
 let mlexpr_of_by_notation f = function
-  | Genarg.AN x -> <:expr< Genarg.AN $f x$ >>
-  | Genarg.ByNotation (loc,s,sco) ->
-      <:expr< Genarg.ByNotation $dloc$ $str:s$ $mlexpr_of_option mlexpr_of_string sco$ >>
+  | Misctypes.AN x -> <:expr< Misctypes.AN $f x$ >>
+  | Misctypes.ByNotation (loc,s,sco) ->
+      <:expr< Misctypes.ByNotation $dloc$ $str:s$ $mlexpr_of_option mlexpr_of_string sco$ >>
 
 let mlexpr_of_intro_pattern = function
-  | Genarg.IntroWildcard -> <:expr< Genarg.IntroWildcard >>
-  | Genarg.IntroAnonymous -> <:expr< Genarg.IntroAnonymous >>
-  | Genarg.IntroFresh id -> <:expr< Genarg.IntroFresh (mlexpr_of_ident $dloc$ id) >>
-  | Genarg.IntroForthcoming b -> <:expr< Genarg.IntroForthcoming (mlexpr_of_bool $dloc$ b) >>
-  | Genarg.IntroIdentifier id ->
-      <:expr< Genarg.IntroIdentifier (mlexpr_of_ident $dloc$ id) >>
-  | Genarg.IntroOrAndPattern _ | Genarg.IntroRewrite _ ->
+  | Misctypes.IntroWildcard -> <:expr< Misctypes.IntroWildcard >>
+  | Misctypes.IntroAnonymous -> <:expr< Misctypes.IntroAnonymous >>
+  | Misctypes.IntroFresh id -> <:expr< Misctypes.IntroFresh (mlexpr_of_ident $dloc$ id) >>
+  | Misctypes.IntroForthcoming b -> <:expr< Misctypes.IntroForthcoming (mlexpr_of_bool $dloc$ b) >>
+  | Misctypes.IntroIdentifier id ->
+      <:expr< Misctypes.IntroIdentifier (mlexpr_of_ident $dloc$ id) >>
+  | Misctypes.IntroOrAndPattern _ | Misctypes.IntroRewrite _ ->
       failwith "mlexpr_of_intro_pattern: TODO"
 
 let mlexpr_of_ident_option = mlexpr_of_option (mlexpr_of_ident)
@@ -72,34 +72,40 @@ let mlexpr_of_or_metaid f = function
   | Tacexpr.MetaId (_,id) -> <:expr< Tacexpr.AI $anti loc id$ >>
 
 let mlexpr_of_quantified_hypothesis = function
-  | Glob_term.AnonHyp n -> <:expr< Glob_term.AnonHyp $mlexpr_of_int n$ >>
-  | Glob_term.NamedHyp id ->  <:expr< Glob_term.NamedHyp $mlexpr_of_ident id$ >>
+  | Misctypes.AnonHyp n -> <:expr< Glob_term.AnonHyp $mlexpr_of_int n$ >>
+  | Misctypes.NamedHyp id ->  <:expr< Glob_term.NamedHyp $mlexpr_of_ident id$ >>
 
 let mlexpr_of_or_var f = function
-  | Glob_term.ArgArg x -> <:expr< Glob_term.ArgArg $f x$ >>
-  | Glob_term.ArgVar id -> <:expr< Glob_term.ArgVar $mlexpr_of_located mlexpr_of_ident id$ >>
+  | Misctypes.ArgArg x -> <:expr< Misctypes.ArgArg $f x$ >>
+  | Misctypes.ArgVar id -> <:expr< Misctypes.ArgVar $mlexpr_of_located mlexpr_of_ident id$ >>
 
 let mlexpr_of_hyp = mlexpr_of_or_metaid (mlexpr_of_located mlexpr_of_ident)
 
-let mlexpr_of_occs =
-  mlexpr_of_pair
-    mlexpr_of_bool (mlexpr_of_list (mlexpr_of_or_var mlexpr_of_int))
+let mlexpr_of_occs = function
+  | Locus.AllOccurrences -> <:expr< Locus.AllOccurrences >>
+  | Locus.AllOccurrencesBut l ->
+    <:expr< Locus.AllOccurrencesBut
+      $mlexpr_of_list (mlexpr_of_or_var mlexpr_of_int) l$ >>
+  | Locus.NoOccurrences -> <:expr< Locus.NoOccurrences >>
+  | Locus.OnlyOccurrences l ->
+    <:expr< Locus.OnlyOccurrences
+      $mlexpr_of_list (mlexpr_of_or_var mlexpr_of_int) l$ >>
 
 let mlexpr_of_occurrences f = mlexpr_of_pair mlexpr_of_occs f
 
 let mlexpr_of_hyp_location = function
-  | occs, Termops.InHyp ->
-      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Termops.InHyp) >>
-  | occs, Termops.InHypTypeOnly ->
-      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Termops.InHypTypeOnly) >>
-  | occs, Termops.InHypValueOnly ->
-      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Termops.InHypValueOnly) >>
+  | occs, Locus.InHyp ->
+      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Locus.InHyp) >>
+  | occs, Locus.InHypTypeOnly ->
+      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Locus.InHypTypeOnly) >>
+  | occs, Locus.InHypValueOnly ->
+      <:expr< ($mlexpr_of_occurrences mlexpr_of_hyp occs$, Locus.InHypValueOnly) >>
 
 let mlexpr_of_clause cl =
-  <:expr< {Tacexpr.onhyps=
+  <:expr< {Locus.onhyps=
              $mlexpr_of_option (mlexpr_of_list mlexpr_of_hyp_location)
-               cl.Tacexpr.onhyps$;
-           Tacexpr.concl_occs= $mlexpr_of_occs cl.Tacexpr.concl_occs$} >>
+               cl.Locus.onhyps$;
+           Locus.concl_occs= $mlexpr_of_occs cl.Locus.concl_occs$} >>
 
 let mlexpr_of_red_flags {
   Glob_term.rBeta = bb;
@@ -120,8 +126,8 @@ let mlexpr_of_explicitation = function
   | Topconstr.ExplByPos (n,_id) -> <:expr< Topconstr.ExplByPos $mlexpr_of_int n$ >>
 
 let mlexpr_of_binding_kind = function
-  | Glob_term.Implicit -> <:expr< Glob_term.Implicit >>
-  | Glob_term.Explicit -> <:expr< Glob_term.Explicit >>
+  | Decl_kinds.Implicit -> <:expr< Decl_kinds.Implicit >>
+  | Decl_kinds.Explicit -> <:expr< Decl_kinds.Explicit >>
 
 let mlexpr_of_binder_kind = function
   | Topconstr.Default b -> <:expr< Topconstr.Default $mlexpr_of_binding_kind b$ >>
@@ -215,14 +221,14 @@ let rec mlexpr_of_may_eval f = function
       <:expr< Glob_term.ConstrTerm $mlexpr_of_constr c$ >>
 
 let mlexpr_of_binding_kind = function
-  | Glob_term.ExplicitBindings l ->
+  | Misctypes.ExplicitBindings l ->
       let l = mlexpr_of_list (mlexpr_of_triple mlexpr_of_loc mlexpr_of_quantified_hypothesis mlexpr_of_constr) l in
-      <:expr< Glob_term.ExplicitBindings $l$ >>
-  | Glob_term.ImplicitBindings l ->
+      <:expr< Misctypes.ExplicitBindings $l$ >>
+  | Misctypes.ImplicitBindings l ->
       let l = mlexpr_of_list mlexpr_of_constr l in
-      <:expr< Glob_term.ImplicitBindings $l$ >>
-  | Glob_term.NoBindings ->
-       <:expr< Glob_term.NoBindings >>
+      <:expr< Misctypes.ImplicitBindings $l$ >>
+  | Misctypes.NoBindings ->
+       <:expr< Misctypes.NoBindings >>
 
 let mlexpr_of_binding = mlexpr_of_pair mlexpr_of_binding_kind mlexpr_of_constr
 

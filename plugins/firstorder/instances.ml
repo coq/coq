@@ -25,6 +25,7 @@ open Formula
 open Sequent
 open Names
 open Libnames
+open Misctypes
 
 let compare_instance inst1 inst2=
 	match inst1,inst2 with
@@ -181,12 +182,12 @@ let right_instance_tac inst continue seq=
 	[tclTHENLIST
 	   [introf;
 	    (fun gls->
-	       split (Glob_term.ImplicitBindings
+	       split (ImplicitBindings
 			[mkVar (Tacmach.pf_nth_hyp_id gls 1)]) gls);
 	    tclSOLVE [wrap 0 true continue (deepen seq)]];
 	 tclTRY assumption]
     | Real ((0,t),_) ->
-	(tclTHEN (split (Glob_term.ImplicitBindings [t]))
+	(tclTHEN (split (ImplicitBindings [t]))
 	   (tclSOLVE [wrap 0 true continue (deepen seq)]))
     | Real ((m,t),_) ->
 	tclFAIL 0 (Pp.str "not implemented ... yet")

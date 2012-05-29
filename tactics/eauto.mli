@@ -35,4 +35,4 @@ val eauto_with_bases :
   bool * int ->
   open_constr list -> Auto.hint_db list -> Proof_type.tactic
 
-val autounfold : hint_db_name list -> Tacticals.clause -> tactic
+val autounfold : hint_db_name list -> Locus.clause -> tactic

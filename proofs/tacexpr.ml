@@ -17,6 +17,8 @@ open Util
 open Genarg
 open Pattern
 open Decl_kinds
+open Misctypes
+open Locus
 
 type 'a or_metaid = AI of 'a | MetaId of loc * string
 
@@ -60,7 +62,7 @@ let make_red_flag =
   add_flag
     {rBeta = false; rIota = false; rZeta = false; rDelta = false; rConst = []}
 
-type 'a raw_hyp_location = 'a with_occurrences * Termops.hyp_location_flag
+type 'a raw_hyp_location = 'a with_occurrences * hyp_location_flag
 
 type 'id move_location =
   | MoveAfter of 'id
@@ -100,21 +102,12 @@ type 'id message_token =
   | MsgInt of int
   | MsgIdent of 'id
 
-(* onhyps:
-     [None] means *on every hypothesis*
-     [Some l] means on hypothesis belonging to l *)
-type 'id gclause =
-  { onhyps : 'id raw_hyp_location list option;
-    concl_occs : occurrences_expr }
-
-let nowhere = {onhyps=Some[]; concl_occs=no_occurrences_expr}
-
 type 'constr induction_clause =
   ('constr with_bindings induction_arg list * 'constr with_bindings option *
    (intro_pattern_expr located option * intro_pattern_expr located option))
 
 type ('constr,'id) induction_clause_list =
-    'constr induction_clause list * 'id gclause option
+    'constr induction_clause list * 'id clause_expr option
 
 type multi =
   | Precisely of int
@@ -162,7 +155,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_atomic_tactic_expr =
   | TacAssert of 'tac option * intro_pattern_expr located option * 'constr
   | TacGeneralize of ('constr with_occurrences * name) list
   | TacGeneralizeDep of 'constr
-  | TacLetTac of name * 'constr * 'id gclause * letin_flag
+  | TacLetTac of name * 'constr * 'id clause_expr * letin_flag
 
   (* Derived basic tactics *)
   | TacSimpleInductionDestruct of rec_flag * quantified_hypothesis
@@ -193,17 +186,17 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_atomic_tactic_expr =
   | TacConstructor of evars_flag * int or_var * 'constr bindings
 
   (* Conversion *)
-  | TacReduce of ('constr,'cst,'pat) red_expr_gen * 'id gclause
-  | TacChange of 'pat option * 'constr * 'id gclause
+  | TacReduce of ('constr,'cst,'pat) red_expr_gen * 'id clause_expr
+  | TacChange of 'pat option * 'constr * 'id clause_expr
 
   (* Equivalence relations *)
   | TacReflexivity
-  | TacSymmetry of 'id gclause
+  | TacSymmetry of 'id clause_expr
   | TacTransitivity of 'constr option
 
   (* Equality and inversion *)
   | TacRewrite of
-      evars_flag * (bool * multi * 'constr with_bindings) list * 'id gclause * 'tac option
+      evars_flag * (bool * multi * 'constr with_bindings) list * 'id clause_expr * 'tac option
   | TacInversion of ('constr,'id) inversion_strength * quantified_hypothesis
 
   (* For ML extensions *)

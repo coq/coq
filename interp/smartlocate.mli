@@ -9,7 +9,7 @@
 open Pp
 open Names
 open Libnames
-open Genarg
+open Misctypes
 
 (** [locate_global_with_alias] locates global reference possibly following
    a notation if this notation has a role of aliasing; raise Not_found

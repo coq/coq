@@ -56,11 +56,13 @@ Lib
 Goptions
 Decl_kinds
 Global
+Locusops
 Termops
 Namegen
 Evd
 Reductionops
 Inductiveops
+Miscops
 Glob_term
 Detyping
 Pattern

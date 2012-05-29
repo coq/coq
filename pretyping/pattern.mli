@@ -18,6 +18,7 @@ open Libnames
 open Nametab
 open Glob_term
 open Mod_subst
+open Misctypes
 
 (** {5 Maps of pattern variables} *)
 

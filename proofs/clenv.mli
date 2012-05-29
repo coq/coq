@@ -17,6 +17,7 @@ open Evarutil
 open Mod_subst
 open Glob_term
 open Unification
+open Misctypes
 
 (** {6 The Type of Constructions clausale environments.} *)
 

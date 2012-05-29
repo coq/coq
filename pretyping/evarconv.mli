@@ -13,6 +13,7 @@ open Environ
 open Termops
 open Reductionops
 open Evd
+open Locus
 
 (** returns exception Reduction.NotConvertible if not unifiable *)
 val the_conv_x     : ?ts:transparent_state -> env -> constr -> constr -> evar_map -> evar_map

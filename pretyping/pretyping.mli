@@ -19,6 +19,7 @@ open Environ
 open Evd
 open Glob_term
 open Evarutil
+open Misctypes
 
 (** An auxiliary function for searching for fixpoint guard indexes *)
 

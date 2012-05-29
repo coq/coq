@@ -13,6 +13,8 @@ open Libnames
 open Glob_term
 open Term
 open Mod_subst
+open Misctypes
+open Decl_kinds
 
 (** Topconstr: definitions of [aconstr] et [constr_expr] *)
 

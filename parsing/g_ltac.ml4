@@ -17,6 +17,7 @@ open Pcoq
 open Prim
 open Tactic
 open Tok
+open Misctypes
 
 let fail_default_value = ArgArg 0
 
@@ -177,7 +178,7 @@ GEXTEND Gram
 	  let t, ty =
 	    match mpv with
 	    | Term t -> (match t with
-	      | CCast (loc, t, CastConv (_, ty)) -> Term t, Some (Term ty)
+	      | CCast (loc, t, (CastConv ty | CastVM ty)) -> Term t, Some (Term ty)
 	      | _ -> mpv, None)
 	    | _ -> mpv, None
 	  in Def (na, t, Option.default (Term (CHole (dummy_loc, None))) ty)

@@ -18,6 +18,7 @@ open Glob_term
 open Pattern
 open Topconstr
 open Notation
+open Misctypes
 
 val check_same_type : constr_expr -> constr_expr -> unit
 

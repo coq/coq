@@ -68,6 +68,8 @@ Goptions
 Decls
 Heads
 Assumptions
+Locusops
+Miscops
 Termops
 Namegen
 Evd

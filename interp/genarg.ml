@@ -16,6 +16,7 @@ open Glob_term
 open Topconstr
 open Term
 open Evd
+open Misctypes
 
 type argument_type =
   (* Basic types *)
@@ -43,11 +44,6 @@ type argument_type =
   | PairArgType of argument_type * argument_type
   | ExtraArgType of string
 
-type 'a and_short_name = 'a * identifier located option
-type 'a or_by_notation =
-  | AN of 'a
-  | ByNotation of (loc * string * Notation.delimiters option)
-
 let loc_of_or_by_notation f = function
   | AN c -> f c
   | ByNotation (loc,s,_) -> loc
@@ -67,16 +63,6 @@ type 'a generic_argument = argument_type * Obj.t
 type rlevel
 type glevel
 type tlevel
-
-type intro_pattern_expr =
-  | IntroOrAndPattern of or_and_intro_pattern_expr
-  | IntroWildcard
-  | IntroRewrite of bool
-  | IntroIdentifier of identifier
-  | IntroFresh of identifier
-  | IntroForthcoming of bool
-  | IntroAnonymous
-and or_and_intro_pattern_expr = (loc * intro_pattern_expr) list list
 
 let rec pr_intro_pattern (_,pat) = match pat with
   | IntroOrAndPattern pll -> pr_or_and_intro_pattern pll

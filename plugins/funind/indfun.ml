@@ -7,6 +7,8 @@ open Indfun_common
 open Libnames
 open Glob_term
 open Declarations
+open Misctypes
+open Decl_kinds
 
 let is_rec_info scheme_info =
   let test_branche min acc (_,_,br) =
@@ -64,7 +66,7 @@ let functional_induction with_clean c princl pat =
 			  errorlabstrm "" (str "Cannot find induction principle for "
 					   ++Printer.pr_lconstr (mkConst c') )
 		    in
-		    (princ,Glob_term.NoBindings, Tacmach.pf_type_of g princ)
+		    (princ,NoBindings, Tacmach.pf_type_of g princ)
 		| _ -> raise (UserError("",str "functional induction must be used with a function" ))
 	    end
 	| Some ((princ,binding)) ->
@@ -109,7 +111,7 @@ let functional_induction with_clean c princl pat =
 	in
 	Tacticals.tclTHEN
 	  (Tacticals.tclMAP (fun id -> Tacticals.tclTRY (Equality.subst_gen (do_rewrite_dependent ()) [id])) idl )
-	  (Hiddentac.h_reduce flag Tacticals.allHypsAndConcl)
+	  (Hiddentac.h_reduce flag Locusops.allHypsAndConcl)
 	  g
       else Tacticals.tclIDTAC g
     in
@@ -480,7 +482,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 	    let b = Names.id_of_string "___b" in 
 	    Topconstr.mkLambdaC(
 	      [dummy_loc,Name a;dummy_loc,Name b],
-	      Topconstr.Default Lib.Explicit,
+	      Topconstr.Default Explicit,
 	      wf_arg_type,
 	      Topconstr.mkAppC(wf_rel_expr,
 			       [
@@ -744,10 +746,9 @@ let rec add_args id new_args b =
   | CPatVar _ -> b
   | CEvar _ -> b
   | CSort _ -> b
-  | CCast(loc,b1,CastConv(ck,b2))  ->
-      CCast(loc,add_args id new_args b1,CastConv(ck,add_args id new_args b2))
-  | CCast(loc,b1,CastCoerce) ->
-      CCast(loc,add_args id new_args b1,CastCoerce)
+  | CCast(loc,b1,b2)  ->
+      CCast(loc,add_args id new_args b1,
+	    Miscops.map_cast_type (add_args id new_args) b2)
   | CRecord (loc, w, pars) ->
       CRecord (loc,
 	       (match w with Some w -> Some (add_args id new_args w) | _ -> None),

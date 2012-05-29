@@ -23,6 +23,8 @@ open Topconstr
 open Nametab
 open Notation
 open Inductiveops
+open Misctypes
+open Decl_kinds
 
 (** constr_expr -> glob_constr translation:
     - it adds holes for implicit arguments
@@ -1516,10 +1518,8 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	GEvar (loc, n, Option.map (List.map (intern env)) l)
     | CSort (loc, s) ->
 	GSort(loc,s)
-    | CCast (loc, c1, CastConv (k, c2)) ->
-	GCast (loc,intern env c1, CastConv (k, intern_type env c2))
-    | CCast (loc, c1, CastCoerce) ->
-	GCast (loc,intern env c1, CastCoerce)
+    | CCast (loc, c1, c2) ->
+	GCast (loc,intern env c1, Miscops.map_cast_type (intern_type env) c2)
 
   and intern_type env = intern (set_type_scope env)
 

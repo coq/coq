@@ -44,7 +44,7 @@ open Equality
 open Auto
 open Eauto
 
-open Genarg
+open Misctypes
 open Indfun_common
 
 
@@ -288,7 +288,7 @@ let tclUSER tac is_mes l g =
       if is_mes
       then tclTHENLIST
         [
-	  unfold_in_concl [(Termops.all_occurrences, evaluable_of_global_reference
+	  unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference
             (delayed_force Indfun_common.ltof_ref))];
          tac
 	 ]
@@ -566,9 +566,9 @@ let rec destruct_bounds_aux infos (bound,hyple,rechyps) lbounds g =
 		   tclTHENLIST[
 		     observe_tac (str "clearing k ") (clear [id]);
 		     h_intros [k;h';def];
-		     observe_tac (str "simple_iter") (simpl_iter onConcl);
+		     observe_tac (str "simple_iter") (simpl_iter Locusops.onConcl);
 		     observe_tac (str "unfold functional")
-		       (unfold_in_concl[((true,[1]),
+		       (unfold_in_concl[(Locus.OnlyOccurrences [1],
 					 evaluable_of_global_reference infos.func)]);
 		     observe_tac (str "test" ) (
 		       tclTHENLIST[
@@ -685,7 +685,7 @@ let mkDestructEq :
      [h_generalize new_hyps;
       (fun g2 ->
 	change_in_concl None
-	  (pattern_occs [((false,[1]), expr)] (pf_env g2) Evd.empty (pf_concl g2)) g2);
+	  (pattern_occs [Locus.AllOccurrencesBut [1], expr] (pf_env g2) Evd.empty (pf_concl g2)) g2);
       simplest_case expr], to_revert
 
 
@@ -857,7 +857,7 @@ let rec make_rewrite_list expr_info max = function
 	    let def_na,_,_ = destProd t in
 	    Nameops.out_name k_na,Nameops.out_name def_na
 	  in
-	  general_rewrite_bindings false Termops.all_occurrences
+	  general_rewrite_bindings false Locus.AllOccurrences
 	    true (* dep proofs also: *) true 
 	    (mkVar hp,
 	     ExplicitBindings[dummy_loc,NamedHyp def,
@@ -883,7 +883,8 @@ let make_rewrite expr_info l hp max =
 	    let def_na,_,_ = destProd t in
 	    Nameops.out_name k_na,Nameops.out_name def_na
 	  in
-	 observe_tac (str "general_rewrite_bindings") (general_rewrite_bindings false Termops.all_occurrences
+	 observe_tac (str "general_rewrite_bindings")
+	   (general_rewrite_bindings false Locus.AllOccurrences
 	    true (* dep proofs also: *) true 
 	    (mkVar hp,
 	     ExplicitBindings[dummy_loc,NamedHyp def,
@@ -892,9 +893,9 @@ let make_rewrite expr_info l hp max =
        [observe_tac(str "make_rewrite finalize") (
 	 (* tclORELSE( h_reflexivity) *)
 	 (tclTHENLIST[
-	   simpl_iter onConcl;
+	   simpl_iter Locusops.onConcl;
 	   observe_tac (str "unfold functional")
-	     (unfold_in_concl[((true,[1]),
+	     (unfold_in_concl[(Locus.OnlyOccurrences [1],
 			       evaluable_of_global_reference expr_info.func)]);
 	   
 	   (list_rewrite true 
@@ -1413,7 +1414,7 @@ let start_equation (f:global_reference) (term_f:global_reference)
   let x = n_x_id ids nargs in
   tclTHENLIST [
     h_intros x;
-    unfold_in_concl [(Termops.all_occurrences, evaluable_of_global_reference f)];
+    unfold_in_concl [(Locus.AllOccurrences, evaluable_of_global_reference f)];
     observe_tac (str "simplest_case")
       (simplest_case (mkApp (terminate_constr,
                              Array.of_list (List.map mkVar x))));
