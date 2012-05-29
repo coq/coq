@@ -411,7 +411,8 @@ END
 
 open Pcoq
 open Genarg
-open Egrammar
+open Egramml
+open Egramcoq
 
 let _ =
   try

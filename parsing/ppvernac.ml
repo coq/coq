@@ -77,7 +77,7 @@ let pr_raw_tactic tac = pr_raw_tactic (Global.env()) tac
 
 let rec extract_signature = function
   | [] -> []
-  | Egrammar.GramNonTerminal (_,t,_,_) :: l -> t :: extract_signature l
+  | Egramml.GramNonTerminal (_,t,_,_) :: l -> t :: extract_signature l
   | _::l -> extract_signature l
 
 let rec match_vernac_rule tys = function
@@ -942,19 +942,19 @@ and pr_extend s cl =
     try pr_gen (Global.env()) a
     with Failure _ -> str ("<error in "^s^">") in
   try
-    let rls = List.assoc s (Egrammar.get_extend_vernac_grammars()) in
+    let rls = List.assoc s (Egramml.get_extend_vernac_grammars()) in
     let rl = match_vernac_rule (List.map Genarg.genarg_tag cl) rls in
     let start,rl,cl =
       match rl with
-      | Egrammar.GramTerminal s :: rl -> str s, rl, cl
-      | Egrammar.GramNonTerminal _ :: rl -> pr_arg (List.hd cl), rl, List.tl cl
+      | Egramml.GramTerminal s :: rl -> str s, rl, cl
+      | Egramml.GramNonTerminal _ :: rl -> pr_arg (List.hd cl), rl, List.tl cl
       | [] -> anomaly "Empty entry" in
     let (pp,_) =
       List.fold_left
         (fun (strm,args) pi ->
           let pp,args = match pi with
-          | Egrammar.GramNonTerminal _ -> (pr_arg (List.hd args), List.tl args)
-          | Egrammar.GramTerminal s -> (str s, args) in
+          | Egramml.GramNonTerminal _ -> (pr_arg (List.hd args), List.tl args)
+          | Egramml.GramTerminal s -> (str s, args) in
           (strm ++ spc() ++ pp), args)
         (start,cl) rl in
     hov 1 pp

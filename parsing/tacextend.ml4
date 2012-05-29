@@ -16,7 +16,7 @@ open Q_coqast
 open Argextend
 open Pcoq
 open Extrawit
-open Egrammar
+open Egramml
 open Compat
 
 let rec make_patt = function
@@ -95,9 +95,9 @@ let mlexpr_terminals_of_grammar_tactic_prod_item_expr = function
   | GramNonTerminal (loc,nt,_,sopt) -> <:expr< None >>
 
 let make_prod_item = function
-  | GramTerminal s -> <:expr< Egrammar.GramTerminal $str:s$ >>
+  | GramTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
   | GramNonTerminal (loc,nt,g,sopt) ->
-      <:expr< Egrammar.GramNonTerminal $default_loc$ $mlexpr_of_argtype loc nt$
+      <:expr< Egramml.GramNonTerminal $default_loc$ $mlexpr_of_argtype loc nt$
       $mlexpr_of_prod_entry_key g$ $mlexpr_of_option mlexpr_of_ident sopt$ >>
 
 let mlexpr_of_clause =
@@ -190,7 +190,7 @@ let declare_tactic loc s cl =
            | None -> () ])
           $atomic_tactics$
       with e -> Pp.pp (Errors.print e);
-      Egrammar.extend_tactic_grammar $se$ $gl$;
+      Egramml.extend_tactic_grammar $se$ $gl$;
       List.iter Pptactic.declare_extra_tactic_pprule $pp$; } >>
     ])
 

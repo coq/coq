@@ -27,7 +27,8 @@ open Glob_term
 open Libnames
 open Tok
 open Lexer
-open Egrammar
+open Egramml
+open Egramcoq
 open Notation
 open Nameops
 
@@ -65,7 +66,7 @@ let rec make_tags = function
   | [] -> []
 
 let cache_tactic_notation (_,(pa,pp)) =
-  Egrammar.extend_grammar (Egrammar.TacticGrammar pa);
+  Egramcoq.extend_grammar (Egramcoq.TacticGrammar pa);
   Pptactic.declare_extra_tactic_pprule pp
 
 let subst_tactic_parule subst (key,n,p,(d,tac)) =
@@ -700,7 +701,7 @@ let cache_one_syntax_extension (typs,prec,ntn,gr,pp) =
     (* Reserve the notation level *)
     Notation.declare_notation_level ntn prec;
     (* Declare the parsing rule *)
-    Egrammar.extend_grammar (Egrammar.Notation (prec,typs,gr));
+    Egramcoq.extend_grammar (Egramcoq.Notation (prec,typs,gr));
     (* Declare the printing rule *)
     Notation.declare_notation_printing_rule ntn (pp,fst prec)
 
@@ -1023,7 +1024,7 @@ let recover_syntax ntn =
   try
     let prec = Notation.level_of_notation ntn in
     let pp_rule,_ = Notation.find_notation_printing_rule ntn in
-    let typs,pa_rule = Egrammar.recover_notation_grammar ntn prec in
+    let typs,pa_rule = Egramcoq.recover_notation_grammar ntn prec in
     (typs,prec,ntn,pa_rule,pp_rule)
   with Not_found ->
     raise NoSyntaxRule

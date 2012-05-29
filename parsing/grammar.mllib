@@ -1,6 +1,5 @@
 Coq_config
 
-Profile
 Pp_control
 Compat
 Flags
@@ -10,16 +9,13 @@ Unicodetable
 Errors
 Util
 Bigint
-Dyn
 Hashcons
 Predicate
 Option
 
 Names
 Libnames
-Summary
 Genarg
-Ppextend
 Tok
 Lexer
 Extend
@@ -28,7 +24,7 @@ Pcoq
 Q_util
 Q_coqast
 
-Egrammar
+Egramml
 Argextend
 Tacextend
 Vernacextend

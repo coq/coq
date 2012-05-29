@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Compat
-open Errors
 open Pp
 open Names
 open Constrexpr
@@ -16,14 +15,13 @@ open Pcoq
 open Extend
 open Vernacexpr
 open Ppextend
-open Glob_term
 open Genarg
-open Mod_subst
+open Egramml
 
-(** Mapping of grammar productions to camlp4 actions
-    Used for Coq-level Notation and Tactic Notation,
-    and for ML-level tactic and vernac extensions
- *)
+(** Mapping of grammar productions to camlp4 actions *)
+
+(** This is the part specific to Coq-level Notation and Tactic Notation.
+    For the ML-level tactic and vernac extensions, see Egramml. *)
 
 (** For constr notations *)
 
@@ -31,18 +29,11 @@ type grammar_constr_prod_item =
   | GramConstrTerminal of Tok.t
   | GramConstrNonTerminal of constr_prod_entry_key * identifier option
   | GramConstrListMark of int * bool
-    (* tells action rule to make a list of the n previous parsed items; 
+    (* tells action rule to make a list of the n previous parsed items;
        concat with last parsed list if true *)
 
 type notation_grammar =
     int * gram_assoc option * notation * grammar_constr_prod_item list list
-
-(** For tactic and vernac notations *)
-
-type grammar_prod_item =
-  | GramTerminal of string
-  | GramNonTerminal of loc * argument_type *
-      prod_entry_key * identifier option
 
 (** Adding notations *)
 
@@ -58,15 +49,6 @@ type all_grammar_command =
          (dir_path * Tacexpr.glob_tactic_expr))
 
 val extend_grammar : all_grammar_command -> unit
-
-val extend_tactic_grammar :
-  string -> grammar_prod_item list list -> unit
-
-val extend_vernac_command_grammar :
-  string -> vernac_expr Gram.entry option -> grammar_prod_item list list -> unit
-
-val get_extend_vernac_grammars :
- unit -> (string * grammar_prod_item list list) list
 
 (** For a declared grammar, returns the rule + the ordered entry types
     of variables in the rule (for use in the interpretation) *)

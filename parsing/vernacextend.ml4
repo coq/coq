@@ -16,7 +16,7 @@ open Q_coqast
 open Argextend
 open Tacextend
 open Pcoq
-open Egrammar
+open Egramml
 open Compat
 
 let rec make_let e = function
@@ -56,7 +56,7 @@ let declare_command loc s nt cl =
     [ <:str_item< do {
 	try Vernacinterp.vinterp_add $mlexpr_of_string s$ $funcl$
 	with e -> Pp.pp (Errors.print e);
-	Egrammar.extend_vernac_command_grammar $mlexpr_of_string s$ $nt$ $gl$
+	Egramml.extend_vernac_command_grammar $mlexpr_of_string s$ $nt$ $gl$
       } >> ]
 
 open Pcaml

@@ -17,10 +17,10 @@ open Constrexpr
 open Notation_term
 open Genarg
 open Libnames
-open Nameops
 open Tacexpr
 open Names
 open Vernacexpr
+open Egramml
 
 (**************************************************************************)
 (*
@@ -61,7 +61,7 @@ type grammar_constr_prod_item =
   | GramConstrTerminal of Tok.t
   | GramConstrNonTerminal of constr_prod_entry_key * identifier option
   | GramConstrListMark of int * bool
-    (* tells action rule to make a list of the n previous parsed items; 
+    (* tells action rule to make a list of the n previous parsed items;
        concat with last parsed list if true *)
 
 let make_constr_action
@@ -108,12 +108,8 @@ let make_constr_action
   in
   make ([],[],[]) (List.rev pil)
 
-(* TODO: factorize the error message with error_invalid_pattern_notaition
-   without introducing useless dependencies *)
-
 let check_cases_pattern_env loc (env,envlist,hasbinders) =
-  if hasbinders then
-    Errors.user_err_loc (loc,"",str "Invalid notation for pattern.")
+  if hasbinders then Topconstr.error_invalid_pattern_notation loc
   else (env,envlist)
 
 let make_cases_pattern_action
@@ -209,60 +205,6 @@ let extend_constr_notation (n,assoc,ntn,rules) =
   nb+nb'
 
 (**********************************************************************)
-(** Making generic actions in type generic_argument                   *)
-
-let make_generic_action
-  (f:loc -> ('b * raw_generic_argument) list -> 'a) pil =
-  let rec make env = function
-    | [] ->
-	Gram.action (fun loc -> f loc env)
-    | None :: tl -> (* parse a non-binding item *)
-        Gram.action (fun _ -> make env tl)
-    | Some (p, t) :: tl -> (* non-terminal *)
-        Gram.action (fun v -> make ((p,in_generic t v) :: env) tl) in
-  make [] (List.rev pil)
-
-let make_rule univ f g pt =
-  let (symbs,ntl) = List.split (List.map g pt) in
-  let act = make_generic_action f ntl in
-  (symbs, act)
-
-(**********************************************************************)
-(** Grammar extensions declared at ML level                           *)
-
-type grammar_prod_item =
-  | GramTerminal of string
-  | GramNonTerminal of
-      loc * argument_type * prod_entry_key * identifier option
-
-let make_prod_item = function
-  | GramTerminal s -> (gram_token_of_string s, None)
-  | GramNonTerminal (_,t,e,po) ->
-      (symbol_of_prod_entry_key e, Option.map (fun p -> (p,t)) po)
-
-(* Tactic grammar extensions *)
-
-let extend_tactic_grammar s gl =
-  let univ = get_univ "tactic" in
-  let mkact loc l = Tacexpr.TacExtend (loc,s,List.map snd l) in
-  let rules = List.map (make_rule univ mkact make_prod_item) gl in
-  maybe_uncurry (Gram.extend Tactic.simple_tactic)
-    (None,[(None, None, List.rev rules)])
-
-(* Vernac grammar extensions *)
-
-let vernac_exts = ref []
-let get_extend_vernac_grammars () = !vernac_exts
-
-let extend_vernac_command_grammar s nt gl =
-  let nt = Option.default Vernac_.command nt in
-  vernac_exts := (s,gl) :: !vernac_exts;
-  let univ = get_univ "vernac" in
-  let mkact loc l = VernacExtend (s,List.map snd l) in
-  let rules = List.map (make_rule univ mkact make_prod_item) gl in
-  maybe_uncurry (Gram.extend nt) (None,[(None, None, List.rev rules)])
-
-(**********************************************************************)
 (** Grammar declaration for Tactic Notation (Coq level)               *)
 
 let get_tactic_entry n =
@@ -280,7 +222,6 @@ let get_tactic_entry n =
 let head_is_ident = function GramTerminal _::_ -> true | _ -> false
 
 let add_tactic_entry (key,lev,prods,tac) =
-  let univ = get_univ "tactic" in
   let entry, pos = get_tactic_entry lev in
   let rules =
     if lev = 0 then begin
@@ -288,12 +229,12 @@ let add_tactic_entry (key,lev,prods,tac) =
 	error "Notation for simple tactic must start with an identifier.";
       let mkact s tac loc l =
 	(TacAlias(loc,s,l,tac):raw_atomic_tactic_expr) in
-      make_rule univ (mkact key tac) make_prod_item prods
+      make_rule (mkact key tac) prods
     end
     else
       let mkact s tac loc l =
 	(TacAtom(loc,TacAlias(loc,s,l,tac)):raw_tactic_expr) in
-      make_rule univ (mkact key tac) make_prod_item prods in
+      make_rule (mkact key tac) prods in
   synchronize_level_positions ();
   grammar_extend entry None (pos,[(None, None, List.rev [rules])]);
   1

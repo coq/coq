@@ -10,7 +10,7 @@
 
 open Genarg
 open Q_util
-open Egrammar
+open Egramml
 open Pcoq
 open Compat
 
