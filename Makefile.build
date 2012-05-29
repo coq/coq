@@ -701,6 +701,9 @@ ml-doc:
 parsing/parsing.dot : | parsing/parsing.mllib.d parsing/highparsing.mllib.d
 	$(OCAMLDOC_MLLIBD)
 
+parsing/grammar.dot : | parsing/grammar.mllib.d
+	$(OCAMLDOC_MLLIBD)
+
 tactics/tactics.dot: | tactics/tactics.mllib.d tactics/hightactics.mllib.d
 	$(OCAMLDOC_MLLIBD)
 
