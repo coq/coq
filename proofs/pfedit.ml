@@ -13,7 +13,6 @@ open Names
 open Nameops
 open Sign
 open Term
-open Declarations
 open Entries
 open Environ
 open Evd
@@ -22,7 +21,6 @@ open Refiner
 open Tacexpr
 open Proof_type
 open Lib
-open Safe_typing
 
 let refining = Proof_global.there_are_pending_proofs
 let check_no_pending_proofs = Proof_global.check_no_pending_proof
