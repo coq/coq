@@ -173,7 +173,7 @@ let _ =
         "hnf", TacReduce(Hnf,nocl);
         "simpl", TacReduce(Simpl None,nocl);
         "compute", TacReduce(Cbv all_flags,nocl);
-        "intro", TacIntroMove(None,no_move);
+        "intro", TacIntroMove(None,MoveLast);
         "intros", TacIntroPattern [];
         "assumption", TacAssumption;
         "cofix", TacCofix None;
@@ -384,7 +384,8 @@ let intern_constr_reference strict ist = function
 let intern_move_location ist = function
   | MoveAfter id -> MoveAfter (intern_hyp_or_metaid ist id)
   | MoveBefore id -> MoveBefore (intern_hyp_or_metaid ist id)
-  | MoveToEnd toleft as x -> x
+  | MoveFirst -> MoveFirst
+  | MoveLast -> MoveLast
 
 (* Internalize an isolated reference in position of tactic *)
 
@@ -1130,7 +1131,8 @@ let interp_hyp_list ist gl l =
 let interp_move_location ist gl = function
   | MoveAfter id -> MoveAfter (interp_hyp ist gl id)
   | MoveBefore id -> MoveBefore (interp_hyp ist gl id)
-  | MoveToEnd toleft as x -> x
+  | MoveFirst -> MoveFirst
+  | MoveLast -> MoveLast
 
 (* Interprets a qualified name *)
 let coerce_to_reference env v =

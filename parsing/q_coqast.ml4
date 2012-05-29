@@ -238,7 +238,8 @@ let mlexpr_of_constr_with_binding =
 let mlexpr_of_move_location f = function
   | Tacexpr.MoveAfter id -> <:expr< Tacexpr.MoveAfter $f id$ >>
   | Tacexpr.MoveBefore id -> <:expr< Tacexpr.MoveBefore $f id$ >>
-  | Tacexpr.MoveToEnd b -> <:expr< Tacexpr.MoveToEnd $mlexpr_of_bool b$ >>
+  | Tacexpr.MoveFirst -> <:expr< Tacexpr.MoveFirst >>
+  | Tacexpr.MoveLast -> <:expr< Tacexpr.MoveLast >>
 
 let mlexpr_of_induction_arg = function
   | Tacexpr.ElimOnConstr c ->

@@ -49,7 +49,7 @@ let introCaseAssumsThen tac ba =
       (ba.branchnames, []),
        if n1 > n2 then snd (list_chop n2 case_thin_sign) else [] in
   let introCaseAssums =
-    tclTHEN (intros_pattern no_move l1) (intros_clearing l3) in
+    tclTHEN (intros_pattern MoveLast l1) (intros_clearing l3) in
   (tclTHEN introCaseAssums (case_on_ba (tac l2) ba))
 
 (* The following tactic Decompose repeatedly applies the

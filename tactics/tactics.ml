@@ -425,7 +425,7 @@ let find_intro_names ctxt gl =
   List.rev res
 
 let build_intro_tac id dest tac = match dest with
-  | MoveToEnd true -> tclTHEN (introduction id) (tac id)
+  | MoveLast -> tclTHEN (introduction id) (tac id)
   | dest -> tclTHENLIST [introduction id; move_hyp true id dest; tac id]
 
 let rec intro_then_gen loc name_flag move_flag force_flag dep_flag tac gl =
@@ -444,14 +444,14 @@ let rec intro_then_gen loc name_flag move_flag force_flag dep_flag tac gl =
 	  user_err_loc(loc,"Intro",str "No product even after head-reduction.")
 
 let intro_gen loc n m f d = intro_then_gen loc n m f d (fun _ -> tclIDTAC)
-let intro_mustbe_force id = intro_gen dloc (IntroMustBe id) no_move true false
-let intro_using id = intro_gen dloc (IntroBasedOn (id,[])) no_move false false
-let intro_then = intro_then_gen dloc (IntroAvoid []) no_move false false
-let intro = intro_gen dloc (IntroAvoid []) no_move false false
-let introf = intro_gen dloc (IntroAvoid []) no_move true false
-let intro_avoiding l = intro_gen dloc (IntroAvoid l) no_move false false
+let intro_mustbe_force id = intro_gen dloc (IntroMustBe id) MoveLast true false
+let intro_using id = intro_gen dloc (IntroBasedOn (id,[])) MoveLast false false
+let intro_then = intro_then_gen dloc (IntroAvoid []) MoveLast false false
+let intro = intro_gen dloc (IntroAvoid []) MoveLast false false
+let introf = intro_gen dloc (IntroAvoid []) MoveLast true false
+let intro_avoiding l = intro_gen dloc (IntroAvoid l) MoveLast false false
 
-let intro_then_force = intro_then_gen dloc (IntroAvoid []) no_move true false
+let intro_then_force = intro_then_gen dloc (IntroAvoid []) MoveLast true false
 
 (**** Multiple introduction tactics ****)
 
@@ -475,7 +475,7 @@ let rec get_next_hyp_position id = function
   | [] -> error ("No such hypothesis: " ^ string_of_id id)
   | (hyp,_,_) :: right ->
       if hyp = id then
-	match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveToEnd true
+	match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveLast
       else
 	get_next_hyp_position id right
 
@@ -1362,7 +1362,7 @@ let check_thin_clash_then id thin avoid tac =
 let rec intros_patterns b avoid ids thin destopt tac = function
   | (loc, IntroWildcard) :: l ->
       intro_then_gen loc (IntroBasedOn(wild_id,avoid@explicit_intro_names l))
-	no_move true false
+	MoveLast true false
         (fun id -> intros_patterns b avoid ids ((loc,id)::thin) destopt tac l)
   | (loc, IntroIdentifier id) :: l ->
       check_thin_clash_then id thin avoid (fun thin ->
@@ -1387,7 +1387,7 @@ let rec intros_patterns b avoid ids thin destopt tac = function
 	   (intros_patterns b avoid ids thin destopt tac))
   | (loc, IntroRewrite l2r) :: l ->
       intro_then_gen loc (IntroAvoid(avoid@explicit_intro_names l))
-	no_move true false
+	MoveLast true false
         (fun id ->
 	  tclTHENLAST (* Skip the side conditions of the rewriting step *)
 	    (rewrite_hyp l2r id)
@@ -1402,7 +1402,7 @@ let intro_pattern destopt pat =
 
 let intro_patterns = function
   | [] -> tclREPEAT intro
-  | l  -> intros_pattern no_move l
+  | l  -> intros_pattern MoveLast l
 
 (**************************)
 (*   Other cut tactics    *)
@@ -1423,7 +1423,7 @@ let prepare_intros s ipat gl = match ipat with
   | IntroOrAndPattern ll -> make_id s gl,
       onLastHypId
 	(intro_or_and_pattern loc true ll []
-	  (intros_patterns true [] [] [] no_move (fun _ -> clear_wildcards)))
+	  (intros_patterns true [] [] [] MoveLast (fun _ -> clear_wildcards)))
   | IntroForthcoming _ -> user_err_loc
       (loc,"",str "Introduction pattern for one hypothesis expected")
 
@@ -1457,7 +1457,7 @@ let as_tac id ipat = match ipat with
       !forward_general_multi_rewrite l2r false (mkVar id,NoBindings) allHypsAndConcl
   | Some (loc,IntroOrAndPattern ll) ->
       intro_or_and_pattern loc true ll []
-        (intros_patterns true [] [] [] no_move (fun _ -> clear_wildcards))
+        (intros_patterns true [] [] [] MoveLast (fun _ -> clear_wildcards))
         id
   | Some (loc,
       (IntroIdentifier _ | IntroAnonymous | IntroFresh _ |
@@ -1748,7 +1748,7 @@ let letin_abstract id c (test,out) (occs,check_occs) gl =
     | Some occ ->
         subst1 (mkVar id) (subst_closed_term_occ_modulo occ test None (pf_concl gl)) in
   let lastlhyp =
-    if depdecls = [] then no_move else MoveAfter(pi1(list_last depdecls)) in
+    if depdecls = [] then MoveLast else MoveAfter(pi1(list_last depdecls)) in
   (depdecls,lastlhyp,ccl,out test)
 
 let letin_tac_gen with_eq name (sigmac,c) test ty occs gl =
@@ -1895,15 +1895,15 @@ let rec consume_pattern avoid id isdep gl = function
   | pat::names -> (pat,names)
 
 let re_intro_dependent_hypotheses (lstatus,rstatus) (_,tophyp) =
-  let tophyp = match tophyp with None -> MoveToEnd true | Some hyp -> MoveAfter hyp in
+  let tophyp = match tophyp with None -> MoveLast | Some hyp -> MoveAfter hyp in
   let newlstatus = (* if some IH has taken place at the top of hyps *)
-    List.map (function (hyp,MoveToEnd true) -> (hyp,tophyp) | x -> x) lstatus
+    List.map (function (hyp,MoveLast) -> (hyp,tophyp) | x -> x) lstatus
   in
   tclTHEN
     (intros_move rstatus)
     (intros_move newlstatus)
 
-let update destopt tophyp = if destopt = no_move then tophyp else destopt
+let update destopt tophyp = if destopt = MoveLast then tophyp else destopt
 
 let safe_dest_intros_patterns avoid thin dest pat tac gl =
   try intros_patterns true avoid [] thin dest tac pat gl
@@ -1912,7 +1912,7 @@ let safe_dest_intros_patterns avoid thin dest pat tac gl =
        only after cook_sign is called, e.g. as in "destruct dec" in context
        "dec:forall x, {x=0}+{x<>0};  a:A  |- if dec a then True else False"
        where argument a of dec will be found only lately *)
-    intros_patterns true avoid [] [] no_move tac pat gl
+    intros_patterns true avoid [] [] MoveLast tac pat gl
 
 type elim_arg_kind = RecArg | IndArg | OtherArg
 
@@ -1929,7 +1929,7 @@ let update_dest (recargdests,tophyp as dests) = function
 
 let get_recarg_dest (recargdests,tophyp) =
   match recargdests with
-  | AfterFixedPosition None -> MoveToEnd true
+  | AfterFixedPosition None -> MoveLast
   | AfterFixedPosition (Some id) -> MoveAfter id
 
 (* Current policy re-introduces recursive arguments of destructed
@@ -1956,13 +1956,13 @@ let induct_discharge dests avoid' tac (avoid,ra) names gl =
         let hyprec,names = consume_pattern avoid hyprecname depind gl names in
         let dest = get_recarg_dest dests in
         safe_dest_intros_patterns avoid thin dest [recpat] (fun ids thin ->
-	safe_dest_intros_patterns avoid thin no_move [hyprec] (fun ids' thin ->
+	safe_dest_intros_patterns avoid thin MoveLast [hyprec] (fun ids' thin ->
 	peel_tac ra' (update_dest dests ids') names thin))
           gl
     | (IndArg,dep,hyprecname) :: ra' ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
         let pat,names = consume_pattern avoid hyprecname dep gl names in
-	safe_dest_intros_patterns avoid thin no_move [pat] (fun ids thin ->
+	safe_dest_intros_patterns avoid thin MoveLast [pat] (fun ids thin ->
         peel_tac ra' (update_dest dests ids) names thin) gl
     | (RecArg,dep,recvarname) :: ra' ->
         let pat,names = consume_pattern avoid recvarname dep gl names in
@@ -2123,7 +2123,7 @@ let cook_sign hyp0_opt indvars env =
       (* If there was no main induction hypotheses, then hyp is one of
          indvars too, so add it to indhyps. *)
       (if hyp0_opt=None then indhyps := hyp::!indhyps);
-      MoveToEnd false (* fake value *)
+      MoveFirst (* fake value *)
     end else if List.mem hyp indvars then begin
       (* warning: hyp can still occur after induction *)
       (* e.g. if the goal (t hyp hyp0) with other occs of hyp in t *)
@@ -2143,7 +2143,7 @@ let cook_sign hyp0_opt indvars env =
       else
 	MoveBefore hyp
   in
-  let _ = fold_named_context seek_deps env ~init:(MoveToEnd false) in
+  let _ = fold_named_context seek_deps env ~init:MoveFirst in
   (* 2nd phase from R to L: get left hyp of [hyp0] and [lhyps] *)
   let compute_lstatus lhyp (hyp,_,_) =
     if hyp = hyp0 then raise (Shunt lhyp);
@@ -2155,11 +2155,11 @@ let cook_sign hyp0_opt indvars env =
   in
   try
     let _ =
-      fold_named_context_reverse compute_lstatus ~init:(MoveToEnd true) env in
-    raise (Shunt (MoveToEnd true)) (* ?? FIXME *)
+      fold_named_context_reverse compute_lstatus ~init:MoveLast env in
+    raise (Shunt MoveLast) (* ?? FIXME *)
   with Shunt lhyp0 ->
     let lhyp0 = match lhyp0 with
-      | MoveToEnd true -> None
+      | MoveLast -> None
       | MoveAfter hyp -> Some hyp
       | _ -> assert false in
     let statuslists = (!lstatus,List.rev !rstatus) in

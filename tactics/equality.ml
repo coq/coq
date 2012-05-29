@@ -1160,7 +1160,7 @@ let injEq ipats (eq,_,(t,t1,t2) as u) eq_clause =
             ) else (raise Not_dep_pair)
         ) with _ ->
 	  inject_at_positions env sigma u eq_clause posns
-	    (fun _ -> intros_pattern no_move ipats)
+	    (fun _ -> intros_pattern MoveLast ipats)
 
 let inj ipats with_evars = onEquality with_evars (injEq ipats)
 

@@ -96,7 +96,6 @@ let
  let module PT = Proof_type in
  let module L = Logic in
  let module X = Xml in
- let module T = Tacexpr in
   let ids_of_node node =
    let constr = Proof2aproof.ProofTreeHash.find proof_tree_to_constr node in
 (*
@@ -144,7 +143,7 @@ Pp.ppnl (Pp.(++) (Pp.str
          Proof2aproof.ProofTreeHash.find proof_tree_to_flattened_proof_tree node
         in begin
         match tactic_expr with
-        | T.TacArg (_,T.Tacexp _) ->
+        | Tacexpr.TacArg (_,Tacexpr.Tacexp _) ->
             (* We don't need to keep the level of abstraction introduced at *)
             (* user-level invocation of tactic... (see Tacinterp.hide_interp)*)
             aux flat_proof old_hyps

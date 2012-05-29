@@ -22,7 +22,7 @@ open Misctypes
 open Locus
 open Decl_kinds
 
-let all_with delta = make_red_flag [FBeta;FIota;FZeta;delta]
+let all_with delta = Tacops.make_red_flag [FBeta;FIota;FZeta;delta]
 
 let tactic_kw = [ "->"; "<-" ; "by" ]
 let _ = List.iter Lexer.add_keyword tactic_kw
@@ -327,7 +327,7 @@ GEXTEND Gram
     ] ]
   ;
   strategy_flag:
-    [ [ s = LIST1 red_flag -> make_red_flag s
+    [ [ s = LIST1 red_flag -> Tacops.make_red_flag s
       | d = delta_flag -> all_with d
     ] ]
   ;
@@ -503,8 +503,8 @@ GEXTEND Gram
   move_location:
     [ [ IDENT "after"; id = id_or_meta -> MoveAfter id
       | IDENT "before"; id = id_or_meta -> MoveBefore id
-      | "at"; IDENT "bottom" -> MoveToEnd true
-      | "at"; IDENT "top" -> MoveToEnd false ] ]
+      | "at"; IDENT "top" -> MoveFirst
+      | "at"; IDENT "bottom" -> MoveLast ] ]
   ;
   simple_tactic:
     [ [
@@ -515,8 +515,8 @@ GEXTEND Gram
       | IDENT "intro"; id = ident; hto = move_location ->
 	  TacIntroMove (Some id, hto)
       | IDENT "intro"; hto = move_location -> TacIntroMove (None, hto)
-      | IDENT "intro"; id = ident -> TacIntroMove (Some id, no_move)
-      | IDENT "intro" -> TacIntroMove (None, no_move)
+      | IDENT "intro"; id = ident -> TacIntroMove (Some id, MoveLast)
+      | IDENT "intro" -> TacIntroMove (None, MoveLast)
 
       | IDENT "assumption" -> TacAssumption
       | IDENT "exact"; c = constr -> TacExact c

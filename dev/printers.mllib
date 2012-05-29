@@ -115,7 +115,7 @@ Smartlocate
 Constrintern
 Modintern
 Constrextern
-Tacexpr
+Tacops
 Proof_type
 Goal
 Logic

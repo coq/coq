@@ -221,7 +221,7 @@ let rec get_hyp_after h = function
   | [] -> error_no_such_hypothesis h
   | (hyp,_,_) :: right ->
       if hyp = h then
-	match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveToEnd false
+	match right with (id,_,_)::_ -> MoveBefore id | [] -> MoveFirst
       else
        get_hyp_after h right
 
@@ -230,7 +230,7 @@ let split_sign hfrom hto l =
     | [] -> error_no_such_hypothesis hfrom
     | (hyp,c,typ) as d :: right ->
       	if hyp = hfrom then
-	  (left,right,d, toleft or hto = MoveToEnd true)
+	  (left,right,d, toleft or hto = MoveLast)
       	else
 	  splitrec (d::left)
 	    (toleft or hto = MoveAfter hyp or hto = MoveBefore hyp)
@@ -252,7 +252,7 @@ let move_hyp with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
   in
   let rec moverec first middle = function
     | [] ->
-	if match hto with MoveToEnd _ -> false | _ -> true then
+	if match hto with MoveFirst | MoveLast -> false | _ -> true then
 	  error_no_such_hypothesis (hyp_of_move_location hto);
 	List.rev first @ List.rev middle
     | (hyp,_,_) :: _ as right when hto = MoveBefore hyp ->
@@ -264,7 +264,7 @@ let move_hyp with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
 	      (first, d::middle)
             else
 	      errorlabstrm "move_hyp" (str "Cannot move " ++ pr_id idfrom ++
-	        pr_move_location pr_id hto ++
+	        Tacops.pr_move_location pr_id hto ++
 	        str (if toleft then ": it occurs in " else ": it depends on ")
 	        ++ pr_id hyp ++ str ".")
           else

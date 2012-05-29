@@ -40,43 +40,13 @@ type glob_red_flag =
   | FConst of reference or_by_notation list
   | FDeltaBut of reference or_by_notation list
 
-let make_red_flag =
-  let rec add_flag red = function
-    | [] -> red
-    | FBeta :: lf -> add_flag { red with rBeta = true } lf
-    | FIota :: lf -> add_flag { red with rIota = true } lf
-    | FZeta :: lf -> add_flag { red with rZeta = true } lf
-    | FConst l :: lf ->
-	if red.rDelta then
-	  error
-	    "Cannot set both constants to unfold and constants not to unfold";
-        add_flag { red with rConst = list_union red.rConst l } lf
-    | FDeltaBut l :: lf ->
-	if red.rConst <> [] & not red.rDelta then
-	  error
-	    "Cannot set both constants to unfold and constants not to unfold";
-        add_flag
-	  { red with rConst = list_union red.rConst l; rDelta = true }
-	  lf
-  in
-  add_flag
-    {rBeta = false; rIota = false; rZeta = false; rDelta = false; rConst = []}
-
 type 'a raw_hyp_location = 'a with_occurrences * hyp_location_flag
 
 type 'id move_location =
   | MoveAfter of 'id
   | MoveBefore of 'id
-  | MoveToEnd of bool
-
-let no_move = MoveToEnd true
-
-open Pp
-
-let pr_move_location pr_id = function
-  | MoveAfter id -> brk(1,1) ++ str "after " ++ pr_id id
-  | MoveBefore id -> brk(1,1) ++ str "before " ++ pr_id id
-  | MoveToEnd toleft -> str (if toleft then " at bottom" else " at top")
+  | MoveFirst
+  | MoveLast (* can be seen as "no move" when doing intro *)
 
 type 'a induction_arg =
   | ElimOnConstr of 'a

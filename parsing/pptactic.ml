@@ -624,7 +624,7 @@ let pr_cofix_tac (id,c) =
   (* Printing tactics as arguments *)
 let rec pr_atom0 = function
   | TacIntroPattern [] -> str "intros"
-  | TacIntroMove (None,hto) when hto = no_move -> str "intro"
+  | TacIntroMove (None,MoveLast) -> str "intro"
   | TacAssumption -> str "assumption"
   | TacAnyConstructor (false,None) -> str "constructor"
   | TacAnyConstructor (true,None) -> str "econstructor"
@@ -647,10 +647,10 @@ and pr_atom1 = function
       hov 1 (str "intros" ++ spc () ++ prlist_with_sep spc pr_intro_pattern p)
   | TacIntrosUntil h ->
       hv 1 (str "intros until" ++ pr_arg pr_quantified_hypothesis h)
-  | TacIntroMove (None,hto) as t when hto = no_move -> pr_atom0 t
-  | TacIntroMove (Some id,hto) when hto = no_move -> str "intro " ++ pr_id id
+  | TacIntroMove (None,MoveLast) as t -> pr_atom0 t
+  | TacIntroMove (Some id,MoveLast) -> str "intro " ++ pr_id id
   | TacIntroMove (ido,hto) ->
-      hov 1 (str"intro" ++ pr_opt pr_id ido ++ pr_move_location pr_ident hto)
+      hov 1 (str"intro" ++ pr_opt pr_id ido ++ Tacops.pr_move_location pr_ident hto)
   | TacAssumption as t -> pr_atom0 t
   | TacExact c -> hov 1 (str "exact" ++ pr_constrarg c)
   | TacExactNoCheck c -> hov 1 (str "exact_no_check" ++ pr_constrarg c)
@@ -764,7 +764,7 @@ and pr_atom1 = function
       assert b;
       hov 1
         (str "move" ++ brk (1,1) ++ pr_ident id1 ++
-	 pr_move_location pr_ident id2)
+	 Tacops.pr_move_location pr_ident id2)
   | TacRename l ->
       hov 1
         (str "rename" ++ brk (1,1) ++
