@@ -6,10 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
-open Util
-open Libnames
-
 (** Informal mathematical status of declarations *)
 
 type locality =
@@ -68,24 +64,9 @@ type logical_kind =
   | IsDefinition of definition_object_kind
   | IsProof of theorem_kind
 
-(** Utils *)
-
-val logical_kind_of_goal_kind : goal_object_kind -> logical_kind
-val string_of_theorem_kind : theorem_kind -> string
-val string_of_definition_kind :
-  locality * definition_object_kind -> string
-
-(** About locality *)
-
-val strength_of_global : global_reference -> locality
-val string_of_strength : locality -> string
-
-(** About recursive power of type declarations *)
+(** Recursive power of type declarations *)
 
 type recursivity_kind =
   | Finite (** = inductive *)
   | CoFinite (** = coinductive *)
   | BiFinite (** = non-recursive, like in "Record" definitions *)
-
-(** helper, converts to "finiteness flag" booleans *)
-val recursivity_flag_of_kind : recursivity_kind -> bool

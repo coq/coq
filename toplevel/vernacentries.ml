@@ -449,7 +449,7 @@ let vernac_inductive finite infer indl =
       | _ -> Errors.error "Cannot handle mutually (co)inductive records."
     in
     let indl = List.map unpack indl in
-    do_mutual_inductive indl (recursivity_flag_of_kind finite)
+    do_mutual_inductive indl (finite<>CoFinite)
 
 let vernac_fixpoint l =
   if Dumpglob.dump () then

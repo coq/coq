@@ -160,6 +160,10 @@ let strength_of_cl = function
   | CL_SECVAR id -> Local
   | _ -> Global
 
+let strength_of_global = function
+  | VarRef _ -> Local
+  | _ -> Global
+
 let get_strength stre ref cls clt =
   let stres = strength_of_cl cls in
   let stret = strength_of_cl clt in

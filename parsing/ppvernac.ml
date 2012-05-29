@@ -360,7 +360,7 @@ let pr_ne_params_list pr_c l =
   prlist_with_sep pr_semicolon (pr_params pr_c)
 *)
 
-let pr_thm_token k = str (string_of_theorem_kind k)
+let pr_thm_token k = str (Kindops.string_of_theorem_kind k)
 
 let pr_syntax_modifier = function
   | SetItemLevel (l,NextLevel) ->
@@ -532,7 +532,7 @@ let rec pr_vernac = function
 
   (* Gallina *)
   | VernacDefinition (d,id,b,f) -> (* A verifier... *)
-      let pr_def_token dk = str (string_of_definition_kind dk) in
+      let pr_def_token dk = str (Kindops.string_of_definition_kind dk) in
       let pr_reduce = function
         | None -> mt()
         | Some r ->

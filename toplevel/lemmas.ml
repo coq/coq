@@ -161,7 +161,7 @@ let save id const do_guard (locality,kind) hook =
   let {const_entry_body = pft;
        const_entry_type = tpo;
        const_entry_opaque = opacity } = const in
-  let k = logical_kind_of_goal_kind kind in
+  let k = Kindops.logical_kind_of_goal_kind kind in
   let l,r = match locality with
     | Local when Lib.sections_are_opened () ->
 	let c = SectionLocalDef (pft, tpo, opacity) in
@@ -203,7 +203,7 @@ let save_remaining_recthms (local,kind) body opaq i (id,(t_i,(_,imps))) =
           let kn = declare_constant id (ParameterEntry (None,t_i,None), k) in
           (Global,ConstRef kn,imps))
   | Some body ->
-      let k = logical_kind_of_goal_kind kind in
+      let k = Kindops.logical_kind_of_goal_kind kind in
       let body_i = match kind_of_term body with
         | Fix ((nv,0),decls) -> mkFix ((nv,i),decls)
         | CoFix (0,decls) -> mkCoFix (i,decls)

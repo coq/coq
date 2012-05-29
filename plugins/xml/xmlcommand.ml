@@ -64,12 +64,12 @@ let extract_nparams pack =
 
 *)
 
+open Decl_kinds
+
 (* could_have_namesakes sp = true iff o is an object that could be cooked and *)
 (* than that could exists in cooked form with the same name in a super        *)
 (* section of the actual section                                              *)
 let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
- let module DK = Decl_kinds in
- let module D = Declare in
   let tag = Libobject.object_tag o in
    print_if_verbose ("Object tag: " ^ tag ^ "\n") ;
    match tag with
@@ -104,11 +104,6 @@ let filter_params pvars hyps =
   let cwdsp = Libnames.make_path cwd (Names.id_of_string "dummy") in
   let modulepath = Cic2acic.get_module_path_of_full_path cwdsp in
    aux (Names.repr_dirpath modulepath) (List.rev pvars)
-;;
-
-type variables_type =
-   Definition of string * Term.constr * Term.types
- | Assumption of string * Term.constr
 ;;
 
 (* The computation is very inefficient, but we can't do anything *)
@@ -401,9 +396,9 @@ let theory_output_string ?(do_not_quote = false) s =
 ;;
 
 let kind_of_global_goal = function
-  | Decl_kinds.Global, Decl_kinds.DefinitionBody _ -> "DEFINITION","InteractiveDefinition"
-  | Decl_kinds.Global, (Decl_kinds.Proof k) -> "THEOREM",Decl_kinds.string_of_theorem_kind k
-  | Decl_kinds.Local, _ -> assert false
+  | Global, DefinitionBody _ -> "DEFINITION","InteractiveDefinition"
+  | Global, (Proof k) -> "THEOREM",Kindops.string_of_theorem_kind k
+  | Local, _ -> assert false
 
 let kind_of_inductive isrecord kn =
  "DEFINITION",
@@ -417,68 +412,65 @@ let kind_of_inductive isrecord kn =
 ;;
 
 let kind_of_variable id =
-  let module DK = Decl_kinds in
   match Decls.variable_kind id with
-    | DK.IsAssumption DK.Definitional -> "VARIABLE","Assumption"
-    | DK.IsAssumption DK.Logical -> "VARIABLE","Hypothesis"
-    | DK.IsAssumption DK.Conjectural -> "VARIABLE","Conjecture"
-    | DK.IsDefinition DK.Definition -> "VARIABLE","LocalDefinition"
-    | DK.IsProof _ -> "VARIABLE","LocalFact"
+    | IsAssumption Definitional -> "VARIABLE","Assumption"
+    | IsAssumption Logical -> "VARIABLE","Hypothesis"
+    | IsAssumption Conjectural -> "VARIABLE","Conjecture"
+    | IsDefinition Definition -> "VARIABLE","LocalDefinition"
+    | IsProof _ -> "VARIABLE","LocalFact"
     | _ -> Errors.anomaly "Unsupported variable kind"
 ;;
 
 let kind_of_constant kn =
-  let module DK = Decl_kinds in
   match Decls.constant_kind kn with
-    | DK.IsAssumption DK.Definitional -> "AXIOM","Declaration"
-    | DK.IsAssumption DK.Logical -> "AXIOM","Axiom"
-    | DK.IsAssumption DK.Conjectural ->
+    | IsAssumption Definitional -> "AXIOM","Declaration"
+    | IsAssumption Logical -> "AXIOM","Axiom"
+    | IsAssumption Conjectural ->
         Pp.warning "Conjecture not supported in dtd (used Declaration instead)";
         "AXIOM","Declaration"
-    | DK.IsDefinition DK.Definition -> "DEFINITION","Definition"
-    | DK.IsDefinition DK.Example ->
+    | IsDefinition Definition -> "DEFINITION","Definition"
+    | IsDefinition Example ->
         Pp.warning "Example not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
-    | DK.IsDefinition DK.Coercion ->
+    | IsDefinition Coercion ->
         Pp.warning "Coercion not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
-    | DK.IsDefinition DK.SubClass ->
+    | IsDefinition SubClass ->
         Pp.warning "SubClass not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
-    | DK.IsDefinition DK.CanonicalStructure ->
+    | IsDefinition CanonicalStructure ->
         Pp.warning "CanonicalStructure not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
-    | DK.IsDefinition DK.Fixpoint ->
+    | IsDefinition Fixpoint ->
         Pp.warning "Fixpoint not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
-    | DK.IsDefinition DK.CoFixpoint ->
+    | IsDefinition CoFixpoint ->
         Pp.warning "CoFixpoint not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
-    | DK.IsDefinition DK.Scheme ->
+    | IsDefinition Scheme ->
         Pp.warning "Scheme not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
-    | DK.IsDefinition DK.StructureComponent ->
+    | IsDefinition StructureComponent ->
         Pp.warning "StructureComponent not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
-    | DK.IsDefinition DK.IdentityCoercion ->
+    | IsDefinition IdentityCoercion ->
         Pp.warning "IdentityCoercion not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
-    | DK.IsDefinition DK.Instance ->
+    | IsDefinition Instance ->
         Pp.warning "Instance not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
-    | DK.IsDefinition DK.Method ->
+    | IsDefinition Method ->
         Pp.warning "Method not supported in dtd (used Definition instead)";
         "DEFINITION","Definition"
-    | DK.IsProof (DK.Theorem|DK.Lemma|DK.Corollary|DK.Fact|DK.Remark as thm) ->
-        "THEOREM",DK.string_of_theorem_kind thm
-    | DK.IsProof _ ->
+    | IsProof (Theorem|Lemma|Corollary|Fact|Remark as thm) ->
+        "THEOREM",Kindops.string_of_theorem_kind thm
+    | IsProof _ ->
         Pp.warning "Unsupported theorem kind (used Theorem instead)";
-        "THEOREM",DK.string_of_theorem_kind DK.Theorem
+        "THEOREM",Kindops.string_of_theorem_kind Theorem
 ;;
 
 let kind_of_global r =
   let module Ln = Libnames in
-  let module DK = Decl_kinds in
   match r with
   | Ln.IndRef kn | Ln.ConstructRef (kn,_) ->
       let isrecord =

@@ -163,16 +163,16 @@ let save with_clean id const (locality,kind) hook =
        const_entry_opaque = opacity } = const in
   let l,r = match locality with
     | Local when Lib.sections_are_opened () ->
-        let k = logical_kind_of_goal_kind kind in
+        let k = Kindops.logical_kind_of_goal_kind kind in
 	let c = SectionLocalDef (pft, tpo, opacity) in
 	let _ = declare_variable id (Lib.cwd(), c, k) in
 	(Local, VarRef id)
     | Local ->
-        let k = logical_kind_of_goal_kind kind in
+        let k = Kindops.logical_kind_of_goal_kind kind in
         let kn = declare_constant id (DefinitionEntry const, k) in
 	(Global, ConstRef kn)
     | Global ->
-        let k = logical_kind_of_goal_kind kind in
+        let k = Kindops.logical_kind_of_goal_kind kind in
         let kn = declare_constant id (DefinitionEntry const, k) in
 	(Global, ConstRef kn) in
   if with_clean then  Pfedit.delete_current_proof ();
