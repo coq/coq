@@ -18,7 +18,6 @@ Libnames
 Genarg
 Tok
 Lexer
-Extend
 Extrawit
 Pcoq
 Q_util

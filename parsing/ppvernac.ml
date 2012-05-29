@@ -19,7 +19,6 @@ open Ppconstr
 open Pptactic
 open Glob_term
 open Genarg
-open Pcoq
 open Libnames
 open Ppextend
 open Constrexpr
