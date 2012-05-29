@@ -32,6 +32,9 @@ open Decl_kinds
 
 let dl = dummy_loc
 
+(** Should we keep details of universes during detyping ? *)
+let print_universes = ref false
+
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)
 
@@ -367,7 +370,7 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
 let detype_sort = function
   | Prop Null -> GProp
   | Prop Pos -> GSet
-  | Type u -> GType (Some u)
+  | Type u -> GType (if !print_universes then Some (Univ.pr_uni u) else None)
 
 type binder_kind = BProd | BLambda | BLetIn
 

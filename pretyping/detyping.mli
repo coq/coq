@@ -17,6 +17,9 @@ open Termops
 open Mod_subst
 open Misctypes
 
+(** Should we keep details of universes during detyping ? *)
+val print_universes : bool ref
+
 val subst_cases_pattern : substitution -> cases_pattern -> cases_pattern
 
 val subst_glob_constr : substitution -> glob_constr -> glob_constr

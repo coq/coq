@@ -65,7 +65,7 @@ let print_implicits_defensive = ref true
 let print_coercions = ref false
 
 (* This forces printing universe names of Type{.} *)
-let print_universes = ref false
+let print_universes = Detyping.print_universes
 
 (* This suppresses printing of primitive tokens (e.g. numeral) and symbols *)
 let print_no_symbol = ref false

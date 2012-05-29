@@ -37,7 +37,8 @@ type 'id move_location =
 
 (** Sorts *)
 
-type glob_sort = GProp | GSet | GType of Univ.universe option
+type sort_info = Pp.std_ppcmds option
+type glob_sort = GProp | GSet | GType of sort_info
 
 (** Casts *)
 

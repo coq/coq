@@ -112,12 +112,10 @@ let pr_sep_com sep f c = pr_with_comments (constr_loc c) (sep() ++ f c)
 
 let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
 
-let pr_universe = Univ.pr_uni
-
 let pr_glob_sort = function
   | GProp -> str "Prop"
   | GSet -> str "Set"
-  | GType u -> hov 0 (str "Type" ++ pr_opt (pr_in_comment pr_universe) u)
+  | GType u -> hov 0 (str "Type" ++ pr_opt (pr_in_comment (fun x->x)) u)
 
 let pr_id = pr_id
 let pr_name = pr_name
