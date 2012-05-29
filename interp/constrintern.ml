@@ -23,6 +23,7 @@ open Pretyping
 open Cases
 open Constrexpr
 open Notation_term
+open Notation_ops
 open Topconstr
 open Nametab
 open Notation

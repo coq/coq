@@ -80,8 +80,8 @@ let revert_reserved_type t =
     let t = Detyping.detype false [] [] t in
     list_try_find
       (fun (pat,id) ->
-	try let _ = Topconstr.match_notation_constr false t ([],pat) in Name id
-	with Topconstr.No_match -> failwith "") l
+	try let _ = Notation_ops.match_notation_constr false t ([],pat) in Name id
+	with Notation_ops.No_match -> failwith "") l
   with Not_found | Failure _ -> Anonymous
 
 let _ = Namegen.set_reserved_typed_name revert_reserved_type
@@ -92,7 +92,7 @@ let anonymize_if_reserved na t = match na with
   | Name id as na ->
       (try
 	if not !Flags.raw_print &
-	   (try Topconstr.notation_constr_of_glob_constr [] [] t
+	   (try Notation_ops.notation_constr_of_glob_constr [] [] t
 		  = find_reserved_type id
             with UserError _ -> false)
 	then GHole (dummy_loc,Evar_kinds.BinderType na)

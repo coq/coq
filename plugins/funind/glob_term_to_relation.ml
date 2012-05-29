@@ -1243,7 +1243,7 @@ let compute_params_name relnames (args : (Names.name * Glob_term.glob_constr * b
 	   if array_for_all
 	     (fun l ->
 		let (n',nt',is_defined') = List.nth l i in
-		n = n' && Topconstr.eq_glob_constr nt nt' && is_defined = is_defined')
+		n = n' && Notation_ops.eq_glob_constr nt nt' && is_defined = is_defined')
 	     rels_params
 	   then
 	     l := param::!l

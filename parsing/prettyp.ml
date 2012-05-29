@@ -435,7 +435,7 @@ let gallina_print_constant_with_infos sp =
 let gallina_print_syntactic_def kn =
   let qid = Nametab.shortest_qualid_of_syndef Idset.empty kn
   and (vars,a) = Syntax_def.search_syntactic_definition kn in
-  let c = Topconstr.glob_constr_of_notation_constr dummy_loc a in
+  let c = Notation_ops.glob_constr_of_notation_constr dummy_loc a in
   hov 2
     (hov 4
        (str "Notation " ++ pr_qualid qid ++

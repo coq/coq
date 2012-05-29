@@ -65,6 +65,7 @@ Inductiveops
 Miscops
 Glob_ops
 Detyping
+Notation_ops
 Topconstr
 Genarg
 Ppextend

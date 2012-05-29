@@ -351,7 +351,7 @@ let find_prim_token g loc p sc =
   (* Try for a user-defined numerical notation *)
   try
     let (_,c),df = find_notation (notation_of_prim_token p) sc in
-    g (Topconstr.glob_constr_of_notation_constr loc c),df
+    g (Notation_ops.glob_constr_of_notation_constr loc c),df
   with Not_found ->
   (* Try for a primitive numerical notation *)
   let (spdir,interp) = Hashtbl.find prim_token_interpreter_tab sc loc p in
@@ -403,34 +403,34 @@ let uninterp_prim_token c =
     let (sc,numpr,_) =
       Hashtbl.find prim_token_key_table (glob_prim_constr_key c) in
     match numpr c with
-      | None -> raise Topconstr.No_match
+      | None -> raise Notation_ops.No_match
       | Some n -> (sc,n)
-  with Not_found -> raise Topconstr.No_match
+  with Not_found -> raise Notation_ops.No_match
 
 let uninterp_prim_token_ind_pattern ind args =
   let ref = IndRef ind in
   try
     let (sc,numpr,b) = Hashtbl.find prim_token_key_table
       (RefKey (canonical_gr ref)) in
-    if not b then raise No_match;
+    if not b then raise Notation_ops.No_match;
     let args' = List.map
       (fun x -> snd (glob_constr_of_closed_cases_pattern x)) args in
     let ref = GRef (dummy_loc,ref) in
     match numpr (GApp (dummy_loc,ref,args')) with
-      | None -> raise No_match
+      | None -> raise Notation_ops.No_match
       | Some n -> (sc,n)
-  with Not_found -> raise No_match
+  with Not_found -> raise Notation_ops.No_match
 
 let uninterp_prim_token_cases_pattern c =
   try
     let k = cases_pattern_key c in
     let (sc,numpr,b) = Hashtbl.find prim_token_key_table k in
-    if not b then raise Topconstr.No_match;
+    if not b then raise Notation_ops.No_match;
     let na,c = glob_constr_of_closed_cases_pattern c in
     match numpr c with
-      | None -> raise Topconstr.No_match
+      | None -> raise Notation_ops.No_match
       | Some n -> (na,sc,n)
-  with Not_found -> raise Topconstr.No_match
+  with Not_found -> raise Notation_ops.No_match
 
 let availability_of_prim_token n printer_scope local_scopes =
   let f scope =
@@ -653,7 +653,7 @@ let pr_scope_classes sc =
 
 let pr_notation_info prglob ntn c =
   str "\"" ++ str ntn ++ str "\" := " ++
-  prglob (Topconstr.glob_constr_of_notation_constr dummy_loc c)
+  prglob (Notation_ops.glob_constr_of_notation_constr dummy_loc c)
 
 let pr_named_scope prglob scope sc =
  (if scope = default_scope then

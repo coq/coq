@@ -14,6 +14,7 @@ open Util
 open Names
 open Constrexpr
 open Notation_term
+open Notation_ops
 open Topconstr
 open Ppextend
 open Extend

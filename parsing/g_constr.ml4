@@ -183,7 +183,7 @@ GEXTEND Gram
           CApp(loc,(None,CPatVar(locid,(true,id))),args) ]
     | "9"
         [ ".."; c = operconstr LEVEL "0"; ".." ->
-          CAppExpl (loc,(None,Ident (loc,Topconstr.ldots_var)),[c]) ]
+          CAppExpl (loc,(None,Ident (loc,Notation_ops.ldots_var)),[c]) ]
     | "8" [ ]
     | "1" LEFTA
       [ c=operconstr; ".("; f=global; args=LIST0 appl_arg; ")" ->
@@ -395,7 +395,7 @@ GEXTEND Gram
       | id = name; idl = LIST0 name; bl = binders ->
           binders_of_names (id::idl) @ bl
       | id1 = name; ".."; id2 = name ->
-          [LocalRawAssum ([id1;(loc,Name Topconstr.ldots_var);id2],
+          [LocalRawAssum ([id1;(loc,Name Notation_ops.ldots_var);id2],
 	                  Default Explicit,CHole (loc,None))]
       | bl = closed_binder; bl' = binders ->
 	  bl@bl'

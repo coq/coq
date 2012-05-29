@@ -875,7 +875,7 @@ let vernac_reserve bl =
   let sb_decl = (fun (idl,c) ->
     let t = Constrintern.interp_type Evd.empty (Global.env()) c in
     let t = Detyping.detype false [] [] t in
-    let t = Topconstr.notation_constr_of_glob_constr [] [] t in
+    let t = Notation_ops.notation_constr_of_glob_constr [] [] t in
     Reserve.declare_reserved_type idl t)
   in List.iter sb_decl bl
 

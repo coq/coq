@@ -23,6 +23,7 @@ open Libnames
 open Impargs
 open Constrexpr
 open Notation_term
+open Notation_ops
 open Topconstr
 open Glob_term
 open Glob_ops
@@ -470,7 +471,7 @@ let rec extern_symbol_ind_pattern allscopes vars ind args = function
   | (keyrule,pat,n as _rule)::rules ->
     try
       apply_notation_to_pattern dummy_loc
-	(match_aconstr_ind_pattern ind args pat) allscopes vars keyrule
+	(match_notation_constr_ind_pattern ind args pat) allscopes vars keyrule
     with
 	No_match -> extern_symbol_ind_pattern allscopes vars ind args rules
 
@@ -763,7 +764,7 @@ let rec extern inctx scopes vars r =
       (sub_extern false scopes vars tm,
        (na',Option.map (fun (loc,ind,nal) ->
 	 let args = List.map (fun x -> PatVar (dummy_loc, x)) nal in
-	 let fullargs = Topconstr.add_patterns_for_params ind args in
+	 let fullargs = Notation_ops.add_patterns_for_params ind args in
 	 extern_ind_pattern_in_scope scopes vars ind fullargs
 	) x))) tml in
     let eqns = List.map (extern_eqn inctx scopes vars) eqns in

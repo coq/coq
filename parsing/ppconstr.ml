@@ -467,7 +467,7 @@ let pr pr sep inherited a =
 	p, lproj
   | CAppExpl (_,(None,Ident (_,var)),[t])
   | CApp (_,(_,CRef(Ident(_,var))),[t,None])
-        when var = Topconstr.ldots_var ->
+        when var = Notation_ops.ldots_var ->
       hov 0 (str ".." ++ pr spc (latom,E) t ++ spc () ++ str ".."), larg
   | CAppExpl (_,(None,f),l) -> pr_appexpl (pr mt) f l, lapp
   | CApp (_,(Some i,f),l) ->
