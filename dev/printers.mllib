@@ -105,6 +105,8 @@ Tok
 Lexer
 Ppextend
 Genarg
+Constrexpr_ops
+Notation_ops
 Topconstr
 Notation
 Dumpglob

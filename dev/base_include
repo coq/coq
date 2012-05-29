@@ -13,6 +13,7 @@
 #directory "proofs";;
 #directory "tactics";;
 #directory "translate";;
+#directory "intf";;
 
 #directory "+camlp4";; (* lazy solution: add both of camlp4/5 so that *)
 #directory "+camlp5";; (* Gramext is found in top_printers.ml *)
@@ -68,6 +69,7 @@ open Library
 
 open Cases
 open Pattern
+open Patternops
 open Cbv
 open Classops
 open Pretyping
@@ -76,6 +78,7 @@ open Classops
 open Clenv
 open Clenvtac
 open Glob_term
+open Glob_ops
 open Coercion
 open Recordops
 open Detyping
@@ -102,7 +105,11 @@ open Notation
 open Ppextend
 open Reserve
 open Syntax_def
+open Constrexpr
+open Constrexpr_ops
 open Topconstr
+open Notation_term
+open Notation_ops
 open Prettyp
 open Search
 

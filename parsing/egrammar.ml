@@ -108,8 +108,13 @@ let make_constr_action
   in
   make ([],[],[]) (List.rev pil)
 
+(* TODO: factorize the error message with error_invalid_pattern_notaition
+   without introducing useless dependencies *)
+
 let check_cases_pattern_env loc (env,envlist,hasbinders) =
-  if hasbinders then Topconstr.error_invalid_pattern_notation loc else (env,envlist)
+  if hasbinders then
+    Errors.user_err_loc (loc,"",str "Invalid notation for pattern.")
+  else (env,envlist)
 
 let make_cases_pattern_action
   (f : loc -> cases_pattern_notation_substitution -> cases_pattern_expr) pil =
