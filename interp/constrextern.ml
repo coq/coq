@@ -21,6 +21,8 @@ open Sign
 open Environ
 open Libnames
 open Impargs
+open Constrexpr
+open Notation_term
 open Topconstr
 open Glob_term
 open Glob_ops
@@ -456,7 +458,7 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
       match t with
 	| PatCstr (loc,_,_,na) ->
 	  let p = apply_notation_to_pattern loc
-	    (match_aconstr_cases_pattern t pat) allscopes vars keyrule in
+	    (match_notation_constr_cases_pattern t pat) allscopes vars keyrule in
 	  insert_pat_alias loc p na
 	| PatVar (loc,Anonymous) -> CPatAtom (loc, None)
 	| PatVar (loc,Name id) -> CPatAtom (loc, Some (Ident (loc,id)))
@@ -910,7 +912,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
           | _ -> raise No_match in
 	(* Try matching ... *)
 	let terms,termlists,binders =
-          match_aconstr !print_universes t pat in
+          match_notation_constr !print_universes t pat in
 	(* Try availability of interpretation ... *)
         let e =
           match keyrule with

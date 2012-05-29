@@ -13,7 +13,7 @@ open Names
 open Nameops
 open Nametab
 open Glob_term
-open Topconstr
+open Constrexpr
 open Term
 open Evd
 open Misctypes

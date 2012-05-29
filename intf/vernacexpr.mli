@@ -10,7 +10,8 @@ open Pp
 open Names
 open Tacexpr
 open Misctypes
-open Topconstr
+open Constrexpr
+open Notation_term
 open Decl_kinds
 open Libnames
 

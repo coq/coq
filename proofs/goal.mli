@@ -55,7 +55,7 @@ val return : 'a -> 'a sensitive
 (* spiwack: it is a wrapper around [Constrintern.interp_open_constr]. 
     In an ideal world, this could/should be the other way round.
     As of now, though, it seems at least quite useful to build tactics. *)
-val interp_constr : Topconstr.constr_expr -> Term.constr sensitive
+val interp_constr : Constrexpr.constr_expr -> Term.constr sensitive
 
 (* Type of constr with holes used by refine. *)
 type refinable

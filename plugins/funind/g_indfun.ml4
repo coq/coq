@@ -10,7 +10,7 @@ open Util
 open Term
 open Names
 open Pp
-open Topconstr
+open Constrexpr
 open Indfun_common
 open Indfun
 open Genarg

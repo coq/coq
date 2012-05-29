@@ -10,11 +10,11 @@ val recursive_definition :
 bool ->
            Names.identifier ->
            Constrintern.internalization_env ->
-           Topconstr.constr_expr ->
-           Topconstr.constr_expr ->
-           int -> Topconstr.constr_expr -> (Names.constant ->
+           Constrexpr.constr_expr ->
+           Constrexpr.constr_expr ->
+           int -> Constrexpr.constr_expr -> (Names.constant ->
             Term.constr option ref ->
             Names.constant ->
-            Names.constant -> int -> Term.types -> int -> Term.constr -> 'a) -> Topconstr.constr_expr list -> unit
+            Names.constant -> int -> Term.types -> int -> Term.constr -> 'a) -> Constrexpr.constr_expr list -> unit
 
 

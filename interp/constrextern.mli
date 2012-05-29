@@ -16,7 +16,8 @@ open Libnames
 open Nametab
 open Glob_term
 open Pattern
-open Topconstr
+open Constrexpr
+open Notation_term
 open Notation
 open Misctypes
 

@@ -8,7 +8,7 @@
 
 open Pp
 open Util
-open Topconstr
+open Constrexpr
 open Glob_term
 open Tacexpr
 open Vernacexpr

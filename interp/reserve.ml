@@ -16,7 +16,7 @@ open Nameops
 open Summary
 open Libobject
 open Lib
-open Topconstr
+open Notation_term
 open Libnames
 
 type key =
@@ -26,19 +26,19 @@ type key =
 let reserve_table = ref Idmap.empty
 let reserve_revtable = ref Gmapl.empty
 
-let aconstr_key = function (* Rem: AApp(ARef ref,[]) stands for @ref *)
-  | AApp (ARef ref,args) -> RefKey(canonical_gr ref), Some (List.length args)
-  | AList (_,_,AApp (ARef ref,args),_,_)
-  | ABinderList (_,_,AApp (ARef ref,args),_) -> RefKey (canonical_gr ref), Some (List.length args)
-  | ARef ref -> RefKey(canonical_gr ref), None
+let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
+  | NApp (NRef ref,args) -> RefKey(canonical_gr ref), Some (List.length args)
+  | NList (_,_,NApp (NRef ref,args),_,_)
+  | NBinderList (_,_,NApp (NRef ref,args),_) -> RefKey (canonical_gr ref), Some (List.length args)
+  | NRef ref -> RefKey(canonical_gr ref), None
   | _ -> Oth, None
 
 let cache_reserved_type (_,(id,t)) =
-  let key = fst (aconstr_key t) in
+  let key = fst (notation_constr_key t) in
   reserve_table := Idmap.add id t !reserve_table;
   reserve_revtable := Gmapl.add key (t,id) !reserve_revtable
 
-let in_reserved : identifier * aconstr -> obj =
+let in_reserved : identifier * notation_constr -> obj =
   declare_object {(default_object "RESERVED-TYPE") with
     cache_function = cache_reserved_type }
 
@@ -80,8 +80,8 @@ let revert_reserved_type t =
     let t = Detyping.detype false [] [] t in
     list_try_find
       (fun (pat,id) ->
-	try let _ = match_aconstr false t ([],pat) in Name id
-	with No_match -> failwith "") l
+	try let _ = Topconstr.match_notation_constr false t ([],pat) in Name id
+	with Topconstr.No_match -> failwith "") l
   with Not_found | Failure _ -> Anonymous
 
 let _ = Namegen.set_reserved_typed_name revert_reserved_type
@@ -92,7 +92,8 @@ let anonymize_if_reserved na t = match na with
   | Name id as na ->
       (try
 	if not !Flags.raw_print &
-	   (try aconstr_of_glob_constr [] [] t = find_reserved_type id
+	   (try Topconstr.notation_constr_of_glob_constr [] [] t
+		  = find_reserved_type id
             with UserError _ -> false)
 	then GHole (dummy_loc,Evar_kinds.BinderType na)
 	else t

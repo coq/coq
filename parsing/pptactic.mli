@@ -11,7 +11,7 @@ open Genarg
 open Tacexpr
 open Pretyping
 open Proof_type
-open Topconstr
+open Constrexpr
 open Glob_term
 open Pattern
 open Ppextend

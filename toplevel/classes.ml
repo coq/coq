@@ -24,7 +24,7 @@ open Typeclasses
 open Libnames
 open Constrintern
 open Glob_term
-open Topconstr
+open Constrexpr
 (*i*)
 
 open Decl_kinds

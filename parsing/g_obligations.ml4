@@ -20,6 +20,7 @@ open Nameops
 open Reduction
 open Term
 open Libnames
+open Constrexpr
 open Topconstr
 
 (* We define new entries for programs, with the use of this module

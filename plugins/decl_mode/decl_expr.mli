@@ -77,15 +77,15 @@ type ('hyp,'constr,'pat,'tac) gen_proof_instr=
 
 
 type raw_proof_instr =
-    ((identifier*(Topconstr.constr_expr option)) located,
-     Topconstr.constr_expr,
-     Topconstr.cases_pattern_expr,
+    ((identifier*(Constrexpr.constr_expr option)) located,
+     Constrexpr.constr_expr,
+     Constrexpr.cases_pattern_expr,
      raw_tactic_expr) gen_proof_instr
 
 type glob_proof_instr =
     ((identifier*(Genarg.glob_constr_and_expr option)) located,
      Genarg.glob_constr_and_expr,
-     Topconstr.cases_pattern_expr,
+     Constrexpr.cases_pattern_expr,
      Tacexpr.glob_tactic_expr) gen_proof_instr
 
 type proof_pattern =
@@ -94,7 +94,7 @@ type proof_pattern =
      pat_constr: Term.constr;
      pat_typ: Term.types;
      pat_pat: Glob_term.cases_pattern;
-     pat_expr: Topconstr.cases_pattern_expr}
+     pat_expr: Constrexpr.cases_pattern_expr}
 
 type proof_instr =
     (Term.constr statement,

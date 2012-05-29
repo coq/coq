@@ -70,21 +70,22 @@ val set_proofs_transparency : bool -> unit (* true = All transparent, false = Op
 val get_proofs_transparency : unit -> bool
 
 val add_definition : Names.identifier -> ?term:Term.constr -> Term.types -> 
-  ?implicits:(Topconstr.explicitation * (bool * bool * bool)) list ->
+  ?implicits:(Constrexpr.explicitation * (bool * bool * bool)) list ->
   ?kind:Decl_kinds.definition_kind ->
   ?tactic:Proof_type.tactic ->
   ?reduce:(Term.constr -> Term.constr) ->
   ?hook:(unit Tacexpr.declaration_hook) -> obligation_info -> progress
 
-type notations = (Vernacexpr.lstring * Topconstr.constr_expr * Topconstr.scope_name option) list
+type notations =
+    (Vernacexpr.lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
 
 type fixpoint_kind =
-  | IsFixpoint of (identifier located option * Topconstr.recursion_order_expr) list
+  | IsFixpoint of (identifier located option * Constrexpr.recursion_order_expr) list
   | IsCoFixpoint
 
 val add_mutual_definitions :
   (Names.identifier * Term.constr * Term.types *
-      (Topconstr.explicitation * (bool * bool * bool)) list * obligation_info) list ->
+      (Constrexpr.explicitation * (bool * bool * bool)) list * obligation_info) list ->
   ?tactic:Proof_type.tactic ->
   ?kind:Decl_kinds.definition_kind ->
   ?reduce:(Term.constr -> Term.constr) ->
@@ -92,7 +93,7 @@ val add_mutual_definitions :
   notations ->
   fixpoint_kind -> unit
 
-val obligation : int * Names.identifier option * Topconstr.constr_expr option ->
+val obligation : int * Names.identifier option * Constrexpr.constr_expr option ->
   Tacexpr.raw_tactic_expr option -> unit
 
 val next_obligation : Names.identifier option -> Tacexpr.raw_tactic_expr option -> unit

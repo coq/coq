@@ -330,10 +330,10 @@ type obligation =
 type obligations = (obligation array * int)
 
 type fixpoint_kind =
-  | IsFixpoint of (identifier located option * Topconstr.recursion_order_expr) list
+  | IsFixpoint of (identifier located option * Constrexpr.recursion_order_expr) list
   | IsCoFixpoint
 
-type notations = (Vernacexpr.lstring * Topconstr.constr_expr * Topconstr.scope_name option) list
+type notations = (Vernacexpr.lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
 
 type program_info = {
   prg_name: identifier;
@@ -342,7 +342,7 @@ type program_info = {
   prg_obligations: obligations;
   prg_deps : identifier list;
   prg_fixkind : fixpoint_kind option ;
-  prg_implicits : (Topconstr.explicitation * (bool * bool * bool)) list;
+  prg_implicits : (Constrexpr.explicitation * (bool * bool * bool)) list;
   prg_notations : notations ;
   prg_kind : definition_kind;
   prg_reduce : constr -> constr;

@@ -15,6 +15,7 @@ open Names
 open Nameops
 open Libnames
 open Ppextend
+open Constrexpr
 open Topconstr
 open Term
 open Pattern
@@ -338,7 +339,7 @@ let pr_guard_annot pr_aux bl (n,ro) =
   match n with
     | None -> mt ()
     | Some (loc, id) ->
-      match (ro : Topconstr.recursion_order_expr) with
+      match (ro : Constrexpr.recursion_order_expr) with
 	| CStructRec ->
 	  let names_of_binder = function
 	    | LocalRawAssum (nal,_,_) -> nal

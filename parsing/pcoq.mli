@@ -13,7 +13,7 @@ open Glob_term
 open Extend
 open Vernacexpr
 open Genarg
-open Topconstr
+open Constrexpr
 open Tacexpr
 open Libnames
 open Compat

@@ -10,7 +10,7 @@ open Names
 open Term
 open Vernacinterp
 open Vernacexpr
-open Topconstr
+open Constrexpr
 open Misctypes
 
 (** Vernacular entries *)

@@ -12,7 +12,7 @@ open Entries
 open Pp
 open Libnames
 open Names
-open Topconstr
+open Constrexpr
 
 (** Module internalization errors *)
 

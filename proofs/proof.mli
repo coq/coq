@@ -187,5 +187,5 @@ module V82 : sig
   val grab_evars : proof -> unit
 
   (* Implements the Existential command *)
-  val instantiate_evar : int -> Topconstr.constr_expr -> proof -> unit
+  val instantiate_evar : int -> Constrexpr.constr_expr -> proof -> unit
 end

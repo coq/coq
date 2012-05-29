@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Topconstr
+open Constrexpr
 open Libnames
 open Nametab
 open Genredexpr

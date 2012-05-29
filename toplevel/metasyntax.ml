@@ -12,6 +12,8 @@ open Compat
 open Errors
 open Util
 open Names
+open Constrexpr
+open Notation_term
 open Topconstr
 open Ppextend
 open Extend
@@ -842,7 +844,7 @@ let check_rule_productivity l =
     error "A recursive notation must start with at least one symbol."
 
 let is_not_printable = function
-  | AVar _ -> warning "This notation will not be used for printing as it is bound to a \nsingle variable"; true
+  | NVar _ -> warning "This notation will not be used for printing as it is bound to a \nsingle variable"; true
   | _ -> false
 
 let find_precedence lev etyps symbols =
@@ -1065,7 +1067,7 @@ let add_notation_in_scope local df c mods scope =
   (* Prepare the interpretation *)
   let (onlyparse,recvars,mainvars,df') = i_data in
   let i_vars = make_internalization_vars recvars mainvars i_typs in
-  let (acvars,ac) = interp_aconstr i_vars recvars c in
+  let (acvars,ac) = interp_notation_constr i_vars recvars c in
   let a = (make_interpretation_vars recvars acvars,ac) in
   let onlyparse = onlyparse or is_not_printable ac in
   (* Ready to change the global state *)
@@ -1086,7 +1088,7 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
   let path = (Lib.library_dp(),Lib.current_dirpath true) in
   let df' = (make_notation_key symbs,(path,df)) in
   let i_vars = make_internalization_vars recvars mainvars i_typs in
-  let (acvars,ac) = interp_aconstr ~impls i_vars recvars c in
+  let (acvars,ac) = interp_notation_constr ~impls i_vars recvars c in
   let a = (make_interpretation_vars recvars acvars,ac) in
   let onlyparse = onlyparse or is_not_printable ac in
   Lib.add_anonymous_leaf (inNotation (local,scope,a,onlyparse,df'));
@@ -1191,10 +1193,10 @@ let try_interp_name_alias = function
 
 let add_syntactic_definition ident (vars,c) local onlyparse =
   let vars,pat =
-    try [], ARef (try_interp_name_alias (vars,c))
+    try [], NRef (try_interp_name_alias (vars,c))
     with Not_found ->
       let i_vars = List.map (fun id -> (id,NtnInternTypeConstr)) vars in
-      let vars,pat = interp_aconstr i_vars [] c in
+      let vars,pat = interp_notation_constr i_vars [] c in
       List.map (fun (id,(sc,kind)) -> (id,sc)) vars, pat
   in
   let onlyparse = onlyparse or is_not_printable pat in

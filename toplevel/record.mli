@@ -10,7 +10,7 @@ open Names
 open Term
 open Sign
 open Vernacexpr
-open Topconstr
+open Constrexpr
 open Impargs
 open Libnames
 

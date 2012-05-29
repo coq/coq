@@ -33,7 +33,8 @@ val print_sec_context_typ : reference -> std_ppcmds
 val print_judgment : env -> unsafe_judgment -> std_ppcmds
 val print_safe_judgment : env -> Safe_typing.judgment -> std_ppcmds
 val print_eval :
-  reduction_function -> env -> Evd.evar_map -> Topconstr.constr_expr -> unsafe_judgment -> std_ppcmds
+  reduction_function -> env -> Evd.evar_map ->
+    Constrexpr.constr_expr -> unsafe_judgment -> std_ppcmds
 
 val print_name : reference or_by_notation -> std_ppcmds
 val print_opaque_name : reference -> std_ppcmds
@@ -68,7 +69,7 @@ type object_pr = {
   print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
   print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
   print_typed_value_in_env  : Environ.env -> Term.constr * Term.types -> Pp.std_ppcmds;
-  print_eval                : reduction_function -> env -> Evd.evar_map -> Topconstr.constr_expr -> unsafe_judgment -> std_ppcmds
+  print_eval                : reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> unsafe_judgment -> std_ppcmds
 }
 
 val set_object_pr : object_pr -> unit

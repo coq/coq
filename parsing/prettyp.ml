@@ -44,7 +44,7 @@ type object_pr = {
   print_library_entry       : bool -> (object_name * Lib.node) -> std_ppcmds option;
   print_context             : bool -> int option -> Lib.library_segment -> std_ppcmds;
   print_typed_value_in_env  : Environ.env -> Term.constr * Term.types -> Pp.std_ppcmds;
-  print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Topconstr.constr_expr -> unsafe_judgment -> std_ppcmds;
+  print_eval                : Reductionops.reduction_function -> env -> Evd.evar_map -> Constrexpr.constr_expr -> unsafe_judgment -> std_ppcmds;
 }
 
 let gallina_print_module  = print_module
@@ -435,7 +435,7 @@ let gallina_print_constant_with_infos sp =
 let gallina_print_syntactic_def kn =
   let qid = Nametab.shortest_qualid_of_syndef Idset.empty kn
   and (vars,a) = Syntax_def.search_syntactic_definition kn in
-  let c = Topconstr.glob_constr_of_aconstr dummy_loc a in
+  let c = Topconstr.glob_constr_of_notation_constr dummy_loc a in
   hov 2
     (hov 4
        (str "Notation " ++ pr_qualid qid ++

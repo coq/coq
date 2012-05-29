@@ -12,7 +12,7 @@ open Term
 open Libnames
 open Pcoq
 open Glob_term
-open Topconstr
+open Constrexpr
 open Names
 open Errors
 open Util

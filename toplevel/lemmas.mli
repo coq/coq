@@ -9,7 +9,7 @@
 open Names
 open Term
 open Decl_kinds
-open Topconstr
+open Constrexpr
 open Tacexpr
 open Vernacexpr
 open Proof_type

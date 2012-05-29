@@ -11,7 +11,7 @@ open Util
 open Pp
 open Names
 open Libnames
-open Topconstr
+open Notation_term
 open Libobject
 open Lib
 open Nameops
@@ -38,7 +38,7 @@ let load_syntax_constant i ((sp,kn),(local,pat,onlyparse)) =
   Nametab.push_syndef (Nametab.Until i) sp kn
 
 let is_alias_of_already_visible_name sp = function
-  | _,ARef ref ->
+  | _,NRef ref ->
       let (dir,id) = repr_qualid (shortest_qualid_of_global Idset.empty ref) in
       dir = empty_dirpath && id = basename sp
   | _ ->
@@ -58,7 +58,7 @@ let cache_syntax_constant d =
   open_syntax_constant 1 d
 
 let subst_syntax_constant (subst,(local,pat,onlyparse)) =
-  (local,subst_interpretation subst pat,onlyparse)
+  (local,Topconstr.subst_interpretation subst pat,onlyparse)
 
 let classify_syntax_constant (local,_,_ as o) =
   if local then Dispose else Substitute o
@@ -71,7 +71,7 @@ let in_syntax_constant : bool * interpretation * bool -> obj =
     subst_function = subst_syntax_constant;
     classify_function = classify_syntax_constant }
 
-type syndef_interpretation = (identifier * subscopes) list * aconstr
+type syndef_interpretation = (identifier * subscopes) list * notation_constr
 
 (* Coercions to the general format of notation that also supports
    variables bound to list of expressions *)

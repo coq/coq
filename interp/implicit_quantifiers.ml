@@ -18,7 +18,7 @@ open Mod_subst
 open Errors
 open Util
 open Glob_term
-open Topconstr
+open Constrexpr
 open Libnames
 open Typeclasses
 open Typeclasses_errors
@@ -111,8 +111,8 @@ let free_vars_of_constr_expr c ?(bound=Idset.empty) l =
   let rec aux bdvars l c = match c with
     | CRef (Ident (loc,id)) -> found loc id bdvars l
     | CNotation (_, "{ _ : _ | _ }", (CRef (Ident (_, id)) :: _, [], [])) when not (Idset.mem id bdvars) ->
-	fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux (Idset.add id bdvars) l c
-    | c -> fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux bdvars l c
+	Topconstr.fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux (Idset.add id bdvars) l c
+    | c -> Topconstr.fold_constr_expr_with_binders (fun a l -> Idset.add a l) aux bdvars l c
   in aux bound l c
 
 let ids_of_names l =
@@ -246,7 +246,7 @@ let combine_params avoid fn applied needed =
 	    aux (t' :: ids) avoid' app need
 
       | (x,_) :: _, [] ->
-	  user_err_loc (constr_loc x,"",str "Typeclass does not expect more arguments")
+	  user_err_loc (Topconstr.constr_loc x,"",str "Typeclass does not expect more arguments")
   in aux [] avoid applied needed
 
 let combine_params_freevar =

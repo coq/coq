@@ -14,7 +14,8 @@ open Environ
 open Libnames
 open Glob_term
 open Pattern
-open Topconstr
+open Constrexpr
+open Notation_term
 open Termops
 open Pretyping
 open Misctypes
@@ -52,7 +53,7 @@ type var_internalization_data =
       (** impargs to automatically add to the variable, e.g. for "JMeq A a B b"
           in implicit mode, this is [A;B] and this adds (A:=A) and (B:=B) *)
     Impargs.implicit_status list * (** signature of impargs of the variable *)
-    scope_name option list (** subscopes of the args of the variable *)
+    Notation_term.scope_name option list (** subscopes of the args of the variable *)
 
 (** A map of free variables to their implicit arguments and scopes *)
 type internalization_env = var_internalization_data Idmap.t
@@ -175,10 +176,11 @@ val global_reference_in_absolute_module : dir_path -> identifier -> constr
     list is a set and this set is [true] for a variable occurring in
     term position, [false] for a variable occurring in binding
     position; [true;false] if in both kinds of position *)
-val interp_aconstr : ?impls:internalization_env ->
+val interp_notation_constr : ?impls:internalization_env ->
   (identifier * notation_var_internalization_type) list ->
   (identifier * identifier) list -> constr_expr ->
-  (identifier * (subscopes * notation_var_internalization_type)) list * aconstr
+  (identifier * (subscopes * notation_var_internalization_type)) list *
+  notation_constr
 
 (** Globalization options *)
 val parsing_explicit : bool ref

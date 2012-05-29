@@ -162,7 +162,7 @@ val by : tactic -> unit
    UserError if no proof is focused or if there is no such [n]th
    existential variable *)
 
-val instantiate_nth_evar_com : int -> Topconstr.constr_expr -> unit
+val instantiate_nth_evar_com : int -> Constrexpr.constr_expr -> unit
 
 (** [build_by_tactic typ tac] returns a term of type [typ] by calling [tac] *)
 

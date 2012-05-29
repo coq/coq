@@ -13,7 +13,7 @@ open Entries
 open Libnames
 open Tacexpr
 open Vernacexpr
-open Topconstr
+open Constrexpr
 open Decl_kinds
 open Redexpr
 open Constrintern

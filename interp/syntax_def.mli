@@ -9,14 +9,14 @@
 open Errors
 open Util
 open Names
-open Topconstr
+open Notation_term
 open Glob_term
 open Nametab
 open Libnames
 
 (** Syntactic definitions. *)
 
-type syndef_interpretation = (identifier * subscopes) list * aconstr
+type syndef_interpretation = (identifier * subscopes) list * notation_constr
 
 val declare_syntactic_definition : bool -> identifier -> bool ->
   syndef_interpretation -> unit

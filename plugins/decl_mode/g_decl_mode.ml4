@@ -192,7 +192,7 @@ GLOBAL: proof_instr;
   statement :
     [[ i=ident ; ":" ; c=constr -> {st_label=Name i;st_it=c}
      | i=ident -> {st_label=Anonymous;
-		   st_it=Topconstr.CRef (Libnames.Ident (loc, i))}
+		   st_it=Constrexpr.CRef (Libnames.Ident (loc, i))}
      | c=constr -> {st_label=Anonymous;st_it=c}
      ]];
   constr_or_thesis :
@@ -205,7 +205,7 @@ GLOBAL: proof_instr;
     |
       [ i=ident ; ":" ; cot=constr_or_thesis -> {st_label=Name i;st_it=cot}
       | i=ident -> {st_label=Anonymous;
-		    st_it=This (Topconstr.CRef (Libnames.Ident (loc, i)))}
+		    st_it=This (Constrexpr.CRef (Libnames.Ident (loc, i)))}
       | c=constr -> {st_label=Anonymous;st_it=This c}
       ]
     ];

@@ -19,6 +19,7 @@ open Declare
 open Names
 open Libnames
 open Nameops
+open Constrexpr
 open Topconstr
 open Constrintern
 open Nametab

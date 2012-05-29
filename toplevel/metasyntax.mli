@@ -15,7 +15,8 @@ open Extend
 open Tacexpr
 open Vernacexpr
 open Notation
-open Topconstr
+open Constrexpr
+open Notation_term
 
 val add_token_obj : string -> unit
 

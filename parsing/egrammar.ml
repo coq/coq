@@ -13,7 +13,8 @@ open Util
 open Pcoq
 open Extend
 open Ppextend
-open Topconstr
+open Constrexpr
+open Notation_term
 open Genarg
 open Libnames
 open Nameops
@@ -108,7 +109,7 @@ let make_constr_action
   make ([],[],[]) (List.rev pil)
 
 let check_cases_pattern_env loc (env,envlist,hasbinders) =
-  if hasbinders then error_invalid_pattern_notation loc else (env,envlist)
+  if hasbinders then Topconstr.error_invalid_pattern_notation loc else (env,envlist)
 
 let make_cases_pattern_action
   (f : loc -> cases_pattern_notation_substitution -> cases_pattern_expr) pil =

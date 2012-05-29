@@ -13,7 +13,7 @@ open Util
 open Tacexpr
 open Genredexpr
 open Genarg
-open Topconstr
+open Constrexpr
 open Libnames
 open Termops
 open Tok
@@ -129,7 +129,7 @@ let mk_cofix_tac (loc,id,bl,ann,ty) =
 (* Functions overloaded by quotifier *)
 let induction_arg_of_constr (c,lbind as clbind) =
   if lbind = NoBindings then
-    try ElimOnIdent (constr_loc c,snd(coerce_to_id c))
+    try ElimOnIdent (Topconstr.constr_loc c,snd(Topconstr.coerce_to_id c))
     with _ -> ElimOnConstr clbind
   else ElimOnConstr clbind
 
@@ -163,7 +163,7 @@ let rec mkCLambdaN_simple_loc loc bll c =
 let mkCLambdaN_simple bl c =
   if bl=[] then c
   else
-    let loc = join_loc (fst (List.hd (pi1 (List.hd bl)))) (constr_loc c) in
+    let loc = join_loc (fst (List.hd (pi1 (List.hd bl)))) (Topconstr.constr_loc c) in
     mkCLambdaN_simple_loc loc bl c
 
 let loc_of_ne_list l = join_loc (fst (List.hd l)) (fst (list_last l))

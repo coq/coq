@@ -14,7 +14,7 @@ open Evd
 open Environ
 open Nametab
 open Mod_subst
-open Topconstr
+open Constrexpr
 open Errors
 open Util
 open Typeclasses

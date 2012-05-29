@@ -16,9 +16,10 @@ open Term
 open Nametab
 open Libnames
 open Summary
+open Constrexpr
+open Notation_term
 open Glob_term
 open Glob_ops
-open Topconstr
 open Ppextend
 (*i*)
 
@@ -202,12 +203,13 @@ let cases_pattern_key = function
   | PatCstr (_,ref,_,_) -> RefKey (canonical_gr (ConstructRef ref))
   | _ -> Oth
 
-let aconstr_key = function (* Rem: AApp(ARef ref,[]) stands for @ref *)
-  | AApp (ARef ref,args) -> RefKey(canonical_gr ref), Some (List.length args)
-  | AList (_,_,AApp (ARef ref,args),_,_)
-  | ABinderList (_,_,AApp (ARef ref,args),_) -> RefKey (canonical_gr ref), Some (List.length args)
-  | ARef ref -> RefKey(canonical_gr ref), None
-  | AApp (_,args) -> Oth, Some (List.length args)
+let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
+  | NApp (NRef ref,args) -> RefKey(canonical_gr ref), Some (List.length args)
+  | NList (_,_,NApp (NRef ref,args),_,_)
+  | NBinderList (_,_,NApp (NRef ref,args),_) ->
+      RefKey (canonical_gr ref), Some (List.length args)
+  | NRef ref -> RefKey(canonical_gr ref), None
+  | NApp (_,args) -> Oth, Some (List.length args)
   | _ -> Oth, None
 
 (**********************************************************************)
@@ -321,7 +323,7 @@ let declare_notation_interpretation ntn scopt pat df =
   if scopt = None then scope_stack := SingleNotation ntn :: !scope_stack
 
 let declare_uninterpretation rule (metas,c as pat) =
-  let (key,n) = aconstr_key c in
+  let (key,n) = notation_constr_key c in
   notations_key_table := Gmapl.add key (rule,pat,n) !notations_key_table
 
 let rec find_interpretation ntn find = function
@@ -349,7 +351,7 @@ let find_prim_token g loc p sc =
   (* Try for a user-defined numerical notation *)
   try
     let (_,c),df = find_notation (notation_of_prim_token p) sc in
-    g (glob_constr_of_aconstr loc c),df
+    g (Topconstr.glob_constr_of_notation_constr loc c),df
   with Not_found ->
   (* Try for a primitive numerical notation *)
   let (spdir,interp) = Hashtbl.find prim_token_interpreter_tab sc loc p in
@@ -401,9 +403,9 @@ let uninterp_prim_token c =
     let (sc,numpr,_) =
       Hashtbl.find prim_token_key_table (glob_prim_constr_key c) in
     match numpr c with
-      | None -> raise No_match
+      | None -> raise Topconstr.No_match
       | Some n -> (sc,n)
-  with Not_found -> raise No_match
+  with Not_found -> raise Topconstr.No_match
 
 let uninterp_prim_token_ind_pattern ind args =
   let ref = IndRef ind in
@@ -423,12 +425,12 @@ let uninterp_prim_token_cases_pattern c =
   try
     let k = cases_pattern_key c in
     let (sc,numpr,b) = Hashtbl.find prim_token_key_table k in
-    if not b then raise No_match;
+    if not b then raise Topconstr.No_match;
     let na,c = glob_constr_of_closed_cases_pattern c in
     match numpr c with
-      | None -> raise No_match
+      | None -> raise Topconstr.No_match
       | Some n -> (na,sc,n)
-  with Not_found -> raise No_match
+  with Not_found -> raise Topconstr.No_match
 
 let availability_of_prim_token n printer_scope local_scopes =
   let f scope =
@@ -447,7 +449,7 @@ let exists_notation_in_scope scopt ntn r =
     r' = r
   with Not_found -> false
 
-let isAVar_or_AHole = function AVar _ | AHole _ -> true | _ -> false
+let isNVar_or_NHole = function NVar _ | NHole _ -> true | _ -> false
 
 (**********************************************************************)
 (* Mapping classes to scopes *)
@@ -651,7 +653,7 @@ let pr_scope_classes sc =
 
 let pr_notation_info prglob ntn c =
   str "\"" ++ str ntn ++ str "\" := " ++
-  prglob (glob_constr_of_aconstr dummy_loc c)
+  prglob (Topconstr.glob_constr_of_notation_constr dummy_loc c)
 
 let pr_named_scope prglob scope sc =
  (if scope = default_scope then
@@ -708,8 +710,8 @@ let browse_notation strict ntn map =
 
 let global_reference_of_notation test (ntn,(sc,c,_)) =
   match c with
-  | ARef ref when test ref -> Some (ntn,sc,ref)
-  | AApp (ARef ref, l) when List.for_all isAVar_or_AHole l & test ref ->
+  | NRef ref when test ref -> Some (ntn,sc,ref)
+  | NApp (NRef ref, l) when List.for_all isNVar_or_NHole l & test ref ->
       Some (ntn,sc,ref)
   | _ -> None
 

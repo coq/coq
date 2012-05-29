@@ -12,7 +12,7 @@ open Util
 open Names
 open Entries
 open Libnames
-open Topconstr
+open Constrexpr
 open Constrintern
 
 type module_internalization_error =

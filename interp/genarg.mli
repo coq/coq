@@ -14,7 +14,7 @@ open Libnames
 open Glob_term
 open Genredexpr
 open Pattern
-open Topconstr
+open Constrexpr
 open Term
 open Evd
 open Misctypes

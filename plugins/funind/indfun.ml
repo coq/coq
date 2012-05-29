@@ -130,8 +130,8 @@ let functional_induction with_clean c princl pat =
 
 let rec abstract_glob_constr c = function
   | [] -> c
-  | Topconstr.LocalRawDef (x,b)::bl -> Topconstr.mkLetInC(x,b,abstract_glob_constr c bl)
-  | Topconstr.LocalRawAssum (idl,k,t)::bl ->
+  | Constrexpr.LocalRawDef (x,b)::bl -> Topconstr.mkLetInC(x,b,abstract_glob_constr c bl)
+  | Constrexpr.LocalRawAssum (idl,k,t)::bl ->
       List.fold_right (fun x b -> Topconstr.mkLambdaC([x],k,t,b)) idl
         (abstract_glob_constr c bl)
 
@@ -220,8 +220,8 @@ let rec is_rec names =
 let rec local_binders_length = function
   (* Assume that no `{ ... } contexts occur *)
   | [] -> 0
-  | Topconstr.LocalRawDef _::bl -> 1 + local_binders_length bl
-  | Topconstr.LocalRawAssum (idl,_,_)::bl -> List.length idl + local_binders_length bl
+  | Constrexpr.LocalRawDef _::bl -> 1 + local_binders_length bl
+  | Constrexpr.LocalRawAssum (idl,_,_)::bl -> List.length idl + local_binders_length bl
 
 let prepare_body ((name,_,args,types,_),_) rt =
   let n = local_binders_length args in
@@ -395,7 +395,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
   in
   let unbounded_eq =
     let f_app_args =
-      Topconstr.CAppExpl
+      Constrexpr.CAppExpl
 	(dummy_loc,
 	 (None,(Ident (dummy_loc,fname))) ,
 	 (List.map
@@ -407,7 +407,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	 )
 	)
     in
-    Topconstr.CApp (dummy_loc,(None,Topconstr.mkRefC (Qualid (dummy_loc,(qualid_of_string "Logic.eq")))),
+    Constrexpr.CApp (dummy_loc,(None,Topconstr.mkRefC (Qualid (dummy_loc,(qualid_of_string "Logic.eq")))),
 		    [(f_app_args,None);(body,None)])
   in
   let eq = Topconstr.prod_constr_expr unbounded_eq args in
@@ -439,7 +439,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
       | None ->
 	  begin
 	    match args with
-	      | [Topconstr.LocalRawAssum ([(_,Name x)],k,t)] -> t,x
+	      | [Constrexpr.LocalRawAssum ([(_,Name x)],k,t)] -> t,x
 	      | _ -> error "Recursive argument must be specified"
 	  end
       | Some wf_args ->
@@ -447,7 +447,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 	    match
 	      List.find
 		(function
-		   | Topconstr.LocalRawAssum(l,k,t) ->
+		   | Constrexpr.LocalRawAssum(l,k,t) ->
 		       List.exists
 			 (function (_,Name id) -> id =  wf_args | _ -> false)
 			 l
@@ -455,7 +455,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 		)
 		args
 	    with
-	      | Topconstr.LocalRawAssum(_,k,t)  ->	    t,wf_args
+	      | Constrexpr.LocalRawAssum(_,k,t)  ->	    t,wf_args
 	      | _ -> assert false
 	  with Not_found -> assert false
   in
@@ -482,7 +482,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 	    let b = Names.id_of_string "___b" in 
 	    Topconstr.mkLambdaC(
 	      [dummy_loc,Name a;dummy_loc,Name b],
-	      Topconstr.Default Explicit,
+	      Constrexpr.Default Explicit,
 	      wf_arg_type,
 	      Topconstr.mkAppC(wf_rel_expr,
 			       [
@@ -505,23 +505,23 @@ let decompose_lambda_n_assum_constr_expr =
   if n = 0 then (List.rev acc,e)
   else
     match e with 
-      | Topconstr.CLambdaN(_, [],e') -> decompose_lambda_n_assum_constr_expr acc n e'
-      | Topconstr.CLambdaN(lambda_loc,(nal,bk,nal_type)::bl,e') ->
+      | Constrexpr.CLambdaN(_, [],e') -> decompose_lambda_n_assum_constr_expr acc n e'
+      | Constrexpr.CLambdaN(lambda_loc,(nal,bk,nal_type)::bl,e') ->
 	let nal_length = List.length nal in 
 	if nal_length <= n 
 	then
 	  decompose_lambda_n_assum_constr_expr 
-	    (Topconstr.LocalRawAssum(nal,bk,nal_type)::acc) 
+	    (Constrexpr.LocalRawAssum(nal,bk,nal_type)::acc)
 	    (n - nal_length) 
-	    (Topconstr.CLambdaN(lambda_loc,bl,e')) 
+	    (Constrexpr.CLambdaN(lambda_loc,bl,e'))
   	else
 	  let nal_keep,nal_expr = list_chop n nal in 
-	  (List.rev (Topconstr.LocalRawAssum(nal_keep,bk,nal_type)::acc),
-	   Topconstr.CLambdaN(lambda_loc,(nal_expr,bk,nal_type)::bl,e')
+	  (List.rev (Constrexpr.LocalRawAssum(nal_keep,bk,nal_type)::acc),
+	   Constrexpr.CLambdaN(lambda_loc,(nal_expr,bk,nal_type)::bl,e')
 	  )
-      | Topconstr.CLetIn(_, na,nav,e') -> 
+      | Constrexpr.CLetIn(_, na,nav,e') ->
 	decompose_lambda_n_assum_constr_expr 
-	  (Topconstr.LocalRawDef(na,nav)::acc) (pred n) e'
+	  (Constrexpr.LocalRawDef(na,nav)::acc) (pred n) e'
       | _ -> error "Not enough product or assumption"
   in
   decompose_lambda_n_assum_constr_expr []
@@ -535,29 +535,30 @@ let decompose_prod_n_assum_constr_expr =
       (List.rev acc,e)
   else
     match e with 
-      | Topconstr.CProdN(_, [],e') -> decompose_prod_n_assum_constr_expr acc n e'
-      | Topconstr.CProdN(lambda_loc,(nal,bk,nal_type)::bl,e') ->
+      | Constrexpr.CProdN(_, [],e') -> decompose_prod_n_assum_constr_expr acc n e'
+      | Constrexpr.CProdN(lambda_loc,(nal,bk,nal_type)::bl,e') ->
 	let nal_length = List.length nal in 
 	if nal_length <= n 
 	then
 	  (* let _ = Pp.msgnl (str "first case") in  *)
 	  decompose_prod_n_assum_constr_expr 
-	    (Topconstr.LocalRawAssum(nal,bk,nal_type)::acc) 
+	    (Constrexpr.LocalRawAssum(nal,bk,nal_type)::acc)
 	    (n - nal_length) 
-	    (if bl = [] then e' else (Topconstr.CLambdaN(lambda_loc,bl,e')))
+	    (if bl = [] then e' else (Constrexpr.CLambdaN(lambda_loc,bl,e')))
   	else
 	  (* let _ = Pp.msgnl (str "second case") in  *)
 	  let nal_keep,nal_expr = list_chop n nal in 
-	  (List.rev (Topconstr.LocalRawAssum(nal_keep,bk,nal_type)::acc),
-	   Topconstr.CLambdaN(lambda_loc,(nal_expr,bk,nal_type)::bl,e')
+	  (List.rev (Constrexpr.LocalRawAssum(nal_keep,bk,nal_type)::acc),
+	   Constrexpr.CLambdaN(lambda_loc,(nal_expr,bk,nal_type)::bl,e')
 	  )
-      | Topconstr.CLetIn(_, na,nav,e') -> 
+      | Constrexpr.CLetIn(_, na,nav,e') ->
 	decompose_prod_n_assum_constr_expr 
-	  (Topconstr.LocalRawDef(na,nav)::acc) (pred n) e'
+	  (Constrexpr.LocalRawDef(na,nav)::acc) (pred n) e'
       | _ -> error "Not enough product or assumption"
   in
   decompose_prod_n_assum_constr_expr []
 
+open Constrexpr
 open Topconstr
 
 let rec make_assoc = List.fold_left2 (fun l a b ->
@@ -569,10 +570,10 @@ match a, b with
 let rec rebuild_bl (aux,assoc) bl typ = 
 	match bl,typ with 
 	  | [], _ -> (List.rev aux,replace_vars_constr_expr assoc typ,assoc)
-	  | (Topconstr.LocalRawAssum(nal,bk,_))::bl',typ -> 
+	  | (Constrexpr.LocalRawAssum(nal,bk,_))::bl',typ ->
 	     rebuild_nal (aux,assoc) bk bl' nal (List.length nal) typ
-	  | (Topconstr.LocalRawDef(na,_))::bl',CLetIn(_,_,nat,typ') ->
-	    rebuild_bl ((Topconstr.LocalRawDef(na,replace_vars_constr_expr assoc nat)::aux),assoc)
+	  | (Constrexpr.LocalRawDef(na,_))::bl',Constrexpr.CLetIn(_,_,nat,typ') ->
+	    rebuild_bl ((Constrexpr.LocalRawDef(na,replace_vars_constr_expr assoc nat)::aux),assoc)
 	      bl' typ'
 	  | _ -> assert false
       and rebuild_nal (aux,assoc) bk bl' nal lnal typ = 
@@ -619,7 +620,7 @@ let do_generate_principle on_error register_built interactive_proof
   List.iter (fun (_,l) -> if l <> [] then error "Function does not support notations for now") fixpoint_exprl;
   let _is_struct =
     match fixpoint_exprl with
-      | [((_,(wf_x,Topconstr.CWfRec wf_rel),_,_,_),_) as fixpoint_expr] ->
+      | [((_,(wf_x,Constrexpr.CWfRec wf_rel),_,_,_),_) as fixpoint_expr] ->
  	  let ((((_,name),_,args,types,body)),_)  as fixpoint_expr =
 	    match recompute_binder_list [fixpoint_expr] with 
 	      | [e] -> e
@@ -641,7 +642,7 @@ let do_generate_principle on_error register_built interactive_proof
 	  if register_built
 	  then register_wf name rec_impls wf_rel (map_option snd wf_x) using_lemmas args types body pre_hook;
 	  false
-      |[((_,(wf_x,Topconstr.CMeasureRec(wf_mes,wf_rel_opt)),_,_,_),_) as fixpoint_expr] ->
+      |[((_,(wf_x,Constrexpr.CMeasureRec(wf_mes,wf_rel_opt)),_,_,_),_) as fixpoint_expr] ->
  	  let ((((_,name),_,args,types,body)),_)  as fixpoint_expr =
 	    match recompute_binder_list [fixpoint_expr] with 
 	      | [e] -> e
@@ -666,7 +667,7 @@ let do_generate_principle on_error register_built interactive_proof
       | _ ->
 	  List.iter (function ((_na,(_,ord),_args,_body,_type),_not) ->
 		       match ord with 
-			 | Topconstr.CMeasureRec _ | Topconstr.CWfRec _ -> 
+			 | Constrexpr.CMeasureRec _ | Constrexpr.CWfRec _ ->
 			     error
 			       ("Cannot use mutual definition with well-founded recursion or measure")
 			 | _ -> ()
@@ -757,18 +758,18 @@ let rec add_args id new_args b =
   | CGeneralization _ -> anomaly "add_args : CGeneralization"
   | CPrim _ -> b
   | CDelimiters _ -> anomaly "add_args : CDelimiters"
-exception Stop of  Topconstr.constr_expr
+exception Stop of  Constrexpr.constr_expr
 
 
 (* [chop_n_arrow n t] chops the [n] first arrows in [t]
-   Acts on Topconstr.constr_expr
+   Acts on Constrexpr.constr_expr
 *)
 let rec chop_n_arrow n t =
   if n <= 0
   then t (* If we have already removed all the arrows then return the type *)
   else (* If not we check the form of [t] *)
     match t with
-      | Topconstr.CProdN(_,nal_ta',t') -> (* If we have a forall, to result are possible :
+      | Constrexpr.CProdN(_,nal_ta',t') -> (* If we have a forall, to result are possible :
 					     either we need to discard more than the number of arrows contained
 					     in this product declaration then we just recall [chop_n_arrow] on
 					     the remaining number of arrow to chop and [t'] we discard it and
@@ -787,7 +788,7 @@ let rec chop_n_arrow n t =
 		      aux (n - nal_l) nal_ta'
 		    else
 		      let new_t' =
-			Topconstr.CProdN(dummy_loc,
+			Constrexpr.CProdN(dummy_loc,
 					((snd (list_chop n nal)),k,t'')::nal_ta',t')
 		      in
 		      raise (Stop new_t')
@@ -800,10 +801,10 @@ let rec chop_n_arrow n t =
       | _ -> anomaly "Not enough products"
 
 
-let rec get_args b t : Topconstr.local_binder list *
-    Topconstr.constr_expr * Topconstr.constr_expr =
+let rec get_args b t : Constrexpr.local_binder list *
+    Constrexpr.constr_expr * Constrexpr.constr_expr =
   match b with
-    | Topconstr.CLambdaN (loc, (nal_ta), b') ->
+    | Constrexpr.CLambdaN (loc, (nal_ta), b') ->
 	begin
 	  let n =
 	    (List.fold_left (fun n (nal,_,_) ->
@@ -811,7 +812,7 @@ let rec get_args b t : Topconstr.local_binder list *
 	  in
 	  let nal_tas,b'',t'' = get_args b' (chop_n_arrow n t) in
 	  (List.map (fun (nal,k,ta) ->
-		       (Topconstr.LocalRawAssum (nal,k,ta))) nal_ta)@nal_tas, b'',t''
+		       (Constrexpr.LocalRawAssum (nal,k,ta))) nal_ta)@nal_tas, b'',t''
 	end
     | _ -> [],b,t
 
@@ -845,7 +846,7 @@ let make_graph (f_ref:global_reference) =
 	 let (nal_tas,b,t)  = get_args extern_body extern_type in
 	 let expr_list =
 	   match b with
-	     | Topconstr.CFix(loc,l_id,fixexprl) ->
+	     | Constrexpr.CFix(loc,l_id,fixexprl) ->
 		 let l =
 		   List.map
 		     (fun (id,(n,recexp),bl,t,b) ->
@@ -854,8 +855,8 @@ let make_graph (f_ref:global_reference) =
 			  List.flatten
 			    (List.map
 			       (function
- 				  | Topconstr.LocalRawDef (na,_)-> []
-			      	  | Topconstr.LocalRawAssum (nal,_,_) ->
+				  | Constrexpr.LocalRawDef (na,_)-> []
+				  | Constrexpr.LocalRawAssum (nal,_,_) ->
 				      List.map
 					(fun (loc,n) ->
 					   CRef(Libnames.Ident(loc, Nameops.out_name n)))
@@ -872,7 +873,7 @@ let make_graph (f_ref:global_reference) =
 		 l
 	     | _ ->
 		 let id = id_of_label (con_label c) in
-		 [((dummy_loc,id),(None,Topconstr.CStructRec),nal_tas,t,Some b),[]]
+		 [((dummy_loc,id),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
 	 in
 	 do_generate_principle error_error false false expr_list;
 	 (* We register the infos *)

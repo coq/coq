@@ -19,7 +19,7 @@ open Libobject
 open Lib
 open Nametab
 open Pp
-open Topconstr
+open Constrexpr
 open Termops
 open Namegen
 open Decl_kinds
@@ -614,7 +614,7 @@ let declare_mib_implicits kn =
       (inImplicits (ImplMutualInductive (kn,flags),List.flatten imps))
 
 (* Declare manual implicits *)
-type manual_explicitation = Topconstr.explicitation * (bool * bool * bool)
+type manual_explicitation = Constrexpr.explicitation * (bool * bool * bool)
 
 type manual_implicits = manual_explicitation list
 

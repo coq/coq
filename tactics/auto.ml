@@ -825,7 +825,7 @@ let prepare_hint env (sigma,c) =
 
 let path_of_constr_expr c =
   match c with
-  | Topconstr.CRef r -> (try PathHints [global r] with _ -> PathAny)
+  | Constrexpr.CRef r -> (try PathHints [global r] with _ -> PathAny)
   | _ -> PathAny
       
 let interp_hints h =

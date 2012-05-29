@@ -10,7 +10,8 @@ open Compat
 open Errors
 open Pp
 open Names
-open Topconstr
+open Constrexpr
+open Notation_term
 open Pcoq
 open Extend
 open Vernacexpr

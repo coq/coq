@@ -19,13 +19,13 @@ open Names
 open Libnames
 open Misctypes
 open Syntax_def
-open Topconstr
+open Notation_term
 
 let global_of_extended_global = function
   | TrueGlobal ref -> ref
   | SynDef kn ->
   match search_syntactic_definition kn with
-  | [],ARef ref -> ref
+  | [],NRef ref -> ref
   | _ -> raise Not_found
 
 let locate_global_with_alias (loc,qid) =

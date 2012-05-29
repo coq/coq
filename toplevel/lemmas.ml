@@ -29,7 +29,7 @@ open Namegen
 open Evd
 open Evarutil
 open Reductionops
-open Topconstr
+open Constrexpr
 open Constrintern
 open Impargs
 open Tacticals

@@ -16,7 +16,7 @@ open Tactic_debug
 open Term
 open Tacexpr
 open Genarg
-open Topconstr
+open Constrexpr
 open Mod_subst
 open Redexpr
 open Misctypes

@@ -13,7 +13,7 @@ open Errors
 open Util
 open Tacexpr
 open Glob_term
-open Topconstr
+open Constrexpr
 open Genarg
 open Libnames
 open Pattern
@@ -294,7 +294,7 @@ let pr_extend prc prlc prtac prpat =
 let strip_prod_binders_expr n ty =
   let rec strip_ty acc n ty =
     match ty with
-        Topconstr.CProdN(_,bll,a) ->
+        Constrexpr.CProdN(_,bll,a) ->
           let nb =
             List.fold_left (fun i (nal,_,_) -> i + List.length nal) 0 bll in
 	  let bll = List.map (fun (x, _, y) -> x, y) bll in

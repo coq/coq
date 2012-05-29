@@ -25,6 +25,7 @@ open Safe_typing
 open Decl_kinds
 open Indtypes
 open Type_errors
+open Constrexpr
 open Topconstr
 
 (********** definition d'un record (structure) **************)

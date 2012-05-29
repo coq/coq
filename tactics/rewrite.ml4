@@ -32,7 +32,7 @@ open Hiddentac
 open Typeclasses
 open Typeclasses_errors
 open Classes
-open Topconstr
+open Constrexpr
 open Pfedit
 open Command
 open Libnames

@@ -738,11 +738,11 @@ type ring_mod =
   | Const_tac of cst_tac_spec
   | Pre_tac of raw_tactic_expr
   | Post_tac of raw_tactic_expr
-  | Setoid of Topconstr.constr_expr * Topconstr.constr_expr
-  | Pow_spec of cst_tac_spec * Topconstr.constr_expr
+  | Setoid of Constrexpr.constr_expr * Constrexpr.constr_expr
+  | Pow_spec of cst_tac_spec * Constrexpr.constr_expr
            (* Syntaxification tactic , correctness lemma *)
-  | Sign_spec of Topconstr.constr_expr
-  | Div_spec of Topconstr.constr_expr
+  | Sign_spec of Constrexpr.constr_expr
+  | Div_spec of Constrexpr.constr_expr
 
 
 VERNAC ARGUMENT EXTEND ring_mod
@@ -1096,7 +1096,7 @@ let add_field_theory name fth eqth morphth cst_tac inj (pre,post) power sign odi
 
 type field_mod =
     Ring_mod of ring_mod
-  | Inject of Topconstr.constr_expr
+  | Inject of Constrexpr.constr_expr
 
 VERNAC ARGUMENT EXTEND field_mod
   | [ ring_mod(m) ] -> [ Ring_mod m ]

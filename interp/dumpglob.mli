@@ -34,10 +34,14 @@ val dump_moddef : Pp.loc -> Names.module_path -> string -> unit
 val dump_modref  : Pp.loc -> Names.module_path -> string -> unit
 val dump_reference  : Pp.loc -> string -> string -> string -> unit
 val dump_libref : Pp.loc -> Names.dir_path -> string -> unit
-val dump_notation_location : (int * int) list -> Topconstr.notation -> (Notation.notation_location * Topconstr.scope_name option) -> unit
+val dump_notation_location : (int * int) list -> Constrexpr.notation ->
+  (Notation.notation_location * Notation_term.scope_name option) -> unit
 val dump_binding : Pp.loc -> Names.Idset.elt -> unit
-val dump_notation : Pp.loc * (Topconstr.notation * Notation.notation_location) -> Topconstr.scope_name option -> bool -> unit
-val dump_constraint :  Topconstr.typeclass_constraint -> bool -> string -> unit
+val dump_notation :
+  Pp.loc * (Constrexpr.notation * Notation.notation_location) ->
+  Notation_term.scope_name option -> bool -> unit
+val dump_constraint :
+  Constrexpr.typeclass_constraint -> bool -> string -> unit
 
 val dump_string : string -> unit
 

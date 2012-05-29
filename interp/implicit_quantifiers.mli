@@ -15,7 +15,7 @@ open Environ
 open Nametab
 open Mod_subst
 open Glob_term
-open Topconstr
+open Constrexpr
 open Pp
 open Libnames
 open Typeclasses
@@ -46,9 +46,9 @@ val implicits_of_glob_constr : ?with_products:bool -> Glob_term.glob_constr -> I
 
 val combine_params_freevar :
   Names.Idset.t -> (global_reference * bool) option * (Names.name * Term.constr option * Term.types) ->
-  Topconstr.constr_expr * Names.Idset.t
+  Constrexpr.constr_expr * Names.Idset.t
 
 val implicit_application : Idset.t -> ?allow_partial:bool ->
   (Names.Idset.t -> (global_reference * bool) option * (Names.name * Term.constr option * Term.types) ->
-    Topconstr.constr_expr * Names.Idset.t) ->
+    Constrexpr.constr_expr * Names.Idset.t) ->
   constr_expr -> constr_expr * Idset.t

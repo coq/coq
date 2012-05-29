@@ -14,7 +14,7 @@ open Glob_term
 open Term
 open Names
 open Libnames
-open Topconstr
+open Constrexpr
 open Util
 open Tok
 open Compat
@@ -31,7 +31,9 @@ let _ = List.iter Lexer.add_keyword constr_kw
 
 let mk_cast = function
     (c,(_,None)) -> c
-  | (c,(_,Some ty)) -> CCast(join_loc (constr_loc c) (constr_loc ty), c, CastConv ty)
+  | (c,(_,Some ty)) ->
+    let loc = join_loc (Topconstr.constr_loc c) (Topconstr.constr_loc ty)
+    in CCast(loc, c, CastConv ty)
 
 let binders_of_names l =
   List.map (fun (loc, na) ->
@@ -223,13 +225,15 @@ GEXTEND Gram
   ;
   binder_constr:
     [ [ forall; bl = open_binders; ","; c = operconstr LEVEL "200" ->
-          mkCProdN loc bl c
+          Topconstr.mkCProdN loc bl c
       | lambda; bl = open_binders; "=>"; c = operconstr LEVEL "200" ->
-          mkCLambdaN loc bl c
+          Topconstr.mkCLambdaN loc bl c
       | "let"; id=name; bl = binders; ty = type_cstr; ":=";
         c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->
-          let loc1 = join_loc (local_binders_loc bl) (constr_loc c1) in
-          CLetIn(loc,id,mkCLambdaN loc1 bl (mk_cast(c1,ty)),c2)
+          let loc1 =
+	    join_loc (Topconstr.local_binders_loc bl) (Topconstr.constr_loc c1)
+	  in
+          CLetIn(loc,id,Topconstr.mkCLambdaN loc1 bl (mk_cast(c1,ty)),c2)
       | "let"; fx = single_fix; "in"; c = operconstr LEVEL "200" ->
           let fixp = mk_single_fix fx in
           let (li,id) = match fixp with
@@ -338,7 +342,7 @@ GEXTEND Gram
         (match p with
           | CPatAtom (_, Some r) -> CPatCstr (loc, r, lp)
           | _ -> Errors.user_err_loc
-              (cases_pattern_expr_loc p, "compound_pattern",
+              (Topconstr.cases_pattern_expr_loc p, "compound_pattern",
                Pp.str "Constructor expected."))
       |"@"; r = Prim.reference; lp = LIST1 NEXT ->
         CPatCstrExpl (loc, r, lp) ]
@@ -391,7 +395,7 @@ GEXTEND Gram
       | id = name; idl = LIST0 name; bl = binders ->
           binders_of_names (id::idl) @ bl
       | id1 = name; ".."; id2 = name ->
-          [LocalRawAssum ([id1;(loc,Name ldots_var);id2],
+          [LocalRawAssum ([id1;(loc,Name Topconstr.ldots_var);id2],
 	                  Default Explicit,CHole (loc,None))]
       | bl = closed_binder; bl' = binders ->
 	  bl@bl'
@@ -412,7 +416,7 @@ GEXTEND Gram
       | "("; id=name; ":="; c=lconstr; ")" ->
           [LocalRawDef (id,c)]
       | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" ->
-          [LocalRawDef (id,CCast (join_loc (constr_loc t) loc,c, CastConv t))]
+          [LocalRawDef (id,CCast (join_loc (Topconstr.constr_loc t) loc,c, CastConv t))]
       | "{"; id=name; "}" ->
           [LocalRawAssum ([id],Default Implicit,CHole (loc, None))]
       | "{"; id=name; idl=LIST1 name; ":"; c=lconstr; "}" ->

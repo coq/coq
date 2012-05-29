@@ -12,6 +12,7 @@ open Tok
 open Errors
 open Util
 open Names
+open Constrexpr
 open Topconstr
 open Extend
 open Vernacexpr

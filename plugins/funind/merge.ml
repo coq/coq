@@ -13,7 +13,7 @@ open Tactics
 open Indfun_common
 open Errors
 open Util
-open Topconstr
+open Constrexpr
 open Vernacexpr
 open Pp
 open Names

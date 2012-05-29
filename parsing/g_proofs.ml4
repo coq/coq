@@ -11,7 +11,7 @@ open Pp
 open Tactic
 open Util
 open Vernac_
-open Topconstr
+open Constrexpr
 open Vernacexpr
 open Locality
 open Prim

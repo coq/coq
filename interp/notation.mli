@@ -13,8 +13,9 @@ open Bigint
 open Names
 open Nametab
 open Libnames
+open Constrexpr
 open Glob_term
-open Topconstr
+open Notation_term
 open Ppextend
 
 (** Notations *)

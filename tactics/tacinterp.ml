@@ -32,6 +32,7 @@ open Proof_type
 open Refiner
 open Tacmach
 open Tactic_debug
+open Constrexpr
 open Topconstr
 open Term
 open Termops

@@ -118,7 +118,7 @@ val assumption       : tactic
 val exact_no_check   : constr -> tactic
 val vm_cast_no_check : constr -> tactic
 val exact_check      : constr -> tactic
-val exact_proof      : Topconstr.constr_expr -> tactic
+val exact_proof      : Constrexpr.constr_expr -> tactic
 
 (** {6 Reduction tactics. } *)
 

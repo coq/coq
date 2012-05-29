@@ -9,7 +9,7 @@
 open Errors
 open Util
 open Names
-open Topconstr
+open Constrexpr
 open Tacinterp
 open Tacmach
 open Decl_expr

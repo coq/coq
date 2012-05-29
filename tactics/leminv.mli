@@ -3,7 +3,7 @@ open Names
 open Term
 open Glob_term
 open Proof_type
-open Topconstr
+open Constrexpr
 open Misctypes
 
 val lemInv_gen : quantified_hypothesis -> constr -> tactic

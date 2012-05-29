@@ -210,7 +210,7 @@ module V82 : sig
   val top_evars : proofview -> Evd.evar list
     
   (* Implements the Existential command *)
-  val instantiate_evar : int -> Topconstr.constr_expr -> proofview -> proofview
+  val instantiate_evar : int -> Constrexpr.constr_expr -> proofview -> proofview
 
   (* spiwack: [purify] might be useful while writing tactics manipulating exception 
      explicitely or from the [V82] submodule (neither being advised, though *)

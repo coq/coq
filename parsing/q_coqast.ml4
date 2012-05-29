@@ -122,40 +122,40 @@ let mlexpr_of_red_flags {
 } >>
 
 let mlexpr_of_explicitation = function
-  | Topconstr.ExplByName id -> <:expr< Topconstr.ExplByName $mlexpr_of_ident id$ >>
-  | Topconstr.ExplByPos (n,_id) -> <:expr< Topconstr.ExplByPos $mlexpr_of_int n$ >>
+  | Constrexpr.ExplByName id -> <:expr< Constrexpr.ExplByName $mlexpr_of_ident id$ >>
+  | Constrexpr.ExplByPos (n,_id) -> <:expr< Constrexpr.ExplByPos $mlexpr_of_int n$ >>
 
 let mlexpr_of_binding_kind = function
   | Decl_kinds.Implicit -> <:expr< Decl_kinds.Implicit >>
   | Decl_kinds.Explicit -> <:expr< Decl_kinds.Explicit >>
 
 let mlexpr_of_binder_kind = function
-  | Topconstr.Default b -> <:expr< Topconstr.Default $mlexpr_of_binding_kind b$ >>
-  | Topconstr.Generalized (b,b',b'') ->
-      <:expr< Topconstr.TypeClass $mlexpr_of_binding_kind b$
+  | Constrexpr.Default b -> <:expr< Constrexpr.Default $mlexpr_of_binding_kind b$ >>
+  | Constrexpr.Generalized (b,b',b'') ->
+      <:expr< Constrexpr.TypeClass $mlexpr_of_binding_kind b$
 	$mlexpr_of_binding_kind b'$ $mlexpr_of_bool b''$ >>
 
 let rec mlexpr_of_constr = function
-  | Topconstr.CRef (Libnames.Ident (loc,id)) when is_meta (string_of_id id) ->
+  | Constrexpr.CRef (Libnames.Ident (loc,id)) when is_meta (string_of_id id) ->
       anti loc (string_of_id id)
-  | Topconstr.CRef r -> <:expr< Topconstr.CRef $mlexpr_of_reference r$ >>
-  | Topconstr.CFix (loc,_,_) -> failwith "mlexpr_of_constr: TODO"
-  | Topconstr.CCoFix (loc,_,_) -> failwith "mlexpr_of_constr: TODO"
-  | Topconstr.CProdN (loc,l,a) -> <:expr< Topconstr.CProdN $dloc$ $mlexpr_of_list
+  | Constrexpr.CRef r -> <:expr< Constrexpr.CRef $mlexpr_of_reference r$ >>
+  | Constrexpr.CFix (loc,_,_) -> failwith "mlexpr_of_constr: TODO"
+  | Constrexpr.CCoFix (loc,_,_) -> failwith "mlexpr_of_constr: TODO"
+  | Constrexpr.CProdN (loc,l,a) -> <:expr< Constrexpr.CProdN $dloc$ $mlexpr_of_list
       (mlexpr_of_triple (mlexpr_of_list (mlexpr_of_pair (fun _ -> dloc) mlexpr_of_name)) mlexpr_of_binder_kind mlexpr_of_constr) l$ $mlexpr_of_constr a$ >>
-  | Topconstr.CLambdaN (loc,l,a) -> <:expr< Topconstr.CLambdaN $dloc$ $mlexpr_of_list (mlexpr_of_triple (mlexpr_of_list (mlexpr_of_pair (fun _ -> dloc) mlexpr_of_name)) mlexpr_of_binder_kind mlexpr_of_constr) l$ $mlexpr_of_constr a$ >>
-  | Topconstr.CLetIn (loc,_,_,_) -> failwith "mlexpr_of_constr: TODO"
-  | Topconstr.CAppExpl (loc,a,l) -> <:expr< Topconstr.CAppExpl $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_reference a$ $mlexpr_of_list mlexpr_of_constr l$ >>
-  | Topconstr.CApp (loc,a,l) -> <:expr< Topconstr.CApp $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_constr a$ $mlexpr_of_list (mlexpr_of_pair mlexpr_of_constr (mlexpr_of_option (mlexpr_of_located mlexpr_of_explicitation))) l$ >>
-  | Topconstr.CCases (loc,_,_,_,_) -> failwith "mlexpr_of_constr: TODO"
-  | Topconstr.CHole (loc, None) -> <:expr< Topconstr.CHole $dloc$ None >>
-  | Topconstr.CHole (loc, Some _) -> failwith "mlexpr_of_constr: TODO CHole (Some _)"
-  | Topconstr.CNotation(_,ntn,(subst,substl,[])) ->
-      <:expr< Topconstr.CNotation $dloc$ $mlexpr_of_string ntn$
+  | Constrexpr.CLambdaN (loc,l,a) -> <:expr< Constrexpr.CLambdaN $dloc$ $mlexpr_of_list (mlexpr_of_triple (mlexpr_of_list (mlexpr_of_pair (fun _ -> dloc) mlexpr_of_name)) mlexpr_of_binder_kind mlexpr_of_constr) l$ $mlexpr_of_constr a$ >>
+  | Constrexpr.CLetIn (loc,_,_,_) -> failwith "mlexpr_of_constr: TODO"
+  | Constrexpr.CAppExpl (loc,a,l) -> <:expr< Constrexpr.CAppExpl $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_reference a$ $mlexpr_of_list mlexpr_of_constr l$ >>
+  | Constrexpr.CApp (loc,a,l) -> <:expr< Constrexpr.CApp $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_constr a$ $mlexpr_of_list (mlexpr_of_pair mlexpr_of_constr (mlexpr_of_option (mlexpr_of_located mlexpr_of_explicitation))) l$ >>
+  | Constrexpr.CCases (loc,_,_,_,_) -> failwith "mlexpr_of_constr: TODO"
+  | Constrexpr.CHole (loc, None) -> <:expr< Constrexpr.CHole $dloc$ None >>
+  | Constrexpr.CHole (loc, Some _) -> failwith "mlexpr_of_constr: TODO CHole (Some _)"
+  | Constrexpr.CNotation(_,ntn,(subst,substl,[])) ->
+      <:expr< Constrexpr.CNotation $dloc$ $mlexpr_of_string ntn$
               ($mlexpr_of_list mlexpr_of_constr subst$,
                $mlexpr_of_list (mlexpr_of_list mlexpr_of_constr) substl$,[]) >>
-  | Topconstr.CPatVar (loc,n) ->
-      <:expr< Topconstr.CPatVar $dloc$ $mlexpr_of_pair mlexpr_of_bool mlexpr_of_ident n$ >>
+  | Constrexpr.CPatVar (loc,n) ->
+      <:expr< Constrexpr.CPatVar $dloc$ $mlexpr_of_pair mlexpr_of_bool mlexpr_of_ident n$ >>
   | _ -> failwith "mlexpr_of_constr: TODO"
 
 let mlexpr_of_occ_constr =

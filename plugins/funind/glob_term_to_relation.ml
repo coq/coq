@@ -1256,13 +1256,13 @@ let compute_params_name relnames (args : (Names.name * Glob_term.glob_constr * b
 
 let rec rebuild_return_type rt =
   match rt with
-    | Topconstr.CProdN(loc,n,t') ->
-	Topconstr.CProdN(loc,n,rebuild_return_type t')
-    | Topconstr.CLetIn(loc,na,t,t') ->
-	Topconstr.CLetIn(loc,na,t,rebuild_return_type t')
-    | _ -> Topconstr.CProdN(dummy_loc,[[dummy_loc,Names.Anonymous],
-				       Topconstr.Default Decl_kinds.Explicit,rt],
-			    Topconstr.CSort(dummy_loc,GType None))
+    | Constrexpr.CProdN(loc,n,t') ->
+	Constrexpr.CProdN(loc,n,rebuild_return_type t')
+    | Constrexpr.CLetIn(loc,na,t,t') ->
+	Constrexpr.CLetIn(loc,na,t,rebuild_return_type t')
+    | _ -> Constrexpr.CProdN(dummy_loc,[[dummy_loc,Names.Anonymous],
+				       Constrexpr.Default Decl_kinds.Explicit,rt],
+			    Constrexpr.CSort(dummy_loc,GType None))
 
 
 let do_build_inductive
@@ -1302,10 +1302,10 @@ let do_build_inductive
 	(fun (n,t,is_defined) acc ->
 	   if is_defined
 	   then
-	     Topconstr.CLetIn(dummy_loc,(dummy_loc, n),Constrextern.extern_glob_constr Idset.empty t,
+	     Constrexpr.CLetIn(dummy_loc,(dummy_loc, n),Constrextern.extern_glob_constr Idset.empty t,
 			      acc)
 	   else
-	     Topconstr.CProdN
+	     Constrexpr.CProdN
 	       (dummy_loc,
 		[[(dummy_loc,n)],Topconstr.default_binder_kind,Constrextern.extern_glob_constr Idset.empty t],
 		acc
@@ -1368,10 +1368,10 @@ let do_build_inductive
       (fun (n,t,is_defined) acc ->
 	 if is_defined
 	 then
-	   Topconstr.CLetIn(dummy_loc,(dummy_loc, n),Constrextern.extern_glob_constr Idset.empty t,
+	   Constrexpr.CLetIn(dummy_loc,(dummy_loc, n),Constrextern.extern_glob_constr Idset.empty t,
 			    acc)
 	 else
-	   Topconstr.CProdN
+	   Constrexpr.CProdN
 	   (dummy_loc,
 	   [[(dummy_loc,n)],Topconstr.default_binder_kind,Constrextern.extern_glob_constr Idset.empty t],
 	    acc
@@ -1390,9 +1390,9 @@ let do_build_inductive
       (fun (n,t,is_defined) ->
 	 if is_defined
 	 then
-	   Topconstr.LocalRawDef((dummy_loc,n), Constrextern.extern_glob_constr Idset.empty t)
+	   Constrexpr.LocalRawDef((dummy_loc,n), Constrextern.extern_glob_constr Idset.empty t)
 	 else
-	 Topconstr.LocalRawAssum
+	 Constrexpr.LocalRawAssum
 	   ([(dummy_loc,n)], Topconstr.default_binder_kind, Constrextern.extern_glob_constr Idset.empty t)
       )
       rels_params

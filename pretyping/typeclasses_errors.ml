@@ -15,7 +15,7 @@ open Evd
 open Environ
 open Nametab
 open Mod_subst
-open Topconstr
+open Constrexpr
 open Compat
 open Pp
 open Util
