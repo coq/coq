@@ -17,6 +17,7 @@ open Tactics
 open Clenv
 open Names
 open Libnames
+open Globnames
 open Tacticals
 open Tacmach
 open Fourier

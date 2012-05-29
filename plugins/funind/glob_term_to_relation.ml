@@ -5,6 +5,7 @@ open Term
 open Glob_term
 open Glob_ops
 open Libnames
+open Globnames
 open Indfun_common
 open Errors
 open Util
@@ -971,7 +972,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    in
 		    mkGProd(n,t,new_b),id_to_exclude
 		  with Continue ->
-		    let jmeq = Libnames.IndRef (destInd (jmeq ())) in
+		    let jmeq = Globnames.IndRef (destInd (jmeq ())) in
 		    let ty' = Pretyping.understand Evd.empty env ty in
 		    let ind,args' = Inductive.find_inductive env ty' in
 		    let mib,_ = Global.lookup_inductive ind in
@@ -981,7 +982,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    in
 		    let rt_typ =
 		       GApp(Pp.dummy_loc,
-			    GRef (Pp.dummy_loc,Libnames.IndRef ind),
+			    GRef (Pp.dummy_loc,Globnames.IndRef ind),
 			    (List.map
 			      (fun p -> Detyping.detype false []
 				 (Termops.names_of_rel_context env)

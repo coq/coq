@@ -13,7 +13,7 @@ open Term
 
 (** results are the reference of the object, together with a context
 (constr+evar) and a substitution under this context *)
-type result = Libnames.global_reference * (constr*existential_key) * Termops.subst
+type result = Globnames.global_reference * (constr*existential_key) * Termops.subst
 
 (** this is the reduction function used in the indexing process *)
 val reduce : types -> types

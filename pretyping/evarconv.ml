@@ -18,7 +18,7 @@ open Termops
 open Environ
 open Recordops
 open Evarutil
-open Libnames
+open Globnames
 open Evd
 
 type flex_kind_of_term =

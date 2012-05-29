@@ -21,7 +21,7 @@ open Inductiveops
 open Recordops
 open Namegen
 open Summary
-open Libnames
+open Globnames
 open Nametab
 open Miniml
 open Table

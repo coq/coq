@@ -8,7 +8,7 @@
 
 open Term
 open Pattern
-open Libnames
+open Globnames
 
 (** Named, bounded-depth, term-discrimination nets. *)
 module Make :

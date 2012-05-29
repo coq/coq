@@ -132,8 +132,8 @@ val library_dp : unit -> Names.dir_path
 val dp_of_mp : Names.module_path -> Names.dir_path
 val split_mp : Names.module_path -> Names.dir_path * Names.dir_path
 val split_modpath : Names.module_path -> Names.dir_path * Names.identifier list
-val library_part :  Libnames.global_reference -> Names.dir_path
-val remove_section_part : Libnames.global_reference -> Names.dir_path
+val library_part :  Globnames.global_reference -> Names.dir_path
+val remove_section_part : Globnames.global_reference -> Names.dir_path
 
 (** {6 Sections } *)
 
@@ -187,8 +187,8 @@ val named_of_variable_context : variable_context -> Sign.named_context
 val section_segment_of_constant : Names.constant -> variable_context
 val section_segment_of_mutual_inductive: Names.mutual_inductive -> variable_context
 
-val section_instance : Libnames.global_reference -> Names.identifier array
-val is_in_section : Libnames.global_reference -> bool
+val section_instance : Globnames.global_reference -> Names.identifier array
+val is_in_section : Globnames.global_reference -> bool
 
 val add_section_variable : Names.identifier -> Decl_kinds.binding_kind -> unit
 
@@ -201,7 +201,7 @@ val replacement_context : unit ->
 
 val discharge_kn :  Names.mutual_inductive -> Names.mutual_inductive
 val discharge_con : Names.constant -> Names.constant
-val discharge_global : Libnames.global_reference -> Libnames.global_reference
+val discharge_global : Globnames.global_reference -> Globnames.global_reference
 val discharge_inductive : Names.inductive -> Names.inductive
 
 

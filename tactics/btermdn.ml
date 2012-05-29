@@ -10,7 +10,7 @@ open Term
 open Names
 open Termdn
 open Pattern
-open Libnames
+open Globnames
 
 (* Discrimination nets with bounded depth.
    See the module dn.ml for further explanations.

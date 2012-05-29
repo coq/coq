@@ -19,6 +19,7 @@ open Names
 open Sign
 open Term
 open Libnames
+open Globnames
 open Decl_kinds
 open Misctypes
 

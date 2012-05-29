@@ -12,7 +12,7 @@ open Util
 open Names
 open Sign
 open Term
-open Libnames
+open Globnames
 open Nametab
 open Decl_kinds
 open Misctypes

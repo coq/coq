@@ -14,6 +14,7 @@ open Term
 open Mod_subst
 open Environ
 open Libnames
+open Globnames
 open Nameops
 open Libobject
 open Lib

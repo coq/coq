@@ -9,6 +9,7 @@
 (* Merging of induction principles. *)
 
 open Libnames
+open Globnames
 open Tactics
 open Indfun_common
 open Errors

@@ -13,7 +13,7 @@ open Term
 open Libobject
 open Library
 open Pattern
-open Libnames
+open Globnames
 
 (* Named, bounded-depth, term-discrimination nets.
    Implementation:

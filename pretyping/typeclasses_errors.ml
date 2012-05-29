@@ -19,7 +19,7 @@ open Constrexpr
 open Compat
 open Pp
 open Util
-open Libnames
+open Globnames
 (*i*)
 
 type contexts = Parameters | Properties

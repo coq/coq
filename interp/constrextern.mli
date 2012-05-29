@@ -13,6 +13,7 @@ open Termops
 open Sign
 open Environ
 open Libnames
+open Globnames
 open Nametab
 open Glob_term
 open Pattern

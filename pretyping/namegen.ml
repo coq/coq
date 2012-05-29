@@ -19,6 +19,7 @@ open Term
 open Nametab
 open Nameops
 open Libnames
+open Globnames
 open Environ
 open Termops
 

@@ -21,7 +21,7 @@ open Declarations
 open Declare
 open Term
 open Names
-open Libnames
+open Globnames
 open Goptions
 open Mod_subst
 open Indrec

@@ -19,6 +19,7 @@ open Inductive
 open Inductiveops
 open Environ
 open Libnames
+open Globnames
 open Reductionops
 open Typeops
 open Typing

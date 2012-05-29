@@ -8,7 +8,7 @@
 
 (*i*)
 open Names
-open Libnames
+open Globnames
 open Decl_kinds
 open Term
 open Sign

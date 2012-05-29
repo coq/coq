@@ -8,7 +8,7 @@
 
 open Term
 open Pattern
-open Libnames
+open Globnames
 open Names
 
 (** Discrimination nets of terms. *)

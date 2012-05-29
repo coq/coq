@@ -12,7 +12,7 @@ open Pp
 open Errors
 open Util
 open Names
-open Libnames
+open Globnames
 
 (* The [signature] type is used to know how many arguments a CIC
    object expects, and what these arguments will become in the ML

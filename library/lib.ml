@@ -10,6 +10,7 @@ open Pp
 open Errors
 open Util
 open Libnames
+open Globnames
 open Nameops
 open Libobject
 open Summary

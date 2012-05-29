@@ -12,6 +12,7 @@ open Compat
 open Pp
 open Names
 open Libnames
+open Globnames
 open Nameops
 open Declarations
 

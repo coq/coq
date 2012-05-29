@@ -8,7 +8,7 @@
 
 open Term
 open Names
-open Libnames
+open Globnames
 
 val qflag : bool ref
 

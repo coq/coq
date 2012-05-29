@@ -37,6 +37,7 @@ open Constrexpr
 open Pfedit
 open Command
 open Libnames
+open Globnames
 open Evd
 open Compat
 open Misctypes
@@ -1736,7 +1737,7 @@ let add_morphism_infer glob m n =
 	  (fun () ->
 	    Lemmas.start_proof instance_id kind instance
 	      (fun _ -> function
-		Libnames.ConstRef cst ->
+		Globnames.ConstRef cst ->
 		  add_instance (Typeclasses.new_instance (Lazy.force proper_class) None
 				   glob (ConstRef cst));
 		  declare_projection n instance_id (ConstRef cst)

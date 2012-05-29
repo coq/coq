@@ -13,6 +13,7 @@ open Names
 open Pcoq
 open Topconstr
 open Libnames
+open Globnames
 
 exception Non_closed_number
 
@@ -31,7 +32,7 @@ let make_path dir id = Libnames.make_path dir (id_of_string id)
 let r_path = make_path rdefinitions "R"
 
 (* TODO: temporary hack *)
-let make_path dir id = Libnames.encode_con dir (id_of_string id)
+let make_path dir id = Globnames.encode_con dir (id_of_string id)
 
 let r_kn = make_path rdefinitions "R"
 let glob_R = ConstRef r_kn

@@ -17,7 +17,7 @@ open Mod_subst
 open Constrexpr
 open Errors
 open Pp
-open Libnames
+open Globnames
 
 type contexts = Parameters | Properties
 

@@ -12,6 +12,7 @@ open Pp
 open Flags
 open Names
 open Libnames
+open Globnames
 open Nametab
 open Environ
 open Libobject

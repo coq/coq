@@ -12,7 +12,7 @@ open Util
 open Formula
 open Tacmach
 open Names
-open Libnames
+open Globnames
 
 module OrderedConstr: Set.OrderedType with type t=constr
 

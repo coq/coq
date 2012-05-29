@@ -89,7 +89,7 @@ let pr_located pr (loc,x) = pr x
 
 let pr_evaluable_reference = function
   | EvalVarRef id -> pr_id id
-  | EvalConstRef sp -> pr_global (Libnames.ConstRef sp)
+  | EvalConstRef sp -> pr_global (Globnames.ConstRef sp)
 
 let pr_quantified_hypothesis = function
   | AnonHyp n -> int n
@@ -314,7 +314,7 @@ let pr_ltac_constant sp =
 let pr_evaluable_reference_env env = function
   | EvalVarRef id -> pr_id id
   | EvalConstRef sp ->
-      Nametab.pr_global_env (Termops.vars_of_env env) (Libnames.ConstRef sp)
+      Nametab.pr_global_env (Termops.vars_of_env env) (Globnames.ConstRef sp)
 
 let pr_esubst prc l =
   let pr_qhyp = function

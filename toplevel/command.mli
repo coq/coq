@@ -11,6 +11,7 @@ open Names
 open Term
 open Entries
 open Libnames
+open Globnames
 open Tacexpr
 open Vernacexpr
 open Constrexpr

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Libnames
+open Globnames
 
 (** The kinds of existential variable *)
 

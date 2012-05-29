@@ -11,7 +11,7 @@ open Errors
 open Util
 open Names
 open Nameops
-open Libnames
+open Globnames
 open Misctypes
 open Glob_term
 open Glob_ops

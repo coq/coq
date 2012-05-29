@@ -15,6 +15,7 @@ open Declarations
 open Namegen
 open Nameops
 open Libnames
+open Globnames
 open Table
 open Miniml
 open Mlutil

@@ -102,18 +102,18 @@ let type_of_global_ref gr =
     "class"
   else
     match gr with
-    | Libnames.ConstRef cst ->
+    | Globnames.ConstRef cst ->
 	type_of_logical_kind (Decls.constant_kind cst)
-    | Libnames.VarRef v ->
+    | Globnames.VarRef v ->
 	"var" ^ type_of_logical_kind (Decls.variable_kind v)
-    | Libnames.IndRef ind ->
+    | Globnames.IndRef ind ->
 	let (mib,oib) = Inductive.lookup_mind_specif (Global.env ()) ind in
 	  if mib.Declarations.mind_record then
 	    if mib.Declarations.mind_finite then "rec"
 	    else "corec"
 	  else if mib.Declarations.mind_finite then "ind"
 	  else "coind"
-    | Libnames.ConstructRef _ -> "constr"
+    | Globnames.ConstructRef _ -> "constr"
 
 let remove_sections dir =
   if Libnames.is_dirpath_prefix_of dir (Lib.cwd ()) then

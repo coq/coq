@@ -35,7 +35,7 @@ open Classes
 open Topconstr
 open Pfedit
 open Command
-open Libnames
+open Globnames
 open Evd
 open Compat
 open Locus

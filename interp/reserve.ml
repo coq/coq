@@ -17,7 +17,7 @@ open Summary
 open Libobject
 open Lib
 open Notation_term
-open Libnames
+open Globnames
 
 type key =
   | RefKey of global_reference

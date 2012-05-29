@@ -23,4 +23,4 @@ val functional_induction :
   Proof_type.goal Tacmach.sigma -> Proof_type.goal list Evd.sigma
 
 
-val make_graph :  Libnames.global_reference -> unit
+val make_graph :  Globnames.global_reference -> unit

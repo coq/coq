@@ -19,7 +19,6 @@ open Topconstr
 open Genarg
 open Tacexpr
 open Extrawit
-open Ppextend
 
 (** The parser of Coq *)
 

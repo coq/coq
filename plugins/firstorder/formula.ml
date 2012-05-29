@@ -15,7 +15,7 @@ open Tacmach
 open Errors
 open Util
 open Declarations
-open Libnames
+open Globnames
 open Inductiveops
 
 let qflag=ref true

@@ -22,6 +22,7 @@ exception Non_closed_number
 (**********************************************************************)
 
 open Libnames
+open Globnames
 open Glob_term
 
 let binnums = ["Coq";"Numbers";"BinNums"]
@@ -32,7 +33,7 @@ let make_path dir id = Libnames.make_path (make_dir dir) (id_of_string id)
 let positive_path = make_path binnums "positive"
 
 (* TODO: temporary hack *)
-let make_kn dir id = Libnames.encode_mind dir id
+let make_kn dir id = Globnames.encode_mind dir id
 
 let positive_kn = make_kn (make_dir binnums) (id_of_string "positive")
 let glob_positive = IndRef (positive_kn,0)

@@ -10,7 +10,7 @@ open Errors
 open Util
 open Names
 open Term
-open Libnames
+open Globnames
 open Miniml
 open Table
 

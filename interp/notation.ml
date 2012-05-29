@@ -15,6 +15,7 @@ open Names
 open Term
 open Nametab
 open Libnames
+open Globnames
 open Summary
 open Constrexpr
 open Notation_term

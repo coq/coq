@@ -22,6 +22,7 @@ open Util
 open Typeclasses_errors
 open Typeclasses
 open Libnames
+open Globnames
 open Constrintern
 open Glob_term
 open Constrexpr

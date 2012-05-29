@@ -14,7 +14,7 @@ open Term
 open Pattern
 open Patternops
 open Glob_term
-open Libnames
+open Globnames
 open Nametab
 
 (* Discrimination nets of terms.

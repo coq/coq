@@ -31,11 +31,11 @@ let destructurate t =
   let c, args = Term.decompose_app t in
   match Term.kind_of_term c, args with
     | Term.Const sp, args ->
-	Kapp (string_of_global (Libnames.ConstRef sp), args)
+	Kapp (string_of_global (Globnames.ConstRef sp), args)
     | Term.Construct csp , args ->
-	Kapp (string_of_global (Libnames.ConstructRef csp), args)
+	Kapp (string_of_global (Globnames.ConstructRef csp), args)
     | Term.Ind isp, args ->
-	Kapp (string_of_global (Libnames.IndRef isp), args)
+	Kapp (string_of_global (Globnames.IndRef isp), args)
     | Term.Var id,[] -> Kvar(Names.string_of_id id)
     | Term.Prod (Names.Anonymous,typ,body), [] -> Kimp(typ,body)
     | Term.Prod (Names.Name _,_,_),[] ->
@@ -48,9 +48,9 @@ let dest_const_apply t =
   let f,args = Term.decompose_app t in
   let ref =
   match Term.kind_of_term f with
-    | Term.Const sp      -> Libnames.ConstRef sp
-    | Term.Construct csp -> Libnames.ConstructRef csp
-    | Term.Ind isp       -> Libnames.IndRef isp
+    | Term.Const sp      -> Globnames.ConstRef sp
+    | Term.Construct csp -> Globnames.ConstructRef csp
+    | Term.Ind isp       -> Globnames.IndRef isp
     | _ -> raise Destruct
   in  Nametab.basename_of_global ref, args
 

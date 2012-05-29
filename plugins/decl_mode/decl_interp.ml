@@ -157,7 +157,7 @@ let special_whd env =
   let infos=Closure.create_clos_infos Closure.betadeltaiota env in
     (fun t -> Closure.whd_val infos (Closure.inject t))
 
-let _eq = Libnames.constr_of_global (Coqlib.glob_eq)
+let _eq = Globnames.constr_of_global (Coqlib.glob_eq)
 
 let decompose_eq env id =
   let typ = Environ.named_type id env in
@@ -247,7 +247,7 @@ let rec glob_of_pat =
 	    add_params (pred n) (GHole(dummy_loc,
 				       Evar_kinds.TomatchTypeParameter(ind,n))::q) in
 	    let args = List.map glob_of_pat lpat in
-	      glob_app(loc,GRef(dummy_loc,Libnames.ConstructRef cstr),
+	      glob_app(loc,GRef(dummy_loc,Globnames.ConstructRef cstr),
 		   add_params mind.Declarations.mind_nparams args)
 
 let prod_one_hyp = function
@@ -334,7 +334,7 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
 	     (if expected = 0 then str "none" else int expected) ++ spc () ++
 	     str "expected.") in
   let app_ind =
-    let rind = GRef (dummy_loc,Libnames.IndRef pinfo.per_ind) in
+    let rind = GRef (dummy_loc,Globnames.IndRef pinfo.per_ind) in
     let rparams = List.map detype_ground pinfo.per_params in
     let rparams_rec =
       List.map

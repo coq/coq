@@ -9,7 +9,7 @@
 open Term
 open Tacmach
 open Names
-open Libnames
+open Globnames
 
 type seqtac= (Sequent.t -> tactic) -> Sequent.t -> tactic
 

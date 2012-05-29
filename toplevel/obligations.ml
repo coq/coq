@@ -3,7 +3,7 @@ open Pp
 open Environ
 open Term
 open Names
-open Libnames
+open Globnames
 open Summary
 open Libobject
 open Entries
@@ -782,7 +782,7 @@ let rec solve_obligation prg num tac =
 			else constant_value (Global.env ()) cst
 		    | Evar_kinds.Define opaque ->
 			if not opaque && not transparent then error_not_transp ()
-			else Libnames.constr_of_global gr
+			else Globnames.constr_of_global gr
 		  in
 		    if transparent then
 		      Auto.add_hints true [string_of_id prg.prg_name]

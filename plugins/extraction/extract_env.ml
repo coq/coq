@@ -10,6 +10,7 @@ open Term
 open Declarations
 open Names
 open Libnames
+open Globnames
 open Pp
 open Errors
 open Util

@@ -20,6 +20,7 @@ open Util
 open Glob_term
 open Constrexpr
 open Libnames
+open Globnames
 open Typeclasses
 open Typeclasses_errors
 open Pp

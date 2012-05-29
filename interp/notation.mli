@@ -13,6 +13,7 @@ open Bigint
 open Names
 open Nametab
 open Libnames
+open Globnames
 open Constrexpr
 open Glob_term
 open Notation_term

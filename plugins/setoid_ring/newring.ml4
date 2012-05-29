@@ -16,6 +16,7 @@ open Term
 open Closure
 open Environ
 open Libnames
+open Globnames
 open Tactics
 open Glob_term
 open Tacticals

@@ -8,7 +8,7 @@
 
 open Names
 open Term
-open Libnames
+open Globnames
 open Misctypes
 open Glob_term
 

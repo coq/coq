@@ -9,7 +9,7 @@
 open Names
 open Declarations
 open Environ
-open Libnames
+open Globnames
 open Errors
 open Util
 open Miniml

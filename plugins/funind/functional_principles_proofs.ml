@@ -15,6 +15,7 @@ open Tacticals
 open Tactics
 open Indfun_common
 open Libnames
+open Globnames
 open Misctypes
 
 let msgnl = Pp.msgnl

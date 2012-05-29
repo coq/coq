@@ -26,6 +26,7 @@ open Util
 open Names
 open Nameops
 open Libnames
+open Globnames
 open Nametab
 open Smartlocate
 open Pfedit

@@ -19,7 +19,7 @@ open Declarations
 open Entries
 open Environ
 open Nameops
-open Libnames
+open Globnames
 open Decls
 open Decl_kinds
 open Declare

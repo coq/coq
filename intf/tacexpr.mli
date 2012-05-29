@@ -9,6 +9,7 @@
 open Names
 open Constrexpr
 open Libnames
+open Globnames
 open Nametab
 open Genredexpr
 open Genarg

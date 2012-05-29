@@ -9,6 +9,7 @@
 open Pp
 open Names
 open Libnames
+open Globnames
 open Term
 open Sign
 open Environ

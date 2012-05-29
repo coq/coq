@@ -17,6 +17,7 @@ open Environ
 open Global
 open Declare
 open Libnames
+open Globnames
 open Nametab
 open Evd
 open Proof_type

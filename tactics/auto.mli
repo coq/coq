@@ -17,7 +17,7 @@ open Clenv
 open Pattern
 open Environ
 open Evd
-open Libnames
+open Globnames
 open Vernacexpr
 open Mod_subst
 open Misctypes

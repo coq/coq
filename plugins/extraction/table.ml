@@ -15,6 +15,7 @@ open Summary
 open Libobject
 open Goptions
 open Libnames
+open Globnames
 open Errors
 open Util
 open Pp

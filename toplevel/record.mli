@@ -12,7 +12,7 @@ open Sign
 open Vernacexpr
 open Constrexpr
 open Impargs
-open Libnames
+open Globnames
 
 (** [declare_projections ref name coers params fields] declare projections of
    record [ref] (if allowed) using the given [name] as argument, and put them

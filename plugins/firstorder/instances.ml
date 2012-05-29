@@ -24,7 +24,7 @@ open Declarations
 open Formula
 open Sequent
 open Names
-open Libnames
+open Globnames
 open Misctypes
 
 let compare_instance inst1 inst2=
@@ -40,11 +40,11 @@ let compare_gr id1 id2 =
   if id1==id2 then 0 else
     if id1==dummy_id then 1
     else if id2==dummy_id then -1
-    else Libnames.RefOrdered.compare id1 id2
+    else Globnames.RefOrdered.compare id1 id2
 
 module OrderedInstance=
 struct
-  type t=instance * Libnames.global_reference
+  type t=instance * Globnames.global_reference
   let compare (inst1,id1) (inst2,id2)=
     (compare_instance =? compare_gr) inst2 inst1 id2 id1
     (* we want a __decreasing__ total order *)

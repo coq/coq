@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Term
-open Libnames
+open Globnames
 open Typeclasses
 open Names
 open Evd

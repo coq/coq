@@ -13,6 +13,7 @@ open Names
 open Nameops
 open Term
 open Libnames
+open Globnames
 open Termops
 open Namegen
 open Declarations

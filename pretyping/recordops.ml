@@ -17,7 +17,7 @@ open Errors
 open Util
 open Pp
 open Names
-open Libnames
+open Globnames
 open Nametab
 open Term
 open Typeops

@@ -9,7 +9,7 @@
 open Names
 open Nametab
 open Term
-open Libnames
+open Globnames
 open Libobject
 open Library
 

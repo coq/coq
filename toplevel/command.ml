@@ -18,6 +18,7 @@ open Redexpr
 open Declare
 open Names
 open Libnames
+open Globnames
 open Nameops
 open Constrexpr
 open Constrexpr_ops

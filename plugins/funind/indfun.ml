@@ -5,6 +5,7 @@ open Term
 open Pp
 open Indfun_common
 open Libnames
+open Globnames
 open Glob_term
 open Declarations
 open Misctypes

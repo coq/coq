@@ -32,6 +32,7 @@ open Tactics
 open Clenv
 open Logic
 open Libnames
+open Globnames
 open Nametab
 open Contradiction
 open Misctypes

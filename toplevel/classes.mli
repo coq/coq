@@ -20,6 +20,7 @@ open Util
 open Typeclasses
 open Implicit_quantifiers
 open Libnames
+open Globnames
 
 (** Errors *)
 
@@ -40,7 +41,7 @@ val declare_instance_constant :
   int option -> (** priority *)
   bool -> (** globality *)
   Impargs.manual_explicitation list -> (** implicits *)
-  ?hook:(Libnames.global_reference -> unit) ->
+  ?hook:(Globnames.global_reference -> unit) ->
   identifier -> (** name *)
   Term.constr -> (** body *)
   Term.types -> (** type *)
@@ -54,7 +55,7 @@ val new_instance :
   constr_expr option ->
   ?generalize:bool ->
   ?tac:Proof_type.tactic  ->
-  ?hook:(Libnames.global_reference -> unit) ->
+  ?hook:(Globnames.global_reference -> unit) ->
   int option ->
   identifier
 

@@ -8,7 +8,6 @@
 
 open Pp
 open Names
-open Libnames
 open Q_util
 open Compat
 
@@ -39,8 +38,8 @@ let mlexpr_of_dirpath dir =
   <:expr< Names.make_dirpath $mlexpr_of_list mlexpr_of_ident l$ >>
 
 let mlexpr_of_qualid qid =
-  let (dir, id) = repr_qualid qid in
-  <:expr< make_qualid $mlexpr_of_dirpath dir$ $mlexpr_of_ident id$ >>
+  let (dir, id) = Libnames.repr_qualid qid in
+  <:expr< Libnames.make_qualid $mlexpr_of_dirpath dir$ $mlexpr_of_ident id$ >>
 
 let mlexpr_of_reference = function
   | Libnames.Qualid (loc,qid) -> <:expr< Libnames.Qualid $dloc$ $mlexpr_of_qualid qid$ >>

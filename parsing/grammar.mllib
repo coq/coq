@@ -14,15 +14,10 @@ Dyn
 Hashcons
 Predicate
 Option
-Hashtbl_alt
 
 Names
 Univ
-Esubst
-Term
-Mod_subst
 
-Nameops
 Libnames
 Summary
 Genarg

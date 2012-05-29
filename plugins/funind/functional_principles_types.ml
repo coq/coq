@@ -101,7 +101,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   let env_with_params_and_predicates = List.fold_right Environ.push_named new_predicates env_with_params in
   let rel_as_kn =
     fst (match princ_type_info.indref with
-	   | Some (Libnames.IndRef ind) -> ind
+	   | Some (Globnames.IndRef ind) -> ind
 	   | _ -> error "Not a valid predicate"
 	)
   in
@@ -660,7 +660,7 @@ let build_scheme fas =
 	    let f_as_constant =
 	      try
 		match Nametab.global f with
-		  | Libnames.ConstRef c -> c
+		  | Globnames.ConstRef c -> c
 		  | _ -> Errors.error "Functional Scheme can only be used with functions"
 	      with Not_found ->
 	      	Errors.error ("Cannot find "^ Libnames.string_of_reference f)
@@ -692,7 +692,7 @@ let build_case_scheme fa =
 (*     Constrintern.global_reference  id *)
 (*   in  *)
   let funs =  (fun (_,f,_) ->
-		 try Libnames.constr_of_global (Nametab.global f)
+		 try Globnames.constr_of_global (Nametab.global f)
 		 with Not_found ->
 		   Errors.error ("Cannot find "^ Libnames.string_of_reference f)) fa in
   let first_fun = destConst  funs in

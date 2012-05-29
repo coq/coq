@@ -6,12 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i*)
 open Pp
-open Errors
-open Util
 open Names
-(*i*)
 
 (*s Pretty-print. *)
 

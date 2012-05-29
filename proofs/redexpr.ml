@@ -12,7 +12,7 @@ open Util
 open Names
 open Term
 open Declarations
-open Libnames
+open Globnames
 open Genredexpr
 open Pattern
 open Reductionops

@@ -35,6 +35,7 @@ open Tacticals
 open Clenv
 open Hiddentac
 open Libnames
+open Globnames
 open Nametab
 open Smartlocate
 open Libobject

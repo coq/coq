@@ -12,7 +12,7 @@ open Util
 open Term
 open Sign
 open Names
-open Libnames
+open Globnames
 open Mod_subst
 open Pp (* debug *)
 (*i*)

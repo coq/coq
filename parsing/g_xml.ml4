@@ -16,6 +16,7 @@ open Glob_term
 open Genarg
 open Tacexpr
 open Libnames
+open Globnames
 
 open Nametab
 open Detyping

@@ -21,7 +21,7 @@ open Inductive
 open Inductiveops
 open Reductionops
 open Environ
-open Libnames
+open Globnames
 open Evd
 open Pfedit
 open Tacred

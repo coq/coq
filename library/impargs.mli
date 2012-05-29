@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Libnames
+open Globnames
 open Term
 open Environ
 open Nametab

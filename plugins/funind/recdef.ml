@@ -16,6 +16,7 @@ open Entries
 open Pp
 open Names
 open Libnames
+open Globnames
 open Nameops
 open Errors
 open Util

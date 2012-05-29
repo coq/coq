@@ -35,6 +35,7 @@ open Environ
 open Type_errors
 open Typeops
 open Libnames
+open Globnames
 open Nameops
 open Classops
 open List

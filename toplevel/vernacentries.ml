@@ -25,6 +25,7 @@ open Tacinterp
 open Command
 open Goptions
 open Libnames
+open Globnames
 open Nametab
 open Vernacexpr
 open Decl_kinds
@@ -135,7 +136,7 @@ let make_cases s =
   let qualified_name = Libnames.qualid_of_string s in
   let glob_ref = Nametab.locate qualified_name in
   match glob_ref with
-    | Libnames.IndRef i ->
+    | Globnames.IndRef i ->
 	let {Declarations.mind_nparams = np}
 	    , {Declarations.mind_consnames = carr ; Declarations.mind_nf_lc = tarr }
 	      = Global.lookup_inductive i in

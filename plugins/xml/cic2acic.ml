@@ -125,16 +125,16 @@ let token_list_of_path dir id tag =
 
 let token_list_of_kernel_name tag =
  let module N = Names in
- let module LN = Libnames in
+ let module GN = Globnames in
  let id,dir = match tag with
    | Variable kn ->
        N.id_of_label (N.label kn), Lib.cwd ()
    | Constant con ->
        N.id_of_label (N.con_label con),
-       Lib.remove_section_part (LN.ConstRef con)
+       Lib.remove_section_part (GN.ConstRef con)
    | Inductive kn ->
        N.id_of_label (N.mind_label kn),
-       Lib.remove_section_part (LN.IndRef (kn,0))
+       Lib.remove_section_part (GN.IndRef (kn,0))
  in
  token_list_of_path dir id (etag_of_tag tag)
 ;;
@@ -431,13 +431,13 @@ print_endline "PASSATO" ; flush stdout ;
           let subst,residual_args,uninst_vars =
            let variables,basedir =
              try
-               let g = Libnames.global_of_constr h in
+               let g = Globnames.global_of_constr h in
                let sp =
                 match g with
-                   Libnames.ConstructRef ((induri,_),_)
-                 | Libnames.IndRef (induri,_) ->
-                    Nametab.path_of_global (Libnames.IndRef (induri,0))
-                 | Libnames.VarRef id ->
+                   Globnames.ConstructRef ((induri,_),_)
+                 | Globnames.IndRef (induri,_) ->
+                    Nametab.path_of_global (Globnames.IndRef (induri,0))
+                 | Globnames.VarRef id ->
                     (* Invariant: variables are never cooked in Coq *)
                     raise Not_found
                  | _ -> Nametab.path_of_global g

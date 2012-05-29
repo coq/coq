@@ -22,6 +22,7 @@ open Lib
 open Classops
 open Declare
 open Libnames
+open Globnames
 open Nametab
 open Decl_kinds
 open Safe_typing

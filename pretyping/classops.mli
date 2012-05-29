@@ -29,7 +29,7 @@ type cl_info_typ = {
   cl_param : int }
 
 (** This is the type of coercion kinds *)
-type coe_typ = Libnames.global_reference
+type coe_typ = Globnames.global_reference
 
 (** This is the type of infos for declared coercions *)
 type coe_info_typ

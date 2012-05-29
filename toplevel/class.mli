@@ -10,7 +10,7 @@ open Names
 open Term
 open Classops
 open Declare
-open Libnames
+open Globnames
 open Decl_kinds
 open Nametab
 

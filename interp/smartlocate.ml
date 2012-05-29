@@ -17,6 +17,7 @@ open Errors
 open Util
 open Names
 open Libnames
+open Globnames
 open Misctypes
 open Syntax_def
 open Notation_term

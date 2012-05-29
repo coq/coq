@@ -10,8 +10,6 @@ open Errors
 open Util
 open Names
 open Libnames
-open Ppextend
-open Extend
 open Tacexpr
 open Vernacexpr
 open Notation

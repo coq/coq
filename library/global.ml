@@ -156,7 +156,7 @@ let import cenv digest =
 let env_of_context hyps =
   reset_with_named_context hyps (env())
 
-open Libnames
+open Globnames
 
 let type_of_reference env = function
   | VarRef id -> Environ.named_type id env

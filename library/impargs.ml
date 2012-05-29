@@ -9,7 +9,7 @@
 open Errors
 open Util
 open Names
-open Libnames
+open Globnames
 open Term
 open Reduction
 open Declarations

@@ -9,6 +9,7 @@
 open Pp
 open Names
 open Libnames
+open Globnames
 open Misctypes
 
 (** [locate_global_with_alias] locates global reference possibly following

@@ -11,6 +11,7 @@ open Util
 open Pp
 open Names
 open Libnames
+open Globnames
 
 (** This module contains the tables for globalization. *)
 

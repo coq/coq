@@ -13,7 +13,7 @@ open Names
 open Term
 open Evd
 open Sign
-open Libnames
+open Globnames
 (*i*)
 
 (*s
@@ -106,7 +106,7 @@ let complete_evar (cl,gen,evm:signature) (ev,evi) (k:signature -> unit) =
 	let (_,genl,_) = Termops.decompose_prod_letin pat in
 	let genl = List.map (fun (_,_,t) -> t) genl in
 	let ((cl,gen,evm),argl) = add_gen_ctx (cl,gen,evm) genl in
-	let def = applistc (Libnames.constr_of_global gr) argl in
+	let def = applistc (Globnames.constr_of_global gr) argl in
 (*	msgnl(str"essayons  ?"++Pp.int ev++spc()++str":="++spc()
 	      ++pr_constr def++spc()++str":"++spc()++pr_constr (Global.type_of_global gr)*)
 	(*++spc()++str"dans"++spc()++pr_evar_map evm++spc());*)
@@ -214,8 +214,8 @@ let rec iter_under_prod (f:rel_context->constr->unit) (ctx:rel_context) t = f ct
 (* main search function: search for total instances containing gr, and
    apply k to each of them *)
 let complete_signature_with_def gr deftyp (k:instance_decl_function -> signature -> unit) : unit =
-  let gr_c = Libnames.constr_of_global gr in
-  let (smap:(Libnames.global_reference * Evd.evar_map,
+  let gr_c = Globnames.constr_of_global gr in
+  let (smap:(Globnames.global_reference * Evd.evar_map,
    ('a * 'b * Term.constr) list * Evd.evar)
   Gmapl.t ref) = ref Gmapl.empty in
   iter_under_prod

@@ -236,7 +236,7 @@ let coq_refl_leibniz1_pattern = PATTERN [ forall x:_, _ x x ]
 let coq_refl_leibniz2_pattern = PATTERN [ forall A:_, forall x:A, _ A x x ]
 let coq_refl_jm_pattern       = PATTERN [ forall A:_, forall x:A, _ A x A x ]
 
-open Libnames
+open Globnames
 
 let match_with_equation t =
   if not (isApp t) then raise NoEquationFound;
@@ -489,7 +489,7 @@ let match_eqdec t =
         false,op_or,matches (Lazy.force coq_eqdec_rev_pattern) t in
   match subst with
   | [(_,typ);(_,c1);(_,c2)] ->
-      eqonleft, Libnames.constr_of_global (Lazy.force op), c1, c2, typ
+      eqonleft, Globnames.constr_of_global (Lazy.force op), c1, c2, typ
   | _ -> anomaly "Unexpected pattern"
 
 (* Patterns "~ ?" and "? -> False" *)

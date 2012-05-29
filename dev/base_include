@@ -64,6 +64,7 @@ open Declare
 open Declaremods
 open Impargs
 open Libnames
+open Globnames
 open Nametab
 open Library
 

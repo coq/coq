@@ -98,7 +98,7 @@ val import : compiled_library -> Digest.t -> module_path
 (** Function to get an environment from the constants part of the global
  * environment and a given context. *)
 
-val type_of_global : Libnames.global_reference -> types
+val type_of_global : Globnames.global_reference -> types
 val env_of_context : Environ.named_context_val -> Environ.env
 
 

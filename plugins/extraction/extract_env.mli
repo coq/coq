@@ -10,6 +10,7 @@
 
 open Names
 open Libnames
+open Globnames
 
 val simple_extraction : reference -> unit
 val full_extraction : string option -> reference list -> unit

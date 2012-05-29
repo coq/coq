@@ -11,7 +11,7 @@ open Names
 open Sign
 open Term
 open Environ
-open Libnames
+open Globnames
 open Nametab
 open Glob_term
 open Mod_subst

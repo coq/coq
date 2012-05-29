@@ -12,6 +12,7 @@ open Util
 open Names
 open Declarations
 open Nameops
+open Globnames
 open Libnames
 open Goptions
 

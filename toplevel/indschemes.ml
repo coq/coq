@@ -27,6 +27,7 @@ open Decl_kinds
 open Indrec
 open Declare
 open Libnames
+open Globnames
 open Goptions
 open Nameops
 open Termops

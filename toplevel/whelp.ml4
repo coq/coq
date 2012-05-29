@@ -17,6 +17,7 @@ open Term
 open Environ
 open Glob_term
 open Libnames
+open Globnames
 open Nametab
 open Detyping
 open Constrintern

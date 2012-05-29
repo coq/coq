@@ -29,6 +29,7 @@ open Libobject
 open Printer
 open Printmod
 open Libnames
+open Globnames
 open Nametab
 open Recordops
 open Misctypes

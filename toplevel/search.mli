@@ -11,7 +11,7 @@ open Names
 open Term
 open Environ
 open Pattern
-open Libnames
+open Globnames
 open Nametab
 
 (** {6 Search facilities. } *)

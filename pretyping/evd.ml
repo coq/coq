@@ -16,6 +16,7 @@ open Termops
 open Sign
 open Environ
 open Libnames
+open Globnames
 open Mod_subst
 
 (* The kinds of existential variables are now defined in [Evar_kinds] *)

@@ -14,7 +14,7 @@ open Names
 open Pp
 open Util
 open Tacinterp
-open Libnames
+open Globnames
 open Proof_type
 open Vernacexpr
 open Decl_kinds

@@ -14,6 +14,7 @@ open Names
 open Nameops
 open Namegen
 open Libnames
+open Globnames
 open Impargs
 open Glob_term
 open Glob_ops

@@ -21,6 +21,7 @@ open Pattern
 open Matching
 open Printer
 open Libnames
+open Globnames
 open Nametab
 
 module SearchBlacklist =
@@ -124,7 +125,7 @@ let filter_by_module (module_list:dir_path list) (accept:bool)
   with No_full_path ->
     false
 
-let ref_eq = Libnames.encode_mind Coqlib.logic_module (id_of_string "eq"), 0
+let ref_eq = Globnames.encode_mind Coqlib.logic_module (id_of_string "eq"), 0
 let c_eq = mkInd ref_eq
 let gref_eq = IndRef ref_eq
 

@@ -20,7 +20,7 @@ open Evar_refiner
 open Clenv
 open Redexpr
 open Tacticals
-open Libnames
+open Globnames
 open Genarg
 open Tacexpr
 open Nametab

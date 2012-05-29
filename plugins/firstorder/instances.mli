@@ -9,7 +9,7 @@
 open Term
 open Tacmach
 open Names
-open Libnames
+open Globnames
 open Rules
 
 val collect_quantified : Sequent.t -> Formula.t list * Sequent.t

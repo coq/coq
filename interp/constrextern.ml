@@ -20,6 +20,7 @@ open Inductive
 open Sign
 open Environ
 open Libnames
+open Globnames
 open Impargs
 open Constrexpr
 open Constrexpr_ops

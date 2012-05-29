@@ -18,6 +18,7 @@ open Glob_term
 open Constrexpr
 open Pp
 open Libnames
+open Globnames
 open Typeclasses
 
 val declare_generalizable : Vernacexpr.locality_flag -> (identifier located) list option -> unit

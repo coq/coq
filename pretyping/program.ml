@@ -33,7 +33,7 @@ let find_reference locstr dir s =
   with Not_found -> anomaly (locstr^": cannot find "^(Libnames.string_of_path sp))
 
 let coq_reference locstr dir s = find_reference locstr ("Coq"::dir) s
-let coq_constant locstr dir s = Libnames.constr_of_global (coq_reference locstr dir s)
+let coq_constant locstr dir s = Globnames.constr_of_global (coq_reference locstr dir s)
 
 let init_constant dir s () = coq_constant "Program" dir s
 let init_reference dir s () = coq_reference "Program" dir s

@@ -470,15 +470,15 @@ let kind_of_constant kn =
 ;;
 
 let kind_of_global r =
-  let module Ln = Libnames in
+  let module Gn = Globnames in
   match r with
-  | Ln.IndRef kn | Ln.ConstructRef (kn,_) ->
+  | Gn.IndRef kn | Gn.ConstructRef (kn,_) ->
       let isrecord =
 	try let _ = Recordops.lookup_projections kn in Declare.KernelSilent
         with Not_found -> Declare.KernelVerbose in
       kind_of_inductive isrecord (fst kn)
-  | Ln.VarRef id -> kind_of_variable id
-  | Ln.ConstRef kn -> kind_of_constant kn
+  | Gn.VarRef id -> kind_of_variable id
+  | Gn.ConstRef kn -> kind_of_constant kn
 ;;
 
 let print_object_kind uri (xmltag,variation) =
@@ -504,12 +504,12 @@ let print internal glob_ref kind xml_library_root =
  let module Nt = Nametab in
  let module T = Term in
  let module X = Xml in
- let module Ln = Libnames in
+ let module Gn = Globnames in
   (* Variables are the identifiers of the variables in scope *)
   let variables = search_variables () in
   let tag,obj =
    match glob_ref with
-      Ln.VarRef id ->
+      Gn.VarRef id ->
        (* this kn is fake since it is not provided by Coq *)
        let kn =
         let (mod_path,dir_path) = Lib.current_prefix () in
@@ -517,7 +517,7 @@ let print internal glob_ref kind xml_library_root =
        in
        let (_,body,typ) = G.lookup_named id in
         Cic2acic.Variable kn,mk_variable_obj id body typ
-    | Ln.ConstRef kn ->
+    | Gn.ConstRef kn ->
        let id = N.id_of_label (N.con_label kn) in
        let cb = G.lookup_constant kn in
        let val0 = D.body_of_constant cb in
@@ -525,14 +525,14 @@ let print internal glob_ref kind xml_library_root =
        let hyps = cb.D.const_hyps in
        let typ = Typeops.type_of_constant_type (Global.env()) typ in
         Cic2acic.Constant kn,mk_constant_obj id val0 typ variables hyps
-    | Ln.IndRef (kn,_) ->
+    | Gn.IndRef (kn,_) ->
        let mib = G.lookup_mind kn in
        let {D.mind_nparams=nparams;
 	    D.mind_packets=packs ;
             D.mind_hyps=hyps;
             D.mind_finite=finite} = mib in
           Cic2acic.Inductive kn,mk_inductive_obj kn mib packs variables nparams hyps finite
-    | Ln.ConstructRef _ ->
+    | Gn.ConstructRef _ ->
        Errors.error ("a single constructor cannot be printed in XML")
   in
   let fn = filename_of_path xml_library_root tag in
@@ -580,7 +580,7 @@ let _ =
   Declare.set_xml_declare_variable
    (function (sp,kn) ->
      let id = Libnames.basename sp in
-     print Declare.UserVerbose (Libnames.VarRef id) (kind_of_variable id) xml_library_root ;
+     print Declare.UserVerbose (Globnames.VarRef id) (kind_of_variable id) xml_library_root ;
      proof_to_export := None)
 ;;
 
@@ -589,7 +589,7 @@ let _ =
    (function (internal,kn) ->
      match !proof_to_export with
         None ->
-          print internal (Libnames.ConstRef kn) (kind_of_constant kn)
+          print internal (Globnames.ConstRef kn) (kind_of_constant kn)
 	    xml_library_root
       | Some pftreestate ->
          (* It is a proof. Let's export it starting from the proof-tree *)
@@ -603,7 +603,7 @@ let _ =
 let _ =
   Declare.set_xml_declare_inductive
    (function (isrecord,(sp,kn)) ->
-      print Declare.UserVerbose (Libnames.IndRef (Names.mind_of_kn kn,0))
+      print Declare.UserVerbose (Globnames.IndRef (Names.mind_of_kn kn,0))
         (kind_of_inductive isrecord (Names.mind_of_kn kn))
         xml_library_root)
 ;;

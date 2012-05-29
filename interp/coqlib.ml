@@ -12,6 +12,7 @@ open Pp
 open Names
 open Term
 open Libnames
+open Globnames
 open Pattern
 open Nametab
 open Smartlocate
@@ -125,8 +126,8 @@ let jmeq_module_name = ["Coq";"Logic";"JMeq"]
 let jmeq_module = make_dir jmeq_module_name
 
 (* TODO: temporary hack *)
-let make_kn dir id = Libnames.encode_mind dir id
-let make_con dir id = Libnames.encode_con dir id
+let make_kn dir id = Globnames.encode_mind dir id
+let make_con dir id = Globnames.encode_con dir id
 
 (** Identity *)
 

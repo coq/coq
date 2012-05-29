@@ -19,7 +19,6 @@ open Vernacexpr
 open Locality
 open Decl_kinds
 open Genarg
-open Ppextend
 open Goptions
 open Declaremods
 open Misctypes

@@ -7,7 +7,7 @@
 (************************************************************************)
 
 open Names
-open Libnames
+open Globnames
 open Environ
 open Term
 

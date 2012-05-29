@@ -17,7 +17,7 @@ open Termops
 open Declarations
 open Formula
 open Sequent
-open Libnames
+open Globnames
 open Locus
 
 type seqtac= (Sequent.t -> tactic) -> Sequent.t -> tactic

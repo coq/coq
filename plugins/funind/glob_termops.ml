@@ -441,7 +441,7 @@ let rec pattern_to_term  = function
       let patl_as_term =
 	List.map pattern_to_term patternl
       in
-      mkGApp(mkGRef(Libnames.ConstructRef constr),
+      mkGApp(mkGRef(Globnames.ConstructRef constr),
 	     implicit_args@patl_as_term
 	    )
 

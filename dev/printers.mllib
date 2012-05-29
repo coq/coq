@@ -60,6 +60,7 @@ Safe_typing
 Summary
 Nameops
 Libnames
+Globnames
 Global
 Nametab
 Libobject

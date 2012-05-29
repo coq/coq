@@ -23,6 +23,7 @@ open Nameops
 open Termops
 open Namegen
 open Libnames
+open Globnames
 open Nametab
 open Evd
 open Mod_subst

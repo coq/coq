@@ -1,6 +1,7 @@
 open Names
 open Pp
 open Libnames
+open Globnames
 open Refiner
 open Hiddentac 
 let mk_prefix pre id = id_of_string (pre^(string_of_id id))

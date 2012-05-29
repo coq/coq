@@ -13,6 +13,7 @@ open Names
 open Term
 open Pp
 open Libnames
+open Globnames
 open Tacticals
 open Tactics
 open Indfun_common

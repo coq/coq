@@ -13,7 +13,7 @@ open Formula
 open Unify
 open Tacmach
 open Names
-open Libnames
+open Globnames
 open Pp
 
 let newcnt ()=
@@ -70,7 +70,7 @@ module Hitem=
 struct
   type t = h_item
   let compare (id1,co1) (id2,co2)=
-    (Libnames.RefOrdered.compare
+    (Globnames.RefOrdered.compare
      =? (fun oc1 oc2 ->
 	   match oc1,oc2 with
 	       Some (m1,c1),Some (m2,c2) ->

@@ -11,7 +11,7 @@
 open Term
 open Hipattern
 open Names
-open Libnames
+open Globnames
 open Pp
 open Proof_type
 open Tacticals
