@@ -6,9 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
 open Pp
-open Util
 open Names
 open Sign
 open Term

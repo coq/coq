@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Pp
-open Errors
 open Names
 open Glob_term
 open Extend
@@ -156,7 +155,6 @@ val create_generic_entry : string -> ('a, rlevel) abstract_argument_type ->
 
 module Prim :
   sig
-    open Util
     open Names
     open Libnames
     val preident : string Gram.entry

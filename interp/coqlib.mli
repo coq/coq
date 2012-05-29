@@ -12,7 +12,6 @@ open Globnames
 open Nametab
 open Term
 open Pattern
-open Errors
 open Util
 
 (** This module collects the global references, constructions and

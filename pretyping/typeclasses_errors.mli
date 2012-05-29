@@ -15,7 +15,6 @@ open Environ
 open Nametab
 open Mod_subst
 open Constrexpr
-open Errors
 open Pp
 open Globnames
 

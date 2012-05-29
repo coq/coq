@@ -15,8 +15,6 @@ open Environ
 open Nametab
 open Mod_subst
 open Constrexpr
-open Errors
-open Util
 open Typeclasses
 open Implicit_quantifiers
 open Libnames

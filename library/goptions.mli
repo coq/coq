@@ -44,8 +44,6 @@
    (synchronous = consistent with the resetting commands)                   *)
 
 open Pp
-open Errors
-open Util
 open Names
 open Libnames
 open Term

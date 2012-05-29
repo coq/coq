@@ -16,8 +16,6 @@ open Environ
 open Nametab
 open Mod_subst
 open Topconstr
-open Errors
-open Util
 
 type direction = Forward | Backward
 

@@ -7,8 +7,6 @@
 (************************************************************************)
 
 (*i*)
-open Errors
-open Util
 open Names
 open Univ
 open Term

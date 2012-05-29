@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Pp
-open Util
 open Names
 open Libnames
 open Misctypes

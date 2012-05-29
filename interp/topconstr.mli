@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Pp
-open Errors
 open Names
 open Libnames
 open Glob_term
