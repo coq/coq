@@ -1477,7 +1477,7 @@ let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance global binders instance fields =
   new_instance binders instance (Some (CRecord (dummy_loc,None,fields)))
-    ~global:(not (Vernacexpr.use_section_locality ())) ~generalize:false None
+    ~global:(not (Locality.use_section_locality ())) ~generalize:false None
 
 let declare_instance_refl global binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
@@ -1496,7 +1496,7 @@ let declare_instance_trans global binders a aeq n lemma =
 
 let declare_relation ?(binders=[]) a aeq n refl symm trans =
   init_setoid ();
-  let global = not (Vernacexpr.use_section_locality ()) in
+  let global = not (Locality.use_section_locality ()) in
   let instance = declare_instance a aeq (add_suffix n "_relation") "Coq.Classes.RelationClasses.RewriteRelation"
   in ignore(anew_instance global binders instance []);
   match (refl,symm,trans) with
@@ -1754,16 +1754,16 @@ let add_morphism glob binders m s n =
 
 VERNAC COMMAND EXTEND AddSetoid1
    [ "Add" "Setoid" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
-     [ add_setoid (not (Vernacexpr.use_section_locality ())) [] a aeq t n ]
+     [ add_setoid (not (Locality.use_section_locality ())) [] a aeq t n ]
   | [ "Add" "Parametric" "Setoid" binders(binders) ":" constr(a) constr(aeq) constr(t) "as" ident(n) ] ->
-     [	add_setoid (not (Vernacexpr.use_section_locality ())) binders a aeq t n ]
+     [	add_setoid (not (Locality.use_section_locality ())) binders a aeq t n ]
   | [ "Add" "Morphism" constr(m) ":" ident(n) ] ->
-      [ add_morphism_infer (not (Vernacexpr.use_section_locality ())) m n ]
+      [ add_morphism_infer (not (Locality.use_section_locality ())) m n ]
   | [ "Add" "Morphism" constr(m) "with" "signature" lconstr(s) "as" ident(n) ] ->
-      [ add_morphism (not (Vernacexpr.use_section_locality ())) [] m s n ]
+      [ add_morphism (not (Locality.use_section_locality ())) [] m s n ]
   | [ "Add" "Parametric" "Morphism" binders(binders) ":" constr(m)
 	"with" "signature" lconstr(s) "as" ident(n) ] ->
-      [ add_morphism (not (Vernacexpr.use_section_locality ())) binders m s n ]
+      [ add_morphism (not (Locality.use_section_locality ())) binders m s n ]
 END
 
 (** Bind to "rewrite" too *)

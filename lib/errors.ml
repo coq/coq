@@ -35,6 +35,8 @@ let invalid_arg_loc (loc,s) = Loc.raise loc (Invalid_argument s)
 exception Error_in_file of string * (bool * string * loc) * exn
 
 exception Timeout
+exception Drop
+exception Quit
 
 let handle_stack = ref []
 

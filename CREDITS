@@ -12,7 +12,7 @@ The "Coq proof assistant" was jointly developed by
 
 All files of the "Coq proof assistant" in directories or sub-directories of
 
-  config dev ide interp kernel lib library parsing pretyping proofs
+  config dev ide interp intf kernel lib library parsing pretyping proofs
   scripts states tactics test-suite theories tools toplevel
 
 are distributed under the terms of the GNU Lesser General Public License 

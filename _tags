@@ -64,6 +64,7 @@
 "ide": include
 "ide/utils": include
 "interp": include
+"intf": include
 "kernel": include
 "kernel/byterun": include
 "lib": include

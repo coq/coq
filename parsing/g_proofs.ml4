@@ -13,6 +13,7 @@ open Util
 open Vernac_
 open Topconstr
 open Vernacexpr
+open Locality
 open Prim
 open Constr
 open Tok

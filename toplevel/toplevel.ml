@@ -12,7 +12,6 @@ open Util
 open Flags
 open Cerrors
 open Vernac
-open Vernacexpr
 open Pcoq
 open Compat
 
@@ -302,11 +301,11 @@ let print_toplevel_error exc =
   match exc with
     | End_of_input ->
 	msgerrnl (mt ()); pp_flush(); exit 0
-    | Vernacexpr.Drop ->  (* Last chance *)
-        if Mltop.is_ocaml_top() then raise Vernacexpr.Drop;
+    | Errors.Drop ->  (* Last chance *)
+        if Mltop.is_ocaml_top() then raise Errors.Drop;
         (str"Error: There is no ML toplevel." ++ fnl ())
-    | Vernacexpr.Quit ->
-	raise Vernacexpr.Quit
+    | Errors.Quit ->
+	raise Errors.Quit
     | _ ->
 	(if is_pervasive_exn exc then (mt ()) else locstrm) ++
         Errors.print exc
@@ -372,9 +371,9 @@ let rec loop () =
     reset_input_buffer stdin top_buffer;
     while true do do_vernac() done
   with
-    | Vernacexpr.Drop -> ()
+    | Errors.Drop -> ()
     | End_of_input -> msgerrnl (mt ()); pp_flush(); exit 0
-    | Vernacexpr.Quit -> exit 0
+    | Errors.Quit -> exit 0
     | e ->
 	msgerrnl (str"Anomaly. Please report.");
 	loop ()

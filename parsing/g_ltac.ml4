@@ -12,6 +12,7 @@ open Topconstr
 open Glob_term
 open Tacexpr
 open Vernacexpr
+open Locality
 open Pcoq
 open Prim
 open Tactic

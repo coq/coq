@@ -117,7 +117,7 @@ VERNAC COMMAND EXTEND Admit_Obligations
 VERNAC COMMAND EXTEND Set_Solver
 | [ "Obligation" "Tactic" ":=" tactic(t) ] -> [
     set_default_tactic
-      (Vernacexpr.use_section_locality ())
+      (Locality.use_section_locality ())
       (Tacinterp.glob_tactic t) ]
 END
 

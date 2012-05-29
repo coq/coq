@@ -72,7 +72,7 @@ SRCDIRS:=\
   config 	tools 		tools/coqdoc 	scripts		lib \
   kernel	kernel/byterun	library 	proofs 		tactics \
   pretyping	interp		toplevel/utils	toplevel 	parsing 	\
-  ide/utils	ide		\
+  intf          ide/utils	ide		\
   $(addprefix plugins/, \
     omega	romega 		micromega 	quote		ring \
     setoid_ring xml 		extraction 	fourier \
@@ -345,7 +345,7 @@ MANPAGES:=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 
 OCAMLDOCDIR=dev/ocamldoc
 
-DOCMLIS=$(wildcard ./lib/*.mli ./kernel/*.mli ./library/*.mli \
+DOCMLIS=$(wildcard ./lib/*.mli ./intf/*.mli ./kernel/*.mli ./library/*.mli \
 	./pretyping/*.mli ./interp/*.mli \
 	./parsing/*.mli ./proofs/*.mli \
 	./tactics/*.mli ./toplevel/*.mli)

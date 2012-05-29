@@ -38,6 +38,8 @@ val invalid_arg_loc : loc * string -> 'a
 val todo : string -> unit
 
 exception Timeout
+exception Drop
+exception Quit
 
 (** Like [Exc_located], but specifies the outermost file read, the
    input buffer associated to the location of the error (or the module name

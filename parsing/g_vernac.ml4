@@ -15,6 +15,7 @@ open Names
 open Topconstr
 open Extend
 open Vernacexpr
+open Locality
 open Pcoq
 open Tactic
 open Decl_kinds

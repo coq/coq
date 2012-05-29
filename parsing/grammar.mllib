@@ -71,7 +71,7 @@ Tacexpr
 Tok
 Lexer
 Extend
-Vernacexpr
+Locality
 Extrawit
 Pcoq
 Q_util

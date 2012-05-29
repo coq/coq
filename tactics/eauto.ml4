@@ -613,6 +613,6 @@ END
 VERNAC COMMAND EXTEND HintCut
 | [ "Hint" "Cut" "[" hints_path(p) "]" opthints(dbnames) ] -> [
   let entry = HintsCutEntry p in
-    Auto.add_hints (Vernacexpr.use_section_locality ()) 
+    Auto.add_hints (Locality.use_section_locality ())
       (match dbnames with None -> ["core"] | Some l -> l) entry ]
 END

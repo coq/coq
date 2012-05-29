@@ -1626,7 +1626,7 @@ let interp c =
   Flags.program_cmd := false;
   Obligations.set_program_mode isprogcmd;
   try
-    interp c; check_locality ();
+    interp c; Locality.check_locality ();
     Flags.program_mode := mode
   with e ->
     Flags.program_mode := mode;

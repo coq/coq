@@ -137,6 +137,6 @@ Tactic_printer
 Egrammar
 Himsg
 Cerrors
-Vernacexpr
+Locality
 Vernacinterp
 Top_printers

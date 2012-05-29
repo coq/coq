@@ -6,25 +6,15 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Compat
-open Errors
 open Pp
-open Util
 open Names
 open Tacexpr
-open Extend
 open Genarg
 open Topconstr
 open Decl_kinds
-open Ppextend
-open Declaremods
-
-(* Toplevel control exceptions *)
-exception Drop
-exception Quit
-
 open Libnames
-open Nametab
+
+(** Vernac expressions, produced by the parser *)
 
 type lident = identifier located
 type lname = name located
@@ -179,7 +169,7 @@ type inductive_expr =
 type one_inductive_expr =
   lident * local_binder list * constr_expr option * constructor_expr list
 
-type module_ast_inl = module_ast annotated
+type module_ast_inl = module_ast Declaremods.annotated
 type module_binder = bool option * lident list * module_ast_inl
 
 type grammar_tactic_prod_item_expr =
@@ -187,10 +177,10 @@ type grammar_tactic_prod_item_expr =
   | TacNonTerm of loc * string * (Names.identifier * string) option
 
 type syntax_modifier =
-  | SetItemLevel of string list * production_level
+  | SetItemLevel of string list * Extend.production_level
   | SetLevel of int
-  | SetAssoc of gram_assoc
-  | SetEntryType of string * simple_constr_prod_entry_key
+  | SetAssoc of Compat.gram_assoc
+  | SetEntryType of string * Extend.simple_constr_prod_entry_key
   | SetOnlyParsing
   | SetFormat of string located
 
@@ -276,8 +266,8 @@ type vernac_expr =
   (* Modules and Module Types *)
   | VernacDeclareModule of bool option * lident *
       module_binder list * module_ast_inl
-  | VernacDefineModule of bool option * lident *
-      module_binder list * module_ast_inl module_signature * module_ast_inl list
+  | VernacDefineModule of bool option * lident * module_binder list *
+      module_ast_inl Declaremods.module_signature * module_ast_inl list
   | VernacDeclareModuleType of lident *
       module_binder list * module_ast_inl list * module_ast_inl list
   | VernacInclude of module_ast_inl list
@@ -315,7 +305,7 @@ type vernac_expr =
       locality_flag * onlyparsing_flag
   | VernacDeclareImplicits of locality_flag * reference or_by_notation *
       (explicitation * bool * bool) list list
-  | VernacArguments of locality_flag * reference or_by_notation * 
+  | VernacArguments of locality_flag * reference or_by_notation *
       ((name * bool * (loc * string) option * bool * bool) list) list *
       int * [ `SimplDontExposeCase | `SimplNeverUnfold | `Rename | `ExtraScopes
             | `ClearImplicits | `ClearScopes | `DefaultImplicits ] list
@@ -365,133 +355,3 @@ type vernac_expr =
   | VernacExtend of string * raw_generic_argument list
 
 and located_vernac_expr = loc * vernac_expr
-
-
-(** Categories of [vernac_expr] *)
-
-let rec strip_vernac = function
-  | VernacTime c | VernacTimeout(_,c) | VernacFail c -> strip_vernac c
-  | c -> c (* TODO: what about VernacList ? *)
-
-let rec is_navigation_vernac = function
-  | VernacResetInitial
-  | VernacResetName _
-  | VernacBacktrack _
-  | VernacBackTo _
-  | VernacBack _ -> true
-  | c -> is_deep_navigation_vernac c
-
-and is_deep_navigation_vernac = function
-  | VernacTime c | VernacTimeout (_,c) | VernacFail c -> is_navigation_vernac c
-  | VernacList l -> List.exists (fun (_,c) -> is_navigation_vernac c) l
-  | _ -> false
-
-(* Locating errors raised just after the dot is parsed but before the
-   interpretation phase *)
-
-let syntax_checking_error loc s = user_err_loc (loc,"",Pp.str s)
-
-(**********************************************************************)
-(* Managing locality *)
-
-let locality_flag = ref None
-
-let local_of_bool = function true -> Local | false -> Global
-
-let check_locality () =
-  match !locality_flag with
-  | Some (loc,true) -> 
-      syntax_checking_error loc
-	"This command does not support the \"Local\" prefix.";
-  | Some (loc,false) -> 
-      syntax_checking_error loc
-	"This command does not support the \"Global\" prefix."
-  | None -> ()
-
-(** Extracting the locality flag *)
-
-(* Commands which supported an inlined Local flag *)
-
-let enforce_locality_full local =
-  let local =
-    match !locality_flag with
-    | Some (_,false) when local ->
-	error "Cannot be simultaneously Local and Global."
-    | Some (_,true) when local ->
-	error "Use only prefix \"Local\"."
-    | None ->
-	if local then begin
-	  Flags.if_warn
-	   Pp.msg_warning (Pp.str"Obsolete syntax: use \"Local\" as a prefix.");
-	  Some true
-	end else
-	None
-    | Some (_,b) -> Some b in
-  locality_flag := None;
-  local
-
-(* Commands which did not supported an inlined Local flag (synonym of
-   [enforce_locality_full false]) *)
-
-let use_locality_full () =
-  let r = Option.map snd !locality_flag in
-  locality_flag := None;
-   r
-
-(** Positioning locality for commands supporting discharging and export
-     outside of modules *)
-
-(* For commands whose default is to discharge and export:
-   Global is the default and is neutral;
-   Local in a section deactivates discharge, 
-   Local not in a section deactivates export *)
-
-let make_locality = function Some true -> true | _ -> false
-
-let use_locality () = make_locality (use_locality_full ())
-
-let use_locality_exp () = local_of_bool (use_locality ())
-
-let enforce_locality local = make_locality (enforce_locality_full local)
-
-let enforce_locality_exp local = local_of_bool (enforce_locality local)
-
-(* For commands whose default is not to discharge and not to export:
-   Global forces discharge and export;
-   Local is the default and is neutral *)
-
-let use_non_locality () =
-  match use_locality_full () with Some false -> false | _ -> true
-
-(* For commands whose default is to not discharge but to export:
-   Global in sections forces discharge, Global not in section is the default;
-   Local in sections is the default, Local not in section forces non-export *)
-
-let make_section_locality =
-  function Some b -> b | None -> Lib.sections_are_opened ()
-
-let use_section_locality () =
-  make_section_locality (use_locality_full ())
-
-let enforce_section_locality local =
-  make_section_locality (enforce_locality_full local)
-
-(** Positioning locality for commands supporting export but not discharge *)
-
-(* For commands whose default is to export (if not in section):
-   Global in sections is forbidden, Global not in section is neutral;
-   Local in sections is the default, Local not in section forces non-export *)
-
-let make_module_locality = function
-  | Some false ->
-      if Lib.sections_are_opened () then
-	error "This command does not support the Global option in sections.";
-      false
-  | Some true -> true
-  | None -> false
-
-let use_module_locality () =
-  make_module_locality (use_locality_full ())
-
-let enforce_module_locality local =
-  make_module_locality (enforce_locality_full local)

@@ -27,6 +27,21 @@ exception DuringCommandInterp of Pp.loc * exn
 
 exception HasNotFailed
 
+(* The navigation vernac commands will be handled separately *)
+
+let rec is_navigation_vernac = function
+  | VernacResetInitial
+  | VernacResetName _
+  | VernacBacktrack _
+  | VernacBackTo _
+  | VernacBack _ -> true
+  | c -> is_deep_navigation_vernac c
+
+and is_deep_navigation_vernac = function
+  | VernacTime c | VernacTimeout (_,c) | VernacFail c -> is_navigation_vernac c
+  | VernacList l -> List.exists (fun (_,c) -> is_navigation_vernac c) l
+  | _ -> false
+
 (* Specifies which file is read. The intermediate file names are
    discarded here. The Drop exception becomes an error. We forget
    if the error ocurred during interpretation or not *)

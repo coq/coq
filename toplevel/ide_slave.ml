@@ -102,7 +102,7 @@ let coqide_cmd_checks (loc,ast) =
     user_error "Debug mode not available within CoqIDE";
   if is_known_option ast then
     user_error "Use CoqIDE display menu instead";
-  if is_navigation_vernac ast then
+  if Vernac.is_navigation_vernac ast then
     user_error "Use CoqIDE navigation instead";
   if is_undo ast then
     msgerrnl (str "Warning: rather use CoqIDE navigation instead");
@@ -362,8 +362,8 @@ let eval_call c =
         let () = flush !orig_stdout in
         let () = pr_debug "Exiting gracefully." in
         exit 0
-      | Vernacexpr.Drop -> None, "Drop is not allowed by coqide!"
-      | Vernacexpr.Quit -> None, "Quit is not allowed by coqide!"
+      | Errors.Drop -> None, "Drop is not allowed by coqide!"
+      | Errors.Quit -> None, "Quit is not allowed by coqide!"
       | Vernac.DuringCommandInterp (_,inner) -> handle_exn inner
       | Error_in_file (_,_,inner) -> None, pr_exn inner
       | Loc.Exc_located (loc, inner) when loc = dummy_loc -> None, pr_exn inner

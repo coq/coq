@@ -14,7 +14,6 @@ open Libnames
 open Himsg
 open Proof_type
 open Tacinterp
-open Vernacexpr
 
 let disable_drop e =
   if e <> Drop then e
