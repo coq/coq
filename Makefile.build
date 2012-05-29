@@ -36,10 +36,12 @@ endif
 # of include, and they will then be automatically deleted, leading to an
 # infinite loop.
 
-ALLDEPS=$(addsuffix .d, \
+MLFILES:=$(MLSTATICFILES) $(MLEXTRAFILES)
+
+ALLDEPS:=$(addsuffix .d, \
   $(ML4FILES) $(MLFILES) $(MLIFILES) $(CFILES) $(MLLIBFILES) $(VFILES))
 
-.SECONDARY: $(ALLDEPS) $(GENFILES) $(GENML4FILES)
+.SECONDARY: $(ALLDEPS) $(GENFILES) $(ML4FILES:.ml4=.ml)
 
 # NOTA: the -include below will lauch the build of all .d. Some of them
 # will _fail_ at first, this is to be expected (no grammar.cma initially).
@@ -838,6 +840,12 @@ COND_OPTFLAGS= \
 ##     and the .cmx is checked with respect to this .cmi
 
 HACKMLI = $(if $(wildcard $<i),,-intf-suffix .cmi)
+
+define diff
+ $(strip $(foreach f, $(1), $(if $(filter $(f),$(2)),,$f)))
+endef
+
+MLWITHOUTMLI := $(call diff, $(MLFILES), $(MLIFILES:.mli=.ml))
 
 $(MLWITHOUTMLI:.ml=.cmx): %.cmx: %.cmi  # for .ml with .mli this is already the case
 
