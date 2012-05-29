@@ -27,7 +27,7 @@ type aconstr =
   | ARef of global_reference
   | AVar of identifier
   | AApp of aconstr * aconstr list
-  | AHole of Evd.hole_kind
+  | AHole of Evar_kinds.t
   | AList of identifier * identifier * aconstr * aconstr * bool
   (** Part only in [glob_constr] *)
   | ALambda of name * aconstr * aconstr
@@ -158,7 +158,7 @@ type constr_expr =
       constr_expr * constr_expr
   | CIf of loc * constr_expr * (name located option * constr_expr option)
       * constr_expr * constr_expr
-  | CHole of loc * Evd.hole_kind option
+  | CHole of loc * Evar_kinds.t option
   | CPatVar of loc * (bool * patvar)
   | CEvar of loc * existential_key * constr_expr list option
   | CSort of loc * glob_sort

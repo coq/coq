@@ -308,7 +308,7 @@ let push_rel_context_to_named_context env typ =
  * Entry points to define new evars   *
  *------------------------------------*)
 
-let default_source = (dummy_loc,InternalHole)
+let default_source = (dummy_loc,Evar_kinds.InternalHole)
 
 let new_pure_evar evd sign ?(src=default_source) ?filter ?candidates typ =
   let newevk = new_untyped_evar() in
@@ -338,7 +338,7 @@ let new_type_evar ?src ?filter evd env =
   new_evar evd' env ?src ?filter (mkSort s)
 
   (* The same using side-effect *)
-let e_new_evar evdref env ?(src=(dummy_loc,InternalHole)) ?filter ?candidates ty =
+let e_new_evar evdref env ?(src=(dummy_loc,Evar_kinds.InternalHole)) ?filter ?candidates ty =
   let (evd',ev) = new_evar !evdref env ~src:src ?filter ?candidates ty in
   evdref := evd';
   ev
@@ -1874,7 +1874,7 @@ let check_evars env initial_sigma sigma c =
 	  if not (Evd.mem initial_sigma evk) then
             let (loc,k) = evar_source evk sigma in
 	      match k with
-	      | ImplicitArg (gr, (i, id), false) -> ()
+	      | Evar_kinds.ImplicitArg (gr, (i, id), false) -> ()
 	      | _ ->
 		  let evi = nf_evar_info sigma (Evd.find_undefined sigma evk) in
 		    error_unsolvable_implicit loc env sigma evi k None)

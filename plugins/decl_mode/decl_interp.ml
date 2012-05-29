@@ -185,7 +185,7 @@ let interp_constr_or_thesis check_sort sigma env = function
 let abstract_one_hyp inject h glob =
   match h with
       Hvar (loc,(id,None)) ->
-	GProd (dummy_loc,Name id, Explicit, GHole (loc,Evd.BinderType (Name id)), glob)
+	GProd (dummy_loc,Name id, Explicit, GHole (loc,Evar_kinds.BinderType (Name id)), glob)
     | Hvar (loc,(id,Some typ)) ->
 	GProd (dummy_loc,Name id, Explicit, fst typ, glob)
     | Hprop st ->
@@ -243,7 +243,7 @@ let rec glob_of_pat =
 	let rec add_params n q =
 	  if n<=0 then q else
 	    add_params (pred n) (GHole(dummy_loc,
-				       Evd.TomatchTypeParameter(ind,n))::q) in
+				       Evar_kinds.TomatchTypeParameter(ind,n))::q) in
 	    let args = List.map glob_of_pat lpat in
 	      glob_app(loc,GRef(dummy_loc,Libnames.ConstructRef cstr),
 		   add_params mind.Declarations.mind_nparams args)
@@ -252,14 +252,14 @@ let prod_one_hyp = function
     (loc,(id,None)) ->
       (fun glob ->
 	 GProd (dummy_loc,Name id, Explicit,
-		GHole (loc,Evd.BinderType (Name id)), glob))
+		GHole (loc,Evar_kinds.BinderType (Name id)), glob))
   | (loc,(id,Some typ)) ->
       (fun glob ->
 	 GProd (dummy_loc,Name id, Explicit, fst typ, glob))
 
 let prod_one_id (loc,id) glob =
   GProd (dummy_loc,Name id, Explicit,
-	 GHole (loc,Evd.BinderType (Name id)), glob)
+	 GHole (loc,Evar_kinds.BinderType (Name id)), glob)
 
 let let_in_one_alias (id,pat) glob =
   GLetIn (dummy_loc,Name id, glob_of_pat pat, glob)
@@ -339,7 +339,8 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
 	(fun (loc,(id,_)) ->
 	   GVar (loc,id)) params in
     let dum_args=
-      list_tabulate (fun _ -> GHole (dummy_loc,Evd.QuestionMark (Evd.Define false)))
+      list_tabulate
+	(fun _ -> GHole (dummy_loc,Evar_kinds.QuestionMark (Evar_kinds.Define false)))
 	oib.Declarations.mind_nrealargs in
       glob_app(dummy_loc,rind,rparams@rparams_rec@dum_args) in
   let pat_vars,aliases,patt = interp_pattern env pat in
@@ -415,7 +416,7 @@ let abstract_one_arg = function
     (loc,(id,None)) ->
       (fun glob ->
 	 GLambda (dummy_loc,Name id, Explicit,
-		GHole (loc,Evd.BinderType (Name id)), glob))
+		GHole (loc,Evar_kinds.BinderType (Name id)), glob))
   | (loc,(id,Some typ)) ->
       (fun glob ->
 	 GLambda (dummy_loc,Name id, Explicit, fst typ, glob))

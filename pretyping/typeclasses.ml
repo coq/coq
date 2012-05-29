@@ -451,7 +451,7 @@ let is_instance = function
       is_class (IndRef ind)
   | _ -> false
 
-let is_implicit_arg k = k <> GoalEvar
+let is_implicit_arg k = k <> Evar_kinds.GoalEvar
   (* match k with *)
   (*     ImplicitArg (ref, (n, id), b) -> true *)
   (*   | InternalHole -> true *)

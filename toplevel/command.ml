@@ -683,7 +683,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
     mkApp (constr_of_global (delayed_force fix_sub_ref),
 	  [| argtyp ; wf_rel ;
 	     Evarutil.e_new_evar isevars env 
-	       ~src:(dummy_loc, Evd.QuestionMark (Evd.Define false)) wf_proof;
+	       ~src:(dummy_loc, Evar_kinds.QuestionMark (Evar_kinds.Define false)) wf_proof;
 	     prop ; intern_body_lam |])
   in
   let _ = isevars := Evarutil.nf_evar_map !isevars in
@@ -866,8 +866,8 @@ let check_program_evars env initial_sigma evd c =
 	  if not (Evd.mem initial_sigma evk) then
             let (loc,k) = Evd.evar_source evk evd in
 	      (match k with
-	      | Evd.QuestionMark _
-	      | Evd.ImplicitArg (_, _, false) -> ()
+	      | Evar_kinds.QuestionMark _
+	      | Evar_kinds.ImplicitArg (_, _, false) -> ()
 	      | _ ->
 		  let evi = nf_evar_info sigma (Evd.find sigma evk) in
 		    Pretype_errors.error_unsolvable_implicit loc env sigma evi k None)

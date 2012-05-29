@@ -558,8 +558,13 @@ let subst_var_with_hole occ tid t =
   let rec substrec = function
     | GVar (_,id) as x -> 
         if id = tid 
-        then (decr occref; if !occref = 0 then x
-                           else (incr locref; GHole (make_loc (!locref,0),Evd.QuestionMark(Evd.Define true))))
+        then
+	  (decr occref;
+	   if !occref = 0 then x
+           else
+	     (incr locref;
+	      GHole (make_loc (!locref,0),
+		     Evar_kinds.QuestionMark(Evar_kinds.Define true))))
         else x
     | c -> map_glob_constr_left_to_right substrec c in
   let t' = substrec t
@@ -570,9 +575,13 @@ let subst_hole_with_term occ tc t =
   let locref = ref 0 in
   let occref = ref occ in
   let rec substrec = function
-    | GHole (_,Evd.QuestionMark(Evd.Define true)) -> 
-        decr occref; if !occref = 0 then tc
-                     else (incr locref; GHole (make_loc (!locref,0),Evd.QuestionMark(Evd.Define true)))
+    | GHole (_,Evar_kinds.QuestionMark(Evar_kinds.Define true)) ->
+        decr occref;
+        if !occref = 0 then tc
+        else
+	  (incr locref;
+	   GHole (make_loc (!locref,0),
+		  Evar_kinds.QuestionMark(Evar_kinds.Define true)))
     | c -> map_glob_constr_left_to_right substrec c
   in
   substrec t

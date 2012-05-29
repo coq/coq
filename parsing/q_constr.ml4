@@ -75,7 +75,7 @@ EXTEND
     | "0"
       [ s = sort -> <:expr< Glob_term.GSort ($dloc$,s) >>
       | id = ident -> <:expr< Glob_term.GVar ($dloc$,$id$) >>
-      | "_" -> <:expr< Glob_term.GHole ($dloc$, QuestionMark (Define False)) >>
+      | "_" -> <:expr< Glob_term.GHole ($dloc$,Evar_kinds.QuestionMark (Evar_kinds.Define False)) >>
       | "?"; id = ident -> <:expr< Glob_term.GPatVar($dloc$,(False,$id$)) >>
       | "{"; c1 = constr; "}"; "+"; "{"; c2 = constr; "}" ->
           apply_ref <:expr< coq_sumbool_ref >> [c1;c2]

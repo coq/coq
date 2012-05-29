@@ -34,12 +34,12 @@ let mk_cast = function
 let binders_of_names l =
   List.map (fun (loc, na) ->
     LocalRawAssum ([loc, na], Default Explicit,
-		   CHole (loc, Some (Evd.BinderType na)))) l
+		   CHole (loc, Some (Evar_kinds.BinderType na)))) l
 
 let binders_of_lidents l =
   List.map (fun (loc, id) ->
     LocalRawAssum ([loc, Name id], Default Glob_term.Explicit,
-		  CHole (loc, Some (Evd.BinderType (Name id))))) l
+		  CHole (loc, Some (Evar_kinds.BinderType (Name id))))) l
 
 let mk_fixb (id,bl,ann,body,(loc,tyc)) =
   let ty = match tyc with

@@ -245,7 +245,7 @@ let pretype_sort evdref = function
 exception Found of fixpoint
 
 let new_type_evar evdref env loc =
-  evd_comb0 (fun evd -> Evarutil.new_type_evar evd env ~src:(loc,InternalHole)) evdref
+  evd_comb0 (fun evd -> Evarutil.new_type_evar evd env ~src:(loc,Evar_kinds.InternalHole)) evdref
 
 (* [pretype tycon env evdref lvar lmeta cstr] attempts to type [cstr] *)
 (* in environment [env], with existential variables [evdref] and *)
@@ -277,7 +277,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
         match tycon with
         | Some ty -> ty
         | None -> new_type_evar evdref env loc in
-      let k = MatchingVar (someta,n) in
+      let k = Evar_kinds.MatchingVar (someta,n) in
 	{ uj_val = e_new_evar evdref env ~src:(loc,k) ty; uj_type = ty }
 
   | GHole (loc,k) ->

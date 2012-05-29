@@ -540,7 +540,7 @@ and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) 
     List.fold_left
       (fun (i,ks,m) b ->
 	 if m=n then (i,t2::ks, m-1) else
-	 let dloc = (dummy_loc,InternalHole) in
+	 let dloc = (dummy_loc,Evar_kinds.InternalHole) in
          let (i',ev) = new_evar i env ~src:dloc (substl ks b) in
 	 (i', ev :: ks, m - 1))
       (evd,[],List.length bs - 1) bs
@@ -816,7 +816,7 @@ let rec solve_unconstrained_evars_with_canditates evd =
 let solve_unconstrained_impossible_cases evd =
   Evd.fold_undefined (fun evk ev_info evd' ->
     match ev_info.evar_source with
-    | _,ImpossibleCase -> Evd.define evk (j_type (coq_unit_judge ())) evd'
+    | _,Evar_kinds.ImpossibleCase -> Evd.define evk (j_type (coq_unit_judge ())) evd'
     | _ -> evd') evd evd
 
 let consider_remaining_unif_problems ?(ts=full_transparent_state) env evd =

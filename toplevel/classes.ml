@@ -231,7 +231,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 			   k.cl_projs;
 			 c :: props, rest'
 		     with Not_found ->
-		       (CHole (Pp.dummy_loc, Some Evd.GoalEvar) :: props), rest
+		       (CHole (Pp.dummy_loc, Some Evar_kinds.GoalEvar) :: props), rest
 		   else props, rest)
 		([], props) k.cl_props
 	    in

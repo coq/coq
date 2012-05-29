@@ -585,8 +585,8 @@ let is_inference_forced p evd ev =
     then
       let (loc, k) = evar_source ev evd in
       match k with
-	| ImplicitArg (_, _, b) -> b
-	| QuestionMark _ -> false
+	| Evar_kinds.ImplicitArg (_, _, b) -> b
+	| Evar_kinds.QuestionMark _ -> false
 	| _ -> true
     else true
   with Not_found -> assert false
@@ -683,7 +683,7 @@ let initial_select_evars with_goals =
      Typeclasses.is_class_evar evd evi)
   else
     (fun evd ev evi -> 
-     (snd (Evd.evar_source ev evd) <> Evd.GoalEvar)
+     (snd (Evd.evar_source ev evd) <> Evar_kinds.GoalEvar)
      && Typeclasses.is_class_evar evd evi)
 
 let resolve_typeclass_evars debug m env evd with_goals split fail =

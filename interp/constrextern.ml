@@ -997,7 +997,7 @@ let extern_sort s = extern_glob_sort (detype_sort s)
 
 let any_any_branch =
   (* | _ => _ *)
-  (loc,[],[PatVar (loc,Anonymous)],GHole (loc,Evd.InternalHole))
+  (loc,[],[PatVar (loc,Anonymous)],GHole (loc,Evar_kinds.InternalHole))
 
 let rec glob_of_pat env = function
   | PRef ref -> GRef (loc,ref)
@@ -1010,7 +1010,7 @@ let rec glob_of_pat env = function
 	    anomaly "glob_constr_of_pattern: index to an anonymous variable"
       with Not_found -> id_of_string ("_UNBOUND_REL_"^(string_of_int n)) in
       GVar (loc,id)
-  | PMeta None -> GHole (loc,Evd.InternalHole)
+  | PMeta None -> GHole (loc,Evar_kinds.InternalHole)
   | PMeta (Some n) -> GPatVar (loc,(false,n))
   | PApp (f,args) ->
       GApp (loc,glob_of_pat env f,array_map_to_list (glob_of_pat env) args)

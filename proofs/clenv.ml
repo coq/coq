@@ -319,7 +319,7 @@ let clenv_pose_metas_as_evars clenv dep_mvs =
       if occur_meta ty then fold clenv (mvs@[mv])
       else
 	let (evd,evar) =
-	  new_evar clenv.evd (cl_env clenv) ~src:(dummy_loc,GoalEvar) ty in
+	  new_evar clenv.evd (cl_env clenv) ~src:(dummy_loc,Evar_kinds.GoalEvar) ty in
 	let clenv = clenv_assign mv evar {clenv with evd=evd} in
 	fold clenv mvs in
   fold clenv dep_mvs

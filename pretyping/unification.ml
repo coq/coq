@@ -113,7 +113,7 @@ let pose_all_metas_as_evars env evd t =
        | None ->
         let {rebus=ty;freemetas=mvs} = Evd.meta_ftype evd mv in
         let ty = if mvs = Evd.Metaset.empty then ty else aux ty in
-        let ev = Evarutil.e_new_evar evdref env ~src:(dummy_loc,GoalEvar) ty in
+        let ev = Evarutil.e_new_evar evdref env ~src:(dummy_loc,Evar_kinds.GoalEvar) ty in
         evdref := meta_assign mv (ev,(Conv,TypeNotProcessed)) !evdref;
         ev)
   | _ ->
@@ -774,7 +774,7 @@ let applyHead env evd n c  =
       match kind_of_term (whd_betadeltaiota env evd cty) with
       | Prod (_,c1,c2) ->
         let (evd',evar) =
-	  Evarutil.new_evar evd env ~src:(dummy_loc,GoalEvar) c1 in
+	  Evarutil.new_evar evd env ~src:(dummy_loc,Evar_kinds.GoalEvar) c1 in
 	  apprec (n-1) (mkApp(c,[|evar|])) (subst1 evar c2) evd'
       | _ -> error "Apply_Head_Then"
   in

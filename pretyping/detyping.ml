@@ -658,13 +658,14 @@ let rec subst_glob_constr subst raw =
 
   | GSort _ -> raw
 
-  | GHole (loc,ImplicitArg (ref,i,b)) ->
+  | GHole (loc,Evar_kinds.ImplicitArg (ref,i,b)) ->
       let ref',_ = subst_global subst ref in
 	if ref' == ref then raw else
-	  GHole (loc,InternalHole)
-  | GHole (loc, (BinderType _ | QuestionMark _ | CasesType | InternalHole |
-      TomatchTypeParameter _ | GoalEvar | ImpossibleCase | MatchingVar _)) ->
-      raw
+	  GHole (loc,Evar_kinds.InternalHole)
+  | GHole (loc, (Evar_kinds.BinderType _ |Evar_kinds.QuestionMark _
+		|Evar_kinds.CasesType |Evar_kinds.InternalHole
+		|Evar_kinds.TomatchTypeParameter _ |Evar_kinds.GoalEvar
+		|Evar_kinds.ImpossibleCase |Evar_kinds.MatchingVar _)) -> raw
 
   | GCast (loc,r1,k) ->
       (match k with

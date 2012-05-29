@@ -18,24 +18,11 @@ open Environ
 open Libnames
 open Mod_subst
 
-(* The kinds of existential variable *)
-
-type obligation_definition_status = Define of bool | Expand
-
-type hole_kind =
-  | ImplicitArg of global_reference * (int * identifier option) * bool
-  | BinderType of name
-  | QuestionMark of obligation_definition_status
-  | CasesType
-  | InternalHole
-  | TomatchTypeParameter of inductive * int
-  | GoalEvar
-  | ImpossibleCase
-  | MatchingVar of bool * identifier
+(* The kinds of existential variables are now defined in [Evar_kinds] *)
 
 (* The type of mappings for existential variables *)
 
-type evar = existential_key
+type evar = Term.existential_key
 
 let string_of_existential evk = "?" ^ string_of_int evk
 let existential_of_int evk = evk
@@ -49,7 +36,7 @@ type evar_info = {
   evar_hyps : named_context_val;
   evar_body : evar_body;
   evar_filter : bool list;
-  evar_source : hole_kind located;
+  evar_source : Evar_kinds.t located;
   evar_candidates : constr list option; (* if not None, list of allowed instances *)
   evar_extra : Store.t }
 
@@ -58,7 +45,7 @@ let make_evar hyps ccl = {
   evar_hyps = hyps;
   evar_body = Evar_empty;
   evar_filter = List.map (fun _ -> true) (named_context_of_val hyps);
-  evar_source = (dummy_loc,InternalHole);
+  evar_source = (dummy_loc,Evar_kinds.InternalHole);
   evar_candidates = None;
   evar_extra = Store.empty
 }
@@ -432,7 +419,7 @@ let define evk body evd =
 	| [] ->  evd.last_mods
         | _ -> ExistentialSet.add evk evd.last_mods }
 
-let evar_declare hyps evk ty ?(src=(dummy_loc,InternalHole)) ?filter ?candidates evd =
+let evar_declare hyps evk ty ?(src=(dummy_loc,Evar_kinds.InternalHole)) ?filter ?candidates evd =
   let filter =
     if filter = None then
       List.map (fun _ -> true) (named_context_of_val hyps)
@@ -752,20 +739,20 @@ let pr_decl ((id,b,_),ok) =
       print_constr c ++ str (if ok then ")" else "}")
 
 let pr_evar_source = function
-  | QuestionMark _ -> str "underscore"
-  | CasesType -> str "pattern-matching return predicate"
-  | BinderType (Name id) -> str "type of " ++ Nameops.pr_id id
-  | BinderType Anonymous -> str "type of anonymous binder"
-  | ImplicitArg (c,(n,ido),b) ->
+  | Evar_kinds.QuestionMark _ -> str "underscore"
+  | Evar_kinds.CasesType -> str "pattern-matching return predicate"
+  | Evar_kinds.BinderType (Name id) -> str "type of " ++ Nameops.pr_id id
+  | Evar_kinds.BinderType Anonymous -> str "type of anonymous binder"
+  | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
       let id = Option.get ido in
       str "parameter " ++ pr_id id ++ spc () ++ str "of" ++
       spc () ++ print_constr (constr_of_global c)
-  | InternalHole -> str "internal placeholder"
-  | TomatchTypeParameter (ind,n) ->
+  | Evar_kinds.InternalHole -> str "internal placeholder"
+  | Evar_kinds.TomatchTypeParameter (ind,n) ->
       pr_nth n ++ str " argument of type " ++ print_constr (mkInd ind)
-  | GoalEvar -> str "goal evar"
-  | ImpossibleCase -> str "type of impossible pattern-matching clause"
-  | MatchingVar _ -> str "matching variable"
+  | Evar_kinds.GoalEvar -> str "goal evar"
+  | Evar_kinds.ImpossibleCase -> str "type of impossible pattern-matching clause"
+  | Evar_kinds.MatchingVar _ -> str "matching variable"
 
 let pr_evar_info evi =
   let phyps =

@@ -278,8 +278,8 @@ let rec find_row_ind = function
 let inductive_template evdref env tmloc ind =
   let arsign = get_full_arity_sign env ind in
   let hole_source = match tmloc with
-    | Some loc -> fun i -> (loc, TomatchTypeParameter (ind,i))
-    | None -> fun _ -> (dummy_loc, InternalHole) in
+    | Some loc -> fun i -> (loc, Evar_kinds.TomatchTypeParameter (ind,i))
+    | None -> fun _ -> (dummy_loc, Evar_kinds.InternalHole) in
    let (_,evarl,_) =
     List.fold_right
       (fun (na,b,ty) (subst,evarl,n) ->
@@ -357,7 +357,7 @@ let coerce_to_indtype typing_fun evdref env matx tomatchl =
 (************************************************************************)
 (* Utils *)
 
-let mkExistential env ?(src=(dummy_loc,InternalHole)) evdref =
+let mkExistential env ?(src=(dummy_loc,Evar_kinds.InternalHole)) evdref =
   e_new_evar evdref env ~src:src (new_Type ())
 
 let evd_comb2 f evdref x y =
@@ -909,7 +909,7 @@ let expand_arg tms (p,ccl) ((_,t),_,na) =
 let adjust_impossible_cases pb pred tomatch submat =
   if submat = [] then
     match kind_of_term (whd_evar !(pb.evdref) pred) with
-    | Evar (evk,_) when snd (evar_source evk !(pb.evdref)) = ImpossibleCase ->
+    | Evar (evk,_) when snd (evar_source evk !(pb.evdref)) = Evar_kinds.ImpossibleCase ->
 	let default = (coq_unit_judge ()).uj_type in
 	pb.evdref := Evd.define evk default !(pb.evdref);
       (* we add an "assert false" case *)
@@ -1469,7 +1469,7 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
 	    (fun i _ ->
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context env) in
-        let ev = e_new_evar evdref env ~src:(loc, CasesType) ty in
+        let ev = e_new_evar evdref env ~src:(loc, Evar_kinds.CasesType) ty in
         evdref := add_conv_pb (Reduction.CONV,env,substl inst ev,t) !evdref;
         ev
     | _ ->
@@ -1492,7 +1492,8 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
       let filter = rel_filter@named_filter in
       let candidates = u :: List.map mkRel vl in
       let ev =
-	e_new_evar evdref extenv ~src:(loc, CasesType) ~filter ~candidates ty in
+	e_new_evar evdref extenv ~src:(loc, Evar_kinds.CasesType)
+	  ~filter ~candidates ty in
       lift k ev
     else
       map_constr_with_full_binders push_binder aux x t in
@@ -1507,7 +1508,7 @@ let build_tycon loc env tycon_env subst tycon extenv evdref t =
 	let n' = rel_context_length (rel_context tycon_env) in
         let tt = new_Type () in
 	let impossible_case_type =
-	  e_new_evar evdref env ~src:(loc,ImpossibleCase) tt in
+	  e_new_evar evdref env ~src:(loc,Evar_kinds.ImpossibleCase) tt in
 	(lift (n'-n) impossible_case_type, tt)
     | Some t ->
         let t = abstract_tycon loc tycon_env evdref subst tycon extenv t in
@@ -1759,7 +1760,7 @@ let prepare_predicate loc typing_fun sigma env tomatchs arsign tycon pred =
 	(* we use two strategies *)
         let sigma,t = match tycon with
 	| Some t -> sigma,t
-	| None -> new_type_evar sigma env ~src:(loc, CasesType) in
+	| None -> new_type_evar sigma env ~src:(loc, Evar_kinds.CasesType) in
         (* First strategy: we build an "inversion" predicate *)
 	let sigma1,pred1 = build_inversion_problem loc env sigma tomatchs t in
 	(* Second strategy: we directly use the evar as a non dependent pred *)
@@ -1825,7 +1826,7 @@ let mk_JMeq typ x typ' y =
   mkApp (delayed_force coq_JMeq_ind, [| typ; x ; typ'; y |])
 let mk_JMeq_refl typ x = mkApp (delayed_force coq_JMeq_refl, [| typ; x |])
 
-let hole = GHole (dummy_loc, Evd.QuestionMark (Evd.Define true))
+let hole = GHole (dummy_loc, Evar_kinds.QuestionMark (Evar_kinds.Define true))
 
 let constr_of_pat env isevars arsign pat avoid =
   let rec typ env (ty, realargs) pat avoid =

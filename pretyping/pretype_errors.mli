@@ -23,8 +23,8 @@ type pretype_error =
   | CantFindCaseType of constr
   (** Unification *)
   | OccurCheck of existential_key * constr
-  | NotClean of existential_key * constr * Evd.hole_kind
-  | UnsolvableImplicit of Evd.evar_info * Evd.hole_kind *
+  | NotClean of existential_key * constr * Evar_kinds.t
+  | UnsolvableImplicit of Evd.evar_info * Evar_kinds.t *
       Evd.unsolvability_explanation option
   | CannotUnify of constr * constr
   | CannotUnifyLocal of constr * constr * constr
@@ -95,10 +95,10 @@ val error_cannot_coerce : env -> Evd.evar_map -> constr * constr -> 'b
 val error_occur_check : env -> Evd.evar_map -> existential_key -> constr -> 'b
 
 val error_not_clean :
-  env -> Evd.evar_map -> existential_key -> constr -> loc * Evd.hole_kind -> 'b
+  env -> Evd.evar_map -> existential_key -> constr -> loc * Evar_kinds.t -> 'b
 
 val error_unsolvable_implicit :
-  loc -> env -> Evd.evar_map -> Evd.evar_info -> Evd.hole_kind ->
+  loc -> env -> Evd.evar_map -> Evd.evar_info -> Evar_kinds.t ->
       Evd.unsolvability_explanation option -> 'b
 
 val error_cannot_unify : env -> Evd.evar_map -> constr * constr -> 'b

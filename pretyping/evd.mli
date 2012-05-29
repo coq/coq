@@ -73,26 +73,6 @@ val map_clb : (constr -> constr) -> clbinding -> clbinding
 
 
 (********************************************************************
-  ** Kinds of existential variables ***)
-
-(** Should the obligation be defined (opaque or transparent (default)) or
-   defined transparent and expanded in the term? *)
-
-type obligation_definition_status = Define of bool | Expand
-
-(** Evars *)
-type hole_kind =
-  | ImplicitArg of global_reference * (int * identifier option) * bool (** Force inference *)
-  | BinderType of name
-  | QuestionMark of obligation_definition_status
-  | CasesType
-  | InternalHole
-  | TomatchTypeParameter of inductive * int
-  | GoalEvar
-  | ImpossibleCase
-  | MatchingVar of bool * identifier
-
-(********************************************************************
   ** Existential variables and unification states ***)
 
 (** A unification state (of type [evar_map]) is primarily a finite mapping
@@ -118,7 +98,7 @@ type evar_info = {
   evar_hyps : named_context_val;
   evar_body : evar_body;
   evar_filter : bool list;
-  evar_source : hole_kind located;
+  evar_source : Evar_kinds.t located;
   evar_candidates : constr list option;
   evar_extra : Store.t }
 
@@ -199,9 +179,9 @@ val defined_evars : evar_map -> evar_map
     It optimizes the call of {!Evd.fold} to [f] and [undefined_evars m] *)
 val fold_undefined : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 val evar_declare :
-  named_context_val -> evar -> types -> ?src:loc * hole_kind ->
+  named_context_val -> evar -> types -> ?src:loc * Evar_kinds.t ->
       ?filter:bool list -> ?candidates:constr list -> evar_map -> evar_map
-val evar_source : existential_key -> evar_map -> hole_kind located
+val evar_source : existential_key -> evar_map -> Evar_kinds.t located
 
 (* spiwack: this function seems to somewhat break the abstraction. 
    [evar_merge evd ev1] extends the evars of [evd] with [evd1] *)

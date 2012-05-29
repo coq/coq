@@ -179,7 +179,7 @@ let declare_implicit_tactic tac = implicit_tactic := Some tac
 let solve_by_implicit_tactic env sigma (evk,args) =
   let evi = Evd.find_undefined sigma evk in
   match (!implicit_tactic, snd (evar_source evk sigma)) with
-  | Some tac, (ImplicitArg _ | QuestionMark _)
+  | Some tac, (Evar_kinds.ImplicitArg _ | Evar_kinds.QuestionMark _)
       when
 	Sign.named_context_equal (Environ.named_context_of_val evi.evar_hyps)
 	(Environ.named_context env) ->

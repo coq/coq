@@ -18,7 +18,7 @@ let mkGProd(n,t,b) = GProd(dummy_loc,n,Explicit,t,b)
 let mkGLetIn(n,t,b) = GLetIn(dummy_loc,n,t,b)
 let mkGCases(rto,l,brl) = GCases(dummy_loc,Term.RegularStyle,rto,l,brl)
 let mkGSort s = GSort(dummy_loc,s)
-let mkGHole () = GHole(dummy_loc,Evd.BinderType Anonymous)
+let mkGHole () = GHole(dummy_loc,Evar_kinds.BinderType Anonymous)
 let mkGCast(b,t) = GCast(dummy_loc,b,CastConv (Term.DEFAULTcast,t))
 
 (*

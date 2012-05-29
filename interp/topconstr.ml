@@ -31,7 +31,7 @@ type aconstr =
   | ARef of global_reference
   | AVar of identifier
   | AApp of aconstr * aconstr list
-  | AHole of Evd.hole_kind
+  | AHole of Evar_kinds.t
   | AList of identifier * identifier * aconstr * aconstr * bool
   (* Part only in glob_constr *)
   | ALambda of name * aconstr * aconstr
@@ -485,13 +485,14 @@ let rec subst_aconstr subst bound raw =
 
   | APatVar _ | ASort _ -> raw
 
-  | AHole (Evd.ImplicitArg (ref,i,b)) ->
+  | AHole (Evar_kinds.ImplicitArg (ref,i,b)) ->
       let ref',t = subst_global subst ref in
 	if ref' == ref then raw else
-	  AHole (Evd.InternalHole)
-  | AHole (Evd.BinderType _ | Evd.QuestionMark _ | Evd.CasesType
-    | Evd.InternalHole | Evd.TomatchTypeParameter _ | Evd.GoalEvar
-    | Evd.ImpossibleCase | Evd.MatchingVar _) -> raw
+	  AHole (Evar_kinds.InternalHole)
+  | AHole (Evar_kinds.BinderType _ |Evar_kinds.QuestionMark _
+	  |Evar_kinds.CasesType |Evar_kinds.InternalHole
+	  |Evar_kinds.TomatchTypeParameter _ |Evar_kinds.GoalEvar
+	  |Evar_kinds.ImpossibleCase |Evar_kinds.MatchingVar _) -> raw
 
   | ACast (r1,k) ->
       match k with
@@ -521,11 +522,12 @@ let abstract_return_type_context pi mklam tml rtno =
 
 let abstract_return_type_context_glob_constr =
   abstract_return_type_context (fun (_,_,nal) -> nal)
-    (fun na c -> GLambda(dummy_loc,na,Explicit,GHole(dummy_loc,Evd.InternalHole),c))
+    (fun na c ->
+      GLambda(dummy_loc,na,Explicit,GHole(dummy_loc,Evar_kinds.InternalHole),c))
 
 let abstract_return_type_context_aconstr =
   abstract_return_type_context snd
-    (fun na c -> ALambda(na,AHole Evd.InternalHole,c))
+    (fun na c -> ALambda(na,AHole Evar_kinds.InternalHole,c))
 
 exception No_match
 
@@ -568,7 +570,7 @@ let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
   | (_,Name id2) when List.mem id2 (fst metas) ->
       let rhs = match na1 with
       | Name id1 -> GVar (dummy_loc,id1)
-      | Anonymous -> GHole (dummy_loc,Evd.InternalHole) in
+      | Anonymous -> GHole (dummy_loc,Evar_kinds.InternalHole) in
       alp, bind_env alp sigma id2 rhs
   | (Name id1,Name id2) -> (id1,id2)::alp,sigma
   | (Anonymous,Anonymous) -> alp,sigma
@@ -592,7 +594,7 @@ let rec match_iterated_binders islambda decls = function
       match_iterated_binders islambda ((na,bk,None,t)::decls) b
   | GLetIn (loc,na,c,b) when glue_letin_with_decls ->
       match_iterated_binders islambda
-	((na,Explicit (*?*), Some c,GHole(loc,Evd.BinderType na))::decls) b
+	((na,Explicit (*?*), Some c,GHole(loc,Evar_kinds.BinderType na))::decls) b
   | b -> (decls,b)
 
 let remove_sigma x (sigmavar,sigmalist,sigmabinders) =
@@ -742,7 +744,7 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
   | b1, ALambda (Name id,AHole _,b2) when inner ->
       let id' = Namegen.next_ident_away id (free_glob_vars b1) in
       match_in u alp metas (bind_binder sigma id
-       [(Name id',Explicit,None,GHole(dummy_loc,Evd.BinderType (Name id')))])
+       [(Name id',Explicit,None,GHole(dummy_loc,Evar_kinds.BinderType (Name id')))])
        (mkGApp dummy_loc b1 (GVar (dummy_loc,id'))) b2
 
   | (GRec _ | GEvar _), _
@@ -905,7 +907,7 @@ type constr_expr =
       constr_expr * constr_expr
   | CIf of loc * constr_expr * (name located option * constr_expr option)
       * constr_expr * constr_expr
-  | CHole of loc * Evd.hole_kind option
+  | CHole of loc * Evar_kinds.t option
   | CPatVar of loc * (bool * patvar)
   | CEvar of loc * existential_key * constr_expr list option
   | CSort of loc * glob_sort

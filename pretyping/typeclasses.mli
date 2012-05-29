@@ -72,7 +72,7 @@ val instance_impl : instance -> global_reference
 val is_class : global_reference -> bool
 val is_instance : global_reference -> bool
 
-val is_implicit_arg : hole_kind -> bool
+val is_implicit_arg : Evar_kinds.t -> bool
 
 (** Returns the term and type for the given instance of the parameters and fields
    of the type class. *)

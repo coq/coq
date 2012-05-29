@@ -180,10 +180,10 @@ let word_of_pos_bigint dloc hght n =
     if is_neg_or_zero hgt then
       int31_of_pos_bigint dloc n
     else if equal n zero then
-      GApp (dloc, ref_W0, [GHole (dloc, Evd.InternalHole)])
+      GApp (dloc, ref_W0, [GHole (dloc, Evar_kinds.InternalHole)])
     else
       let (h,l) = split_at hgt n in
-      GApp (dloc, ref_WW, [GHole (dloc, Evd.InternalHole);
+      GApp (dloc, ref_WW, [GHole (dloc, Evar_kinds.InternalHole);
 			   decomp (sub_1 hgt) h;
 			   decomp (sub_1 hgt) l])
   in

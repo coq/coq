@@ -39,8 +39,8 @@ val sort_dependencies : (int * evar_info * Intset.t) list -> (int * evar_info * 
 (* env, id, evars, number of function prototypes to try to clear from
    evars contexts, object and type *)
 val eterm_obligations : env -> identifier -> evar_map -> int ->
-  ?status:obligation_definition_status -> constr -> types -> 
-  (identifier * types * hole_kind located * obligation_definition_status * Intset.t * 
+  ?status:Evar_kinds.obligation_definition_status -> constr -> types ->
+  (identifier * types * Evar_kinds.t located * Evar_kinds.obligation_definition_status * Intset.t *
       tactic option) array
     (* Existential key, obl. name, type as product, 
        location of the original evar, associated tactic,
@@ -52,8 +52,8 @@ val eterm_obligations : env -> identifier -> evar_map -> int ->
        translation from obligation identifiers to constrs, new term, new type *)
 
 type obligation_info =
-  (identifier * Term.types * hole_kind located *
-      obligation_definition_status * Intset.t * tactic option) array
+  (identifier * Term.types * Evar_kinds.t located *
+      Evar_kinds.obligation_definition_status * Intset.t * tactic option) array
     (* ident, type, location, (opaque or transparent, expand or define),
        dependencies, tactic to solve it *)
 

@@ -94,7 +94,7 @@ let anonymize_if_reserved na t = match na with
 	if not !Flags.raw_print &
 	   (try aconstr_of_glob_constr [] [] t = find_reserved_type id
             with UserError _ -> false)
-	then GHole (dummy_loc,Evd.BinderType na)
+	then GHole (dummy_loc,Evar_kinds.BinderType na)
 	else t
       with Not_found -> t)
   | Anonymous -> t

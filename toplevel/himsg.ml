@@ -342,35 +342,35 @@ let pr_ne_context_of header footer env =
   then footer
   else pr_ne_context_of header env
 
-let explain_hole_kind env evi = function
-  | QuestionMark _ -> str "this placeholder"
-  | CasesType ->
+let explain_evar_kind env evi = function
+  | Evar_kinds.QuestionMark _ -> str "this placeholder"
+  | Evar_kinds.CasesType ->
       str "the type of this pattern-matching problem"
-  | BinderType (Name id) ->
+  | Evar_kinds.BinderType (Name id) ->
       str "the type of " ++ Nameops.pr_id id
-  | BinderType Anonymous ->
+  | Evar_kinds.BinderType Anonymous ->
       str "the type of this anonymous binder"
-  | ImplicitArg (c,(n,ido),b) ->
+  | Evar_kinds.ImplicitArg (c,(n,ido),b) ->
       let id = Option.get ido in
       str "the implicit parameter " ++
       pr_id id ++ spc () ++ str "of" ++
       spc () ++ Nametab.pr_global_env Idset.empty c
-  | InternalHole ->
+  | Evar_kinds.InternalHole ->
       str "an internal placeholder" ++
 	Option.cata (fun evi ->
 	  let env = Evd.evar_env evi in
 	    str " of type "  ++ pr_lconstr_env env evi.evar_concl ++
 	      pr_ne_context_of (str " in environment:"++ fnl ()) (mt ()) env)
 	(mt ()) evi
-  | TomatchTypeParameter (tyi,n) ->
+  | Evar_kinds.TomatchTypeParameter (tyi,n) ->
       str "the " ++ pr_nth n ++
       str " argument of the inductive type (" ++ pr_inductive env tyi ++
       str ") of this term"
-  | GoalEvar ->
+  | Evar_kinds.GoalEvar ->
       str "an existential variable"
-  | ImpossibleCase ->
+  | Evar_kinds.ImpossibleCase ->
       str "the type of an impossible pattern-matching clause"
-  | MatchingVar _ ->
+  | Evar_kinds.MatchingVar _ ->
       assert false
 
 let explain_not_clean env sigma ev t k =
@@ -378,7 +378,7 @@ let explain_not_clean env sigma ev t k =
   let env = make_all_name_different env in
   let id = Evd.string_of_existential ev in
   let var = pr_lconstr_env env t in
-  str "Tried to instantiate " ++ explain_hole_kind env None k ++
+  str "Tried to instantiate " ++ explain_evar_kind env None k ++
   str " (" ++ str id ++ str ")" ++ spc () ++
   str "with a term using variable " ++ var ++ spc () ++
   str "which is not in its scope."
@@ -398,7 +398,7 @@ let explain_typeclass_resolution env evi k =
   | None -> mt()
 
 let explain_unsolvable_implicit env evi k explain =
-  str "Cannot infer " ++ explain_hole_kind env (Some evi) k ++
+  str "Cannot infer " ++ explain_evar_kind env (Some evi) k ++
   explain_unsolvability explain ++ str "." ++
   explain_typeclass_resolution env evi k
 
@@ -693,7 +693,7 @@ let explain_no_instance env (_,id) l =
   str "applied to arguments" ++ spc () ++
     pr_sequence (pr_lconstr_env env) l
 
-let is_goal_evar evi = match evi.evar_source with (_, GoalEvar) -> true | _ -> false
+let is_goal_evar evi = match evi.evar_source with (_, Evar_kinds.GoalEvar) -> true | _ -> false
 
 let pr_constraints printenv env evm =
   let evm = Evd.undefined_evars (Evarutil.nf_evar_map_undefined evm) in

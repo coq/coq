@@ -49,8 +49,8 @@ let check_evars env evm =
   (fun (key, evi) ->
    let (loc,k) = evar_source key evm in
      match k with
-     | QuestionMark _
-     | ImplicitArg (_,_,false) -> ()
+     | Evar_kinds.QuestionMark _
+     | Evar_kinds.ImplicitArg (_,_,false) -> ()
      | _ ->
        Pretype_errors.error_unsolvable_implicit loc env
          evm (Evarutil.nf_evar_info evm evi) k None)
@@ -59,9 +59,9 @@ let check_evars env evm =
 type oblinfo =
   { ev_name: int * identifier;
     ev_hyps: named_context;
-    ev_status: obligation_definition_status;
+    ev_status: Evar_kinds.obligation_definition_status;
     ev_chop: int option;
-    ev_src: hole_kind located;
+    ev_src: Evar_kinds.t located;
     ev_typ: types;
     ev_tac: tactic option;
     ev_deps: Intset.t }
@@ -252,13 +252,13 @@ let eterm_obligations env name evm fs ?status t ty =
 	   | None -> evtyp, hyps, 0
 	 in
 	 let loc, k = evar_source id evm in
-	 let status = match k with QuestionMark o -> Some o | _ -> status in
+	 let status = match k with Evar_kinds.QuestionMark o -> Some o | _ -> status in
 	 let status, chop = match status with
-	   | Some (Define true as stat) ->
-	       if chop <> fs then Define false, None
+	   | Some (Evar_kinds.Define true as stat) ->
+	       if chop <> fs then Evar_kinds.Define false, None
 	       else stat, Some chop
 	   | Some s -> s, None
-	   | None -> Define true, None
+	   | None -> Evar_kinds.Define true, None
 	 in
 	 let tac = match evar_tactic.get ev.evar_extra with
 	   | Some t ->
@@ -284,7 +284,8 @@ let eterm_obligations env name evm fs ?status t ty =
 	    ev_src = src; ev_typ = typ; ev_deps = deps; ev_tac = tac } = info
       in
       let status = match status with
-	| Define true when Idset.mem name transparent -> Define false
+	| Evar_kinds.Define true when Idset.mem name transparent ->
+	  Evar_kinds.Define false
 	| _ -> status
       in name, typ, src, status, deps, tac) evts
   in
@@ -312,15 +313,16 @@ let explain_no_obligations = function
     Some ident -> str "No obligations for program " ++ str (string_of_id ident)
   | None -> str "No obligations remaining"
 
-type obligation_info = (Names.identifier * Term.types * hole_kind located *
-			  obligation_definition_status * Intset.t * tactic option) array
+type obligation_info =
+    (Names.identifier * Term.types * Evar_kinds.t located *
+     Evar_kinds.obligation_definition_status * Intset.t * tactic option) array
 
 type obligation =
   { obl_name : identifier;
     obl_type : types;
-    obl_location : hole_kind located;
+    obl_location : Evar_kinds.t located;
     obl_body : constr option;
-    obl_status : obligation_definition_status;
+    obl_status : Evar_kinds.obligation_definition_status;
     obl_deps : Intset.t;
     obl_tac : tactic option;
   }
@@ -391,7 +393,7 @@ let evar_of_obligation o = make_evar (Global.named_context_val ()) o.obl_type
 
 let get_obligation_body expand obl =
   let c = Option.get obl.obl_body in
-    if expand && obl.obl_status = Expand then
+    if expand && obl.obl_status = Evar_kinds.Expand then
       match kind_of_term c with
       | Const c -> constant_value (Global.env ()) c
       | _ -> c
@@ -603,8 +605,8 @@ let declare_obligation prg obl body =
   let body = prg.prg_reduce body in
   let ty = prg.prg_reduce obl.obl_type in
   match obl.obl_status with
-  | Expand -> { obl with obl_body = Some body }
-  | Define opaque ->
+  | Evar_kinds.Expand -> { obl with obl_body = Some body }
+  | Evar_kinds.Define opaque ->
       let opaque = if get_proofs_transparency () then false else opaque in
       let ce = 
 	{ const_entry_body = body;
@@ -628,8 +630,9 @@ let init_prog_info n b t deps fixkind notations obls impls kind reduce hook =
 	assert(obls = [||]);
 	let n = Nameops.add_suffix n "_obligation" in
 	  [| { obl_name = n; obl_body = None;
-	       obl_location = dummy_loc, InternalHole; obl_type = t;
-	       obl_status = Expand; obl_deps = Intset.empty; obl_tac = None } |],
+	       obl_location = dummy_loc, Evar_kinds.InternalHole; obl_type = t;
+	       obl_status = Evar_kinds.Expand; obl_deps = Intset.empty;
+	       obl_tac = None } |],
 	mkVar n
     | Some b ->
 	Array.mapi
@@ -726,7 +729,7 @@ let goal_fix_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Fixp
 
 let kind_of_opacity o =
   match o with
-  | Define false | Expand -> goal_kind
+  | Evar_kinds.Define false | Evar_kinds.Expand -> goal_kind
   | _ -> goal_proof_kind
 
 let not_transp_msg =
@@ -774,10 +777,10 @@ let rec solve_obligation prg num tac =
 		  let transparent = evaluable_constant cst (Global.env ()) in
 		  let body =
 		    match obl.obl_status with
-		    | Expand ->
+		    | Evar_kinds.Expand ->
 			if not transparent then error_not_transp ()
 			else constant_value (Global.env ()) cst
-		    | Define opaque ->
+		    | Evar_kinds.Define opaque ->
 			if not opaque && not transparent then error_not_transp ()
 			else Libnames.constr_of_global gr
 		  in

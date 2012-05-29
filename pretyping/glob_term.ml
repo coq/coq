@@ -15,7 +15,6 @@ open Sign
 open Term
 open Libnames
 open Nametab
-open Evd
 (*i*)
 
 (* Untyped intermediate terms, after ASTs and before constr. *)
@@ -67,7 +66,7 @@ type glob_constr =
   | GRec of loc * fix_kind * identifier array * glob_decl list array *
       glob_constr array * glob_constr array
   | GSort of loc * glob_sort
-  | GHole of (loc * hole_kind)
+  | GHole of (loc * Evar_kinds.t)
   | GCast of loc * glob_constr * glob_constr cast_type
 
 and glob_decl = name * binding_kind * glob_constr option * glob_constr
