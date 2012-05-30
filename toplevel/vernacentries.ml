@@ -739,7 +739,7 @@ let vernac_chdir = function
   | Some path ->
       begin
 	try Sys.chdir (Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) path)
-	with Sys_error str -> warning ("Cd failed: " ^ str)
+	with Sys_error err -> msg_warning (str ("Cd failed: " ^ err))
       end;
       if_verbose message (Sys.getcwd())
 

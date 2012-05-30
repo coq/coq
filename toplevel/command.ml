@@ -91,7 +91,7 @@ let interp_definition bl red_option c ctypopt =
 	let typ = nf_evar !evdref (it_mkProd_or_LetIn ty ctx) in
 	(* Check that all implicit arguments inferable from the term is inferable from the type *)
 	if not (try List.for_all (fun (key,va) -> List.assoc key impsty = va) imps2 with Not_found -> false)
-	then warn (str "Implicit arguments declaration relies on type." ++
+	then msg_warning (str "Implicit arguments declaration relies on type." ++
 		     spc () ++ str "The term declares more implicits than the type here.");
 	imps1@(Impargs.lift_implicits nb_args impsty),
 	{ const_entry_body = body;

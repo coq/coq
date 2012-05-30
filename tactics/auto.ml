@@ -518,7 +518,7 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri ?(name=PathAny) (c,cty) 
 	else begin
 	  if not eapply then failwith "make_apply_entry";
           if verbose then
-	    warn (str "the hint: eapply " ++ pr_lconstr c ++
+	    msg_warning (str "the hint: eapply " ++ pr_lconstr c ++
 	    str " will only be used by eauto");
           (Some hd,
            { pri = (match pri with None -> nb_hyp cty + nmiss | Some p -> p);

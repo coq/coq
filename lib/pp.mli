@@ -101,8 +101,6 @@ val ppnl : std_ppcmds -> unit
 val pperr : std_ppcmds -> unit
 val pperrnl : std_ppcmds -> unit
 val message : string -> unit       (** = pPNL *)
-val warning : string -> unit
-val warn : std_ppcmds -> unit
 val pp_flush : unit -> unit
 val flush_all: unit -> unit
 

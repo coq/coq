@@ -656,7 +656,7 @@ let save_library_to dir f =
     System.marshal_out ch di;
     System.marshal_out ch table;
     close_out ch
-  with e -> warning ("Removed file "^f'); close_out ch; Sys.remove f'; raise e
+  with e -> msg_warning (str ("Removed file "^f')); close_out ch; Sys.remove f'; raise e
 
 (************************************************************************)
 (*s Display the memory use of a library. *)

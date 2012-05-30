@@ -300,7 +300,6 @@ let safe_init_constant md name () =
 let fix_proto = safe_init_constant tactics_module "fix_proto"
 let hide_obligation = safe_init_constant tactics_module "obligation"
 
-let ppwarn cmd = Pp.warn (str"Program:" ++ cmd)
 let pperror cmd = Errors.errorlabstrm "Program" cmd
 let error s = pperror (str s)
 
@@ -736,7 +735,6 @@ let not_transp_msg =
   str "Obligation should be transparent but was declared opaque." ++ spc () ++
     str"Use 'Defined' instead."
 
-let warn_not_transp () = ppwarn not_transp_msg
 let error_not_transp () = pperror not_transp_msg
 
 let rec string_of_list sep f = function

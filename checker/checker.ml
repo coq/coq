@@ -68,8 +68,8 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
 let convert_string d =
   try id_of_string d
   with _ ->
-    if_verbose warning
-      ("Directory "^d^" cannot be used as a Coq identifier (skipped)");
+    if_verbose msg_warning
+      (str ("Directory "^d^" cannot be used as a Coq identifier (skipped)"));
     flush_all ();
     failwith "caught"
 

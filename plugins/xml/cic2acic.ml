@@ -23,8 +23,8 @@ let get_module_path_of_full_path path =
     (function modul -> Libnames.is_dirpath_prefix_of modul dirpath) modules
   with
      [] ->
-       Pp.warning ("Modules not supported: reference to "^
-         Libnames.string_of_path path^" will be wrong");
+       Pp.msg_warning (Pp.str ("Modules not supported: reference to "^
+         Libnames.string_of_path path^" will be wrong"));
        dirpath
    | [modul] -> modul
    | _ ->
