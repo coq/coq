@@ -116,10 +116,6 @@ Infix "?=" := compare (at level 70, no associativity) : N_scope.
 
 (** Boolean equality and comparison *)
 
-(** Nota: this [eqb] is not convertible with the generated [N_beq],
-    since the underlying [Pos.eqb] differs from [positive_beq]
-    (cf BinIntDef). *)
-
 Fixpoint eqb n m :=
   match n, m with
     | 0, 0 => true
