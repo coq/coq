@@ -779,6 +779,5 @@ END
 VERNAC COMMAND EXTEND GrabEvars
 [ "Grab" "Existential" "Variables" ] ->
   [ let p = Proof_global.give_me_the_proof () in
-    Proof.V82.grab_evars p;
-    Flags.if_verbose (fun () -> Pp.msg (Printer.pr_open_subgoals ())) () ]
+    Proof.V82.grab_evars p ]
 END

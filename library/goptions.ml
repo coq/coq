@@ -106,7 +106,7 @@ module MakeTable =
          (fun c -> t := MySet.remove c !t))
 
     let print_table table_name printer table =
-      msg (str table_name ++
+      pp (str table_name ++
 	   (hov 0
 	      (if MySet.is_empty table then str "None" ++ fnl ()
                else MySet.fold
@@ -120,7 +120,7 @@ module MakeTable =
       method mem x =
 	let y = A.encode x in
         let answer = MySet.mem y !t in
-        msg (A.member_message y answer ++ fnl ())
+        msg_info (A.member_message y answer)
       method print = print_table A.title A.printer !t
     end
 
@@ -354,11 +354,9 @@ let print_option_value key =
   let s = read () in
   match s with
     | BoolValue b ->
-	msg (str ("The "^name^" mode is "^(if b then "on" else "off")) ++
-	     fnl ())
+	msg_info (str ("The "^name^" mode is "^(if b then "on" else "off")))
     | _ ->
-	msg (str ("Current value of "^name^" is ") ++
-	     msg_option_value (name,s) ++ fnl ())
+	msg_info (str ("Current value of "^name^" is ") ++ msg_option_value (name, s))
 
 
 let get_tables () =
@@ -380,27 +378,26 @@ let print_tables () =
     if depr then msg ++ str " [DEPRECATED]" ++ fnl ()
     else msg ++ fnl ()
   in
-  msg
-    (str "Synchronous options:" ++ fnl () ++
-     OptionMap.fold
-       (fun key (name, depr, (sync,read,_,_,_)) p ->
-	  if sync then p ++ print_option key name (read ()) depr
-	  else p)
-       !value_tab (mt ()) ++
-     str "Asynchronous options:" ++ fnl () ++
-     OptionMap.fold
-       (fun key (name, depr, (sync,read,_,_,_)) p ->
-	  if sync then p
-	  else p ++ print_option key name (read ()) depr)
-       !value_tab (mt ()) ++
-     str "Tables:" ++ fnl () ++
-     List.fold_right
-       (fun (nickkey,_) p -> p ++ str ("  "^nickkey) ++ fnl ())
-       !string_table (mt ()) ++
-     List.fold_right
-       (fun (nickkey,_) p -> p ++ str ("  "^nickkey) ++ fnl ())
-       !ref_table (mt ()) ++
-     fnl ()
-    )
+  str "Synchronous options:" ++ fnl () ++
+    OptionMap.fold
+      (fun key (name, depr, (sync,read,_,_,_)) p ->
+        if sync then p ++ print_option key name (read ()) depr
+        else p)
+      !value_tab (mt ()) ++
+  str "Asynchronous options:" ++ fnl () ++
+    OptionMap.fold
+      (fun key (name, depr, (sync,read,_,_,_)) p ->
+        if sync then p
+        else p ++ print_option key name (read ()) depr)
+      !value_tab (mt ()) ++
+  str "Tables:" ++ fnl () ++
+    List.fold_right
+      (fun (nickkey,_) p -> p ++ str ("  "^nickkey) ++ fnl ())
+      !string_table (mt ()) ++
+    List.fold_right
+      (fun (nickkey,_) p -> p ++ str ("  "^nickkey) ++ fnl ())
+      !ref_table (mt ()) ++
+    fnl ()
+
 
 

@@ -606,7 +606,6 @@ let extraction_inline b l =
 let print_extraction_inline () =
   let (i,n)= !inline_table in
   let i'= Refset'.filter (function ConstRef _ -> true | _ -> false) i in
-  msg
     (str "Extraction Inline:" ++ fnl () ++
      Refset'.fold
        (fun r p ->

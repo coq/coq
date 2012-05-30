@@ -96,6 +96,9 @@ val msgnl_with : Format.formatter -> std_ppcmds -> unit
 
 (** {6 Pretty-printing functions {% \emph{%}without flush{% }%} on [stdout] and [stderr]. } *)
 
+(** These functions are low-level interace to printing and should not be used
+    in usual code. Consider using the [msg_*] function family instead. *)
+
 val pp : std_ppcmds -> unit
 val ppnl : std_ppcmds -> unit
 val pperr : std_ppcmds -> unit
@@ -104,18 +107,21 @@ val message : string -> unit       (** = pPNL *)
 val pp_flush : unit -> unit
 val flush_all: unit -> unit
 
-(** {6 Pretty-printing functions {% \emph{%}with flush{% }%} on [stdout] and [stderr]. } *)
+(** {6 Sending messages to the user } *)
 
+val msg_info : std_ppcmds -> unit
+val msg_warning : std_ppcmds -> unit
+val msg_debug : std_ppcmds -> unit
+
+val string_of_ppcmds : std_ppcmds -> string
+
+(** {6 Deprecated functions} *)
+
+(** DEPRECATED. Do not use in newly written code. *)
 val msg : std_ppcmds -> unit
 val msgnl : std_ppcmds -> unit
 val msgerr : std_ppcmds -> unit
 val msgerrnl : std_ppcmds -> unit
-val msg_warning : std_ppcmds -> unit
-
-(** Same specific display in emacs as warning, but without the "Warning:" **)
-val msg_debug : std_ppcmds -> unit
-
-val string_of_ppcmds : std_ppcmds -> string
 
 (** {6 Location management. } *)
 

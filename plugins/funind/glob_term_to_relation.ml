@@ -16,10 +16,10 @@ let observe strm =
   if do_observe ()
   then Pp.msgnl strm
   else ()
-let observennl strm =
+(*let observennl strm =
   if do_observe ()
   then Pp.msg strm
-  else ()
+  else ()*)
 
 
 type binder_type =

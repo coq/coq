@@ -40,7 +40,7 @@ val success: state -> bool
 
 val pp: state -> Pp.std_ppcmds
 
-val pr_form : form -> unit
+val pr_form : form -> Pp.std_ppcmds
 
 val reset_info : unit -> unit
 

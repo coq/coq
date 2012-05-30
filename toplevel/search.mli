@@ -20,33 +20,28 @@ type glob_search_about_item =
   | GlobSearchSubPattern of constr_pattern
   | GlobSearchString of string
 
-val search_by_head : constr -> dir_path list * bool -> unit
-val search_rewrite : constr -> dir_path list * bool -> unit
-val search_pattern : constr -> dir_path list * bool -> unit
+type filter_function = global_reference -> env -> constr -> bool
+type display_function = global_reference -> env -> constr -> unit
+
+val search_by_head : constr -> dir_path list * bool -> std_ppcmds
+val search_rewrite : constr -> dir_path list * bool -> std_ppcmds
+val search_pattern : constr -> dir_path list * bool -> std_ppcmds
 val search_about  :
-  (bool * glob_search_about_item) list -> dir_path list * bool -> unit
+  (bool * glob_search_about_item) list -> dir_path list * bool -> std_ppcmds
 
 (** The filtering function that is by standard search facilities.
    It can be passed as argument to the raw search functions.
    It is used in pcoq. *)
 
-val filter_by_module_from_list :
-  dir_path list * bool -> global_reference -> env -> 'a -> bool
+val filter_by_module_from_list : dir_path list * bool -> filter_function
 
-val filter_blacklist : global_reference -> env -> constr -> bool
+val filter_blacklist : filter_function
 
 (** raw search functions can be used for various extensions.
    They are also used for pcoq. *)
-val gen_filtered_search : (global_reference -> env -> constr -> bool) ->
-      (global_reference -> env -> constr -> unit) -> unit
-val filtered_search : (global_reference -> env -> constr -> bool) ->
-  (global_reference -> env -> constr -> unit) -> global_reference -> unit
-val raw_pattern_search : (global_reference -> env -> constr -> bool) ->
-  (global_reference -> env -> constr -> unit) -> constr_pattern -> unit
-val raw_search_rewrite : (global_reference -> env -> constr -> bool) ->
-  (global_reference -> env -> constr -> unit) -> constr_pattern -> unit
-val raw_search_about : (global_reference -> env -> constr -> bool) ->
-  (global_reference -> env -> constr -> unit) ->
-      (bool * glob_search_about_item) list -> unit
-val raw_search_by_head : (global_reference -> env -> constr -> bool) ->
-  (global_reference -> env -> constr -> unit) -> constr_pattern -> unit
+val gen_filtered_search : filter_function -> display_function -> unit
+val filtered_search : filter_function -> display_function -> global_reference -> unit
+val raw_pattern_search : filter_function -> display_function -> constr_pattern -> unit
+val raw_search_rewrite : filter_function -> display_function -> constr_pattern -> unit
+val raw_search_about : filter_function -> display_function -> (bool * glob_search_about_item) list -> unit
+val raw_search_by_head : filter_function -> display_function -> constr_pattern -> unit

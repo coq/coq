@@ -128,10 +128,10 @@ TACTIC EXTEND closed_term
 END
 ;;
 
-TACTIC EXTEND echo
+(* TACTIC EXTEND echo
 | [ "echo" constr(t) ] ->
   [ Pp.msg (Termops.print_constr t);  Tacinterp.eval_tactic (TacId []) ]
-END;;
+END;;*)
 
 (*
 let closed_term_ast l =

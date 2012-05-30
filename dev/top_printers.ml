@@ -222,7 +222,7 @@ let constr_display csr =
     | Anonymous -> "Anonymous"
 
   in
-    msg (str (term_display csr) ++fnl ())
+  Pp.pp (str (term_display csr) ++fnl ()); Pp.pp_flush ()
 
 open Format;;
 

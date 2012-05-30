@@ -1742,8 +1742,7 @@ let add_morphism_infer glob m n =
 				   glob (ConstRef cst));
 		  declare_projection n instance_id (ConstRef cst)
 		| _ -> assert false);
-	    Pfedit.by (Tacinterp.interp <:tactic< Coq.Classes.SetoidTactics.add_morphism_tactic>>)) ();
-	Flags.if_verbose (fun x -> msg (Printer.pr_open_subgoals x)) ()
+	    Pfedit.by (Tacinterp.interp <:tactic< Coq.Classes.SetoidTactics.add_morphism_tactic>>)) ()
 
 let add_morphism glob binders m s n =
   init_setoid ();

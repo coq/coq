@@ -801,8 +801,7 @@ let rec solve_obligation prg num tac =
 	    trace (str "Started obligation " ++ int user_num ++ str "  proof: " ++
 		     Printer.pr_constr_env (Global.env ()) obl.obl_type);
 	    Pfedit.by (snd (get_default_tactic ()));
-	    Option.iter (fun tac -> Pfedit.set_end_tac (Tacinterp.interp tac)) tac;
-	    Flags.if_verbose (fun () -> msg (Printer.pr_open_subgoals ())) ()
+	    Option.iter (fun tac -> Pfedit.set_end_tac (Tacinterp.interp tac)) tac
       | l -> pperror (str "Obligation " ++ int user_num ++ str " depends on obligation(s) "
 		      ++ str (string_of_list ", " (fun x -> string_of_int (succ x)) l))
 

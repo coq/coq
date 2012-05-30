@@ -19,6 +19,7 @@ open Globnames
 open Vernacexpr
 open Mod_subst
 open Misctypes
+open Pp
 
 (** Auto and related automation tactics *)
 
@@ -124,15 +125,11 @@ val add_hints : locality_flag -> hint_db_name list -> hints_entry -> unit
 
 val prepare_hint : env -> open_constr -> constr
 
-val print_searchtable : unit -> unit
-
-val print_applicable_hint : unit -> unit
-
-val print_hint_ref : global_reference -> unit
-
-val print_hint_db_by_name : hint_db_name -> unit
-
-val print_hint_db : Hint_db.t -> unit
+val pr_searchtable : unit -> std_ppcmds
+val pr_applicable_hint : unit -> std_ppcmds
+val pr_hint_ref : global_reference -> std_ppcmds
+val pr_hint_db_by_name : hint_db_name -> std_ppcmds
+val pr_hint_db : Hint_db.t -> std_ppcmds
 
 (** [make_exact_entry pri (c, ctyp)].
    [c] is the term given as an exact proof to solve the goal;

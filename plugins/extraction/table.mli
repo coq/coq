@@ -177,7 +177,7 @@ val find_custom_match : ml_branch array -> string
 
 val extraction_language : lang -> unit
 val extraction_inline : bool -> reference list -> unit
-val print_extraction_inline : unit -> unit
+val print_extraction_inline : unit -> Pp.std_ppcmds
 val reset_extraction_inline : unit -> unit
 val extract_constant_inline :
   bool -> reference -> string list -> string -> unit

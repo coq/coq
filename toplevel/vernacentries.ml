@@ -91,8 +91,7 @@ let show_top_evars () =
   let pfts = get_pftreestate () in
   let gls = Proof.V82.subgoals pfts in
   let sigma = gls.Evd.sigma in
-  msg (pr_evars_int 1 (Evarutil.non_instantiated sigma))
-  
+  msg_info (pr_evars_int 1 (Evarutil.non_instantiated sigma))
 
 let show_prooftree () =
   (* Spiwack: proof tree is currently not working *)
@@ -102,7 +101,7 @@ let enable_goal_printing = ref true
 
 let print_subgoals () =
   if !enable_goal_printing && is_verbose ()
-  then msg (pr_open_subgoals ())
+  then msg_info (pr_open_subgoals ())
 
 let try_print_subgoals () =
   Pp.flush_all();
@@ -164,7 +163,7 @@ let show_match id =
   let pr_branch l =
     str "| " ++ hov 1 (prlist_with_sep spc str l) ++ str " =>"
   in
-  msg (v 1 (str "match # with" ++ fnl () ++
+  msg_info (v 1 (str "match # with" ++ fnl () ++
 	    prlist_with_sep fnl pr_branch patterns ++ fnl ()))
 
 (* "Print" commands *)
@@ -380,7 +379,7 @@ let vernac_end_proof = function
     admit ()
   | Proved (is_opaque,idopt) ->
     let prf = Pfedit.get_current_proof_name () in
-    if is_verbose () && !qed_display_script then (show_script (); msg (fnl()));
+    if is_verbose () && !qed_display_script then show_script ();
     begin match idopt with
     | None -> save_named is_opaque
     | Some ((_,id),None) -> save_anonymous is_opaque id
@@ -1204,13 +1203,13 @@ let vernac_check_may_eval redexp glopt rc =
   match redexp with
     | None ->
 	if !pcoq <> None then (Option.get !pcoq).print_check env j
-	else msg (print_judgment env j)
+	else msg_info (print_judgment env j)
     | Some r ->
         let (sigma',r_interp) = interp_redexp env sigma' r in
 	let redfun = fst (reduction_of_red_expr r_interp) in
 	if !pcoq <> None
 	then (Option.get !pcoq).print_eval redfun env sigma' rc j
-	else msg (print_eval redfun env sigma' rc j)
+	else msg_info (print_eval redfun env sigma' rc j)
 
 let vernac_declare_reduction locality s r =
   declare_red_expr locality s (snd (interp_redexp (Global.env()) Evd.empty r))
@@ -1222,23 +1221,23 @@ let vernac_global_check c =
   let c = interp_constr evmap env c in
   let senv = Global.safe_env() in
   let j = Safe_typing.typing senv c in
-  msg (print_safe_judgment env j)
+  msg_info (print_safe_judgment env j)
 
 let vernac_print = function
-  | PrintTables -> print_tables ()
-  | PrintFullContext-> msg (print_full_context_typ ())
-  | PrintSectionContext qid -> msg (print_sec_context_typ qid)
-  | PrintInspect n -> msg (inspect n)
+  | PrintTables -> msg_info (print_tables ())
+  | PrintFullContext-> msg_info (print_full_context_typ ())
+  | PrintSectionContext qid -> msg_info (print_sec_context_typ qid)
+  | PrintInspect n -> msg_info (inspect n)
   | PrintGrammar ent -> Metasyntax.print_grammar ent
   | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
-  | PrintModules -> msg (print_modules ())
+  | PrintModules -> msg_info (print_modules ())
   | PrintModule qid -> print_module qid
   | PrintModuleType qid -> print_modtype qid
   | PrintMLLoadPath -> Mltop.print_ml_path ()
   | PrintMLModules -> Mltop.print_ml_modules ()
   | PrintName qid ->
       if !pcoq <> None then (Option.get !pcoq).print_name qid
-      else msg (print_name qid)
+      else msg_info (print_name qid)
   | PrintGraph -> ppnl (Prettyp.print_graph())
   | PrintClasses -> ppnl (Prettyp.print_classes())
   | PrintTypeClasses -> ppnl (Prettyp.print_typeclasses())
@@ -1253,25 +1252,25 @@ let vernac_print = function
     let univ = if b then Univ.sort_universes univ else univ in
     pp (Univ.pr_universes univ)
   | PrintUniverses (b, Some s) -> dump_universes b s
-  | PrintHint r -> Auto.print_hint_ref (smart_global r)
-  | PrintHintGoal -> Auto.print_applicable_hint ()
-  | PrintHintDbName s -> Auto.print_hint_db_by_name s
+  | PrintHint r -> msg_info (Auto.pr_hint_ref (smart_global r))
+  | PrintHintGoal -> msg_info (Auto.pr_applicable_hint ())
+  | PrintHintDbName s -> msg_info (Auto.pr_hint_db_by_name s)
   | PrintRewriteHintDbName s -> Autorewrite.print_rewrite_hintdb s
-  | PrintHintDb -> Auto.print_searchtable ()
+  | PrintHintDb -> msg_info (Auto.pr_searchtable ())
   | PrintScopes ->
       pp (Notation.pr_scopes (Constrextern.without_symbols pr_lglob_constr))
   | PrintScope s ->
       pp (Notation.pr_scope (Constrextern.without_symbols pr_lglob_constr) s)
   | PrintVisibility s ->
       pp (Notation.pr_visibility (Constrextern.without_symbols pr_lglob_constr) s)
-  | PrintAbout qid -> msg (print_about qid)
-  | PrintImplicit qid -> msg (print_impargs qid)
+  | PrintAbout qid -> msg_info (print_about qid)
+  | PrintImplicit qid -> msg_info (print_impargs qid)
   | PrintAssumptions (o,r) ->
       (* Prints all the axioms and section variables used by a term *)
       let cstr = constr_of_global (smart_global r) in
       let st = Conv_oracle.get_transp_state () in
       let nassums = Assumptions.assumptions st ~add_opaque:o cstr in
-      msg (Printer.pr_assumptionset (Global.env ()) nassums)
+      msg_info (Printer.pr_assumptionset (Global.env ()) nassums)
 
 let global_module r =
   let (loc,qid) = qualid_of_reference r in
@@ -1310,15 +1309,15 @@ let vernac_search s r =
   match s with
   | SearchPattern c ->
       let (_,c) = interp_open_constr_patvar Evd.empty (Global.env()) c in
-      Search.search_pattern c r
+      msg_info (Search.search_pattern c r)
   | SearchRewrite c ->
       let _,pat = interp_open_constr_patvar Evd.empty (Global.env()) c in
-      Search.search_rewrite pat r
+      msg_info (Search.search_rewrite pat r)
   | SearchHead c ->
       let _,pat = interp_open_constr_patvar Evd.empty (Global.env()) c in
-      Search.search_by_head pat r
+      msg_info (Search.search_by_head pat r)
   | SearchAbout sl ->
-      Search.search_about (List.map (on_snd interp_search_about_item) sl) r
+      msg_info (Search.search_about (List.map (on_snd interp_search_about_item) sl) r)
 
 let vernac_locate = function
   | LocateTerm (AN qid) -> msgnl (print_located_qualid qid)
@@ -1420,7 +1419,7 @@ let vernac_unfocus () =
 let vernac_unfocused () =
   let p = Proof_global.give_me_the_proof () in
   if Proof.unfocused p then
-    msg (str"The proof is indeed fully unfocused.")
+    msg_info (str"The proof is indeed fully unfocused.")
   else
     error "The proof is not fully unfocused."
 
@@ -1458,14 +1457,14 @@ let vernac_bullet (bullet:Proof_global.Bullet.t) =
 let vernac_show = function
   | ShowGoal goalref ->
       if !pcoq <> None then (Option.get !pcoq).show_goal goalref
-      else msg (match goalref with
+      else msg_info (match goalref with
 	| OpenSubgoals -> pr_open_subgoals ()
 	| NthGoal n -> pr_nth_open_subgoal n
         | GoalId id -> pr_goal_by_id id)
   | ShowGoalImplicitly None ->
-      Constrextern.with_implicits msg (pr_open_subgoals ())
+      Constrextern.with_implicits msg_info (pr_open_subgoals ())
   | ShowGoalImplicitly (Some n) ->
-      Constrextern.with_implicits msg (pr_nth_open_subgoal n)
+      Constrextern.with_implicits msg_info (pr_nth_open_subgoal n)
   | ShowProof -> show_proof ()
   | ShowNode -> show_node ()
   | ShowScript -> show_script ()

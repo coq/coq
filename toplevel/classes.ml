@@ -305,7 +305,6 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 		else if Flags.is_auto_intros () then
 		  Pfedit.by (Refiner.tclDO len Tactics.intro);
 		(match tac with Some tac -> Pfedit.by tac | None -> ())) ();
-	       Flags.if_verbose (msg $$ Printer.pr_open_subgoals) ();
 	       id)
 	end)
 	

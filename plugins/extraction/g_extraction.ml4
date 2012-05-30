@@ -99,7 +99,7 @@ END
 
 VERNAC COMMAND EXTEND PrintExtractionInline
 | [ "Print" "Extraction" "Inline" ]
-  -> [ print_extraction_inline () ]
+  -> [ msg_info (print_extraction_inline ()) ]
 END
 
 VERNAC COMMAND EXTEND ResetExtractionInline

@@ -24,6 +24,9 @@ open Libnames
 open Globnames
 open Nametab
 
+type filter_function = global_reference -> env -> constr -> bool
+type display_function = global_reference -> env -> constr -> unit
+
 module SearchBlacklist =
   Goptions.MakeStringTable
     (struct
@@ -107,10 +110,10 @@ let rec head c =
 
 let xor a b = (a or b) & (not (a & b))
 
-let plain_display ref a c =
+let plain_display accu ref a c =
   let pc = pr_lconstr_env a c in
   let pr = pr_global ref in
-  msg (hov 2 (pr ++ str":" ++ spc () ++ pc) ++ fnl ())
+  accu := !accu ++ hov 2 (pr ++ str":" ++ spc () ++ pc) ++ fnl ()
 
 let filter_by_module (module_list:dir_path list) (accept:bool)
   (ref:global_reference) _ _ =
@@ -193,14 +196,20 @@ let raw_search search_function extra_filter display_function pat =
 	 display_function gr env typ
     ) (search_function pat)
 
-let text_pattern_search extra_filter =
-  raw_search Libtypes.search_concl extra_filter plain_display
+let text_pattern_search extra_filter pat =
+  let ans = ref (mt ()) in
+  raw_search Libtypes.search_concl extra_filter (plain_display ans) pat;
+  !ans
 
-let text_search_rewrite extra_filter =
-  raw_search (Libtypes.search_eq_concl c_eq) extra_filter plain_display
+let text_search_rewrite extra_filter pat =
+  let ans = ref (mt ()) in
+  raw_search (Libtypes.search_eq_concl c_eq) extra_filter (plain_display ans) pat;
+  !ans
 
-let text_search_by_head extra_filter =
-  raw_search Libtypes.search_head_concl extra_filter plain_display
+let text_search_by_head extra_filter pat =
+  let ans = ref (mt ()) in
+  raw_search Libtypes.search_head_concl extra_filter (plain_display ans) pat;
+  !ans
 
 let filter_by_module_from_list = function
   | [], _ -> (fun _ _ _ -> true)
@@ -244,5 +253,7 @@ let raw_search_about filter_modules display_function l =
   in
   gen_filtered_search filter display_function
 
-let search_about ref inout =
-  raw_search_about (filter_by_module_from_list inout) plain_display ref
+let search_about reference inout =
+  let ans = ref (mt ()) in
+  raw_search_about (filter_by_module_from_list inout) (plain_display ans) reference;
+  !ans

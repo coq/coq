@@ -696,14 +696,15 @@ type explanation =
 let check_disequalities state =
   let uf=state.uf in
   let rec check_aux = function
-      dis::q ->
-	debug (fun () -> msg
-	(str "Checking if " ++ pr_idx_term state dis.lhs ++ str " = " ++
-	 pr_idx_term state dis.rhs ++ str " ... ")) ();
-	if find uf dis.lhs=find uf dis.rhs then
-	  begin debug msgnl (str "Yes");Some dis end
-	else
-	  begin debug msgnl (str "No");check_aux q end
+    | dis::q ->
+        let (info, ans) =
+          if find uf dis.lhs = find uf dis.rhs then (str "Yes", Some dis)
+          else (str "No", check_aux q)
+        in
+        let _ = debug (fun () -> msg_debug
+        (str "Checking if " ++ pr_idx_term state dis.lhs ++ str " = " ++
+         pr_idx_term state dis.rhs ++ str " ... " ++ info)) () in
+        ans
     | [] -> None
   in
     check_aux state.diseq

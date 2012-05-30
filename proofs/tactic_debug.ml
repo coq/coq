@@ -60,7 +60,7 @@ let help () =
 let goal_com g tac =
   begin
     db_pr_goal g;
-    msg (str "Going to execute:" ++ fnl () ++ !prtac tac ++ fnl ())
+    msgnl (str "Going to execute:" ++ fnl () ++ !prtac tac)
   end
 
 let skipped = ref 0
@@ -105,14 +105,14 @@ let run ini =
     for i=1 to 2 do
       print_char (Char.chr 8);print_char (Char.chr 13)
     done;
-    msg (str "Executed expressions: " ++ int !skipped ++ fnl() ++ fnl())
+    msgnl (str "Executed expressions: " ++ int !skipped ++ fnl())
   end;
   incr skipped
 
 (* Prints the prompt *)
 let rec prompt level =
   begin
-    msg (fnl () ++ str "TcDebug (" ++ int level ++ str ") > ");
+    pp (fnl () ++ str "TcDebug (" ++ int level ++ str ") > ");
     flush stdout;
     let exit () = skip:=0;skipped:=0;raise Sys.Break in
     let inst = try read_line () with End_of_file -> exit () in

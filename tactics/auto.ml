@@ -411,6 +411,10 @@ module Hint_db = struct
     f None (List.map (fun x -> snd (snd x)) db.hintdb_nopat);
     Constr_map.iter (fun k (l,l',_) -> f (Some k) (List.map snd (l@l'))) db.hintdb_map
 
+  let fold f db accu =
+    let accu = f None (List.map (fun x -> snd (snd x)) db.hintdb_nopat) accu in
+    Constr_map.fold (fun k (l,l',_) -> f (Some k) (List.map snd (l@l'))) db.hintdb_map accu
+
   let transparent_state db = db.hintdb_state
 
   let set_transparent_state db st =
@@ -921,7 +925,6 @@ let pr_hint_list_for_head c =
 let pr_hint_ref ref = pr_hint_list_for_head ref
 
 (* Print all hints associated to head id in any database *)
-let print_hint_ref ref =  ppnl(pr_hint_ref ref)
 
 let pr_hint_term cl =
   try
@@ -949,53 +952,51 @@ let pr_hint_term cl =
 let error_no_such_hint_database x =
   error ("No such Hint database: "^x^".")
 
-let print_hint_term cl = ppnl (pr_hint_term cl)
-
 (* print all hints that apply to the concl of the current goal *)
-let print_applicable_hint () =
+let pr_applicable_hint () =
   let pts = get_pftreestate () in
   let glss = Proof.V82.subgoals pts in
   match glss.Evd.it with
   | [] -> Errors.error "No focused goal."
   | g::_ ->
     let gl = { Evd.it = g; sigma = glss.Evd.sigma } in
-    print_hint_term (pf_concl gl)
+    pr_hint_term (pf_concl gl)
 
 (* displays the whole hint database db *)
-let print_hint_db db =
+let pr_hint_db db =
+  let content =
+    let fold head hintlist accu =
+      let goal_descr = match head with
+      | None -> str "For any goal"
+      | Some head -> str "For " ++ pr_global head
+      in
+      let hints = pr_hint_list (List.map (fun x -> (0, x)) hintlist) in
+      let hint_descr = hov 0 (goal_descr ++ str " -> " ++ hints) in
+      accu ++ hint_descr
+    in
+    Hint_db.fold fold db (mt ())
+  in
   let (ids, csts) = Hint_db.transparent_state db in
-  msgnl (hov 0
-	  ((if Hint_db.use_dn db then str"Discriminated database"
-	    else str"Non-discriminated database")));
-  msgnl (hov 2 (str"Unfoldable variable definitions: " ++ pr_idpred ids));
-  msgnl (hov 2 (str"Unfoldable constant definitions: " ++ pr_cpred csts));
-  msgnl (hov 2 (str"Cut: " ++ pp_hints_path (Hint_db.cut db)));
-  Hint_db.iter
-    (fun head hintlist ->
-      match head with
-      | Some head ->
-	  msg (hov 0
-		  (str "For " ++ pr_global head ++ str " -> " ++
-		      pr_hint_list (List.map (fun x -> (0,x)) hintlist)))
-      | None ->
-	  msg (hov 0
-		  (str "For any goal -> " ++
-		      pr_hint_list (List.map (fun x -> (0, x)) hintlist))))
-    db
+  hov 0
+    ((if Hint_db.use_dn db then str"Discriminated database"
+      else str"Non-discriminated database")) ++ fnl () ++
+  hov 2 (str"Unfoldable variable definitions: " ++ pr_idpred ids) ++ fnl () ++
+  hov 2 (str"Unfoldable constant definitions: " ++ pr_cpred csts) ++ fnl () ++
+  hov 2 (str"Cut: " ++ pp_hints_path (Hint_db.cut db)) ++ fnl () ++
+  content
 
-let print_hint_db_by_name dbname =
+let pr_hint_db_by_name dbname =
   try
-    let db = searchtable_map dbname in print_hint_db db
+    let db = searchtable_map dbname in pr_hint_db db
   with Not_found ->
     error_no_such_hint_database dbname
 
 (* displays all the hints of all databases *)
-let print_searchtable () =
-  Hintdbmap.iter
-    (fun name db ->
-       msg (str "In the database " ++ str name ++ str ":" ++ fnl ());
-       print_hint_db db)
-    !searchtable
+let pr_searchtable () =
+  let fold name db accu =
+    str "In the database " ++ str name ++ str ":" ++ fnl () ++ pr_hint_db db
+  in
+  Hintdbmap.fold fold !searchtable (mt ())
 
 (**************************************************************************)
 (*                           Automatic tactics                            *)

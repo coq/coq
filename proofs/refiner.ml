@@ -89,7 +89,7 @@ let tclIDTAC gls = goal_goal_list gls
 
 (* the message printing identity tactic *)
 let tclIDTAC_MESSAGE s gls =
-  msg (hov 0 s); tclIDTAC gls
+  pp (hov 0 s); pp_flush (); tclIDTAC gls
 
 (* General failure tactic *)
 let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" (str s)

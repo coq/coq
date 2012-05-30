@@ -296,18 +296,16 @@ let cache_ml_module_object (_,{mnames=mnames}) =
        if not (module_is_known mname) then
 	 if has_dynlink then
            let fname = file_of_name mname in
+           let info = str"[Loading ML file " ++ str fname ++ str" ..." in
 	   try
-	     if_verbose
-	       msg (str"[Loading ML file " ++ str fname ++ str" ...");
              load_ml_object mname fname;
-             if_verbose msgnl (str" done]");
+             if_verbose msgnl (info ++ str" done]");
              add_loaded_module mname
            with e ->
-	     if_verbose msgnl (str" failed]");
+	     if_verbose msgnl (info ++ str" failed]");
 	     raise e
 	 else
-	     (if_verbose msgnl (str" failed]");
-	      error ("Dynamic link not supported (module "^name^")"))
+	      error ("Dynamic link not supported (module "^name^")")
        else init_ml_object mname)
     mnames
 

@@ -106,7 +106,8 @@ let check_one_lib admit (dir,m) =
     (Flags.if_verbose msgnl
       (str "Checking library: " ++ pr_dirpath dir);
       Safe_typing.import file md dig);
-  Flags.if_verbose msg(fnl());
+  Flags.if_verbose pp (fnl());
+  pp_flush ();
   register_loaded_library m
 
 (*************************************************************************)
@@ -287,7 +288,7 @@ let name_clash_message dir mdir f =
 let depgraph = ref LibraryMap.empty
 
 let intern_from_file (dir, f) =
-  Flags.if_verbose msg (str"[intern "++str f++str" ...");
+  Flags.if_verbose pp (str"[intern "++str f++str" ..."); pp_flush ();
   let (md,table,digest) =
     try
       let ch = with_magic_number_check raw_intern_library f in

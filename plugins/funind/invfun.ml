@@ -55,10 +55,10 @@ let observe strm =
   then Pp.msgnl strm
   else ()
 
-let observennl strm =
+(*let observennl strm =
   if do_observe ()
   then begin Pp.msg strm;Pp.pp_flush () end
-  else ()
+  else ()*)
 
 
 let do_observe_tac s tac g =

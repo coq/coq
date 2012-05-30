@@ -472,7 +472,7 @@ and pp_atom= function
   | Atom n -> int n
   | f -> str "(" ++ hv 2 (pp_form f) ++ str ")"
 
-let pr_form f = msg (pp_form f)
+let pr_form f = pp_form f
 
 let pp_intmap map =
   let pp=ref (str "") in
