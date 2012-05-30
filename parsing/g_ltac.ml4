@@ -12,6 +12,7 @@ open Tacexpr
 open Vernacexpr
 open Misctypes
 open Genredexpr
+open Tok
 
 open Pcoq
 open Pcoq.Prim

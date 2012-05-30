@@ -10,6 +10,7 @@ open Constrexpr
 open Vernacexpr
 open Locality
 open Misctypes
+open Tok
 
 open Pcoq
 open Pcoq.Tactic

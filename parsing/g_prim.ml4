@@ -8,6 +8,7 @@
 
 open Names
 open Libnames
+open Tok
 
 open Pcoq
 open Pcoq.Prim
