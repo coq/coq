@@ -183,7 +183,7 @@ Definition ltb x y :=
 
 (** Nota: [geb] and [gtb] are provided for compatibility,
   but [leb] and [ltb] should rather be used instead, since
-  more results we be available on them. *)
+  more results will be available on them. *)
 
 Definition geb x y :=
   match x ?= y with
@@ -196,10 +196,6 @@ Definition gtb x y :=
     | Gt => true
     | _ => false
   end.
-
-(** Nota: this [eqb] is not convertible with the generated [Z_beq],
-    since the underlying [Pos.eqb] differs from [positive_beq]
-    (cf BinIntDef). *)
 
 Fixpoint eqb x y :=
   match x, y with

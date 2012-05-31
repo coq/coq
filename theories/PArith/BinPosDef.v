@@ -288,9 +288,6 @@ Definition max p p' :=
 
 (** ** Boolean equality and comparisons *)
 
-(** Nota: this [eqb] is not convertible with the generated [positive_beq], due
-    to a different guard argument. We keep this version for compatibility. *)
-
 Fixpoint eqb p q {struct q} :=
   match p, q with
     | p~1, q~1 => eqb p q
