@@ -429,7 +429,7 @@ let include_dirs (inc_i,inc_r) =
     if !some_ml4file || !some_mlfile || !some_mlifile then begin
       print "OCAMLLIBS?="; print_list "\\\n  " str_i; print "\n";
     end;
-    if !some_vfile then begin
+    if !some_vfile || !some_mllibfile || !some_mlpackfile then begin
       print "COQLIBS?="; print_list "\\\n  " str_i'; print " "; print_list "\\\n  " str_r; print "\n";
       print "COQDOCLIBS?=";   print_list "\\\n  " str_r; print "\n\n";
     end
