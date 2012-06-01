@@ -2775,7 +2775,7 @@ let subst_global_reference subst =
  let subst_global ref =
   let ref',t' = subst_global subst ref in
    if not (eq_constr (constr_of_global ref') t') then
-    ppnl (str "Warning: The reference " ++ pr_global ref ++ str " is not " ++
+    msg_warning (str "The reference " ++ pr_global ref ++ str " is not " ++
           str " expanded to \"" ++ pr_lconstr t' ++ str "\", but to " ++
           pr_global ref') ;
    ref'

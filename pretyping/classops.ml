@@ -324,7 +324,7 @@ let add_coercion_in_graph (ic,source,target) =
       old_inheritance_graph
   end;
   if (!ambig_paths <> []) && is_verbose () then
-    ppnl (message_ambig !ambig_paths)
+    msg_warning (message_ambig !ambig_paths)
 
 type coercion = coe_typ * locality * bool * cl_typ * cl_typ * int
 

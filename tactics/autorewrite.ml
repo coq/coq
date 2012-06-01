@@ -91,7 +91,7 @@ let find_matches bas pat =
     List.map (fun ((_,rew), esubst, subst) -> rew) res
 
 let print_rewrite_hintdb bas =
-  ppnl (str "Database " ++ str bas ++ (Pp.cut ()) ++
+  (str "Database " ++ str bas ++ (Pp.cut ()) ++
 	   prlist_with_sep Pp.cut
 	   (fun h ->
 	     str (if h.rew_l2r then "rewrite -> " else "rewrite <- ") ++

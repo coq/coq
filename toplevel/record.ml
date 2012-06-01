@@ -123,7 +123,7 @@ let warning_or_error coe indsp err =
               (pr_id fi ++ strbrk " cannot be defined because it is not typable.")
   in
   if coe then errorlabstrm "structure" st;
-  Flags.if_verbose ppnl (hov 0 (str"Warning: " ++ st))
+  Flags.if_verbose msg_warning (hov 0 (str"Warning: " ++ st))
 
 type field_status =
   | NoProjection of name

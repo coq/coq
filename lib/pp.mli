@@ -74,38 +74,6 @@ val tb : unit -> std_ppcmds
 val close : unit -> std_ppcmds
 val tclose : unit -> std_ppcmds
 
-(** {6 Pretty-printing functions {% \emph{%}without flush{% }%}. } *)
-
-val pp_with : Format.formatter -> std_ppcmds -> unit
-val ppnl_with : Format.formatter -> std_ppcmds -> unit
-val warning_with : Format.formatter -> string -> unit
-val warn_with : Format.formatter -> std_ppcmds -> unit
-val pp_flush_with : Format.formatter -> unit -> unit
-
-val set_warning_function : (Format.formatter -> std_ppcmds -> unit) -> unit
-
-(** {6 Pretty-printing functions {% \emph{%}with flush{% }%}. } *)
-
-val msg_with : Format.formatter -> std_ppcmds -> unit
-val msgnl_with : Format.formatter -> std_ppcmds -> unit
-
-
-(** {6 ... } *)
-(** The following functions are instances of the previous ones on
-  [std_ft] and [err_ft]. *)
-
-(** {6 Pretty-printing functions {% \emph{%}without flush{% }%} on [stdout] and [stderr]. } *)
-
-(** These functions are low-level interace to printing and should not be used
-    in usual code. Consider using the [msg_*] function family instead. *)
-
-val pp : std_ppcmds -> unit
-val ppnl : std_ppcmds -> unit
-val pperr : std_ppcmds -> unit
-val pperrnl : std_ppcmds -> unit
-val pp_flush : unit -> unit
-val flush_all: unit -> unit
-
 (** {6 Sending messages to the user } *)
 
 val msg_info : std_ppcmds -> unit
@@ -164,3 +132,31 @@ val pr_enum : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 val pr_located : ('a -> std_ppcmds) -> 'a located -> std_ppcmds
 val pr_sequence : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 val surround : std_ppcmds -> std_ppcmds
+
+(** {6 Low-level pretty-printing functions {% \emph{%}without flush{% }%}. } *)
+
+val pp_with : Format.formatter -> std_ppcmds -> unit
+val ppnl_with : Format.formatter -> std_ppcmds -> unit
+val warning_with : Format.formatter -> string -> unit
+val warn_with : Format.formatter -> std_ppcmds -> unit
+val pp_flush_with : Format.formatter -> unit -> unit
+
+(** {6 Pretty-printing functions {% \emph{%}without flush{% }%} on [stdout] and [stderr]. } *)
+
+(** These functions are low-level interface to printing and should not be used
+    in usual code. Consider using the [msg_*] function family instead. *)
+
+val pp : std_ppcmds -> unit
+val ppnl : std_ppcmds -> unit
+val pperr : std_ppcmds -> unit
+val pperrnl : std_ppcmds -> unit
+val pp_flush : unit -> unit
+val flush_all: unit -> unit
+
+val set_warning_function : (Format.formatter -> std_ppcmds -> unit) -> unit
+
+(** {6 Low-level pretty-printing functions {% \emph{%}with flush{% }%}. } *)
+
+val msg_with : Format.formatter -> std_ppcmds -> unit
+val msgnl_with : Format.formatter -> std_ppcmds -> unit
+

@@ -6,6 +6,7 @@
 
  *************************************************************************)
 
+open Pp
 open Errors
 open Util
 open Const_omega
@@ -17,7 +18,7 @@ open OmegaSolver
 let debug = ref false
 
 let show_goal gl =
-  if !debug then Pp.ppnl (Tacmach.pr_gls gl); Tacticals.tclIDTAC gl
+  if !debug then (); Tacticals.tclIDTAC gl
 
 let pp i = print_int i; print_newline (); flush stdout
 
@@ -160,16 +161,15 @@ let indice = function Left x | Right x -> x
 (* Affichage de l'environnement de réification (termes et propositions) *)
 let print_env_reification env =
   let rec loop c i = function
-      [] -> Printf.printf "  ===============================\n\n"
+      [] ->  str "  ===============================\n\n"
     | t :: l ->
-	Printf.printf "  (%c%02d) := " c i;
-	Pp.ppnl (Printer.pr_lconstr t);
-	Pp.flush_all ();
-	loop c (succ i) l in
-  print_newline ();
-  Printf.printf "  ENVIRONMENT OF PROPOSITIONS :\n\n"; loop 'P' 0 env.props;
-  Printf.printf "  ENVIRONMENT OF TERMS :\n\n"; loop 'V' 0 env.terms
-
+      let s = Printf.sprintf "(%c%02d)" c i in
+      spc () ++ str s ++ str " := " ++ Printer.pr_lconstr t ++ fnl () ++
+      loop c (succ i) l
+  in
+  let prop_info = str "ENVIRONMENT OF PROPOSITIONS :" ++ fnl () ++ loop 'P' 0 env.props in
+  let term_info = str "ENVIRONMENT OF TERMS :" ++ fnl () ++ loop 'V' 0 env.terms in
+  msg_debug (prop_info ++ fnl () ++ term_info)
 
 (* \subsection{Gestion des environnements de variable pour Omega} *)
 (* generation d'identifiant d'equation pour Omega *)

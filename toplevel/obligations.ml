@@ -916,16 +916,16 @@ let show_term n =
 
 let add_definition n ?term t ?(implicits=[]) ?(kind=Global,Definition) ?tactic
     ?(reduce=reduce) ?(hook=fun _ _ -> ()) obls =
-  Flags.if_verbose pp (str (string_of_id n) ++ str " has type-checked");
+  let info = str (string_of_id n) ++ str " has type-checked" in
   let prg = init_prog_info n term t [] None [] obls implicits kind reduce hook in
   let obls,_ = prg.prg_obligations in
   if Array.length obls = 0 then (
-    Flags.if_verbose ppnl (str ".");
+    Flags.if_verbose msg_info (info ++ str ".");
     let cst = declare_definition prg in
       Defined cst)
   else (
     let len = Array.length obls in
-    let _ = Flags.if_verbose ppnl (str ", generating " ++ int len ++ str " obligation(s)") in
+    let _ = Flags.if_verbose msg_info (info ++ str ", generating " ++ int len ++ str " obligation(s)") in
       progmap_add n prg;
       let res = auto_solve_obligations (Some n) tactic in
 	match res with

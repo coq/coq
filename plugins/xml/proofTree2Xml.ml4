@@ -56,16 +56,6 @@ let constr_to_xml obj sigma env =
     Errors.anomaly
      ("Problem during the conversion of constr into XML: " ^
       Printexc.to_string e)
-(* CSC: debugging stuff
-Pp.ppnl (Pp.str "Problem during the conversion of constr into XML") ;
-Pp.ppnl (Pp.str "ENVIRONMENT:") ;
-Pp.ppnl (Printer.pr_context_of rel_env) ;
-Pp.ppnl (Pp.str "TERM:") ;
-Pp.ppnl (Printer.pr_lconstr_env rel_env obj') ;
-Pp.ppnl (Pp.str "RAW-TERM:") ;
-Pp.ppnl (Printer.pr_lconstr obj') ;
-Xml.xml_empty "MISSING TERM" [] (*; raise e*)
-*)
 ;;
 
 let first_word s =
@@ -98,20 +88,10 @@ let
  let module X = Xml in
   let ids_of_node node =
    let constr = Proof2aproof.ProofTreeHash.find proof_tree_to_constr node in
-(*
-let constr =
- try
-    Proof2aproof.ProofTreeHash.find proof_tree_to_constr node
- with _ -> Pp.ppnl (Pp.(++) (Pp.str "Node of the proof-tree that generated
-no lambda-term: ") (Refiner.print_script true (Evd.empty)
-(Global.named_context ()) node)) ; assert false (* Closed bug, should not
-happen any more *)
-in
-*)
    try
     Some (Acic.CicHash.find constr_to_ids constr)
    with _ ->
-Pp.ppnl (Pp.(++) (Pp.str
+Pp.msg_warning (Pp.(++) (Pp.str
 "The_generated_term_is_not_a_subterm_of_the_final_lambda_term")
 (Printer.pr_lconstr constr)) ;
     None

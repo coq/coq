@@ -39,7 +39,7 @@ val auto_multi_rewrite : ?conds:conditions -> string list -> Locus.clause -> tac
 
 val auto_multi_rewrite_with : ?conds:conditions -> tactic -> string list -> Locus.clause -> tactic
 
-val print_rewrite_hintdb : string -> unit
+val print_rewrite_hintdb : string -> Pp.std_ppcmds
 
 open Clenv
 

@@ -147,7 +147,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
 (try
         Typeops.judge_of_type u
  with _ -> (* Successor of a non universe-variable universe anomaly *)
- (Pp.ppnl (Pp.str "Warning: universe refresh performed!!!") ; flush stdout ) ;
+  Pp.msg_warning (Pp.str "Universe refresh performed!!!");
   Typeops.judge_of_type (Termops.new_univ ())
 )
 
@@ -239,7 +239,7 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
       in
 (*CSC: debugging stuff to be removed *)
 if Acic.CicHash.mem subterms_to_types cstr then
- (Pp.ppnl (Pp.(++) (Pp.str "DUPLICATE INSERTION: ") (Printer.pr_lconstr cstr)) ; flush stdout ) ;
+ Pp.msg_warning (Pp.(++) (Pp.str "DUPLICATE INSERTION: ") (Printer.pr_lconstr cstr));
        Acic.CicHash.add subterms_to_types cstr types ;
        E.make_judge cstr res
 

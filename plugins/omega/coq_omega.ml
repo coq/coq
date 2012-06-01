@@ -509,7 +509,6 @@ let context operation path (t : constr) =
       | ((P_TYPE :: p), LetIn (n,b,t,c)) ->
 	  (mkLetIn (n,b,loop i p t,c))
       | (p, _) ->
-	  ppnl (Printer.pr_lconstr t);
 	  failwith ("abstract_path " ^ string_of_int(List.length p))
   in
   loop 1 path t
@@ -530,7 +529,6 @@ let occurence path (t : constr) =
     | ((P_TYPE :: p), Lambda (n,term,c)) -> loop p term
     | ((P_TYPE :: p), LetIn (n,b,term,c)) -> loop p term
     | (p, _) ->
-	ppnl (Printer.pr_lconstr t);
 	failwith ("occurence " ^ string_of_int(List.length p))
   in
   loop path t

@@ -1233,20 +1233,20 @@ let vernac_print = function
   | PrintModules -> msg_info (print_modules ())
   | PrintModule qid -> print_module qid
   | PrintModuleType qid -> print_modtype qid
-  | PrintMLLoadPath -> Mltop.print_ml_path ()
-  | PrintMLModules -> Mltop.print_ml_modules ()
+  | PrintMLLoadPath -> msg_info (Mltop.print_ml_path ())
+  | PrintMLModules -> msg_info (Mltop.print_ml_modules ())
   | PrintName qid ->
       if !pcoq <> None then (Option.get !pcoq).print_name qid
       else msg_info (print_name qid)
-  | PrintGraph -> ppnl (Prettyp.print_graph())
-  | PrintClasses -> ppnl (Prettyp.print_classes())
-  | PrintTypeClasses -> ppnl (Prettyp.print_typeclasses())
-  | PrintInstances c -> ppnl (Prettyp.print_instances (smart_global c))
-  | PrintLtac qid -> ppnl (Tacinterp.print_ltac (snd (qualid_of_reference qid)))
-  | PrintCoercions -> ppnl (Prettyp.print_coercions())
+  | PrintGraph -> msg_info (Prettyp.print_graph())
+  | PrintClasses -> msg_info (Prettyp.print_classes())
+  | PrintTypeClasses -> msg_info (Prettyp.print_typeclasses())
+  | PrintInstances c -> msg_info (Prettyp.print_instances (smart_global c))
+  | PrintLtac qid -> msg_info (Tacinterp.print_ltac (snd (qualid_of_reference qid)))
+  | PrintCoercions -> msg_info (Prettyp.print_coercions())
   | PrintCoercionPaths (cls,clt) ->
-      ppnl (Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt))
-  | PrintCanonicalConversions -> ppnl (Prettyp.print_canonical_projections ())
+      msg_info (Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt))
+  | PrintCanonicalConversions -> msg_info (Prettyp.print_canonical_projections ())
   | PrintUniverses (b, None) ->
     let univ = Global.universes () in
     let univ = if b then Univ.sort_universes univ else univ in
@@ -1255,7 +1255,7 @@ let vernac_print = function
   | PrintHint r -> msg_info (Auto.pr_hint_ref (smart_global r))
   | PrintHintGoal -> msg_info (Auto.pr_applicable_hint ())
   | PrintHintDbName s -> msg_info (Auto.pr_hint_db_by_name s)
-  | PrintRewriteHintDbName s -> Autorewrite.print_rewrite_hintdb s
+  | PrintRewriteHintDbName s -> msg_info (Autorewrite.print_rewrite_hintdb s)
   | PrintHintDb -> msg_info (Auto.pr_searchtable ())
   | PrintScopes ->
       pp (Notation.pr_scopes (Constrextern.without_symbols pr_lglob_constr))

@@ -74,6 +74,5 @@ type ml_module_object = {
 
 val declare_ml_modules : Vernacexpr.locality_flag -> string list -> unit
 
-val print_ml_path : unit -> unit
-
-val print_ml_modules : unit -> unit
+val print_ml_path : unit -> Pp.std_ppcmds
+val print_ml_modules : unit -> Pp.std_ppcmds

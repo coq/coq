@@ -145,7 +145,7 @@ let debug_prompt lev g tac f =
   with e ->
     skip:=0; skipped:=0;
     if Logic.catchable_exception e then
-      ppnl (str "Level " ++ int lev ++ str ": " ++ !explain_logic_error e);
+      msg_tac_debug (str "Level " ++ int lev ++ str ": " ++ !explain_logic_error e);
     raise e
 
 (* Prints a constr *)

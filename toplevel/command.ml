@@ -380,7 +380,7 @@ let declare_mutual_inductive_with_eliminations isrecord mie impls =
 			  maybe_declare_manual_implicits false (ConstructRef (ind, succ j)) impls)
 		       constrimpls)
       impls;
-  if_verbose ppnl (minductive_message names);
+  if_verbose msg_info (minductive_message names);
   declare_default_schemes mind;
   mind
 

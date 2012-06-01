@@ -324,11 +324,11 @@ let declare_ml_modules local l =
 
 let print_ml_path () =
   let l = !coq_mlpath_copy in
-  ppnl (str"ML Load Path:" ++ fnl () ++ str"  " ++
-          hv 0 (prlist_with_sep fnl str l))
+  str"ML Load Path:" ++ fnl () ++ str"  " ++
+          hv 0 (prlist_with_sep fnl str l)
 
 	  (* Printing of loaded ML modules *)
 
 let print_ml_modules () =
   let l = get_loaded_modules () in
-  pp (str"Loaded ML Modules: " ++ pr_vertical_list str l)
+  str"Loaded ML Modules: " ++ pr_vertical_list str l
