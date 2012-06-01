@@ -16,6 +16,7 @@
 (*                                                                      *)
 (************************************************************************)
 
+open Pp
 open Mutils
 
 (**
@@ -894,10 +895,7 @@ struct
 
   let parse_expr parse_constant parse_exp ops_spec env term =
     if debug
-    then (Pp.pp (Pp.str "parse_expr: ");
-          Pp.pp (Printer.prterm term);
-          Pp.pp (Pp.str "\n");
-          Pp.pp_flush ());
+    then Pp.msg_debug (Pp.str "parse_expr: " ++ Printer.prterm term);
 
 (*
     let constant_or_variable env term =
@@ -1013,11 +1011,7 @@ struct
 
   let rconstant term = 
     if debug
-    then (Pp.pp_flush ();
-          Pp.pp (Pp.str "rconstant: ");
-          Pp.pp (Printer.prterm  term);
-          Pp.pp (Pp.str "\n");
-          Pp.pp_flush ());
+    then Pp.msg_debug (Pp.str "rconstant: " ++ Printer.prterm term ++ fnl ());
     let res = rconstant term in
       if debug then 
 	(Printf.printf "rconstant -> %a\n" pp_Rcst res ; flush stdout) ;
@@ -1057,11 +1051,7 @@ struct
 
   let  parse_arith parse_op parse_expr env cstr =
    if debug
-   then (Pp.pp_flush ();
-         Pp.pp (Pp.str "parse_arith: ");
-         Pp.pp (Printer.prterm  cstr);
-         Pp.pp (Pp.str "\n");
-         Pp.pp_flush ());
+   then Pp.msg_debug (Pp.str "parse_arith: " ++ Printer.prterm  cstr ++ fnl ());
    match kind_of_term cstr with
     | App(op,args) ->
        let (op,lhs,rhs) = parse_op (op,args) in
@@ -1645,8 +1635,6 @@ let micromega_gen
 		  (Term.mkApp(Lazy.force coq_list, [|spec.proof_typ|])) env ff'
 	      ]) gl
   with
-(*   | Failure x -> flush stdout ; Pp.pp_flush () ;
-      Tacticals.tclFAIL 0 (Pp.str x) gl *)
    | ParseError  -> Tacticals.tclFAIL 0 (Pp.str "Bad logical fragment") gl
    | CsdpNotFound -> flush stdout ; Pp.pp_flush () ;
       Tacticals.tclFAIL 0 (Pp.str 
@@ -1716,8 +1704,6 @@ let micromega_genr prover gl =
                 micromega_order_changer res' env (abstract_wrt_formula ff' ff)
               ]) gl
   with
-(*   | Failure x -> flush stdout ; Pp.pp_flush () ;
-      Tacticals.tclFAIL 0 (Pp.str x) gl *)
    | ParseError  -> Tacticals.tclFAIL 0 (Pp.str "Bad logical fragment") gl
    | CsdpNotFound -> flush stdout ; Pp.pp_flush () ;
       Tacticals.tclFAIL 0 (Pp.str 

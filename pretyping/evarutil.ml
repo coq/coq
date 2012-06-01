@@ -1679,7 +1679,7 @@ and evar_define conv_algo ?(choose=false) env evd (evk,argsv as ev) rhs =
         let ty = evi.evar_concl in
         Typing.check env evd' body ty
       with e ->
-        pperrnl
+        msg_info
           (str "Ill-typed evar instantiation: " ++ fnl() ++
            pr_evar_map evd' ++ fnl() ++
            str "----> " ++ int ev ++ str " := " ++

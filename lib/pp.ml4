@@ -328,6 +328,7 @@ let flush_all() = flush stderr; flush stdout; pp_flush()
 let msg x = msg_with !std_ft x
 let msgnl x = msgnl_with !std_ft x
 let msg_info x = msgnl x
+let msg_tactic x = msgnl x
 let msgerr x = msg_with !err_ft x
 let msgerrnl x = msgnl_with !err_ft x
 let msg_warning x = msg_warning_with !err_ft x

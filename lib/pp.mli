@@ -78,6 +78,7 @@ val tclose : unit -> std_ppcmds
 
 val msg_info : std_ppcmds -> unit
 val msg_warning : std_ppcmds -> unit
+(* val msg_tactic : std_ppcmds -> unit *)
 val msg_debug : std_ppcmds -> unit
 
 val string_of_ppcmds : std_ppcmds -> string
@@ -137,8 +138,6 @@ val surround : std_ppcmds -> std_ppcmds
 
 val pp_with : Format.formatter -> std_ppcmds -> unit
 val ppnl_with : Format.formatter -> std_ppcmds -> unit
-val warning_with : Format.formatter -> string -> unit
-val warn_with : Format.formatter -> std_ppcmds -> unit
 val pp_flush_with : Format.formatter -> unit -> unit
 
 (** {6 Pretty-printing functions {% \emph{%}without flush{% }%} on [stdout] and [stderr]. } *)
@@ -158,5 +157,4 @@ val set_warning_function : (Format.formatter -> std_ppcmds -> unit) -> unit
 (** {6 Low-level pretty-printing functions {% \emph{%}with flush{% }%}. } *)
 
 val msg_with : Format.formatter -> std_ppcmds -> unit
-val msgnl_with : Format.formatter -> std_ppcmds -> unit
 

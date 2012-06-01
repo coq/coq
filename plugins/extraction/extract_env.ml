@@ -465,7 +465,7 @@ let print_structure_to_file (fn,si,mo) dry struc =
   (* First, a dry run, for computing objects to rename or duplicate *)
   set_phase Pre;
   let devnull = formatter true None in
-  msg_with devnull (d.pp_struct struc);
+  pp_with devnull (d.pp_struct struc);
   let opened = opened_libraries () in
   (* Print the implementation *)
   let cout = if dry then None else Option.map open_out fn in
@@ -473,8 +473,8 @@ let print_structure_to_file (fn,si,mo) dry struc =
   begin try
     (* The real printing of the implementation *)
     set_phase Impl;
-    msg_with ft (d.preamble mo opened unsafe_needs);
-    msg_with ft (d.pp_struct struc);
+    pp_with ft (d.preamble mo opened unsafe_needs);
+    pp_with ft (d.pp_struct struc);
     Option.iter close_out cout;
   with e ->
     Option.iter close_out cout; raise e
@@ -487,8 +487,8 @@ let print_structure_to_file (fn,si,mo) dry struc =
        let ft = formatter false (Some cout) in
        begin try
 	 set_phase Intf;
-	 msg_with ft (d.sig_preamble mo opened unsafe_needs);
-	 msg_with ft (d.pp_sig (signature_of_structure struc));
+	 pp_with ft (d.sig_preamble mo opened unsafe_needs);
+	 pp_with ft (d.pp_sig (signature_of_structure struc));
 	 close_out cout;
        with e ->
 	 close_out cout; raise e

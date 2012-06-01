@@ -1366,7 +1366,6 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
     end;
   try
     by tclIDTAC; (* raises UserError _ if the proof is complete *)
-    if Flags.is_verbose () then (pp (Printer.pr_open_subgoals()))
   with UserError _ ->
     defined ()
 
@@ -1521,7 +1520,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
       with e ->
 	begin
 	  if do_observe ()
-	  then pperrnl (str "Cannot create equation Lemma " ++ Errors.print e)
+	  then msg_debug (str "Cannot create equation Lemma " ++ Errors.print e)
 	  else anomaly "Cannot create equation Lemma"
 	  ;
 	  true

@@ -54,9 +54,9 @@ let rec extract_signature = function
 let check_unicity s l =
   let l' = List.map (fun (l,_) -> extract_signature l) l in
   if not (Util.list_distinct l') then
-    Pp.warning_with !Pp_control.err_ft
-      ("Two distinct rules of tactic entry "^s^" have the same\n"^
-      "non-terminals in the same order: put them in distinct tactic entries")
+    Pp.msg_warning
+      (strbrk ("Two distinct rules of tactic entry "^s^" have the same "^
+      "non-terminals in the same order: put them in distinct tactic entries"))
 
 let make_clause (pt,e) =
   (make_patt pt,

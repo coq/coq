@@ -142,14 +142,6 @@ and e_my_find_search db_list local_db hdc concl =
 	   | Extern tacast -> conclPattern concl p tacast
        in
        (tac,lazy (pr_autotactic t)))
-       (*i
-	 fun gls -> pPNL (pr_autotactic t); pp_flush ();
-                     try tac gls
-		     with e when Logic.catchable_exception(e) ->
-                            (str "Fail\n";
-			     pp_flush ();
-			     raise e)
-       i*)
   in
   List.map tac_of_hint hintl
 

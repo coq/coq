@@ -1250,7 +1250,7 @@ let vernac_print = function
   | PrintUniverses (b, None) ->
     let univ = Global.universes () in
     let univ = if b then Univ.sort_universes univ else univ in
-    pp (Univ.pr_universes univ)
+    msg_info (Univ.pr_universes univ)
   | PrintUniverses (b, Some s) -> dump_universes b s
   | PrintHint r -> msg_info (Auto.pr_hint_ref (smart_global r))
   | PrintHintGoal -> msg_info (Auto.pr_applicable_hint ())
@@ -1258,11 +1258,11 @@ let vernac_print = function
   | PrintRewriteHintDbName s -> msg_info (Autorewrite.print_rewrite_hintdb s)
   | PrintHintDb -> msg_info (Auto.pr_searchtable ())
   | PrintScopes ->
-      pp (Notation.pr_scopes (Constrextern.without_symbols pr_lglob_constr))
+      msg_info (Notation.pr_scopes (Constrextern.without_symbols pr_lglob_constr))
   | PrintScope s ->
-      pp (Notation.pr_scope (Constrextern.without_symbols pr_lglob_constr) s)
+      msg_info (Notation.pr_scope (Constrextern.without_symbols pr_lglob_constr) s)
   | PrintVisibility s ->
-      pp (Notation.pr_visibility (Constrextern.without_symbols pr_lglob_constr) s)
+      msg_info (Notation.pr_visibility (Constrextern.without_symbols pr_lglob_constr) s)
   | PrintAbout qid -> msg_info (print_about qid)
   | PrintImplicit qid -> msg_info (print_impargs qid)
   | PrintAssumptions (o,r) ->
