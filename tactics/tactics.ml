@@ -782,16 +782,48 @@ let general_elim_clause elimtac (c,lbindc) elim gl =
 let general_elim with_evars c e =
   general_elim_clause (elimination_clause_scheme with_evars) c e
 
+(* Case analysis tactics *)
+
+let general_case_analysis_in_context with_evars (c,lbindc) gl =
+  let (mind,_) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+  let sort = elimination_sort_of_goal gl in
+  let elim =
+    if occur_term c (pf_concl gl) then
+      pf_apply build_case_analysis_scheme gl mind true sort
+    else
+      pf_apply build_case_analysis_scheme_default gl mind sort in
+  general_elim with_evars (c,lbindc)
+    {elimindex = None; elimbody = (elim,NoBindings)} gl
+
+let general_case_analysis with_evars (c,lbindc as cx) =
+  match kind_of_term c with
+    | Var id when lbindc = NoBindings ->
+	tclTHEN (try_intros_until_id_check id)
+	  (general_case_analysis_in_context with_evars cx)
+    | _ ->
+	general_case_analysis_in_context with_evars cx
+
+let simplest_case c = general_case_analysis false (c,NoBindings)
+
 (* Elimination tactic with bindings but using the default elimination
  * constant associated with the type. *)
 
+exception IsRecord
+
+let is_record mind = (Global.lookup_mind (fst mind)).mind_record
+
 let find_eliminator c gl =
   let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
+  if is_record ind then raise IsRecord;
   let c = lookup_eliminator ind (elimination_sort_of_goal gl) in
   {elimindex = None; elimbody = (c,NoBindings)}
 
 let default_elim with_evars (c,_ as cx) gl =
-  general_elim with_evars cx (find_eliminator c gl) gl
+  try general_elim with_evars cx (find_eliminator c gl) gl
+  with IsRecord ->
+    (* For records, induction principles aren't there by default anymore.
+       Instead, we do a case analysis instead. *)
+    general_case_analysis with_evars cx gl
 
 let elim_in_context with_evars c = function
   | Some elim ->
@@ -847,29 +879,6 @@ let elimination_in_clause_scheme with_evars ?(flags=elim_flags) id i elimclause 
 
 let general_elim_in with_evars id =
   general_elim_clause (elimination_in_clause_scheme with_evars id)
-
-(* Case analysis tactics *)
-
-let general_case_analysis_in_context with_evars (c,lbindc) gl =
-  let (mind,_) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
-  let sort = elimination_sort_of_goal gl in
-  let elim =
-    if occur_term c (pf_concl gl) then
-      pf_apply build_case_analysis_scheme gl mind true sort
-    else
-      pf_apply build_case_analysis_scheme_default gl mind sort in
-  general_elim with_evars (c,lbindc)
-    {elimindex = None; elimbody = (elim,NoBindings)} gl
-
-let general_case_analysis with_evars (c,lbindc as cx) =
-  match kind_of_term c with
-    | Var id when lbindc = NoBindings ->
-	tclTHEN (try_intros_until_id_check id)
-	  (general_case_analysis_in_context with_evars cx)
-    | _ ->
-	general_case_analysis_in_context with_evars cx
-
-let simplest_case c = general_case_analysis false (c,NoBindings)
 
 (* Apply a tactic below the products of the conclusion of a lemma *)
 
@@ -2803,7 +2812,7 @@ let guess_elim isrec hyp0 gl =
   let mind,_ = pf_reduce_to_quantified_ind gl tmptyp0 in
   let s = elimination_sort_of_goal gl in
   let elimc =
-    if isrec then lookup_eliminator mind s
+    if isrec && not (is_record mind) then lookup_eliminator mind s
     else
       if use_dependent_propositions_elimination () &&
 	dependent_no_evar (mkVar hyp0) (pf_concl gl)

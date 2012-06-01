@@ -307,8 +307,13 @@ let gl_make_case_nodep ind gl =
 let elimination_then_using tac predicate bindings c gl =
   let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   let indclause  = mk_clenv_from gl (c,t) in
-  general_elim_then_using gl_make_elim
-    true None tac predicate bindings ind indclause gl
+  let isrec,mkelim =
+    if (Global.lookup_mind (fst ind)).mind_record
+    then false,gl_make_case_dep
+    else true,gl_make_elim
+  in
+  general_elim_then_using mkelim isrec
+    None tac predicate bindings ind indclause gl
 
 let case_then_using =
   general_elim_then_using gl_make_case_dep false
