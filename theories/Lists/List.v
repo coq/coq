@@ -754,21 +754,10 @@ Section ListOps.
 
   Hypothesis eq_dec : forall (x y : A), {x = y}+{x <> y}.
 
-  Lemma list_eq_dec :
-    forall l l':list A, {l = l'} + {l <> l'}.
-  Proof.
-    induction l as [| x l IHl]; destruct l' as [| y l'].
-    left; trivial.
-    right; apply nil_cons.
-    right; unfold not; intro HF; apply (nil_cons (sym_eq HF)).
-    destruct (eq_dec x y) as [xeqy|xneqy]; destruct (IHl l') as [leql'|lneql'];
-      try (right; unfold not; intro HF; injection HF; intros; contradiction).
-    rewrite xeqy; rewrite leql'; left; trivial.
-  Qed.
-
+  Lemma list_eq_dec : forall l l':list A, {l = l'} + {l <> l'}.
+  Proof. decide equality. Defined.
 
 End ListOps.
-
 
 (***************************************************)
 (** * Applying functions to the elements of a list *)
