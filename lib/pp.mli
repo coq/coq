@@ -103,7 +103,6 @@ val pp : std_ppcmds -> unit
 val ppnl : std_ppcmds -> unit
 val pperr : std_ppcmds -> unit
 val pperrnl : std_ppcmds -> unit
-val message : string -> unit       (** = pPNL *)
 val pp_flush : unit -> unit
 val flush_all: unit -> unit
 
@@ -122,6 +121,7 @@ val msg : std_ppcmds -> unit
 val msgnl : std_ppcmds -> unit
 val msgerr : std_ppcmds -> unit
 val msgerrnl : std_ppcmds -> unit
+val message : string -> unit       (** = pPNL *)
 
 (** {6 Location management. } *)
 

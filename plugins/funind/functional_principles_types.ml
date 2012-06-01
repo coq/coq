@@ -36,7 +36,7 @@ let pr_elim_scheme el =
 
 let observe s =
   if do_observe ()
-  then Pp.msgnl s
+  then Pp.msg_debug s
 
 
 let pr_elim_scheme el =
@@ -54,7 +54,7 @@ let pr_elim_scheme el =
 
 let observe s =
   if do_observe ()
-  then Pp.msgnl s
+  then Pp.msg_debug s
 
 (*
    Transform an inductive induction principle into
@@ -394,9 +394,7 @@ let generate_functional_principle
 	     Decl_kinds.IsDefinition (Decl_kinds.Scheme)
 	    )
 	);
-	Flags.if_verbose
-	  (fun id -> Pp.msgnl (Ppconstr.pr_id id ++ str " is defined"))
-	  name;
+	Declare.definition_message name;
 	names := name :: !names
       in
       register_with_sort InProp;
@@ -676,8 +674,7 @@ let build_scheme fas =
 	 (Declare.declare_constant
 	    princ_id
 	    (Entries.DefinitionEntry def_entry,Decl_kinds.IsProof Decl_kinds.Theorem));
-       Flags.if_verbose
-	 (fun id -> Pp.msgnl (Ppconstr.pr_id id ++ str " is defined")) princ_id
+       Declare.definition_message princ_id
     )
     fas
     bodies_types;

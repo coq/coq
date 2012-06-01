@@ -126,7 +126,7 @@ open Pp
 
 VERNAC COMMAND EXTEND Show_Solver
 | [ "Show" "Obligation" "Tactic" ] -> [
-    msgnl (str"Program obligation tactic is " ++ print_default_tactic ()) ]
+    msg_info (str"Program obligation tactic is " ++ print_default_tactic ()) ]
 END
 
 VERNAC COMMAND EXTEND Show_Obligations
@@ -135,8 +135,8 @@ VERNAC COMMAND EXTEND Show_Obligations
 END
 
 VERNAC COMMAND EXTEND Show_Preterm
-| [ "Preterm" "of" ident(name) ] -> [ show_term (Some name) ]
-| [ "Preterm" ] -> [ show_term None ]
+| [ "Preterm" "of" ident(name) ] -> [ msg_info (show_term (Some name)) ]
+| [ "Preterm" ] -> [ msg_info (show_term None) ]
 END
 
 open Pp

@@ -309,9 +309,9 @@ let parse_args arglist =
 	try
 	  Stream.empty s; exit 1
 	with Stream.Failure ->
-	  msgnl (Errors.print e); exit 1
+	  pperrnl (Errors.print e); exit 1
       end
-    | e -> begin msgnl (Errors.print e); exit 1 end
+    | e -> begin pperrnl (Errors.print e); exit 1 end
 
 let init arglist =
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
@@ -344,8 +344,8 @@ let init arglist =
       outputstate ()
     with e ->
       flush_all();
-      if not !batch_mode then message "Error during initialization:";
-      msgnl (Toplevel.print_toplevel_error e);
+      if not !batch_mode then pperrnl
+        (str "Error during initialization:" ++ fnl () ++ Toplevel.print_toplevel_error e);
       exit 1
   end;
   if !batch_mode then

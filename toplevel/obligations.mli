@@ -109,7 +109,7 @@ val try_solve_obligations : Names.identifier option -> Proof_type.tactic option 
 
 val show_obligations : ?msg:bool -> Names.identifier option -> unit
 
-val show_term : Names.identifier option -> unit
+val show_term : Names.identifier option -> std_ppcmds
 
 val admit_obligations : Names.identifier option -> unit
 

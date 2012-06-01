@@ -159,9 +159,9 @@ let verbose_phrase verbch loc =
 	let s = String.create len in
         seek_in ch (fst loc);
         really_input ch s 0 len;
-        message s;
+        ppnl (str s);
         pp_flush()
-    | _ -> ()
+    | None -> ()
 
 exception End_of_input
 
@@ -194,7 +194,7 @@ let pr_new_syntax loc ocom =
   if !beautify_file then
     pp (hov 0 (comment (fst loc) ++ com ++ comment (snd loc)))
   else
-    msgnl (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
+    msg_info (hov 4 (str"New Syntax:" ++ fnl() ++ (hov 0 com)));
   States.unfreeze fs;
   Format.set_formatter_out_channel stdout
 
@@ -251,7 +251,7 @@ let rec vernac_com interpfun checknav (loc,com) =
 	  | e ->
 	      (* Anomalies are re-raised by the next line *)
 	      let msg = Errors.print_no_anomaly e in
-	      if_verbose msgnl
+	      if_verbose msg_info
 		(str "The command has indeed failed with message:" ++
 		 fnl () ++ str "=> " ++ hov 0 msg)
 	end
@@ -260,7 +260,7 @@ let rec vernac_com interpfun checknav (loc,com) =
 	  let tstart = System.get_time() in
           interp v;
 	  let tend = get_time() in
-          msgnl (str"Finished transaction in " ++
+          msg_info (str"Finished transaction in " ++
                    System.fmt_time_difference tstart tend)
 
     | VernacTimeout(n,v) ->
@@ -357,7 +357,7 @@ let compile verbosely f =
   if !Flags.xml_export then !xml_start_library ();
   let _ = load_vernac verbosely long_f_dot_v in
   if Pfedit.get_all_proof_names () <> [] then
-    (message "Error: There are pending proofs"; exit 1);
+    (pperrnl (str "Error: There are pending proofs"); exit 1);
   if !Flags.xml_export then !xml_end_library ();
   Dumpglob.end_dump_glob ();
   Library.save_library_to ldir (long_f_dot_v ^ "o")

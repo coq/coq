@@ -60,4 +60,4 @@ val extend_with_ref_list : global_reference list ->
 val extend_with_auto_hints : Auto.hint_db_name list ->
   t -> Proof_type.goal sigma -> t
 
-val print_cmap: global_reference list CM.t -> unit
+val print_cmap: global_reference list CM.t -> Pp.std_ppcmds

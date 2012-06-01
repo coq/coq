@@ -526,7 +526,7 @@ let check_positivity env_ar mind params nrecp inds =
 (************************************************************************)
 
 let check_inductive env kn mib =
-  Flags.if_verbose msgnl (str "  checking ind: " ++ pr_mind kn);
+  Flags.if_verbose ppnl (str "  checking ind: " ++ pr_mind kn); pp_flush ();
   (* check mind_constraints: should be consistent with env *)
   let env = add_constraints mib.mind_constraints env in
   (* check mind_record : TODO ? check #constructor = 1 ? *)

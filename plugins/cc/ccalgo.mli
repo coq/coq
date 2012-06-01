@@ -71,7 +71,7 @@ module Termhash : Hashtbl.S with type key = term
 
 val constr_of_term : term -> constr
 
-val debug : (Pp.std_ppcmds -> unit) -> Pp.std_ppcmds -> unit
+val debug : Pp.std_ppcmds -> unit
 
 val forest : state -> forest
 

@@ -56,7 +56,7 @@ val add_syntactic_definition : identifier -> identifier list * constr_expr ->
 
 (** Print the Camlp4 state of a grammar *)
 
-val print_grammar : string -> unit
+val pr_grammar : string -> Pp.std_ppcmds
 
 val check_infix_modifiers : syntax_modifier list -> unit
 

@@ -299,10 +299,10 @@ let cache_ml_module_object (_,{mnames=mnames}) =
            let info = str"[Loading ML file " ++ str fname ++ str" ..." in
 	   try
              load_ml_object mname fname;
-             if_verbose msgnl (info ++ str" done]");
+             if_verbose msg_info (info ++ str" done]");
              add_loaded_module mname
            with e ->
-	     if_verbose msgnl (info ++ str" failed]");
+	     if_verbose msg_info (info ++ str" failed]");
 	     raise e
 	 else
 	      error ("Dynamic link not supported (module "^name^")")

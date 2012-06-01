@@ -683,7 +683,7 @@ let  mkCaseEq a  : tactic =
 
 let case_eq_intros_rewrite x g =
   let n = nb_prod (Tacmach.pf_concl g) in
-  Pp.msgnl (Printer.pr_lconstr x); 
+  (* Pp.msgnl (Printer.pr_lconstr x); *)
   tclTHENLIST [
       mkCaseEq x;
       (fun g -> 
@@ -702,7 +702,7 @@ let rec find_a_destructable_match t =
 	  (* TODO check there is no rel n. *)
 	  raise (Found (Tacinterp.eval_tactic(<:tactic<destruct x>>)))
 	else
-	  let _ = Pp.msgnl (Printer.pr_lconstr x)  in
+	  (* let _ = Pp.msgnl (Printer.pr_lconstr x)  in *)
 	  raise (Found (case_eq_intros_rewrite x))
     | _ -> iter_constr find_a_destructable_match t
 	
@@ -714,8 +714,8 @@ let destauto t =
 
 let destauto_in id g = 
   let ctype = Tacmach.pf_type_of g (mkVar id) in
-  Pp.msgnl (Printer.pr_lconstr (mkVar id)); 
-  Pp.msgnl (Printer.pr_lconstr (ctype)); 
+(*  Pp.msgnl (Printer.pr_lconstr (mkVar id)); *)
+(*  Pp.msgnl (Printer.pr_lconstr (ctype)); *)
   destauto ctype g
 
 TACTIC EXTEND destauto

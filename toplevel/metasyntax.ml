@@ -113,36 +113,44 @@ let add_tactic_notation (n,prods,e) =
 (**********************************************************************)
 (* Printing grammar entries                                           *)
 
-let print_grammar = function
+let entry_buf = Buffer.create 64
+
+let pr_entry e =
+  let () = Buffer.clear entry_buf in
+  let ft = Format.formatter_of_buffer entry_buf in
+  let () = Gram.entry_print ft e in
+  str (Buffer.contents entry_buf)
+
+let pr_grammar = function
   | "constr" | "operconstr" | "binder_constr" ->
-      msgnl (str "Entry constr is");
-      Gram.entry_print Pcoq.Constr.constr;
-      msgnl (str "and lconstr is");
-      Gram.entry_print Pcoq.Constr.lconstr;
-      msgnl (str "where binder_constr is");
-      Gram.entry_print Pcoq.Constr.binder_constr;
-      msgnl (str "and operconstr is");
-      Gram.entry_print Pcoq.Constr.operconstr;
+      str "Entry constr is" ++ fnl () ++
+      pr_entry Pcoq.Constr.constr ++
+      str "and lconstr is" ++ fnl () ++
+      pr_entry Pcoq.Constr.lconstr ++
+      str "where binder_constr is" ++ fnl () ++
+      pr_entry Pcoq.Constr.binder_constr ++
+      str "and operconstr is" ++ fnl () ++
+      pr_entry Pcoq.Constr.operconstr
   | "pattern" ->
-      Gram.entry_print Pcoq.Constr.pattern
+      pr_entry Pcoq.Constr.pattern
   | "tactic" ->
-      msgnl (str "Entry tactic_expr is");
-      Gram.entry_print Pcoq.Tactic.tactic_expr;
-      msgnl (str "Entry binder_tactic is");
-      Gram.entry_print Pcoq.Tactic.binder_tactic;
-      msgnl (str "Entry simple_tactic is");
-      Gram.entry_print Pcoq.Tactic.simple_tactic;
+      str "Entry tactic_expr is" ++ fnl () ++
+      pr_entry Pcoq.Tactic.tactic_expr ++
+      str "Entry binder_tactic is" ++ fnl () ++
+      pr_entry Pcoq.Tactic.binder_tactic ++
+      str "Entry simple_tactic is" ++ fnl () ++
+      pr_entry Pcoq.Tactic.simple_tactic
   | "vernac" ->
-      msgnl (str "Entry vernac is");
-      Gram.entry_print Pcoq.Vernac_.vernac;
-      msgnl (str "Entry command is");
-      Gram.entry_print Pcoq.Vernac_.command;
-      msgnl (str "Entry syntax is");
-      Gram.entry_print Pcoq.Vernac_.syntax;
-      msgnl (str "Entry gallina is");
-      Gram.entry_print Pcoq.Vernac_.gallina;
-      msgnl (str "Entry gallina_ext is");
-      Gram.entry_print Pcoq.Vernac_.gallina_ext;
+      str "Entry vernac is" ++ fnl () ++
+      pr_entry Pcoq.Vernac_.vernac ++
+      str "Entry command is" ++ fnl () ++
+      pr_entry Pcoq.Vernac_.command ++
+      str "Entry syntax is" ++ fnl () ++
+      pr_entry Pcoq.Vernac_.syntax ++
+      str "Entry gallina is" ++ fnl () ++
+      pr_entry Pcoq.Vernac_.gallina ++
+      str "Entry gallina_ext is" ++ fnl () ++
+      pr_entry Pcoq.Vernac_.gallina_ext
   | _ -> error "Unknown or unprintable grammar entry."
 
 (**********************************************************************)
@@ -594,7 +602,7 @@ let is_not_small_constr = function
 let rec define_keywords_aux = function
   | GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal(IDENT k) :: l
       when is_not_small_constr e ->
-      message ("Identifier '"^k^"' now a keyword");
+      msg_info (str ("Identifier '"^k^"' now a keyword"));
       Lexer.add_keyword k;
       n1 :: GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
   | n :: l -> n :: define_keywords_aux l
@@ -603,7 +611,7 @@ let rec define_keywords_aux = function
   (* Ensure that IDENT articulation terminal symbols are keywords *)
 let define_keywords = function
   | GramConstrTerminal(IDENT k)::l ->
-      message ("Identifier '"^k^"' now a keyword");
+      msg_info (str ("Identifier '"^k^"' now a keyword"));
       Lexer.add_keyword k;
       GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
   | l -> define_keywords_aux l
@@ -857,7 +865,7 @@ let find_precedence lev etyps symbols =
 	    error "The level of the leftmost non-terminal cannot be changed."
 	| ETName | ETBigint | ETReference ->
 	    if lev = None then
-	      ([msgnl,str "Setting notation at level 0."],0)
+	      ([msg_info,str "Setting notation at level 0."],0)
 	    else
 	    if lev <> Some 0 then
 	      error "A notation starting with an atomic expression must be at level 0."
@@ -877,7 +885,7 @@ let find_precedence lev etyps symbols =
       (match list_last symbols with Terminal _ -> true |_ -> false)
       ->
       if lev = None then
-	([msgnl,str "Setting notation at level 0."], 0)
+	([msg_info,str "Setting notation at level 0."], 0)
       else [],Option.get lev
   | _ ->
       if lev = None then error "Cannot determine the level.";

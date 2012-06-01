@@ -163,7 +163,7 @@ let make_instance_ident gr =
 
 let new_instance_message ident typ def =
   Flags.if_verbose
-  msgnl (str"new instance"++spc()
+  msg_info (str"new instance"++spc()
 	 ++Nameops.pr_id ident++spc()++str":"++spc()
 	 ++pr_constr typ++spc()++str":="++spc()
 	 ++pr_constr def)
@@ -204,7 +204,7 @@ let declare_class_instance gr ctx params =
     (ce,Decl_kinds.IsDefinition Decl_kinds.Instance) in
   Typeclasses.add_instance (Typeclasses.new_instance cl (Some 100) true (ConstRef cst));
   new_instance_message ident typ def
-  with e -> msgnl (str"Error defining instance := "++pr_constr def++str" : "++pr_constr typ++str"  "++Errors.print e)
+  with e -> msg_info (str"Error defining instance := "++pr_constr def++str" : "++pr_constr typ++str"  "++Errors.print e)
 
 let rec iter_under_prod (f:rel_context->constr->unit) (ctx:rel_context) t = f ctx t;
   match kind_of_term t with

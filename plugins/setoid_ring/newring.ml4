@@ -552,7 +552,7 @@ let ring_equality (r,add,mul,opp,req) =
 		let op_morph =
 		  op_morph r add mul opp req add_m_lem mul_m_lem opp_m_lem in
 		  Flags.if_verbose
-		    msgnl
+		    msg_info
 		    (str"Using setoid \""++pr_constr req++str"\""++spc()++
 			str"and morphisms \""++pr_constr add_m_lem ++
 			str"\","++spc()++ str"\""++pr_constr mul_m_lem++
@@ -561,7 +561,7 @@ let ring_equality (r,add,mul,opp,req) =
 		  op_morph)
             | None ->
 		(Flags.if_verbose
-		    msgnl
+		    msg_info
 		    (str"Using setoid \""++pr_constr req ++str"\"" ++ spc() ++
 			str"and morphisms \""++pr_constr add_m_lem ++
 			str"\""++spc()++str"and \""++

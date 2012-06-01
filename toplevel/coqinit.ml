@@ -47,10 +47,10 @@ let load_rcfile() =
 			 " found. Skipping rcfile loading."))
 	*)
     with e ->
-      (msgnl (str"Load of rcfile failed.");
+      (msg_info (str"Load of rcfile failed.");
        raise e)
   else
-    Flags.if_verbose msgnl (str"Skipping rcfile loading.")
+    Flags.if_verbose msg_info (str"Skipping rcfile loading.")
 
 (* Puts dir in the path of ML and in the LoadPath *)
 let coq_add_path unix_path s =

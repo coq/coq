@@ -121,7 +121,7 @@ END
 
 VERNAC COMMAND EXTEND PrintExtractionBlacklist
 | [ "Print" "Extraction" "Blacklist" ]
-  -> [ print_extraction_blacklist () ]
+  -> [ msg_info (print_extraction_blacklist ()) ]
 END
 
 VERNAC COMMAND EXTEND ResetExtractionBlacklist

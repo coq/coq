@@ -44,7 +44,7 @@ let reset () =
   prune := 0
 
 let stop() =
-  msgnl (str "[Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
+  msg_debug (str "[Reds: beta=" ++ int !beta ++ str" delta=" ++ int !delta ++
 	 str" zeta=" ++ int !zeta ++ str" evar=" ++ int !evar ++
          str" iota=" ++ int !iota ++ str" prune=" ++ int !prune ++ str"]")
 

@@ -210,7 +210,7 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
                     const_entry_opaque = false } in
 		  let k = (DefinitionEntry cie,IsDefinition kind) in
 		  let kn = declare_constant ~internal:KernelSilent fid k in
-		  Flags.if_verbose message (string_of_id fid ^" is defined");
+		  Declare.definition_message fid;
 		  kn
                 with Type_errors.TypeError (ctx,te) ->
                   raise (NotDefinable (BadTypedProj (fid,ctx,te))) in

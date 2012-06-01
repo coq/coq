@@ -48,11 +48,11 @@ let pr_constr_with_binding prc (c,bl) :  Pp.std_ppcmds =
   pr_with_bindings prc prc  (c,bl)
 
 (* The local debuging mechanism *)
-let msgnl = Pp.msgnl
+(* let msgnl = Pp.msgnl *)
 
 let observe strm =
   if do_observe ()
-  then Pp.msgnl strm
+  then Pp.msg_debug strm
   else ()
 
 (*let observennl strm =

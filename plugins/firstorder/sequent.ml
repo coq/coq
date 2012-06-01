@@ -241,7 +241,7 @@ let print_cmap map=
       Ppconstr.pr_constr_expr xc ++
       cut () ++
       s in
-    msgnl (v 0
+    (v 0
 	     (str "-----" ++
 	      cut () ++
 	      CM.fold print_entry map (mt ()) ++

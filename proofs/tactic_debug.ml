@@ -33,6 +33,8 @@ let explain_logic_error = ref (fun e -> mt())
 
 let explain_logic_error_no_anomaly = ref (fun e -> mt())
 
+let msg_tac_debug s = Pp.ppnl s; Pp.pp_flush ()
+
 (* Prints the goal *)
 
 let db_pr_goal g =
@@ -44,12 +46,12 @@ let db_pr_goal g =
                    str" "  ++ pc) ++ fnl ()
 
 let db_pr_goal g =
-  msgnl (str "Goal:" ++ fnl () ++ db_pr_goal g)
+  msg_tac_debug (str "Goal:" ++ fnl () ++ db_pr_goal g)
 
 
 (* Prints the commands *)
 let help () =
-  msgnl (str "Commands: <Enter> = Continue" ++ fnl() ++
+  msg_tac_debug (str "Commands: <Enter> = Continue" ++ fnl() ++
          str "          h/? = Help" ++ fnl() ++
          str "          r <num> = Run <num> times" ++ fnl() ++
          str "          r <string> = Run up to next idtac <string>" ++ fnl() ++
@@ -60,7 +62,7 @@ let help () =
 let goal_com g tac =
   begin
     db_pr_goal g;
-    msgnl (str "Going to execute:" ++ fnl () ++ !prtac tac)
+    msg_tac_debug (str "Going to execute:" ++ fnl () ++ !prtac tac)
   end
 
 let skipped = ref 0
@@ -105,7 +107,7 @@ let run ini =
     for i=1 to 2 do
       print_char (Char.chr 8);print_char (Char.chr 13)
     done;
-    msgnl (str "Executed expressions: " ++ int !skipped ++ fnl())
+    msg_tac_debug (str "Executed expressions: " ++ int !skipped ++ fnl())
   end;
   incr skipped
 
@@ -149,14 +151,14 @@ let debug_prompt lev g tac f =
 (* Prints a constr *)
 let db_constr debug env c =
   if debug <> DebugOff & !skip = 0 & !breakpoint = None then
-    msgnl (str "Evaluated term: " ++ print_constr_env env c)
+    msg_tac_debug (str "Evaluated term: " ++ print_constr_env env c)
 
 (* Prints the pattern rule *)
 let db_pattern_rule debug num r =
   if debug <> DebugOff & !skip = 0 & !breakpoint = None then
   begin
-    msgnl (str "Pattern rule " ++ int num ++ str ":");
-    msgnl (str "|" ++ spc () ++ !prmatchrl r)
+    msg_tac_debug (str "Pattern rule " ++ int num ++ str ":" ++ fnl () ++
+      str "|" ++ spc () ++ !prmatchrl r)
   end
 
 (* Prints the hypothesis pattern identifier if it exists *)
@@ -167,39 +169,39 @@ let hyp_bound = function
 (* Prints a matched hypothesis *)
 let db_matched_hyp debug env (id,_,c) ido =
   if debug <> DebugOff & !skip = 0 & !breakpoint = None then
-    msgnl (str "Hypothesis " ++
+    msg_tac_debug (str "Hypothesis " ++
            str ((Names.string_of_id id)^(hyp_bound ido)^
                 " has been matched: ") ++ print_constr_env env c)
 
 (* Prints the matched conclusion *)
 let db_matched_concl debug env c =
   if debug <> DebugOff & !skip = 0 & !breakpoint = None then
-    msgnl (str "Conclusion has been matched: " ++ print_constr_env env c)
+    msg_tac_debug (str "Conclusion has been matched: " ++ print_constr_env env c)
 
 (* Prints a success message when the goal has been matched *)
 let db_mc_pattern_success debug =
   if debug <> DebugOff & !skip = 0 & !breakpoint = None then
-    msgnl (str "The goal has been successfully matched!" ++ fnl() ++
+    msg_tac_debug (str "The goal has been successfully matched!" ++ fnl() ++
            str "Let us execute the right-hand side part..." ++ fnl())
 
 (* Prints a failure message for an hypothesis pattern *)
 let db_hyp_pattern_failure debug env (na,hyp) =
   if debug <> DebugOff & !skip = 0 & !breakpoint = None then
-    msgnl (str ("The pattern hypothesis"^(hyp_bound na)^
+    msg_tac_debug (str ("The pattern hypothesis"^(hyp_bound na)^
                 " cannot match: ") ++
            !prmatchpatt env hyp)
 
 (* Prints a matching failure message for a rule *)
 let db_matching_failure debug =
   if debug <> DebugOff & !skip = 0 & !breakpoint = None then
-    msgnl (str "This rule has failed due to matching errors!" ++ fnl() ++
+    msg_tac_debug (str "This rule has failed due to matching errors!" ++ fnl() ++
            str "Let us try the next one...")
 
 (* Prints an evaluation failure message for a rule *)
 let db_eval_failure debug s =
   if debug <> DebugOff & !skip = 0 & !breakpoint = None then
     let s = str "message \"" ++ s ++ str "\"" in
-    msgnl
+    msg_tac_debug
       (str "This rule has failed due to \"Fail\" tactic (" ++
        s ++ str ", level 0)!" ++ fnl() ++ str "Let us try the next one...")
 
@@ -207,8 +209,8 @@ let db_eval_failure debug s =
 let db_logic_failure debug err =
   if debug <> DebugOff & !skip = 0 & !breakpoint = None then
   begin
-    msgnl (!explain_logic_error err);
-    msgnl (str "This rule has failed due to a logic error!" ++ fnl() ++
+    msg_tac_debug (!explain_logic_error err);
+    msg_tac_debug (str "This rule has failed due to a logic error!" ++ fnl() ++
            str "Let us try the next one...")
   end
 

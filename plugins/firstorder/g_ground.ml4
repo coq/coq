@@ -65,7 +65,7 @@ END
 
 VERNAC COMMAND EXTEND Firstorder_Print_Solver
 | [ "Print" "Firstorder" "Solver" ] -> [
-    Pp.msgnl
+    Pp.msg_info
       (Pp.(++) (Pp.str"Firstorder solver tactic is ") (print_default_solver ())) ]
 END
 

@@ -285,7 +285,7 @@ let rtauto_tac gls=
     begin
       reset_info ();
       if !verbose then
-	msgnl (str "Starting proof-search ...");
+	msg_info (str "Starting proof-search ...");
     end in
   let search_start_time = System.get_time () in
   let prf =
@@ -295,10 +295,10 @@ let rtauto_tac gls=
   let search_end_time = System.get_time () in
   let _ = if !verbose then
     begin
-      msgnl (str "Proof tree found in " ++
+      msg_info (str "Proof tree found in " ++
 	     System.fmt_time_difference search_start_time search_end_time);
       pp_info ();
-      msgnl (str "Building proof term ... ")
+      msg_info (str "Building proof term ... ")
     end in
   let build_start_time=System.get_time () in
   let _ = step_count := 0; node_count := 0 in
@@ -311,7 +311,7 @@ let rtauto_tac gls=
   let build_end_time=System.get_time () in
   let _ = if !verbose then
     begin
-      msgnl (str "Proof term built in " ++
+      msg_info (str "Proof term built in " ++
 	     System.fmt_time_difference build_start_time build_end_time ++
 	     fnl () ++
 	     str "Proof size : " ++ int !step_count ++
@@ -328,9 +328,9 @@ let rtauto_tac gls=
       Tactics.exact_no_check term gls in
   let tac_end_time = System.get_time () in
   let _ =
-    if !check then msgnl (str "Proof term type-checking is on");
+    if !check then msg_info (str "Proof term type-checking is on");
     if !verbose then
-      msgnl (str "Internal tactic executed in " ++
+      msg_info (str "Internal tactic executed in " ++
 	     System.fmt_time_difference tac_start_time tac_end_time) in
     result
 

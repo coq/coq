@@ -153,9 +153,8 @@ open Declarations
 open Entries
 open Decl_kinds
 open Declare
-let definition_message id =
-  Flags.if_verbose message ((string_of_id id) ^ " is defined")
 
+let definition_message = Declare.definition_message
 
 let save with_clean id const (locality,kind) hook =
   let {const_entry_body = pft;

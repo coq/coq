@@ -58,10 +58,11 @@ open Miscops
 open Locus
 
 let safe_msgnl s =
-    try msgnl s with e ->
-      msgnl
-	(str "bug in the debugger: " ++
-         str "an exception is raised while printing debug information")
+  let _ =
+    try ppnl s with e ->
+    ppnl (str "bug in the debugger: an exception is raised while printing debug information")
+  in
+  pp_flush () 
 
 let error_syntactic_metavariables_not_allowed loc =
   user_err_loc
@@ -3148,7 +3149,7 @@ let add_tacdef local isrec tacl =
     | _ -> Lib.add_anonymous_leaf (inMD (local,gtacl)) in
   List.iter
     (fun (id,b,_) ->
-      Flags.if_verbose msgnl (Libnames.pr_reference id ++
+      Flags.if_verbose msg_info (Libnames.pr_reference id ++
 				 (if b then str " is redefined"
 				   else str " is defined")))
     tacl

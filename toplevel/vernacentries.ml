@@ -71,7 +71,7 @@ let show_proof () =
   (* spiwack: this would probably be cooler with a bit of polishing. *)
   let p = Proof_global.give_me_the_proof () in
   let pprf = Proof.partial_proof p in
-  msgnl (Pp.prlist_with_sep Pp.fnl Printer.pr_constr pprf)
+  msg_info (Pp.prlist_with_sep Pp.fnl Printer.pr_constr pprf)
 
 let show_node () =
   (* spiwack: I'm have little clue what this function used to do. I deactivated it, 
@@ -81,10 +81,10 @@ let show_node () =
 let show_script () =
   let prf = Pfedit.get_current_proof_name () in
   let cmds = Backtrack.get_script prf in
-  msgnl (Pp.prlist_with_sep Pp.fnl Ppvernac.pr_vernac cmds)
+  msg_info (Pp.prlist_with_sep Pp.fnl Ppvernac.pr_vernac cmds)
 
 let show_thesis () =
-     msgnl (anomaly "TODO" )
+     msg_info (anomaly "TODO" )
 
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
@@ -118,12 +118,12 @@ let show_intro all =
   if all
   then
     let lid = Tactics.find_intro_names l gl in
-    msgnl (hov 0 (prlist_with_sep  spc pr_id lid))
+    msg_info (hov 0 (prlist_with_sep  spc pr_id lid))
   else
     try
       let n = list_last l in
-      msgnl (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
-    with Failure "list_last" -> message ""
+      msg_info (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
+    with Failure "list_last" -> ()
 
 (** Prepare a "match" template for a given inductive type.
     For each branch of the match, we list the constructor name
@@ -176,7 +176,7 @@ let print_loadpath dir =
   let l = match dir with
     | None -> l
     | Some dir -> List.filter (fun (s,l) -> is_dirpath_prefix_of dir l) l in
-  msgnl (Pp.t (str "Logical Path:                 " ++
+  msg_info (Pp.t (str "Logical Path:                 " ++
 		 tab () ++ str "Physical path:" ++ fnl () ++
 		 prlist_with_sep fnl print_path_entry l))
 
@@ -199,23 +199,23 @@ let print_module r =
     let globdir = Nametab.locate_dir qid in
       match globdir with
 	  DirModule (dirpath,(mp,_)) ->
-	    msgnl (Printmod.print_module (Printmod.printable_body dirpath) mp)
+	    msg_info (Printmod.print_module (Printmod.printable_body dirpath) mp)
 	| _ -> raise Not_found
   with
-      Not_found -> msgnl (str"Unknown Module " ++ pr_qualid qid)
+      Not_found -> msg_info (str"Unknown Module " ++ pr_qualid qid)
 
 let print_modtype r =
   let (loc,qid) = qualid_of_reference r in
   try
     let kn = Nametab.locate_modtype qid in
-    msgnl (Printmod.print_modtype kn)
+    msg_info (Printmod.print_modtype kn)
   with Not_found ->
     (* Is there a module of this name ? If yes we display its type *)
     try
       let mp = Nametab.locate_module qid in
-      msgnl (Printmod.print_module false mp)
+      msg_info (Printmod.print_module false mp)
     with Not_found ->
-      msgnl (str"Unknown Module Type or Module " ++ pr_qualid qid)
+      msg_info (str"Unknown Module Type or Module " ++ pr_qualid qid)
 
 let dump_universes_gen g s =
   let output = open_out s in
@@ -249,7 +249,7 @@ let dump_universes_gen g s =
   try
     Univ.dump_universes output_constraint g;
     close ();
-    msgnl (str ("Universes written to file \""^s^"\"."))
+    msg_info (str ("Universes written to file \""^s^"\"."))
   with
       e -> close (); raise e
 
@@ -263,15 +263,15 @@ let dump_universes sorted s =
 
 let locate_file f =
   let _,file = System.find_file_in_path ~warn:false (Library.get_load_paths ()) f in
-  msgnl (str file)
+  msg_info (str file)
 
 let msg_found_library = function
   | Library.LibLoaded, fulldir, file ->
-      msgnl (hov 0
+      msg_info (hov 0
 	(pr_dirpath fulldir ++ strbrk " has been loaded from file " ++
 	 str file))
   | Library.LibInPath, fulldir, file ->
-      msgnl (hov 0
+      msg_info (hov 0
 	(pr_dirpath fulldir ++ strbrk " is bound to file " ++ str file))
 let msg_notfound_library loc qid = function
   | Library.LibUnmappedDir ->
@@ -280,7 +280,7 @@ let msg_notfound_library loc qid = function
         strbrk "Cannot find a physical path bound to logical path " ++
            pr_dirpath dir ++ str".")
   | Library.LibNotFound ->
-      msgnl (hov 0
+      msg_info (hov 0
 	(strbrk "Unable to locate library " ++ pr_qualid qid ++ str"."))
   | e -> assert false
 
@@ -300,11 +300,11 @@ let print_located_module r =
 	str "No module is referred to by basename "
       else
 	str "No module is referred to by name ") ++ pr_qualid qid
-  in msgnl msg
+  in msg_info msg
 
 let print_located_tactic r =
   let (loc,qid) = qualid_of_reference r in
-  msgnl
+  msg_info
     (try
       str "Ltac " ++
       pr_path (Nametab.path_of_tactic (Nametab.locate_tactic qid))
@@ -494,7 +494,7 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast =
     id binders_ast (Enforce mty_ast) []
   in
     Dumpglob.dump_moddef loc mp "mod";
-    if_verbose message ("Module "^ string_of_id id ^" is declared");
+    if_verbose msg_info (str ("Module "^ string_of_id id ^" is declared"));
     Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
 
 let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
@@ -514,8 +514,8 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
 	 id binders_ast mty_ast_o
        in
 	 Dumpglob.dump_moddef loc mp "mod";
-	 if_verbose message
-	   ("Interactive Module "^ string_of_id id ^" started") ;
+	 if_verbose msg_info
+	   (str ("Interactive Module "^ string_of_id id ^" started"));
          List.iter
            (fun (export,id) ->
              Option.iter
@@ -535,15 +535,15 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
 	  id binders_ast mty_ast_o mexpr_ast_l
        in
 	 Dumpglob.dump_moddef loc mp "mod";
-	 if_verbose message
-	   ("Module "^ string_of_id id ^" is defined");
+	 if_verbose msg_info
+	   (str ("Module "^ string_of_id id ^" is defined"));
          Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)])
            export
 
 let vernac_end_module export (loc,id as lid) =
   let mp = Declaremods.end_module () in
   Dumpglob.dump_modref loc mp "mod";
-  if_verbose message ("Module "^ string_of_id id ^" is defined") ;
+  if_verbose msg_info (str ("Module "^ string_of_id id ^" is defined"));
   Option.iter (fun export -> vernac_import export [Ident lid]) export
 
 let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
@@ -562,8 +562,8 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
        let mp = Declaremods.start_modtype
 	 Modintern.interp_modtype id binders_ast mty_sign in
         Dumpglob.dump_moddef loc mp "modtype";
-	if_verbose message
-	  ("Interactive Module Type "^ string_of_id id ^" started");
+	if_verbose msg_info
+	  (str ("Interactive Module Type "^ string_of_id id ^" started"));
         List.iter
          (fun (export,id) ->
            Option.iter
@@ -582,13 +582,13 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
           Modintern.interp_modexpr_or_modtype
 	  id binders_ast mty_sign mty_ast_l in
           Dumpglob.dump_moddef loc mp "modtype";
-	  if_verbose message
-	    ("Module Type "^ string_of_id id ^" is defined")
+	  if_verbose msg_info
+	    (str ("Module Type "^ string_of_id id ^" is defined"))
 
 let vernac_end_modtype (loc,id) =
   let mp = Declaremods.end_modtype () in
   Dumpglob.dump_modref loc mp "modtype";
-  if_verbose message ("Module Type "^ string_of_id id ^" is defined")
+  if_verbose msg_info (str ("Module Type "^ string_of_id id ^" is defined"))
 
 let vernac_include l =
   Declaremods.declare_include Modintern.interp_modexpr_or_modtype l
@@ -637,7 +637,7 @@ let vernac_coercion stre ref qids qidt =
   let source = cl_of_qualid qids in
   let ref' = smart_global ref in
   Class.try_add_new_coercion_with_target ref' stre ~source ~target;
-  if_verbose msgnl (pr_global ref' ++ str " is now a coercion")
+  if_verbose msg_info (pr_global ref' ++ str " is now a coercion")
 
 let vernac_identity_coercion stre id qids qidt =
   let target = cl_of_qualid qidt in
@@ -734,13 +734,13 @@ let vernac_declare_ml_module local l =
 				    l)
 
 let vernac_chdir = function
-  | None -> message (Sys.getcwd())
+  | None -> msg_info (str (Sys.getcwd()))
   | Some path ->
       begin
 	try Sys.chdir (Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) path)
 	with Sys_error err -> msg_warning (str ("Cd failed: " ^ err))
       end;
-      if_verbose message (Sys.getcwd())
+      if_verbose msg_info (str (Sys.getcwd()))
 
 
 (********************)
@@ -1228,7 +1228,7 @@ let vernac_print = function
   | PrintFullContext-> msg_info (print_full_context_typ ())
   | PrintSectionContext qid -> msg_info (print_sec_context_typ qid)
   | PrintInspect n -> msg_info (inspect n)
-  | PrintGrammar ent -> Metasyntax.print_grammar ent
+  | PrintGrammar ent -> msg_info (Metasyntax.pr_grammar ent)
   | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
   | PrintModules -> msg_info (print_modules ())
   | PrintModule qid -> print_module qid
@@ -1320,9 +1320,9 @@ let vernac_search s r =
       msg_info (Search.search_about (List.map (on_snd interp_search_about_item) sl) r)
 
 let vernac_locate = function
-  | LocateTerm (AN qid) -> msgnl (print_located_qualid qid)
+  | LocateTerm (AN qid) -> msg_info (print_located_qualid qid)
   | LocateTerm (ByNotation (_,ntn,sc)) ->
-      ppnl
+      msg_info
         (Notation.locate_notation
           (Constrextern.without_symbols pr_lglob_constr) ntn sc)
   | LocateLibrary qid -> print_located_library qid
@@ -1374,20 +1374,20 @@ let vernac_abort = function
   | None ->
       Backtrack.mark_unreachable [Pfedit.get_current_proof_name ()];
       delete_current_proof ();
-      if_verbose message "Current goal aborted";
+      if_verbose msg_info (str "Current goal aborted");
       if !pcoq <> None then (Option.get !pcoq).abort ""
   | Some id ->
       Backtrack.mark_unreachable [snd id];
       delete_proof id;
       let s = string_of_id (snd id) in
-      if_verbose message ("Goal "^s^" aborted");
+      if_verbose msg_info (str ("Goal "^s^" aborted"));
       if !pcoq <> None then (Option.get !pcoq).abort s
 
 let vernac_abort_all () =
   if refining() then begin
     Backtrack.mark_unreachable (Pfedit.get_all_proof_names ());
     delete_all_proofs ();
-    message "Current goals aborted"
+    msg_info (str "Current goals aborted")
   end else
     error "No proof-editing in progress."
 
@@ -1471,7 +1471,7 @@ let vernac_show = function
   | ShowExistentials -> show_top_evars ()
   | ShowTree -> show_prooftree ()
   | ShowProofNames ->
-      msgnl (pr_sequence pr_id (Pfedit.get_all_proof_names()))
+      msg_info (pr_sequence pr_id (Pfedit.get_all_proof_names()))
   | ShowIntros all -> show_intro all
   | ShowMatch id -> show_match id
   | ShowThesis -> show_thesis ()
@@ -1489,7 +1489,7 @@ let vernac_check_guard () =
     with UserError(_,s) ->
       (str ("Condition violated: ") ++s)
   in
-  msgnl message
+  msg_info message
 
 let interp c = match c with
   (* Control (done in vernac) *)
@@ -1590,7 +1590,7 @@ let interp c = match c with
   | VernacPrint p -> vernac_print p
   | VernacSearch (s,r) -> vernac_search s r
   | VernacLocate l -> vernac_locate l
-  | VernacComments l -> if_verbose message ("Comments ok\n")
+  | VernacComments l -> if_verbose msg_info (str "Comments ok\n")
   | VernacNop -> ()
 
   (* Proof management *)

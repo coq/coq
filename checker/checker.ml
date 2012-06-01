@@ -292,7 +292,7 @@ let parse_args argv =
 
     | "-coqlib" :: s :: rem ->
       if not (exists_dir s) then 
-	(msgnl (str ("Directory '"^s^"' does not exist")); exit 1);
+	(pperrnl (str ("Directory '"^s^"' does not exist")); exit 1);
       Flags.coqlib := s;
       Flags.coqlib_spec := true;
       parse rem
@@ -332,7 +332,7 @@ let parse_args argv =
         Flags.make_silent true; parse rem
 
     | s :: _ when s<>"" && s.[0]='-' ->
-        msgnl (str "Unknown option " ++ str s); exit 1
+        pperrnl (str "Unknown option " ++ str s); exit 1
     | s :: rem ->  add_compile s; parse rem
   in
   try
@@ -342,9 +342,9 @@ let parse_args argv =
 	try
 	  Stream.empty s; exit 1
 	with Stream.Failure ->
-	  msgnl (explain_exn e); exit 1
+	  pperrnl (explain_exn e); exit 1
       end
-    | e -> begin msgnl (explain_exn e); exit 1 end
+    | e -> begin pperrnl (explain_exn e); exit 1 end
 
 
 (* To prevent from doing the initialization twice *)
@@ -361,8 +361,7 @@ let init_with_argv argv =
       engage ();
     with e ->
       flush_all();
-      message "Error during initialization :";
-      msgnl (explain_exn e);
+      pperrnl (str "Error during initialization :" ++ (explain_exn e));
       exit 1
   end
 

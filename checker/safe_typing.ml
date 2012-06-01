@@ -182,7 +182,7 @@ let stamp_library file digest = ()
    warning is issued in case of mismatch *)
 let import file (dp,mb,depends,engmt as vo) digest =
   Validate.apply !Flags.debug val_vo vo;
-  Flags.if_verbose msgnl (str "*** vo structure validated ***");
+  Flags.if_verbose ppnl (str "*** vo structure validated ***"); pp_flush ();
   let env = !genv in
   check_imports msg_warning dp env depends;
   check_engagement env engmt;

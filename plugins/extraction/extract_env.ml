@@ -420,8 +420,9 @@ let print_one_decl struc mp decl =
   ignore (d.pp_struct struc);
   set_phase Impl;
   push_visible mp [];
-  msgnl (d.pp_decl decl);
-  pop_visible ()
+  let ans = d.pp_decl decl in
+  pop_visible ();
+  ans
 
 (*s Extraction of a ml struct to a file. *)
 
@@ -496,7 +497,7 @@ let print_structure_to_file (fn,si,mo) dry struc =
     (if dry then None else si);
   (* Print the buffer content via Coq standard formatter (ok with coqide). *)
   if Buffer.length buf <> 0 then begin
-    Pp.message (Buffer.contents buf);
+    Pp.msg_info (str (Buffer.contents buf));
     Buffer.reset buf
   end
 
@@ -580,9 +581,13 @@ let simple_extraction r = match locate_ref [r] with
       let struc = optimize_struct ([r],[]) (mono_environment [r] []) in
       let d = get_decl_in_structure r struc in
       warns ();
-      if is_custom r then msgnl (str "(** User defined extraction *)");
-      print_one_decl struc (modpath_of_r r) d;
-      reset ()
+      let flag =
+        if is_custom r then str "(** User defined extraction *)" ++ fnl()
+        else mt ()
+      in
+      let ans = flag ++ print_one_decl struc (modpath_of_r r) d in
+      reset ();
+      Pp.msg_info ans
   | _ -> assert false
 
 

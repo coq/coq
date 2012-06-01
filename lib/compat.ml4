@@ -109,7 +109,7 @@ module type GrammarSig = sig
   val action : 'a -> action
   val entry_create : string -> 'a entry
   val entry_parse : 'a entry -> parsable -> 'a
-  val entry_print : 'a entry -> unit
+  val entry_print : Format.formatter -> 'a entry -> unit
   val srules' : production_rule list -> symbol
   val parse_tokens_after_filter : 'a entry -> Tok.t Stream.t -> 'a
 end
@@ -129,9 +129,9 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
   let entry_create = Entry.create
   let entry_parse = Entry.parse
 IFDEF CAMLP5_6_02_1 THEN
-  let entry_print x = Entry.print !Pp_control.std_ft x
+  let entry_print ft x = Entry.print ft x
 ELSE
-  let entry_print = Entry.print
+  let entry_print _ x = Entry.print x
 END
   let srules' = Gramext.srules
   let parse_tokens_after_filter = Entry.parse_token
@@ -149,7 +149,7 @@ module type GrammarSig = sig
   val action : 'a -> action
   val entry_create : string -> 'a entry
   val entry_parse : 'a entry -> parsable -> 'a
-  val entry_print : 'a entry -> unit
+  val entry_print : Format.formatter -> 'a entry -> unit
   val srules' : production_rule list -> symbol
 end
 
@@ -162,7 +162,7 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
   let action = Action.mk
   let entry_create = Entry.mk
   let entry_parse e s = parse e (*FIXME*)Loc.ghost s
-  let entry_print x = Entry.print !Pp_control.std_ft x
+  let entry_print ft x = Entry.print ft x
   let srules' = srules (entry_create "dummy")
 end
 

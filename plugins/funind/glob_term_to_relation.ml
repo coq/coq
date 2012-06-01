@@ -14,7 +14,7 @@ open Misctypes
 
 let observe strm =
   if do_observe ()
-  then Pp.msgnl strm
+  then Pp.msg_debug strm
   else ()
 (*let observennl strm =
   if do_observe ()

@@ -26,7 +26,7 @@ let refresh_arity ar =
     | _ -> ar, Univ.empty_constraint
 
 let check_constant_declaration env kn cb =
-  Flags.if_verbose msgnl (str "  checking cst: " ++ prcon kn);
+  Flags.if_verbose ppnl (str "  checking cst: " ++ prcon kn);
 (*  let env = add_constraints cb.const_constraints env in*)
   let env' = check_named_ctxt env cb.const_hyps in
   (match cb.const_type with

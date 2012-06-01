@@ -105,8 +105,8 @@ let open_trapping_failure name =
 
 let try_remove filename =
   try Sys.remove filename
-  with _ -> msgnl (str"Warning: " ++ str"Could not remove file " ++
-                   str filename ++ str" which is corrupted!" )
+  with _ -> msg_warning
+    (str"Could not remove file " ++ str filename ++ str" which is corrupted!")
 
 let marshal_out ch v = Marshal.to_channel ch v []
 let marshal_in ch =

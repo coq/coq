@@ -99,11 +99,11 @@ let check_one_lib admit (dir,m) =
      also check if it carries a validation certificate (yet to
      be implemented). *)
   if LibrarySet.mem dir admit then
-    (Flags.if_verbose msgnl
+    (Flags.if_verbose ppnl
       (str "Admitting library: " ++ pr_dirpath dir);
       Safe_typing.unsafe_import file md dig)
   else
-    (Flags.if_verbose msgnl
+    (Flags.if_verbose ppnl
       (str "Checking library: " ++ pr_dirpath dir);
       Safe_typing.import file md dig);
   Flags.if_verbose pp (fnl());
@@ -159,7 +159,7 @@ let remove_load_path dir =
 
 let add_load_path (phys_path,coq_path) =
   if !Flags.debug then
-    msgnl (str "path: " ++ pr_dirpath coq_path ++ str " ->" ++ spc() ++
+    ppnl (str "path: " ++ pr_dirpath coq_path ++ str " ->" ++ spc() ++
            str phys_path);
   let phys_path = canonical_path_name phys_path in
     match list_filter2 (fun p d -> p = phys_path) !load_paths with
@@ -299,9 +299,9 @@ let intern_from_file (dir, f) =
       if dir <> md.md_name then
         errorlabstrm "load_physical_library"
           (name_clash_message dir md.md_name f);
-      Flags.if_verbose msgnl(str" done]");
+      Flags.if_verbose ppnl (str" done]");
       md,table,digest
-    with e -> Flags.if_verbose msgnl(str" failed!]"); raise e in
+    with e -> Flags.if_verbose ppnl (str" failed!]"); raise e in
   depgraph := LibraryMap.add md.md_name md.md_deps !depgraph;
   mk_library md f table digest
 
@@ -360,11 +360,11 @@ let recheck_library ~norec ~admit ~check =
   let nochk =
     List.fold_right LibrarySet.remove (List.map fst (nrl@ml)) nochk in
   (* *)
-  Flags.if_verbose msgnl (fnl()++hv 2 (str "Ordered list:" ++ fnl() ++
+  Flags.if_verbose ppnl (fnl()++hv 2 (str "Ordered list:" ++ fnl() ++
     prlist
     (fun (dir,_) -> pr_dirpath dir ++ fnl()) needed));
   List.iter (check_one_lib nochk) needed;
-  Flags.if_verbose msgnl(str"Modules were successfully checked")
+  Flags.if_verbose ppnl (str"Modules were successfully checked")
 
 open Printf
 

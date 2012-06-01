@@ -299,9 +299,8 @@ let try_add_new_coercion_with_source ref stre ~source =
 
 let add_coercion_hook stre ref =
   try_add_new_coercion ref stre;
-  Flags.if_verbose message
-    (string_of_qualid (shortest_qualid_of_global Idset.empty ref)
-    ^ " is now a coercion")
+  Flags.if_verbose msg_info
+    (pr_global_env Idset.empty ref ++ str " is now a coercion")
 
 let add_subclass_hook stre ref =
   let cl = class_of_global ref in

@@ -430,8 +430,8 @@ let check_loaded_modfile mp = match base_mp mp with
   | _ -> ()
 
 let info_file f =
-  Flags.if_verbose message
-    ("The file "^f^" has been created by extraction.")
+  Flags.if_verbose msg_info
+    (str ("The file "^f^" has been created by extraction."))
 
 
 (*S The Extraction auxiliary commands *)
@@ -738,8 +738,7 @@ let extraction_blacklist l =
 (* Printing part *)
 
 let print_extraction_blacklist () =
-  msgnl
-    (prlist_with_sep fnl pr_id (Idset.elements !blacklist_table))
+  prlist_with_sep fnl pr_id (Idset.elements !blacklist_table)
 
 (* Reset part *)
 

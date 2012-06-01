@@ -192,7 +192,7 @@ val extraction_implicit : reference -> int_or_id list -> unit
 
 val extraction_blacklist : identifier list -> unit
 val reset_extraction_blacklist : unit -> unit
-val print_extraction_blacklist : unit -> unit
+val print_extraction_blacklist : unit -> Pp.std_ppcmds
 
 
 

@@ -235,17 +235,17 @@ let rec print_debug_queue b e =
     begin
       let lmsg,goal = Stack.pop debug_queue in 
       if b then 
-	Pp.msgnl (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
+	Pp.msg_debug (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
       else
 	begin
-	  Pp.msgnl (str " from " ++ lmsg ++ str " on goal " ++ goal);
+	  Pp.msg_debug (str " from " ++ lmsg ++ str " on goal " ++ goal);
 	end;
       print_debug_queue false e;
     end
 
 let observe strm =
   if do_observe ()
-  then Pp.msgnl strm
+  then Pp.msg_debug strm
   else ()
 
 
@@ -413,7 +413,7 @@ let treat_case forbid_new_ids to_intros finalize_tac nb_lam e infos : tactic =
 	    (fun g' -> 
 	      let ty_teq = pf_type_of g' (mkVar heq) in
 	      let teq_lhs,teq_rhs =
-		let _,args = try destApp ty_teq with _ -> Pp.msgnl (Printer.pr_goal g' ++ fnl () ++ pr_id heq ++ str ":" ++ Printer.pr_lconstr ty_teq); assert false in
+		let _,args = try destApp ty_teq with _ -> assert false in
 		args.(1),args.(2)
 	      in
 	      let new_b' = Termops.replace_term teq_lhs teq_rhs new_b in 

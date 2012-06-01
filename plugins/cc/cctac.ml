@@ -378,16 +378,16 @@ let build_term_to_complete uf meta pac =
 
 let cc_tactic depth additionnal_terms gls=
   Coqlib.check_required_library ["Coq";"Init";"Logic"];
-  let _ = debug Pp.msgnl (Pp.str "Reading subgoal ...") in
+  let _ = debug (Pp.str "Reading subgoal ...") in
   let state = make_prb gls depth additionnal_terms in
-  let _ = debug Pp.msgnl (Pp.str "Problem built, solving ...") in
+  let _ = debug (Pp.str "Problem built, solving ...") in
   let sol = execute true state in
-  let _ = debug Pp.msgnl (Pp.str "Computation completed.") in
+  let _ = debug (Pp.str "Computation completed.") in
   let uf=forest state in
     match sol with
 	None -> tclFAIL 0 (str "congruence failed") gls
       | Some reason ->
-	  debug Pp.msgnl (Pp.str "Goal solved, generating proof ...");
+	  debug (Pp.str "Goal solved, generating proof ...");
 	  match reason with
 	      Discrimination (i,ipac,j,jpac) ->
 		let p=build_proof uf (`Discr (i,ipac,j,jpac)) in
@@ -400,10 +400,10 @@ let cc_tactic depth additionnal_terms gls=
 		  List.map
 		    (build_term_to_complete uf newmeta)
 		    (epsilons uf) in
-		  Pp.msgnl
+		  Pp.msg_info
 		    (Pp.str "Goal is solvable by congruence but \
  some arguments are missing.");
-		  Pp.msgnl
+		  Pp.msg_info
 		    (Pp.str "  Try " ++
 		     hov 8
 		       begin
@@ -413,9 +413,8 @@ let cc_tactic depth additionnal_terms gls=
 			   (Termops.print_constr_env (pf_env gls))
 			   terms_to_complete ++
 			 str ")\","
-		       end);
-		  Pp.msgnl
-		    (Pp.str "  replacing metavariables by arbitrary terms.");
+		       end ++
+		    Pp.str "  replacing metavariables by arbitrary terms.");
 		  tclFAIL 0 (str "Incomplete") gls
 	    | Contradiction dis ->
 		let p=build_proof uf (`Prove (dis.lhs,dis.rhs)) in

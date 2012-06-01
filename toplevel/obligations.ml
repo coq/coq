@@ -36,7 +36,7 @@ let declare_fix_ref = ref (fun _ _ _ _ _ -> assert false)
 let declare_definition_ref = ref (fun _ _ _ _ _ -> assert false)
 
 let trace s =
-  if !Flags.debug then (msgnl s; msgerr s)
+  if !Flags.debug then (msg_debug s; msgerr s)
   else ()
 
 let succfix (depth, fixrels) =
@@ -348,8 +348,7 @@ type program_info = {
   prg_hook : unit Tacexpr.declaration_hook;
 }
 
-let assumption_message id =
-  Flags.if_verbose message ((string_of_id id) ^ " is assumed")
+let assumption_message = Declare.assumption_message
 
 let (set_default_tactic, get_default_tactic, print_default_tactic) = 
   Tactic_option.declare_tactic_option "Program tactic"
@@ -675,11 +674,11 @@ type progress =
 let obligations_message rem =
   if rem > 0 then
     if rem = 1 then
-      Flags.if_verbose msgnl (int rem ++ str " obligation remaining")
+      Flags.if_verbose msg_info (int rem ++ str " obligation remaining")
     else
-      Flags.if_verbose msgnl (int rem ++ str " obligations remaining")
+      Flags.if_verbose msg_info (int rem ++ str " obligations remaining")
   else
-    Flags.if_verbose msgnl (str "No more obligations remaining")
+    Flags.if_verbose msg_info (str "No more obligations remaining")
 
 let update_obls prg obls rem =
   let prg' = { prg with prg_obligations = (obls, rem) } in
@@ -879,7 +878,7 @@ and try_solve_obligations n tac =
   try ignore (solve_obligations n tac) with NoObligations _ -> ()
 
 and auto_solve_obligations n ?oblset tac : progress =
-  Flags.if_verbose msgnl (str "Solving obligations automatically...");
+  Flags.if_verbose msg_info (str "Solving obligations automatically...");
   try solve_prg_obligations (get_prog_err n) ?oblset tac with NoObligations _ -> Dependent
 
 open Pp
@@ -887,13 +886,13 @@ let show_obligations_of_prg ?(msg=true) prg =
   let n = prg.prg_name in
   let obls, rem = prg.prg_obligations in
   let showed = ref 5 in
-    if msg then msgnl (int rem ++ str " obligation(s) remaining: ");
+    if msg then msg_info (int rem ++ str " obligation(s) remaining: ");
     Array.iteri (fun i x ->
 		   match x.obl_body with
 		   | None ->
 		       if !showed > 0 then (
 			 decr showed;
-			 msgnl (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
+			 msg_info (str "Obligation" ++ spc() ++ int (succ i) ++ spc () ++
 				   str "of" ++ spc() ++ str (string_of_id n) ++ str ":" ++ spc () ++
 				   hov 1 (Printer.pr_constr_env (Global.env ()) x.obl_type ++ 
 					    str "." ++ fnl ())))
@@ -911,7 +910,7 @@ let show_obligations ?(msg=true) n =
 let show_term n =
   let prg = get_prog_err n in
   let n = prg.prg_name in
-    msgnl (str (string_of_id n) ++ spc () ++ str":" ++ spc () ++
+    (str (string_of_id n) ++ spc () ++ str":" ++ spc () ++
 	     Printer.pr_constr_env (Global.env ()) prg.prg_type ++ spc () ++ str ":=" ++ fnl ()
 	    ++ Printer.pr_constr_env (Global.env ()) prg.prg_body)
 

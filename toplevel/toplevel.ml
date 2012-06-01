@@ -355,7 +355,7 @@ let do_vernac () =
     try
       raw_do_vernac top_buffer.tokens
     with e ->
-      msgnl (print_toplevel_error (process_error e))
+      ppnl (print_toplevel_error (process_error e))
   end;
   flush_all()
 

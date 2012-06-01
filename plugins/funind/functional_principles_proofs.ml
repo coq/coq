@@ -18,7 +18,7 @@ open Libnames
 open Globnames
 open Misctypes
 
-let msgnl = Pp.msgnl
+(* let msgnl = Pp.msgnl *)
 
 (*
 let observe strm =
@@ -60,17 +60,17 @@ let rec print_debug_queue b e =
     begin
       let lmsg,goal = Stack.pop debug_queue in 
       if b then 
-	Pp.msgnl (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
+	Pp.msg_debug (lmsg ++ (str " raised exception " ++ Errors.print e) ++ str " on goal " ++ goal)
       else
 	begin
-	  Pp.msgnl (str " from " ++ lmsg ++ str " on goal " ++ goal);
+	  Pp.msg_debug (str " from " ++ lmsg ++ str " on goal " ++ goal);
 	end;
       print_debug_queue false e;
     end
 
 let observe strm =
   if do_observe ()
-  then Pp.msgnl strm
+  then Pp.msg_debug strm
   else ()
 
 let do_observe_tac s tac g = 
