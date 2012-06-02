@@ -18,6 +18,11 @@ open States
 open Toplevel
 open Coqinit
 
+let () = at_exit flush_all
+
+let fatal_error info =
+  pperrnl info; flush_all (); exit 1
+
 let get_version_date () =
   try
     let coqlib = Envars.coqlib Errors.error in
@@ -309,9 +314,9 @@ let parse_args arglist =
 	try
 	  Stream.empty s; exit 1
 	with Stream.Failure ->
-	  pperrnl (Errors.print e); exit 1
+	  fatal_error (Errors.print e)
       end
-    | e -> begin pperrnl (Errors.print e); exit 1 end
+    | e -> fatal_error (Errors.print e)
 
 let init arglist =
   Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
@@ -344,9 +349,8 @@ let init arglist =
       outputstate ()
     with e ->
       flush_all();
-      if not !batch_mode then pperrnl
-        (str "Error during initialization:" ++ fnl () ++ Toplevel.print_toplevel_error e);
-      exit 1
+      if not !batch_mode then
+        fatal_error (str "Error during initialization:" ++ fnl () ++ Toplevel.print_toplevel_error e)
   end;
   if !batch_mode then
     (flush_all();

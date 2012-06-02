@@ -149,6 +149,7 @@ val pp : std_ppcmds -> unit
 val ppnl : std_ppcmds -> unit
 val pperr : std_ppcmds -> unit
 val pperrnl : std_ppcmds -> unit
+val pperr_flush : unit -> unit
 val pp_flush : unit -> unit
 val flush_all: unit -> unit
 

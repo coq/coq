@@ -16,6 +16,11 @@ open Names
 open Term
 open Check
 
+let () = at_exit flush_all
+
+let fatal_error info =
+  pperrnl info; flush_all (); exit 1
+
 let coq_root = id_of_string "Coq"
 let parse_dir s =
   let len = String.length s in
@@ -292,7 +297,7 @@ let parse_args argv =
 
     | "-coqlib" :: s :: rem ->
       if not (exists_dir s) then 
-	(pperrnl (str ("Directory '"^s^"' does not exist")); exit 1);
+	fatal_error (str ("Directory '"^s^"' does not exist"));
       Flags.coqlib := s;
       Flags.coqlib_spec := true;
       parse rem
@@ -332,7 +337,7 @@ let parse_args argv =
         Flags.make_silent true; parse rem
 
     | s :: _ when s<>"" && s.[0]='-' ->
-        pperrnl (str "Unknown option " ++ str s); exit 1
+        fatal_error (str "Unknown option " ++ str s)
     | s :: rem ->  add_compile s; parse rem
   in
   try
@@ -342,9 +347,9 @@ let parse_args argv =
 	try
 	  Stream.empty s; exit 1
 	with Stream.Failure ->
-	  pperrnl (explain_exn e); exit 1
+	  fatal_error (explain_exn e)
       end
-    | e -> begin pperrnl (explain_exn e); exit 1 end
+    | e -> begin fatal_error (explain_exn e) end
 
 
 (* To prevent from doing the initialization twice *)
@@ -360,9 +365,7 @@ let init_with_argv argv =
       init_load_path ();
       engage ();
     with e ->
-      flush_all();
-      pperrnl (str "Error during initialization :" ++ (explain_exn e));
-      exit 1
+      fatal_error (str "Error during initialization :" ++ (explain_exn e))
   end
 
 let init() = init_with_argv Sys.argv
@@ -372,8 +375,6 @@ let run () =
     compile_files ();
     flush_all()
   with e ->
-    (Pp.ppnl(explain_exn e);
-    flush_all();
-    exit 1)
+    fatal_error (explain_exn e)
 
 let start () = init(); run(); Check_stat.stats(); exit 0

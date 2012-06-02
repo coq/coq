@@ -357,7 +357,7 @@ let compile verbosely f =
   if !Flags.xml_export then !xml_start_library ();
   let _ = load_vernac verbosely long_f_dot_v in
   if Pfedit.get_all_proof_names () <> [] then
-    (pperrnl (str "Error: There are pending proofs"); exit 1);
+    (pperrnl (str "Error: There are pending proofs"); flush_all (); exit 1);
   if !Flags.xml_export then !xml_end_library ();
   Dumpglob.end_dump_glob ();
   Library.save_library_to ldir (long_f_dot_v ^ "o")

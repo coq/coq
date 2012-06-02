@@ -322,7 +322,9 @@ let pperrnl   x = ppnl_with !err_ft x
 let message   s = ppnl      (str s)
 let warning   x = warning_with !err_ft x
 let pp_flush  x = Format.pp_print_flush !std_ft x
-let flush_all() = flush stderr; flush stdout; pp_flush()
+let pperr_flush x = Format.pp_print_flush !err_ft x
+let flush_all () =
+  flush stderr; flush stdout; pp_flush (); pperr_flush ()
 
 (* pretty printing functions WITH FLUSH *)
 let msg x = msg_with !std_ft x
