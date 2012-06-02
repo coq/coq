@@ -351,6 +351,8 @@ let init arglist =
       flush_all();
       if not !batch_mode then
         fatal_error (str "Error during initialization:" ++ fnl () ++ Toplevel.print_toplevel_error e)
+      else
+        fatal_error (Toplevel.print_toplevel_error e)
   end;
   if !batch_mode then
     (flush_all();
