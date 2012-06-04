@@ -334,7 +334,7 @@ let print_color s x =
   else x
 
 let make_body color info s =
-  emacs_quote (print_color color (print_color "1" (info ++ spc () ++ s)))
+  emacs_quote (print_color color (print_color "1" (hov 0 (info ++ spc () ++ s))))
 
 let debugbody strm = print_color "36" (str "Debug:" ++ spc () ++ strm) (* cyan *)
 let warnbody strm = make_body "93" (str "Warning:") strm (* bright yellow *)
@@ -342,7 +342,7 @@ let errorbody strm = make_body "31" (str "Error:") strm (* bright red *)
 
 let std_logger level msg = match level with
 | Debug _ -> msgnl (debugbody msg) (* cyan *)
-| Info -> msgnl (print_color "37" msg) (* gray *)
+| Info -> msgnl (print_color "37" (hov 0 msg)) (* gray *)
 | Notice -> msgnl msg
 | Warning -> msgnl_with !err_ft (warnbody msg) (* bright yellow *)
 | Error -> msgnl_with !err_ft (errorbody msg) (* bright red *)
