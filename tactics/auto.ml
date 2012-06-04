@@ -281,13 +281,19 @@ let rec pp_hints_path = function
   | PathEmpty -> str"Ø"
   | PathEpsilon -> str"ε"
 
-let rec subst_hints_path subst hp =
-  match hp with
-  | PathAtom PathAny -> hp
-  | PathAtom (PathHints grs) -> 
+let subst_path_atom subst p =
+  match p with
+  | PathAny -> p
+  | PathHints grs ->
     let gr' gr = fst (subst_global subst gr) in
     let grs' = list_smartmap gr' grs in
-      if grs' == grs then hp else PathAtom (PathHints grs')
+      if grs' == grs then p else PathHints grs'
+
+let rec subst_hints_path subst hp =
+  match hp with
+  | PathAtom p ->
+    let p' = subst_path_atom subst p in
+      if p' == p then hp else PathAtom p'
   | PathStar p -> let p' = subst_hints_path subst p in
       if p' == p then hp else PathStar p'
   | PathSeq (p, q) ->
@@ -681,9 +687,10 @@ let subst_autohint (subst,(local,name,hintlist as obj)) =
 	  let tac' = !forward_subst_tactic subst tac in
 	  if tac==tac' then data.code else Extern tac'
     in
+    let name' = subst_path_atom subst data.name in
     let data' =
-      if data.pat==pat' && data.code==code' then data
-      else { data with pat = pat'; code = code' }
+      if data.pat==pat' && data.name == name' && data.code==code' then data
+      else { data with pat = pat'; name = name'; code = code' }
     in
     if k' == k && data' == data then hint else (k',data')
   in

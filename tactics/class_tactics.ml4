@@ -680,25 +680,21 @@ let resolve_all_evars debug m env p oevd do_split fail =
 	  docomp evd comps
   in docomp oevd split
 
-let initial_select_evars with_goals =
-  if with_goals then
-    (fun evd ev evi ->
-     Typeclasses.is_class_evar evd evi)
-  else
-    (fun evd ev evi -> 
-     (snd (Evd.evar_source ev evd) <> Evar_kinds.GoalEvar)
-     && Typeclasses.is_class_evar evd evi)
+let initial_select_evars filter =
+  fun evd ev evi ->
+    filter (snd evi.Evd.evar_source) &&
+    Typeclasses.is_class_evar evd evi
 
-let resolve_typeclass_evars debug m env evd with_goals split fail =
+let resolve_typeclass_evars debug m env evd filter split fail =
   let evd = 
     try Evarconv.consider_remaining_unif_problems
       ~ts:(Typeclasses.classes_transparent_state ()) env evd
     with _ -> evd
   in
-    resolve_all_evars debug m env (initial_select_evars with_goals) evd split fail
+    resolve_all_evars debug m env (initial_select_evars filter) evd split fail
 
-let solve_inst debug depth env evd with_goals split fail =
-  resolve_typeclass_evars debug depth env evd with_goals split fail
+let solve_inst debug depth env evd filter split fail =
+  resolve_typeclass_evars debug depth env evd filter split fail
 
 let _ =
   Typeclasses.solve_instanciations_problem :=

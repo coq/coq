@@ -72,7 +72,7 @@ let clenv_refine with_evars ?(with_classes=true) clenv gls =
   let clenv = clenv_pose_dependent_evars with_evars clenv in
   let evd' =
     if with_classes then
-      Typeclasses.resolve_typeclasses ~with_goals:true
+      Typeclasses.resolve_typeclasses ~filter:Typeclasses.all_evars
         ~fail:(not with_evars) clenv.env clenv.evd
     else clenv.evd
   in

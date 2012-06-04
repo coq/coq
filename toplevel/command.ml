@@ -290,7 +290,7 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
 
   (* Instantiate evars and check all are resolved *)
   let evd = consider_remaining_unif_problems env_params !evdref in
-  let evd = Typeclasses.resolve_typeclasses ~with_goals:false ~fail:true env_params evd in
+  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env_params evd in
   let sigma = evd in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map (nf_evar sigma) cl,impsl)) constructors in
   let ctx_params = Sign.map_rel_context (nf_evar sigma) ctx_params in
@@ -781,7 +781,7 @@ let interp_recursive isfix fixl notations =
   (env,rec_sign,evd), (fixnames,fixdefs,fixtypes), list_combine3 fixctxnames fiximps fixannots
 
 let check_recursive isfix ((env,rec_sign,evd),(fixnames,fixdefs,fixtypes),info) =
-  let evd = Typeclasses.resolve_typeclasses ~with_goals:false ~fail:true env evd in
+  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env evd in
   List.iter (Option.iter (check_evars (push_named_context rec_sign env) Evd.empty evd)) fixdefs;
   List.iter (check_evars env Evd.empty evd) fixtypes;
   if not (List.mem None fixdefs) then begin
@@ -889,7 +889,8 @@ let do_program_recursive fixkind fixl ntns =
   in
     (* Program-specific code *)
     (* Get the interesting evars, those that were not instanciated *)
-  let evd = Typeclasses.resolve_typeclasses ~with_goals:false ~fail:true env evd in
+  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals_or_obligations ~fail:true env evd in
+  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:false env evd in
     (* Solve remaining evars *)
   let rec collect_evars id def typ imps =
     (* Generalize by the recursive prototypes  *)
