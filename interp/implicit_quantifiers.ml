@@ -315,8 +315,8 @@ let implicits_of_glob_constr ?(with_products=true) l =
 	  if with_products then abs na bk b
 	  else 
 	    (if bk = Implicit then
-	       msg_warning (str "Ignoring implicit status of product binder " ++ 
-			      pr_name na ++ str " and following binders");
+	       msg_warning (strbrk "Ignoring implicit status of product binder " ++ 
+			      pr_name na ++ strbrk " and following binders");
 	     [])
       | GLambda (loc, na, bk, t, b) -> abs na bk b
       | GLetIn (loc, na, t, b) -> aux i b

@@ -236,7 +236,7 @@ let add_tactic s t =
 let overwriting_add_tactic s t =
   if Hashtbl.mem tac_tab s then begin
     Hashtbl.remove tac_tab s;
-    msg_warning (str ("Overwriting definition of tactic "^s))
+    msg_warning (strbrk ("Overwriting definition of tactic "^s))
   end;
   Hashtbl.add tac_tab s t
 
@@ -274,7 +274,7 @@ let lookup_genarg id =
   try Gmap.find id !extragenargtab
   with Not_found ->
     let msg = "No interpretation function found for entry " ^ id in
-    msg_warning (str msg);
+    msg_warning (strbrk msg);
     let f = (fun _ _ -> failwith msg), (fun _ _ _ -> failwith msg), (fun _ a -> a) in
     add_interp_genarg id f;
     f
@@ -1820,9 +1820,8 @@ and eval_tactic ist = function
   | TacArg a -> interp_tactic ist (TacArg a)
   | TacInfo tac ->
       msg_warning
-	(str "The general \"info\" tactic is currently not working.\n" ++
-	 str "Some specific verbose tactics may exist instead, such as\n" ++
-	 str "info_trivial, info_auto, info_eauto.");
+	(strbrk "The general \"info\" tactic is currently not working." ++ fnl () ++
+	 strbrk "Some specific verbose tactics may exist instead, such as info_trivial, info_auto, info_eauto.");
       eval_tactic ist tac
 
 and force_vrec ist gl = function
@@ -2775,7 +2774,7 @@ let subst_global_reference subst =
  let subst_global ref =
   let ref',t' = subst_global subst ref in
    if not (eq_constr (constr_of_global ref') t') then
-    msg_warning (str "The reference " ++ pr_global ref ++ str " is not " ++
+    msg_warning (strbrk "The reference " ++ pr_global ref ++ str " is not " ++
           str " expanded to \"" ++ pr_lconstr t' ++ str "\", but to " ++
           pr_global ref') ;
    ref'

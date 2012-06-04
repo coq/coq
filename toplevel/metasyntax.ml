@@ -602,7 +602,7 @@ let is_not_small_constr = function
 let rec define_keywords_aux = function
   | GramConstrNonTerminal(e,Some _) as n1 :: GramConstrTerminal(IDENT k) :: l
       when is_not_small_constr e ->
-      msg_info (str ("Identifier '"^k^"' now a keyword"));
+      msg_info (strbrk ("Identifier '"^k^"' now a keyword"));
       Lexer.add_keyword k;
       n1 :: GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
   | n :: l -> n :: define_keywords_aux l
@@ -611,7 +611,7 @@ let rec define_keywords_aux = function
   (* Ensure that IDENT articulation terminal symbols are keywords *)
 let define_keywords = function
   | GramConstrTerminal(IDENT k)::l ->
-      msg_info (str ("Identifier '"^k^"' now a keyword"));
+      msg_info (strbrk ("Identifier '"^k^"' now a keyword"));
       Lexer.add_keyword k;
       GramConstrTerminal(KEYWORD k) :: define_keywords_aux l
   | l -> define_keywords_aux l
@@ -854,7 +854,7 @@ let check_rule_productivity l =
     error "A recursive notation must start with at least one symbol."
 
 let is_not_printable = function
-  | NVar _ -> msg_warning (str "This notation will not be used for printing as it is bound to a single variable."); true
+  | NVar _ -> msg_warning (strbrk "This notation will not be used for printing as it is bound to a single variable."); true
   | _ -> false
 
 let find_precedence lev etyps symbols =
@@ -865,7 +865,7 @@ let find_precedence lev etyps symbols =
 	    error "The level of the leftmost non-terminal cannot be changed."
 	| ETName | ETBigint | ETReference ->
 	    if lev = None then
-	      ([msg_info,str "Setting notation at level 0."],0)
+	      ([msg_info,strbrk "Setting notation at level 0."],0)
 	    else
 	    if lev <> Some 0 then
 	      error "A notation starting with an atomic expression must be at level 0."
@@ -885,7 +885,7 @@ let find_precedence lev etyps symbols =
       (match list_last symbols with Terminal _ -> true |_ -> false)
       ->
       if lev = None then
-	([msg_info,str "Setting notation at level 0."], 0)
+	([msg_info,strbrk "Setting notation at level 0."], 0)
       else [],Option.get lev
   | _ ->
       if lev = None then error "Cannot determine the level.";
@@ -912,7 +912,7 @@ let remove_curly_brackets l =
             (match next' with
               | Terminal "}" as t2 :: l'' as l1 ->
                   if l <> l0 or l' <> l1 then
-                    msg_warning (str "Skipping spaces inside curly brackets");
+                    msg_warning (strbrk "Skipping spaces inside curly brackets");
                   if deb & l'' = [] then [t1;x;t2] else begin
                     check_curly_brackets_notation_exists ();
                     x :: aux false l''
@@ -957,7 +957,7 @@ let compute_pure_syntax_data (df,mods) =
   let msgs =
     if onlyparse then
       (msg_warning,
-      str "The only parsing modifier has no effect in Reserved Notation.")::msgs
+      strbrk "The only parsing modifier has no effect in Reserved Notation.")::msgs
     else msgs in
   msgs, sy_data
 

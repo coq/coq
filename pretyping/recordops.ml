@@ -245,9 +245,9 @@ let compute_canonical_projections (con,ind) =
                    if Flags.is_verbose () then
                      (let con_pp = Nametab.pr_global_env Idset.empty (ConstRef con)
                       and proji_sp_pp = Nametab.pr_global_env Idset.empty (ConstRef proji_sp) in
-		      msg_warning (str "No global reference exists for projection value"
-                                   ++ Termops.print_constr t ++ str " in instance "  
-                                   ++ con_pp ++ str " of " ++ proji_sp_pp ++ str ", ignoring it."));
+		      msg_warning (strbrk "No global reference exists for projection value"
+                                   ++ Termops.print_constr t ++ strbrk " in instance "  
+                                   ++ con_pp ++ str " of " ++ proji_sp_pp ++ strbrk ", ignoring it."));
 		   l
 	       end
 	   | _ -> l)
@@ -279,9 +279,9 @@ let open_canonical_structure i (_,o) =
               and new_can_s = (Termops.print_constr s.o_DEF) in
               let prj = (Nametab.pr_global_env Idset.empty proj)
               and hd_val = (pr_cs_pattern cs_pat) in
-              msg_warning (str "Ignoring canonical projection to " ++ hd_val
-                             ++ str " by " ++ prj ++ str " in "
-                             ++ new_can_s ++ str ": redundant with " ++ old_can_s)) lo
+              msg_warning (strbrk "Ignoring canonical projection to " ++ hd_val
+                             ++ strbrk " by " ++ prj ++ strbrk " in "
+                             ++ new_can_s ++ strbrk ": redundant with " ++ old_can_s)) lo
 
 let cache_canonical_structure o =
   open_canonical_structure 1 o

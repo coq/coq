@@ -128,8 +128,8 @@ let compile_files () =
 let set_compat_version = function
   | "8.3" -> compat_version := Some V8_3
   | "8.2" -> compat_version := Some V8_2
-  | "8.1" -> msg_warning (str "Compatibility with version 8.1 not supported.")
-  | "8.0" -> msg_warning (str "Compatibility with version 8.0 not supported.")
+  | "8.1" -> msg_warning (strbrk "Compatibility with version 8.1 not supported.")
+  | "8.0" -> msg_warning (strbrk "Compatibility with version 8.0 not supported.")
   | s -> error ("Unknown compatibility version \""^s^"\".")
 
 (*s options for the virtual machine *)
@@ -153,7 +153,7 @@ let usage () =
   flush stderr ;
   exit 1
 
-let warning s = msg_warning (str s)
+let warning s = msg_warning (strbrk s)
 
 let ide_slave = ref false
 let filter_opts = ref false

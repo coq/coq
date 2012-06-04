@@ -91,8 +91,8 @@ let interp_definition bl red_option c ctypopt =
 	let typ = nf_evar !evdref (it_mkProd_or_LetIn ty ctx) in
 	(* Check that all implicit arguments inferable from the term is inferable from the type *)
 	if not (try List.for_all (fun (key,va) -> List.assoc key impsty = va) imps2 with Not_found -> false)
-	then msg_warning (str "Implicit arguments declaration relies on type." ++
-		     spc () ++ str "The term declares more implicits than the type here.");
+	then msg_warning (strbrk "Implicit arguments declaration relies on type." ++
+		     spc () ++ strbrk "The term declares more implicits than the type here.");
 	imps1@(Impargs.lift_implicits nb_args impsty),
 	{ const_entry_body = body;
           const_entry_secctx = None;
@@ -112,7 +112,7 @@ let declare_global_definition ident ce local k imps =
   let gr = ConstRef kn in
     maybe_declare_manual_implicits false gr imps;
     if local = Local && Flags.is_verbose() then
-      msg_warning (pr_id ident ++ str" is declared as a global definition");
+      msg_warning (pr_id ident ++ strbrk " is declared as a global definition");
     definition_message ident;
     Autoinstance.search_declaration (ConstRef kn);
     gr
@@ -131,8 +131,8 @@ let declare_definition ident (local,k) ce imps hook =
         definition_message ident;
         if Pfedit.refining () then
           Flags.if_warn msg_warning
-	    (str"Local definition " ++ pr_id ident ++
-             str" is not visible from current goals");
+	    (strbrk "Local definition " ++ pr_id ident ++
+             strbrk " is not visible from current goals");
         VarRef ident
     | (Global|Local) ->
         declare_global_definition ident ce local k imps in
@@ -167,8 +167,8 @@ let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) =
             (Lib.cwd(), SectionLocalAssum (c,impl), IsAssumption kind) in
         assumption_message ident;
         if is_verbose () & Pfedit.refining () then
-          msg_warning (str"Variable " ++ pr_id ident ++
-          str" is not visible from current goals");
+          msg_warning (str"Variable" ++ spc () ++ pr_id ident ++
+          strbrk " is not visible from current goals");
 	let r = VarRef ident in
 	  Typeclasses.declare_instance None true r; r
     | (Global|Local) ->
@@ -179,8 +179,8 @@ let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) =
 	  maybe_declare_manual_implicits false gr imps;
         assumption_message ident;
         if local=Local & Flags.is_verbose () then
-          msg_warning (pr_id ident ++ str" is declared as a parameter" ++
-          str" because it is at a global level");
+          msg_warning (pr_id ident ++ strbrk " is declared as a parameter" ++
+          strbrk " because it is at a global level");
 	Autoinstance.search_declaration (ConstRef kn);
 	Typeclasses.declare_instance None false gr;
         gr 
@@ -290,7 +290,7 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
 
   (* Instantiate evars and check all are resolved *)
   let evd = consider_remaining_unif_problems env_params !evdref in
-  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env_params evd in
+  let evd = Typeclasses.resolve_typeclasses ~with_goals:false ~fail:true env_params evd in
   let sigma = evd in
   let constructors = List.map (fun (idl,cl,impsl) -> (idl,List.map (nf_evar sigma) cl,impsl)) constructors in
   let ctx_params = Sign.map_rel_context (nf_evar sigma) ctx_params in
@@ -781,7 +781,7 @@ let interp_recursive isfix fixl notations =
   (env,rec_sign,evd), (fixnames,fixdefs,fixtypes), list_combine3 fixctxnames fiximps fixannots
 
 let check_recursive isfix ((env,rec_sign,evd),(fixnames,fixdefs,fixtypes),info) =
-  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env evd in
+  let evd = Typeclasses.resolve_typeclasses ~with_goals:false ~fail:true env evd in
   List.iter (Option.iter (check_evars (push_named_context rec_sign env) Evd.empty evd)) fixdefs;
   List.iter (check_evars env Evd.empty evd) fixtypes;
   if not (List.mem None fixdefs) then begin
@@ -889,8 +889,7 @@ let do_program_recursive fixkind fixl ntns =
   in
     (* Program-specific code *)
     (* Get the interesting evars, those that were not instanciated *)
-  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals_or_obligations ~fail:true env evd in
-  let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:false env evd in
+  let evd = Typeclasses.resolve_typeclasses ~with_goals:false ~fail:true env evd in
     (* Solve remaining evars *)
   let rec collect_evars id def typ imps =
     (* Generalize by the recursive prototypes  *)
