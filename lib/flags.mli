@@ -47,6 +47,10 @@ val if_verbose : ('a -> unit) -> 'a -> unit
 val make_auto_intros : bool -> unit
 val is_auto_intros : unit -> bool
 
+(** Terminal colouring *)
+val make_term_color : bool -> unit
+val is_term_color : unit -> bool
+
 (** [program_cmd] indicates that the current command is a Program one.
     [program_mode] tells that Program mode has been activated, either
     globally via [Set Program] or locally via the Program command prefix. *)

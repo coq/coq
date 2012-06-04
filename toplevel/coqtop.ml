@@ -256,9 +256,11 @@ let parse_args arglist =
     | "-emacs" :: rem ->
 	Flags.print_emacs := true; Pp.make_pp_emacs();
 	Vernacentries.qed_display_script := false;
+        Flags.make_term_color false;
 	parse rem
     | "-emacs-U" :: rem ->
 	warning "Obsolete option \"-emacs-U\", use -emacs instead.";	
+        Flags.make_term_color false;
 	parse ("-emacs" :: rem)
 
     | "-unicode" :: rem -> add_require "Utf8_core"; parse rem
@@ -300,6 +302,8 @@ let parse_args arglist =
     | "-ideslave" :: rem -> ide_slave := true; parse rem
 
     | "-filteropts" :: rem -> filter_opts := true; parse rem
+
+    | "-nocolor" :: rem -> Flags.make_term_color false; parse rem
 
     | s :: rem ->
       if !filter_opts then

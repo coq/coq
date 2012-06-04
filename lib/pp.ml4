@@ -283,8 +283,6 @@ let emacs_quote strm =
     [< str emacs_quote_start; hov 0 strm; str emacs_quote_end >]
   else hov 0 strm
 
-let warnbody strm = emacs_quote (str "Warning:" ++ spc () ++ strm)
-let errorbody strm = emacs_quote (str "Error:" ++ spc () ++ strm)
 
 (* pretty printing functions WITHOUT FLUSH *)
 let pp_with ft strm =
@@ -302,12 +300,6 @@ let msg_with ft strm =
 let msgnl_with ft strm =
   pp_dirs ft [< 'Ppdir_ppcmds strm ; 'Ppdir_print_newline >]
 
-let msg_warning_with ft strm =
-  msgnl_with ft (warnbody strm)
-
-let msg_error_with ft strm =
-  msgnl_with ft (errorbody strm)
-
 (* pretty printing functions WITHOUT FLUSH *)
 let pp        x = pp_with   !std_ft x
 let ppnl      x = ppnl_with !std_ft x
@@ -322,16 +314,50 @@ let flush_all () =
 (* pretty printing functions WITH FLUSH *)
 let msg x = msg_with !std_ft x
 let msgnl x = msgnl_with !std_ft x
-let msg_info x = msgnl x
-let msg_notice x = msgnl x
-let msg_tactic x = msgnl x
 let msgerr x = msg_with !err_ft x
 let msgerrnl x = msgnl_with !err_ft x
-let msg_warning x = msg_warning_with !err_ft x
-let msg_error x = msg_error_with !err_ft x
 
-(* Same specific display in emacs as warning, but without the "Warning:" *)
-let msg_debug x = msgnl (emacs_quote x)
+(* Logging management *)
+
+type level =
+| Debug of string
+| Info
+| Notice
+| Warning
+| Error
+
+type logger = level -> std_ppcmds -> unit
+
+let print_color s x =
+  if Flags.is_term_color () then
+    (str ("\027[" ^ s ^ "m")) ++ x ++ (str "\027[0m")
+  else x
+
+let make_body color info s =
+  emacs_quote (print_color color (print_color "1" (info ++ spc () ++ s)))
+
+let debugbody strm = print_color "36" (str "Debug:" ++ spc () ++ strm) (* cyan *)
+let warnbody strm = make_body "93" (str "Warning:") strm (* bright yellow *)
+let errorbody strm = make_body "31" (str "Error:") strm (* bright red *)
+
+let std_logger level msg = match level with
+| Debug _ -> msgnl (debugbody msg) (* cyan *)
+| Info -> msgnl (print_color "37" msg) (* gray *)
+| Notice -> msgnl msg
+| Warning -> msgnl_with !err_ft (warnbody msg) (* bright yellow *)
+| Error -> msgnl_with !err_ft (errorbody msg) (* bright red *)
+
+let logger = ref std_logger
+
+let msg_info x = !logger Info x
+let msg_notice x = !logger Notice x
+let msg_warning x = !logger Warning x
+let msg_error x = !logger Error x
+let msg_debug x = !logger (Debug "_") x
+
+let set_logger l = logger := l
+
+(** Utility *)
 
 let string_of_ppcmds c =
   msg_with Format.str_formatter c;

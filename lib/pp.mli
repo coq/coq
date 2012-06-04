@@ -76,6 +76,15 @@ val tclose : unit -> std_ppcmds
 
 (** {6 Sending messages to the user } *)
 
+type level =
+| Debug of string
+| Info
+| Notice
+| Warning
+| Error
+
+type logger = level -> std_ppcmds -> unit
+
 val msg_info : std_ppcmds -> unit
 (** Message that displays information, usually in verbose mode, such as [Foobar
     is defined] *)
@@ -93,6 +102,11 @@ val msg_error : std_ppcmds -> unit
 
 val msg_debug : std_ppcmds -> unit
 (** For debugging purposes *)
+
+val std_logger : logger
+(** Standard logging function *)
+
+val set_logger : logger -> unit
 
 (** {6 Utilities} *)
 
@@ -171,4 +185,3 @@ val flush_all: unit -> unit
 (** {6 Low-level pretty-printing functions {% \emph{%}with flush{% }%}. } *)
 
 val msg_with : Format.formatter -> std_ppcmds -> unit
-

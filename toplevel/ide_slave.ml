@@ -418,6 +418,7 @@ let loop () =
   (* We'll handle goal fetching and display in our own way *)
   Vernacentries.enable_goal_printing := false;
   Vernacentries.qed_display_script := false;
+  Flags.make_term_color false;
   try
     while true do
       let xml_answer =
