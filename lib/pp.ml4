@@ -283,7 +283,8 @@ let emacs_quote strm =
     [< str emacs_quote_start; hov 0 strm; str emacs_quote_end >]
   else hov 0 strm
 
-let warnbody strm = emacs_quote (str "Warning: " ++ strm)
+let warnbody strm = emacs_quote (str "Warning:" ++ spc () ++ strm)
+let errorbody strm = emacs_quote (str "Error:" ++ spc () ++ strm)
 
 (* pretty printing functions WITHOUT FLUSH *)
 let pp_with ft strm =
@@ -291,16 +292,6 @@ let pp_with ft strm =
 
 let ppnl_with ft strm =
   pp_dirs ft [< 'Ppdir_ppcmds [< strm ; 'Ppcmd_force_newline >] >]
-
-let default_warn_with ft strm = ppnl_with ft (warnbody strm)
-
-let pp_warn_with = ref default_warn_with
-
-let set_warning_function pp_warn = pp_warn_with := pp_warn
-
-let warn_with ft strm = !pp_warn_with ft strm
-
-let warning_with ft string = warn_with ft (str string)
 
 let pp_flush_with ft = Format.pp_print_flush ft
 
@@ -314,13 +305,15 @@ let msgnl_with ft strm =
 let msg_warning_with ft strm =
   msgnl_with ft (warnbody strm)
 
+let msg_error_with ft strm =
+  msgnl_with ft (errorbody strm)
+
 (* pretty printing functions WITHOUT FLUSH *)
 let pp        x = pp_with   !std_ft x
 let ppnl      x = ppnl_with !std_ft x
 let pperr     x = pp_with   !err_ft x
 let pperrnl   x = ppnl_with !err_ft x
 let message   s = ppnl      (str s)
-let warning   x = warning_with !err_ft x
 let pp_flush  x = Format.pp_print_flush !std_ft x
 let pperr_flush x = Format.pp_print_flush !err_ft x
 let flush_all () =
@@ -330,10 +323,12 @@ let flush_all () =
 let msg x = msg_with !std_ft x
 let msgnl x = msgnl_with !std_ft x
 let msg_info x = msgnl x
+let msg_notice x = msgnl x
 let msg_tactic x = msgnl x
 let msgerr x = msg_with !err_ft x
 let msgerrnl x = msgnl_with !err_ft x
 let msg_warning x = msg_warning_with !err_ft x
+let msg_error x = msg_error_with !err_ft x
 
 (* Same specific display in emacs as warning, but without the "Warning:" *)
 let msg_debug x = msgnl (emacs_quote x)

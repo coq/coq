@@ -105,9 +105,9 @@ let coqide_cmd_checks (loc,ast) =
   if Vernac.is_navigation_vernac ast then
     user_error "Use CoqIDE navigation instead";
   if is_undo ast then
-    msgerrnl (str "Warning: rather use CoqIDE navigation instead");
+    msg_warning (str "Rather use CoqIDE navigation instead");
   if is_query ast then
-    msgerrnl (str "Warning: query commands should not be inserted in scripts")
+    msg_warning (str "Query commands should not be inserted in scripts")
 
 (** Interpretation (cf. [Ide_intf.interp]) *)
 

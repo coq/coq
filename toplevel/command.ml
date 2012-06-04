@@ -167,7 +167,7 @@ let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) =
             (Lib.cwd(), SectionLocalAssum (c,impl), IsAssumption kind) in
         assumption_message ident;
         if is_verbose () & Pfedit.refining () then
-          msgerrnl (str"Warning: Variable " ++ pr_id ident ++
+          msg_warning (str"Variable " ++ pr_id ident ++
           str" is not visible from current goals");
 	let r = VarRef ident in
 	  Typeclasses.declare_instance None true r; r

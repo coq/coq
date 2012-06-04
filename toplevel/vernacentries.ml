@@ -71,7 +71,7 @@ let show_proof () =
   (* spiwack: this would probably be cooler with a bit of polishing. *)
   let p = Proof_global.give_me_the_proof () in
   let pprf = Proof.partial_proof p in
-  msg_info (Pp.prlist_with_sep Pp.fnl Printer.pr_constr pprf)
+  msg_notice (Pp.prlist_with_sep Pp.fnl Printer.pr_constr pprf)
 
 let show_node () =
   (* spiwack: I'm have little clue what this function used to do. I deactivated it, 
@@ -81,17 +81,17 @@ let show_node () =
 let show_script () =
   let prf = Pfedit.get_current_proof_name () in
   let cmds = Backtrack.get_script prf in
-  msg_info (Pp.prlist_with_sep Pp.fnl Ppvernac.pr_vernac cmds)
+  msg_notice (Pp.prlist_with_sep Pp.fnl Ppvernac.pr_vernac cmds)
 
 let show_thesis () =
-     msg_info (anomaly "TODO" )
+     msg_error (anomaly "TODO" )
 
 let show_top_evars () =
   (* spiwack: new as of Feb. 2010: shows goal evars in addition to non-goal evars. *)
   let pfts = get_pftreestate () in
   let gls = Proof.V82.subgoals pfts in
   let sigma = gls.Evd.sigma in
-  msg_info (pr_evars_int 1 (Evarutil.non_instantiated sigma))
+  msg_notice (pr_evars_int 1 (Evarutil.non_instantiated sigma))
 
 let show_prooftree () =
   (* Spiwack: proof tree is currently not working *)
@@ -101,7 +101,7 @@ let enable_goal_printing = ref true
 
 let print_subgoals () =
   if !enable_goal_printing && is_verbose ()
-  then msg_info (pr_open_subgoals ())
+  then msg_notice (pr_open_subgoals ())
 
 let try_print_subgoals () =
   Pp.flush_all();
@@ -118,11 +118,11 @@ let show_intro all =
   if all
   then
     let lid = Tactics.find_intro_names l gl in
-    msg_info (hov 0 (prlist_with_sep  spc pr_id lid))
+    msg_notice (hov 0 (prlist_with_sep  spc pr_id lid))
   else
     try
       let n = list_last l in
-      msg_info (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
+      msg_notice (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
     with Failure "list_last" -> ()
 
 (** Prepare a "match" template for a given inductive type.
@@ -163,7 +163,7 @@ let show_match id =
   let pr_branch l =
     str "| " ++ hov 1 (prlist_with_sep spc str l) ++ str " =>"
   in
-  msg_info (v 1 (str "match # with" ++ fnl () ++
+  msg_notice (v 1 (str "match # with" ++ fnl () ++
 	    prlist_with_sep fnl pr_branch patterns ++ fnl ()))
 
 (* "Print" commands *)
@@ -176,9 +176,9 @@ let print_loadpath dir =
   let l = match dir with
     | None -> l
     | Some dir -> List.filter (fun (s,l) -> is_dirpath_prefix_of dir l) l in
-  msg_info (Pp.t (str "Logical Path:                 " ++
-		 tab () ++ str "Physical path:" ++ fnl () ++
-		 prlist_with_sep fnl print_path_entry l))
+    Pp.t (str "Logical Path:                 " ++
+                  tab () ++ str "Physical path:" ++ fnl () ++
+                  prlist_with_sep fnl print_path_entry l)
 
 let print_modules () =
   let opened = Library.opened_libraries ()
@@ -199,23 +199,23 @@ let print_module r =
     let globdir = Nametab.locate_dir qid in
       match globdir with
 	  DirModule (dirpath,(mp,_)) ->
-	    msg_info (Printmod.print_module (Printmod.printable_body dirpath) mp)
+	    msg_notice (Printmod.print_module (Printmod.printable_body dirpath) mp)
 	| _ -> raise Not_found
   with
-      Not_found -> msg_info (str"Unknown Module " ++ pr_qualid qid)
+      Not_found -> msg_error (str"Unknown Module " ++ pr_qualid qid)
 
 let print_modtype r =
   let (loc,qid) = qualid_of_reference r in
   try
     let kn = Nametab.locate_modtype qid in
-    msg_info (Printmod.print_modtype kn)
+    msg_notice (Printmod.print_modtype kn)
   with Not_found ->
     (* Is there a module of this name ? If yes we display its type *)
     try
       let mp = Nametab.locate_module qid in
-      msg_info (Printmod.print_module false mp)
+      msg_notice (Printmod.print_module false mp)
     with Not_found ->
-      msg_info (str"Unknown Module Type or Module " ++ pr_qualid qid)
+      msg_error (str"Unknown Module Type or Module " ++ pr_qualid qid)
 
 let dump_universes_gen g s =
   let output = open_out s in
@@ -263,7 +263,7 @@ let dump_universes sorted s =
 
 let locate_file f =
   let _,file = System.find_file_in_path ~warn:false (Library.get_load_paths ()) f in
-  msg_info (str file)
+  str file
 
 let msg_found_library = function
   | Library.LibLoaded, fulldir, file ->
@@ -273,6 +273,7 @@ let msg_found_library = function
   | Library.LibInPath, fulldir, file ->
       msg_info (hov 0
 	(pr_dirpath fulldir ++ strbrk " is bound to file " ++ str file))
+
 let msg_notfound_library loc qid = function
   | Library.LibUnmappedDir ->
       let dir = fst (repr_qualid qid) in
@@ -280,7 +281,7 @@ let msg_notfound_library loc qid = function
         strbrk "Cannot find a physical path bound to logical path " ++
            pr_dirpath dir ++ str".")
   | Library.LibNotFound ->
-      msg_info (hov 0
+      msg_error (hov 0
 	(strbrk "Unable to locate library " ++ pr_qualid qid ++ str"."))
   | e -> assert false
 
@@ -291,25 +292,22 @@ let print_located_library r =
 
 let print_located_module r =
   let (loc,qid) = qualid_of_reference r in
-  let msg =
-    try
-      let dir = Nametab.full_name_module qid in
-      str "Module " ++ pr_dirpath dir
-    with Not_found ->
-      (if fst (repr_qualid qid) = empty_dirpath then
-	str "No module is referred to by basename "
-      else
-	str "No module is referred to by name ") ++ pr_qualid qid
-  in msg_info msg
+  try
+    let dir = Nametab.full_name_module qid in
+    msg_notice (str "Module " ++ pr_dirpath dir)
+  with Not_found ->
+    if fst (repr_qualid qid) = empty_dirpath then
+      msg_error (str "No module is referred to by basename" ++ spc () ++ pr_qualid qid)
+    else
+      msg_error (str "No module is referred to by name" ++ spc () ++ pr_qualid qid)
 
 let print_located_tactic r =
   let (loc,qid) = qualid_of_reference r in
-  msg_info
-    (try
-      str "Ltac " ++
-      pr_path (Nametab.path_of_tactic (Nametab.locate_tactic qid))
-     with Not_found ->
-	str "No Ltac definition is referred to by " ++ pr_qualid qid)
+  try
+    let path = Nametab.path_of_tactic (Nametab.locate_tactic qid) in
+    msg_notice (str "Ltac " ++ pr_path path)
+  with Not_found ->
+    msg_error (str "No Ltac definition is referred to by " ++ pr_qualid qid)
 
 let smart_global r =
   let gr = Smartlocate.smart_global r in
@@ -734,7 +732,7 @@ let vernac_declare_ml_module local l =
 				    l)
 
 let vernac_chdir = function
-  | None -> msg_info (str (Sys.getcwd()))
+  | None -> msg_notice (str (Sys.getcwd()))
   | Some path ->
       begin
 	try Sys.chdir (Envars.expand_path_macros ~warn:(fun x -> msg_warning (str x)) path)
@@ -1203,13 +1201,13 @@ let vernac_check_may_eval redexp glopt rc =
   match redexp with
     | None ->
 	if !pcoq <> None then (Option.get !pcoq).print_check env j
-	else msg_info (print_judgment env j)
+	else msg_notice (print_judgment env j)
     | Some r ->
         let (sigma',r_interp) = interp_redexp env sigma' r in
 	let redfun = fst (reduction_of_red_expr r_interp) in
 	if !pcoq <> None
 	then (Option.get !pcoq).print_eval redfun env sigma' rc j
-	else msg_info (print_eval redfun env sigma' rc j)
+	else msg_notice (print_eval redfun env sigma' rc j)
 
 let vernac_declare_reduction locality s r =
   declare_red_expr locality s (snd (interp_redexp (Global.env()) Evd.empty r))
@@ -1221,56 +1219,56 @@ let vernac_global_check c =
   let c = interp_constr evmap env c in
   let senv = Global.safe_env() in
   let j = Safe_typing.typing senv c in
-  msg_info (print_safe_judgment env j)
+  msg_notice (print_safe_judgment env j)
 
 let vernac_print = function
-  | PrintTables -> msg_info (print_tables ())
-  | PrintFullContext-> msg_info (print_full_context_typ ())
-  | PrintSectionContext qid -> msg_info (print_sec_context_typ qid)
-  | PrintInspect n -> msg_info (inspect n)
-  | PrintGrammar ent -> msg_info (Metasyntax.pr_grammar ent)
-  | PrintLoadPath dir -> (* For compatibility ? *) print_loadpath dir
-  | PrintModules -> msg_info (print_modules ())
+  | PrintTables -> msg_notice (print_tables ())
+  | PrintFullContext-> msg_notice (print_full_context_typ ())
+  | PrintSectionContext qid -> msg_notice (print_sec_context_typ qid)
+  | PrintInspect n -> msg_notice (inspect n)
+  | PrintGrammar ent -> msg_notice (Metasyntax.pr_grammar ent)
+  | PrintLoadPath dir -> (* For compatibility ? *) msg_notice (print_loadpath dir)
+  | PrintModules -> msg_notice (print_modules ())
   | PrintModule qid -> print_module qid
   | PrintModuleType qid -> print_modtype qid
-  | PrintMLLoadPath -> msg_info (Mltop.print_ml_path ())
-  | PrintMLModules -> msg_info (Mltop.print_ml_modules ())
+  | PrintMLLoadPath -> msg_notice (Mltop.print_ml_path ())
+  | PrintMLModules -> msg_notice (Mltop.print_ml_modules ())
   | PrintName qid ->
       if !pcoq <> None then (Option.get !pcoq).print_name qid
-      else msg_info (print_name qid)
-  | PrintGraph -> msg_info (Prettyp.print_graph())
-  | PrintClasses -> msg_info (Prettyp.print_classes())
-  | PrintTypeClasses -> msg_info (Prettyp.print_typeclasses())
-  | PrintInstances c -> msg_info (Prettyp.print_instances (smart_global c))
-  | PrintLtac qid -> msg_info (Tacinterp.print_ltac (snd (qualid_of_reference qid)))
-  | PrintCoercions -> msg_info (Prettyp.print_coercions())
+      else msg_notice (print_name qid)
+  | PrintGraph -> msg_notice (Prettyp.print_graph())
+  | PrintClasses -> msg_notice (Prettyp.print_classes())
+  | PrintTypeClasses -> msg_notice (Prettyp.print_typeclasses())
+  | PrintInstances c -> msg_notice (Prettyp.print_instances (smart_global c))
+  | PrintLtac qid -> msg_notice (Tacinterp.print_ltac (snd (qualid_of_reference qid)))
+  | PrintCoercions -> msg_notice (Prettyp.print_coercions())
   | PrintCoercionPaths (cls,clt) ->
-      msg_info (Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt))
-  | PrintCanonicalConversions -> msg_info (Prettyp.print_canonical_projections ())
+      msg_notice (Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt))
+  | PrintCanonicalConversions -> msg_notice (Prettyp.print_canonical_projections ())
   | PrintUniverses (b, None) ->
     let univ = Global.universes () in
     let univ = if b then Univ.sort_universes univ else univ in
-    msg_info (Univ.pr_universes univ)
+    msg_notice (Univ.pr_universes univ)
   | PrintUniverses (b, Some s) -> dump_universes b s
-  | PrintHint r -> msg_info (Auto.pr_hint_ref (smart_global r))
-  | PrintHintGoal -> msg_info (Auto.pr_applicable_hint ())
-  | PrintHintDbName s -> msg_info (Auto.pr_hint_db_by_name s)
-  | PrintRewriteHintDbName s -> msg_info (Autorewrite.print_rewrite_hintdb s)
-  | PrintHintDb -> msg_info (Auto.pr_searchtable ())
+  | PrintHint r -> msg_notice (Auto.pr_hint_ref (smart_global r))
+  | PrintHintGoal -> msg_notice (Auto.pr_applicable_hint ())
+  | PrintHintDbName s -> msg_notice (Auto.pr_hint_db_by_name s)
+  | PrintRewriteHintDbName s -> msg_notice (Autorewrite.print_rewrite_hintdb s)
+  | PrintHintDb -> msg_notice (Auto.pr_searchtable ())
   | PrintScopes ->
-      msg_info (Notation.pr_scopes (Constrextern.without_symbols pr_lglob_constr))
+      msg_notice (Notation.pr_scopes (Constrextern.without_symbols pr_lglob_constr))
   | PrintScope s ->
-      msg_info (Notation.pr_scope (Constrextern.without_symbols pr_lglob_constr) s)
+      msg_notice (Notation.pr_scope (Constrextern.without_symbols pr_lglob_constr) s)
   | PrintVisibility s ->
-      msg_info (Notation.pr_visibility (Constrextern.without_symbols pr_lglob_constr) s)
-  | PrintAbout qid -> msg_info (print_about qid)
-  | PrintImplicit qid -> msg_info (print_impargs qid)
+      msg_notice (Notation.pr_visibility (Constrextern.without_symbols pr_lglob_constr) s)
+  | PrintAbout qid -> msg_notice (print_about qid)
+  | PrintImplicit qid -> msg_notice (print_impargs qid)
   | PrintAssumptions (o,r) ->
       (* Prints all the axioms and section variables used by a term *)
       let cstr = constr_of_global (smart_global r) in
       let st = Conv_oracle.get_transp_state () in
       let nassums = Assumptions.assumptions st ~add_opaque:o cstr in
-      msg_info (Printer.pr_assumptionset (Global.env ()) nassums)
+      msg_notice (Printer.pr_assumptionset (Global.env ()) nassums)
 
 let global_module r =
   let (loc,qid) = qualid_of_reference r in
@@ -1309,26 +1307,26 @@ let vernac_search s r =
   match s with
   | SearchPattern c ->
       let (_,c) = interp_open_constr_patvar Evd.empty (Global.env()) c in
-      msg_info (Search.search_pattern c r)
+      msg_notice (Search.search_pattern c r)
   | SearchRewrite c ->
       let _,pat = interp_open_constr_patvar Evd.empty (Global.env()) c in
-      msg_info (Search.search_rewrite pat r)
+      msg_notice (Search.search_rewrite pat r)
   | SearchHead c ->
       let _,pat = interp_open_constr_patvar Evd.empty (Global.env()) c in
-      msg_info (Search.search_by_head pat r)
+      msg_notice (Search.search_by_head pat r)
   | SearchAbout sl ->
-      msg_info (Search.search_about (List.map (on_snd interp_search_about_item) sl) r)
+      msg_notice (Search.search_about (List.map (on_snd interp_search_about_item) sl) r)
 
 let vernac_locate = function
-  | LocateTerm (AN qid) -> msg_info (print_located_qualid qid)
+  | LocateTerm (AN qid) -> msg_notice (print_located_qualid qid)
   | LocateTerm (ByNotation (_,ntn,sc)) ->
-      msg_info
+      msg_notice
         (Notation.locate_notation
           (Constrextern.without_symbols pr_lglob_constr) ntn sc)
   | LocateLibrary qid -> print_located_library qid
   | LocateModule qid -> print_located_module qid
   | LocateTactic qid -> print_located_tactic qid
-  | LocateFile f -> locate_file f
+  | LocateFile f -> msg_notice (locate_file f)
 
 (****************)
 (* Backtracking *)
@@ -1419,7 +1417,7 @@ let vernac_unfocus () =
 let vernac_unfocused () =
   let p = Proof_global.give_me_the_proof () in
   if Proof.unfocused p then
-    msg_info (str"The proof is indeed fully unfocused.")
+    msg_notice (str"The proof is indeed fully unfocused.")
   else
     error "The proof is not fully unfocused."
 
@@ -1457,21 +1455,21 @@ let vernac_bullet (bullet:Proof_global.Bullet.t) =
 let vernac_show = function
   | ShowGoal goalref ->
       if !pcoq <> None then (Option.get !pcoq).show_goal goalref
-      else msg_info (match goalref with
+      else msg_notice (match goalref with
 	| OpenSubgoals -> pr_open_subgoals ()
 	| NthGoal n -> pr_nth_open_subgoal n
         | GoalId id -> pr_goal_by_id id)
   | ShowGoalImplicitly None ->
-      Constrextern.with_implicits msg_info (pr_open_subgoals ())
+      Constrextern.with_implicits msg_notice (pr_open_subgoals ())
   | ShowGoalImplicitly (Some n) ->
-      Constrextern.with_implicits msg_info (pr_nth_open_subgoal n)
+      Constrextern.with_implicits msg_notice (pr_nth_open_subgoal n)
   | ShowProof -> show_proof ()
   | ShowNode -> show_node ()
   | ShowScript -> show_script ()
   | ShowExistentials -> show_top_evars ()
   | ShowTree -> show_prooftree ()
   | ShowProofNames ->
-      msg_info (pr_sequence pr_id (Pfedit.get_all_proof_names()))
+      msg_notice (pr_sequence pr_id (Pfedit.get_all_proof_names()))
   | ShowIntros all -> show_intro all
   | ShowMatch id -> show_match id
   | ShowThesis -> show_thesis ()
@@ -1489,7 +1487,7 @@ let vernac_check_guard () =
     with UserError(_,s) ->
       (str ("Condition violated: ") ++s)
   in
-  msg_info message
+  msg_notice message
 
 let interp c = match c with
   (* Control (done in vernac) *)

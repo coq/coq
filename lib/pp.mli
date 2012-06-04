@@ -77,9 +77,24 @@ val tclose : unit -> std_ppcmds
 (** {6 Sending messages to the user } *)
 
 val msg_info : std_ppcmds -> unit
+(** Message that displays information, usually in verbose mode, such as [Foobar
+    is defined] *)
+
+val msg_notice : std_ppcmds -> unit
+(** Message that should be displayed, such as [Print Foo] or [Show Bar]. *)
+
 val msg_warning : std_ppcmds -> unit
-(* val msg_tactic : std_ppcmds -> unit *)
+(** Message indicating that something went wrong, but without serious 
+    consequences. *)
+
+val msg_error : std_ppcmds -> unit
+(** Message indicating that something went really wrong, though still 
+    recoverable; otherwise an exception would have been raised. *)
+
 val msg_debug : std_ppcmds -> unit
+(** For debugging purposes *)
+
+(** {6 Utilities} *)
 
 val string_of_ppcmds : std_ppcmds -> string
 
@@ -152,8 +167,6 @@ val pperrnl : std_ppcmds -> unit
 val pperr_flush : unit -> unit
 val pp_flush : unit -> unit
 val flush_all: unit -> unit
-
-val set_warning_function : (Format.formatter -> std_ppcmds -> unit) -> unit
 
 (** {6 Low-level pretty-printing functions {% \emph{%}with flush{% }%}. } *)
 

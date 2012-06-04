@@ -36,7 +36,7 @@ let declare_fix_ref = ref (fun _ _ _ _ _ -> assert false)
 let declare_definition_ref = ref (fun _ _ _ _ _ -> assert false)
 
 let trace s =
-  if !Flags.debug then (msg_debug s; msgerr s)
+  if !Flags.debug then msg_debug s
   else ()
 
 let succfix (depth, fixrels) =
