@@ -317,7 +317,7 @@ let load_pref () =
     set_bool "auto_save" (fun v -> np.auto_save <- v);
     set_int "auto_save_delay" (fun v -> np.auto_save_delay <- v);
     set_pair "auto_save_name" (fun v1 v2 -> np.auto_save_name <- (v1,v2));
-    set_hd "encoding_manual" (fun v -> np.encoding <- (inputenc_of_string v));
+    set_hd "encoding" (fun v -> np.encoding <- (inputenc_of_string v));
     set_hd "project_options"
       (fun v -> np.read_project <- (project_behavior_of_string v));
     set_hd "project_file_name" (fun v -> np.project_file_name <- v);
