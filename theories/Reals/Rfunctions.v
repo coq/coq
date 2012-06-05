@@ -82,6 +82,15 @@ Proof.
   intros n0 H' m; rewrite H'; auto with real.
 Qed.
 
+Lemma Rpow_mult_distr : forall (x y:R) (n:nat), (x * y) ^ n = x^n * y^n.
+Proof.
+intros x y n ; induction n.
+ field.
+ simpl.
+ repeat (rewrite Rmult_assoc) ; apply Rmult_eq_compat_l.
+ rewrite IHn ; field.
+Qed.
+
 Lemma pow_nonzero : forall (x:R) (n:nat), x <> 0 -> x ^ n <> 0.
 Proof.
   intro; simple induction n; simpl.

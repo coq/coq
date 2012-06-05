@@ -16,17 +16,224 @@ Require Export Cos_rel.
 Require Export Cos_plus.
 Require Import ZArith_base.
 Require Import Zcomplements.
+Require Import Classical_Prop.
+Require Import Fourier.
+Require Import Ranalysis1.
+Require Import Rsqrt_def. 
+Require Import PSeries_reg.
+
 Local Open Scope nat_scope.
 Local Open Scope R_scope.
 
-(** sin_PI2 is the only remaining axiom **)
-Axiom sin_PI2 : sin (PI / 2) = 1.
+Lemma CVN_R_cos :
+  forall fn:nat -> R -> R,
+    fn = (fun (N:nat) (x:R) => (-1) ^ N / INR (fact (2 * N)) * x ^ (2 * N)) ->
+    CVN_R fn.
+Proof.
+  unfold CVN_R in |- *; intros.
+  cut ((r:R) <> 0).
+  intro hyp_r; unfold CVN_r in |- *.
+  exists (fun n:nat => / INR (fact (2 * n)) * r ^ (2 * n)).
+  cut
+    { l:R |
+        Un_cv
+        (fun n:nat =>
+          sum_f_R0 (fun k:nat => Rabs (/ INR (fact (2 * k)) * r ^ (2 * k)))
+          n) l }.
+  intro X; elim X; intros.
+  exists x.
+  split.
+  apply p.
+  intros; rewrite H; unfold Rdiv in |- *; do 2 rewrite Rabs_mult.
+  rewrite pow_1_abs; rewrite Rmult_1_l.
+  cut (0 < / INR (fact (2 * n))).
+  intro; rewrite (Rabs_right _ (Rle_ge _ _ (Rlt_le _ _ H1))).
+  apply Rmult_le_compat_l.
+  left; apply H1.
+  rewrite <- RPow_abs; apply pow_maj_Rabs.
+  rewrite Rabs_Rabsolu.
+  unfold Boule in H0; rewrite Rminus_0_r in H0.
+  left; apply H0.
+  apply Rinv_0_lt_compat; apply INR_fact_lt_0.
+  apply Alembert_C2.
+  intro; apply Rabs_no_R0.
+  apply prod_neq_R0.
+  apply Rinv_neq_0_compat.
+  apply INR_fact_neq_0.
+  apply pow_nonzero; assumption.
+  assert (H0 := Alembert_cos).
+  unfold cos_n in H0; unfold Un_cv in H0; unfold Un_cv in |- *; intros.
+  cut (0 < eps / Rsqr r).
+  intro; elim (H0 _ H2); intros N0 H3.
+  exists N0; intros.
+  unfold R_dist in |- *; assert (H5 := H3 _ H4).
+  unfold R_dist in H5;
+    replace
+    (Rabs
+      (Rabs (/ INR (fact (2 * S n)) * r ^ (2 * S n)) /
+        Rabs (/ INR (fact (2 * n)) * r ^ (2 * n)))) with
+    (Rsqr r *
+      Rabs ((-1) ^ S n / INR (fact (2 * S n)) / ((-1) ^ n / INR (fact (2 * n))))).
+  apply Rmult_lt_reg_l with (/ Rsqr r).
+  apply Rinv_0_lt_compat; apply Rsqr_pos_lt; assumption.
+  pattern (/ Rsqr r) at 1 in |- *; replace (/ Rsqr r) with (Rabs (/ Rsqr r)).
+  rewrite <- Rabs_mult; rewrite Rmult_minus_distr_l; rewrite Rmult_0_r;
+    rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+  rewrite Rmult_1_l; rewrite <- (Rmult_comm eps); apply H5.
+  unfold Rsqr in |- *; apply prod_neq_R0; assumption.
+  rewrite Rabs_Rinv.
+  rewrite Rabs_right.
+  reflexivity.
+  apply Rle_ge; apply Rle_0_sqr.
+  unfold Rsqr in |- *; apply prod_neq_R0; assumption.
+  rewrite (Rmult_comm (Rsqr r)); unfold Rdiv in |- *; repeat rewrite Rabs_mult;
+    rewrite Rabs_Rabsolu; rewrite pow_1_abs; rewrite Rmult_1_l;
+      repeat rewrite Rmult_assoc; apply Rmult_eq_compat_l.
+  rewrite Rabs_Rinv.
+  rewrite Rabs_mult; rewrite (pow_1_abs n); rewrite Rmult_1_l;
+    rewrite <- Rabs_Rinv.
+  rewrite Rinv_involutive.
+  rewrite Rinv_mult_distr.
+  rewrite Rabs_Rinv.
+  rewrite Rinv_involutive.
+  rewrite (Rmult_comm (Rabs (Rabs (r ^ (2 * S n))))); rewrite Rabs_mult;
+    rewrite Rabs_Rabsolu; rewrite Rmult_assoc; apply Rmult_eq_compat_l.
+  rewrite Rabs_Rinv.
+  do 2 rewrite Rabs_Rabsolu; repeat rewrite Rabs_right.
+  replace (r ^ (2 * S n)) with (r ^ (2 * n) * r * r).
+  repeat rewrite <- Rmult_assoc; rewrite <- Rinv_l_sym.
+  unfold Rsqr in |- *; ring.
+  apply pow_nonzero; assumption.
+  replace (2 * S n)%nat with (S (S (2 * n))).
+  simpl in |- *; ring.
+  ring.
+  apply Rle_ge; apply pow_le; left; apply (cond_pos r).
+  apply Rle_ge; apply pow_le; left; apply (cond_pos r).
+  apply Rabs_no_R0; apply pow_nonzero; assumption.
+  apply Rabs_no_R0; apply INR_fact_neq_0.
+  apply INR_fact_neq_0.
+  apply Rabs_no_R0; apply Rinv_neq_0_compat; apply INR_fact_neq_0.
+  apply Rabs_no_R0; apply pow_nonzero; assumption.
+  apply INR_fact_neq_0.
+  apply Rinv_neq_0_compat; apply INR_fact_neq_0.
+  apply prod_neq_R0.
+  apply pow_nonzero; discrR.
+  apply Rinv_neq_0_compat; apply INR_fact_neq_0.
+  unfold Rdiv in |- *; apply Rmult_lt_0_compat.
+  apply H1.
+  apply Rinv_0_lt_compat; apply Rsqr_pos_lt; assumption.
+  assert (H0 := cond_pos r); red in |- *; intro; rewrite H1 in H0;
+    elim (Rlt_irrefl _ H0).
+Qed.
 
 (**********)
-Lemma PI_neq0 : PI <> 0.
+Lemma continuity_cos : continuity cos.
 Proof.
-  red in |- *; intro; assert (H0 := PI_RGT_0); rewrite H in H0;
-    elim (Rlt_irrefl _ H0).
+  set (fn := fun (N:nat) (x:R) => (-1) ^ N / INR (fact (2 * N)) * x ^ (2 * N)).
+  cut (CVN_R fn).
+  intro; cut (forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l }).
+  intro cv; cut (forall n:nat, continuity (fn n)).
+  intro; cut (forall x:R, cos x = SFL fn cv x).
+  intro; cut (continuity (SFL fn cv) -> continuity cos).
+  intro; apply H1.
+  apply SFL_continuity; assumption.
+  unfold continuity in |- *; unfold continuity_pt in |- *;
+    unfold continue_in in |- *; unfold limit1_in in |- *;
+      unfold limit_in in |- *; simpl in |- *; unfold R_dist in |- *;
+        intros.
+  elim (H1 x _ H2); intros.
+  exists x0; intros.
+  elim H3; intros.
+  split.
+  apply H4.
+  intros; rewrite (H0 x); rewrite (H0 x1); apply H5; apply H6.
+  intro; unfold cos, SFL in |- *.
+  case (cv x); case (exist_cos (Rsqr x)); intros.
+  symmetry  in |- *; eapply UL_sequence.
+  apply u.
+  unfold cos_in in c; unfold infinite_sum in c; unfold Un_cv in |- *; intros.
+  elim (c _ H0); intros N0 H1.
+  exists N0; intros.
+  unfold R_dist in H1; unfold R_dist, SP in |- *.
+  replace (sum_f_R0 (fun k:nat => fn k x) n) with
+  (sum_f_R0 (fun i:nat => cos_n i * Rsqr x ^ i) n).
+  apply H1; assumption.
+  apply sum_eq; intros.
+  unfold cos_n, fn in |- *; apply Rmult_eq_compat_l.
+  unfold Rsqr in |- *; rewrite pow_sqr; reflexivity.
+  intro; unfold fn in |- *;
+    replace (fun x:R => (-1) ^ n / INR (fact (2 * n)) * x ^ (2 * n)) with
+    (fct_cte ((-1) ^ n / INR (fact (2 * n))) * pow_fct (2 * n))%F;
+    [ idtac | reflexivity ].
+  apply continuity_mult.
+  apply derivable_continuous; apply derivable_const.
+  apply derivable_continuous; apply (derivable_pow (2 * n)).
+  apply CVN_R_CVS; apply X.
+  apply CVN_R_cos; unfold fn in |- *; reflexivity.
+Qed.
+
+Lemma sin_gt_cos_7_8 : sin (7 / 8) > cos (7 / 8).
+Proof. 
+assert (lo1 : 0 <= 7/8) by fourier.
+assert (up1 : 7/8 <= 4) by fourier.
+assert (lo : -2 <= 7/8) by fourier.
+assert (up : 7/8 <= 2) by fourier.
+destruct (pre_sin_bound _ 0 lo1 up1) as [lower _ ].
+destruct (pre_cos_bound _ 0 lo up) as [_ upper].
+apply Rle_lt_trans with (1 := upper).
+apply Rlt_le_trans with (2 := lower).
+unfold cos_approx, sin_approx.
+simpl sum_f_R0; replace 7 with (IZR 7) by (simpl; field).
+replace 8 with (IZR 8) by (simpl; field).
+unfold cos_term, sin_term; simpl fact; rewrite !INR_IZR_INZ.
+simpl plus; simpl mult.
+field_simplify;
+  try (repeat apply conj; apply not_eq_sym, Rlt_not_eq, (IZR_lt 0); reflexivity).
+unfold Rminus; rewrite !pow_IZR, <- !mult_IZR, <- !opp_IZR, <- ?plus_IZR.
+match goal with 
+  |- IZR ?a / ?b < ?c / ?d =>
+  apply Rmult_lt_reg_r with d;[apply (IZR_lt 0); reflexivity |
+    unfold Rdiv at 2; rewrite Rmult_assoc, Rinv_l, Rmult_1_r, Rmult_comm;
+     [ |apply not_eq_sym, Rlt_not_eq, (IZR_lt 0); reflexivity ]];
+  apply Rmult_lt_reg_r with b;[apply (IZR_lt 0); reflexivity | ]
+end.
+unfold Rdiv; rewrite !Rmult_assoc, Rinv_l, Rmult_1_r;
+ [ | apply not_eq_sym, Rlt_not_eq, (IZR_lt 0); reflexivity].
+repeat (rewrite <- !plus_IZR || rewrite <- !mult_IZR).
+apply IZR_lt; reflexivity.
+Qed.
+
+Definition PI_2_aux : {z | 7/8 <= z <= 7/4 /\ -cos z = 0}.
+assert (cc : continuity (fun r =>- cos r)).
+ apply continuity_opp, continuity_cos.
+assert (cvp : 0 < cos (7/8)).
+ assert (int78 : -2 <= 7/8 <= 2) by (split; fourier).
+ destruct int78 as [lower upper].
+ case (pre_cos_bound _ 0 lower upper).
+ unfold cos_approx; simpl sum_f_R0; unfold cos_term.
+ intros cl _; apply Rlt_le_trans with (2 := cl); simpl.
+ fourier.
+assert (cun : cos (7/4) < 0).
+ replace (7/4) with (7/8 + 7/8) by field.
+ rewrite cos_plus.
+ apply Rlt_minus; apply Rsqr_incrst_1.
+   exact sin_gt_cos_7_8.
+  apply Rlt_le; assumption.
+ apply Rlt_le; apply Rlt_trans with (1 := cvp); exact sin_gt_cos_7_8.
+apply IVT; auto; fourier.
+Qed.
+
+Definition PI2 := proj1_sig PI_2_aux.
+
+Definition PI := 2 * PI2.
+
+Lemma cos_pi2 : cos PI2 = 0.
+unfold PI2; case PI_2_aux; simpl.
+intros x [_ q]; rewrite <- (Ropp_involutive (cos x)), q; apply Ropp_0.
+Qed.
+
+Lemma pi2_int : 7/8 <= PI2 <= 7/4.
+unfold PI2; case PI_2_aux; simpl; tauto.
 Qed.
 
 (**********)
@@ -45,18 +252,63 @@ Qed.
 
 Lemma cos2 : forall x:R, Rsqr (cos x) = 1 - Rsqr (sin x).
 Proof.
-  intro x; generalize (sin2_cos2 x); intro H1; rewrite <- H1;
-    unfold Rminus in |- *; rewrite <- (Rplus_comm (Rsqr (cos x)));
-      rewrite Rplus_assoc; rewrite Rplus_opp_r; symmetry  in |- *;
-        apply Rplus_0_r.
+  intros x; rewrite <- (sin2_cos2 x); ring.
+Qed.
+
+Lemma sin2 : forall x:R, Rsqr (sin x) = 1 - Rsqr (cos x).
+Proof.
+  intro x; generalize (cos2 x); intro H1; rewrite H1.
+  unfold Rminus in |- *; rewrite Ropp_plus_distr; rewrite <- Rplus_assoc;
+    rewrite Rplus_opp_r; rewrite Rplus_0_l; symmetry  in |- *;
+      apply Ropp_involutive.
 Qed.
 
 (**********)
 Lemma cos_PI2 : cos (PI / 2) = 0.
 Proof.
-  apply Rsqr_eq_0; rewrite cos2; rewrite sin_PI2; rewrite Rsqr_1;
-    unfold Rminus in |- *; apply Rplus_opp_r.
+ unfold PI; generalize cos_pi2; replace ((2 * PI2)/2) with PI2 by field; tauto.
 Qed.
+
+Lemma sin_pos_tech : forall x, 0 < x < 2 -> 0 < sin x. 
+intros x [int1 int2].
+assert (lo : 0 <= x) by (apply Rlt_le; assumption).
+assert (up : x <= 4) by (apply Rlt_le, Rlt_trans with (1:=int2); fourier).
+destruct (pre_sin_bound _ 0 lo up) as [t _]; clear lo up.
+apply Rlt_le_trans with (2:= t); clear t.
+unfold sin_approx; simpl sum_f_R0; unfold sin_term; simpl.
+match goal with |- _ < ?a =>
+  replace a with (x * (1 - x^2/6)) by (simpl; field)
+end.
+assert (t' : x ^ 2 <= 4).
+ replace 4 with (2 ^ 2) by field.
+ apply (pow_incr x 2); split; apply Rlt_le; assumption.
+apply Rmult_lt_0_compat;[assumption | fourier ].
+Qed.
+
+Lemma sin_PI2 : sin (PI / 2) = 1.
+replace (PI / 2) with PI2 by (unfold PI; field).
+assert (int' : 0 < PI2 < 2).
+ destruct pi2_int; split; fourier.
+assert (lo2 := sin_pos_tech PI2 int').
+assert (t2 : Rabs (sin PI2) = 1).
+ rewrite <- Rabs_R1; apply Rsqr_eq_abs_0.
+ rewrite Rsqr_1, sin2, cos_pi2, Rsqr_0, Rminus_0_r; reflexivity.
+revert t2; rewrite Rabs_pos_eq;[| apply Rlt_le]; tauto.
+Qed.
+
+Lemma PI_RGT_0 : PI > 0.
+Proof. unfold PI; destruct pi2_int; fourier. Qed.
+
+Lemma PI_4 : PI <= 4.
+Proof. unfold PI; destruct pi2_int; fourier. Qed.
+
+(**********)
+Lemma PI_neq0 : PI <> 0.
+Proof.
+  red in |- *; intro; assert (H0 := PI_RGT_0); rewrite H in H0;
+    elim (Rlt_irrefl _ H0).
+Qed.
+
 
 (**********)
 Lemma cos_PI : cos PI = -1.
@@ -80,6 +332,27 @@ Proof.
   rewrite Rplus_0_r; rewrite Rplus_comm; exact H.
 Qed.
 
+Lemma sin_bound : forall (a : R) (n : nat), 0 <= a -> a <= PI ->
+       sin_approx a (2 * n + 1) <= sin a <= sin_approx a (2 * (n + 1)).
+Proof.
+intros a n a0 api; apply pre_sin_bound.
+ assumption.
+apply Rle_trans with (1:= api) (2 := PI_4).
+Qed.
+
+Lemma cos_bound : forall (a : R) (n : nat), - PI / 2 <= a -> a <= PI / 2 ->
+       cos_approx a (2 * n + 1) <= cos a <= cos_approx a (2 * (n + 1)).
+Proof.
+intros a n lower upper; apply pre_cos_bound.
+ apply Rle_trans with (2 := lower).
+ apply Rmult_le_reg_r with 2; [fourier |].
+ replace ((-PI/2) * 2) with (-PI) by field.
+ assert (t := PI_4); fourier.
+apply Rle_trans with (1 := upper).
+apply Rmult_le_reg_r with 2; [fourier | ].
+replace ((PI/2) * 2) with PI by field.
+generalize PI_4; intros; fourier.
+Qed.
 (**********)
 Lemma neg_cos : forall x:R, cos (x + PI) = - cos x.
 Proof.
@@ -158,14 +431,6 @@ Qed.
 (*******************************************************)
 (** * Some properties of cos, sin and tan              *)
 (*******************************************************)
-
-Lemma sin2 : forall x:R, Rsqr (sin x) = 1 - Rsqr (cos x).
-Proof.
-  intro x; generalize (cos2 x); intro H1; rewrite H1.
-  unfold Rminus in |- *; rewrite Ropp_plus_distr; rewrite <- Rplus_assoc;
-    rewrite Rplus_opp_r; rewrite Rplus_0_l; symmetry  in |- *;
-      apply Ropp_involutive.
-Qed.
 
 Lemma sin_2a : forall x:R, sin (2 * x) = 2 * sin x * cos x.
 Proof.

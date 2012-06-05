@@ -414,27 +414,27 @@ Proof.
 Qed.
 
 (** Now, PI is defined *)
-Definition PI : R := 4 * (let (a,_) := exist_PI in a).
+Definition Alt_PI : R := 4 * (let (a,_) := exist_PI in a).
 
 (** We can get an approximation of PI with the following inequality *)
-Lemma PI_ineq :
+Lemma Alt_PI_ineq :
   forall N:nat,
-    sum_f_R0 (tg_alt PI_tg) (S (2 * N)) <= PI / 4 <=
+    sum_f_R0 (tg_alt PI_tg) (S (2 * N)) <= Alt_PI / 4 <=
     sum_f_R0 (tg_alt PI_tg) (2 * N).
 Proof.
   intro; apply alternated_series_ineq.
   apply PI_tg_decreasing.
   apply PI_tg_cv.
-  unfold PI in |- *; case exist_PI; intro.
+  unfold Alt_PI in |- *; case exist_PI; intro.
   replace (4 * x / 4) with x.
   trivial.
   unfold Rdiv in |- *; rewrite (Rmult_comm 4); rewrite Rmult_assoc;
     rewrite <- Rinv_r_sym; [ rewrite Rmult_1_r; reflexivity | discrR ].
 Qed.
 
-Lemma PI_RGT_0 : 0 < PI.
+Lemma Alt_PI_RGT_0 : 0 < Alt_PI.
 Proof.
-  assert (H := PI_ineq 0).
+  assert (H := Alt_PI_ineq 0).
   apply Rmult_lt_reg_l with (/ 4).
   apply Rinv_0_lt_compat; prove_sup0.
   rewrite Rmult_0_r; rewrite Rmult_comm.
