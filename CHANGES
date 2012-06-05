@@ -1,6 +1,13 @@
 Changes from V8.4
 =================
 
+Vernacular commands
+
+- The command "Record foo ..." does not generate induction principles
+  (foo_rect, foo_rec, foo_ind) anymore by default (feature wish #2693).
+  A flag "Set/Unset Record Elimination Schemes" allows to change this.
+  The tactic "induction" on a record is now actually doing "destruct".
+
 Tactics
 
 - Tactics btauto, a reflexive boolean tautology solver.
