@@ -63,7 +63,7 @@ let if_silent f x = if !silent then f x
 let if_verbose f x = if not !silent then f x
 
 (* Use terminal color *)
-let term_color = ref true
+let term_color = ref false
 let make_term_color b = term_color := b
 let is_term_color () = !term_color
 

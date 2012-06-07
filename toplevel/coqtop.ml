@@ -303,7 +303,7 @@ let parse_args arglist =
 
     | "-filteropts" :: rem -> filter_opts := true; parse rem
 
-    | "-nocolor" :: rem -> Flags.make_term_color false; parse rem
+    | "-color" :: rem -> Flags.make_term_color true; parse rem
 
     | s :: rem ->
       if !filter_opts then
