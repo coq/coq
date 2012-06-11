@@ -1,5 +1,5 @@
 Require Import Rbase.
-Require Import Ranalysis.
+Require Import Ranalysis_reg.
 Require Import Rfunctions.
 Require Import Rseries.
 Require Import Fourier.

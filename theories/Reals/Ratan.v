@@ -1,8 +1,8 @@
 Require Import Fourier.
 Require Import Rbase.
 Require Import PSeries_reg.
-Require Import Rtrigo.
-Require Import Ranalysis.
+Require Import Rtrigo1.
+Require Import Ranalysis_reg.
 Require Import Rfunctions.
 Require Import AltSeries.
 Require Import Rseries.

@@ -9,7 +9,7 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import SeqSeries.
-Require Import Rtrigo.
+Require Import Rtrigo1.
 Require Import R_sqrt.
 Open Local Scope R_scope.
 

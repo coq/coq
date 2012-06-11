@@ -20,6 +20,7 @@ Ranalysis3.vo
 Ranalysis4.vo
 Ranalysis5.vo
 Ranalysis.vo
+Ranalysis_reg.vo
 Ratan.vo
 Raxioms.vo
 Rbase.vo
@@ -51,6 +52,7 @@ Rtrigo_calc.vo
 Rtrigo_def.vo
 Rtrigo_fun.vo
 Rtrigo_reg.vo
+Rtrigo1.vo
 Rtrigo.vo
 SeqProp.vo
 SeqSeries.vo

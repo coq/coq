@@ -9,7 +9,7 @@
 
 Require Import Rfunctions.
 Require Import SeqSeries.
-Require Import Ranalysis.
+Require Import Ranalysis_reg.
 Require Import Rbase.
 Require Import RiemannInt_SF.
 Require Import Classical_Prop.

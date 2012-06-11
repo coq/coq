@@ -9,7 +9,7 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import SeqSeries.
-Require Import Rtrigo.
+Require Import Rtrigo1.
 Require Import Ranalysis1.
 Require Import Ranalysis3.
 Require Import Exp_prop.
