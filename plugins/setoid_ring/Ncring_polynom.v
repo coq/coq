@@ -103,7 +103,7 @@ Variable P:Pol.
 
 (* Xi^n * P + Q
 les variables de tete de Q ne sont pas forcement < i 
-mais Q est normalisé : variables de tete decroissantes *)
+mais Q est normalisÃ© : variables de tete decroissantes *)
 
 Fixpoint PaddX (i n:positive)(Q:Pol){struct Q}:=
   match Q with

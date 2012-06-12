@@ -119,7 +119,7 @@ Lemma essai : {x : nat | x = 1}.
 Restart.
 
 (* mais si on contraint par le but alors ca marche : *)
-(* Remarque : on peut toujours faire ça *)
+(* Remarque : on peut toujours faire Ã§a *)
  refine (exist _ 1 _:{x : nat | x = 1}).
 
 Restart.
@@ -184,7 +184,7 @@ Qed.
 
 
 
-(* Quelques essais de recurrence bien fondée *)
+(* Quelques essais de recurrence bien fondÃ©e *)
 
 Require Import Wf.
 Require Import Wf_nat.

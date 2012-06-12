@@ -1,4 +1,4 @@
-(* Test régression bug #1041 *)
+(* Test rÃ©gression bug #1041 *)
 
 Goal Prop.
 

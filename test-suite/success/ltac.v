@@ -1,6 +1,6 @@
 (* The tactic language *)
 
-(* Submitted by Pierre Crégut *)
+(* Submitted by Pierre CrÃ©gut *)
 (* Checks substitution of x *)
 Ltac f x := unfold x in |- *; idtac.
 
@@ -9,7 +9,7 @@ f plus.
 reflexivity.
 Qed.
 
-(* Submitted by Pierre Crégut *)
+(* Submitted by Pierre CrÃ©gut *)
 (* Check syntactic correctness *)
 Ltac F x := idtac; G x
  with G y := idtac; F y.
@@ -211,7 +211,7 @@ is.
 exact I.
 Abort.
 
-(* Interférence entre espaces des noms *)
+(* InterfÃ©rence entre espaces des noms *)
 
 Ltac O := intro.
 Ltac Z1 t := set (x:=t).

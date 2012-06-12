@@ -67,9 +67,9 @@ Abort.
 
 (* Submitted by Jacek Chrzaszcz (bug #1102) *)
 
-(* le problème a été résolu ici par normalisation des evars présentes
-   dans les types d'evars, mais le problème reste a priori ouvert dans
-   le cas plus général d'evars non instanciées dans les types d'autres
+(* le problÃ¨me a Ã©tÃ© rÃ©solu ici par normalisation des evars prÃ©sentes
+   dans les types d'evars, mais le problÃ¨me reste a priori ouvert dans
+   le cas plus gÃ©nÃ©ral d'evars non instanciÃ©es dans les types d'autres
    evars *)
 
 Goal exists n:nat, n=n.

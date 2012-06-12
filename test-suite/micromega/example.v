@@ -2,7 +2,7 @@
 (*                                                                      *)
 (* Micromega: A reflexive tactic using the Positivstellensatz           *)
 (*                                                                      *)
-(*  Frédéric Besson (Irisa/Inria) 2006-2008                             *)
+(*  FrÃ©dÃ©ric Besson (Irisa/Inria) 2006-2008                             *)
 (*                                                                      *)
 (************************************************************************)
 
@@ -23,7 +23,7 @@ Proof.
 Qed.
 
 
-(* From Laurent Théry *)
+(* From Laurent ThÃ©ry *)
 
 Lemma some_pol : forall x, 4 * x ^ 2 + 3 * x + 2 >= 0.
 Proof.

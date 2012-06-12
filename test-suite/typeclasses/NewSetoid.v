@@ -8,7 +8,7 @@
 
 (* Certified Haskell Prelude.
  * Author: Matthieu Sozeau
- * Institution: LRI, CNRS UMR 8623 - Universit√copyright Paris Sud
+ * Institution: LRI, CNRS UMR 8623 - Universit√Écopyright Paris Sud
  *              91405 Orsay, France *)
 
 Require Import Coq.Program.Program.

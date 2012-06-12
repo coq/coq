@@ -44,7 +44,7 @@ Fixpoint build (nl : list nat) :
 
 
 (* Checks that disjoint contexts are correctly set by restrict_hyp *)
-(* Bug de 1999 corrigé en déc 2004 *)
+(* Bug de 1999 corrigÃ© en dÃ©c 2004 *)
 
 Check
   (let p :=

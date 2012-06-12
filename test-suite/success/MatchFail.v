@@ -4,7 +4,7 @@ Require Export ZArithRing.
 (* Cette tactique a pour objectif de remplacer toute instance
    de (POS (xI e)) ou de (POS (xO e)) par
    2*(POS e)+1  ou 2*(POS e), pour rendre les expressions plus
-   à même d'être utilisées par Ring, lorsque ces expressions contiennent
+   Ã  mÃªme d'Ãªtre utilisÃ©es par Ring, lorsque ces expressions contiennent
    des variables de type positive. *)
 Ltac compute_POS :=
   match goal with

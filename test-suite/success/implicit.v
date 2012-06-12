@@ -61,7 +61,7 @@ Check (eq1 0 0).
 Check (eq2 0 0).
 Check (eq3 nat 0 0).
 
-(* Example submitted by Frédéric (interesting in v8 syntax) *)
+(* Example submitted by FrÃ©dÃ©ric (interesting in v8 syntax) *)
 
 Parameter f : nat -> nat * nat.
 Notation lhs := fst.
