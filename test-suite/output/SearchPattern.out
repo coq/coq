@@ -14,6 +14,7 @@ minus: nat -> nat -> nat
 min: nat -> nat -> nat
 max: nat -> nat -> nat
 length: forall A : Type, list A -> nat
+
 S: nat -> nat
 pred: nat -> nat
 plus: nat -> nat -> nat
@@ -28,3 +29,4 @@ eq_refl: forall (A : Type) (x : A), x = x
 iff_refl: forall A : Prop, A <-> A
 pair: forall A B : Type, A -> B -> A * B
 conj: forall A B : Prop, A -> B -> A /\ B
+

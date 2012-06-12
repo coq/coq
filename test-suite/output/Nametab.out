@@ -7,11 +7,11 @@ Constant Top.Q.N.K.foo
 Constant Top.Q.N.K.foo
 Constant Top.Q.N.K.foo
   (shorter name to refer to it in current context is Q.N.K.foo)
-No module is referred to by basename K
-No module is referred to by name N.K
+Error: No module is referred to by basename K
+Error: No module is referred to by name N.K
 Module Top.Q.N.K
 Module Top.Q.N.K
-No module is referred to by basename N
+Error: No module is referred to by basename N
 Module Top.Q.N
 Module Top.Q.N
 Module Top.Q
@@ -26,10 +26,10 @@ Constant Top.Q.N.K.foo
 Constant Top.Q.N.K.foo
   (shorter name to refer to it in current context is K.foo)
 Module Top.Q.N.K
-No module is referred to by name N.K
+Error: No module is referred to by name N.K
 Module Top.Q.N.K
 Module Top.Q.N.K
-No module is referred to by basename N
+Error: No module is referred to by basename N
 Module Top.Q.N
 Module Top.Q.N
 Module Top.Q

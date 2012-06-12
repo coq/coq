@@ -276,7 +276,7 @@ let default_pr_goal gs =
     str"  " ++ hv 0 (penv ++ fnl () ++
 		       str (emacs_str "")  ++
 		       str "============================" ++ fnl ()  ++
-		       thesis ++ str " " ++  pc) ++ fnl ()
+		       thesis ++ str " " ++  pc)
 
 (* display a goal tag *)
 let pr_goal_tag g =
@@ -312,13 +312,12 @@ let pr_evar (ev, evd) =
 
 (* Print an enumerated list of existential variables *)
 let rec pr_evars_int i = function
-  | [] -> (mt ())
+  | [] -> mt ()
   | (ev,evd)::rest ->
       let pegl = pr_evgl_sign evd in
-      let pei = pr_evars_int (i+1) rest in
       (hov 0 (str "Existential " ++ int i ++ str " =" ++ spc () ++
               str (string_of_existential ev)  ++ str " : " ++ pegl)) ++
-      fnl () ++ pei
+      (match rest with [] -> mt () | _ -> fnl () ++ pr_evars_int (i+1) rest)
 
 let default_pr_subgoal n sigma =
   let rec prrec p = function
@@ -348,7 +347,7 @@ let emacs_print_dependent_evars sigma seeds =
 	    end i (str ",")
       end evars (str "")
     in
-    cut () ++
+    fnl () ++
     str "(dependent evars:" ++ evars ++ str ")" ++ fnl ()
   in
   delayed_emacs_cmd evars
@@ -361,11 +360,11 @@ let default_pr_subgoals close_cmd sigma seeds = function
 	match close_cmd with
 	  Some cmd ->
 	    (str "Subproof completed, now type " ++ str cmd ++
-	       str "." ++ fnl ())
+	       str ".")
 	| None ->
 	    let exl = Evarutil.non_instantiated sigma in
 	      if exl = [] then
-		(str"No more subgoals." ++ fnl ()
+		(str"No more subgoals."
 		 ++ emacs_print_dependent_evars sigma seeds)
 	      else
 		let pei = pr_evars_int 1 exl in
@@ -393,7 +392,7 @@ let default_pr_subgoals close_cmd sigma seeds = function
       v 0 (
 	int(List.length rest+1) ++ str" subgoals" ++
           str (emacs_str ", subgoal 1") ++ pr_goal_tag g1 ++ cut ()
-	++ pg1 ++ prest ++ fnl ()
+	++ pg1 ++ prest
 	++ emacs_print_dependent_evars sigma seeds
       )
 
@@ -433,7 +432,7 @@ let pr_open_subgoals () =
             begin match bgoals with
 	    | [] -> pr_subgoals None sigma seeds goals
 	    | _ -> pr_subgoals None bsigma seeds bgoals ++ fnl () ++ fnl () ++
-		      str"This subproof is complete, but there are still unfocused goals." ++ fnl ()
+		      str"This subproof is complete, but there are still unfocused goals."
 		(* spiwack: to stay compatible with the proof general and coqide,
 		    I use print the message after the goal. It would be better to have
 		    something like:
@@ -547,7 +546,7 @@ open Assumptions
 
 let pr_assumptionset env s =
   if ContextObjectMap.is_empty s then
-    str "Closed under the global context" ++ fnl()
+    str "Closed under the global context"
   else
     let safe_pr_constant env kn =
       try pr_constant env kn
@@ -567,7 +566,6 @@ let pr_assumptionset env s =
 			   ++ str (string_of_id id)
 			   ++ str " : "
 	                   ++ pr_ltype typ
-	                   ++ fnl ()
 			    )
 	                 ,
 	                   a, o)
@@ -576,7 +574,6 @@ let pr_assumptionset env s =
 			      Option.default (fnl ()) a
 			   ++ safe_pr_constant env kn
 	                   ++ safe_pr_ltype typ
-	                   ++ fnl ()
 			     )
 			 , o
 			 )
@@ -585,7 +582,6 @@ let pr_assumptionset env s =
 			      Option.default (fnl ()) o
 			   ++ safe_pr_constant env kn
 	                   ++ safe_pr_ltype typ
-	                   ++ fnl ()
 			     )
 			 )
       )

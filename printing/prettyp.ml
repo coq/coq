@@ -56,9 +56,9 @@ let gallina_print_modtype = print_modtype
 
 let print_closed_sections = ref false
 
-let pr_infos_list l = v 0 (prlist_with_sep cut (fun x -> x) l) ++ fnl()
+let pr_infos_list l = v 0 (prlist_with_sep cut (fun x -> x) l)
 
-let with_line_skip l = if l = [] then mt() else fnl() ++ pr_infos_list l
+let with_line_skip l = if l = [] then mt() else fnl() ++ fnl () ++ pr_infos_list l
 
 let blankline = mt() (* add a blank sentence in the list of infos *)
 
@@ -355,7 +355,7 @@ let print_located_qualid ref =
 
 let gallina_print_typed_value_in_env env (trm,typ) =
   (pr_lconstr_env env trm ++ fnl () ++
-     str "     : " ++ pr_ltype_env env typ ++ fnl ())
+     str "     : " ++ pr_ltype_env env typ)
 
 (* To be improved; the type should be used to provide the types in the
    abstractions. This should be done recursively inside pr_lconstr, so that
@@ -390,7 +390,7 @@ let gallina_print_inductive sp =
   let env = Global.env() in
   let mib = Environ.lookup_mind sp env in
   let mipv = mib.mind_packets in
-  pr_mutual_inductive_body env sp mib ++ fnl () ++
+  pr_mutual_inductive_body env sp mib ++
   with_line_skip
     (print_inductive_renames sp mipv @
      print_inductive_implicit_args sp mipv @
@@ -427,7 +427,6 @@ let print_constant with_values sep sp =
     | _ ->
 	print_basename sp ++ str sep ++ cut () ++
 	(if with_values then print_typed_body (val_0,typ) else pr_ltype typ))
-  ++ fnl ()
 
 let gallina_print_constant_with_infos sp =
   print_constant true " = " sp ++
@@ -442,7 +441,7 @@ let gallina_print_syntactic_def kn =
        (str "Notation " ++ pr_qualid qid ++
         prlist (fun id -> spc () ++ pr_id id) (List.map fst vars) ++
         spc () ++ str ":=") ++
-     spc () ++ Constrextern.without_symbols pr_glob_constr c) ++ fnl ()
+     spc () ++ Constrextern.without_symbols pr_glob_constr c)
 
 let gallina_print_leaf_entry with_values ((sp,kn as oname),lobj) =
   let sep = if with_values then " = " else " : "
@@ -675,17 +674,17 @@ let print_about_any k =
   match k with
   | Term ref ->
       pr_infos_list
-       ([print_ref false ref; blankline] @
+       (print_ref false ref :: blankline ::
 	print_name_infos ref @
 	print_simpl_behaviour ref @
 	print_opacity ref @
 	[hov 0 (str "Expands to: " ++ pr_located_qualid k)])
   | Syntactic kn ->
       v 0 (
-      print_syntactic_def kn ++
-      hov 0 (str "Expands to: " ++ pr_located_qualid k)) ++ fnl()
+      print_syntactic_def kn ++ fnl () ++
+      hov 0 (str "Expands to: " ++ pr_located_qualid k))
   | Dir _ | ModuleType _ | Undefined _ ->
-      hov 0 (pr_located_qualid k) ++ fnl()
+      hov 0 (pr_located_qualid k)
 
 let print_about = function
   | ByNotation (loc,ntn,sc) ->
@@ -763,7 +762,7 @@ let print_canonical_projections () =
 open Typeclasses
 
 let pr_typeclass env t =
-  print_ref false t.cl_impl ++ fnl ()
+  print_ref false t.cl_impl
 
 let print_typeclasses () =
   let env = Global.env () in
@@ -772,7 +771,7 @@ let print_typeclasses () =
 let pr_instance env i =
   (*   gallina_print_constant_with_infos i.is_impl *)
   (* lighter *)
-  print_ref false (instance_impl i) ++ fnl ()
+  print_ref false (instance_impl i)
 
 let print_all_instances () =
   let env = Global.env () in

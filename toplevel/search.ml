@@ -113,7 +113,9 @@ let xor a b = (a or b) & (not (a & b))
 let plain_display accu ref a c =
   let pc = pr_lconstr_env a c in
   let pr = pr_global ref in
-  accu := !accu ++ hov 2 (pr ++ str":" ++ spc () ++ pc) ++ fnl ()
+  accu := hov 2 (pr ++ str":" ++ spc () ++ pc) :: !accu
+
+let format_display l = prlist_with_sep fnl (fun x -> x) (List.rev l)
 
 let filter_by_module (module_list:dir_path list) (accept:bool)
   (ref:global_reference) _ _ =
@@ -197,19 +199,19 @@ let raw_search search_function extra_filter display_function pat =
     ) (search_function pat)
 
 let text_pattern_search extra_filter pat =
-  let ans = ref (mt ()) in
+  let ans = ref [] in
   raw_search Libtypes.search_concl extra_filter (plain_display ans) pat;
-  !ans
+  format_display !ans
 
 let text_search_rewrite extra_filter pat =
-  let ans = ref (mt ()) in
+  let ans = ref [] in
   raw_search (Libtypes.search_eq_concl c_eq) extra_filter (plain_display ans) pat;
-  !ans
+  format_display !ans
 
 let text_search_by_head extra_filter pat =
-  let ans = ref (mt ()) in
+  let ans = ref [] in
   raw_search Libtypes.search_head_concl extra_filter (plain_display ans) pat;
-  !ans
+  format_display !ans
 
 let filter_by_module_from_list = function
   | [], _ -> (fun _ _ _ -> true)
@@ -254,6 +256,6 @@ let raw_search_about filter_modules display_function l =
   gen_filtered_search filter display_function
 
 let search_about reference inout =
-  let ans = ref (mt ()) in
+  let ans = ref [] in
   raw_search_about (filter_by_module_from_list inout) (plain_display ans) reference;
-  !ans
+  format_display !ans
