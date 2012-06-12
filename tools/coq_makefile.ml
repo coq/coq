@@ -363,10 +363,9 @@ let variables is_install opt (args,defs) =
     (* Caml executables and relative variables *)
     if !some_ml4file || !some_mlfile || !some_mlifile then begin
     print "COQSRCLIBS?=-I $(COQLIB)kernel -I $(COQLIB)lib \\
-  -I $(COQLIB)library -I $(COQLIB)parsing \\
-  -I $(COQLIB)pretyping -I $(COQLIB)interp \\
-  -I $(COQLIB)printing -I $(COQLIB)intf \\
-  -I $(COQLIB)proofs -I $(COQLIB)tactics \\
+  -I $(COQLIB)library -I $(COQLIB)parsing -I $(COQLIB)pretyping \\
+  -I $(COQLIB)interp -I $(COQLIB)printing -I $(COQLIB)intf \\
+  -I $(COQLIB)proofs -I $(COQLIB)tactics -I $(COQLIB)tools \\
   -I $(COQLIB)toplevel -I $(COQLIB)grammar";
     List.iter (fun c -> print " \\
   -I $(COQLIB)plugins/"; print c) Coq_config.plugins_dirs; print "\n";
@@ -376,9 +375,13 @@ let variables is_install opt (args,defs) =
     print "CAMLLINK?=$(OCAMLC) -rectypes\n";
     print "CAMLOPTLINK?=$(OCAMLOPT) -rectypes\n";
     print "GRAMMARS?=grammar.cma\n";
-    print "CAMLP4EXTEND?=pa_extend.cmo pa_macro.cmo q_MLast.cmo\n";
-    print "CAMLP4OPTIONS?=-loc loc\n";
-    print "PP?=-pp \"$(CAMLP4BIN)$(CAMLP4)o -I $(CAMLLIB) -I . $(COQSRCLIBS) $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl\"\n\n";
+    print "ifeq ($(CAMLP4),camlp5)
+CAMLP4EXTEND=pa_extend.cmo q_MLast.cmo pa_macro.cmo
+else
+CAMLP4EXTEND=
+endif\n";
+    print "PP?=-pp \"$(CAMLP4BIN)$(CAMLP4O) -I $(CAMLLIB) -I . $(COQSRCLIBS) compat5.cmo \\
+  $(CAMLP4EXTEND) $(GRAMMARS) $(CAMLP4OPTIONS) -impl\"\n\n";
     end;
     match is_install with
       | Project_file.NoInstall -> ()
