@@ -37,23 +37,6 @@ open Lemmas
 open Declaremods
 open Misctypes
 
-(* Pcoq hooks *)
-
-type pcoq_hook = {
-  start_proof : unit -> unit;
-  solve : int -> unit;
-  abort : string -> unit;
-  search : searchable -> dir_path list * bool -> unit;
-  print_name : reference or_by_notation -> unit;
-  print_check : Environ.env -> Environ.unsafe_judgment -> unit;
-  print_eval : Reductionops.reduction_function -> Environ.env -> Evd.evar_map -> constr_expr ->
-    Environ.unsafe_judgment -> unit;
-  show_goal : goal_reference -> unit
-}
-
-let pcoq = ref None
-let set_pcoq_hook f = pcoq := Some f
-
 (* Misc *)
 
 let cl_of_qualid = function
@@ -338,8 +321,7 @@ let vernac_notation = Metasyntax.add_notation
 
 let start_proof_and_print k l hook =
   start_proof_com k l hook;
-  print_subgoals ();
-  if !pcoq <> None then (Option.get !pcoq).start_proof ()
+  print_subgoals ()
 
 let vernac_definition (local,k) (loc,id as lid) def hook =
   if local = Local then Dumpglob.dump_definition lid true "var"
@@ -673,8 +655,7 @@ let vernac_solve n tcom b =
     (* in case a strict subtree was completed,
        go back to the top of the prooftree *)
     Proof_global.maximal_unfocus command_focus p;
-    print_subgoals();
-    if !pcoq <> None then (Option.get !pcoq).solve n
+    print_subgoals()
   end
  
 
@@ -879,11 +860,6 @@ let vernac_reserve bl =
 
 let vernac_generalizable = Implicit_quantifiers.declare_generalizable
 
-let make_silent_if_not_pcoq b =
-  if !pcoq <> None then
-    error "Turning on/off silent flag is not supported in Pcoq mode."
-  else make_silent b
-
 let _ =
   declare_bool_option
     { optsync  = false;
@@ -891,7 +867,7 @@ let _ =
       optname  = "silent";
       optkey   = ["Silent"];
       optread  = is_silent;
-      optwrite = make_silent_if_not_pcoq }
+      optwrite = make_silent }
 
 let _ =
   declare_bool_option
@@ -1200,14 +1176,11 @@ let vernac_check_may_eval redexp glopt rc =
       Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c) in
   match redexp with
     | None ->
-	if !pcoq <> None then (Option.get !pcoq).print_check env j
-	else msg_notice (print_judgment env j)
+	msg_notice (print_judgment env j)
     | Some r ->
         let (sigma',r_interp) = interp_redexp env sigma' r in
 	let redfun = fst (reduction_of_red_expr r_interp) in
-	if !pcoq <> None
-	then (Option.get !pcoq).print_eval redfun env sigma' rc j
-	else msg_notice (print_eval redfun env sigma' rc j)
+	msg_notice (print_eval redfun env sigma' rc j)
 
 let vernac_declare_reduction locality s r =
   declare_red_expr locality s (snd (interp_redexp (Global.env()) Evd.empty r))
@@ -1233,9 +1206,7 @@ let vernac_print = function
   | PrintModuleType qid -> print_modtype qid
   | PrintMLLoadPath -> msg_notice (Mltop.print_ml_path ())
   | PrintMLModules -> msg_notice (Mltop.print_ml_modules ())
-  | PrintName qid ->
-      if !pcoq <> None then (Option.get !pcoq).print_name qid
-      else msg_notice (print_name qid)
+  | PrintName qid -> msg_notice (print_name qid)
   | PrintGraph -> msg_notice (Prettyp.print_graph())
   | PrintClasses -> msg_notice (Prettyp.print_classes())
   | PrintTypeClasses -> msg_notice (Prettyp.print_typeclasses())
@@ -1303,7 +1274,6 @@ let interp_search_about_item = function
 
 let vernac_search s r =
   let r = interp_search_restriction r in
-  if !pcoq <> None then (Option.get !pcoq).search s r else
   match s with
   | SearchPattern c ->
       let (_,c) = interp_open_constr_patvar Evd.empty (Global.env()) c in
@@ -1372,14 +1342,12 @@ let vernac_abort = function
   | None ->
       Backtrack.mark_unreachable [Pfedit.get_current_proof_name ()];
       delete_current_proof ();
-      if_verbose msg_info (str "Current goal aborted");
-      if !pcoq <> None then (Option.get !pcoq).abort ""
+      if_verbose msg_info (str "Current goal aborted")
   | Some id ->
       Backtrack.mark_unreachable [snd id];
       delete_proof id;
       let s = string_of_id (snd id) in
-      if_verbose msg_info (str ("Goal "^s^" aborted"));
-      if !pcoq <> None then (Option.get !pcoq).abort s
+      if_verbose msg_info (str ("Goal "^s^" aborted"))
 
 let vernac_abort_all () =
   if refining() then begin
@@ -1454,11 +1422,12 @@ let vernac_bullet (bullet:Proof_global.Bullet.t) =
 
 let vernac_show = function
   | ShowGoal goalref ->
-      if !pcoq <> None then (Option.get !pcoq).show_goal goalref
-      else msg_notice (match goalref with
-	| OpenSubgoals -> pr_open_subgoals ()
-	| NthGoal n -> pr_nth_open_subgoal n
-        | GoalId id -> pr_goal_by_id id)
+    let info = match goalref with
+      | OpenSubgoals -> pr_open_subgoals ()
+      | NthGoal n -> pr_nth_open_subgoal n
+      | GoalId id -> pr_goal_by_id id
+    in
+    msg_notice info
   | ShowGoalImplicitly None ->
       Constrextern.with_implicits msg_notice (pr_open_subgoals ())
   | ShowGoalImplicitly (Some n) ->

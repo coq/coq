@@ -21,22 +21,8 @@ val show_prooftree : unit -> unit
 val show_node : unit -> unit
 
 (** This function can be used by any command that want to observe terms
-   in the context of the current goal, as for instance in pcoq *)
+   in the context of the current goal *)
 val get_current_context_of_args : int option -> Evd.evar_map * Environ.env
-
-type pcoq_hook = {
-  start_proof : unit -> unit;
-  solve : int -> unit;
-  abort : string -> unit;
-  search : searchable -> dir_path list * bool -> unit;
-  print_name : Libnames.reference or_by_notation -> unit;
-  print_check : Environ.env -> Environ.unsafe_judgment -> unit;
-  print_eval : Reductionops.reduction_function -> Environ.env -> Evd.evar_map -> constr_expr ->
-    Environ.unsafe_judgment -> unit;
-  show_goal : goal_reference -> unit
-}
-
-val set_pcoq_hook : pcoq_hook -> unit
 
 (** The main interpretation function of vernacular expressions *)
 

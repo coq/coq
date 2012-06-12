@@ -30,15 +30,13 @@ val search_about  :
   (bool * glob_search_about_item) list -> dir_path list * bool -> std_ppcmds
 
 (** The filtering function that is by standard search facilities.
-   It can be passed as argument to the raw search functions.
-   It is used in pcoq. *)
+   It can be passed as argument to the raw search functions. *)
 
 val filter_by_module_from_list : dir_path list * bool -> filter_function
 
 val filter_blacklist : filter_function
 
-(** raw search functions can be used for various extensions.
-   They are also used for pcoq. *)
+(** raw search functions can be used for various extensions. *)
 val gen_filtered_search : filter_function -> display_function -> unit
 val filtered_search : filter_function -> display_function -> global_reference -> unit
 val raw_pattern_search : filter_function -> display_function -> constr_pattern -> unit
