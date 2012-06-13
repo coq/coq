@@ -80,6 +80,8 @@ object (self)
   val mutable auto_complete = false
   val mutable auto_complete_length = 3
   val mutable last_completion = (-1, "", Proposals.empty)
+  (* this variable prevents CoqIDE from autocompleting when we have deleted something *)
+  val mutable is_auto_completing = false
 
   val undo_lock = Mutex.create ()
 
@@ -155,6 +157,9 @@ object (self)
       (Minilib.log "REDO DISCARDED"; true)
 
   method private handle_insert iter s =
+    (* we're inserting, so we may autocomplete *)
+    is_auto_completing <- true;
+    (* Save the insert action *)
     if Mutex.try_lock undo_lock then begin
       let action = Insert (s, iter#offset, Glib.Utf8.length s) in
       history <- action :: history;
@@ -164,6 +169,9 @@ object (self)
     end
 
   method private handle_delete ~start ~stop =
+    (* disable autocomplete *)
+    is_auto_completing <- false;
+    (* Save the delete action *)
     if Mutex.try_lock undo_lock then begin
       let start_offset = start#offset in
       let stop_offset = stop#offset in
@@ -215,7 +223,7 @@ object (self)
     end
 
   method private may_auto_complete () =
-    if auto_complete then self#do_auto_complete ()
+    if auto_complete && is_auto_completing then self#do_auto_complete ()
 
   initializer
     (* Install undo managing *)
