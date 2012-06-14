@@ -259,6 +259,29 @@ let same c d = try check_same_type c d; true with _ -> false
 (**********************************************************************)
 (* mapping patterns to cases_pattern_expr                                *)
 
+let add_patt_for_params ind l =
+    Util.list_addn (fst (Inductiveops.inductive_nargs ind)) (CPatAtom (dummy_loc,None)) l
+
+let drop_implicits_in_patt cst nb_expl args =
+  let impl_st = (implicits_of_global cst) in
+  let impl_data = extract_impargs_data impl_st in
+  let rec impls_fit l = function
+    |[],t -> Some (List.rev_append l t)
+    |_,[] -> None
+    |h::t,CPatAtom(_,None)::tt when is_status_implicit h -> impls_fit l (t,tt)
+    |h::_,_ when is_status_implicit h -> None
+    |_::t,hh::tt -> impls_fit (hh::l) (t,tt)
+  in let rec aux = function
+    |[] -> None
+    |(_,imps)::t -> match impls_fit [] (imps,args) with
+	|None -> aux t
+	|x -> x
+     in
+     if nb_expl = 0 then aux impl_data
+     else
+       let imps = list_skipn_at_least nb_expl (select_stronger_impargs impl_st) in
+       impls_fit [] (imps,args)
+
 let has_curly_brackets ntn =
   String.length ntn >= 6 & (String.sub ntn 0 6 = "{ _ } " or
     String.sub ntn (String.length ntn - 6) 6 = " { _ }" or
@@ -319,34 +342,16 @@ let make_notation loc ntn (terms,termlists,binders as subst) =
     (fun (loc,p) -> CPrim (loc,p))
     destPrim terms
 
-let make_pat_notation loc ntn (terms,termlists as subst) =
-  if termlists <> [] then CPatNotation (loc,ntn,subst,[]) else
+let make_pat_notation loc ntn (terms,termlists as subst) args =
+  if termlists <> [] then CPatNotation (loc,ntn,subst,args) else
   make_notation_gen loc ntn
-    (fun (loc,ntn,l) -> CPatNotation (loc,ntn,(l,[]),[]))
+    (fun (loc,ntn,l) -> CPatNotation (loc,ntn,(l,[]),args))
     (fun (loc,p) -> CPatPrim (loc,p))
     destPatPrim terms
 
 let mkPat loc qid l =
   (* Normally irrelevant test with v8 syntax, but let's do it anyway *)
   if l = [] then CPatAtom (loc,Some qid) else CPatCstr (loc,qid,[],l)
-
-let add_patt_for_params ind l =
-    Util.list_addn (fst (Inductiveops.inductive_nargs ind)) (CPatAtom (dummy_loc,None)) l
-
-let drop_implicits_in_patt cst args =
-  let impl_st = extract_impargs_data (implicits_of_global cst) in
-  let rec impls_fit l = function
-    |[],t -> Some (List.rev_append l t)
-    |_,[] -> None
-    |h::t,CPatAtom(_,None)::tt when is_status_implicit h -> impls_fit l (t,tt)
-    |h::_,_ when is_status_implicit h -> None
-    |_::t,hh::tt -> impls_fit (hh::l) (t,tt)
-  in let rec aux = function
-    |[] -> None
-    |(_,imps)::t -> match impls_fit [] (imps,args) with
-	|None -> aux t
-	|x -> x
-     in aux impl_st
 
 let pattern_printable_in_both_syntax (ind,_ as c) =
   let impl_st = extract_impargs_data (implicits_of_global (ConstructRef c)) in
@@ -413,36 +418,39 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 		    else CPatCstr (loc, c, add_patt_for_params (fst cstrsp) args, [])
 		  else
 		    let full_args = add_patt_for_params (fst cstrsp) args in
-		    match drop_implicits_in_patt (ConstructRef cstrsp) full_args with
+		    match drop_implicits_in_patt (ConstructRef cstrsp) 0 full_args with
 		      |Some true_args -> CPatCstr (loc, c, [], true_args)
 		      |None -> CPatCstr (loc, c, full_args, [])
 	  in insert_pat_alias loc p na
-and apply_notation_to_pattern loc ((subst,substlist),more_args) (tmp_scope, scopes as allscopes) vars =
+and apply_notation_to_pattern loc gr ((subst,substlist),more_args)
+    (tmp_scope, scopes as allscopes) vars =
   function
     | NotationRule (sc,ntn) ->
-      begin match more_args with
-	|_::_ ->
-	  (* Parser and Constrintern do not understand a notation for
-	     partially applied constructor. *)
-	  raise No_match
-	|[] ->
-	  match availability_of_notation (sc,ntn) allscopes with
-	    (* Uninterpretation is not allowed in current context *)
-	    | None -> raise No_match
-	    (* Uninterpretation is allowed in current context *)
-	    | Some (scopt,key) ->
-	      let scopes' = Option.List.cons scopt scopes in
-	      let l =
-		List.map (fun (c,(scopt,scl)) ->
-		  extern_cases_pattern_in_scope (scopt,scl@scopes') vars c)
-		  subst in
-	      let ll =
-		List.map (fun (c,(scopt,scl)) ->
-		  let subscope = (scopt,scl@scopes') in
-		  List.map (extern_cases_pattern_in_scope subscope vars) c)
-		  substlist in
-	      insert_pat_delimiters loc
-		(make_pat_notation loc ntn (l,ll)) key
+      begin
+	match availability_of_notation (sc,ntn) allscopes with
+	  (* Uninterpretation is not allowed in current context *)
+	  | None -> raise No_match
+	  (* Uninterpretation is allowed in current context *)
+	  | Some (scopt,key) ->
+	    let scopes' = Option.List.cons scopt scopes in
+	    let l =
+	      List.map (fun (c,(scopt,scl)) ->
+		extern_cases_pattern_in_scope (scopt,scl@scopes') vars c)
+		subst in
+	    let ll =
+	      List.map (fun (c,(scopt,scl)) ->
+		let subscope = (scopt,scl@scopes') in
+		List.map (extern_cases_pattern_in_scope subscope vars) c)
+		substlist in
+	    let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
+	    let l2' = if !Topconstr.oldfashion_patterns || ll <> [] then l2
+	      else
+		match drop_implicits_in_patt gr (List.length l) l2 with
+		  |Some true_args -> true_args
+		  |None -> raise No_match
+	    in
+	    insert_pat_delimiters loc
+	      (make_pat_notation loc ntn (l,ll) l2') key
       end
     | SynDefRule kn ->
       let qid = Qualid (loc, shortest_qualid_of_syndef vars kn) in
@@ -451,15 +459,21 @@ and apply_notation_to_pattern loc ((subst,substlist),more_args) (tmp_scope, scop
           extern_cases_pattern_in_scope (scopt,scl@scopes) vars c)
           subst in
       let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
+      let l2' = if !Topconstr.oldfashion_patterns then l2
+	else
+	  match drop_implicits_in_patt gr (List.length l1) l2 with
+	    |Some true_args -> true_args
+	    |None -> raise No_match
+      in
       assert (substlist = []);
-      mkPat loc qid (List.rev_append l1 l2)
+      mkPat loc qid (List.rev_append l1 l2')
 and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
     try
       match t with
-	| PatCstr (loc,_,_,na) ->
-	  let p = apply_notation_to_pattern loc
+	| PatCstr (loc,cstr,_,na) ->
+	  let p = apply_notation_to_pattern loc (ConstructRef cstr)
 	    (match_notation_constr_cases_pattern t pat) allscopes vars keyrule in
 	  insert_pat_alias loc p na
 	| PatVar (loc,Anonymous) -> CPatAtom (loc, None)
@@ -471,7 +485,7 @@ let rec extern_symbol_ind_pattern allscopes vars ind args = function
   | [] -> raise No_match
   | (keyrule,pat,n as _rule)::rules ->
     try
-      apply_notation_to_pattern dummy_loc
+      apply_notation_to_pattern dummy_loc (IndRef ind)
 	(match_notation_constr_ind_pattern ind args pat) allscopes vars keyrule
     with
 	No_match -> extern_symbol_ind_pattern allscopes vars ind args rules
@@ -499,7 +513,7 @@ let extern_ind_pattern_in_scope (scopes:local_scopes) vars ind args =
     with No_match ->
       let c = extern_reference dummy_loc vars (IndRef ind) in
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
-      match drop_implicits_in_patt (IndRef ind) args with
+      match drop_implicits_in_patt (IndRef ind) 0 args with
 	   |Some true_args -> CPatCstr (dummy_loc, c, [], true_args)
 	   |None -> CPatCstr (dummy_loc, c, args, [])
 

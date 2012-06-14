@@ -116,9 +116,14 @@ fun x : option Z => match x with
                     end
      : option Z -> Z
 fun x : option Z => match x with
-                    | SOME3 _ x0 => x0
-                    | NONE3 _ => 0
+                    | SOME2 x0 => x0
+                    | NONE2 => 0
                     end
      : option Z -> Z
+fun x : list ?99 => match x with
+                    | NIL => NONE2
+                    | (_ :') t => SOME2 t
+                    end
+     : list ?99 -> option (list ?99)
 s
      : s

@@ -246,6 +246,10 @@ Notation NONE3 := @None.
 Notation SOME3 := @Some.     
 Check (fun x => match x with SOME3 _ x => x | NONE3 _ => 0 end).
 
+Notation "a :'" := (cons a) (at level 12).
+
+Check (fun x => match x with | nil => NONE | h :' t => SOME3 _ t end).
+
 (* Check correct matching of "Type" in notations. Of course the
    notation denotes a term that will be reinterpreted with a different
    universe than the actual one; but it would be the same anyway
