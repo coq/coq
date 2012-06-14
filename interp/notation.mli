@@ -84,8 +84,8 @@ val declare_string_interpreter : scope_name -> required_module ->
 
 val interp_prim_token : loc -> prim_token -> local_scopes ->
   glob_constr * (notation_location * scope_name option)
-val interp_prim_token_cases_pattern : loc -> prim_token -> name ->
-  local_scopes -> cases_pattern * (notation_location * scope_name option)
+val interp_prim_token_cases_pattern_expr : loc -> (global_reference -> unit) -> prim_token ->
+  local_scopes -> raw_cases_pattern_expr * (notation_location * scope_name option)
 
 (** Return the primitive token associated to a [term]/[cases_pattern];
    raise [No_match] if no such token *)

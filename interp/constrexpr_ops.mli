@@ -19,6 +19,7 @@ open Constrexpr
 val constr_loc : constr_expr -> loc
 
 val cases_pattern_expr_loc : cases_pattern_expr -> loc
+val raw_cases_pattern_expr_loc : raw_cases_pattern_expr -> loc
 
 val local_binders_loc : local_binder list -> loc
 
@@ -50,3 +51,6 @@ val names_of_local_assums : local_binder list -> name located list
 
 (** Does not take let binders into account *)
 val names_of_local_binders : local_binder list -> name located list
+
+val raw_cases_pattern_expr_of_glob_constr : (Globnames.global_reference -> unit)
+  -> Glob_term.glob_constr -> raw_cases_pattern_expr

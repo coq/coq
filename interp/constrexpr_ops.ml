@@ -13,6 +13,7 @@ open Nameops
 open Libnames
 open Misctypes
 open Term
+open Glob_term
 open Mod_subst
 open Constrexpr
 open Decl_kinds
@@ -57,14 +58,19 @@ let constr_loc = function
 
 let cases_pattern_expr_loc = function
   | CPatAlias (loc,_,_) -> loc
-  | CPatCstr (loc,_,_) -> loc
-  | CPatCstrExpl (loc,_,_) -> loc
+  | CPatCstr (loc,_,_,_) -> loc
   | CPatAtom (loc,_) -> loc
   | CPatOr (loc,_) -> loc
-  | CPatNotation (loc,_,_) -> loc
+  | CPatNotation (loc,_,_,_) -> loc
   | CPatRecord (loc, _) -> loc
   | CPatPrim (loc,_) -> loc
   | CPatDelimiters (loc,_,_) -> loc
+
+let raw_cases_pattern_expr_loc = function
+  | RCPatAlias (loc,_,_) -> loc
+  | RCPatCstr (loc,_,_,_) -> loc
+  | RCPatAtom (loc,_) -> loc
+  | RCPatOr (loc,_) -> loc
 
 let local_binder_loc = function
   | LocalRawAssum ((loc,_)::_,_,t)
@@ -140,3 +146,14 @@ let coerce_to_name = function
   | a -> Errors.user_err_loc
         (constr_loc a,"coerce_to_name",
          str "This expression should be a name.")
+
+let rec raw_cases_pattern_expr_of_glob_constr looked_for = function
+  | GVar (loc,id) -> RCPatAtom (loc,Some id)
+  | GHole (loc,_) -> RCPatAtom (loc,None)
+  | GRef (loc,g) ->
+    looked_for g;
+    RCPatCstr (loc, g,[],[])
+  | GApp (loc,GRef (_,g),l) ->
+    looked_for g;
+    RCPatCstr (loc, g,[],List.map (raw_cases_pattern_expr_of_glob_constr looked_for) l)
+  | _ -> raise Not_found

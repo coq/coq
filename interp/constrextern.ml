@@ -169,10 +169,9 @@ let rec check_same_pattern p1 p2 =
   match p1, p2 with
     | CPatAlias(_,a1,i1), CPatAlias(_,a2,i2) when i1=i2 ->
         check_same_pattern a1 a2
-    | CPatCstr(_,c1,a1), CPatCstr(_,c2,a2) when c1=c2 ->
-        List.iter2 check_same_pattern a1 a2
-    | CPatCstrExpl(_,c1,a1), CPatCstrExpl(_,c2,a2) when c1=c2 ->
-        List.iter2 check_same_pattern a1 a2
+    | CPatCstr(_,c1,a1,b1), CPatCstr(_,c2,a2,b2) when c1=c2 ->
+        let () = List.iter2 check_same_pattern a1 a2 in
+        List.iter2 check_same_pattern b1 b2
     | CPatAtom(_,r1), CPatAtom(_,r2) when r1=r2 -> ()
     | CPatPrim(_,i1), CPatPrim(_,i2) when i1=i2 -> ()
     | CPatDelimiters(_,s1,e1), CPatDelimiters(_,s2,e2) when s1=s2 ->
@@ -321,21 +320,21 @@ let make_notation loc ntn (terms,termlists,binders as subst) =
     destPrim terms
 
 let make_pat_notation loc ntn (terms,termlists as subst) =
-  if termlists <> [] then CPatNotation (loc,ntn,subst) else
+  if termlists <> [] then CPatNotation (loc,ntn,subst,[]) else
   make_notation_gen loc ntn
-    (fun (loc,ntn,l) -> CPatNotation (loc,ntn,(l,[])))
+    (fun (loc,ntn,l) -> CPatNotation (loc,ntn,(l,[]),[]))
     (fun (loc,p) -> CPatPrim (loc,p))
     destPatPrim terms
 
 let mkPat loc qid l =
   (* Normally irrelevant test with v8 syntax, but let's do it anyway *)
-  if l = [] then CPatAtom (loc,Some qid) else CPatCstr (loc,qid,l)
+  if l = [] then CPatAtom (loc,Some qid) else CPatCstr (loc,qid,[],l)
 
 let add_patt_for_params ind l =
     Util.list_addn (fst (Inductiveops.inductive_nargs ind)) (CPatAtom (dummy_loc,None)) l
 
-let drop_implicits_in_patt ind args =
-  let impl_st = extract_impargs_data (implicits_of_global (IndRef ind)) in
+let drop_implicits_in_patt cst args =
+  let impl_st = extract_impargs_data (implicits_of_global cst) in
   let rec impls_fit l = function
     |[],t -> Some (List.rev_append l t)
     |_,[] -> None
@@ -367,7 +366,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 	when !in_debugger||Inductiveops.mis_constructor_has_local_defs cstrsp ->
       let c = extern_reference loc Idset.empty (ConstructRef cstrsp) in
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
-      CPatCstrExpl (loc, c, add_patt_for_params (fst cstrsp) args)
+      CPatCstr (loc, c, add_patt_for_params (fst cstrsp) args, [])
     | _ ->
   try
     if !Flags.raw_print or !print_no_symbol then raise No_match;
@@ -410,13 +409,13 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
                   let c = extern_reference loc Idset.empty (ConstructRef cstrsp) in
 		  if !Topconstr.oldfashion_patterns then
 		    if pattern_printable_in_both_syntax cstrsp
-		    then CPatCstr (loc, c, args)
-		    else CPatCstrExpl (loc, c, add_patt_for_params (fst cstrsp) args)
+		    then CPatCstr (loc, c, [], args)
+		    else CPatCstr (loc, c, add_patt_for_params (fst cstrsp) args, [])
 		  else
 		    let full_args = add_patt_for_params (fst cstrsp) args in
-		    match drop_implicits_in_patt (fst cstrsp) full_args with
-		      |Some true_args -> CPatCstr (loc, c, true_args)
-		      |None -> CPatCstrExpl (loc, c, full_args)
+		    match drop_implicits_in_patt (ConstructRef cstrsp) full_args with
+		      |Some true_args -> CPatCstr (loc, c, [], true_args)
+		      |None -> CPatCstr (loc, c, full_args, [])
 	  in insert_pat_alias loc p na
 and apply_notation_to_pattern loc ((subst,substlist),more_args) (tmp_scope, scopes as allscopes) vars =
   function
@@ -483,7 +482,7 @@ let extern_ind_pattern_in_scope (scopes:local_scopes) vars ind args =
   if !in_debugger||Inductiveops.inductive_has_local_defs ind then
     let c = extern_reference dummy_loc vars (IndRef ind) in
     let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
-    CPatCstrExpl (dummy_loc, c, add_patt_for_params ind args)
+    CPatCstr (dummy_loc, c, add_patt_for_params ind args, [])
   else
     try
       if !Flags.raw_print or !print_no_symbol then raise No_match;
@@ -500,9 +499,9 @@ let extern_ind_pattern_in_scope (scopes:local_scopes) vars ind args =
     with No_match ->
       let c = extern_reference dummy_loc vars (IndRef ind) in
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
-      match drop_implicits_in_patt ind args with
-	   |Some true_args -> CPatCstr (dummy_loc, c, true_args)
-	   |None -> CPatCstrExpl (dummy_loc, c, args)
+      match drop_implicits_in_patt (IndRef ind) args with
+	   |Some true_args -> CPatCstr (dummy_loc, c, [], true_args)
+	   |None -> CPatCstr (dummy_loc, c, args, [])
 
 let extern_cases_pattern vars p =
   extern_cases_pattern_in_scope (None,[]) vars p

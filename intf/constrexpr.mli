@@ -35,13 +35,25 @@ type proj_flag = int option (** [Some n] = proj of the n-th visible argument *)
 
 type prim_token = Numeral of Bigint.bigint | String of string
 
+type raw_cases_pattern_expr =
+  | RCPatAlias of loc * raw_cases_pattern_expr * identifier
+  | RCPatCstr of loc * Globnames.global_reference
+    * raw_cases_pattern_expr list * raw_cases_pattern_expr list
+  (** [CPatCstr (_, Inl c, l1, l2)] represents (@c l1) l2 *)
+  | RCPatAtom of loc * identifier option
+  | RCPatOr of loc * raw_cases_pattern_expr list
+
 type cases_pattern_expr =
   | CPatAlias of loc * cases_pattern_expr * identifier
-  | CPatCstr of loc * reference * cases_pattern_expr list
-  | CPatCstrExpl of loc * reference * cases_pattern_expr list
+  | CPatCstr of loc * reference
+    * cases_pattern_expr list * cases_pattern_expr list
+  (** [CPatCstr (_, Inl c, l1, l2)] represents (@c l1) l2 *)
   | CPatAtom of loc * reference option
   | CPatOr of loc * cases_pattern_expr list
   | CPatNotation of loc * notation * cases_pattern_notation_substitution
+    * cases_pattern_expr list (** CPatNotation (_, n, l1 ,l2) represents
+				  (notation n applied with substitution l1)
+				  applied to arguments l2 *)
   | CPatPrim of loc * prim_token
   | CPatRecord of loc * (reference * cases_pattern_expr) list
   | CPatDelimiters of loc * string * cases_pattern_expr

@@ -47,7 +47,8 @@ let error_invalid_pattern_notation loc =
 let ids_of_cases_indtype =
   let rec vars_of ids = function
     (* We deal only with the regular cases *)
-    | (CPatCstr (_,_,l)|CPatCstrExpl (_, _, l)|CPatNotation (_,_,(l,[]))) -> List.fold_left vars_of [] l
+    | (CPatCstr (_,_,l1,l2)|CPatNotation (_,_,(l1,[]),l2)) ->
+      List.fold_left vars_of (List.fold_left vars_of [] l2) l1
     (* assume the ntn is applicative and does not instantiate the head !! *)
     | CPatDelimiters(_,_,c) -> vars_of ids c
     | CPatAtom (_, Some (Libnames.Ident (_, x))) -> x::ids
@@ -69,10 +70,14 @@ let rec cases_pattern_fold_names f a = function
   | CPatRecord (_, l) ->
       List.fold_left (fun acc (r, cp) -> cases_pattern_fold_names f acc cp) a l
   | CPatAlias (_,pat,id) -> f id a
-  | CPatCstr (_,_,patl) | CPatCstrExpl (_,_,patl) | CPatOr (_,patl) ->
+  | CPatOr (_,patl) ->
       List.fold_left (cases_pattern_fold_names f) a patl
-  | CPatNotation (_,_,(patl,patll)) ->
-      List.fold_left (cases_pattern_fold_names f) a (patl@List.flatten patll)
+  | CPatCstr (_,_,patl1,patl2) ->
+    List.fold_left (cases_pattern_fold_names f)
+      (List.fold_left (cases_pattern_fold_names f) a patl1) patl2
+  | CPatNotation (_,_,(patl,patll),patl') ->
+      List.fold_left (cases_pattern_fold_names f)
+	(List.fold_left (cases_pattern_fold_names f) a (patl@List.flatten patll)) patl'
   | CPatDelimiters (_,_,pat) -> cases_pattern_fold_names f a pat
   | CPatAtom (_,Some (Ident (_,id))) when not (is_constructor id) -> f id a
   | CPatPrim _ | CPatAtom _ -> a

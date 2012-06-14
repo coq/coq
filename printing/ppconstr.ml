@@ -174,19 +174,24 @@ let rec pr_patt sep inh p =
       str "{| " ++ prlist_with_sep pr_semicolon pp l ++ str " |}", lpatrec
   | CPatAlias (_,p,id) ->
       pr_patt mt (las,E) p ++ str " as " ++ pr_id id, las
-  | CPatCstr (_,c,[]) -> pr_reference c, latom
-  | CPatCstr (_,c,args) ->
+  | CPatCstr (_,c,[],[]) -> pr_reference c, latom
+  | CPatCstr (_,c,[],args) ->
       pr_reference c ++ prlist (pr_patt spc (lapp,L)) args, lapp
-  | CPatCstrExpl (_,c,args) ->
+  | CPatCstr (_,c,args,[]) ->
       str "@" ++ pr_reference c ++ prlist (pr_patt spc (lapp,L)) args, lapp
+  | CPatCstr (_,c,expl_args,extra_args) ->
+      surround (str "@" ++ pr_reference c ++ prlist (pr_patt spc (lapp,L)) expl_args)
+    ++ prlist (pr_patt spc (lapp,L)) extra_args, lapp
   | CPatAtom (_,None) -> str "_", latom
   | CPatAtom (_,Some r) -> pr_reference r, latom
   | CPatOr (_,pl) ->
       hov 0 (prlist_with_sep pr_bar (pr_patt spc (lpator,L)) pl), lpator
-  | CPatNotation (_,"( _ )",([p],[])) ->
+  | CPatNotation (_,"( _ )",([p],[]),[]) ->
       pr_patt (fun()->str"(") (max_int,E) p ++ str")", latom
-  | CPatNotation (_,s,(l,ll)) ->
-      pr_notation (pr_patt mt) (fun _ _ _ -> mt()) s (l,ll,[])
+  | CPatNotation (_,s,(l,ll),args) ->
+    let strm_not, l_not = pr_notation (pr_patt mt) (fun _ _ _ -> mt()) s (l,ll,[]) in
+    (if args=[]||prec_less l_not (lapp,L) then strm_not else surround strm_not)
+    ++ prlist (pr_patt spc (lapp,L)) args, if args<>[] then lapp else l_not
   | CPatPrim (_,p) -> pr_prim_token p, latom
   | CPatDelimiters (_,k,p) -> pr_delimiters k (pr_patt mt lsimple p), 1
   in

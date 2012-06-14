@@ -344,12 +344,14 @@ GEXTEND Gram
     | "9" RIGHTA
       [ p = pattern; lp = LIST1 NEXT ->
         (match p with
-          | CPatAtom (_, Some r) -> CPatCstr (loc, r, lp)
+	  | CPatAtom (_, Some r) -> CPatCstr (loc, r, [], lp)
+	  | CPatCstr (_, r, l1, l2) -> CPatCstr (loc, r, l1 , l2@lp)
+	  | CPatNotation (_, n, s, l) -> CPatNotation (loc, n , s, l@lp)
           | _ -> Errors.user_err_loc
               (cases_pattern_expr_loc p, "compound_pattern",
-               Pp.str "Constructor expected."))
+               Pp.str "Such pattern cannot have arguments."))
       |"@"; r = Prim.reference; lp = LIST1 NEXT ->
-        CPatCstrExpl (loc, r, lp) ]
+        CPatCstr (loc, r, lp, []) ]
     | "1" LEFTA
       [ c = pattern; "%"; key=IDENT -> CPatDelimiters (loc,key,c) ]
     | "0"
@@ -359,7 +361,7 @@ GEXTEND Gram
       | "("; p = pattern LEVEL "200"; ")" ->
           (match p with
               CPatPrim (_,Numeral z) when Bigint.is_pos_or_zero z ->
-                CPatNotation(loc,"( _ )",([p],[]))
+                CPatNotation(loc,"( _ )",([p],[]),[])
             | _ -> p)
       | n = INT -> CPatPrim (loc, Numeral (Bigint.of_string n))
       | s = string -> CPatPrim (loc, String s) ] ]

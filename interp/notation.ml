@@ -372,8 +372,8 @@ let interp_prim_token_gen g loc p local_scopes =
 let interp_prim_token =
   interp_prim_token_gen (fun x -> x)
 
-let interp_prim_token_cases_pattern loc p name =
-  interp_prim_token_gen (cases_pattern_of_glob_constr name) loc p
+let interp_prim_token_cases_pattern_expr loc looked_for p =
+  interp_prim_token_gen (Constrexpr_ops.raw_cases_pattern_expr_of_glob_constr looked_for) loc p
 
 let rec interp_notation loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in

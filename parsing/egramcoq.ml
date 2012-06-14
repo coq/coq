@@ -198,7 +198,7 @@ let extend_constr_notation (n,assoc,ntn,rules) =
   let e = interp_constr_entry_key false (ETConstr (n,())) in
   let nb = extend_constr e (ETConstr(n,()),assoc) (make_constr_action mkact) false rules in
   (* Add the notation in cases_pattern *)
-  let mkact loc env = CPatNotation (loc,ntn,env) in
+  let mkact loc env = CPatNotation (loc,ntn,env,[]) in
   let e = interp_constr_entry_key true (ETConstr (n,())) in
   let nb' = extend_constr e (ETConstr (n,()),assoc) (make_cases_pattern_action mkact)
     true rules in
