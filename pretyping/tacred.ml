@@ -327,7 +327,7 @@ let reference_eval sigma env = function
 let x = Name (id_of_string "x")
 
 let make_elim_fun (names,(nbfix,lv,n)) largs =
-  let lu = list_firstn n (list_of_stack largs) in
+  let lu = nfirsts_app_of_stack n largs in
   let p = List.length lv in
   let lyi = List.map fst lv in
   let la =
@@ -450,7 +450,7 @@ let reduce_fix_use_function env sigma f whfun fix stack =
 	    (recarg, empty_stack)
 	  else
 	    whfun (recarg, empty_stack) in
-        let stack' = stack_assign stack recargnum (app_stack recarg') in
+        let stack' = stack_assign stack recargnum (zip recarg') in
 	(match kind_of_term recarg'hd with
            | Construct _ ->
 	       Reduced (contract_fix_use_function env sigma f fix,stack')
@@ -506,14 +506,14 @@ let special_red_case env sigma whfun (ci, p, c, lf)  =
         | Some gvalue ->
 	    if reducible_mind_case gvalue then
 	      reduce_mind_case_use_function constr env sigma
-	        {mP=p; mconstr=gvalue; mcargs=list_of_stack cargs;
+	        {mP=p; mconstr=gvalue; mcargs=list_of_app_stack cargs;
                 mci=ci; mlf=lf}
 	    else
 	      redrec (gvalue, cargs)
     else
       if reducible_mind_case constr then
         reduce_mind_case
-	  {mP=p; mconstr=constr; mcargs=list_of_stack cargs;
+	  {mP=p; mconstr=constr; mcargs=list_of_app_stack cargs;
 	  mci=ci; mlf=lf}
       else
 	raise Redelimination
@@ -623,7 +623,7 @@ let rec red_elim_const env sigma ref largs =
           let arg = stack_nth stack i in
           let rarg = whd_construct_state env sigma (arg, empty_stack) in
           match kind_of_term (fst rarg) with
-          | Construct _ -> stack_assign stack i (app_stack rarg)
+          | Construct _ -> stack_assign stack i (zip rarg)
           | _ -> raise Redelimination)
         largs l, n >= 0 && l =  [] && nargs >= n, 
                  n >= 0 && l <> [] && nargs >= n in
@@ -656,13 +656,13 @@ let rec red_elim_const env sigma ref largs =
 	(match reduce_fix_use_function env sigma f whfun (destFix d) lrest with
 	   | NotReducible -> raise Redelimination
 	   | Reduced (c,rest) -> (nf_beta sigma c, rest))
-    | NotAnElimination when unfold_nonelim -> 
+    | NotAnElimination when unfold_nonelim ->
          let c = reference_value sigma env ref in
-         whd_betaiotazeta sigma (app_stack (c, largs)), empty_stack
+         whd_betaiotazeta sigma (zip (c, largs)), empty_stack
     | _ -> raise Redelimination
     with Redelimination when unfold_anyway ->
        let c = reference_value sigma env ref in
-       whd_betaiotazeta sigma (app_stack (c, largs)), empty_stack
+       whd_betaiotazeta sigma (zip (c, largs)), empty_stack
 
 (* reduce to whd normal form or to an applied constant that does not hide
    a reducible iota/fix/cofix redex (the "simpl" tactic) *)
@@ -675,7 +675,7 @@ and whd_simpl_state env sigma s =
              | None -> s
              | Some (a,rest) -> stacklam redrec [a] c rest)
       | LetIn (n,b,t,c) -> stacklam redrec [b] c stack
-      | App (f,cl) -> redrec (f, append_stack cl stack)
+      | App (f,cl) -> redrec (f, append_stack_app cl stack)
       | Cast (c,_,_) -> redrec (c, stack)
       | Case (ci,p,c,lf) ->
           (try
@@ -732,13 +732,13 @@ let try_red_product env sigma c =
       | App (f,l) ->
           (match kind_of_term f with
              | Fix fix ->
-                 let stack = append_stack l empty_stack in
+                 let stack = append_stack_app l empty_stack in
                  (match fix_recarg fix stack with
                     | None -> raise Redelimination
                     | Some (recargnum,recarg) ->
                         let recarg' = redrec env recarg in
                         let stack' = stack_assign stack recargnum recarg' in
-                        simpfun (app_stack (f,stack')))
+                        simpfun (zip (f,stack')))
              | _ -> simpfun (appvect (redrec env f, l)))
       | Cast (c,_,_) -> redrec env c
       | Prod (x,a,b) -> mkProd (x, a, redrec (push_rel (x,None,a) env) b)
@@ -827,14 +827,14 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
 	      | _ -> redrec (c, stack))
 	| None -> s'
     else s'
-  in app_stack (redrec (c, empty_stack))
+  in zip (redrec (c, empty_stack))
 
 let hnf_constr = whd_simpl_orelse_delta_but_fix
 
 (* The "simpl" reduction tactic *)
 
 let whd_simpl env sigma c =
-  app_stack (whd_simpl_state env sigma (c, empty_stack))
+  zip (whd_simpl_state env sigma (c, empty_stack))
 
 let simpl env sigma c = strong whd_simpl env sigma c
 
@@ -1033,7 +1033,7 @@ let one_step_reduce env sigma c =
           (match decomp_stack stack with
              | None      -> raise NotStepReducible
              | Some (a,rest) -> (subst1 a c, rest))
-      | App (f,cl) -> redrec (f, append_stack cl stack)
+      | App (f,cl) -> redrec (f, append_stack_app cl stack)
       | LetIn (_,f,_,cl) -> (subst1 f cl,stack)
       | Cast (c,_,_) -> redrec (c,stack)
       | Case (ci,p,c,lf) ->
@@ -1056,7 +1056,7 @@ let one_step_reduce env sigma c =
 
       | _ -> raise NotStepReducible
   in
-  app_stack (redrec (c, empty_stack))
+  zip (redrec (c, empty_stack))
 
 let isIndRef = function IndRef _ -> true | _ -> false
 

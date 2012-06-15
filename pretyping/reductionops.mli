@@ -32,15 +32,18 @@ type 'a stack_member =
 and 'a stack = 'a stack_member list
 
 val empty_stack : 'a stack
-val append_stack : 'a array -> 'a stack -> 'a stack
-val append_stack_list : 'a list -> 'a stack -> 'a stack
+val append_stack_app : 'a array -> 'a stack -> 'a stack
+val append_stack_app_list : 'a list -> 'a stack -> 'a stack
 
 val decomp_stack : 'a stack -> ('a * 'a stack) option
-val list_of_stack : 'a stack -> 'a list
-val array_of_stack : 'a stack -> 'a array
+(** Takes the n first arguments of application put on the stack. Fails is the
+    stack does not start by n arguments of application. *)
+val nfirsts_app_of_stack : int -> 'a stack -> 'a list
+val list_of_app_stack : 'a stack -> 'a list
+val array_of_app_stack : 'a stack -> 'a array
 val stack_assign : 'a stack -> int -> 'a -> 'a stack
 val stack_args_size : 'a stack -> int
-val app_stack : constr * constr stack -> constr
+val zip : constr * constr stack -> constr
 val stack_tail : int -> 'a stack -> 'a stack
 val stack_nth : 'a stack -> int -> 'a
 

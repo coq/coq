@@ -63,8 +63,8 @@ let evar_apprec ts env evd stack c =
     match kind_of_term t with
       | Evar (evk,_ as ev) when Evd.is_defined sigma evk ->
 	  aux (Evd.existential_value sigma ev, stack)
-      | _ -> (t, list_of_stack stack)
-  in aux (c, append_stack_list stack empty_stack)
+      | _ -> decompose_app (zip (t, stack))
+  in aux (c, append_stack_app_list stack empty_stack)
 
 let apprec_nohdbeta ts env evd c =
   match kind_of_term (fst (Reductionops.whd_stack evd c)) with
