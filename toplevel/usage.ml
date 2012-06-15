@@ -100,6 +100,7 @@ let print_config () =
   Printf.printf "CAMLLIB=%s/\n" (Envars.camllib ());
   Printf.printf "CAMLP4=%s\n" Coq_config.camlp4;
   Printf.printf "CAMLP4O=%s\n" Coq_config.camlp4o;
+  Printf.printf "CAMLP4BIN=%s/\n" (Envars.camlp4bin ());
   Printf.printf "CAMLP4LIB=%s\n" (Envars.camlp4lib ());
   Printf.printf "CAMLP4OPTIONS=%s\n" Coq_config.camlp4compat;
   Printf.printf "HASNATDYNLINK=%s\n" (if Coq_config.has_natdynlink then "true" else "false")

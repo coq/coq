@@ -26,5 +26,6 @@ val xdg_dirs : warn:(string -> unit) -> string list
 val coqpath : string list
 
 val camlbin : unit -> string
+val camlp4bin : unit -> string
 val camllib : unit -> string
 val camlp4lib : unit -> string
