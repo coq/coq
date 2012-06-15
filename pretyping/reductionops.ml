@@ -29,7 +29,7 @@ exception Elimconst
 type 'a stack_member =
   | Zapp of 'a list
   | Zcase of case_info * 'a * 'a array
-  | Zfix of 'a * 'a stack
+  | Zfix of fixpoint * 'a list
   | Zshift of int
   | Zupdate of 'a
 
@@ -63,8 +63,8 @@ let strip_n_app n s =
   try
     let bef,aft = list_chop n apps in
     match aft with
-      |h::[] -> Some (append_stack_app_list bef empty_stack,h,s')
-      |h::t -> Some (append_stack_app_list bef empty_stack,h,append_stack_app_list aft s')
+      |h::[] -> Some (bef,h,s')
+      |h::t -> Some (bef,h,append_stack_app_list t s')
       |[] -> None
   with
     |Failure _ -> None
@@ -80,7 +80,8 @@ let rec zip = function
   | f, (Zapp args :: s) ->
       zip (applist (f, args), s)
   | f, (Zcase (ci,rt,br)::s) -> zip (mkCase (ci,rt,f,br), s)
-  | f, (Zfix (fix,st)::s) -> zip (fix, st@append_stack_app_list [f] s)
+  | f, (Zfix (fix,st)::s) -> zip
+    (mkFix fix, append_stack_app_list st (append_stack_app_list [f] s))
   | f, (Zshift n::s) -> zip (lift n f, s)
   | _ -> assert false
 let rec stack_assign s p c = match s with
@@ -353,18 +354,29 @@ let rec whd_state_gen flags ts env sigma =
 	     | _ -> s)
 
       | Case (ci,p,d,lf) when red_iota flags ->
-          let (c,cargs) = whrec (d, empty_stack) in
-          if reducible_mind_case c then
-            whrec (reduce_mind_case
-                     {mP=p; mconstr=c; mcargs=list_of_app_stack cargs;
-		      mci=ci; mlf=lf}, stack)
-          else
-	    (mkCase (ci, p, zip (c,cargs), lf), stack)
+	whrec (d, Zcase (ci,p,lf) :: stack)
 
-      | Fix fix when red_iota flags ->
-	  (match reduce_fix (fun _ -> whrec) sigma fix stack with
-             | Reduced s' -> whrec s'
-	     | NotReducible -> s)
+      | Fix ((ri,n),_ as f) when red_iota flags ->
+	(match strip_n_app ri.(n) stack with
+	  |None -> s
+	  |Some (bef,arg,s') -> whrec (arg, Zfix(f,bef)::s'))
+
+      | Construct (ind,c) -> begin
+	match strip_app stack with
+	  |args, (Zcase(ci, _, lf)::s') ->
+	    whrec (lf.(c-1), append_stack_app_list (list_skipn ci.ci_npar args) s')
+	  |args, (Zfix (f,s')::s'') ->
+	    let x' = applist(x,args) in
+	    whrec (contract_fix f,append_stack_app_list s' (append_stack_app_list [x'] s''))
+	  |_ -> s
+      end
+
+      | CoFix cofix -> begin
+	match strip_app stack with
+	  |args, (Zcase(ci, _, lf)::s') ->
+	     whrec (contract_cofix cofix, stack)
+	  |_ -> s
+      end
 
       | x -> s
   in
@@ -396,18 +408,12 @@ let local_whd_state_gen flags sigma =
 	     | _ -> s)
 
       | Case (ci,p,d,lf) when red_iota flags ->
-          let (c,cargs) = whrec (d, empty_stack) in
-          if reducible_mind_case c then
-            whrec (reduce_mind_case
-                     {mP=p; mconstr=c; mcargs=list_of_app_stack cargs;
-		      mci=ci; mlf=lf}, stack)
-          else
-	    (mkCase (ci, p, zip(c,cargs), lf), stack)
+	whrec (d, Zcase (ci,p,lf) :: stack)
 
-      | Fix fix when red_iota flags ->
-	  (match reduce_fix (fun _ ->whrec) sigma fix stack with
-             | Reduced s' -> whrec s'
-	     | NotReducible -> s)
+      | Fix ((ri,n),_ as f) when red_iota flags ->
+	(match strip_n_app ri.(n) stack with
+	  |None -> s
+	  |Some (bef,arg,s') -> whrec (arg, Zfix(f,bef)::s'))
 
       | Evar ev ->
           (match safe_evar_value sigma ev with
@@ -418,6 +424,23 @@ let local_whd_state_gen flags sigma =
           (match safe_meta_value sigma ev with
               Some c -> whrec (c,stack)
             | None -> s)
+
+      | Construct (ind,c) -> begin
+	match strip_app stack with
+	  |args, (Zcase(ci, _, lf)::s') ->
+	    whrec (lf.(c-1), append_stack_app_list (list_skipn ci.ci_npar args) s')
+	  |args, (Zfix (f,s')::s'') ->
+	    let x' = applist(x,args) in
+	    whrec (contract_fix f,append_stack_app_list s' (append_stack_app_list [x'] s''))
+	  |_ -> s
+      end
+
+      | CoFix cofix -> begin
+	match strip_app stack with
+	  |args, (Zcase(ci, _, lf)::s') ->
+	     whrec (contract_cofix cofix, stack)
+	  |_ -> s
+      end
 
       | x -> s
   in
@@ -580,13 +603,25 @@ let rec whd_betaiota_preserving_vm_cast env sigma t =
             | Some (a,m) -> stacklam_var [a] c m
             | _ -> s)
        | Case (ci,p,d,lf) ->
-           let (c,cargs) = whrec (d, empty_stack) in
-           if reducible_mind_case c then
-             whrec (reduce_mind_case
-                      {mP=p; mconstr=c; mcargs=list_of_app_stack cargs;
-                       mci=ci; mlf=lf}, stack)
-           else
-             (mkCase (ci, p, zip (c,cargs), lf), stack)
+	 whrec (d, Zcase (ci,p,lf) :: stack)
+
+       | Construct (ind,c) -> begin
+	 match strip_app stack with
+	   |args, (Zcase(ci, _, lf)::s') ->
+	     whrec (lf.(c-1), append_stack_app_list (list_skipn ci.ci_npar args) s')
+	   |args, (Zfix (f,s')::s'') ->
+	     let x' = applist(x,args) in
+	     whrec (contract_fix f,append_stack_app_list s' (append_stack_app_list [x'] s''))
+	   |_ -> s
+       end
+
+       | CoFix cofix -> begin
+	 match strip_app stack with
+	   |args, (Zcase(ci, _, lf)::s') ->
+	     whrec (contract_cofix cofix, stack)
+	   |_ -> s
+       end
+
        | x -> s
    in
    zip (whrec (t,empty_stack))
@@ -823,21 +858,16 @@ let is_sort env sigma arity =
 let whd_betaiota_deltazeta_for_iota_state ts env sigma s =
   let rec whrec s =
     let (t, stack as s) = whd_betaiota_state sigma s in
-    match kind_of_term t with
-    | Case (ci,p,d,lf) ->
-        let (cr,crargs) = whd_betadeltaiota_stack_using ts env sigma d in
-        let rslt = mkCase (ci, p, applist (cr,crargs), lf) in
-        if reducible_mind_case cr then
-	  whrec (rslt, stack)
-        else
-	  s
-    | Fix fix ->
-	  (match
-              reduce_fix (whd_betadeltaiota_state_using ts env) sigma fix stack
-           with
-             | Reduced s -> whrec s
-	     | NotReducible -> s)
-    | _ -> s
+    match strip_app stack with
+      |args, (Zcase _ :: _ as stack') ->
+	let seq = (t,append_stack_app_list args empty_stack) in
+	let t_o,stack_o = whd_betadeltaiota_state_using ts env sigma seq in
+	if reducible_mind_case t_o then whrec (t_o, stack_o@stack') else s
+      |args, (Zfix _ :: _ as stack') ->
+	let seq = (t,append_stack_app_list args empty_stack) in
+	let t_o,stack_o = whd_betadeltaiota_state_using ts env sigma seq in
+	if isConstruct t_o then whrec (t_o, stack_o@stack') else s
+      |_ -> s
   in whrec s
 
 (* A reduction function like whd_betaiota but which keeps casts
@@ -868,17 +898,26 @@ let whd_programs_stack env sigma =
 	  if occur_existential d then
 	    s
 	  else
-            let (c,cargs) = whrec (d, empty_stack) in
-            if reducible_mind_case c then
-	      whrec (reduce_mind_case
-		       {mP=p; mconstr=c; mcargs=list_of_app_stack cargs;
-			mci=ci; mlf=lf}, stack)
-	    else
-	      (mkCase (ci, p, zip(c,cargs), lf), stack)
-      | Fix fix ->
-	  (match reduce_fix (fun _ ->whrec) sigma  fix stack with
-             | Reduced s' -> whrec s'
-	     | NotReducible -> s)
+	    whrec (d, Zcase (ci,p,lf) :: stack)
+      | Fix ((ri,n),_ as f) ->
+	(match strip_n_app ri.(n) stack with
+	  |None -> s
+	  |Some (bef,arg,s') -> whrec (arg, Zfix(f,bef)::s'))
+      | Construct (ind,c) -> begin
+	match strip_app stack with
+	  |args, (Zcase(ci, _, lf)::s') ->
+	    whrec (lf.(c-1), append_stack_app_list (list_skipn ci.ci_npar args) s')
+	  |args, (Zfix (f,s')::s'') ->
+	    let x' = applist(x,args) in
+	    whrec (contract_fix f,append_stack_app_list s' (append_stack_app_list [x'] s''))
+	  |_ -> s
+      end
+      | CoFix cofix -> begin
+	match strip_app stack with
+	  |args, (Zcase(ci, _, lf)::s') ->
+	     whrec (contract_cofix cofix, stack)
+	  |_ -> s
+      end
       | _ -> s
   in
   whrec

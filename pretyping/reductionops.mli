@@ -25,7 +25,7 @@ exception Elimconst
 type 'a stack_member =
   | Zapp of 'a list
   | Zcase of case_info * 'a * 'a array
-  | Zfix of 'a * 'a stack
+  | Zfix of fixpoint * 'a list
   | Zshift of int
   | Zupdate of 'a
 
