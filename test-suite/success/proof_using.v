@@ -51,11 +51,17 @@ Proof using v1 v2.
 admit.
 Qed.
 
+Lemma deep2 : v1 = v2.
+Proof using v1 v2.
+Admitted.
+
 End S2.
 
 Check (deep 3 : v1 = 3).
+Check (deep2 3 : v1 = 3).
 
 End S1.
 
 Check (deep 3 4 : 3 = 4).
+Check (deep2 3 4 : 3 = 4).
 

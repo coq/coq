@@ -150,7 +150,8 @@ let translate_constant env kn ce =
 
 let translate_recipe env kn r =
   build_constant_declaration env kn 
-    (let def,typ,cst = Cooking.cook_constant env r in def,typ,cst,None)
+    (let def,typ,cst,hyps = Cooking.cook_constant env r in
+     def,typ,cst,Some hyps)
 
 (* Insertion of inductive types. *)
 
