@@ -104,11 +104,6 @@ let mk_relation a = mkApp (Lazy.force coq_relation, [| a |])
 
 let rewrite_relation_class = lazy (gen_constant ["Classes"; "RelationClasses"] "RewriteRelation")
 
-let arrow_morphism a b =
-  if isprop a && isprop b then
-    Lazy.force impl
-  else Lazy.force arrow
-
 let proper_type = lazy (constr_of_global (Lazy.force proper_class).cl_impl)
 
 let proper_proxy_type = lazy (constr_of_global (Lazy.force proper_proxy_class).cl_impl)
@@ -464,6 +459,16 @@ let unfold_forall t =
 	  | _ -> assert false)
     | _ -> assert false
 
+let arrow_morphism ta tb a b =
+  let ap = is_Prop ta and bp = is_Prop tb in
+    if ap && bp then mkApp (Lazy.force impl, [| a; b |]), unfold_impl
+    else if ap then (* Domain in Prop, CoDomain in Type *)
+      mkProd (Anonymous, a, b), (fun x -> x)
+    else if bp then (* Dummy forall *)
+      mkApp (Lazy.force coq_all, [| a; mkLambda (Anonymous, a, b) |]), unfold_forall
+    else (* None in Prop, use arrow *)
+      mkApp (Lazy.force arrow, [| a; b |]), unfold_impl
+
 let rec decomp_pointwise n c =
   if n = 0 then c
   else
@@ -814,9 +819,10 @@ let subterm all flags (s : strategy) : strategy =
       | Prod (n, x, b) when noccurn 1 b ->
 	  let b = subst1 mkProp b in
 	  let tx = Typing.type_of env (goalevars evars) x and tb = Typing.type_of env (goalevars evars) b in
-	  let res = aux env avoid (mkApp (arrow_morphism tx tb, [| x; b |])) ty cstr evars in
+	  let mor, unfold = arrow_morphism tx tb x b in
+	  let res = aux env avoid mor ty cstr evars in
 	    (match res with
-	    | Some (Some r) -> Some (Some { r with rew_to = unfold_impl r.rew_to })
+	    | Some (Some r) -> Some (Some { r with rew_to = unfold r.rew_to })
 	    | _ -> res)
 
       (* 		if x' = None && flags.under_lambdas then *)
@@ -1948,7 +1954,7 @@ let implify id gl =
 	let sigma = project gl in
 	let tyhd = Typing.type_of env sigma ty
 	and tyconcl = Typing.type_of (Environ.push_rel hd env) sigma concl in
-	let app = mkApp (arrow_morphism tyhd (subst1 mkProp tyconcl), [| ty; (subst1 mkProp concl) |]) in
+	let app, unfold = arrow_morphism tyhd (subst1 mkProp tyconcl) ty (subst1 mkProp concl) in
 	  it_mkProd_or_LetIn app tl
     | _ -> ctype
   in convert_hyp_no_check (id, b, ctype') gl
