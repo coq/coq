@@ -42,7 +42,9 @@ let lposint = 0
 let lnegint = 35 (* must be consistent with Notation "- x" *)
 let ltop = (200,E)
 let lproj = 1
-let lsimple = (1,E)
+let ldelim = 1
+let lsimpleconstr = (8,E)
+let lsimplepatt = (1,E)
 
 let prec_less child (parent,assoc) =
   if parent < 0 && child = lprod then true
@@ -193,7 +195,7 @@ let rec pr_patt sep inh p =
     (if args=[]||prec_less l_not (lapp,L) then strm_not else surround strm_not)
     ++ prlist (pr_patt spc (lapp,L)) args, if args<>[] then lapp else l_not
   | CPatPrim (_,p) -> pr_prim_token p, latom
-  | CPatDelimiters (_,k,p) -> pr_delimiters k (pr_patt mt lsimple p), 1
+  | CPatDelimiters (_,k,p) -> pr_delimiters k (pr_patt mt lsimplepatt p), 1
   in
   let loc = cases_pattern_expr_loc p in
   pr_with_comments loc
@@ -355,7 +357,7 @@ let pr_guard_annot pr_aux bl (n,ro) =
 	    (match r with None -> mt() | Some r -> str" on " ++ pr_aux r) ++ str"}"
 
 let pr_fixdecl pr prd dangling_with_for ((_,id),ro,bl,t,c) =
-  let annot = pr_guard_annot (pr lsimple) bl ro in
+  let annot = pr_guard_annot (pr lsimpleconstr) bl ro in
     pr_recursive_decl pr prd dangling_with_for id bl annot t c
 
 let pr_cofixdecl pr prd dangling_with_for ((_,id),bl,t,c) =
@@ -375,7 +377,7 @@ let pr_asin pr (na,indnalopt) =
     | None -> mt ()) ++
   (match indnalopt with
     | None -> mt ()
-    | Some t -> spc () ++ str "in " ++ pr_patt lsimple t)
+    | Some t -> spc () ++ str "in " ++ pr_patt lsimplepatt t)
 
 let pr_case_item pr (tm,asin) =
   hov 0 (pr (lcast,E) tm ++ pr_asin pr asin)
@@ -384,7 +386,7 @@ let pr_case_type pr po =
   match po with
     | None | Some (CHole _) -> mt()
     | Some p ->
-        spc() ++ hov 2 (str "return" ++ pr_sep_com spc (pr lsimple) p)
+        spc() ++ hov 2 (str "return" ++ pr_sep_com spc (pr lsimpleconstr) p)
 
 let pr_simple_return_type pr na po =
   (match na with
@@ -394,7 +396,7 @@ let pr_simple_return_type pr na po =
   pr_case_type pr po
 
 let pr_proj pr pr_app a f l =
-  hov 0 (pr lsimple a ++ cut() ++ str ".(" ++ pr_app pr f l ++ str ")")
+  hov 0 (pr (lproj,E) a ++ cut() ++ str ".(" ++ pr_app pr f l ++ str ")")
 
 let pr_appexpl pr f l =
       hov 2 (
@@ -544,9 +546,9 @@ let pr pr sep inherited a =
       pr (fun()->str"(") (max_int,L) t ++ str")", latom
   | CNotation (_,s,env) ->
       pr_notation (pr mt) (pr_binders_gen (pr mt ltop)) s env
-  | CGeneralization (_,bk,ak,c) -> pr_generalization bk ak (pr mt lsimple c), latom
+  | CGeneralization (_,bk,ak,c) -> pr_generalization bk ak (pr mt ltop c), latom
   | CPrim (_,p) -> pr_prim_token p, prec_of_prim_token p
-  | CDelimiters (_,sc,a) -> pr_delimiters sc (pr mt lsimple a), 1
+  | CDelimiters (_,sc,a) -> pr_delimiters sc (pr mt (ldelim,E) a), ldelim
   in
   let loc = constr_loc a in
   pr_with_comments loc
@@ -564,10 +566,14 @@ let modular_constr_pr = pr
 let rec fix rf x =rf (fix rf) x
 let pr = fix modular_constr_pr mt
 
+let pr_simpleconstr = function
+  | CAppExpl (_,(None,f),[]) -> str "@" ++ pr_reference f
+  | c -> pr lsimpleconstr c
+
 let default_term_pr = {
-  pr_constr_expr   = pr lsimple;
+  pr_constr_expr   = pr_simpleconstr;
   pr_lconstr_expr  = pr ltop;
-  pr_constr_pattern_expr  = pr lsimple;
+  pr_constr_pattern_expr  = pr_simpleconstr;
   pr_lconstr_pattern_expr = pr ltop
 }
 

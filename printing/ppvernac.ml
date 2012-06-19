@@ -852,8 +852,8 @@ let rec pr_vernac = function
       | Some r0 ->
           hov 2 (str"Eval" ++ spc() ++
           pr_red_expr (pr_constr,pr_lconstr,pr_smart_global, pr_constr) r0 ++
-          spc() ++ str"in" ++ spc () ++ pr_constr c)
-      | None -> hov 2 (str"Check" ++ spc() ++ pr_constr c)
+          spc() ++ str"in" ++ spc () ++ pr_lconstr c)
+      | None -> hov 2 (str"Check" ++ spc() ++ pr_lconstr c)
       in
       (if io = None then mt() else int (Option.get io) ++ str ": ") ++
       pr_mayeval r c
