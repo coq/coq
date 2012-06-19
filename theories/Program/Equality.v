@@ -290,12 +290,14 @@ Lemma simplification_heq A B (x y : A) :
   (x = y -> B) -> (JMeq x y -> B).
 Proof. intros H J; apply H; apply (JMeq_eq J). Defined.
 
+Definition conditional_eq {A} (x y : A) := eq x y.
+
 Lemma simplification_existT2 A (P : A -> Type) B (p : A) (x y : P p) :
-  (x = y -> B) -> (existT P p x = existT P p y -> B).
+  (x = y -> B) -> (conditional_eq (existT P p x) (existT P p y) -> B).
 Proof. intros H E. apply H. apply inj_pair2. assumption. Defined.
 
 Lemma simplification_existT1 A (P : A -> Type) B (p q : A) (x : P p) (y : P q) :
-  (p = q -> existT P p x = existT P q y -> B) -> (existT P p x = existT P q y -> B).
+  (p = q -> conditional_eq (existT P p x) (existT P q y) -> B) -> (existT P p x = existT P q y -> B).
 Proof. injection 2. auto. Defined.
 
 Lemma simplification_K A (x : A) (B : x = x -> Type) :
@@ -319,8 +321,10 @@ Ltac simplify_one_dep_elim_term c :=
     | @JMeq _ _ _ _ -> _ => refine (simplification_heq _ _ _ _ _)
     | ?t = ?t -> _ => intros _ || refine (simplification_K _ t _ _)
     | eq (existT _ _ _) (existT _ _ _) -> _ =>
-      refine (simplification_existT2 _ _ _ _ _ _ _) ||
         refine (simplification_existT1 _ _ _ _ _ _ _ _)
+    | conditional_eq (existT _ _ _) (existT _ _ _) -> _ =>
+        refine (simplification_existT2 _ _ _ _ _ _ _) ||
+               (unfold conditional_eq; intro)
     | ?x = ?y -> _ => (* variables case *)
       (unfold x) || (unfold y) ||
       (let hyp := fresh in intros hyp ;
