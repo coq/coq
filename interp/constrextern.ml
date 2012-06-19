@@ -591,10 +591,10 @@ let extern_global loc impl f =
     CRef f
 
 let extern_app loc inctx impl (cf,f) args =
-  if args = [] (* maybe caused by a hidden coercion *) then
-    extern_global loc impl f
-  else
-  if not !Constrintern.parsing_explicit &&
+  if args = [] then
+    (* If coming from a notation "Notation a := @b" *)
+    CAppExpl (loc, (None, f), [])
+  else if not !Constrintern.parsing_explicit &&
     ((!Flags.raw_print or
       (!print_implicits & not !print_implicits_explicit_args)) &
      List.exists is_status_implicit impl)
