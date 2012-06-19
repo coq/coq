@@ -1353,7 +1353,7 @@ Infix "mod" := Z.modulo (at level 40, no associativity) : Z_scope.
 Infix "÷" := Z.quot (at level 40, left associativity) : Z_scope.
 
 (* TODO : transition from Zdivide *)
-Notation "( x | y )" := (Z.divide x y) (at level 0).
+Notation "( x | y )" := (Z.divide x y) (at level 0) : Z_scope.
 
 Infix "?=" := Z.compare (at level 70, no associativity) : Z_scope.
 
