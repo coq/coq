@@ -158,6 +158,17 @@ let tclose () = [< 'Ppcmd_close_tbox >]
 
 let (++) = Stream.iapp
 
+let rec eval_ppcmds l =
+  let rec aux l =
+    try
+      let a = match Stream.next l with
+      | Ppcmd_box (b,s) -> Ppcmd_box (b,eval_ppcmds s)
+      | a -> a in
+      let rest = aux l in
+      a :: rest
+    with Stream.Failure -> [] in
+  Stream.of_list (aux l)
+
 (* In new syntax only double quote char is escaped by repeating it *)
 let rec escape_string s =
   let rec escape_at s i =

@@ -40,6 +40,10 @@ val comments : ((int * int) * string) list ref
 
 val (++) : std_ppcmds -> std_ppcmds -> std_ppcmds
 
+(** {6 Evaluation. } *)
+
+val eval_ppcmds : std_ppcmds -> std_ppcmds
+
 (** {6 Derived commands. } *)
 
 val spc : unit -> std_ppcmds
