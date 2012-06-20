@@ -580,8 +580,8 @@ let choose_less_dependent_instance evk evd term args =
   let evi = Evd.find_undefined evd evk in
   let subst = make_pure_subst evi args in
   let subst' = List.filter (fun (id,c) -> eq_constr c term) subst in
-  if subst' = [] then error "Too complex unification problem." else
-  Evd.define evk (mkVar (fst (List.hd subst'))) evd
+  if subst' = [] then evd, false else
+  Evd.define evk (mkVar (fst (List.hd subst'))) evd, true
 
 let apply_on_subterm f c t =
   let rec applyrec (k,c as kc) t =
@@ -734,12 +734,12 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
       & array_for_all (fun a -> eq_constr a term2 or isEvar a) args1 ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
-      choose_less_dependent_instance evk1 evd term2 args1, true
+      choose_less_dependent_instance evk1 evd term2 args1
   | (Rel _|Var _), Evar (evk2,args2) when l1 = [] & l2 = []
       & array_for_all (fun a -> eq_constr a term1 or isEvar a) args2 ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
-      choose_less_dependent_instance evk2 evd term1 args2, true
+      choose_less_dependent_instance evk2 evd term1 args2
   | Evar (evk1,args1), Evar (evk2,args2) when evk1 = evk2 ->
       let f env evd pbty x y = (evd,is_trans_fconv pbty ts env evd x y) in
       solve_refl ~can_drop:true f env evd evk1 args1 args2, true
