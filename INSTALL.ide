@@ -1,7 +1,7 @@
 			CoqIde Installation procedure.
 
 CoqIde is a graphical interface to perform interactive proofs.
-You should be able to do everything you do in coqtop inside CoqIde 
+You should be able to do everything you do in coqtop inside CoqIde
 excepted dropping to the ML toplevel.
 
 DISCLAIMER: CoqIde is ongoing work. Although it should never let you
@@ -23,10 +23,10 @@ On Gentoo GNU/Linux, do:
 Else, read the rest of this document to compile your own CoqIde.
 
 REQUIREMENT:
-	- OCaml >= 3.11 with native threads support.
+	- OCaml >= 3.11.2 with native threads support.
 	- make world must succeed.
 	- The graphical toolkit GTK+ 2.x. See http://www.gtk.org.
-	  The official supported version is at least 2.10.x.
+	  The official supported version is at least 2.24.x.
 	  You may still compile CoqIde with older versions and 
           use all features.
 	  Run 
@@ -40,36 +40,36 @@ REQUIREMENT:
           install GTK+ 2.x should you need to force it for one reason
           or another.)
 
-        - The OCaml bindings for GTK+ 2.x, lablgtk2.
+        - The OCaml bindings for GTK+ 2.x, lablgtk2 with support for gtksourceview2.
 
-	  You need at least version 2.12.0.
+	  You need at least version 2.14.2.
 
 	  Your distribution may contain precompiled packages. For
           example, for Debian, run
-                aptitude install liblablgtk2-ocaml-dev
+                aptitude install liblablgtksourceview2-ocaml-dev
 		   for Mandriva, run
-		urpmi ocaml-lablgtk2-devel
+		urpmi ocaml-lablgtk-devel
 
           If it does not, see
-          http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html .
+	  http://lablgtk.forge.ocamlcore.org/
 
           One official releases of lablgtk2 is here:
-          http://wwwfun.kurims.kyoto-u.ac.jp/soft/lsl/dist/lablgtk-2.10.1.tar.gz
+          https://forge.ocamlcore.org/frs/download.php/561/lablgtk-2.14.2.tar.gz
 
           If you are in a hurry just run :
 
               cd /tmp && \
               wget \
-               http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/dist/lablgtk-2.10.1.tar.gz && \
-              tar zxvf lablgtk-2.10.1.tar.gz && \
-              cd lablgtk-2.10.1 && \
+               https://forge.ocamlcore.org/frs/download.php/561/lablgtk-2.14.2.tar.gz && \
+              tar zxvf lablgtk-2.14.2.tar.gz && \
+              cd lablgtk-2.14.2 && \
               ./configure && \
               make world && \
               make install
 
    	  You must have write access to the OCaml standard library path.
 
-          If this fails, read lablgtk-2.10.1/README.
+          If this fails, read lablgtk-2.14.2/README.
 
 
 INSTALLATION
