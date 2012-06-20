@@ -265,6 +265,7 @@ let destMeta c = match kind_of_term c with
   | _ -> invalid_arg "destMeta"
 
 let isMeta c = match kind_of_term c with Meta _ -> true | _ -> false
+let isMetaOf mv c = match kind_of_term c with Meta mv' -> mv = mv' | _ -> false
 
 (* Destructs a variable *)
 let destVar c = match kind_of_term c with
