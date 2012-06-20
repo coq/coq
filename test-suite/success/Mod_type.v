@@ -17,3 +17,15 @@ Module Bar : BAR.
   Module Foo := Fu.
 
 End Bar.
+
+(* Check bug #2809: correct printing of modules with notations *)
+
+Module C.
+  Inductive test : Type :=
+    | c1 : test
+    | c2 : nat -> test.
+
+  Notation "! x" := (c2 x) (at level 50).
+End C.
+
+Print C. (* Should print test_rect without failing *)

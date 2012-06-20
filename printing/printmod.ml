@@ -221,9 +221,9 @@ let rec printable_body dir =
     state after the printing *)
 
 let print_modexpr' env mp mexpr =
-  States.with_state_protection (print_modexpr env mp []) mexpr
+  States.with_state_protection (fun e -> eval_ppcmds (print_modexpr env mp [] e)) mexpr
 let print_modtype' env mp mty =
-  States.with_state_protection (print_modtype env mp []) mty
+  States.with_state_protection (fun e -> eval_ppcmds (print_modtype env mp [] e)) mty
 
 let print_module' env mp with_body mb =
   let name = print_modpath [] mp in
