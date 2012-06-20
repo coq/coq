@@ -124,10 +124,15 @@ End Respecting.
 
 (** The default equivalence on function spaces, with higher-priority than [eq]. *)
 
-Program Instance pointwise_equivalence {A} `(eqb : Equivalence B eqB) :
+Instance pointwise_reflexive {A} `(reflb : Reflexive B eqB) :
+  Reflexive (pointwise_relation A eqB) | 9.
+Proof. firstorder. Qed.
+Instance pointwise_symmetric {A} `(symb : Symmetric B eqB) :
+  Symmetric (pointwise_relation A eqB) | 9.
+Proof. firstorder. Qed.
+Instance pointwise_transitive {A} `(transb : Transitive B eqB) :
+  Transitive (pointwise_relation A eqB) | 9.
+Proof. firstorder. Qed.
+Instance pointwise_equivalence {A} `(eqb : Equivalence B eqB) :
   Equivalence (pointwise_relation A eqB) | 9.
-
-  Next Obligation.
-  Proof.
-    transitivity (y a) ; auto.
-  Qed.
+Proof. split; apply _. Qed.
