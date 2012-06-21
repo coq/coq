@@ -766,6 +766,12 @@ TACTIC EXTEND is_hyp
     | _ -> tclFAIL 0 (str "Not a variable or hypothesis") ]
 END
 
+TACTIC EXTEND is_fix
+| [ "is_fix" constr(x) ] ->
+  [ match kind_of_term x with
+    | Fix _ -> Tacticals.tclIDTAC
+    | _ -> Tacticals.tclFAIL 0 (Pp.str "not a fix definition") ]
+END;;
 
 (* Command to grab the evars left unresolved at the end of a proof. *)
 (* spiwack: I put it in extratactics because it is somewhat tied with
