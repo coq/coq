@@ -188,6 +188,12 @@ and header = parse
 		{ header lexbuf }
 
 and pcdata = parse
+        | newline | (newline break) | break
+                {
+                        Buffer.add_char tmp '\n';
+                        newline lexbuf;
+                        pcdata lexbuf
+                }
 	| pcchar+
 		{
 			Buffer.add_string tmp (lexeme lexbuf);
