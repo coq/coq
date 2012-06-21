@@ -201,7 +201,7 @@ let install_doc some_vfiles some_mlifiles (_,inc_r) =
 	       if some_mlifiles then install_one_kind "mlihtml" rt;
 	   end else begin
 	     prerr_string "Warning: -R options don't have a correct common prefix,
- install-doc will put anything in $INSTALLDEFAULTROOT";
+ install-doc will put anything in $INSTALLDEFAULTROOT\n";
 	   if some_vfiles then install_one_kind "html" "$(INSTALLDEFAULTROOT)";
 	   if some_mlifiles then install_one_kind "mlihtml" "$(INSTALLDEFAULTROOT)";
 	   end in
@@ -428,7 +428,7 @@ let include_dirs (inc_i,inc_r) =
     if !some_ml4file || !some_mlfile || !some_mlifile then begin
       print "OCAMLLIBS?="; print_list "\\\n  " str_i; print "\n";
     end;
-    if !some_vfile then begin
+    if !some_vfile || !some_mllibfile || !some_mlpackfile then begin
       print "COQLIBS?="; print_list "\\\n  " str_i'; print " "; print_list "\\\n  " str_r; print "\n";
       print "COQDOCLIBS?=";   print_list "\\\n  " str_r; print "\n\n";
     end

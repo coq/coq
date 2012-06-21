@@ -123,7 +123,7 @@ let camlp4lib () =
   else
     let camlp4bin = camlp4bin () in
     let com = (Filename.concat camlp4bin Coq_config.camlp4) ^ " -where" in
-    let _,res = System.run_command (fun x -> x) (fun _ -> ()) com in
-    Util.strip res
-
-
+    let ex,res = System.run_command (fun x -> x) (fun _ -> ()) com in
+    match ex with
+      |Unix.WEXITED 0 -> Util.strip res
+      |_ -> "/dev/null"
