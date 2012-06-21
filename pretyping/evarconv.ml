@@ -821,12 +821,27 @@ let solve_unconstrained_impossible_cases evd =
 
 let consider_remaining_unif_problems ?(ts=full_transparent_state) env evd =
   let evd = solve_unconstrained_evars_with_canditates evd in
-  let (evd,pbs) = extract_all_conv_pbs evd in
-  let heuristic_solved_evd = List.fold_left
-    (fun evd (pbty,env,t1,t2) ->
+  let rec aux evd pbs progress stuck =
+    match pbs with
+    | (pbty,env,t1,t2 as pb) :: pbs ->
       let evd', b = apply_conversion_problem_heuristic ts env evd pbty t1 t2 in
-	if b then evd' else Pretype_errors.error_cannot_unify env evd (t1, t2))
-    evd pbs in
+	if b then 
+	  let (evd', rest) = extract_all_conv_pbs evd' in
+	    if rest = [] then aux evd' pbs true stuck
+	    else (* Unification got actually stuck, postpone *)
+	      aux evd pbs progress (pb :: stuck)
+	else Pretype_errors.error_cannot_unify env evd (t1, t2)
+    | _ -> 
+	if progress then aux evd stuck false []
+	else 
+	  match stuck with
+	  | [] -> (* We're finished *) evd
+	  | (pbty,env,t1,t2) :: _ ->
+	      (* There remains stuck problems *)
+	      Pretype_errors.error_cannot_unify env evd (t1, t2)
+  in
+  let (evd,pbs) = extract_all_conv_pbs evd in
+  let heuristic_solved_evd = aux evd pbs false [] in
   check_problems_are_solved env heuristic_solved_evd;
   solve_unconstrained_impossible_cases heuristic_solved_evd
 
