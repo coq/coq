@@ -705,15 +705,16 @@ object(self)
       else None
     with Not_found -> None
 
-  method private fill_command_queue max_len max_iter queue =
-    let iter = ref self#get_start_of_input in
-    let len = ref 0 in
-    let break = ref true in
-    while (max_len < 0 || !len < max_len) && (!iter#compare max_iter < 0) && !break do
-      let opt_sentence = self#find_phrase_starting_at !iter in
+  (** [fill_command_queue until q] fills a command queue until the [until]
+      condition returns true; it is fed with the number of phrases read and the
+      iters enclosing the current sentence. *)
+  method private fill_command_queue until queue =
+    let rec loop len iter =
+      let opt_sentence = self#find_phrase_starting_at iter in
       match opt_sentence with
-      | None -> break := false
+      | None -> raise Exit
       | Some (start, stop) ->
+        if until len start stop then raise Exit;
         input_buffer#apply_tag Tags.Script.to_process ~start ~stop;
         (* Check if this is a comment *)
         let is_comment = stop#backward_char#has_tag Tags.Script.comment_sentence in
@@ -724,9 +725,9 @@ object(self)
           flags = flags;
         } in
         Queue.push payload queue;
-        incr len;
-        iter := stop;
-    done;
+        if not stop#is_end then loop (succ len) stop
+    in
+    try loop 0 self#get_start_of_input with Exit -> ()
 
   method private process_command_queue ?(verbose = false) queue handle =
     let error = ref None in
@@ -780,13 +781,13 @@ object(self)
     input_buffer#place_cursor ~where:start;
     self#set_message msg
 
-  method private process_until max_len max_iter handle verbose =
+  method private process_until until handle verbose =
     let queue = Queue.create () in
     (* Lock everything and fill the waiting queue *)
     push_info "Coq is computing";
     self#clear_message;
     input_view#set_editable false;
-    self#fill_command_queue max_len max_iter queue;
+    self#fill_command_queue until queue;
     (* Now unlock and process asynchronously *)
     input_view#set_editable true;
     let (msg, error) = self#process_command_queue ~verbose queue handle in
@@ -803,10 +804,15 @@ object(self)
       self#show_error phrase loc msg
 
   method process_next_phrase handle verbose =
-    self#process_until 1 input_buffer#end_iter handle verbose
+    let until len start stop = 1 <= len in
+    self#process_until until handle verbose
 
-  method private process_until_iter_or_error handle stop =
-    self#process_until (-1) stop handle false
+  method private process_until_iter_or_error handle iter =
+    let until len start stop =
+      if current.stop_before then stop#compare iter > 0
+      else start#compare iter >= 0
+    in
+    self#process_until until handle false
 (* FIXME: restore the stop_before mechanism
     let get_current () =
       if current.stop_before then
