@@ -9,7 +9,6 @@
 (* Parsing of vernacular. *)
 
 open Pp
-open Lexer
 open Errors
 open Util
 open Flags

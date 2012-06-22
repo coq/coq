@@ -229,7 +229,7 @@ let rec explain_exn = function
       hov 0 (anomaly_string () ++ str "uncaught Stream.Failure.")
   | Stream.Error txt ->
       hov 0 (str "Syntax error: " ++ str txt)
-  | Token.Error txt ->
+  | Compat.Token.Error txt ->
       hov 0 (str "Syntax error: " ++ str txt)
   | Sys_error msg ->
       hov 0 (anomaly_string () ++ str "uncaught exception Sys_error " ++ str (guill msg) ++ report() )

@@ -33,7 +33,7 @@ exception EvaluatedError of std_ppcmds * exn option
 let explain_exn_default = function
   (* Basic interaction exceptions *)
   | Stream.Error txt -> hov 0 (str ("Syntax error: " ^ txt ^ "."))
-  | Token.Error txt ->  hov 0 (str ("Syntax error: " ^ txt ^ "."))
+  | Compat.Token.Error txt ->  hov 0 (str ("Syntax error: " ^ txt ^ "."))
   | Lexer.Error.E err -> hov 0 (str (Lexer.Error.to_string err))
   | Sys_error msg -> hov 0 (str ("System error: " ^ guill msg))
   | Out_of_memory -> hov 0 (str "Out of memory.")

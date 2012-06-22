@@ -322,7 +322,7 @@ let parse_to_dot =
 let rec discard_to_dot () =
   try
     Gram.entry_parse parse_to_dot top_buffer.tokens
-  with Loc.Exc_located(_,(Token.Error _|Lexer.Error.E _)) ->
+  with Loc.Exc_located(_,(Compat.Token.Error _|Lexer.Error.E _)) ->
     discard_to_dot()
 
 
