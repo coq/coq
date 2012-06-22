@@ -134,12 +134,13 @@ let classify_files_by_root var files (inc_i,inc_r) =
 	  inc_r;
     end
 
-let vars_to_put_by_root acc files_var files (inc_i,inc_r) =
-  let absdir_of_files = List.rev_map
+let vars_to_put_by_root acc files_vars_x_files (inc_i,inc_r) =
+  let absdir_of_files files = List.rev_map
     (fun x -> CUnix.canonical_path_name (Filename.dirname x))
     files in
-  let has_inc_i_files =
-    List.exists (fun (_,a) -> List.mem a absdir_of_files) inc_i in
+  let has_inc_i_files = List.fold_left (fun acc (var,files) ->
+    if List.exists (fun (_,a) -> List.mem a files) inc_i
+    then var::acc else acc) [] files_vars_x_files in
   try
     (* All files caught by a -R . option (assuming it is the only one) *)
     let ldir = match inc_r with
@@ -147,10 +148,10 @@ let vars_to_put_by_root acc files_var files (inc_i,inc_r) =
       |l -> let out = List.assoc "." (List.map (fun (p,l,_) -> (p,l)) inc_r) in
 	    let () = prerr_string "Warning: install rule assumes that -R . _ is the only -R option" in
 	    out in
-    (Some(".",files_var,physical_dir_of_logical_dir ldir),None)::acc
+    [physical_dir_of_logical_dir ldir,".",List.rev_map fst files_vars_x_files)]
   with Not_found ->
     if inc_r = [] then
-      (None,Some(files_var, "$(INSTALLDEFAULTROOT)"))::acc
+      ("$(INSTALLDEFAULTROOT)",None,files_vars)::acc
     else
       (* Files in the scope of a -R option (assuming they are disjoint) *)
       Util.list_fold_left_i (fun i out (pdir,ldir,abspdir) ->
