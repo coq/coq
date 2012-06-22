@@ -134,51 +134,50 @@ let classify_files_by_root var files (inc_i,inc_r) =
 	  inc_r;
     end
 
-let install_include_by_root files_var files (inc_i,inc_r) =
+let vars_to_put_by_root acc files_var files (inc_i,inc_r) =
+  let absdir_of_files = List.rev_map
+    (fun x -> CUnix.canonical_path_name (Filename.dirname x))
+    files in
+  let has_inc_i_files =
+    List.exists (fun (_,a) -> List.mem a absdir_of_files) inc_i in
   try
     (* All files caught by a -R . option (assuming it is the only one) *)
     let ldir = match inc_r with
       |[(".",t,_)] -> t
       |l -> let out = List.assoc "." (List.map (fun (p,l,_) -> (p,l)) inc_r) in
-	 let () = prerr_string "Warning: install rule assumes that -R . _ is the only -R option" in
-	   out in
-    let pdir = physical_dir_of_logical_dir ldir in
-      printf "\tfor i in $(%s); do \\\n" files_var;
-      printf "\t install -d `dirname $(DSTROOT)$(COQLIBINSTALL)/%s/$$i`; \\\n" pdir;
-      printf "\t install -m 0644 $$i $(DSTROOT)$(COQLIBINSTALL)/%s/$$i; \\\n" pdir;
-      printf "\tdone\n"
+	    let () = prerr_string "Warning: install rule assumes that -R . _ is the only -R option" in
+	    out in
+    (Some(".",files_var,physical_dir_of_logical_dir ldir),None)::acc
   with Not_found ->
-    let absdir_of_files = List.rev_map
-      (fun x -> CUnix.canonical_path_name (Filename.dirname x))
-      files in
-    let has_inc_i_files =
-      List.exists (fun (_,a) -> List.mem a absdir_of_files) inc_i in
-    let install_inc_i d =
+    if inc_r = [] then
+      (None,Some(files_var, "$(INSTALLDEFAULTROOT)"))::acc
+    else
+      (* Files in the scope of a -R option (assuming they are disjoint) *)
+      Util.list_fold_left_i (fun i out (pdir,ldir,abspdir) ->
+	let has_inc_r_files = List.exists (is_prefix abspdir) absdir_of_files in
+	let pdir' = physical_dir_of_logical_dir ldir in
+	if has_inc_r_files
+	then (Some (pdir,files_var^string_of_int i, pdir'),
+	      if has_inc_i_files then Some(files_var,pdir') else None)::out
+	else if has_inc_i_files then (None,Some(files_var,pdir'))::out else out) 1 acc inc_r
+
+let install_include_by_root =
+  let install_inc_i = function
+    | None -> ()
+    | Some (var,d) ->
       printf "\tinstall -d $(DSTROOT)$(COQLIBINSTALL)/%s; \\\n" d;
-      printf "\tfor i in $(%sINC); do \\\n" files_var;
+      printf "\tfor i in $(%sINC); do \\\n" var;
       printf "\t install -m 0644 $$i $(DSTROOT)$(COQLIBINSTALL)/%s/`basename $$i`; \\\n" d;
       printf "\tdone\n"
-    in
-      if inc_r = [] then
-	if has_inc_i_files then
-	  begin
-	    (* Files in the scope of a -I option *)
-	    install_inc_i "$(INSTALLDEFAULTROOT)";
-	  end else ()
-      else
-	(* Files in the scope of a -R option (assuming they are disjoint) *)
-	list_iter_i (fun i (pdir,ldir,abspdir) ->
-		       let has_inc_r_files = List.exists (is_prefix abspdir) absdir_of_files in
-		       let pdir' = physical_dir_of_logical_dir ldir in
-			 if has_inc_r_files then
-			   begin
-			     printf "\tcd %s; for i in $(%s%d); do \\\n" pdir files_var i;
-			     printf "\t install -d `dirname $(DSTROOT)$(COQLIBINSTALL)/%s/$$i`; \\\n" pdir';
-			     printf "\t install -m 0644 $$i $(DSTROOT)$(COQLIBINSTALL)/%s/$$i; \\\n" pdir';
-			     printf "\tdone\n";
-			   end;
-			 if has_inc_i_files then install_inc_i pdir'
-		    ) inc_r
+  in
+  List.iter (fun (a,b) -> match a with
+    | None -> install_inc_i b
+    | Some (pdir,var,pdir') ->
+      printf "\tcd %s; for i in $(%s); do \\\n" pdir var;
+      printf "\t install -d `dirname $(DSTROOT)$(COQLIBINSTALL)/%s/$$i`; \\\n" pdir';
+      printf "\t install -m 0644 $$i $(DSTROOT)$(COQLIBINSTALL)/%s/$$i; \\\n" pdir';
+      printf "\tdone\n";
+      install_inc_i b)
 
 let install_doc some_vfiles some_mlifiles (_,inc_r) =
   let install_one_kind kind dir =
@@ -212,25 +211,27 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
   |is_install ->
     let () = if is_install = Project_file.UnspecInstall then
 	print "userinstall:\n\t+$(MAKE) USERINSTALL=true install\n\n" in
-  let not_empty = function |[] -> false |_::_ -> true in
-  let cmofiles = mlpackfiles@mlfiles@ml4files in
-  let cmifiles = mlifiles@cmofiles in
-  let cmxsfiles = cmofiles@mllibfiles in
+    let not_empty = function |[] -> false |_::_ -> true in
+    let cmofiles = mlpackfiles@mlfiles@ml4files in
+    let cmifiles = mlifiles@cmofiles in
+    let cmxsfiles = cmofiles@mllibfiles in
     if (not_empty cmxsfiles) then begin
       print "install-natdynlink:\n";
-      install_include_by_root "CMXSFILES" cmxsfiles inc;
+      install_include_by_root (vars_to_put_by_root [] "CMXSFILES" cmxsfiles inc);
       print "\n";
     end;
     print "install:";
     if (not_empty cmxsfiles) then print "$(if ifeq '$(HASNATDYNLINK)' 'true',install-natdynlink)";
     print "\n";
-    if not_empty vfiles then install_include_by_root "VOFILES" vfiles inc;
-    if (not_empty cmofiles) then
-      install_include_by_root "CMOFILES" cmofiles inc;
-    if (not_empty cmifiles) then
-      install_include_by_root "CMIFILES" cmifiles inc;
-    if (not_empty mllibfiles) then
-      install_include_by_root "CMAFILES" mllibfiles inc;
+    let sorted_dirs =
+      vars_to_put_by_root (
+	vars_to_put_by_root (
+	  vars_to_put_by_root (
+	    vars_to_put_by_root [] "VOFILES" vfiles inc
+	  ) "CMOFILES" cmofiles inc
+	) "CMIFILES" cmifiles inc
+      ) "CMAFILES" mllibfiles inc in
+    install_include_by_root sorted_dirs;
     List.iter
       (fun x ->
 	 printf "\t(cd %s; $(MAKE) DSTROOT=$(DSTROOT) INSTALLDEFAULTROOT=$(INSTALLDEFAULTROOT)/%s install)\n" x x)
