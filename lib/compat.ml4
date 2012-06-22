@@ -37,6 +37,7 @@ END
 IFDEF CAMLP5 THEN
 
 module PcamlSig = struct end
+module Token = Token
 
 ELSE
 
