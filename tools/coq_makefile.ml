@@ -179,51 +179,28 @@ let install_include_by_root =
       printf "\tdone\n";
       install_inc_i b)
 
-let install_doc some_vfiles some_mlifiles (_,inc_r) =
-  let install_one_kind kind dir =
-    printf "\tinstall -d $(DSTROOT)$(COQDOCINSTALL)/%s/%s\n" dir kind;
-    printf "\tfor i in %s/*; do \\\n" kind;
-    printf "\t install -m 0644 $$i $(DSTROOT)$(COQDOCINSTALL)/%s/$$i;\\\n" dir;
-    print "\tdone\n" in
-    print "install-doc:\n";
-    let () = match inc_r with
-      |[] ->
-	 if some_vfiles then install_one_kind "html" "$(INSTALLDEFAULTROOT)";
-	  if some_mlifiles then install_one_kind "mlihtml" "$(INSTALLDEFAULTROOT)";
-      |(_,lp,_)::q ->
-	 let pr = List.fold_left (fun a (_,b,_) -> string_prefix a b) lp q in
-	   if (pr <> "") &&
-	     ((List.exists (fun(_,b,_) -> b = pr) inc_r) || pr.[String.length pr - 1] = '.')
-	   then begin
-	     let rt = physical_dir_of_logical_dir pr in
-	       if some_vfiles then install_one_kind "html" rt;
-	       if some_mlifiles then install_one_kind "mlihtml" rt;
-	   end else begin
-	     prerr_string "Warning: -R options don't have a correct common prefix,
- install-doc will put anything in $INSTALLDEFAULTROOT\n";
-	   if some_vfiles then install_one_kind "html" "$(INSTALLDEFAULTROOT)";
-	   if some_mlifiles then install_one_kind "mlihtml" "$(INSTALLDEFAULTROOT)";
-	   end in
-      print "\n"
+let where_put_doc = function
+    |_,[] -> "$(INSTALLDEFAULTROOT)";
+    |_,((_,lp,_)::q as inc_r) ->
+      let pr = List.fold_left (fun a (_,b,_) -> string_prefix a b) lp q in
+      if (pr <> "") &&
+	((List.exists (fun(_,b,_) -> b = pr) inc_r) || pr.[String.length pr - 1] = '.')
+      then
+	physical_dir_of_logical_dir pr
+      else
+	let () = prerr_string "Warning: -R options don't have a correct common prefix,
+ install-doc will put anything in $INSTALLDEFAULTROOT\n" in
+	"$(INSTALLDEFAULTROOT)"
 
 let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) inc = function
-  |Project_file.NoInstall -> ()
+  |Project_file.NoInstall -> None
   |is_install ->
-    let () = if is_install = Project_file.UnspecInstall then
-	print "userinstall:\n\t+$(MAKE) USERINSTALL=true install\n\n" in
     let not_empty = function |[] -> false |_::_ -> true in
-    let cmofiles = mlpackfiles@mlfiles@ml4files in
-    let cmifiles = mlifiles@cmofiles in
-    let cmxsfiles = cmofiles@mllibfiles in
-    if (not_empty cmxsfiles) then begin
-      print "install-natdynlink:\n";
-      install_include_by_root (vars_to_put_by_root [] "CMXSFILES" cmxsfiles inc);
-      print "\n";
-    end;
-    print "install:";
-    if (not_empty cmxsfiles) then print "$(if ifeq '$(HASNATDYNLINK)' 'true',install-natdynlink)";
-    print "\n";
-    let sorted_dirs =
+    let cmofiles = List.rev_append mlpackfiles (List.rev_append mlfiles ml4files) in
+    let cmifiles = List.rev_append mlifiles cmofiles in
+    let cmxsfiles = List.rev_append cmofiles mllibfiles in
+    let where_what_cmxs = vars_to_put_by_root [] "CMXSFILES" cmxsfiles inc in
+    let where_what =
       vars_to_put_by_root (
 	vars_to_put_by_root (
 	  vars_to_put_by_root (
@@ -231,13 +208,33 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
 	  ) "CMOFILES" cmofiles inc
 	) "CMIFILES" cmifiles inc
       ) "CMAFILES" mllibfiles inc in
-    install_include_by_root sorted_dirs;
+    let doc_dir = where_put_doc inc in
+    let () = if is_install = Project_file.UnspecInstall then
+	print "userinstall:\n\t+$(MAKE) USERINSTALL=true install\n\n" in
+    if (not_empty cmxsfiles) then begin
+      print "install-natdynlink:\n";
+      install_include_by_root where_what_cmxs;
+      print "\n";
+    end;
+    print "install:";
+    if (not_empty cmxsfiles) then print "$(if ifeq '$(HASNATDYNLINK)' 'true',install-natdynlink)";
+    print "\n";
+    install_include_by_root where_what;
     List.iter
       (fun x ->
-	 printf "\t(cd %s; $(MAKE) DSTROOT=$(DSTROOT) INSTALLDEFAULTROOT=$(INSTALLDEFAULTROOT)/%s install)\n" x x)
+	printf "\t(cd %s; $(MAKE) DSTROOT=$(DSTROOT) INSTALLDEFAULTROOT=$(INSTALLDEFAULTROOT)/%s install)\n" x x)
       sds;
     print "\n";
-    install_doc (not_empty vfiles) (not_empty mlifiles) inc
+    let install_one_kind kind dir =
+      printf "\tinstall -d $(DSTROOT)$(COQDOCINSTALL)/%s/%s\n" dir kind;
+      printf "\tfor i in %s/*; do \\\n" kind;
+      printf "\t install -m 0644 $$i $(DSTROOT)$(COQDOCINSTALL)/%s/$$i;\\\n" dir;
+      print "\tdone\n" in
+    print "install-doc:\n";
+    if not_empty vfiles then install_one_kind "html" doc_dir;
+    if not_empty mlifiles then install_one_kind "mlihtml" doc_dir;
+    print "\n";
+    Some (List.rev_append where_what_cmxs where_what,doc_dir)
 
 let make_makefile sds =
   if !make_name <> "" then begin
