@@ -134,51 +134,60 @@ let classify_files_by_root var files (inc_i,inc_r) =
 	  inc_r;
     end
 
-let vars_to_put_by_root acc files_vars_x_files (inc_i,inc_r) =
-  let absdir_of_files files = List.rev_map
-    (fun x -> CUnix.canonical_path_name (Filename.dirname x))
-    files in
-  let has_inc_i_files = List.fold_left (fun acc (var,files) ->
-    if List.exists (fun (_,a) -> List.mem a files) inc_i
-    then var::acc else acc) [] files_vars_x_files in
+let vars_to_put_by_root var_x_files_l (inc_i,inc_r) =
+  let var_x_absdirs_l = List.rev_map
+    (fun (v,l) -> (v,List.rev_map (fun x -> CUnix.canonical_path_name (Filename.dirname x)) l))
+    var_x_files_l in
+  let var_filter f g = List.fold_left (fun acc (var,dirs) ->
+    if f dirs
+    then (g var)::acc else acc) [] var_x_absdirs_l in
   try
     (* All files caught by a -R . option (assuming it is the only one) *)
     let ldir = match inc_r with
       |[(".",t,_)] -> t
-      |l -> let out = List.assoc "." (List.map (fun (p,l,_) -> (p,l)) inc_r) in
+      |l -> let out = List.assoc "." (List.rev_map (fun (p,l,_) -> (p,l)) inc_r) in
 	    let () = prerr_string "Warning: install rule assumes that -R . _ is the only -R option" in
 	    out in
-    [physical_dir_of_logical_dir ldir,".",List.rev_map fst files_vars_x_files)]
+    (None,[".",physical_dir_of_logical_dir ldir,List.rev_map fst var_x_files_l])
   with Not_found ->
-    if inc_r = [] then
-      ("$(INSTALLDEFAULTROOT)",None,files_vars)::acc
-    else
-      (* Files in the scope of a -R option (assuming they are disjoint) *)
-      Util.list_fold_left_i (fun i out (pdir,ldir,abspdir) ->
-	let has_inc_r_files = List.exists (is_prefix abspdir) absdir_of_files in
-	let pdir' = physical_dir_of_logical_dir ldir in
-	if has_inc_r_files
-	then (Some (pdir,files_var^string_of_int i, pdir'),
-	      if has_inc_i_files then Some(files_var,pdir') else None)::out
-	else if has_inc_i_files then (None,Some(files_var,pdir'))::out else out) 1 acc inc_r
+    (
+      (* vars for -I options *)
+      Some (var_filter (fun l -> List.exists (fun (_,a) -> List.mem a l) inc_i) (fun x -> x)),
+      (* (physical dir, physical dir of logical path,vars) for -R options
+	 (assuming physical dirs are disjoint) *)
+      if inc_r = [] then
+	["$(INSTALLDEFAULTROOT)",".",[]]
+      else
+	Util.list_fold_left_i (fun i out (pdir,ldir,abspdir) ->
+	  let vars_r = var_filter (List.exists (is_prefix abspdir)) (fun x -> x^string_of_int i) in
+	  let pdir' = physical_dir_of_logical_dir ldir in
+	  (pdir,pdir',vars_r)::out) 1 [] inc_r
+    )
 
 let install_include_by_root =
-  let install_inc_i = function
-    | None -> ()
-    | Some (var,d) ->
-      printf "\tinstall -d $(DSTROOT)$(COQLIBINSTALL)/%s; \\\n" d;
-      printf "\tfor i in $(%sINC); do \\\n" var;
-      printf "\t install -m 0644 $$i $(DSTROOT)$(COQLIBINSTALL)/%s/`basename $$i`; \\\n" d;
-      printf "\tdone\n"
-  in
-  List.iter (fun (a,b) -> match a with
-    | None -> install_inc_i b
-    | Some (pdir,var,pdir') ->
-      printf "\tcd %s; for i in $(%s); do \\\n" pdir var;
+  let install_dir for_i (pdir,pdir',vars) =
+    let b = vars <> [] in
+    if b then begin
+      printf "\tcd %s; for i in " pdir;
+      print_list " " (List.rev_map (Format.sprintf "$(%s)") vars);
+      print "; do \\\n";
       printf "\t install -d `dirname $(DSTROOT)$(COQLIBINSTALL)/%s/$$i`; \\\n" pdir';
       printf "\t install -m 0644 $$i $(DSTROOT)$(COQLIBINSTALL)/%s/$$i; \\\n" pdir';
       printf "\tdone\n";
-      install_inc_i b)
+    end;
+    for_i b pdir' in
+  let install_i = function
+    |[] -> fun _ _ -> ()
+    |l -> fun b d ->
+      if not b then printf "\tinstall -d $(DSTROOT)$(COQLIBINSTALL)/%s; \\\n" d;
+      print "\tfor i in ";
+      print_list " " (List.rev_map (Format.sprintf "$(%sINC)") l);
+      print "; do \\\n";
+      printf "\t install -m 0644 $$i $(DSTROOT)$(COQLIBINSTALL)/%s/`basename $$i`; \\\n" d;
+      printf "\tdone\n"
+  in function
+  |None,l -> List.iter (install_dir (fun _ _ -> ())) l
+  |Some v_i,l -> List.iter (install_dir (install_i v_i)) l
 
 let where_put_doc = function
     |_,[] -> "$(INSTALLDEFAULTROOT)";
@@ -194,21 +203,16 @@ let where_put_doc = function
 	"$(INSTALLDEFAULTROOT)"
 
 let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) inc = function
-  |Project_file.NoInstall -> None
+  |Project_file.NoInstall -> ()
   |is_install ->
     let not_empty = function |[] -> false |_::_ -> true in
     let cmofiles = List.rev_append mlpackfiles (List.rev_append mlfiles ml4files) in
     let cmifiles = List.rev_append mlifiles cmofiles in
     let cmxsfiles = List.rev_append cmofiles mllibfiles in
-    let where_what_cmxs = vars_to_put_by_root [] "CMXSFILES" cmxsfiles inc in
-    let where_what =
-      vars_to_put_by_root (
-	vars_to_put_by_root (
-	  vars_to_put_by_root (
-	    vars_to_put_by_root [] "VOFILES" vfiles inc
-	  ) "CMOFILES" cmofiles inc
-	) "CMIFILES" cmifiles inc
-      ) "CMAFILES" mllibfiles inc in
+    let where_what_cmxs = vars_to_put_by_root [("CMXSFILES",cmxsfiles)] inc in
+    let where_what = vars_to_put_by_root
+      [("VOFILES",vfiles);("CMOFILES",cmofiles);("CMIFILES",cmifiles);("CMAFILES",mllibfiles)]
+      inc in
     let doc_dir = where_put_doc inc in
     let () = if is_install = Project_file.UnspecInstall then
 	print "userinstall:\n\t+$(MAKE) USERINSTALL=true install\n\n" in
@@ -234,8 +238,8 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
     print "install-doc:\n";
     if not_empty vfiles then install_one_kind "html" doc_dir;
     if not_empty mlifiles then install_one_kind "mlihtml" doc_dir;
-    print "\n";
-    Some (List.rev_append where_what_cmxs where_what,doc_dir)
+    print "\n"
+(*    Some (List.rev_append where_what_cmxs where_what,doc_dir)*)
 
 let make_makefile sds =
   if !make_name <> "" then begin
