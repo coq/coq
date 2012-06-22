@@ -1580,7 +1580,7 @@ let interp c = match c with
   | VernacProof (Some tac, None) -> vernac_set_end_tac tac ; print_subgoals ()
   | VernacProof (None, Some l) -> vernac_set_used_variables l ; print_subgoals ()
   | VernacProof (Some tac, Some l) -> 
-      vernac_set_end_tac tac; vernac_set_used_variables l
+      vernac_set_end_tac tac; vernac_set_used_variables l ; print_subgoals ()
   | VernacProofMode mn -> Proof_global.set_proof_mode mn
   (* Toplevel control *)
   | VernacToplevelControl e -> raise e
