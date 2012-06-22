@@ -156,7 +156,7 @@ let vars_to_put_by_root var_x_files_l (inc_i,inc_r) =
       (* (physical dir, physical dir of logical path,vars) for -R options
 	 (assuming physical dirs are disjoint) *)
       if inc_r = [] then
-	["$(INSTALLDEFAULTROOT)",".",[]]
+	[".","$(INSTALLDEFAULTROOT)",[]]
       else
 	Util.list_fold_left_i (fun i out (pdir,ldir,abspdir) ->
 	  let vars_r = var_filter (List.exists (is_prefix abspdir)) (fun x -> x^string_of_int i) in
@@ -168,7 +168,7 @@ let install_include_by_root =
   let install_dir for_i (pdir,pdir',vars) =
     let b = vars <> [] in
     if b then begin
-      printf "\tcd %s; for i in " pdir;
+      printf "\tcd %s && for i in " pdir;
       print_list " " (List.rev_map (Format.sprintf "$(%s)") vars);
       print "; do \\\n";
       printf "\t install -d `dirname $(DSTROOT)$(COQLIBINSTALL)/%s/$$i`; \\\n" pdir';
@@ -188,6 +188,28 @@ let install_include_by_root =
   in function
   |None,l -> List.iter (install_dir (fun _ _ -> ())) l
   |Some v_i,l -> List.iter (install_dir (install_i v_i)) l
+
+let uninstall_by_root =
+  let uninstall_dir for_i (pdir,pdir',vars) =
+    printf "\tprintf 'cd $${DSTROOT}$(COQLIBINSTALL)/%s" pdir';
+    if vars <> [] then begin
+      print " && rm -f ";
+      print_list " " (List.rev_map (Format.sprintf "$(%s)") vars);
+    end;
+    for_i ();
+    print " && find . -type d -and -empty -delete\\n";
+    print "cd $${DSTROOT}$(COQLIBINSTALL) && ";
+    printf "find %s -maxdepth 0 -and -empty -exec rmdir -p \\{\\} \\;\\n' >> \"$@\"\n" pdir'
+in
+  let uninstall_i = function
+    |[] -> ()
+    |l ->
+      print " && \\\\\\nfor i in ";
+      print_list " " (List.rev_map (Format.sprintf "$(%sINC)") l);
+      print "; do rm -f `basename $$i`; done"
+  in function
+  |None,l -> List.iter (uninstall_dir (fun _ -> ())) l
+  |Some v_i,l -> List.iter (uninstall_dir (fun () -> uninstall_i v_i)) l
 
 let where_put_doc = function
     |_,[] -> "$(INSTALLDEFAULTROOT)";
@@ -210,7 +232,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
     let cmifiles = List.rev_append mlifiles cmofiles in
     let cmxsfiles = List.rev_append cmofiles mllibfiles in
     let where_what_cmxs = vars_to_put_by_root [("CMXSFILES",cmxsfiles)] inc in
-    let where_what = vars_to_put_by_root
+    let where_what_oth = vars_to_put_by_root
       [("VOFILES",vfiles);("CMOFILES",cmofiles);("CMIFILES",cmifiles);("CMAFILES",mllibfiles)]
       inc in
     let doc_dir = where_put_doc inc in
@@ -224,7 +246,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
     print "install:";
     if (not_empty cmxsfiles) then print "$(if ifeq '$(HASNATDYNLINK)' 'true',install-natdynlink)";
     print "\n";
-    install_include_by_root where_what;
+    install_include_by_root where_what_oth;
     List.iter
       (fun x ->
 	printf "\t(cd %s; $(MAKE) DSTROOT=$(DSTROOT) INSTALLDEFAULTROOT=$(INSTALLDEFAULTROOT)/%s install)\n" x x)
@@ -238,8 +260,23 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
     print "install-doc:\n";
     if not_empty vfiles then install_one_kind "html" doc_dir;
     if not_empty mlifiles then install_one_kind "mlihtml" doc_dir;
-    print "\n"
-(*    Some (List.rev_append where_what_cmxs where_what,doc_dir)*)
+    print "\n";
+    let uninstall_one_kind kind dir =
+      printf "\tprintf 'cd $${DSTROOT}$(COQDOCINSTALL)/%s \\\\\\n' >> \"$@\"\n" dir;
+      printf "\tprintf '&& rm -f $(shell find %s -maxdepth 1 -and -type f -print)\\n' >> \"$@\"\n" kind;
+      print "\tprintf 'cd $${DSTROOT}$(COQDOCINSTALL) && ";
+      printf "find %s/%s -maxdepth 0 -and -empty -exec rmdir -p \\{\\} \\;\\n' >> \"$@\"\n" dir kind
+    in
+    print "uninstall_me.sh:\n";
+    print "\techo '#!/bin/sh' > $@ \n";
+    if (not_empty cmxsfiles) then uninstall_by_root where_what_cmxs;
+    uninstall_by_root where_what_oth;
+    if not_empty vfiles then uninstall_one_kind "html" doc_dir;
+    if not_empty mlifiles then uninstall_one_kind "mlihtml" doc_dir;
+    print "\tchmod +x $@\n";
+    print "\n";
+    print "uninstall: uninstall_me.sh\n";
+    print "\tsh $<\n\n"
 
 let make_makefile sds =
   if !make_name <> "" then begin
@@ -262,7 +299,7 @@ let clean sds sps =
   if !some_vfile then
     print "\trm -f $(VOFILES) $(VIFILES) $(GFILES) $(VFILES:.v=.v.d) $(VFILES:=.beautified) $(VFILES:=.old)\n";
   print "\trm -f all.ps all-gal.ps all.pdf all-gal.pdf all.glob $(VFILES:.v=.glob) $(VFILES:.v=.tex) $(VFILES:.v=.g.tex) all-mli.tex\n";
-  print "\t- rm -rf html mlihtml\n";
+  print "\t- rm -rf html mlihtml uninstall_me.sh\n";
   List.iter
     (fun (file,_,_) ->
        if not (is_genrule file) then
@@ -599,8 +636,9 @@ let all_target (vfiles, (_,_,_,_,mlpackfiles as mlfiles), sps, sds) inc =
   main_targets vfiles mlfiles other_targets inc;
     print ".PHONY: ";
     print_list " "
-      ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install"
-	:: "userinstall" :: "depend" :: "html" :: "validate" :: sds);
+      ("all" ::  "opt" :: "byte" :: "archclean" :: "clean" :: "install" ::
+	  "uninstall_me.sh" :: "uninstall" :: "userinstall" :: "depend" ::
+	  "html" :: "validate" :: sds);
     print "\n\n";
     custom sps;
     subdirs sds;
