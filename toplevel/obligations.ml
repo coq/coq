@@ -13,7 +13,6 @@ open Util
 open Evd
 open Declare
 open Proof_type
-open Compat
 
 (**
    - Get types of existentials ;
@@ -61,7 +60,7 @@ type oblinfo =
     ev_hyps: named_context;
     ev_status: Evar_kinds.obligation_definition_status;
     ev_chop: int option;
-    ev_src: Evar_kinds.t located;
+    ev_src: Evar_kinds.t Loc.located;
     ev_typ: types;
     ev_tac: tactic option;
     ev_deps: Intset.t }
@@ -313,13 +312,13 @@ let explain_no_obligations = function
   | None -> str "No obligations remaining"
 
 type obligation_info =
-    (Names.identifier * Term.types * Evar_kinds.t located *
+    (Names.identifier * Term.types * Evar_kinds.t Loc.located *
      Evar_kinds.obligation_definition_status * Intset.t * tactic option) array
 
 type obligation =
   { obl_name : identifier;
     obl_type : types;
-    obl_location : Evar_kinds.t located;
+    obl_location : Evar_kinds.t Loc.located;
     obl_body : constr option;
     obl_status : Evar_kinds.obligation_definition_status;
     obl_deps : Intset.t;
@@ -329,7 +328,7 @@ type obligation =
 type obligations = (obligation array * int)
 
 type fixpoint_kind =
-  | IsFixpoint of (identifier located option * Constrexpr.recursion_order_expr) list
+  | IsFixpoint of (identifier Loc.located option * Constrexpr.recursion_order_expr) list
   | IsCoFixpoint
 
 type notations = (Vernacexpr.lstring * Constrexpr.constr_expr * Notation_term.scope_name option) list
@@ -584,7 +583,7 @@ let declare_mutual_definition l =
       | IsFixpoint wfl ->
 	  let possible_indexes =
 	    list_map3 compute_possible_guardness_evidences wfl fixdefs fixtypes in
-	  let indexes = Pretyping.search_guard dummy_loc (Global.env ()) possible_indexes fixdecls in
+	  let indexes = Pretyping.search_guard Loc.ghost (Global.env ()) possible_indexes fixdecls in
 	    Some indexes, list_map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 l
       | IsCoFixpoint ->
 	  None, list_map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 l
@@ -628,7 +627,7 @@ let init_prog_info n b t deps fixkind notations obls impls kind reduce hook =
 	assert(obls = [||]);
 	let n = Nameops.add_suffix n "_obligation" in
 	  [| { obl_name = n; obl_body = None;
-	       obl_location = dummy_loc, Evar_kinds.InternalHole; obl_type = t;
+	       obl_location = Loc.ghost, Evar_kinds.InternalHole; obl_type = t;
 	       obl_status = Evar_kinds.Expand; obl_deps = Intset.empty;
 	       obl_tac = None } |],
 	mkVar n

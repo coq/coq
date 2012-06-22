@@ -475,7 +475,7 @@ let vernac_declare_module export (loc, id) binders_ast mty_ast =
   in
     Dumpglob.dump_moddef loc mp "mod";
     if_verbose msg_info (str ("Module "^ string_of_id id ^" is declared"));
-    Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
+    Option.iter (fun export -> vernac_import export [Ident (Loc.ghost,id)]) export
 
 let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
   (* We check the state of the system (in section, in module type)
@@ -499,7 +499,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
          List.iter
            (fun (export,id) ->
              Option.iter
-               (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
+               (fun export -> vernac_import export [Ident (Loc.ghost,id)]) export
            ) argsexport
     | _::_ ->
        let binders_ast = List.map
@@ -517,7 +517,7 @@ let vernac_define_module export (loc, id) binders_ast mty_ast_o mexpr_ast_l =
 	 Dumpglob.dump_moddef loc mp "mod";
 	 if_verbose msg_info
 	   (str ("Module "^ string_of_id id ^" is defined"));
-         Option.iter (fun export -> vernac_import export [Ident (dummy_loc,id)])
+         Option.iter (fun export -> vernac_import export [Ident (Loc.ghost,id)])
            export
 
 let vernac_end_module export (loc,id as lid) =
@@ -547,7 +547,7 @@ let vernac_declare_module_type (loc,id) binders_ast mty_sign mty_ast_l =
         List.iter
          (fun (export,id) ->
            Option.iter
-            (fun export -> vernac_import export [Ident (dummy_loc,id)]) export
+            (fun export -> vernac_import export [Ident (Loc.ghost,id)]) export
          ) argsexport
 
     | _ :: _ ->
@@ -1172,7 +1172,7 @@ let vernac_check_may_eval redexp glopt rc =
       Evarutil.check_evars env sigma sigma' c;
       Arguments_renaming.rename_typing env c
     with P.PretypeError (_,_,P.UnsolvableImplicit _)
-      | Compat.Loc.Exc_located (_,P.PretypeError (_,_,P.UnsolvableImplicit _)) ->
+      | Loc.Exc_located (_,P.PretypeError (_,_,P.UnsolvableImplicit _)) ->
       Evarutil.j_nf_evar sigma' (Retyping.get_judgment_of env sigma' c) in
   match redexp with
     | None ->
@@ -1265,7 +1265,7 @@ let interp_search_about_item = function
   | SearchString (s,sc) ->
       try
 	let ref =
-	  Notation.interp_notation_as_global_reference dummy_loc
+	  Notation.interp_notation_as_global_reference Loc.ghost
 	    (fun _ -> true) s sc in
 	GlobSearchSubPattern (Pattern.PRef ref)
       with UserError _ ->

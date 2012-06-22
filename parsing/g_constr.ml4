@@ -36,7 +36,7 @@ let _ = List.iter Lexer.add_keyword constr_kw
 let mk_cast = function
     (c,(_,None)) -> c
   | (c,(_,Some ty)) ->
-    let loc = join_loc (constr_loc c) (constr_loc ty)
+    let loc = Loc.merge (constr_loc c) (constr_loc ty)
     in CCast(loc, c, CastConv ty)
 
 let binders_of_names l =
@@ -235,7 +235,7 @@ GEXTEND Gram
       | "let"; id=name; bl = binders; ty = type_cstr; ":=";
         c1 = operconstr LEVEL "200"; "in"; c2 = operconstr LEVEL "200" ->
           let loc1 =
-	    join_loc (local_binders_loc bl) (constr_loc c1)
+	    Loc.merge (local_binders_loc bl) (constr_loc c1)
 	  in
           CLetIn(loc,id,mkCLambdaN loc1 bl (mk_cast(c1,ty)),c2)
       | "let"; fx = single_fix; "in"; c = operconstr LEVEL "200" ->
@@ -422,7 +422,7 @@ GEXTEND Gram
       | "("; id=name; ":="; c=lconstr; ")" ->
           [LocalRawDef (id,c)]
       | "("; id=name; ":"; t=lconstr; ":="; c=lconstr; ")" ->
-          [LocalRawDef (id,CCast (join_loc (constr_loc t) loc,c, CastConv t))]
+          [LocalRawDef (id,CCast (Loc.merge (constr_loc t) loc,c, CastConv t))]
       | "{"; id=name; "}" ->
           [LocalRawAssum ([id],Default Implicit,CHole (loc, None))]
       | "{"; id=name; idl=LIST1 name; ":"; c=lconstr; "}" ->

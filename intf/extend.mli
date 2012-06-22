@@ -6,14 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Compat
-
 (** Entry keys for constr notations *)
 
 type side = Left | Right
 
 type production_position =
-  | BorderProd of side * gram_assoc option
+  | BorderProd of side * Compat.gram_assoc option
   | InternalProd
 
 type production_level =

@@ -17,7 +17,7 @@ open Vernacexpr
 (** Making generic actions in type generic_argument *)
 
 let make_generic_action
-  (f:loc -> ('b * raw_generic_argument) list -> 'a) pil =
+  (f:Loc.t -> ('b * raw_generic_argument) list -> 'a) pil =
   let rec make env = function
     | [] ->
 	Gram.action (fun loc -> f loc env)
@@ -37,7 +37,7 @@ let make_rule_gen mkproditem mkact pt =
 type grammar_prod_item =
   | GramTerminal of string
   | GramNonTerminal of
-      loc * argument_type * prod_entry_key * identifier option
+      Loc.t * argument_type * prod_entry_key * identifier option
 
 let make_prod_item = function
   | GramTerminal s -> (gram_token_of_string s, None)

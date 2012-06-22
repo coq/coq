@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Compat
 open Pp
 open Errors
 open Util
@@ -215,10 +214,10 @@ let anomaly_string () = str "Anomaly: "
 let report () = (str "." ++ spc () ++ str "Please report.")
 
 let print_loc loc =
-  if loc = dummy_loc then
+  if loc = Loc.ghost then
     (str"<unknown>")
   else
-    let loc = unloc loc in
+    let loc = Loc.unloc loc in
     (int (fst loc) ++ str"-" ++ int (snd loc))
 let guill s = "\""^s^"\""
 
@@ -274,7 +273,7 @@ let rec explain_exn = function
       hov 0
         (str "Error:" ++ spc () ++ Himsg.explain_inductive_error ctx e)*)
   | Loc.Exc_located (loc,exc) ->
-      hov 0 ((if loc = dummy_loc then (mt ())
+      hov 0 ((if loc = Loc.ghost then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
                ++ explain_exn exc)
   | Assert_failure (s,b,e) ->

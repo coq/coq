@@ -104,7 +104,7 @@ let pr_com_at n =
   if Flags.do_beautify() && n <> 0 then comment n
   else mt()
 
-let pr_with_comments loc pp = pr_located (fun x -> x) (loc,pp)
+let pr_with_comments loc pp = Loc.pr_located (fun x -> x) (loc,pp)
 
 let pr_sep_com sep f c = pr_with_comments (constr_loc c) (sep() ++ f c)
 
@@ -137,14 +137,14 @@ let pr_opt_type_spc pr = function
   | t ->  str " :" ++ pr_sep_com (fun()->brk(1,2)) (pr ltop) t
 
 let pr_lident (loc,id) =
-  if loc <> dummy_loc then
-    let (b,_) = unloc loc in
-    pr_located pr_id (make_loc (b,b+String.length(string_of_id id)),id)
+  if loc <> Loc.ghost then
+    let (b,_) = Loc.unloc loc in
+    Loc.pr_located pr_id (Loc.make_loc (b,b+String.length(string_of_id id)),id)
   else pr_id id
 
 let pr_lname = function
     (loc,Name id) -> pr_lident (loc,id)
-  | lna -> pr_located pr_name lna
+  | lna -> Loc.pr_located pr_name lna
 
 let pr_or_var pr = function
   | ArgArg x -> pr x
@@ -213,8 +213,8 @@ let pr_eqn pr (loc,pl,rhs) =
       pr_sep_com spc (pr ltop) rhs))
 
 let begin_of_binder = function
-    LocalRawDef((loc,_),_) -> fst (unloc loc)
-  | LocalRawAssum((loc,_)::_,_,_) -> fst (unloc loc)
+    LocalRawDef((loc,_),_) -> fst (Loc.unloc loc)
+  | LocalRawAssum((loc,_)::_,_,_) -> fst (Loc.unloc loc)
   | _ -> assert false
 
 let begin_of_binders = function
@@ -260,7 +260,7 @@ let pr_binder_among_many pr_c = function
   | LocalRawDef (na,c) ->
       let c,topt = match c with
         | CCast(_,c, (CastConv t|CastVM t)) -> c, t
-        | _ -> c, CHole (dummy_loc, None) in
+        | _ -> c, CHole (Loc.ghost, None) in
       surround (pr_lname na ++ pr_opt_type pr_c topt ++
          str":=" ++ cut() ++ pr_c c)
 

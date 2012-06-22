@@ -154,7 +154,7 @@ module Refinable = struct
     let my_type = Retyping.get_type_of env !rdefs t in
     let j = Environ.make_judge t my_type in
     let (new_defs,j') =
-      Coercion.inh_conv_coerce_to (Pp.dummy_loc) env !rdefs j typ
+      Coercion.inh_conv_coerce_to (Loc.ghost) env !rdefs j typ
     in
     rdefs := new_defs;
     j'.Environ.uj_val
@@ -498,7 +498,7 @@ module V82 = struct
 		Evd.evar_filter = List.map (fun _ -> true)
 	(Environ.named_context_of_val hyps);
 		Evd.evar_body = Evd.Evar_empty;
-		Evd.evar_source = (Pp.dummy_loc,Evar_kinds.GoalEvar);
+		Evd.evar_source = (Loc.ghost,Evar_kinds.GoalEvar);
 		Evd.evar_candidates = None;
 		Evd.evar_extra = extra }
     in

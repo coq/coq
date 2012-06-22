@@ -37,7 +37,6 @@ open Pfedit
 open Command
 open Globnames
 open Evd
-open Compat
 open Locus
 open Misctypes
 

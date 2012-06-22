@@ -125,7 +125,7 @@ END
 
 type 'id gen_place= ('id * hyp_location_flag,unit) location
 
-type loc_place = identifier Pp.located gen_place
+type loc_place = identifier Loc.located gen_place
 type place = identifier gen_place
 
 let pr_gen_place pr_id = function
@@ -167,11 +167,11 @@ ARGUMENT EXTEND hloc
   |  [ "in" "|-" "*" ] ->
     [ ConclLocation () ]
 | [ "in" ident(id) ] ->
-    [ HypLocation ((Pp.dummy_loc,id),InHyp) ]
+    [ HypLocation ((Loc.ghost,id),InHyp) ]
 | [ "in" "(" "Type" "of" ident(id) ")" ] ->
-    [ HypLocation ((Pp.dummy_loc,id),InHypTypeOnly) ]
+    [ HypLocation ((Loc.ghost,id),InHypTypeOnly) ]
 | [ "in" "(" "Value" "of" ident(id) ")" ] ->
-    [ HypLocation ((Pp.dummy_loc,id),InHypValueOnly) ]
+    [ HypLocation ((Loc.ghost,id),InHypValueOnly) ]
 
  END
 

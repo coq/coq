@@ -39,7 +39,6 @@ open Command
 open Libnames
 open Globnames
 open Evd
-open Compat
 open Misctypes
 open Locus
 open Locusops
@@ -55,10 +54,10 @@ let init_setoid () =
   else Coqlib.check_required_library ["Coq";"Setoids";"Setoid"]
 
 let proper_class =
-  lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.Proper"))))
+  lazy (class_info (Nametab.global (Qualid (Loc.ghost, qualid_of_string "Coq.Classes.Morphisms.Proper"))))
 
 let proper_proxy_class =
-  lazy (class_info (Nametab.global (Qualid (dummy_loc, qualid_of_string "Coq.Classes.Morphisms.ProperProxy"))))
+  lazy (class_info (Nametab.global (Qualid (Loc.ghost, qualid_of_string "Coq.Classes.Morphisms.ProperProxy"))))
 
 let proper_proj = lazy (mkConst (Option.get (pi3 (List.hd (Lazy.force proper_class).cl_projs))))
 
@@ -150,7 +149,7 @@ let build_signature evars env m (cstrs : (types * types option) option list)
     (finalcstr : (types * types option) option) =
   let new_evar evars env t =
     new_cstr_evar evars env
-      (* ~src:(dummy_loc, ImplicitArg (ConstRef (Lazy.force respectful), (n, Some na))) *) t
+      (* ~src:(Loc.ghost, ImplicitArg (ConstRef (Lazy.force respectful), (n, Some na))) *) t
   in
   let mk_relty evars env ty obj =
     match obj with
@@ -1478,33 +1477,33 @@ TACTIC EXTEND GenRew
     [ cl_rewrite_clause_newtac_tac c o AllOccurrences None ]
 END
 
-let mkappc s l = CAppExpl (dummy_loc,(None,(Libnames.Ident (dummy_loc,id_of_string s))),l)
+let mkappc s l = CAppExpl (Loc.ghost,(None,(Libnames.Ident (Loc.ghost,id_of_string s))),l)
 
 let declare_an_instance n s args =
-  ((dummy_loc,Name n), Explicit,
-  CAppExpl (dummy_loc, (None, Qualid (dummy_loc, qualid_of_string s)),
+  ((Loc.ghost,Name n), Explicit,
+  CAppExpl (Loc.ghost, (None, Qualid (Loc.ghost, qualid_of_string s)),
 	   args))
 
 let declare_instance a aeq n s = declare_an_instance n s [a;aeq]
 
 let anew_instance global binders instance fields =
-  new_instance binders instance (Some (CRecord (dummy_loc,None,fields)))
+  new_instance binders instance (Some (CRecord (Loc.ghost,None,fields)))
     ~global:(not (Locality.use_section_locality ())) ~generalize:false None
 
 let declare_instance_refl global binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Reflexive") "Coq.Classes.RelationClasses.Reflexive"
   in anew_instance global binders instance
-       [(Ident (dummy_loc,id_of_string "reflexivity"),lemma)]
+       [(Ident (Loc.ghost,id_of_string "reflexivity"),lemma)]
 
 let declare_instance_sym global binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Symmetric") "Coq.Classes.RelationClasses.Symmetric"
   in anew_instance global binders instance
-       [(Ident (dummy_loc,id_of_string "symmetry"),lemma)]
+       [(Ident (Loc.ghost,id_of_string "symmetry"),lemma)]
 
 let declare_instance_trans global binders a aeq n lemma =
   let instance = declare_instance a aeq (add_suffix n "_Transitive") "Coq.Classes.RelationClasses.Transitive"
   in anew_instance global binders instance
-       [(Ident (dummy_loc,id_of_string "transitivity"),lemma)]
+       [(Ident (Loc.ghost,id_of_string "transitivity"),lemma)]
 
 let declare_relation ?(binders=[]) a aeq n refl symm trans =
   init_setoid ();
@@ -1528,16 +1527,16 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PreOrder"
 	in ignore(
 	    anew_instance global binders instance
-	      [(Ident (dummy_loc,id_of_string "PreOrder_Reflexive"), lemma1);
-	       (Ident (dummy_loc,id_of_string "PreOrder_Transitive"),lemma3)])
+	      [(Ident (Loc.ghost,id_of_string "PreOrder_Reflexive"), lemma1);
+	       (Ident (Loc.ghost,id_of_string "PreOrder_Transitive"),lemma3)])
     | (None, Some lemma2, Some lemma3) ->
 	let _lemma_sym = declare_instance_sym global binders a aeq n lemma2 in
 	let _lemma_trans = declare_instance_trans global binders a aeq n lemma3 in
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.PER"
 	in ignore(
 	    anew_instance global binders instance
-	      [(Ident (dummy_loc,id_of_string "PER_Symmetric"), lemma2);
-	       (Ident (dummy_loc,id_of_string "PER_Transitive"),lemma3)])
+	      [(Ident (Loc.ghost,id_of_string "PER_Symmetric"), lemma2);
+	       (Ident (Loc.ghost,id_of_string "PER_Transitive"),lemma3)])
      | (Some lemma1, Some lemma2, Some lemma3) ->
 	let _lemma_refl = declare_instance_refl global binders a aeq n lemma1 in
 	let _lemma_sym = declare_instance_sym global binders a aeq n lemma2 in
@@ -1545,9 +1544,9 @@ let declare_relation ?(binders=[]) a aeq n refl symm trans =
 	let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
 	in ignore(
 	  anew_instance global binders instance
-	    [(Ident (dummy_loc,id_of_string "Equivalence_Reflexive"), lemma1);
-	     (Ident (dummy_loc,id_of_string "Equivalence_Symmetric"), lemma2);
-	     (Ident (dummy_loc,id_of_string "Equivalence_Transitive"), lemma3)])
+	    [(Ident (Loc.ghost,id_of_string "Equivalence_Reflexive"), lemma1);
+	     (Ident (Loc.ghost,id_of_string "Equivalence_Symmetric"), lemma2);
+	     (Ident (Loc.ghost,id_of_string "Equivalence_Transitive"), lemma3)])
 
 type 'a binders_argtype = (local_binder list, 'a) Genarg.abstract_argument_type
 
@@ -1626,7 +1625,7 @@ VERNAC COMMAND EXTEND AddParametricRelation3
       [ declare_relation ~binders:b a aeq n None None (Some lemma3) ]
 END
 
-let cHole = CHole (dummy_loc, None)
+let cHole = CHole (Loc.ghost, None)
 
 open Entries
 open Libnames
@@ -1723,9 +1722,9 @@ let add_setoid global binders a aeq t n =
   let instance = declare_instance a aeq n "Coq.Classes.RelationClasses.Equivalence"
   in ignore(
     anew_instance global binders instance
-      [(Ident (dummy_loc,id_of_string "Equivalence_Reflexive"), mkappc "Seq_refl" [a;aeq;t]);
-       (Ident (dummy_loc,id_of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
-       (Ident (dummy_loc,id_of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])])
+      [(Ident (Loc.ghost,id_of_string "Equivalence_Reflexive"), mkappc "Seq_refl" [a;aeq;t]);
+       (Ident (Loc.ghost,id_of_string "Equivalence_Symmetric"), mkappc "Seq_sym" [a;aeq;t]);
+       (Ident (Loc.ghost,id_of_string "Equivalence_Transitive"), mkappc "Seq_trans" [a;aeq;t])])
 
 let add_morphism_infer glob m n =
   init_setoid ();
@@ -1754,13 +1753,13 @@ let add_morphism glob binders m s n =
   init_setoid ();
   let instance_id = add_suffix n "_Proper" in
   let instance =
-    ((dummy_loc,Name instance_id), Explicit,
-    CAppExpl (dummy_loc,
-	     (None, Qualid (dummy_loc, Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper")),
+    ((Loc.ghost,Name instance_id), Explicit,
+    CAppExpl (Loc.ghost,
+	     (None, Qualid (Loc.ghost, Libnames.qualid_of_string "Coq.Classes.Morphisms.Proper")),
 	     [cHole; s; m]))
   in
   let tac = Tacinterp.interp <:tactic<add_morphism_tactic>> in
-    ignore(new_instance ~global:glob binders instance (Some (CRecord (dummy_loc,None,[])))
+    ignore(new_instance ~global:glob binders instance (Some (CRecord (Loc.ghost,None,[])))
 	      ~generalize:false ~tac ~hook:(declare_projection n instance_id) None)
 
 VERNAC COMMAND EXTEND AddSetoid1

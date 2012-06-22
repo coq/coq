@@ -75,4 +75,4 @@ let _ =
   Notation.declare_numeral_interpreter "nat_scope"
     (nat_path,["Coq";"Init";"Datatypes"])
     nat_of_int
-    ([GRef (dummy_loc,glob_S); GRef (dummy_loc,glob_O)], uninterp_nat, true)
+    ([GRef (Loc.ghost,glob_S); GRef (Loc.ghost,glob_O)], uninterp_nat, true)

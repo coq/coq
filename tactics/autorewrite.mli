@@ -12,7 +12,7 @@ open Tacmach
 open Equality
 
 (** Rewriting rules before tactic interpretation *)
-type raw_rew_rule = Pp.loc * Term.constr * bool * Tacexpr.raw_tactic_expr
+type raw_rew_rule = Loc.t * Term.constr * bool * Tacexpr.raw_tactic_expr
 
 (** To add rewriting rules to a base *)
 val add_rew_rules : string -> raw_rew_rule list -> unit
@@ -56,6 +56,6 @@ type hypinfo = {
 }
 
 val find_applied_relation : bool ->
-  Pp.loc ->
+  Loc.t ->
   Environ.env -> Evd.evar_map -> Term.constr -> bool -> hypinfo
 

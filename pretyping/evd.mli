@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Loc
 open Pp
 open Names
 open Term
@@ -177,7 +178,7 @@ val defined_evars : evar_map -> evar_map
     It optimizes the call of {!Evd.fold} to [f] and [undefined_evars m] *)
 val fold_undefined : (evar -> evar_info -> 'a -> 'a) -> evar_map -> 'a -> 'a
 val evar_declare :
-  named_context_val -> evar -> types -> ?src:loc * Evar_kinds.t ->
+  named_context_val -> evar -> types -> ?src:Loc.t * Evar_kinds.t ->
       ?filter:bool list -> ?candidates:constr list -> evar_map -> evar_map
 val evar_source : existential_key -> evar_map -> Evar_kinds.t located
 

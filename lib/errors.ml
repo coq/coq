@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-open Compat
 open Pp
 
 (* Errors *)
@@ -32,7 +31,7 @@ let invalid_arg_loc (loc,s) = Loc.raise loc (Invalid_argument s)
 (* Like Exc_located, but specifies the outermost file read, the filename
    associated to the location of the error, and the error itself. *)
 
-exception Error_in_file of string * (bool * string * loc) * exn
+exception Error_in_file of string * (bool * string * Loc.t) * exn
 
 exception Timeout
 exception Drop

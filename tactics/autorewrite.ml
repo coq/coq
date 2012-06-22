@@ -100,7 +100,7 @@ let print_rewrite_hintdb bas =
 	       Pptactic.pr_glob_tactic (Global.env()) h.rew_tac)
 	   (find_rewrites bas))
 
-type raw_rew_rule = loc * constr * bool * raw_tactic_expr
+type raw_rew_rule = Loc.t * constr * bool * raw_tactic_expr
 
 (* Applies all the rules of one base *)
 let one_base general_rewrite_maybe_in tac_main bas =

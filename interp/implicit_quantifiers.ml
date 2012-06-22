@@ -60,7 +60,7 @@ let cache_generalizable_type (_,(local,cmd)) =
 let load_generalizable_type _ (_,(local,cmd)) =
   generalizable_table := add_generalizable cmd !generalizable_table
 
-let in_generalizable : bool * identifier located list option -> obj =
+let in_generalizable : bool * identifier Loc.located list option -> obj =
   declare_object {(default_object "GENERALIZED-IDENT") with
     load_function = load_generalizable_type;
     cache_function = cache_generalizable_type;
@@ -253,7 +253,7 @@ let combine_params avoid fn applied needed =
 let combine_params_freevar =
   fun avoid (_, (na, _, _)) ->
     let id' = next_name_away_from na avoid in
-      (CRef (Ident (dummy_loc, id')), Idset.add id' avoid)
+      (CRef (Ident (Loc.ghost, id')), Idset.add id' avoid)
 
 let destClassApp cl =
   match cl with

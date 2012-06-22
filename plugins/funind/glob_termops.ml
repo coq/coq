@@ -11,18 +11,18 @@ let idmap_is_empty m = m = Idmap.empty
 
 (*
    Some basic functions to rebuild glob_constr
-   In each of them the location is Util.dummy_loc
+   In each of them the location is Loc.ghost
 *)
-let mkGRef ref = GRef(dummy_loc,ref)
-let mkGVar id = GVar(dummy_loc,id)
-let mkGApp(rt,rtl) = GApp(dummy_loc,rt,rtl)
-let mkGLambda(n,t,b) = GLambda(dummy_loc,n,Explicit,t,b)
-let mkGProd(n,t,b) = GProd(dummy_loc,n,Explicit,t,b)
-let mkGLetIn(n,t,b) = GLetIn(dummy_loc,n,t,b)
-let mkGCases(rto,l,brl) = GCases(dummy_loc,Term.RegularStyle,rto,l,brl)
-let mkGSort s = GSort(dummy_loc,s)
-let mkGHole () = GHole(dummy_loc,Evar_kinds.BinderType Anonymous)
-let mkGCast(b,t) = GCast(dummy_loc,b,CastConv t)
+let mkGRef ref = GRef(Loc.ghost,ref)
+let mkGVar id = GVar(Loc.ghost,id)
+let mkGApp(rt,rtl) = GApp(Loc.ghost,rt,rtl)
+let mkGLambda(n,t,b) = GLambda(Loc.ghost,n,Explicit,t,b)
+let mkGProd(n,t,b) = GProd(Loc.ghost,n,Explicit,t,b)
+let mkGLetIn(n,t,b) = GLetIn(Loc.ghost,n,t,b)
+let mkGCases(rto,l,brl) = GCases(Loc.ghost,Term.RegularStyle,rto,l,brl)
+let mkGSort s = GSort(Loc.ghost,s)
+let mkGHole () = GHole(Loc.ghost,Evar_kinds.BinderType Anonymous)
+let mkGCast(b,t) = GCast(Loc.ghost,b,CastConv t)
 
 (*
   Some basic functions to decompose glob_constrs

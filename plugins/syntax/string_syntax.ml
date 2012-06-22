@@ -64,6 +64,6 @@ let _ =
   Notation.declare_string_interpreter "string_scope"
     (string_path,["Coq";"Strings";"String"])
     interp_string
-    ([GRef (dummy_loc,static_glob_String);
-      GRef (dummy_loc,static_glob_EmptyString)],
+    ([GRef (Loc.ghost,static_glob_String);
+      GRef (Loc.ghost,static_glob_EmptyString)],
      uninterp_string, true)

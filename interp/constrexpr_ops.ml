@@ -74,43 +74,43 @@ let raw_cases_pattern_expr_loc = function
 
 let local_binder_loc = function
   | LocalRawAssum ((loc,_)::_,_,t)
-  | LocalRawDef ((loc,_),t) -> join_loc loc (constr_loc t)
+  | LocalRawDef ((loc,_),t) -> Loc.merge loc (constr_loc t)
   | LocalRawAssum ([],_,_) -> assert false
 
 let local_binders_loc bll =
-  if bll = [] then dummy_loc else
-  join_loc (local_binder_loc (List.hd bll)) (local_binder_loc (list_last bll))
+  if bll = [] then Loc.ghost else
+  Loc.merge (local_binder_loc (List.hd bll)) (local_binder_loc (list_last bll))
 
 (** Pseudo-constructors *)
 
-let mkIdentC id  = CRef (Ident (dummy_loc, id))
+let mkIdentC id  = CRef (Ident (Loc.ghost, id))
 let mkRefC r     = CRef r
-let mkCastC (a,k)  = CCast (dummy_loc,a,k)
-let mkLambdaC (idl,bk,a,b) = CLambdaN (dummy_loc,[idl,bk,a],b)
-let mkLetInC (id,a,b)   = CLetIn (dummy_loc,id,a,b)
-let mkProdC (idl,bk,a,b)   = CProdN (dummy_loc,[idl,bk,a],b)
+let mkCastC (a,k)  = CCast (Loc.ghost,a,k)
+let mkLambdaC (idl,bk,a,b) = CLambdaN (Loc.ghost,[idl,bk,a],b)
+let mkLetInC (id,a,b)   = CLetIn (Loc.ghost,id,a,b)
+let mkProdC (idl,bk,a,b)   = CProdN (Loc.ghost,[idl,bk,a],b)
 
 let mkAppC (f,l) =
   let l = List.map (fun x -> (x,None)) l in
   match f with
-  | CApp (_,g,l') -> CApp (dummy_loc, g, l' @ l)
-  | _ -> CApp (dummy_loc, (None, f), l)
+  | CApp (_,g,l') -> CApp (Loc.ghost, g, l' @ l)
+  | _ -> CApp (Loc.ghost, (None, f), l)
 
 let rec mkCProdN loc bll c =
   match bll with
   | LocalRawAssum ((loc1,_)::_ as idl,bk,t) :: bll ->
-      CProdN (loc,[idl,bk,t],mkCProdN (join_loc loc1 loc) bll c)
+      CProdN (loc,[idl,bk,t],mkCProdN (Loc.merge loc1 loc) bll c)
   | LocalRawDef ((loc1,_) as id,b) :: bll ->
-      CLetIn (loc,id,b,mkCProdN (join_loc loc1 loc) bll c)
+      CLetIn (loc,id,b,mkCProdN (Loc.merge loc1 loc) bll c)
   | [] -> c
   | LocalRawAssum ([],_,_) :: bll -> mkCProdN loc bll c
 
 let rec mkCLambdaN loc bll c =
   match bll with
   | LocalRawAssum ((loc1,_)::_ as idl,bk,t) :: bll ->
-      CLambdaN (loc,[idl,bk,t],mkCLambdaN (join_loc loc1 loc) bll c)
+      CLambdaN (loc,[idl,bk,t],mkCLambdaN (Loc.merge loc1 loc) bll c)
   | LocalRawDef ((loc1,_) as id,b) :: bll ->
-      CLetIn (loc,id,b,mkCLambdaN (join_loc loc1 loc) bll c)
+      CLetIn (loc,id,b,mkCLambdaN (Loc.merge loc1 loc) bll c)
   | [] -> c
   | LocalRawAssum ([],_,_) :: bll -> mkCLambdaN loc bll c
 

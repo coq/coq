@@ -46,7 +46,7 @@ open Pcoq
 open Prim
 open Constr
 
-let sigref = mkRefC (Qualid (Pp.dummy_loc, Libnames.qualid_of_string "Coq.Init.Specif.sig"))
+let sigref = mkRefC (Qualid (Loc.ghost, Libnames.qualid_of_string "Coq.Init.Specif.sig"))
 
 GEXTEND Gram
   GLOBAL: withtac;

@@ -6,19 +6,24 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Misctypes
+open Pp
 
-(** Mapping [cast_type] *)
+include Compat.Loc
 
-val map_cast_type : ('a -> 'b) -> 'a cast_type -> 'b cast_type
-val smartmap_cast_type : ('a -> 'a) -> 'a cast_type -> 'a cast_type
+(* Locations management *)
 
-(** Printing of [intro_pattern] *)
+let dummy_loc = Compat.Loc.ghost
+let join_loc = Compat.Loc.merge
+let make_loc = Compat.make_loc
+let unloc = Compat.unloc
 
-val pr_intro_pattern : intro_pattern_expr Loc.located -> Pp.std_ppcmds
-val pr_or_and_intro_pattern : or_and_intro_pattern_expr -> Pp.std_ppcmds
+type 'a located = t * 'a
+let located_fold_left f x (_,a) = f x a
+let located_iter2 f (_,a) (_,b) = f a b
+let down_located f (_,a) = f a
 
-(** Printing of [move_location] *)
-
-val pr_move_location :
-  ('a -> Pp.std_ppcmds) -> 'a move_location -> Pp.std_ppcmds
+let pr_located pr (loc, x) =
+  if Flags.do_beautify () && loc <> dummy_loc then
+    let (b, e) = unloc loc in
+    Pp.comment b ++ pr x ++ Pp.comment e
+  else pr x

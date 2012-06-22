@@ -540,7 +540,7 @@ and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) 
     List.fold_left
       (fun (i,ks,m) b ->
 	 if m=n then (i,t2::ks, m-1) else
-	 let dloc = (dummy_loc,Evar_kinds.InternalHole) in
+	 let dloc = (Loc.ghost,Evar_kinds.InternalHole) in
          let (i',ev) = new_evar i env ~src:dloc (substl ks b) in
 	 (i', ev :: ks, m - 1))
       (evd,[],List.length bs - 1) bs

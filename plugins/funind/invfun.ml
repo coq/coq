@@ -274,7 +274,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       List.map
 	(fun (_,_,br_type) ->
 	   List.map
-	     (fun id -> dummy_loc, IntroIdentifier id)
+	     (fun id -> Loc.ghost, IntroIdentifier id)
 	     (generate_fresh_id (id_of_string "y") ids (List.length (fst (decompose_prod_assum br_type))))
 	)
 	branches
@@ -459,7 +459,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
-	     (*(dummy_loc,Glob_term.NamedHyp id,p)*)p::bindings,id::avoid
+	     (*(Loc.ghost,Glob_term.NamedHyp id,p)*)p::bindings,id::avoid
 	  )
 	  ([],pf_ids_of_hyps g)
 	  princ_infos.params
@@ -469,7 +469,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.rev (fst  (List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
-	     (*(dummy_loc,Glob_term.NamedHyp id,(nf_zeta p))*) (nf_zeta p)::bindings,id::avoid)
+	     (*(Loc.ghost,Glob_term.NamedHyp id,(nf_zeta p))*) (nf_zeta p)::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates
 	  (lemmas)))
@@ -538,13 +538,13 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       List.map
 	(fun (_,_,br_type) ->
 	   List.map
-	     (fun id -> dummy_loc, Genarg.IntroIdentifier id)
+	     (fun id -> Loc.ghost, Genarg.IntroIdentifier id)
 	     (generate_fresh_id (id_of_string "y") ids (List.length (fst (decompose_prod_assum br_type))))
 	)
 	branches
     in
     (* before building the full intro pattern for the principle *)
-    let pat = Some (dummy_loc,Genarg.IntroOrAndPattern intro_pats) in
+    let pat = Some (Loc.ghost,Genarg.IntroOrAndPattern intro_pats) in
     let eq_ind = Coqlib.build_coq_eq () in
     let eq_construct = mkConstruct((destInd eq_ind),1) in
     (* The next to referencies will be used to find out which constructor to apply in each branch *)
@@ -682,7 +682,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
-	     (dummy_loc,Glob_term.NamedHyp id,p)::bindings,id::avoid
+	     (Loc.ghost,Glob_term.NamedHyp id,p)::bindings,id::avoid
 	  )
 	  ([],pf_ids_of_hyps g)
 	  princ_infos.params
@@ -692,7 +692,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	List.rev (fst  (List.fold_left2
 	  (fun (bindings,avoid) (x,_,_) p ->
 	     let id = Namegen.next_ident_away (Nameops.out_name x) avoid in
-	     (dummy_loc,Glob_term.NamedHyp id,(nf_zeta p))::bindings,id::avoid)
+	     (Loc.ghost,Glob_term.NamedHyp id,(nf_zeta p))::bindings,id::avoid)
 	  ([],avoid)
 	  princ_infos.predicates
 	  (lemmas)))

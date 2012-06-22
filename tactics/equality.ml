@@ -1147,7 +1147,7 @@ let injEq ipats (eq,_,(t,t1,t2) as u) eq_clause =
               then (
 (* Require Import Eqdec_dec copied from vernac_require in vernacentries.ml*)
               let qidl = qualid_of_reference
-                (Ident (dummy_loc,id_of_string "Eqdep_dec")) in
+                (Ident (Loc.ghost,id_of_string "Eqdep_dec")) in
               Library.require_library [qidl] (Some false);
 (* cut with the good equality and prove the requested goal *)
               tclTHENS (cut (mkApp (ceq,new_eq_args)) )
@@ -1170,7 +1170,7 @@ let injClause ipats with_evars = function
   | Some c -> onInductionArg (inj ipats with_evars) c
 
 let injConcl gls  = injClause [] false None gls
-let injHyp id gls = injClause [] false (Some (ElimOnIdent (dummy_loc,id))) gls
+let injHyp id gls = injClause [] false (Some (ElimOnIdent (Loc.ghost,id))) gls
 
 let decompEqThen ntac (lbeq,_,(t,t1,t2) as u) clause gls =
   let sort = pf_apply get_type_of gls (pf_concl gls) in

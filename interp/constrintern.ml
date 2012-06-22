@@ -119,7 +119,7 @@ type internalization_error =
   | BadPatternsNumber of int * int
   | BadExplicitationNumber of explicitation * int option
 
-exception InternalizationError of loc * internalization_error
+exception InternalizationError of Loc.t * internalization_error
 
 let explain_variable_capture id id' =
   pr_id id ++ str " is dependent in the type of " ++ pr_id id' ++
@@ -325,12 +325,12 @@ let reset_tmp_scope env = {env with tmp_scope = None}
 
 let rec it_mkGProd loc2 env body =
   match env with
-      (loc1, (na, bk, _, t)) :: tl -> it_mkGProd loc2 tl (GProd (join_loc loc1 loc2, na, bk, t, body))
+      (loc1, (na, bk, _, t)) :: tl -> it_mkGProd loc2 tl (GProd (Loc.merge loc1 loc2, na, bk, t, body))
     | [] -> body
 
 let rec it_mkGLambda loc2 env body =
   match env with
-      (loc1, (na, bk, _, t)) :: tl -> it_mkGLambda loc2 tl (GLambda (join_loc loc1 loc2, na, bk, t, body))
+      (loc1, (na, bk, _, t)) :: tl -> it_mkGLambda loc2 tl (GLambda (Loc.merge loc1 loc2, na, bk, t, body))
     | [] -> body
 
 (**********************************************************************)
@@ -474,10 +474,10 @@ let intern_generalization intern env lvar loc bk ak c =
       in
 	if pi then
 	  (fun (id, loc') acc ->
-	    GProd (join_loc loc' loc, Name id, bk, GHole (loc', Evar_kinds.BinderType (Name id)), acc))
+	    GProd (Loc.merge loc' loc, Name id, bk, GHole (loc', Evar_kinds.BinderType (Name id)), acc))
 	else
 	  (fun (id, loc') acc ->
-	    GLambda (join_loc loc' loc, Name id, bk, GHole (loc', Evar_kinds.BinderType (Name id)), acc))
+	    GLambda (Loc.merge loc' loc, Name id, bk, GHole (loc', Evar_kinds.BinderType (Name id)), acc))
     in
       List.fold_right (fun (id, loc as lid) (env, acc) ->
 	let env' = push_name_env lvar (Variable,[],[],[]) env (loc, Name id) in
@@ -738,7 +738,7 @@ let intern_applied_reference intern env namedctx lvar args = function
 
 let interp_reference vars r =
   let (r,_,_,_),_ =
-    intern_applied_reference (fun _ -> error_not_enough_arguments dummy_loc)
+    intern_applied_reference (fun _ -> error_not_enough_arguments Loc.ghost)
       {ids = Idset.empty; unb = false ;
        tmp_scope = None; scopes = []; impls = empty_internalization_env} []
       (vars,[]) [] r
@@ -800,7 +800,7 @@ let rec has_duplicate = function
   | x::l -> if List.mem x l then (Some x) else has_duplicate l
 
 let loc_of_lhs lhs =
- join_loc (fst (List.hd lhs)) (fst (list_last lhs))
+ Loc.merge (fst (List.hd lhs)) (fst (list_last lhs))
 
 let check_linearity lhs ids =
   match has_duplicate ids with
@@ -840,10 +840,10 @@ let add_implicits_check_length fail nargs nargs_with_letin impls_st len_pl1 pl2 
 	      else args_len = nargs_with_letin || (fst (fail (nargs - List.length impl_list + i))))
 	       ,l)
     |imp::q as il,[] -> if is_status_implicit imp && maximal_insertion_of imp
-      then let (b,out) = aux i (q,[]) in (b,RCPatAtom(dummy_loc,None)::out)
+      then let (b,out) = aux i (q,[]) in (b,RCPatAtom(Loc.ghost,None)::out)
       else fail (remaining_args (len_pl1+i) il)
     |imp::q,(hh::tt as l) -> if is_status_implicit imp
-      then let (b,out) = aux i (q,l) in (b,RCPatAtom(dummy_loc,None)::out)
+      then let (b,out) = aux i (q,l) in (b,RCPatAtom(Loc.ghost,None)::out)
       else let (b,out) = aux (succ i) (q,tt) in (b,hh::out)
   in aux 0 (impl_list,pl2)
 
@@ -883,7 +883,7 @@ let find_constructor loc add_params ref =
     |Some nb_args -> let nb = if nb_args = Inductiveops.constructor_nrealhyps c
       then fst (Inductiveops.inductive_nargs ind)
       else Inductiveops.inductive_nparams ind in
-		     Util.list_make nb ([],[([],PatVar(dummy_loc,Anonymous))])
+		     Util.list_make nb ([],[([],PatVar(Loc.ghost,Anonymous))])
     |None -> []) cstr
 
 let find_pattern_variable = function
@@ -1312,7 +1312,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 					     let (_,bli,tyi,_) = idl_temp.(i) in
 					     let fix_args = (List.map (fun (_,(na, bk, _, _)) -> (build_impls bk na)) bli) in
 					       push_name_env lvar (impls_type_list ~args:fix_args tyi)
-					    en (dummy_loc, Name name)) 0 env' lf in
+					    en (Loc.ghost, Name name)) 0 env' lf in
              (a,b,c,intern {env'' with tmp_scope = None} bd)) dl idl_temp in
 	GRec (loc,GFix
 	      (Array.map (fun (ro,_,_,_) -> ro) idl,n),
@@ -1339,7 +1339,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 					     let (bli,tyi,_) = idl_tmp.(i) in
 					     let cofix_args =  List.map (fun (_, (na, bk, _, _)) -> (build_impls bk na)) bli in
 	       push_name_env lvar (impls_type_list ~args:cofix_args tyi)
-					    en (dummy_loc, Name name)) 0 env' lf in
+					    en (Loc.ghost, Name name)) 0 env' lf in
              (b,c,intern {env'' with tmp_scope = None} bd)) dl idl_tmp in
 	GRec (loc,GCoFix n,
               Array.of_list lf,
@@ -1396,7 +1396,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	check_projection isproj (List.length args) c;
 	(match c with
           (* Now compact "(f args') args" *)
-	  | GApp (loc', f', args') -> GApp (join_loc loc' loc, f',args'@args)
+	  | GApp (loc', f', args') -> GApp (Loc.merge loc' loc, f',args'@args)
 	  | _ -> GApp (loc, c, args))
     | CRecord (loc, _, fs) ->
 	let cargs =
@@ -1424,7 +1424,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	  (tm,ind)::inds, Option.fold_right Idset.add extra_id ex_ids, List.rev_append match_td matchs)
 	    tms ([],Idset.empty,[]) in
       let env' = Idset.fold
-	(fun var bli -> push_name_env lvar (Variable,[],[],[]) bli (dummy_loc,Name var))
+	(fun var bli -> push_name_env lvar (Variable,[],[],[]) bli (Loc.ghost,Name var))
 	(Idset.union ex_ids as_in_vars) (reset_hidden_inductive_implicit_test env) in
       (* PatVars before a real pattern do not need to be matched *)
       let stripped_match_from_in = let rec aux = function
@@ -1436,12 +1436,12 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	  | [] -> Option.map (intern_type env') rtnpo (* Only PatVar in "in" clauses *)
 	  | l -> let thevars,thepats=List.split l in
 		 Some (
-		   GCases(dummy_loc,Term.RegularStyle,Some (GSort (dummy_loc,GType None)), (* "return Type" *)
-			  List.map (fun id -> GVar (dummy_loc,id),(Name id,None)) thevars, (* "match v1,..,vn" *)
-			  [dummy_loc,[],thepats, (* "|p1,..,pn" *)
-			   Option.cata (intern_type env') (GHole(dummy_loc,Evar_kinds.CasesType)) rtnpo; (* "=> P" is there were a P "=> _" else *)
-			   dummy_loc,[],list_make (List.length thepats) (PatVar(dummy_loc,Anonymous)), (* "|_,..,_" *)
-			   GHole(dummy_loc,Evar_kinds.ImpossibleCase) (* "=> _" *)]))
+		   GCases(Loc.ghost,Term.RegularStyle,Some (GSort (Loc.ghost,GType None)), (* "return Type" *)
+			  List.map (fun id -> GVar (Loc.ghost,id),(Name id,None)) thevars, (* "match v1,..,vn" *)
+			  [Loc.ghost,[],thepats, (* "|p1,..,pn" *)
+			   Option.cata (intern_type env') (GHole(Loc.ghost,Evar_kinds.CasesType)) rtnpo; (* "=> P" is there were a P "=> _" else *)
+			   Loc.ghost,[],list_make (List.length thepats) (PatVar(Loc.ghost,Anonymous)), (* "|_,..,_" *)
+			   GHole(Loc.ghost,Evar_kinds.ImpossibleCase) (* "=> _" *)]))
 	in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
 	GCases (loc, sty, rtnpo, tms, List.flatten eqns')
@@ -1451,7 +1451,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
         let ((b',(na',_)),_,_) = intern_case_item env' Idset.empty (b,(na,None)) in
         let p' = Option.map (fun u ->
 	  let env'' = push_name_env lvar (Variable,[],[],[]) (reset_hidden_inductive_implicit_test env')
-	    (dummy_loc,na') in
+	    (Loc.ghost,na') in
 	  intern_type env'' u) po in
         GLetTuple (loc, List.map snd nal, (na', p'), b',
                    intern (List.fold_left (push_name_env lvar (Variable,[],[],[])) (reset_hidden_inductive_implicit_test env) nal) c)
@@ -1460,7 +1460,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
       let ((c',(na',_)),_,_) = intern_case_item env' Idset.empty (c,(na,None)) in (* no "in" no match to ad too *)
       let p' = Option.map (fun p ->
           let env'' = push_name_env lvar (Variable,[],[],[]) (reset_hidden_inductive_implicit_test env)
-	    (dummy_loc,na') in
+	    (Loc.ghost,na') in
 	  intern_type env'' p) po in
         GIf (loc, c', (na', p'), intern env b1, intern env b2)
     | CHole (loc, k) ->
@@ -1516,7 +1516,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
     let extra_id,na = match tm', na with
       | GVar (loc,id), None when Idset.mem id env.ids -> Some id,(loc,Name id)
       | GRef (loc, VarRef id), None -> Some id,(loc,Name id)
-      | _, None -> None,(dummy_loc,Anonymous)
+      | _, None -> None,(Loc.ghost,Anonymous)
       | _, Some (loc,na) -> None,(loc,na) in
     (* the "in" part *)
     let match_td,typ = match t with
@@ -1540,7 +1540,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	    match case_rel_ctxt,arg_pats with
 	      (* LetIn in the rel_context *)
 	      |(_,Some _,_)::t, l when not with_letin ->
-		canonize_args t l forbidden_names match_acc ((dummy_loc,Anonymous)::var_acc)
+		canonize_args t l forbidden_names match_acc ((Loc.ghost,Anonymous)::var_acc)
 	      |[],[] ->
 		(add_name match_acc na, var_acc)
 	      |_::t,PatVar (loc,x)::tt ->

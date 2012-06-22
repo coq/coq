@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Loc
 open Pp
 open Names
 open Libnames
@@ -16,12 +17,12 @@ open Constrexpr
 
 (** Constrexpr_ops: utilities on [constr_expr] *)
 
-val constr_loc : constr_expr -> loc
+val constr_loc : constr_expr -> Loc.t
 
-val cases_pattern_expr_loc : cases_pattern_expr -> loc
-val raw_cases_pattern_expr_loc : raw_cases_pattern_expr -> loc
+val cases_pattern_expr_loc : cases_pattern_expr -> Loc.t
+val raw_cases_pattern_expr_loc : raw_cases_pattern_expr -> Loc.t
 
-val local_binders_loc : local_binder list -> loc
+val local_binders_loc : local_binder list -> Loc.t
 
 val default_binder_kind : binder_kind
 
@@ -41,8 +42,8 @@ val abstract_constr_expr : constr_expr -> local_binder list -> constr_expr
 val prod_constr_expr : constr_expr -> local_binder list -> constr_expr
 
 (** Same as [abstract_constr_expr] and [prod_constr_expr], with location *)
-val mkCLambdaN : loc -> local_binder list -> constr_expr -> constr_expr
-val mkCProdN : loc -> local_binder list -> constr_expr -> constr_expr
+val mkCLambdaN : Loc.t -> local_binder list -> constr_expr -> constr_expr
+val mkCProdN : Loc.t -> local_binder list -> constr_expr -> constr_expr
 
 (** For binders parsing *)
 

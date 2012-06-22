@@ -31,7 +31,7 @@ let rec make_when loc = function
   | GramNonTerminal(loc',t,_,Some p)::l ->
       let p = Names.string_of_id p in
       let l = make_when loc l in
-      let loc = join_loc loc' loc in
+      let loc = Loc.merge loc' loc in
       let t = mlexpr_of_argtype loc' t in
       <:expr< Genarg.genarg_tag $lid:p$ = $t$ && $l$ >>
   | _::l -> make_when loc l
@@ -40,7 +40,7 @@ let rec make_let e = function
   | [] -> e
   | GramNonTerminal(loc,t,_,Some p)::l ->
       let p = Names.string_of_id p in
-      let loc = join_loc loc (MLast.loc_of_expr e) in
+      let loc = Loc.merge loc (MLast.loc_of_expr e) in
       let e = make_let e l in
       let v = <:expr< Genarg.out_gen $make_wit loc t$ $lid:p$ >> in
       <:expr< let $lid:p$ = $v$ in $e$ >>
@@ -78,7 +78,7 @@ let rec make_eval_tactic e = function
   | [] -> e
   | GramNonTerminal(loc,tag,_,Some p)::l when is_tactic_genarg tag ->
       let p = Names.string_of_id p in
-      let loc = join_loc loc (MLast.loc_of_expr e) in
+      let loc = Loc.merge loc (MLast.loc_of_expr e) in
       let e = make_eval_tactic e l in
       <:expr< let $lid:p$ = $lid:p$ in $e$ >>
   | _::l -> make_eval_tactic e l
@@ -107,7 +107,7 @@ let rec make_tags loc = function
   | [] -> <:expr< [] >>
   | GramNonTerminal(loc',t,_,Some p)::l ->
       let l = make_tags loc l in
-      let loc = join_loc loc' loc in
+      let loc = Loc.merge loc' loc in
       let t = mlexpr_of_argtype loc' t in
       <:expr< [ $t$ :: $l$ ] >>
   | _::l -> make_tags loc l

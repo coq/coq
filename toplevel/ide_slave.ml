@@ -8,7 +8,6 @@
 
 open Vernacexpr
 open Names
-open Compat
 open Errors
 open Util
 open Pp
@@ -366,8 +365,8 @@ let eval_call c =
       | Errors.Quit -> None, "Quit is not allowed by coqide!"
       | Vernac.DuringCommandInterp (_,inner) -> handle_exn inner
       | Error_in_file (_,_,inner) -> None, pr_exn inner
-      | Loc.Exc_located (loc, inner) when loc = dummy_loc -> None, pr_exn inner
-      | Loc.Exc_located (loc, inner) -> Some (Pp.unloc loc), pr_exn inner
+      | Loc.Exc_located (loc, inner) when loc = Loc.ghost -> None, pr_exn inner
+      | Loc.Exc_located (loc, inner) -> Some (Loc.unloc loc), pr_exn inner
       | e -> None, pr_exn e
   in
   let interruptible f x =

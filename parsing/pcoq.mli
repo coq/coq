@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Loc
 open Pp
 open Names
 open Glob_term
@@ -171,7 +172,7 @@ module Prim :
     val qualid : qualid located Gram.entry
     val fullyqualid : identifier list located Gram.entry
     val reference : reference Gram.entry
-    val by_notation : (loc * string * string option) Gram.entry
+    val by_notation : (Loc.t * string * string option) Gram.entry
     val smart_global : reference or_by_notation Gram.entry
     val dirpath : dir_path Gram.entry
     val ne_string : string Gram.entry
@@ -242,7 +243,7 @@ module Vernac_ :
   end
 
 (** The main entry: reads an optional vernac command *)
-val main_entry : (loc * vernac_expr) option Gram.entry
+val main_entry : (Loc.t * vernac_expr) option Gram.entry
 
 (** Mapping formal entries into concrete ones *)
 

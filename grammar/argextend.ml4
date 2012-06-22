@@ -14,8 +14,8 @@ open Egramml
 open Pcoq
 open Compat
 
-let loc = Pp.dummy_loc
-let default_loc = <:expr< Pp.dummy_loc >>
+let loc = Loc.ghost
+let default_loc = <:expr< Loc.ghost >>
 
 let rec make_rawwit loc = function
   | BoolArgType -> <:expr< Genarg.rawwit_bool >>

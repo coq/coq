@@ -30,7 +30,7 @@ open Mod_subst
 open Misctypes
 open Decl_kinds
 
-let dl = dummy_loc
+let dl = Loc.ghost
 
 (** Should we keep details of universes during detyping ? *)
 let print_universes = ref false
@@ -687,12 +687,12 @@ let rec subst_glob_constr subst raw =
 let simple_cases_matrix_of_branches ind brs =
   List.map (fun (i,n,b) ->
       let nal,c = it_destRLambda_or_LetIn_names n b in
-      let mkPatVar na = PatVar (dummy_loc,na) in
-      let p = PatCstr (dummy_loc,(ind,i+1),List.map mkPatVar nal,Anonymous) in
+      let mkPatVar na = PatVar (Loc.ghost,na) in
+      let p = PatCstr (Loc.ghost,(ind,i+1),List.map mkPatVar nal,Anonymous) in
       let ids = map_succeed Nameops.out_name nal in
-      (dummy_loc,ids,[p],c))
+      (Loc.ghost,ids,[p],c))
     brs
 
 let return_type_of_predicate ind nrealargs_ctxt pred =
   let nal,p = it_destRLambda_or_LetIn_names (nrealargs_ctxt+1) pred in
-  (List.hd nal, Some (dummy_loc, ind, List.tl nal)), Some p
+  (List.hd nal, Some (Loc.ghost, ind, List.tl nal)), Some p

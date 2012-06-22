@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Compat
 open Pp
 open Errors
 open Util
@@ -68,7 +67,7 @@ let error_needs_inversion env x t =
 
 module type S = sig
   val compile_cases :
-    loc -> case_style ->
+    Loc.t -> case_style ->
     (type_constraint -> env -> evar_map ref -> glob_constr -> unsafe_judgment) * evar_map ref ->
     type_constraint ->
     env -> glob_constr option * tomatch_tuples * cases_clauses ->
@@ -102,7 +101,7 @@ let msg_may_need_inversion () =
 
 (* Utils *)
 let make_anonymous_patvars n =
-  list_make n (PatVar (dummy_loc,Anonymous))
+  list_make n (PatVar (Loc.ghost,Anonymous))
 
 (* We have x1:t1...xn:tn,xi':ti,y1..yk |- c and re-generalize
    over xi:ti to get x1:t1...xn:tn,xi':ti,y1..yk |- c[xi:=xi'] *)
@@ -128,7 +127,7 @@ type 'a equation =
     { patterns     : cases_pattern list;
       rhs          : 'a rhs;
       alias_stack  : name list;
-      eqn_loc      : loc;
+      eqn_loc      : Loc.t;
       used         : bool ref }
 
 type 'a matrix = 'a equation list
@@ -178,7 +177,7 @@ and build_glob_pattern args = function
   | Top -> args
   | MakeConstructor (pci, rh) ->
       glob_pattern_of_partial_history
-	[PatCstr (dummy_loc, pci, args, Anonymous)] rh
+	[PatCstr (Loc.ghost, pci, args, Anonymous)] rh
 
 let complete_history = glob_pattern_of_partial_history []
 
@@ -188,12 +187,12 @@ let rec pop_history_pattern = function
   | Continuation (0, l, Top) ->
       Result (List.rev l)
   | Continuation (0, l, MakeConstructor (pci, rh)) ->
-      feed_history (PatCstr (dummy_loc,pci,List.rev l,Anonymous)) rh
+      feed_history (PatCstr (Loc.ghost,pci,List.rev l,Anonymous)) rh
   | _ ->
       anomaly "Constructor not yet filled with its arguments"
 
 let pop_history h =
-  feed_history (PatVar (dummy_loc, Anonymous)) h
+  feed_history (PatVar (Loc.ghost, Anonymous)) h
 
 (* Builds a continuation expecting [n] arguments and building [ci] applied
    to this [n] arguments *)
@@ -251,7 +250,7 @@ type 'a pattern_matching_problem =
       tomatch   : tomatch_stack;
       history   : pattern_continuation;
       mat       : 'a matrix;
-      caseloc   : loc;
+      caseloc   : Loc.t;
       casestyle : case_style;
       typing_function: type_constraint -> env -> evar_map ref -> 'a option -> unsafe_judgment }
 
@@ -280,7 +279,7 @@ let inductive_template evdref env tmloc ind =
   let arsign = get_full_arity_sign env ind in
   let hole_source = match tmloc with
     | Some loc -> fun i -> (loc, Evar_kinds.TomatchTypeParameter (ind,i))
-    | None -> fun _ -> (dummy_loc, Evar_kinds.InternalHole) in
+    | None -> fun _ -> (Loc.ghost, Evar_kinds.InternalHole) in
    let (_,evarl,_) =
     List.fold_right
       (fun (na,b,ty) (subst,evarl,n) ->
@@ -358,7 +357,7 @@ let coerce_to_indtype typing_fun evdref env matx tomatchl =
 (************************************************************************)
 (* Utils *)
 
-let mkExistential env ?(src=(dummy_loc,Evar_kinds.InternalHole)) evdref =
+let mkExistential env ?(src=(Loc.ghost,Evar_kinds.InternalHole)) evdref =
   e_new_evar evdref env ~src:src (new_Type ())
 
 let evd_comb2 f evdref x y =
@@ -390,7 +389,7 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
 		let _ = e_cumul pb.env pb.evdref indt typ in
 		current
 	      else
-		(evd_comb2 (Coercion.inh_conv_coerce_to dummy_loc pb.env)
+		(evd_comb2 (Coercion.inh_conv_coerce_to Loc.ghost pb.env)
 		  pb.evdref (make_judge current typ) indt).uj_val in
 	    let sigma =  !(pb.evdref) in
 	    (current,try_find_ind pb.env sigma indt names))
@@ -914,7 +913,7 @@ let adjust_impossible_cases pb pred tomatch submat =
 	let default = (coq_unit_judge ()).uj_type in
 	pb.evdref := Evd.define evk default !(pb.evdref);
       (* we add an "assert false" case *)
-      let pats = List.map (fun _ -> PatVar (dummy_loc,Anonymous)) tomatch in
+      let pats = List.map (fun _ -> PatVar (Loc.ghost,Anonymous)) tomatch in
       let aliasnames =
 	map_succeed (function Alias _ | NonDepAlias -> Anonymous | _ -> failwith"") tomatch
       in
@@ -924,7 +923,7 @@ let adjust_impossible_cases pb pred tomatch submat =
 		  avoid_ids = [];
 		  it = None };
 	  alias_stack = Anonymous::aliasnames;
-	  eqn_loc = dummy_loc;
+	  eqn_loc = Loc.ghost;
 	  used = ref false } ]
     | _ ->
 	submat
@@ -1207,7 +1206,7 @@ let build_branch current realargs deps (realnames,curname) pb arsign eqns const_
   let submat = adjust_impossible_cases pb pred tomatch submat in
   if submat = [] then
     raise_pattern_matching_error
-      (dummy_loc, pb.env, NonExhaustive (complete_history history));
+      (Loc.ghost, pb.env, NonExhaustive (complete_history history));
 
   typs,
   { pb with
@@ -1531,16 +1530,16 @@ let build_tycon loc env tycon_env subst tycon extenv evdref t =
 let build_inversion_problem loc env sigma tms t =
   let make_patvar t (subst,avoid) =
     let id = next_name_away (named_hd env t Anonymous) avoid in
-    PatVar (dummy_loc,Name id), ((id,t)::subst, id::avoid) in
+    PatVar (Loc.ghost,Name id), ((id,t)::subst, id::avoid) in
   let rec reveal_pattern t (subst,avoid as acc) =
     match kind_of_term (whd_betadeltaiota env sigma t) with
-    | Construct cstr -> PatCstr (dummy_loc,cstr,[],Anonymous), acc
+    | Construct cstr -> PatCstr (Loc.ghost,cstr,[],Anonymous), acc
     | App (f,v) when isConstruct f ->
 	let cstr = destConstruct f in
 	let n = constructor_nrealargs env cstr in
 	let l = list_lastn n (Array.to_list v) in
 	let l,acc = list_fold_map' reveal_pattern l acc in
-	PatCstr (dummy_loc,cstr,l,Anonymous), acc
+	PatCstr (Loc.ghost,cstr,l,Anonymous), acc
     | _ -> make_patvar t acc in
   let rec aux n env acc_sign tms acc =
     match tms with
@@ -1597,7 +1596,7 @@ let build_inversion_problem loc env sigma tms t =
   let eqn1 =
     { patterns = patl;
       alias_stack = [];
-      eqn_loc = dummy_loc;
+      eqn_loc = Loc.ghost;
       used = ref false;
       rhs = { rhs_env = pb_env;
               (* we assume all vars are used; in practice we discard dependent
@@ -1610,9 +1609,9 @@ let build_inversion_problem loc env sigma tms t =
      type constraints are incompatible with the constraints on the
      inductive types of the multiple terms matched in Xi *)
   let eqn2 =
-    { patterns = List.map (fun _ -> PatVar (dummy_loc,Anonymous)) patl;
+    { patterns = List.map (fun _ -> PatVar (Loc.ghost,Anonymous)) patl;
       alias_stack = [];
-      eqn_loc = dummy_loc;
+      eqn_loc = Loc.ghost;
       used = ref false;
       rhs = { rhs_env = pb_env;
               rhs_vars = [];
@@ -1827,7 +1826,7 @@ let mk_JMeq typ x typ' y =
   mkApp (delayed_force coq_JMeq_ind, [| typ; x ; typ'; y |])
 let mk_JMeq_refl typ x = mkApp (delayed_force coq_JMeq_refl, [| typ; x |])
 
-let hole = GHole (dummy_loc, Evar_kinds.QuestionMark (Evar_kinds.Define true))
+let hole = GHole (Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define true))
 
 let constr_of_pat env isevars arsign pat avoid =
   let rec typ env (ty, realargs) pat avoid =
@@ -1919,13 +1918,13 @@ let vars_of_ctx ctx =
       match b with
 	| Some t' when kind_of_term t' = Rel 0 ->
 	    prev,
-	    (GApp (dummy_loc,
-		(GRef (dummy_loc, delayed_force coq_eq_refl_ref)), 
-		   [hole; GVar (dummy_loc, prev)])) :: vars
+	    (GApp (Loc.ghost,
+		(GRef (Loc.ghost, delayed_force coq_eq_refl_ref)), 
+		   [hole; GVar (Loc.ghost, prev)])) :: vars
 	| _ ->
 	    match na with
 		Anonymous -> raise (Invalid_argument "vars_of_ctx")
-	      | Name n -> n, GVar (dummy_loc, n) :: vars)
+	      | Name n -> n, GVar (Loc.ghost, n) :: vars)
       ctx (id_of_string "vars_of_ctx_error", [])
   in List.rev y
 
@@ -2060,13 +2059,13 @@ let constrs_of_pats typing_fun env isevars eqns tomatchs sign neqs arity =
 	 let branch_name = id_of_string ("program_branch_" ^ (string_of_int !i)) in
 	 let branch_decl = (Name branch_name, Some (lift !i bbody), (lift !i btype)) in
 	 let branch =
-	   let bref = GVar (dummy_loc, branch_name) in
+	   let bref = GVar (Loc.ghost, branch_name) in
 	     match vars_of_ctx rhs_rels with
 		 [] -> bref
-	       | l -> GApp (dummy_loc, bref, l)
+	       | l -> GApp (Loc.ghost, bref, l)
 	 in
 	 let branch = match ineqs with
-	     Some _ -> GApp (dummy_loc, branch, [ hole ])
+	     Some _ -> GApp (Loc.ghost, branch, [ hole ])
 	   | None -> branch
 	 in
 	 incr i;

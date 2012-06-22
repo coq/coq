@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Loc
 open Pp
 open Names
 open Term
@@ -19,7 +20,7 @@ open Term
 open Evd
 open Misctypes
 
-val loc_of_or_by_notation : ('a -> loc) -> 'a or_by_notation -> loc
+val loc_of_or_by_notation : ('a -> Loc.t) -> 'a or_by_notation -> Loc.t
 
 (** In globalize tactics, we need to keep the initial [constr_expr] to recompute
    in the environment by the effective calls to Intro, Inversion, etc 

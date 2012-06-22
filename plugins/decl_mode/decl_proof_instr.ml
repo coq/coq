@@ -751,7 +751,7 @@ let consider_tac c hyps gls =
     | _ ->
 	let id = pf_get_new_id (id_of_string "_tmp") gls in
 	tclTHEN
-	  (forward None (Some (dummy_loc, IntroIdentifier id)) c)
+	  (forward None (Some (Loc.ghost, IntroIdentifier id)) c)
  	  (consider_match false [] [id] hyps) gls
 
 
@@ -1290,7 +1290,7 @@ let understand_my_constr c gls =
   let nc = names_of_rel_context env in
   let rawc = Detyping.detype false [] nc c in
   let rec frob = function
-    | GEvar _ -> GHole (dummy_loc,Evar_kinds.QuestionMark Evar_kinds.Expand)
+    | GEvar _ -> GHole (Loc.ghost,Evar_kinds.QuestionMark Evar_kinds.Expand)
     | rc ->  map_glob_constr frob rc
   in
   Pretyping.understand_tcc (sig_sig gls) env ~expected_type:(pf_concl gls) (frob rawc)

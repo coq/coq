@@ -17,13 +17,12 @@ open System
 open Vernacexpr
 open Vernacinterp
 open Ppvernac
-open Compat
 
 (* The functions in this module may raise (unexplainable!) exceptions.
    Use the module Coqtoplevel, which catches these exceptions
    (the exceptions are explained only at the toplevel). *)
 
-exception DuringCommandInterp of Pp.loc * exn
+exception DuringCommandInterp of Loc.t * exn
 
 exception HasNotFailed
 
@@ -51,13 +50,13 @@ let raise_with_file file exc =
   let (cmdloc,re) =
     match exc with
       | DuringCommandInterp(loc,e) -> (loc,e)
-      | e -> (dummy_loc,e)
+      | e -> (Loc.ghost,e)
   in
   let (inner,inex) =
     match re with
-      | Error_in_file (_, (b,f,loc), e) when loc <> dummy_loc ->
+      | Error_in_file (_, (b,f,loc), e) when loc <> Loc.ghost ->
           ((b, f, loc), e)
-      | Loc.Exc_located (loc, e) when loc <> dummy_loc ->
+      | Loc.Exc_located (loc, e) when loc <> Loc.ghost ->
           ((false,file, loc), e)
       | Loc.Exc_located (_, e) | e -> ((false,file,cmdloc), e)
   in
@@ -152,7 +151,7 @@ let close_input in_chan (_,verb) =
   with _ -> ()
 
 let verbose_phrase verbch loc =
-  let loc = unloc loc in
+  let loc = Loc.unloc loc in
   match verbch with
     | Some ch ->
 	let len = snd loc - fst loc in
@@ -184,7 +183,7 @@ let set_formatter_translator() =
   Format.set_max_boxes max_int
 
 let pr_new_syntax loc ocom =
-  let loc = unloc loc in
+  let loc = Loc.unloc loc in
   if !beautify_file then set_formatter_translator();
   let fs = States.freeze () in
   let com = match ocom with
@@ -308,10 +307,10 @@ and read_vernac_file verbosely s =
     close_input in_chan input;    (* we must close the file first *)
     match real_error e with
       | End_of_input ->
-          if do_beautify () then pr_new_syntax (make_loc (max_int,max_int)) None
+          if do_beautify () then pr_new_syntax (Loc.make_loc (max_int,max_int)) None
       | _ -> raise_with_file fname e
 
-(** [eval_expr : ?preserving:bool -> Pp.loc * Vernacexpr.vernac_expr -> unit]
+(** [eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit]
    It executes one vernacular command. By default the command is
    considered as non-state-preserving, in which case we add it to the
    Backtrack stack (triggering a save of a frozen state and the generation

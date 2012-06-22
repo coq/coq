@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Pp
+open Loc
 open Names
 
 (** {6 Dirpaths } *)
@@ -109,7 +110,7 @@ type reference =
 val qualid_of_reference : reference -> qualid located
 val string_of_reference : reference -> string
 val pr_reference : reference -> std_ppcmds
-val loc_of_reference : reference -> loc
+val loc_of_reference : reference -> Loc.t
 
 (** Deprecated synonyms *)
 

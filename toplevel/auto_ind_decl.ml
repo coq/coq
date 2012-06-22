@@ -59,7 +59,7 @@ exception InductiveWithSort
 exception ParameterWithoutEquality of constant
 exception NonSingletonProp of inductive
 
-let dl = dummy_loc
+let dl = Loc.ghost
 
 (* Some pre declaration of constant we are going to use *)
 let bb = constr_of_global Coqlib.glob_bool

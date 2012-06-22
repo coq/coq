@@ -21,9 +21,9 @@ let anti loc x =
   expl_anti loc <:expr< $lid:purge_str x$ >>
 
 (* We don't give location for tactic quotation! *)
-let loc = dummy_loc
+let loc = Loc.ghost
 
-let dloc = <:expr< Pp.dummy_loc >>
+let dloc = <:expr< Loc.ghost >>
 
 let mlexpr_of_ident id =
   <:expr< Names.id_of_string $str:Names.string_of_id id$ >>

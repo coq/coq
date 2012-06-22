@@ -49,9 +49,9 @@ val interp_assumption :
 
 val declare_assumption : coercion_flag -> assumption_kind -> types ->
   Impargs.manual_implicits ->
-  bool (** implicit *) -> Entries.inline -> variable located -> unit
+  bool (** implicit *) -> Entries.inline -> variable Loc.located -> unit
 
-val declare_assumptions : variable located list ->
+val declare_assumptions : variable Loc.located list ->
   coercion_flag -> assumption_kind -> types -> Impargs.manual_implicits ->
   bool -> Entries.inline -> unit
 
@@ -99,7 +99,7 @@ val do_mutual_inductive :
 
 type structured_fixpoint_expr = {
   fix_name : identifier;
-  fix_annot : identifier located option;
+  fix_annot : identifier Loc.located option;
   fix_binders : local_binder list;
   fix_body : constr_expr option;
   fix_type : constr_expr

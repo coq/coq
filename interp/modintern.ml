@@ -46,19 +46,19 @@ let error_result_must_be_signature () =
   error "The result module type must be a signature."
 
 let error_not_a_modtype_loc loc s =
-  Compat.Loc.raise loc (Modops.ModuleTypingError (Modops.NotAModuleType s))
+  Loc.raise loc (Modops.ModuleTypingError (Modops.NotAModuleType s))
 
 let error_not_a_module_loc loc s =
-  Compat.Loc.raise loc (Modops.ModuleTypingError (Modops.NotAModule s))
+  Loc.raise loc (Modops.ModuleTypingError (Modops.NotAModule s))
 
 let error_not_a_module_nor_modtype_loc loc s =
-  Compat.Loc.raise loc (ModuleInternalizationError (NotAModuleNorModtype s))
+  Loc.raise loc (ModuleInternalizationError (NotAModuleNorModtype s))
 
 let error_incorrect_with_in_module loc =
-  Compat.Loc.raise loc (ModuleInternalizationError IncorrectWithInModule)
+  Loc.raise loc (ModuleInternalizationError IncorrectWithInModule)
 
 let error_application_to_module_type loc =
-  Compat.Loc.raise loc (ModuleInternalizationError IncorrectModuleApplication)
+  Loc.raise loc (ModuleInternalizationError IncorrectModuleApplication)
 
 
 
@@ -149,7 +149,7 @@ let loc_of_module = function
 let check_module_argument_is_path me' = function
   | CMident _ -> ()
   | (CMapply (loc,_,_) | CMwith (loc,_,_)) ->
-      Compat.Loc.raise loc
+      Loc.raise loc
         (Modops.ModuleTypingError (Modops.ApplicationToNotPath me'))
 
 let rec interp_modexpr env = function

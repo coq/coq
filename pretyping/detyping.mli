@@ -34,7 +34,7 @@ val detype : bool -> identifier list -> names_context -> constr -> glob_constr
 val detype_case :
   bool -> ('a -> glob_constr) ->
   (constructor array -> int array -> 'a array ->
-    (loc * identifier list * cases_pattern list * glob_constr) list) ->
+    (Loc.t * identifier list * cases_pattern list * glob_constr) list) ->
   ('a -> int -> bool) ->
   identifier list -> inductive * case_style * int array * int ->
     'a option -> 'a -> 'a array -> glob_constr
@@ -48,7 +48,7 @@ val detype_rel_context : constr option -> identifier list -> names_context ->
 val lookup_name_as_displayed  : env -> constr -> identifier -> int option
 val lookup_index_as_renamed : env -> constr -> int -> int option
 
-val set_detype_anonymous : (loc -> int -> glob_constr) -> unit
+val set_detype_anonymous : (Loc.t -> int -> glob_constr) -> unit
 val force_wildcard : unit -> bool
 val synthetize_type : unit -> bool
 

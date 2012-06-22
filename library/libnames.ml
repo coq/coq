@@ -153,8 +153,8 @@ type global_dir_reference =
       (* this won't last long I hope! *)
 
 type reference =
-  | Qualid of qualid located
-  | Ident of identifier located
+  | Qualid of qualid Loc.located
+  | Ident of identifier Loc.located
 
 let qualid_of_reference = function
   | Qualid (loc,qid) -> loc, qid

@@ -77,13 +77,13 @@ type ('hyp,'constr,'pat,'tac) gen_proof_instr=
 
 
 type raw_proof_instr =
-    ((identifier*(Constrexpr.constr_expr option)) located,
+    ((identifier*(Constrexpr.constr_expr option)) Loc.located,
      Constrexpr.constr_expr,
      Constrexpr.cases_pattern_expr,
      raw_tactic_expr) gen_proof_instr
 
 type glob_proof_instr =
-    ((identifier*(Genarg.glob_constr_and_expr option)) located,
+    ((identifier*(Genarg.glob_constr_and_expr option)) Loc.located,
      Genarg.glob_constr_and_expr,
      Constrexpr.cases_pattern_expr,
      Tacexpr.glob_tactic_expr) gen_proof_instr

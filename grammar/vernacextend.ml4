@@ -23,7 +23,7 @@ let rec make_let e = function
   | [] -> e
   | GramNonTerminal(loc,t,_,Some p)::l ->
       let p = Names.string_of_id p in
-      let loc = join_loc loc (MLast.loc_of_expr e) in
+      let loc = Loc.merge loc (MLast.loc_of_expr e) in
       let e = make_let e l in
       <:expr< let $lid:p$ = Genarg.out_gen $make_rawwit loc t$ $lid:p$ in $e$ >>
   | _::l -> make_let e l

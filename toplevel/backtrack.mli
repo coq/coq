@@ -61,7 +61,7 @@ val reset_initial : unit -> unit
 
 (** Reset to the last known state just before defining [id] *)
 
-val reset_name : Names.identifier Pp.located -> unit
+val reset_name : Names.identifier Loc.located -> unit
 
 (** When a proof is ended (via either Qed/Admitted/Restart/Abort),
     old proof steps should be marked differently to avoid jumping back

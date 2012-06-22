@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Loc
 open Pp
 open Names
 open Tacexpr
@@ -175,7 +176,7 @@ type module_binder = bool option * lident list * module_ast_inl
 
 type grammar_tactic_prod_item_expr =
   | TacTerm of string
-  | TacNonTerm of loc * string * (Names.identifier * string) option
+  | TacNonTerm of Loc.t * string * (Names.identifier * string) option
 
 type syntax_modifier =
   | SetItemLevel of string list * Extend.production_level
@@ -307,7 +308,7 @@ type vernac_expr =
   | VernacDeclareImplicits of locality_flag * reference or_by_notation *
       (explicitation * bool * bool) list list
   | VernacArguments of locality_flag * reference or_by_notation *
-      ((name * bool * (loc * string) option * bool * bool) list) list *
+      ((name * bool * (Loc.t * string) option * bool * bool) list) list *
       int * [ `SimplDontExposeCase | `SimplNeverUnfold | `Rename | `ExtraScopes
             | `ClearImplicits | `ClearScopes | `DefaultImplicits ] list
   | VernacArgumentsScope of locality_flag * reference or_by_notation *
@@ -355,4 +356,4 @@ type vernac_expr =
   (* For extension *)
   | VernacExtend of string * raw_generic_argument list
 
-and located_vernac_expr = loc * vernac_expr
+and located_vernac_expr = Loc.t * vernac_expr

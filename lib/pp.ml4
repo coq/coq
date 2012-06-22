@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Pp_control
-open Compat
 
 (* This should not be used outside of this file. Use
    Flags.print_emacs instead. This one is updated when reading
@@ -374,19 +373,6 @@ let string_of_ppcmds c =
   msg_with Format.str_formatter c;
   Format.flush_str_formatter ()
 
-(* Locations management *)
-type loc = Loc.t
-let dummy_loc = Loc.ghost
-let join_loc = Loc.merge
-let make_loc = make_loc
-let unloc = unloc
-
-type 'a located = loc * 'a
-let located_fold_left f x (_,a) = f x a
-let located_iter2 f (_,a) (_,b) = f a b
-let down_located f (_,a) = f a
-
-
 (* Copy paste from Util *)
 
 let pr_comma () = str "," ++ spc ()
@@ -466,11 +452,5 @@ let prvect_with_sep sep elem v = prvecti_with_sep sep (fun _ -> elem) v
 (* [prvect pr [|a ; ... ; c|]] outputs [pr a ++ ... ++ pr c] *)
 
 let prvect elem v = prvect_with_sep mt elem v
-
-let pr_located pr (loc,x) =
-  if Flags.do_beautify() && loc<>dummy_loc then
-    let (b,e) = unloc loc in
-    comment b ++ pr x ++ comment e
-  else pr x
 
 let surround p = hov 1 (str"(" ++ p ++ str")")

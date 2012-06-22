@@ -25,7 +25,7 @@ type intro_pattern_expr =
   | IntroFresh of identifier
   | IntroForthcoming of bool
   | IntroAnonymous
-and or_and_intro_pattern_expr = (Pp.loc * intro_pattern_expr) list list
+and or_and_intro_pattern_expr = (Loc.t * intro_pattern_expr) list list
 
 (** Move destination for hypothesis *)
 
@@ -52,7 +52,7 @@ type 'a cast_type =
 
 type quantified_hypothesis = AnonHyp of int | NamedHyp of identifier
 
-type 'a explicit_bindings = (Pp.loc * quantified_hypothesis * 'a) list
+type 'a explicit_bindings = (Loc.t * quantified_hypothesis * 'a) list
 
 type 'a bindings =
   | ImplicitBindings of 'a list
@@ -66,13 +66,13 @@ type 'a with_bindings = 'a * 'a bindings
 
 type 'a or_var =
   | ArgArg of 'a
-  | ArgVar of Names.identifier Pp.located
+  | ArgVar of Names.identifier Loc.located
 
-type 'a and_short_name = 'a * identifier Pp.located option
+type 'a and_short_name = 'a * identifier Loc.located option
 
 type 'a or_by_notation =
   | AN of 'a
-  | ByNotation of (Pp.loc * string * string option)
+  | ByNotation of (Loc.t * string * string option)
 
 (* NB: the last string in [ByNotation] is actually a [Notation.delimiters],
    but this formulation avoids a useless dependency. *)

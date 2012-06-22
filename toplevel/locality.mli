@@ -8,7 +8,7 @@
 
 (** * Managing locality *)
 
-val locality_flag : (Pp.loc * bool) option ref
+val locality_flag : (Loc.t * bool) option ref
 val check_locality : unit -> unit
 
 (** * Extracting the locality flag *)

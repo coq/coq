@@ -23,7 +23,7 @@ open Misctypes
 
 let absurd c gls =
   let env = pf_env gls and sigma = project gls in
-  let _,j = Coercion.inh_coerce_to_sort dummy_loc env
+  let _,j = Coercion.inh_coerce_to_sort Loc.ghost env
     (Evd.create_goal_evar_defs sigma) (Retyping.get_judgment_of env sigma c) in
   let c = j.Environ.utj_val in
   (tclTHENS

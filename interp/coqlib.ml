@@ -76,7 +76,7 @@ let check_required_library d =
 (* Loading silently ...
     let m, prefix = list_sep_last d' in
     read_library
-     (dummy_loc,make_qualid (make_dirpath (List.rev prefix)) m)
+     (Loc.ghost,make_qualid (make_dirpath (List.rev prefix)) m)
 *)
 (* or failing ...*)
       error ("Library "^(string_of_dirpath dir)^" has to be required first.")

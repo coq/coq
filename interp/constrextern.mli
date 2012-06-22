@@ -37,7 +37,7 @@ val extern_constr_pattern : names_context -> constr_pattern -> constr_expr
 
 val extern_constr : bool -> env -> constr -> constr_expr
 val extern_constr_in_scope : bool -> scope_name -> env -> constr -> constr_expr
-val extern_reference : loc -> Idset.t -> global_reference -> reference
+val extern_reference : Loc.t -> Idset.t -> global_reference -> reference
 val extern_type : bool -> env -> types -> constr_expr
 val extern_sort : sorts -> glob_sort
 val extern_rel_context : constr option -> env ->
@@ -55,7 +55,7 @@ val print_projections : bool ref
 
 (** Debug printing options *)
 val set_debug_global_reference_printer :
-  (loc -> global_reference -> reference) -> unit
+  (Loc.t -> global_reference -> reference) -> unit
 val in_debugger : bool ref
 
 (** This governs printing of implicit arguments. If [with_implicits] is

@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Loc
 open Pp
 open Names
 open Libnames
@@ -47,10 +48,10 @@ val map_constr_expr_with_binders :
       'a -> constr_expr -> constr_expr
 
 val ntn_loc :
-  loc -> constr_notation_substitution -> string -> (int * int) list
+  Loc.t -> constr_notation_substitution -> string -> (int * int) list
 val patntn_loc :
-  loc -> cases_pattern_notation_substitution -> string -> (int * int) list
+  Loc.t -> cases_pattern_notation_substitution -> string -> (int * int) list
 
 (** For cases pattern parsing errors *)
 
-val error_invalid_pattern_notation : Pp.loc -> 'a
+val error_invalid_pattern_notation : Loc.t -> 'a

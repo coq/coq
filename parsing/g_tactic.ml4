@@ -139,7 +139,7 @@ let mkTacCase with_evar = function
   (* Reinterpret numbers as a notation for terms *)
   | [([(ElimOnAnonHyp n)],None,(None,None))],None ->
       TacCase (with_evar,
-        (CPrim (dummy_loc, Numeral (Bigint.of_string (string_of_int n))),
+        (CPrim (Loc.ghost, Numeral (Bigint.of_string (string_of_int n))),
 	 NoBindings))
   (* Reinterpret ident as notations for variables in the context *)
   (* because we don't know if they are quantified or not *)
@@ -156,17 +156,17 @@ let mkTacCase with_evar = function
 let rec mkCLambdaN_simple_loc loc bll c =
   match bll with
   | ((loc1,_)::_ as idl,bk,t) :: bll ->
-      CLambdaN (loc,[idl,bk,t],mkCLambdaN_simple_loc (join_loc loc1 loc) bll c)
+      CLambdaN (loc,[idl,bk,t],mkCLambdaN_simple_loc (Loc.merge loc1 loc) bll c)
   | ([],_,_) :: bll -> mkCLambdaN_simple_loc loc bll c
   | [] -> c
 
 let mkCLambdaN_simple bl c =
   if bl=[] then c
   else
-    let loc = join_loc (fst (List.hd (pi1 (List.hd bl)))) (Constrexpr_ops.constr_loc c) in
+    let loc = Loc.merge (fst (List.hd (pi1 (List.hd bl)))) (Constrexpr_ops.constr_loc c) in
     mkCLambdaN_simple_loc loc bl c
 
-let loc_of_ne_list l = join_loc (fst (List.hd l)) (fst (list_last l))
+let loc_of_ne_list l = Loc.merge (fst (List.hd l)) (fst (list_last l))
 
 let map_int_or_var f = function
   | ArgArg x -> ArgArg (f x)

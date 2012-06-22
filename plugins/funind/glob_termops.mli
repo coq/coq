@@ -15,7 +15,7 @@ val pattern_to_term : cases_pattern -> glob_constr
 
 (*
    Some basic functions to rebuild glob_constr
-   In each of them the location is Util.dummy_loc
+   In each of them the location is Util.Loc.ghost
 *)
 val mkGRef : Globnames.global_reference -> glob_constr
 val mkGVar : Names.identifier -> glob_constr
@@ -85,9 +85,9 @@ val alpha_rt : Names.identifier list -> glob_constr -> glob_constr
 
 (* same as alpha_rt but for case branches *)
 val alpha_br : Names.identifier list ->
-    Pp.loc * Names.identifier list * Glob_term.cases_pattern list *
+    Loc.t * Names.identifier list * Glob_term.cases_pattern list *
     Glob_term.glob_constr ->
-    Pp.loc * Names.identifier list * Glob_term.cases_pattern list *
+    Loc.t * Names.identifier list * Glob_term.cases_pattern list *
     Glob_term.glob_constr
 
 

@@ -113,7 +113,7 @@ let list_add_set_eq eq_fun x l =
 
 let const_of_id id =
   let _,princ_ref =
-    qualid_of_reference (Libnames.Ident (Pp.dummy_loc,id))
+    qualid_of_reference (Libnames.Ident (Loc.ghost,id))
   in
   try Nametab.locate_constant princ_ref
   with Not_found -> Errors.error ("cannot find "^ string_of_id id)

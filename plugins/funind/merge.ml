@@ -70,7 +70,7 @@ let isVarf f x =
     in global environment. *)
 let ident_global_exist id =
   try
-    let ans = CRef (Libnames.Ident (dummy_loc,id)) in
+    let ans = CRef (Libnames.Ident (Loc.ghost,id)) in
     let _ = ignore (Constrintern.intern_constr Evd.empty (Global.env()) ans) in
     true
   with _ -> false
@@ -517,16 +517,16 @@ let rec merge_app c1 c2 id1 id2 shift filter_shift_stable =
     | GApp(_,f1, arr1), GApp(_,f2,arr2) when isVarf id1 f1 && isVarf id2 f2 ->
         let _ = prstr "\nICI1!\n";Pp.flush_all() in
         let args = filter_shift_stable lnk (arr1 @ arr2) in
-        GApp (dummy_loc,GVar (dummy_loc,shift.ident) , args)
+        GApp (Loc.ghost,GVar (Loc.ghost,shift.ident) , args)
     | GApp(_,f1, arr1), GApp(_,f2,arr2)  -> raise NoMerge
     | GLetIn(_,nme,bdy,trm) , _ ->
         let _ = prstr "\nICI2!\n";Pp.flush_all() in
         let newtrm = merge_app trm c2 id1 id2 shift filter_shift_stable in
-        GLetIn(dummy_loc,nme,bdy,newtrm)
+        GLetIn(Loc.ghost,nme,bdy,newtrm)
     | _, GLetIn(_,nme,bdy,trm) ->
         let _ = prstr "\nICI3!\n";Pp.flush_all() in
         let newtrm = merge_app c1 trm id1 id2 shift filter_shift_stable in
-        GLetIn(dummy_loc,nme,bdy,newtrm)
+        GLetIn(Loc.ghost,nme,bdy,newtrm)
     | _ -> let _ = prstr "\nICI4!\n";Pp.flush_all() in
            raise NoMerge
 
@@ -535,16 +535,16 @@ let rec merge_app_unsafe c1 c2 shift filter_shift_stable =
   match c1 , c2 with
     | GApp(_,f1, arr1), GApp(_,f2,arr2) ->
         let args = filter_shift_stable lnk (arr1 @ arr2) in
-        GApp (dummy_loc,GVar(dummy_loc,shift.ident) , args)
+        GApp (Loc.ghost,GVar(Loc.ghost,shift.ident) , args)
           (* FIXME: what if the function appears in the body of the let? *)
     | GLetIn(_,nme,bdy,trm) , _ ->
         let _ = prstr "\nICI2 '!\n";Pp.flush_all() in
         let newtrm = merge_app_unsafe trm c2 shift filter_shift_stable in
-        GLetIn(dummy_loc,nme,bdy,newtrm)
+        GLetIn(Loc.ghost,nme,bdy,newtrm)
     | _, GLetIn(_,nme,bdy,trm) ->
         let _ = prstr "\nICI3 '!\n";Pp.flush_all() in
         let newtrm = merge_app_unsafe c1 trm shift filter_shift_stable in
-        GLetIn(dummy_loc,nme,bdy,newtrm)
+        GLetIn(Loc.ghost,nme,bdy,newtrm)
     | _ -> let _ = prstr "\nICI4 '!\n";Pp.flush_all() in raise NoMerge
 
 
@@ -831,7 +831,7 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
         let _ = prNamedRConstr (string_of_name nme) tp in
         let _ = prstr "  ;  " in
         let typ = glob_constr_to_constr_expr tp in
-        LocalRawAssum ([(dummy_loc,nme)], Constrexpr_ops.default_binder_kind, typ) :: acc)
+        LocalRawAssum ([(Loc.ghost,nme)], Constrexpr_ops.default_binder_kind, typ) :: acc)
       [] params in
   let concl = Constrextern.extern_constr false (Global.env()) concl in
   let arity,_ =
@@ -839,7 +839,7 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
       (fun (acc,env) (nm,_,c) ->
         let typ = Constrextern.extern_constr false env c in
         let newenv = Environ.push_rel (nm,None,c) env in
-        CProdN (dummy_loc, [[(dummy_loc,nm)],Constrexpr_ops.default_binder_kind,typ] , acc) , newenv)
+        CProdN (Loc.ghost, [[(Loc.ghost,nm)],Constrexpr_ops.default_binder_kind,typ] , acc) , newenv)
       (concl,Global.env())
       (shift.funresprms2 @ shift.funresprms1
         @ shift.args2 @ shift.args1 @ shift.otherprms2 @ shift.otherprms1) in
@@ -853,12 +853,12 @@ let merge_rec_params_and_arity prms1 prms2 shift (concl:constr) =
     FIXME: params et cstr_expr (arity) *)
 let glob_constr_list_to_inductive_expr prms1 prms2 mib1 mib2 shift
     (rawlist:(identifier * glob_constr) list) =
-  let lident = dummy_loc, shift.ident in
+  let lident = Loc.ghost, shift.ident in
   let bindlist , cstr_expr = (* params , arities *)
     merge_rec_params_and_arity prms1 prms2 shift mkSet in
   let lcstor_expr : (bool * (lident * constr_expr)) list  =
     List.map (* zeta_normalize t ? *)
-      (fun (id,t) -> false, ((dummy_loc,id),glob_constr_to_constr_expr t))
+      (fun (id,t) -> false, ((Loc.ghost,id),glob_constr_to_constr_expr t))
       rawlist in
   lident , bindlist , Some cstr_expr , lcstor_expr
 
@@ -868,7 +868,7 @@ let mkProd_reldecl (rdecl:rel_declaration) (t2:glob_constr) =
   match rdecl with
     | (nme,None,t) ->
         let traw = Detyping.detype false [] [] t in
-        GProd (dummy_loc,nme,Explicit,traw,t2)
+        GProd (Loc.ghost,nme,Explicit,traw,t2)
     | (_,Some _,_) -> assert false
 
 
@@ -878,7 +878,7 @@ let mkProd_reldecl (rdecl:rel_declaration) (t2:glob_constr) =
   match rdecl with
     | (nme,None,t) ->
         let traw = Detyping.detype false [] [] t in
-        GProd (dummy_loc,nme,Explicit,traw,t2)
+        GProd (Loc.ghost,nme,Explicit,traw,t2)
     | (_,Some _,_) -> assert false
 
 
@@ -915,7 +915,7 @@ let merge_inductive (ind1: inductive) (ind2: inductive)
 (* Find infos on identifier id. *)
 let find_Function_infos_safe (id:identifier): Indfun_common.function_info =
   let kn_of_id x =
-    let f_ref = Libnames.Ident (dummy_loc,x) in
+    let f_ref = Libnames.Ident (Loc.ghost,x) in
     locate_with_msg (str "Don't know what to do with " ++ Libnames.pr_reference f_ref)
       locate_constant f_ref in
     try find_Function_infos (kn_of_id id)

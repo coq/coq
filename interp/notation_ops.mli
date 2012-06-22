@@ -28,12 +28,12 @@ val eq_glob_constr : glob_constr -> glob_constr -> bool
 
 (** Re-interpret a notation as a [glob_constr], taking care of binders     *)
 
-val glob_constr_of_notation_constr_with_binders : Pp.loc ->
+val glob_constr_of_notation_constr_with_binders : Loc.t ->
   ('a -> name -> 'a * name) ->
   ('a -> notation_constr -> glob_constr) ->
   'a -> notation_constr -> glob_constr
 
-val glob_constr_of_notation_constr : Pp.loc -> notation_constr -> glob_constr
+val glob_constr_of_notation_constr : Loc.t -> notation_constr -> glob_constr
 
 (** [match_notation_constr] matches a [glob_constr] against a notation
     interpretation; raise [No_match] if the matching fails   *)

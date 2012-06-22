@@ -219,7 +219,7 @@ let notation_constr_key = function (* Rem: NApp(NRef ref,[]) stands for @ref *)
 type required_module = full_path * string list
 
 type 'a prim_token_interpreter =
-    loc -> 'a -> glob_constr
+    Loc.t -> 'a -> glob_constr
 
 type cases_pattern_status = bool (* true = use prim token in patterns *)
 
@@ -227,7 +227,7 @@ type 'a prim_token_uninterpreter =
     glob_constr list * (glob_constr -> 'a option) * cases_pattern_status
 
 type internal_prim_token_interpreter =
-    loc -> prim_token -> required_module * (unit -> glob_constr)
+    Loc.t -> prim_token -> required_module * (unit -> glob_constr)
 
 let prim_token_interpreter_tab =
   (Hashtbl.create 7 : (scope_name, internal_prim_token_interpreter) Hashtbl.t)
@@ -416,8 +416,8 @@ let uninterp_prim_token_ind_pattern ind args =
     if not b then raise Notation_ops.No_match;
     let args' = List.map
       (fun x -> snd (glob_constr_of_closed_cases_pattern x)) args in
-    let ref = GRef (dummy_loc,ref) in
-    match numpr (GApp (dummy_loc,ref,args')) with
+    let ref = GRef (Loc.ghost,ref) in
+    match numpr (GApp (Loc.ghost,ref,args')) with
       | None -> raise Notation_ops.No_match
       | Some n -> (sc,n)
   with Not_found -> raise Notation_ops.No_match
@@ -435,7 +435,7 @@ let uninterp_prim_token_cases_pattern c =
 
 let availability_of_prim_token n printer_scope local_scopes =
   let f scope =
-    try ignore (Hashtbl.find prim_token_interpreter_tab scope dummy_loc n); true
+    try ignore (Hashtbl.find prim_token_interpreter_tab scope Loc.ghost n); true
     with Not_found -> false in
   let scopes = make_current_scopes local_scopes in
   Option.map snd (find_without_delimiters f (Some printer_scope,None) scopes)
@@ -654,7 +654,7 @@ let pr_scope_classes sc =
 
 let pr_notation_info prglob ntn c =
   str "\"" ++ str ntn ++ str "\" := " ++
-  prglob (Notation_ops.glob_constr_of_notation_constr dummy_loc c)
+  prglob (Notation_ops.glob_constr_of_notation_constr Loc.ghost c)
 
 let pr_named_scope prglob scope sc =
  (if scope = default_scope then
@@ -727,7 +727,7 @@ let error_notation_not_reference loc ntn =
 let interp_notation_as_global_reference loc test ntn sc =
   let scopes = match sc with
   | Some sc ->
-      Gmap.add sc (find_scope (find_delimiters_scope dummy_loc sc)) Gmap.empty
+      Gmap.add sc (find_scope (find_delimiters_scope Loc.ghost sc)) Gmap.empty
   | None -> !scope_map in
   let ntns = browse_notation true ntn scopes in
   let refs = List.map (global_reference_of_notation test) ntns in

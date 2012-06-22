@@ -31,24 +31,24 @@ type pattern_matching_error =
 
 exception PatternMatchingError of env * pattern_matching_error
 
-val raise_pattern_matching_error : (loc * env * pattern_matching_error) -> 'a
+val raise_pattern_matching_error : (Loc.t * env * pattern_matching_error) -> 'a
 
-val error_wrong_numarg_constructor_loc : loc -> env -> constructor -> int -> 'a
+val error_wrong_numarg_constructor_loc : Loc.t -> env -> constructor -> int -> 'a
 
-val error_wrong_numarg_inductive_loc : loc -> env -> inductive -> int -> 'a
+val error_wrong_numarg_inductive_loc : Loc.t -> env -> inductive -> int -> 'a
 
-val error_bad_constructor_loc : loc -> constructor -> inductive -> 'a
+val error_bad_constructor_loc : Loc.t -> constructor -> inductive -> 'a
 
-val error_bad_pattern_loc : loc -> constructor -> constr -> 'a
+val error_bad_pattern_loc : Loc.t -> constructor -> constr -> 'a
 
-val error_wrong_predicate_arity_loc : loc -> env -> constr -> constr -> constr -> 'a
+val error_wrong_predicate_arity_loc : Loc.t -> env -> constr -> constr -> constr -> 'a
 
 val error_needs_inversion : env -> constr -> types -> 'a
 
 (** {6 Compilation primitive. } *)
 
 val compile_cases :
-  loc -> case_style ->
+  Loc.t -> case_style ->
   (type_constraint -> env -> evar_map ref -> glob_constr -> unsafe_judgment) * evar_map ref ->
   type_constraint ->
   env -> glob_constr option * tomatch_tuples * cases_clauses ->
@@ -75,7 +75,7 @@ type 'a equation =
     { patterns     : cases_pattern list;
       rhs          : 'a rhs;
       alias_stack  : name list;
-      eqn_loc      : loc;
+      eqn_loc      : Loc.t;
       used         : bool ref }
 
 type 'a matrix = 'a equation list
@@ -110,7 +110,7 @@ type 'a pattern_matching_problem =
       tomatch   : tomatch_stack;
       history   : pattern_continuation;
       mat       : 'a matrix;
-      caseloc   : loc;
+      caseloc   : Loc.t;
       casestyle : case_style;
       typing_function: type_constraint -> env -> evar_map ref -> 'a option -> unsafe_judgment }
 

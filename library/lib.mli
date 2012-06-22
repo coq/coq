@@ -161,7 +161,7 @@ val first_command_label : int
 val reset_label : int -> unit
 
 (** search the label registered immediately before adding some definition *)
-val label_before_name : Names.identifier Pp.located -> int
+val label_before_name : Names.identifier Loc.located -> int
 
 (** {6 We can get and set the state of the operations (used in [States]). } *)
 

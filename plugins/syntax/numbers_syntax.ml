@@ -144,7 +144,7 @@ let uninterp_int31 i =
 let _ = Notation.declare_numeral_interpreter int31_scope
   (int31_path, int31_module)
   interp_int31
-  ([GRef (Pp.dummy_loc, int31_construct)],
+  ([GRef (Loc.ghost, int31_construct)],
    uninterp_int31,
    true)
 
@@ -258,7 +258,7 @@ let uninterp_bigN rc =
 let bigN_list_of_constructors =
   let rec build i =
     if less_than i (add_1 n_inlined) then
-      GRef (Pp.dummy_loc, bigN_constructor i)::(build (add_1 i))
+      GRef (Loc.ghost, bigN_constructor i)::(build (add_1 i))
     else
       []
   in
@@ -304,8 +304,8 @@ let uninterp_bigZ rc =
 let _ = Notation.declare_numeral_interpreter bigZ_scope
   (bigZ_path, bigZ_module)
   interp_bigZ
-  ([GRef (Pp.dummy_loc, bigZ_pos);
-    GRef (Pp.dummy_loc, bigZ_neg)],
+  ([GRef (Loc.ghost, bigZ_pos);
+    GRef (Loc.ghost, bigZ_neg)],
    uninterp_bigZ,
    true)
 
@@ -325,5 +325,5 @@ let uninterp_bigQ rc =
 let _ = Notation.declare_numeral_interpreter bigQ_scope
   (bigQ_path, bigQ_module)
   interp_bigQ
-  ([GRef (Pp.dummy_loc, bigQ_z)], uninterp_bigQ,
+  ([GRef (Loc.ghost, bigQ_z)], uninterp_bigQ,
    true)

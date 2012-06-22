@@ -24,7 +24,7 @@ open Misctypes
 (** An auxiliary function for searching for fixpoint guard indexes *)
 
 val search_guard :
-  Pp.loc -> env -> int list list -> rec_declaration -> int array
+  Loc.t -> env -> int list list -> rec_declaration -> int array
 
 type typing_constraint = OfType of types option | IsType
 

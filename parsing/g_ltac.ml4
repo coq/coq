@@ -180,7 +180,7 @@ GEXTEND Gram
 	      | CCast (loc, t, (CastConv ty | CastVM ty)) -> Term t, Some (Term ty)
 	      | _ -> mpv, None)
 	    | _ -> mpv, None
-	  in Def (na, t, Option.default (Term (CHole (dummy_loc, None))) ty)
+	  in Def (na, t, Option.default (Term (CHole (Loc.ghost, None))) ty)
     ] ]
   ;
   match_context_rule:

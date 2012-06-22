@@ -56,7 +56,7 @@ let adjust_guardness_conditions const = function
 	  lemma_guard (Array.to_list fixdefs) in
 *)
       let indexes =
-	search_guard dummy_loc (Global.env()) possible_indexes fixdecls in
+	search_guard Loc.ghost (Global.env()) possible_indexes fixdecls in
       { const with const_entry_body = mkFix ((indexes,0),fixdecls) }
   | c -> const
 

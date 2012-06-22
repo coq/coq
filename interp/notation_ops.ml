@@ -165,7 +165,7 @@ let compare_glob_constr f add t1 t2 = match t1,t2 with
 
 let rec eq_glob_constr t1 t2 = compare_glob_constr eq_glob_constr (fun _ -> ()) t1 t2
 
-let subtract_loc loc1 loc2 = make_loc (fst (unloc loc1),fst (unloc loc2)-1)
+let subtract_loc loc1 loc2 = Loc.make_loc (fst (Loc.unloc loc1),fst (Loc.unloc loc2)-1)
 
 let check_is_hole id = function GHole _ -> () | t ->
   user_err_loc (loc_of_glob_constr t,"",
@@ -209,7 +209,7 @@ let compare_recursive_parts found f (iterator,subc) =
     | Some (x,y,Some lassoc) ->
 	let newfound = (pi1 !found, (x,y) :: pi2 !found, pi3 !found) in
 	let iterator =
-	  f (if lassoc then subst_glob_vars [y,GVar(dummy_loc,x)] iterator
+	  f (if lassoc then subst_glob_vars [y,GVar(Loc.ghost,x)] iterator
 	  else iterator) in
 	(* found have been collected by compare_constr *)
 	found := newfound;
@@ -467,7 +467,7 @@ let abstract_return_type_context pi mklam tml rtno =
 let abstract_return_type_context_glob_constr =
   abstract_return_type_context (fun (_,_,nal) -> nal)
     (fun na c ->
-      GLambda(dummy_loc,na,Explicit,GHole(dummy_loc,Evar_kinds.InternalHole),c))
+      GLambda(Loc.ghost,na,Explicit,GHole(Loc.ghost,Evar_kinds.InternalHole),c))
 
 let abstract_return_type_context_notation_constr =
   abstract_return_type_context snd
@@ -513,8 +513,8 @@ let match_opt f sigma t1 t2 = match (t1,t2) with
 let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
   | (_,Name id2) when List.mem id2 (fst metas) ->
       let rhs = match na1 with
-      | Name id1 -> GVar (dummy_loc,id1)
-      | Anonymous -> GHole (dummy_loc,Evar_kinds.InternalHole) in
+      | Name id1 -> GVar (Loc.ghost,id1)
+      | Anonymous -> GHole (Loc.ghost,Evar_kinds.InternalHole) in
       alp, bind_env alp sigma id2 rhs
   | (Name id1,Name id2) -> (id1,id2)::alp,sigma
   | (Anonymous,Anonymous) -> alp,sigma
@@ -689,8 +689,8 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
   | b1, NLambda (Name id,NHole _,b2) when inner ->
       let id' = Namegen.next_ident_away id (free_glob_vars b1) in
       match_in u alp metas (bind_binder sigma id
-       [(Name id',Explicit,None,GHole(dummy_loc,Evar_kinds.BinderType (Name id')))])
-       (mkGApp dummy_loc b1 (GVar (dummy_loc,id'))) b2
+       [(Name id',Explicit,None,GHole(Loc.ghost,Evar_kinds.BinderType (Name id')))])
+       (mkGApp Loc.ghost b1 (GVar (Loc.ghost,id'))) b2
 
   | (GRec _ | GEvar _), _
   | _,_ -> raise No_match
@@ -721,7 +721,7 @@ let match_notation_constr u c (metas,pat) =
     with Not_found ->
       (* Happens for binders bound to Anonymous *)
       (* Find a better way to propagate Anonymous... *)
-      GVar (dummy_loc,x) in
+      GVar (Loc.ghost,x) in
   List.fold_right (fun (x,(scl,typ)) (terms',termlists',binders') ->
     match typ with
     | NtnTypeConstr ->
@@ -736,7 +736,7 @@ let match_notation_constr u c (metas,pat) =
 let add_patterns_for_params ind l =
   let mib,_ = Global.lookup_inductive ind in
   let nparams = mib.Declarations.mind_nparams in
-    Util.list_addn nparams (PatVar (dummy_loc,Anonymous)) l
+    Util.list_addn nparams (PatVar (Loc.ghost,Anonymous)) l
 
 let bind_env_cases_pattern (sigma,sigmalist,x as fullsigma) var v =
   try

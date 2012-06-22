@@ -95,7 +95,7 @@ let anonymize_if_reserved na t = match na with
 	   (try Notation_ops.notation_constr_of_glob_constr [] [] t
 		  = find_reserved_type id
             with UserError _ -> false)
-	then GHole (dummy_loc,Evar_kinds.BinderType na)
+	then GHole (Loc.ghost,Evar_kinds.BinderType na)
 	else t
       with Not_found -> t)
   | Anonymous -> t

@@ -19,8 +19,8 @@ open Pcaml
 open PcamlSig
 open Misctypes
 
-let loc = dummy_loc
-let dloc = <:expr< Pp.dummy_loc >>
+let loc = Loc.ghost
+let dloc = <:expr< Loc.ghost >>
 
 let apply_ref f l =
   <:expr<

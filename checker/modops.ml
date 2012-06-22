@@ -37,7 +37,7 @@ let error_no_such_label_sub l l1 =
 let error_not_a_module_loc loc s =
   user_err_loc (loc,"",str ("\""^string_of_label s^"\" is not a module"))
 
-let error_not_a_module s = error_not_a_module_loc dummy_loc s
+let error_not_a_module s = error_not_a_module_loc Loc.ghost s
 
 let error_with_incorrect l =
   error ("Incorrect constraint for label \""^(string_of_label l)^"\"")

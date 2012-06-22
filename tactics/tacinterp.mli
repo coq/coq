@@ -104,7 +104,7 @@ val intern_constr_with_bindings :
   glob_constr_and_expr * glob_constr_and_expr bindings
 
 val intern_hyp :
-  glob_sign -> identifier Pp.located -> identifier Pp.located
+  glob_sign -> identifier Loc.located -> identifier Loc.located
 
 val subst_genarg :
   substitution -> glob_generic_argument -> glob_generic_argument
@@ -129,7 +129,7 @@ val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> Evd.evar_map 
 val interp_tac_gen : (identifier * value) list -> identifier list ->
                  debug_info -> raw_tactic_expr -> tactic
 
-val interp_hyp :  interp_sign -> goal sigma -> identifier located -> identifier
+val interp_hyp :  interp_sign -> goal sigma -> identifier Loc.located -> identifier
 
 val interp_bindings : interp_sign -> Environ.env -> Evd.evar_map ->
  glob_constr_and_expr bindings -> Evd.evar_map * constr bindings
@@ -165,8 +165,8 @@ val print_ltac : Libnames.qualid -> std_ppcmds
 
 exception CannotCoerceTo of string
 
-val interp_ltac_var : (value -> 'a) -> interp_sign -> Environ.env option -> identifier located -> 'a
+val interp_ltac_var : (value -> 'a) -> interp_sign -> Environ.env option -> identifier Loc.located -> 'a
 
-val interp_int : interp_sign -> identifier located -> int
+val interp_int : interp_sign -> identifier Loc.located -> int
 
-val error_ltac_variable : loc -> identifier -> Environ.env option -> value -> string -> 'a
+val error_ltac_variable : Loc.t -> identifier -> Environ.env option -> value -> string -> 'a

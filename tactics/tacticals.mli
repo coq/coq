@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Loc
 open Pp
 open Names
 open Term
@@ -126,7 +127,7 @@ type branch_assumptions = {
 (** [check_disjunctive_pattern_size loc pats n] returns an appropriate 
    error message if |pats| <> n *)
 val check_or_and_pattern_size :
-  Pp.loc -> or_and_intro_pattern_expr -> int -> unit
+  Loc.t -> or_and_intro_pattern_expr -> int -> unit
 
 (** Tolerate "[]" to mean a disjunctive pattern of any length *)
 val fix_empty_or_and_pattern : int -> or_and_intro_pattern_expr ->

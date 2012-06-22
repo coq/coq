@@ -19,17 +19,17 @@ open Pp
 exception Anomaly of string * std_ppcmds
 val anomaly : string -> 'a
 val anomalylabstrm : string -> std_ppcmds -> 'a
-val anomaly_loc : loc * string * std_ppcmds -> 'a
+val anomaly_loc : Loc.t * string * std_ppcmds -> 'a
 
 exception UserError of string * std_ppcmds
 val error : string -> 'a
 val errorlabstrm : string -> std_ppcmds -> 'a
-val user_err_loc : loc * string * std_ppcmds -> 'a
+val user_err_loc : Loc.t * string * std_ppcmds -> 'a
 
 exception AlreadyDeclared of std_ppcmds
 val alreadydeclared : std_ppcmds -> 'a
 
-val invalid_arg_loc : loc * string -> 'a
+val invalid_arg_loc : Loc.t * string -> 'a
 
 (** [todo] is for running of an incomplete code its implementation is
    "do nothing" (or print a message), but this function should not be
@@ -45,7 +45,7 @@ exception Quit
    input buffer associated to the location of the error (or the module name
    if boolean is true), and the error itself. *)
 
-exception Error_in_file of string * (bool * string * loc) * exn
+exception Error_in_file of string * (bool * string * Loc.t) * exn
 
 (** [register_handler h] registers [h] as a handler.
     When an expression is printed with [print e], it

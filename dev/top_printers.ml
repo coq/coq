@@ -353,7 +353,7 @@ let print_pure_constr csr =
 
 let ppfconstr c = ppconstr (Closure.term_of_fconstr c)
 
-let pploc x = let (l,r) = unloc x in
+let pploc x = let (l,r) = Loc.unloc x in
   print_string"(";print_int l;print_string",";print_int r;print_string")"
 
 (* extendable tactic arguments *)
@@ -428,7 +428,7 @@ let _ =
   extend_vernac_command_grammar "PrintConstr" None
     [[GramTerminal "PrintConstr";
       GramNonTerminal
-        (dummy_loc,ConstrArgType,Aentry ("constr","constr"),
+        (Loc.ghost,ConstrArgType,Aentry ("constr","constr"),
 	 Some (Names.id_of_string "c"))]]
 
 let _ =
@@ -445,7 +445,7 @@ let _ =
   extend_vernac_command_grammar "PrintPureConstr" None
     [[GramTerminal "PrintPureConstr";
       GramNonTerminal
-        (dummy_loc,ConstrArgType,Aentry ("constr","constr"),
+        (Loc.ghost,ConstrArgType,Aentry ("constr","constr"),
 	 Some (Names.id_of_string "c"))]]
 
 (* Setting printer of unbound global reference *)

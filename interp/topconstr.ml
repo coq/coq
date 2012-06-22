@@ -59,7 +59,7 @@ let ids_of_cases_tomatch tms =
   List.fold_right
     (fun (_,(ona,indnal)) l ->
       Option.fold_right (fun t -> (@) (ids_of_cases_indtype t))
-      indnal (Option.fold_right (down_located name_cons) ona l))
+      indnal (Option.fold_right (Loc.down_located name_cons) ona l))
     tms []
 
 let is_constructor id =
@@ -84,7 +84,7 @@ let rec cases_pattern_fold_names f a = function
 
 let ids_of_pattern_list =
   List.fold_left
-    (located_fold_left
+    (Loc.located_fold_left
       (List.fold_left (cases_pattern_fold_names Idset.add)))
     Idset.empty
 
@@ -117,7 +117,7 @@ let fold_constr_expr_with_binders g f n acc = function
       (* The following is an approximation: we don't know exactly if
          an ident is binding nor to which subterms bindings apply *)
       let acc = List.fold_left (f n) acc (l@List.flatten ll) in
-      List.fold_left (fun acc bl -> fold_local_binders g f n acc (CHole (dummy_loc,None)) bl) acc bll
+      List.fold_left (fun acc bl -> fold_local_binders g f n acc (CHole (Loc.ghost,None)) bl) acc bll
   | CGeneralization (_,_,_,c) -> f n acc c
   | CDelimiters (loc,_,a) -> f n acc a
   | CHole _ | CEvar _ | CPatVar _ | CSort _ | CPrim _ | CRef _ ->
@@ -131,12 +131,12 @@ let fold_constr_expr_with_binders g f n acc = function
 	let ids = ids_of_pattern_list patl in
 	f (Idset.fold g ids n) acc rhs) bl acc
   | CLetTuple (loc,nal,(ona,po),b,c) ->
-      let n' = List.fold_right (down_located (name_fold g)) nal n in
-      f (Option.fold_right (down_located (name_fold g)) ona n') (f n acc b) c
+      let n' = List.fold_right (Loc.down_located (name_fold g)) nal n in
+      f (Option.fold_right (Loc.down_located (name_fold g)) ona n') (f n acc b) c
   | CIf (_,c,(ona,po),b1,b2) ->
       let acc = f n (f n (f n acc b1) b2) c in
       Option.fold_left
-	(f (Option.fold_right (down_located (name_fold g)) ona n)) acc po
+	(f (Option.fold_right (Loc.down_located (name_fold g)) ona n)) acc po
   | CFix (loc,_,l) ->
       let n' = List.fold_right (fun ((_,id),_,_,_,_) -> g id) l n in
       List.fold_right (fun (_,(_,o),lb,t,c) acc ->
@@ -177,7 +177,7 @@ let split_at_annot bl na =
 
 (* Used in correctness and interface *)
 
-let map_binder g e nal = List.fold_right (down_located (name_fold g)) nal e
+let map_binder g e nal = List.fold_right (Loc.down_located (name_fold g)) nal e
 
 let map_binders f g e bl =
   (* TODO: avoid variable capture in [t] by some [na] in [List.tl nal] *)
@@ -221,11 +221,11 @@ let map_constr_expr_with_binders g f e = function
       let po = Option.map (f (List.fold_right g ids e)) rtnpo in
       CCases (loc, sty, po, List.map (fun (tm,x) -> (f e tm,x)) a,bl)
   | CLetTuple (loc,nal,(ona,po),b,c) ->
-      let e' = List.fold_right (down_located (name_fold g)) nal e in
-      let e'' = Option.fold_right (down_located (name_fold g)) ona e in
+      let e' = List.fold_right (Loc.down_located (name_fold g)) nal e in
+      let e'' = Option.fold_right (Loc.down_located (name_fold g)) ona e in
       CLetTuple (loc,nal,(ona,Option.map (f e'') po),f e b,f e' c)
   | CIf (loc,c,(ona,po),b1,b2) ->
-      let e' = Option.fold_right (down_located (name_fold g)) ona e in
+      let e' = Option.fold_right (Loc.down_located (name_fold g)) ona e in
       CIf (loc,f e c,(ona,Option.map (f e') po),f e b1,f e b2)
   | CFix (loc,id,dl) ->
       CFix (loc,id,List.map (fun (id,n,bl,t,d) ->
@@ -254,20 +254,20 @@ let rec replace_vars_constr_expr l = function
 (* Concrete syntax for modules and modules types *)
 
 type with_declaration_ast =
-  | CWith_Module of identifier list located * qualid located
-  | CWith_Definition of identifier list located * constr_expr
+  | CWith_Module of identifier list Loc.located * qualid Loc.located
+  | CWith_Definition of identifier list Loc.located * constr_expr
 
 type module_ast =
-  | CMident of qualid located
-  | CMapply of loc * module_ast * module_ast
-  | CMwith of loc * module_ast * with_declaration_ast
+  | CMident of qualid Loc.located
+  | CMapply of Loc.t * module_ast * module_ast
+  | CMwith of Loc.t * module_ast * with_declaration_ast
 
 (* Returns the ranges of locs of the notation that are not occupied by args  *)
 (* and which are then occupied by proper symbols of the notation (or spaces) *)
 
 let locs_of_notation loc locs ntn =
-  let (bl,el) = unloc loc in
-  let locs =  List.map unloc locs in
+  let (bl, el) = Loc.unloc loc in
+  let locs =  List.map Loc.unloc locs in
   let rec aux pos = function
     | [] -> if pos = el then [] else [(pos,el-1)]
     | (ba,ea)::l ->if pos = ba then aux ea l else (pos,ba-1)::aux ea l

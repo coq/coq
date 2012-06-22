@@ -1144,7 +1144,7 @@ let add_notation local c ((loc,df),modifiers) sc =
 
 (* Infix notations *)
 
-let inject_var x = CRef (Ident (dummy_loc, id_of_string x))
+let inject_var x = CRef (Ident (Loc.ghost, id_of_string x))
 
 let add_infix local ((loc,inf),modifiers) pr sc =
   check_infix_modifiers modifiers;

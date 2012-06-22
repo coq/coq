@@ -8,7 +8,6 @@
 
 open Errors
 open Util
-open Compat
 open Pp
 open Names
 open Libnames

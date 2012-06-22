@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Compat
 open Pp
 open Errors
 open Util
@@ -16,10 +15,10 @@ open Pretype_errors
 open Indrec
 
 let print_loc loc =
-  if loc = dummy_loc then
+  if loc = Loc.ghost then
     (str"<unknown>")
   else
-    let loc = unloc loc in
+    let loc = Loc.unloc loc in
     (int (fst loc) ++ str"-" ++ int (snd loc))
 
 let guill s = "\""^s^"\""
@@ -43,7 +42,7 @@ let explain_exn_default = function
   | Sys.Break -> hov 0 (fnl () ++ str "User interrupt.")
   (* Meta-exceptions *)
   | Loc.Exc_located (loc,exc) ->
-      hov 0 ((if loc = dummy_loc then (mt ())
+      hov 0 ((if loc = Loc.ghost then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
                ++ Errors.print_no_anomaly exc)
   | EvaluatedError (msg,None) -> msg

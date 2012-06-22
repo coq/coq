@@ -355,7 +355,7 @@ let extract_params indl =
 let extract_inductive indl =
   List.map (fun ((_,indname),_,ar,lc) -> {
     ind_name = indname;
-    ind_arity = Option.cata (fun x -> x) (CSort (dummy_loc,GType None)) ar;
+    ind_arity = Option.cata (fun x -> x) (CSort (Loc.ghost,GType None)) ar;
     ind_lc = List.map (fun (_,((_,id),t)) -> (id,t)) lc
   }) indl
 
@@ -481,7 +481,7 @@ let check_mutuality env isfix fixl =
 
 type structured_fixpoint_expr = {
   fix_name : identifier;
-  fix_annot : identifier located option;
+  fix_annot : identifier Loc.located option;
   fix_binders : local_binder list;
   fix_body : constr_expr option;
   fix_type : constr_expr
@@ -563,7 +563,7 @@ let mkSubset name typ prop =
 	 [| typ; mkLambda (name, typ, prop) |])
 let sigT = Lazy.lazy_from_fun build_sigma_type
 
-let make_qref s = Qualid (dummy_loc, qualid_of_string s)
+let make_qref s = Qualid (Loc.ghost, qualid_of_string s)
 let lt_ref = make_qref "Init.Peano.lt"
 
 let rec telescope = function
@@ -687,7 +687,7 @@ let build_wellfounded (recname,n,bl,arityc,body) r measure notation =
     mkApp (constr_of_global (delayed_force fix_sub_ref),
 	  [| argtyp ; wf_rel ;
 	     Evarutil.e_new_evar isevars env 
-	       ~src:(dummy_loc, Evar_kinds.QuestionMark (Evar_kinds.Define false)) wf_proof;
+	       ~src:(Loc.ghost, Evar_kinds.QuestionMark (Evar_kinds.Define false)) wf_proof;
 	     prop ; intern_body_lam |])
   in
   let _ = isevars := Evarutil.nf_evar_map !isevars in
@@ -807,7 +807,7 @@ let declare_fixpoint ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
-    let indexes = search_guard dummy_loc (Global.env()) indexes fixdecls in
+    let indexes = search_guard Loc.ghost (Global.env()) indexes fixdecls in
     let fiximps = List.map (fun (n,r,p) -> r) fiximps in
     let fixdecls =
       list_map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
@@ -915,7 +915,7 @@ let do_program_recursive fixkind fixl ntns =
 	Array.of_list (List.map (subst_vars (List.rev fixnames)) fixdefs)
       in
       let indexes = 
-	Pretyping.search_guard dummy_loc (Global.env ()) possible_indexes fixdecls in
+	Pretyping.search_guard Loc.ghost (Global.env ()) possible_indexes fixdecls in
 	list_iter_i (fun i _ -> Inductive.check_fix env ((indexes,i),fixdecls)) fixl
     end;
     Obligations.add_mutual_definitions defs ntns fixkind

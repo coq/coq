@@ -308,7 +308,7 @@ let push_rel_context_to_named_context env typ =
  * Entry points to define new evars   *
  *------------------------------------*)
 
-let default_source = (dummy_loc,Evar_kinds.InternalHole)
+let default_source = (Loc.ghost,Evar_kinds.InternalHole)
 
 let new_pure_evar evd sign ?(src=default_source) ?filter ?candidates typ =
   let newevk = new_untyped_evar() in
@@ -338,7 +338,7 @@ let new_type_evar ?src ?filter evd env =
   new_evar evd' env ?src ?filter (mkSort s)
 
   (* The same using side-effect *)
-let e_new_evar evdref env ?(src=(dummy_loc,Evar_kinds.InternalHole)) ?filter ?candidates ty =
+let e_new_evar evdref env ?(src=(Loc.ghost,Evar_kinds.InternalHole)) ?filter ?candidates ty =
   let (evd',ev) = new_evar !evdref env ~src:src ?filter ?candidates ty in
   evdref := evd';
   ev
@@ -1962,7 +1962,7 @@ let define_pure_evar_as_lambda env evd evk =
   let evd1,(na,dom,rng) = match kind_of_term typ with
   | Prod (na,dom,rng) -> (evd,(na,dom,rng))
   | Evar ev' -> let evd,typ = define_evar_as_product evd ev' in evd,destProd typ
-  | _ -> error_not_product_loc dummy_loc env evd typ in
+  | _ -> error_not_product_loc Loc.ghost env evd typ in
   let avoid = ids_of_named_context (evar_context evi) in
   let id =
     next_name_away_with_default_using_types "x" na avoid (whd_evar evd dom) in

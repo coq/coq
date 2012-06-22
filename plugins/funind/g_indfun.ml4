@@ -139,7 +139,7 @@ module FunctionGram =
 struct
   let gec s = Gram.entry_create ("Function."^s)
 		(* types *)
-  let function_rec_definition_loc : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) located Gram.entry = gec "function_rec_definition_loc"
+  let function_rec_definition_loc : (Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) Loc.located Gram.entry = gec "function_rec_definition_loc"
 end
 open FunctionGram
 
@@ -151,7 +151,7 @@ GEXTEND Gram
     ;
 
   END
-type 'a function_rec_definition_loc_argtype = ((Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) located, 'a) Genarg.abstract_argument_type
+type 'a function_rec_definition_loc_argtype = ((Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) Loc.located, 'a) Genarg.abstract_argument_type
 
 let (wit_function_rec_definition_loc : Genarg.tlevel function_rec_definition_loc_argtype),
   (globwit_function_rec_definition_loc : Genarg.glevel function_rec_definition_loc_argtype),
@@ -460,9 +460,9 @@ VERNAC COMMAND EXTEND MergeFunind
       "with" "(" ident(id2) ne_ident_list(cl2)  ")" "using" ident(id) ] ->
      [
        let f1 = Constrintern.interp_constr Evd.empty (Global.env())
-	 (CRef (Libnames.Ident (Pp.dummy_loc,id1))) in
+	 (CRef (Libnames.Ident (Loc.ghost,id1))) in
        let f2 = Constrintern.interp_constr Evd.empty (Global.env())
-	 (CRef (Libnames.Ident (Pp.dummy_loc,id2))) in
+	 (CRef (Libnames.Ident (Loc.ghost,id2))) in
        let f1type = Typing.type_of (Global.env()) Evd.empty f1 in
        let f2type = Typing.type_of (Global.env()) Evd.empty f2 in
        let ar1 = List.length (fst (decompose_prod f1type)) in

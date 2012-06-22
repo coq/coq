@@ -19,12 +19,12 @@ open Glob_term
 
 (** Operations on [glob_constr] *)
 
-val cases_pattern_loc : cases_pattern -> loc
+val cases_pattern_loc : cases_pattern -> Loc.t
 
 val cases_predicate_names : tomatch_tuples -> name list
 
 (** Apply one argument to a glob_constr *)
-val mkGApp : loc -> glob_constr -> glob_constr -> glob_constr
+val mkGApp : Loc.t -> glob_constr -> glob_constr -> glob_constr
 
 val map_glob_constr :
   (glob_constr -> glob_constr) -> glob_constr -> glob_constr
@@ -37,7 +37,7 @@ val fold_glob_constr : ('a -> glob_constr -> 'a) -> 'a -> glob_constr -> 'a
 val iter_glob_constr : (glob_constr -> unit) -> glob_constr -> unit
 val occur_glob_constr : identifier -> glob_constr -> bool
 val free_glob_vars : glob_constr -> identifier list
-val loc_of_glob_constr : glob_constr -> loc
+val loc_of_glob_constr : glob_constr -> Loc.t
 
 (** Conversion from glob_constr to cases pattern, if possible
 

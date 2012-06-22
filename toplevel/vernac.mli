@@ -12,12 +12,12 @@
    Raises [End_of_file] if EOF (or Ctrl-D) is reached. *)
 
 val parse_sentence : Pcoq.Gram.parsable * in_channel option ->
- Pp.loc * Vernacexpr.vernac_expr
+ Loc.t * Vernacexpr.vernac_expr
 
 (** Reads and executes vernac commands from a stream.
    The boolean [just_parsing] disables interpretation of commands. *)
 
-exception DuringCommandInterp of Pp.loc * exn
+exception DuringCommandInterp of Loc.t * exn
 exception End_of_input
 
 val just_parsing : bool ref
@@ -28,7 +28,7 @@ val just_parsing : bool ref
    of a new state label). An example of state-preserving command is one coming
    from the query panel of Coqide. *)
 
-val eval_expr : ?preserving:bool -> Pp.loc * Vernacexpr.vernac_expr -> unit
+val eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit
 val raw_do_vernac : Pcoq.Gram.parsable -> unit
 
 (** Set XML hooks *)

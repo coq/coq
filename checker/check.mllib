@@ -3,6 +3,7 @@ Pp_control
 Compat
 Flags
 Pp
+Loc
 Segmenttree
 Unicodetable
 Errors

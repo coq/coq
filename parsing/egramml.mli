@@ -13,7 +13,7 @@
 
 type grammar_prod_item =
   | GramTerminal of string
-  | GramNonTerminal of Pp.loc * Genarg.argument_type *
+  | GramNonTerminal of Loc.t * Genarg.argument_type *
       Pcoq.prod_entry_key * Names.identifier option
 
 val extend_tactic_grammar :
@@ -29,5 +29,5 @@ val get_extend_vernac_grammars :
 (** Utility function reused in Egramcoq : *)
 
 val make_rule :
-  (Pp.loc -> (Names.identifier * Tacexpr.raw_generic_argument) list -> 'b) ->
+  (Loc.t -> (Names.identifier * Tacexpr.raw_generic_argument) list -> 'b) ->
   grammar_prod_item list -> Pcoq.Gram.symbol list * Pcoq.Gram.action

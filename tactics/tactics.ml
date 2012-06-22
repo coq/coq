@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Compat
 open Pp
 open Errors
 open Util
@@ -61,7 +60,7 @@ let rec nb_prod x =
 
 let inj_with_occurrences e = (AllOccurrences,e)
 
-let dloc = dummy_loc
+let dloc = Loc.ghost
 
 let typ_of = Retyping.get_type_of
 

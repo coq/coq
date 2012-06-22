@@ -16,27 +16,27 @@ let mlexpr_of_list f l =
   List.fold_right
     (fun e1 e2 ->
       let e1 = f e1 in
-       let loc = join_loc (MLast.loc_of_expr e1) (MLast.loc_of_expr e2) in
+       let loc = Loc.merge (MLast.loc_of_expr e1) (MLast.loc_of_expr e2) in
        <:expr< [$e1$ :: $e2$] >>)
-    l (let loc = dummy_loc in <:expr< [] >>)
+    l (let loc = Loc.ghost in <:expr< [] >>)
 
 let mlexpr_of_pair m1 m2 (a1,a2) =
   let e1 = m1 a1 and e2 = m2 a2 in
-  let loc = join_loc (MLast.loc_of_expr e1) (MLast.loc_of_expr e2) in
+  let loc = Loc.merge (MLast.loc_of_expr e1) (MLast.loc_of_expr e2) in
   <:expr< ($e1$, $e2$) >>
 
 let mlexpr_of_triple m1 m2 m3 (a1,a2,a3)=
   let e1 = m1 a1 and e2 = m2 a2 and e3 = m3 a3 in
-  let loc = join_loc (MLast.loc_of_expr e1) (MLast.loc_of_expr e3) in
+  let loc = Loc.merge (MLast.loc_of_expr e1) (MLast.loc_of_expr e3) in
   <:expr< ($e1$, $e2$, $e3$) >>
 
 let mlexpr_of_quadruple m1 m2 m3 m4 (a1,a2,a3,a4)=
   let e1 = m1 a1 and e2 = m2 a2 and e3 = m3 a3 and e4 = m4 a4 in
-  let loc = join_loc (MLast.loc_of_expr e1) (MLast.loc_of_expr e4) in
+  let loc = Loc.merge (MLast.loc_of_expr e1) (MLast.loc_of_expr e4) in
   <:expr< ($e1$, $e2$, $e3$, $e4$) >>
 
 (* We don't give location for tactic quotation! *)
-let loc = dummy_loc
+let loc = Loc.ghost
 
 
 let mlexpr_of_bool = function

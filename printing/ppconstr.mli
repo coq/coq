@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Loc
 open Pp
 open Environ
 open Term
@@ -34,7 +35,7 @@ val pr_metaid : identifier -> std_ppcmds
 val pr_lident : identifier located -> std_ppcmds
 val pr_lname : name located -> std_ppcmds
 
-val pr_with_comments : loc -> std_ppcmds -> std_ppcmds
+val pr_with_comments : Loc.t -> std_ppcmds -> std_ppcmds
 val pr_com_at : int -> std_ppcmds
 val pr_sep_com :
   (unit -> std_ppcmds) ->

@@ -273,8 +273,8 @@ let make_discr_match_brl i =
   list_map_i
     (fun j (_,idl,patl,_) ->
        if j=i
-       then (dummy_loc,idl,patl, mkGRef (Lazy.force coq_True_ref))
-       else (dummy_loc,idl,patl, mkGRef (Lazy.force coq_False_ref))
+       then (Loc.ghost,idl,patl, mkGRef (Lazy.force coq_True_ref))
+       else (Loc.ghost,idl,patl, mkGRef (Lazy.force coq_False_ref))
     )
     0
 (*
@@ -511,9 +511,9 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 		    | u::l -> 
 			match t with 
 			  | GLambda(loc,na,_,nat,b) -> 
-			      GLetIn(dummy_loc,na,u,aux b l)
+			      GLetIn(Loc.ghost,na,u,aux b l)
 			  | _ -> 
-			      GApp(dummy_loc,t,l)
+			      GApp(Loc.ghost,t,l)
 		in
 		build_entry_lc env funnames avoid (aux f args)
 	    | GVar(_,id) when Idset.mem id funnames ->
@@ -571,7 +571,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 			let new_b =
 			  replace_var_by_term
 			    id
-			    (GVar(dummy_loc,id))
+			    (GVar(Loc.ghost,id))
 			    b
 			in
 			(Name new_id,new_b,new_avoid)
@@ -661,7 +661,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	assert (Array.length case_pats = 2);
 	let brl =
 	  list_map_i
-	    (fun i x -> (dummy_loc,[],[case_pats.(i)],x))
+	    (fun i x -> (Loc.ghost,[],[case_pats.(i)],x))
 	    0
 	    [lhs;rhs]
 	in
@@ -692,7 +692,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	  let case_pats = build_constructors_of_type ind nal_as_glob_constr in
 	  assert (Array.length case_pats = 1);
 	  let br =
-	    (dummy_loc,[],[case_pats.(0)],e)
+	    (Loc.ghost,[],[case_pats.(0)],e)
 	  in
 	  let match_expr = mkGCases(None,[b,(Anonymous,None)],[br]) in
 	  build_entry_lc env funnames avoid match_expr
@@ -981,8 +981,8 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		      ((Util.list_chop nparam args'))
 		    in
 		    let rt_typ =
-		       GApp(Pp.dummy_loc,
-			    GRef (Pp.dummy_loc,Globnames.IndRef ind),
+		       GApp(Loc.ghost,
+			    GRef (Loc.ghost,Globnames.IndRef ind),
 			    (List.map
 			      (fun p -> Detyping.detype false []
 				 (Termops.names_of_rel_context env)
@@ -1130,7 +1130,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		then
 		  new_b, Idset.remove id (Idset.filter not_free_in_t id_to_exclude)
 		else
-		  GProd(dummy_loc,n,k,t,new_b),Idset.filter not_free_in_t id_to_exclude
+		  GProd(Loc.ghost,n,k,t,new_b),Idset.filter not_free_in_t id_to_exclude
 	    | _ -> anomaly "Should not have an anonymous function here"
 		(* We have renamed all the anonymous functions during alpha_renaming phase *)
 
@@ -1149,7 +1149,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 	  match n with
 	    | Name id when Idset.mem id id_to_exclude && depth >= nb_args  ->
 		new_b,Idset.remove id (Idset.filter not_free_in_t id_to_exclude)
-	    | _ -> GLetIn(dummy_loc,n,t,new_b),
+	    | _ -> GLetIn(Loc.ghost,n,t,new_b),
 		Idset.filter not_free_in_t id_to_exclude
 	end
     | GLetTuple(_,nal,(na,rto),t,b) ->
@@ -1175,7 +1175,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 (* 	    | Name id when Idset.mem id id_to_exclude ->  *)
 (* 		new_b,Idset.remove id (Idset.filter not_free_in_t id_to_exclude) *)
 (* 	    | _ -> *)
-	  GLetTuple(dummy_loc,nal,(na,None),t,new_b),
+	  GLetTuple(Loc.ghost,nal,(na,None),t,new_b),
 		Idset.filter not_free_in_t (Idset.union id_to_exclude id_to_exclude')
 
 	end
@@ -1261,9 +1261,9 @@ let rec rebuild_return_type rt =
 	Constrexpr.CProdN(loc,n,rebuild_return_type t')
     | Constrexpr.CLetIn(loc,na,t,t') ->
 	Constrexpr.CLetIn(loc,na,t,rebuild_return_type t')
-    | _ -> Constrexpr.CProdN(dummy_loc,[[dummy_loc,Names.Anonymous],
+    | _ -> Constrexpr.CProdN(Loc.ghost,[[Loc.ghost,Names.Anonymous],
 				       Constrexpr.Default Decl_kinds.Explicit,rt],
-			    Constrexpr.CSort(dummy_loc,GType None))
+			    Constrexpr.CSort(Loc.ghost,GType None))
 
 
 let do_build_inductive
@@ -1303,12 +1303,12 @@ let do_build_inductive
 	(fun (n,t,is_defined) acc ->
 	   if is_defined
 	   then
-	     Constrexpr.CLetIn(dummy_loc,(dummy_loc, n),Constrextern.extern_glob_constr Idset.empty t,
+	     Constrexpr.CLetIn(Loc.ghost,(Loc.ghost, n),Constrextern.extern_glob_constr Idset.empty t,
 			      acc)
 	   else
 	     Constrexpr.CProdN
-	       (dummy_loc,
-		[[(dummy_loc,n)],Constrexpr_ops.default_binder_kind,Constrextern.extern_glob_constr Idset.empty t],
+	       (Loc.ghost,
+		[[(Loc.ghost,n)],Constrexpr_ops.default_binder_kind,Constrextern.extern_glob_constr Idset.empty t],
 		acc
 	       )
 	)
@@ -1369,12 +1369,12 @@ let do_build_inductive
       (fun (n,t,is_defined) acc ->
 	 if is_defined
 	 then
-	   Constrexpr.CLetIn(dummy_loc,(dummy_loc, n),Constrextern.extern_glob_constr Idset.empty t,
+	   Constrexpr.CLetIn(Loc.ghost,(Loc.ghost, n),Constrextern.extern_glob_constr Idset.empty t,
 			    acc)
 	 else
 	   Constrexpr.CProdN
-	   (dummy_loc,
-	   [[(dummy_loc,n)],Constrexpr_ops.default_binder_kind,Constrextern.extern_glob_constr Idset.empty t],
+	   (Loc.ghost,
+	   [[(Loc.ghost,n)],Constrexpr_ops.default_binder_kind,Constrextern.extern_glob_constr Idset.empty t],
 	    acc
 	   )
       )
@@ -1391,17 +1391,17 @@ let do_build_inductive
       (fun (n,t,is_defined) ->
 	 if is_defined
 	 then
-	   Constrexpr.LocalRawDef((dummy_loc,n), Constrextern.extern_glob_constr Idset.empty t)
+	   Constrexpr.LocalRawDef((Loc.ghost,n), Constrextern.extern_glob_constr Idset.empty t)
 	 else
 	 Constrexpr.LocalRawAssum
-	   ([(dummy_loc,n)], Constrexpr_ops.default_binder_kind, Constrextern.extern_glob_constr Idset.empty t)
+	   ([(Loc.ghost,n)], Constrexpr_ops.default_binder_kind, Constrextern.extern_glob_constr Idset.empty t)
       )
       rels_params
   in
   let ext_rels_constructors =
     Array.map (List.map
       (fun (id,t) ->
-	 false,((dummy_loc,id),
+	 false,((Loc.ghost,id),
 		Flags.with_option
 		  Flags.raw_print
 		  (Constrextern.extern_glob_type Idset.empty) ((* zeta_normalize *) t)
@@ -1410,7 +1410,7 @@ let do_build_inductive
       (rel_constructors)
   in
   let rel_ind i ext_rel_constructors =
-    ((dummy_loc,relnames.(i)),
+    ((Loc.ghost,relnames.(i)),
     rel_params,
     Some rel_arities.(i),
     ext_rel_constructors),[]

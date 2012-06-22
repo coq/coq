@@ -128,8 +128,8 @@ type ltac_call_kind =
   | LtacConstrInterp of glob_constr *
       (extended_patvar_map * (identifier * identifier option) list)
 
-type ltac_trace = (int * loc * ltac_call_kind) list
+type ltac_trace = (int * Loc.t * ltac_call_kind) list
 
-exception LtacLocated of (int * ltac_call_kind * ltac_trace * loc) * exn
+exception LtacLocated of (int * ltac_call_kind * ltac_trace * Loc.t) * exn
 
 val abstract_tactic_box : atomic_tactic_expr option ref ref

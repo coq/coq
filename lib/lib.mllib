@@ -3,6 +3,7 @@ Xml_parser
 Pp_control
 Compat
 Pp
+Loc
 Errors
 Bigint
 Hashcons

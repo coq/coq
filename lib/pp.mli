@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Pp_control
-open Compat
 
 (** Modify pretty printing functions behavior for emacs ouput (special
    chars inserted at some places). This function should called once in
@@ -125,19 +124,6 @@ val msgerr : std_ppcmds -> unit
 val msgerrnl : std_ppcmds -> unit
 val message : string -> unit       (** = pPNL *)
 
-(** {6 Location management. } *)
-
-type loc = Loc.t
-val unloc : loc -> int * int
-val make_loc : int * int -> loc
-val dummy_loc : loc
-val join_loc : loc -> loc -> loc
-
-type 'a located = loc * 'a
-val located_fold_left : ('a -> 'b -> 'a) -> 'a -> 'b located -> 'a
-val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
-val down_located : ('a -> 'b) -> 'a located -> 'b
-
 (** {6 Util copy/paste. } *)
 
 val pr_comma : unit -> std_ppcmds
@@ -163,7 +149,6 @@ val prvecti_with_sep :
    (unit -> std_ppcmds) -> (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
 val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 val pr_enum : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
-val pr_located : ('a -> std_ppcmds) -> 'a located -> std_ppcmds
 val pr_sequence : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
 val surround : std_ppcmds -> std_ppcmds
 

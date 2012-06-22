@@ -22,19 +22,19 @@ val dump_to_dotglob : unit -> unit
 val pause : unit -> unit
 val continue : unit -> unit
 
-val add_glob : Pp.loc -> Globnames.global_reference -> unit
-val add_glob_kn : Pp.loc -> Names.kernel_name -> unit
+val add_glob : Loc.t -> Globnames.global_reference -> unit
+val add_glob_kn : Loc.t -> Names.kernel_name -> unit
 
-val dump_definition : Pp.loc * Names.identifier -> bool -> string -> unit
-val dump_moddef : Pp.loc -> Names.module_path -> string -> unit
-val dump_modref  : Pp.loc -> Names.module_path -> string -> unit
-val dump_reference  : Pp.loc -> string -> string -> string -> unit
-val dump_libref : Pp.loc -> Names.dir_path -> string -> unit
+val dump_definition : Loc.t * Names.identifier -> bool -> string -> unit
+val dump_moddef : Loc.t -> Names.module_path -> string -> unit
+val dump_modref  : Loc.t -> Names.module_path -> string -> unit
+val dump_reference  : Loc.t -> string -> string -> string -> unit
+val dump_libref : Loc.t -> Names.dir_path -> string -> unit
 val dump_notation_location : (int * int) list -> Constrexpr.notation ->
   (Notation.notation_location * Notation_term.scope_name option) -> unit
-val dump_binding : Pp.loc -> Names.Idset.elt -> unit
+val dump_binding : Loc.t -> Names.Idset.elt -> unit
 val dump_notation :
-  Pp.loc * (Constrexpr.notation * Notation.notation_location) ->
+  Loc.t * (Constrexpr.notation * Notation.notation_location) ->
   Notation_term.scope_name option -> bool -> unit
 val dump_constraint :
   Constrexpr.typeclass_constraint -> bool -> string -> unit

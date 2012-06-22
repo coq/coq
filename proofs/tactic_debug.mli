@@ -18,7 +18,7 @@ open Term
    Currently, it is quite simple and we can hope to have, in the future, a more
    complete panel of commands dedicated to a proof assistant framework *)
 
-val set_tactic_printer : (glob_tactic_expr ->Pp.std_ppcmds) -> unit
+val set_tactic_printer : (glob_tactic_expr -> Pp.std_ppcmds) -> unit
 val set_match_pattern_printer :
   (env -> constr_pattern match_pattern -> Pp.std_ppcmds) -> unit
 val set_match_rule_printer :
@@ -78,4 +78,4 @@ val db_logic_failure : debug_info -> exn -> unit
 
 (** Prints a logic failure message for a rule *)
 val db_breakpoint : debug_info ->
-  identifier Pp.located message_token list -> unit
+  identifier Loc.located message_token list -> unit

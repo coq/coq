@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Loc
 open Names
 open Constrexpr
 open Libnames
@@ -19,7 +20,7 @@ open Misctypes
 open Locus
 open Pp
 
-type 'a or_metaid = AI of 'a | MetaId of loc * string
+type 'a or_metaid = AI of 'a | MetaId of Loc.t * string
 
 type direction_flag = bool (* true = Left-to-right    false = right-to-right *)
 type lazy_flag = bool      (* true = lazy             false = eager *)
@@ -154,15 +155,15 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_atomic_tactic_expr =
   | TacInversion of ('constr,'id) inversion_strength * quantified_hypothesis
 
   (* For ML extensions *)
-  | TacExtend of loc * string * 'lev generic_argument list
+  | TacExtend of Loc.t * string * 'lev generic_argument list
 
   (* For syntax extensions *)
-  | TacAlias of loc * string *
+  | TacAlias of Loc.t * string *
       (identifier * 'lev generic_argument) list
       * (dir_path * glob_tactic_expr)
 
 and ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr =
-  | TacAtom of loc * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_atomic_tactic_expr
+  | TacAtom of Loc.t * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_atomic_tactic_expr
   | TacThen of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr *
 	('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr array *
 	('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr *
@@ -193,16 +194,16 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_fun_ast =
 
   (* These are the possible arguments of a tactic definition *)
 and ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg =
-  | TacDynamic     of loc * Dyn.t
+  | TacDynamic     of Loc.t * Dyn.t
   | TacVoid
-  | MetaIdArg      of loc * bool * string
+  | MetaIdArg      of Loc.t * bool * string
   | ConstrMayEval  of ('constr,'cst,'pat) may_eval
   | IntroPattern   of intro_pattern_expr located
   | Reference      of 'ref
   | Integer        of int
-  | TacCall        of loc *
+  | TacCall        of Loc.t *
       'ref * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg list
-  | TacExternal of loc * string * string *
+  | TacExternal of Loc.t * string * string *
       ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg list
   | TacFreshId     of string or_var list
   | Tacexp of 'tac

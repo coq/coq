@@ -37,7 +37,7 @@ type evar_info = {
   evar_hyps : named_context_val;
   evar_body : evar_body;
   evar_filter : bool list;
-  evar_source : Evar_kinds.t located;
+  evar_source : Evar_kinds.t Loc.located;
   evar_candidates : constr list option; (* if not None, list of allowed instances *)
   evar_extra : Store.t }
 
@@ -46,7 +46,7 @@ let make_evar hyps ccl = {
   evar_hyps = hyps;
   evar_body = Evar_empty;
   evar_filter = List.map (fun _ -> true) (named_context_of_val hyps);
-  evar_source = (dummy_loc,Evar_kinds.InternalHole);
+  evar_source = (Loc.ghost,Evar_kinds.InternalHole);
   evar_candidates = None;
   evar_extra = Store.empty
 }
@@ -420,7 +420,7 @@ let define evk body evd =
 	| [] ->  evd.last_mods
         | _ -> ExistentialSet.add evk evd.last_mods }
 
-let evar_declare hyps evk ty ?(src=(dummy_loc,Evar_kinds.InternalHole)) ?filter ?candidates evd =
+let evar_declare hyps evk ty ?(src=(Loc.ghost,Evar_kinds.InternalHole)) ?filter ?candidates evd =
   let filter =
     if filter = None then
       List.map (fun _ -> true) (named_context_of_val hyps)

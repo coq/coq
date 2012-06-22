@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Compat
 open Pp
 open Errors
 open Util
@@ -38,10 +37,10 @@ let abstract_tactic_expr ?(dflt=false) te tacfun gls =
 
 let abstract_tactic ?(dflt=false) te =
   !abstract_tactic_box := Some te;
-  abstract_tactic_expr ~dflt (Tacexpr.TacAtom (dummy_loc,te))
+  abstract_tactic_expr ~dflt (Tacexpr.TacAtom (Loc.ghost,te))
 
 let abstract_extended_tactic ?(dflt=false) s args =
-  abstract_tactic ~dflt (Tacexpr.TacExtend (dummy_loc, s, args))
+  abstract_tactic ~dflt (Tacexpr.TacExtend (Loc.ghost, s, args))
 
 let refiner = function
   | Prim pr ->

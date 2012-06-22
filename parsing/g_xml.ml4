@@ -27,8 +27,8 @@ open Genredexpr
 
 (* Generic xml parser without raw data *)
 
-type attribute = string * (loc * string)
-type xml = XmlTag of loc * string * attribute list * xml list
+type attribute = string * (Loc.t * string)
+type xml = XmlTag of Loc.t * string * attribute list * xml list
 
 let check_tags loc otag ctag =
   if otag <> ctag then

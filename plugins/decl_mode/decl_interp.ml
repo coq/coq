@@ -18,7 +18,6 @@ open Pretyping
 open Glob_term
 open Term
 open Pp
-open Compat
 open Decl_kinds
 open Misctypes
 
@@ -188,16 +187,16 @@ let interp_constr_or_thesis check_sort sigma env = function
 let abstract_one_hyp inject h glob =
   match h with
       Hvar (loc,(id,None)) ->
-	GProd (dummy_loc,Name id, Explicit, GHole (loc,Evar_kinds.BinderType (Name id)), glob)
+	GProd (Loc.ghost,Name id, Explicit, GHole (loc,Evar_kinds.BinderType (Name id)), glob)
     | Hvar (loc,(id,Some typ)) ->
-	GProd (dummy_loc,Name id, Explicit, fst typ, glob)
+	GProd (Loc.ghost,Name id, Explicit, fst typ, glob)
     | Hprop st ->
-	GProd (dummy_loc,st.st_label, Explicit, inject st.st_it, glob)
+	GProd (Loc.ghost,st.st_label, Explicit, inject st.st_it, glob)
 
 let glob_constr_of_hyps inject hyps head =
   List.fold_right (abstract_one_hyp inject) hyps head
 
-let glob_prop = GSort (dummy_loc,GProp)
+let glob_prop = GSort (Loc.ghost,GProp)
 
 let rec match_hyps blend names constr = function
     [] -> [],substl names constr
@@ -245,27 +244,27 @@ let rec glob_of_pat =
 	let mind= fst (Global.lookup_inductive ind) in
 	let rec add_params n q =
 	  if n<=0 then q else
-	    add_params (pred n) (GHole(dummy_loc,
+	    add_params (pred n) (GHole(Loc.ghost,
 				       Evar_kinds.TomatchTypeParameter(ind,n))::q) in
 	    let args = List.map glob_of_pat lpat in
-	      glob_app(loc,GRef(dummy_loc,Globnames.ConstructRef cstr),
+	      glob_app(loc,GRef(Loc.ghost,Globnames.ConstructRef cstr),
 		   add_params mind.Declarations.mind_nparams args)
 
 let prod_one_hyp = function
     (loc,(id,None)) ->
       (fun glob ->
-	 GProd (dummy_loc,Name id, Explicit,
+	 GProd (Loc.ghost,Name id, Explicit,
 		GHole (loc,Evar_kinds.BinderType (Name id)), glob))
   | (loc,(id,Some typ)) ->
       (fun glob ->
-	 GProd (dummy_loc,Name id, Explicit, fst typ, glob))
+	 GProd (Loc.ghost,Name id, Explicit, fst typ, glob))
 
 let prod_one_id (loc,id) glob =
-  GProd (dummy_loc,Name id, Explicit,
+  GProd (Loc.ghost,Name id, Explicit,
 	 GHole (loc,Evar_kinds.BinderType (Name id)), glob)
 
 let let_in_one_alias (id,pat) glob =
-  GLetIn (dummy_loc,Name id, glob_of_pat pat, glob)
+  GLetIn (Loc.ghost,Name id, glob_of_pat pat, glob)
 
 let rec bind_primary_aliases map pat =
   match pat with
@@ -335,7 +334,7 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
 	     (if expected = 0 then str "none" else int expected) ++ spc () ++
 	     str "expected.") in
   let app_ind =
-    let rind = GRef (dummy_loc,Globnames.IndRef pinfo.per_ind) in
+    let rind = GRef (Loc.ghost,Globnames.IndRef pinfo.per_ind) in
     let rparams = List.map detype_ground pinfo.per_params in
     let rparams_rec =
       List.map
@@ -343,18 +342,18 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
 	   GVar (loc,id)) params in
     let dum_args=
       list_tabulate
-	(fun _ -> GHole (dummy_loc,Evar_kinds.QuestionMark (Evar_kinds.Define false)))
+	(fun _ -> GHole (Loc.ghost,Evar_kinds.QuestionMark (Evar_kinds.Define false)))
 	oib.Declarations.mind_nrealargs in
-      glob_app(dummy_loc,rind,rparams@rparams_rec@dum_args) in
+      glob_app(Loc.ghost,rind,rparams@rparams_rec@dum_args) in
   let pat_vars,aliases,patt = interp_pattern env pat in
   let inject = function
-      Thesis (Plain) -> Glob_term.GSort(dummy_loc,GProp)
+      Thesis (Plain) -> Glob_term.GSort(Loc.ghost,GProp)
     | Thesis (For rec_occ) ->
 	if not (List.mem rec_occ pat_vars) then
 	  errorlabstrm "suppose it is"
 	    (str "Variable " ++ Nameops.pr_id rec_occ ++
 	       str " does not occur in pattern.");
-	Glob_term.GSort(dummy_loc,GProp)
+	Glob_term.GSort(Loc.ghost,GProp)
     | This (c,_) -> c in
   let term1 = glob_constr_of_hyps inject hyps glob_prop in
   let loc_ids,npatt =
@@ -362,8 +361,8 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
     let npatt= deanonymize rids patt in
       List.rev (fst !rids),npatt in
   let term2 =
-    GLetIn(dummy_loc,Anonymous,
-	   GCast(dummy_loc,glob_of_pat npatt,
+    GLetIn(Loc.ghost,Anonymous,
+	   GCast(Loc.ghost,glob_of_pat npatt,
 		 CastConv app_ind),term1) in
   let term3=List.fold_right let_in_one_alias aliases term2 in
   let term4=List.fold_right prod_one_id loc_ids term3 in
@@ -418,11 +417,11 @@ let interp_casee sigma env = function
 let abstract_one_arg = function
     (loc,(id,None)) ->
       (fun glob ->
-	 GLambda (dummy_loc,Name id, Explicit,
+	 GLambda (Loc.ghost,Name id, Explicit,
 		GHole (loc,Evar_kinds.BinderType (Name id)), glob))
   | (loc,(id,Some typ)) ->
       (fun glob ->
-	 GLambda (dummy_loc,Name id, Explicit, fst typ, glob))
+	 GLambda (Loc.ghost,Name id, Explicit, fst typ, glob))
 
 let glob_constr_of_fun args body =
   List.fold_right abstract_one_arg args (fst body)

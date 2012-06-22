@@ -87,9 +87,9 @@ let uninterp_positive p =
 let _ = Notation.declare_numeral_interpreter "positive_scope"
   (positive_path,binnums)
   interp_positive
-  ([GRef (dummy_loc, glob_xI);
-    GRef (dummy_loc, glob_xO);
-    GRef (dummy_loc, glob_xH)],
+  ([GRef (Loc.ghost, glob_xI);
+    GRef (Loc.ghost, glob_xO);
+    GRef (Loc.ghost, glob_xH)],
    uninterp_positive,
    true)
 
@@ -138,8 +138,8 @@ let uninterp_n p =
 let _ = Notation.declare_numeral_interpreter "N_scope"
   (n_path,binnums)
   n_of_int
-  ([GRef (dummy_loc, glob_N0);
-    GRef (dummy_loc, glob_Npos)],
+  ([GRef (Loc.ghost, glob_N0);
+    GRef (Loc.ghost, glob_Npos)],
   uninterp_n,
   true)
 
@@ -186,8 +186,8 @@ let uninterp_z p =
 let _ = Notation.declare_numeral_interpreter "Z_scope"
   (z_path,binnums)
   z_of_int
-  ([GRef (dummy_loc, glob_ZERO);
-    GRef (dummy_loc, glob_POS);
-    GRef (dummy_loc, glob_NEG)],
+  ([GRef (Loc.ghost, glob_ZERO);
+    GRef (Loc.ghost, glob_POS);
+    GRef (Loc.ghost, glob_NEG)],
   uninterp_z,
   true)

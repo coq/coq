@@ -1002,12 +1002,12 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
 	     Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
        | Proof_type.LtacAtomCall (te,otac) -> quote
 	   (Pptactic.pr_glob_tactic (Global.env())
-	      (Tacexpr.TacAtom (dummy_loc,te)))
+	      (Tacexpr.TacAtom (Loc.ghost,te)))
 	   ++ (match !otac with
 		 | Some te' when (Obj.magic te' <> te) ->
 		     strbrk " (expanded to " ++ quote
 		       (Pptactic.pr_tactic (Global.env())
-			  (Tacexpr.TacAtom (dummy_loc,te')))
+			  (Tacexpr.TacAtom (Loc.ghost,te')))
 		     ++ str ")"
 		 | _ -> mt ())
        | Proof_type.LtacConstrInterp (c,(vars,unboundvars)) ->

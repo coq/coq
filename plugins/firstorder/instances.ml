@@ -128,7 +128,7 @@ let mk_open_instance id gl m t=
       match t with
 	  GLambda(loc,name,k,_,t0)->
 	    let t1=raux (n-1) t0 in
-	      GLambda(loc,name,k,GHole (dummy_loc,Evar_kinds.BinderType name),t1)
+	      GLambda(loc,name,k,GHole (Loc.ghost,Evar_kinds.BinderType name),t1)
 	| _-> anomaly "can't happen" in
   let ntt=try
     Pretyping.understand evmap env (raux m rawt)

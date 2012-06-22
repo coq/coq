@@ -189,7 +189,7 @@ let simpl_iter clause =
 (* Others ugly things ... *)
 let (value_f:constr list -> global_reference -> constr) =
   fun al fterm ->
-    let d0 = dummy_loc in
+    let d0 = Loc.ghost in
     let rev_x_id_l =
       (
 	List.fold_left
@@ -861,8 +861,8 @@ let rec make_rewrite_list expr_info max = function
 	  general_rewrite_bindings false Locus.AllOccurrences
 	    true (* dep proofs also: *) true 
 	    (mkVar hp,
-	     ExplicitBindings[dummy_loc,NamedHyp def,
-			      expr_info.f_constr;dummy_loc,NamedHyp k,
+	     ExplicitBindings[Loc.ghost,NamedHyp def,
+			      expr_info.f_constr;Loc.ghost,NamedHyp k,
 			      (f_S max)]) false g) )
       )
       [make_rewrite_list expr_info max l;
@@ -888,8 +888,8 @@ let make_rewrite expr_info l hp max =
 	   (general_rewrite_bindings false Locus.AllOccurrences
 	    true (* dep proofs also: *) true 
 	    (mkVar hp,
-	     ExplicitBindings[dummy_loc,NamedHyp def,
-			      expr_info.f_constr;dummy_loc,NamedHyp k,
+	     ExplicitBindings[Loc.ghost,NamedHyp def,
+			      expr_info.f_constr;Loc.ghost,NamedHyp k,
 			      (f_S (f_S max))]) false) g)
        [observe_tac(str "make_rewrite finalize") (
 	 (* tclORELSE( h_reflexivity) *)
@@ -1279,7 +1279,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
     Errors.error "\"abstract\" cannot handle existentials";
   let hook _ _ =
     let opacity =
-      let na_ref = Libnames.Ident (dummy_loc,na) in
+      let na_ref = Libnames.Ident (Loc.ghost,na) in
       let na_global = Nametab.global na_ref in
       match na_global with
 	  ConstRef c -> is_opaque_constant c
@@ -1512,7 +1512,7 @@ let recursive_definition is_mes function_name rec_impls type_of_f r rec_arg_num 
   let hook _ _ = 
     let term_ref = Nametab.locate (qualid_of_ident term_id) in
     let f_ref = declare_f function_name (IsProof Lemma) arg_types term_ref in
-    let _ = Table.extraction_inline true [Ident (dummy_loc,term_id)] in 
+    let _ = Table.extraction_inline true [Ident (Loc.ghost,term_id)] in 
     (*     message "start second proof"; *)
     let stop = 
       try com_eqn (List.length res_vars) equation_id functional_ref f_ref term_ref (subst_var function_name equation_lemma_type);

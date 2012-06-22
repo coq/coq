@@ -51,7 +51,6 @@ open Syntax_def
 open Pretyping
 open Extrawit
 open Pcoq
-open Compat
 open Evd
 open Misctypes
 open Miscops
@@ -95,7 +94,7 @@ type value =
   | VList of value list
   | VRec of (identifier*value) list ref * glob_tactic_expr
 
-let dloc = dummy_loc
+let dloc = Loc.ghost
 
 let catch_error call_trace tac g =
   if call_trace = [] then tac g else try tac g with
@@ -156,7 +155,7 @@ let ((tactic_in : (interp_sign -> glob_tactic_expr) -> Dyn.t),
 let ((value_in : value -> Dyn.t),
      (value_out : Dyn.t -> value)) = Dyn.create "value"
 
-let valueIn t = TacDynamic (dummy_loc,value_in t)
+let valueIn t = TacDynamic (Loc.ghost,value_in t)
 let valueOut = function
   | TacDynamic (_,d) ->
     if (Dyn.tag d) = "value" then
@@ -1547,14 +1546,14 @@ let interp_open_constr_with_bindings ist env sigma (c,bl) =
   sigma, (c, bl)
 
 let loc_of_bindings = function
-| NoBindings -> dummy_loc
+| NoBindings -> Loc.ghost
 | ImplicitBindings l -> loc_of_glob_constr (fst (list_last l))
 | ExplicitBindings l -> pi1 (list_last l)
 
 let interp_open_constr_with_bindings_loc ist env sigma ((c,_),bl as cb) =
   let loc1 = loc_of_glob_constr c in
   let loc2 = loc_of_bindings bl in
-  let loc = if loc2 = dummy_loc then loc1 else join_loc loc1 loc2 in
+  let loc = if loc2 = Loc.ghost then loc1 else Loc.merge loc1 loc2 in
   let sigma, cb = interp_open_constr_with_bindings ist env sigma cb in
   sigma, (loc,cb)
 

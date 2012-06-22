@@ -8,7 +8,7 @@
 
 (** Error report. *)
 
-val print_loc : Pp.loc -> Pp.std_ppcmds
+val print_loc : Loc.t -> Pp.std_ppcmds
 
 (** Pre-explain a vernac interpretation error *)
 

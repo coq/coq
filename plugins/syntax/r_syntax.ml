@@ -118,8 +118,8 @@ let uninterp_r p =
 let _ = Notation.declare_numeral_interpreter "R_scope"
   (r_path,["Coq";"Reals";"Rdefinitions"])
   r_of_int
-  ([GRef(dummy_loc,glob_Ropp);GRef(dummy_loc,glob_R0);
-    GRef(dummy_loc,glob_Rplus);GRef(dummy_loc,glob_Rmult);
-    GRef(dummy_loc,glob_R1)],
+  ([GRef(Loc.ghost,glob_Ropp);GRef(Loc.ghost,glob_R0);
+    GRef(Loc.ghost,glob_Rplus);GRef(Loc.ghost,glob_Rmult);
+    GRef(Loc.ghost,glob_R1)],
     uninterp_r,
     false)

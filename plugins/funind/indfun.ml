@@ -182,7 +182,7 @@ let build_newrecursive l =
        match body_opt with 
 	 | Some body -> 
 	     (fixna,bll,ar,body)
-	 | None -> user_err_loc (dummy_loc,"Function",str "Body of Function must be given")
+	 | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given")
     ) l
   in
   build_newrecursive l'
@@ -321,7 +321,7 @@ let generate_principle  on_error
 	(*i The next call to mk_rel_id is valid since we have just construct the graph
 	   Ensures by : do_built
 	i*)
-	let f_R_mut = Ident (dummy_loc,mk_rel_id (List.nth names 0)) in
+	let f_R_mut = Ident (Loc.ghost,mk_rel_id (List.nth names 0)) in
 	let ind_kn =
 	  fst (locate_with_msg
 		 (pr_reference f_R_mut++str ": Not an inductive type!")
@@ -363,7 +363,7 @@ let generate_principle  on_error
 let register_struct is_rec (fixpoint_exprl:(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list) list) =
   match fixpoint_exprl with
     | [((_,fname),_,bl,ret_type,body),_] when not is_rec ->
-      let body = match body with | Some body -> body | None -> user_err_loc (dummy_loc,"Function",str "Body of Function must be given") in 
+      let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
 	Command.do_definition fname (Decl_kinds.Global,Decl_kinds.Definition)
 	  bl None body (Some ret_type) (fun _ _ -> ())
     | _ ->
@@ -397,8 +397,8 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
   let unbounded_eq =
     let f_app_args =
       Constrexpr.CAppExpl
-	(dummy_loc,
-	 (None,(Ident (dummy_loc,fname))) ,
+	(Loc.ghost,
+	 (None,(Ident (Loc.ghost,fname))) ,
 	 (List.map
 	    (function
 	       | _,Anonymous -> assert false
@@ -408,7 +408,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	 )
 	)
     in
-    Constrexpr.CApp (dummy_loc,(None,Constrexpr_ops.mkRefC (Qualid (dummy_loc,(qualid_of_string "Logic.eq")))),
+    Constrexpr.CApp (Loc.ghost,(None,Constrexpr_ops.mkRefC (Qualid (Loc.ghost,(qualid_of_string "Logic.eq")))),
 		    [(f_app_args,None);(body,None)])
   in
   let eq = Constrexpr_ops.prod_constr_expr unbounded_eq args in
@@ -465,13 +465,13 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
       | None ->
 	  let ltof =
 	    let make_dir l = make_dirpath (List.map id_of_string (List.rev l)) in
-	    Libnames.Qualid (dummy_loc,Libnames.qualid_of_path
+	    Libnames.Qualid (Loc.ghost,Libnames.qualid_of_path
 			       (Libnames.make_path (make_dir ["Arith";"Wf_nat"]) (id_of_string "ltof")))
 	  in
 	  let fun_from_mes =
 	    let applied_mes =
 	      Constrexpr_ops.mkAppC(wf_mes_expr,[Constrexpr_ops.mkIdentC wf_arg])    in
-	    Constrexpr_ops.mkLambdaC ([(dummy_loc,Name wf_arg)],Constrexpr_ops.default_binder_kind,wf_arg_type,applied_mes)
+	    Constrexpr_ops.mkLambdaC ([(Loc.ghost,Name wf_arg)],Constrexpr_ops.default_binder_kind,wf_arg_type,applied_mes)
 	  in
 	  let wf_rel_from_mes =
 	    Constrexpr_ops.mkAppC(Constrexpr_ops.mkRefC  ltof,[wf_arg_type;fun_from_mes])
@@ -482,7 +482,7 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 	    let a = Names.id_of_string "___a" in 
 	    let b = Names.id_of_string "___b" in 
 	    Constrexpr_ops.mkLambdaC(
-	      [dummy_loc,Name a;dummy_loc,Name b],
+	      [Loc.ghost,Name a;Loc.ghost,Name b],
 	      Constrexpr.Default Explicit,
 	      wf_arg_type,
 	      Constrexpr_ops.mkAppC(wf_rel_expr,
@@ -590,12 +590,12 @@ let rec rebuild_bl (aux,assoc) bl typ =
 		(if new_nal' = [] && rest = []
 		 then  typ' 
 		 else if new_nal' = [] 
-		 then CProdN(dummy_loc,rest,typ')
-		 else CProdN(dummy_loc,((new_nal',bk',nal't)::rest),typ'))
+		 then CProdN(Loc.ghost,rest,typ')
+		 else CProdN(Loc.ghost,((new_nal',bk',nal't)::rest),typ'))
 	    else 
 	      let captured_nal,non_captured_nal = list_chop lnal' nal in 
 	      rebuild_nal ((LocalRawAssum(captured_nal,bk,replace_vars_constr_expr assoc nal't)::aux), (make_assoc assoc nal' captured_nal))
-		bk bl' non_captured_nal (lnal - lnal') (CProdN(dummy_loc,rest,typ'))
+		bk bl' non_captured_nal (lnal - lnal') (CProdN(Loc.ghost,rest,typ'))
 	  | _ -> assert false
 
 let rebuild_bl (aux,assoc) bl typ = rebuild_bl (aux,assoc) bl typ
@@ -628,7 +628,7 @@ let do_generate_principle on_error register_built interactive_proof
 	      | _ -> assert false
 	  in 
 	  let fixpoint_exprl = [fixpoint_expr] in 
-	  let body = match body with | Some body -> body | None -> user_err_loc (dummy_loc,"Function",str "Body of Function must be given") in 
+	  let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
 	  let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
 	  let using_lemmas = [] in 
 	  let pre_hook =
@@ -652,7 +652,7 @@ let do_generate_principle on_error register_built interactive_proof
 	  let fixpoint_exprl = [fixpoint_expr] in 
 	  let recdefs,rec_impls = build_newrecursive fixpoint_exprl in
 	  let using_lemmas = [] in
-	  let body = match body with | Some body -> body | None -> user_err_loc (dummy_loc,"Function",str "Body of Function must be given") in 
+	  let body = match body with | Some body -> body | None -> user_err_loc (Loc.ghost,"Function",str "Body of Function must be given") in 
 	  let pre_hook =
 	    generate_principle
 	      on_error
@@ -701,7 +701,7 @@ let rec add_args id new_args b =
   | CRef r ->
       begin      match r with
 	| Libnames.Ident(loc,fname) when fname = id ->
-	    CAppExpl(dummy_loc,(None,r),new_args)
+	    CAppExpl(Loc.ghost,(None,r),new_args)
 	| _ -> b
       end
   | CFix  _  | CCoFix _ -> anomaly "add_args : todo"
@@ -789,7 +789,7 @@ let rec chop_n_arrow n t =
 		      aux (n - nal_l) nal_ta'
 		    else
 		      let new_t' =
-			Constrexpr.CProdN(dummy_loc,
+			Constrexpr.CProdN(Loc.ghost,
 					((snd (list_chop n nal)),k,t'')::nal_ta',t')
 		      in
 		      raise (Stop new_t')
@@ -867,14 +867,14 @@ let make_graph (f_ref:global_reference) =
 			    )
 			in
 			let b' = add_args (snd id) new_args b in
-			(((id, ( Some (dummy_loc,rec_id),CStructRec),nal_tas@bl,t,Some b'),[]):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
+			(((id, ( Some (Loc.ghost,rec_id),CStructRec),nal_tas@bl,t,Some b'),[]):(Vernacexpr.fixpoint_expr * Vernacexpr.decl_notation list))
 		     )
 		     fixexprl
 		 in
 		 l
 	     | _ ->
 		 let id = id_of_label (con_label c) in
-		 [((dummy_loc,id),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
+		 [((Loc.ghost,id),(None,Constrexpr.CStructRec),nal_tas,t,Some b),[]]
 	 in
 	 do_generate_principle error_error false false expr_list;
 	 (* We register the infos *)

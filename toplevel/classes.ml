@@ -69,7 +69,7 @@ let existing_instance glob g =
 let mismatched_params env n m = mismatched_ctx_inst env Parameters n m
 let mismatched_props env n m = mismatched_ctx_inst env Properties n m
 
-type binder_list = (identifier located * bool * constr_expr) list
+type binder_list = (identifier Loc.located * bool * constr_expr) list
 
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 
@@ -135,13 +135,13 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 	  (fun avoid (clname, (id, _, t)) ->
 	    match clname with
 	    | Some (cl, b) ->
-		let t = CHole (Pp.dummy_loc, None) in
+		let t = CHole (Loc.ghost, None) in
 		  t, avoid
 	    | None -> failwith ("new instance: under-applied typeclass"))
 	  cl
     | Explicit -> cl, Idset.empty
   in
-  let tclass = if generalize then CGeneralization (dummy_loc, Implicit, Some AbsPi, tclass) else tclass in
+  let tclass = if generalize then CGeneralization (Loc.ghost, Implicit, Some AbsPi, tclass) else tclass in
   let k, cty, ctx', ctx, len, imps, subst =
     let impls, ((env', ctx), imps) = interp_context_evars evars env ctx in
     let c', imps' = interp_type_evars_impls ~impls ~evdref:evars ~fail_evar:false env' tclass in
@@ -232,7 +232,7 @@ let new_instance ?(abstract=false) ?(global=false) ctx (instid, bk, cl) props
 			   k.cl_projs;
 			 c :: props, rest'
 		     with Not_found ->
-		       (CHole (Pp.dummy_loc, Some Evar_kinds.GoalEvar) :: props), rest
+		       (CHole (Loc.ghost, Some Evar_kinds.GoalEvar) :: props), rest
 		   else props, rest)
 		([], props) k.cl_props
 	    in
@@ -348,6 +348,6 @@ let context l =
 	   match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls
       in
 	Command.declare_assumption false (Local (* global *), Definitional) t
-	  [] impl (* implicit *) None (* inline *) (dummy_loc, id))
+	  [] impl (* implicit *) None (* inline *) (Loc.ghost, id))
   in List.iter fn (List.rev ctx)
        

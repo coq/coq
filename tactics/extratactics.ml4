@@ -22,7 +22,6 @@ open Errors
 open Util
 open Evd
 open Equality
-open Compat
 open Misctypes
 
 (**********************************************************************)
@@ -67,7 +66,7 @@ END
 
 let induction_arg_of_quantified_hyp = function
   | AnonHyp n -> ElimOnAnonHyp n
-  | NamedHyp id -> ElimOnIdent (Pp.dummy_loc,id)
+  | NamedHyp id -> ElimOnIdent (Loc.ghost,id)
 
 (* Versions *_main must come first!! so that "1" is interpreted as a
    ElimOnAnonHyp and not as a "constr", and "id" is interpreted as a
@@ -558,7 +557,7 @@ let subst_var_with_hole occ tid t =
 	   if !occref = 0 then x
            else
 	     (incr locref;
-	      GHole (make_loc (!locref,0),
+	      GHole (Loc.make_loc (!locref,0),
 		     Evar_kinds.QuestionMark(Evar_kinds.Define true))))
         else x
     | c -> map_glob_constr_left_to_right substrec c in
@@ -575,7 +574,7 @@ let subst_hole_with_term occ tc t =
         if !occref = 0 then tc
         else
 	  (incr locref;
-	   GHole (make_loc (!locref,0),
+	   GHole (Loc.make_loc (!locref,0),
 		  Evar_kinds.QuestionMark(Evar_kinds.Define true)))
     | c -> map_glob_constr_left_to_right substrec c
   in
@@ -599,7 +598,7 @@ let hResolve id c occ t gl =
       Pretyping.understand sigma env t_hole
     with 
     | Loc.Exc_located (loc,Pretype_errors.PretypeError (_,_,Pretype_errors.UnsolvableImplicit _)) ->
-        resolve_hole (subst_hole_with_term (fst (unloc loc)) c_raw t_hole)
+        resolve_hole (subst_hole_with_term (fst (Loc.unloc loc)) c_raw t_hole)
   in
   let t_constr = resolve_hole (subst_var_with_hole occ id t_raw) in
   let t_constr_type = Retyping.get_type_of env sigma t_constr in

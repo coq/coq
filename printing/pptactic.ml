@@ -357,7 +357,7 @@ let pr_as_ipat = function
 
 let pr_as_name = function
   | Anonymous -> mt ()
-  | Name id -> str " as " ++ pr_lident (dummy_loc,id)
+  | Name id -> str " as " ++ pr_lident (Loc.ghost,id)
 
 let pr_pose_as_style prc na c =
   spc() ++ prc c ++ pr_as_name na
@@ -479,7 +479,7 @@ let pr_funvar = function
 
 let pr_let_clause k pr (id,(bl,t)) =
   hov 0 (str k ++ pr_lident id ++ prlist pr_funvar bl ++
-         str " :=" ++ brk (1,1) ++ pr (TacArg (dummy_loc,t)))
+         str " :=" ++ brk (1,1) ++ pr (TacArg (Loc.ghost,t)))
 
 let pr_let_clauses recflag pr = function
   | hd::tl ->
@@ -952,7 +952,7 @@ and pr_tacarg = function
       str "external" ++ spc() ++ qs com ++ spc() ++ qs req ++
       spc() ++ prlist_with_sep spc pr_tacarg la
   | (TacCall _|Tacexp _|Integer _) as a ->
-      str "ltac:" ++ pr_tac (latom,E) (TacArg (dummy_loc,a))
+      str "ltac:" ++ pr_tac (latom,E) (TacArg (Loc.ghost,a))
 
 in (pr_tac, pr_match_rule)
 
@@ -961,7 +961,7 @@ let strip_prod_binders_glob_constr n (ty,_) =
     if n=0 then (List.rev acc, (ty,None)) else
       match ty with
           Glob_term.GProd(loc,na,Explicit,a,b) ->
-            strip_ty (([dummy_loc,na],(a,None))::acc) (n-1) b
+            strip_ty (([Loc.ghost,na],(a,None))::acc) (n-1) b
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 
@@ -970,7 +970,7 @@ let strip_prod_binders_constr n ty =
     if n=0 then (List.rev acc, ty) else
       match Term.kind_of_term ty with
           Term.Prod(na,a,b) ->
-            strip_ty (([dummy_loc,na],a)::acc) (n-1) b
+            strip_ty (([Loc.ghost,na],a)::acc) (n-1) b
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 

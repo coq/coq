@@ -21,7 +21,6 @@
 (* Secondary maintenance: collective *)
 
 
-open Compat
 open Pp
 open Errors
 open Util
@@ -74,7 +73,7 @@ let search_guard loc env possible_indexes fixdefs =
     let indexes = Array.of_list (List.map List.hd possible_indexes) in
     let fix = ((indexes, 0),fixdefs) in
     (try check_fix env fix with
-       | e -> if loc = dummy_loc then raise e else Loc.raise loc e);
+       | e -> if loc = Loc.ghost then raise e else Loc.raise loc e);
     indexes
   else
     (* we now search recursively amoungst all combinations *)
@@ -87,7 +86,7 @@ let search_guard loc env possible_indexes fixdefs =
 	    with TypeError _ -> ())
 	 (list_combinations possible_indexes);
        let errmsg = "Cannot guess decreasing argument of fix." in
-       if loc = dummy_loc then error errmsg else
+       if loc = Loc.ghost then error errmsg else
 	 user_err_loc (loc,"search_guard", Pp.str errmsg)
      with Found indexes -> indexes)
 
@@ -428,7 +427,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 	      | _ ->
 		  let hj = pretype empty_tycon env evdref lvar c in
 		    error_cant_apply_not_functional_loc
-		      (join_loc floc argloc) env !evdref
+		      (Loc.merge floc argloc) env !evdref
 	      	      resj [hj]
       in
       let resj = apply_rec env 1 fj candargs args in

@@ -65,7 +65,7 @@ type grammar_constr_prod_item =
        concat with last parsed list if true *)
 
 let make_constr_action
-  (f : loc -> constr_notation_substitution -> constr_expr) pil =
+  (f : Loc.t -> constr_notation_substitution -> constr_expr) pil =
   let rec make (constrs,constrlists,binders as fullsubst) = function
   | [] ->
       Gram.action (fun loc -> f loc fullsubst)
@@ -82,11 +82,11 @@ let make_constr_action
         Gram.action (fun (v:reference) ->
 	  make (CRef v :: constrs, constrlists, binders) tl)
     | ETName ->
-        Gram.action (fun (na:name located) ->
+        Gram.action (fun (na:Loc.t * name) ->
 	  make (constr_expr_of_name na :: constrs, constrlists, binders) tl)
     | ETBigint ->
         Gram.action (fun (v:Bigint.bigint) ->
-	  make (CPrim(dummy_loc,Numeral v) :: constrs, constrlists, binders) tl)
+	  make (CPrim(Loc.ghost,Numeral v) :: constrs, constrlists, binders) tl)
     | ETConstrList (_,n) ->
 	Gram.action (fun (v:constr_expr list) ->
 	  make (constrs, v::constrlists, binders) tl)
@@ -113,7 +113,7 @@ let check_cases_pattern_env loc (env,envlist,hasbinders) =
   else (env,envlist)
 
 let make_cases_pattern_action
-  (f : loc -> cases_pattern_notation_substitution -> cases_pattern_expr) pil =
+  (f : Loc.t -> cases_pattern_notation_substitution -> cases_pattern_expr) pil =
   let rec make (env,envlist,hasbinders as fullenv) = function
   | [] ->
       Gram.action (fun loc -> f loc (check_cases_pattern_env loc fullenv))
@@ -128,13 +128,13 @@ let make_cases_pattern_action
           make (v::env, envlist, hasbinders) tl)
     | ETReference ->
         Gram.action (fun (v:reference) ->
-	  make (CPatAtom (dummy_loc,Some v) :: env, envlist, hasbinders) tl)
+	  make (CPatAtom (Loc.ghost,Some v) :: env, envlist, hasbinders) tl)
     | ETName ->
-        Gram.action (fun (na:name located) ->
+        Gram.action (fun (na:Loc.t * name) ->
 	  make (cases_pattern_expr_of_name na :: env, envlist, hasbinders) tl)
     | ETBigint ->
         Gram.action (fun (v:Bigint.bigint) ->
-	  make (CPatPrim (dummy_loc,Numeral v) :: env, envlist, hasbinders) tl)
+	  make (CPatPrim (Loc.ghost,Numeral v) :: env, envlist, hasbinders) tl)
     | ETConstrList (_,_) ->
         Gram.action  (fun (vl:cases_pattern_expr list) ->
 	  make (env, vl :: envlist, hasbinders) tl)

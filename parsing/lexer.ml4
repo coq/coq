@@ -538,7 +538,7 @@ let loct_add loct i loc = Hashtbl.add loct i loc
 
 let current_location_table = ref (loct_create ())
 
-type location_table = (int, loc) Hashtbl.t
+type location_table = (int, Loc.t) Hashtbl.t
 let location_table () = !current_location_table
 let restore_location_table t = current_location_table := t
 let location_function n = loct_func !current_location_table n
