@@ -329,7 +329,7 @@ let msgerrnl x = msgnl_with !err_ft x
 
 (* Logging management *)
 
-type level =
+type level = Interface.message_level =
 | Debug of string
 | Info
 | Notice

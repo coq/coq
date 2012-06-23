@@ -101,6 +101,13 @@ type coq_info = {
 
 (** * Coq answers to CoqIde *)
 
+type message_level =
+| Debug of string
+| Info
+| Notice
+| Warning
+| Error
+
 type location = (int * int) option (* start and end of the error *)
 
 type 'a value =

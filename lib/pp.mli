@@ -79,14 +79,7 @@ val tclose : unit -> std_ppcmds
 
 (** {6 Sending messages to the user } *)
 
-type level =
-| Debug of string
-| Info
-| Notice
-| Warning
-| Error
-
-type logger = level -> std_ppcmds -> unit
+type logger = Interface.message_level -> std_ppcmds -> unit
 
 val msg_info : std_ppcmds -> unit
 (** Message that displays information, usually in verbose mode, such as [Foobar
