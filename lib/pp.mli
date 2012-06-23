@@ -20,7 +20,7 @@ type ppcmd
 
 type std_ppcmds = ppcmd Stream.t
 
-(** {6 Formatting commands. } *)
+(** {6 Formatting commands} *)
 
 val str  : string -> std_ppcmds
 val stras : int * string -> std_ppcmds
@@ -40,11 +40,11 @@ val comments : ((int * int) * string) list ref
 
 val (++) : std_ppcmds -> std_ppcmds -> std_ppcmds
 
-(** {6 Evaluation. } *)
+(** {6 Evaluation} *)
 
 val eval_ppcmds : std_ppcmds -> std_ppcmds
 
-(** {6 Derived commands. } *)
+(** {6 Derived commands} *)
 
 val spc : unit -> std_ppcmds
 val cut : unit -> std_ppcmds
@@ -59,7 +59,7 @@ val strbrk : string -> std_ppcmds
 
 val xmlescape : ppcmd -> ppcmd
 
-(** {6 Boxing commands. } *)
+(** {6 Boxing commands} *)
 
 val h : int -> std_ppcmds -> std_ppcmds
 val v : int -> std_ppcmds -> std_ppcmds
@@ -67,7 +67,7 @@ val hv : int -> std_ppcmds -> std_ppcmds
 val hov : int -> std_ppcmds -> std_ppcmds
 val t : std_ppcmds -> std_ppcmds
 
-(** {6 Opening and closing of boxes. } *)
+(** {6 Opening and closing of boxes} *)
 
 val hb : int -> std_ppcmds
 val vb : int -> std_ppcmds
@@ -77,7 +77,7 @@ val tb : unit -> std_ppcmds
 val close : unit -> std_ppcmds
 val tclose : unit -> std_ppcmds
 
-(** {6 Sending messages to the user } *)
+(** {6 Sending messages to the user} *)
 
 type logger = Interface.message_level -> std_ppcmds -> unit
 
@@ -108,42 +108,68 @@ val set_logger : logger -> unit
 
 val string_of_ppcmds : std_ppcmds -> string
 
-(** {6 Deprecated functions} *)
-
-(** DEPRECATED. Do not use in newly written code. *)
-val msg : std_ppcmds -> unit
-val msgnl : std_ppcmds -> unit
-val msgerr : std_ppcmds -> unit
-val msgerrnl : std_ppcmds -> unit
-val message : string -> unit       (** = pPNL *)
-
-(** {6 Util copy/paste. } *)
+(** {6 Printing combinators} *)
 
 val pr_comma : unit -> std_ppcmds
+(** Well-spaced comma. *)
+
 val pr_semicolon : unit -> std_ppcmds
+(** Well-spaced semicolon. *)
+
 val pr_bar : unit -> std_ppcmds
+(** Well-spaced pipe bar. *)
+
 val pr_arg : ('a -> std_ppcmds) -> 'a -> std_ppcmds
+(** Adds a space in front of its argument. *)
+
 val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
+(** Inner object preceded with a space if [Some], nothing otherwise. *)
+
 val pr_opt_no_spc : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
+(** Same as [pr_opt] but without the leading space. *)
+
 val pr_nth : int -> std_ppcmds
+(** Ordinal number with the correct suffix (i.e. "st", "nd", "th", etc.). *)
 
 val prlist : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+(** Concatenation of the list contents, without any separator.
 
-(** unlike all other functions below, [prlist] works lazily.
-   if a strict behavior is needed, use [prlist_strict] instead. *)
+    Unlike all other functions below, [prlist] works lazily. If a strict 
+    behavior is needed, use [prlist_strict] instead. *)
+
 val prlist_strict :  ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+(** Same as [prlist], but strict. *)
+
 val prlist_with_sep :
-   (unit -> std_ppcmds) -> ('b -> std_ppcmds) -> 'b list -> std_ppcmds
+   (unit -> std_ppcmds) -> ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+(** [prlist_with_sep sep pr [a ; ... ; c]] outputs
+    [pr a ++ sep() ++ ... ++ sep() ++ pr c]. *)
+
 val prvect : ('a -> std_ppcmds) -> 'a array -> std_ppcmds
+(** As [prlist], but on arrays. *)
+
 val prvecti : (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
+(** Indexed version of [prvect]. *)
+
 val prvect_with_sep :
    (unit -> std_ppcmds) -> ('a -> std_ppcmds) -> 'a array -> std_ppcmds
+(** As [prlist_with_sep], but on arrays. *)
+
 val prvecti_with_sep :
    (unit -> std_ppcmds) -> (int -> 'a -> std_ppcmds) -> 'a array -> std_ppcmds
-val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
+(** Indexed version of [prvect_with_sep]. *)
+
 val pr_enum : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+(** [pr_enum pr [a ; b ; ... ; c]] outputs
+    [pr a ++ str "," ++ pr b ++ str "," ++ ... ++ str "and" ++ pr c]. *)
+
 val pr_sequence : ('a -> std_ppcmds) -> 'a list -> std_ppcmds
+(** Sequence of objects separated by space (unless an element is empty). *)
+
 val surround : std_ppcmds -> std_ppcmds
+(** Surround with parenthesis. *)
+
+val pr_vertical_list : ('b -> std_ppcmds) -> 'b list -> std_ppcmds
 
 (** {6 Low-level pretty-printing functions {% \emph{%}without flush{% }%}. } *)
 
@@ -164,6 +190,14 @@ val pperr_flush : unit -> unit
 val pp_flush : unit -> unit
 val flush_all: unit -> unit
 
-(** {6 Low-level pretty-printing functions {% \emph{%}with flush{% }%}. } *)
+(** {6 Deprecated functions} *)
+
+(** DEPRECATED. Do not use in newly written code. *)
 
 val msg_with : Format.formatter -> std_ppcmds -> unit
+
+val msg : std_ppcmds -> unit
+val msgnl : std_ppcmds -> unit
+val msgerr : std_ppcmds -> unit
+val msgerrnl : std_ppcmds -> unit
+val message : string -> unit       (** = pPNL *)
