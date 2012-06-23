@@ -85,7 +85,7 @@ val is_closed : coqtop -> bool
 val killer : (int -> unit) ref
 val interrupter : (int -> unit) ref
 
-(** * Calls to Coqtop, cf [Ide_intf] for more details *)
+(** * Calls to Coqtop, cf [Serialize] for more details *)
 
 val interp :
   handle -> ?raw:bool -> ?verbose:bool -> string -> string Interface.value

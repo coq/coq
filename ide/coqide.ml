@@ -626,38 +626,27 @@ object(self)
         (b#place_cursor start;
          self#recenter_insert)
 
-  val mutable full_goal_done = true
-
   method show_goals handle =
-    if not full_goal_done then
-      proof_view#buffer#set_text "";
-    begin
-      let menu_callback = if current.contextual_menus_on_goal then
-          (fun s () -> ignore (self#insert_this_phrase_on_success handle
-                                 true true ("progress "^s) s))
-        else
-          (fun _ _ -> ()) in
-      try
-        begin match Coq.goals handle with
-          | Interface.Fail (l, str) ->
-            self#set_message ("Error in coqtop :\n"^str)
-          | Interface.Good goals ->
-            begin match Coq.evars handle with
-            | Interface.Fail (l, str) ->
-              self#set_message ("Error in coqtop :\n"^str)
-            | Interface.Good evs ->
-              let hints = match Coq.hints handle with
-              | Interface.Fail (_, _) -> None
-              | Interface.Good hints -> hints
-              in
-              Ideproof.display
-                (Ideproof.mode_tactic menu_callback)
-                proof_view goals hints evs
-            end
-        end
-      with
-        | e -> Minilib.log (Printexc.to_string e)
-    end
+    let menu_callback s () =
+      if current.contextual_menus_on_goal then
+        ignore (self#insert_this_phrase_on_success handle
+                                true true ("progress "^s) s)
+    in
+    match Coq.goals handle with
+    | Interface.Fail (l, str) ->
+      self#set_message ("Error in coqtop :\n"^str)
+    | Interface.Good goals ->
+      begin match Coq.evars handle with
+      | Interface.Fail (l, str) ->
+        self#set_message ("Error in coqtop :\n"^str)
+      | Interface.Good evs ->
+        let hints = match Coq.hints handle with
+        | Interface.Fail (_, _) -> None
+        | Interface.Good hints -> hints
+        in
+        Ideproof.display (Ideproof.mode_tactic menu_callback)
+          proof_view goals hints evs
+      end
 
   method private send_to_coq handle verbose phrase show_output show_error =
     let display_output msg =
@@ -670,10 +659,7 @@ object(self)
           self#insert_message s;
         end
       end in
-      full_goal_done <- false;
       Minilib.log "Send_to_coq starting now";
-      (* It's important here to work with [ct] and not [!mycoqtop], otherwise
-         we could miss a restart of coqtop and continue sending it orders. *)
       match Coq.interp handle ~verbose phrase with
         | Interface.Fail (l,str) -> sync display_error (l,str); None
         | Interface.Good msg -> sync display_output msg; Some Safe
@@ -688,12 +674,9 @@ object(self)
         flash_info "This error is so nasty that I can't even display it."
       else self#insert_message s;
     in
-    try
-      match Coq.interp handle ~raw:true ~verbose:false phrase with
-      | Interface.Fail (_, err) -> sync display_error err
-      | Interface.Good msg -> sync self#insert_message msg
-    with
-    | e -> sync display_error (Printexc.to_string e)
+    match Coq.interp handle ~raw:true ~verbose:false phrase with
+    | Interface.Fail (_, err) -> sync display_error err
+    | Interface.Good msg -> sync self#insert_message msg
 
   method private find_phrase_starting_at (start:GText.iter) =
     try
@@ -916,7 +899,6 @@ object(self)
   (* backtrack Coq to the phrase preceding iterator [i] *)
   method private backtrack_to_no_lock handle i =
     Minilib.log "Backtracking_to iter starts now.";
-    full_goal_done <- false;
     (* pop Coq commands until we reach iterator [i] *)
     let rec n_step n =
       if Stack.is_empty cmd_stack then n else
@@ -930,24 +912,23 @@ object(self)
 	  else n_step (succ n)
 	end
     in
-    begin
-      try
-	self#do_backtrack handle (fun _ -> ()) (n_step 0);
-	(* We may have backtracked too much: let's replay *)
-	self#process_until_iter_or_error handle i
-      with _ ->
-        push_info
-	  ("WARNING: undo failed badly.\n" ^
-	   "Coq might be in an inconsistent state.\n" ^
-	   "Please restart and report.");
-    end
+    self#do_backtrack handle (fun _ -> ()) (n_step 0);
+    (* We may have backtracked too much: let's replay *)
+    self#process_until_iter_or_error handle i
 
   method private backtrack_to handle i =
-    if Mutex.try_lock coq_may_stop then
-      (push_info "Undoing...";
-       self#backtrack_to_no_lock handle i; Mutex.unlock coq_may_stop;
-       pop_info ())
-    else Minilib.log "backtrack_to : discarded (lock is busy)"
+    if Mutex.try_lock coq_may_stop then begin
+      push_info "Undoing...";
+      (* A bit hackish; may deserve a FIXME *)
+      let err =
+        try self#backtrack_to_no_lock handle i; None
+        with err -> Some err
+      in
+      Mutex.unlock coq_may_stop;
+      pop_info ();
+      match err with None -> () | Some e -> raise e
+    end else
+      Minilib.log "backtrack_to : discarded (lock is busy)"
 
   method go_to_insert handle =
     let point = self#get_insert in
@@ -956,7 +937,6 @@ object(self)
     else self#backtrack_to handle point
 
   method undo_last_step handle =
-    full_goal_done <- false;
     if Mutex.try_lock coq_may_stop then
       (push_info "Undoing last step...";
        (try
@@ -1830,13 +1810,13 @@ let main files =
     ~callback:(fun _ -> do_if_active (fun handle a -> a#tactic_wizard handle [s]) ()) in
   let query_callback command _ =
     let word = get_current_word () in
+    let term = session_notebook#current_term in
+    let f query handle = term.analyzed_view#raw_coq_query handle query in
     if not (word = "") then
-      let term = session_notebook#current_term in
       let query = command ^ " " ^ word ^ "." in
       term.message_view#buffer#set_text "";
-      Coq.try_grab term.toplvl
-        (fun handle -> term.analyzed_view#raw_coq_query handle query)
-        ignore
+      try Coq.try_grab term.toplvl (f query) ignore
+      with e -> term.message_view#buffer#set_text (Printexc.to_string e)
   in
   let query_shortcut s accel =
     GAction.add_action s ~label:("_"^s) ?accel ~callback:(query_callback s)
