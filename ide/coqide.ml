@@ -846,6 +846,7 @@ object(self)
     self#undo_command_stack handle to_undo;
     input_view#set_editable true;
     pop_info ();
+    finish ()
 
   method private backtrack_to_iter handle iter =
     let until _ _ _ stop = iter#compare stop >= 0 in
