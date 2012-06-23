@@ -57,7 +57,7 @@ object
   method set_message : string -> unit
   method raw_coq_query : Coq.handle -> string -> unit
   method show_goals : Coq.handle -> unit
-  method undo_last_step : Coq.handle -> unit
+  method backtrack_last_phrase : Coq.handle -> unit
   method help_for_keyword : unit -> unit
 end
 
@@ -444,9 +444,6 @@ object(self)
   val cmd_stack = Stack.create ()
   val mycoqtop = _ct
 
-  (* To prevent Coq from interrupting during undoing...*)
-  val coq_may_stop = Mutex.create ()
-
   val mutable filename = _fn
   val mutable stats = None
   val mutable last_modification_time = 0.
@@ -764,7 +761,8 @@ object(self)
     input_buffer#place_cursor ~where:start;
     self#set_message msg
 
-  method private process_until until handle verbose =
+  (** Compute the phrases until [until] returns [true]. *)
+  method private process_until until finish handle verbose =
     let queue = Queue.create () in
     (* Lock everything and fill the waiting queue *)
     push_info "Coq is computing";
@@ -781,32 +779,92 @@ object(self)
     | None ->
       let msg = try List.hd msg with _ -> "" in
       if verbose then self#set_message msg;
-      input_buffer#place_cursor self#get_start_of_input;
+      finish ();
       self#recenter_insert
     | Some (phrase, loc, msg) ->
       self#show_error phrase loc msg
 
   method process_next_phrase handle verbose =
     let until len start stop = 1 <= len in
-    self#process_until until handle verbose
+    let finish () = input_buffer#place_cursor self#get_start_of_input in
+    self#process_until until finish handle verbose
 
-  method private process_until_iter_or_error handle iter =
+  method private process_until_iter handle iter =
     let until len start stop =
       if current.stop_before then stop#compare iter > 0
       else start#compare iter >= 0
     in
-    self#process_until until handle false
-(* FIXME: restore the stop_before mechanism
-    let get_current () =
-      if current.stop_before then
-        match self#find_phrase_starting_at self#get_start_of_input with
-          | None -> self#get_start_of_input
-          | Some (_, stop2) -> stop2
-      else begin
-        self#get_start_of_input
-      end
+    let finish () = () in
+    self#process_until until finish handle false
+
+  method process_until_end_or_error handle =
+    self#process_until_iter handle input_buffer#end_iter
+
+  (** Clear the command stack until [until] returns [true]. Returns the number
+      of commands sent to Coqtop to backtrack. *)
+  method private clear_command_stack until =
+    let rec loop len real_len =
+      if Stack.is_empty cmd_stack then real_len
+      else
+        let phrase = Stack.top cmd_stack in
+        let is_comment = List.mem `COMMENT phrase.flags in
+        let start = input_buffer#get_iter_at_mark phrase.start in
+        let stop = input_buffer#get_iter_at_mark phrase.stop in
+        if not (until len real_len start stop) then begin
+          (* [until] has not been reached, so we clear this command *)
+          ignore (Stack.pop cmd_stack);
+          input_buffer#remove_tag Tags.Script.processed ~start ~stop;
+          input_buffer#remove_tag Tags.Script.unjustified ~start ~stop;
+          input_buffer#move_mark ~where:start (`NAME "start_of_input");
+          input_buffer#delete_mark phrase.start;
+          input_buffer#delete_mark phrase.stop;
+          loop (succ len) (if is_comment then real_len else succ real_len)
+        end else
+          real_len
     in
-*)
+    loop 0 0
+
+  (** Actually performs the undoing *)
+  method private undo_command_stack handle n =
+    match Coq.rewind handle n with
+    | Interface.Good n ->
+      let until _ len _ _ = n <= len in
+      (* Coqtop requested [n] more ACTUAL backtrack *)
+      ignore (self#clear_command_stack until)
+    | Interface.Fail (l, str) ->
+      self#set_message
+        ("Error while backtracking: " ^ str ^
+          "\nCoqIDE and coqtop may be out of sync, you may want to use Restart.")
+
+  (** Wrapper around the raw undo command *)
+  method private backtrack_until until finish handle =
+    push_info "Coq is undoing";
+    self#clear_message;
+    (* Lock everything *)
+    input_view#set_editable false;
+    let to_undo = self#clear_command_stack until in
+    self#undo_command_stack handle to_undo;
+    input_view#set_editable true;
+    pop_info ();
+
+  method private backtrack_to_iter handle iter =
+    let until _ _ _ stop = iter#compare stop >= 0 in
+    let finish () = () in
+    self#backtrack_until until finish handle;
+    (* We may have backtracked too much: let's replay *)
+    self#process_until_iter handle iter
+
+  method backtrack_last_phrase handle =
+    let until len _ _ _ = 1 <= len in
+    let finish () = input_buffer#place_cursor self#get_start_of_input in
+    self#backtrack_until until finish handle;
+    self#show_goals handle
+
+  method go_to_insert handle =
+    let point = self#get_insert in
+    if point#compare self#get_start_of_input >= 0
+    then self#process_until_iter handle point
+    else self#backtrack_to_iter handle point
 
   method private insert_this_phrase_on_success handle
     show_output show_msg coqphrase insertphrase =
@@ -834,13 +892,14 @@ object(self)
       sync (fun _ -> self#insert_message ("Unsuccessfully tried: "^coqphrase)) ();
       false
 
-  method process_until_end_or_error handle =
-      self#process_until_iter_or_error handle input_buffer#end_iter
-
   method private generic_reset_initial handle =
     let start = input_buffer#start_iter in
     (* clear the stack *)
-    Stack.clear cmd_stack;
+    while not (Stack.is_empty cmd_stack) do
+      let phrase = Stack.pop cmd_stack in
+      input_buffer#delete_mark phrase.start;
+      input_buffer#delete_mark phrase.stop
+    done;
     (* reset the buffer *)
     input_buffer#move_mark ~where:start (`NAME "start_of_input");
     input_buffer#remove_tag Tags.Script.processed start input_buffer#end_iter;
@@ -860,101 +919,6 @@ object(self)
 
   method requested_reset_initial handle =
     self#generic_reset_initial handle
-
-  (* Internal method for dialoging with coqtop about a backtrack.
-     The ide's cmd_stack has already been cleared up to the desired point.
-     The [finish] function is used to handle minor differences between
-     [go_to_insert] and [undo_last_step] *)
-
-  method private do_backtrack handle finish n =
-    (* pop n more commands if coqtop has said so (e.g. for undoing a proof) *)
-    let rec n_pop n =
-      if n = 0 then ()
-      else
-	let phrase = Stack.pop cmd_stack in
-	let stop = input_buffer#get_iter_at_mark phrase.stop in
-        if stop#backward_char#has_tag Tags.Script.comment_sentence
-	  then n_pop n
-	  else n_pop (pred n)
-    in
-    match Coq.rewind handle n with
-      | Interface.Good n ->
-	n_pop n;
-        sync (fun _ ->
-          let start =
-            if Stack.is_empty cmd_stack then input_buffer#start_iter
-            else input_buffer#get_iter_at_mark (Stack.top cmd_stack).stop in
-	  let stop = self#get_start_of_input in
-          input_buffer#remove_tag Tags.Script.processed ~start ~stop;
-          input_buffer#remove_tag Tags.Script.unjustified ~start ~stop;
-          input_buffer#move_mark ~where:start (`NAME "start_of_input");
-          self#show_goals handle;
-          self#clear_message;
-          finish start) ()
-      | Interface.Fail (l,str) ->
-        sync self#set_message
-          ("Error while backtracking :\n" ^ str ^ "\n" ^
-	   "CoqIDE and coqtop may be out of sync, you may want to use Restart.")
-
-  (* backtrack Coq to the phrase preceding iterator [i] *)
-  method private backtrack_to_no_lock handle i =
-    Minilib.log "Backtracking_to iter starts now.";
-    (* pop Coq commands until we reach iterator [i] *)
-    let rec n_step n =
-      if Stack.is_empty cmd_stack then n else
-        let phrase = Stack.top cmd_stack in
-	let stop = input_buffer#get_iter_at_mark phrase.stop in
-        if i#compare stop >= 0 then n
-	else begin
-	  ignore (Stack.pop cmd_stack);
-          if stop#backward_char#has_tag Tags.Script.comment_sentence
-	  then n_step n
-	  else n_step (succ n)
-	end
-    in
-    self#do_backtrack handle (fun _ -> ()) (n_step 0);
-    (* We may have backtracked too much: let's replay *)
-    self#process_until_iter_or_error handle i
-
-  method private backtrack_to handle i =
-    if Mutex.try_lock coq_may_stop then begin
-      push_info "Undoing...";
-      (* A bit hackish; may deserve a FIXME *)
-      let err =
-        try self#backtrack_to_no_lock handle i; None
-        with err -> Some err
-      in
-      Mutex.unlock coq_may_stop;
-      pop_info ();
-      match err with None -> () | Some e -> raise e
-    end else
-      Minilib.log "backtrack_to : discarded (lock is busy)"
-
-  method go_to_insert handle =
-    let point = self#get_insert in
-    if point#compare self#get_start_of_input>=0
-    then self#process_until_iter_or_error handle point
-    else self#backtrack_to handle point
-
-  method undo_last_step handle =
-    if Mutex.try_lock coq_may_stop then
-      (push_info "Undoing last step...";
-       (try
-          let phrase = Stack.pop cmd_stack in
-	  let stop = input_buffer#get_iter_at_mark phrase.stop in
-	  let count =
-	    if stop#backward_char#has_tag Tags.Script.comment_sentence then 0 else 1
-	  in
-	  let finish where =
-	    input_buffer#place_cursor ~where;
-	    self#recenter_insert;
-	  in
-	  self#do_backtrack handle finish count
-        with Stack.Empty -> ()
-       );
-       pop_info ();
-       Mutex.unlock coq_may_stop)
-    else Minilib.log "undo_last_step discarded"
 
   method tactic_wizard handle l =
     async(fun _ -> self#clear_message) ();
@@ -1945,7 +1909,7 @@ let main files =
 	~callback:(fun _ -> do_or_activate (fun handle a -> a#process_next_phrase handle true) ())
 	~tooltip:"Forward one command" ~accel:(current.modifier_for_navigation^"Down");
       GAction.add_action "Backward" ~label:"_Backward" ~stock:`GO_UP
-	~callback:(fun _ -> do_or_activate (fun handle a -> a#undo_last_step handle) ())
+	~callback:(fun _ -> do_or_activate (fun handle a -> a#backtrack_last_phrase handle) ())
 	~tooltip:"Backward one command" ~accel:(current.modifier_for_navigation^"Up");
       GAction.add_action "Go to" ~label:"_Go to" ~stock:`JUMP_TO
 	~callback:(fun _ -> do_or_activate (fun handle a -> a#go_to_insert handle) ())
