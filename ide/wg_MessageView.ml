@@ -16,7 +16,10 @@ class type message_view =
 
 let message_view () : message_view =
   let buffer = GText.buffer ~tag_table:Tags.Message.table () in
-  let view = GText.view ~buffer ~editable:false ~wrap_mode:`WORD () in
+  let view = GText.view ~buffer
+    ~editable:false ~cursor_visible:false ~wrap_mode:`WORD ()
+  in
+  let () = view#set_left_margin 2 in
   object
     inherit GObj.widget view#as_widget
 

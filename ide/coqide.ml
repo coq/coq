@@ -1089,7 +1089,7 @@ let create_session file =
   let proof =
     GText.view
       ~buffer:(GText.buffer ~tag_table:Tags.Proof.table ())
-      ~editable:false ~wrap_mode:`CHAR () in
+      ~editable:false ~wrap_mode:`WORD () in
   let message = Wg_MessageView.message_view () in
   let basename = GMisc.label ~text:(match file with
 				      |None -> "*scratch*"
