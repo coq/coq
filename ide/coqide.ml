@@ -41,7 +41,6 @@ object
   method auto_save : unit
   method save : string -> bool
   method save_as : string -> bool
-  method clear_message : unit
   method get_insert : GText.iter
   method get_start_of_input : GText.iter
   method go_to_insert : Coq.handle -> unit
@@ -66,7 +65,7 @@ type viewable_script = {
   script : Wg_ScriptView.script_view;
   tab_label : GMisc.label;
   proof_view : GText.view;
-  message_view : GText.view;
+  message_view : Wg_MessageView.message_view;
   analyzed_view : _analyzed_view;
   toplvl : Coq.coqtop;
   command : Wg_Command.command_window;
@@ -433,14 +432,14 @@ let toggle_proof_visibility (buffer:GText.buffer) (cursor:GText.iter) =
 let custom_project_files = ref []
 let sup_args = ref []
 
-class analyzed_view (_script:Wg_ScriptView.script_view) (_pv:GText.view) (_mv:GText.view) _ct _fn =
+class analyzed_view (_script:Wg_ScriptView.script_view)
+  (_pv:GText.view) (_mv:Wg_MessageView.message_view) _ct _fn =
 object(self)
   val input_view = _script
   val input_buffer = _script#source_buffer
   val proof_view = _pv
   val proof_buffer = _pv#buffer
   val message_view = _mv
-  val message_buffer = _mv#buffer
   val cmd_stack = Stack.create ()
   val mycoqtop = _ct
 
@@ -572,14 +571,11 @@ object(self)
     else self#save f
 
   method insert_message s =
-    message_buffer#insert s;
-    message_view#misc#draw None
+    message_view#push Interface.Notice s
 
   method set_message s =
-    message_buffer#set_text s;
-    message_view#misc#draw None
-
-  method clear_message = message_buffer#set_text ""
+    message_view#clear ();
+    message_view#push Interface.Notice s
 
   method get_start_of_input =  input_buffer#get_iter_at_mark (`NAME "start_of_input")
 
@@ -752,21 +748,24 @@ object(self)
     (!info, !error)
 
   method private show_error phrase loc msg = match loc with
-  | None -> self#set_message msg
+  | None ->
+    message_view#clear ();
+    message_view#push Interface.Error msg
   | Some (start, stop) ->
     let soi = self#get_start_of_input in
     let start = soi#forward_chars (byte_offset_to_char_offset phrase start) in
     let stop = soi#forward_chars (byte_offset_to_char_offset phrase stop) in
     input_buffer#apply_tag Tags.Script.error ~start ~stop;
     input_buffer#place_cursor ~where:start;
-    self#set_message msg
+    message_view#clear ();
+    message_view#push Interface.Error msg
 
   (** Compute the phrases until [until] returns [true]. *)
   method private process_until until finish handle verbose =
     let queue = Queue.create () in
     (* Lock everything and fill the waiting queue *)
     push_info "Coq is computing";
-    self#clear_message;
+    message_view#clear ();
     input_view#set_editable false;
     self#fill_command_queue until queue;
     (* Now unlock and process asynchronously *)
@@ -839,7 +838,7 @@ object(self)
   (** Wrapper around the raw undo command *)
   method private backtrack_until until finish handle =
     push_info "Coq is undoing";
-    self#clear_message;
+    message_view#clear ();
     (* Lock everything *)
     input_view#set_editable false;
     let to_undo = self#clear_command_stack until in
@@ -908,7 +907,7 @@ object(self)
     input_buffer#remove_tag Tags.Script.to_process start input_buffer#end_iter;
     tag_on_insert (input_buffer :> GText.buffer);
     (* clear the views *)
-    self#clear_message;
+    message_view#clear ();
     proof_buffer#set_text "";
     (* apply the initial commands to coq *)
     self#include_file_dir_in_path handle;
@@ -922,7 +921,7 @@ object(self)
     self#generic_reset_initial handle
 
   method tactic_wizard handle l =
-    async(fun _ -> self#clear_message) ();
+    async message_view#clear ();
     ignore
       (List.exists
          (fun p ->
@@ -980,12 +979,6 @@ object(self)
   untagged and then retagged. *)
 
   initializer
-    ignore (message_buffer#connect#insert_text
-              ~callback:(fun it s -> ignore
-                (message_view#scroll_to_mark
-                   ~use_align:false
-                   ~within_margin:0.49
-                   `INSERT)));
     ignore (input_buffer#connect#insert_text
               ~callback:(fun it s ->
                 if (it#compare self#get_start_of_input)<0
@@ -1032,7 +1025,7 @@ object(self)
     );
     ignore (input_buffer#add_selection_clipboard cb);
     ignore (proof_buffer#add_selection_clipboard cb);
-    ignore (message_buffer#add_selection_clipboard cb);
+    ignore (message_view#add_selection_clipboard cb);
     ignore (input_buffer#connect#after#mark_set
               ~callback:(fun it (m:Gtk.text_mark) ->
                 !set_location
@@ -1097,10 +1090,7 @@ let create_session file =
     GText.view
       ~buffer:(GText.buffer ~tag_table:Tags.Proof.table ())
       ~editable:false ~wrap_mode:`CHAR () in
-  let message =
-    GText.view
-      ~buffer:(GText.buffer ~tag_table:Tags.Message.table ())
-      ~editable:false ~wrap_mode:`WORD () in
+  let message = Wg_MessageView.message_view () in
   let basename = GMisc.label ~text:(match file with
 				      |None -> "*scratch*"
 				      |Some f -> (Glib.Convert.filename_to_utf8 (Filename.basename f))
@@ -1554,11 +1544,15 @@ let main files =
   let get_active_view_for_cp () =
     let has_sel (i0,i1) = i0#compare i1 <> 0 in
     let current = session_notebook#current_term in
-    if has_sel current.script#buffer#selection_bounds
-    then current.script#as_view
-    else if has_sel current.proof_view#buffer#selection_bounds
-    then current.proof_view#as_view
-    else current.message_view#as_view
+    let obj =
+      if has_sel current.script#buffer#selection_bounds
+        then current.script#as_widget
+        else if has_sel current.proof_view#buffer#selection_bounds
+          then current.proof_view#as_widget
+          else current.message_view#as_widget
+    in
+    (* This object will receive a copy/paste signal *)
+    Gobject.unsafe_cast obj
   in
 
 (* begin Preferences *)
@@ -1779,9 +1773,9 @@ let main files =
     let f query handle = term.analyzed_view#raw_coq_query handle query in
     if not (word = "") then
       let query = command ^ " " ^ word ^ "." in
-      term.message_view#buffer#set_text "";
+      term.message_view#clear ();
       try Coq.try_grab term.toplvl (f query) ignore
-      with e -> term.message_view#buffer#set_text (Printexc.to_string e)
+      with e -> term.message_view#push Interface.Error (Printexc.to_string e)
   in
   let query_shortcut s accel =
     GAction.add_action s ~label:("_"^s) ?accel ~callback:(query_callback s)

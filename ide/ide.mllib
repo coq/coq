@@ -19,6 +19,7 @@ Ideutils
 Coq
 Gtk_parsing
 Ideproof
+Wg_MessageView
 Wg_ScriptView
 Coq_lex
 Coq_commands
