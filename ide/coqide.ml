@@ -543,7 +543,7 @@ object(self)
         | Some fn ->
           try
             last_auto_save_time <- Unix.time();
-            Minilib.log ("Autosave time : "^(string_of_float (Unix.time())));
+            Minilib.log ("Autosave time: "^(string_of_float (Unix.time())));
             if try_export fn (input_buffer#get_text ()) then begin
               flash_info ~delay:1000 "Autosaved"
             end
@@ -622,16 +622,15 @@ object(self)
   method show_goals handle =
     let menu_callback s () =
       if current.contextual_menus_on_goal then
-        ignore (self#insert_this_phrase_on_success handle
-                                true true ("progress "^s) s)
+        ignore (self#insert_this_phrase_on_success handle ("progress "^s) s)
     in
     match Coq.goals handle with
     | Interface.Fail (l, str) ->
-      self#set_message ("Error in coqtop :\n"^str)
+      self#set_message ("Error in coqtop:\n"^str)
     | Interface.Good goals ->
       begin match Coq.evars handle with
       | Interface.Fail (l, str) ->
-        self#set_message ("Error in coqtop :\n"^str)
+        self#set_message ("Error in coqtop:\n"^str)
       | Interface.Good evs ->
         let hints = match Coq.hints handle with
         | Interface.Fail (_, _) -> None
@@ -640,24 +639,6 @@ object(self)
         Ideproof.display (Ideproof.mode_tactic menu_callback)
           proof_view goals hints evs
       end
-
-  method private send_to_coq handle verbose phrase show_output show_error =
-    let display_output msg =
-      self#insert_message (if show_output then msg else "") in
-    let display_error (loc, s) =
-      if show_error then begin
-        if not (Glib.Utf8.validate s) then
-          flash_info "This error is so nasty that I can't even display it."
-        else begin
-          self#insert_message s;
-        end
-      end in
-      Minilib.log "Send_to_coq starting now";
-      match Coq.interp handle ~verbose phrase with
-        | Interface.Fail (l,str) -> sync display_error (l,str); None
-        | Interface.Good msg -> sync display_output msg; Some Safe
-          (* TODO: Restore someday the access to Decl_mode.get_damon_flag,
-	     and also detect the use of admit, and then return Unsafe *)
 
   (* This method is intended to perform stateless commands *)
   method raw_coq_query handle phrase =
@@ -866,8 +847,20 @@ object(self)
     then self#process_until_iter handle point
     else self#backtrack_to_iter handle point
 
-  method private insert_this_phrase_on_success handle
-    show_output show_msg coqphrase insertphrase =
+  method private send_to_coq handle phrase =
+    let display_error (loc, s) =
+        if not (Glib.Utf8.validate s) then
+          flash_info "This error is so nasty that I can't even display it."
+        else self#insert_message s
+      in
+      Minilib.log "Send_to_coq starting now";
+      match Coq.interp handle ~verbose:false phrase with
+        | Interface.Fail (l,str) -> sync display_error (l,str); None
+        | Interface.Good msg -> sync self#insert_message msg; Some Safe
+          (* TODO: Restore someday the access to Decl_mode.get_damon_flag,
+             and also detect the use of admit, and then return Unsafe *)
+
+  method private insert_this_phrase_on_success handle coqphrase insertphrase =
     let mark_processed safe =
       let stop = self#get_start_of_input in
       if stop#starts_line then
@@ -876,7 +869,7 @@ object(self)
       let start = self#get_start_of_input in
       input_buffer#move_mark ~where:stop (`NAME "start_of_input");
       input_buffer#apply_tag (safety_tag safe) ~start ~stop;
-      if (self#get_insert#compare) stop <= 0 then
+      if self#get_insert#compare stop <= 0 then
         input_buffer#place_cursor ~where:stop;
       let ide_payload = {
         start = `MARK (input_buffer#create_mark start);
@@ -886,7 +879,7 @@ object(self)
       Stack.push ide_payload cmd_stack;
       self#show_goals handle;
     in
-    match self#send_to_coq handle false coqphrase show_output show_msg with
+    match self#send_to_coq handle coqphrase with
     | Some safe -> sync mark_processed safe; true
     | None ->
       sync (fun _ -> self#insert_message ("Unsuccessfully tried: "^coqphrase)) ();
@@ -925,7 +918,7 @@ object(self)
     ignore
       (List.exists
          (fun p ->
-           self#insert_this_phrase_on_success handle true false
+           self#insert_this_phrase_on_success handle
              ("progress "^p^".\n") (p^".\n")) l)
 
   method private include_file_dir_in_path handle =
@@ -1042,7 +1035,7 @@ object(self)
               ~callback:(fun it s ->
                 Minilib.log "Should recenter ?";
                 if String.contains s '\n' then begin
-                  Minilib.log "Should recenter : yes";
+                  Minilib.log "Should recenter: yes";
                   self#recenter_insert
                 end));
     let callback () =
