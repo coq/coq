@@ -1535,18 +1535,11 @@ let main files =
                       else " failed")
   in
   let quit_f _ = if not (forbid_quit_to_save ()) then exit 0 in
-  let get_active_view_for_cp () =
-    let has_sel (i0,i1) = i0#compare i1 <> 0 in
-    let current = session_notebook#current_term in
-    let obj =
-      if has_sel current.script#buffer#selection_bounds
-        then current.script#as_widget
-        else if has_sel current.proof_view#buffer#selection_bounds
-          then current.proof_view#as_widget
-          else current.message_view#as_widget
-    in
-    (* This object will receive a copy/paste signal *)
-    Gobject.unsafe_cast obj
+  let emit_to_focus sgn =
+    let focussed_widget = GtkWindow.Window.get_focus w#as_window in
+    let obj = Gobject.unsafe_cast focussed_widget in
+    try GtkSignal.emit_unit obj sgn
+    with _ -> ()
   in
 
 (* begin Preferences *)
@@ -1824,18 +1817,12 @@ let main files =
 			ignore (term.script#undo ()))) ~stock:`UNDO;
       GAction.add_action "Redo" ~stock:`REDO
 	~callback:(fun _ -> ignore (session_notebook#current_term.script#redo ()));
-      GAction.add_action "Cut" ~callback:(fun _ -> GtkSignal.emit_unit
-					    (get_active_view_for_cp ())
-					    ~sgn:GtkText.View.S.cut_clipboard
-					 ) ~stock:`CUT;
-      GAction.add_action "Copy" ~callback:(fun _ -> GtkSignal.emit_unit
-             (get_active_view_for_cp ())
-             ~sgn:GtkText.View.S.copy_clipboard) ~stock:`COPY;
-      GAction.add_action "Paste" ~callback:(fun _ ->
-             try GtkSignal.emit_unit
-                   session_notebook#current_term.script#as_view
-                   ~sgn:GtkText.View.S.paste_clipboard
-             with _ -> Minilib.log "EMIT PASTE FAILED") ~stock:`PASTE;
+      GAction.add_action "Cut"
+        ~callback:(fun _ -> emit_to_focus GtkText.View.S.cut_clipboard) ~stock:`CUT;
+      GAction.add_action "Copy"
+        ~callback:(fun _ -> emit_to_focus GtkText.View.S.copy_clipboard) ~stock:`COPY;
+      GAction.add_action "Paste"
+        ~callback:(fun _ -> emit_to_focus GtkText.View.S.paste_clipboard) ~stock:`PASTE;
       GAction.add_action "Find" ~stock:`FIND
         ~callback:(fun _ -> session_notebook#current_term.finder#show_find ());
       GAction.add_action "Find Next" ~label:"Find _Next" ~stock:`GO_DOWN ~accel:"F3"
