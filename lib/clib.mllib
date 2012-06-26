@@ -1,6 +1,7 @@
 Coq_config
 Segmenttree
 Unicodetable
+Deque
 Util
 Serialize
 Xml_utils
