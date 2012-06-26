@@ -18,6 +18,10 @@ object
   method clear_undo : unit -> unit
   method auto_complete : bool
   method set_auto_complete : bool -> unit
+  method right_margin_position : int
+  method set_right_margin_position : int -> unit
+  method show_right_margin : bool
+  method set_show_right_margin : bool -> unit
 end
 
 val script_view : Coq.coqtop ->

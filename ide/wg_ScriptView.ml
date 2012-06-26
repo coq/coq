@@ -225,6 +225,35 @@ object (self)
   method private may_auto_complete () =
     if auto_complete && is_auto_completing then self#do_auto_complete ()
 
+  (* HACK: missing gtksourceview features *)
+  method right_margin_position =
+    let prop = {
+      Gobject.name = "right-margin-position";
+      conv = Gobject.Data.int;
+    } in
+    Gobject.get prop obj
+
+  method set_right_margin_position pos =
+    let prop = {
+      Gobject.name = "right-margin-position";
+      conv = Gobject.Data.int;
+    } in
+    Gobject.set prop obj pos
+
+  method show_right_margin =
+    let prop = {
+      Gobject.name = "show-right-margin";
+      conv = Gobject.Data.boolean;
+    } in
+    Gobject.get prop obj
+
+  method set_show_right_margin show =
+    let prop = {
+      Gobject.name = "show-right-margin";
+      conv = Gobject.Data.boolean;
+    } in
+    Gobject.set prop obj show
+
   initializer
     (* Install undo managing *)
     ignore (self#buffer#connect#insert_text ~callback:self#handle_insert);

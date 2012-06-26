@@ -2089,6 +2089,7 @@ let main files =
         let conv = { Gobject.name = "draw-spaces"; Gobject.conv = Gobject.Data.int } in
         Gobject.set conv p.script#as_widget show_spaces;
 
+        p.script#set_show_right_margin current.show_right_margin;
         p.script#set_insert_spaces_instead_of_tabs current.spaces_instead_of_tabs;
         p.script#set_tab_width current.tab_length;
         p.script#set_auto_complete current.auto_complete;
