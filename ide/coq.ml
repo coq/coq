@@ -427,6 +427,11 @@ let reset_coqtop coqtop hook =
 module PrintOpt =
 struct
   type t = string list
+
+  let width_ref = ref None
+  let set_printing_width w = width_ref := Some w
+
+  let width = ["Printing"; "Width"]
   let implicit = ["Printing"; "Implicit"]
   let coercions = ["Printing"; "Coercions"]
   let raw_matching = ["Printing"; "Matching"; "Synth"]
@@ -442,6 +447,7 @@ struct
   let set coqtop options =
     let () = List.iter (fun (name, v) -> Hashtbl.replace state_hack name v) options in
     let options = List.map (fun (name, v) -> (name, Interface.BoolValue v)) options in
+    let options = (width, Interface.IntValue !width_ref):: options in
     match eval_call coqtop (Serialize.set_options options) with
     | Interface.Good () -> ()
     | _ -> raise (Failure "Cannot set options.")

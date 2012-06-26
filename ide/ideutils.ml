@@ -325,3 +325,10 @@ let url_for_keyword =
 let browse_keyword f text =
   try let u = Lazy.force url_for_keyword text in browse f (doc_url() ^ u)
   with Not_found -> f ("No documentation found for \""^text^"\".\n")
+
+let textview_width (view : #GText.view) =
+  let rect = view#visible_rect in
+  let pixel_width = Gdk.Rectangle.width rect in
+  let metrics = view#misc#pango_context#get_metrics ()  in
+  let char_width = GPango.to_pixels metrics#approx_char_width in
+  pixel_width / char_width

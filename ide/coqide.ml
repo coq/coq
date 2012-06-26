@@ -624,6 +624,7 @@ object(self)
       if current.contextual_menus_on_goal then
         ignore (self#insert_this_phrase_on_success handle ("progress "^s) s)
     in
+    Coq.PrintOpt.set_printing_width (textview_width proof_view);
     match Coq.goals handle with
     | Interface.Fail (l, str) ->
       self#set_message ("Error in coqtop:\n"^str)

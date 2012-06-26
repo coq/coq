@@ -67,3 +67,6 @@ val pbar : GRange.progress_bar
    everything. Reference: http://ss64.com/nt/cmd.html *)
 
 val requote : string -> string
+
+val textview_width : #GText.view -> int
+(** Returns an approximate value of the character width of a textview *)

@@ -112,5 +112,6 @@ sig
   val existential : t
   val universes : t
 
+  val set_printing_width : int -> unit
   val set : handle -> (t * bool) list -> unit
 end
