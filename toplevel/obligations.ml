@@ -25,7 +25,6 @@ open Term
 open Sign
 open Names
 open Evd
-open List
 open Pp
 open Errors
 open Util
@@ -149,7 +148,7 @@ let etype_of_evar evs hyps concl =
     | [] ->
 	let t', s, trans = subst_evar_constr evs n mkVar concl in
 	  subst_vars acc 0 t', s, trans
-  in aux [] 0 (rev hyps)
+  in aux [] 0 (List.rev hyps)
 
 
 open Tacticals
@@ -240,7 +239,7 @@ let eterm_obligations env name evm fs ?status t ty =
   in
   let evts =
     (* Remove existential variables in types and build the corresponding products *)
-    fold_right
+    List.fold_right
       (fun (id, (n, nstr), ev) l ->
 	 let hyps = Evd.evar_filtered_context ev in
 	 let hyps = trunc_named_context nc_len hyps in

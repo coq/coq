@@ -55,7 +55,6 @@ struct
 end
 open M
 
-open List
 open Mutils
 
 
@@ -122,7 +121,7 @@ let real_nonlinear_prover d l =
     match kd with
      | Axiom_lt i -> poly_mul p y
      | Axiom_eq i -> poly_mul (poly_pow p 2) y
-     |   _        -> failwith "monoids") m (poly_const (Int 1)) , map  snd m))
+     |   _        -> failwith "monoids") m (poly_const (Int 1)) , List.map snd m))
    (sets_of_list neq) in
 
   let (cert_ideal, cert_cone,monoid) = deepen_until d (fun d ->
@@ -130,10 +129,10 @@ let real_nonlinear_prover d l =
     real_positivnullstellensatz_general false d peq pge (poly_neg (fst m) ) in
 		      (ci,cc,snd m)) monoids) 0 in
 
-  let proofs_ideal = map2 (fun q i -> Eqmul(term_of_poly q,Axiom_eq i))
+  let proofs_ideal = List.map2 (fun q i -> Eqmul(term_of_poly q,Axiom_eq i))
    cert_ideal (List.map snd eq) in
 
-  let proofs_cone = map term_of_sos cert_cone in
+  let proofs_cone = List.map term_of_sos cert_cone in
 
   let proof_ne =
    let (neq , lt) = List.partition
@@ -159,7 +158,7 @@ let pure_sos  l =
  (* If there is no strict inequality,
     I should nonetheless be able to try something - over Z  > is equivalent to -1  >= *)
  try
-  let l = List.combine l (interval 0 (length l -1)) in
+  let l = List.combine l (interval 0 (List.length l -1)) in
   let (lt,i) =  try (List.find (fun (x,_) -> snd x =  Mc.Strict) l)
    with Not_found -> List.hd l in
   let plt = poly_neg (poly_of_term (expr_to_term (fst lt))) in

@@ -8,7 +8,6 @@
 (* ========================================================================= *)
 open Sos_types
 open Num
-open List
 
 let debugging = ref false;;
 
@@ -62,7 +61,7 @@ let lcm_num x y =
 (* ------------------------------------------------------------------------- *)
 
 let rec el n l =
-  if n = 0 then hd l else el (n - 1) (tl l);;
+  if n = 0 then List.hd l else el (n - 1) (List.tl l);;
 
 
 (* ------------------------------------------------------------------------- *)
@@ -169,7 +168,7 @@ let insert x l =
 
 let union l1 l2 = itlist insert l1 l2;;
 
-let subtract l1 l2 = filter (fun x -> not (mem x l2)) l1;;
+let subtract l1 l2 = List.filter (fun x -> not (mem x l2)) l1;;
 
 (* ------------------------------------------------------------------------- *)
 (* Merging and bottom-up mergesort.                                          *)
@@ -224,7 +223,7 @@ let rec sort cmp lis =
   match lis with
     [] -> []
   | piv::rest ->
-      let r,l = partition (cmp piv) rest in
+      let r,l = List.partition (cmp piv) rest in
       (sort cmp l) @ (piv::(sort cmp r));;
 
 (* ------------------------------------------------------------------------- *)
@@ -416,7 +415,7 @@ let (|=>) = fun x y -> (x |-> y) undefined;;
 let rec choose t =
   match t with
     Empty -> failwith "choose: completely undefined function"
-  | Leaf(h,l) -> hd l
+  | Leaf(h,l) -> List.hd l
   | Branch(b,p,t1,t2) -> choose t1;;
 
 (* ------------------------------------------------------------------------- *)
@@ -583,7 +582,7 @@ let strings_of_file filename =
   let rec suck_lines acc =
     try let l = Pervasives.input_line fd in
         suck_lines (l::acc)
-    with End_of_file -> rev acc in
+    with End_of_file -> List.rev acc in
   let data = suck_lines [] in
   (Pervasives.close_in fd; data);;
 

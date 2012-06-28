@@ -10,7 +10,6 @@
 (* Nonlinear universal reals procedure using SOS decomposition.              *)
 (* ========================================================================= *)
 open Num;;
-open List;;
 open Sos_types;;
 open Sos_lib;;
 
@@ -40,7 +39,7 @@ let decimalize =
     let z = pow10(-e) */ y +/ Int 1 in
     let k = round_num(pow10 d */ z) in
     (if x </ Int 0 then "-0." else "0.") ^
-    implode(tl(explode(string_of_num k))) ^
+    implode(List.tl(explode(string_of_num k))) ^
     (if e = 0 then "" else "e"^string_of_int e);;
 
 (* ------------------------------------------------------------------------- *)
@@ -123,7 +122,7 @@ let vector_dot (v1:vector) (v2:vector) =
         (combine ( */ ) (fun x -> x =/ Int 0) (snd v1) (snd v2));;
 
 let vector_of_list l =
-  let n = length l in
+  let n = List.length l in
   (n,itlist2 (|->) (1--n) l undefined :vector);;
 
 (* ------------------------------------------------------------------------- *)
@@ -176,9 +175,9 @@ let diagonal (v:vector) =
   ((n,n),foldl (fun a i c -> ((i,i) |-> c) a) undefined (snd v) : matrix);;
 
 let matrix_of_list l =
-  let m = length l in
+  let m = List.length l in
   if m = 0 then matrix_0 (0,0) else
-  let n = length (hd l) in
+  let n = List.length (List.hd l) in
   (m,n),itern 1 l (fun v i -> itern 1 v (fun c j -> (i,j) |-> c)) undefined;;
 
 (* ------------------------------------------------------------------------- *)
@@ -302,14 +301,14 @@ let string_of_vector min_size max_size (v:vector) =
   let n_raw = dim v in
   if n_raw = 0 then "[]" else
   let n = max min_size (min n_raw max_size) in
-  let xs = map ((o) string_of_num (element v)) (1--n) in
+  let xs = List.map ((o) string_of_num (element v)) (1--n) in
   "[" ^ end_itlist (fun s t -> s ^ ", " ^ t) xs ^
   (if n_raw > max_size then ", ...]" else "]");;
 
 let string_of_matrix max_size (m:matrix) =
   let i_raw,j_raw = dimensions m in
   let i = min max_size i_raw and j = min max_size j_raw in
-  let rstr = map (fun k -> string_of_vector j j (row k m)) (1--i) in
+  let rstr = List.map (fun k -> string_of_vector j j (row k m)) (1--i) in
   "["^end_itlist(fun s t -> s^";\n "^t) rstr ^
   (if j > max_size then "\n ...]" else "]");;
 
@@ -408,7 +407,7 @@ let rec poly_of_term t = match t with
 
 let sdpa_of_vector (v:vector) =
   let n = dim v in
-  let strs = map (o (decimalize 20)  (element v)) (1--n) in
+  let strs = List.map (o (decimalize 20)  (element v)) (1--n) in
   end_itlist (fun x y -> x ^ " " ^ y) strs ^ "\n";;
 
 (* ------------------------------------------------------------------------- *)
@@ -445,15 +444,15 @@ let sdpa_of_matrix k (m:matrix) =
 (* ------------------------------------------------------------------------- *)
 
 let sdpa_of_problem comment obj mats =
-  let m = length mats - 1
-  and n,_ = dimensions (hd mats) in
+  let m = List.length mats - 1
+  and n,_ = dimensions (List.hd mats) in
   "\"" ^ comment ^ "\"\n" ^
   string_of_int m ^ "\n" ^
   "1\n" ^
   string_of_int n ^ "\n" ^
   sdpa_of_vector obj ^
   itlist2 (fun k m a -> sdpa_of_matrix (k - 1) m ^ a)
-          (1--length mats) mats "";;
+          (1--List.length mats) mats "";;
 
 (* ------------------------------------------------------------------------- *)
 (* More parser basics.                                                       *)
@@ -461,7 +460,7 @@ let sdpa_of_problem comment obj mats =
 
 let word s =
    end_itlist (fun p1 p2 -> (p1 ++ p2) >> (fun (s,t) -> s^t))
-              (map a (explode s));;
+              (List.map a (explode s));;
 let token s =
   many (some isspace) ++ word s ++ many (some isspace)
   >> (fun ((_,t),_) -> t);;
@@ -470,7 +469,7 @@ let decimal =
   let numeral = some isnum in
   let decimalint = atleast 1 numeral >> ((o) Num.num_of_string  implode) in
   let decimalfrac = atleast 1 numeral
-    >> (fun s -> Num.num_of_string(implode s) // pow10 (length s)) in
+    >> (fun s -> Num.num_of_string(implode s) // pow10 (List.length s)) in
   let decimalsig =
     decimalint ++ possibly (a "." ++ decimalfrac >> snd)
     >> (function (h,[x]) -> h +/ x | (h,_) -> h) in
@@ -626,13 +625,13 @@ let scale_then =
   fun solver obj mats ->
     let cd1 = itlist common_denominator mats (Int 1)
     and cd2 = common_denominator (snd obj)  (Int 1) in
-    let mats' = map (mapf (fun x -> cd1 */ x)) mats
+    let mats' = List.map (mapf (fun x -> cd1 */ x)) mats
     and obj' = vector_cmul cd2 obj in
     let max1 = itlist maximal_element mats' (Int 0)
     and max2 = maximal_element (snd obj') (Int 0) in
     let scal1 = pow2 (20-int_of_float(log(float_of_num max1) /. log 2.0))
     and scal2 = pow2 (20-int_of_float(log(float_of_num max2) /. log 2.0)) in
-    let mats'' = map (mapf (fun x -> x */ scal1)) mats'
+    let mats'' = List.map (mapf (fun x -> x */ scal1)) mats'
     and obj'' = vector_cmul scal2 obj' in
     solver obj'' mats'';;
 
@@ -651,7 +650,7 @@ let nice_vector n = mapa (nice_rational n);;
 
 let linear_program_basic a =
   let m,n = dimensions a in
-  let mats =  map (fun j -> diagonal (column j a)) (1--n)
+  let mats =  List.map (fun j -> diagonal (column j a)) (1--n)
   and obj = vector_const (Int 1) m in
   let rv,res = run_csdp false obj mats in
   if rv = 1 or rv = 2 then false
@@ -665,7 +664,7 @@ let linear_program_basic a =
 let linear_program a b =
   let m,n = dimensions a in
   if dim b <> m then failwith "linear_program: incompatible dimensions" else
-  let mats = diagonal b :: map (fun j -> diagonal (column j a)) (1--n)
+  let mats = diagonal b :: List.map (fun j -> diagonal (column j a)) (1--n)
   and obj = vector_const (Int 1) m in
   let rv,res = run_csdp false obj mats in
   if rv = 1 or rv = 2 then false
@@ -679,10 +678,10 @@ let linear_program a b =
 (* ------------------------------------------------------------------------- *)
 
 let in_convex_hull pts pt =
-  let pts1 = (1::pt) :: map (fun x -> 1::x) pts in
-  let pts2 = map (fun p -> map (fun x -> -x) p @ p) pts1 in
-  let n = length pts + 1
-  and v = 2 * (length pt + 1) in
+  let pts1 = (1::pt) :: List.map (fun x -> 1::x) pts in
+  let pts2 = List.map (fun p -> List.map (fun x -> -x) p @ p) pts1 in
+  let n = List.length pts + 1
+  and v = 2 * (List.length pt + 1) in
   let m = v + n - 1 in
   let mat =
     (m,n),
@@ -700,8 +699,8 @@ let minimal_convex_hull =
     | (m::ms) -> if in_convex_hull ms m then ms else ms@[m] in
   let augment m ms = funpow 3 augment1 (m::ms) in
   fun mons ->
-    let mons' = itlist augment (tl mons) [hd mons] in
-    funpow (length mons') augment1 mons';;
+    let mons' = itlist augment (List.tl mons) [List.hd mons] in
+    funpow (List.length mons') augment1 mons';;
 
 (* ------------------------------------------------------------------------- *)
 (* Stuff for "equations" (generic A->num functions).                         *)
@@ -743,7 +742,7 @@ let eliminate_equations =
                   let b = tryapplyd e v (Int 0) in
                   if b =/ Int 0 then e else
                   equation_add e (equation_cmul (minus_num b // a) eq) in
-                eliminate vs ((v |-> eq') (mapf elim dun)) (map elim oeqs)
+                eliminate vs ((v |-> eq') (mapf elim dun)) (List.map elim oeqs)
             with Failure _ -> eliminate vs dun eqs in
   fun one vars eqs ->
     let assig = eliminate vars undefined eqs in
@@ -774,7 +773,7 @@ let eliminate_all_equations one =
           let b = tryapplyd e v (Int 0) in
           if b =/ Int 0 then e else
           equation_add e (equation_cmul (minus_num b // a) eq) in
-        eliminate ((v |-> eq') (mapf elim dun)) (map elim oeqs) in
+        eliminate ((v |-> eq') (mapf elim dun)) (List.map elim oeqs) in
   fun eqs ->
     let assig = eliminate undefined eqs in
     let vs = foldl (fun a x f -> subtract (dom f) [one] @ a) [] assig in
@@ -805,14 +804,14 @@ let solve_equations one eqs =
 
 let newton_polytope pol =
   let vars = poly_variables pol in
-  let mons = map (fun m -> map (fun x -> monomial_degree x m) vars) (dom pol)
-  and ds = map (fun x -> (degree x pol + 1) / 2) vars in
+  let mons = List.map (fun m -> List.map (fun x -> monomial_degree x m) vars) (dom pol)
+  and ds = List.map (fun x -> (degree x pol + 1) / 2) vars in
   let all = itlist (fun n -> allpairs (fun h t -> h::t) (0--n)) ds [[]]
   and mons' = minimal_convex_hull mons in
   let all' =
-    filter (fun m -> in_convex_hull mons' (map (fun x -> 2 * x) m)) all in
-  map (fun m -> itlist2 (fun v i a -> if i = 0 then a else (v |-> i) a)
-                        vars m monomial_1) (rev all');;
+    List.filter (fun m -> in_convex_hull mons' (List.map (fun x -> 2 * x) m)) all in
+  List.map (fun m -> itlist2 (fun v i a -> if i = 0 then a else (v |-> i) a)
+                        vars m monomial_1) (List.rev all');;
 
 (* ------------------------------------------------------------------------- *)
 (* Diagonalize (Cholesky/LDU) the matrix corresponding to a quadratic form.  *)
@@ -851,10 +850,10 @@ let deration d =
     let a = foldl (fun a i c -> lcm_num a (denominator c)) (Int 1) (snd l) //
             foldl (fun a i c -> gcd_num a (numerator c)) (Int 0) (snd l) in
     (c // (a */ a)),mapa (fun x -> a */ x) l in
-  let d' = map adj d in
+  let d' = List.map adj d in
   let a = itlist ((o) lcm_num ( (o) denominator fst)) d' (Int 1) //
           itlist ((o) gcd_num ( (o) numerator fst)) d' (Int 0)  in
-  (Int 1 // a),map (fun (c,l) -> (a */ c,l)) d';;
+  (Int 1 // a),List.map (fun (c,l) -> (a */ c,l)) d';;
 
 (* ------------------------------------------------------------------------- *)
 (* Enumeration of monomials with given multidegree bound.                    *)
@@ -865,8 +864,8 @@ let rec enumerate_monomials d vars =
   else if d = 0 then [undefined]
   else if vars = [] then [monomial_1] else
   let alts =
-    map (fun k -> let oths = enumerate_monomials (d - k) (tl vars) in
-                  map (fun ks -> if k = 0 then ks else (hd vars |-> k) ks) oths)
+    List.map (fun k -> let oths = enumerate_monomials (d - k) (List.tl vars) in
+                  List.map (fun ks -> if k = 0 then ks else (List.hd vars |-> k) ks) oths)
         (0--d) in
   end_itlist (@) alts;;
 
@@ -883,7 +882,7 @@ let rec enumerate_products d pols =
   | (p,b)::ps -> let e = multidegree p in
                  if e = 0 then enumerate_products d ps else
                  enumerate_products d ps @
-                 map (fun (q,c) -> poly_mul p q,Product(b,c))
+                 List.map (fun (q,c) -> poly_mul p q,Product(b,c))
                      (enumerate_products (d - e) ps);;
 
 (* ------------------------------------------------------------------------- *)
@@ -936,15 +935,15 @@ let sdpa_of_blockdiagonal k m =
 (* ------------------------------------------------------------------------- *)
 
 let sdpa_of_blockproblem comment nblocks blocksizes obj mats =
-  let m = length mats - 1 in
+  let m = List.length mats - 1 in
   "\"" ^ comment ^ "\"\n" ^
   string_of_int m ^ "\n" ^
   string_of_int nblocks ^ "\n" ^
-  (end_itlist (fun s t -> s^" "^t) (map string_of_int blocksizes)) ^
+  (end_itlist (fun s t -> s^" "^t) (List.map string_of_int blocksizes)) ^
   "\n" ^
   sdpa_of_vector obj ^
   itlist2 (fun k m a -> sdpa_of_blockdiagonal (k - 1) m ^ a)
-          (1--length mats) mats "";;
+          (1--List.length mats) mats "";;
 
 (* ------------------------------------------------------------------------- *)
 (* Hence run CSDP on a problem in block diagonal form.                       *)
@@ -996,35 +995,35 @@ let bmatrix_sub m1 m2 = bmatrix_add m1 (bmatrix_neg m2);;
 (* ------------------------------------------------------------------------- *)
 
 let blocks blocksizes bm =
-  map (fun (bs,b0) ->
+  List.map (fun (bs,b0) ->
         let m = foldl
           (fun a (b,i,j) c -> if b = b0 then ((i,j) |-> c) a else a)
           undefined bm in
         (((bs,bs),m):matrix))
-      (zip blocksizes (1--length blocksizes));;
+      (zip blocksizes (1--List.length blocksizes));;
 
 (* ------------------------------------------------------------------------- *)
 (* Positiv- and Nullstellensatz. Flag "linf" forces a linear representation. *)
 (* ------------------------------------------------------------------------- *)
 
 let real_positivnullstellensatz_general linf d eqs leqs pol =
-  let vars = itlist ((o) union poly_variables) (pol::eqs @ map fst leqs) [] in
+  let vars = itlist ((o) union poly_variables) (pol::eqs @ List.map fst leqs) [] in
   let monoid =
     if linf then
       (poly_const num_1,Rational_lt num_1)::
-      (filter (fun (p,c) -> multidegree p <= d) leqs)
+      (List.filter (fun (p,c) -> multidegree p <= d) leqs)
     else enumerate_products d leqs in
-  let nblocks = length monoid in
+  let nblocks = List.length monoid in
   let mk_idmultiplier k p =
     let e = d - multidegree p in
     let mons = enumerate_monomials e vars in
-    let nons = zip mons (1--length mons) in
+    let nons = zip mons (1--List.length mons) in
     mons,
     itlist (fun (m,n) -> (m |-> ((-k,-n,n) |=> Int 1))) nons undefined in
   let mk_sqmultiplier k (p,c) =
     let e = (d - multidegree p) / 2 in
     let mons = enumerate_monomials e vars in
-    let nons = zip mons (1--length mons) in
+    let nons = zip mons (1--List.length mons) in
     mons,
     itlist (fun (m1,n1) ->
       itlist (fun (m2,n2) a ->
@@ -1035,9 +1034,9 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
           (m |-> equation_add ((k,n1,n2) |=> c) e) a)
          nons)
        nons undefined in
-  let sqmonlist,sqs = unzip(map2 mk_sqmultiplier (1--length monoid) monoid)
-  and idmonlist,ids =  unzip(map2 mk_idmultiplier (1--length eqs) eqs) in
-  let blocksizes = map length sqmonlist in
+  let sqmonlist,sqs = unzip(List.map2 mk_sqmultiplier (1--List.length monoid) monoid)
+  and idmonlist,ids =  unzip(List.map2 mk_idmultiplier (1--List.length eqs) eqs) in
+  let blocksizes = List.map List.length sqmonlist in
   let bigsum =
     itlist2 (fun p q a -> epoly_pmul p q a) eqs ids
             (itlist2 (fun (p,c) s a -> epoly_pmul p s a) monoid sqs
@@ -1055,8 +1054,8 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
   let diagents = foldl
     (fun a (b,i,j) e -> if b > 0 & i = j then equation_add e a else a)
     undefined allassig in
-  let mats = map mk_matrix qvars
-  and obj = length pvs,
+  let mats = List.map mk_matrix qvars
+  and obj = List.length pvs,
             itern 1 pvs (fun v i -> (i |--> tryapplyd diagents v (Int 0)))
                         undefined in
   let raw_vec = if pvs = [] then vector_0 0
@@ -1071,11 +1070,11 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
      (fun i a -> bmatrix_add (bmatrix_cmul (element vec i) (el i mats)) a)
      (bmatrix_neg (el 0 mats)) in
     let allmats = blocks blocksizes blockmat in
-    vec,map diag allmats in
+    vec,List.map diag allmats in
   let vec,ratdias =
     if pvs = [] then find_rounding num_1
-    else tryfind find_rounding (map Num.num_of_int (1--31) @
-                                map pow2 (5--66)) in
+    else tryfind find_rounding (List.map Num.num_of_int (1--31) @
+                                List.map pow2 (5--66)) in
   let newassigs =
     itlist (fun k -> el (k - 1) pvs |-> element vec k)
            (1--dim vec) ((0,0,0) |=> Int(-1)) in
@@ -1088,11 +1087,11 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
   let mk_sos mons =
     let mk_sq (c,m) =
         c,itlist (fun k a -> (el (k - 1) mons |--> element m k) a)
-                 (1--length mons) undefined in
-    map mk_sq in
-  let sqs = map2 mk_sos sqmonlist ratdias
-  and cfs = map poly_of_epoly ids in
-  let msq = filter (fun (a,b) -> b <> []) (map2 (fun a b -> a,b) monoid sqs) in
+                 (1--List.length mons) undefined in
+    List.map mk_sq in
+  let sqs = List.map2 mk_sos sqmonlist ratdias
+  and cfs = List.map poly_of_epoly ids in
+  let msq = List.filter (fun (a,b) -> b <> []) (List.map2 (fun a b -> a,b) monoid sqs) in
   let eval_sq sqs = itlist
    (fun (c,q) -> poly_add (poly_cmul c (poly_mul q q))) sqs poly_0 in
   let sanity =
@@ -1100,7 +1099,7 @@ let real_positivnullstellensatz_general linf d eqs leqs pol =
            (itlist2 (fun p q -> poly_add (poly_mul p q)) cfs eqs
                     (poly_neg pol)) in
   if not(is_undefined sanity) then raise Sanity else
-  cfs,map (fun (a,b) -> snd a,b) msq;;
+  cfs,List.map (fun (a,b) -> snd a,b) msq;;
 
 (* ------------------------------------------------------------------------- *)
 (* Iterative deepening.                                                      *)
@@ -1138,7 +1137,7 @@ let monomial_order =
     else lexorder mon1 mon2;;
 
 let dest_poly p =
-  map (fun (m,c) -> c,dest_monomial m)
+  List.map (fun (m,c) -> c,dest_monomial m)
       (sort (fun (m1,_) (m2,_) -> monomial_order m1 m2) (graph p));;
 
 (* ------------------------------------------------------------------------- *)
@@ -1164,7 +1163,7 @@ let term_of_cmonomial =
 let term_of_poly =
   fun p ->
     if p = poly_0 then Zero else
-    let cms = map term_of_cmonomial
+    let cms = List.map term_of_cmonomial
      (sort (fun (m1,_) (m2,_) -> monomial_order m1 m2) (graph p)) in
     end_itlist (fun t1 t2 -> Add (t1,t2)) cms;;
 
@@ -1173,7 +1172,7 @@ let term_of_sqterm (c,p) =
 
 let term_of_sos (pr,sqs) =
   if sqs = [] then pr
-  else Product(pr,end_itlist (fun a b -> Sum(a,b)) (map term_of_sqterm sqs));;
+  else Product(pr,end_itlist (fun a b -> Sum(a,b)) (List.map term_of_sqterm sqs));;
 
 (* ------------------------------------------------------------------------- *)
 (* Interface to HOL.                                                         *)
@@ -1371,14 +1370,14 @@ let SOS_RULE tm =
 
 let rec allpermutations l =
   if l = [] then [[]] else
-  itlist (fun h acc -> map (fun t -> h::t)
+  itlist (fun h acc -> List.map (fun t -> h::t)
                 (allpermutations (subtract l [h])) @ acc) l [];;
 
 let allvarorders l =
-  map (fun vlis x -> index x vlis) (allpermutations l);;
+  List.map (fun vlis x -> index x vlis) (allpermutations l);;
 
 let changevariables_monomial zoln (m:monomial) =
-  foldl (fun a x k -> (assoc x zoln |-> k) a) monomial_1 m;;
+  foldl (fun a x k -> (List.assoc x zoln |-> k) a) monomial_1 m;;
 
 let changevariables zoln pol =
   foldl (fun a m c -> (changevariables_monomial zoln m |-> c) a)
@@ -1390,7 +1389,7 @@ let changevariables zoln pol =
 
 let sdpa_of_vector (v:vector) =
   let n = dim v in
-  let strs = map (o (decimalize 20) (element v)) (1--n) in
+  let strs = List.map (o (decimalize 20) (element v)) (1--n) in
   end_itlist (fun x y -> x ^ " " ^ y) strs ^ "\n";;
 
 let sdpa_of_blockdiagonal k m =
@@ -1412,15 +1411,15 @@ let sdpa_of_matrix k (m:matrix) =
      " " ^ decimalize 20 c ^ "\n" ^ a) mss "";;
 
 let sdpa_of_problem comment obj mats =
-  let m = length mats - 1
-  and n,_ = dimensions (hd mats) in
+  let m = List.length mats - 1
+  and n,_ = dimensions (List.hd mats) in
   "\"" ^ comment ^ "\"\n" ^
   string_of_int m ^ "\n" ^
   "1\n" ^
   string_of_int n ^ "\n" ^
   sdpa_of_vector obj ^
   itlist2 (fun k m a -> sdpa_of_matrix (k - 1) m ^ a)
-          (1--length mats) mats "";;
+          (1--List.length mats) mats "";;
 
 let run_csdp dbg obj mats =
   let input_file = Filename.temp_file "sos" ".dat-s" in
@@ -1455,33 +1454,33 @@ let csdp obj mats =
 let sumofsquares_general_symmetry tool pol =
   let vars = poly_variables pol
   and lpps = newton_polytope pol in
-  let n = length lpps in
+  let n = List.length lpps in
   let sym_eqs =
-    let invariants = filter
+    let invariants = List.filter
      (fun vars' ->
         is_undefined(poly_sub pol (changevariables (zip vars vars') pol)))
      (allpermutations vars) in
-    let lpns = zip lpps (1--length lpps) in
+    let lpns = zip lpps (1--List.length lpps) in
     let lppcs =
-      filter (fun (m,(n1,n2)) -> n1 <= n2)
+      List.filter (fun (m,(n1,n2)) -> n1 <= n2)
              (allpairs
                (fun (m1,n1) (m2,n2) -> (m1,m2),(n1,n2)) lpns lpns) in
     let clppcs = end_itlist (@)
-       (map (fun ((m1,m2),(n1,n2)) ->
-                map (fun vars' ->
+       (List.map (fun ((m1,m2),(n1,n2)) ->
+                List.map (fun vars' ->
                         (changevariables_monomial (zip vars vars') m1,
                          changevariables_monomial (zip vars vars') m2),(n1,n2))
                     invariants)
             lppcs) in
-    let clppcs_dom = setify(map fst clppcs) in
-    let clppcs_cls = map (fun d -> filter (fun (e,_) -> e = d) clppcs)
+    let clppcs_dom = setify(List.map fst clppcs) in
+    let clppcs_cls = List.map (fun d -> List.filter (fun (e,_) -> e = d) clppcs)
                          clppcs_dom in
-    let eqvcls = map (o setify (map snd)) clppcs_cls in
+    let eqvcls = List.map (o setify (List.map snd)) clppcs_cls in
     let mk_eq cls acc =
       match cls with
         [] -> raise Sanity
       | [h] -> acc
-      | h::t -> map (fun k -> (k |-> Int(-1)) (h |=> Int 1)) t @ acc in
+      | h::t -> List.map (fun k -> (k |-> Int(-1)) (h |=> Int 1)) t @ acc in
     itlist mk_eq eqvcls [] in
   let eqs = foldl (fun a x y -> y::a) []
    (itern 1 lpps (fun m1 n1 ->
@@ -1497,15 +1496,15 @@ let sumofsquares_general_symmetry tool pol =
   let allassig = itlist (fun v -> (v |-> (v |=> Int 1))) pvs assig in
   let qvars = (0,0)::pvs in
   let diagents =
-    end_itlist equation_add (map (fun i -> apply allassig (i,i)) (1--n)) in
+    end_itlist equation_add (List.map (fun i -> apply allassig (i,i)) (1--n)) in
   let mk_matrix v =
    ((n,n),
     foldl (fun m (i,j) ass -> let c = tryapplyd ass v (Int 0) in
                               if c =/ Int 0 then m else
                               ((j,i) |-> c) (((i,j) |-> c) m))
           undefined allassig :matrix) in
-  let mats = map mk_matrix qvars
-  and obj = length pvs,
+  let mats = List.map mk_matrix qvars
+  and obj = List.length pvs,
             itern 1 pvs (fun v i -> (i |--> tryapplyd diagents v (Int 0)))
                 undefined in
   let raw_vec = if pvs = [] then vector_0 0 else tool obj mats in
@@ -1524,12 +1523,12 @@ let sumofsquares_general_symmetry tool pol =
        let mat = matrix_neg (el 0 mats) in
        deration(diag mat)
     else
-       tryfind find_rounding (map Num.num_of_int (1--31) @
-                              map pow2 (5--66)) in
+       tryfind find_rounding (List.map Num.num_of_int (1--31) @
+                              List.map pow2 (5--66)) in
   let poly_of_lin(d,v) =
     d,foldl(fun a i c -> (el (i - 1) lpps |-> c) a) undefined (snd v) in
-  let lins = map poly_of_lin dia in
-  let sqs = map (fun (d,l) -> poly_mul (poly_const d) (poly_pow l 2)) lins in
+  let lins = List.map poly_of_lin dia in
+  let sqs = List.map (fun (d,l) -> poly_mul (poly_const d) (poly_pow l 2)) lins in
   let sos = poly_cmul rat (end_itlist poly_add sqs) in
   if is_undefined(poly_sub sos pol) then rat,lins else raise Sanity;;
 

@@ -37,7 +37,6 @@ open Libnames
 open Globnames
 open Nameops
 open Classops
-open List
 open Recordops
 open Evarutil
 open Pretype_errors
