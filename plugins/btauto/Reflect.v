@@ -1,11 +1,11 @@
-Require Import Bool DecidableClass Algebra Ring NPeano.
+Require Import Bool DecidableClass Algebra Ring PArith ROmega.
 
 Section Bool.
 
 (* Boolean formulas and their evaluations *)
 
 Inductive formula :=
-| formula_var : nat -> formula
+| formula_var : positive -> formula
 | formula_btm : formula
 | formula_top : formula
 | formula_cnj : formula -> formula -> formula
@@ -15,7 +15,7 @@ Inductive formula :=
 | formula_ifb : formula -> formula -> formula -> formula.
 
 Fixpoint formula_eval var f := match f with
-| formula_var x => List.nth x var false 
+| formula_var x => list_nth x var false 
 | formula_btm => false
 | formula_top => true
 | formula_cnj fl fr => (formula_eval var fl) && (formula_eval var fr)
@@ -80,20 +80,21 @@ Qed.
 Hint Extern 5 => change 0 with (min 0 0).
 Local Hint Resolve poly_add_valid_compat poly_mul_valid_compat.
 Local Hint Constructors valid.
+Hint Extern 5 => zify; omega.
 
 (* Compatibility with validity *)
 
 Lemma poly_of_formula_valid_compat : forall f, exists n, valid n (poly_of_formula f).
 Proof.
 intros f; induction f; simpl.
-  now exists (S n); constructor; intuition; inversion H.
-  now exists 0; auto.
-  now exists 0; auto.
-  now destruct IHf1 as [n1 Hn1]; destruct IHf2 as [n2 Hn2]; exists (max n1 n2); auto.
-  now destruct IHf1 as [n1 Hn1]; destruct IHf2 as [n2 Hn2]; exists (max (max n1 n2) (max n1 n2)); auto.
-  now destruct IHf as [n Hn]; exists (max 0 n); auto.
-  now destruct IHf1 as [n1 Hn1]; destruct IHf2 as [n2 Hn2]; exists (max n1 n2); auto.
-  destruct IHf1 as [n1 Hn1]; destruct IHf2 as [n2 Hn2]; destruct IHf3 as [n3 Hn3]; eexists; eauto.
++ exists (Pos.succ p); constructor; intuition; inversion H.
++ exists 1%positive; auto.
++ exists 1%positive; auto.
++ destruct IHf1 as [n1 Hn1]; destruct IHf2 as [n2 Hn2]; exists (Pos.max n1 n2); auto.
++ destruct IHf1 as [n1 Hn1]; destruct IHf2 as [n2 Hn2]; exists (Pos.max (Pos.max n1 n2) (Pos.max n1 n2)); auto.
++ destruct IHf as [n Hn]; exists (Pos.max 1 n); auto.
++ destruct IHf1 as [n1 Hn1]; destruct IHf2 as [n2 Hn2]; exists (Pos.max n1 n2); auto.
++ destruct IHf1 as [n1 Hn1]; destruct IHf2 as [n2 Hn2]; destruct IHf3 as [n3 Hn3]; eexists; eauto.
 Qed.
 
 (* The soundness lemma ; alas not complete! *)
@@ -138,11 +139,10 @@ rewrite <- (reduce_eval_compat nr (poly_of_formula fr)); auto.
 rewrite Heq; reflexivity.
 Qed.
 
-Fixpoint make_last {A} n (x def : A) :=
-match n with
-| 0 => cons x nil
-| S n => cons def (make_last n x def)
-end.
+Definition make_last {A} n (x def : A) :=
+  Pos.peano_rect (fun _ => list A)
+    (cons x nil)
+    (fun _ F => cons def F) n.
 
 (* Replace the nth element of a list *)
 
@@ -150,10 +150,8 @@ Fixpoint list_replace l n b :=
 match l with
 | nil => make_last n b false
 | cons a l =>
-  match n with
-  | 0 => cons b l
-  | S n => cons a (list_replace l n b)
-  end
+  Pos.peano_rect _
+    (cons b l) (fun n _ => cons a (list_replace l n b)) n
 end.
 
 (** Extract a non-null witness from a polynomial *)
@@ -172,32 +170,72 @@ match p with
     list_replace var i false
 end.
 
-Lemma make_last_nth_1 : forall A n i x def, i <> n ->
-  List.nth i (@make_last A n x def) def = def.
+Lemma list_nth_base : forall A (def : A) l,
+  list_nth 1 l def = match l with nil => def | cons x _ => x end.
 Proof.
-intros A n; induction n; intros i x def Hd; simpl.
-  destruct i; [exfalso; omega|now destruct i; auto].
-  destruct i; intuition.
+intros A def l; unfold list_nth.
+rewrite Pos.peano_rect_base; reflexivity.
 Qed.
 
-Lemma make_last_nth_2 : forall A n x def, List.nth n (@make_last A n x def) def = x.
+Lemma list_nth_succ : forall A n (def : A) l,
+  list_nth (Pos.succ n) l def =
+    match l with nil => def | cons _ l => list_nth n l def end.
 Proof.
-intros A n; induction n; intros x def; simpl; auto.
+intros A def l; unfold list_nth.
+rewrite Pos.peano_rect_succ; reflexivity.
+Qed.
+
+Lemma list_nth_nil : forall A n (def : A),
+  list_nth n nil def = def.
+Proof.
+intros A n def; induction n using Pos.peano_rect.
++ rewrite list_nth_base; reflexivity.
++ rewrite list_nth_succ; reflexivity.
+Qed.
+
+Lemma make_last_nth_1 : forall A n i x def, i <> n ->
+  list_nth i (@make_last A n x def) def = def.
+Proof.
+intros A n; induction n using Pos.peano_rect; intros i x def Hd; simpl.
++ unfold make_last; rewrite Pos.peano_rect_base.
+  induction i using Pos.peano_case; [elim Hd; reflexivity|].
+  rewrite list_nth_succ, list_nth_nil; reflexivity.
++ unfold make_last; rewrite Pos.peano_rect_succ; fold (make_last n x def).
+  induction i using Pos.peano_case.
+  - rewrite list_nth_base; reflexivity.
+  - rewrite list_nth_succ; apply IHn; zify; omega.
+Qed.
+
+Lemma make_last_nth_2 : forall A n x def, list_nth n (@make_last A n x def) def = x.
+Proof.
+intros A n; induction n using Pos.peano_rect; intros x def; simpl.
++ reflexivity.
++ unfold make_last; rewrite Pos.peano_rect_succ; fold (make_last n x def).
+  rewrite list_nth_succ; auto.
 Qed.
 
 Lemma list_replace_nth_1 : forall var i j x, i <> j ->
-  List.nth i (list_replace var j x) false = List.nth i var false.
+  list_nth i (list_replace var j x) false = list_nth i var false.
 Proof.
 intros var; induction var; intros i j x Hd; simpl.
-  rewrite make_last_nth_1; [destruct i; reflexivity|assumption].
-  destruct i; destruct j; simpl; solve [auto|congruence].
++ rewrite make_last_nth_1, list_nth_nil; auto.
++ induction j using Pos.peano_rect.
+  - rewrite Pos.peano_rect_base.
+    induction i using Pos.peano_rect; [now elim Hd; auto|].
+    rewrite 2list_nth_succ; reflexivity.
+  - rewrite Pos.peano_rect_succ.
+    induction i using Pos.peano_rect.
+    { rewrite 2list_nth_base; reflexivity. }
+    { rewrite 2list_nth_succ; apply IHvar; zify; omega. }
 Qed.
 
-Lemma list_replace_nth_2 : forall var i x, List.nth i (list_replace var i x) false = x.
+Lemma list_replace_nth_2 : forall var i x, list_nth i (list_replace var i x) false = x.
 Proof.
 intros var; induction var; intros i x; simpl.
-  now apply make_last_nth_2.
-  now destruct i; simpl in *; [reflexivity|auto].
++ now apply make_last_nth_2.
++ induction i using Pos.peano_rect.
+  - rewrite Pos.peano_rect_base, list_nth_base; reflexivity.
+  - rewrite Pos.peano_rect_succ, list_nth_succ; auto.
 Qed.
 
 (* The witness is correct only if the polynomial is linear *)
@@ -213,10 +251,10 @@ intros k p Hl Hp; induction Hl; simpl.
       assert (Hrw : b = true); [|rewrite Hrw; reflexivity]
     end.
     erewrite eval_suffix_compat; [now eauto| |now apply linear_valid_incl; eauto].
-    now intros j Hd; apply list_replace_nth_1; omega.
+    now intros j Hd; apply list_replace_nth_1; zify; omega.
     rewrite list_replace_nth_2, xorb_false_r.
     erewrite eval_suffix_compat; [now eauto| |now apply linear_valid_incl; eauto].
-    now intros j Hd; apply list_replace_nth_1; omega.
+    now intros j Hd; apply list_replace_nth_1; zify; omega.
 Qed.
 
 (* This should be better when using the [vm_compute] tactic instead of plain reflexivity. *)
@@ -235,7 +273,7 @@ rewrite <- xorb_false_l; change false with (eval var (Cst false)).
 rewrite <- poly_add_compat, <- Heq.
 repeat rewrite poly_add_compat.
 rewrite (reduce_eval_compat nl); [|assumption].
-rewrite (reduce_eval_compat (max nl nr)); [|apply poly_add_valid_compat; assumption].
+rewrite (reduce_eval_compat (Pos.max nl nr)); [|apply poly_add_valid_compat; assumption].
 rewrite (reduce_eval_compat nr); [|assumption].
 rewrite poly_add_compat; ring.
 Qed.

@@ -34,18 +34,20 @@ module CoqList = struct
 
 end
 
-module CoqNat = struct
-  let path = ["Init"; "Datatypes"]
-  let typ = get_constant path "nat"
-  let _S = get_constant path "S"
-  let _O = get_constant path "O"
+module CoqPositive = struct
+  let path = ["Numbers"; "BinNums"]
+  let typ = get_constant path "positive"
+  let _xH = get_constant path "xH"
+  let _xO = get_constant path "xO"
+  let _xI = get_constant path "xI"
 
   (* A coq nat from an int *)
   let rec of_int n =
-    if n <= 0 then Lazy.force _O
+    if n <= 1 then Lazy.force _xH
     else
-      let ans = of_int (pred n) in
-      lapp _S [|ans|]
+      let ans = of_int (n / 2) in
+      if n mod 2 = 0 then lapp _xO [|ans|]
+      else lapp _xI [|ans|]
 
 end
 
@@ -70,7 +72,7 @@ module Env = struct
       let () = incr off in
       i
 
-  let empty () = (ConstrHashtbl.create 16, ref 0)
+  let empty () = (ConstrHashtbl.create 16, ref 1)
 
   let to_list (env, _) =
     (* we need to get an ordered list *)
@@ -159,7 +161,7 @@ module Btauto = struct
   let soundness = get_constant ["btauto"; "Reflect"] "reduce_poly_of_formula_sound_alt"
 
   let rec convert = function
-  | Bool.Var n -> lapp f_var [|CoqNat.of_int n|]
+  | Bool.Var n -> lapp f_var [|CoqPositive.of_int n|]
   | Bool.Const true -> Lazy.force f_top
   | Bool.Const false -> Lazy.force f_btm
   | Bool.Andb (b1, b2) -> lapp f_cnj [|convert b1; convert b2|]
