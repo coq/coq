@@ -1226,13 +1226,14 @@ let pr_dbg_header = function
   | (Info,_,_) -> str "(* info auto : *)"
 
 let tclTRY_dbg d tac =
+  let (level, _, _) = d in
   tclORELSE0
     (fun gl ->
       let out = tac gl in
-      msg_debug (pr_dbg_header d ++ fnl () ++ pr_info_trace d);
+      if level <> Off then msg_debug (pr_dbg_header d ++ fnl () ++ pr_info_trace d);
       out)
     (fun gl ->
-      msg_debug (pr_info_nop d);
+      if level = Info then msg_debug (pr_info_nop d);
       tclIDTAC gl)
 
 (**************************************************************************)
