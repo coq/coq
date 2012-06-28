@@ -1207,33 +1207,32 @@ and erase_subtree depth = function
   | (d,_) :: l -> if d = depth then l else erase_subtree depth l
 
 let pr_info_atom (d,pp) =
-  msg_debug (str (String.make d ' ') ++ pp () ++ str ".")
+  str (String.make d ' ') ++ pp () ++ str "."
 
 let pr_info_trace = function
   | (Info,_,{contents=(d,Some pp)::l}) ->
-      List.iter pr_info_atom (cleanup_info_trace d [(d,pp)] l)
-  | _ -> ()
+      prlist_with_sep fnl pr_info_atom (cleanup_info_trace d [(d,pp)] l)
+  | _ -> mt ()
 
 let pr_info_nop = function
-  | (Info,_,_) -> msg_debug (str "idtac.")
-  | _ -> ()
+  | (Info,_,_) -> str "idtac."
+  | _ -> mt ()
 
 let pr_dbg_header = function
-  | (Off,_,_) -> ()
-  | (Debug,0,_) -> msg_debug (str "(* debug trivial : *)")
-  | (Debug,_,_) -> msg_debug (str "(* debug auto : *)")
-  | (Info,0,_) -> msg_debug (str "(* info trivial : *)")
-  | (Info,_,_) -> msg_debug (str "(* info auto : *)")
+  | (Off,_,_) -> mt ()
+  | (Debug,0,_) -> str "(* debug trivial : *)"
+  | (Debug,_,_) -> str "(* debug auto : *)"
+  | (Info,0,_) -> str "(* info trivial : *)"
+  | (Info,_,_) -> str "(* info auto : *)"
 
 let tclTRY_dbg d tac =
   tclORELSE0
     (fun gl ->
-      pr_dbg_header d;
       let out = tac gl in
-      pr_info_trace d;
+      msg_debug (pr_dbg_header d ++ fnl () ++ pr_info_trace d);
       out)
     (fun gl ->
-      pr_info_nop d;
+      msg_debug (pr_info_nop d);
       tclIDTAC gl)
 
 (**************************************************************************)

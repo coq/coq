@@ -346,7 +346,7 @@ let print_color s x =
 let make_body color info s =
   emacs_quote (print_color color (print_color "1" (hov 0 (info ++ spc () ++ s))))
 
-let debugbody strm = print_color "36" (str "Debug:" ++ spc () ++ strm) (* cyan *)
+let debugbody strm = print_color "36" (hov 0 (str "Debug:" ++ spc () ++ strm)) (* cyan *)
 let warnbody strm = make_body "93" (str "Warning:") strm (* bright yellow *)
 let errorbody strm = make_body "31" (str "Error:") strm (* bright red *)
 
