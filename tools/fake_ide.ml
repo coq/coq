@@ -10,17 +10,18 @@
 
 exception Comment
 
-let coqtop = ref (stdin, stdout)
+type coqtop = {
+  in_chan : in_channel;
+  out_chan : out_channel;
+  xml_parser : Xml_parser.t;
+}
 
-let p = Xml_parser.make ()
-let () = Xml_parser.check_eof p false
-
-let eval_call (call:'a Serialize.call) =
+let eval_call (call:'a Serialize.call) coqtop =
   prerr_endline (Serialize.pr_call call);
   let xml_query = Serialize.of_call call in
-  Xml_utils.print_xml (snd !coqtop) xml_query;
-  flush (snd !coqtop);
-  let xml_answer = Xml_parser.parse p (Xml_parser.SChannel (fst !coqtop)) in
+  Xml_utils.print_xml coqtop.out_chan xml_query;
+  flush coqtop.out_chan;
+  let xml_answer = Xml_parser.parse coqtop.xml_parser in
   let res = Serialize.to_answer xml_answer in
   prerr_endline (Serialize.pr_full_value call res);
   match res with Interface.Fail _ -> exit 1 | _ -> ()
@@ -72,11 +73,19 @@ let main =
     | 2 when Sys.argv.(1) <> "-help" -> Sys.argv.(1)
     | _ -> usage ()
   in
-  coqtop := Unix.open_process (coqtop_name^" -ideslave");
+  let coqtop =
+    let (cin, cout) = Unix.open_process (coqtop_name^" -ideslave") in
+    let p = Xml_parser.make (Xml_parser.SChannel cin) in
+    let () = Xml_parser.check_eof p false in {
+      in_chan = cin;
+      out_chan = cout;
+      xml_parser = p;
+    }
+  in
   while true do
     let l = try read_line () with End_of_file -> exit 0
     in
-    try read_eval_print l
+    try read_eval_print l coqtop
     with
       | Comment -> ()
       | e ->
