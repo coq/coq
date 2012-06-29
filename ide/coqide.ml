@@ -731,7 +731,7 @@ object(self)
       input_buffer#delete_mark sentence.stop;
     done;
     (* Return the list of info messages and the error *)
-    (!info, !error)
+    (List.rev !info, !error)
 
   method private show_error phrase loc msg = match loc with
   | None ->
