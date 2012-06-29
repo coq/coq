@@ -332,3 +332,14 @@ let textview_width (view : #GText.view) =
   let metrics = view#misc#pango_context#get_metrics ()  in
   let char_width = GPango.to_pixels metrics#approx_char_width in
   pixel_width / char_width
+
+let default_logger level message =
+  let level = match level with
+  | Interface.Debug _ -> `DEBUG
+  | Interface.Info -> `INFO
+  | Interface.Notice -> `NOTICE
+  | Interface.Warning -> `WARNING
+  | Interface.Error -> `ERROR
+  in
+  Minilib.log ~level message
+

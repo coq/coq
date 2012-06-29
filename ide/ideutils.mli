@@ -70,3 +70,6 @@ val requote : string -> string
 
 val textview_width : #GText.view -> int
 (** Returns an approximate value of the character width of a textview *)
+
+val default_logger : Interface.message_level -> string -> unit
+(** Default logger. It logs messages that the casual user should not see. *)

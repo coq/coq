@@ -87,8 +87,11 @@ val interrupter : (int -> unit) ref
 
 (** * Calls to Coqtop, cf [Serialize] for more details *)
 
+type logger = Interface.message_level -> string -> unit
+(** Except for interp, we use the default logger for any call. *)
+
 val interp :
-  handle -> ?raw:bool -> ?verbose:bool -> string -> string Interface.value
+  handle -> logger -> ?raw:bool -> ?verbose:bool -> string -> string Interface.value
 val rewind : handle -> int -> int Interface.value
 val status : handle -> Interface.status Interface.value
 val goals : handle -> Interface.goals option Interface.value

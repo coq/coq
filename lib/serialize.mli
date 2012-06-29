@@ -108,6 +108,10 @@ val to_value : (xml -> 'a) -> xml -> 'a value
 val of_call : 'a call -> xml
 val to_call : xml -> 'a call
 
+val of_message : message -> xml
+val to_message : xml -> message
+val is_message : xml -> bool
+
 val of_answer : 'a call -> 'a value -> xml
 val to_answer : xml -> 'a value
 

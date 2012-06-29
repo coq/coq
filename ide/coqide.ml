@@ -577,6 +577,9 @@ object(self)
     message_view#clear ();
     message_view#push Interface.Notice s
 
+  method private push_message level content =
+    message_view#push level content
+
   method get_start_of_input =  input_buffer#get_iter_at_mark (`NAME "start_of_input")
 
   method get_insert = get_insert input_buffer
@@ -649,7 +652,7 @@ object(self)
         flash_info "This error is so nasty that I can't even display it."
       else self#insert_message s;
     in
-    match Coq.interp handle ~raw:true ~verbose:false phrase with
+    match Coq.interp handle self#push_message ~raw:true ~verbose:false phrase with
     | Interface.Fail (_, err) -> sync display_error err
     | Interface.Good msg -> sync self#insert_message msg
 
@@ -690,6 +693,7 @@ object(self)
   method private process_command_queue ?(verbose = false) queue handle =
     let error = ref None in
     let info = ref [] in
+    let push_info level message = info := (level, message) :: !info in
     (* First, process until error *)
     Minilib.log "Begin command processing";
     while not (Queue.is_empty queue) && !error = None do
@@ -699,9 +703,9 @@ object(self)
         let start = input_buffer#get_iter_at_mark sentence.start in
         let stop = input_buffer#get_iter_at_mark sentence.stop in
         let phrase = start#get_slice ~stop in
-        match Coq.interp handle ~verbose phrase with
+        match Coq.interp handle push_info ~verbose phrase with
         | Interface.Fail (loc, msg) -> error := Some (phrase, loc, msg);
-        | Interface.Good msg -> info := msg :: !info
+        | Interface.Good msg -> push_info Interface.Notice msg
       end;
       (* If there is no error, then we mark it done *)
       if !error = None then begin
@@ -758,8 +762,8 @@ object(self)
     self#show_goals handle;
     match error with
     | None ->
-      let msg = try List.hd msg with _ -> "" in
-      if verbose then self#set_message msg;
+      if verbose then
+        List.iter (fun (lvl, msg) -> self#push_message lvl msg) msg;
       finish ();
       self#recenter_insert
     | Some (phrase, loc, msg) ->
@@ -855,7 +859,7 @@ object(self)
         else self#insert_message s
       in
       Minilib.log "Send_to_coq starting now";
-      match Coq.interp handle ~verbose:false phrase with
+      match Coq.interp handle default_logger ~verbose:false phrase with
         | Interface.Fail (l,str) -> sync display_error (l,str); None
         | Interface.Good msg -> sync self#insert_message msg; Some Safe
           (* TODO: Restore someday the access to Decl_mode.get_damon_flag,
@@ -934,7 +938,7 @@ object(self)
 	  | Interface.Good true -> ()
 	  | Interface.Good false ->
 	    let cmd = Printf.sprintf "Add LoadPath \"%s\". "  dir in
-	    match Coq.interp handle cmd with
+	    match Coq.interp handle default_logger cmd with
 	      | Interface.Fail (l,str) ->
 		self#set_message ("Couln't add loadpath:\n"^str)
 	      | Interface.Good _ -> ()

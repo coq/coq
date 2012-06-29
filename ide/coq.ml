@@ -179,6 +179,7 @@ type handle = {
   cout : in_channel;
   cin : out_channel;
   mutable alive : bool;
+  xml_parser : Xml_parser.t;
 }
 
 type coqtop = {
@@ -204,6 +205,8 @@ type coqtop = {
   - coqtop.handle may be written ONLY when toplvl_ctr_mtx AND coqtop.lock is 
     taken.
 *)
+
+type logger = Interface.message_level -> string -> unit
 
 exception DeadCoqtop
 
@@ -249,12 +252,15 @@ let unsafe_spawn_handle args =
   let prog = coqtop_path () in
   let args = Array.of_list (prog :: "-ideslave" :: args) in
   let (pid, ic, oc) = open_process_pid prog args in
+  let p = Xml_parser.make (Xml_parser.SChannel ic) in
+  Xml_parser.check_eof p false;
   incr toplvl_ctr;
   {
     pid = pid;
     cin = oc;
     cout = ic;
     alive = true;
+    xml_parser = p;
   }
 
 (** This clears any potentially remaining open garbage. *)
@@ -345,15 +351,22 @@ let try_grab coqtop f g =
 
 (** Cf [Ide_intf] for more details *)
 
-let p = Xml_parser.make ()
-let () = Xml_parser.check_eof p false
-
-let eval_call coqtop (c:'a Serialize.call) =
+let eval_call coqtop logger (c:'a Serialize.call) =
+  (** Retrieve the messages sent by coqtop until an answer has been received *)
+  let rec loop () =
+    let xml = Xml_parser.parse coqtop.xml_parser in
+    if Serialize.is_message xml then
+      let message = Serialize.to_message xml in
+      let level = message.Interface.message_level in
+      let content = message.Interface.message_content in
+      let () = logger level content  in
+      loop ()
+    else (Serialize.to_answer xml : 'a Interface.value)
+  in
   try
     Xml_utils.print_xml coqtop.cin (Serialize.of_call c);
     flush coqtop.cin;
-    let xml = Xml_parser.parse p (Xml_parser.SChannel coqtop.cout) in
-    (Serialize.to_answer xml : 'a Interface.value)
+    loop ()
   with
   | Serialize.Marshal_error ->
     (* the protocol was not respected... *)
@@ -366,20 +379,20 @@ let eval_call coqtop (c:'a Serialize.call) =
     Minilib.log msg;
     raise DeadCoqtop
 
-let interp coqtop ?(raw=false) ?(verbose=true) s =
-  eval_call coqtop (Serialize.interp (raw,verbose,s))
-let rewind coqtop i = eval_call coqtop (Serialize.rewind i)
-let inloadpath coqtop s = eval_call coqtop (Serialize.inloadpath s)
-let mkcases coqtop s = eval_call coqtop (Serialize.mkcases s)
-let status coqtop = eval_call coqtop Serialize.status
-let hints coqtop = eval_call coqtop Serialize.hints
-let search coqtop flags = eval_call coqtop (Serialize.search flags)
+let interp coqtop log ?(raw=false) ?(verbose=true) s =
+  eval_call coqtop log (Serialize.interp (raw,verbose,s))
+let rewind coqtop i = eval_call coqtop default_logger (Serialize.rewind i)
+let inloadpath coqtop s = eval_call coqtop default_logger (Serialize.inloadpath s)
+let mkcases coqtop s = eval_call coqtop default_logger (Serialize.mkcases s)
+let status coqtop = eval_call coqtop default_logger Serialize.status
+let hints coqtop = eval_call coqtop default_logger Serialize.hints
+let search coqtop flags = eval_call coqtop default_logger (Serialize.search flags)
 
 let unsafe_close coqtop =
   if Mutex.try_lock coqtop.lock then begin
     let () =
       try
-        match eval_call coqtop.handle Serialize.quit with
+        match eval_call coqtop.handle default_logger Serialize.quit with
         | Interface.Good _ -> ()
         | _ -> raise Exit
       with err -> kill_coqtop coqtop
@@ -448,7 +461,7 @@ struct
     let () = List.iter (fun (name, v) -> Hashtbl.replace state_hack name v) options in
     let options = List.map (fun (name, v) -> (name, Interface.BoolValue v)) options in
     let options = (width, Interface.IntValue !width_ref):: options in
-    match eval_call coqtop (Serialize.set_options options) with
+    match eval_call coqtop default_logger (Serialize.set_options options) with
     | Interface.Good () -> ()
     | _ -> raise (Failure "Cannot set options.")
 
@@ -460,8 +473,8 @@ end
 
 let goals coqtop =
   let () = PrintOpt.enforce_hack coqtop in
-  eval_call coqtop Serialize.goals
+  eval_call coqtop default_logger Serialize.goals
 
 let evars coqtop =
   let () = PrintOpt.enforce_hack coqtop in
-  eval_call coqtop Serialize.evars
+  eval_call coqtop default_logger Serialize.evars

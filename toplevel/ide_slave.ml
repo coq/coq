@@ -396,6 +396,18 @@ let eval_call c =
   ignore (read_stdout ());
   Serialize.abstract_eval_call handler c
 
+(** Message dispatching. *)
+
+let slave_logger level message =
+  (* convert the message into XML *)
+  let message = {
+    Interface.message_level = level;
+    Interface.message_content = Pp.string_of_ppcmds message
+  } in
+  let xml = Serialize.of_message message in
+  (* Send it to stdout *)
+  Xml_utils.print_xml !orig_stdout xml;
+  flush !orig_stdout
 
 (** The main loop *)
 
@@ -410,10 +422,11 @@ let fail err =
   Serialize.of_value (fun _ -> assert false) (Interface.Fail (None, err))
 
 let loop () =
-  let p = Xml_parser.make () in
+  let p = Xml_parser.make (Xml_parser.SChannel stdin) in
   let () = Xml_parser.check_eof p false in
   init_signal_handler ();
   catch_break := false;
+  Pp.set_logger slave_logger;
   (* We'll handle goal fetching and display in our own way *)
   Vernacentries.enable_goal_printing := false;
   Vernacentries.qed_display_script := false;
@@ -422,7 +435,7 @@ let loop () =
     while true do
       let xml_answer =
         try
-          let xml_query = Xml_parser.parse p (Xml_parser.SChannel stdin) in
+          let xml_query = Xml_parser.parse p in
           let q = Serialize.to_call xml_query in
           let () = pr_debug ("<-- " ^ Serialize.pr_call q) in
           let r = eval_call q in

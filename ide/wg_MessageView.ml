@@ -31,7 +31,8 @@ let message_view () : message_view =
       | Interface.Error -> [Tags.Message.error]
       | _ -> []
       in
-      buffer#insert ~tags msg
+      buffer#insert ~tags msg;
+      buffer#insert ~tags "\n"
 
     method add_selection_clipboard cb =
       buffer#add_selection_clipboard cb

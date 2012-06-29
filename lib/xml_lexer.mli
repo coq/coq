@@ -38,7 +38,7 @@ type token =
 type pos = int * int * int * int
 
 val init : Lexing.lexbuf -> unit 
-val close : Lexing.lexbuf -> unit
+val close : unit -> unit
 val token : Lexing.lexbuf -> token
 val pos : Lexing.lexbuf -> pos
 val restore : pos -> unit

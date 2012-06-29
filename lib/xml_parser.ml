@@ -50,21 +50,16 @@ exception Error of error
 exception File_not_found of string
 
 type t = {
-	mutable check_eof : bool;
-	mutable concat_pcdata : bool;
+  mutable check_eof : bool;
+  mutable concat_pcdata : bool;
+  source : Lexing.lexbuf;
+  stack : Xml_lexer.token Stack.t;
 }
 
-type source = 
-	| SFile of string
-	| SChannel of in_channel
-	| SString of string
-	| SLexbuf of Lexing.lexbuf
-
-type state = {
-	source : Lexing.lexbuf;
-	stack : Xml_lexer.token Stack.t;
-	xparser : t;
-}
+type source =
+| SChannel of in_channel
+| SString of string
+| SLexbuf of Lexing.lexbuf
 
 exception Internal_error of error_msg
 exception NoMoreData
@@ -88,11 +83,19 @@ let _raises e f =
 	xml_error := e;
 	file_not_found := f
 
-let make () =
-	{
-		check_eof = true;
-		concat_pcdata = true;
-	}
+let make source =
+  let source = match source with
+  | SChannel chan -> Lexing.from_channel chan
+  | SString s -> Lexing.from_string s
+  | SLexbuf lexbuf -> lexbuf
+  in
+  let () = Xml_lexer.init source in
+  {
+    check_eof = true;
+    concat_pcdata = true;
+    source = source;
+    stack = Stack.create ();
+  }
 
 let check_eof p v = p.check_eof <- v
 let concat_pcdata p v = p.concat_pcdata <- v
@@ -162,40 +165,25 @@ let convert = function
 	| Xml_lexer.EAttributeValueExpected -> AttributeValueExpected
 	| Xml_lexer.EUnterminatedEntity -> 	UnterminatedEntity
 
-let do_parse xparser source =
+let do_parse xparser =
 	try
-		Xml_lexer.init source;
-		let s = { source = source; xparser = xparser; stack = Stack.create(); } in
-		let x = read_xml s in
-		if xparser.check_eof && pop s <> Xml_lexer.Eof then raise (Internal_error EOFExpected);
-		Xml_lexer.close source;
+		Xml_lexer.init xparser.source;
+		let x = read_xml xparser in
+		if xparser.check_eof && pop xparser <> Xml_lexer.Eof then raise (Internal_error EOFExpected);
+		Xml_lexer.close ();
 		x
 	with
 		| NoMoreData ->
-			Xml_lexer.close source;
-			raise (!xml_error NodeExpected source)
+			Xml_lexer.close ();
+			raise (!xml_error NodeExpected xparser.source)
 		| Internal_error e ->
-			Xml_lexer.close source;
-			raise (!xml_error e source)
+			Xml_lexer.close ();
+			raise (!xml_error e xparser.source)
 		| Xml_lexer.Error e ->
-			Xml_lexer.close source;
-			raise (!xml_error (convert e) source)
+			Xml_lexer.close ();
+			raise (!xml_error (convert e) xparser.source)
 
-let parse p = function
-	| SChannel ch -> do_parse p (Lexing.from_channel ch)
-	| SString str -> do_parse p (Lexing.from_string str)
-	| SLexbuf lex -> do_parse p lex
-	| SFile fname ->
-		let ch = (try open_in fname with Sys_error _ -> raise (!file_not_found fname)) in
-		try
-			let x = do_parse p (Lexing.from_channel ch) in
-			close_in ch;
-			x
-		with
-			e ->
-				close_in ch;
-				raise e
-
+let parse p = do_parse p
 
 let error_msg = function
         | UnterminatedComment -> "Unterminated comment"

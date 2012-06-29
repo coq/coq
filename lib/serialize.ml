@@ -412,9 +412,39 @@ let to_coq_info = function
   }
 | _ -> raise Marshal_error
 
+let of_message_level = function
+| Debug s -> constructor "message_level" "debug" [PCData s]
+| Info -> constructor "message_level" "info" []
+| Notice -> constructor "message_level" "notice" []
+| Warning -> constructor "message_level" "warning" []
+| Error -> constructor "message_level" "error" []
+
+let to_message_level xml = do_match xml "message_level"
+  (fun s args -> match s with
+  | "debug" -> Debug (raw_string args)
+  | "info" -> Info
+  | "notice" -> Notice
+  | "warning" -> Warning
+  | "error" -> Error
+  | _ -> raise Marshal_error)
+
+let of_message msg =
+  let lvl = of_message_level msg.message_level in
+  let content = of_string msg.message_content in
+  Element ("message", [], [lvl; content])
+
+let to_message xml = match xml with
+| Element ("message", [], [lvl; content]) ->
+  { message_level = to_message_level lvl; message_content = to_string content }
+| _ -> raise Marshal_error
+
 let of_hints =
   let of_hint = of_list (of_pair of_string of_string) in
   of_option (of_pair (of_list of_hint) of_hint)
+
+let is_message = function
+| Element ("message", _, _) -> true
+| _ -> false
 
 let of_answer (q : 'a call) (r : 'a value) =
   let convert = match q with
