@@ -400,9 +400,10 @@ let eval_call c =
 
 let slave_logger level message =
   (* convert the message into XML *)
+  let msg = Pp.string_of_ppcmds (hov 0 message) in
   let message = {
     Interface.message_level = level;
-    Interface.message_content = Pp.string_of_ppcmds message
+    Interface.message_content = msg;
   } in
   let xml = Serialize.of_message message in
   (* Send it to stdout *)

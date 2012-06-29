@@ -447,7 +447,7 @@ struct
   let width = ["Printing"; "Width"]
   let implicit = ["Printing"; "Implicit"]
   let coercions = ["Printing"; "Coercions"]
-  let raw_matching = ["Printing"; "Matching"; "Synth"]
+  let raw_matching = ["Printing"; "Matching"]
   let notations = ["Printing"; "Notations"]
   let all_basic = ["Printing"; "All"]
   let existential = ["Printing"; "Existential"; "Instances"]

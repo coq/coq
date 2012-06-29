@@ -26,4 +26,15 @@ let debug = ref false
 *)
 
 let log ?(level = `DEBUG) msg =
-  if !debug then try prerr_endline msg; flush stderr with _ -> ()
+  let prefix = match level with
+  | `DEBUG -> "DEBUG"
+  | `INFO -> "INFO"
+  | `NOTICE -> "NOTICE"
+  | `WARNING -> "WARNING"
+  | `ERROR -> "ERROR"
+  | `FATAL -> "FATAL"
+  in
+  if !debug then begin
+    try Printf.eprintf "[%s] %s\n%!" prefix msg
+    with _ -> ()
+  end
