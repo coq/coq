@@ -422,8 +422,6 @@ let fail err =
   Serialize.of_value (fun _ -> assert false) (Interface.Fail (None, err))
 
 let loop () =
-  let p = Xml_parser.make (Xml_parser.SChannel stdin) in
-  let () = Xml_parser.check_eof p false in
   init_signal_handler ();
   catch_break := false;
   Pp.set_logger slave_logger;
@@ -435,6 +433,8 @@ let loop () =
     while true do
       let xml_answer =
         try
+          let p = Xml_parser.make (Xml_parser.SChannel stdin) in
+          let () = Xml_parser.check_eof p false in
           let xml_query = Xml_parser.parse p in
           let q = Serialize.to_call xml_query in
           let () = pr_debug ("<-- " ^ Serialize.pr_call q) in
