@@ -27,6 +27,9 @@ type proofview = {
      comb : Goal.goal list
      }
 
+let proofview p =
+  p.comb , p.solution
+
 (* Initialises a proofview, the argument is a list of environement, 
    conclusion types, and optional names, creating that many initial goals. *)
 let init = 
@@ -93,6 +96,8 @@ let list_goto =
    and second component is what goes after (in the expected
    order) *)
 type focus_context = Goal.goal list * Goal.goal list
+
+let focus_context (l,r) = List.length l + List.length r
 
 (* This (internal) function extracts a sublist between two indices, and
    returns this sublist together with its context:

@@ -34,6 +34,15 @@ open Term
 (* Type of a proof. *)
 type proof
 
+(* Returns a stylised view of a proof for use by, for instance,
+   ide-s. *)
+(* spiwack: the type of [proof] will change as we push more refined
+   functions to ide-s. This would be better than spawning a new nearly
+   identical function everytime. Hence the generic name. *)
+(* In this version: returns the focused goals, a representation of the
+   focus stack (the number of goals at each level) and the underlying
+   evar_map *)
+val proof : proof -> Goal.goal list * int list * Evd.evar_map
 
 (*** General proof functions ***)
 
