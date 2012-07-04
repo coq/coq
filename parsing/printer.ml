@@ -430,15 +430,7 @@ let pr_open_subgoals () =
   | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
             begin match bgoals with
 	    | [] -> pr_subgoals None sigma seeds goals
-	    | _ -> pr_subgoals None bsigma seeds bgoals ++ fnl () ++ fnl () ++
-		      str"This subproof is complete, but there are still unfocused goals." ++ fnl ()
-		(* spiwack: to stay compatible with the proof general and coqide,
-		    I use print the message after the goal. It would be better to have
-		    something like:
- 		      str"This subproof is complete, but there are still unfocused goals:" 
-		      ++ fnl () ++ fnl () ++ pr_subgoals None bsigma bgoals
-		    instead. But it doesn't quite work.
-		*)
+	    | _ -> str"This subproof is complete, but there are still unfocused goals." ++ fnl () ++ fnl () ++ pr_subgoals None bsigma seeds bgoals
 	    end
   | _ -> pr_subgoals None sigma seeds goals
   end
