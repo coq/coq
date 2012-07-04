@@ -24,6 +24,16 @@ open Term
 
 type proofview 
 
+
+(* Returns a stylised view of a proofview for use by, for instance,
+   ide-s. *)
+(* spiwack: the type of [proofview] will change as we push more
+   refined functions to ide-s. This would be better than spawning a
+   new nearly identical function everytime. Hence the generic name. *)
+(* In this version: returns the list of focused goals together with
+   the [evar_map] context. *)
+val proofview : proofview -> Goal.goal list * Evd.evar_map
+
 (* Initialises a proofview, the argument is a list of environement, 
    conclusion types, creating that many initial goals. *)
 val init : (Environ.env * Term.types) list -> proofview
@@ -45,6 +55,14 @@ exception IndexOutOfRange
 
 (* Type of the object which allow to unfocus a view.*)
 type focus_context
+
+(* Returns a stylised view of a focus_context for use by, for
+   instance, ide-s. *)
+(* spiwack: the type of [focus_context] will change as we push more
+   refined functions to ide-s. This would be better than spawning a
+   new nearly identical function everytime. Hence the generic name. *)
+(* In this version: returns the number of goals that are held *)
+val focus_context : focus_context -> int
 
 (* [focus i j] focuses a proofview on the goals from index [i] to index [j] 
    (inclusive). (i.e. goals number [i] to [j] become the only goals of the

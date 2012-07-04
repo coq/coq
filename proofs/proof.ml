@@ -149,12 +149,26 @@ type proof = { (* current proof_state *)
 
 (*** General proof functions ***)
 
+let proof { state = p } =
+  let (goals,sigma) = Proofview.proofview p.proofview in
+  (* spiwack: beware, the bottom of the stack is used by [Proof]
+     internally, and should not be exposed. *)
+  let rec map_minus_one f = function
+    | [] -> assert false
+    | [_] -> []
+    | a::l -> f a :: (map_minus_one f l)
+  in
+  let stack =
+    map_minus_one (fun (_,_,c) -> Proofview.focus_context c) p.focus_stack
+  in
+  (goals,stack,sigma)
+
 let rec unroll_focus pv = function
   | (_,_,ctx)::stk -> unroll_focus (Proofview.unfocus ctx pv) stk
   | [] -> pv
 
 (* spiwack: a proof is considered completed even if its still focused, if the focus
-                   doesn't hide any goal.
+   doesn't hide any goal.
    Unfocusing is handled in {!return}. *)
 let is_done p =
   Proofview.finished p.state.proofview && 
