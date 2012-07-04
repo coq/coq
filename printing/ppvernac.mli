@@ -20,8 +20,6 @@ open Libnames
 open Ppextend
 open Topconstr
 
-val sep_end : unit -> std_ppcmds
-
 (** Prints a vernac expression *)
 val pr_vernac_body : vernac_expr -> std_ppcmds
 

@@ -62,7 +62,11 @@ let pr_module = Libnames.pr_reference
 
 let pr_import_module = Libnames.pr_reference
 
-let sep_end () = str"."
+let sep_end = function
+  | VernacBullet _
+  | VernacSubproof None
+  | VernacEndSubproof -> str""
+  | _ -> str"."
 
 (* Warning: [pr_raw_tactic] globalises and fails if globalisation fails *)
 
@@ -483,7 +487,7 @@ let rec pr_vernac = function
   (* Control *)
   | VernacList l ->
       hov 2 (str"[" ++ spc() ++
-             prlist (fun v -> pr_located pr_vernac v ++ sep_end () ++ fnl()) l
+             prlist (fun v -> pr_located pr_vernac v ++ sep_end (snd v) ++ fnl()) l
              ++ spc() ++ str"]")
   | VernacLoad (f,s) -> str"Load" ++ if f then (spc() ++ str"Verbose"
   ++ spc()) else spc()  ++ qs s
@@ -967,4 +971,4 @@ in pr_vernac
 
 let pr_vernac_body v = make_pr_vernac pr_constr_expr pr_lconstr_expr v
 
-let pr_vernac v = make_pr_vernac pr_constr_expr pr_lconstr_expr v ++ sep_end ()
+let pr_vernac v = make_pr_vernac pr_constr_expr pr_lconstr_expr v ++ sep_end v
