@@ -604,7 +604,8 @@ Section MakeRingPol.
   (morph_opp CRmorph)
   : Esimpl.
 
- Ltac Esimpl := autorewrite with Esimpl; rsimpl; simpl.
+ (* Quicker than autorewrite with Esimpl :-) *)
+ Ltac Esimpl := try rewrite_db Esimpl; rsimpl; simpl.
 
  Lemma PaddC_ok c P l : (PaddC P c)@l == P@l + [c].
  Proof.

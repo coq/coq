@@ -993,6 +993,11 @@ let explain_reduction_tactic_error = function
 let explain_ltac_call_trace (nrep,last,trace,loc) =
   let calls =
     (nrep,last) :: List.rev (List.map(fun(n,_,ck)->(n,ck))trace) in
+  let tacexpr_differ te te' =
+    (* NB: The following comparison may raise an exception
+       since a tacexpr may embed a functional part via a TacExtend *)
+    try te <> te' with Invalid_argument _ -> false
+  in
   let pr_call (n,ck) =
     (match ck with
        | Proof_type.LtacNotationCall s -> quote (str s)
@@ -1004,11 +1009,11 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
 	   (Pptactic.pr_glob_tactic (Global.env())
 	      (Tacexpr.TacAtom (Loc.ghost,te)))
 	   ++ (match !otac with
-		 | Some te' when (Obj.magic te' <> te) ->
-		     strbrk " (expanded to " ++ quote
-		       (Pptactic.pr_tactic (Global.env())
-			  (Tacexpr.TacAtom (Loc.ghost,te')))
-		     ++ str ")"
+		 | Some te' when tacexpr_differ (Obj.magic te') te ->
+		   strbrk " (expanded to " ++ quote
+		     (Pptactic.pr_tactic (Global.env())
+			(Tacexpr.TacAtom (Loc.ghost,te')))
+		   ++ str ")"
 		 | _ -> mt ())
        | Proof_type.LtacConstrInterp (c,(vars,unboundvars)) ->
 	   let filter =

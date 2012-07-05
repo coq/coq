@@ -1528,9 +1528,16 @@ ARGUMENT EXTEND rewstrategy
   | [ "fold" constr(c) ] -> [ StratFold c ]
 END
 
+(* By default the strategy for "rewrite_db" is top-down *)
+
+let db_strat db = Strategies.td (Strategies.hints db)
+let cl_rewrite_clause_db db cl = cl_rewrite_clause_strat (db_strat db) cl
+
 TACTIC EXTEND rewrite_strat
 | [ "rewrite_strat" rewstrategy(s) "in" hyp(id) ] -> [ cl_rewrite_clause_strat s (Some id) ]
 | [ "rewrite_strat" rewstrategy(s) ] -> [ cl_rewrite_clause_strat s None ]
+| [ "rewrite_db" preident(db) "in" hyp(id) ] -> [ cl_rewrite_clause_db db (Some id) ]
+| [ "rewrite_db" preident(db) ] -> [ cl_rewrite_clause_db db None ]
 END
 
 let clsubstitute o c =
