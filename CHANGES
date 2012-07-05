@@ -7,6 +7,12 @@ Vernacular commands
   (foo_rect, foo_rec, foo_ind) anymore by default (feature wish #2693).
   A flag "Set/Unset Record Elimination Schemes" allows to change this.
   The tactic "induction" on a record is now actually doing "destruct".
+- The "Open Scope" command can now be given also a delimiter (e.g. Z).
+
+Specification Language
+
+- The syntax "x -> y" is now declared at level 99. In particular, it has
+  now a lower priority than "<->" : "A -> B <-> C" is now "A -> (B <-> C)".
 
 Tactics
 
@@ -29,6 +35,9 @@ Program
 Notations
 
 - "Bind Scope" can no longer bind "Funclass" and "Sortclass".
+- A notation can be given a (compat "8.x") annotation, making
+  it behave like a (only parsing), but flags may active warning
+  or error when this notation is used.
 
 Internal Infrastructure
 
