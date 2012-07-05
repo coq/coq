@@ -314,23 +314,23 @@ unfold cos_approx; simpl; unfold cos_term.
 simpl mult; replace ((-1)^ 0) with 1 by ring; replace ((-1)^2) with 1 by ring;
  replace ((-1)^4) with 1 by ring; replace ((-1)^1) with (-1) by ring;
  replace ((-1)^3) with (-1) by ring; replace 3 with (IZR 3) by (simpl; ring);
- replace 2 with (IZR 2) by (simpl; ring); simpl Z_of_nat;
+ replace 2 with (IZR 2) by (simpl; ring); simpl Z.of_nat;
  rewrite !INR_IZR_INZ, Ropp_mult_distr_l_reverse, Rmult_1_l.
 match goal with |- _ < ?a =>
-replace a with ((- IZR 3 ^ 6 * IZR (Z_of_nat (fact 0)) * IZR (Z_of_nat (fact 2)) *
-    IZR (Z_of_nat (fact 4)) +
-    IZR 3 ^ 4 * IZR 2 ^ 2 * IZR (Z_of_nat (fact 0)) * IZR (Z_of_nat (fact 2)) *
-    IZR (Z_of_nat (fact 6)) -
-    IZR 3 ^ 2 * IZR 2 ^ 4 * IZR (Z_of_nat (fact 0)) * IZR (Z_of_nat (fact 4)) *
-    IZR (Z_of_nat (fact 6)) +
-    IZR 2 ^ 6 * IZR (Z_of_nat (fact 2)) * IZR (Z_of_nat (fact 4)) *
-    IZR (Z_of_nat (fact 6))) /
-   (IZR 2 ^ 6 * IZR (Z_of_nat (fact 0)) * IZR (Z_of_nat (fact 2)) *
-    IZR (Z_of_nat (fact 4)) * IZR (Z_of_nat (fact 6))));[ | field;
+replace a with ((- IZR 3 ^ 6 * IZR (Z.of_nat (fact 0)) * IZR (Z.of_nat (fact 2)) *
+    IZR (Z.of_nat (fact 4)) +
+    IZR 3 ^ 4 * IZR 2 ^ 2 * IZR (Z.of_nat (fact 0)) * IZR (Z.of_nat (fact 2)) *
+    IZR (Z.of_nat (fact 6)) -
+    IZR 3 ^ 2 * IZR 2 ^ 4 * IZR (Z.of_nat (fact 0)) * IZR (Z.of_nat (fact 4)) *
+    IZR (Z.of_nat (fact 6)) +
+    IZR 2 ^ 6 * IZR (Z.of_nat (fact 2)) * IZR (Z.of_nat (fact 4)) *
+    IZR (Z.of_nat (fact 6))) /
+   (IZR 2 ^ 6 * IZR (Z.of_nat (fact 0)) * IZR (Z.of_nat (fact 2)) *
+    IZR (Z.of_nat (fact 4)) * IZR (Z.of_nat (fact 6))));[ | field;
     repeat apply conj;((rewrite <- INR_IZR_INZ; apply INR_fact_neq_0) ||
          (apply Rgt_not_eq; apply (IZR_lt 0); reflexivity)) ]
 end.
-rewrite !fact_simpl, !inj_mult; simpl Z_of_nat.
+rewrite !fact_simpl, !Nat2Z.inj_mul; simpl Z.of_nat.
 unfold Rdiv; apply Rmult_lt_0_compat.
 unfold Rminus; rewrite !pow_IZR, <- !opp_IZR, <- !mult_IZR, <- !opp_IZR, 
   <- !plus_IZR; apply (IZR_lt 0); reflexivity.
@@ -788,7 +788,7 @@ intros x Hx eps Heps.
   intros ; rewrite H0 in H ; try discriminate H.
    rewrite H0 in HN.
    simpl in HN.
-   pose (N := nat_of_P p).
+   pose (N := Pos.to_nat p).
    fold N in HN.
    clear H H0.
    exists N.
