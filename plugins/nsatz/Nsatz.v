@@ -152,9 +152,7 @@ Lemma norm_correct :
   forall (l : list R) (pe : PEZ), PEevalR l pe == PhiR l (norm pe).
 Proof.
  intros;apply (norm_aux_spec Rset Rext (Rth_ARth Rset Rext Rtheory)
-           (gen_phiZ_morph Rset Rext Rtheory) R_power_theory)
-    with (lmp:= List.nil).
- compute;trivial.
+           (gen_phiZ_morph Rset Rext Rtheory) R_power_theory).
 Qed.
 
 Lemma PolZeq_correct : forall P P' l,
