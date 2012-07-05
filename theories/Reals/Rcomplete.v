@@ -37,7 +37,7 @@ Proof.
   intros.
   exists x.
   rewrite <- H2 in p0.
-  unfold Un_cv in |- *.
+  unfold Un_cv.
   intros.
   unfold Un_cv in p; unfold Un_cv in p0.
   cut (0 < eps / 3).
@@ -46,7 +46,7 @@ Proof.
   elim (p0 (eps / 3) H4); intros.
   exists (max x1 x2).
   intros.
-  unfold R_dist in |- *.
+  unfold R_dist.
   apply Rle_lt_trans with (Rabs (Un n - Vn n) + Rabs (Vn n - x)).
   replace (Un n - x) with (Un n - Vn n + (Vn n - x));
   [ apply Rabs_triang | ring ].
@@ -54,14 +54,14 @@ Proof.
   do 2 rewrite <- (Rplus_comm (Rabs (Vn n - x))).
   apply Rplus_le_compat_l.
   repeat rewrite Rabs_right.
-  unfold Rminus in |- *; do 2 rewrite <- (Rplus_comm (- Vn n));
+  unfold Rminus; do 2 rewrite <- (Rplus_comm (- Vn n));
     apply Rplus_le_compat_l.
   assert (H8 := Vn_Un_Wn_order Un (cauchy_maj Un H) (cauchy_min Un H)).
   fold Vn Wn in H8.
   elim (H8 n); intros.
   assumption.
   apply Rle_ge.
-  unfold Rminus in |- *; apply Rplus_le_reg_l with (Vn n).
+  unfold Rminus; apply Rplus_le_reg_l with (Vn n).
   rewrite Rplus_0_r.
   replace (Vn n + (Wn n + - Vn n)) with (Wn n); [ idtac | ring ].
   assert (H8 := Vn_Un_Wn_order Un (cauchy_maj Un H) (cauchy_min Un H)).
@@ -69,7 +69,7 @@ Proof.
   elim (H8 n); intros.
   apply Rle_trans with (Un n); assumption.
   apply Rle_ge.
-  unfold Rminus in |- *; apply Rplus_le_reg_l with (Vn n).
+  unfold Rminus; apply Rplus_le_reg_l with (Vn n).
   rewrite Rplus_0_r.
   replace (Vn n + (Un n + - Vn n)) with (Un n); [ idtac | ring ].
   assert (H8 := Vn_Un_Wn_order Un (cauchy_maj Un H) (cauchy_min Un H)).
@@ -85,26 +85,26 @@ Proof.
   repeat apply Rplus_lt_compat.
   unfold R_dist in H5.
   apply H5.
-  unfold ge in |- *; apply le_trans with (max x1 x2).
+  unfold ge; apply le_trans with (max x1 x2).
   apply le_max_l.
   assumption.
   rewrite <- Rabs_Ropp.
   replace (- (x - Vn n)) with (Vn n - x); [ idtac | ring ].
   unfold R_dist in H6.
   apply H6.
-  unfold ge in |- *; apply le_trans with (max x1 x2).
+  unfold ge; apply le_trans with (max x1 x2).
   apply le_max_r.
   assumption.
   unfold R_dist in H6.
   apply H6.
-  unfold ge in |- *; apply le_trans with (max x1 x2).
+  unfold ge; apply le_trans with (max x1 x2).
   apply le_max_r.
   assumption.
   right.
-  pattern eps at 4 in |- *; replace eps with (3 * (eps / 3)).
+  pattern eps at 4; replace eps with (3 * (eps / 3)).
   ring.
-  unfold Rdiv in |- *; rewrite <- Rmult_assoc; apply Rinv_r_simpl_m; discrR.
-  unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+  unfold Rdiv; rewrite <- Rmult_assoc; apply Rinv_r_simpl_m; discrR.
+  unfold Rdiv; apply Rmult_lt_0_compat;
     [ assumption | apply Rinv_0_lt_compat; prove_sup0 ].
   apply cond_eq.
   intros.
@@ -130,10 +130,10 @@ Proof.
   repeat apply Rplus_lt_compat.
   rewrite <- Rabs_Ropp.
   replace (- (x - Wn N)) with (Wn N - x); [ apply H4 | ring ].
-  unfold ge, N in |- *.
+  unfold ge, N.
   apply le_trans with (max N1 N2); apply le_max_l.
-  unfold Wn, Vn in |- *.
-  unfold sequence_majorant, sequence_minorant in |- *.
+  unfold Wn, Vn.
+  unfold sequence_majorant, sequence_minorant.
   assert
     (H7 :=
       approx_maj (fun k:nat => Un (N + k)%nat) (maj_ss Un N (cauchy_maj Un H))).
@@ -169,13 +169,13 @@ Proof.
   [ repeat apply Rplus_lt_compat | ring ].
   assumption.
   apply H6.
-  unfold ge in |- *.
+  unfold ge.
   apply le_trans with N.
-  unfold N in |- *; apply le_max_r.
+  unfold N; apply le_max_r.
   apply le_plus_l.
-  unfold ge in |- *.
+  unfold ge.
   apply le_trans with N.
-  unfold N in |- *; apply le_max_r.
+  unfold N; apply le_max_r.
   apply le_plus_l.
   rewrite <- Rabs_Ropp.
   replace (- (Un (N + k1)%nat - Vn N)) with (Vn N - Un (N + k1)%nat);
@@ -183,14 +183,14 @@ Proof.
   reflexivity.
   reflexivity.
   apply H5.
-  unfold ge in |- *; apply le_trans with (max N1 N2).
+  unfold ge; apply le_trans with (max N1 N2).
   apply le_max_r.
-  unfold N in |- *; apply le_max_l.
-  pattern eps at 4 in |- *; replace eps with (5 * (eps / 5)).
+  unfold N; apply le_max_l.
+  pattern eps at 4; replace eps with (5 * (eps / 5)).
   ring.
-  unfold Rdiv in |- *; rewrite <- Rmult_assoc; apply Rinv_r_simpl_m.
+  unfold Rdiv; rewrite <- Rmult_assoc; apply Rinv_r_simpl_m.
   discrR.
-  unfold Rdiv in |- *; apply Rmult_lt_0_compat.
+  unfold Rdiv; apply Rmult_lt_0_compat.
   assumption.
   apply Rinv_0_lt_compat.
   prove_sup0; try apply lt_O_Sn.

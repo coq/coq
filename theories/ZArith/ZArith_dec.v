@@ -151,7 +151,7 @@ Proof.
   intro.
   apply False_rec.
   apply H.
-  symmetry  in |- *.
+  symmetry .
   assumption.
 Defined.
 
@@ -174,7 +174,7 @@ Proof.
   assumption.
   intro.
   right.
-  symmetry  in |- *.
+  symmetry .
   assumption.
 Defined.
 

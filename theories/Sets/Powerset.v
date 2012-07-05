@@ -39,7 +39,7 @@ Inductive Power_set (A:Ensemble U) : Ensemble (Ensemble U) :=
 Hint Resolve Definition_of_Power_set.
 
 Theorem Empty_set_minimal : forall X:Ensemble U, Included U (Empty_set U) X.
-intro X; red in |- *.
+intro X; red.
 intros x H'; elim H'.
 Qed.
 Hint Resolve Empty_set_minimal.
@@ -79,7 +79,7 @@ Lemma Strict_inclusion_is_transitive_with_inclusion :
    Strict_Included U x y -> Included U y z -> Strict_Included U x z.
 intros x y z H' H'0; try assumption.
 elim Strict_Rel_is_Strict_Included.
-unfold contains in |- *.
+unfold contains.
 intros H'1 H'2; try assumption.
 apply H'1.
 apply Strict_Rel_Transitive_with_Rel with (y := y); auto with sets.
@@ -90,7 +90,7 @@ Lemma Strict_inclusion_is_transitive_with_inclusion_left :
    Included U x y -> Strict_Included U y z -> Strict_Included U x z.
 intros x y z H' H'0; try assumption.
 elim Strict_Rel_is_Strict_Included.
-unfold contains in |- *.
+unfold contains.
 intros H'1 H'2; try assumption.
 apply H'1.
 apply Strict_Rel_Transitive_with_Rel_left with (y := y); auto with sets.
@@ -105,14 +105,14 @@ Qed.
 
 Theorem Empty_set_is_Bottom :
  forall A:Ensemble U, Bottom (Ensemble U) (Power_set_PO A) (Empty_set U).
-intro A; apply Bottom_definition; simpl in |- *; auto with sets.
+intro A; apply Bottom_definition; simpl; auto with sets.
 Qed.
 Hint Resolve Empty_set_is_Bottom.
 
 Theorem Union_minimal :
  forall a b X:Ensemble U,
    Included U a X -> Included U b X -> Included U (Union U a b) X.
-intros a b X H' H'0; red in |- *.
+intros a b X H' H'0; red.
 intros x H'1; elim H'1; auto with sets.
 Qed.
 Hint Resolve Union_minimal.
@@ -133,13 +133,13 @@ Qed.
 
 Theorem Intersection_decreases_l :
  forall a b:Ensemble U, Included U (Intersection U a b) a.
-intros a b; red in |- *.
+intros a b; red.
 intros x H'; elim H'; auto with sets.
 Qed.
 
 Theorem Intersection_decreases_r :
  forall a b:Ensemble U, Included U (Intersection U a b) b.
-intros a b; red in |- *.
+intros a b; red.
 intros x H'; elim H'; auto with sets.
 Qed.
 Hint Resolve Union_increases_l Union_increases_r Intersection_decreases_l
@@ -151,10 +151,10 @@ Theorem Union_is_Lub :
    Included U b A ->
    Lub (Ensemble U) (Power_set_PO A) (Couple (Ensemble U) a b) (Union U a b).
 intros A a b H' H'0.
-apply Lub_definition; simpl in |- *.
-apply Upper_Bound_definition; simpl in |- *; auto with sets.
+apply Lub_definition; simpl.
+apply Upper_Bound_definition; simpl; auto with sets.
 intros y H'1; elim H'1; auto with sets.
-intros y H'1; elim H'1; simpl in |- *; auto with sets.
+intros y H'1; elim H'1; simpl; auto with sets.
 Qed.
 
 Theorem Intersection_is_Glb :
@@ -164,13 +164,13 @@ Theorem Intersection_is_Glb :
    Glb (Ensemble U) (Power_set_PO A) (Couple (Ensemble U) a b)
      (Intersection U a b).
 intros A a b H' H'0.
-apply Glb_definition; simpl in |- *.
-apply Lower_Bound_definition; simpl in |- *; auto with sets.
+apply Glb_definition; simpl.
+apply Lower_Bound_definition; simpl; auto with sets.
 apply Definition_of_Power_set.
 generalize Inclusion_is_transitive; intro IT; red in IT; apply IT with a;
  auto with sets.
 intros y H'1; elim H'1; auto with sets.
-intros y H'1; elim H'1; simpl in |- *; auto with sets.
+intros y H'1; elim H'1; simpl; auto with sets.
 Qed.
 
 End The_power_set_partial_order.

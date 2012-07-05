@@ -44,7 +44,7 @@ Section identity_is_a_congruence.
 
  Lemma not_identity_sym : notT (identity x y) -> notT (identity y x).
  Proof.
-  red in |- *; intros H H'; apply H; destruct H'; trivial.
+  red; intros H H'; apply H; destruct H'; trivial.
  Qed.
 
 End identity_is_a_congruence.

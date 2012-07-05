@@ -9,7 +9,7 @@ Functional Scheme iszero_ind := Induction for iszero Sort Prop.
 
 Lemma toto : forall n : nat, n = 0 -> iszero n = true.
 intros x eg.
- functional induction iszero x; simpl in |- *.
+ functional induction iszero x; simpl.
 trivial.
 inversion eg.
 Qed.
@@ -212,19 +212,19 @@ Function plus_x_not_five'' (n m : nat) {struct n} : nat :=
 
 Lemma notplusfive'' : forall x y : nat, y = 5 -> plus_x_not_five'' x y = x.
 intros a b.
- functional induction plus_x_not_five'' a b; intros hyp; simpl in |- *; auto.
+ functional induction plus_x_not_five'' a b; intros hyp; simpl; auto.
 Qed.
 
 Lemma iseq_eq : forall n m : nat, n = m -> nat_equal_bool n m = true.
 intros n m.
- functional induction nat_equal_bool n m; simpl in |- *; intros hyp; auto.
+ functional induction nat_equal_bool n m; simpl; intros hyp; auto.
 rewrite <- hyp in y; simpl in y;tauto.
 inversion hyp.
 Qed.
 
 Lemma iseq_eq' : forall n m : nat, nat_equal_bool n m = true -> n = m.
 intros n m.
- functional induction nat_equal_bool n m; simpl in |- *; intros eg; auto.
+ functional induction nat_equal_bool n m; simpl; intros eg; auto.
 inversion eg.
 inversion eg.
 Qed.
@@ -245,7 +245,7 @@ Qed.
 
 Lemma inf_x_plusxy'' : forall x : nat, x <= x + 0.
 intros n.
-unfold plus in |- *.
+unfold plus.
  functional induction plus n 0; intros.
 auto with arith.
 apply le_n_S.
@@ -266,7 +266,7 @@ Function mod2 (n : nat) : nat :=
 
 Lemma princ_mod2 : forall n : nat, mod2 n <= n.
 intros n.
- functional induction mod2 n; simpl in |- *; auto with arith.
+ functional induction mod2 n; simpl; auto with arith.
 Qed.
 
 Function isfour (n : nat) : bool :=
@@ -284,7 +284,7 @@ Function isononeorfour (n : nat) : bool :=
 
 Lemma toto'' : forall n : nat, istrue (isfour n) -> istrue (isononeorfour n).
 intros n.
- functional induction isononeorfour n; intros istr; simpl in |- *;
+ functional induction isononeorfour n; intros istr; simpl;
  inversion istr.
 apply istrue0.
 destruct n. inversion istr.
@@ -367,7 +367,7 @@ Function ftest2 (n m : nat) {struct n} : nat :=
 
 Lemma test2' : forall n m : nat, ftest2 n m <= 2.
 intros n m.
- functional induction ftest2 n m; simpl in |- *; intros; auto.
+ functional induction ftest2 n m; simpl; intros; auto.
 Qed.
 
 Function ftest3 (n m : nat) {struct n} : nat :=
@@ -387,7 +387,7 @@ auto.
 intros.
 auto.
 intros.
-simpl in |- *.
+simpl.
 auto.
 Qed.
 
@@ -408,7 +408,7 @@ auto.
 intros.
 auto.
 intros.
-simpl in |- *.
+simpl.
 auto.
 Qed.
 
@@ -451,7 +451,7 @@ Qed.
 
 Lemma essai6 : forall n m : nat, ftest6 n m <= 2.
 intros n m.
- functional induction ftest6 n m; simpl in |- *; auto.
+ functional induction ftest6 n m; simpl; auto.
 Qed.
 
 (* Some tests with modules *)

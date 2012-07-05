@@ -72,7 +72,7 @@ Hint Resolve andb_prop: bool.
 Lemma andb_true_intro :
   forall b1 b2:bool, b1 = true /\ b2 = true -> andb b1 b2 = true.
 Proof.
-  destruct b1; destruct b2; simpl in |- *; intros [? ?]; assumption.
+  destruct b1; destruct b2; simpl; intros [? ?]; assumption.
 Qed.
 Hint Resolve andb_true_intro: bool.
 
@@ -203,7 +203,7 @@ Lemma injective_projections :
   forall (A B:Type) (p1 p2:A * B),
     fst p1 = fst p2 -> snd p1 = snd p2 -> p1 = p2.
 Proof.
-  destruct p1; destruct p2; simpl in |- *; intros Hfst Hsnd.
+  destruct p1; destruct p2; simpl; intros Hfst Hsnd.
   rewrite Hfst; rewrite Hsnd; reflexivity.
 Qed.
 

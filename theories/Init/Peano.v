@@ -54,7 +54,7 @@ Hint Immediate eq_add_S: core.
 
 Theorem not_eq_S : forall n m:nat, n <> m -> S n <> S m.
 Proof.
-  red in |- *; auto.
+  red; auto.
 Qed.
 Hint Resolve not_eq_S: core.
 
@@ -93,7 +93,7 @@ Hint Resolve (f_equal2 (A1:=nat) (A2:=nat)): core.
 
 Lemma plus_n_O : forall n:nat, n = n + 0.
 Proof.
-  induction n; simpl in |- *; auto.
+  induction n; simpl; auto.
 Qed.
 Hint Resolve plus_n_O: core.
 
@@ -104,7 +104,7 @@ Qed.
 
 Lemma plus_n_Sm : forall n m:nat, S (n + m) = n + S m.
 Proof.
-  intros n m; induction n; simpl in |- *; auto.
+  intros n m; induction n; simpl; auto.
 Qed.
 Hint Resolve plus_n_Sm: core.
 

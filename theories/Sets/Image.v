@@ -55,7 +55,7 @@ Section Image.
   Proof.
     intros X x f.
     apply Extensionality_Ensembles.
-    split; red in |- *; intros x0 H'.
+    split; red; intros x0 H'.
     elim H'; intros.
     rewrite H0.
     elim Add_inv with U X x x1; auto using Im_def with sets.
@@ -72,7 +72,7 @@ Section Image.
     intro f; try assumption.
     apply Extensionality_Ensembles.
     split; auto with sets.
-    red in |- *.
+    red.
     intros x H'; elim H'.
     intros x0 H'0; elim H'0; auto with sets.
   Qed.
@@ -102,7 +102,7 @@ Section Image.
     forall f:U -> V,
       ~ injective f ->  exists x : _, (exists y : _, f x = f y /\ x <> y).
   Proof.
-    unfold injective in |- *; intros f H.
+    unfold injective; intros f H.
     cut (exists x : _, ~ (forall y:U, f x = f y -> x = y)).
     2: apply not_all_ex_not with (P := fun x:U => forall y:U, f x = f y -> x = y);
       trivial with sets.
@@ -153,7 +153,7 @@ Section Image.
     apply cardinal_unicity with V (Add _ (Im A f) (f x)); trivial with sets.
     apply card_add; auto with sets.
     rewrite <- H1; trivial with sets.
-    red in |- *; intro; apply H'2.
+    red; intro; apply H'2.
     apply In_Image_elim with f; trivial with sets.
   Qed.
 
@@ -180,7 +180,7 @@ Section Image.
       cardinal U A n ->
       forall n':nat, cardinal V (Im A f) n' -> n' < n -> ~ injective f.
   Proof.
-    unfold not in |- *; intros A f n CAn n' CIfn' ltn'n I.
+    unfold not; intros A f n CAn n' CIfn' ltn'n I.
     cut (n' = n).
     intro E; generalize ltn'n; rewrite E; exact (lt_irrefl n).
     apply injective_preserves_cardinal with (A := A) (f := f) (n := n);

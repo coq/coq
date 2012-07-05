@@ -47,7 +47,7 @@ Hint Immediate gt_S_n: arith v62.
 
 Theorem gt_S : forall n m, S n > m -> n > m \/ m = n.
 Proof.
-  intros n m H; unfold gt in |- *; apply le_lt_or_eq; auto with arith.
+  intros n m H; unfold gt; apply le_lt_or_eq; auto with arith.
 Qed.
 
 Lemma gt_pred : forall n m, m > S n -> pred m > n.
@@ -110,23 +110,23 @@ Hint Resolve le_gt_S: arith v62.
 
 Theorem le_gt_trans : forall n m p, m <= n -> m > p -> n > p.
 Proof.
-  red in |- *; intros; apply lt_le_trans with m; auto with arith.
+  red; intros; apply lt_le_trans with m; auto with arith.
 Qed.
 
 Theorem gt_le_trans : forall n m p, n > m -> p <= m -> n > p.
 Proof.
-  red in |- *; intros; apply le_lt_trans with m; auto with arith.
+  red; intros; apply le_lt_trans with m; auto with arith.
 Qed.
 
 Lemma gt_trans : forall n m p, n > m -> m > p -> n > p.
 Proof.
-  red in |- *; intros n m p H1 H2.
+  red; intros n m p H1 H2.
   apply lt_trans with m; auto with arith.
 Qed.
 
 Theorem gt_trans_S : forall n m p, S n > m -> m > p -> n > p.
 Proof.
-  red in |- *; intros; apply lt_le_trans with m; auto with arith.
+  red; intros; apply lt_le_trans with m; auto with arith.
 Qed.
 
 Hint Resolve gt_trans_S le_gt_trans gt_le_trans: arith v62.
@@ -142,7 +142,7 @@ Qed.
 
 Lemma plus_gt_reg_l : forall n m p, p + n > p + m -> n > m.
 Proof.
-  red in |- *; intros n m p H; apply plus_lt_reg_l with p; auto with arith.
+  red; intros n m p H; apply plus_lt_reg_l with p; auto with arith.
 Qed.
 
 Lemma plus_gt_compat_l : forall n m p, n > m -> p + n > p + m.

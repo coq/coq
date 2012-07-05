@@ -16,7 +16,7 @@ auto.
 Qed.
 
 Lemma lem3 : forall P : Prop, P.
-intro P; pattern P in |- *.
+intro P; pattern P.
 apply lem2.
 Abort.
 
@@ -34,7 +34,7 @@ Require Import Relations.
 
 Theorem dep_eq_trans : forall X : Type, transitive X (dep_eq X).
 Proof.
-  unfold transitive in |- *.
+  unfold transitive.
   intros X f g h H1 H2.
   inversion H1.
 Abort.

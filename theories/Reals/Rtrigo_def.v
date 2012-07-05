@@ -27,7 +27,7 @@ Proof.
   intro;
     generalize
       (Alembert_C3 (fun n:nat => / INR (fact n)) x exp_cof_no_R0 Alembert_exp).
-  unfold Pser, exp_in in |- *.
+  unfold Pser, exp_in.
   trivial.
 Defined.
 
@@ -36,24 +36,24 @@ Definition exp (x:R) : R := proj1_sig (exist_exp x).
 Lemma pow_i : forall i:nat, (0 < i)%nat -> 0 ^ i = 0.
 Proof.
   intros; apply pow_ne_zero.
-  red in |- *; intro; rewrite H0 in H; elim (lt_irrefl _ H).
+  red; intro; rewrite H0 in H; elim (lt_irrefl _ H).
 Qed.
 
 Lemma exist_exp0 : { l:R | exp_in 0 l }.
 Proof.
   exists 1.
-  unfold exp_in in |- *; unfold infinite_sum in |- *; intros.
+  unfold exp_in; unfold infinite_sum; intros.
   exists 0%nat.
   intros; replace (sum_f_R0 (fun i:nat => / INR (fact i) * 0 ^ i) n) with 1.
-  unfold R_dist in |- *; replace (1 - 1) with 0;
+  unfold R_dist; replace (1 - 1) with 0;
     [ rewrite Rabs_R0; assumption | ring ].
   induction  n as [| n Hrecn].
-  simpl in |- *; rewrite Rinv_1; ring.
+  simpl; rewrite Rinv_1; ring.
   rewrite tech5.
   rewrite <- Hrecn.
-  simpl in |- *.
+  simpl.
   ring.
-  unfold ge in |- *; apply le_O_n.
+  unfold ge; apply le_O_n.
 Defined.
 
 (* Value of [exp 0] *)
@@ -61,7 +61,7 @@ Lemma exp_0 : exp 0 = 1.
 Proof.
   cut (exp_in 0 (exp 0)).
   cut (exp_in 0 1).
-  unfold exp_in in |- *; intros; eapply uniqueness_sum.
+  unfold exp_in; intros; eapply uniqueness_sum.
   apply H0.
   apply H.
   exact (proj2_sig exist_exp0).
@@ -77,14 +77,14 @@ Definition tanh (x:R) : R := sinh x / cosh x.
 
 Lemma cosh_0 : cosh 0 = 1.
 Proof.
-  unfold cosh in |- *; rewrite Ropp_0; rewrite exp_0.
-  unfold Rdiv in |- *; rewrite <- Rinv_r_sym; [ reflexivity | discrR ].
+  unfold cosh; rewrite Ropp_0; rewrite exp_0.
+  unfold Rdiv; rewrite <- Rinv_r_sym; [ reflexivity | discrR ].
 Qed.
 
 Lemma sinh_0 : sinh 0 = 0.
 Proof.
-  unfold sinh in |- *; rewrite Ropp_0; rewrite exp_0.
-  unfold Rminus, Rdiv in |- *; rewrite Rplus_opp_r; apply Rmult_0_l.
+  unfold sinh; rewrite Ropp_0; rewrite exp_0.
+  unfold Rminus, Rdiv; rewrite Rplus_opp_r; apply Rmult_0_l.
 Qed.
 
 Definition cos_n (n:nat) : R := (-1) ^ n / INR (fact (2 * n)).
@@ -92,8 +92,8 @@ Definition cos_n (n:nat) : R := (-1) ^ n / INR (fact (2 * n)).
 Lemma simpl_cos_n :
   forall n:nat, cos_n (S n) / cos_n n = - / INR (2 * S n * (2 * n + 1)).
 Proof.
-  intro; unfold cos_n in |- *; replace (S n) with (n + 1)%nat; [ idtac | ring ].
-  rewrite pow_add; unfold Rdiv in |- *; rewrite Rinv_mult_distr.
+  intro; unfold cos_n; replace (S n) with (n + 1)%nat; [ idtac | ring ].
+  rewrite pow_add; unfold Rdiv; rewrite Rinv_mult_distr.
   rewrite Rinv_involutive.
   replace
   ((-1) ^ n * (-1) ^ 1 * / INR (fact (2 * (n + 1))) *
@@ -101,7 +101,7 @@ Proof.
   ((-1) ^ n * / (-1) ^ n * / INR (fact (2 * (n + 1))) * INR (fact (2 * n)) *
     (-1) ^ 1); [ idtac | ring ].
   rewrite <- Rinv_r_sym.
-  rewrite Rmult_1_l; unfold pow in |- *; rewrite Rmult_1_r.
+  rewrite Rmult_1_l; unfold pow; rewrite Rmult_1_r.
   replace (2 * (n + 1))%nat with (S (S (2 * n))); [ idtac | ring ].
   do 2 rewrite fact_simpl; do 2 rewrite mult_INR;
     repeat rewrite Rinv_mult_distr; try (apply not_O_INR; discriminate).
@@ -135,7 +135,7 @@ Proof.
   apply Rmult_le_reg_l with (IZR (Z.of_nat x)).
   assumption.
   rewrite <- Rinv_r_sym;
-    [ idtac | red in |- *; intro; rewrite H5 in H4; elim (Rlt_irrefl _ H4) ].
+    [ idtac | red; intro; rewrite H5 in H4; elim (Rlt_irrefl _ H4) ].
   apply Rmult_le_reg_l with (IZR (Z.of_nat (max x 1))).
   apply Rlt_le_trans with (IZR (Z.of_nat x)).
   assumption.
@@ -145,14 +145,14 @@ Proof.
   rewrite Rmult_1_r; repeat rewrite <- INR_IZR_INZ; apply le_INR;
     apply le_max_l.
   rewrite <- INR_IZR_INZ; apply not_O_INR.
-  red in |- *; intro; assert (H6 := le_max_r x 1); cut (0 < 1)%nat;
+  red; intro; assert (H6 := le_max_r x 1); cut (0 < 1)%nat;
     [ intro | apply lt_O_Sn ]; assert (H8 := lt_le_trans _ _ _ H7 H6);
       rewrite H5 in H8; elim (lt_irrefl _ H8).
-  pattern eps at 1 in |- *; rewrite <- Rinv_involutive.
+  pattern eps at 1; rewrite <- Rinv_involutive.
   apply Rinv_lt_contravar.
   apply Rmult_lt_0_compat; [ apply Rinv_0_lt_compat; assumption | assumption ].
   rewrite H3 in H0; assumption.
-  red in |- *; intro; rewrite H5 in H; elim (Rlt_irrefl _ H).
+  red; intro; rewrite H5 in H; elim (Rlt_irrefl _ H).
   apply Rlt_trans with (/ eps).
   apply Rinv_0_lt_compat; assumption.
   rewrite H3 in H0; assumption.
@@ -166,10 +166,10 @@ Qed.
 
 Lemma Alembert_cos : Un_cv (fun n:nat => Rabs (cos_n (S n) / cos_n n)) 0.
 Proof.
-  unfold Un_cv in |- *; intros.
+  unfold Un_cv; intros.
   assert (H0 := archimed_cor1 eps H).
   elim H0; intros; exists x.
-  intros; rewrite simpl_cos_n; unfold R_dist in |- *; unfold Rminus in |- *;
+  intros; rewrite simpl_cos_n; unfold R_dist; unfold Rminus;
     rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu;
       rewrite Rabs_Ropp; rewrite Rabs_right.
   rewrite mult_INR; rewrite Rinv_mult_distr.
@@ -177,7 +177,7 @@ Proof.
   intro; cut (/ INR (2 * n + 1) < eps).
   intro; rewrite <- (Rmult_1_l eps).
   apply Rmult_gt_0_lt_compat; try assumption.
-  change (0 < / INR (2 * n + 1)) in |- *; apply Rinv_0_lt_compat;
+  change (0 < / INR (2 * n + 1)); apply Rinv_0_lt_compat;
     apply lt_INR_0.
   replace (2 * n + 1)%nat with (S (2 * n)); [ apply lt_O_Sn | ring ].
   apply Rlt_0_1.
@@ -221,7 +221,7 @@ Proof.
 Qed.
 
 Lemma cosn_no_R0 : forall n:nat, cos_n n <> 0.
-  intro; unfold cos_n in |- *; unfold Rdiv in |- *; apply prod_neq_R0.
+  intro; unfold cos_n; unfold Rdiv; apply prod_neq_R0.
   apply pow_nonzero; discrR.
   apply Rinv_neq_0_compat.
   apply INR_fact_neq_0.
@@ -234,7 +234,7 @@ Definition cos_in (x l:R) : Prop :=
 (**********)
 Lemma exist_cos : forall x:R, { l:R | cos_in x l }.
   intro; generalize (Alembert_C3 cos_n x cosn_no_R0 Alembert_cos).
-  unfold Pser, cos_in in |- *; trivial.
+  unfold Pser, cos_in; trivial.
 Qed.
 
 
@@ -246,8 +246,8 @@ Definition sin_n (n:nat) : R := (-1) ^ n / INR (fact (2 * n + 1)).
 Lemma simpl_sin_n :
   forall n:nat, sin_n (S n) / sin_n n = - / INR ((2 * S n + 1) * (2 * S n)).
 Proof.
-  intro; unfold sin_n in |- *; replace (S n) with (n + 1)%nat; [ idtac | ring ].
-  rewrite pow_add; unfold Rdiv in |- *; rewrite Rinv_mult_distr.
+  intro; unfold sin_n; replace (S n) with (n + 1)%nat; [ idtac | ring ].
+  rewrite pow_add; unfold Rdiv; rewrite Rinv_mult_distr.
   rewrite Rinv_involutive.
   replace
   ((-1) ^ n * (-1) ^ 1 * / INR (fact (2 * (n + 1) + 1)) *
@@ -255,7 +255,7 @@ Proof.
   ((-1) ^ n * / (-1) ^ n * / INR (fact (2 * (n + 1) + 1)) *
     INR (fact (2 * n + 1)) * (-1) ^ 1); [ idtac | ring ].
   rewrite <- Rinv_r_sym.
-  rewrite Rmult_1_l; unfold pow in |- *; rewrite Rmult_1_r;
+  rewrite Rmult_1_l; unfold pow; rewrite Rmult_1_r;
     replace (2 * (n + 1) + 1)%nat with (S (S (2 * n + 1))).
   do 2 rewrite fact_simpl; do 2 rewrite mult_INR;
     repeat rewrite Rinv_mult_distr.
@@ -291,9 +291,9 @@ Qed.
 
 Lemma Alembert_sin : Un_cv (fun n:nat => Rabs (sin_n (S n) / sin_n n)) 0.
 Proof.
-  unfold Un_cv in |- *; intros; assert (H0 := archimed_cor1 eps H).
+  unfold Un_cv; intros; assert (H0 := archimed_cor1 eps H).
   elim H0; intros; exists x.
-  intros; rewrite simpl_sin_n; unfold R_dist in |- *; unfold Rminus in |- *;
+  intros; rewrite simpl_sin_n; unfold R_dist; unfold Rminus;
     rewrite Ropp_0; rewrite Rplus_0_r; rewrite Rabs_Rabsolu;
       rewrite Rabs_Ropp; rewrite Rabs_right.
   rewrite mult_INR; rewrite Rinv_mult_distr.
@@ -301,7 +301,7 @@ Proof.
   intro; cut (/ INR (2 * S n + 1) < eps).
   intro; rewrite <- (Rmult_1_l eps); rewrite (Rmult_comm (/ INR (2 * S n + 1)));
     apply Rmult_gt_0_lt_compat; try assumption.
-  change (0 < / INR (2 * S n + 1)) in |- *; apply Rinv_0_lt_compat;
+  change (0 < / INR (2 * S n + 1)); apply Rinv_0_lt_compat;
     apply lt_INR_0; replace (2 * S n + 1)%nat with (S (2 * S n));
       [ apply lt_O_Sn | ring ].
   apply Rlt_0_1.
@@ -329,7 +329,7 @@ Proof.
   apply not_O_INR; discriminate.
   apply not_O_INR; discriminate.
   apply not_O_INR; discriminate.
-  left; change (0 < / INR ((2 * S n + 1) * (2 * S n))) in |- *;
+  left; change (0 < / INR ((2 * S n + 1) * (2 * S n)));
     apply Rinv_0_lt_compat.
   apply lt_INR_0.
   replace ((2 * S n + 1) * (2 * S n))%nat with
@@ -342,7 +342,7 @@ Defined.
 
 Lemma sin_no_R0 : forall n:nat, sin_n n <> 0.
 Proof.
-  intro; unfold sin_n in |- *; unfold Rdiv in |- *; apply prod_neq_R0.
+  intro; unfold sin_n; unfold Rdiv; apply prod_neq_R0.
   apply pow_nonzero; discrR.
   apply Rinv_neq_0_compat; apply INR_fact_neq_0.
 Qed.
@@ -355,7 +355,7 @@ Definition sin_in (x l:R) : Prop :=
 Lemma exist_sin : forall x:R, { l:R | sin_in x l }.
 Proof.
   intro; generalize (Alembert_C3 sin_n x sin_no_R0 Alembert_sin).
-  unfold Pser, sin_n in |- *; trivial.
+  unfold Pser, sin_n; trivial.
 Defined.
 
 (***********************)
@@ -368,40 +368,40 @@ Definition sin (x:R) : R := let (a,_) := exist_sin (Rsqr x) in x * a.
 
 Lemma cos_sym : forall x:R, cos x = cos (- x).
 Proof.
-  intros; unfold cos in |- *; replace (Rsqr (- x)) with (Rsqr x).
+  intros; unfold cos; replace (Rsqr (- x)) with (Rsqr x).
   reflexivity.
   apply Rsqr_neg.
 Qed.
 
 Lemma sin_antisym : forall x:R, sin (- x) = - sin x.
 Proof.
-  intro; unfold sin in |- *; replace (Rsqr (- x)) with (Rsqr x);
+  intro; unfold sin; replace (Rsqr (- x)) with (Rsqr x);
     [ idtac | apply Rsqr_neg ].
   case (exist_sin (Rsqr x)); intros; ring.
 Qed.
 
 Lemma sin_0 : sin 0 = 0.
 Proof.
-  unfold sin in |- *; case (exist_sin (Rsqr 0)).
+  unfold sin; case (exist_sin (Rsqr 0)).
   intros; ring.
 Qed.
 
 Lemma exist_cos0 : { l:R | cos_in 0 l }.
 Proof.
   exists 1.
-  unfold cos_in in |- *; unfold infinite_sum in |- *; intros; exists 0%nat.
+  unfold cos_in; unfold infinite_sum; intros; exists 0%nat.
   intros.
-  unfold R_dist in |- *.
+  unfold R_dist.
   induction  n as [| n Hrecn].
-  unfold cos_n in |- *; simpl in |- *.
-  unfold Rdiv in |- *; rewrite Rinv_1.
+  unfold cos_n; simpl.
+  unfold Rdiv; rewrite Rinv_1.
   do 2 rewrite Rmult_1_r.
-  unfold Rminus in |- *; rewrite Rplus_opp_r; rewrite Rabs_R0; assumption.
+  unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0; assumption.
   rewrite tech5.
   replace (cos_n (S n) * 0 ^ S n) with 0.
   rewrite Rplus_0_r.
-  apply Hrecn; unfold ge in |- *; apply le_O_n.
-  simpl in |- *; ring.
+  apply Hrecn; unfold ge; apply le_O_n.
+  simpl; ring.
 Defined.
 
 (* Value of [cos 0] *)
@@ -409,10 +409,10 @@ Lemma cos_0 : cos 0 = 1.
 Proof.
   cut (cos_in 0 (cos 0)).
   cut (cos_in 0 1).
-  unfold cos_in in |- *; intros; eapply uniqueness_sum.
+  unfold cos_in; intros; eapply uniqueness_sum.
   apply H0.
   apply H.
   exact (proj2_sig exist_cos0).
-  assert (H := proj2_sig (exist_cos (Rsqr 0))); unfold cos in |- *;
-    pattern 0 at 1 in |- *; replace 0 with (Rsqr 0); [ exact H | apply Rsqr_0 ].
+  assert (H := proj2_sig (exist_cos (Rsqr 0))); unfold cos;
+    pattern 0 at 1; replace 0 with (Rsqr 0); [ exact H | apply Rsqr_0 ].
 Qed.

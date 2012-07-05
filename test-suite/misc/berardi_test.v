@@ -45,7 +45,7 @@ Lemma AC_IF :
    (B -> Q e1) -> (~ B -> Q e2) -> Q (IFProp B e1 e2).
 Proof.
 intros P B e1 e2 Q p1 p2.
-unfold IFProp in |- *.
+unfold IFProp.
 case (EM B); assumption.
 Qed.
 
@@ -76,7 +76,7 @@ Record retract_cond : Prop :=
 Lemma AC : forall r:retract_cond, retract -> forall a:A, j2 r (i2 r a) = a.
 Proof.
 intros r.
-case r; simpl in |- *.
+case r; simpl.
 trivial.
 Qed.
 
@@ -113,7 +113,7 @@ Lemma retract_pow_U_U : retract (pow U) U.
 Proof.
 exists g f.
 intro a.
-unfold f, g in |- *; simpl in |- *.
+unfold f, g; simpl.
 apply AC.
 exists (fun x:pow U => x) (fun x:pow U => x).
 trivial.
@@ -130,8 +130,8 @@ Definition R : U := g (fun u:U => Not_b (u U u)).
 
 Lemma not_has_fixpoint : R R = Not_b (R R).
 Proof.
-unfold R at 1 in |- *.
-unfold g in |- *.
+unfold R at 1.
+unfold g.
 rewrite AC with (r := L1 U U) (a := fun u:U => Not_b (u U u)).
 trivial.
 exists (fun x:pow U => x) (fun x:pow U => x); trivial.
@@ -141,7 +141,7 @@ Qed.
 Theorem classical_proof_irrelevence : T = F.
 Proof.
 generalize not_has_fixpoint.
-unfold Not_b in |- *.
+unfold Not_b.
 apply AC_IF.
 intros is_true is_false.
 elim is_true; elim is_false; trivial.

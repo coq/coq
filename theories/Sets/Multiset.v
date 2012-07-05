@@ -42,14 +42,14 @@ Section multiset_defs.
 
   Lemma meq_trans : forall x y z:multiset, meq x y -> meq y z -> meq x z.
   Proof.
-    unfold meq in |- *.
+    unfold meq.
     destruct x; destruct y; destruct z.
     intros; rewrite H; auto.
   Qed.
 
   Lemma meq_sym : forall x y:multiset, meq x y -> meq y x.
   Proof.
-    unfold meq in |- *.
+    unfold meq.
     destruct x; destruct y; auto.
   Qed.
 
@@ -59,12 +59,12 @@ Section multiset_defs.
 
   Lemma munion_empty_left : forall x:multiset, meq x (munion EmptyBag x).
   Proof.
-    unfold meq in |- *; unfold munion in |- *; simpl in |- *; auto.
+    unfold meq; unfold munion; simpl; auto.
   Qed.
 
   Lemma munion_empty_right : forall x:multiset, meq x (munion x EmptyBag).
   Proof.
-    unfold meq in |- *; unfold munion in |- *; simpl in |- *; auto.
+    unfold meq; unfold munion; simpl; auto.
   Qed.
 
 
@@ -72,21 +72,21 @@ Section multiset_defs.
 
   Lemma munion_comm : forall x y:multiset, meq (munion x y) (munion y x).
   Proof.
-    unfold meq in |- *; unfold multiplicity in |- *; unfold munion in |- *.
+    unfold meq; unfold multiplicity; unfold munion.
     destruct x; destruct y; auto with arith.
   Qed.
 
   Lemma munion_ass :
     forall x y z:multiset, meq (munion (munion x y) z) (munion x (munion y z)).
   Proof.
-    unfold meq in |- *; unfold munion in |- *; unfold multiplicity in |- *.
+    unfold meq; unfold munion; unfold multiplicity.
     destruct x; destruct y; destruct z; auto with arith.
   Qed.
 
   Lemma meq_left :
     forall x y z:multiset, meq x y -> meq (munion x z) (munion y z).
   Proof.
-    unfold meq in |- *; unfold munion in |- *; unfold multiplicity in |- *.
+    unfold meq; unfold munion; unfold multiplicity.
     destruct x; destruct y; destruct z.
     intros; elim H; auto with arith.
   Qed.
@@ -94,7 +94,7 @@ Section multiset_defs.
   Lemma meq_right :
     forall x y z:multiset, meq x y -> meq (munion z x) (munion z y).
   Proof.
-    unfold meq in |- *; unfold munion in |- *; unfold multiplicity in |- *.
+    unfold meq; unfold munion; unfold multiplicity.
     destruct x; destruct y; destruct z.
     intros; elim H; auto.
   Qed.

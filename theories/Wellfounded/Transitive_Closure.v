@@ -18,7 +18,7 @@ Section Wf_Transitive_Closure.
   Notation trans_clos := (clos_trans A R).
 
   Lemma incl_clos_trans : inclusion A R trans_clos.
-    red in |- *; auto with sets.
+    red; auto with sets.
   Qed.
 
   Lemma Acc_clos_trans : forall x:A, Acc R x -> Acc trans_clos x.
@@ -39,7 +39,7 @@ Section Wf_Transitive_Closure.
 
   Theorem wf_clos_trans : well_founded R -> well_founded trans_clos.
   Proof.
-    unfold well_founded in |- *; auto with sets.
+    unfold well_founded; auto with sets.
   Defined.
 
 End Wf_Transitive_Closure.

@@ -21,7 +21,7 @@ Hint Resolve IZR_nz Rmult_integral_contrapositive.
 
 Lemma eqR_Qeq : forall x y : Q, Q2R x = Q2R y -> x==y.
 Proof.
-unfold Qeq, Q2R in |- *; intros (x1, x2) (y1, y2); unfold Qnum, Qden in |- *;
+unfold Qeq, Q2R; intros (x1, x2) (y1, y2); unfold Qnum, Qden;
  intros.
 apply eq_IZR.
 do 2 rewrite mult_IZR.
@@ -36,24 +36,24 @@ Qed.
 
 Lemma Qeq_eqR : forall x y : Q, x==y -> Q2R x = Q2R y.
 Proof.
-unfold Qeq, Q2R in |- *; intros (x1, x2) (y1, y2); unfold Qnum, Qden in |- *;
+unfold Qeq, Q2R; intros (x1, x2) (y1, y2); unfold Qnum, Qden;
  intros.
 set (X1 := IZR x1) in *; assert (X2nz := IZR_nz x2);
  set (X2 := IZR (Zpos x2)) in *.
 set (Y1 := IZR y1) in *; assert (Y2nz := IZR_nz y2);
  set (Y2 := IZR (Zpos y2)) in *.
 assert ((X1 * Y2)%R = (Y1 * X2)%R).
- unfold X1, X2, Y1, Y2 in |- *; do 2 rewrite <- mult_IZR.
+ unfold X1, X2, Y1, Y2; do 2 rewrite <- mult_IZR.
  apply IZR_eq; auto.
 clear H.
 field_simplify_eq; auto.
 ring_simplify X1 Y2 (Y2 * X1)%R.
-rewrite H0 in |- *;  ring.
+rewrite H0;  ring.
 Qed.
 
 Lemma Rle_Qle : forall x y : Q, (Q2R x <= Q2R y)%R -> x<=y.
 Proof.
-unfold Qle, Q2R in |- *; intros (x1, x2) (y1, y2); unfold Qnum, Qden in |- *;
+unfold Qle, Q2R; intros (x1, x2) (y1, y2); unfold Qnum, Qden;
  intros.
 apply le_IZR.
 do 2 rewrite mult_IZR.
@@ -65,37 +65,37 @@ replace (X1 * Y2)%R with (X1 * / X2 * (X2 * Y2))%R; try (field; auto).
 replace (Y1 * X2)%R with (Y1 * / Y2 * (X2 * Y2))%R; try (field; auto).
 apply Rmult_le_compat_r; auto.
 apply Rmult_le_pos.
-unfold X2 in |- *; replace 0%R with (IZR 0); auto; apply IZR_le;
+unfold X2; replace 0%R with (IZR 0); auto; apply IZR_le;
  auto with zarith.
-unfold Y2 in |- *; replace 0%R with (IZR 0); auto; apply IZR_le;
+unfold Y2; replace 0%R with (IZR 0); auto; apply IZR_le;
  auto with zarith.
 Qed.
 
 Lemma Qle_Rle : forall x y : Q, x<=y -> (Q2R x <= Q2R y)%R.
 Proof.
-unfold Qle, Q2R in |- *; intros (x1, x2) (y1, y2); unfold Qnum, Qden in |- *;
+unfold Qle, Q2R; intros (x1, x2) (y1, y2); unfold Qnum, Qden;
  intros.
 set (X1 := IZR x1) in *; assert (X2nz := IZR_nz x2);
  set (X2 := IZR (Zpos x2)) in *.
 set (Y1 := IZR y1) in *; assert (Y2nz := IZR_nz y2);
  set (Y2 := IZR (Zpos y2)) in *.
 assert (X1 * Y2 <= Y1 * X2)%R.
- unfold X1, X2, Y1, Y2 in |- *; do 2 rewrite <- mult_IZR.
+ unfold X1, X2, Y1, Y2; do 2 rewrite <- mult_IZR.
  apply IZR_le; auto.
 clear H.
 replace (X1 * / X2)%R with (X1 * Y2 * (/ X2 * / Y2))%R; try (field; auto).
 replace (Y1 * / Y2)%R with (Y1 * X2 * (/ X2 * / Y2))%R; try (field; auto).
 apply Rmult_le_compat_r; auto.
 apply Rmult_le_pos; apply Rlt_le; apply Rinv_0_lt_compat.
-unfold X2 in |- *; replace 0%R with (IZR 0); auto; apply IZR_lt; red in |- *;
+unfold X2; replace 0%R with (IZR 0); auto; apply IZR_lt; red;
  auto with zarith.
-unfold Y2 in |- *; replace 0%R with (IZR 0); auto; apply IZR_lt; red in |- *;
+unfold Y2; replace 0%R with (IZR 0); auto; apply IZR_lt; red;
  auto with zarith.
 Qed.
 
 Lemma Rlt_Qlt : forall x y : Q, (Q2R x < Q2R y)%R -> x<y.
 Proof.
-unfold Qlt, Q2R in |- *; intros (x1, x2) (y1, y2); unfold Qnum, Qden in |- *;
+unfold Qlt, Q2R; intros (x1, x2) (y1, y2); unfold Qnum, Qden;
  intros.
 apply lt_IZR.
 do 2 rewrite mult_IZR.
@@ -107,38 +107,38 @@ replace (X1 * Y2)%R with (X1 * / X2 * (X2 * Y2))%R; try (field; auto).
 replace (Y1 * X2)%R with (Y1 * / Y2 * (X2 * Y2))%R; try (field; auto).
 apply Rmult_lt_compat_r; auto.
 apply Rmult_lt_0_compat.
-unfold X2 in |- *; replace 0%R with (IZR 0); auto; apply IZR_lt; red in |- *;
+unfold X2; replace 0%R with (IZR 0); auto; apply IZR_lt; red;
  auto with zarith.
-unfold Y2 in |- *; replace 0%R with (IZR 0); auto; apply IZR_lt; red in |- *;
+unfold Y2; replace 0%R with (IZR 0); auto; apply IZR_lt; red;
  auto with zarith.
 Qed.
 
 Lemma Qlt_Rlt : forall x y : Q, x<y -> (Q2R x < Q2R y)%R.
 Proof.
-unfold Qlt, Q2R in |- *; intros (x1, x2) (y1, y2); unfold Qnum, Qden in |- *;
+unfold Qlt, Q2R; intros (x1, x2) (y1, y2); unfold Qnum, Qden;
  intros.
 set (X1 := IZR x1) in *; assert (X2nz := IZR_nz x2);
  set (X2 := IZR (Zpos x2)) in *.
 set (Y1 := IZR y1) in *; assert (Y2nz := IZR_nz y2);
  set (Y2 := IZR (Zpos y2)) in *.
 assert (X1 * Y2 < Y1 * X2)%R.
- unfold X1, X2, Y1, Y2 in |- *; do 2 rewrite <- mult_IZR.
+ unfold X1, X2, Y1, Y2; do 2 rewrite <- mult_IZR.
  apply IZR_lt; auto.
 clear H.
 replace (X1 * / X2)%R with (X1 * Y2 * (/ X2 * / Y2))%R; try (field; auto).
 replace (Y1 * / Y2)%R with (Y1 * X2 * (/ X2 * / Y2))%R; try (field; auto).
 apply Rmult_lt_compat_r; auto.
 apply Rmult_lt_0_compat; apply Rinv_0_lt_compat.
-unfold X2 in |- *; replace 0%R with (IZR 0); auto; apply IZR_lt; red in |- *;
+unfold X2; replace 0%R with (IZR 0); auto; apply IZR_lt; red;
  auto with zarith.
-unfold Y2 in |- *; replace 0%R with (IZR 0); auto; apply IZR_lt; red in |- *;
+unfold Y2; replace 0%R with (IZR 0); auto; apply IZR_lt; red;
  auto with zarith.
 Qed.
 
 Lemma Q2R_plus : forall x y : Q, Q2R (x+y) = (Q2R x + Q2R y)%R.
 Proof.
-unfold Qplus, Qeq, Q2R in |- *; intros (x1, x2) (y1, y2);
- unfold Qden, Qnum in |- *.
+unfold Qplus, Qeq, Q2R; intros (x1, x2) (y1, y2);
+ unfold Qden, Qnum.
 simpl_mult.
 rewrite plus_IZR.
 do 3 rewrite mult_IZR.
@@ -147,8 +147,8 @@ Qed.
 
 Lemma Q2R_mult : forall x y : Q, Q2R (x*y) = (Q2R x * Q2R y)%R.
 Proof.
-unfold Qmult, Qeq, Q2R in |- *; intros (x1, x2) (y1, y2);
- unfold Qden, Qnum in |- *.
+unfold Qmult, Qeq, Q2R; intros (x1, x2) (y1, y2);
+ unfold Qden, Qnum.
 simpl_mult.
 do 2 rewrite mult_IZR.
 field; auto.
@@ -156,24 +156,24 @@ Qed.
 
 Lemma Q2R_opp : forall x : Q, Q2R (- x) = (- Q2R x)%R.
 Proof.
-unfold Qopp, Qeq, Q2R in |- *; intros (x1, x2); unfold Qden, Qnum in |- *.
+unfold Qopp, Qeq, Q2R; intros (x1, x2); unfold Qden, Qnum.
 rewrite Ropp_Ropp_IZR.
 field; auto.
 Qed.
 
 Lemma Q2R_minus : forall x y : Q, Q2R (x-y) = (Q2R x - Q2R y)%R.
-unfold Qminus in |- *; intros; rewrite Q2R_plus; rewrite Q2R_opp; auto.
+unfold Qminus; intros; rewrite Q2R_plus; rewrite Q2R_opp; auto.
 Qed.
 
 Lemma Q2R_inv : forall x : Q, ~ x==0 -> Q2R (/x) = (/ Q2R x)%R.
 Proof.
-unfold Qinv, Q2R, Qeq in |- *; intros (x1, x2); unfold Qden, Qnum in |- *.
+unfold Qinv, Q2R, Qeq; intros (x1, x2); unfold Qden, Qnum.
 case x1.
-simpl in |- *; intros; elim H; trivial.
+simpl; intros; elim H; trivial.
 intros; field; auto.
 intros;
-  change (IZR (Zneg x2)) with (- IZR (' x2))%R in |- *;
-  change (IZR (Zneg p)) with (- IZR (' p))%R in |- *;
+  change (IZR (Zneg x2)) with (- IZR (' x2))%R;
+  change (IZR (Zneg p)) with (- IZR (' p))%R;
   field; (*auto 8 with real.*)
   repeat split; auto; auto with real.
 Qed.
@@ -181,7 +181,7 @@ Qed.
 Lemma Q2R_div :
  forall x y : Q, ~ y==0 -> Q2R (x/y) = (Q2R x / Q2R y)%R.
 Proof.
-unfold Qdiv, Rdiv in |- *.
+unfold Qdiv, Rdiv.
 intros; rewrite Q2R_mult.
 rewrite Q2R_inv; auto.
 Qed.
@@ -205,7 +205,7 @@ Qed.
 Let ex2 : forall x y : Q, ~ y==0 -> (x/y)*y == x.
 intros; QField.
 intro; apply H; apply eqR_Qeq.
-rewrite H0; unfold Q2R in |- *; simpl in |- *; field; auto with real.
+rewrite H0; unfold Q2R; simpl; field; auto with real.
 Qed.
 
 End LegacyQField.

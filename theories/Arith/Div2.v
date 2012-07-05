@@ -43,7 +43,7 @@ Qed.
 
 Lemma lt_div2 : forall n, 0 < n -> div2 n < n.
 Proof.
-  intro n. pattern n in |- *. apply ind_0_1_SS.
+  intro n. pattern n. apply ind_0_1_SS.
   (* n = 0 *)
   inversion 1.
   (* n=1 *)
@@ -99,12 +99,12 @@ Hint Unfold double: arith.
 
 Lemma double_S : forall n, double (S n) = S (S (double n)).
 Proof.
-  intro. unfold double in |- *. simpl in |- *. auto with arith.
+  intro. unfold double. simpl. auto with arith.
 Qed.
 
 Lemma double_plus : forall n (m:nat), double (n + m) = double n + double m.
 Proof.
-  intros m n. unfold double in |- *.
+  intros m n. unfold double.
   do 2 rewrite plus_assoc_reverse. rewrite (plus_permute n).
   reflexivity.
 Qed.
@@ -115,7 +115,7 @@ Lemma even_odd_double :
   forall n,
     (even n <-> n = double (div2 n)) /\ (odd n <-> n = S (double (div2 n))).
 Proof.
-  intro n. pattern n in |- *. apply ind_0_1_SS.
+  intro n. pattern n. apply ind_0_1_SS.
   (* n = 0 *)
   split; split; auto with arith.
   intro H. inversion H.
@@ -126,11 +126,11 @@ Proof.
   intros. destruct H as ((IH1,IH2),(IH3,IH4)).
   split; split.
   intro H. inversion H. inversion H1.
-  simpl in |- *. rewrite (double_S (div2 n0)). auto with arith.
-  simpl in |- *. rewrite (double_S (div2 n0)). intro H. injection H. auto with arith.
+  simpl. rewrite (double_S (div2 n0)). auto with arith.
+  simpl. rewrite (double_S (div2 n0)). intro H. injection H. auto with arith.
   intro H. inversion H. inversion H1.
-  simpl in |- *. rewrite (double_S (div2 n0)). auto with arith.
-  simpl in |- *. rewrite (double_S (div2 n0)). intro H. injection H. auto with arith.
+  simpl. rewrite (double_S (div2 n0)). auto with arith.
+  simpl. rewrite (double_S (div2 n0)). intro H. injection H. auto with arith.
 Qed.
 (** Specializations *)
 

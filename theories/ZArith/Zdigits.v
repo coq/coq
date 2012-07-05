@@ -90,13 +90,13 @@ Section ENCODING_VALUE.
   Lemma Zmod2_twice :
     forall z:Z, z = (2 * Zmod2 z + bit_value (Z.odd z))%Z.
   Proof.
-    destruct z; simpl in |- *.
+    destruct z; simpl.
     trivial.
 
-    destruct p; simpl in |- *; trivial.
+    destruct p; simpl; trivial.
 
-    destruct p; simpl in |- *.
-    destruct p as [p| p| ]; simpl in |- *.
+    destruct p; simpl.
+    destruct p as [p| p| ]; simpl.
     rewrite <- (Pos.pred_double_succ p); trivial.
 
     trivial.
@@ -145,17 +145,17 @@ Section Z_BRIC_A_BRAC.
       (z >= 0)%Z ->
       Z_to_binary (S n) (bit_value b + 2 * z) = Bcons b n (Z_to_binary n z).
   Proof.
-    destruct b; destruct z; simpl in |- *; auto.
+    destruct b; destruct z; simpl; auto.
     intro H; elim H; trivial.
   Qed.
 
   Lemma binary_value_pos :
     forall (n:nat) (bv:Bvector n), (binary_value n bv >= 0)%Z.
   Proof.
-    induction bv as [| a n v IHbv]; simpl in |- *.
+    induction bv as [| a n v IHbv]; simpl.
     omega.
 
-    destruct a; destruct (binary_value n v); simpl in |- *; auto.
+    destruct a; destruct (binary_value n v); simpl; auto.
     auto with zarith.
   Qed.
 
@@ -174,7 +174,7 @@ Section Z_BRIC_A_BRAC.
   Proof.
     destruct b; destruct z as [| p| p]; auto.
     destruct p as [p| p| ]; auto.
-    destruct p as [p| p| ]; simpl in |- *; auto.
+    destruct p as [p| p| ]; simpl; auto.
     intros; rewrite (Pos.succ_pred_double p); trivial.
   Qed.
 
@@ -201,7 +201,7 @@ Section Z_BRIC_A_BRAC.
     auto.
 
     destruct p; auto.
-    simpl in |- *; intros; omega.
+    simpl; intros; omega.
 
     intro H; elim H; trivial.
   Qed.
@@ -233,7 +233,7 @@ Section Z_BRIC_A_BRAC.
   Lemma Zeven_bit_value :
     forall z:Z, Zeven.Zeven z -> bit_value (Z.odd z) = 0%Z.
   Proof.
-    destruct z; unfold bit_value in |- *; auto.
+    destruct z; unfold bit_value; auto.
     destruct p; tauto || (intro H; elim H).
     destruct p; tauto || (intro H; elim H).
   Qed.
@@ -241,7 +241,7 @@ Section Z_BRIC_A_BRAC.
   Lemma Zodd_bit_value :
     forall z:Z, Zeven.Zodd z -> bit_value (Z.odd z) = 1%Z.
   Proof.
-    destruct z; unfold bit_value in |- *; auto.
+    destruct z; unfold bit_value; auto.
     intros; elim H.
     destruct p; tauto || (intros; elim H).
     destruct p; tauto || (intros; elim H).
@@ -310,7 +310,7 @@ Section COHERENT_VALUE.
       (z < two_power_nat n)%Z -> binary_value n (Z_to_binary n z) = z.
   Proof.
     induction n as [| n IHn].
-    unfold two_power_nat, shift_nat in |- *; simpl in |- *; intros; omega.
+    unfold two_power_nat, shift_nat; simpl; intros; omega.
 
     intros; rewrite Z_to_binary_Sn_z.
     rewrite binary_value_Sn.
@@ -328,7 +328,7 @@ Section COHERENT_VALUE.
       (z < two_power_nat n)%Z -> two_compl_value n (Z_to_two_compl n z) = z.
   Proof.
     induction n as [| n IHn].
-    unfold two_power_nat, shift_nat in |- *; simpl in |- *; intros.
+    unfold two_power_nat, shift_nat; simpl; intros.
     assert (z = (-1)%Z \/ z = 0%Z). omega.
     intuition; subst z; trivial.
 

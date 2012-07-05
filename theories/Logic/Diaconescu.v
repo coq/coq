@@ -61,7 +61,7 @@ Variable pred_extensionality : PredicateExtensionality.
 Lemma prop_ext : forall A B:Prop, (A <-> B) -> A = B.
 Proof.
   intros A B H.
-  change ((fun _ => A) true = (fun _ => B) true) in |- *.
+  change ((fun _ => A) true = (fun _ => B) true).
   rewrite
    pred_extensionality with (P := fun _:bool => A) (Q := fun _:bool => B).
     reflexivity.
@@ -134,8 +134,8 @@ right.
 intro HP.
 assert (Hequiv : forall b:bool, class_of_true b <-> class_of_false b).
 intro b; split.
-unfold class_of_false in |- *; right; assumption.
-unfold class_of_true in |- *; right; assumption.
+unfold class_of_false; right; assumption.
+unfold class_of_true; right; assumption.
 assert (Heq : class_of_true = class_of_false).
 apply pred_extensionality with (1 := Hequiv).
 apply diff_true_false.

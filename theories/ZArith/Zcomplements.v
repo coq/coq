@@ -56,7 +56,7 @@ Proof.
   set (Q := fun z => 0 <= z -> P z * P (- z)) in *.
   cut (Q (Z.abs p)); [ intros | apply (Z_lt_rec Q); auto with zarith ].
   elim (Zabs_dec p); intro eq; rewrite eq; elim H; auto with zarith.
-  unfold Q in |- *; clear Q; intros.
+  unfold Q; clear Q; intros.
   split; apply HP.
   rewrite Z.abs_eq; auto; intros.
   elim (H (Z.abs m)); intros; auto with zarith.
@@ -75,7 +75,7 @@ Proof.
   set (Q := fun z => 0 <= z -> P z /\ P (- z)) in *.
   cut (Q (Z.abs p)); [ intros | apply (Z_lt_induction Q); auto with zarith ].
   elim (Zabs_dec p); intro eq; rewrite eq; elim H; auto with zarith.
-  unfold Q in |- *; clear Q; intros.
+  unfold Q; clear Q; intros.
   split; apply HP.
   rewrite Z.abs_eq; auto; intros.
   elim (H (Z.abs m)); intros; auto with zarith.

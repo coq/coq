@@ -39,7 +39,7 @@ Lemma essai7 :
  derivable_pt (fun x : R => (cos (/ sqrt x) * Rsqr (sin x + 1))%R) 1.
 reg.
 apply Rlt_0_1.
-red in |- *; intro;  rewrite sqrt_1 in H; assert (H0 := R1_neq_R0); elim H0;
+red; intro;  rewrite sqrt_1 in H; assert (H0 := R1_neq_R0); elim H0;
  assumption.
 Qed.
 
@@ -127,7 +127,7 @@ Lemma essai23 :
    (fun x : R => (sin (sqrt (x - 1)) + exp (Rsqr (sqrt x + 3)))%R) 1.
 reg.
 left; apply Rlt_0_1.
-right; unfold Rminus in |- *;  rewrite Rplus_opp_r; reflexivity.
+right; unfold Rminus;  rewrite Rplus_opp_r; reflexivity.
 Qed.
 
 Lemma essai24 :
@@ -135,8 +135,8 @@ Lemma essai24 :
 reg.
  replace (x * x + 2 * x + 2)%R with (Rsqr (x + 1) + 1)%R.
 apply Rplus_le_lt_0_compat; [ apply Rle_0_sqr | apply Rlt_0_1 ].
-unfold Rsqr in |- *;  ring.
-red in |- *; intro; cut (0 < x * x + 1)%R.
+unfold Rsqr;  ring.
+red; intro; cut (0 < x * x + 1)%R.
 intro;  rewrite H in H0; elim (Rlt_irrefl _ H0).
 apply Rplus_le_lt_0_compat;
  [  replace (x * x)%R with (Rsqr x); [ apply Rle_0_sqr | reflexivity ]

@@ -52,12 +52,12 @@ Section Bool_eq_dec.
   Definition not_eq_false_beq : forall x y:A, x <> y -> false = beq x y.
   Proof.
     intros x y H.
-    symmetry  in |- *.
+    symmetry .
     apply not_true_is_false.
     intro.
     apply H.
     apply beq_eq.
-    symmetry  in |- *.
+    symmetry .
     assumption.
   Defined.
 

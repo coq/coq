@@ -23,7 +23,7 @@ Fixpoint eq_nat n m : Prop :=
   end.
 
 Theorem eq_nat_refl : forall n, eq_nat n n.
-  induction n; simpl in |- *; auto.
+  induction n; simpl; auto.
 Qed.
 Hint Resolve eq_nat_refl: arith v62.
 
@@ -35,7 +35,7 @@ Qed.
 Hint Immediate eq_eq_nat: arith v62.
 
 Lemma eq_nat_eq : forall n m, eq_nat n m -> n = m.
-  induction n; induction m; simpl in |- *; contradiction || auto with arith.
+  induction n; induction m; simpl; contradiction || auto with arith.
 Qed.
 Hint Immediate eq_nat_eq: arith v62.
 
@@ -55,11 +55,11 @@ Proof.
   induction n.
   destruct m as [| n].
   auto with arith.
-  intros; right; red in |- *; trivial with arith.
+  intros; right; red; trivial with arith.
   destruct m as [| n0].
-  right; red in |- *; auto with arith.
+  right; red; auto with arith.
   intros.
-  simpl in |- *.
+  simpl.
   apply IHn.
 Defined.
 
@@ -76,12 +76,12 @@ Fixpoint beq_nat n m : bool :=
 
 Lemma beq_nat_refl : forall n, true = beq_nat n n.
 Proof.
-  intro x; induction x; simpl in |- *; auto.
+  intro x; induction x; simpl; auto.
 Qed.
 
 Definition beq_nat_eq : forall x y, true = beq_nat x y -> x = y.
 Proof.
-  double induction x y; simpl in |- *.
+  double induction x y; simpl.
     reflexivity.
     intros n H1 H2. discriminate H2.
     intros n H1 H2. discriminate H2.

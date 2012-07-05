@@ -50,7 +50,7 @@ Section Properties.
 
     Lemma clos_rt_idempotent : inclusion (R*)* R*.
     Proof.
-      red in |- *.
+      red.
       induction 1; auto with sets.
       intros.
       apply rt_trans with y; auto with sets.
@@ -66,7 +66,7 @@ Section Properties.
     Lemma clos_rt_clos_rst :
       inclusion (clos_refl_trans R) (clos_refl_sym_trans R).
     Proof.
-      red in |- *.
+      red.
       induction 1; auto with sets.
       apply rst_trans with y; auto with sets.
     Qed.
@@ -87,7 +87,7 @@ Section Properties.
       inclusion (clos_refl_sym_trans (clos_refl_sym_trans R))
       (clos_refl_sym_trans R).
     Proof.
-      red in |- *.
+      red.
       induction 1; auto with sets.
       apply rst_trans with y; auto with sets.
     Qed.

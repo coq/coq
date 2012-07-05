@@ -41,7 +41,7 @@ Section Wf_Disjoint_Union.
     well_founded leA -> well_founded leB -> well_founded Le_AsB.
   Proof.
     intros.
-    unfold well_founded in |- *.
+    unfold well_founded.
     destruct a as [a| b].
     apply (acc_A_sum a).
     apply (H a).

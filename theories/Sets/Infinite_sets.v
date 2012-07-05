@@ -56,7 +56,7 @@ Section Infinite_sets.
     intros A X H' H'0.
     elim H'0; intros H'1 H'2.
     apply Strict_super_set_contains_new_element; auto with sets.
-    red in |- *; intro H'3; apply H'.
+    red; intro H'3; apply H'.
     rewrite <- H'3; auto with sets.
   Qed.
 
@@ -76,7 +76,7 @@ Section Infinite_sets.
     split.
     apply card_add; auto with sets.
     cut (In U A x).
-    intro H'4; red in |- *; auto with sets.
+    intro H'4; red; auto with sets.
     intros x0 H'5; elim H'5; auto with sets.
     intros x1 H'6; elim H'6; auto with sets.
     elim H'3; auto with sets.
@@ -91,7 +91,7 @@ Section Infinite_sets.
     split.
     apply card_add; auto with sets.
     elim H'2; auto with sets.
-    red in |- *.
+    red.
     intros x2 H'9; elim H'9; auto with sets.
     intros x3 H'10; elim H'10; auto with sets.
     elim H'2; auto with sets.
@@ -167,11 +167,11 @@ Section Infinite_sets.
     apply ex_intro with (x := Add U x0 x1).
     split; [ split; [ try assumption | idtac ] | idtac ].
     apply card_add; auto with sets.
-    red in |- *; intro H'9; try exact H'9.
+    red; intro H'9; try exact H'9.
     apply H'1.
     elim H'4; intros H'10 H'11; rewrite <- H'11; clear H'4; auto with sets.
     elim H'4; intros H'9 H'10; try exact H'9; clear H'4; auto with sets.
-    red in |- *; auto with sets.
+    red; auto with sets.
     intros x2 H'4; elim H'4; auto with sets.
     intros x3 H'11; elim H'11; auto with sets.
     elim H'4; intros H'9 H'10; rewrite <- H'10; clear H'4; auto with sets.
@@ -235,7 +235,7 @@ Section Infinite_sets.
   Proof.
     intros A f H' H'0 H'1.
     apply NNPP.
-    red in |- *; intro H'2.
+    red; intro H'2.
     elim (Pigeonhole_bis A f); auto with sets.
   Qed.
 

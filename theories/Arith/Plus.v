@@ -33,7 +33,7 @@ Definition plus_0_r n := eq_sym (plus_n_O n).
 
 Lemma plus_comm : forall n m, n + m = m + n.
 Proof.
-  intros n m; elim n; simpl in |- *; auto with arith.
+  intros n m; elim n; simpl; auto with arith.
   intros y H; elim (plus_n_Sm m y); auto with arith.
 Qed.
 Hint Immediate plus_comm: arith v62.
@@ -45,7 +45,7 @@ Definition plus_Snm_nSm : forall n m, S n + m = n + S m:=
 
 Lemma plus_assoc : forall n m p, n + (m + p) = n + m + p.
 Proof.
-  intros n m p; elim n; simpl in |- *; auto with arith.
+  intros n m p; elim n; simpl; auto with arith.
 Qed.
 Hint Resolve plus_assoc: arith v62.
 
@@ -64,42 +64,42 @@ Hint Resolve plus_assoc_reverse: arith v62.
 
 Lemma plus_reg_l : forall n m p, p + n = p + m -> n = m.
 Proof.
-  intros m p n; induction n; simpl in |- *; auto with arith.
+  intros m p n; induction n; simpl; auto with arith.
 Qed.
 
 Lemma plus_le_reg_l : forall n m p, p + n <= p + m -> n <= m.
 Proof.
-  induction p; simpl in |- *; auto with arith.
+  induction p; simpl; auto with arith.
 Qed.
 
 Lemma plus_lt_reg_l : forall n m p, p + n < p + m -> n < m.
 Proof.
-  induction p; simpl in |- *; auto with arith.
+  induction p; simpl; auto with arith.
 Qed.
 
 (** * Compatibility with order *)
 
 Lemma plus_le_compat_l : forall n m p, n <= m -> p + n <= p + m.
 Proof.
-  induction p; simpl in |- *; auto with arith.
+  induction p; simpl; auto with arith.
 Qed.
 Hint Resolve plus_le_compat_l: arith v62.
 
 Lemma plus_le_compat_r : forall n m p, n <= m -> n + p <= m + p.
 Proof.
-  induction 1; simpl in |- *; auto with arith.
+  induction 1; simpl; auto with arith.
 Qed.
 Hint Resolve plus_le_compat_r: arith v62.
 
 Lemma le_plus_l : forall n m, n <= n + m.
 Proof.
-  induction n; simpl in |- *; auto with arith.
+  induction n; simpl; auto with arith.
 Qed.
 Hint Resolve le_plus_l: arith v62.
 
 Lemma le_plus_r : forall n m, m <= n + m.
 Proof.
-  intros n m; elim n; simpl in |- *; auto with arith.
+  intros n m; elim n; simpl; auto with arith.
 Qed.
 Hint Resolve le_plus_r: arith v62.
 
@@ -117,7 +117,7 @@ Hint Immediate lt_plus_trans: arith v62.
 
 Lemma plus_lt_compat_l : forall n m p, n < m -> p + n < p + m.
 Proof.
-  induction p; simpl in |- *; auto with arith.
+  induction p; simpl; auto with arith.
 Qed.
 Hint Resolve plus_lt_compat_l: arith v62.
 
@@ -131,18 +131,18 @@ Hint Resolve plus_lt_compat_r: arith v62.
 Lemma plus_le_compat : forall n m p q, n <= m -> p <= q -> n + p <= m + q.
 Proof.
   intros n m p q H H0.
-  elim H; simpl in |- *; auto with arith.
+  elim H; simpl; auto with arith.
 Qed.
 
 Lemma plus_le_lt_compat : forall n m p q, n <= m -> p < q -> n + p < m + q.
 Proof.
-  unfold lt in |- *. intros. change (S n + p <= m + q) in |- *. rewrite plus_Snm_nSm.
+  unfold lt. intros. change (S n + p <= m + q). rewrite plus_Snm_nSm.
   apply plus_le_compat; assumption.
 Qed.
 
 Lemma plus_lt_le_compat : forall n m p q, n < m -> p <= q -> n + p < m + q.
 Proof.
-  unfold lt in |- *. intros. change (S n + p <= m + q) in |- *. apply plus_le_compat; assumption.
+  unfold lt. intros. change (S n + p <= m + q). apply plus_le_compat; assumption.
 Qed.
 
 Lemma plus_lt_compat : forall n m p q, n < m -> p < q -> n + p < m + q.
@@ -190,8 +190,8 @@ Fixpoint tail_plus n m : nat :=
   end.
 
 Lemma plus_tail_plus : forall n m, n + m = tail_plus n m.
-induction n as [| n IHn]; simpl in |- *; auto.
-intro m; rewrite <- IHn; simpl in |- *; auto.
+induction n as [| n IHn]; simpl; auto.
+intro m; rewrite <- IHn; simpl; auto.
 Qed.
 
 (** * Discrimination *)

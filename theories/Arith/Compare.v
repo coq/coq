@@ -39,7 +39,7 @@ Proof.
   lapply (lt_le_S m n); auto with arith.
   intro H'; lapply (le_lt_or_eq (S m) n); auto with arith.
   induction 1; auto with arith.
-  right; exists (n - S (S m)); simpl in |- *.
+  right; exists (n - S (S m)); simpl.
   rewrite (plus_comm m (n - S (S m))).
   rewrite (plus_n_Sm (n - S (S m)) m).
   rewrite (plus_n_Sm (n - S (S m)) (S m)).

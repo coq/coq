@@ -6,4 +6,4 @@ Variable P : forall m : nat, m = n -> Prop.
 
 Goal forall p : n = n, P n p.
 intro.
-pattern n, p in |- *.
+pattern n, p.

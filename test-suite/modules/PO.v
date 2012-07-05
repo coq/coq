@@ -27,13 +27,13 @@ Module Pair (X: PO) (Y: PO) <: PO.
   Qed.
 
   Lemma le_trans : forall p1 p2 p3 : T, le p1 p2 -> le p2 p3 -> le p1 p3.
-    unfold le in |- *;  intuition; info  eauto.
+    unfold le;  intuition; info  eauto.
   Qed.
 
   Lemma le_antis : forall p1 p2 : T, le p1 p2 -> le p2 p1 -> p1 = p2.
     destruct p1.
     destruct p2.
-    unfold le in |- *.
+    unfold le.
      intuition.
      cutrewrite (t = t1).
      cutrewrite (t0 = t2).

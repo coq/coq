@@ -60,7 +60,7 @@ Section WfLexicographic_Product.
     well_founded leA ->
     (forall x:A, well_founded (leB x)) -> well_founded LexProd.
   Proof.
-    intros wfA wfB; unfold well_founded in |- *.
+    intros wfA wfB; unfold well_founded.
     destruct a.
     apply acc_A_B_lexprod; auto with sets; intros.
     red in wfB.
@@ -94,7 +94,7 @@ Section Wf_Symmetric_Product.
   Lemma wf_symprod :
     well_founded leA -> well_founded leB -> well_founded Symprod.
   Proof.
-    red in |- *.
+    red.
     destruct a.
     apply Acc_symprod; auto with sets.
   Defined.
@@ -161,7 +161,7 @@ Section Swap.
 
   Lemma wf_swapprod : well_founded R -> well_founded SwapProd.
   Proof.
-    red in |- *.
+    red.
     destruct a; intros.
     apply Acc_swapprod; auto with sets.
   Defined.

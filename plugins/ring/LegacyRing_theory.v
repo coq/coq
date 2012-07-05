@@ -58,22 +58,22 @@ Hint Resolve plus_comm plus_assoc mult_comm mult_assoc plus_zero_left
 (* Lemmas whose form is x=y are also provided in form y=x because Auto does
   not symmetry *)
 Lemma SR_mult_assoc2 : forall n m p:A, n * m * p = n * (m * p).
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma SR_plus_assoc2 : forall n m p:A, n + m + p = n + (m + p).
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma SR_plus_zero_left2 : forall n:A, n = 0 + n.
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma SR_mult_one_left2 : forall n:A, n = 1 * n.
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma SR_mult_zero_left2 : forall n:A, 0 = 0 * n.
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma SR_distr_left2 : forall n m p:A, n * p + m * p = (n + m) * p.
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma SR_plus_permute : forall n m p:A, n + (m + p) = m + (n + p).
 intros.
@@ -100,7 +100,7 @@ eauto.
 Qed.
 
 Lemma SR_distr_right2 : forall n m p:A, n * m + n * p = n * (m + p).
-symmetry  in |- *; apply SR_distr_right. Qed.
+symmetry ; apply SR_distr_right. Qed.
 
 Lemma SR_mult_zero_right : forall n:A, n * 0 = 0.
 intro; rewrite mult_comm; eauto.
@@ -176,22 +176,22 @@ Hint Resolve plus_comm plus_assoc mult_comm mult_assoc plus_zero_left
 (* Lemmas whose form is x=y are also provided in form y=x because Auto does
   not symmetry *)
 Lemma Th_mult_assoc2 : forall n m p:A, n * m * p = n * (m * p).
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma Th_plus_assoc2 : forall n m p:A, n + m + p = n + (m + p).
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma Th_plus_zero_left2 : forall n:A, n = 0 + n.
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma Th_mult_one_left2 : forall n:A, n = 1 * n.
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma Th_distr_left2 : forall n m p:A, n * p + m * p = (n + m) * p.
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma Th_opp_def2 : forall n:A, 0 = n + - n.
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma Th_plus_permute : forall n m p:A, n + (m + p) = m + (n + p).
 intros.
@@ -214,7 +214,7 @@ Hint Resolve Th_plus_permute Th_mult_permute.
 Lemma aux1 : forall a:A, a + a = a -> a = 0.
 intros.
 generalize (opp_def a).
-pattern a at 1 in |- *.
+pattern a at 1.
 rewrite <- H.
 rewrite <- plus_assoc.
 rewrite opp_def.
@@ -233,7 +233,7 @@ Qed.
 Hint Resolve Th_mult_zero_left.
 
 Lemma Th_mult_zero_left2 : forall n:A, 0 = 0 * n.
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma aux2 : forall x y z:A, x + y = 0 -> x + z = 0 -> y = z.
 intros.
@@ -255,7 +255,7 @@ Qed.
 Hint Resolve Th_opp_mult_left.
 
 Lemma Th_opp_mult_left2 : forall x y:A, - x * y = - (x * y).
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma Th_mult_zero_right : forall n:A, n * 0 = 0.
 intro; elim mult_comm; eauto.
@@ -306,14 +306,14 @@ Qed.
 Hint Resolve Th_opp_opp.
 
 Lemma Th_opp_opp2 : forall n:A, n = - - n.
-symmetry  in |- *; eauto. Qed.
+symmetry ; eauto. Qed.
 
 Lemma Th_mult_opp_opp : forall x y:A, - x * - y = x * y.
 intros; rewrite <- Th_opp_mult_left; rewrite <- Th_opp_mult_right; auto.
 Qed.
 
 Lemma Th_mult_opp_opp2 : forall x y:A, x * y = - x * - y.
-symmetry  in |- *; apply Th_mult_opp_opp. Qed.
+symmetry ; apply Th_mult_opp_opp. Qed.
 
 Lemma Th_opp_zero : - 0 = 0.
 rewrite <- (plus_zero_left (- 0)).
@@ -342,7 +342,7 @@ eauto.
 Qed.
 
 Lemma Th_distr_right2 : forall n m p:A, n * m + n * p = n * (m + p).
-symmetry  in |- *; apply Th_distr_right.
+symmetry ; apply Th_distr_right.
 Qed.
 
 End Theory_of_rings.
@@ -357,7 +357,7 @@ Definition Semi_Ring_Theory_of :
     Ring_Theory Aplus Amult Aone Azero Aopp Aeq ->
     Semi_Ring_Theory Aplus Amult Aone Azero Aeq.
 intros until 1; case H.
-split; intros; simpl in |- *; eauto.
+split; intros; simpl; eauto.
 Defined.
 
 (* Every ring can be viewed as a semi-ring : this property will be used

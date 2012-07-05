@@ -51,7 +51,7 @@ Qed.
 
 Theorem lt_not_le : forall n m, n < m -> ~ m <= n.
 Proof.
-  red in |- *; intros n m Lt Le; exact (le_not_lt m n Le Lt).
+  red; intros n m Lt Le; exact (le_not_lt m n Le Lt).
 Qed.
 Hint Immediate le_not_lt lt_not_le: arith v62.
 
@@ -107,12 +107,12 @@ Qed.
 
 Lemma lt_pred : forall n m, S n < m -> n < pred m.
 Proof.
-induction 1; simpl in |- *; auto with arith.
+induction 1; simpl; auto with arith.
 Qed.
 Hint Immediate lt_pred: arith v62.
 
 Lemma lt_pred_n_n : forall n, 0 < n -> pred n < n.
-destruct 1; simpl in |- *; auto with arith.
+destruct 1; simpl; auto with arith.
 Qed.
 Hint Resolve lt_pred_n_n: arith v62.
 
@@ -159,7 +159,7 @@ Hint Immediate lt_le_weak: arith v62.
 
 Theorem le_or_lt : forall n m, n <= m \/ m < n.
 Proof.
-  intros n m; pattern n, m in |- *; apply nat_double_ind; auto with arith.
+  intros n m; pattern n, m; apply nat_double_ind; auto with arith.
   induction 1; auto with arith.
 Qed.
 

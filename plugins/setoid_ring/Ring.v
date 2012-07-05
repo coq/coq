@@ -14,7 +14,7 @@ Require Export Ring_tac.
 
 Lemma BoolTheory :
   ring_theory false true xorb andb xorb (fun b:bool => b) (eq(A:=bool)).
-split; simpl in |- *.
+split; simpl.
 destruct x; reflexivity.
 destruct x; destruct y; reflexivity.
 destruct x; destruct y; destruct z; reflexivity.

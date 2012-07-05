@@ -603,12 +603,12 @@ Qed.
 
 Lemma lt_leaf : forall x, lt_tree x (Leaf elt).
 Proof.
- unfold lt_tree in |- *; intros; intuition_in.
+ unfold lt_tree; intros; intuition_in.
 Qed.
 
 Lemma gt_leaf : forall x, gt_tree x (Leaf elt).
 Proof.
-  unfold gt_tree in |- *; intros; intuition_in.
+  unfold gt_tree; intros; intuition_in.
 Qed.
 
 Lemma lt_tree_node : forall x y l r e h,
@@ -1388,8 +1388,8 @@ Lemma fold_equiv_aux :
  L.fold f (elements_aux acc s) a = L.fold f acc (fold f s a).
 Proof.
  simple induction s.
- simpl in |- *; intuition.
- simpl in |- *; intros.
+ simpl; intuition.
+ simpl; intros.
  rewrite H.
  simpl.
  apply H0.
@@ -1399,11 +1399,11 @@ Lemma fold_equiv :
  forall (A : Type) (s : t elt) (f : key -> elt -> A -> A) (a : A),
  fold f s a = fold' f s a.
 Proof.
- unfold fold', elements in |- *.
- simple induction s; simpl in |- *; auto; intros.
+ unfold fold', elements.
+ simple induction s; simpl; auto; intros.
  rewrite fold_equiv_aux.
  rewrite H0.
- simpl in |- *; auto.
+ simpl; auto.
 Qed.
 
 Lemma fold_1 :

@@ -33,7 +33,7 @@ Require Export Relations_3.
 Theorem Rstar_imp_coherent :
  forall (U:Type) (R:Relation U) (x y:U), Rstar U R x y -> coherent U R x y.
 Proof.
-intros U R x y H'; red in |- *.
+intros U R x y H'; red.
 exists y; auto with sets.
 Qed.
 Hint Resolve Rstar_imp_coherent.
@@ -41,8 +41,8 @@ Hint Resolve Rstar_imp_coherent.
 Theorem coherent_symmetric :
  forall (U:Type) (R:Relation U), Symmetric U (coherent U R).
 Proof.
-unfold coherent at 1 in |- *.
-intros U R; red in |- *.
+unfold coherent at 1.
+intros U R; red.
 intros x y H'; elim H'.
 intros z H'0; exists z; tauto.
 Qed.
@@ -50,9 +50,9 @@ Qed.
 Theorem Strong_confluence :
  forall (U:Type) (R:Relation U), Strongly_confluent U R -> Confluent U R.
 Proof.
-intros U R H'; red in |- *.
-intro x; red in |- *; intros a b H'0.
-unfold coherent at 1 in |- *.
+intros U R H'; red.
+intro x; red; intros a b H'0.
+unfold coherent at 1.
 generalize b; clear b.
 elim H'0; clear H'0.
 intros x0 b H'1; exists b; auto with sets.
@@ -75,9 +75,9 @@ Qed.
 Theorem Strong_confluence_direct :
  forall (U:Type) (R:Relation U), Strongly_confluent U R -> Confluent U R.
 Proof.
-intros U R H'; red in |- *.
-intro x; red in |- *; intros a b H'0.
-unfold coherent at 1 in |- *.
+intros U R H'; red.
+intro x; red; intros a b H'0.
+unfold coherent at 1.
 generalize b; clear b.
 elim H'0; clear H'0.
 intros x0 b H'1; exists b; auto with sets.
@@ -111,7 +111,7 @@ Theorem Noetherian_contains_Noetherian :
  forall (U:Type) (R R':Relation U),
    Noetherian U R -> contains U R R' -> Noetherian U R'.
 Proof.
-unfold Noetherian at 2 in |- *.
+unfold Noetherian at 2.
 intros U R R' H' H'0 x.
 elim (H' x); auto with sets.
 Qed.
@@ -120,8 +120,8 @@ Theorem Newman :
  forall (U:Type) (R:Relation U),
    Noetherian U R -> Locally_confluent U R -> Confluent U R.
 Proof.
-intros U R H' H'0; red in |- *; intro x.
-elim (H' x); unfold confluent in |- *.
+intros U R H' H'0; red; intro x.
+elim (H' x); unfold confluent.
 intros x0 H'1 H'2 y z H'3 H'4.
 generalize (Rstar_cases U R x0 y); intro h; lapply h;
  [ intro h0; elim h0;
@@ -163,7 +163,7 @@ generalize (H'2 v); intro h; lapply h;
        | clear h h0 ]
     | clear h h0 ]
  | clear h ]; auto with sets.
-red in |- *; (exists z1; split); auto with sets.
+red; (exists z1; split); auto with sets.
 apply T with y1; auto with sets.
 apply T with t; auto with sets.
 Qed.

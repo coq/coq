@@ -36,24 +36,24 @@ Section Ensembles_facts.
 
   Lemma Noone_in_empty : forall x:U, ~ In U (Empty_set U) x.
   Proof.
-    red in |- *; destruct 1.
+    red; destruct 1.
   Qed.
 
   Lemma Included_Empty : forall A:Ensemble U, Included U (Empty_set U) A.
   Proof.
-    intro; red in |- *.
+    intro; red.
     intros x H; elim (Noone_in_empty x); auto with sets.
   Qed.
 
   Lemma Add_intro1 :
     forall (A:Ensemble U) (x y:U), In U A y -> In U (Add U A x) y.
   Proof.
-    unfold Add at 1 in |- *; auto with sets.
+    unfold Add at 1; auto with sets.
   Qed.
 
   Lemma Add_intro2 : forall (A:Ensemble U) (x:U), In U (Add U A x) x.
   Proof.
-    unfold Add at 1 in |- *; auto with sets.
+    unfold Add at 1; auto with sets.
   Qed.
 
   Lemma Inhabited_add : forall (A:Ensemble U) (x:U), Inhabited U (Add U A x).
@@ -66,7 +66,7 @@ Section Ensembles_facts.
     forall X:Ensemble U, Inhabited U X -> X <> Empty_set U.
   Proof.
     intros X H'; elim H'.
-    intros x H'0; red in |- *; intro H'1.
+    intros x H'0; red; intro H'1.
     absurd (In U X x); auto with sets.
     rewrite H'1; auto using Noone_in_empty with sets.
   Qed.
@@ -78,7 +78,7 @@ Section Ensembles_facts.
 
   Lemma not_Empty_Add : forall (A:Ensemble U) (x:U), Empty_set U <> Add U A x.
   Proof.
-    intros; red in |- *; intro H; generalize (Add_not_Empty A x); auto with sets.
+    intros; red; intro H; generalize (Add_not_Empty A x); auto with sets.
   Qed.
 
   Lemma Singleton_inv : forall x y:U, In U (Singleton U x) y -> x = y.
@@ -121,7 +121,7 @@ Section Ensembles_facts.
     forall (A B:Ensemble U) (x:U),
       In U A x -> ~ In U B x -> In U (Setminus U A B) x.
   Proof.
-    unfold Setminus at 1 in |- *; red in |- *; auto with sets.
+    unfold Setminus at 1; red; auto with sets.
   Qed.
 
   Lemma Strict_Included_intro :
@@ -132,7 +132,7 @@ Section Ensembles_facts.
 
   Lemma Strict_Included_strict : forall X:Ensemble U, ~ Strict_Included U X X.
   Proof.
-    intro X; red in |- *; intro H'; elim H'.
+    intro X; red; intro H'; elim H'.
     intros H'0 H'1; elim H'1; auto with sets.
   Qed.
 

@@ -29,23 +29,23 @@ Proof.
   intro.
   assert (H1 := cv_speed_pow_fact C0).
   unfold Un_cv in H1; unfold R_dist in H1.
-  unfold Un_cv in |- *; unfold R_dist in |- *; intros.
+  unfold Un_cv; unfold R_dist; intros.
   cut (0 < eps / C0);
     [ intro
-      | unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+      | unfold Rdiv; apply Rmult_lt_0_compat;
 	[ assumption | apply Rinv_0_lt_compat; assumption ] ].
   elim (H1 (eps / C0) H3); intros N0 H4.
   exists N0; intros.
   replace (Majxy x y n) with (C0 ^ S n / INR (fact n)).
-  simpl in |- *.
+  simpl.
   apply Rmult_lt_reg_l with (Rabs (/ C0)).
   apply Rabs_pos_lt.
   apply Rinv_neq_0_compat.
-  red in |- *; intro; rewrite H6 in H0; elim (Rlt_irrefl _ H0).
+  red; intro; rewrite H6 in H0; elim (Rlt_irrefl _ H0).
   rewrite <- Rabs_mult.
-  unfold Rminus in |- *; rewrite Rmult_plus_distr_l.
+  unfold Rminus; rewrite Rmult_plus_distr_l.
   rewrite Ropp_0; rewrite Rmult_0_r.
-  unfold Rdiv in |- *; repeat rewrite <- Rmult_assoc.
+  unfold Rdiv; repeat rewrite <- Rmult_assoc.
   rewrite <- Rinv_l_sym.
   rewrite Rmult_1_l.
   rewrite (Rabs_right (/ C0)).
@@ -54,15 +54,15 @@ Proof.
     [ idtac | ring ].
   unfold Rdiv in H4; apply H4; assumption.
   apply Rle_ge; left; apply Rinv_0_lt_compat; assumption.
-  red in |- *; intro; rewrite H6 in H0; elim (Rlt_irrefl _ H0).
-  unfold Majxy in |- *.
-  unfold C0 in |- *.
+  red; intro; rewrite H6 in H0; elim (Rlt_irrefl _ H0).
+  unfold Majxy.
+  unfold C0.
   rewrite pow_mult.
-  unfold C in |- *; reflexivity.
-  unfold C0 in |- *; apply pow_lt; assumption.
+  unfold C; reflexivity.
+  unfold C0; apply pow_lt; assumption.
   apply Rlt_le_trans with 1.
   apply Rlt_0_1.
-  unfold C in |- *.
+  unfold C.
   apply RmaxLess1.
 Qed.
 
@@ -72,7 +72,7 @@ Lemma reste1_maj :
 Proof.
   intros.
   set (C := Rmax 1 (Rmax (Rabs x) (Rabs y))).
-  unfold Reste1 in |- *.
+  unfold Reste1.
   apply Rle_trans with
     (sum_f_R0
       (fun k:nat =>
@@ -120,7 +120,7 @@ Proof.
           C ^ (2 * S (N + k))) (pred (N - k))) (pred N)).
   apply sum_Rle; intros.
   apply sum_Rle; intros.
-  unfold Rdiv in |- *; repeat rewrite Rabs_mult.
+  unfold Rdiv; repeat rewrite Rabs_mult.
   do 2 rewrite pow_1_abs.
   do 2 rewrite Rmult_1_l.
   rewrite (Rabs_right (/ INR (fact (2 * S (n0 + n))))).
@@ -142,7 +142,7 @@ Proof.
   apply pow_incr.
   split.
   apply Rabs_pos.
-  unfold C in |- *.
+  unfold C.
   apply Rle_trans with (Rmax (Rabs x) (Rabs y)); apply RmaxLess2.
   apply Rle_trans with (C ^ (2 * S (n0 + n)) * C ^ (2 * (N - n0))).
   do 2 rewrite <- (Rmult_comm (C ^ (2 * (N - n0)))).
@@ -150,11 +150,11 @@ Proof.
   apply pow_le.
   apply Rle_trans with 1.
   left; apply Rlt_0_1.
-  unfold C in |- *; apply RmaxLess1.
+  unfold C; apply RmaxLess1.
   apply pow_incr.
   split.
   apply Rabs_pos.
-  unfold C in |- *; apply Rle_trans with (Rmax (Rabs x) (Rabs y)).
+  unfold C; apply Rle_trans with (Rmax (Rabs x) (Rabs y)).
   apply RmaxLess1.
   apply RmaxLess2.
   right.
@@ -203,7 +203,7 @@ Proof.
   left; apply Rinv_0_lt_compat.
   rewrite mult_INR; apply Rmult_lt_0_compat; apply INR_fact_lt_0.
   apply Rle_pow.
-  unfold C in |- *; apply RmaxLess1.
+  unfold C; apply RmaxLess1.
   replace (4 * N)%nat with (2 * (2 * N))%nat; [ idtac | ring ].
   apply (fun m n p:nat => mult_le_compat_l p n m).
   replace (2 * N)%nat with (S (N + pred N)).
@@ -223,33 +223,33 @@ Proof.
   apply pow_le.
   left; apply Rlt_le_trans with 1.
   apply Rlt_0_1.
-  unfold C in |- *; apply RmaxLess1.
+  unfold C; apply RmaxLess1.
   replace (/ INR (fact (2 * S (n0 + n)) * fact (2 * (N - n0)))) with
     (Binomial.C (2 * S (N + n)) (2 * S (n0 + n)) / INR (fact (2 * S (N + n)))).
   apply Rle_trans with
     (Binomial.C (2 * S (N + n)) (S (N + n)) / INR (fact (2 * S (N + n)))).
-  unfold Rdiv in |- *;
+  unfold Rdiv;
     do 2 rewrite <- (Rmult_comm (/ INR (fact (2 * S (N + n))))).
   apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
   apply C_maj.
   omega.
   right.
-  unfold Rdiv in |- *; rewrite Rmult_comm.
-  unfold Binomial.C in |- *.
-  unfold Rdiv in |- *; repeat rewrite <- Rmult_assoc.
+  unfold Rdiv; rewrite Rmult_comm.
+  unfold Binomial.C.
+  unfold Rdiv; repeat rewrite <- Rmult_assoc.
   rewrite <- Rinv_l_sym.
   rewrite Rmult_1_l.
   replace (2 * S (N + n) - S (N + n))%nat with (S (N + n)).
   rewrite Rinv_mult_distr.
-  unfold Rsqr in |- *; reflexivity.
+  unfold Rsqr; reflexivity.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   omega.
   apply INR_fact_neq_0.
-  unfold Rdiv in |- *; rewrite Rmult_comm.
-  unfold Binomial.C in |- *.
-  unfold Rdiv in |- *; repeat rewrite <- Rmult_assoc.
+  unfold Rdiv; rewrite Rmult_comm.
+  unfold Binomial.C.
+  unfold Rdiv; repeat rewrite <- Rmult_assoc.
   rewrite <- Rinv_l_sym.
   rewrite Rmult_1_l.
   replace (2 * S (N + n) - 2 * S (n0 + n))%nat with (2 * (N - n0))%nat.
@@ -271,17 +271,17 @@ Proof.
   apply pow_le.
   left; apply Rlt_le_trans with 1.
   apply Rlt_0_1.
-  unfold C in |- *; apply RmaxLess1.
+  unfold C; apply RmaxLess1.
   apply Rle_trans with (Rsqr (/ INR (fact (S (N + n)))) * INR N).
   apply Rmult_le_compat_l.
   apply Rle_0_sqr.
   apply le_INR.
   omega.
-  rewrite Rmult_comm; unfold Rdiv in |- *; apply Rmult_le_compat_l.
+  rewrite Rmult_comm; unfold Rdiv; apply Rmult_le_compat_l.
   apply pos_INR.
   apply Rle_trans with (/ INR (fact (S (N + n)))).
-  pattern (/ INR (fact (S (N + n)))) at 2 in |- *; rewrite <- Rmult_1_r.
-  unfold Rsqr in |- *.
+  pattern (/ INR (fact (S (N + n)))) at 2; rewrite <- Rmult_1_r.
+  unfold Rsqr.
   apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
   apply Rmult_le_reg_l with (INR (fact (S (N + n)))).
@@ -313,14 +313,14 @@ Proof.
   rewrite sum_cte.
   apply Rle_trans with (C ^ (4 * N) / INR (fact (pred N))).
   rewrite <- (Rmult_comm (C ^ (4 * N))).
-  unfold Rdiv in |- *; rewrite Rmult_assoc; apply Rmult_le_compat_l.
+  unfold Rdiv; rewrite Rmult_assoc; apply Rmult_le_compat_l.
   apply pow_le.
   left; apply Rlt_le_trans with 1.
   apply Rlt_0_1.
-  unfold C in |- *; apply RmaxLess1.
+  unfold C; apply RmaxLess1.
   cut (S (pred N) = N).
   intro; rewrite H0.
-  pattern N at 2 in |- *; rewrite <- H0.
+  pattern N at 2; rewrite <- H0.
   do 2 rewrite fact_simpl.
   rewrite H0.
   repeat rewrite mult_INR.
@@ -329,7 +329,7 @@ Proof.
   repeat rewrite <- Rmult_assoc.
   rewrite <- Rinv_r_sym.
   rewrite Rmult_1_l.
-  pattern (/ INR (fact (pred N))) at 2 in |- *; rewrite <- Rmult_1_r.
+  pattern (/ INR (fact (pred N))) at 2; rewrite <- Rmult_1_r.
   rewrite Rmult_assoc.
   apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
@@ -340,19 +340,19 @@ Proof.
   apply le_INR; apply le_n_Sn.
   apply not_O_INR; discriminate.
   apply not_O_INR.
-  red in |- *; intro; rewrite H1 in H; elim (lt_irrefl _ H).
+  red; intro; rewrite H1 in H; elim (lt_irrefl _ H).
   apply not_O_INR.
-  red in |- *; intro; rewrite H1 in H; elim (lt_irrefl _ H).
+  red; intro; rewrite H1 in H; elim (lt_irrefl _ H).
   apply INR_fact_neq_0.
   apply not_O_INR; discriminate.
   apply prod_neq_R0.
   apply not_O_INR.
-  red in |- *; intro; rewrite H1 in H; elim (lt_irrefl _ H).
+  red; intro; rewrite H1 in H; elim (lt_irrefl _ H).
   apply INR_fact_neq_0.
-  symmetry  in |- *; apply S_pred with 0%nat; assumption.
+  symmetry ; apply S_pred with 0%nat; assumption.
   right.
-  unfold Majxy in |- *.
-  unfold C in |- *.
+  unfold Majxy.
+  unfold C.
   replace (S (pred N)) with N.
   reflexivity.
   apply S_pred with 0%nat; assumption.
@@ -363,7 +363,7 @@ Lemma reste2_maj :
 Proof.
   intros.
   set (C := Rmax 1 (Rmax (Rabs x) (Rabs y))).
-  unfold Reste2 in |- *.
+  unfold Reste2.
   apply Rle_trans with
     (sum_f_R0
       (fun k:nat =>
@@ -415,7 +415,7 @@ Proof.
 	    pred N)).
   apply sum_Rle; intros.
   apply sum_Rle; intros.
-  unfold Rdiv in |- *; repeat rewrite Rabs_mult.
+  unfold Rdiv; repeat rewrite Rabs_mult.
   do 2 rewrite pow_1_abs.
   do 2 rewrite Rmult_1_l.
   rewrite (Rabs_right (/ INR (fact (2 * S (n0 + n) + 1)))).
@@ -437,7 +437,7 @@ Proof.
   apply pow_incr.
   split.
   apply Rabs_pos.
-  unfold C in |- *.
+  unfold C.
   apply Rle_trans with (Rmax (Rabs x) (Rabs y)); apply RmaxLess2.
   apply Rle_trans with (C ^ (2 * S (n0 + n) + 1) * C ^ (2 * (N - n0) + 1)).
   do 2 rewrite <- (Rmult_comm (C ^ (2 * (N - n0) + 1))).
@@ -445,11 +445,11 @@ Proof.
   apply pow_le.
   apply Rle_trans with 1.
   left; apply Rlt_0_1.
-  unfold C in |- *; apply RmaxLess1.
+  unfold C; apply RmaxLess1.
   apply pow_incr.
   split.
   apply Rabs_pos.
-  unfold C in |- *; apply Rle_trans with (Rmax (Rabs x) (Rabs y)).
+  unfold C; apply Rle_trans with (Rmax (Rabs x) (Rabs y)).
   apply RmaxLess1.
   apply RmaxLess2.
   right.
@@ -477,7 +477,7 @@ Proof.
   left; apply Rinv_0_lt_compat.
   rewrite mult_INR; apply Rmult_lt_0_compat; apply INR_fact_lt_0.
   apply Rle_pow.
-  unfold C in |- *; apply RmaxLess1.
+  unfold C; apply RmaxLess1.
   replace (4 * S N)%nat with (2 * (2 * S N))%nat; [ idtac | ring ].
   apply (fun m n p:nat => mult_le_compat_l p n m).
   replace (2 * S N)%nat with (S (S (N + N))).
@@ -500,14 +500,14 @@ Proof.
   apply pow_le.
   left; apply Rlt_le_trans with 1.
   apply Rlt_0_1.
-  unfold C in |- *; apply RmaxLess1.
+  unfold C; apply RmaxLess1.
   replace (/ INR (fact (2 * S (n0 + n) + 1) * fact (2 * (N - n0) + 1))) with
     (Binomial.C (2 * S (S (N + n))) (2 * S (n0 + n) + 1) /
       INR (fact (2 * S (S (N + n))))).
   apply Rle_trans with
     (Binomial.C (2 * S (S (N + n))) (S (S (N + n))) /
       INR (fact (2 * S (S (N + n))))).
-  unfold Rdiv in |- *;
+  unfold Rdiv;
     do 2 rewrite <- (Rmult_comm (/ INR (fact (2 * S (S (N + n)))))).
   apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
@@ -518,21 +518,21 @@ Proof.
   ring.
   omega.
   right.
-  unfold Rdiv in |- *; rewrite Rmult_comm.
-  unfold Binomial.C in |- *.
-  unfold Rdiv in |- *; repeat rewrite <- Rmult_assoc.
+  unfold Rdiv; rewrite Rmult_comm.
+  unfold Binomial.C.
+  unfold Rdiv; repeat rewrite <- Rmult_assoc.
   rewrite <- Rinv_l_sym.
   rewrite Rmult_1_l.
   replace (2 * S (S (N + n)) - S (S (N + n)))%nat with (S (S (N + n))).
   rewrite Rinv_mult_distr.
-  unfold Rsqr in |- *; reflexivity.
+  unfold Rsqr; reflexivity.
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
   omega.
   apply INR_fact_neq_0.
-  unfold Rdiv in |- *; rewrite Rmult_comm.
-  unfold Binomial.C in |- *.
-  unfold Rdiv in |- *; repeat rewrite <- Rmult_assoc.
+  unfold Rdiv; rewrite Rmult_comm.
+  unfold Binomial.C.
+  unfold Rdiv; repeat rewrite <- Rmult_assoc.
   rewrite <- Rinv_l_sym.
   rewrite Rmult_1_l.
   replace (2 * S (S (N + n)) - (2 * S (n0 + n) + 1))%nat with
@@ -556,7 +556,7 @@ Proof.
   apply pow_le.
   left; apply Rlt_le_trans with 1.
   apply Rlt_0_1.
-  unfold C in |- *; apply RmaxLess1.
+  unfold C; apply RmaxLess1.
   apply Rle_trans with (Rsqr (/ INR (fact (S (S (N + n))))) * INR N).
   apply Rmult_le_compat_l.
   apply Rle_0_sqr.
@@ -564,11 +564,11 @@ Proof.
   apply le_INR.
   omega.
   omega.
-  rewrite Rmult_comm; unfold Rdiv in |- *; apply Rmult_le_compat_l.
+  rewrite Rmult_comm; unfold Rdiv; apply Rmult_le_compat_l.
   apply pos_INR.
   apply Rle_trans with (/ INR (fact (S (S (N + n))))).
-  pattern (/ INR (fact (S (S (N + n))))) at 2 in |- *; rewrite <- Rmult_1_r.
-  unfold Rsqr in |- *.
+  pattern (/ INR (fact (S (S (N + n))))) at 2; rewrite <- Rmult_1_r.
+  unfold Rsqr.
   apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
   apply Rmult_le_reg_l with (INR (fact (S (S (N + n))))).
@@ -599,11 +599,11 @@ Proof.
   rewrite sum_cte.
   apply Rle_trans with (C ^ (4 * S N) / INR (fact N)).
   rewrite <- (Rmult_comm (C ^ (4 * S N))).
-  unfold Rdiv in |- *; rewrite Rmult_assoc; apply Rmult_le_compat_l.
+  unfold Rdiv; rewrite Rmult_assoc; apply Rmult_le_compat_l.
   apply pow_le.
   left; apply Rlt_le_trans with 1.
   apply Rlt_0_1.
-  unfold C in |- *; apply RmaxLess1.
+  unfold C; apply RmaxLess1.
   cut (S (pred N) = N).
   intro; rewrite H0.
   do 2 rewrite fact_simpl.
@@ -642,10 +642,10 @@ Proof.
   apply INR_fact_neq_0.
   apply not_O_INR; discriminate.
   apply prod_neq_R0; [ apply not_O_INR; discriminate | apply INR_fact_neq_0 ].
-  symmetry  in |- *; apply S_pred with 0%nat; assumption.
+  symmetry ; apply S_pred with 0%nat; assumption.
   right.
-  unfold Majxy in |- *.
-  unfold C in |- *.
+  unfold Majxy.
+  unfold C.
   reflexivity.
 Qed.
 
@@ -654,10 +654,10 @@ Proof.
   intros.
   assert (H := Majxy_cv_R0 x y).
   unfold Un_cv in H; unfold R_dist in H.
-  unfold Un_cv in |- *; unfold R_dist in |- *; intros.
+  unfold Un_cv; unfold R_dist; intros.
   elim (H eps H0); intros N0 H1.
   exists (S N0); intros.
-  unfold Rminus in |- *; rewrite Ropp_0; rewrite Rplus_0_r.
+  unfold Rminus; rewrite Ropp_0; rewrite Rplus_0_r.
   apply Rle_lt_trans with (Rabs (Majxy x y (pred n))).
   rewrite (Rabs_right (Majxy x y (pred n))).
   apply reste1_maj.
@@ -665,8 +665,8 @@ Proof.
   apply lt_O_Sn.
   assumption.
   apply Rle_ge.
-  unfold Majxy in |- *.
-  unfold Rdiv in |- *; apply Rmult_le_pos.
+  unfold Majxy.
+  unfold Rdiv; apply Rmult_le_pos.
   apply pow_le.
   apply Rle_trans with 1.
   left; apply Rlt_0_1.
@@ -674,7 +674,7 @@ Proof.
   left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
   replace (Majxy x y (pred n)) with (Majxy x y (pred n) - 0); [ idtac | ring ].
   apply H1.
-  unfold ge in |- *; apply le_S_n.
+  unfold ge; apply le_S_n.
   replace (S (pred n)) with n.
   assumption.
   apply S_pred with 0%nat.
@@ -686,10 +686,10 @@ Proof.
   intros.
   assert (H := Majxy_cv_R0 x y).
   unfold Un_cv in H; unfold R_dist in H.
-  unfold Un_cv in |- *; unfold R_dist in |- *; intros.
+  unfold Un_cv; unfold R_dist; intros.
   elim (H eps H0); intros N0 H1.
   exists (S N0); intros.
-  unfold Rminus in |- *; rewrite Ropp_0; rewrite Rplus_0_r.
+  unfold Rminus; rewrite Ropp_0; rewrite Rplus_0_r.
   apply Rle_lt_trans with (Rabs (Majxy x y n)).
   rewrite (Rabs_right (Majxy x y n)).
   apply reste2_maj.
@@ -697,8 +697,8 @@ Proof.
   apply lt_O_Sn.
   assumption.
   apply Rle_ge.
-  unfold Majxy in |- *.
-  unfold Rdiv in |- *; apply Rmult_le_pos.
+  unfold Majxy.
+  unfold Rdiv; apply Rmult_le_pos.
   apply pow_le.
   apply Rle_trans with 1.
   left; apply Rlt_0_1.
@@ -706,7 +706,7 @@ Proof.
   left; apply Rinv_0_lt_compat; apply INR_fact_lt_0.
   replace (Majxy x y n) with (Majxy x y n - 0); [ idtac | ring ].
   apply H1.
-  unfold ge in |- *; apply le_trans with (S N0).
+  unfold ge; apply le_trans with (S N0).
   apply le_n_Sn.
   exact H2.
 Qed.
@@ -714,7 +714,7 @@ Qed.
 Lemma reste_cv_R0 : forall x y:R, Un_cv (Reste x y) 0.
 Proof.
   intros.
-  unfold Reste in |- *.
+  unfold Reste.
   set (An := fun n:nat => Reste2 x y n).
   set (Bn := fun n:nat => Reste1 x y (S n)).
   cut
@@ -723,21 +723,21 @@ Proof.
   intro.
   apply H.
   apply CV_minus.
-  unfold An in |- *.
+  unfold An.
   replace (fun n:nat => Reste2 x y n) with (Reste2 x y).
   apply reste2_cv_R0.
   reflexivity.
-  unfold Bn in |- *.
+  unfold Bn.
   assert (H0 := reste1_cv_R0 x y).
   unfold Un_cv in H0; unfold R_dist in H0.
-  unfold Un_cv in |- *; unfold R_dist in |- *; intros.
+  unfold Un_cv; unfold R_dist; intros.
   elim (H0 eps H1); intros N0 H2.
   exists N0; intros.
   apply H2.
-  unfold ge in |- *; apply le_trans with (S N0).
+  unfold ge; apply le_trans with (S N0).
   apply le_n_Sn.
   apply le_n_S; assumption.
-  unfold An, Bn in |- *.
+  unfold An, Bn.
   intro.
   replace 0 with (0 - 0); [ idtac | ring ].
   exact H.
@@ -751,7 +751,7 @@ Proof.
   intros.
   apply UL_sequence with (C1 x y); assumption.
   apply C1_cvg.
-  unfold Un_cv in |- *; unfold R_dist in |- *.
+  unfold Un_cv; unfold R_dist.
   intros.
   assert (H0 := A1_cvg x).
   assert (H1 := A1_cvg y).
@@ -764,7 +764,7 @@ Proof.
   unfold R_dist in H4; unfold R_dist in H5; unfold R_dist in H6.
   cut (0 < eps / 3);
     [ intro
-      | unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+      | unfold Rdiv; apply Rmult_lt_0_compat;
 	[ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
   elim (H4 (eps / 3) H7); intros N1 H8.
   elim (H5 (eps / 3) H7); intros N2 H9.
@@ -788,8 +788,8 @@ Proof.
   replace eps with (eps / 3 + (eps / 3 + eps / 3)).
   apply Rplus_lt_compat.
   apply H8.
-  unfold ge in |- *; apply le_trans with N.
-  unfold N in |- *.
+  unfold ge; apply le_trans with N.
+  unfold N.
   apply le_trans with (max N1 N2).
   apply le_max_l.
   apply le_trans with (max (max N1 N2) N3).
@@ -804,12 +804,12 @@ Proof.
   rewrite <- Rabs_Ropp.
   rewrite Ropp_minus_distr.
   apply H9.
-  unfold ge in |- *; apply le_trans with (max N1 N2).
+  unfold ge; apply le_trans with (max N1 N2).
   apply le_max_r.
   apply le_S_n.
   rewrite <- H12.
   apply le_trans with N.
-  unfold N in |- *.
+  unfold N.
   apply le_n_S.
   apply le_trans with (max (max N1 N2) N3).
   apply le_max_l.
@@ -817,35 +817,35 @@ Proof.
   assumption.
   replace (Reste x y (pred n)) with (Reste x y (pred n) - 0).
   apply H10.
-  unfold ge in |- *.
+  unfold ge.
   apply le_S_n.
   rewrite <- H12.
   apply le_trans with N.
-  unfold N in |- *.
+  unfold N.
   apply le_n_S.
   apply le_trans with (max (max N1 N2) N3).
   apply le_max_r.
   apply le_n_Sn.
   assumption.
   ring.
-  pattern eps at 4 in |- *; replace eps with (3 * (eps / 3)).
+  pattern eps at 4; replace eps with (3 * (eps / 3)).
   ring.
-  unfold Rdiv in |- *.
+  unfold Rdiv.
   rewrite <- Rmult_assoc.
   apply Rinv_r_simpl_m.
   discrR.
   apply lt_le_trans with (pred N).
-  unfold N in |- *; simpl in |- *; apply lt_O_Sn.
+  unfold N; simpl; apply lt_O_Sn.
   apply le_S_n.
   rewrite <- H12.
   replace (S (pred N)) with N.
   assumption.
-  unfold N in |- *; simpl in |- *; reflexivity.
+  unfold N; simpl; reflexivity.
   cut (0 < N)%nat.
   intro.
   cut (0 < n)%nat.
   intro.
   apply S_pred with 0%nat; assumption.
   apply lt_le_trans with N; assumption.
-  unfold N in |- *; apply lt_O_Sn.
+  unfold N; apply lt_O_Sn.
 Qed.

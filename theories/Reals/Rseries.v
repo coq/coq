@@ -54,20 +54,20 @@ Section sequence.
 (*********)
   Lemma EUn_noempty :  exists r : R, EUn r.
   Proof.
-    unfold EUn in |- *; split with (Un 0); split with 0%nat; trivial.
+    unfold EUn; split with (Un 0); split with 0%nat; trivial.
   Qed.
 
 (*********)
   Lemma Un_in_EUn : forall n:nat, EUn (Un n).
   Proof.
-    intro; unfold EUn in |- *; split with n; trivial.
+    intro; unfold EUn; split with n; trivial.
   Qed.
 
 (*********)
   Lemma Un_bound_imp :
     forall x:R, (forall n:nat, Un n <= x) -> is_upper_bound EUn x.
   Proof.
-    intros; unfold is_upper_bound in |- *; intros; unfold EUn in H0; elim H0;
+    intros; unfold is_upper_bound; intros; unfold EUn in H0; elim H0;
       clear H0; intros; generalize (H x1); intro; rewrite <- H0 in H1;
         trivial.
   Qed.
@@ -77,7 +77,7 @@ Section sequence.
     forall n m:nat, Un_growing -> (n >= m)%nat -> Un n >= Un m.
   Proof.
     double induction n m; intros.
-    unfold Rge in |- *; right; trivial.
+    unfold Rge; right; trivial.
     exfalso; unfold ge in H1; generalize (le_Sn_O n0); intro; auto.
     cut (n0 >= 0)%nat.
     generalize H0; intros; unfold Un_growing in H0;
@@ -89,7 +89,7 @@ Section sequence.
     elim y; clear y; intro y.
     unfold ge in H2; generalize (le_not_lt n0 n1 (le_S_n n0 n1 H2)); intro;
       exfalso; auto.
-    rewrite y; unfold Rge in |- *; right; trivial.
+    rewrite y; unfold Rge; right; trivial.
     unfold ge in H0; generalize (H0 (S n0) H1 (lt_le_S n0 n1 y)); intro;
       unfold Un_growing in H1;
         apply
@@ -285,7 +285,7 @@ Section sequence.
 (*********)
   Lemma cauchy_bound : Cauchy_crit -> bound EUn.
   Proof.
-    unfold Cauchy_crit, bound in |- *; intros; unfold is_upper_bound in |- *;
+    unfold Cauchy_crit, bound; intros; unfold is_upper_bound;
       unfold Rgt in H; elim (H 1 Rlt_0_1); clear H; intros;
         generalize (H x); intro; generalize (le_dec x); intro;
           elim (finite_greater x); intros; split with (Rmax x0 (Un x + 1));
@@ -324,12 +324,12 @@ End Isequence.
 Lemma GP_infinite :
   forall x:R, Rabs x < 1 -> Pser (fun n:nat => 1) x (/ (1 - x)).
 Proof.
-  intros; unfold Pser in |- *; unfold infinite_sum in |- *; intros;
+  intros; unfold Pser; unfold infinite_sum; intros;
     elim (Req_dec x 0).
   intros; exists 0%nat; intros; rewrite H1; rewrite Rminus_0_r; rewrite Rinv_1;
     cut (sum_f_R0 (fun n0:nat => 1 * 0 ^ n0) n = 1).
   intros; rewrite H3; rewrite R_dist_eq; auto.
-  elim n; simpl in |- *.
+  elim n; simpl.
   ring.
   intros; rewrite H3; ring.
   intro; cut (0 < eps * (Rabs (1 - x) * Rabs (/ x))).
@@ -344,11 +344,11 @@ Proof.
   apply Rabs_pos_lt.
   apply Rminus_eq_contra.
   apply Rlt_dichotomy_converse.
-  right; unfold Rgt in |- *.
+  right; unfold Rgt.
   apply (Rle_lt_trans x (Rabs x) 1).
   apply RRle_abs.
   assumption.
-  unfold R_dist in |- *; rewrite <- Rabs_mult.
+  unfold R_dist; rewrite <- Rabs_mult.
   rewrite Rmult_minus_distr_l.
   cut
     ((1 - x) * sum_f_R0 (fun n0:nat => x ^ n0) n =
@@ -359,7 +359,7 @@ Proof.
   cut (- (x ^ (n + 1) - 1) - 1 = - x ^ (n + 1)).
   intro; rewrite H7.
   rewrite Rabs_Ropp; cut ((n + 1)%nat = S n); auto.
-  intro H8; rewrite H8; simpl in |- *; rewrite Rabs_mult;
+  intro H8; rewrite H8; simpl; rewrite Rabs_mult;
     apply
       (Rlt_le_trans (Rabs x * Rabs (x ^ n))
         (Rabs x * (eps * (Rabs (1 - x) * Rabs (/ x)))) (
@@ -373,7 +373,7 @@ Proof.
       Rabs x * Rabs (/ x) * (eps * Rabs (1 - x))).
   clear H8; intros; rewrite H8; rewrite <- Rabs_mult; rewrite Rinv_r.
   rewrite Rabs_R1; cut (1 * (eps * Rabs (1 - x)) = Rabs (1 - x) * eps).
-  intros; rewrite H9; unfold Rle in |- *; right; reflexivity.
+  intros; rewrite H9; unfold Rle; right; reflexivity.
   ring.
   assumption.
   ring.
@@ -381,12 +381,12 @@ Proof.
   ring.
   apply Rminus_eq_contra.
   apply Rlt_dichotomy_converse.
-  right; unfold Rgt in |- *.
+  right; unfold Rgt.
   apply (Rle_lt_trans x (Rabs x) 1).
   apply RRle_abs.
   assumption.
   ring; ring.
-  elim n; simpl in |- *.
+  elim n; simpl.
   ring.
   intros; rewrite H5.
   ring.
@@ -396,7 +396,7 @@ Proof.
   apply Rabs_pos_lt.
   apply Rminus_eq_contra.
   apply Rlt_dichotomy_converse.
-  right; unfold Rgt in |- *.
+  right; unfold Rgt.
   apply (Rle_lt_trans x (Rabs x) 1).
   apply RRle_abs.
   assumption.

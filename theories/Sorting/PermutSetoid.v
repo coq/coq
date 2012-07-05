@@ -52,7 +52,7 @@ Lemma list_contents_app :
   forall l m:list A,
     meq (list_contents (l ++ m)) (munion (list_contents l) (list_contents m)).
 Proof.
-  simple induction l; simpl in |- *; auto with datatypes.
+  simple induction l; simpl; auto with datatypes.
   intros.
   apply meq_trans with
     (munion (singletonBag a) (munion (list_contents l0) (list_contents m)));
@@ -65,7 +65,7 @@ Definition permutation (l m:list A) := meq (list_contents l) (list_contents m).
 
 Lemma permut_refl : forall l:list A, permutation l l.
 Proof.
-  unfold permutation in |- *; auto with datatypes.
+  unfold permutation; auto with datatypes.
 Qed.
 
 Lemma permut_sym :
@@ -77,7 +77,7 @@ Qed.
 Lemma permut_trans :
   forall l m n:list A, permutation l m -> permutation m n -> permutation l n.
 Proof.
-  unfold permutation in |- *; intros.
+  unfold permutation; intros.
   apply meq_trans with (list_contents m); auto with datatypes.
 Qed.
 
@@ -102,7 +102,7 @@ Lemma permut_app :
   forall l l' m m':list A,
     permutation l l' -> permutation m m' -> permutation (l ++ m) (l' ++ m').
 Proof.
-  unfold permutation in |- *; intros.
+  unfold permutation; intros.
   apply meq_trans with (munion (list_contents l) (list_contents m));
     auto using permut_cons, list_contents_app with datatypes.
   apply meq_trans with (munion (list_contents l') (list_contents m'));

@@ -36,11 +36,11 @@ Section Wf_Lexicographic_Exponentiation.
   Proof.
     simple induction x.
     simple induction z.
-    simpl in |- *; intros H.
+    simpl; intros H.
     inversion_clear H.
-    simpl in |- *; intros; apply (Lt_nil A leA).
+    simpl; intros; apply (Lt_nil A leA).
     intros a l HInd.
-    simpl in |- *.
+    simpl.
     intros.
     inversion_clear H.
     apply (Lt_hd A leA); auto with sets.
@@ -54,7 +54,7 @@ Section Wf_Lexicographic_Exponentiation.
       ltl x (y ++ z) -> ltl x y \/ (exists y' : List, x = y ++ y' /\ ltl y' z).
   Proof.
     intros x y; generalize x.
-    elim y; simpl in |- *.
+    elim y; simpl.
     right.
     exists x0; auto with sets.
     intros.
@@ -196,7 +196,7 @@ Section Wf_Lexicographic_Exponentiation.
           Descl x0 /\ Descl (l0 ++ Cons x1 Nil)).
 
 
-    simpl in |- *.
+    simpl.
     split.
     generalize (app_inj_tail _ _ _ _ H2); simple induction 1.
     simple induction 1; auto with sets.
@@ -239,7 +239,7 @@ Section Wf_Lexicographic_Exponentiation.
   Proof.
     intros a b x.
     case x.
-    simpl in |- *.
+    simpl.
     simple induction 1.
     intros.
     inversion H1; auto with sets.
@@ -267,7 +267,7 @@ Section Wf_Lexicographic_Exponentiation.
     case x.
     intros; apply (Lt_nil A leA).
 
-    simpl in |- *; intros.
+    simpl; intros.
     inversion_clear H0.
     apply (Lt_hd A leA a b); auto with sets.
 
@@ -284,17 +284,17 @@ Section Wf_Lexicographic_Exponentiation.
     apply (Acc_inv (R:=Lex_Exp) (x:=<< x1 ++ x2, y1 >>)).
     auto with sets.
 
-    unfold lex_exp in |- *; simpl in |- *; auto with sets.
+    unfold lex_exp; simpl; auto with sets.
   Qed.
 
 
   Theorem wf_lex_exp : well_founded leA -> well_founded Lex_Exp.
   Proof.
-    unfold well_founded at 2 in |- *.
+    unfold well_founded at 2.
     simple induction a; intros x y.
     apply Acc_intro.
     simple induction y0.
-    unfold lex_exp at 1 in |- *; simpl in |- *.
+    unfold lex_exp at 1; simpl.
     apply rev_ind with
       (A := A)
       (P := fun x:List =>
@@ -335,8 +335,8 @@ Section Wf_Lexicographic_Exponentiation.
     intro.
     apply Acc_intro.
     simple induction y2.
-    unfold lex_exp at 1 in |- *.
-    simpl in |- *; intros x4 y3. intros.
+    unfold lex_exp at 1.
+    simpl; intros x4 y3. intros.
     apply (H0 x4 y3); auto with sets.
 
     intros.
@@ -357,7 +357,7 @@ Section Wf_Lexicographic_Exponentiation.
     generalize (HInd2 f); intro.
     apply Acc_intro.
     simple induction y3.
-    unfold lex_exp at 1 in |- *; simpl in |- *; intros.
+    unfold lex_exp at 1; simpl; intros.
     apply H15; auto with sets.
   Qed.
 

@@ -145,7 +145,7 @@ Lemma even_mult_aux :
   forall n m,
     (odd (n * m) <-> odd n /\ odd m) /\ (even (n * m) <-> even n \/ even m).
 Proof.
-  intros n; elim n; simpl in |- *; auto with arith.
+  intros n; elim n; simpl; auto with arith.
   intros m; split; split; auto with arith.
   intros H'; inversion H'.
   intros H'; elim H'; auto.

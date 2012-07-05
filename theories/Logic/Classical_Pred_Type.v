@@ -42,7 +42,7 @@ Qed.
 Lemma not_ex_all_not :
  forall P:U -> Prop, ~ (exists n : U, P n) -> forall n:U, ~ P n.
 Proof. (* Intuitionistic *)
-unfold not in |- *; intros P notex n abs.
+unfold not; intros P notex n abs.
 apply notex.
 exists n; trivial.
 Qed.
@@ -52,20 +52,20 @@ Lemma not_ex_not_all :
 Proof.
 intros P H n.
 apply NNPP.
-red in |- *; intro K; apply H; exists n; trivial.
+red; intro K; apply H; exists n; trivial.
 Qed.
 
 Lemma ex_not_not_all :
  forall P:U -> Prop, (exists n : U, ~ P n) -> ~ (forall n:U, P n).
 Proof. (* Intuitionistic *)
-unfold not in |- *; intros P exnot allP.
+unfold not; intros P exnot allP.
 elim exnot; auto.
 Qed.
 
 Lemma all_not_not_ex :
  forall P:U -> Prop, (forall n:U, ~ P n) -> ~ (exists n : U, P n).
 Proof. (* Intuitionistic *)
-unfold not in |- *; intros P allnot exP; elim exP; intros n p.
+unfold not; intros P allnot exP; elim exP; intros n p.
 apply allnot with n; auto.
 Qed.
 

@@ -23,7 +23,7 @@ Arguments fact n%nat.
 
 Lemma lt_O_fact : forall n:nat, 0 < fact n.
 Proof.
-  simple induction n; unfold lt in |- *; simpl in |- *; auto with arith.
+  simple induction n; unfold lt; simpl; auto with arith.
 Qed.
 
 Lemma fact_neq_0 : forall n:nat, fact n <> 0.

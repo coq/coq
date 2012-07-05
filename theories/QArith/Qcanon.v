@@ -488,7 +488,7 @@ Definition Qc_eq_bool (x y : Qc) :=
 
 Lemma Qc_eq_bool_correct : forall x y : Qc, Qc_eq_bool x y = true -> x=y.
 Proof.
-  intros x y; unfold Qc_eq_bool in |- *; case (Qc_eq_dec x y); simpl in |- *; auto.
+  intros x y; unfold Qc_eq_bool; case (Qc_eq_dec x y); simpl; auto.
   intros _ H; inversion H.
 Qed.
 

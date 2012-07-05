@@ -345,7 +345,7 @@ Lemma rel_choice_and_proof_irrel_imp_guarded_rel_choice :
   RelationalChoice -> ProofIrrelevance -> GuardedRelationalChoice.
 Proof.
   intros rel_choice proof_irrel.
-  red in |- *; intros A B P R H.
+  red; intros A B P R H.
   destruct (rel_choice _ _ (fun (x:sigT P) (y:B) => R (projT1 x) y)) as (R',(HR'R,H0)).
   intros (x,HPx).
   destruct (H x HPx) as (y,HRxy).
@@ -581,7 +581,7 @@ Lemma classical_denumerable_description_imp_fun_choice :
       (forall x y, decidable (R x y)) -> FunctionalChoice_on_rel R.
 Proof.
   intros A Descr.
-  red in |- *; intros R Rdec H.
+  red; intros R Rdec H.
   set (R':= fun x y => R x y /\ forall y', R x y' -> y <= y').
   destruct (Descr R') as (f,Hf).
   intro x.

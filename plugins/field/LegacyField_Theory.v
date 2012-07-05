@@ -44,20 +44,20 @@ Proof.
   elim (H1 e0); intro y; elim (H2 e); intro y0;
    try
     (left; rewrite y; rewrite y0; auto) ||
-      (right; red in |- *; intro; inversion H3; auto).
+      (right; red; intro; inversion H3; auto).
   elim (H1 e0); intro y; elim (H2 e); intro y0;
    try
     (left; rewrite y; rewrite y0; auto) ||
-      (right; red in |- *; intro; inversion H3; auto).
+      (right; red; intro; inversion H3; auto).
   elim (H0 e); intro y.
   left; rewrite y; auto.
-  right; red in |- *; intro; inversion H1; auto.
+  right; red; intro; inversion H1; auto.
   elim (H0 e); intro y.
   left; rewrite y; auto.
-  right; red in |- *; intro; inversion H1; auto.
+  right; red; intro; inversion H1; auto.
   elim (eq_nat_dec n n0); intro y.
   left; rewrite y; auto.
-  right; red in |- *; intro; inversion H; auto.
+  right; red; intro; inversion H; auto.
 Defined.
 
 Definition eq_nat_dec := Eval compute in eq_nat_dec.
@@ -152,7 +152,7 @@ Lemma r_AmultT_mult :
  forall r r1 r2:AT, AmultT r r1 = AmultT r r2 -> r <> AzeroT -> r1 = r2.
 Proof.
   intros; transitivity (AmultT (AmultT (AinvT r) r) r1).
-  rewrite Th_inv_defT; [ symmetry  in |- *; apply AmultT_1l; auto | auto ].
+  rewrite Th_inv_defT; [ symmetry ; apply AmultT_1l; auto | auto ].
   transitivity (AmultT (AmultT (AinvT r) r) r2).
   repeat rewrite AmultT_assoc; rewrite H; trivial.
   rewrite Th_inv_defT; [ apply AmultT_1l; auto | auto ].
@@ -181,7 +181,7 @@ Qed.
 Lemma Rmult_neq_0_reg :
  forall r1 r2:AT, AmultT r1 r2 <> AzeroT -> r1 <> AzeroT /\ r2 <> AzeroT.
 Proof.
-  intros r1 r2 H; split; red in |- *; intro; apply H; rewrite H0; legacy ring.
+  intros r1 r2 H; split; red; intro; apply H; rewrite H0; legacy ring.
 Qed.
 
 (************************)
@@ -262,11 +262,11 @@ Lemma merge_mult_correct1 :
 Proof.
 intros e1 e2; generalize e1; generalize e2; clear e1 e2.
 simple induction e2; auto; intros.
-unfold merge_mult at 1 in |- *; fold merge_mult in |- *;
- unfold interp_ExprA at 2 in |- *; fold interp_ExprA in |- *;
- rewrite (H0 e e3 lvar); unfold interp_ExprA at 1 in |- *;
- fold interp_ExprA in |- *; unfold interp_ExprA at 5 in |- *;
- fold interp_ExprA in |- *; auto.
+unfold merge_mult at 1; fold merge_mult;
+ unfold interp_ExprA at 2; fold interp_ExprA;
+ rewrite (H0 e e3 lvar); unfold interp_ExprA at 1;
+ fold interp_ExprA; unfold interp_ExprA at 5;
+ fold interp_ExprA; auto.
 Qed.
 
 Lemma merge_mult_correct :
@@ -274,7 +274,7 @@ Lemma merge_mult_correct :
    interp_ExprA lvar (merge_mult e1 e2) = interp_ExprA lvar (EAmult e1 e2).
 Proof.
 simple induction e1; auto; intros.
-elim e0; try (intros; simpl in |- *; legacy ring).
+elim e0; try (intros; simpl; legacy ring).
 unfold interp_ExprA in H2; fold interp_ExprA in H2;
  cut
   (AmultT (interp_ExprA lvar e2)
@@ -284,7 +284,7 @@ unfold interp_ExprA in H2; fold interp_ExprA in H2;
      (AmultT (AmultT (interp_ExprA lvar e) (interp_ExprA lvar e4))
         (interp_ExprA lvar e2)) (interp_ExprA lvar e3)).
 intro H3; rewrite H3; rewrite <- H2; rewrite merge_mult_correct1;
- simpl in |- *; legacy ring.
+ simpl; legacy ring.
 legacy ring.
 Qed.
 
@@ -295,8 +295,8 @@ Lemma assoc_mult_correct1 :
    interp_ExprA lvar (assoc_mult (EAmult e1 e2)).
 Proof.
 simple induction e1; auto; intros.
-rewrite <- (H e0 lvar); simpl in |- *; rewrite merge_mult_correct;
- simpl in |- *; rewrite merge_mult_correct; simpl in |- *;
+rewrite <- (H e0 lvar); simpl; rewrite merge_mult_correct;
+ simpl; rewrite merge_mult_correct; simpl;
  auto.
 Qed.
 
@@ -306,21 +306,21 @@ Lemma assoc_mult_correct :
 Proof.
 simple induction e; auto; intros.
 elim e0; intros.
-intros; simpl in |- *; legacy ring.
-simpl in |- *; rewrite (AmultT_1l (interp_ExprA lvar (assoc_mult e1)));
+intros; simpl; legacy ring.
+simpl; rewrite (AmultT_1l (interp_ExprA lvar (assoc_mult e1)));
  rewrite (AmultT_1l (interp_ExprA lvar e1)); apply H0.
-simpl in |- *; rewrite (H0 lvar); auto.
-simpl in |- *; rewrite merge_mult_correct; simpl in |- *;
- rewrite merge_mult_correct; simpl in |- *; rewrite AmultT_assoc;
- rewrite assoc_mult_correct1; rewrite H2; simpl in |- *;
+simpl; rewrite (H0 lvar); auto.
+simpl; rewrite merge_mult_correct; simpl;
+ rewrite merge_mult_correct; simpl; rewrite AmultT_assoc;
+ rewrite assoc_mult_correct1; rewrite H2; simpl;
  rewrite <- assoc_mult_correct1 in H1; unfold interp_ExprA at 3 in H1;
  fold interp_ExprA in H1; rewrite (H0 lvar) in H1;
  rewrite (AmultT_comm (interp_ExprA lvar e3) (interp_ExprA lvar e1));
  rewrite <- AmultT_assoc; rewrite H1; rewrite AmultT_assoc;
  legacy ring.
-simpl in |- *; rewrite (H0 lvar); auto.
-simpl in |- *; rewrite (H0 lvar); auto.
-simpl in |- *; rewrite (H0 lvar); auto.
+simpl; rewrite (H0 lvar); auto.
+simpl; rewrite (H0 lvar); auto.
+simpl; rewrite (H0 lvar); auto.
 Qed.
 
 Lemma merge_plus_correct1 :
@@ -330,11 +330,11 @@ Lemma merge_plus_correct1 :
 Proof.
 intros e1 e2; generalize e1; generalize e2; clear e1 e2.
 simple induction e2; auto; intros.
-unfold merge_plus at 1 in |- *; fold merge_plus in |- *;
- unfold interp_ExprA at 2 in |- *; fold interp_ExprA in |- *;
- rewrite (H0 e e3 lvar); unfold interp_ExprA at 1 in |- *;
- fold interp_ExprA in |- *; unfold interp_ExprA at 5 in |- *;
- fold interp_ExprA in |- *; auto.
+unfold merge_plus at 1; fold merge_plus;
+ unfold interp_ExprA at 2; fold interp_ExprA;
+ rewrite (H0 e e3 lvar); unfold interp_ExprA at 1;
+ fold interp_ExprA; unfold interp_ExprA at 5;
+ fold interp_ExprA; auto.
 Qed.
 
 Lemma merge_plus_correct :
@@ -342,7 +342,7 @@ Lemma merge_plus_correct :
    interp_ExprA lvar (merge_plus e1 e2) = interp_ExprA lvar (EAplus e1 e2).
 Proof.
 simple induction e1; auto; intros.
-elim e0; try intros; try (simpl in |- *; legacy ring).
+elim e0; try intros; try (simpl; legacy ring).
 unfold interp_ExprA in H2; fold interp_ExprA in H2;
  cut
   (AplusT (interp_ExprA lvar e2)
@@ -352,7 +352,7 @@ unfold interp_ExprA in H2; fold interp_ExprA in H2;
      (AplusT (AplusT (interp_ExprA lvar e) (interp_ExprA lvar e4))
         (interp_ExprA lvar e2)) (interp_ExprA lvar e3)).
 intro H3; rewrite H3; rewrite <- H2; rewrite merge_plus_correct1;
- simpl in |- *; legacy ring.
+ simpl; legacy ring.
 legacy ring.
 Qed.
 
@@ -362,8 +362,8 @@ Lemma assoc_plus_correct :
    interp_ExprA lvar (assoc (EAplus e1 e2)).
 Proof.
 simple induction e1; auto; intros.
-rewrite <- (H e0 lvar); simpl in |- *; rewrite merge_plus_correct;
- simpl in |- *; rewrite merge_plus_correct; simpl in |- *;
+rewrite <- (H e0 lvar); simpl; rewrite merge_plus_correct;
+ simpl; rewrite merge_plus_correct; simpl;
  auto.
 Qed.
 
@@ -373,11 +373,11 @@ Lemma assoc_correct :
 Proof.
 simple induction e; auto; intros.
 elim e0; intros.
-simpl in |- *; rewrite (H0 lvar); auto.
-simpl in |- *; rewrite (H0 lvar); auto.
-simpl in |- *; rewrite merge_plus_correct; simpl in |- *;
- rewrite merge_plus_correct; simpl in |- *; rewrite AplusT_assoc;
- rewrite assoc_plus_correct; rewrite H2; simpl in |- *;
+simpl; rewrite (H0 lvar); auto.
+simpl; rewrite (H0 lvar); auto.
+simpl; rewrite merge_plus_correct; simpl;
+ rewrite merge_plus_correct; simpl; rewrite AplusT_assoc;
+ rewrite assoc_plus_correct; rewrite H2; simpl;
  apply
   (r_AplusT_plus (interp_ExprA lvar (assoc e1))
      (AplusT (interp_ExprA lvar (assoc e2))
@@ -386,7 +386,7 @@ simpl in |- *; rewrite merge_plus_correct; simpl in |- *;
         (interp_ExprA lvar e1))); rewrite <- AplusT_assoc;
  rewrite
   (AplusT_comm (interp_ExprA lvar (assoc e1)) (interp_ExprA lvar (assoc e2)))
-  ; rewrite assoc_plus_correct; rewrite H1; simpl in |- *;
+  ; rewrite assoc_plus_correct; rewrite H1; simpl;
  rewrite (H0 lvar);
  rewrite <-
   (AplusT_assoc (AplusT (interp_ExprA lvar e2) (interp_ExprA lvar e1))
@@ -399,15 +399,15 @@ simpl in |- *; rewrite merge_plus_correct; simpl in |- *;
  rewrite <-
   (AplusT_assoc (interp_ExprA lvar e2) (interp_ExprA lvar e3)
      (interp_ExprA lvar e1)); apply AplusT_comm.
-unfold assoc in |- *; fold assoc in |- *; unfold interp_ExprA in |- *;
- fold interp_ExprA in |- *; rewrite assoc_mult_correct;
- rewrite (H0 lvar); simpl in |- *; auto.
-simpl in |- *; rewrite (H0 lvar); auto.
-simpl in |- *; rewrite (H0 lvar); auto.
-simpl in |- *; rewrite (H0 lvar); auto.
-unfold assoc in |- *; fold assoc in |- *; unfold interp_ExprA in |- *;
- fold interp_ExprA in |- *; rewrite assoc_mult_correct;
- simpl in |- *; auto.
+unfold assoc; fold assoc; unfold interp_ExprA;
+ fold interp_ExprA; rewrite assoc_mult_correct;
+ rewrite (H0 lvar); simpl; auto.
+simpl; rewrite (H0 lvar); auto.
+simpl; rewrite (H0 lvar); auto.
+simpl; rewrite (H0 lvar); auto.
+unfold assoc; fold assoc; unfold interp_ExprA;
+ fold interp_ExprA; rewrite assoc_mult_correct;
+ simpl; auto.
 Qed.
 
 (**** Distribution *****)
@@ -451,7 +451,7 @@ Lemma distrib_mult_right_correct :
    interp_ExprA lvar (distrib_mult_right e1 e2) =
    AmultT (interp_ExprA lvar e1) (interp_ExprA lvar e2).
 Proof.
-simple induction e1; try intros; simpl in |- *; auto.
+simple induction e1; try intros; simpl; auto.
 rewrite AmultT_comm; rewrite AmultT_AplusT_distr; rewrite (H e2 lvar);
  rewrite (H0 e2 lvar); legacy ring.
 Qed.
@@ -461,10 +461,10 @@ Lemma distrib_mult_left_correct :
    interp_ExprA lvar (distrib_mult_left e1 e2) =
    AmultT (interp_ExprA lvar e1) (interp_ExprA lvar e2).
 Proof.
-simple induction e1; try intros; simpl in |- *.
-rewrite AmultT_Ol; rewrite distrib_mult_right_correct; simpl in |- *;
+simple induction e1; try intros; simpl.
+rewrite AmultT_Ol; rewrite distrib_mult_right_correct; simpl;
  apply AmultT_Or.
-rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_comm.
+rewrite distrib_mult_right_correct; simpl; apply AmultT_comm.
 rewrite AmultT_comm;
  rewrite
   (AmultT_AplusT_distr (interp_ExprA lvar e2) (interp_ExprA lvar e)
@@ -472,10 +472,10 @@ rewrite AmultT_comm;
  rewrite (AmultT_comm (interp_ExprA lvar e2) (interp_ExprA lvar e));
  rewrite (AmultT_comm (interp_ExprA lvar e2) (interp_ExprA lvar e0));
  rewrite (H e2 lvar); rewrite (H0 e2 lvar); auto.
-rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_comm.
-rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_comm.
-rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_comm.
-rewrite distrib_mult_right_correct; simpl in |- *; apply AmultT_comm.
+rewrite distrib_mult_right_correct; simpl; apply AmultT_comm.
+rewrite distrib_mult_right_correct; simpl; apply AmultT_comm.
+rewrite distrib_mult_right_correct; simpl; apply AmultT_comm.
+rewrite distrib_mult_right_correct; simpl; apply AmultT_comm.
 Qed.
 
 Lemma distrib_correct :
@@ -483,13 +483,13 @@ Lemma distrib_correct :
    interp_ExprA lvar (distrib e) = interp_ExprA lvar e.
 Proof.
 simple induction e; intros; auto.
-simpl in |- *; rewrite <- (H lvar); rewrite <- (H0 lvar);
- unfold distrib in |- *; simpl in |- *; auto.
-simpl in |- *; rewrite <- (H lvar); rewrite <- (H0 lvar);
- unfold distrib in |- *; simpl in |- *; apply distrib_mult_left_correct.
-simpl in |- *; fold AoppT in |- *; rewrite <- (H lvar);
- unfold distrib in |- *; simpl in |- *; rewrite distrib_mult_right_correct;
- simpl in |- *; fold AoppT in |- *; legacy ring.
+simpl; rewrite <- (H lvar); rewrite <- (H0 lvar);
+ unfold distrib; simpl; auto.
+simpl; rewrite <- (H lvar); rewrite <- (H0 lvar);
+ unfold distrib; simpl; apply distrib_mult_left_correct.
+simpl; fold AoppT; rewrite <- (H lvar);
+ unfold distrib; simpl; rewrite distrib_mult_right_correct;
+ simpl; fold AoppT; legacy ring.
 Qed.
 
 (**** Multiplication by the inverse product ****)
@@ -500,7 +500,7 @@ Lemma mult_eq :
    interp_ExprA lvar (EAmult a e1) = interp_ExprA lvar (EAmult a e2) ->
    interp_ExprA lvar e1 = interp_ExprA lvar e2.
 Proof.
-  simpl in |- *; intros;
+  simpl; intros;
    apply
     (r_AmultT_mult (interp_ExprA lvar a) (interp_ExprA lvar e1)
        (interp_ExprA lvar e2)); assumption.
@@ -523,16 +523,16 @@ Lemma multiply_aux_correct :
    interp_ExprA lvar (multiply_aux a e) =
    AmultT (interp_ExprA lvar a) (interp_ExprA lvar e).
 Proof.
-simple induction e; simpl in |- *; intros; try rewrite merge_mult_correct;
+simple induction e; simpl; intros; try rewrite merge_mult_correct;
  auto.
-  simpl in |- *; rewrite (H0 lvar); legacy ring.
+  simpl; rewrite (H0 lvar); legacy ring.
 Qed.
 
 Lemma multiply_correct :
  forall (e:ExprA) (lvar:list (AT * nat)),
    interp_ExprA lvar (multiply e) = interp_ExprA lvar e.
 Proof.
-  simple induction e; simpl in |- *; auto.
+  simple induction e; simpl; auto.
   intros; apply multiply_aux_correct.
 Qed.
 
@@ -583,27 +583,27 @@ Lemma monom_remove_correct :
    AmultT (interp_ExprA lvar a) (interp_ExprA lvar e).
 Proof.
 simple induction e; intros.
-simpl in |- *; case (eqExprA EAzero (EAinv a)); intros;
- [ inversion e0 | simpl in |- *; trivial ].
-simpl in |- *; case (eqExprA EAone (EAinv a)); intros;
- [ inversion e0 | simpl in |- *; trivial ].
-simpl in |- *; case (eqExprA (EAplus e0 e1) (EAinv a)); intros;
- [ inversion e2 | simpl in |- *; trivial ].
-simpl in |- *; case (eqExprA e0 (EAinv a)); intros.
-rewrite e2; simpl in |- *; fold AinvT in |- *.
+simpl; case (eqExprA EAzero (EAinv a)); intros;
+ [ inversion e0 | simpl; trivial ].
+simpl; case (eqExprA EAone (EAinv a)); intros;
+ [ inversion e0 | simpl; trivial ].
+simpl; case (eqExprA (EAplus e0 e1) (EAinv a)); intros;
+ [ inversion e2 | simpl; trivial ].
+simpl; case (eqExprA e0 (EAinv a)); intros.
+rewrite e2; simpl; fold AinvT.
 rewrite <-
  (AmultT_assoc (interp_ExprA lvar a) (AinvT (interp_ExprA lvar a))
     (interp_ExprA lvar e1)); rewrite AinvT_r; [ legacy ring | assumption ].
-simpl in |- *; rewrite H0; auto; legacy ring.
-simpl in |- *; fold AoppT in |- *; case (eqExprA (EAopp e0) (EAinv a));
- intros; [ inversion e1 | simpl in |- *; trivial ].
-unfold monom_remove in |- *; case (eqExprA (EAinv e0) (EAinv a)); intros.
+simpl; rewrite H0; auto; legacy ring.
+simpl; fold AoppT; case (eqExprA (EAopp e0) (EAinv a));
+ intros; [ inversion e1 | simpl; trivial ].
+unfold monom_remove; case (eqExprA (EAinv e0) (EAinv a)); intros.
 case (eqExprA e0 a); intros.
-rewrite e2; simpl in |- *; fold AinvT in |- *; rewrite AinvT_r; auto.
-inversion e1; simpl in |- *; exfalso; auto.
-simpl in |- *; trivial.
-unfold monom_remove in |- *; case (eqExprA (EAvar n) (EAinv a)); intros;
- [ inversion e0 | simpl in |- *; trivial ].
+rewrite e2; simpl; fold AinvT; rewrite AinvT_r; auto.
+inversion e1; simpl; exfalso; auto.
+simpl; trivial.
+unfold monom_remove; case (eqExprA (EAvar n) (EAinv a)); intros;
+ [ inversion e0 | simpl; trivial ].
 Qed.
 
 Lemma monom_simplif_rem_correct :
@@ -612,7 +612,7 @@ Lemma monom_simplif_rem_correct :
    interp_ExprA lvar (monom_simplif_rem a e) =
    AmultT (interp_ExprA lvar a) (interp_ExprA lvar e).
 Proof.
-simple induction a; simpl in |- *; intros; try rewrite monom_remove_correct;
+simple induction a; simpl; intros; try rewrite monom_remove_correct;
  auto.
 elim (Rmult_neq_0_reg (interp_ExprA lvar e) (interp_ExprA lvar e0) H1);
  intros.
@@ -626,9 +626,9 @@ Lemma monom_simplif_correct :
    interp_ExprA lvar (monom_simplif a e) = interp_ExprA lvar e.
 Proof.
 simple induction e; intros; auto.
-simpl in |- *; case (eqExprA a e0); intros.
+simpl; case (eqExprA a e0); intros.
 rewrite <- e2; apply monom_simplif_rem_correct; auto.
-simpl in |- *; trivial.
+simpl; trivial.
 Qed.
 
 Lemma inverse_correct :
@@ -637,8 +637,8 @@ Lemma inverse_correct :
    interp_ExprA lvar (inverse_simplif a e) = interp_ExprA lvar e.
 Proof.
 simple induction e; intros; auto.
-simpl in |- *; rewrite (H0 a lvar H1); rewrite monom_simplif_correct; auto.
-unfold inverse_simplif in |- *; rewrite monom_simplif_correct; auto.
+simpl; rewrite (H0 a lvar H1); rewrite monom_simplif_correct; auto.
+unfold inverse_simplif; rewrite monom_simplif_correct; auto.
 Qed.
 
 End Theory_of_fields.

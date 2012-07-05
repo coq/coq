@@ -406,7 +406,7 @@ Unset Implicit Arguments.
 Definition Semi_Setoid_Ring_Theory_of :
   Setoid_Ring_Theory -> Semi_Setoid_Ring_Theory.
 intros until 1; case H.
-split; intros; simpl in |- *; eauto.
+split; intros; simpl; eauto.
 Defined.
 
 Coercion Semi_Setoid_Ring_Theory_of : Setoid_Ring_Theory >->

@@ -16,7 +16,7 @@ Proof.
   intros.
   apply index_eq_prop.
   generalize H.
-  case (index_eq n m); simpl in |- *; trivial; intros.
+  case (index_eq n m); simpl; trivial; intros.
   contradiction.
 Qed.
 
@@ -371,7 +371,7 @@ Hint Immediate T.
 Lemma varlist_eq_prop : forall x y:varlist, Is_true (varlist_eq x y) -> x = y.
 Proof.
   simple induction x; simple induction y; contradiction || (try reflexivity).
-  simpl in |- *; intros.
+  simpl; intros.
   generalize (andb_prop2 _ _ H1); intros; elim H2; intros.
   rewrite (index_eq_prop _ _ H3); rewrite (H v0 H4); reflexivity.
 Qed.
@@ -380,7 +380,7 @@ Remark ivl_aux_ok :
  forall (v:varlist) (i:index),
    ivl_aux i v = Amult (interp_var i) (interp_vl v).
 Proof.
-  simple induction v; simpl in |- *; intros.
+  simple induction v; simpl; intros.
   trivial.
   rewrite H; trivial.
 Qed.
@@ -390,14 +390,14 @@ Lemma varlist_merge_ok :
    interp_vl (varlist_merge x y) = Amult (interp_vl x) (interp_vl y).
 Proof.
   simple induction x.
-  simpl in |- *; trivial.
+  simpl; trivial.
   simple induction y.
-  simpl in |- *; trivial.
-  simpl in |- *; intros.
-  elim (index_lt i i0); simpl in |- *; intros.
+  simpl; trivial.
+  simpl; intros.
+  elim (index_lt i i0); simpl; intros.
 
   repeat rewrite ivl_aux_ok.
-  rewrite H. simpl in |- *.
+  rewrite H. simpl.
   rewrite ivl_aux_ok.
   eauto.
 
@@ -410,7 +410,7 @@ Qed.
 Remark ics_aux_ok :
  forall (x:A) (s:canonical_sum), ics_aux x s = Aplus x (interp_cs s).
 Proof.
-  simple induction s; simpl in |- *; intros.
+  simple induction s; simpl; intros.
   trivial.
   reflexivity.
   reflexivity.
@@ -420,7 +420,7 @@ Remark interp_m_ok :
  forall (x:A) (l:varlist), interp_m x l = Amult x (interp_vl l).
 Proof.
   destruct l as [| i v].
-  simpl in |- *; trivial.
+  simpl; trivial.
   reflexivity.
 Qed.
 
@@ -428,10 +428,10 @@ Lemma canonical_sum_merge_ok :
  forall x y:canonical_sum,
    interp_cs (canonical_sum_merge x y) = Aplus (interp_cs x) (interp_cs y).
 
-simple induction x; simpl in |- *.
+simple induction x; simpl.
 trivial.
 
-simple induction y; simpl in |- *; intros.
+simple induction y; simpl; intros.
 (* monom and nil *)
 eauto.
 
@@ -439,25 +439,25 @@ eauto.
 generalize (varlist_eq_prop v v0).
 elim (varlist_eq v v0).
 intros; rewrite (H1 I).
-simpl in |- *; repeat rewrite ics_aux_ok; rewrite H.
+simpl; repeat rewrite ics_aux_ok; rewrite H.
 repeat rewrite interp_m_ok.
 rewrite (SR_distr_left T).
 repeat rewrite <- (SR_plus_assoc T).
 apply f_equal with (f := Aplus (Amult a (interp_vl v0))).
 trivial.
 
-elim (varlist_lt v v0); simpl in |- *.
+elim (varlist_lt v v0); simpl.
 repeat rewrite ics_aux_ok.
-rewrite H; simpl in |- *; rewrite ics_aux_ok; eauto.
+rewrite H; simpl; rewrite ics_aux_ok; eauto.
 
-rewrite ics_aux_ok; rewrite H0; repeat rewrite ics_aux_ok; simpl in |- *;
+rewrite ics_aux_ok; rewrite H0; repeat rewrite ics_aux_ok; simpl;
  eauto.
 
 (* monom and varlist *)
 generalize (varlist_eq_prop v v0).
 elim (varlist_eq v v0).
 intros; rewrite (H1 I).
-simpl in |- *; repeat rewrite ics_aux_ok; rewrite H.
+simpl; repeat rewrite ics_aux_ok; rewrite H.
 repeat rewrite interp_m_ok.
 rewrite (SR_distr_left T).
 repeat rewrite <- (SR_plus_assoc T).
@@ -465,13 +465,13 @@ apply f_equal with (f := Aplus (Amult a (interp_vl v0))).
 rewrite (SR_mult_one_left T).
 trivial.
 
-elim (varlist_lt v v0); simpl in |- *.
+elim (varlist_lt v v0); simpl.
 repeat rewrite ics_aux_ok.
-rewrite H; simpl in |- *; rewrite ics_aux_ok; eauto.
-rewrite ics_aux_ok; rewrite H0; repeat rewrite ics_aux_ok; simpl in |- *;
+rewrite H; simpl; rewrite ics_aux_ok; eauto.
+rewrite ics_aux_ok; rewrite H0; repeat rewrite ics_aux_ok; simpl;
  eauto.
 
-simple induction y; simpl in |- *; intros.
+simple induction y; simpl; intros.
 (* varlist and nil *)
 trivial.
 
@@ -479,7 +479,7 @@ trivial.
 generalize (varlist_eq_prop v v0).
 elim (varlist_eq v v0).
 intros; rewrite (H1 I).
-simpl in |- *; repeat rewrite ics_aux_ok; rewrite H.
+simpl; repeat rewrite ics_aux_ok; rewrite H.
 repeat rewrite interp_m_ok.
 rewrite (SR_distr_left T).
 repeat rewrite <- (SR_plus_assoc T).
@@ -487,17 +487,17 @@ rewrite (SR_mult_one_left T).
 apply f_equal with (f := Aplus (interp_vl v0)).
 trivial.
 
-elim (varlist_lt v v0); simpl in |- *.
+elim (varlist_lt v v0); simpl.
 repeat rewrite ics_aux_ok.
-rewrite H; simpl in |- *; rewrite ics_aux_ok; eauto.
-rewrite ics_aux_ok; rewrite H0; repeat rewrite ics_aux_ok; simpl in |- *;
+rewrite H; simpl; rewrite ics_aux_ok; eauto.
+rewrite ics_aux_ok; rewrite H0; repeat rewrite ics_aux_ok; simpl;
  eauto.
 
 (* varlist and varlist *)
 generalize (varlist_eq_prop v v0).
 elim (varlist_eq v v0).
 intros; rewrite (H1 I).
-simpl in |- *; repeat rewrite ics_aux_ok; rewrite H.
+simpl; repeat rewrite ics_aux_ok; rewrite H.
 repeat rewrite interp_m_ok.
 rewrite (SR_distr_left T).
 repeat rewrite <- (SR_plus_assoc T).
@@ -505,10 +505,10 @@ rewrite (SR_mult_one_left T).
 apply f_equal with (f := Aplus (interp_vl v0)).
 trivial.
 
-elim (varlist_lt v v0); simpl in |- *.
+elim (varlist_lt v v0); simpl.
 repeat rewrite ics_aux_ok.
-rewrite H; simpl in |- *; rewrite ics_aux_ok; eauto.
-rewrite ics_aux_ok; rewrite H0; repeat rewrite ics_aux_ok; simpl in |- *;
+rewrite H; simpl; rewrite ics_aux_ok; eauto.
+rewrite ics_aux_ok; rewrite H0; repeat rewrite ics_aux_ok; simpl;
  eauto.
 Qed.
 
@@ -518,24 +518,24 @@ Lemma monom_insert_ok :
    Aplus (Amult a (interp_vl l)) (interp_cs s).
 intros; generalize s; simple induction s0.
 
-simpl in |- *; rewrite interp_m_ok; trivial.
+simpl; rewrite interp_m_ok; trivial.
 
-simpl in |- *; intros.
+simpl; intros.
 generalize (varlist_eq_prop l v); elim (varlist_eq l v).
-intro Hr; rewrite (Hr I); simpl in |- *; rewrite interp_m_ok;
+intro Hr; rewrite (Hr I); simpl; rewrite interp_m_ok;
  repeat rewrite ics_aux_ok; rewrite interp_m_ok; rewrite (SR_distr_left T);
  eauto.
-elim (varlist_lt l v); simpl in |- *;
+elim (varlist_lt l v); simpl;
  [ repeat rewrite interp_m_ok; rewrite ics_aux_ok; eauto
  | repeat rewrite interp_m_ok; rewrite ics_aux_ok; rewrite H;
     rewrite ics_aux_ok; eauto ].
 
-simpl in |- *; intros.
+simpl; intros.
 generalize (varlist_eq_prop l v); elim (varlist_eq l v).
-intro Hr; rewrite (Hr I); simpl in |- *; rewrite interp_m_ok;
+intro Hr; rewrite (Hr I); simpl; rewrite interp_m_ok;
  repeat rewrite ics_aux_ok; rewrite (SR_distr_left T);
  rewrite (SR_mult_one_left T); eauto.
-elim (varlist_lt l v); simpl in |- *;
+elim (varlist_lt l v); simpl;
  [ repeat rewrite interp_m_ok; rewrite ics_aux_ok; eauto
  | repeat rewrite interp_m_ok; rewrite ics_aux_ok; rewrite H;
     rewrite ics_aux_ok; eauto ].
@@ -546,24 +546,24 @@ Lemma varlist_insert_ok :
    interp_cs (varlist_insert l s) = Aplus (interp_vl l) (interp_cs s).
 intros; generalize s; simple induction s0.
 
-simpl in |- *; trivial.
+simpl; trivial.
 
-simpl in |- *; intros.
+simpl; intros.
 generalize (varlist_eq_prop l v); elim (varlist_eq l v).
-intro Hr; rewrite (Hr I); simpl in |- *; rewrite interp_m_ok;
+intro Hr; rewrite (Hr I); simpl; rewrite interp_m_ok;
  repeat rewrite ics_aux_ok; rewrite interp_m_ok; rewrite (SR_distr_left T);
  rewrite (SR_mult_one_left T); eauto.
-elim (varlist_lt l v); simpl in |- *;
+elim (varlist_lt l v); simpl;
  [ repeat rewrite interp_m_ok; rewrite ics_aux_ok; eauto
  | repeat rewrite interp_m_ok; rewrite ics_aux_ok; rewrite H;
     rewrite ics_aux_ok; eauto ].
 
-simpl in |- *; intros.
+simpl; intros.
 generalize (varlist_eq_prop l v); elim (varlist_eq l v).
-intro Hr; rewrite (Hr I); simpl in |- *; rewrite interp_m_ok;
+intro Hr; rewrite (Hr I); simpl; rewrite interp_m_ok;
  repeat rewrite ics_aux_ok; rewrite (SR_distr_left T);
  rewrite (SR_mult_one_left T); eauto.
-elim (varlist_lt l v); simpl in |- *;
+elim (varlist_lt l v); simpl;
  [ repeat rewrite interp_m_ok; rewrite ics_aux_ok; eauto
  | repeat rewrite interp_m_ok; rewrite ics_aux_ok; rewrite H;
     rewrite ics_aux_ok; eauto ].
@@ -573,9 +573,9 @@ Lemma canonical_sum_scalar_ok :
  forall (a:A) (s:canonical_sum),
    interp_cs (canonical_sum_scalar a s) = Amult a (interp_cs s).
 simple induction s.
-simpl in |- *; eauto.
+simpl; eauto.
 
-simpl in |- *; intros.
+simpl; intros.
 repeat rewrite ics_aux_ok.
 repeat rewrite interp_m_ok.
 rewrite H.
@@ -583,7 +583,7 @@ rewrite (SR_distr_right T).
 repeat rewrite <- (SR_mult_assoc T).
 reflexivity.
 
-simpl in |- *; intros.
+simpl; intros.
 repeat rewrite ics_aux_ok.
 repeat rewrite interp_m_ok.
 rewrite H.
@@ -596,9 +596,9 @@ Lemma canonical_sum_scalar2_ok :
  forall (l:varlist) (s:canonical_sum),
    interp_cs (canonical_sum_scalar2 l s) = Amult (interp_vl l) (interp_cs s).
 simple induction s.
-simpl in |- *; trivial.
+simpl; trivial.
 
-simpl in |- *; intros.
+simpl; intros.
 rewrite monom_insert_ok.
 repeat rewrite ics_aux_ok.
 repeat rewrite interp_m_ok.
@@ -610,7 +610,7 @@ repeat rewrite <- (SR_plus_assoc T).
 rewrite (SR_mult_permute T a (interp_vl l) (interp_vl v)).
 reflexivity.
 
-simpl in |- *; intros.
+simpl; intros.
 rewrite varlist_insert_ok.
 repeat rewrite ics_aux_ok.
 repeat rewrite interp_m_ok.
@@ -627,9 +627,9 @@ Lemma canonical_sum_scalar3_ok :
    interp_cs (canonical_sum_scalar3 c l s) =
    Amult c (Amult (interp_vl l) (interp_cs s)).
 simple induction s.
-simpl in |- *; repeat rewrite (SR_mult_zero_right T); reflexivity.
+simpl; repeat rewrite (SR_mult_zero_right T); reflexivity.
 
-simpl in |- *; intros.
+simpl; intros.
 rewrite monom_insert_ok.
 repeat rewrite ics_aux_ok.
 repeat rewrite interp_m_ok.
@@ -641,7 +641,7 @@ repeat rewrite <- (SR_plus_assoc T).
 rewrite (SR_mult_permute T a (interp_vl l) (interp_vl v)).
 reflexivity.
 
-simpl in |- *; intros.
+simpl; intros.
 rewrite monom_insert_ok.
 repeat rewrite ics_aux_ok.
 repeat rewrite interp_m_ok.
@@ -657,7 +657,7 @@ Qed.
 Lemma canonical_sum_prod_ok :
  forall x y:canonical_sum,
    interp_cs (canonical_sum_prod x y) = Amult (interp_cs x) (interp_cs y).
-simple induction x; simpl in |- *; intros.
+simple induction x; simpl; intros.
 trivial.
 
 rewrite canonical_sum_merge_ok.
@@ -666,7 +666,7 @@ rewrite ics_aux_ok.
 rewrite interp_m_ok.
 rewrite H.
 rewrite (SR_mult_assoc T a (interp_vl v) (interp_cs y)).
-symmetry  in |- *.
+symmetry .
 eauto.
 
 rewrite canonical_sum_merge_ok.
@@ -678,7 +678,7 @@ Qed.
 
 Theorem spolynomial_normalize_ok :
  forall p:spolynomial, interp_cs (spolynomial_normalize p) = interp_sp p.
-simple induction p; simpl in |- *; intros.
+simple induction p; simpl; intros.
 
 reflexivity.
 reflexivity.
@@ -699,7 +699,7 @@ simple induction s.
 reflexivity.
 
 (* cons_monom *)
-simpl in |- *; intros.
+simpl; intros.
 generalize (SR_eq_prop T a Azero).
 elim (Aeq a Azero).
 intro Heq; rewrite (Heq I).
@@ -709,25 +709,25 @@ rewrite interp_m_ok.
 rewrite (SR_mult_zero_left T).
 trivial.
 
-intros; simpl in |- *.
+intros; simpl.
 generalize (SR_eq_prop T a Aone).
 elim (Aeq a Aone).
 intro Heq; rewrite (Heq I).
-simpl in |- *.
+simpl.
 repeat rewrite ics_aux_ok.
 rewrite interp_m_ok.
 rewrite H.
 rewrite (SR_mult_one_left T).
 reflexivity.
 
-simpl in |- *.
+simpl.
 repeat rewrite ics_aux_ok.
 rewrite interp_m_ok.
 rewrite H.
 reflexivity.
 
 (* cons_varlist *)
-simpl in |- *; intros.
+simpl; intros.
 repeat rewrite ics_aux_ok.
 rewrite H.
 reflexivity.
@@ -737,7 +737,7 @@ Qed.
 Theorem spolynomial_simplify_ok :
  forall p:spolynomial, interp_cs (spolynomial_simplify p) = interp_sp p.
 intro.
-unfold spolynomial_simplify in |- *.
+unfold spolynomial_simplify.
 rewrite canonical_sum_simplify_ok.
 apply spolynomial_normalize_ok.
 Qed.
@@ -850,7 +850,7 @@ Unset Implicit Arguments.
 Lemma spolynomial_of_ok :
  forall p:polynomial,
    interp_p p = interp_sp Aplus Amult Azero vm (spolynomial_of p).
-simple induction p; reflexivity || (simpl in |- *; intros).
+simple induction p; reflexivity || (simpl; intros).
 rewrite H; rewrite H0; reflexivity.
 rewrite H; rewrite H0; reflexivity.
 rewrite H.
@@ -863,23 +863,23 @@ Theorem polynomial_normalize_ok :
  forall p:polynomial,
    polynomial_normalize p =
    spolynomial_normalize Aplus Amult Aone (spolynomial_of p).
-simple induction p; reflexivity || (simpl in |- *; intros).
+simple induction p; reflexivity || (simpl; intros).
 rewrite H; rewrite H0; reflexivity.
 rewrite H; rewrite H0; reflexivity.
-rewrite H; simpl in |- *.
+rewrite H; simpl.
 elim
  (canonical_sum_scalar3 Aplus Amult Aone (Aopp Aone) Nil_var
     (spolynomial_normalize Aplus Amult Aone (spolynomial_of p0)));
  [ reflexivity
- | simpl in |- *; intros; rewrite H0; reflexivity
- | simpl in |- *; intros; rewrite H0; reflexivity ].
+ | simpl; intros; rewrite H0; reflexivity
+ | simpl; intros; rewrite H0; reflexivity ].
 Qed.
 
 Theorem polynomial_simplify_ok :
  forall p:polynomial,
    interp_cs Aplus Amult Aone Azero vm (polynomial_simplify p) = interp_p p.
 intro.
-unfold polynomial_simplify in |- *.
+unfold polynomial_simplify.
 rewrite spolynomial_of_ok.
 rewrite polynomial_normalize_ok.
 rewrite (canonical_sum_simplify_ok A Aplus Amult Aone Azero Aeq vm T).

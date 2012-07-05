@@ -21,7 +21,7 @@ intros; rewrite H; reflexivity.
 Qed.
 
 Lemma IZR_neq : forall z1 z2:Z, z1 <> z2 -> IZR z1 <> IZR z2.
-intros; red in |- *; intro; elim H; apply eq_IZR; assumption.
+intros; red; intro; elim H; apply eq_IZR; assumption.
 Qed.
 
 Ltac discrR :=
@@ -45,7 +45,7 @@ Ltac prove_sup0 :=
       repeat
        (apply Rmult_lt_0_compat || apply Rplus_lt_pos;
          try apply Rlt_0_1 || apply Rlt_R0_R2)
-  |  |- (?X1 > 0) => change (0 < X1) in |- *; prove_sup0
+  |  |- (?X1 > 0) => change (0 < X1); prove_sup0
   end.
 
 Ltac omega_sup :=
@@ -59,7 +59,7 @@ Ltac omega_sup :=
 
 Ltac prove_sup :=
   match goal with
-  |  |- (?X1 > ?X2) => change (X2 < X1) in |- *; prove_sup
+  |  |- (?X1 > ?X2) => change (X2 < X1); prove_sup
   |  |- (0 < ?X1) => prove_sup0
   |  |- (- ?X1 < 0) => rewrite <- Ropp_0; prove_sup
   |  |- (- ?X1 < - ?X2) => apply Ropp_lt_gt_contravar; prove_sup
