@@ -59,7 +59,7 @@ Definition le (n m : t) := n#1 + m#2 <= m#1 + n#2.
 Definition min (n m : t) : t := (min (n#1 + m#2) (m#1 + n#2), n#2 + m#2).
 Definition max (n m : t) : t := (max (n#1 + m#2) (m#1 + n#2), n#2 + m#2).
 
-(** NB : We do not have [Zpred (Zsucc n) = n] but only [Zpred (Zsucc n) == n].
+(** NB : We do not have [Z.pred (Z.succ n) = n] but only [Z.pred (Z.succ n) == n].
     It could be possible to consider as canonical only pairs where
     one of the elements is 0, and make all operations convert
     canonical values into other canonical values. In that case, we

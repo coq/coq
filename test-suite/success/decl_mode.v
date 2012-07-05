@@ -138,7 +138,7 @@ Coercion IZR: Z >->R.*)
 Open Scope R_scope.
 
 Lemma square_abs_square:
-  forall p,(INR (Zabs_nat p) * INR (Zabs_nat p)) = (IZR p * IZR p).
+  forall p,(INR (Z.abs_nat p) * INR (Z.abs_nat p)) = (IZR p * IZR p).
 proof.
   assume p:Z.
   per cases on p.
@@ -147,7 +147,7 @@ proof.
     suppose it is (Zpos z).
       thus thesis.
     suppose it is (Zneg z).
-      have ((INR (Zabs_nat (Zneg z)) * INR (Zabs_nat (Zneg z))) =
+      have ((INR (Z.abs_nat (Zneg z)) * INR (Z.abs_nat (Zneg z))) =
       (IZR (Zpos z) * IZR (Zpos z))).
            ~= ((- IZR (Zpos z)) * (- IZR (Zpos z))).
       thus ~= (IZR (Zneg z) * IZR (Zneg z)).
@@ -165,15 +165,15 @@ proof.
   have H_in_R:(INR q<>0:>R) by H.
   have triv:((IZR p/INR q* INR q) =IZR p :>R) by * using field.
   have sqrt2:((sqrt (INR 2%nat) * sqrt (INR 2%nat))= INR 2%nat:>R) by sqrt_def.
-  have (INR (Zabs_nat p * Zabs_nat p)
-     = (INR (Zabs_nat p) * INR (Zabs_nat p)))
+  have (INR (Z.abs_nat p * Z.abs_nat p)
+     = (INR (Z.abs_nat p) * INR (Z.abs_nat p)))
     by mult_INR.
     ~=  (IZR p* IZR p) by square_abs_square.
     ~=  ((IZR p/INR q*INR q)*(IZR p/INR q*INR q)) by triv. (* we have to factor because field is too weak *)
     ~=  ((IZR p/INR q)*(IZR p/INR q)*(INR q*INR q)) using ring.
     ~=  (sqrt (INR 2%nat) * sqrt (INR 2%nat)*(INR q*INR q)) by H0.
     ~= (INR (2%nat * (q*q)))  by sqrt2,mult_INR.
-  then  (Zabs_nat p * Zabs_nat p = 2* (q * q))%nat.
+  then  (Z.abs_nat p * Z.abs_nat p = 2* (q * q))%nat.
     ~= ((q*q)+(q*q))%nat.
     ~= (Div2.double (q*q)).
   then (q=0%nat) by main_theorem.

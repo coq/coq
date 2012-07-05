@@ -14,6 +14,18 @@ Require Import BinPos BinInt BinNat Pnat Nnat.
 
 Local Open Scope Z_scope.
 
+(** Conversions between integers and natural numbers
+
+    Seven sections:
+    - chains of conversions (combining two conversions)
+    - module N2Z : from N to Z
+    - module Z2N : from Z to N (negative numbers rounded to 0)
+    - module Zabs2N : from Z to N (via the absolute value)
+    - module Nat2Z : from nat to Z
+    - module Z2Nat : from Z to nat (negative numbers rounded to 0)
+    - module Zabs2Nat : from Z to nat (via the absolute value)
+*)
+
 (** * Chains of conversions *)
 
 (** When combining successive conversions, we have the following
@@ -254,8 +266,12 @@ Qed.
 
 Lemma inj_pow n m : Z.of_N (n^m) = (Z.of_N n)^(Z.of_N m).
 Proof.
- symmetry. destruct n, m; trivial. now apply Z.pow_0_l. apply Z.pow_Zpos.
+ destruct n, m; trivial. now rewrite Z.pow_0_l. apply Pos2Z.inj_pow.
 Qed.
+
+Lemma inj_testbit a n :
+ Z.testbit (Z.of_N a) (Z.of_N n) = N.testbit a n.
+Proof. apply Z.Private_BootStrap.testbit_of_N. Qed.
 
 End N2Z.
 
@@ -408,6 +424,10 @@ Proof.
  - now destruct 2.
 Qed.
 
+Lemma inj_testbit a n : 0<=n ->
+ Z.testbit (Z.of_N a) n = N.testbit a (Z.to_N n).
+Proof. apply Z.Private_BootStrap.testbit_of_N'. Qed.
+
 End Z2N.
 
 Module Zabs2N.
@@ -526,9 +546,9 @@ Proof.
   intros. rewrite abs_N_nonneg. now apply Z2N.inj_quot. now apply Z.quot_pos.
  destruct n, m; trivial; simpl.
  - trivial.
- - now rewrite <- Z.opp_Zpos, Z.quot_opp_r, inj_opp.
- - now rewrite <- Z.opp_Zpos, Z.quot_opp_l, inj_opp.
- - now rewrite <- 2 Z.opp_Zpos, Z.quot_opp_opp.
+ - now rewrite <- Pos2Z.opp_pos, Z.quot_opp_r, inj_opp.
+ - now rewrite <- Pos2Z.opp_pos, Z.quot_opp_l, inj_opp.
+ - now rewrite <- 2 Pos2Z.opp_pos, Z.quot_opp_opp.
 Qed.
 
 Lemma inj_rem n m : Z.abs_N (Z.rem n m) = ((Z.abs_N n) mod (Z.abs_N m))%N.
@@ -538,9 +558,9 @@ Proof.
   intros. rewrite abs_N_nonneg. now apply Z2N.inj_rem. now apply Z.rem_nonneg.
  destruct n, m; trivial; simpl.
  - trivial.
- - now rewrite <- Z.opp_Zpos, Z.rem_opp_r.
- - now rewrite <- Z.opp_Zpos, Z.rem_opp_l, inj_opp.
- - now rewrite <- 2 Z.opp_Zpos, Z.rem_opp_opp, inj_opp.
+ - now rewrite <- Pos2Z.opp_pos, Z.rem_opp_r.
+ - now rewrite <- Pos2Z.opp_pos, Z.rem_opp_l, inj_opp.
+ - now rewrite <- 2 Pos2Z.opp_pos, Z.rem_opp_opp, inj_opp.
 Qed.
 
 Lemma inj_pow n m : 0<=m -> Z.abs_N (n^m) = ((Z.abs_N n)^(Z.abs_N m))%N.
@@ -584,7 +604,7 @@ Qed.
 
 Lemma inj_succ n : Z.of_nat (S n) = Z.succ (Z.of_nat n).
 Proof.
- destruct n. trivial. simpl. symmetry. apply Z.succ_Zpos.
+ destruct n. trivial. simpl. apply Pos2Z.inj_succ.
 Qed.
 
 (** [Z.of_N] produce non-negative integers *)
@@ -915,10 +935,10 @@ End Zabs2Nat.
 
 Definition neq (x y:nat) := x <> y.
 
-Lemma inj_neq n m : neq n m -> Zne (Z_of_nat n) (Z_of_nat m).
+Lemma inj_neq n m : neq n m -> Zne (Z.of_nat n) (Z.of_nat m).
 Proof. intros H H'. now apply H, Nat2Z.inj. Qed.
 
-Lemma Zpos_P_of_succ_nat n : Zpos (P_of_succ_nat n) = Zsucc (Z_of_nat n).
+Lemma Zpos_P_of_succ_nat n : Zpos (Pos.of_succ_nat n) = Z.succ (Z.of_nat n).
 Proof (Nat2Z.inj_succ n).
 
 (** For these one, used in omega, a Definition is necessary *)
@@ -953,7 +973,7 @@ Notation inj_max := Nat2Z.inj_max (compat "8.3").
 
 Notation Z_of_nat_of_P := positive_nat_Z (compat "8.3").
 Notation Zpos_eq_Z_of_nat_o_nat_of_P :=
-  (fun p => sym_eq (positive_nat_Z p)) (compat "8.3").
+  (fun p => eq_sym (positive_nat_Z p)) (compat "8.3").
 
 Notation Z_of_nat_of_N := N_nat_Z (compat "8.3").
 Notation Z_of_N_of_nat := nat_N_Z (compat "8.3").
@@ -991,7 +1011,7 @@ Notation Zabs_N_plus := Zabs2N.inj_add (compat "8.3").
 Notation Zabs_N_mult_abs := Zabs2N.inj_mul_abs (compat "8.3").
 Notation Zabs_N_mult := Zabs2N.inj_mul (compat "8.3").
 
-Theorem inj_minus2 : forall n m:nat, (m > n)%nat -> Z_of_nat (n - m) = 0.
+Theorem inj_minus2 : forall n m:nat, (m > n)%nat -> Z.of_nat (n - m) = 0.
 Proof.
  intros. rewrite not_le_minus_0; auto with arith.
 Qed.

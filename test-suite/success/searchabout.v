@@ -55,6 +55,6 @@ SearchAbout [-"*"%nat "+"%nat] outside Logic.
 
 Require Import ZArith.
 
-SearchAbout Zmult Zplus "distr".
+SearchAbout Z.mul Z.add "distr".
 SearchAbout "+"%Z "*"%Z "distr" -positive -Prop.
 SearchAbout (?x * _ + ?x * _)%Z outside OmegaLemmas.

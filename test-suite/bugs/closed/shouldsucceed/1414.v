@@ -26,13 +26,13 @@ Program Fixpoint union
     | t1,Leaf => t1
     | Node l1 v1 r1 h1, Node l2 v2 r2 h2 =>
         if (Z_ge_lt_dec h1 h2) then
-          if (Z_eq_dec h2 1)
+          if (Z.eq_dec h2 1)
           then add v2 s
           else
             let (l2', r2') := split v1 u in
             join (union l1 l2' _ _ _ _) v1 (union r1 (snd r2') _ _ _ _)
         else
-          if (Z_eq_dec h1 1)
+          if (Z.eq_dec h1 1)
           then add v1 s
           else
             let (l1', r1') := split v2 u in

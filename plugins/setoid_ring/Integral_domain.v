@@ -19,7 +19,7 @@ rewrite H0. rewrite <- H. cring.
 Qed.
 
 
-Definition pow (r : R) (n : nat) := Ring_theory.pow_N 1 mul r (N_of_nat n).
+Definition pow (r : R) (n : nat) := Ring_theory.pow_N 1 mul r (N.of_nat n).
 
 Lemma pow_not_zero: forall p n, pow p n == 0 -> p == 0.
 induction n. unfold pow; simpl. intros. absurd (1 == 0). 
@@ -29,9 +29,8 @@ intros.
 case (integral_domain_product p (pow p n) H). trivial. trivial. 
 unfold pow; simpl. 
 clear IHn. induction n; simpl; try cring. 
- rewrite Ring_theory.pow_pos_Psucc. cring. apply ring_setoid.
+ rewrite Ring_theory.pow_pos_succ. cring. apply ring_setoid.
 apply ring_mult_comp.
-apply cring_mul_comm.
 apply ring_mul_assoc.
 Qed.
 

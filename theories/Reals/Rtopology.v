@@ -287,7 +287,7 @@ Proof.
   apply H5; split.
   unfold D_x, no_cond in |- *; split.
   trivial.
-  apply (sym_not_eq (A:=R)); apply H7.
+  apply (not_eq_sym (A:=R)); apply H7.
   unfold disc in H6; apply H6.
   intros; unfold continuity_pt in |- *; unfold continue_in in |- *;
     unfold limit1_in in |- *; unfold limit_in in |- *;
@@ -1581,7 +1581,7 @@ Proof.
   right; elim H1; intros; elim H2; intros; exists x; exists x0; intros.
   split;
     [ assumption
-      | split; [ assumption | apply (sym_not_eq (A:=R)); assumption ] ].
+      | split; [ assumption | apply (not_eq_sym (A:=R)); assumption ] ].
   left; exists x; split.
   assumption.
   intros; case (Req_dec x0 x); intro.

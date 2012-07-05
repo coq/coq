@@ -106,9 +106,10 @@ Context {R:Type}`{Rr:Ring R}.
 
 (* Powers *)
 
- Lemma pow_pos_comm : forall  x j,  x * pow_pos x j == pow_pos x j * x.
+Lemma pow_pos_comm : forall  x j,  x * pow_pos x j == pow_pos x j * x.
+Proof.
 induction j; simpl. rewrite <- ring_mul_assoc.
-rewrite <- ring_mul_assoc. 
+rewrite <- ring_mul_assoc.
 rewrite <- IHj. rewrite (ring_mul_assoc (pow_pos x j) x (pow_pos x j)).
 rewrite <- IHj. rewrite <- ring_mul_assoc. reflexivity.
 rewrite <- ring_mul_assoc. rewrite <- IHj.
@@ -116,10 +117,10 @@ rewrite ring_mul_assoc. rewrite IHj.
 rewrite <- ring_mul_assoc. rewrite IHj. reflexivity. reflexivity.
 Qed.
 
- Lemma pow_pos_Psucc : forall  x j, pow_pos x (Psucc j) == x * pow_pos x j.
- Proof.
-  induction j; simpl. 
-  rewrite IHj. 
+Lemma pow_pos_succ : forall  x j, pow_pos x (Pos.succ j) == x * pow_pos x j.
+Proof.
+induction j; simpl.
+  rewrite IHj.
 rewrite <- (ring_mul_assoc x (pow_pos x j) (x * pow_pos x j)).
 rewrite (ring_mul_assoc (pow_pos x j) x  (pow_pos x j)).
   rewrite <- pow_pos_comm.
@@ -127,20 +128,20 @@ rewrite <- ring_mul_assoc. reflexivity.
 reflexivity. reflexivity.
 Qed.
 
- Lemma pow_pos_Pplus : forall  x i j,
-   pow_pos x (i + j) == pow_pos x i * pow_pos x j.
- Proof.
+Lemma pow_pos_add : forall  x i j,
+  pow_pos x (i + j) == pow_pos x i * pow_pos x j.
+Proof.
   intro x;induction i;intros.
-  rewrite xI_succ_xO;rewrite Pplus_one_succ_r.
-  rewrite <- Pplus_diag;repeat rewrite <- Pplus_assoc.
+  rewrite Pos.xI_succ_xO;rewrite <- Pos.add_1_r.
+  rewrite <- Pos.add_diag;repeat rewrite <- Pos.add_assoc.
   repeat rewrite IHi.
-  rewrite Pplus_comm;rewrite <- Pplus_one_succ_r;
-  rewrite pow_pos_Psucc.
+  rewrite Pos.add_comm;rewrite Pos.add_1_r;
+  rewrite pow_pos_succ.
   simpl;repeat rewrite ring_mul_assoc. reflexivity.
-  rewrite <- Pplus_diag;repeat rewrite <- Pplus_assoc.
+  rewrite <- Pos.add_diag;repeat rewrite <- Pos.add_assoc.
   repeat rewrite IHi. rewrite ring_mul_assoc. reflexivity.
-  rewrite Pplus_comm;rewrite <- Pplus_one_succ_r;rewrite pow_pos_Psucc.
-   simpl. reflexivity. 
+  rewrite Pos.add_comm;rewrite Pos.add_1_r;rewrite pow_pos_succ.
+   simpl. reflexivity.
  Qed.
 
  Definition id_phi_N (x:N) : N := x.

@@ -82,8 +82,8 @@ Lemma pos_sub_spec p q :
  pos_sub p q =
  match (p ?= q)%positive with
    | Eq => 0
-   | Lt => Zneg (q - p)
-   | Gt => Zpos (p - q)
+   | Lt => neg (q - p)
+   | Gt => pos (p - q)
  end.
 Proof.
  revert q. induction p; destruct q; simpl; trivial;
@@ -95,6 +95,18 @@ Proof.
   subst; unfold Pos.sub; simpl; now rewrite Pos.sub_mask_diag.
 Qed.
 
+Lemma pos_sub_discr p q :
+  match pos_sub p q with
+  | Z0 => p = q
+  | pos k => p = q + k
+  | neg k => q = p + k
+  end%positive.
+Proof.
+ rewrite pos_sub_spec.
+ case Pos.compare_spec; auto; intros;
+  now rewrite Pos.add_comm, Pos.sub_add.
+Qed.
+
 (** Particular cases of the previous result *)
 
 Lemma pos_sub_diag p : pos_sub p p = 0.
@@ -102,12 +114,12 @@ Proof.
  now rewrite pos_sub_spec, Pos.compare_refl.
 Qed.
 
-Lemma pos_sub_lt p q : (p < q)%positive -> pos_sub p q = Zneg (q - p).
+Lemma pos_sub_lt p q : (p < q)%positive -> pos_sub p q = neg (q - p).
 Proof.
  intros H. now rewrite pos_sub_spec, H.
 Qed.
 
-Lemma pos_sub_gt p q : (q < p)%positive -> pos_sub p q = Zpos (p - q).
+Lemma pos_sub_gt p q : (q < p)%positive -> pos_sub p q = pos (p - q).
 Proof.
  intros H. now rewrite pos_sub_spec, Pos.compare_antisym, H.
 Qed.
@@ -118,89 +130,6 @@ Lemma pos_sub_opp p q : - pos_sub p q = pos_sub q p.
 Proof.
  revert q; induction p; destruct q; simpl; trivial;
  rewrite <- IHp; now destruct pos_sub.
-Qed.
-
-(** * Results concerning [Zpos] and [Zneg] and the operators *)
-
-Lemma opp_Zneg p : - Zneg p = Zpos p.
-Proof.
- reflexivity.
-Qed.
-
-Lemma opp_Zpos p : - Zpos p = Zneg p.
-Proof.
- reflexivity.
-Qed.
-
-Lemma succ_Zpos p : succ (Zpos p) = Zpos (Pos.succ p).
-Proof.
- simpl. f_equal. apply Pos.add_1_r.
-Qed.
-
-Lemma add_Zpos p q : Zpos p + Zpos q = Zpos (p+q).
-Proof.
- reflexivity.
-Qed.
-
-Lemma add_Zneg p q : Zneg p + Zneg q = Zneg (p+q).
-Proof.
- reflexivity.
-Qed.
-
-Lemma add_Zpos_Zneg p q : Zpos p + Zneg q = pos_sub p q.
-Proof.
- reflexivity.
-Qed.
-
-Lemma add_Zneg_Zpos p q : Zneg p + Zpos q = pos_sub q p.
-Proof.
- reflexivity.
-Qed.
-
-Lemma sub_Zpos n m : (n < m)%positive -> Zpos m - Zpos n = Zpos (m-n).
-Proof.
- intros H. simpl. now apply pos_sub_gt.
-Qed.
-
-Lemma mul_Zpos (p q : positive) : Zpos p * Zpos q = Zpos (p*q).
-Proof.
- reflexivity.
-Qed.
-
-Lemma pow_Zpos p q : (Zpos p)^(Zpos q) = Zpos (p^q).
-Proof.
- unfold Pos.pow, pow, pow_pos.
- symmetry. now apply Pos.iter_swap_gen.
-Qed.
-
-Lemma inj_Zpos p q : Zpos p = Zpos q <-> p = q.
-Proof.
- split; intros H. now injection H. now f_equal.
-Qed.
-
-Lemma inj_Zneg p q : Zneg p = Zneg q <-> p = q.
-Proof.
- split; intros H. now injection H. now f_equal.
-Qed.
-
-Lemma pos_xI p : Zpos p~1 = 2 * Zpos p + 1.
-Proof.
- reflexivity.
-Qed.
-
-Lemma pos_xO p : Zpos p~0 = 2 * Zpos p.
-Proof.
- reflexivity.
-Qed.
-
-Lemma neg_xI p : Zneg p~1 = 2 * Zneg p - 1.
-Proof.
- reflexivity.
-Qed.
-
-Lemma neg_xO p : Zneg p~0 = 2 * Zneg p.
-Proof.
- reflexivity.
 Qed.
 
 (** In the following module, we group results that are needed now
@@ -242,7 +171,7 @@ Qed.
 (** ** Addition is associative *)
 
 Lemma pos_sub_add p q r :
-  pos_sub (p + q) r = Zpos p + pos_sub q r.
+  pos_sub (p + q) r = pos p + pos_sub q r.
 Proof.
  simpl. rewrite !pos_sub_spec.
  case (Pos.compare_spec q r); intros E0.
@@ -269,19 +198,19 @@ Qed.
 
 Lemma add_assoc n m p : n + (m + p) = n + m + p.
 Proof.
- assert (AUX : forall x y z, Zpos x + (y + z) = Zpos x + y + z).
+ assert (AUX : forall x y z, pos x + (y + z) = pos x + y + z).
  { intros x [|y|y] [|z|z]; rewrite ?add_0_r; trivial.
    - simpl. now rewrite Pos.add_assoc.
-   - simpl (_ + Zneg _). symmetry. apply pos_sub_add.
-   - simpl (Zneg _ + _); simpl (_ + Zneg _).
-     now rewrite (add_comm _ (Zpos _)), <- 2 pos_sub_add, Pos.add_comm.
-   - apply opp_inj. rewrite !opp_add_distr, opp_Zpos, !opp_Zneg.
-     simpl (Zneg _ + _); simpl (_ + Zneg _).
+   - simpl (_ + neg _). symmetry. apply pos_sub_add.
+   - simpl (neg _ + _); simpl (_ + neg _).
+     now rewrite (add_comm _ (pos _)), <- 2 pos_sub_add, Pos.add_comm.
+   - apply opp_inj. rewrite !opp_add_distr. simpl opp.
+     simpl (neg _ + _); simpl (_ + neg _).
      rewrite add_comm, Pos.add_comm. apply pos_sub_add. }
  destruct n.
  - trivial.
  - apply AUX.
- - apply opp_inj. rewrite !opp_add_distr, opp_Zneg. apply AUX.
+ - apply opp_inj. rewrite !opp_add_distr. simpl opp. apply AUX.
 Qed.
 
 (** ** Subtraction and successor *)
@@ -354,7 +283,7 @@ Qed.
 (** ** Distributivity of multiplication over addition *)
 
 Lemma mul_add_distr_pos (p:positive) n m :
- Zpos p * (n + m) = Zpos p * n + Zpos p * m.
+ pos p * (n + m) = pos p * n + pos p * m.
 Proof.
  destruct n as [|n|n], m as [|m|m]; simpl; trivial;
  rewrite ?pos_sub_spec, ?Pos.mul_compare_mono_l; try case Pos.compare_spec;
@@ -365,13 +294,65 @@ Lemma mul_add_distr_l n m p : n * (m + p) = n * m + n * p.
 Proof.
  destruct n as [|n|n]. trivial.
  apply mul_add_distr_pos.
- rewrite <- opp_Zpos, !mul_opp_l, <- opp_add_distr. f_equal.
+ change (neg n) with (- pos n).
+ rewrite !mul_opp_l, <- opp_add_distr. f_equal.
  apply mul_add_distr_pos.
 Qed.
 
 Lemma mul_add_distr_r n m p : (n + m) * p = n * p + m * p.
 Proof.
  rewrite !(mul_comm _ p). apply mul_add_distr_l.
+Qed.
+
+(** ** Basic properties of divisibility *)
+
+Lemma divide_Zpos p q : (pos p|pos q) <-> (p|q)%positive.
+Proof.
+ split.
+ intros ([ |r|r],H); simpl in *; destr_eq H. exists r; auto.
+ intros (r,H). exists (pos r); simpl; now f_equal.
+Qed.
+
+Lemma divide_Zpos_Zneg_r n p : (n|pos p) <-> (n|neg p).
+Proof.
+ split; intros (m,H); exists (-m); now rewrite mul_opp_l, <- H.
+Qed.
+
+Lemma divide_Zpos_Zneg_l n p : (pos p|n) <-> (neg p|n).
+Proof.
+ split; intros (m,H); exists (-m); now rewrite mul_opp_l, <- mul_opp_r.
+Qed.
+
+(** ** Conversions between [Z.testbit] and [N.testbit] *)
+
+Lemma testbit_of_N a n :
+ testbit (of_N a) (of_N n) = N.testbit a n.
+Proof.
+ destruct a as [|a], n; simpl; trivial. now destruct a.
+Qed.
+
+Lemma testbit_of_N' a n : 0<=n ->
+ testbit (of_N a) n = N.testbit a (to_N n).
+Proof.
+ intro Hn. rewrite <- testbit_of_N. f_equal.
+ destruct n; trivial; now destruct Hn.
+Qed.
+
+Lemma testbit_Zpos a n : 0<=n ->
+ testbit (pos a) n = N.testbit (N.pos a) (to_N n).
+Proof.
+ intro Hn. now rewrite <- testbit_of_N'.
+Qed.
+
+Lemma testbit_Zneg a n : 0<=n ->
+ testbit (neg a) n = negb (N.testbit (Pos.pred_N a) (to_N n)).
+Proof.
+ intro Hn.
+ rewrite <- testbit_of_N' by trivial.
+ destruct n as [ |n|n];
+  [ | simpl; now destruct (Pos.pred_N a) | now destruct Hn].
+ unfold testbit.
+ now destruct a as [|[ | | ]| ].
 Qed.
 
 End Private_BootStrap.
@@ -454,9 +435,8 @@ Qed.
 
 Lemma eqb_eq n m : (n =? m) = true <-> n = m.
 Proof.
- destruct n, m; simpl; try (now split).
- rewrite inj_Zpos. apply Pos.eqb_eq.
- rewrite inj_Zneg. apply Pos.eqb_eq.
+ destruct n, m; simpl; try (now split); rewrite Pos.eqb_eq;
+ split; (now injection 1) || (intros; now f_equal).
 Qed.
 
 Lemma ltb_lt n m : (n <? m) = true <-> n < m.
@@ -580,7 +560,7 @@ Qed.
 
 (** For folding back a [pow_pos] into a [pow] *)
 
-Lemma pow_pos_fold n p : pow_pos n p = n ^ (Zpos p).
+Lemma pow_pos_fold n p : pow_pos n p = n ^ (pos p).
 Proof.
  reflexivity.
 Qed.
@@ -607,7 +587,7 @@ Lemma sqrt_spec n : 0<=n ->
  let s := sqrt n in s*s <= n < (succ s)*(succ s).
 Proof.
  destruct n. now repeat split. unfold sqrt.
- rewrite succ_Zpos. intros _. apply (Pos.sqrt_spec p).
+ intros _. simpl succ. rewrite Pos.add_1_r. apply (Pos.sqrt_spec p).
  now destruct 1.
 Qed.
 
@@ -627,8 +607,10 @@ Qed.
 
 Lemma log2_spec n : 0 < n -> 2^(log2 n) <= n < 2^(succ (log2 n)).
 Proof.
+ assert (Pow : forall p q, pos (p^q) = (pos p)^(pos q)).
+ { intros. now apply Pos.iter_swap_gen. }
  destruct n as [|[p|p|]|]; intros Hn; split; try easy; unfold log2;
-  rewrite ?succ_Zpos, pow_Zpos.
+  simpl succ; rewrite ?Pos.add_1_r, <- Pow.
  change (2^Pos.size p <= Pos.succ (p~0))%positive.
  apply Pos.lt_le_incl, Pos.lt_succ_r, Pos.size_le.
  apply Pos.size_gt.
@@ -678,20 +660,22 @@ Qed.
 (** ** Correctness proofs for Trunc division *)
 
 Lemma pos_div_eucl_eq a b : 0 < b ->
-  let (q, r) := pos_div_eucl a b in Zpos a = q * b + r.
+  let (q, r) := pos_div_eucl a b in pos a = q * b + r.
 Proof.
  intros Hb.
  induction a; unfold pos_div_eucl; fold pos_div_eucl.
  - (* ~1 *)
    destruct pos_div_eucl as (q,r).
-   rewrite pos_xI, IHa, mul_add_distr_l, mul_assoc.
+   change (pos a~1) with (2*(pos a)+1).
+   rewrite IHa, mul_add_distr_l, mul_assoc.
    destruct ltb.
    now rewrite add_assoc.
    rewrite mul_add_distr_r, mul_1_l, <- !add_assoc. f_equal.
    unfold sub. now rewrite (add_comm _ (-b)), add_assoc, add_opp_diag_r.
  - (* ~0 *)
    destruct pos_div_eucl as (q,r).
-   rewrite (pos_xO a), IHa, mul_add_distr_l, mul_assoc.
+   change (pos a~0) with (2*pos a).
+   rewrite IHa, mul_add_distr_l, mul_assoc.
    destruct ltb.
    trivial.
    rewrite mul_add_distr_r, mul_1_l, <- !add_assoc. f_equal.
@@ -709,21 +693,23 @@ Lemma div_eucl_eq a b : b<>0 ->
 Proof.
  destruct a as [ |a|a], b as [ |b|b]; unfold div_eucl; trivial;
   (now destruct 1) || intros _;
-  generalize (pos_div_eucl_eq a (Zpos b) (eq_refl _));
-  destruct pos_div_eucl as (q,r); rewrite <- ?opp_Zpos, mul_comm;
-  intros ->.
- - (* Zpos Zpos *)
+  generalize (pos_div_eucl_eq a (pos b) (eq_refl _));
+  destruct pos_div_eucl as (q,r); rewrite mul_comm.
+ - (* pos pos *)
    trivial.
- - (* Zpos Zneg *)
-   destruct r as [ |r|r]; rewrite !mul_opp_opp; trivial;
+ - (* pos neg *)
+   intros ->.
+   destruct r as [ |r|r]; rewrite <- !mul_opp_comm; trivial;
     rewrite mul_add_distr_l, mul_1_r, <- add_assoc; f_equal;
    now rewrite add_assoc, add_opp_diag_r.
- - (* Zneg Zpos *)
+ - (* neg pos *)
+   change (neg a) with (- pos a). intros ->.
    rewrite (opp_add_distr _ r), <- mul_opp_r.
    destruct r as [ |r|r]; trivial;
     rewrite opp_add_distr, mul_add_distr_l, <- add_assoc; f_equal;
     unfold sub; now rewrite add_assoc, mul_opp_r, mul_1_r, add_opp_diag_l.
- - (* Zneg Zneg *)
+ - (* neg neg *)
+   change (neg a) with (- pos a). intros ->.
    now rewrite opp_add_distr, <- mul_opp_l.
 Qed.
 
@@ -735,10 +721,10 @@ Qed.
 
 Lemma pos_div_eucl_bound a b : 0<b -> 0 <= snd (pos_div_eucl a b) < b.
 Proof.
- assert (AUX : forall m p, m < Zpos (p~0) -> m - Zpos p < Zpos p).
+ assert (AUX : forall m p, m < pos (p~0) -> m - pos p < pos p).
   intros m p. unfold lt.
-  rewrite (compare_sub m), (compare_sub _ (Zpos _)). unfold sub.
-  rewrite <- add_assoc. simpl opp; simpl (Zneg _ + _).
+  rewrite (compare_sub m), (compare_sub _ (pos _)). unfold sub.
+  rewrite <- add_assoc. simpl opp; simpl (neg _ + _).
   now rewrite Pos.add_diag.
  intros Hb.
  destruct b as [|b|b]; discriminate Hb || clear Hb.
@@ -770,7 +756,7 @@ Proof.
  destruct a as [|a|a]; unfold modulo, div_eucl.
  now split.
  now apply pos_div_eucl_bound.
- generalize (pos_div_eucl_bound a (Zpos b) (eq_refl _)).
+ generalize (pos_div_eucl_bound a (pos b) (eq_refl _)).
  destruct pos_div_eucl as (q,r); unfold snd; intros (Hr,Hr').
  destruct r as [|r|r]; (now destruct Hr) || clear Hr.
  now split.
@@ -787,17 +773,17 @@ Proof.
  destruct b as [|b|b]; try easy; intros _.
  destruct a as [|a|a]; unfold modulo, div_eucl.
  now split.
- generalize (pos_div_eucl_bound a (Zpos b) (eq_refl _)).
+ generalize (pos_div_eucl_bound a (pos b) (eq_refl _)).
  destruct pos_div_eucl as (q,r); unfold snd; intros (Hr,Hr').
  destruct r as [|r|r]; (now destruct Hr) || clear Hr.
  now split.
  split.
  unfold lt in *; simpl in *. rewrite pos_sub_lt by trivial.
  rewrite <- Pos.compare_antisym. now apply Pos.sub_decr.
- change (Zneg b - Zneg r <= 0). unfold le, lt in *.
+ change (neg b - neg r <= 0). unfold le, lt in *.
   rewrite <- compare_sub. simpl in *.
   now rewrite <- Pos.compare_antisym, Hr'.
- generalize (pos_div_eucl_bound a (Zpos b) (eq_refl _)).
+ generalize (pos_div_eucl_bound a (pos b) (eq_refl _)).
  destruct pos_div_eucl as (q,r); unfold snd; intros (Hr,Hr').
  split; destruct r; try easy.
   red; simpl; now rewrite <- Pos.compare_antisym.
@@ -808,9 +794,10 @@ Qed.
 Theorem quotrem_eq a b : let (q,r) := quotrem a b in a = q * b + r.
 Proof.
  destruct a as [|a|a], b as [|b|b]; simpl; trivial;
- generalize (N.pos_div_eucl_spec a (Npos b)); case N.pos_div_eucl; trivial;
-  intros q r; rewrite <- ?opp_Zpos;
-  change (Zpos a) with (of_N (Npos a)); intros ->; now destruct q, r.
+ generalize (N.pos_div_eucl_spec a (N.pos b)); case N.pos_div_eucl; trivial;
+  intros q r;
+  try change (neg a) with (-pos a);
+  change (pos a) with (of_N (N.pos a)); intros ->; now destruct q, r.
 Qed.
 
 Lemma quot_rem' a b : a = b*(a÷b) + rem a b.
@@ -829,7 +816,7 @@ Proof.
  destruct a as [|a|a]; (now destruct Ha) || clear Ha.
  compute. now split.
  unfold rem, quotrem.
- assert (H := N.pos_div_eucl_remainder a (Npos b)).
+ assert (H := N.pos_div_eucl_remainder a (N.pos b)).
  destruct N.pos_div_eucl as (q,[|r]); simpl; split; try easy.
  now apply H.
 Qed.
@@ -851,25 +838,6 @@ Proof. intros _. apply rem_opp_l'. Qed.
 
 Lemma rem_opp_r a b : b<>0 -> rem a (-b) = rem a b.
 Proof. intros _. apply rem_opp_r'. Qed.
-
-(** ** Basic properties of divisibility *)
-
-Lemma divide_Zpos p q : (Zpos p|Zpos q) <-> (p|q)%positive.
-Proof.
- split.
- intros ([ |r|r],H); simpl in *; destr_eq H. exists r; auto.
- intros (r,H). exists (Zpos r); simpl; now f_equal.
-Qed.
-
-Lemma divide_Zpos_Zneg_r n p : (n|Zpos p) <-> (n|Zneg p).
-Proof.
- split; intros (m,H); exists (-m); now rewrite mul_opp_l, <- H.
-Qed.
-
-Lemma divide_Zpos_Zneg_l n p : (Zpos p|n) <-> (Zneg p|n).
-Proof.
- split; intros (m,H); exists (-m); now rewrite mul_opp_l, <- mul_opp_r.
-Qed.
 
 (** ** Correctness proofs for gcd *)
 
@@ -905,7 +873,7 @@ Qed.
 
 Lemma gcd_greatest a b c : (c|a) -> (c|b) -> (c | gcd a b).
 Proof.
- assert (H : forall p q r, (r|Zpos p) -> (r|Zpos q) -> (r|Zpos (Pos.gcd p q))).
+ assert (H : forall p q r, (r|pos p) -> (r|pos q) -> (r|pos (Pos.gcd p q))).
  { intros p q [|r|r] H H'.
    destruct H; now rewrite mul_comm in *.
    apply divide_Zpos, Pos.gcd_greatest; now apply divide_Zpos.
@@ -928,38 +896,6 @@ Theorem ggcd_opp a b :
 Proof.
  destruct a as [|a|a], b as [|b|b]; unfold ggcd, opp; auto;
   destruct (Pos.ggcd a b) as (g,(aa,bb)); auto.
-Qed.
-
-(** ** Conversions between [Z.testbit] and [N.testbit] *)
-
-Lemma testbit_of_N a n :
- testbit (of_N a) (of_N n) = N.testbit a n.
-Proof.
- destruct a as [|a], n; simpl; trivial. now destruct a.
-Qed.
-
-Lemma testbit_of_N' a n : 0<=n ->
- testbit (of_N a) n = N.testbit a (to_N n).
-Proof.
- intro Hn. rewrite <- testbit_of_N. f_equal.
- destruct n; trivial; now destruct Hn.
-Qed.
-
-Lemma testbit_Zpos a n : 0<=n ->
- testbit (Zpos a) n = N.testbit (Npos a) (to_N n).
-Proof.
- intro Hn. now rewrite <- testbit_of_N'.
-Qed.
-
-Lemma testbit_Zneg a n : 0<=n ->
- testbit (Zneg a) n = negb (N.testbit (Pos.pred_N a) (to_N n)).
-Proof.
- intro Hn.
- rewrite <- testbit_of_N' by trivial.
- destruct n as [ |n|n];
-  [ | simpl; now destruct (Ppred_N a) | now destruct Hn].
- unfold testbit.
- now destruct a as [|[ | | ]| ].
 Qed.
 
 (** ** Proofs of specifications for bitwise operations *)
@@ -994,9 +930,9 @@ Lemma testbit_odd_succ a n : 0<=n ->
 Proof.
  destruct n as [|n|n]; (now destruct 1) || intros _.
  destruct a as [|[a|a|]|[a|a|]]; simpl; trivial. now destruct a.
- unfold testbit. rewrite succ_Zpos.
+ unfold testbit; simpl.
  destruct a as [|a|[a|a|]]; simpl; trivial;
-  rewrite ?Pos.pred_N_succ; now destruct n.
+  rewrite ?Pos.add_1_r, ?Pos.pred_N_succ; now destruct n.
 Qed.
 
 Lemma testbit_even_succ a n : 0<=n ->
@@ -1004,9 +940,9 @@ Lemma testbit_even_succ a n : 0<=n ->
 Proof.
  destruct n as [|n|n]; (now destruct 1) || intros _.
  destruct a as [|[a|a|]|[a|a|]]; simpl; trivial. now destruct a.
- unfold testbit. rewrite succ_Zpos.
+ unfold testbit; simpl.
  destruct a as [|a|[a|a|]]; simpl; trivial;
-  rewrite ?Pos.pred_N_succ; now destruct n.
+  rewrite ?Pos.add_1_r, ?Pos.pred_N_succ; now destruct n.
 Qed.
 
 (** Correctness proofs about [Z.shiftr] and [Z.shiftl] *)
@@ -1017,9 +953,9 @@ Proof.
  intros Hn Hm. unfold shiftr.
  destruct n as [ |n|n]; (now destruct Hn) || clear Hn; simpl.
  now rewrite add_0_r.
- assert (forall p, to_N (m + Zpos p) = (to_N m + Npos p)%N).
+ assert (forall p, to_N (m + pos p) = (to_N m + N.pos p)%N).
   destruct m; trivial; now destruct Hm.
- assert (forall p, 0 <= m + Zpos p).
+ assert (forall p, 0 <= m + pos p).
   destruct m; easy || now destruct Hm.
  destruct a as [ |a|a].
  (* a = 0 *)
@@ -1027,15 +963,15 @@ Proof.
   by (apply Pos.iter_invariant; intros; subst; trivial).
  now rewrite 2 testbit_0_l.
  (* a > 0 *)
- change (Zpos a) with (of_N (Npos a)) at 1.
- rewrite <- (Pos.iter_swap_gen _ _ _ Ndiv2) by now intros [|[ | | ]].
+ change (pos a) with (of_N (N.pos a)) at 1.
+ rewrite <- (Pos.iter_swap_gen _ _ _ N.div2) by now intros [|[ | | ]].
  rewrite testbit_Zpos, testbit_of_N', H; trivial.
- exact (N.shiftr_spec' (Npos a) (Npos n) (to_N m)).
+ exact (N.shiftr_spec' (N.pos a) (N.pos n) (to_N m)).
  (* a < 0 *)
- rewrite <- (Pos.iter_swap_gen _ _ _ Pdiv2_up) by trivial.
+ rewrite <- (Pos.iter_swap_gen _ _ _ Pos.div2_up) by trivial.
  rewrite 2 testbit_Zneg, H; trivial. f_equal.
- rewrite (Pos.iter_swap_gen _ _ _ _ Ndiv2) by exact N.pred_div2_up.
- exact (N.shiftr_spec' (Ppred_N a) (Npos n) (to_N m)).
+ rewrite (Pos.iter_swap_gen _ _ _ _ N.div2) by exact N.pred_div2_up.
+ exact (N.shiftr_spec' (Pos.pred_N a) (N.pos n) (to_N m)).
 Qed.
 
 Lemma shiftl_spec_low a n m : m<n ->
@@ -1052,11 +988,11 @@ Proof.
  (* a > 0 *)
  rewrite <- (Pos.iter_swap_gen _ _ _ xO) by trivial.
  rewrite testbit_Zpos by easy.
- exact (N.shiftl_spec_low (Npos a) (Npos n) (Npos m) H).
+ exact (N.shiftl_spec_low (N.pos a) (N.pos n) (N.pos m) H).
  (* a < 0 *)
  rewrite <- (Pos.iter_swap_gen _ _ _ xO) by trivial.
  rewrite testbit_Zneg by easy.
- now rewrite (N.pos_pred_shiftl_low a (Npos n)).
+ now rewrite (N.pos_pred_shiftl_low a (N.pos n)).
 Qed.
 
 Lemma shiftl_spec_high a n m : 0<=m -> n<=m ->
@@ -1066,9 +1002,9 @@ Proof.
  destruct n as [ |n|n]. simpl. now rewrite sub_0_r.
  (* n > 0 *)
  destruct m as [ |m|m]; try (now destruct H).
- assert (0 <= Zpos m - Zpos n).
+ assert (0 <= pos m - pos n).
   red. now rewrite compare_antisym, <- compare_sub, <- compare_antisym.
- assert (EQ : to_N (Zpos m - Zpos n) = (Npos m - Npos n)%N).
+ assert (EQ : to_N (pos m - pos n) = (N.pos m - N.pos n)%N).
   red in H. simpl in H. simpl to_N.
   rewrite pos_sub_spec, Pos.compare_antisym.
   destruct (Pos.compare_spec n m) as [H'|H'|H']; try (now destruct H).
@@ -1083,16 +1019,16 @@ Proof.
  (* ... a > 0 *)
  rewrite <- (Pos.iter_swap_gen _ _ _ xO) by trivial.
  rewrite 2 testbit_Zpos, EQ by easy.
- exact (N.shiftl_spec_high' (Npos p) (Npos n) (Npos m) H).
+ exact (N.shiftl_spec_high' (N.pos p) (N.pos n) (N.pos m) H).
  (* ... a < 0 *)
  rewrite <- (Pos.iter_swap_gen _ _ _ xO) by trivial.
  rewrite 2 testbit_Zneg, EQ by easy. f_equal.
  simpl to_N.
  rewrite <- N.shiftl_spec_high by easy.
- now apply (N.pos_pred_shiftl_high p (Npos n)).
+ now apply (N.pos_pred_shiftl_high p (N.pos n)).
  (* n < 0 *)
  unfold sub. simpl.
- now apply (shiftr_spec_aux a (Zpos n) m).
+ now apply (shiftr_spec_aux a (pos n) m).
 Qed.
 
 Lemma shiftr_spec a n m : 0<=m ->
@@ -1180,11 +1116,11 @@ Proof.
  induction p using Pos.peano_ind.
   now apply (Hs 0).
   rewrite <- Pos.add_1_r.
-  now apply (Hs (Zpos p)).
+  now apply (Hs (pos p)).
  induction p using Pos.peano_ind.
   now apply (Hp 0).
   rewrite <- Pos.add_1_r.
-  now apply (Hp (Zneg p)).
+  now apply (Hp (neg p)).
 Qed.
 
 Lemma bi_induction (P : Z -> Prop) :
@@ -1341,7 +1277,7 @@ Qed.
 
 End Z.
 
-(** Export Notations *)
+(** Re-export Notations *)
 
 Infix "+" := Z.add : Z_scope.
 Notation "- x" := (Z.opp x) : Z_scope.
@@ -1351,27 +1287,271 @@ Infix "^" := Z.pow : Z_scope.
 Infix "/" := Z.div : Z_scope.
 Infix "mod" := Z.modulo (at level 40, no associativity) : Z_scope.
 Infix "÷" := Z.quot (at level 40, left associativity) : Z_scope.
-
-(* TODO : transition from Zdivide *)
-Notation "( x | y )" := (Z.divide x y) (at level 0) : Z_scope.
-
 Infix "?=" := Z.compare (at level 70, no associativity) : Z_scope.
-
-Infix "<=" := Z.le : Z_scope.
-Infix "<" := Z.lt : Z_scope.
-Infix ">=" := Z.ge : Z_scope.
-Infix ">" := Z.gt : Z_scope.
-
-Notation "x <= y <= z" := (x <= y /\ y <= z) : Z_scope.
-Notation "x <= y < z" := (x <= y /\ y < z) : Z_scope.
-Notation "x < y < z" := (x < y /\ y < z) : Z_scope.
-Notation "x < y <= z" := (x < y /\ y <= z) : Z_scope.
-
 Infix "=?" := Z.eqb (at level 70, no associativity) : Z_scope.
 Infix "<=?" := Z.leb (at level 70, no associativity) : Z_scope.
 Infix "<?" := Z.ltb (at level 70, no associativity) : Z_scope.
 Infix ">=?" := Z.geb (at level 70, no associativity) : Z_scope.
 Infix ">?" := Z.gtb (at level 70, no associativity) : Z_scope.
+Notation "( x | y )" := (Z.divide x y) (at level 0) : Z_scope.
+Infix "<=" := Z.le : Z_scope.
+Infix "<" := Z.lt : Z_scope.
+Infix ">=" := Z.ge : Z_scope.
+Infix ">" := Z.gt : Z_scope.
+Notation "x <= y <= z" := (x <= y /\ y <= z) : Z_scope.
+Notation "x <= y < z" := (x <= y /\ y < z) : Z_scope.
+Notation "x < y < z" := (x < y /\ y < z) : Z_scope.
+Notation "x < y <= z" := (x < y /\ y <= z) : Z_scope.
+
+(** Conversions from / to positive numbers *)
+
+Module Pos2Z.
+
+Lemma id p : Z.to_pos (Z.pos p) = p.
+Proof. reflexivity. Qed.
+
+Lemma inj p q : Z.pos p = Z.pos q -> p = q.
+Proof. now injection 1. Qed.
+
+Lemma inj_iff p q : Z.pos p = Z.pos q <-> p = q.
+Proof. split. apply inj. intros; now f_equal. Qed.
+
+Lemma is_pos p : 0 < Z.pos p.
+Proof. reflexivity. Qed.
+
+Lemma is_nonneg p : 0 <= Z.pos p.
+Proof. easy. Qed.
+
+Lemma inj_1 : Z.pos 1 = 1.
+Proof. reflexivity. Qed.
+
+Lemma inj_xO p : Z.pos p~0 = 2 * Z.pos p.
+Proof. reflexivity. Qed.
+
+Lemma inj_xI p : Z.pos p~1 = 2 * Z.pos p + 1.
+Proof. reflexivity. Qed.
+
+Lemma inj_succ p : Z.pos (Pos.succ p) = Z.succ (Z.pos p).
+Proof. simpl. now rewrite Pos.add_1_r. Qed.
+
+Lemma inj_add p q : Z.pos (p+q) = Z.pos p + Z.pos q.
+Proof. reflexivity. Qed.
+
+Lemma inj_sub p q : (p < q)%positive ->
+ Z.pos (q-p) = Z.pos q - Z.pos p.
+Proof. intros. simpl. now rewrite Z.pos_sub_gt. Qed.
+
+Lemma inj_sub_max p q : Z.pos (p - q) = Z.max 1 (Z.pos p - Z.pos q).
+Proof.
+  simpl. rewrite Z.pos_sub_spec. case Pos.compare_spec; intros.
+  - subst; now rewrite Pos.sub_diag.
+  - now rewrite Pos.sub_lt.
+  - now destruct (p-q)%positive.
+Qed.
+
+Lemma inj_pred p : p <> 1%positive ->
+ Z.pos (Pos.pred p) = Z.pred (Z.pos p).
+Proof. destruct p; easy || now destruct 1. Qed.
+
+Lemma inj_mul p q : Z.pos (p*q) = Z.pos p * Z.pos q.
+Proof. reflexivity. Qed.
+
+Lemma inj_pow_pos p q : Z.pos (p^q) = Z.pow_pos (Z.pos p) q.
+Proof. now apply Pos.iter_swap_gen. Qed.
+
+Lemma inj_pow p q : Z.pos (p^q) = (Z.pos p)^(Z.pos q).
+Proof. apply inj_pow_pos. Qed.
+
+Lemma inj_square p : Z.pos (Pos.square p) = Z.square (Z.pos p).
+Proof. reflexivity. Qed.
+
+Lemma inj_compare p q : (p ?= q)%positive = (Z.pos p ?= Z.pos q).
+Proof. reflexivity. Qed.
+
+Lemma inj_leb p q : (p <=? q)%positive = (Z.pos p <=? Z.pos q).
+Proof. reflexivity. Qed.
+
+Lemma inj_ltb p q : (p <? q)%positive = (Z.pos p <? Z.pos q).
+Proof. reflexivity. Qed.
+
+Lemma inj_eqb p q : (p =? q)%positive = (Z.pos p =? Z.pos q).
+Proof. reflexivity. Qed.
+
+Lemma inj_max p q : Z.pos (Pos.max p q) = Z.max (Z.pos p) (Z.pos q).
+Proof.
+ unfold Z.max, Pos.max. rewrite inj_compare. now case Z.compare_spec.
+Qed.
+
+Lemma inj_min p q : Z.pos (Pos.min p q) = Z.min (Z.pos p) (Z.pos q).
+Proof.
+ unfold Z.min, Pos.min. rewrite inj_compare. now case Z.compare_spec.
+Qed.
+
+Lemma inj_sqrt p : Z.pos (Pos.sqrt p) = Z.sqrt (Z.pos p).
+Proof. reflexivity. Qed.
+
+Lemma inj_gcd p q : Z.pos (Pos.gcd p q) = Z.gcd (Z.pos p) (Z.pos q).
+Proof. reflexivity. Qed.
+
+Definition inj_divide p q : (Z.pos p|Z.pos q) <-> (p|q)%positive.
+Proof. apply Z.Private_BootStrap.divide_Zpos. Qed.
+
+Lemma inj_testbit a n : 0<=n ->
+ Z.testbit (Z.pos a) n = N.testbit (N.pos a) (Z.to_N n).
+Proof. apply Z.Private_BootStrap.testbit_Zpos. Qed.
+
+(** Some results concerning Z.neg *)
+
+Lemma inj_neg p q : Z.neg p = Z.neg q -> p = q.
+Proof. now injection 1. Qed.
+
+Lemma inj_neg_iff p q : Z.neg p = Z.neg q <-> p = q.
+Proof. split. apply inj_neg. intros; now f_equal. Qed.
+
+Lemma neg_is_neg p : Z.neg p < 0.
+Proof. reflexivity. Qed.
+
+Lemma neg_is_nonpos p : Z.neg p <= 0.
+Proof. easy. Qed.
+
+Lemma neg_xO p : Z.neg p~0 = 2 * Z.neg p.
+Proof. reflexivity. Qed.
+
+Lemma neg_xI p : Z.neg p~1 = 2 * Z.neg p - 1.
+Proof. reflexivity. Qed.
+
+Lemma opp_neg p : - Z.neg p = Z.pos p.
+Proof. reflexivity. Qed.
+
+Lemma opp_pos p : - Z.pos p = Z.neg p.
+Proof. reflexivity. Qed.
+
+Lemma add_neg_neg p q : Z.neg p + Z.neg q = Z.neg (p+q).
+Proof. reflexivity. Qed.
+
+Lemma add_pos_neg p q : Z.pos p + Z.neg q = Z.pos_sub p q.
+Proof. reflexivity. Qed.
+
+Lemma add_neg_pos p q : Z.neg p + Z.pos q = Z.pos_sub q p.
+Proof. reflexivity. Qed.
+
+Lemma divide_pos_neg_r n p : (n|Z.pos p) <-> (n|Z.neg p).
+Proof. apply Z.Private_BootStrap.divide_Zpos_Zneg_r. Qed.
+
+Lemma divide_pos_neg_l n p : (Z.pos p|n) <-> (Z.neg p|n).
+Proof. apply Z.Private_BootStrap.divide_Zpos_Zneg_l. Qed.
+
+Lemma testbit_neg a n : 0<=n ->
+ Z.testbit (Z.neg a) n = negb (N.testbit (Pos.pred_N a) (Z.to_N n)).
+Proof. apply Z.Private_BootStrap.testbit_Zneg. Qed.
+
+End Pos2Z.
+
+Module Z2Pos.
+
+Lemma id x : 0 < x -> Z.pos (Z.to_pos x) = x.
+Proof. now destruct x. Qed.
+
+Lemma inj x y : 0 < x -> 0 < y -> Z.to_pos x = Z.to_pos y -> x = y.
+Proof.
+ destruct x; simpl; try easy. intros _ H ->. now apply id.
+Qed.
+
+Lemma inj_iff x y : 0 < x -> 0 < y -> (Z.to_pos x = Z.to_pos y <-> x = y).
+Proof. split. now apply inj. intros; now f_equal. Qed.
+
+Lemma to_pos_nonpos x : x <= 0 -> Z.to_pos x = 1%positive.
+Proof. destruct x; trivial. now destruct 1. Qed.
+
+Lemma inj_1 : Z.to_pos 1 = 1%positive.
+Proof. reflexivity. Qed.
+
+Lemma inj_double x : 0 < x ->
+ Z.to_pos (Z.double x) = (Z.to_pos x)~0%positive.
+Proof. now destruct x. Qed.
+
+Lemma inj_succ_double x : 0 < x ->
+ Z.to_pos (Z.succ_double x) = (Z.to_pos x)~1%positive.
+Proof. now destruct x. Qed.
+
+Lemma inj_succ x : 0 < x -> Z.to_pos (Z.succ x) = Pos.succ (Z.to_pos x).
+Proof.
+ destruct x; try easy. simpl. now rewrite Pos.add_1_r.
+Qed.
+
+Lemma inj_add x y : 0 < x -> 0 < y ->
+ Z.to_pos (x+y) = (Z.to_pos x + Z.to_pos y)%positive.
+Proof. destruct x; easy || now destruct y. Qed.
+
+Lemma inj_sub x y : 0 < x < y ->
+ Z.to_pos (y-x) = (Z.to_pos y - Z.to_pos x)%positive.
+Proof.
+ destruct x; try easy. destruct y; try easy. simpl.
+ intros. now rewrite Z.pos_sub_gt.
+Qed.
+
+Lemma inj_pred x : 1 < x -> Z.to_pos (Z.pred x) = Pos.pred (Z.to_pos x).
+Proof. now destruct x as [|[x|x|]|]. Qed.
+
+Lemma inj_mul x y : 0 < x -> 0 < y ->
+ Z.to_pos (x*y) = (Z.to_pos x * Z.to_pos y)%positive.
+Proof. destruct x; easy || now destruct y. Qed.
+
+Lemma inj_pow x y : 0 < x -> 0 < y ->
+ Z.to_pos (x^y) = (Z.to_pos x ^ Z.to_pos y)%positive.
+Proof.
+ intros. apply Pos2Z.inj. rewrite Pos2Z.inj_pow, !id; trivial.
+ apply Z.pow_pos_nonneg. trivial. now apply Z.lt_le_incl.
+Qed.
+
+Lemma inj_pow_pos x p : 0 < x ->
+ Z.to_pos (Z.pow_pos x p) = ((Z.to_pos x)^p)%positive.
+Proof. intros. now apply (inj_pow x (Z.pos p)). Qed.
+
+Lemma inj_compare x y : 0 < x -> 0 < y ->
+ (x ?= y) = (Z.to_pos x ?= Z.to_pos y)%positive.
+Proof. destruct x; easy || now destruct y. Qed.
+
+Lemma inj_leb x y : 0 < x -> 0 < y ->
+ (x <=? y) = (Z.to_pos x <=? Z.to_pos y)%positive.
+Proof. destruct x; easy || now destruct y. Qed.
+
+Lemma inj_ltb x y : 0 < x -> 0 < y ->
+ (x <? y) = (Z.to_pos x <? Z.to_pos y)%positive.
+Proof. destruct x; easy || now destruct y. Qed.
+
+Lemma inj_eqb x y : 0 < x -> 0 < y ->
+ (x =? y) = (Z.to_pos x =? Z.to_pos y)%positive.
+Proof. destruct x; easy || now destruct y. Qed.
+
+Lemma inj_max x y :
+ Z.to_pos (Z.max x y) = Pos.max (Z.to_pos x) (Z.to_pos y).
+Proof.
+ destruct x; simpl; try rewrite Pos.max_1_l.
+ - now destruct y.
+ - destruct y; simpl; now rewrite ?Pos.max_1_r, <- ?Pos2Z.inj_max.
+ - destruct y; simpl; rewrite ?Pos.max_1_r; trivial.
+   apply to_pos_nonpos. now apply Z.max_lub.
+Qed.
+
+Lemma inj_min x y :
+ Z.to_pos (Z.min x y) = Pos.min (Z.to_pos x) (Z.to_pos y).
+Proof.
+ destruct x; simpl; try rewrite Pos.min_1_l.
+ - now destruct y.
+ - destruct y; simpl; now rewrite ?Pos.min_1_r, <- ?Pos2Z.inj_min.
+ - destruct y; simpl; rewrite ?Pos.min_1_r; trivial.
+   apply to_pos_nonpos. apply Z.min_le_iff. now left.
+Qed.
+
+Lemma inj_sqrt x : Z.to_pos (Z.sqrt x) = Pos.sqrt (Z.to_pos x).
+Proof. now destruct x. Qed.
+
+Lemma inj_gcd x y : 0 < x -> 0 < y ->
+ Z.to_pos (Z.gcd x y) = Pos.gcd (Z.to_pos x) (Z.to_pos y).
+Proof. destruct x; easy || now destruct y. Qed.
+
+End Z2Pos.
 
 (** Compatibility Notations *)
 
@@ -1404,7 +1584,6 @@ Notation Z_of_N := Z.of_N (compat "8.3").
 
 Notation Zind := Z.peano_ind (compat "8.3").
 Notation Zopp_0 := Z.opp_0 (compat "8.3").
-Notation Zopp_neg := Z.opp_Zneg (compat "8.3").
 Notation Zopp_involutive := Z.opp_involutive (compat "8.3").
 Notation Zopp_inj := Z.opp_inj (compat "8.3").
 Notation Zplus_0_l := Z.add_0_l (compat "8.3").
@@ -1452,10 +1631,18 @@ Notation Zmult_reg_l := Z.mul_reg_l (compat "8.3").
 Notation Zmult_reg_r := Z.mul_reg_r (compat "8.3").
 Notation Zmult_succ_l := Z.mul_succ_l (compat "8.3").
 Notation Zmult_succ_r := Z.mul_succ_r (compat "8.3").
-Notation Zpos_xI := Z.pos_xI (compat "8.3").
-Notation Zpos_xO := Z.pos_xO (compat "8.3").
-Notation Zneg_xI := Z.neg_xI (compat "8.3").
-Notation Zneg_xO := Z.neg_xO (compat "8.3").
+
+Notation Zpos_xI := Pos2Z.inj_xI (compat "8.3").
+Notation Zpos_xO := Pos2Z.inj_xO (compat "8.3").
+Notation Zneg_xI := Pos2Z.neg_xI (compat "8.3").
+Notation Zneg_xO := Pos2Z.neg_xO (compat "8.3").
+Notation Zopp_neg := Pos2Z.opp_neg (compat "8.3").
+Notation Zpos_succ_morphism := Pos2Z.inj_succ (compat "8.3").
+Notation Zpos_mult_morphism := Pos2Z.inj_mul (compat "8.3").
+Notation Zpos_minus_morphism := Pos2Z.inj_sub (compat "8.3").
+Notation Zpos_eq_rev := Pos2Z.inj (compat "8.3").
+Notation Zpos_plus_distr := Pos2Z.inj_add (compat "8.3").
+Notation Zneg_plus_distr := Pos2Z.add_neg_neg (compat "8.3").
 
 Notation Z := Z (only parsing).
 Notation Z_rect := Z_rect (only parsing).
@@ -1482,8 +1669,6 @@ Lemma Zplus_0_r_reverse : forall n, n = n + 0.
 Proof (SYM1 Z.add_0_r).
 Lemma Zplus_eq_compat : forall n m p q, n=m -> p=q -> n+p=m+q.
 Proof (f_equal2 Z.add).
-Lemma Zpos_succ_morphism : forall p, Zpos (Psucc p) = Zsucc (Zpos p).
-Proof (SYM1 Z.succ_Zpos).
 Lemma Zsucc_pred : forall n, n = Z.succ (Z.pred n).
 Proof (SYM1 Z.succ_pred).
 Lemma Zpred_succ : forall n, n = Z.pred (Z.succ n).
@@ -1506,15 +1691,10 @@ Lemma Zminus_plus_simpl_l_reverse : forall n m p, n - m = p + n - (p + m).
 Proof (SYM3 Zminus_plus_simpl_l).
 Lemma Zminus_plus_simpl_r : forall n m p, n + p - (m + p) = n - m.
 Proof (fun n m p => Z.add_add_simpl_r_r n p m).
-Lemma Zpos_minus_morphism : forall a b,
- Pcompare a b Eq = Lt -> Zpos (b - a) = Zpos b - Zpos a.
-Proof. intros. now rewrite Z.sub_Zpos. Qed.
 Lemma Zeq_minus : forall n m, n = m -> n - m = 0.
 Proof (fun n m => proj2 (Z.sub_move_0_r n m)).
 Lemma Zminus_eq : forall n m, n - m = 0 -> n = m.
 Proof (fun n m => proj1 (Z.sub_move_0_r n m)).
-Lemma Zpos_mult_morphism : forall p q, Zpos (p * q) = Zpos p * Zpos q.
-Proof (SYM2 Z.mul_Zpos).
 Lemma Zmult_0_r_reverse : forall n, 0 = n * 0.
 Proof (SYM1 Z.mul_0_r).
 Lemma Zmult_assoc_reverse : forall n m p, n * m * p = n * (m * p).
@@ -1529,20 +1709,14 @@ Lemma Zopp_mult_distr_r : forall n m, - (n * m) = n * - m.
 Proof (SYM2 Z.mul_opp_r).
 Lemma Zmult_minus_distr_l : forall n m p, p * (n - m) = p * n - p * m.
 Proof (fun n m p => Z.mul_sub_distr_l p n m).
-Lemma Zmult_succ_r_reverse : forall n m, n * m + n = n * Zsucc m.
+Lemma Zmult_succ_r_reverse : forall n m, n * m + n = n * Z.succ m.
 Proof (SYM2 Z.mul_succ_r).
-Lemma Zmult_succ_l_reverse : forall n m, n * m + m = Zsucc n * m.
+Lemma Zmult_succ_l_reverse : forall n m, n * m + m = Z.succ n * m.
 Proof (SYM2 Z.mul_succ_l).
-Lemma Zpos_eq : forall p q, p = q -> Zpos p = Zpos q.
-Proof (fun p q => proj2 (Z.inj_Zpos p q)).
-Lemma Zpos_eq_rev : forall p q, Zpos p = Zpos q -> p = q.
-Proof (fun p q => proj1 (Z.inj_Zpos p q)).
-Lemma Zpos_eq_iff : forall p q, p = q <-> Zpos p = Zpos q.
-Proof (fun p q => iff_sym (Z.inj_Zpos p q)).
-Lemma Zpos_plus_distr : forall p q, Zpos (p + q) = Zpos p + Zpos q.
-Proof (SYM2 Z.add_Zpos).
-Lemma Zneg_plus_distr : forall p q, Zneg (p + q) = Zneg p + Zneg q.
-Proof (SYM2 Z.add_Zneg).
+Lemma Zpos_eq : forall p q, p = q -> Z.pos p = Z.pos q.
+Proof. congruence. Qed.
+Lemma Zpos_eq_iff : forall p q, p = q <-> Z.pos p = Z.pos q.
+Proof (fun p q => iff_sym (Pos2Z.inj_iff p q)).
 
 Hint Immediate Zsucc_pred: zarith.
 

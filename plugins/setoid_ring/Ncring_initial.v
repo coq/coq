@@ -27,20 +27,17 @@ Definition NotConstant := false.
 
 (** Z is a ring and a setoid*)
 
-Lemma Zsth : Setoid_Theory Z (@eq Z).
-constructor;red;intros;subst;trivial.
-Qed.
+Lemma Zsth : Equivalence (@eq Z).
+Proof. exact Z.eq_equiv. Qed.
 
-Instance Zops:@Ring_ops Z 0%Z 1%Z Zplus Zmult Zminus Zopp (@eq Z).
+Instance Zops:@Ring_ops Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp (@eq Z).
 
 Instance Zr: (@Ring _ _ _ _ _ _ _ _ Zops).
-constructor;
-try (try apply Zsth;
-   try (unfold respectful, Proper; unfold equality; unfold eq_notation in *;
-  intros; try rewrite H; try rewrite H0; reflexivity)).
- exact Zplus_comm. exact Zplus_assoc.
- exact Zmult_1_l.  exact Zmult_1_r. exact Zmult_assoc.
- exact Zmult_plus_distr_l.  intros; apply Zmult_plus_distr_r.  exact Zminus_diag.
+Proof.
+constructor; try apply Zsth; try solve_proper.
+ exact Z.add_comm. exact Z.add_assoc.
+ exact Z.mul_1_l.  exact Z.mul_1_r. exact Z.mul_assoc.
+ exact Z.mul_add_distr_r.  intros; apply Z.mul_add_distr_l.  exact Z.sub_diag.
 Defined.
 
 (*Instance ZEquality: @Equality Z:= (@eq Z).*)
@@ -102,7 +99,7 @@ Ltac rsimpl := simpl.
  Qed.
 
  Lemma ARgen_phiPOS_Psucc : forall x,
-   gen_phiPOS1 (Psucc x) == 1 + (gen_phiPOS1 x).
+   gen_phiPOS1 (Pos.succ x) == 1 + (gen_phiPOS1 x).
  Proof.
   induction x;rsimpl;norm.
  rewrite IHx. gen_rewrite. add_push 1. reflexivity.
@@ -112,7 +109,7 @@ Ltac rsimpl := simpl.
    gen_phiPOS1 (x + y) == (gen_phiPOS1 x) + (gen_phiPOS1 y).
  Proof.
   induction x;destruct y;simpl;norm.
-  rewrite Pplus_carry_spec.
+  rewrite Pos.add_carry_spec.
   rewrite ARgen_phiPOS_Psucc.
   rewrite IHx;norm.
   add_push (gen_phiPOS1 y);add_push 1;reflexivity.
@@ -152,20 +149,13 @@ Ltac rsimpl := simpl.
  == gen_phiPOS1 x + -gen_phiPOS1 y.
  Proof.
   intros x y.
-  rewrite Z.pos_sub_spec.
-  assert (HH0 := Pminus_mask_Gt x y). unfold Pos.gt in HH0.
-  assert (HH1 := Pminus_mask_Gt y x). unfold Pos.gt in HH1.
-  rewrite Pos.compare_antisym in HH1.
-  destruct (Pos.compare_spec x y) as [HH|HH|HH].
-  subst. rewrite ring_opp_def;reflexivity.
-  destruct HH1 as [h [HHeq1 [HHeq2 HHor]]];trivial.
-  unfold Pminus; rewrite HHeq1;rewrite <- HHeq2.
-  rewrite ARgen_phiPOS_add;simpl;norm.
-  rewrite ring_opp_def;norm.
-  destruct HH0 as [h [HHeq1 [HHeq2 HHor]]];trivial.
-  unfold Pminus; rewrite HHeq1;rewrite <- HHeq2.
-  rewrite ARgen_phiPOS_add;simpl;norm.
-  add_push (gen_phiPOS1 h). rewrite ring_opp_def ; norm.
+  generalize (Z.pos_sub_discr x y).
+  destruct (Z.pos_sub x y) as [|p|p]; intros; subst.
+  - now rewrite ring_opp_def.
+  - rewrite ARgen_phiPOS_add;simpl;norm.
+    add_push (gen_phiPOS1 p). rewrite ring_opp_def;norm.
+  - rewrite ARgen_phiPOS_add;simpl;norm.
+    rewrite ring_opp_def;norm.
  Qed.
 
  Lemma match_compOpp : forall x (B:Type) (be bl bg:B),
@@ -206,16 +196,14 @@ Lemma gen_phiZ_opp : forall x, [- x] == - [x].
 Global Instance gen_phiZ_morph :
 (@Ring_morphism (Z:Type) R _ _ _ _ _ _ _ Zops Zr _ _ _ _ _ _ _ _ _ gen_phiZ) . (* beurk!*)
  apply Build_Ring_morphism; simpl;try reflexivity.
-   apply gen_phiZ_add. intros. rewrite ring_sub_def. 
-replace (Zminus x y) with (x + (-y))%Z. rewrite gen_phiZ_add. 
-rewrite gen_phiZ_opp.  rewrite ring_sub_def. reflexivity.
+   apply gen_phiZ_add. intros. rewrite ring_sub_def.
+replace (x-y)%Z with (x + (-y))%Z.
+now rewrite gen_phiZ_add, gen_phiZ_opp, ring_sub_def.
 reflexivity.
- apply gen_phiZ_mul. apply gen_phiZ_opp. apply gen_phiZ_ext. 
+ apply gen_phiZ_mul. apply gen_phiZ_opp. apply gen_phiZ_ext.
  Defined.
 
 End ZMORPHISM.
 
 Instance multiplication_phi_ring{R:Type}`{Ring R} : Multiplication  :=
   {multiplication x y := (gen_phiZ x) * y}.
-
-

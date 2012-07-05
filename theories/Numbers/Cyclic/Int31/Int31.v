@@ -117,12 +117,12 @@ Definition iszero : int31 -> bool := Eval compute in
    It seems to work, but later "unfold iszero" takes forever. *)
 
 
-(** [base] is [2^31], obtained via iterations of [Zdouble].
+(** [base] is [2^31], obtained via iterations of [Z.double].
    It can also be seen as the smallest b > 0 s.t. phi_inv b = 0
    (see below) *)
 
 Definition base := Eval compute in
- iter_nat size Z Zdouble 1%Z.
+ iter_nat size Z Z.double 1%Z.
 
 (** * Recursors *)
 
@@ -155,11 +155,11 @@ Definition recr := recr_aux size.
 
 (** * Conversions *)
 
-(** From int31 to Z, we simply iterates [Zdouble] or [Zdouble_plus_one]. *)
+(** From int31 to Z, we simply iterates [Z.double] or [Z.succ_double]. *)
 
 Definition phi : int31 -> Z :=
  recr Z (0%Z)
-  (fun b _ => match b with D0 => Zdouble | D1 => Zdouble_plus_one end).
+  (fun b _ => match b with D0 => Z.double | D1 => Z.succ_double end).
 
 (** From positive to int31. An abstract definition could be :
       [ phi_inv (2n) = 2*(phi_inv n) /\
@@ -293,13 +293,13 @@ Notation "n '*c' m" := (mul31c n m) (at level 40, no associativity) : int31_scop
 (** Division of a double size word modulo [2^31] *)
 
 Definition div3121 (nh nl m : int31) :=
-  let (q,r) := Zdiv_eucl (phi2 nh nl) (phi m) in
+  let (q,r) := Z.div_eucl (phi2 nh nl) (phi m) in
   (phi_inv q, phi_inv r).
 
 (** Division modulo [2^31] *)
 
 Definition div31 (n m : int31) :=
-  let (q,r) := Zdiv_eucl (phi n) (phi m) in
+  let (q,r) := Z.div_eucl (phi n) (phi m) in
   (phi_inv q, phi_inv r).
 Notation "n / m" := (div31 n m) : int31_scope.
 
@@ -391,7 +391,7 @@ Eval lazy delta [On In Twon] in
   | Lt => iter31_sqrt 31 (fun i j => j) i (fst (i/Twon))
   end.
 
-Definition v30 := Eval compute in (addmuldiv31 (phi_inv (Z_of_nat size - 1)) In On).
+Definition v30 := Eval compute in (addmuldiv31 (phi_inv (Z.of_nat size - 1)) In On).
 
 Definition sqrt312_step (rec: int31 -> int31 -> int31 -> int31)
    (ih il j: int31)  :=
@@ -452,7 +452,7 @@ Definition positive_to_int31 (p:positive) := p2i size p.
     It is used as default answer for numbers of zeros
     in [head0] and [tail0] *)
 
-Definition T31 : int31 := Eval compute in phi_inv (Z_of_nat size).
+Definition T31 : int31 := Eval compute in phi_inv (Z.of_nat size).
 
 Definition head031 (i:int31) :=
   recl _ (fun _ => T31)

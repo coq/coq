@@ -29,7 +29,7 @@ Qed.
 Lemma fact_neq_0 : forall n:nat, fact n <> 0.
 Proof.
   intro.
-  apply sym_not_eq.
+  apply not_eq_sym.
   apply lt_O_neq.
   apply lt_O_fact.
 Qed.

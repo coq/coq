@@ -165,7 +165,7 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
     case (for_all (fdec Pdec) s); unfold For_all in |- *; [ left | right ];
      intros.
     assert (compat_bool E.eq (fdec Pdec)); auto.
-    generalize (H0 H3 (refl_equal _) _ H2).
+    generalize (H0 H3 Logic.eq_refl _ H2).
     unfold fdec in |- *.
     case (Pdec x); intuition.
     inversion H4.
@@ -230,7 +230,7 @@ Module DepOfNodep (Import M: S) <: Sdep with Module E := M.E.
     unfold fdec in |- *; case (Pdec x); intuition.
       change ((fun x => negb (fdec Pdec x)) x = true) in |- *.
       apply (filter_2 (s:=s) (x:=x)); auto.
-    set (b := fdec Pdec x) in *; generalize (refl_equal b);
+    set (b := fdec Pdec x) in *; generalize (Logic.eq_refl b);
      pattern b at -1 in |- *; case b; unfold b in |- *;
      [ left | right ].
     elim (H4 x); intros _ B; apply B; auto with set.

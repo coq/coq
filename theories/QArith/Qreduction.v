@@ -11,46 +11,29 @@
 Require Export QArith_base.
 Require Import Znumtheory.
 
-(** First, a function that (tries to) build a positive back from a Z. *)
+Notation Z2P := Z.to_pos (compat "8.3").
+Notation Z2P_correct := Z2Pos.id (compat "8.3").
 
-Definition Z2P (z : Z) :=
-  match z with
-  | Z0 => 1%positive
-  | Zpos p => p
-  | Zneg p => p
-  end.
-
-Lemma Z2P_correct : forall z : Z, (0 < z)%Z -> Zpos (Z2P z) = z.
-Proof.
- simple destruct z; simpl in |- *; auto; intros; discriminate.
-Qed.
-
-Lemma Z2P_correct2 : forall z : Z, 0%Z <> z -> Zpos (Z2P z) = Zabs z.
-Proof.
- simple destruct z; simpl in |- *; auto; intros; elim H; auto.
-Qed.
-
-(** Simplification of fractions using [Zgcd].
+(** Simplification of fractions using [Z.gcd].
   This version can compute within Coq. *)
 
 Definition Qred (q:Q) :=
   let (q1,q2) := q in
-  let (r1,r2) := snd (Zggcd q1 ('q2))
-  in r1#(Z2P r2).
+  let (r1,r2) := snd (Z.ggcd q1 ('q2))
+  in r1#(Z.to_pos r2).
 
 Lemma Qred_correct : forall q, (Qred q) == q.
 Proof.
   unfold Qred, Qeq; intros (n,d); simpl.
-  generalize (Zggcd_gcd n ('d)) (Zgcd_nonneg n ('d))
-    (Zggcd_correct_divisors n ('d)).
-  destruct (Zggcd n (Zpos d)) as (g,(nn,dd)); simpl.
+  generalize (Z.ggcd_gcd n ('d)) (Z.gcd_nonneg n ('d))
+    (Z.ggcd_correct_divisors n ('d)).
+  destruct (Z.ggcd n (Zpos d)) as (g,(nn,dd)); simpl.
   Open Scope Z_scope.
   intros Hg LE (Hn,Hd). rewrite Hd, Hn.
   rewrite <- Hg in LE; clear Hg.
   assert (0 <> g) by (intro; subst; discriminate).
-  rewrite Z2P_correct. ring.
-  apply Zmult_gt_0_lt_0_reg_r with g; auto with zarith.
-  now rewrite Zmult_comm, <- Hd.
+  rewrite Z2Pos.id. ring.
+  rewrite <- (Z.mul_pos_cancel_l g); [now rewrite <- Hd | omega].
   Close Scope Z_scope.
 Qed.
 
@@ -59,68 +42,54 @@ Proof.
   intros (a,b) (c,d).
   unfold Qred, Qeq in *; simpl in *.
   Open Scope Z_scope.
-  generalize (Zggcd_gcd a ('b)) (Zgcd_is_gcd a ('b))
-    (Zgcd_nonneg a ('b)) (Zggcd_correct_divisors a ('b)).
-  destruct (Zggcd a (Zpos b)) as (g,(aa,bb)).
-  generalize (Zggcd_gcd c ('d)) (Zgcd_is_gcd c ('d))
-    (Zgcd_nonneg c ('d)) (Zggcd_correct_divisors c ('d)).
-  destruct (Zggcd c (Zpos d)) as (g',(cc,dd)).
-  simpl.
-  intro H; rewrite <- H; clear H.
-  intros Hg'1 Hg'2 (Hg'3,Hg'4).
-  intro H; rewrite <- H; clear H.
-  intros Hg1 Hg2 (Hg3,Hg4).
-  intros.
-  assert (g <> 0) by (intro; subst g; discriminate).
-  assert (g' <> 0) by (intro; subst g'; discriminate).
+  intros H.
+  generalize (Z.ggcd_gcd a ('b)) (Zgcd_is_gcd a ('b))
+    (Z.gcd_nonneg a ('b)) (Z.ggcd_correct_divisors a ('b)).
+  destruct (Z.ggcd a (Zpos b)) as (g,(aa,bb)).
+  simpl. intros <- Hg1 Hg2 (Hg3,Hg4).
+  assert (Hg0 : g <> 0) by (intro; now subst g).
+  generalize (Z.ggcd_gcd c ('d)) (Zgcd_is_gcd c ('d))
+    (Z.gcd_nonneg c ('d)) (Z.ggcd_correct_divisors c ('d)).
+  destruct (Z.ggcd c (Zpos d)) as (g',(cc,dd)).
+  simpl. intros <- Hg'1 Hg'2 (Hg'3,Hg'4).
+  assert (Hg'0 : g' <> 0) by (intro; now subst g').
 
   elim (rel_prime_cross_prod aa bb cc dd).
-  congruence.
-  unfold rel_prime in |- *.
-  (*rel_prime*)
-  constructor.
-  exists aa; auto with zarith.
-  exists bb; auto with zarith.
-  intros.
-  inversion Hg1.
-  destruct (H6 (g*x)) as (x',Hx).
-  rewrite Hg3.
-  destruct H2 as (xa,Hxa); exists xa; rewrite Hxa; ring.
-  rewrite Hg4.
-  destruct H3 as (xb,Hxb); exists xb; rewrite Hxb; ring.
-  exists x'.
-  apply Zmult_reg_l with g; auto. rewrite Hx at 1; ring.
-  (* /rel_prime *)
-  unfold rel_prime in |- *.
-  (* rel_prime *)
-  constructor.
-  exists cc; auto with zarith.
-  exists dd; auto with zarith.
-  intros.
-  inversion Hg'1.
-  destruct (H6 (g'*x)) as (x',Hx).
-  rewrite Hg'3.
-  destruct H2 as (xc,Hxc); exists xc; rewrite Hxc; ring.
-  rewrite Hg'4.
-  destruct H3 as (xd,Hxd); exists xd; rewrite Hxd; ring.
-  exists x'.
-  apply Zmult_reg_l with g'; auto. rewrite Hx at 1; ring.
-    (* /rel_prime *)
-  assert (0<bb); [|auto with zarith].
-  apply Zmult_gt_0_lt_0_reg_r with g.
-  omega.
-  rewrite Zmult_comm.
-  rewrite <- Hg4; compute; auto.
-  assert (0<dd); [|auto with zarith].
-  apply Zmult_gt_0_lt_0_reg_r with g'.
-  omega.
-  rewrite Zmult_comm.
-  rewrite <- Hg'4; compute; auto.
-  apply Zmult_reg_l with (g'*g).
-  intro H2; elim (Zmult_integral _ _ H2); auto.
-  replace (g'*g*(aa*dd)) with ((g*aa)*(g'*dd)); [|ring].
-  replace (g'*g*(bb*cc)) with ((g'*cc)*(g*bb)); [|ring].
-  rewrite <- Hg3; rewrite <- Hg4; rewrite <- Hg'3; rewrite <- Hg'4; auto.
+  - congruence.
+  - (*rel_prime*)
+    constructor.
+    * exists aa; auto with zarith.
+    * exists bb; auto with zarith.
+    * intros x Ha Hb.
+      destruct Hg1 as (Hg11,Hg12,Hg13).
+      destruct (Hg13 (g*x)) as (x',Hx).
+      { rewrite Hg3.
+        destruct Ha as (xa,Hxa); exists xa; rewrite Hxa; ring. }
+      { rewrite Hg4.
+        destruct Hb as (xb,Hxb); exists xb; rewrite Hxb; ring. }
+      exists x'.
+      apply Z.mul_reg_l with g; auto. rewrite Hx at 1; ring.
+  - (* rel_prime *)
+    constructor.
+    * exists cc; auto with zarith.
+    * exists dd; auto with zarith.
+    * intros x Hc Hd.
+      inversion Hg'1 as (Hg'11,Hg'12,Hg'13).
+      destruct (Hg'13 (g'*x)) as (x',Hx).
+      { rewrite Hg'3.
+        destruct Hc as (xc,Hxc); exists xc; rewrite Hxc; ring. }
+      { rewrite Hg'4.
+        destruct Hd as (xd,Hxd); exists xd; rewrite Hxd; ring. }
+      exists x'.
+      apply Z.mul_reg_l with g'; auto. rewrite Hx at 1; ring.
+  - apply Z.lt_gt.
+    rewrite <- (Z.mul_pos_cancel_l g); [now rewrite <- Hg4 | omega].
+  - apply Z.lt_gt.
+    rewrite <- (Z.mul_pos_cancel_l g'); [now rewrite <- Hg'4 | omega].
+  - apply Z.mul_reg_l with (g*g').
+    * rewrite Z.mul_eq_0. now destruct 1.
+    * rewrite Z.mul_shuffle1, <- Hg3, <- Hg'4.
+      now rewrite Z.mul_shuffle1, <- Hg'3, <- Hg4, H, Z.mul_comm.
   Close Scope Z_scope.
 Qed.
 
@@ -137,39 +106,39 @@ Definition Qminus' x y := Qred (Qminus x y).
 
 Lemma Qplus'_correct : forall p q : Q, (Qplus' p q)==(Qplus p q).
 Proof.
-  intros; unfold Qplus' in |- *; apply Qred_correct; auto.
+  intros; unfold Qplus'; apply Qred_correct; auto.
 Qed.
 
 Lemma Qmult'_correct : forall p q : Q, (Qmult' p q)==(Qmult p q).
 Proof.
-  intros; unfold Qmult' in |- *; apply Qred_correct; auto.
+  intros; unfold Qmult'; apply Qred_correct; auto.
 Qed.
 
 Lemma Qminus'_correct : forall p q : Q, (Qminus' p q)==(Qminus p q).
 Proof.
-  intros; unfold Qminus' in |- *; apply Qred_correct; auto.
+  intros; unfold Qminus'; apply Qred_correct; auto.
 Qed.
 
 Add Morphism Qplus' : Qplus'_comp.
 Proof.
-  intros; unfold Qplus' in |- *.
-  rewrite H; rewrite H0; auto with qarith.
+  intros; unfold Qplus'.
+  rewrite H, H0; auto with qarith.
 Qed.
 
 Add Morphism Qmult' : Qmult'_comp.
-  intros; unfold Qmult' in |- *.
-  rewrite H; rewrite H0; auto with qarith.
+  intros; unfold Qmult'.
+  rewrite H, H0; auto with qarith.
 Qed.
 
 Add Morphism Qminus' : Qminus'_comp.
-  intros; unfold Qminus' in |- *.
-  rewrite H; rewrite H0; auto with qarith.
+  intros; unfold Qminus'.
+  rewrite H, H0; auto with qarith.
 Qed.
 
 Lemma Qred_opp: forall q, Qred (-q) = - (Qred q).
 Proof.
   intros (x, y); unfold Qred; simpl.
-  rewrite Zggcd_opp; case Zggcd; intros p1 (p2, p3); simpl.
+  rewrite Z.ggcd_opp; case Z.ggcd; intros p1 (p2, p3); simpl.
   unfold Qopp; auto.
 Qed.
 
@@ -178,4 +147,3 @@ Theorem Qred_compare: forall x y,
 Proof.
   intros x y; apply Qcompare_comp; apply Qeq_sym; apply Qred_correct.
 Qed.
-

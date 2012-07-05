@@ -26,10 +26,10 @@ Module BigN_BigZ <: NType_ZType BigN.BigN BigZ.
  reflexivity.
  Qed.
  Definition Zabs_N := BigZ.to_N.
- Lemma spec_Zabs_N : forall z, BigN.to_Z (Zabs_N z) = Zabs (BigZ.to_Z z).
+ Lemma spec_Zabs_N : forall z, BigN.to_Z (Zabs_N z) = Z.abs (BigZ.to_Z z).
  Proof.
  unfold Zabs_N; intros.
- rewrite BigZ.spec_to_Z, Zmult_comm; apply Zsgn_Zabs.
+ rewrite BigZ.spec_to_Z, Z.mul_comm; apply Z.sgn_abs.
  Qed.
 End BigN_BigZ.
 
@@ -89,10 +89,10 @@ exact BigQ.div_mul_inv. exact BigQ.mul_inv_diag_l.
 Qed.
 
 Lemma BigQpowerth :
- power_theory 1 BigQ.mul BigQ.eq Z_of_N BigQ.power.
+ power_theory 1 BigQ.mul BigQ.eq Z.of_N BigQ.power.
 Proof.
 constructor. intros. BigQ.qify.
-replace ([r] ^ Z_of_N n)%Q with (pow_N 1 Qmult [r] n)%Q by (now destruct n).
+replace ([r] ^ Z.of_N n)%Q with (pow_N 1 Qmult [r] n)%Q by (now destruct n).
 destruct n. reflexivity.
 induction p; simpl; auto; rewrite ?BigQ.spec_mul, ?IHp; reflexivity.
 Qed.

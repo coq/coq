@@ -58,7 +58,7 @@ Qed.
 
 Lemma Rgt_not_eq : forall r1 r2, r1 > r2 -> r1 <> r2.
 Proof.
-  intros; apply sym_not_eq; apply Rlt_not_eq; auto with real.
+  intros; apply not_eq_sym; apply Rlt_not_eq; auto with real.
 Qed.
 
 (**********)
@@ -278,8 +278,8 @@ Proof. intros; red; apply Rlt_eq_compat with (r2:=r4) (r4:=r2); auto. Qed.
 
 Lemma Rle_trans : forall r1 r2 r3, r1 <= r2 -> r2 <= r3 -> r1 <= r3.
 Proof.
-  generalize trans_eq Rlt_trans Rlt_eq_compat.
-  unfold Rle in |- *.
+  generalize eq_trans Rlt_trans Rlt_eq_compat.
+  unfold Rle.
   intuition eauto 2.
 Qed.
 
@@ -1389,7 +1389,7 @@ Qed.
 (**********)
 Lemma tech_Rplus : forall r (s:R), 0 <= r -> 0 < s -> r + s <> 0.
 Proof.
-  intros; apply sym_not_eq; apply Rlt_not_eq.
+  intros; apply not_eq_sym; apply Rlt_not_eq.
   rewrite Rplus_comm; replace 0 with (0 + 0); auto with real.
 Qed.
 Hint Immediate tech_Rplus: real.
@@ -1599,11 +1599,11 @@ Qed.
 Hint Resolve lt_1_INR: real.
 
 (**********)
-Lemma pos_INR_nat_of_P : forall p:positive, 0 < INR (nat_of_P p).
+Lemma pos_INR_nat_of_P : forall p:positive, 0 < INR (Pos.to_nat p).
 Proof.
   intro; apply lt_0_INR.
   simpl in |- *; auto with real.
-  apply nat_of_P_pos.
+  apply Pos2Nat.is_pos.
 Qed.
 Hint Resolve pos_INR_nat_of_P: real.
 
@@ -1666,7 +1666,7 @@ Proof.
   case (le_lt_or_eq _ _ H1); intros H2.
   apply Rlt_dichotomy_converse; auto with real.
   exfalso; auto.
-  apply sym_not_eq; apply Rlt_dichotomy_converse; auto with real.
+  apply not_eq_sym; apply Rlt_dichotomy_converse; auto with real.
 Qed.
 Hint Resolve not_INR: real.
 
@@ -1703,16 +1703,16 @@ Hint Resolve not_1_INR: real.
 
 
 (**********)
-Lemma IZN : forall n:Z, (0 <= n)%Z ->  exists m : nat, n = Z_of_nat m.
+Lemma IZN : forall n:Z, (0 <= n)%Z ->  exists m : nat, n = Z.of_nat m.
 Proof.
   intros z; idtac; apply Z_of_nat_complete; assumption.
 Qed.
 
 (**********)
-Lemma INR_IZR_INZ : forall n:nat, INR n = IZR (Z_of_nat n).
+Lemma INR_IZR_INZ : forall n:nat, INR n = IZR (Z.of_nat n).
 Proof.
   simple induction n; auto with real.
-  intros; simpl in |- *; rewrite nat_of_P_of_succ_nat;
+  intros; simpl in |- *; rewrite SuccNat2Pos.id_succ;
     auto with real.
 Qed.
 
@@ -1720,13 +1720,13 @@ Lemma plus_IZR_NEG_POS :
   forall p q:positive, IZR (Zpos p + Zneg q) = IZR (Zpos p) + IZR (Zneg q).
 Proof.
   intros p q; simpl. rewrite Z.pos_sub_spec.
-  case Pcompare_spec; intros H; simpl.
+  case Pos.compare_spec; intros H; simpl.
   subst. ring.
-  rewrite Pminus_minus by trivial.
-  rewrite minus_INR by (now apply lt_le_weak, Plt_lt).
+  rewrite Pos2Nat.inj_sub by trivial.
+  rewrite minus_INR by (now apply lt_le_weak, Pos2Nat.inj_lt).
   ring.
-  rewrite Pminus_minus by trivial.
-  rewrite minus_INR by (now apply lt_le_weak, Plt_lt).
+  rewrite Pos2Nat.inj_sub by trivial.
+  rewrite minus_INR by (now apply lt_le_weak, Pos2Nat.inj_lt).
   ring.
 Qed.
 
@@ -1734,10 +1734,10 @@ Qed.
 Lemma plus_IZR : forall n m:Z, IZR (n + m) = IZR n + IZR m.
 Proof.
   intro z; destruct z; intro t; destruct t; intros; auto with real.
-  simpl; intros; rewrite Pplus_plus; auto with real.
+  simpl; intros; rewrite Pos2Nat.inj_add; auto with real.
   apply plus_IZR_NEG_POS.
-  rewrite Zplus_comm; rewrite Rplus_comm; apply plus_IZR_NEG_POS.
-  simpl; intros; rewrite Pplus_plus; rewrite plus_INR;
+  rewrite Z.add_comm; rewrite Rplus_comm; apply plus_IZR_NEG_POS.
+  simpl; intros; rewrite Pos2Nat.inj_add; rewrite plus_INR;
     auto with real.
 Qed.
 
@@ -1745,31 +1745,31 @@ Qed.
 Lemma mult_IZR : forall n m:Z, IZR (n * m) = IZR n * IZR m.
 Proof.
   intros z t; case z; case t; simpl in |- *; auto with real.
-  intros t1 z1; rewrite Pmult_mult; auto with real.
-  intros t1 z1; rewrite Pmult_mult; auto with real.
+  intros t1 z1; rewrite Pos2Nat.inj_mul; auto with real.
+  intros t1 z1; rewrite Pos2Nat.inj_mul; auto with real.
   rewrite Rmult_comm.
   rewrite Ropp_mult_distr_l_reverse; auto with real.
   apply Ropp_eq_compat; rewrite mult_comm; auto with real.
-  intros t1 z1; rewrite Pmult_mult; auto with real.
+  intros t1 z1; rewrite Pos2Nat.inj_mul; auto with real.
   rewrite Ropp_mult_distr_l_reverse; auto with real.
-  intros t1 z1; rewrite Pmult_mult; auto with real.
+  intros t1 z1; rewrite Pos2Nat.inj_mul; auto with real.
   rewrite Rmult_opp_opp; auto with real.
 Qed.
 
-Lemma pow_IZR : forall z n, pow (IZR z) n = IZR (Zpower z (Z_of_nat n)).
+Lemma pow_IZR : forall z n, pow (IZR z) n = IZR (Z.pow z (Z.of_nat n)).
 Proof.
  intros z [|n];simpl;trivial.
  rewrite Zpower_pos_nat.
- rewrite nat_of_P_of_succ_nat. unfold Zpower_nat;simpl.
+ rewrite SuccNat2Pos.id_succ. unfold Zpower_nat;simpl.
  rewrite mult_IZR.
  induction n;simpl;trivial.
  rewrite mult_IZR;ring[IHn].
 Qed.
 
 (**********)
-Lemma succ_IZR : forall n:Z, IZR (Zsucc n) = IZR n + 1.
+Lemma succ_IZR : forall n:Z, IZR (Z.succ n) = IZR n + 1.
 Proof.
-  intro; change 1 with (IZR 1); unfold Zsucc; apply plus_IZR.
+  intro; change 1 with (IZR 1); unfold Z.succ; apply plus_IZR.
 Qed.
 
 (**********)
@@ -1782,7 +1782,7 @@ Definition Ropp_Ropp_IZR := opp_IZR.
 
 Lemma minus_IZR : forall n m:Z, IZR (n - m) = IZR n - IZR m.
 Proof.
-  intros; unfold Zminus, Rminus.
+  intros; unfold Z.sub, Rminus.
   rewrite <- opp_IZR.
   apply plus_IZR.
 Qed.
@@ -1790,7 +1790,7 @@ Qed.
 (**********)
 Lemma Z_R_minus : forall n m:Z, IZR n - IZR m = IZR (n - m).
 Proof.
-  intros z1 z2; unfold Rminus in |- *; unfold Zminus in |- *.
+  intros z1 z2; unfold Rminus in |- *; unfold Z.sub in |- *.
   rewrite <- (Ropp_Ropp_IZR z2); symmetry  in |- *; apply plus_IZR.
 Qed.
 
@@ -1799,7 +1799,7 @@ Lemma lt_0_IZR : forall n:Z, 0 < IZR n -> (0 < n)%Z.
 Proof.
   intro z; case z; simpl in |- *; intros.
   absurd (0 < 0); auto with real.
-  unfold Zlt in |- *; simpl in |- *; trivial.
+  unfold Z.lt in |- *; simpl in |- *; trivial.
   case Rlt_not_le with (1 := H).
   replace 0 with (-0); auto with real.
 Qed.
@@ -1807,7 +1807,7 @@ Qed.
 (**********)
 Lemma lt_IZR : forall n m:Z, IZR n < IZR m -> (n < m)%Z.
 Proof.
-  intros z1 z2 H; apply Zlt_0_minus_lt.
+  intros z1 z2 H; apply Z.lt_0_sub.
   apply lt_0_IZR.
   rewrite <- Z_R_minus.
   exact (Rgt_minus (IZR z2) (IZR z1) H).
@@ -1817,8 +1817,8 @@ Qed.
 Lemma eq_IZR_R0 : forall n:Z, IZR n = 0 -> n = 0%Z.
 Proof.
   intro z; destruct z; simpl in |- *; intros; auto with zarith.
-  case (Rlt_not_eq 0 (INR (nat_of_P p))); auto with real.
-  case (Rlt_not_eq (- INR (nat_of_P p)) 0); auto with real.
+  case (Rlt_not_eq 0 (INR (Pos.to_nat p))); auto with real.
+  case (Rlt_not_eq (- INR (Pos.to_nat p)) 0); auto with real.
   apply Ropp_lt_gt_0_contravar. unfold Rgt in |- *; apply pos_INR_nat_of_P.
 Qed.
 
@@ -1841,7 +1841,7 @@ Qed.
 Lemma le_0_IZR : forall n:Z, 0 <= IZR n -> (0 <= n)%Z.
 Proof.
   unfold Rle in |- *; intros z [H| H].
-  red in |- *; intro; apply (Zlt_le_weak 0 z (lt_0_IZR z H)); assumption.
+  red in |- *; intro; apply (Z.lt_le_incl 0 z (lt_0_IZR z H)); assumption.
   rewrite (eq_IZR_R0 z); auto with zarith real.
 Qed.
 
@@ -1849,7 +1849,7 @@ Qed.
 Lemma le_IZR : forall n m:Z, IZR n <= IZR m -> (n <= m)%Z.
 Proof.
   unfold Rle in |- *; intros z1 z2 [H| H].
-  apply (Zlt_le_weak z1 z2); auto with real.
+  apply (Z.lt_le_incl z1 z2); auto with real.
   apply lt_IZR; trivial.
   rewrite (eq_IZR z1 z2); auto with zarith real.
 Qed.
@@ -1885,10 +1885,10 @@ Qed.
 Lemma one_IZR_lt1 : forall n:Z, -1 < IZR n < 1 -> n = 0%Z.
 Proof.
   intros z [H1 H2].
-  apply Zle_antisym.
-  apply Zlt_succ_le; apply lt_IZR; trivial.
-  replace 0%Z with (Zsucc (-1)); trivial.
-  apply Zlt_le_succ; apply lt_IZR; trivial.
+  apply Z.le_antisymm.
+  apply Z.lt_succ_r; apply lt_IZR; trivial.
+  replace 0%Z with (Z.succ (-1)); trivial.
+  apply Z.le_succ_l; apply lt_IZR; trivial.
 Qed.
 
 Lemma one_IZR_r_R1 :

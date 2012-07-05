@@ -11,7 +11,7 @@ Require Export Qreduction.
 
 Hint Resolve Qlt_le_weak : qarith.
 
-Definition Qabs (x:Q) := let (n,d):=x in (Zabs n#d).
+Definition Qabs (x:Q) := let (n,d):=x in (Z.abs n#d).
 
 Lemma Qabs_case : forall (x:Q) (P : Q -> Type), (0 <= x -> P x) -> (x <= 0 -> P (- x)) -> P (Qabs x).
 Proof.
@@ -26,9 +26,9 @@ intros [xn xd] [yn yd] H.
 simpl.
 unfold Qeq in *.
 simpl in *.
-change (' yd)%Z with (Zabs (' yd)).
-change (' xd)%Z with (Zabs (' xd)).
-repeat rewrite <- Zabs_Zmult.
+change (' yd)%Z with (Z.abs (' yd)).
+change (' xd)%Z with (Z.abs (' xd)).
+repeat rewrite <- Z.abs_mul.
 congruence.
 Qed.
 
@@ -61,7 +61,7 @@ auto.
 apply (Qopp_le_compat x 0).
 Qed.
 
-Lemma Zabs_Qabs : forall n d, (Zabs n#d)==Qabs (n#d).
+Lemma Zabs_Qabs : forall n d, (Z.abs n#d)==Qabs (n#d).
 Proof.
 intros [|n|n]; reflexivity.
 Qed.
@@ -85,25 +85,25 @@ intros [xn xd] [yn yd].
 unfold Qplus.
 unfold Qle.
 simpl.
-apply Zmult_le_compat_r;auto with *.
-change (' yd)%Z with (Zabs (' yd)).
-change (' xd)%Z with (Zabs (' xd)).
-repeat rewrite <- Zabs_Zmult.
-apply Zabs_triangle.
+apply Z.mul_le_mono_nonneg_r;auto with *.
+change (' yd)%Z with (Z.abs (' yd)).
+change (' xd)%Z with (Z.abs (' xd)).
+repeat rewrite <- Z.abs_mul.
+apply Z.abs_triangle.
 Qed.
 
 Lemma Qabs_Qmult : forall a b, Qabs (a*b) == (Qabs a)*(Qabs b).
 Proof.
 intros [an ad] [bn bd].
 simpl.
-rewrite Zabs_Zmult.
+rewrite Z.abs_mul.
 reflexivity.
 Qed.
 
 Lemma Qabs_Qminus x y: Qabs (x - y) = Qabs (y - x).
 Proof.
  unfold Qminus, Qopp. simpl.
- rewrite Pmult_comm, <- Zabs_Zopp.
+ rewrite Pos.mul_comm, <- Z.abs_opp.
  do 2 f_equal. ring.
 Qed.
 

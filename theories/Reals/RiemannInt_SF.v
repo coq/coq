@@ -21,7 +21,7 @@ Set Implicit Arguments.
 Definition Nbound (I:nat -> Prop) : Prop :=
   exists n : nat, (forall i:nat, I i -> (i <= n)%nat).
 
-Lemma IZN_var : forall z:Z, (0 <= z)%Z -> {n : nat | z = Z_of_nat n}.
+Lemma IZN_var : forall z:Z, (0 <= z)%Z -> {n : nat | z = Z.of_nat n}.
 Proof.
   intros; apply Z_of_nat_complete_inf; assumption.
 Qed.

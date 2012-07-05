@@ -2,26 +2,26 @@
 (* Checks that qualified names are accepted *)
 
 (* New-style syntax *)
-Hint Resolve refl_equal: core arith.
-Hint Immediate trans_equal.
-Hint Unfold sym_equal: core.
+Hint Resolve eq_refl: core arith.
+Hint Immediate eq_trans.
+Hint Unfold eq_sym: core.
 Hint Constructors eq: foo bar.
-Hint Extern 3 (_ = _) => apply refl_equal: foo bar.
+Hint Extern 3 (_ = _) => apply eq_refl: foo bar.
 
 (* Old-style syntax *)
-Hint Resolve refl_equal sym_equal.
-Hint Resolve refl_equal sym_equal: foo.
-Hint Immediate refl_equal sym_equal.
-Hint Immediate refl_equal sym_equal: foo.
-Hint Unfold fst sym_equal.
-Hint Unfold fst sym_equal: foo.
+Hint Resolve eq_refl eq_sym.
+Hint Resolve eq_refl eq_sym: foo.
+Hint Immediate eq_refl eq_sym.
+Hint Immediate eq_refl eq_sym: foo.
+Hint Unfold fst eq_sym.
+Hint Unfold fst eq_sym: foo.
 
 (* Checks that local names are accepted *)
 Section A.
   Remark Refl : forall (A : Set) (x : A), x = x.
-  Proof. exact @refl_equal. Defined.
-  Definition Sym := sym_equal.
-  Let Trans := trans_equal.
+  Proof. exact @eq_refl. Defined.
+  Definition Sym := eq_sym.
+  Let Trans := eq_trans.
 
   Hint Resolve Refl: foo.
   Hint Resolve Sym: bar.

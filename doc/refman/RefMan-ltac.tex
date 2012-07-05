@@ -607,7 +607,7 @@ Ltac f x :=
   match x with
     context f [S ?X] => 
     idtac X;                    (* To display the evaluation order *)
-    assert (p := refl_equal 1 : X=1);    (* To filter the case X=1 *)
+    assert (p := eq_refl 1 : X=1);    (* To filter the case X=1 *)
     let x:= context f[O] in assert (x=O) (* To observe the context *)
   end.
 Goal True.
@@ -1205,7 +1205,7 @@ Axiom AR_unit : (A -> unit) = unit.
 Axiom AL_unit : (unit -> A) = A.
 Lemma Cons : B = C -> A * B = A * C.
 Proof.
-intro Heq; rewrite Heq; apply refl_equal.
+intro Heq; rewrite Heq; reflexivity.
 Qed.
 End Iso_axioms.
 \end{coq_example*}
@@ -1272,7 +1272,7 @@ Ltac assoc := repeat rewrite <- Ass.
 \begin{coq_example}
 Ltac DoCompare n :=
   match goal with
-  | [ |- (?A = ?A) ] => apply refl_equal
+  | [ |- (?A = ?A) ] => reflexivity
   | [ |- (?A * ?B = ?A * ?C) ] =>
     apply Cons; let newn := Length B in DoCompare newn
   | [ |- (?A * ?B = ?C) ] =>

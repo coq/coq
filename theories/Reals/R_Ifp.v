@@ -58,7 +58,7 @@ Proof.
       intros a b; rewrite b; clear a b; rewrite <- Z_R_minus;
         cut (up 0 = 1%Z).
   intro; rewrite H1;
-    rewrite (Rminus_diag_eq (IZR 1) (IZR 1) (refl_equal (IZR 1)));
+    rewrite (Rminus_diag_eq (IZR 1) (IZR 1) (eq_refl (IZR 1)));
       apply Ropp_0.
   elim (archimed 0); intros; clear H2; unfold Rgt in H1;
     rewrite (Rminus_0_r (IZR (up 0))) in H0; generalize (lt_O_IZR (up 0) H1);
@@ -130,16 +130,16 @@ Proof.
 Qed.
 
 (**********)
-Lemma Int_part_INR : forall n:nat, Int_part (INR n) = Z_of_nat n.
+Lemma Int_part_INR : forall n:nat, Int_part (INR n) = Z.of_nat n.
 Proof.
   intros n; unfold Int_part in |- *.
-  cut (up (INR n) = (Z_of_nat n + Z_of_nat 1)%Z).
+  cut (up (INR n) = (Z.of_nat n + Z.of_nat 1)%Z).
   intros H'; rewrite H'; simpl in |- *; ring.
-  apply sym_equal; apply tech_up; auto.
-  replace (Z_of_nat n + Z_of_nat 1)%Z with (Z_of_nat (S n)).
+  symmetry; apply tech_up; auto.
+  replace (Z.of_nat n + Z.of_nat 1)%Z with (Z.of_nat (S n)).
   repeat rewrite <- INR_IZR_INZ.
   apply lt_INR; auto.
-  rewrite Zplus_comm; rewrite <- Znat.inj_plus; simpl in |- *; auto.
+  rewrite Z.add_comm; rewrite <- Znat.Nat2Z.inj_add; simpl in |- *; auto.
   rewrite plus_IZR; simpl in |- *; auto with real.
   repeat rewrite <- INR_IZR_INZ; auto with real.
 Qed.

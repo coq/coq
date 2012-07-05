@@ -81,7 +81,7 @@ Qed.
 Lemma eqb31_eq : forall x y, eqb31 x y = true <-> x=y.
 Proof.
 unfold eqb31. intros x y.
-rewrite Cyclic31.spec_compare. case Zcompare_spec.
+rewrite Cyclic31.spec_compare. case Z.compare_spec.
 intuition. apply Int31_canonic; auto.
 intuition; subst; auto with zarith; try discriminate.
 intuition; subst; auto with zarith; try discriminate.

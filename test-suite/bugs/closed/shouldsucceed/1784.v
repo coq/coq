@@ -58,7 +58,7 @@ Program Fixpoint lt_dec (x y:sv) { struct x } : {slt x y}+{~slt x y} :=
   match x with
     | I x =>
       match y with
-        | I y => if (Z_eq_dec x y) then in_left else in_right
+        | I y => if (Z.eq_dec x y) then in_left else in_right
         | S ys => in_right
       end
     | S xs =>

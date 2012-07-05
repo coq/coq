@@ -79,9 +79,9 @@ End PairDecidableType.
 Module PairUsualDecidableType(D1 D2:UsualDecidableType) <: UsualDecidableType.
  Definition t := prod D1.t D2.t.
  Definition eq := @eq t.
- Definition eq_refl := @refl_equal t.
- Definition eq_sym := @sym_eq t.
- Definition eq_trans := @trans_eq t.
+ Definition eq_refl := @eq_refl t.
+ Definition eq_sym := @eq_sym t.
+ Definition eq_trans := @eq_trans t.
  Definition eq_dec : forall x y, { eq x y }+{ ~eq x y }.
  Proof.
  intros (x1,x2) (y1,y2);

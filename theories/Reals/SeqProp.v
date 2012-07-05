@@ -1131,7 +1131,7 @@ Proof.
     rewrite Rinv_mult_distr.
   apply Rmult_le_compat_l.
   left; apply Rinv_0_lt_compat; apply lt_INR_0; apply neq_O_lt; red in |- *;
-    intro; assert (H10 := sym_eq H9); elim (fact_neq_0 _ H10).
+    intro; assert (H10 := eq_sym H9); elim (fact_neq_0 _ H10).
   left; apply Rinv_lt_contravar.
   apply Rmult_lt_0_compat; apply lt_INR_0; apply lt_O_Sn.
   apply lt_INR; apply lt_n_S.
@@ -1156,7 +1156,7 @@ Proof.
   replace (Rabs x ^ 1) with (Rabs x); [ idtac | simpl in |- *; ring ].
   replace (M_nat + n + 1)%nat with (S (M_nat + n)).
   apply Rmult_le_reg_l with (INR (fact (S (M_nat + n)))).
-  apply lt_INR_0; apply neq_O_lt; red in |- *; intro; assert (H9 := sym_eq H8);
+  apply lt_INR_0; apply neq_O_lt; red; intro; assert (H9 := eq_sym H8);
     elim (fact_neq_0 _ H9).
   rewrite (Rmult_comm (Rabs x)); rewrite <- Rmult_assoc; rewrite <- Rinv_r_sym.
   rewrite Rmult_1_l.
@@ -1173,7 +1173,7 @@ Proof.
   intro; unfold Un in |- *; unfold Rdiv in |- *; apply Rmult_lt_0_compat.
   apply pow_lt; assumption.
   apply Rinv_0_lt_compat; apply lt_INR_0; apply neq_O_lt; red in |- *; intro;
-    assert (H8 := sym_eq H7); elim (fact_neq_0 _ H8).
+    assert (H8 := eq_sym H7); elim (fact_neq_0 _ H8).
   clear Un Vn; apply INR_le; simpl in |- *.
   induction  M_nat as [| M_nat HrecM_nat].
   assert (H6 := archimed (Rabs x)); fold M in H6; elim H6; intros.
@@ -1192,7 +1192,7 @@ Proof.
   unfold Rdiv in |- *; rewrite Rabs_mult; rewrite (Rabs_right (/ INR (fact n))).
   rewrite RPow_abs; right; reflexivity.
   apply Rle_ge; left; apply Rinv_0_lt_compat; apply lt_INR_0; apply neq_O_lt;
-    red in |- *; intro; assert (H4 := sym_eq H3); elim (fact_neq_0 _ H4).
+    red; intro; assert (H4 := eq_sym H3); elim (fact_neq_0 _ H4).
   apply Rle_ge; unfold Rdiv in |- *; apply Rmult_le_pos.
   case (Req_dec x 0); intro.
   rewrite H3; rewrite Rabs_R0.
@@ -1201,6 +1201,6 @@ Proof.
       | simpl in |- *; rewrite Rmult_0_l; right; reflexivity ].
   left; apply pow_lt; apply Rabs_pos_lt; assumption.
   left; apply Rinv_0_lt_compat; apply lt_INR_0; apply neq_O_lt; red in |- *;
-    intro; assert (H4 := sym_eq H3); elim (fact_neq_0 _ H4).
+    intro; assert (H4 := eq_sym H3); elim (fact_neq_0 _ H4).
   apply H1; assumption.
 Qed.

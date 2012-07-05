@@ -182,13 +182,13 @@ Section sequence.
 
     assert (Hs0: forall n, sum n = 0).
     intros n.
-    specialize (Hm1 (sum n) (ex_intro _ _ (refl_equal _))).
+    specialize (Hm1 (sum n) (ex_intro _ _ (eq_refl _))).
     apply Rle_antisym with (2 := proj1 (Hsum n)).
     now rewrite <- Hm.
 
     assert (Hub: forall n, Un n <= l - eps).
     intros n.
-    generalize (refl_equal (sum (S n))).
+    generalize (eq_refl (sum (S n))).
     simpl sum at 1.
     rewrite 2!Hs0, Rplus_0_l.
     unfold test.
@@ -238,7 +238,7 @@ Section sequence.
     rewrite (IHN H6), Rplus_0_l.
     unfold test.
     destruct Rle_lt_dec.
-    apply refl_equal.
+    apply eq_refl.
     now elim Rlt_not_le with (1 := r).
 
     destruct (le_or_lt N n) as [Hn|Hn].
@@ -272,13 +272,13 @@ Section sequence.
   Proof.
     intro; induction  N as [| N HrecN].
     split with (Un 0); intros; rewrite (le_n_O_eq n H);
-      apply (Req_le (Un n) (Un n) (refl_equal (Un n))).
+      apply (Req_le (Un n) (Un n) (eq_refl (Un n))).
     elim HrecN; clear HrecN; intros; split with (Rmax (Un (S N)) x); intros;
       elim (Rmax_Rle (Un (S N)) x (Un n)); intros; clear H1;
         inversion H0.
     rewrite <- H1; rewrite <- H1 in H2;
       apply
-        (H2 (or_introl (Un n <= x) (Req_le (Un n) (Un n) (refl_equal (Un n))))).
+        (H2 (or_introl (Un n <= x) (Req_le (Un n) (Un n) (eq_refl (Un n))))).
     apply (H2 (or_intror (Un n <= Un (S N)) (H n H3))).
   Qed.
 

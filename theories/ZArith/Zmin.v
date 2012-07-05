@@ -12,12 +12,30 @@ Require Import BinInt Zcompare Zorder.
 
 Local Open Scope Z_scope.
 
-(** Definition [Zmin] is now [BinInt.Z.min]. *)
+(** Definition [Z.min] is now [BinInt.Z.min]. *)
 
-(** * Characterization of the minimum on binary integer numbers *)
+(** Exact compatibility *)
 
-Definition Zmin_case := Z.min_case.
-Definition Zmin_case_strong := Z.min_case_strong.
+Notation Zmin_case := Z.min_case (compat "8.3").
+Notation Zmin_case_strong := Z.min_case_strong (compat "8.3").
+Notation Zle_min_l := Z.le_min_l (compat "8.3").
+Notation Zle_min_r := Z.le_min_r (compat "8.3").
+Notation Zmin_glb := Z.min_glb (compat "8.3").
+Notation Zmin_glb_lt := Z.min_glb_lt (compat "8.3").
+Notation Zle_min_compat_r := Z.min_le_compat_r (compat "8.3").
+Notation Zle_min_compat_l := Z.min_le_compat_l (compat "8.3").
+Notation Zmin_idempotent := Z.min_id (compat "8.3").
+Notation Zmin_n_n := Z.min_id (compat "8.3").
+Notation Zmin_comm := Z.min_comm (compat "8.3").
+Notation Zmin_assoc := Z.min_assoc (compat "8.3").
+Notation Zmin_irreducible_inf := Z.min_dec (compat "8.3").
+Notation Zsucc_min_distr := Z.succ_min_distr (compat "8.3").
+Notation Zmin_SS := Z.succ_min_distr (compat "8.3").
+Notation Zplus_min_distr_r := Z.add_min_distr_r (compat "8.3").
+Notation Zmin_plus := Z.add_min_distr_r (compat "8.3").
+Notation Zpos_min := Pos2Z.inj_min (compat "8.3").
+
+(** Slightly different lemmas *)
 
 Lemma Zmin_spec x y :
   x <= y /\ Z.min x y = x  \/  x > y /\ Z.min x y = y.
@@ -25,71 +43,15 @@ Proof.
  Z.swap_greater. rewrite Z.min_comm. destruct (Z.min_spec y x); auto.
 Qed.
 
-(** * Greatest lower bound properties of min *)
-
-Lemma Zle_min_l : forall n m, Z.min n m <= n. Proof Z.le_min_l.
-Lemma Zle_min_r : forall n m, Z.min n m <= m. Proof Z.le_min_r.
-
-Lemma Zmin_glb : forall n m p, p <= n -> p <= m -> p <= Z.min n m.
-Proof Z.min_glb.
-Lemma Zmin_glb_lt : forall n m p, p < n -> p < m -> p < Z.min n m.
-Proof Z.min_glb_lt.
-
-(** * Compatibility with order *)
-
-Lemma Zle_min_compat_r : forall n m p, n <= m -> Z.min n p <= Z.min m p.
-Proof Z.min_le_compat_r.
-Lemma Zle_min_compat_l : forall n m p, n <= m -> Z.min p n <= Z.min p m.
-Proof Z.min_le_compat_l.
-
-(** * Semi-lattice properties of min *)
-
-Lemma Zmin_idempotent : forall n, Z.min n n = n. Proof Z.min_id.
-Notation Zmin_n_n := Z.min_id (compat "8.3").
-Lemma Zmin_comm : forall n m, Z.min n m = Z.min m n. Proof Z.min_comm.
-Lemma Zmin_assoc : forall n m p, Z.min n (Z.min m p) = Z.min (Z.min n m) p.
-Proof Z.min_assoc.
-
-(** * Additional properties of min *)
-
-Lemma Zmin_irreducible_inf : forall n m, {Z.min n m = n} + {Z.min n m = m}.
-Proof Z.min_dec.
-
 Lemma Zmin_irreducible n m : Z.min n m = n \/ Z.min n m = m.
 Proof. destruct (Z.min_dec n m); auto. Qed.
 
-Notation Zmin_or := Zmin_irreducible (only parsing).
+Notation Zmin_or := Zmin_irreducible (compat "8.3").
 
 Lemma Zmin_le_prime_inf n m p : Z.min n m <= p -> {n <= p} + {m <= p}.
-Proof. apply Zmin_case; auto. Qed.
-
-(** * Operations preserving min *)
-
-Lemma Zsucc_min_distr :
- forall n m, Z.succ (Z.min n m) = Z.min (Z.succ n) (Z.succ m).
-Proof Z.succ_min_distr.
-
-Notation Zmin_SS := Z.succ_min_distr (only parsing).
-
-Lemma Zplus_min_distr_r :
- forall n m p, Z.min (n + p) (m + p) = Z.min n m + p.
-Proof Z.add_min_distr_r.
-
-Notation Zmin_plus := Z.add_min_distr_r (only parsing).
-
-(** * Minimum and Zpos *)
-
-Lemma Zpos_min p q : Zpos (Pos.min p q) = Z.min (Zpos p) (Zpos q).
-Proof.
- unfold Z.min, Pos.min; simpl. destruct Pos.compare; auto.
-Qed.
+Proof. apply Z.min_case; auto. Qed.
 
 Lemma Zpos_min_1 p : Z.min 1 (Zpos p) = 1.
 Proof.
  now destruct p.
 Qed.
-
-
-
-
-

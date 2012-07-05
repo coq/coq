@@ -77,13 +77,13 @@ Definition rbound2 (C:Z -> Z -> Z) : Prop :=
 
 Lemma bounded_drift : forall s t p q C D, s <= t /\ correct p t  /\ correct q t /\
   rbound1 C /\ rbound2 C /\ rbound1 D /\ rbound2 D  ->
-  Zabs (C p t - D q t) <= Zabs (C p s - D q s) + 2 * rho * (t- s).
+  Z.abs (C p t - D q t) <= Z.abs (C p s - D q s) + 2 * rho * (t- s).
 Proof.
   intros.
-  generalize (Zabs_eq (C p t - D q t)).
-  generalize (Zabs_non_eq (C p t - D q t)).
-  generalize (Zabs_eq (C p s -D q s)).
-  generalize (Zabs_non_eq (C p s - D q s)).
+  generalize (Z.abs_eq (C p t - D q t)).
+  generalize (Z.abs_neq (C p t - D q t)).
+  generalize (Z.abs_eq (C p s -D q s)).
+  generalize (Z.abs_neq (C p s - D q s)).
   unfold rbound2 in H.
   unfold rbound1 in H.
   intuition.

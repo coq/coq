@@ -30,7 +30,7 @@ Declare ML Module "numbers_syntax_plugin".
 
 Local Open Scope Z_scope.
 
-(* For compatibility of scripts, weaker version of some lemmas of Zdiv *)
+(* For compatibility of scripts, weaker version of some lemmas of Z.div *)
 
 Lemma Zlt0_not_eq : forall n, 0<n -> n<>0.
 Proof.
@@ -43,22 +43,22 @@ Definition Z_div_plus_l a b c H := Zdiv.Z_div_plus_full_l a b c (Zlt0_not_eq _ H
 
 (* Automation *)
 
-Hint  Extern 2 (Zle _ _) =>
+Hint  Extern 2 (Z.le _ _) =>
  (match goal with
-   |- Zpos _ <= Zpos _ => exact (refl_equal _)
-|   H: _ <=  ?p |- _ <= ?p => apply Zle_trans with (2 := H)
-|   H: _ <  ?p |- _ <= ?p => apply Zlt_le_weak; apply Zle_lt_trans with (2 := H)
+   |- Zpos _ <= Zpos _ => exact (eq_refl _)
+|   H: _ <=  ?p |- _ <= ?p => apply Z.le_trans with (2 := H)
+|   H: _ <  ?p |- _ <= ?p => apply Z.lt_le_incl; apply Z.le_lt_trans with (2 := H)
   end).
 
-Hint  Extern 2 (Zlt _ _) =>
+Hint  Extern 2 (Z.lt _ _) =>
  (match goal with
-   |- Zpos _ < Zpos _ => exact (refl_equal _)
-|      H: _ <=  ?p |- _ <= ?p => apply Zlt_le_trans with (2 := H)
-|   H: _ <  ?p |- _ <= ?p => apply Zle_lt_trans with (2 := H)
+   |- Zpos _ < Zpos _ => exact (eq_refl _)
+|      H: _ <=  ?p |- _ <= ?p => apply Z.lt_le_trans with (2 := H)
+|   H: _ <  ?p |- _ <= ?p => apply Z.le_lt_trans with (2 := H)
   end).
 
 
-Hint Resolve Zlt_gt Zle_ge Z_div_pos: zarith.
+Hint Resolve Z.lt_gt Z.le_ge Z_div_pos: zarith.
 
 (**************************************
    Properties of order and product
@@ -71,9 +71,9 @@ Hint Resolve Zlt_gt Zle_ge Z_div_pos: zarith.
  Proof.
   intros a b c d beta H1 (H3, H4) (H5, H6).
   assert (a - c < 1); auto with zarith.
-  apply Zmult_lt_reg_r with beta; auto with zarith.
-  apply Zle_lt_trans with (d  - b); auto with zarith.
-  rewrite Zmult_minus_distr_r; auto with zarith.
+  apply Z.mul_lt_mono_pos_r with beta; auto with zarith.
+  apply Z.le_lt_trans with (d  - b); auto with zarith.
+  rewrite Z.mul_sub_distr_r; auto with zarith.
  Qed.
 
  Theorem beta_lex_inv: forall a b c d beta,
@@ -82,15 +82,15 @@ Hint Resolve Zlt_gt Zle_ge Z_div_pos: zarith.
       a * beta + b < c * beta  + d.
  Proof.
   intros a b c d beta H1 (H3, H4) (H5, H6).
-  case (Zle_or_lt (c * beta + d) (a * beta + b)); auto with zarith.
-  intros H7; contradict H1;apply Zle_not_lt;apply beta_lex with (1 := H7);auto.
+  case (Z.le_gt_cases (c * beta + d) (a * beta + b)); auto with zarith.
+  intros H7. contradict H1. apply Z.le_ngt. apply beta_lex with (1 := H7); auto.
  Qed.
 
  Lemma beta_mult : forall h l beta,
    0 <= h < beta -> 0 <= l < beta -> 0 <= h*beta+l < beta^2.
  Proof.
   intros h l beta H1 H2;split. auto with zarith.
-  rewrite <- (Zplus_0_r (beta^2)); rewrite Zpower_2;
+  rewrite <- (Z.add_0_r (beta^2)); rewrite Z.pow_2_r;
    apply beta_lex_inv;auto with zarith.
  Qed.
 
@@ -98,9 +98,9 @@ Hint Resolve Zlt_gt Zle_ge Z_div_pos: zarith.
    forall b x y, 0 <= x < b -> 0 <= y < b -> 0 <= x * y <= b^2 - 2*b + 1.
  Proof.
   intros b x y (Hx1,Hx2) (Hy1,Hy2);split;auto with zarith.
-  apply Zle_trans with ((b-1)*(b-1)).
-  apply Zmult_le_compat;auto with zarith.
-  apply Zeq_le; ring.
+  apply Z.le_trans with ((b-1)*(b-1)).
+  apply Z.mul_le_mono_nonneg;auto with zarith.
+  apply Z.eq_le_incl; ring.
  Qed.
 
  Lemma sum_mul_carry : forall xh xl yh yl wc cc beta,
@@ -129,11 +129,10 @@ Hint Resolve Zlt_gt Zle_ge Z_div_pos: zarith.
  Proof.
   intros x y cross beta HH HH1 HH2.
   split; auto with zarith.
-  apply Zle_lt_trans with  ((beta-1)*(beta-1)+(beta-1)); auto with zarith.
-  apply Zplus_le_compat; auto with zarith.
-  apply Zmult_le_compat; auto with zarith.
-  repeat (rewrite Zmult_minus_distr_l || rewrite Zmult_minus_distr_r);
-  rewrite Zpower_2; auto with zarith.
+  apply Z.le_lt_trans with  ((beta-1)*(beta-1)+(beta-1)); auto with zarith.
+  apply Z.add_le_mono; auto with zarith.
+  apply Z.mul_le_mono_nonneg; auto with zarith.
+  rewrite ?Z.mul_sub_distr_l, ?Z.mul_sub_distr_r, Z.pow_2_r; auto with zarith.
  Qed.
 
  Theorem mult_add_ineq2: forall x y c cross beta,
@@ -144,11 +143,10 @@ Hint Resolve Zlt_gt Zle_ge Z_div_pos: zarith.
  Proof.
   intros x y c cross beta HH HH1 HH2.
   split; auto with zarith.
-  apply Zle_lt_trans with ((beta-1)*(beta-1)+(2*beta-2));auto with zarith.
-  apply Zplus_le_compat; auto with zarith.
-  apply Zmult_le_compat; auto with zarith.
-  repeat (rewrite Zmult_minus_distr_l || rewrite Zmult_minus_distr_r);
-   rewrite Zpower_2; auto with zarith.
+  apply Z.le_lt_trans with ((beta-1)*(beta-1)+(2*beta-2));auto with zarith.
+  apply Z.add_le_mono; auto with zarith.
+  apply Z.mul_le_mono_nonneg; auto with zarith.
+  rewrite ?Z.mul_sub_distr_l, ?Z.mul_sub_distr_r, Z.pow_2_r; auto with zarith.
  Qed.
 
 Theorem mult_add_ineq3: forall x y c cross beta,
@@ -161,20 +159,20 @@ Theorem mult_add_ineq3: forall x y c cross beta,
   intros x y c cross beta HH HH1 HH2 HH3.
   apply mult_add_ineq2;auto with zarith.
   split;auto with zarith.
-  apply Zle_trans with (1*beta+cross);auto with zarith.
+  apply Z.le_trans with (1*beta+cross);auto with zarith.
  Qed.
 
-Hint Rewrite Zmult_1_r Zmult_0_r Zmult_1_l Zmult_0_l Zplus_0_l Zplus_0_r Zminus_0_r: rm10.
+Hint Rewrite Z.mul_1_r Z.mul_0_r Z.mul_1_l Z.mul_0_l Z.add_0_l Z.add_0_r Z.sub_0_r: rm10.
 
 
 (**************************************
- Properties of Zdiv and Zmod
+ Properties of Z.div and Z.modulo
 **************************************)
 
 Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  Proof.
   intros a b H H1;case (Z_mod_lt a b);auto with zarith;intros H2 H3;split;auto.
-  case (Zle_or_lt b a); intros H4; auto with zarith.
+  case (Z.le_gt_cases b a); intros H4; auto with zarith.
   rewrite Zmod_small; auto with zarith.
  Qed.
 
@@ -184,26 +182,26 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  Proof.
   intros a b r t (H1, H2) H3 (H4, H5).
   assert (t < 2 ^ b).
-  apply Zlt_le_trans with (1:= H5); auto with zarith.
+  apply Z.lt_le_trans with (1:= H5); auto with zarith.
   apply Zpower_le_monotone; auto with zarith.
   rewrite Zplus_mod; auto with zarith.
   rewrite Zmod_small with (a := t); auto with zarith.
   apply Zmod_small; auto with zarith.
   split; auto with zarith.
   assert (0 <= 2 ^a * r); auto with zarith.
-  apply Zplus_le_0_compat; auto with zarith.
+  apply Z.add_nonneg_nonneg; auto with zarith.
   match goal with |- context [?X mod ?Y] => case (Z_mod_lt X Y) end;
    auto with zarith.
   pattern (2 ^ b) at 2; replace (2 ^ b) with ((2 ^ b - 2 ^a) + 2 ^ a);
     try ring.
-  apply Zplus_le_lt_compat; auto with zarith.
+  apply Z.add_le_lt_mono; auto with zarith.
   replace b with ((b - a) + a); try ring.
   rewrite Zpower_exp; auto with zarith.
-  pattern (2 ^a) at 4; rewrite <- (Zmult_1_l (2 ^a));
-   try rewrite <- Zmult_minus_distr_r.
-  rewrite (Zmult_comm (2 ^(b - a))); rewrite  Zmult_mod_distr_l;
+  pattern (2 ^a) at 4; rewrite <- (Z.mul_1_l (2 ^a));
+   try rewrite <- Z.mul_sub_distr_r.
+  rewrite (Z.mul_comm (2 ^(b - a))); rewrite  Zmult_mod_distr_l;
    auto with zarith.
-  rewrite (Zmult_comm (2 ^a)); apply Zmult_le_compat_r; auto with zarith.
+  rewrite (Z.mul_comm (2 ^a)); apply Z.mul_le_mono_nonneg_r; auto with zarith.
   match goal with |- context [?X mod ?Y] => case (Z_mod_lt X Y) end;
    auto with zarith.
  Qed.
@@ -214,25 +212,25 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  Proof.
   intros a b r t (H1, H2) H3 (H4, H5).
   assert (t < 2 ^ b).
-  apply Zlt_le_trans with (1:= H5); auto with zarith.
+  apply Z.lt_le_trans with (1:= H5); auto with zarith.
   apply Zpower_le_monotone; auto with zarith.
   rewrite Zplus_mod; auto with zarith.
   rewrite Zmod_small with (a := t); auto with zarith.
   apply Zmod_small; auto with zarith.
   split; auto with zarith.
   assert (0 <= 2 ^a * r); auto with zarith.
-  apply Zplus_le_0_compat; auto with zarith.
+  apply Z.add_nonneg_nonneg; auto with zarith.
   match goal with |- context [?X mod ?Y] => case (Z_mod_lt X Y) end;
    auto with zarith.
   pattern (2 ^ b) at 2;replace (2 ^ b) with ((2 ^ b - 2 ^a) + 2 ^ a); try ring.
-  apply Zplus_le_lt_compat; auto with zarith.
+  apply Z.add_le_lt_mono; auto with zarith.
   replace b with ((b - a) + a); try ring.
   rewrite Zpower_exp; auto with zarith.
-  pattern (2 ^a) at 4; rewrite <- (Zmult_1_l (2 ^a));
-   try rewrite <- Zmult_minus_distr_r.
-  repeat rewrite (fun x => Zmult_comm x (2 ^ a)); rewrite Zmult_mod_distr_l;
+  pattern (2 ^a) at 4; rewrite <- (Z.mul_1_l (2 ^a));
+   try rewrite <- Z.mul_sub_distr_r.
+  repeat rewrite (fun x => Z.mul_comm x (2 ^ a)); rewrite Zmult_mod_distr_l;
    auto with zarith.
-  apply Zmult_le_compat_l; auto with zarith.
+  apply Z.mul_le_mono_nonneg_l; auto with zarith.
   match goal with |- context [?X mod ?Y] => case (Z_mod_lt X Y) end;
    auto with zarith.
  Qed.
@@ -243,13 +241,13 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
   Proof.
    intros a b r t (H1, H2) H3 (H4, H5).
    assert (Eq: t < 2 ^ b); auto with zarith.
-   apply Zlt_le_trans with (1 := H5); auto with zarith.
+   apply Z.lt_le_trans with (1 := H5); auto with zarith.
    apply Zpower_le_monotone; auto with zarith.
    pattern (r * 2 ^ a) at 1; rewrite Z_div_mod_eq with (b := 2 ^ b);
     auto with zarith.
-   rewrite <- Zplus_assoc.
+   rewrite <- Z.add_assoc.
    rewrite <- Zmod_shift_r; auto with zarith.
-   rewrite (Zmult_comm (2 ^ b)); rewrite Z_div_plus_full_l; auto with zarith.
+   rewrite (Z.mul_comm (2 ^ b)); rewrite Z_div_plus_full_l; auto with zarith.
    rewrite (fun x y => @Zdiv_small (x mod y)); auto with zarith.
    match goal with |- context [?X mod ?Y] => case (Z_mod_lt X Y) end;
     auto with zarith.
@@ -264,7 +262,7 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
   intros n p a H1 H2.
   pattern (a*2^p) at 1;replace (a*2^p) with
      (a*2^p/2^n * 2^n + a*2^p mod 2^n).
-  2:symmetry;rewrite (Zmult_comm (a*2^p/2^n));apply Z_div_mod_eq.
+  2:symmetry;rewrite (Z.mul_comm (a*2^p/2^n));apply Z_div_mod_eq.
   replace (a * 2 ^ p / 2 ^ n) with (a / 2 ^ (n - p));trivial.
   replace (2^n) with (2^(n-p)*2^p).
   symmetry;apply Zdiv_mult_cancel_r.
@@ -273,7 +271,7 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
   rewrite <- Zpower_exp.
   replace (n-p+p) with n;trivial. ring.
   omega. omega.
-  apply Zlt_gt. apply Zpower_gt_0;auto with zarith.
+  apply Z.lt_gt. apply Z.pow_pos_nonneg;auto with zarith.
  Qed.
 
 
@@ -284,15 +282,15 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  intros.
  rewrite Zmod_small.
  rewrite Zmod_eq by (auto with zarith).
- unfold Zminus at 1.
+ unfold Z.sub at 1.
  rewrite Z_div_plus_l by (auto with zarith).
  assert (2^n = 2^(n-p)*2^p).
   rewrite <- Zpower_exp by (auto with zarith).
   replace (n-p+p) with n; auto with zarith.
  rewrite H0.
  rewrite <- Zdiv_Zdiv, Z_div_mult by (auto with zarith).
- rewrite (Zmult_comm (2^(n-p))), Zmult_assoc.
- rewrite Zopp_mult_distr_l.
+ rewrite (Z.mul_comm (2^(n-p))), Z.mul_assoc.
+ rewrite <- Z.mul_opp_l.
  rewrite Z_div_mult by (auto with zarith).
  symmetry; apply Zmod_eq; auto with zarith.
 
@@ -301,9 +299,9 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  split.
  apply Z_div_pos; auto with zarith.
  apply Zdiv_lt_upper_bound; auto with zarith.
- apply Zlt_le_trans with (2^n); auto with zarith.
- rewrite <- (Zmult_1_r (2^n)) at 1.
- apply Zmult_le_compat; auto with zarith.
+ apply Z.lt_le_trans with (2^n); auto with zarith.
+ rewrite <- (Z.mul_1_r (2^n)) at 1.
+ apply Z.mul_le_mono_nonneg; auto with zarith.
  cut (0 < 2 ^ (n-p)); auto with zarith.
  Qed.
 
@@ -320,8 +318,8 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  Proof.
   intros p x y H;destruct (Z_le_gt_dec 0 p).
   apply Zdiv_lt_upper_bound;auto with zarith.
-  apply Zlt_le_trans with y;auto with zarith.
-  rewrite <- (Zmult_1_r y);apply Zmult_le_compat;auto with zarith.
+  apply Z.lt_le_trans with y;auto with zarith.
+  rewrite <- (Z.mul_1_r y);apply Z.mul_le_mono_nonneg;auto with zarith.
   assert (0 < 2^p);auto with zarith.
   replace (2^p) with 0.
   destruct x;change (0<y);auto with zarith.
@@ -329,15 +327,13 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  Qed.
 
  Theorem Zgcd_div_pos a b:
-   0 < b -> 0 < Zgcd a b -> 0 < b / Zgcd a b.
+   0 < b -> 0 < Z.gcd a b -> 0 < b / Z.gcd a b.
  Proof.
- intros Ha Hg.
- case (Zle_lt_or_eq 0 (b/Zgcd a b)); auto.
- apply Z_div_pos; auto with zarith.
- intros H; generalize Ha.
- pattern b at 1; rewrite (Zdivide_Zdiv_eq (Zgcd a b) b); auto.
- rewrite <- H; auto with zarith.
- assert (F := (Zgcd_is_gcd a b)); inversion F; auto.
+ intros Hb Hg.
+ assert (H : 0 <= b / Z.gcd a b) by (apply Z.div_pos; auto with zarith).
+ Z.le_elim H; trivial.
+ rewrite (Zdivide_Zdiv_eq (Z.gcd a b) b), <- H, Z.mul_0_r in Hb;
+  auto using Z.gcd_divide_r with zarith.
  Qed.
 
  Theorem Zdiv_neg a b:
@@ -347,7 +343,7 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  assert (b > 0) by omega.
  generalize (Z_mult_div_ge a _ H); intros.
  assert (b * (a / b) < 0)%Z.
-  apply Zle_lt_trans with a; auto with zarith.
+  apply Z.le_lt_trans with a; auto with zarith.
  destruct b; try (compute in Hb; discriminate).
  destruct (a/Zpos p)%Z.
  compute in H1; discriminate.
@@ -355,20 +351,20 @@ Theorem Zmod_le_first: forall a b, 0 <= a -> 0 < b -> 0 <= a mod b <= a.
  compute; auto.
  Qed.
 
- Lemma Zdiv_gcd_zero : forall a b, b / Zgcd a b = 0 -> b <> 0 ->
-  Zgcd a b = 0.
+ Lemma Zdiv_gcd_zero : forall a b, b / Z.gcd a b = 0 -> b <> 0 ->
+  Z.gcd a b = 0.
  Proof.
  intros.
  generalize (Zgcd_is_gcd a b); destruct 1.
  destruct H2 as (k,Hk).
  generalize H; rewrite Hk at 1.
- destruct (Z_eq_dec (Zgcd a b) 0) as [H'|H']; auto.
+ destruct (Z.eq_dec (Z.gcd a b) 0) as [H'|H']; auto.
  rewrite Z_div_mult_full; auto.
  intros; subst k; simpl in *; subst b; elim H0; auto.
  Qed.
 
  Lemma Zgcd_mult_rel_prime : forall a b c,
-  Zgcd a c = 1 -> Zgcd b c = 1 -> Zgcd (a*b) c = 1.
+  Z.gcd a c = 1 -> Z.gcd b c = 1 -> Z.gcd (a*b) c = 1.
  Proof.
  intros.
  rewrite Zgcd_1_rel_prime in *.
@@ -396,23 +392,20 @@ intros Q b Q0 QS.
 set (Q' := fun n => (n < b /\ Q n) \/ (b <= n)).
 assert (H : forall n, 0 <= n -> Q' n).
 apply natlike_rec2; unfold Q'.
-destruct (Zle_or_lt b 0) as [H | H]. now right. left; now split.
+destruct (Z.le_gt_cases b 0) as [H | H]. now right. left; now split.
 intros n H IH. destruct IH as [[IH1 IH2] | IH].
-destruct (Zle_or_lt (b - 1) n) as [H1 | H1].
+destruct (Z.le_gt_cases (b - 1) n) as [H1 | H1].
 right; auto with zarith.
 left. split; [auto with zarith | now apply (QS n)].
 right; auto with zarith.
 unfold Q' in *; intros n H1 H2. destruct (H n H1) as [[H3 H4] | H3].
-assumption. apply Zle_not_lt in H3. false_hyp H2 H3.
+assumption. now apply Z.le_ngt in H3.
 Qed.
 
-Lemma Zsquare_le : forall x, x <= x*x.
+Lemma Zsquare_le x : x <= x*x.
 Proof.
-intros.
-destruct (Z_lt_le_dec 0 x).
-pattern x at 1; rewrite <- (Zmult_1_l x).
-apply Zmult_le_compat; auto with zarith.
-apply Zle_trans with 0; auto with zarith.
-rewrite <- Zmult_opp_opp.
-apply Zmult_le_0_compat; auto with zarith.
+destruct (Z.lt_ge_cases 0 x).
+- rewrite <- Z.mul_1_l at 1.
+  rewrite <- Z.mul_le_mono_pos_r; auto with zarith.
+- pose proof (Z.square_nonneg x); auto with zarith.
 Qed.

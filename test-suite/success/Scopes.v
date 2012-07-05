@@ -3,7 +3,7 @@
 Require Import ZArith.
 
 Module A.
-Definition opp := Zopp.
+Definition opp := Z.opp.
 End A.
 Check (A.opp 3).
 

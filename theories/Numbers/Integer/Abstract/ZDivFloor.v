@@ -16,7 +16,7 @@ Require Import ZAxioms ZMulOrder ZSgnAbs NZDiv.
 
     [a = bq+r /\ 0 <= |r| < |b| /\ Sign(r) = Sign(b)]
 
-    This is the convention followed historically by [Zdiv] in Coq, and
+    This is the convention followed historically by [Z.div] in Coq, and
     corresponds to convention "F" in the following paper:
 
     R. Boute, "The Euclidean definition of the functions div and mod",

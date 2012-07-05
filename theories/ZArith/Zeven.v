@@ -136,7 +136,7 @@ Notation Zodd_bool_succ := Z.odd_succ (compat "8.3").
 Notation Zodd_bool_pred := Z.odd_pred (compat "8.3").
 
 (******************************************************************)
-(** * Definition of [Zquot2], [Zdiv2] and properties wrt [Zeven]
+(** * Definition of [Z.quot2], [Z.div2] and properties wrt [Zeven]
   and [Zodd] *)
 
 Notation Zdiv2 := Z.div2 (compat "8.3").
@@ -225,7 +225,7 @@ Lemma Zsplit2 n :
  {p : Z * Z | let (x1, x2) := p in n = x1 + x2 /\ (x1 = x2 \/ x2 = x1 + 1)}.
 Proof.
  destruct (Z_modulo_2 n) as [(y,Hy)|(y,Hy)];
-  rewrite Z.mul_comm, <- Zplus_diag_eq_mult_2 in Hy.
+  rewrite <- Z.add_diag in Hy.
  - exists (y, y). split. assumption. now left.
  - exists (y, y + 1). split. now rewrite Z.add_assoc. now right.
 Qed.

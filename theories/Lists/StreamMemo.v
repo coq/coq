@@ -32,10 +32,10 @@ Fixpoint memo_get (n:nat) (l:Stream A) : A :=
 Theorem memo_get_correct: forall n, memo_get n memo_list = f n.
 Proof.
 assert (F1: forall n m, memo_get n (memo_make m) = f (n + m)).
-  induction n as [| n Hrec]; try (intros m; refine (refl_equal _)).
+{ induction n as [| n Hrec]; try (intros m; reflexivity).
   intros m; simpl; rewrite Hrec.
-  rewrite plus_n_Sm; auto.
-intros n; apply trans_equal with (f (n + 0)); try exact (F1 n 0).
+  rewrite plus_n_Sm; auto. }
+intros n; transitivity (f (n + 0)); try exact (F1 n 0).
 rewrite <- plus_n_O; auto.
 Qed.
 
@@ -57,11 +57,10 @@ Definition imemo_list := let f0 := f 0 in
 
 Theorem imemo_get_correct: forall n, memo_get n imemo_list = f n.
 Proof.
-assert (F1: forall n m,
-    memo_get n (imemo_make (f m)) = f (S (n + m))).
-  induction n as [| n Hrec]; try (intros m; exact (sym_equal (Hg_correct m))).
-  simpl; intros m; rewrite <- Hg_correct; rewrite Hrec; rewrite <- plus_n_Sm; auto.
-destruct n as [| n]; try apply refl_equal.
+assert (F1: forall n m, memo_get n (imemo_make (f m)) = f (S (n + m))).
+{ induction n as [| n Hrec]; try (intros m; exact (eq_sym (Hg_correct m))).
+  simpl; intros m; rewrite <- Hg_correct, Hrec, <- plus_n_Sm; auto. }
+destruct n as [| n]; try reflexivity.
 unfold imemo_list; simpl; rewrite F1.
 rewrite <- plus_n_O; auto.
 Qed.
@@ -82,7 +81,7 @@ Inductive memo_val: Type :=
 
 Fixpoint is_eq (n m : nat) : {n = m} + {True} :=
   match n, m return {n = m} + {True} with
-  | 0, 0 =>left True (refl_equal 0)
+  | 0, 0 =>left True (eq_refl 0)
   | 0, S m1 => right (0 = S m1) I
   | S n1, 0 => right (S n1 = 0) I
   | S n1, S m1 =>
@@ -98,7 +97,7 @@ match v with
     match is_eq n m with
     | left H =>
        match H in (eq _ y) return (A y -> A n) with
-        | refl_equal => fun v1 : A n => v1
+        | eq_refl => fun v1 : A n => v1
        end
     | right _ => fun _ : A m => f n
     end x
@@ -115,7 +114,7 @@ Proof.
 intros n; unfold dmemo_get, dmemo_list.
 rewrite (memo_get_correct memo_val mf n); simpl.
 case (is_eq n n); simpl; auto; intros e.
-assert (e = refl_equal n).
+assert (e = eq_refl n).
  apply eq_proofs_unicity.
  induction x as [| x Hx]; destruct y as [| y].
  left; auto.
@@ -144,7 +143,7 @@ Proof.
 intros n; unfold dmemo_get, dimemo_list.
 rewrite (imemo_get_correct memo_val mf mg); simpl.
 case (is_eq n n); simpl; auto; intros e.
-assert (e = refl_equal n).
+assert (e = eq_refl n).
  apply eq_proofs_unicity.
  induction x as [| x Hx]; destruct y as [| y].
  left; auto.
@@ -169,11 +168,11 @@ Open Scope Z_scope.
 Fixpoint tfact (n: nat) :=
   match n with
    | O => 1
-   | S n1 => Z_of_nat n * tfact n1
+   | S n1 => Z.of_nat n * tfact n1
   end.
 
 Definition lfact_list :=
-  dimemo_list _ tfact (fun n z => (Z_of_nat (S  n) * z)).
+  dimemo_list _ tfact (fun n z => (Z.of_nat (S  n) * z)).
 
 Definition lfact n := dmemo_get _ tfact n lfact_list.
 

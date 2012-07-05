@@ -9,17 +9,17 @@
 Require Import ZArith Zwf Psatz QArith.
 Open Scope Z_scope.
 
-Lemma Zabs_square : forall x,  (Zabs  x)^2 = x^2.
+Lemma Z.abs_square : forall x,  (Z.abs  x)^2 = x^2.
 Proof.
  intros ; case (Zabs_dec x) ; intros ; psatz Z 2.
 Qed.
-Hint Resolve Zabs_pos Zabs_square.
+Hint Resolve Z.abs_nonneg Z.abs_square.
 
 Lemma integer_statement :  ~exists n, exists p, n^2 = 2*p^2 /\ n <> 0.
 Proof.
-intros [n [p [Heq Hnz]]]; pose (n' := Zabs n); pose (p':=Zabs p).
-assert (facts : 0 <= Zabs n /\ 0 <= Zabs p /\ Zabs n^2=n^2
-         /\ Zabs p^2 = p^2) by auto.
+intros [n [p [Heq Hnz]]]; pose (n' := Z.abs n); pose (p':=Z.abs p).
+assert (facts : 0 <= Z.abs n /\ 0 <= Z.abs p /\ Z.abs n^2=n^2
+         /\ Z.abs p^2 = p^2) by auto.
 assert (H : (0 < n' /\ 0 <= p' /\ n' ^2 = 2* p' ^2)) by
   (destruct facts as [Hf1 [Hf2 [Hf3 Hf4]]]; unfold n', p' ; psatz Z 2).
 generalize p' H; elim n' using (well_founded_ind (Zwf_well_founded 0)); clear.
@@ -35,7 +35,7 @@ Lemma QnumZpower : forall x : Q, Qnum (x ^ 2)%Q = ((Qnum x) ^ 2) %Z.
 Proof.
   intros.
   destruct x.
-  cbv beta  iota zeta delta - [Zmult].
+  cbv beta  iota zeta delta - [Z.mul].
   ring.
 Qed.
 
@@ -45,15 +45,15 @@ Proof.
   intros.
   destruct x.
   simpl.
-  unfold Zpower_pos.
+  unfold Z.pow_pos.
   simpl.
-  rewrite Pmult_1_r.
+  rewrite Pos.mul_1_r.
   reflexivity.
 Qed.
 
 Theorem sqrt2_not_rational : ~exists x:Q, x^2==2#1.
 Proof.
- unfold Qeq; intros [x]; simpl (Qden (2#1)); rewrite Zmult_1_r.
+ unfold Qeq; intros [x]; simpl (Qden (2#1)); rewrite Z.mul_1_r.
  intros HQeq.
  assert (Heq : (Qnum x ^ 2 = 2 * ' Qden x ^ 2%Q)%Z) by
    (rewrite QnumZpower in HQeq ; rewrite QdenZpower in HQeq ; auto).

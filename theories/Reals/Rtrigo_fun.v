@@ -39,7 +39,7 @@ Proof.
               in H4; rewrite (let (H1, H2) := Rmult_ne (/ INR (S n)) in H1) in H4;
                 rewrite (Rmult_comm (/ INR (S n))) in H4;
                   rewrite (Rmult_assoc eps (/ INR (S n)) (INR (S n))) in H4;
-                    rewrite (Rinv_l (INR (S n)) (not_O_INR (S n) (sym_not_equal (O_S n)))) in H4;
+                    rewrite (Rinv_l (INR (S n)) (not_O_INR (S n) (not_eq_sym (O_S n)))) in H4;
                       rewrite (let (H1, H2) := Rmult_ne eps in H1) in H4;
                         assumption.
   apply Rlt_minus; unfold Rgt in a; rewrite <- Rinv_1;
@@ -72,10 +72,10 @@ Proof.
               in H6; rewrite (let (H1, H2) := Rmult_ne (/ INR (S n)) in H1) in H6;
                 rewrite (Rmult_comm (/ INR (S n))) in H6;
                   rewrite (Rmult_assoc eps (/ INR (S n)) (INR (S n))) in H6;
-                    rewrite (Rinv_l (INR (S n)) (not_O_INR (S n) (sym_not_equal (O_S n)))) in H6;
+                    rewrite (Rinv_l (INR (S n)) (not_O_INR (S n) (not_eq_sym (O_S n)))) in H6;
                       rewrite (let (H1, H2) := Rmult_ne eps in H1) in H6;
                         assumption.
-  cut (IZR (up (/ eps - 1)) = IZR (Z_of_nat x));
+  cut (IZR (up (/ eps - 1)) = IZR (Z.of_nat x));
     [ intro | rewrite H1; trivial ].
   elim (archimed (/ eps - 1)); intros; clear H6; unfold Rgt in H5;
     rewrite H4 in H5; rewrite INR_IZR_INZ; assumption.
@@ -89,11 +89,11 @@ Proof.
     generalize (Rmult_lt_compat_l (/ eps) eps 1 (Rinv_0_lt_compat eps H) H0);
       rewrite
         (Rinv_l eps
-          (sym_not_eq (Rlt_dichotomy_converse 0 eps (or_introl (0 > eps) H))))
+          (not_eq_sym (Rlt_dichotomy_converse 0 eps (or_introl (0 > eps) H))))
         ; rewrite (let (H1, H2) := Rmult_ne (/ eps) in H1);
           intro; fold (/ eps - 1 > 0) in |- *; apply Rgt_minus;
             unfold Rgt in |- *; assumption.
-  right; rewrite H0; rewrite Rinv_1; apply sym_eq; apply Rminus_diag_eq; auto.
+  right; rewrite H0; rewrite Rinv_1; symmetry; apply Rminus_diag_eq; auto.
   elim (archimed (/ eps - 1)); intros; clear H1; unfold Rgt in H0; apply Rlt_le;
     assumption.
 Qed.

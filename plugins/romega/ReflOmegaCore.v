@@ -86,73 +86,50 @@ Module Z_as_Int <: Int.
   Definition int := Z.
   Definition zero := 0.
   Definition one := 1.
-  Definition plus := Zplus.
-  Definition opp := Zopp.
-  Definition minus := Zminus.
-  Definition mult := Zmult.
+  Definition plus := Z.add.
+  Definition opp := Z.opp.
+  Definition minus := Z.sub.
+  Definition mult := Z.mul.
 
   Lemma ring : @ring_theory int zero one plus mult minus opp (@eq int).
   Proof.
   constructor.
-  exact Zplus_0_l.
-  exact Zplus_comm.
-  exact Zplus_assoc.
-  exact Zmult_1_l.
-  exact Zmult_comm.
-  exact Zmult_assoc.
-  exact Zmult_plus_distr_l.
-  unfold minus, Zminus; auto.
-  exact Zplus_opp_r.
+  exact Z.add_0_l.
+  exact Z.add_comm.
+  exact Z.add_assoc.
+  exact Z.mul_1_l.
+  exact Z.mul_comm.
+  exact Z.mul_assoc.
+  exact Z.mul_add_distr_r.
+  unfold minus, Z.sub; auto.
+  exact Z.add_opp_diag_r.
   Qed.
 
-  Definition le := Zle.
-  Definition lt := Zlt.
-  Definition ge := Zge.
-  Definition gt := Zgt.
-  Lemma le_lt_iff : forall i j, (i<=j) <-> ~(j<i).
-  Proof.
-   split; intros.
-   apply Zle_not_lt; auto.
-   rewrite <- Zge_iff_le.
-   apply Znot_lt_ge; auto.
-  Qed.
-  Definition ge_le_iff := Zge_iff_le.
-  Definition gt_lt_iff := Zgt_iff_lt.
+  Definition le := Z.le.
+  Definition lt := Z.lt.
+  Definition ge := Z.ge.
+  Definition gt := Z.gt.
+  Definition le_lt_iff := Z.le_ngt.
+  Definition ge_le_iff := Z.ge_le_iff.
+  Definition gt_lt_iff := Z.gt_lt_iff.
 
-  Definition lt_trans := Zlt_trans.
-  Definition lt_not_eq := Zlt_not_eq.
+  Definition lt_trans := Z.lt_trans.
+  Definition lt_not_eq := Z.lt_neq.
 
-  Definition lt_0_1 := Zlt_0_1.
-  Definition plus_le_compat := Zplus_le_compat.
+  Definition lt_0_1 := Z.lt_0_1.
+  Definition plus_le_compat := Z.add_le_mono.
   Definition mult_lt_compat_l := Zmult_lt_compat_l.
-  Lemma opp_le_compat : forall i j, i<=j -> (-j)<=(-i).
-  Proof.
-  unfold Zle; intros; rewrite <- Zcompare_opp; auto.
-  Qed.
+  Lemma opp_le_compat i j : i<=j -> (-j)<=(-i).
+  Proof. apply -> Z.opp_le_mono. Qed.
 
-  Definition compare := Zcompare.
-  Definition compare_Eq := Zcompare_Eq_iff_eq.
-  Lemma compare_Lt : forall i j, compare i j = Lt <-> i<j.
-  Proof. intros; unfold compare, Zlt; intuition. Qed.
-  Lemma compare_Gt : forall i j, compare i j = Gt <-> i>j.
-  Proof. intros; unfold compare, Zgt; intuition. Qed.
+  Definition compare := Z.compare.
+  Definition compare_Eq := Z.compare_eq_iff.
+  Lemma compare_Lt i j : compare i j = Lt <-> i<j.
+  Proof. reflexivity. Qed.
+  Lemma compare_Gt i j : compare i j = Gt <-> i>j.
+  Proof. reflexivity. Qed.
 
-  Lemma le_lt_int : forall x y, x<y <-> x<=y+-(1).
-  Proof.
-   intros; split; intros.
-   generalize (Zlt_left _ _ H); simpl; intros.
-   apply Zle_left_rev; auto.
-   apply Zlt_0_minus_lt.
-   generalize (Zplus_le_lt_compat x (y+-1) (-x) (-x+1) H).
-   rewrite Zplus_opp_r.
-   rewrite <-Zplus_assoc.
-   rewrite (Zplus_permute (-1)).
-   simpl in *.
-   rewrite Zplus_0_r.
-   intro H'; apply H'.
-   replace (-x+1) with (Zsucc (-x)); auto.
-   apply Zlt_succ.
-  Qed.
+  Definition le_lt_int := Z.lt_le_pred.
 
 End Z_as_Int.
 
@@ -2192,7 +2169,7 @@ Proof.
  auto; case (nth_hyps j l);
  auto; intros t3 t4; case t3; auto;
  simpl in |- *; intros z z' H1 H2;
- generalize (refl_equal (interp_term e (fusion_cancel t (t2 + t4)%term)));
+ generalize (eq_refl (interp_term e (fusion_cancel t (t2 + t4)%term)));
  pattern (fusion_cancel t (t2 + t4)%term) at 2 3 in |- *;
  case (fusion_cancel t (t2 + t4)%term); simpl in |- *;
  auto; intro k; elim (fusion_cancel_stable t); simpl in |- *.
@@ -2370,7 +2347,7 @@ Proof.
  unfold valid1, exact_divide in |- *; intros k1 k2 t ep e p1;
  Simplify; simpl; auto; subst;
  rewrite <- scalar_norm_stable; simpl; intros;
- [ destruct (mult_integral _ _ (sym_eq H0)); intuition
+ [ destruct (mult_integral _ _ (eq_sym H0)); intuition
  | contradict H0; rewrite <- H0, mult_0_l; auto
  ].
 Qed.

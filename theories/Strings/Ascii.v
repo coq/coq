@@ -65,7 +65,7 @@ Definition ascii_of_N (n : N) :=
 
 (** Same for [nat] *)
 
-Definition ascii_of_nat (a : nat) := ascii_of_N (N_of_nat a).
+Definition ascii_of_nat (a : nat) := ascii_of_N (N.of_nat a).
 
 (** The opposite functions *)
 
@@ -81,7 +81,7 @@ Definition N_of_ascii (a : ascii) : N :=
  let (a0,a1,a2,a3,a4,a5,a6,a7) := a in
  N_of_digits (a0::a1::a2::a3::a4::a5::a6::a7::nil).
 
-Definition nat_of_ascii (a : ascii) : nat := nat_of_N (N_of_ascii a).
+Definition nat_of_ascii (a : ascii) : nat := N.to_nat (N_of_ascii a).
 
 (** Proofs that we have indeed opposite function (below 256) *)
 
@@ -111,10 +111,10 @@ Theorem nat_ascii_embedding :
 Proof.
  intros. unfold nat_of_ascii, ascii_of_nat.
  rewrite N_ascii_embedding.
- apply nat_of_N_of_nat.
- unfold Nlt.
- change 256%N with (N_of_nat 256).
- rewrite <- N_of_nat_compare.
+ apply Nat2N.id.
+ unfold N.lt.
+ change 256%N with (N.of_nat 256).
+ rewrite <- Nat2N.inj_compare.
  rewrite <- Compare_dec.nat_compare_lt. auto.
 Qed.
 

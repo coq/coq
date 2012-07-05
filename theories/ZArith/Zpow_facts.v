@@ -85,15 +85,15 @@ Proof.
   assert (Hn := Nat2Z.is_nonneg n).
   destruct p; simpl Pos.size_nat.
   - specialize IHn with p.
-    rewrite Z.pos_xI, Nat2Z.inj_succ, Z.pow_succ_r; omega.
+    rewrite Pos2Z.inj_xI, Nat2Z.inj_succ, Z.pow_succ_r; omega.
   - specialize IHn with p.
-    rewrite Z.pos_xO, Nat2Z.inj_succ, Z.pow_succ_r; omega.
+    rewrite Pos2Z.inj_xO, Nat2Z.inj_succ, Z.pow_succ_r; omega.
   - split; auto with zarith.
     intros _. apply Z.pow_gt_1. easy.
     now rewrite Nat2Z.inj_succ, Z.lt_succ_r.
 Qed.
 
-(** * Zpower and modulo *)
+(** * Z.pow and modulo *)
 
 Theorem Zpower_mod p q n :
   0 < n -> (p^q) mod n = ((p mod n)^q) mod n.
@@ -106,7 +106,7 @@ Proof.
   - rewrite !Z.pow_neg_r; auto with zarith.
 Qed.
 
-(** A direct way to compute Zpower modulo **)
+(** A direct way to compute Z.pow modulo **)
 
 Fixpoint Zpow_mod_pos (a: Z)(m: positive)(n : Z) : Z :=
   match m with
@@ -231,7 +231,7 @@ Proof.
   exists n; destruct H; rewrite Z.mul_0_r in H; auto.
 Qed.
 
-(** * Zsquare: a direct definition of [z^2] *)
+(** * Z.square: a direct definition of [z^2] *)
 
 Notation Psquare := Pos.square (compat "8.3").
 Notation Zsquare := Z.square (compat "8.3").

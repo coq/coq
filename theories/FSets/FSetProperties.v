@@ -823,7 +823,7 @@ Module WProperties_fun (Import E : DecidableType)(M : WSfun E).
   rewrite (inter_subset_equal H).
   generalize (@cardinal_inv_1 (diff s' s)).
   destruct (cardinal (diff s' s)).
-  intro H2; destruct (H2 (refl_equal _) x).
+  intro H2; destruct (H2 Logic.eq_refl x).
   set_iff; auto.
   intros _.
   change (0 + cardinal s < S n + cardinal s).

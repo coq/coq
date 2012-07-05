@@ -196,7 +196,7 @@ Proof.
   case (H0 (dist R_met (f x0) l)); auto.
   intros alpha1 [H2 H3]; apply H3; auto; split; auto.
   case (dist_refl R_met x0 x0); intros Hr1 Hr2; rewrite Hr2; auto.
-  case (dist_refl R_met (f x0) l); intros Hr1 Hr2; apply sym_eq; auto.
+  case (dist_refl R_met (f x0) l); intros Hr1 Hr2; symmetry; auto.
 Qed.
 
 (*********)
@@ -270,7 +270,7 @@ Lemma limit_free :
 Proof.
   unfold limit1_in in |- *; unfold limit_in in |- *; simpl in |- *; intros;
     split with eps; split; auto; intros; elim (R_dist_refl (f x) (f x));
-      intros a b; rewrite (b (refl_equal (f x))); unfold Rgt in H;
+      intros a b; rewrite (b (eq_refl (f x))); unfold Rgt in H;
         assumption.
 Qed.
 

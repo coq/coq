@@ -84,7 +84,7 @@ Proof.
   left; apply pow_lt; assumption.
   apply Rmult_le_reg_l with (INR (fact (S (S (2 * S n0 + 1))))).
   rewrite <- H3; apply lt_INR_0; apply neq_O_lt; red in |- *; intro;
-    assert (H5 := sym_eq H4); elim (fact_neq_0 _ H5).
+    assert (H5 := eq_sym H4); elim (fact_neq_0 _ H5).
   rewrite <- H3; rewrite (Rmult_comm (INR (fact (2 * S (S n0) + 1))));
     rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
   rewrite Rmult_1_r; rewrite H3; do 2 rewrite fact_simpl; do 2 rewrite mult_INR;
@@ -274,7 +274,7 @@ Proof.
   apply pow_le; assumption.
   apply Rmult_le_reg_l with (INR (fact (S (S (2 * S n1))))).
   rewrite <- H4; apply lt_INR_0; apply neq_O_lt; red in |- *; intro;
-    assert (H6 := sym_eq H5); elim (fact_neq_0 _ H6).
+    assert (H6 := eq_sym H5); elim (fact_neq_0 _ H6).
   rewrite <- H4; rewrite (Rmult_comm (INR (fact (2 * S (S n1)))));
     rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
   rewrite Rmult_1_r; rewrite H4; do 2 rewrite fact_simpl; do 2 rewrite mult_INR;

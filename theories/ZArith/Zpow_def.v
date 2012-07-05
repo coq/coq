@@ -19,7 +19,7 @@ Notation Zpower := Z.pow (compat "8.3").
 Notation Zpower_0_r := Z.pow_0_r (compat "8.3").
 Notation Zpower_succ_r := Z.pow_succ_r (compat "8.3").
 Notation Zpower_neg_r := Z.pow_neg_r (compat "8.3").
-Notation Zpower_Ppow := Z.pow_Zpos (compat "8.3").
+Notation Zpower_Ppow := Pos2Z.inj_pow (compat "8.3").
 
 Lemma Zpower_theory : power_theory 1 Z.mul (@eq Z) Z.of_N Z.pow.
 Proof.

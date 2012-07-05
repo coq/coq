@@ -111,19 +111,19 @@ Proof.
   intros n0 H' m; rewrite H'; auto with real.
 Qed.
 
-Lemma R_power_theory : power_theory 1%R Rmult (eq (A:=R))  nat_of_N pow.
+Lemma R_power_theory : power_theory 1%R Rmult (@eq R) N.to_nat pow.
 Proof.
  constructor. destruct n. reflexivity.
- simpl. induction p;simpl.
- rewrite ZL6. rewrite Rdef_pow_add;rewrite IHp. reflexivity.
- unfold nat_of_P;simpl;rewrite ZL6;rewrite Rdef_pow_add;rewrite IHp;trivial.
- rewrite Rmult_comm;apply Rmult_1_l.
+ simpl. induction p.
+ - rewrite Pos2Nat.inj_xI. simpl. now rewrite plus_0_r, Rdef_pow_add, IHp.
+ - rewrite Pos2Nat.inj_xO. simpl. now rewrite plus_0_r, Rdef_pow_add, IHp.
+ - simpl. rewrite Rmult_comm;apply Rmult_1_l.
 Qed.
 
 Ltac Rpow_tac t :=
   match isnatcst t with
   | false => constr:(InitialRing.NotConstant)
-  | _ => constr:(N_of_nat t)
+  | _ => constr:(N.of_nat t)
   end.
 
 Add Field RField : Rfield

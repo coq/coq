@@ -71,7 +71,7 @@ Leibniz equality on some type. An example implementation is:
 Instance unit_EqDec : EqDec unit :=
 { eqb x y := true ;
   eqb_leibniz x y H := 
-    match x, y return x = y with tt, tt => refl_equal tt end }.
+    match x, y return x = y with tt, tt => eq_refl tt end }.
 \end{coq_example*}
 
 If one does not give all the members in the \texttt{Instance}

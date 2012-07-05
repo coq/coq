@@ -130,17 +130,17 @@ Proof.
   intro; cut (0 <= up (/ eps))%Z.
   intro; assert (H2 := IZN _ H1); elim H2; intros; exists (max x 1).
   split.
-  cut (0 < IZR (Z_of_nat x)).
-  intro; rewrite INR_IZR_INZ; apply Rle_lt_trans with (/ IZR (Z_of_nat x)).
-  apply Rmult_le_reg_l with (IZR (Z_of_nat x)).
+  cut (0 < IZR (Z.of_nat x)).
+  intro; rewrite INR_IZR_INZ; apply Rle_lt_trans with (/ IZR (Z.of_nat x)).
+  apply Rmult_le_reg_l with (IZR (Z.of_nat x)).
   assumption.
   rewrite <- Rinv_r_sym;
     [ idtac | red in |- *; intro; rewrite H5 in H4; elim (Rlt_irrefl _ H4) ].
-  apply Rmult_le_reg_l with (IZR (Z_of_nat (max x 1))).
-  apply Rlt_le_trans with (IZR (Z_of_nat x)).
+  apply Rmult_le_reg_l with (IZR (Z.of_nat (max x 1))).
+  apply Rlt_le_trans with (IZR (Z.of_nat x)).
   assumption.
   repeat rewrite <- INR_IZR_INZ; apply le_INR; apply le_max_l.
-  rewrite Rmult_1_r; rewrite (Rmult_comm (IZR (Z_of_nat (max x 1))));
+  rewrite Rmult_1_r; rewrite (Rmult_comm (IZR (Z.of_nat (max x 1))));
     rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
   rewrite Rmult_1_r; repeat rewrite <- INR_IZR_INZ; apply le_INR;
     apply le_max_l.

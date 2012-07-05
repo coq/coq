@@ -34,20 +34,20 @@ Require Import EnvRing.
 
 Open Scope Z_scope.
 
-Lemma Zsor : SOR 0 1 Zplus Zmult Zminus Zopp (@eq Z) Zle Zlt.
+Lemma Zsor : SOR 0 1 Z.add Z.mul Z.sub Z.opp (@eq Z) Z.le Z.lt.
 Proof.
   constructor ; intros ; subst ; try (intuition (auto  with zarith)).
   apply Zsth.
   apply Zth.
-  destruct (Ztrichotomy n m) ; intuition (auto with zarith).
-  apply Zmult_lt_0_compat ; auto.
+  destruct (Z.lt_trichotomy n m) ; intuition.
+  apply Z.mul_pos_pos ; auto.
 Qed.
 
 Lemma ZSORaddon :
-  SORaddon 0 1 Zplus Zmult Zminus Zopp  (@eq Z) Zle (* ring elements *)
-  0%Z 1%Z Zplus Zmult Zminus Zopp (* coefficients *)
-  Zeq_bool Zle_bool
-  (fun x => x) (fun x => x) (pow_N 1 Zmult).
+  SORaddon 0 1 Z.add Z.mul Z.sub Z.opp  (@eq Z) Z.le (* ring elements *)
+  0%Z 1%Z Z.add Z.mul Z.sub Z.opp (* coefficients *)
+  Zeq_bool Z.leb
+  (fun x => x) (fun x => x) (pow_N 1 Z.mul).
 Proof.
   constructor.
   constructor ; intros ; try reflexivity.
@@ -65,20 +65,20 @@ Fixpoint Zeval_expr (env : PolEnv Z) (e: PExpr Z) : Z :=
     | PEX x => env x
     | PEadd e1 e2 => Zeval_expr env e1 + Zeval_expr env e2
     | PEmul e1 e2 => Zeval_expr env e1 * Zeval_expr env e2
-    | PEpow e1 n  => Zpower (Zeval_expr env e1) (Z_of_N n)
+    | PEpow e1 n  => Z.pow (Zeval_expr env e1) (Z.of_N n)
     | PEsub e1 e2 => (Zeval_expr env e1) - (Zeval_expr env e2)
-    | PEopp e   => Zopp (Zeval_expr env e)
+    | PEopp e   => Z.opp (Zeval_expr env e)
   end.
 
-Definition eval_expr := eval_pexpr  Zplus Zmult Zminus Zopp (fun x => x) (fun x => x) (pow_N 1 Zmult).
+Definition eval_expr := eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x => x) (fun x => x) (pow_N 1 Z.mul).
 
-Lemma ZNpower : forall r n, r ^ Z_of_N n = pow_N 1 Zmult r n.
+Lemma ZNpower : forall r n, r ^ Z.of_N n = pow_N 1 Z.mul r n.
 Proof.
   destruct n.
   reflexivity.
   simpl.
-  unfold Zpower_pos.
-  replace (pow_pos Zmult r p) with (1 * (pow_pos Zmult r p)) by ring.
+  unfold Z.pow_pos.
+  replace (pow_pos Z.mul r p) with (1 * (pow_pos Z.mul r p)) by ring.
   generalize 1.
   induction p; simpl ; intros ; repeat rewrite IHp ; ring.
 Qed.
@@ -94,10 +94,10 @@ Definition Zeval_op2 (o : Op2) : Z -> Z -> Prop :=
 match o with
 | OpEq =>  @eq Z
 | OpNEq => fun x y  => ~ x = y
-| OpLe => Zle
-| OpGe => Zge
-| OpLt => Zlt
-| OpGt => Zgt
+| OpLe => Z.le
+| OpGe => Z.ge
+| OpLt => Z.lt
+| OpGt => Z.gt
 end.
 
 Definition Zeval_formula (env : PolEnv Z) (f : Formula Z):=
@@ -105,23 +105,23 @@ Definition Zeval_formula (env : PolEnv Z) (f : Formula Z):=
     (Zeval_op2 op) (Zeval_expr env lhs) (Zeval_expr env rhs).
 
 Definition Zeval_formula' :=
-  eval_formula  Zplus Zmult Zminus Zopp (@eq Z) Zle Zlt (fun x => x) (fun x => x) (pow_N 1 Zmult).
+  eval_formula  Z.add Z.mul Z.sub Z.opp (@eq Z) Z.le Z.lt (fun x => x) (fun x => x) (pow_N 1 Z.mul).
 
 Lemma Zeval_formula_compat : forall env f, Zeval_formula env f <-> Zeval_formula' env f.
 Proof.
   destruct f ; simpl.
   rewrite Zeval_expr_compat. rewrite Zeval_expr_compat.
   unfold eval_expr.
-  generalize (eval_pexpr Zplus Zmult Zminus Zopp (fun x : Z => x)
-        (fun x : N => x) (pow_N 1 Zmult) env Flhs).
-  generalize ((eval_pexpr Zplus Zmult Zminus Zopp (fun x : Z => x)
-        (fun x : N => x) (pow_N 1 Zmult) env Frhs)).
+  generalize (eval_pexpr Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
+        (fun x : N => x) (pow_N 1 Z.mul) env Flhs).
+  generalize ((eval_pexpr Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
+        (fun x : N => x) (pow_N 1 Z.mul) env Frhs)).
   destruct Fop ; simpl; intros ; intuition (auto with zarith).
 Qed.
 
 
 Definition eval_nformula :=
-  eval_nformula 0 Zplus Zmult  (@eq Z) Zle Zlt (fun x => x) .
+  eval_nformula 0 Z.add Z.mul  (@eq Z) Z.le Z.lt (fun x => x) .
 
 Definition Zeval_op1 (o : Op1) : Z -> Prop :=
 match o with
@@ -140,7 +140,7 @@ Qed.
 
 Definition ZWitness := Psatz Z.
 
-Definition ZWeakChecker := check_normalised_formulas 0 1 Zplus Zmult Zeq_bool Zle_bool.
+Definition ZWeakChecker := check_normalised_formulas 0 1 Z.add Z.mul Zeq_bool Z.leb.
 
 Lemma ZWeakChecker_sound :   forall (l : list (NFormula Z)) (cm : ZWitness),
   ZWeakChecker l cm = true ->
@@ -154,13 +154,13 @@ Proof.
   exact H.
 Qed.
 
-Definition psub  := psub Z0  Zplus Zminus Zopp Zeq_bool.
+Definition psub  := psub Z0  Z.add Z.sub Z.opp Zeq_bool.
 
-Definition padd  := padd Z0  Zplus Zeq_bool.
+Definition padd  := padd Z0  Z.add Zeq_bool.
 
-Definition norm  := norm 0 1 Zplus Zmult Zminus Zopp Zeq_bool.
+Definition norm  := norm 0 1 Z.add Z.mul Z.sub Z.opp Zeq_bool.
 
-Definition eval_pol := eval_pol 0  Zplus Zmult (fun x => x).
+Definition eval_pol := eval_pol Z.add Z.mul (fun x => x).
 
 Lemma eval_pol_sub : forall env lhs rhs, eval_pol env (psub  lhs rhs) = eval_pol env lhs - eval_pol env rhs.
 Proof.
@@ -211,10 +211,10 @@ Proof.
       repeat rewrite eval_pol_add;
       repeat rewrite <- eval_pol_norm ; simpl in *;
   unfold eval_expr;
-  generalize (   eval_pexpr  Zplus Zmult Zminus Zopp (fun x : Z => x)
-    (fun x : N => x) (pow_N 1 Zmult) env lhs);
-  generalize (eval_pexpr  Zplus Zmult Zminus Zopp (fun x : Z => x)
-    (fun x : N => x) (pow_N 1 Zmult) env rhs) ; intros z1 z2 ; intros ; subst;
+  generalize (   eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
+    (fun x : N => x) (pow_N 1 Z.mul) env lhs);
+  generalize (eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
+    (fun x : N => x) (pow_N 1 Z.mul) env rhs) ; intros z1 z2 ; intros ; subst;
     intuition (auto with zarith).
   Transparent padd.
 Qed.
@@ -248,17 +248,17 @@ Proof.
       repeat rewrite eval_pol_add;
       repeat rewrite <- eval_pol_norm ; simpl in *;
   unfold eval_expr;
-  generalize (   eval_pexpr  Zplus Zmult Zminus Zopp (fun x : Z => x)
-    (fun x : N => x) (pow_N 1 Zmult) env lhs);
-  generalize (eval_pexpr  Zplus Zmult Zminus Zopp (fun x : Z => x)
-    (fun x : N => x) (pow_N 1 Zmult) env rhs) ; intros z1 z2 ; intros ; subst;
+  generalize (   eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
+    (fun x : N => x) (pow_N 1 Z.mul) env lhs);
+  generalize (eval_pexpr  Z.add Z.mul Z.sub Z.opp (fun x : Z => x)
+    (fun x : N => x) (pow_N 1 Z.mul) env rhs) ; intros z1 z2 ; intros ; subst;
     intuition (auto with zarith).
   Transparent padd.
 Qed.
 
-Definition Zunsat := check_inconsistent 0  Zeq_bool Zle_bool.
+Definition Zunsat := check_inconsistent 0  Zeq_bool Z.leb.
 
-Definition Zdeduce := nformula_plus_nformula 0 Zplus Zeq_bool.
+Definition Zdeduce := nformula_plus_nformula 0 Z.add Zeq_bool.
 
 
 Definition ZweakTautoChecker (w: list ZWitness) (f : BFormula (Formula Z)) : bool :=
@@ -270,7 +270,7 @@ Require Import Zdiv.
 Open Scope Z_scope.
 
 Definition ceiling (a b:Z) : Z :=
-  let (q,r) := Zdiv_eucl a b in
+  let (q,r) := Z.div_eucl a b in
     match r with
       | Z0 => q
       | _  => q + 1
@@ -279,47 +279,38 @@ Definition ceiling (a b:Z) : Z :=
 
 Require Import Znumtheory.
 
-Lemma Zdivide_ceiling : forall a b, (b | a) -> ceiling a b = Zdiv a b.
+Lemma Zdivide_ceiling : forall a b, (b | a) -> ceiling a b = Z.div a b.
 Proof.
   unfold ceiling.
   intros.
   apply Zdivide_mod in H.
-  case_eq (Zdiv_eucl a b).
+  case_eq (Z.div_eucl a b).
   intros.
   change z with (fst (z,z0)).
   rewrite <- H0.
-  change (fst (Zdiv_eucl a b)) with (Zdiv a b).
+  change (fst (Z.div_eucl a b)) with (Z.div a b).
   change z0 with (snd (z,z0)).
   rewrite <- H0.
-  change (snd (Zdiv_eucl a b)) with (Zmod a b).
+  change (snd (Z.div_eucl a b)) with (Z.modulo a b).
   rewrite H.
   reflexivity.
 Qed.
 
-Lemma narrow_interval_lower_bound : forall a b x, a > 0 -> a * x  >= b -> x >= ceiling b a.
+Lemma narrow_interval_lower_bound a b x :
+  a > 0 -> a * x  >= b -> x >= ceiling b a.
 Proof.
+  rewrite !Z.ge_le_iff.
   unfold ceiling.
-  intros.
-  generalize (Z_div_mod b a H).
-  destruct (Zdiv_eucl b a).
-  intros.
-  destruct H1.
-  destruct H2.
-  subst.
-  destruct (Ztrichotomy z0 0) as [ HH1 | [HH2 | HH3]]; destruct z0 ; try auto with zarith ; try discriminate.
-  assert (HH :x >= z \/ x < z) by (destruct (Ztrichotomy x z) ; auto with zarith).
-  destruct HH ;auto.
-  generalize (Zmult_lt_compat_l _ _ _ H3 H1).
-  auto with zarith.
-  clear H2.
-  assert (HH :x >= z +1 \/ x <= z) by (destruct (Ztrichotomy x z) ; intuition (auto with zarith)).
-  destruct HH ;auto.
-  assert (0 < a) by auto with zarith.
-  generalize (Zmult_lt_0_le_compat_r _ _ _ H2 H1).
-  intros.
-  rewrite Zmult_comm  in H4.
-  rewrite (Zmult_comm z)  in H4.
-  auto with zarith.
+  intros Ha H.
+  generalize (Z_div_mod b a Ha).
+  destruct (Z.div_eucl b a) as (q,r). intros (->,(H1,H2)).
+  destruct r as [|r|r].
+  - rewrite Z.add_0_r in H.
+    apply Z.mul_le_mono_pos_l in H; auto with zarith.
+  - assert (0 < Z.pos r) by easy.
+    rewrite Z.add_1_r, Z.le_succ_l.
+    apply Z.mul_lt_mono_pos_l with a; auto with zarith.
+  - now elim H1.
 Qed.
 
 (** NB: narrow_interval_upper_bound is Zdiv.Zdiv_le_lower_bound *)
@@ -360,7 +351,7 @@ Proof.
   destruct x ; simpl ; intuition congruence.
 Qed.
 
-Definition ZgcdM (x y : Z) := Zmax (Zgcd x y) 1.
+Definition ZgcdM (x y : Z) := Z.max (Z.gcd x y) 1.
 
 
 Fixpoint Zgcd_pol (p : PolC Z) : (Z * Z) :=
@@ -378,7 +369,7 @@ Fixpoint Zgcd_pol (p : PolC Z) : (Z * Z) :=
 
 Fixpoint Zdiv_pol (p:PolC Z) (x:Z) : PolC Z :=
   match p with
-    | Pc c => Pc (Zdiv c x)
+    | Pc c => Pc (Z.div c x)
     | Pinj j p => Pinj j (Zdiv_pol p x)
     | PX p j q => PX (Zdiv_pol p x) j (Zdiv_pol q x)
   end.
@@ -421,10 +412,10 @@ Proof.
   intros.
   simpl.
   unfold ZgcdM.
-  generalize (Zgcd_is_pos z1 z2).
-  generalize (Zmax_spec (Zgcd z1 z2) 1).
-  generalize (Zgcd_is_pos (Zmax (Zgcd z1 z2) 1) z).
-  generalize (Zmax_spec (Zgcd (Zmax (Zgcd z1 z2) 1) z) 1).
+  generalize (Z.gcd_nonneg z1 z2).
+  generalize (Zmax_spec (Z.gcd z1 z2) 1).
+  generalize (Z.gcd_nonneg (Z.max (Z.gcd z1 z2) 1) z).
+  generalize (Zmax_spec (Z.gcd (Z.max (Z.gcd z1 z2) 1) z) 1).
   auto with zarith.
 Qed.
 
@@ -433,7 +424,7 @@ Proof.
   intros.
   induction H.
   constructor.
-  apply Zdivide_trans with (1:= H0) ; assumption.
+  apply Z.divide_trans with (1:= H0) ; assumption.
   constructor. auto.
   constructor ; auto.
 Qed.
@@ -444,20 +435,20 @@ Proof.
   exists c. ring.
 Qed.
 
-Lemma Zgcd_minus : forall a b c, (a | c - b ) -> (Zgcd a b | c).
+Lemma Zgcd_minus : forall a b c, (a | c - b ) -> (Z.gcd a b | c).
 Proof.
   intros a b c (q,Hq).
   destruct (Zgcd_is_gcd a b) as [(a',Ha) (b',Hb) _].
-  set (g:=Zgcd a b) in *; clearbody g.
+  set (g:=Z.gcd a b) in *; clearbody g.
   exists (q * a' + b').
-  symmetry in Hq. rewrite <- Zeq_plus_swap in Hq.
+  symmetry in Hq. rewrite <- Z.add_move_r in Hq.
   rewrite <- Hq, Hb, Ha. ring.
 Qed.
 
 Lemma Zdivide_pol_sub : forall p a b,
-  0 < Zgcd a b ->
-  Zdivide_pol a (PsubC Zminus p b) ->
-   Zdivide_pol (Zgcd a b) p.
+  0 < Z.gcd a b ->
+  Zdivide_pol a (PsubC Z.sub p b) ->
+   Zdivide_pol (Z.gcd a b) p.
 Proof.
   induction p.
   simpl.
@@ -477,7 +468,7 @@ Proof.
 Qed.
 
 Lemma Zdivide_pol_sub_0 : forall p a,
-  Zdivide_pol a (PsubC Zminus p 0) ->
+  Zdivide_pol a (PsubC Z.sub p 0) ->
    Zdivide_pol a p.
 Proof.
   induction p.
@@ -496,7 +487,7 @@ Qed.
 
 
 Lemma Zgcd_pol_div : forall p g c,
-  Zgcd_pol p = (g, c) -> Zdivide_pol g (PsubC Zminus p c).
+  Zgcd_pol p = (g, c) -> Zdivide_pol g (PsubC Z.sub p c).
 Proof.
   induction p ; simpl.
   (* Pc *)
@@ -511,12 +502,12 @@ Proof.
   case_eq (Zgcd_pol p1) ; case_eq (Zgcd_pol p3) ; intros.
   inv H1.
   unfold ZgcdM at 1.
-  destruct (Zmax_spec (Zgcd (ZgcdM z1 z2) z) 1) as [HH1 | HH1];
+  destruct (Zmax_spec (Z.gcd (ZgcdM z1 z2) z) 1) as [HH1 | HH1];
   destruct HH1 as [HH1 HH1'] ; rewrite HH1'.
   constructor.
   apply Zdivide_pol_Zdivide with (x:= ZgcdM z1 z2).
   unfold ZgcdM.
-  destruct (Zmax_spec  (Zgcd z1 z2)  1) as [HH2 | HH2].
+  destruct (Zmax_spec  (Z.gcd z1 z2)  1) as [HH2 | HH2].
   destruct HH2.
   rewrite H2.
   apply Zdivide_pol_sub ; auto.
@@ -524,9 +515,9 @@ Proof.
   destruct HH2. rewrite H2.
   apply Zdivide_pol_one.
   unfold ZgcdM in HH1. unfold ZgcdM.
-  destruct (Zmax_spec  (Zgcd z1 z2)  1) as [HH2 | HH2].
+  destruct (Zmax_spec  (Z.gcd z1 z2)  1) as [HH2 | HH2].
   destruct HH2. rewrite H2 in *.
-  destruct (Zgcd_is_gcd (Zgcd z1 z2) z); auto.
+  destruct (Zgcd_is_gcd (Z.gcd z1 z2) z); auto.
   destruct HH2. rewrite H2.
   destruct (Zgcd_is_gcd 1  z); auto.
   apply Zdivide_pol_Zdivide with (x:= z).
@@ -539,7 +530,7 @@ Qed.
 
 
 
-Lemma Zgcd_pol_correct_lt : forall p env g c, Zgcd_pol p = (g,c) -> 0 < g -> eval_pol env p = g * (eval_pol env (Zdiv_pol (PsubC Zminus p c) g))  + c.
+Lemma Zgcd_pol_correct_lt : forall p env g c, Zgcd_pol p = (g,c) -> 0 < g -> eval_pol env p = g * (eval_pol env (Zdiv_pol (PsubC Z.sub p c) g))  + c.
 Proof.
   intros.
   rewrite <- Zdiv_pol_correct ; auto.
@@ -553,8 +544,8 @@ Qed.
 
 Definition makeCuttingPlane (p : PolC Z) : PolC  Z * Z :=
   let (g,c) := Zgcd_pol p in
-    if Zgt_bool g Z0
-      then (Zdiv_pol (PsubC Zminus p c) g , Zopp (ceiling (Zopp c) g))
+    if Z.gtb g Z0
+      then (Zdiv_pol (PsubC Z.sub p c) g , Z.opp (ceiling (Z.opp c) g))
       else (p,Z0).
 
 
@@ -562,13 +553,13 @@ Definition genCuttingPlane (f : NFormula Z) : option (PolC Z * Z * Op1) :=
   let (e,op) := f in
     match op with
       | Equal => let (g,c) := Zgcd_pol e in
-        if andb (Zgt_bool g Z0) (andb (negb (Zeq_bool c Z0)) (negb (Zeq_bool (Zgcd g c) g)))
+        if andb (Z.gtb g Z0) (andb (negb (Zeq_bool c Z0)) (negb (Zeq_bool (Z.gcd g c) g)))
           then None (* inconsistent *)
           else (* Could be optimised Zgcd_pol is recomputed *)
             let (p,c) := makeCuttingPlane e  in
               Some (p,c,Equal)
       | NonEqual => Some (e,Z0,op)
-      | Strict   =>  let (p,c) := makeCuttingPlane (PsubC Zminus e 1) in
+      | Strict   =>  let (p,c) := makeCuttingPlane (PsubC Z.sub e 1) in
         Some (p,c,NonStrict)
       | NonStrict => let (p,c) := makeCuttingPlane e  in
         Some (p,c,NonStrict)
@@ -595,7 +586,7 @@ Qed.
 
 
 Definition eval_Psatz  : list (NFormula Z) -> ZWitness ->  option (NFormula Z) :=
-  eval_Psatz 0 1 Zplus Zmult Zeq_bool Zle_bool.
+  eval_Psatz 0 1 Z.add Z.mul Zeq_bool Z.leb.
 
 
 Definition valid_cut_sign (op:Op1) :=
@@ -634,9 +625,9 @@ Fixpoint ZChecker (l:list (NFormula Z)) (pf : ZArithProof)  {struct pf} : bool :
                    (fix label (pfs:list ZArithProof) :=
                    fun lb ub =>
                      match pfs with
-                       | nil => if Zgt_bool lb ub then true else false
-                       | pf::rsr => andb (ZChecker  ((psub e1 (Pc lb), Equal) :: l) pf) (label rsr (Zplus lb 1%Z) ub)
-                     end)   pf (Zopp z1)  z2
+                       | nil => if Z.gtb lb ub then true else false
+                       | pf::rsr => andb (ZChecker  ((psub e1 (Pc lb), Equal) :: l) pf) (label rsr (Z.add lb 1%Z) ub)
+                     end)   pf (Z.opp z1)  z2
                   else false
               |   _    ,   _   => true
            end
@@ -710,12 +701,12 @@ Proof.
   unfold makeCuttingPlane in H0.
   revert H0.
   case_eq (Zgcd_pol e) ; intros g c0.
-  generalize (Zgt_cases g 0) ; destruct (Zgt_bool g 0).
+  generalize (Zgt_cases g 0) ; destruct (Z.gtb g 0).
   intros.
   inv H2.
-  change (RingMicromega.eval_pol 0 Zplus Zmult (fun x : Z => x)) with eval_pol in *.
+  change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in *.
   apply Zgcd_pol_correct_lt with (env:=env) in H1.
-  generalize (narrow_interval_lower_bound g (- c0) (eval_pol env (Zdiv_pol (PsubC Zminus e c0) g)) H0).
+  generalize (narrow_interval_lower_bound g (- c0) (eval_pol env (Zdiv_pol (PsubC Z.sub e c0) g)) H0).
   auto with zarith.
   auto with zarith.
   (* g <= 0 *)
@@ -733,7 +724,7 @@ Proof.
   (* Equal *)
   destruct p as [[e' z] op].
   case_eq (Zgcd_pol e) ; intros g c.
-  case_eq (Zgt_bool g 0 && (negb (Zeq_bool c 0) && negb (Zeq_bool (Zgcd g c) g))) ; [discriminate|].
+  case_eq (Z.gtb g 0 && (negb (Zeq_bool c 0) && negb (Zeq_bool (Z.gcd g c) g))) ; [discriminate|].
   case_eq (makeCuttingPlane e).
   intros.
   inv H3.
@@ -741,7 +732,7 @@ Proof.
   rewrite H1 in H.
   revert H.
   change (eval_pol env e = 0) in H2.
-  case_eq (Zgt_bool g 0).
+  case_eq (Z.gtb g 0).
   intros.
   rewrite <- Zgt_is_gt_bool in H.  
   rewrite Zgcd_pol_correct_lt with (1:= H1)  in H2; auto with zarith.
@@ -749,7 +740,7 @@ Proof.
   change (eval_pol env (padd e' (Pc z)) = 0).
   inv H3.
   rewrite eval_pol_add.
-  set (x:=eval_pol env (Zdiv_pol (PsubC Zminus e c) g)) in *; clearbody x.
+  set (x:=eval_pol env (Zdiv_pol (PsubC Z.sub e c) g)) in *; clearbody x.
   simpl.
   rewrite andb_false_iff in H0.
   destruct H0.
@@ -759,8 +750,7 @@ Proof.
   rewrite negb_false_iff in H0.
   apply Zeq_bool_eq in H0.
   subst. simpl.
-  rewrite Zplus_0_r in H2.
-  apply Zmult_integral in H2.
+  rewrite Z.add_0_r, Z.mul_eq_0 in H2.
   intuition auto with zarith.
   rewrite negb_false_iff in H0.
   apply Zeq_bool_eq in H0.
@@ -769,7 +759,7 @@ Proof.
   inv HH.
   apply Zdivide_opp_r in H4.
   rewrite Zdivide_ceiling ; auto.
-  apply Zeq_minus.
+  apply Z.sub_move_0_r.
   apply Z.div_unique_exact ; auto with zarith.
   intros.
   unfold nformula_of_cutting_plane.
@@ -789,7 +779,7 @@ Proof.
   simpl. auto with zarith.
   (* Strict *)
   destruct p as [[e' z] op].
-  case_eq (makeCuttingPlane (PsubC Zminus e 1)).
+  case_eq (makeCuttingPlane (PsubC Z.sub e 1)).
   intros.
   inv H1.
   apply makeCuttingPlane_ns_sound with (env:=env) (2:= H).
@@ -813,7 +803,7 @@ Proof.
   destruct f.
   destruct o.
   case_eq (Zgcd_pol p) ; intros g c.
-  case_eq (Zgt_bool g 0 && (negb (Zeq_bool c 0) && negb (Zeq_bool (Zgcd g c) g))).
+  case_eq (Z.gtb g 0 && (negb (Zeq_bool c 0) && negb (Zeq_bool (Z.gcd g c) g))).
   intros.
   flatten_bool.
   rewrite negb_true_iff in H5.
@@ -823,16 +813,16 @@ Proof.
   apply Zeq_bool_neq in H.
   change (eval_pol env p = 0) in H2.
   rewrite Zgcd_pol_correct_lt with (1:= H0) in H2; auto with zarith.
-  set (x:=eval_pol env (Zdiv_pol (PsubC Zminus p c) g)) in *; clearbody x.
+  set (x:=eval_pol env (Zdiv_pol (PsubC Z.sub p c) g)) in *; clearbody x.
   contradict H5.
   apply Zis_gcd_gcd; auto with zarith.
   constructor; auto with zarith.
   exists (-x).
-  rewrite <- Zopp_mult_distr_l, Zmult_comm; auto with zarith.
+  rewrite Z.mul_opp_l, Z.mul_comm; auto with zarith.
   (**)
   destruct (makeCuttingPlane p);  discriminate.
   discriminate.
-  destruct (makeCuttingPlane (PsubC Zminus p 1)) ; discriminate.
+  destruct (makeCuttingPlane (PsubC Z.sub p 1)) ; discriminate.
   destruct (makeCuttingPlane p) ; discriminate.
 Qed.
 
@@ -920,7 +910,7 @@ Proof.
    unfold nformula_of_cutting_plane in HCutR.
    unfold eval_nformula in HCutR.
    unfold RingMicromega.eval_nformula in HCutR.
-   change (RingMicromega.eval_pol 0 Zplus Zmult (fun x : Z => x)) with eval_pol in HCutR.
+   change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in HCutR.
    unfold eval_op1 in HCutR.
    destruct op1 ; simpl in Hop1 ; try discriminate;
      rewrite eval_pol_add in HCutR; simpl in HCutR; auto with zarith.
@@ -933,7 +923,7 @@ Proof.
    unfold nformula_of_cutting_plane in HCutL.
    unfold eval_nformula in HCutL.
    unfold RingMicromega.eval_nformula in HCutL.
-   change (RingMicromega.eval_pol 0 Zplus Zmult (fun x : Z => x)) with eval_pol in HCutL.
+   change (RingMicromega.eval_pol Z.add Z.mul (fun x : Z => x)) with eval_pol in HCutL.
    unfold eval_op1 in HCutL.
    rewrite eval_pol_add in HCutL. simpl in HCutL.
    destruct op2 ; simpl in Hop2 ; try discriminate ;  omega.
@@ -944,14 +934,14 @@ Proof.
   intros.
   assert (HH :forall x, -z1 <= x <= z2 -> exists pr,
     (In pr pf /\
-      ZChecker  ((PsubC Zminus p1 x,Equal) :: l) pr = true)%Z).
+      ZChecker  ((PsubC Z.sub p1 x,Equal) :: l) pr = true)%Z).
   clear HZ0 Hop1 Hop2 HCutL HCutR H0 H1.
   revert Hfix.
   generalize (-z1). clear z1. intro z1.
   revert z1 z2.
   induction pf;simpl ;intros.
   generalize (Zgt_cases z1 z2).
-  destruct (Zgt_bool z1 z2).
+  destruct (Z.gtb z1 z2).
   intros.
   apply False_ind ; omega.
   discriminate.
@@ -972,7 +962,7 @@ Proof.
   zify. omega.
   (*/asser *)
   destruct (HH _ H1) as [pr [Hin Hcheker]].
-  assert (make_impl (eval_nformula env) ((PsubC Zminus p1 (eval_pol env p1),Equal) :: l) False).
+  assert (make_impl (eval_nformula env) ((PsubC Z.sub p1 (eval_pol env p1),Equal) :: l) False).
    apply (H pr);auto.
    apply in_bdepth ; auto.
   rewrite <- make_conj_impl in H2.

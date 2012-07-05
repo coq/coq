@@ -236,7 +236,7 @@ Proof.
 Qed.
 
 (** Hence the number of bits of [a] is [1+log2 a]
-    (see [Psize] and [Psize_pos]).
+    (see [Pos.size_nat] and [Pos.size]).
 *)
 
 (** Testing bits after division or multiplication by a power of two *)

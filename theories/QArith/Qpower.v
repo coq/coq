@@ -101,10 +101,9 @@ Lemma Qpower_plus_positive : forall a n m, Qpower_positive a (n+m) == (Qpower_po
 Proof.
 intros a n m.
 unfold Qpower_positive.
-apply pow_pos_Pplus.
+apply pow_pos_add.
 apply Q_Setoid.
 apply Qmult_comp.
-apply Qmult_comm.
 apply Qmult_assoc.
 Qed.
 
@@ -114,21 +113,18 @@ intros a [|n|n]; simpl; try reflexivity.
 symmetry; apply Qinv_involutive.
 Qed.
 
-Lemma Qpower_minus_positive : forall a (n m:positive), (Pcompare n m Eq=Gt)%positive -> Qpower_positive a (n-m)%positive == (Qpower_positive a n)/(Qpower_positive a m).
+Lemma Qpower_minus_positive : forall a (n m:positive),
+  (m < n)%positive ->
+  Qpower_positive a (n-m)%positive == (Qpower_positive a n)/(Qpower_positive a m).
 Proof.
 intros a n m H.
-destruct (Qeq_dec a 0).
- rewrite q.
- repeat rewrite Qpower_positive_0.
- reflexivity.
-rewrite <- (Qdiv_mult_l (Qpower_positive a (n - m)) (Qpower_positive a m)) by
- (apply Qpower_not_0_positive; assumption).
-apply Qdiv_comp;[|reflexivity].
-rewrite Qmult_comm.
-rewrite <- Qpower_plus_positive.
-rewrite Pplus_minus.
-reflexivity.
-assumption.
+destruct (Qeq_dec a 0) as [EQ|NEQ].
+- now rewrite EQ, !Qpower_positive_0.
+- rewrite <- (Qdiv_mult_l (Qpower_positive a (n - m)) (Qpower_positive a m)) by
+   (now apply Qpower_not_0_positive).
+  f_equiv.
+  rewrite <- Qpower_plus_positive.
+  now rewrite Pos.sub_add.
 Qed.
 
 Lemma Qpower_plus : forall a n m, ~a==0 -> a^(n+m) == a^n*a^m.
@@ -140,8 +136,6 @@ rewrite ?Z.pos_sub_spec;
 case Pos.compare_spec; intros H0; simpl; subst;
  try rewrite Qpower_minus_positive;
  try (field; try split; apply Qpower_not_0_positive);
- try assumption;
- apply ZC2;
  assumption.
 Qed.
 
@@ -158,13 +152,14 @@ apply Qpower_plus.
 assumption.
 Qed.
 
-Lemma Qpower_mult_positive : forall a n m, Qpower_positive a (n*m) == Qpower_positive (Qpower_positive a n) m.
+Lemma Qpower_mult_positive : forall a n m,
+  Qpower_positive a (n*m) == Qpower_positive (Qpower_positive a n) m.
 Proof.
 intros a n m.
-induction n using Pind.
+induction n using Pos.peano_ind.
  reflexivity.
-rewrite Pmult_Sn_m.
-rewrite Pplus_one_succ_l.
+rewrite Pos.mul_succ_l.
+rewrite <- Pos.add_1_l.
 do 2 rewrite Qpower_plus_positive.
 rewrite IHn.
 rewrite Qmult_power_positive.
@@ -184,11 +179,11 @@ Qed.
 Lemma Zpower_Qpower : forall (a n:Z), (0<=n)%Z -> inject_Z (a^n) == (inject_Z a)^n.
 Proof.
 intros a [|n|n] H;[reflexivity| |elim H; reflexivity].
-induction n using Pind.
+induction n using Pos.peano_ind.
  replace (a^1)%Z with a by ring.
  ring.
-rewrite Zpos_succ_morphism.
-unfold Zsucc.
+rewrite Pos2Z.inj_succ.
+unfold Z.succ.
 rewrite Zpower_exp; auto with *; try discriminate.
 rewrite Qpower_plus' by discriminate.
 rewrite <- IHn by discriminate.
@@ -209,31 +204,20 @@ setoid_replace (0+ - a) with (-a) in A by ring.
 apply Qmult_le_0_compat; assumption.
 Qed.
 
-Theorem Qpower_decomp: forall p x y,
-  Qpower_positive (x #y) p == x ^ Zpos p # (Z2P ((Zpos y) ^ Zpos p)).
+Theorem Qpower_decomp p x y :
+  Qpower_positive (x#y) p = x ^ Zpos p # (y ^ p).
 Proof.
-induction p; intros; unfold Qmult; simpl.
-(* xI *)
-rewrite IHp, xI_succ_xO, <-Pplus_diag, Pplus_one_succ_l.
-repeat rewrite Zpower_pos_is_exp.
-red; unfold Qmult, Qnum, Qden, Zpower.
-repeat rewrite Zpos_mult_morphism.
-repeat rewrite Z2P_correct.
-repeat rewrite Zpower_pos_1_r; ring.
-apply Zpower_pos_pos; red; auto.
-repeat apply Zmult_lt_0_compat; red; auto;
- apply Zpower_pos_pos; red; auto.
-(* xO *)
-rewrite IHp, <-Pplus_diag.
-repeat rewrite Zpower_pos_is_exp.
-red; unfold Qmult, Qnum, Qden, Zpower.
-repeat rewrite Zpos_mult_morphism.
-repeat rewrite Z2P_correct; try ring.
-apply Zpower_pos_pos; red; auto.
-repeat apply Zmult_lt_0_compat; auto;
- apply Zpower_pos_pos; red; auto.
-(* xO *)
-unfold Qmult; simpl.
-red; simpl; rewrite Zpower_pos_1_r;
- rewrite Zpos_mult_morphism; ring.
+induction p; intros; simpl Qpower_positive; rewrite ?IHp.
+- (* xI *)
+  unfold Qmult, Qnum, Qden. f_equal.
+  + now rewrite <- Z.pow_twice_r, <- Z.pow_succ_r.
+  + apply Pos2Z.inj; rewrite !Pos2Z.inj_mul, !Pos2Z.inj_pow.
+    now rewrite <- Z.pow_twice_r, <- Z.pow_succ_r.
+- (* xO *)
+  unfold Qmult, Qnum, Qden. f_equal.
+  + now rewrite <- Z.pow_twice_r.
+  + apply Pos2Z.inj; rewrite !Pos2Z.inj_mul, !Pos2Z.inj_pow.
+    now rewrite <- Z.pow_twice_r.
+- (* xO *)
+  now rewrite Z.pow_1_r, Pos.pow_1_r.
 Qed.

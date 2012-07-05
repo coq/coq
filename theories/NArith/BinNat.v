@@ -76,7 +76,7 @@ Defined.
 
 (** Discrimination principle *)
 
-Definition discr n : { p:positive | n = Npos p } + { n = N0 }.
+Definition discr n : { p:positive | n = pos p } + { n = 0 }.
 Proof.
  destruct n; auto.
  left; exists p; auto.
@@ -87,12 +87,12 @@ Defined.
 Definition binary_rect (P:N -> Type) (f0 : P 0)
   (f2 : forall n, P n -> P (double n))
   (fS2 : forall n, P n -> P (succ_double n)) (n : N) : P n :=
- let P' p := P (Npos p) in
- let f2' p := f2 (Npos p) in
- let fS2' p := fS2 (Npos p) in
+ let P' p := P (pos p) in
+ let f2' p := f2 (pos p) in
+ let fS2' p := fS2 (pos p) in
  match n with
  | 0 => f0
- | Npos p => positive_rect P' fS2' f2' (fS2 0 f0) p
+ | pos p => positive_rect P' fS2' f2' (fS2 0 f0) p
  end.
 
 Definition binary_rec (P:N -> Set) := binary_rect P.
@@ -103,11 +103,11 @@ Definition binary_ind (P:N -> Prop) := binary_rect P.
 Definition peano_rect
   (P : N -> Type) (f0 : P 0)
     (f : forall n : N, P n -> P (succ n)) (n : N) : P n :=
-let P' p := P (Npos p) in
-let f' p := f (Npos p) in
+let P' p := P (pos p) in
+let f' p := f (pos p) in
 match n with
 | 0 => f0
-| Npos p => Pos.peano_rect P' (f 0 f0) f' p
+| pos p => Pos.peano_rect P' (f 0 f0) f' p
 end.
 
 Theorem peano_rect_base P a f : peano_rect P a f 0 = a.
@@ -140,12 +140,12 @@ Qed.
 
 (** Properties of mixed successor and predecessor. *)
 
-Lemma pos_pred_spec p : Pos.pred_N p = pred (Npos p).
+Lemma pos_pred_spec p : Pos.pred_N p = pred (pos p).
 Proof.
  now destruct p.
 Qed.
 
-Lemma succ_pos_spec n : Npos (succ_pos n) = succ n.
+Lemma succ_pos_spec n : pos (succ_pos n) = succ n.
 Proof.
  now destruct n.
 Qed.
@@ -155,7 +155,7 @@ Proof.
  destruct n. trivial. apply Pos.pred_N_succ.
 Qed.
 
-Lemma succ_pos_pred p : succ (Pos.pred_N p) = Npos p.
+Lemma succ_pos_pred p : succ (Pos.pred_N p) = pos p.
 Proof.
  destruct p; simpl; trivial. f_equal. apply Pos.succ_pred_double.
 Qed.
@@ -472,7 +472,7 @@ Lemma log2_spec n : 0 < n ->
  2^(log2 n) <= n < 2^(succ (log2 n)).
 Proof.
  destruct n as [|[p|p|]]; discriminate || intros _; simpl; split.
- apply (size_le (Npos p)).
+ apply (size_le (pos p)).
  apply Pos.size_gt.
  apply Pos.size_le.
  apply Pos.size_gt.
@@ -494,7 +494,7 @@ Proof.
  trivial.
  destruct p; simpl; split; try easy.
  intros (m,H). now destruct m.
- now exists (Npos p).
+ now exists (pos p).
  intros (m,H). now destruct m.
 Qed.
 
@@ -504,7 +504,7 @@ Proof.
  split. discriminate.
  intros (m,H). now destruct m.
  destruct p; simpl; split; try easy.
- now exists (Npos p).
+ now exists (pos p).
  intros (m,H). now destruct m.
  now exists 0.
 Qed.
@@ -512,19 +512,19 @@ Qed.
 (** Specification of the euclidean division *)
 
 Theorem pos_div_eucl_spec (a:positive)(b:N) :
-  let (q,r) := pos_div_eucl a b in Npos a = q * b + r.
+  let (q,r) := pos_div_eucl a b in pos a = q * b + r.
 Proof.
   induction a; cbv beta iota delta [pos_div_eucl]; fold pos_div_eucl; cbv zeta.
   (* a~1 *)
   destruct pos_div_eucl as (q,r).
-  change (Npos a~1) with (succ_double (Npos a)).
+  change (pos a~1) with (succ_double (pos a)).
   rewrite IHa, succ_double_add, double_mul.
   case leb_spec; intros H; trivial.
   rewrite succ_double_mul, <- add_assoc. f_equal.
   now rewrite (add_comm b), sub_add.
   (* a~0 *)
   destruct pos_div_eucl as (q,r).
-  change (Npos a~0) with (double (Npos a)).
+  change (pos a~0) with (double (pos a)).
   rewrite IHa, double_add, double_mul.
   case leb_spec; intros H; trivial.
   rewrite succ_double_mul, <- add_assoc. f_equal.
@@ -537,7 +537,7 @@ Theorem div_eucl_spec a b :
  let (q,r) := div_eucl a b in a = b * q + r.
 Proof.
   destruct a as [|a], b as [|b]; unfold div_eucl; trivial.
-  generalize (pos_div_eucl_spec a (Npos b)).
+  generalize (pos_div_eucl_spec a (pos b)).
   destruct pos_div_eucl. now rewrite mul_comm.
 Qed.
 
@@ -664,7 +664,7 @@ Proof.
  destruct (Pos.gcd_greatest p q r) as (u,H).
  exists s. now inversion Hs.
  exists t. now inversion Ht.
- exists (Npos u). simpl; now f_equal.
+ exists (pos u). simpl; now f_equal.
 Qed.
 
 Lemma gcd_nonneg a b : 0 <= gcd a b.
@@ -862,7 +862,7 @@ Program Definition testbit_wd : Proper (eq==>eq==>Logic.eq) testbit := _.
 
 Theorem bi_induction :
   forall A : N -> Prop, Proper (Logic.eq==>iff) A ->
-    A N0 -> (forall n, A n <-> A (succ n)) -> forall n : N, A n.
+    A 0 -> (forall n, A n <-> A (succ n)) -> forall n : N, A n.
 Proof.
 intros A A_wd A0 AS. apply peano_rect. assumption. intros; now apply -> AS.
 Qed.
@@ -1018,7 +1018,7 @@ Notation N_rect := N_rect (only parsing).
 Notation N_rec := N_rec (only parsing).
 Notation N_ind := N_ind (only parsing).
 Notation N0 := N0 (only parsing).
-Notation Npos := Npos (only parsing).
+Notation Npos := N.pos (only parsing).
 
 Notation Ndiscr := N.discr (compat "8.3").
 Notation Ndouble_plus_one := N.succ_double (compat "8.3").

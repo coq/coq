@@ -182,7 +182,7 @@ Section DoubleAdd.
    destruct x as [ |xh xl];simpl. apply spec_ww_1.
    generalize (spec_w_succ_c xl);destruct (w_succ_c xl) as [l|l];
     intro H;unfold interp_carry in H. simpl;rewrite H;ring.
-   rewrite <- Zplus_assoc;rewrite <- H;rewrite Zmult_1_l.
+   rewrite <- Z.add_assoc;rewrite <- H;rewrite Z.mul_1_l.
    assert ([|l|] = 0). generalize (spec_to_Z xl)(spec_to_Z l);omega.
    rewrite H0;generalize (spec_w_succ_c xh);destruct (w_succ_c xh) as [h|h];
     intro H1;unfold interp_carry in H1.
@@ -195,19 +195,19 @@ Section DoubleAdd.
   Lemma spec_ww_add_c  : forall x y, [+[ww_add_c x y]] = [[x]] + [[y]].
   Proof.
    destruct x as [ |xh xl];simpl;trivial.
-   destruct y as [ |yh yl];simpl. rewrite Zplus_0_r;trivial.
+   destruct y as [ |yh yl];simpl. rewrite Z.add_0_r;trivial.
    replace ([|xh|] * wB + [|xl|] + ([|yh|] * wB + [|yl|]))
    with (([|xh|]+[|yh|])*wB + ([|xl|]+[|yl|])). 2:ring.
    generalize (spec_w_add_c xl yl);destruct (w_add_c xl yl) as [l|l];
     intros H;unfold interp_carry in H;rewrite <- H.
    generalize (spec_w_add_c xh yh);destruct (w_add_c xh yh) as [h|h];
     intros H1;unfold interp_carry in *;rewrite <- H1. trivial.
-   repeat rewrite Zmult_1_l;rewrite spec_w_WW;rewrite wwB_wBwB; ring.
-   rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l.
+   repeat rewrite Z.mul_1_l;rewrite spec_w_WW;rewrite wwB_wBwB; ring.
+   rewrite Z.add_assoc;rewrite <- Z.mul_add_distr_r.
    generalize (spec_w_add_carry_c xh yh);destruct (w_add_carry_c xh yh)
     as [h|h]; intros H1;unfold interp_carry in *;rewrite <- H1.
    simpl;ring.
-   repeat rewrite Zmult_1_l;rewrite wwB_wBwB;rewrite spec_w_WW;ring.
+   repeat rewrite Z.mul_1_l;rewrite wwB_wBwB;rewrite spec_w_WW;ring.
   Qed.
 
   Section Cont.
@@ -221,23 +221,23 @@ Section DoubleAdd.
     destruct x as [ |xh xl];simpl;trivial.
     apply spec_f0;trivial.
     destruct y as [ |yh yl];simpl.
-    apply spec_f0;simpl;rewrite Zplus_0_r;trivial.
+    apply spec_f0;simpl;rewrite Z.add_0_r;trivial.
     generalize (spec_w_add_c xl yl);destruct (w_add_c xl yl) as [l|l];
      intros H;unfold interp_carry in H.
     generalize (spec_w_add_c xh yh);destruct (w_add_c xh yh) as [h|h];
      intros H1;unfold interp_carry in *.
     apply spec_f0. simpl;rewrite H;rewrite H1;ring.
     apply spec_f1. simpl;rewrite spec_w_WW;rewrite H.
-    rewrite Zplus_assoc;rewrite wwB_wBwB. rewrite Zpower_2; rewrite <- Zmult_plus_distr_l.
-    rewrite Zmult_1_l in H1;rewrite H1;ring.
+    rewrite Z.add_assoc;rewrite wwB_wBwB. rewrite Z.pow_2_r; rewrite <- Z.mul_add_distr_r.
+    rewrite Z.mul_1_l in H1;rewrite H1;ring.
     generalize (spec_w_add_carry_c xh yh);destruct (w_add_carry_c xh yh)
      as [h|h]; intros H1;unfold interp_carry in *.
-    apply spec_f0;simpl;rewrite H1. rewrite Zmult_plus_distr_l.
-    rewrite <- Zplus_assoc;rewrite H;ring.
+    apply spec_f0;simpl;rewrite H1. rewrite Z.mul_add_distr_r.
+    rewrite <- Z.add_assoc;rewrite H;ring.
     apply spec_f1.  simpl;rewrite spec_w_WW;rewrite wwB_wBwB.
-    rewrite Zplus_assoc; rewrite Zpower_2; rewrite <- Zmult_plus_distr_l.
-    rewrite Zmult_1_l in H1;rewrite H1. rewrite Zmult_plus_distr_l.
-    rewrite <- Zplus_assoc;rewrite H;ring.
+    rewrite Z.add_assoc; rewrite Z.pow_2_r; rewrite <- Z.mul_add_distr_r.
+    rewrite Z.mul_1_l in H1;rewrite H1. rewrite Z.mul_add_distr_r.
+    rewrite <- Z.add_assoc;rewrite H;ring.
    Qed.
 
   End Cont.
@@ -248,19 +248,19 @@ Section DoubleAdd.
    destruct x as [ |xh xl];intro y;simpl.
    exact (spec_ww_succ_c y).
    destruct y as [ |yh yl];simpl.
-   rewrite Zplus_0_r;exact (spec_ww_succ_c (WW xh xl)).
+   rewrite Z.add_0_r;exact (spec_ww_succ_c (WW xh xl)).
    replace ([|xh|] * wB + [|xl|] + ([|yh|] * wB + [|yl|]) + 1)
    with (([|xh|]+[|yh|])*wB + ([|xl|]+[|yl|]+1)). 2:ring.
    generalize (spec_w_add_carry_c xl yl);destruct (w_add_carry_c xl yl)
     as [l|l];intros H;unfold interp_carry in H;rewrite <- H.
    generalize (spec_w_add_c xh yh);destruct (w_add_c xh yh) as [h|h];
     intros H1;unfold interp_carry in H1;rewrite <- H1. trivial.
-   unfold interp_carry;repeat rewrite Zmult_1_l;simpl;rewrite wwB_wBwB;ring.
-   rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l.
+   unfold interp_carry;repeat rewrite Z.mul_1_l;simpl;rewrite wwB_wBwB;ring.
+   rewrite Z.add_assoc;rewrite <- Z.mul_add_distr_r.
    generalize (spec_w_add_carry_c xh yh);destruct (w_add_carry_c xh yh)
     as [h|h];intros H1;unfold interp_carry in H1;rewrite <- H1. trivial.
    unfold interp_carry;rewrite spec_w_WW;
-   repeat rewrite Zmult_1_l;simpl;rewrite wwB_wBwB;ring.
+   repeat rewrite Z.mul_1_l;simpl;rewrite wwB_wBwB;ring.
   Qed.
 
   Lemma spec_ww_succ : forall x, [[ww_succ x]] = ([[x]] + 1) mod wwB.
@@ -268,14 +268,14 @@ Section DoubleAdd.
    destruct x as [ |xh xl];simpl.
    rewrite spec_ww_1;rewrite Zmod_small;trivial.
    split;[intro;discriminate|apply wwB_pos].
-   rewrite <- Zplus_assoc;generalize (spec_w_succ_c xl);
+   rewrite <- Z.add_assoc;generalize (spec_w_succ_c xl);
    destruct (w_succ_c xl) as[l|l];intro H;unfold interp_carry in H;rewrite <-H.
    rewrite Zmod_small;trivial.
    rewrite wwB_wBwB;apply beta_mult;apply spec_to_Z.
    assert ([|l|] = 0). clear spec_ww_1 spec_w_1 spec_w_0.
     assert (H1:= spec_to_Z l); assert (H2:= spec_to_Z xl); omega.
-   rewrite H0;rewrite Zplus_0_r;rewrite <- Zmult_plus_distr_l;rewrite wwB_wBwB.
-   rewrite Zpower_2; rewrite Zmult_mod_distr_r;try apply lt_0_wB.
+   rewrite H0;rewrite Z.add_0_r;rewrite <- Z.mul_add_distr_r;rewrite wwB_wBwB.
+   rewrite Z.pow_2_r; rewrite Zmult_mod_distr_r;try apply lt_0_wB.
    rewrite spec_w_W0;rewrite spec_w_succ;trivial.
   Qed.
 
@@ -284,7 +284,7 @@ Section DoubleAdd.
    destruct x as [ |xh xl];intros y;simpl.
    rewrite Zmod_small;trivial. apply spec_ww_to_Z;trivial.
    destruct y as [ |yh yl].
-   change [[W0]] with 0;rewrite Zplus_0_r.
+   change [[W0]] with 0;rewrite Z.add_0_r.
    rewrite Zmod_small;trivial.
     exact (spec_ww_to_Z w_digits w_to_Z spec_to_Z (WW xh xl)).
    simpl. replace ([|xh|] * wB + [|xl|] + ([|yh|] * wB + [|yl|]))
@@ -292,7 +292,7 @@ Section DoubleAdd.
    generalize (spec_w_add_c xl yl);destruct (w_add_c xl yl) as [l|l];
    unfold interp_carry;intros H;simpl;rewrite <- H.
    rewrite (mod_wwB w_digits w_to_Z spec_to_Z);rewrite spec_w_add;trivial.
-   rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l.
+   rewrite Z.add_assoc;rewrite <- Z.mul_add_distr_r.
    rewrite(mod_wwB w_digits w_to_Z spec_to_Z);rewrite spec_w_add_carry;trivial.
   Qed.
 
@@ -302,13 +302,13 @@ Section DoubleAdd.
    destruct x as [ |xh xl];intros y;simpl.
    exact (spec_ww_succ y).
    destruct y as [ |yh yl].
-   change [[W0]] with 0;rewrite Zplus_0_r. exact (spec_ww_succ (WW xh xl)).
+   change [[W0]] with 0;rewrite Z.add_0_r. exact (spec_ww_succ (WW xh xl)).
    simpl;replace ([|xh|] * wB + [|xl|] + ([|yh|] * wB + [|yl|]) + 1)
    with (([|xh|]+[|yh|])*wB + ([|xl|]+[|yl|]+1)). 2:ring.
    generalize (spec_w_add_carry_c xl yl);destruct (w_add_carry_c xl yl)
    as [l|l];unfold interp_carry;intros H;rewrite <- H;simpl ww_to_Z.
    rewrite(mod_wwB w_digits w_to_Z spec_to_Z);rewrite spec_w_add;trivial.
-   rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l.
+   rewrite Z.add_assoc;rewrite <- Z.mul_add_distr_r.
    rewrite(mod_wwB w_digits w_to_Z spec_to_Z);rewrite spec_w_add_carry;trivial.
   Qed.
 

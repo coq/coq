@@ -25,7 +25,7 @@ Module ProofIrrelevanceTheory (M:ProofIrrelevance).
       forall (U:Type) (p:U) (Q:U -> Type) (x:Q p) (h:p = p),
         x = eq_rect p Q x p h.
     Proof.
-      intros; rewrite M.proof_irrelevance with (p1:=h) (p2:=refl_equal p).
+      intros; rewrite M.proof_irrelevance with (p1:=h) (p2:=eq_refl p).
       reflexivity.
     Qed.
   End Eq_rect_eq.

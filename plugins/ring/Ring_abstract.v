@@ -137,8 +137,7 @@ Hint Resolve (SR_plus_zero_right2 T).
 Hint Resolve (SR_mult_one_right T).
 Hint Resolve (SR_mult_one_right2 T).
 (*Hint Resolve (SR_plus_reg_right T).*)
-Hint Resolve refl_equal sym_equal trans_equal.
-(*Hints Resolve refl_eqT sym_eqT trans_eqT.*)
+Hint Resolve eq_refl eq_sym eq_trans.
 Hint Immediate T.
 
 Remark iacs_aux_ok :
@@ -446,8 +445,7 @@ Hint Resolve (Th_plus_zero_right2 T).
 Hint Resolve (Th_mult_one_right T).
 Hint Resolve (Th_mult_one_right2 T).
 (*Hint Resolve (Th_plus_reg_right T).*)
-Hint Resolve refl_equal sym_equal trans_equal.
-(*Hints Resolve refl_eqT sym_eqT trans_eqT.*)
+Hint Resolve eq_refl eq_sym eq_trans.
 Hint Immediate T.
 
 Lemma isacs_aux_ok :

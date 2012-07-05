@@ -27,7 +27,7 @@ Section WfLexicographic_Product.
     forall x:A,
       Acc leA x ->
       (forall x0:A, clos_trans A leA x0 x -> well_founded (leB x0)) ->
-      forall y:B x, Acc (leB x) y -> Acc LexProd (existS B x y).
+      forall y:B x, Acc (leB x) y -> Acc LexProd (existT B x y).
   Proof.
     induction 1 as [x _ IHAcc]; intros H2 y.
     induction 1 as [x0 H IHAcc0]; intros.

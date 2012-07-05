@@ -418,7 +418,7 @@ Proof.
   unfold D_x, no_cond in |- *.
   split.
   trivial.
-  apply (sym_not_eq (A:=R)); assumption.
+  apply (not_eq_sym (A:=R)); assumption.
   apply H5; assumption.
 Qed.
 

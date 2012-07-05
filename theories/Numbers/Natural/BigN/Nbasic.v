@@ -32,7 +32,7 @@ Proof.
  transitivity (2 * (2 ^ Z.of_nat n * Zpos p)).
  rewrite <- IHn. auto.
  rewrite Z.mul_assoc.
- rewrite inj_S.
+ rewrite Nat2Z.inj_succ.
  rewrite <- Z.pow_succ_r; auto with zarith.
 Qed.
 
@@ -41,39 +41,39 @@ Qed.
 Fixpoint plength (p: positive) : positive :=
   match p with
     xH => xH
-  | xO p1 => Psucc (plength p1)
-  | xI p1 => Psucc (plength p1)
+  | xO p1 => Pos.succ (plength p1)
+  | xI p1 => Pos.succ (plength p1)
   end.
 
 Theorem plength_correct: forall p, (Zpos p < 2 ^ Zpos (plength p))%Z.
-assert (F: (forall p, 2 ^ (Zpos (Psucc p)) = 2 * 2 ^ Zpos p)%Z).
-intros p; replace (Zpos (Psucc p)) with (1 + Zpos p)%Z.
+assert (F: (forall p, 2 ^ (Zpos (Pos.succ p)) = 2 * 2 ^ Zpos p)%Z).
+intros p; replace (Zpos (Pos.succ p)) with (1 + Zpos p)%Z.
 rewrite Zpower_exp; auto with zarith.
-rewrite Zpos_succ_morphism; unfold Zsucc; auto with zarith.
+rewrite Pos2Z.inj_succ; unfold Z.succ; auto with zarith.
 intros p; elim p; simpl plength; auto.
-intros p1 Hp1; rewrite F; repeat rewrite Zpos_xI.
+intros p1 Hp1; rewrite F; repeat rewrite Pos2Z.inj_xI.
 assert (tmp: (forall p, 2 * p = p + p)%Z);
   try repeat rewrite tmp; auto with zarith.
-intros p1 Hp1; rewrite F; rewrite (Zpos_xO p1).
+intros p1 Hp1; rewrite F; rewrite (Pos2Z.inj_xO p1).
 assert (tmp: (forall p, 2 * p = p + p)%Z);
   try repeat rewrite tmp; auto with zarith.
-rewrite Zpower_1_r; auto with zarith.
+rewrite Z.pow_1_r; auto with zarith.
 Qed.
 
-Theorem plength_pred_correct: forall p, (Zpos p <= 2 ^ Zpos (plength (Ppred p)))%Z.
-intros p; case (Psucc_pred p); intros H1.
+Theorem plength_pred_correct: forall p, (Zpos p <= 2 ^ Zpos (plength (Pos.pred p)))%Z.
+intros p; case (Pos.succ_pred_or p); intros H1.
 subst; simpl plength.
-rewrite Zpower_1_r; auto with zarith.
+rewrite Z.pow_1_r; auto with zarith.
 pattern p at 1; rewrite <- H1.
-rewrite Zpos_succ_morphism; unfold Zsucc; auto with zarith.
-generalize (plength_correct (Ppred p)); auto with zarith.
+rewrite Pos2Z.inj_succ; unfold Z.succ; auto with zarith.
+generalize (plength_correct (Pos.pred p)); auto with zarith.
 Qed.
 
 Definition Pdiv p q :=
-  match Zdiv (Zpos p) (Zpos q) with
+  match Z.div (Zpos p) (Zpos q) with
     Zpos q1 => match (Zpos p) - (Zpos q) * (Zpos q1) with
                  Z0 => q1
-               | _ => (Psucc q1)
+               | _ => (Pos.succ q1)
                end
   |  _ => xH
   end.
@@ -85,20 +85,20 @@ unfold Pdiv.
 assert (H1: Zpos q > 0); auto with zarith.
 assert (H1b: Zpos p >= 0); auto with zarith.
 generalize (Z_div_ge0 (Zpos p) (Zpos q) H1 H1b).
-generalize (Z_div_mod_eq (Zpos p) (Zpos q) H1); case Zdiv.
-  intros HH _; rewrite HH; rewrite Zmult_0_r; rewrite Zmult_1_r; simpl.
+generalize (Z_div_mod_eq (Zpos p) (Zpos q) H1); case Z.div.
+  intros HH _; rewrite HH; rewrite Z.mul_0_r; rewrite Z.mul_1_r; simpl.
 case (Z_mod_lt (Zpos p) (Zpos q) H1); auto with zarith.
 intros q1 H2.
 replace (Zpos p - Zpos q * Zpos q1) with (Zpos p mod Zpos q).
   2: pattern (Zpos p) at 2; rewrite H2; auto with zarith.
 generalize H2 (Z_mod_lt (Zpos p) (Zpos q) H1); clear H2;
-  case Zmod.
+  case Z.modulo.
   intros HH _; rewrite HH; auto with zarith.
-  intros r1 HH (_,HH1); rewrite HH; rewrite Zpos_succ_morphism.
-  unfold Zsucc; rewrite Zmult_plus_distr_r; auto with zarith.
+  intros r1 HH (_,HH1); rewrite HH; rewrite Pos2Z.inj_succ.
+  unfold Z.succ; rewrite Z.mul_add_distr_l; auto with zarith.
   intros r1 _ (HH,_); case HH; auto.
 intros q1 HH; rewrite HH.
-unfold Zge; simpl Zcompare; intros HH1; case HH1; auto.
+unfold Z.ge; simpl Z.compare; intros HH1; case HH1; auto.
 Qed.
 
 Definition is_one p := match p with xH => true | _ => false end.
@@ -109,7 +109,7 @@ Qed.
 
 Definition get_height digits p :=
   let r := Pdiv p digits in
-   if is_one r then xH else Psucc (plength (Ppred r)).
+   if is_one r then xH else Pos.succ (plength (Pos.pred r)).
 
 Theorem get_height_correct:
   forall digits N,
@@ -119,13 +119,13 @@ unfold get_height.
 assert (H1 := Pdiv_le N digits).
 case_eq (is_one (Pdiv N digits)); intros H2.
 rewrite (is_one_one _ H2) in H1.
-rewrite Zmult_1_r in H1.
-change (2^(1-1))%Z with 1; rewrite Zmult_1_r; auto.
+rewrite Z.mul_1_r in H1.
+change (2^(1-1))%Z with 1; rewrite Z.mul_1_r; auto.
 clear H2.
-apply Zle_trans with (1 := H1).
-apply Zmult_le_compat_l; auto with zarith.
-rewrite Zpos_succ_morphism; unfold Zsucc.
-rewrite Zplus_comm; rewrite Zminus_plus.
+apply Z.le_trans with (1 := H1).
+apply Z.mul_le_mono_nonneg_l; auto with zarith.
+rewrite Pos2Z.inj_succ; unfold Z.succ.
+rewrite Z.add_comm; rewrite Z.add_simpl_l.
 apply plength_pred_correct.
 Qed.
 
@@ -152,18 +152,18 @@ Open Scope nat_scope.
 
 Fixpoint plusnS (n m: nat) {struct n} : (n + S m = S (n + m))%nat :=
   match n return  (n + S m = S (n + m))%nat with
-  | 0 => refl_equal (S m)
+  | 0 => eq_refl (S m)
   | S n1 =>
       let v := S (S n1 + m) in
-      eq_ind_r (fun n => S n = v) (refl_equal v) (plusnS n1 m)
+      eq_ind_r (fun n => S n = v) (eq_refl v) (plusnS n1 m)
   end.
 
 Fixpoint plusn0 n : n + 0 = n :=
   match n return (n + 0 = n) with
-  | 0 => refl_equal 0
+  | 0 => eq_refl 0
   | S n1 =>
       let v := S n1 in
-      eq_ind_r (fun n : nat => S n = v) (refl_equal v) (plusn0 n1)
+      eq_ind_r (fun n : nat => S n = v) (eq_refl v) (plusn0 n1)
   end.
 
  Fixpoint diff (m n: nat) {struct m}: nat * nat :=
@@ -177,8 +177,8 @@ Fixpoint diff_l (m n : nat) {struct m} : fst (diff m n) + n = max m n :=
   match m return fst (diff m n) + n = max m n with
   | 0 =>
       match n return (n = max 0 n) with
-      | 0 => refl_equal _
-      | S n0 => refl_equal _
+      | 0 => eq_refl _
+      | S n0 => eq_refl _
       end
   | S m1 =>
       match n return (fst (diff (S m1) n) + n = max (S m1) n)
@@ -188,7 +188,7 @@ Fixpoint diff_l (m n : nat) {struct m} : fst (diff m n) + n = max m n :=
           let v := fst (diff m1 n1) + n1 in
           let v1 := fst (diff m1 n1) + S n1 in
           eq_ind v (fun n => v1 = S n)
-            (eq_ind v1 (fun n => v1 = n) (refl_equal v1) (S v) (plusnS _ _))
+            (eq_ind v1 (fun n => v1 = n) (eq_refl v1) (S v) (plusnS _ _))
             _ (diff_l _ _)
       end
   end.
@@ -197,17 +197,17 @@ Fixpoint diff_r (m n: nat) {struct m}: snd (diff m n) + m = max m n :=
   match m return (snd (diff m n) + m = max m n) with
   | 0 =>
       match n return (snd (diff 0 n) + 0 = max 0 n) with
-      | 0 => refl_equal _
+      | 0 => eq_refl _
       | S _ => plusn0 _
       end
   | S m =>
       match n return (snd (diff (S m) n) + S m = max (S m) n) with
-      | 0 => refl_equal (snd (diff (S m) 0) + S m)
+      | 0 => eq_refl (snd (diff (S m) 0) + S m)
       | S n1 =>
           let v := S (max m n1) in
           eq_ind_r (fun n => n = v)
             (eq_ind_r (fun n => S n = v)
-               (refl_equal v) (diff_r _ _)) (plusnS _ _)
+               (eq_refl v) (diff_r _ _)) (plusnS _ _)
       end
   end.
 
@@ -216,7 +216,7 @@ Fixpoint diff_r (m n: nat) {struct m}: snd (diff m n) + m = max m n :=
  Definition castm (m n: nat) (H: m = n) (x: word w (S m)):
      (word w (S n)) :=
  match H in (_ = y) return (word w (S y)) with
- | refl_equal => x
+ | eq_refl => x
  end.
 
 Variable m: nat.
@@ -314,7 +314,7 @@ Section CompareRec.
  Lemma base_xO: forall n, base (xO n) = (base n)^2.
  Proof.
  intros n1; unfold base.
- rewrite (Zpos_xO n1); rewrite Zmult_comm; rewrite Zpower_mult; auto with zarith.
+ rewrite (Pos2Z.inj_xO n1); rewrite Z.mul_comm; rewrite Z.pow_mul_r; auto with zarith.
  Qed.
 
  Let double_to_Z_pos: forall n x, 0 <= double_to_Z n x < double_wB n :=
@@ -332,13 +332,13 @@ Section CompareRec.
   rewrite 2 Hrec.
   simpl double_to_Z.
   set (wB := DoubleBase.double_wB wm_base n).
-  case Zcompare_spec; intros Cmp.
+  case Z.compare_spec; intros Cmp.
   rewrite <- Cmp. reflexivity.
-  symmetry. apply Zgt_lt, Zlt_gt. (* ;-) *)
+  symmetry. apply Z.gt_lt, Z.lt_gt. (* ;-) *)
   assert (0 < wB).
    unfold wB, DoubleBase.double_wB, base; auto with zarith.
-  change 0 with (0 + 0); apply Zplus_lt_le_compat; auto with zarith.
-  apply Zmult_lt_0_compat; auto with zarith.
+  change 0 with (0 + 0); apply Z.add_lt_le_mono; auto with zarith.
+  apply Z.mul_pos_pos; auto with zarith.
   case (double_to_Z_pos n xl); auto with zarith.
   case (double_to_Z_pos n xh); intros; exfalso; omega.
   Qed.
@@ -358,9 +358,9 @@ Section CompareRec.
   end.
 
  Variable spec_compare: forall x y,
-   compare x y = Zcompare (w_to_Z x) (w_to_Z y).
+   compare x y = Z.compare (w_to_Z x) (w_to_Z y).
  Variable spec_compare_m: forall x y,
-   compare_m x y = Zcompare (wm_to_Z x) (w_to_Z y).
+   compare_m x y = Z.compare (wm_to_Z x) (w_to_Z y).
  Variable wm_base_lt: forall x,
    0 <= w_to_Z x < base (wm_base).
 
@@ -369,35 +369,35 @@ Section CompareRec.
  Proof.
  intros n x; elim n; simpl; auto; clear n.
  intros n (H0, H); split; auto.
- apply Zlt_le_trans with (1:= H).
+ apply Z.lt_le_trans with (1:= H).
  unfold double_wB, DoubleBase.double_wB; simpl.
  rewrite Pshiftl_nat_S, base_xO.
  set (u := base (Pos.shiftl_nat wm_base n)).
  assert (0 < u).
   unfold u, base; auto with zarith.
  replace (u^2) with (u * u); simpl; auto with zarith.
- apply Zle_trans with (1 * u); auto with zarith.
- unfold Zpower_pos; simpl; ring.
+ apply Z.le_trans with (1 * u); auto with zarith.
+ unfold Z.pow_pos; simpl; ring.
  Qed.
 
 
  Lemma spec_compare_mn_1: forall n x y,
-   compare_mn_1 n x y = Zcompare (double_to_Z n x) (w_to_Z y).
+   compare_mn_1 n x y = Z.compare (double_to_Z n x) (w_to_Z y).
  Proof.
  intros n; elim n; simpl; auto; clear n.
  intros n Hrec x; case x; clear x; auto.
  intros y; rewrite spec_compare; rewrite w_to_Z_0. reflexivity.
  intros xh xl y; simpl;
- rewrite spec_compare0_mn, Hrec. case Zcompare_spec.
+ rewrite spec_compare0_mn, Hrec. case Z.compare_spec.
  intros H1b.
- rewrite <- H1b; rewrite Zmult_0_l; rewrite Zplus_0_l; auto.
- symmetry. apply Zlt_gt.
+ rewrite <- H1b; rewrite Z.mul_0_l; rewrite Z.add_0_l; auto.
+ symmetry. apply Z.lt_gt.
  case (double_wB_lt n y); intros _ H0.
- apply Zlt_le_trans with (1:= H0).
+ apply Z.lt_le_trans with (1:= H0).
  fold double_wB.
  case (double_to_Z_pos n xl); intros H1 H2.
- apply Zle_trans with (double_to_Z n xh * double_wB n); auto with zarith.
- apply Zle_trans with (1 * double_wB n); auto with zarith.
+ apply Z.le_trans with (double_to_Z n xh * double_wB n); auto with zarith.
+ apply Z.le_trans with (1 * double_wB n); auto with zarith.
  case (double_to_Z_pos n xh); intros; exfalso; omega.
  Qed.
 
@@ -440,8 +440,8 @@ End AddS.
  Proof.
  intros x; elim x; clear x; [intros x1 Hrec | intros x1 Hrec | idtac];
    intros y; case y; clear y; intros y1 H || intros H; simpl length_pos;
-   try (rewrite (Zpos_xI x1) || rewrite (Zpos_xO x1));
-   try (rewrite (Zpos_xI y1) || rewrite (Zpos_xO y1));
+   try (rewrite (Pos2Z.inj_xI x1) || rewrite (Pos2Z.inj_xO x1));
+   try (rewrite (Pos2Z.inj_xI y1) || rewrite (Pos2Z.inj_xO y1));
    try (inversion H; fail);
    try (assert (Zpos x1 < Zpos y1); [apply Hrec; apply lt_S_n | idtac]; auto with zarith);
    assert (0 < Zpos y1); auto with zarith; red; auto.

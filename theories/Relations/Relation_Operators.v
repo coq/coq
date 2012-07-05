@@ -149,13 +149,13 @@ Section Lexicographic_Product.
   Variable leA : A -> A -> Prop.
   Variable leB : forall x:A, B x -> B x -> Prop.
 
-  Inductive lexprod : sigS B -> sigS B -> Prop :=
+  Inductive lexprod : sigT B -> sigT B -> Prop :=
     | left_lex :
       forall (x x':A) (y:B x) (y':B x'),
-        leA x x' -> lexprod (existS B x y) (existS B x' y')
+        leA x x' -> lexprod (existT B x y) (existT B x' y')
     | right_lex :
       forall (x:A) (y y':B x),
-        leB x y y' -> lexprod (existS B x y) (existS B x y').
+        leB x y y' -> lexprod (existT B x y) (existT B x y').
 
 End Lexicographic_Product.
 

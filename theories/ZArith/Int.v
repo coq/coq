@@ -250,7 +250,7 @@ Module MoreInt (Import I:Int).
       | EZplus e1 e2 => ((ez2z e1)+(ez2z e2))%Z
       | EZminus e1 e2 => ((ez2z e1)-(ez2z e2))%Z
       | EZmult e1 e2 => ((ez2z e1)*(ez2z e2))%Z
-      | EZmax e1 e2 => Zmax (ez2z e1) (ez2z e2)
+      | EZmax e1 e2 => Z.max (ez2z e1) (ez2z e2)
       | EZopp e => (-(ez2z e))%Z
       | EZofI e => i2z (ei2i e)
       | EZraw z => z
@@ -367,14 +367,14 @@ Module Z_as_Int <: Int.
   Definition _1 := 1.
   Definition _2 := 2.
   Definition _3 := 3.
-  Definition plus := Zplus.
-  Definition opp := Zopp.
-  Definition minus := Zminus.
-  Definition mult := Zmult.
-  Definition max := Zmax.
+  Definition plus := Z.add.
+  Definition opp := Z.opp.
+  Definition minus := Z.sub.
+  Definition mult := Z.mul.
+  Definition max := Z.max.
   Definition gt_le_dec := Z_gt_le_dec.
   Definition ge_lt_dec := Z_ge_lt_dec.
-  Definition eq_dec := Z_eq_dec.
+  Definition eq_dec := Z.eq_dec.
   Definition i2z : int -> Z := fun n => n.
   Lemma i2z_eq : forall n p, i2z n=i2z p -> n = p. Proof. auto. Qed.
   Lemma i2z_0 : i2z _0 = 0.  Proof. auto. Qed.
@@ -385,5 +385,5 @@ Module Z_as_Int <: Int.
   Lemma i2z_opp n : i2z (- n) = - i2z n.  Proof. auto. Qed.
   Lemma i2z_minus n p : i2z (n - p) = i2z n - i2z p.  Proof. auto. Qed.
   Lemma i2z_mult n p : i2z (n * p) = i2z n * i2z p.  Proof. auto. Qed.
-  Lemma i2z_max n p : i2z (max n p) = Zmax (i2z n) (i2z p). Proof. auto. Qed.
+  Lemma i2z_max n p : i2z (max n p) = Z.max (i2z n) (i2z p). Proof. auto. Qed.
 End Z_as_Int.

@@ -188,8 +188,8 @@ Lemma projT1_injective : a1=a2 -> a1'=a2'.
 Proof.
   intro Heq ; unfold a1', a2', A'.
   rewrite Heq.
-  replace (or_introl (a2=a2) (refl_equal a2))
-     with (or_intror (a2=a2) (refl_equal a2)).
+  replace (or_introl (a2=a2) (eq_refl a2))
+     with (or_intror (a2=a2) (eq_refl a2)).
   reflexivity.
   apply proof_irrelevance.
 Qed.

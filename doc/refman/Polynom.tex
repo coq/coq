@@ -927,7 +927,7 @@ Open Scope Z_scope.
 Goal forall x y z:Z, x + 3 + y + y * z = x + 3 + y + z * y.
 \end{coq_example}
 \begin{coq_example*}
-intros; rewrite (Zmult_comm y z); reflexivity.
+intros; rewrite (Z.mul_comm y z); reflexivity.
 Save toto.
 \end{coq_example*}
 \begin{coq_example}

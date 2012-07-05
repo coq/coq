@@ -623,7 +623,7 @@ Proof.
   apply RmaxLess1; auto.
 Qed.
 
-Lemma Rabs_Zabs : forall z:Z, Rabs (IZR z) = IZR (Zabs z).
+Lemma Rabs_Zabs : forall z:Z, Rabs (IZR z) = IZR (Z.abs z).
 Proof.
   intros z; case z; simpl in |- *; auto with real.
   apply Rabs_right; auto with real.
@@ -632,7 +632,7 @@ Proof.
   apply Rabs_right; auto with real zarith.
 Qed.
 
-Lemma abs_IZR : forall z, IZR (Zabs z) = Rabs (IZR z).
+Lemma abs_IZR : forall z, IZR (Z.abs z) = Rabs (IZR z).
 Proof.
   intros.
   now rewrite Rabs_Zabs.

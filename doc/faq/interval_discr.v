@@ -32,16 +32,16 @@ Theorem le_uniqueness_proof : forall (n m : nat) (p q : n <= m), p = q.
 Proof.
 induction p using le_ind'; intro q.
  replace (le_n n) with
-  (eq_rect _ (fun n0 => n <= n0) (le_n n) _ (refl_equal n)).
+  (eq_rect _ (fun n0 => n <= n0) (le_n n) _ eq_refl).
  2:reflexivity.
-  generalize (refl_equal n).
+  generalize (eq_refl n).
     pattern n at 2 4 6 10, q; case q; [intro | intros m l e].
      rewrite <- eq_rect_eq_nat; trivial.
      contradiction (le_Sn_n m); rewrite <- e; assumption.
  replace (le_S n m p) with
-  (eq_rect _ (fun n0 => n <= n0) (le_S n m p) _ (refl_equal (S m))).
+  (eq_rect _ (fun n0 => n <= n0) (le_S n m p) _ eq_refl).
  2:reflexivity.
-  generalize (refl_equal (S m)).
+  generalize (eq_refl (S m)).
     pattern (S m) at 1 3 4 6, q; case q; [intro Heq | intros m0 l HeqS].
      contradiction (le_Sn_n m); rewrite Heq; assumption.
      injection HeqS; intro Heq; generalize l HeqS.
@@ -216,7 +216,7 @@ Lemma inj_restrict :
 Proof.
 intros A f x y z Hfinj Hneqx Hfy Hfx Heq.
 assert (f z <> f x).
-  apply sym_not_eq.
+  apply not_eq_sym.
   intro Heqf.
   apply Hneqx.
   apply Hfinj.
@@ -292,7 +292,7 @@ destruct (le_lt_dec (f xSn) (f y)) as [Hlefy|Hgefy].
 assert (Heq : x = y).
   apply Hfinj.
   assert (f xSn <> f y).
-    apply sym_not_eq.
+    apply not_eq_sym.
     intro Heqf.
     apply Hneqy.
     apply Hfinj.
@@ -302,7 +302,7 @@ assert (Heq : x = y).
     apply le_O_n.
     apply le_neq_lt; assumption.
   assert (f xSn <> f x).
-    apply sym_not_eq.
+    apply not_eq_sym.
     intro Heqf.
     apply Hneqx.
     apply Hfinj.

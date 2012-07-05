@@ -13,7 +13,7 @@ Qed.
 
 Require Import ZArith.
 
-Definition f'' (a:bool) := if a then eq (A:= Z) else Zlt.
+Definition f'' (a:bool) := if a then eq (A:= Z) else Z.lt.
 
 Lemma f_refl'' : forall n , f'' true n n.
 Proof.

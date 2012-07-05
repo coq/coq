@@ -101,7 +101,7 @@ Section Dependent_Equality.
     forall (p q:U) (x:P p) (y:P q), eq_dep p x q y -> eq_dep1 p x q y.
   Proof.
     destruct 1.
-    apply eq_dep1_intro with (refl_equal p).
+    apply eq_dep1_intro with (eq_refl p).
     simpl; trivial.
   Qed.
 
@@ -121,7 +121,7 @@ Proof.
   apply eq_dep_intro.
 Qed.
 
-Notation eq_sigS_eq_dep := eq_sigT_eq_dep (only parsing). (* Compatibility *)
+Notation eq_sigS_eq_dep := eq_sigT_eq_dep (compat "8.2"). (* Compatibility *)
 
 Lemma eq_dep_eq_sigT :
   forall (U:Type) (P:U -> Type) (p q:U) (x:P p) (y:P q),
@@ -250,12 +250,12 @@ Section Equivalences.
   (** Uniqueness of Reflexive Identity Proofs *)
 
   Definition UIP_refl_ :=
-    forall (x:U) (p:x = x), p = refl_equal x.
+    forall (x:U) (p:x = x), p = eq_refl x.
 
   (** Streicher's axiom K *)
 
   Definition Streicher_K_ :=
-    forall (x:U) (P:x = x -> Prop), P (refl_equal x) -> forall p:x = x, P p.
+    forall (x:U) (P:x = x -> Prop), P (eq_refl x) -> forall p:x = x, P p.
 
   (** Injectivity of Dependent Equality is a consequence of *)
   (** Invariance by Substitution of Reflexive Equality Proof *)
@@ -389,14 +389,14 @@ Proof (eq_dep_eq__UIP U eq_dep_eq).
 
 (** Uniqueness of Reflexive Identity Proofs is a direct instance of UIP *)
 
-Lemma UIP_refl : forall (x:U) (p:x = x), p = refl_equal x.
+Lemma UIP_refl : forall (x:U) (p:x = x), p = eq_refl x.
 Proof (UIP__UIP_refl U UIP).
 
 (** Streicher's axiom K is a direct consequence of Uniqueness of
     Reflexive Identity Proofs *)
 
 Lemma Streicher_K :
-  forall (x:U) (P:x = x -> Prop), P (refl_equal x) -> forall p:x = x, P p.
+  forall (x:U) (P:x = x -> Prop), P (eq_refl x) -> forall p:x = x, P p.
 Proof (UIP_refl__Streicher_K U UIP_refl).
 
 End Axioms.

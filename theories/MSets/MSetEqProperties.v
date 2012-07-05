@@ -206,7 +206,7 @@ intros.
 generalize (@choose_1 s) (@choose_2 s).
 destruct (choose s);intros.
 exists e;auto with set.
-generalize (H1 (refl_equal None)); clear H1.
+generalize (H1 (eq_refl None)); clear H1.
 intros; rewrite (is_empty_1 H1) in H; discriminate.
 Qed.
 
@@ -631,7 +631,7 @@ destruct (choose (filter f s)).
 intros H0 _; apply exists_1; auto.
 exists e; generalize (H0 e); rewrite filter_iff; auto.
 intros _ H0.
-rewrite (is_empty_1 (H0 (refl_equal None))) in H; auto; discriminate.
+rewrite (is_empty_1 (H0 (eq_refl None))) in H; auto; discriminate.
 Qed.
 
 Lemma partition_filter_1:
@@ -879,8 +879,8 @@ generalize (@add_filter_1 f Hf s0 (add x s0) x) (@add_filter_2 f Hf s0 (add x s0
 assert (~ In x (filter f s0)).
  intro H1; rewrite (mem_1 (filter_1 Hf H1)) in H; discriminate H.
 case (f x); simpl; intros.
-rewrite (MP.cardinal_2 H1 (H2 (refl_equal true) (MP.Add_add s0 x))); auto.
-rewrite <- (MP.Equal_cardinal (H3 (refl_equal false) (MP.Add_add s0 x))); auto.
+rewrite (MP.cardinal_2 H1 (H2 (eq_refl true) (MP.Add_add s0 x))); auto.
+rewrite <- (MP.Equal_cardinal (H3 (eq_refl false) (MP.Add_add s0 x))); auto.
 intros; rewrite fold_empty;auto.
 rewrite MP.cardinal_1; auto.
 unfold Empty; intros.

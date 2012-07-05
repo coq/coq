@@ -6,14 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** * Zgcd_alt : an alternate version of Zgcd, based on Euclid's algorithm *)
+(** * Zgcd_alt : an alternate version of Z.gcd, based on Euclid's algorithm *)
 
 (**
 Author: Pierre Letouzey
 *)
 
-(** The alternate [Zgcd_alt] given here used to be the main [Zgcd]
-    function (see file [Znumtheory]), but this main [Zgcd] is now
+(** The alternate [Zgcd_alt] given here used to be the main [Z.gcd]
+    function (see file [Znumtheory]), but this main [Z.gcd] is now
     based on a modern binary-efficient algorithm. This earlier
     version, based on Euclid's algorithm of iterated modulo, is kept
     here due to both its intrinsic interest and its use as reference
@@ -35,22 +35,22 @@ Open Scope Z_scope.
    match n with
      | O => 1 (* arbitrary, since n should be big enough *)
      | S n => match a with
-  	        | Z0 => Zabs b
-  	        | Zpos _ => Zgcdn n (Zmod b a) a
-  	        | Zneg a => Zgcdn n (Zmod b (Zpos a)) (Zpos a)
+	        | Z0 => Z.abs b
+	        | Zpos _ => Zgcdn n (Z.modulo b a) a
+	        | Zneg a => Zgcdn n (Z.modulo b (Zpos a)) (Zpos a)
   	      end
    end.
 
  Definition Zgcd_bound (a:Z) :=
    match a with
      | Z0 => S O
-     | Zpos p => let n := Psize p in (n+n)%nat
-     | Zneg p => let n := Psize p in (n+n)%nat
+     | Zpos p => let n := Pos.size_nat p in (n+n)%nat
+     | Zneg p => let n := Pos.size_nat p in (n+n)%nat
    end.
 
  Definition Zgcd_alt a b := Zgcdn (Zgcd_bound a) a b.
 
- (** A first obvious fact : [Zgcd a b] is positive. *)
+ (** A first obvious fact : [Z.gcd a b] is positive. *)
 
  Lemma Zgcdn_pos : forall n a b,
    0 <= Zgcdn n a b.
@@ -62,28 +62,28 @@ Open Scope Z_scope.
 
  Lemma Zgcd_alt_pos : forall a b, 0 <= Zgcd_alt a b.
  Proof.
-   intros; unfold Zgcd; apply Zgcdn_pos; auto.
+   intros; unfold Z.gcd; apply Zgcdn_pos; auto.
  Qed.
 
- (** We now prove that Zgcd is indeed a gcd. *)
+ (** We now prove that Z.gcd is indeed a gcd. *)
 
  (** 1) We prove a weaker & easier bound. *)
 
  Lemma Zgcdn_linear_bound : forall n a b,
-   Zabs a < Z_of_nat n -> Zis_gcd a b (Zgcdn n a b).
+   Z.abs a < Z.of_nat n -> Zis_gcd a b (Zgcdn n a b).
  Proof.
    induction n.
    simpl; intros.
-   exfalso; generalize (Zabs_pos a); omega.
+   exfalso; generalize (Z.abs_nonneg a); omega.
    destruct a; intros; simpl;
      [ generalize (Zis_gcd_0_abs b); intuition | | ];
-   unfold Zmod;
-   generalize (Z_div_mod b (Zpos p) (refl_equal Gt));
-   destruct (Zdiv_eucl b (Zpos p)) as (q,r);
+   unfold Z.modulo;
+   generalize (Z_div_mod b (Zpos p) (eq_refl Gt));
+   destruct (Z.div_eucl b (Zpos p)) as (q,r);
    intros (H0,H1);
-   rewrite inj_S in H; simpl Zabs in H;
-   (assert (H2: Zabs r < Z_of_nat n) by
-    (rewrite Zabs_eq; auto with zarith));
+   rewrite Nat2Z.inj_succ in H; simpl Z.abs in H;
+   (assert (H2: Z.abs r < Z.of_nat n) by
+    (rewrite Z.abs_eq; auto with zarith));
     assert (IH:=IHn r (Zpos p) H2); clear IHn;
     simpl in IH |- *;
     rewrite H0.
@@ -122,7 +122,7 @@ Open Scope Z_scope.
  Proof.
    induction 1.
    auto with zarith.
-   apply Zle_trans with (fibonacci m); auto.
+   apply Z.le_trans with (fibonacci m); auto.
    clear.
    destruct m.
    simpl; auto with zarith.
@@ -142,53 +142,38 @@ Open Scope Z_scope.
    fibonacci (S (S n)) <= b.
  Proof.
    induction n.
-   simpl; intros.
-   destruct a; omega.
-   intros.
-   destruct a; [simpl in *; omega| | destruct H; discriminate].
-   revert H1; revert H0.
-   set (m:=S n) in *; (assert (m=S n) by auto); clearbody m.
-   pattern m at 2; rewrite H0.
-   simpl Zgcdn.
-   unfold Zmod; generalize (Z_div_mod b (Zpos p) (refl_equal Gt)).
-   destruct (Zdiv_eucl b (Zpos p)) as (q,r).
-   intros (H1,H2).
-   destruct H2.
-   destruct (Zle_lt_or_eq _ _ H2).
-   generalize (IHn _ _ (conj H4 H3)).
-   intros H5 H6 H7.
-   replace (fibonacci (S (S m))) with (fibonacci (S m) + fibonacci m) by auto.
-   assert (r = Zpos p * (-q) + b) by (rewrite H1; ring).
-   destruct H5; auto.
-   pattern r at 1; rewrite H8.
-   apply Zis_gcd_sym.
-   apply Zis_gcd_for_euclid2; auto.
-   apply Zis_gcd_sym; auto.
-   split; auto.
-   rewrite H1.
-   apply Zplus_le_compat; auto.
-   apply Zle_trans with (Zpos p * 1); auto.
-   ring_simplify (Zpos p * 1); auto.
-   apply Zmult_le_compat_l.
-   destruct q.
-   omega.
-   assert (0 < Zpos p0) by (compute; auto).
-   omega.
-   assert (Zpos p * Zneg p0 < 0) by (compute; auto).
-   omega.
-   compute; intros; discriminate.
-   (* r=0 *)
-   subst r.
-   simpl; rewrite H0.
-   intros.
-   simpl in H4.
-   simpl in H5.
-   destruct n.
-   simpl in H5.
-   simpl.
-   omega.
-   simpl in H5.
-   elim H5; auto.
+   intros [|a|a]; intros; simpl; omega.
+   intros [|a|a] b (Ha,Ha'); [simpl; omega | | easy ].
+   remember (S n) as m.
+   rewrite Heqm at 2. simpl Zgcdn.
+   unfold Z.modulo; generalize (Z_div_mod b (Zpos a) eq_refl).
+   destruct (Z.div_eucl b (Zpos a)) as (q,r).
+   intros (EQ,(Hr,Hr')).
+   Z.le_elim Hr.
+   - (* r > 0 *)
+     replace (fibonacci (S (S m))) with (fibonacci (S m) + fibonacci m) by auto.
+     intros.
+     destruct (IHn r (Zpos a) (conj Hr Hr')); auto.
+     + assert (EQ' : r = Zpos a * (-q) + b) by (rewrite EQ; ring).
+       rewrite EQ' at 1.
+       apply Zis_gcd_sym.
+       apply Zis_gcd_for_euclid2; auto.
+       apply Zis_gcd_sym; auto.
+     + split; auto.
+       rewrite EQ.
+       apply Z.add_le_mono; auto.
+       apply Z.le_trans with (Zpos a * 1); auto.
+       now rewrite Z.mul_1_r.
+       apply Z.mul_le_mono_nonneg_l; auto with zarith.
+       change 1 with (Z.succ 0). apply Z.le_succ_l.
+       destruct q; auto with zarith.
+       assert (Zpos a * Zneg p < 0) by now compute. omega.
+   - (* r = 0 *)
+     clear IHn EQ Hr'; intros _.
+     subst r; simpl; rewrite Heqm.
+     destruct n.
+     + simpl. omega.
+     + now destruct 1.
  Qed.
 
  (** 3b) We reformulate the previous result in a more positive way. *)
@@ -199,18 +184,18 @@ Open Scope Z_scope.
  Proof.
    destruct a; [ destruct 1; exfalso; omega | | destruct 1; discriminate].
    cut (forall k n b,
-     k = (S (nat_of_P p) - n)%nat ->
+     k = (S (Pos.to_nat p) - n)%nat ->
      0 < Zpos p < b -> Zpos p < fibonacci (S n) ->
      Zis_gcd (Zpos p) b (Zgcdn n (Zpos p) b)).
    destruct 2; eauto.
    clear n; induction k.
    intros.
-   assert (nat_of_P p < n)%nat by omega.
+   assert (Pos.to_nat p < n)%nat by omega.
    apply Zgcdn_linear_bound.
    simpl.
    generalize (inj_le _ _ H2).
-   rewrite inj_S.
-   rewrite <- Zpos_eq_Z_of_nat_o_nat_of_P; auto.
+   rewrite Nat2Z.inj_succ.
+   rewrite positive_nat_Z; auto.
    omega.
    intros.
    generalize (Zgcdn_worst_is_fibonacci n (Zpos p) b H0); intros.
@@ -233,77 +218,69 @@ Open Scope Z_scope.
    induction p; [ | | compute; auto ];
     simpl Zgcd_bound in *;
     rewrite plus_comm; simpl plus;
-    set (n:= (Psize p+Psize p)%nat) in *; simpl;
+    set (n:= (Pos.size_nat p+Pos.size_nat p)%nat) in *; simpl;
     assert (n <> O) by (unfold n; destruct p; simpl; auto).
 
    destruct n as [ |m]; [elim H; auto| ].
-   generalize (fibonacci_pos m); rewrite Zpos_xI; omega.
+   generalize (fibonacci_pos m); rewrite Pos2Z.inj_xI; omega.
 
    destruct n as [ |m]; [elim H; auto| ].
-   generalize (fibonacci_pos m); rewrite Zpos_xO; omega.
+   generalize (fibonacci_pos m); rewrite Pos2Z.inj_xO; omega.
  Qed.
 
  (* 5) the end: we glue everything together and take care of
     situations not corresponding to [0<a<b]. *)
 
- Lemma Zgcdn_is_gcd :
-   forall n a b, (Zgcd_bound a <= n)%nat ->
-     Zis_gcd a b (Zgcdn n a b).
+ Lemma Zgcd_bound_opp a : Zgcd_bound (-a) = Zgcd_bound a.
  Proof.
-   destruct a; intros.
-   simpl in H.
-   destruct n; [exfalso; omega | ].
-   simpl; generalize (Zis_gcd_0_abs b); intuition.
-   (*Zpos*)
-   generalize (Zgcd_bound_fibonacci (Zpos p)).
-   simpl Zgcd_bound in *.
-   remember (Psize p+Psize p)%nat as m.
-   assert (1 < m)%nat.
-     rewrite Heqm; destruct p; simpl; rewrite 1? plus_comm;
-       auto with arith.
-   destruct m as [ |m]; [inversion H0; auto| ].
-   destruct n as [ |n]; [inversion H; auto| ].
-   simpl Zgcdn.
-   unfold Zmod.
-   generalize (Z_div_mod b (Zpos p) (refl_equal Gt)).
-   destruct (Zdiv_eucl b (Zpos p)) as (q,r).
-   intros (H2,H3) H4.
-   rewrite H2.
-   apply Zis_gcd_for_euclid2.
-   destruct H3.
-   destruct (Zle_lt_or_eq _ _ H1).
-   apply Zgcdn_ok_before_fibonacci; auto.
-   apply Zlt_le_trans with (fibonacci (S m)); [ omega | apply fibonacci_incr; auto].
-   subst r; simpl.
-   destruct m as [ |m]; [exfalso; omega| ].
-   destruct n as [ |n]; [exfalso; omega| ].
-   simpl; apply Zis_gcd_sym; apply Zis_gcd_0.
-   (*Zneg*)
-   generalize (Zgcd_bound_fibonacci (Zpos p)).
-   simpl Zgcd_bound in *.
-   remember (Psize p+Psize p)%nat as m.
-   assert (1 < m)%nat.
-     rewrite Heqm; destruct p; simpl; rewrite 1? plus_comm;
-       auto with arith.
-   destruct m as [ |m]; [inversion H0; auto| ].
-   destruct n as [ |n]; [inversion H; auto| ].
-   simpl Zgcdn.
-   unfold Zmod.
-   generalize (Z_div_mod b (Zpos p) (refl_equal Gt)).
-   destruct (Zdiv_eucl b (Zpos p)) as (q,r).
-   intros (H1,H2) H3.
-   rewrite H1.
-   apply Zis_gcd_minus.
-   apply Zis_gcd_sym.
-   apply Zis_gcd_for_euclid2.
-   destruct H2.
-   destruct (Zle_lt_or_eq _ _ H2).
-   apply Zgcdn_ok_before_fibonacci; auto.
-   apply Zlt_le_trans with (fibonacci (S m)); [ omega | apply fibonacci_incr; auto].
-   subst r; simpl.
-   destruct m as [ |m]; [exfalso; omega| ].
-   destruct n as [ |n]; [exfalso; omega| ].
-   simpl; apply Zis_gcd_sym; apply Zis_gcd_0.
+  now destruct a.
+ Qed.
+
+ Lemma Zgcdn_opp n a b : Zgcdn n (-a) b = Zgcdn n a b.
+ Proof.
+  induction n; simpl; auto.
+  destruct a; simpl; auto.
+ Qed.
+
+ Lemma Zgcdn_is_gcd_pos n a b : (Zgcd_bound (Zpos a) <= n)%nat ->
+   Zis_gcd (Zpos a) b (Zgcdn n (Zpos a) b).
+ Proof.
+  intros.
+  generalize (Zgcd_bound_fibonacci (Zpos a)).
+  simpl Zgcd_bound in *.
+  remember (Pos.size_nat a+Pos.size_nat a)%nat as m.
+  assert (1 < m)%nat.
+  { rewrite Heqm; destruct a; simpl; rewrite 1?plus_comm;
+    auto with arith. }
+  destruct m as [ |m]; [inversion H0; auto| ].
+  destruct n as [ |n]; [inversion H; auto| ].
+  simpl Zgcdn.
+  unfold Z.modulo.
+  generalize (Z_div_mod b (Zpos a) (eq_refl Gt)).
+  destruct (Z.div_eucl b (Zpos a)) as (q,r).
+  intros (->,(H1,H2)) H3.
+  apply Zis_gcd_for_euclid2.
+  Z.le_elim H1.
+  + apply Zgcdn_ok_before_fibonacci; auto.
+    apply Z.lt_le_trans with (fibonacci (S m));
+    [ omega | apply fibonacci_incr; auto].
+  + subst r; simpl.
+    destruct m as [ |m]; [exfalso; omega| ].
+    destruct n as [ |n]; [exfalso; omega| ].
+    simpl; apply Zis_gcd_sym; apply Zis_gcd_0.
+ Qed.
+
+ Lemma Zgcdn_is_gcd n a b :
+   (Zgcd_bound a <= n)%nat -> Zis_gcd a b (Zgcdn n a b).
+ Proof.
+   destruct a.
+   - simpl; intros.
+     destruct n; [exfalso; omega | ].
+     simpl; generalize (Zis_gcd_0_abs b); intuition.
+   - apply Zgcdn_is_gcd_pos.
+   - rewrite <- Zgcd_bound_opp, <- Zgcdn_opp.
+     intros. apply Zis_gcd_minus, Zis_gcd_sym. simpl Z.opp.
+     now apply Zgcdn_is_gcd_pos.
  Qed.
 
  Lemma Zgcd_is_gcd :

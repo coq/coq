@@ -39,8 +39,8 @@ Proof. reflexivity. Qed.
 Lemma floor_ok : forall p:positive, floor p <= Zpos p < 2 * floor p.
 Proof.
  unfold floor. induction p; simpl.
- - rewrite !Z.pos_xI, (Z.pos_xO (xO _)), Z.pos_xO. omega.
- - rewrite (Z.pos_xO (xO _)), (Z.pos_xO p), Z.pos_xO. omega.
+ - rewrite !Pos2Z.inj_xI, (Pos2Z.inj_xO (xO _)), Pos2Z.inj_xO. omega.
+ - rewrite (Pos2Z.inj_xO (xO _)), (Pos2Z.inj_xO p), Pos2Z.inj_xO. omega.
  - omega.
 Qed.
 
@@ -107,7 +107,7 @@ Require Import List.
 Fixpoint Zlength_aux (acc:Z) (A:Type) (l:list A) : Z :=
   match l with
     | nil => acc
-    | _ :: l => Zlength_aux (Zsucc acc) A l
+    | _ :: l => Zlength_aux (Z.succ acc) A l
   end.
 
 Definition Zlength := Zlength_aux 0.

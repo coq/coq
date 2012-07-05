@@ -42,10 +42,9 @@ Section cring.
 Context {R:Type}`{Rr:Cring R}.
 
 Lemma cring_eq_ext: ring_eq_ext _+_ _*_ -_ _==_.
-intros. apply mk_reqe;intros. 
-rewrite H. rewrite H0. reflexivity.
-rewrite H. rewrite H0. reflexivity.
- rewrite H. reflexivity. Defined.
+Proof.
+intros. apply mk_reqe; solve_proper.
+Defined.
 
 Lemma cring_almost_ring_theory:
    almost_ring_theory (R:=R) zero one _+_ _*_ _-_ -_ _==_.
@@ -64,11 +63,11 @@ rewrite ring_sub_def ; reflexivity. Defined.
 
 Lemma cring_morph:
   ring_morph  zero one _+_ _*_ _-_ -_ _==_
-             0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool
+             0%Z 1%Z Z.add Z.mul Z.sub Z.opp Zeq_bool
              Ncring_initial.gen_phiZ.
 intros. apply mkmorph ; intros; simpl; try reflexivity.
 rewrite Ncring_initial.gen_phiZ_add; reflexivity.
-rewrite ring_sub_def. unfold Zminus. rewrite Ncring_initial.gen_phiZ_add.
+rewrite ring_sub_def. unfold Z.sub. rewrite Ncring_initial.gen_phiZ_add.
 rewrite Ncring_initial.gen_phiZ_opp; reflexivity.
 rewrite Ncring_initial.gen_phiZ_mul; reflexivity.
 rewrite Ncring_initial.gen_phiZ_opp; reflexivity.
@@ -80,7 +79,7 @@ Lemma cring_power_theory :
 intros; apply Ring_theory.mkpow_th. reflexivity. Defined.
 
 Lemma cring_div_theory: 
-  div_theory _==_ Zplus Zmult Ncring_initial.gen_phiZ Z.quotrem.
+  div_theory _==_ Z.add Z.mul Ncring_initial.gen_phiZ Z.quotrem.
 intros. apply InitialRing.Ztriv_div_th. unfold Setoid_Theory.
 simpl.   apply ring_setoid. Defined.
 
@@ -102,7 +101,7 @@ Ltac cring_gen :=
                         ring_setoid
                         cring_eq_ext
                         cring_almost_ring_theory
-                        Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool
+                        Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp Zeq_bool
                         Ncring_initial.gen_phiZ
                         cring_morph
                         N
@@ -126,7 +125,7 @@ Ltac cring:=
   cring_compute.
 
 Instance Zcri: (Cring (Rr:=Zr)).
-red. exact Zmult_comm. Defined.
+red. exact Z.mul_comm. Defined.
 
 (* Cring_simplify *)
 
@@ -136,7 +135,7 @@ Ltac cring_simplify_aux lterm fv lexpr hyp :=
     match lexpr with
       | ?e::?le =>
         let t := constr:(@Ring_polynom.norm_subst
-          Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool Z.quotrem O nil e) in
+          Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp Zeq_bool Z.quotrem O nil e) in
         let te := 
           constr:(@Ring_polynom.Pphi_dev
             _ 0 1 _+_ _*_ _-_ -_ 
@@ -149,7 +148,7 @@ Ltac cring_simplify_aux lterm fv lexpr hyp :=
         let t':= fresh "t" in
         pose (t' := nft);
         assert (eq1 : t = t');
-        [vm_cast_no_check (refl_equal t')|
+        [vm_cast_no_check (eq_refl t')|
         let eq2 := fresh "ring" in
         assert (eq2:(@Ring_polynom.PEeval
           _ zero _+_ _*_ _-_ -_ Z Ncring_initial.gen_phiZ N (fun n:N => n)
@@ -159,7 +158,7 @@ Ltac cring_simplify_aux lterm fv lexpr hyp :=
             ring_setoid
             cring_eq_ext
             cring_almost_ring_theory
-            Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool
+            Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp Zeq_bool
             Ncring_initial.gen_phiZ
             cring_morph
             N
@@ -169,7 +168,7 @@ Ltac cring_simplify_aux lterm fv lexpr hyp :=
             Z.quotrem
             cring_div_theory
             get_signZ get_signZ_th
-            O nil fv I nil (refl_equal nil) );
+            O nil fv I nil (eq_refl nil) );
           intro eq3; apply eq3; reflexivity|
               match hyp with
                 | 1%nat => rewrite eq2

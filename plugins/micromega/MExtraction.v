@@ -51,7 +51,7 @@ Extract Constant Rinv   => "fun x -> 1 / x".
 Extraction "micromega.ml"
   List.map simpl_cone (*map_cone  indexes*)
   denorm Qpower
-  n_of_Z N_of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find.
+  n_of_Z N.of_nat ZTautoChecker ZWeakChecker QTautoChecker RTautoChecker find.
 
 
 

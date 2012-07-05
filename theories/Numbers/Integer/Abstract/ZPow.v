@@ -18,6 +18,17 @@ Module Type ZPowProp
 
  Include NZPowProp A A B.
 
+(** A particular case of [pow_add_r], with no precondition *)
+
+Lemma pow_twice_r a b : a^(2*b) == a^b * a^b.
+Proof.
+ rewrite two_succ. nzsimpl.
+ destruct (le_gt_cases 0 b).
+ - now rewrite pow_add_r.
+ - rewrite !pow_neg_r. now nzsimpl. trivial.
+   now apply add_neg_neg.
+Qed.
+
 (** Parity of power *)
 
 Lemma even_pow : forall a b, 0<b -> even (a^b) = even a.

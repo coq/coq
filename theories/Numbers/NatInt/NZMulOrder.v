@@ -271,9 +271,9 @@ Definition mul_eq_0 := eq_mul_0.
 Definition mul_eq_0_l := eq_mul_0_l.
 Definition mul_eq_0_r := eq_mul_0_r.
 
-Theorem lt_0_mul : forall n m, 0 < n * m <-> (0 < n /\ 0 < m) \/ (m < 0 /\ n < 0).
+Theorem lt_0_mul n m : 0 < n * m <-> (0 < n /\ 0 < m) \/ (m < 0 /\ n < 0).
 Proof.
-intros n m; split; [intro H | intros [[H1 H2] | [H1 H2]]].
+split; [intro H | intros [[H1 H2] | [H1 H2]]].
 destruct (lt_trichotomy n 0) as [H1 | [H1 | H1]];
 [| rewrite H1 in H; rewrite mul_0_l in H; false_hyp H lt_irrefl |];
 (destruct (lt_trichotomy m 0) as [H2 | [H2 | H2]];

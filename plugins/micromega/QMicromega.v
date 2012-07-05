@@ -60,7 +60,7 @@ Proof.
 Qed.
 
 
-(*Definition Zeval_expr :=  eval_pexpr 0 Zplus Zmult Zminus Zopp  (fun x => x) (fun x => Z_of_N x) (Zpower).*)
+(*Definition Zeval_expr :=  eval_pexpr 0 Z.add Z.mul Z.sub Z.opp  (fun x => x) (fun x => Z.of_N x) (Z.pow).*)
 Require Import EnvRing.
 
 Fixpoint Qeval_expr (env: PolEnv Q) (e: PExpr Q) : Q :=
@@ -71,7 +71,7 @@ Fixpoint Qeval_expr (env: PolEnv Q) (e: PExpr Q) : Q :=
     | PEsub pe1 pe2 => (Qeval_expr env pe1) - (Qeval_expr env pe2)
     | PEmul pe1 pe2 => (Qeval_expr env pe1) * (Qeval_expr env pe2)
     | PEopp pe1 => - (Qeval_expr env pe1)
-    | PEpow pe1 n => Qpower (Qeval_expr env pe1)  (Z_of_N n)
+    | PEpow pe1 n => Qpower (Qeval_expr env pe1)  (Z.of_N n)
   end.
 
 Lemma Qeval_expr_simpl : forall env e,
@@ -83,7 +83,7 @@ Lemma Qeval_expr_simpl : forall env e,
     | PEsub pe1 pe2 => (Qeval_expr env pe1) - (Qeval_expr env pe2)
     | PEmul pe1 pe2 => (Qeval_expr env pe1) * (Qeval_expr env pe2)
     | PEopp pe1 => - (Qeval_expr env pe1)
-    | PEpow pe1 n => Qpower (Qeval_expr env pe1)  (Z_of_N n)
+    | PEpow pe1 n => Qpower (Qeval_expr env pe1)  (Z.of_N n)
   end.
 Proof.
   destruct e ; reflexivity.
@@ -91,7 +91,7 @@ Qed.
 
 Definition Qeval_expr' := eval_pexpr  Qplus Qmult Qminus Qopp (fun x => x) (fun x => x) (pow_N 1 Qmult).
 
-Lemma QNpower : forall r n, r ^ Z_of_N n = pow_N 1 Qmult r n.
+Lemma QNpower : forall r n, r ^ Z.of_N n = pow_N 1 Qmult r n.
 Proof.
   destruct n ; reflexivity.
 Qed.

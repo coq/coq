@@ -3,7 +3,7 @@ Require Export Integral_domain.
 Require Export Ncring_initial.
 
 Instance Zcri: (Cring (Rr:=Zr)).
-red. exact Zmult_comm. Defined.
+red. exact Z.mul_comm. Defined.
 
 Lemma Z_one_zero: 1%Z <> 0%Z.
 omega. 

@@ -387,8 +387,7 @@ Hint Resolve (SSR_plus_zero_right2 S T).
 Hint Resolve (SSR_mult_one_right S T).
 Hint Resolve (SSR_mult_one_right2 S T).
 Hint Resolve (SSR_plus_reg_right S T).
-Hint Resolve refl_equal sym_equal trans_equal.
-(*Hints Resolve refl_eqT sym_eqT trans_eqT.*)
+Hint Resolve eq_refl eq_sym eq_trans.
 Hint Immediate T.
 
 Lemma varlist_eq_prop : forall x y:varlist, Is_true (varlist_eq x y) -> x = y.
@@ -1052,8 +1051,7 @@ Hint Resolve (STh_plus_zero_right2 S T).
 Hint Resolve (STh_mult_one_right S T).
 Hint Resolve (STh_mult_one_right2 S T).
 Hint Resolve (STh_plus_reg_right S plus_morph T).
-Hint Resolve refl_equal sym_equal trans_equal.
-(*Hints Resolve refl_eqT sym_eqT trans_eqT.*)
+Hint Resolve eq_refl eq_sym eq_trans.
 Hint Immediate T.
 
 

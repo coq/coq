@@ -36,7 +36,7 @@ End TestOrder.
 
 (** Z forms a ring *)
 
-(*Lemma Zring : ring_theory 0 1 NZadd NZmul NZsub Zopp NZeq.
+(*Lemma Zring : ring_theory 0 1 NZadd NZmul NZsub Z.opp NZeq.
 Proof.
 constructor.
 exact Zadd_0_l.

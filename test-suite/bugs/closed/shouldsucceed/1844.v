@@ -1,6 +1,6 @@
 Require Import ZArith.
 
-Definition zeq := Z_eq_dec.
+Definition zeq := Z.eq_dec.
 
 Definition update (A: Set) (x: Z) (v: A) (s: Z -> A) : Z -> A :=
  fun y => if zeq x y then v else s y.

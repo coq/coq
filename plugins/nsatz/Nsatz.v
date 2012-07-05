@@ -64,15 +64,15 @@ Definition PEZ := PExpr Z.
 Definition P0Z : PolZ := P0 (C:=Z) 0%Z.
 
 Definition PolZadd : PolZ -> PolZ -> PolZ :=
-  @Padd  Z 0%Z Zplus Zeq_bool.
+  @Padd  Z 0%Z Z.add Zeq_bool.
 
 Definition PolZmul : PolZ -> PolZ -> PolZ :=
-  @Pmul  Z 0%Z 1%Z Zplus Zmult Zeq_bool.
+  @Pmul  Z 0%Z 1%Z Z.add Z.mul Zeq_bool.
 
 Definition PolZeq := @Peq Z Zeq_bool.
 
 Definition norm :=
-  @norm_aux Z 0%Z 1%Z Zplus Zmult Zminus Zopp Zeq_bool.
+  @norm_aux Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp Zeq_bool.
 
 Fixpoint mult_l (la : list PEZ) (lp: list PolZ) : PolZ :=
  match la, lp with
@@ -100,16 +100,16 @@ Definition PhiR : list R -> PolZ -> R :=
 Definition PEevalR : list R -> PEZ -> R :=
    PEeval ring0 add mul sub opp
     (gen_phiZ ring0 ring1 add mul opp)
-         nat_of_N pow.
+         N.to_nat pow.
 
 Lemma P0Z_correct : forall l, PhiR l P0Z = 0.
 Proof. trivial. Qed.
 
 Lemma Rext: ring_eq_ext add mul opp _==_.
-apply mk_reqe. intros. rewrite H ; rewrite H0; cring.
- intros. rewrite H; rewrite H0; cring. 
-intros.  rewrite H; cring. Qed.
- 
+Proof.
+constructor; solve_proper.
+Qed.
+
 Lemma Rset : Setoid_Theory R _==_.
 apply ring_setoid.
 Qed.
@@ -144,8 +144,8 @@ unfold PolZmul, PhiR. intros.
 Qed.
 
 Lemma R_power_theory
-     : Ring_theory.power_theory ring1 mul _==_ nat_of_N pow.
-apply Ring_theory.mkpow_th. unfold pow. intros. rewrite Nnat.N_of_nat_of_N. 
+     : Ring_theory.power_theory ring1 mul _==_ N.to_nat pow.
+apply Ring_theory.mkpow_th. unfold pow. intros. rewrite Nnat.N2Nat.id.
 reflexivity. Qed.
 
 Lemma norm_correct :
@@ -241,9 +241,9 @@ Fixpoint interpret3 t fv {struct t}: R :=
   | (PEopp t1) =>
        let v1  := interpret3 t1 fv in (-v1)
   | (PEpow t1 t2) =>
-       let v1  := interpret3 t1 fv in pow v1 (nat_of_N t2)
+       let v1  := interpret3 t1 fv in pow v1 (N.to_nat t2)
   | (PEc t1) => (IZR1 t1)
-  | (PEX n) => List.nth (pred (nat_of_P n)) fv 0
+  | (PEX n) => List.nth (pred (Pos.to_nat n)) fv 0
   end.
 
 
@@ -308,9 +308,9 @@ Ltac nsatz_call radicalmax info nparam p lp kont :=
     lazymatch n with
     | 0%N => fail
     | _ =>
-        (let r := eval compute in (Nminus radicalmax (Npred n)) in
+        (let r := eval compute in (N.sub radicalmax (N.pred n)) in
          nsatz_call_n info nparam p r lp kont) ||
-         let n' := eval compute in (Npred n) in try_n n'
+         let n' := eval compute in (N.pred n) in try_n n'
     end in
   try_n radicalmax.
 
@@ -343,7 +343,7 @@ Ltac get_lpol g :=
   end.
 
 Ltac nsatz_generic radicalmax info lparam lvar :=
- let nparam := eval compute in (Z_of_nat (List.length lparam)) in
+ let nparam := eval compute in (Z.of_nat (List.length lparam)) in
  match goal with
   |- ?g => let lb := lterm_goal g in 
      match (match lvar with
@@ -397,7 +397,7 @@ Ltac nsatz_generic radicalmax info lparam lvar :=
           (*simpl*) idtac;
           repeat (split;[assumption|idtac]); exact I
         | (*simpl in Hg2;*) (*simpl*) idtac; 
-          apply Rintegral_domain_pow with (interpret3 c fv) (nat_of_N r);
+          apply Rintegral_domain_pow with (interpret3 c fv) (N.to_nat r);
           (*simpl*) idtac;
             try apply integral_domain_one_zero;
             try apply integral_domain_minus_one_zero;
@@ -502,7 +502,7 @@ omega.
 Qed.
 
 Instance Zcri: (Cring (Rr:=Zr)).
-red. exact Zmult_comm. Defined.
+red. exact Z.mul_comm. Defined.
 
 Instance Zdi : (Integral_domain (Rcr:=Zcri)). 
 constructor. 

@@ -318,7 +318,7 @@ Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
 
 Theorem div_mod : forall a b, ~b==0 -> a == b*(div a b) + (modulo a b).
 Proof.
-intros a b. zify. intros. apply Z_div_mod_eq_full; auto.
+intros a b. zify. intros. apply Z.div_mod; auto.
 Qed.
 
 Theorem mod_bound_pos : forall a b, 0<=a -> 0<b ->
@@ -444,7 +444,7 @@ Qed.
 (** Recursion *)
 
 Definition recursion (A : Type) (a : A) (f : NN.t -> A -> A) (n : NN.t) :=
-  Nrect (fun _ => A) a (fun n a => f (NN.of_N n) a) (NN.to_N n).
+  N.peano_rect (fun _ => A) a (fun n a => f (NN.of_N n) a) (NN.to_N n).
 Arguments recursion [A] a f n.
 
 Instance recursion_wd (A : Type) (Aeq : relation A) :
@@ -457,7 +457,7 @@ unfold NN.to_N.
 rewrite <- Exx'; clear x' Exx'.
 induction (Z.to_N [x]) using N.peano_ind.
 simpl; auto.
-rewrite 2 Nrect_step. now apply Eff'.
+rewrite 2 N.peano_rect_succ. now apply Eff'.
 Qed.
 
 Theorem recursion_0 :
@@ -474,7 +474,7 @@ Proof.
 unfold eq, recursion; intros A Aeq a f EAaa f_wd n.
 replace (to_N (succ n)) with (N.succ (to_N n)) by
  (zify; now rewrite <- Z2N.inj_succ by apply spec_pos).
-rewrite Nrect_step.
+rewrite N.peano_rect_succ.
 apply f_wd; auto.
 zify. now rewrite Z2N.id by apply spec_pos.
 fold (recursion a f n). apply recursion_wd; auto. red; auto.

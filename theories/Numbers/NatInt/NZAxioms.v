@@ -43,7 +43,7 @@ End IsNZDomain.
 (** Axiomatization of some more constants
 
     Simply denoting "1" for (S 0) and so on works ok when implementing
-    by nat, but leaves some (Nsucc N0) when implementing by N.
+    by nat, but leaves some (N.succ N0) when implementing by N.
 *)
 
 Module Type OneTwo (Import T:Typ).

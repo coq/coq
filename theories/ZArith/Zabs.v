@@ -77,9 +77,9 @@ Notation Zsgn_null := Z.sgn_null_iff (compat "8.3").
 (** A characterization of the sign function: *)
 
 Lemma Zsgn_spec x :
-  0 < x /\ Zsgn x = 1 \/
-  0 = x /\ Zsgn x = 0 \/
-  0 > x /\ Zsgn x = -1.
+  0 < x /\ Z.sgn x = 1 \/
+  0 = x /\ Z.sgn x = 0 \/
+  0 > x /\ Z.sgn x = -1.
 Proof.
  intros. Z.swap_greater. apply Z.sgn_spec.
 Qed.
@@ -99,7 +99,7 @@ Proof.
  intros (H,H'). apply Zabs2Nat.inj_le; trivial. now transitivity n.
 Qed.
 
-Lemma Zabs_nat_lt n m : 0 <= n < m -> (Zabs_nat n < Zabs_nat m)%nat.
+Lemma Zabs_nat_lt n m : 0 <= n < m -> (Z.abs_nat n < Z.abs_nat m)%nat.
 Proof.
  intros (H,H'). apply Zabs2Nat.inj_lt; trivial.
   transitivity n; trivial. now apply Z.lt_le_incl.

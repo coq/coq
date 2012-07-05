@@ -214,7 +214,7 @@ Proof.
   split.
   unfold D_x, no_cond in |- *; split.
   trivial.
-  apply (sym_not_eq (A:=R)); apply H6.
+  apply (not_eq_sym (A:=R)); apply H6.
   unfold Rminus in |- *; rewrite Ropp_0; rewrite Rplus_0_r; apply H7.
   unfold Boule in |- *; unfold Rminus in |- *; rewrite Ropp_0;
     rewrite Rplus_0_r; rewrite Rabs_R0; apply (cond_pos r).
@@ -298,7 +298,7 @@ Proof.
   split.
   unfold D_x, no_cond in |- *; split.
   trivial.
-  apply (sym_not_eq (A:=R)); unfold Rdiv in |- *; apply prod_neq_R0.
+  apply (not_eq_sym (A:=R)); unfold Rdiv in |- *; apply prod_neq_R0.
   apply H7.
   apply Rinv_neq_0_compat; discrR.
   apply Rlt_trans with (del_c / 2).

@@ -83,7 +83,7 @@ Proof.
 Qed.
 Print eq_3_3.
 
-Lemma eq_proof_proof : refl_equal (2*6) = refl_equal (3*4).
+Lemma eq_proof_proof : eq_refl (2*6) = eq_refl (3*4).
 Proof.
  reflexivity.
 Qed.
@@ -241,7 +241,7 @@ Section equality_elimination.
            (Q : A -> Type).
  Check (fun H : Q a =>
   match p in (eq _  y) return Q y with
-     refl_equal => H
+     eq_refl => H
   end).
 
 End equality_elimination.
@@ -377,18 +377,18 @@ Inductive itree : Set :=
 
 Definition isingle l := inode l (fun i => ileaf).
 
-Definition t1 := inode 0 (fun n => isingle (Z_of_nat (2*n))).
+Definition t1 := inode 0 (fun n => isingle (Z.of_nat (2*n))).
 
 Definition t2 := inode 0
                       (fun n : nat =>
-                               inode (Z_of_nat n)
-                                     (fun p => isingle (Z_of_nat (n*p)))).
+                               inode (Z.of_nat n)
+                                     (fun p => isingle (Z.of_nat (n*p)))).
 
 
 Inductive itree_le : itree-> itree -> Prop :=
   | le_leaf : forall t, itree_le  ileaf t
   | le_node  : forall l l' s s',
-                       Zle l l' ->
+                       Z.le l l' ->
                       (forall i, exists j:nat, itree_le (s i) (s' j)) ->
                       itree_le  (inode  l s) (inode  l' s').
 
@@ -423,7 +423,7 @@ Qed.
 Inductive itree_le' : itree-> itree -> Prop :=
   | le_leaf' : forall t, itree_le'  ileaf t
   | le_node' : forall l l' s s' g,
-                       Zle l l' ->
+                       Z.le l l' ->
                       (forall i, itree_le' (s i) (s' (g i))) ->
                        itree_le'  (inode  l s) (inode  l' s').
 

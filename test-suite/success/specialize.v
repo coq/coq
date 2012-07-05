@@ -5,20 +5,20 @@ intros.
 (* "compatibility" mode: specializing a global name
    means a kind of generalize *)
 
-specialize trans_equal. intros _.
-specialize trans_equal with (1:=H)(2:=H0). intros _.
-specialize trans_equal with (x:=a)(y:=b)(z:=c). intros _.
-specialize trans_equal with (1:=H)(z:=c). intros _.
-specialize trans_equal with nat a b c. intros _.
-specialize (@trans_equal nat). intros _.
-specialize (@trans_equal _ a b c). intros _.
-specialize (trans_equal (x:=a)). intros _.
-specialize (trans_equal (x:=a)(y:=b)). intros _.
-specialize (trans_equal H H0). intros _.
-specialize (trans_equal H0 (z:=b)). intros _.
+specialize eq_trans. intros _.
+specialize eq_trans with (1:=H)(2:=H0). intros _.
+specialize eq_trans with (x:=a)(y:=b)(z:=c). intros _.
+specialize eq_trans with (1:=H)(z:=c). intros _.
+specialize eq_trans with nat a b c. intros _.
+specialize (@eq_trans nat). intros _.
+specialize (@eq_trans _ a b c). intros _.
+specialize (eq_trans (x:=a)). intros _.
+specialize (eq_trans (x:=a)(y:=b)). intros _.
+specialize (eq_trans H H0). intros _.
+specialize (eq_trans H0 (z:=b)). intros _.
 
 (* local "in place" specialization *)
-assert (Eq:=trans_equal).
+assert (Eq:=eq_trans).
 
 specialize Eq.
 specialize Eq with (1:=H)(2:=H0). Undo.
@@ -38,10 +38,10 @@ specialize (Eq _ _ _ b H0). Undo.
     presque ok... *)
 
 (* 2) echoue moins lorsque zero premise de mangé *)
-specialize trans_equal with (1:=Eq).  (* mal typé !! *)
+specialize eq_trans with (1:=Eq).  (* mal typé !! *)
 
 (* 3) *)
-specialize trans_equal with _ a b c. intros _.
+specialize eq_trans with _ a b c. intros _.
 (* Anomaly: Evar ?88 was not declared. Please report. *)
 *)
 

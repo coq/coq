@@ -30,7 +30,7 @@ Qed.
 
 Theorem inj_add p q : to_nat (p + q) = to_nat p + to_nat q.
 Proof.
- revert q. induction p using Pind; intros q.
+ revert q. induction p using peano_ind; intros q.
  now rewrite add_1_l, inj_succ.
  now rewrite add_succ_l, !inj_succ, IHp.
 Qed.
@@ -410,23 +410,24 @@ Notation P_of_succ_nat_o_nat_of_P_eq_succ := Pos2SuccNat.id_succ (compat "8.3").
 Notation pred_o_P_of_succ_nat_o_nat_of_P_eq_id := Pos2SuccNat.pred_id (compat "8.3").
 
 Lemma nat_of_P_minus_morphism p q :
- Pcompare p q Eq = Gt -> Pos.to_nat (p - q) = Pos.to_nat p - Pos.to_nat q.
-Proof (fun H => Pos2Nat.inj_sub p q (ZC1 _ _ H)).
+ Pos.compare_cont p q Eq = Gt ->
+  Pos.to_nat (p - q) = Pos.to_nat p - Pos.to_nat q.
+Proof (fun H => Pos2Nat.inj_sub p q (Pos.gt_lt _ _ H)).
 
 Lemma nat_of_P_lt_Lt_compare_morphism p q :
- Pcompare p q Eq = Lt -> Pos.to_nat p < Pos.to_nat q.
+ Pos.compare_cont p q Eq = Lt -> Pos.to_nat p < Pos.to_nat q.
 Proof (proj1 (Pos2Nat.inj_lt p q)).
 
 Lemma nat_of_P_gt_Gt_compare_morphism p q :
- Pcompare p q Eq = Gt -> Pos.to_nat p > Pos.to_nat q.
+ Pos.compare_cont p q Eq = Gt -> Pos.to_nat p > Pos.to_nat q.
 Proof (proj1 (Pos2Nat.inj_gt p q)).
 
 Lemma nat_of_P_lt_Lt_compare_complement_morphism p q :
- Pos.to_nat p < Pos.to_nat q -> Pcompare p q Eq = Lt.
+ Pos.to_nat p < Pos.to_nat q -> Pos.compare_cont p q Eq = Lt.
 Proof (proj2 (Pos2Nat.inj_lt p q)).
 
 Definition nat_of_P_gt_Gt_compare_complement_morphism p q :
- Pos.to_nat p > Pos.to_nat q -> Pcompare p q Eq = Gt.
+ Pos.to_nat p > Pos.to_nat q -> Pos.compare_cont p q Eq = Gt.
 Proof (proj2 (Pos2Nat.inj_gt p q)).
 
 (** Old intermediate results about [Pmult_nat] *)
@@ -445,7 +446,7 @@ Proof.
 Qed.
 
 Lemma Pmult_nat_succ_morphism :
- forall p n, Pmult_nat (Psucc p) n = n + Pmult_nat p n.
+ forall p n, Pmult_nat (Pos.succ p) n = n + Pmult_nat p n.
 Proof.
  intros. now rewrite !Pmult_nat_mult, Pos2Nat.inj_succ.
 Qed.
@@ -457,7 +458,7 @@ Proof.
 Qed.
 
 Theorem Pmult_nat_plus_carry_morphism :
- forall p q n, Pmult_nat (Pplus_carry p q) n = n + Pmult_nat (p + q) n.
+ forall p q n, Pmult_nat (Pos.add_carry p q) n = n + Pmult_nat (p + q) n.
 Proof.
  intros. now rewrite Pos.add_carry_spec, Pmult_nat_succ_morphism.
 Qed.

@@ -22,39 +22,39 @@ Arguments Qcmake this%Q _.
 Open Scope Qc_scope.
 
 Lemma Qred_identity :
-  forall q:Q, Zgcd (Qnum q) (QDen q) = 1%Z -> Qred q = q.
+  forall q:Q, Z.gcd (Qnum q) (QDen q) = 1%Z -> Qred q = q.
 Proof.
   unfold Qred; intros (a,b); simpl.
-  generalize (Zggcd_gcd a ('b)) (Zggcd_correct_divisors a ('b)).
+  generalize (Z.ggcd_gcd a ('b)) (Z.ggcd_correct_divisors a ('b)).
   intros.
   rewrite H1 in H; clear H1.
-  destruct (Zggcd a ('b)) as (g,(aa,bb)); simpl in *; subst.
+  destruct (Z.ggcd a ('b)) as (g,(aa,bb)); simpl in *; subst.
   destruct H0.
-  rewrite Zmult_1_l in H, H0.
+  rewrite Z.mul_1_l in H, H0.
   subst; simpl; auto.
 Qed.
 
 Lemma Qred_identity2 :
-  forall q:Q, Qred q = q -> Zgcd (Qnum q) (QDen q) = 1%Z.
+  forall q:Q, Qred q = q -> Z.gcd (Qnum q) (QDen q) = 1%Z.
 Proof.
   unfold Qred; intros (a,b); simpl.
-  generalize (Zggcd_gcd a ('b)) (Zggcd_correct_divisors a ('b)) (Zgcd_is_pos a ('b)).
+  generalize (Z.ggcd_gcd a ('b)) (Z.ggcd_correct_divisors a ('b)) (Z.gcd_nonneg a ('b)).
   intros.
   rewrite <- H; rewrite <- H in H1; clear H.
-  destruct (Zggcd a ('b)) as (g,(aa,bb)); simpl in *; subst.
+  destruct (Z.ggcd a ('b)) as (g,(aa,bb)); simpl in *; subst.
   injection H2; intros; clear H2.
   destruct H0.
   clear H0 H3.
   destruct g as [|g|g]; destruct bb as [|bb|bb]; simpl in *; try discriminate.
   f_equal.
-  apply Pmult_reg_r with bb.
+  apply Pos.mul_reg_r with bb.
   injection H2; intros.
   rewrite <- H0.
   rewrite H; simpl; auto.
   elim H1; auto.
 Qed.
 
-Lemma Qred_iff : forall q:Q, Qred q = q <-> Zgcd (Qnum q) (QDen q) = 1%Z.
+Lemma Qred_iff : forall q:Q, Qred q = q <-> Z.gcd (Qnum q) (QDen q) = 1%Z.
 Proof.
   split; intros.
   apply Qred_identity2; auto.

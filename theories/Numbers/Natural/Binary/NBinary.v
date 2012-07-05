@@ -31,8 +31,8 @@ Time Eval vm_compute in (log 500000). (* 11 sec *)
 Fixpoint binposlog (p : positive) : N :=
 match p with
 | xH => 0
-| xO p' => Nsucc (binposlog p')
-| xI p' => Nsucc (binposlog p')
+| xO p' => N.succ (binposlog p')
+| xI p' => N.succ (binposlog p')
 end.
 
 Definition binlog (n : N) : N :=
