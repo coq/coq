@@ -576,7 +576,6 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/SeqSeries.v
     theories/Reals/Sqrt_reg.v
     theories/Reals/Rlogic.v
-    theories/Reals/LegacyRfield.v
     (theories/Reals/Reals.v)
   </dd>
     

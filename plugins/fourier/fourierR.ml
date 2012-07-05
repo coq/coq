@@ -605,7 +605,7 @@ let rec fourier gl=
 (* en attendant Field, ça peut aider Ring de remplacer 1/1 par 1 ... *)
 
       			        [tclORELSE
-                                   (Ring.polynom [])
+                                   (* TODO : Ring.polynom []*) tclIDTAC
                                    tclIDTAC;
 					  (tclTHEN (apply (get coq_sym_eqT))
 						(apply (get coq_Rinv_1)))]

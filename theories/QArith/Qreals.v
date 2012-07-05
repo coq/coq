@@ -187,25 +187,3 @@ rewrite Q2R_inv; auto.
 Qed.
 
 Hint Rewrite Q2R_plus Q2R_mult Q2R_opp Q2R_minus Q2R_inv Q2R_div : q2r_simpl.
-
-Section LegacyQField.
-
-(** In the past, the field tactic was not able to deal with setoid datatypes,
-    so translating from Q to R and applying field on reals was a workaround.
-    See now Qfield for a direct field tactic on Q. *)
-
-Ltac QField := apply eqR_Qeq; autorewrite with q2r_simpl; try field; auto.
-
-(** Examples of use: *)
-
-Let ex1 : forall x y z : Q, (x+y)*z == (x*z)+(y*z).
-intros; QField.
-Qed.
-
-Let ex2 : forall x y : Q, ~ y==0 -> (x/y)*y == x.
-intros; QField.
-intro; apply H; apply eqR_Qeq.
-rewrite H0; unfold Q2R; simpl; field; auto with real.
-Qed.
-
-End LegacyQField.

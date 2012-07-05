@@ -16,7 +16,6 @@ Require Import ZMicromega.
 Require Import QMicromega.
 Require Import RMicromega.
 Require Import QArith.
-Require Export Ring_normalize.
 Require Import ZArith.
 Require Import Rdefinitions.
 Require Export RingMicromega.

@@ -74,9 +74,9 @@ SRCDIRS:=\
   pretyping	interp		toplevel/utils	toplevel 	parsing \
   printing	grammar 	intf            ide/utils	ide	\
   $(addprefix plugins/, \
-    omega	romega 		micromega 	quote		ring \
+    omega	romega 		micromega 	quote \
     setoid_ring xml 		extraction 	fourier \
-    cc 		funind 		firstorder 	field \
+    cc 		funind 		firstorder \
     rtauto 	nsatz           syntax          decl_mode	btauto)
 
 # Order is relevent here because kernel and checker contain files
@@ -166,10 +166,8 @@ OMEGACMA:=plugins/omega/omega_plugin.cma
 ROMEGACMA:=plugins/romega/romega_plugin.cma
 MICROMEGACMA:=plugins/micromega/micromega_plugin.cma
 QUOTECMA:=plugins/quote/quote_plugin.cma
-RINGCMA:=plugins/ring/ring_plugin.cma
-NEWRINGCMA:=plugins/setoid_ring/newring_plugin.cma
+RINGCMA:=plugins/setoid_ring/newring_plugin.cma
 NSATZCMA:=plugins/nsatz/nsatz_plugin.cma
-FIELDCMA:=plugins/field/field_plugin.cma
 XMLCMA:=plugins/xml/xml_plugin.cma
 FOURIERCMA:=plugins/fourier/fourier_plugin.cma
 EXTRACTIONCMA:=plugins/extraction/extraction_plugin.cma
@@ -188,7 +186,7 @@ OTHERSYNTAXCMA:=$(addprefix plugins/syntax/, \
 DECLMODECMA:=plugins/decl_mode/decl_mode_plugin.cma
 
 PLUGINSCMA:=$(OMEGACMA) $(ROMEGACMA) $(MICROMEGACMA) $(DECLMODECMA) \
-        $(QUOTECMA) $(RINGCMA) $(NEWRINGCMA) $(FIELDCMA) \
+        $(QUOTECMA) $(RINGCMA) \
         $(FOURIERCMA) $(EXTRACTIONCMA) $(XMLCMA) \
         $(CCCMA)  $(FOCMA) $(RTAUTOCMA) $(BTAUTOCMA) \
         $(FUNINDCMA) $(NSATZCMA) $(NATSYNTAXCMA) $(OTHERSYNTAXCMA)
@@ -300,9 +298,7 @@ OMEGAVO:=$(call cat_vo_itarget, plugins/omega)
 ROMEGAVO:=$(call cat_vo_itarget, plugins/romega)
 MICROMEGAVO:=$(call cat_vo_itarget, plugins/micromega)
 QUOTEVO:=$(call cat_vo_itarget, plugins/quote)
-RINGVO:=$(call cat_vo_itarget, plugins/ring)
-FIELDVO:=$(call cat_vo_itarget, plugins/field)
-NEWRINGVO:=$(call cat_vo_itarget, plugins/setoid_ring)
+RINGVO:=$(call cat_vo_itarget, plugins/setoid_ring)
 NSATZVO:=$(call cat_vo_itarget, plugins/nsatz)
 FOURIERVO:=$(call cat_vo_itarget, plugins/fourier)
 FUNINDVO:=$(call cat_vo_itarget, plugins/funind)
@@ -312,9 +308,9 @@ EXTRACTIONVO:=$(call cat_vo_itarget, plugins/extraction)
 XMLVO:=
 CCVO:=
 
-PLUGINSVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) $(RINGVO) $(FIELDVO) \
+PLUGINSVO:= $(OMEGAVO) $(ROMEGAVO) $(MICROMEGAVO) \
 	    $(XMLVO) $(FOURIERVO) $(CCVO) $(FUNINDVO) \
-	    $(RTAUTOVO) $(BTAUTOVO) $(NEWRINGVO) $(QUOTEVO) \
+	    $(RTAUTOVO) $(BTAUTOVO) $(RINGVO) $(QUOTEVO) \
             $(NSATZVO) $(EXTRACTIONVO)
 
 ALLVO:= $(THEORIESVO) $(PLUGINSVO)

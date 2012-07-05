@@ -8,8 +8,7 @@
 
 (* "Fourier's method to solve linear inequations/equations systems.".*)
 
-Require Export LegacyRing.
-Require Export LegacyField.
+Require Export Field.
 Require Export DiscrR.
 Require Export Fourier_util.
 Declare ML Module "fourier_plugin".

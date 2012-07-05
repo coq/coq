@@ -433,18 +433,16 @@ noreal: logic arith bool zarith qarith lists sets fsets relations \
 # 3) plugins
 ###########################################################################
 
-.PHONY: plugins omega micromega ring setoid_ring nsatz xml extraction
-.PHONY: field fourier funind cc rtauto btauto pluginsopt
+.PHONY: plugins omega micromega setoid_ring nsatz xml extraction
+.PHONY: fourier funind cc rtauto btauto pluginsopt
 
 plugins: $(PLUGINSVO)
 omega: $(OMEGAVO) $(OMEGACMA) $(ROMEGAVO) $(ROMEGACMA)
 micromega: $(MICROMEGAVO) $(MICROMEGACMA) $(CSDPCERT)
-ring: $(RINGVO) $(RINGCMA)
-setoid_ring: $(NEWRINGVO) $(NEWRINGCMA)
+setoid_ring: $(RINGVO) $(RINGCMA)
 nsatz: $(NSATZVO) $(NSATZCMA)
 xml: $(XMLVO) $(XMLCMA)
 extraction: $(EXTRACTIONCMA)
-field: $(FIELDVO) $(FIELDCMA)
 fourier: $(FOURIERVO) $(FOURIERCMA)
 funind: $(FUNINDCMA) $(FUNINDVO)
 cc: $(CCVO) $(CCCMA)

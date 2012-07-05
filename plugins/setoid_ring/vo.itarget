@@ -7,7 +7,6 @@ InitialRing.vo
 NArithRing.vo
 RealField.vo
 Ring_base.vo
-Ring_equiv.vo
 Ring_polynom.vo
 Ring_tac.vo
 Ring_theory.vo

@@ -17,7 +17,6 @@
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
 open Quote
-open Ring
 open Mutils
 open Glob_term
 open Errors
