@@ -75,7 +75,7 @@ Ltac false_hyp H G :=
 
 (* A case with no loss of information. *)
 
-Ltac case_eq x := generalize (refl_equal x); pattern x at -1; case x.
+Ltac case_eq x := generalize (eq_refl x); pattern x at -1; case x.
 
 (* use either discriminate or injection on a hypothesis *)
 

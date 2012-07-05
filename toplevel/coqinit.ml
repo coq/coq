@@ -136,3 +136,11 @@ let init_ocaml_path () =
 	[ "pretyping" ]; [ "interp" ]; [ "parsing" ]; [ "proofs" ];
 	[ "tactics" ]; [ "toplevel" ]; [ "printing" ]; [ "intf" ];
         [ "grammar" ]; [ "ide" ] ]
+
+let get_compat_version = function
+  | "8.3" -> Flags.V8_3
+  | "8.2" -> Flags.V8_2
+  | ("8.1" | "8.0") as s ->
+    msg_warning (strbrk ("Compatibility with version "^s^" not supported."));
+    Flags.V8_2
+  | s -> Errors.error ("Unknown compatibility version \""^s^"\".")

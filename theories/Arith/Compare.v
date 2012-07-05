@@ -10,8 +10,6 @@
 
 Open Local Scope nat_scope.
 
-Notation not_eq_sym := sym_not_eq.
-
 Implicit Types m n p q : nat.
 
 Require Import Arith_base.

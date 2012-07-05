@@ -381,7 +381,8 @@ let pr_syntax_modifier = function
   | SetAssoc RightA -> str"right associativity"
   | SetAssoc NonA -> str"no associativity"
   | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_entry_type typ
-  | SetOnlyParsing -> str"only parsing"
+  | SetOnlyParsing Flags.Current -> str"only parsing"
+  | SetOnlyParsing v -> str("compat \"" ^ Flags.pr_version v ^ "\"")
   | SetFormat s -> str"format " ++ pr_located qs s
 
 let pr_syntax_modifiers = function
@@ -779,7 +780,8 @@ let rec pr_vernac = function
       hov 2
         (pr_locality local ++ str"Notation " ++ pr_lident id ++ spc () ++
 	 prlist (fun x -> spc() ++ pr_id x) ids ++ str":=" ++ pr_constrarg c ++
-         pr_syntax_modifiers (if onlyparsing then [SetOnlyParsing] else []))
+         pr_syntax_modifiers
+	   (match onlyparsing with None -> [] | Some v -> [SetOnlyParsing v]))
   | VernacDeclareImplicits (local,q,[]) ->
       hov 2 (pr_section_locality local ++ str"Implicit Arguments" ++ spc() ++
 	pr_smart_global q)
