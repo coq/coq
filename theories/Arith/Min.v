@@ -10,7 +10,7 @@
 
 Require Import NPeano.
 
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 Implicit Types m n p : nat.
 
 Notation min := Peano.min (only parsing).

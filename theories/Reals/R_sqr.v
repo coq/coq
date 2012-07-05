@@ -8,7 +8,7 @@
 
 Require Import Rbase.
 Require Import Rbasic_fun.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (****************************************************)
 (** Rsqr : some results                             *)

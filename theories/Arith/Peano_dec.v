@@ -9,7 +9,7 @@
 Require Import Decidable.
 Require Eqdep_dec.
 Require Import Le Lt.
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 Implicit Types m n x y : nat.
 

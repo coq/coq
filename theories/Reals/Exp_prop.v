@@ -15,8 +15,8 @@ Require Import PSeries_reg.
 Require Import Div2.
 Require Import Even.
 Require Import Max.
-Open Local Scope nat_scope.
-Open Local Scope R_scope.
+Local Open Scope nat_scope.
+Local Open Scope R_scope.
 
 Definition E1 (x:R) (N:nat) : R :=
   sum_f_R0 (fun k:nat => / INR (fact k) * x ^ k) N.

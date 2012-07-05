@@ -15,7 +15,7 @@ Definition gt (n m:nat) := m < n.
 Require Import Le.
 Require Import Lt.
 Require Import Plus.
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 Implicit Types m n p : nat.
 

@@ -11,7 +11,7 @@ Require Import Rfunctions.
 Require Import Rseries.
 Require Import SeqProp.
 Require Import Max.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (****************************************************)
 (*              R is complete :                     *)

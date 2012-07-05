@@ -19,7 +19,7 @@ Require Export Rsigma.
 Require Export Rprod.
 Require Export Cauchy_prod.
 Require Export Alembert.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (**********)
 Lemma sum_maj1 :

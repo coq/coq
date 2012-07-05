@@ -11,7 +11,7 @@ Require Import Lt.
 Require Import Gt.
 Require Import Decidable.
 
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 Implicit Types m n x y : nat.
 

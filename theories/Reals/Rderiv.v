@@ -16,7 +16,7 @@ Require Import Rfunctions.
 Require Import Rlimit.
 Require Import Fourier.
 Require Import Omega.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (*********)
 Definition D_x (D:R -> Prop) (y x:R) : Prop := D x /\ y <> x.

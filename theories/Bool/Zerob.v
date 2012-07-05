@@ -9,7 +9,7 @@
 Require Import Arith.
 Require Import Bool.
 
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 Definition zerob (n:nat) : bool :=
   match n with

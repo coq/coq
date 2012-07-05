@@ -13,7 +13,7 @@ Require Import SeqProp.
 Require Import PartSum.
 Require Import Max.
 
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (***************************************************)
 (* Various versions of the criterion of D'Alembert *)

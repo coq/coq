@@ -9,7 +9,7 @@ Require Import SeqProp.
 Require Import PartSum.
 Require Import Ratan.
 
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (* Proving a few formulas in the style of John Machin to compute Pi *)
 

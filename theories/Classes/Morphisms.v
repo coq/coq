@@ -73,7 +73,7 @@ End ProperNotations.
 
 Export ProperNotations.
 
-Open Local Scope signature_scope.
+Local Open Scope signature_scope.
 
 (** [solve_proper] try to solve the goal [Proper (?==> ... ==>?) f]
     by repeated introductions and setoid rewrites. It should work

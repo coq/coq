@@ -12,8 +12,8 @@ Require Import SeqSeries.
 Require Import Rtrigo1.
 Require Import Ranalysis1.
 Require Import PSeries_reg.
-Open Local Scope nat_scope.
-Open Local Scope R_scope.
+Local Open Scope nat_scope.
+Local Open Scope R_scope.
 
 
 (**********)

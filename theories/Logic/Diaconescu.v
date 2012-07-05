@@ -265,7 +265,7 @@ End ProofIrrel_RelChoice_imp_EqEM.
 
 (** Proof sketch from Bell [Bell93] (with thanks to P. Castéran) *)
 
-Notation Local inhabited A := A (only parsing).
+Local Notation inhabited A := A (only parsing).
 
 Section ExtensionalEpsilon_imp_EM.
 
@@ -279,7 +279,7 @@ Hypothesis epsilon_extensionality :
   forall (A:Type) (i:inhabited A) (P Q:A->Prop),
   (forall a, P a <-> Q a) -> epsilon A i P = epsilon A i Q.
 
-Notation Local eps := (epsilon bool true) (only parsing).
+Local Notation eps := (epsilon bool true) (only parsing).
 
 Theorem extensional_epsilon_imp_EM : forall P:Prop, P \/ ~ P.
 Proof.

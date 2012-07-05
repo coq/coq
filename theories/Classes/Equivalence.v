@@ -26,7 +26,7 @@ Unset Strict Implicit.
 Generalizable Variables A R eqA B S eqB.
 Local Obligation Tactic := simpl_relation.
 
-Open Local Scope signature_scope.
+Local Open Scope signature_scope.
 
 Definition equiv `{Equivalence A R} : relation A := R.
 
@@ -37,7 +37,7 @@ Notation " x === y " := (equiv x y) (at level 70, no associativity) : equiv_scop
 
 Notation " x =/= y " := (complement equiv x y) (at level 70, no associativity) : equiv_scope.
 
-Open Local Scope equiv_scope.
+Local Open Scope equiv_scope.
 
 (** Overloading for [PER]. *)
 

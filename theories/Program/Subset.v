@@ -10,7 +10,7 @@
 Require Import Coq.Program.Utils.
 Require Import Coq.Program.Equality.
 
-Open Local Scope program_scope.
+Local Open Scope program_scope.
 
 (** The following tactics implement a poor-man's solution for proof-irrelevance: it tries to
    factorize every proof of the same proposition in a goal so that equality of such proofs becomes trivial. *)

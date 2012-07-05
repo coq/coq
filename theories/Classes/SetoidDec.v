@@ -50,7 +50,7 @@ Definition swap_sumbool {A B} (x : { A } + { B }) : { B } + { A } :=
 
 Require Import Coq.Program.Program.
 
-Open Local Scope program_scope.
+Local Open Scope program_scope.
 
 (** Invert the branches. *)
 

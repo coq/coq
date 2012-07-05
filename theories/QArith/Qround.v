@@ -18,7 +18,7 @@ Hint Resolve Qopp_lt_compat : qarith.
 
 (************)
 
-Coercion Local inject_Z : Z >-> Q.
+Local Coercion inject_Z : Z >-> Q.
 
 Definition Qfloor (x:Q) := let (n,d) := x in Z.div n (Zpos d).
 Definition Qceiling (x:Q) := (-(Qfloor (-x)))%Z.

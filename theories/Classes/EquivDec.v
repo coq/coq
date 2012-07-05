@@ -49,7 +49,7 @@ Definition swap_sumbool {A B} (x : { A } + { B }) : { B } + { A } :=
     | right H => @left _ _ H
   end.
 
-Open Local Scope program_scope.
+Local Open Scope program_scope.
 
 (** Invert the branches. *)
 

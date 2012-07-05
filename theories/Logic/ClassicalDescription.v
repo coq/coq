@@ -20,7 +20,7 @@ Require Export Classical.   (* Axiomatize classical reasoning *)
 Require Export Description. (* Axiomatize constructive form of Church's iota *)
 Require Import ChoiceFacts.
 
-Notation Local inhabited A := A (only parsing).
+Local Notation inhabited A := A (only parsing).
 
 (** The idea for the following proof comes from [ChicliPottierSimpson02] *)
 

@@ -22,7 +22,7 @@ Require Import Rsqrt_def.
 Require Import R_sqrt.
 Require Import MVT.
 Require Import Ranalysis4.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Lemma P_Rmin : forall (P:R -> Prop) (x y:R), P x -> P y -> P (Rmin x y).
 Proof.
@@ -394,7 +394,7 @@ Qed.
 
 Definition Rpower (x y:R) := exp (y * ln x).
 
-Infix Local "^R" := Rpower (at level 30, right associativity) : R_scope.
+Local Infix "^R" := Rpower (at level 30, right associativity) : R_scope.
 
 (******************************************************************)
 (** *                     Properties of  Rpower                   *)

@@ -10,7 +10,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Ranalysis1.
 Require Import Ranalysis2.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (** Division *)
 Theorem derivable_pt_lim_div :

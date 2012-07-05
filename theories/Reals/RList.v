@@ -8,7 +8,7 @@
 
 Require Import Rbase.
 Require Import Rfunctions.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Inductive Rlist : Type :=
 | nil : Rlist

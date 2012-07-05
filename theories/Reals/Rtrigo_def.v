@@ -7,7 +7,7 @@
 (************************************************************************)
 
 Require Import Rbase Rfunctions SeqSeries Rtrigo_fun Max.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (********************************)
 (** * Definition of exponential *)

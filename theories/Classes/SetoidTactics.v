@@ -146,7 +146,7 @@ Tactic Notation "setoid_replace" constr(x) "with" constr(y)
 
 Require Import Coq.Program.Tactics.
 
-Open Local Scope signature_scope.
+Local Open Scope signature_scope.
 
 Ltac red_subst_eq_morphism concl :=
   match concl with
