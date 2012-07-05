@@ -31,7 +31,7 @@ Additional suggested reading:
 *)
 
 Require MSetGenTree.
-Require Import Bool List BinPos Pnat Setoid SetoidList NPeano Psatz.
+Require Import Bool List BinPos Pnat Setoid SetoidList NPeano.
 Local Open Scope list_scope.
 
 (* For nicer extraction, we create induction principles
@@ -975,18 +975,18 @@ Proof.
  specialize (Hf acc).
  destruct (f acc) as (t1,acc1).
  destruct Hf as (Hf1,Hf2).
-  { lia. }
+  { transitivity size; trivial. subst. auto with arith. }
  destruct acc1 as [|x acc1].
-  { exfalso. subst acc.
-    rewrite <- app_nil_end, <- elements_cardinal in LE. lia. }
+  { exfalso. revert LE. apply Nat.lt_nge. subst.
+    rewrite <- app_nil_end, <- elements_cardinal; auto with arith. }
  specialize (Hg acc1).
  destruct (g acc1) as (t2,acc2).
  destruct Hg as (Hg1,Hg2).
-  { subst acc. rewrite app_length, <- elements_cardinal in LE.
-    simpl in LE. unfold elt in *. lia. }
- simpl. split.
- * lia.
- * rewrite elements_node, app_ass. simpl. unfold elt in *; congruence.
+  { revert LE. subst.
+    rewrite app_length, <- elements_cardinal. simpl.
+    rewrite Nat.add_succ_r, <- Nat.succ_le_mono.
+    apply Nat.add_le_mono_l. }
+ simpl. rewrite elements_node, app_ass. now subst.
 Qed.
 
 Lemma treeify_aux_spec n (p:bool) :
@@ -995,11 +995,16 @@ Proof.
  revert p.
  induction n as [n|n|]; intros p; simpl treeify_aux.
  - eapply treeify_cont_spec; [ apply (IHn false) | apply (IHn p) | ].
-   rewrite Pos2Nat.inj_xI. generalize (Pos2Nat.is_pos n).
-   destruct p; simpl; lia.
+   rewrite Pos2Nat.inj_xI.
+   assert (H := Pos2Nat.is_pos n). apply Nat.neq_0_lt_0 in H.
+   destruct p; simpl; intros; rewrite Nat.add_0_r; trivial.
+   now rewrite <- Nat.add_succ_r, Nat.succ_pred; trivial.
  - eapply treeify_cont_spec; [ apply (IHn p) | apply (IHn true) | ].
-   rewrite Pos2Nat.inj_xO. generalize (Pos2Nat.is_pos n).
-   destruct p; simpl; lia.
+   rewrite Pos2Nat.inj_xO.
+   assert (H := Pos2Nat.is_pos n). apply Nat.neq_0_lt_0 in H.
+   rewrite <- Nat.add_succ_r, Nat.succ_pred by trivial.
+   destruct p; simpl; intros; rewrite Nat.add_0_r; trivial.
+   symmetry. now apply Nat.add_pred_l.
  - destruct p; [ apply treeify_zero_spec | apply treeify_one_spec ].
 Qed.
 
@@ -1016,7 +1021,9 @@ Proof.
  subst l. rewrite plength_spec, app_length, <- elements_cardinal in *.
  destruct acc.
  * now rewrite app_nil_r.
- * simpl in H. lia.
+ * exfalso. revert H. simpl.
+   rewrite Nat.add_succ_r, Nat.add_comm.
+   apply Nat.succ_add_discr.
 Qed.
 
 Lemma treeify_spec x l : InT x (treeify l) <-> InA X.eq x l.
@@ -1531,10 +1538,10 @@ Proof.
    simpl maxdepth. simpl redcarac.
    rewrite Nat.add_succ_r, <- Nat.succ_le_mono.
    now apply Nat.max_lub.
- - simpl. Nat.nzsimpl. rewrite <- Nat.succ_le_mono.
-   apply Nat.max_lub; eapply Nat.le_trans; eauto.
-   destree l; simpl; lia.
-   destree r; simpl; lia.
+ - simpl. rewrite <- Nat.succ_le_mono.
+   apply Nat.max_lub; eapply Nat.le_trans; eauto;
+   [destree l | destree r]; simpl;
+   rewrite !Nat.add_0_r, ?Nat.add_1_r; auto with arith.
 Qed.
 
 Lemma rb_mindepth s n : rbt n s -> n + redcarac s <= mindepth s.
@@ -1546,7 +1553,8 @@ Proof.
    replace (redcarac l) with 0 in * by now destree l.
    replace (redcarac r) with 0 in * by now destree r.
    now apply Nat.min_glb.
- - apply -> Nat.succ_le_mono. apply Nat.min_glb; lia.
+ - apply -> Nat.succ_le_mono. rewrite Nat.add_0_r.
+   apply Nat.min_glb; eauto with arith.
 Qed.
 
 Lemma maxdepth_upperbound s : Rbt s ->
@@ -1554,8 +1562,14 @@ Lemma maxdepth_upperbound s : Rbt s ->
 Proof.
  intros (n,H).
  eapply Nat.le_trans; [eapply rb_maxdepth; eauto|].
- generalize (rb_mindepth s n H).
- generalize (mindepth_log_cardinal s). lia.
+ transitivity (2*(n+redcarac s)).
+ - rewrite Nat.mul_add_distr_l. apply Nat.add_le_mono_l.
+   rewrite <- Nat.mul_1_l at 1. apply Nat.mul_le_mono_r.
+   auto with arith.
+ - apply Nat.mul_le_mono_l.
+   transitivity (mindepth s).
+   + now apply rb_mindepth.
+   + apply mindepth_log_cardinal.
 Qed.
 
 Lemma maxdepth_lowerbound s : s<>Leaf ->
@@ -1792,12 +1806,18 @@ Proof.
  unfold treeify_cont.
  specialize (Hf acc).
  destruct (f acc) as (l, acc1). simpl in *.
- destruct Hf as (Hf1, Hf2). { lia. }
- destruct acc1 as [|x acc2]; simpl in *. { lia. }
- specialize (Hg acc2).
- destruct (g acc2) as (r, acc3). simpl in *.
- destruct Hg as (Hg1, Hg2). { lia. }
- split; [auto | lia].
+ destruct Hf as (Hf1, Hf2). { subst. eauto with arith. }
+ destruct acc1 as [|x acc2]; simpl in *.
+ - exfalso. revert Hacc. apply Nat.lt_nge. rewrite H, <- Hf2.
+   auto with arith.
+ - specialize (Hg acc2).
+   destruct (g acc2) as (r, acc3). simpl in *.
+   destruct Hg as (Hg1, Hg2).
+   { revert Hacc.
+     rewrite H, <- Hf2, Nat.add_succ_r, <- Nat.succ_le_mono.
+     apply Nat.add_le_mono_l. }
+   split; auto.
+   now rewrite H, <- Hf2, <- Hg2, Nat.add_succ_r, Nat.add_assoc.
 Qed.
 
 Lemma treeify_aux_rb n :
@@ -1807,12 +1827,17 @@ Proof.
  induction n as [n (d,IHn)|n (d,IHn)| ].
  - exists (S d). intros b.
    eapply treeify_cont_rb; [ apply (IHn false) | apply (IHn b) | ].
-   rewrite Pos2Nat.inj_xI. generalize (Pos2Nat.is_pos n).
-   destruct b; simpl; lia.
+   rewrite Pos2Nat.inj_xI.
+   assert (H := Pos2Nat.is_pos n). apply Nat.neq_0_lt_0 in H.
+   destruct b; simpl; intros; rewrite Nat.add_0_r; trivial.
+   now rewrite <- Nat.add_succ_r, Nat.succ_pred; trivial.
  - exists (S d). intros b.
    eapply treeify_cont_rb; [ apply (IHn b) | apply (IHn true) | ].
-   rewrite Pos2Nat.inj_xO. generalize (Pos2Nat.is_pos n).
-   destruct b; simpl; lia.
+   rewrite Pos2Nat.inj_xO.
+   assert (H := Pos2Nat.is_pos n). apply Nat.neq_0_lt_0 in H.
+   rewrite <- Nat.add_succ_r, Nat.succ_pred by trivial.
+   destruct b; simpl; intros; rewrite Nat.add_0_r; trivial.
+   symmetry. now apply Nat.add_pred_l.
  - exists 0; destruct b;
     [ apply treeify_zero_rb | apply treeify_one_rb ].
 Qed.
