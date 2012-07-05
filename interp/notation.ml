@@ -57,6 +57,9 @@ let notation_level_map = ref Gmap.empty
 (* Scopes table: scope_name -> symbol_interpretation *)
 let scope_map = ref Gmap.empty
 
+(* Delimiter table : delimiter -> scope_name *)
+let delimiters_map = ref Gmap.empty
+
 let empty_scope = {
   notations = Gmap.empty;
   delimiters = None
@@ -78,11 +81,24 @@ let declare_scope scope =
 (*    Flags.if_warn message ("Creating scope "^scope);*)
     scope_map := Gmap.add scope empty_scope !scope_map
 
+let error_unknown_scope sc = error ("Scope "^sc^" is not declared.")
+
 let find_scope scope =
   try Gmap.find scope !scope_map
-  with Not_found -> error ("Scope "^scope^" is not declared.")
+  with Not_found -> error_unknown_scope scope
 
 let check_scope sc = let _ = find_scope sc in ()
+
+(* [sc] might be here a [scope_name] or a [delimiter]
+   (now allowed after Open Scope) *)
+
+let normalize_scope sc =
+  try let _ = Gmap.find sc !scope_map in sc
+  with Not_found ->
+    try
+      let sc = Gmap.find sc !delimiters_map in
+      let _ = Gmap.find sc !scope_map in sc
+    with Not_found -> error_unknown_scope sc
 
 (**********************************************************************)
 (* The global stack of scopes                                         *)
@@ -103,10 +119,13 @@ let scope_is_open sc = scope_is_open_in_scopes sc (!scope_stack)
 
 (* Exportation of scopes *)
 let open_scope i (_,(local,op,sc)) =
-  if i=1 then begin
-  (match sc with Scope sc -> check_scope sc | _ -> ());
-  scope_stack := if op then sc :: !scope_stack else list_except sc !scope_stack
-  end
+  if i=1 then
+    let sc = match sc with
+      | Scope sc -> Scope (normalize_scope sc)
+      | _ -> sc
+    in
+    scope_stack :=
+      if op then sc :: !scope_stack else list_except sc !scope_stack
 
 let cache_scope o =
   open_scope 1 o
@@ -145,8 +164,6 @@ let make_current_scopes (tmp_scope,scopes) =
 
 (**********************************************************************)
 (* Delimiters *)
-
-let delimiters_map = ref Gmap.empty
 
 let declare_delimiters scope key =
   let sc = find_scope scope in
