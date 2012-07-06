@@ -8,7 +8,6 @@
 
 Require Import ZArith.
 Require Import Psatz.
-Require Import Ring_normalize.
 Open Scope Z_scope.
 Require Import ZMicromega.
 Require Import VarMap.

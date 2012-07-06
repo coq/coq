@@ -8,7 +8,6 @@
 
 Require Import Psatz.
 Require Import Reals.
-Require Import Ring_normalize.
 
 Open Scope R_scope.
 

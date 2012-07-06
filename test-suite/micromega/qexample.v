@@ -8,7 +8,6 @@
 
 Require Import Psatz.
 Require Import QArith.
-Require Import Ring_normalize.
 
 Lemma plus_minus : forall x y,
   0 == x + y -> 0 ==  x -y -> 0 == x /\ 0 == y.
