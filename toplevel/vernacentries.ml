@@ -389,8 +389,10 @@ let vernac_end_proof = function
 let vernac_exact_proof c =
   (* spiwack: for simplicity I do not enforce that "Proof proof_term" is
      called only at the begining of a proof. *)
-    by (Tactics.exact_proof c);
-      save_named true
+  let prf = Pfedit.get_current_proof_name () in
+  by (Tactics.exact_proof c);
+  save_named true;
+  Backtrack.mark_unreachable [prf]
 
 let vernac_assumption kind l nl=
   let global = fst kind = Global in
