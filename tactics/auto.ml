@@ -392,7 +392,7 @@ module Hint_db = struct
     let db = if db.use_dn && rebuild then rebuild_db st' db else db
     in addkv k (next_hint_id db) v db
 
-  let add_list l db = List.fold_right add_one l db
+  let add_list l db = List.fold_left (fun db k -> add_one k db) db l
 
   let remove_sdl p sdl = list_smartfilter p sdl 
   let remove_he st p (sl1, sl2, dn as he) =
