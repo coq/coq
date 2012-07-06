@@ -319,6 +319,18 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   let pretype_ref evdref env ref =
     let c = constr_of_global ref in
       make_judge c (Retyping.get_type_of env Evd.empty c)
+  let pretype_ref loc evdref env = function
+    | VarRef id ->
+        (* Section variable *)
+        (try let (_,_,ty) = lookup_named id env in make_judge (mkVar id) ty
+         with Not_found ->
+           (* This may happen if env is a goal env and section variables have
+              been cleared - section variables should be different from goal
+              variables *)
+           Pretype_errors.error_var_not_found_loc loc id)
+    | ref ->
+        let c = constr_of_global ref in
+        make_judge c (Retyping.get_type_of env Evd.empty c)
 
   let pretype_sort evdref = function
     | GProp c -> judge_of_prop_contents c
@@ -335,7 +347,7 @@ module Pretyping_F (Coercion : Coercion.S) = struct
   let rec pretype (tycon : type_constraint) env evdref lvar = function
     | GRef (loc,ref) ->
 	inh_conv_coerce_to_tycon loc env evdref
-	  (pretype_ref evdref env ref)
+	  (pretype_ref loc evdref env ref)
 	  tycon
 
     | GVar (loc, id) ->
