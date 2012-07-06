@@ -100,7 +100,7 @@ GEXTEND Gram
   ;
   dirpath:
     [ [ id = ident; l = LIST0 field ->
-        make_dirpath (l@[id]) ] ]
+        make_dirpath (List.rev (id::l)) ] ]
   ;
   string:
     [ [ s = STRING -> s ] ]
