@@ -1153,11 +1153,11 @@ Program Definition rem_wd : Proper (eq==>eq==>eq) rem := _.
 Program Definition pow_wd : Proper (eq==>eq==>eq) pow := _.
 Program Definition testbit_wd : Proper (eq==>eq==>Logic.eq) testbit := _.
 
-Include ZProp
- <+ UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
+(** The Bind Scope prevents Z to stay associated with abstract_scope.
+    (TODO FIX) *)
 
-(** Otherwise Z stays associated with abstract_scope : (TODO FIX) *)
-Bind Scope Z_scope with Z.
+Include ZProp. Bind Scope Z_scope with Z.
+Include UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
 
 (** In generic statements, the predicates [lt] and [le] have been
   favored, whereas [gt] and [ge] don't even exist in the abstract
