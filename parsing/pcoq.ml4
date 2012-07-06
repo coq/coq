@@ -454,7 +454,6 @@ let default_levels =
   [200,RightA,false;
    100,RightA,false;
    99,RightA,true;
-   90,RightA,false;
    10,RightA,false;
    9,RightA,false;
    8,RightA,true;
