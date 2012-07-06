@@ -768,6 +768,8 @@ GEXTEND Gram
 	  VernacPrint (PrintModuleType qid)
       | IDENT "Print"; IDENT "Module"; qid = global ->
 	  VernacPrint (PrintModule qid)
+      | IDENT "Print"; IDENT "Namespace" ; ns = dirpath ->
+          VernacPrint (PrintNamespace ns)
       | IDENT "Inspect"; n = natural -> VernacPrint (PrintInspect n)
       | IDENT "About"; qid = smart_global -> VernacPrint (PrintAbout qid)
 

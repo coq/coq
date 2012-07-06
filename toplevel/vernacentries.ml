@@ -200,6 +200,76 @@ let print_modtype r =
     with Not_found ->
       msg_error (str"Unknown Module Type or Module " ++ pr_qualid qid)
 
+let print_namespace ns =
+  let ns = List.rev (Names.repr_dirpath ns) in
+  (* [match_dirpath], [match_modulpath] are helpers for [matches]
+     which checks whether a constant is in the namespace [ns]. *)
+  let rec match_dirpath ns = function
+    | [] -> Some ns
+    | id::dir ->
+        begin match match_dirpath ns dir with
+        | Some [] as y -> y
+        | Some (a::ns') ->
+            if Names.id_ord a id = 0 then Some ns'
+            else None
+        | None -> None
+        end
+  in
+  let rec match_modulepath ns = function
+    | MPbound _ -> None (* Not a proper namespace. *)
+    | MPfile dir -> match_dirpath ns (Names.repr_dirpath dir)
+    | MPdot (mp,lbl) ->
+        let id = Names.id_of_label lbl in
+        begin match match_modulepath ns mp with
+        | Some [] as y -> y
+        | Some (a::ns') ->
+            if Names.id_ord a id = 0 then Some ns'
+            else None
+        | None -> None
+        end
+  in
+  (* [qualified_minus n mp] returns a list of qualifiers representing
+     [mp] except the [n] first (in the concrete syntax order).  The
+     idea is that if [mp] matches [ns], then [qualified_minus mp
+     (length ns)] will be the correct representation of [mp] assuming
+     [ns] is imported. *)
+  (* precondition: [mp] matches some namespace of length [n] *)
+  let qualified_minus n mp =
+    let rec list_of_modulepath = function
+      | MPbound _ -> assert false (* MPbound never matches *)
+      | MPfile dir -> Names.repr_dirpath dir
+      | MPdot (mp,lbl) -> (Names.id_of_label lbl)::(list_of_modulepath mp)
+    in
+    snd (Util.list_chop n (List.rev (list_of_modulepath mp)))
+  in
+  let print_list pr l = prlist_with_sep (fun () -> str".") pr l in
+  let print_kn kn =
+    (* spiwack: I'm ignoring the dirpath, is that bad? *)
+    let (mp,_,lbl) = Names.repr_kn kn in
+    let qn = (qualified_minus (List.length ns) mp)@[Names.id_of_label lbl] in
+    print_list pr_id qn
+  in
+  let print_constant k body =
+    let t =
+      match body.Declarations.const_type with
+      | Declarations.PolymorphicArity (ctx,a) -> Term.mkArity (ctx, Term.Type a.Declarations.poly_level)
+      | Declarations.NonPolymorphicType t -> t
+    in
+    print_kn k ++ str":" ++ spc() ++ Printer.pr_type t
+  in
+  let matches mp = match_modulepath ns mp = Some [] in
+  let constants = (Environ.pre_env (Global.env ())).Pre_env.env_globals.Pre_env.env_constants in
+  let constants_in_namespace =
+    Cmap_env.fold (fun c (body,_) acc ->
+      let kn = user_con c in
+      if matches (modpath kn) then
+        acc++fnl()++hov 2 (print_constant kn body)
+      else
+        acc
+    ) constants (str"")
+  in
+  msg_notice ((print_list pr_id ns)++str":"++fnl()++constants_in_namespace)
+
 let dump_universes_gen g s =
   let output = open_out s in
   let output_constraint, close =
@@ -1206,6 +1276,7 @@ let vernac_print = function
   | PrintModules -> msg_notice (print_modules ())
   | PrintModule qid -> print_module qid
   | PrintModuleType qid -> print_modtype qid
+  | PrintNamespace ns -> print_namespace ns
   | PrintMLLoadPath -> msg_notice (Mltop.print_ml_path ())
   | PrintMLModules -> msg_notice (Mltop.print_ml_modules ())
   | PrintName qid -> msg_notice (print_name qid)

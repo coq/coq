@@ -42,6 +42,7 @@ type printable =
   | PrintModules
   | PrintModule of reference
   | PrintModuleType of reference
+  | PrintNamespace of dir_path
   | PrintMLLoadPath
   | PrintMLModules
   | PrintName of reference or_by_notation
