@@ -1804,7 +1804,11 @@ let rec add_evars_of_evars_in_types_of_set acc evm s =
     let r = add_evars_of_evars_in_type r evm e in
     match (Evd.find evm e).evar_body with
     | Evar_empty -> r
-    | Evar_defined b -> add_evars_of_evars_in_types_of_set r evm (evars_of_term b)
+    | Evar_defined b ->
+        (* Adds the evars used to define [b] to the binding map. *)
+        let r = add_evars_of_evars_of_term r evm b in
+        (* Goes recursively in the [evar_info] of each of these evar. *)
+        add_evars_of_evars_in_types_of_set r evm (evars_of_term b)
   end s acc
 
 let evars_of_evars_in_types_of_list evm l =
