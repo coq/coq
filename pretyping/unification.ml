@@ -397,7 +397,8 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
                check_compatibility curenv substn tyM tyN);
 	    if k2 < k1 then sigma,(k1,cN,stN)::metasubst,evarsubst
 	    else sigma,(k2,cM,stM)::metasubst,evarsubst
-	| Meta k, _ ->
+	| Meta k, _
+            when not (dependent cM cN) (* helps early trying alternatives *) ->
             if wt && flags.check_applied_meta_types then
               (let tyM = Typing.meta_type sigma k in
                let tyN = get_type_of curenv sigma cN in
@@ -410,7 +411,8 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 	      (k,lift (-nb) cN,snd (extract_instance_status pb))::metasubst,
               evarsubst)
 	    else error_cannot_unify_local curenv sigma (m,n,cN)
-	| _, Meta k ->
+	| _, Meta k
+            when not (dependent cN cM) (* helps early trying alternatives *) ->
             if wt && flags.check_applied_meta_types then
               (let tyM = get_type_of curenv sigma cM in
                let tyN = Typing.meta_type sigma k in
