@@ -33,6 +33,7 @@ type info = {
   nproofs : int;
   prfname : identifier option;
   prfdepth : int;
+  ngoals : int;
   cmd : vernac_expr;
   mutable reachable : bool;
 }
@@ -74,6 +75,14 @@ let search test =
   with Found i ->
     while i != Stack.top history do pop () done
 
+(** An auxiliary function to retrieve the number of remaining subgoals *)
+
+let get_ngoals () =
+  try
+    let prf = Proof_global.give_me_the_proof () in
+    List.length (Evd.sig_it (Proof.V82.background_subgoals prf))
+  with Proof_global.NoCurrentProof -> 0
+
 (** Register the end of a command and store the current state *)
 
 let mark_command ast =
@@ -85,6 +94,7 @@ let mark_command ast =
       prfname = (try Some (Pfedit.get_current_proof_name ()) with _ -> None);
       prfdepth = max 0 (Pfedit.current_proof_depth ());
       reachable = true;
+      ngoals = get_ngoals ();
       cmd = ast }
     history
 
@@ -175,6 +185,7 @@ let reset_initial () =
 	nproofs = 0;
 	prfname = None;
 	prfdepth = 0;
+	ngoals = 0;
 	reachable = true;
 	cmd = VernacNop }
       history
@@ -215,10 +226,10 @@ let get_script prf =
     | _ -> ()
   in
   (try Stack.iter select history with Not_found -> ());
-  (* Get rid of intermediate commands which don't grow the depth *)
+  (* Get rid of intermediate commands which don't grow the proof depth *)
   let rec filter n = function
     | [] -> []
-    | {prfdepth=d; cmd=c}::l when n < d -> c :: filter d l
+    | {prfdepth=d; cmd=c; ngoals=ng}::l when n < d -> (c,ng) :: filter d l
     | {prfdepth=d}::l -> filter d l
   in
   (* initial proof depth (after entering the lemma statement) is 1 *)
