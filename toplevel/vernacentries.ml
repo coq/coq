@@ -72,10 +72,59 @@ let show_node () =
       could, possibly, be cleaned away. (Feb. 2010) *)
   ()
 
+(* indentation code for Show Script, initially contributed
+   by D. de Rauglaudre *)
+
+let indent_script_item ((ng1,ngl1),nl,beginend,ppl) (cmd,ng) =
+  (* ng1 : number of goals remaining at the current level (before cmd)
+     ngl1 : stack of previous levels with their remaining goals
+     ng : number of goals after the execution of cmd
+     beginend : special indentation stack for { } *)
+  let ngprev = List.fold_left (+) ng1 ngl1 in
+  let new_ngl =
+    if ng > ngprev then
+      (* We've branched *)
+      (ng - ngprev + 1, ng1 - 1 :: ngl1)
+    else if ng < ngprev then
+      (* A subgoal have been solved. Let's compute the new current level
+	 by discarding all levels with 0 remaining goals. *)
+      let _ = assert (ng = ngprev - 1) in
+      let rec loop = function
+	| (0, ng2::ngl2) -> loop (ng2,ngl2)
+	| p -> p
+      in loop (ng1-1, ngl1)
+    else
+      (* Standard case, same goal number as before *)
+      (ng1, ngl1)
+  in
+  (* When a subgoal have been solved, separate this block by an empty line *)
+  let new_nl = (ng < ngprev)
+  in
+  (* Indentation depth *)
+  let ind = List.length ngl1
+  in
+  (* Some special handling of bullets and { }, to get a nicer display *)
+  let pred n = max 0 (n-1) in
+  let ind, nl, new_beginend = match cmd with
+    | VernacSubproof _ -> pred ind, nl, (pred ind)::beginend
+    | VernacEndSubproof -> List.hd beginend, false, List.tl beginend
+    | VernacBullet _ -> pred ind, nl, beginend
+    | _ -> ind, nl, beginend
+  in
+  let pp =
+    (if nl then fnl () else mt ()) ++
+    (hov (ind+1) (str (String.make ind ' ') ++ Ppvernac.pr_vernac cmd))
+  in
+  (new_ngl, new_nl, new_beginend, pp :: ppl)
+
 let show_script () =
   let prf = Pfedit.get_current_proof_name () in
   let cmds = Backtrack.get_script prf in
-  msgnl (Util.prlist_with_sep Pp.fnl Ppvernac.pr_vernac cmds)
+  let _,_,_,indented_cmds =
+    List.fold_left indent_script_item ((1,[]),false,[],[]) cmds
+  in
+  let indented_cmds = List.rev (indented_cmds) in
+  msgnl (v 0 (Util.prlist_with_sep Pp.fnl (fun x -> x) indented_cmds))
 
 let show_thesis () =
      msgnl (anomaly "TODO" )

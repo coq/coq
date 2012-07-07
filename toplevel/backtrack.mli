@@ -76,7 +76,7 @@ val mark_unreachable : ?after:int -> Names.identifier list -> unit
 
 (** Parse the history stack for printing the script of a proof *)
 
-val get_script : Names.identifier -> Vernacexpr.vernac_expr list
+val get_script : Names.identifier -> (Vernacexpr.vernac_expr * int) list
 
 
 (** For debug purpose, a dump of the history *)
@@ -86,6 +86,7 @@ type info = {
   nproofs : int;
   prfname : Names.identifier option;
   prfdepth : int;
+  ngoals : int;
   cmd : Vernacexpr.vernac_expr;
   mutable reachable : bool;
 }
