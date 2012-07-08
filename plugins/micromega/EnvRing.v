@@ -1042,7 +1042,7 @@ Section POWER.
     | None, None => (norm_aux pe1) ++ (norm_aux pe2)
     end.
   Proof.
-  unfold norm_aux at 1; fold norm_aux.
+  simpl (norm_aux (PEadd _ _)).
   destruct pe1; [ | | | | | reflexivity | ];
    destruct pe2; simpl get_PEopp; reflexivity.
   Qed.
