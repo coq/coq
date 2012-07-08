@@ -399,15 +399,6 @@ Section MakeRingPol.
   | zmon: positive -> Mon -> Mon
   | vmon: positive -> Mon -> Mon.
 
- Fixpoint Mphi (l:Env R)(M: Mon) : R :=
-  match M with
-  | mon0 => rI
-  | zmon j M1 => Mphi (jump j l) M1
-  | vmon i M1 => Mphi (tail l) M1 * (hd l) ^ i
-  end.
-
- Notation "M @@ l" := (Mphi l M) (at level 10, no associativity).
-
  Definition mkZmon j M :=
    match M with mon0 => mon0 | _ => zmon j M end.
 
@@ -503,6 +494,17 @@ Section MakeRingPol.
 
  Reserved Notation "P @ l " (at level 10, no associativity).
  Notation "P @ l " := (Pphi l P).
+
+ (** Evaluation of a monomial towards R *)
+
+ Fixpoint Mphi(l:Env R) (M: Mon) : R :=
+  match M with
+  | mon0 => rI
+  | zmon j M1 => Mphi (jump j l) M1
+  | vmon i M1 => Mphi (tail l) M1 * (hd l) ^ i
+  end.
+
+ Notation "M @@ l" := (Mphi l M) (at level 10, no associativity).
 
  (** Proofs *)
 
@@ -601,21 +603,21 @@ Qed.
     rewrite H, Pphi0, Pos.add_comm, pow_pos_add; rsimpl.
  Qed.
 
- Ltac Esimpl :=
-  repeat (progress (
-   match goal with
-   | |- context [P0@?l] => rewrite (Pphi0 l)
-   | |- context [P1@?l] => rewrite (Pphi1 l)
-   | |- context [(mkPinj ?j ?P)@?l] => rewrite (mkPinj_ok j l P)
-   | |- context [(mkPX ?P ?i ?Q)@?l] => rewrite (mkPX_ok l P i Q)
-   | |- context [[cO]] => rewrite (morph0 CRmorph)
-   | |- context [[cI]] => rewrite (morph1 CRmorph)
-   | |- context [[?x +! ?y]] => rewrite ((morph_add CRmorph) x y)
-   | |- context [[?x *! ?y]] => rewrite ((morph_mul CRmorph) x y)
-   | |- context [[?x -! ?y]] => rewrite ((morph_sub CRmorph) x y)
-   | |- context [[-! ?x]] => rewrite ((morph_opp CRmorph) x)
-   end));
-  rsimpl; simpl.
+ Hint Rewrite
+  Pphi0
+  Pphi1
+  mkPinj_ok
+  mkPX_ok
+  (morph0 CRmorph)
+  (morph1 CRmorph)
+  (morph0 CRmorph)
+  (morph_add CRmorph)
+  (morph_mul CRmorph)
+  (morph_sub CRmorph)
+  (morph_opp CRmorph)
+  : Esimpl.
+
+ Ltac Esimpl := autorewrite with Esimpl; rsimpl; simpl.
 
  Lemma PaddC_ok c P l : (PaddC P c)@l == P@l + [c].
  Proof.
@@ -655,15 +657,7 @@ Qed.
   - rewrite IHP1, IHP2;rsimpl.
  Qed.
 
- Ltac Esimpl2 :=
-  Esimpl;
-  repeat (progress (
-   match goal with
-   | |- context [(PaddC ?P ?c)@?l] => rewrite (PaddC_ok c P l)
-   | |- context [(PsubC ?P ?c)@?l] => rewrite (PsubC_ok c P l)
-   | |- context [(PmulC ?P ?c)@?l] => rewrite (PmulC_ok c P l)
-   | |- context [(--?P)@?l] => rewrite (Popp_ok P l)
-   end)); Esimpl.
+ Hint Rewrite PaddC_ok PsubC_ok PmulC_ok Popp_ok : Esimpl.
 
  Lemma PaddX_ok P' P k l :
   (forall P l, (P++P')@l == P@l + P'@l) ->
@@ -674,7 +668,7 @@ Qed.
   - add_permut.
   - destruct p; simpl;
     rewrite ?Pjump_xO_tail, ?Pjump_pred_double; add_permut.
-  - destr_pos_sub; intros ->;Esimpl2.
+  - destr_pos_sub; intros ->;Esimpl.
     + rewrite IHP';rsimpl. add_permut.
     + rewrite IHP', pow_pos_add;simpl;Esimpl. add_permut.
     + rewrite IHP1, pow_pos_add;rsimpl. add_permut.
@@ -682,9 +676,9 @@ Qed.
 
  Lemma Padd_ok P' P l : (P ++ P')@l == P@l + P'@l.
  Proof.
-  revert P l; induction P';simpl;intros;Esimpl2.
+  revert P l; induction P';simpl;intros;Esimpl.
   - revert p l; induction P;simpl;intros.
-    + Esimpl2; add_permut.
+    + Esimpl; add_permut.
     + destr_pos_sub; intros ->;Esimpl.
       * now rewrite IHP'.
       * rewrite IHP';Esimpl. now rewrite Pjump_add.
@@ -694,12 +688,12 @@ Qed.
       * rewrite IHP2;simpl. rewrite Pjump_pred_double. rsimpl.
       * rewrite IHP'. rsimpl.
   - destruct P;simpl.
-    + Esimpl2. add_permut.
-    + destruct p0;simpl;Esimpl2; rewrite IHP'2; simpl.
+    + Esimpl. add_permut.
+    + destruct p0;simpl;Esimpl; rewrite IHP'2; simpl.
       * rewrite Pjump_xO_tail. rsimpl. add_permut.
       * rewrite Pjump_pred_double. rsimpl. add_permut.
       * rsimpl. unfold tail. add_permut.
-    + destr_pos_sub; intros ->; Esimpl2.
+    + destr_pos_sub; intros ->; Esimpl.
       * rewrite IHP'1, IHP'2;rsimpl. add_permut.
       * rewrite IHP'1, IHP'2;simpl;Esimpl.
         rewrite pow_pos_add;rsimpl. add_permut.
@@ -717,7 +711,7 @@ Qed.
   - destruct p; simpl;
     rewrite Popp_ok;rsimpl;
     rewrite ?Pjump_xO_tail, ?Pjump_pred_double; add_permut.
-  - destr_pos_sub; intros ->; Esimpl2; rsimpl.
+  - destr_pos_sub; intros ->; Esimpl.
     + rewrite IHP';rsimpl. add_permut.
     + rewrite IHP', pow_pos_add;simpl;Esimpl. add_permut.
     + rewrite IHP1, pow_pos_add;rsimpl. add_permut.
@@ -725,9 +719,9 @@ Qed.
 
  Lemma Psub_ok P' P l : (P -- P')@l == P@l - P'@l.
  Proof.
-  revert P l; induction P';simpl;intros;Esimpl2.
+  revert P l; induction P';simpl;intros;Esimpl.
   - revert p l; induction P;simpl;intros.
-    + Esimpl2; add_permut.
+    + Esimpl; add_permut.
     + destr_pos_sub; intros ->;Esimpl.
       * rewrite IHP';rsimpl.
       * rewrite IHP';Esimpl. now rewrite Pjump_add.
@@ -737,12 +731,12 @@ Qed.
       * rewrite IHP2;simpl. rewrite Pjump_pred_double. rsimpl.
       * rewrite IHP'. rsimpl.
   - destruct P;simpl.
-    + Esimpl2; add_permut.
-    + destruct p0;simpl;Esimpl2; rewrite IHP'2; simpl.
+    + Esimpl; add_permut.
+    + destruct p0;simpl;Esimpl; rewrite IHP'2; simpl.
       * rewrite Pjump_xO_tail. rsimpl. add_permut.
       * rewrite Pjump_pred_double. rsimpl. add_permut.
       * rsimpl. unfold tail. add_permut.
-    + destr_pos_sub; intros ->; Esimpl2.
+    + destr_pos_sub; intros ->; Esimpl.
       * rewrite IHP'1, IHP'2;rsimpl. add_permut.
       * rewrite IHP'1, IHP'2;simpl;Esimpl.
         rewrite pow_pos_add;rsimpl. add_permut.
@@ -756,12 +750,12 @@ Qed.
  Proof.
   intros IHP'.
   induction P;simpl;intros.
-  - Esimpl2; mul_permut.
-  - destr_pos_sub; intros ->;Esimpl2.
+  - Esimpl; mul_permut.
+  - destr_pos_sub; intros ->;Esimpl.
     + now rewrite IHP'.
     + now rewrite IHP', Pjump_add.
     + now rewrite IHP, Pjump_add.
-  - destruct p0;Esimpl2; rewrite ?IHP1, ?IHP2; rsimpl.
+  - destruct p0;Esimpl; rewrite ?IHP1, ?IHP2; rsimpl.
     + rewrite Pjump_xO_tail. f_equiv. mul_permut.
     + rewrite Pjump_pred_double. f_equiv. mul_permut.
     + rewrite IHP'. f_equiv. mul_permut.
@@ -773,22 +767,22 @@ Qed.
   - apply PmulC_ok.
   - apply PmulI_ok;trivial.
   - destruct P.
-    + rewrite (ARmul_comm ARth). Esimpl2; Esimpl2.
-    + Esimpl2. rewrite IHP'1;Esimpl2. f_equiv.
+    + rewrite (ARmul_comm ARth). Esimpl.
+    + Esimpl. rewrite IHP'1;Esimpl. f_equiv.
       destruct p0;rewrite IHP'2;Esimpl.
       * now rewrite Pjump_xO_tail.
       * rewrite Pjump_pred_double; Esimpl.
     + rewrite Padd_ok, !mkPX_ok, Padd_ok, !mkPX_ok,
-       !IHP'1, !IHP'2, PmulI_ok; trivial. Esimpl2.
+       !IHP'1, !IHP'2, PmulI_ok; trivial. simpl. Esimpl.
       unfold tail.
       add_permut; f_equiv; mul_permut.
  Qed.
 
  Lemma Psquare_ok P l : (Psquare P)@l == P@l * P@l.
  Proof.
-  revert l;induction P;simpl;intros;Esimpl2.
+  revert l;induction P;simpl;intros;Esimpl.
   - apply IHP.
-  - rewrite Padd_ok, Pmul_ok;Esimpl2.
+  - rewrite Padd_ok, Pmul_ok;Esimpl.
     rewrite IHP1, IHP2.
     mul_push ((hd l)^p). now mul_push (P2@l).
  Qed.
@@ -866,7 +860,7 @@ Qed.
    rewrite ?He, IHP1, mkPX_ok, ?mkZmon_ok; simpl; rsimpl;
    unfold tail; add_permut; mul_permut.
    * rewrite <- pow_pos_add, Pos.add_comm, Pos.sub_add by trivial; rsimpl.
-   * rewrite mkPX_ok; Esimpl2. mul_permut.
+   * rewrite mkPX_ok. simpl. Esimpl. mul_permut.
      rewrite <- pow_pos_add, Pos.sub_add by trivial; rsimpl.
  Qed.
 
@@ -876,12 +870,10 @@ Qed.
  Proof.
  unfold POneSubst.
  assert (H := Mphi_ok P1). destr_mfactor R1 S1. rewrite H; clear H.
- intros EQ EQ'.
- assert (EQ'' : P3 = R1 ++ P2 ** S1).
- { revert EQ. destruct S1; try now injection 1.
-   case ceqb_spec; try discriminate. now injection 2. }
- rewrite EQ', EQ''; clear EQ EQ' EQ''.
- rewrite Padd_ok, Pmul_ok; rsimpl.
+ intros EQ EQ'. replace P3 with (R1 ++ P2 ** S1).
+ - rewrite EQ', Padd_ok, Pmul_ok; rsimpl.
+ - revert EQ. destruct S1; try now injection 1.
+   case ceqb_spec; now inversion 2.
  Qed.
 
  Lemma PNSubst1_ok n P1 M1 P2 l :
@@ -897,13 +889,13 @@ Qed.
  Proof.
  unfold PNSubst.
  assert (H := POneSubst_ok P1 M1 P2); destruct POneSubst; try discriminate.
- destruct n; [discriminate | injection 1; intros EQ'].
- intros. rewrite <- EQ', <- PNSubst1_ok; auto.
+ destruct n; inversion_clear 1.
+ intros. rewrite <- PNSubst1_ok; auto.
  Qed.
 
  Fixpoint MPcond (LM1: list (Mon * Pol)) (l: Env R) : Prop :=
    match LM1 with
-   | cons (M1,P2) LM2 => (Mphi l M1 == P2@l) /\ (MPcond LM2 l)
+   | cons (M1,P2) LM2 => (M1@@l == P2@l) /\ MPcond LM2 l
    | _ => True
    end.
 
@@ -971,11 +963,7 @@ Qed.
   now rewrite <- nth_pred_double, nth_jump.
  Qed.
 
- Ltac Esimpl3 :=
-  repeat match goal with
-  | |- context [(?P1 ++ ?P2)@?l] => rewrite (Padd_ok P2 P1 l)
-  | |- context [(?P1 -- ?P2)@?l] => rewrite (Psub_ok P2 P1 l)
-  end;Esimpl2;try reflexivity;try apply (ARadd_comm ARth).
+ Hint Rewrite Padd_ok Psub_ok : Esimpl.
 
 Section POWER.
   Variable subst_l : Pol -> Pol.
@@ -1037,28 +1025,57 @@ Section POWER.
 
   Definition norm_subst pe := subst_l (norm_aux pe).
 
-  Lemma norm_aux_opp pe :
-   norm_aux (PEopp pe) = Popp (norm_aux pe).
-  Proof. reflexivity. Qed.
+  (** Internally, [norm_aux] is expanded in a large number of cases.
+      To speed-up proofs, we use an alternative definition. *)
 
-  Lemma norm_aux_spec l pe : PEeval l pe == (norm_aux pe)@l.
+  Definition get_PEopp pe :=
+   match pe with
+   | PEopp pe' => Some pe'
+   | _ => None
+   end.
+
+  Lemma norm_aux_PEadd pe1 pe2 :
+    norm_aux (PEadd pe1 pe2) =
+    match get_PEopp pe1, get_PEopp pe2 with
+    | Some pe1', _ => (norm_aux pe2) -- (norm_aux pe1')
+    | None, Some pe2' => (norm_aux pe1) -- (norm_aux pe2')
+    | None, None => (norm_aux pe1) ++ (norm_aux pe2)
+    end.
   Proof.
+  unfold norm_aux at 1; fold norm_aux.
+  destruct pe1; [ | | | | | reflexivity | ];
+   destruct pe2; simpl get_PEopp; reflexivity.
+  Qed.
+
+  Lemma norm_aux_PEopp pe :
+    match get_PEopp pe with
+    | Some pe' => norm_aux pe = -- (norm_aux pe')
+    | None => True
+    end.
+  Proof.
+  now destruct pe.
+  Qed.
+
+  Lemma norm_aux_spec l pe :
+    PEeval l pe == (norm_aux pe)@l.
+  Proof.
+   intros.
    induction pe.
    - reflexivity.
    - apply mkX_ok.
    - simpl PEeval. rewrite IHpe1, IHpe2.
-     simpl. destruct pe1, pe2; Esimpl3.
-   - simpl. now rewrite IHpe1, IHpe2, Psub_ok.
-   - simpl. now rewrite IHpe1, IHpe2, Pmul_ok.
-   - simpl. rewrite IHpe. Esimpl2.
+     assert (H1 := norm_aux_PEopp pe1).
+     assert (H2 := norm_aux_PEopp pe2).
+     rewrite norm_aux_PEadd.
+     do 2 destruct get_PEopp; rewrite ?H1, ?H2; Esimpl; add_permut.
+   - simpl. rewrite IHpe1, IHpe2. Esimpl.
+   - simpl. rewrite IHpe1, IHpe2. now rewrite Pmul_ok.
+   - simpl. rewrite IHpe. Esimpl.
    - simpl. rewrite Ppow_N_ok by reflexivity.
-     rewrite pow_th.(rpow_pow_N). destruct n0;Esimpl2.
+     rewrite pow_th.(rpow_pow_N). destruct n0; simpl; Esimpl.
      induction p;simpl; now rewrite ?IHp, ?IHpe, ?Pms_ok, ?Pmul_ok.
   Qed.
 
-
  End NORM_SUBST_REC.
 
-
 End MakeRingPol.
-
