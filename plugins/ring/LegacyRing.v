@@ -19,7 +19,7 @@ Declare ML Module "ring_plugin".
 
 Definition BoolTheory :
   Ring_Theory xorb andb true false (fun b:bool => b) eqb.
-split; simpl in |- *.
+split; simpl.
 destruct n; destruct m; reflexivity.
 destruct n; destruct m; destruct p; reflexivity.
 destruct n; destruct m; reflexivity.
@@ -28,7 +28,7 @@ destruct n; reflexivity.
 destruct n; reflexivity.
 destruct n; reflexivity.
 destruct n; destruct m; destruct p; reflexivity.
-destruct x; destruct y; reflexivity || simpl in |- *; tauto.
+destruct x; destruct y; reflexivity || simpl; tauto.
 Defined.
 
 Add Legacy Ring bool xorb andb true false (fun b:bool => b) eqb BoolTheory

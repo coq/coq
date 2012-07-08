@@ -46,8 +46,8 @@ Qed.
 
 Theorem le_Sn_0 : forall n, ~ S n <= 0.
 Proof.
-  red in |- *; intros n H.
-  change (IsSucc 0) in |- *; elim H; simpl in |- *; auto with arith.
+  red; intros n H.
+  change (IsSucc 0); elim H; simpl; auto with arith.
 Qed.
 
 Hint Resolve le_0_n le_Sn_0: arith v62.

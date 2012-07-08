@@ -103,7 +103,7 @@ Section Well_founded.
 
   Lemma Fix_eq : forall x:A, Fix x = F (fun (y:A) (p:R y x) => Fix y).
   Proof.
-   intro x; unfold Fix in |- *.
+   intro x; unfold Fix.
    rewrite <- Fix_F_eq.
    apply F_ext; intros.
    apply Fix_F_inv.

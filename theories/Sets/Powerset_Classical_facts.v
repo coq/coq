@@ -44,13 +44,13 @@ Section Sets_as_an_algebra.
       ~ In U A x ->
       Strict_Included U (Add U A x) (Add U B x) -> Strict_Included U A B.
   Proof.
-    intros A B x H' H'0; red in |- *.
+    intros A B x H' H'0; red.
     lapply (Strict_Included_inv U (Add U A x) (Add U B x)); auto with sets.
     clear H'0; intro H'0; split.
     apply incl_add_x with (x := x); tauto.
     elim H'0; intros H'1 H'2; elim H'2; clear H'0 H'2.
     intros x0 H'0.
-    red in |- *; intro H'2.
+    red; intro H'2.
     elim H'0; clear H'0.
     rewrite <- H'2; auto with sets.
   Qed.
@@ -58,7 +58,7 @@ Section Sets_as_an_algebra.
   Lemma incl_soustr_in :
     forall (X:Ensemble U) (x:U), In U X x -> Included U (Subtract U X x) X.
   Proof.
-    intros X x H'; red in |- *.
+    intros X x H'; red.
     intros x0 H'0; elim H'0; auto with sets.
   Qed.
 
@@ -66,7 +66,7 @@ Section Sets_as_an_algebra.
     forall (X Y:Ensemble U) (x:U),
       Included U X Y -> Included U (Subtract U X x) (Subtract U Y x).
   Proof.
-    intros X Y x H'; red in |- *.
+    intros X Y x H'; red.
     intros x0 H'0; elim H'0.
     intros H'1 H'2.
     apply Subtract_intro; auto with sets.
@@ -75,7 +75,7 @@ Section Sets_as_an_algebra.
   Lemma incl_soustr_add_l :
     forall (X:Ensemble U) (x:U), Included U (Subtract U (Add U X x) x) X.
   Proof.
-    intros X x; red in |- *.
+    intros X x; red.
     intros x0 H'; elim H'; auto with sets.
     intro H'0; elim H'0; auto with sets.
     intros t H'1 H'2; elim H'2; auto with sets.
@@ -85,10 +85,10 @@ Section Sets_as_an_algebra.
     forall (X:Ensemble U) (x:U),
       ~ In U X x -> Included U X (Subtract U (Add U X x) x).
   Proof.
-    intros X x H'; red in |- *.
+    intros X x H'; red.
     intros x0 H'0; try assumption.
     apply Subtract_intro; auto with sets.
-    red in |- *; intro H'1; apply H'; rewrite H'1; auto with sets.
+    red; intro H'1; apply H'; rewrite H'1; auto with sets.
   Qed.
   Hint Resolve incl_soustr_add_r: sets v62.
 
@@ -96,7 +96,7 @@ Section Sets_as_an_algebra.
     forall (X:Ensemble U) (x:U),
       In U X x -> Included U X (Add U (Subtract U X x) x).
   Proof.
-    intros X x H'; red in |- *.
+    intros X x H'; red.
     intros x0 H'0; try assumption.
     elim (classic (x = x0)); intro K; auto with sets.
     elim K; auto with sets.
@@ -106,7 +106,7 @@ Section Sets_as_an_algebra.
     forall (X:Ensemble U) (x:U),
       In U X x -> Included U (Add U (Subtract U X x) x) X.
   Proof.
-    intros X x H'; red in |- *.
+    intros X x H'; red.
     intros x0 H'0; elim H'0; auto with sets.
     intros y H'1; elim H'1; auto with sets.
     intros t H'1; try assumption.
@@ -118,7 +118,7 @@ Section Sets_as_an_algebra.
       x <> y -> Subtract U (Add U X x) y = Add U (Subtract U X y) x.
   Proof.
     intros X x y H'; apply Extensionality_Ensembles.
-    split; red in |- *.
+    split; red.
     intros x0 H'0; elim H'0; auto with sets.
     intro H'1; elim H'1.
     intros u H'2 H'3; try assumption.
@@ -146,7 +146,7 @@ Section Sets_as_an_algebra.
     apply H'4 with (y := Y); auto using add_soustr_2 with sets.
     red in H'0.
     elim H'0; intros H'1 H'2; try exact H'1; clear H'0. (* PB *)
-    red in |- *; intro H'0; apply H'2.
+    red; intro H'0; apply H'2.
     rewrite H'0; auto 8 using add_soustr_xy, add_soustr_1, add_soustr_2 with sets.
   Qed.
 
@@ -177,7 +177,7 @@ Section Sets_as_an_algebra.
     exists (Subtract U X x).
     split; auto using incl_soustr_in, add_soustr_xy, add_soustr_1, add_soustr_2 with sets.
     red in H'0.
-    red in |- *.
+    red.
     intros x0 H'2; try assumption.
     lapply (Subtract_inv U X x x0); auto with sets.
     intro H'3; elim H'3; intros K K'; clear H'3.
@@ -189,7 +189,7 @@ Section Sets_as_an_algebra.
     elim K'; auto with sets.
     intro H'1; left; try assumption.
     red in H'0.
-    red in |- *.
+    red.
     intros x0 H'2; try assumption.
     lapply (H'0 x0); auto with sets.
     intro H'3; try assumption.
@@ -207,7 +207,7 @@ Section Sets_as_an_algebra.
       (forall z:Ensemble U, Included U x z -> Included U z y -> x = z \/ z = y).
   Proof.
     intros A x y H'; elim H'.
-    unfold Strict_Rel_of in |- *; simpl in |- *.
+    unfold Strict_Rel_of; simpl.
     intros H'0 H'1; split; [ auto with sets | idtac ].
     intros z H'2 H'3; try assumption.
     elim (classic (x = z)); auto with sets.
@@ -227,11 +227,11 @@ Section Sets_as_an_algebra.
   Proof.
     intros A a H' x H'0 H'1; try assumption.
     apply setcover_intro; auto with sets.
-    red in |- *.
-    split; [ idtac | red in |- *; intro H'2; try exact H'2 ]; auto with sets.
+    red.
+    split; [ idtac | red; intro H'2; try exact H'2 ]; auto with sets.
     apply H'1.
     rewrite H'2; auto with sets.
-    red in |- *; intro H'2; elim H'2; clear H'2.
+    red; intro H'2; elim H'2; clear H'2.
     intros z H'2; elim H'2; intros H'3 H'4; try exact H'3; clear H'2.
     lapply (Strict_Included_inv U a z); auto with sets; clear H'3.
     intro H'2; elim H'2; intros H'3 H'5; elim H'5; clear H'2 H'5.
@@ -249,7 +249,7 @@ Section Sets_as_an_algebra.
     red in K.
     elim K; intros H'11 H'12; apply H'12; clear K; auto with sets.
     rewrite H'15.
-    red in |- *.
+    red.
     intros x1 H'10; elim H'10; auto with sets.
     intros x2 H'11; elim H'11; auto with sets.
   Qed.
@@ -275,11 +275,11 @@ Section Sets_as_an_algebra.
     elim (H'7 (Add U a x)); auto with sets.
     intro H'1.
     absurd (a = Add U a x); auto with sets.
-    red in |- *; intro H'8; try exact H'8.
+    red; intro H'8; try exact H'8.
     apply H'3.
     rewrite H'8; auto with sets.
     auto with sets.
-    red in |- *.
+    red.
     intros x0 H'1; elim H'1; auto with sets.
     intros x1 H'8; elim H'8; auto with sets.
     split; [ idtac | try assumption ].

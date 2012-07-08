@@ -61,7 +61,7 @@ Section EqdepDec.
 
   Let nu_constant : forall (y:A) (u v:x = y), nu u = nu v.
     intros.
-    unfold nu in |- *.
+    unfold nu.
     case (eq_dec x y); intros.
     reflexivity.
 
@@ -75,7 +75,7 @@ Section EqdepDec.
   Remark nu_left_inv : forall (y:A) (u:x = y), nu_inv (nu u) = u.
   Proof.
     intros.
-    case u; unfold nu_inv in |- *.
+    case u; unfold nu_inv.
     apply trans_sym_eq.
   Qed.
 
@@ -115,7 +115,7 @@ Section EqdepDec.
   Proof.
     intros.
     cut (proj (ex_intro P x y) y = proj (ex_intro P x y') y).
-    simpl in |- *.
+    simpl.
     case (eq_dec x x).
     intro e.
     elim e using K_dec; trivial.

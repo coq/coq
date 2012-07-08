@@ -66,7 +66,7 @@ Module FuncDict (E: ELEM).
   Lemma find_add_true : forall (s : T) (e : E.T), find e (add e s) = true.
 
     intros.
-    unfold find, add in |- *.
+    unfold find, add.
     elim (Reflexivity_provable _ _ (E.eq_dec e e)).
     intros.
      rewrite H.
@@ -77,13 +77,13 @@ Module FuncDict (E: ELEM).
   Lemma find_add_false :
    forall (s : T) (e e' : E.T), e <> e' -> find e (add e' s) = find e s.
     intros.
-    unfold add, find in |- *.
+    unfold add, find.
     cut (exists x : _, E.eq_dec e' e = right _ x).
     intros.
     elim H0.
     intros.
      rewrite H1.
-    unfold ifte in |- *.
+    unfold ifte.
     reflexivity.
 
     apply Disequality_provable.
@@ -123,7 +123,7 @@ Module Lemmas (G: SET) (E: ELEM).
    forall a : E.T, ESet.find a S1 = ESet.find a S2.
 
     intros.
-    unfold S1, S2 in |- *.
+    unfold S1, S2.
     elim (E.eq_dec a a1); elim (E.eq_dec a a2); intros H1 H2;
      try  rewrite <- H1; try  rewrite <- H2;
      repeat
@@ -153,7 +153,7 @@ Module ListDict (E: ELEM).
 
   Lemma find_add_true : forall (s : T) (e : E.T), find e (add e s) = true.
     intros.
-    simpl in |- *.
+    simpl.
     elim (Reflexivity_provable _ _ (E.eq_dec e e)).
     intros.
      rewrite H.
@@ -165,11 +165,11 @@ Module ListDict (E: ELEM).
   Lemma find_add_false :
    forall (s : T) (e e' : E.T), e <> e' -> find e (add e' s) = find e s.
     intros.
-    simpl in |- *.
+    simpl.
     elim (Disequality_provable _ _ _ H (E.eq_dec e e')).
     intros.
      rewrite H0.
-    simpl in |- *.
+    simpl.
     reflexivity.
   Qed.
 

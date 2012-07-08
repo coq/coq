@@ -24,7 +24,7 @@ Section WfInclusion.
 
   Theorem wf_incl : inclusion A R1 R2 -> well_founded R2 -> well_founded R1.
   Proof.
-    unfold well_founded in |- *; auto with sets.
+    unfold well_founded; auto with sets.
   Qed.
 
 End WfInclusion.

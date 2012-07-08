@@ -271,10 +271,10 @@ assert (H2 : ~ is_upper_bound E M').
   intro H5.
   assert (M <= M')%R by (apply H4; exact H5).
   apply (Rlt_not_le M M').
-    unfold M' in |- *.
-    pattern M at 2 in |- *.
+    unfold M'.
+    pattern M at 2.
     rewrite <- Rplus_0_l.
-    pattern (0 + M)%R in |- *.
+    pattern (0 + M)%R.
     rewrite Rplus_comm.
     rewrite <- (Rplus_opp_r 1).
     apply Rplus_lt_compat_l.
@@ -284,7 +284,7 @@ assert (H2 : ~ is_upper_bound E M').
 apply H2.
 intros N (n,H7).
 rewrite H7.
-unfold M' in |- *.
+unfold M'.
 assert (H5 : (INR (S n) <= M)%R) by (apply H3; exists (S n); reflexivity).
 rewrite S_INR in H5.
 assert (H6 : (INR n + 1 + -1 <= M + -1)%R).

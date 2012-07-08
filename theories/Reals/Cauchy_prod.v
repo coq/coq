@@ -21,7 +21,7 @@ Proof.
   replace N with (S (pred N)).
   rewrite tech5.
   reflexivity.
-  symmetry  in |- *; apply S_pred with 0%nat; assumption.
+  symmetry ; apply S_pred with 0%nat; assumption.
 Qed.
 
   (**********)
@@ -51,7 +51,7 @@ Proof.
   elim (lt_irrefl _ H).
   cut (N = 0%nat \/ (0 < N)%nat).
   intro; elim H0; intro.
-  rewrite H1; simpl in |- *; ring.
+  rewrite H1; simpl; ring.
   replace (pred (S N)) with (S (pred N)).
   do 5 rewrite tech5.
   rewrite Rmult_plus_distr_r; rewrite Rmult_plus_distr_l; rewrite (HrecN H1).
@@ -66,7 +66,7 @@ Proof.
       repeat rewrite Rplus_assoc; apply Rplus_eq_compat_l.
   rewrite <- minus_n_n; cut (N = 1%nat \/ (2 <= N)%nat).
   intro; elim H2; intro.
-  rewrite H3; simpl in |- *; ring.
+  rewrite H3; simpl; ring.
   replace
     (sum_f_R0
       (fun k:nat =>
@@ -147,7 +147,7 @@ Proof.
       (pred (pred N))).
   repeat rewrite Rplus_assoc; apply Rplus_eq_compat_l.
   replace (pred (N - pred N)) with 0%nat.
-  simpl in |- *; rewrite <- minus_n_O.
+  simpl; rewrite <- minus_n_O.
   replace (S (pred N)) with N.
   replace (sum_f_R0 (fun k:nat => An (S N) * Bn (S k)) (pred (pred N))) with
     (sum_f_R0 (fun k:nat => Bn (S k) * An (S N)) (pred (pred N))).
@@ -161,11 +161,11 @@ Proof.
   apply S_pred with 0%nat; assumption.
   replace (N - pred N)%nat with 1%nat.
   reflexivity.
-  pattern N at 1 in |- *; replace N with (S (pred N)).
+  pattern N at 1; replace N with (S (pred N)).
   rewrite <- minus_Sn_m.
   rewrite <- minus_n_n; reflexivity.
   apply le_n.
-  symmetry  in |- *; apply S_pred with 0%nat; assumption.
+  symmetry ; apply S_pred with 0%nat; assumption.
   apply sum_eq; intros;
     rewrite
       (sum_N_predN (fun l:nat => An (S (S (l + i))) * Bn (N - l)%nat)
@@ -259,7 +259,7 @@ Proof.
   apply le_n.
   apply (fun p n m:nat => plus_le_reg_l n m p) with 1%nat.
   rewrite le_plus_minus_r.
-  simpl in |- *; assumption.
+  simpl; assumption.
   apply le_trans with 2%nat; [ apply le_n_Sn | assumption ].
   apply le_trans with 2%nat; [ apply le_n_Sn | assumption ].
   simpl; ring.
@@ -274,7 +274,7 @@ Proof.
   apply le_trans with (pred (pred N)).
   assumption.
   apply le_pred_n.
-  symmetry  in |- *; apply S_pred with 0%nat; assumption.
+  symmetry ; apply S_pred with 0%nat; assumption.
   apply INR_eq; rewrite S_INR; rewrite plus_INR; reflexivity.
   apply le_trans with (pred (pred N)).
   assumption.
@@ -427,7 +427,7 @@ Proof.
   apply le_trans with (pred (pred N)).
   assumption.
   apply le_pred_n.
-  symmetry  in |- *; apply S_pred with 0%nat; assumption.
+  symmetry ; apply S_pred with 0%nat; assumption.
   apply INR_eq; rewrite S_INR; rewrite plus_INR; simpl; ring.
   apply le_trans with (pred (pred N)).
   assumption.
@@ -441,11 +441,11 @@ Proof.
   inversion H1.
   left; reflexivity.
   right; apply le_n_S; assumption.
-  simpl in |- *.
+  simpl.
   replace (S (pred N)) with N.
   reflexivity.
   apply S_pred with 0%nat; assumption.
-  simpl in |- *.
+  simpl.
   cut ((N - pred N)%nat = 1%nat).
   intro; rewrite H2; reflexivity.
   rewrite pred_of_minus.
@@ -453,7 +453,7 @@ Proof.
   simpl; ring.
   apply lt_le_S; assumption.
   rewrite <- pred_of_minus; apply le_pred_n.
-  simpl in |- *; symmetry  in |- *; apply S_pred with 0%nat; assumption.
+  simpl; symmetry ; apply S_pred with 0%nat; assumption.
   inversion H.
   left; reflexivity.
   right; apply lt_le_trans with 1%nat; [ apply lt_n_Sn | exact H1 ].

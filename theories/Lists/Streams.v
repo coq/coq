@@ -49,21 +49,21 @@ Qed.
 Lemma tl_nth_tl :
  forall (n:nat) (s:Stream), tl (Str_nth_tl n s) = Str_nth_tl n (tl s).
 Proof.
-  simple induction n; simpl in |- *; auto.
+  simple induction n; simpl; auto.
 Qed.
 Hint Resolve tl_nth_tl: datatypes v62.
 
 Lemma Str_nth_tl_plus :
  forall (n m:nat) (s:Stream),
    Str_nth_tl n (Str_nth_tl m s) = Str_nth_tl (n + m) s.
-simple induction n; simpl in |- *; intros; auto with datatypes.
+simple induction n; simpl; intros; auto with datatypes.
 rewrite <- H.
 rewrite tl_nth_tl; trivial with datatypes.
 Qed.
 
 Lemma Str_nth_plus :
  forall (n m:nat) (s:Stream), Str_nth n (Str_nth_tl m s) = Str_nth (n + m) s.
-intros; unfold Str_nth in |- *; rewrite Str_nth_tl_plus;
+intros; unfold Str_nth; rewrite Str_nth_tl_plus;
  trivial with datatypes.
 Qed.
 
@@ -89,7 +89,7 @@ Qed.
 
 Theorem sym_EqSt : forall s1 s2:Stream, EqSt s1 s2 -> EqSt s2 s1.
 coinduction Eq_sym.
-case H; intros; symmetry  in |- *; assumption.
+case H; intros; symmetry ; assumption.
 case H; intros; assumption.
 Qed.
 
@@ -110,10 +110,10 @@ Qed.
 
 Theorem eqst_ntheq :
  forall (n:nat) (s1 s2:Stream), EqSt s1 s2 -> Str_nth n s1 = Str_nth n s2.
-unfold Str_nth in |- *; simple induction n.
+unfold Str_nth; simple induction n.
 intros s1 s2 H; case H; trivial with datatypes.
 intros m hypind.
-simpl in |- *.
+simpl.
 intros s1 s2 H.
 apply hypind.
 case H; trivial with datatypes.

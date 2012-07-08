@@ -38,8 +38,8 @@ Section Ensembles_classical.
     elim (not_all_ex_not U (fun x:U => ~ In U A x)).
     intros x H; apply Inhabited_intro with x.
     apply NNPP; auto with sets.
-    red in |- *; intro.
-    apply NI; red in |- *.
+    red; intro.
+    apply NI; red.
     intros x H'; elim (H x); trivial with sets.
   Qed.
 
@@ -47,7 +47,7 @@ Section Ensembles_classical.
     forall A:Ensemble U, A <> Empty_set U -> Inhabited U A.
   Proof.
     intros; apply not_included_empty_Inhabited.
-    red in |- *; auto with sets.
+    red; auto with sets.
   Qed.
 
   Lemma Inhabited_Setminus :
@@ -73,7 +73,7 @@ Section Ensembles_classical.
   Lemma Subtract_intro :
     forall (A:Ensemble U) (x y:U), In U A y -> x <> y -> In U (Subtract U A x) y.
   Proof.
-    unfold Subtract at 1 in |- *; auto with sets.
+    unfold Subtract at 1; auto with sets.
   Qed.
   Hint Resolve Subtract_intro : sets.
 
@@ -103,7 +103,7 @@ Section Ensembles_classical.
   Lemma not_SIncl_empty :
     forall X:Ensemble U, ~ Strict_Included U X (Empty_set U).
   Proof.
-    intro X; red in |- *; intro H'; try exact H'.
+    intro X; red; intro H'; try exact H'.
     lapply (Strict_Included_inv X (Empty_set U)); auto with sets.
     intro H'0; elim H'0; intros H'1 H'2; elim H'2; clear H'0.
     intros x H'0; elim H'0.
@@ -113,10 +113,10 @@ Section Ensembles_classical.
   Lemma Complement_Complement :
     forall A:Ensemble U, Complement U (Complement U A) = A.
   Proof.
-    unfold Complement in |- *; intros; apply Extensionality_Ensembles;
+    unfold Complement; intros; apply Extensionality_Ensembles;
       auto with sets.
-    red in |- *; split; auto with sets.
-    red in |- *; intros; apply NNPP; auto with sets.
+    red; split; auto with sets.
+    red; intros; apply NNPP; auto with sets.
   Qed.
 
 End Ensembles_classical.

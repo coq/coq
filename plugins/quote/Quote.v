@@ -67,7 +67,7 @@ Fixpoint index_lt (n m:index) {struct m} : bool :=
   end.
 
 Lemma index_eq_prop : forall n m:index, index_eq n m = true -> n = m.
-  simple induction n; simple induction m; simpl in |- *; intros.
+  simple induction n; simple induction m; simpl; intros.
   rewrite (H i0 H1); reflexivity.
   discriminate.
   discriminate.

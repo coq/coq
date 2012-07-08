@@ -12,14 +12,14 @@ Proof.
 constructor.
  intro; apply Rplus_0_l.
  exact Rplus_comm.
- symmetry  in |- *; apply Rplus_assoc.
+ symmetry ; apply Rplus_assoc.
  intro; apply Rmult_1_l.
  exact Rmult_comm.
- symmetry  in |- *; apply Rmult_assoc.
+ symmetry ; apply Rmult_assoc.
  intros m n p.
-   rewrite Rmult_comm in |- *.
-   rewrite (Rmult_comm n p) in |- *.
-   rewrite (Rmult_comm m p) in |- *.
+   rewrite Rmult_comm.
+   rewrite (Rmult_comm n p).
+   rewrite (Rmult_comm m p).
    apply Rmult_plus_distr_l.
  reflexivity.
  exact Rplus_opp_r.
@@ -42,17 +42,17 @@ destruct H0.
  apply Rlt_trans with (IZR (up x)); trivial.
     replace (IZR (up x)) with (x + (IZR (up x) - x))%R.
   apply Rplus_lt_compat_l; trivial.
-  unfold Rminus in |- *.
-    rewrite (Rplus_comm (IZR (up x)) (- x)) in |- *.
-    rewrite <- Rplus_assoc in |- *.
-    rewrite Rplus_opp_r in |- *.
+  unfold Rminus.
+    rewrite (Rplus_comm (IZR (up x)) (- x)).
+    rewrite <- Rplus_assoc.
+    rewrite Rplus_opp_r.
     apply Rplus_0_l.
  elim H0.
-   unfold Rminus in |- *.
-   rewrite (Rplus_comm (IZR (up x)) (- x)) in |- *.
-   rewrite <- Rplus_assoc in |- *.
-   rewrite Rplus_opp_r in |- *.
-   rewrite Rplus_0_l in |- *; trivial.
+   unfold Rminus.
+   rewrite (Rplus_comm (IZR (up x)) (- x)).
+   rewrite <- Rplus_assoc.
+   rewrite Rplus_opp_r.
+   rewrite Rplus_0_l; trivial.
 Qed.
 
 Notation Rset := (Eqsth R).
@@ -61,7 +61,7 @@ Notation Rext := (Eq_ext Rplus Rmult Ropp).
 Lemma Rlt_0_2 : 0 < 2.
 apply Rlt_trans with (0 + 1).
  apply Rlt_n_Sn.
- rewrite Rplus_comm in |- *.
+ rewrite Rplus_comm.
    apply Rplus_lt_compat_l.
     replace 1 with (0 + 1).
   apply Rlt_n_Sn.
@@ -69,19 +69,19 @@ apply Rlt_trans with (0 + 1).
 Qed.
 
 Lemma Rgen_phiPOS : forall x, InitialRing.gen_phiPOS1 1 Rplus Rmult x > 0.
-unfold Rgt in |- *.
-induction x; simpl in |- *; intros.
+unfold Rgt.
+induction x; simpl; intros.
  apply Rlt_trans with (1 + 0).
-  rewrite Rplus_comm in |- *.
+  rewrite Rplus_comm.
     apply Rlt_n_Sn.
   apply Rplus_lt_compat_l.
-    rewrite <- (Rmul_0_l Rset Rext RTheory 2) in |- *.
-    rewrite Rmult_comm in |- *.
+    rewrite <- (Rmul_0_l Rset Rext RTheory 2).
+    rewrite Rmult_comm.
     apply Rmult_lt_compat_l.
    apply Rlt_0_2.
    trivial.
- rewrite <- (Rmul_0_l Rset Rext RTheory 2) in |- *.
-   rewrite Rmult_comm in |- *.
+ rewrite <- (Rmul_0_l Rset Rext RTheory 2).
+   rewrite Rmult_comm.
    apply Rmult_lt_compat_l.
   apply Rlt_0_2.
   trivial.
@@ -93,9 +93,9 @@ Qed.
 
 Lemma Rgen_phiPOS_not_0 :
   forall x, InitialRing.gen_phiPOS1 1 Rplus Rmult x <> 0.
-red in |- *; intros.
+red; intros.
 specialize (Rgen_phiPOS x).
-rewrite H in |- *; intro.
+rewrite H; intro.
 apply (Rlt_asym 0 0); trivial.
 Qed.
 
@@ -107,7 +107,7 @@ Proof gen_phiZ_complete Rset Rext Rfield Rgen_phiPOS_not_0.
 
 Lemma Rdef_pow_add : forall (x:R) (n m:nat), pow x  (n + m) = pow x n * pow x m.
 Proof.
-  intros x n; elim n; simpl in |- *; auto with real.
+  intros x n; elim n; simpl; auto with real.
   intros n0 H' m; rewrite H'; auto with real.
 Qed.
 

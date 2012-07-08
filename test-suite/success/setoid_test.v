@@ -18,10 +18,10 @@ Definition same (s t : set) : Prop := forall a : A, In a s <-> In a t.
 
 Lemma setoid_set : Setoid_Theory set same.
 
-unfold same in |- *; split ; red.
-red in |- *; auto.
+unfold same; split ; red.
+red; auto.
 
-red in |- *.
+red.
 intros.
 elim (H a); auto.
 
@@ -33,19 +33,19 @@ Qed.
 Add Setoid set same setoid_set as setsetoid.
 
 Add Morphism In : In_ext.
-unfold same in |- *; intros a s t H; elim (H a); auto.
+unfold same; intros a s t H; elim (H a); auto.
 Qed.
 
 Lemma add_aux :
  forall s t : set,
  same s t -> forall a b : A, In a (Add b s) -> In a (Add b t).
-unfold same in |- *; simple induction 2; intros.
+unfold same; simple induction 2; intros.
 rewrite H1.
-simpl in |- *; left; reflexivity.
+simpl; left; reflexivity.
 
 elim (H a).
 intros.
-simpl in |- *; right.
+simpl; right.
 apply (H2 H1).
 Qed.
 
@@ -74,15 +74,15 @@ setoid_replace (remove a (Add a Empty)) with Empty.
 
 auto.
 
-unfold same in |- *.
+unfold same.
 split.
-simpl in |- *.
+simpl.
 case (eq_dec a a).
 intros e ff; elim ff.
 
 intros; absurd (a = a); trivial.
 
-simpl in |- *.
+simpl.
 intro H; elim H.
 Qed.
 

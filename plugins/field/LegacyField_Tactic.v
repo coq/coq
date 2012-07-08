@@ -150,7 +150,7 @@ Ltac apply_assoc FT lvar trm :=
   match constr:(t = trm) with
   | (?X1 = ?X1) => idtac
   | _ =>
-      rewrite <- (assoc_correct FT trm); change (assoc trm) with t in |- *
+      rewrite <- (assoc_correct FT trm); change (assoc trm) with t
   end.
 
 (**** Distribution *****)
@@ -161,7 +161,7 @@ Ltac apply_distrib FT lvar trm :=
   | (?X1 = ?X1) => idtac
   | _ =>
       rewrite <- (distrib_correct FT trm);
-       change (distrib trm) with t in |- *
+       change (distrib trm) with t
   end.
 
 (**** Multiplication by the inverse product ****)
@@ -175,7 +175,7 @@ Ltac weak_reduce :=
   |  |- context [(interp_ExprA ?X1 ?X2 _)] =>
       cbv beta iota zeta
        delta [interp_ExprA assoc_2nd eq_nat_dec mult_of_list X1 X2 A Azero
-             Aone Aplus Amult Aopp Ainv] in |- *
+             Aone Aplus Amult Aopp Ainv]
   end.
 
 Ltac multiply mul :=
@@ -199,7 +199,7 @@ Ltac apply_multiply FT lvar trm :=
   | (?X1 = ?X1) => idtac
   | _ =>
       rewrite <- (multiply_correct FT trm);
-       change (multiply trm) with t in |- *
+       change (multiply trm) with t
   end.
 
 (**** Permutations and simplification ****)
@@ -210,7 +210,7 @@ Ltac apply_inverse mul FT lvar trm :=
   | (?X1 = ?X1) => idtac
   | _ =>
       rewrite <- (inverse_correct FT trm mul);
-       [ change (inverse_simplif mul trm) with t in |- * | assumption ]
+       [ change (inverse_simplif mul trm) with t | assumption ]
   end.
 (**** Inverse test ****)
 
@@ -252,11 +252,11 @@ Ltac apply_simplif sfun :=
 
 Ltac unfolds FT :=
   match get_component Aminus FT with
-  | Some ?X1 => unfold X1 in |- *
+  | Some ?X1 => unfold X1
   | _ => idtac
   end;
   match get_component Adiv FT with
-  | Some ?X1 => unfold X1 in |- *
+  | Some ?X1 => unfold X1
   | _ => idtac
   end.
 
@@ -267,8 +267,8 @@ Ltac reduce FT :=
   with AmultT := get_component Amult FT
   with AoppT := get_component Aopp FT
   with AinvT := get_component Ainv FT in
-  (cbv beta iota zeta delta -[AzeroT AoneT AplusT AmultT AoppT AinvT] in |- * ||
-     compute in |- *).
+  (cbv beta iota zeta delta -[AzeroT AoneT AplusT AmultT AoppT AinvT] ||
+     compute).
 
 Ltac field_gen_aux FT :=
   let AplusT := get_component Aplus FT in
@@ -280,7 +280,7 @@ Ltac field_gen_aux FT :=
       cut
         (let ft := FT in
          let vm := lvar in interp_ExprA ft vm trm1 = interp_ExprA ft vm trm2);
-        [ compute in |- *; auto
+        [ compute; auto
         | intros ft vm; apply_simplif apply_distrib;
            apply_simplif apply_assoc; multiply mul;
            [ apply_simplif apply_multiply;

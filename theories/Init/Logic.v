@@ -240,12 +240,12 @@ Section universal_quantification.
 
   Theorem inst : forall x:A, all (fun x => P x) -> P x.
   Proof.
-    unfold all in |- *; auto.
+    unfold all; auto.
   Qed.
 
   Theorem gen : forall (B:Prop) (f:forall y:A, B -> P y), B -> all P.
   Proof.
-    red in |- *; auto.
+    red; auto.
   Qed.
 
 End universal_quantification.
@@ -284,7 +284,7 @@ Section Logic_lemmas.
 
   Theorem absurd : forall A C:Prop, A -> ~ A -> C.
   Proof.
-    unfold not in |- *; intros A C h1 h2.
+    unfold not; intros A C h1 h2.
     destruct (h2 h1).
   Qed.
 
@@ -313,7 +313,7 @@ Section Logic_lemmas.
 
     Theorem not_eq_sym : x <> y -> y <> x.
     Proof.
-      red in |- *; intros h1 h2; apply h1; destruct h2; trivial.
+      red; intros h1 h2; apply h1; destruct h2; trivial.
     Qed.
 
   End equality.

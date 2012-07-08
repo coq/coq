@@ -32,13 +32,13 @@ Section wf_proof.
   Let f (z:Z) := Z.abs_nat (z - c).
 
   Lemma Zwf_well_founded : well_founded (Zwf c).
-    red in |- *; intros.
+    red; intros.
     assert (forall (n:nat) (a:Z), (f a < n)%nat \/ a < c -> Acc (Zwf c) a).
     clear a; simple induction n; intros.
   (** n= 0 *)
     case H; intros.
     case (lt_n_O (f a)); auto.
-    apply Acc_intro; unfold Zwf in |- *; intros.
+    apply Acc_intro; unfold Zwf; intros.
     assert False; omega || contradiction.
   (** inductive case *)
     case H0; clear H0; intro; auto.

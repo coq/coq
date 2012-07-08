@@ -14,7 +14,7 @@ Local Open Scope R_scope.
 (** Rsqr : some results                             *)
 (****************************************************)
 
-Ltac ring_Rsqr := unfold Rsqr in |- *; ring.
+Ltac ring_Rsqr := unfold Rsqr; ring.
 
 Lemma Rsqr_neg : forall x:R, Rsqr x = Rsqr (- x).
 Proof.
@@ -48,25 +48,25 @@ Qed.
 
 Lemma Rsqr_gt_0_0 : forall x:R, 0 < Rsqr x -> x <> 0.
 Proof.
-  intros; red in |- *; intro; rewrite H0 in H; rewrite Rsqr_0 in H;
+  intros; red; intro; rewrite H0 in H; rewrite Rsqr_0 in H;
     elim (Rlt_irrefl 0 H).
 Qed.
 
 Lemma Rsqr_pos_lt : forall x:R, x <> 0 -> 0 < Rsqr x.
 Proof.
   intros; case (Rtotal_order 0 x); intro;
-    [ unfold Rsqr in |- *; apply Rmult_lt_0_compat; assumption
+    [ unfold Rsqr; apply Rmult_lt_0_compat; assumption
       | elim H0; intro;
-        [ elim H; symmetry  in |- *; exact H1
+        [ elim H; symmetry ; exact H1
           | rewrite Rsqr_neg; generalize (Ropp_lt_gt_contravar x 0 H1);
-            rewrite Ropp_0; intro; unfold Rsqr in |- *;
+            rewrite Ropp_0; intro; unfold Rsqr;
               apply Rmult_lt_0_compat; assumption ] ].
 Qed.
 
 Lemma Rsqr_div : forall x y:R, y <> 0 -> Rsqr (x / y) = Rsqr x / Rsqr y.
 Proof.
-  intros; unfold Rsqr in |- *.
-  unfold Rdiv in |- *.
+  intros; unfold Rsqr.
+  unfold Rdiv.
   rewrite Rinv_mult_distr.
   repeat rewrite Rmult_assoc.
   apply Rmult_eq_compat_l.
@@ -80,7 +80,7 @@ Qed.
 
 Lemma Rsqr_eq_0 : forall x:R, Rsqr x = 0 -> x = 0.
 Proof.
-  unfold Rsqr in |- *; intros; generalize (Rmult_integral x x H); intro;
+  unfold Rsqr; intros; generalize (Rmult_integral x x H); intro;
     elim H0; intro; assumption.
 Qed.
 
@@ -122,7 +122,7 @@ Qed.
 Lemma Rsqr_incr_1 :
   forall x y:R, x <= y -> 0 <= x -> 0 <= y -> Rsqr x <= Rsqr y.
 Proof.
-  intros; unfold Rsqr in |- *; apply Rmult_le_compat; assumption.
+  intros; unfold Rsqr; apply Rmult_le_compat; assumption.
 Qed.
 
 Lemma Rsqr_incrst_0 :
@@ -140,7 +140,7 @@ Qed.
 Lemma Rsqr_incrst_1 :
   forall x y:R, x < y -> 0 <= x -> 0 <= y -> Rsqr x < Rsqr y.
 Proof.
-  intros; unfold Rsqr in |- *; apply Rmult_le_0_lt_compat; assumption.
+  intros; unfold Rsqr; apply Rmult_le_0_lt_compat; assumption.
 Qed.
 
 Lemma Rsqr_neg_pos_le_0 :
@@ -183,7 +183,7 @@ Qed.
 
 Lemma Rsqr_abs : forall x:R, Rsqr x = Rsqr (Rabs x).
 Proof.
-  intro; unfold Rabs in |- *; case (Rcase_abs x); intro;
+  intro; unfold Rabs; case (Rcase_abs x); intro;
     [ apply Rsqr_neg | reflexivity ].
 Qed.
 
@@ -220,7 +220,7 @@ Qed.
 
 Lemma Rsqr_eq_abs_0 : forall x y:R, Rsqr x = Rsqr y -> Rabs x = Rabs y.
 Proof.
-  intros; unfold Rabs in |- *; case (Rcase_abs x); case (Rcase_abs y); intros.
+  intros; unfold Rabs; case (Rcase_abs x); case (Rcase_abs y); intros.
   rewrite (Rsqr_neg x) in H; rewrite (Rsqr_neg y) in H;
     generalize (Ropp_lt_gt_contravar y 0 r);
       generalize (Ropp_lt_gt_contravar x 0 r0); rewrite Ropp_0;
@@ -288,7 +288,7 @@ Qed.
 
 Lemma Rsqr_inv : forall x:R, x <> 0 -> Rsqr (/ x) = / Rsqr x.
 Proof.
-  intros; unfold Rsqr in |- *.
+  intros; unfold Rsqr.
   rewrite Rinv_mult_distr; try reflexivity || assumption.
 Qed.
 
@@ -302,7 +302,7 @@ Proof.
   repeat rewrite Rmult_plus_distr_l.
   repeat rewrite Rplus_assoc.
   apply Rplus_eq_compat_l.
-  unfold Rdiv, Rminus in |- *.
+  unfold Rdiv, Rminus.
   replace (2 * 1 + 2 * 1) with 4; [ idtac | ring ].
   rewrite (Rmult_plus_distr_r (4 * a * c) (- Rsqr b) (/ (4 * a))).
   rewrite Rsqr_mult.
@@ -332,7 +332,7 @@ Proof.
   rewrite (Rmult_comm x).
   apply Rplus_eq_compat_l.
   rewrite (Rmult_comm (/ a)).
-  unfold Rsqr in |- *; repeat rewrite Rmult_assoc.
+  unfold Rsqr; repeat rewrite Rmult_assoc.
   rewrite <- Rinv_l_sym.
   rewrite Rmult_1_r.
   ring.
@@ -357,7 +357,7 @@ Proof.
       rewrite Rplus_opp_l; replace (- (y * y) + x * x) with ((x - y) * (x + y)).
   intro; generalize (Rmult_integral (x - y) (x + y) H0); intro; elim H1; intros.
   left; apply Rminus_diag_uniq; assumption.
-  right; apply Rminus_diag_uniq; unfold Rminus in |- *; rewrite Ropp_involutive;
+  right; apply Rminus_diag_uniq; unfold Rminus; rewrite Ropp_involutive;
     assumption.
   ring.
 Qed.

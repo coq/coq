@@ -63,13 +63,13 @@ Section Partial_order_facts.
     forall x y z:U,
       Strict_Rel_of U D x y -> Rel_of U D y z -> Strict_Rel_of U D x z.
   Proof.
-    unfold Strict_Rel_of at 1 in |- *.
-    red in |- *.
-    elim D; simpl in |- *.
+    unfold Strict_Rel_of at 1.
+    red.
+    elim D; simpl.
     intros C R H' H'0; elim H'0.
     intros H'1 H'2 H'3 x y z H'4 H'5; split.
     apply H'2 with (y := y); tauto.
-    red in |- *; intro H'6.
+    red; intro H'6.
     elim H'4; intros H'7 H'8; apply H'8; clear H'4.
     apply H'3; auto.
     rewrite H'6; tauto.
@@ -79,20 +79,20 @@ Section Partial_order_facts.
     forall x y z:U,
       Rel_of U D x y -> Strict_Rel_of U D y z -> Strict_Rel_of U D x z.
   Proof.
-    unfold Strict_Rel_of at 1 in |- *.
-    red in |- *.
-    elim D; simpl in |- *.
+    unfold Strict_Rel_of at 1.
+    red.
+    elim D; simpl.
     intros C R H' H'0; elim H'0.
     intros H'1 H'2 H'3 x y z H'4 H'5; split.
     apply H'2 with (y := y); tauto.
-    red in |- *; intro H'6.
+    red; intro H'6.
     elim H'5; intros H'7 H'8; apply H'8; clear H'5.
     apply H'3; auto.
     rewrite <- H'6; auto.
   Qed.
 
   Lemma Strict_Rel_Transitive : Transitive U (Strict_Rel_of U D).
-    red in |- *.
+    red.
     intros x y z H' H'0.
     apply Strict_Rel_Transitive_with_Rel with (y := y);
       [ intuition | unfold Strict_Rel_of in H', H'0; intuition ].

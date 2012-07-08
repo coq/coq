@@ -340,7 +340,7 @@ Module IntProperties (I:Int).
 
  Lemma sum1 : forall a b c d : int, 0 = a -> 0 = b -> 0 = a * c + b * d.
  Proof.
- intros; elim H; elim H0; simpl in |- *; auto.
+ intros; elim H; elim H0; simpl; auto.
  now rewrite mult_0_l, mult_0_l, plus_0_l.
  Qed.
 
@@ -1053,34 +1053,34 @@ Proof.
  | intros; elim beq_nat_true with (1 := H); trivial ].
 Qed.
 
-Ltac trivial_case := unfold not in |- *; intros; discriminate.
+Ltac trivial_case := unfold not; intros; discriminate.
 
 Theorem eq_term_false :
  forall t1 t2 : term, eq_term t1 t2 = false -> t1 <> t2.
 Proof.
  simple induction t1;
- [ intros z t2; case t2; try trivial_case; simpl in |- *; unfold not in |- *;
+ [ intros z t2; case t2; try trivial_case; simpl; unfold not;
     intros; elim beq_false with (1 := H); simplify_eq H0;
     auto
- | intros t11 H1 t12 H2 t2; case t2; try trivial_case; simpl in |- *;
-    intros t21 t22 H3; unfold not in |- *; intro H4;
+ | intros t11 H1 t12 H2 t2; case t2; try trivial_case; simpl;
+    intros t21 t22 H3; unfold not; intro H4;
     elim andb_false_elim with (1 := H3); intros H5;
     [ elim H1 with (1 := H5); simplify_eq H4; auto
     | elim H2 with (1 := H5); simplify_eq H4; auto ]
- | intros t11 H1 t12 H2 t2; case t2; try trivial_case; simpl in |- *;
-    intros t21 t22 H3; unfold not in |- *; intro H4;
+ | intros t11 H1 t12 H2 t2; case t2; try trivial_case; simpl;
+    intros t21 t22 H3; unfold not; intro H4;
     elim andb_false_elim with (1 := H3); intros H5;
     [ elim H1 with (1 := H5); simplify_eq H4; auto
     | elim H2 with (1 := H5); simplify_eq H4; auto ]
- | intros t11 H1 t12 H2 t2; case t2; try trivial_case; simpl in |- *;
-    intros t21 t22 H3; unfold not in |- *; intro H4;
+ | intros t11 H1 t12 H2 t2; case t2; try trivial_case; simpl;
+    intros t21 t22 H3; unfold not; intro H4;
     elim andb_false_elim with (1 := H3); intros H5;
     [ elim H1 with (1 := H5); simplify_eq H4; auto
     | elim H2 with (1 := H5); simplify_eq H4; auto ]
- | intros t11 H1 t2; case t2; try trivial_case; simpl in |- *; intros t21 H3;
-    unfold not in |- *; intro H4; elim H1 with (1 := H3);
+ | intros t11 H1 t2; case t2; try trivial_case; simpl; intros t21 H3;
+    unfold not; intro H4; elim H1 with (1 := H3);
     simplify_eq H4; auto
- | intros n t2; case t2; try trivial_case; simpl in |- *; unfold not in |- *;
+ | intros n t2; case t2; try trivial_case; simpl; unfold not;
     intros; elim beq_nat_false with (1 := H); simplify_eq H0;
     auto ].
 Qed.
@@ -1100,17 +1100,17 @@ Qed.
    avait utilisé le test précédent et fait une elimination dessus. *)
 
 Ltac elim_eq_term t1 t2 :=
-  pattern (eq_term t1 t2) in |- *; apply bool_eq_ind; intro Aux;
+  pattern (eq_term t1 t2); apply bool_eq_ind; intro Aux;
    [ generalize (eq_term_true t1 t2 Aux); clear Aux
    | generalize (eq_term_false t1 t2 Aux); clear Aux ].
 
 Ltac elim_beq t1 t2 :=
-  pattern (beq t1 t2) in |- *; apply bool_eq_ind; intro Aux;
+  pattern (beq t1 t2); apply bool_eq_ind; intro Aux;
    [ generalize (beq_true t1 t2 Aux); clear Aux
    | generalize (beq_false t1 t2 Aux); clear Aux ].
 
 Ltac elim_bgt t1 t2 :=
-  pattern (bgt t1 t2) in |- *; apply bool_eq_ind; intro Aux;
+  pattern (bgt t1 t2); apply bool_eq_ind; intro Aux;
   [ generalize (bgt_true t1 t2 Aux); clear Aux
   | generalize (bgt_false t1 t2 Aux); clear Aux ].
 
@@ -1186,15 +1186,15 @@ Theorem goal_to_hyps :
  (interp_hyps envp env l -> False) -> interp_goal envp env l.
 Proof.
  simple induction l;
- [ simpl in |- *; auto
- | simpl in |- *; intros a l1 H1 H2 H3; apply H1; intro H4; apply H2; auto ].
+ [ simpl; auto
+ | simpl; intros a l1 H1 H2 H3; apply H1; intro H4; apply H2; auto ].
 Qed.
 
 Theorem hyps_to_goal :
  forall (envp : list Prop) (env : list int) (l : hyps),
  interp_goal envp env l -> interp_hyps envp env l -> False.
 Proof.
- simple induction l; simpl in |- *; [ auto | intros; apply H; elim H1; auto ].
+ simple induction l; simpl; [ auto | intros; apply H; elim H1; auto ].
 Qed.
 
 (* \subsection{Manipulations sur les hypothèses} *)
@@ -1234,7 +1234,7 @@ Theorem valid_goal :
   forall (ep : list Prop) (env : list int) (l : hyps) (a : hyps -> hyps),
   valid_hyps a -> interp_goal ep env (a l) -> interp_goal ep env l.
 Proof.
- intros; simpl in |- *; apply goal_to_hyps; intro H1;
+ intros; simpl; apply goal_to_hyps; intro H1;
  apply (hyps_to_goal ep env (a l) H0); apply H; assumption.
 Qed.
 
@@ -1259,7 +1259,7 @@ Theorem list_goal_to_hyps :
  forall (envp : list Prop) (env : list int) (l : lhyps),
  (interp_list_hyps envp env l -> False) -> interp_list_goal envp env l.
 Proof.
- simple induction l; simpl in |- *;
+ simple induction l; simpl;
  [ auto
  | intros h1 l1 H H1; split;
     [ apply goal_to_hyps; intro H2; apply H1; auto
@@ -1270,7 +1270,7 @@ Theorem list_hyps_to_goal :
  forall (envp : list Prop) (env : list int) (l : lhyps),
  interp_list_goal envp env l -> interp_list_hyps envp env l -> False.
 Proof.
- simple induction l; simpl in |- *;
+ simple induction l; simpl;
  [ auto
  | intros h1 l1 H (H1, H2) H3; elim H3; intro H4;
     [ apply hyps_to_goal with (1 := H1); assumption | auto ] ].
@@ -1287,7 +1287,7 @@ Definition valid_list_goal (f : hyps -> lhyps) :=
 Theorem goal_valid :
  forall f : hyps -> lhyps, valid_list_hyps f -> valid_list_goal f.
 Proof.
- unfold valid_list_goal in |- *; intros f H ep e lp H1; apply goal_to_hyps;
+ unfold valid_list_goal; intros f H ep e lp H1; apply goal_to_hyps;
  intro H2; apply list_hyps_to_goal with (1 := H1);
  apply (H ep e lp); assumption.
 Qed.
@@ -1298,8 +1298,8 @@ Theorem append_valid :
  interp_list_hyps ep e (l1 ++ l2).
 Proof.
  intros ep e; simple induction l1;
- [ simpl in |- *; intros l2 [H| H]; [ contradiction | trivial ]
- | simpl in |- *; intros h1 t1 HR l2 [[H| H]| H];
+ [ simpl; intros l2 [H| H]; [ contradiction | trivial ]
+ | simpl; intros h1 t1 HR l2 [[H| H]| H];
     [ auto
     | right; apply (HR l2); left; trivial
     | right; apply (HR l2); right; trivial ] ].
@@ -1315,11 +1315,11 @@ Theorem nth_valid :
  forall (ep : list Prop) (e : list int) (i : nat) (l : hyps),
  interp_hyps ep e l -> interp_proposition ep e (nth_hyps i l).
 Proof.
- unfold nth_hyps in |- *; simple induction i;
- [ simple induction l; simpl in |- *; [ auto | intros; elim H0; auto ]
+ unfold nth_hyps; simple induction i;
+ [ simple induction l; simpl; [ auto | intros; elim H0; auto ]
  | intros n H; simple induction l;
-    [ simpl in |- *; trivial
-    | intros; simpl in |- *; apply H; elim H1; auto ] ].
+    [ simpl; trivial
+    | intros; simpl; apply H; elim H1; auto ] ].
 Qed.
 
 (* Appliquer une opération (valide) sur deux hypothèses extraites de
@@ -1332,7 +1332,7 @@ Theorem apply_oper_2_valid :
  forall (i j : nat) (f : proposition -> proposition -> proposition),
  valid2 f -> valid_hyps (apply_oper_2 i j f).
 Proof.
- intros i j f Hf; unfold apply_oper_2, valid_hyps in |- *; simpl in |- *;
+ intros i j f Hf; unfold apply_oper_2, valid_hyps; simpl;
  intros lp Hlp; split; [ apply Hf; apply nth_valid; assumption | assumption ].
 Qed.
 
@@ -1353,14 +1353,14 @@ Theorem apply_oper_1_valid :
  forall (i : nat) (f : proposition -> proposition),
  valid1 f -> valid_hyps (apply_oper_1 i f).
 Proof.
- unfold valid_hyps in |- *; intros i f Hf ep e; elim i;
+ unfold valid_hyps; intros i f Hf ep e; elim i;
  [ intro lp; case lp;
-    [ simpl in |- *; trivial
-    | simpl in |- *; intros p l' (H1, H2); split;
+    [ simpl; trivial
+    | simpl; intros p l' (H1, H2); split;
        [ apply Hf with (1 := H1) | assumption ] ]
  | intros n Hrec lp; case lp;
-    [ simpl in |- *; auto
-    | simpl in |- *; intros p l' (H1, H2); split;
+    [ simpl; auto
+    | simpl; intros p l' (H1, H2); split;
        [ assumption | apply Hrec; assumption ] ] ].
 Qed.
 
@@ -1398,14 +1398,14 @@ Definition apply_both (f g : term -> term) (t : term) :=
 Theorem apply_left_stable :
  forall f : term -> term, term_stable f -> term_stable (apply_left f).
 Proof.
- unfold term_stable in |- *; intros f H e t; case t; auto; simpl in |- *;
+ unfold term_stable; intros f H e t; case t; auto; simpl;
  intros; elim H; trivial.
 Qed.
 
 Theorem apply_right_stable :
  forall f : term -> term, term_stable f -> term_stable (apply_right f).
 Proof.
- unfold term_stable in |- *; intros f H e t; case t; auto; simpl in |- *;
+ unfold term_stable; intros f H e t; case t; auto; simpl;
  intros t0 t1; elim H; trivial.
 Qed.
 
@@ -1413,7 +1413,7 @@ Theorem apply_both_stable :
  forall f g : term -> term,
  term_stable f -> term_stable g -> term_stable (apply_both f g).
 Proof.
- unfold term_stable in |- *; intros f g H1 H2 e t; case t; auto; simpl in |- *;
+ unfold term_stable; intros f g H1 H2 e t; case t; auto; simpl;
  intros t0 t1; elim H1; elim H2; trivial.
 Qed.
 
@@ -1421,7 +1421,7 @@ Theorem compose_term_stable :
  forall f g : term -> term,
  term_stable f -> term_stable g -> term_stable (fun t : term => f (g t)).
 Proof.
- unfold term_stable in |- *; intros f g Hf Hg e t; elim Hf; apply Hg.
+ unfold term_stable; intros f g Hf Hg e t; elim Hf; apply Hg.
 Qed.
 
 (* \subsection{Les règles de réécriture} *)
@@ -1499,14 +1499,14 @@ Ltac loop t :=
   | (if beq ?X1 ?X2 then _ else _) =>
       let H := fresh "H" in
       elim_beq X1 X2; intro H; try (rewrite H in *; clear H);
-       simpl in |- *; auto; Simplify
+       simpl; auto; Simplify
   | (if bgt ?X1 ?X2 then _ else _) =>
       let H := fresh "H" in
-      elim_bgt X1 X2; intro H; simpl in |- *; auto; Simplify
+      elim_bgt X1 X2; intro H; simpl; auto; Simplify
   | (if eq_term ?X1 ?X2 then _ else _) =>
       let H := fresh "H" in
       elim_eq_term X1 X2; intro H; try (rewrite H in *; clear H);
-       simpl in |- *; auto; Simplify
+       simpl; auto; Simplify
   | (if _ && _ then _ else _) => rewrite andb_if; Simplify
   | (if negb _ then _ else _) => rewrite negb_if; Simplify
   | _ => fail
@@ -1520,7 +1520,7 @@ with Simplify := match goal with
 Ltac prove_stable x th :=
   match constr:x with
   | ?X1 =>
-      unfold term_stable, X1 in |- *; intros; Simplify; simpl in |- *;
+      unfold term_stable, X1; intros; Simplify; simpl;
        apply th
   end.
 
@@ -1640,7 +1640,7 @@ Definition T_OMEGA13 (t : term) :=
 
 Theorem T_OMEGA13_stable : term_stable T_OMEGA13.
 Proof.
- unfold term_stable, T_OMEGA13 in |- *; intros; Simplify; simpl in |- *;
+ unfold term_stable, T_OMEGA13; intros; Simplify; simpl;
  apply OMEGA13.
 Qed.
 
@@ -1887,16 +1887,16 @@ Fixpoint reduce (t : term) : term :=
 
 Theorem reduce_stable : term_stable reduce.
 Proof.
- unfold term_stable in |- *; intros e t; elim t; auto;
+ unfold term_stable; intros e t; elim t; auto;
  try
-  (intros t0 H0 t1 H1; simpl in |- *; rewrite H0; rewrite H1;
+  (intros t0 H0 t1 H1; simpl; rewrite H0; rewrite H1;
     (case (reduce t0);
       [ intro z0; case (reduce t1); intros; auto
       | intros; auto
       | intros; auto
       | intros; auto
       | intros; auto
-      | intros; auto ])); intros t0 H0; simpl in |- *;
+      | intros; auto ])); intros t0 H0; simpl;
  rewrite H0; case (reduce t0); intros; auto.
 Qed.
 
@@ -1921,12 +1921,12 @@ Fixpoint fusion (trace : list t_fusion) (t : term) {struct trace} : term :=
 
 Theorem fusion_stable : forall t : list t_fusion, term_stable (fusion t).
 Proof.
- simple induction t; simpl in |- *;
+ simple induction t; simpl;
  [ exact reduce_stable
  | intros stp l H; case stp;
     [ apply compose_term_stable;
        [ apply apply_right_stable; assumption | exact T_OMEGA10_stable ]
-    | unfold term_stable in |- *; intros e t1; rewrite T_OMEGA10_stable;
+    | unfold term_stable; intros e t1; rewrite T_OMEGA10_stable;
        rewrite Tred_factor5_stable; apply H
     | apply compose_term_stable;
        [ apply apply_right_stable; assumption | exact T_OMEGA11_stable ]
@@ -1959,7 +1959,7 @@ Fixpoint fusion_cancel (trace : nat) (t : term) {struct trace} : term :=
 
 Theorem fusion_cancel_stable : forall t : nat, term_stable (fusion_cancel t).
 Proof.
- unfold term_stable, fusion_cancel in |- *; intros trace e; elim trace;
+ unfold term_stable, fusion_cancel; intros trace e; elim trace;
  [ exact (reduce_stable e)
  | intros n H t; elim H; exact (T_OMEGA13_stable e t) ].
 Qed.
@@ -1976,7 +1976,7 @@ Fixpoint scalar_norm_add (trace : nat) (t : term) {struct trace} : term :=
 Theorem scalar_norm_add_stable :
  forall t : nat, term_stable (scalar_norm_add t).
 Proof.
- unfold term_stable, scalar_norm_add in |- *; intros trace; elim trace;
+ unfold term_stable, scalar_norm_add; intros trace; elim trace;
  [ exact reduce_stable
  | intros n H e t; elim apply_right_stable;
     [ exact (T_OMEGA11_stable e t) | exact H ] ].
@@ -1991,7 +1991,7 @@ Fixpoint scalar_norm (trace : nat) (t : term) {struct trace} : term :=
 
 Theorem scalar_norm_stable : forall t : nat, term_stable (scalar_norm t).
 Proof.
- unfold term_stable, scalar_norm in |- *; intros trace; elim trace;
+ unfold term_stable, scalar_norm; intros trace; elim trace;
  [ exact reduce_stable
  | intros n H e t; elim apply_right_stable;
     [ exact (T_OMEGA16_stable e t) | exact H ] ].
@@ -2006,7 +2006,7 @@ Fixpoint add_norm (trace : nat) (t : term) {struct trace} : term :=
 
 Theorem add_norm_stable : forall t : nat, term_stable (add_norm t).
 Proof.
- unfold term_stable, add_norm in |- *; intros trace; elim trace;
+ unfold term_stable, add_norm; intros trace; elim trace;
  [ exact reduce_stable
  | intros n H e t; elim apply_right_stable;
     [ exact (Tplus_assoc_r_stable e t) | exact H ] ].
@@ -2048,12 +2048,12 @@ Fixpoint t_rewrite (s : step) : term -> term :=
 
 Theorem t_rewrite_stable : forall s : step, term_stable (t_rewrite s).
 Proof.
- simple induction s; simpl in |- *;
+ simple induction s; simpl;
  [ intros; apply apply_both_stable; auto
  | intros; apply apply_left_stable; auto
  | intros; apply apply_right_stable; auto
- | unfold term_stable in |- *; intros; elim H0; apply H
- | unfold term_stable in |- *; auto
+ | unfold term_stable; intros; elim H0; apply H
+ | unfold term_stable; auto
  | exact Topp_plus_stable
  | exact Topp_opp_stable
  | exact Topp_mult_r_stable
@@ -2093,11 +2093,11 @@ Definition constant_not_nul (i : nat) (h : hyps) :=
 Theorem constant_not_nul_valid :
  forall i : nat, valid_hyps (constant_not_nul i).
 Proof.
- unfold valid_hyps, constant_not_nul in |- *; intros;
- generalize (nth_valid ep e i lp); Simplify; simpl in |- *.
+ unfold valid_hyps, constant_not_nul; intros;
+ generalize (nth_valid ep e i lp); Simplify; simpl.
 
- elim_beq i1 i0; auto; simpl in |- *; intros H1 H2;
- elim H1; symmetry  in |- *; auto.
+ elim_beq i1 i0; auto; simpl; intros H1 H2;
+ elim H1; symmetry ; auto.
 Qed.
 
 (* \paragraph{[O_CONSTANT_NEG]} *)
@@ -2111,8 +2111,8 @@ Definition constant_neg (i : nat) (h : hyps) :=
 
 Theorem constant_neg_valid : forall i : nat, valid_hyps (constant_neg i).
 Proof.
- unfold valid_hyps, constant_neg in |- *; intros;
- generalize (nth_valid ep e i lp); Simplify; simpl in |- *.
+ unfold valid_hyps, constant_neg; intros;
+ generalize (nth_valid ep e i lp); Simplify; simpl.
  rewrite gt_lt_iff in H0; rewrite le_lt_iff; intuition.
 Qed.
 
@@ -2134,7 +2134,7 @@ Theorem not_exact_divide_valid :
  forall (k1 k2 : int) (body : term) (t i : nat),
  valid_hyps (not_exact_divide k1 k2 body t i).
 Proof.
- unfold valid_hyps, not_exact_divide in |- *; intros;
+ unfold valid_hyps, not_exact_divide; intros;
  generalize (nth_valid ep e i lp); Simplify.
  rewrite (scalar_norm_add_stable t e), <-H1.
  do 2 rewrite <- scalar_norm_add_stable; simpl in *; intros.
@@ -2163,16 +2163,16 @@ Definition contradiction (t i j : nat) (l : hyps) :=
 Theorem contradiction_valid :
  forall t i j : nat, valid_hyps (contradiction t i j).
 Proof.
- unfold valid_hyps, contradiction in |- *; intros t i j ep e l H;
+ unfold valid_hyps, contradiction; intros t i j ep e l H;
  generalize (nth_valid _ _ i _ H); generalize (nth_valid _ _ j _ H);
  case (nth_hyps i l); auto; intros t1 t2; case t1;
  auto; case (nth_hyps j l);
  auto; intros t3 t4; case t3; auto;
- simpl in |- *; intros z z' H1 H2;
+ simpl; intros z z' H1 H2;
  generalize (eq_refl (interp_term e (fusion_cancel t (t2 + t4)%term)));
- pattern (fusion_cancel t (t2 + t4)%term) at 2 3 in |- *;
- case (fusion_cancel t (t2 + t4)%term); simpl in |- *;
- auto; intro k; elim (fusion_cancel_stable t); simpl in |- *.
+ pattern (fusion_cancel t (t2 + t4)%term) at 2 3;
+ case (fusion_cancel t (t2 + t4)%term); simpl;
+ auto; intro k; elim (fusion_cancel_stable t); simpl.
  Simplify; intro H3.
  generalize (OMEGA2 _ _ H2 H1); rewrite H3.
  rewrite gt_lt_iff in H0; rewrite le_lt_iff; intuition.
@@ -2227,23 +2227,23 @@ Definition negate_contradict_inv (t i1 i2 : nat) (h : hyps) :=
 Theorem negate_contradict_valid :
  forall i j : nat, valid_hyps (negate_contradict i j).
 Proof.
- unfold valid_hyps, negate_contradict in |- *; intros i j ep e l H;
+ unfold valid_hyps, negate_contradict; intros i j ep e l H;
  generalize (nth_valid _ _ i _ H); generalize (nth_valid _ _ j _ H);
  case (nth_hyps i l); auto; intros t1 t2; case t1;
  auto; intros z; auto; case (nth_hyps j l);
  auto; intros t3 t4; case t3; auto; intros z';
- auto; simpl in |- *; intros H1 H2; Simplify.
+ auto; simpl; intros H1 H2; Simplify.
 Qed.
 
 Theorem negate_contradict_inv_valid :
  forall t i j : nat, valid_hyps (negate_contradict_inv t i j).
 Proof.
- unfold valid_hyps, negate_contradict_inv in |- *; intros t i j ep e l H;
+ unfold valid_hyps, negate_contradict_inv; intros t i j ep e l H;
  generalize (nth_valid _ _ i _ H); generalize (nth_valid _ _ j _ H);
  case (nth_hyps i l); auto; intros t1 t2; case t1;
  auto; intros z; auto; case (nth_hyps j l);
  auto; intros t3 t4; case t3; auto; intros z';
- auto; simpl in |- *; intros H1 H2; Simplify;
+ auto; simpl; intros H1 H2; Simplify;
  [
  rewrite <- scalar_norm_stable in H2; simpl in *;
  elim (mult_integral (interp_term e t4) (-(1))); intuition;
@@ -2310,9 +2310,9 @@ Definition sum (k1 k2 : int) (trace : list t_fusion)
 Theorem sum_valid :
  forall (k1 k2 : int) (t : list t_fusion), valid2 (sum k1 k2 t).
 Proof.
- unfold valid2 in |- *; intros k1 k2 t ep e p1 p2; unfold sum in |- *;
- Simplify; simpl in |- *; auto; try elim (fusion_stable t);
- simpl in |- *; intros;
+ unfold valid2; intros k1 k2 t ep e p1 p2; unfold sum;
+ Simplify; simpl; auto; try elim (fusion_stable t);
+ simpl; intros;
  [ apply sum1; assumption
  | apply sum2; try assumption; apply sum4; assumption
  | rewrite plus_comm; apply sum2; try assumption; apply sum4; assumption
@@ -2344,7 +2344,7 @@ Definition exact_divide (k : int) (body : term) (t : nat)
 Theorem exact_divide_valid :
  forall (k : int) (t : term) (n : nat), valid1 (exact_divide k t n).
 Proof.
- unfold valid1, exact_divide in |- *; intros k1 k2 t ep e p1;
+ unfold valid1, exact_divide; intros k1 k2 t ep e p1;
  Simplify; simpl; auto; subst;
  rewrite <- scalar_norm_stable; simpl; intros;
  [ destruct (mult_integral _ _ (eq_sym H0)); intuition
@@ -2374,9 +2374,9 @@ Theorem divide_and_approx_valid :
  forall (k1 k2 : int) (body : term) (t : nat),
  valid1 (divide_and_approx k1 k2 body t).
 Proof.
- unfold valid1, divide_and_approx in |- *; intros k1 k2 body t ep e p1;
+ unfold valid1, divide_and_approx; intros k1 k2 body t ep e p1;
  Simplify; simpl; auto; subst;
- elim (scalar_norm_add_stable t e); simpl in |- *.
+ elim (scalar_norm_add_stable t e); simpl.
  intro H2; apply mult_le_approx with (3 := H2); assumption.
 Qed.
 
@@ -2398,9 +2398,9 @@ Definition merge_eq (t : nat) (prop1 prop2 : proposition) :=
 
 Theorem merge_eq_valid : forall n : nat, valid2 (merge_eq n).
 Proof.
- unfold valid2, merge_eq in |- *; intros n ep e p1 p2; Simplify; simpl in |- *;
- auto; elim (scalar_norm_stable n e); simpl in |- *;
- intros; symmetry  in |- *; apply OMEGA8 with (2 := H0);
+ unfold valid2, merge_eq; intros n ep e p1 p2; Simplify; simpl;
+ auto; elim (scalar_norm_stable n e); simpl;
+ intros; symmetry ; apply OMEGA8 with (2 := H0);
  [ assumption | elim opp_eq_mult_neg_1; trivial ].
 Qed.
 
@@ -2417,8 +2417,8 @@ Definition constant_nul (i : nat) (h : hyps) :=
 
 Theorem constant_nul_valid : forall i : nat, valid_hyps (constant_nul i).
 Proof.
- unfold valid_hyps, constant_nul in |- *; intros;
- generalize (nth_valid ep e i lp); Simplify; simpl in |- *;
+ unfold valid_hyps, constant_nul; intros;
+ generalize (nth_valid ep e i lp); Simplify; simpl;
  intro H1; absurd (0 = 0); intuition.
 Qed.
 
@@ -2439,8 +2439,8 @@ Definition state (m : int) (s : step) (prop1 prop2 : proposition) :=
 
 Theorem state_valid : forall (m : int) (s : step), valid2 (state m s).
 Proof.
- unfold valid2 in |- *; intros m s ep e p1 p2; unfold state in |- *; Simplify;
- simpl in |- *; auto; elim (t_rewrite_stable s e); simpl in |- *;
+ unfold valid2; intros m s ep e p1 p2; unfold state; Simplify;
+ simpl; auto; elim (t_rewrite_stable s e); simpl;
  intros H1 H2; elim H1.
  now rewrite H2, plus_opp_l, plus_0_l, mult_0_l.
 Qed.
@@ -2467,18 +2467,18 @@ Theorem split_ineq_valid :
  valid_list_hyps f1 ->
  valid_list_hyps f2 -> valid_list_hyps (split_ineq i t f1 f2).
 Proof.
- unfold valid_list_hyps, split_ineq in |- *; intros i t f1 f2 H1 H2 ep e lp H;
+ unfold valid_list_hyps, split_ineq; intros i t f1 f2 H1 H2 ep e lp H;
  generalize (nth_valid _ _ i _ H); case (nth_hyps i lp);
- simpl in |- *; auto; intros t1 t2; case t1; simpl in |- *;
- auto; intros z; simpl in |- *; auto; intro H3.
+ simpl; auto; intros t1 t2; case t1; simpl;
+ auto; intros z; simpl; auto; intro H3.
  Simplify.
  apply append_valid; elim (OMEGA19 (interp_term e t2));
- [ intro H4; left; apply H1; simpl in |- *; elim (add_norm_stable t);
-    simpl in |- *; auto
- | intro H4; right; apply H2; simpl in |- *; elim (scalar_norm_add_stable t);
-    simpl in |- *; auto
- | generalize H3; unfold not in |- *; intros E1 E2; apply E1;
-    symmetry  in |- *; trivial ].
+ [ intro H4; left; apply H1; simpl; elim (add_norm_stable t);
+    simpl; auto
+ | intro H4; right; apply H2; simpl; elim (scalar_norm_add_stable t);
+    simpl; auto
+ | generalize H3; unfold not; intros E1 E2; apply E1;
+    symmetry ; trivial ].
 Qed.
 
 
@@ -2511,47 +2511,47 @@ Fixpoint execute_omega (t : t_omega) (l : hyps) {struct t} : lhyps :=
 
 Theorem omega_valid : forall t : t_omega, valid_list_hyps (execute_omega t).
 Proof.
- simple induction t; simpl in |- *;
- [ unfold valid_list_hyps in |- *; simpl in |- *; intros; left;
+ simple induction t; simpl;
+ [ unfold valid_list_hyps; simpl; intros; left;
     apply (constant_not_nul_valid n ep e lp H)
- | unfold valid_list_hyps in |- *; simpl in |- *; intros; left;
+ | unfold valid_list_hyps; simpl; intros; left;
     apply (constant_neg_valid n ep e lp H)
- | unfold valid_list_hyps, valid_hyps in |- *;
+ | unfold valid_list_hyps, valid_hyps;
     intros k1 k2 body n t' Ht' m ep e lp H; apply Ht';
     apply
      (apply_oper_1_valid m (divide_and_approx k1 k2 body n)
         (divide_and_approx_valid k1 k2 body n) ep e lp H)
- | unfold valid_list_hyps in |- *; simpl in |- *; intros; left;
+ | unfold valid_list_hyps; simpl; intros; left;
     apply (not_exact_divide_valid i i0 t0 n n0 ep e lp H)
- | unfold valid_list_hyps, valid_hyps in |- *;
+ | unfold valid_list_hyps, valid_hyps;
     intros k body n t' Ht' m ep e lp H; apply Ht';
     apply
      (apply_oper_1_valid m (exact_divide k body n)
         (exact_divide_valid k body n) ep e lp H)
- | unfold valid_list_hyps, valid_hyps in |- *;
+ | unfold valid_list_hyps, valid_hyps;
     intros k1 i1 k2 i2 trace t' Ht' ep e lp H; apply Ht';
     apply
      (apply_oper_2_valid i1 i2 (sum k1 k2 trace) (sum_valid k1 k2 trace) ep e
         lp H)
- | unfold valid_list_hyps in |- *; simpl in |- *; intros; left;
+ | unfold valid_list_hyps; simpl; intros; left;
     apply (contradiction_valid n n0 n1 ep e lp H)
- | unfold valid_list_hyps, valid_hyps in |- *;
+ | unfold valid_list_hyps, valid_hyps;
     intros trace i1 i2 t' Ht' ep e lp H; apply Ht';
     apply
      (apply_oper_2_valid i1 i2 (merge_eq trace) (merge_eq_valid trace) ep e
         lp H)
- | intros t' i k1 H1 k2 H2; unfold valid_list_hyps in |- *; simpl in |- *;
+ | intros t' i k1 H1 k2 H2; unfold valid_list_hyps; simpl;
     intros ep e lp H;
     apply
      (split_ineq_valid i t' (execute_omega k1) (execute_omega k2) H1 H2 ep e
         lp H)
- | unfold valid_list_hyps in |- *; simpl in |- *; intros i ep e lp H; left;
+ | unfold valid_list_hyps; simpl; intros i ep e lp H; left;
     apply (constant_nul_valid i ep e lp H)
- | unfold valid_list_hyps in |- *; simpl in |- *; intros i j ep e lp H; left;
+ | unfold valid_list_hyps; simpl; intros i j ep e lp H; left;
     apply (negate_contradict_valid i j ep e lp H)
- | unfold valid_list_hyps in |- *; simpl in |- *; intros n i j ep e lp H;
+ | unfold valid_list_hyps; simpl; intros n i j ep e lp H;
     left; apply (negate_contradict_inv_valid n i j ep e lp H)
- | unfold valid_list_hyps, valid_hyps in |- *;
+ | unfold valid_list_hyps, valid_hyps;
     intros m s i1 i2 t' Ht' ep e lp H; apply Ht';
     apply (apply_oper_2_valid i1 i2 (state m s) (state_valid m s) ep e lp H) ].
 Qed.
@@ -2573,9 +2573,9 @@ Definition move_right (s : step) (p : proposition) :=
 
 Theorem move_right_valid : forall s : step, valid1 (move_right s).
 Proof.
- unfold valid1, move_right in |- *; intros s ep e p; Simplify; simpl in |- *;
- elim (t_rewrite_stable s e); simpl in |- *;
- [ symmetry  in |- *; apply egal_left; assumption
+ unfold valid1, move_right; intros s ep e p; Simplify; simpl;
+ elim (t_rewrite_stable s e); simpl;
+ [ symmetry ; apply egal_left; assumption
  | intro; apply le_left; assumption
  | intro; apply le_left; rewrite <- ge_le_iff; assumption
  | intro; apply lt_left; rewrite <- gt_lt_iff; assumption
@@ -2588,7 +2588,7 @@ Definition do_normalize (i : nat) (s : step) := apply_oper_1 i (move_right s).
 Theorem do_normalize_valid :
  forall (i : nat) (s : step), valid_hyps (do_normalize i s).
 Proof.
- intros; unfold do_normalize in |- *; apply apply_oper_1_valid;
+ intros; unfold do_normalize; apply apply_oper_1_valid;
  apply move_right_valid.
 Qed.
 
@@ -2602,7 +2602,7 @@ Fixpoint do_normalize_list (l : list step) (i : nat)
 Theorem do_normalize_list_valid :
  forall (l : list step) (i : nat), valid_hyps (do_normalize_list l i).
 Proof.
- simple induction l; simpl in |- *; unfold valid_hyps in |- *;
+ simple induction l; simpl; unfold valid_hyps;
  [ auto
  | intros a l' Hl' i ep e lp H; unfold valid_hyps in Hl'; apply Hl';
     apply (do_normalize_valid i a ep e lp); assumption ].
@@ -2631,8 +2631,8 @@ Theorem append_goal :
  interp_list_goal ep e (l1 ++ l2).
 Proof.
  intros ep e; simple induction l1;
- [ simpl in |- *; intros l2 (H1, H2); assumption
- | simpl in |- *; intros h1 t1 HR l2 ((H1, H2), H3); split; auto ].
+ [ simpl; intros l2 (H1, H2); assumption
+ | simpl; intros h1 t1 HR l2 ((H1, H2), H3); split; auto ].
 Qed.
 
 (* A simple decidability checker : if the proposition belongs to the
@@ -2661,11 +2661,11 @@ Theorem decidable_correct :
  forall (ep : list Prop) (e : list int) (p : proposition),
  decidability p = true -> decidable (interp_proposition ep e p).
 Proof.
- simple induction p; simpl in |- *; intros;
+ simple induction p; simpl; intros;
  [ apply dec_eq
  | apply dec_le
  | left; auto
- | right; unfold not in |- *; auto
+ | right; unfold not; auto
  | apply dec_not; auto
  | apply dec_ge
  | apply dec_gt
@@ -2701,7 +2701,7 @@ Theorem interp_full_false :
  forall (ep : list Prop) (e : list int) (l : hyps) (c : proposition),
  (interp_hyps ep e l -> interp_proposition ep e c) -> interp_full ep e (l, c).
 Proof.
- simple induction l; unfold interp_full in |- *; simpl in |- *;
+ simple induction l; unfold interp_full; simpl;
  [ auto | intros a l1 H1 c H2 H3; apply H1; auto ].
 Qed.
 
@@ -2721,12 +2721,12 @@ Theorem to_contradict_valid :
  forall (ep : list Prop) (e : list int) (lc : hyps * proposition),
  interp_goal ep e (to_contradict lc) -> interp_full ep e lc.
 Proof.
- intros ep e lc; case lc; intros l c; simpl in |- *;
- pattern (decidability c) in |- *; apply bool_eq_ind;
- [ simpl in |- *; intros H H1; apply interp_full_false; intros H2;
+ intros ep e lc; case lc; intros l c; simpl;
+ pattern (decidability c); apply bool_eq_ind;
+ [ simpl; intros H H1; apply interp_full_false; intros H2;
     apply not_not;
     [ apply decidable_correct; assumption
-    | unfold not at 1 in |- *; intro H3; apply hyps_to_goal with (2 := H2);
+    | unfold not at 1; intro H3; apply hyps_to_goal with (2 := H2);
        auto ]
  | intros H1 H2; apply interp_full_false; intro H3;
     elim hyps_to_goal with (1 := H2); assumption ].
@@ -2790,7 +2790,7 @@ Theorem map_cons_val :
  interp_proposition ep e p ->
  interp_list_hyps ep e l -> interp_list_hyps ep e (map_cons _ p l).
 Proof.
- simple induction l; simpl in |- *; [ auto | intros; elim H1; intro H2; auto ].
+ simple induction l; simpl; [ auto | intros; elim H1; intro H2; auto ].
 Qed.
 
 Hint Resolve map_cons_val append_valid decidable_correct.
@@ -2799,43 +2799,43 @@ Theorem destructure_hyps_valid :
  forall n : nat, valid_list_hyps (destructure_hyps n).
 Proof.
  simple induction n;
- [ unfold valid_list_hyps in |- *; simpl in |- *; auto
- | unfold valid_list_hyps at 2 in |- *; intros n1 H ep e lp; case lp;
-    [ simpl in |- *; auto
+ [ unfold valid_list_hyps; simpl; auto
+ | unfold valid_list_hyps at 2; intros n1 H ep e lp; case lp;
+    [ simpl; auto
     | intros p l; case p;
        try
-        (simpl in |- *; intros; apply map_cons_val; simpl in |- *; elim H0;
+        (simpl; intros; apply map_cons_val; simpl; elim H0;
           auto);
        [ intro p'; case p';
           try
-           (simpl in |- *; intros; apply map_cons_val; simpl in |- *; elim H0;
+           (simpl; intros; apply map_cons_val; simpl; elim H0;
              auto);
-          [ simpl in |- *; intros p1 (H1, H2);
-             pattern (decidability p1) in |- *; apply bool_eq_ind;
+          [ simpl; intros p1 (H1, H2);
+             pattern (decidability p1); apply bool_eq_ind;
              intro H3;
-             [ apply H; simpl in |- *; split;
+             [ apply H; simpl; split;
                 [ apply not_not; auto | assumption ]
              | auto ]
-          | simpl in |- *; intros p1 p2 (H1, H2); apply H; simpl in |- *;
+          | simpl; intros p1 p2 (H1, H2); apply H; simpl;
              elim not_or with (1 := H1); auto
-          | simpl in |- *; intros p1 p2 (H1, H2);
-             pattern (decidability p1) in |- *; apply bool_eq_ind;
+          | simpl; intros p1 p2 (H1, H2);
+             pattern (decidability p1); apply bool_eq_ind;
              intro H3;
              [ apply append_valid; elim not_and with (2 := H1);
-                [ intro; left; apply H; simpl in |- *; auto
-                | intro; right; apply H; simpl in |- *; auto
+                [ intro; left; apply H; simpl; auto
+                | intro; right; apply H; simpl; auto
                 | auto ]
              | auto ] ]
-       | simpl in |- *; intros p1 p2 (H1, H2); apply append_valid;
-          (elim H1; intro H3; simpl in |- *; [ left | right ]);
-          apply H; simpl in |- *; auto
-       | simpl in |- *; intros; apply H; simpl in |- *; tauto
-       | simpl in |- *; intros p1 p2 (H1, H2);
-          pattern (decidability p1) in |- *; apply bool_eq_ind;
+       | simpl; intros p1 p2 (H1, H2); apply append_valid;
+          (elim H1; intro H3; simpl; [ left | right ]);
+          apply H; simpl; auto
+       | simpl; intros; apply H; simpl; tauto
+       | simpl; intros p1 p2 (H1, H2);
+          pattern (decidability p1); apply bool_eq_ind;
           intro H3;
           [ apply append_valid; elim imp_simp with (2 := H1);
-             [ intro H4; left; simpl in |- *; apply H; simpl in |- *; auto
-             | intro H4; right; simpl in |- *; apply H; simpl in |- *; auto
+             [ intro H4; left; simpl; apply H; simpl; auto
+             | intro H4; right; simpl; apply H; simpl; auto
              | auto ]
           | auto ] ] ] ].
 Qed.
@@ -2858,8 +2858,8 @@ Theorem p_apply_left_stable :
  forall f : proposition -> proposition,
  prop_stable f -> prop_stable (p_apply_left f).
 Proof.
- unfold prop_stable in |- *; intros f H ep e p; split;
- (case p; simpl in |- *; auto; intros p1; elim (H ep e p1); tauto).
+ unfold prop_stable; intros f H ep e p; split;
+ (case p; simpl; auto; intros p1; elim (H ep e p1); tauto).
 Qed.
 
 Definition p_apply_right (f : proposition -> proposition)
@@ -2876,8 +2876,8 @@ Theorem p_apply_right_stable :
  forall f : proposition -> proposition,
  prop_stable f -> prop_stable (p_apply_right f).
 Proof.
- unfold prop_stable in |- *; intros f H ep e p; split;
- (case p; simpl in |- *; auto;
+ unfold prop_stable; intros f H ep e p; split;
+ (case p; simpl; auto;
    [ intros p1; elim (H ep e p1); tauto
    | intros p1 p2; elim (H ep e p2); tauto
    | intros p1 p2; elim (H ep e p2); tauto
@@ -2900,42 +2900,42 @@ Theorem p_invert_stable :
  forall f : proposition -> proposition,
  prop_stable f -> prop_stable (p_invert f).
 Proof.
- unfold prop_stable in |- *; intros f H ep e p; split;
- (case p; simpl in |- *; auto;
-   [ intros t1 t2; elim (H ep e (NeqTerm t1 t2)); simpl in |- *;
+ unfold prop_stable; intros f H ep e p; split;
+ (case p; simpl; auto;
+   [ intros t1 t2; elim (H ep e (NeqTerm t1 t2)); simpl;
       generalize (dec_eq (interp_term e t1) (interp_term e t2));
-      unfold decidable in |- *; tauto
-   | intros t1 t2; elim (H ep e (GtTerm t1 t2)); simpl in |- *;
+      unfold decidable; tauto
+   | intros t1 t2; elim (H ep e (GtTerm t1 t2)); simpl;
       generalize (dec_gt (interp_term e t1) (interp_term e t2));
-      unfold decidable in |- *; rewrite le_lt_iff, <- gt_lt_iff; tauto
-   | intros t1 t2; elim (H ep e (LtTerm t1 t2)); simpl in |- *;
+      unfold decidable; rewrite le_lt_iff, <- gt_lt_iff; tauto
+   | intros t1 t2; elim (H ep e (LtTerm t1 t2)); simpl;
       generalize (dec_lt (interp_term e t1) (interp_term e t2));
-      unfold decidable in |- *; rewrite ge_le_iff, le_lt_iff; tauto
-   | intros t1 t2; elim (H ep e (LeqTerm t1 t2)); simpl in |- *;
+      unfold decidable; rewrite ge_le_iff, le_lt_iff; tauto
+   | intros t1 t2; elim (H ep e (LeqTerm t1 t2)); simpl;
       generalize (dec_gt (interp_term e t1) (interp_term e t2));
-      unfold decidable in |- *; repeat rewrite le_lt_iff;
+      unfold decidable; repeat rewrite le_lt_iff;
       repeat rewrite gt_lt_iff; tauto
-   | intros t1 t2; elim (H ep e (GeqTerm t1 t2)); simpl in |- *;
+   | intros t1 t2; elim (H ep e (GeqTerm t1 t2)); simpl;
       generalize (dec_lt (interp_term e t1) (interp_term e t2));
-      unfold decidable in |- *; repeat rewrite ge_le_iff;
+      unfold decidable; repeat rewrite ge_le_iff;
       repeat rewrite le_lt_iff; tauto
-   | intros t1 t2; elim (H ep e (EqTerm t1 t2)); simpl in |- *;
+   | intros t1 t2; elim (H ep e (EqTerm t1 t2)); simpl;
       generalize (dec_eq (interp_term e t1) (interp_term e t2));
       unfold decidable; tauto ]).
 Qed.
 
 Theorem move_right_stable : forall s : step, prop_stable (move_right s).
 Proof.
- unfold move_right, prop_stable in |- *; intros s ep e p; split;
- [ Simplify; simpl in |- *; elim (t_rewrite_stable s e); simpl in |- *;
-    [ symmetry  in |- *; apply egal_left; assumption
+ unfold move_right, prop_stable; intros s ep e p; split;
+ [ Simplify; simpl; elim (t_rewrite_stable s e); simpl;
+    [ symmetry ; apply egal_left; assumption
     | intro; apply le_left; assumption
     | intro; apply le_left; rewrite <- ge_le_iff; assumption
     | intro; apply lt_left; rewrite <- gt_lt_iff; assumption
     | intro; apply lt_left; assumption
     | intro; apply ne_left_2; assumption ]
- | case p; simpl in |- *; intros; auto; generalize H; elim (t_rewrite_stable s);
-    simpl in |- *; intro H1;
+ | case p; simpl; intros; auto; generalize H; elim (t_rewrite_stable s);
+    simpl; intro H1;
     [ rewrite (plus_0_r_reverse (interp_term e t0)); rewrite H1;
        rewrite plus_permute; rewrite plus_opp_r;
        rewrite plus_0_r; trivial
@@ -2946,7 +2946,7 @@ Proof.
        rewrite plus_opp_r; assumption
     | rewrite gt_lt_iff; apply lt_left_inv; assumption
     | apply lt_left_inv; assumption
-    | unfold not in |- *; intro H2; apply H1;
+    | unfold not; intro H2; apply H1;
        rewrite H2; rewrite plus_opp_r; trivial ] ].
 Qed.
 
@@ -2962,12 +2962,12 @@ Fixpoint p_rewrite (s : p_step) : proposition -> proposition :=
 
 Theorem p_rewrite_stable : forall s : p_step, prop_stable (p_rewrite s).
 Proof.
- simple induction s; simpl in |- *;
+ simple induction s; simpl;
  [ intros; apply p_apply_left_stable; trivial
  | intros; apply p_apply_right_stable; trivial
  | intros; apply p_invert_stable; apply move_right_stable
  | apply move_right_stable
- | unfold prop_stable in |- *; simpl in |- *; intros; split; auto ].
+ | unfold prop_stable; simpl; intros; split; auto ].
 Qed.
 
 Fixpoint normalize_hyps (l : list h_step) (lh : hyps) {struct l} : hyps :=
@@ -2979,11 +2979,11 @@ Fixpoint normalize_hyps (l : list h_step) (lh : hyps) {struct l} : hyps :=
 Theorem normalize_hyps_valid :
  forall l : list h_step, valid_hyps (normalize_hyps l).
 Proof.
- simple induction l; unfold valid_hyps in |- *; simpl in |- *;
+ simple induction l; unfold valid_hyps; simpl;
  [ auto
  | intros n_s r; case n_s; intros n s H ep e lp H1; apply H;
     apply apply_oper_1_valid;
-    [ unfold valid1 in |- *; intros ep1 e1 p1 H2;
+    [ unfold valid1; intros ep1 e1 p1 H2;
        elim (p_rewrite_stable s ep1 e1 p1); auto
     | assumption ] ].
 Qed.
@@ -3050,21 +3050,21 @@ Theorem extract_valid :
  forall s : list direction,
  valid1 (extract_hyp_pos s) /\ co_valid1 (extract_hyp_neg s).
 Proof.
- unfold valid1, co_valid1 in |- *; simple induction s;
+ unfold valid1, co_valid1; simple induction s;
  [ split;
-    [ simpl in |- *; auto
-    | intros ep e p1; case p1; simpl in |- *; auto; intro p;
-       pattern (decidability p) in |- *; apply bool_eq_ind;
+    [ simpl; auto
+    | intros ep e p1; case p1; simpl; auto; intro p;
+       pattern (decidability p); apply bool_eq_ind;
        [ intro H; generalize (decidable_correct ep e p H);
-          unfold decidable in |- *; tauto
-       | simpl in |- *; auto ] ]
+          unfold decidable; tauto
+       | simpl; auto ] ]
  | intros a s' (H1, H2); simpl in H2; split; intros ep e p; case a; auto;
-    case p; auto; simpl in |- *; intros;
+    case p; auto; simpl; intros;
     (apply H1; tauto) ||
       (apply H2; tauto) ||
-        (pattern (decidability p0) in |- *; apply bool_eq_ind;
+        (pattern (decidability p0); apply bool_eq_ind;
           [ intro H3; generalize (decidable_correct ep e p0 H3);
-             unfold decidable in |- *; intro H4; apply H1;
+             unfold decidable; intro H4; apply H1;
              tauto
           | intro; tauto ]) ].
 Qed.
@@ -3094,29 +3094,29 @@ Fixpoint decompose_solve (s : e_step) (h : hyps) {struct s} : lhyps :=
 Theorem decompose_solve_valid :
  forall s : e_step, valid_list_goal (decompose_solve s).
 Proof.
- intro s; apply goal_valid; unfold valid_list_hyps in |- *; elim s;
- simpl in |- *; intros;
+ intro s; apply goal_valid; unfold valid_list_hyps; elim s;
+ simpl; intros;
  [ cut (interp_proposition ep e1 (extract_hyp_pos l (nth_hyps n lp)));
-    [ case (extract_hyp_pos l (nth_hyps n lp)); simpl in |- *; auto;
-       [ intro p; case p; simpl in |- *; auto; intros p1 p2 H2;
-          pattern (decidability p1) in |- *; apply bool_eq_ind;
+    [ case (extract_hyp_pos l (nth_hyps n lp)); simpl; auto;
+       [ intro p; case p; simpl; auto; intros p1 p2 H2;
+          pattern (decidability p1); apply bool_eq_ind;
           [ intro H3; generalize (decidable_correct ep e1 p1 H3); intro H4;
              apply append_valid; elim H4; intro H5;
-             [ right; apply H0; simpl in |- *; tauto
-             | left; apply H; simpl in |- *; tauto ]
-          | simpl in |- *; auto ]
-       | intros p1 p2 H2; apply append_valid; simpl in |- *; elim H2;
-          [ intros H3; left; apply H; simpl in |- *; auto
-          | intros H3; right; apply H0; simpl in |- *; auto ]
+             [ right; apply H0; simpl; tauto
+             | left; apply H; simpl; tauto ]
+          | simpl; auto ]
+       | intros p1 p2 H2; apply append_valid; simpl; elim H2;
+          [ intros H3; left; apply H; simpl; auto
+          | intros H3; right; apply H0; simpl; auto ]
        | intros p1 p2 H2;
-         pattern (decidability p1) in |- *; apply bool_eq_ind;
+         pattern (decidability p1); apply bool_eq_ind;
           [ intro H3; generalize (decidable_correct ep e1 p1 H3); intro H4;
              apply append_valid; elim H4; intro H5;
-             [ right; apply H0; simpl in |- *; tauto
-             | left; apply H; simpl in |- *; tauto ]
-          | simpl in |- *; auto ] ]
+             [ right; apply H0; simpl; tauto
+             | left; apply H; simpl; tauto ]
+          | simpl; auto ] ]
     | elim (extract_valid l); intros H2 H3; apply H2; apply nth_valid; auto ]
- | intros; apply H; simpl in |- *; split;
+ | intros; apply H; simpl; split;
     [ elim (extract_valid l); intros H2 H3; apply H2; apply nth_valid; auto
     | auto ]
  | apply omega_valid with (1 := H) ].
@@ -3137,11 +3137,11 @@ Fixpoint reduce_lhyps (lp : lhyps) : lhyps :=
 
 Theorem reduce_lhyps_valid : valid_lhyps reduce_lhyps.
 Proof.
- unfold valid_lhyps in |- *; intros ep e lp; elim lp;
- [ simpl in |- *; auto
+ unfold valid_lhyps; intros ep e lp; elim lp;
+ [ simpl; auto
  | intros a l HR; elim a;
-    [ simpl in |- *; tauto
-    | intros a1 l1; case l1; case a1; simpl in |- *; try tauto ] ].
+    [ simpl; tauto
+    | intros a1 l1; case l1; case a1; simpl; try tauto ] ].
 Qed.
 
 Theorem do_reduce_lhyps :
@@ -3161,13 +3161,13 @@ Definition do_concl_to_hyp :
   interp_goal envp env (concl_to_hyp c :: l) ->
   interp_goal_concl c envp env l.
 Proof.
- simpl in |- *; intros envp env c l; induction l as [| a l Hrecl];
- [ simpl in |- *; unfold concl_to_hyp in |- *;
-    pattern (decidability c) in |- *; apply bool_eq_ind;
+ simpl; intros envp env c l; induction l as [| a l Hrecl];
+ [ simpl; unfold concl_to_hyp;
+    pattern (decidability c); apply bool_eq_ind;
     [ intro H; generalize (decidable_correct envp env c H);
-       unfold decidable in |- *; simpl in |- *; tauto
-    | simpl in |- *; intros H1 H2; elim H2; trivial ]
- | simpl in |- *; tauto ].
+       unfold decidable; simpl; tauto
+    | simpl; intros H1 H2; elim H2; trivial ]
+ | simpl; tauto ].
 Qed.
 
 Definition omega_tactic (t1 : e_step) (t2 : list h_step)
@@ -3180,7 +3180,7 @@ Theorem do_omega :
  interp_list_goal envp env (omega_tactic t1 t2 c l) ->
  interp_goal_concl c envp env l.
 Proof.
- unfold omega_tactic in |- *; intros; apply do_concl_to_hyp;
+ unfold omega_tactic; intros; apply do_concl_to_hyp;
  apply (normalize_hyps_goal t2); apply (decompose_solve_valid t1);
  apply do_reduce_lhyps; assumption.
 Qed.

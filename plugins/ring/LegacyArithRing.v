@@ -75,14 +75,14 @@ Ltac rewrite_S_to_plus :=
        (**)  (**)
        rewrite_S_to_plus_term X1
        with t2 := rewrite_S_to_plus_term X2 in
-       change (t1 = t2) in |- *
+       change (t1 = t2)
   |  |- (?X1 = ?X2) =>
       try
        let t1 :=
        (**)  (**)
        rewrite_S_to_plus_term X1
        with t2 := rewrite_S_to_plus_term X2 in
-       change (t1 = t2) in |- *
+       change (t1 = t2)
   end.
 
 Ltac ring_nat := rewrite_S_to_plus; ring.

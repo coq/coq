@@ -61,7 +61,7 @@ Section Ensembles_finis_facts.
             (exists x : _, X = Add U A x /\ ~ In U A x /\ cardinal U A n)
       end.
   Proof.
-    induction 1; simpl in |- *; auto.
+    induction 1; simpl; auto.
     exists A; exists x; auto.
   Qed.
 
@@ -73,7 +73,7 @@ Section Ensembles_finis_facts.
 	| S n => Inhabited U X
       end.
   Proof.
-    intros X p C; elim C; simpl in |- *; trivial with sets.
+    intros X p C; elim C; simpl; trivial with sets.
   Qed.
 
 End Ensembles_finis_facts.

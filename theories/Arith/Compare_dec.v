@@ -256,7 +256,7 @@ Lemma leb_correct : forall m n, m <= n -> leb m n = true.
 Proof.
   induction m as [| m IHm]. trivial.
   destruct n. intro H. elim (le_Sn_O _ H).
-  intros. simpl in |- *. apply IHm. apply le_S_n. assumption.
+  intros. simpl. apply IHm. apply le_S_n. assumption.
 Qed.
 
 Lemma leb_complete : forall m n, leb m n = true -> m <= n.

@@ -54,7 +54,7 @@ Section Inverse_Image.
     Qed.
 
   Lemma WF_inverse_image : WF B R -> WF A Rof.
-    red in |- *; intros; apply ACC_inverse_image; auto.
+    red; intros; apply ACC_inverse_image; auto.
     Qed.
 
 End Inverse_Image.
@@ -106,7 +106,7 @@ generalize eqx0; clear eqx0.
 elim eqy using eq_ind_r; intro.
 case (inj _ _ _ _ eqx0); intros.
 exists X1 R1 X4 R4 (fun x : X1 => f0 (x0 (f x))) maj0; trivial.
-red in |- *; auto.
+red; auto.
 Defined.
 
 
@@ -124,7 +124,7 @@ apply sym_eq; assumption.
 
 intros.
 apply H1 with (y := f (x1 maj)) (f := fun x : X1 => f (x1 (f0 x)));
- try red in |- *; auto.
+ try red; auto.
 Defined.
 
   (* The embedding relation is well founded *)
@@ -160,7 +160,7 @@ Section Subsets.
 exists sub (Rof _ _ emb witness) A0 emb witness a; trivial.
 exact WF_emb.
 
-red in |- *; trivial.
+red; trivial.
 
 exact emb_wit.
 Defined.
@@ -176,7 +176,7 @@ End Subsets.
       - the upper bound is a, which is in F(b) since a < b
    *)
   Lemma F_morphism : morphism A0 emb A0 emb F.
-red in |- *; intros.
+red; intros.
 exists
  (sub x)
    (Rof _ _ emb (witness x))
@@ -187,10 +187,10 @@ exists
 apply WF_inverse_image.
 exact WF_emb.
 
-unfold morphism, Rof, fsub in |- *; simpl in |- *; intros.
+unfold morphism, Rof, fsub; simpl; intros.
 trivial.
 
-unfold Rof, fsub in |- *; simpl in |- *; intros.
+unfold Rof, fsub; simpl; intros.
 apply emb_wit.
 Defined.
 
@@ -231,10 +231,10 @@ intros.
 change
   match i0 X1 R1, i0 X2 R2 with
   | i1 x1 r1, i1 x2 r2 => exists f : _, morphism x1 r1 x2 r2 f
-  end in |- *.
-case H; simpl in |- *.
+  end.
+case H; simpl.
 exists (fun x : X1 => x).
-red in |- *; trivial.
+red; trivial.
 Defined.
 
 (* The following command raises 'Error: Universe Inconsistency'.

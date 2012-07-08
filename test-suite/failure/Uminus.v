@@ -31,7 +31,7 @@ Lemma Omega : forall i:U -> prop, induct i -> up (i WF).
 Proof.
 intros i y.
 apply y.
-unfold le, WF, induct in |- *.
+unfold le, WF, induct.
 intros x H0.
 apply y.
 exact H0.
@@ -39,7 +39,7 @@ Qed.
 
 Lemma lemma1 : induct (fun u => down (I u)).
 Proof.
-unfold induct in |- *.
+unfold induct.
 intros x p.
 intro q.
 apply (q (fun u => down (I u)) p).

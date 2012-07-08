@@ -55,13 +55,13 @@ Section defs.
 
   Lemma leA_Tree_Leaf : forall a:A, leA_Tree a Tree_Leaf.
   Proof.
-    simpl in |- *; auto with datatypes.
+    simpl; auto with datatypes.
   Qed.
 
   Lemma leA_Tree_Node :
     forall (a b:A) (G D:Tree), leA a b -> leA_Tree a (Tree_Node b G D).
   Proof.
-    simpl in |- *; auto with datatypes.
+    simpl; auto with datatypes.
   Qed.
 
 
@@ -121,7 +121,7 @@ Section defs.
     forall (T:Tree) (a b:A), leA a b -> leA_Tree b T -> leA_Tree a T.
   Proof.
     simple induction T; auto with datatypes.
-    intros; simpl in |- *; apply leA_trans with b; auto with datatypes.
+    intros; simpl; apply leA_trans with b; auto with datatypes.
   Qed.
 
   (** ** Merging two sorted lists *)
@@ -213,12 +213,12 @@ Section defs.
     simple induction 1; intros.
     apply insert_exist with (Tree_Node a Tree_Leaf Tree_Leaf);
       auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
-    simpl in |- *; unfold meq, munion in |- *; auto using node_is_heap with datatypes.
+    simpl; unfold meq, munion; auto using node_is_heap with datatypes.
     elim (leA_dec a a0); intros.
     elim (X a0); intros.
     apply insert_exist with (Tree_Node a T2 T0);
       auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
-    simpl in |- *; apply treesort_twist1; trivial with datatypes.
+    simpl; apply treesort_twist1; trivial with datatypes.
     elim (X a); intros T3 HeapT3 ConT3 LeA.
     apply insert_exist with (Tree_Node a0 T2 T3);
       auto using node_is_heap, nil_is_heap, leA_Tree_Leaf with datatypes.
@@ -226,7 +226,7 @@ Section defs.
     apply low_trans with a; auto with datatypes.
     apply LeA; auto with datatypes.
     apply low_trans with a; auto with datatypes.
-    simpl in |- *; apply treesort_twist2; trivial with datatypes.
+    simpl; apply treesort_twist2; trivial with datatypes.
   Qed.
 
 
@@ -242,10 +242,10 @@ Section defs.
   Proof.
     simple induction l.
     apply (heap_exist nil Tree_Leaf); auto with datatypes.
-    simpl in |- *; unfold meq in |- *; exact nil_is_heap.
+    simpl; unfold meq; exact nil_is_heap.
     simple induction 1.
     intros T i m; elim (insert T i a).
-    intros; apply heap_exist with T1; simpl in |- *; auto with datatypes.
+    intros; apply heap_exist with T1; simpl; auto with datatypes.
     apply meq_trans with (munion (contents T) (singletonBag a)).
     apply meq_trans with (munion (singletonBag a) (contents T)).
     apply meq_right; trivial with datatypes.
@@ -269,7 +269,7 @@ Section defs.
     apply flat_exist with (nil (A:=A)); auto with datatypes.
     elim X; intros l1 s1 i1 m1; elim X0; intros l2 s2 i2 m2.
     elim (merge _ s1 _ s2); intros.
-    apply flat_exist with (a :: l); simpl in |- *; auto with datatypes.
+    apply flat_exist with (a :: l); simpl; auto with datatypes.
     apply meq_trans with
       (munion (list_contents _ eqA_dec l1)
 	(munion (list_contents _ eqA_dec l2) (singletonBag a))).
@@ -288,7 +288,7 @@ Section defs.
     forall l:list A,
     {m : list A | Sorted leA m & permutation _ eqA_dec l m}.
   Proof.
-    intro l; unfold permutation in |- *.
+    intro l; unfold permutation.
     elim (list_to_heap l).
     intros.
     elim (heap_to_list T); auto with datatypes.

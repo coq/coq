@@ -20,8 +20,8 @@ Local Open Scope R_scope.
 Lemma Alembert_exp :
   Un_cv (fun n:nat => Rabs (/ INR (fact (S n)) * / / INR (fact n))) 0.
 Proof.
-  unfold Un_cv in |- *; intros; elim (Rgt_dec eps 1); intro.
-  split with 0%nat; intros; rewrite (simpl_fact n); unfold R_dist in |- *;
+  unfold Un_cv; intros; elim (Rgt_dec eps 1); intro.
+  split with 0%nat; intros; rewrite (simpl_fact n); unfold R_dist;
     rewrite (Rminus_0_r (Rabs (/ INR (S n))));
       rewrite (Rabs_Rabsolu (/ INR (S n))); cut (/ INR (S n) > 0).
   intro; rewrite (Rabs_pos_eq (/ INR (S n))).
@@ -47,11 +47,11 @@ Proof.
       rewrite (let (H1, H2) := Rmult_ne eps in H2); unfold Rgt in H;
         assumption.
   unfold Rgt in H1; apply Rlt_le; assumption.
-  unfold Rgt in |- *; apply Rinv_0_lt_compat; apply lt_INR_0; apply lt_O_Sn.
+  unfold Rgt; apply Rinv_0_lt_compat; apply lt_INR_0; apply lt_O_Sn.
 (**)
   cut (0 <= up (/ eps - 1))%Z.
   intro; elim (IZN (up (/ eps - 1)) H0); intros; split with x; intros;
-    rewrite (simpl_fact n); unfold R_dist in |- *;
+    rewrite (simpl_fact n); unfold R_dist;
       rewrite (Rminus_0_r (Rabs (/ INR (S n))));
         rewrite (Rabs_Rabsolu (/ INR (S n))); cut (/ INR (S n) > 0).
   intro; rewrite (Rabs_pos_eq (/ INR (S n))).
@@ -80,10 +80,10 @@ Proof.
   elim (archimed (/ eps - 1)); intros; clear H6; unfold Rgt in H5;
     rewrite H4 in H5; rewrite INR_IZR_INZ; assumption.
   unfold Rgt in H1; apply Rlt_le; assumption.
-  unfold Rgt in |- *; apply Rinv_0_lt_compat; apply lt_INR_0; apply lt_O_Sn.
+  unfold Rgt; apply Rinv_0_lt_compat; apply lt_INR_0; apply lt_O_Sn.
   apply (le_O_IZR (up (/ eps - 1)));
     apply (Rle_trans 0 (/ eps - 1) (IZR (up (/ eps - 1)))).
-  generalize (Rnot_gt_le eps 1 b); clear b; unfold Rle in |- *; intro; elim H0;
+  generalize (Rnot_gt_le eps 1 b); clear b; unfold Rle; intro; elim H0;
     clear H0; intro.
   left; unfold Rgt in H;
     generalize (Rmult_lt_compat_l (/ eps) eps 1 (Rinv_0_lt_compat eps H) H0);
@@ -91,8 +91,8 @@ Proof.
         (Rinv_l eps
           (not_eq_sym (Rlt_dichotomy_converse 0 eps (or_introl (0 > eps) H))))
         ; rewrite (let (H1, H2) := Rmult_ne (/ eps) in H1);
-          intro; fold (/ eps - 1 > 0) in |- *; apply Rgt_minus;
-            unfold Rgt in |- *; assumption.
+          intro; fold (/ eps - 1 > 0); apply Rgt_minus;
+            unfold Rgt; assumption.
   right; rewrite H0; rewrite Rinv_1; symmetry; apply Rminus_diag_eq; auto.
   elim (archimed (/ eps - 1)); intros; clear H1; unfold Rgt in H0; apply Rlt_le;
     assumption.

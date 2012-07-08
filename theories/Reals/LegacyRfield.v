@@ -17,9 +17,9 @@ Open Scope R_scope.
 Lemma RLegacyTheory : Ring_Theory Rplus Rmult 1 0 Ropp (fun x y:R => false).
   split.
   exact Rplus_comm.
-  symmetry  in |- *; apply Rplus_assoc.
+  symmetry ; apply Rplus_assoc.
   exact Rmult_comm.
-  symmetry  in |- *; apply Rmult_assoc.
+  symmetry ; apply Rmult_assoc.
   intro; apply Rplus_0_l.
   intro; apply Rmult_1_l.
   exact Rplus_opp_r.

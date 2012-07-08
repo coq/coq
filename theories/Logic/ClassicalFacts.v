@@ -148,7 +148,7 @@ Proof.
   case (prop_ext_retract_A_A_imp_A Ext A a); intros g1 g2 g1_o_g2.
   exists (fun f => (fun x:A => f (g1 x x)) (g2 (fun x => f (g1 x x)))).
   intro f.
-  pattern (g1 (g2 (fun x:A => f (g1 x x)))) at 1 in |- *.
+  pattern (g1 (g2 (fun x:A => f (g1 x x)))) at 1.
   rewrite (g1_o_g2 (fun x:A => f (g1 x x))).
   reflexivity.
 Qed.
@@ -192,12 +192,12 @@ Section Proof_irrelevance_gen.
     case (ext_prop_fixpoint Ext bool true); intros G Gfix.
     set (neg := fun b:bool => bool_elim bool false true b).
     generalize (eq_refl (G neg)).
-    pattern (G neg) at 1 in |- *.
+    pattern (G neg) at 1.
     apply Ind with (b := G neg); intro Heq.
     rewrite (bool_elim_redl bool false true).
-    change (true = neg true) in |- *; rewrite Heq; apply Gfix.
+    change (true = neg true); rewrite Heq; apply Gfix.
     rewrite (bool_elim_redr bool false true).
-    change (neg false = false) in |- *; rewrite Heq; symmetry  in |- *;
+    change (neg false = false); rewrite Heq; symmetry ;
       apply Gfix.
   Qed.
 
@@ -207,9 +207,9 @@ Section Proof_irrelevance_gen.
     intros Ext Ind A a1 a2.
     set (f := fun b:bool => bool_elim A a1 a2 b).
     rewrite (bool_elim_redl A a1 a2).
-    change (f true = a2) in |- *.
+    change (f true = a2).
     rewrite (bool_elim_redr A a1 a2).
-    change (f true = f false) in |- *.
+    change (f true = f false).
     rewrite (aux Ext Ind).
     reflexivity.
   Qed.
@@ -344,8 +344,8 @@ Section Proof_irrelevance_EM_CC.
 
   Lemma p2p1 : forall A:Prop, A -> b2p (p2b A).
   Proof.
-    unfold p2b in |- *; intro A; apply or_dep_elim with (b := em A);
-      unfold b2p in |- *; intros.
+    unfold p2b; intro A; apply or_dep_elim with (b := em A);
+      unfold b2p; intros.
     apply (or_elim_redl A (~ A) B (fun _ => b1) (fun _ => b2)).
     destruct (b H).
   Qed.
@@ -353,8 +353,8 @@ Section Proof_irrelevance_EM_CC.
   Lemma p2p2 : b1 <> b2 -> forall A:Prop, b2p (p2b A) -> A.
   Proof.
     intro not_eq_b1_b2.
-    unfold p2b in |- *; intro A; apply or_dep_elim with (b := em A);
-      unfold b2p in |- *; intros.
+    unfold p2b; intro A; apply or_dep_elim with (b := em A);
+      unfold b2p; intros.
     assumption.
     destruct not_eq_b1_b2.
     rewrite <- (or_elim_redr A (~ A) B (fun _ => b1) (fun _ => b2)) in H.

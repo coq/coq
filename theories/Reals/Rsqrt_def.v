@@ -41,18 +41,18 @@ Lemma dicho_comp :
 Proof.
   intros.
   induction  n as [| n Hrecn].
-  simpl in |- *; assumption.
-  simpl in |- *.
+  simpl; assumption.
+  simpl.
   case (P ((Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2)).
-  unfold Rdiv in |- *; apply Rmult_le_reg_l with 2.
+  unfold Rdiv; apply Rmult_le_reg_l with 2.
   prove_sup0.
-  pattern 2 at 1 in |- *; rewrite Rmult_comm.
+  pattern 2 at 1; rewrite Rmult_comm.
   rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ idtac | discrR ].
   rewrite Rmult_1_r.
   rewrite double.
   apply Rplus_le_compat_l.
   assumption.
-  unfold Rdiv in |- *; apply Rmult_le_reg_l with 2.
+  unfold Rdiv; apply Rmult_le_reg_l with 2.
   prove_sup0.
   rewrite Rmult_comm.
   rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ idtac | discrR ].
@@ -67,14 +67,14 @@ Lemma dicho_lb_growing :
   forall (x y:R) (P:R -> bool), x <= y -> Un_growing (dicho_lb x y P).
 Proof.
   intros.
-  unfold Un_growing in |- *.
+  unfold Un_growing.
   intro.
-  simpl in |- *.
+  simpl.
   case (P ((Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2)).
   right; reflexivity.
-  unfold Rdiv in |- *; apply Rmult_le_reg_l with 2.
+  unfold Rdiv; apply Rmult_le_reg_l with 2.
   prove_sup0.
-  pattern 2 at 1 in |- *; rewrite Rmult_comm.
+  pattern 2 at 1; rewrite Rmult_comm.
   rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ idtac | discrR ].
   rewrite Rmult_1_r.
   rewrite double.
@@ -87,11 +87,11 @@ Lemma dicho_up_decreasing :
   forall (x y:R) (P:R -> bool), x <= y -> Un_decreasing (dicho_up x y P).
 Proof.
   intros.
-  unfold Un_decreasing in |- *.
+  unfold Un_decreasing.
   intro.
-  simpl in |- *.
+  simpl.
   case (P ((Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2)).
-  unfold Rdiv in |- *; apply Rmult_le_reg_l with 2.
+  unfold Rdiv; apply Rmult_le_reg_l with 2.
   prove_sup0.
   rewrite Rmult_comm.
   rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ idtac | discrR ].
@@ -112,17 +112,17 @@ Lemma dicho_lb_maj_y :
 Proof.
   intros.
   induction  n as [| n Hrecn].
-  simpl in |- *; assumption.
-  simpl in |- *.
+  simpl; assumption.
+  simpl.
   case (P ((Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2)).
   assumption.
-  unfold Rdiv in |- *; apply Rmult_le_reg_l with 2.
+  unfold Rdiv; apply Rmult_le_reg_l with 2.
   prove_sup0.
   rewrite Rmult_comm.
   rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ rewrite Rmult_1_r | discrR ].
   rewrite double; apply Rplus_le_compat.
   assumption.
-  pattern y at 2 in |- *; replace y with (Dichotomy_ub x y P 0);
+  pattern y at 2; replace y with (Dichotomy_ub x y P 0);
     [ idtac | reflexivity ].
   apply decreasing_prop.
   assert (H0 := dicho_up_decreasing x y P H).
@@ -136,10 +136,10 @@ Proof.
   intros.
   cut (forall n:nat, dicho_lb x y P n <= y).
   intro.
-  unfold has_ub in |- *.
-  unfold bound in |- *.
+  unfold has_ub.
+  unfold bound.
   exists y.
-  unfold is_upper_bound in |- *.
+  unfold is_upper_bound.
   intros.
   elim H1; intros.
   rewrite H2; apply H0.
@@ -151,15 +151,15 @@ Lemma dicho_up_min_x :
 Proof.
   intros.
   induction  n as [| n Hrecn].
-  simpl in |- *; assumption.
-  simpl in |- *.
+  simpl; assumption.
+  simpl.
   case (P ((Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2)).
-  unfold Rdiv in |- *; apply Rmult_le_reg_l with 2.
+  unfold Rdiv; apply Rmult_le_reg_l with 2.
   prove_sup0.
-  pattern 2 at 1 in |- *; rewrite Rmult_comm.
+  pattern 2 at 1; rewrite Rmult_comm.
   rewrite Rmult_assoc; rewrite <- Rinv_l_sym; [ rewrite Rmult_1_r | discrR ].
   rewrite double; apply Rplus_le_compat.
-  pattern x at 1 in |- *; replace x with (Dichotomy_lb x y P 0);
+  pattern x at 1; replace x with (Dichotomy_lb x y P 0);
     [ idtac | reflexivity ].
   apply tech9.
   assert (H0 := dicho_lb_growing x y P H).
@@ -175,14 +175,14 @@ Proof.
   intros.
   cut (forall n:nat, x <= dicho_up x y P n).
   intro.
-  unfold has_lb in |- *.
-  unfold bound in |- *.
+  unfold has_lb.
+  unfold bound.
   exists (- x).
-  unfold is_upper_bound in |- *.
+  unfold is_upper_bound.
   intros.
   elim H1; intros.
   rewrite H2.
-  unfold opp_seq in |- *.
+  unfold opp_seq.
   apply Ropp_le_contravar.
   apply H0.
   apply dicho_up_min_x; assumption.
@@ -214,35 +214,35 @@ Lemma dicho_lb_dicho_up :
 Proof.
   intros.
   induction  n as [| n Hrecn].
-  simpl in |- *.
-  unfold Rdiv in |- *; rewrite Rinv_1; ring.
-  simpl in |- *.
+  simpl.
+  unfold Rdiv; rewrite Rinv_1; ring.
+  simpl.
   case (P ((Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2)).
-  unfold Rdiv in |- *.
+  unfold Rdiv.
   replace
   ((Dichotomy_lb x y P n + Dichotomy_ub x y P n) * / 2 - Dichotomy_lb x y P n)
     with ((dicho_up x y P n - dicho_lb x y P n) / 2).
-  unfold Rdiv in |- *; rewrite Hrecn.
-  unfold Rdiv in |- *.
+  unfold Rdiv; rewrite Hrecn.
+  unfold Rdiv.
   rewrite Rinv_mult_distr.
   ring.
   discrR.
   apply pow_nonzero; discrR.
-  pattern (Dichotomy_lb x y P n) at 2 in |- *;
+  pattern (Dichotomy_lb x y P n) at 2;
     rewrite (double_var (Dichotomy_lb x y P n));
-      unfold dicho_up, dicho_lb, Rminus, Rdiv in |- *; ring.
+      unfold dicho_up, dicho_lb, Rminus, Rdiv; ring.
   replace
   (Dichotomy_ub x y P n - (Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2)
     with ((dicho_up x y P n - dicho_lb x y P n) / 2).
-  unfold Rdiv in |- *; rewrite Hrecn.
-  unfold Rdiv in |- *.
+  unfold Rdiv; rewrite Hrecn.
+  unfold Rdiv.
   rewrite Rinv_mult_distr.
   ring.
   discrR.
   apply pow_nonzero; discrR.
-  pattern (Dichotomy_ub x y P n) at 1 in |- *;
+  pattern (Dichotomy_ub x y P n) at 1;
     rewrite (double_var (Dichotomy_ub x y P n));
-      unfold dicho_up, dicho_lb, Rminus, Rdiv in |- *; ring.
+      unfold dicho_up, dicho_lb, Rminus, Rdiv; ring.
 Qed.
 
 Definition pow_2_n (n:nat) := 2 ^ n.
@@ -250,23 +250,23 @@ Definition pow_2_n (n:nat) := 2 ^ n.
 Lemma pow_2_n_neq_R0 : forall n:nat, pow_2_n n <> 0.
 Proof.
   intro.
-  unfold pow_2_n in |- *.
+  unfold pow_2_n.
   apply pow_nonzero.
   discrR.
 Qed.
 
 Lemma pow_2_n_growing : Un_growing pow_2_n.
 Proof.
-  unfold Un_growing in |- *.
+  unfold Un_growing.
   intro.
   replace (S n) with (n + 1)%nat;
-  [ unfold pow_2_n in |- *; rewrite pow_add | ring ].
-  pattern (2 ^ n) at 1 in |- *; rewrite <- Rmult_1_r.
+  [ unfold pow_2_n; rewrite pow_add | ring ].
+  pattern (2 ^ n) at 1; rewrite <- Rmult_1_r.
   apply Rmult_le_compat_l.
   left; apply pow_lt; prove_sup0.
-  simpl in |- *.
+  simpl.
   rewrite Rmult_1_r.
-  pattern 1 at 1 in |- *; rewrite <- Rplus_0_r; apply Rplus_le_compat_l; left;
+  pattern 1 at 1; rewrite <- Rplus_0_r; apply Rplus_le_compat_l; left;
     apply Rlt_0_1.
 Qed.
 
@@ -274,7 +274,7 @@ Lemma pow_2_n_infty : cv_infty pow_2_n.
 Proof.
   cut (forall N:nat, INR N <= 2 ^ N).
   intros.
-  unfold cv_infty in |- *.
+  unfold cv_infty.
   intro.
   case (total_order_T 0 M); intro.
   elim s; intro.
@@ -287,41 +287,41 @@ Proof.
   apply Rlt_le_trans with (INR N0).
   rewrite INR_IZR_INZ.
   rewrite <- H1.
-  unfold N in |- *.
+  unfold N.
   assert (H3 := archimed M).
   elim H3; intros; assumption.
   apply Rle_trans with (pow_2_n N0).
-  unfold pow_2_n in |- *; apply H.
+  unfold pow_2_n; apply H.
   apply Rge_le.
   apply growing_prop.
   apply pow_2_n_growing.
   assumption.
   apply le_IZR.
-  unfold N in |- *.
-  simpl in |- *.
+  unfold N.
+  simpl.
   assert (H0 := archimed M); elim H0; intros.
   left; apply Rlt_trans with M; assumption.
   exists 0%nat; intros.
   rewrite <- b.
-  unfold pow_2_n in |- *; apply pow_lt; prove_sup0.
+  unfold pow_2_n; apply pow_lt; prove_sup0.
   exists 0%nat; intros.
   apply Rlt_trans with 0.
   assumption.
-  unfold pow_2_n in |- *; apply pow_lt; prove_sup0.
+  unfold pow_2_n; apply pow_lt; prove_sup0.
   simple induction N.
-  simpl in |- *.
+  simpl.
   left; apply Rlt_0_1.
   intros.
-  pattern (S n) at 2 in |- *; replace (S n) with (n + 1)%nat; [ idtac | ring ].
+  pattern (S n) at 2; replace (S n) with (n + 1)%nat; [ idtac | ring ].
   rewrite S_INR; rewrite pow_add.
-  simpl in |- *.
+  simpl.
   rewrite Rmult_1_r.
   apply Rle_trans with (2 ^ n).
   rewrite <- (Rplus_comm 1).
   rewrite <- (Rmult_1_r (INR n)).
   apply (poly n 1).
   apply Rlt_0_1.
-  pattern (2 ^ n) at 1 in |- *; rewrite <- Rplus_0_r.
+  pattern (2 ^ n) at 1; rewrite <- Rplus_0_r.
   rewrite <- (Rmult_comm 2).
   rewrite double.
   apply Rplus_le_compat_l.
@@ -338,8 +338,8 @@ Proof.
   cut (Un_cv (fun i:nat => dicho_lb x y P i - dicho_up x y P i) 0).
   intro.
   assert (H4 := UL_sequence _ _ _ H2 H3).
-  symmetry  in |- *; apply Rminus_diag_uniq_sym; assumption.
-  unfold Un_cv in |- *; unfold R_dist in |- *.
+  symmetry ; apply Rminus_diag_uniq_sym; assumption.
+  unfold Un_cv; unfold R_dist.
   intros.
   assert (H4 := cv_infty_cv_R0 pow_2_n pow_2_n_neq_R0 pow_2_n_infty).
   case (total_order_T x y); intro.
@@ -356,7 +356,7 @@ Proof.
   rewrite <- Rabs_Ropp.
   rewrite Ropp_minus_distr'.
   rewrite dicho_lb_dicho_up.
-  unfold Rdiv in |- *; rewrite Rabs_mult.
+  unfold Rdiv; rewrite Rabs_mult.
   rewrite (Rabs_right (y - x)).
   apply Rmult_lt_reg_l with (/ (y - x)).
   apply Rinv_0_lt_compat; assumption.
@@ -366,12 +366,12 @@ Proof.
   [ unfold pow_2_n, Rdiv in H6; rewrite <- (Rmult_comm eps); apply H6;
     assumption
     | ring ].
-  red in |- *; intro; rewrite H8 in Hyp; elim (Rlt_irrefl _ Hyp).
+  red; intro; rewrite H8 in Hyp; elim (Rlt_irrefl _ Hyp).
   apply Rle_ge.
   apply Rplus_le_reg_l with x; rewrite Rplus_0_r.
   replace (x + (y - x)) with y; [ assumption | ring ].
   assumption.
-  unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+  unfold Rdiv; apply Rmult_lt_0_compat;
     [ assumption | apply Rinv_0_lt_compat; assumption ].
   apply Rplus_lt_reg_r with x; rewrite Rplus_0_r.
   replace (x + (y - x)) with y; [ assumption | ring ].
@@ -382,7 +382,7 @@ Proof.
   rewrite Ropp_minus_distr'.
   rewrite dicho_lb_dicho_up.
   rewrite b.
-  unfold Rminus, Rdiv in |- *; rewrite Rplus_opp_r; rewrite Rmult_0_l;
+  unfold Rminus, Rdiv; rewrite Rplus_opp_r; rewrite Rmult_0_l;
     rewrite Rabs_R0; assumption.
   assumption.
   elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H r)).
@@ -399,23 +399,23 @@ Lemma continuity_seq :
   forall (f:R -> R) (Un:nat -> R) (l:R),
     continuity_pt f l -> Un_cv Un l -> Un_cv (fun i:nat => f (Un i)) (f l).
 Proof.
-  unfold continuity_pt, Un_cv in |- *; unfold continue_in in |- *.
-  unfold limit1_in in |- *.
-  unfold limit_in in |- *.
-  unfold dist in |- *.
-  simpl in |- *.
-  unfold R_dist in |- *.
+  unfold continuity_pt, Un_cv; unfold continue_in.
+  unfold limit1_in.
+  unfold limit_in.
+  unfold dist.
+  simpl.
+  unfold R_dist.
   intros.
   elim (H eps H1); intros alp H2.
   elim H2; intros.
   elim (H0 alp H3); intros N H5.
   exists N; intros.
   case (Req_dec (Un n) l); intro.
-  rewrite H7; unfold Rminus in |- *; rewrite Rplus_opp_r; rewrite Rabs_R0;
+  rewrite H7; unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0;
     assumption.
   apply H4.
   split.
-  unfold D_x, no_cond in |- *.
+  unfold D_x, no_cond.
   split.
   trivial.
   apply (not_eq_sym (A:=R)); assumption.
@@ -428,9 +428,9 @@ Lemma dicho_lb_car :
 Proof.
   intros.
   induction  n as [| n Hrecn].
-  simpl in |- *.
+  simpl.
   assumption.
-  simpl in |- *.
+  simpl.
   assert
     (X :=
       sumbool_of_bool (P ((Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2))).
@@ -447,9 +447,9 @@ Lemma dicho_up_car :
 Proof.
   intros.
   induction  n as [| n Hrecn].
-  simpl in |- *.
+  simpl.
   assumption.
-  simpl in |- *.
+  simpl.
   assert
     (X :=
       sumbool_of_bool (P ((Dichotomy_lb x y P n + Dichotomy_ub x y P n) / 2))).
@@ -480,7 +480,7 @@ Proof.
   split.
   split.
   apply Rle_trans with (dicho_lb x y (fun z:R => cond_positivity (f z)) 0).
-  simpl in |- *.
+  simpl.
   right; reflexivity.
   apply growing_ineq.
   apply dicho_lb_growing; assumption.
@@ -503,7 +503,7 @@ Proof.
   assert (H10 := H5 H7).
   apply Rle_antisym; assumption.
   intro.
-  unfold Wn in |- *.
+  unfold Wn.
   cut (forall z:R, cond_positivity z = true <-> 0 <= z).
   intro.
   assert (H8 := dicho_up_car x y (fun z:R => cond_positivity (f z)) n).
@@ -514,7 +514,7 @@ Proof.
   apply H12.
   left; assumption.
   intro.
-  unfold cond_positivity in |- *.
+  unfold cond_positivity.
   case (Rle_dec 0 z); intro.
   split.
   intro; assumption.
@@ -523,7 +523,7 @@ Proof.
   intro feqt;discriminate feqt.
   intro.
   elim n0; assumption.
-  unfold Vn in |- *.
+  unfold Vn.
   cut (forall z:R, cond_positivity z = false <-> z < 0).
   intros.
   assert (H8 := dicho_lb_car x y (fun z:R => cond_positivity (f z)) n).
@@ -535,7 +535,7 @@ Proof.
   apply H12.
   assumption.
   intro.
-  unfold cond_positivity in |- *.
+  unfold cond_positivity.
   case (Rle_dec 0 z); intro.
   split.
   intro feqt; discriminate feqt.
@@ -554,7 +554,7 @@ Proof.
   cut (0 < - f x0).
   intro.
   elim (H7 (- f x0) H8); intros.
-  cut (x2 >= x2)%nat; [ intro | unfold ge in |- *; apply le_n ].
+  cut (x2 >= x2)%nat; [ intro | unfold ge; apply le_n ].
   assert (H11 := H9 x2 H10).
   rewrite Rabs_right in H11.
   pattern (- f x0) at 1 in H11; rewrite <- Rplus_0_r in H11.
@@ -562,11 +562,11 @@ Proof.
   assert (H12 := Rplus_lt_reg_r _ _ _ H11).
   assert (H13 := H6 x2).
   elim (Rlt_irrefl _ (Rle_lt_trans _ _ _ H13 H12)).
-  apply Rle_ge; left; unfold Rminus in |- *; apply Rplus_le_lt_0_compat.
+  apply Rle_ge; left; unfold Rminus; apply Rplus_le_lt_0_compat.
   apply H6.
   exact H8.
   apply Ropp_0_gt_lt_contravar; assumption.
-  unfold Wn in |- *; assumption.
+  unfold Wn; assumption.
   cut (Un_cv Vn x0).
   intros.
   assert (H7 := continuity_seq f Vn x0 (H x0) H5).
@@ -574,7 +574,7 @@ Proof.
   elim s; intro.
   unfold Un_cv in H7; unfold R_dist in H7.
   elim (H7 (f x0) a); intros.
-  cut (x2 >= x2)%nat; [ intro | unfold ge in |- *; apply le_n ].
+  cut (x2 >= x2)%nat; [ intro | unfold ge; apply le_n ].
   assert (H10 := H8 x2 H9).
   rewrite Rabs_left in H10.
   pattern (f x0) at 2 in H10; rewrite <- Rplus_0_r in H10.
@@ -589,12 +589,12 @@ Proof.
   apply Ropp_0_gt_lt_contravar; assumption.
   apply Rplus_lt_reg_r with (f x0 - f (Vn x2)).
   rewrite Rplus_0_r; replace (f x0 - f (Vn x2) + (f (Vn x2) - f x0)) with 0;
-    [ unfold Rminus in |- *; apply Rplus_lt_le_0_compat | ring ].
+    [ unfold Rminus; apply Rplus_lt_le_0_compat | ring ].
   assumption.
   apply Ropp_0_ge_le_contravar; apply Rle_ge; apply H6.
   right; rewrite <- b; reflexivity.
   left; assumption.
-  unfold Vn in |- *; assumption.
+  unfold Vn; assumption.
 Qed.
 
 Lemma IVT_cor :
@@ -613,11 +613,11 @@ Proof.
   exists y.
   split.
   split; [ assumption | right; reflexivity ].
-  symmetry  in |- *; exact b.
+  symmetry ; exact b.
   exists x.
   split.
   split; [ right; reflexivity | assumption ].
-  symmetry  in |- *; exact b.
+  symmetry ; exact b.
   elim s; intro.
   cut (x < y).
   intro.
@@ -633,8 +633,8 @@ Proof.
   unfold opp_fct in H7.
   rewrite <- (Ropp_involutive (f x0)).
   apply Ropp_eq_0_compat; assumption.
-  unfold opp_fct in |- *; apply Ropp_0_gt_lt_contravar; assumption.
-  unfold opp_fct in |- *.
+  unfold opp_fct; apply Ropp_0_gt_lt_contravar; assumption.
+  unfold opp_fct.
   apply Rplus_lt_reg_r with (f x); rewrite Rplus_opp_r; rewrite Rplus_0_r;
     assumption.
   inversion H0.
@@ -644,7 +644,7 @@ Proof.
   exists x.
   split.
   split; [ right; reflexivity | assumption ].
-  symmetry  in |- *; assumption.
+  symmetry ; assumption.
   case (total_order_T 0 (f y)); intro.
   elim s; intro.
   cut (x < y).
@@ -657,7 +657,7 @@ Proof.
   exists y.
   split.
   split; [ assumption | right; reflexivity ].
-  symmetry  in |- *; assumption.
+  symmetry ; assumption.
   cut (0 < f x * f y).
   intro.
   elim (Rlt_irrefl _ (Rlt_le_trans _ _ _ H2 H1)).
@@ -690,18 +690,18 @@ Proof.
   elim H5; intros; assumption.
   unfold f in H6.
   apply Rminus_diag_uniq_sym; exact H6.
-  rewrite Rmult_comm; pattern 0 at 2 in |- *; rewrite <- (Rmult_0_r (f 1)).
+  rewrite Rmult_comm; pattern 0 at 2; rewrite <- (Rmult_0_r (f 1)).
   apply Rmult_le_compat_l; assumption.
-  unfold f in |- *.
+  unfold f.
   rewrite Rsqr_1.
   apply Rplus_le_reg_l with y.
-  rewrite Rplus_0_r; rewrite Rplus_comm; unfold Rminus in |- *;
+  rewrite Rplus_0_r; rewrite Rplus_comm; unfold Rminus;
     rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r;
       left; assumption.
   exists 1.
   split.
   left; apply Rlt_0_1.
-  rewrite b; symmetry  in |- *; apply Rsqr_1.
+  rewrite b; symmetry ; apply Rsqr_1.
   cut (0 <= f y).
   intro.
   cut (f 0 * f y <= 0).
@@ -714,14 +714,14 @@ Proof.
   elim H5; intros; assumption.
   unfold f in H6.
   apply Rminus_diag_uniq_sym; exact H6.
-  rewrite Rmult_comm; pattern 0 at 2 in |- *; rewrite <- (Rmult_0_r (f y)).
+  rewrite Rmult_comm; pattern 0 at 2; rewrite <- (Rmult_0_r (f y)).
   apply Rmult_le_compat_l; assumption.
-  unfold f in |- *.
+  unfold f.
   apply Rplus_le_reg_l with y.
-  rewrite Rplus_0_r; rewrite Rplus_comm; unfold Rminus in |- *;
+  rewrite Rplus_0_r; rewrite Rplus_comm; unfold Rminus;
     rewrite Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_r.
-  pattern y at 1 in |- *; rewrite <- Rmult_1_r.
-  unfold Rsqr in |- *; apply Rmult_le_compat_l.
+  pattern y at 1; rewrite <- Rmult_1_r.
+  unfold Rsqr; apply Rmult_le_compat_l.
   assumption.
   left; exact r.
   replace f with (Rsqr - fct_cte y)%F.
@@ -729,8 +729,8 @@ Proof.
   apply derivable_continuous; apply derivable_Rsqr.
   apply derivable_continuous; apply derivable_const.
   reflexivity.
-  unfold f in |- *; rewrite Rsqr_0.
-  unfold Rminus in |- *; rewrite Rplus_0_l.
+  unfold f; rewrite Rsqr_0.
+  unfold Rminus; rewrite Rplus_0_l.
   apply Rge_le.
   apply Ropp_0_le_ge_contravar; assumption.
 Qed.
@@ -749,7 +749,7 @@ Proof.
   intros.
   elim p; intros.
   rewrite H in H0; assumption.
-  unfold Rsqrt in |- *.
+  unfold Rsqrt.
   case (Rsqrt_exists x (cond_nonneg x)).
   intros.
   elim p; elim a; intros.
@@ -770,7 +770,7 @@ Proof.
   rewrite <- H.
   elim p; intros.
   rewrite H1; reflexivity.
-  unfold Rsqrt in |- *.
+  unfold Rsqrt.
   case (Rsqrt_exists x (cond_nonneg x)).
   intros.
   elim p; elim a; intros.

@@ -43,13 +43,13 @@ Qed.
 Theorem Rstar_contains_R :
  forall (U:Type) (R:Relation U), contains U (Rstar U R) R.
 Proof.
-intros U R; red in |- *; intros x y H'; apply Rstar_n with y; auto with sets.
+intros U R; red; intros x y H'; apply Rstar_n with y; auto with sets.
 Qed.
 
 Theorem Rstar_contains_Rplus :
  forall (U:Type) (R:Relation U), contains U (Rstar U R) (Rplus U R).
 Proof.
-intros U R; red in |- *.
+intros U R; red.
 intros x y H'; elim H'.
 generalize Rstar_contains_R; intro T; red in T; auto with sets.
 intros x0 y0 z H'0 H'1 H'2; apply Rstar_n with y0; auto with sets.
@@ -58,7 +58,7 @@ Qed.
 Theorem Rstar_transitive :
  forall (U:Type) (R:Relation U), Transitive U (Rstar U R).
 Proof.
-intros U R; red in |- *.
+intros U R; red.
 intros x y z H'; elim H'; auto with sets.
 intros x0 y0 z0 H'0 H'1 H'2 H'3; apply Rstar_n with y0; auto with sets.
 Qed.
@@ -75,7 +75,7 @@ Theorem Rstar_equiv_Rstar1 :
  forall (U:Type) (R:Relation U), same_relation U (Rstar U R) (Rstar1 U R).
 Proof.
 generalize Rstar_contains_R; intro T; red in T.
-intros U R; unfold same_relation, contains in |- *.
+intros U R; unfold same_relation, contains.
 split; intros x y H'; elim H'; auto with sets.
 generalize Rstar_transitive; intro T1; red in T1.
 intros x0 y0 z H'0 H'1 H'2 H'3; apply T1 with y0; auto with sets.
@@ -85,7 +85,7 @@ Qed.
 Theorem Rsym_imp_Rstarsym :
  forall (U:Type) (R:Relation U), Symmetric U R -> Symmetric U (Rstar U R).
 Proof.
-intros U R H'; red in |- *.
+intros U R H'; red.
 intros x y H'0; elim H'0; auto with sets.
 intros x0 y0 z H'1 H'2 H'3.
 generalize Rstar_transitive; intro T1; red in T1.
@@ -97,7 +97,7 @@ Theorem Sstar_contains_Rstar :
  forall (U:Type) (R S:Relation U),
    contains U (Rstar U S) R -> contains U (Rstar U S) (Rstar U R).
 Proof.
-unfold contains in |- *.
+unfold contains.
 intros U R S H' x y H'0; elim H'0; auto with sets.
 generalize Rstar_transitive; intro T1; red in T1.
 intros x0 y0 z H'1 H'2 H'3; apply T1 with y0; auto with sets.

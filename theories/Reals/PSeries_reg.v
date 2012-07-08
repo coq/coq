@@ -44,7 +44,7 @@ Lemma CVN_CVU :
     (cv:forall x:R, {l:R | Un_cv (fun N:nat => SP fn N x) l })
     (r:posreal), CVN_r fn r -> CVU (fun n:nat => SP fn n) (SFL fn cv) 0 r.
 Proof.
-  intros; unfold CVU in |- *; intros.
+  intros; unfold CVU; intros.
   unfold CVN_r in X.
   elim X; intros An X0.
   elim X0; intros s H0.
@@ -58,7 +58,7 @@ Proof.
     rewrite Ropp_minus_distr';
       rewrite (Rabs_right (s - sum_f_R0 (fun k:nat => Rabs (An k)) n)).
   eapply sum_maj1.
-  unfold SFL in |- *; case (cv y); intro.
+  unfold SFL; case (cv y); intro.
   trivial.
   apply H1.
   intro; elim H0; intros.
@@ -69,7 +69,7 @@ Proof.
   apply H8; apply H6.
   apply Rle_ge;
     apply Rplus_le_reg_l with (sum_f_R0 (fun k:nat => Rabs (An k)) n).
-  rewrite Rplus_0_r; unfold Rminus in |- *; rewrite (Rplus_comm s);
+  rewrite Rplus_0_r; unfold Rminus; rewrite (Rplus_comm s);
     rewrite <- Rplus_assoc; rewrite Rplus_opp_r; rewrite Rplus_0_l;
       apply sum_incr.
   apply H1.
@@ -77,10 +77,10 @@ Proof.
   unfold R_dist in H4; unfold Rminus in H4; rewrite Ropp_0 in H4.
   assert (H7 := H4 n H5).
   rewrite Rplus_0_r in H7; apply H7.
-  unfold Un_cv in H1; unfold Un_cv in |- *; intros.
+  unfold Un_cv in H1; unfold Un_cv; intros.
   elim (H1 _ H3); intros.
   exists x; intros.
-  unfold R_dist in |- *; unfold R_dist in H4.
+  unfold R_dist; unfold R_dist in H4.
   rewrite Rminus_0_r; apply H4; assumption.
 Qed.
 
@@ -91,13 +91,13 @@ Lemma CVU_continuity :
     (forall (n:nat) (y:R), Boule x r y -> continuity_pt (fn n) y) ->
     forall y:R, Boule x r y -> continuity_pt f y.
 Proof.
-  intros; unfold continuity_pt in |- *; unfold continue_in in |- *;
-    unfold limit1_in in |- *; unfold limit_in in |- *;
-      simpl in |- *; unfold R_dist in |- *; intros.
+  intros; unfold continuity_pt; unfold continue_in;
+    unfold limit1_in; unfold limit_in;
+      simpl; unfold R_dist; intros.
   unfold CVU in H.
   cut (0 < eps / 3);
     [ intro
-      | unfold Rdiv in |- *; apply Rmult_lt_0_compat;
+      | unfold Rdiv; apply Rmult_lt_0_compat;
         [ assumption | apply Rinv_0_lt_compat; prove_sup0 ] ].
   elim (H _ H3); intros N0 H4.
   assert (H5 := H0 N0 y H1).
@@ -110,7 +110,7 @@ Proof.
   set (del := Rmin del1 del2).
   exists del; intros.
   split.
-  unfold del in |- *; unfold Rmin in |- *; case (Rle_dec del1 del2); intro.
+  unfold del; unfold Rmin; case (Rle_dec del1 del2); intro.
   apply (cond_pos del1).
   elim H8; intros; assumption.
   intros;
@@ -130,27 +130,27 @@ Proof.
   elim H9; intros.
   apply Rlt_le_trans with del.
   assumption.
-  unfold del in |- *; apply Rmin_l.
+  unfold del; apply Rmin_l.
   elim H8; intros.
   apply H11.
   split.
   elim H9; intros; assumption.
   elim H9; intros; apply Rlt_le_trans with del.
   assumption.
-  unfold del in |- *; apply Rmin_r.
+  unfold del; apply Rmin_r.
   rewrite <- Rabs_Ropp; rewrite Ropp_minus_distr'; apply H4.
   apply le_n.
   assumption.
   apply Rmult_eq_reg_l with 3.
-  do 2 rewrite Rmult_plus_distr_l; unfold Rdiv in |- *; rewrite <- Rmult_assoc;
+  do 2 rewrite Rmult_plus_distr_l; unfold Rdiv; rewrite <- Rmult_assoc;
     rewrite Rinv_r_simpl_m.
   ring.
   discrR.
   discrR.
   cut (0 < r - Rabs (x - y)).
   intro; exists (mkposreal _ H6).
-  simpl in |- *; intros.
-  unfold Boule in |- *; replace (y + h - x) with (h + (y - x));
+  simpl; intros.
+  unfold Boule; replace (y + h - x) with (h + (y - x));
     [ idtac | ring ]; apply Rle_lt_trans with (Rabs h + Rabs (y - x)).
   apply Rabs_triang.
   apply Rplus_lt_reg_r with (- Rabs (x - y)).
@@ -173,8 +173,8 @@ Lemma continuity_pt_finite_SF :
     continuity_pt (fun y:R => sum_f_R0 (fun k:nat => fn k y) N) x.
 Proof.
   intros; induction  N as [| N HrecN].
-  simpl in |- *; apply (H 0%nat); apply le_n.
-  simpl in |- *;
+  simpl; apply (H 0%nat); apply le_n.
+  simpl;
     replace (fun y:R => sum_f_R0 (fun k:nat => fn k y) N + fn (S N) y) with
     ((fun y:R => sum_f_R0 (fun k:nat => fn k y) N) + (fun y:R => fn (S N) y))%F;
     [ idtac | reflexivity ].
@@ -197,7 +197,7 @@ Proof.
   intros; eapply CVU_continuity.
   apply CVN_CVU.
   apply X.
-  intros; unfold SP in |- *; apply continuity_pt_finite_SF.
+  intros; unfold SP; apply continuity_pt_finite_SF.
   intros; apply H.
   apply H1.
   apply H0.
@@ -208,7 +208,7 @@ Lemma SFL_continuity :
     (cv:forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l }),
     CVN_R fn -> (forall n:nat, continuity (fn n)) -> continuity (SFL fn cv).
 Proof.
-  intros; unfold continuity in |- *; intro.
+  intros; unfold continuity; intro.
   cut (0 < Rabs x + 1);
     [ intro | apply Rplus_le_lt_0_compat; [ apply Rabs_pos | apply Rlt_0_1 ] ].
   cut (Boule 0 (mkposreal _ H0) x).
@@ -216,8 +216,8 @@ Proof.
   apply X.
   intros; apply (H n y).
   apply H1.
-  unfold Boule in |- *; simpl in |- *; rewrite Rminus_0_r;
-    pattern (Rabs x) at 1 in |- *; rewrite <- Rplus_0_r;
+  unfold Boule; simpl; rewrite Rminus_0_r;
+    pattern (Rabs x) at 1; rewrite <- Rplus_0_r;
       apply Rplus_lt_compat_l; apply Rlt_0_1.
 Qed.
 
@@ -227,10 +227,10 @@ Lemma CVN_R_CVS :
     CVN_R fn -> forall x:R, { l:R | Un_cv (fun N:nat => SP fn N x) l }.
 Proof.
   intros; apply R_complete.
-  unfold SP in |- *; set (An := fun N:nat => fn N x).
-  change (Cauchy_crit_series An) in |- *.
+  unfold SP; set (An := fun N:nat => fn N x).
+  change (Cauchy_crit_series An).
   apply cauchy_abs.
-  unfold Cauchy_crit_series in |- *; apply CV_Cauchy.
+  unfold Cauchy_crit_series; apply CV_Cauchy.
   unfold CVN_R in X; cut (0 < Rabs x + 1).
   intro; assert (H0 := X (mkposreal _ H)).
   unfold CVN_r in H0; elim H0; intros Bn H1.
@@ -239,13 +239,13 @@ Proof.
   apply Rseries_CV_comp with Bn.
   intro; split.
   apply Rabs_pos.
-  unfold An in |- *; apply H4; unfold Boule in |- *; simpl in |- *;
+  unfold An; apply H4; unfold Boule; simpl;
     rewrite Rminus_0_r.
-  pattern (Rabs x) at 1 in |- *; rewrite <- Rplus_0_r; apply Rplus_lt_compat_l;
+  pattern (Rabs x) at 1; rewrite <- Rplus_0_r; apply Rplus_lt_compat_l;
     apply Rlt_0_1.
   exists l.
   cut (forall n:nat, 0 <= Bn n).
-  intro; unfold Un_cv in H3; unfold Un_cv in |- *; intros.
+  intro; unfold Un_cv in H3; unfold Un_cv; intros.
   elim (H3 _ H6); intros.
   exists x0; intros.
   replace (sum_f_R0 Bn n) with (sum_f_R0 (fun k:nat => Rabs (Bn k)) n).
@@ -253,8 +253,8 @@ Proof.
   apply sum_eq; intros; apply Rabs_right; apply Rle_ge; apply H5.
   intro; apply Rle_trans with (Rabs (An n)).
   apply Rabs_pos.
-  unfold An in |- *; apply H4; unfold Boule in |- *; simpl in |- *;
-    rewrite Rminus_0_r; pattern (Rabs x) at 1 in |- *;
+  unfold An; apply H4; unfold Boule; simpl;
+    rewrite Rminus_0_r; pattern (Rabs x) at 1;
       rewrite <- Rplus_0_r; apply Rplus_lt_compat_l; apply Rlt_0_1.
   apply Rplus_le_lt_0_compat; [ apply Rabs_pos | apply Rlt_0_1 ].
 Qed.

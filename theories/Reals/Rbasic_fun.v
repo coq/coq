@@ -45,10 +45,10 @@ Qed.
 (*********)
 Lemma Rmin_Rgt_l : forall r1 r2 r, Rmin r1 r2 > r -> r1 > r /\ r2 > r.
 Proof.
-  intros r1 r2 r; unfold Rmin in |- *; case (Rle_dec r1 r2); intros.
+  intros r1 r2 r; unfold Rmin; case (Rle_dec r1 r2); intros.
   split.
   assumption.
-  unfold Rgt in |- *; unfold Rgt in H; exact (Rlt_le_trans r r1 r2 H r0).
+  unfold Rgt; unfold Rgt in H; exact (Rlt_le_trans r r1 r2 H r0).
   split.
   generalize (Rnot_le_lt r1 r2 n); intro; exact (Rgt_trans r1 r2 r H0 H).
   assumption.
@@ -57,7 +57,7 @@ Qed.
 (*********)
 Lemma Rmin_Rgt_r : forall r1 r2 r, r1 > r /\ r2 > r -> Rmin r1 r2 > r.
 Proof.
-  intros; unfold Rmin in |- *; case (Rle_dec r1 r2); elim H; clear H; intros;
+  intros; unfold Rmin; case (Rle_dec r1 r2); elim H; clear H; intros;
     assumption.
 Qed.
 
@@ -72,14 +72,14 @@ Qed.
 (*********)
 Lemma Rmin_l : forall x y:R, Rmin x y <= x.
 Proof.
-  intros; unfold Rmin in |- *; case (Rle_dec x y); intro H1;
+  intros; unfold Rmin; case (Rle_dec x y); intro H1;
     [ right; reflexivity | auto with real ].
 Qed.
 
 (*********)
 Lemma Rmin_r : forall x y:R, Rmin x y <= y.
 Proof.
-  intros; unfold Rmin in |- *; case (Rle_dec x y); intro H1;
+  intros; unfold Rmin; case (Rle_dec x y); intro H1;
     [ assumption | auto with real ].
 Qed.
 
@@ -123,20 +123,20 @@ Qed.
 (*********)
 Lemma Rmin_pos : forall x y:R, 0 < x -> 0 < y -> 0 < Rmin x y.
 Proof.
-  intros; unfold Rmin in |- *.
+  intros; unfold Rmin.
   case (Rle_dec x y); intro; assumption.
 Qed.
 
 (*********)
 Lemma Rmin_glb : forall x y z:R, z <= x -> z <= y -> z <= Rmin x y.
 Proof.
-  intros; unfold Rmin in |- *; case (Rle_dec x y); intro; assumption.
+  intros; unfold Rmin; case (Rle_dec x y); intro; assumption.
 Qed.
 
 (*********)
 Lemma Rmin_glb_lt : forall x y z:R, z < x -> z < y -> z < Rmin x y.
 Proof.
-  intros; unfold Rmin in |- *; case (Rle_dec x y); intro; assumption.
+  intros; unfold Rmin; case (Rle_dec x y); intro; assumption.
 Qed.
 
 (*******************************)
@@ -167,8 +167,8 @@ Qed.
 Lemma Rmax_Rle : forall r1 r2 r, r <= Rmax r1 r2 <-> r <= r1 \/ r <= r2.
 Proof.
   intros; split.
-  unfold Rmax in |- *; case (Rle_dec r1 r2); intros; auto.
-  intro; unfold Rmax in |- *; case (Rle_dec r1 r2); elim H; clear H; intros;
+  unfold Rmax; case (Rle_dec r1 r2); intros; auto.
+  intro; unfold Rmax; case (Rle_dec r1 r2); elim H; clear H; intros;
     auto.
   apply (Rle_trans r r1 r2); auto.
   generalize (Rnot_le_lt r1 r2 n); clear n; intro; unfold Rgt in H0;
@@ -177,7 +177,7 @@ Qed.
 
 Lemma Rmax_comm : forall x y:R, Rmax x y = Rmax y x.
 Proof.
-  intros p q; unfold Rmax in |- *; case (Rle_dec p q); case (Rle_dec q p); auto;
+  intros p q; unfold Rmax; case (Rle_dec p q); case (Rle_dec q p); auto;
     intros H1 H2; apply Rle_antisym; auto with real.
 Qed.
 
@@ -188,14 +188,14 @@ Notation RmaxSym := Rmax_comm (only parsing).
 (*********)
 Lemma Rmax_l : forall x y:R, x <= Rmax x y.
 Proof.
-  intros; unfold Rmax in |- *; case (Rle_dec x y); intro H1;
+  intros; unfold Rmax; case (Rle_dec x y); intro H1;
     [ assumption | auto with real ].
 Qed.
 
 (*********)
 Lemma Rmax_r : forall x y:R, y <= Rmax x y.
 Proof.
-  intros; unfold Rmax in |- *; case (Rle_dec x y); intro H1;
+  intros; unfold Rmax; case (Rle_dec x y); intro H1;
     [ right; reflexivity | auto with real ].
 Qed.
 
@@ -232,7 +232,7 @@ Qed.
 Lemma RmaxRmult :
   forall (p q:R) r, 0 <= r -> Rmax (r * p) (r * q) = r * Rmax p q.
 Proof.
-  intros p q r H; unfold Rmax in |- *.
+  intros p q r H; unfold Rmax.
   case (Rle_dec p q); case (Rle_dec (r * p) (r * q)); auto; intros H1 H2; auto.
   case H; intros E1.
   case H1; auto with real.
@@ -246,7 +246,7 @@ Qed.
 (*********)
 Lemma Rmax_stable_in_negreal : forall x y:negreal, Rmax x y < 0.
 Proof.
-  intros; unfold Rmax in |- *; case (Rle_dec x y); intro;
+  intros; unfold Rmax; case (Rle_dec x y); intro;
     [ apply (cond_neg y) | apply (cond_neg x) ].
 Qed.
 
@@ -265,7 +265,7 @@ Qed.
 (*********)
 Lemma Rmax_neg : forall x y:R, x < 0 -> y < 0 -> Rmax x y < 0.
 Proof.
-  intros; unfold Rmax in |- *.
+  intros; unfold Rmax.
   case (Rle_dec x y); intro; assumption.
 Qed.
 
@@ -278,7 +278,7 @@ Lemma Rcase_abs : forall r, {r < 0} + {r >= 0}.
 Proof.
   intro; generalize (Rle_dec 0 r); intro X; elim X; intro; clear X.
   right; apply (Rle_ge 0 r a).
-  left; fold (0 > r) in |- *; apply (Rnot_le_lt 0 r b).
+  left; fold (0 > r); apply (Rnot_le_lt 0 r b).
 Qed.
 
 (*********)
@@ -291,27 +291,27 @@ Definition Rabs r : R :=
 (*********)
 Lemma Rabs_R0 : Rabs 0 = 0.
 Proof.
-  unfold Rabs in |- *; case (Rcase_abs 0); auto; intro.
+  unfold Rabs; case (Rcase_abs 0); auto; intro.
   generalize (Rlt_irrefl 0); intro; exfalso; auto.
 Qed.
 
 Lemma Rabs_R1 : Rabs 1 = 1.
 Proof.
-unfold Rabs in |- *; case (Rcase_abs 1); auto with real.
+unfold Rabs; case (Rcase_abs 1); auto with real.
 intros H; absurd (1 < 0); auto with real.
 Qed.
 
 (*********)
 Lemma Rabs_no_R0 : forall r, r <> 0 -> Rabs r <> 0.
 Proof.
-  intros; unfold Rabs in |- *; case (Rcase_abs r); intro; auto.
+  intros; unfold Rabs; case (Rcase_abs r); intro; auto.
   apply Ropp_neq_0_compat; auto.
 Qed.
 
 (*********)
 Lemma Rabs_left : forall r, r < 0 -> Rabs r = - r.
 Proof.
-  intros; unfold Rabs in |- *; case (Rcase_abs r); trivial; intro;
+  intros; unfold Rabs; case (Rcase_abs r); trivial; intro;
     absurd (r >= 0).
   exact (Rlt_not_ge r 0 H).
   assumption.
@@ -320,7 +320,7 @@ Qed.
 (*********)
 Lemma Rabs_right : forall r, r >= 0 -> Rabs r = r.
 Proof.
-  intros; unfold Rabs in |- *; case (Rcase_abs r); intro.
+  intros; unfold Rabs; case (Rcase_abs r); intro.
   absurd (r >= 0).
   exact (Rlt_not_ge r 0 r0).
   assumption.
@@ -331,21 +331,21 @@ Lemma Rabs_left1 : forall a:R, a <= 0 -> Rabs a = - a.
 Proof.
   intros a H; case H; intros H1.
   apply Rabs_left; auto.
-  rewrite H1; simpl in |- *; rewrite Rabs_right; auto with real.
+  rewrite H1; simpl; rewrite Rabs_right; auto with real.
 Qed.
 
 (*********)
 Lemma Rabs_pos : forall x:R, 0 <= Rabs x.
 Proof.
-  intros; unfold Rabs in |- *; case (Rcase_abs x); intro.
+  intros; unfold Rabs; case (Rcase_abs x); intro.
   generalize (Ropp_lt_gt_contravar x 0 r); intro; unfold Rgt in H;
-    rewrite Ropp_0 in H; unfold Rle in |- *; left; assumption.
+    rewrite Ropp_0 in H; unfold Rle; left; assumption.
   apply Rge_le; assumption.
 Qed.
 
 Lemma Rle_abs : forall x:R, x <= Rabs x.
 Proof.
-  intro; unfold Rabs in |- *; case (Rcase_abs x); intros; fourier.
+  intro; unfold Rabs; case (Rcase_abs x); intros; fourier.
 Qed.
 
 Definition RRle_abs := Rle_abs.
@@ -353,7 +353,7 @@ Definition RRle_abs := Rle_abs.
 (*********)
 Lemma Rabs_pos_eq : forall x:R, 0 <= x -> Rabs x = x.
 Proof.
-  intros; unfold Rabs in |- *; case (Rcase_abs x); intro;
+  intros; unfold Rabs; case (Rcase_abs x); intro;
     [ generalize (Rgt_not_le 0 x r); intro; exfalso; auto | trivial ].
 Qed.
 
@@ -368,7 +368,7 @@ Lemma Rabs_pos_lt : forall x:R, x <> 0 -> 0 < Rabs x.
 Proof.
   intros; generalize (Rabs_pos x); intro; unfold Rle in H0; elim H0; intro;
     auto.
-  exfalso; clear H0; elim H; clear H; generalize H1; unfold Rabs in |- *;
+  exfalso; clear H0; elim H; clear H; generalize H1; unfold Rabs;
     case (Rcase_abs x); intros; auto.
   clear r H1; generalize (Rplus_eq_compat_l x 0 (- x) H0);
     rewrite (let (H1, H2) := Rplus_ne x in H1); rewrite (Rplus_opp_r x);
@@ -378,7 +378,7 @@ Qed.
 (*********)
 Lemma Rabs_minus_sym : forall x y:R, Rabs (x - y) = Rabs (y - x).
 Proof.
-  intros; unfold Rabs in |- *; case (Rcase_abs (x - y));
+  intros; unfold Rabs; case (Rcase_abs (x - y));
     case (Rcase_abs (y - x)); intros.
   generalize (Rminus_lt y x r); generalize (Rminus_lt x y r0); intros;
     generalize (Rlt_asym x y H); intro; exfalso;
@@ -397,7 +397,7 @@ Qed.
 (*********)
 Lemma Rabs_mult : forall x y:R, Rabs (x * y) = Rabs x * Rabs y.
 Proof.
-  intros; unfold Rabs in |- *; case (Rcase_abs (x * y)); case (Rcase_abs x);
+  intros; unfold Rabs; case (Rcase_abs (x * y)); case (Rcase_abs x);
     case (Rcase_abs y); intros; auto.
   generalize (Rmult_lt_gt_compat_neg_l y x 0 r r0); intro;
     rewrite (Rmult_0_r y) in H; generalize (Rlt_asym (x * y) 0 r1);
@@ -448,7 +448,7 @@ Qed.
 (*********)
 Lemma Rabs_Rinv : forall r, r <> 0 -> Rabs (/ r) = / Rabs r.
 Proof.
-  intro; unfold Rabs in |- *; case (Rcase_abs r); case (Rcase_abs (/ r)); auto;
+  intro; unfold Rabs; case (Rcase_abs r); case (Rcase_abs (/ r)); auto;
     intros.
   apply Ropp_inv_permute; auto.
   generalize (Rinv_lt_0_compat r r1); intro; unfold Rge in r0; elim r0; intros.
@@ -470,7 +470,7 @@ Proof.
   cut (Rabs (-1) = 1).
   intros; rewrite H0.
   ring.
-  unfold Rabs in |- *; case (Rcase_abs (-1)).
+  unfold Rabs; case (Rcase_abs (-1)).
   intro; ring.
   intro H0; generalize (Rge_le (-1) 0 H0); intros.
   generalize (Ropp_le_ge_contravar 0 (-1) H1).
@@ -483,13 +483,13 @@ Qed.
 (*********)
 Lemma Rabs_triang : forall a b:R, Rabs (a + b) <= Rabs a + Rabs b.
 Proof.
-  intros a b; unfold Rabs in |- *; case (Rcase_abs (a + b)); case (Rcase_abs a);
+  intros a b; unfold Rabs; case (Rcase_abs (a + b)); case (Rcase_abs a);
     case (Rcase_abs b); intros.
   apply (Req_le (- (a + b)) (- a + - b)); rewrite (Ropp_plus_distr a b);
     reflexivity.
 (**)
   rewrite (Ropp_plus_distr a b); apply (Rplus_le_compat_l (- a) (- b) b);
-    unfold Rle in |- *; unfold Rge in r; elim r; intro.
+    unfold Rle; unfold Rge in r; elim r; intro.
   left; unfold Rgt in H; generalize (Rplus_lt_compat_l (- b) 0 b H); intro;
     elim (Rplus_ne (- b)); intros v w; rewrite v in H0;
       clear v w; rewrite (Rplus_opp_l b) in H0; apply (Rlt_trans (- b) 0 b H0 H).
@@ -497,7 +497,7 @@ Proof.
 (**)
   rewrite (Ropp_plus_distr a b); rewrite (Rplus_comm (- a) (- b));
     rewrite (Rplus_comm a (- b)); apply (Rplus_le_compat_l (- b) (- a) a);
-      unfold Rle in |- *; unfold Rge in r0; elim r0; intro.
+      unfold Rle; unfold Rge in r0; elim r0; intro.
   left; unfold Rgt in H; generalize (Rplus_lt_compat_l (- a) 0 a H); intro;
     elim (Rplus_ne (- a)); intros v w; rewrite v in H0;
       clear v w; rewrite (Rplus_opp_l a) in H0; apply (Rlt_trans (- a) 0 a H0 H).
@@ -521,27 +521,27 @@ Proof.
 (**)
   rewrite (Rplus_comm a b); rewrite (Rplus_comm (- a) b);
     apply (Rplus_le_compat_l b a (- a)); apply (Rminus_le a (- a));
-      unfold Rminus in |- *; rewrite (Ropp_involutive a);
+      unfold Rminus; rewrite (Ropp_involutive a);
         generalize (Rplus_lt_compat_l a a 0 r0); clear r r1;
           intro; elim (Rplus_ne a); intros v w; rewrite v in H;
             clear v w; generalize (Rlt_trans (a + a) a 0 H r0);
               intro; apply (Rlt_le (a + a) 0 H0).
 (**)
   apply (Rplus_le_compat_l a b (- b)); apply (Rminus_le b (- b));
-    unfold Rminus in |- *; rewrite (Ropp_involutive b);
+    unfold Rminus; rewrite (Ropp_involutive b);
       generalize (Rplus_lt_compat_l b b 0 r); clear r0 r1;
         intro; elim (Rplus_ne b); intros v w; rewrite v in H;
           clear v w; generalize (Rlt_trans (b + b) b 0 H r);
             intro; apply (Rlt_le (b + b) 0 H0).
 (**)
-  unfold Rle in |- *; right; reflexivity.
+  unfold Rle; right; reflexivity.
 Qed.
 
 (*********)
 Lemma Rabs_triang_inv : forall a b:R, Rabs a - Rabs b <= Rabs (a - b).
 Proof.
   intros; apply (Rplus_le_reg_l (Rabs b) (Rabs a - Rabs b) (Rabs (a - b)));
-    unfold Rminus in |- *; rewrite <- (Rplus_assoc (Rabs b) (Rabs a) (- Rabs b));
+    unfold Rminus; rewrite <- (Rplus_assoc (Rabs b) (Rabs a) (- Rabs b));
       rewrite (Rplus_comm (Rabs b) (Rabs a));
         rewrite (Rplus_assoc (Rabs a) (Rabs b) (- Rabs b));
           rewrite (Rplus_opp_r (Rabs b)); rewrite (proj1 (Rplus_ne (Rabs a)));
@@ -561,7 +561,7 @@ Proof.
   rewrite <- (Rabs_Ropp (Rabs a - Rabs b)); rewrite <- (Rabs_Ropp (a - b));
     do 2 rewrite Ropp_minus_distr.
   apply H; left; assumption.
-  rewrite Heq; unfold Rminus in |- *; rewrite Rplus_opp_r; rewrite Rabs_R0;
+  rewrite Heq; unfold Rminus; rewrite Rplus_opp_r; rewrite Rabs_R0;
     apply Rabs_pos.
   apply H; left; assumption.
   intros; replace (Rabs (Rabs a - Rabs b)) with (Rabs a - Rabs b).
@@ -576,8 +576,8 @@ Qed.
 (*********)
 Lemma Rabs_def1 : forall x a:R, x < a -> - a < x -> Rabs x < a.
 Proof.
-  unfold Rabs in |- *; intros; case (Rcase_abs x); intro.
-  generalize (Ropp_lt_gt_contravar (- a) x H0); unfold Rgt in |- *;
+  unfold Rabs; intros; case (Rcase_abs x); intro.
+  generalize (Ropp_lt_gt_contravar (- a) x H0); unfold Rgt;
     rewrite Ropp_involutive; intro; assumption.
   assumption.
 Qed.
@@ -585,15 +585,15 @@ Qed.
 (*********)
 Lemma Rabs_def2 : forall x a:R, Rabs x < a -> x < a /\ - a < x.
 Proof.
-  unfold Rabs in |- *; intro x; case (Rcase_abs x); intros.
-  generalize (Ropp_gt_lt_0_contravar x r); unfold Rgt in |- *; intro;
+  unfold Rabs; intro x; case (Rcase_abs x); intros.
+  generalize (Ropp_gt_lt_0_contravar x r); unfold Rgt; intro;
     generalize (Rlt_trans 0 (- x) a H0 H); intro; split.
   apply (Rlt_trans x 0 a r H1).
   generalize (Ropp_lt_gt_contravar (- x) a H); rewrite (Ropp_involutive x);
-    unfold Rgt in |- *; trivial.
+    unfold Rgt; trivial.
   fold (a > x) in H; generalize (Rgt_ge_trans a x 0 H r); intro;
-    generalize (Ropp_lt_gt_0_contravar a H0); intro; fold (0 > - a) in |- *;
-      generalize (Rge_gt_trans x 0 (- a) r H1); unfold Rgt in |- *;
+    generalize (Ropp_lt_gt_0_contravar a H0); intro; fold (0 > - a);
+      generalize (Rge_gt_trans x 0 (- a) r H1); unfold Rgt;
         intro; split; assumption.
 Qed.
 
@@ -625,7 +625,7 @@ Qed.
 
 Lemma Rabs_Zabs : forall z:Z, Rabs (IZR z) = IZR (Z.abs z).
 Proof.
-  intros z; case z; simpl in |- *; auto with real.
+  intros z; case z; simpl; auto with real.
   apply Rabs_right; auto with real.
   intros p0; apply Rabs_right; auto with real zarith.
   intros p0; rewrite Rabs_Ropp.

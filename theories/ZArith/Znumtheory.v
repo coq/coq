@@ -305,7 +305,7 @@ Section extended_euclid_algorithm.
 	v1 * a + v2 * b = v3 ->
 	(forall d:Z, Zis_gcd u3 v3 d -> Zis_gcd a b d) -> Euclid.
   Proof.
-    intros v3 Hv3; generalize Hv3; pattern v3 in |- *.
+    intros v3 Hv3; generalize Hv3; pattern v3.
     apply Zlt_0_rec.
     clear v3 Hv3; intros.
     elim (Z_zerop x); intro.
@@ -319,8 +319,8 @@ Section extended_euclid_algorithm.
     apply Z_mod_lt; omega.
     assert (xpos : x > 0). omega.
     generalize (Z_div_mod_eq u3 x xpos).
-    unfold q in |- *.
-    intro eq; pattern u3 at 2 in |- *; rewrite eq; ring.
+    unfold q.
+    intro eq; pattern u3 at 2; rewrite eq; ring.
     apply (H (u3 - q * x) Hq (proj1 Hq) v1 v2 x (u1 - q * v1) (u2 - q * v2)).
     tauto.
     replace ((u1 - q * v1) * a + (u2 - q * v2) * b) with
@@ -459,12 +459,12 @@ Proof.
   apply Gauss with a.
   rewrite H3.
   auto with zarith.
-  red in |- *; auto with zarith.
+  red; auto with zarith.
   apply Gauss with c.
   rewrite Z.mul_comm.
   rewrite <- H3.
   auto with zarith.
-  red in |- *; auto with zarith.
+  red; auto with zarith.
 Qed.
 
 (** After factorization by a gcd, the original numbers are relatively prime. *)
@@ -479,7 +479,7 @@ Proof.
   elim H1; intros.
   elim H4; intros.
   rewrite H2 in H6; subst b; omega.
-  unfold rel_prime in |- *.
+  unfold rel_prime.
   destruct H1.
   destruct H1 as (a',H1).
   destruct H3 as (b',H3).

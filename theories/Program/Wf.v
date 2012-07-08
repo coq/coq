@@ -52,7 +52,7 @@ Section Well_founded.
 
   Lemma Fix_eq : forall x:A, Fix_sub x = F_sub x (fun (y:A|R y x) => Fix_sub (proj1_sig y)).
   Proof.
-    intro x; unfold Fix_sub in |- *.
+    intro x; unfold Fix_sub.
     rewrite <- (Fix_F_eq ).
     apply F_ext; intros.
     apply Fix_F_inv.

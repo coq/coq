@@ -2,7 +2,7 @@
 
 (* Submitted by Pierre Crégut *)
 (* Checks substitution of x *)
-Ltac f x := unfold x in |- *; idtac.
+Ltac f x := unfold x; idtac.
 
 Lemma lem1 : 0 + 0 = 0.
 f plus.
@@ -86,7 +86,7 @@ assert t.
 exact H.
 intro H1.
 apply H.
-symmetry  in |- *.
+symmetry .
 assumption.
 Qed.
 
@@ -105,7 +105,7 @@ sym'.
 exact H.
 intro H1.
 apply H.
-symmetry  in |- *.
+symmetry .
 assumption.
 Qed.
 
@@ -193,7 +193,7 @@ Abort.
 (* Used to fail in V8.1 *)
 
 Tactic Notation "test" constr(t) integer(n) :=
-   set (k := t) in |- * at n.
+   set (k := t) at n.
 
 Goal forall x : nat, x = 1 -> x + x + x = 3.
 intros x H.

@@ -143,7 +143,7 @@ Hint Immediate T.
 Remark iacs_aux_ok :
  forall (x:A) (s:abstract_sum), iacs_aux x s = Aplus x (interp_acs s).
 Proof.
-  simple induction s; simpl in |- *; intros.
+  simple induction s; simpl; intros.
   trivial.
   reflexivity.
 Qed.
@@ -158,8 +158,8 @@ Lemma abstract_varlist_insert_ok :
   simple induction s.
   trivial.
 
-  simpl in |- *; intros.
-  elim (varlist_lt l v); simpl in |- *.
+  simpl; intros.
+  elim (varlist_lt l v); simpl.
   eauto.
   rewrite iacs_aux_ok.
   rewrite H; auto.
@@ -177,13 +177,13 @@ Proof.
 
   auto.
 
-  simpl in |- *; elim (varlist_lt v v0); simpl in |- *.
+  simpl; elim (varlist_lt v v0); simpl.
   repeat rewrite iacs_aux_ok.
-  rewrite H; simpl in |- *; auto.
+  rewrite H; simpl; auto.
 
   simpl in H0.
   repeat rewrite iacs_aux_ok.
-  rewrite H0. simpl in |- *; auto.
+  rewrite H0. simpl; auto.
 Qed.
 
 Lemma abstract_sum_scalar_ok :
@@ -192,9 +192,9 @@ Lemma abstract_sum_scalar_ok :
    Amult (interp_vl Amult Aone Azero vm l) (interp_acs s).
 Proof.
   simple induction s.
-  simpl in |- *; eauto.
+  simpl; eauto.
 
-  simpl in |- *; intros.
+  simpl; intros.
   rewrite iacs_aux_ok.
   rewrite abstract_varlist_insert_ok.
   rewrite H.
@@ -208,22 +208,22 @@ Lemma abstract_sum_prod_ok :
 
 Proof.
   simple induction x.
-  intros; simpl in |- *; eauto.
+  intros; simpl; eauto.
 
   destruct y as [| v0 a0]; intros.
 
-  simpl in |- *; rewrite H; eauto.
+  simpl; rewrite H; eauto.
 
-  unfold abstract_sum_prod in |- *; fold abstract_sum_prod in |- *.
+  unfold abstract_sum_prod; fold abstract_sum_prod.
   rewrite abstract_sum_merge_ok.
   rewrite abstract_sum_scalar_ok.
-  rewrite H; simpl in |- *; auto.
+  rewrite H; simpl; auto.
 Qed.
 
 Theorem aspolynomial_normalize_ok :
  forall x:aspolynomial, interp_asp x = interp_acs (aspolynomial_normalize x).
 Proof.
-  simple induction x; simpl in |- *; intros; trivial.
+  simple induction x; simpl; intros; trivial.
   rewrite abstract_sum_merge_ok.
   rewrite H; rewrite H0; eauto.
   rewrite abstract_sum_prod_ok.
@@ -451,7 +451,7 @@ Hint Immediate T.
 Lemma isacs_aux_ok :
  forall (x:A) (s:signed_sum), isacs_aux x s = Aplus x (interp_sacs s).
 Proof.
-  simple induction s; simpl in |- *; intros.
+  simple induction s; simpl; intros.
   trivial.
   reflexivity.
   reflexivity.
@@ -460,15 +460,15 @@ Qed.
 Hint Extern 10 (_ = _ :>A) => rewrite isacs_aux_ok: core.
 
 Ltac solve1 v v0 H H0 :=
-  simpl in |- *; elim (varlist_lt v v0); simpl in |- *; rewrite isacs_aux_ok;
-   [ rewrite H; simpl in |- *; auto | simpl in H0; rewrite H0; auto ].
+  simpl; elim (varlist_lt v v0); simpl; rewrite isacs_aux_ok;
+   [ rewrite H; simpl; auto | simpl in H0; rewrite H0; auto ].
 
 Lemma signed_sum_merge_ok :
  forall x y:signed_sum,
    interp_sacs (signed_sum_merge x y) = Aplus (interp_sacs x) (interp_sacs y).
 
   simple induction x.
-  intro; simpl in |- *; auto.
+  intro; simpl; auto.
 
   simple induction y; intros.
 
@@ -476,8 +476,8 @@ Lemma signed_sum_merge_ok :
 
   solve1 v v0 H H0.
 
-  simpl in |- *; generalize (varlist_eq_prop v v0).
-  elim (varlist_eq v v0); simpl in |- *.
+  simpl; generalize (varlist_eq_prop v v0).
+  elim (varlist_eq v v0); simpl.
 
   intro Heq; rewrite (Heq I).
   rewrite H.
@@ -497,8 +497,8 @@ Lemma signed_sum_merge_ok :
 
   auto.
 
-  simpl in |- *; generalize (varlist_eq_prop v v0).
-  elim (varlist_eq v v0); simpl in |- *.
+  simpl; generalize (varlist_eq_prop v v0).
+  elim (varlist_eq v v0); simpl.
 
   intro Heq; rewrite (Heq I).
   rewrite H.
@@ -516,7 +516,7 @@ Lemma signed_sum_merge_ok :
 Qed.
 
 Ltac solve2 l v H :=
-  elim (varlist_lt l v); simpl in |- *; rewrite isacs_aux_ok;
+  elim (varlist_lt l v); simpl; rewrite isacs_aux_ok;
    [ auto | rewrite H; auto ].
 
 Lemma plus_varlist_insert_ok :
@@ -528,12 +528,12 @@ Proof.
   simple induction s.
   trivial.
 
-  simpl in |- *; intros.
+  simpl; intros.
   solve2 l v H.
 
-  simpl in |- *; intros.
+  simpl; intros.
   generalize (varlist_eq_prop l v).
-  elim (varlist_eq l v); simpl in |- *.
+  elim (varlist_eq l v); simpl.
 
   intro Heq; rewrite (Heq I).
   repeat rewrite isacs_aux_ok.
@@ -555,9 +555,9 @@ Proof.
   simple induction s.
   trivial.
 
-  simpl in |- *; intros.
+  simpl; intros.
   generalize (varlist_eq_prop l v).
-  elim (varlist_eq l v); simpl in |- *.
+  elim (varlist_eq l v); simpl.
 
   intro Heq; rewrite (Heq I).
   repeat rewrite isacs_aux_ok.
@@ -568,10 +568,10 @@ Proof.
   rewrite (Th_opp_def T).
   auto.
 
-  simpl in |- *; intros.
+  simpl; intros.
   solve2 l v H.
 
-  simpl in |- *; intros; solve2 l v H.
+  simpl; intros; solve2 l v H.
 
 Qed.
 
@@ -579,9 +579,9 @@ Lemma signed_sum_opp_ok :
  forall s:signed_sum, interp_sacs (signed_sum_opp s) = Aopp (interp_sacs s).
 Proof.
 
-  simple induction s; simpl in |- *; intros.
+  simple induction s; simpl; intros.
 
-  symmetry  in |- *; apply (Th_opp_zero T).
+  symmetry ; apply (Th_opp_zero T).
 
   repeat rewrite isacs_aux_ok.
   rewrite H.
@@ -605,14 +605,14 @@ Proof.
   simple induction s.
   trivial.
 
-  simpl in |- *; intros.
+  simpl; intros.
   rewrite plus_varlist_insert_ok.
   rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
   repeat rewrite isacs_aux_ok.
   rewrite H.
   auto.
 
-  simpl in |- *; intros.
+  simpl; intros.
   rewrite minus_varlist_insert_ok.
   repeat rewrite isacs_aux_ok.
   rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
@@ -629,11 +629,11 @@ Lemma minus_sum_scalar_ok :
    Aopp (Amult (interp_vl Amult Aone Azero vm l) (interp_sacs s)).
 Proof.
 
-  simple induction s; simpl in |- *; intros.
+  simple induction s; simpl; intros.
 
-  rewrite (Th_mult_zero_right T); symmetry  in |- *; apply (Th_opp_zero T).
+  rewrite (Th_mult_zero_right T); symmetry ; apply (Th_opp_zero T).
 
-  simpl in |- *; intros.
+  simpl; intros.
   rewrite minus_varlist_insert_ok.
   rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
   repeat rewrite isacs_aux_ok.
@@ -642,7 +642,7 @@ Proof.
   rewrite (Th_plus_opp_opp T).
   reflexivity.
 
-  simpl in |- *; intros.
+  simpl; intros.
   rewrite plus_varlist_insert_ok.
   repeat rewrite isacs_aux_ok.
   rewrite (varlist_merge_ok A Aplus Amult Aone Azero Aeq vm T).
@@ -662,16 +662,16 @@ Proof.
 
   simple induction x.
 
-  simpl in |- *; eauto 1.
+  simpl; eauto 1.
 
-  intros; simpl in |- *.
+  intros; simpl.
   rewrite signed_sum_merge_ok.
   rewrite plus_sum_scalar_ok.
   repeat rewrite isacs_aux_ok.
   rewrite H.
   auto.
 
-  intros; simpl in |- *.
+  intros; simpl.
   repeat rewrite isacs_aux_ok.
   rewrite signed_sum_merge_ok.
   rewrite minus_sum_scalar_ok.
@@ -685,7 +685,7 @@ Qed.
 Theorem apolynomial_normalize_ok :
  forall p:apolynomial, interp_sacs (apolynomial_normalize p) = interp_ap p.
 Proof.
-  simple induction p; simpl in |- *; auto 1.
+  simple induction p; simpl; auto 1.
   intros.
     rewrite signed_sum_merge_ok.
     rewrite H; rewrite H0; reflexivity.

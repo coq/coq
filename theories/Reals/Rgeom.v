@@ -20,23 +20,23 @@ Definition dist_euc (x0 y0 x1 y1:R) : R :=
 
 Lemma distance_refl : forall x0 y0:R, dist_euc x0 y0 x0 y0 = 0.
 Proof.
-  intros x0 y0; unfold dist_euc in |- *; apply Rsqr_inj;
+  intros x0 y0; unfold dist_euc; apply Rsqr_inj;
     [ apply sqrt_positivity; apply Rplus_le_le_0_compat;
       [ apply Rle_0_sqr | apply Rle_0_sqr ]
       | right; reflexivity
       | rewrite Rsqr_0; rewrite Rsqr_sqrt;
-        [ unfold Rsqr in |- *; ring
+        [ unfold Rsqr; ring
           | apply Rplus_le_le_0_compat; [ apply Rle_0_sqr | apply Rle_0_sqr ] ] ].
 Qed.
 
 Lemma distance_symm :
   forall x0 y0 x1 y1:R, dist_euc x0 y0 x1 y1 = dist_euc x1 y1 x0 y0.
 Proof.
-  intros x0 y0 x1 y1; unfold dist_euc in |- *; apply Rsqr_inj;
+  intros x0 y0 x1 y1; unfold dist_euc; apply Rsqr_inj;
     [ apply sqrt_positivity; apply Rplus_le_le_0_compat
       | apply sqrt_positivity; apply Rplus_le_le_0_compat
       | repeat rewrite Rsqr_sqrt;
-        [ unfold Rsqr in |- *; ring
+        [ unfold Rsqr; ring
           | apply Rplus_le_le_0_compat
           | apply Rplus_le_le_0_compat ] ]; apply Rle_0_sqr.
 Qed.
@@ -49,8 +49,8 @@ Lemma law_cosines :
           a * c * cos ac = (x0 - x1) * (x2 - x1) + (y0 - y1) * (y2 - y1) ->
           Rsqr b = Rsqr c + Rsqr a - 2 * (a * c * cos ac).
 Proof.
-  unfold dist_euc in |- *; intros; repeat rewrite Rsqr_sqrt;
-    [ rewrite H; unfold Rsqr in |- *; ring
+  unfold dist_euc; intros; repeat rewrite Rsqr_sqrt;
+    [ rewrite H; unfold Rsqr; ring
       | apply Rplus_le_le_0_compat
       | apply Rplus_le_le_0_compat
       | apply Rplus_le_le_0_compat ]; apply Rle_0_sqr.
@@ -60,7 +60,7 @@ Lemma triangle :
   forall x0 y0 x1 y1 x2 y2:R,
     dist_euc x0 y0 x1 y1 <= dist_euc x0 y0 x2 y2 + dist_euc x2 y2 x1 y1.
 Proof.
-  intros; unfold dist_euc in |- *; apply Rsqr_incr_0;
+  intros; unfold dist_euc; apply Rsqr_incr_0;
     [ rewrite Rsqr_plus; repeat rewrite Rsqr_sqrt;
       [ replace (Rsqr (x0 - x1)) with
         (Rsqr (x0 - x2) + Rsqr (x2 - x1) + 2 * (x0 - x2) * (x2 - x1));
@@ -112,7 +112,7 @@ Definition yt (y ty:R) : R := y + ty.
 
 Lemma translation_0 : forall x y:R, xt x 0 = x /\ yt y 0 = y.
 Proof.
-  intros x y; split; [ unfold xt in |- * | unfold yt in |- * ]; ring.
+  intros x y; split; [ unfold xt | unfold yt ]; ring.
 Qed.
 
 Lemma isometric_translation :
@@ -120,7 +120,7 @@ Lemma isometric_translation :
     Rsqr (x1 - x2) + Rsqr (y1 - y2) =
     Rsqr (xt x1 tx - xt x2 tx) + Rsqr (yt y1 ty - yt y2 ty).
 Proof.
-  intros; unfold Rsqr, xt, yt in |- *; ring.
+  intros; unfold Rsqr, xt, yt; ring.
 Qed.
 
 (******************************************************************)
@@ -132,13 +132,13 @@ Definition yr (x y theta:R) : R := - x * sin theta + y * cos theta.
 
 Lemma rotation_0 : forall x y:R, xr x y 0 = x /\ yr x y 0 = y.
 Proof.
-  intros x y; unfold xr, yr in |- *; split; rewrite cos_0; rewrite sin_0; ring.
+  intros x y; unfold xr, yr; split; rewrite cos_0; rewrite sin_0; ring.
 Qed.
 
 Lemma rotation_PI2 :
   forall x y:R, xr x y (PI / 2) = y /\ yr x y (PI / 2) = - x.
 Proof.
-  intros x y; unfold xr, yr in |- *; split; rewrite cos_PI2; rewrite sin_PI2;
+  intros x y; unfold xr, yr; split; rewrite cos_PI2; rewrite sin_PI2;
     ring.
 Qed.
 
@@ -148,7 +148,7 @@ Lemma isometric_rotation_0 :
     Rsqr (xr x1 y1 theta - xr x2 y2 theta) +
     Rsqr (yr x1 y1 theta - yr x2 y2 theta).
 Proof.
-  intros; unfold xr, yr in |- *;
+  intros; unfold xr, yr;
     replace
     (x1 * cos theta + y1 * sin theta - (x2 * cos theta + y2 * sin theta)) with
     (cos theta * (x1 - x2) + sin theta * (y1 - y2));
@@ -168,7 +168,7 @@ Lemma isometric_rotation :
     dist_euc (xr x1 y1 theta) (yr x1 y1 theta) (xr x2 y2 theta)
     (yr x2 y2 theta).
 Proof.
-  unfold dist_euc in |- *; intros; apply Rsqr_inj;
+  unfold dist_euc; intros; apply Rsqr_inj;
     [ apply sqrt_positivity; apply Rplus_le_le_0_compat
       | apply sqrt_positivity; apply Rplus_le_le_0_compat
       | repeat rewrite Rsqr_sqrt;

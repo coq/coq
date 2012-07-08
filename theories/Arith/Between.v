@@ -74,7 +74,7 @@ Section Between.
 
   Lemma in_int_intro : forall p q r, p <= r -> r < q -> in_int p q r.
   Proof.
-    red in |- *; auto with arith.
+    red; auto with arith.
   Qed.
   Hint Resolve in_int_intro: arith v62.
 
@@ -149,7 +149,7 @@ Section Between.
       between k l ->
       (forall n:nat, in_int k l n -> P n -> ~ Q n) -> ~ exists_between k l.
   Proof.
-    induction 1; red in |- *; intros.
+    induction 1; red; intros.
     absurd (k < k); auto with arith.
     absurd (Q l); auto with arith.
     elim (exists_in_int k (S l)); auto with arith; intros l' inl' Ql'.

@@ -25,7 +25,7 @@ Section WellOrdering.
 
   Theorem wf_WO : well_founded le_WO.
   Proof.
-    unfold well_founded in |- *; intro.
+    unfold well_founded; intro.
     apply Acc_intro.
     elim a.
     intros.
@@ -37,7 +37,7 @@ Section WellOrdering.
     apply (H v0 y0).
     cut (f = f1).
     intros E; rewrite E; auto.
-    symmetry  in |- *.
+    symmetry .
     apply (inj_pair2 A (fun a0:A => B a0 -> WO) a0 f1 f H5).
   Qed.
 
@@ -61,7 +61,7 @@ Section Characterisation_wf_relations.
     apply (well_founded_induction_type H (fun a:A => WO A B)); auto.
     intros x H1.
     apply (sup A B x).
-    unfold B at 1 in |- *.
+    unfold B at 1.
     destruct 1 as [x0].
     apply (H1 x0); auto.
 Qed.

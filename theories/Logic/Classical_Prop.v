@@ -20,7 +20,7 @@ Axiom classic : forall P:Prop, P \/ ~ P.
 
 Lemma NNPP : forall p:Prop, ~ ~ p -> p.
 Proof.
-unfold not in |- *; intros; elim (classic p); auto.
+unfold not; intros; elim (classic p); auto.
 intro NP; elim (H NP).
 Qed.
 
@@ -35,7 +35,7 @@ Qed.
 
 Lemma not_imply_elim : forall P Q:Prop, ~ (P -> Q) -> P.
 Proof.
-intros; apply NNPP; red in |- *.
+intros; apply NNPP; red.
 intro; apply H; intro; absurd P; trivial.
 Qed.
 
@@ -68,7 +68,7 @@ Qed.
 
 Lemma or_not_and : forall P Q:Prop, ~ P \/ ~ Q -> ~ (P /\ Q).
 Proof.
-simple induction 1; red in |- *; simple induction 2; auto.
+simple induction 1; red; simple induction 2; auto.
 Qed.
 
 Lemma not_or_and : forall P Q:Prop, ~ (P \/ Q) -> ~ P /\ ~ Q.

@@ -396,14 +396,14 @@ Section NWORDMORPHISM.
 
  Lemma gen_phiNword0_ok : forall w, Nw_is0 w = true -> gen_phiNword w == 0.
 Proof.
-induction w; simpl in |- *; intros; auto.
+induction w; simpl; intros; auto.
  reflexivity.
 
  destruct a.
   destruct w.
    reflexivity.
 
-   rewrite IHw in |- *; trivial.
+   rewrite IHw; trivial.
    apply (ARopp_zero Rsth Reqe ARth).
 
    discriminate.
@@ -412,7 +412,7 @@ Qed.
   Lemma gen_phiNword_cons : forall w n,
     gen_phiNword (n::w) == gen_phiN rO rI radd rmul n - gen_phiNword w.
 induction w.
- destruct n; simpl in |- *; norm.
+ destruct n; simpl; norm.
 
  intros.
  destruct n; norm.
@@ -423,27 +423,27 @@ Qed.
 destruct w; intros.
  destruct n; norm.
 
- unfold Nwcons in |- *.
- rewrite gen_phiNword_cons in |- *.
+ unfold Nwcons.
+ rewrite gen_phiNword_cons.
  reflexivity.
 Qed.
 
  Lemma gen_phiNword_ok : forall w1 w2,
    Nweq_bool w1 w2 = true -> gen_phiNword w1 == gen_phiNword w2.
 induction w1; intros.
- simpl in |- *.
- rewrite (gen_phiNword0_ok _ H) in |- *.
+ simpl.
+ rewrite (gen_phiNword0_ok _ H).
  reflexivity.
 
- rewrite gen_phiNword_cons in |- *.
+ rewrite gen_phiNword_cons.
  destruct w2.
   simpl in H.
   destruct a; try  discriminate.
-  rewrite (gen_phiNword0_ok _ H) in |- *.
+  rewrite (gen_phiNword0_ok _ H).
   norm.
 
   simpl in H.
-  rewrite gen_phiNword_cons in |- *.
+  rewrite gen_phiNword_cons.
   case_eq (N.eqb a n); intros H0.
    rewrite H0 in H.
    apply N.eqb_eq in H0. rewrite <- H0.
@@ -457,27 +457,27 @@ Qed.
 Lemma Nwadd_ok : forall x y,
    gen_phiNword (Nwadd x y) == gen_phiNword x + gen_phiNword y.
 induction x; intros.
- simpl in |- *.
+ simpl.
  norm.
 
  destruct y.
   simpl Nwadd; norm.
 
-  simpl Nwadd in |- *.
-  repeat rewrite gen_phiNword_cons in |- *.
-  rewrite (fun sreq => gen_phiN_add Rsth sreq (ARth_SRth ARth)) in |- * by
+  simpl Nwadd.
+  repeat rewrite gen_phiNword_cons.
+  rewrite (fun sreq => gen_phiN_add Rsth sreq (ARth_SRth ARth)) by
     (destruct Reqe; constructor; trivial).
 
-  rewrite IHx in |- *.
+  rewrite IHx.
   norm.
   add_push (- gen_phiNword x); reflexivity.
 Qed.
 
 Lemma Nwopp_ok : forall x, gen_phiNword (Nwopp x) == - gen_phiNword x.
-simpl in |- *.
-unfold Nwopp in |- *; simpl in |- *.
+simpl.
+unfold Nwopp; simpl.
 intros.
-rewrite gen_phiNword_Nwcons in |- *; norm.
+rewrite gen_phiNword_Nwcons; norm.
 Qed.
 
 Lemma Nwscal_ok : forall n x,
@@ -485,12 +485,12 @@ Lemma Nwscal_ok : forall n x,
 induction x; intros.
  norm.
 
- simpl Nwscal in |- *.
- repeat rewrite gen_phiNword_cons in |- *.
- rewrite (fun sreq => gen_phiN_mult Rsth sreq (ARth_SRth ARth)) in |- *
+ simpl Nwscal.
+ repeat rewrite gen_phiNword_cons.
+ rewrite (fun sreq => gen_phiN_mult Rsth sreq (ARth_SRth ARth))
    by (destruct Reqe; constructor; trivial).
 
-  rewrite IHx in |- *.
+  rewrite IHx.
   norm.
 Qed.
 
@@ -500,19 +500,19 @@ induction x; intros.
  norm.
 
  destruct a.
-  simpl Nwmul in |- *.
-  rewrite Nwopp_ok in |- *.
-  rewrite IHx in |- *.
-  rewrite gen_phiNword_cons in |- *.
+  simpl Nwmul.
+  rewrite Nwopp_ok.
+  rewrite IHx.
+  rewrite gen_phiNword_cons.
   norm.
 
-  simpl Nwmul in |- *.
-  unfold Nwsub in |- *.
-  rewrite Nwadd_ok in |- *.
-  rewrite Nwscal_ok in |- *.
-  rewrite Nwopp_ok in |- *.
-  rewrite IHx in |- *.
-  rewrite gen_phiNword_cons in |- *.
+  simpl Nwmul.
+  unfold Nwsub.
+  rewrite Nwadd_ok.
+  rewrite Nwscal_ok.
+  rewrite Nwopp_ok.
+  rewrite IHx.
+  rewrite gen_phiNword_cons.
   norm.
 Qed.
 
@@ -528,9 +528,9 @@ constructor.
  exact Nwadd_ok.
 
  intros.
- unfold Nwsub in |- *.
- rewrite Nwadd_ok in |- *.
- rewrite Nwopp_ok in |- *.
+ unfold Nwsub.
+ rewrite Nwadd_ok.
+ rewrite Nwopp_ok.
  norm.
 
  exact Nwmul_ok.

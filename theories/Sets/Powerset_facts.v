@@ -42,7 +42,7 @@ Section Sets_as_an_algebra.
 
   Theorem Empty_set_zero' : forall x:U, Add U (Empty_set U) x = Singleton U x.
   Proof.
-    unfold Add at 1 in |- *; auto using Empty_set_zero with sets.
+    unfold Add at 1; auto using Empty_set_zero with sets.
   Qed.
 
   Lemma less_than_empty :
@@ -76,7 +76,7 @@ Section Sets_as_an_algebra.
   Theorem Couple_as_union :
     forall x y:U, Union U (Singleton U x) (Singleton U y) = Couple U x y.
   Proof.
-    intros x y; apply Extensionality_Ensembles; split; red in |- *.
+    intros x y; apply Extensionality_Ensembles; split; red.
     intros x0 H'; elim H'; (intros x1 H'0; elim H'0; auto with sets).
     intros x0 H'; elim H'; auto with sets.
   Qed.
@@ -86,7 +86,7 @@ Section Sets_as_an_algebra.
       Union U (Union U (Singleton U x) (Singleton U y)) (Singleton U z) =
       Triple U x y z.
   Proof.
-    intros x y z; apply Extensionality_Ensembles; split; red in |- *.
+    intros x y z; apply Extensionality_Ensembles; split; red.
     intros x0 H'; elim H'.
     intros x1 H'0; elim H'0; (intros x2 H'1; elim H'1; auto with sets).
     intros x1 H'0; elim H'0; auto with sets.
@@ -114,7 +114,7 @@ Section Sets_as_an_algebra.
   Proof.
     intros A B.
     apply Extensionality_Ensembles.
-    split; red in |- *; intros x H'; elim H'; auto with sets.
+    split; red; intros x H'; elim H'; auto with sets.
   Qed.
 
   Theorem Distributivity :
@@ -124,7 +124,7 @@ Section Sets_as_an_algebra.
   Proof.
     intros A B C.
     apply Extensionality_Ensembles.
-    split; red in |- *; intros x H'.
+    split; red; intros x H'.
     elim H'.
     intros x0 H'0 H'1; generalize H'0.
     elim H'1; auto with sets.
@@ -138,7 +138,7 @@ Section Sets_as_an_algebra.
   Proof.
     intros A B C.
     apply Extensionality_Ensembles.
-    split; red in |- *; intros x H'.
+    split; red; intros x H'.
     elim H'; auto with sets.
     intros x0 H'0; elim H'0; auto with sets.
     elim H'.
@@ -151,15 +151,15 @@ Section Sets_as_an_algebra.
   Theorem Union_add :
     forall (A B:Ensemble U) (x:U), Add U (Union U A B) x = Union U A (Add U B x).
   Proof.
-    unfold Add in |- *; auto using Union_associative with sets.
+    unfold Add; auto using Union_associative with sets.
   Qed.
 
   Theorem Non_disjoint_union :
     forall (X:Ensemble U) (x:U), In U X x -> Add U X x = X.
   Proof.
-    intros X x H'; unfold Add in |- *.
-    apply Extensionality_Ensembles; red in |- *.
-    split; red in |- *; auto with sets.
+    intros X x H'; unfold Add.
+    apply Extensionality_Ensembles; red.
+    split; red; auto with sets.
     intros x0 H'0; elim H'0; auto with sets.
     intros t H'1; elim H'1; auto with sets.
   Qed.
@@ -167,12 +167,12 @@ Section Sets_as_an_algebra.
   Theorem Non_disjoint_union' :
     forall (X:Ensemble U) (x:U), ~ In U X x -> Subtract U X x = X.
   Proof.
-    intros X x H'; unfold Subtract in |- *.
+    intros X x H'; unfold Subtract.
     apply Extensionality_Ensembles.
-    split; red in |- *; auto with sets.
+    split; red; auto with sets.
     intros x0 H'0; elim H'0; auto with sets.
     intros x0 H'0; apply Setminus_intro; auto with sets.
-    red in |- *; intro H'1; elim H'1.
+    red; intro H'1; elim H'1.
     lapply (Singleton_inv U x x0); auto with sets.
     intro H'4; apply H'; rewrite H'4; auto with sets.
   Qed.
@@ -186,7 +186,7 @@ Section Sets_as_an_algebra.
     forall (A B:Ensemble U) (x:U),
       Included U A B -> Included U (Add U A x) (Add U B x).
   Proof.
-    intros A B x H'; red in |- *; auto with sets.
+    intros A B x H'; red; auto with sets.
     intros x0 H'0.
     lapply (Add_inv U A x x0); auto with sets.
     intro H'1; elim H'1;
@@ -198,7 +198,7 @@ Section Sets_as_an_algebra.
     forall (A B:Ensemble U) (x:U),
       ~ In U A x -> Included U (Add U A x) (Add U B x) -> Included U A B.
   Proof.
-    unfold Included in |- *.
+    unfold Included.
     intros A B x H' H'0 x0 H'1.
     lapply (H'0 x0); auto with sets.
     intro H'2; lapply (Add_inv U B x x0); auto with sets.
@@ -212,7 +212,7 @@ Section Sets_as_an_algebra.
     forall (A:Ensemble U) (x y:U), Add U (Add U A x) y = Add U (Add U A y) x.
   Proof.
     intros A x y.
-    unfold Add in |- *.
+    unfold Add.
     rewrite (Union_associative A (Singleton U x) (Singleton U y)).
     rewrite (Union_commutative (Singleton U x) (Singleton U y)).
     rewrite <- (Union_associative A (Singleton U y) (Singleton U x));
@@ -234,7 +234,7 @@ Section Sets_as_an_algebra.
   Proof.
     intros A B x y H'; try assumption.
     rewrite <- (Union_add (Add U A x) B y).
-    unfold Add at 4 in |- *.
+    unfold Add at 4.
     rewrite (Union_commutative A (Singleton U x)).
     rewrite Union_associative.
     rewrite (Union_absorbs A B H').

@@ -46,12 +46,12 @@ Theorem pre_sin_bound :
     a <= 4 -> sin_approx a (2 * n + 1) <= sin a <= sin_approx a (2 * (n + 1)).
 Proof.
   intros; case (Req_dec a 0); intro Hyp_a.
-  rewrite Hyp_a; rewrite sin_0; split; right; unfold sin_approx in |- *;
-    apply sum_eq_R0 || (symmetry  in |- *; apply sum_eq_R0);
-      intros; unfold sin_term in |- *; rewrite pow_add;
-        simpl in |- *; unfold Rdiv in |- *; rewrite Rmult_0_l;
+  rewrite Hyp_a; rewrite sin_0; split; right; unfold sin_approx;
+    apply sum_eq_R0 || (symmetry ; apply sum_eq_R0);
+      intros; unfold sin_term; rewrite pow_add;
+        simpl; unfold Rdiv; rewrite Rmult_0_l;
           ring.
-  unfold sin_approx in |- *; cut (0 < a).
+  unfold sin_approx; cut (0 < a).
   intro Hyp_a_pos.
   rewrite (decomp_sum (sin_term a) (2 * n + 1)).
   rewrite (decomp_sum (sin_term a) (2 * (n + 1))).
@@ -76,14 +76,14 @@ Proof.
       - sum_f_R0 (tg_alt Un) (S (2 * n))).
   intro; apply H2.
   apply alternated_series_ineq.
-  unfold Un_decreasing, Un in |- *; intro;
+  unfold Un_decreasing, Un; intro;
     cut ((2 * S (S n0) + 1)%nat = S (S (2 * S n0 + 1))).
   intro; rewrite H3.
   replace (a ^ S (S (2 * S n0 + 1))) with (a ^ (2 * S n0 + 1) * (a * a)).
-  unfold Rdiv in |- *; rewrite Rmult_assoc; apply Rmult_le_compat_l.
+  unfold Rdiv; rewrite Rmult_assoc; apply Rmult_le_compat_l.
   left; apply pow_lt; assumption.
   apply Rmult_le_reg_l with (INR (fact (S (S (2 * S n0 + 1))))).
-  rewrite <- H3; apply lt_INR_0; apply neq_O_lt; red in |- *; intro;
+  rewrite <- H3; apply lt_INR_0; apply neq_O_lt; red; intro;
     assert (H5 := eq_sym H4); elim (fact_neq_0 _ H5).
   rewrite <- H3; rewrite (Rmult_comm (INR (fact (2 * S (S n0) + 1))));
     rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
@@ -91,7 +91,7 @@ Proof.
     repeat rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
   rewrite Rmult_1_r.
   do 2 rewrite S_INR; rewrite plus_INR; rewrite mult_INR; repeat rewrite S_INR;
-    simpl in |- *;
+    simpl;
       replace
       (((0 + 1 + 1) * (INR n0 + 1) + (0 + 1) + 1 + 1) *
         ((0 + 1 + 1) * (INR n0 + 1) + (0 + 1) + 1)) with
@@ -106,7 +106,7 @@ Proof.
   left; prove_sup0.
   rewrite <- (Rplus_0_r 16); replace 20 with (16 + 4);
     [ apply Rplus_le_compat_l; left; prove_sup0 | ring ].
-  rewrite <- (Rplus_comm 20); pattern 20 at 1 in |- *; rewrite <- Rplus_0_r;
+  rewrite <- (Rplus_comm 20); pattern 20 at 1; rewrite <- Rplus_0_r;
     apply Rplus_le_compat_l.
   apply Rplus_le_le_0_compat.
   repeat apply Rmult_le_pos.
@@ -119,14 +119,14 @@ Proof.
   replace 0 with (INR 0); [ apply le_INR; apply le_O_n | reflexivity ].
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
-  simpl in |- *; ring.
+  simpl; ring.
   ring.
-  assert (H3 := cv_speed_pow_fact a); unfold Un in |- *; unfold Un_cv in H3;
-    unfold R_dist in H3; unfold Un_cv in |- *; unfold R_dist in |- *;
+  assert (H3 := cv_speed_pow_fact a); unfold Un; unfold Un_cv in H3;
+    unfold R_dist in H3; unfold Un_cv; unfold R_dist;
       intros; elim (H3 eps H4); intros N H5.
   exists N; intros; apply H5.
   replace (2 * S n0 + 1)%nat with (S (2 * S n0)).
-  unfold ge in |- *; apply le_trans with (2 * S n0)%nat.
+  unfold ge; apply le_trans with (2 * S n0)%nat.
   apply le_trans with (2 * S N)%nat.
   apply le_trans with (2 * N)%nat.
   apply le_n_2n.
@@ -137,49 +137,49 @@ Proof.
   assert (X := exist_sin (Rsqr a)); elim X; intros.
   cut (x = sin a / a).
   intro; rewrite H3 in p; unfold sin_in in p; unfold infinite_sum in p;
-    unfold R_dist in p; unfold Un_cv in |- *; unfold R_dist in |- *;
+    unfold R_dist in p; unfold Un_cv; unfold R_dist;
       intros.
   cut (0 < eps / Rabs a).
   intro; elim (p _ H5); intros N H6.
   exists N; intros.
   replace (sum_f_R0 (tg_alt Un) n0) with
   (a * (1 - sum_f_R0 (fun i:nat => sin_n i * Rsqr a ^ i) (S n0))).
-  unfold Rminus in |- *; rewrite Rmult_plus_distr_l; rewrite Rmult_1_r;
+  unfold Rminus; rewrite Rmult_plus_distr_l; rewrite Rmult_1_r;
     rewrite Ropp_plus_distr; rewrite Ropp_involutive;
       repeat rewrite Rplus_assoc; rewrite (Rplus_comm a);
         rewrite (Rplus_comm (- a)); repeat rewrite Rplus_assoc;
           rewrite Rplus_opp_l; rewrite Rplus_0_r; apply Rmult_lt_reg_l with (/ Rabs a).
   apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption.
-  pattern (/ Rabs a) at 1 in |- *; rewrite <- (Rabs_Rinv a Hyp_a).
+  pattern (/ Rabs a) at 1; rewrite <- (Rabs_Rinv a Hyp_a).
   rewrite <- Rabs_mult; rewrite Rmult_plus_distr_l; rewrite <- Rmult_assoc;
     rewrite <- Rinv_l_sym; [ rewrite Rmult_1_l | assumption ];
       rewrite (Rmult_comm (/ a)); rewrite (Rmult_comm (/ Rabs a));
         rewrite <- Rabs_Ropp; rewrite Ropp_plus_distr; rewrite Ropp_involutive;
-          unfold Rminus, Rdiv in H6; apply H6; unfold ge in |- *;
+          unfold Rminus, Rdiv in H6; apply H6; unfold ge;
             apply le_trans with n0; [ exact H7 | apply le_n_Sn ].
   rewrite (decomp_sum (fun i:nat => sin_n i * Rsqr a ^ i) (S n0)).
   replace (sin_n 0) with 1.
-  simpl in |- *; rewrite Rmult_1_r; unfold Rminus in |- *;
+  simpl; rewrite Rmult_1_r; unfold Rminus;
     rewrite Ropp_plus_distr; rewrite <- Rplus_assoc; rewrite Rplus_opp_r;
       rewrite Rplus_0_l; rewrite Ropp_mult_distr_r_reverse;
         rewrite <- Ropp_mult_distr_l_reverse; rewrite scal_sum;
           apply sum_eq.
-  intros; unfold sin_n, Un, tg_alt in |- *;
+  intros; unfold sin_n, Un, tg_alt;
     replace ((-1) ^ S i) with (- (-1) ^ i).
   replace (a ^ (2 * S i + 1)) with (Rsqr a * Rsqr a ^ i * a).
-  unfold Rdiv in |- *; ring.
-  rewrite pow_add; rewrite pow_Rsqr; simpl in |- *; ring.
-  simpl in |- *; ring.
-  unfold sin_n in |- *; unfold Rdiv in |- *; simpl in |- *; rewrite Rinv_1;
+  unfold Rdiv; ring.
+  rewrite pow_add; rewrite pow_Rsqr; simpl; ring.
+  simpl; ring.
+  unfold sin_n; unfold Rdiv; simpl; rewrite Rinv_1;
     rewrite Rmult_1_r; reflexivity.
   apply lt_O_Sn.
-  unfold Rdiv in |- *; apply Rmult_lt_0_compat.
+  unfold Rdiv; apply Rmult_lt_0_compat.
   assumption.
   apply Rinv_0_lt_compat; apply Rabs_pos_lt; assumption.
-  unfold sin in |- *; case (exist_sin (Rsqr a)).
+  unfold sin; case (exist_sin (Rsqr a)).
   intros; cut (x = x0).
-  intro; rewrite H3; unfold Rdiv in |- *.
-  symmetry  in |- *; apply Rinv_r_simpl_m; assumption.
+  intro; rewrite H3; unfold Rdiv.
+  symmetry ; apply Rinv_r_simpl_m; assumption.
   unfold sin_in in p; unfold sin_in in s; eapply uniqueness_sum.
   apply p.
   apply s.
@@ -188,16 +188,16 @@ Proof.
   split; apply Ropp_le_contravar; assumption.
   replace (- sum_f_R0 (tg_alt Un) (S (2 * n))) with
   (-1 * sum_f_R0 (tg_alt Un) (S (2 * n))); [ rewrite scal_sum | ring ].
-  apply sum_eq; intros; unfold sin_term, Un, tg_alt in |- *;
+  apply sum_eq; intros; unfold sin_term, Un, tg_alt;
     replace ((-1) ^ S i) with (-1 * (-1) ^ i).
-  unfold Rdiv in |- *; ring.
+  unfold Rdiv; ring.
   reflexivity.
   replace (- sum_f_R0 (tg_alt Un) (2 * n)) with
   (-1 * sum_f_R0 (tg_alt Un) (2 * n)); [ rewrite scal_sum | ring ].
   apply sum_eq; intros.
-  unfold sin_term, Un, tg_alt in |- *;
+  unfold sin_term, Un, tg_alt;
     replace ((-1) ^ S i) with (-1 * (-1) ^ i).
-  unfold Rdiv in |- *; ring.
+  unfold Rdiv; ring.
   reflexivity.
   replace (2 * (n + 1))%nat with (S (S (2 * n))).
   reflexivity.
@@ -213,7 +213,7 @@ Proof.
   apply Rplus_le_reg_l with (- a).
   rewrite <- Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_l;
     rewrite (Rplus_comm (- a)); apply H3.
-  unfold sin_term in |- *; simpl in |- *; unfold Rdiv in |- *; rewrite Rinv_1;
+  unfold sin_term; simpl; unfold Rdiv; rewrite Rinv_1;
     ring.
   replace (2 * (n + 1))%nat with (S (S (2 * n))).
   apply lt_O_Sn.
@@ -221,7 +221,7 @@ Proof.
   replace (2 * n + 1)%nat with (S (2 * n)).
   apply lt_O_Sn.
   ring.
-  inversion H; [ assumption | elim Hyp_a; symmetry  in |- *; assumption ].
+  inversion H; [ assumption | elim Hyp_a; symmetry ; assumption ].
 Qed.
 
 (**********)
@@ -240,7 +240,7 @@ Proof.
       a <= 2 ->
       cos_approx a (2 * n + 1) <= cos a <= cos_approx a (2 * (n + 1))).
   intros H a n; apply H.
-  intros; unfold cos_approx in |- *.
+  intros; unfold cos_approx.
   rewrite (decomp_sum (cos_term a0) (2 * n0 + 1)).
   rewrite (decomp_sum (cos_term a0) (2 * (n0 + 1))).
   replace (cos_term a0 0) with 1.
@@ -266,21 +266,21 @@ Proof.
       - sum_f_R0 (tg_alt Un) (S (2 * n0))).
   intro; apply H3.
   apply alternated_series_ineq.
-  unfold Un_decreasing in |- *; intro; unfold Un in |- *.
+  unfold Un_decreasing; intro; unfold Un.
   cut ((2 * S (S n1))%nat = S (S (2 * S n1))).
   intro; rewrite H4;
     replace (a0 ^ S (S (2 * S n1))) with (a0 ^ (2 * S n1) * (a0 * a0)).
-  unfold Rdiv in |- *; rewrite Rmult_assoc; apply Rmult_le_compat_l.
+  unfold Rdiv; rewrite Rmult_assoc; apply Rmult_le_compat_l.
   apply pow_le; assumption.
   apply Rmult_le_reg_l with (INR (fact (S (S (2 * S n1))))).
-  rewrite <- H4; apply lt_INR_0; apply neq_O_lt; red in |- *; intro;
+  rewrite <- H4; apply lt_INR_0; apply neq_O_lt; red; intro;
     assert (H6 := eq_sym H5); elim (fact_neq_0 _ H6).
   rewrite <- H4; rewrite (Rmult_comm (INR (fact (2 * S (S n1)))));
     rewrite Rmult_assoc; rewrite <- Rinv_l_sym.
   rewrite Rmult_1_r; rewrite H4; do 2 rewrite fact_simpl; do 2 rewrite mult_INR;
     repeat rewrite Rmult_assoc; rewrite <- Rinv_r_sym.
   rewrite Rmult_1_r; do 2 rewrite S_INR; rewrite mult_INR; repeat rewrite S_INR;
-    simpl in |- *;
+    simpl;
       replace
       (((0 + 1 + 1) * (INR n1 + 1) + 1 + 1) * ((0 + 1 + 1) * (INR n1 + 1) + 1))
     with (4 * INR n1 * INR n1 + 14 * INR n1 + 12); [ idtac | ring ].
@@ -293,9 +293,9 @@ Proof.
   discrR.
   assumption.
   left; prove_sup0.
-  pattern 4 at 1 in |- *; rewrite <- Rplus_0_r; replace 12 with (4 + 8);
+  pattern 4 at 1; rewrite <- Rplus_0_r; replace 12 with (4 + 8);
     [ apply Rplus_le_compat_l; left; prove_sup0 | ring ].
-  rewrite <- (Rplus_comm 12); pattern 12 at 1 in |- *; rewrite <- Rplus_0_r;
+  rewrite <- (Rplus_comm 12); pattern 12 at 1; rewrite <- Rplus_0_r;
     apply Rplus_le_compat_l.
   apply Rplus_le_le_0_compat.
   repeat apply Rmult_le_pos.
@@ -308,12 +308,12 @@ Proof.
   replace 0 with (INR 0); [ apply le_INR; apply le_O_n | reflexivity ].
   apply INR_fact_neq_0.
   apply INR_fact_neq_0.
-  simpl in |- *; ring.
+  simpl; ring.
   ring.
-  assert (H4 := cv_speed_pow_fact a0); unfold Un in |- *; unfold Un_cv in H4;
-    unfold R_dist in H4; unfold Un_cv in |- *; unfold R_dist in |- *;
+  assert (H4 := cv_speed_pow_fact a0); unfold Un; unfold Un_cv in H4;
+    unfold R_dist in H4; unfold Un_cv; unfold R_dist;
       intros; elim (H4 eps H5); intros N H6; exists N; intros.
-  apply H6; unfold ge in |- *; apply le_trans with (2 * S N)%nat.
+  apply H6; unfold ge; apply le_trans with (2 * S N)%nat.
   apply le_trans with (2 * N)%nat.
   apply le_n_2n.
   apply (fun m n p:nat => mult_le_compat_l p n m); apply le_n_Sn.
@@ -321,40 +321,40 @@ Proof.
   assert (X := exist_cos (Rsqr a0)); elim X; intros.
   cut (x = cos a0).
   intro; rewrite H4 in p; unfold cos_in in p; unfold infinite_sum in p;
-    unfold R_dist in p; unfold Un_cv in |- *; unfold R_dist in |- *;
+    unfold R_dist in p; unfold Un_cv; unfold R_dist;
       intros.
   elim (p _ H5); intros N H6.
   exists N; intros.
   replace (sum_f_R0 (tg_alt Un) n1) with
   (1 - sum_f_R0 (fun i:nat => cos_n i * Rsqr a0 ^ i) (S n1)).
-  unfold Rminus in |- *; rewrite Ropp_plus_distr; rewrite Ropp_involutive;
+  unfold Rminus; rewrite Ropp_plus_distr; rewrite Ropp_involutive;
     repeat rewrite Rplus_assoc; rewrite (Rplus_comm 1);
       rewrite (Rplus_comm (-1)); repeat rewrite Rplus_assoc;
         rewrite Rplus_opp_l; rewrite Rplus_0_r; rewrite <- Rabs_Ropp;
           rewrite Ropp_plus_distr; rewrite Ropp_involutive;
             unfold Rminus in H6; apply H6.
-  unfold ge in |- *; apply le_trans with n1.
+  unfold ge; apply le_trans with n1.
   exact H7.
   apply le_n_Sn.
   rewrite (decomp_sum (fun i:nat => cos_n i * Rsqr a0 ^ i) (S n1)).
   replace (cos_n 0) with 1.
-  simpl in |- *; rewrite Rmult_1_r; unfold Rminus in |- *;
+  simpl; rewrite Rmult_1_r; unfold Rminus;
     rewrite Ropp_plus_distr; rewrite <- Rplus_assoc; rewrite Rplus_opp_r;
       rewrite Rplus_0_l;
         replace (- sum_f_R0 (fun i:nat => cos_n (S i) * (Rsqr a0 * Rsqr a0 ^ i)) n1)
     with
       (-1 * sum_f_R0 (fun i:nat => cos_n (S i) * (Rsqr a0 * Rsqr a0 ^ i)) n1);
       [ idtac | ring ]; rewrite scal_sum; apply sum_eq;
-        intros; unfold cos_n, Un, tg_alt in |- *.
+        intros; unfold cos_n, Un, tg_alt.
   replace ((-1) ^ S i) with (- (-1) ^ i).
   replace (a0 ^ (2 * S i)) with (Rsqr a0 * Rsqr a0 ^ i).
-  unfold Rdiv in |- *; ring.
+  unfold Rdiv; ring.
   rewrite pow_Rsqr; reflexivity.
-  simpl in |- *; ring.
-  unfold cos_n in |- *; unfold Rdiv in |- *; simpl in |- *; rewrite Rinv_1;
+  simpl; ring.
+  unfold cos_n; unfold Rdiv; simpl; rewrite Rinv_1;
     rewrite Rmult_1_r; reflexivity.
   apply lt_O_Sn.
-  unfold cos in |- *; case (exist_cos (Rsqr a0)); intros; unfold cos_in in p;
+  unfold cos; case (exist_cos (Rsqr a0)); intros; unfold cos_in in p;
     unfold cos_in in c; eapply uniqueness_sum.
   apply p.
   apply c.
@@ -363,15 +363,15 @@ Proof.
   split; apply Ropp_le_contravar; assumption.
   replace (- sum_f_R0 (tg_alt Un) (S (2 * n0))) with
   (-1 * sum_f_R0 (tg_alt Un) (S (2 * n0))); [ rewrite scal_sum | ring ].
-  apply sum_eq; intros; unfold cos_term, Un, tg_alt in |- *;
+  apply sum_eq; intros; unfold cos_term, Un, tg_alt;
     replace ((-1) ^ S i) with (-1 * (-1) ^ i).
-  unfold Rdiv in |- *; ring.
+  unfold Rdiv; ring.
   reflexivity.
   replace (- sum_f_R0 (tg_alt Un) (2 * n0)) with
   (-1 * sum_f_R0 (tg_alt Un) (2 * n0)); [ rewrite scal_sum | ring ];
-  apply sum_eq; intros; unfold cos_term, Un, tg_alt in |- *;
+  apply sum_eq; intros; unfold cos_term, Un, tg_alt;
     replace ((-1) ^ S i) with (-1 * (-1) ^ i).
-  unfold Rdiv in |- *; ring.
+  unfold Rdiv; ring.
   reflexivity.
   replace (2 * (n0 + 1))%nat with (S (S (2 * n0))).
   reflexivity.
@@ -386,7 +386,7 @@ Proof.
   apply Rplus_le_reg_l with (-1).
   rewrite <- Rplus_assoc; rewrite Rplus_opp_l; rewrite Rplus_0_l;
     rewrite (Rplus_comm (-1)); apply H4.
-  unfold cos_term in |- *; simpl in |- *; unfold Rdiv in |- *; rewrite Rinv_1;
+  unfold cos_term; simpl; unfold Rdiv; rewrite Rinv_1;
     ring.
   replace (2 * (n0 + 1))%nat with (S (S (2 * n0))).
   apply lt_O_Sn.
@@ -403,8 +403,8 @@ Proof.
   intro; rewrite H3; rewrite (H3 a (2 * (n + 1))%nat); rewrite cos_sym; apply H.
   left; assumption.
   rewrite <- (Ropp_involutive 2); apply Ropp_le_contravar; exact H0.
-  intros; unfold cos_approx in |- *; apply sum_eq; intros;
-    unfold cos_term in |- *; do 2 rewrite pow_Rsqr; rewrite Rsqr_neg;
-      unfold Rdiv in |- *; reflexivity.
+  intros; unfold cos_approx; apply sum_eq; intros;
+    unfold cos_term; do 2 rewrite pow_Rsqr; rewrite Rsqr_neg;
+      unfold Rdiv; reflexivity.
   apply Ropp_0_gt_lt_contravar; assumption.
 Qed.
