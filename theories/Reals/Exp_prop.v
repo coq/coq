@@ -9,7 +9,7 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import SeqSeries.
-Require Import Rtrigo.
+Require Import Rtrigo1.
 Require Import Ranalysis1.
 Require Import PSeries_reg.
 Require Import Div2.
@@ -63,20 +63,6 @@ Definition maj_Reste_E (x y:R) (N:nat) : R :=
   4 *
   (Rmax 1 (Rmax (Rabs x) (Rabs y)) ^ (2 * N) /
     Rsqr (INR (fact (div2 (pred N))))).
-
-Lemma Rle_Rinv : forall x y:R, 0 < x -> 0 < y -> x <= y -> / y <= / x.
-Proof.
-  intros; apply Rmult_le_reg_l with x.
-  apply H.
-  rewrite <- Rinv_r_sym.
-  apply Rmult_le_reg_l with y.
-  apply H0.
-  rewrite Rmult_1_r; rewrite Rmult_comm; rewrite Rmult_assoc;
-    rewrite <- Rinv_l_sym.
-  rewrite Rmult_1_r; apply H1.
-  red in |- *; intro; rewrite H2 in H0; elim (Rlt_irrefl _ H0).
-  red in |- *; intro; rewrite H2 in H; elim (Rlt_irrefl _ H).
-Qed.
 
 (**********)
 Lemma div2_double : forall N:nat, div2 (2 * N) = N.

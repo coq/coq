@@ -27,7 +27,8 @@ Definition sin_approx (a:R) (n:nat) : R := sum_f_R0 (sin_term a) n.
 Definition cos_approx (a:R) (n:nat) : R := sum_f_R0 (cos_term a) n.
 
 (**********)
-Lemma PI_4 : PI <= 4.
+(*
+Lemma Alt_PI_4 : Alt_PI <= 4.
 Proof.
   assert (H0 := PI_ineq 0).
   elim H0; clear H0; intros _ H0.
@@ -37,12 +38,12 @@ Proof.
   apply Rinv_0_lt_compat; prove_sup0.
   rewrite <- Rinv_l_sym; [ rewrite Rmult_comm; assumption | discrR ].
 Qed.
-
+*)
 (**********)
-Theorem sin_bound :
+Theorem pre_sin_bound :
   forall (a:R) (n:nat),
     0 <= a ->
-    a <= PI -> sin_approx a (2 * n + 1) <= sin a <= sin_approx a (2 * (n + 1)).
+    a <= 4 -> sin_approx a (2 * n + 1) <= sin a <= sin_approx a (2 * (n + 1)).
 Proof.
   intros; case (Req_dec a 0); intro Hyp_a.
   rewrite Hyp_a; rewrite sin_0; split; right; unfold sin_approx in |- *;
@@ -100,7 +101,7 @@ Proof.
   replace 16 with (Rsqr 4); [ idtac | ring_Rsqr ].
   replace (a * a) with (Rsqr a); [ idtac | reflexivity ].
   apply Rsqr_incr_1.
-  apply Rle_trans with PI; [ assumption | apply PI_4 ].
+  assumption.
   assumption.
   left; prove_sup0.
   rewrite <- (Rplus_0_r 16); replace 20 with (16 + 4);
@@ -224,20 +225,19 @@ Proof.
 Qed.
 
 (**********)
-Lemma cos_bound :
+Lemma pre_cos_bound :
   forall (a:R) (n:nat),
-    - PI / 2 <= a ->
-    a <= PI / 2 ->
+    - 2 <= a -> a <= 2 ->
     cos_approx a (2 * n + 1) <= cos a <= cos_approx a (2 * (n + 1)).
 Proof.
   cut
     ((forall (a:R) (n:nat),
       0 <= a ->
-      a <= PI / 2 ->
+      a <= 2 ->
       cos_approx a (2 * n + 1) <= cos a <= cos_approx a (2 * (n + 1))) ->
     forall (a:R) (n:nat),
-      - PI / 2 <= a ->
-      a <= PI / 2 ->
+      - 2 <= a ->
+      a <= 2 ->
       cos_approx a (2 * n + 1) <= cos a <= cos_approx a (2 * (n + 1))).
   intros H a n; apply H.
   intros; unfold cos_approx in |- *.
@@ -289,12 +289,7 @@ Proof.
   replace 4 with (Rsqr 2); [ idtac | ring_Rsqr ].
   replace (a0 * a0) with (Rsqr a0); [ idtac | reflexivity ].
   apply Rsqr_incr_1.
-  apply Rle_trans with (PI / 2).
   assumption.
-  unfold Rdiv in |- *; apply Rmult_le_reg_l with 2.
-  prove_sup0.
-  rewrite <- Rmult_assoc; rewrite Rinv_r_simpl_m.
-  replace 4 with 4; [ apply PI_4 | ring ].
   discrR.
   assumption.
   left; prove_sup0.
@@ -407,9 +402,7 @@ Proof.
   intro; cut (forall (x:R) (n:nat), cos_approx x n = cos_approx (- x) n).
   intro; rewrite H3; rewrite (H3 a (2 * (n + 1))%nat); rewrite cos_sym; apply H.
   left; assumption.
-  rewrite <- (Ropp_involutive (PI / 2)); apply Ropp_le_contravar;
-    unfold Rdiv in |- *; unfold Rdiv in H0; rewrite <- Ropp_mult_distr_l_reverse;
-      exact H0.
+  rewrite <- (Ropp_involutive 2); apply Ropp_le_contravar; exact H0.
   intros; unfold cos_approx in |- *; apply sum_eq; intros;
     unfold cos_term in |- *; do 2 rewrite pow_Rsqr; rewrite Rsqr_neg;
       unfold Rdiv in |- *; reflexivity.

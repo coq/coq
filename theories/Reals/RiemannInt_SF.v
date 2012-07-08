@@ -8,7 +8,7 @@
 
 Require Import Rbase.
 Require Import Rfunctions.
-Require Import Ranalysis.
+Require Import Ranalysis_reg.
 Require Import Classical_Prop.
 Open Local Scope R_scope.
 

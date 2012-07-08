@@ -9,6 +9,7 @@ DiscrR.vo
 Exp_prop.vo
 Integration.vo
 LegacyRfield.vo
+Machin.vo
 MVT.vo
 NewtonInt.vo
 PartSum.vo
@@ -17,7 +18,10 @@ Ranalysis1.vo
 Ranalysis2.vo
 Ranalysis3.vo
 Ranalysis4.vo
+Ranalysis5.vo
 Ranalysis.vo
+Ranalysis_reg.vo
+Ratan.vo
 Raxioms.vo
 Rbase.vo
 Rbasic_fun.vo
@@ -48,6 +52,7 @@ Rtrigo_calc.vo
 Rtrigo_def.vo
 Rtrigo_fun.vo
 Rtrigo_reg.vo
+Rtrigo1.vo
 Rtrigo.vo
 SeqProp.vo
 SeqSeries.vo

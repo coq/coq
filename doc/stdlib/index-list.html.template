@@ -523,7 +523,10 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/Rsigma.v
     theories/Reals/R_sqr.v
     theories/Reals/Rtrigo_fun.v
+    theories/Reals/Rtrigo1.v
     theories/Reals/Rtrigo.v
+    theories/Reals/Ratan.v
+    theories/Reals/Machin.v
     theories/Reals/SplitAbsolu.v
     theories/Reals/SplitRmult.v
     theories/Reals/Alembert.v
@@ -544,6 +547,8 @@ through the <tt>Require Import</tt> command.</p>
     theories/Reals/Ranalysis2.v
     theories/Reals/Ranalysis3.v
     theories/Reals/Ranalysis4.v
+    theories/Reals/Ranalysis5.v
+    theories/Reals/Ranalysis_reg.v
     theories/Reals/Rcomplete.v
     theories/Reals/RiemannInt.v
     theories/Reals/RiemannInt_SF.v
