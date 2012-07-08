@@ -32,7 +32,7 @@ let print_usage_channel co command =
 \n  -nois                  start with an empty state\
 \n  -outputstate f         write state in file f.coq\
 \n  -compat X.Y            provides compatibility support for Coq version X.Y\
-\n  -verb-compat-notations be warned when using compatibility notations\
+\n  -verbose-compat-notations  be warned when using compatibility notations\
 \n  -no-compat-notations   get an error when using compatibility notations\
 \n\
 \n  -load-ml-object f      load ML object file f\
