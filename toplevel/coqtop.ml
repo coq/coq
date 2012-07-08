@@ -243,7 +243,7 @@ let parse_args arglist =
         Flags.compat_version := get_compat_version v; parse rem
     | "-compat" :: []       -> usage ()
 
-    | "-verb-compat-notations" :: rem -> verb_compat_ntn := true; parse rem
+    | "-verbose-compat-notations" :: rem -> verb_compat_ntn := true; parse rem
     | "-no-compat-notations" :: rem -> no_compat_ntn := true; parse rem
 
     | "-vm" :: rem -> use_vm := true; parse rem
