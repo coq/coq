@@ -12,7 +12,7 @@ Require Import Coq.Init.Wf.
 Require Import Coq.Program.Utils.
 Require Import ProofIrrelevance.
 
-Open Local Scope program_scope.
+Local Open Scope program_scope.
 
 Section Well_founded.
   Variable A : Type.

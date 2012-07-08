@@ -9,7 +9,7 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import SeqSeries.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (*****************************************************************)
 (**           To define transcendental functions                 *)

@@ -16,7 +16,7 @@ where "n <= m" := (le n m) : nat_scope.
 >>
  *)
 
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 Implicit Types m n p : nat.
 

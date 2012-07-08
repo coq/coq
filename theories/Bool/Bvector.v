@@ -13,7 +13,7 @@ Require Vector.
 Export Vector.VectorNotations.
 Require Import Minus.
 
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 (**
 We build bit vectors in the spirit of List.v.

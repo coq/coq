@@ -34,8 +34,8 @@ Module AvlProofs (Import I:Int)(X: OrderedType).
 Module Import Raw := Raw I X.
 Module Import II:=MoreInt(I).
 Import Raw.Proofs.
-Open Local Scope pair_scope.
-Open Local Scope Int_scope.
+Local Open Scope pair_scope.
+Local Open Scope Int_scope.
 
 Ltac omega_max := i2z_refl; romega with Z.
 

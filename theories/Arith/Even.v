@@ -10,7 +10,7 @@
     and we prove the decidability and the exclusion of those predicates.
     The main results about parity are proved in the module Div2. *)
 
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 Implicit Types m n : nat.
 

@@ -10,7 +10,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Export Rlimit.
 Require Export Rderiv.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 Implicit Type f : R -> R.
 
 (****************************************************)
@@ -43,7 +43,7 @@ Notation "- x" := (opp_fct x) : Rfun_scope.
 Infix "*" := mult_fct : Rfun_scope.
 Infix "-" := minus_fct : Rfun_scope.
 Infix "/" := div_fct : Rfun_scope.
-Notation Local "f1 'o' f2" := (comp f1 f2)
+Local Notation "f1 'o' f2" := (comp f1 f2)
   (at level 20, right associativity) : Rfun_scope.
 Notation "/ x" := (inv_fct x) : Rfun_scope.
 

@@ -11,7 +11,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import SeqSeries.
 Require Import Ranalysis1.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Fixpoint Dichotomy_lb (x y:R) (P:R -> bool) (N:nat) {struct N} : R :=
   match N with

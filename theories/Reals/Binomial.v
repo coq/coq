@@ -9,7 +9,7 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import PartSum.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Definition C (n p:nat) : R :=
   INR (fact n) / (INR (fact p) * INR (fact (n - p))).

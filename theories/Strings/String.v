@@ -24,7 +24,7 @@ Inductive string : Set :=
 
 Delimit Scope string_scope with string.
 Bind Scope string_scope with string.
-Open Local Scope string_scope.
+Local Open Scope string_scope.
 
 (** Equality is decidable *)
 

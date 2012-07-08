@@ -10,7 +10,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Rseries.
 Require Import Max.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (*****************************************************************)
 (**           Convergence properties of sequences                *)

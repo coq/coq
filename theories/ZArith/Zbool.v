@@ -13,7 +13,7 @@ Require Import Zcompare.
 Require Import ZArith_dec.
 Require Import Sumbool.
 
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
 (** * Boolean operations from decidability of order *)
 (** The decidability of equality and order relations over

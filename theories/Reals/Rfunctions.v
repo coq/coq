@@ -535,7 +535,7 @@ Definition powerRZ (x:R) (n:Z) :=
     | Zneg p => / x ^ Pos.to_nat p
   end.
 
-Infix Local "^Z" := powerRZ (at level 30, right associativity) : R_scope.
+Local Infix "^Z" := powerRZ (at level 30, right associativity) : R_scope.
 
 Lemma Zpower_NR0 :
   forall (x:Z) (n:nat), (0 <= x)%Z -> (0 <= Zpower_nat x n)%Z.

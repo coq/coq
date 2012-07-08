@@ -11,7 +11,7 @@ Require Import Rfunctions.
 Require Import Rseries.
 Require Import Rcomplete.
 Require Import Max.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Lemma tech1 :
   forall (An:nat -> R) (N:nat),

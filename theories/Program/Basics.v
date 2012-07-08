@@ -29,7 +29,7 @@ Hint Unfold compose.
 Notation " g ∘ f " := (compose g f)
   (at level 40, left associativity) : program_scope.
 
-Open Local Scope program_scope.
+Local Open Scope program_scope.
 
 (** The non-dependent function space between [A] and [B]. *)
 

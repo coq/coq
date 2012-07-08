@@ -13,7 +13,7 @@
 
 Require Import Rbase.
 Require Import Omega.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (*********************************************************)
 (** *    Fractional part                                 *)

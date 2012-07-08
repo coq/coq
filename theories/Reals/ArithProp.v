@@ -12,8 +12,8 @@ Require Import Even.
 Require Import Div2.
 Require Import ArithRing.
 
-Open Local Scope Z_scope.
-Open Local Scope R_scope.
+Local Open Scope Z_scope.
+Local Open Scope R_scope.
 
 Lemma minus_neq_O : forall n i:nat, (i < n)%nat -> (n - i)%nat <> 0%nat.
 Proof.

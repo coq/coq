@@ -10,7 +10,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Ranalysis_reg.
 Require Import Classical_Prop.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Set Implicit Arguments.
 

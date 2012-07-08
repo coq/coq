@@ -9,7 +9,7 @@
 Require Import Plus.
 Require Import Mult.
 Require Import Lt.
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 (** Factorial *)
 

@@ -14,7 +14,7 @@ Infix "<" := lt : nat_scope.
 *)
 
 Require Import Le.
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 Implicit Types m n p : nat.
 

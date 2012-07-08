@@ -11,7 +11,7 @@ Require Import Sumbool.
 Require Import BinInt.
 Require Import Zorder.
 Require Import Zcompare.
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
 (* begin hide *)
 (* Trivial, to deprecate? *)

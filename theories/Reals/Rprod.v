@@ -12,7 +12,7 @@ Require Import Rfunctions.
 Require Import Rseries.
 Require Import PartSum.
 Require Import Binomial.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (** TT Ak; 0<=k<=N *)
 Fixpoint prod_f_R0 (f:nat -> R) (N:nat) : R :=

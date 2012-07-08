@@ -12,7 +12,7 @@ Require Import SeqSeries.
 Require Import Ranalysis1.
 Require Import Max.
 Require Import Even.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Definition Boule (x:R) (r:posreal) (y:R) : Prop := Rabs (y - x) < r.
 

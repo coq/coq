@@ -8,7 +8,7 @@
 
 Require Import Arith Max Min BinInt BinNat Znat Nnat.
 
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
 
 (** * zify: the Z-ification tactic *)

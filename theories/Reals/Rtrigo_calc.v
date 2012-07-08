@@ -11,7 +11,7 @@ Require Import Rfunctions.
 Require Import SeqSeries.
 Require Import Rtrigo1.
 Require Import R_sqrt.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Lemma tan_PI : tan PI = 0.
 Proof.

@@ -9,7 +9,7 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import Rsqrt_def.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (** * Continuous extension of Rsqrt on R *)
 Definition sqrt (x:R) : R :=

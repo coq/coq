@@ -20,7 +20,7 @@ where "n + m" := (plus n m) : nat_scope.
 Require Import Le.
 Require Import Lt.
 
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 Implicit Types m n p q : nat.
 

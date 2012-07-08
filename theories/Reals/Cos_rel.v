@@ -10,7 +10,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import SeqSeries.
 Require Import Rtrigo_def.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Definition A1 (x:R) (N:nat) : R :=
   sum_f_R0 (fun k:nat => (-1) ^ k / INR (fact (2 * k)) * x ^ (2 * k)) N.

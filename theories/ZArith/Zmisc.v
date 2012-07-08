@@ -11,7 +11,7 @@ Require Import BinInt.
 Require Import Zcompare.
 Require Import Zorder.
 Require Import Bool.
-Open Local Scope Z_scope.
+Local Open Scope Z_scope.
 
 (**********************************************************************)
 (** Iterators *)

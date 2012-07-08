@@ -11,7 +11,7 @@ Require Export Minus.
 Require Export Lt.
 Require Export Le.
 
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 Implicit Types m n p : nat.
 

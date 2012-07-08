@@ -13,7 +13,7 @@ Require Import Rtrigo1.
 Require Import Ranalysis1.
 Require Import Ranalysis3.
 Require Import Exp_prop.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (**********)
 Lemma derivable_pt_inv :

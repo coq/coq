@@ -21,7 +21,7 @@ Delimit Scope R_scope with R.
 (* Automatically open scope R_scope for arguments of type R *)
 Bind Scope R_scope with R.
 
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Parameter R0 : R.
 Parameter R1 : R.

@@ -11,7 +11,7 @@ Require Import Ranalysis5.
 Require Import SeqSeries.
 Require Import PartSum.
 
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (** Tools *)
 

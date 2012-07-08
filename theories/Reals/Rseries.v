@@ -9,7 +9,7 @@
 Require Import Rbase.
 Require Import Rfunctions.
 Require Import Compare.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Implicit Type r : R.
 

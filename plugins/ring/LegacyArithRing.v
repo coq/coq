@@ -13,7 +13,7 @@ Require Export LegacyRing.
 Require Export Arith.
 Require Import Eqdep_dec.
 
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 Fixpoint nateq (n m:nat) {struct m} : bool :=
   match n, m with

@@ -9,7 +9,7 @@
 Require Import Le.
 Require Import Lt.
 
-Open Local Scope nat_scope.
+Local Open Scope nat_scope.
 
 Implicit Types k l p q r : nat.
 

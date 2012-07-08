@@ -10,7 +10,7 @@ Require Import Rbase.
 Require Import Rfunctions.
 Require Import Ranalysis1.
 Require Import R_sqrt.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (**********)
 Lemma sqrt_var_maj :

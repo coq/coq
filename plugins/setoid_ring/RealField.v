@@ -5,7 +5,7 @@ Require Import Rdefinitions.
 Require Import Rpow_def.
 Require Import Raxioms.
 
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Lemma RTheory : ring_theory 0 1 Rplus Rmult Rminus Ropp (eq (A:=R)).
 Proof.

@@ -12,7 +12,7 @@
 
 Require Export ZArith_base.
 Require Export Rdefinitions.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 (*********************************************************)
 (** *            Field axioms                            *)

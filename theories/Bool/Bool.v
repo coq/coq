@@ -754,7 +754,7 @@ Notation "a &&& b" := (if a then b else false)
 Notation "a ||| b" := (if a then true else b)
  (at level 50, left associativity) : lazy_bool_scope.
 
-Open Local Scope lazy_bool_scope.
+Local Open Scope lazy_bool_scope.
 
 Lemma andb_lazy_alt : forall a b : bool, a && b = a &&& b.
 Proof.

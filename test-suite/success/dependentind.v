@@ -68,7 +68,7 @@ where " Γ ⊢ τ " := (term Γ τ) : type_scope.
 
 Hint Constructors term : lambda.
 
-Open Local Scope context_scope.
+Local Open Scope context_scope.
 
 Ltac eqns := subst ; reverse ; simplify_dep_elim ; simplify_IH_hyps.
 

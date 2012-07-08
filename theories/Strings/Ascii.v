@@ -137,7 +137,7 @@ Qed.
   which is typically not the case in coqide).
 *)
 
-Open Local Scope char_scope.
+Local Open Scope char_scope.
 
 Example Space := " ".
 Example DoubleQuote := """".

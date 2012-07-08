@@ -8,7 +8,7 @@
 
 Require Import RIneq.
 Require Import Omega.
-Open Local Scope R_scope.
+Local Open Scope R_scope.
 
 Lemma Rlt_R0_R2 : 0 < 2.
 change 2 with (INR 2); apply lt_INR_0; apply lt_O_Sn.
