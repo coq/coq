@@ -17,7 +17,13 @@ open Libnames
 
 type syndef_interpretation = (identifier * subscopes) list * aconstr
 
-val declare_syntactic_definition : bool -> identifier -> bool ->
-  syndef_interpretation -> unit
+val declare_syntactic_definition : bool -> identifier ->
+  Flags.compat_version option -> syndef_interpretation -> unit
 
 val search_syntactic_definition : kernel_name -> syndef_interpretation
+
+(** Options concerning verbose display of compatibility notations
+    or their deactivation *)
+
+val set_verbose_compat_notations : bool -> unit
+val set_compat_notations : bool -> unit

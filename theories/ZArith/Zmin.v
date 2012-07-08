@@ -45,7 +45,7 @@ Proof Z.min_le_compat_l.
 (** * Semi-lattice properties of min *)
 
 Lemma Zmin_idempotent : forall n, Z.min n n = n. Proof Z.min_id.
-Notation Zmin_n_n := Z.min_id (only parsing).
+Notation Zmin_n_n := Z.min_id (compat "8.3").
 Lemma Zmin_comm : forall n m, Z.min n m = Z.min m n. Proof Z.min_comm.
 Lemma Zmin_assoc : forall n m p, Z.min n (Z.min m p) = Z.min (Z.min n m) p.
 Proof Z.min_assoc.

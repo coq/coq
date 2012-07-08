@@ -18,7 +18,9 @@ open Nametab
 
 (* Syntactic definitions. *)
 
-let syntax_table = ref (KNmap.empty : interpretation KNmap.t)
+type version = Flags.compat_version option
+
+let syntax_table = ref (KNmap.empty : (interpretation*version) KNmap.t)
 
 let _ = Summary.declare_summary
 	  "SYNTAXCONSTANT"
@@ -26,14 +28,14 @@ let _ = Summary.declare_summary
 	    Summary.unfreeze_function = (fun ft -> syntax_table := ft);
 	    Summary.init_function = (fun () -> syntax_table := KNmap.empty) }
 
-let add_syntax_constant kn c =
-  syntax_table := KNmap.add kn c !syntax_table
+let add_syntax_constant kn c onlyparse =
+  syntax_table := KNmap.add kn (c,onlyparse) !syntax_table
 
-let load_syntax_constant i ((sp,kn),(local,pat,onlyparse)) =
+let load_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_syntax_constant"
       (pr_id (basename sp) ++ str " already exists");
-  add_syntax_constant kn pat;
+  add_syntax_constant kn pat onlyparse;
   Nametab.push_syndef (Nametab.Until i) sp kn
 
 let is_alias_of_already_visible_name sp = function
@@ -46,7 +48,7 @@ let is_alias_of_already_visible_name sp = function
 let open_syntax_constant i ((sp,kn),(_,pat,onlyparse)) =
   if not (is_alias_of_already_visible_name sp pat) then begin
     Nametab.push_syndef (Nametab.Exactly i) sp kn;
-    if not onlyparse then
+    if onlyparse = None then
       (* Redeclare it to be used as (short) name in case an other (distfix)
 	 notation was declared inbetween *)
       Notation.declare_uninterpretation (Notation.SynDefRule kn) pat
@@ -62,7 +64,8 @@ let subst_syntax_constant (subst,(local,pat,onlyparse)) =
 let classify_syntax_constant (local,_,_ as o) =
   if local then Dispose else Substitute o
 
-let in_syntax_constant : bool * interpretation * bool -> obj =
+let in_syntax_constant
+ : bool * interpretation * Flags.compat_version option -> obj =
   declare_object {(default_object "SYNTAXCONSTANT") with
     cache_function = cache_syntax_constant;
     load_function = load_syntax_constant;
@@ -80,5 +83,50 @@ let out_pat (ids,ac) = (List.map (fun (id,(sc,typ)) -> (id,sc)) ids,ac)
 let declare_syntactic_definition local id onlyparse pat =
   let _ = add_leaf id (in_syntax_constant (local,in_pat pat,onlyparse)) in ()
 
+let pr_global r = pr_global_env Idset.empty r
+let pr_syndef kn = pr_qualid (shortest_qualid_of_syndef Idset.empty kn)
+
+let allow_compat_notations = ref true
+let verbose_compat_notations = ref false
+
+let is_verbose_compat () =
+  !verbose_compat_notations || not !allow_compat_notations
+
+let verbose_compat kn def = function
+  | Some v when is_verbose_compat () && Flags.version_strictly_greater v ->
+    let act =
+      if !verbose_compat_notations then msg_warning else errorlabstrm ""
+    in
+    let pp_def = match def with
+      | [], ARef r -> str " is " ++ pr_global_env Idset.empty r
+      | _ -> str " is a compatibility notation"
+    in
+    let since = str (" since Coq > " ^ Flags.pr_version v ^ ".") in
+    act (pr_syndef kn ++ pp_def ++ since)
+  | _ -> ()
+
 let search_syntactic_definition kn =
-  out_pat (KNmap.find kn !syntax_table)
+  let pat,v = KNmap.find kn !syntax_table in
+  let def = out_pat pat in
+  verbose_compat kn def v;
+  def
+
+open Goptions
+
+let set_verbose_compat_notations =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "verbose compatibility notations";
+      optkey   = ["Verbose";"Compat";"Notations"];
+      optread  = (fun () -> !verbose_compat_notations);
+      optwrite = ((:=) verbose_compat_notations) }
+
+let set_compat_notations =
+  declare_bool_option
+    { optsync  = true;
+      optdepr  = false;
+      optname  = "accept compatibility notations";
+      optkey   = ["Compat"; "Notations"];
+      optread  = (fun () -> !allow_compat_notations);
+      optwrite = ((:=) allow_compat_notations) }

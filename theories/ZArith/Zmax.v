@@ -104,8 +104,8 @@ Qed.
 
 (* begin hide *)
 (* Compatibility *)
-Notation Zmax1 := Z.le_max_l (only parsing).
-Notation Zmax2 := Z.le_max_r (only parsing).
-Notation Zmax_irreducible_inf := Z.max_dec (only parsing).
-Notation Zmax_le_prime_inf := Z.max_le (only parsing).
+Notation Zmax1 := Z.le_max_l (compat "8.3").
+Notation Zmax2 := Z.le_max_r (compat "8.3").
+Notation Zmax_irreducible_inf := Z.max_dec (compat "8.3").
+Notation Zmax_le_prime_inf := Z.max_le (compat "8.3").
 (* end hide *)

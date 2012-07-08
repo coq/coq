@@ -46,7 +46,7 @@ Qed.
    has been chosen to be [a], so this equation holds even for [b=0].
 *)
 
-Notation Z_quot_rem_eq := Z.quot_rem' (only parsing).
+Notation Z_quot_rem_eq := Z.quot_rem' (compat "8.3").
 
 (** Then, the inequalities constraining the remainder:
     The remainder is bounded by the divisor, in term of absolute values *)

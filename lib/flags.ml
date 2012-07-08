@@ -38,11 +38,18 @@ let record_print = ref true
 
 (* Compatibility mode *)
 
-type compat_version = V8_2 | V8_3
-let compat_version = ref None
-let version_strictly_greater v =
-  match !compat_version with None -> true | Some v' -> v'>v
+(* Current means no particular compatibility consideration.
+   For correct comparisons, this constructor should remain the last one. *)
+
+type compat_version = V8_2 | V8_3 | Current
+let compat_version = ref Current
+let version_strictly_greater v = !compat_version > v
 let version_less_or_equal v = not (version_strictly_greater v)
+
+let pr_version = function
+  | V8_2 -> "8.2"
+  | V8_3 -> "8.3"
+  | Current -> "current"
 
 (* Translate *)
 let beautify = ref false

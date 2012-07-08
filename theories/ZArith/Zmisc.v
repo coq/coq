@@ -18,7 +18,7 @@ Open Local Scope Z_scope.
 
 (** [n]th iteration of the function [f] *)
 
-Notation iter := @Z.iter (only parsing).
+Notation iter := @Z.iter (compat "8.3").
 
 Lemma iter_nat_of_Z : forall n A f x, 0 <= n ->
   iter n A f x = iter_nat (Z.abs_nat n) A f x.

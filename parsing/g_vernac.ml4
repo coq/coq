@@ -976,8 +976,7 @@ GEXTEND Gram
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
          VernacInfix (enforce_module_locality local,(op,modl),p,sc)
      | IDENT "Notation"; local = obsolete_locality; id = identref;
-	 idl = LIST0 ident; ":="; c = constr;
-	 b = [ "("; IDENT "only"; IDENT "parsing"; ")" -> true | -> false ] ->
+	 idl = LIST0 ident; ":="; c = constr; b = only_parsing ->
            VernacSyntacticDefinition
 	     (id,(idl,c),enforce_module_locality local,b)
      | IDENT "Notation"; local = obsolete_locality; s = ne_lstring; ":=";
@@ -1005,6 +1004,13 @@ GEXTEND Gram
         to factorize with other "Print"-based vernac entries *)
   ] ]
   ;
+  only_parsing:
+    [ [ "("; IDENT "only"; IDENT "parsing"; ")" ->
+         Some Flags.Current
+      | "("; IDENT "compat"; s = STRING; ")" ->
+         Some (Coqinit.get_compat_version s)
+      | -> None ] ]
+  ;
   obsolete_locality:
     [ [ IDENT "Local" -> true | -> false ] ]
   ;
@@ -1020,7 +1026,10 @@ GEXTEND Gram
       | IDENT "left"; IDENT "associativity" -> SetAssoc LeftA
       | IDENT "right"; IDENT "associativity" -> SetAssoc RightA
       | IDENT "no"; IDENT "associativity" -> SetAssoc NonA
-      | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
+      | IDENT "only"; IDENT "parsing" ->
+        SetOnlyParsing Flags.Current
+      | IDENT "compat"; s = STRING ->
+        SetOnlyParsing (Coqinit.get_compat_version s)
       | IDENT "format"; s = [s = STRING -> (loc,s)] -> SetFormat s
       | x = IDENT; ","; l = LIST1 [id = IDENT -> id ] SEP ","; "at";
         lev = level -> SetItemLevel (x::l,lev)

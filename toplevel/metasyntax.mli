@@ -54,7 +54,7 @@ val add_syntax_extension :
 (** Add a syntactic definition (as in "Notation f := ...") *)
 
 val add_syntactic_definition : identifier -> identifier list * constr_expr ->
-  bool -> bool -> unit
+  bool -> Flags.compat_version option -> unit
 
 (** Print the Camlp4 state of a grammar *)
 

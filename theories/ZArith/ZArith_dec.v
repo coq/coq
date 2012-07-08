@@ -36,7 +36,7 @@ Proof.
   intro; apply Zcompare_rect.
 Defined.
 
-Notation Z_eq_dec := Z.eq_dec (only parsing).
+Notation Z_eq_dec := Z.eq_dec (compat "8.3").
 
 Section decidability.
 

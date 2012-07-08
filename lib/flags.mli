@@ -26,10 +26,11 @@ val load_proofs : load_proofs ref
 val raw_print : bool ref
 val record_print : bool ref
 
-type compat_version = V8_2 | V8_3
-val compat_version : compat_version option ref
+type compat_version = V8_2 | V8_3 | Current
+val compat_version : compat_version ref
 val version_strictly_greater : compat_version -> bool
 val version_less_or_equal : compat_version -> bool
+val pr_version : compat_version -> string
 
 val beautify : bool ref
 val make_beautify : bool -> unit

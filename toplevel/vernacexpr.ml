@@ -128,9 +128,12 @@ type instance_flag  = bool option (* Some true = Backward instance; Some false =
 type export_flag    = bool (* true = Export;        false = Import         *)
 type specif_flag    = bool (* true = Specification; false = Implementation *)
 type inductive_flag = Decl_kinds.recursivity_kind
-type onlyparsing_flag = bool (* true = Parse only;  false = Print also     *)
 type infer_flag     = bool (* true = try to Infer record; false = nothing  *)
 type full_locality_flag = bool option (* true = Local; false = Global      *)
+type onlyparsing_flag = Flags.compat_version option
+ (* Some v = Parse only;  None = Print also.
+    If v<>Current, it contains the name of the coq version
+    which this notation is trying to be compatible with *)
 
 type option_value = Goptionstyp.option_value =
   | BoolValue of bool
@@ -189,7 +192,7 @@ type syntax_modifier =
   | SetLevel of int
   | SetAssoc of gram_assoc
   | SetEntryType of string * simple_constr_prod_entry_key
-  | SetOnlyParsing
+  | SetOnlyParsing of Flags.compat_version
   | SetFormat of string located
 
 type proof_end =

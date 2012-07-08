@@ -757,7 +757,7 @@ let interp_modifiers modl =
     | SetAssoc a :: l ->
 	if assoc <> None then error"An associativity is given more than once.";
 	interp (Some a) level etyps format l
-    | SetOnlyParsing :: l ->
+    | SetOnlyParsing _ :: l ->
 	onlyparsing := true;
 	interp assoc level etyps format l
     | SetFormat s :: l ->
@@ -770,8 +770,13 @@ let check_infix_modifiers modifiers =
   if t <> [] then
     error "Explicit entry level or type unexpected in infix notation."
 
-let no_syntax_modifiers modifiers =
-  modifiers = [] or modifiers = [SetOnlyParsing]
+let no_syntax_modifiers = function
+  | [] | [SetOnlyParsing _] -> true
+  | _ -> false
+
+let is_only_parsing = function
+  | [SetOnlyParsing _] -> true
+  | _ -> false
 
 (* Compute precedences from modifiers (or find default ones) *)
 
@@ -1118,7 +1123,7 @@ let add_notation local c ((loc,df),modifiers) sc =
   let df' =
    if no_syntax_modifiers modifiers then
     (* No syntax data: try to rely on a previously declared rule *)
-    let onlyparse = modifiers=[SetOnlyParsing] in
+    let onlyparse = is_only_parsing modifiers in
     try add_notation_interpretation_core local df c sc onlyparse
     with NoSyntaxRule ->
       (* Try to determine a default syntax rule *)
@@ -1193,6 +1198,9 @@ let add_syntactic_definition ident (vars,c) local onlyparse =
       let vars,pat = interp_aconstr i_vars [] c in
       List.map (fun (id,(sc,kind)) -> (id,sc)) vars, pat
   in
-  let onlyparse = onlyparse or is_not_printable pat in
+  let onlyparse = match onlyparse with
+    | None when (is_not_printable pat) -> Some Flags.Current
+    | p -> p
+  in
   Syntax_def.declare_syntactic_definition local ident onlyparse (vars,pat)
 
