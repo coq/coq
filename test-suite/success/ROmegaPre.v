@@ -14,38 +14,38 @@ Open Scope Z_scope.
 
 (* zify_op *)
 
-Goal forall a:Z, Zmax a a = a.
+Goal forall a:Z, Z.max a a = a.
 intros.
 romega with *.
 Qed.
 
-Goal forall a b:Z, Zmax a b = Zmax b a.
+Goal forall a b:Z, Z.max a b = Z.max b a.
 intros.
 romega with *.
 Qed.
 
-Goal forall a b c:Z, Zmax a (Zmax b c) = Zmax (Zmax a b) c.
+Goal forall a b c:Z, Z.max a (Z.max b c) = Z.max (Z.max a b) c.
 intros.
 romega with *.
 Qed.
 
-Goal forall a b:Z, Zmax a b + Zmin a b = a + b.
+Goal forall a b:Z, Z.max a b + Z.min a b = a + b.
 intros.
 romega with *.
 Qed.
 
-Goal forall a:Z, (Zabs a)*(Zsgn a) = a.
+Goal forall a:Z, (Z.abs a)*(Z.sgn a) = a.
 intros.
 zify.
 intuition; subst; romega. (* pure multiplication: omega alone can't do it *)
 Qed.
 
-Goal forall a:Z, Zabs a = a -> a >= 0.
+Goal forall a:Z, Z.abs a = a -> a >= 0.
 intros.
 romega with *.
 Qed.
 
-Goal forall a:Z, Zsgn a = a -> a = 1 \/ a = 0 \/ a = -1.
+Goal forall a:Z, Z.sgn a = a -> a = 1 \/ a = 0 \/ a = -1.
 intros.
 romega with *.
 Qed.
@@ -119,7 +119,7 @@ Qed.
 
 (* mix of datatypes *)
 
-Goal forall p, Z_of_N (N_of_nat (nat_of_N (Npos p))) = Zpos p.
+Goal forall p, Z.of_N (N.of_nat (N.to_nat (Npos p))) = Zpos p.
 intros.
 romega with *.
 Qed.

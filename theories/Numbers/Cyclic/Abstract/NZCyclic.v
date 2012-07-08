@@ -69,7 +69,7 @@ Program Instance mul_wd : Proper (eq ==> eq ==> eq) mul.
 
 Theorem gt_wB_1 : 1 < wB.
 Proof.
-unfold base. apply Zpower_gt_1; unfold Zlt; auto with zarith.
+unfold base. apply Zpower_gt_1; unfold Z.lt; auto with zarith.
 Qed.
 
 Theorem gt_wB_0 : 0 < wB.
@@ -161,20 +161,20 @@ End Induction.
 Theorem add_0_l : forall n, 0 + n == n.
 Proof.
 intro n. zify.
-rewrite Zplus_0_l. apply Zmod_small. apply ZnZ.spec_to_Z.
+rewrite Z.add_0_l. apply Zmod_small. apply ZnZ.spec_to_Z.
 Qed.
 
 Theorem add_succ_l : forall n m, (S n) + m == S (n + m).
 Proof.
 intros n m. zify.
 rewrite succ_mod_wB. repeat rewrite Zplus_mod_idemp_l; try apply gt_wB_0.
-rewrite <- (Zplus_assoc ([| n |] mod wB) 1 [| m |]). rewrite Zplus_mod_idemp_l.
-rewrite (Zplus_comm 1 [| m |]); now rewrite Zplus_assoc.
+rewrite <- (Z.add_assoc ([| n |] mod wB) 1 [| m |]). rewrite Zplus_mod_idemp_l.
+rewrite (Z.add_comm 1 [| m |]); now rewrite Z.add_assoc.
 Qed.
 
 Theorem sub_0_r : forall n, n - 0 == n.
 Proof.
-intro n. zify. rewrite Zminus_0_r. apply NZ_to_Z_mod.
+intro n. zify. rewrite Z.sub_0_r. apply NZ_to_Z_mod.
 Qed.
 
 Theorem sub_succ_r : forall n m, n - (S m) == P (n - m).
@@ -192,7 +192,7 @@ Qed.
 Theorem mul_succ_l : forall n m, (S n) * m == n * m + m.
 Proof.
 intros n m. zify. rewrite Zplus_mod_idemp_l, Zmult_mod_idemp_l.
-now rewrite Zmult_plus_distr_l, Zmult_1_l.
+now rewrite Z.mul_add_distr_r, Z.mul_1_l.
 Qed.
 
 Definition t := t.

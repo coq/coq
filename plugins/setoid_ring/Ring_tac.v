@@ -3,6 +3,7 @@ Require Import Setoid.
 Require Import BinPos.
 Require Import Ring_polynom.
 Require Import BinList.
+Require Export ListTactics.
 Require Import InitialRing.
 Require Import Quote.
 Declare ML Module "newring_plugin".
@@ -14,7 +15,7 @@ Ltac compute_assertion eqn t' t :=
   let nft := eval vm_compute in t in
   pose (t' := nft);
   assert (eqn : t = t');
-  [vm_cast_no_check (refl_equal t')|idtac].
+  [vm_cast_no_check (eq_refl t')|idtac].
 
 Ltac relation_carrier req :=
   let ty := type of req in
@@ -340,7 +341,7 @@ Ltac Ring RNG lemma lH :=
         || idtac "can not automatically proof hypothesis :";
            idtac " maybe a left member of a hypothesis is not a monomial")
     | vm_compute;
-      (exact (refl_equal true) || fail "not a valid ring equation")]).
+      (exact (eq_refl true) || fail "not a valid ring equation")]).
 
 Ltac Ring_norm_gen f RNG lemma lH rl :=
   let mkFV := get_RingFV RNG in
@@ -385,7 +386,7 @@ Ltac Ring_simplify_gen f RNG lH rl :=
   let lemma := get_SimplifyLemma RNG in
   let l := fresh "to_rewrite" in
   pose (l:= rl);
-  generalize (refl_equal l);
+  generalize (eq_refl l);
   unfold l at 2;
   get_Pre RNG ();
   let rl :=

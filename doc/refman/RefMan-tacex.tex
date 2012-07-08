@@ -545,7 +545,7 @@ red; intros (x, (y, Hy)).
 elim (Hy 0); elim (Hy 1); elim (Hy 2); intros;
  match goal with
  | [_:(?a = ?b),_:(?a = ?c) |- _ ] =>
-     cut (b = c); [ discriminate | apply trans_equal with a; auto ]
+     cut (b = c); [ discriminate | transitivity a; auto ]
  end.
 Qed.
 \end{coq_example*}
@@ -795,7 +795,7 @@ Axiom AR_unit : (A -> unit) = unit.
 Axiom AL_unit : (unit -> A) = A.
 Lemma Cons : B = C -> A * B = A * C.
 Proof.
-intro Heq; rewrite Heq; apply refl_equal.
+intro Heq; rewrite Heq; reflexivity.
 Qed.
 End Iso_axioms.
 \end{coq_example*}
@@ -855,7 +855,7 @@ Ltac assoc := repeat rewrite <- Ass.
 \begin{coq_example}
 Ltac DoCompare n :=
   match goal with
-  | [ |- (?A = ?A) ] => apply refl_equal
+  | [ |- (?A = ?A) ] => reflexivity
   | [ |- (?A * ?B = ?A * ?C) ] =>
       apply Cons; let newn := Length B in
                   DoCompare newn

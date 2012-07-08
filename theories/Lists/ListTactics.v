@@ -60,7 +60,7 @@ Ltac Find_at a l :=
    match l with
    | nil     => fail 100 "anomaly: Find_at"
    | a :: _  => eval compute in n
-   | _ :: ?l => find (Psucc n) l
+   | _ :: ?l => find (Pos.succ n) l
    end
  in find 1%positive l.
 

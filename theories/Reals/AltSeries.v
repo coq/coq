@@ -374,7 +374,7 @@ Proof.
     replace (/ (2 * eps) * (INR N * (2 * eps))) with
       (INR N * (2 * eps * / (2 * eps))); [ idtac | ring ].
   rewrite <- Rinv_r_sym.
-  rewrite Rmult_1_r; replace (INR N) with (IZR (Z_of_nat N)).
+  rewrite Rmult_1_r; replace (INR N) with (IZR (Z.of_nat N)).
   rewrite <- H4.
   elim H1; intros; assumption.
   symmetry  in |- *; apply INR_IZR_INZ.

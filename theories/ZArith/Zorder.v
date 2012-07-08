@@ -167,8 +167,10 @@ Notation Zle_or_lt := Z.le_gt_cases (compat "8.3").
 
 Notation Zlt_trans := Z.lt_trans (compat "8.3").
 
-Lemma Zgt_trans : forall n m p:Z, n > m -> m > p -> n > p.
-Proof Zcompare_Gt_trans.
+Lemma Zgt_trans n m p : n > m -> m > p -> n > p.
+Proof.
+  Z.swap_greater. intros; now transitivity m.
+Qed.
 
 (** Mixed transitivity *)
 
@@ -304,7 +306,7 @@ Proof.
 Qed.
 
 Hint Resolve Z.le_succ_diag_r: zarith.
-Hint Resolve Zle_le_succ: zarith.
+Hint Resolve Z.le_le_succ_r: zarith.
 
 (** Relating order wrt successor and order wrt predecessor *)
 
@@ -345,7 +347,7 @@ Proof.
   easy.
 Qed.
 
-(* weaker but useful (in [Zpower] for instance) *)
+(* weaker but useful (in [Z.pow] for instance) *)
 Lemma Zle_0_pos : forall p:positive, 0 <= Zpos p.
 Proof.
  easy.
@@ -361,7 +363,7 @@ Proof.
   induction n; simpl; intros. apply Z.le_refl. easy.
 Qed.
 
-Hint Immediate Zeq_le: zarith.
+Hint Immediate Z.eq_le_incl: zarith.
 
 (** Derived lemma *)
 

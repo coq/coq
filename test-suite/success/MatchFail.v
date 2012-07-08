@@ -12,13 +12,13 @@ Ltac compute_POS :=
       let v := constr:X1 in
       match constr:v with
       | 1%positive => fail 1
-      | _ =>  rewrite (BinInt.Zpos_xI v)
+      | _ =>  rewrite (BinInt.Pos2Z.inj_xI v)
       end
   |  |- context [(Zpos (xO ?X1))] =>
       let v := constr:X1 in
       match constr:v with
       | 1%positive => fail 1
-      | _ =>  rewrite (BinInt.Zpos_xO v)
+      | _ =>  rewrite (BinInt.Pos2Z.inj_xO v)
       end
   end.
 

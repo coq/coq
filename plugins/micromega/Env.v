@@ -12,10 +12,9 @@
 (*                                                                      *)
 (************************************************************************)
 
-Require Import ZArith.
-Require Import Coq.Arith.Max.
-Require Import List.
+Require Import BinInt List.
 Set Implicit Arguments.
+Local Open Scope positive_scope.
 
 Section S.
 
@@ -23,154 +22,78 @@ Section S.
 
   Definition Env := positive -> D.
 
-  Definition jump (j:positive) (e:Env) := fun x => e (Pplus x j).
+  Definition jump (j:positive) (e:Env) := fun x => e (x+j).
 
-  Definition nth (n:positive) (e : Env ) := e n.
+  Definition nth (n:positive) (e:Env) := e n.
 
-  Definition hd (x:D) (e: Env)  := nth xH e.
+  Definition hd (e:Env) := nth 1 e.
 
-  Definition tail (e: Env) := jump xH e.
+  Definition tail (e:Env) := jump 1 e.
 
-  Lemma psucc : forall p, (match p with
-                              | xI y' => xO (Psucc y')
-                              | xO y' => xI y'
-                              | 1%positive => 2%positive
-                            end) = (p+1)%positive.
+  Lemma jump_add i j l x : jump (i + j) l x = jump i (jump j l) x.
   Proof.
-    destruct p.
-    auto with zarith.
-    rewrite xI_succ_xO.
-    auto with zarith.
-    reflexivity.
+    unfold jump. f_equal. apply Pos.add_assoc.
   Qed.
 
-  Lemma jump_Pplus : forall i j l,
-    forall x, jump (i + j) l x = jump i (jump j l) x.
-  Proof.
-    unfold jump.
-    intros.
-    rewrite Pplus_assoc.
-    reflexivity.
-  Qed.
-
-  Lemma jump_simpl : forall p l,
-    forall x, jump p l x =
+  Lemma jump_simpl p l x :
+    jump p l x =
     match p with
       | xH => tail l x
       | xO p => jump p (jump p l) x
       | xI p  => jump p (jump p (tail l)) x
     end.
   Proof.
-    destruct p ; unfold tail ; intros ;  repeat rewrite <- jump_Pplus.
-    (* xI p = p + p + 1 *)
-    rewrite xI_succ_xO.
-    rewrite Pplus_diag.
-    rewrite <- Pplus_one_succ_r.
-    reflexivity.
-    (* xO p = p + p *)
-    rewrite Pplus_diag.
-    reflexivity.
-    reflexivity.
+    destruct p; unfold tail; rewrite <- ?jump_add; f_equal;
+    now rewrite Pos.add_diag.
   Qed.
 
-  Ltac jump_s :=
-    repeat
-      match goal with
-        | |- context [jump xH ?e] => rewrite (jump_simpl xH)
-        | |- context [jump (xO ?p) ?e] => rewrite (jump_simpl (xO p))
-        | |- context [jump (xI ?p) ?e] => rewrite (jump_simpl (xI p))
-      end.
-
-  Lemma jump_tl : forall j l, forall x, tail (jump j l) x = jump j (tail l) x.
+  Lemma jump_tl j l x : tail (jump j l) x = jump j (tail l) x.
   Proof.
-    unfold tail.
-    intros.
-    repeat rewrite <- jump_Pplus.
-    rewrite Pplus_comm.
-    reflexivity.
+    unfold tail. rewrite <- !jump_add. f_equal. apply Pos.add_comm.
   Qed.
 
-  Lemma jump_Psucc : forall j l,
-    forall x, (jump (Psucc j) l x) = (jump 1 (jump j l) x).
+  Lemma jump_succ j l x : jump (Pos.succ j) l x = jump 1 (jump j l) x.
   Proof.
-    intros.
-    rewrite <- jump_Pplus.
-    rewrite Pplus_one_succ_r.
-    rewrite Pplus_comm.
-    reflexivity.
+    rewrite <- jump_add. f_equal. symmetry. apply Pos.add_1_l.
   Qed.
 
-  Lemma jump_Pdouble_minus_one : forall i l,
-    forall x, (jump (Pdouble_minus_one i) (tail l)) x = (jump i (jump i l)) x.
+  Lemma jump_pred_double i l x :
+    jump (Pos.pred_double i) (tail l) x = jump i (jump i l) x.
   Proof.
-    unfold tail.
-    intros.
-    repeat rewrite <- jump_Pplus.
-    rewrite <- Pplus_one_succ_r.
-    rewrite Psucc_o_double_minus_one_eq_xO.
-    rewrite Pplus_diag.
-    reflexivity.
+    unfold tail. rewrite <- !jump_add. f_equal.
+    now rewrite Pos.add_1_r, Pos.succ_pred_double, Pos.add_diag.
   Qed.
 
-  Lemma jump_x0_tail : forall p l, forall x, jump (xO p) (tail l) x = jump (xI p) l x.
-  Proof.
-    intros.
-    unfold jump.
-    unfold tail.
-    unfold jump.
-    rewrite <- Pplus_assoc.
-    simpl.
-    reflexivity.
-  Qed.
-
-  Lemma nth_spec : forall p l x,
+  Lemma nth_spec p l :
     nth p l =
     match p with
-      | xH => hd x l
+      | xH => hd l
       | xO p => nth p (jump p l)
       | xI p => nth p (jump p (tail l))
     end.
   Proof.
-    unfold nth.
-    destruct p.
-    intros.
-    unfold jump, tail.
-    unfold jump.
-    rewrite Pplus_diag.
-    rewrite xI_succ_xO.
-    simpl.
-    reflexivity.
-    unfold jump.
-    rewrite Pplus_diag.
-    reflexivity.
-    unfold hd.
-    unfold nth.
-    reflexivity.
+    unfold hd, nth, tail, jump.
+    destruct p; f_equal; now rewrite Pos.add_diag.
   Qed.
 
-
-  Lemma nth_jump : forall p l x, nth p (tail l) = hd x (jump p l).
+  Lemma nth_jump p l : nth p (tail l) = hd (jump p l).
   Proof.
-    unfold tail.
-    unfold hd.
-    unfold jump.
-    unfold nth.
-    intros.
-    rewrite Pplus_comm.
-    reflexivity.
+    unfold hd, nth, tail, jump. f_equal. apply Pos.add_comm.
   Qed.
 
-  Lemma nth_Pdouble_minus_one :
-    forall p l, nth (Pdouble_minus_one p) (tail l) = nth p (jump p l).
+  Lemma nth_pred_double p l :
+    nth (Pos.pred_double p) (tail l) = nth p (jump p l).
   Proof.
-    intros.
-    unfold tail.
-    unfold nth, jump.
-    rewrite Pplus_diag.
-    rewrite <- Psucc_o_double_minus_one_eq_xO.
-    rewrite Pplus_one_succ_r.
-    reflexivity.
+    unfold nth, tail, jump. f_equal.
+    now rewrite Pos.add_1_r, Pos.succ_pred_double, Pos.add_diag.
   Qed.
 
 End S.
 
+Ltac jump_simpl :=
+  repeat
+    match goal with
+      | |- appcontext [jump xH] => rewrite (jump_simpl xH)
+      | |- appcontext [jump (xO ?p)] => rewrite (jump_simpl (xO p))
+      | |- appcontext [jump (xI ?p)] => rewrite (jump_simpl (xI p))
+    end.

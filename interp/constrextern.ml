@@ -293,7 +293,7 @@ let make_notation_gen loc ntn mknot mkprim destprim l =
   if has_curly_brackets ntn
   then expand_curly_brackets loc mknot ntn l
   else match ntn,List.map destprim l with
-    (* Special case to avoid writing "- 3" for e.g. (Zopp 3) *)
+    (* Special case to avoid writing "- 3" for e.g. (Z.opp 3) *)
     | "- _", [Some (Numeral p)] when Bigint.is_strictly_pos p ->
         mknot (loc,ntn,([mknot (loc,"( _ )",l)]))
     | _ ->

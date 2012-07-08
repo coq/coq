@@ -561,7 +561,7 @@ Proof.
   apply Rminus_eq_contra.
   red in |- *; intros H2; case HD2.
   symmetry  in |- *; apply (ln_inv _ _ HD1 Hy H2).
-  apply Rminus_eq_contra; apply (sym_not_eq HD2).
+  apply Rminus_eq_contra; apply (not_eq_sym HD2).
   apply Rinv_neq_0_compat; apply Rminus_eq_contra; red in |- *; intros H2;
     case HD2; apply ln_inv; auto.
   assumption.
@@ -588,7 +588,7 @@ Proof.
     [ idtac | ring ].
   apply H1.
   elim H2; intros H3 _; unfold D_x in H3; elim H3; clear H3; intros _ H3;
-    apply Rminus_eq_contra; apply (sym_not_eq (A:=R));
+    apply Rminus_eq_contra; apply (not_eq_sym (A:=R));
       apply H3.
   elim H2; clear H2; intros _ H2; apply H2.
   assumption.
@@ -625,7 +625,7 @@ Proof.
   replace (- h - x / 2 + (x / 2 + x / 2 + h)) with (x / 2); [ apply H7 | ring ].
   apply r.
   apply Rplus_lt_le_0_compat; [ assumption | apply Rge_le; apply r ].
-  apply (sym_not_eq (A:=R)); apply Rminus_not_eq; replace (x + h - x) with h;
+  apply (not_eq_sym (A:=R)); apply Rminus_not_eq; replace (x + h - x) with h;
     [ apply H5 | ring ].
   replace (x + h - x) with h;
   [ apply Rlt_le_trans with alp;

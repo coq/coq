@@ -122,8 +122,8 @@ Arguments INR n%nat.
 Definition IZR (z:Z) : R :=
   match z with
   | Z0 => 0
-  | Zpos n => INR (nat_of_P n)
-  | Zneg n => - INR (nat_of_P n)
+  | Zpos n => INR (Pos.to_nat n)
+  | Zneg n => - INR (Pos.to_nat n)
   end.
 Arguments IZR z%Z.
 

@@ -8,8 +8,8 @@ Qed.
 
 Require Import ZArith.
 Goal (forall x y z, ~ z <= 0 -> x * z < y * z -> x <= y)%Z.
-intros; apply Znot_le_gt, Zgt_lt in H.
-apply Zmult_lt_reg_r, Zlt_le_weak in H0; auto.
+intros; apply Znot_le_gt, Z.gt_lt in H.
+apply Zmult_lt_reg_r, Z.lt_le_incl in H0; auto.
 Qed.
 
 (* Test application under tuples *)
@@ -266,7 +266,7 @@ Qed.
   (* This works because unfold calls clos_norm_flags which calls nf_evar *)
 
 Lemma eapply_evar_unfold : let x:=O in O=x -> 0=O.
-intros x H; eapply trans_equal;
+intros x H; eapply eq_trans;
 [apply H | unfold x;match goal with |- ?x = ?x => reflexivity end].
 Qed.
 

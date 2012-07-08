@@ -7,14 +7,10 @@
 (************************************************************************)
 
 Set Implicit Arguments.
-Require Import Setoid.
-Require Import BinList.
-Require Import BinPos.
-Require Import BinNat.
-Require Import BinInt.
+Require Import Setoid BinList BinPos BinNat BinInt.
 Require Export Ring_theory.
 
-Open Local Scope positive_scope.
+Local Open Scope positive_scope.
 Import RingSyntax.
 
 Section MakeRingPol.
@@ -25,7 +21,7 @@ Section MakeRingPol.
  Variable req : R -> R -> Prop.
 
  (* Ring properties *)
- Variable Rsth : Setoid_Theory R req.
+ Variable Rsth : Equivalence req.
  Variable Reqe : ring_eq_ext radd rmul ropp req.
  Variable ARth : almost_ring_theory rO rI radd rmul rsub ropp req.
 
@@ -60,8 +56,6 @@ Section MakeRingPol.
  Notation " x ?=! y" := (ceqb x y). Notation "[ x ]" := (phi x).
 
  (* Useful tactics *)
-  Add Setoid R req Rsth as R_set1.
- Ltac rrefl := gen_reflexivity Rsth.
   Add Morphism radd : radd_ext.  exact (Radd_ext Reqe). Qed.
   Add Morphism rmul : rmul_ext.  exact (Rmul_ext Reqe). Qed.
   Add Morphism ropp : ropp_ext.  exact (Ropp_ext Reqe). Qed.
@@ -128,7 +122,7 @@ Section MakeRingPol.
  Definition mkPinj_pred j P:=
   match j with
   | xH => P
-  | xO j => Pinj (Pdouble_minus_one j) P
+  | xO j => Pinj (Pos.pred_double j) P
   | xI j => Pinj (xO j) P
   end.
 
@@ -179,7 +173,7 @@ Section MakeRingPol.
    match P with
    | Pc c => mkPinj j (PaddC Q c)
    | Pinj j' Q' =>
-     match ZPminus j' j with
+     match Z.pos_sub j' j with
      | Zpos k =>  mkPinj j (Pop (Pinj k Q') Q)
      | Z0 => mkPinj j (Pop Q' Q)
      | Zneg k => mkPinj j' (PaddI k Q')
@@ -187,7 +181,7 @@ Section MakeRingPol.
    | PX P i Q' =>
      match j with
      | xH => PX P i (Pop Q' Q)
-     | xO j => PX P i (PaddI (Pdouble_minus_one j) Q')
+     | xO j => PX P i (PaddI (Pos.pred_double j) Q')
      | xI j => PX P i (PaddI (xO j) Q')
      end
    end.
@@ -196,7 +190,7 @@ Section MakeRingPol.
    match P with
    | Pc c => mkPinj j (PaddC (--Q) c)
    | Pinj j' Q' =>
-     match ZPminus j' j with
+     match Z.pos_sub j' j with
      | Zpos k =>  mkPinj j (Pop (Pinj k Q') Q)
      | Z0 => mkPinj j (Pop Q' Q)
      | Zneg k => mkPinj j' (PsubI k Q')
@@ -204,7 +198,7 @@ Section MakeRingPol.
    | PX P i Q' =>
      match j with
      | xH => PX P i (Pop Q' Q)
-     | xO j => PX P i (PsubI (Pdouble_minus_one j) Q')
+     | xO j => PX P i (PsubI (Pos.pred_double j) Q')
      | xI j => PX P i (PsubI (xO j) Q')
      end
    end.
@@ -217,11 +211,11 @@ Section MakeRingPol.
   | Pinj j Q' =>
     match j with
     | xH =>  PX P' i' Q'
-    | xO j => PX P' i' (Pinj (Pdouble_minus_one j) Q')
+    | xO j => PX P' i' (Pinj (Pos.pred_double j) Q')
     | xI j => PX P' i' (Pinj (xO j) Q')
     end
   | PX P i Q' =>
-    match ZPminus i i' with
+    match Z.pos_sub i i' with
     | Zpos k => mkPX (Pop (PX P k P0) P') i' Q'
     | Z0 => mkPX (Pop P P') i Q'
     | Zneg k => mkPX (PaddX k P) i Q'
@@ -234,11 +228,11 @@ Section MakeRingPol.
   | Pinj j Q' =>
     match j with
     | xH =>  PX (--P') i' Q'
-    | xO j => PX (--P') i' (Pinj (Pdouble_minus_one j) Q')
+    | xO j => PX (--P') i' (Pinj (Pos.pred_double j) Q')
     | xI j => PX (--P') i' (Pinj (xO j) Q')
     end
   | PX P i Q' =>
-    match ZPminus i i' with
+    match Z.pos_sub i i' with
     | Zpos k => mkPX (Pop (PX P k P0) P') i' Q'
     | Z0 => mkPX (Pop P P') i Q'
     | Zneg k => mkPX (PsubX k P) i Q'
@@ -258,11 +252,11 @@ Section MakeRingPol.
     | Pinj j Q =>
       match j with
       | xH => PX P' i' (Padd Q Q')
-      | xO j => PX P' i' (Padd (Pinj (Pdouble_minus_one j) Q) Q')
+      | xO j => PX P' i' (Padd (Pinj (Pos.pred_double j) Q) Q')
       | xI j => PX P' i' (Padd (Pinj (xO j) Q) Q')
       end
     | PX P i Q =>
-      match ZPminus i i' with
+      match Z.pos_sub i i' with
       | Zpos k => mkPX (Padd (PX P k P0) P') i' (Padd Q Q')
       | Z0 => mkPX (Padd P P') i (Padd Q Q')
       | Zneg k => mkPX (PaddX Padd P' k P) i (Padd Q Q')
@@ -281,11 +275,11 @@ Section MakeRingPol.
     | Pinj j Q =>
       match j with
       | xH => PX (--P') i' (Psub Q Q')
-      | xO j => PX (--P') i' (Psub (Pinj (Pdouble_minus_one j) Q) Q')
+      | xO j => PX (--P') i' (Psub (Pinj (Pos.pred_double j) Q) Q')
       | xI j => PX (--P') i' (Psub (Pinj (xO j) Q) Q')
       end
     | PX P i Q =>
-      match ZPminus i i' with
+      match Z.pos_sub i i' with
       | Zpos k => mkPX (Psub (PX P k P0) P') i' (Psub Q Q')
       | Z0 => mkPX (Psub P P') i (Psub Q Q')
       | Zneg k => mkPX (PsubX Psub P' k P) i (Psub Q Q')
@@ -314,7 +308,7 @@ Section MakeRingPol.
    match P with
    | Pc c => mkPinj j (PmulC Q c)
    | Pinj j' Q' =>
-     match ZPminus j' j with
+     match Z.pos_sub j' j with
      | Zpos k => mkPinj j (Pmul (Pinj k Q') Q)
      | Z0 => mkPinj j (Pmul Q' Q)
      | Zneg k => mkPinj j' (PmulI k Q')
@@ -322,13 +316,12 @@ Section MakeRingPol.
    | PX P' i' Q' =>
      match j with
      | xH => mkPX (PmulI xH P') i' (Pmul Q' Q)
-     | xO j' => mkPX (PmulI j P') i' (PmulI (Pdouble_minus_one j') Q')
+     | xO j' => mkPX (PmulI j P') i' (PmulI (Pos.pred_double j') Q')
      | xI j' => mkPX (PmulI j P') i' (PmulI (xO j') Q')
      end
    end.
 
  End PmulI.
-(* A symmetric version of the multiplication *)
 
  Fixpoint Pmul (P P'' : Pol) {struct P''} : Pol :=
    match P'' with
@@ -341,7 +334,7 @@ Section MakeRingPol.
        let QQ' :=
          match j with
          | xH => Pmul Q Q'
-         | xO j => Pmul (Pinj (Pdouble_minus_one j) Q) Q'
+         | xO j => Pmul (Pinj (Pos.pred_double j) Q) Q'
          | xI j => Pmul (Pinj (xO j) Q) Q'
          end in
        mkPX (Pmul P P') i' QQ'
@@ -354,24 +347,6 @@ Section MakeRingPol.
      end
   end.
 
-(* Non symmetric *)
-(*
- Fixpoint Pmul_aux (P P' : Pol) {struct P'} : Pol :=
-  match P' with
-  | Pc c' => PmulC P c'
-  | Pinj j' Q' => PmulI Pmul_aux Q' j' P
-  | PX P' i' Q' =>
-     (mkPX (Pmul_aux P P') i' P0) ++ (PmulI Pmul_aux Q' xH P)
-  end.
-
- Definition Pmul P P' :=
-  match P with
-  | Pc c => PmulC P' c
-  | Pinj j Q => PmulI Pmul_aux Q j P'
-  | PX P i Q =>
-    (mkPX (Pmul_aux P P') i P0) ++ (PmulI Pmul_aux Q xH P')
-  end.
-*)
  Notation "P ** P'" := (Pmul P P').
 
  Fixpoint Psquare (P:Pol) : Pol :=
@@ -406,7 +381,7 @@ Section MakeRingPol.
    match M with mon0 => mon0 | _ => zmon j M end.
 
  Definition zmon_pred j M :=
-   match j with xH => M | _ => mkZmon (Ppred j) M end.
+   match j with xH => M | _ => mkZmon (Pos.pred j) M end.
 
  Definition mkVmon i M :=
    match M with
@@ -517,51 +492,26 @@ Section MakeRingPol.
 
  Reserved Notation "P @ l " (at level 10, no associativity).
  Notation "P @ l " := (Pphi l P).
+
  (** Proofs *)
- Lemma ZPminus_spec : forall x y,
-  match ZPminus x y with
-  | Z0 => x = y
-  | Zpos k => x = (y + k)%positive
-  | Zneg k => y = (x + k)%positive
+
+ Ltac destr_pos_sub H :=
+  match goal with |- context [Z.pos_sub ?x ?y] =>
+   assert (H := Z.pos_sub_discr x y); destruct (Z.pos_sub x y)
   end.
- Proof.
-  induction x;destruct y.
-  replace (ZPminus (xI x) (xI y)) with (Zdouble (ZPminus x y));trivial.
-  assert (H := IHx y);destruct (ZPminus x y);unfold Zdouble;rewrite H;trivial.
-  replace (ZPminus (xI x) (xO y)) with (Zdouble_plus_one (ZPminus x y));trivial.
-  assert (H := IHx y);destruct (ZPminus x y);unfold Zdouble_plus_one;rewrite H;trivial.
-  apply Pplus_xI_double_minus_one.
-  simpl;trivial.
-  replace (ZPminus (xO x) (xI y)) with (Zdouble_minus_one (ZPminus x y));trivial.
-  assert (H := IHx y);destruct (ZPminus x y);unfold Zdouble_minus_one;rewrite H;trivial.
-  apply Pplus_xI_double_minus_one.
-  replace (ZPminus (xO x) (xO y)) with (Zdouble (ZPminus x y));trivial.
-  assert (H := IHx y);destruct (ZPminus x y);unfold Zdouble;rewrite H;trivial.
-  replace (ZPminus (xO x) xH) with (Zpos (Pdouble_minus_one x));trivial.
-  rewrite <- Pplus_one_succ_l.
-  rewrite Psucc_o_double_minus_one_eq_xO;trivial.
-  replace (ZPminus xH (xI y)) with (Zneg (xO y));trivial.
-  replace (ZPminus xH (xO y)) with (Zneg (Pdouble_minus_one y));trivial.
-  rewrite <- Pplus_one_succ_l.
-  rewrite Psucc_o_double_minus_one_eq_xO;trivial.
-  simpl;trivial.
- Qed.
 
  Lemma Peq_ok : forall P P',
     (P ?== P') = true -> forall l, P@l == P'@ l.
  Proof.
-  induction P;destruct P';simpl;intros;try discriminate;trivial.
-  apply (morph_eq CRmorph);trivial.
-  assert (H1 := Pos.compare_eq p p0); destruct (p ?= p0);
-   try discriminate H.
-  rewrite (IHP P' H); rewrite H1;trivial;rrefl.
-  assert (H1 := Pos.compare_eq p p0); destruct (p ?= p0);
-   try discriminate H.
-  rewrite H1;trivial. clear H1.
-  assert (H1 := IHP1 P'1);assert (H2 := IHP2 P'2);
-   destruct (P2 ?== P'1);[destruct (P3 ?== P'2); [idtac|discriminate H]
-                         |discriminate H].
-  rewrite (H1 H);rewrite (H2 H);rrefl.
+  induction P;destruct P';simpl; intros H l; try easy.
+  - now apply (morph_eq CRmorph).
+  - destruct (Pos.compare_spec p p0); [ subst | easy | easy ].
+    now rewrite IHP.
+  - specialize (IHP1 P'1); specialize (IHP2 P'2).
+    destruct (Pos.compare_spec p p0); [ subst | easy | easy ].
+    destruct (P2 ?== P'1); [|easy].
+    rewrite H in *.
+    now rewrite IHP1, IHP2.
  Qed.
 
  Lemma Pphi0 : forall l, P0@l == 0.
@@ -577,23 +527,23 @@ Section MakeRingPol.
  Lemma mkPinj_ok : forall j l P, (mkPinj j P)@l == P@(jump j l).
  Proof.
   intros j l p;destruct p;simpl;rsimpl.
-  rewrite <-jump_Pplus;rewrite Pplus_comm;rrefl.
+  rewrite <-jump_add;rewrite Pos.add_comm;reflexivity.
  Qed.
 
- Let pow_pos_Pplus :=
-    pow_pos_Pplus rmul Rsth Reqe.(Rmul_ext) ARth.(ARmul_comm) ARth.(ARmul_assoc).
+ Let pow_pos_add :=
+    pow_pos_add Rsth Reqe.(Rmul_ext) ARth.(ARmul_assoc).
 
  Lemma mkPX_ok : forall l P i Q,
   (mkPX P i Q)@l == P@l*(pow_pos rmul (hd 0 l) i) + Q@(tail l).
  Proof.
   intros l P i Q;unfold mkPX.
-  destruct P;try (simpl;rrefl).
-  assert (H := morph_eq CRmorph c cO);destruct (c ?=! cO);simpl;try rrefl.
-  rewrite (H (refl_equal true));rewrite (morph0 CRmorph).
-  rewrite mkPinj_ok;rsimpl;simpl;rrefl.
-  assert (H := @Peq_ok P3 P0);destruct (P3 ?== P0);simpl;try rrefl.
-  rewrite (H (refl_equal true));trivial.
-  rewrite Pphi0.  rewrite pow_pos_Pplus;rsimpl.
+  destruct P;try (simpl;reflexivity).
+  assert (H := morph_eq CRmorph c cO);destruct (c ?=! cO);simpl;try reflexivity.
+  rewrite (H (eq_refl true));rewrite (morph0 CRmorph).
+  rewrite mkPinj_ok;rsimpl;simpl;reflexivity.
+  assert (H := @Peq_ok P3 P0);destruct (P3 ?== P0);simpl;try reflexivity.
+  rewrite (H (eq_refl true));trivial.
+  rewrite Pphi0.  rewrite pow_pos_add;rsimpl.
  Qed.
 
  Ltac Esimpl :=
@@ -636,16 +586,16 @@ Section MakeRingPol.
  Proof.
   induction P;simpl;intros;Esimpl;trivial.
   rewrite IHP1;rewrite IHP2;rsimpl.
-  mul_push ([c]);rrefl.
+  mul_push ([c]);reflexivity.
  Qed.
 
  Lemma PmulC_ok : forall c P l, (PmulC P c)@l == P@l * [c].
  Proof.
   intros c P l; unfold PmulC.
   assert (H:= morph_eq CRmorph c cO);destruct (c ?=! cO).
-  rewrite (H (refl_equal true));Esimpl.
+  rewrite (H (eq_refl true));Esimpl.
   assert (H1:= morph_eq CRmorph c cI);destruct (c ?=! cI).
-  rewrite (H1 (refl_equal true));Esimpl.
+  rewrite (H1 (eq_refl true));Esimpl.
   apply PmulC_aux_ok.
  Qed.
 
@@ -673,51 +623,51 @@ Section MakeRingPol.
   generalize P p l;clear P p l.
   induction P;simpl;intros.
   Esimpl2;apply (ARadd_comm ARth).
-  assert (H := ZPminus_spec p p0);destruct (ZPminus p p0).
-  rewrite H;Esimpl. rewrite IHP';rrefl.
+  destr_pos_sub H.
+  rewrite H;Esimpl. rewrite IHP';reflexivity.
   rewrite H;Esimpl. rewrite IHP';Esimpl.
-  rewrite <- jump_Pplus;rewrite Pplus_comm;rrefl.
+  rewrite <- jump_add;rewrite Pos.add_comm;reflexivity.
   rewrite H;Esimpl. rewrite IHP.
-  rewrite <- jump_Pplus;rewrite Pplus_comm;rrefl.
+  rewrite <- jump_add;rewrite Pos.add_comm;reflexivity.
   destruct p0;simpl.
   rewrite IHP2;simpl;rsimpl.
   rewrite IHP2;simpl.
-  rewrite jump_Pdouble_minus_one;rsimpl.
+  rewrite jump_pred_double;rsimpl.
   rewrite IHP';rsimpl.
   destruct P;simpl.
-  Esimpl2;add_push [c];rrefl.
+  Esimpl2;add_push [c];reflexivity.
   destruct p0;simpl;Esimpl2.
   rewrite IHP'2;simpl.
-  rsimpl;add_push (P'1@l * (pow_pos rmul (hd 0 l) p));rrefl.
+  rsimpl;add_push (P'1@l * (pow_pos rmul (hd 0 l) p));reflexivity.
   rewrite IHP'2;simpl.
-  rewrite jump_Pdouble_minus_one;rsimpl;add_push (P'1@l * (pow_pos rmul (hd 0 l) p));rrefl.
-  rewrite IHP'2;rsimpl. add_push (P @ (tail l));rrefl.
-  assert (H := ZPminus_spec p0 p);destruct (ZPminus p0 p);Esimpl2.
+  rewrite jump_pred_double;rsimpl;add_push (P'1@l * (pow_pos rmul (hd 0 l) p));reflexivity.
+  rewrite IHP'2;rsimpl. add_push (P @ (tail l));reflexivity.
+  destr_pos_sub H; Esimpl2.
   rewrite IHP'1;rewrite IHP'2;rsimpl.
-  add_push (P3 @ (tail l));rewrite H;rrefl.
+  add_push (P3 @ (tail l));rewrite H;reflexivity.
   rewrite IHP'1;rewrite IHP'2;simpl;Esimpl.
-  rewrite H;rewrite Pplus_comm.
-  rewrite pow_pos_Pplus;rsimpl.
-  add_push (P3 @ (tail l));rrefl.
+  rewrite H;rewrite Pos.add_comm.
+  rewrite pow_pos_add;rsimpl.
+  add_push (P3 @ (tail l));reflexivity.
   assert (forall P k l,
            (PaddX Padd P'1 k P) @ l == P@l + P'1@l * pow_pos rmul (hd 0 l) k).
    induction P;simpl;intros;try apply (ARadd_comm ARth).
    destruct p2;simpl;try apply (ARadd_comm ARth).
-   rewrite jump_Pdouble_minus_one;apply (ARadd_comm ARth).
-    assert (H1 := ZPminus_spec p2 k);destruct (ZPminus p2 k);Esimpl2.
-    rewrite IHP'1;rsimpl; rewrite H1;add_push (P5 @ (tail l0));rrefl.
+   rewrite jump_pred_double;apply (ARadd_comm ARth).
+    destr_pos_sub H1; Esimpl2.
+    rewrite IHP'1;rsimpl; rewrite H1;add_push (P5 @ (tail l0));reflexivity.
     rewrite IHP'1;simpl;Esimpl.
-    rewrite H1;rewrite Pplus_comm.
-    rewrite pow_pos_Pplus;simpl;Esimpl.
-    add_push (P5 @ (tail l0));rrefl.
-    rewrite IHP1;rewrite H1;rewrite Pplus_comm.
-    rewrite pow_pos_Pplus;simpl;rsimpl.
-    add_push (P5 @ (tail l0));rrefl.
+    rewrite H1;rewrite Pos.add_comm.
+    rewrite pow_pos_add;simpl;Esimpl.
+    add_push (P5 @ (tail l0));reflexivity.
+    rewrite IHP1;rewrite H1;rewrite Pos.add_comm.
+    rewrite pow_pos_add;simpl;rsimpl.
+    add_push (P5 @ (tail l0));reflexivity.
   rewrite H0;rsimpl.
   add_push (P3 @ (tail l)).
-  rewrite H;rewrite Pplus_comm.
-  rewrite IHP'2;rewrite pow_pos_Pplus;rsimpl.
-  add_push (P3 @ (tail l));rrefl.
+  rewrite H;rewrite Pos.add_comm.
+  rewrite IHP'2;rewrite pow_pos_add;rsimpl.
+  add_push (P3 @ (tail l));reflexivity.
  Qed.
 
  Lemma Psub_ok : forall P' P l, (P -- P')@l == P@l - P'@l.
@@ -726,54 +676,53 @@ Section MakeRingPol.
   generalize P p l;clear P p l.
   induction P;simpl;intros.
   Esimpl2;apply (ARadd_comm ARth).
-  assert (H := ZPminus_spec p p0);destruct (ZPminus p p0).
+  destr_pos_sub H.
   rewrite H;Esimpl. rewrite IHP';rsimpl.
   rewrite H;Esimpl. rewrite IHP';Esimpl.
-  rewrite <- jump_Pplus;rewrite Pplus_comm;rrefl.
+  rewrite <- jump_add;rewrite Pos.add_comm;reflexivity.
   rewrite H;Esimpl. rewrite IHP.
-  rewrite <- jump_Pplus;rewrite Pplus_comm;rrefl.
+  rewrite <- jump_add;rewrite Pos.add_comm;reflexivity.
   destruct p0;simpl.
   rewrite IHP2;simpl;rsimpl.
   rewrite IHP2;simpl.
-  rewrite jump_Pdouble_minus_one;rsimpl.
+  rewrite jump_pred_double;rsimpl.
   rewrite IHP';rsimpl.
   destruct P;simpl.
-  repeat rewrite Popp_ok;Esimpl2;rsimpl;add_push [c];try rrefl.
+  repeat rewrite Popp_ok;Esimpl2;rsimpl;add_push [c];try reflexivity.
   destruct p0;simpl;Esimpl2.
   rewrite IHP'2;simpl;rsimpl;add_push (P'1@l * (pow_pos rmul (hd 0 l) p));trivial.
-  add_push (P @ (jump p0 (jump p0 (tail l))));rrefl.
-  rewrite IHP'2;simpl;rewrite jump_Pdouble_minus_one;rsimpl.
-  add_push (- (P'1 @ l * pow_pos  rmul (hd 0 l) p));rrefl.
-  rewrite IHP'2;rsimpl;add_push (P @ (tail l));rrefl.
-  assert (H := ZPminus_spec p0 p);destruct (ZPminus p0 p);Esimpl2.
+  add_push (P @ (jump p0 (jump p0 (tail l))));reflexivity.
+  rewrite IHP'2;simpl;rewrite jump_pred_double;rsimpl.
+  add_push (- (P'1 @ l * pow_pos  rmul (hd 0 l) p));reflexivity.
+  rewrite IHP'2;rsimpl;add_push (P @ (tail l));reflexivity.
+  destr_pos_sub H; Esimpl2.
   rewrite IHP'1; rewrite IHP'2;rsimpl.
-  add_push (P3 @ (tail l));rewrite H;rrefl.
+  add_push (P3 @ (tail l));rewrite H;reflexivity.
    rewrite IHP'1; rewrite IHP'2;rsimpl;simpl;Esimpl.
-  rewrite H;rewrite Pplus_comm.
-  rewrite pow_pos_Pplus;rsimpl.
-  add_push (P3 @ (tail l));rrefl.
+  rewrite H;rewrite Pos.add_comm.
+  rewrite pow_pos_add;rsimpl.
+  add_push (P3 @ (tail l));reflexivity.
   assert (forall P k l,
            (PsubX Psub P'1 k P) @ l == P@l + - P'1@l * pow_pos rmul (hd 0 l) k).
    induction P;simpl;intros.
    rewrite Popp_ok;rsimpl;apply (ARadd_comm ARth);trivial.
    destruct p2;simpl;rewrite Popp_ok;rsimpl.
    apply (ARadd_comm ARth);trivial.
-   rewrite jump_Pdouble_minus_one;apply (ARadd_comm ARth);trivial.
+   rewrite jump_pred_double;apply (ARadd_comm ARth);trivial.
    apply (ARadd_comm ARth);trivial.
-    assert (H1 := ZPminus_spec p2 k);destruct (ZPminus p2 k);Esimpl2;rsimpl.
-    rewrite IHP'1;rsimpl;add_push (P5 @ (tail l0));rewrite H1;rrefl.
-    rewrite IHP'1;rewrite H1;rewrite Pplus_comm.
-    rewrite pow_pos_Pplus;simpl;Esimpl.
-    add_push (P5 @ (tail l0));rrefl.
-    rewrite IHP1;rewrite H1;rewrite Pplus_comm.
-    rewrite pow_pos_Pplus;simpl;rsimpl.
-    add_push (P5 @ (tail l0));rrefl.
+    destr_pos_sub H1; Esimpl2; rsimpl.
+    rewrite IHP'1;rsimpl;add_push (P5 @ (tail l0));rewrite H1;reflexivity.
+    rewrite IHP'1;rewrite H1;rewrite Pos.add_comm.
+    rewrite pow_pos_add;simpl;Esimpl.
+    add_push (P5 @ (tail l0));reflexivity.
+    rewrite IHP1;rewrite H1;rewrite Pos.add_comm.
+    rewrite pow_pos_add;simpl;rsimpl.
+    add_push (P5 @ (tail l0));reflexivity.
   rewrite H0;rsimpl.
   rewrite IHP'2;rsimpl;add_push (P3 @ (tail l)).
-  rewrite H;rewrite Pplus_comm.
-  rewrite pow_pos_Pplus;rsimpl.
+  rewrite H;rewrite Pos.add_comm.
+  rewrite pow_pos_add;rsimpl.
  Qed.
-(* Proof for the symmetriv version *)
 
  Lemma PmulI_ok :
   forall P',
@@ -783,60 +732,23 @@ Section MakeRingPol.
  Proof.
   induction P;simpl;intros.
   Esimpl2;apply (ARmul_comm ARth).
-  assert (H1 := ZPminus_spec p p0);destruct (ZPminus p p0);Esimpl2.
-  rewrite H1; rewrite H;rrefl.
+  destr_pos_sub H1; Esimpl2.
+  rewrite H1; rewrite H;reflexivity.
   rewrite H1; rewrite H.
-  rewrite Pplus_comm.
-  rewrite jump_Pplus;simpl;rrefl.
-  rewrite H1;rewrite Pplus_comm.
-  rewrite jump_Pplus;rewrite IHP;rrefl.
+  rewrite Pos.add_comm.
+  rewrite jump_add;simpl;reflexivity.
+  rewrite H1;rewrite Pos.add_comm.
+  rewrite jump_add;rewrite IHP;reflexivity.
   destruct p0;Esimpl2.
   rewrite IHP1;rewrite IHP2;simpl;rsimpl.
-  mul_push (pow_pos rmul (hd 0 l) p);rrefl.
+  mul_push (pow_pos rmul (hd 0 l) p);reflexivity.
   rewrite IHP1;rewrite IHP2;simpl;rsimpl.
-  mul_push (pow_pos rmul (hd 0 l) p); rewrite jump_Pdouble_minus_one;rrefl.
+  mul_push (pow_pos rmul (hd 0 l) p); rewrite jump_pred_double;reflexivity.
   rewrite IHP1;simpl;rsimpl.
   mul_push (pow_pos rmul (hd 0 l) p).
-  rewrite H;rrefl.
+  rewrite H;reflexivity.
  Qed.
 
-(*
- Lemma PmulI_ok :
-  forall P',
-   (forall (P : Pol) (l : list R), (Pmul_aux P P') @ l == P @ l * P' @ l) ->
-   forall (P : Pol) (p : positive) (l : list R),
-    (PmulI Pmul_aux P' p P) @ l == P @ l * P' @ (jump p l).
- Proof.
-  induction P;simpl;intros.
-  Esimpl2;apply (ARmul_comm ARth).
-  assert (H1 := ZPminus_spec p p0);destruct (ZPminus p p0);Esimpl2.
-  rewrite H1; rewrite H;rrefl.
-  rewrite H1; rewrite H.
-  rewrite Pplus_comm.
-  rewrite jump_Pplus;simpl;rrefl.
-  rewrite H1;rewrite Pplus_comm.
-  rewrite jump_Pplus;rewrite IHP;rrefl.
-  destruct p0;Esimpl2.
-  rewrite IHP1;rewrite IHP2;simpl;rsimpl.
-  mul_push (pow_pos rmul (hd 0 l) p);rrefl.
-  rewrite IHP1;rewrite IHP2;simpl;rsimpl.
-  mul_push (pow_pos rmul (hd 0 l) p); rewrite jump_Pdouble_minus_one;rrefl.
-  rewrite IHP1;simpl;rsimpl.
-  mul_push (pow_pos rmul (hd 0 l) p).
-  rewrite H;rrefl.
- Qed.
-
- Lemma Pmul_aux_ok : forall P' P l,(Pmul_aux P P')@l == P@l * P'@l.
- Proof.
-  induction P';simpl;intros.
-  Esimpl2;trivial.
-  apply PmulI_ok;trivial.
-  rewrite Padd_ok;Esimpl2.
-  rewrite (PmulI_ok P'2 IHP'2). rewrite IHP'1. rrefl.
- Qed.
-*)
-
-(* Proof for the symmetric version *)
  Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
  Proof.
   intros P P';generalize P;clear P;induction P';simpl;intros.
@@ -846,11 +758,11 @@ Section MakeRingPol.
   Esimpl2. rewrite IHP'1;Esimpl2.
    assert (match p0 with
            | xI j => Pinj (xO j) P ** P'2
-           | xO j => Pinj (Pdouble_minus_one j) P ** P'2
+           | xO j => Pinj (Pos.pred_double j) P ** P'2
            | 1 => P ** P'2
            end @ (tail l) == P @ (jump p0 l) * P'2 @ (tail l)).
    destruct p0;simpl;rewrite IHP'2;Esimpl.
-   rewrite jump_Pdouble_minus_one;Esimpl.
+   rewrite jump_pred_double;Esimpl.
    rewrite H;Esimpl.
    rewrite Padd_ok; Esimpl2. rewrite Padd_ok; Esimpl2.
    repeat (rewrite IHP'1 || rewrite IHP'2);simpl.
@@ -858,27 +770,13 @@ Section MakeRingPol.
    mul_push (P'1@l). simpl. mul_push (P'2 @ (tail l)). Esimpl.
  Qed.
 
-(*
-Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
- Proof.
-  destruct P;simpl;intros.
-  Esimpl2;apply (ARmul_comm ARth).
-  rewrite (PmulI_ok P (Pmul_aux_ok P)).
-  apply (ARmul_comm ARth).
-  rewrite Padd_ok; Esimpl2.
-  rewrite (PmulI_ok P3 (Pmul_aux_ok P3));trivial.
-  rewrite Pmul_aux_ok;mul_push (P' @ l).
-  rewrite (ARmul_comm ARth (P' @ l));rrefl.
- Qed.
-*)
-
  Lemma Psquare_ok : forall P l, (Psquare P)@l == P@l * P@l.
  Proof.
   induction P;simpl;intros;Esimpl2.
   apply IHP. rewrite Padd_ok. rewrite Pmul_ok;Esimpl2.
   rewrite IHP1;rewrite IHP2.
   mul_push (pow_pos rmul (hd 0 l) p). mul_push (P2@l).
-  rrefl.
+  reflexivity.
  Qed.
 
 
@@ -892,14 +790,14 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
  Proof.
    destruct j; simpl;intros auto; rsimpl.
    rewrite mkZmon_ok;rsimpl.
-   rewrite mkZmon_ok;simpl. rewrite jump_Pdouble_minus_one; rsimpl.
+   rewrite mkZmon_ok;simpl. rewrite jump_pred_double; rsimpl.
  Qed.
 
  Lemma mkVmon_ok : forall M i l, Mphi l (mkVmon i M) == Mphi l M*pow_pos rmul (hd 0 l) i.
  Proof.
   destruct M;simpl;intros;rsimpl.
    rewrite zmon_pred_ok;simpl;rsimpl.
-  rewrite Pplus_comm;rewrite pow_pos_Pplus;rsimpl.
+  rewrite Pos.add_comm;rewrite pow_pos_add;rsimpl.
  Qed.
 
  Lemma Mcphi_ok: forall P c l,
@@ -930,9 +828,9 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
       P@l == Q@l + (phi c) * (Mphi l M) * (R@l).
  Proof.
  intros P; elim P; simpl; auto; clear P.
-   intros c (c1, M) l; case M; simpl; auto.
+ - intros c (c1, M) l; case M; simpl; auto.
    assert (H1:= morph_eq CRmorph c1 cI);destruct (c1 ?=! cI).
-   rewrite (H1 (refl_equal true));Esimpl.
+   rewrite (H1 (eq_refl true));Esimpl.
     try rewrite (morph0 CRmorph); rsimpl.
    generalize (div_th.(div_eucl_th) c c1); case (cdiv c c1).
    intros q r H; rewrite H; clear H H1.
@@ -940,39 +838,39 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
    rewrite (ARadd_comm ARth); rsimpl.
    intros p m; Esimpl.
    intros p m; Esimpl.
-   intros i P Hrec (c,M) l; case M; simpl; clear M.
-     assert (H1:= morph_eq CRmorph c cI);destruct (c ?=! cI).
-     rewrite (H1 (refl_equal true));Esimpl.
+ - intros i P Hrec (c,M) l; case M; simpl; clear M.
+   + assert (H1:= morph_eq CRmorph c cI);destruct (c ?=! cI).
+     rewrite (H1 (eq_refl true));Esimpl.
      Esimpl.
-   generalize (Mcphi_ok P c (jump i l)); case CFactor.
-   intros R1 Q1 HH; rewrite HH; Esimpl.
-     intros j M.
-     case_eq (i ?= j); intros He; simpl.
-       rewrite (Pos.compare_eq _ _ He).
+     generalize (Mcphi_ok P c (jump i l)); case CFactor.
+     intros R1 Q1 HH; rewrite HH; Esimpl.
+   + intros j M.
+     case Pos.compare_spec; intros He; simpl.
+     * rewrite He.
        generalize (Hrec (c, M) (jump j l)); case (MFactor P c M);
         simpl; intros P2 Q2 H; repeat rewrite mkPinj_ok; auto.
-       generalize (Hrec (c, (zmon (j -i) M)) (jump i l));
+     * generalize (Hrec (c, (zmon (j -i) M)) (jump i l));
        case (MFactor P c (zmon (j -i) M)); simpl.
        intros P2 Q2 H; repeat rewrite mkPinj_ok; auto.
-       rewrite  <- (Pplus_minus _ _ (ZC2 _ _ He)).
-       rewrite Pplus_comm; rewrite jump_Pplus; auto.
-       rewrite (morph0 CRmorph); rsimpl.
-       intros P2 m; rewrite (morph0 CRmorph); rsimpl.
+       rewrite  <- (Pos.sub_add _ _ He).
+       rewrite jump_add; auto.
+     * rewrite (morph0 CRmorph); rsimpl.
+   + intros P2 m; rewrite (morph0 CRmorph); rsimpl.
 
-   intros P2 Hrec1 i Q2 Hrec2 (c, M) l; case M; simpl; auto.
-     assert (H1:= morph_eq CRmorph c cI);destruct (c ?=! cI).
-     rewrite (H1 (refl_equal true));Esimpl.
+ - intros P2 Hrec1 i Q2 Hrec2 (c, M) l; case M; simpl; auto.
+   + assert (H1:= morph_eq CRmorph c cI);destruct (c ?=! cI).
+     rewrite (H1 (eq_refl true));Esimpl.
      Esimpl.
-    generalize (Mcphi_ok P2 c l); case CFactor.
-    intros S1 S2 HS.
-    generalize (Mcphi_ok Q2 c (tail l)); case CFactor.
-    intros S3 S4 HS1; Esimpl; rewrite HS; rewrite HS1.
-    rsimpl.
-    apply (Radd_ext Reqe); rsimpl.
-    repeat rewrite <- (ARadd_assoc ARth).
-    apply (Radd_ext Reqe); rsimpl.
-    rewrite (ARadd_comm ARth); rsimpl.
-   intros j M1.
+     generalize (Mcphi_ok P2 c l); case CFactor.
+     intros S1 S2 HS.
+     generalize (Mcphi_ok Q2 c (tail l)); case CFactor.
+     intros S3 S4 HS1; Esimpl; rewrite HS; rewrite HS1.
+     rsimpl.
+     apply (Radd_ext Reqe); rsimpl.
+     repeat rewrite <- (ARadd_assoc ARth).
+     apply (Radd_ext Reqe); rsimpl.
+     rewrite (ARadd_comm ARth); rsimpl.
+   + intros j M1.
      generalize (Hrec1 (c,zmon j M1) l);
      case (MFactor P2 c (zmon j M1)).
      intros R1 S1 H1.
@@ -986,9 +884,9 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
      apply radd_ext; rsimpl.
      rewrite (ARadd_comm ARth); rsimpl.
      rewrite zmon_pred_ok;rsimpl.
-   intros j M1.
-     case_eq (i ?= j); intros He; simpl.
-       rewrite (Pos.compare_eq _ _ He).
+   + intros j M1.
+     case Pos.compare_spec; intros He; simpl.
+     * rewrite He.
        generalize (Hrec1 (c, mkZmon xH M1) l); case (MFactor P2 c (mkZmon xH M1));
         simpl; intros P3 Q3 H; repeat rewrite mkPinj_ok; auto.
        rewrite H; rewrite mkPX_ok; rsimpl.
@@ -1002,7 +900,7 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
        repeat (rewrite <-(ARmul_assoc ARth)).
        apply rmul_ext; rsimpl.
        rewrite (ARmul_comm ARth); rsimpl.
-       generalize (Hrec1 (c, vmon (j - i) M1) l);
+     * generalize (Hrec1 (c, vmon (j - i) M1) l);
              case (MFactor P2 c (vmon (j - i) M1));
         simpl; intros P3 Q3 H; repeat rewrite mkPinj_ok; auto.
        rewrite H; rsimpl; repeat rewrite mkPinj_ok; auto.
@@ -1018,9 +916,9 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
        rewrite <- (ARmul_comm ARth (Mphi (tail l) M1)); rsimpl.
        repeat (rewrite <-(ARmul_assoc ARth)).
        apply rmul_ext; rsimpl.
-       rewrite <- pow_pos_Pplus.
-       rewrite (Pplus_minus _ _ (ZC2 _ _ He)); rsimpl.
-       generalize (Hrec1 (c, mkZmon 1 M1) l);
+       rewrite <- pow_pos_add.
+       rewrite Pos.add_comm, Pos.sub_add by trivial; rsimpl.
+     * generalize (Hrec1 (c, mkZmon 1 M1) l);
              case (MFactor P2 c (mkZmon 1 M1));
         simpl; intros P3 Q3 H; repeat rewrite mkPinj_ok; auto.
        rewrite H; rsimpl.
@@ -1041,11 +939,9 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
        rewrite (ARmul_comm ARth); rsimpl.
        repeat (rewrite <- (ARmul_assoc ARth)).
        apply rmul_ext; rsimpl.
-       rewrite <- pow_pos_Pplus.
-       rewrite (Pplus_minus _ _ He); rsimpl.
+       rewrite <- pow_pos_add.
+       rewrite Pos.add_comm, Pos.sub_add by trivial; rsimpl.
  Qed.
-
-(* Proof for the symmetric version *)
 
  Lemma POneSubst_ok: forall P1 M1 P2 P3 l,
     POneSubst P1 M1 P2 = Some P3 -> phi (fst M1) * Mphi l (snd M1) == P2@l -> P1@l == P3@l.
@@ -1070,30 +966,7 @@ Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
    injection H2; intros; subst;trivial.
   rewrite H;rewrite Padd_ok;rewrite Pmul_ok;rsimpl.
  Qed.
-(*
-  Lemma POneSubst_ok: forall P1 M1 P2 P3 l,
-    POneSubst P1 M1 P2 = Some P3 -> Mphi l M1 == P2@l -> P1@l == P3@l.
-Proof.
- intros P2 M1 P3 P4 l; unfold POneSubst.
- generalize (Mphi_ok P2 M1 l); case (MFactor P2 M1); simpl; auto.
- intros Q1 R1; case R1.
-   intros c H; rewrite H.
-   generalize (morph_eq CRmorph c cO);
-        case (c ?=! cO); simpl; auto.
-   intros H1 H2; rewrite H1; auto; rsimpl.
-   discriminate.
-   intros _ H1 H2; injection H1; intros; subst.
-   rewrite H2; rsimpl.
-  rewrite Padd_ok; rewrite Pmul_ok; rsimpl.
-  intros i P5 H; rewrite H.
-   intros HH H1; injection HH; intros; subst; rsimpl.
-   rewrite Padd_ok; rewrite Pmul_ok. rewrite H1; rsimpl.
-   intros i P5 P6 H1 H2 H3; rewrite H1; rewrite H3.
-   injection H2; intros; subst; rsimpl.
-   rewrite Padd_ok.
-   rewrite Pmul_ok; rsimpl.
- Qed.
-*)
+
  Lemma PNSubst1_ok: forall n P1 M1 P2 l,
     [fst M1] * Mphi l (snd M1) == P2@l -> P1@l == (PNSubst1 P1 M1 P2 n)@l.
  Proof.
@@ -1193,47 +1066,16 @@ Strategy expand [PEeval].
  Lemma mkX_ok : forall p l, nth 0 p l == (mk_X p) @ l.
  Proof.
   destruct p;simpl;intros;Esimpl;trivial.
-  rewrite <-jump_tl;rewrite nth_jump;rrefl.
+  rewrite <-jump_tl;rewrite nth_jump;reflexivity.
   rewrite <- nth_jump.
-  rewrite nth_Pdouble_minus_one;rrefl.
+  rewrite nth_pred_double;reflexivity.
  Qed.
 
  Ltac Esimpl3 :=
   repeat match goal with
   | |- context [(?P1 ++ ?P2)@?l] => rewrite (Padd_ok P2 P1 l)
   | |- context [(?P1 -- ?P2)@?l] => rewrite (Psub_ok P2 P1 l)
-  end;Esimpl2;try rrefl;try apply (ARadd_comm ARth).
-
-(* Power using the chinise algorithm *)
-(*Section POWER.
-  Variable subst_l : Pol -> Pol.
-  Fixpoint Ppow_pos (P:Pol) (p:positive){struct p} : Pol :=
-   match p with
-   | xH => P
-   | xO p => subst_l (Psquare (Ppow_pos P p))
-   | xI p => subst_l (Pmul P (Psquare (Ppow_pos P p)))
-   end.
-
-  Definition Ppow_N P n :=
-   match n with
-   | N0 => P1
-   | Npos p => Ppow_pos P p
-   end.
-
-  Lemma Ppow_pos_ok : forall l, (forall P, subst_l P@l == P@l) ->
-         forall P p, (Ppow_pos P p)@l == (pow_pos Pmul P p)@l.
-  Proof.
-   intros l subst_l_ok P.
-   induction p;simpl;intros;try rrefl;try rewrite subst_l_ok.
-   repeat rewrite Pmul_ok;rewrite Psquare_ok;rewrite IHp;rrefl.
-   repeat rewrite Pmul_ok;rewrite Psquare_ok;rewrite IHp;rrefl.
-  Qed.
-
-  Lemma Ppow_N_ok : forall l,  (forall P, subst_l P@l == P@l) ->
-         forall P n, (Ppow_N P n)@l == (pow_N P1 Pmul P n)@l.
-  Proof.  destruct n;simpl. rrefl. apply Ppow_pos_ok. trivial.  Qed.
-
- End POWER. *)
+  end;Esimpl2;try reflexivity;try apply (ARadd_comm ARth).
 
 Section POWER.
   Variable subst_l : Pol -> Pol.
@@ -1255,12 +1097,12 @@ Section POWER.
   Proof.
    intros l subst_l_ok res P p. generalize res;clear res.
    induction p;simpl;intros;try rewrite subst_l_ok; repeat rewrite Pmul_ok;repeat rewrite IHp.
-   rsimpl. mul_push (P@l);rsimpl. rsimpl. rrefl.
+   rsimpl. mul_push (P@l);rsimpl. rsimpl. reflexivity.
   Qed.
 
   Lemma Ppow_N_ok : forall l,  (forall P, subst_l P@l == P@l) ->
          forall P n, (Ppow_N P n)@l == (pow_N P1 Pmul P n)@l.
-  Proof.  destruct n;simpl. rrefl. rewrite Ppow_pos_ok by trivial. Esimpl.  Qed.
+  Proof.  destruct n;simpl. reflexivity. rewrite Ppow_pos_ok by trivial. Esimpl.  Qed.
 
  End POWER.
 
@@ -1289,42 +1131,6 @@ Section POWER.
 
   Definition norm_subst pe := subst_l (norm_aux pe).
 
- (*
-  Fixpoint norm_subst (pe:PExpr) : Pol :=
-   match pe with
-   | PEc c => Pc c
-   | PEX j => subst_l (mk_X j)
-   | PEadd (PEopp pe1) pe2 => Psub (norm_subst pe2) (norm_subst pe1)
-   | PEadd pe1 (PEopp pe2) =>
-     Psub (norm_subst pe1) (norm_subst pe2)
-   | PEadd pe1 pe2 => Padd (norm_subst  pe1) (norm_subst pe2)
-   | PEsub pe1 pe2 => Psub (norm_subst pe1) (norm_subst pe2)
-   | PEmul pe1 pe2 => Pmul_subst (norm_subst pe1) (norm_subst pe2)
-   | PEopp pe1 => Popp (norm_subst pe1)
-   | PEpow pe1 n => Ppow_subst (norm_subst pe1) n
-   end.
-
-  Lemma norm_subst_spec :
-     forall l pe, MPcond lmp l ->
-       PEeval l pe == (norm_subst pe)@l.
-  Proof.
-   intros;assert (subst_l_ok:forall P, (subst_l P)@l == P@l).
-      unfold subst_l;intros.
-      rewrite <- PNSubstL_ok;trivial. rrefl.
-   assert (Pms_ok:forall P1 P2, (Pmul_subst P1 P2)@l == P1@l*P2@l).
-    intros;unfold Pmul_subst;rewrite subst_l_ok;rewrite Pmul_ok;rrefl.
-   induction pe;simpl;Esimpl3.
-   rewrite subst_l_ok;apply mkX_ok.
-   rewrite IHpe1;rewrite IHpe2;destruct pe1;destruct pe2;Esimpl3.
-   rewrite IHpe1;rewrite IHpe2;rrefl.
-   rewrite Pms_ok;rewrite IHpe1;rewrite IHpe2;rrefl.
-   rewrite IHpe;rrefl.
-   unfold Ppow_subst. rewrite Ppow_N_ok. trivial.
-   rewrite pow_th.(rpow_pow_N). destruct n0;Esimpl3.
-   induction p;simpl;try rewrite IHp;try rewrite IHpe;repeat rewrite Pms_ok;
-      repeat rewrite Pmul_ok;rrefl.
-  Qed.
-*)
  Lemma norm_aux_spec :
      forall l pe, MPcond lmp l ->
        PEeval l pe == (norm_aux pe)@l.
@@ -1333,13 +1139,13 @@ Section POWER.
    induction pe;simpl;Esimpl3.
    apply mkX_ok.
    rewrite IHpe1;rewrite IHpe2;destruct pe1;destruct pe2;Esimpl3.
-   rewrite IHpe1;rewrite IHpe2;rrefl.
-   rewrite IHpe1;rewrite IHpe2. rewrite Pmul_ok. rrefl.
-   rewrite IHpe;rrefl.
-   rewrite Ppow_N_ok by (intros;rrefl).
+   rewrite IHpe1;rewrite IHpe2;reflexivity.
+   rewrite IHpe1;rewrite IHpe2. rewrite Pmul_ok. reflexivity.
+   rewrite IHpe;reflexivity.
+   rewrite Ppow_N_ok by (intros;reflexivity).
    rewrite pow_th.(rpow_pow_N). destruct n0;Esimpl3.
    induction p;simpl;try rewrite IHp;try rewrite IHpe;repeat rewrite Pms_ok;
-      repeat rewrite Pmul_ok;rrefl.
+      repeat rewrite Pmul_ok;reflexivity.
   Qed.
 
  Lemma norm_subst_spec :
@@ -1519,7 +1325,7 @@ Section POWER.
    | Pinj j Q =>
      add_mult_dev rP Q (jump j fv) N0 (add_pow_list (hd 0 fv) n lm)
    | PX P i Q =>
-     let rP := add_mult_dev rP P fv (Nplus (Npos i) n) lm in
+     let rP := add_mult_dev rP P fv (N.add (Npos i) n) lm in
      if Q ?== P0 then rP
      else add_mult_dev rP Q (tail fv) N0 (add_pow_list (hd 0 fv) n lm)
    end.
@@ -1531,7 +1337,7 @@ Section POWER.
   | Pc c => mkmult_c c (add_pow_list (hd 0 fv) n lm)
   | Pinj j Q => mult_dev Q (jump j fv) N0 (add_pow_list (hd 0 fv) n lm)
   | PX P i Q =>
-     let rP := mult_dev P fv (Nplus (Npos i) n) lm in
+     let rP := mult_dev P fv (N.add (Npos i) n) lm in
      if Q ?== P0 then rP
      else
        let lmq := add_pow_list (hd 0 fv) n lm in
@@ -1575,7 +1381,7 @@ Section POWER.
     (forall l lr : list (R * positive), r_list_pow (rev_append l lr) == r_list_pow lr * r_list_pow l).
    induction l;intros;simpl;Esimpl.
    destruct a;rewrite IHl;Esimpl.
-   rewrite (ARmul_comm ARth (pow_pos rmul r p)). rrefl.
+   rewrite (ARmul_comm ARth (pow_pos rmul r p)). reflexivity.
   intros;unfold rev'. rewrite H;simpl;Esimpl.
   Qed.
 
@@ -1630,13 +1436,13 @@ Qed.
    change match n with
     | N0 => Npos p
     | Npos q => Npos (p + q)
-    end with (Nplus (Npos p) n);trivial.
+    end with (N.add (Npos p) n);trivial.
    assert (H := Peq_ok P3 P0).
     destruct (P3 ?== P0).
-    rewrite (H (refl_equal true)).
-   rewrite  IHP1. destruct n;simpl;Esimpl;rewrite pow_pos_Pplus;Esimpl.
+    rewrite (H (eq_refl true)).
+   rewrite  IHP1. destruct n;simpl;Esimpl;rewrite pow_pos_add;Esimpl.
    rewrite  IHP2.
-   rewrite IHP1. destruct n;simpl;Esimpl;rewrite pow_pos_Pplus;Esimpl.
+   rewrite IHP1. destruct n;simpl;Esimpl;rewrite pow_pos_add;Esimpl.
  Qed.
 
  Lemma mult_dev_ok : forall P fv n lm,
@@ -1653,13 +1459,13 @@ Qed.
    change match n with
     | N0 => Npos p
     | Npos q => Npos (p + q)
-    end with (Nplus (Npos p) n);trivial.
+    end with (N.add (Npos p) n);trivial.
    assert (H := Peq_ok P3 P0).
     destruct (P3 ?== P0).
-    rewrite (H (refl_equal true)).
-   rewrite  IHP1. destruct n;simpl;Esimpl;rewrite pow_pos_Pplus;Esimpl.
+    rewrite (H (eq_refl true)).
+   rewrite  IHP1. destruct n;simpl;Esimpl;rewrite pow_pos_add;Esimpl.
    rewrite add_mult_dev_ok. rewrite IHP1; rewrite add_pow_list_ok.
-   destruct n;simpl;Esimpl;rewrite pow_pos_Pplus;Esimpl.
+   destruct n;simpl;Esimpl;rewrite pow_pos_add;Esimpl.
   Qed.
 
  Lemma Pphi_avoid_ok : forall P fv, Pphi_avoid fv P  == P@fv.
@@ -1687,7 +1493,7 @@ Qed.
 
  Lemma Pphi_pow_ok : forall P fv, Pphi_pow fv P  == P@fv.
  Proof.
-  unfold Pphi_pow;intros;apply Pphi_avoid_ok;intros;try rewrite local_mkpow_ok;rrefl.
+  unfold Pphi_pow;intros;apply Pphi_avoid_ok;intros;try rewrite local_mkpow_ok;reflexivity.
  Qed.
 
  Lemma ring_rw_pow_correct : forall n lH l,
@@ -1711,14 +1517,14 @@ Qed.
   Definition mkpow x p :=
     match p with
     | xH => x
-    | xO p => mkmult_pow x x (Pdouble_minus_one p)
+    | xO p => mkmult_pow x x (Pos.pred_double p)
     | xI p => mkmult_pow x x (xO p)
     end.
 
   Definition mkopp_pow x p :=
     match p with
     | xH => -x
-    | xO p => mkmult_pow (-x) x (Pdouble_minus_one p)
+    | xO p => mkmult_pow (-x) x (Pos.pred_double p)
     | xI p => mkmult_pow (-x) x (xO p)
     end.
 
@@ -1737,9 +1543,9 @@ Qed.
     repeat rewrite mkmult_pow_ok;Esimpl.
     rewrite mkmult_pow_ok;Esimpl.
     pattern x at 1;replace x with (pow_pos rmul x 1).
-    rewrite <- pow_pos_Pplus.
-    rewrite <- Pplus_one_succ_l.
-    rewrite Psucc_o_double_minus_one_eq_xO.
+    rewrite <- pow_pos_add.
+    rewrite Pos.add_1_l.
+    rewrite Pos.succ_pred_double.
     simpl;Esimpl.
     trivial.
   Qed.
@@ -1750,9 +1556,9 @@ Qed.
     repeat rewrite mkmult_pow_ok;Esimpl.
     rewrite mkmult_pow_ok;Esimpl.
     pattern x at 1;replace x with (pow_pos rmul x 1).
-    rewrite <- pow_pos_Pplus.
-    rewrite <- Pplus_one_succ_l.
-    rewrite Psucc_o_double_minus_one_eq_xO.
+    rewrite <- pow_pos_add.
+    rewrite Pos.add_1_l.
+    rewrite Pos.succ_pred_double.
     simpl;Esimpl.
     trivial.
   Qed.

@@ -4,6 +4,6 @@
    and not "O = O" *)
 
 Lemma eapply_evar : O=O -> 0=O.
-intro H; eapply trans_equal;
+intro H; eapply eq_trans;
   [apply H | match goal with |- ?x = ?x => reflexivity end].
 Qed.

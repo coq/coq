@@ -106,7 +106,7 @@ Ltac rewrite_match_eq H :=
     [ |- ?T ] =>
     match T with
       context [ match_eq ?A ?B ?t ?f ] =>
-      rewrite (match_eq_rewrite A B t f (exist _ _ (sym_eq H)))
+      rewrite (match_eq_rewrite A B t f (exist _ _ (eq_sym H)))
     end
   end.
 

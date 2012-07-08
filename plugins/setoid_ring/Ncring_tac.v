@@ -104,7 +104,7 @@ Instance  reify_pow (R:Type) `{Ring R}
 Instance  reify_var (R:Type) t lvar i 
  `{nth R t lvar i}
  `{Rr: Ring (T:=R)}
- : reify (Rr:= Rr) (PEX Z (P_of_succ_nat i))lvar t 
+ : reify (Rr:= Rr) (PEX Z (Pos.of_succ_nat i))lvar t
  | 100.
 
 Class reifylist (R:Type)`{Rr:Ring (T:=R)} (lexpr:list (PExpr Z)) (lvar:list R) 
@@ -202,7 +202,7 @@ Ltac ring_simplify_aux lterm fv lexpr hyp :=
     match lexpr with
       | ?e::?le => (* e:PExpr Z est la réification de t0:R *)
         let t := constr:(@Ncring_polynom.norm_subst
-          Z 0%Z 1%Z Zplus Zmult Zminus Zopp (@eq Z) Zops Zeq_bool e) in
+          Z 0%Z 1%Z Z.add Z.mul Z.sub Z.opp (@eq Z) Zops Zeq_bool e) in
         (* t:Pol Z *)
         let te := 
           constr:(@Ncring_polynom.Pphi Z 
@@ -212,13 +212,13 @@ Ltac ring_simplify_aux lterm fv lexpr hyp :=
         let t':= fresh "t" in
         pose (t' := nft);
         assert (eq1 : t = t');
-        [vm_cast_no_check (refl_equal t')|
+        [vm_cast_no_check (eq_refl t')|
         let eq2 := fresh "ring" in
         assert (eq2:(@Ncring_polynom.PEeval Z
           _ 0 1 _+_ _*_ _-_ -_ _==_ _ Ncring_initial.gen_phiZ N (fun n:N => n) 
           (@Ring_theory.pow_N _ 1 multiplication) fv e) == te);
         [apply (@Ncring_polynom.norm_subst_ok
-          Z _ 0%Z 1%Z Zplus Zmult Zminus Zopp (@eq Z)
+          Z _ 0%Z 1%Z Z.add Z.mul Z.sub Z.opp (@eq Z)
           _ _ 0 1 _+_ _*_ _-_ -_ _==_ _ _ Ncring_initial.gen_phiZ _
           (@comm _ 0 1 _+_ _*_ _-_ -_ _==_ _ _) _ Zeqb_ok);
            apply mkpow_th; reflexivity

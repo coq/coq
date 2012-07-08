@@ -36,8 +36,8 @@ Local Unset Boolean Equality Schemes.
 Module PositiveOrderedTypeBits <: UsualOrderedType.
   Definition t:=positive.
   Include HasUsualEq <+ UsualIsEq.
-  Definition eqb := Peqb.
-  Definition eqb_eq := Peqb_eq.
+  Definition eqb := Pos.eqb.
+  Definition eqb_eq := Pos.eqb_eq.
   Include HasEqBool2Dec.
 
   Fixpoint bits_lt (p q:positive) : Prop :=

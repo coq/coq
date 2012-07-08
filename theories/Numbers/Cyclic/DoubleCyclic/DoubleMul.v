@@ -246,7 +246,7 @@ Section DoubleMul.
   Variable spec_w_W0 : forall h, [[w_W0 h]] = [|h|] * wB.
   Variable spec_w_0W : forall l, [[w_0W l]] = [|l|].
   Variable spec_w_compare :
-     forall x y, w_compare x y = Zcompare [|x|] [|y|].
+     forall x y, w_compare x y = Z.compare [|x|] [|y|].
   Variable spec_w_succ : forall x, [|w_succ x|] = ([|x|] + 1) mod wB.
   Variable spec_w_add_c  : forall x y, [+|w_add_c x y|] = [|x|] + [|y|].
   Variable spec_w_add : forall x y, [|w_add x y|] = ([|x|] + [|y|]) mod wB.
@@ -325,7 +325,7 @@ Section DoubleMul.
    destruct cc as [ | cch ccl]; simpl zn2z_to_Z; simpl ww_to_Z.
    rewrite spec_ww_add;rewrite spec_w_W0;rewrite Zmod_small;
     rewrite wwB_wBwB. ring.
-   rewrite <- (Zplus_0_r ([|wc|]*wB));rewrite H;apply mult_add_ineq3;zarith.
+   rewrite <- (Z.add_0_r ([|wc|]*wB));rewrite H;apply mult_add_ineq3;zarith.
    simpl ww_to_Z in H1. assert (U:=spec_to_Z cch).
    assert ([|wc|]*wB + [|cch|] <= 2*wB - 3).
     destruct (Z_le_gt_dec ([|wc|]*wB + [|cch|]) (2*wB - 3));trivial.
@@ -335,21 +335,21 @@ Section DoubleMul.
      assert (H5 := Zmult_lt_b _ _ _ (spec_to_Z xl) (spec_to_Z yh)).
      omega.
    generalize H3;clear H3;rewrite <- H1.
-   rewrite Zplus_assoc; rewrite Zpower_2; rewrite Zmult_assoc;
-     rewrite <- Zmult_plus_distr_l.
+   rewrite Z.add_assoc; rewrite Z.pow_2_r; rewrite Z.mul_assoc;
+     rewrite <- Z.mul_add_distr_r.
     assert (((2 * wB - 4) + 2)*wB <= ([|wc|] * wB + [|cch|])*wB).
-     apply Zmult_le_compat;zarith.
-    rewrite Zmult_plus_distr_l in H3.
+     apply Z.mul_le_mono_nonneg;zarith.
+    rewrite Z.mul_add_distr_r in H3.
     intros. assert (U2 := spec_to_Z ccl);omega.
    generalize (spec_ww_add_c (w_W0 ccl) ll);destruct (ww_add_c (w_W0 ccl) ll)
-   as [l|l];unfold interp_carry;rewrite spec_w_W0;try rewrite Zmult_1_l;
+   as [l|l];unfold interp_carry;rewrite spec_w_W0;try rewrite Z.mul_1_l;
    simpl zn2z_to_Z;
    try rewrite spec_ww_add;try rewrite spec_ww_add_carry;rewrite spec_w_WW;
    rewrite Zmod_small;rewrite wwB_wBwB;intros.
    rewrite H4;ring. rewrite H;apply mult_add_ineq2;zarith.
-   rewrite Zplus_assoc;rewrite Zmult_plus_distr_l.
-   rewrite Zmult_1_l;rewrite <- Zplus_assoc;rewrite H4;ring.
-   repeat rewrite <- Zplus_assoc;rewrite H;apply mult_add_ineq2;zarith.
+   rewrite Z.add_assoc;rewrite Z.mul_add_distr_r.
+   rewrite Z.mul_1_l;rewrite <- Z.add_assoc;rewrite H4;ring.
+   repeat rewrite <- Z.add_assoc;rewrite H;apply mult_add_ineq2;zarith.
   Qed.
 
   Lemma spec_double_mul_c : forall cross:w->w->w->w->zn2z w -> zn2z w -> w*zn2z w,
@@ -361,7 +361,7 @@ Section DoubleMul.
      forall x y, [||double_mul_c cross x y||] = [[x]] * [[y]].
   Proof.
    intros cross Hcross x y;destruct x as [ |xh xl];simpl;trivial.
-   destruct y as [ |yh yl];simpl. rewrite Zmult_0_r;trivial.
+   destruct y as [ |yh yl];simpl. rewrite Z.mul_0_r;trivial.
    assert (H1:= spec_w_mul_c xh yh);assert (H2:= spec_w_mul_c xl yl).
    generalize (Hcross _ _ _ _ _ _ H1 H2).
    destruct (cross xh xl yh yl (w_mul_c xh yh) (w_mul_c xl yl)) as (wc,cc).
@@ -382,7 +382,7 @@ Section DoubleMul.
   Lemma spec_w_2: [|w_2|] = 2.
   unfold w_2; rewrite spec_w_add; rewrite spec_w_1; simpl.
   apply Zmod_small; split; auto with zarith.
-  rewrite <- (Zpower_1_r 2); unfold base; apply Zpower_lt_monotone; auto with zarith.
+  rewrite <- (Z.pow_1_r 2); unfold base; apply Zpower_lt_monotone; auto with zarith.
   Qed.
 
   Lemma kara_prod_aux : forall xh xl yh yl,
@@ -401,19 +401,19 @@ Section DoubleMul.
      assert (Hyh := (spec_to_Z yh)); assert (Hyl := (spec_to_Z yl)).
    generalize (spec_ww_add_c hh ll); case (ww_add_c hh ll);
      intros z Hz; rewrite <- Hz; unfold interp_carry; assert (Hz1 := (spec_ww_to_Z z)).
-   rewrite spec_w_compare; case Zcompare_spec; intros Hxlh;
+   rewrite spec_w_compare; case Z.compare_spec; intros Hxlh;
     try rewrite Hxlh; try rewrite spec_w_0; try (ring; fail).
-   rewrite spec_w_compare; case Zcompare_spec; intros Hylh.
+   rewrite spec_w_compare; case Z.compare_spec; intros Hylh.
    rewrite Hylh; rewrite spec_w_0; try (ring; fail).
    rewrite spec_w_0; try (ring; fail).
    repeat (rewrite spec_ww_sub || rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    split; auto with zarith.
    simpl in Hz; rewrite Hz; rewrite H; rewrite H0.
-   rewrite kara_prod_aux; apply Zplus_le_0_compat; apply Zmult_le_0_compat; auto with zarith.
-   apply Zle_lt_trans with ([[z]]-0); auto with zarith.
-   unfold Zminus; apply Zplus_le_compat_l; apply Zle_left_rev; simpl; rewrite Zopp_involutive.
-   apply Zmult_le_0_compat; auto with zarith.
+   rewrite kara_prod_aux; apply Z.add_nonneg_nonneg; apply Z.mul_nonneg_nonneg; auto with zarith.
+   apply Z.le_lt_trans with ([[z]]-0); auto with zarith.
+   unfold Z.sub; apply Z.add_le_mono_l; apply Z.le_0_sub; simpl; rewrite Z.opp_involutive.
+   apply Z.mul_nonneg_nonneg; auto with zarith.
    match goal with |- context[ww_add_c ?x ?y] =>
      generalize (spec_ww_add_c x y); case (ww_add_c x y); try rewrite spec_w_0;
      intros z1 Hz2
@@ -423,7 +423,7 @@ Section DoubleMul.
    rewrite spec_w_1; unfold interp_carry in Hz2; rewrite Hz2;
      repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
-   rewrite spec_w_compare; case Zcompare_spec; intros Hylh.
+   rewrite spec_w_compare; case Z.compare_spec; intros Hylh.
    rewrite Hylh; rewrite spec_w_0; try (ring; fail).
    match goal with |- context[ww_add_c ?x ?y] =>
      generalize (spec_ww_add_c x y); case (ww_add_c x y); try rewrite spec_w_0;
@@ -442,15 +442,15 @@ Section DoubleMul.
      replace ((x - y) * (z - t)) with ((y - x) * (t - z)); [idtac | ring]
    end.
    simpl in Hz; rewrite Hz; rewrite H; rewrite H0.
-   rewrite kara_prod_aux; apply Zplus_le_0_compat; apply Zmult_le_0_compat; auto with zarith.
-   apply Zle_lt_trans with ([[z]]-0); auto with zarith.
-   unfold Zminus; apply Zplus_le_compat_l; apply Zle_left_rev; simpl; rewrite Zopp_involutive.
-   apply Zmult_le_0_compat; auto with zarith.
+   rewrite kara_prod_aux; apply Z.add_nonneg_nonneg; apply Z.mul_nonneg_nonneg; auto with zarith.
+   apply Z.le_lt_trans with ([[z]]-0); auto with zarith.
+   unfold Z.sub; apply Z.add_le_mono_l; apply Z.le_0_sub; simpl; rewrite Z.opp_involutive.
+   apply Z.mul_nonneg_nonneg; auto with zarith.
    (** there is a carry in hh + ll **)
-   rewrite Zmult_1_l.
-   rewrite spec_w_compare; case Zcompare_spec; intros Hxlh;
+   rewrite Z.mul_1_l.
+   rewrite spec_w_compare; case Z.compare_spec; intros Hxlh;
     try rewrite Hxlh; try rewrite spec_w_1; try (ring; fail).
-   rewrite spec_w_compare; case Zcompare_spec; intros Hylh;
+   rewrite spec_w_compare; case Z.compare_spec; intros Hylh;
      try rewrite Hylh; try rewrite spec_w_1; try (ring; fail).
    match goal with |- context[ww_sub_c ?x ?y] =>
      generalize (spec_ww_sub_c x y); case (ww_sub_c x y); try rewrite spec_w_1;
@@ -458,7 +458,7 @@ Section DoubleMul.
    end.
    simpl in Hz2; rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
-   rewrite spec_w_0; rewrite Zmult_0_l; rewrite Zplus_0_l.
+   rewrite spec_w_0; rewrite Z.mul_0_l; rewrite Z.add_0_l.
    generalize Hz2; clear Hz2; unfold interp_carry.
    repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
@@ -469,11 +469,11 @@ Section DoubleMul.
    simpl in Hz2; rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    rewrite spec_w_2; unfold interp_carry in Hz2.
-   apply trans_equal with (wwB + (1 * wwB + [[z1]])).
+   transitivity (wwB + (1 * wwB + [[z1]])).
    ring.
    rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
-   rewrite spec_w_compare; case Zcompare_spec; intros Hylh;
+   rewrite spec_w_compare; case Z.compare_spec; intros Hylh;
      try rewrite Hylh; try rewrite spec_w_1; try (ring; fail).
    match goal with |- context[ww_add_c ?x ?y] =>
      generalize (spec_ww_add_c x y); case (ww_add_c x y); try rewrite spec_w_1;
@@ -482,7 +482,7 @@ Section DoubleMul.
    simpl in Hz2; rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
    rewrite spec_w_2; unfold interp_carry in Hz2.
-   apply trans_equal with (wwB + (1 * wwB + [[z1]])).
+   transitivity (wwB + (1 * wwB + [[z1]])).
    ring.
    rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
@@ -492,7 +492,7 @@ Section DoubleMul.
    end.
    simpl in Hz2; rewrite Hz2; repeat (rewrite spec_w_sub || rewrite spec_w_mul_c).
    repeat rewrite Zmod_small; auto with zarith; try (ring; fail).
-   rewrite spec_w_0; rewrite Zmult_0_l; rewrite Zplus_0_l.
+   rewrite spec_w_0; rewrite Z.mul_0_l; rewrite Z.add_0_l.
    match goal with |- context[(?x - ?y) * (?z - ?t)] =>
      replace ((x - y) * (z - t)) with ((y - x) * (t - z)); [idtac | ring]
    end.
@@ -513,7 +513,7 @@ Section DoubleMul.
    rewrite <- wwB_wBwB;intros H1 H2.
    assert (H3 := wB_pos w_digits).
    assert (2*wB <= wwB).
-    rewrite wwB_wBwB; rewrite Zpower_2; apply Zmult_le_compat;zarith.
+    rewrite wwB_wBwB; rewrite Z.pow_2_r; apply Z.mul_le_mono_nonneg;zarith.
    omega.
   Qed.
 
@@ -537,14 +537,14 @@ Section DoubleMul.
    assert (U1:= lt_0_wwB w_digits).
    intros x y; case x; auto; intros xh xl.
    case y; auto.
-   simpl; rewrite Zmult_0_r; rewrite Zmod_small; auto with zarith.
+   simpl; rewrite Z.mul_0_r; rewrite Zmod_small; auto with zarith.
    intros yh yl;simpl.
    repeat (rewrite spec_ww_add || rewrite spec_w_W0 || rewrite spec_w_mul_c
     || rewrite spec_w_add || rewrite spec_w_mul).
    rewrite <- Zplus_mod; auto with zarith.
-   repeat (rewrite Zmult_plus_distr_l || rewrite Zmult_plus_distr_r).
+   repeat (rewrite Z.mul_add_distr_r || rewrite Z.mul_add_distr_l).
    rewrite <- Zmult_mod_distr_r; auto with zarith.
-   rewrite <- Zpower_2; rewrite <- wwB_wBwB; auto with zarith.
+   rewrite <- Z.pow_2_r; rewrite <- wwB_wBwB; auto with zarith.
    rewrite Zplus_mod; auto with zarith.
    rewrite Zmod_mod; auto with zarith.
    rewrite <- Zplus_mod; auto with zarith.
@@ -564,10 +564,10 @@ Section DoubleMul.
    apply (spec_mul_aux xh xl xh xl wc cc);trivial.
    generalize Heq (spec_ww_add_c (w_mul_c xh xl) (w_mul_c xh xl));clear Heq.
    rewrite spec_w_mul_c;destruct (ww_add_c (w_mul_c xh xl) (w_mul_c xh xl));
-   unfold interp_carry;try rewrite Zmult_1_l;intros Heq Heq';inversion Heq;
-   rewrite (Zmult_comm [|xl|]);subst.
-   rewrite spec_w_0;rewrite Zmult_0_l;rewrite Zplus_0_l;trivial.
-   rewrite spec_w_1;rewrite Zmult_1_l;rewrite <- wwB_wBwB;trivial.
+   unfold interp_carry;try rewrite Z.mul_1_l;intros Heq Heq';inversion Heq;
+   rewrite (Z.mul_comm [|xl|]);subst.
+   rewrite spec_w_0;rewrite Z.mul_0_l;rewrite Z.add_0_l;trivial.
+   rewrite spec_w_1;rewrite Z.mul_1_l;rewrite <- wwB_wBwB;trivial.
   Qed.
 
   Section DoubleMulAddn1Proof.
@@ -589,8 +589,8 @@ Section DoubleMul.
     assert(H:=IHn xl y r);destruct (double_mul_add_n1 w_mul_add n xl y r)as(rl,l).
    assert(U:=IHn xh y rl);destruct(double_mul_add_n1 w_mul_add n xh y rl)as(rh,h).
     rewrite <- double_wB_wwB. rewrite spec_double_WW;simpl;trivial.
-    rewrite Zmult_plus_distr_l;rewrite <- Zplus_assoc;rewrite <- H.
-    rewrite Zmult_assoc;rewrite Zplus_assoc;rewrite <- Zmult_plus_distr_l.
+    rewrite Z.mul_add_distr_r;rewrite <- Z.add_assoc;rewrite <- H.
+    rewrite Z.mul_assoc;rewrite Z.add_assoc;rewrite <- Z.mul_add_distr_r.
     rewrite U;ring.
    Qed.
 
@@ -604,9 +604,9 @@ Section DoubleMul.
    destruct (w_mul_c x y) as [ |h l];simpl;rewrite <- H.
    rewrite spec_w_0;trivial.
    assert (U:=spec_w_add_c l r);destruct (w_add_c l r) as [lr|lr];unfold
-   interp_carry in U;try rewrite Zmult_1_l in H;simpl.
+   interp_carry in U;try rewrite Z.mul_1_l in H;simpl.
    rewrite U;ring. rewrite spec_w_succ. rewrite Zmod_small.
-   rewrite <- Zplus_assoc;rewrite <- U;ring.
+   rewrite <- Z.add_assoc;rewrite <- U;ring.
    simpl in H;assert (H1:= Zmult_lt_b _ _ _ (spec_to_Z x) (spec_to_Z y)).
    rewrite <- H in H1.
    assert (H2:=spec_to_Z h);split;zarith.

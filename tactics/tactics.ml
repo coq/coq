@@ -3406,7 +3406,7 @@ let intros_symmetry =
 
 (* Transitivity tactics *)
 
-(* This tactic first tries to apply a constant named trans_eq, where eq
+(* This tactic first tries to apply a constant named eq_trans, where eq
    is the name of the equality predicate. If this constant is not
    defined and the conclusion is a=b, it solves the goal doing
    Cut x1=x2;

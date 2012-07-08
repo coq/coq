@@ -20,5 +20,5 @@ Check ∀ x z, True -> (∃ y v, x + v ≥ y + z) ∨ x ≤ 0.
 
 (* Integer Arithmetic *)
 (* TODO: this should come after ZArith
-Notation "x ≤ y" := (Zle x y) (at level 70, no associativity).
+Notation "x ≤ y" := (Z.le x y) (at level 70, no associativity).
 *)

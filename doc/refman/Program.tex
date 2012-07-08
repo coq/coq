@@ -53,7 +53,7 @@ will be first rewrote to:
   (match x as y return (x = y -> _) with
   | 0 => fun H : x = 0 -> t
   | S n => fun H : x = S n -> u
-  end) (refl_equal n).
+  end) (eq_refl n).
 \end{coq_example*}
   
   This permits to get the proper equalities in the context of proof

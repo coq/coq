@@ -1871,6 +1871,10 @@ Notation xI := xI (only parsing).
 Notation xO := xO (only parsing).
 Notation xH := xH (only parsing).
 
+Notation IsNul := Pos.IsNul (only parsing).
+Notation IsPos := Pos.IsPos (only parsing).
+Notation IsNeg := Pos.IsNeg (only parsing).
+
 Notation Psucc := Pos.succ (compat "8.3").
 Notation Pplus := Pos.add (compat "8.3").
 Notation Pplus_carry := Pos.add_carry (compat "8.3").
@@ -1882,9 +1886,6 @@ Notation nat_of_P := Pos.to_nat (compat "8.3").
 Notation P_of_succ_nat := Pos.of_succ_nat (compat "8.3").
 Notation Pdouble_minus_one := Pos.pred_double (compat "8.3").
 Notation positive_mask := Pos.mask (compat "8.3").
-Notation IsNul := Pos.IsNul (compat "8.3").
-Notation IsPos := Pos.IsPos (compat "8.3").
-Notation IsNeg := Pos.IsNeg (compat "8.3").
 Notation positive_mask_rect := Pos.mask_rect (compat "8.3").
 Notation positive_mask_ind := Pos.mask_ind (compat "8.3").
 Notation positive_mask_rec := Pos.mask_rec (compat "8.3").
@@ -2056,24 +2057,24 @@ Lemma Peqb_true_eq x y : Pos.eqb x y = true -> x=y.
 Proof. apply Pos.eqb_eq. Qed.
 Lemma Pcompare_eq_Gt p q : (p ?= q) = Gt <-> p > q.
 Proof. reflexivity. Qed.
-Lemma Pplus_one_succ_r p : Psucc p = p + 1.
+Lemma Pplus_one_succ_r p : Pos.succ p = p + 1.
 Proof (eq_sym (Pos.add_1_r p)).
-Lemma Pplus_one_succ_l p : Psucc p = 1 + p.
+Lemma Pplus_one_succ_l p : Pos.succ p = 1 + p.
 Proof (eq_sym (Pos.add_1_l p)).
-Lemma Pcompare_refl p : Pcompare p p Eq = Eq.
+Lemma Pcompare_refl p : Pos.compare_cont p p Eq = Eq.
 Proof (Pos.compare_cont_refl p Eq).
-Lemma Pcompare_Eq_eq : forall p q, Pcompare p q Eq = Eq -> p = q.
+Lemma Pcompare_Eq_eq : forall p q, Pos.compare_cont p q Eq = Eq -> p = q.
 Proof Pos.compare_eq.
-Lemma ZC4 p q : Pcompare p q Eq = CompOpp (Pcompare q p Eq).
+Lemma ZC4 p q : Pos.compare_cont p q Eq = CompOpp (Pos.compare_cont q p Eq).
 Proof (Pos.compare_antisym q p).
-Lemma Ppred_minus p : Ppred p = p - 1.
+Lemma Ppred_minus p : Pos.pred p = p - 1.
 Proof (eq_sym (Pos.sub_1_r p)).
 
 Lemma Pminus_mask_Gt p q :
   p > q ->
   exists h : positive,
-   Pminus_mask p q = IsPos h /\
-   q + h = p /\ (h = 1 \/ Pminus_mask_carry p q = IsPos (Ppred h)).
+   Pos.sub_mask p q = IsPos h /\
+   q + h = p /\ (h = 1 \/ Pos.sub_mask_carry p q = IsPos (Pos.pred h)).
 Proof.
  intros H. apply Pos.gt_lt in H.
  destruct (Pos.sub_mask_pos p q H) as (r & U).

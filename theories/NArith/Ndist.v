@@ -38,7 +38,7 @@ Qed.
 
 Lemma Nplength_zeros :
  forall (a:N) (n:nat),
-   Nplength a = ni n -> forall k:nat, k < n -> Nbit a k = false.
+   Nplength a = ni n -> forall k:nat, k < n -> N.testbit_nat a k = false.
 Proof.
   simple induction a; trivial.
   simple induction p. simple induction n. intros. inversion H1.
@@ -46,33 +46,33 @@ Proof.
   intros. simpl in H1. discriminate H1.
   simple induction k. trivial.
   generalize H0. case n. intros. inversion H3.
-  intros. simpl in |- *. unfold Nbit in H. apply (H n0). simpl in H1. inversion H1. reflexivity.
+  intros. simpl in |- *. unfold N.testbit_nat in H. apply (H n0). simpl in H1. inversion H1. reflexivity.
   exact (lt_S_n n1 n0 H3).
   simpl in |- *. intros n H. inversion H. intros. inversion H0.
 Qed.
 
 Lemma Nplength_one :
- forall (a:N) (n:nat), Nplength a = ni n -> Nbit a n = true.
+ forall (a:N) (n:nat), Nplength a = ni n -> N.testbit_nat a n = true.
 Proof.
   simple induction a. intros. inversion H.
   simple induction p. intros. simpl in H0. inversion H0. reflexivity.
-  intros. simpl in H0. inversion H0. simpl in |- *. unfold Nbit in H. apply H. reflexivity.
+  intros. simpl in H0. inversion H0. simpl in |- *. unfold N.testbit_nat in H. apply H. reflexivity.
   intros. simpl in H. inversion H. reflexivity.
 Qed.
 
 Lemma Nplength_first_one :
  forall (a:N) (n:nat),
-   (forall k:nat, k < n -> Nbit a k = false) ->
-   Nbit a n = true -> Nplength a = ni n.
+   (forall k:nat, k < n -> N.testbit_nat a k = false) ->
+   N.testbit_nat a n = true -> Nplength a = ni n.
 Proof.
   simple induction a. intros. simpl in H0. discriminate H0.
   simple induction p. intros. generalize H0. case n. intros. reflexivity.
-  intros. absurd (Nbit (Npos (xI p0)) 0 = false). trivial with bool.
+  intros. absurd (N.testbit_nat (Npos (xI p0)) 0 = false). trivial with bool.
   auto with bool arith.
   intros. generalize H0 H1. case n. intros. simpl in H3. discriminate H3.
   intros. simpl in |- *. unfold Nplength in H.
   cut (ni (Pplength p0) = ni n0). intro. inversion H4. reflexivity.
-  apply H. intros. change (Nbit (Npos (xO p0)) (S k) = false) in |- *. apply H2. apply lt_n_S. exact H4.
+  apply H. intros. change (N.testbit_nat (Npos (xO p0)) (S k) = false) in |- *. apply H2. apply lt_n_S. exact H4.
   exact H3.
   intro. case n. trivial.
   intros. simpl in H0. discriminate H0.
@@ -222,27 +222,27 @@ Qed.
 
 Lemma Nplength_lb :
  forall (a:N) (n:nat),
-   (forall k:nat, k < n -> Nbit a k = false) -> ni_le (ni n) (Nplength a).
+   (forall k:nat, k < n -> N.testbit_nat a k = false) -> ni_le (ni n) (Nplength a).
 Proof.
   simple induction a. intros. exact (ni_min_inf_r (ni n)).
   intros. unfold Nplength in |- *. apply le_ni_le. case (le_or_lt n (Pplength p)). trivial.
-  intro. absurd (Nbit (Npos p) (Pplength p) = false).
+  intro. absurd (N.testbit_nat (Npos p) (Pplength p) = false).
   rewrite
    (Nplength_one (Npos p) (Pplength p)
-      (refl_equal (Nplength (Npos p)))).
+      (eq_refl (Nplength (Npos p)))).
   discriminate.
   apply H. exact H0.
 Qed.
 
 Lemma Nplength_ub :
- forall (a:N) (n:nat), Nbit a n = true -> ni_le (Nplength a) (ni n).
+ forall (a:N) (n:nat), N.testbit_nat a n = true -> ni_le (Nplength a) (ni n).
 Proof.
   simple induction a. intros. discriminate H.
   intros. unfold Nplength in |- *. apply le_ni_le. case (le_or_lt (Pplength p) n). trivial.
-  intro. absurd (Nbit (Npos p) n = true).
+  intro. absurd (N.testbit_nat (Npos p) n = true).
   rewrite
    (Nplength_zeros (Npos p) (Pplength p)
-      (refl_equal (Nplength (Npos p))) n H0).
+      (eq_refl (Nplength (Npos p))) n H0).
   discriminate.
   exact H.
 Qed.
@@ -255,26 +255,26 @@ Qed.
     Instead of working with $d$, we work with $pd$, namely
     [Npdist]: *)
 
-Definition Npdist (a a':N) := Nplength (Nxor a a').
+Definition Npdist (a a':N) := Nplength (N.lxor a a').
 
 (** d is a distance, so $d(a,a')=0$ iff $a=a'$; this means that
     $pd(a,a')=infty$ iff $a=a'$: *)
 
 Lemma Npdist_eq_1 : forall a:N, Npdist a a = infty.
 Proof.
-  intros. unfold Npdist in |- *. rewrite Nxor_nilpotent. reflexivity.
+  intros. unfold Npdist in |- *. rewrite N.lxor_nilpotent. reflexivity.
 Qed.
 
 Lemma Npdist_eq_2 : forall a a':N, Npdist a a' = infty -> a = a'.
 Proof.
-  intros. apply Nxor_eq. apply Nplength_infty. exact H.
+  intros. apply N.lxor_eq. apply Nplength_infty. exact H.
 Qed.
 
 (** $d$ is a distance, so $d(a,a')=d(a',a)$: *)
 
 Lemma Npdist_comm : forall a a':N, Npdist a a' = Npdist a' a.
 Proof.
-  unfold Npdist in |- *. intros. rewrite Nxor_comm. reflexivity.
+  unfold Npdist in |- *. intros. rewrite N.lxor_comm. reflexivity.
 Qed.
 
 (** $d$ is an ultrametric distance, that is, not only $d(a,a')\leq
@@ -292,21 +292,21 @@ Qed.
 Lemma Nplength_ultra_1 :
  forall a a':N,
    ni_le (Nplength a) (Nplength a') ->
-   ni_le (Nplength a) (Nplength (Nxor a a')).
+   ni_le (Nplength a) (Nplength (N.lxor a a')).
 Proof.
   simple induction a. intros. unfold ni_le in H. unfold Nplength at 1 3 in H.
   rewrite (ni_min_inf_l (Nplength a')) in H.
   rewrite (Nplength_infty a' H). simpl in |- *. apply ni_le_refl.
   intros. unfold Nplength at 1 in |- *. apply Nplength_lb. intros.
-  cut (forall a'':N, Nxor (Npos p) a' = a'' -> Nbit a'' k = false).
+  cut (forall a'':N, N.lxor (Npos p) a' = a'' -> N.testbit_nat a'' k = false).
   intros. apply H1. reflexivity.
   intro a''. case a''. intro. reflexivity.
   intros. rewrite <- H1. rewrite (Nxor_semantics (Npos p) a' k).
   rewrite
    (Nplength_zeros (Npos p) (Pplength p)
-      (refl_equal (Nplength (Npos p))) k H0).
+      (eq_refl (Nplength (Npos p))) k H0).
   generalize H. case a'. trivial.
-  intros. cut (Nbit (Npos p1) k = false). intros. rewrite H3. reflexivity.
+  intros. cut (N.testbit_nat (Npos p1) k = false). intros. rewrite H3. reflexivity.
   apply Nplength_zeros with (n := Pplength p1). reflexivity.
   apply (lt_le_trans k (Pplength p) (Pplength p1)). exact H0.
   apply ni_le_le. exact H2.
@@ -314,14 +314,14 @@ Qed.
 
 Lemma Nplength_ultra :
  forall a a':N,
-   ni_le (ni_min (Nplength a) (Nplength a')) (Nplength (Nxor a a')).
+   ni_le (ni_min (Nplength a) (Nplength a')) (Nplength (N.lxor a a')).
 Proof.
   intros. case (ni_le_total (Nplength a) (Nplength a')). intro.
   cut (ni_min (Nplength a) (Nplength a') = Nplength a).
   intro. rewrite H0. apply Nplength_ultra_1. exact H.
   exact H.
   intro. cut (ni_min (Nplength a) (Nplength a') = Nplength a').
-  intro. rewrite H0. rewrite Nxor_comm. apply Nplength_ultra_1. exact H.
+  intro. rewrite H0. rewrite N.lxor_comm. apply Nplength_ultra_1. exact H.
   rewrite ni_min_comm. exact H.
 Qed.
 
@@ -329,8 +329,8 @@ Lemma Npdist_ultra :
  forall a a' a'':N,
    ni_le (ni_min (Npdist a a'') (Npdist a'' a')) (Npdist a a').
 Proof.
-  intros. unfold Npdist in |- *. cut (Nxor (Nxor a a'') (Nxor a'' a') = Nxor a a').
+  intros. unfold Npdist in |- *. cut (N.lxor (N.lxor a a'') (N.lxor a'' a') = N.lxor a a').
   intro. rewrite <- H. apply Nplength_ultra.
-  rewrite Nxor_assoc. rewrite <- (Nxor_assoc a'' a'' a'). rewrite Nxor_nilpotent.
-  rewrite Nxor_neutral_left. reflexivity.
+  rewrite N.lxor_assoc. rewrite <- (N.lxor_assoc a'' a'' a'). rewrite N.lxor_nilpotent.
+  rewrite N.lxor_0_l. reflexivity.
 Qed.

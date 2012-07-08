@@ -138,7 +138,7 @@ Proof.
 Qed.
 
 
-(** A ternary comparison function in the spirit of [Zcompare]. *)
+(** A ternary comparison function in the spirit of [Z.compare]. *)
 
 Fixpoint nat_compare n m :=
   match n, m with

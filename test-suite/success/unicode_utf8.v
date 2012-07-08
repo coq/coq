@@ -75,7 +75,7 @@ Notation "x ≤ y" := (x<=y) (at level 70, no associativity).
 
 Require Import ZArith.
 Open Scope Z_scope.
-Locate "≤". (* still le, not Zle *)
+Locate "≤". (* still le, not Z.le *)
 Notation "x ≤ y" := (x<=y) (at level 70, no associativity).
 Locate "≤".
 Close Scope Z_scope.

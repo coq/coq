@@ -15,14 +15,14 @@ Open Scope positive_scope.
 Ltac clean := try (simpl; congruence).
 
 Lemma Gt_Psucc: forall p q,
-       (p ?= Psucc q) = Gt -> (p ?= q) = Gt.
+       (p ?= Pos.succ q) = Gt -> (p ?= q) = Gt.
 Proof.
 intros. rewrite <- Pos.compare_succ_succ.
 now apply Pos.lt_gt, Pos.lt_lt_succ, Pos.gt_lt.
 Qed.
 
 Lemma Psucc_Gt : forall p,
-       (Psucc p ?= p) = Gt.
+       (Pos.succ p ?= p) = Gt.
 Proof.
 intros. apply Pos.lt_gt, Pos.lt_succ_diag_r.
 Qed.
@@ -181,7 +181,7 @@ mkStore  {index:positive;contents:Tree}.
 Definition empty := mkStore xH Tempty.
 
 Definition push a  S :=
-mkStore (Psucc (index S)) (Tadd (index S) a (contents S)).
+mkStore (Pos.succ (index S)) (Tadd (index S) a (contents S)).
 
 Definition get i S := Tget i (contents S).
 
@@ -214,7 +214,7 @@ intros a S.
 rewrite Tget_Tadd.
 rewrite Psucc_Gt.
 intro W.
-change (get (Psucc (index S)) S =PNone).
+change (get (Pos.succ (index S)) S =PNone).
 apply get_Full_Gt; auto.
 apply Psucc_Gt.
 Qed.
@@ -248,7 +248,7 @@ forall x, get i S = PSome x ->
 Proof.
 intros i a S F x H.
 case_eq (i ?= index S);intro test.
-rewrite (Pcompare_Eq_eq _ _ test) in H.
+rewrite (Pos.compare_eq _ _ test) in H.
 rewrite (get_Full_Eq _ F) in H;congruence.
 rewrite <- H.
 rewrite (get_push_Full i a).
@@ -260,13 +260,13 @@ Qed.
 Lemma Full_index_one_empty : forall S, Full S -> index S = 1 -> S=empty.
 intros [ind cont] F one; inversion F.
 reflexivity.
-simpl index in one;assert (h:=Psucc_not_one (index S)).
+simpl index in one;assert (h:=Pos.succ_not_1 (index S)).
 congruence.
 Qed.
 
 Lemma push_not_empty: forall a S, (push a S) <> empty.
 intros a [ind cont];unfold push,empty.
-simpl;intro H;injection H; intros _ ; apply Psucc_not_one.
+simpl;intro H;injection H; intros _ ; apply Pos.succ_not_1.
 Qed.
 
 Fixpoint In (x:A) (S:Store) (F:Full S) {struct F}: Prop :=

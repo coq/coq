@@ -74,7 +74,7 @@ Extract Constant Z.compare =>
 Extract Constant Z.of_N => "fun p -> p".
 Extract Constant Z.abs_N => "abs".
 
-(** Zdiv and Zmod are quite complex to define in terms of (/) and (mod).
+(** Z.div and Z.modulo are quite complex to define in terms of (/) and (mod).
     For the moment we don't even try *)
 
 

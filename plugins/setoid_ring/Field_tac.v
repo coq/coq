@@ -447,7 +447,7 @@ Ltac prove_field_eqn ope FLD fv expr :=
   pose (res' := res);
   let lemma := get_L1 FLD in
   let lemma :=
-    constr:(lemma O fv List.nil expr' res' I List.nil (refl_equal _)) in
+    constr:(lemma O fv List.nil expr' res' I List.nil (eq_refl _)) in
   let ty := type of lemma in
   let lhs := match ty with
     forall _, ?lhs=_ -> _ => lhs
@@ -487,7 +487,7 @@ Ltac reduce_field_expr ope kont FLD fv expr :=
   kont c.
 
 (* Hack to let a Ltac return a term in the context of a primitive tactic *)
-Ltac return_term x := generalize (refl_equal x).
+Ltac return_term x := generalize (eq_refl x).
 Ltac get_term :=
   match goal with
   | |- ?x = _ -> _ => x

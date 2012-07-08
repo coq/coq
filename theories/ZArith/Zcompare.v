@@ -7,7 +7,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(** Binary Integers : results about Zcompare *)
+(** Binary Integers : results about Z.compare *)
 (** Initial author: Pierre Crégut (CNET, Lannion, France *)
 
 (** THIS FILE IS DEPRECATED.
@@ -85,7 +85,7 @@ Qed.
 
 Lemma Zcompare_succ_compat n m : (Z.succ n ?= Z.succ m) = (n ?= m).
 Proof.
- rewrite <- 2 Z.add_1_l. apply Zcompare_plus_compat.
+ rewrite <- 2 Z.add_1_l. apply Z.add_compare_mono_l.
 Qed.
 
 (** * Multiplication and comparison *)
@@ -106,7 +106,7 @@ Qed.
 Lemma Zmult_compare_compat_r n m p :
   p > 0 -> (n ?= m) = (n * p ?= m * p).
 Proof.
- intros; rewrite 2 (Zmult_comm _ p); now apply Zmult_compare_compat_l.
+ intros; rewrite 2 (Z.mul_comm _ p); now apply Zmult_compare_compat_l.
 Qed.
 
 (** * Relating [x ?= y] to [=], [<=], [<], [>=] or [>] *)

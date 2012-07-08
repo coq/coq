@@ -111,7 +111,7 @@ Module ZnZ.
     (* Conversion functions with Z *)
     spec_to_Z   : forall x, 0 <= [| x |] < wB;
     spec_of_pos : forall p,
-           Zpos p = (Z_of_N (fst (of_pos p)))*wB + [|(snd (of_pos p))|];
+           Zpos p = (Z.of_N (fst (of_pos p)))*wB + [|(snd (of_pos p))|];
     spec_zdigits : [| zdigits |] = Zpos digits;
     spec_more_than_1_digit: 1 < Zpos digits;
 
@@ -284,11 +284,11 @@ Module ZnZ.
  generalize (spec_of_pos p).
  case (of_pos p); intros n w1; simpl.
  case n; simpl Npos; auto with zarith.
- intros p1 Hp1; contradict Hp; apply Zle_not_lt.
+ intros p1 Hp1; contradict Hp; apply Z.le_ngt.
  replace (base digits) with (1 * base digits + 0) by ring.
  rewrite Hp1.
- apply Zplus_le_compat.
- apply Zmult_le_compat; auto with zarith.
+ apply Z.add_le_mono.
+ apply Z.mul_le_mono_nonneg; auto with zarith.
  case p1; simpl; intros; red; simpl; intros; discriminate.
  unfold base; auto with zarith.
  case (spec_to_Z w1); auto with zarith.
@@ -305,7 +305,7 @@ Module ZnZ.
  Proof.
  intros p; case p; simpl; try rewrite spec_0; auto.
  intros; rewrite of_pos_correct; auto with zarith.
- intros p1 (H1, _); contradict H1; apply Zlt_not_le; red; simpl; auto.
+ intros p1 (H1, _); contradict H1; apply Z.lt_nge; red; simpl; auto.
  Qed.
 
  End Of_Z.
@@ -346,46 +346,46 @@ Ltac zify := unfold eq in *; autorewrite with cyclic.
 
 Lemma add_0_l : forall x, 0 + x == x.
 Proof.
-intros. zify. rewrite Zplus_0_l.
+intros. zify. rewrite Z.add_0_l.
 apply Zmod_small. apply ZnZ.spec_to_Z.
 Qed.
 
 Lemma add_comm : forall x y, x + y == y + x.
 Proof.
-intros. zify. now rewrite Zplus_comm.
+intros. zify. now rewrite Z.add_comm.
 Qed.
 
 Lemma add_assoc : forall x y z, x + (y + z) == x + y + z.
 Proof.
-intros. zify. now rewrite Zplus_mod_idemp_r, Zplus_mod_idemp_l, Zplus_assoc.
+intros. zify. now rewrite Zplus_mod_idemp_r, Zplus_mod_idemp_l, Z.add_assoc.
 Qed.
 
 Lemma mul_1_l : forall x, 1 * x == x.
 Proof.
-intros. zify. rewrite Zmult_1_l.
+intros. zify. rewrite Z.mul_1_l.
 apply Zmod_small. apply ZnZ.spec_to_Z.
 Qed.
 
 Lemma mul_comm : forall x y, x * y == y * x.
 Proof.
-intros. zify. now rewrite Zmult_comm.
+intros. zify. now rewrite Z.mul_comm.
 Qed.
 
 Lemma mul_assoc : forall x y z, x * (y * z) == x * y * z.
 Proof.
-intros. zify. now rewrite Zmult_mod_idemp_r, Zmult_mod_idemp_l, Zmult_assoc.
+intros. zify. now rewrite Zmult_mod_idemp_r, Zmult_mod_idemp_l, Z.mul_assoc.
 Qed.
 
 Lemma mul_add_distr_r : forall x y z, (x+y)*z == x*z + y*z.
 Proof.
-intros. zify. now rewrite <- Zplus_mod, Zmult_mod_idemp_l, Zmult_plus_distr_l.
+intros. zify. now rewrite <- Zplus_mod, Zmult_mod_idemp_l, Z.mul_add_distr_r.
 Qed.
 
 Lemma add_opp_r : forall x y, x + - y == x-y.
 Proof.
-intros. zify. rewrite <- Zminus_mod_idemp_r. unfold Zminus.
-destruct (Z_eq_dec ([|y|] mod wB) 0) as [EQ|NEQ].
-rewrite Z_mod_zero_opp_full, EQ, 2 Zplus_0_r; auto.
+intros. zify. rewrite <- Zminus_mod_idemp_r. unfold Z.sub.
+destruct (Z.eq_dec ([|y|] mod wB) 0) as [EQ|NEQ].
+rewrite Z_mod_zero_opp_full, EQ, 2 Z.add_0_r; auto.
 rewrite Z_mod_nz_opp_full by auto.
 rewrite <- Zplus_mod_idemp_r, <- Zminus_mod_idemp_l.
 rewrite Z_mod_same_full. simpl. now rewrite Zplus_mod_idemp_r.
@@ -393,7 +393,7 @@ Qed.
 
 Lemma add_opp_diag_r : forall x, x + - x == 0.
 Proof.
-intros. red. rewrite add_opp_r. zify. now rewrite Zminus_diag, Zmod_0_l.
+intros. red. rewrite add_opp_r. zify. now rewrite Z.sub_diag, Zmod_0_l.
 Qed.
 
 Lemma CyclicRing : ring_theory 0 1 ZnZ.add ZnZ.mul ZnZ.sub ZnZ.opp eq.
@@ -413,18 +413,8 @@ Lemma eqb_eq : forall x y, eqb x y = true <-> x == y.
 Proof.
  intros. unfold eqb, eq.
  rewrite ZnZ.spec_compare.
- case Zcompare_spec; intuition; try discriminate.
+ case Z.compare_spec; intuition; try discriminate.
 Qed.
-
-(* POUR HUGO:
-Lemma eqb_eq : forall x y, eqb x y = true <-> x == y.
-Proof.
- intros. unfold eqb, eq. generalize (ZnZ.spec_compare x y).
- case (ZnZ.compare x y); intuition; try discriminate.
- (* BUG ?! using destruct instead of case won't work:
-   it gives 3 subcases, but ZnZ.compare x y is still there in them! *)
-Qed.
-*)
 
 Lemma eqb_correct : forall x y, eqb x y = true -> x==y.
 Proof. now apply eqb_eq. Qed.

@@ -315,11 +315,11 @@ symmetry.
 rewrite <- H1; intros a Ha.
 rewrite <- (H a) in Ha.
 destruct H0 as (_,H0).
-exact (H0 (refl_equal true) _ Ha).
+exact (H0 Logic.eq_refl _ Ha).
 rewrite <- H0; intros a Ha.
 rewrite (H a) in Ha.
 destruct H1 as (_,H1).
-exact (H1 (refl_equal true) _ Ha).
+exact (H1 Logic.eq_refl _ Ha).
 Qed.
 
 Instance Empty_m : Proper (Equal ==> iff) Empty.
@@ -489,5 +489,3 @@ End WFacts_fun.
 
 Module WFacts (M:WS) := WFacts_fun M.E M.
 Module Facts := WFacts.
-
-

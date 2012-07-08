@@ -85,7 +85,7 @@ Proof.
         unfold Rgt in |- *; intro; elim (H7 H5); clear H7;
           intros; clear H4 H5; generalize (H1 x1 (conj H3 H8));
             clear H1; intro; unfold D_x in H3; elim H3; intros;
-              generalize (sym_not_eq H5); clear H5; intro H5;
+              generalize (not_eq_sym H5); clear H5; intro H5;
                 generalize (Rminus_eq_contra x1 x0 H5); intro; generalize H1;
                   pattern (d x0) at 1 in |- *;
                     rewrite <- (let (H1, H2) := Rmult_ne (d x0) in H2);
@@ -177,8 +177,8 @@ Proof.
   unfold D_in in |- *; intros; unfold limit1_in in |- *;
     unfold limit_in in |- *; unfold Rdiv in |- *; intros;
       simpl in |- *; split with eps; split; auto.
-  intros; rewrite (Rminus_diag_eq y y (refl_equal y)); rewrite Rmult_0_l;
-    unfold R_dist in |- *; rewrite (Rminus_diag_eq 0 0 (refl_equal 0));
+  intros; rewrite (Rminus_diag_eq y y (eq_refl y)); rewrite Rmult_0_l;
+    unfold R_dist in |- *; rewrite (Rminus_diag_eq 0 0 (eq_refl 0));
       unfold Rabs in |- *; case (Rcase_abs 0); intro.
   absurd (0 < 0); auto.
   red in |- *; intro; apply (Rlt_irrefl 0 H1).
@@ -193,8 +193,8 @@ Proof.
     unfold limit_in in |- *; intros; simpl in |- *; split with eps;
       split; auto.
   intros; elim H0; clear H0; intros; unfold D_x in H0; elim H0; intros;
-    rewrite (Rinv_r (x - x0) (Rminus_eq_contra x x0 (sym_not_eq H3)));
-      unfold R_dist in |- *; rewrite (Rminus_diag_eq 1 1 (refl_equal 1));
+    rewrite (Rinv_r (x - x0) (Rminus_eq_contra x x0 (not_eq_sym H3)));
+      unfold R_dist in |- *; rewrite (Rminus_diag_eq 1 1 (eq_refl 1));
         unfold Rabs in |- *; case (Rcase_abs 0); intro.
   absurd (0 < 0); auto.
   red in |- *; intro; apply (Rlt_irrefl 0 r).
@@ -270,7 +270,7 @@ Proof.
   ring.
   unfold limit1_in in |- *; unfold limit_in in |- *; simpl in |- *; intros;
     split with eps; split; auto; intros; elim (R_dist_refl (g x0) (g x0));
-      intros a b; rewrite (b (refl_equal (g x0))); unfold Rgt in H;
+      intros a b; rewrite (b (eq_refl (g x0))); unfold Rgt in H;
         assumption.
 Qed.
 
@@ -391,7 +391,7 @@ Proof.
       rewrite (Rminus_diag_eq (f x2) (f x0) H12) in H16;
         rewrite (Rmult_0_l (/ (x2 - x0))) in H16;
           rewrite (Rmult_0_l (dg (f x0))) in H16; rewrite H12;
-            rewrite (Rminus_diag_eq (g (f x0)) (g (f x0)) (refl_equal (g (f x0))));
+            rewrite (Rminus_diag_eq (g (f x0)) (g (f x0)) (eq_refl (g (f x0))));
               rewrite (Rmult_0_l (/ (x2 - x0))); assumption.
   clear H10 H5; elim H11; clear H11; intros; elim H5; clear H5; intros;
     cut

@@ -21,17 +21,17 @@ Lemma natSRth : semi_ring_theory O (S O) plus mult (@eq nat).
 
 Lemma nat_morph_N :
    semi_morph 0 1 plus mult (eq (A:=nat))
-          0%N 1%N N.add N.mul N.eqb nat_of_N.
+          0%N 1%N N.add N.mul N.eqb N.to_nat.
 Proof.
   constructor;trivial.
-  exact nat_of_Nplus.
-  exact nat_of_Nmult.
+  exact N2Nat.inj_add.
+  exact N2Nat.inj_mul.
   intros x y H. apply N.eqb_eq in H. now subst.
 Qed.
 
 Ltac natcst t :=
   match isnatcst t with
-    true => constr:(N_of_nat t)
+    true => constr:(N.of_nat t)
   | _ => constr:InitialRing.NotConstant
   end.
 

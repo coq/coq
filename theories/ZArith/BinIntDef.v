@@ -22,6 +22,11 @@ Module Z.
 
 Definition t := Z.
 
+(** ** Nicer names [Z.pos] and [Z.neg] for contructors *)
+
+Notation pos := Zpos.
+Notation neg := Zneg.
+
 (** ** Constants *)
 
 Definition zero := 0.
@@ -33,22 +38,22 @@ Definition two := 2.
 Definition double x :=
   match x with
     | 0 => 0
-    | Zpos p => Zpos p~0
-    | Zneg p => Zneg p~0
+    | pos p => pos p~0
+    | neg p => neg p~0
   end.
 
 Definition succ_double x :=
   match x with
     | 0 => 1
-    | Zpos p => Zpos p~1
-    | Zneg p => Zneg (Pos.pred_double p)
+    | pos p => pos p~1
+    | neg p => neg (Pos.pred_double p)
   end.
 
 Definition pred_double x :=
   match x with
     | 0 => -1
-    | Zneg p => Zneg p~1
-    | Zpos p => Zpos (Pos.pred_double p)
+    | neg p => neg p~1
+    | pos p => pos (Pos.pred_double p)
   end.
 
 (** ** Subtraction of positive into Z *)
@@ -57,12 +62,12 @@ Fixpoint pos_sub (x y:positive) {struct y} : Z :=
   match x, y with
     | p~1, q~1 => double (pos_sub p q)
     | p~1, q~0 => succ_double (pos_sub p q)
-    | p~1, 1 => Zpos p~0
+    | p~1, 1 => pos p~0
     | p~0, q~1 => pred_double (pos_sub p q)
     | p~0, q~0 => double (pos_sub p q)
-    | p~0, 1 => Zpos (Pos.pred_double p)
-    | 1, q~1 => Zneg q~0
-    | 1, q~0 => Zneg (Pos.pred_double q)
+    | p~0, 1 => pos (Pos.pred_double p)
+    | 1, q~1 => neg q~0
+    | 1, q~0 => neg (Pos.pred_double q)
     | 1, 1 => Z0
   end%positive.
 
@@ -72,10 +77,10 @@ Definition add x y :=
   match x, y with
     | 0, y => y
     | x, 0 => x
-    | Zpos x', Zpos y' => Zpos (x' + y')
-    | Zpos x', Zneg y' => pos_sub x' y'
-    | Zneg x', Zpos y' => pos_sub y' x'
-    | Zneg x', Zneg y' => Zneg (x' + y')
+    | pos x', pos y' => pos (x' + y')
+    | pos x', neg y' => pos_sub x' y'
+    | neg x', pos y' => pos_sub y' x'
+    | neg x', neg y' => neg (x' + y')
   end.
 
 Infix "+" := add : Z_scope.
@@ -85,8 +90,8 @@ Infix "+" := add : Z_scope.
 Definition opp x :=
   match x with
     | 0 => 0
-    | Zpos x => Zneg x
-    | Zneg x => Zpos x
+    | pos x => neg x
+    | neg x => pos x
   end.
 
 Notation "- x" := (opp x) : Z_scope.
@@ -111,10 +116,10 @@ Definition mul x y :=
   match x, y with
     | 0, _ => 0
     | _, 0 => 0
-    | Zpos x', Zpos y' => Zpos (x' * y')
-    | Zpos x', Zneg y' => Zneg (x' * y')
-    | Zneg x', Zpos y' => Zneg (x' * y')
-    | Zneg x', Zneg y' => Zpos (x' * y')
+    | pos x', pos y' => pos (x' * y')
+    | pos x', neg y' => neg (x' * y')
+    | neg x', pos y' => neg (x' * y')
+    | neg x', neg y' => pos (x' * y')
   end.
 
 Infix "*" := mul : Z_scope.
@@ -125,9 +130,9 @@ Definition pow_pos (z:Z) (n:positive) := Pos.iter n (mul z) 1.
 
 Definition pow x y :=
   match y with
-    | Zpos p => pow_pos x p
+    | pos p => pow_pos x p
     | 0 => 1
-    | Zneg _ => 0
+    | neg _ => 0
   end.
 
 Infix "^" := pow : Z_scope.
@@ -137,8 +142,8 @@ Infix "^" := pow : Z_scope.
 Definition square x :=
   match x with
     | 0 => 0
-    | Zpos p => Zpos (Pos.square p)
-    | Zneg p => Zpos (Pos.square p)
+    | pos p => pos (Pos.square p)
+    | neg p => pos (Pos.square p)
   end.
 
 (** ** Comparison *)
@@ -146,14 +151,14 @@ Definition square x :=
 Definition compare x y :=
   match x, y with
     | 0, 0 => Eq
-    | 0, Zpos y' => Lt
-    | 0, Zneg y' => Gt
-    | Zpos x', 0 => Gt
-    | Zpos x', Zpos y' => (x' ?= y')%positive
-    | Zpos x', Zneg y' => Gt
-    | Zneg x', 0 => Lt
-    | Zneg x', Zpos y' => Lt
-    | Zneg x', Zneg y' => CompOpp ((x' ?= y')%positive)
+    | 0, pos y' => Lt
+    | 0, neg y' => Gt
+    | pos x', 0 => Gt
+    | pos x', pos y' => (x' ?= y')%positive
+    | pos x', neg y' => Gt
+    | neg x', 0 => Lt
+    | neg x', pos y' => Lt
+    | neg x', neg y' => CompOpp ((x' ?= y')%positive)
   end.
 
 Infix "?=" := compare (at level 70, no associativity) : Z_scope.
@@ -163,8 +168,8 @@ Infix "?=" := compare (at level 70, no associativity) : Z_scope.
 Definition sgn z :=
   match z with
     | 0 => 0
-    | Zpos p => 1
-    | Zneg p => -1
+    | pos p => 1
+    | neg p => -1
   end.
 
 (** Boolean equality and comparisons *)
@@ -200,8 +205,8 @@ Definition gtb x y :=
 Fixpoint eqb x y :=
   match x, y with
     | 0, 0 => true
-    | Zpos p, Zpos q => Pos.eqb p q
-    | Zneg p, Zneg q => Pos.eqb p q
+    | pos p, pos q => Pos.eqb p q
+    | neg p, neg q => Pos.eqb p q
     | _, _ => false
   end.
 
@@ -230,8 +235,8 @@ Definition min n m :=
 Definition abs z :=
   match z with
     | 0 => 0
-    | Zpos p => Zpos p
-    | Zneg p => Zpos p
+    | pos p => pos p
+    | neg p => pos p
   end.
 
 (** ** Conversions *)
@@ -241,24 +246,24 @@ Definition abs z :=
 Definition abs_nat (z:Z) : nat :=
   match z with
     | 0 => 0%nat
-    | Zpos p => Pos.to_nat p
-    | Zneg p => Pos.to_nat p
+    | pos p => Pos.to_nat p
+    | neg p => Pos.to_nat p
   end.
 
 (** From [Z] to [N] via absolute value *)
 
 Definition abs_N (z:Z) : N :=
   match z with
-    | Z0 => 0%N
-    | Zpos p => Npos p
-    | Zneg p => Npos p
+    | 0 => 0%N
+    | pos p => N.pos p
+    | neg p => N.pos p
   end.
 
 (** From [Z] to [nat] by rounding negative numbers to 0 *)
 
 Definition to_nat (z:Z) : nat :=
   match z with
-    | Zpos p => Pos.to_nat p
+    | pos p => Pos.to_nat p
     | _ => O
   end.
 
@@ -266,7 +271,7 @@ Definition to_nat (z:Z) : nat :=
 
 Definition to_N (z:Z) : N :=
   match z with
-    | Zpos p => Npos p
+    | pos p => N.pos p
     | _ => 0%N
   end.
 
@@ -275,15 +280,23 @@ Definition to_N (z:Z) : N :=
 Definition of_nat (n:nat) : Z :=
   match n with
    | O => 0
-   | S n => Zpos (Pos.of_succ_nat n)
+   | S n => pos (Pos.of_succ_nat n)
   end.
 
 (** From [N] to [Z] *)
 
 Definition of_N (n:N) : Z :=
   match n with
-    | N0 => 0
-    | Npos p => Zpos p
+    | 0%N => 0
+    | N.pos p => pos p
+  end.
+
+(** From [Z] to [positive] by rounding nonpositive numbers to 1 *)
+
+Definition to_pos (z:Z) : positive :=
+  match z with
+    | pos p => p
+    | _ => 1%positive
   end.
 
 (** ** Iteration of a function
@@ -293,7 +306,7 @@ Definition of_N (n:N) : Z :=
 
 Definition iter (n:Z) {A} (f:A -> A) (x:A) :=
   match n with
-    | Zpos p => Pos.iter p f x
+    | pos p => Pos.iter p f x
     | _ => x
   end.
 
@@ -348,17 +361,17 @@ Definition div_eucl (a b:Z) : Z * Z :=
   match a, b with
     | 0, _ => (0, 0)
     | _, 0 => (0, 0)
-    | Zpos a', Zpos _ => pos_div_eucl a' b
-    | Zneg a', Zpos _ =>
+    | pos a', pos _ => pos_div_eucl a' b
+    | neg a', pos _ =>
       let (q, r) := pos_div_eucl a' b in
 	match r with
 	  | 0 => (- q, 0)
 	  | _ => (- (q + 1), b - r)
 	end
-    | Zneg a', Zneg b' =>
-      let (q, r) := pos_div_eucl a' (Zpos b') in (q, - r)
-    | Zpos a', Zneg b' =>
-      let (q, r) := pos_div_eucl a' (Zpos b') in
+    | neg a', neg b' =>
+      let (q, r) := pos_div_eucl a' (pos b') in (q, - r)
+    | pos a', neg b' =>
+      let (q, r) := pos_div_eucl a' (pos b') in
 	match r with
 	  | 0 => (- q, 0)
 	  | _ => (- (q + 1), b + r)
@@ -392,14 +405,14 @@ Definition quotrem (a b:Z) : Z * Z :=
   match a, b with
    | 0,  _ => (0, 0)
    | _, 0  => (0, a)
-   | Zpos a, Zpos b =>
-     let (q, r) := N.pos_div_eucl a (Npos b) in (of_N q, of_N r)
-   | Zneg a, Zpos b =>
-     let (q, r) := N.pos_div_eucl a (Npos b) in (-of_N q, - of_N r)
-   | Zpos a, Zneg b =>
-     let (q, r) := N.pos_div_eucl a (Npos b) in (-of_N q, of_N r)
-   | Zneg a, Zneg b =>
-     let (q, r) := N.pos_div_eucl a (Npos b) in (of_N q, - of_N r)
+   | pos a, pos b =>
+     let (q, r) := N.pos_div_eucl a (N.pos b) in (of_N q, of_N r)
+   | neg a, pos b =>
+     let (q, r) := N.pos_div_eucl a (N.pos b) in (-of_N q, - of_N r)
+   | pos a, neg b =>
+     let (q, r) := N.pos_div_eucl a (N.pos b) in (-of_N q, of_N r)
+   | neg a, neg b =>
+     let (q, r) := N.pos_div_eucl a (N.pos b) in (of_N q, - of_N r)
   end.
 
 Definition quot a b := fst (quotrem a b).
@@ -414,16 +427,16 @@ Infix "÷" := quot (at level 40, left associativity) : Z_scope.
 Definition even z :=
   match z with
     | 0 => true
-    | Zpos (xO _) => true
-    | Zneg (xO _) => true
+    | pos (xO _) => true
+    | neg (xO _) => true
     | _ => false
   end.
 
 Definition odd z :=
   match z with
     | 0 => false
-    | Zpos (xO _) => false
-    | Zneg (xO _) => false
+    | pos (xO _) => false
+    | neg (xO _) => false
     | _ => true
   end.
 
@@ -437,9 +450,9 @@ Definition odd z :=
 Definition div2 z :=
  match z with
    | 0 => 0
-   | Zpos 1 => 0
-   | Zpos p => Zpos (Pos.div2 p)
-   | Zneg p => Zneg (Pos.div2_up p)
+   | pos 1 => 0
+   | pos p => pos (Pos.div2 p)
+   | neg p => neg (Pos.div2_up p)
  end.
 
 (** [quot2] performs rounding toward zero, it is hence a particular
@@ -449,21 +462,21 @@ Definition div2 z :=
 Definition quot2 (z:Z) :=
   match z with
     | 0 => 0
-    | Zpos 1 => 0
-    | Zpos p => Zpos (Pos.div2 p)
-    | Zneg 1 => 0
-    | Zneg p => Zneg (Pos.div2 p)
+    | pos 1 => 0
+    | pos p => pos (Pos.div2 p)
+    | neg 1 => 0
+    | neg p => neg (Pos.div2 p)
   end.
 
-(** NB: [Z.quot2] used to be named [Zdiv2] in Coq <= 8.3 *)
+(** NB: [Z.quot2] used to be named [Z.div2] in Coq <= 8.3 *)
 
 
 (** * Base-2 logarithm *)
 
 Definition log2 z :=
   match z with
-    | Zpos (p~1) => Zpos (Pos.size p)
-    | Zpos (p~0) => Zpos (Pos.size p)
+    | pos (p~1) => pos (Pos.size p)
+    | pos (p~0) => pos (Pos.size p)
     | _ => 0
   end.
 
@@ -473,17 +486,17 @@ Definition log2 z :=
 Definition sqrtrem n :=
  match n with
   | 0 => (0, 0)
-  | Zpos p =>
+  | pos p =>
     match Pos.sqrtrem p with
-     | (s, IsPos r) => (Zpos s, Zpos r)
-     | (s, _) => (Zpos s, 0)
+     | (s, IsPos r) => (pos s, pos r)
+     | (s, _) => (pos s, 0)
     end
-  | Zneg _ => (0,0)
+  | neg _ => (0,0)
  end.
 
 Definition sqrt n :=
  match n with
-  | Zpos p => Zpos (Pos.sqrt p)
+  | pos p => pos (Pos.sqrt p)
   | _ => 0
  end.
 
@@ -494,10 +507,10 @@ Definition gcd a b :=
   match a,b with
     | 0, _ => abs b
     | _, 0 => abs a
-    | Zpos a, Zpos b => Zpos (Pos.gcd a b)
-    | Zpos a, Zneg b => Zpos (Pos.gcd a b)
-    | Zneg a, Zpos b => Zpos (Pos.gcd a b)
-    | Zneg a, Zneg b => Zpos (Pos.gcd a b)
+    | pos a, pos b => pos (Pos.gcd a b)
+    | pos a, neg b => pos (Pos.gcd a b)
+    | neg a, pos b => pos (Pos.gcd a b)
+    | neg a, neg b => pos (Pos.gcd a b)
   end.
 
 (** A generalized gcd, also computing division of a and b by gcd. *)
@@ -506,14 +519,14 @@ Definition ggcd a b : Z*(Z*Z) :=
   match a,b with
     | 0, _ => (abs b,(0, sgn b))
     | _, 0 => (abs a,(sgn a, 0))
-    | Zpos a, Zpos b =>
-       let '(g,(aa,bb)) := Pos.ggcd a b in (Zpos g, (Zpos aa, Zpos bb))
-    | Zpos a, Zneg b =>
-       let '(g,(aa,bb)) := Pos.ggcd a b in (Zpos g, (Zpos aa, Zneg bb))
-    | Zneg a, Zpos b =>
-       let '(g,(aa,bb)) := Pos.ggcd a b in (Zpos g, (Zneg aa, Zpos bb))
-    | Zneg a, Zneg b =>
-       let '(g,(aa,bb)) := Pos.ggcd a b in (Zpos g, (Zneg aa, Zneg bb))
+    | pos a, pos b =>
+       let '(g,(aa,bb)) := Pos.ggcd a b in (pos g, (pos aa, pos bb))
+    | pos a, neg b =>
+       let '(g,(aa,bb)) := Pos.ggcd a b in (pos g, (pos aa, neg bb))
+    | neg a, pos b =>
+       let '(g,(aa,bb)) := Pos.ggcd a b in (pos g, (neg aa, pos bb))
+    | neg a, neg b =>
+       let '(g,(aa,bb)) := Pos.ggcd a b in (pos g, (neg aa, neg bb))
   end.
 
 
@@ -532,13 +545,13 @@ Definition ggcd a b : Z*(Z*Z) :=
 Definition testbit a n :=
  match n with
    | 0 => odd a
-   | Zpos p =>
+   | pos p =>
      match a with
        | 0 => false
-       | Zpos a => Pos.testbit a (Npos p)
-       | Zneg a => negb (N.testbit (Pos.pred_N a) (Npos p))
+       | pos a => Pos.testbit a (N.pos p)
+       | neg a => negb (N.testbit (Pos.pred_N a) (N.pos p))
      end
-   | Zneg _ => false
+   | neg _ => false
  end.
 
 (** Shifts
@@ -555,8 +568,8 @@ Definition testbit a n :=
 Definition shiftl a n :=
  match n with
    | 0 => a
-   | Zpos p => Pos.iter p (mul 2) a
-   | Zneg p => Pos.iter p div2 a
+   | pos p => Pos.iter p (mul 2) a
+   | neg p => Pos.iter p div2 a
  end.
 
 Definition shiftr a n := shiftl a (-n).
@@ -567,40 +580,40 @@ Definition lor a b :=
  match a, b with
    | 0, _ => b
    | _, 0 => a
-   | Zpos a, Zpos b => Zpos (Pos.lor a b)
-   | Zneg a, Zpos b => Zneg (N.succ_pos (N.ldiff (Pos.pred_N a) (Npos b)))
-   | Zpos a, Zneg b => Zneg (N.succ_pos (N.ldiff (Pos.pred_N b) (Npos a)))
-   | Zneg a, Zneg b => Zneg (N.succ_pos (N.land (Pos.pred_N a) (Pos.pred_N b)))
+   | pos a, pos b => pos (Pos.lor a b)
+   | neg a, pos b => neg (N.succ_pos (N.ldiff (Pos.pred_N a) (N.pos b)))
+   | pos a, neg b => neg (N.succ_pos (N.ldiff (Pos.pred_N b) (N.pos a)))
+   | neg a, neg b => neg (N.succ_pos (N.land (Pos.pred_N a) (Pos.pred_N b)))
  end.
 
 Definition land a b :=
  match a, b with
    | 0, _ => 0
    | _, 0 => 0
-   | Zpos a, Zpos b => of_N (Pos.land a b)
-   | Zneg a, Zpos b => of_N (N.ldiff (Npos b) (Pos.pred_N a))
-   | Zpos a, Zneg b => of_N (N.ldiff (Npos a) (Pos.pred_N b))
-   | Zneg a, Zneg b => Zneg (N.succ_pos (N.lor (Pos.pred_N a) (Pos.pred_N b)))
+   | pos a, pos b => of_N (Pos.land a b)
+   | neg a, pos b => of_N (N.ldiff (N.pos b) (Pos.pred_N a))
+   | pos a, neg b => of_N (N.ldiff (N.pos a) (Pos.pred_N b))
+   | neg a, neg b => neg (N.succ_pos (N.lor (Pos.pred_N a) (Pos.pred_N b)))
  end.
 
 Definition ldiff a b :=
  match a, b with
    | 0, _ => 0
    | _, 0 => a
-   | Zpos a, Zpos b => of_N (Pos.ldiff a b)
-   | Zneg a, Zpos b => Zneg (N.succ_pos (N.lor (Pos.pred_N a) (Npos b)))
-   | Zpos a, Zneg b => of_N (N.land (Npos a) (Pos.pred_N b))
-   | Zneg a, Zneg b => of_N (N.ldiff (Pos.pred_N b) (Pos.pred_N a))
+   | pos a, pos b => of_N (Pos.ldiff a b)
+   | neg a, pos b => neg (N.succ_pos (N.lor (Pos.pred_N a) (N.pos b)))
+   | pos a, neg b => of_N (N.land (N.pos a) (Pos.pred_N b))
+   | neg a, neg b => of_N (N.ldiff (Pos.pred_N b) (Pos.pred_N a))
  end.
 
 Definition lxor a b :=
  match a, b with
    | 0, _ => b
    | _, 0 => a
-   | Zpos a, Zpos b => of_N (Pos.lxor a b)
-   | Zneg a, Zpos b => Zneg (N.succ_pos (N.lxor (Pos.pred_N a) (Npos b)))
-   | Zpos a, Zneg b => Zneg (N.succ_pos (N.lxor (Npos a) (Pos.pred_N b)))
-   | Zneg a, Zneg b => of_N (N.lxor (Pos.pred_N a) (Pos.pred_N b))
+   | pos a, pos b => of_N (Pos.lxor a b)
+   | neg a, pos b => neg (N.succ_pos (N.lxor (Pos.pred_N a) (N.pos b)))
+   | pos a, neg b => neg (N.succ_pos (N.lxor (N.pos a) (Pos.pred_N b)))
+   | neg a, neg b => of_N (N.lxor (Pos.pred_N a) (Pos.pred_N b))
  end.
 
 End Z.

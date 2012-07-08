@@ -449,7 +449,7 @@ let build_polynom gl th lc =
 	  mkLApp(coq_Pplus, [|th.th_a; aux c1; aux c2 |])
       | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
 	  mkLApp(coq_Pmult, [|th.th_a; aux c1; aux c2 |])
-      (* The special case of Zminus *)
+      (* The special case of Z.sub *)
       | App (binop, [|c1; c2|])
 	  when safe_pf_conv_x gl c
             (mkApp (th.th_plus, [|c1; mkApp(unbox th.th_opp, [|c2|])|])) ->
@@ -567,7 +567,7 @@ let build_apolynom gl th lc =
 	  mkLApp(coq_APplus, [| aux c1; aux c2 |])
       | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
 	  mkLApp(coq_APmult, [| aux c1; aux c2 |])
-      (* The special case of Zminus *)
+      (* The special case of Z.sub *)
       | App (binop, [|c1; c2|])
 	  when safe_pf_conv_x gl c
             (mkApp(th.th_plus, [|c1; mkApp(unbox th.th_opp,[|c2|]) |])) ->
@@ -628,7 +628,7 @@ let build_setpolynom gl th lc =
 	  mkLApp(coq_SetPplus, [|th.th_a; aux c1; aux c2 |])
       | App (binop, [|c1; c2|]) when safe_pf_conv_x gl binop th.th_mult ->
 	  mkLApp(coq_SetPmult, [|th.th_a; aux c1; aux c2 |])
-      (* The special case of Zminus *)
+      (* The special case of Z.sub *)
       | App (binop, [|c1; c2|])
 	  when safe_pf_conv_x gl c
 	    (mkApp(th.th_plus, [|c1; mkApp(unbox th.th_opp,[|c2|])|])) ->

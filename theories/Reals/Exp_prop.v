@@ -770,7 +770,7 @@ Proof.
   split.
   unfold D_x, no_cond in |- *; split.
   trivial.
-  apply (sym_not_eq H6).
+  apply (not_eq_sym H6).
   rewrite Rminus_0_r; apply H7.
   unfold SFL in |- *.
   case (cv 0); intros.

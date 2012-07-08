@@ -161,13 +161,13 @@ Section DoubleBase.
   Variable spec_w_0W  : forall l, [[w_0W l]] = [|l|].
   Variable spec_to_Z  : forall x, 0 <= [|x|] < wB.
   Variable spec_w_compare : forall x y,
-     w_compare x y = Zcompare [|x|] [|y|].
+     w_compare x y = Z.compare [|x|] [|y|].
 
   Lemma wwB_wBwB : wwB = wB^2.
   Proof.
-   unfold base, ww_digits;rewrite Zpower_2; rewrite (Zpos_xO w_digits).
+   unfold base, ww_digits;rewrite Z.pow_2_r; rewrite (Pos2Z.inj_xO w_digits).
    replace (2 * Zpos w_digits) with (Zpos w_digits + Zpos w_digits).
-   apply Zpower_exp; unfold Zge;simpl;intros;discriminate.
+   apply Zpower_exp; unfold Z.ge;simpl;intros;discriminate.
    ring.
   Qed.
 
@@ -179,28 +179,28 @@ Section DoubleBase.
 
   Lemma lt_0_wB : 0 < wB.
   Proof.
-   unfold base;apply Zpower_gt_0. unfold Zlt;reflexivity.
-   unfold Zle;intros H;discriminate H.
+   unfold base;apply Z.pow_pos_nonneg. unfold Z.lt;reflexivity.
+   unfold Z.le;intros H;discriminate H.
   Qed.
 
   Lemma lt_0_wwB : 0 < wwB.
-  Proof. rewrite wwB_wBwB; rewrite Zpower_2; apply Zmult_lt_0_compat;apply lt_0_wB. Qed.
+  Proof. rewrite wwB_wBwB; rewrite Z.pow_2_r; apply Z.mul_pos_pos;apply lt_0_wB. Qed.
 
   Lemma wB_pos: 1 < wB.
   Proof.
-   unfold base;apply Zlt_le_trans with (2^1).  unfold Zlt;reflexivity.
-   apply Zpower_le_monotone.  unfold Zlt;reflexivity.
-   split;unfold Zle;intros H. discriminate H.
+   unfold base;apply Z.lt_le_trans with (2^1).  unfold Z.lt;reflexivity.
+   apply Zpower_le_monotone.  unfold Z.lt;reflexivity.
+   split;unfold Z.le;intros H. discriminate H.
    clear spec_w_0W w_0W spec_w_Bm1 spec_to_Z spec_w_WW w_WW.
    destruct w_digits; discriminate H.
   Qed.
 
   Lemma wwB_pos: 1 < wwB.
   Proof.
-   assert (H:= wB_pos);rewrite wwB_wBwB;rewrite <-(Zmult_1_r 1).
-   rewrite Zpower_2.
-   apply Zmult_lt_compat2;(split;[unfold Zlt;reflexivity|trivial]).
-   apply Zlt_le_weak;trivial.
+   assert (H:= wB_pos);rewrite wwB_wBwB;rewrite <-(Z.mul_1_r 1).
+   rewrite Z.pow_2_r.
+   apply Zmult_lt_compat2;(split;[unfold Z.lt;reflexivity|trivial]).
+   apply Z.lt_le_incl;trivial.
   Qed.
 
   Theorem wB_div_2:  2 * (wB / 2) = wB.
@@ -208,22 +208,22 @@ Section DoubleBase.
    clear spec_w_0 w_0 spec_w_1 w_1 spec_w_Bm1 w_Bm1 spec_w_WW spec_w_0W
     spec_to_Z;unfold base.
    assert (2 ^ Zpos w_digits = 2 * (2 ^ (Zpos w_digits - 1))).
-   pattern 2 at 2; rewrite <- Zpower_1_r.
+   pattern 2 at 2; rewrite <- Z.pow_1_r.
    rewrite <- Zpower_exp; auto with zarith.
    f_equal; auto with zarith.
    case w_digits; compute; intros; discriminate.
    rewrite H; f_equal; auto with zarith.
-   rewrite Zmult_comm; apply Z_div_mult; auto with zarith.
+   rewrite Z.mul_comm; apply Z_div_mult; auto with zarith.
   Qed.
 
   Theorem wwB_div_2 : wwB / 2 = wB / 2 * wB.
   Proof.
    clear spec_w_0 w_0 spec_w_1 w_1 spec_w_Bm1 w_Bm1 spec_w_WW spec_w_0W
     spec_to_Z.
-   rewrite wwB_wBwB; rewrite Zpower_2.
+   rewrite wwB_wBwB; rewrite Z.pow_2_r.
    pattern wB at 1; rewrite <- wB_div_2; auto.
-   rewrite <- Zmult_assoc.
-   repeat (rewrite (Zmult_comm 2); rewrite Z_div_mult); auto with zarith.
+   rewrite <- Z.mul_assoc.
+   repeat (rewrite (Z.mul_comm 2); rewrite Z_div_mult); auto with zarith.
   Qed.
 
   Lemma mod_wwB : forall z x,
@@ -231,15 +231,15 @@ Section DoubleBase.
   Proof.
    intros z x.
    rewrite Zplus_mod.
-   pattern wwB at 1;rewrite wwB_wBwB; rewrite Zpower_2.
+   pattern wwB at 1;rewrite wwB_wBwB; rewrite Z.pow_2_r.
    rewrite Zmult_mod_distr_r;try apply lt_0_wB.
    rewrite (Zmod_small [|x|]).
    apply Zmod_small;rewrite wwB_wBwB;apply beta_mult;try apply spec_to_Z.
-   apply Z_mod_lt;apply Zlt_gt;apply lt_0_wB.
+   apply Z_mod_lt;apply Z.lt_gt;apply lt_0_wB.
    destruct (spec_to_Z x);split;trivial.
    change [|x|] with (0*wB+[|x|]). rewrite wwB_wBwB.
-   rewrite Zpower_2;rewrite <- (Zplus_0_r (wB*wB));apply beta_lex_inv.
-   apply lt_0_wB. apply spec_to_Z. split;[apply Zle_refl | apply lt_0_wB].
+   rewrite Z.pow_2_r;rewrite <- (Z.add_0_r (wB*wB));apply beta_lex_inv.
+   apply lt_0_wB. apply spec_to_Z. split;[apply Z.le_refl | apply lt_0_wB].
  Qed.
 
   Lemma wB_div : forall x y, ([|x|] * wB + [|y|]) / wB = [|x|].
@@ -265,29 +265,29 @@ Section DoubleBase.
    clear spec_w_0 spec_w_1 spec_w_Bm1 w_0 w_1 w_Bm1.
    unfold base;apply Zpower_lt_monotone;auto with zarith.
    assert (0 < Zpos w_digits). compute;reflexivity.
-   unfold ww_digits;rewrite Zpos_xO;auto with zarith.
+   unfold ww_digits;rewrite Pos2Z.inj_xO;auto with zarith.
   Qed.
 
   Lemma w_to_Z_wwB : forall x, x < wB -> x < wwB.
   Proof.
-   intros x H;apply Zlt_trans with wB;trivial;apply lt_wB_wwB.
+   intros x H;apply Z.lt_trans with wB;trivial;apply lt_wB_wwB.
   Qed.
 
   Lemma spec_ww_to_Z : forall x, 0 <= [[x]] < wwB.
   Proof.
    clear spec_w_0 spec_w_1 spec_w_Bm1 w_0 w_1 w_Bm1.
    destruct x as [ |h l];simpl.
-   split;[apply Zle_refl|apply lt_0_wwB].
+   split;[apply Z.le_refl|apply lt_0_wwB].
    assert (H:=spec_to_Z h);assert (L:=spec_to_Z l);split.
-   apply Zplus_le_0_compat;auto with zarith.
-   rewrite <- (Zplus_0_r wwB);rewrite wwB_wBwB; rewrite Zpower_2;
+   apply Z.add_nonneg_nonneg;auto with zarith.
+   rewrite <- (Z.add_0_r wwB);rewrite wwB_wBwB; rewrite Z.pow_2_r;
     apply beta_lex_inv;auto with zarith.
   Qed.
 
   Lemma double_wB_wwB : forall n, double_wB n * double_wB n = double_wB (S n).
   Proof.
    intros n;unfold double_wB;simpl.
-   unfold base. rewrite Pshiftl_nat_S, (Zpos_xO (_ << _)).
+   unfold base. rewrite Pshiftl_nat_S, (Pos2Z.inj_xO (_ << _)).
    replace  (2 * Zpos (w_digits << n)) with
      (Zpos (w_digits << n) + Zpos (w_digits << n)) by ring.
    symmetry; apply Zpower_exp;intro;discriminate.
@@ -306,14 +306,14 @@ Section DoubleBase.
   intros n; elim n; clear n; auto.
     unfold double_wB, "<<"; auto with zarith.
   intros n H1; rewrite <- double_wB_wwB.
-  apply Zle_trans with (wB * 1).
-    rewrite Zmult_1_r; apply Zle_refl.
-  apply Zmult_le_compat; auto with zarith.
-  apply Zle_trans with wB; auto with zarith.
-  unfold base.
-  rewrite <- (Zpower_0_r 2).
-  apply Zpower_le_monotone2; auto with zarith.
+  apply Z.le_trans with (wB * 1).
+    rewrite Z.mul_1_r; apply Z.le_refl.
   unfold base; auto with zarith.
+  apply Z.mul_le_mono_nonneg; auto with zarith.
+  apply Z.le_trans with wB; auto with zarith.
+  unfold base.
+  rewrite <- (Z.pow_0_r 2).
+  apply Z.pow_le_mono_r; auto with zarith.
   Qed.
 
   Lemma spec_double_to_Z :
@@ -326,9 +326,9 @@ Section DoubleBase.
   unfold double_wB,base;split;auto with zarith.
   assert (U0:= IHn w0);assert (U1:= IHn w1).
   split;auto with zarith.
-  apply Zlt_le_trans with ((double_wB n - 1) * double_wB n + double_wB n).
+  apply Z.lt_le_trans with ((double_wB n - 1) * double_wB n + double_wB n).
   assert (double_to_Z n w0*double_wB n <= (double_wB n - 1)*double_wB n).
-  apply Zmult_le_compat_r;auto with zarith.
+  apply Z.mul_le_mono_nonneg_r;auto with zarith.
   auto with zarith.
   rewrite <- double_wB_wwB.
   replace ((double_wB n - 1) * double_wB n + double_wB n) with (double_wB n * double_wB n);
@@ -342,22 +342,19 @@ Section DoubleBase.
   clear spec_w_1 spec_w_Bm1.
   intros n; elim n; auto; clear n.
   intros n Hrec x; case x; clear x; auto.
-  intros xx yy H1; simpl in H1.
-  assert (F1: [!n | xx!] = 0).
-    case (Zle_lt_or_eq 0 ([!n | xx!])); auto.
-      case (spec_double_to_Z n xx); auto.
-     intros F2.
-     assert (F3 := double_wB_more_digits n).
-    assert (F4: 0 <= [!n | yy!]).
-      case (spec_double_to_Z n yy); auto.
+  intros xx yy; simpl.
+  destruct (spec_double_to_Z n xx) as [F1 _]. Z.le_elim F1.
+  - (* 0 < [!n | xx!] *)
+    intros; exfalso.
+    assert (F3 := double_wB_more_digits n).
+    destruct (spec_double_to_Z n yy) as [F4 _].
     assert (F5: 1 * wB <=  [!n | xx!] * double_wB n);
      auto with zarith.
-    apply Zmult_le_compat; auto with zarith.
+    apply Z.mul_le_mono_nonneg; auto with zarith.
     unfold base; auto with zarith.
-  simpl get_low; simpl double_to_Z.
-  generalize H1; clear H1.
-  rewrite F1; rewrite Zmult_0_l; rewrite Zplus_0_l.
-  intros H1; apply Hrec; auto.
+  - (* 0 = [!n | xx!] *)
+    rewrite <- F1; rewrite Z.mul_0_l, Z.add_0_l.
+    intros; apply Hrec; auto.
   Qed.
 
   Lemma spec_double_WW : forall n (h l : word w n),
@@ -399,36 +396,36 @@ Section DoubleBase.
 
   Ltac comp2ord := match goal with
    | |- Lt = (?x ?= ?y) => symmetry; change (x < y)
-   | |- Gt = (?x ?= ?y) => symmetry; change (x > y); apply Zlt_gt
+   | |- Gt = (?x ?= ?y) => symmetry; change (x > y); apply Z.lt_gt
   end.
 
   Lemma spec_ww_compare : forall x y,
-    ww_compare x y = Zcompare [[x]] [[y]].
+    ww_compare x y = Z.compare [[x]] [[y]].
   Proof.
    destruct x as [ |xh xl];destruct y as [ |yh yl];simpl;trivial.
    (* 1st case *)
    rewrite 2 spec_w_compare, spec_w_0.
-   destruct (Zcompare_spec 0 [|yh|]) as [H|H|H].
+   destruct (Z.compare_spec 0 [|yh|]) as [H|H|H].
    rewrite <- H;simpl. reflexivity.
    symmetry. change (0 < [|yh|]*wB+[|yl|]).
    change 0 with (0*wB+0). rewrite <- spec_w_0 at 2.
    apply wB_lex_inv;trivial.
-   absurd (0 <= [|yh|]). apply Zlt_not_le; trivial.
+   absurd (0 <= [|yh|]). apply Z.lt_nge; trivial.
    destruct (spec_to_Z yh);trivial.
    (* 2nd case *)
    rewrite 2 spec_w_compare, spec_w_0.
-   destruct (Zcompare_spec [|xh|] 0) as [H|H|H].
+   destruct (Z.compare_spec [|xh|] 0) as [H|H|H].
    rewrite H;simpl;reflexivity.
-   absurd (0 <= [|xh|]). apply Zlt_not_le; trivial.
+   absurd (0 <= [|xh|]). apply Z.lt_nge; trivial.
    destruct (spec_to_Z xh);trivial.
    comp2ord.
    change 0 with (0*wB+0). rewrite <- spec_w_0 at 2.
    apply wB_lex_inv;trivial.
    (* 3rd case *)
    rewrite 2 spec_w_compare.
-   destruct (Zcompare_spec [|xh|] [|yh|]) as [H|H|H].
+   destruct (Z.compare_spec [|xh|] [|yh|]) as [H|H|H].
    rewrite H.
-   symmetry. apply Zcompare_plus_compat.
+   symmetry. apply Z.add_compare_mono_l.
    comp2ord. apply wB_lex_inv;trivial.
    comp2ord. apply wB_lex_inv;trivial.
   Qed.

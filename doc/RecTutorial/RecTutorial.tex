@@ -560,11 +560,11 @@ as it can be infered from $a$.
 \begin{alltt}
 Print eq.
 \it{} Inductive eq (A : Type) (x : A) : A \arrow{} Prop :=  
-    refl_equal : x = x
+    eq_refl : x = x
 For eq: Argument A is implicit
-For refl_equal: Argument A is implicit
+For eq_refl: Argument A is implicit
 For eq: Argument scopes are [type_scope _ _]
-For refl_equal: Argument scopes are [type_scope _]
+For eq_refl: Argument scopes are [type_scope _]
 \end{alltt}
 
 Notice also that  the first parameter $A$ of \texttt{eq} has type
@@ -581,15 +581,15 @@ Proof.
  reflexivity.
 Qed.
 
-Lemma eq_proof_proof : refl_equal (2*6) = refl_equal (3*4).
+Lemma eq_proof_proof : eq_refl (2*6) = eq_refl (3*4).
 Proof.
  reflexivity.
 Qed.
 
 Print eq_proof_proof.
 \it eq_proof_proof = 
-refl_equal (refl_equal (3 * 4))
-     : refl_equal (2 * 6) = refl_equal (3 * 4)
+eq_refl (eq_refl (3 * 4))
+     : eq_refl (2 * 6) = eq_refl (3 * 4)
 \tt
 
 Lemma eq_lt_le : ( 2 < 4) = (3 {\coqle} 4).
@@ -942,10 +942,10 @@ predecessor =  fun n : nat {\funarrow}
 \textbf{| O {\funarrow}}
     exist (fun m : nat {\funarrow} 0 = 0 {\coqand} m = 0 {\coqor} 0 = S m) 0
       (or_introl (0 = 1) 
-                 (conj (refl_equal 0) (refl_equal 0)))
+                 (conj (eq_refl 0) (eq_refl 0)))
 \textbf{| S n0 {\funarrow}}
     exist (fun m : nat {\funarrow} S n0 = 0 {\coqand} m = 0 {\coqor} S n0 = S m) n0
-      (or_intror (S n0 = 0 {\coqand} n0 = 0) (refl_equal (S n0)))
+      (or_intror (S n0 = 0 {\coqand} n0 = 0) (eq_refl (S n0)))
 \textbf{end}  : {\prodsym} n : nat, \textbf{pred_spec n}
 \end{alltt}
 
@@ -1084,7 +1084,7 @@ The following term is a proof  of ``~$Q\;a\, \arrow{}\, Q\;b$~''.
 \begin{alltt}
 fun H : Q a {\funarrow}
   match \(\pi\) in (_ = y) return Q y with
-     refl_equal {\funarrow} H
+     eq_refl {\funarrow} H
   end
 \end{alltt}
 Notice the header of the \texttt{match} construct.
@@ -1552,13 +1552,13 @@ node, a tree of height 1 and a tree of height 2:
 \begin{alltt}
 Definition isingle l := inode l (fun i {\funarrow} ileaf).
 
-Definition t1 := inode 0 (fun n {\funarrow} isingle (Z_of_nat n)).
+Definition t1 := inode 0 (fun n {\funarrow} isingle (Z.of_nat n)).
 
 Definition t2 := 
  inode 0 
       (fun n : nat {\funarrow} 
-                   inode (Z_of_nat n)
-                   (fun p {\funarrow} isingle (Z_of_nat (n*p)))).
+                   inode (Z.of_nat n)
+                   (fun p {\funarrow} isingle (Z.of_nat (n*p)))).
 \end{alltt}
 
 
@@ -1572,7 +1572,7 @@ appear:
 Inductive itree_le : itree{\arrow} itree {\arrow} Prop :=
   | le_leaf : {\prodsym} t, itree_le  ileaf t
   | le_node : {\prodsym} l l' s s', 
-                Zle l l' {\arrow} 
+                Z.le l l' {\arrow}
                 ({\prodsym} i, {\exsym} j:nat, itree_le (s i) (s' j)){\arrow} 
                 itree_le  (inode  l s) (inode  l' s').
 
@@ -1597,7 +1597,7 @@ the type of \texttt{itree\_le}, does not present this problem:
 Inductive itree_le' : itree{\arrow} itree {\arrow} Prop :=
   | le_leaf'  : {\prodsym} t, itree_le'  ileaf t
   | le_node' : {\prodsym} l l' s s' g, 
-                  Zle l l' {\arrow}  
+                  Z.le l l' {\arrow}
                   ({\prodsym} i, itree_le' (s i) (s' (g i))) {\arrow} 
                   itree_le'  (inode  l s) (inode  l' s').
 

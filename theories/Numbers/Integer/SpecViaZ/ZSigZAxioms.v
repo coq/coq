@@ -93,7 +93,7 @@ replace z with (-(-z))%Z in * by (auto with zarith).
 remember (-z)%Z as z'.
 pattern z'; apply natlike_ind.
 apply B0.
-intros; rewrite Zopp_succ; unfold Zpred; apply BP; auto.
+intros; rewrite Z.opp_succ; unfold Z.pred; apply BP; auto.
 subst z'; auto with zarith.
 Qed.
 
@@ -364,7 +364,7 @@ Program Instance mod_wd : Proper (eq==>eq==>eq) modulo.
 
 Theorem div_mod : forall a b, ~b==0 -> a == b*(div a b) + (modulo a b).
 Proof.
-intros a b. zify. intros. apply Z_div_mod_eq_full; auto.
+intros a b. zify. intros. apply Z.div_mod; auto.
 Qed.
 
 Theorem mod_pos_bound :

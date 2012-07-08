@@ -12,12 +12,38 @@ Require Export BinInt Zcompare Zorder.
 
 Local Open Scope Z_scope.
 
-(** Definition [Zmax] is now [BinInt.Z.max]. *)
+(** Definition [Z.max] is now [BinInt.Z.max]. *)
 
-(** * Characterization of maximum on binary integer numbers *)
+(** Exact compatibility *)
 
-Definition Zmax_case := Z.max_case.
-Definition Zmax_case_strong := Z.max_case_strong.
+Notation Zmax_case := Z.max_case (compat "8.3").
+Notation Zmax_case_strong := Z.max_case_strong (compat "8.3").
+Notation Zmax_right := Z.max_r (compat "8.3").
+Notation Zle_max_l := Z.le_max_l (compat "8.3").
+Notation Zle_max_r := Z.le_max_r (compat "8.3").
+Notation Zmax_lub := Z.max_lub (compat "8.3").
+Notation Zmax_lub_lt := Z.max_lub_lt (compat "8.3").
+Notation Zle_max_compat_r := Z.max_le_compat_r (compat "8.3").
+Notation Zle_max_compat_l := Z.max_le_compat_l (compat "8.3").
+Notation Zmax_idempotent := Z.max_id (compat "8.3").
+Notation Zmax_n_n := Z.max_id (compat "8.3").
+Notation Zmax_comm := Z.max_comm (compat "8.3").
+Notation Zmax_assoc := Z.max_assoc (compat "8.3").
+Notation Zmax_irreducible_dec := Z.max_dec (compat "8.3").
+Notation Zmax_le_prime := Z.max_le (compat "8.3").
+Notation Zsucc_max_distr := Z.succ_max_distr (compat "8.3").
+Notation Zmax_SS := Z.succ_max_distr (compat "8.3").
+Notation Zplus_max_distr_l := Z.add_max_distr_l (compat "8.3").
+Notation Zplus_max_distr_r := Z.add_max_distr_r (compat "8.3").
+Notation Zmax_plus := Z.add_max_distr_r (compat "8.3").
+Notation Zmax1 := Z.le_max_l (compat "8.3").
+Notation Zmax2 := Z.le_max_r (compat "8.3").
+Notation Zmax_irreducible_inf := Z.max_dec (compat "8.3").
+Notation Zmax_le_prime_inf := Z.max_le (compat "8.3").
+Notation Zpos_max := Pos2Z.inj_max (compat "8.3").
+Notation Zpos_minus := Pos2Z.inj_sub_max (compat "8.3").
+
+(** Slightly different lemmas *)
 
 Lemma Zmax_spec x y :
   x >= y /\ Z.max x y = x  \/ x < y /\ Z.max x y = y.
@@ -26,86 +52,9 @@ Proof.
 Qed.
 
 Lemma Zmax_left n m : n>=m -> Z.max n m = n.
-Proof. Z.swap_greater. apply Zmax_l. Qed.
+Proof. Z.swap_greater. apply Z.max_l. Qed.
 
-Lemma Zmax_right : forall n m, n<=m -> Z.max n m = m. Proof Zmax_r.
-
-(** * Least upper bound properties of max *)
-
-Lemma Zle_max_l : forall n m, n <= Z.max n m. Proof Z.le_max_l.
-Lemma Zle_max_r : forall n m, m <= Z.max n m. Proof Z.le_max_r.
-
-Lemma Zmax_lub : forall n m p, n <= p -> m <= p -> Z.max n m <= p.
-Proof Z.max_lub.
-
-Lemma Zmax_lub_lt : forall n m p:Z, n < p -> m < p -> Z.max n m < p.
-Proof Z.max_lub_lt.
-
-
-(** * Compatibility with order *)
-
-Lemma Zle_max_compat_r : forall n m p, n <= m -> Z.max n p <= Z.max m p.
-Proof Z.max_le_compat_r.
-
-Lemma Zle_max_compat_l : forall n m p, n <= m -> Z.max p n <= Z.max p m.
-Proof Z.max_le_compat_l.
-
-
-(** * Semi-lattice properties of max *)
-
-Lemma Zmax_idempotent : forall n, Z.max n n = n. Proof Z.max_id.
-Lemma Zmax_comm : forall n m, Z.max n m = Z.max m n. Proof Z.max_comm.
-Lemma Zmax_assoc : forall n m p, Z.max n (Z.max m p) = Z.max (Z.max n m) p.
-Proof Z.max_assoc.
-
-(** * Additional properties of max *)
-
-Lemma Zmax_irreducible_dec : forall n m, {Z.max n m = n} + {Z.max n m = m}.
-Proof Z.max_dec.
-
-Lemma Zmax_le_prime : forall n m p, p <= Z.max n m -> p <= n \/ p <= m.
-Proof Z.max_le.
-
-
-(** * Operations preserving max *)
-
-Lemma Zsucc_max_distr :
-  forall n m, Z.succ (Z.max n m) = Z.max (Z.succ n) (Z.succ m).
-Proof Z.succ_max_distr.
-
-Lemma Zplus_max_distr_l : forall n m p, Z.max (p + n) (p + m) = p + Z.max n m.
-Proof Z.add_max_distr_l.
-
-Lemma Zplus_max_distr_r : forall n m p, Z.max (n + p) (m + p) = Z.max n m + p.
-Proof Z.add_max_distr_r.
-
-(** * Maximum and Zpos *)
-
-Lemma Zpos_max p q : Zpos (Pos.max p q) = Z.max (Zpos p) (Zpos q).
-Proof.
- unfold Zmax, Pmax. simpl.
- case Pos.compare_spec; auto; congruence.
-Qed.
-
-Lemma Zpos_max_1 p : Z.max 1 (Zpos p) = Zpos p.
+Lemma Zpos_max_1 p : Z.max 1 (Z.pos p) = Z.pos p.
 Proof.
  now destruct p.
 Qed.
-
-(** * Characterization of Pos.sub in term of Z.sub and Z.max *)
-
-Lemma Zpos_minus p q : Zpos (p - q) = Z.max 1 (Zpos p - Zpos q).
-Proof.
-  simpl. rewrite Z.pos_sub_spec. case Pos.compare_spec; intros H.
-  subst; now rewrite Pos.sub_diag.
-  now rewrite Pos.sub_lt.
-  symmetry. apply Zpos_max_1.
-Qed.
-
-(* begin hide *)
-(* Compatibility *)
-Notation Zmax1 := Z.le_max_l (compat "8.3").
-Notation Zmax2 := Z.le_max_r (compat "8.3").
-Notation Zmax_irreducible_inf := Z.max_dec (compat "8.3").
-Notation Zmax_le_prime_inf := Z.max_le (compat "8.3").
-(* end hide *)

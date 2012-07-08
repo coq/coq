@@ -78,7 +78,7 @@ Proof.
 Qed.
 
 Hint Immediate Zpower_nat_is_exp Zpower_pos_is_exp : zarith.
-Hint Unfold Zpower_pos Zpower_nat: zarith.
+Hint Unfold Z.pow_pos Zpower_nat: zarith.
 
 Theorem Zpower_exp x n m :
   n >= 0 -> m >= 0 -> x ^ (n + m) = x ^ n * x ^ m.
@@ -181,7 +181,7 @@ Section Powers_of_2.
   Qed.
 
   Theorem shift_pos_correct p x :
-    Zpos (shift_pos p x) = Zpower_pos 2 p * Zpos x.
+    Zpos (shift_pos p x) = Z.pow_pos 2 p * Zpos x.
   Proof.
    now rewrite shift_pos_nat, Zpower_pos_nat, shift_nat_correct.
   Qed.
@@ -266,13 +266,13 @@ Section power_div_with_rest.
    apply Pos.iter_invariant; [|omega].
    intros ((q,r),d) (H,H'). unfold Zdiv_rest_aux.
    destruct q as [ |[q|q| ]|[q|q| ]]; try omega.
-   - rewrite Z.pos_xI, Z.mul_add_distr_r in H.
+   - rewrite Pos2Z.inj_xI, Z.mul_add_distr_r in H.
      rewrite Z.mul_shuffle3, Z.mul_assoc. omega.
-   - rewrite Z.pos_xO in H.
+   - rewrite Pos2Z.inj_xO in H.
      rewrite Z.mul_shuffle3, Z.mul_assoc. omega.
-   - rewrite Z.neg_xI, Z.mul_sub_distr_r in H.
+   - rewrite Pos2Z.neg_xI, Z.mul_sub_distr_r in H.
      rewrite Z.mul_sub_distr_r, Z.mul_shuffle3, Z.mul_assoc. omega.
-   - rewrite Z.neg_xO in H.
+   - rewrite Pos2Z.neg_xO in H.
      rewrite Z.mul_shuffle3, Z.mul_assoc. omega.
   Qed.
 

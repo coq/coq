@@ -38,7 +38,7 @@ Proof.
   exact Hp.
 Qed.
 
-Lemma Qpower_theory : power_theory 1 Qmult Qeq Z_of_N Qpower.
+Lemma Qpower_theory : power_theory 1 Qmult Qeq Z.of_N Qpower.
 Proof.
 constructor.
 intros r [|n];
@@ -66,7 +66,7 @@ Ltac Qpow_tac t :=
   match t with
   | Z0 => N0
   | Zpos ?n => Ncst (Npos n)
-  | Z_of_N ?n => Ncst n
+  | Z.of_N ?n => Ncst n
   | NtoZ ?n => Ncst n
   | _ => NotConstant
   end.

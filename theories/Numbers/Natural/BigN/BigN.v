@@ -119,7 +119,7 @@ BigN.zify. auto with zarith.
 intros NEQ.
 generalize (BigN.spec_div_eucl a b).
 generalize (Z_div_mod_full [a] [b] NEQ).
-destruct BigN.div_eucl as (q,r), Zdiv_eucl as (q',r').
+destruct BigN.div_eucl as (q,r), Z.div_eucl as (q',r').
 intros (EQ,_). injection 1. intros EQr EQq.
 BigN.zify. rewrite EQr, EQq; auto.
 Qed.

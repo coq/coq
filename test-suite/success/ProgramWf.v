@@ -22,14 +22,14 @@ Program Fixpoint merge (n m : nat) {measure (n + m) (lt)} : nat :=
 Print merge.
 
 
-Print Zlt.
+Print Z.lt.
 Print Zwf.
 
 Open Local Scope Z_scope.
 
 Program Fixpoint Zwfrec (n m : Z) {measure (n + m) (Zwf 0)} : Z :=
   match n ?= m with
-    | Lt => Zwfrec n (Zpred m)
+    | Lt => Zwfrec n (Z.pred m)
     | _ => 0
   end.
 

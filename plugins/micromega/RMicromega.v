@@ -85,17 +85,17 @@ Qed.
 
 Ltac INR_nat_of_P :=
   match goal with
-    | H : context[INR (nat_of_P ?X)] |- _ => 
+    | H : context[INR (Pos.to_nat ?X)] |- _ =>
       revert H ; 
       let HH := fresh in
-        assert (HH := pos_INR_nat_of_P X) ; revert HH ; generalize (INR (nat_of_P X))
-    | |- context[INR (nat_of_P ?X)] =>
+        assert (HH := pos_INR_nat_of_P X) ; revert HH ; generalize (INR (Pos.to_nat X))
+    | |- context[INR (Pos.to_nat ?X)] =>
       let HH := fresh in
-        assert (HH := pos_INR_nat_of_P X) ; revert HH ; generalize (INR (nat_of_P X))
+        assert (HH := pos_INR_nat_of_P X) ; revert HH ; generalize (INR (Pos.to_nat X))
   end.
 
 Ltac add_eq expr val := set (temp := expr) ; 
-  generalize (refl_equal temp) ; 
+  generalize (eq_refl temp) ;
     unfold temp at 1 ; generalize temp ; intro val ; clear temp.
 
 Ltac Rinv_elim :=
@@ -210,7 +210,7 @@ Proof.
   rewrite plus_IZR in *.
   rewrite mult_IZR in *.
   simpl.  
-  rewrite nat_of_P_mult_morphism.
+  rewrite Pos2Nat.inj_mul.
   rewrite mult_INR.
   rewrite mult_IZR.
   simpl.
@@ -244,7 +244,7 @@ Proof.
   simpl.
   repeat rewrite mult_IZR.
   simpl.  
-  rewrite nat_of_P_mult_morphism.
+  rewrite Pos2Nat.inj_mul.
   rewrite mult_INR.
   repeat INR_nat_of_P.
   intros. field ; split ; apply Rlt_neq ; auto.
@@ -275,7 +275,7 @@ Proof.
   apply Rlt_neq ; auto.
   simpl in H.
   exfalso.
-  rewrite Pmult_comm  in H.
+  rewrite Pos.mul_comm  in H.
   compute in H.
   discriminate.
 Qed.
@@ -291,7 +291,7 @@ Proof.
   destruct x.
   unfold Qopp.
   simpl.
-  rewrite Zopp_involutive.
+  rewrite Z.opp_involutive.
   reflexivity.
 Qed.
 
@@ -348,7 +348,7 @@ Proof.
   intros.
   assert ( 0 > x \/ 0 < x)%Q.
    destruct x ; unfold Qlt, Qeq in * ; simpl in *.
-   rewrite Zmult_1_r in *.
+   rewrite Z.mul_1_r in *.
    destruct Qnum ; simpl in * ; intuition auto.
    right. reflexivity.
    left ; reflexivity.
@@ -379,7 +379,7 @@ Proof.
 Qed.
 
 
-Notation to_nat := N.to_nat. (*Nnat.nat_of_N*)
+Notation to_nat := N.to_nat.
 
 Lemma QSORaddon :
   @SORaddon R
@@ -471,7 +471,7 @@ Definition INZ (n:N) : R :=
     | Npos p => IZR (Zpos p)
   end.
 
-Definition Reval_expr := eval_pexpr  Rplus Rmult Rminus Ropp R_of_Rcst nat_of_N pow.
+Definition Reval_expr := eval_pexpr  Rplus Rmult Rminus Ropp R_of_Rcst N.to_nat pow.
 
 
 Definition Reval_op2 (o:Op2) : R -> R -> Prop :=
@@ -490,10 +490,10 @@ Definition Reval_formula (e: PolEnv R) (ff : Formula Rcst) :=
 
 
 Definition Reval_formula' :=
-  eval_sformula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt nat_of_N pow R_of_Rcst.
+  eval_sformula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt N.to_nat pow R_of_Rcst.
 
 Definition QReval_formula := 
-  eval_formula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt IQR nat_of_N pow .
+  eval_formula  Rplus Rmult Rminus Ropp (@eq R) Rle Rlt IQR N.to_nat pow .
 
 Lemma Reval_formula_compat : forall env f, Reval_formula env f <-> Reval_formula' env f.
 Proof.

@@ -79,5 +79,5 @@ Qed.
 
 Lemma Zpower_alt_Ppow p q : (Zpos p)^^(Zpos q) = Zpos (p^q).
 Proof.
- now rewrite Zpower_equiv, Z.pow_Zpos.
+ now rewrite Zpower_equiv, Pos2Z.inj_pow.
 Qed.

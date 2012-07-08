@@ -39,7 +39,7 @@ Proof.
 Qed.
 
 Lemma Z_of_nat_complete_inf (x : Z) :
- 0 <= x -> {n : nat | x = Z_of_nat n}.
+ 0 <= x -> {n : nat | x = Z.of_nat n}.
 Proof.
  intros H. exists (Z.to_nat x). symmetry. now apply Z2Nat.id.
 Qed.
@@ -53,7 +53,7 @@ Qed.
 
 Lemma Z_of_nat_set :
  forall P:Z -> Set,
-   (forall n:nat, P (Z_of_nat n)) -> forall x:Z, 0 <= x -> P x.
+   (forall n:nat, P (Z.of_nat n)) -> forall x:Z, 0 <= x -> P x.
 Proof.
  intros P H x Hx. now destruct (Z_of_nat_complete_inf x Hx) as (n,->).
 Qed.
@@ -129,7 +129,7 @@ Section Efficient_Rec.
    - now destruct Hz.
   Qed.
 
-  (** A more general induction principle on non-negative numbers using [Zlt]. *)
+  (** A more general induction principle on non-negative numbers using [Z.lt]. *)
 
   Lemma Zlt_0_rec :
     forall P:Z -> Type,
@@ -155,7 +155,7 @@ Section Efficient_Rec.
     exact Zlt_0_rec.
   Qed.
 
-  (** Obsolete version of [Zlt] induction principle on non-negative numbers *)
+  (** Obsolete version of [Z.lt] induction principle on non-negative numbers *)
 
   Lemma Z_lt_rec :
     forall P:Z -> Type,
@@ -173,7 +173,7 @@ Section Efficient_Rec.
     exact Z_lt_rec.
   Qed.
 
-  (** An even more general induction principle using [Zlt]. *)
+  (** An even more general induction principle using [Z.lt]. *)
 
   Lemma Zlt_lower_bound_rec :
     forall P:Z -> Type, forall z:Z,

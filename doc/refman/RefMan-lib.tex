@@ -220,11 +220,11 @@ define \verb:eq: as the smallest reflexive relation, and it is also
 equivalent to Leibniz' equality.
 
 \ttindex{eq}
-\ttindex{refl\_equal}
+\ttindex{eq\_refl}
 
 \begin{coq_example*}
 Inductive eq (A:Type) (x:A) : A -> Prop :=
-    refl_equal : eq A x x.
+    eq_refl : eq A x x.
 \end{coq_example*}
 
 \subsubsection[Lemmas]{Lemmas\label{PreludeLemmas}}
@@ -239,8 +239,8 @@ Theorem absurd : forall A C:Prop, A -> ~ A -> C.
 \begin{coq_eval}
 Abort.
 \end{coq_eval}
-\ttindex{sym\_eq}
-\ttindex{trans\_eq}
+\ttindex{eq\_sym}
+\ttindex{eq\_trans}
 \ttindex{f\_equal}
 \ttindex{sym\_not\_eq}
 \begin{coq_example*}
@@ -248,10 +248,10 @@ Section equality.
 Variables A B : Type.
 Variable f : A -> B.
 Variables x y z : A.
-Theorem sym_eq : x = y -> y = x.
-Theorem trans_eq : x = y -> y = z -> x = z.
+Theorem eq_sym : x = y -> y = x.
+Theorem eq_trans : x = y -> y = z -> x = z.
 Theorem f_equal : x = y -> f x = f y.
-Theorem sym_not_eq : x <> y -> y <> x.
+Theorem not_eq_sym : x <> y -> y <> x.
 \end{coq_example*}
 \begin{coq_eval}
 Abort.
@@ -280,7 +280,7 @@ Abort.
 \end{coq_eval}
 %Abort (for now predefined eq_rect)
 \begin{coq_example*}
-Hint Immediate sym_eq sym_not_eq : core.
+Hint Immediate eq_sym not_eq_sym : core.
 \end{coq_example*}
 \ttindex{f\_equal$i$}
 
@@ -864,22 +864,22 @@ module {\tt ZArith} and opening scope {\tt Z\_scope}.
 \begin{tabular}{l|l|l|l}
 Notation & Interpretation & Precedence & Associativity\\
 \hline
-\verb!_ < _! & {\tt Zlt} &&\\
-\verb!x <= y! & {\tt Zle} &&\\
-\verb!_ > _! & {\tt Zgt} &&\\
-\verb!x >= y! & {\tt Zge} &&\\
+\verb!_ < _! & {\tt Z.lt} &&\\
+\verb!x <= y! & {\tt Z.le} &&\\
+\verb!_ > _! & {\tt Z.gt} &&\\
+\verb!x >= y! & {\tt Z.ge} &&\\
 \verb!x < y < z! & {\tt x < y \verb!/\! y < z} &&\\
 \verb!x < y <= z! & {\tt x < y \verb!/\! y <= z} &&\\
 \verb!x <= y < z! & {\tt x <= y \verb!/\! y < z} &&\\
 \verb!x <= y <= z! & {\tt x <= y \verb!/\! y <= z} &&\\
-\verb!_ ?= _! & {\tt Zcompare} & 70 & no\\
-\verb!_ + _! & {\tt Zplus} &&\\
-\verb!_ - _! & {\tt Zminus} &&\\
-\verb!_ * _! & {\tt Zmult} &&\\
-\verb!_ / _! & {\tt Zdiv} &&\\
-\verb!_ mod _! & {\tt Zmod} & 40 & no \\
-\verb!- _!  & {\tt Zopp} &&\\
-\verb!_ ^ _! & {\tt Zpower} &&\\
+\verb!_ ?= _! & {\tt Z.compare} & 70 & no\\
+\verb!_ + _! & {\tt Z.add} &&\\
+\verb!_ - _! & {\tt Z.sub} &&\\
+\verb!_ * _! & {\tt Z.mul} &&\\
+\verb!_ / _! & {\tt Z.div} &&\\
+\verb!_ mod _! & {\tt Z.modulo} & 40 & no \\
+\verb!- _!  & {\tt Z.opp} &&\\
+\verb!_ ^ _! & {\tt Z.pow} &&\\
 \end{tabular}
 \end{center}
 \caption{Definition of the scope for integer arithmetics ({\tt Z\_scope})}

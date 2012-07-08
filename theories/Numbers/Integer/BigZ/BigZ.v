@@ -76,7 +76,7 @@ Infix "÷" := BigZ.quot (at level 40, left associativity) : bigZ_scope.
 (** Some additional results about [BigZ] *)
 
 Theorem spec_to_Z: forall n : bigZ,
-  BigN.to_Z (BigZ.to_N n) = ((Zsgn [n]) * [n])%Z.
+  BigN.to_Z (BigZ.to_N n) = ((Z.sgn [n]) * [n])%Z.
 Proof.
 intros n; case n; simpl; intros p;
   generalize (BigN.spec_pos p); case (BigN.to_Z p); auto.
@@ -85,7 +85,7 @@ intros p1 H1; case H1; auto.
 Qed.
 
 Theorem spec_to_N n:
- ([n] = Zsgn [n] * (BigN.to_Z (BigZ.to_N n)))%Z.
+ ([n] = Z.sgn [n] * (BigN.to_Z (BigZ.to_N n)))%Z.
 Proof.
 case n; simpl; intros p;
   generalize (BigN.spec_pos p); case (BigN.to_Z p); auto.
@@ -118,7 +118,7 @@ Qed.
 Lemma BigZeqb_correct : forall x y, (x =? y) = true -> x==y.
 Proof. now apply BigZ.eqb_eq. Qed.
 
-Definition BigZ_of_N n := BigZ.of_Z (Z_of_N n).
+Definition BigZ_of_N n := BigZ.of_Z (Z.of_N n).
 
 Lemma BigZpower : power_theory 1 BigZ.mul BigZ.eq BigZ_of_N BigZ.pow.
 Proof.
@@ -139,7 +139,7 @@ BigZ.zify. auto with zarith.
 intros NEQ.
 generalize (BigZ.spec_div_eucl a b).
 generalize (Z_div_mod_full [a] [b] NEQ).
-destruct BigZ.div_eucl as (q,r), Zdiv_eucl as (q',r').
+destruct BigZ.div_eucl as (q,r), Z.div_eucl as (q',r').
 intros (EQ,_). injection 1. intros EQr EQq.
 BigZ.zify. rewrite EQr, EQq; auto.
 Qed.

@@ -277,7 +277,7 @@ an infinite object of type
 definition.
 \begin{coq_example}
 CoFixpoint eqproof (s1 s2:Stream A) : EqSt s1 (conc s1 s2) :=
-  eqst s1 (conc s1 s2) (refl_equal (hd A (conc s1 s2)))
+  eqst s1 (conc s1 s2) (eq_refl (hd A (conc s1 s2)))
     (eqproof (tl A s1) s2).
 \end{coq_example}
 \begin{coq_eval}

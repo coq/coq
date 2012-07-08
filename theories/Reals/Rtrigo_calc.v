@@ -150,7 +150,7 @@ Proof.
         intro H2;
           [ assumption
             | absurd (0 = sqrt 2);
-              [ apply (sym_not_eq (A:=R)); apply sqrt2_neq_0 | assumption ] ] ].
+              [ apply (not_eq_sym (A:=R)); apply sqrt2_neq_0 | assumption ] ] ].
 Qed.
 
 Lemma Rlt_sqrt3_0 : 0 < sqrt 3.

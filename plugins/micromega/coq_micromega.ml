@@ -300,6 +300,8 @@ struct
      ["Coq";"Reals" ; "Rpow_def"] ;
 ]
 
+  let z_modules = [["Coq";"ZArith";"BinInt"]]
+
   (**
     * Initialization : a large amount of Caml symbols are derived from
     * ZMicromega.v
@@ -309,6 +311,7 @@ struct
   let constant = gen_constant_in_modules "ZMicromega" coq_modules
   let bin_constant = gen_constant_in_modules "ZMicromega" bin_module
   let r_constant = gen_constant_in_modules "ZMicromega" r_modules
+  let z_constant = gen_constant_in_modules "ZMicromega" z_modules
   (* let constant = gen_constant_in_modules "Omicron" coq_modules *)
 
   let coq_and = lazy (init_constant "and")
@@ -371,17 +374,17 @@ struct
   let coq_cutProof = lazy (constant "CutProof")
   let coq_enumProof = lazy (constant "EnumProof")
 
-  let coq_Zgt = lazy (constant "Zgt")
-  let coq_Zge = lazy (constant "Zge")
-  let coq_Zle = lazy (constant "Zle")
-  let coq_Zlt = lazy (constant "Zlt")
+  let coq_Zgt = lazy (z_constant "Z.gt")
+  let coq_Zge = lazy (z_constant "Z.ge")
+  let coq_Zle = lazy (z_constant "Z.le")
+  let coq_Zlt = lazy (z_constant "Z.lt")
   let coq_Eq  = lazy (init_constant "eq")
 
-  let coq_Zplus = lazy (constant "Zplus")
-  let coq_Zminus = lazy (constant "Zminus")
-  let coq_Zopp = lazy (constant "Zopp")
-  let coq_Zmult = lazy (constant "Zmult")
-  let coq_Zpower = lazy (constant "Zpower")
+  let coq_Zplus = lazy (z_constant "Z.add")
+  let coq_Zminus = lazy (z_constant "Z.sub")
+  let coq_Zopp = lazy (z_constant "Z.opp")
+  let coq_Zmult = lazy (z_constant "Z.mul")
+  let coq_Zpower = lazy (z_constant "Z.pow")
 
   let coq_Qgt = lazy (constant "Qgt")
   let coq_Qge = lazy (constant "Qge")

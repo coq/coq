@@ -429,7 +429,7 @@ Proof.
     rewrite Rmult_1_r in H12; rewrite <- Rinv_r_sym in H12;
       [ idtac | discrR ].
   cut (IZR 1 < IZR 2).
-  unfold IZR in |- *; unfold INR, nat_of_P in |- *; simpl in |- *; intro;
+  unfold IZR in |- *; unfold INR, Pos.to_nat in |- *; simpl in |- *; intro;
     elim (Rlt_irrefl 1 (Rlt_trans _ _ _ H13 H12)).
   apply IZR_lt; omega.
   unfold Rabs in |- *; case (Rcase_abs (/ 2)); intro.

@@ -282,7 +282,7 @@ Fixpoint treeify_aux (pred:bool)(n: positive) : treeify_t :=
 
 Fixpoint plength (l:list elt) := match l with
  | nil => 1%positive
- | _::l => Psucc (plength l)
+ | _::l => Pos.succ (plength l)
 end.
 
 Definition treeify (l:list elt) :=

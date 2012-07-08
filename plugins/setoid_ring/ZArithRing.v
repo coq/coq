@@ -39,14 +39,14 @@ Ltac Zpower_neg :=
   repeat match goal with
   | [|- ?G] =>
     match G with
-    | context c [Zpower _ (Zneg _)] =>
+    | context c [Z.pow _ (Zneg _)] =>
       let t := context c [Z0] in
       change t
     end
   end.
 
 Add Ring Zr : Zth
-  (decidable Zeq_bool_eq, constants [Zcst], preprocess [Zpower_neg;unfold Zsucc],
+  (decidable Zeq_bool_eq, constants [Zcst], preprocess [Zpower_neg;unfold Z.succ],
    power_tac Zpower_theory [Zpow_tac],
     (* The two following option are not needed, it is the default chose when the set of
         coefficiant is usual ring Z *)

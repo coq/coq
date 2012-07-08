@@ -142,7 +142,7 @@ Qed.
 Definition PolC := Pol C. (* polynomials in generalized Horner form, defined in Ring_polynom or EnvRing *)
 Definition PolEnv := Env R. (* For interpreting PolC *)
 Definition eval_pol (env : PolEnv) (p:PolC) : R :=
-   Pphi 0 rplus rtimes phi env p.
+   Pphi rplus rtimes phi env p.
 
 Inductive Op1 : Set := (* relations with 0 *)
 | Equal (* == 0 *)
@@ -320,7 +320,7 @@ Definition map_option2 (A B C : Type) (f : A -> B -> option C)
 
 Arguments map_option2 [A B C] f o o'.
 
-Definition Rops_wd := mk_reqe rplus rtimes ropp req
+Definition Rops_wd := mk_reqe (*rplus rtimes ropp req*)
                        sor.(SORplus_wd)
                        sor.(SORtimes_wd)
                        sor.(SORopp_wd).
@@ -469,17 +469,11 @@ Fixpoint ge_bool (n m  : nat) : bool :=
              end
    end.
 
-Lemma ge_bool_cases : forall n m, (if ge_bool n m then n >= m else n < m)%nat.
+Lemma ge_bool_cases : forall n m,
+ (if ge_bool n m then n >= m else n < m)%nat.
 Proof.
-  induction n ; simpl.
-  destruct m ; simpl.
-  constructor.
-  omega.
-  destruct m.
-  constructor.
-  omega.
-  generalize (IHn m).
-  destruct (ge_bool n m) ; omega.
+  induction n; destruct m ; simpl; auto with arith.
+  specialize (IHn m). destruct (ge_bool); auto with arith.
 Qed.
 
 
@@ -593,7 +587,7 @@ Definition paddC := PaddC cplus.
 Definition psubC := PsubC cminus.
 
 Definition PsubC_ok : forall c P env, eval_pol env (psubC  P c) == eval_pol env P - [c] :=
-  let Rops_wd := mk_reqe rplus rtimes ropp req
+  let Rops_wd := mk_reqe (*rplus rtimes ropp req*)
                        sor.(SORplus_wd)
                        sor.(SORtimes_wd)
                        sor.(SORopp_wd) in
@@ -601,7 +595,7 @@ Definition PsubC_ok : forall c P env, eval_pol env (psubC  P c) == eval_pol env 
                 addon.(SORrm).
 
 Definition PaddC_ok : forall c P env, eval_pol env (paddC  P c) == eval_pol env P + [c] :=
-  let Rops_wd := mk_reqe rplus rtimes ropp req
+  let Rops_wd := mk_reqe (*rplus rtimes ropp req*)
                        sor.(SORplus_wd)
                        sor.(SORtimes_wd)
                        sor.(SORopp_wd) in
@@ -882,13 +876,14 @@ Qed.
 Fixpoint xdenorm (jmp : positive) (p: Pol C) : PExpr C :=
   match p with
     | Pc c => PEc c
-    | Pinj j p => xdenorm  (Pplus j jmp ) p
+    | Pinj j p => xdenorm  (Pos.add j jmp ) p
     | PX p j q   => PEadd
       (PEmul (xdenorm jmp p) (PEpow (PEX _  jmp) (Npos j)))
-      (xdenorm (Psucc jmp) q)
+      (xdenorm (Pos.succ jmp) q)
   end.
 
-Lemma xdenorm_correct : forall p i  env, eval_pol (jump i env)  p == eval_pexpr env (xdenorm (Psucc i) p).
+Lemma xdenorm_correct : forall p i env,
+  eval_pol (jump i env) p == eval_pexpr env (xdenorm (Pos.succ i) p).
 Proof.
   unfold eval_pol.
   induction p.
@@ -896,22 +891,21 @@ Proof.
   (* Pinj *)
   simpl.
   intros.
-  rewrite Pplus_succ_permute_r.
+  rewrite Pos.add_succ_r.
   rewrite <- IHp.
   symmetry.
-  rewrite Pplus_comm.
-  rewrite Pjump_Pplus. reflexivity.
+  rewrite Pos.add_comm.
+  rewrite Pjump_add. reflexivity.
   (* PX *)
   simpl.
   intros.
-  rewrite <- IHp1.
-  rewrite <- IHp2.
+  rewrite <- IHp1, <- IHp2.
   unfold Env.tail , Env.hd.
-  rewrite <- Pjump_Pplus.
-  rewrite <- Pplus_one_succ_r.
+  rewrite <- Pjump_add.
+  rewrite Pos.add_1_r.
   unfold Env.nth.
   unfold jump at 2.
-  rewrite Pplus_one_succ_l.
+  rewrite <- Pos.add_1_l.
   rewrite addon.(SORpower).(rpow_pow_N).
   unfold pow_N. ring.
 Qed.
@@ -924,14 +918,14 @@ Proof.
   induction p.
   reflexivity.
   simpl.
-  rewrite <- Pplus_one_succ_r.
+  rewrite Pos.add_1_r.
   apply xdenorm_correct.
   simpl.
   intros.
   rewrite IHp1.
   unfold Env.tail.
   rewrite xdenorm_correct.
-  change (Psucc xH) with 2%positive.
+  change (Pos.succ xH) with 2%positive.
   rewrite addon.(SORpower).(rpow_pow_N).
   simpl. reflexivity.
 Qed.

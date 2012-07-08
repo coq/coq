@@ -32,12 +32,12 @@ Ltac compute_POS :=
     |  |- context [(Zpos (xI ?X1))] =>
       match constr:X1 with
 	| context [1%positive] => fail 1
-	| _ => rewrite (BinInt.Zpos_xI X1)
+	| _ => rewrite (Pos2Z.inj_xI X1)
       end
     |  |- context [(Zpos (xO ?X1))] =>
       match constr:X1 with
 	| context [1%positive] => fail 1
-	| _ => rewrite (BinInt.Zpos_xO X1)
+	| _ => rewrite (Pos2Z.inj_xO X1)
       end
   end.
 
@@ -115,7 +115,7 @@ Definition Zsqrt :
           fun h =>
             match sqrtrempos p with
               | c_sqrt s r Heq Hint =>
-		existS
+		existT
                 (fun s:Z =>
                   {r : Z |
                     Zpos p = s * s + r /\ s * s <= Zpos p < (s + 1) * (s + 1)})
@@ -131,10 +131,10 @@ Definition Zsqrt :
             {s : Z &
               {r : Z |
 		Zneg p = s * s + r /\ s * s <= Zneg p < (s + 1) * (s + 1)}}
-            (h (refl_equal Datatypes.Gt))
+            (h (eq_refl Datatypes.Gt))
 	| Z0 =>
           fun h =>
-            existS
+            existT
             (fun s:Z =>
               {r : Z | 0 = s * s + r /\ s * s <= 0 < (s + 1) * (s + 1)}) 0
             (exist
@@ -149,8 +149,8 @@ Defined.
 Definition Zsqrt_plain (x:Z) : Z :=
   match x with
     | Zpos p =>
-      match Zsqrt (Zpos p) (Zorder.Zle_0_pos p) with
-	| existS s _ => s
+      match Zsqrt (Zpos p) (Pos2Z.is_nonneg p) with
+	| existT s _ => s
       end
     | Zneg p => 0
     | Z0 => 0
@@ -164,12 +164,11 @@ Theorem Zsqrt_interval :
     Zsqrt_plain n * Zsqrt_plain n <= n <
     (Zsqrt_plain n + 1) * (Zsqrt_plain n + 1).
 Proof.
-  intros x; case x.
-  unfold Zsqrt_plain in |- *; omega.
-  intros p; unfold Zsqrt_plain in |- *;
-    case (Zsqrt (Zpos p) (Zorder.Zle_0_pos p)).
-  intros s [r [Heq Hint]] Hle; assumption.
-  intros p Hle; elim Hle; auto.
+  intros [|p|p] Hp.
+  - now compute.
+  - unfold Zsqrt_plain.
+    now destruct Zsqrt as (s & r & Heq & Hint).
+  - now elim Hp.
 Qed.
 
 (** Positivity *)
@@ -177,9 +176,9 @@ Qed.
 Theorem Zsqrt_plain_is_pos: forall n, 0 <= n ->  0 <= Zsqrt_plain n.
 Proof.
   intros n m; case (Zsqrt_interval n); auto with zarith.
-  intros H1 H2; case (Zle_or_lt 0 (Zsqrt_plain n)); auto.
-  intros H3; contradict H2; auto; apply Zle_not_lt.
-  apply Zle_trans with ( 2 := H1 ).
+  intros H1 H2; case (Z.le_gt_cases 0 (Zsqrt_plain n)); auto.
+  intros H3; contradict H2; auto; apply Z.le_ngt.
+  apply Z.le_trans with ( 2 := H1 ).
   replace ((Zsqrt_plain n + 1) * (Zsqrt_plain n + 1))
      with (Zsqrt_plain n * Zsqrt_plain n + (2 * Zsqrt_plain n + 1));
   auto with zarith.
@@ -194,13 +193,13 @@ Proof.
   generalize (Zsqrt_plain_is_pos (a * a)); auto with zarith; intros Haa.
   case (Zsqrt_interval (a * a)); auto with zarith.
   intros H1 H2.
-  case (Zle_or_lt a (Zsqrt_plain (a * a))); intros H3; auto.
-  case Zle_lt_or_eq with (1:=H3); auto; clear H3; intros H3.
-  contradict H1; auto; apply Zlt_not_le; auto with zarith.
-  apply Zle_lt_trans with (a * Zsqrt_plain (a * a)); auto with zarith.
-  apply Zmult_lt_compat_r; auto with zarith.
-  contradict H2; auto; apply Zle_not_lt; auto with zarith.
-  apply Zmult_le_compat; auto with zarith.
+  case (Z.le_gt_cases a (Zsqrt_plain (a * a))); intros H3.
+  - Z.le_elim H3; auto.
+    contradict H1; auto; apply Z.lt_nge; auto with zarith.
+    apply Z.le_lt_trans with (a * Zsqrt_plain (a * a)); auto with zarith.
+    apply Z.mul_lt_mono_pos_r; auto with zarith.
+  - contradict H2; auto; apply Z.le_ngt; auto with zarith.
+    apply Z.mul_le_mono_nonneg; auto with zarith.
 Qed.
 
 (** [Zsqrt_plain] is increasing *)
@@ -208,16 +207,16 @@ Qed.
 Theorem Zsqrt_le:
  forall p q, 0 <= p <= q  ->  Zsqrt_plain p <= Zsqrt_plain q.
 Proof.
-  intros p q [H1 H2]; case Zle_lt_or_eq with (1:=H2); clear H2; intros H2;
-  [ | subst q; auto with zarith].
-  case (Zle_or_lt (Zsqrt_plain p) (Zsqrt_plain q)); auto; intros H3.
+  intros p q [H1 H2].
+  Z.le_elim H2; [ | subst q; auto with zarith].
+  case (Z.le_gt_cases (Zsqrt_plain p) (Zsqrt_plain q)); auto; intros H3.
   assert (Hp: (0 <= Zsqrt_plain q)).
-   apply Zsqrt_plain_is_pos; auto with zarith.
+  { apply Zsqrt_plain_is_pos; auto with zarith. }
   absurd (q <= p); auto with zarith.
-  apply Zle_trans with ((Zsqrt_plain q + 1) * (Zsqrt_plain q + 1)).
+  apply Z.le_trans with ((Zsqrt_plain q + 1) * (Zsqrt_plain q + 1)).
   case (Zsqrt_interval q); auto with zarith.
-  apply Zle_trans with (Zsqrt_plain p * Zsqrt_plain p); auto with zarith.
-  apply Zmult_le_compat; auto with zarith.
+  apply Z.le_trans with (Zsqrt_plain p * Zsqrt_plain p); auto with zarith.
+  apply Z.mul_le_mono_nonneg; auto with zarith.
   case (Zsqrt_interval p); auto with zarith.
 Qed.
 

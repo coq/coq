@@ -250,7 +250,7 @@ Proof.
   unfold D_x, no_cond in |- *.
   split.
   trivial.
-  apply (sym_not_eq (A:=R)); exact H8.
+  apply (not_eq_sym (A:=R)); exact H8.
   unfold Rminus in |- *; rewrite Ropp_0; rewrite Rplus_0_r;
     apply Rlt_le_trans with alpha1.
   exact H9.

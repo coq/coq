@@ -29,7 +29,7 @@ Section wf_proof.
   (** The proof of well-foundness is classic: we do the proof by induction
       on a measure in nat, which is here [|x-c|] *)
 
-  Let f (z:Z) := Zabs_nat (z - c).
+  Let f (z:Z) := Z.abs_nat (z - c).
 
   Lemma Zwf_well_founded : well_founded (Zwf c).
     red in |- *; intros.
@@ -45,12 +45,12 @@ Section wf_proof.
     apply Acc_intro; intros.
     apply H.
     unfold Zwf in H1.
-    case (Zle_or_lt c y); intro; auto with zarith.
+    case (Z.le_gt_cases c y); intro; auto with zarith.
     left.
     red in H0.
     apply lt_le_trans with (f a); auto with arith.
-    unfold f in |- *.
-    apply Zabs.Zabs_nat_lt; omega.
+    unfold f.
+    apply Zabs2Nat.inj_lt; omega.
     apply (H (S (f a))); auto.
   Qed.
 
@@ -75,18 +75,15 @@ Section wf_proof_up.
   (** The proof of well-foundness is classic: we do the proof by induction
       on a measure in nat, which is here [|c-x|] *)
 
-  Let f (z:Z) := Zabs_nat (c - z).
+  Let f (z:Z) := Z.abs_nat (c - z).
 
   Lemma Zwf_up_well_founded : well_founded (Zwf_up c).
   Proof.
     apply well_founded_lt_compat with (f := f).
-    unfold Zwf_up, f in |- *.
+    unfold Zwf_up, f.
     intros.
-    apply Zabs.Zabs_nat_lt.
-    unfold Zminus in |- *. split.
-    apply Zle_left; intuition.
-    apply Zplus_lt_compat_l; unfold Zlt in |- *; rewrite <- Zcompare_opp;
-      intuition.
+    apply Zabs2Nat.inj_lt; try (apply Z.le_0_sub; intuition).
+    now apply Z.sub_lt_mono_l.
   Qed.
 
 End wf_proof_up.

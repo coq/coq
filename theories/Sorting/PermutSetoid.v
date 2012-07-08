@@ -71,7 +71,7 @@ Qed.
 Lemma permut_sym :
   forall l1 l2 : list A, permutation l1 l2 -> permutation l2 l1.
 Proof.
-  unfold permutation, meq; intros; apply sym_eq; trivial.
+  unfold permutation, meq; intros; symmetry; trivial.
 Qed.
 
 Lemma permut_trans :

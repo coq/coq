@@ -390,21 +390,21 @@ Section Z_2nZ.
  Proof. refine (spec_ww_to_Z w_digits w_to_Z _);auto. Qed.
 
  Let spec_ww_of_pos : forall p,
-     Zpos p = (Z_of_N (fst (ww_of_pos p)))*wwB + [|(snd (ww_of_pos p))|].
+     Zpos p = (Z.of_N (fst (ww_of_pos p)))*wwB + [|(snd (ww_of_pos p))|].
  Proof.
   unfold ww_of_pos;intros.
   rewrite (ZnZ.spec_of_pos p). unfold w_of_pos.
   case (ZnZ.of_pos p); intros. simpl.
   destruct n; simpl ZnZ.to_Z.
   simpl;unfold w_to_Z,w_0; rewrite ZnZ.spec_0;trivial.
-  unfold Z_of_N.
+  unfold Z.of_N.
   rewrite (ZnZ.spec_of_pos p0).
   case (ZnZ.of_pos p0); intros. simpl.
-  unfold fst, snd,Z_of_N, to_Z, wB, w_digits, w_to_Z, w_WW.
+  unfold fst, snd,Z.of_N, to_Z, wB, w_digits, w_to_Z, w_WW.
   rewrite ZnZ.spec_WW.
   replace wwB with (wB*wB).
   unfold wB,w_to_Z,w_digits;destruct n;ring.
-  symmetry. rewrite <- Zpower_2; exact (wwB_wBwB w_digits).
+  symmetry. rewrite <- Z.pow_2_r; exact (wwB_wBwB w_digits).
  Qed.
 
  Let spec_ww_0 : [|W0|] = 0.
@@ -417,7 +417,7 @@ Section Z_2nZ.
  Proof. refine (spec_ww_Bm1 w_Bm1 w_digits w_to_Z _);auto. Qed.
 
  Let spec_ww_compare :
-  forall x y, compare x y = Zcompare [|x|] [|y|].
+  forall x y, compare x y = Z.compare [|x|] [|y|].
  Proof.
   refine (spec_ww_compare w_0 w_digits w_to_Z w_compare _ _ _);auto.
  Qed.
@@ -575,9 +575,9 @@ Section Z_2nZ.
   unfold w_add_c; case ZnZ.add_c; unfold interp_carry; simpl ww_to_Z.
     intros w0 Hw0; simpl; unfold w_to_Z; rewrite Hw0.
   unfold w_0; rewrite ZnZ.spec_0; simpl; auto with zarith.
-  intros w0; rewrite Zmult_1_l; simpl.
+  intros w0; rewrite Z.mul_1_l; simpl.
   unfold w_to_Z, w_1; rewrite ZnZ.spec_1; auto with zarith.
-  rewrite Zmult_1_l; auto.
+  rewrite Z.mul_1_l; auto.
  Qed.
 
  Let spec_low: forall x,
@@ -585,7 +585,7 @@ Section Z_2nZ.
   intros x; case x; simpl low.
     unfold ww_to_Z, w_to_Z, w_0; rewrite ZnZ.spec_0; simpl; auto.
   intros xh xl; simpl.
-  rewrite Zplus_comm; rewrite Z_mod_plus; auto with zarith.
+  rewrite Z.add_comm; rewrite Z_mod_plus; auto with zarith.
   rewrite Zmod_small; auto with zarith.
   unfold wB, base; auto with zarith.
  Qed.
@@ -597,7 +597,7 @@ Section Z_2nZ.
  rewrite spec_add2.
  unfold w_to_Z, w_zdigits, w_digits.
  rewrite ZnZ.spec_zdigits; auto.
- rewrite Zpos_xO; auto with zarith.
+ rewrite Pos2Z.inj_xO; auto with zarith.
  Qed.
 
 
@@ -605,7 +605,7 @@ Section Z_2nZ.
  Proof.
  refine (spec_ww_head00 w_0 w_0W
                 w_compare w_head0 w_add2 w_zdigits _ww_zdigits
-                w_to_Z _ _ _ (refl_equal _ww_digits) _ _ _ _); auto.
+                w_to_Z _ _ _ (eq_refl _ww_digits) _ _ _ _); auto.
  exact ZnZ.spec_head00.
  exact ZnZ.spec_zdigits.
  Qed.
@@ -623,7 +623,7 @@ Section Z_2nZ.
  Proof.
  refine (spec_ww_tail00 w_0 w_0W
                 w_compare w_tail0 w_add2 w_zdigits _ww_zdigits
-                w_to_Z _ _ _ (refl_equal _ww_digits) _ _ _ _); wwauto.
+                w_to_Z _ _ _ (eq_refl _ww_digits) _ _ _ _); wwauto.
  exact ZnZ.spec_tail00.
  exact ZnZ.spec_zdigits.
  Qed.
@@ -749,7 +749,7 @@ refine
       | false => [|x|] mod 2 = 1
       end.
  Proof.
- refine (@spec_ww_is_even t w_is_even w_0 w_1 w_Bm1 w_digits _ _ _ _ _); auto.
+ refine (@spec_ww_is_even t w_is_even w_digits _ _ ).
  exact ZnZ.spec_is_even.
  Qed.
 
@@ -798,7 +798,7 @@ refine
   exact ZnZ.spec_zdigits.
   unfold w_to_Z, w_zdigits.
   rewrite ZnZ.spec_zdigits.
-  rewrite <- Zpos_xO; exact spec_ww_digits.
+  rewrite <- Pos2Z.inj_xO; exact spec_ww_digits.
  Qed.
 
  Global Instance mk_zn2z_specs_karatsuba : ZnZ.Specs mk_zn2z_ops_karatsuba.
@@ -811,7 +811,7 @@ refine
   exact ZnZ.spec_zdigits.
   unfold w_to_Z, w_zdigits.
   rewrite ZnZ.spec_zdigits.
-  rewrite <- Zpos_xO; exact spec_ww_digits.
+  rewrite <- Pos2Z.inj_xO; exact spec_ww_digits.
  Qed.
 
 End Z_2nZ.

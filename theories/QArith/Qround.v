@@ -11,7 +11,7 @@ Require Import QArith.
 Lemma Qopp_lt_compat: forall p q : Q, p < q -> - q < - p.
 Proof.
 intros (a1,a2) (b1,b2); unfold Qle, Qlt; simpl.
-do 2 rewrite <- Zopp_mult_distr_l; omega.
+rewrite !Z.mul_opp_l; omega.
 Qed.
 
 Hint Resolve Qopp_lt_compat : qarith.
@@ -20,7 +20,7 @@ Hint Resolve Qopp_lt_compat : qarith.
 
 Coercion Local inject_Z : Z >-> Q.
 
-Definition Qfloor (x:Q) := let (n,d) := x in Zdiv n (Zpos d).
+Definition Qfloor (x:Q) := let (n,d) := x in Z.div n (Zpos d).
 Definition Qceiling (x:Q) := (-(Qfloor (-x)))%Z.
 
 Lemma Qfloor_Z : forall z:Z, Qfloor z = z.
@@ -46,7 +46,7 @@ simpl.
 unfold Qle.
 simpl.
 replace (n*1)%Z with n by ring.
-rewrite Zmult_comm.
+rewrite Z.mul_comm.
 apply Z_mult_div_ge.
 auto with *.
 Qed.
@@ -81,7 +81,7 @@ ring_simplify.
 replace (n / ' d * ' d + ' d)%Z with
   (('d * (n / 'd) + n mod 'd) + 'd - n mod 'd)%Z by ring.
 rewrite <- Z_div_mod_eq; auto with*.
-rewrite <- Zlt_plus_swap.
+rewrite <- Z.lt_add_lt_sub_r.
 destruct (Z_mod_lt n ('d)); auto with *.
 Qed.
 
@@ -107,7 +107,7 @@ unfold Qle in *.
 simpl in *.
 rewrite <- (Zdiv_mult_cancel_r xn ('xd) ('yd)); auto with *.
 rewrite <- (Zdiv_mult_cancel_r yn ('yd) ('xd)); auto with *.
-rewrite (Zmult_comm ('yd) ('xd)).
+rewrite (Z.mul_comm ('yd) ('xd)).
 apply Z_div_le; auto with *.
 Qed.
 
@@ -125,7 +125,7 @@ Hint Resolve Qceiling_resp_le : qarith.
 Add Morphism Qfloor with signature Qeq ==> eq as Qfloor_comp.
 Proof.
 intros x y H.
-apply Zle_antisym.
+apply Z.le_antisymm.
  auto with *.
 symmetry in H; auto with *.
 Qed.
@@ -133,7 +133,7 @@ Qed.
 Add Morphism Qceiling with signature Qeq ==> eq as Qceiling_comp.
 Proof.
 intros x y H.
-apply Zle_antisym.
+apply Z.le_antisymm.
  auto with *.
 symmetry in H; auto with *.
 Qed.
@@ -142,9 +142,9 @@ Lemma Zdiv_Qdiv (n m: Z): (n / m)%Z = Qfloor (n / m).
 Proof.
  unfold Qfloor. intros. simpl.
  destruct m as [?|?|p]; simpl.
-  now rewrite Zdiv_0_r, Zmult_0_r.
-  now rewrite Zmult_1_r.
- rewrite <- Zopp_eq_mult_neg_1.
- rewrite <- (Zopp_involutive (Zpos p)).
+  now rewrite Zdiv_0_r, Z.mul_0_r.
+  now rewrite Z.mul_1_r.
+ rewrite <- Z.opp_eq_mul_m1.
+ rewrite <- (Z.opp_involutive (Zpos p)).
  now rewrite Zdiv_opp_opp.
 Qed.

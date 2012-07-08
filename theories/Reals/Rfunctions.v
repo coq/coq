@@ -25,8 +25,8 @@ Require Export SplitRmult.
 Require Export ArithProp.
 Require Import Omega.
 Require Import Zpower.
-Open Local Scope nat_scope.
-Open Local Scope R_scope.
+Local Open Scope nat_scope.
+Local Open Scope R_scope.
 
 (*******************************)
 (** * Lemmas about factorial   *)
@@ -221,8 +221,8 @@ Qed.
 Lemma RPow_abs : forall (x:R) (n:nat), Rabs x ^ n = Rabs (x ^ n).
 Proof.
   intro; simple induction n; simpl.
-  apply sym_eq; apply Rabs_pos_eq; apply Rlt_le; apply Rlt_0_1.
-  intros; rewrite H; apply sym_eq; apply Rabs_mult.
+  symmetry; apply Rabs_pos_eq; apply Rlt_le; apply Rlt_0_1.
+  intros; rewrite H; symmetry; apply Rabs_mult.
 Qed.
 
 
@@ -526,13 +526,13 @@ Qed.
 (*i Due to L.Thery i*)
 
 Ltac case_eq name :=
-  generalize (refl_equal name); pattern name at -1; case name.
+  generalize (eq_refl name); pattern name at -1; case name.
 
 Definition powerRZ (x:R) (n:Z) :=
   match n with
     | Z0 => 1
-    | Zpos p => x ^ nat_of_P p
-    | Zneg p => / x ^ nat_of_P p
+    | Zpos p => x ^ Pos.to_nat p
+    | Zneg p => / x ^ Pos.to_nat p
   end.
 
 Infix Local "^Z" := powerRZ (at level 30, right associativity) : R_scope.
@@ -548,7 +548,7 @@ Proof.
   reflexivity.
 Qed.
 
-Lemma powerRZ_1 : forall x:R, x ^Z Zsucc 0 = x.
+Lemma powerRZ_1 : forall x:R, x ^Z Z.succ 0 = x.
 Proof.
   simpl; auto with real.
 Qed.
@@ -558,67 +558,63 @@ Proof.
   destruct z; simpl; auto with real.
 Qed.
 
+Lemma powerRZ_pos_sub (x:R) (n m:positive) : x <> 0 ->
+   x ^Z (Z.pos_sub n m) = x ^ Pos.to_nat n * / x ^ Pos.to_nat m.
+Proof.
+ intro Hx.
+ rewrite Z.pos_sub_spec.
+ case Pos.compare_spec; intro H; simpl.
+ - subst; auto with real.
+ - rewrite Pos2Nat.inj_sub by trivial.
+   rewrite Pos2Nat.inj_lt in H.
+   rewrite (pow_RN_plus x _ (Pos.to_nat n)) by auto with real.
+   rewrite plus_comm, le_plus_minus_r by auto with real.
+   rewrite Rinv_mult_distr, Rinv_involutive; auto with real.
+ - rewrite Pos2Nat.inj_sub by trivial.
+   rewrite Pos2Nat.inj_lt in H.
+   rewrite (pow_RN_plus x _ (Pos.to_nat m)) by auto with real.
+   rewrite plus_comm, le_plus_minus_r by auto with real.
+   reflexivity.
+Qed.
+
 Lemma powerRZ_add :
   forall (x:R) (n m:Z), x <> 0 -> x ^Z (n + m) = x ^Z n * x ^Z m.
 Proof.
-  intro x; destruct n as [| n1| n1]; destruct m as [| m1| m1]; simpl;
-    auto with real.
-(* POS/POS *)
-  rewrite Pplus_plus; auto with real.
-(* POS/NEG *)
-  rewrite Z.pos_sub_spec.
-  case Pcompare_spec; intros; simpl.
-  subst; auto with real.
-  rewrite Pminus_minus by trivial.
-  rewrite (pow_RN_plus x _ (nat_of_P n1)) by auto with real.
-  rewrite plus_comm, le_plus_minus_r by (now apply lt_le_weak, Plt_lt).
-  rewrite Rinv_mult_distr, Rinv_involutive; auto with real.
-  rewrite Pminus_minus by trivial.
-  rewrite (pow_RN_plus x _ (nat_of_P m1)) by auto with real.
-  rewrite plus_comm, le_plus_minus_r by (now apply lt_le_weak, Plt_lt).
-  reflexivity.
-(* NEG/POS *)
-  rewrite Z.pos_sub_spec.
-  case Pcompare_spec; intros; simpl.
-  subst; auto with real.
-  rewrite Pminus_minus by trivial.
-  rewrite (pow_RN_plus x _ (nat_of_P m1)) by auto with real.
-  rewrite plus_comm, le_plus_minus_r by (now apply lt_le_weak, Plt_lt).
-  rewrite Rinv_mult_distr, Rinv_involutive; auto with real.
-  rewrite Pminus_minus by trivial.
-  rewrite (pow_RN_plus x _ (nat_of_P n1)) by auto with real.
-  rewrite plus_comm, le_plus_minus_r by (now apply lt_le_weak, Plt_lt).
-  auto with real.
-(* NEG/NEG *)
-  rewrite Pplus_plus; auto with real.
-  intros H'; rewrite pow_add; auto with real.
-  apply Rinv_mult_distr; auto.
-  apply pow_nonzero; auto.
-  apply pow_nonzero; auto.
+  intros x [|n|n] [|m|m]; simpl; intros; auto with real.
+  - (* + + *)
+    rewrite Pos2Nat.inj_add; auto with real.
+  - (* + - *)
+    now apply powerRZ_pos_sub.
+  - (* - + *)
+    rewrite Rmult_comm. now apply powerRZ_pos_sub.
+  - (* - - *)
+    rewrite Pos2Nat.inj_add; auto with real.
+    rewrite pow_add; auto with real.
+    apply Rinv_mult_distr; apply pow_nonzero; auto.
 Qed.
 Hint Resolve powerRZ_O powerRZ_1 powerRZ_NOR powerRZ_add: real.
 
 Lemma Zpower_nat_powerRZ :
-  forall n m:nat, IZR (Zpower_nat (Z_of_nat n) m) = INR n ^Z Z_of_nat m.
+  forall n m:nat, IZR (Zpower_nat (Z.of_nat n) m) = INR n ^Z Z.of_nat m.
 Proof.
   intros n m; elim m; simpl; auto with real.
-  intros m1 H'; rewrite nat_of_P_of_succ_nat; simpl.
-  replace (Zpower_nat (Z_of_nat n) (S m1)) with
-  (Z_of_nat n * Zpower_nat (Z_of_nat n) m1)%Z.
+  intros m1 H'; rewrite SuccNat2Pos.id_succ; simpl.
+  replace (Zpower_nat (Z.of_nat n) (S m1)) with
+  (Z.of_nat n * Zpower_nat (Z.of_nat n) m1)%Z.
   rewrite mult_IZR; auto with real.
   repeat rewrite <- INR_IZR_INZ; simpl.
   rewrite H'; simpl.
   case m1; simpl; auto with real.
-  intros m2; rewrite nat_of_P_of_succ_nat; auto.
+  intros m2; rewrite SuccNat2Pos.id_succ; auto.
   unfold Zpower_nat; auto.
 Qed.
 
 Lemma Zpower_pos_powerRZ :
-  forall n m, IZR (Zpower_pos n m) = IZR n ^Z Zpos m.
+  forall n m, IZR (Z.pow_pos n m) = IZR n ^Z Zpos m.
 Proof.
   intros.
   rewrite Zpower_pos_nat; simpl.
-  induction (nat_of_P m).
+  induction (Pos.to_nat m).
   easy.
   unfold Zpower_nat; simpl.
   rewrite mult_IZR.
@@ -638,10 +634,10 @@ Qed.
 Hint Resolve powerRZ_le: real.
 
 Lemma Zpower_nat_powerRZ_absolu :
-  forall n m:Z, (0 <= m)%Z -> IZR (Zpower_nat n (Zabs_nat m)) = IZR n ^Z m.
+  forall n m:Z, (0 <= m)%Z -> IZR (Zpower_nat n (Z.abs_nat m)) = IZR n ^Z m.
 Proof.
   intros n m; case m; simpl; auto with zarith.
-  intros p H'; elim (nat_of_P p); simpl; auto with zarith.
+  intros p H'; elim (Pos.to_nat p); simpl; auto with zarith.
   intros n0 H'0; rewrite <- H'0; simpl; auto with zarith.
   rewrite <- mult_IZR; auto.
   intros p H'; absurd (0 <= Zneg p)%Z; auto with zarith.
@@ -650,9 +646,9 @@ Qed.
 Lemma powerRZ_R1 : forall n:Z, 1 ^Z n = 1.
 Proof.
   intros n; case n; simpl; auto.
-  intros p; elim (nat_of_P p); simpl; auto; intros n0 H'; rewrite H';
+  intros p; elim (Pos.to_nat p); simpl; auto; intros n0 H'; rewrite H';
     ring.
-  intros p; elim (nat_of_P p); simpl.
+  intros p; elim (Pos.to_nat p); simpl.
   exact Rinv_1.
   intros n1 H'; rewrite Rinv_mult_distr; try rewrite Rinv_1; try rewrite H';
     auto with real.
@@ -760,9 +756,9 @@ Qed.
 Lemma R_dist_refl : forall x y:R, R_dist x y = 0 <-> x = y.
 Proof.
   unfold R_dist; intros; split_Rabs; split; intros.
-  rewrite (Ropp_minus_distr x y) in H; apply sym_eq;
+  rewrite (Ropp_minus_distr x y) in H; symmetry;
     apply (Rminus_diag_uniq y x H).
-  rewrite (Ropp_minus_distr x y); generalize (sym_eq H); intro;
+  rewrite (Ropp_minus_distr x y); generalize (eq_sym H); intro;
     apply (Rminus_diag_eq y x H0).
   apply (Rminus_diag_uniq x y H).
   apply (Rminus_diag_eq x y H).

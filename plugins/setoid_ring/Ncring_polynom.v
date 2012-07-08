@@ -52,7 +52,7 @@ Instance equalityb_coef : Equalityb C :=
   match P, P' with
   | Pc c, Pc c' => c =? c'
   | PX P i n Q, PX P' i' n' Q' =>
-    match Pcompare i i' Eq, Pcompare n n' Eq with
+    match Pos.compare i i', Pos.compare n n' with
     | Eq, Eq => if Peq P P' then Peq Q Q' else false
     | _,_ => false
     end
@@ -67,7 +67,7 @@ Instance equalityb_pol : Equalityb Pol :=
   match P with
   | Pc c => if c =? 0 then Q else PX P i n Q 
   | PX P' i' n' Q' => 
-       match Pcompare i i' Eq with
+       match Pos.compare i i' with
         | Eq => if Q' =? P0 then PX P' i (n + n') Q else PX P i n Q
         | _ => PX P i n Q
        end
@@ -109,13 +109,13 @@ Fixpoint PaddX (i n:positive)(Q:Pol){struct Q}:=
   match Q with
   | Pc c => mkPX P i n Q
   | PX P' i' n' Q' => 
-      match Pcompare i i' Eq with
+      match Pos.compare i i' with
       | (* i > i' *)
         Gt => mkPX P i n Q
       | (* i < i' *)
         Lt => mkPX P' i' n' (PaddX i n Q')
       | (* i = i' *)
-        Eq => match ZPminus n n' with
+        Eq => match Z.pos_sub n n' with
               | (* n > n' *) 
                 Zpos k => mkPX (PaddX i k P') i' n' Q'
               | (* n = n' *)
@@ -178,61 +178,25 @@ Definition Psub(P P':Pol):= P ++ (--P').
 
  Reserved Notation "P @ l " (at level 10, no associativity).
  Notation "P @ l " := (Pphi l P).
+
  (** Proofs *)
- Lemma ZPminus_spec : forall x y,
-  match ZPminus x y with
-  | Z0 => x = y
-  | Zpos k => x = (y + k)%positive
-  | Zneg k => y = (x + k)%positive
+
+ Ltac destr_pos_sub H :=
+  match goal with |- context [Z.pos_sub ?x ?y] =>
+   assert (H := Z.pos_sub_discr x y); destruct (Z.pos_sub x y)
   end.
- Proof.
-  induction x;destruct y.
-  replace (ZPminus (xI x) (xI y)) with (Zdouble (ZPminus x y));trivial.
-  assert (Hh := IHx y);destruct (ZPminus x y);unfold Zdouble;
-rewrite Hh;trivial.
-  replace (ZPminus (xI x) (xO y)) with (Zdouble_plus_one (ZPminus x y));
-trivial.
-  assert (Hh := IHx y);destruct (ZPminus x y);unfold Zdouble_plus_one;
-rewrite Hh;trivial.
-  apply Pplus_xI_double_minus_one.
-  simpl;trivial.
-  replace (ZPminus (xO x) (xI y)) with (Zdouble_minus_one (ZPminus x y));
-trivial.
-  assert (Hh := IHx y);destruct (ZPminus x y);unfold Zdouble_minus_one;
-rewrite Hh;trivial.
-  apply Pplus_xI_double_minus_one.
-  replace (ZPminus (xO x) (xO y)) with (Zdouble (ZPminus x y));trivial.
-  assert (Hh := IHx y);destruct (ZPminus x y);unfold Zdouble;rewrite Hh;
-trivial.
-  replace (ZPminus (xO x) xH) with (Zpos (Pdouble_minus_one x));trivial.
-  rewrite <- Pplus_one_succ_l.
-  rewrite Psucc_o_double_minus_one_eq_xO;trivial.
-  replace (ZPminus xH (xI y)) with (Zneg (xO y));trivial.
-  replace (ZPminus xH (xO y)) with (Zneg (Pdouble_minus_one y));trivial.
-  rewrite <- Pplus_one_succ_l.
-  rewrite Psucc_o_double_minus_one_eq_xO;trivial.
-  simpl;trivial.
- Qed.
 
  Lemma Peq_ok : forall P P',
     (P =? P') = true -> forall l, P@l == P'@ l.
  Proof.
-  induction P;destruct P';simpl;intros;try discriminate;trivial.
- apply ring_morphism_eq.
- apply Ceqb_eq ;trivial.
-  assert (H1h := IHP1 P'1);assert (H2h := IHP2 P'2).
-   simpl in H1h. destruct (Peq P2 P'1). simpl in H2h; 
-destruct (Peq P3 P'2).
-  rewrite (H1h);trivial . rewrite (H2h);trivial. 
-assert (H3h := Pcompare_Eq_eq p p1);
- destruct (Pos.compare_cont p p1 Eq);
-assert (H4h := Pcompare_Eq_eq p0 p2);
-destruct (Pos.compare_cont p0 p2 Eq); try (discriminate H).
- rewrite H3h;trivial. rewrite H4h;trivial. reflexivity.
- destruct (Pos.compare_cont p p1 Eq); destruct (Pos.compare_cont p0 p2 Eq);
- try (discriminate H).
- destruct (Pos.compare_cont p p1 Eq); destruct (Pos.compare_cont p0 p2 Eq);
- try (discriminate H). 
+ induction P;destruct P';simpl;intros ;try easy.
+ - now apply ring_morphism_eq, Ceqb_eq.
+ - specialize (IHP1 P'1). specialize (IHP2 P'2).
+   simpl in IHP1, IHP2.
+   destruct (Pos.compare_spec p p1); try discriminate;
+   destruct (Pos.compare_spec p0 p2); try discriminate.
+   destruct (Peq P2 P'1); try discriminate.
+   subst; now rewrite IHP1, IHP2.
  Qed.
 
  Lemma Pphi0 : forall l, P0@l == 0.
@@ -255,12 +219,12 @@ destruct (Pos.compare_cont p0 p2 Eq); try (discriminate H).
 simpl; case_eq (Ceqb c 0);simpl;try reflexivity.
 intros.
   rewrite Hh. rewrite ring_morphism0.
-  rsimpl. apply Ceqb_eq. trivial. assert (Hh1 := Pcompare_Eq_eq i p);
-destruct (Pos.compare_cont i p Eq).
+  rsimpl. apply Ceqb_eq. trivial.
+  destruct (Pos.compare_spec i p).
   assert (Hh := @Peq_ok P3 P0). case_eq (P3=? P0). intro. simpl. 
   rewrite Hh. 
-  rewrite Pphi0. rsimpl. rewrite Pplus_comm. rewrite pow_pos_Pplus;rsimpl.
-rewrite Hh1;trivial. reflexivity. trivial. intros. simpl. reflexivity. simpl. reflexivity.
+  rewrite Pphi0. rsimpl. rewrite Pos.add_comm. rewrite pow_pos_add;rsimpl.
+  subst;trivial. reflexivity. trivial. intros. simpl. reflexivity. simpl. reflexivity.
  simpl. reflexivity.
  Qed.
 
@@ -331,13 +295,13 @@ Lemma PaddXPX: forall P i n Q,
   match Q with
   | Pc c => mkPX P i n Q
   | PX P' i' n' Q' => 
-      match Pcompare i i' Eq with
+      match Pos.compare i i' with
       | (* i > i' *)
         Gt => mkPX P i n Q
       | (* i < i' *)
         Lt => mkPX P' i' n' (PaddX Padd P i n Q')
       | (* i = i' *)
-        Eq => match ZPminus n n' with
+        Eq => match Z.pos_sub n n' with
               | (* n > n' *) 
                 Zpos k => mkPX (PaddX Padd P i k P') i' n' Q'
               | (* n = n' *)
@@ -359,17 +323,17 @@ Lemma PaddX_ok2 : forall P2,
 induction P2;simpl;intros. split. intros. apply PaddCl_ok.
  induction P.  unfold PaddX. intros. rewrite mkPX_ok.
  simpl. rsimpl.
-intros. simpl. assert (Hh := Pcompare_Eq_eq k p);
- destruct (Pos.compare_cont k p Eq).
- assert (H1h := ZPminus_spec n p0);destruct (ZPminus n p0). Esimpl2.
+intros. simpl.
+ destruct (Pos.compare_spec k p) as [Hh|Hh|Hh].
+ destr_pos_sub H1h. Esimpl2.
 rewrite Hh; trivial. rewrite H1h. reflexivity.
 simpl. rewrite mkPX_ok. rewrite IHP1. Esimpl2.
- rewrite Pplus_comm in H1h.
+ rewrite Pos.add_comm in H1h.
 rewrite H1h. 
-rewrite pow_pos_Pplus.  Esimpl2.
+rewrite pow_pos_add.  Esimpl2.
 rewrite Hh; trivial. reflexivity.
-rewrite mkPX_ok. rewrite PaddCl_ok. Esimpl2. rewrite Pplus_comm in H1h.
-rewrite H1h.  Esimpl2. rewrite pow_pos_Pplus. Esimpl2.
+rewrite mkPX_ok. rewrite PaddCl_ok. Esimpl2. rewrite Pos.add_comm in H1h.
+rewrite H1h.  Esimpl2. rewrite pow_pos_add. Esimpl2.
 rewrite Hh; trivial. reflexivity.
 rewrite mkPX_ok. rewrite IHP2. Esimpl2.
 rewrite (ring_add_comm  (P2 @ l * pow_pos (nth 0 p l) p0) 
@@ -382,19 +346,18 @@ split. intros. rewrite H0. rewrite H1.
 Esimpl2.
 induction P. unfold PaddX. intros. rewrite mkPX_ok. simpl. reflexivity.
 intros. rewrite PaddXPX. 
-assert (H3h := Pcompare_Eq_eq k p1);
- destruct (Pos.compare_cont k p1 Eq).
-assert (H4h := ZPminus_spec n p2);destruct (ZPminus n p2). 
+destruct (Pos.compare_spec k p1) as [H3h|H3h|H3h].
+destr_pos_sub H4h.
 rewrite mkPX_ok. simpl. rewrite H0. rewrite H1. Esimpl2.
 rewrite H4h. rewrite H3h;trivial. reflexivity.
 rewrite mkPX_ok. rewrite IHP1. Esimpl2. rewrite H3h;trivial.
-rewrite Pplus_comm in H4h.
-rewrite H4h. rewrite pow_pos_Pplus. Esimpl2.
+rewrite Pos.add_comm in H4h.
+rewrite H4h. rewrite pow_pos_add. Esimpl2.
 rewrite mkPX_ok. simpl. rewrite H0. rewrite H1. 
 rewrite mkPX_ok.
  Esimpl2. rewrite H3h;trivial.
- rewrite Pplus_comm in H4h.
-rewrite H4h. rewrite pow_pos_Pplus. Esimpl2.
+ rewrite Pos.add_comm in H4h.
+rewrite H4h. rewrite pow_pos_add. Esimpl2.
 rewrite mkPX_ok. simpl. rewrite IHP2. Esimpl2.
 gen_add_push (P2 @ l * pow_pos (nth 0 p1 l) p2). try reflexivity.
 rewrite mkPX_ok. simpl. reflexivity.
