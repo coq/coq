@@ -1484,8 +1484,7 @@ Qed.
 
 (** We hence obtain all the generic properties of [min] and [max]. *)
 
-Include !UsualMinMaxLogicalProperties.
-Include !UsualMinMaxDecProperties.
+Include UsualMinMaxLogicalProperties <+ UsualMinMaxDecProperties.
 
 (** Minimum, maximum and constant one *)
 
