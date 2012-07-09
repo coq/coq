@@ -455,8 +455,11 @@ GEXTEND Gram
   eqn_ipat:
     [ [ IDENT "eqn"; ":"; id = naming_intropattern -> Some id
       | IDENT "_eqn"; ":"; id = naming_intropattern ->
-        let msg = "Obsolete syntax \"_eqn\" could be replaced by \"eqn\"" in
+        let msg = "Obsolete syntax \"_eqn:H\" could be replaced by \"eqn:H\"" in
         msg_warning (strbrk msg); Some id
+      | IDENT "_eqn" ->
+        let msg = "Obsolete syntax \"_eqn\" could be replaced by \"eqn:?\"" in
+        msg_warning (strbrk msg); Some (loc, IntroAnonymous)
       | -> None ] ]
   ;
   as_name:
