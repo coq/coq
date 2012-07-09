@@ -9,11 +9,11 @@
 Require Import ZArith Zwf Psatz QArith.
 Open Scope Z_scope.
 
-Lemma Z.abs_square : forall x,  (Z.abs  x)^2 = x^2.
+Lemma Zabs_square : forall x,  (Z.abs  x)^2 = x^2.
 Proof.
  intros ; case (Zabs_dec x) ; intros ; psatz Z 2.
 Qed.
-Hint Resolve Z.abs_nonneg Z.abs_square.
+Hint Resolve Z.abs_nonneg Zabs_square.
 
 Lemma integer_statement :  ~exists n, exists p, n^2 = 2*p^2 /\ n <> 0.
 Proof.
