@@ -396,7 +396,7 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   induction s; simpl.
   intuition; inv.
   intros.
-  destruct (f a) as [ ]_eqn:E; rewrite ?InA_cons, IHs; intuition.
+  destruct (f a) eqn:E; rewrite ?InA_cons, IHs; intuition.
   setoid_replace x with a; auto.
   setoid_replace a with x in E; auto. congruence.
   Qed.
@@ -420,7 +420,7 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   unfold For_all; induction s; simpl.
   intuition. inv.
   intros; inv.
-  destruct (f a) as [ ]_eqn:F.
+  destruct (f a) eqn:F.
   rewrite IHs; intuition. inv; auto.
   setoid_replace x with a; auto.
   split; intros H'; try discriminate.
@@ -436,7 +436,7 @@ Module MakeRaw (X:DecidableType) <: WRawSets X.
   unfold Exists; induction s; simpl.
   split; [discriminate| intros (x & Hx & _); inv].
   intros.
-  destruct (f a) as [ ]_eqn:F.
+  destruct (f a) eqn:F.
   split; auto.
   exists a; auto.
   rewrite IHs; firstorder.

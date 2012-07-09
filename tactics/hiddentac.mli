@@ -66,19 +66,19 @@ val h_simple_induction   : quantified_hypothesis -> tactic
 val h_simple_destruct    : quantified_hypothesis -> tactic
 val h_simple_induction_destruct : rec_flag -> quantified_hypothesis -> tactic
 val h_new_induction   : evars_flag ->
-  (evar_map * constr with_bindings) induction_arg list ->
-  constr with_bindings option ->
+  (evar_map * constr with_bindings) induction_arg ->
   intro_pattern_expr located option * intro_pattern_expr located option ->
+  constr with_bindings option ->
   Tacticals.clause option -> tactic
 val h_new_destruct    : evars_flag ->
-  (evar_map * constr with_bindings) induction_arg list ->
-  constr with_bindings option ->
+  (evar_map * constr with_bindings) induction_arg ->
   intro_pattern_expr located option * intro_pattern_expr located option ->
+  constr with_bindings option ->
   Tacticals.clause option -> tactic
 val h_induction_destruct : rec_flag -> evars_flag ->
-  ((evar_map * constr with_bindings) induction_arg list *
-   constr with_bindings option *
+  ((evar_map * constr with_bindings) induction_arg *
    (intro_pattern_expr located option * intro_pattern_expr located option)) list
+    * constr with_bindings option
     * Tacticals.clause option -> tactic
 
 val h_specialize      : int option -> constr with_bindings -> tactic

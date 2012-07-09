@@ -1,4 +1,13 @@
-Changes from V8.4beta to V8.4
+Changes from V8.4beta2 to V8.4
+==============================
+
+Tactics
+
+- An annotation "eqn:H" or "eqn:?" can be added to a "destruct"
+  or "induction" to make it generate equations in the spirit of "case_eq".
+  The former syntax "_eqn" is discontinued.
+
+Changes from V8.4beta to V8.4beta2
 =============================
 
 Vernacular commands

@@ -73,7 +73,7 @@ Qed.
 
 Lemma mult_minus_distr_r : forall n m p, (n - m) * p = n * p - m * p.
 Proof.
-  intros; induction n m using nat_double_ind; simpl; auto with arith.
+  intros; induction n, m using nat_double_ind; simpl; auto with arith.
   rewrite <- minus_plus_simpl_l_reverse; auto with arith.
 Qed.
 Hint Resolve mult_minus_distr_r: arith v62.

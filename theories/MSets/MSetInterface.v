@@ -480,7 +480,7 @@ Module WRaw2SetsOn (E:DecidableType)(M:WRawSets E) <: WSetsOn E.
  Proof.
   intros (s,Hs) (s',Hs').
   change ({M.Equal s s'}+{~M.Equal s s'}).
-  destruct (M.equal s s') as [ ]_eqn:H; [left|right];
+  destruct (M.equal s s') eqn:H; [left|right];
    rewrite <- M.equal_spec; congruence.
  Defined.
 

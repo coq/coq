@@ -84,13 +84,13 @@ Ltac destr_eq H := discriminate H || (try (injection H; clear H; intro H)).
 (* Similar variants of destruct *)
 
 Tactic Notation "destruct_with_eqn" constr(x) :=
-  destruct x as []_eqn.
+  destruct x eqn:?.
 Tactic Notation "destruct_with_eqn" ident(n) :=
-  try intros until n; destruct n as []_eqn.
+  try intros until n; destruct n eqn:?.
 Tactic Notation "destruct_with_eqn" ":" ident(H) constr(x) :=
-  destruct x as []_eqn:H.
+  destruct x eqn:H.
 Tactic Notation "destruct_with_eqn" ":" ident(H) ident(n) :=
-  try intros until n; destruct n as []_eqn:H.
+  try intros until n; destruct n eqn:H.
 
 (** Break every hypothesis of a certain type *)
 

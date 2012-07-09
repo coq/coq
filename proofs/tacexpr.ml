@@ -108,11 +108,14 @@ type 'id gclause =
 let nowhere = {onhyps=Some[]; concl_occs=no_occurrences_expr}
 
 type 'constr induction_clause =
-  ('constr with_bindings induction_arg list * 'constr with_bindings option *
-   (intro_pattern_expr located option * intro_pattern_expr located option))
+    'constr with_bindings induction_arg *
+    (intro_pattern_expr located option (* eqn:... *)
+    * intro_pattern_expr located option) (* as ... *)
 
 type ('constr,'id) induction_clause_list =
-    'constr induction_clause list * 'id gclause option
+    'constr induction_clause list
+    * 'constr with_bindings option (* using ... *)
+    * 'id gclause option (* in ... *)
 
 type multi =
   | Precisely of int

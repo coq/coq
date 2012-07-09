@@ -130,21 +130,19 @@ let induction_arg_of_constr (c,lbind as clbind) =
   else ElimOnConstr clbind
 
 let mkTacCase with_evar = function
-  | [([ElimOnConstr cl],None,(None,None))],None ->
+  | [ElimOnConstr cl,(None,None)],None,None ->
       TacCase (with_evar,cl)
   (* Reinterpret numbers as a notation for terms *)
-  | [([(ElimOnAnonHyp n)],None,(None,None))],None ->
+  | [ElimOnAnonHyp n,(None,None)],None,None ->
       TacCase (with_evar,
         (CPrim (dummy_loc, Numeral (Bigint.of_string (string_of_int n))),
 	 NoBindings))
   (* Reinterpret ident as notations for variables in the context *)
   (* because we don't know if they are quantified or not *)
-  | [([ElimOnIdent id],None,(None,None))],None ->
+  | [ElimOnIdent id,(None,None)],None,None ->
       TacCase (with_evar,(CRef (Ident id),NoBindings))
   | ic ->
-      if List.exists (fun (cl,a,b) ->
-           List.exists (function ElimOnAnonHyp _ -> true | _ -> false) cl)
-           (fst ic)
+      if List.exists (function (ElimOnAnonHyp _,_) -> true | _ -> false) (pi1 ic)
       then
 	error "Use of numbers as direct arguments of 'case' is not supported.";
       TacInductionDestruct (false,with_evar,ic)
@@ -278,11 +276,6 @@ GEXTEND Gram
       | id = ident -> loc, IntroIdentifier id
       | "*" -> loc, IntroForthcoming true
       | "**" -> loc, IntroForthcoming false ] ]
-  ;
-  intropattern_modifier:
-    [ [ IDENT "_eqn";
-        id = [ ":"; id = naming_intropattern -> id | -> loc, IntroAnonymous ]
-        -> id ] ]
   ;
   simple_intropattern:
     [ [ pat = disjunctive_intropattern -> pat
@@ -445,10 +438,12 @@ GEXTEND Gram
     [ [ "as"; ipat = simple_intropattern -> Some ipat
       | -> None ] ]
   ;
-  with_induction_names:
-    [ [ "as"; ipat = simple_intropattern; eq = OPT intropattern_modifier
-        -> (eq,Some ipat)
-      | -> (None,None) ] ]
+  eqn_ipat:
+    [ [ IDENT "eqn"; ":"; id = naming_intropattern -> Some id
+      | IDENT "_eqn"; ":"; id = naming_intropattern ->
+        let msg = "Obsolete syntax \"_eqn\" could be replaced by \"eqn\"" in
+        msg_warning (strbrk msg); Some id
+      | -> None ] ]
   ;
   as_name:
     [ [ "as"; id = ident -> Names.Name id | -> Names.Anonymous ] ]
@@ -477,14 +472,11 @@ GEXTEND Gram
     [ [ b = orient; p = rewriter -> let (m,c) = p in (b,m,c) ] ]
   ;
   induction_clause:
-    [ [ lc = LIST1 induction_arg; ipats = with_induction_names;
-        el = OPT eliminator -> (lc,el,ipats) ] ]
-  ;
-  one_induction_clause:
-    [ [ ic = induction_clause; cl = opt_clause -> ([ic],cl) ] ]
+    [ [ c = induction_arg; pat = as_ipat; eq = eqn_ipat -> (c,(eq,pat)) ] ]
   ;
   induction_clause_list:
-    [ [ ic = LIST1 induction_clause SEP ","; cl = opt_clause -> (ic,cl) ] ]
+    [ [ ic = LIST1 induction_clause SEP ",";
+	el = OPT eliminator; cl = opt_clause -> (ic,el,cl) ] ]
   ;
   move_location:
     [ [ IDENT "after"; id = id_or_meta -> MoveAfter id
@@ -578,9 +570,9 @@ GEXTEND Gram
       (* Derived basic tactics *)
       | IDENT "simple"; IDENT"induction"; h = quantified_hypothesis ->
           TacSimpleInductionDestruct (true,h)
-      | IDENT "induction"; ic = one_induction_clause ->
+      | IDENT "induction"; ic = induction_clause_list ->
 	  TacInductionDestruct (true,false,ic)
-      | IDENT "einduction"; ic = one_induction_clause ->
+      | IDENT "einduction"; ic = induction_clause_list ->
 	  TacInductionDestruct(true,true,ic)
       | IDENT "double"; IDENT "induction"; h1 = quantified_hypothesis;
 	  h2 = quantified_hypothesis -> TacDoubleInduction (h1,h2)

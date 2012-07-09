@@ -3189,12 +3189,19 @@ let induct_destruct isrec with_evars (lc,elim,names,cls) gl =
   end
 
 let induction_destruct isrec with_evars = function
-  | [],_ -> tclIDTAC
-  | [a,b,c],cl -> induct_destruct isrec with_evars (a,b,c,cl)
-  | (a,b,c)::l,cl ->
+  | [],_,_ -> tclIDTAC
+  | [a,b],el,cl -> induct_destruct isrec with_evars ([a],el,b,cl)
+  | (a,b)::l,None,cl ->
       tclTHEN
-        (induct_destruct isrec with_evars (a,b,c,cl))
-        (tclMAP (fun (a,b,c) -> induct_destruct false with_evars (a,b,c,cl)) l)
+        (induct_destruct isrec with_evars ([a],None,b,cl))
+        (tclMAP (fun (a,b) -> induct_destruct false with_evars ([a],None,b,cl)) l)
+  | l,Some el,cl ->
+      let check_basic_using = function
+        | a,(None,None) -> a
+	| _ -> error "Unsupported syntax for \"using\"."
+      in
+      let l' = List.map check_basic_using l in
+      induct_destruct isrec with_evars (l', Some el, (None,None), cl)
 
 let new_induct ev lc e idl cls = induct_destruct true ev (lc,e,idl,cls)
 let new_destruct ev lc e idl cls = induct_destruct false ev (lc,e,idl,cls)
