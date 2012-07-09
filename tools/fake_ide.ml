@@ -16,13 +16,24 @@ type coqtop = {
   xml_parser : Xml_parser.t;
 }
 
+let logger level content = ()
+
 let eval_call (call:'a Serialize.call) coqtop =
   prerr_endline (Serialize.pr_call call);
   let xml_query = Serialize.of_call call in
   Xml_utils.print_xml coqtop.out_chan xml_query;
   flush coqtop.out_chan;
-  let xml_answer = Xml_parser.parse coqtop.xml_parser in
-  let res = Serialize.to_answer xml_answer in
+  let rec loop () =
+    let xml = Xml_parser.parse coqtop.xml_parser in
+    if Serialize.is_message xml then
+      let message = Serialize.to_message xml in
+      let level = message.Interface.message_level in
+      let content = message.Interface.message_content in
+      let () = logger level content in
+      loop ()
+    else (Serialize.to_answer xml : 'a Interface.value)
+  in
+  let res = loop () in
   prerr_endline (Serialize.pr_full_value call res);
   match res with Interface.Fail _ -> exit 1 | _ -> ()
 
