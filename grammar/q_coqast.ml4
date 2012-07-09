@@ -347,11 +347,13 @@ let rec mlexpr_of_atomic_tactic = function
                 (mlexpr_of_pair mlexpr_of_occ_constr mlexpr_of_name) cl$ >>
   | Tacexpr.TacGeneralizeDep c ->
       <:expr< Tacexpr.TacGeneralizeDep $mlexpr_of_constr c$ >>
-  | Tacexpr.TacLetTac (na,c,cl,b) ->
+  | Tacexpr.TacLetTac (na,c,cl,b,e) ->
       let na = mlexpr_of_name na in
       let cl = mlexpr_of_clause_pattern cl in
       <:expr< Tacexpr.TacLetTac $na$ $mlexpr_of_constr c$ $cl$
-	      $mlexpr_of_bool b$ >>
+	      $mlexpr_of_bool b$
+	      (mlexpr_of_option (mlexpr_of_located mlexpr_of_intro_pattern) e)
+      >>
 
   (* Derived basic tactics *)
   | Tacexpr.TacSimpleInductionDestruct (isrec,h) ->

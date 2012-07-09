@@ -28,6 +28,8 @@ Tactics
 - An annotation "eqn:H" or "eqn:?" can be added to a "destruct"
   or "induction" to make it generate equations in the spirit of "case_eq".
   The former syntax "_eqn" is discontinued.
+- The name of the hypothesis introduced by tactic "remember" can be
+  set via the new syntax "remember t as x eqn:H" (wish #2489).
 
 Program
 

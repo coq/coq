@@ -541,15 +541,16 @@ GEXTEND Gram
 	  TacMutualCofix (false,id,List.map mk_cofix_tac fd)
 
       | IDENT "pose"; (id,b) = bindings_with_parameters ->
-	  TacLetTac (Names.Name id,b,Locusops.nowhere,true)
+	  TacLetTac (Names.Name id,b,Locusops.nowhere,true,None)
       | IDENT "pose"; b = constr; na = as_name ->
-	  TacLetTac (na,b,Locusops.nowhere,true)
+	  TacLetTac (na,b,Locusops.nowhere,true,None)
       | IDENT "set"; (id,c) = bindings_with_parameters; p = clause_dft_concl ->
-	  TacLetTac (Names.Name id,c,p,true)
+	  TacLetTac (Names.Name id,c,p,true,None)
       | IDENT "set"; c = constr; na = as_name; p = clause_dft_concl ->
-          TacLetTac (na,c,p,true)
-      | IDENT "remember"; c = constr; na = as_name; p = clause_dft_all ->
-          TacLetTac (na,c,p,false)
+          TacLetTac (na,c,p,true,None)
+      | IDENT "remember"; c = constr; na = as_name; e = eqn_ipat;
+          p = clause_dft_all ->
+          TacLetTac (na,c,p,false,e)
 
       (* Begin compatibility *)
       | IDENT "assert"; test_lpar_id_coloneq; "("; (loc,id) = identref; ":=";

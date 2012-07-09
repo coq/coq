@@ -626,6 +626,11 @@ Section~\ref{Occurrences clauses}.
   This behaves as {\tt set (} {\ident} := {\term} {\tt ) in *} and using a
   logical (Leibniz's) equality instead of a local definition.
 
+\item {\tt remember {\term} {\tt as} {\ident} {\tt eqn:\ident}}
+
+  This behaves as {\tt remember {\term} {\tt as} {\ident}}, except
+  that the name of the generated equality is also given.
+
 \item {\tt remember {\term} {\tt as} {\ident} in {\occgoalset}}
 
   This is a more general form of {\tt remember} that remembers the

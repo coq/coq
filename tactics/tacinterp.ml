@@ -718,10 +718,11 @@ let rec intern_atomic lf ist x =
 	               intern_constr_with_occurrences ist c,
                        intern_name lf ist na) cl)
   | TacGeneralizeDep c -> TacGeneralizeDep (intern_constr ist c)
-  | TacLetTac (na,c,cls,b) ->
+  | TacLetTac (na,c,cls,b,eqpat) ->
       let na = intern_name lf ist na in
       TacLetTac (na,intern_constr ist c,
-                 (clause_app (intern_hyp_location ist) cls),b)
+                 (clause_app (intern_hyp_location ist) cls),b,
+		 (Option.map (intern_intro_pattern lf ist) eqpat))
 
   (* Automation tactics *)
   | TacTrivial (d,lems,l) -> TacTrivial (d,List.map (intern_constr ist) lems,l)
@@ -2398,18 +2399,18 @@ and interp_atomic ist gl tac =
       tclTHEN
 	(tclEVARS sigma)
 	(h_generalize_dep c_interp)
-  | TacLetTac (na,c,clp,b) ->
+  | TacLetTac (na,c,clp,b,eqpat) ->
       let clp = interp_clause ist gl clp in
       if clp = Locusops.nowhere then
-        (* We try to fully-typechect the term *)
+        (* We try to fully-typecheck the term *)
 	let (sigma,c_interp) = pf_interp_constr ist gl c in
 	tclTHEN
 	  (tclEVARS sigma)
-          (h_let_tac b (interp_fresh_name ist env na) c_interp clp)
+          (h_let_tac b (interp_fresh_name ist env na) c_interp clp eqpat)
       else
         (* We try to keep the pattern structure as much as possible *)
         h_let_pat_tac b (interp_fresh_name ist env na)
-          (interp_pure_open_constr ist env sigma c) clp
+          (interp_pure_open_constr ist env sigma c) clp eqpat
 
   (* Automation tactics *)
   | TacTrivial (debug,lems,l) ->
@@ -2854,7 +2855,8 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacGeneralize cl ->
       TacGeneralize (List.map (on_fst (subst_constr_with_occurrences subst))cl)
   | TacGeneralizeDep c -> TacGeneralizeDep (subst_glob_constr subst c)
-  | TacLetTac (id,c,clp,b) -> TacLetTac (id,subst_glob_constr subst c,clp,b)
+  | TacLetTac (id,c,clp,b,eqpat) ->
+    TacLetTac (id,subst_glob_constr subst c,clp,b,eqpat)
 
   (* Automation tactics *)
   | TacTrivial (d,lems,l) -> TacTrivial (d,List.map (subst_glob_constr subst) lems,l)
