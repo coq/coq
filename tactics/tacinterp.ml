@@ -732,12 +732,12 @@ let rec intern_atomic lf ist x =
   (* Derived basic tactics *)
   | TacSimpleInductionDestruct (isrec,h) ->
       TacSimpleInductionDestruct (isrec,intern_quantified_hypothesis ist h)
-  | TacInductionDestruct (ev,isrec,(l,cls)) ->
-      TacInductionDestruct (ev,isrec,(List.map (fun (lc,cbo,(ipato,ipats)) ->
-	      (List.map (intern_induction_arg ist) lc,
-               Option.map (intern_constr_with_bindings ist) cbo,
+  | TacInductionDestruct (ev,isrec,(l,el,cls)) ->
+      TacInductionDestruct (ev,isrec,(List.map (fun (c,(ipato,ipats)) ->
+	      (intern_induction_arg ist c,
                (Option.map (intern_intro_pattern lf ist) ipato,
 	        Option.map (intern_intro_pattern lf ist) ipats))) l,
+               Option.map (intern_constr_with_bindings ist) el,
                Option.map (clause_app (intern_hyp_location ist)) cls))
   | TacDoubleInduction (h1,h2) ->
       let h1 = intern_quantified_hypothesis ist h1 in
@@ -2424,17 +2424,17 @@ and interp_atomic ist gl tac =
   (* Derived basic tactics *)
   | TacSimpleInductionDestruct (isrec,h) ->
       h_simple_induction_destruct isrec (interp_quantified_hypothesis ist h)
-  | TacInductionDestruct (isrec,ev,(l,cls)) ->
+  | TacInductionDestruct (isrec,ev,(l,el,cls)) ->
       let sigma, l =
-        list_fold_map (fun sigma (lc,cbo,(ipato,ipats)) ->
-          let lc = List.map (interp_induction_arg ist gl) lc in
-	  let sigma,cbo =
-            Option.fold_map (interp_constr_with_bindings ist env) sigma cbo in
-          (sigma,(lc,cbo,
+        list_fold_map (fun sigma (c,(ipato,ipats)) ->
+          let c = interp_induction_arg ist gl c in
+          (sigma,(c,
             (Option.map (interp_intro_pattern ist gl) ipato,
 	     Option.map (interp_intro_pattern ist gl) ipats)))) sigma l in
+      let sigma,el =
+        Option.fold_map (interp_constr_with_bindings ist env) sigma el in
       let cls = Option.map (interp_clause ist gl) cls in
-      tclWITHHOLES ev (h_induction_destruct isrec ev) sigma (l,cls)
+      tclWITHHOLES ev (h_induction_destruct isrec ev) sigma (l,el,cls)
   | TacDoubleInduction (h1,h2) ->
       let h1 = interp_quantified_hypothesis ist h1 in
       let h2 = interp_quantified_hypothesis ist h2 in
@@ -2862,10 +2862,10 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
 
   (* Derived basic tactics *)
   | TacSimpleInductionDestruct (isrec,h) as x -> x
-  | TacInductionDestruct (isrec,ev,(l,cls)) ->
-      TacInductionDestruct (isrec,ev,(List.map (fun (lc,cbo,ids) ->
-	List.map (subst_induction_arg subst) lc,
-        Option.map (subst_glob_with_bindings subst) cbo, ids) l, cls))
+  | TacInductionDestruct (isrec,ev,(l,el,cls)) ->
+      let l' = List.map (fun (c,ids) -> subst_induction_arg subst c, ids) l in
+      let el' = Option.map (subst_glob_with_bindings subst) el in
+      TacInductionDestruct (isrec,ev,(l',el',cls))
   | TacDoubleInduction (h1,h2) as x -> x
   | TacDecomposeAnd c -> TacDecomposeAnd (subst_glob_constr subst c)
   | TacDecomposeOr c -> TacDecomposeOr (subst_glob_constr subst c)

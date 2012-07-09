@@ -338,11 +338,15 @@ let pr_bindings prlc prc = pr_bindings_gen false prlc prc
 let pr_with_bindings prlc prc (c,bl) =
   hov 1 (prc c ++ pr_bindings prlc prc bl)
 
+let pr_as_ipat pat = str "as " ++ pr_intro_pattern pat
+let pr_eqn_ipat pat = str "eqn:" ++ pr_intro_pattern pat
+
 let pr_with_induction_names = function
   | None, None -> mt ()
-  | eqpat, ipat ->
-      spc () ++ hov 1 (str "as" ++ pr_opt pr_intro_pattern eqpat ++
-                       pr_opt pr_intro_pattern ipat)
+  | Some eqpat, None -> spc () ++ hov 1 (pr_eqn_ipat eqpat)
+  | None, Some ipat -> spc () ++ hov 1 (pr_as_ipat ipat)
+  | Some eqpat, Some ipat ->
+    spc () ++ hov 1 (pr_as_ipat ipat ++ spc () ++ pr_eqn_ipat eqpat)
 
 let pr_as_intro_pattern ipat =
   spc () ++ hov 1 (str "as" ++ spc () ++ pr_intro_pattern ipat)
@@ -714,14 +718,14 @@ and pr_atom1 = function
   | TacSimpleInductionDestruct (isrec,h) ->
       hov 1 (str "simple " ++ str (if isrec then "induction" else "destruct")
              ++ pr_arg pr_quantified_hypothesis h)
-  | TacInductionDestruct (isrec,ev,(l,cl)) ->
+  | TacInductionDestruct (isrec,ev,(l,el,cl)) ->
       hov 1 (str (with_evars ev (if isrec then "induction" else "destruct")) ++
              spc () ++
-             prlist_with_sep pr_comma (fun (h,e,ids) ->
-	       prlist_with_sep spc (pr_induction_arg pr_lconstr pr_constr) h ++
-	       pr_with_induction_names ids ++
-               pr_opt pr_eliminator e) l ++
-               pr_opt_no_spc (pr_clauses None pr_ident) cl)
+             prlist_with_sep pr_comma (fun (h,ids) ->
+	       pr_induction_arg pr_lconstr pr_constr h ++
+	       pr_with_induction_names ids) l ++
+             pr_opt pr_eliminator el ++
+	     pr_opt_no_spc (pr_clauses None pr_ident) cl)
   | TacDoubleInduction (h1,h2) ->
       hov 1
         (str "double induction" ++

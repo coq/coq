@@ -25,6 +25,9 @@ Tactics
   version of "tauto".
 - Similarly, "intuition" has been made more uniform and, where it now
   fails, "dintuition" can be used.
+- An annotation "eqn:H" or "eqn:?" can be added to a "destruct"
+  or "induction" to make it generate equations in the spirit of "case_eq".
+  The former syntax "_eqn" is discontinued.
 
 Program
 

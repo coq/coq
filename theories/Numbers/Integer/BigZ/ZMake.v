@@ -416,7 +416,7 @@ Module Make (NN:NType) <: ZType.
  Ltac break_nonneg x px EQx :=
   let H := fresh "H" in
   assert (H:=NN.spec_pos x);
-  destruct (NN.to_Z x) as [|px|px]_eqn:EQx;
+  destruct (NN.to_Z x) as [|px|px] eqn:EQx;
    [clear H|clear H|elim H; reflexivity].
 
  Theorem spec_div_eucl: forall x y,

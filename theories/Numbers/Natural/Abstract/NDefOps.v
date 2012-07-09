@@ -376,7 +376,7 @@ Lemma log_good_step : forall n h1 h2,
   (if n << 2 then 0 else S (h2 (half n))).
 Proof.
 intros n h1 h2 E.
-destruct (n<<2) as [ ]_eqn:H.
+destruct (n<<2) eqn:H.
 auto with *.
 f_equiv. apply E, half_decrease.
 rewrite two_succ, <- not_true_iff_false, ltb_lt, nlt_ge, le_succ_l in H.

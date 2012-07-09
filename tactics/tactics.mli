@@ -295,10 +295,10 @@ val new_destruct : evars_flag ->
 (** {6 Generic case analysis / induction tactics. } *)
 
 val induction_destruct : rec_flag -> evars_flag ->
-  ((evar_map * constr with_bindings) induction_arg list *
-  constr with_bindings option *
+  ((evar_map * constr with_bindings) induction_arg *
   (intro_pattern_expr located option * intro_pattern_expr located option))
   list *
+  constr with_bindings option *
   clause option -> tactic
 
 (** {6 Eliminations giving the type instead of the proof. } *)

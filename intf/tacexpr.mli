@@ -58,11 +58,14 @@ type 'id message_token =
   | MsgIdent of 'id
 
 type 'constr induction_clause =
-  ('constr with_bindings induction_arg list * 'constr with_bindings option *
-   (intro_pattern_expr located option * intro_pattern_expr located option))
+    'constr with_bindings induction_arg *
+    (intro_pattern_expr located option (* eqn:... *)
+    * intro_pattern_expr located option) (* as ... *)
 
 type ('constr,'id) induction_clause_list =
-    'constr induction_clause list * 'id clause_expr option
+    'constr induction_clause list
+    * 'constr with_bindings option (* using ... *)
+    * 'id clause_expr option (* in ... *)
 
 type multi =
   | Precisely of int

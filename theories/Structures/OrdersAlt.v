@@ -140,7 +140,7 @@ Module OT_from_Alt (Import O:OrderedTypeAlt) <: OrderedType.
  Lemma lt_eq : forall x y z, lt x y -> eq y z -> lt x z.
  Proof.
   unfold lt, eq; intros x y z Hxy Hyz.
-  destruct (compare x z) as [ ]_eqn:Hxz; auto.
+  destruct (compare x z) eqn:Hxz; auto.
   rewrite compare_sym, CompOpp_iff in Hyz. simpl in Hyz.
   rewrite (compare_trans Hxz Hyz) in Hxy; discriminate.
   rewrite compare_sym, CompOpp_iff in Hxy. simpl in Hxy.
@@ -150,7 +150,7 @@ Module OT_from_Alt (Import O:OrderedTypeAlt) <: OrderedType.
  Lemma eq_lt : forall x y z, eq x y -> lt y z -> lt x z.
  Proof.
   unfold lt, eq; intros x y z Hxy Hyz.
-  destruct (compare x z) as [ ]_eqn:Hxz; auto.
+  destruct (compare x z) eqn:Hxz; auto.
   rewrite compare_sym, CompOpp_iff in Hxy. simpl in Hxy.
   rewrite (compare_trans Hxy Hxz) in Hyz; discriminate.
   rewrite compare_sym, CompOpp_iff in Hyz. simpl in Hyz.
@@ -169,7 +169,7 @@ Module OT_from_Alt (Import O:OrderedTypeAlt) <: OrderedType.
  Lemma compare_spec : forall x y, CompSpec eq lt x y (compare x y).
  Proof.
   unfold eq, lt, compare; intros.
-  destruct (O.compare x y) as [ ]_eqn:H; auto.
+  destruct (O.compare x y) eqn:H; auto.
   apply CompGt.
   rewrite compare_sym, H; auto.
  Qed.
