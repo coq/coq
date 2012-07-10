@@ -7,7 +7,7 @@
 (***********************************************************************)
 
 Require Export List.
-Require Export Sorting.
+Require Export Sorted.
 Require Export Setoid Basics Morphisms.
 Set Implicit Arguments.
 Unset Strict Implicit.
@@ -199,7 +199,29 @@ Proof.
  rewrite <- In_rev; auto.
 Qed.
 
+(** Some more facts about InA *)
 
+Lemma InA_singleton x y : InA x (y::nil) <-> eqA x y.
+Proof.
+ rewrite InA_cons, InA_nil; tauto.
+Qed.
+
+Lemma InA_double_head x y l :
+ InA x (y :: y :: l) <-> InA x (y :: l).
+Proof.
+ rewrite !InA_cons; tauto.
+Qed.
+
+Lemma InA_permute_heads x y z l :
+ InA x (y :: z :: l) <-> InA x (z :: y :: l).
+Proof.
+ rewrite !InA_cons; tauto.
+Qed.
+
+Lemma InA_app_idem x l : InA x (l ++ l) <-> InA x l.
+Proof.
+ rewrite InA_app_iff; tauto.
+Qed.
 
 Section NoDupA.
 
@@ -270,7 +292,56 @@ Proof.
  eapply NoDupA_split; eauto.
 Qed.
 
-Lemma equivlistA_NoDupA_split : forall l l1 l2 x y, eqA x y ->
+Lemma NoDupA_singleton x : NoDupA (x::nil).
+Proof.
+ repeat constructor. inversion 1.
+Qed.
+
+End NoDupA.
+
+Section EquivlistA.
+
+Global Instance equivlistA_cons_proper:
+ Proper (eqA ==> equivlistA ==> equivlistA) (@cons A).
+Proof.
+ intros ? ? E1 ? ? E2 ?; now rewrite !InA_cons, E1, E2.
+Qed.
+
+Global Instance equivlistA_app_proper:
+ Proper (equivlistA ==> equivlistA ==> equivlistA) (@app A).
+Proof.
+ intros ? ? E1 ? ? E2 ?. now rewrite !InA_app_iff, E1, E2.
+Qed.
+
+Lemma equivlistA_cons_nil x l : ~ equivlistA (x :: l) nil.
+Proof.
+ intros E. now eapply InA_nil, E, InA_cons_hd.
+Qed.
+
+Lemma equivlistA_nil_eq l : equivlistA l nil -> l = nil.
+Proof.
+ destruct l.
+ - trivial.
+ - intros H. now apply equivlistA_cons_nil in H.
+Qed.
+
+Lemma equivlistA_double_head x l : equivlistA (x :: x :: l) (x :: l).
+Proof.
+ intro. apply InA_double_head.
+Qed.
+
+Lemma equivlistA_permute_heads x y l :
+ equivlistA (x :: y :: l) (y :: x :: l).
+Proof.
+ intro. apply InA_permute_heads.
+Qed.
+
+Lemma equivlistA_app_idem l : equivlistA (l ++ l) l.
+Proof.
+ intro. apply InA_app_idem.
+Qed.
+
+Lemma equivlistA_NoDupA_split l l1 l2 x y : eqA x y ->
  NoDupA (x::l) -> NoDupA (l1++y::l2) ->
  equivlistA (x::l) (l1++y::l2) -> equivlistA l (l1++l2).
 Proof.
@@ -290,9 +361,7 @@ Proof.
  rewrite <-H,<-EQN; auto.
 Qed.
 
-End NoDupA.
-
-
+End EquivlistA.
 
 Section Fold.
 
@@ -588,10 +657,9 @@ Proof.
 Qed.
 
 (** For compatibility, can be deduced from [InfA_compat] *)
-Lemma InfA_eqA :
- forall l x y, eqA x y -> InfA y l -> InfA x l.
+Lemma InfA_eqA l x y : eqA x y -> InfA y l -> InfA x l.
 Proof.
- intros l x y H; rewrite H; auto.
+ intros H; now rewrite H.
 Qed.
 Hint Immediate InfA_ltA InfA_eqA.
 
@@ -785,8 +853,10 @@ Qed.
 End Filter.
 End Type_with_equality.
 
-
 Hint Constructors InA eqlistA NoDupA sort lelistA.
+
+Arguments equivlistA_cons_nil {A} eqA {eqA_equiv} x l _.
+Arguments equivlistA_nil_eq {A} eqA {eqA_equiv} l _.
 
 Section Find.
 
@@ -838,7 +908,6 @@ Qed.
 
 End Find.
 
-
 (** Compatibility aliases. [Proper] is rather to be used directly now.*)
 
 Definition compat_bool {A} (eqA:A->A->Prop)(f:A->bool) :=
@@ -852,4 +921,3 @@ Definition compat_P {A} (eqA:A->A->Prop)(P:A->Prop) :=
 
 Definition compat_op {A B} (eqA:A->A->Prop)(eqB:B->B->Prop)(f:A->B->B) :=
  Proper (eqA==>eqB==>eqB) f.
-

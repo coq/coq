@@ -400,6 +400,7 @@ through the <tt>Require Import</tt> command.</p>
     theories/Lists/List.v
     theories/Lists/ListSet.v
     theories/Lists/SetoidList.v
+    theories/Lists/SetoidPermutation.v
     theories/Lists/Streams.v
     theories/Lists/StreamMemo.v
     theories/Lists/ListTactics.v
