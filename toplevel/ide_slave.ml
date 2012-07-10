@@ -233,16 +233,23 @@ let status () =
       and display the other parts (opened sections and modules) *)
   let path =
     let l = Names.repr_dirpath (Lib.cwd ()) in
-    let l = snd (Util.list_sep_last l) in
-    if l = [] then None
-    else Some (Names.string_of_dirpath (Names.make_dirpath l))
+    List.rev_map Names.string_of_id l
   in
   let proof =
-    try
-      Some (Names.string_of_id (Pfedit.get_current_proof_name ()))
+    try Some (Names.string_of_id (Proof_global.get_current_proof_name ()))
     with _ -> None
   in
-  { Interface.status_path = path; Interface.status_proofname = proof }
+  let allproofs =
+    let l = Proof_global.get_all_proof_names () in
+    List.map Names.string_of_id l
+  in
+  {
+    Interface.status_path = path;
+    Interface.status_proofname = proof;
+    Interface.status_allproofs = allproofs;
+    Interface.status_statenum = Lib.current_command_label ();
+    Interface.status_proofnum = Pfedit.current_proof_depth ();
+  }
 
 (** This should be elsewhere... *)
 let search flags =
