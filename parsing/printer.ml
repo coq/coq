@@ -333,7 +333,7 @@ let default_pr_subgoal n sigma =
 
 let emacs_print_dependent_evars sigma seeds =
   let evars () =
-    let evars = Evarutil.evars_of_evars_in_types_of_list sigma seeds in
+    let evars = Evarutil.gather_dependent_evars sigma seeds in
     let evars =
       Intmap.fold begin fun e i s ->
 	let e' = str (string_of_existential e) in
