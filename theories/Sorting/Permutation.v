@@ -85,7 +85,7 @@ Instance Permutation_Equivalence A : Equivalence (@Permutation A) | 10 := {
   Equivalence_Transitive := @Permutation_trans A }.
 
 Instance Permutation_cons A :
- Proper (Logic.eq ==> @Permutation A ==> @Permutation A) (@cons A).
+ Proper (Logic.eq ==> @Permutation A ==> @Permutation A) (@cons A) | 10.
 Proof.
   repeat intro; subst; auto using perm_skip.
 Qed.
@@ -106,7 +106,7 @@ Proof.
 Qed.
 
 Global Instance Permutation_in' :
- Proper (Logic.eq ==> @Permutation A ==> iff) (@In A).
+ Proper (Logic.eq ==> @Permutation A ==> iff) (@In A) | 10.
 Proof.
   repeat red; intros; subst; eauto using Permutation_in.
 Qed.
@@ -138,7 +138,7 @@ Proof.
 Qed.
 
 Global Instance Permutation_app' :
- Proper (@Permutation A ==> @Permutation A ==> @Permutation A) (@app A).
+ Proper (@Permutation A ==> @Permutation A ==> @Permutation A) (@app A) | 10.
 Proof.
   repeat intro; now apply Permutation_app.
 Qed.
@@ -187,7 +187,7 @@ Proof.
 Qed.
 
 Global Instance Permutation_rev' :
- Proper (@Permutation A ==> @Permutation A) (@rev A).
+ Proper (@Permutation A ==> @Permutation A) (@rev A) | 10.
 Proof.
   repeat intro; now rewrite <- 2 Permutation_rev.
 Qed.
@@ -199,7 +199,7 @@ Proof.
 Qed.
 
 Global Instance Permutation_length' :
- Proper (@Permutation A ==> Logic.eq) (@length A).
+ Proper (@Permutation A ==> Logic.eq) (@length A) | 10.
 Proof.
   exact Permutation_length.
 Qed.
@@ -407,7 +407,7 @@ Proof.
 Qed.
 
 Global Instance Permutation_NoDup' :
- Proper (@Permutation A ==> iff) (@NoDup A).
+ Proper (@Permutation A ==> iff) (@NoDup A) | 10.
 Proof.
   repeat red; eauto using Permutation_NoDup.
 Qed.
@@ -426,7 +426,7 @@ Proof.
 Qed.
 
 Global Instance Permutation_map' :
-  Proper (@Permutation A ==> @Permutation B) (map f).
+  Proper (@Permutation A ==> @Permutation B) (map f) | 10.
 Proof.
   exact Permutation_map.
 Qed.
