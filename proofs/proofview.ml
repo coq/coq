@@ -97,7 +97,7 @@ let list_goto =
    order) *)
 type focus_context = Goal.goal list * Goal.goal list
 
-let focus_context (l,r) = List.length l + List.length r
+let focus_context f = f
 
 (* This (internal) function extracts a sublist between two indices, and
    returns this sublist together with its context:

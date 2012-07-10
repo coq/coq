@@ -454,6 +454,7 @@ let pr_open_subgoals () =
      [evar_info]-s instead. *)
   let p = Proof_global.give_me_the_proof () in
   let (goals , stack , sigma ) = Proof.proof p in
+  let stack = List.map (fun (l,r) -> List.length l + List.length r) stack in
   let seeds = Proof.V82.top_evars p in
   begin match goals with
   | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in

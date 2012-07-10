@@ -42,7 +42,7 @@ type proof
 (* In this version: returns the focused goals, a representation of the
    focus stack (the number of goals at each level) and the underlying
    evar_map *)
-val proof : proof -> Goal.goal list * int list * Evd.evar_map
+val proof : proof -> Goal.goal list * (Goal.goal list * Goal.goal list) list * Evd.evar_map
 
 (*** General proof functions ***)
 

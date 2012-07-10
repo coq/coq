@@ -62,7 +62,7 @@ type focus_context
    refined functions to ide-s. This would be better than spawning a
    new nearly identical function everytime. Hence the generic name. *)
 (* In this version: returns the number of goals that are held *)
-val focus_context : focus_context -> int
+val focus_context : focus_context -> Goal.goal list * Goal.goal list
 
 (* [focus i j] focuses a proofview on the goals from index [i] to index [j] 
    (inclusive). (i.e. goals number [i] to [j] become the only goals of the
