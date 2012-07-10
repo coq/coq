@@ -1102,8 +1102,6 @@ let map_rewprf f = function
   | RewPrf (rel, prf) -> RewPrf (f rel, f prf)
   | RewCast c -> RewCast c
 
-exception RewriteFailure
-
 type result = (evar_map * constr option * types) option option
 
 let cl_rewrite_clause_aux ?(abs=None) strat env avoid sigma concl is_hyp : result =
@@ -1168,9 +1166,9 @@ let cl_rewrite_clause_tac ?abs strat meta clause gl =
   let evartac evd = Refiner.tclEVARS evd in
   let treat res =
     match res with
-    | None -> raise RewriteFailure
+    | None -> tclFAIL 0 (str "Nothing to rewrite")
     | Some None ->
-	tclFAIL 0 (str"setoid rewrite failed: no progress made")
+	tclFAIL 0 (str"No progress made")
     | Some (Some (undef, p, newt)) ->
 	let tac = 
 	  match clause, p with
@@ -1201,7 +1199,7 @@ let cl_rewrite_clause_tac ?abs strat meta clause gl =
     | Loc.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
     | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
 	Refiner.tclFAIL_lazy 0
-	  (lazy (str"setoid rewrite failed: unable to satisfy the rewriting constraints."
+	  (lazy (str"Unable to satisfy the rewriting constraints."
 		 ++ fnl () ++ Himsg.explain_typeclass_error env e))
   in tac gl
 
@@ -1249,12 +1247,15 @@ let assert_replacing id newt tac =
   in Proofview.tclTHEN (Proofview.tclSENSITIVE sens) 
        (Proofview.tclFOCUS 2 2 tac)
 
+let newfail n s = 
+  Proofview.tclZERO (Refiner.FailError (n, lazy s))
+
 let cl_rewrite_clause_newtac ?abs strat clause =
   let treat (res, is_hyp) = 
     match res with
-    | None -> raise RewriteFailure
+    | None -> newfail 0 (str "Nothing to rewrite")
     | Some None ->
-	fail 0 (str"setoid rewrite failed: no progress made")
+	newfail 0 (str"No progress made")
     | Some (Some res) ->
 	match is_hyp, res with
 	| Some id, (undef, Some p, newt) ->
@@ -1294,22 +1295,25 @@ let cl_rewrite_clause_newtac ?abs strat clause =
   
 let cl_rewrite_clause_new_strat ?abs strat clause =
   init_setoid ();
-    try cl_rewrite_clause_newtac ?abs strat clause
-    with RewriteFailure ->
-      fail 0 (str"setoid rewrite failed: strategy failed")
+  cl_rewrite_clause_newtac ?abs strat clause
 
 let cl_rewrite_clause_newtac' l left2right occs clause =
   Proof_global.run_tactic 
     (Proofview.tclFOCUS 1 1 
        (cl_rewrite_clause_new_strat (rewrite_with rewrite_unif_flags l left2right occs) clause))
 
-let cl_rewrite_clause_strat strat clause gl =
-    init_setoid ();
-    let meta = Evarutil.new_meta() in
-(*     let gl = { gl with sigma = Typeclasses.mark_unresolvables gl.sigma } in *)
+
+let tactic_init_setoid () = 
+  init_setoid (); tclIDTAC
+
+let cl_rewrite_clause_strat strat clause =
+  tclTHEN (tactic_init_setoid ())
+  (fun gl ->
+   let meta = Evarutil.new_meta() in
      try cl_rewrite_clause_tac strat (mkMeta meta) clause gl
-      with RewriteFailure ->
-        tclFAIL 0 (str"setoid rewrite failed: strategy failed") gl
+     with
+     | Refiner.FailError (n, pp) -> 
+       tclFAIL n (str"setoid rewrite failed: " ++ Lazy.force pp) gl)
 
 let cl_rewrite_clause l left2right occs clause gl =
   cl_rewrite_clause_strat (rewrite_with (general_rewrite_unif_flags ()) l left2right occs) clause gl
@@ -1847,16 +1851,10 @@ let apply_lemma gl (c,l) cl l2r occs =
 let general_s_rewrite cl l2r occs (c,l) ~new_goals gl =
   let meta = Evarutil.new_meta() in
   let hypinfo, strat = apply_lemma gl (c,l) cl l2r occs in
-    try
-      tclWEAK_PROGRESS 
-	(tclTHEN
-           (Refiner.tclEVARS hypinfo.cl.evd)
-	   (cl_rewrite_clause_tac ~abs:hypinfo.abs strat (mkMeta meta) cl)) gl
-    with RewriteFailure ->
-      let {l2r=l2r; c1=x; c2=y} = hypinfo in
-	raise (Pretype_errors.PretypeError
-		  (pf_env gl,project gl,
-		  Pretype_errors.NoOccurrenceFound ((if l2r then x else y), cl)))
+    tclWEAK_PROGRESS 
+      (tclTHEN
+       (Refiner.tclEVARS hypinfo.cl.evd)
+       (cl_rewrite_clause_tac ~abs:hypinfo.abs strat (mkMeta meta) cl)) gl
 
 let general_s_rewrite_clause x =
   init_setoid ();
