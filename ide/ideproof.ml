@@ -130,6 +130,13 @@ let display mode (view:GText.view) goals hints evars =
   | Some { Interface.fg_goals = []; Interface.bg_goals = bg } ->
     (* No foreground proofs, but still unfocused ones *)
     view#buffer#insert "This subproof is complete, but there are still unfocused goals:\n\n";
+    let rec flatten = function
+    | [] -> []
+    | (lg, rg) :: l ->
+      let inner = flatten l in
+      List.rev_append lg inner @ rg
+    in
+    let bg = flatten (List.rev bg) in
     let iter goal =
       let msg = Printf.sprintf "%s\n" goal.Interface.goal_ccl in
       view#buffer#insert msg

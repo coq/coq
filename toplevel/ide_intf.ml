@@ -10,7 +10,7 @@
 
 (** WARNING: TO BE UPDATED WHEN MODIFIED! *)
 
-let protocol_version = "20120511"
+let protocol_version = "20120710"
 
 (** * Interface of calls to Coq by CoqIde *)
 
@@ -370,14 +370,16 @@ let to_goal = function
 | _ -> raise Marshal_error
 
 let of_goals g =
+  let of_glist = of_list of_goal in
   let fg = of_list of_goal g.fg_goals in
-  let bg = of_list of_goal g.bg_goals in
+  let bg = of_list (of_pair of_glist of_glist) g.bg_goals in
   Element ("goals", [], [fg; bg])
 
 let to_goals = function
 | Element ("goals", [], [fg; bg]) ->
+  let to_glist = to_list to_goal in
   let fg = to_list to_goal fg in
-  let bg = to_list to_goal bg in
+  let bg = to_list (to_pair to_glist to_glist) bg in
   { fg_goals = fg; bg_goals = bg; }
 | _ -> raise Marshal_error
 
@@ -512,7 +514,14 @@ let pr_mkcases l =
 let pr_goals_aux g =
   if g.fg_goals = [] then
     if g.bg_goals = [] then "Proof completed."
-    else Printf.sprintf "Still %i unfocused goals." (List.length g.bg_goals)
+    else
+      let rec pr_focus _ = function
+      | [] -> assert false
+      | [lg, rg] -> Printf.sprintf "%i" (List.length lg + List.length rg)
+      | (lg, rg) :: l ->
+        Printf.sprintf "%i:%a" (List.length lg + List.length rg) pr_focus l
+      in
+      Printf.sprintf "Still focussed: [%a]." pr_focus g.bg_goals
   else
     let pr_menu s = s in
     let pr_goal { goal_hyp = hyps; goal_ccl = goal } =
