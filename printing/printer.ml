@@ -578,44 +578,34 @@ let pr_assumptionset env s =
     let safe_pr_ltype typ =
       try str " : " ++ pr_ltype typ with _ -> mt ()
     in
-    let (vars,axioms,opaque) =
-      ContextObjectMap.fold (fun t typ r ->
-	let (v,a,o) = r in
-	match t with
-	| Variable id -> (  Some (
-	                      Option.default (fnl ()) v
-			   ++ str (string_of_id id)
-			   ++ str " : "
-	                   ++ pr_ltype typ
-			    )
-	                 ,
-	                   a, o)
-	| Axiom kn    -> ( v ,
-			     Some (
-			      Option.default (fnl ()) a
-			   ++ safe_pr_constant env kn
-	                   ++ safe_pr_ltype typ
-			     )
-			 , o
-			 )
-	| Opaque kn    -> ( v , a ,
-			     Some (
-			      Option.default (fnl ()) o
-			   ++ safe_pr_constant env kn
-	                   ++ safe_pr_ltype typ
-			     )
-			 )
-      )
-	s (None,None,None)
+    let fold t typ accu =
+      let (v, a, o) = accu in
+      match t with
+      | Variable id ->
+        let var = str (string_of_id id) ++ str " : " ++ pr_ltype typ in
+        (var :: v, a, o)
+      | Axiom kn ->
+        let ax = safe_pr_constant env kn ++ safe_pr_ltype typ in
+        (v, ax :: a, o)
+      | Opaque kn ->
+        let opq = safe_pr_constant env kn ++ safe_pr_ltype typ in
+        (v, a, opq :: o)
     in
-    let (vars,axioms,opaque) =
-      ( Option.map (fun p -> str "Section Variables:" ++ p) vars ,
-	Option.map (fun p -> str "Axioms:" ++ p) axioms ,
-	Option.map (fun p -> str "Opaque constants:" ++ p) opaque
-      )
+    let (vars, axioms, opaque) = ContextObjectMap.fold fold s ([], [], []) in
+    let opt_list title = function
+    | [] -> None
+    | l ->
+      let section =
+        title ++ fnl () ++
+        v 0 (prlist_with_sep fnl (fun s -> s) l) in
+      Some section
     in
-    (Option.default (mt ()) vars) ++ (Option.default (mt ()) axioms)
-      ++ (Option.default (mt ()) opaque)
+    let assums = [
+      opt_list (str "Section Variables:") vars;
+      opt_list (str "Axioms:") axioms;
+      opt_list (str "Opaque constants:") opaque;
+    ] in
+    prlist_with_sep fnl (pr_opt_no_spc (fun x -> x)) assums
 
 let cmap_to_list m = Cmap.fold (fun k v acc -> v :: acc) m []
 
