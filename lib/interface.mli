@@ -44,8 +44,8 @@ type status = {
 type goals = {
   fg_goals : goal list;
   (** List of the focussed goals *)
-  bg_goals : goal list;
-  (** List of the background goals *)
+  bg_goals : (goal list * goal list) list;
+  (** Zipper representing the unfocussed background goals *)
 }
 
 type hint = (string * string) list

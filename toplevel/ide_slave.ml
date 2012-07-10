@@ -178,19 +178,21 @@ let process_goal sigma g =
   let process_hyp h_env d acc =
     let d = Term.map_named_declaration (Reductionops.nf_evar sigma) d in
     (string_of_ppcmds (pr_var_decl h_env d)) :: acc in
-(*           (string_of_ppcmds (pr_var_decl h_env d), hyp_next_tac sigma h_env d)::acc in *)
   let hyps =
     List.rev (Environ.fold_named_context process_hyp env ~init: []) in
   { Interface.goal_hyp = hyps; Interface.goal_ccl = ccl; Interface.goal_id = id; }
-(*         hyps,(ccl,concl_next_tac sigma g)) *)
 
 let goals () =
   try
     let pfts = Proof_global.give_me_the_proof () in
-    let { Evd.it = all_goals ; sigma = sigma } = Proof.V82.subgoals pfts in
-    let fg = List.map (process_goal sigma) all_goals in
-    let { Evd.it = bgoals ; sigma = sigma } = Proof.V82.background_subgoals pfts in
-    let bg = List.map (process_goal sigma) bgoals in
+    let (goals, zipper, sigma) = Proof.proof pfts in
+    let fg = List.map (process_goal sigma) goals in
+    let map_zip (lg, rg) =
+      let lg = List.map (process_goal sigma) lg in
+      let rg = List.map (process_goal sigma) rg in
+      (lg, rg)
+    in
+    let bg = List.map map_zip zipper in
     Some { Interface.fg_goals = fg; Interface.bg_goals = bg; }
   with Proof_global.NoCurrentProof -> None
 
