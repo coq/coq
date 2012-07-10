@@ -1190,9 +1190,9 @@ let cl_rewrite_clause_tac ?abs strat meta clause gl =
   let evartac evd = Refiner.tclEVARS evd in
   let treat res =
     match res with
-    | None -> raise (RewriteFailure (str "Nothing to rewrite"))
+    | None -> tclFAIL 0 (str "Nothing to rewrite")
     | Some None ->
-	tclFAIL 0 (str"setoid rewrite failed: no progress made")
+	tclFAIL 0 (str"No progress made")
     | Some (Some (undef, p, newt)) ->
 	let tac = 
 	  match clause, p with
@@ -1223,7 +1223,7 @@ let cl_rewrite_clause_tac ?abs strat meta clause gl =
     | Loc.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
     | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
 	Refiner.tclFAIL_lazy 0
-	  (lazy (str"setoid rewrite failed: unable to satisfy the rewriting constraints."
+	  (lazy (str"Unable to satisfy the rewriting constraints."
 		 ++ fnl () ++ Himsg.explain_typeclass_error env e))
   in tac gl
 
@@ -1276,9 +1276,9 @@ let newfail n s =
 let cl_rewrite_clause_newtac ?abs strat clause =
   let treat (res, is_hyp) = 
     match res with
-    | None -> raise (RewriteFailure (str "Nothing to rewrite"))
+    | None -> newfail 0 (str "Nothing to rewrite")
     | Some None ->
-	newfail 0 (str"setoid rewrite failed: no progress made")
+	newfail 0 (str"No progress made")
     | Some (Some res) ->
 	match is_hyp, res with
 	| Some id, (undef, Some p, newt) ->
@@ -1343,8 +1343,8 @@ let cl_rewrite_clause_strat strat clause =
      try cl_rewrite_clause_tac strat (mkMeta meta) clause gl
      with RewriteFailure e ->
        tclFAIL 0 (str"setoid rewrite failed: " ++ e) gl
-     | e ->
-       tclFAIL 0 (str"setoid rewrite failed: " ++ Errors.print e) gl)
+     | Refiner.FailError (n, pp) -> 
+       tclFAIL n (str"setoid rewrite failed: " ++ Lazy.force pp) gl)
 
 let cl_rewrite_clause l left2right occs clause gl =
   cl_rewrite_clause_strat (rewrite_with (general_rewrite_unif_flags ()) l left2right occs) clause gl
