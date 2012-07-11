@@ -354,7 +354,9 @@ let emacs_print_dependent_evars sigma seeds =
 
 (* Print open subgoals. Checks for uninstantiated existential variables *)
 (* spiwack: [seeds] is for printing dependent evars in emacs mode. *)
-let default_pr_subgoals close_cmd sigma seeds stack goals =
+(* spiwack: [pr_first] is true when the first goal must be singled out
+   and printed in its entirety. *)
+let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds stack goals =
   let rec print_stack a = function
     | [] -> Pp.int a
     | b::l -> Pp.int a ++ str"-" ++ print_stack b l
@@ -368,6 +370,13 @@ let default_pr_subgoals close_cmd sigma seeds stack goals =
         let pc = pr_concl n sigma g in
         let prest = pr_rec (n+1) rest in
         (cut () ++ pc ++ prest)
+  in
+  let print_multiple_goals g l =
+    if pr_first then
+      default_pr_goal { it = g ; sigma = sigma } ++
+      pr_rec 2 l
+    else 
+      pr_rec 1 (g::l)
   in
   match goals,stack with
   | [],_ ->
@@ -401,22 +410,20 @@ let default_pr_subgoals close_cmd sigma seeds stack goals =
 	++ emacs_print_dependent_evars sigma seeds
       )
   | g1::rest,[] ->
-      let pg1 = default_pr_goal { it = g1 ; sigma = sigma } in
-      let prest = pr_rec 2 rest in
+      let goals = print_multiple_goals g1 rest in
       v 0 (
 	int(List.length rest+1) ++ str" subgoals" ++
           str (emacs_str ", subgoal 1") ++ pr_goal_tag g1 ++ cut ()
-	++ pg1 ++ prest
+	++ goals
 	++ emacs_print_dependent_evars sigma seeds
       )
   | g1::rest,a::l ->
-      let pg1 = default_pr_goal { it = g1 ; sigma = sigma } in
-      let prest = pr_rec 2 rest in
+      let goals = print_multiple_goals g1 rest in
       v 0 (
 	int(List.length rest+1) ++ str" focused subgoals (" ++
           print_unfocused a l ++ str")" ++ cut () ++
           str (emacs_str ", subgoal 1") ++ pr_goal_tag g1 ++ cut ()
-	++ pg1 ++ prest
+	++ goals
 	++ emacs_print_dependent_evars sigma seeds
       )
 
@@ -425,7 +432,7 @@ let default_pr_subgoals close_cmd sigma seeds stack goals =
 
 
 type printer_pr = {
- pr_subgoals            : string option -> evar_map -> evar list -> int list -> goal list -> std_ppcmds;
+ pr_subgoals            : ?pr_first:bool -> string option -> evar_map -> evar list -> int list -> goal list -> std_ppcmds;
  pr_subgoal             : int -> evar_map -> goal list -> std_ppcmds;
  pr_goal                : goal sigma -> std_ppcmds;
 }
@@ -440,7 +447,7 @@ let printer_pr = ref default_printer_pr
 
 let set_printer_pr = (:=) printer_pr
 
-let pr_subgoals x = !printer_pr.pr_subgoals x
+let pr_subgoals ?pr_first x = !printer_pr.pr_subgoals ?pr_first x
 let pr_subgoal  x = !printer_pr.pr_subgoal  x
 let pr_goal     x = !printer_pr.pr_goal     x
 
@@ -460,7 +467,7 @@ let pr_open_subgoals () =
   | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
           begin match bgoals with
 	  | [] -> pr_subgoals None sigma seeds stack goals
-	  | _ -> str"This subproof is complete, but there are still unfocused goals." ++ fnl () ++ fnl () ++ pr_subgoals None bsigma seeds [] bgoals
+	  | _ -> str"This subproof is complete, but there are still unfocused goals." ++ fnl () ++ fnl () ++ pr_subgoals ~pr_first:false None bsigma seeds [] bgoals
 	  end
   | _ -> pr_subgoals None sigma seeds stack goals
   end
