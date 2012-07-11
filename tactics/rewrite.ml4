@@ -1222,9 +1222,9 @@ let cl_rewrite_clause_tac ?abs strat meta clause gl =
     with
     | Loc.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
     | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
-	Refiner.tclFAIL_lazy 0
-	  (lazy (str"Unable to satisfy the rewriting constraints."
-		 ++ fnl () ++ Himsg.explain_typeclass_error env e))
+	Refiner.tclFAIL 0
+	  (str"Unable to satisfy the rewriting constraints."
+	   ++ fnl () ++ Himsg.explain_typeclass_error env e)
   in tac gl
 
 open Goal

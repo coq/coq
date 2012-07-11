@@ -395,7 +395,7 @@ let explain_typeclass_resolution env evi k =
       fnl () ++ str "Could not find an instance for " ++
       pr_lconstr_env env evi.evar_concl ++
       pr_ne_context_of (str " in environment:"++ fnl ()) (str ".") env
-  | None -> mt()
+  | _ -> mt()
 
 let explain_unsolvable_implicit env evi k explain =
   str "Cannot infer " ++ explain_evar_kind env (Some evi) k ++
@@ -696,12 +696,8 @@ let explain_no_instance env (_,id) l =
 let is_goal_evar evi = match evi.evar_source with (_, Evar_kinds.GoalEvar) -> true | _ -> false
 
 let pr_constraints printenv env evm =
-  let evm = Evd.undefined_evars (Evarutil.nf_evar_map_undefined evm) in
-  let evm = fold_undefined 
-    (fun ev evi evm' -> 
-       if is_goal_evar evi then Evd.remove evm' ev else evm') evm evm
-  in
   let l = Evd.to_list evm in
+  assert(l <> []);
   let (ev, evi) = List.hd l in
     if List.for_all (fun (ev', evi') ->
       eq_named_context_val evi.evar_hyps evi'.evar_hyps) l
@@ -717,18 +713,23 @@ let pr_constraints printenv env evm =
       pr_evar_map None evm
 
 let explain_unsatisfiable_constraints env evd constr =
-  let evm = Evarutil.nf_evar_map evd in
-  let undef = Evd.undefined_evars evm in
+  let evm = Evd.undefined_evars (Evarutil.nf_evar_map_undefined evd) in
+  (* Remove goal evars *)
+  let undef = fold_undefined 
+    (fun ev evi evm' -> 
+       if is_goal_evar evi then Evd.remove evm' ev else evm') evm evm
+  in
   match constr with
   | None ->
       str"Unable to satisfy the following constraints:" ++ fnl() ++
 	pr_constraints true env undef
   | Some (ev, k) ->
-      explain_unsolvable_implicit env (Evd.find evm ev) k None ++ fnl () ++
-	if List.length (Evd.to_list undef) > 1 then
-	  str"With the following constraints:" ++ fnl() ++
-	    pr_constraints false env (Evd.remove undef ev)
-	else mt ()
+      explain_typeclass_resolution env (Evd.find evm ev) k ++ fnl () ++
+	(let remaining = Evd.remove undef ev in
+	   if Evd.has_undefined remaining then
+	     str"With the following constraints:" ++ fnl() ++
+	       pr_constraints false env remaining
+	   else mt ())
 
 let explain_mismatched_contexts env c i j =
   str"Mismatched contexts while declaring instance: " ++ brk (1,1) ++
