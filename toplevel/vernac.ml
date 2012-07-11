@@ -41,6 +41,12 @@ and is_deep_navigation_vernac = function
   | VernacList l -> List.exists (fun (_,c) -> is_navigation_vernac c) l
   | _ -> false
 
+(* NB: Reset is now allowed again as asked by A. Chlipala *)
+
+let is_reset = function
+  | VernacResetInitial | VernacResetName _ -> true
+  | _ -> false
+
 (* Specifies which file is read. The intermediate file names are
    discarded here. The Drop exception becomes an error. We forget
    if the error ocurred during interpretation or not *)
@@ -289,7 +295,7 @@ and read_vernac_file verbosely s =
     else Flags.silently Vernacentries.interp
   in
   let checknav loc cmd =
-    if is_navigation_vernac cmd then
+    if is_navigation_vernac cmd && not (is_reset cmd) then
 	user_error loc "Navigation commands forbidden in files"
   in
   let (in_chan, fname, input) =
@@ -299,6 +305,7 @@ and read_vernac_file verbosely s =
      * raised, which means that we raised the end of the file being loaded *)
     while true do
       vernac_com interpfun checknav (parse_sentence input);
+      Lib.mark_end_of_command();
       pp_flush ()
     done
   with e ->   (* whatever the exception *)
@@ -353,6 +360,7 @@ let compile verbosely f =
   Dumpglob.start_dump_glob long_f_dot_v;
   Dumpglob.dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
   if !Flags.xml_export then !xml_start_library ();
+  Lib.mark_end_of_command ();
   let _ = load_vernac verbosely long_f_dot_v in
   if Pfedit.get_all_proof_names () <> [] then
     (pperrnl (str "Error: There are pending proofs"); flush_all (); exit 1);

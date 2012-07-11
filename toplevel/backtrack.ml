@@ -40,6 +40,11 @@ type info = {
 
 let history : info Stack.t = Stack.create ()
 
+(** Is this stack active (i.e. nonempty) ?
+    The stack is currently inactive when compiling files (coqc). *)
+
+let is_active () = not (Stack.is_empty history)
+
 (** For debug purpose, a dump of the history *)
 
 let dump_history () =

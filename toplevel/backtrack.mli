@@ -19,6 +19,11 @@
 
 val mark_command : Vernacexpr.vernac_expr -> unit
 
+(** Is this history stack active (i.e. nonempty) ?
+    The stack is currently inactive when compiling files (coqc). *)
+
+val is_active : unit -> bool
+
 (** The [Invalid] exception is raised when one of the following function
     tries to empty the history stack, or reach an unknown states, etc.
     The stack is preserved in these cases. *)

@@ -1445,10 +1445,27 @@ let vernac_back n =
   with Backtrack.Invalid -> error "Invalid backtrack."
 
 let vernac_reset_name id =
-  try Backtrack.reset_name id; try_print_subgoals ()
-  with Backtrack.Invalid -> error "Invalid Reset."
+  try
+    if Backtrack.is_active () then
+      (Backtrack.reset_name id; try_print_subgoals ())
+    else
+      (* When compiling files, Reset is now allowed again
+	 as asked by A. Chlipala. we emulate a simple reset,
+	 that discards all proofs. *)
+      let lbl = Lib.label_before_name id in
+      Pfedit.delete_all_proofs ();
+      Pp.msg_warning (str "Reset occured during compilation.");
+      Lib.reset_label lbl
+  with Backtrack.Invalid | Not_found -> error "Invalid Reset."
 
-let vernac_reset_initial () = Backtrack.reset_initial ()
+
+let vernac_reset_initial () =
+  if Backtrack.is_active () then
+    Backtrack.reset_initial ()
+  else begin
+    Pp.msg_warning (str "Reset occured during compilation.");
+    Lib.reset_label Lib.first_command_label
+  end
 
 (* For compatibility with ProofGeneral: *)
 
