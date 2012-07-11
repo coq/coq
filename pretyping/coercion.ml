@@ -319,11 +319,9 @@ let coerce_itf loc env isevars v t c1 =
   let t = Option.map (app_opt env evars coercion) v in
     !evars, t
 
-
-
 let saturate_evd env evd =
   Typeclasses.resolve_typeclasses
-    ~filter:Typeclasses.no_goals ~split:true ~fail:false env evd
+    ~filter:Typeclasses.no_goals ~split:false ~fail:false env evd
 
 (* appliquer le chemin de coercions p à hj *)
 let apply_coercion env sigma p hj typ_cl =
@@ -461,16 +459,16 @@ let inh_conv_coerce_to_gen rigidonly loc env evd cj t =
     try
       inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
     with NoCoercion ->
-      let evd = saturate_evd env evd in
-	try
-	  inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
-	with NoCoercion ->
-	  (if Flags.is_program_mode () then
-	     try
-	       coerce_itf loc env evd (Some cj.uj_val) cj.uj_type t
-	     with NoSubtacCoercion ->
-	       error_actual_type_loc loc env evd cj t
-	   else error_actual_type_loc loc env evd cj t)
+      try
+	if Flags.is_program_mode () then
+	  coerce_itf loc env evd (Some cj.uj_val) cj.uj_type t
+	else raise NoSubtacCoercion
+      with NoSubtacCoercion ->
+	let evd = saturate_evd env evd in
+      	  try
+      	    inh_conv_coerce_to_fail loc env evd rigidonly (Some cj.uj_val) cj.uj_type t
+      	  with NoCoercion ->
+	    error_actual_type_loc loc env evd cj t
   in
   let val' = match val' with Some v -> v | None -> assert(false) in
     (evd',{ uj_val = val'; uj_type = t })
