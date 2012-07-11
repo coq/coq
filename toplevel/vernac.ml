@@ -47,6 +47,30 @@ let is_reset = function
   | VernacResetInitial | VernacResetName _ -> true
   | _ -> false
 
+(* When doing Load on a file, two behaviors are possible:
+
+   - either the history stack is grown by only one command,
+     the "Load" itself. This is mandatory for command-counting
+     interfaces (CoqIDE).
+
+   - either each individual sub-commands in the file is added
+     to the history stack. This allows commands like Show Script
+     to work across the loaded file boundary (cf. bug #2820).
+
+   The best of the two could probably be combined someday,
+   in the meanwhile we use a flag. *)
+
+let atomic_load = ref true
+
+let _ =
+  Goptions.declare_bool_option
+    { Goptions.optsync  = true;
+      Goptions.optdepr  = false;
+      Goptions.optname  = "atomic registration of commands in a Load";
+      Goptions.optkey   = ["Atomic";"Load"];
+      Goptions.optread  = (fun () -> !atomic_load);
+      Goptions.optwrite = ((:=) atomic_load) }
+
 (* Specifies which file is read. The intermediate file names are
    discarded here. The Drop exception becomes an error. We forget
    if the error ocurred during interpretation or not *)
@@ -298,14 +322,21 @@ and read_vernac_file verbosely s =
     if is_navigation_vernac cmd && not (is_reset cmd) then
 	user_error loc "Navigation commands forbidden in files"
   in
+  let end_inner_command cmd =
+    if !atomic_load || is_reset cmd then
+      Lib.mark_end_of_command () (* for Reset in coqc or coqtop -l *)
+    else
+      Backtrack.mark_command cmd; (* for Show Script, cf bug #2820 *)
+  in
   let (in_chan, fname, input) =
     open_file_twice_if verbosely s in
   try
     (* we go out of the following infinite loop when a End_of_input is
      * raised, which means that we raised the end of the file being loaded *)
     while true do
-      vernac_com interpfun checknav (parse_sentence input);
-      Lib.mark_end_of_command();
+      let loc_ast = parse_sentence input in
+      vernac_com interpfun checknav loc_ast;
+      end_inner_command (snd loc_ast);
       pp_flush ()
     done
   with e ->   (* whatever the exception *)
