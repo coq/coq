@@ -388,6 +388,12 @@ and is_deep_navigation_vernac = function
   | VernacList l -> List.exists (fun (_,c) -> is_navigation_vernac c) l
   | _ -> false
 
+(* NB: Reset is now allowed again as asked by A. Chlipala *)
+
+let is_reset = function
+  | VernacResetInitial | VernacResetName _ -> true
+  | _ -> false
+
 (* Locating errors raised just after the dot is parsed but before the
    interpretation phase *)
 

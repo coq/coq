@@ -927,8 +927,8 @@ GEXTEND Gram
       | IDENT "Restore"; IDENT "State"; s = ne_string -> VernacRestoreState s
 
 (* Resetting *)
-      | IDENT "Reset"; id = identref -> VernacResetName id
       | IDENT "Reset"; IDENT "Initial" -> VernacResetInitial
+      | IDENT "Reset"; id = identref -> VernacResetName id
       | IDENT "Back" -> VernacBack 1
       | IDENT "Back"; n = natural -> VernacBack n
       | IDENT "BackTo"; n = natural -> VernacBackTo n

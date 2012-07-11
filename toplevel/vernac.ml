@@ -272,7 +272,7 @@ and read_vernac_file verbosely s =
     else Flags.silently Vernacentries.interp
   in
   let checknav loc cmd =
-    if is_navigation_vernac cmd then
+    if is_navigation_vernac cmd && not (is_reset cmd) then
 	user_error loc "Navigation commands forbidden in files"
   in
   let (in_chan, fname, input) =
@@ -282,6 +282,7 @@ and read_vernac_file verbosely s =
      * raised, which means that we raised the end of the file being loaded *)
     while true do
       vernac_com interpfun checknav (parse_sentence input);
+      Lib.mark_end_of_command();
       pp_flush ()
     done
   with e ->   (* whatever the exception *)
@@ -336,6 +337,7 @@ let compile verbosely f =
   Dumpglob.start_dump_glob long_f_dot_v;
   Dumpglob.dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
   if !Flags.xml_export then !xml_start_library ();
+  Lib.mark_end_of_command ();
   let _ = load_vernac verbosely long_f_dot_v in
   if Pfedit.get_all_proof_names () <> [] then
     (message "Error: There are pending proofs"; exit 1);
