@@ -1454,7 +1454,7 @@ let vernac_reset_name id =
 	 that discards all proofs. *)
       let lbl = Lib.label_before_name id in
       Pfedit.delete_all_proofs ();
-      Pp.msg_warning (str "Reset occured during compilation.");
+      Pp.msg_warning (str "Reset command occurred in non-interactive mode.");
       Lib.reset_label lbl
   with Backtrack.Invalid | Not_found -> error "Invalid Reset."
 
@@ -1463,7 +1463,7 @@ let vernac_reset_initial () =
   if Backtrack.is_active () then
     Backtrack.reset_initial ()
   else begin
-    Pp.msg_warning (str "Reset occured during compilation.");
+    Pp.msg_warning (str "Reset command occurred in non-interactive mode.");
     Lib.reset_label Lib.first_command_label
   end
 

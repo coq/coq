@@ -348,6 +348,7 @@ let load_vernac verb file =
   chan_beautify :=
     if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout;
   try
+    Lib.mark_end_of_command (); (* in case we're still in coqtop init *)
     read_vernac_file verb file;
     if !Flags.beautify_file then close_out !chan_beautify;
   with e ->
@@ -360,7 +361,6 @@ let compile verbosely f =
   Dumpglob.start_dump_glob long_f_dot_v;
   Dumpglob.dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
   if !Flags.xml_export then !xml_start_library ();
-  Lib.mark_end_of_command ();
   let _ = load_vernac verbosely long_f_dot_v in
   if Pfedit.get_all_proof_names () <> [] then
     (pperrnl (str "Error: There are pending proofs"); flush_all (); exit 1);
