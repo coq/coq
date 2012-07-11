@@ -134,12 +134,17 @@ val tclTHEN : unit tactic -> 'a tactic -> 'a tactic
    but drops the value at the end. *)
 val tclIGNORE : 'a tactic -> unit tactic
 
-(* [tclOR t1 t2 = t1] if t1 succeeds and [tclOR t1 t2 = t2] if t2 fails. 
-    No interleaving at this point. *)
+(* [tclOR t1 t2 = t1] as long as [t1] succeeds. Whenever the successes
+   of [t1] have been depleted, then it behaves as [t2].  No
+   interleaving at this point. *)
 val tclOR : 'a tactic -> 'a tactic -> 'a tactic
 
 (* [tclZERO] always fails *)
 val tclZERO : exn -> 'a tactic
+
+(* [tclORELSE t1 t2] behaves like [t1] if [t1] succeeds at least once
+   or [t2] if [t1] fails. *)
+val tclORELSE : 'a tactic -> 'a tactic -> 'a tactic
 
 (* Focuses a tactic at a range of subgoals, found by their indices. *)
 val tclFOCUS : int -> int -> 'a tactic -> 'a tactic
@@ -229,8 +234,4 @@ module V82 : sig
     
   (* Implements the Existential command *)
   val instantiate_evar : int -> Constrexpr.constr_expr -> proofview -> proofview
-
-  (* spiwack: [purify] might be useful while writing tactics manipulating exception 
-     explicitely or from the [V82] submodule (neither being advised, though *)
-  val purify : 'a tactic -> 'a tactic
 end

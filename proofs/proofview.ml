@@ -173,104 +173,78 @@ let unfocus c sp =
      specialized bind on unit-returning tactics).
 *)
 
-(* type of tactics *)
-(* spiwack: double-continuation backtracking monads are reasonable
-    folklore for "search" implementations (including Tac interactive prover's
-    tactics). Yet it's quite hard to wrap your head around these.
-    I recommand reading a few times the "Backtracking, Interleaving, and Terminating
-    Monad Transformers" paper by O. Kiselyov, C. Chen, D. Fridman.  
-    The peculiar shape of the monadic type is reminiscent of that of the continuation
-    monad transformer.
-    A good way to get a feel of what's happening is to look at what happens when
-    executing [apply (tclUNIT ())]. 
-    The disjunction function is unlike that of the LogicT paper, because we want and 
-    need to backtrack over state as well as values. Therefore we cannot be
-    polymorphic over the inner monad. *)
-type proof_step = { goals : Goal.goal list ; defs : Evd.evar_map }
-type +'a result = { proof_step : proof_step ;
-		                content : 'a }
+(* type of tactics:
 
-(* nb=non-backtracking *)
-type +'a nb_tactic  = proof_step -> 'a result
+   tactics can
+   - access the environment,
+   - access and change the current [proofview]
+   - backtrack on previous changes of the proofview *)
+(* spiwack: it seems lighter, for now, to deal with the environment here rather than in [Monads]. *)
 
-(* double-continutation backtracking *)
-(* "sk" stands for "success continuation", "fk" for "failure continuation" *)
-type 'r fk = exn -> 'r
-type (-'a,'r) sk = 'a -> 'r fk -> 'r
-type +'a tactic0 = { go : 'r. ('a, 'r nb_tactic) sk -> 'r nb_tactic fk -> 'r nb_tactic }
+module LocalState = struct
+  type t = proofview
+end
+module Backtrack = Monads.Logic(Monads.Id)
+module Inner = Monads.StateLogic(LocalState)(Backtrack)
 
-(* We obtain a tactic by parametrizing with an environment *)
-(* spiwack: alternatively the environment could be part of the "nb_tactic" state
-    monad. As long as we do not intend to change the environment during a tactic,
-    it's probably better here. *)
-type +'a tactic = Environ.env -> 'a tactic0
-
-(* unit of [nb_tactic] *)
-let nb_tac_unit a step = { proof_step = step ; content = a }
+type +'a tactic = Environ.env -> 'a Inner.t
 
 (* Applies a tactic to the current proofview. *)
-let apply env t sp  = 
-  let start = { goals = sp.comb ; defs = sp.solution } in
-  let res = (t env).go (fun a _ step -> nb_tac_unit a step) (fun e _ -> raise e) start in
-  let next = res.proof_step in
-  {sp with
-     solution = next.defs ;
-     comb = next.goals
-  }
+let apply env t sp =
+  let next = Backtrack.run (Inner.run (t env) sp) in
+  next.Inner.state
 
 (*** tacticals ***)
 
 
 (* Unit of the tactic monad *)
-let tclUNIT a _ = { go = fun sk fk step -> sk a fk step }
+let tclUNIT a _ = Inner.return a
 
 (* Bind operation of the tactic monad *)
-let tclBIND t k env = { go = fun sk fk step ->
-  (t env).go (fun a fk -> (k a env).go sk fk) fk step
-}
+let tclBIND t k env =
+  Inner.bind (t env) (fun a -> k a env)
 
 (* Interpretes the ";" (semicolon) of Ltac.
    As a monadic operation, it's a specialized "bind"
    on unit-returning tactic (meaning "there is no value to bind") *)
-let tclTHEN t1 t2 env = { go = fun sk fk step ->
-  (t1 env).go (fun () fk -> (t2 env).go sk fk) fk step
-}
+let tclTHEN t1 t2 env =
+  Inner.seq (t1 env) (t2 env)
 
 (* [tclIGNORE t] has the same operational content as [t],
    but drops the value at the end. *)
-let tclIGNORE tac env = { go = fun sk fk step ->
-  (tac env).go (fun _ fk -> sk () fk) fk step
-}
+let tclIGNORE tac env = Inner.ignore (tac env)
 
-(* [tclOR t1 t2 = t1] if t1 succeeds and [tclOR t1 t2 = t2] if t1 fails. 
-    No interleaving for the moment. *)
-(* spiwack: compared to the LogicT paper, we backtrack at the same state
-    where [t1] has been called, not the state where [t1] failed. *)
-let tclOR t1 t2 env = { go = fun sk fk step ->
-  (t1 env).go sk (fun _ _ -> (t2 env).go sk fk step) step
-}
+(* [tclOR t1 t2 = t1] as long as [t1] succeeds. Whenever the successes
+   of [t1] have been depleted, then it behaves as [t2].  No
+   interleaving at this point. *)
+let tclOR t1 t2 env =
+  Inner.plus (t1 env) (t2 env)
 
 (* [tclZERO e] always fails with error message [e]*)
-let tclZERO e env = { go = fun _ fk step -> fk e step }
+let tclZERO e _ = Inner.zero e
 
-
-(* Focusing operation on proof_steps. *)
-let focus_proof_step i j ps =
-  let (new_subgoals, context) = focus_sublist i j ps.goals in
-  ( { ps with goals = new_subgoals } , context )
-
-(* Unfocusing operation of proof_steps. *)
-let unfocus_proof_step c ps =
-  { ps with 
-     goals = undefined ps.defs (unfocus_sublist c ps.goals) 
-  }
+(* [tclORELSE t1 t2] behaves like [t1] if [t1] succeeds at least once
+   or [t2] if [t1] fails. *)
+let tclORELSE t1 t2 env =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Inner.bind in
+  Inner.split (t1 env) >>= function
+    | Util.Inr _ -> t2 env
+    | Util.Inl (a,t1') -> Inner.plus (Inner.return a) t1'
 
 (* Focuses a tactic at a range of subgoals, found by their indices. *)
 (* arnaud: bug if 0 goals ! *)
-let tclFOCUS i j t env = { go = fun sk fk step ->
-  let (focused,context) = focus_proof_step i j step in
-  (t env).go (fun a fk step -> sk a fk (unfocus_proof_step context step)) fk focused
-}
+let tclFOCUS i j t env =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Inner.bind in
+  let (>>) = Inner.seq in
+  Inner.get >>= fun initial ->
+  let (focused,context) = focus i j initial in
+  Inner.set focused >>
+  t (env) >>= fun result ->
+  Inner.get >>= fun next ->
+  Inner.set (unfocus context next) >>
+  Inner.return result
 
 (* Dispatch tacticals are used to apply a different tactic to each goal under
     consideration. They come in two flavours:
@@ -292,45 +266,49 @@ end
     the return value at two given lists of subgoals are combined when
     both lists are being concatenated.
     [join] and [null] need be some sort of comutative monoid. *)
-let rec tclDISPATCHGEN null join tacs env = { go = fun sk fk step ->
-  match tacs,step.goals with
-  | [] , [] -> (tclUNIT null env).go sk fk step
-  | t::tacs , first::goals -> 
-      (tclDISPATCHGEN null join tacs env).go
-	begin fun x fk step -> 
-	  match Goal.advance step.defs first with
-	  | None -> sk x fk step
-	  | Some first ->
-	    (t env).go 
-	      begin fun y fk step' -> 
-		sk (join x y) fk { step' with 
-			                   goals = step'.goals@step.goals
-				         }
-	      end 
-	      fk 
-	      { step with goals = [first] }
-	end
-	fk
-	{ step with goals = goals }
-  | _ -> raise SizeMismatch
-}
-
-(* takes a tactic which can raise exception and makes it pure by *failing* 
-    on with these exceptions. Does not catch anomalies. *)
-let purify t = 
-  let t' env = { go = fun sk fk step -> try (t env).go (fun x -> sk (Util.Inl x)) fk step
-     	                                                     with Errors.Anomaly _ as e -> raise e
-							           | e -> sk (Util.Inr e) fk step
-	       }
-  in
-  tclBIND t' begin function
-    | Util.Inl x -> tclUNIT x
-    | Util.Inr e -> tclZERO e
-  end
-let tclDISPATCHGEN null join tacs = purify (tclDISPATCHGEN null join tacs)
+let rec tclDISPATCHGEN null join tacs env =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Inner.bind in
+  let (>>) = Inner.seq in
+  Inner.get >>= fun initial ->
+  match tacs,initial.comb with
+  | [], [] -> tclUNIT null env
+  | t::tacs , first::goals ->
+      Inner.set {initial with comb=goals} >>
+      tclDISPATCHGEN null join tacs env >>= fun x ->
+      Inner.get >>= fun step ->
+      begin match Goal.advance step.solution first with
+      | None -> Inner.return x (* If [first] has been solved by side effect: do nothing. *)
+      | Some first ->
+          Inner.set {step with comb=[first]} >>
+          t env >>= fun y ->
+          Inner.get >>= fun step' ->
+          Inner.set {step' with comb=step'.comb@step.comb} >>
+          Inner.return (join x y)
+      end
+  | _ , _ -> raise SizeMismatch
 
 let unitK () () = ()
 let tclDISPATCH = tclDISPATCHGEN () unitK
+
+(* This is a helper function for the dispatching tactics (like [tclGOALBIND] and
+    [tclDISPATCHS]). It takes an ['a sensitive] value, and returns a tactic
+    whose return value is, again, ['a sensitive] but only has value in the
+    (unmodified) goals under focus. *)
+let here_s b env =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Inner.bind in
+  Inner.get >>= fun step ->
+  Inner.return (Goal.bind (Goal.here_list step.comb b) (fun b -> b))
+
+(* see .mli for documentation. *)
+let tclDISPATCHS tacs = 
+  let tacs = 
+    List.map begin fun tac -> 
+      tclBIND tac here_s
+    end tacs 
+  in
+  tclDISPATCHGEN Goal.null Goal.plus tacs
 
 let extend_to_list =
   let rec copy n x l =
@@ -343,60 +321,12 @@ let extend_to_list =
     let ne = List.length endxs in
     let n = List.length l in
     startxs@(copy (n-ne-ns) rx endxs)
-let tclEXTEND tacs1 rtac tacs2 env = { go = fun sk fk step -> 
-  let tacs = extend_to_list tacs1 rtac tacs2 step.goals in
-  (tclDISPATCH tacs env).go sk fk step
-}
-
-(* [tclGOALBIND] and [tclGOALBINDU] are sorts of bind which take a
-    [Goal.sensitive] as a first argument, the tactic then acts on each goal separately.
-    Allows backtracking between goals. *)
-let list_of_sensitive s k env step =
-  Goal.list_map begin fun defs g ->
-    let (a,defs) = Goal.eval s env defs g in
-    (k a) , defs
-  end step.goals step.defs
-(* In form of a tactic *)
-let list_of_sensitive s k env = { go = fun sk fk step ->
-  let (tacs,defs) = list_of_sensitive s k env step in
-  sk tacs fk { step with defs = defs } 
-}
-
-(* This is a helper function for the dispatching tactics (like [tclGOALBIND] and
-    [tclDISPATCHS]). It takes an ['a sensitive] value, and returns a tactic
-    whose return value is, again, ['a sensitive] but only has value in the
-    (unmodified) goals under focus. *)
-let here_s b env = { go = fun sk fk step ->
-  sk (Goal.bind (Goal.here_list step.goals b) (fun b -> b)) fk step
-}
-
-let rec tclGOALBIND s k = 
-  (* spiwack: the first line ensures that the value returned by the tactic [k] will
-      not "escape its scope". *)
-  let k a = tclBIND (k a) here_s in
-  purify begin 
-    tclBIND (list_of_sensitive s k) begin fun tacs ->
-      tclDISPATCHGEN Goal.null Goal.plus tacs
-    end 
-  end
-
-(* spiwack: this should probably be moved closer to the [tclDISPATCH] tactical. *)
-let tclDISPATCHS tacs = 
-  let tacs = 
-    List.map begin fun tac -> 
-      tclBIND tac here_s
-    end tacs 
-  in
-  purify begin 
-    tclDISPATCHGEN Goal.null Goal.plus tacs
-  end
-
-let rec tclGOALBINDU s k = 
-  purify begin 
-    tclBIND (list_of_sensitive s k) begin fun tacs ->
-      tclDISPATCHGEN () unitK tacs
-    end
-  end
+let tclEXTEND tacs1 rtac tacs2 env =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Inner.bind in
+  Inner.get >>= fun step ->
+  let tacs = extend_to_list tacs1 rtac tacs2 step.comb in
+  tclDISPATCH tacs env
 
 (* spiwack: up to a few details, same errors are in the Logic module.
     this should be maintained synchronized, probably. *)
@@ -416,9 +346,48 @@ let rec catchable_exception = function
       (_, Typeclasses_errors.UnsatisfiableConstraints _) -> true
   | _ -> false
 
+
+(* [tclGOALBIND] and [tclGOALBINDU] are sorts of bind which take a
+    [Goal.sensitive] as a first argument, the tactic then acts on each goal separately.
+    Allows backtracking between goals. *)
+
+(* [list_of_sensitive s k] where [s] is and ['a Goal.sensitive] [k]
+   has type ['a -> 'b] returns the list of ['b] obtained by evualating
+   [s] to each goal successively and applying [k] to each result. *)
+let list_of_sensitive s k env step =
+  Goal.list_map begin fun defs g ->
+    let (a,defs) = Goal.eval s env defs g in
+    (k a) , defs
+  end step.comb step.solution
+(* In form of a tactic *)
+let list_of_sensitive s k env =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Inner.bind in
+  let (>>) = Inner.seq in
+  Inner.get >>= fun step ->
+  try 
+    let (tacs,defs) = list_of_sensitive s k env step in
+    Inner.set { step with solution = defs } >>
+    Inner.return tacs
+  with e when catchable_exception e ->
+    tclZERO e env
+
+let rec tclGOALBIND s k = 
+  (* spiwack: the first line ensures that the value returned by the tactic [k] will
+      not "escape its scope". *)
+  let k a = tclBIND (k a) here_s in
+  tclBIND (list_of_sensitive s k) begin fun tacs ->
+    tclDISPATCHGEN Goal.null Goal.plus tacs
+  end
+
+let rec tclGOALBINDU s k = 
+  tclBIND (list_of_sensitive s k) begin fun tacs ->
+    tclDISPATCHGEN () unitK tacs
+  end
+
 (* No backtracking can happen here, hence, as opposed to the dispatch tacticals,
     everything is done in one step. *)
-let sensitive_on_step s env step =
+let sensitive_on_proofview s env step =
   let wrap g ((defs, partial_list) as partial_res) = 
     match Goal.advance defs g with
     | None ->partial_res
@@ -427,14 +396,20 @@ let sensitive_on_step s env step =
       (d',sg::partial_list)
   in
   let ( new_defs , combed_subgoals ) = 
-    List.fold_right wrap step.goals (step.defs,[])
+    List.fold_right wrap step.comb (step.solution,[])
   in
-  { defs = new_defs;
-     goals = List.flatten combed_subgoals }
-let tclSENSITIVE s =
-  purify begin
-    fun env -> { go = fun sk fk step -> sk () fk (sensitive_on_step s env step) }
-  end
+  { step with
+     solution = new_defs;
+     comb = List.flatten combed_subgoals }
+let tclSENSITIVE s env =
+  (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+  let (>>=) = Inner.bind in
+  Inner.get >>= fun step ->
+  try
+    let next = sensitive_on_proofview s env step in
+    Inner.set next
+  with e when catchable_exception e ->
+    tclZERO e env
 
 
 (*** Commands ***)
@@ -457,23 +432,28 @@ end
 module V82 = struct
   type tac = Goal.goal Evd.sigma -> Goal.goal list Evd.sigma
 
-  let tactic tac _ = { go = fun sk fk ps ->
+  let tactic tac env =
     (* spiwack: we ignore the dependencies between goals here, expectingly
-         preserving the semantics of <= 8.2 tactics *)
-    let tac evd gl = 
-      let glsigma  = tac { Evd.it = gl ; Evd.sigma = evd }  in
-      let sigma = glsigma.Evd.sigma in
-      let g = glsigma.Evd.it in
-      ( g , sigma )
-    in
+       preserving the semantics of <= 8.2 tactics *)
+    (* spiwack: convenience notations, waiting for ocaml 3.12 *)
+    let (>>=) = Inner.bind in
+    Inner.get >>= fun ps ->
+    try
+      let tac evd gl = 
+        let glsigma  = tac { Evd.it = gl ; Evd.sigma = evd }  in
+        let sigma = glsigma.Evd.sigma in
+        let g = glsigma.Evd.it in
+        ( g , sigma )
+      in
     (* Old style tactics expect the goals normalized with respect to evars. *)
-    let (initgoals,initevd) = 
-      Goal.list_map Goal.V82.nf_evar ps.goals ps.defs
-    in
-    let (goalss,evd) = Goal.list_map tac initgoals initevd in
-    let sgs = List.flatten goalss in
-    sk () fk { defs = evd ; goals = sgs }
-}
+      let (initgoals,initevd) = 
+        Goal.list_map Goal.V82.nf_evar ps.comb ps.solution
+      in
+      let (goalss,evd) = Goal.list_map tac initgoals initevd in
+      let sgs = List.flatten goalss in
+      Inner.set { ps with solution=evd ; comb=sgs }
+    with e when catchable_exception e ->
+      tclZERO e env
 
   let has_unresolved_evar pv =
     Evd.has_undefined pv.solution
@@ -517,5 +497,4 @@ module V82 = struct
     { pv with
 	solution = Evar_refiner.instantiate_pf_com evk com pv.solution }
 
-  let purify = purify
 end
