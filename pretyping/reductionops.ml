@@ -285,18 +285,6 @@ let fix_recarg ((recindices,bodynum),_) stack =
   with Not_found ->
     None
 
-type fix_reduction_result = NotReducible | Reduced of state
-
-let reduce_fix whdfun sigma fix stack =
-  match fix_recarg fix stack with
-    | None -> NotReducible
-    | Some (recargnum,recarg) ->
-        let (recarg'hd,_ as recarg') = whdfun sigma (recarg, empty_stack) in
-        let stack' = stack_assign stack recargnum (zip recarg') in
-	(match kind_of_term recarg'hd with
-           | Construct _ -> Reduced (contract_fix fix, stack')
-	   | _ -> NotReducible)
-
 (* Generic reduction function *)
 
 (* Y avait un commentaire pour whd_betadeltaiota :
