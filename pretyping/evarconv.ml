@@ -191,6 +191,17 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
 
 and evar_eqappr_x ?(rhs_is_already_stuck = false)
   ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
+  let miller_pfenning on_left fallback ev (_,lF) apprM evd =
+    let tM = applist apprM in
+    match is_unification_pattern_evar env evd ev lF tM with
+    | Some l1' ->
+      (* Miller-Pfenning's patterns unification *)
+      (* Preserve generality (except that CCI has no eta-conversion) *)
+      let t2 = nf_evar evd tM in
+      let t2 = solve_pattern_eqn env l1' t2 in
+      solve_simple_eqn (evar_conv_x ts) env evd
+	(position_problem on_left pbty,ev,t2)
+    | None -> fallback in
   (* Evar must be undefined since we have flushed evars *)
   match (flex_kind_of_term term1 l1, flex_kind_of_term term2 l2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
@@ -221,16 +232,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	ise_try evd [f1; f2]
 
     | Flexible ev1, MaybeFlexible ->
-	let f1 i =
-          match is_unification_pattern_evar env evd ev1 l1 (applist appr2) with
-          | Some l1' ->
-	    (* Miller-Pfenning's patterns unification *)
-	    (* Preserve generality (except that CCI has no eta-conversion) *)
-	    let t2 = nf_evar evd (applist appr2) in
-	    let t2 = solve_pattern_eqn env l1' t2 in
-	    solve_simple_eqn (evar_conv_x ts) env evd
-	      (position_problem true pbty,ev1,t2)
-          | None -> (i,false)
+	let f1 i = miller_pfenning true (i,false) ev1 appr1 appr2 i
         and f2 i =
 	  if
             List.length l1 <= List.length l2
@@ -254,16 +256,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	ise_try evd [f1; f2; f3]
 
     | MaybeFlexible, Flexible ev2 ->
-	let f1 i =
-	  match is_unification_pattern_evar env evd ev2 l2 (applist appr1) with
-          | Some l1' ->
-	    (* Miller-Pfenning's patterns unification *)
-	    (* Preserve generality (except that CCI has no eta-conversion) *)
-	    let t1 = nf_evar evd (applist appr1) in
-	    let t1 = solve_pattern_eqn env l2 t1 in
-	    solve_simple_eqn (evar_conv_x ts) env evd
-	      (position_problem false pbty,ev2,t1)
-          | None -> (i,false)
+	let f1 i = miller_pfenning false (i, false) ev2 appr2 appr1 i
         and f2 i =
           if
        	    List.length l2 <= List.length l1
@@ -367,32 +360,16 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	     evar_conv_x ts (push_rel (na,None,c) env) i CONV c'1 c'2)]
 
     | Flexible ev1, (Rigid | PseudoRigid) ->
-	(match is_unification_pattern_evar env evd ev1 l1 (applist appr2) with
-        | Some l1 ->
-	  (* Miller-Pfenning's pattern unification *)
-	  (* Preserve generality thanks to eta-conversion) *)
-	  let t2 = nf_evar evd (applist appr2) in
-	  let t2 = solve_pattern_eqn env l1 t2 in
-	  solve_simple_eqn (evar_conv_x ts) env evd
-	    (position_problem true pbty,ev1,t2)
-        | None ->
-	  (* Postpone the use of an heuristic *)
-	  add_conv_pb (pbty,env,applist appr1,applist appr2) evd,
-	  true)
+      miller_pfenning true
+	((* Postpone the use of an heuristic *)
+	  add_conv_pb (pbty,env,applist appr1,applist appr2) evd, true)
+	ev1 appr1 appr2 evd
 
     | (Rigid | PseudoRigid), Flexible ev2 ->
-	(match is_unification_pattern_evar env evd ev2 l2 (applist appr1) with
-        | Some l2 ->
-	  (* Miller-Pfenning's pattern unification *)
-	  (* Preserve generality thanks to eta-conversion) *)
-	  let t1 = nf_evar evd (applist appr1) in
-	  let t1 = solve_pattern_eqn env l2 t1 in
-	  solve_simple_eqn (evar_conv_x ts) env evd
-	    (position_problem false pbty,ev2,t1)
-        | None ->
-	  (* Postpone the use of an heuristic *)
-	  add_conv_pb (pbty,env,applist appr1,applist appr2) evd,
-	  true)
+      miller_pfenning false
+	((* Postpone the use of an heuristic *)
+	  add_conv_pb (pbty,env,applist appr1,applist appr2) evd, true)
+	ev2 appr2 appr1 evd
 
     | MaybeFlexible, (Rigid | PseudoRigid) ->
 	let f3 i =
