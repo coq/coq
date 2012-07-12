@@ -457,7 +457,7 @@ esac
 
 if [ "$coq_debug_flag" = "-g" ]; then
     case $CAMLTAG in
-        OCAML31*)
+        OCAML31*|OCAML4*)
             # Compilation debug flag
             coq_debug_flag_opt="-g"
             ;;
@@ -507,7 +507,7 @@ if [ "$camlp5dir" != "" ]; then
     camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
 else
     case $CAMLTAG in
-        OCAML31*)
+        OCAML31*|OCAML4*)
             if [ -x "${CAMLLIB}/camlp5" ]; then
                 CAMLP4LIB=+camlp5
             elif [ -x "${CAMLLIB}/site-lib/camlp5" ]; then
@@ -551,7 +551,7 @@ if [ "$best_compiler" = "opt" ] ; then
       CAMLOPTVERSION=`"$nativecamlc" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
       if [ "`uname -s`" = "Darwin" -a "$ARCH" = "i386" ]; then
 	  case $CAMLOPTVERSION in
-	      3.09.3|3.1?*) ;;
+	      3.09.3|3.1?*|4.*) ;;
 	      *) echo "Native compilation on MacOS X Pentium requires Objective-Caml >= 3.09.3,"
 		 best_compiler=byte
 		 echo "only the bytecode version of Coq will be available."
