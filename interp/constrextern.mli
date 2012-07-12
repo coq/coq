@@ -19,7 +19,7 @@ open Pattern
 open Topconstr
 open Notation
 
-val check_same_type : constr_expr -> constr_expr -> unit
+val is_same_type : constr_expr -> constr_expr -> bool
 
 (** Translation of pattern, cases pattern, glob_constr and term into syntax
    trees for printing *)

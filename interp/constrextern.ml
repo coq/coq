@@ -205,7 +205,8 @@ let rec check_same_type ty1 ty2 =
   | CLetIn(_,(_,na1),a1,b1), CLetIn(_,(_,na2),a2,b2) when na1=na2 ->
       check_same_type a1 a2;
       check_same_type b1 b2
-  | CAppExpl(_,r1,al1), CAppExpl(_,r2,al2) when r1=r2 ->
+  | CAppExpl(_,(proj1,r1),al1), CAppExpl(_,(proj2,r2),al2) when proj1=proj2 ->
+      check_same_ref r1 r2;
       List.iter2 check_same_type al1 al2
   | CApp(_,(_,e1),al1), CApp(_,(_,e2),al2) ->
       check_same_type e1 e2;
@@ -249,7 +250,7 @@ and check_same_fix_binder bl1 bl2 =
           check_same_binder ([na1],default_binder_kind,def1) ([na2],default_binder_kind,def2)
       | _ -> failwith "not same binder") bl1 bl2
 
-let same c d = try check_same_type c d; true with _ -> false
+let is_same_type c d = try let () = check_same_type c d in true with Failure _ -> false
 
 (**********************************************************************)
 (* mapping patterns to cases_pattern_expr                                *)
@@ -759,7 +760,7 @@ and factorize_prod scopes vars aty c =
     ([],extern_symbol scopes vars c (uninterp_notations c))
   with No_match -> match c with
   | GProd (loc,(Name id as na),bk,ty,c)
-      when same aty (extern_typ scopes vars (anonymize_if_reserved na ty))
+      when is_same_type aty (extern_typ scopes vars (anonymize_if_reserved na ty))
 	& not (occur_var_constr_expr id aty) (* avoid na in ty escapes scope *)
 	-> let (nal,c) = factorize_prod scopes (Idset.add id vars) aty c in
            ((loc,Name id)::nal,c)
@@ -771,7 +772,7 @@ and factorize_lambda inctx scopes vars aty c =
     ([],extern_symbol (Some Notation.type_scope,snd scopes) vars c (uninterp_notations c))
   with No_match -> match c with
   | GLambda (loc,na,bk,ty,c)
-      when same aty (extern_typ scopes vars (anonymize_if_reserved na ty))
+      when is_same_type aty (extern_typ scopes vars (anonymize_if_reserved na ty))
 	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)
 	-> let (nal,c) =
 	     factorize_lambda inctx scopes (add_vname vars na) aty c in
@@ -790,7 +791,7 @@ and extern_local_binder scopes vars = function
       let ty = extern_typ scopes vars (anonymize_if_reserved na ty) in
       (match extern_local_binder scopes (name_fold Idset.add na vars) l with
           (assums,ids,LocalRawAssum(nal,k,ty')::l)
-            when same ty ty' &
+            when is_same_type ty ty' &
               match na with Name id -> not (occur_var_constr_expr id ty')
                 | _ -> true ->
               (na::assums,na::ids,
