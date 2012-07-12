@@ -51,26 +51,15 @@ val add_known_module : string -> unit
 val module_is_known : string -> bool
 val load_ml_object : string -> string -> unit
 
-(* Declare a plugin and its initialization function. 
- * A plugin is just an ML module with an initialization function.
- * Adding a known plugin implies adding it as a known ML module.
- * The initialization function is granted to be called after Coq is fully
- * bootstrapped, even if the plugin is statically linked with the toplevel *)
+(** Declare a plugin and its initialization function.
+    A plugin is just an ML module with an initialization function.
+    Adding a known plugin implies adding it as a known ML module.
+    The initialization function is granted to be called after Coq is fully
+    bootstrapped, even if the plugin is statically linked with the toplevel *)
 val add_known_plugin : (unit -> unit) -> string -> unit
 
-(* Calls all initialization functions in a non-specified order *)
+(** Calls all initialization functions in a non-specified order *)
 val init_known_plugins : unit -> unit
-
-(** Summary of Declared ML Modules *)
-val get_loaded_modules : unit -> string list
-val add_loaded_module : string -> unit
-val init_ml_modules : unit -> unit
-val unfreeze_ml_modules : string list -> unit
-
-type ml_module_object = {
-  mlocal: Vernacexpr.locality_flag;
-  mnames: string list;
-}
 
 val declare_ml_modules : Vernacexpr.locality_flag -> string list -> unit
 
