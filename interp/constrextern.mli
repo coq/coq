@@ -22,7 +22,7 @@ open Notation_term
 open Notation
 open Misctypes
 
-val check_same_type : constr_expr -> constr_expr -> unit
+val is_same_type : constr_expr -> constr_expr -> bool
 
 (** Translation of pattern, cases pattern, glob_constr and term into syntax
    trees for printing *)

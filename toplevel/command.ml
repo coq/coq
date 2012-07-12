@@ -321,17 +321,14 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
     mind_entry_inds = entries },
     impls
 
-let eq_constr_expr c1 c2 =
-  try let _ = Constrextern.check_same_type c1 c2 in true with _ -> false
-
 (* Very syntactical equality *)
 let eq_local_binder d1 d2 = match d1,d2 with
   | LocalRawAssum (nal1,k1,c1), LocalRawAssum (nal2,k2,c2) ->
       List.length nal1 = List.length nal2 && k1 = k2 &&
       List.for_all2 (fun (_,na1) (_,na2) -> na1 = na2) nal1 nal2 &&
-      eq_constr_expr c1 c2
+      Constrextern.is_same_type c1 c2
   | LocalRawDef ((_,id1),c1), LocalRawDef ((_,id2),c2) ->
-      id1 = id2 && eq_constr_expr c1 c2
+      id1 = id2 && Constrextern.is_same_type c1 c2
   | _ ->
       false
 
