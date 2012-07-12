@@ -471,7 +471,7 @@ case $CAMLVERSION in
 	    echo "          Configuration script failed!"
 	    exit 1
 	fi;;
-    3.11.2|3.12*)
+    3.11.2|3.12*|4.*)
 	CAMLP4COMPAT="-loc loc" 
 	echo "You have Objective-Caml $CAMLVERSION. Good!";;
     *)
@@ -494,7 +494,7 @@ esac
 
 if [ "$coq_debug_flag" = "-g" ]; then
     case $CAMLTAG in
-        OCAML31*)
+        OCAML31*|OCAML4*)
             # Compilation debug flag
             coq_debug_flag_opt="-g"
             ;;
@@ -568,7 +568,7 @@ case $usecamlp5 in
   yes)
     camlp4oexec=`echo "$camlp4oexec" | tr 4 5`
     case `"$camlp4oexec" -v 2>&1` in
-	*4.0*|*5.00*)
+	*"version 4.0"*|*5.00*)
 	    echo "Camlp5 version < 5.01 not supported."
 	    echo "Configuration script failed!"
 	    exit 1;;
@@ -654,11 +654,11 @@ if [ "$coqide_spec" = "yes" -a "$COQIDE" = "no" ]; then
     echo "CoqIde disabled as requested."
 else
     case $lablgtkdir_spec in
-	no) 
-	    if [ -f "${CAMLLIB}/lablgtk2/gSourceView2.mli" ]; then
+	no)
+            if lablgtkdir=$(ocamlfind query lablgtk2.sourceview2 2> /dev/null); then
+                lablgtkdir_spec=yes
+	    elif [ -f "${CAMLLIB}/lablgtk2/gSourceView2.mli" ]; then
 		lablgtkdir=${CAMLLIB}/lablgtk2
-	    elif [ -f "${CAMLLIB}/site-lib/lablgtk2/gSourceView2.mli" ]; then
-		lablgtkdir=${CAMLLIB}/site-lib/lablgtk2
 	    fi;;
 	yes)
 	    if [ ! -f "$lablgtkdir/gSourceView2.mli" ]; then
