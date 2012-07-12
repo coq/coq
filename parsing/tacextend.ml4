@@ -188,7 +188,11 @@ let declare_tactic loc s cl =
                  Tacexpr.TacExtend($default_loc$,$se$,l)))
            | None -> () ])
           $atomic_tactics$
-      with e -> Pp.pp (Errors.print e);
+      with e ->
+	    Pp.msg_warning
+	      (Stream.iapp
+	        (Pp.str ("Exception in tactic extend " ^ $se$ ^": "))
+	        (Errors.print e));
       Egrammar.extend_tactic_grammar $se$ $gl$;
       List.iter Pptactic.declare_extra_tactic_pprule $pp$; } >>
     ])
