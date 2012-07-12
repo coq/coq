@@ -76,12 +76,16 @@ let src_dirs () =
   [ []; [ "config" ]; [ "toplevel" ] ] @
   if !coqide then [[ "ide" ]] else []
 
+let is_ocaml4 = String.sub Coq_config.caml_version 0 2 = "4."
+
 let includes () = 
   List.fold_right
     (fun d l -> "-I" :: List.fold_left Filename.concat !src_coqtop d :: l)
     (src_dirs ())
-    (["-I"; Coq_config.camlp4lib] @ 
-     (if !coqide then ["-thread"; "-I"; "+lablgtk2"] else []))
+    (["-I"; "\"" ^ Coq_config.camlp4lib ^ "\""] @ 
+     (if !coqide then ["-thread"; "-I"; "+lablgtk2"] else []) @
+     (if is_ocaml4 then ["-I"; "+compiler-libs"] else []))
+
 
 (* Transform bytecode object file names in native object file names *)
 let native_suffix f =
@@ -315,9 +319,11 @@ let main () =
       "ocamlopt -linkall"
     end else
       (* bytecode (we shunt ocamlmktop script which fails on win32) *)
-      let ocamlmktoplib = " toplevellib.cma" in
-      let ocamlccustom = "ocamlc -custom -linkall" in
-      (if !top then ocamlccustom^ocamlmktoplib else ocamlccustom)
+      let ocamlmktoplib = if is_ocaml4
+	then " ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma"
+	else " toplevellib.cma" in
+      let ocamlccustom ="ocamlc -custom -linkall" in
+	(if !top then ocamlccustom^ocamlmktoplib else ocamlccustom)
   in
   (* files to link *)
   let (modules, tolink) = files_to_link userfiles in
