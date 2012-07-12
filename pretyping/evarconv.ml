@@ -57,14 +57,7 @@ let eval_flexible_term ts env c =
   | _ -> assert false
 
 let evar_apprec ts env evd stack c =
-  let sigma =  evd in
-  let rec aux s =
-    let (t,stack) = whd_betaiota_deltazeta_for_iota_state ts env sigma s in
-    match kind_of_term t with
-      | Evar (evk,_ as ev) when Evd.is_defined sigma evk ->
-	  aux (Evd.existential_value sigma ev, stack)
-      | _ -> decompose_app (zip (t, stack))
-  in aux (c, append_stack_app_list stack empty_stack)
+  decompose_app (zip (whd_betaiota_deltazeta_for_iota_state ts env evd (c,append_stack_app_list stack empty_stack)))
 
 let apprec_nohdbeta ts env evd c =
   match kind_of_term (fst (Reductionops.whd_stack evd c)) with
