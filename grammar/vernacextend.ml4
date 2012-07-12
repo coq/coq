@@ -50,13 +50,18 @@ let mlexpr_of_clause =
        (Option.List.cons (Option.map (fun a -> GramTerminal a) a) b))
 
 let declare_command loc s nt cl =
+  let se = mlexpr_of_string s in
   let gl = mlexpr_of_clause cl in
   let funcl = make_fun_clauses loc s cl in
   declare_str_items loc
     [ <:str_item< do {
-	try Vernacinterp.vinterp_add $mlexpr_of_string s$ $funcl$
-	with e -> Pp.pp (Errors.print e);
-	Egramml.extend_vernac_command_grammar $mlexpr_of_string s$ $nt$ $gl$
+	try Vernacinterp.vinterp_add $se$ $funcl$
+	with e ->
+	  Pp.msg_warning
+	    (Stream.iapp
+	       (Pp.str ("Exception in vernac extend " ^ $se$ ^": "))
+	       (Errors.print e));
+	Egramml.extend_vernac_command_grammar $se$ $nt$ $gl$
       } >> ]
 
 open Pcaml
