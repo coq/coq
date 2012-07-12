@@ -22,19 +22,19 @@ open Globnames
 open Evd
 
 type flex_kind_of_term =
-  | Rigid of constr
-  | PseudoRigid of constr (* approximated as rigid but not necessarily so *)
-  | MaybeFlexible of constr (* approx'ed as reducible but not necessarily so *)
+  | Rigid
+  | PseudoRigid (* approximated as rigid but not necessarily so *)
+  | MaybeFlexible (* approx'ed as reducible but not necessarily so *)
   | Flexible of existential
 
 let flex_kind_of_term c l =
   match kind_of_term c with
-    | Rel _ | Const _ | Var _ -> MaybeFlexible c
-    | Lambda _ when l<>[] -> MaybeFlexible c
-    | LetIn _  -> MaybeFlexible c
+    | Rel _ | Const _ | Var _ -> MaybeFlexible
+    | Lambda _ when l<>[] -> MaybeFlexible
+    | LetIn _  -> MaybeFlexible
     | Evar ev -> Flexible ev
-    | Lambda _ | Prod _ | Sort _ | Ind _ | Construct _ | CoFix _ -> Rigid c
-    | Meta _ | Case _ | Fix _ -> PseudoRigid c
+    | Lambda _ | Prod _ | Sort _ | Ind _ | Construct _ | CoFix _ -> Rigid
+    | Meta _ | Case _ | Fix _ -> PseudoRigid
     | Cast _ | App _ -> assert false
 
 let eval_flexible_term ts env c =
@@ -220,7 +220,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	in
 	ise_try evd [f1; f2]
 
-    | Flexible ev1, MaybeFlexible flex2 ->
+    | Flexible ev1, MaybeFlexible ->
 	let f1 i =
           match is_unification_pattern_evar env evd ev1 l1 (applist appr2) with
           | Some l1' ->
@@ -246,14 +246,14 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
                (fun i -> evar_conv_x ts env i pbty term1 (applist(term2,deb2)))]
           else (i,false)
 	and f3 i =
-	  match eval_flexible_term ts env flex2 with
+	  match eval_flexible_term ts env term2 with
 	    | Some v2 ->
 		evar_eqappr_x ts env i pbty appr1 (evar_apprec ts env i l2 v2)
 	    | None -> (i,false)
 	in
 	ise_try evd [f1; f2; f3]
 
-    | MaybeFlexible flex1, Flexible ev2 ->
+    | MaybeFlexible, Flexible ev2 ->
 	let f1 i =
 	  match is_unification_pattern_evar env evd ev2 l2 (applist appr1) with
           | Some l1' ->
@@ -278,15 +278,15 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
                (fun i -> evar_conv_x ts env i pbty (applist(term1,deb1)) term2)]
           else (i,false)
 	and f3 i =
-	  match eval_flexible_term ts env flex1 with
+	  match eval_flexible_term ts env term1 with
 	    | Some v1 ->
 		evar_eqappr_x ts env i pbty (evar_apprec ts env i l1 v1) appr2
 	    | None -> (i,false)
 	in
 	ise_try evd [f1; f2; f3]
 
-    | MaybeFlexible flex1, MaybeFlexible flex2 -> begin
-        match kind_of_term flex1, kind_of_term flex2 with
+    | MaybeFlexible, MaybeFlexible -> begin
+        match kind_of_term term1, kind_of_term term2 with
         | LetIn (na,b1,t1,c'1), LetIn (_,b2,_,c'2) ->
         let f1 i =
           ise_and i
@@ -305,7 +305,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 
 	| _, _ ->
 	let f1 i =
-	  if eq_constr flex1 flex2 then
+	  if eq_constr term1 term2 then
 	    ise_list2 i (fun i -> evar_conv_x ts env i CONV) l1 l2
 	  else
 	     (i,false)
@@ -328,27 +328,27 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
                 is_unnamed (evar_apprec ts env i args (subst1 b c))
             | App _| Cast _ -> assert false in
           let rhs_is_stuck_and_unnamed () =
-            match eval_flexible_term ts env flex2 with
+            match eval_flexible_term ts env term2 with
             | None -> false
             | Some v2 -> is_unnamed (evar_apprec ts env i l2 v2) in
           let rhs_is_already_stuck =
             rhs_is_already_stuck || rhs_is_stuck_and_unnamed () in
-	  if isLambda flex1 || rhs_is_already_stuck then
-	    match eval_flexible_term ts env flex1 with
+	  if isLambda term1 || rhs_is_already_stuck then
+	    match eval_flexible_term ts env term1 with
 	    | Some v1 ->
 		evar_eqappr_x ~rhs_is_already_stuck 
                   ts env i pbty (evar_apprec ts env i l1 v1) appr2
 	    | None ->
-		match eval_flexible_term ts env flex2 with
+		match eval_flexible_term ts env term2 with
 		| Some v2 ->
 		    evar_eqappr_x ts env i pbty appr1 (evar_apprec ts env i l2 v2)
 		| None -> (i,false)
 	  else
-	    match eval_flexible_term ts env flex2 with
+	    match eval_flexible_term ts env term2 with
 	    | Some v2 ->
 		evar_eqappr_x ts env i pbty appr1 (evar_apprec ts env i l2 v2)
 	    | None ->
-		match eval_flexible_term ts env flex1 with
+		match eval_flexible_term ts env term1 with
 		| Some v1 ->
 		    evar_eqappr_x ts env i pbty (evar_apprec ts env i l1 v1) appr2
 		| None -> (i,false)
@@ -356,9 +356,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	ise_try evd [f1; f2; f3]
       end
 
-    | Rigid c1, Rigid c2 when isLambda c1 & isLambda c2 ->
-        let (na,c1,c'1) = destLambda c1 in
-        let (_,c2,c'2) = destLambda c2 in
+    | Rigid, Rigid when isLambda term1 & isLambda term2 ->
+        let (na,c1,c'1) = destLambda term1 in
+        let (_,c2,c'2) = destLambda term2 in
         assert (l1=[] & l2=[]);
         ise_and evd
           [(fun i -> evar_conv_x ts env i CONV c1 c2);
@@ -366,7 +366,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	     let c = nf_evar i c1 in
 	     evar_conv_x ts (push_rel (na,None,c) env) i CONV c'1 c'2)]
 
-    | Flexible ev1, (Rigid _ | PseudoRigid _) ->
+    | Flexible ev1, (Rigid | PseudoRigid) ->
 	(match is_unification_pattern_evar env evd ev1 l1 (applist appr2) with
         | Some l1 ->
 	  (* Miller-Pfenning's pattern unification *)
@@ -380,7 +380,7 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	  add_conv_pb (pbty,env,applist appr1,applist appr2) evd,
 	  true)
 
-    | (Rigid _ | PseudoRigid _), Flexible ev2 ->
+    | (Rigid | PseudoRigid), Flexible ev2 ->
 	(match is_unification_pattern_evar env evd ev2 l2 (applist appr1) with
         | Some l2 ->
 	  (* Miller-Pfenning's pattern unification *)
@@ -394,24 +394,24 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	  add_conv_pb (pbty,env,applist appr1,applist appr2) evd,
 	  true)
 
-    | MaybeFlexible flex1, (Rigid _ | PseudoRigid _) ->
+    | MaybeFlexible, (Rigid | PseudoRigid) ->
 	let f3 i =
 	  (try conv_record ts env i (check_conv_record appr1 appr2)
            with Not_found -> (i,false))
 	and f4 i =
-	  match eval_flexible_term ts env flex1 with
+	  match eval_flexible_term ts env term1 with
 	    | Some v1 ->
 		evar_eqappr_x ts env i pbty (evar_apprec ts env i l1 v1) appr2
 	    | None -> (i,false)
 	in
 	ise_try evd [f3; f4]
 
-    | (Rigid _ | PseudoRigid _), MaybeFlexible flex2 ->
+    | (Rigid | PseudoRigid), MaybeFlexible ->
 	let f3 i =
 	  (try conv_record ts env i (check_conv_record appr2 appr1)
            with Not_found -> (i,false))
 	and f4 i =
-	  match eval_flexible_term ts env flex2 with
+	  match eval_flexible_term ts env term2 with
 	    | Some v2 ->
 		evar_eqappr_x ts env i pbty appr1 (evar_apprec ts env i l2 v2)
 	    | None -> (i,false)
@@ -419,26 +419,26 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	ise_try evd [f3; f4]
 
     (* Eta-expansion *)
-    | Rigid c1, _ when isLambda c1 ->
+    | Rigid, _ when isLambda term1 ->
 	assert (l1 = []);
-	let (na,c1,c'1) = destLambda c1 in
+	let (na,c1,c'1) = destLambda term1 in
         let c = nf_evar evd c1 in
 	let env' = push_rel (na,None,c) env in
         let appr1 = evar_apprec ts env' evd [] c'1 in
 	let appr2 = (lift 1 term2, List.map (lift 1) l2 @ [mkRel 1]) in
 	evar_eqappr_x ts env' evd CONV appr1 appr2
 
-    | _, Rigid c2 when isLambda c2 ->
+    | _, Rigid when isLambda term2 ->
 	assert (l2 = []);
-	let (na,c2,c'2) = destLambda c2 in
+	let (na,c2,c'2) = destLambda term2 in
         let c = nf_evar evd c2 in
 	let env' = push_rel (na,None,c) env in
 	let appr1 = (lift 1 term1, List.map (lift 1) l1 @ [mkRel 1]) in
         let appr2 = evar_apprec ts env' evd [] c'2 in
 	evar_eqappr_x ts env' evd CONV appr1 appr2
 
-    | Rigid c1, Rigid c2 -> begin
-        match kind_of_term c1, kind_of_term c2 with
+    | Rigid, Rigid -> begin
+        match kind_of_term term1, kind_of_term term2 with
 
 	| Sort s1, Sort s2 when l1=[] & l2=[] ->
 	    (try 
@@ -488,8 +488,8 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 
       end
 
-    | PseudoRigid c1, PseudoRigid c2 -> begin
-        match kind_of_term c1, kind_of_term c2 with
+    | PseudoRigid, PseudoRigid -> begin
+        match kind_of_term term1, kind_of_term term2 with
 
 	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
             ise_and evd
@@ -524,9 +524,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	| _, (Lambda _ | Rel _ | Var _ | Const _ | Evar _) -> assert false
       end
 
-    | PseudoRigid _, Rigid _ ->  (evd,false)
+    | PseudoRigid, Rigid ->  (evd,false)
 
-    | Rigid _, PseudoRigid _ ->  (evd,false)
+    | Rigid, PseudoRigid ->  (evd,false)
 
 and conv_record trs env evd (c,bs,(params,params1),(us,us2),(ts,ts1),c1,(n,t2)) =
   let (evd',ks,_) =
