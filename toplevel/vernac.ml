@@ -257,22 +257,24 @@ let rec vernac_com interpfun checknav (loc,com) =
           end;
 	begin
 	  try
-	    read_vernac_file verbosely (CUnix.make_suffix fname ".v");
-	    restore_translator_coqdoc st
+	    let status = read_vernac_file verbosely (CUnix.make_suffix fname ".v") in
+	    restore_translator_coqdoc st;
+            status
 	  with e ->
 	    restore_translator_coqdoc st;
 	    raise e
 	end
 
-    | VernacList l -> List.iter (fun (_,v) -> interp v) l
+    | VernacList l ->
+        List.fold_left (fun status (_,v) -> interp v && true) true l
 
-    | v when !just_parsing -> ()
+    | v when !just_parsing -> true
 
     | VernacFail v ->
 	begin try
 	  (* If the command actually works, ignore its effects on the state *)
 	  States.with_state_protection
-	    (fun v -> interp v; raise HasNotFailed) v
+	    (fun v -> ignore (interp v); raise HasNotFailed) v
 	with e -> match real_error e with
 	  | HasNotFailed ->
 	      errorlabstrm "Fail" (str "The command has not failed !")
@@ -281,15 +283,17 @@ let rec vernac_com interpfun checknav (loc,com) =
 	      let msg = Errors.print_no_anomaly e in
 	      if_verbose msg_info
 		(str "The command has indeed failed with message:" ++
-		 fnl () ++ str "=> " ++ hov 0 msg)
+		 fnl () ++ str "=> " ++ hov 0 msg);
+              true
 	end
 
     | VernacTime v ->
 	  let tstart = System.get_time() in
-          interp v;
+          let status = interp v in
 	  let tend = get_time() in
           msg_info (str"Finished transaction in " ++
-                   System.fmt_time_difference tstart tend)
+                   System.fmt_time_difference tstart tend);
+          status
 
     | VernacTimeout(n,v) ->
 	  current_timeout := Some n;
@@ -298,9 +302,12 @@ let rec vernac_com interpfun checknav (loc,com) =
     | v ->
 	  let psh = default_set_timeout () in
 	  try
-            States.with_heavy_rollback interpfun
-              Cerrors.process_vernac_interp_error v;
-	    restore_timeout psh
+            let status =
+              States.with_heavy_rollback interpfun
+                Cerrors.process_vernac_interp_error v
+            in
+	    restore_timeout psh;
+            status
 	  with e -> restore_timeout psh; raise e
   in
     try
@@ -330,21 +337,25 @@ and read_vernac_file verbosely s =
   in
   let (in_chan, fname, input) =
     open_file_twice_if verbosely s in
+  let status = ref true in
   try
     (* we go out of the following infinite loop when a End_of_input is
      * raised, which means that we raised the end of the file being loaded *)
     while true do
       let loc_ast = parse_sentence input in
-      vernac_com interpfun checknav loc_ast;
+      let command_status = vernac_com interpfun checknav loc_ast in
+      status := !status && command_status;
       end_inner_command (snd loc_ast);
       pp_flush ()
-    done
+    done;
+    assert false
   with e ->   (* whatever the exception *)
     Format.set_formatter_out_channel stdout;
     close_input in_chan input;    (* we must close the file first *)
     match real_error e with
       | End_of_input ->
-          if do_beautify () then pr_new_syntax (Loc.make_loc (max_int,max_int)) None
+          if do_beautify () then pr_new_syntax (Loc.make_loc (max_int,max_int)) None;
+          !status
       | _ -> raise_with_file fname e
 
 (** [eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit]
@@ -359,9 +370,10 @@ let checknav loc ast =
     user_error loc "Navigation commands forbidden in nested commands"
 
 let eval_expr ?(preserving=false) loc_ast =
-  vernac_com Vernacentries.interp checknav loc_ast;
+  let status = vernac_com Vernacentries.interp checknav loc_ast in
   if not preserving && not (is_navigation_vernac (snd loc_ast)) then
-    Backtrack.mark_command (snd loc_ast)
+    Backtrack.mark_command (snd loc_ast);
+  status
 
 (* raw_do_vernac : Pcoq.Gram.parsable -> unit
  * vernac_step . parse_sentence *)
@@ -380,7 +392,7 @@ let load_vernac verb file =
     if !Flags.beautify_file then open_out (file^beautify_suffix) else stdout;
   try
     Lib.mark_end_of_command (); (* in case we're still in coqtop init *)
-    read_vernac_file verb file;
+    let _ = read_vernac_file verb file in
     if !Flags.beautify_file then close_out !chan_beautify;
   with e ->
     if !Flags.beautify_file then close_out !chan_beautify;

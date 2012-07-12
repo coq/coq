@@ -352,7 +352,7 @@ let do_vernac () =
   resynch_buffer top_buffer;
   begin
     try
-      raw_do_vernac top_buffer.tokens
+      ignore (raw_do_vernac top_buffer.tokens)
     with e ->
       ppnl (print_toplevel_error (process_error e))
   end;

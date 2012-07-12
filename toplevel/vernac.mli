@@ -27,9 +27,10 @@ val just_parsing : bool ref
    Backtrack stack (triggering a save of a frozen state and the generation
    of a new state label). An example of state-preserving command is one coming
    from the query panel of Coqide. *)
-
-val eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> unit
-val raw_do_vernac : Pcoq.Gram.parsable -> unit
+(* spiwack: return value: [true] if safe (general case), [false] if
+   unsafe (like [Admitted]). *)
+val eval_expr : ?preserving:bool -> Loc.t * Vernacexpr.vernac_expr -> bool
+val raw_do_vernac : Pcoq.Gram.parsable -> bool
 
 (** Set XML hooks *)
 val set_xml_start_library : (unit -> unit) -> unit

@@ -631,14 +631,14 @@ object(self)
     match Coq.goals handle with
     | Interface.Fail (l, str) ->
       self#set_message ("Error in coqtop:\n"^str)
-    | Interface.Good goals ->
+    | Interface.Good goals | Interface.Unsafe goals ->
       begin match Coq.evars handle with
-      | Interface.Fail (l, str) ->
+      | Interface.Fail (l, str)->
         self#set_message ("Error in coqtop:\n"^str)
-      | Interface.Good evs ->
+      | Interface.Good evs  | Interface.Unsafe evs ->
         let hints = match Coq.hints handle with
         | Interface.Fail (_, _) -> None
-        | Interface.Good hints -> hints
+        | Interface.Good hints | Interface.Unsafe hints -> hints
         in
         Ideproof.display (Ideproof.mode_tactic menu_callback)
           proof_view goals hints evs
@@ -654,7 +654,7 @@ object(self)
     in
     match Coq.interp handle self#push_message ~raw:true ~verbose:false phrase with
     | Interface.Fail (_, err) -> sync display_error err
-    | Interface.Good msg -> sync self#insert_message msg
+    | Interface.Good msg | Interface.Unsafe msg -> sync self#insert_message msg
 
   method private find_phrase_starting_at (start:GText.iter) =
     try
@@ -705,7 +705,7 @@ object(self)
         let phrase = start#get_slice ~stop in
         match Coq.interp handle push_info ~verbose phrase with
         | Interface.Fail (loc, msg) -> error := Some (phrase, loc, msg);
-        | Interface.Good msg -> push_info Interface.Notice msg
+        | Interface.Good msg | Interface.Unsafe msg -> push_info Interface.Notice msg
       end;
       (* If there is no error, then we mark it done *)
       if !error = None then begin
@@ -812,7 +812,7 @@ object(self)
   (** Actually performs the undoing *)
   method private undo_command_stack handle n =
     match Coq.rewind handle n with
-    | Interface.Good n ->
+    | Interface.Good n | Interface.Unsafe n ->
       let until _ len _ _ = n <= len in
       (* Coqtop requested [n] more ACTUAL backtrack *)
       ignore (self#clear_command_stack until)
@@ -862,8 +862,7 @@ object(self)
       match Coq.interp handle default_logger ~verbose:false phrase with
         | Interface.Fail (l,str) -> sync display_error (l,str); None
         | Interface.Good msg -> sync self#insert_message msg; Some Safe
-          (* TODO: Restore someday the access to Decl_mode.get_damon_flag,
-             and also detect the use of admit, and then return Unsafe *)
+        | Interface.Unsafe msg -> sync self#insert_message msg; Some Unsafe
 
   method private insert_this_phrase_on_success handle coqphrase insertphrase =
     let mark_processed safe =
@@ -935,13 +934,13 @@ object(self)
 	  | Interface.Fail (_,str) ->
 	    self#set_message
 	      ("Could not determine lodpath, this might lead to problems:\n"^str)
-	  | Interface.Good true -> ()
-	  | Interface.Good false ->
+	  | Interface.Good true | Interface.Unsafe true -> ()
+	  | Interface.Good false | Interface.Unsafe false ->
 	    let cmd = Printf.sprintf "Add LoadPath \"%s\". "  dir in
 	    match Coq.interp handle default_logger cmd with
 	      | Interface.Fail (l,str) ->
 		self#set_message ("Couln't add loadpath:\n"^str)
-	      | Interface.Good _ -> ()
+	      | Interface.Good _ | Interface.Unsafe _ -> ()
 
   method help_for_keyword () =
     browse_keyword (self#insert_message) (get_current_word ())
@@ -1586,7 +1585,7 @@ let main files =
         let msg = match Coq.status handle with
         | Interface.Fail (l, str) ->
           "Oops, problem while fetching coq status."
-        | Interface.Good status ->
+        | Interface.Good status | Interface.Unsafe status ->
           let path = match status.Interface.status_path with
           | [] | _ :: [] -> "" (* Drop the topmost level, usually "Top" *)
           | _ :: l -> " in " ^ String.concat "." l
@@ -1611,7 +1610,7 @@ let main files =
     try
       Coq.try_grab coqtop begin fun handle -> match Coq.mkcases handle w with
         | Interface.Fail _ -> raise Not_found
-        | Interface.Good cases ->
+        | Interface.Good cases | Interface.Unsafe cases ->
           let print_branch c l =
 	    Format.fprintf c " | @[<hov 1>%a@]=> _@\n"
 	      (print_list (fun c s -> Format.fprintf c "%s@ " s)) l

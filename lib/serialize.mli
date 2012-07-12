@@ -76,7 +76,8 @@ val quit : unit call
 (** The structure that coqtop should implement *)
 
 type handler = {
-  interp : raw * verbose * string -> string;
+  (* spiwack: [Inl] for safe and [Inr] for unsafe. *)
+  interp : raw * verbose * string -> (string,string) Util.union;
   rewind : int -> int;
   goals : unit -> goals option;
   evars : unit -> evar list option;

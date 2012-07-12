@@ -40,7 +40,8 @@ type 'a call =
 (** The structure that coqtop should implement *)
 
 type handler = {
-  interp : raw * verbose * string -> string;
+  (* spiwack: [Inl] for safe and [Inr] for unsafe. *)
+  interp : raw * verbose * string -> (string,string) Util.union;
   rewind : int -> int;
   goals : unit -> goals option;
   evars : unit -> evar list option;
@@ -76,21 +77,28 @@ let quit : unit call = Quit
 
 let abstract_eval_call handler c =
   try
-    let res = match c with
-      | Interp (r,b,s) -> Obj.magic (handler.interp (r,b,s) : string)
-      | Rewind i -> Obj.magic (handler.rewind i : int)
-      | Goal -> Obj.magic (handler.goals () : goals option)
-      | Evars -> Obj.magic (handler.evars () : evar list option)
-      | Hints -> Obj.magic (handler.hints () : (hint list * hint) option)
-      | Status -> Obj.magic (handler.status () : status)
-      | Search flags -> Obj.magic (handler.search flags : search_answer list)
-      | GetOptions -> Obj.magic (handler.get_options () : (option_name * option_state) list)
-      | SetOptions opts -> Obj.magic (handler.set_options opts : unit)
-      | InLoadPath s -> Obj.magic (handler.inloadpath s : bool)
-      | MkCases s -> Obj.magic (handler.mkcases s : string list list)
-      | Quit -> Obj.magic (handler.quit () : unit)
-      | About -> Obj.magic (handler.about () : coq_info)
-    in Good res
+    match c with
+      | Interp (r,b,s) ->
+          begin match handler.interp (r,b,s) with
+            | Util.Inl v -> Good (Obj.magic (v:string))
+            | Util.Inr v -> Unsafe (Obj.magic (v:string))
+          end
+      | c ->
+          let res = match c with
+            | Interp (r,b,s) -> assert false
+            | Rewind i -> Obj.magic (handler.rewind i : int)
+            | Goal -> Obj.magic (handler.goals () : goals option)
+            | Evars -> Obj.magic (handler.evars () : evar list option)
+            | Hints -> Obj.magic (handler.hints () : (hint list * hint) option)
+            | Status -> Obj.magic (handler.status () : status)
+            | Search flags -> Obj.magic (handler.search flags : search_answer list)
+            | GetOptions -> Obj.magic (handler.get_options () : (option_name * option_state) list)
+            | SetOptions opts -> Obj.magic (handler.set_options opts : unit)
+            | InLoadPath s -> Obj.magic (handler.inloadpath s : bool)
+            | MkCases s -> Obj.magic (handler.mkcases s : string list list)
+            | Quit -> Obj.magic (handler.quit () : unit)
+            | About -> Obj.magic (handler.about () : coq_info)
+          in Good res
   with e ->
     let (l, str) = handler.handle_exn e in
     Fail (l,str)
@@ -253,6 +261,7 @@ let to_search_answer = function
 
 let of_value f = function
 | Good x -> Element ("value", ["val", "good"], [f x])
+| Unsafe x -> Element ("value", ["val", "unsafe"], [f x])
 | Fail (loc, msg) ->
   let loc = match loc with
   | None -> []
@@ -264,6 +273,7 @@ let to_value f = function
 | Element ("value", attrs, l) ->
   let ans = massoc "val" attrs in
   if ans = "good" then Good (f (singleton l))
+  else if ans = "unsafe" then Unsafe (f (singleton l))
   else if ans = "fail" then
     let loc =
       try
@@ -533,6 +543,7 @@ let pr_call = function
 
 let pr_value_gen pr = function
   | Good v -> "GOOD " ^ pr v
+  | Unsafe v -> "UNSAFE" ^ pr v
   | Fail (_,str) -> "FAIL ["^str^"]"
 
 let pr_value v = pr_value_gen (fun _ -> "") v

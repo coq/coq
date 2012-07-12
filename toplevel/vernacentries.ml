@@ -47,6 +47,10 @@ let cl_of_qualid = function
 let scope_class_of_qualid qid =
   Notation.scope_class_of_reference (Smartlocate.smart_global qid)
 
+(** Vernac commands can raise this [UnsafeSuccess] to notify they
+    modified the environment in an unsafe manner, such as [Admitted]. *)
+exception UnsafeSuccess
+
 (*******************)
 (* "Show" commands *)
 
@@ -475,7 +479,8 @@ let qed_display_script = ref true
 let vernac_end_proof = function
   | Admitted ->
     Backtrack.mark_unreachable [Pfedit.get_current_proof_name ()];
-    admit ()
+    admit ();
+    raise UnsafeSuccess
   | Proved (is_opaque,idopt) ->
     let prf = Pfedit.get_current_proof_name () in
     if is_verbose () && !qed_display_script then show_script ();
@@ -1734,8 +1739,13 @@ let interp c =
   Obligations.set_program_mode isprogcmd;
   try
     interp c; Locality.check_locality ();
-    Flags.program_mode := mode
-  with e ->
+    Flags.program_mode := mode;
+    true
+  with
+    | UnsafeSuccess ->
+        Flags.program_mode := mode;
+        false
+    | e ->
     Flags.program_mode := mode;
     raise e
 
