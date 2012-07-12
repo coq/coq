@@ -222,11 +222,6 @@ let file_of_name name =
  * (linked or loaded with load_object). It is used not to load a
  * module twice. It is NOT the list of ML modules Coq knows. *)
 
-type ml_module_object = {
-  mlocal : Vernacexpr.locality_flag;
-  mnames : string list
-}
-
 let known_loaded_modules = ref Stringset.empty
 
 let add_known_module mname =
@@ -236,7 +231,19 @@ let add_known_module mname =
 let module_is_known mname =
   Stringset.mem (String.capitalize mname) !known_loaded_modules
 
+(** A plugin is just an ML module with an initialization function. *)
+
 let known_loaded_plugins = ref Stringmap.empty
+
+let add_known_plugin init name =
+  let name = String.capitalize name in
+  add_known_module name;
+  known_loaded_plugins := Stringmap.add name init !known_loaded_plugins
+
+let init_known_plugins () =
+  Stringmap.iter (fun _ f -> f()) !known_loaded_plugins
+
+(** ml object = ml module or plugin *)
 
 let init_ml_object mname =
   try Stringmap.find mname !known_loaded_plugins ()
@@ -247,79 +254,75 @@ let load_ml_object mname fname=
   add_known_module mname;
   init_ml_object mname
 
-let add_known_plugin init name =
-  let name = String.capitalize name in
-  add_known_module name;
-  known_loaded_plugins := Stringmap.add name init !known_loaded_plugins
-
-let init_known_plugins () =
-  Stringmap.iter (fun _ f -> f()) !known_loaded_plugins
-
 (* Summary of declared ML Modules *)
 
-(* List and not Stringset because order is important *)
-let loaded_modules = ref []
-let get_loaded_modules () = !loaded_modules
-let add_loaded_module md = loaded_modules := md :: !loaded_modules
+(* List and not Stringset because order is important: most recent first. *)
 
-let orig_loaded_modules = ref !loaded_modules
-let init_ml_modules () = loaded_modules := !orig_loaded_modules
+let loaded_modules = ref []
+let get_loaded_modules () = List.rev !loaded_modules
+let add_loaded_module md = loaded_modules := md :: !loaded_modules
+let reset_loaded_modules () = loaded_modules := []
+
+let if_verbose_load verb f name fname =
+  if not verb then f name fname
+  else
+    let info = "[Loading ML file "^fname^" ..." in
+    try
+      f name fname;
+      msg_info (str (info^" done]"));
+    with e ->
+      msg_info (str (info^" failed]"));
+      raise e
+
+(** Load a module for the first time (i.e. dynlink it)
+    or simulate its reload (i.e. doing nothing except maybe
+    an initialization function). *)
+
+let cache_ml_object verb reinit name =
+  begin
+    if module_is_known name then
+      (if reinit then init_ml_object name)
+    else if not has_dynlink then
+      error ("Dynamic link not supported (module "^name^")")
+    else
+      if_verbose_load (verb && is_verbose ())
+	load_ml_object name (file_of_name name)
+  end;
+  add_loaded_module name
 
 let unfreeze_ml_modules x =
-  loaded_modules := [];
-  List.iter
-    (fun name ->
-       let mname = mod_of_name name in
-       if not (module_is_known mname) then
-         if has_dynlink then
-           let fname = file_of_name mname in
-           load_ml_object mname fname
-         else
-	   errorlabstrm "Mltop.unfreeze_ml_modules"
-             (str"Loading of ML object file forbidden in a native Coq.")
-       else init_ml_object mname;
-       add_loaded_module mname)
-    x
+  reset_loaded_modules ();
+  List.iter (cache_ml_object false false) x
 
 let _ =
   Summary.declare_summary "ML-MODULES"
-    { Summary.freeze_function = (fun () -> List.rev (get_loaded_modules()));
-      Summary.unfreeze_function = (fun x -> unfreeze_ml_modules x);
-      Summary.init_function = (fun () -> init_ml_modules ()) }
+    { Summary.freeze_function = get_loaded_modules;
+      Summary.unfreeze_function = unfreeze_ml_modules;
+      Summary.init_function = reset_loaded_modules }
 
-(* Same as restore_ml_modules, but verbosely *)
+(* Liboject entries of declared ML Modules *)
 
-let cache_ml_module_object (_,{mnames=mnames}) =
-  List.iter
-    (fun name ->
-       let mname = mod_of_name name in
-       if not (module_is_known mname) then
-	 if has_dynlink then
-           let fname = file_of_name mname in
-           let info = str"[Loading ML file " ++ str fname ++ str" ..." in
-	   try
-             load_ml_object mname fname;
-             if_verbose msg_info (info ++ str" done]");
-             add_loaded_module mname
-           with e ->
-	     if_verbose msg_info (info ++ str" failed]");
-	     raise e
-	 else
-	      error ("Dynamic link not supported (module "^name^")")
-       else init_ml_object mname)
-    mnames
+type ml_module_object = {
+  mlocal : Vernacexpr.locality_flag;
+  mnames : string list
+}
 
-let classify_ml_module_object ({mlocal=mlocal} as o) =
+let cache_ml_objects (_,{mnames=mnames}) =
+  List.iter (cache_ml_object true true) mnames
+
+let classify_ml_objects ({mlocal=mlocal} as o) =
   if mlocal then Dispose else Substitute o
 
 let inMLModule : ml_module_object -> obj =
-  declare_object {(default_object "ML-MODULE") with
-                    load_function = (fun _ -> cache_ml_module_object);
-                    cache_function = cache_ml_module_object;
-                    subst_function = (fun (_,o) -> o);
-                    classify_function = classify_ml_module_object }
+  declare_object
+    {(default_object "ML-MODULE") with
+      load_function = (fun _ -> cache_ml_objects);
+      cache_function = cache_ml_objects;
+      subst_function = (fun (_,o) -> o);
+      classify_function = classify_ml_objects }
 
 let declare_ml_modules local l =
+  let l = List.map mod_of_name l in
   Lib.add_anonymous_leaf (inMLModule {mlocal=local; mnames=l})
 
 let print_ml_path () =
@@ -327,7 +330,7 @@ let print_ml_path () =
   str"ML Load Path:" ++ fnl () ++ str"  " ++
           hv 0 (prlist_with_sep fnl str l)
 
-	  (* Printing of loaded ML modules *)
+(* Printing of loaded ML modules *)
 
 let print_ml_modules () =
   let l = get_loaded_modules () in
