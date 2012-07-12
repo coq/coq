@@ -190,7 +190,7 @@ let rec evar_conv_x ts env evd pbty term1 term2 =
             (decompose_app term1) (decompose_app term2)
 
 and evar_eqappr_x ?(rhs_is_already_stuck = false)
-  ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
+    ts env evd pbty (term1,l1 as appr1) (term2,l2 as appr2) =
   let miller_pfenning on_left fallback ev (_,lF) apprM evd =
     let tM = applist apprM in
     match is_unification_pattern_evar env evd ev lF tM with
@@ -202,6 +202,30 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
       solve_simple_eqn (evar_conv_x ts) env evd
 	(position_problem on_left pbty,ev,t2)
     | None -> fallback in
+  let flex_maybeflex on_left ev (termF,lF as apprF) (termM, lM as apprM) =
+    let switch f a b = if on_left then f a b else f b a in
+    let f1 i = miller_pfenning on_left (i,false) ev apprF apprM i
+    and f2 i =
+      if List.length lF <= List.length lM
+      then
+	(* Try first-order unification *)
+	(* (heuristic that gives acceptable results in practice) *)
+	let (debM,restM) =
+          list_chop (List.length lM-List.length lF) lM in
+        ise_and i
+          (* First compare extra args for better failure message *)
+          [(fun i -> switch (ise_list2 i
+			       (fun i -> evar_conv_x ts env i CONV)) lF restM);
+           (fun i -> switch (evar_conv_x ts env i pbty) termF (applist(termM,debM)))]
+      else (i,false)
+    and f3 i =
+      match eval_flexible_term ts env termM with
+      | Some vM ->
+	switch (evar_eqappr_x ts env i pbty) apprF (evar_apprec ts env i lM vM)
+      | None -> (i,false)
+    in
+    ise_try evd [f1; f2; f3] in
+
   (* Evar must be undefined since we have flushed evars *)
   match (flex_kind_of_term term1 l1, flex_kind_of_term term2 l2) with
     | Flexible (sp1,al1 as ev1), Flexible (sp2,al2 as ev2) ->
@@ -231,52 +255,9 @@ and evar_eqappr_x ?(rhs_is_already_stuck = false)
 	in
 	ise_try evd [f1; f2]
 
-    | Flexible ev1, MaybeFlexible ->
-	let f1 i = miller_pfenning true (i,false) ev1 appr1 appr2 i
-        and f2 i =
-	  if
-            List.length l1 <= List.length l2
-	  then
-	    (* Try first-order unification *)
-	    (* (heuristic that gives acceptable results in practice) *)
-	    let (deb2,rest2) =
-              list_chop (List.length l2-List.length l1) l2 in
-            ise_and i
-              (* First compare extra args for better failure message *)
-              [(fun i -> ise_list2 i
-                  (fun i -> evar_conv_x ts env i CONV) l1 rest2);
-               (fun i -> evar_conv_x ts env i pbty term1 (applist(term2,deb2)))]
-          else (i,false)
-	and f3 i =
-	  match eval_flexible_term ts env term2 with
-	    | Some v2 ->
-		evar_eqappr_x ts env i pbty appr1 (evar_apprec ts env i l2 v2)
-	    | None -> (i,false)
-	in
-	ise_try evd [f1; f2; f3]
+    | Flexible ev1, MaybeFlexible -> flex_maybeflex true ev1 appr1 appr2
 
-    | MaybeFlexible, Flexible ev2 ->
-	let f1 i = miller_pfenning false (i, false) ev2 appr2 appr1 i
-        and f2 i =
-          if
-       	    List.length l2 <= List.length l1
-	  then
-	    (* Try first-order unification *)
-	    (* (heuristic that gives acceptable results in practice) *)
-            let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
-            ise_and i
-            (* First compare extra args for better failure message *)
-              [(fun i -> ise_list2 i
-                  (fun i -> evar_conv_x ts env i CONV) rest1 l2);
-               (fun i -> evar_conv_x ts env i pbty (applist(term1,deb1)) term2)]
-          else (i,false)
-	and f3 i =
-	  match eval_flexible_term ts env term1 with
-	    | Some v1 ->
-		evar_eqappr_x ts env i pbty (evar_apprec ts env i l1 v1) appr2
-	    | None -> (i,false)
-	in
-	ise_try evd [f1; f2; f3]
+    | MaybeFlexible, Flexible ev2 -> flex_maybeflex false ev2 appr2 appr1
 
     | MaybeFlexible, MaybeFlexible -> begin
         match kind_of_term term1, kind_of_term term2 with
