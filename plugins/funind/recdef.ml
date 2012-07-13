@@ -1289,7 +1289,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
     ref_ := Some lemma ;
     let lid = ref [] in
     let h_num = ref (-1) in
-    Flags.silently Vernacentries.interp (Vernacexpr.VernacAbort None);
+    ignore (Flags.silently Vernacentries.interp (Vernacexpr.VernacAbort None));
     build_proof
       (  fun gls ->
 	   let hid = next_ident_away_in_goal h_id (pf_ids_of_hyps gls) in

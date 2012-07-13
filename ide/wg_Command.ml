@@ -119,7 +119,7 @@ object(self)
         let answer = match Coq.interp handle insert ~raw:true phrase with
         | Interface.Fail (l,str) ->
             "Error while interpreting "^phrase^":\n"^str
-        | Interface.Good results ->
+        | Interface.Good results | Interface.Unsafe results ->
             "Result for command " ^ phrase ^ ":\n" ^ results
         in
         result#buffer#insert answer
