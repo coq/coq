@@ -18,15 +18,6 @@ type ide_info = {
   flags : flag list;
 }
 
-(** Have we used admit or declarative mode's daimon ?
-    If yes, we color differently *)
-
-type safety = Safe | Unsafe
-
-let safety_tag = function
-  | Safe -> Tags.Script.processed
-  | Unsafe -> Tags.Script.unjustified
-
 class type _analyzed_view =
 object
 
@@ -693,6 +684,7 @@ object(self)
   method private process_command_queue ?(verbose = false) queue handle =
     let error = ref None in
     let info = ref [] in
+    let current_flags = ref [] in
     let push_info level message = info := (level, message) :: !info in
     (* First, process until error *)
     Minilib.log "Begin command processing";
@@ -704,8 +696,13 @@ object(self)
         let stop = input_buffer#get_iter_at_mark sentence.stop in
         let phrase = start#get_slice ~stop in
         match Coq.interp handle push_info ~verbose phrase with
-        | Interface.Fail (loc, msg) -> error := Some (phrase, loc, msg);
-        | Interface.Good msg | Interface.Unsafe msg -> push_info Interface.Notice msg
+        | Interface.Fail (loc, msg) ->
+          error := Some (phrase, loc, msg);
+        | Interface.Good msg ->
+          push_info Interface.Notice msg;
+          current_flags := []
+        | Interface.Unsafe msg ->
+          current_flags := [`UNSAFE]
       end;
       (* If there is no error, then we mark it done *)
       if !error = None then begin
@@ -713,8 +710,15 @@ object(self)
            were not modified meanwhile. Not really necessary but who knows... *)
         let start = input_buffer#get_iter_at_mark sentence.start in
         let stop = input_buffer#get_iter_at_mark sentence.stop in
+        let sentence = { sentence with
+          flags = !current_flags @ sentence.flags
+        } in
+        let tag =
+          if List.mem `UNSAFE !current_flags then Tags.Script.unjustified
+          else Tags.Script.processed
+        in
         input_buffer#move_mark ~where:stop (`NAME "start_of_input");
-        input_buffer#apply_tag Tags.Script.processed ~start ~stop;
+        input_buffer#apply_tag tag ~start ~stop;
         input_buffer#remove_tag Tags.Script.to_process ~start ~stop;
         (* Discard the old stack info and put it were it belongs *)
         ignore (Queue.pop queue);
@@ -860,19 +864,23 @@ object(self)
       in
       Minilib.log "Send_to_coq starting now";
       match Coq.interp handle default_logger ~verbose:false phrase with
-        | Interface.Fail (l,str) -> sync display_error (l,str); None
-        | Interface.Good msg -> sync self#insert_message msg; Some Safe
-        | Interface.Unsafe msg -> sync self#insert_message msg; Some Unsafe
+      | Interface.Fail (l, str) -> sync display_error (l, str); None
+      | Interface.Good msg -> sync self#insert_message msg; Some []
+      | Interface.Unsafe msg -> sync self#insert_message msg; Some [`UNSAFE]
 
   method private insert_this_phrase_on_success handle coqphrase insertphrase =
-    let mark_processed safe =
+    let mark_processed flags =
       let stop = self#get_start_of_input in
       if stop#starts_line then
         input_buffer#insert ~iter:stop insertphrase
       else input_buffer#insert ~iter:stop ("\n"^insertphrase);
       let start = self#get_start_of_input in
       input_buffer#move_mark ~where:stop (`NAME "start_of_input");
-      input_buffer#apply_tag (safety_tag safe) ~start ~stop;
+      let tag =
+        if List.mem `UNSAFE flags then Tags.Script.unjustified
+        else Tags.Script.processed
+      in
+      input_buffer#apply_tag tag ~start ~stop;
       if self#get_insert#compare stop <= 0 then
         input_buffer#place_cursor ~where:stop;
       let ide_payload = {
@@ -884,7 +892,7 @@ object(self)
       self#show_goals handle;
     in
     match self#send_to_coq handle coqphrase with
-    | Some safe -> sync mark_processed safe; true
+    | Some flags -> sync mark_processed flags; true
     | None ->
       sync (fun _ -> self#insert_message ("Unsuccessfully tried: "^coqphrase)) ();
       false
