@@ -46,21 +46,21 @@ Qed.
 
 Goal forall x, S x = S (S x).   
 intros.
-induction (S _) at -2.
+induction (S _) in |- * at -2.
 now_show (0=1).
 Undo 2.
-induction (S _) at 1 3.
+induction (S _) in |- * at 1 3.
 now_show (0=1).
 Undo 2.
-induction (S _) at 1.
+induction (S _) in |- * at 1.
 now_show (0=S (S x)).
 Undo 2.
-induction (S _) at 2.
+induction (S _) in |- * at 2.
 now_show (S x=0).
 Undo 2.
-induction (S _) at 3.
+induction (S _) in |- * at 3.
 now_show (S x=1).
 Undo 2.
-Fail induction (S _) at 4.
+Fail induction (S _) in |- * at 4.
 Abort.
 
