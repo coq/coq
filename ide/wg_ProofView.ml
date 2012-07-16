@@ -6,6 +6,15 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+class type proof_view =
+  object
+    inherit GObj.widget
+    method refresh : unit -> unit
+    method clear : unit -> unit
+    method set_goals : Interface.goals option -> unit
+    method set_evars : Interface.evar list option -> unit
+    method width : int
+  end
 
 (* tag is the tag to be hooked, item is the item covered by this tag, make_menu
  *  * is the template for building menu if needed, sel_cb is the callback if
@@ -145,3 +154,28 @@ let display mode (view:GText.view) goals hints evars =
     end
   | Some { Interface.fg_goals = fg } ->
     mode view fg hints
+
+let proof_view () =
+  let buffer = GText.buffer ~tag_table:Tags.Proof.table () in
+  let view = GText.view ~buffer ~editable:false ~wrap_mode:`WORD () in
+  let default_clipboard = GData.clipboard Gdk.Atom.primary in
+  let _ = buffer#add_selection_clipboard default_clipboard in
+  object
+    inherit GObj.widget view#as_widget
+    val mutable goals = None
+    val mutable evars = None
+
+    method clear () = buffer#set_text ""
+
+    method set_goals gls = goals <- gls
+
+    method set_evars evs = evars <- evs
+
+    method refresh () =
+      let dummy _ () = () in
+      display (mode_tactic dummy) view goals None evars
+
+    method width = Ideutils.textview_width view
+  end
+
+(*     ignore (proof_buffer#add_selection_clipboard cb); *)

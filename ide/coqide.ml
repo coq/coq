@@ -55,7 +55,7 @@ end
 type viewable_script = {
   script : Wg_ScriptView.script_view;
   tab_label : GMisc.label;
-  proof_view : GText.view;
+  proof_view : Wg_ProofView.proof_view;
   message_view : Wg_MessageView.message_view;
   analyzed_view : _analyzed_view;
   toplvl : Coq.coqtop;
@@ -424,12 +424,11 @@ let custom_project_files = ref []
 let sup_args = ref []
 
 class analyzed_view (_script:Wg_ScriptView.script_view)
-  (_pv:GText.view) (_mv:Wg_MessageView.message_view) _ct _fn =
+  (_pv:Wg_ProofView.proof_view) (_mv:Wg_MessageView.message_view) _ct _fn =
 object(self)
   val input_view = _script
   val input_buffer = _script#source_buffer
   val proof_view = _pv
-  val proof_buffer = _pv#buffer
   val message_view = _mv
   val cmd_stack = Stack.create ()
   val mycoqtop = _ct
@@ -614,11 +613,7 @@ object(self)
          self#recenter_insert)
 
   method show_goals handle =
-    let menu_callback s () =
-      if current.contextual_menus_on_goal then
-        ignore (self#insert_this_phrase_on_success handle ("progress "^s) s)
-    in
-    Coq.PrintOpt.set_printing_width (textview_width proof_view);
+    Coq.PrintOpt.set_printing_width proof_view#width;
     match Coq.goals handle with
     | Interface.Fail (l, str) ->
       self#set_message ("Error in coqtop:\n"^str)
@@ -627,12 +622,9 @@ object(self)
       | Interface.Fail (l, str)->
         self#set_message ("Error in coqtop:\n"^str)
       | Interface.Good evs  | Interface.Unsafe evs ->
-        let hints = match Coq.hints handle with
-        | Interface.Fail (_, _) -> None
-        | Interface.Good hints | Interface.Unsafe hints -> hints
-        in
-        Ideproof.display (Ideproof.mode_tactic menu_callback)
-          proof_view goals hints evs
+        proof_view#set_goals goals;
+        proof_view#set_evars evs;
+        proof_view#refresh ()
       end
 
   (* This method is intended to perform stateless commands *)
@@ -913,7 +905,7 @@ object(self)
     tag_on_insert (input_buffer :> GText.buffer);
     (* clear the views *)
     message_view#clear ();
-    proof_buffer#set_text "";
+    proof_view#clear ();
     (* apply the initial commands to coq *)
     self#include_file_dir_in_path handle;
 
@@ -1029,8 +1021,6 @@ object(self)
               )
     );
     ignore (input_buffer#add_selection_clipboard cb);
-    ignore (proof_buffer#add_selection_clipboard cb);
-    ignore (message_view#add_selection_clipboard cb);
     ignore (input_buffer#connect#after#mark_set
               ~callback:(fun it (m:Gtk.text_mark) ->
                 !set_location
@@ -1091,10 +1081,7 @@ let create_session file =
       ?style_scheme:(style_manager#style_scheme current.source_style)
       ()
   in
-  let proof =
-    GText.view
-      ~buffer:(GText.buffer ~tag_table:Tags.Proof.table ())
-      ~editable:false ~wrap_mode:`WORD () in
+  let proof = Wg_ProofView.proof_view () in
   let message = Wg_MessageView.message_view () in
   let basename = GMisc.label ~text:(match file with
 				      |None -> "*scratch*"
@@ -1126,8 +1113,6 @@ let create_session file =
   let _ =
     script#buffer#create_mark ~name:"prev_insert" script#buffer#start_iter in
   let _ =
-    proof#buffer#create_mark ~name:"end_of_conclusion" proof#buffer#start_iter in
-  let _ =
     GtkBase.Widget.add_events proof#as_widget [`ENTER_NOTIFY;`POINTER_MOTION] in
   let () =
     let fold accu (opts, _, _, _, dflt) =
@@ -1135,23 +1120,8 @@ let create_session file =
     in
     let options = List.fold_left fold [] print_items in
     Coq.grab ct (fun handle -> Coq.PrintOpt.set handle options) in
-  let _ =
-    proof#event#connect#motion_notify ~callback:
-      (fun e ->
-        let win = match proof#get_window `WIDGET with
-          | None -> assert false
-          | Some w -> w in
-        let x,y = Gdk.Window.get_pointer_location win in
-        let b_x,b_y = proof#window_to_buffer_coords ~tag:`WIDGET ~x ~y in
-        let it = proof#get_iter_at_location ~x:b_x ~y:b_y in
-        let tags = it#tags in
-        List.iter
-          (fun t ->
-            ignore (GtkText.Tag.event t#as_tag proof#as_widget e it#as_iter))
-          tags;
-        false) in
   script#misc#set_name "ScriptWindow";
-  script#buffer#place_cursor ~where:(script#buffer#start_iter);
+  script#buffer#place_cursor ~where:script#buffer#start_iter;
   proof#misc#set_can_focus true;
   message#misc#set_can_focus true;
 
@@ -1943,10 +1913,10 @@ let main files =
     GAction.add_actions templates_actions [
       GAction.add_action "Templates" ~label:"Te_mplates";
       add_complex_template
-	("Lemma", "_Lemma __", "Lemma new_lemma : .\nIdeproof.\n\nSave.\n",
+	("Lemma", "_Lemma __", "Lemma new_lemma : .\nProof.\n\nSave.\n",
 	 19, 9, Some "L");
       add_complex_template
-	("Theorem", "_Theorem __", "Theorem new_theorem : .\nIdeproof.\n\nSave.\n",
+	("Theorem", "_Theorem __", "Theorem new_theorem : .\nProof.\n\nSave.\n",
 	 19, 11, Some "T");
       add_complex_template
 	("Definition", "_Definition __", "Definition ident := .\n",
@@ -2126,70 +2096,57 @@ let main files =
       ~height:current.window_height);
   refresh_tabs_hook := update_notebook_pos;
 
-  let about_full_string =
-    "\nCoq is developed by the Coq Development Team\
-     \n(INRIA - CNRS - LIX - LRI - PPS)\
-     \nWeb site: " ^ Coq_config.wwwcoq ^
-    "\nFeature wish or bug report: http://coq.inria.fr/bugs/\
-     \n\
-     \nCredits for CoqIDE, the Integrated Development Environment for Coq:\
-     \n\
-     \nMain author  : Benjamin Monate\
-     \nContributors : Jean-Christophe Filliâtre\
-     \n               Pierre Letouzey, Claude Marché\
-     \n               Bruno Barras, Pierre Corbineau\
-     \n               Julien Narboux, Hugo Herbelin, ... \
-     \n\
-     \nVersion information\
-     \n-------------------\
-     \n"
-  in
-  let initial_about (b:GText.buffer) =
+  let initial_about () =
     let initial_string =
-      "Welcome to CoqIDE, an Integrated Development Environment for Coq\n"
+      "Welcome to CoqIDE, an Integrated Development Environment for Coq"
     in
     let coq_version = Coq.short_version () in
-    b#insert ~iter:b#start_iter "\n\n";
-    if Glib.Utf8.validate ("You are running " ^ coq_version) then
-      b#insert ~iter:b#start_iter ("You are running " ^ coq_version);
-    if Glib.Utf8.validate initial_string then
-      b#insert ~iter:b#start_iter initial_string;
-    (try
-       let image = Filename.concat (List.find
-	 (fun x -> Sys.file_exists (Filename.concat x "coq.png"))
-	 (Envars.xdg_data_dirs Ideutils.flash_info)) "coq.png" in
-       let startup_image = GdkPixbuf.from_file image in
-       b#insert ~iter:b#start_iter "\n\n";
-       b#insert_pixbuf ~iter:b#start_iter ~pixbuf:startup_image;
-       b#insert ~iter:b#start_iter "\n\n\t\t   "
-     with _ -> ())
+    let version_info =
+      if Glib.Utf8.validate coq_version then
+        "\nYou are running " ^ coq_version
+      else ""
+    in
+    let msg = initial_string ^ version_info in
+    session_notebook#current_term.message_view#push Interface.Notice msg
   in
 
-  let about (b:GText.buffer) =
-    (try
-       let image = Filename.concat (List.find
-	 (fun x -> Sys.file_exists (Filename.concat x "coq.png"))
-	 (Envars.xdg_data_dirs Ideutils.flash_info)) "coq.png" in
-       let startup_image = GdkPixbuf.from_file image in
-       b#insert ~iter:b#start_iter "\n\n";
-       b#insert_pixbuf ~iter:b#start_iter ~pixbuf:startup_image;
-       b#insert ~iter:b#start_iter "\n\n\t\t   "
-     with _ -> ());
-    if Glib.Utf8.validate about_full_string
-    then b#insert about_full_string;
-    let coq_version = Coq.version () in
-    if Glib.Utf8.validate coq_version
-    then b#insert coq_version
-
+  let about () =
+    let dialog = GWindow.about_dialog () in
+    let _ = dialog#connect#response (fun _ -> dialog#destroy ()) in
+    let _ =
+      try
+        let image = Filename.concat (List.find
+          (fun x -> Sys.file_exists (Filename.concat x "coq.png"))
+          (Envars.xdg_data_dirs Ideutils.flash_info)) "coq.png" in
+        let startup_image = GdkPixbuf.from_file image in
+        dialog#set_logo startup_image
+      with _ -> ()
+    in
+    let copyright = "Coq is developed by the Coq Development Team\n\
+      (INRIA - CNRS - LIX - LRI - PPS)"
+    in
+    let authors = [
+      "Benjamin Monate";
+      "Jean-Christophe Filliâtre";
+      "Pierre Letouzey";
+      "Claude Marché";
+      "Bruno Barras";
+      "Pierre Corbineau";
+      "Julien Narboux";
+      "Hugo Herbelin";
+    ] in
+    dialog#set_name "CoqIDE";
+    dialog#set_comments "The Coq Integrated Development Environment";
+    dialog#set_website Coq_config.wwwcoq;
+    dialog#set_version Coq_config.version;
+    dialog#set_copyright copyright;
+    dialog#set_authors authors;
+    dialog#show ()
   in
   (* Remove default pango menu for textviews *)
   w#show ();
-  ignore ((help_actions#get_action "About Coq")#connect#activate
-	    ~callback:(fun _ -> let prf_v = session_notebook#current_term.proof_view in
-                                 prf_v#buffer#set_text ""; about prf_v#buffer));
-  (*
+  ignore ((help_actions#get_action "About Coq")#connect#activate about);
 
-  *)
 (* Begin Color configuration *)
 
   Tags.set_processing_color (Tags.color_of_string current.processing_color);
@@ -2213,7 +2170,7 @@ let main files =
       !refresh_editor_hook ();
       session_notebook#goto_page index;
     end;
-  initial_about session_notebook#current_term.proof_view#buffer;
+  initial_about ();
   !refresh_toolbar_hook ();
   !refresh_editor_hook ();
   session_notebook#current_term.script#misc#grab_focus ();;

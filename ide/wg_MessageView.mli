@@ -9,7 +9,6 @@
 class type message_view =
   object
     inherit GObj.widget
-    method add_selection_clipboard : GData.clipboard -> unit
     method clear : unit -> unit
     method push : Interface.message_level -> string -> unit
   end

@@ -6,10 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-val display :
-  (GText.view -> Interface.goal list -> 'a -> unit) -> GText.view ->
-  Interface.goals option -> 'a -> Interface.evar list option -> unit
+class type proof_view =
+  object
+    inherit GObj.widget
+    method refresh : unit -> unit
+    method clear : unit -> unit
+    method set_goals : Interface.goals option -> unit
+    method set_evars : Interface.evar list option -> unit
+    method width : int
+  end
 
-val mode_tactic :
-  ('a -> unit -> unit) -> GText.view -> Interface.goal list ->
-  ((string * 'a) list list * (string * 'a) list) option -> unit
+val proof_view : unit -> proof_view

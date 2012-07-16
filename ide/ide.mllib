@@ -18,7 +18,7 @@ Project_file
 Ideutils
 Coq
 Gtk_parsing
-Ideproof
+Wg_ProofView
 Wg_MessageView
 Wg_ScriptView
 Coq_lex
