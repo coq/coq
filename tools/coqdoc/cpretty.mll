@@ -254,7 +254,7 @@
     let nbsp,isp = count_spaces s in
     Output.indentation nbsp;
     let s = String.sub s isp (String.length s - isp) in
-    Output.ident s (lexeme_start lexbuf + isp)
+    Output.keyword s (lexeme_start lexbuf + isp)
 
 }
 
@@ -369,13 +369,17 @@ let commands =
   | "Drop"
   | "ProtectedLoop"
   | "Quit"
+  | "Restart"
   | "Load"
   | "Add"
   | "Remove" space+ "Loadpath"
   | "Print"
   | "Inspect"
   | "About"
+  | "SearchAbout"
+  | "SearchRewrite"
   | "Search"
+  | "Locate"
   | "Eval"
   | "Reset"
   | "Check"
@@ -403,6 +407,14 @@ let prog_kw =
   | "Obligations"
   | "Solve"
 
+let hint_kw = 
+  "Extern" | "Rewrite" | "Resolve" | "Immediate" | "Transparent" | "Opaque" | "Unfold" | "Constructors"
+
+let set_kw =
+    "Printing" space+ ("Coercions" | "Universes" | "All")
+  | "Implicit" space+ "Arguments"
+  
+
 let gallina_kw_to_hide =
     "Implicit" space+ "Arguments"
   | "Ltac"
@@ -410,15 +422,16 @@ let gallina_kw_to_hide =
   | "Import"
   | "Export"
   | "Load"
-  | "Hint"
+  | "Hint" space+ hint_kw
   | "Open"
   | "Close"
   | "Delimit"
   | "Transparent"
   | "Opaque"
   | ("Declare" space+ ("Morphism" | "Step") )
-  | ("Set" | "Unset") space+ "Printing" space+ "Coercions"
+  | ("Set" | "Unset") space+ set_kw
   | "Declare" space+ ("Left" | "Right") space+ "Step"
+  | "Debug" space+ ("On" | "Off")
 
 
 let section = "*" | "**" | "***" | "****"

@@ -420,6 +420,10 @@ let smart_global r =
     Dumpglob.add_glob (Genarg.loc_of_or_by_notation loc_of_reference r) gr;
     gr
 
+let dump_global r = 
+  let gr = Smartlocate.smart_global r in
+    Dumpglob.add_glob (Genarg.loc_of_or_by_notation loc_of_reference r) gr
+
 (**********)
 (* Syntax *)
 
@@ -568,9 +572,21 @@ let vernac_cofixpoint l =
     List.iter (fun ((lid, _, _, _), _) -> Dumpglob.dump_definition lid false "def") l;
   do_cofixpoint l
 
-let vernac_scheme = Indschemes.do_scheme
+let vernac_scheme l =
+  if Dumpglob.dump () then
+    List.iter (fun (lid, s) ->
+	       Option.iter (fun lid -> Dumpglob.dump_definition lid false "def") lid;
+	       match s with
+	       | InductionScheme (_, r, _)
+	       | CaseScheme (_, r, _) 
+	       | EqualityScheme r -> dump_global r) l;
+  Indschemes.do_scheme l
 
-let vernac_combined_scheme = Indschemes.do_combined_scheme
+let vernac_combined_scheme lid l =
+  if Dumpglob.dump () then
+    (Dumpglob.dump_definition lid false "def";
+     List.iter (fun lid -> dump_global (AN (Ident lid))) l);
+ Indschemes.do_combined_scheme lid l
 
 (**********************)
 (* Modules            *)
@@ -1356,8 +1372,10 @@ let vernac_print = function
       msg_notice (Notation.pr_scope (Constrextern.without_symbols pr_lglob_constr) s)
   | PrintVisibility s ->
       msg_notice (Notation.pr_visibility (Constrextern.without_symbols pr_lglob_constr) s)
-  | PrintAbout qid -> msg_notice (print_about qid)
-  | PrintImplicit qid -> msg_notice (print_impargs qid)
+  | PrintAbout qid -> 
+    dump_global qid; msg_notice (print_about qid)
+  | PrintImplicit qid -> 
+    dump_global qid; msg_notice (print_impargs qid)
   | PrintAssumptions (o,r) ->
       (* Prints all the axioms and section variables used by a term *)
       let cstr = constr_of_global (smart_global r) in
