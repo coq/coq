@@ -916,7 +916,7 @@ let rec pr_tac inherited tac =
   | TacSolve tl ->
       str "solve" ++ spc () ++ pr_seq_body (pr_tac ltop) tl, llet
   | TacComplete t ->
-      str "complete" ++ spc () ++ pr_tac (lcomplete,E) t, lcomplete
+      pr_tac (lcomplete,E) t, lcomplete
   | TacId l ->
       str "idtac" ++ prlist (pr_arg (pr_message_token pr_ident)) l, latom
   | TacAtom (loc,TacAlias (_,s,l,_)) ->

@@ -201,7 +201,7 @@ Theorem rdiv2:
  r1 / r2 + r3 / r4 == (r1 * r4 + r3 * r2) / (r2 * r4).
 Proof.
 intros r1 r2 r3 r4 H H0.
-assert (~ r2 * r4 == 0) by complete (apply field_is_integral_domain; trivial).
+assert (~ r2 * r4 == 0) by (apply field_is_integral_domain; trivial).
 apply rmul_reg_l with (r2 * r4); trivial.
 rewrite rdiv_simpl; trivial.
 rewrite (ARdistr_r Rsth Reqe ARth).
@@ -223,7 +223,7 @@ assert (HH1: ~ r2 == 0) by (intros HH; case H; rewrite HH; ring).
 assert (HH2: ~ r5 == 0) by (intros HH; case H; rewrite HH; ring).
 assert (HH3: ~ r4 == 0) by (intros HH; case H0; rewrite HH; ring).
 assert (HH4: ~ r2 * (r4 * r5) == 0)
-   by complete (repeat apply field_is_integral_domain; trivial).
+   by (repeat apply field_is_integral_domain; trivial).
 apply rmul_reg_l with (r2 * (r4 * r5)); trivial.
 rewrite rdiv_simpl; trivial.
 rewrite (ARdistr_r Rsth Reqe ARth).
@@ -295,7 +295,7 @@ Hint Resolve rdiv6 .
  (r1 / r2) * (r3 / r4) == (r1 * r3) / (r2 * r4).
 Proof.
 intros r1 r2 r3 r4 H H0.
-assert (~ r2 * r4 == 0) by complete (apply field_is_integral_domain; trivial).
+assert (~ r2 * r4 == 0) by (apply field_is_integral_domain; trivial).
 apply rmul_reg_l with (r2 * r4); trivial.
 rewrite rdiv_simpl; trivial.
 transitivity (r2 * (r1 / r2) * (r4 * (r3 / r4))); [  ring | idtac ].
