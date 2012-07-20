@@ -423,7 +423,7 @@ let rec extern_cases_pattern_in_scope (scopes:local_scopes) vars pat =
 		      |Some true_args -> CPatCstr (loc, c, [], true_args)
 		      |None -> CPatCstr (loc, c, full_args, [])
 	  in insert_pat_alias loc p na
-and apply_notation_to_pattern loc gr ((subst,substlist),more_args)
+and apply_notation_to_pattern loc gr ((subst,substlist),(nb_to_drop,more_args))
     (tmp_scope, scopes as allscopes) vars =
   function
     | NotationRule (sc,ntn) ->
@@ -446,7 +446,7 @@ and apply_notation_to_pattern loc gr ((subst,substlist),more_args)
 	    let l2 = List.map (extern_cases_pattern_in_scope allscopes vars) more_args in
 	    let l2' = if !Topconstr.oldfashion_patterns || ll <> [] then l2
 	      else
-		match drop_implicits_in_patt gr (List.length l) l2 with
+		match drop_implicits_in_patt gr nb_to_drop l2 with
 		  |Some true_args -> true_args
 		  |None -> raise No_match
 	    in

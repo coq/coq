@@ -47,12 +47,12 @@ val match_notation_constr : bool -> glob_constr -> interpretation ->
 val match_notation_constr_cases_pattern :
   cases_pattern -> interpretation ->
   ((cases_pattern * subscopes) list * (cases_pattern list * subscopes) list) *
-    (cases_pattern list)
+    (int * cases_pattern list)
 
 val match_notation_constr_ind_pattern :
   inductive -> cases_pattern  list -> interpretation ->
   ((cases_pattern * subscopes) list * (cases_pattern list * subscopes) list) *
-    (cases_pattern list)
+    (int * cases_pattern list)
 
 (** Substitution of kernel names in interpretation data                *)
 

@@ -748,10 +748,10 @@ let bind_env_cases_pattern (sigma,sigmalist,x as fullsigma) var v =
 
 let rec match_cases_pattern metas sigma a1 a2 =
  match (a1,a2) with
-  | r1, NVar id2 when List.mem id2 metas -> (bind_env_cases_pattern sigma id2 r1),[]
-  | PatVar (_,Anonymous), NHole _ -> sigma,[]
+  | r1, NVar id2 when List.mem id2 metas -> (bind_env_cases_pattern sigma id2 r1),(0,[])
+  | PatVar (_,Anonymous), NHole _ -> sigma,(0,[])
   | PatCstr (loc,(ind,_ as r1),largs,_), NRef (ConstructRef r2) when r1 = r2 ->
-      sigma,largs
+      sigma,(0,largs)
   | PatCstr (loc,(ind,_ as r1),args1,_), NApp (NRef (ConstructRef r2),l2)
       when r1 = r2 ->
       let l1 = add_patterns_for_params (fst r1) args1 in
@@ -761,21 +761,21 @@ let rec match_cases_pattern metas sigma a1 a2 =
 	raise No_match
       else
 	let l1',more_args = Util.list_chop le2 l1 in
-	(List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),more_args
+	(List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),(le2,more_args)
   | r1, NList (x,_,iter,termin,lassoc) ->
       (match_alist (fun (metas,_) -> match_cases_pattern_no_more_args metas)
-	(metas,[]) (pi1 sigma,pi2 sigma,()) r1 x iter termin lassoc),[]
+	(metas,[]) (pi1 sigma,pi2 sigma,()) r1 x iter termin lassoc),(0,[])
   | _ -> raise No_match
 
 and match_cases_pattern_no_more_args metas sigma a1 a2 =
     match match_cases_pattern metas sigma a1 a2 with
-      |out,[] -> out
+      |out,(_,[]) -> out
       |_ -> raise No_match
 
 let match_ind_pattern metas sigma ind pats a2 =
   match a2 with
   | NRef (IndRef r2) when ind = r2 ->
-      sigma,pats
+      sigma,(0,pats)
   | NApp (NRef (IndRef r2),l2)
       when ind = r2 ->
       let le2 = List.length l2 in
@@ -784,7 +784,7 @@ let match_ind_pattern metas sigma ind pats a2 =
 	raise No_match
       else
 	let l1',more_args = Util.list_chop le2 pats in
-	(List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),more_args
+	(List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),(le2,more_args)
   |_ -> raise No_match
 
 let reorder_canonically_substitution terms termlists metas =
@@ -798,9 +798,9 @@ let reorder_canonically_substitution terms termlists metas =
 let match_notation_constr_cases_pattern c (metas,pat) =
   let vars = List.map fst metas in
   let (terms,termlists,()),more_args = match_cases_pattern vars ([],[],()) c pat in
-  reorder_canonically_substitution terms termlists metas,more_args
+  reorder_canonically_substitution terms termlists metas, more_args
 
 let match_notation_constr_ind_pattern ind args (metas,pat) =
   let vars = List.map fst metas in
   let (terms,termlists,()),more_args = match_ind_pattern vars ([],[],()) ind args pat in
-  reorder_canonically_substitution terms termlists metas,more_args
+  reorder_canonically_substitution terms termlists metas, more_args
