@@ -18,5 +18,7 @@ Based on contents from Util/VecUtil of the CoLoR contribution *)
 Require Fin.
 Require VectorDef.
 Require VectorSpec.
+Require VectorEq.
 Include VectorDef.
 Include VectorSpec.
+Include VectorEq.

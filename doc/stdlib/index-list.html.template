@@ -424,6 +424,7 @@ through the <tt>Require Import</tt> command.</p>
       theories/Vectors/Fin.v
       theories/Vectors/VectorDef.v
       theories/Vectors/VectorSpec.v
+      theories/Vectors/VectorEq.v
       (theories/Vectors/Vector.v)
     </dd>
 
