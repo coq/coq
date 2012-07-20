@@ -420,7 +420,7 @@ let smart_global r =
     Dumpglob.add_glob (Genarg.loc_of_or_by_notation loc_of_reference r) gr;
     gr
 
-let dump_global r = 
+let dump_global r =
   let gr = Smartlocate.smart_global r in
     Dumpglob.add_glob (Genarg.loc_of_or_by_notation loc_of_reference r) gr
 
@@ -1372,9 +1372,9 @@ let vernac_print = function
       msg_notice (Notation.pr_scope (Constrextern.without_symbols pr_lglob_constr) s)
   | PrintVisibility s ->
       msg_notice (Notation.pr_visibility (Constrextern.without_symbols pr_lglob_constr) s)
-  | PrintAbout qid -> 
-    dump_global qid; msg_notice (print_about qid)
-  | PrintImplicit qid -> 
+  | PrintAbout qid ->
+    msg_notice (print_about qid)
+  | PrintImplicit qid ->
     dump_global qid; msg_notice (print_impargs qid)
   | PrintAssumptions (o,r) ->
       (* Prints all the axioms and section variables used by a term *)

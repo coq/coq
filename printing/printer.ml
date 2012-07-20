@@ -612,7 +612,7 @@ let pr_assumptionset env s =
       opt_list (str "Axioms:") axioms;
       opt_list (str "Opaque constants:") opaque;
     ] in
-    prlist_with_sep fnl (pr_opt_no_spc (fun x -> x)) assums
+    prlist_with_sep fnl (fun x -> x) (Option.List.flatten assums)
 
 let cmap_to_list m = Cmap.fold (fun k v acc -> v :: acc) m []
 

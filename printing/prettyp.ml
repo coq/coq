@@ -670,9 +670,10 @@ let print_opaque_name qid =
         let (_,c,ty) = lookup_named id env in
 	print_named_decl (id,c,ty)
 
-let print_about_any k =
+let print_about_any loc k =
   match k with
   | Term ref ->
+    Dumpglob.add_glob loc ref;
       pr_infos_list
        (print_ref false ref :: blankline ::
 	print_name_infos ref @
@@ -680,6 +681,9 @@ let print_about_any k =
 	print_opacity ref @
 	[hov 0 (str "Expands to: " ++ pr_located_qualid k)])
   | Syntactic kn ->
+    let () = match Syntax_def.search_syntactic_definition kn with
+    | [],Notation_term.NRef ref -> Dumpglob.add_glob loc ref
+    | _ -> () in
       v 0 (
       print_syntactic_def kn ++ fnl () ++
       hov 0 (str "Expands to: " ++ pr_located_qualid k))
@@ -688,11 +692,11 @@ let print_about_any k =
 
 let print_about = function
   | ByNotation (loc,ntn,sc) ->
-      print_about_any
+      print_about_any loc
         (Term (Notation.interp_notation_as_global_reference loc (fun _ -> true)
                ntn sc))
   | AN ref ->
-      print_about_any (locate_any_name ref)
+      print_about_any (loc_of_reference ref) (locate_any_name ref)
 
 (* for debug *)
 let inspect depth =

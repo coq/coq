@@ -834,9 +834,9 @@ let whd_simpl_orelse_delta_but_fix env sigma c =
       match reference_opt_value sigma env (destEvalRef constr) with
 	| Some c ->
 	    (match kind_of_term (strip_lam c) with
-              | CoFix _ | Fix _ -> s,[]
+              | CoFix _ | Fix _ -> s'
 	      | _ -> redrec (applist(c, stack)))
-	| None -> s,[]
+	| None -> s'
     else s'
   in applist (redrec c)
 
