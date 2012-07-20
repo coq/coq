@@ -131,13 +131,13 @@ let hyp_next_tac sigma env (id,_,ast) =
     ("exact "^id_s),("exact "^id_s^".\n");
     ("generalize "^id_s),("generalize "^id_s^".\n");
     ("absurd <"^id_s^">"),("absurd "^type_s^".\n")
-  ] @ (if Hipattern.is_equality_type ast then [
+  ] @ [
     ("discriminate "^id_s),("discriminate "^id_s^".\n");
     ("injection "^id_s),("injection "^id_s^".\n")
-  ] else []) @ (if Hipattern.is_equality_type (snd (Reductionops.splay_prod env sigma ast)) then [
+  ] @ [
     ("rewrite "^id_s),("rewrite "^id_s^".\n");
     ("rewrite <- "^id_s),("rewrite <- "^id_s^".\n")
-  ] else []) @ [
+  ] @ [
     ("elim "^id_s), ("elim "^id_s^".\n");
     ("inversion "^id_s), ("inversion "^id_s^".\n");
     ("inversion clear "^id_s), ("inversion_clear "^id_s^".\n")
@@ -149,11 +149,11 @@ let concl_next_tac sigma concl =
     "intro";
     "intros";
     "intuition"
-  ] @ (if Hipattern.is_equality_type (Goal.V82.concl sigma concl) then [
+  ] @ [
     "reflexivity";
     "discriminate";
     "symmetry"
-  ] else []) @ [
+  ] @ [
     "assumption";
     "omega";
     "ring";
