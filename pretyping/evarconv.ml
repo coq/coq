@@ -60,7 +60,7 @@ let evar_apprec ts env evd stack c =
   decompose_app (zip (whd_betaiota_deltazeta_for_iota_state ts env evd (c,append_stack_app_list stack empty_stack)))
 
 let apprec_nohdbeta ts env evd c =
-  match kind_of_term (fst (Reductionops.whd_stack evd c)) with
+  match kind_of_term (fst (Reductionops.whd_nored_stack evd c)) with
     | (Case _ | Fix _) -> applist (evar_apprec ts env evd [] c)
     | _ -> c
 

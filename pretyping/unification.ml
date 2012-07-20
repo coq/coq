@@ -967,12 +967,12 @@ let w_unify_meta_types env ?(flags=default_unify_flags) evd =
    types of metavars are unifiable with the types of their instances    *)
 
 let check_types env flags (sigma,_,_ as subst) m n =
-  if isEvar_or_Meta (fst (whd_stack sigma m)) then
+  if isEvar_or_Meta (fst (whd_nored_stack sigma m)) then
     unify_0_with_initial_metas subst true env CUMUL
       flags
       (get_type_of env sigma n)
       (get_type_of env sigma m)
-  else if isEvar_or_Meta (fst (whd_stack sigma n)) then
+  else if isEvar_or_Meta (fst (whd_nored_stack sigma n)) then
     unify_0_with_initial_metas subst true env CUMUL
       flags
       (get_type_of env sigma m)
@@ -1193,8 +1193,8 @@ let secondOrderAbstractionAlgo dep =
   if dep then secondOrderDependentAbstraction else secondOrderAbstraction
 
 let w_unify2 env evd flags dep cv_pb ty1 ty2 =
-  let c1, oplist1 = whd_stack evd ty1 in
-  let c2, oplist2 = whd_stack evd ty2 in
+  let c1, oplist1 = whd_nored_stack evd ty1 in
+  let c2, oplist2 = whd_nored_stack evd ty2 in
   match kind_of_term c1, kind_of_term c2 with
     | Meta p1, _ ->
         (* Find the predicate *)
@@ -1225,8 +1225,8 @@ let w_unify2 env evd flags dep cv_pb ty1 ty2 =
    convertible and first-order otherwise. But if failed if e.g. the type of
    Meta(1) had meta-variables in it. *)
 let w_unify env evd cv_pb ?(flags=default_unify_flags) ty1 ty2 =
-  let hd1,l1 = whd_stack evd ty1 in
-  let hd2,l2 = whd_stack evd ty2 in
+  let hd1,l1 = whd_nored_stack evd ty1 in
+  let hd2,l2 = whd_nored_stack evd ty2 in
     match kind_of_term hd1, l1<>[], kind_of_term hd2, l2<>[] with
       (* Pattern case *)
       | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true)

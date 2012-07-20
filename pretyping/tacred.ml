@@ -617,6 +617,39 @@ let recargs r =
 let dont_expose_case r =
   try (get_behaviour r).b_dont_expose_case with Not_found -> false
 
+let whd_nothing_for_iota env sigma s =
+  let rec whrec (x, stack as s) =
+    match kind_of_term x with
+      | Rel n ->
+	  (match lookup_rel n env with
+	     | (_,Some body,_) -> whrec (lift n body, stack)
+	     | _ -> s)
+      | Var id ->
+	  (match lookup_named id env with
+	     | (_,Some body,_) -> whrec (body, stack)
+	     | _ -> s)
+      | Evar ev ->
+	(try whrec (Evd.existential_value sigma ev, stack)
+	with Evd.NotInstantiatedEvar | Not_found -> s)
+      | Meta ev ->
+	(try whrec (Evd.meta_value sigma ev, stack)
+	with Not_found -> s)
+      | Const const when is_transparent_constant full_transparent_state const ->
+	  (match constant_opt_value env const with
+	     | Some  body -> whrec (body, stack)
+	     | None -> s)
+      | LetIn (_,b,_,c) -> stacklam whrec [b] c stack
+      | Cast (c,_,_) -> whrec (c, stack)
+      | App (f,cl)  -> whrec (f, append_stack_app cl stack)
+      | Lambda (na,t,c) ->
+          (match decomp_stack stack with
+             | Some (a,m) -> stacklam whrec [a] c m
+	     | _ -> s)
+
+      | x -> s
+  in
+  decompose_app (zip (whrec (s,empty_stack)))
+
 (* [red_elim_const] contracts iota/fix/cofix redexes hidden behind
    constants by keeping the name of the constants in the recursive calls;
    it fails if no redex is around *)
@@ -640,12 +673,12 @@ let rec red_elim_const env sigma ref largs =
   try match reference_eval sigma env ref with
     | EliminationCases n when nargs >= n ->
 	let c = reference_value sigma env ref in
-	let c', lrest = whd_betadelta_stack env sigma (applist(c,largs)) in
+	let c', lrest = whd_nothing_for_iota env sigma (applist(c,largs)) in
 	let whfun = whd_simpl_stack env sigma in
         (special_red_case env sigma whfun (destCase c'), lrest)
     | EliminationFix (min,minfxargs,infos) when nargs >= min ->
 	let c = reference_value sigma env ref in
-	let d, lrest = whd_betadelta_stack env sigma (applist(c,largs)) in
+	let d, lrest = whd_nothing_for_iota env sigma (applist(c,largs)) in
 	let f = make_elim_fun ([|Some (minfxargs,ref)|],infos) largs in
 	let whfun = whd_construct_stack env sigma in
 	(match reduce_fix_use_function env sigma f whfun (destFix d) lrest with
@@ -660,7 +693,7 @@ let rec red_elim_const env sigma ref largs =
 	    let c', lrest = whd_betalet_stack sigma (applist(c,args)) in
 	    descend (destEvalRef c') lrest in
 	let (_, midargs as s) = descend ref largs in
-	let d, lrest = whd_betadelta_stack env sigma (applist s) in
+	let d, lrest = whd_nothing_for_iota env sigma (applist s) in
 	let f = make_elim_fun refinfos midargs in
 	let whfun = whd_construct_stack env sigma in
 	(match reduce_fix_use_function env sigma f whfun (destFix d) lrest with
@@ -1082,7 +1115,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
   else
   (* lazily reduces to match the head of [t] with the expected [ref] *)
   let rec elimrec env t l =
-    let c, _ = Reductionops.whd_stack sigma t in
+    let c, _ = Reductionops.whd_nored_stack sigma t in
     match kind_of_term c with
       | Prod (n,ty,t') ->
 	  if allow_product then

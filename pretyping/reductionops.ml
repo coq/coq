@@ -71,9 +71,10 @@ let strip_n_app n s =
 let nfirsts_app_of_stack n s =
   let (args, _) = strip_app s in list_firstn n args
 let list_of_app_stack s =
-  let (out,s') = strip_app s in assert (s' = []); out
+  let (out,s') = strip_app s in
+  Option.init (s' = []) out
 let array_of_app_stack s =
-  Array.of_list (list_of_app_stack s)
+  Option.map Array.of_list (list_of_app_stack s)
 let rec zip = function
   | f, [] -> f
   | f, (Zapp [] :: s) -> zip (f, s)
@@ -136,25 +137,11 @@ let safe_evar_value sigma ev =
   try Some (Evd.existential_value sigma ev)
   with NotInstantiatedEvar | Not_found -> None
 
-let rec whd_app_state sigma (x, stack as s) =
-  match kind_of_term x with
-    | App (f,cl) -> whd_app_state sigma (f, append_stack_app cl stack)
-    | Cast (c,_,_)  -> whd_app_state sigma (c, stack)
-    | Evar ev ->
-        (match safe_evar_value sigma ev with
-            Some c -> whd_app_state sigma (c,stack)
-          | _ -> s)
-    | _             -> s
-
 let safe_meta_value sigma ev =
   try Some (Evd.meta_value sigma ev)
   with Not_found -> None
 
 let appterm_of_stack t = decompose_app (zip t)
-
-let whd_stack sigma x =
-  appterm_of_stack (whd_app_state sigma (x, empty_stack))
-let whd_castapp_stack = whd_stack
 
 let strong whdfun env sigma t =
   let rec strongrec env t =
@@ -214,6 +201,7 @@ end : RedFlagsSig)
 open RedFlags
 
 (* Local *)
+let nored = mkflags []
 let beta = mkflags [fbeta]
 let eta = mkflags [feta]
 let zeta = mkflags [fzeta]
@@ -341,30 +329,32 @@ let rec whd_state_gen flags ts env sigma =
 		    | _ -> s)
 	     | _ -> s)
 
-      | Case (ci,p,d,lf) when red_iota flags ->
+      | Case (ci,p,d,lf) ->
 	whrec (d, Zcase (ci,p,lf) :: stack)
 
-      | Fix ((ri,n),_ as f) when red_iota flags ->
+      | Fix ((ri,n),_ as f) ->
 	(match strip_n_app ri.(n) stack with
 	  |None -> s
 	  |Some (bef,arg,s') -> whrec (arg, Zfix(f,bef)::s'))
 
-      | Construct (ind,c) -> begin
-	match strip_app stack with
+      | Construct (ind,c) ->
+	if red_iota flags then
+	  match strip_app stack with
 	  |args, (Zcase(ci, _, lf)::s') ->
 	    whrec (lf.(c-1), append_stack_app_list (list_skipn ci.ci_npar args) s')
 	  |args, (Zfix (f,s')::s'') ->
 	    let x' = applist(x,args) in
 	    whrec (contract_fix f,append_stack_app_list s' (append_stack_app_list [x'] s''))
 	  |_ -> s
-      end
+	else s
 
-      | CoFix cofix -> begin
-	match strip_app stack with
+      | CoFix cofix ->
+	if red_iota flags then
+	  match strip_app stack with
 	  |args, (Zcase(ci, _, lf)::s') ->
-	     whrec (contract_cofix cofix, stack)
+	    whrec (contract_cofix cofix, stack)
 	  |_ -> s
-      end
+	else s
 
       | x -> s
   in
@@ -395,10 +385,10 @@ let local_whd_state_gen flags sigma =
 		    | _ -> s)
 	     | _ -> s)
 
-      | Case (ci,p,d,lf) when red_iota flags ->
+      | Case (ci,p,d,lf) ->
 	whrec (d, Zcase (ci,p,lf) :: stack)
 
-      | Fix ((ri,n),_ as f) when red_iota flags ->
+      | Fix ((ri,n),_ as f) ->
 	(match strip_n_app ri.(n) stack with
 	  |None -> s
 	  |Some (bef,arg,s') -> whrec (arg, Zfix(f,bef)::s'))
@@ -413,22 +403,24 @@ let local_whd_state_gen flags sigma =
               Some c -> whrec (c,stack)
             | None -> s)
 
-      | Construct (ind,c) -> begin
-	match strip_app stack with
+      | Construct (ind,c) ->
+	if red_iota flags then
+	  match strip_app stack with
 	  |args, (Zcase(ci, _, lf)::s') ->
 	    whrec (lf.(c-1), append_stack_app_list (list_skipn ci.ci_npar args) s')
 	  |args, (Zfix (f,s')::s'') ->
 	    let x' = applist(x,args) in
 	    whrec (contract_fix f,append_stack_app_list s' (append_stack_app_list [x'] s''))
 	  |_ -> s
-      end
+	else s
 
-      | CoFix cofix -> begin
-	match strip_app stack with
-	  |args, (Zcase(ci, _, lf)::s') ->
-	     whrec (contract_cofix cofix, stack)
+      | CoFix cofix ->
+	if red_iota flags then
+	  match strip_app stack with
+	  |args, (Zcase(ci, _, lf)::s') when red_iota flags ->
+	    whrec (contract_cofix cofix, stack)
 	  |_ -> s
-      end
+	else s
 
       | x -> s
   in
@@ -440,6 +432,11 @@ let stack_red_of_state_red f sigma x =
 
 let red_of_state_red f sigma x =
   zip (f sigma (x,empty_stack))
+
+(* 0. No Reduction Functions *)
+
+let whd_nored_state = local_whd_state_gen nored
+let whd_nored_stack = stack_red_of_state_red whd_nored_state
 
 (* 1. Beta Reduction Functions *)
 

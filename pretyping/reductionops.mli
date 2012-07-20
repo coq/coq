@@ -39,8 +39,10 @@ val decomp_stack : 'a stack -> ('a * 'a stack) option
 (** Takes the n first arguments of application put on the stack. Fails is the
     stack does not start by n arguments of application. *)
 val nfirsts_app_of_stack : int -> 'a stack -> 'a list
-val list_of_app_stack : 'a stack -> 'a list
-val array_of_app_stack : 'a stack -> 'a array
+(** @return (the nth first elements, the (n+1)th element, the remaining stack)  *)
+val strip_n_app : int -> 'a stack -> ('a list * 'a * 'a stack) option
+val list_of_app_stack : 'a stack -> 'a list option
+val array_of_app_stack : 'a stack -> 'a array option
 val stack_assign : 'a stack -> int -> 'a -> 'a stack
 val stack_args_size : 'a stack -> int
 val zip : constr * constr stack -> constr
@@ -65,12 +67,6 @@ type contextual_state_reduction_function =
     env -> evar_map -> state -> state
 type state_reduction_function = contextual_state_reduction_function
 type local_state_reduction_function = evar_map -> state -> state
-
-(** Removes cast and put into applicative form *)
-val whd_stack : local_stack_reduction_function
-
-(** For compatibility: alias for whd\_stack *)
-val whd_castapp_stack : local_stack_reduction_function
 
 (** {6 Reduction Function Operators } *)
 
@@ -106,6 +102,8 @@ val whd_betadeltaiota_nolet :  contextual_reduction_function
 val whd_betaetalet : local_reduction_function
 val whd_betalet : local_reduction_function
 
+(** Removes cast and put into applicative form *)
+val whd_nored_stack : local_stack_reduction_function
 val whd_beta_stack : local_stack_reduction_function
 val whd_betaiota_stack : local_stack_reduction_function
 val whd_betaiotazeta_stack : local_stack_reduction_function
@@ -114,6 +112,7 @@ val whd_betadeltaiota_nolet_stack : contextual_stack_reduction_function
 val whd_betaetalet_stack : local_stack_reduction_function
 val whd_betalet_stack : local_stack_reduction_function
 
+val whd_nored_state : local_state_reduction_function
 val whd_beta_state : local_state_reduction_function
 val whd_betaiota_state : local_state_reduction_function
 val whd_betaiotazeta_state : local_state_reduction_function

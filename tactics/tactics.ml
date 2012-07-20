@@ -1163,7 +1163,7 @@ let specialize mopt (c,lbind) g =
       let clause = make_clenv_binding g (c,pf_type_of g c) lbind in
       let flags = { default_unify_flags with resolve_evars = true } in
       let clause = clenv_unify_meta_types ~flags clause in
-      let (thd,tstack) = whd_stack clause.evd (clenv_value clause) in
+      let (thd,tstack) = whd_nored_stack clause.evd (clenv_value clause) in
       let nargs = List.length tstack in
       let tstack = match mopt with
 	| Some m ->
