@@ -253,3 +253,12 @@ Check (fun x => match x with SOME3 x => x | NONE3 => 0 end).
 
 Notation s := Type.
 Check s.
+
+(* Test bug #2835: notations were not uniformly managed under prod and lambda *)
+
+Open Scope nat_scope.
+
+Notation "'foo' n" := (S n) (at level 50): nat_scope.
+
+Check (foo 9).
+Check (fun _ : nat => 9).

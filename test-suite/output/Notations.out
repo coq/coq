@@ -122,3 +122,8 @@ fun x : option Z => match x with
      : option Z -> Z
 s
      : s
+Identifier 'foo' now a keyword
+10
+     : nat
+fun _ : nat => 9
+     : nat -> nat
