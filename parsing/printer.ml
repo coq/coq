@@ -355,6 +355,8 @@ let emacs_print_dependent_evars sigma seeds =
 (* spiwack: [seeds] is for printing dependent evars in emacs mode. *)
 (* spiwack: [pr_first] is true when the first goal must be singled out
    and printed in its entirety. *)
+(* courtieu: in emacs mode, even less cases where the first goal is printed
+   in its entirety *)
 let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds stack goals =
   let rec print_stack a = function
     | [] -> Pp.int a
@@ -396,13 +398,13 @@ let default_pr_subgoals ?(pr_first=true) close_cmd sigma seeds stack goals =
 	       ++ emacs_print_dependent_evars sigma seeds ++ fnl () ++
                  str "You can use Grab Existential Variables.")
       end
-  | [g],[] ->
+  | [g],[] when not !Flags.print_emacs ->
       let pg = default_pr_goal { it = g ; sigma = sigma } in
       v 0 (
 	str "1 subgoal" ++ pr_goal_tag g ++ cut () ++ pg
 	++ emacs_print_dependent_evars sigma seeds
       )
-  | [g],a::l ->
+  | [g],a::l when not !Flags.print_emacs ->
       let pg = default_pr_goal { it = g ; sigma = sigma } in
       v 0 (
 	str "1 focused subgoal (" ++ print_unfocused a l ++ str")" ++ pr_goal_tag g ++ cut () ++ pg
@@ -466,7 +468,12 @@ let pr_open_subgoals () =
   | [] -> let { Evd.it = bgoals ; sigma = bsigma } = Proof.V82.background_subgoals p in
           begin match bgoals with
 	  | [] -> pr_subgoals None sigma seeds stack goals
-	  | _ -> str"This subproof is complete, but there are still unfocused goals." ++ fnl () ++ fnl () ++ pr_subgoals ~pr_first:false None bsigma seeds [] bgoals
+	  | _ ->
+	    (* emacs mode: xml-like flag for detecting information message *)
+	    str (emacs_str "<infomsg>") ++
+	    str"This subproof is complete, but there are still unfocused goals."
+	    ++ str (emacs_str "</infomsg>")
+	    ++ fnl () ++ fnl () ++ pr_subgoals ~pr_first:false None bsigma seeds [] bgoals
 	  end
   | _ -> pr_subgoals None sigma seeds stack goals
   end
