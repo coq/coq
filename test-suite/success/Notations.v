@@ -96,3 +96,8 @@ Notation "'FORALL'  x .. y , P" := (forall x, .. (forall y, P) ..)
   (at level 200, x binder, y binder, right associativity) : type_scope.
 
 Fail Check fun x => match x with S (FORALL x, _) => 0 end.
+
+(* Bug #2708: don't check for scope of variables used as binder *)
+
+Parameter traverse : (nat -> unit) -> (nat -> unit).
+Notation traverse_var f l := (traverse (fun l => f l) l).
