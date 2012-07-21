@@ -756,12 +756,12 @@ let rec extern inctx scopes vars r =
 
   | GProd (loc,na,bk,t,c) ->
       let t = extern_typ scopes vars (anonymize_if_reserved na t) in
-      let (idl,c) = factorize_prod scopes (add_vname vars na) t c in
+      let (idl,c) = factorize_prod scopes (add_vname vars na) na bk t c in
       CProdN (loc,[(Loc.ghost,na)::idl,Default bk,t],c)
 
   | GLambda (loc,na,bk,t,c) ->
       let t = extern_typ scopes vars (anonymize_if_reserved na t) in
-      let (idl,c) = factorize_lambda inctx scopes (add_vname vars na) t c in
+      let (idl,c) = factorize_lambda inctx scopes (add_vname vars na) na bk t c in
       CLambdaN (loc,[(Loc.ghost,na)::idl,Default bk,t],c)
 
   | GCases (loc,sty,rtntypopt,tml,eqns) ->
@@ -843,30 +843,25 @@ and extern_typ (_,scopes) =
 
 and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
 
-and factorize_prod scopes vars aty c =
-  try
-    if !Flags.raw_print or !print_no_symbol then raise No_match;
-    ([],extern_symbol (Some Notation.type_scope,snd scopes) vars c (uninterp_notations c))
-  with No_match -> match c with
-  | GProd (loc,(Name id as na),bk,ty,c)
-      when is_same_type aty (extern_typ scopes vars (anonymize_if_reserved na ty))
-	& not (occur_var_constr_expr id aty) (* avoid na in ty escapes scope *)
-	-> let (nal,c) = factorize_prod scopes (Idset.add id vars) aty c in
-           ((loc,Name id)::nal,c)
-  | c -> ([],extern_typ scopes vars c)
+and factorize_prod scopes vars na bk aty c =
+  let c = extern_typ scopes vars c in
+  match na, c with
+  | Name id, CProdN (loc,[nal,Default bk',ty],c)
+      when bk = bk' && is_same_type aty ty
+      & not (occur_var_constr_expr id ty) (* avoid na in ty escapes scope *) ->
+      nal,c
+  | _ ->
+      [],c
 
-and factorize_lambda inctx scopes vars aty c =
-  try
-    if !Flags.raw_print or !print_no_symbol then raise No_match;
-    ([],extern_symbol (None,snd scopes) vars c (uninterp_notations c))
-  with No_match -> match c with
-  | GLambda (loc,na,bk,ty,c)
-      when is_same_type aty (extern_typ scopes vars (anonymize_if_reserved na ty))
-	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)
-	-> let (nal,c) =
-	     factorize_lambda inctx scopes (add_vname vars na) aty c in
-           ((loc,na)::nal,c)
-  | c -> ([],sub_extern inctx scopes vars c)
+and factorize_lambda inctx scopes vars na bk aty c =
+  let c = sub_extern inctx scopes vars c in
+  match c with
+  | CLambdaN (loc,[nal,Default bk',ty],c)
+      when bk = bk' && is_same_type aty ty
+      & not (occur_name na ty) (* avoid na in ty escapes scope *) ->
+      nal,c
+  | _ ->
+      [],c
 
 and extern_local_binder scopes vars = function
     [] -> ([],[],[])

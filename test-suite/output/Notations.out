@@ -127,3 +127,8 @@ fun x : list ?99 => match x with
      : list ?99 -> option (list ?99)
 s
      : s
+Identifier 'foo' now a keyword
+10
+     : nat
+fun _ : nat => 9
+     : nat -> nat
