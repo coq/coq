@@ -175,14 +175,18 @@ let rec can_divide k m d i =
   (m.(k+i) > d.(i)) or
   (m.(k+i) = d.(i) && can_divide k m d (i+1))
 
-(* computes m - d * q * base^(|m|-k) in-place on positive numbers *)
+(* computes m - d * q * base^(|m|-|d|-k) in-place on positive numbers *)
 let sub_mult m d q k =
   if q <> 0 then
   for i = Array.length d - 1 downto 0 do
     let v = d.(i) * q in
     m.(k+i) <- m.(k+i) - v mod base;
     if m.(k+i) < 0 then (m.(k+i) <- m.(k+i) + base; m.(k+i-1) <- m.(k+i-1) -1);
-    if v >= base then m.(k+i-1) <- m.(k+i-1) - v / base;
+    if v >= base then begin
+      m.(k+i-1) <- m.(k+i-1) - v / base;
+      if m.(k+i-1) < 0 then
+        (m.(k+i-1) <- m.(k+i-1) + base; m.(k+i-2) <- m.(k+i-2) -1)
+    end
   done
 
 let euclid m d =
