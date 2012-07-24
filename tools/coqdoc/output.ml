@@ -31,7 +31,8 @@ let is_keyword =
   build_table
     [ "About"; "AddPath"; "Axiom"; "Abort"; "Chapter"; "Check"; "Coercion"; "Compute"; "CoFixpoint";
       "CoInductive"; "Corollary"; "Defined"; "Definition"; "End"; "Eval"; "Example";
-      "Export"; "Fact"; "Fix"; "Fixpoint"; "Function"; "Generalizable"; "Global"; "Grammar"; "Goal"; "Hint";
+      "Export"; "Fact"; "Fix"; "Fixpoint"; "Function"; "Generalizable"; "Global"; "Grammar";
+      "Guarded"; "Goal"; "Hint";
       "Hypothesis"; "Hypotheses";
       "Resolve"; "Unfold"; "Immediate"; "Extern"; "Implicit"; "Import"; "Inductive";
       "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Ltac";
@@ -53,6 +54,7 @@ let is_keyword =
       (*i (* coq terms *) *)
       "forall"; "match"; "as"; "in"; "return"; "with"; "end"; "let"; "fun";
       "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="; "where"; "struct"; "wf"; "measure";
+      "fix"; "cofix";
       (* Ltac *)
       "before"; "after"
        ]
@@ -60,7 +62,10 @@ let is_keyword =
 let is_tactic =
   build_table
     [ "intro"; "intros"; "apply"; "rewrite"; "refine"; "case"; "clear"; "injection";
-      "elimtype"; "progress"; "setoid_rewrite";
+      "elimtype"; "progress"; "setoid_rewrite"; "left"; "right"; "constructor"; 
+      "econstructor"; "decide equality"; "abstract"; "exists"; "cbv"; "simple destruct";
+      "info"; "fourier"; "field"; "specialize"; "evar"; "solve"; "instanciate";
+      "quote"; "eexact"; "autorewrite";
       "destruct"; "destruction"; "destruct_call"; "dependent"; "elim"; "extensionality";
       "f_equal"; "generalize"; "generalize_eqs"; "generalize_eqs_vars"; "induction"; "rename"; "move"; "omega";
       "set"; "assert"; "do"; "repeat";
@@ -69,7 +74,7 @@ let is_tactic =
       "reflexivity"; "symmetry"; "transitivity";
       "replace"; "setoid_replace"; "inversion"; "inversion_clear";
       "pattern"; "intuition"; "congruence"; "fail"; "fresh";
-      "trivial"; "exact"; "tauto"; "firstorder"; "ring";
+      "trivial"; "tauto"; "firstorder"; "ring";
       "clapply"; "program_simpl"; "program_simplify"; "eapply"; "auto"; "eauto" ]
 
 (*s Current Coq module *)
@@ -357,6 +362,9 @@ module Latex = struct
   let translate s =
     match Tokens.translate s with Some s -> s | None -> escaped s
 
+  let keyword s loc = 
+    printf "\\coqdockw{%s}" (translate s)
+
   let ident s loc =
     try
       let tag = Index.find (get_module false) loc in
@@ -614,6 +622,9 @@ module Html = struct
 
   let translate s =
     match Tokens.translate s with Some s -> s | None -> escaped s
+
+  let keyword s loc = 
+    printf "<span class=\"id\" type=\"keyword\">%s</span>" (translate s)
 
   let ident s loc =
     if is_keyword s then begin
@@ -921,13 +932,14 @@ module TeXmacs = struct
 
   let indentation n = ()
 
-  let ident_true s =
-    if is_keyword s then begin
-      printf "<kw|"; raw_ident s; printf ">"
-    end else begin
-      raw_ident s
-    end
+  let keyword s =
+    printf "<kw|"; raw_ident s; printf ">"
 
+  let ident_true s =
+    if is_keyword s then keyword s
+    else raw_ident s
+
+  let keyword s loc = keyword s
   let ident s _ = if !in_doc then ident_true s else raw_ident s
 
   let output_sublexer_string doescape issymbchar tag s =
@@ -1049,6 +1061,7 @@ module Raw = struct
   let indentation n =
       for i = 1 to n do printf " " done
 
+  let keyword s loc = raw_ident s
   let ident s loc = raw_ident s
 
   let sublexer c l = char c
@@ -1162,6 +1175,7 @@ let rule = select Latex.rule Html.rule TeXmacs.rule Raw.rule
 
 let nbsp = select Latex.nbsp Html.nbsp TeXmacs.nbsp Raw.nbsp
 let char = select Latex.char Html.char TeXmacs.char Raw.char
+let keyword = select Latex.keyword Html.keyword TeXmacs.keyword Raw.keyword
 let ident = select Latex.ident Html.ident TeXmacs.ident Raw.ident
 let sublexer = select Latex.sublexer Html.sublexer TeXmacs.sublexer Raw.sublexer
 let initialize = select Latex.initialize Html.initialize TeXmacs.initialize Raw.initialize
