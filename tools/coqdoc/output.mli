@@ -76,8 +76,12 @@ val hard_verbatim_char : char -> unit
 
 val start_latex_math : unit -> unit
 val stop_latex_math : unit -> unit
-val start_verbatim : unit -> unit
-val stop_verbatim : unit -> unit
+val start_verbatim : bool -> unit
+val stop_verbatim : bool -> unit
+val start_quote : unit -> unit
+val stop_quote : unit -> unit
+
+val url : string -> string option -> unit
 
 (* this outputs an inference rule in one go.  You pass it the list of
    assumptions, then the middle line info, then the conclusion (which

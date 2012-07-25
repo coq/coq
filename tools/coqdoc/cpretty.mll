@@ -77,8 +77,17 @@
   let in_proof = ref None
   let in_emph = ref false
 
-  let start_emph () = in_emph := true; Output.start_emph ()
-  let stop_emph () = if !in_emph then (Output.stop_emph (); in_emph := false)
+  let in_env start stop = 
+    let r = ref false in
+    let start_env () = r := true; start () in
+    let stop_env () = if !r then stop (); r := false in
+      (fun x -> !r), start_env, stop_env
+      
+  let in_emph, start_emph, stop_emph = in_env Output.start_emph Output.stop_emph
+  let in_quote, start_quote, stop_quote = in_env Output.start_quote Output.stop_quote
+
+  let url_buffer = Buffer.create 40
+  let url_name_buffer = Buffer.create 40
 
   let backtrack lexbuf = lexbuf.lex_curr_pos <- lexbuf.lex_start_pos;
     lexbuf.lex_curr_p <- lexbuf.lex_start_p
@@ -702,7 +711,7 @@ and doc_bol = parse
   | space* nl+
       { Output.paragraph (); doc_bol lexbuf }
   | "<<" space*
-      { Output.start_verbatim (); verbatim lexbuf; doc_bol lexbuf }
+      { Output.start_verbatim false; verbatim false lexbuf; doc_bol lexbuf }
   | eof
       { true }
   | '_'
@@ -726,8 +735,8 @@ and doc_list_bol indents = parse
             backtrack lexbuf; doc_bol lexbuf
       }
   | "<<" space*
-      { Output.start_verbatim ();
-        verbatim lexbuf;
+      { Output.start_verbatim false;
+        verbatim false lexbuf;
         doc_list_bol indents lexbuf }
   | "[[" nl
       { formatted := true;
@@ -826,6 +835,7 @@ and doc indents = parse
       { inf_rules indents lexbuf }
   | "[]"
       { Output.proofbox (); doc indents lexbuf }
+  | "{{" { url lexbuf; doc indents lexbuf }
   | "["
       { if !Cdglobals.plain_comments then Output.char '['
         else (brackets := 1;  Output.start_inline_coq (); escaped_coq lexbuf;
@@ -885,6 +895,15 @@ and doc indents = parse
       { if !Cdglobals.plain_comments then Output.char '_' else stop_emph () ;
         Output.char (lexeme_char lexbuf 1);
         doc indents lexbuf }
+  | "<<" space*
+      { Output.start_verbatim true; verbatim true lexbuf; doc_bol lexbuf }
+  | '"'
+      { if !Cdglobals.plain_comments 
+	then Output.char '"' 
+	else if in_quote ()
+	then stop_quote () 
+	else start_quote ();
+        doc indents lexbuf }
   | eof
       { false }
   | _
@@ -911,11 +930,22 @@ and escaped_html = parse
   | eof { () }
   | _   { Output.html_char (lexeme_char lexbuf 0); escaped_html lexbuf }
 
-and verbatim = parse
-  | nl ">>" space* nl { Output.verbatim_char '\n'; Output.stop_verbatim () }
-  | nl ">>" { Output.verbatim_char '\n'; Output.stop_verbatim () }
-  | eof { Output.stop_verbatim () }
-  | _ { Output.verbatim_char (lexeme_char lexbuf 0); verbatim lexbuf }
+and verbatim inline = parse
+  | nl ">>" space* nl { Output.verbatim_char '\n'; Output.stop_verbatim inline }
+  | nl ">>" { Output.verbatim_char '\n'; Output.stop_verbatim inline }
+  | ">>" { Output.stop_verbatim inline }
+  | eof { Output.stop_verbatim inline }
+  | _ { Output.verbatim_char (lexeme_char lexbuf 0); verbatim inline lexbuf }
+
+and url = parse
+  | "}}" { Output.url (Buffer.contents url_buffer) None; Buffer.clear url_buffer }
+  | "}" { url_name lexbuf }
+  | _ { Buffer.add_char url_buffer (lexeme_char lexbuf 0); url lexbuf }
+
+and url_name = parse
+  | "}" { Output.url (Buffer.contents url_buffer) (Some (Buffer.contents url_name_buffer));
+	  Buffer.clear url_buffer; Buffer.clear url_name_buffer }
+  | _ { Buffer.add_char url_name_buffer (lexeme_char lexbuf 0); url_name lexbuf }
 
 (*s Coq, inside quotations *)
 
