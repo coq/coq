@@ -14,7 +14,7 @@ Require Arith_base.
 the n-uplet and [FS] set (n-1)-uplet of all the element but the first.
 
    Author: Pierre Boutillier
-   Institution: PPS, INRIA 12/2010-01/2012
+   Institution: PPS, INRIA 12/2010-01/2012-07/2012
 *)
 
 Inductive t : nat -> Set :=
@@ -177,3 +177,55 @@ induction o ; simpl.
   rewrite Plus.plus_assoc. destruct (to_nat o); simpl; rewrite Mult.mult_succ_r.
     now rewrite (Plus.plus_comm n).
 Qed.
+
+Fixpoint eqb {m n} (p : t m) (q : t n) :=
+match p, q with
+| @F1 m', @F1 n' => EqNat.beq_nat m' n'
+| @FS _ _, @F1 _ => false
+| @F1 _, @FS _ _ => false
+| @FS _ p', @FS _ q' => eqb p' q'
+end.
+
+Lemma eqb_nat_eq : forall m n (p : t m) (q : t n), eqb p q = true -> m = n.
+Proof.
+intros m n p; revert n; induction p; destruct q; simpl; intros; f_equal.
++ now apply EqNat.beq_nat_true.
++ easy.
++ easy.
++ eapply IHp. eassumption.
+Qed.
+
+Lemma eqb_eq : forall n (p q : t n), eqb p q = true <-> p = q.
+Proof.
+apply rect2; simpl; intros.
+- split; intros ; [ reflexivity | now apply EqNat.beq_nat_true_iff ].
+- now split.
+- now split.
+- eapply iff_trans.
+ + eassumption.
+ + split.
+  * intros; now f_equal.
+  * apply FS_inj.
+Qed.
+
+Lemma eq_dec {n} (x y : t n): {x = y} + {x <> y}.
+Proof.
+ case_eq (eqb x y); intros.
+  + left; now apply eqb_eq.
+  + right. intros Heq. apply <- eqb_eq in Heq. congruence.
+Defined.
+
+Definition cast: forall {m} (v: t m) {n}, m = n -> t n.
+Proof.
+refine (fix cast {m} (v: t m) {struct v} :=
+ match v in t m' return forall n, m' = n -> t n with
+ |@F1 _ => fun n => match n with
+   | 0 => fun H => False_rect _ _
+   | S n' => fun H => F1
+ end
+ |@FS _ f => fun n => match n with
+   | 0 => fun H => False_rect _ _
+   | S n' => fun H => FS (cast f n' (f_equal pred H))
+ end
+end); discriminate.
+Defined.
