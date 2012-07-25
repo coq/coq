@@ -526,7 +526,7 @@ let vernac_scheme l =
 let vernac_combined_scheme lid l =
   if Dumpglob.dump () then
     (Dumpglob.dump_definition lid false "def";
-     List.iter (fun lid -> dump_global (AN (Ident lid))) l);
+     List.iter (fun lid -> dump_global (Genarg.AN (Ident lid))) l);
  Indschemes.do_combined_scheme lid l
 
 (**********************)
