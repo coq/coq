@@ -260,7 +260,7 @@ let set_prompt prompt =
 let rec is_pervasive_exn = function
   | Out_of_memory | Stack_overflow | Sys.Break -> true
   | Error_in_file (_,_,e) -> is_pervasive_exn e
-  | Stdpp.Exc_located (_,e) -> is_pervasive_exn e
+  | Compat.Exc_located (_,e) -> is_pervasive_exn e
   | DuringCommandInterp (_,e) -> is_pervasive_exn e
   | DuringSyntaxChecking e -> is_pervasive_exn e
   | _ -> false
@@ -272,13 +272,13 @@ let print_toplevel_error exc =
   let (dloc,exc) =
     match exc with
       | DuringCommandInterp (loc,ie)
-      | Stdpp.Exc_located (loc, DuringSyntaxChecking ie) ->
+      | Compat.Exc_located (loc, DuringSyntaxChecking ie) ->
           if loc = dummy_loc then (None,ie) else (Some loc, ie)
       | _ -> (None, exc) 
   in
   let (locstrm,exc) =
     match exc with
-      | Stdpp.Exc_located (loc, ie) ->
+      | Compat.Exc_located (loc, ie) ->
           if valid_buffer_loc top_buffer dloc loc then
             (print_highlight_location top_buffer loc, ie)
           else 
@@ -315,7 +315,7 @@ let parse_to_dot =
 let rec discard_to_dot () =
   try 
     Gram.Entry.parse parse_to_dot top_buffer.tokens
-  with Stdpp.Exc_located(_,(Token.Error _|Lexer.Error _)) -> 
+  with Compat.Exc_located(_,(Token.Error _|Lexer.Error _)) -> 
     discard_to_dot()
 
 
@@ -324,7 +324,7 @@ let rec discard_to_dot () =
 
 let process_error = function
   | DuringCommandInterp _ 
-  | Stdpp.Exc_located (_,DuringSyntaxChecking _) as e -> e
+  | Compat.Exc_located (_,DuringSyntaxChecking _) as e -> e
   | e ->
       if is_pervasive_exn e then 
 	e

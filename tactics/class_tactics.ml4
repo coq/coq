@@ -173,7 +173,7 @@ let filter_hyp t =
 
 let rec catchable = function
   | Refiner.FailError _ -> true
-  | Stdpp.Exc_located (_, e) -> catchable e
+  | Compat.Exc_located (_, e) -> catchable e
   | e -> Logic.catchable_exception e
 
 let is_dep gl gls =
@@ -1081,7 +1081,7 @@ let cl_rewrite_clause_aux ?(flags=default_flags) hypinfo goal_meta occs clause g
 	      else tclIDTAC
 	  in tclTHENLIST [evartac; rewtac] gl
 	  with 
-	  | Stdpp.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
+	  | Compat.Exc_located (_, TypeClassError (env, (UnsatisfiableConstraints _ as e)))
 	  | TypeClassError (env, (UnsatisfiableConstraints _ as e)) ->
 	      tclFAIL 0 (str" setoid rewrite failed: unable to satisfy the rewriting constraints." 
 			  ++ fnl () ++ Himsg.explain_typeclass_error env e) gl)
@@ -1763,7 +1763,7 @@ let setoid_transitivity c gl =
   (CRef (Qualid (dummy_loc, Nametab.shortest_qualid_of_global Idset.empty
   (Lazy.force meth)))) ~bindings gl
   with Not_found | Typeclasses_errors.TypeClassError (_, _) |
-      Stdpp.Exc_located (_, Typeclasses_errors.TypeClassError (_, _)) -> 
+      Compat.Exc_located (_, Typeclasses_errors.TypeClassError (_, _)) -> 
 	match fallback gl with 
 	| Some tac -> tac gl
 	| None ->

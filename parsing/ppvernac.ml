@@ -749,7 +749,7 @@ let rec pr_vernac = function
       (if i = 1 then mt() else int i ++ str ": ") ++
       pr_raw_tactic tac
       ++ (try if deftac & Pfedit.get_end_tac() <> None then str ".." else mt ()
-      with UserError _|Stdpp.Exc_located _ -> mt())
+      with UserError _|Compat.Exc_located _ -> mt())
 
   | VernacSolveExistential (i,c) ->
       str"Existential " ++ int i ++ pr_lconstrarg c
