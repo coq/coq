@@ -319,8 +319,8 @@ let rec whd_state_gen flags ts env sigma =
 			let napp = Array.length cl in
 			if napp > 0 then
 			  let x', l' = whrec' (array_last cl, empty_stack) in
-                          match kind_of_term x', decomp_stack l' with
-                            | Rel 1, None ->
+                          match kind_of_term x' with
+                            | Rel 1 when l' = empty_stack ->
 				let lc = Array.sub cl 0 (napp-1) in
 				let u = if napp=1 then f else appvect (f,lc) in
 				if noccurn 1 u then (pop u,empty_stack) else s
@@ -375,8 +375,8 @@ let local_whd_state_gen flags sigma =
 			let napp = Array.length cl in
 			if napp > 0 then
 			  let x', l' = whrec (array_last cl, empty_stack) in
-                          match kind_of_term x', decomp_stack l' with
-                            | Rel 1, None ->
+                          match kind_of_term x' with
+                            | Rel 1 when l' = empty_stack ->
 				let lc = Array.sub cl 0 (napp-1) in
 				let u = if napp=1 then f else appvect (f,lc) in
 				if noccurn 1 u then (pop u,empty_stack) else s
