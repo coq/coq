@@ -1316,7 +1316,7 @@ let vernac_print = function
   | PrintVisibility s ->
       pp (Notation.pr_visibility (Constrextern.without_symbols pr_lglob_constr) s)
   | PrintAbout qid -> 
-    dump_global qid; msg (print_about qid)
+    msg (print_about qid)
   | PrintImplicit qid -> 
     dump_global qid; msg (print_impargs qid)
   | PrintAssumptions (o,r) ->
