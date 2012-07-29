@@ -184,8 +184,10 @@ let sub_mult m d q k =
     if m.(k+i) < 0 then (m.(k+i) <- m.(k+i) + base; m.(k+i-1) <- m.(k+i-1) -1);
     if v >= base then begin
       m.(k+i-1) <- m.(k+i-1) - v / base;
-      if m.(k+i-1) < 0 then
-        (m.(k+i-1) <- m.(k+i-1) + base; m.(k+i-2) <- m.(k+i-2) -1)
+      let j = ref (i-1) in
+      while m.(k + !j) < 0 do (* result is positive, hence !j remains >= 0 *)
+        m.(k + !j) <- m.(k + !j) + base; decr j; m.(k + !j) <- m.(k + !j)
+      done
     end
   done
 
