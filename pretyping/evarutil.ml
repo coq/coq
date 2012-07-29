@@ -145,6 +145,11 @@ let noccur_evar evd evk c =
   in
   try occur_rec c; true with Occur -> false
 
+let normalize_evar evd ev =
+  match kind_of_term (whd_evar evd (mkEvar ev)) with
+  | Evar (evk,args) -> (evk,args)
+  | _ -> assert false
+
 (**********************)
 (* Creating new metas *)
 (**********************)
@@ -1591,6 +1596,8 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
 	  let ty = get_type_of env' !evdref t in
 	  let (evd,evar'',ev'') =
              materialize_evar (evar_define conv_algo) env' !evdref k ev ty in
+          (* materialize_evar may instantiate ev' by another evar; adjust it *)
+          let (evk',args' as ev') = normalize_evar evd ev' in
 	  let evd =
 	     (* Try to project (a restriction of) the left evar ... *)
 	    try
