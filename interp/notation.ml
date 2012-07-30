@@ -383,7 +383,7 @@ let interp_prim_token_gen g loc p local_scopes =
   with Not_found ->
     user_err_loc (loc,"interp_prim_token",
     (match p with
-      | Numeral n -> str "No interpretation for numeral " ++ pr_bigint n
+      | Numeral n -> str "No interpretation for numeral " ++ str (to_string n)
       | String s -> str "No interpretation for string " ++ qs s) ++ str ".")
 
 let interp_prim_token =
