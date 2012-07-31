@@ -196,6 +196,9 @@ let is_strictly_pos n = n<>[||] && n.(0) > 0
 let is_neg_or_zero n = n=[||] or n.(0) < 0
 let is_pos_or_zero n = n=[||] or n.(0) > 0
 
+(* Is m without its i first blocs less then n without its j first blocs ?
+   Invariant : |m|-i = |n|-j *)
+
 let rec less_than_same_size m n i j =
   i < Array.length m &&
   (m.(i) < n.(j) or (m.(i) = n.(j) && less_than_same_size m n (i+1) (j+1)))
@@ -212,6 +215,8 @@ let less_than m n =
 
 let equal m n = (m = n)
 
+(* Is m without its k top blocs less than n ? *)
+
 let less_than_shift_pos k m n =
   (Array.length m - k < Array.length n)
   or (Array.length m - k = Array.length n && less_than_same_size m n k 0)
@@ -221,7 +226,10 @@ let rec can_divide k m d i =
   (m.(k+i) > d.(i)) or
   (m.(k+i) = d.(i) && can_divide k m d (i+1))
 
-(* computes m - d * q * base^(|m|-|d|-k) in-place on positive numbers *)
+(* For two big nums m and d and a small number q,
+   computes m - d * q * base^(|m|-|d|-k) in-place (in m).
+   Both m d and q are positive. *)
+
 let sub_mult m d q k =
   if q <> 0 then
   for i = Array.length d - 1 downto 0 do
@@ -232,7 +240,7 @@ let sub_mult m d q k =
       m.(k+i-1) <- m.(k+i-1) - v / base;
       let j = ref (i-1) in
       while m.(k + !j) < 0 do (* result is positive, hence !j remains >= 0 *)
-        m.(k + !j) <- m.(k + !j) + base; decr j; m.(k + !j) <- m.(k + !j)
+        m.(k + !j) <- m.(k + !j) + base; decr j; m.(k + !j) <- m.(k + !j) -1
       done
     end
   done
