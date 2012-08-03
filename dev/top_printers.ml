@@ -111,6 +111,7 @@ let prdelta s = pp (Mod_subst.debug_pr_delta s)
 let pp_idpred s = pp (pr_idpred s)
 let pp_cpred s = pp (pr_cpred s)
 let pp_transparent_state s = pp (pr_transparent_state s)
+let pphintdb db = pp (Auto.pr_hint_db db)
 
 (* proof printers *)
 let ppmetas metas = pp(pr_metaset metas)
