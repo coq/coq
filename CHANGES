@@ -119,7 +119,7 @@ Tactics
 - New proof engine.
 - Scripts can now be structured thanks to bullets - * + and to subgoal
   delimitation via { }. Note: for use with ProofGeneral, a cvs version of
-  ProofGeneral no older than mid-July 2011 is currently required. DOC TODO.
+  ProofGeneral no older than mid-July 2011 is currently required.
 - Support for tactical "info" is suspended.
 - Support for command "Show Script" is suspended.
 - New tactics constr_eq, is_evar and has_evar.
@@ -166,7 +166,7 @@ Vernacular commands
 - New command "Add/Remove Search Blacklist <substring> ..." :
   a Search or SearchAbout or similar query will never mention lemmas
   whose qualified names contain any of the declared substrings.
-  The default blacklisted substrings are "_admitted" "_subproof" "Private_". DOC TODO
+  The default blacklisted substrings are "_admitted" "_subproof" "Private_".
 - When the output file of "Print Universes" ends in ".dot" or ".gv",
   the universe graph is printed in the DOT language, and can be
   processed by Graphviz tools.

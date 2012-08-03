@@ -336,6 +336,16 @@ This restricts the search to constructions not defined in modules
 
 \end{Variants}
 
+\subsubsection{Nota Bene:}
+For the {\tt Search}, {\tt SearchAbout}, {\tt SearchPattern} and
+{\tt SearchRewrite} queries, it is possible to globally filter
+the search results via the command
+{\tt Add Search Blacklist "substring1"}.
+A lemma whose fully-qualified name contains any of the declared substrings
+will be removed from the search results.
+The default blacklisted substrings are {\tt "\_admitted"
+  "\_subproof" "Private\_"}. The command {\tt Remove Search Blacklist
+  ...} allows to expunge this blacklist.
 
 % \begin{tabbing}
 % \ \ \ \ \=11.\ \=\kill
