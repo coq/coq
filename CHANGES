@@ -25,11 +25,6 @@ Tactics
   version of "tauto".
 - Similarly, "intuition" has been made more uniform and, where it now
   fails, "dintuition" can be used.
-- An annotation "eqn:H" or "eqn:?" can be added to a "destruct"
-  or "induction" to make it generate equations in the spirit of "case_eq".
-  The former syntax "_eqn" is discontinued.
-- The name of the hypothesis introduced by tactic "remember" can be
-  set via the new syntax "remember t as x eqn:H" (wish #2489).
 
 Program
 
@@ -50,6 +45,43 @@ Internal Infrastructure
   many internal a.s.t. of Coq are now placed in mli files in
   a new directory intf/, for instance constrexpr.mli or glob_term.mli.
   More details in dev/doc/changes.
+
+Changes from V8.4beta2 to V8.4
+==============================
+
+Vernacular commands
+
+- The "Reset" command is now supported again in files given to coqc or Load.
+- "Show Script" now indents again the displayed scripts. It can also work
+  correctly across Load'ed files if the option "Unset Atomic Load" is used.
+- "Open Scope" can now be given the delimiter (e.g. Z) instead of the full
+  scope name (e.g. Z_scope).
+
+Notations
+
+- Most compatibility notations of the standard library are now tagged as
+  (compat xyz), where xyz is a former Coq version, for instance "8.3".
+  These notations behave as (only parsing) notations, except that they may
+  triggers warnings (or errors) when used while Coq is not in a corresponding
+  -compat mode.
+- To activate these compatibility warnings, use "Set Verbose Compat Notations"
+  or the command-line flag -verbose-compat-notations.
+- For a strict mode without these compatibility notations, use
+  "Unset Compat Notations" or the command-line flag -no-compat-notations.
+
+Tactics
+
+- An annotation "eqn:H" or "eqn:?" can be added to a "destruct"
+  or "induction" to make it generate equations in the spirit of "case_eq".
+  The former syntax "_eqn" is discontinued.
+- The name of the hypothesis introduced by tactic "remember" can be
+  set via the new syntax "remember t as x eqn:H" (wish #2489).
+
+Libraries
+
+- Reals: changed definition of PI, no more axiom about sin(PI/2).
+- SetoidPermutation: a notion of permutation for lists modulo a setoid equality.
+- BigN: fixed the ocaml code doing the parsing/printing of big numbers.
 
 Changes from V8.4beta to V8.4beta2
 ==================================
