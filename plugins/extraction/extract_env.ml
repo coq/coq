@@ -574,7 +574,13 @@ let separate_extraction lr =
 (*s Simple extraction in the Coq toplevel. The vernacular command
     is \verb!Extraction! [qualid]. *)
 
-let simple_extraction r = match locate_ref [r] with
+let dump_global r = 
+  let gr = Smartlocate.global_with_alias r in
+    Dumpglob.add_glob (loc_of_reference r) gr
+
+let simple_extraction r =
+  dump_global r;
+  match locate_ref [r] with
   | ([], [mp]) as p -> full_extr None p
   | [r],[] ->
       init false false;
