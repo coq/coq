@@ -1466,6 +1466,22 @@ let vernac_back n =
 
 let vernac_reset_name id =
   try
+    let globalized =
+      try
+	let gr = Smartlocate.global_with_alias (Ident id) in
+	Dumpglob.add_glob (fst id) gr;
+	true
+      with _ -> false in
+
+    if not globalized then begin
+       try begin match Lib.find_opening_node (snd id) with
+          | Lib.OpenedSection _ -> Dumpglob.dump_reference (fst id)
+              (string_of_dirpath (Lib.current_dirpath true)) "<>" "sec";
+          (* Might be nice to implement module cases, too.... *)
+          | _ -> ()
+       end with UserError _ -> ()
+    end;
+
     if Backtrack.is_active () then
       (Backtrack.reset_name id; try_print_subgoals ())
     else
