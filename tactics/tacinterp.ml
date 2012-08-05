@@ -571,6 +571,22 @@ let intern_typed_pattern ist p =
 let intern_typed_pattern_with_occurrences ist (l,p) =
   (l,intern_typed_pattern ist p)
 
+(* This seems fairly hacky, but it's the first way I've found to get proper
+   globalization of [unfold].  --adamc *)
+let dump_glob_red_expr = function
+  | Unfold occs -> List.iter (fun (_, r) ->
+    try
+      Dumpglob.add_glob (loc_of_or_by_notation Libnames.loc_of_reference r)
+	(Smartlocate.smart_global r)
+    with _ -> ()) occs
+  | Cbv grf | Lazy grf ->
+    List.iter (fun r ->
+      try
+        Dumpglob.add_glob (loc_of_or_by_notation Libnames.loc_of_reference r)
+	  (Smartlocate.smart_global r)
+      with _ -> ()) grf.rConst
+  | _ -> ()
+
 let intern_red_expr ist = function
   | Unfold l -> Unfold (List.map (intern_unfold ist) l)
   | Fold l -> Fold (List.map (intern_constr ist) l)
@@ -771,6 +787,7 @@ let rec intern_atomic lf ist x =
 
   (* Conversion *)
   | TacReduce (r,cl) ->
+      dump_glob_red_expr r;
       TacReduce (intern_red_expr ist r, clause_app (intern_hyp_location ist) cl)
   | TacChange (None,c,cl) ->
       TacChange (None,

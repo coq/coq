@@ -1317,6 +1317,7 @@ let vernac_check_may_eval redexp glopt rc =
     | None ->
 	msg_notice (print_judgment env j)
     | Some r ->
+        Tacinterp.dump_glob_red_expr r;
         let (sigma',r_interp) = interp_redexp env sigma' r in
 	let redfun = fst (reduction_of_red_expr r_interp) in
 	msg_notice (print_eval redfun env sigma' rc j)

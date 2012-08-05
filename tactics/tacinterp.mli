@@ -123,6 +123,7 @@ val interp_ltac_constr : interp_sign -> goal sigma -> glob_tactic_expr ->
   Evd.evar_map * constr
 
 (** Interprets redexp arguments *)
+val dump_glob_red_expr : raw_red_expr -> unit
 val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr -> Evd.evar_map * red_expr
 
 (** Interprets tactic expressions *)
