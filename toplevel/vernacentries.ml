@@ -421,9 +421,10 @@ let smart_global r =
     gr
 
 let dump_global r =
-  let gr = Smartlocate.smart_global r in
+  try
+    let gr = Smartlocate.smart_global r in
     Dumpglob.add_glob (Genarg.loc_of_or_by_notation loc_of_reference r) gr
-
+  with _ -> ()
 (**********)
 (* Syntax *)
 
@@ -1347,7 +1348,7 @@ let vernac_print = function
   | PrintNamespace ns -> print_namespace ns
   | PrintMLLoadPath -> msg_notice (Mltop.print_ml_path ())
   | PrintMLModules -> msg_notice (Mltop.print_ml_modules ())
-  | PrintName qid -> msg_notice (print_name qid)
+  | PrintName qid -> dump_global qid; msg_notice (print_name qid)
   | PrintGraph -> msg_notice (Prettyp.print_graph())
   | PrintClasses -> msg_notice (Prettyp.print_classes())
   | PrintTypeClasses -> msg_notice (Prettyp.print_typeclasses())

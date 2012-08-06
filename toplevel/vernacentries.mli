@@ -13,6 +13,8 @@ open Vernacexpr
 open Constrexpr
 open Misctypes
 
+val dump_global : Libnames.reference or_by_notation -> unit
+
 (** Vernacular entries *)
 
 val show_script : unit -> unit
