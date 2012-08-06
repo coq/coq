@@ -135,7 +135,7 @@ let mkTacCase with_evar = function
   (* Reinterpret numbers as a notation for terms *)
   | [ElimOnAnonHyp n,(None,None)],None,None ->
       TacCase (with_evar,
-        (CPrim (dummy_loc, Numeral (Bigint.of_string (string_of_int n))),
+        (CPrim (dummy_loc, Numeral (Bigint.of_int n)),
 	 NoBindings))
   (* Reinterpret ident as notations for variables in the context *)
   (* because we don't know if they are quantified or not *)

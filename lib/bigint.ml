@@ -319,25 +319,32 @@ open ArrayInt
 
 type bigint = Obj.t
 
-(* NB: n should be here in ]-base*base ; base*base] *)
+(* Since base is the largest power of 10 such that base*base <= max_int,
+   we have max_int < 100*base*base : any int can be represented
+   by at most three blocs *)
 
-let array_of_int n =
+let small n = (-base <= n) && (n < base)
+
+let mkarray n =
+  (* n isn't small, this case is handled separately below *)
   let lo = n mod base
   and hi = n / base in
-  if hi = base then [|1;0;lo|]
-  else if hi < 0 && lo <> 0 then [|hi-1;lo+base|]
-  else [|hi;lo|]
+  let t = if small hi then [|hi;lo|] else [|hi/base;hi mod base;lo|]
+  in
+  for i = Array.length t -1 downto 1 do
+    if t.(i) < 0 then (t.(i) <- t.(i) + base; t.(i-1) <- t.(i-1) -1)
+  done;
+  t
 
 let ints_of_int n =
   if n = 0 then [| |]
-  else if -base <= n && n < base then [| n |]
-  else array_of_int n
+  else if small n then [| n |]
+  else mkarray n
 
-let big_of_int n =
-  if -base <= n && n < base then Obj.repr n
-  else Obj.repr (array_of_int n)
+let of_int n =
+  if small n then Obj.repr n else Obj.repr (mkarray n)
 
-let big_of_ints n =
+let of_ints n =
   let n = normalize n in (* TODO: using normalize here seems redundant now *)
   if n = zero then Obj.repr 0 else
   if Array.length n = 1 then Obj.repr n.(0) else
@@ -346,61 +353,79 @@ let big_of_ints n =
 let coerce_to_int = (Obj.magic : Obj.t -> int)
 let coerce_to_ints = (Obj.magic : Obj.t -> int array)
 
-let ints_of_z n =
+let to_ints n =
   if Obj.is_int n then ints_of_int (coerce_to_int n)
   else coerce_to_ints n
+
+let int_of_ints =
+  let maxi = mkarray max_int and mini = mkarray min_int in
+  fun t ->
+    let l = Array.length t in
+    if (l > 3) || (l = 3 && (less_than maxi t || less_than t mini))
+    then failwith "Bigint.to_int: too large";
+    let sum = ref 0 in
+    let pow = ref 1 in
+    for i = l-1 downto 0 do
+      sum := !sum + t.(i) * !pow;
+      pow := !pow*base;
+    done;
+    !sum
+
+let to_int n =
+  if Obj.is_int n then coerce_to_int n
+  else int_of_ints (coerce_to_ints n)
 
 let app_pair f (m, n) =
   (f m, f n)
 
 let add m n =
   if Obj.is_int m & Obj.is_int n
-  then big_of_int (coerce_to_int m + coerce_to_int n)
-  else big_of_ints (add (ints_of_z m) (ints_of_z n))
+  then of_int (coerce_to_int m + coerce_to_int n)
+  else of_ints (add (to_ints m) (to_ints n))
 
 let sub m n =
   if Obj.is_int m & Obj.is_int n
-  then big_of_int (coerce_to_int m - coerce_to_int n)
-  else big_of_ints (sub (ints_of_z m) (ints_of_z n))
+  then of_int (coerce_to_int m - coerce_to_int n)
+  else of_ints (sub (to_ints m) (to_ints n))
 
 let mult m n =
   if Obj.is_int m & Obj.is_int n
-  then big_of_int (coerce_to_int m * coerce_to_int n)
-  else big_of_ints (mult (ints_of_z m) (ints_of_z n))
+  then of_int (coerce_to_int m * coerce_to_int n)
+  else of_ints (mult (to_ints m) (to_ints n))
 
 let euclid m n =
   if Obj.is_int m & Obj.is_int n
-  then app_pair big_of_int
+  then app_pair of_int
     (coerce_to_int m / coerce_to_int n, coerce_to_int m mod coerce_to_int n)
-  else app_pair big_of_ints (euclid (ints_of_z m) (ints_of_z n))
+  else app_pair of_ints (euclid (to_ints m) (to_ints n))
 
 let less_than m n =
   if Obj.is_int m & Obj.is_int n
   then coerce_to_int m < coerce_to_int n
-  else less_than (ints_of_z m) (ints_of_z n)
+  else less_than (to_ints m) (to_ints n)
 
 let neg n =
-  if Obj.is_int n then big_of_int (- (coerce_to_int n))
-  else big_of_ints (neg (ints_of_z n))
+  if Obj.is_int n then of_int (- (coerce_to_int n))
+  else of_ints (neg (to_ints n))
 
-let of_string m = big_of_ints (of_string m)
-let to_string m = to_string (ints_of_z m)
+let of_string m = of_ints (of_string m)
+let to_string m = to_string (to_ints m)
 
-let zero = big_of_int 0
-let one = big_of_int 1
+let zero = of_int 0
+let one = of_int 1
+let two = of_int 2
 let sub_1 n = sub n one
 let add_1 n = add n one
-let two = big_of_int 2
 let mult_2 n = add n n
 
 let div2_with_rest n =
   let (q,b) = euclid n two in
   (q, b = one)
 
-let is_strictly_neg n = is_strictly_neg (ints_of_z n)
-let is_strictly_pos n = is_strictly_pos (ints_of_z n)
-let is_neg_or_zero n = is_neg_or_zero (ints_of_z n)
-let is_pos_or_zero n = is_pos_or_zero (ints_of_z n)
+let is_strictly_neg n = is_strictly_neg (to_ints n)
+let is_strictly_pos n = is_strictly_pos (to_ints n)
+let is_neg_or_zero n = is_neg_or_zero (to_ints n)
+let is_pos_or_zero n = is_pos_or_zero (to_ints n)
 
 let equal m n = (m = n)
 
@@ -412,18 +437,15 @@ let equal m n = (m = n)
     k*n^(2m+1) = (n*k)*(n*n)^m *)
 let pow  =
   let rec pow_aux odd_rest n m = (* odd_rest is the k from above *)
-    if is_neg_or_zero m then
+    if m<=0 then
       odd_rest
     else
-      let (quo,rem) = div2_with_rest m in
+      let quo = m lsr 1 (* i.e. m/2 *)
+      and odd = (m land 1) <> 0 in
       pow_aux
-	((* [if m mod 2 = 1]*)
-         if rem then
-          mult n odd_rest
-	 else
-          odd_rest )
-	(* quo = [m/2] *)
-	(mult n n) quo
+	(if odd then mult n odd_rest else odd_rest)
+	(mult n n)
+	quo
   in
   pow_aux one
 

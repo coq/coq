@@ -13,6 +13,9 @@ type bigint
 val of_string : string -> bigint
 val to_string : bigint -> string
 
+val of_int : int -> bigint
+val to_int : bigint -> int (** May raise a Failure on oversized numbers *)
+
 val zero : bigint
 val one : bigint
 val two : bigint
@@ -36,4 +39,4 @@ val is_pos_or_zero : bigint -> bool
 val is_neg_or_zero : bigint -> bool
 val neg : bigint -> bigint
 
-val pow : bigint -> bigint -> bigint
+val pow : bigint -> int -> bigint
