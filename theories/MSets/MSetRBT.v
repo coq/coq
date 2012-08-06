@@ -280,10 +280,12 @@ Fixpoint treeify_aux (pred:bool)(n: positive) : treeify_t :=
  | xI n => treeify_cont (treeify_aux false n) (treeify_aux pred n)
  end.
 
-Fixpoint plength (l:list elt) := match l with
- | nil => 1%positive
- | _::l => Pos.succ (plength l)
+Fixpoint plength_aux (l:list elt)(p:positive) := match l with
+ | nil => p
+ | _::l => plength_aux l (Pos.succ p)
 end.
+
+Definition plength l := plength_aux l 1.
 
 Definition treeify (l:list elt) :=
  fst (treeify_aux true (plength l) l).
@@ -1008,9 +1010,16 @@ Proof.
  - destruct p; [ apply treeify_zero_spec | apply treeify_one_spec ].
 Qed.
 
+Lemma plength_aux_spec l p :
+  Pos.to_nat (plength_aux l p) = length l + Pos.to_nat p.
+Proof.
+ revert p. induction l; simpl; trivial.
+ intros. now rewrite IHl, Pos2Nat.inj_succ, Nat.add_succ_r.
+Qed.
+
 Lemma plength_spec l : Pos.to_nat (plength l) = S (length l).
 Proof.
- induction l; simpl; now rewrite ?Pos2Nat.inj_succ, ?IHl.
+ unfold plength. rewrite plength_aux_spec. apply Nat.add_1_r.
 Qed.
 
 Lemma treeify_elements l : elements (treeify l) = l.
