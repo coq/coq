@@ -1268,8 +1268,8 @@ let start_verbatim =
   select Latex.start_verbatim Html.start_verbatim TeXmacs.start_verbatim Raw.start_verbatim
 let stop_verbatim =
   select Latex.stop_verbatim Html.stop_verbatim TeXmacs.stop_verbatim Raw.stop_verbatim
-let verbatim_char =
-  select output_char Html.char TeXmacs.char Raw.char
+let verbatim_char inline =
+  select (if inline then Latex.char else output_char) Html.char TeXmacs.char Raw.char
 let hard_verbatim_char = output_char
 
 let url = 

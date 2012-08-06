@@ -931,11 +931,11 @@ and escaped_html = parse
   | _   { Output.html_char (lexeme_char lexbuf 0); escaped_html lexbuf }
 
 and verbatim inline = parse
-  | nl ">>" space* nl { Output.verbatim_char '\n'; Output.stop_verbatim inline }
-  | nl ">>" { Output.verbatim_char '\n'; Output.stop_verbatim inline }
+  | nl ">>" space* nl { Output.verbatim_char inline '\n'; Output.stop_verbatim inline }
+  | nl ">>" { Output.verbatim_char inline '\n'; Output.stop_verbatim inline }
   | ">>" { Output.stop_verbatim inline }
   | eof { Output.stop_verbatim inline }
-  | _ { Output.verbatim_char (lexeme_char lexbuf 0); verbatim inline lexbuf }
+  | _ { Output.verbatim_char inline (lexeme_char lexbuf 0); verbatim inline lexbuf }
 
 and url = parse
   | "}}" { Output.url (Buffer.contents url_buffer) None; Buffer.clear url_buffer }
