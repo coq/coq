@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
-
 (** Arbitrary large integer numbers *)
 
 type bigint
@@ -39,5 +37,3 @@ val is_neg_or_zero : bigint -> bool
 val neg : bigint -> bigint
 
 val pow : bigint -> bigint -> bigint
-
-val pr_bigint : bigint -> std_ppcmds

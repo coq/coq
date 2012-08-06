@@ -151,7 +151,7 @@ let pr_or_var pr = function
   | ArgVar (loc,s) -> pr_lident (loc,s)
 
 let pr_prim_token = function
-  | Numeral n -> Bigint.pr_bigint n
+  | Numeral n -> str (Bigint.to_string n)
   | String s -> qs s
 
 let pr_evar pr n l =

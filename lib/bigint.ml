@@ -6,10 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-(*i*)
-open Pp
-(*i*)
-
 (***************************************************)
 (* Basic operations on (unbounded) integer numbers *)
 (***************************************************)
@@ -350,8 +346,6 @@ let is_strictly_neg n = is_strictly_neg (ints_of_z n)
 let is_strictly_pos n = is_strictly_pos (ints_of_z n)
 let is_neg_or_zero n = is_neg_or_zero (ints_of_z n)
 let is_pos_or_zero n = is_pos_or_zero (ints_of_z n)
-
-let pr_bigint n = str (to_string n)
 
 (* spiwack: computes n^m *)
 (* The basic idea of the algorithm is that n^(2m) = (n^2)^m *)
