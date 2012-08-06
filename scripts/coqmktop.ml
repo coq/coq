@@ -260,14 +260,14 @@ let main () =
     if !opt then begin
       (* native code *)
       if !top then failwith "no custom toplevel in native code !";
-      let ocamloptexec = Filename.concat camlbin "ocamlopt" in
+      let ocamloptexec = Filename.quote (Filename.concat camlbin "ocamlopt") in
         ocamloptexec^" -linkall"
     end else
       (* bytecode (we shunt ocamlmktop script which fails on win32) *)
       let ocamlmktoplib = if is_ocaml4
 	then " ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma"
 	else " toplevellib.cma" in
-      let ocamlcexec = Filename.concat camlbin "ocamlc" in
+      let ocamlcexec = Filename.quote (Filename.concat camlbin "ocamlc") in
       let ocamlccustom = Printf.sprintf "%s %s -linkall "
         ocamlcexec Coq_config.coqrunbyteflags in
       (if !top then ocamlccustom^ocamlmktoplib else ocamlccustom)
@@ -290,6 +290,10 @@ let main () =
     let args = if !top then args @ [ "topstart.cmo" ] else args in
       (* Now, with the .cma, we MUST use the -linkall option *)
     let command = String.concat " " (prog::"-rectypes"::args) in
+    (* In Win32, when Sys.command (and hence cmd.exe) executes a command
+       that may contains many double-quote, we should double-quote the whole ! *)
+    let command = if Sys.os_type = "Win32" then "\""^command^"\"" else command
+    in
       if !echo then
 	begin
 	  print_endline command;
