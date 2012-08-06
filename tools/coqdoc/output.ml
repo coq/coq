@@ -300,9 +300,23 @@ module Latex = struct
 
   let stop_latex_math () = output_char '$'
 
-  let start_verbatim () = printf "\\begin{verbatim}"
+  let start_quote () = output_char '`'; output_char '`'
+  let stop_quote () = output_char '\''; output_char '\''
+    
+  let start_verbatim inline = 
+    if inline then printf "\\texttt{"
+    else printf "\\begin{verbatim}"
 
-  let stop_verbatim () = printf "\\end{verbatim}\n"
+  let stop_verbatim inline =
+    if inline then printf "}"
+    else printf "\\end{verbatim}\n"
+
+  let url addr name = 
+    printf "%s\\footnote{\\url{%s}}"
+      (match name with
+       | None -> ""
+       | Some n -> n)
+      addr
 
   let indentation n =
     if n == 0 then
@@ -589,8 +603,22 @@ module Html = struct
   let start_latex_math () = ()
   let stop_latex_math () = ()
 
-  let start_verbatim () = printf "<pre>"
-  let stop_verbatim () = printf "</pre>\n"
+  let start_quote () = char '"'
+  let stop_quote () = start_quote ()
+
+  let start_verbatim inline = 
+    if inline then printf "<tt>"
+    else printf "<pre>"
+
+  let stop_verbatim inline = 
+    if inline then printf "</tt>" 
+    else printf "</pre>\n"
+
+  let url addr name = 
+    printf "<a href=\"%s\">%s</a>" addr 
+      (match name with
+       | Some n -> n
+       | None -> addr)
 
   let module_ref m s =
     match find_module m with
@@ -948,9 +976,17 @@ module TeXmacs = struct
 
   let stop_latex_math () = output_char '>'
 
-  let start_verbatim () = in_doc := true; printf "<\\verbatim>"
+  let start_verbatim inline = in_doc := true; printf "<\\verbatim>"
+  let stop_verbatim inline = in_doc := false; printf "</verbatim>"
 
-  let stop_verbatim () = in_doc := false; printf "</verbatim>"
+  let url addr name = 
+    printf "%s<\\footnote><\\url>%s</url></footnote>" addr
+      (match name with
+       | None -> ""
+       | Some n -> n)
+
+  let start_quote () = output_char '`'; output_char '`'
+  let stop_quote () = output_char '\''; output_char '\''
 
   let indentation n = ()
 
@@ -1076,9 +1112,16 @@ module Raw = struct
   let start_latex_math () = ()
   let stop_latex_math () = ()
 
-  let start_verbatim () = ()
+  let start_verbatim inline = ()
+  let stop_verbatim inline = ()
 
-  let stop_verbatim () = ()
+  let url addr name = 
+    match name with
+    | Some n -> printf "%s (%s)" n addr
+    | None -> printf "%s" addr
+
+  let start_quote () = printf "\""
+  let stop_quote () = printf "\""
 
   let indentation n =
       for i = 1 to n do printf " " done
@@ -1229,8 +1272,16 @@ let verbatim_char =
   select output_char Html.char TeXmacs.char Raw.char
 let hard_verbatim_char = output_char
 
+let url = 
+  select Latex.url Html.url TeXmacs.url Raw.url
+
+let start_quote =
+  select Latex.start_quote Html.start_quote TeXmacs.start_quote Raw.start_quote
+let stop_quote =
+  select Latex.stop_quote Html.stop_quote TeXmacs.stop_quote Raw.stop_quote
+
 let inf_rule_dumb assumptions (midsp,midln,midnm) conclusions = 
-  start_verbatim ();
+  start_verbatim false;
   let dumb_line = 
        function (sp,ln) -> (String.iter char ((String.make sp ' ') ^ ln);
                             char '\n')
@@ -1240,7 +1291,7 @@ let inf_rule_dumb assumptions (midsp,midln,midnm) conclusions =
                                 | Some s -> " " ^ s 
                                 | None -> ""));
      List.iter dumb_line conclusions);
-  stop_verbatim ()
+  stop_verbatim false
 
 let inf_rule = select inf_rule_dumb Html.inf_rule inf_rule_dumb inf_rule_dumb
 
