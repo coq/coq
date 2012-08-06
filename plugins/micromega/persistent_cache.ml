@@ -95,14 +95,24 @@ let read_key_elem inch =
     | End_of_file -> None
     |    _        -> raise InvalidTableFormat
 
+(** In win32, it seems that we should unlock the exact zone
+    that has been locked, and not the whole file *)
 
-let unlock fd = 
-  try 
-    let pos = lseek fd 0 SEEK_CUR in
-    ignore (lseek fd 0 SEEK_SET) ; 
-    lockf fd F_ULOCK 0 ; 
+let locked_start = ref 0
+
+let lock fd =
+  locked_start := lseek fd 0 SEEK_CUR;
+  lockf fd F_LOCK 0
+
+let rlock fd =
+  locked_start := lseek fd 0 SEEK_CUR;
+  lockf fd F_RLOCK 0
+
+let unlock fd =
+  let pos = lseek fd 0 SEEK_CUR in
+  ignore (lseek fd !locked_start SEEK_SET);
+  lockf fd F_ULOCK 0;
   ignore (lseek fd pos SEEK_SET)
-  with exc -> failwith (Printexc.to_string exc)
 
 let open_in f =
   let flags = [O_RDONLY ; O_CREAT] in
@@ -118,7 +128,7 @@ let open_in f =
 	  xload () in
     try
       (* Locking of the (whole) file while reading *)
-      lockf finch F_RLOCK 0 ; 
+      rlock finch;
       finally 
 	(fun () -> xload () ) 
 	(fun () -> 
@@ -136,7 +146,7 @@ let open_in f =
 	let flags = [O_WRONLY; O_TRUNC;O_CREAT] in
 	let out =  (openfile f flags 0o666) in
 	let outch = out_channel_of_descr out in
-	  lockf out F_LOCK 0 ; 
+	  lock out;
 	  (try 
 	    Table.iter 
 	      (fun k e -> Marshal.to_channel outch (k,e) [Marshal.No_sharing]) htbl;
@@ -168,8 +178,8 @@ let add t k e =
       let fd = descr_of_out_channel outch in
       begin
 	Table.add tbl k e ;
-	lockf fd F_LOCK 0 ;
-	ignore (lseek fd 0 SEEK_END) ; 
+	lock fd;
+	ignore (lseek fd 0 SEEK_END);
 	Marshal.to_channel outch (k,e) [Marshal.No_sharing] ;
 	flush outch ;
 	unlock fd
