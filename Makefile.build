@@ -529,9 +529,9 @@ $(FAKEIDE): lib/xml_lexer$(BESTOBJ) lib/xml_parser$(BESTOBJ) lib/xml_utils$(BEST
 
 ifeq ($(CAMLP4),camlp4)
 tools/compat5.cmo: tools/compat5.mlp
-	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp "$(CAMLP4O) -impl" -impl $<
+	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp '$(CAMLP4O) -impl' -impl $<
 tools/compat5b.cmo: tools/compat5b.mlp
-	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp "$(CAMLP4O) -impl" -impl $<
+	$(OCAMLC) -c -I $(MYCAMLP4LIB) -pp '$(CAMLP4O) -impl' -impl $<
 else
 tools/compat5.cmo: tools/compat5.ml
 	$(OCAMLC) -c $<
@@ -725,7 +725,7 @@ dev/printers.cma: | dev/printers.mllib.d
 grammar/grammar.cma: | grammar/grammar.mllib.d
 	$(SHOW)'Testing $@'
 	@touch test.ml4
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) -I $(CAMLLIB) $^ -impl" -impl test.ml4 -o test-grammar
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp '$(CAMLP4O) -I $(CAMLLIB) $^ -impl' -impl test.ml4 -o test-grammar
 	@rm -f test-grammar test.*
 	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $^ -linkall -a -o $@
