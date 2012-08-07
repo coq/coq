@@ -792,7 +792,9 @@ structured scripts (bullets and proof brackets) but, even if yet not
 user-available, the new engine also provides the basis for refining
 existential variables using tactics, for applying tactics to several
 goals simultaneously, for reordering goals, all features which are
-planned for the next release.
+planned for the next release. The new proof engine forced to
+reimplement {\tt info} and {\tt Show Script} differently, what was
+done by Pierre Letouzey.
 
 Before version 8.4, {\CoqIDE} was linked to {\Coq} with the graphical
 interface living in a separate thread. From version 8.4, {\CoqIDE} is a
@@ -861,9 +863,15 @@ Regarding vernacular commands, St\'ephane Glondu provided new commands
 to analyze the structure of type universes.
 
 Regarding libraries, a new library about lists of a given length
-(called vectors) has been provided by Pierre Boutillier.
+(called vectors) has been provided by Pierre Boutillier. A new
+instance of finite sets based on Red-Black trees and provided by
+Andrew Appel has been adapted for the standard library by Pierre
+Letouzey. In the library of real analysis, Yves Bertot changed the
+definition of $\pi$ and provided a proof of the long-standing fact yet
+remaining unproved in this library, namely that $sin \frac{\pi}{2} =
+1$.
 
-Pierre Corbineau maintained the C-zar proof mode.
+Pierre Corbineau maintained the Mathematical Proof Language (C-zar).
 
 Bruno Barras and Benjamin Gr\'egoire maintained the call-by-value
 reduction machines.
@@ -879,22 +887,33 @@ Julien Forest maintained the {\tt Function} command.
 Matthieu Sozeau maintained the setoid rewriting mechanism.
 
 {\Coq} related tools have been upgraded too. In particular, {\tt
-  coq\_makefile} has been largely revised by Pierre Boutillier.
+  coq\_makefile} has been largely revised by Pierre Boutillier. Also,
+patches from Adam Chlipala for {\tt coqdoc} have been integrated by
+Pierre Boutillier.
 
 Bruno Barras and Pierre Letouzey maintained the {\tt coqchk} checker.
 
 Pierre Courtieu and Arnaud Spiwack contributed new features for using
 {\Coq} through Proof General.
 
-Under the hood, the {\Coq} architecture benefited from improvements in
-terms of efficiency and robustness thanks to Pierre Letouzey and Yann
-R\'egis-Gianas with contributions from St\'ephane Glondu and Matthias
-Puech. The build system is maintained by Pierre Letouzey with
-contributions from St\'ephane Glondu and Pierre Boutillier.
+The {\tt Dp} plugin has been removed. Use the plugin provided with
+{\tt Why 3} instead (\url{http://why3.lri.fr}).
 
-The general maintenance was done by Hugo Herbelin, Pierre Letouzey,
-Pierre Boutillier and St\'ephane Glondu with local contributions from
-Guillaume Melquiond and Julien Narboux.
+Under the hood, the {\Coq} architecture benefited from improvements in
+terms of efficiency and robustness, especially regarding universes
+management and existential variables management, thanks to Pierre
+Letouzey and Yann R\'egis-Gianas with contributions from St\'ephane
+Glondu and Matthias Puech. The build system is maintained by Pierre
+Letouzey with contributions from St\'ephane Glondu and Pierre
+Boutillier.
+
+A new backtracking mechanism simplifying the task of external
+interfaces has been designed by Pierre Letouzey.
+
+The general maintenance was done by Pierre Letouzey, Hugo Herbelin,
+Pierre Boutillier, Matthieu Sozeau and St\'ephane Glondu with also
+specific contributions from Guillaume Melquiond, Julien Narboux and
+Pierre-Marie Pédrot.
 
 Packaging tools were provided by Pierre Letouzey (Windows), Pierre
 Boutillier (MacOS), St\'ephane Glondu (Debian). Releasing, testing and
