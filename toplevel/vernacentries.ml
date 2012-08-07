@@ -360,10 +360,11 @@ let smart_global r =
     Dumpglob.add_glob (Genarg.loc_of_or_by_notation loc_of_reference r) gr;
     gr
 
-let dump_global r = 
-  let gr = Smartlocate.smart_global r in
+let dump_global r =
+  try
+    let gr = Smartlocate.smart_global r in
     Dumpglob.add_glob (Genarg.loc_of_or_by_notation loc_of_reference r) gr
-
+  with _ -> ()
 (**********)
 (* Syntax *)
 
@@ -1257,6 +1258,7 @@ let vernac_check_may_eval redexp glopt rc =
 	if !pcoq <> None then (Option.get !pcoq).print_check env j
 	else msg (print_judgment env j)
     | Some r ->
+        Tacinterp.dump_glob_red_expr r;
         let (sigma',r_interp) = interp_redexp env sigma' r in
 	let redfun = fst (reduction_of_red_expr r_interp) in
 	if !pcoq <> None
@@ -1410,6 +1412,22 @@ let vernac_back n =
 
 let vernac_reset_name id =
   try
+    let globalized =
+      try
+	let gr = Smartlocate.global_with_alias (Ident id) in
+	Dumpglob.add_glob (fst id) gr;
+	true
+      with _ -> false in
+
+    if not globalized then begin
+       try begin match Lib.find_opening_node (snd id) with
+          | Lib.OpenedSection _ -> Dumpglob.dump_reference (fst id)
+              (string_of_dirpath (Lib.current_dirpath true)) "<>" "sec";
+          (* Might be nice to implement module cases, too.... *)
+          | _ -> ()
+       end with UserError _ -> ()
+    end;
+
     if Backtrack.is_active () then
       (Backtrack.reset_name id; try_print_subgoals ())
     else

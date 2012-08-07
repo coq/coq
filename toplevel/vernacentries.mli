@@ -12,6 +12,8 @@ open Vernacinterp
 open Vernacexpr
 open Topconstr
 
+val dump_global : Libnames.reference Genarg.or_by_notation -> unit
+
 (** Vernacular entries *)
 
 val show_script : unit -> unit

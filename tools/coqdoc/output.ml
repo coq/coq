@@ -32,21 +32,24 @@ let is_keyword =
     [ "About"; "AddPath"; "Axiom"; "Abort"; "Chapter"; "Check"; "Coercion"; "Compute"; "CoFixpoint";
       "CoInductive"; "Corollary"; "Defined"; "Definition"; "End"; "Eval"; "Example";
       "Export"; "Fact"; "Fix"; "Fixpoint"; "Function"; "Generalizable"; "Global"; "Grammar";
-      "Guarded"; "Goal"; "Hint";
+      "Guarded"; "Goal"; "Hint"; "Debug"; "On";
       "Hypothesis"; "Hypotheses";
-      "Resolve"; "Unfold"; "Immediate"; "Extern"; "Implicit"; "Import"; "Inductive";
+      "Resolve"; "Unfold"; "Immediate"; "Extern"; "Constructors"; "Rewrite";
+      "Implicit"; "Import"; "Inductive";
       "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Ltac";
       "Module"; "Module Type"; "Declare Module"; "Include";
-      "Mutual"; "Parameter"; "Parameters"; "Print"; "Printing"; "Proof"; "Proof with"; "Qed";
-      "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme";
+      "Mutual"; "Parameter"; "Parameters"; "Print"; "Printing"; "All"; "Proof"; "Proof with"; "Qed";
+      "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme"; "Assumptions"; "Axioms"; "Universes";
       "Induction"; "for"; "Sort"; "Section"; "Show"; "Structure"; "Syntactic"; "Syntax"; "Tactic"; "Theorem";
+      "Search"; "SearchAbout"; "SearchRewrite";
       "Set"; "Types"; "Undo"; "Unset"; "Variable"; "Variables"; "Context";
       "Notation"; "Reserved Notation"; "Tactic Notation";
       "Delimit"; "Bind"; "Open"; "Scope"; "Inline";
       "Implicit Arguments"; "Add"; "Strict";
       "Typeclasses"; "Instance"; "Global Instance"; "Class"; "Instantiation";
-      "subgoal"; "vm_compute";
-      "Opaque"; "Transparent";
+      "subgoal"; "subgoals"; "vm_compute";
+      "Opaque"; "Transparent"; "Time";
+      "Extraction"; "Extract";
       (* Program *)
       "Program Definition"; "Program Example"; "Program Fixpoint"; "Program Lemma";
       "Obligation"; "Obligations"; "Solve"; "using"; "Next Obligation"; "Next";
@@ -56,7 +59,9 @@ let is_keyword =
       "if"; "then"; "else"; "Prop"; "Set"; "Type"; ":="; "where"; "struct"; "wf"; "measure";
       "fix"; "cofix";
       (* Ltac *)
-      "before"; "after"
+      "before"; "after"; "constr"; "ltac"; "goal"; "context"; "beta"; "delta"; "iota"; "zeta";
+      (* Notations *)
+      "level"; "associativity"; "no"
        ]
 
 let is_tactic =
@@ -75,7 +80,9 @@ let is_tactic =
       "replace"; "setoid_replace"; "inversion"; "inversion_clear";
       "pattern"; "intuition"; "congruence"; "fail"; "fresh";
       "trivial"; "tauto"; "firstorder"; "ring";
-      "clapply"; "program_simpl"; "program_simplify"; "eapply"; "auto"; "eauto" ]
+      "clapply"; "program_simpl"; "program_simplify"; "eapply"; "auto"; "eauto";
+      "change"; "fold"; "hnf"; "lazy"; "simple"; "eexists"; "debug"; "idtac"; "first"; "type of"; "pose";
+      "eval"; "instantiate"; "until" ]
 
 (*s Current Coq module *)
 
@@ -266,6 +273,12 @@ module Latex = struct
 	| '^' | '~' as c ->
 	    Buffer.add_char buff '\\'; Buffer.add_char buff c;
 	    Buffer.add_string buff "{}"
+        | '\'' ->
+            if i < String.length s - 1 && s.[i+1] = '\'' then begin
+              Buffer.add_char buff '\''; Buffer.add_char buff '{';
+              Buffer.add_char buff '}'
+            end else
+              Buffer.add_char buff '\''
 	| c ->
 	    Buffer.add_char buff c
       done;
@@ -361,11 +374,19 @@ module Latex = struct
     | Some ref -> reference s ref
     | None -> if issymbchar then output_string s else printf "\\coqdocvar{%s}" s
 
+  let last_was_in = ref false
+
   let sublexer c loc =
-    let tag =
-      try Some (Index.find (get_module false) loc) with Not_found -> None
-    in
-    Tokens.output_tagged_symbol_char tag c
+    if c = '*' && !last_was_in then begin
+      Tokens.flush_sublexer ();
+      output_char '*'
+    end else begin
+      let tag =
+        try Some (Index.find (get_module false) loc) with Not_found -> None
+      in
+      Tokens.output_tagged_symbol_char tag c
+    end;
+    last_was_in := false
 
   let initialize () =
     Tokens.token_tree := token_tree_latex;
@@ -380,6 +401,7 @@ module Latex = struct
     printf "\\coqdockw{%s}" (translate s)
 
   let ident s loc =
+    last_was_in := s = "in";
     try
       let tag = Index.find (get_module false) loc in
       reference (translate s) tag
@@ -1246,8 +1268,8 @@ let start_verbatim =
   select Latex.start_verbatim Html.start_verbatim TeXmacs.start_verbatim Raw.start_verbatim
 let stop_verbatim =
   select Latex.stop_verbatim Html.stop_verbatim TeXmacs.stop_verbatim Raw.stop_verbatim
-let verbatim_char =
-  select output_char Html.char TeXmacs.char Raw.char
+let verbatim_char inline =
+  select (if inline then Latex.char else output_char) Html.char TeXmacs.char Raw.char
 let hard_verbatim_char = output_char
 
 let url = 

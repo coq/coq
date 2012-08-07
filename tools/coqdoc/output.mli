@@ -71,7 +71,7 @@ val latex_char : char -> unit
 val latex_string : string -> unit
 val html_char : char -> unit
 val html_string : string -> unit
-val verbatim_char : char -> unit
+val verbatim_char : bool -> char -> unit
 val hard_verbatim_char : char -> unit
 
 val start_latex_math : unit -> unit

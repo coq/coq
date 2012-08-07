@@ -855,6 +855,7 @@ let interp_hints h =
   | HintsConstructors lqid ->
       let constr_hints_of_ind qid =
         let ind = global_inductive_with_alias qid in
+	Dumpglob.dump_reference (fst (qualid_of_reference qid)) "<>" (string_of_reference qid) "ind";
         list_tabulate (fun i -> let c = (ind,i+1) in
 			 None, true, PathHints [ConstructRef c], mkConstruct c)
 	  (nconstructors ind) in
