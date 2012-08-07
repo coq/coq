@@ -370,7 +370,11 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
 let detype_sort = function
   | Prop Null -> GProp
   | Prop Pos -> GSet
-  | Type u -> GType (if !print_universes then Some (Univ.pr_uni u) else None)
+  | Type u ->
+    GType
+      (if !print_universes
+       then Some (Pp.string_of_ppcmds (Univ.pr_uni u))
+       else None)
 
 type binder_kind = BProd | BLambda | BLetIn
 

@@ -113,7 +113,7 @@ let pr_in_comment pr x = str "(* " ++ pr x ++ str " *)"
 let pr_glob_sort = function
   | GProp -> str "Prop"
   | GSet -> str "Set"
-  | GType u -> hov 0 (str "Type" ++ pr_opt (pr_in_comment (fun x->x)) u)
+  | GType u -> hov 0 (str "Type" ++ pr_opt (pr_in_comment str) u)
 
 let pr_id = pr_id
 let pr_name = pr_name

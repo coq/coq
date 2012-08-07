@@ -37,7 +37,7 @@ type 'id move_location =
 
 (** Sorts *)
 
-type sort_info = Pp.std_ppcmds option
+type sort_info = string option
 type glob_sort = GProp | GSet | GType of sort_info
 
 (** Casts *)
