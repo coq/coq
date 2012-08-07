@@ -450,16 +450,20 @@ fi
 mk_win_path () {
     case $ARCH,$CYGWIN in
 	win32,yes) cygpath -m "$1" ;;
-	win32*) "$ocamlexec" "$COQSRC/tools/mingwpath.ml" "$1" ;;
+	win32*) "$ocamlexec" "tools/mingwpath.ml" "$1" ;;
 	*) echo "$1" ;;
     esac
 }
 
-case $ARCH in
+case $ARCH,$src_spec in
+    win32,yes) echo "Error: the -src option is currently not supported on Windows"
+	       exit 1;;
     win32) CAMLBIN=`mk_win_path "$CAMLBIN"`;;
 esac
 
-CAMLVERSION=`"$bytecamlc" -version`
+# Beware of the final \r in Win32
+CAMLVERSION=`"$CAMLC" -version | tr -d "\r"`
+CAMLLIB=`"$CAMLC" -where | tr -d "\r"`
 
 case $CAMLVERSION in
     1.*|2.*|3.0*|3.10*|3.11.[01])
@@ -484,13 +488,6 @@ esac
 CAMLTAG=OCAML`echo $CAMLVERSION | sed -e "s/\([1-9]\)\.\([0-9]*\).*/\1\2/g"`
 
 # For coqmktop & bytecode compiler
-
-case $ARCH in
-    win32) # Awfull trick to get around a ^M problem at the end of CAMLLIB
-      CAMLLIB=`"$CAMLC" -where | sed -e 's/^\(.*\)$/\1/'` ;;
-    *)
-      CAMLLIB=`"$CAMLC" -where`
-esac
 
 if [ "$coq_debug_flag" = "-g" ]; then
     case $CAMLTAG in
@@ -1003,7 +1000,7 @@ config_template="$COQSRC/config/Makefile.template"
 ### since some of them (e.g. $COQSRC) will be escaped
 
 escape_string () {
-    "$ocamlexec" "$COQSRC/tools/escape_string.ml" "$1"
+    "$ocamlexec" "tools/escape_string.ml" "$1"
 }
 
 # Escaped version of browser command
