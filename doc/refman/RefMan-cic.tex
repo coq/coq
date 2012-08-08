@@ -404,22 +404,48 @@ $$\WTEGRED{x}{\triangleright_{\delta}}{t}~~~~~\mbox{if $(x:=t:T) \in \Gamma$}~~~
 
 \paragraph[$\zeta$-reduction.]{$\zeta$-reduction.\label{zeta}\index{zeta-reduction@$\zeta$-reduction}}
 
-Coq allows also to remove local definitions occurring in terms by
+{\Coq} allows also to remove local definitions occurring in terms by
 replacing the defined variable by its value. The declaration being
 destroyed, this reduction differs from $\delta$-reduction. It is
 called $\zeta$-reduction and shows as follows.
 
 $$\WTEGRED{\kw{let}~x:=u~\kw{in}~t}{\triangleright_{\zeta}}{\subst{t}{x}{u}}$$
 
+\paragraph{$\eta$-conversion.
+\label{eta}
+\index{eta-conversion@$\eta$-conversion}
+%\index{eta-reduction@$\eta$-reduction}
+}
+An other important concept is $\eta$-conversion. It is to identify any
+term $t$ of functional type $\forall x:T, U$ with its so-called
+$\eta$-expansion $\lb x:T\mto (t\ x)$ for $x$ an arbitrary variable
+name fresh in $t$.
+
+The notion of $\eta$-reduction ${\lb x:T\mto (t\ x)}{\triangleright}{t}$
+(for $x$ not occurring in $t$) is not type-sound because of subtyping
+(think about $\lb x:\Type(1)\mto (f x)$ of type $\forall
+x:\Type(1), \Type(1)$ for $f$ of type $\forall x:\Type(2),
+\Type(1)$). On the other side, $\eta$-expansion requires to know $T$
+and hence requires types. Hence, neither $\eta$-expansion nor
+$\eta$-reduction can be type-safely considered on terms we do not know
+the type. However, $\eta$ can be used as a conversion rule.
+
 \paragraph[Convertibility.]{Convertibility.\label{convertibility}
 \index{beta-reduction@$\beta$-reduction}\index{iota-reduction@$\iota$-reduction}\index{delta-reduction@$\delta$-reduction}\index{zeta-reduction@$\zeta$-reduction}}
 
 Let us write $\WTEGRED{t}{\triangleright}{u}$ for the contextual closure of the relation $t$ reduces to $u$ in the environment $E$ and context $\Gamma$ with one of the previous reduction $\beta$, $\iota$, $\delta$ or $\zeta$.
 
-We say that two terms $t_1$ and $t_2$ are {\em convertible} (or {\em
-  equivalent)} in the environment $E$ and context $\Gamma$ iff there exists a term $u$ such that $\WTEGRED{t_1}{\triangleright \ldots \triangleright}{u}$
-and $\WTEGRED{t_2}{\triangleright \ldots \triangleright}{u}$.
-We then write $\WTEGCONV{t_1}{t_2}$.
+We say that two terms $t_1$ and $t_2$ are {\em
+  $\beta\iota\delta\zeta\eta$-convertible}, or simply {\em
+  convertible}, or {\em equivalent}, in the environment $E$ and
+context $\Gamma$ iff there exist terms $u_1$ and $u_2$ such that
+$\WTEGRED{t_1}{\triangleright \ldots \triangleright}{u_1}$ and
+$\WTEGRED{t_2}{\triangleright \ldots \triangleright}{u_2}$ and either
+$u_1$ and $u_2$ are identical, or they are convertible up to
+$\eta$-expansion, i.e. $u_1$ is $\lb x:T\mto u'_1$ and $u_2\,x$ is
+recursively convertible to $u'_1$, or, symmetrically, $u_2$ is $\lb
+x:T\mto u'_2$ and $u_1\,x$ is recursively convertible to $u'_2$.  We
+then write $\WTEGCONV{t_1}{t_2}$.
 
 The convertibility relation allows to introduce a new typing rule
 which says that two convertible well-formed types have the same
@@ -427,16 +453,17 @@ inhabitants.
 
 At the moment, we did not take into account one rule between universes
 which says that any term in a universe of index $i$ is also a term in
-the universe of index $i+1$. This property is included into the
+the universe of index $i+1$ (this is the {\em cumulativity} rule of
+{\CIC}). This property is included into the
 conversion rule by extending the equivalence relation of
-convertibility into an order inductively defined by:
+convertibility into a {\em subtyping} relation inductively defined by:
 \begin{enumerate}
 \item if $\WTEGCONV{t}{u}$ then $\WTEGLECONV{t}{u}$,
 \item if $i \leq j$ then $\WTEGLECONV{\Type(i)}{\Type(j)}$,
 \item for any $i$, $\WTEGLECONV{\Set}{\Type(i)}$,
 \item $\WTEGLECONV{\Prop}{\Set}$, hence, by transitivity,
   $\WTEGLECONV{\Prop}{\Type(i)}$, for any $i$
-\item if $\WTEGCONV{T}{U}$ and $\WTELECONV{\Gamma::(x:T)}{T'}{U'}$ then $\WTEGLECONV{\forall~x:T,T'}{\forall~x:U,U'}$.
+\item if $\WTEGCONV{T}{U}$ and $\WTELECONV{\Gamma::(x:T)}{T'}{U'}$ then $\WTEGLECONV{\forall~x:T, T'}{\forall~x:U, U'}$.
 \end{enumerate}
 
 The conversion rule is now exactly:
@@ -447,23 +474,6 @@ The conversion rule is now exactly:
       \frac{\WTEG{U}{s}~~~~\WTEG{t}{T}~~~~\WTEGLECONV{T}{U}}{\WTEG{t}{U}}}
   \end{description}
 
-
-\paragraph{$\eta$-conversion.
-\label{eta}
-\index{eta-conversion@$\eta$-conversion}
-\index{eta-reduction@$\eta$-reduction}}
-
-An other important rule is the $\eta$-conversion. It is to identify
-terms over a dummy abstraction of a variable followed by an
-application of this variable. Let $T$ be a type, $t$ be a term in
-which the variable $x$ doesn't occurs free. We have
-\[ \WTEGRED{\lb x:T\mto (t\ x)}{\triangleright}{t} \]
-Indeed, as $x$ doesn't occur free in $t$, for any $u$ one
-applies to $\lb x:T\mto (t\ x)$, it $\beta$-reduces to $(t\ u)$. So
-$\lb x:T\mto (t\ x)$ and $t$ can be identified.
-
-\Rem The $\eta$-reduction is not taken into account in the
-convertibility rule of \Coq.
 
 \paragraph[Normal form.]{Normal form.\index{Normal form}\label{Normal-form}\label{Head-normal-form}\index{Head normal form}}
 A term which cannot be any more reduced is said to be in {\em normal
