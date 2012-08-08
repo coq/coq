@@ -3,4 +3,49 @@ Potential sources of incompatibilities between Coq V8.3 and V8.4
 
 (see also file CHANGES)
 
-TO BE DONE
+The main known incompatibilities between 8.3 and 8.4 are consequences
+of the following changes:
+
+- The reorganization of the library of numbers:
+
+  Several definitions have new names or are defined in modules of
+  different names, but a special care has been taken to have this
+  renaming transparent for the user thanks to compatibility notations.
+
+  However some definitions have changed, what might require some
+  adaptations. The most noticeable examples are:
+  - The "?=" notation which now bind to Pos.compare rather than former
+    Pcompare (now Pos.compare_cont).
+  - Changes in names may induce different automatically generated
+    names in proof scripts (e.g. when issuing "destruct Z_le_gt_dec").
+  - Z.add has a new definition, hence, applying "simpl" on subterms of
+    its body might give different results than before.
+  - BigN.shiftl and BigN.shiftr have reversed arguments order, the
+    power function in BigN now takes two BigN.
+
+- Other changes in libraries:
+
+  - The definition of functions over "vectors" (list of fixed length)
+    have changed.
+  - TheoryList.v has been removed.
+
+- Slight changes in tactics:
+
+  - Less unfolding of fixpoints when applying destruct or inversion on
+    a fixpoint hiding an inductive type (add an extra call to simpl to
+    preserve compatibility).
+  - Less unexpected local definitions when applying "destruct"
+    (incompatibilities solvable by adapting name hypotheses).
+  - Tactic "apply" might succeed more often, e.g. by now solving
+    pattern-matching of the form ?f x y = g(x,y) (compatibility
+    ensured by using "Unset Tactic Pattern Unification"), but also
+    because it supports (full) betaiota (using "simple apply" might
+    then help).
+  - Tactic autorewrite does no longer instantiate pre-existing
+    existential variables.
+  - Tactic "info" is now available only for auto, eauto and trivial.
+
+- Miscellaneous changes:
+
+  - The command "Load" is now atomic for backtracking (use "Unset
+    Atomic Load" for compatibility).
