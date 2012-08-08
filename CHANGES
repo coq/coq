@@ -89,7 +89,7 @@ Changes from V8.3 to V8.4beta
 
 Logic
 
-- Standard eta-conversion now supported (dependent product only). (DOC TO DO)
+- Standard eta-conversion now supported (dependent product only).
 - Guard condition improvement: subterm property is propagated through beta-redex
   blocked by pattern-matching, as in "(match v with C .. => fun x => u end) x";
   this allows for instance to use "rewrite ... in ..." without breaking
