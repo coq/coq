@@ -196,11 +196,11 @@ More precisely the language of the {\em Calculus of Inductive
   {\em dependent product}. If $x$ doesn't occurs in $U$ then
   $\forall~x:T,U$ reads as {\it ``if T then U''}. A non dependent
   product can be written: $T \rightarrow U$.
-\item if $x$ is a variable and $T$, $U$ are terms then $\lb~x:T \mto U$
+\item if $x$ is a variable and $T$, $U$ are terms then $\lb x:T \mto U$
   ($\kw{fun}~x:T\Ra U$ in \Coq{} concrete syntax) is a term. This is a
   notation for the $\lambda$-abstraction of
   $\lambda$-calculus\index{lambda-calculus@$\lambda$-calculus}
-  \cite{Bar81}. The term $\lb~x:T \mto U$ is a function which maps
+  \cite{Bar81}. The term $\lb x:T \mto U$ is a function which maps
   elements of $T$ to $U$.
 \item if $T$ and $U$ are terms then $(T\ U)$ is a term  
  ($T~U$ in \Coq{} concrete syntax).  The term $(T\ 
@@ -217,13 +217,13 @@ $(t~t_1\ldots t_n)$ represents $(\ldots (t~t_1)\ldots t_n)$. The
 products and arrows associate to the right such that $\forall~x:A,B\ra C\ra
 D$ represents $\forall~x:A,(B\ra (C\ra D))$.  One uses sometimes
 $\forall~x~y:A,B$ or
-$\lb~x~y:A\mto B$ to denote the abstraction or product of several variables
+$\lb x~y:A\mto B$ to denote the abstraction or product of several variables
 of the same type. The equivalent formulation is $\forall~x:A, \forall y:A,B$ or
-$\lb~x:A \mto \lb y:A \mto B$
+$\lb x:A \mto \lb y:A \mto B$
 
 \paragraph{Free variables.}
 The notion of free variables is defined as usual.  In the expressions
-$\lb~x:T\mto U$ and $\forall x:T, U$ the occurrences of $x$ in $U$
+$\lb x:T\mto U$ and $\forall x:T, U$ the occurrences of $x$ in $U$
 are bound.  They are represented by de Bruijn indexes in the internal
 structure of terms.
 
@@ -347,7 +347,7 @@ be derived from the following rules.
     {\WTEG{\forall~x:T,U}{\Type(k)}}}
 \item[Lam]\index{Typing rules!Lam} 
 \inference{\frac{\WTEG{\forall~x:T,U}{s}~~~~ \WTE{\Gamma::(x:T)}{t}{U}}
-        {\WTEG{\lb~x:T\mto t}{\forall x:T, U}}}
+        {\WTEG{\lb x:T\mto t}{\forall x:T, U}}}
 \item[App]\index{Typing rules!App}
  \inference{\frac{\WTEG{t}{\forall~x:U,T}~~~~\WTEG{u}{U}}
                  {\WTEG{(t\ u)}{\subst{T}{x}{u}}}}
@@ -357,7 +357,7 @@ be derived from the following rules.
 \end{description}
     
 \Rem We may have $\kw{let}~x:=t~\kw{in}~u$
-well-typed without having $((\lb~x:T\mto u)~t)$ well-typed (where
+well-typed without having $((\lb x:T\mto u)~t)$ well-typed (where
 $T$ is a type of $t$). This is because the value $t$ associated to $x$
 may be used in a conversion rule (see Section~\ref{conv-rules}).
 
@@ -368,13 +368,13 @@ may be used in a conversion rule (see Section~\ref{conv-rules}).
 We want to be able to identify some terms as we can identify the
 application of a function to a given argument with its result. For
 instance the identity function over a given type $T$ can be written
-$\lb~x:T\mto x$. In any environment $E$ and context $\Gamma$, we want to identify any object $a$ (of type $T$) with the
-application $((\lb~x:T\mto x)~a)$. We define for this a {\em reduction} (or a
+$\lb x:T\mto x$. In any environment $E$ and context $\Gamma$, we want to identify any object $a$ (of type $T$) with the
+application $((\lb x:T\mto x)~a)$. We define for this a {\em reduction} (or a
 {\em conversion}) rule we call $\beta$:
-\[ \WTEGRED{((\lb~x:T\mto
+\[ \WTEGRED{((\lb x:T\mto
   t)~u)}{\triangleright_{\beta}}{\subst{t}{x}{u}} \] 
 We say that $\subst{t}{x}{u}$ is the {\em $\beta$-contraction} of
-$((\lb~x:T\mto t)~u)$ and, conversely, that $((\lb~x:T\mto t)~u)$
+$((\lb x:T\mto t)~u)$ and, conversely, that $((\lb x:T\mto t)~u)$
 is the {\em $\beta$-expansion} of $\subst{t}{x}{u}$.
 
 According to $\beta$-reduction, terms of the {\em Calculus of
@@ -457,10 +457,10 @@ An other important rule is the $\eta$-conversion. It is to identify
 terms over a dummy abstraction of a variable followed by an
 application of this variable. Let $T$ be a type, $t$ be a term in
 which the variable $x$ doesn't occurs free. We have
-\[ \WTEGRED{\lb~x:T\mto (t\ x)}{\triangleright}{t} \]
+\[ \WTEGRED{\lb x:T\mto (t\ x)}{\triangleright}{t} \]
 Indeed, as $x$ doesn't occur free in $t$, for any $u$ one
-applies to $\lb~x:T\mto (t\ x)$, it $\beta$-reduces to $(t\ u)$. So
-$\lb~x:T\mto (t\ x)$ and $t$ can be identified.
+applies to $\lb x:T\mto (t\ x)$, it $\beta$-reduces to $(t\ u)$. So
+$\lb x:T\mto (t\ x)$ and $t$ can be identified.
 
 \Rem The $\eta$-reduction is not taken into account in the
 convertibility rule of \Coq.
@@ -470,19 +470,19 @@ A term which cannot be any more reduced is said to be in {\em normal
   form}. There are several ways (or strategies) to apply the reduction
 rule. Among them, we have to mention the {\em head reduction} which
 will play an important role (see Chapter~\ref{Tactics}). Any term can
-be written as $\lb~x_1:T_1\mto \ldots \lb x_k:T_k \mto 
+be written as $\lb x_1:T_1\mto \ldots \lb x_k:T_k \mto
 (t_0\ t_1\ldots t_n)$ where
 $t_0$ is not an application. We say then that $t_0$ is the {\em head
-  of $t$}. If we assume that $t_0$ is $\lb~x:T\mto u_0$ then one step of
+  of $t$}. If we assume that $t_0$ is $\lb x:T\mto u_0$ then one step of
 $\beta$-head reduction of $t$ is:
-\[\lb~x_1:T_1\mto \ldots \lb x_k:T_k\mto (\lb~x:T\mto u_0\ t_1\ldots t_n) 
-~\triangleright ~ \lb~(x_1:T_1)\ldots(x_k:T_k)\mto 
+\[\lb x_1:T_1\mto \ldots \lb x_k:T_k\mto (\lb x:T\mto u_0\ t_1\ldots t_n)
+~\triangleright ~ \lb (x_1:T_1)\ldots(x_k:T_k)\mto
 (\subst{u_0}{x}{t_1}\ t_2 \ldots t_n)\]
 Iterating the process of head reduction until the head of the reduced
 term is no more an abstraction leads to the {\em $\beta$-head normal
   form} of $t$:
 \[ t \triangleright \ldots \triangleright
-\lb~x_1:T_1\mto \ldots\lb x_k:T_k\mto (v\ u_1
+\lb x_1:T_1\mto \ldots\lb x_k:T_k\mto (v\ u_1
 \ldots u_m)\]
 where $v$ is not an abstraction (nor an application).  Note that the
 head normal form must not be confused with the normal form since some
@@ -526,7 +526,7 @@ variable $x$ is available at each stage where $c$ is mentioned.
 \paragraph{Abstracting property:} 
  \inference{\frac{\WF{E; \Def{\Gamma::(x:U)}{c}{t}{T};
        F}{\Delta}~~~~\WFE{\Gamma}}
-           {\WF{E;\Def{\Gamma}{c}{\lb~x:U\mto t}{\forall~x:U,T};
+           {\WF{E;\Def{\Gamma}{c}{\lb x:U\mto t}{\forall~x:U,T};
   \subst{F}{c}{(c~x)}}{\subst{\Delta}{c}{(c~x)}}}}
 
 \paragraph{Pruning the context.} 
@@ -862,7 +862,7 @@ assuming the notion of product and lists were already defined and {\tt
     neg}:\Set}{{\tt neg}:(A\ra{\tt False}) \ra {\tt neg}}.  Assuming
 $X$ has arity ${\tt nat \ra Prop}$ and {\tt ex} is the inductively
 defined existential quantifier, the occurrence of $X$ in ${\tt (ex~
-  nat~ \lb~n:nat\mto (X~ n))}$ is also strictly positive.
+  nat~ \lb n:nat\mto (X~ n))}$ is also strictly positive.
 
 \paragraph{Correctness rules.}
 We shall now describe the rules allowing the introduction of a new
@@ -1206,7 +1206,7 @@ compact notation~:
 % \[\kw{fun} l:\ListA \Ra \kw{match}~l~\kw{with}~ \Nil \Ra \true~
 % |~(\cons~a~m) \Ra \false \kw{end}\]
 % represented by
-% \[\lb~l:\ListA \mto\Case{\bool}{l}{\true~ |~ \lb a~m,~\false}\]
+% \[\lb l:\ListA \mto\Case{\bool}{l}{\true~ |~ \lb a~m,~\false}\]
 %\noindent {\bf Remark. } 
 
 % In the system \Coq\ the expression above, can be
