@@ -142,12 +142,6 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 (*     observe (str "replacing " ++ pr_lconstr c ++ str " by "  ++ pr_lconstr res); *)
     res
   in
-  let rec has_dummy_var t  =
-    fold_constr
-      (fun b t -> b || (eq_constr t dummy_var) || (has_dummy_var t))
-      false
-      t
-  in
   let rec compute_new_princ_type remove env pre_princ : types*(constr list) =
     let (new_princ_type,_) as res =
       match kind_of_term pre_princ with
