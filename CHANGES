@@ -88,27 +88,27 @@ Changes from V8.4beta to V8.4beta2
 
 Vernacular commands
 
-- Back and BackTo are now handling the proof states. They may
-  perform some extra steps of backtrack to avoid states where
-  the proof state is unavailable (typically a closed proof).
-- The commands Suspend and Resume have been removed.
+- Commands "Back" and "BackTo" are now handling the proof states. They may
+  perform some extra steps of backtrack to avoid states where the proof
+  state is unavailable (typically a closed proof).
+- The commands "Suspend" and "Resume" have been removed.
 - A basic Show Script has been reintroduced (no indentation).
 - New command "Set Parsing Explicit" for deactivating parsing (and printing)
   of implicit arguments (useful for teaching).
-- New command "Grab Existential Variables" to transform the unresolved evars at
-  the end of a proof into goals.
+- New command "Grab Existential Variables" to transform the unresolved evars
+  at the end of a proof into goals.
 
 Tactics
 
-- Still no general "info" tactical, but new specific tactics
-  info_auto, info_eauto, info_trivial which provides information
-  on the proofs found by auto/eauto/trivial. Display of these
-  details could also be activated by Set Info Auto/Eauto/Trivial.
-- Details on everything tried by auto/eauto/trivial during
-  a proof search could be obtained by "debug auto", "debug eauto",
-  "debug trivial" or by a global "Set Debug Auto/Eauto/Trivial".
-- New command "r string" that interprets "idtac string" as a breakpoint
-  and jumps to its next use in Ltac debugger.
+- Still no general "info" tactical, but new specific tactics info_auto,
+  info_eauto, info_trivial which provides information on the proofs found
+  by auto/eauto/trivial. Display of these details could also be activated by
+  "Set Info Auto"/"Set Info Eauto"/"Set Info Trivial".
+- Details on everything tried by auto/eauto/trivial during a proof search
+  could be obtained by "debug auto", "debug eauto", "debug trivial" or by a
+  global "Set Debug Auto"/"Set Debug Eauto"/"Set Debug Trivial".
+- New command "r string" in Ltac debugger that interprets "idtac
+  string" in Ltac code as a breakpoint and jumps to its next use.
 - Tactics from the Dp plugin (simplify, ergo, yices, cvc3, z3, cvcl,
   harvey, zenon, gwhy) have been removed, since Why2 has not been
   maintained for the last few years. The Why3 plugin should be a suitable
@@ -119,7 +119,7 @@ Libraries
 - MSetRBT: a new implementation of MSets via Red-Black trees (initial
   contribution by Andrew Appel).
 - MSetAVL: for maximal sharing with the new MSetRBT, the argument order
-  of Node has changed (this should be transparent to regular MSets users). 
+  of Node has changed (this should be transparent to regular MSets users).
 
 Module System
 
@@ -129,15 +129,15 @@ Module System
 
 CoqIDE
 
-- Coqide now supports the Restart command, and Undo (with a warning).
-  Better support for Abort.
+- Coqide now supports the "Restart" command, and "Undo" (with a warning).
+  Better support for "Abort".
 
 Changes from V8.3 to V8.4beta
 =============================
 
 Logic
 
-- Standard eta-conversion now supported (dependent product only) (DOC TO DO).
+- Standard eta-conversion now supported (dependent product only).
 - Guard condition improvement: subterm property is propagated through beta-redex
   blocked by pattern-matching, as in "(match v with C .. => fun x => u end) x";
   this allows for instance to use "rewrite ... in ..." without breaking
@@ -162,7 +162,7 @@ Tactics
 
 - New proof engine.
 - Scripts can now be structured thanks to bullets - * + and to subgoal
-  delimitation via { }. Note: for use with ProofGeneral, a cvs version of
+  delimitation via { }. Note: for use with Proof General, a cvs version of
   Proof General no older than mid-July 2011 is currently required.
 - Support for tactical "info" is suspended.
 - Support for command "Show Script" is suspended.
@@ -214,7 +214,7 @@ Vernacular commands
 - It is now mandatory to have a space (or tabulation or newline or end-of-file)
   after a "." ending a sentence.
 - In SearchAbout, the [ ] delimiters are now optional.
-- New command "Add/Remove Search Blacklist <substring> ..." :
+- New command "Add/Remove Search Blacklist <substring> ...":
   a Search or SearchAbout or similar query will never mention lemmas
   whose qualified names contain any of the declared substrings.
   The default blacklisted substrings are "_admitted" "_subproof" "Private_".
@@ -258,9 +258,9 @@ Module System
 Libraries
 
 - Extension of the abstract part of Numbers, which now provide axiomatizations
-  and results about many more integer functions, such as pow, gcd, lcm, sqrt, log2
-  and bitwise functions. These functions are implemented for nat N BigN Z BigZ.
-  See in particular file NPeano for new functions about nat.
+  and results about many more integer functions, such as pow, gcd, lcm, sqrt,
+  log2 and bitwise functions. These functions are implemented for nat, N, BigN,
+  Z, BigZ. See in particular file NPeano for new functions about nat.
 - The definition of types positive, N, Z is now in file BinNums.v
 - Major reorganization of ZArith. The initial file ZArith/BinInt.v now contains
   an internal module Z implementing the Numbers interface for integers.
@@ -299,13 +299,13 @@ Libraries
   may introduce incompatibilities. In particular, the order of the arguments
   for BigN.shiftl and BigN.shiftr is now reversed: the number to shift now
   comes first. By default, the power function now takes two BigN.
-- Creation of Vector, an independant library for lists indiced by their length.
+- Creation of Vector, an independent library for lists indexed by their length.
   Vectors' names overwrite lists' one so you should not "Import" the library.
-  All old names change: functions' name follows the ocaml names and, for example,
+  All old names changed: function names follow the ocaml ones and, for example,
   Vcons becomes Vector.cons. You can get [..;..;..]-style notations by importing
   Vector.VectorNotations.
 - Removal of TheoryList. Requiring List instead should work most of the time.
-- New syntax "rew Heq in H" and "rew <- Heq in H" for eq_rect and 
+- New syntax "rew Heq in H" and "rew <- Heq in H" for eq_rect and
   eq_rect_r (available by importing module EqNotations).
 - Wf.iter_nat is now Peano.nat_iter (with an implicit type argument).
 
