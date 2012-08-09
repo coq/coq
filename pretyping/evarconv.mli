@@ -30,16 +30,16 @@ val evar_conv_x : transparent_state ->
   env -> evar_map -> conv_pb -> constr -> constr -> evar_map * bool
 val evar_eqappr_x : transparent_state ->
   env -> evar_map ->
-    conv_pb -> constr * constr list -> constr * constr list ->
+    conv_pb -> constr * constr stack -> constr * constr stack ->
       evar_map * bool
 (**/**)
 
 val consider_remaining_unif_problems : ?ts:transparent_state -> env -> evar_map -> evar_map
 
-val check_conv_record : constr * types list -> constr * types list ->
+val check_conv_record : constr * types stack -> constr * types stack ->
   constr * constr list * (constr list * constr list) *
     (constr list * types list) *
-    (constr list * types list) * constr *
+    (constr stack * types stack) * constr *
     (int * constr)
 
 val set_solve_evars : (env -> evar_map -> constr -> evar_map * constr) -> unit

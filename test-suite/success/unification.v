@@ -1,3 +1,7 @@
+Let test_stack_unification_interaction_with_delta A
+  : (if negb _ then true else false) = if orb false (negb A) then true else false
+  := eq_refl.
+
 (* Test patterns unification *)
 
 Lemma l1 : (forall P, (exists x:nat, P x) -> False)

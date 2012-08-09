@@ -341,7 +341,7 @@ let is_open_canonical_projection env sigma (c,args) =
   try
     let n = find_projection_nparams (global_of_constr c) in
     try
-      let arg = whd_betadeltaiota env sigma (List.nth args n) in
+      let arg = whd_betadeltaiota env sigma (stack_nth args n) in
       let hd = match kind_of_term arg with App (hd, _) -> hd | _ -> arg in
       not (isConstruct hd) 
     with Failure _ -> false

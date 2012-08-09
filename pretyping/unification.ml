@@ -607,9 +607,9 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
   and canonical_projections curenvnb pb b cM cN (sigma,_,_ as substn) =
     let f1 () =
       if isApp cM then
-	let f1l1 = decompose_app cM in
+	let f1l1 = whd_nored_state sigma (cM,empty_stack) in
 	  if is_open_canonical_projection env sigma f1l1 then
-	    let f2l2 = decompose_app cN in
+	    let f2l2 = whd_nored_state sigma (cN,empty_stack) in
 	      solve_canonical_projection curenvnb pb b cM f1l1 cN f2l2 substn
 	  else error_cannot_unify (fst curenvnb) sigma (cM,cN)
       else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -620,9 +620,9 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       else
 	try f1 () with e when precatchable_exception e ->
 	  if isApp cN then
-	    let f2l2 = decompose_app cN in
+	    let f2l2 = whd_nored_state sigma (cN, empty_stack) in
 	      if is_open_canonical_projection env sigma f2l2 then
-		let f1l1 = decompose_app cM in
+		let f1l1 = whd_nored_state sigma (cM, empty_stack) in
 		  solve_canonical_projection curenvnb pb b cN f2l2 cM f1l1 substn
 	      else error_cannot_unify (fst curenvnb) sigma (cM,cN)
 	  else error_cannot_unify (fst curenvnb) sigma (cM,cN)
@@ -649,9 +649,11 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
       (evd,ms,es) us2 us in
     let substn = unilist2 (fun s u1 u -> unirec_rec curenvnb pb b false s u1 (substl ks u))
       substn params1 params in
-    let substn = unilist2 (unirec_rec curenvnb pb b false) substn ts ts1 in
-      unirec_rec curenvnb pb b false substn c1 (applist (c,(List.rev ks)))
-
+    match Option.lift2 (unilist2 (unirec_rec curenvnb pb b false) substn)
+      (list_of_app_stack ts) (list_of_app_stack ts1) with
+      |Some substn ->
+	unirec_rec curenvnb pb b false substn c1 (applist (c,(List.rev ks)))
+      |None -> anomaly "As expected, solve_canonical_projection breaks the term too much"
   in
   let evd = sigma in
     if (if occur_meta_or_undefined_evar evd m || occur_meta_or_undefined_evar evd n

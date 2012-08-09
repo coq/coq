@@ -36,6 +36,7 @@ val append_stack_app : 'a array -> 'a stack -> 'a stack
 val append_stack_app_list : 'a list -> 'a stack -> 'a stack
 
 val decomp_stack : 'a stack -> ('a * 'a stack) option
+val strip_app : 'a stack -> 'a list * 'a stack
 (** Takes the n first arguments of application put on the stack. Fails is the
     stack does not start by n arguments of application. *)
 val nfirsts_app_of_stack : int -> 'a stack -> 'a list
@@ -93,6 +94,7 @@ val nf_evar : evar_map -> constr -> constr
 val nf_betaiota_preserving_vm_cast : reduction_function
 
 (** Lazy strategy, weak head reduction *)
+
 val whd_evar :  evar_map -> constr -> constr
 val whd_beta : local_reduction_function
 val whd_betaiota : local_reduction_function
