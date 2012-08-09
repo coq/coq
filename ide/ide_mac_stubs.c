@@ -8,7 +8,7 @@
 #include <lablgtk2/wrappers.h>
 #include <lablgtk2/ml_glib.h>
 #include <lablgtk2/ml_gobject.h>
-#include <igemacintegration/gtkosxapplication.h>
+#include <gtkmacintegration/gtkosxapplication.h>
 
 GtkOSXApplication *theApp;
 value open_file_fun, forbid_quit_fun, themenubar, pref_item, about_item;
@@ -76,10 +76,10 @@ CAMLprim value caml_gtk_mac_ready(value menubar, value prefs, value about)
   caml_register_generational_global_root(&about_item);
   /*  gtk_accel_map_foreach(NULL, osx_accel_map_foreach_lcb);*/
   gtk_osxapplication_set_menu_bar(theApp,check_cast(GTK_MENU_SHELL,themenubar));
-  about_grp = gtk_osxapplication_add_app_menu_group(theApp);
-  pref_grp = gtk_osxapplication_add_app_menu_group(theApp);
-  gtk_osxapplication_add_app_menu_item(theApp,about_grp,check_cast(GTK_MENU_ITEM,about_item));
-  gtk_osxapplication_add_app_menu_item(theApp,pref_grp,check_cast(GTK_MENU_ITEM,pref_item));
+  gtk_osxapplication_insert_app_menu_item(theApp,check_cast(GTK_WIDGET,about_item),1);
+  gtk_osxapplication_insert_app_menu_item(theApp,gtk_separator_menu_item_new(),2);
+  gtk_osxapplication_insert_app_menu_item(theApp,check_cast(GTK_WIDGET,pref_item),3);
+  gtk_osxapplication_insert_app_menu_item(theApp,gtk_separator_menu_item_new(),4);
   gtk_osxapplication_ready(theApp);
   CAMLreturn(Val_unit);
 }

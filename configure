@@ -674,10 +674,10 @@ else
     else
         echo "LablGtk2 found, native threads: native CoqIde will be available."
 	COQIDE=opt
-        if [ "$nomacintegration_spec" = "no" ] && pkg-config --exists ige-mac-integration;
+        if [ "$nomacintegration_spec" = "no" ] && pkg-config --exists gtk-mac-integration;
         then
-            cflags=$cflags" `pkg-config --cflags ige-mac-integration`"
-	    IDEARCHFLAGS='-ccopt "`pkg-config --libs ige-mac-integration`"'
+            cflags=$cflags" `pkg-config --cflags gtk-mac-integration`"
+	    IDEARCHFLAGS='-ccopt "`pkg-config --libs gtk-mac-integration`"'
 	    IDEARCHFILE=ide/ide_mac_stubs.o
 	    IDEARCHDEF=QUARTZ
 	elif [ "$ARCH" = "win32" ];
