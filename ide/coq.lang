@@ -37,7 +37,7 @@
     <define-regex id="decl_head">((?'gal'(Program\%{space}+)?(\%{single_decl}|\%{begin_proof}))\%{space}+(?'id'\%{ident}))|((?'gal4list'\%{mult_decl})(?'id_list'(\%{space}+\%{ident})+))</define-regex>
 
     <context id="escape-seq" style-ref="escape">
-      <match>\\(\\|"|'|n|t|b|r)</match>
+      <match>""</match>
     </context>
     <context id="string" style-ref="string">
       <start>"</start>

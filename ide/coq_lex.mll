@@ -18,8 +18,7 @@ let undotted_sep = [ '{' '}' '-' '+' '*' ]
 let dot_sep = '.' (space | eof)
 
 rule coq_string = parse
-  | "\\\"" { coq_string lexbuf }
-  | "\\\\" { coq_string lexbuf }
+  | "\"\"" { coq_string lexbuf }
   | "\"" { () }
   | eof { () }
   | _ { coq_string lexbuf }
