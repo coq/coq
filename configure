@@ -674,8 +674,8 @@ else
     elif [ "$coqide_spec" = "yes" -a "$COQIDE" = "byte" ]; then 
 	echo "LablGtk2 found, bytecode CoqIde will be used as requested."
 	COQIDE=byte
-    elif [ ! -f "${CAMLLIB}/threads/threads.cmxa" ]; then 
-	echo "LablGtk2 found, no native threads: bytecode CoqIde will be available."
+    elif [ ! -f "${CAMLLIB}/threads/threads.cmxa" -a -f "${lablgtkdir}/gtkThread.cmx" ]; then 
+	echo "LablGtk2 found, not native (or no native threads): bytecode CoqIde will be available."
 	COQIDE=byte
     else
         echo "LablGtk2 found, native threads: native CoqIde will be available."
