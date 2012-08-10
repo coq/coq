@@ -12,6 +12,15 @@
 
 open Unix
 
+(* In Win32 outside cygwin, Sys.command calls cmd.exe. When it executes
+   a command that may contains many double-quote, we should double-quote
+   the whole ! *)
+
+let safe_sys_command =
+  if Sys.os_type = "Win32" then
+    fun cmd -> Sys.command ("\""^cmd^"\"")
+  else Sys.command
+
 (* Objects to link *)
 
 (* 1. Core objects *)
@@ -54,17 +63,18 @@ let no_start   = ref false
 
 let is_ocaml4 = String.sub Coq_config.caml_version 0 2 = "4."
 
-let src_dirs () =
+let src_dirs =
   [ []; ["kernel";"byterun"]; [ "config" ]; [ "toplevel" ] ]
 
 let includes () =
+  if !Flags.boot then []
+  else
   let coqlib = Envars.coqlib () in
   let camlp4lib = Envars.camlp4lib () in
     List.fold_right
       (fun d l -> "-I" :: ("\"" ^ List.fold_left Filename.concat coqlib d ^ "\"") :: l)
-      (src_dirs ())
+      src_dirs
       (["-I"; "\"" ^ camlp4lib ^ "\""] @
-	  ["-I"; "\"" ^ coqlib ^ "\""] @
          if is_ocaml4 then ["-I"; "+compiler-libs"] else [])
 
 (* Transform bytecode object file names in native object file names *)
@@ -282,7 +292,7 @@ let main () =
       []
   in
   (* the list of the loaded modules *)
-  let main_file = create_tmp_main_file modules in
+  let main_file = Filename.quote (create_tmp_main_file modules) in
   try
     let args =
       options @ (includes ()) @ copts @ tolink @ dynlink @ [ main_file ] in
@@ -290,10 +300,6 @@ let main () =
     let args = if !top then args @ [ "topstart.cmo" ] else args in
       (* Now, with the .cma, we MUST use the -linkall option *)
     let command = String.concat " " (prog::"-rectypes"::args) in
-    (* In Win32, when Sys.command (and hence cmd.exe) executes a command
-       that may contains many double-quote, we should double-quote the whole ! *)
-    let command = if Sys.os_type = "Win32" then "\""^command^"\"" else command
-    in
       if !echo then
 	begin
 	  print_endline command;
@@ -302,7 +308,7 @@ let main () =
 	       (string_of_int (String.length command)) ^ " characters)");
 	  flush Pervasives.stdout
 	end;
-      let retcode = Sys.command command in
+      let retcode = safe_sys_command command in
 	clean main_file;
 	(* command gives the exit code in HSB, and signal in LSB !!! *)
 	if retcode > 255 then retcode lsr 8 else retcode
