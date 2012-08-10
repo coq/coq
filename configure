@@ -81,10 +81,6 @@ usage () {
     printf "\tSpecifies whether or not to compile the documentation\n"
     echo "-with-geoproof (yes|no)"
     printf "\tSpecifies whether or not to use Geoproof binding\n"
-    echo "-with-cc <file>"
-    echo "-with-ar <file>"
-    echo "-with-ranlib <file>"
-    printf "\tTells configure where to find gcc/ar/ranlib executables\n"
     echo "-byte-only"
     printf "\tCompiles only bytecode version of Coq\n"
     echo "-debug"
@@ -118,10 +114,6 @@ coq_annotate_flag=
 best_compiler=opt
 cflags="-fno-defer-pop -Wall -Wno-unused"
 natdynlink=yes
-
-gcc_exec=gcc
-ar_exec=ar
-ranlib_exec=ranlib
 
 local=false
 coqrunbyteflags_spec=no
@@ -253,18 +245,6 @@ while : ; do
 	      yes) with_geoproof=true;;
 	      no) with_geoproof=false;;
 	  esac
-	  shift;;
-    -with-cc|-with-gcc|--with-cc|--with-gcc) 
-	  gcc_spec=yes
-	  gcc_exec=$2
-	  shift;;
-    -with-ar|--with-ar) 
-	  ar_spec=yes
-	  ar_exec=$2
-	  shift;;
-    -with-ranlib|--with-ranlib) 
-	  ranlib_spec=yes
-	  ranlib_exec=$2
 	  shift;;
     -makecmd|--makecmd) makecmd="$2"
 		      shift;;
@@ -1244,11 +1224,6 @@ BEST=$best_compiler
 # Can be obtain by UNIX command arch
 ARCH=$ARCH
 HASNATDYNLINK=$NATDYNLINKFLAG
-
-# Your C compiler and co
-CC="$gcc_exec"
-AR="$ar_exec"
-RANLIB="$ranlib_exec"
 
 # Supplementary libs for some systems, currently:
 #  . Sun Solaris: -cclib -lunix -cclib -lnsl -cclib -lsocket
