@@ -65,6 +65,9 @@ type int31_field =
   | Int31Compare
   | Int31Head0
   | Int31Tail0
+  | Int31Lor
+  | Int31Land
+  | Int31Lxor
 
 type field =
  (* | KEq

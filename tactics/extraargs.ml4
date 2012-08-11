@@ -383,7 +383,9 @@ PRINTED BY pr_r_int31_field
 | [ "int31" "compare" ] -> [ Retroknowledge.Int31Compare ]
 | [ "int31" "head0" ] -> [ Retroknowledge.Int31Head0 ]
 | [ "int31" "tail0" ] -> [ Retroknowledge.Int31Tail0 ]
-
+| [ "int31" "lor" ] -> [ Retroknowledge.Int31Lor ]
+| [ "int31" "land" ] -> [ Retroknowledge.Int31Land ]
+| [ "int31" "lxor" ] -> [ Retroknowledge.Int31Lxor ]
 END
 
 ARGUMENT EXTEND retroknowledge_field

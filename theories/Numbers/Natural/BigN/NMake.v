@@ -1617,40 +1617,90 @@ Module Make (W0:CyclicType) <: NType.
   rewrite spec_shiftr, spec_1. apply Z.div2_spec.
  Qed.
 
- (** TODO : provide efficient versions instead of just converting
-   from/to N (see with Laurent) *)
+ Local Notation lorn := (fun n =>
+  let op := dom_op n in
+  let lor := ZnZ.lor in
+  fun x y => reduce n (lor x y)).
 
- Definition lor x y := of_N (N.lor (to_N x) (to_N y)).
- Definition land x y := of_N (N.land (to_N x) (to_N y)).
- Definition ldiff x y := of_N (N.ldiff (to_N x) (to_N y)).
- Definition lxor x y := of_N (N.lxor (to_N x) (to_N y)).
+ Definition lor : t -> t -> t := Eval red_t in same_level lorn.
 
- Lemma spec_land: forall x y, [land x y] = Z.land [x] [y].
+ Lemma lor_fold : lor = same_level lorn.
+ Proof. red_t; reflexivity. Qed.
+
+ Theorem spec_lor x y : [lor x y] = Z.lor [x] [y].
  Proof.
-  intros x y. unfold land. rewrite spec_of_N. unfold to_N.
-  generalize (spec_pos x), (spec_pos y).
-  destruct [x], [y]; trivial; (now destruct 1) || (now destruct 2).
+  rewrite lor_fold. apply spec_same_level; clear x y.
+  intros n x y. simpl. rewrite spec_reduce. apply ZnZ.spec_lor.
  Qed.
 
- Lemma spec_lor: forall x y, [lor x y] = Z.lor [x] [y].
+ Local Notation landn := (fun n =>
+  let op := dom_op n in
+  let land := ZnZ.land in
+  fun x y => reduce n (land x y)).
+
+ Definition land : t -> t -> t := Eval red_t in same_level landn.
+
+ Lemma land_fold : land = same_level landn.
+ Proof. red_t; reflexivity. Qed.
+
+ Theorem spec_land x y : [land x y] = Z.land [x] [y].
  Proof.
-  intros x y. unfold lor. rewrite spec_of_N. unfold to_N.
-  generalize (spec_pos x), (spec_pos y).
-  destruct [x], [y]; trivial; (now destruct 1) || (now destruct 2).
+  rewrite land_fold. apply spec_same_level; clear x y.
+  intros n x y. simpl. rewrite spec_reduce. apply ZnZ.spec_land.
  Qed.
 
- Lemma spec_ldiff: forall x y, [ldiff x y] = Z.ldiff [x] [y].
+ Local Notation lxorn := (fun n =>
+  let op := dom_op n in
+  let lxor := ZnZ.lxor in
+  fun x y => reduce n (lxor x y)).
+
+ Definition lxor : t -> t -> t := Eval red_t in same_level lxorn.
+
+ Lemma lxor_fold : lxor = same_level lxorn.
+ Proof. red_t; reflexivity. Qed.
+
+ Theorem spec_lxor x y : [lxor x y] = Z.lxor [x] [y].
  Proof.
-  intros x y. unfold ldiff. rewrite spec_of_N. unfold to_N.
-  generalize (spec_pos x), (spec_pos y).
-  destruct [x], [y]; trivial; (now destruct 1) || (now destruct 2).
+  rewrite lxor_fold. apply spec_same_level; clear x y.
+  intros n x y. simpl. rewrite spec_reduce. apply ZnZ.spec_lxor.
  Qed.
 
- Lemma spec_lxor: forall x y, [lxor x y] = Z.lxor [x] [y].
+ Local Notation ldiffn := (fun n =>
+  let op := dom_op n in
+  let lxor := ZnZ.lxor in
+  let land := ZnZ.land in
+  let m1 := ZnZ.minus_one in
+  fun x y => reduce n (land x (lxor y m1))).
+
+ Definition ldiff : t -> t -> t := Eval red_t in same_level ldiffn.
+
+ Lemma ldiff_fold : ldiff = same_level ldiffn.
+ Proof. red_t; reflexivity. Qed.
+
+ Lemma ldiff_alt x y p :
+  0 <= x < 2^p -> 0 <= y < 2^p ->
+  Z.ldiff x y = Z.land x (Z.lxor y (2^p - 1)).
  Proof.
-  intros x y. unfold lxor. rewrite spec_of_N. unfold to_N.
-  generalize (spec_pos x), (spec_pos y).
-  destruct [x], [y]; trivial; (now destruct 1) || (now destruct 2).
+  intros (Hx,Hx') (Hy,Hy').
+  destruct p as [|p|p].
+  - simpl in *; replace x with 0; replace y with 0; auto with zarith.
+  - rewrite <- Z.shiftl_1_l. change (_ - 1) with (Z.ones (Z.pos p)).
+    rewrite <- Z.ldiff_ones_l_low; trivial.
+    rewrite !Z.ldiff_land, Z.land_assoc. f_equal.
+    rewrite Z.land_ones; try easy.
+    symmetry. apply Z.mod_small; now split.
+    Z.le_elim Hy.
+    + now apply Z.log2_lt_pow2.
+    + now subst.
+  - simpl in *; omega.
+ Qed.
+
+ Theorem spec_ldiff x y : [ldiff x y] = Z.ldiff [x] [y].
+ Proof.
+  rewrite ldiff_fold. apply spec_same_level; clear x y.
+  intros n x y. simpl. rewrite spec_reduce.
+  rewrite ZnZ.spec_land, ZnZ.spec_lxor, ZnZ.spec_m1.
+  symmetry. apply ldiff_alt; apply ZnZ.spec_to_Z.
  Qed.
 
 End Make.

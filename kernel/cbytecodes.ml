@@ -114,6 +114,9 @@ type instruction =
   | Kareconst of int*Label.t            (* conditional jump *)
   | Kcompint31                          (* dynamic compilation of int31 *)
   | Kdecompint31                        (* dynamic decompilation of int31 *)
+  | Klorint31                            (* bitwise operations: or and xor *)
+  | Klandint31
+  | Klxorint31
 (* /spiwack *)
 
 and bytecodes = instruction list
@@ -220,6 +223,9 @@ let rec instruction ppf = function
   | Kareconst(n,lbl) -> fprintf ppf "\tareconst %i %i" n lbl
   | Kcompint31 -> fprintf ppf "\tcompint31"
   | Kdecompint31 -> fprintf ppf "\tdecompint"
+  | Klorint31 -> fprintf ppf "\tlorint31"
+  | Klandint31 -> fprintf ppf "\tlandint31"
+  | Klxorint31 -> fprintf ppf "\tlxorint31"
 
 (* /spiwack *)
 

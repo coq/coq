@@ -283,6 +283,27 @@ Section Z_2nZ.
   Eval lazy beta delta [ww_gcd] in
   ww_gcd compare w_0 w_eq0 w_gcd_gt _ww_digits gcd_gt_fix gcd_cont.
 
+ Definition lor (x y : zn2z t) :=
+  match x, y with
+  | W0, _ => y
+  | _, W0 => x
+  | WW hx lx, WW hy ly => WW (ZnZ.lor hx hy) (ZnZ.lor lx ly)
+  end.
+
+ Definition land (x y : zn2z t) :=
+  match x, y with
+  | W0, _ => W0
+  | _, W0 => W0
+  | WW hx lx, WW hy ly => WW (ZnZ.land hx hy) (ZnZ.land lx ly)
+  end.
+
+ Definition lxor (x y : zn2z t) :=
+  match x, y with
+  | W0, _ => y
+  | _, W0 => x
+  | WW hx lx, WW hy ly => WW (ZnZ.lxor hx hy) (ZnZ.lxor lx ly)
+  end.
+
  (* ** Record of operators on 2 words *)
 
  Global Instance mk_zn2z_ops : ZnZ.Ops (zn2z t) | 1 :=
@@ -303,7 +324,10 @@ Section Z_2nZ.
     pos_mod
     is_even
     sqrt2
-    sqrt.
+    sqrt
+    lor
+    land
+    lxor.
 
  Global Instance mk_zn2z_ops_karatsuba : ZnZ.Ops (zn2z t) | 2 :=
    ZnZ.MkOps _ww_digits _ww_zdigits
@@ -323,7 +347,10 @@ Section Z_2nZ.
     pos_mod
     is_even
     sqrt2
-    sqrt.
+    sqrt
+    lor
+    land
+    lxor.
 
  (* Proof *)
  Context {specs : ZnZ.Specs ops}.
@@ -785,6 +812,81 @@ refine
  exact ZnZ.spec_is_even.
  exact spec_ww_add_mul_div.
  exact ZnZ.spec_sqrt2.
+ Qed.
+
+ Let wB_pos : 0 < wB.
+ Proof.
+ unfold wB, base; apply Z.pow_pos_nonneg; auto with zarith.
+ Qed.
+
+ Let ww_testbit_high n x y : Z.pos w_digits <= n ->
+  Z.testbit [|WW x y|] n =
+  Z.testbit (ZnZ.to_Z x) (n - Z.pos w_digits).
+ Proof.
+  intros Hn.
+  assert (E : ZnZ.to_Z x = [|WW x y|] / wB).
+  { simpl.
+    rewrite Z.div_add_l; auto with zarith.
+    now rewrite Z.div_small, Z.add_0_r. }
+  rewrite E.
+  unfold wB, base. rewrite Z.div_pow2_bits.
+  - f_equal; auto with zarith.
+  - easy.
+  - auto with zarith.
+ Qed.
+
+ Let ww_testbit_low n x y : 0 <= n < Z.pos w_digits ->
+  Z.testbit [|WW x y|] n = Z.testbit (ZnZ.to_Z y) n.
+ Proof.
+  intros (Hn,Hn').
+  assert (E : ZnZ.to_Z y = [|WW x y|] mod wB).
+  { simpl; symmetry.
+    rewrite Z.add_comm, Z.mod_add; auto with zarith.
+    apply Z.mod_small; auto with zarith. }
+  rewrite E.
+  unfold wB, base. symmetry. apply Z.mod_pow2_bits_low; auto.
+ Qed.
+
+ Let spec_lor x y : [|lor x y|] = Z.lor [|x|] [|y|].
+ Proof.
+  destruct x as [ |hx lx]. trivial.
+  destruct y as [ |hy ly]. now rewrite Z.lor_comm.
+  change ([|WW (ZnZ.lor hx hy) (ZnZ.lor lx ly)|] =
+          Z.lor [|WW hx lx|] [|WW hy ly|]).
+  apply Z.bits_inj'; intros n Hn.
+  rewrite Z.lor_spec.
+  destruct (Z.le_gt_cases (Z.pos w_digits) n) as [LE|GT].
+  - now rewrite !ww_testbit_high, ZnZ.spec_lor, Z.lor_spec.
+  - rewrite !ww_testbit_low; auto.
+    now rewrite ZnZ.spec_lor, Z.lor_spec.
+ Qed.
+
+ Let spec_land x y : [|land x y|] = Z.land [|x|] [|y|].
+ Proof.
+  destruct x as [ |hx lx]. trivial.
+  destruct y as [ |hy ly]. now rewrite Z.land_comm.
+  change ([|WW (ZnZ.land hx hy) (ZnZ.land lx ly)|] =
+          Z.land [|WW hx lx|] [|WW hy ly|]).
+  apply Z.bits_inj'; intros n Hn.
+  rewrite Z.land_spec.
+  destruct (Z.le_gt_cases (Z.pos w_digits) n) as [LE|GT].
+  - now rewrite !ww_testbit_high, ZnZ.spec_land, Z.land_spec.
+  - rewrite !ww_testbit_low; auto.
+    now rewrite ZnZ.spec_land, Z.land_spec.
+ Qed.
+
+ Let spec_lxor x y : [|lxor x y|] = Z.lxor [|x|] [|y|].
+ Proof.
+  destruct x as [ |hx lx]. trivial.
+  destruct y as [ |hy ly]. now rewrite Z.lxor_comm.
+  change ([|WW (ZnZ.lxor hx hy) (ZnZ.lxor lx ly)|] =
+          Z.lxor [|WW hx lx|] [|WW hy ly|]).
+  apply Z.bits_inj'; intros n Hn.
+  rewrite Z.lxor_spec.
+  destruct (Z.le_gt_cases (Z.pos w_digits) n) as [LE|GT].
+  - now rewrite !ww_testbit_high, ZnZ.spec_lxor, Z.lxor_spec.
+  - rewrite !ww_testbit_low; auto.
+    now rewrite ZnZ.spec_lxor, Z.lxor_spec.
  Qed.
 
  Global Instance mk_zn2z_specs : ZnZ.Specs mk_zn2z_ops.

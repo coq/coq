@@ -88,7 +88,11 @@ Module ZnZ.
     is_even     : t -> bool;
     (* square root *)
     sqrt2       : t -> t -> t * carry t;
-    sqrt        : t -> t  }.
+    sqrt        : t -> t;
+    (* bitwise operations *)
+    lor         : t -> t -> t;
+    land        : t -> t -> t;
+    lxor        : t -> t -> t }.
 
  Section Specs.
  Context {t : Type}{ops : Ops t}.
@@ -199,7 +203,10 @@ Module ZnZ.
           [||WW x y||] = [|s|] ^ 2 + [+|r|] /\
           [+|r|] <= 2 * [|s|];
     spec_sqrt : forall x,
-       [|sqrt x|] ^ 2 <= [|x|] < ([|sqrt x|] + 1) ^ 2
+       [|sqrt x|] ^ 2 <= [|x|] < ([|sqrt x|] + 1) ^ 2;
+    spec_lor : forall x y, [|lor x y|] = Z.lor [|x|] [|y|];
+    spec_land : forall x y, [|land x y|] = Z.land [|x|] [|y|];
+    spec_lxor : forall x y, [|lxor x y|] = Z.lxor [|x|] [|y|]
   }.
 
  End Specs.

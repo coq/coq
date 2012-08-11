@@ -796,6 +796,40 @@ Section ZModulo.
  exists 0; simpl; auto with zarith.
  Qed.
 
+ Definition lor := Z.lor.
+ Definition land := Z.land.
+ Definition lxor := Z.lxor.
+
+ Lemma spec_lor x y : [|lor x y|] = Z.lor [|x|] [|y|].
+ Proof.
+ unfold lor, to_Z.
+ apply Z.bits_inj'; intros n Hn. rewrite Z.lor_spec.
+ unfold wB, base.
+ destruct (Z.le_gt_cases (Z.pos digits) n).
+ - rewrite !Z.mod_pow2_bits_high; auto with zarith.
+ - rewrite !Z.mod_pow2_bits_low, Z.lor_spec; auto with zarith.
+ Qed.
+
+ Lemma spec_land x y : [|land x y|] = Z.land [|x|] [|y|].
+ Proof.
+ unfold land, to_Z.
+ apply Z.bits_inj'; intros n Hn. rewrite Z.land_spec.
+ unfold wB, base.
+ destruct (Z.le_gt_cases (Z.pos digits) n).
+ - rewrite !Z.mod_pow2_bits_high; auto with zarith.
+ - rewrite !Z.mod_pow2_bits_low, Z.land_spec; auto with zarith.
+ Qed.
+
+ Lemma spec_lxor x y : [|lxor x y|] = Z.lxor [|x|] [|y|].
+ Proof.
+ unfold lxor, to_Z.
+ apply Z.bits_inj'; intros n Hn. rewrite Z.lxor_spec.
+ unfold wB, base.
+ destruct (Z.le_gt_cases (Z.pos digits) n).
+ - rewrite !Z.mod_pow2_bits_high; auto with zarith.
+ - rewrite !Z.mod_pow2_bits_low, Z.lxor_spec; auto with zarith.
+ Qed.
+
  (** Let's now group everything in two records *)
 
  Instance zmod_ops : ZnZ.Ops Z := ZnZ.MkOps
@@ -849,7 +883,10 @@ Section ZModulo.
 
     (is_even     : t -> bool)
     (sqrt2       : t -> t -> t * carry t)
-    (sqrt        : t -> t).
+    (sqrt        : t -> t)
+    (lor         : t -> t -> t)
+    (land         : t -> t -> t)
+    (lxor         : t -> t -> t).
 
  Instance zmod_specs : ZnZ.Specs zmod_ops := ZnZ.MkSpecs
     spec_to_Z
@@ -906,7 +943,10 @@ Section ZModulo.
 
     spec_is_even
     spec_sqrt2
-    spec_sqrt.
+    spec_sqrt
+    spec_lor
+    spec_land
+    spec_lxor.
 
 End ZModulo.
 
@@ -922,4 +962,3 @@ Module ZModuloCyclicType (P:PositiveNotOne) <: CyclicType.
  Instance ops : ZnZ.Ops t := zmod_ops P.p.
  Instance specs : ZnZ.Specs ops := zmod_specs P.not_one.
 End ZModuloCyclicType.
-

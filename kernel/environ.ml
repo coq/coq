@@ -521,6 +521,9 @@ fun env field value ->
     | KInt31 (_, Int31Compare) -> add_int31_binop_from_const Cbytecodes.Kcompareint31
     | KInt31 (_, Int31Head0) -> add_int31_unop_from_const Cbytecodes.Khead0int31
     | KInt31 (_, Int31Tail0) -> add_int31_unop_from_const Cbytecodes.Ktail0int31
+    | KInt31 (_, Int31Lor) -> add_int31_binop_from_const Cbytecodes.Klorint31
+    | KInt31 (_, Int31Land) -> add_int31_binop_from_const Cbytecodes.Klandint31
+    | KInt31 (_, Int31Lxor) -> add_int31_binop_from_const Cbytecodes.Klxorint31
     | _ -> env.retroknowledge
   in
   Retroknowledge.add_field retroknowledge_with_reactive_info field value

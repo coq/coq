@@ -1158,7 +1158,10 @@ Instance int31_ops : ZnZ.Ops int31 :=
   fun i => let (_,r) := i/2 in
   match r ?= 0 with Eq => true | _ => false end;
  sqrt2       := sqrt312;
- sqrt        := sqrt31
+ sqrt        := sqrt31;
+ lor         := lor31;
+ land        := land31;
+ lxor        := lxor31
 }.
 
 Section Int31_Specs.
@@ -2403,6 +2406,51 @@ Qed.
  apply Zmod_unique with [|q|]; auto with zarith.
  Qed.
 
+ (* Bitwise *)
+
+ Lemma log2_phi_bounded x : Z.log2 [|x|] < Z.of_nat size.
+ Proof.
+  destruct (phi_bounded x) as (H,H').
+  Z.le_elim H.
+  - now apply Z.log2_lt_pow2.
+  - now rewrite <- H.
+ Qed.
+
+ Lemma spec_lor x y : [| ZnZ.lor x y |] = Z.lor [|x|] [|y|].
+ Proof.
+ unfold ZnZ.lor; simpl. unfold lor31.
+ rewrite phi_phi_inv.
+ apply Z.mod_small; split; trivial.
+ - apply Z.lor_nonneg; split; apply phi_bounded.
+ - apply Z.log2_lt_cancel. rewrite Z.log2_pow2 by easy.
+   rewrite Z.log2_lor; try apply phi_bounded.
+   apply Z.max_lub_lt; apply log2_phi_bounded.
+ Qed.
+
+ Lemma spec_land x y : [| ZnZ.land x y |] = Z.land [|x|] [|y|].
+ Proof.
+ unfold ZnZ.land; simpl. unfold land31.
+ rewrite phi_phi_inv.
+ apply Z.mod_small; split; trivial.
+ - apply Z.land_nonneg; left; apply phi_bounded.
+ - apply Z.log2_lt_cancel. rewrite Z.log2_pow2 by easy.
+   eapply Z.le_lt_trans.
+   apply Z.log2_land; try apply phi_bounded.
+   apply Z.min_lt_iff; left; apply log2_phi_bounded.
+ Qed.
+
+ Lemma spec_lxor x y : [| ZnZ.lxor x y |] = Z.lxor [|x|] [|y|].
+ Proof.
+ unfold ZnZ.lxor; simpl. unfold lxor31.
+ rewrite phi_phi_inv.
+ apply Z.mod_small; split; trivial.
+ - apply Z.lxor_nonneg; split; intros; apply phi_bounded.
+ - apply Z.log2_lt_cancel. rewrite Z.log2_pow2 by easy.
+   eapply Z.le_lt_trans.
+   apply Z.log2_lxor; try apply phi_bounded.
+   apply Z.max_lub_lt; apply log2_phi_bounded.
+ Qed.
+
  Global Instance int31_specs : ZnZ.Specs int31_ops := {
     spec_to_Z   := phi_bounded;
     spec_of_pos := positive_to_int31_spec;
@@ -2446,7 +2494,10 @@ Qed.
     spec_pos_mod := spec_pos_mod;
     spec_is_even := spec_is_even;
     spec_sqrt2 := spec_sqrt2;
-    spec_sqrt := spec_sqrt }.
+    spec_sqrt := spec_sqrt;
+    spec_lor := spec_lor;
+    spec_land := spec_land;
+    spec_lxor := spec_lxor }.
 
 End Int31_Specs.
 

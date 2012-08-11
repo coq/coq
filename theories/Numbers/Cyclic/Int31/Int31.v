@@ -335,6 +335,11 @@ Definition addmuldiv31 p i j :=
  in
  res.
 
+(** Bitwise operations *)
+
+Definition lor31 n m := phi_inv (Z.lor (phi n) (phi m)).
+Definition land31 n m := phi_inv (Z.land (phi n) (phi m)).
+Definition lxor31 n m := phi_inv (Z.lxor (phi n) (phi m)).
 
 Register add31 as int31 plus in "coq_int31" by True.
 Register add31c as int31 plusc in "coq_int31" by True.
@@ -348,6 +353,12 @@ Register div3121 as int31 div21 in "coq_int31" by True.
 Register div31 as int31 div in "coq_int31" by True.
 Register compare31 as int31 compare in "coq_int31" by True.
 Register addmuldiv31 as int31 addmuldiv in "coq_int31" by True.
+Register lor31 as int31 lor in "coq_int31" by True.
+Register land31 as int31 land in "coq_int31" by True.
+Register lxor31 as int31 lxor in "coq_int31" by True.
+
+Definition lnot31 n := lxor31 Tn n.
+Definition ldiff31 n m := land31 n (lnot31 m).
 
 Fixpoint euler (guard:nat) (i j:int31) {struct guard} :=
   match guard with

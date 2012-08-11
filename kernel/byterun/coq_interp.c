@@ -1373,7 +1373,29 @@ value coq_interprete
         Next;
       }
 
+      Instruct (ORINT31) {
+	/* returns the bitwise or */
+	print_instr("ORINT31");
+        accu =
+	  value_of_uint32((uint32_of_value(accu)) | (uint32_of_value(*sp++)));
+	Next;
+      }
 
+      Instruct (ANDINT31) {
+	/* returns the bitwise and */
+	print_instr("ANDINT31");
+        accu =
+	  value_of_uint32((uint32_of_value(accu)) & (uint32_of_value(*sp++)));
+	Next;
+      }
+
+      Instruct (XORINT31) {
+	/* returns the bitwise xor */
+	print_instr("XORINT31");
+        accu =
+	  value_of_uint32((uint32_of_value(accu)) ^ (uint32_of_value(*sp++)));
+	Next;
+      }
 
       /*  /spiwack   */
 

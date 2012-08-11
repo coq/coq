@@ -46,7 +46,8 @@ void init_arity () {
     arity[MULCINT31]=arity[MULINT31]=arity[COMPAREINT31]=
     arity[DIV21INT31]=arity[DIVINT31]=arity[ADDMULDIVINT31]=
     arity[HEAD0INT31]=arity[TAIL0INT31]=
-    arity[COMPINT31]=arity[DECOMPINT31]=0;
+    arity[COMPINT31]=arity[DECOMPINT31]=
+    arity[ORINT31]=arity[ANDINT31]=arity[XORINT31]=0;
   /* instruction with one operand */
   arity[ACC]=arity[PUSHACC]=arity[POP]=arity[ENVACC]=arity[PUSHENVACC]=
     arity[PUSH_RETADDR]=arity[APPLY]=arity[APPTERM1]=arity[APPTERM2]=

@@ -107,9 +107,10 @@ type instruction =
   | Kisconst of Label.t                 (** conditional jump *)
   | Kareconst of int*Label.t            (** conditional jump *)
   | Kcompint31                          (** dynamic compilation of int31 *)
-  | Kdecompint31                        (** dynamix decompilation of int31 
-   /spiwack *)
-
+  | Kdecompint31                        (** dynamix decompilation of int31 *)
+  | Klorint31                           (** bitwise operations: or and xor *)
+  | Klandint31
+  | Klxorint31
 
 and bytecodes = instruction list
 
