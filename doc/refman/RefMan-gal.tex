@@ -772,13 +772,13 @@ a postulate.
   {\tt Parameter {\ident} :{\term}.} \\
   Is equivalent to {\tt Axiom {\ident} : {\term}}
 
-\item {\tt Parameter {\ident$_1$}\ldots{\ident$_n$} {\tt :}{\term}.}\\
+\item {\tt Parameter {\ident$_1$} {\ldots} {\ident$_n$} {\tt :}{\term}.}\\
   Adds $n$ parameters with specification {\term}
 
 \item
  {\tt Parameter\,%
-(\,{\ident$_{1,1}$}\ldots{\ident$_{1,k_1}$}\,{\tt :}\,{\term$_1$} {\tt )}\,%
-\ldots\,{\tt (}\,{\ident$_{n,1}$}\ldots{\ident$_{n,k_n}$}\,{\tt :}\,%
+(\,{\ident$_{1,1}$} {\ldots} {\ident$_{1,k_1}$}\,{\tt :}\,{\term$_1$} {\tt )}\;%
+\ldots\;{\tt (}\,{\ident$_{n,1}$}{\ldots}{\ident$_{n,k_n}$}\,{\tt :}\,%
 {\term$_n$} {\tt )}.}\\ 
   Adds $n$ blocks of parameters with different specifications.
 
@@ -808,12 +808,12 @@ Variable} command out of any section is equivalent to using {\tt Parameter}.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Variable {\ident$_1$}\ldots{\ident$_n$} {\tt :}{\term}.}\\
-  Links {\term} to names {\ident$_1$}\ldots{\ident$_n$}.
+\item {\tt Variable {\ident$_1$} {\ldots} {\ident$_n$} {\tt :}{\term}.}\\
+  Links {\term} to names {\ident$_1$} {\ldots} {\ident$_n$}.
 \item
  {\tt Variable\,%
-(\,{\ident$_{1,1}$}\ldots{\ident$_{1,k_1}$}\,{\tt :}\,{\term$_1$} {\tt )}\,%
-\ldots\,{\tt (}\,{\ident$_{n,1}$}\ldots{\ident$_{n,k_n}$}\,{\tt :}\,%
+(\,{\ident$_{1,1}$} {\ldots} {\ident$_{1,k_1}$}\,{\tt :}\,{\term$_1$} {\tt )}\;%
+\ldots\;{\tt (}\,{\ident$_{n,1}$} {\ldots}{\ident$_{n,k_n}$}\,{\tt :}\,%
 {\term$_n$} {\tt )}.}\\ 
   Adds $n$ blocks of variables with different specifications.
 \item \comindex{Hypothesis}
@@ -870,17 +870,17 @@ environment, provided that {\term} is well-typed.
   It checks that the type of {\term$_2$} is definitionally equal to
   {\term$_1$}, and registers {\ident} as being of type {\term$_1$},
   and bound to value {\term$_2$}.
-\item {\tt Definition {\ident} {\binder$_1$}\ldots{\binder$_n$}
+\item {\tt Definition {\ident} {\binder$_1$} {\ldots} {\binder$_n$}
        {\tt :}\term$_1$ {\tt :=} {\term$_2$}.}\\
   This is equivalent to \\
    {\tt Definition\,{\ident}\,{\tt :\,forall}\,%
-       {\binder$_1$}\ldots{\binder$_n$}{\tt ,}\,\term$_1$\,{\tt :=}}\,%
-       {\tt fun}\,{\binder$_1$}\ldots{\binder$_n$}\,{\tt =>}\,{\term$_2$}\,%
+       {\binder$_1$} {\ldots} {\binder$_n$}{\tt ,}\,\term$_1$\,{\tt :=}}\,%
+       {\tt fun}\,{\binder$_1$} {\ldots} {\binder$_n$}\,{\tt =>}\,{\term$_2$}\,%
        {\tt .}
 
 \item {\tt Example {\ident} := {\term}.}\\
 {\tt Example {\ident} {\tt :}{\term$_1$} := {\term$_2$}.}\\
-{\tt Example {\ident} {\binder$_1$}\ldots{\binder$_n$}
+{\tt Example {\ident} {\binder$_1$} {\ldots} {\binder$_n$}
        {\tt :}\term$_1$ {\tt :=} {\term$_2$}.}\\
 \comindex{Example}
 These are synonyms of the {\tt Definition} forms.

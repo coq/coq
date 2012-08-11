@@ -267,10 +267,10 @@ available. The command to activate it is
 The corresponding grammar rules are given Figure~\ref{fig:projsyntax}.
 When {\qualid} denotes a projection, the syntax {\tt
   {\term}.({\qualid})} is equivalent to {\qualid~\term}, the syntax
-{\tt {\term}.({\qualid}~{\termarg}$_1$~ \ldots~ {\termarg}$_n$)} to
-{\qualid~{\termarg}$_1$ \ldots {\termarg}$_n$~\term}, and the syntax
-{\tt {\term}.(@{\qualid}~{\term}$_1$~\ldots~{\term}$_n$)} to
-{@\qualid~{\term}$_1$ \ldots {\term}$_n$~\term}. In each case, {\term}
+{\term}{\tt .(}{\qualid}~{\termarg}$_1$ {\ldots} {\termarg}$_n${\tt )} to
+{\qualid~{\termarg}$_1$ {\ldots} {\termarg}$_n$~\term}, and the syntax
+{\term}{\tt .(@}{\qualid}~{\term}$_1$~\ldots~{\term}$_n${\tt )} to
+{@\qualid~{\term}$_1$ {\ldots} {\term}$_n$~\term}. In each case, {\term}
 is the object projected and the other arguments are the parameters of
 the inductive type.
 
