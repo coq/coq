@@ -866,22 +866,22 @@ environment, provided that {\term} is well-typed.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Definition {\ident} {\tt :}{\term$_1$} := {\term$_2$}.}\\
+\item {\tt Definition} {\ident} {\tt :} {\term$_1$} {\tt :=} {\term$_2$}{\tt .}\\
   It checks that the type of {\term$_2$} is definitionally equal to
   {\term$_1$}, and registers {\ident} as being of type {\term$_1$},
   and bound to value {\term$_2$}.
-\item {\tt Definition {\ident} {\binder$_1$} {\ldots} {\binder$_n$}
-       {\tt :}\term$_1$ {\tt :=} {\term$_2$}.}\\
+\item {\tt Definition} {\ident} {\binder$_1$} {\ldots} {\binder$_n$}
+       {\tt :} \term$_1$ {\tt :=} {\term$_2$}{\tt .}\\
   This is equivalent to \\
-   {\tt Definition\,{\ident}\,{\tt :\,forall}\,%
-       {\binder$_1$} {\ldots} {\binder$_n$}{\tt ,}\,\term$_1$\,{\tt :=}}\,%
+   {\tt Definition} {\ident} {\tt : forall}%
+       {\binder$_1$} {\ldots} {\binder$_n$}{\tt ,}\,\term$_1$\,{\tt :=}\,%
        {\tt fun}\,{\binder$_1$} {\ldots} {\binder$_n$}\,{\tt =>}\,{\term$_2$}\,%
        {\tt .}
 
 \item {\tt Example {\ident} := {\term}.}\\
-{\tt Example {\ident} {\tt :}{\term$_1$} := {\term$_2$}.}\\
-{\tt Example {\ident} {\binder$_1$} {\ldots} {\binder$_n$}
-       {\tt :}\term$_1$ {\tt :=} {\term$_2$}.}\\
+{\tt Example} {\ident} {\tt :} {\term$_1$} {\tt :=} {\term$_2$}{\tt .}\\
+{\tt Example} {\ident} {\binder$_1$} {\ldots} {\binder$_n$}
+       {\tt :} {\term$_1$} {\tt :=} {\term$_2$}{\tt .}\\
 \comindex{Example}
 These are synonyms of the {\tt Definition} forms.
 \end{Variants}
@@ -932,16 +932,14 @@ mutually inductive types. We explain also co-inductive types.
 The definition of a simple inductive type has the following form:
 
 \medskip
-{\tt 
 \begin{tabular}{l}
-Inductive {\ident} : {\sort} :=  \\
+{\tt Inductive} {\ident} {\tt :} {\sort} {\tt :=} \\
 \begin{tabular}{clcl}
-   & {\ident$_1$}  &:& {\type$_1$} \\
- | & {\ldots} && \\
- | & {\ident$_n$} &:& {\type$_n$}
+         & {\ident$_1$} & {\tt :} & {\type$_1$} \\
+ {\tt |} & {\ldots} && \\
+ {\tt |} & {\ident$_n$} & {\tt :} & {\type$_n$} \\
 \end{tabular}
 \end{tabular}
-}
 \medskip
 
 The name {\ident} is the name of the inductively defined type and
@@ -1184,24 +1182,22 @@ this reason, the parameters must be strictly the same for each
 inductive types The extended syntax is:
 
 \medskip
-{\tt 
 \begin{tabular}{l}
-Inductive {\ident$_1$} {\params} : {\type$_1$} :=  \\
+{\tt Inductive} {\ident$_1$} {\params} {\tt :} {\type$_1$} {\tt :=}  \\
 \begin{tabular}{clcl}
-   & {\ident$_1^1$}     &:& {\type$_1^1$} \\
- | & {\ldots} && \\
- | & {\ident$_{n_1}^1$} &:& {\type$_{n_1}^1$}
+         & {\ident$_1^1$}    &{\tt :}& {\type$_1^1$} \\
+ {\tt |} & {\ldots} && \\
+ {\tt |} & {\ident$_{n_1}^1$} &{\tt :}& {\type$_{n_1}^1$}
 \end{tabular}  \\
-with\\
+{\tt with}\\
 ~{\ldots} \\
-with {\ident$_m$} {\params} : {\type$_m$} := \\
+{\tt with} {\ident$_m$} {\params} {\tt :} {\type$_m$} {\tt :=} \\
 \begin{tabular}{clcl}
-   & {\ident$_1^m$}     &:& {\type$_1^m$} \\
- | & {\ldots} \\
- | & {\ident$_{n_m}^m$} &:& {\type$_{n_m}^m$}.
+         & {\ident$_1^m$}    &{\tt :}& {\type$_1^m$} \\
+ {\tt |} & {\ldots} \\
+ {\tt |} & {\ident$_{n_m}^m$} &{\tt :}& {\type$_{n_m}^m$}.
 \end{tabular}
 \end{tabular}
-}
 \medskip
 
 \Example
@@ -1433,9 +1429,9 @@ to define functions over mutually defined inductive types or more
 generally any mutually recursive definitions.
 
 \begin{Variants}
-\item {\tt Fixpoint {\ident$_1$} {\params$_1$} :{\type$_1$} := {\term$_1$}\\
-        with {\ldots} \\
-        with {\ident$_m$} {\params$_m$} :{\type$_m$} :=  {\term$_m$}}\\
+\item {\tt Fixpoint} {\ident$_1$} {\params$_1$} {\tt :} {\type$_1$} {\tt :=} {\term$_1$}\\
+        {\tt with} {\ldots} \\
+        {\tt with} {\ident$_m$} {\params$_m$} {\tt :} {\type$_m$} {\tt :=} {\term$_m$}\\
         Allows to define simultaneously {\ident$_1$}, {\ldots},
         {\ident$_m$}.
 \end{Variants}
@@ -1530,10 +1526,10 @@ Eval compute in (tl (from 0)).
 \item{\tt CoFixpoint {\ident$_1$} {\params} :{\type$_1$} :=
   {\term$_1$}}\\ As for most constructions, arguments of co-fixpoints
   expressions can be introduced before the {\tt :=} sign.
-\item{\tt CoFixpoint {\ident$_1$} :{\type$_1$} := {\term$_1$}\\
-     with\\
-        \mbox{}\hspace{0.1cm} $\ldots$  \\
-        with {\ident$_m$}   : {\type$_m$} := {\term$_m$}}\\
+\item{\tt CoFixpoint} {\ident$_1$} {\tt :} {\type$_1$} {\tt :=} {\term$_1$}\\
+     {\tt with}\\
+        \mbox{}\hspace{0.1cm} {\ldots} \\
+        {\tt with} {\ident$_m$} {\tt :} {\type$_m$} {\tt :=} {\term$_m$}\\
 As in the \texttt{Fixpoint} command (see Section~\ref{Fixpoint}), it
 is possible to introduce a block of mutually dependent methods.
 \end{Variants}

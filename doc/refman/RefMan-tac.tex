@@ -302,9 +302,9 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
   constant then the latter can still be referred to by a qualified name
   (see \ref{LongNames}).
 
-\item {\tt intros \ident$_1$ \dots\ \ident$_n$} 
+\item {\tt intros \ident$_1$ \mbox{\dots} \ident$_n$} 
   
-  Is equivalent to the composed tactic {\tt intro \ident$_1$; \dots\ ;
+  Is equivalent to the composed tactic {\tt intro \ident$_1$; \mbox{\dots} ;
     intro \ident$_n$}.
 
   More generally, the \texttt{intros} tactic takes a pattern as
@@ -418,18 +418,18 @@ Section~\ref{pattern} to transform the goal so that it gets the form
 
 \begin{Variants}
 
-\item{\tt apply {\term} with {\term$_1$} \dots\ {\term$_n$}} 
-  \tacindex{apply \dots\ with}
+\item{\tt apply {\term} with {\term$_1$} \mbox{\dots} {\term$_n$}} 
+  \tacindex{apply \mbox{\dots} with}
   
   Provides {\tt apply} with explicit instantiations for all dependent
   premises of the type of {\term} which do not occur in the conclusion
   and consequently cannot be found by unification. Notice that
-  {\term$_1$} \dots\ {\term$_n$} must be given according to the order
+  {\term$_1$} \mbox{\dots} {\term$_n$} must be given according to the order
   of these dependent premises of the type of {\term}.
 
   \ErrMsg \errindex{Not the right number of missing arguments}
 
-\item{\tt apply {\term} with ({\vref$_1$} := {\term$_1$}) \dots\ ({\vref$_n$}
+\item{\tt apply {\term} with ({\vref$_1$} := {\term$_1$}) \mbox{\dots} ({\vref$_n$}
     := {\term$_n$})} 
   
   This also provides {\tt apply} with values for instantiating
@@ -498,7 +498,7 @@ Section~\ref{pattern} to transform the goal so that it gets the form
 \end{Variants}
 
 \subsection{{\tt apply {\term} in {\ident}}
-\tacindex{apply \ldots\ in}}
+\tacindex{apply {\ldots} in}}
 
 This tactic applies to any goal.  The argument {\term} is a term
 well-formed in the local context and the argument {\ident} is an
@@ -779,13 +779,13 @@ where $G'$ is obtained from $G$ by replacing all occurrences of $t$ by
 {\tt x}. The name of the variable (here {\tt n}) is chosen based on $T$.
 
 \begin{Variants}
-\item {\tt generalize {\term$_1$ , \dots\ , \term$_n$}}
+\item {\tt generalize {\term$_1$ , \mbox{\dots} , \term$_n$}}
   
-  Is equivalent to {\tt generalize \term$_n$; \dots\ ; generalize
+  Is equivalent to {\tt generalize \term$_n$; \mbox{\dots} ; generalize
     \term$_1$}. Note that the sequence of \term$_i$'s are processed
   from $n$ to $1$.
 
-\item {\tt generalize {\term} at {\num$_1$ \dots\ \num$_i$}}
+\item {\tt generalize {\term} at {\num$_1$ \mbox{\dots} \num$_i$}}
   
   Is equivalent to {\tt generalize \term} but generalizing only over
   the specified occurrences of {\term} (counting from left to right on the
@@ -796,10 +796,10 @@ where $G'$ is obtained from $G$ by replacing all occurrences of $t$ by
   Is equivalent to {\tt generalize \term} but use {\ident} to name the
   generalized hypothesis.
 
-\item {\tt generalize {\term$_1$} at {\num$_{11}$ \dots\ \num$_{1i_1}$} 
+\item {\tt generalize {\term$_1$} at {\num$_{11}$ \mbox{\dots} \num$_{1i_1}$} 
                       as {\ident$_1$}
                       , {\ldots} ,
-                      {\term$_n$} at {\num$_{n1}$ \dots\ \num$_{ni_n}$}
+                      {\term$_n$} at {\num$_{n1}$ \mbox{\dots} \num$_{ni_n}$}
                       as {\ident$_2$}}
   
   This is the most general form of {\tt generalize} that combines the
@@ -813,11 +813,11 @@ where $G'$ is obtained from $G$ by replacing all occurrences of $t$ by
 \end{Variants}
 
 
-\subsection{\tt revert  \ident$_1$ \dots\ \ident$_n$
+\subsection{\tt revert  \ident$_1$ \mbox{\dots} \ident$_n$
 \tacindex{revert}
 \label{revert}}
 
-This applies to any goal with variables \ident$_1$ \dots\ \ident$_n$.
+This applies to any goal with variables \ident$_1$ \mbox{\dots} \ident$_n$.
 It moves the hypotheses (possibly defined) to the goal, if this respects
 dependencies. This tactic is the inverse of {\tt intro}. 
 
@@ -847,7 +847,7 @@ This tactic applies to any goal. It implements the rule
 \item \errindex{Not convertible}
 \end{ErrMsgs}
 
-\tacindex{change \dots\ in}
+\tacindex{change \mbox{\dots} in}
 \begin{Variants}
 \item {\tt change \term$_1$ with \term$_2$} 
   
@@ -855,9 +855,9 @@ This tactic applies to any goal. It implements the rule
   current goal.  The terms \term$_1$ and \term$_2$ must be
   convertible.
 
-\item {\tt change \term$_1$ at \num$_1$ \dots\ \num$_i$ with \term$_2$} 
+\item {\tt change \term$_1$ at \num$_1$ \mbox{\dots} \num$_i$ with \term$_2$} 
   
-  This replaces the occurrences numbered \num$_1$ \dots\ \num$_i$ of
+  This replaces the occurrences numbered \num$_1$ \mbox{\dots} \num$_i$ of
   \term$_1$ by \term$_2$ in the current goal.
   The terms \term$_1$ and \term$_2$ must be convertible.
 
@@ -867,7 +867,7 @@ This tactic applies to any goal. It implements the rule
 
 \item {\tt change \term$_1$ with \term$_2$ in {\ident}}
   
-\item {\tt change \term$_1$ at  \num$_1$ \dots\ \num$_i$ with \term$_2$ in
+\item {\tt change \term$_1$ at  \num$_1$ \mbox{\dots} \num$_i$ with \term$_2$ in
     {\ident}}
   
   This applies the {\tt change} tactic not to the goal but to the
@@ -1067,7 +1067,7 @@ different forms:
 
 \begin{itemize}
 \item In a bindings list of the form {\tt (\vref$_1$ := \term$_1$)
-  \dots\ (\vref$_n$ := \term$_n$)}, {\vref} is either an {\ident} or a
+  \mbox{\dots} (\vref$_n$ := \term$_n$)}, {\vref} is either an {\ident} or a
   {\num}. The references are determined according to the type of
   {\term}. If \vref$_i$ is an identifier, this identifier has to be
   bound in the type of {\term} and the binding provides the tactic
@@ -1234,29 +1234,37 @@ Goal clauses are written after a conversion tactic (tactics
 are introduced by  the keyword \texttt{in}. If no goal clause is provided,
 the default is to perform the conversion only in the conclusion.
 
-The syntax and description of the various goal clauses is the following:
-\begin{description}
-\item[]\texttt{in {\ident}$_1$ $\ldots$ {\ident}$_n$ |- } only in hypotheses {\ident}$_1$
-  \ldots {\ident}$_n$
-\item[]\texttt{in {\ident}$_1$ $\ldots$ {\ident}$_n$ |- *} in hypotheses {\ident}$_1$ \ldots
-  {\ident}$_n$ and in the conclusion
-\item[]\texttt{in * |-} in every hypothesis
-\item[]\texttt{in *} (equivalent to \texttt{in * |- *}) everywhere
-\item[]\texttt{in (type of {\ident}$_1$) (value of {\ident}$_2$) $\ldots$ |-} in
-  type part of {\ident}$_1$, in the value part of {\ident}$_2$, etc. 
-\end{description}
+The syntax of goal clauses for conversion is the following:
+\begin{center}
+\begin{tabular}{rcl} 
+{\hyplocation} & ::= & {\ident} $\mid$ {\tt (type of} {\ident}{\tt )} $\mid$ {\tt (value of} {\ident}{\tt )}\\
+{\convclause} & ::= & \texttt{in} \sequence{\hyplocation}{,} {\tt |- \zeroone{*}}\\
+& $\mid$ & \texttt{in * |- \zeroone{*}}\\
+& $\mid$ & \texttt{in *}\\
+ \end{tabular}
+\end{center}
 
-For backward compatibility, the notation \texttt{in}~{\ident}$_1$\ldots {\ident}$_n$
-performs the conversion in hypotheses {\ident}$_1$\ldots {\ident}$_n$.
+If {\ident} refers to a local definition, then {\tt (type of}
+{\ident}{\tt )} refers to the type part of it only and {\tt (value of}
+{\ident}{\tt )} refers to the value part of it.  If {\tt *} is given
+on the right of {\tt |-}, then the conclusion is concerned
+too. Otherwise, only the listed names of hypotheses are concerned. If
+{\tt *} appears on the left of {\tt |-}, then all hypotheses are
+concerned. Finally, the expression {\tt in *} is an short-hand for
+\texttt{in * |- *}.
+
+For backward compatibility, the notation \texttt{in}~{\ident}$_1$ {\tt
+  ,} {\ldots} {\tt ,} {\ident}$_n$ performs the conversion in
+hypotheses {\ident}$_1$ {\ldots} {\ident}$_n$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %voir reduction__conv_x : histoires d'univers.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection[{\tt cbv \flag$_1$ \dots\ \flag$_n$}, {\tt lazy \flag$_1$
-\dots\ \flag$_n$} and {\tt compute}]
-{{\tt cbv \flag$_1$ \dots\ \flag$_n$}, {\tt lazy \flag$_1$
-\dots\ \flag$_n$} and {\tt compute}
+\subsection[{\tt cbv} \flag$_1$ \mbox{\ldots} \flag$_n$, {\tt lazy} \flag$_1$
+\mbox{\ldots} \flag$_n$ and {\tt compute}]
+{{\tt cbv} \flag$_1$ {\ldots} \flag$_n$, {\tt lazy} \flag$_1$
+{\ldots} \flag$_n$ and {\tt compute}
 \tacindex{cbv}
 \tacindex{lazy}
 \tacindex{compute}
@@ -1271,8 +1279,8 @@ pattern-matching over a constructed term, and unfolding of {\tt fix}
 and {\tt cofix} expressions) and $\zeta$ (contraction of local
 definitions), the flag are either {\tt beta}, {\tt delta}, {\tt iota}
 or {\tt zeta}. The {\tt delta} flag itself can be refined into {\tt
-delta [\qualid$_1$\ldots\qualid$_k$]} or {\tt delta
--[\qualid$_1$\ldots\qualid$_k$]}, restricting in the first case the
+delta [}{\qualid$_1$} {\ldots} {\qualid$_k$}{\tt ]} or {\tt delta
+-[}{\qualid$_1$} {\ldots} {\qualid$_k$}{\tt ]}, restricting in the first case the
 constants to unfold to the constants listed, and restricting in the
 second case the constant to unfold to all but the ones explicitly
 mentioned. Notice that the {\tt delta} flag does not apply to
@@ -1308,24 +1316,24 @@ computational expressions (i.e. with few dead code).
   
   This is a synonym for {\tt lazy beta delta iota zeta}.
 
-\item {\tt compute [\qualid$_1$\ldots\qualid$_k$]}\\
-      {\tt cbv [\qualid$_1$\ldots\qualid$_k$]}
+\item {\tt compute [}{\qualid$_1$} {\ldots} {\qualid$_k$}{\tt ]}\\
+      {\tt cbv [}{\qualid$_1$} {\ldots} {\qualid$_k$}{\tt ]}
 
   These are synonyms of {\tt cbv beta delta
-  [\qualid$_1$\ldots\qualid$_k$] iota zeta}.
+  [}{\qualid$_1$} {\ldots} {\qualid$_k$}{\tt ] iota zeta}.
   
-\item {\tt compute -[\qualid$_1$\ldots\qualid$_k$]}\\
-      {\tt cbv -[\qualid$_1$\ldots\qualid$_k$]}
+\item {\tt compute -[}{\qualid$_1$} {\ldots} {\qualid$_k$}{\tt ]}\\
+      {\tt cbv -[}{\qualid$_1$} {\ldots} {\qualid$_k$}{\tt ]}
 
   These are synonyms of {\tt cbv beta delta
-  -[\qualid$_1$\ldots\qualid$_k$] iota zeta}.
+  -[}{\qualid$_1$} {\ldots} {\qualid$_k$}{\tt ] iota zeta}.
 
-\item {\tt lazy [\qualid$_1$\ldots\qualid$_k$]}\\
-      {\tt lazy -[\qualid$_1$\ldots\qualid$_k$]}
+\item {\tt lazy [}{\qualid$_1$} {\ldots} {\qualid$_k$}{\tt ]}\\
+      {\tt lazy -[}{\qualid$_1$} {\ldots} {\qualid$_k$}{\tt ]}
 
   These are respectively synonyms of {\tt lazy beta delta
-  [\qualid$_1$\ldots\qualid$_k$] iota zeta} and {\tt lazy beta delta
-  -[\qualid$_1$\ldots\qualid$_k$] iota zeta}.
+  [}{\qualid$_1$} {\ldots} {\qualid$_k$}{\tt ] iota zeta} and {\tt lazy beta delta
+  -[}{\qualid$_1$} {\ldots} {\qualid$_k$}{\tt ] iota zeta}.
 
 \item {\tt vm\_compute} \tacindex{vm\_compute}
 
@@ -1350,9 +1358,9 @@ computational expressions (i.e. with few dead code).
 \tacindex{red}}
 
 This tactic applies to a goal which has the form {\tt
-  forall (x:T1)\dots(xk:Tk), c t1 \dots\ tn} where {\tt c} is a constant.  If
+  forall (x:T1)} {\ldots} {\tt (xk:Tk), c t1} {\ldots} {\tt tn} where {\tt c} is a constant.  If
 {\tt c} is transparent then it replaces {\tt c} with its definition
-(say {\tt t}) and then reduces {\tt (t t1 \dots\ tn)} according to
+(say {\tt t}) and then reduces {\tt (t t1} {\ldots} {\tt tn)} according to
 $\beta\iota\zeta$-reduction rules.
 
 \begin{ErrMsgs}
@@ -1438,14 +1446,14 @@ expression {\tt (minus (S (S x)) (S y))} is simplified to
 {\tt (minus (S x) y)} even if an extra simplification is possible.
 \end{itemize}
 
-\tacindex{simpl \dots\ in}
+\tacindex{simpl \mbox{\dots} in}
 \begin{Variants}
 \item {\tt simpl {\term}}
   
   This applies {\tt simpl} only to the occurrences of {\term} in the
   current goal.
 
-\item {\tt simpl {\term} at \num$_1$ \dots\ \num$_i$}
+\item {\tt simpl {\term} at \num$_1$ \mbox{\dots} \num$_i$}
   
   This applies {\tt simpl} only to the \num$_1$, \dots, \num$_i$
   occurrences of {\term} in the current goal.
@@ -1457,7 +1465,7 @@ expression {\tt (minus (S (S x)) (S y))} is simplified to
   This applies {\tt simpl} only to the applicative subterms whose head
   occurrence is {\ident}.
 
-\item {\tt simpl {\ident} at \num$_1$ \dots\ \num$_i$}
+\item {\tt simpl {\ident} at \num$_1$ \mbox{\dots} \num$_i$}
   
   This applies {\tt simpl} only to the \num$_1$, \dots, \num$_i$
 applicative subterms whose head occurrence is {\ident}.
@@ -1481,14 +1489,14 @@ with its $\beta\iota$-normal form.
 
 \begin{Variants}
 \item {\tt unfold {\qualid}$_1$, \dots, \qualid$_n$}
-  \tacindex{unfold \dots\ in}
+  \tacindex{unfold \mbox{\dots} in}
   
   Replaces {\em simultaneously} {\qualid}$_1$, \dots, {\qualid}$_n$
   with their definitions and replaces the current goal with its
   $\beta\iota$ normal form.
 
 \item {\tt unfold {\qualid}$_1$ at \num$_1^1$, \dots, \num$_i^1$,
-\dots,\ \qualid$_n$ at \num$_1^n$ \dots\ \num$_j^n$}
+\dots,\ \qualid$_n$ at \num$_1^n$ \mbox{\dots} \num$_j^n$}
   
   The lists \num$_1^1$, \dots, \num$_i^1$ and \num$_1^n$, \dots,
   \num$_j^n$ specify the occurrences of {\qualid}$_1$, \dots,
@@ -1514,7 +1522,7 @@ with its $\beta\iota$-normal form.
   Section~\ref{scopechange}).
 
 \item {\tt unfold \qualidorstring$_1$ at \num$_1^1$, \dots, \num$_i^1$,
-\dots,\ \qualidorstring$_n$ at \num$_1^n$ \dots\ \num$_j^n$}
+\dots,\ \qualidorstring$_n$ at \num$_1^n$ \mbox{\dots} \num$_j^n$}
 
   This is the most general form, where {\qualidorstring} is either a
   {\qualid} or a {\qstring} referring to a notation.
@@ -1531,7 +1539,7 @@ replaced by \term.
 \begin{Variants}
 \item {\tt fold} \term$_1$ \dots\ \term$_n$ 
   
-  Equivalent to {\tt fold} \term$_1${\tt;}\ldots{\tt; fold} \term$_n$.
+  Equivalent to {\tt fold} \term$_1$ {\tt;} {\ldots} {\tt; fold} \term$_n$.
 \end{Variants}
 
 \subsection{{\tt pattern {\term}}
@@ -1555,13 +1563,13 @@ x}$)$) $t$}.  This command can be used, for instance, when the tactic
 {\tt apply} fails on matching.
 
 \begin{Variants}
-\item {\tt pattern {\term} at {\num$_1$} \dots\ {\num$_n$}}
+\item {\tt pattern {\term} at {\num$_1$} \mbox{\dots} {\num$_n$}}
   
   Only the occurrences {\num$_1$} \dots\ {\num$_n$} of {\term} are
   considered for $\beta$-expansion. Occurrences are located from left
   to right.
 
-\item {\tt pattern {\term} at - {\num$_1$} \dots\ {\num$_n$}}
+\item {\tt pattern {\term} at - {\num$_1$} \mbox{\dots} {\num$_n$}}
   
   All occurrences except the occurrences of indexes {\num$_1$} \dots\
   {\num$_n$} of {\term} are considered for
@@ -1569,15 +1577,15 @@ x}$)$) $t$}.  This command can be used, for instance, when the tactic
 
 \item {\tt pattern {\term$_1$}, \dots, {\term$_m$}}
   
-  Starting from a goal $\phi(t_1 \dots\ t_m)$, the tactic
+  Starting from a goal $\phi(t_1 \mbox{\dots} t_m)$, the tactic
    {\tt pattern $t_1$, \dots,\ $t_m$} generates the equivalent goal {\tt
-   (fun (x$_1$:$A_1$) \dots\ (x$_m$:$A_m$) => $\phi(${\tt x$_1$\dots\
-   x$_m$}$)$) $t_1$ \dots\ $t_m$}.\\ If $t_i$ occurs in one of the
+   (fun (x$_1$:$A_1$) \mbox{\dots} (x$_m$:$A_m$) => $\phi(${\tt x$_1$\dots\
+   x$_m$}$)$) $t_1$ \mbox{\dots} $t_m$}.\\ If $t_i$ occurs in one of the
    generated types $A_j$ these occurrences will also be considered and
    possibly abstracted.
 
-\item {\tt pattern {\term$_1$} at {\num$_1^1$} \dots\ {\num$_{n_1}^1$}, \dots,
-    {\term$_m$} at {\num$_1^m$} \dots\ {\num$_{n_m}^m$}}
+\item {\tt pattern {\term$_1$} at {\num$_1^1$} \mbox{\dots} {\num$_{n_1}^1$}, \dots,
+    {\term$_m$} at {\num$_1^m$} \mbox{\dots} {\num$_{n_m}^m$}}
   
   This behaves as above but processing only the occurrences \num$_1^1$,
   \dots, \num$_i^1$ of \term$_1$, \dots, \num$_1^m$, \dots, \num$_j^m$
@@ -1745,7 +1753,7 @@ induction n.
 \begin{ErrMsgs}
 \item \errindex{Not an inductive product}
 \item \errindex{Unable to find an instance for the variables
-{\ident} \ldots {\ident}}
+{\ident} {\ldots} {\ident}}
   
   Use in this case 
   the variant {\tt elim \dots\ with \dots} below.
@@ -1757,18 +1765,18 @@ induction n.
   This behaves as {\tt induction {\term}} but uses the names in
   {\disjconjintropattern} to name the variables introduced in the context.
   The {\disjconjintropattern} must typically be of the form
-  {\tt [} $p_{11}$ \ldots
-  $p_{1n_1}$ {\tt |} {\ldots} {\tt |} $p_{m1}$ \ldots $p_{mn_m}$ {\tt
+  {\tt [} $p_{11}$ {\ldots}
+  $p_{1n_1}$ {\tt |} {\ldots} {\tt |} $p_{m1}$ {\ldots} $p_{mn_m}$ {\tt
     ]} with $m$ being the number of constructors of the type of
   {\term}. Each variable introduced by {\tt induction} in the context
-  of the $i^{th}$ goal gets its name from the list $p_{i1}$ \ldots
+  of the $i^{th}$ goal gets its name from the list $p_{i1}$ {\ldots}
   $p_{in_i}$ in order. If there are not enough names, {\tt induction}
   invents names for the remaining variables to introduce. More
   generally, the $p_{ij}$ can be any disjunctive/conjunctive
   introduction pattern (see Section~\ref{intros-pattern}). For instance,
   for an inductive type with one constructor, the pattern notation
-  {\tt ($p_{1}$,\ldots,$p_{n}$)} can be used instead of
-  {\tt [} $p_{1}$ \ldots $p_{n}$ {\tt ]}.
+  {\tt (}$p_{1}$ {\tt ,} {\ldots} {\tt ,} $p_{n}${\tt )} can be used instead of
+  {\tt [} $p_{1}$ {\ldots} $p_{n}$ {\tt ]}.
 
 \item{\tt induction {\term} eqn:{\namingintropattern}}
 
@@ -1807,7 +1815,7 @@ induction n.
   This behaves as {\tt induction {\term$_1$} using {\term$_2$}} but
   also providing instances for the premises of the type of {\term$_2$}.
 
-\item \texttt{induction {\term}$_1$, $\ldots$, {\term}$_n$ using {\qualid}}
+\item \texttt{induction {\term}$_1$, {\ldots}, {\term}$_n$ using {\qualid}}
 
   This syntax is used for the case {\qualid} denotes an induction principle
   with complex predicates as the induction principles generated by
@@ -1959,11 +1967,11 @@ syntax {\tt destruct ({\num})} (not very interesting anyway).
   
   This behaves as {\tt destruct {\term}} but uses the names in
   {\intropattern} to name the variables introduced in the context.
-  The {\intropattern} must have the form {\tt [} $p_{11}$ \ldots
-  $p_{1n_1}$ {\tt |} {\ldots} {\tt |} $p_{m1}$ \ldots $p_{mn_m}$ {\tt
+  The {\intropattern} must have the form {\tt [} $p_{11}$ {\ldots}
+  $p_{1n_1}$ {\tt |} {\ldots} {\tt |} $p_{m1}$ {\ldots} $p_{mn_m}$ {\tt
     ]} with $m$ being the number of constructors of the type of
   {\term}. Each variable introduced by {\tt destruct} in the context
-  of the $i^{th}$ goal gets its name from the list $p_{i1}$ \ldots
+  of the $i^{th}$ goal gets its name from the list $p_{i1}$ {\ldots}
   $p_{in_i}$ in order. If there are not enough names, {\tt destruct}
   invents names for the remaining variables to introduce. More
   generally, the $p_{ij}$ can be any disjunctive/conjunctive
@@ -2105,8 +2113,8 @@ introduction pattern $p$:
 \item introduction on \texttt{\ident} behaves as described in
   Section~\ref{intro};
 \item introduction over a disjunction of list of patterns {\tt
-  [$p_{11}$ {\ldots} $p_{1m_1}$ | {\ldots} | $p_{11}$ {\ldots}
-    $p_{nm_n}$]} expects the product to be over an inductive type
+  [}$p_{11}$ {\ldots} $p_{1m_1}$ {\tt |} {\ldots} {\tt |} $p_{11}$ {\ldots}
+    $p_{nm_n}${\tt ]} expects the product to be over an inductive type
   whose number of constructors is $n$ (or more generally over a type
   of conclusion an inductive type built from $n$ constructors,
   e.g. {\tt C -> A$\backslash$/B if $n=2$}): it destructs the introduced
@@ -2119,17 +2127,17 @@ introduction pattern $p$:
   introduced (for instance, the list of patterns {\tt [$\;$|$\;$] H}
   applied on goal {\tt forall x:nat, x=0 -> 0=x} behaves the same as
   the list of patterns {\tt [$\,$|$\,$?$\,$] H});
-\item introduction over a conjunction of patterns {\tt ($p_1$, \ldots,
-  $p_n$)} expects the goal to be a product over an inductive type $I$ with a
+\item introduction over a conjunction of patterns {\tt (}$p_1${\tt ,} {\ldots}{\tt ,}
+  $p_n${\tt )} expects the goal to be a product over an inductive type $I$ with a
   single constructor that itself has at least $n$ arguments: it
   performs a case analysis over the hypothesis, as {\tt destruct}
-  would, and applies the patterns $p_1$~\ldots~$p_n$ to the arguments
+  would, and applies the patterns $p_1$ {\ldots} $p_n$ to the arguments
   of the constructor of $I$ (observe that {\tt ($p_1$, {\ldots},
   $p_n$)} is an alternative notation for {\tt [$p_1$ {\ldots}
   $p_n$]});
-\item introduction via {\tt ( $p_1$ \& \ldots \& $p_n$ )}
+\item introduction via {\tt (} $p_1$ {\tt \&} {\ldots} {\tt \&} $p_n$ {\tt )}
   is a shortcut for introduction via
-  {\tt ($p_1$,(\ldots,(\dots,$p_n$)\ldots))}; it expects the
+  {\tt (}$p_1$ {\tt ,(}{\ldots}{\tt ,(}{\dots}{\tt ,}$p_n$){\ldots}{\tt ))}; it expects the
   hypothesis to be a sequence of right-associative binary inductive 
   constructors such as {\tt conj} or {\tt ex\_intro}; for instance, an
   hypothesis with type {\tt A\verb|/\|exists x, B\verb|/\|C\verb|/\|D} can be
@@ -2149,8 +2157,8 @@ introduction pattern $p$:
   removed.
 \end{itemize}
 
-\Rem {\tt intros $p_1~\ldots~p_n$} is not equivalent to \texttt{intros
-  $p_1$;\ldots; intros $p_n$} for the following reasons:
+\Rem {\tt intros} $p_1$ {\ldots} $p_n$ is not equivalent to \texttt{intros}
+  $p_1${\tt ;} {\ldots}{\tt ; intros} $p_n$ for the following reasons:
 \begin{itemize}
 \item A wildcard pattern never succeeds when applied isolated on a
   dependent product, while it succeeds as part of a list of
@@ -2494,7 +2502,7 @@ This happens if \term$_1$ does not occur in the goal.
   Use {\tac} to completely solve the side-conditions arising from the
   rewrite.
 
-\item {\tt rewrite $\term_1$, \ldots, $\term_n$}\\
+\item {\tt rewrite} $\term_1${\tt ,} {\ldots}{\tt ,} $\term_n$\\
   Is equivalent to the $n$ successive tactics {\tt rewrite $\term_1$}
   up to {\tt rewrite $\term_n$}, each one working on the first subgoal
   generated by the previous one.
@@ -2581,7 +2589,7 @@ It is equivalent to {\tt apply refl\_equal}.
 
 \begin{ErrMsgs}
 \item \errindex{The conclusion is not a substitutive equation}
-\item \errindex{Impossible to unify \dots\ with \dots.}
+\item \errindex{Impossible to unify \dots\ with \dots}
 \end{ErrMsgs}
 
 \subsection{\tt symmetry
@@ -2978,14 +2986,14 @@ latter is first introduced in the local context using
   The arguments of the $i^{th}$ constructor and the
   equalities that {\tt inversion} introduces in the context of the
   goal corresponding to the $i^{th}$ constructor, if it exists, get
-  their names from the list $p_{i1}$ \ldots $p_{in_i}$ in order. If
+  their names from the list $p_{i1}$ {\ldots} $p_{in_i}$ in order. If
   there are not enough names, {\tt induction} invents names for the
   remaining variables to introduce. In case an equation splits into
   several equations (because {\tt inversion} applies {\tt injection}
   on the equalities it generates), the corresponding name $p_{ij}$ in
   the list must be replaced by a sublist of the form {\tt [$p_{ij1}$
-  \ldots $p_{ijq}$]} (or, equivalently, {\tt ($p_{ij1}$,
-  \ldots, $p_{ijq}$)}) where $q$ is the number of subequalities
+  {\ldots} $p_{ijq}$]} (or, equivalently, {\tt ($p_{ij1}$,
+  {\ldots}, $p_{ijq}$)}) where $q$ is the number of subequalities
   obtained from splitting the original equation. Here is an example.
 
 \begin{coq_eval}
@@ -3030,19 +3038,19 @@ Abort.
   \texttt{inversion} {\ident} \texttt{in} \ident$_1$ \dots\ 
   \ident$_n$.
   
-\item \tacindex{inversion\_clear \dots\ in} \texttt{inversion\_clear}
-  {\ident} \texttt{in} \ident$_1$ \ldots \ident$_n$
+\item \tacindex{inversion\_clear {\ldots} in} \texttt{inversion\_clear}
+  {\ident} \texttt{in} \ident$_1$ {\ldots} \ident$_n$
  
   Let \ident$_1$ \dots\ \ident$_n$, be identifiers in the local context. This
-  tactic behaves as generalizing \ident$_1$ \dots\ \ident$_n$, and
+  tactic behaves as generalizing \ident$_1$ {\ldots} \ident$_n$, and
   then performing {\tt inversion\_clear}.
   
-\item \tacindex{inversion\_clear \dots\ as \dots\ in}
+\item \tacindex{inversion\_clear {\ldots} as \dots\ in}
   \texttt{inversion\_clear} {\ident} \texttt{as} {\intropattern}
-  \texttt{in} \ident$_1$ \ldots \ident$_n$
+  \texttt{in} \ident$_1$ {\ldots} \ident$_n$
 
   This allows to name the hypotheses introduced in the context by
-  \texttt{inversion\_clear} {\ident} \texttt{in} \ident$_1$ \ldots
+  \texttt{inversion\_clear} {\ident} \texttt{in} \ident$_1$ {\ldots}
   \ident$_n$.
 
 \item \tacindex{dependent inversion} \texttt{dependent inversion}
@@ -3274,14 +3282,14 @@ hints of the database named {\tt core}.
   Uses all existing hint databases, minus the special database
   {\tt v62}. See Section~\ref{Hints-databases}
 
-\item \texttt{auto using \nterm{lemma}$_1$ , \ldots , \nterm{lemma}$_n$}
+\item \texttt{auto using} \nterm{lemma}$_1$ {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$
 
   Uses \nterm{lemma}$_1$, \ldots, \nterm{lemma}$_n$ in addition to
   hints (can be combined with the \texttt{with \ident} option). If
   $lemma_i$ is an inductive type, it is the collection of its
   constructors which is added as hints.
 
-\item \texttt{auto using \nterm{lemma}$_1$ , \ldots , \nterm{lemma}$_n$ with \ident$_1$ \dots\ \ident$_n$}
+\item \texttt{auto using} \nterm{lemma}$_1$ {\tt ,} {\ldots} {\tt ,} \nterm{lemma}$_n$ with \ident$_1$ {\ldots} \ident$_n$
 
   This combines the effects of the {\tt using} and {\tt with} options.
 
@@ -3897,7 +3905,7 @@ legacy one.
 
 \begin{Variants}
 \item\texttt{Local Hint} \textsl{hint\_definition} \texttt{:}
-  \ident$_1$ \ldots\ \ident$_n$
+  \ident$_1$ {\ldots} \ident$_n$
   
   This is used to declare a hint database that must not be exported to the other
   modules that require and import the current module. Inside a
@@ -3909,7 +3917,7 @@ legacy one.
 The general
 command to add a hint to some database \ident$_1$, \dots, \ident$_n$ is:
 \begin{tabbing}
-  \texttt{Hint} \textsl{hint\_definition} \texttt{:} \ident$_1$ \ldots\ \ident$_n$
+  \texttt{Hint} \textsl{hint\_definition} \texttt{:} \ident$_1$ {\ldots} \ident$_n$
 \end{tabbing}
 where {\sl hint\_definition} is one of the following expressions:
 
@@ -4094,7 +4102,7 @@ the tactic.
     database. 
 
 \item\texttt{Local Hint} \textsl{hint\_definition} \texttt{:}
-   \ident$_1$ \ldots\ \ident$_n$
+   \ident$_1$ {\ldots} \ident$_n$
 
   This is used to declare hints that must not be exported to the other
   modules that require and import the current module. Inside a
@@ -4380,7 +4388,7 @@ Its syntax follows the schema :
 
 \noindent
 {\tt Combined Scheme {\ident$_0$} from {\ident$_1$}, .., {\ident$_n$}}\\
-\ident$_1$ \ldots \ident$_n$ are different inductive principles that must belong to
+\ident$_1$ {\ldots} \ident$_n$ are different inductive principles that must belong to
 the same package of mutual inductive principle definitions. This command
 generates {\ident$_0$} to be the conjunction of the principles: it is
 built from the common premises of the principles and concluded by the

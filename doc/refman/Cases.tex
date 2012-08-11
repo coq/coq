@@ -33,7 +33,7 @@ anything. It may occur an arbitrary number of times in a
 pattern. Alias patterns written \texttt{(}{\sl pattern} \texttt{as}
 {\sl identifier}\texttt{)} are also accepted. This pattern matches the
 same values as {\sl pattern} does and {\sl identifier} is bound to the
-matched value.  
+matched value.
 A pattern of the form {\pattern}{\tt |}{\pattern} is called
 disjunctive. A list of patterns separated with commas is also
 considered as a pattern and is called {\em multiple pattern}. However
@@ -53,7 +53,7 @@ The extended \texttt{match} still accepts an optional {\em elimination
 predicate} given after the keyword \texttt{return}.  Given a pattern
 matching expression, if all the right-hand-sides of \texttt{=>} ({\em
 rhs} in short) have the same type, then this type can be sometimes
-synthesized, and so we can omit the \texttt{return} part. Otherwise 
+synthesized, and so we can omit the \texttt{return} part. Otherwise
 the predicate after \texttt{return} has to be provided, like for the basic
 \texttt{match}.
 
@@ -175,9 +175,9 @@ Fixpoint lef (n m:nat) {struct m} : bool :=
 \end{coq_example}
 
 Here the last pattern superposes with the first two. Because
-of the priority rule, the last pattern 
+of the priority rule, the last pattern
 will be used only for values that do not match neither the  first nor
-the second one.  
+the second one.
 
 Terms with useless patterns are not accepted by the
 system. Here is an example:
@@ -303,7 +303,7 @@ Check
 
 \asection{Matching objects of dependent types}
 The previous examples illustrate pattern matching on objects of
-non-dependent types, but we can also 
+non-dependent types, but we can also
 use the expansion strategy to destructure objects of dependent type.
 Consider the type \texttt{listn} of lists of a certain length:
 \label{listn}
@@ -321,7 +321,7 @@ We can define the function \texttt{length} over \texttt{listn} by:
 Definition length (n:nat) (l:listn n) := n.
 \end{coq_example}
 
-Just for illustrating pattern matching, 
+Just for illustrating pattern matching,
 we can define it by case analysis:
 
 \begin{coq_example}
@@ -340,7 +340,7 @@ same notions of usual pattern matching.
 % Constraining of dependencies is not longer valid in V7
 %
 \iffalse
-Now suppose we split the second pattern  of \texttt{length} into two 
+Now suppose we split the second pattern  of \texttt{length} into two
 cases so to give an
 alternative definition using nested patterns:
 \begin{coq_example}
@@ -371,11 +371,11 @@ In fact, they are equivalent
 because the pattern \texttt{niln} implies that \texttt{n} can only match
 the value $0$ and analogously the pattern \texttt{consn} determines that \texttt{n} can
 only match  values of the form  $(S~v)$ where $v$ is the value matched by
-\texttt{m}. 
+\texttt{m}.
 
 The converse is also true. If
 we destructure the  length  value with the pattern \texttt{O} then the list
-value should be $niln$. 
+value should be $niln$.
 Thus, the following term \texttt{length3} corresponds to the function
 \texttt{length} but this time defined by case analysis on the dependencies instead of on the list:
 
@@ -392,7 +392,7 @@ When we have nested patterns of dependent types, the semantics of
 pattern matching becomes a little more difficult because
 the set of values that are matched by a sub-pattern may be conditioned by the
 values matched by another sub-pattern. Dependent nested patterns are
-somehow constrained patterns. 
+somehow constrained patterns.
 In the examples, the expansion of
 \texttt{length1} and \texttt{length2} yields exactly the same term
  but the
@@ -415,7 +415,7 @@ The examples  given so far do not need an explicit elimination predicate
  because all the rhs have the same type and the
 strategy succeeds to synthesize it.
 Unfortunately when dealing with dependent patterns it often happens
-that we need to write cases where the type of the rhs are 
+that we need to write cases where the type of the rhs are
 different  instances of the elimination  predicate.
 The function  \texttt{concat} for \texttt{listn}
 is an example where the branches have different type
@@ -430,14 +430,14 @@ Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
   end.
 \end{coq_example}
 The elimination predicate is {\tt fun (n:nat) (l:listn n) => listn~(n+m)}.
-In general if $m$ has type $(I~q_1\ldots q_r~t_1\ldots t_s)$ where 
-$q_1\ldots q_r$ are parameters, the elimination predicate should be of
+In general if $m$ has type {\tt (}$I$ $q_1$ {\ldots} $q_r$ $t_1$ {\ldots} $t_s${\tt )} where
+$q_1$, {\ldots}, $q_r$ are parameters, the elimination predicate should be of
 the form~:
-{\tt fun $y_1$\ldots $y_s$ $x$:($I$~$q_1$\ldots $q_r$~$y_1$\ldots
-  $y_s$) => Q}.
+{\tt fun} $y_1$ {\ldots} $y_s$ $x${\tt :}($I$~$q_1$ {\ldots} $q_r$ $y_1$ {\ldots}
+  $y_s${\tt ) =>} $Q$.
 
 In the concrete syntax, it should be written~:
-\[ \kw{match}~m~\kw{as}~x~\kw{in}~(I~\_\ldots \_~y_1\ldots y_s)~\kw{return}~Q~\kw{with}~\ldots~\kw{end}\]
+\[ \kw{match}~m~\kw{as}~x~\kw{in}~(I~\_~\mbox{\ldots}~\_~y_1~\mbox{\ldots}~y_s)~\kw{return}~Q~\kw{with}~\mbox{\ldots}~\kw{end}\]
 
 The variables which appear in the \kw{in} and \kw{as} clause are new
 and bounded in the property $Q$ in the \kw{return} clause. The
@@ -533,12 +533,12 @@ and {\tt tail n v} will be subterm of {\tt v}.
 
 \asection{Using pattern matching to write proofs}
 In all the previous examples the elimination predicate does not depend
-on the object(s) matched. But it may depend and the typical case 
+on the object(s) matched. But it may depend and the typical case
 is when we write a proof by induction or a function that yields an
 object of dependent type. An example of proof using \texttt{match} in
 given in Section~\ref{refine-example}.
 
-For example, we can write 
+For example, we can write
 the function \texttt{buildlist} that given a natural number
 $n$ builds a list of length $n$ containing zeros as follows:
 
@@ -550,7 +550,7 @@ Fixpoint buildlist (n:nat) : listn n :=
   end.
 \end{coq_example}
 
-We can also use multiple patterns. 
+We can also use multiple patterns.
 Consider the following definition of the predicate less-equal
 \texttt{Le}:
 
@@ -576,14 +576,14 @@ Fixpoint dec (n m:nat) {struct n} : LE n m \/ LE m n :=
   end.
 \end{coq_example}
 In the example of \texttt{dec},
-the first \texttt{match} is dependent while 
+the first \texttt{match} is dependent while
 the second is not.
 
 % In general, consider the terms $e_1\ldots e_n$,
 % where  the type of $e_i$ is an instance of a family type
 % $\lb (\vec{d_i}:\vec{D_i}) \mto T_i$  ($1\leq i
 % \leq n$). Then, in expression \texttt{match}  $e_1,\ldots,
-% e_n$ \texttt{of} \ldots \texttt{end}, the 
+% e_n$ \texttt{of} \ldots \texttt{end}, the
 % elimination predicate ${\cal P}$ should be of the form:
 % $[\vec{d_1}:\vec{D_1}][x_1:T_1]\ldots [\vec{d_n}:\vec{D_n}][x_n:T_n]Q.$
 
@@ -664,9 +664,9 @@ Check (fun x => match x with
 
 \asection{When does the expansion strategy fail ?}\label{limitations}
 The strategy works very like in ML languages when treating
-patterns of non-dependent type.  
-But there are new cases of failure that are due to the presence of 
-dependencies. 
+patterns of non-dependent type.
+But there are new cases of failure that are due to the presence of
+dependencies.
 
 The error messages of the current implementation may be sometimes
 confusing.  When the tactic fails because patterns are somehow
@@ -676,11 +676,11 @@ well typed when the whole expression is not. In this situation the
 message makes reference to the expanded expression.  We encourage
 users, when they have patterns with the same outer constructor in
 different equations, to name the variable patterns in the same
-positions with the same name.  
-E.g. to write {\small\texttt{(cons n O x) => e1}} 
+positions with the same name.
+E.g. to write {\small\texttt{(cons n O x) => e1}}
 and {\small\texttt{(cons n \_ x) => e2}} instead of
-{\small\texttt{(cons n O x) => e1}} and 
-{\small\texttt{(cons n' \_ x') => e2}}. 
+{\small\texttt{(cons n O x) => e1}} and
+{\small\texttt{(cons n' \_ x') => e2}}.
 This helps to maintain certain name correspondence between the
 generated expression and the original.
 
@@ -689,10 +689,10 @@ Here is a summary of the error messages corresponding to each situation:
 \begin{ErrMsgs}
 \item \sverb{The constructor } {\sl
     ident} \sverb{ expects } {\sl num} \sverb{ arguments}
-  
+
  \sverb{The variable } {\sl ident} \sverb{ is bound several times
     in pattern } {\sl term}
-  
+
  \sverb{Found a constructor of inductive type } {\term}
  \sverb{ while a constructor of } {\term} \sverb{ is expected}
 
@@ -718,7 +718,7 @@ The elimination predicate provided to \texttt{match} has not the
 % , or the synthesis of
 %   implicit arguments fails (for example to find the elimination
 %   predicate or to resolve implicit arguments in the rhs).
- 
+
 %   There are {\em nested patterns of dependent type}, the elimination
 %   predicate corresponds to non-dependent case and has the form
 %   $[x_1:T_1]...[x_n:T_n]T$ and {\bf some} $x_i$ occurs {\bf free} in
@@ -726,15 +726,15 @@ The elimination predicate provided to \texttt{match} has not the
 %   predicate during some step of compilation.  In this situation we
 %   recommend the user to rewrite the nested dependent patterns into
 %   several \texttt{match} with {\em simple patterns}.
-  
+
 \item {\tt Unable to infer a match predicate\\
     Either there is a type incompatiblity or the problem involves\\
     dependencies}
- 
+
   There is a type mismatch between the different branches.
   The user should provide an elimination predicate.
 
-% Obsolete ?  
+% Obsolete ?
 % \item because of nested patterns, it may happen that even though all
 %   the rhs have the same type, the strategy needs dependent elimination
 %   and so an elimination predicate must be provided. The system warns
@@ -768,7 +768,7 @@ The elimination predicate provided to \texttt{match} has not the
 
 % \begin{coq_example}
 %   Fixpoint last [n:nat; l:(listn n)] : nat :=
-%    match l of 
+%    match l of
 %      (consn _ a niln) => a
 %    | (consn m _ x) => (last m x) | niln => O
 %    end.
@@ -813,7 +813,7 @@ The elimination predicate provided to \texttt{match} has not the
 \end{ErrMsgs}
 
 
-%%% Local Variables: 
+%%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "Reference-Manual"
-%%% End: 
+%%% End:

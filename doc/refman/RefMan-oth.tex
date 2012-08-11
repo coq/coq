@@ -22,7 +22,7 @@ global constant.
 \comindex{About}\\ 
 This displays various informations about the object denoted by {\qualid}:
 its kind (module, constant, assumption, inductive,
-constructor, abbreviation\ldots), long name, type, implicit
+constructor, abbreviation, \ldots), long name, type, implicit
 arguments and argument scopes. It does not print the body of
 definitions or proofs.
 
@@ -135,9 +135,9 @@ displayed in Objective Caml syntax, where global identifiers are still
 displayed as in \Coq\ terms.
 
 \begin{Variants}
-\item \texttt{Recursive Extraction {\qualid$_1$} \ldots{} {\qualid$_n$}.}\\
+\item \texttt{Recursive Extraction} {\qualid$_1$} \ldots{} {\qualid$_n$}{\tt .}\\
   Recursively extracts all the material needed for the extraction of 
-  globals {\qualid$_1$} \ldots{} {\qualid$_n$}.
+  globals {\qualid$_1$}, \ldots, {\qualid$_n$}.
 \end{Variants}
 
 \SeeAlso Chapter~\ref{Extraction}.
@@ -170,12 +170,12 @@ Search (@eq bool).
 
 \begin{Variants}
 \item
-{\tt Search {\term} inside {\module$_1$} \ldots{} {\module$_n$}.}
+{\tt Search} {\term} {\tt inside} {\module$_1$} \ldots{} {\module$_n$}{\tt .}
 
 This restricts the search to constructions defined in modules
 {\module$_1$} \ldots{} {\module$_n$}.
 
-\item {\tt Search {\term} outside {\module$_1$} \ldots{} {\module$_n$}.}
+\item {\tt Search} {\term} {\tt outside} {\module$_1$} \ldots{} {\module$_n$}{\tt .}
 
 This restricts the search to constructions not defined in modules
 {\module$_1$} \ldots{} {\module$_n$}.
@@ -240,8 +240,8 @@ search excludes the objects that mention that {\termpattern} or that
 {\str}.
 
 \item
-  {\tt SearchAbout \nelist{{\termpatternorstr}}{}
-    inside {\module$_1$} \ldots{} {\module$_n$}.}
+  {\tt SearchAbout} \nelist{{\termpatternorstr}}{}
+    {\tt inside} {\module$_1$} \ldots{} {\module$_n$}{\tt .}
 
 This restricts the search to constructions defined in modules
 {\module$_1$} \ldots{} {\module$_n$}.
@@ -559,7 +559,7 @@ with the mapping used to compile the file.
   Export} {\it B}, then the command {\tt Require Import} {\it A}
   also imports the module {\it B}.
 
-\item {\tt Require \zeroone{Import {\sl |} Export} {\qualid}$_1$ \ldots {\qualid}$_n$.}
+\item {\tt Require \zeroone{Import {\sl |} Export}} {\qualid}$_1$ {\ldots} {\qualid}$_n${\tt .}
 
   This loads the modules {\qualid}$_1$, \ldots, {\qualid}$_n$ and
   their recursive dependencies. If {\tt Import} or {\tt Export} is
@@ -618,7 +618,7 @@ This command displays the list of library files loaded in the current
 imported.
 
 \subsection[\tt Declare ML Module {\str$_1$} .. {\str$_n$}.]{\tt Declare ML Module {\str$_1$} .. {\str$_n$}.\comindex{Declare ML Module}}
-This commands loads the Objective Caml compiled files {\str$_1$} {\dots}
+This commands loads the Objective Caml compiled files {\str$_1$} {\ldots}
 {\str$_n$} (dynamic link). It is mainly used to load tactics
 dynamically.
 % (see Chapter~\ref{WritingTactics}).
@@ -974,13 +974,13 @@ computation of algebraic values, such as numbers, and for reflexion-based
 tactics. The commands to fine-tune the reduction strategies and the
 lazy conversion algorithm are described first.
 
-\subsection[\tt Opaque \qualid$_1$ {\dots} \qualid$_n$.]{\tt Opaque \qualid$_1$ {\dots} \qualid$_n$.\comindex{Opaque}\label{Opaque}} 
+\subsection[{\tt Opaque} \qualid$_1$ {\ldots} \qualid$_n${\tt .}]{{\tt Opaque} \qualid$_1$ {\ldots} \qualid$_n${\tt .}\comindex{Opaque}\label{Opaque}}
 This command has an effect on unfoldable constants, i.e. 
 on constants defined by {\tt Definition} or {\tt Let} (with an explicit
 body), or by a command assimilated to a definition such as {\tt
 Fixpoint}, {\tt Program Definition}, etc, or by a proof ended by {\tt
 Defined}. The command tells not to unfold
-the constants {\qualid$_1$} {\dots} {\qualid$_n$} in tactics using
+the constants {\qualid$_1$} {\ldots} {\qualid$_n$} in tactics using
 $\delta$-conversion (unfolding a constant is replacing it by its
 definition).
 
@@ -990,7 +990,7 @@ case {\Coq} has to check the conversion (see Section~\ref{conv-rules})
 of two distinct applied constants.
 
 The scope of {\tt Opaque} is limited to the current section, or
-current file, unless the variant {\tt Global Opaque \qualid$_1$ {\dots}
+current file, unless the variant {\tt Global Opaque \qualid$_1$ {\ldots}
 \qualid$_n$} is used.
 
 \SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
@@ -1004,7 +1004,7 @@ environment}\\
     and if \texttt{bar} does not exist, \texttt{foo} is set opaque.
 \end{ErrMsgs}
 
-\subsection[\tt Transparent \qualid$_1$ {\dots} \qualid$_n$.]{\tt Transparent \qualid$_1$ {\dots} \qualid$_n$.\comindex{Transparent}\label{Transparent}}
+\subsection[{\tt Transparent} \qualid$_1$ {\ldots} \qualid$_n${\tt .}]{{\tt Transparent} \qualid$_1$ {\ldots} \qualid$_n${\tt .}\comindex{Transparent}\label{Transparent}}
 This command is the converse of {\tt Opaque} and it applies on
 unfoldable constants to restore their unfoldability after an {\tt
 Opaque} command.
@@ -1018,8 +1018,8 @@ distinguishes lemmas from the usual defined constants, whose actual
 values are of course relevant in general.
 
 The scope of {\tt Transparent} is limited to the current section, or
-current file, unless the variant {\tt Global Transparent \qualid$_1$
-\dots \qualid$_n$} is used.
+current file, unless the variant {\tt Global Transparent} \qualid$_1$
+{\ldots} \qualid$_n$ is used.
 
 \begin{ErrMsgs}
 % \item \errindex{Can not set transparent.}\\
@@ -1032,12 +1032,12 @@ environment}\\
 \SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
 \ref{Theorem}
 
-\subsection{\tt Strategy {\it level} [ \qualid$_1$ {\dots} \qualid$_n$
-  ].\comindex{Strategy}\comindex{Local Strategy}\label{Strategy}}
+\subsection{{\tt Strategy} {\it level} {\tt [} \qualid$_1$ {\ldots} \qualid$_n$
+  {\tt ].}\comindex{Strategy}\comindex{Local Strategy}\label{Strategy}}
 This command generalizes the behavior of {\tt Opaque} and {\tt
   Transparent} commands. It is used to fine-tune the strategy for
 unfolding constants, both at the tactic level and at the kernel
-level. This command associates a level to \qualid$_1$ {\dots}
+level. This command associates a level to \qualid$_1$ {\ldots}
 \qualid$_n$. Whenever two expressions with two distinct head
 constants are compared (for instance, this comparison can be triggered
 by a type cast), the one with lower level is expanded first. In case
