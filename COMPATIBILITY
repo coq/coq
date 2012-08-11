@@ -49,3 +49,16 @@ of the following changes:
 
   - The command "Load" is now atomic for backtracking (use "Unset
     Atomic Load" for compatibility).
+
+
+Incompatibilities beyond 8.4...
+
+- Syntax: "x -> y" has now lower priority than "<->" "A -> B <-> C" is
+  now "A -> (B <-> C)"
+
+- Tactics: tauto and intuition no longer accidentally destruct binary
+  connectives or records other than and, or, prod, sum, iff. In most
+  of cases, dtauto or dintuition, though stronger than 8.3 tauto and
+  8.3 intuition will provide compatibility.
+
+- "Solve Obligations using" is now "Solve Obligations with".
