@@ -1089,11 +1089,11 @@ syntax
 
 \noindent
 \begin{tabular}{lcl}
-{\sentence} & ::= & \texttt{Tactic Notation} \zeroone{\taclevel} \nelist{\proditem}{} \\
+{\sentence} & ::= & \zeroone{\tt Local} \texttt{Tactic Notation} \zeroone{\taclevel} \sequence{\proditem}{} \\
 & & \texttt{:= {\tac} .}\\
 {\proditem} & ::= & {\str} $|$ {\tacargtype}{\tt ({\ident})} \\ 
 {\taclevel} & ::= & {\tt (at level} {\naturalnumber}{\tt )} \\
-{\tacargtype} & ::= &
+{\tacargtype}\!\! & ::= &
 %{\tt preident} $|$
 {\tt ident} $|$
 {\tt simple\_intropattern} $|$
@@ -1170,6 +1170,10 @@ entries can be used in primitive tactics or in other notations at
 places where a list of the underlying entry can be used: {\nterm{entry}} is
 either {\tt\small constr}, {\tt\small hyp}, {\tt\small integer} or
 {\tt\small int\_or\_var}.
+
+Tactic notations do not survive the end of sections. They survive
+modules unless the command {\tt Local Tactic Notation} is used instead
+of {\tt Tactic Notation}.
 
 %%% Local Variables: 
 %%% mode: latex

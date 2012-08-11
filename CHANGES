@@ -26,6 +26,7 @@ Tactics
   record-like inductive types, superseding the old version of "tauto".
 - Similarly, "intuition" has been made more uniform and, where it now
   fails, "dintuition" can be used. (possible source of incompatibilities)
+- Tactic notations can now be defined locally to a module (use "Local" prefix).
 
 Program
 

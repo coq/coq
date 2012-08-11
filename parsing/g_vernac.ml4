@@ -998,7 +998,7 @@ GEXTEND Gram
 
      | IDENT "Tactic"; IDENT "Notation"; n = tactic_level;
 	 pil = LIST1 production_item; ":="; t = Tactic.tactic
-         -> VernacTacticNotation (n,pil,t)
+         -> VernacTacticNotation (use_module_locality(),n,pil,t)
 
      | IDENT "Reserved"; IDENT "Infix"; s = ne_lstring;
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ] ->

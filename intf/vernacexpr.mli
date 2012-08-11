@@ -215,7 +215,8 @@ type vernac_expr =
   | VernacFail of vernac_expr
 
   (* Syntax *)
-  | VernacTacticNotation of int * grammar_tactic_prod_item_expr list * raw_tactic_expr
+  | VernacTacticNotation of
+      locality_flag * int * grammar_tactic_prod_item_expr list * raw_tactic_expr
   | VernacSyntaxExtension of locality_flag * (lstring * syntax_modifier list)
   | VernacOpenCloseScope of (locality_flag * bool * scope_name)
   | VernacDelimiters of scope_name * string

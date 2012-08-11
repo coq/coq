@@ -1644,7 +1644,7 @@ let interp c = match c with
       assert false
 
   (* Syntax *)
-  | VernacTacticNotation (n,r,e) -> Metasyntax.add_tactic_notation (n,r,e)
+  | VernacTacticNotation (b,n,r,e) -> Metasyntax.add_tactic_notation (b,n,r,e)
   | VernacSyntaxExtension (lcl,sl) -> vernac_syntax_extension lcl sl
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
   | VernacBindScope (sc,rl) -> vernac_bind_scope sc rl

@@ -65,18 +65,22 @@ let rec make_tags = function
   | GramNonTerminal (loc, etyp, _, po) :: l -> etyp :: make_tags l
   | [] -> []
 
-let cache_tactic_notation (_,(pa,pp)) =
+let cache_tactic_notation (_,(local,pa,pp)) =
   Egramcoq.extend_grammar (Egramcoq.TacticGrammar pa);
   Pptactic.declare_extra_tactic_pprule pp
 
 let subst_tactic_parule subst (key,n,p,(d,tac)) =
   (key,n,p,(d,Tacinterp.subst_tactic subst tac))
 
-let subst_tactic_notation (subst,(pa,pp)) =
-  (subst_tactic_parule subst pa,pp)
+let subst_tactic_notation (subst,(local,pa,pp)) =
+  (local,subst_tactic_parule subst pa,pp)
+
+let classify_tactic_notation (local,_,_ as o) =
+  if local then Dispose else Substitute o
 
 type tactic_grammar_obj =
-    (string * int * grammar_prod_item list *
+    locality_flag
+    * (string * int * grammar_prod_item list *
        (dir_path * Tacexpr.glob_tactic_expr))
     * (string * Genarg.argument_type list * (int * Pptactic.grammar_terminals))
 
@@ -85,7 +89,7 @@ let inTacticGrammar : tactic_grammar_obj -> obj =
        open_function = (fun i o -> if i=1 then cache_tactic_notation o);
        cache_function = cache_tactic_notation;
        subst_function = subst_tactic_notation;
-       classify_function = (fun o -> Substitute o)}
+       classify_function = classify_tactic_notation}
 
 let cons_production_parameter l = function
   | GramTerminal _ -> l
@@ -100,7 +104,7 @@ let rec next_key_away key t =
   if Pptactic.exists_extra_tactic_pprule key t then next_key_away (key^"'") t
   else key
 
-let add_tactic_notation (n,prods,e) =
+let add_tactic_notation (local,n,prods,e) =
   let prods = List.map (interp_prod_item n) prods in
   let tags = make_tags prods in
   let key = next_key_away (tactic_notation_key prods) tags in
@@ -108,7 +112,7 @@ let add_tactic_notation (n,prods,e) =
   let ids = List.fold_left cons_production_parameter [] prods in
   let tac = Tacinterp.glob_tactic_env ids (Global.env()) e in
   let parule = (key,n,prods,(Lib.cwd(),tac)) in
-  Lib.add_anonymous_leaf (inTacticGrammar (parule,pprule))
+  Lib.add_anonymous_leaf (inTacticGrammar (local,parule,pprule))
 
 (**********************************************************************)
 (* Printing grammar entries                                           *)
@@ -729,7 +733,7 @@ let classify_syntax_definition (local,_ as o) =
   if local then Dispose else Substitute o
 
 type syntax_extension_obj =
-    bool *
+    locality_flag *
       (notation_var_internalization_type list * Notation.level *
          notation * notation_grammar * unparsing list)
       list

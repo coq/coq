@@ -497,7 +497,8 @@ let rec pr_vernac = function
   | VernacFail v -> str"Fail" ++ spc() ++ pr_vernac v
 
   (* Syntax *)
-  | VernacTacticNotation (n,r,e) -> pr_grammar_tactic_rule n ("",r,e)
+  | VernacTacticNotation (local,n,r,e) ->
+      pr_locality local ++ pr_grammar_tactic_rule n ("",r,e)
   | VernacOpenCloseScope (local,opening,sc) ->
       pr_section_locality local ++
       str (if opening then "Open " else "Close ") ++
