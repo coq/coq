@@ -22,8 +22,9 @@ an explicit toplevel for the language (formerly called \textsc{Fml}).
 \asection{Generating ML code}
 \comindex{Extraction}
 \comindex{Recursive Extraction}
-\comindex{Extraction Module}
-\comindex{Recursive Extraction Module}
+\comindex{Separate Extraction}
+\comindex{Extraction Library}
+\comindex{Recursive Extraction Library}
 
 The next two commands are meant to be used for rapid preview of
 extraction. They both display extracted term(s) inside \Coq.
@@ -60,6 +61,19 @@ one monolithic file or one file per \Coq\ library.
 \item {\tt Recursive Extraction Library} \ident. ~\par
   Extraction of the \Coq\ library {\tt\ident.v} and all other modules 
   {\tt\ident.v} depends on. 
+
+\item {\tt Separate Extraction}
+      \qualid$_1$ \dots\ \qualid$_n$. ~\par
+  Recursive extraction of all the globals (or modules) \qualid$_1$ \dots\
+  \qualid$_n$ and all their dependencies, just as {\tt
+    Extraction "{\em file}"}, but instead of producing one monolithic
+  file, this command splits the produced code in separate ML files, one per
+  corresponding Coq {\tt .v} file. This command is hence quite similar
+  to {\tt Recursive Extraction Library}, except that only the needed
+  parts of Coq libraries are extracted instead of the whole. The
+  naming convention in case of name clash is the same one as
+  {\tt Extraction Library} : identifiers are here renamed
+  using prefixes \verb!coq_!  or \verb!Coq_!.
 \end{description}
 
 The list of globals \qualid$_i$ does not need to be
@@ -111,6 +125,19 @@ Default is Set. This control all optimizations made on the ML terms
 (mostly reduction of dummy beta/iota redexes, but also simplifications on
 Cases, etc). Put this option to Unset if you want a ML term as close as 
 possible to the Coq term.
+
+\item \comindex{Set Extraction KeepSingleton}
+{\tt Set Extraction KeepSingleton.}
+
+\item \comindex{Unset Extraction KeepSingleton}
+{\tt Unset Extraction KeepSingleton.}
+
+Default is Unset. Normaly, when the extraction of an inductive type
+produces a singleton type (i.e. a type with only one constructor, and
+only one argument to this constructor), the inductive structure is
+removed and this type is seen as an alias to the inner type.
+The typical example is {\tt sig}. This option allows to disable this
+optimization when one wishes to preserve the inductive structure of types.
 
 \item \comindex{Set Extraction AutoInline}
 {\tt Set Extraction AutoInline.} 
