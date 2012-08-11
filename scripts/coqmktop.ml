@@ -67,15 +67,13 @@ let src_dirs =
   [ []; ["kernel";"byterun"]; [ "config" ]; [ "toplevel" ] ]
 
 let includes () =
-  if !Flags.boot then []
-  else
-  let coqlib = Envars.coqlib () in
-  let camlp4lib = Envars.camlp4lib () in
-    List.fold_right
-      (fun d l -> "-I" :: ("\"" ^ List.fold_left Filename.concat coqlib d ^ "\"") :: l)
-      src_dirs
-      (["-I"; "\"" ^ camlp4lib ^ "\""] @
-         if is_ocaml4 then ["-I"; "+compiler-libs"] else [])
+  (if !Flags.boot then [] (* the include flags are given on the cmdline *)
+   else
+      let coqlib = Envars.coqlib () in
+      let mkdir d = "\"" ^ List.fold_left Filename.concat coqlib d ^ "\"" in
+      let camlp4incl = ["-I"; "\"" ^ Envars.camlp4lib () ^ "\""] in
+      List.fold_right (fun d l -> "-I" :: mkdir d :: l)	src_dirs camlp4incl)
+  @ (if is_ocaml4 then ["-I"; "+compiler-libs"] else [])
 
 (* Transform bytecode object file names in native object file names *)
 let native_suffix f =
