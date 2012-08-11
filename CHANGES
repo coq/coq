@@ -12,19 +12,20 @@ Vernacular commands
 Specification Language
 
 - The syntax "x -> y" is now declared at level 99. In particular, it has
-  now a lower priority than "<->" : "A -> B <-> C" is now "A -> (B <-> C)".
+  now a lower priority than "<->": "A -> B <-> C" is now "A -> (B <-> C)"
+  (possible source of incompatibilities)
 
 Tactics
 
 - Tactics btauto, a reflexive boolean tautology solver.
 - Tactic "tauto" was exceptionally able to destruct other connectives
-  than the binary connectives "and", "or", "prod", "sum", "iff".  This
+  than the binary connectives "and", "or", "prod", "sum", "iff". This
   non-uniform behavior has been fixed (bug #2680) and tauto is
-  slightly weaker. On the opposite side, new tactic "dtauto" is able
-  to destruct any record-like inductive types, superseding the old
-  version of "tauto".
+  slightly weaker (possible source of incompatibilities). On the
+  opposite side, new tactic "dtauto" is able to destruct any
+  record-like inductive types, superseding the old version of "tauto".
 - Similarly, "intuition" has been made more uniform and, where it now
-  fails, "dintuition" can be used.
+  fails, "dintuition" can be used. (possible source of incompatibilities)
 
 Program
 
@@ -186,7 +187,7 @@ Tactics
 - Using "auto with nocore" disables the use of the "core" database (wish #2188).
   This pseudo-database "nocore" can also be used with trivial and eauto.
 - Tactics "set", "destruct" and "induction" accepts incomplete terms and
-  use the goal to complete the pattern assuming it is no ambiguous.
+  use the goal to complete the pattern assuming it is non ambiguous.
 - When used on arguments with a dependent type, tactics such as
   "destruct", "induction", "case", "elim", etc. now try to abstract
   automatically the dependencies over the arguments of the types
