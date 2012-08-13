@@ -455,7 +455,7 @@ let pr_vernac_solve (i,env,tac,deftac) =
   (if i = 1 then mt() else int i ++ str ": ") ++
   Pptacticnew.pr_glob_tactic env tac
   ++ (try if deftac & Pfedit.get_end_tac() <> None then str ".." else mt ()
-      with UserError _|Stdpp.Exc_located _ -> mt())
+      with UserError _|Compat.Exc_located _ -> mt())
 
 (**************************************)
 (* Pretty printer for vernac commands *)

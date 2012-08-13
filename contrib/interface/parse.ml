@@ -120,7 +120,7 @@ let parse_to_dot =
 
 let rec discard_to_dot stream =
   try Gram.Entry.parse parse_to_dot (Gram.parsable stream) with
-  | Stdpp.Exc_located(_, Token.Error _) -> discard_to_dot stream;;
+  | Compat.Exc_located(_, Token.Error _) -> discard_to_dot stream;;
 
 let rec decompose_string_aux s n =
     try let index = String.index_from s n '\n' in
@@ -195,7 +195,7 @@ let parse_command_list reqid stream string_list =
     let first_ast = 
         try ParseOK (Gram.Entry.parse Pcoq.main_entry (Gram.parsable stream))
         with
-        | (Stdpp.Exc_located(l, Stream.Error txt)) as e -> 
+        | (Compat.Exc_located(l, Stream.Error txt)) as e -> 
           begin
              msgnl (ctf_SyntaxWarningMessage reqid (Cerrors.explain_exn e));
              try
@@ -287,11 +287,11 @@ let parse_string_action reqid phylum char_stream string_list =
       | _ -> error "parse_string_action : bad phylum" in
       print_parse_results reqid msg
  with
- | Stdpp.Exc_located(l,Match_failure(_,_,_)) ->
+ | Compat.Exc_located(l,Match_failure(_,_,_)) ->
     flush_until_end_of_stream char_stream;
     msgnl (ctf_SyntaxErrorMessage reqid
               (Cerrors.explain_exn 
-                 (Stdpp.Exc_located(l,Stream.Error "match failure"))))
+                 (Compat.Exc_located(l,Stream.Error "match failure"))))
  | e ->
     flush_until_end_of_stream char_stream;
     msgnl (ctf_SyntaxErrorMessage reqid (Cerrors.explain_exn e));;
@@ -314,19 +314,19 @@ let parse_file_action reqid file_name =
      let stream_err = Stream.of_channel file_chan_err in
      let rec discard_to_dot () =
        try Gram.Entry.parse parse_to_dot (Gram.parsable stream)
-       with Stdpp.Exc_located(_,Token.Error _) -> discard_to_dot() in
+       with Compat.Exc_located(_,Token.Error _) -> discard_to_dot() in
        match let rec parse_whole_file () =
 	 let this_pos = Stream.count stream in
            match 
              try
 	       ParseOK(Gram.Entry.parse Pcoq.main_entry (Gram.parsable stream))
              with
-               | Stdpp.Exc_located(l,Stream.Error txt) -> 
+               | Compat.Exc_located(l,Stream.Error txt) -> 
                    msgnl (ctf_SyntaxWarningMessage reqid
 			    (str "Error with file" ++ spc () ++
 			     str file_name ++ fnl () ++
 			     Cerrors.explain_exn 
-				 (Stdpp.Exc_located(l,Stream.Error txt))));
+				 (Compat.Exc_located(l,Stream.Error txt))));
 		   (try 
 		      begin
                       	discard_to_dot ();
@@ -367,13 +367,13 @@ let parse_file_action reqid file_name =
 		 (P_cl (CT_command_list (first_one, tail)))
 	   | [] -> raise (UserError ("parse_file_action", str "empty file."))
        with
-	 | Stdpp.Exc_located(l,Match_failure(_,_,_)) ->
+	 | Compat.Exc_located(l,Match_failure(_,_,_)) ->
 	     msgnl
 	       (ctf_SyntaxErrorMessage reqid
 		  (str "Error with file" ++ spc () ++ str file_name ++ 
 		   fnl () ++
 		     Cerrors.explain_exn
-		       (Stdpp.Exc_located(l,Stream.Error "match failure"))))
+		       (Compat.Exc_located(l,Stream.Error "match failure"))))
 	 | e ->
 	     msgnl
 	       (ctf_SyntaxErrorMessage reqid

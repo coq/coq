@@ -1729,14 +1729,14 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
         try
 	  false, nb_prod ndep_arity, typing_fun (mk_tycon ndep_arity) env pred
 	with PretypeError _ | TypeError _ |
-	    Stdpp.Exc_located (_,(PretypeError _ | TypeError _)) ->
+	    Compat.Exc_located (_,(PretypeError _ | TypeError _)) ->
         evars_reset_evd isevars_copy isevars;
         (* We then assume the predicate is dependent *)
 	let dep_arity = build_expected_arity env isevars true tomatchs in
 	try
 	  true, nb_prod dep_arity, typing_fun (mk_tycon dep_arity) env pred
 	with PretypeError _ | TypeError _ |
-	  Stdpp.Exc_located (_,(PretypeError _ | TypeError _)) ->
+	  Compat.Exc_located (_,(PretypeError _ | TypeError _)) ->
         evars_reset_evd isevars_copy isevars;
         (* Otherwise we attempt to type it without constraints, possibly *)
         (* failing with an error message; it may also be well-typed *)

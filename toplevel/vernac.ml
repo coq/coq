@@ -40,14 +40,14 @@ let raise_with_file file exc =
     match re with
       | Error_in_file (_, (b,f,loc), e) when loc <> dummy_loc ->
           ((b, f, loc), e)
-      | Stdpp.Exc_located (loc, e) when loc <> dummy_loc ->
+      | Compat.Exc_located (loc, e) when loc <> dummy_loc ->
           ((false,file, loc), e)
       | _ -> ((false,file,cmdloc), re)
   in 
   raise (Error_in_file (file, inner, disable_drop inex))
 
 let real_error = function
-  | Stdpp.Exc_located (_, e) -> e
+  | Compat.Exc_located (_, e) -> e
   | Error_in_file (_, _, e) -> e
   | e -> e
 
@@ -127,7 +127,7 @@ let pre_printing = function
         let pfts = Pfedit.get_pftreestate () in
         let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in
         Some (env,t,Pfedit.focus(),List.length gls)
-      with UserError _|Stdpp.Exc_located _ -> None)
+      with UserError _|Compat.Exc_located _ -> None)
   | _ -> None
 
 let post_printing loc (env,t,f,n) = function

@@ -392,7 +392,7 @@ let first_match pat_of_fun env ast sl =
     | [] -> None
     | h::t ->
         (try Some (h, ast_match env (pat_of_fun h) ast)
-         with (No_match _| Stdpp.Exc_located (_,No_match _)) -> aux t)
+         with (No_match _| Compat.Exc_located (_,No_match _)) -> aux t)
   in 
   aux sl
 
@@ -402,7 +402,7 @@ let find_all_matches pat_of_fun env ast sl =
     | (h::t) ->
         let l = aux t in
         (try (h, ast_match env (pat_of_fun h) ast)::l
-         with (No_match _| Stdpp.Exc_located (_,No_match _)) -> l)
+         with (No_match _| Compat.Exc_located (_,No_match _)) -> l)
   in 
   aux sl
 
@@ -411,7 +411,7 @@ let first_matchl patl_of_fun env astl sl =
     | [] -> None
     | (h::t) ->
         (try Some (h, astl_match env (patl_of_fun h) astl)
-         with (No_match _| Stdpp.Exc_located (_,No_match _)) -> aux t)
+         with (No_match _| Compat.Exc_located (_,No_match _)) -> aux t)
   in 
   aux sl
     

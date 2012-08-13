@@ -516,11 +516,11 @@ let tclORELSE0 t1 t2 g =
     t1 g
   with (* Breakpoint *)
   | e when catchable_exception e -> check_for_interrupt (); t2 g
-  | FailError (0,_) | Stdpp.Exc_located(_, FailError (0,_)) ->
+  | FailError (0,_) | Compat.Exc_located(_, FailError (0,_)) ->
       check_for_interrupt (); t2 g
   | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
-  | Stdpp.Exc_located (s,FailError (lvl,s')) ->
-      raise (Stdpp.Exc_located (s,FailError (lvl - 1, s')))
+  | Compat.Exc_located (s,FailError (lvl,s')) ->
+      raise (Compat.Exc_located (s,FailError (lvl - 1, s')))
 
 (* ORELSE t1 t2 tries to apply t1 and if it fails or does not progress, 
    then applies t2 *)
@@ -552,11 +552,11 @@ let ite_gen tcal tac_if continue tac_else gl=
     with (* Breakpoint *)
       | e when catchable_exception e ->
 	  check_for_interrupt (); tac_else0 e gl
-      | (FailError (0,_) | Stdpp.Exc_located(_, FailError (0,_))) as e ->
+      | (FailError (0,_) | Compat.Exc_located(_, FailError (0,_))) as e ->
 	  check_for_interrupt (); tac_else0 e gl
       | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
-      | Stdpp.Exc_located (s,FailError (lvl,s')) ->
-	  raise (Stdpp.Exc_located (s,FailError (lvl - 1, s')))
+      | Compat.Exc_located (s,FailError (lvl,s')) ->
+	  raise (Compat.Exc_located (s,FailError (lvl - 1, s')))
 	
 (* Try the first tactic and, if it succeeds, continue with 
    the second one, and if it fails, use the third one *)

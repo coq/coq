@@ -93,7 +93,7 @@ let rec explain_exn_default = function
       let s = if s="" then "" else " \""^s^"\"" in
       hov 0 (str "Error: Tactic failure" ++ str s ++
              if i=0 then mt () else str " (level " ++ int i ++ str").")
-  | Stdpp.Exc_located (loc,exc) ->
+  | Compat.Exc_located (loc,exc) ->
       hov 0 ((if loc = dummy_loc then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
                ++ explain_exn_default exc)

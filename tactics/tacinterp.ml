@@ -81,15 +81,15 @@ let locate_tactic_call loc = function
   | v -> v
 
 let locate_error_in_file dir = function
-  | Stdpp.Exc_located (loc,e) -> Error_in_file ("",(true,dir,loc),e)
+  | Compat.Exc_located (loc,e) -> Error_in_file ("",(true,dir,loc),e)
   | e -> Error_in_file ("",(true,dir,dummy_loc),e)
 
 let catch_error loc tac g =
   try tac g
   with e when loc <> dummy_loc ->
     match e with
-      |	Stdpp.Exc_located (_,e) -> raise (Stdpp.Exc_located (loc,e))
-      |	e -> raise (Stdpp.Exc_located (loc,e))
+      |	Compat.Exc_located (_,e) -> raise (Compat.Exc_located (loc,e))
+      |	e -> raise (Compat.Exc_located (loc,e))
 
 (* Signature for interpretation: val_interp and interpretation functions *)
 type interp_sign =
@@ -957,7 +957,7 @@ exception Not_coherent_metas
 exception Eval_fail of string
 
 let is_failure = function
-  | FailError _ | Stdpp.Exc_located (_,FailError _) -> true
+  | FailError _ | Compat.Exc_located (_,FailError _) -> true
   | _ -> false
 
 let is_match_catchable = function
@@ -1442,10 +1442,10 @@ and eval_with_fail ist tac goal =
     | VTactic (loc,tac) -> VRTactic (catch_error loc tac goal)
     | a -> a)
   with
-    | Stdpp.Exc_located (_,FailError (0,s)) | FailError (0,s) ->
+    | Compat.Exc_located (_,FailError (0,s)) | FailError (0,s) ->
 	raise (Eval_fail s)
-    | Stdpp.Exc_located (s',FailError (lvl,s)) ->
-	raise (Stdpp.Exc_located (s',FailError (lvl - 1, s)))
+    | Compat.Exc_located (s',FailError (lvl,s)) ->
+	raise (Compat.Exc_located (s',FailError (lvl - 1, s)))
     | FailError (lvl,s) ->
 	raise (FailError (lvl - 1, s))
 

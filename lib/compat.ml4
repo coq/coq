@@ -15,6 +15,7 @@ IFDEF OCAML309 THEN DEFINE OCAML308 END
 IFDEF CAMLP5 THEN
 module M = struct 
 type loc = Stdpp.location
+exception Exc_located = Ploc.Exc
 let dummy_loc = Stdpp.dummy_loc
 let make_loc = Stdpp.make_loc
 let unloc loc = Stdpp.first_pos loc, Stdpp.last_pos loc
@@ -27,6 +28,7 @@ let using l x = l.Token.tok_using x
 end
 ELSE IFDEF OCAML308 THEN
 module M = struct
+exception Exc_located = Compat.Exc_located
 type loc = Token.flocation
 let dummy_loc = Token.dummy_loc
 let make_loc loc = Token.make_loc loc
@@ -47,6 +49,7 @@ let using l x = l.Token.using x
 end
 ELSE
 module M = struct
+exception Exc_located = Compat.Exc_located
 type loc = int * int
 let dummy_loc = (0,0)
 let make_loc x = x
@@ -61,6 +64,7 @@ end
 END
 END
 
+exception Exc_located = M.Exc_located
 type loc = M.loc
 let dummy_loc = M.dummy_loc
 let unloc = M.unloc

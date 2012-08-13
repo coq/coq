@@ -108,7 +108,7 @@ let is_in_proof_mode () =
   try ignore (get_pftreestate ()); true with _ -> false
 
 let user_error_loc l s =
-  raise (Stdpp.Exc_located (l, Util.UserError ("CoqIde", s)))
+  raise (Compat.Exc_located (l, Util.UserError ("CoqIde", s)))
 
 let interp verbosely s = 
   prerr_endline "Starting interp...";
@@ -190,9 +190,9 @@ let try_interptac s =
     | _ ->
 	prerr_endline "try_interptac: not a tactic"; Failed
   with 
-  | Sys.Break | Stdpp.Exc_located (_,Sys.Break)
+  | Sys.Break | Compat.Exc_located (_,Sys.Break)
       -> prerr_endline "try_interp: interrupted"; Interrupted
-  | Stdpp.Exc_located (_,e) -> prerr_endline ("try_interp: failed ("^(Printexc.to_string e)); Failed
+  | Compat.Exc_located (_,e) -> prerr_endline ("try_interp: failed ("^(Printexc.to_string e)); Failed
   | e -> Failed	  
 
 let is_tactic = function
@@ -203,7 +203,7 @@ let is_tactic = function
 let rec is_pervasive_exn = function
   | Out_of_memory | Stack_overflow | Sys.Break -> true
   | Error_in_file (_,_,e) -> is_pervasive_exn e
-  | Stdpp.Exc_located (_,e) -> is_pervasive_exn e
+  | Compat.Exc_located (_,e) -> is_pervasive_exn e
   | DuringCommandInterp (_,e) -> is_pervasive_exn e
   | _ -> false
 
@@ -216,7 +216,7 @@ let print_toplevel_error exc =
   in
   let (loc,exc) =
     match exc with
-      | Stdpp.Exc_located (loc, ie) -> (Some loc),ie
+      | Compat.Exc_located (loc, ie) -> (Some loc),ie
       | Error_in_file (s, (_,fname, loc), ie) -> None, ie
       | _ -> dloc,exc
   in
