@@ -175,7 +175,7 @@ let subtac (loc, command) =
 	debug 2 (Himsg.explain_pretype_error env exn);
 	raise e
 	  
-    | (Stdpp.Exc_located (loc, e')) as e ->
+    | (Compat.Exc_located (loc, e')) as e ->
 	debug 2 (str "Parsing exception: ");
 	(match e' with
 	   | Type_errors.TypeError (env, exn) ->

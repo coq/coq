@@ -39,14 +39,14 @@ let raise_with_file file exc =
     match re with
       | Error_in_file (_, (b,f,loc), e) when loc <> dummy_loc ->
           ((b, f, loc), e)
-      | Stdpp.Exc_located (loc, e) when loc <> dummy_loc ->
+      | Compat.Exc_located (loc, e) when loc <> dummy_loc ->
           ((false,file, loc), e)
       | _ -> ((false,file,cmdloc), re)
   in 
   raise (Error_in_file (file, inner, disable_drop inex))
 
 let real_error = function
-  | Stdpp.Exc_located (_, e) -> e
+  | Compat.Exc_located (_, e) -> e
   | Error_in_file (_, _, e) -> e
   | e -> e
 

@@ -89,15 +89,15 @@ let locate_tactic_call loc = function
   | v -> v
 
 let locate_error_in_file dir = function
-  | Stdpp.Exc_located (loc,e) -> Error_in_file ("",(true,dir,loc),e)
+  | Compat.Exc_located (loc,e) -> Error_in_file ("",(true,dir,loc),e)
   | e -> Error_in_file ("",(true,dir,dummy_loc),e)
 
 let catch_error loc tac g =
   try tac g
   with e when loc <> dummy_loc ->
     match e with
-      |	Stdpp.Exc_located (_,e) -> raise (Stdpp.Exc_located (loc,e))
-      |	e -> raise (Stdpp.Exc_located (loc,e))
+      |	Compat.Exc_located (_,e) -> raise (Compat.Exc_located (loc,e))
+      |	e -> raise (Compat.Exc_located (loc,e))
 
 (* Signature for interpretation: val_interp and interpretation functions *)
 type interp_sign =
@@ -1473,7 +1473,7 @@ let interp_quantified_hypothesis ist = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id ->
       try try_interp_ltac_var coerce_to_quantified_hypothesis ist None(dloc,id)
-      with Not_found | Stdpp.Exc_located (_, UserError _) | UserError _
+      with Not_found | Compat.Exc_located (_, UserError _) | UserError _
    -> NamedHyp id
 
 let interp_binding_name ist = function
@@ -1483,7 +1483,7 @@ let interp_binding_name ist = function
       (* user has to use other names for variables if these ones clash with *)
       (* a name intented to be used as a (non-variable) identifier *)
       try try_interp_ltac_var coerce_to_quantified_hypothesis ist None(dloc,id)
-      with Not_found | Stdpp.Exc_located (_, UserError _) | UserError _ 
+      with Not_found | Compat.Exc_located (_, UserError _) | UserError _ 
    -> NamedHyp id
 
 (* Quantified named or numbered hypothesis or hypothesis in context *)
@@ -1668,10 +1668,10 @@ and eval_with_fail ist is_lazy goal tac =
     | VTactic (loc,tac) when not is_lazy -> VRTactic (catch_error loc tac goal)
     | a -> a)
   with
-    | Stdpp.Exc_located (_,FailError (0,s)) | FailError (0,s) ->
+    | Compat.Exc_located (_,FailError (0,s)) | FailError (0,s) ->
 	raise (Eval_fail s)
-    | Stdpp.Exc_located (s',FailError (lvl,s)) ->
-	raise (Stdpp.Exc_located (s',FailError (lvl - 1, s)))
+    | Compat.Exc_located (s',FailError (lvl,s)) ->
+	raise (Compat.Exc_located (s',FailError (lvl - 1, s)))
     | FailError (lvl,s) ->
 	raise (FailError (lvl - 1, s))
 

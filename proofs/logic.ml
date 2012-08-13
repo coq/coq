@@ -47,7 +47,7 @@ exception RefinerError of refiner_error
 open Pretype_errors
 
 let rec catchable_exception = function
-  | Stdpp.Exc_located(_,e) -> catchable_exception e
+  | Compat.Exc_located(_,e) -> catchable_exception e
   | Util.UserError _ | TypeError _ 
   | RefinerError _ | Indrec.RecursionSchemeError _
   | Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)

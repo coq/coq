@@ -115,7 +115,7 @@ let parse_file f =
       let c = Grammar.Entry.parse command cs in execute c
     done
   with 
-    | End_of_file | Stdpp.Exc_located (_, End_of_file) -> close_in c; exit 0
+    | End_of_file | Compat.Exc_located (_, End_of_file) -> close_in c; exit 0
     | exn -> close_in c; raise exn
 
 module Explain = Fhimsg.Make(struct let pr_term = pr_term end)
@@ -124,7 +124,7 @@ let rec explain_exn = function
   | TypeError (k,ctx,te) -> 
       mSGNL (hov 0 (str "type error:" ++ spc () ++ 
 		      Explain.explain_type_error k ctx te ++ fnl ()))
-  | Stdpp.Exc_located (_,exn) -> 
+  | Compat.Exc_located (_,exn) -> 
       explain_exn exn
   | exn -> 
       mSGNL (hov 0 (str"error: " ++ str (Printexc.to_string exn) ++ fnl ()))
@@ -135,7 +135,7 @@ let top () =
     try
       let c = Grammar.Entry.parse command cs in execute c
     with 
-      | End_of_file | Stdpp.Exc_located (_, End_of_file) -> exit 0
+      | End_of_file | Compat.Exc_located (_, End_of_file) -> exit 0
       | exn -> explain_exn exn
   done
 
