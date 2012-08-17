@@ -422,9 +422,9 @@ let extra_rules () = begin
       if not w32 then N else S ([A"-camlbin";A w32bin;A "-ccopt";P w32ico])
     in
     if opt then rule fo ~prod:fo ~deps:(depsall@depso) ~insert:`top
-      (cmd [P coqmktop_boot;w32flag;A"-boot";A"-opt";incl fo;A"-o";Px fo]);
+      (cmd [P coqmktop_boot;w32flag;A"-boot";A"-opt";incl fo;camlp4incl;A"-o";Px fo]);
     rule fb ~prod:fb ~deps:(depsall@depsb) ~insert:`top
-      (cmd [P coqmktop_boot;w32flag;A"-boot";A"-top";incl fb;A"-o";Px fb]);
+      (cmd [P coqmktop_boot;w32flag;A"-boot";A"-top";incl fb;camlp4incl;A"-o";Px fb]);
   in
 
 (** Coq files dependencies *)
