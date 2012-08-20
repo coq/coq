@@ -190,7 +190,7 @@ let sub_mult m d q k =
       m.(k+i-1) <- m.(k+i-1) - v / base;
       let j = ref (i-1) in
       while m.(k + !j) < 0 do (* result is positive, hence !j remains >= 0 *)
-        m.(k + !j) <- m.(k + !j) + base; decr j; m.(k + !j) <- m.(k + !j)
+        m.(k + !j) <- m.(k + !j) + base; decr j; m.(k + !j) <- m.(k + !j) -1
       done
     end
   done
