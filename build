@@ -12,12 +12,14 @@ check_config() {
  [ -L $MYCFG ] || ln -sf $CFG $MYCFG
 }
 
-ocb() { $OCAMLBUILD $FLAGS $*; }
+# NB: we exec ocamlbuild and run ocb last for a correct exit code
+
+ocb() { exec $OCAMLBUILD $FLAGS $*; }
 
 rule() {
   check_config
   case $1 in
-    clean)  ocb -clean && rm -rf bin/* && rm -f $MYCFG;;
+    clean)  rm -rf bin/* $MYCFG && ocb -clean;;
     all)    ocb coq.otarget;;
     win32)  ocb coq-win32.otarget;;
     *)      ocb $1;;
