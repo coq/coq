@@ -426,8 +426,8 @@ program: $(PROGRAMVO)
 structures: $(STRUCTURESVO)
 vectors: $(VECTORSVO)
 
-noreal: logic arith bool zarith qarith lists sets fsets relations \
-	wellfounded setoids sorting
+noreal: unicode logic arith bool zarith qarith lists sets fsets \
+	relations wellfounded setoids sorting
 
 ###########################################################################
 # 3) plugins
