@@ -223,7 +223,6 @@ cleanconfig:
 distclean: clean cleanconfig
 
 voclean:
-	rm -f states/*.coq
 	find theories plugins test-suite -name '*.vo' -o -name '*.glob' | xargs rm -f
 
 devdocclean:

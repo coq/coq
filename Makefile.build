@@ -212,7 +212,7 @@ coqlib:: theories plugins
 
 coqlight: theories-light tools coqbinaries
 
-states:: states/initial.coq
+states: theories/Init/Prelude.vo
 
 ifeq ($(BEST),opt)
 $(COQTOPEXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
@@ -471,17 +471,13 @@ btauto: $(BTAUTOVO) $(BTAUTOCMA)
 pluginsopt: $(PLUGINSOPT)
 
 ###########################################################################
-# rules to make theories, plugins and states
+# rules to make theories and plugins
 ###########################################################################
 
-states/initial.coq: states/MakeInitial.v $(INITVO) $(VO_TOOLS_STRICT) | states/MakeInitial.v.d $(VO_TOOLS_ORDER_ONLY)
-	$(SHOW)'BUILD     $@'
-	$(HIDE)$(BOOTCOQTOP) -batch -notop -silent -nois -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
-
 theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_STRICT) | theories/Init/%.v.d $(VO_TOOLS_ORDER_ONLY)
-	$(SHOW)'COQC -nois $<'
+	$(SHOW)'COQC -noinit $<'
 	$(HIDE)rm -f theories/Init/$*.glob
-	$(HIDE)$(BOOTCOQC) theories/Init/$* -nois
+	$(HIDE)$(BOOTCOQC) theories/Init/$* -noinit
 
 theories/Numbers/Natural/BigN/NMake_gen.v: theories/Numbers/Natural/BigN/NMake_gen.ml
 	$(OCAML) $< $(TOTARGET)
@@ -629,8 +625,6 @@ endif
 install-library:
 	$(MKDIR) $(FULLCOQLIB)
 	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILES) $(PLUGINS)
-	$(MKDIR) $(FULLCOQLIB)/states
-	$(INSTALLLIB) states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLCOQLIB)/user-contrib
 	$(INSTALLLIB) $(DLLCOQRUN) $(FULLCOQLIB)
 ifeq ($(BEST),opt)
@@ -647,8 +641,6 @@ endif
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
 	$(INSTALLSH) $(FULLCOQLIB) $(LIBFILESLIGHT) $(INITPLUGINS)
-	$(MKDIR) $(FULLCOQLIB)/states
-	$(INSTALLLIB) states/*.coq $(FULLCOQLIB)/states
 	rm -f $(FULLCOQLIB)/revision
 	-$(INSTALLLIB) revision $(FULLCOQLIB)
 ifeq ($(BEST),opt)
@@ -905,7 +897,7 @@ plugins/%_mod.ml: plugins/%.mllib
 	$(CAMLP4O) $(PR_O) -I $(CAMLLIB) tools/compat5.cmo $${DEPS} $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@; \
 	else echo $< : Dependency $${DEPS} not ready yet; false; fi
 
-%.vo %.glob: %.v states/initial.coq $(INITPLUGINSBEST) $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
+%.vo %.glob: %.v states $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
 	$(SHOW)'COQC      $<'
 	$(HIDE)rm -f $*.glob 
 	$(HIDE)$(BOOTCOQC) $*

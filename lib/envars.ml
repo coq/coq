@@ -82,7 +82,7 @@ let reldir instdir testfile oth =
   if Sys.file_exists (Filename.concat out testfile) then out else oth ()
 
 let guess_coqlib fail =
-  let file = "states/initial.coq" in
+  let file = "theories/Init/Prelude.vo" in
     reldir (if Coq_config.arch = "win32" then ["lib"] else ["lib";"coq"]) file
       (fun () ->
         let coqlib = match Coq_config.coqlib with

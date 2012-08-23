@@ -63,13 +63,9 @@ let unset_toplevel_name () = toplevel_name := None
 
 let remove_top_ml () = Mltop.remove ()
 
-let inputstate = ref None
-let set_inputstate s = inputstate:= Some s
-let inputstate () =
-  match !inputstate with
-    | Some "" -> ()
-    | Some s -> intern_state s
-    | None -> intern_state "initial.coq"
+let inputstate = ref ""
+let set_inputstate s = inputstate:=s
+let inputstate () = if !inputstate <> "" then intern_state !inputstate
 
 let outputstate = ref ""
 let set_outputstate s = outputstate:=s
@@ -101,11 +97,13 @@ let load_vernac_obj () =
   List.iter (fun f -> Library.require_library_from_file None f None)
     (List.rev !load_vernacular_obj)
 
+let load_init = ref true
+
 let require_list = ref ([] : string list)
 let add_require s = require_list := s :: !require_list
 let require () =
   List.iter (fun s -> Library.require_library_from_file None s (Some false))
-    (List.rev !require_list)
+    ((if !load_init then ["Prelude"] else []) @ List.rev !require_list)
 
 let compile_list = ref ([] : (bool * string) list)
 let add_compile verbose s =
@@ -196,7 +194,7 @@ let parse_args arglist =
       Flags.load_proofs := Flags.Force; set_outputstate s; parse rem
     | "-outputstate" :: []       -> usage ()
 
-    | "-nois" :: rem -> set_inputstate ""; parse rem
+    | ("-noinit"|"-nois") :: rem -> load_init := false; parse rem
 
     | ("-inputstate"|"-is") :: s :: rem -> set_inputstate s; parse rem
     | ("-inputstate"|"-is") :: []       -> usage ()

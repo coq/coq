@@ -49,7 +49,6 @@ config/coq_config.ml
 dev/ocamldebug-coq
 plugins/micromega/csdpcert
 kernel/byterun/dllcoqrun.so
-states/initial.coq
 coqdoc.sty
 test-suite/lia.cache
 test-suite/trace

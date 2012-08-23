@@ -126,9 +126,7 @@ let copcodes = "kernel/copcodes.ml"
 
 let libcoqrun = "kernel/byterun/libcoqrun.a"
 
-let initialcoq = "states/initial.coq"
-let init_vo = ["theories/Init/Prelude.vo";"theories/Init/Logic_Type.vo"]
-let makeinitial = "states/MakeInitial.v"
+let init_vo = "theories/Init/Prelude.vo"
 
 let nmake = "theories/Numbers/Natural/BigN/NMake_gen.v"
 let nmakegen = "theories/Numbers/Natural/BigN/NMake_gen.ml"
@@ -447,8 +445,8 @@ let extra_rules () = begin
   in
 
   let coq_v_rule d init =
-    let bootflag = if init then A"-nois" else N in
-    let gendep = if init then coqtopbest else initialcoq in
+    let bootflag = if init then A"-noinit" else N in
+    let gendep = if init then coqtopbest else init_vo in
     rule (d^".v.vo")
       ~prods:[d^"%.vo";d^"%.glob"] ~deps:[gendep;d^"%.v";d^"%.v.depends"]
       (fun env build ->
@@ -458,12 +456,6 @@ let extra_rules () = begin
   in
   coq_v_rule "theories/Init/" true;
   coq_v_rule "" false;
-
-(** Initial state *)
-
-  rule "initial.coq" ~prod:initialcoq ~deps:(makeinitial::init_vo)
-    (cmd [P coqtopbest;A"-boot";A"-batch";A"-nois";A"-notop";A"-silent";
-	  A"-l";P makeinitial; A"-outputstate";Px initialcoq]);
 
 (** Generation of _plugin_mod.ml files *)
 

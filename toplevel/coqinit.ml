@@ -96,7 +96,7 @@ let init_load_path () =
   let user_contrib = coqlib/"user-contrib" in
   let xdg_dirs = Envars.xdg_dirs (fun x -> msg_warning (str x)) in
   let coqpath = Envars.coqpath in
-  let dirs = ["states";"plugins"] in
+  let dirs = ["plugins"] in
     (* NOTE: These directories are searched from last to first *)
     (* first, developer specific directory to open *)
     if Coq_config.local then coq_add_path (coqlib/"dev") "dev";
@@ -104,7 +104,7 @@ let init_load_path () =
     List.iter
       (fun (s,alias) -> Mltop.add_rec_path ~unix_path:(coqlib/s) ~coq_root:(Names.make_dirpath [Names.id_of_string alias; Nameops.coq_root]))
       theories_dirs_map;
-    (* then states and plugins *)
+    (* then plugins *)
     List.iter (fun s -> coq_add_rec_path (coqlib/s)) dirs;
     (* then user-contrib *)
     if Sys.file_exists user_contrib then

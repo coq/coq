@@ -71,7 +71,7 @@ let normalize_filename f =
 (** A weaker analog of the function in Envars *)
 
 let guess_coqlib () =
-  let file = "states/initial.coq" in
+  let file = "theories/Init/Prelude.vo" in
   match Coq_config.coqlib with
     | Some coqlib when Sys.file_exists (Filename.concat coqlib file) ->
       coqlib

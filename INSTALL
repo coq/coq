@@ -69,7 +69,8 @@ WHAT DO YOU NEED ?
 
      - a C compiler
 
-     - for Coqide, the Lablgtk development files, and the GTK libraries, see INSTALL.ide for more details
+     - for Coqide, the Lablgtk development files, and the GTK libraries,
+       see INSTALL.ide for more details
 
    By FTP, Coq comes as a single compressed tar-file. You have
    probably already decompressed it if you are reading this document.
@@ -155,10 +156,6 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
         Use the ocamlc.opt compiler instead of ocamlc (and ocamlopt.opt 
         compiler instead of ocamlopt). Makes compilation faster (recommended).
 
--nowarnings
-	Disable the Objective Caml compiler warnings. This option has no
-	effect on the result of the compilation.
-
 -browser <command>
 	Use <command> to open an URL in a browser. %s must appear in <command>,
 	and will be replaced by the URL.
@@ -232,10 +229,8 @@ THE AVAILABLE COMMANDS.
    coqtop.byte otherwise. coqc also invokes the fastest version of Coq.
    Options -opt and -byte to coqtop and coqc selects a particular binary.
 
-    * `coqtop' launches Coq in the interactive mode. The default state
-      (see the "-inputstate" option) is `initial.coq', which contains some 
-      basic logical definitions, the associated parsing and printing rules,
-      and the following tactic modules: Equality, Tauto, Inv, EAuto and Refine.
+    * `coqtop' launches Coq in the interactive mode. By default it loads
+      basic logical definitions and tactics from the Init directory.
 
     * `coqc' allows compilation of Coq files directly from the command line.
       To compile a file foo.v, do:
@@ -251,23 +246,6 @@ THE AVAILABLE COMMANDS.
    and in the corresponding manual pages.
 
    There is also a tutorial and a FAQ; see http://coq.inria.fr/doc1-eng.html
-
-
-COMMON PROBLEMS.
-================
-
-    * On some sites, when running `./configure', `pwd' returned a 
-    path which is not valid from another machine (it may look like 
-    "/tmp_mnt/foo/...") and, as a consequence, you won't be able to run
-    coqtop or coqc. The solution is to give the correct value, with
-
-	./configure -src <correct path> <other options>
-
-    * The `make install' procedure uses mkdirhier, a program that may
-   not be present on certain systems. To fix that, try to replace
-   mkdirhier with mkdir -p
-
-    * See also section on dynamically loaded libraries.
 
 
 COMPILING FOR DIFFERENT ARCHITECTURES.
@@ -304,17 +282,16 @@ COMPILING FOR DIFFERENT ARCHITECTURES.
 MOVING BINARIES OR LIBRARY.
 ===========================
 
-   If you move the binaries or the library, Coq will be "lost".
-   Running "coqtop" would then return an error message of the kind:
+   If you move both the binaries and the library in a consistent way,
+   Coq should be able to still run. Otherwise, Coq may be "lost",
+   running "coqtop" would then return an error message of the kind:
 
 	Error during initialization :
-	Error: Can't find file initial.coq on loadpath
+	Error: cannot guess a path for Coq libraries; please use -coqlib option
 
-   If you really have (or want) to move the binaries or the library, then
-   you have to indicate their new places to Coq, using the options -bindir (for
-   the binaries directory) and -libdir (for the standard library directory) :
+   You can then indicate the new places to Coq, using the options -coqlib :
 
-	coqtop -bindir <new directory> -libdir <new directory>
+	coqtop -coqlib <new directory>
 
    See also next section.
 
