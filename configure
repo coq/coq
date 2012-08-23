@@ -718,9 +718,11 @@ case $ARCH in
 	   CAMLP4BIN=`mk_win_path "$CAMLP4BIN"`
 esac
 
+# Default installation directories
+
 case $ARCH$CYGWIN in
   win32)
-	 W32PREF='C:\coq\'
+	 W32PREF='C:/coq/'
 	 bindir_def="${W32PREF}bin"
 	 libdir_def="${W32PREF}lib"
 	 configdir_def="${W32PREF}config"
@@ -742,121 +744,85 @@ esac
 
 emacs_def=emacs
 
-case $bindir_spec/$prefix_spec/$local in
-    yes/*/*) BINDIR=$bindir ;;
-    */yes/*) BINDIR=$prefix/bin ;;
-    */*/true) BINDIR=$COQTOP/bin ;;
-    *)  printf "Where should I install the Coq binaries [%s]? " "$bindir_def"
-        read BINDIR
-	case $BINDIR in
-	    "") BINDIR=$bindir_def;;
-	    *) true;;
-	esac;;
+askdir () {
+  printf "Where should I install $1 [%s]? " $2
+  read answer
+  if [ "$answer" = "" ]; then answer="$2"; fi
+}
+
+if [ $local = false ]; then
+
+# Installation directories for a non-local build
+
+case $bindir_spec/$prefix_spec in
+    yes/*) BINDIR=$bindir ;;
+    no/yes) BINDIR=$prefix/bin ;;
+    *) askdir "the Coq binaries" $bindir_def
+       BINDIR="$answer";;
 esac
 
-case $libdir_spec/$prefix_spec/$local in
-    yes/*/*) LIBDIR=$libdir;;
-    */yes/*)
-        libdir_spec=yes
-        case $ARCH in
-          win32) LIBDIR=$prefix ;;
-          *)  LIBDIR=$prefix/lib/coq ;;
-        esac ;;
-    */*/true) LIBDIR=$COQTOP ;;
-    *)  printf "Where should I install the Coq library [%s]? " "$libdir_def"
-        read LIBDIR
-        libdir_spec=yes
-	case $LIBDIR in
-	    "") LIBDIR=$libdir_def;;
-	    *) true;;
-	esac;;
+case $libdir_spec/$prefix_spec/$ARCH in
+    yes/*) LIBDIR=$libdir;;
+    no/yes/win32) LIBDIR=$prefix;;
+    no/yes/*) LIBDIR=$prefix/lib/coq ;;
+    *) askdir "the Coq library" $libdir_def
+       LIBDIR="$answer";;
+esac
+libdir_spec=yes
+
+case $configdir_spec/$prefix_spec/$ARCH in
+    yes/*) CONFIGDIR=$configdir;;
+    no/yes/win32) CONFIGDIR=$prefix/config;;
+    no/yes/*) CONFIGDIR=$prefix/etc/xdg/coq;;
+    *) askdir "the Coqide configuration files" $configdir_def
+       CONFIGDIR="$answer";;
+esac
+if [ "$CONFIGDIR" != "$configdir_def" ]; then configdir_spec=yes; fi
+
+case $datadir_spec/$prefix_spec in
+    yes/*) DATADIR=$datadir;;
+    no/yes) DATADIR=$prefix/share/coq;;
+    *) askdir "the Coqide data files" $datadir_def
+	DATADIR="$answer";;
+esac
+if [ "$DATADIR" != "datadir_def" ]; then datadir_spec=yes; fi
+
+case $mandir_spec/$prefix_spec in
+    yes/*) MANDIR=$mandir;;
+    no/yes) MANDIR=$prefix/share/man ;;
+    *) askdir "the Coq man pages" $mandir_def
+       MANDIR="$answer";;
 esac
 
-case $configdir_spec/$prefix_spec/$local in
-    yes/*/*) CONFIGDIR=$configdir;;
-    */yes/*) configdir_spec=yes
-	case $ARCH in
-	    win32) CONFIGDIR=$prefix/config;;
-            *) CONFIGDIR=$prefix/etc/xdg/coq;;
-	esac;;
-    */*/true) CONFIGDIR=$COQTOP/ide
-    configdir_spec=yes;;
-    *)  printf "Where should I install the Coqide configuration files [%s]? " "$configdir_def"
-        read CONFIGDIR
-	case $CONFIGDIR in
-	    "") CONFIGDIR=$configdir_def;;
-	    *) configdir_spec=yes;;
-	esac;;
+case $docdir_spec/$prefix_spec in
+    yes/*) DOCDIR=$docdir;;
+    no/yes) DOCDIR=$prefix/share/doc/coq;;
+    *) askdir "the Coq documentation [%s]? " $docdir_def
+       DOCDIR="$answer";;
 esac
 
-case $datadir_spec/$prefix_spec/$local in
-    yes/*/*) DATADIR=$datadir;;
-    */yes/*) DATADIR=$prefix/share/coq;;
-    */*/true) DATADIR=$COQTOP/ide
-        datadir_spec=yes;;
-    *)  printf "Where should I install the Coqide data files [%s]? " "$datadir_def"
-        read DATADIR
-	case $DATADIR in
-	    "") DATADIR=$datadir_def;;
-	    *) datadir_spec=yes;;
-	esac;;
+case $emacslib_spec/$prefix_spec/$ARCH in
+    yes/*) EMACSLIB=$emacslib;;
+    no/yes/win32) EMACSLIB=$prefix/emacs ;;
+    no/yes/*) EMACSLIB=$prefix/share/emacs/site-lisp ;;
+    *) askdir "the Coq Emacs mode" $emacslib_def
+       EMACSLIB="$answer";;
 esac
 
-case $mandir_spec/$prefix_spec/$local in
-    yes/*/*) MANDIR=$mandir;;
-    */yes/*) MANDIR=$prefix/share/man ;;
-    */*/true) MANDIR=$COQTOP/man ;;
-    *)  printf "Where should I install the Coq man pages [%s]? "  "$mandir_def"
-        read MANDIR
-	case $MANDIR in
-	    "") MANDIR=$mandir_def;;
-	    *) true;;
-	esac;;
+case $coqdocdir_spec/$prefix_spec/$ARCH in
+    yes/*) COQDOCDIR=$coqdocdir;;
+    no/yes/win32) COQDOCDIR=$prefix/latex ;;
+    no/yes/*) COQDOCDIR=$prefix/share/emacs/site-lisp ;;
+    *) askdir "Coqdoc TeX/LaTeX files" $coqdocdir_def
+       COQDOCDIR="$answer";;
 esac
 
-case $docdir_spec/$prefix_spec/$local in
-    yes/*/*) DOCDIR=$docdir;;
-    */yes/*) DOCDIR=$prefix/share/doc/coq;;
-    */*/true) DOCDIR=$COQTOP/doc;;
-    *)  printf "Where should I install the Coq documentation [%s]? " "$docdir_def"
-        read DOCDIR
-	case $DOCDIR in
-	    "") DOCDIR=$docdir_def;;
-	    *) true;;
-	esac;;
-esac
-
-case $emacslib_spec/$prefix_spec/$local in
-    yes/*/*) EMACSLIB=$emacslib;;
-    */yes/*)
-        case $ARCH in
-          win32) EMACSLIB=$prefix/emacs ;;
-          *)  EMACSLIB=$prefix/share/emacs/site-lisp ;;
-        esac ;;
-    */*/true) EMACSLIB=$COQTOP/tools/emacs ;;
-    *)  printf "Where should I install the Coq Emacs mode [%s]? " "$emacslib_def"
-        read EMACSLIB
-	case $EMACSLIB in
-	    "") EMACSLIB=$emacslib_def;;
-	    *) true;;
-	esac;;
-esac
-
-case $coqdocdir_spec/$prefix_spec/$local in
-    yes/*/*) COQDOCDIR=$coqdocdir;;
-    */yes/*)
-        case $ARCH in
-          win32) COQDOCDIR=$prefix/latex ;;
-          *)  COQDOCDIR=$prefix/share/emacs/site-lisp ;;
-        esac ;;
-    */*/true) COQDOCDIR=$COQTOP/tools/coqdoc ;;
-    *)  printf "Where should I install Coqdoc TeX/LaTeX files [%s]? " "$coqdocdir_def"
-        read COQDOCDIR
-	case $COQDOCDIR in
-	    "") COQDOCDIR=$coqdocdir_def;;
-	    *) true;;
-	esac;;
-esac
+else # local build
+    CONFIGDIR=$COQTOP/ide
+    DATADIR=$COQTOP/ide
+    configdir_spec=yes
+    datadir_spec=yes
+fi
 
 # Determine if we enable -custom by default (Windows and MacOS)
 CUSTOM_OS=no
@@ -896,7 +862,6 @@ esac
 # Summary of the configuration
 
 echo ""
-echo "  Coq top directory                 : $COQTOP"
 echo "  Architecture                      : $ARCH"
 if test ! -z "$OS" ; then
   echo "  Operating system                  : $OS"
@@ -927,6 +892,10 @@ echo "  Web browser                       : $BROWSER"
 echo "  Coq web site                      : $WWWCOQ"
 echo ""
 
+if test "$local" = "true"; then
+echo "  Local build, no installation..."
+echo ""
+else
 echo "  Paths for true installation:"
 echo "    binaries      will be copied in $BINDIR"
 echo "    library       will be copied in $LIBDIR"
@@ -936,9 +905,10 @@ echo "    man pages     will be copied in $MANDIR"
 echo "    documentation will be copied in $DOCDIR"
 echo "    emacs mode    will be copied in $EMACSLIB"
 echo ""
+fi
 
 ##################################################
-# Building the $COQTOP/dev/ocamldebug-coq file
+# Building the dev/ocamldebug-coq file
 ##################################################
 
 OCAMLDEBUGCOQ=dev/ocamldebug-coq
@@ -979,7 +949,6 @@ BROWSER=`escape_string "$BROWSER"`
 
 case $ARCH in
     win32)
-	COQTOP=`escape_string "$COQTOP"`
 	BINDIR=`escape_string "$BINDIR"`
 	LIBDIR=`escape_string "$LIBDIR"`
 	CONFIGDIR=`escape_string "$CONFIGDIR"`
@@ -1024,7 +993,7 @@ case $datadir_spec in
 esac
 
 #####################################################
-# Building the $COQTOP/config/coq_config.ml file
+# Building the config/coq_config.ml file
 #####################################################
 
 rm -f "$mlconfig_file" "$mymlconfig_file"
@@ -1094,7 +1063,7 @@ chmod a-w "$mlconfig_file"
 ln -sf "$mlconfig_file" "$mymlconfig_file"
 
 ###############################################
-# Building the $COQTOP/config/Makefile file
+# Building the config/Makefile file
 ###############################################
 
 rm -f "$config_file"

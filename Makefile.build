@@ -13,11 +13,8 @@
 # Starting rule
 ###########################################################################
 
-# build and install the three subsystems: coq, coqide
+# build the different subsystems: coq, coqide
 world: revision coq coqide
-install: install-coq install-coqide
-
-.PHONY: world install
 
 ###########################################################################
 # Includes
@@ -26,10 +23,21 @@ install: install-coq install-coqide
 include Makefile.common
 include Makefile.doc
 
-ifeq ($(WITHDOC),all)
-world: doc
-install: install-doc
+ifeq ($(LOCAL),true)
+install:
+	@echo "Nothing to install in a local build!"
+else
+install: install-coq install-coqide install-doc-$(WITHDOC)
 endif
+
+install-doc-all: install-doc
+install-doc-no:
+
+world: doc-$(WITHDOC)
+doc-all: doc
+doc-no:
+
+.PHONY: world install install-doc-all install-doc-no doc-all doc-no
 
 # All dependency includes must be declared secondary, otherwise make will
 # delete them if it decided to build them by dependency instead of because
