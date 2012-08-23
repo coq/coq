@@ -174,10 +174,12 @@ CINCLUDES= -I $(CAMLHLIB)
 
 # libcoqrun.a, dllcoqrun.so
 
+# NB: We used to do a ranlib after ocamlmklib, but it seems that
+# ocamlmklib is already doing it
+
 $(LIBCOQRUN): kernel/byterun/coq_jumptbl.h $(BYTERUN) 
 	cd $(dir $(LIBCOQRUN)) && \
 	$(OCAMLMKLIB) -oc $(COQRUN) $(foreach u,$(BYTERUN),$(notdir $(u)))
-	$(RANLIB) $(LIBCOQRUN)
 
 #coq_jumptbl.h is required only if you have GCC 2.0 or later
 kernel/byterun/coq_jumptbl.h : kernel/byterun/coq_instruct.h
@@ -957,7 +959,7 @@ checker/%.mllib.d: $(D_DEPEND_BEFORE_SRC) checker/%.mllib $(D_DEPEND_AFTER_SRC) 
 
 %.c.d: $(D_DEPEND_BEFORE_SRC) %.c $(D_DEPEND_AFTER_SRC) $(GENHFILES)
 	$(SHOW)'CCDEP     $<'
-	$(HIDE)$(CC) -MM -MQ "$@" -MQ "$(<:.c=.o)" $(CFLAGS) -isystem $(CAMLHLIB) $< $(TOTARGET)
+	$(HIDE)$(OCAMLC) -ccopt "-MM -MQ $@ -MQ $(<:.c=.o) -isystem $(CAMLHLIB)" $< $(TOTARGET)
 
 ###########################################################################
 # this sets up developper supporting stuff
