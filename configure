@@ -916,7 +916,6 @@ OCAMLDEBUGCOQ=dev/ocamldebug-coq
 if test "$coq_debug_flag" = "-g" ; then
   rm -f $OCAMLDEBUGCOQ
   sed -e "s|COQTOPDIRECTORY|$COQTOP|" \
-      -e "s|COQLIBDIRECTORY|$LIBDIR|" \
       -e "s|CAMLBINDIRECTORY|$CAMLBIN|" \
       -e "s|CAMLP4LIBDIRECTORY|$FULLCAMLP4LIB|"\
       $OCAMLDEBUGCOQ.template > $OCAMLDEBUGCOQ
