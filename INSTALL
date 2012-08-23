@@ -88,9 +88,9 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 =================================================
 
 1- Check that you have the Objective Caml compiler version 3.11.2 (or later)
-   installed on your computer and that "ocamlmktop" and "ocamlc" (or
-   its native code version "ocamlc.opt") lie in a directory which is present
-   in your $PATH environment variable. 
+   installed on your computer and that "ocamlc" (or its native code version
+   "ocamlc.opt") lie in a directory which is present in your $PATH environment
+   variable.
 
    To get Coq in native-code, (it runs 4 to 10 times faster than
    bytecode, but it takes more time to get compiled and the binary is

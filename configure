@@ -105,7 +105,6 @@ ocamldepexec=ocamldep
 ocamldocexec=ocamldoc
 ocamllexexec=ocamllex
 ocamlyaccexec=ocamlyacc
-ocamlmktopexec=ocamlmktop
 camlp4oexec=camlp4o
 default_typerex_wrapper="ocp-wrapper -save-types"
 
@@ -413,7 +412,6 @@ case $camldir_spec in
 	 ocamldocexec=$CAMLBIN/ocamldoc
 	 ocamllexexec=$CAMLBIN/ocamllex
 	 ocamlyaccexec=$CAMLBIN/ocamlyacc
-	 ocamlmktopexec=$CAMLBIN/ocamlmktop
 	 ocamlmklibexec=$CAMLBIN/ocamlmklib
 	 camlp4oexec=$CAMLBIN/camlp4o
 esac
@@ -1191,7 +1189,6 @@ OCAMLYACC="$ocamlyaccexec"
 # Caml link command and Caml make top command
 CAMLLINK="$bytecamlc"
 CAMLOPTLINK="$nativecamlc"
-CAMLMKTOP="$ocamlmktopexec"
 
 # Caml flags
 CAMLFLAGS=-rectypes $coq_annotate_flag
