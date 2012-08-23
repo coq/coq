@@ -106,8 +106,8 @@ let _build = Options.build_dir
 let core_libs =
   ["lib/clib"; "lib/lib"; "kernel/kernel"; "library/library";
    "pretyping/pretyping"; "interp/interp";  "proofs/proofs";
-   "parsing/parsing"; "tactics/tactics"; "toplevel/toplevel";
-   "parsing/highparsing"; "tactics/hightactics"]
+   "printing/printing"; "parsing/parsing"; "tactics/tactics";
+   "toplevel/toplevel";  "parsing/highparsing"; "tactics/hightactics"]
 let core_cma = List.map (fun s -> s^".cma") core_libs
 let core_cmxa = List.map (fun s -> s^".cmxa") core_libs
 let core_mllib = List.map (fun s -> s^".mllib") core_libs
@@ -329,8 +329,10 @@ let extra_rules () = begin
   flag ["link"; "ocaml"] (S [A"-rectypes"; camlp4incl]);
   flag ["ocaml"; "ide"; "compile"] lablgtkincl;
   flag ["ocaml"; "ide"; "link"] lablgtkincl;
-  flag ["ocaml"; "ide"; "link"; "byte"] (S [A"lablgtk.cma"; A"gtkThread.cmo"]);
-  flag ["ocaml"; "ide"; "link"; "native"] (S [A"lablgtk.cmxa"; A"gtkThread.cmx"]);
+  flag ["ocaml"; "ide"; "link"; "byte"]
+    (S [A"lablgtk.cma"; A"lablgtksourceview2.cma"; A"gtkThread.cmo"]);
+  flag ["ocaml"; "ide"; "link"; "native"]
+    (S [A"lablgtk.cmxa"; A"lablgtksourceview2.cmxa"; A"gtkThread.cmx"]);
 
 (** C code for the VM *)
 
