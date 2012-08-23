@@ -41,8 +41,6 @@ usage () {
     printf "\tSet link flags for VM-independant bytecode (coqdep, coqdoc, ...)\n"
     echo "-custom"
     printf "\tGenerate all bytecode executables with -custom (not recommended)\n"
-    echo "-src"
-    printf "\tSpecifies the source directory\n"
     echo "-bindir"
     echo "-libdir"
     echo "-configdir"
@@ -122,7 +120,6 @@ local=false
 coqrunbyteflags_spec=no
 coqtoolsbyteflags_spec=no
 custom_spec=no
-src_spec=no
 prefix_spec=no
 bindir_spec=no
 libdir_spec=no
@@ -147,8 +144,6 @@ force_caml_version=no
 force_caml_version_spec=no
 usecamlp5=yes
 
-COQSRC=`pwd`
-
 # Parse command-line arguments
 
 while : ; do
@@ -168,9 +163,6 @@ while : ; do
                                             shift;;
     -custom|--custom) custom_spec=yes
                       shift;;
-    -src|--src) src_spec=yes
-                COQSRC="$2"
-	        shift;;
     -bindir|--bindir) bindir_spec=yes
                       bindir="$2"
 		      shift;;
@@ -433,9 +425,7 @@ mk_win_path () {
     esac
 }
 
-case $ARCH,$src_spec in
-    win32,yes) echo "Error: the -src option is currently not supported on Windows"
-	       exit 1;;
+case $ARCH in
     win32) CAMLBIN=`mk_win_path "$CAMLBIN"`;;
 esac
 
@@ -719,15 +709,13 @@ fi
 ###########################################
 # bindir, libdir, mandir, docdir, etc.
 
+COQTOP=$PWD
+
 # OCaml only understand Windows filenames (C:\...)
 case $ARCH in
-    win32) COQSRC=`mk_win_path "$COQSRC"`
+    win32) COQTOP=`mk_win_path "$COQTOP"`
 	   CAMLBIN=`mk_win_path "$CAMLBIN"`
 	   CAMLP4BIN=`mk_win_path "$CAMLP4BIN"`
-esac
-
-case $src_spec in
-  no) COQTOP=${COQSRC}
 esac
 
 case $ARCH$CYGWIN in
@@ -953,7 +941,7 @@ echo ""
 # Building the $COQTOP/dev/ocamldebug-coq file
 ##################################################
 
-OCAMLDEBUGCOQ=$COQSRC/dev/ocamldebug-coq
+OCAMLDEBUGCOQ=dev/ocamldebug-coq
 
 if test "$coq_debug_flag" = "-g" ; then
   rm -f $OCAMLDEBUGCOQ
@@ -969,15 +957,15 @@ fi
 # Creation of configuration files
 ##############################################
 
-mlconfig_file="$COQSRC/config/coq_config.ml"
-mymlconfig_file="$COQSRC/myocamlbuild_config.ml"
-config_file="$COQSRC/config/Makefile"
-config_template="$COQSRC/config/Makefile.template"
+mlconfig_file=config/coq_config.ml
+mymlconfig_file=myocamlbuild_config.ml
+config_file=config/Makefile
+config_template=config/Makefile.template
 
 
 ### Warning !!
 ### After this line, be careful when using variables,
-### since some of them (e.g. $COQSRC) will be escaped
+### since some of them will be escaped
 
 escape_string () {
     "$ocamlexec" "tools/escape_string.ml" "$1"
@@ -993,7 +981,6 @@ case $ARCH in
     win32)
 	COQTOP=`escape_string "$COQTOP"`
 	BINDIR=`escape_string "$BINDIR"`
-	COQSRC=`escape_string "$COQSRC"`
 	LIBDIR=`escape_string "$LIBDIR"`
 	CONFIGDIR=`escape_string "$CONFIGDIR"`
 	DATADIR=`escape_string "$DATADIR"`
@@ -1090,12 +1077,9 @@ let localwwwrefman = "file:/" ^ docdir ^ "html/refman"
 
 END_OF_COQ_CONFIG
 
-# to be sure printf is found on windows when spaces occur in PATH variable
-PRINTF=`which printf`
-
 # Subdirectories of theories/ added in coq_config.ml
 subdirs () {
-    (cd $1; find * \( -name .svn -prune \) -o \( -type d -exec $PRINTF "\"%s\";\n" {} \; \) >> "$mlconfig_file")
+    (cd $1; find * \( -name .svn -prune \) -o \( -type d -exec printf "\"%s\";\n" {} \; \) ) >> "$mlconfig_file"
 }
 
 echo "let theories_dirs = [" >> "$mlconfig_file"
@@ -1152,7 +1136,6 @@ EMACSLIB="$EMACSLIB"
 EMACS=$EMACS
 
 # Path to Coq distribution
-COQSRC="$COQSRC"
 VERSION=$VERSION
 
 # Ocaml version number
