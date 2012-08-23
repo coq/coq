@@ -17,13 +17,9 @@ COQMKTOP:=bin/coqmktop$(EXE)
 COQC:=bin/coqc$(EXE)
 
 COQTOPBYTE:=bin/coqtop.byte$(EXE)
-COQTOPOPT:=bin/coqtop.opt$(EXE)
-BESTCOQTOP:=bin/coqtop.$(BEST)$(EXE)
 COQTOPEXE:=bin/coqtop$(EXE)
 
 CHICKENBYTE:=bin/coqchk.byte$(EXE)
-CHICKENOPT:=bin/coqchk.opt$(EXE)
-BESTCHICKEN:=bin/coqchk.$(BEST)$(EXE)
 CHICKEN:=bin/coqchk$(EXE)
 
 FAKEIDE:=bin/fake_ide$(EXE)
@@ -50,7 +46,6 @@ INSTALLSH:=./install.sh
 MKDIR:=install -d
 
 COQIDEBYTE:=bin/coqide.byte$(EXE)
-COQIDEOPT:=bin/coqide.opt$(EXE)
 COQIDE:=bin/coqide$(EXE)
 
 ifeq ($(BEST),opt)
@@ -63,8 +58,8 @@ BESTOBJ:=$(if $(OPT),.cmx,.cmo)
 BESTLIB:=$(if $(OPT),.cmxa,.cma)
 
 COQBINARIES:= $(COQMKTOP) $(COQC) \
-  $(COQTOPBYTE) $(if $(OPT),$(COQTOPOPT)) $(COQTOPEXE) \
-  $(CHICKENBYTE) $(if $(OPT),$(CHICKENOPT)) $(CHICKEN)
+  $(COQTOPBYTE) $(COQTOPEXE) \
+  $(CHICKENBYTE) $(CHICKEN)
 
 CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 

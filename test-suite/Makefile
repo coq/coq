@@ -30,13 +30,8 @@
 BIN := ../bin/
 LIB := ..
 
-ifeq ($(BEST),byte)
-  coqtop := $(BIN)coqtop.byte -boot -q -batch -I prerequisite
-  bincoqc := $(BIN)coqc -coqlib $(LIB) -byte -I prerequisite
-else
-  coqtop := $(BIN)coqtop -boot -q -batch -I prerequisite
-  bincoqc := $(BIN)coqc -coqlib $(LIB) -I prerequisite
-endif
+coqtop := $(BIN)coqtop.byte -boot -q -batch -I prerequisite
+bincoqc := $(BIN)coqc -coqlib $(LIB) -I prerequisite
 
 command := $(coqtop) -top Top -load-vernac-source
 coqc := $(coqtop) -compile

@@ -2,10 +2,6 @@
 
 MAKE="${MAKE:=make}"
 
-if [ "$1" = -byte ]; then
-  export BEST=byte
-fi
-
 ${MAKE} clean > /dev/null 2>&1
 ${MAKE} all > /dev/null 2>&1
 cat summary.log

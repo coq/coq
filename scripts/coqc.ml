@@ -22,8 +22,7 @@
 
 let environment = Unix.environment ()
 
-let best = if Coq_config.arch = "win32" then "" else ("."^Coq_config.best)
-let binary = ref ("coqtop" ^ best)
+let binary = ref "coqtop"
 let image = ref ""
 
 (* coqc options *)
@@ -110,8 +109,7 @@ let parse_args () =
 	usage ()
     | "-byte" :: rem ->
        binary := "coqtop.byte"; parse (cfiles,args) rem
-    | "-opt" :: rem ->
-       binary := "coqtop.opt"; parse (cfiles,args) rem
+    | "-opt" :: rem -> (* now a no-op *) parse (cfiles,args) rem
     | "-libdir" :: _ :: rem ->
         print_string "Warning: option -libdir deprecated and ignored\n"; flush stdout;
         parse (cfiles,args) rem

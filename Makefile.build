@@ -80,7 +80,7 @@ TIMECMD=	# is "'time -p'" to get compilation time of .v
 # TIME="%C (%U user, %S sys, %e total, %M maxres)"
 
 COQOPTS=$(COQ_XML) $(VM)
-BOOTCOQTOP:=$(TIMECMD) $(BESTCOQTOP) -boot $(COQOPTS)
+BOOTCOQTOP:=$(TIMECMD) $(COQTOPEXE) -boot $(COQOPTS)
 BOOTCOQC:=$(BOOTCOQTOP) -compile
 
 # The SHOW and HIDE variables control whether make will echo complete commands 
@@ -144,12 +144,12 @@ ifndef ORDER_ONLY_SEP
 $(error This Makefile needs GNU Make 3.81 or later (that is a version that supports the order-only dependency feature without major bugs.))
 endif
 
-VO_TOOLS_DEP := $(BESTCOQTOP)
+VO_TOOLS_DEP := $(COQTOPEXE)
 ifdef COQ_XML
  VO_TOOLS_DEP += $(COQDOC)
 endif
 ifdef VALIDATE
- VO_TOOLS_DEP += $(BESTCHICKEN)
+ VO_TOOLS_DEP += $(CHICKEN)
 endif
 ifdef NO_RECOMPILE_LIB
  VO_TOOLS_ORDER_ONLY:=$(VO_TOOLS_DEP)
@@ -214,34 +214,38 @@ coqlight: theories-light tools coqbinaries
 
 states:: states/initial.coq
 
-$(COQTOPOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
+ifeq ($(BEST),opt)
+$(COQTOPEXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -boot -opt $(COREOPTFLAGS) -o $@
 	$(STRIP) $@
+else
+$(COQTOPEXE): $(COQTOPBYTE)
+	cp $< $@
+endif
 
 $(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -boot -top $(COREBYTEFLAGS) -o $@
-
-$(COQTOPEXE): $(ORDER_ONLY_SEP) $(BESTCOQTOP)
-	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)
 
 LOCALCHKLIBS:=$(addprefix -I , $(CHKSRCDIRS) )
 CHKLIBS:=$(LOCALCHKLIBS) -I $(MYCAMLP4LIB)
 CHKBYTEFLAGS:=$(CHKLIBS) $(CAMLDEBUG) $(USERFLAGS)
 CHKOPTFLAGS:=$(CHKLIBS) $(CAMLDEBUGOPT) $(CAMLTIMEPROF) $(USERFLAGS)
 
-$(CHICKENOPT): checker/check.cmxa checker/main.ml
+ifeq ($(BEST),opt)
+$(CHICKEN): checker/check.cmxa checker/main.ml
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(CHKOPTFLAGS) -o $@ $(SYSCMXA) $^
 	$(STRIP) $@
+else
+$(CHICKEN): $(CHICKENBYTE)
+	cp $< $@
+endif
 
 $(CHICKENBYTE): checker/check.cma checker/main.ml
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(CHKBYTEFLAGS) $(COQTOOLSBYTEFLAGS) -o $@ $(SYSCMA) $^
-
-$(CHICKEN): $(ORDER_ONLY_SEP) $(BESTCHICKEN)
-	cd bin && ln -sf coqchk.$(BEST)$(EXE) coqchk$(EXE)
 
 # coqmktop
 $(COQMKTOP): $(patsubst %.cma,%$(BESTLIB),$(COQMKTOPCMO:.cmo=$(BESTOBJ)))
@@ -305,22 +309,24 @@ IDEFILES=ide/coq.lang ide/coq_style.xml ide/coq.png ide/mac_default_accel_map
 coqide-binaries: coqide-$(HASCOQIDE)
 coqide-no:
 coqide-byte: $(COQIDEBYTE) $(COQIDE)
-coqide-opt:  $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
+coqide-opt:  $(COQIDEBYTE) $(COQIDE)
 coqide-files: $(IDEFILES)
 
-$(COQIDEOPT): $(LINKIDEOPT) | $(COQTOPOPT)
+ifeq ($(HASCOQIDE),opt)
+$(COQIDE): $(LINKIDEOPT) | $(COQTOPEXE)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) $(IDEOPTFLAGS) -o $@ unix.cmxa threads.cmxa\
 	         lablgtk.cmxa lablgtksourceview2.cmxa gtkThread.cmx str.cmxa $(LINKIDEOPT)
 	$(STRIP) $@
+else
+$(COQIDE): $(COQIDEBYTE)
+	cp $< $@
+endif
 
 $(COQIDEBYTE): $(LINKIDE) | $(COQTOPBYTE)
 	$(SHOW)'OCAMLC -o $@'
 	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -o $@ unix.cma threads.cma lablgtk.cma\
 	        lablgtksourceview2.cma gtkThread.cmo str.cma $(COQRUNBYTEFLAGS) $(LINKIDE)
-
-$(COQIDE):
-	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)
 
 # install targets
 
@@ -367,15 +373,15 @@ install-ide-info:
 
 VALIDOPTS=-silent -o -m
 
-validate:: $(BESTCHICKEN) $(ALLVO)
+validate:: $(CHICKEN) $(ALLVO)
 	$(SHOW)'COQCHK <theories & plugins>'
-	$(HIDE)$(BESTCHICKEN) -boot $(VALIDOPTS) $(ALLMODS)
+	$(HIDE)$(CHICKEN) -boot $(VALIDOPTS) $(ALLMODS)
 
 $(ALLSTDLIB).v:
 	$(SHOW)'MAKE $(notdir $@)'
 	$(HIDE)echo "Require $(ALLMODS)." > $@
 
-MAKE_TSOPTS=-C test-suite -s BEST=$(BEST) VERBOSE=$(VERBOSE)
+MAKE_TSOPTS=-C test-suite -s VERBOSE=$(VERBOSE)
 
 check:: validate test-suite
 
@@ -590,17 +596,9 @@ endif
 install-coq: install-binaries install-library install-coq-info install-devfiles
 install-coqlight: install-binaries install-library-light
 
-install-binaries:: install-$(BEST)  install-tools
-
-install-byte::
+install-binaries: install-tools
 	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQC) $(COQTOPBYTE) $(CHICKEN) $(FULLBINDIR)
-	cd $(FULLBINDIR); ln -sf coqtop.byte$(EXE) coqtop$(EXE); ln -sf coqchk.byte$(EXE) coqchk$(EXE)
-
-install-opt::
-	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(CHICKEN) $(CHICKENOPT) $(FULLBINDIR)
-	cd $(FULLBINDIR); ln -sf coqtop.opt$(EXE) coqtop$(EXE); ln -sf coqchk.opt$(EXE) coqchk$(EXE)
+	$(INSTALLBIN) $(COQC) $(COQTOPBYTE) $(COQTOPEXE) $(CHICKEN) $(FULLBINDIR)
 
 install-tools::
 	$(MKDIR) $(FULLBINDIR)
@@ -913,7 +911,7 @@ plugins/%_mod.ml: plugins/%.mllib
 	$(HIDE)$(BOOTCOQC) $*
 ifdef VALIDATE
 	$(SHOW)'COQCHK    $(call vo_to_mod,$@)'
-	$(HIDE)$(BESTCHICKEN) -boot -silent -norec $(call vo_to_mod,$@) \
+	$(HIDE)$(CHICKEN) -boot -silent -norec $(call vo_to_mod,$@) \
 	  || ( RV=$$?; rm -f "$@"; exit $${RV} )
 endif
 
