@@ -68,16 +68,21 @@ COQBINARIES:= $(COQMKTOP) $(COQC) \
 
 CSDPCERT:=plugins/micromega/csdpcert$(EXE)
 
+CORESRCDIRS:=\
+  config 	lib		kernel		kernel/byterun	library \
+  proofs 	tactics 	pretyping	interp		toplevel \
+  parsing	printing	grammar	        intf
+
+PLUGINS:=\
+  omega		romega 		micromega 	quote \
+  setoid_ring 	xml 		extraction 	fourier \
+  cc 		funind 		firstorder 	\
+  rtauto 	nsatz           syntax          decl_mode	btauto
+
 SRCDIRS:=\
-  config 	tools 		tools/coqdoc 	scripts		lib \
-  kernel	kernel/byterun	library 	proofs 		tactics \
-  pretyping	interp		toplevel 	parsing		printing \
-  grammar 	intf            ide/utils	ide	\
-  $(addprefix plugins/, \
-    omega	romega 		micromega 	quote \
-    setoid_ring xml 		extraction 	fourier \
-    cc 		funind 		firstorder \
-    rtauto 	nsatz           syntax          decl_mode	btauto)
+  $(CORESRCDIRS)  \
+  tools 	tools/coqdoc 	scripts		ide/utils	ide \
+  $(addprefix plugins/, $(PLUGINS))
 
 # Order is relevent here because kernel and checker contain files
 # with the same name

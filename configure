@@ -741,13 +741,15 @@ fi
 ###########################################
 # bindir, libdir, mandir, docdir, etc.
 
-case $src_spec in
-  no) COQTOP=${COQSRC}
-esac
-
 # OCaml only understand Windows filenames (C:\...)
 case $ARCH in
-    win32) COQTOP=`mk_win_path "$COQTOP"`
+    win32) COQSRC=`mk_win_path "$COQSRC"`
+	   CAMLBIN=`mk_win_path "$CAMLBIN"`
+	   CAMLP4BIN=`mk_win_path "$CAMLP4BIN"`
+esac
+
+case $src_spec in
+  no) COQTOP=${COQSRC}
 esac
 
 case $ARCH$CYGWIN in
@@ -1011,8 +1013,6 @@ BROWSER=`escape_string "$BROWSER"`
 
 case $ARCH in
     win32)
-	COQSRC=`mk_win_path "$COQSRC"`
-
 	COQTOP=`escape_string "$COQTOP"`
 	BINDIR=`escape_string "$BINDIR"`
 	COQSRC=`escape_string "$COQSRC"`
