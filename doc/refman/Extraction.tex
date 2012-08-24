@@ -95,23 +95,25 @@ of the extraction options. Default is Ocaml.
 
 \asubsection{Inlining and optimizations}
 
-Since Objective Caml is a strict language, the extracted
-code has to be optimized in order to be efficient (for instance, when
-using induction principles we do not want to compute all the recursive
-calls but only the needed ones). So the extraction mechanism provides
-an automatic optimization routine that will be
-called each time the user want to generate Ocaml programs. Essentially,
-it performs constants inlining and reductions.  Therefore some
-constants may not appear in resulting monolithic Ocaml program.
-In the case of modular extraction, even if some inlining is done, the
-inlined constant are nevertheless printed, to ensure
-session-independent programs.
+Since Objective Caml is a strict language, the extracted code has to
+be optimized in order to be efficient (for instance, when using
+induction principles we do not want to compute all the recursive calls
+but only the needed ones). So the extraction mechanism provides an
+automatic optimization routine that will be called each time the user
+want to generate Ocaml programs. The optimizations can be split in two
+groups: the type preserving ones -- essentially constant inlining and
+reductions -- and the non type perserving ones -- some function
+abstractions of dummy types are removed when it's deemed safe in order
+to have more elegant types. Therefore some constants may not appear in
+resulting monolithic Ocaml program. In the case of modular extraction,
+even if some inlining is done, the inlined constant are nevertheless
+printed, to ensure session-independent programs.
 
-Concerning Haskell, such optimizations are less useful because of
-lazyness. We still make some optimizations, for example in order to
-produce more readable code. 
+Concerning Haskell, type preserving optimizations are less useful
+because of lazyness. We still make some optimizations, for example in
+order to produce more readable code.
 
-All these optimizations are controled by the following \Coq\ options: 
+The type preserving optimizations are controled by the following \Coq\ options: 
 
 \begin{description}
 
@@ -121,10 +123,22 @@ All these optimizations are controled by the following \Coq\ options:
 \item \comindex{Unset Extraction Optimize}
 {\tt Unset Extraction Optimize.}
 
-Default is Set. This control all optimizations made on the ML terms 
-(mostly reduction of dummy beta/iota redexes, but also simplifications on
-Cases, etc). Put this option to Unset if you want a ML term as close as 
-possible to the Coq term.
+Default is Set. This control all type preserving optimizations made on
+the ML terms (mostly reduction of dummy beta/iota redexes, but also
+simplifications on Cases, etc). Put this option to Unset if you want a
+ML term as close as possible to the Coq term.
+
+\item \comindex{Set Extraction Conservative Types}
+{\tt Set Extraction Conservative Types.}
+
+\item \comindex{Unset Extraction Conservative Types}
+{\tt Unset Extraction Conservative Types.}
+
+Default is Unset. This control the non type preserving optimizations
+made on ML terms (which try to avoid function abstraction of dummy
+types).  If you turn this option to Set to make sure that {\tt e:t}
+implies that {\tt e':t'} where {\tt e'} and {\tt t'} are the extracted
+code of {\tt e} and {\tt t} respectively.
 
 \item \comindex{Set Extraction KeepSingleton}
 {\tt Set Extraction KeepSingleton.}

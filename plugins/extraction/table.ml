@@ -533,6 +533,19 @@ let _ = declare_int_option
                           | None -> chg_flag 0
                           | Some i -> chg_flag (max i 0))}
 
+(* This option controls whether "dummy lambda" are removed when a
+   toplevel constant is defined. *)
+let conservative_types_ref = ref false
+let conservative_types () = !conservative_types_ref
+
+let _ = declare_bool_option
+  {optsync = true;
+   optdepr = false;
+   optname = "Extraction Conservative Types";
+   optkey = ["Extraction"; "Conservative"; "Types"];
+   optread = (fun () -> !conservative_types_ref);
+   optwrite = (fun b -> conservative_types_ref := b) }
+
 
 (*s Extraction Lang *)
 

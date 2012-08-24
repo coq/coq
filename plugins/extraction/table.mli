@@ -132,6 +132,10 @@ type opt_flag =
 
 val optims :  unit -> opt_flag
 
+(*s Controls whether dummy lambda are removed *)
+
+val conservative_types : unit -> bool
+
 (*s Target language. *)
 
 type lang = Ocaml | Haskell | Scheme

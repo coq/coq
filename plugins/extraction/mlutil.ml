@@ -285,13 +285,13 @@ let type_simpl = type_expand (fun _ -> None)
 (*s Generating a signature from a ML type. *)
 
 let type_to_sign env t = match type_expand env t with
-  | Tdummy d -> Kill d
+  | Tdummy d when not (conservative_types ()) -> Kill d
   | _ -> Keep
 
 let type_to_signature env t =
   let rec f = function
     | Tmeta {contents = Some t} -> f t
-    | Tarr (Tdummy d, b) -> Kill d :: f b
+    | Tarr (Tdummy d, b) when not (conservative_types ())  -> Kill d :: f b
     | Tarr (_, b) -> Keep :: f b
     | _ -> []
   in f (type_expand env t)
