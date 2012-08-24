@@ -73,6 +73,6 @@ and tomatch_tuple = (glob_constr * predicate_pattern)
 and tomatch_tuples = tomatch_tuple list
 
 and cases_clause = (Loc.t * identifier list * cases_pattern list * glob_constr)
-(** [(p,il,cl,t)] = "|'cl' as 'il' => 't'" *)
-
+(** [(p,il,cl,t)] = "|'cl' => 't'". Precondition: the free variables
+    of [t] are members of [il]. *)
 and cases_clauses = cases_clause list
