@@ -99,11 +99,16 @@ let load_vernac_obj () =
 
 let load_init = ref true
 
+let require_prelude () =
+  let q = qualid_of_string "Coq.Init.Prelude" in
+  Library.require_library [Loc.ghost,q] (Some true)
+
 let require_list = ref ([] : string list)
 let add_require s = require_list := s :: !require_list
 let require () =
+  if !load_init then require_prelude ();
   List.iter (fun s -> Library.require_library_from_file None s (Some false))
-    ((if !load_init then ["Prelude"] else []) @ List.rev !require_list)
+    (List.rev !require_list)
 
 let compile_list = ref ([] : (bool * string) list)
 let add_compile verbose s =
