@@ -195,12 +195,14 @@ type language_descr = {
 
   (* Concerning the source file *)
   file_suffix : string;
-  preamble : identifier -> module_path list -> unsafe_needs -> std_ppcmds;
+  (* the second argument is a comment to add to the preamble *)
+  preamble : identifier -> std_ppcmds -> module_path list -> unsafe_needs -> std_ppcmds;
   pp_struct : ml_structure -> std_ppcmds;
 
   (* Concerning a possible interface file *)
   sig_suffix : string option;
-  sig_preamble : identifier -> module_path list -> unsafe_needs -> std_ppcmds;
+  (* the second argument is a comment to add to the preamble *)
+  sig_preamble : identifier -> std_ppcmds -> module_path list -> unsafe_needs -> std_ppcmds;
   pp_sig : ml_signature -> std_ppcmds;
 
   (* for an isolated declaration print *)

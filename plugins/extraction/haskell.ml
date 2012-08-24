@@ -33,13 +33,19 @@ let keywords =
     "as"; "qualified"; "hiding" ; "unit" ; "unsafeCoerce" ]
   Idset.empty
 
-let preamble mod_name used_modules usf =
+let pp_comment s = str "-- " ++ s ++ fnl ()
+let pp_bracket_comment s = str"{- " ++ hov 0 s ++ str" -}"
+
+let preamble mod_name comment used_modules usf =
   let pp_import mp = str ("import qualified "^ string_of_modfile mp ^"\n")
   in
   (if not usf.magic then mt ()
    else
-     str "{-# OPTIONS_GHC -cpp -fglasgow-exts #-}\n" ++
-     str "{- For Hugs, use the option -F\"cpp -P -traditional\" -}\n\n")
+     str "{-# OPTIONS_GHC -cpp -fglasgow-exts #-}" ++ fnl () ++
+     str "{- For Hugs, use the option -F\"cpp -P -traditional\" -}")
+  ++ fnl () ++ fnl ()
+  ++
+  pp_bracket_comment comment ++ fnl () ++ fnl ()
   ++
   str "module " ++ pr_upper_id mod_name ++ str " where" ++ fnl2 () ++
   str "import qualified Prelude" ++ fnl () ++
@@ -231,8 +237,6 @@ and pp_function env f t =
 
 (*s Pretty-printing of inductive types declaration. *)
 
-let pp_comment s = str "-- " ++ s ++ fnl ()
-
 let pp_logical_ind packet =
   pp_comment (pr_id packet.ip_typename ++ str " : logical inductive") ++
   pp_comment (str "with constructors : " ++
@@ -359,7 +363,7 @@ let haskell_descr = {
   preamble = preamble;
   pp_struct = pp_struct;
   sig_suffix = None;
-  sig_preamble = (fun _ _ _ -> mt ());
+  sig_preamble = (fun _ s _ _ -> (pp_bracket_comment s)++fnl());
   pp_sig = (fun _ -> mt ());
   pp_decl = pp_decl;
 }

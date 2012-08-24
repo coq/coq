@@ -28,7 +28,10 @@ let keywords =
       "error"; "delay"; "force"; "_"; "__"]
     Idset.empty
 
-let preamble _ _ usf =
+let pp_comment s = str";; "++h 0 s++fnl ()
+
+let preamble _ comment _ usf =
+  pp_comment comment ++ fnl () ++
   str ";; This extracted scheme code relies on some additional macros\n" ++
   str ";; available at http://www.pps.jussieu.fr/~letouzey/scheme\n" ++
   str "(load \"macros_extr.scm\")\n\n" ++
@@ -223,7 +226,7 @@ let scheme_descr = {
   preamble = preamble;
   pp_struct = pp_struct;
   sig_suffix = None;
-  sig_preamble = (fun _ _ _ -> mt ());
+  sig_preamble = (fun _ s _ _ -> pp_comment s ++ fnl () ++ fnl ());
   pp_sig = (fun _ -> mt ());
   pp_decl = pp_decl;
 }

@@ -62,7 +62,10 @@ let keywords =
 
 let pp_open mp = str ("open "^ string_of_modfile mp ^"\n")
 
-let preamble _ used_modules usf =
+let pp_comment s = str "(* " ++ hov 0 s ++ str " *)"
+
+let preamble _ comment used_modules usf =
+  pp_comment comment ++ fnl () ++ fnl () ++
   prlist pp_open used_modules ++
   (if used_modules = [] then mt () else fnl ()) ++
   (if usf.tdummy || usf.tunknown then str "type __ = Obj.t\n" else mt()) ++
@@ -71,7 +74,8 @@ let preamble _ used_modules usf =
    else mt ()) ++
   (if usf.tdummy || usf.tunknown || usf.mldummy then fnl () else mt ())
 
-let sig_preamble _ used_modules usf =
+let sig_preamble _ comment used_modules usf =
+  pp_comment comment ++ fnl () ++ fnl () ++
   prlist pp_open used_modules ++
   (if used_modules = [] then mt () else fnl ()) ++
   (if usf.tdummy || usf.tunknown then str "type __ = Obj.t\n\n" else mt())
@@ -413,7 +417,6 @@ let pp_equiv param_list name = function
   | RenEquiv ren, _  ->
       str " = " ++ pp_parameters param_list ++ str (ren^".") ++ name
 
-let pp_comment s = str "(* " ++ s ++ str " *)"
 
 let pp_one_ind prefix ip_equiv pl name cnames ctyps =
   let pl = rename_tvars keywords pl in

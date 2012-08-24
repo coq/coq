@@ -136,6 +136,10 @@ val optims :  unit -> opt_flag
 
 val conservative_types : unit -> bool
 
+(*s A comment to print at the beginning of the files *)
+
+val file_comment : unit -> string
+
 (*s Target language. *)
 
 type lang = Ocaml | Haskell | Scheme

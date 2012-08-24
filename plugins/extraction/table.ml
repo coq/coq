@@ -547,6 +547,18 @@ let _ = declare_bool_option
    optwrite = (fun b -> conservative_types_ref := b) }
 
 
+(* Allows to print a comment at the beginning of the output files *)
+let file_comment_ref = ref ""
+let file_comment () = !file_comment_ref
+
+let _ = declare_string_option
+  {optsync = true;
+   optdepr = false;
+   optname = "Extraction File Comment";
+   optkey = ["Extraction"; "File"; "Comment"];
+   optread = (fun () -> !file_comment_ref);
+   optwrite = (fun s -> file_comment_ref := s) }
+
 (*s Extraction Lang *)
 
 type lang = Ocaml | Haskell | Scheme
