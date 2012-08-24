@@ -23,7 +23,7 @@ struct
   let error = make_tag table ~name:"error" [`UNDERLINE `DOUBLE ; `FOREGROUND "red"]
   let to_process = make_tag table ~name:"to_process" [`BACKGROUND !processing_color ;`EDITABLE false]
   let processed = make_tag table ~name:"processed" [`BACKGROUND !processed_color;`EDITABLE false]
-  let unjustified = make_tag table ~name:"unjustified" [`UNDERLINE `SINGLE; `FOREGROUND "red"; `BACKGROUND "gold";`EDITABLE false]
+  let unjustified = make_tag table ~name:"unjustified" [`BACKGROUND "gold";`EDITABLE false]
   let found = make_tag table ~name:"found" [`BACKGROUND "blue"; `FOREGROUND "white"]
   let sentence = make_tag table ~name:"sentence" []
 end
