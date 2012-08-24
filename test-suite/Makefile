@@ -265,6 +265,7 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v
 	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
 	  $(command) "$<" 2>&1 \
 	    | grep -v "Welcome to Coq" \
+	    | grep -v "[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
 	    > $$tmpoutput; \
 	  diff -u $*.out $$tmpoutput 2>&1; R=$$?; times; \
