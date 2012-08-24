@@ -332,22 +332,23 @@ let context l =
   let ctx = try named_of_rel_context fullctx with _ ->
     error "Anonymous variables not allowed in contexts."
   in
-  let fn (id, _, t) =
+  let fn status (id, _, t) =
     if Lib.is_modtype () && not (Lib.sections_are_opened ()) then
       let cst = Declare.declare_constant ~internal:Declare.KernelSilent id
 	(ParameterEntry (None,t,None), IsAssumption Logical)
       in
 	match class_of_constr t with
 	| Some (rels, (tc, args) as _cl) ->
-	    add_instance (Typeclasses.new_instance tc None false (ConstRef cst))
+	    add_instance (Typeclasses.new_instance tc None false (ConstRef cst));
+            status
 	    (* declare_subclasses (ConstRef cst) cl *)
-	| None -> ()
+	| None -> status
     else (
       let impl = List.exists 
 	(fun (x,_) ->
 	   match x with ExplByPos (_, Some id') -> id = id' | _ -> false) impls
       in
 	Command.declare_assumption false (Local (* global *), Definitional) t
-	  [] impl (* implicit *) None (* inline *) (Loc.ghost, id))
-  in List.iter fn (List.rev ctx)
+	  [] impl (* implicit *) None (* inline *) (Loc.ghost, id) && status)
+  in List.fold_left fn true (List.rev ctx)
        

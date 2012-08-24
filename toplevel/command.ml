@@ -160,7 +160,7 @@ let do_definition ident k bl red_option c ctypopt hook =
 (* 2| Variable/Hypothesis/Parameter/Axiom declarations *)
 
 let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) =
-  let r = match local with
+  let r,status = match local with
     | Local when Lib.sections_are_opened () ->
         let _ =
           declare_variable ident
@@ -170,7 +170,7 @@ let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) =
           msg_warning (str"Variable" ++ spc () ++ pr_id ident ++
           strbrk " is not visible from current goals");
 	let r = VarRef ident in
-	  Typeclasses.declare_instance None true r; r
+	  Typeclasses.declare_instance None true r; r,true
     | (Global|Local) ->
         let kn =
           declare_constant ident 
@@ -183,9 +183,10 @@ let declare_assumption is_coe (local,kind) c imps impl nl (_,ident) =
           strbrk " because it is at a global level");
 	Autoinstance.search_declaration (ConstRef kn);
 	Typeclasses.declare_instance None false gr;
-        gr 
+        gr , (Lib.is_modtype_strict ())
   in
-    if is_coe then Class.try_add_new_coercion r local
+    if is_coe then Class.try_add_new_coercion r local;
+    status
 
 let declare_assumptions_hook = ref ignore
 let set_declare_assumptions_hook = (:=) declare_assumptions_hook
@@ -197,7 +198,7 @@ let interp_assumption bl c =
 
 let declare_assumptions idl is_coe k c imps impl_is_on nl =
   !declare_assumptions_hook c;
-  List.iter (declare_assumption is_coe k c imps impl_is_on nl) idl
+  List.fold_left (fun status id -> declare_assumption is_coe k c imps impl_is_on nl id && status) true idl
 
 (* 3a| Elimination schemes for mutual inductive definitions *)
 

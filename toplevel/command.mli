@@ -47,13 +47,15 @@ val do_definition : identifier -> definition_kind ->
 val interp_assumption :
   local_binder list -> constr_expr -> types * Impargs.manual_implicits
 
+(** returns [false] if the assumption is neither local to a section,
+    nor in a module type and meant to be instantiated. *)
 val declare_assumption : coercion_flag -> assumption_kind -> types ->
   Impargs.manual_implicits ->
-  bool (** implicit *) -> Entries.inline -> variable Loc.located -> unit
+  bool (** implicit *) -> Entries.inline -> variable Loc.located -> bool
 
 val declare_assumptions : variable Loc.located list ->
   coercion_flag -> assumption_kind -> types -> Impargs.manual_implicits ->
-  bool -> Entries.inline -> unit
+  bool -> Entries.inline -> bool
 
 (** {6 Inductive and coinductive types} *)
 

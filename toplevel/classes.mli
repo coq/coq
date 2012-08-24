@@ -67,7 +67,9 @@ val id_of_class : typeclass -> identifier
 
 (** Context command *)
 
-val context : local_binder list -> unit
+(** returns [false] if, for lack of section, it declares an assumption
+    (unless in a module type). *)
+val context : local_binder list -> bool
 
 (** Forward ref for refine *)
 

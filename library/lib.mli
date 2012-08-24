@@ -91,6 +91,9 @@ val sections_depth : unit -> int
 (** Are we inside an opened module type *)
 val is_module_or_modtype : unit -> bool
 val is_modtype : unit -> bool
+(* [is_modtype_strict] checks not only if we are in a module type, but
+   if the latest module started is a module type.  *)
+val is_modtype_strict : unit -> bool
 val is_module : unit -> bool
 val current_mod_id : unit -> Names.module_ident
 

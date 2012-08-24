@@ -509,13 +509,16 @@ let vernac_exact_proof c =
 
 let vernac_assumption kind l nl=
   let global = fst kind = Global in
-    List.iter (fun (is_coe,(idl,c)) ->
+  let status =
+    List.fold_left (fun status (is_coe,(idl,c)) ->
       if Dumpglob.dump () then
 	List.iter (fun lid ->
 	  if global then Dumpglob.dump_definition lid false "ax"
 	  else Dumpglob.dump_definition lid true "var") idl;
       let t,imps = interp_assumption [] c in
-      declare_assumptions idl is_coe kind t imps false nl) l
+      declare_assumptions idl is_coe kind t imps false nl && status) true l
+  in
+  if not status then raise UnsafeSuccess
 
 let vernac_record k finite infer struc binders sort nameopt cfs =
   let const = match nameopt with
@@ -774,7 +777,7 @@ let vernac_instance abst glob sup inst props pri =
   ignore(Classes.new_instance ~abstract:abst ~global:glob sup inst props pri)
 
 let vernac_context l =
-  Classes.context l
+  if not (Classes.context l) then raise UnsafeSuccess
 
 let vernac_declare_instances glob ids =
   List.iter (fun (id) -> Classes.existing_instance glob id) ids
