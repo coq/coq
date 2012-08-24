@@ -924,6 +924,19 @@ let extract_std_constant env kn body typ =
   in
   trm, type_expunge_from_sign env s t
 
+(* Extracts the type of an axiom, honors the Extraction Implicit declaration. *)
+let extract_axiom env kn typ =
+  reset_meta_count ();
+  (* The short type [t] (i.e. possibly with abbreviations). *)
+  let t = snd (record_constant_type env kn (Some typ)) in
+  (* The real type [t']: without head products, expanded, *)
+  (* and with [Tvar] translated to [Tvar'] (not instantiable). *)
+  let l,_ = type_decomp (expand env (var2var' t)) in
+  let s = List.map (type2sign env) l in
+  (* Check for user-declared implicit information *)
+  let s = sign_with_implicits (ConstRef kn) s in
+  type_expunge_from_sign env s t
+
 let extract_fixpoint env vkn (fi,ti,ci) =
   let n = Array.length vkn in
   let types = Array.make n (Tdummy Kother)
@@ -960,8 +973,8 @@ let extract_constant env kn cb =
     in Dtype (r, vl, t)
   in
   let mk_ax () =
-    let t = snd (record_constant_type env kn (Some typ)) in
-    Dterm (r, MLaxiom, type_expunge env t)
+    let t = extract_axiom env kn typ in
+    Dterm (r, MLaxiom, t)
   in
   let mk_def c =
     let e,t = extract_std_constant env kn c typ in
