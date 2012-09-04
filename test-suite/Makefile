@@ -30,7 +30,7 @@
 BIN := ../bin/
 LIB := ..
 
-coqtop := $(BIN)coqtop.byte -boot -q -batch -I prerequisite
+coqtop := $(BIN)coqtop -boot -q -batch -I prerequisite
 bincoqc := $(BIN)coqc -coqlib $(LIB) -I prerequisite
 
 command := $(coqtop) -top Top -load-vernac-source
