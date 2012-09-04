@@ -41,6 +41,7 @@ SHOW := $(if $(VERBOSE),@true,@echo)
 HIDE := $(if $(VERBOSE),,@)
 REDIR := $(if $(VERBOSE),,> /dev/null 2>&1)
 
+bogomips:=
 ifneq (,$(wildcard /proc/cpuinfo))
   sedbogo := -e "s/bogomips.*: \([0-9]*\).*/\1/p" # i386, ppc
   sedbogo += -e "s/Cpu0Bogo.*: \([0-9]*\).*/\1/p" # sparc
@@ -265,8 +266,9 @@ $(addsuffix .log,$(wildcard output/*.v)): %.v.log: %.v
 	  tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`; \
 	  $(command) "$<" 2>&1 \
 	    | grep -v "Welcome to Coq" \
-	    | grep -v "[Loading ML file" \
+	    | grep -v "\[Loading ML file" \
 	    | grep -v "Skipping rcfile loading" \
+	    | tail -n +2 \
 	    > $$tmpoutput; \
 	  diff -u $*.out $$tmpoutput 2>&1; R=$$?; times; \
 	  if [ $$R = 0 ]; then \
