@@ -897,7 +897,7 @@ plugins/%_mod.ml: plugins/%.mllib
 	$(CAMLP4O) $(PR_O) -I $(CAMLLIB) tools/compat5.cmo $${DEPS} $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@; \
 	else echo $< : Dependency $${DEPS} not ready yet; false; fi
 
-%.vo %.glob: %.v states $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
+%.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
 	$(SHOW)'COQC      $<'
 	$(HIDE)rm -f $*.glob 
 	$(HIDE)$(BOOTCOQC) $*
