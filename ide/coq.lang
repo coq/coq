@@ -29,12 +29,12 @@
     <define-regex id="qualit">(\%{ident}*\.)*\%{ident}</define-regex>
     <define-regex id="undotted_sep">[-+*{}]</define-regex>
     <define-regex id="dot_sep">\.(\s|\z)</define-regex>
-    <define-regex id="single_decl">(Definition)|(Let)|(Example)|(SubClass)|(Fixpoint)|(CoFixpoint)|(Scheme)|(Function)|(Hypothesis)|(Axiom)|(Variable)|(Parameter)|(Conjecture)|(Inductive)|(CoInductive)|(Record)|(Structure)|(Ltac)|(Instance)|(Include)|(Context)|(Class)|(Module(\%{space}+Type)?)|(Existing\%{space}+Instance)|(Canonical\%{space}+Structure)</define-regex>
+    <define-regex id="single_decl">(Definition)|(Let)|(Example)|(SubClass)|(Fixpoint)|(CoFixpoint)|(Scheme)|(Function)|(Hypothesis)|(Axiom)|(Variable)|(Parameter)|(Conjecture)|(Inductive)|(CoInductive)|(Record)|(Structure)|(Ltac)|(Instance)|(Context)|(Class)|(Module(\%{space}+Type)?)|(Existing\%{space}+Instance)|(Canonical\%{space}+Structure)</define-regex>
     <define-regex id="mult_decl">(Hypotheses)|(Axioms)|(Variables)|(Parameters)|(Implicit\%{space}+Type(s)?)</define-regex>
     <define-regex id="locality">(((Local)|(Global))\%{space}+)?</define-regex>
     <define-regex id="begin_proof">(Theorem)|(Lemma)|(Fact)|(Remark)|(Corollary)|(Proposition)|(Property)</define-regex>
     <define-regex id="end_proof">(Qed)|(Defined)|(Admitted)|(Abort)</define-regex>
-    <define-regex id="decl_head">((?'gal'(Program\%{space}+)?(\%{single_decl}|\%{begin_proof}))\%{space}+(?'id'\%{ident}))|((?'gal4list'\%{mult_decl})(?'id_list'(\%{space}+\%{ident})+))</define-regex>
+    <define-regex id="decl_head">((?'gal'(Program\%{space}+)?(\%{single_decl}|\%{begin_proof}))\%{space}+(?'id'\%{ident}))|((?'gal4list'\%{mult_decl})(?'id_list'(\%{space}+\%{ident})*))</define-regex>
 
     <context id="escape-seq" style-ref="escape">
       <match>""</match>
@@ -177,15 +177,16 @@
 	  <keyword>Delimit</keyword>
 	</context>
 	<context id="command-for-qualit">
-	  <suffix>)\%{space}+(?'qua'\%{qualit})</suffix>
+	  <suffix>\%{space}+(?'qua'\%{qualit})</suffix>
 	  <keyword>Chapter</keyword>
 	  <keyword>Combined\%{space}+Scheme</keyword>
 	  <keyword>End</keyword>
 	  <keyword>Section</keyword>
 	  <keyword>Arguments</keyword>
+	  <keyword>(Import)|(Include)</keyword>
 	  <keyword>Require(\%{space}+((Import)|(Export)))?</keyword>
-	  <keyword>(Recursive\%{space}+)?Extraction\%{space}+((Language\%{space}+(Ocaml)|(Haskell)|(Scheme)|(Toplevel))|(Library)|((No)?Inline)|(Blacklist))?</keyword>
-	  <keyword>Extract\%{space}+(Inlined\%{space}+)?(Constant)|(Inductive</keyword>
+	  <keyword>(Recursive\%{space}+)?Extraction(\%{space}+(Language\%{space}+(Ocaml)|(Haskell)|(Scheme)|(Toplevel))|(Library)|((No)?Inline)|(Blacklist))?</keyword>
+	  <keyword>Extract\%{space}+(Inlined\%{space}+)?(Constant)|(Inductive)</keyword>
 	  <include>
 	    <context sub-pattern="1" style-ref="vernac-keyword"/>
 	    <context sub-pattern="qua" style-ref="identifier"/>
