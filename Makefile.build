@@ -298,7 +298,7 @@ plugins/micromega/csdpcert$(EXE): $(CSDPCERTCMO:.cmo=$(BESTOBJ))
 .PHONY: coqide coqide-binaries coqide-no coqide-byte coqide-opt coqide-files
 
 # target to build CoqIde
-coqide:: coqide-files coqide-binaries states
+coqide:: coqide-files coqide-binaries theories/Init/Prelude.vo
 
 COQIDEFLAGS=-thread $(COQIDEINCLUDES)
 
