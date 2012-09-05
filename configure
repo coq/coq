@@ -35,35 +35,34 @@ usage () {
     printf "\tSet installation directory to <dir>\n"
     echo "-local"
     printf "\tSet installation directory to the current source tree\n"
-    echo "-coqrunbyteflags"
+    echo "-coqrunbyteflags <flags>"
     printf "\tSet link flags for VM-dependent bytecode (coqtop)\n"
-    echo "-coqtoolsbyteflags"
+    echo "-coqtoolsbyteflags <flags>"
     printf "\tSet link flags for VM-independant bytecode (coqdep, coqdoc, ...)\n"
     echo "-custom"
     printf "\tGenerate all bytecode executables with -custom (not recommended)\n"
-    echo "-bindir"
-    echo "-libdir"
-    echo "-configdir"
-    echo "-datadir"
-    echo "-mandir"
-    echo "-docdir"
+    echo "-bindir <dir>"
+    echo "-libdir <dir>"
+    echo "-configdir <dir>"
+    echo "-datadir <dir>"
+    echo "-mandir <dir>"
+    echo "-docdir <dir>"
     printf "\tSpecifies where to install bin/lib/config/data/man/doc files resp.\n"
-    echo "-emacslib"
-    echo "-emacs"
+    echo "-emacslib <dir>"
     printf "\tSpecifies where emacs files are to be installed\n"
-    echo "-coqdocdir"
+    echo "-coqdocdir <dir>"
     printf "\tSpecifies where Coqdoc style files are to be installed\n"
-    echo "-camldir"
+    echo "-camldir <dir>"
     printf "\tSpecifies the path to the OCaml library\n"
-    echo "-lablgtkdir"
+    echo "-lablgtkdir <dir>"
     printf "\tSpecifies the path to the Lablgtk library\n"
     echo "-usecamlp5"
     printf "\tSpecifies to use camlp5 instead of camlp4\n"
     echo "-usecamlp4"
     printf "\tSpecifies to use camlp4 instead of camlp5\n"
-    echo "-camlp5dir"
+    echo "-camlp5dir <dir>"
     printf "\tSpecifies where to look for the Camlp5 library and tells to use it\n"
-    echo "-arch"
+    echo "-arch <arch>"
     printf "\tSpecifies the architecture\n"
     echo "-opt"
     printf "\tSpecifies whether or not to use OCaml *.opt optimized compilers\n"
@@ -161,8 +160,7 @@ while : ; do
     -coqtoolsbyteflags|--coqtoolsbyteflags) coqtoolsbyteflags_spec=yes
                                             coqtoolsbyteflags="$2"
                                             shift;;
-    -custom|--custom) custom_spec=yes
-                      shift;;
+    -custom|--custom) custom_spec=yes;;
     -bindir|--bindir) bindir_spec=yes
                       bindir="$2"
 		      shift;;
@@ -186,6 +184,7 @@ while : ; do
 			  shift;;
     -emacs |--emacs) emacs_spec=yes
 		     emacs="$2"
+                     printf "Warning: obsolete -emacs option\n"
 		     shift;;
     -coqdocdir|--coqdocdir) coqdocdir_spec=yes
 	              coqdocdir="$2"
@@ -742,8 +741,6 @@ case $ARCH$CYGWIN in
 	 coqdocdir_def=/usr/local/share/texmf/tex/latex/misc;;
 esac
 
-emacs_def=emacs
-
 askdir () {
   printf "Where should I install $1 [%s]? " $2
   read answer
@@ -844,18 +841,6 @@ case $coqtoolsbyteflags_spec/$custom_spec/$CUSTOM_OS in
     */yes/*|*/*/yes) COQTOOLSBYTEFLAGS="-custom";;
     *) COQTOOLSBYTEFLAGS="";;
 esac
-
-# case $emacs_spec in
-#     no) printf "Which Emacs command should I use to compile coq.el [%s]? " "$emacs_def"
-#         read EMACS
-	
-# 	case $EMACS in
-# 	    "") EMACS="$emacs_def";;
-# 	    *) true;;
-# 	esac;;
-#     yes) EMACS="$emacs";;
-# esac
-
 
 
 ###########################################
