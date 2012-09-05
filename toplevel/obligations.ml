@@ -656,8 +656,17 @@ let get_prog name =
 	       | 1 -> map_first prg_infos
 	       | _ -> error "More than one program with unsolved obligations")
 
+let get_any_prog () =
+  let prg_infos = !from_prg in
+  let n = map_cardinal prg_infos in
+  if n > 0 then map_first prg_infos
+  else raise (NoObligations None)
+
 let get_prog_err n =
   try get_prog n with NoObligations id -> pperror (explain_no_obligations id)
+
+let get_any_prog_err () =
+  try get_any_prog () with NoObligations id -> pperror (explain_no_obligations id)
 
 let obligations_solved prg = (snd prg.prg_obligations) = 0
 
@@ -951,22 +960,36 @@ let add_mutual_definitions l ?tactic ?(kind=Global,Definition) ?(reduce=reduce)
 	false deps
     in ()
 
-let admit_obligations n =
-  let prg = get_prog_err n in
+let admit_prog prg =
   let obls, rem = prg.prg_obligations in
     Array.iteri 
       (fun i x ->
-	match x.obl_body with
-	| None ->
+        match x.obl_body with
+        | None ->
             let x = subst_deps_obl obls x in
-	    let kn = Declare.declare_constant x.obl_name 
+            let kn = Declare.declare_constant x.obl_name 
               (ParameterEntry (None, x.obl_type,None), IsAssumption Conjectural)
-	    in
-	      assumption_message x.obl_name;
-	      obls.(i) <- { x with obl_body = Some (mkConst kn) }
-	| Some _ -> ())
+            in
+              assumption_message x.obl_name;
+              obls.(i) <- { x with obl_body = Some (mkConst kn) }
+        | Some _ -> ())
       obls;
     ignore(update_obls prg obls 0)
+
+let rec admit_all_obligations () =
+  let prg = try Some (get_any_prog ()) with NoObligations _ -> None in
+  match prg with
+  | None -> ()
+  | Some prg ->
+    admit_prog prg;
+    admit_all_obligations ()
+
+let admit_obligations n =
+  match n with
+  | None -> admit_all_obligations ()
+  | Some _ ->
+    let prg = get_prog_err n in
+    admit_prog prg
 
 exception Found of int
 
@@ -976,7 +999,10 @@ let array_find f arr =
   with Found i -> i
 
 let next_obligation n tac =
-  let prg = get_prog_err n in
+  let prg = match n with
+  | None -> get_any_prog_err ()
+  | Some _ -> get_prog_err n
+  in
   let obls, rem = prg.prg_obligations in
   let i =
     try array_find (fun x ->  x.obl_body = None && deps_remaining obls x.obl_deps = []) obls
