@@ -1735,6 +1735,28 @@ let main files =
   let tactic_shortcut s sc = GAction.add_action s ~label:("_"^s)
     ~accel:(current.modifier_for_tactics^sc)
     ~callback:(fun _ -> do_if_active (fun handle a -> a#tactic_wizard handle [s]) ()) in
+  let query_searchabout () =
+    let word = get_current_word () in
+    let term = session_notebook#current_term in
+    let query handle =
+      let results = Coq.search handle [Interface.SubType_Pattern word, true] in
+      let results = match results with | Interface.Good l -> l | _ -> [] in
+      let buf =  term.message_view#buffer in
+      let insert result =
+        let basename = result.Interface.search_answer_base_name in
+        let path = result.Interface.search_answer_full_path in
+        let name = String.concat "." path ^ "." ^ basename in
+        let tpe = result.Interface.search_answer_type in
+        buf#insert ~tags:[Tags.Message.item] name;
+        buf#insert "\n";
+        buf#insert tpe;
+        buf#insert "\n";
+      in
+      term.message_view#clear ();
+      List.iter insert results
+    in
+    Coq.try_grab term.toplvl query ignore
+  in
   let query_callback command _ =
     let word = get_current_word () in
     let term = session_notebook#current_term in
@@ -1744,6 +1766,9 @@ let main files =
       term.message_view#clear ();
       try Coq.try_grab term.toplvl (f query) ignore
       with e -> term.message_view#push Interface.Error (Printexc.to_string e)
+  in
+  let query_callback command _ =
+    if command = "SearchAbout" then query_searchabout () else query_callback command ()
   in
   let query_shortcut s accel =
     GAction.add_action s ~label:("_"^s) ?accel ~callback:(query_callback s)
@@ -1805,13 +1830,13 @@ let main files =
       GAction.add_action "Paste"
         ~callback:(fun _ -> emit_to_focus GtkText.View.S.paste_clipboard) ~stock:`PASTE;
       GAction.add_action "Find" ~stock:`FIND
-        ~callback:(fun _ -> session_notebook#current_term.finder#show_find ());
+        ~callback:(fun _ -> session_notebook#current_term.finder#show `FIND);
       GAction.add_action "Find Next" ~label:"Find _Next" ~stock:`GO_DOWN ~accel:"F3"
         ~callback:(fun _ -> session_notebook#current_term.finder#find_forward ());
       GAction.add_action "Find Previous" ~label:"Find _Previous" ~stock:`GO_UP ~accel:"<Shift>F3"
         ~callback:(fun _ -> session_notebook#current_term.finder#find_backward ());
       GAction.add_action "Replace" ~stock:`FIND_AND_REPLACE
-        ~callback:(fun _ -> session_notebook#current_term.finder#show_replace ());
+        ~callback:(fun _ -> session_notebook#current_term.finder#show `REPLACE);
      GAction.add_action "Close Find" ~accel:"Escape"
         ~callback:(fun _ -> session_notebook#current_term.finder#hide ());
       GAction.add_action "Complete Word" ~label:"Complete Word" ~callback:(fun _ ->

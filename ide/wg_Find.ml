@@ -6,9 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-type mode =
-| Find
-| Replace
+type mode = [ `FIND | `REPLACE ]
 
 class finder (view : GText.view) =
 
@@ -92,7 +90,7 @@ class finder (view : GText.view) =
 
   object (self)
     val mutable last_found = None
-    val mutable mode = Find
+    val mutable mode : mode = `FIND
 
     method coerce = widget#coerce
 
@@ -172,15 +170,19 @@ class finder (view : GText.view) =
       self#find_from true starti self#search_text
 
     method private search_text = match mode with
-    | Find -> find_entry#text
-    | Replace -> r_find_entry#text
+    | `FIND -> find_entry#text
+    | `REPLACE -> r_find_entry#text
 
     method hide () =
       widget#misc#hide ();
       view#coerce#misc#grab_focus ()
 
-    method show_find () =
-      mode <- Find;
+    method show (mode : mode) = match mode with
+    | `FIND -> self#show_find ()
+    | `REPLACE -> self#show_replace ()
+
+    method private show_find () =
+      mode <- `FIND;
       let search =
         if self#coerce#misc#visible then
           r_find_entry#text
@@ -194,8 +196,8 @@ class finder (view : GText.view) =
       replace_box#misc#hide ();
       find_entry#misc#grab_focus ()
 
-    method show_replace () =
-      mode <- Replace;
+    method private show_replace () =
+      mode <- `REPLACE;
       let search =
         if self#coerce#misc#visible then
           find_entry#text
@@ -217,6 +219,64 @@ class finder (view : GText.view) =
       let _ = r_previous_button#connect#clicked self#find_backward in
       let _ = r_replace_button#connect#clicked self#replace in
       let _ = r_replace_all_button#connect#clicked self#replace_all in
+      ()
+
+  end
+
+class info (coqtop : Coq.coqtop) (view : GText.view) (msg_view : Wg_MessageView.message_view) =
+
+  let widget = GPack.vbox () in
+  (* SearchAbout part *)
+  let query_box = GPack.hbox ~packing:widget#add () in
+  let _ =
+    GMisc.label ~text:"SearchAbout:"
+      ~xalign:1.0
+      ~packing:query_box#pack ()
+  in
+  let find_entry = GEdit.entry
+    ~editable:true
+    ~packing:(query_box#pack ~expand:true)
+    ()
+  in
+  let next_button =
+    GButton.button
+      ~label:"_Go"
+      ~use_mnemonic:true
+(*       ~stock:`GO_DOWN *)
+      ~packing:query_box#pack
+      ()
+  in
+
+
+  object (self)
+    method coerce = widget#coerce
+
+    method private get_selected_word () =
+      let start = view#buffer#get_iter `INSERT in
+      let stop = view#buffer#get_iter `SEL_BOUND in
+      view#buffer#get_text ~start ~stop ()
+
+    method hide () =
+      widget#misc#hide ();
+      view#coerce#misc#grab_focus ()
+
+    method show () =
+      let search =
+        if self#coerce#misc#visible then find_entry#text
+        else
+          self#get_selected_word ()
+      in
+      find_entry#set_text search;
+      widget#misc#show ()
+
+    method private search () =
+      let search = find_entry#text in
+      let len = String.length search in
+      ()
+
+    initializer
+      let _ = self#hide () in
+      let _ = next_button#connect#clicked self#search in
       ()
 
   end

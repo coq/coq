@@ -30,6 +30,7 @@ module Message :
 sig
   val table : GText.tag_table
   val error : GText.tag
+  val item : GText.tag
 end
 
 val string_of_color : Gdk.color -> string

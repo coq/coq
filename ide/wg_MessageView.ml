@@ -11,6 +11,7 @@ class type message_view =
     inherit GObj.widget
     method clear : unit -> unit
     method push : Interface.message_level -> string -> unit
+    method buffer : GText.buffer
   end
 
 let message_view () : message_view =
@@ -34,5 +35,7 @@ let message_view () : message_view =
       in
       buffer#insert ~tags msg;
       buffer#insert ~tags "\n"
+
+    method buffer = buffer
 
   end

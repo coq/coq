@@ -38,6 +38,7 @@ module Message =
 struct
   let table = GText.tag_table ()
   let error = make_tag table ~name:"error" [`FOREGROUND "red"]
+  let item = make_tag table ~name:"item" [`WEIGHT `BOLD]
 end
 
 let string_of_color clr =

@@ -11,6 +11,7 @@ class type message_view =
     inherit GObj.widget
     method clear : unit -> unit
     method push : Interface.message_level -> string -> unit
+    method buffer : GText.buffer
   end
 
 val message_view : unit -> message_view

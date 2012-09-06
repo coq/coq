@@ -10,7 +10,6 @@ Editable_cells
 Config_parser
 Tags
 Wg_Notebook
-Wg_Find
 Config_lexer
 Utf8_convert
 Preferences
@@ -20,6 +19,7 @@ Coq
 Gtk_parsing
 Wg_ProofView
 Wg_MessageView
+Wg_Find
 Wg_ScriptView
 Coq_lex
 Coq_commands
