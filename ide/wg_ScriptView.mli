@@ -22,6 +22,8 @@ object
   method set_right_margin_position : int -> unit
   method show_right_margin : bool
   method set_show_right_margin : bool -> unit
+  method comment : unit -> unit
+  method uncomment : unit -> unit
 end
 
 val script_view : Coq.coqtop ->

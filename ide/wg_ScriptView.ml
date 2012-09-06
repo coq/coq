@@ -254,6 +254,80 @@ object (self)
     } in
     Gobject.set prop obj show
 
+  method comment () =
+    let rec get_line_start iter =
+      if iter#starts_line then iter
+      else get_line_start iter#backward_char
+    in
+    let (start, stop) =
+      if self#buffer#has_selection then
+        self#buffer#selection_bounds
+      else
+        let insert = self#buffer#get_iter `INSERT in
+        (get_line_start insert, insert#forward_to_line_end)
+    in
+      let stop_mark = self#buffer#create_mark ~left_gravity:false stop in
+      let () = self#buffer#begin_user_action () in
+      let was_inserted = self#buffer#insert_interactive ~iter:start "(* " in
+      let stop = self#buffer#get_iter_at_mark (`MARK stop_mark) in
+      let () = if was_inserted then ignore (self#buffer#insert_interactive ~iter:stop " *)") in
+      let () = self#buffer#end_user_action () in
+      self#buffer#delete_mark (`MARK stop_mark)
+
+  method uncomment () =
+    let rec get_left_iter depth (iter : GText.iter) =
+      let prev_close = iter#backward_search "*)" in
+      let prev_open = iter#backward_search "(*" in
+      let prev_object = match prev_close, prev_open with
+      | None, None | Some _, None -> `NONE
+      | None, Some (po, _) -> `OPEN po
+      | Some (co, _), Some (po, _) -> if co#compare po < 0 then `OPEN po else `CLOSE co
+      in
+      match prev_object with
+      | `NONE -> None
+      | `OPEN po ->
+        if depth <= 0 then Some po
+        else get_left_iter (pred depth) po
+      | `CLOSE co ->
+        get_left_iter (succ depth) co
+    in
+    let rec get_right_iter depth (iter : GText.iter) =
+      let next_close = iter#forward_search "*)" in
+      let next_open = iter#forward_search "(*" in
+      let next_object = match next_close, next_open with
+      | None, None | None, Some _ -> `NONE
+      | Some (_, co), None -> `CLOSE co
+      | Some (_, co), Some (_, po) ->
+        if co#compare po > 0 then `OPEN po else `CLOSE co
+      in
+      match next_object with
+      | `NONE -> None
+      | `OPEN po ->
+        get_right_iter (succ depth) po
+      | `CLOSE co ->
+        if depth <= 0 then Some co
+        else get_right_iter (pred depth) co
+    in
+    let insert = self#buffer#get_iter `INSERT in
+    let left_elt = get_left_iter 0 insert in
+    let right_elt = get_right_iter 0 insert in
+    match left_elt, right_elt with
+    | Some liter, Some riter ->
+      let stop_mark = self#buffer#create_mark ~left_gravity:false riter in
+      (* We remove one trailing/leading space if it exists *)
+      let lcontent = self#buffer#get_text ~start:liter ~stop:(liter#forward_chars 3) () in
+      let rcontent = self#buffer#get_text ~start:(riter#backward_chars 3) ~stop:riter () in
+      let llen = if lcontent = "(* " then 3 else 2 in
+      let rlen = if rcontent = " *)" then 3 else 2 in
+      (* Atomic operation for the user *)
+      let () = self#buffer#begin_user_action () in
+      let was_deleted = self#buffer#delete_interactive ~start:liter ~stop:(liter#forward_chars llen) () in
+      let riter = self#buffer#get_iter_at_mark (`MARK stop_mark) in
+      if was_deleted then ignore (self#buffer#delete_interactive ~start:(riter#backward_chars rlen) ~stop:riter ());
+      let () = self#buffer#end_user_action () in
+      self#buffer#delete_mark (`MARK stop_mark)
+    | _ -> ()
+
   initializer
     (* Install undo managing *)
     ignore (self#buffer#connect#insert_text ~callback:self#handle_insert);

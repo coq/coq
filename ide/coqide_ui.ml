@@ -118,6 +118,10 @@ let init () =
     <menuitem action='Locate' />
     <menuitem action='Whelp Locate' />
   </menu>
+  <menu name='Tools' action='Tools'>
+    <menuitem action='Comment' />
+    <menuitem action='Uncomment' />
+  </menu>
   <menu action='Compile'>
     <menuitem action='Compile buffer' />
     <menuitem action='Make' />

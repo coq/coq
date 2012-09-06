@@ -272,7 +272,7 @@ class info (coqtop : Coq.coqtop) (view : GText.view) (msg_view : Wg_MessageView.
     method private search () =
       let search = find_entry#text in
       let len = String.length search in
-      ()
+      ignore len
 
     initializer
       let _ = self#hide () in

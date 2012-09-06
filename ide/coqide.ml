@@ -1707,6 +1707,7 @@ let main files =
   let navigation_actions = GAction.action_group ~name:"Navigation" () in
   let tactics_actions = GAction.action_group ~name:"Tactics" () in
   let templates_actions = GAction.action_group ~name:"Templates" () in
+  let tools_actions = GAction.action_group ~name:"Tools" () in
   let queries_actions = GAction.action_group ~name:"Queries" () in
   let compile_actions = GAction.action_group ~name:"Compile" () in
   let windows_actions = GAction.action_group ~name:"Windows" () in
@@ -1773,6 +1774,8 @@ let main files =
   let query_shortcut s accel =
     GAction.add_action s ~label:("_"^s) ?accel ~callback:(query_callback s)
   in
+  let comment_f _ = session_notebook#current_term.script#comment () in
+  let uncomment_f _ = session_notebook#current_term.script#uncomment () in
   let add_complex_template (name, label, text, offset, len, key) =
     (* Templates/Lemma *)
     let callback _ =
@@ -1945,7 +1948,7 @@ let main files =
 	 19, 11, Some "T");
       add_complex_template
 	("Definition", "_Definition __", "Definition ident := .\n",
-	 6, 5, Some "D");
+	 6, 5, Some "E");
       add_complex_template
 	("Inductive", "_Inductive __", "Inductive ident : :=\n  | : .\n",
 	 14, 5, Some "I");
@@ -1967,6 +1970,11 @@ let main files =
       query_shortcut "About" (Some "F5");
       query_shortcut "Locate" None;
       query_shortcut "Whelp Locate" None;
+    ];
+    GAction.add_actions tools_actions [
+      GAction.add_action "Tools" ~label:"_Tools";
+      GAction.add_action "Comment" ~label:"_Comment" ~callback:comment_f ~accel:"<CTRL>D";
+      GAction.add_action "Uncomment" ~label:"_Uncomment" ~callback:uncomment_f ~accel:"<CTRL><SHIFT>D";
     ];
     GAction.add_actions compile_actions [
       GAction.add_action "Compile" ~label:"_Compile";
@@ -2029,6 +2037,7 @@ let main files =
     Coqide_ui.ui_m#insert_action_group navigation_actions 0;
     Coqide_ui.ui_m#insert_action_group tactics_actions 0;
     Coqide_ui.ui_m#insert_action_group templates_actions 0;
+    Coqide_ui.ui_m#insert_action_group tools_actions 0;
     Coqide_ui.ui_m#insert_action_group queries_actions 0;
     Coqide_ui.ui_m#insert_action_group compile_actions 0;
     Coqide_ui.ui_m#insert_action_group windows_actions 0;
