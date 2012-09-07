@@ -333,19 +333,15 @@ $(COQIDEBYTE): $(LINKIDE) | $(COQTOPBYTE)
 .PHONY: install-coqide install-ide-no install-ide-byte install-ide-opt
 .PHONY: install-ide-files install-ide-info install-im install-ide-devfiles
 
-install-coqide:: install-ide-$(HASCOQIDE) install-ide-files install-ide-info install-ide-devfiles
+ifeq ($(HASCOQIDE),no)
+install-coqide:
+else
+install-coqide: install-ide-bin install-ide-files install-ide-info install-ide-devfiles
+endif
 
-install-ide-no:
-
-install-ide-byte:
+install-ide-bin:
 	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQIDEBYTE) $(FULLBINDIR)
-	cd $(FULLBINDIR); ln -sf coqide.byte$(EXE) coqide$(EXE)
-
-install-ide-opt:
-	$(MKDIR) $(FULLBINDIR)
-	$(INSTALLBIN) $(COQIDEOPT) $(FULLBINDIR)
-	cd $(FULLBINDIR); ln -sf coqide.opt$(EXE) coqide$(EXE)
+	$(INSTALLBIN) $(COQIDE) $(FULLBINDIR)
 
 install-ide-devfiles:
 	$(MKDIR) $(FULLCOQLIB)
