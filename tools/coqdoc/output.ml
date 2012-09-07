@@ -126,9 +126,12 @@ let initialize_texmacs () =
 
 let token_tree_texmacs = ref (initialize_texmacs ())
 
+let token_tree_latex = ref Tokens.empty_ttree
+let token_tree_html = ref Tokens.empty_ttree
+
 let initialize_tex_html () =
   let if_utf8 = if !Cdglobals.utf8 then fun x -> Some x else fun _ -> None in
-    List.fold_right (fun (s,l,l') (tt,tt') ->
+  let (tree_latex, tree_html) = List.fold_right (fun (s,l,l') (tt,tt') ->
       (Tokens.ttree_add tt s l,
        match l' with None -> tt' | Some l' -> Tokens.ttree_add tt' s l'))
       [ "*" ,  "\\ensuremath{\\times}", if_utf8 "×";
@@ -151,10 +154,9 @@ let initialize_tex_html () =
 	"Π", "\\ensuremath{\\Pi}", if_utf8 "Π";
 	"λ", "\\ensuremath{\\lambda}", if_utf8 "λ";
 	(* "fun", "\\ensuremath{\\lambda}" ? *)
-      ] (Tokens.empty_ttree,Tokens.empty_ttree)
-
-let token_tree_latex = ref (fst (initialize_tex_html ()))
-let token_tree_html = ref (snd (initialize_tex_html ()))
+      ] (Tokens.empty_ttree,Tokens.empty_ttree) in
+  token_tree_latex := tree_latex;
+  token_tree_html  := tree_html
 
 let add_printing_token s (t1,t2) =
   (match t1 with None -> () | Some t1 ->
@@ -389,6 +391,7 @@ module Latex = struct
     last_was_in := false
 
   let initialize () =
+    initialize_tex_html ();
     Tokens.token_tree := token_tree_latex;
     Tokens.outfun := output_sublexer_string
 
@@ -667,6 +670,7 @@ module Html = struct
     Tokens.output_tagged_symbol_char tag c
 
   let initialize () =
+    initialize_tex_html();
     Tokens.token_tree := token_tree_html;
     Tokens.outfun := output_sublexer_string
 
