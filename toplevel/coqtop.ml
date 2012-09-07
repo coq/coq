@@ -106,7 +106,7 @@ let require_prelude () =
 let require_list = ref ([] : string list)
 let add_require s = require_list := s :: !require_list
 let require () =
-  if !load_init then require_prelude ();
+  if !load_init then silently require_prelude ();
   List.iter (fun s -> Library.require_library_from_file None s (Some false))
     (List.rev !require_list)
 
