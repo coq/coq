@@ -320,15 +320,25 @@ let interface_search flags =
   in
   let ans = ref [] in
   let print_function ref env constr =
-    let name = Names.string_of_id (Nametab.basename_of_global ref) in
-    let make_path = Names.string_of_id in
-    let path =
-      List.rev_map make_path (Names.repr_dirpath (Nametab.dirpath_of_global ref))
+    let fullpath = repr_dirpath (Nametab.dirpath_of_global ref) in
+    let qualid = Nametab.shortest_qualid_of_global Idset.empty ref in
+    let (shortpath, basename) = Libnames.repr_qualid qualid in
+    let shortpath = repr_dirpath shortpath in
+    (* [shortpath] is a suffix of [fullpath] and we're looking for the missing
+       prefix *)
+    let rec prefix full short accu = match full, short with
+    | _, [] ->
+      let full = List.rev_map string_of_id full in
+      (full, accu)
+    | _ :: full, m :: short ->
+      prefix full short (string_of_id m :: accu)
+    | _ -> assert false
     in
+    let (prefix, qualid) = prefix fullpath shortpath [string_of_id basename] in
     let answer = {
-      Interface.search_answer_full_path = path;
-      Interface.search_answer_base_name = name;
-      Interface.search_answer_type = string_of_ppcmds (pr_lconstr_env env constr);
+      Interface.coq_object_prefix = prefix;
+      Interface.coq_object_qualid = qualid;
+      Interface.coq_object_object = string_of_ppcmds (pr_lconstr_env env constr);
     } in
     ans := answer :: !ans;
   in

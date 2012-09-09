@@ -59,7 +59,7 @@ val mkcases : string -> string list list call
 val evars : evar list option call
 
 (** Search for objects satisfying the given search flags. *)
-val search : search_flags -> search_answer list call
+val search : search_flags -> string coq_object list call
 
 (** Retrieve the list of options of the current toplevel, together with their 
     state. *)
@@ -83,7 +83,7 @@ type handler = {
   evars : unit -> evar list option;
   hints : unit -> (hint list * hint) option;
   status : unit -> status;
-  search : search_flags -> search_answer list;
+  search : search_flags -> string coq_object list;
   get_options : unit -> (option_name * option_state) list;
   set_options : (option_name * option_value) list -> unit;
   inloadpath : string -> bool;

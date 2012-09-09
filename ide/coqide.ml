@@ -1744,10 +1744,9 @@ let main files =
       let results = match results with | Interface.Good l -> l | _ -> [] in
       let buf =  term.message_view#buffer in
       let insert result =
-        let basename = result.Interface.search_answer_base_name in
-        let path = result.Interface.search_answer_full_path in
-        let name = String.concat "." path ^ "." ^ basename in
-        let tpe = result.Interface.search_answer_type in
+        let qualid = result.Interface.coq_object_qualid in
+        let name = String.concat "." qualid in
+        let tpe = result.Interface.coq_object_object in
         buf#insert ~tags:[Tags.Message.item] name;
         buf#insert "\n";
         buf#insert tpe;

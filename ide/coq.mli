@@ -99,7 +99,7 @@ val evars : handle -> Interface.evar list option Interface.value
 val hints : handle -> (Interface.hint list * Interface.hint) option Interface.value
 val inloadpath : handle -> string -> bool Interface.value
 val mkcases : handle -> string -> string list list Interface.value
-val search : handle -> Interface.search_flags -> Interface.search_answer list Interface.value
+val search : handle -> Interface.search_flags -> string Interface.coq_object list Interface.value
 
 (** A specialized version of [raw_interp] dedicated to
     set/unset options. *)

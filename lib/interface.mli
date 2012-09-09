@@ -86,10 +86,14 @@ type search_constraint =
     the flag should be negated. *)
 type search_flags = (search_constraint * bool) list
 
-type search_answer = {
-  search_answer_full_path : string list;
-  search_answer_base_name : string;
-  search_answer_type : string;
+(** A named object in Coq. [coq_object_qualid] is the shortest path defined for 
+    the user. [coq_object_prefix] is the missing part to recover the fully 
+    qualified name, i.e [fully_qualified = coq_object_prefix + coq_object_qualid].
+    [coq_object_object] is the actual content of the object. *)
+type 'a coq_object = {
+  coq_object_prefix : string list;
+  coq_object_qualid : string list;
+  coq_object_object : 'a;
 }
 
 type coq_info = {

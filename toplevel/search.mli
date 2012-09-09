@@ -30,7 +30,7 @@ val search_about  :
   (bool * glob_search_about_item) list -> dir_path list * bool -> std_ppcmds
 
 val interface_search : (Interface.search_constraint * bool) list ->
-  Interface.search_answer list
+  string Interface.coq_object list
 
 (** The filtering function that is by standard search facilities.
    It can be passed as argument to the raw search functions. *)

@@ -61,7 +61,12 @@ let get_completion (buffer : GText.buffer) coqtop w =
     let query handle = match Coq.search handle flags with
     | Interface.Good l ->
       let fold accu elt =
-        Proposals.add elt.Interface.search_answer_base_name accu
+        let rec last accu = function
+        | [] -> accu
+        | [basename] -> Proposals.add basename accu
+        | _ :: l -> last accu l
+        in
+        last accu elt.Interface.coq_object_qualid
       in
       ans := (List.fold_left fold accu l)
     | _ -> ()
