@@ -255,7 +255,9 @@ and check_same_fix_binder bl1 bl2 =
           check_same_binder ([na1],default_binder_kind,def1) ([na2],default_binder_kind,def2)
       | _ -> failwith "not same binder") bl1 bl2
 
-let is_same_type c d = try let () = check_same_type c d in true with Failure _ -> false
+let is_same_type c d =
+  try let () = check_same_type c d in true
+  with Failure _ | Invalid_argument _ -> false
 
 (**********************************************************************)
 (* mapping patterns to cases_pattern_expr                                *)
