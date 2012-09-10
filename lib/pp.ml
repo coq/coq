@@ -110,21 +110,21 @@ let utf8_length s =
   !cnt
 
 (* formatting commands *)
-let str s = [< 'Ppcmd_print (utf8_length s,s) >]
-let stras (i,s) = [< 'Ppcmd_print (i,s) >]
-let brk (a,b) = [< 'Ppcmd_print_break (a,b) >]
-let tbrk (a,b) = [< 'Ppcmd_print_tbreak (a,b) >]
-let tab () = [< 'Ppcmd_set_tab >]
-let fnl () = [< 'Ppcmd_force_newline >]
-let pifb () = [< 'Ppcmd_print_if_broken >]
-let ws n = [< 'Ppcmd_white_space n >]
-let comment n = [< ' Ppcmd_comment n >]
+let str s = Stream.of_list [Ppcmd_print (utf8_length s,s)]
+let stras (i,s) = Stream.of_list [Ppcmd_print (i,s)]
+let brk (a,b) = Stream.of_list [Ppcmd_print_break (a,b)]
+let tbrk (a,b) = Stream.of_list [Ppcmd_print_tbreak (a,b)]
+let tab () = Stream.of_list [Ppcmd_set_tab]
+let fnl () = Stream.of_list [Ppcmd_force_newline]
+let pifb () = Stream.of_list [Ppcmd_print_if_broken]
+let ws n = Stream.of_list [Ppcmd_white_space n]
+let comment n = Stream.of_list [Ppcmd_comment n]
 
 (* derived commands *)
-let mt () = [< >]
-let spc () = [< 'Ppcmd_print_break (1,0) >]
-let cut () = [< 'Ppcmd_print_break (0,0) >]
-let align () = [< 'Ppcmd_print_break (0,0) >]
+let mt () = Stream.of_list []
+let spc () = Stream.of_list [Ppcmd_print_break (1,0)]
+let cut () = Stream.of_list [Ppcmd_print_break (0,0)]
+let align () = Stream.of_list [Ppcmd_print_break (0,0)]
 let int n = str (string_of_int n)
 let real r = str (string_of_float r)
 let bool b = str (string_of_bool b)
@@ -132,29 +132,29 @@ let strbrk s =
   let rec aux p n =
     if n < String.length s then
       if s.[n] = ' ' then
-	if p=n then [< spc (); aux (n+1) (n+1) >]
-	else [< str (String.sub s p (n-p)); spc (); aux (n+1) (n+1) >]
-      else aux p (n+1)
-    else if p=n then [< >] else [< str (String.sub s p (n-p)) >]
+	if p = n then Stream.lapp spc (aux (n+1) (n+1))
+	else Stream.iapp (str (String.sub s p (n-p))) (Stream.lapp spc (aux (n+1) (n+1)))
+      else aux p (n + 1)
+    else if p = n then Stream.sempty else str (String.sub s p (n-p))
   in aux 0 0
 
 let ismt s = try let _ = Stream.empty s in true with Stream.Failure -> false
 
 (* boxing commands *)
-let h n s = [< 'Ppcmd_box(Pp_hbox n,s) >]
-let v n s = [< 'Ppcmd_box(Pp_vbox n,s) >]
-let hv n s = [< 'Ppcmd_box(Pp_hvbox n,s) >]
-let hov n s = [< 'Ppcmd_box(Pp_hovbox n,s) >]
-let t s = [< 'Ppcmd_box(Pp_tbox,s) >]
+let h n s = Stream.of_list [Ppcmd_box(Pp_hbox n,s)]
+let v n s = Stream.of_list [Ppcmd_box(Pp_vbox n,s)]
+let hv n s = Stream.of_list [Ppcmd_box(Pp_hvbox n,s)]
+let hov n s = Stream.of_list [Ppcmd_box(Pp_hovbox n,s)]
+let t s = Stream.of_list [Ppcmd_box(Pp_tbox,s)]
 
 (* Opening and closing of boxes *)
-let hb n = [< 'Ppcmd_open_box(Pp_hbox n) >]
-let vb n = [< 'Ppcmd_open_box(Pp_vbox n) >]
-let hvb n = [< 'Ppcmd_open_box(Pp_hvbox n) >]
-let hovb n = [< 'Ppcmd_open_box(Pp_hovbox n) >]
-let tb () = [< 'Ppcmd_open_box Pp_tbox >]
-let close () = [< 'Ppcmd_close_box >]
-let tclose () = [< 'Ppcmd_close_tbox >]
+let hb n = Stream.of_list [Ppcmd_open_box(Pp_hbox n)]
+let vb n = Stream.of_list [Ppcmd_open_box(Pp_vbox n)]
+let hvb n = Stream.of_list [Ppcmd_open_box(Pp_hvbox n)]
+let hovb n = Stream.of_list [Ppcmd_open_box(Pp_hovbox n)]
+let tb () = Stream.of_list [Ppcmd_open_box Pp_tbox]
+let close () = Stream.of_list [Ppcmd_close_box]
+let tclose () = Stream.of_list [Ppcmd_close_tbox]
 
 let (++) = Stream.iapp
 
@@ -290,25 +290,25 @@ let emacs_quote_end = String.make 1 (Char.chr 255)
 
 let emacs_quote strm =
   if !print_emacs then
-    [< str emacs_quote_start; hov 0 strm; str emacs_quote_end >]
+    Stream.iapp (str emacs_quote_start) (Stream.iapp (hov 0 strm) (str emacs_quote_end))
   else hov 0 strm
 
 
 (* pretty printing functions WITHOUT FLUSH *)
 let pp_with ft strm =
-  pp_dirs ft [< 'Ppdir_ppcmds strm >]
+  pp_dirs ft (Stream.ising (Ppdir_ppcmds strm))
 
 let ppnl_with ft strm =
-  pp_dirs ft [< 'Ppdir_ppcmds [< strm ; 'Ppcmd_force_newline >] >]
+  pp_dirs ft (Stream.ising (Ppdir_ppcmds (Stream.iapp strm (Stream.slazy fnl))))
 
 let pp_flush_with ft = Format.pp_print_flush ft
 
 (* pretty printing functions WITH FLUSH *)
 let msg_with ft strm =
-  pp_dirs ft [< 'Ppdir_ppcmds strm ; 'Ppdir_print_flush >]
+  pp_dirs ft (Stream.of_list [Ppdir_ppcmds strm ; Ppdir_print_flush])
 
 let msgnl_with ft strm =
-  pp_dirs ft [< 'Ppdir_ppcmds strm ; 'Ppdir_print_newline >]
+  pp_dirs ft (Stream.of_list [Ppdir_ppcmds strm ; Ppdir_print_newline])
 
 (* pretty printing functions WITHOUT FLUSH *)
 let pp        x = pp_with   !std_ft x
@@ -338,10 +338,11 @@ type level = Interface.message_level =
 
 type logger = level -> std_ppcmds -> unit
 
-let print_color s x =
-  if Flags.is_term_color () then
-    (str ("\027[" ^ s ^ "m")) ++ x ++ (str "\027[0m")
-  else x
+let print_color s x = x
+(* FIXME *)
+(*   if Flags.is_term_color () then *)
+(*     (str ("\027[" ^ s ^ "m")) ++ x ++ (str "\027[0m") *)
+(*   else x *)
 
 let make_body color info s =
   emacs_quote (print_color color (print_color "1" (hov 0 (info ++ spc () ++ s))))
