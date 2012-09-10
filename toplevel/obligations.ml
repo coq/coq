@@ -962,6 +962,7 @@ let add_mutual_definitions l ?tactic ?(kind=Global,Definition) ?(reduce=reduce)
 
 let admit_prog prg =
   let obls, rem = prg.prg_obligations in
+  let obls = Array.copy obls in
     Array.iteri 
       (fun i x ->
         match x.obl_body with
