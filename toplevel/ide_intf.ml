@@ -45,7 +45,7 @@ type handler = {
   evars : unit -> evar list option;
   hints : unit -> (hint list * hint) option;
   status : unit -> status;
-  search : search_flags -> search_answer list;
+  search : search_flags -> string coq_object list;
   get_options : unit -> (option_name * option_state) list;
   set_options : (option_name * option_value) list -> unit;
   inloadpath : string -> bool;
@@ -63,7 +63,7 @@ let goals : goals option call = Goal
 let evars : evar list option call = Evars
 let hints : (hint list * hint) option call = Hints
 let status : status call = Status
-let search flags : search_answer list call = Search flags
+let search flags : string coq_object list call = Search flags
 let get_options : (option_name * option_state) list call = GetOptions
 let set_options l : unit call = SetOptions l
 let inloadpath s : bool call = InLoadPath s
@@ -81,7 +81,7 @@ let abstract_eval_call handler c =
       | Evars -> Obj.magic (handler.evars () : evar list option)
       | Hints -> Obj.magic (handler.hints () : (hint list * hint) option)
       | Status -> Obj.magic (handler.status () : status)
-      | Search flags -> Obj.magic (handler.search flags : search_answer list)
+      | Search flags -> Obj.magic (handler.search flags : string coq_object list)
       | GetOptions -> Obj.magic (handler.get_options () : (option_name * option_state) list)
       | SetOptions opts -> Obj.magic (handler.set_options opts : unit)
       | InLoadPath s -> Obj.magic (handler.inloadpath s : bool)
@@ -232,20 +232,20 @@ let to_search_constraint xml = do_match xml "search_constraint"
   | "include_blacklist" -> Include_Blacklist
   | _ -> raise Marshal_error)
 
-let of_search_answer ans =
-  let path = of_list of_string ans.search_answer_full_path in
-  let name = of_string ans.search_answer_base_name in
-  let tpe = of_string ans.search_answer_type in
-  Element ("search_answer", [], [path; name; tpe])
+let of_coq_object f ans =
+  let prefix = of_list of_string ans.coq_object_prefix in
+  let qualid = of_list of_string ans.coq_object_qualid in
+  let obj = f ans.coq_object_object in
+  Element ("coq_object", [], [prefix; qualid; obj])
 
-let to_search_answer = function
-| Element ("search_answer", [], [path; name; tpe]) ->
-  let path = to_list to_string path in
-  let name = to_string name in
-  let tpe = to_string tpe in {
-    search_answer_full_path = path;
-    search_answer_base_name = name;
-    search_answer_type = tpe;
+let to_coq_object f = function
+| Element ("coq_object", [], [prefix; qualid; obj]) ->
+  let prefix = to_list to_string prefix in
+  let qualid = to_list to_string qualid in
+  let obj = f obj in {
+    coq_object_prefix = prefix;
+    coq_object_qualid = qualid;
+    coq_object_object = obj;
   }
 | _ -> raise Marshal_error
 
@@ -424,7 +424,7 @@ let of_answer (q : 'a call) (r : 'a value) =
   | Evars -> Obj.magic (of_option (of_list of_evar) : evar list option -> xml)
   | Hints -> Obj.magic (of_hints : (hint list * hint) option -> xml)
   | Status -> Obj.magic (of_status : status -> xml)
-  | Search _ -> Obj.magic (of_list of_search_answer : search_answer list -> xml)
+  | Search _ -> Obj.magic (of_list (of_coq_object of_string) : string coq_object list -> xml)
   | GetOptions -> Obj.magic (of_list (of_pair (of_list of_string) of_option_state) : (option_name * option_state) list -> xml)
   | SetOptions _ -> Obj.magic (fun _ -> Element ("unit", [], []))
   | InLoadPath _ -> Obj.magic (of_bool : bool -> xml)
@@ -451,7 +451,7 @@ let to_answer xml =
     | "option_value" -> Obj.magic (to_option_value elt : option_value)
     | "option_state" -> Obj.magic (to_option_state elt : option_state)
     | "coq_info" -> Obj.magic (to_coq_info elt : coq_info)
-    | "search_answer" -> Obj.magic (to_search_answer elt : search_answer)
+    | "coq_object" -> Obj.magic (to_coq_object convert elt : 'a coq_object)
     | _ -> raise Marshal_error
     end
   | _ -> raise Marshal_error
