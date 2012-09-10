@@ -116,6 +116,7 @@ let init () =
     <menuitem action='Print' />
     <menuitem action='About' />
     <menuitem action='Locate' />
+    <menuitem action='Print Assumptions' />
     <menuitem action='Whelp Locate' />
   </menu>
   <menu name='Tools' action='Tools'>

@@ -1968,6 +1968,7 @@ let main files =
       query_shortcut "Print" (Some "F4");
       query_shortcut "About" (Some "F5");
       query_shortcut "Locate" None;
+      query_shortcut "Print Assumptions" None;
       query_shortcut "Whelp Locate" None;
     ];
     GAction.add_actions tools_actions [
