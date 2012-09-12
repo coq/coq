@@ -22,3 +22,6 @@ val debug : bool ref
 
 val log : ?level:level -> string -> unit
 
+val coqide_config_home : unit -> string
+val coqide_config_dirs : unit -> string list
+val coqide_data_dirs : unit -> string list

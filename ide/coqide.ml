@@ -1408,7 +1408,7 @@ let main files =
   (try
      let icon_image = Filename.concat (List.find
        (fun x -> Sys.file_exists (Filename.concat x "coq.png"))
-       (Envars.xdg_data_dirs Ideutils.flash_info)) "coq.png" in
+       (Minilib.coqide_data_dirs ())) "coq.png" in
      let icon = GdkPixbuf.from_file icon_image in
      w#set_icon (Some icon)
    with _ -> ());
@@ -2151,7 +2151,7 @@ let main files =
       try
         let image = Filename.concat (List.find
           (fun x -> Sys.file_exists (Filename.concat x "coq.png"))
-          (Envars.xdg_data_dirs Ideutils.flash_info)) "coq.png" in
+          (Minilib.coqide_data_dirs ())) "coq.png" in
         let startup_image = GdkPixbuf.from_file image in
         dialog#set_logo startup_image
       with _ -> ()

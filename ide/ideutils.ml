@@ -296,7 +296,7 @@ let url_for_keyword =
 	let cin =
 	  try let index_urls = Filename.concat (List.find
             (fun x -> Sys.file_exists (Filename.concat x "index_urls.txt"))
-	    (Envars.xdg_config_dirs flash_info)) "index_urls.txt" in
+	    (Minilib.coqide_config_dirs ())) "index_urls.txt" in
 	    open_in index_urls
 	  with Not_found ->
 	    let doc_url = doc_url () in

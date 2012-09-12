@@ -9,28 +9,28 @@
 open Configwin
 open Printf
 
-let pref_file = Filename.concat (Envars.xdg_config_home Minilib.log) "coqiderc"
-let accel_file = Filename.concat (Envars.xdg_config_home Minilib.log) "coqide.keys"
+let pref_file = Filename.concat (Minilib.coqide_config_home ()) "coqiderc"
+let accel_file = Filename.concat (Minilib.coqide_config_home ()) "coqide.keys"
 let lang_manager = GSourceView2.source_language_manager ~default:true
 let () = lang_manager#set_search_path
-  ((Envars.xdg_data_dirs Minilib.log)@lang_manager#search_path)
+  ((Minilib.coqide_data_dirs ())@lang_manager#search_path)
 let style_manager = GSourceView2.source_style_scheme_manager ~default:true
 let () = style_manager#set_search_path
-  ((Envars.xdg_data_dirs Minilib.log)@style_manager#search_path)
+  ((Minilib.coqide_data_dirs ())@style_manager#search_path)
 
 let get_config_file name =
   let find_config dir = Sys.file_exists (Filename.concat dir name) in
-  let config_dir = List.find find_config (Envars.xdg_config_dirs Minilib.log) in
+  let config_dir = List.find find_config (Minilib.coqide_config_dirs ()) in
   Filename.concat config_dir name
 
 (* Small hack to handle v8.3 to v8.4 change in configuration file *)
 let loaded_pref_file =
   try get_config_file "coqiderc"
-  with Not_found -> Filename.concat (Envars.home Minilib.log) ".coqiderc"
+  with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) ".coqiderc"
 
 let loaded_accel_file =
   try get_config_file "coqide.keys"
-  with Not_found -> Filename.concat (Envars.home Minilib.log) ".coqide.keys"
+  with Not_found -> Filename.concat (Option.default "" (Glib.get_home_dir ())) ".coqide.keys"
 
 let mod_to_str (m:Gdk.Tags.modifier) =
   match m with
@@ -231,8 +231,8 @@ let current = {
   }
 
 let save_pref () =
-  if not (Sys.file_exists (Envars.xdg_config_home Minilib.log))
-  then Unix.mkdir (Envars.xdg_config_home Minilib.log) 0o700;
+  if not (Sys.file_exists (Minilib.coqide_config_home ()))
+  then Unix.mkdir (Minilib.coqide_config_home ()) 0o700;
   let () = try GtkData.AccelMap.save accel_file with _ -> () in
   let p = current in
 

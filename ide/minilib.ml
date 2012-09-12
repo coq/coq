@@ -38,3 +38,18 @@ let log ?(level = `DEBUG) msg =
     try Printf.eprintf "[%s] %s\n%!" prefix msg
     with _ -> ()
   end
+
+let coqify d = Filename.concat d "coq"
+
+let coqide_config_home () =
+  coqify (Glib.get_user_config_dir ())
+
+let coqide_data_dirs () =
+  coqify (Glib.get_user_data_dir ())
+  :: List.map coqify (Glib.get_system_data_dirs ())
+  @ Option.List.cons Coq_config.datadir []
+
+let coqide_config_dirs () =
+  coqide_config_home ()
+  :: List.map coqify (Glib.get_system_config_dirs ())
+  @ Option.List.cons Coq_config.configdir []

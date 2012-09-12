@@ -53,19 +53,19 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
   | ("-full"|"-opt") :: r ->
     process_cmd_line orig_dir (project_file,makefile,install,true) l r
   | "-impredicative-set" :: r ->
-    Minilib.log "Please now use \"-arg -impredicative-set\" instead of \"-impredicative-set\" alone to be more uniform.";
+    Pp.msg_warning (Pp.str "Please now use \"-arg -impredicative-set\" instead of \"-impredicative-set\" alone to be more uniform.");
     process_cmd_line orig_dir opts (Arg "-impredicative-set" :: l) r
   | "-no-install" :: r ->
-    Minilib.log "Option -no-install is deprecated. Use \"-install none\" instead";
+    Pp.msg_warning (Pp.(++) (Pp.str "Option -no-install is deprecated.") (Pp.(++) (Pp.spc ()) (Pp.str "Use \"-install none\" instead")));
     process_cmd_line orig_dir (project_file,makefile,NoInstall,opt) l r
   | "-install" :: d :: r ->
-    if install <> UnspecInstall then Minilib.log "Warning: -install sets more than once.";
+    if install <> UnspecInstall then Pp.msg_warning (Pp.str "-install sets more than once.");
     let install =
       match d with
 	| "user" -> UserInstall
 	| "none" -> NoInstall
 	| "global" -> TraditionalInstall
-	| _ -> Minilib.log (String.concat "" ["Warning: invalid option '"; d; "' passed to -install."]);
+	| _ -> Pp.msg_warning (Pp.(++) (Pp.str "invalid option '") (Pp.(++) (Pp.str d) (Pp.str "' passed to -install.")));
           install
     in
     process_cmd_line orig_dir (project_file,makefile,install,opt) l r
@@ -81,8 +81,8 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
     let file = CUnix.remove_path_dot (CUnix.correct_path file orig_dir) in
     let () = match project_file with
       | None -> ()
-      | Some _ -> Minilib.log
-	"Warning: Several features will not work with multiple project files."
+      | Some _ -> Pp.msg_warning (Pp.str
+	"Several features will not work with multiple project files.")
     in
     let (opts',l') = process_cmd_line (Filename.dirname file) (Some file,makefile,install,opt) l (parse file) in
       process_cmd_line orig_dir opts' l' r
@@ -96,7 +96,7 @@ let rec process_cmd_line orig_dir ((project_file,makefile,install,opt) as opts) 
 	let () = match makefile with
 	  |None -> ()
 	  |Some f ->
-	     Minilib.log ("Warning: Only one output file is genererated. "^f^" will not be.")
+	     Pp.msg_warning (Pp.(++) (Pp.str "Only one output file is genererated. ") (Pp.(++) (Pp.str f) (Pp.str " will not be.")))
 	in process_cmd_line orig_dir (project_file,Some file,install,opt) l r
       end
   | v :: "=" :: def :: r ->
@@ -182,7 +182,6 @@ let args_from_project file project_files default_name =
 	  if contains_file dir v_files
 	  then build_cmd_line i_inc r_inc args
 	  else let newdir = Filename.dirname dir in
-	    Minilib.log newdir;
 	    if dir = newdir then [] else find_project_file newdir
       with Sys_error s ->
 	let newdir = Filename.dirname dir in
