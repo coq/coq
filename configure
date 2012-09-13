@@ -250,7 +250,7 @@ if [ "$camlp5dir" != "" ]; then
     camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
 else
     case $CAMLTAG in
-        OCAML31*)
+        OCAML31*|OCAML4*)
             if [ -x "${CAMLLIB}/camlp5" ]; then
                 CAMLP4LIB=+camlp5
             elif [ -x "${CAMLLIB}/site-lib/camlp5" ]; then
