@@ -121,7 +121,7 @@ let add_syntax_obj whatfor sel =
 
 (* Tokens *)
 
-let cache_token (_,s) = Pcoq.lexer.Token.using ("", s)
+let cache_token (_,s) = Compat.using Pcoq.lexer ("", s)
 
 let (inToken, outToken) =
   declare_object {(default_object "TOKEN") with
@@ -224,22 +224,22 @@ let print_grammar univ entry =
     let u = get_univ univ in
     let typ = explicitize_entry (fst u) entry in
     let te,_,_ = get_constr_entry false typ in
-    Gram.Entry.print te
+    entry_print te
   else
     match entry with
       | "constr" | "operconstr" | "binder_constr" ->
 	  msgnl (str "Entry constr is");
-	  Gram.Entry.print Pcoq.Constr.constr;
+	  entry_print Pcoq.Constr.constr;
 	  msgnl (str "and lconstr is");
-	  Gram.Entry.print Pcoq.Constr.lconstr;
+	  entry_print Pcoq.Constr.lconstr;
 	  msgnl (str "where binder_constr is");
-	  Gram.Entry.print Pcoq.Constr.binder_constr;
+	  entry_print Pcoq.Constr.binder_constr;
 	  msgnl (str "and operconstr is");
-	  Gram.Entry.print Pcoq.Constr.operconstr;
+	  entry_print Pcoq.Constr.operconstr;
       | "pattern" ->
-	  Gram.Entry.print Pcoq.Constr.pattern
+	  entry_print Pcoq.Constr.pattern
       | "tactic" -> 
-	  Gram.Entry.print Pcoq.Tactic.simple_tactic
+	  entry_print Pcoq.Tactic.simple_tactic
       | _ -> error "Unknown or unprintable grammar entry"
 
 (* Parse a format (every terminal starting with a letter or a single

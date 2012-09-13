@@ -82,9 +82,10 @@ OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF)
 OCAMLDEP=ocamldep
 DEPFLAGS=-slash $(LOCALINCLUDES)
 
-OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
-OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
-CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo pa_ifdef.cmo q_MLast.cmo 
+OCAMLC_P4O=$(OCAMLC) -rectypes -pp $(CAMLP4O) $(BYTEFLAGS)
+OCAMLOPT_P4O=$(OCAMLOPT) -rectypes -pp $(CAMLP4O) $(OPTFLAGS)
+CAMLP4EXTENSIONS=-I . pa_extend.cmo pa_extend_m.cmo q_MLast.cmo pa_macro.cmo
+CAMLP4OPTIONS=$(CAMLP4COMPAT) -D$(CAMLVERSION)
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
@@ -342,7 +343,7 @@ COQMKTOPCMO=$(CONFIG) scripts/tolink.cmo scripts/coqmktop.cmo
 
 $(COQMKTOP): $(COQMKTOPCMO)
 	$(SHOW)'OCAMLC -o $@'	
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom str.cma unix.cma \
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -o $@ -custom str.cma unix.cma \
           $(COQMKTOPCMO) $(OSDEPLIBS)
 
 scripts/tolink.ml: Makefile
@@ -370,7 +371,7 @@ COQCCMO=$(CONFIG) toplevel/usage.cmo scripts/coqc.cmo
 
 $(COQC): $(COQCCMO) $(COQTOPBYTE) $(BESTCOQTOP)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom unix.cma $(COQCCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -o $@ -custom unix.cma $(COQCCMO) $(OSDEPLIBS)
 
 clean::
 	rm -f scripts/tolink.ml
@@ -394,108 +395,108 @@ hightactics: $(HIGHTACTICS)
 
 lib/lib.cma: $(LIBREP)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(LIBREP)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -a -o $@ $(LIBREP)
 
 lib/lib.cmxa: $(LIBREP:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(LIBREP:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -a -o $@ $(LIBREP:.cmo=.cmx)
 
 kernel/kernel.cma: $(KERNEL)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(KERNEL)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -a -o $@ $(KERNEL)
 
 kernel/kernel.cmxa: $(KERNEL:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(KERNEL:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -a -o $@ $(KERNEL:.cmo=.cmx)
 
 library/library.cma: $(LIBRARY)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(LIBRARY)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -a -o $@ $(LIBRARY)
 
 library/library.cmxa: $(LIBRARY:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(LIBRARY:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -a -o $@ $(LIBRARY:.cmo=.cmx)
 
 pretyping/pretyping.cma: $(PRETYPING)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(PRETYPING)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -a -o $@ $(PRETYPING)
 
 pretyping/pretyping.cmxa: $(PRETYPING:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(PRETYPING:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -a -o $@ $(PRETYPING:.cmo=.cmx)
 
 interp/interp.cma: $(INTERP)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(INTERP)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -a -o $@ $(INTERP)
 
 interp/interp.cmxa: $(INTERP:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(INTERP:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -a -o $@ $(INTERP:.cmo=.cmx)
 
 parsing/parsing.cma: $(PARSING)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(PARSING)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -a -o $@ $(PARSING)
 
 parsing/parsing.cmxa: $(PARSING:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(PARSING:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -a -o $@ $(PARSING:.cmo=.cmx)
 
 proofs/proofs.cma: $(PROOFS)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(PROOFS)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -a -o $@ $(PROOFS)
 
 proofs/proofs.cmxa: $(PROOFS:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(PROOFS:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -a -o $@ $(PROOFS:.cmo=.cmx)
 
 tactics/tactics.cma: $(TACTICS)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(TACTICS)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -a -o $@ $(TACTICS)
 
 tactics/tactics.cmxa: $(TACTICS:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(TACTICS:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -a -o $@ $(TACTICS:.cmo=.cmx)
 
 toplevel/toplevel.cma: $(TOPLEVEL)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(TOPLEVEL)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -a -o $@ $(TOPLEVEL)
 
 toplevel/toplevel.cmxa: $(TOPLEVEL:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(TOPLEVEL:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -a -o $@ $(TOPLEVEL:.cmo=.cmx)
 
 parsing/highparsing.cma: $(HIGHPARSING)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(HIGHPARSING)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -a -o $@ $(HIGHPARSING)
 
 parsing/highparsing.cmxa: $(HIGHPARSING:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHPARSING:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -a -o $@ $(HIGHPARSING:.cmo=.cmx)
 
 tactics/hightactics.cma: $(HIGHTACTICS) $(USERTACCMO)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(HIGHTACTICS) $(USERTACCMO)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -a -o $@ $(HIGHTACTICS) $(USERTACCMO)
 
 tactics/hightactics.cmxa: $(HIGHTACTICS:.cmo=.cmx) $(USERTACCMO:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHTACTICS:.cmo=.cmx) \
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -a -o $@ $(HIGHTACTICS:.cmo=.cmx) \
 		$(USERTACCMO:.cmo=.cmx)
 
 contrib/contrib.cma: $(CONTRIB)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(CONTRIB)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -a -o $@ $(CONTRIB)
 
 contrib/contrib.cmxa: $(CONTRIB:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(CONTRIB:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -a -o $@ $(CONTRIB:.cmo=.cmx)
 
 parsing/highparsingnew.cma: $(HIGHPARSINGNEW)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(HIGHPARSINGNEW)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -a -o $@ $(HIGHPARSINGNEW)
 
 parsing/highparsingnew.cmxa: $(HIGHPARSINGNEW:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHPARSINGNEW:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -a -o $@ $(HIGHPARSINGNEW:.cmo=.cmx)
 
 ###########################################################################
 # CoqIde special targets
@@ -558,32 +559,32 @@ $(COQIDE):
 
 ide/%.cmo: ide/%.ml
 	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(HIDE)$(OCAMLC) -rectypes $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
 ide/%.cmi: ide/%.mli
 	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(HIDE)$(OCAMLC) -rectypes $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
 ide/%.cmx: ide/%.ml
 	$(SHOW)'OCAMLOPT  $<'	
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
+	$(HIDE)$(OCAMLOPT) -rectypes $(COQIDEFLAGS) $(OPTFLAGS) -c $<
 
 ide/utils/%.cmo: ide/utils/%.ml
 	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(HIDE)$(OCAMLC) -rectypes $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
 ide/utils/%.cmi: ide/utils/%.mli
 	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(HIDE)$(OCAMLC) -rectypes $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
 ide/utils/%.cmx: ide/utils/%.ml
 	$(SHOW)'OCAMLOPT  $<'	
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
+	$(HIDE)$(OCAMLOPT) -rectypes $(COQIDEFLAGS) $(OPTFLAGS) -c $<
 
 # Special target to select between whether lablgtk >= 2.6.0 or not
 ide/undo.cmi: ide/undo.mli
 	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) $(CAMLP4COMPAT) -intf" -c -intf $<
+	$(HIDE)$(OCAMLC) -rectypes $(COQIDEFLAGS) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) $(CAMLP4COMPAT) -intf" -c -intf $<
 
 clean::
 	rm -f ide/extract_index.ml ide/find_phrase.ml ide/highlight.ml
@@ -594,11 +595,11 @@ clean::
 
 ide/ide.cma: $(COQIDECMO)
 	$(SHOW)'OCAMLC -a -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(COQIDECMO)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -a -o $@ $(COQIDECMO)
 
 ide/ide.cmxa: $(COQIDECMO:.cmo=.cmx)
 	$(SHOW)'OCAMLOPT -a -o $@'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(COQIDECMO:.cmo=.cmx)
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -a -o $@ $(COQIDECMO:.cmo=.cmx)
 
 # install targets
 
@@ -672,12 +673,12 @@ PARSERCMX= $(PARSERREQUIRESCMX) $(PARSERCODE:.cmo=.cmx)
 
 bin/parser$(EXE): $(PARSERCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) -linkall -custom -cclib -lunix $(OPTFLAGS) -o $@ \
+	$(HIDE)$(OCAMLC) -rectypes -linkall -custom -cclib -lunix $(OPTFLAGS) -o $@ \
 	  dynlink.cma $(CMA) $(PARSERCMO)
 
 bin/parser.opt$(EXE): $(PARSERCMX)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) -linkall -cclib -lunix $(OPTFLAGS) -o $@ \
+	$(HIDE)$(OCAMLOPT) -rectypes -linkall -cclib -lunix $(OPTFLAGS) -o $@ \
 	  $(CMXA) $(PARSERCMX)
 
 INTERFACEVO=
@@ -1062,7 +1063,7 @@ COQDEPCMO=config/coq_config.cmo tools/coqdep_lexer.cmo tools/coqdep.cmo
 
 $(COQDEP): $(COQDEPCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ unix.cma $(COQDEPCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -custom -o $@ unix.cma $(COQDEPCMO) $(OSDEPLIBS)
 
 beforedepend:: tools/coqdep_lexer.ml $(COQDEP)
 
@@ -1070,23 +1071,23 @@ GALLINACMO=tools/gallina_lexer.cmo tools/gallina.cmo
 
 $(GALLINA): $(GALLINACMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ $(GALLINACMO)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -custom -o $@ $(GALLINACMO)
 
 beforedepend:: tools/gallina_lexer.ml
 
 $(COQMAKEFILE): tools/coq_makefile.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coq_makefile.cmo
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -custom -o $@ tools/coq_makefile.cmo
 
 $(COQTEX): tools/coq-tex.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma tools/coq-tex.cmo
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -custom -o $@ str.cma tools/coq-tex.cmo
 
 beforedepend:: tools/coqwc.ml
 
 $(COQWC): tools/coqwc.cmo
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coqwc.cmo
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -custom -o $@ tools/coqwc.cmo
 
 beforedepend:: tools/coqdoc/pretty.ml tools/coqdoc/index.ml
 
@@ -1096,7 +1097,7 @@ COQDOCCMO=$(CONFIG) tools/coqdoc/alpha.cmo tools/coqdoc/index.cmo \
 
 $(COQDOC): $(COQDOCCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma unix.cma $(COQDOCCMO)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -custom -o $@ str.cma unix.cma $(COQDOCCMO)
 
 clean::
 	rm -f tools/coqdep_lexer.ml tools/gallina_lexer.ml
@@ -1115,7 +1116,7 @@ MINICOQ=bin/minicoq$(EXE)
 
 $(MINICOQ): $(MINICOQCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
 
 ###########################################################################
 # Installation
@@ -1310,7 +1311,7 @@ GRAMMARCMO=$(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
 
 parsing/grammar.cma: $(GRAMMARCMO)
 	$(SHOW)'OCAMLC -a $@'   
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
 
 clean::
 	rm -f parsing/grammar.cma
@@ -1335,19 +1336,19 @@ ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
 
 toplevel/mltop.cmo: toplevel/mltop.byteml
 	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -c -impl $< -o $@
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -c -impl $< -o $@
 
 toplevel/mltop.cmx: toplevel/mltop.optml
 	$(SHOW)'OCAMLOPT  $<'	
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -c -impl $< -o $@
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -c -impl $< -o $@
 
 toplevel/mltop.byteml: toplevel/mltop.ml4
 	$(SHOW)'CAMLP4O   $<'	
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -DByte -impl $< > $@ || rm -f $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENSIONS) pr_o.cmo -DByte -impl $< > $@ || rm -f $@
 
 toplevel/mltop.optml: toplevel/mltop.ml4
 	$(SHOW)'CAMLP4O   $<'	
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -impl $< > $@ || rm -f $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENSIONS) pr_o.cmo -impl $< > $@ || rm -f $@
 
 ML4FILES += toplevel/mltop.ml4
 
@@ -1384,11 +1385,11 @@ proofs/tacexpr.cmx: proofs/tacexpr.ml
 
 lib/compat.cmo: lib/compat.ml4
 	$(SHOW)'OCAMLC4  $<' 
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) -impl" -c -impl $<
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) $(CAMLP4OPTIONS) -impl" -c -impl $<
 
 lib/compat.cmx: lib/compat.ml4
 	$(SHOW)'OCAMLOPT  $<' 
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) -impl" -c -impl $<
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) $(CAMLP4OPTIONS) -impl" -c -impl $<
 
 # files compiled with camlp4 because of streams syntax
 
@@ -1406,11 +1407,11 @@ ML4FILES += lib/pp.ml4 			\
 
 #parsing/lexer.cmx: parsing/lexer.ml4
 #	$(SHOW)'OCAMLOPT4 $<'
-#	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` pr_o.cmo -impl" -c -impl $<
+#	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) pr_o.cmo `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 #parsing/lexer.cmo: parsing/lexer.ml4
 #	$(SHOW)'OCAMLC4   $<'
-#	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` pr_o.cmo -impl" -c -impl $<
+#	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) pr_o.cmo `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 
 
@@ -1422,15 +1423,15 @@ ML4FILES += lib/pp.ml4 			\
 
 .ml.cmo:
 	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -c $<
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
 
 .mli.cmi:
 	$(SHOW)'OCAMLC    $<'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -c $<
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
 
 .ml.cmx:
 	$(SHOW)'OCAMLOPT  $<'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -c $<
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
 
 .mll.ml:
 	$(SHOW)'OCAMLLEX  $<'
@@ -1446,11 +1447,11 @@ ML4FILES += lib/pp.ml4 			\
 
 .ml4.cmx:
 	$(SHOW)'OCAMLOPT4 $<'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) `$(CAMLP4DEPS) $<` $(CAML4OPTIONS) -impl" -c -impl $<
 
 .ml4.cmo:
 	$(SHOW)'OCAMLC4   $<'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENSIONS) `$(CAMLP4DEPS) $<` $(CAMLP4OPTIONS) -impl" -c -impl $<
 
 #.v.vo:
 #	$(BOOTCOQTOP) -compile $*

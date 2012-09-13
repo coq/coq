@@ -30,6 +30,29 @@ open Extend
    we unfreeze the state of the lexer. This restores the behaviour of the
    lexer. B.B. *)
 
+IFDEF CAMLP5 THEN 
+
+let lexer = {
+  Token.tok_func = Lexer.func;
+  Token.tok_using = Lexer.add_token;
+  Token.tok_removing = (fun _ -> ());
+  Token.tok_match = Token.default_match;
+  (* Token.parse = Lexer.tparse; *)
+  Token.tok_comm = None;
+  Token.tok_text = Lexer.token_text }
+
+module L =
+  struct
+    type te = string * string
+    let lexer = lexer
+  end
+
+(* The parser of Coq *)
+
+module G = Grammar.GMake(L)
+
+ELSE 
+
 let lexer = {
   Token.func = Lexer.func;
   Token.using = Lexer.add_token;
@@ -45,6 +68,8 @@ module L =
 (* The parser of Coq *)
 
 module G = Grammar.Make(L)
+
+END
 
 let grammar_delete e rls =
   List.iter
@@ -95,7 +120,7 @@ type ext_kind =
   | ByGrammar of
       grammar_object G.Entry.e * Gramext.position option *
       (string option * Gramext.g_assoc option *
-       (Token.t Gramext.g_symbol list * Gramext.g_action) list) list
+       (Compat.token Gramext.g_symbol list * Gramext.g_action) list) list
   | ByGEXTEND of (unit -> unit) * (unit -> unit)
 
 let camlp4_state = ref []
@@ -115,6 +140,11 @@ module Gram =
       errorlabstrm "Pcoq.delete_rule" (str "GDELETE_RULE forbidden.")
   end
 
+IFDEF CAMLP5_6_02_1 THEN
+let entry_print x = Gram.Entry.print !Pp_control.std_ft x
+ELSE
+let entry_print = Gram.Entry.print
+END
 
 let camlp4_verbosity silent f x =
   let a = !Gramext.warning_verbose in
@@ -457,6 +487,7 @@ let globalizer = ref (fun x -> failwith "No globalizer")
 let set_globalizer f = globalizer := f
 
 let define_ast_quotation default s (e:Coqast.t G.Entry.e) =
+  assert (s = "constr"); (* This is the only use and we can inline this *)
   (if default then
     GEXTEND Gram
       ast: [ [ "<<"; c = e; ">>" -> c ] ];
@@ -469,7 +500,7 @@ let define_ast_quotation default s (e:Coqast.t G.Entry.e) =
   (GEXTEND Gram
      GLOBAL: ast constr command tactic;
      ast:
-       [ [ "<:"; IDENT $s$; ":<"; c = e; ">>" -> c ] ];
+       [ [ "<:"; IDENT "constr"; ":<"; c = e; ">>" -> c ] ];
      (* Uncomment this to keep compatibility with old grammar syntax
      constr:
        [ [ "<:"; IDENT $s$; ":<"; c = e; ">>" -> c ] ];
@@ -618,7 +649,7 @@ let find_position forpat other assoc lev =
 	    (* Maybe this was (p,Left) and p occurs a second time *)
 	    if a = Gramext.LeftA then
 	      match l with
-		| (p,a)::_ as l' when p = n -> raise (Found a)
+		| (p,a)::_ when p = n -> raise (Found a)
 		| _ -> after := Some pa; pa::(n,create_assoc assoc)::l
 	    else
 	      (* This was not (p,LeftA) hence assoc is RightA *)
@@ -792,9 +823,9 @@ let rec symbol_of_production assoc from forpat typ =
     | ETConstrList (typ',[]) ->
         Gramext.Slist1 (symbol_of_production assoc from forpat (ETConstr typ'))
     | ETConstrList (typ',tkl) ->
-        Gramext.Slist1sep
-          (symbol_of_production assoc from forpat (ETConstr typ'),
-           Gramext.srules
+        Compat.slist1sep
+          (symbol_of_production assoc from forpat (ETConstr typ'))
+          (Gramext.srules
              [List.map (fun x -> Gramext.Stoken x) tkl,
               List.fold_right (fun _ v -> Gramext.action (fun _ -> v)) tkl
                 (Gramext.action (fun loc -> ()))])

@@ -49,9 +49,9 @@ let rec collect_metas = function
 (* Hash-consing *)
 module Hloc = Hashcons.Make(
   struct
-    type t = loc
+    type t = Compat.loc
     type u = unit
-    let equal (b1,e1) (b2,e2) = b1=b2 & e1=e2
+    let equal l1 l2 = (Compat.unloc l1 = Compat.unloc l2)
     let hash_sub () x = x
     let hash = Hashtbl.hash
   end)

@@ -24,7 +24,7 @@ done
 
 bytecamlc=ocamlc
 nativecamlc=ocamlopt
-camlp4o=camlp4o
+camlp4oexec=camlp4o
 coq_debug_flag=
 coq_profile_flag=
 best_compiler=opt
@@ -75,6 +75,9 @@ while : ; do
     -coqdocdir|--coqdocdir) coqdocdir_spec=yes
 	              coqdocdir="$2"
 		      shift;;
+    -camlp5dir|--camlp5dir)
+	                camlp5dir="$2"
+			shift;;
     -arch|--arch) arch_spec=yes
                   arch=$2
 		  shift;;
@@ -124,6 +127,8 @@ case $arch_spec in
 	    # cygwin returns a name of the form /cygdrive/c/... 
 	    # that coqc does not understand; need to transform it
 	    COQTOP=`echo $COQTOP | sed -e "s#.*cygdrive.\(.\)#\1:#"`
+	elif test -x /bin/uname ; then
+	    ARCH=`/bin/uname -s`
 	elif test -x /usr/bin/uname ; then
 	    ARCH=`/usr/bin/uname -s`
 	else
@@ -185,16 +190,21 @@ CAMLBIN=`dirname "$CAMLC"`
 CAMLVERSION=`"$CAMLC" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
 
 case $CAMLVERSION in
-  1.*|2.*|3.00|3.01|3.02|3.03|3.03alpha|3.04|3.05beta|3.05|3.08.0)
+  1.*|2.*|3.00|3.01|3.02|3.03|3.03alpha|3.04|3.05beta|3.05|3.06|3.08.0)
 	echo "Your version of Objective-Caml is $CAMLVERSION."
 	if [ "$CAMLVERSION" = "3.08.0" ] ; then
-	  echo "You need Objective-Caml 3.06 or later (to the exception of 3.08.0)!"
+          echo "You need Objective-Caml 3.07 or later (to the exception of 3.08.0)!"
 	else
-	  echo "You need Objective-Caml 3.06 or later!";
+          echo "You need Objective-Caml 3.07 or later!"
 	fi
 	echo "Configuration script failed!"
 	exit 1;;
-  3.06|3.07*|3.08*)
+  3.07*)
+        cflags="$cflags -DOCAML_307"
+	coq_inline_flag="-inline 0"
+	echo "You have Objective-Caml $CAMLVERSION. Good!";;
+  3.08*)
+	coq_inline_flag="-inline 0"
 	echo "You have Objective-Caml $CAMLVERSION. Good!";;
   ?*)
 	CAMLP4COMPAT="-loc loc" 
@@ -226,10 +236,50 @@ fi
 
 CAMLLIB=`"$CAMLC" -where`
 
-# Camlp4 (greatly simplified since merged with ocaml)
+# Camlp4 / Camlp5 configuration
+# Very basic for the moment: if camlp5 exists, we use it...
 
-CAMLP4BIN=${CAMLBIN}
-CAMLP4LIB=+camlp4
+if [ "$camlp5dir" != "" ]; then
+    CAMLP4=camlp5
+    CAMLP4LIB=$camlp5dir
+    if [ ! -f $camlp5dir/camlp5.cma ]; then
+        echo "Cannot find camlp5 libraries in $camlp5dir (camlp5.cma not found)"
+        echo "Configuration script failed!"
+        exit 1
+    fi
+    camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
+else
+    case $CAMLTAG in
+        OCAML31*)
+            if [ -x "${CAMLLIB}/camlp5" ]; then
+                CAMLP4LIB=+camlp5
+            elif [ -x "${CAMLLIB}/site-lib/camlp5" ]; then
+                CAMLP4LIB=+site-lib/camlp5
+            else
+	        echo "Objective Caml 3.10 found but no Camlp5 installed."
+	        echo "Configuration script failed!"
+	        exit 1
+            fi
+            CAMLP4=camlp5
+            camlp4oexec=`echo $camlp4oexec | sed -e 's/4/5/'`
+            ;;
+        *)
+            CAMLP4=camlp4
+            CAMLP4LIB=+camlp4
+            ;;
+    esac
+fi
+
+if [ "$CAMLP4" = "camlp5" ] && `$camlp4oexec -v 2>&1 | grep -q 5.00`; then
+    echo "Camlp5 version 5.00 not supported: versions 4.0x or >= 5.01 are OK."
+    echo "Configuration script failed!"
+    exit 1
+fi
+
+case $CAMLP4LIB in
+    +*) FULLCAMLP4LIB=$CAMLLIB/`echo $CAMLP4LIB | cut -b 2-`;;
+    *)  FULLCAMLP4LIB=$CAMLP4LIB;;
+esac
 
 # OS dependent libraries
 
@@ -249,32 +299,48 @@ esac
 
 # lablgtk2 and CoqIDE
 
-if [ "$coqide_spec" = "no" ] ; then
-if test -x "${CAMLLIB}/lablgtk2" ; then
-    if grep -q -w convert_with_fallback "${CAMLLIB}/lablgtk2/glib.mli" ; then
-	if test -f "${CAMLLIB}/threads/threads.cmxa" ; then
-            echo "LablGtk2 found, native threads: native CoqIde will be available"
-	    COQIDE=opt;
-        else
-            echo "LablGtk2 found, no native threads: bytecode CoqIde will be available"
-	    COQIDE=byte
-	fi
-    else
-        echo "LablGtk2 found but too old: CoqIde will not be available"
-        COQIDE=no;
-    fi
-else
-    echo "LablGtk2 not found: CoqIde will not be available"
-    COQIDE=no
-fi
+# -byte-only should imply -coqide byte, unless the user decides otherwise
+
+if [ "$best_compiler" = "byte" -a "$coqide_spec" = "no" ]; then 
+    coqide_spec=yes
+    COQIDE=byte
 fi
 
-if [ $COQIDE != no ] ; then
-  if grep "class view " "${CAMLLIB}/lablgtk2/gText.mli" | grep -q "\[>" ; then
-    LABLGTKGE26=yes;
-  else
-    LABLGTKGE26=no
-  fi
+# Which coqide is asked ? which one is possible ?
+
+if [ "$coqide_spec" = "yes" -a "$COQIDE" = "no" ]; then 
+    echo "CoqIde disabled as requested."
+else
+    case $lablgtkdir_spec in
+        no) 
+            if [ -f "${CAMLLIB}/lablgtk2/glib.mli" ]; then
+                lablgtkdir=${CAMLLIB}/lablgtk2
+            elif [ -f "${CAMLLIB}/site-lib/lablgtk2/glib.mli" ]; then
+                lablgtkdir=${CAMLLIB}/site-lib/lablgtk2
+            fi;;
+        yes)
+            if [ ! -f "$lablgtkdir/glib.mli" ]; then
+                echo "Incorrect LablGtk2 library (glib.mli not found)."
+                echo "Configuration script failed!"
+                exit 1
+            fi;;
+    esac
+    if [ "$lablgtkdir" = "" ]; then
+        echo "LablGtk2 not found: CoqIde will not be available."
+        COQIDE=no
+    elif [ -z "`grep -w convert_with_fallback "$lablgtkdir/glib.mli"`" ]; then
+        echo "LablGtk2 found but too old: CoqIde will not be available."
+        COQIDE=no;
+    elif [ "$coqide_spec" = "yes" -a "$COQIDE" = "byte" ]; then 
+        echo "LablGtk2 found, bytecode CoqIde will be used as requested."
+        COQIDE=byte
+    elif [ ! -f "${CAMLLIB}/threads/threads.cmxa" ]; then 
+        echo "LablGtk2 found, no native threads: bytecode CoqIde will be available."
+        COQIDE=byte
+    else 
+        echo "LablGtk2 found, native threads: native CoqIde will be available."
+        COQIDE=opt
+    fi
 fi
 
 # Tell on windows if ocaml understands cygwin or windows path formats
@@ -473,6 +539,7 @@ let bindir = "$ESCBINDIR"
 let coqlib = "$ESCLIBDIR"
 let coqtop = "$ESCCOQTOP"
 let camllib = "$ESCCAMLLIB"
+let camlp4 = "$CAMLP4"
 let camlp4lib = "$ESCCAMLP4LIB"
 let best = "$best_compiler"
 let arch = "$ARCH"
@@ -545,8 +612,8 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|OSDEPENDENTP4OPTFLAGS|$OSDEPP4OPTFLAGS|" \
     -e "s|CAMLTAG|$CAMLTAG|" \
     -e "s|CAMLP4BINDIRECTORY|$ESCCAMLP4BIN|" \
-    -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
-    -e "s|CAMLP4TOOL|$camlp4o|" \
+    -e "s|CAMLP4LIBDIRECTORY|$FULLCAMLP4LIB|"\
+    -e "s|CAMLP4TOOL|$camlp4oexec|" \
     -e "s|CAMLP4COMPATFLAGS|$CAMLP4COMPAT|" \
     -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
     -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
@@ -576,14 +643,20 @@ if test "$coq_debug_flag" = "-g" ; then
 fi
 
 ##################################################
-# Fixing lablgtk types
+# Fixing lablgtk types (before/after 2.6.0) 
 ####################################################
 
-if [ "$LABLGTKGE26" = "yes" ] ; then
-  cp -f ide/undo_lablgtk_ge26.mli ide/undo.mli;
-else
-  cp -f ide/undo_lablgtk_lt26.mli ide/undo.mli
-fi
+if [ ! "$COQIDE" = "no" ]; then 
+    if grep "class view " "$lablgtkdir/gText.mli" | grep -q "\[>" ; then
+       if grep -q "?accepts_tab:bool" "$lablgtkdir/gText.mli" ; then
+        cp -f ide/undo_lablgtk_ge212.mli ide/undo.mli
+       else
+	cp -f ide/undo_lablgtk_ge26.mli ide/undo.mli
+       fi
+    else
+	cp -f ide/undo_lablgtk_lt26.mli ide/undo.mli
+    fi
+fi  
 
 ##################################################
 # The end

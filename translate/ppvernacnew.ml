@@ -30,7 +30,7 @@ open Tacinterp
 
 let pr_spc_type = pr_sep_com spc pr_type
 
-let pr_lident (b,_ as loc,id) =
+let pr_lident (loc,id) =
   if loc <> dummy_loc then
     let (b,_) = unloc loc in
     pr_located pr_id (make_loc (b,b+String.length(string_of_id id)),id)

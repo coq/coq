@@ -35,7 +35,7 @@ let local_compute = [FBeta;FIota;FDeltaBut [];FZeta]
 
 let error_oldelim _ = error "OldElim no longer supported"
 
-let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
+let join_to_constr loc c2 = join_loc loc (Topconstr.constr_loc c2)
 
 (* Auxiliary grammar rules *)
 

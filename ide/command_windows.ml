@@ -69,9 +69,10 @@ object(self)
   val notebook = notebook
   method window = window
   method new_command ?command ?term () =
+    let appendp x = ignore (notebook#append_page x) in
     let frame = GBin.frame 
 		  ~shadow_type:`ETCHED_OUT
-		  ~packing:notebook#append_page
+		  ~packing:appendp
 		  ()
     in
     notebook#goto_page (notebook#page_num frame#coerce);
