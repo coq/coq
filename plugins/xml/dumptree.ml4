@@ -26,9 +26,7 @@ open Names;;
 
 exception Different
 
-let xmlstream s =
-  (* In XML we want to print the whole stream so we can force the evaluation *)
-  Stream.of_list (List.map xmlescape (Stream.npeek max_int s))
+let xmlstream s = xmlescape s
 ;;
 
 let thin_sign osign sign =

@@ -191,7 +191,7 @@ let declare_tactic loc s cl =
           $atomic_tactics$
       with e ->
 	Pp.msg_warning
-	  (Stream.iapp
+	  (Pp.app
 	     (Pp.str ("Exception in tactic extend " ^ $se$ ^": "))
 	     (Errors.print e));
       Egramml.extend_tactic_grammar $se$ $gl$;

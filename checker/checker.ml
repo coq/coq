@@ -342,12 +342,9 @@ let parse_args argv =
   try
     parse (List.tl (Array.to_list argv))
   with
-    | UserError(_,s) as e -> begin
-	try
-	  Stream.empty s; exit 1
-	with Stream.Failure ->
-	  fatal_error (explain_exn e)
-      end
+    | UserError(_, s) as e ->
+      if Pp.is_empty s then exit 1
+      else fatal_error (explain_exn e)
     | e -> begin fatal_error (explain_exn e) end
 
 

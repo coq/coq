@@ -58,7 +58,7 @@ let declare_command loc s nt cl =
 	try Vernacinterp.vinterp_add $se$ $funcl$
 	with e ->
 	  Pp.msg_warning
-	    (Stream.iapp
+	    (Pp.app
 	       (Pp.str ("Exception in vernac extend " ^ $se$ ^": "))
 	       (Errors.print e));
 	Egramml.extend_vernac_command_grammar $se$ $nt$ $gl$

@@ -16,9 +16,7 @@ val make_pp_nonemacs:unit -> unit
 
 (** Pretty-printers. *)
 
-type ppcmd
-
-type std_ppcmds = ppcmd Stream.t
+type std_ppcmds
 
 (** {6 Formatting commands} *)
 
@@ -36,13 +34,19 @@ val ismt : std_ppcmds -> bool
 val comment : int -> std_ppcmds
 val comments : ((int * int) * string) list ref
 
-(** {6 Concatenation. } *)
+(** {6 Manipulation commands} *)
+
+val app : std_ppcmds -> std_ppcmds -> std_ppcmds
+(** Concatenation. *)
 
 val (++) : std_ppcmds -> std_ppcmds -> std_ppcmds
-
-(** {6 Evaluation} *)
+(** Infix alias for [app]. *)
 
 val eval_ppcmds : std_ppcmds -> std_ppcmds
+(** Force computation. *)
+
+val is_empty : std_ppcmds -> bool
+(** Test emptyness. *)
 
 (** {6 Derived commands} *)
 
@@ -57,7 +61,7 @@ val qs : string -> std_ppcmds
 val quote : std_ppcmds -> std_ppcmds
 val strbrk : string -> std_ppcmds
 
-val xmlescape : ppcmd -> ppcmd
+val xmlescape : std_ppcmds -> std_ppcmds
 
 (** {6 Boxing commands} *)
 

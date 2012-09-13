@@ -73,6 +73,9 @@ type std_ppcmds = ppcmd Stream.t
 
 type 'a ppdirs = 'a ppdir_token Stream.t
 
+let is_empty s =
+  try Stream.empty s; true with Stream.Failure -> false
+
 (* Compute length of an UTF-8 encoded string
    Rem 1 : utf8_length <= String.length (equal if pure ascii)
    Rem 2 : if used for an iso8859_1 encoded string, the result is
@@ -158,6 +161,8 @@ let tclose () = Stream.of_list [Ppcmd_close_tbox]
 
 let (++) = Stream.iapp
 
+let app = Stream.iapp
+
 let rec eval_ppcmds l =
   let rec aux l =
     try
@@ -183,6 +188,9 @@ let qstring s = str ("\""^escape_string s^"\"")
 let qs = qstring
 let quote s = h 0 (str "\"" ++ s ++ str "\"")
 
+let stream_map f s =
+  Stream.of_list (List.map f (Stream.npeek max_int s))
+
 let rec xmlescape ppcmd =
   let rec escape what withwhat (len, str) =
     try
@@ -199,10 +207,11 @@ let rec xmlescape ppcmd =
         Ppcmd_print (escape '"' "&quot;"
           (escape '<' "&lt;" (escape '&' "&amp;" (len, str))))
       (* In XML we always print whole content so we can npeek the whole stream *)
-    | Ppcmd_box (x, str) -> Ppcmd_box (x, Stream.of_list
-        (List.map xmlescape (Stream.npeek max_int str)))
+    | Ppcmd_box (x, str) ->
+      Ppcmd_box (x, stream_map xmlescape str)
     | x -> x
 
+let xmlescape = stream_map xmlescape
 
 (* This flag tells if the last printed comment ends with a newline, to
   avoid empty lines *)

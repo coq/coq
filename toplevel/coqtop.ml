@@ -317,12 +317,9 @@ let parse_args arglist =
   try
     parse arglist
   with
-    | UserError(_,s) as e -> begin
-	try
-	  Stream.empty s; exit 1
-	with Stream.Failure ->
-	  fatal_error (Errors.print e)
-      end
+    | UserError(_, s) as e ->
+      if is_empty s then exit 1
+      else fatal_error (Errors.print e)
     | e -> fatal_error (Errors.print e)
 
 let init arglist =
