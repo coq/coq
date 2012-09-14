@@ -108,8 +108,6 @@ type ('constr, 'types) kind_of_term =
    -rectypes of the Caml compiler to be set *)
 type constr = (constr,constr) kind_of_term
 
-type strategy = types option
-
 type existential = existential_key * constr array
 type rec_declaration = name array * constr array * constr array
 type fixpoint = (int array * int) * rec_declaration
@@ -649,10 +647,12 @@ let rec constr_ord m n=
 
 type types = constr
 
+type strategy = types option
+
 type named_declaration = identifier * constr option * types
 type rel_declaration = name * constr option * types
 
-let map_named_declaration f (id, v, ty) = (id, Option.map f v, f ty)
+let map_named_declaration f (id, (v : strategy), ty) = (id, Option.map f v, f ty)
 let map_rel_declaration = map_named_declaration
 
 let fold_named_declaration f (_, v, ty) a = f ty (Option.fold_right f v a)
