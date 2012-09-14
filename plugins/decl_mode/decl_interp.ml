@@ -138,7 +138,7 @@ let rec intern_bare_proof_instr globs = function
   | Pcast (id,typ) ->
       Pcast (id,intern_constr globs typ)
 
-let rec intern_proof_instr globs instr=
+let intern_proof_instr globs instr=
   {emph = instr.emph;
    instr = intern_bare_proof_instr globs instr.instr}
 
@@ -467,7 +467,7 @@ let rec interp_bare_proof_instr info (sigma:Evd.evar_map) (env:Environ.env) = fu
   | Pcast (id,typ) ->
       Pcast(id,interp_constr true sigma env typ)
 
-let rec interp_proof_instr info sigma env instr=
+let interp_proof_instr info sigma env instr=
   {emph = instr.emph;
    instr = interp_bare_proof_instr info sigma env instr.instr}
 

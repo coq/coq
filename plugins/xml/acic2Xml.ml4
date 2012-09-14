@@ -210,7 +210,7 @@ let param_attribute_of_params params =
 ;;
 
 let print_object uri ids_to_inner_sorts =
- let rec aux =
+ let aux =
   let module A = Acic in
   let module X = Xml in
     function

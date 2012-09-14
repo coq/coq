@@ -220,7 +220,7 @@ let pos_rel i r sz =
 (* non-terminating instruction (branch, raise, return, appterm)          *)
 (* in front of it.                                                       *)
 
-let rec discard_dead_code cont = cont
+let discard_dead_code cont = cont
 (*function
     [] -> []
   | (Klabel _ | Krestart ) :: _ as cont -> cont

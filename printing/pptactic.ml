@@ -122,7 +122,7 @@ let pr_with_constr prc = function
   | None -> mt ()
   | Some c -> spc () ++ hov 1 (str "with" ++ spc () ++ prc c)
 
-let rec pr_message_token prid = function
+let pr_message_token prid = function
   | MsgString s -> qs s
   | MsgInt n -> int n
   | MsgIdent id -> prid id

@@ -317,7 +317,7 @@ let compile_constant_body = Cbytegen.compile_constant_body
 
 exception Hyp_not_found
 
-let rec apply_to_hyp (ctxt,vals) id f =
+let apply_to_hyp (ctxt,vals) id f =
   let rec aux rtail ctxt vals =
     match ctxt, vals with
     | (idc,c,ct as d)::ctxt, v::vals ->
@@ -330,7 +330,7 @@ let rec apply_to_hyp (ctxt,vals) id f =
     | _, _ -> assert false
   in aux [] ctxt vals
 
-let rec apply_to_hyp_and_dependent_on (ctxt,vals) id f g =
+let apply_to_hyp_and_dependent_on (ctxt,vals) id f g =
   let rec aux ctxt vals =
     match ctxt,vals with
     | (idc,c,ct as d)::ctxt, v::vals ->

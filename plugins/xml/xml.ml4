@@ -55,7 +55,7 @@ let pp_ch strm channel =
       pp_r m s
   | [< >] -> ()
  and print_spaces m =
-  for i = 1 to m do fprint_string "  " done
+  for _i = 1 to m do fprint_string "  " done
  and fprint_string str =
   output_string channel str
  in

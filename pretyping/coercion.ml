@@ -75,7 +75,7 @@ let app_opt env evars f t =
 let pair_of_array a = (a.(0), a.(1))
 let make_name s = Name (id_of_string s)
 
-let rec disc_subset x =
+let disc_subset x =
   match kind_of_term x with
   | App (c, l) ->
       (match kind_of_term c with
@@ -102,7 +102,7 @@ let lift_args n sign =
   in
     liftrec (List.length sign) sign
 
-let rec mu env isevars t =
+let mu env isevars t =
   let rec aux v =
     let v' = hnf env !isevars v in
       match disc_subset v' with
@@ -133,7 +133,7 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
       | [(na,b,t)], c -> (na,t), c
       | _ -> raise NoSubtacCoercion
     in
-    let rec coerce_application typ typ' c c' l l' =
+    let coerce_application typ typ' c c' l l' =
       let len = Array.length l in
       let rec aux tele typ typ' i co =
 	if i < len then
@@ -211,7 +211,7 @@ and coerce loc env isevars (x : Term.constr) (y : Term.constr)
 		       pair_of_array l, pair_of_array l'
 		     in
 		     let c1 = coerce_unify env a a' in
-		     let rec remove_head a c =
+		     let remove_head a c =
 		       match kind_of_term c with
 		       | Lambda (n, t, t') -> c, t'
 			   (*| Prod (n, t, t') -> t'*)

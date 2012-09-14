@@ -298,7 +298,7 @@ let it_destRLambda_or_LetIn_names n c =
       | GLetIn (_,na,_,c) -> aux (n-1) (na::nal) c
       | _ ->
           (* eta-expansion *)
-	  let rec next l =
+	  let next l =
 	    let x = next_ident_away (id_of_string "x") l in
 	    (* Not efficient but unusual and no function to get free glob_vars *)
 (* 	    if occur_glob_constr x c then next (x::l) else x in *)
@@ -557,7 +557,7 @@ and detype_binder isgoal bk avoid env na ty c =
   | BLambda -> GLambda (dl, na',Explicit,detype false avoid env ty, r)
   | BLetIn -> GLetIn (dl, na',detype false avoid env ty, r)
 
-let rec detype_rel_context where avoid env sign =
+let detype_rel_context where avoid env sign =
   let where = Option.map (fun c -> it_mkLambda_or_LetIn c sign) where in
   let rec aux avoid env = function
   | [] -> []

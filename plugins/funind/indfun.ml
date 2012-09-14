@@ -188,7 +188,7 @@ let build_newrecursive l =
   build_newrecursive l'
 
 (* Checks whether or not the mutual bloc is recursive *)
-let rec is_rec names =
+let is_rec names =
   let names = List.fold_right Idset.add names Idset.empty in
   let check_id id names =  Idset.mem id names in
   let rec lookup names = function
@@ -562,7 +562,7 @@ let decompose_prod_n_assum_constr_expr =
 open Constrexpr
 open Topconstr
 
-let rec make_assoc = List.fold_left2 (fun l a b ->
+let make_assoc = List.fold_left2 (fun l a b ->
 match a, b with
   |(_,Name na), (_, Name id) -> (na, id)::l
   |_,_ -> l

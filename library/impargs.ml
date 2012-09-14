@@ -695,7 +695,7 @@ let rec select_impargs_size n = function
   | (LessArgsThan p, impls)::l ->
       if n <= p then impls else select_impargs_size n l
 
-let rec select_stronger_impargs = function
+let select_stronger_impargs = function
   | [] -> [] (* Tolerance for (DefaultImpArgs,[]) *)
   | (_,impls)::_ -> impls
 

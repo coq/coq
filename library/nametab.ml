@@ -505,8 +505,8 @@ let global_inductive r =
 (********************************************************************)
 (* Registration of tables as a global table and rollback            *)
 
-type frozen = ccitab * dirtab * kntab * kntab
-    * globrevtab * mprevtab * knrevtab * knrevtab
+type frozen = ccitab * dirtab * mptab * kntab 
+    * globrevtab * mprevtab * mptrevtab * knrevtab
 
 let init () =
   the_ccitab := SpTab.empty;
@@ -518,9 +518,7 @@ let init () =
   the_modtyperevtab := MPmap.empty;
   the_tacticrevtab := KNmap.empty
 
-
-
-let freeze () =
+let freeze () : frozen =
   !the_ccitab,
   !the_dirtab,
   !the_modtypetab,

@@ -49,7 +49,7 @@ open Miscops
 
 exception Bound
 
-let rec nb_prod x =
+let nb_prod x =
   let rec count n c =
     match kind_of_term c with
         Prod(_,_,t) -> count (n+1) t
@@ -101,7 +101,7 @@ let string_of_inductive c =
   | _ -> raise Bound
   with Bound -> error "Bound head variable."
 
-let rec head_constr_bound t =
+let head_constr_bound t =
   let t = strip_outer_cast t in
   let _,ccl = decompose_prod_assum t in
   let hd,args = decompose_app ccl in
@@ -1535,7 +1535,7 @@ let generalize_dep ?(with_let=false) c gl =
   let env = pf_env gl in
   let sign = pf_hyps gl in
   let init_ids = ids_of_named_context (Global.named_context()) in
-  let rec seek d toquant =
+  let seek d toquant =
     if List.exists (fun (id,_,_) -> occur_var_in_decl env id d) toquant
       or dependent_in_decl c d then
       d::toquant

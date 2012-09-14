@@ -429,7 +429,7 @@ let is_prod_ident = function
   | Terminal s when is_letter s.[0] or s.[0] = '_' -> true
   | _ -> false
 
-let rec is_non_terminal = function
+let is_non_terminal = function
   | NonTerminal _ | SProdList _ -> true
   | _ -> false
 

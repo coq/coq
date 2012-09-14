@@ -420,7 +420,7 @@ let pol_sparse_to_term n2 p =
   aux p
 
 
-let rec remove_list_tail l i =
+let remove_list_tail l i =
   let rec aux l i =
     if l=[]
     then []

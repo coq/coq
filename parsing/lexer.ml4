@@ -389,10 +389,10 @@ let rec progress_further last nj tt cs =
 and update_longest_valid_token last nj tt cs =
   match tt.node with
   | Some _ as last' ->
-      for i=1 to nj do Stream.junk cs done;
-      progress_further last' 0 tt cs
+    stream_njunk nj cs;
+    progress_further last' 0 tt cs
   | None ->
-      progress_further last nj tt cs
+    progress_further last nj tt cs
 
 (* nj is the number of char peeked since last valid token *)
 (* n the number of char in utf8 block *)

@@ -566,7 +566,7 @@ module Html = struct
           printf "<h1 class=\"libtitle\">%s %s</h1>\n\n" ln (get_module true)
     end
 
-  let indentation n = for i = 1 to n do printf "&nbsp;" done
+  let indentation n = for _i = 1 to n do printf "&nbsp;" done
 
   let line_break () = printf "<br/>\n"
 
@@ -1128,7 +1128,7 @@ module Raw = struct
   let stop_quote () = printf "\""
 
   let indentation n =
-      for i = 1 to n do printf " " done
+      for _i = 1 to n do printf " " done
 
   let keyword s loc = raw_ident s
   let ident s loc = raw_ident s

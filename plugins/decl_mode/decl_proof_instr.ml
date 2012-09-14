@@ -1140,10 +1140,10 @@ let case_tac params pat_info hyps gls0 =
 
 (* end cases *)
 
-type instance_stack =
-    (constr option*(constr list) list) list
+type ('a, 'b) instance_stack =
+    ('b * (('a option * constr list) list)) list
 
-let initial_instance_stack ids =
+let initial_instance_stack ids : (_, _) instance_stack =
   List.map (fun id -> id,[None,[]]) ids
 
 let push_one_arg arg = function

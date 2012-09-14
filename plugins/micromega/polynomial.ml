@@ -315,7 +315,7 @@ module Vect =
 	if Big_int.compare_big_int res Big_int.zero_big_int = 0
 	then Big_int.unit_big_int else res
 
-    let rec mul z t =
+    let mul z t =
       match z with
 	| Int 0 -> []
 	| Int 1 -> t

@@ -764,7 +764,7 @@ let slice i a q =
 
 (* sugar strategy *)
 
-let rec addS x l =    l @ [x] (* oblige de mettre en queue sinon le certificat deconne *)
+let addS x l =    l @ [x] (* oblige de mettre en queue sinon le certificat deconne *)
 			  
 let addSsugar x l =
   if !sugar_flag

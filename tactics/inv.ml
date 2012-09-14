@@ -190,7 +190,7 @@ let make_inv_predicate env sigma indf realargs id status concl =
    and introduces generalized hypotheis.
    Precondition: t=(mkVar id) *)
 
-let rec dependent_hyps id idlist gl =
+let dependent_hyps id idlist gl =
   let rec dep_rec =function
     | [] -> []
     | (id1,_,_)::l ->

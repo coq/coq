@@ -692,7 +692,7 @@ let warn_install_at_root_directory
 
 let check_overlapping_include (_,inc_r) =
   let pwd = Sys.getcwd () in
-  let rec aux = function
+  let aux = function
     | [] -> ()
     | (pdir,_,abspdir)::l ->
 	if not (is_prefix pwd abspdir) then

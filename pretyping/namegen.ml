@@ -26,7 +26,7 @@ open Termops
 (**********************************************************************)
 (* Globality of identifiers *)
 
-let rec is_imported_modpath mp =
+let is_imported_modpath mp =
   let current_mp,_ = Lib.current_prefix() in
     match mp with
       | MPfile dp ->
@@ -313,7 +313,7 @@ let compute_displayed_let_name_in flags avoid na c =
   let fresh_id = next_name_for_display flags na avoid in
   (Name fresh_id, fresh_id::avoid)
 
-let rec rename_bound_vars_as_displayed avoid env c =
+let rename_bound_vars_as_displayed avoid env c =
   let rec rename avoid env c =
     match kind_of_term c with
     | Prod (na,c1,c2)  ->

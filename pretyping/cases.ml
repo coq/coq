@@ -183,7 +183,7 @@ let complete_history = glob_pattern_of_partial_history []
 
 (* This is to build glued pattern-matching history and alias bodies *)
 
-let rec pop_history_pattern = function
+let pop_history_pattern = function
   | Continuation (0, l, Top) ->
       Result (List.rev l)
   | Continuation (0, l, MakeConstructor (pci, rh)) ->

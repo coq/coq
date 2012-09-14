@@ -100,7 +100,7 @@ let _ = Errors.register_handler begin function
   | NoSuchProof -> Errors.error "No such proof."
   | _ -> raise Errors.Unhandled
 end
-let rec extract id l =
+let extract id l =
   let rec aux = function
     | ((id',_) as np)::l when id_ord id id' = 0 -> (np,l)
     | np::l -> let (np', l) = aux l in (np' , np::l)

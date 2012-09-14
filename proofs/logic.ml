@@ -147,7 +147,7 @@ let push_val y = function
 let push_item x v (m,l) =
   (Idmap.add x v m, (x,Idset.empty)::l)
 let mem_q x (m,_) = Idmap.mem x m
-let rec find_q x (m,q) =
+let find_q x (m,q) =
   let v = Idmap.find x m in
   let m' = Idmap.remove x m in
   let rec find accs acc = function

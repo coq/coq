@@ -800,7 +800,7 @@ let rec merge_ids ids ids' = match ids,ids' with
 
 let is_exn = function MLexn _ -> true | _ -> false
 
-let rec permut_case_fun br acc =
+let permut_case_fun br acc =
   let nb = ref max_int in
   Array.iter (fun (_,_,t) ->
 		let ids, c = collect_lams t in

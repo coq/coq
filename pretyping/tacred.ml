@@ -1061,7 +1061,7 @@ let reduce_to_ind_gen allow_product env sigma t =
 let reduce_to_quantified_ind x = reduce_to_ind_gen true x
 let reduce_to_atomic_ind x = reduce_to_ind_gen false x
 
-let rec find_hnf_rectype env sigma t =
+let find_hnf_rectype env sigma t =
   let ind,t = reduce_to_atomic_ind env sigma t in
   ind, snd (decompose_app t)
 

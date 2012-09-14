@@ -349,7 +349,7 @@ let is_int x = (x.den)=1
 ;;
 
 (* fraction = couple (num,den) *)
-let rec rational_to_fraction x= (x.num,x.den)
+let rational_to_fraction x= (x.num,x.den)
 ;;
 
 (* traduction -3 -> (Ropp (Rplus R1 (Rplus R1 R1)))
@@ -360,7 +360,7 @@ let int_to_real n =
    then get coq_R0
    else
      (let s=ref (get coq_R1) in
-      for i=1 to (nn-1) do s:=mkApp (get coq_Rplus,[|get coq_R1;!s|]) done;
+      for _i = 1 to (nn-1) do s:=mkApp (get coq_Rplus,[|get coq_R1;!s|]) done;
       if n<0 then mkApp (get coq_Ropp, [|!s|]) else !s)
 ;;
 (* -1/2 -> (Rmult (Ropp R1) (Rinv (Rplus R1 R1)))
@@ -376,9 +376,9 @@ let rational_to_real x =
 let tac_zero_inf_pos gl (n,d) =
    let tacn=ref (apply (get coq_Rlt_zero_1)) in
    let tacd=ref (apply (get coq_Rlt_zero_1)) in
-   for i=1 to n-1 do
+   for _i = 1 to n - 1 do
        tacn:=(tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacn); done;
-   for i=1 to d-1 do
+   for _i = 1 to d - 1 do
        tacd:=(tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacd); done;
    (tclTHENS (apply (get coq_Rlt_mult_inv_pos)) [!tacn;!tacd])
 ;;
@@ -390,9 +390,9 @@ let tac_zero_infeq_pos gl (n,d)=
                  then (apply (get coq_Rle_zero_zero))
                  else (apply (get coq_Rle_zero_1))) in
    let tacd=ref (apply (get coq_Rlt_zero_1)) in
-   for i=1 to n-1 do
+   for  _i = 1 to n - 1 do
        tacn:=(tclTHEN (apply (get coq_Rle_zero_pos_plus1)) !tacn); done;
-   for i=1 to d-1 do
+   for _i = 1 to d - 1 do
        tacd:=(tclTHEN (apply (get coq_Rlt_zero_pos_plus1)) !tacd); done;
    (tclTHENS (apply (get coq_Rle_mult_inv_pos)) [!tacn;!tacd])
 ;;

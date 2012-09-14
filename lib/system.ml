@@ -58,7 +58,7 @@ let where_in_path ?(warn=true) path filename =
 	  then (lpe,f) :: search rem
 	  else search rem
     | [] -> [] in
-  let rec check_and_warn l =
+  let check_and_warn l =
     match l with
       | [] -> raise Not_found
       | (lpe, f) :: l' ->

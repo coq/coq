@@ -558,7 +558,7 @@ let nf_betadeltaiota env sigma =
    du type checking :
      (fun x => x + x) M
 *)
-let rec whd_betaiota_preserving_vm_cast env sigma t =
+let whd_betaiota_preserving_vm_cast env sigma t =
    let rec stacklam_var subst t stack =
      match (decomp_stack stack,kind_of_term t) with
      | Some (h,stacktl), Lambda (_,_,c) ->

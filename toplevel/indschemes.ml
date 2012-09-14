@@ -353,7 +353,7 @@ let do_mutual_induction_scheme lnamedepindsort =
       lnamedepindsort
   in
   let listdecl = Indrec.build_mutual_induction_scheme env0 sigma lrecspec in
-  let rec declare decl fi lrecref =
+  let declare decl fi lrecref =
     let decltype = Retyping.get_type_of env0 Evd.empty decl in
     let decltype = refresh_universes decltype in
     let cst = define fi UserVerbose decl (Some decltype) in

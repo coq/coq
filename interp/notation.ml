@@ -392,7 +392,7 @@ let interp_prim_token =
 let interp_prim_token_cases_pattern_expr loc looked_for p =
   interp_prim_token_gen (Constrexpr_ops.raw_cases_pattern_expr_of_glob_constr looked_for) loc p
 
-let rec interp_notation loc ntn local_scopes =
+let interp_notation loc ntn local_scopes =
   let scopes = make_current_scopes local_scopes in
   try find_interpretation ntn (find_notation ntn) scopes
   with Not_found ->

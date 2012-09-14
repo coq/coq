@@ -639,7 +639,7 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref,pr_pattern) = function
   | ExtraRedExpr s -> str s
   | CbvVm o -> str "vm_compute" ++ pr_opt (pr_with_occurrences pr_pattern) o
 
-let rec pr_may_eval test prc prlc pr2 pr3 = function
+let pr_may_eval test prc prlc pr2 pr3 = function
   | ConstrEval (r,c) ->
       hov 0
         (str "eval" ++ brk (1,1) ++

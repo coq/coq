@@ -594,7 +594,7 @@ let compile name kind =
   in
   loop []
 
-let rec decompile af =
+let decompile af =
   let rec loop = function
     | ({v=v; c=n}::r) -> Oplus(Otimes(Oatom (unintern_id v),Oz n),loop r)
     | [] -> Oz af.constant
@@ -685,7 +685,7 @@ let rec shuffle p (t1,t2) =
 	  Oplus(t2,t1)
 	else [],Oplus(t1,t2)
 
-let rec shuffle_mult p_init k1 e1 k2 e2 =
+let shuffle_mult p_init k1 e1 k2 e2 =
   let rec loop p = function
     | (({c=c1;v=v1}::l1) as l1'),(({c=c2;v=v2}::l2) as l2') ->
 	if v1 = v2 then
@@ -742,7 +742,7 @@ let rec shuffle_mult p_init k1 e1 k2 e2 =
   in
   loop p_init (e1,e2)
 
-let rec shuffle_mult_right p_init e1 k2 e2 =
+let shuffle_mult_right p_init e1 k2 e2 =
   let rec loop p = function
     | (({c=c1;v=v1}::l1) as l1'),(({c=c2;v=v2}::l2) as l2') ->
 	if v1 = v2 then
@@ -827,7 +827,7 @@ let rec scalar p n = function
   | Oz i -> [focused_simpl p],Oz(n*i)
   | Oufo c -> [], Oufo (mkApp (Lazy.force coq_Zmult, [| mk_integer n; c |]))
 
-let rec scalar_norm p_init =
+let scalar_norm p_init =
   let rec loop p = function
     | [] -> [focused_simpl p_init]
     | (_::l) ->
@@ -838,7 +838,7 @@ let rec scalar_norm p_init =
   in
   loop p_init
 
-let rec norm_add p_init =
+let norm_add p_init =
   let rec loop p = function
     | [] -> [focused_simpl p_init]
     | _:: l ->
@@ -848,7 +848,7 @@ let rec norm_add p_init =
   in
   loop p_init
 
-let rec scalar_norm_add p_init =
+let scalar_norm_add p_init =
   let rec loop p = function
     | [] -> [focused_simpl p_init]
     | _ :: l ->

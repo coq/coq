@@ -62,7 +62,7 @@ let npop n =
  (* Since our history stack always contains an initial entry,
     it's invalid to try to completely empty it *)
  if n < 0 || n >= Stack.length history then raise Invalid
- else for i = 1 to n do pop () done
+ else for _i = 1 to n do pop () done
 
 let top () =
   try Stack.top history with Stack.Empty -> raise Invalid
@@ -107,7 +107,7 @@ let mark_command ast =
     [pnum] and finally going to state number [snum]. *)
 
 let raw_backtrack snum pnum naborts =
-  for i = 1 to naborts do Pfedit.delete_current_proof () done;
+  for _i = 1 to naborts do Pfedit.delete_current_proof () done;
   Pfedit.undo_todepth pnum;
   Lib.reset_label snum
 

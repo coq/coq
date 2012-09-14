@@ -816,7 +816,7 @@ let pivot v (c1,p1) (c2,p2) =
 	    
 exception FoundProof of  prf_rule
 
-let rec simpl_sys sys = 
+let simpl_sys sys = 
   List.fold_left (fun acc (c,p) -> 
 		    match check_sat (c,p) with
 		    | Tauto -> acc

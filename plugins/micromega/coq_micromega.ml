@@ -574,7 +574,7 @@ struct
 
   let pp_positive o x = Printf.fprintf o "%i" (CoqToCaml.positive x)
 
-  let rec dump_n x =
+  let dump_n x =
    match x with
     | Mc.N0 -> Lazy.force coq_N0
     | Mc.Npos p -> Term.mkApp(Lazy.force coq_Npos,[| dump_positive p|])
@@ -587,12 +587,12 @@ struct
 
   let pp_index o x = Printf.fprintf o "%i" (CoqToCaml.index x)
 
-  let rec pp_n o x =  output_string o  (string_of_int (CoqToCaml.n x))
+  let pp_n o x =  output_string o  (string_of_int (CoqToCaml.n x))
 
   let dump_pair t1 t2 dump_t1 dump_t2 (x,y) =
    Term.mkApp(Lazy.force coq_pair,[| t1 ; t2 ; dump_t1 x ; dump_t2 y|])
 
-  let rec parse_z term =
+  let parse_z term =
    let (i,c) = get_left_construct term in
     match i with
      | 1 -> Mc.Z0
@@ -777,7 +777,7 @@ struct
         Printf.fprintf o "0" in
     pp_cone o e
 
-  let rec dump_op = function
+  let dump_op = function
    | Mc.OpEq-> Lazy.force coq_OpEq
    | Mc.OpNEq-> Lazy.force coq_OpNEq
    | Mc.OpLe -> Lazy.force coq_OpLe

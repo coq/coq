@@ -68,7 +68,7 @@ module ST=struct
     with
 	Not_found -> ()
 
-  let rec delete_set st s = Intset.iter (delete st) s
+  let delete_set st s = Intset.iter (delete st) s
 
 end
 
@@ -781,7 +781,7 @@ let make_fun_table state =
     !funtab
 
 
-let rec do_match state res pb_stack =
+let do_match state res pb_stack =
   let mp=Stack.pop pb_stack in
     match mp.mp_stack with
 	[] ->

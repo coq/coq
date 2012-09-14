@@ -505,7 +505,7 @@ let expand_alias_once aliases x =
   | []  -> None
   | l -> Some (list_last l)
 
-let rec expansions_of_var aliases x =
+let expansions_of_var aliases x =
   match get_alias_chain_of aliases x with
   | [] -> [x]
   | a::_ as l when isRel a || isVar a -> x :: List.rev l
@@ -689,7 +689,7 @@ module Constrhash = Hashtbl.Make
 	  let hash = hash_constr
    end)
 
-let rec constr_list_distinct l =
+let constr_list_distinct l =
   let visited = Constrhash.create 23 in
   let rec loop = function
     | h::t ->

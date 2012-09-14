@@ -89,7 +89,7 @@ let list_try_find f =
   in
   try_find_f
 
-let rec list_fold_right_elements f l =
+let list_fold_right_elements f l =
   let rec aux = function
     | [] -> invalid_arg "list_fold_right_elements"
     | [x] -> x
@@ -142,7 +142,7 @@ let rec rec_gcd_list c l  =
   | [] -> c
   | e::l -> rec_gcd_list (gcd_big_int  c (numerator e)) l
 
-let rec gcd_list l =
+let gcd_list l =
  let res = rec_gcd_list zero_big_int l in
   if compare_big_int res zero_big_int = 0
   then unit_big_int else res

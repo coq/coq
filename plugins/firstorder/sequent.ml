@@ -124,7 +124,7 @@ let lookup item seq=
 	    | Some ((m2,t2) as c2)->id=id2 && m2>m && more_general c2 c in
 	  History.exists p seq.history
 
-let rec add_formula side nam t seq gl=
+let add_formula side nam t seq gl=
   match build_formula side nam t gl seq.cnt with
       Left f->
 	begin

@@ -21,7 +21,7 @@ module Make = functor(S : SearchProblem) -> struct
 
   type position = int list
 
-  let msg_with_position p pp =
+  let msg_with_position (p : position) pp =
     let rec pp_rec = function
       | [] -> mt ()
       | [i] -> int i
@@ -58,7 +58,7 @@ module Make = functor(S : SearchProblem) -> struct
 
   let empty = [],[]
 
-  let push x (h,t) = (x::h,t)
+  let push x (h,t) : _ queue = (x::h,t)
 
   let pop = function
     | h, x::t -> x, (h,t)

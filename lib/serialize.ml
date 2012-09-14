@@ -508,7 +508,7 @@ let pr_option_value = function
 | StringValue s -> s
 | BoolValue b -> if b then "true" else "false"
 
-let rec pr_setoptions opts =
+let pr_setoptions opts =
   let map (key, v) =
     let key = String.concat " " key in
     key ^ " := " ^ (pr_option_value v)

@@ -219,7 +219,7 @@ let push_named_rec_types (lna,typarray,_) env =
   Array.fold_left
     (fun e assum -> push_named assum e) env ctxt
 
-let rec lookup_rel_id id sign =
+let lookup_rel_id id sign =
   let rec lookrec = function
     | (n, (Anonymous,_,_)::l) -> lookrec (n+1,l)
     | (n, (Name id',b,t)::l)  -> if id' = id then (n,b,t) else lookrec (n+1,l)
@@ -839,7 +839,7 @@ let add_name n nl = n::nl
 let lookup_name_of_rel p names =
   try List.nth names (p-1)
   with Invalid_argument _ | Failure _ -> raise Not_found
-let rec lookup_rel_of_name id names =
+let lookup_rel_of_name id names =
   let rec lookrec n = function
     | Anonymous :: l  -> lookrec (n+1) l
     | (Name id') :: l -> if id' = id then n else lookrec (n+1) l
@@ -1056,7 +1056,7 @@ let rec mem_named_context id = function
   | [] -> false
 
 let clear_named_body id env =
-  let rec aux _ = function
+  let aux _ = function
   | (id',Some c,t) when id = id' -> push_named (id,None,t)
   | d -> push_named d in
   fold_named_context aux env ~init:(reset_context env)

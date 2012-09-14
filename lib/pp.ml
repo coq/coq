@@ -71,8 +71,6 @@ type ppcmd = (int*string) ppcmd_token
 
 type std_ppcmds = ppcmd Stream.t
 
-type 'a ppdirs = 'a ppdir_token Stream.t
-
 let is_empty s =
   try Stream.empty s; true with Stream.Failure -> false
 
@@ -175,7 +173,7 @@ let rec eval_ppcmds l =
   Stream.of_list (aux l)
 
 (* In new syntax only double quote char is escaped by repeating it *)
-let rec escape_string s =
+let escape_string s =
   let rec escape_at s i =
     if i<0 then s
     else if s.[i] == '"' then

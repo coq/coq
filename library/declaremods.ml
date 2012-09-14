@@ -1043,7 +1043,7 @@ let iter_all_segments f =
 	   List.iter apply_obj objects)
       !modtab_objects
   in
-  let rec apply_node = function
+  let apply_node = function
     | sp, Leaf o -> f sp o
     | _ -> ()
   in

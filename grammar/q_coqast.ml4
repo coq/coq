@@ -208,7 +208,7 @@ let rec mlexpr_of_argtype loc = function
       <:expr< Genarg.PairArgType $t1$ $t2$ >>
   | Genarg.ExtraArgType s -> <:expr< Genarg.ExtraArgType $str:s$ >>
 
-let rec mlexpr_of_may_eval f = function
+let mlexpr_of_may_eval f = function
   | Genredexpr.ConstrEval (r,c) ->
       <:expr< Genredexpr.ConstrEval $mlexpr_of_red_expr r$ $f c$ >>
   | Genredexpr.ConstrContext ((loc,id),c) ->

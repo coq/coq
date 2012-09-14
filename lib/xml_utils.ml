@@ -116,7 +116,7 @@ let buffer_attr (n,v) =
 	done;
 	Buffer.add_char tmp '"'
 
-let rec print_attr chan (n, v) =
+let print_attr chan (n, v) =
   Printf.fprintf chan " %s=\"" n;
   let l = String.length v in
   for p = 0 to l-1 do

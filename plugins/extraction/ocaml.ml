@@ -120,7 +120,7 @@ let pp_fields r fields = list_map_i (pp_one_field r) 0 fields
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
 
-let rec pp_type par vl t =
+let pp_type par vl t =
   let rec pp_rec par = function
     | Tmeta _ | Tvar' _ | Taxiom -> assert false
     | Tvar i -> (try pp_tvar (List.nth vl (pred i))

@@ -289,7 +289,7 @@ let print_pure_constr csr =
       print_string "Fix("; print_int i; print_string ")";
       print_cut();
       open_vbox 0;
-      let rec print_fix () =
+      let print_fix () =
         for k = 0 to (Array.length tl) - 1 do
 	  open_vbox 0;
 	  name_display lna.(k); print_string "/";
@@ -303,7 +303,7 @@ let print_pure_constr csr =
       print_string "CoFix("; print_int i; print_string ")";
       print_cut();
       open_vbox 0;
-      let rec print_fix () =
+      let print_fix () =
         for k = 0 to (Array.length tl) - 1 do
           open_vbox 1;
 	  name_display lna.(k);  print_cut(); print_string ":";

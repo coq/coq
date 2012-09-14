@@ -73,7 +73,7 @@ let e_check_branch_types env evdref ind cj (lfj,explft) =
       error_ill_formed_branch env cj.uj_val (ind,i+1) lfj.(i).uj_type explft.(i)
   done
 
-let rec max_sort l =
+let max_sort l =
   if List.mem InType l then InType else
   if List.mem InSet l then InSet else InProp
 

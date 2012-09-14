@@ -423,7 +423,7 @@ let generate_functional_principle
 exception Not_Rec
 
 let get_funs_constant mp dp =
-  let rec get_funs_constant const e : (Names.constant*int) array =
+  let get_funs_constant const e : (Names.constant*int) array =
     match kind_of_term ((strip_lam e)) with
       | Fix((_,(na,_,_))) ->
 	  Array.mapi

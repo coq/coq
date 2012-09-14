@@ -72,7 +72,7 @@ type flag = info * scheme
 (*s [flag_of_type] transforms a type [t] into a [flag].
   Really important function. *)
 
-let rec flag_of_type env t =
+let rec flag_of_type env t : flag =
   let t = whd_betadeltaiota env none t in
   match kind_of_term t with
     | Prod (x,t,c) -> flag_of_type (push_rel (x,None,t) env) c
@@ -844,7 +844,7 @@ and extract_fix env mle i (fi,ti,ci as recd) mlt =
 (* [decomp_lams_eta env c t] finds the number [n] of products in the type [t],
    and decompose the term [c] in [n] lambdas, with eta-expansion if needed. *)
 
-let rec decomp_lams_eta_n n m env c t =
+let decomp_lams_eta_n n m env c t =
   let rels = fst (splay_prod_n env none n t) in
   let rels = List.map (fun (id,_,c) -> (id,c)) rels in
   let rels',c = decompose_lam c in

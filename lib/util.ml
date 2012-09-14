@@ -548,7 +548,7 @@ let rec list_fold_left3 f accu l1 l2 l3 =
      a1
      []] *)
 
-let rec list_fold_right_and_left f l hd =
+let list_fold_right_and_left f l hd =
   let rec aux tl = function
     | [] -> hd
     | a::l -> let hd = aux (a::tl) l in f hd a tl
@@ -636,7 +636,7 @@ let list_uniquize l =
     | [] -> List.rev acc
   in aux [] l
 
-let rec list_distinct l =
+let list_distinct l =
   let visited = Hashtbl.create 23 in
   let rec loop = function
     | h::t ->
@@ -774,7 +774,7 @@ let rec list_skipn n l = match n,l with
   | _, [] -> failwith "list_skipn"
   | n, _::l -> list_skipn (pred n) l
 
-let rec list_skipn_at_least n l =
+let list_skipn_at_least n l =
   try list_skipn n l with Failure _ -> []
 
 let list_prefix_of prefl l =
@@ -852,7 +852,7 @@ let list_union_map f l acc =
    [list_cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]],
    and so on if there are more elements in the lists. *)
 
-let rec list_cartesian op l1 l2 =
+let list_cartesian op l1 l2 =
   list_map_append (fun x -> List.map (op x) l2) l1
 
 (* [list_cartesians] is an n-ary cartesian product: it iterates
@@ -874,12 +874,12 @@ let rec list_combine3 x y z =
   
 (* Keep only those products that do not return None *)
 
-let rec list_cartesian_filter op l1 l2 =
+let list_cartesian_filter op l1 l2 =
   list_map_append (fun x -> list_map_filter (op x) l2) l1
 
 (* Keep only those products that do not return None *)
 
-let rec list_cartesians_filter op init ll =
+let list_cartesians_filter op init ll =
   List.fold_right (list_cartesian_filter op) ll [init]
 
 (* Drop the last element of a list *)
@@ -1217,15 +1217,6 @@ let array_filter_along f filter v =
 let array_filter_with filter v =
   Array.of_list (list_filter_with filter (Array.to_list v))
 
-(* Stream *)
-
-let stream_nth n st =
-  try List.nth (Stream.npeek (n+1) st) n
-  with Failure _ -> raise Stream.Failure
-
-let stream_njunk n st =
-  for i = 1 to n do Stream.junk st done
-
 (* Matrices *)
 
 let matrix_transpose mat =
@@ -1247,7 +1238,7 @@ let iterate f =
   iterate_f
 
 let repeat n f x =
-  for i = 1 to n do f x done
+  let rec loop i = if i <> 0 then (f x; loop (i - 1)) in loop n
 
 let iterate_for a b f x =
   let rec iterate i v = if i > b then v else iterate (succ i) (f i v) in
@@ -1257,6 +1248,15 @@ let app_opt f x =
   match f with
   | Some f -> f x
   | None -> x
+
+(* Stream *)
+
+let stream_nth n st =
+  try List.nth (Stream.npeek (n+1) st) n
+  with Failure _ -> raise Stream.Failure
+
+let stream_njunk n st =
+  repeat n Stream.junk st
 
 (* Delayed computations *)
 

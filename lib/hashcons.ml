@@ -60,7 +60,6 @@ module Make(X:Comp) =
      *)
     module Htbl = Hashtbl.Make(
       struct type t=X.t
-             type u=X.u
              let hash=X.hash
              let equal x1 x2 = (*incr comparaison;*) X.equal x1 x2
       end)

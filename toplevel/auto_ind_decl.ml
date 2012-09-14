@@ -47,7 +47,7 @@ and aux = function
   if n > (List.length l) then failwith "quick_chop args"
   else kick_last (aux (n,l) )
 
-let rec deconstruct_type t =
+let deconstruct_type t =
   let l,r = decompose_prod t in
     (List.map (fun (_,b) -> b) (List.rev l))@[r]
 

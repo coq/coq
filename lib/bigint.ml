@@ -100,7 +100,7 @@ let normalize_neg n =
    input: an array with first bloc in [-base;base[ and others in [0;base[
    output: a canonical array *)
 
-let rec normalize n =
+let normalize n =
   if Array.length n = 0 then n
   else if n.(0) = -1 then normalize_neg n
   else if n.(0) = 0 then normalize_pos n
@@ -172,7 +172,7 @@ let sub n m =
   if d >= 0 then sub_to (Array.copy n) m d
   else let r = neg m in add_to r n (Array.length r - Array.length n)
 
-let rec mult m n =
+let mult m n =
   if m = zero or n = zero then zero else
   let l = Array.length m + Array.length n in
   let r = Array.create l 0 in

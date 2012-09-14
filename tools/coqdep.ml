@@ -20,7 +20,7 @@ let option_D = ref false
 let option_w = ref false
 let option_sort = ref false
 
-let rec warning_mult suf iter =
+let warning_mult suf iter =
   let tab = Hashtbl.create 151 in
   let check f d =
     begin try

@@ -179,7 +179,7 @@ let litteral_of_constr env sigma term=
 
 (* store all equalities from the context *)
 
-let rec make_prb gls depth additionnal_terms =
+let make_prb gls depth additionnal_terms =
   let env=pf_env gls in
   let sigma=sig_sig gls in
   let state = empty depth gls in

@@ -73,7 +73,7 @@ let mkAppliedInd (IndType ((ind,params), realargs)) =
 
 (* Does not consider imbricated or mutually recursive types *)
 let mis_is_recursive_subset listind rarg =
-  let rec one_is_rec rvec =
+  let one_is_rec rvec =
     List.exists
       (fun ra ->
         match dest_recarg ra with
@@ -242,7 +242,7 @@ let substnl_rel_context subst n sign =
 
 let substl_rel_context subst = substnl_rel_context subst 0
 
-let rec instantiate_context sign args =
+let instantiate_context sign args =
   let rec aux subst = function
   | (_,None,_)::sign, a::args -> aux (a::subst) (sign,args)
   | (_,Some b,_)::sign, args -> aux (substl subst b::subst) (sign,args)

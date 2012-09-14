@@ -63,7 +63,7 @@ let uninterp_ascii r =
     | GRef (_,k)::l when k = glob_false -> 2*(uninterp_bool_list (n-1) l)
     | _ -> raise Non_closed_ascii in
   try
-    let rec aux = function
+    let aux = function
     | GApp (_,GRef (_,k),l) when k = force glob_Ascii -> uninterp_bool_list 8 l
     | _ -> raise Non_closed_ascii in
     Some (aux r)

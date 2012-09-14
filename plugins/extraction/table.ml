@@ -67,7 +67,7 @@ let is_toplevel mp =
 let at_toplevel mp =
   is_modfile mp || is_toplevel mp
 
-let rec mp_length mp =
+let mp_length mp =
   let mp0 = current_toplevel () in
   let rec len = function
     | mp when mp = mp0 -> 1

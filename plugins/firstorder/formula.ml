@@ -77,7 +77,7 @@ type kind_of_formula=
   | Forall of constr*constr
   | Atom of constr
 
-let rec kind_of_formula gl term =
+let kind_of_formula gl term =
   let normalize=special_nf gl in
   let cciterm=special_whd gl term in
     match match_with_imp_term cciterm with

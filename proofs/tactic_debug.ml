@@ -104,7 +104,7 @@ let run_com inst =
 let run ini =
   if not ini then
   begin
-    for i=1 to 2 do
+    for _i = 1 to 2 do
       print_char (Char.chr 8);print_char (Char.chr 13)
     done;
     msg_tac_debug (str "Executed expressions: " ++ int !skipped ++ fnl())

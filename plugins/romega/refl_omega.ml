@@ -302,7 +302,7 @@ let omega_of_oformula env kind =
 
 (* \subsection{Omega vers Oformula} *)
 
-let rec oformula_of_omega env af =
+let oformula_of_omega env af =
   let rec loop = function
     | ({v=v; c=n}::r) ->
 	Oplus(Omult(unintern_omega env v,Oint n),loop r)
@@ -313,7 +313,7 @@ let app f v = mkApp(Lazy.force f,v)
 
 (* \subsection{Oformula vers COQ reel} *)
 
-let rec coq_of_formula env t =
+let coq_of_formula env t =
   let rec loop = function
   | Oplus (t1,t2) -> app Z.plus [| loop t1; loop t2 |]
   | Oopp t -> app Z.opp [| loop t |]
@@ -477,11 +477,11 @@ let rec negate = function
  | Oufo c -> do_list [], Oufo (Oopp c)
  | Ominus _ -> failwith "negate minus"
 
-let rec norm l = (List.length l)
+let norm l = (List.length l)
 
 (* \subsection{Mélange (fusion) de deux équations} *)
 (* \subsubsection{Version avec coefficients} *)
-let rec shuffle_path k1 e1 k2 e2 =
+let shuffle_path k1 e1 k2 e2 =
   let rec loop = function
       (({c=c1;v=v1}::l1) as l1'),
       (({c=c2;v=v2}::l2) as l2') ->

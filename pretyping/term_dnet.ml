@@ -53,7 +53,7 @@ struct
   type dconstr = dconstr t
 
   (* debug *)
-  let rec pr_dconstr f : 'a t -> std_ppcmds = function
+  let pr_dconstr f : 'a t -> std_ppcmds = function
     | DRel -> str "*"
     | DSort -> str "Sort"
     | DRef _ -> str "Ref"

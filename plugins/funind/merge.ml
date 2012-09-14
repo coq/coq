@@ -570,7 +570,7 @@ let rec merge_rec_hyps shift accrec
     | e::lt -> e :: merge_rec_hyps shift accrec lt filter_shift_stable
 
 
-let rec build_suppl_reccall (accrec:(name * glob_constr) list) concl2 shift =
+let build_suppl_reccall (accrec:(name * glob_constr) list) concl2 shift =
   List.map (fun (nm,tp) -> (nm,merge_app_unsafe tp concl2 shift)) accrec
 
 
@@ -761,7 +761,7 @@ let merge_constructor_id id1 id2 shift:identifier =
 (** [merge_constructors lnk shift avoid] merges the two list of
     constructor [(name*type)]. These are translated to glob_constr
     first, each of them having distinct var names. *)
-let rec merge_constructors (shift:merge_infos) (avoid:Idset.t)
+let merge_constructors (shift:merge_infos) (avoid:Idset.t)
     (typcstr1:(identifier * glob_constr) list)
     (typcstr2:(identifier * glob_constr) list) : (identifier * glob_constr) list =
   List.flatten
@@ -779,7 +779,7 @@ let rec merge_constructors (shift:merge_infos) (avoid:Idset.t)
 (** [merge_inductive_body lnk shift avoid oib1 oib2] merges two
     inductive bodies [oib1] and [oib2], linking with [lnk], params
     info in [shift], avoiding identifiers in [avoid]. *)
-let rec merge_inductive_body (shift:merge_infos) avoid (oib1:one_inductive_body)
+let merge_inductive_body (shift:merge_infos) avoid (oib1:one_inductive_body)
     (oib2:one_inductive_body) =
   (* building glob_constr type of constructors *)
   let mkrawcor nme avoid typ =
@@ -813,7 +813,7 @@ let rec merge_inductive_body (shift:merge_infos) avoid (oib1:one_inductive_body)
     [lnk]. [shift] information on parameters of the new inductive.
     For the moment, inductives are supposed to be non mutual.
 *)
-let rec merge_mutual_inductive_body
+let merge_mutual_inductive_body
     (mib1:mutual_inductive_body) (mib2:mutual_inductive_body) (shift:merge_infos) =
   (* Mutual not treated, we take first ind body of each. *)
   merge_inductive_body shift Idset.empty mib1.mind_packets.(0) mib2.mind_packets.(0)

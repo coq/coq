@@ -1499,7 +1499,7 @@ module N =
   
   (** val eqb : n -> n -> bool **)
   
-  let rec eqb n0 m =
+  let eqb n0 m =
     match n0 with
     | N0 ->
       (match m with
@@ -1693,7 +1693,7 @@ module N =
   
   (** val ldiff : n -> n -> n **)
   
-  let rec ldiff n0 m =
+  let ldiff n0 m =
     match n0 with
     | N0 -> N0
     | Npos p ->
@@ -2205,7 +2205,7 @@ module Z =
   
   (** val eqb : z -> z -> bool **)
   
-  let rec eqb x y =
+  let eqb x y =
     match x with
     | Z0 ->
       (match y with

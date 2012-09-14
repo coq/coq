@@ -1455,7 +1455,7 @@ let rec message_of_value gl = function
   | VRec _ | VRTactic _ | VFun _ -> str "<tactic>"
   | VList l -> prlist_with_sep spc (message_of_value gl) l
 
-let rec interp_message_token ist gl = function
+let interp_message_token ist gl = function
   | MsgString s -> str s
   | MsgInt n -> int n
   | MsgIdent (loc,id) ->
@@ -1464,7 +1464,7 @@ let rec interp_message_token ist gl = function
 	with Not_found -> user_err_loc (loc,"",pr_id id ++ str" not found.") in
       message_of_value gl v
 
-let rec interp_message_nl ist gl = function
+let interp_message_nl ist gl = function
   | [] -> mt()
   | l -> prlist_with_sep spc (interp_message_token ist gl) l ++ fnl()
 
@@ -2016,7 +2016,7 @@ and interp_match_goal ist goal lz lr lmr =
   let hyps = if lr then List.rev hyps else hyps in
   let concl = pf_concl goal in
   let env = pf_env goal in
-  let rec apply_goal_sub app ist (id,c) csr mt mhyps hyps =
+  let apply_goal_sub app ist (id,c) csr mt mhyps hyps =
     let rec match_next_pattern find_next () =
       let (lgoal,ctxt,find_next') = find_next () in
       let lctxt = give_context ctxt id in
@@ -2209,7 +2209,7 @@ and interp_genarg_var_list1 ist gl x =
 
 (* Interprets the Match expressions *)
 and interp_match ist g lz constr lmr =
-  let rec apply_match_subterm app ist (id,c) csr mt =
+  let apply_match_subterm app ist (id,c) csr mt =
     let rec match_next_pattern find_next () =
       let (lmatch,ctxt,find_next') = find_next () in
       let lctxt = give_context ctxt id in
@@ -2597,7 +2597,7 @@ and interp_atomic ist gl tac =
       abstract_extended_tactic opn args (tac args)
   | TacAlias (loc,s,l,(_,body)) -> fun gl ->
     let evdref = ref gl.sigma in
-    let rec f x = match genarg_tag x with
+    let f x = match genarg_tag x with
     | IntArgType ->
         VInteger (out_gen globwit_int x)
     | IntOrVarArgType ->
@@ -3102,7 +3102,7 @@ let inMD : bool * (tacdef_kind * glob_tactic_expr) list -> obj =
      subst_function = subst_md;
      classify_function = classify_md}
 
-let rec split_ltac_fun = function
+let split_ltac_fun = function
   | TacFun (l,t) -> (l,t)
   | t -> ([],t)
 

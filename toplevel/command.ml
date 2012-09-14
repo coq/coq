@@ -895,7 +895,7 @@ let do_program_recursive fixkind fixl ntns =
   let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env evd in
     (* Solve remaining evars *)
   let evd = nf_evar_map_undefined evd in
-  let rec collect_evars id def typ imps =
+  let collect_evars id def typ imps =
     (* Generalize by the recursive prototypes  *)
     let def =
       nf_evar evd (Termops.it_mkNamedLambda_or_LetIn def rec_sign)

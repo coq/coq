@@ -110,7 +110,7 @@ let glob_constr_of_notation_constr_with_binders loc g f e = function
   | NPatVar n -> GPatVar (loc,(false,n))
   | NRef x -> GRef (loc,x)
 
-let rec glob_constr_of_notation_constr loc x =
+let glob_constr_of_notation_constr loc x =
   let rec aux () x =
     glob_constr_of_notation_constr_with_binders loc (fun () id -> ((),id)) aux () x
   in aux () x
@@ -544,7 +544,7 @@ let rec match_iterated_binders islambda decls = function
 let remove_sigma x (sigmavar,sigmalist,sigmabinders) =
   (List.remove_assoc x sigmavar,sigmalist,sigmabinders)
 
-let rec match_abinderlist_with_app match_fun metas sigma rest x iter termin =
+let match_abinderlist_with_app match_fun metas sigma rest x iter termin =
   let rec aux sigma acc rest =
     try
       let sigma = match_fun (ldots_var::fst metas,snd metas) sigma rest iter in

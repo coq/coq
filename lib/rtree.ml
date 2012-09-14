@@ -101,7 +101,7 @@ let rec map f t = match t with
   | Node (a,sons) -> Node (f a, Array.map (map f) sons)
   | Rec(j,defs) -> Rec (j, Array.map (map f) defs)
 
-let rec smartmap f t = match t with
+let smartmap f t = match t with
     Param _ -> t
   | Node (a,sons) ->
       let a'=f a and sons' = Util.array_smartmap (map f) sons in

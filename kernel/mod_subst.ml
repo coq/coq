@@ -147,7 +147,7 @@ let mind_in_delta mind resolver = kn_in_delta (user_mind mind) resolver
 let mp_of_delta resolve mp =
  try Deltamap.find_mp mp resolve with Not_found -> mp
 
-let rec find_prefix resolve mp =
+let find_prefix resolve mp =
   let rec sub_mp = function
     | MPdot(mp,l) as mp_sup ->
 	(try Deltamap.find_mp mp_sup resolve

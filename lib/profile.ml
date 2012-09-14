@@ -221,7 +221,7 @@ let loops = 10000
 let time_overhead_A_D () =
   let e = create_record () in
   let before = get_time () in
-  for i=1 to loops do
+  for _i = 1 to loops do
     (* This is a copy of profile1 for overhead estimation *)
     let dw = dummy_spent_alloc () in
     match !dummy_stack with [] -> assert false | p::_ ->
@@ -245,7 +245,7 @@ let time_overhead_A_D () =
   done;
   let after = get_time () in
   let beforeloop =  get_time () in
-  for i=1 to loops do () done;
+  for _i = 1 to loops do () done;
   let afterloop = get_time () in
   float_of_int ((after - before) - (afterloop - beforeloop))
   /. float_of_int loops
@@ -253,7 +253,7 @@ let time_overhead_A_D () =
 let time_overhead_B_C () =
   let dummy_x = 0 in
   let before = get_time () in
-  for i=1 to loops do
+  for _i = 1 to loops do
     try
       dummy_last_alloc := get_alloc ();
       let _r = dummy_f dummy_x in
@@ -264,7 +264,7 @@ let time_overhead_B_C () =
   done;
   let after = get_time () in
   let beforeloop =  get_time () in
-  for i=1 to loops do () done;
+  for _i = 1 to loops do () done;
   let afterloop = get_time () in
   float_of_int ((after - before) - (afterloop - beforeloop))
   /. float_of_int loops

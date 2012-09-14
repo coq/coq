@@ -108,6 +108,8 @@ type ('constr, 'types) kind_of_term =
    -rectypes of the Caml compiler to be set *)
 type constr = (constr,constr) kind_of_term
 
+type strategy = types option
+
 type existential = existential_key * constr array
 type rec_declaration = name array * constr array * constr array
 type fixpoint = (int array * int) * rec_declaration
@@ -429,7 +431,7 @@ let rec under_casts f c = match kind_of_term c with
 (******************************************************************)
 
 (* flattens application lists throwing casts in-between *)
-let rec collapse_appl c = match kind_of_term c with
+let collapse_appl c = match kind_of_term c with
   | App (f,cl) ->
       let rec collapse_rec f cl2 =
         match kind_of_term (strip_outer_cast f) with
@@ -646,8 +648,6 @@ let rec constr_ord m n=
 (***************************************************************************)
 
 type types = constr
-
-type strategy = types option
 
 type named_declaration = identifier * constr option * types
 type rel_declaration = name * constr option * types
