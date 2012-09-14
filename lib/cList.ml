@@ -185,7 +185,143 @@ end
 
 include List
 
-(* Lists *)
+(** Tail-rec implementation of usual functions. This is a well-known trick used
+    in, for instance, ExtLib and Batteries. *)
+
+type 'a cell = {
+  head : 'a;
+  mutable tail : 'a list;
+}
+
+external cast : 'a cell -> 'a list = "%identity"
+
+let map f = function
+| [] -> []
+| x :: l ->
+  let rec loop p = function
+  | [] -> ()
+  | x :: l ->
+    let c = { head = f x; tail = [] } in
+    p.tail <- cast c;
+    loop c l
+  in
+  let c = { head = f x; tail = [] } in
+  loop c l;
+  cast c
+
+let map2 f l1 l2 = match l1, l2 with
+| [], [] -> []
+| x :: l1, y :: l2 ->
+  let rec loop p l1 l2 = match l1, l2 with
+  | [], [] -> ()
+  | x :: l1, y :: l2 ->
+    let c = { head = f x y; tail = [] } in
+    p.tail <- cast c;
+    loop c l1 l2
+  | _ -> invalid_arg "List.map2"
+  in
+  let c = { head = f x y; tail = [] } in
+  loop c l1 l2;
+  cast c
+| _ -> invalid_arg "List.map2"
+
+let append l1 l2 = match l1 with
+| [] -> l2
+| x :: l ->
+  let rec loop p = function
+  | [] -> p.tail <- l2
+  | x :: l ->
+    let c = { head = x; tail = [] } in
+    p.tail <- cast c;
+    loop c l
+  in
+  let c = { head = x; tail = [] } in
+  loop c l;
+  cast c
+
+let concat l =
+  let rec copy p = function
+  | [] -> p
+  | x :: l ->
+    let c = { head = x; tail = [] } in
+    p.tail <- cast c;
+    copy c l
+  in
+  let rec loop p = function
+  | [] -> ()
+  | x :: l -> loop (copy p x) l
+  in
+  let dummy = { head = Obj.magic 0; tail = [] } in
+  loop dummy l;
+  dummy.tail
+
+let flatten = concat
+
+let split = function
+| [] -> [], []
+| (x, y) :: l ->
+  let rec loop p q = function
+  | [] -> ()
+  | (x, y) :: l ->
+    let cl = { head = x; tail = [] } in
+    let cr = { head = y; tail = [] } in
+    p.tail <- cast cl;
+    q.tail <- cast cr;
+    loop cl cr l
+  in
+  let cl = { head = x; tail = [] } in
+  let cr = { head = y; tail = [] } in
+  loop cl cr l;
+  (cast cl, cast cr)
+
+let combine l1 l2 = match l1, l2 with
+| [], [] -> []
+| x :: l1, y :: l2 ->
+  let rec loop p l1 l2 = match l1, l2 with
+  | [], [] -> ()
+  | x :: l1, y :: l2 ->
+    let c = { head = (x, y); tail = [] } in
+    p.tail <- cast c;
+    loop c l1 l2
+  | _ -> invalid_arg "List.combine"
+  in
+  let c = { head = (x, y); tail = [] } in
+  loop c l1 l2;
+  cast c
+| _ -> invalid_arg "List.combine"
+
+let filter f l =
+  let rec loop p = function
+  | [] -> ()
+  | x :: l ->
+    if f x then
+      let c = { head = x; tail = [] } in
+      let () = p.tail <- cast c in
+      loop c l
+    else
+      loop p l
+  in
+  let c = { head = Obj.magic 0; tail = [] } in
+  loop c l;
+  c.tail
+
+(** FIXME: Already present in OCaml 4.00 *)
+
+let map_i f i = function
+| [] -> []
+| x :: l ->
+  let rec loop i p = function
+  | [] -> ()
+  | x :: l ->
+    let c = { head = f i x; tail = [] } in
+    p.tail <- cast c;
+    loop (succ i) c l
+  in
+  let c = { head = f i x; tail = [] } in
+  loop (succ i) c l;
+  cast c
+
+(** Extensions of OCaml Stdlib *)
 
 let rec compare cmp l1 l2 =
   if l1 == l2 then 0 else
@@ -266,13 +402,6 @@ let map_left f = (* ensures the order in case of side-effects *)
     | x::l -> let v = f x in v :: map_rec l
   in
   map_rec
-
-let map_i f =
-  let rec map_i_rec i = function
-    | [] -> []
-    | x::l -> let v = f i x in v :: map_i_rec (i+1) l
-  in
-  map_i_rec
 
 let map2_i f i l1 l2 =
   let rec map_i i = function

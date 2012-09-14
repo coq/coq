@@ -365,6 +365,8 @@ let ascii_of_ident s =
 
 module List : CList.ExtS = CList
 
+let (@) = CList.append
+
 (* Arrays *)
 
 let array_compare item_cmp v1 v2 =

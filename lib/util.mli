@@ -73,6 +73,8 @@ val ascii_of_ident : string -> string
 
 module List : CList.ExtS
 
+val (@) : 'a list -> 'a list -> 'a list
+
 (** {6 Arrays. } *)
 
 val array_compare : ('a -> 'a -> int) -> 'a array -> 'a array -> int
