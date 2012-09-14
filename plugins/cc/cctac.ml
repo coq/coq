@@ -9,10 +9,7 @@
 (* This file is the interface between the c-c algorithm and Coq *)
 
 open Evd
-open Proof_type
 open Names
-open Libnames
-open Nameops
 open Inductiveops
 open Declarations
 open Term
@@ -21,12 +18,10 @@ open Tactics
 open Tacticals
 open Typing
 open Ccalgo
-open Tacinterp
 open Ccproof
 open Pp
 open Errors
 open Util
-open Format
 
 let constant dir s = lazy (Coqlib.gen_constant "CC" dir s)
 

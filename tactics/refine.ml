@@ -54,10 +54,7 @@ open Term
 open Termops
 open Namegen
 open Tacmach
-open Sign
 open Environ
-open Reduction
-open Typing
 open Tactics
 open Tacticals
 open Printer

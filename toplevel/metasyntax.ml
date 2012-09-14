@@ -19,11 +19,9 @@ open Notation_ops
 open Ppextend
 open Extend
 open Libobject
-open Summary
 open Constrintern
 open Vernacexpr
 open Pcoq
-open Glob_term
 open Libnames
 open Tok
 open Lexer

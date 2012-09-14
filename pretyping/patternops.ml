@@ -14,8 +14,6 @@ open Nameops
 open Term
 open Glob_term
 open Glob_ops
-open Environ
-open Nametab
 open Pp
 open Mod_subst
 open Misctypes

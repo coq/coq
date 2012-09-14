@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Constrextern
 open Pp
 open Tacexpr
 open Termops

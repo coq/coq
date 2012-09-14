@@ -1,18 +1,9 @@
 open Printf
-open Pp
-open Environ
-open Term
-open Names
 open Globnames
-open Summary
 open Libobject
 open Entries
 open Decl_kinds
-open Errors
-open Util
-open Evd
 open Declare
-open Proof_type
 
 (**
    - Get types of existentials ;
@@ -537,7 +528,6 @@ let declare_definition prg =
       (fun local gr -> prg.prg_hook local gr; gr)
 
 open Pp
-open Ppconstr
 
 let rec lam_index n t acc =
   match kind_of_term t with

@@ -8,23 +8,17 @@
 
 (*i*)
 open Names
-open Decl_kinds
 open Term
-open Sign
-open Entries
 open Evd
 open Environ
 open Nametab
-open Mod_subst
 open Errors
-open Pp
 open Util
 open Typeclasses_errors
 open Typeclasses
 open Libnames
 open Globnames
 open Constrintern
-open Glob_term
 open Constrexpr
 (*i*)
 
@@ -73,7 +67,6 @@ type binder_list = (identifier Loc.located * bool * constr_expr) list
 
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 
-open Topconstr
 
 let type_ctx_instance evars env ctx inst subst =
   let rec aux (subst, instctx) l = function

@@ -12,7 +12,6 @@ open Names
 open Univ
 open Term
 open Declarations
-open Sign
 open Environ
 open Entries
 open Reduction

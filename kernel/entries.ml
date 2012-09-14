@@ -8,7 +8,6 @@
 
 (*i*)
 open Names
-open Univ
 open Term
 open Sign
 (*i*)

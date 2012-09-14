@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Errors
-open Util
 open Pp
 open Names
 open Libnames

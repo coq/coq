@@ -7,19 +7,15 @@
 (************************************************************************)
 
 open Equality
-open Hipattern
 open Names
 open Pp
 open Proof_type
 open Tacticals
-open Tacinterp
 open Tactics
 open Term
 open Termops
 open Errors
 open Util
-open Glob_term
-open Vernacinterp
 open Tacexpr
 open Mod_subst
 open Locus

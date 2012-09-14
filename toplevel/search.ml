@@ -10,12 +10,9 @@ open Pp
 open Errors
 open Util
 open Names
-open Nameops
 open Term
-open Glob_term
 open Declarations
 open Libobject
-open Declare
 open Environ
 open Pattern
 open Matching

@@ -17,13 +17,9 @@ open Util
 open Names
 open Univ
 open Term
-open Reduction
-open Sign
 open Declarations
-open Inductive
 open Environ
 open Entries
-open Type_errors
 open Indtypes
 open Typeops
 

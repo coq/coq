@@ -612,7 +612,6 @@ let pr_red_flag pr r =
      pr_arg str "delta " ++ (if r.rDelta then str "-" else mt ()) ++
      hov 0 (str "[" ++ prlist_with_sep spc pr r.rConst ++ str "]"))
 
-open Genarg
 
 let pr_metaid id = str"?" ++ pr_id id
 

@@ -13,15 +13,9 @@ open Util
 open Names
 open Nameops
 open Libnames
-open Glob_term
-open Glob_ops
-open Term
-open Mod_subst
 open Misctypes
-open Decl_kinds
 open Constrexpr
 open Constrexpr_ops
-open Notation_term
 (*i*)
 
 

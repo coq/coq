@@ -13,7 +13,6 @@ open Univ
 open Term
 open Declarations
 open Inductive
-open Sign
 open Environ
 open Reduction
 open Typeops

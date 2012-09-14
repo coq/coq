@@ -7,11 +7,6 @@ open Names
 open Declarations
 open Pp
 open Entries
-open Hiddentac
-open Evd
-open Tacmach
-open Proof_type
-open Tacticals
 open Tactics
 open Indfun_common
 open Functional_principles_proofs

@@ -10,7 +10,6 @@
 (* proof-trees that will be transformed into proof-terms in cctac.ml4   *)
 
 open Errors
-open Util
 open Names
 open Term
 open Ccalgo

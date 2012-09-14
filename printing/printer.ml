@@ -10,13 +10,9 @@ open Pp
 open Errors
 open Util
 open Names
-open Nameops
 open Term
 open Sign
 open Environ
-open Global
-open Declare
-open Libnames
 open Globnames
 open Nametab
 open Evd
@@ -24,10 +20,8 @@ open Proof_type
 open Refiner
 open Pfedit
 open Constrextern
-open Tacexpr
 open Ppconstr
 
-open Store.Field
 
 let emacs_str s =
   if !Flags.print_emacs then s else ""
@@ -638,8 +632,6 @@ let pr_instance_gmap insts =
 open Declarations
 open Termops
 open Reduction
-open Inductive
-open Inductiveops
 
 let print_params env params =
   if params = [] then mt () else pr_rel_context env params ++ brk(1,2)

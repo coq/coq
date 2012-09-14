@@ -20,16 +20,11 @@ open Nameops
 open Term
 open Namegen
 open Declarations
-open Entries
 open Inductive
 open Inductiveops
 open Environ
 open Reductionops
-open Typeops
-open Type_errors
-open Safe_typing
 open Nametab
-open Sign
 
 type dep_flag = bool
 

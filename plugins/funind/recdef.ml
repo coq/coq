@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Tacexpr
 open Term
 open Namegen
 open Environ
@@ -20,9 +19,7 @@ open Nameops
 open Errors
 open Util
 open Closure
-open RedFlags
 open Tacticals
-open Typing
 open Tacmach
 open Tactics
 open Nametab
@@ -31,12 +28,9 @@ open Declare
 open Decl_kinds
 open Tacred
 open Proof_type
-open Vernacinterp
 open Pfedit
-open Topconstr
 open Glob_term
 open Pretyping
-open Safe_typing
 open Constrintern
 open Hiddentac
 open Misctypes

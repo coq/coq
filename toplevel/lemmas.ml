@@ -26,7 +26,6 @@ open Declare
 open Pretyping
 open Termops
 open Namegen
-open Evd
 open Evarutil
 open Reductionops
 open Constrexpr

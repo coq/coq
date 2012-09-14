@@ -7,11 +7,8 @@
 (************************************************************************)
 
 open Pp
-open Errors
 open Util
 open Names
-open Term
-open Declarations
 open Namegen
 open Nameops
 open Libnames
@@ -19,8 +16,6 @@ open Globnames
 open Table
 open Miniml
 open Mlutil
-open Modutil
-open Mod_subst
 
 let string_of_id id =
   let s = Names.string_of_id id in

@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Compat
 open Errors
 open Util
@@ -15,11 +14,9 @@ open Extend
 open Ppextend
 open Constrexpr
 open Notation_term
-open Genarg
 open Libnames
 open Tacexpr
 open Names
-open Vernacexpr
 open Egramml
 
 (**************************************************************************)

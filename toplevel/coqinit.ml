@@ -7,8 +7,6 @@
 (************************************************************************)
 
 open Pp
-open System
-open Toplevel
 
 let (/) = Filename.concat
 

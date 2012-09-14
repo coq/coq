@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Errors
 open Util
 open Names
@@ -17,9 +16,7 @@ open Namegen
 open Declarations
 open Inductiveops
 open Environ
-open Sign
 open Reductionops
-open Typeops
 open Type_errors
 open Glob_term
 open Glob_ops

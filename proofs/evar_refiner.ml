@@ -7,13 +7,9 @@
 (************************************************************************)
 
 open Errors
-open Util
 open Names
-open Term
 open Evd
 open Evarutil
-open Sign
-open Refiner
 
 (******************************************)
 (* Instantiation of existential variables *)

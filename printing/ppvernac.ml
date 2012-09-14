@@ -8,8 +8,6 @@
 
 open Pp
 open Names
-open Nameops
-open Nametab
 
 let pr_located = Loc.pr_located
 
@@ -20,14 +18,10 @@ open Extend
 open Vernacexpr
 open Ppconstr
 open Pptactic
-open Glob_term
-open Genarg
 open Libnames
-open Ppextend
 open Constrexpr
 open Constrexpr_ops
 open Decl_kinds
-open Tacinterp
 open Declaremods
 
 let pr_spc_lconstr = pr_sep_com spc pr_lconstr_expr

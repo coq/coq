@@ -6,12 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Errors
 open Util
 open Names
 open Namegen
-open Sign
 open Term
 open Termops
 open Environ
@@ -23,7 +21,6 @@ open Tacred
 open Proof_type
 open Logic
 open Refiner
-open Tacexpr
 
 let re_sig it gc = { it = it; sigma = gc }
 
@@ -194,8 +191,6 @@ let rename_hyp l       = with_check (rename_hyp_no_check l)
 (* Pretty-printers *)
 
 open Pp
-open Tacexpr
-open Glob_term
 
 let db_pr_goal sigma g =
   let env = Goal.V82.env sigma g in

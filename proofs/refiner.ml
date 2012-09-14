@@ -9,14 +9,8 @@
 open Pp
 open Errors
 open Util
-open Term
-open Termops
-open Sign
 open Evd
-open Sign
 open Environ
-open Reductionops
-open Type_errors
 open Proof_type
 open Logic
 

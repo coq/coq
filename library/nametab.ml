@@ -7,13 +7,10 @@
 (************************************************************************)
 
 open Errors
-open Util
 open Pp
 open Names
 open Libnames
 open Globnames
-open Nameops
-open Declarations
 
 
 exception GlobalizationError of qualid

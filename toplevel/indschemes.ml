@@ -15,7 +15,6 @@
    declaring new schemes *)
 
 open Pp
-open Flags
 open Errors
 open Util
 open Names
@@ -31,10 +30,7 @@ open Globnames
 open Goptions
 open Nameops
 open Termops
-open Typeops
-open Inductiveops
 open Pretyping
-open Topconstr
 open Nametab
 open Smartlocate
 open Vernacexpr

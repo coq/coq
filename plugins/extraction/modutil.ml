@@ -7,15 +7,12 @@
 (************************************************************************)
 
 open Names
-open Declarations
-open Environ
 open Globnames
 open Errors
 open Util
 open Miniml
 open Table
 open Mlutil
-open Mod_subst
 
 (*S Functions upon ML modules. *)
 

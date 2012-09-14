@@ -8,8 +8,6 @@
 
 open Pp
 open Errors
-open Util
-open Sign
 open Evd
 open Tacexpr
 open Proof_type

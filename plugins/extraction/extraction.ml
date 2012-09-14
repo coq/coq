@@ -7,7 +7,6 @@
 (************************************************************************)
 
 (*i*)
-open Errors
 open Util
 open Names
 open Term
@@ -20,9 +19,7 @@ open Termops
 open Inductiveops
 open Recordops
 open Namegen
-open Summary
 open Globnames
-open Nametab
 open Miniml
 open Table
 open Mlutil

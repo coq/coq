@@ -6,15 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
 open Util
-open Pp
 open Term
 open Names
-open Environ
-open Univ
-open Evd
-open Conv_oracle
 open Closure
 open Esubst
 

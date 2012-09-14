@@ -10,7 +10,6 @@ open Term
 open Summary
 open Libobject
 open Globnames
-open Names
 (*
  * Module construction
  *)

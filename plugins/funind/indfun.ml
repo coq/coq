@@ -695,7 +695,6 @@ let do_generate_principle on_error register_built interactive_proof
   in
   ()
 
-open Topconstr
 let rec add_args id new_args b =
   match b with
   | CRef r ->

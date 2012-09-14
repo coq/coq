@@ -13,9 +13,7 @@ open System
 open Flags
 open Names
 open Libnames
-open Nameops
 open States
-open Toplevel
 open Coqinit
 
 let () = at_exit flush_all

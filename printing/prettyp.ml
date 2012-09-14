@@ -18,12 +18,7 @@ open Nameops
 open Term
 open Termops
 open Declarations
-open Inductive
-open Inductiveops
-open Sign
-open Reduction
 open Environ
-open Declare
 open Impargs
 open Libobject
 open Libnames

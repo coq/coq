@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Conv_oracle
 open Cbytecodes
 
 external set_drawinstr : unit -> unit = "coq_set_drawinstr"

@@ -7,25 +7,17 @@
 (************************************************************************)
 
 open Errors
-open Util
 open Pp
 open Names
-open Nameops
 open Term
 open Termops
-open Inductive
-open Declarations
 open Entries
 open Environ
-open Inductive
-open Lib
 open Classops
 open Declare
-open Libnames
 open Globnames
 open Nametab
 open Decl_kinds
-open Safe_typing
 
 let strength_min l = if List.mem Local l then Local else Global
 

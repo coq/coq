@@ -9,21 +9,11 @@
 (* This file defines the printer for natural numbers in [nat] *)
 
 (*i*)
-open Pcoq
-open Pp
-open Errors
-open Util
-open Names
-open Coqlib
 open Glob_term
-open Libnames
 open Bigint
 open Coqlib
-open Notation
 open Pp
 open Errors
-open Util
-open Names
 (*i*)
 
 (**********************************************************************)

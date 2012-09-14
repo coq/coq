@@ -14,7 +14,6 @@
    for evaluation in the bytecode virtual machine *)
 
 open Term
-open Names
 
 (* Type declarations, these types shouldn't be exported they are accessed
    through specific functions. As being mutable and all it is wiser *)

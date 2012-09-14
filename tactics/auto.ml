@@ -15,11 +15,8 @@ open Namegen
 open Term
 open Termops
 open Inductiveops
-open Sign
 open Environ
-open Inductive
 open Evd
-open Reduction
 open Typing
 open Pattern
 open Patternops
@@ -28,7 +25,6 @@ open Tacmach
 open Proof_type
 open Pfedit
 open Genredexpr
-open Evar_refiner
 open Tacred
 open Tactics
 open Tacticals
@@ -39,9 +35,7 @@ open Globnames
 open Nametab
 open Smartlocate
 open Libobject
-open Library
 open Printer
-open Declarations
 open Tacexpr
 open Mod_subst
 open Misctypes

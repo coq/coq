@@ -314,7 +314,6 @@ let maximal_unfocus k p =
 
 module Bullet = struct
 
-  open Store.Field
 
 
   type t = Vernacexpr.bullet

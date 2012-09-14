@@ -9,12 +9,8 @@
 open Pp
 open Util
 open Names
-open Nameops
 open Libnames
-open Misctypes
-open Term
 open Glob_term
-open Mod_subst
 open Constrexpr
 open Decl_kinds
 

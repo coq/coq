@@ -7,15 +7,12 @@
 (************************************************************************)
 
 open Pp
-open Errors
 open Util
-open Flags
 open Names
 open Nameops
 open Namegen
 open Term
 open Termops
-open Inductive
 open Indtypes
 open Sign
 open Environ
@@ -23,11 +20,9 @@ open Pretype_errors
 open Type_errors
 open Typeclasses_errors
 open Indrec
-open Reduction
 open Cases
 open Logic
 open Printer
-open Glob_term
 open Evd
 
 let pr_lconstr c = quote (pr_lconstr c)

@@ -10,13 +10,10 @@ open Hipattern
 open Names
 open Term
 open Termops
-open Reductionops
 open Tacmach
-open Errors
 open Util
 open Declarations
 open Globnames
-open Inductiveops
 
 let qflag=ref true
 

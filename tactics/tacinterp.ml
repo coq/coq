@@ -8,9 +8,6 @@
 
 open Constrintern
 open Closure
-open RedFlags
-open Declarations
-open Entries
 open Libobject
 open Pattern
 open Patternops
@@ -19,7 +16,6 @@ open Pp
 open Genredexpr
 open Glob_term
 open Glob_ops
-open Sign
 open Tacred
 open Errors
 open Util
@@ -39,18 +35,13 @@ open Constrexpr_ops
 open Term
 open Termops
 open Tacexpr
-open Safe_typing
-open Typing
 open Hiddentac
 open Genarg
-open Decl_kinds
 open Mod_subst
 open Printer
 open Inductiveops
-open Syntax_def
 open Pretyping
 open Extrawit
-open Pcoq
 open Evd
 open Misctypes
 open Miscops

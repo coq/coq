@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Libobject
-open Proof_type
 open Pp
 
 let declare_tactic_option ?(default=Tacexpr.TacId []) name =

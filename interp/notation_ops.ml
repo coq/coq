@@ -15,9 +15,7 @@ open Globnames
 open Misctypes
 open Glob_term
 open Glob_ops
-open Term
 open Mod_subst
-open Constrexpr
 open Notation_term
 open Decl_kinds
 

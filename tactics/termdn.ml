@@ -6,16 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
-open Util
 open Names
-open Nameops
 open Term
 open Pattern
 open Patternops
-open Glob_term
 open Globnames
-open Nametab
 
 (* Discrimination nets of terms.
    See the module dn.ml for further explanations.

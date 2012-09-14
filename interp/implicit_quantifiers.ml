@@ -9,12 +9,6 @@
 (*i*)
 open Names
 open Decl_kinds
-open Term
-open Sign
-open Evd
-open Environ
-open Nametab
-open Mod_subst
 open Errors
 open Util
 open Glob_term

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Names
-open Misctypes
 open Locus
 
 (** Utilities on occurrences *)

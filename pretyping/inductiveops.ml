@@ -13,7 +13,6 @@ open Univ
 open Term
 open Termops
 open Namegen
-open Sign
 open Declarations
 open Environ
 open Reductionops

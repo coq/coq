@@ -6,12 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
-open Util
 open Names
 open Term
-open Libobject
-open Library
 open Pattern
 open Globnames
 

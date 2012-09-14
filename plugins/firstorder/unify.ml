@@ -6,12 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
 open Util
-open Formula
-open Tacmach
 open Term
-open Names
 open Termops
 open Reductionops
 

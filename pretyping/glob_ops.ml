@@ -6,17 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
-open Pp
 open Util
 open Names
-open Sign
-open Term
 open Globnames
-open Nametab
-open Decl_kinds
 open Misctypes
-open Locus
 open Glob_term
 
 (* Untyped intermediate terms, after ASTs and before constr. *)

@@ -7,12 +7,9 @@
 (************************************************************************)
 
 (*i*)
-open Environ
 open Evd
 open Names
-open Libnames
 open Term
-open Pp
 open Tacexpr
 (* open Decl_expr *)
 open Glob_term

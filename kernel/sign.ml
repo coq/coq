@@ -16,7 +16,6 @@
    names-based contexts *)
 
 open Names
-open Errors
 open Util
 open Term
 

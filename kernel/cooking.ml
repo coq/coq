@@ -13,15 +13,12 @@
 (* This module implements kernel-level discharching of local
    declarations over global constants and inductive types *)
 
-open Pp
 open Errors
-open Util
 open Names
 open Term
 open Sign
 open Declarations
 open Environ
-open Reduction
 
 (*s Cooking the constants. *)
 

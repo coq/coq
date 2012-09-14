@@ -19,7 +19,6 @@ open Miniml
 open Mlutil
 open Modutil
 open Common
-open Declarations
 
 
 (*s Some utility functions. *)

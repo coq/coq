@@ -13,7 +13,6 @@ open Util
 open Pp
 open Names
 open Nameops
-open Summary
 open Libobject
 open Lib
 open Notation_term

@@ -10,12 +10,8 @@
 
 open Pp
 open Errors
-open Util
 open Libobject
-open Names
 open Libnames
-open Term
-open Nametab
 open Mod_subst
 
 open Interface

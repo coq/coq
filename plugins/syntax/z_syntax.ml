@@ -6,13 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pcoq
 open Pp
 open Errors
-open Util
 open Names
-open Topconstr
-open Libnames
 open Bigint
 
 exception Non_closed_number
@@ -21,7 +17,6 @@ exception Non_closed_number
 (* Parsing positive via scopes                                        *)
 (**********************************************************************)
 
-open Libnames
 open Globnames
 open Glob_term
 

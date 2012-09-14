@@ -10,11 +10,9 @@ open Errors
 open Util
 open Pp
 open Names
-open Univ
 open Term
 open Termops
 open Namegen
-open Sign
 open Pre_env
 open Environ
 open Evd
@@ -1894,7 +1892,6 @@ let check_evars env initial_sigma sigma c =
       | _ -> iter_constr proc_rec c
   in proc_rec c
 
-open Glob_term
 
 (****************************************)
 (* Operations on value/type constraints *)

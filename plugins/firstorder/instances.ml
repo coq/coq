@@ -6,11 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Formula
-open Sequent
 open Unify
 open Rules
-open Pp
 open Errors
 open Util
 open Term
@@ -20,7 +17,6 @@ open Tactics
 open Tacticals
 open Termops
 open Reductionops
-open Declarations
 open Formula
 open Sequent
 open Names

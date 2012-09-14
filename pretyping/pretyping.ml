@@ -33,11 +33,8 @@ open Reductionops
 open Environ
 open Type_errors
 open Typeops
-open Libnames
 open Globnames
 open Nameops
-open Classops
-open Recordops
 open Evarutil
 open Pretype_errors
 open Glob_term
@@ -55,7 +52,6 @@ type pure_open_constr = evar_map * constr
 
 (************************************************************************)
 (* This concerns Cases *)
-open Declarations
 open Inductive
 open Inductiveops
 

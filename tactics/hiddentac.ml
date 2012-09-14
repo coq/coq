@@ -6,13 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
-open Proof_type
-open Tacmach
 
-open Glob_term
 open Refiner
-open Genarg
 open Tacexpr
 open Tactics
 open Util

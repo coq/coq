@@ -12,7 +12,6 @@ open Printer
 open Names
 open Term
 open Evd
-open Sign
 open Globnames
 (*i*)
 

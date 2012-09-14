@@ -220,7 +220,6 @@ let rec pr_glob_generic prc prlc prtac prpat x =
       try pi2 (Stringmap.find s !genarg_pprule) prc prlc prtac x
       with Not_found -> str "[no printer for " ++ str s ++ str "]"
 
-open Closure
 
 let rec pr_generic prc prlc prtac prpat x =
   match Genarg.genarg_tag x with
@@ -543,7 +542,6 @@ let linfo = 5
 
 let level_of (n,p) = match p with E -> n | L -> n-1 | Prec n -> n | Any -> lseq
 
-open Closure
 
 (** A printer for tactics that polymorphically works on the three
     "raw", "glob" and "typed" levels; in practice, the environment is

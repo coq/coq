@@ -12,9 +12,7 @@ open Rules
 open Instances
 open Term
 open Tacmach
-open Tactics
 open Tacticals
-open Libnames
 
 let update_flags ()=
   let predref=ref Names.Cpred.empty in

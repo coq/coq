@@ -14,26 +14,16 @@ open Nameops
 open Term
 open Termops
 open Namegen
-open Global
-open Sign
 open Environ
 open Inductiveops
 open Printer
-open Reductionops
 open Retyping
 open Tacmach
-open Proof_type
-open Evar_refiner
 open Clenv
-open Tactics
 open Tacticals
 open Tactics
 open Elim
 open Equality
-open Typing
-open Pattern
-open Matching
-open Glob_term
 open Misctypes
 open Tacexpr
 
@@ -208,7 +198,6 @@ let split_dep_and_nodep hyps gl =
        if var_occurs_in_pf gl id then (d::l1,l2) else (l1,d::l2))
     hyps ([],[])
 
-open Coqlib
 
 (* Computation of dids is late; must have been done in rewrite_equations*)
 (* Will keep generalizing and introducing back and forth... *)

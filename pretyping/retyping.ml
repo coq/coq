@@ -7,14 +7,12 @@
 (************************************************************************)
 
 open Errors
-open Util
 open Term
 open Inductive
 open Inductiveops
 open Names
 open Reductionops
 open Environ
-open Typeops
 open Declarations
 open Termops
 

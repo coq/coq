@@ -13,7 +13,6 @@ open Errors
 open Util
 open Flags
 open Names
-open Entries
 open Nameops
 open Term
 open Pfedit
@@ -26,13 +25,10 @@ open Command
 open Goptions
 open Libnames
 open Globnames
-open Nametab
 open Vernacexpr
 open Decl_kinds
 open Constrexpr
-open Pretyping
 open Redexpr
-open Syntax_def
 open Lemmas
 open Declaremods
 open Misctypes

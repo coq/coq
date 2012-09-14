@@ -17,7 +17,6 @@ open Environ
 open Inductive
 open Libobject
 open Lib
-open Nametab
 open Pp
 open Constrexpr
 open Termops

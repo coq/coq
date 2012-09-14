@@ -10,7 +10,6 @@
      associated declarations *)
 
 open Names
-open Term
 open Sign
 open Decl_kinds
 open Libnames

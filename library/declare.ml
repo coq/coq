@@ -16,7 +16,6 @@ open Libnames
 open Globnames
 open Nameops
 open Term
-open Sign
 open Declarations
 open Entries
 open Libobject

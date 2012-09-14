@@ -6,22 +6,10 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Errors
 open Util
 open Names
 open Term
-open Reductionops
-open Environ
-open Typeops
-open Pretype_errors
-open Classops
-open Recordops
-open Evarutil
-open Evarconv
-open Retyping
-open Evd
-open Termops
 
 type message = string
 

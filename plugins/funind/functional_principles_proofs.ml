@@ -6,9 +6,7 @@ open Namegen
 open Names
 open Declarations
 open Pp
-open Entries
 open Hiddentac
-open Evd
 open Tacmach
 open Proof_type
 open Tacticals

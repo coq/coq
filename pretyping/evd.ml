@@ -13,9 +13,7 @@ open Names
 open Nameops
 open Term
 open Termops
-open Sign
 open Environ
-open Libnames
 open Globnames
 open Mod_subst
 

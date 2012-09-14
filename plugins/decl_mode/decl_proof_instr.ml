@@ -11,7 +11,6 @@ open Util
 open Pp
 open Evd
 
-open Refiner
 open Proof_type
 open Tacmach
 open Tacinterp

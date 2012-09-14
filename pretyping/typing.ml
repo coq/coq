@@ -8,7 +8,6 @@
 
 open Errors
 open Util
-open Names
 open Term
 open Environ
 open Reductionops
@@ -17,7 +16,6 @@ open Pretype_errors
 open Inductive
 open Inductiveops
 open Typeops
-open Evd
 open Arguments_renaming
 
 let meta_type evd mv =

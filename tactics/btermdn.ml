@@ -8,7 +8,6 @@
 
 open Term
 open Names
-open Termdn
 open Pattern
 open Globnames
 

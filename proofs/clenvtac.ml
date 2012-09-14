@@ -6,26 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
-open Errors
-open Util
 open Names
-open Nameops
 open Term
 open Termops
-open Sign
-open Environ
 open Evd
-open Evarutil
-open Proof_type
 open Refiner
 open Logic
 open Reduction
-open Reductionops
 open Tacmach
-open Glob_term
-open Pattern
-open Tacexpr
 open Clenv
 
 

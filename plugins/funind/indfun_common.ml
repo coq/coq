@@ -149,7 +149,6 @@ let refl_equal = lazy(coq_constant "eq_refl")
 (* Copy of the standart save mechanism but without the much too  *)
 (* slow reduction function                                       *)
 (*****************************************************************)
-open Declarations
 open Entries
 open Decl_kinds
 open Declare

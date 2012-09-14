@@ -14,19 +14,15 @@ open Nameops
 open Term
 open Termops
 open Namegen
-open Sign
 open Environ
 open Evd
 open Reduction
 open Reductionops
-open Glob_term
-open Pattern
 open Tacred
 open Pretype_errors
 open Evarutil
 open Unification
 open Mod_subst
-open Coercion
 open Misctypes
 
 (* Abbreviations *)

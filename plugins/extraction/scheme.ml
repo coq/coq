@@ -12,8 +12,6 @@ open Pp
 open Errors
 open Util
 open Names
-open Nameops
-open Libnames
 open Miniml
 open Mlutil
 open Table

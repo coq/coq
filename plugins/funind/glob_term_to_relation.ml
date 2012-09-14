@@ -4,7 +4,6 @@ open Names
 open Term
 open Glob_term
 open Glob_ops
-open Libnames
 open Globnames
 open Indfun_common
 open Errors

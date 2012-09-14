@@ -16,10 +16,7 @@
 (* This file provides with various operations on modules and module types *)
 
 open Errors
-open Util
-open Pp
 open Names
-open Univ
 open Term
 open Declarations
 open Environ

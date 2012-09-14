@@ -10,7 +10,6 @@ open Pp
 open Errors
 open Util
 open Names
-open Nameops
 open Term
 open Termops
 open Namegen
@@ -18,21 +17,15 @@ open Sign
 open Evd
 open Printer
 open Reductionops
-open Declarations
 open Entries
 open Inductiveops
 open Environ
 open Tacmach
-open Proof_type
 open Pfedit
-open Evar_refiner
 open Clenv
 open Declare
 open Tacticals
 open Tactics
-open Inv
-open Vernacexpr
-open Safe_typing
 open Decl_kinds
 
 let no_inductive_inconstr env constr =

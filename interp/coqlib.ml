@@ -13,7 +13,6 @@ open Names
 open Term
 open Libnames
 open Globnames
-open Pattern
 open Nametab
 open Smartlocate
 

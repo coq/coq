@@ -12,18 +12,15 @@
 (* This module checks subtyping of module types *)
 
 (*i*)
-open Errors
 open Util
 open Names
 open Univ
 open Term
 open Declarations
-open Environ
 open Reduction
 open Inductive
 open Modops
 open Mod_subst
-open Entries
 (*i*)
 
 (* This local type is used to subtype a constant with a constructor or

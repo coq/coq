@@ -6,17 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Errors
 open Term
-open Proof_type
 open Hipattern
 open Tacmach
 open Tacticals
 open Tactics
 open Coqlib
 open Reductionops
-open Glob_term
 open Misctypes
 
 (* Absurd *)

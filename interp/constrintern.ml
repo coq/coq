@@ -18,7 +18,6 @@ open Globnames
 open Impargs
 open Glob_term
 open Glob_ops
-open Pattern
 open Patternops
 open Pretyping
 open Cases
@@ -1766,7 +1765,6 @@ let interp_binder_evars evdref env na t =
   understand_tcc_evars evdref env IsType t'
 
 open Environ
-open Term
 
 let my_intern_constr sigma env lvar acc c =
   internalize sigma env acc false lvar c

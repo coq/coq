@@ -16,10 +16,8 @@ open Globnames
 open Nametab
 open Environ
 open Libobject
-open Library
 open Term
 open Termops
-open Glob_term
 open Decl_kinds
 open Mod_subst
 

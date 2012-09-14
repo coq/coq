@@ -7,12 +7,9 @@
 (************************************************************************)
 
 open Vernacexpr
-open Names
 open Errors
-open Util
 open Pp
 open Printer
-open Namegen
 
 (** Ide_slave : an implementation of [Interface], i.e. mainly an interp
     function and a rewind function. This specialized loop is triggered

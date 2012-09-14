@@ -6,17 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
-open Util
 open Names
-open Sign
 open Term
 open Termops
 open Namegen
 open Environ
 open Type_errors
-open Glob_term
-open Inductiveops
 
 type pretype_error =
   (* Old Case *)

@@ -16,7 +16,6 @@ open Term
 open Termops
 open Namegen
 open Declarations
-open Inductive
 open Inductiveops
 open Reductionops
 open Environ
@@ -28,14 +27,12 @@ open Genredexpr
 open Tacmach
 open Proof_type
 open Logic
-open Evar_refiner
 open Clenv
 open Clenvtac
 open Refiner
 open Tacticals
 open Hipattern
 open Coqlib
-open Nametab
 open Tacexpr
 open Decl_kinds
 open Evarutil

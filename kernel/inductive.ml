@@ -11,7 +11,6 @@ open Util
 open Names
 open Univ
 open Term
-open Sign
 open Declarations
 open Environ
 open Reduction

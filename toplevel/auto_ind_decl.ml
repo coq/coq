@@ -11,20 +11,12 @@
 
 open Tacmach
 open Errors
-open Util
-open Flags
-open Decl_kinds
 open Pp
-open Entries
 open Termops
 open Declarations
-open Declare
 open Term
 open Names
 open Globnames
-open Goptions
-open Mod_subst
-open Indrec
 open Inductiveops
 open Tactics
 open Tacticals

@@ -17,13 +17,8 @@ open Environ
 open Declarations
 open Entries
 open Declare
-open Nametab
 open Constrintern
-open Command
-open Inductive
-open Safe_typing
 open Decl_kinds
-open Indtypes
 open Type_errors
 open Constrexpr
 open Constrexpr_ops

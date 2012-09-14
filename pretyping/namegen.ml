@@ -12,7 +12,6 @@
 (* This file is about generating new or fresh names and dealing with
    alpha-renaming *)
 
-open Errors
 open Util
 open Names
 open Term

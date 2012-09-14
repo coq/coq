@@ -24,7 +24,6 @@ open Util
 open Pp
 open Term
 open Names
-open Declarations
 open Environ
 open Esubst
 

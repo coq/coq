@@ -16,9 +16,6 @@ open Nameops
 open Termops
 open Reductionops
 open Term
-open Glob_term
-open Sign
-open Environ
 open Pattern
 open Patternops
 open Misctypes

@@ -11,21 +11,15 @@ open Errors
 open Util
 open Names
 open Nameops
-open Evd
 open Term
 open Termops
-open Sign
 open Environ
 open Reductionops
-open Inductive
 open Inductiveops
 open Typing
 open Proof_type
-open Typeops
 open Type_errors
 open Retyping
-open Evarutil
-open Tacexpr
 open Misctypes
 
 type refiner_error =

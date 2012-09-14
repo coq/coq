@@ -58,19 +58,12 @@
 *)
 
 open Errors
-open Util
 open Names
 open Univ
-open Term
-open Reduction
-open Sign
 open Declarations
-open Inductive
 open Environ
 open Entries
 open Typeops
-open Type_errors
-open Indtypes
 open Term_typing
 open Modops
 open Subtyping

@@ -6,24 +6,16 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Errors
 open Util
 open Names
 open Term
 open Termops
-open Environ
-open Libnames
-open Reduction
 open Inductiveops
-open Proof_type
-open Clenv
 open Hipattern
 open Tacmach
 open Tacticals
 open Tactics
-open Hiddentac
-open Genarg
 open Tacexpr
 open Misctypes
 

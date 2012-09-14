@@ -8,12 +8,6 @@
 
 open Pp
 open Errors
-open Util
-open Names
-open Libnames
-open Himsg
-open Proof_type
-open Tacinterp
 
 let disable_drop e =
   if e <> Drop then e

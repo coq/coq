@@ -12,10 +12,7 @@ open Util
 open Names
 open Nameops
 open Term
-open Sign
 open Environ
-open Libnames
-open Nametab
 open Locus
 
 (* Sorts and sort family *)

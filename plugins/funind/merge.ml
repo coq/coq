@@ -8,7 +8,6 @@
 
 (* Merging of induction principles. *)
 
-open Libnames
 open Globnames
 open Tactics
 open Indfun_common
@@ -21,7 +20,6 @@ open Names
 open Term
 open Termops
 open Declarations
-open Environ
 open Glob_term
 open Glob_termops
 open Decl_kinds

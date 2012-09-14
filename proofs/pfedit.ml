@@ -7,20 +7,11 @@
 (************************************************************************)
 
 open Pp
-open Errors
-open Util
 open Names
-open Nameops
-open Sign
-open Term
 open Entries
 open Environ
 open Evd
-open Typing
 open Refiner
-open Tacexpr
-open Proof_type
-open Lib
 
 let refining = Proof_global.there_are_pending_proofs
 let check_no_pending_proofs = Proof_global.check_no_pending_proof

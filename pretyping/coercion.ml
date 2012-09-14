@@ -14,7 +14,6 @@
    Corbineau, Feb 2008 *)
 (* Turned into an abstract compilation unit by Matthieu Sozeau, March 2006 *)
 
-open Pp
 open Errors
 open Util
 open Names
@@ -24,10 +23,8 @@ open Environ
 open Typeops
 open Pretype_errors
 open Classops
-open Recordops
 open Evarutil
 open Evarconv
-open Retyping
 open Evd
 open Termops
 

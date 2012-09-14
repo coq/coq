@@ -14,7 +14,6 @@ open Tacmach
 open Tactics
 open Tacticals
 open Termops
-open Declarations
 open Formula
 open Sequent
 open Globnames

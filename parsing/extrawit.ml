@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Errors
-open Util
 open Genarg
 
 (* This file defines extra argument types *)

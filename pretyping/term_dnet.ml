@@ -7,10 +7,8 @@
 (************************************************************************)
 
 (*i*)
-open Errors
 open Util
 open Term
-open Sign
 open Names
 open Globnames
 open Mod_subst

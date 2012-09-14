@@ -8,7 +8,6 @@
 
 open Names
 open Term
-open Sign
 open Environ
 open Reduction
 

@@ -9,18 +9,9 @@
 (*i*)
 open Names
 open Globnames
-open Decl_kinds
 open Term
-open Sign
-open Evd
 open Environ
-open Nametab
-open Mod_subst
-open Errors
-open Util
-open Pp
 open Libobject
-open Nameops
 (*i*)
 
 let empty_name_table = (Refmap.empty : name list list Refmap.t)

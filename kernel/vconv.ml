@@ -1,5 +1,4 @@
 open Names
-open Declarations
 open Term
 open Environ
 open Conv_oracle

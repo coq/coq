@@ -15,10 +15,7 @@
    Module-traversing code: Pierre Letouzey *)
 
 open Errors
-open Util
 open Names
-open Sign
-open Univ
 open Term
 open Declarations
 open Mod_subst

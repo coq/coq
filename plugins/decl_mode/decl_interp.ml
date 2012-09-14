@@ -11,7 +11,6 @@ open Util
 open Names
 open Constrexpr
 open Tacinterp
-open Tacmach
 open Decl_expr
 open Decl_mode
 open Pretyping

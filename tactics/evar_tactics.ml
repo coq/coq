@@ -6,16 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
-open Pp
 open Errors
 open Evar_refiner
 open Tacmach
 open Tacexpr
 open Refiner
-open Proof_type
 open Evd
-open Sign
 open Locus
 
 (* The instantiate tactic *)

@@ -13,13 +13,11 @@
    declarations *)
 
 open Errors
-open Util
 open Names
 open Univ
 open Declarations
 open Entries
 open Environ
-open Term_typing
 open Modops
 open Subtyping
 open Mod_subst

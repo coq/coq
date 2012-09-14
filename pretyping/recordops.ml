@@ -20,9 +20,7 @@ open Names
 open Globnames
 open Nametab
 open Term
-open Typeops
 open Libobject
-open Library
 open Mod_subst
 open Reductionops
 

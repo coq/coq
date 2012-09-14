@@ -17,7 +17,6 @@ open Names
 open Term
 open Tacmach
 open Evd
-open Proof_type
 
 let init_size=5
 

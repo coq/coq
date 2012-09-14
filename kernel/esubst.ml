@@ -10,7 +10,6 @@
 
 (* Support for explicit substitutions *)
 
-open Errors
 open Util
 
 (*********************)

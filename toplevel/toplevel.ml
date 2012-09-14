@@ -8,9 +8,7 @@
 
 open Pp
 open Errors
-open Util
 open Flags
-open Cerrors
 open Vernac
 open Pcoq
 

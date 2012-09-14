@@ -14,20 +14,9 @@ open Term
 open Termops
 open Sign
 open Declarations
-open Inductive
-open Reduction
-open Environ
-open Libnames
-open Refiner
 open Tacmach
 open Clenv
 open Clenvtac
-open Glob_term
-open Pattern
-open Matching
-open Genarg
-open Tacexpr
-open Locus
 open Misctypes
 
 (************************************************************************)

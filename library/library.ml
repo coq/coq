@@ -16,7 +16,6 @@ open Nameops
 open Safe_typing
 open Libobject
 open Lib
-open Nametab
 
 (*************************************************************************)
 (*s Load path. Mapping from physical to logical paths etc.*)

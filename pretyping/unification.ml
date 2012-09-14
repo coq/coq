@@ -6,20 +6,16 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Errors
 open Util
 open Names
-open Nameops
 open Term
 open Termops
 open Namegen
-open Sign
 open Environ
 open Evd
 open Reduction
 open Reductionops
-open Glob_term
 open Evarutil
 open Pretype_errors
 open Retyping

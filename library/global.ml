@@ -6,11 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Errors
-open Util
 open Names
 open Term
-open Sign
 open Environ
 open Safe_typing
 open Summary
