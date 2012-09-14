@@ -182,7 +182,7 @@ and nf_stk env c t stk  =
       let (mind,_ as ind),allargs = find_rectype_a env t in
       let (mib,mip) = Inductive.lookup_mind_specif env ind in
       let nparams = mib.mind_nparams in
-      let params,realargs = Util.array_chop nparams allargs in
+      let params,realargs = Util.Array.chop nparams allargs in
       let pT =
 	hnf_prod_applist env (type_of_ind env ind) (Array.to_list params) in
       let pT = whd_betadeltaiota env pT in
@@ -264,7 +264,7 @@ and nf_fix env f =
   let ft = Array.map (fun v -> nf_val env v crazy_type) vt in
   let name = Array.init ndef (fun _ -> (Name (id_of_string "Ffix"))) in
   let env = push_rec_types (name,ft,ft) env in
-  let fb = Util.array_map2 (fun v t -> nf_fun env v t) vb ft in
+  let fb = Util.Array.map2 (fun v t -> nf_fun env v t) vb ft in
   mkFix ((rec_args,init),(name,ft,fb))
 
 and nf_fix_app env f vargs =
@@ -282,7 +282,7 @@ and nf_cofix env cf =
   let cft = Array.map (fun v -> nf_val env v crazy_type) vt in
   let name = Array.init ndef (fun _ -> (Name (id_of_string "Fcofix"))) in
   let env = push_rec_types (name,cft,cft) env in
-  let cfb = Util.array_map2 (fun v t -> nf_val env v t) vb cft in
+  let cfb = Util.Array.map2 (fun v t -> nf_val env v t) vb cft in
   mkCoFix (init,(name,cft,cfb))
 
 let cbv_vm env c t  =

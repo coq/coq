@@ -224,7 +224,7 @@ and pp_fix par env i (ids,bl) args =
        (v 1 (str "let {" ++ fnl () ++
 	     prvect_with_sep (fun () -> str ";" ++ fnl ())
 	       (fun (fi,ti) -> pp_function env (pr_id fi) ti)
-	       (array_map2 (fun a b -> a,b) ids bl) ++
+	       (Array.map2 (fun a b -> a,b) ids bl) ++
 	     str "}") ++
         fnl () ++ str "in " ++ pp_apply (pr_id ids.(i)) false args))
 

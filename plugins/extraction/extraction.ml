@@ -202,7 +202,7 @@ let oib_equal o1 o2 =
   o1.mind_consnames = o2.mind_consnames
 
 let mib_equal m1 m2 =
-  array_equal oib_equal m1.mind_packets m1.mind_packets &&
+  Array.equal oib_equal m1.mind_packets m1.mind_packets &&
   m1.mind_record = m2.mind_record &&
   m1.mind_finite = m2.mind_finite &&
   m1.mind_ntypes = m2.mind_ntypes &&
@@ -833,7 +833,7 @@ and extract_fix env mle i (fi,ti,ci as recd) mlt =
   let metas = Array.map new_meta fi in
   metas.(i) <- mlt;
   let mle = Array.fold_left Mlenv.push_type mle metas in
-  let ei = array_map2 (extract_maybe_term env mle) metas ci in
+  let ei = Array.map2 (extract_maybe_term env mle) metas ci in
   MLfix (i, Array.map id_of_name fi, ei)
 
 (*S ML declarations. *)
@@ -859,7 +859,7 @@ let rec gentypvar_ok c = match kind_of_term c with
   | App (c,v) ->
       (* if all arguments are variables, these variables will
 	 disappear after extraction (see [empty_s] below) *)
-      array_for_all isRel v && gentypvar_ok c
+      Array.for_all isRel v && gentypvar_ok c
   | Cast (c,_,_) -> gentypvar_ok c
   | _ -> false
 
@@ -1053,9 +1053,9 @@ let logical_decl = function
   | Dterm (_,MLdummy,Tdummy _) -> true
   | Dtype (_,[],Tdummy _) -> true
   | Dfix (_,av,tv) ->
-      (array_for_all ((=) MLdummy) av) &&
-      (array_for_all isDummy tv)
-  | Dind (_,i) -> array_for_all (fun ip -> ip.ip_logical) i.ind_packets
+      (Array.for_all ((=) MLdummy) av) &&
+      (Array.for_all isDummy tv)
+  | Dind (_,i) -> Array.for_all (fun ip -> ip.ip_logical) i.ind_packets
   | _ -> false
 
 (*s Is a [ml_spec] logical ? *)
@@ -1063,5 +1063,5 @@ let logical_decl = function
 let logical_spec = function
   | Stype (_, [], Some (Tdummy _)) -> true
   | Sval (_,Tdummy _) -> true
-  | Sind (_,i) -> array_for_all (fun ip -> ip.ip_logical) i.ind_packets
+  | Sind (_,i) -> Array.for_all (fun ip -> ip.ip_logical) i.ind_packets
   | _ -> false

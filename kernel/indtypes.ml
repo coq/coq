@@ -253,7 +253,7 @@ let typecheck_inductive env mie =
   (* Compute/check the sorts of the inductive types *)
   let ind_min_levels = inductive_levels arities inds in
   let inds, cst =
-    array_fold_map2' (fun ((id,full_arity,ar_level),cn,info,lc,_) lev cst ->
+    Array.fold_map2' (fun ((id,full_arity,ar_level),cn,info,lc,_) lev cst ->
       let sign, s = dest_arity env full_arity in
       let status,cst = match s with
       | Type u when ar_level <> None (* Explicitly polymorphic *)
@@ -330,7 +330,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
   let largs = Array.of_list largs in
   if Array.length largs < nparams then
     raise (IllFormedInd (LocalNotEnoughArgs l));
-  let (lpar,largs') = array_chop nparams largs in
+  let (lpar,largs') = Array.chop nparams largs in
   let nhyps = List.length hyps in
   let rec check k index = function
     | [] -> ()
@@ -340,7 +340,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
 	  | Rel w when w = index -> check (k-1) (index+1) hyps
 	  | _ -> raise (IllFormedInd (LocalNonPar (k+1,l)))
   in check (nparams-1) (n-nhyps) hyps;
-  if not (array_for_all (noccur_between n ntypes) largs') then
+  if not (Array.for_all (noccur_between n ntypes) largs') then
     failwith_non_pos_vect n ntypes largs'
 
 (* Computes the maximum number of recursive parameters :
@@ -518,7 +518,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
     in check_constr_rec ienv nmr [] c
   in
   let irecargs_nmr =
-    array_map2
+    Array.map2
       (fun id c ->
         let _,rawc = mind_extract_params lparams c in
           try
@@ -646,7 +646,7 @@ let build_inductive env env_ar params isrecord isfinite inds nmr recargs cst =
 	mind_nb_args = !nblock;
 	mind_reloc_tbl = rtbl;
       } in
-  let packets = array_map2 build_one_packet inds recargs in
+  let packets = Array.map2 build_one_packet inds recargs in
     (* Build the mutual inductive *)
     { mind_record = isrecord;
       mind_ntypes = ntypes;

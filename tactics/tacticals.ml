@@ -211,7 +211,7 @@ let compute_construtor_signatures isrec (_,k as ity) =
   let lc =
     Array.map (fun c -> snd (decompose_prod_n_assum n c)) mip.mind_nf_lc in
   let lrecargs = dest_subterms mip.mind_recargs in
-  array_map2 analrec lc lrecargs
+  Array.map2 analrec lc lrecargs
 
 let elimination_sort_of_goal gl =
   pf_apply Retyping.get_sort_family_of gl (pf_concl gl)

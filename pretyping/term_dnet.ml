@@ -127,11 +127,11 @@ struct
 	  | DApp (c1,t1), DApp (c2,t2)
 	  | DLambda (c1,t1), DLambda (c2,t2)) -> f (f acc c1 c2) t1 t2
 	| DCase (ci,p1,c1,bl1),DCase (_,p2,c2,bl2) ->
-	    array_fold_left2 f (f (f acc p1 p2) c1 c2) bl1 bl2
+	    Array.fold_left2 f (f (f acc p1 p2) c1 c2) bl1 bl2
 	| DFix (ia,i,ta1,ca1), DFix (_,_,ta2,ca2) ->
-	    array_fold_left2 f (array_fold_left2 f acc ta1 ta2) ca1 ca2
+	    Array.fold_left2 f (Array.fold_left2 f acc ta1 ta2) ca1 ca2
 	| DCoFix(i,ta1,ca1), DCoFix(_,ta2,ca2) ->
-	    array_fold_left2 f (array_fold_left2 f acc ta1 ta2) ca1 ca2
+	    Array.fold_left2 f (Array.fold_left2 f acc ta1 ta2) ca1 ca2
 	| DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
 	    f (Option.fold_left2 f (f acc t1 t2) topt1 topt2) u1 u2
 	| _ -> assert false
@@ -147,11 +147,11 @@ struct
 	| DLambda (t1,c1), DLambda (t2,c2) -> DLambda (f t1 t2, f c1 c2)
 	| DApp (t1,u1), DApp (t2,u2) -> DApp (f t1 t2,f u1 u2)
 	| DCase (ci,p1,c1,bl1), DCase (_,p2,c2,bl2) ->
-	    DCase (ci, f p1 p2, f c1 c2, array_map2 f bl1 bl2)
+	    DCase (ci, f p1 p2, f c1 c2, Array.map2 f bl1 bl2)
 	| DFix (ia,i,ta1,ca1), DFix (_,_,ta2,ca2) ->
-	    DFix (ia,i,array_map2 f ta1 ta2,array_map2 f ca1 ca2)
+	    DFix (ia,i,Array.map2 f ta1 ta2,Array.map2 f ca1 ca2)
 	| DCoFix (i,ta1,ca1), DCoFix (_,ta2,ca2) ->
-	    DCoFix (i,array_map2 f ta1 ta2,array_map2 f ca1 ca2)
+	    DCoFix (i,Array.map2 f ta1 ta2,Array.map2 f ca1 ca2)
 	| DCons ((t1,topt1),u1), DCons ((t2,topt2),u2) ->
 	    DCons ((f t1 t2,Option.lift2 f topt1 topt2), f u1 u2)
 	| _ -> assert false

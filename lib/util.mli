@@ -77,57 +77,7 @@ val (@) : 'a list -> 'a list -> 'a list
 
 (** {6 Arrays. } *)
 
-val array_compare : ('a -> 'a -> int) -> 'a array -> 'a array -> int
-val array_equal : ('a -> 'a -> bool) -> 'a array -> 'a array -> bool
-val array_exists : ('a -> bool) -> 'a array -> bool
-val array_for_all : ('a -> bool) -> 'a array -> bool
-val array_for_all2 : ('a -> 'b -> bool) -> 'a array -> 'b array -> bool
-val array_for_all3 : ('a -> 'b -> 'c -> bool) ->
-  'a array -> 'b array -> 'c array -> bool
-val array_for_all4 : ('a -> 'b -> 'c -> 'd -> bool) ->
-  'a array -> 'b array -> 'c array -> 'd array -> bool
-val array_for_all_i : (int -> 'a -> bool) -> int -> 'a array -> bool
-val array_find_i : (int -> 'a -> bool) -> 'a array -> int option
-val array_hd : 'a array -> 'a
-val array_tl : 'a array -> 'a array
-val array_last : 'a array -> 'a
-val array_cons : 'a -> 'a array -> 'a array
-val array_rev : 'a array -> unit
-val array_fold_right_i :
-  (int -> 'b -> 'a -> 'a) -> 'b array -> 'a -> 'a
-val array_fold_left_i : (int -> 'a -> 'b -> 'a) -> 'a -> 'b array -> 'a
-val array_fold_right2 :
-  ('a -> 'b -> 'c -> 'c) -> 'a array -> 'b array -> 'c -> 'c
-val array_fold_left2 :
-  ('a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
-val array_fold_left3 :
-  ('a -> 'b -> 'c -> 'd -> 'a) -> 'a -> 'b array -> 'c array -> 'd array -> 'a
-val array_fold_left2_i :
-  (int -> 'a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
-val array_fold_left_from : int -> ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
-val array_fold_right_from : int -> ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
-val array_app_tl : 'a array -> 'a list -> 'a list
-val array_list_of_tl : 'a array -> 'a list
-val array_map_to_list : ('a -> 'b) -> 'a array -> 'b list
-val array_chop : int -> 'a array -> 'a array * 'a array
-val array_smartmap : ('a -> 'a) -> 'a array -> 'a array
-val array_map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
-val array_map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
-val array_map3 :
-  ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
-val array_map_left : ('a -> 'b) -> 'a array -> 'b array
-val array_map_left_pair : ('a -> 'b) -> 'a array -> ('c -> 'd) -> 'c array ->
-  'b array * 'd array
-val array_iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
-val array_fold_map' : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
-val array_fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
-val array_fold_map2' :
-  ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
-val array_distinct : 'a array -> bool
-val array_union_map : ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
-val array_rev_to_list : 'a array -> 'a list
-val array_filter_along : ('a -> bool) -> 'a list -> 'b array -> 'b array
-val array_filter_with : bool list -> 'a array -> 'a array
+module Array : CArray.ExtS
 
 (** {6 Streams. } *)
 

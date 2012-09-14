@@ -153,17 +153,9 @@ exception Found of int
 (* Array scanning *)
 
 let array_prfx (arr: 'a array) (pred: int -> 'a -> bool): int =
-  try
-    for i=0 to Array.length arr - 1 do if pred i (arr.(i)) then raise (Found i) done;
-    Array.length arr (* all elt are positive *)
-  with Found i -> i
-
-let array_fold_lefti (f: int -> 'a -> 'b -> 'a) (acc:'a) (arr:'b array): 'a =
-  let i = ref 0 in
-  Array.fold_left
-    (fun acc x ->
-      let res = f !i acc x in i := !i + 1; res)
-    acc arr
+match Array.find_i pred arr with
+| None -> Array.length arr (* all elt are positive *)
+| Some i -> i
 
 (* Like List.chop but except that [i] is the size of the suffix of [l]. *)
 let list_chop_end i l =
@@ -660,7 +652,7 @@ let rec merge_types shift accrec1
     returns the list of unlinked vars of [allargs2]. *)
 let build_link_map_aux (allargs1:identifier array) (allargs2:identifier array)
     (lnk:int merged_arg array) =
-  array_fold_lefti
+  Array.fold_left_i
     (fun i acc e ->
       if i = Array.length lnk - 1 then acc (* functional arg, not in allargs *)
       else
@@ -939,7 +931,7 @@ let merge (id1:identifier) (id2:identifier) (args1:identifier array)
                  as above: vars may be linked inside args2?? *)
     Array.mapi
       (fun i c ->
-        match array_find_i (fun i x -> x=c) args1 with
+        match Array.find_i (fun i x -> x=c) args1 with
           | Some j -> Linked j
           | None -> Unlinked)
       args2 in

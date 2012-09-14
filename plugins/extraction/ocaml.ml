@@ -374,7 +374,7 @@ and pp_fix par env i (ids,bl) args =
 	  prvect_with_sep
       	    (fun () -> fnl () ++ str "and ")
 	    (fun (fi,ti) -> pr_id fi ++ pp_function env ti)
-	    (array_map2 (fun id b -> (id,b)) ids bl) ++
+	    (Array.map2 (fun id b -> (id,b)) ids bl) ++
 	  fnl () ++
 	  hov 2 (str "in " ++ pp_apply (pr_id ids.(i)) false args)))
 

@@ -463,10 +463,10 @@ let fold_constr f acc c = match kind_of_term c with
   | Evar (_,l) -> Array.fold_left f acc l
   | Case (_,p,c,bl) -> Array.fold_left f (f (f acc p) c) bl
   | Fix (_,(lna,tl,bl)) ->
-      let fd = array_map3 (fun na t b -> (na,t,b)) lna tl bl in
+      let fd = Array.map3 (fun na t b -> (na,t,b)) lna tl bl in
       Array.fold_left (fun acc (na,t,b) -> f (f acc t) b) acc fd
   | CoFix (_,(lna,tl,bl)) ->
-      let fd = array_map3 (fun na t b -> (na,t,b)) lna tl bl in
+      let fd = Array.map3 (fun na t b -> (na,t,b)) lna tl bl in
       Array.fold_left (fun acc (na,t,b) -> f (f acc t) b) acc fd
 
 (* [iter_constr f c] iters [f] on the immediate subterms of [c]; it is
@@ -572,17 +572,17 @@ let compare_constr f t1 t2 =
   | _, App (c2,l2) when isCast c2 -> f t1 (mkApp (pi1 (destCast c2),l2))
   | App (c1,l1), App (c2,l2) ->
     Array.length l1 = Array.length l2 &&
-      f c1 c2 && array_for_all2 f l1 l2
-  | Evar (e1,l1), Evar (e2,l2) -> e1 = e2 & array_for_all2 f l1 l2
+      f c1 c2 && Array.for_all2 f l1 l2
+  | Evar (e1,l1), Evar (e2,l2) -> e1 = e2 & Array.for_all2 f l1 l2
   | Const c1, Const c2 -> eq_constant c1 c2
   | Ind c1, Ind c2 -> eq_ind c1 c2
   | Construct c1, Construct c2 -> eq_constructor c1 c2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
-      f p1 p2 & f c1 c2 & array_for_all2 f bl1 bl2
+      f p1 p2 & f c1 c2 & Array.for_all2 f bl1 bl2
   | Fix (ln1,(_,tl1,bl1)), Fix (ln2,(_,tl2,bl2)) ->
-      ln1 = ln2 & array_for_all2 f tl1 tl2 & array_for_all2 f bl1 bl2
+      ln1 = ln2 & Array.for_all2 f tl1 tl2 & Array.for_all2 f bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-      ln1 = ln2 & array_for_all2 f tl1 tl2 & array_for_all2 f bl1 bl2
+      ln1 = ln2 & Array.for_all2 f tl1 tl2 & Array.for_all2 f bl1 bl2
   | _ -> false
 
 (*******************************)
@@ -618,9 +618,9 @@ let constr_ord_int f t1 t2 =
 	((f =? f) ==? f) b1 b2 t1 t2 c1 c2
     | App (c1,l1), _ when isCast c1 -> f (mkApp (pi1 (destCast c1),l1)) t2
     | _, App (c2,l2) when isCast c2 -> f t1 (mkApp (pi1 (destCast c2),l2))
-    | App (c1,l1), App (c2,l2) -> (f =? (array_compare f)) c1 c2 l1 l2
+    | App (c1,l1), App (c2,l2) -> (f =? (Array.compare f)) c1 c2 l1 l2
     | Evar (e1,l1), Evar (e2,l2) ->
-	((-) =? (array_compare f)) e1 e2 l1 l2
+	((-) =? (Array.compare f)) e1 e2 l1 l2
     | Const c1, Const c2 -> kn_ord (canonical_con c1) (canonical_con c2)
     | Ind (spx, ix), Ind (spy, iy) ->
 	let c = ix - iy in if c = 0 then kn_ord (canonical_mind spx) (canonical_mind spy) else c
@@ -629,12 +629,12 @@ let constr_ord_int f t1 t2 =
 	  (let c = ix - iy in if c = 0 then kn_ord (canonical_mind spx) (canonical_mind spy) else c)
 	else c
     | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
-	((f =? f) ==? (array_compare f)) p1 p2 c1 c2 bl1 bl2
+	((f =? f) ==? (Array.compare f)) p1 p2 c1 c2 bl1 bl2
     | Fix (ln1,(_,tl1,bl1)), Fix (ln2,(_,tl2,bl2)) ->
-	((Pervasives.compare =? (array_compare f)) ==? (array_compare f))
+	((Pervasives.compare =? (Array.compare f)) ==? (Array.compare f))
 	ln1 ln2 tl1 tl2 bl1 bl2
     | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-	((Pervasives.compare =? (array_compare f)) ==? (array_compare f))
+	((Pervasives.compare =? (Array.compare f)) ==? (Array.compare f))
 	ln1 ln2 tl1 tl2 bl1 bl2
     | t1, t2 -> Pervasives.compare t1 t2
 

@@ -154,7 +154,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
 	    compute_new_princ_type_for_binder  remove mkLambda env x t b
 	| Ind _ | Construct _ when is_dom pre_princ -> raise Toberemoved
 	| App(f,args) when is_dom f ->
-	    let var_to_be_removed = destRel (array_last args) in
+	    let var_to_be_removed = destRel (Array.last args) in
 	    let num = get_fun_num f in
 	    raise (Toberemoved_with_rel (var_to_be_removed,mk_replacement pre_princ num args))
 	| App(f,args) ->
@@ -479,7 +479,7 @@ let get_funs_constant mp dp =
 	let first_infos = extract_info true (List.hd l_bodies) in
 	let check body  = (* Hope this is correct *)
 	  let eq_infos (ia1, na1, ta1, ca1) (ia2, na2, ta2, ca2) =
-	    ia1 = ia2 && na1 = na2 && array_equal eq_constr ta1 ta2 && array_equal eq_constr ca1 ca2
+	    ia1 = ia2 && na1 = na2 && Array.equal eq_constr ta1 ta2 && Array.equal eq_constr ca1 ca2
 	  in
 	  if not (eq_infos first_infos (extract_info false body))
 	  then  error "Not a mutal recursive block"

@@ -141,8 +141,8 @@ let check_fix env cb i =
 
 let prec_declaration_equal (na1, ca1, ta1) (na2, ca2, ta2) =
   na1 = na2 &&
-  array_equal eq_constr ca1 ca2 &&
-  array_equal eq_constr ta1 ta2
+  Array.equal eq_constr ca1 ca2 &&
+  Array.equal eq_constr ta1 ta2
 
 let factor_fix env l cb msb =
   let _,recd as check = check_fix env cb 0 in
@@ -287,7 +287,7 @@ let rec extract_sfb env mp all = function
 	 let vl,recd,msb = factor_fix env l cb msb in
 	 let vc = Array.map (make_con mp empty_dirpath) vl in
 	 let ms = extract_sfb env mp all msb in
-	 let b = array_exists Visit.needed_con vc in
+	 let b = Array.exists Visit.needed_con vc in
 	 if all || b then
 	   let d = extract_fixpoint env vc recd in
 	   if (not b) && (logical_decl d) then ms

@@ -20,7 +20,7 @@ open Environ
 let inductive_of_constructor = fst
 
 let conv_leq_vecti env v1 v2 =
-  array_fold_left2_i
+  Array.fold_left2_i
     (fun i _ t1 t2 ->
       (try conv_leq env t1 t2
       with NotConvertible -> raise (NotConvertibleVect i)); ())
@@ -244,7 +244,7 @@ let type_fixpoint env lna lar lbody vdefj =
   try
     conv_leq_vecti env vdefj (Array.map (fun ty -> lift lt ty) lar)
   with NotConvertibleVect i ->
-    let vdefj = array_map2 (fun b ty -> b,ty) lbody vdefj in
+    let vdefj = Array.map2 (fun b ty -> b,ty) lbody vdefj in
     error_ill_typed_rec_body env i lna vdefj lar
 
 (************************************************************************)
@@ -293,7 +293,7 @@ let rec execute env cstr =
 		(* No sort-polymorphism *)
 		execute env f
 	in
-        let jl = array_map2 (fun c ty -> c,ty) args jl in
+        let jl = Array.map2 (fun c ty -> c,ty) args jl in
 	judge_of_apply env (f,j) jl
 
     | Lambda (name,c1,c2) ->
@@ -362,7 +362,7 @@ and execute_type env constr =
 
 and execute_recdef env (names,lar,vdef) i =
   let larj = execute_array env lar in
-  let larj = array_map2 (fun c ty -> c,ty) lar larj in
+  let larj = Array.map2 (fun c ty -> c,ty) lar larj in
   let lara = Array.map (assumption_of_judgment env) larj in
   let env1 = push_rec_types (names,lara,vdef) env in
   let vdefj = execute_array env1 vdef in

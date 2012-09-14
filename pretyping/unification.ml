@@ -71,7 +71,7 @@ let abstract_list_all env evd typ c l =
     error_cannot_find_well_typed_abstraction env evd p l
 
 let set_occurrences_of_last_arg args =
-  Some AllOccurrences :: List.tl (array_map_to_list (fun _ -> None) args)
+  Some AllOccurrences :: List.tl (Array.map_to_list (fun _ -> None) args)
 
 let abstract_list_all_with_dependencies env evd typ c l =
   let evd,ev = new_evar evd env typ in
@@ -324,7 +324,7 @@ let use_metas_pattern_unification flags nb l =
   !global_evars_pattern_unification_flag && flags.use_pattern_unification
   || (Flags.version_less_or_equal Flags.V8_3 || 
       flags.use_meta_bound_pattern_unification) &&
-     array_for_all (fun c -> isRel c && destRel c <= nb) l
+     Array.for_all (fun c -> isRel c && destRel c <= nb) l
 
 let expand_key env = function
   | Some (ConstKey cst) -> constant_opt_value env cst
@@ -461,7 +461,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
 
 	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
             (try 
-	       array_fold_left2 (unirec_rec curenvnb CONV true wt)
+	       Array.fold_left2 (unirec_rec curenvnb CONV true wt)
 		 (unirec_rec curenvnb CONV true false
 		    (unirec_rec curenvnb CONV true false substn p1 p2) c1 c2)
                  cl1 cl2
@@ -503,7 +503,7 @@ let unify_0_with_initial_metas (sigma,ms,es as subst) conv_at_top env cv_pb flag
   and unify_app curenvnb pb b substn cM f1 l1 cN f2 l2 =
     try
       let (f1,l1,f2,l2) = adjust_app_array_size f1 l1 f2 l2 in
-      array_fold_left2 (unirec_rec curenvnb CONV true false)
+      Array.fold_left2 (unirec_rec curenvnb CONV true false)
 	(unirec_rec curenvnb CONV true true substn f1 f2) l1 l2
     with ex when precatchable_exception ex ->
     try reduce curenvnb pb b false substn cM cN

@@ -985,22 +985,18 @@ let admit_obligations n =
 
 exception Found of int
 
-let array_find f arr =
-  try Array.iteri (fun i x -> if f x then raise (Found i)) arr;
-    raise Not_found
-  with Found i -> i
-
 let next_obligation n tac =
   let prg = match n with
   | None -> get_any_prog_err ()
   | Some _ -> get_prog_err n
   in
   let obls, rem = prg.prg_obligations in
-  let i =
-    try array_find (fun x ->  x.obl_body = None && deps_remaining obls x.obl_deps = []) obls
-    with Not_found -> anomaly "Could not find a solvable obligation."
-  in solve_obligation prg i tac
-
+  let is_open _ x = x.obl_body = None && deps_remaining obls x.obl_deps = [] in
+  let i = match Array.find_i is_open obls with
+  | Some i -> i
+  | None -> anomaly "Could not find a solvable obligation."
+  in
+  solve_obligation prg i tac
 
 let init_program () =
   Coqlib.check_required_library ["Coq";"Init";"Datatypes"];

@@ -718,7 +718,7 @@ let clenv_refine_in ?(sidecond_first=false) with_evars ?(with_classes=true) id c
 
 let last_arg c = match kind_of_term c with
   | App (f,cl) ->
-      array_last cl
+      Array.last cl
   | _ -> anomaly "last_arg"
 
 let nth_arg i c =
@@ -1305,7 +1305,7 @@ let intro_or_and_pattern loc b ll l' tac id gl =
     check_or_and_pattern_size loc ll (Array.length nv);
     tclTHENLASTn
       (tclTHEN (simplest_case c) (clear [id]))
-      (array_map2 (fun n l -> tac ((adjust_names_length n n l)@l'))
+      (Array.map2 (fun n l -> tac ((adjust_names_length n n l)@l'))
 	nv (Array.of_list ll))
       gl
 
@@ -2315,7 +2315,7 @@ let ids_of_constr ?(all=false) vars c =
 	| Construct (ind,_)
 	| Ind ind ->
             let (mib,mip) = Global.lookup_inductive ind in
-	      array_fold_left_from
+	      Array.fold_left_from
 		(if all then 0 else mib.Declarations.mind_nparams)
 		aux vars args
 	| _ -> fold_constr aux vars c)
@@ -2328,7 +2328,7 @@ let decompose_indapp f args =
   | Ind ind ->
       let (mib,mip) = Global.lookup_inductive ind in
       let first = mib.Declarations.mind_nparams_rec in
-      let pars, args = array_chop first args in
+      let pars, args = Array.chop first args in
 	mkApp (f, pars), args
   | _ -> f, args
 
@@ -2459,10 +2459,10 @@ let abstract_args gl generalize_vars dep id defined f args =
     let parvars = ids_of_constr ~all:true Idset.empty f' in
       if not (linear parvars args') then true, f, args
       else
-	match array_find_i (fun i x -> not (isVar x) || is_defined_variable env (destVar x)) args' with
+	match Array.find_i (fun i x -> not (isVar x) || is_defined_variable env (destVar x)) args' with
 	| None -> false, f', args'
 	| Some nonvar ->
-	    let before, after = array_chop nonvar args' in
+	    let before, after = Array.chop nonvar args' in
 	      true, mkApp (f', before), after
   in
     if dogen then
@@ -2941,7 +2941,7 @@ let apply_induction_with_discharge induct_tac elim indhyps destopt avoid names t
     (tclTHEN
        (induct_tac elim)
        (tclMAP (fun id -> tclTRY (expand_hyp id)) (List.rev indhyps)))
-    (array_map2 (induct_discharge destopt avoid tac) indsign names) gl
+    (Array.map2 (induct_discharge destopt avoid tac) indsign names) gl
 
 (* Apply induction "in place" taking into account dependent
    hypotheses from the context *)

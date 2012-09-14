@@ -97,10 +97,10 @@ let glob_constr_of_notation_constr_with_binders loc g f e = function
       let e',na = g e na in
       GIf (loc,f e c,(na,Option.map (f e') po),f e b1,f e b2)
   | NRec (fk,idl,dll,tl,bl) ->
-      let e,dll = array_fold_map (List.fold_map (fun e (na,oc,b) ->
+      let e,dll = Array.fold_map (List.fold_map (fun e (na,oc,b) ->
 	  let e,na = g e na in
 	  (e,(na,Explicit,Option.map (f e) oc,f e b)))) e dll in
-      let e',idl = array_fold_map (to_id g) e idl in
+      let e',idl = Array.fold_map (to_id g) e idl in
       GRec (loc,fk,idl,dll,Array.map (f e) tl,Array.map (f e') bl)
   | NCast (c,k) -> GCast (loc,f e c,Miscops.map_cast_type (f e) k)
   | NSort x -> GSort (loc,x)
@@ -423,12 +423,12 @@ let rec subst_notation_constr subst bound raw =
 
   | NRec (fk,idl,dll,tl,bl) ->
       let dll' =
-	array_smartmap (List.smartmap (fun (na,oc,b as x) ->
+	Array.smartmap (List.smartmap (fun (na,oc,b as x) ->
 	  let oc' =  Option.smartmap (subst_notation_constr subst bound) oc in
 	  let b' =  subst_notation_constr subst bound b in
 	  if oc' == oc && b' == b then x else (na,oc',b'))) dll in
-      let tl' = array_smartmap (subst_notation_constr subst bound) tl in
-      let bl' = array_smartmap (subst_notation_constr subst bound) bl in
+      let tl' = Array.smartmap (subst_notation_constr subst bound) tl in
+      let bl' = Array.smartmap (subst_notation_constr subst bound) bl in
       if dll' == dll && tl' == tl && bl' == bl then raw else
 	  NRec (fk,idl,dll',tl',bl')
 
@@ -500,7 +500,7 @@ let match_fix_kind fk1 fk2 =
   | GCoFix n1, GCoFix n2 -> n1 = n2
   | GFix (nl1,n1), GFix (nl2,n2) ->
       n1 = n2 &&
-      array_for_all2 (fun (n1,_) (n2,_) -> n2 = None || n1 = n2) nl1 nl2
+      Array.for_all2 (fun (n1,_) (n2,_) -> n2 = None || n1 = n2) nl1 nl2
   | _ -> false
 
 let match_opt f sigma t1 t2 = match (t1,t2) with
@@ -658,18 +658,18 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
       List.fold_left2 (match_in u alp metas) sigma [a1;b1;c1] [a2;b2;c2]
   | GRec (_,fk1,idl1,dll1,tl1,bl1), NRec (fk2,idl2,dll2,tl2,bl2)
       when match_fix_kind fk1 fk2 & Array.length idl1 =  Array.length idl2 &
-	array_for_all2 (fun l1 l2 -> List.length l1 = List.length l2) dll1 dll2
+	Array.for_all2 (fun l1 l2 -> List.length l1 = List.length l2) dll1 dll2
 	->
-      let alp,sigma = array_fold_left2
+      let alp,sigma = Array.fold_left2
 	(List.fold_left2 (fun (alp,sigma) (na1,_,oc1,b1) (na2,oc2,b2) ->
 	  let sigma =
 	    match_in u alp metas
               (match_opt (match_in u alp metas) sigma oc1 oc2) b1 b2
 	  in match_names metas (alp,sigma) na1 na2)) (alp,sigma) dll1 dll2 in
-      let sigma = array_fold_left2 (match_in u alp metas) sigma tl1 tl2 in
-      let alp,sigma = array_fold_right2 (fun id1 id2 alsig ->
+      let sigma = Array.fold_left2 (match_in u alp metas) sigma tl1 tl2 in
+      let alp,sigma = Array.fold_right2 (fun id1 id2 alsig ->
 	match_names metas alsig (Name id1) (Name id2)) idl1 idl2 (alp,sigma) in
-      array_fold_left2 (match_in u alp metas) sigma bl1 bl2
+      Array.fold_left2 (match_in u alp metas) sigma bl1 bl2
   | GCast(_,c1,CastConv t1), NCast (c2,CastConv t2)
   | GCast(_,c1,CastVM t1), NCast (c2,CastVM t2) ->
       match_in u alp metas (match_in u alp metas sigma c1 c2) t1 t2

@@ -144,7 +144,7 @@ let is_tuple t =
    "Inductive I A1 ... An := C1 (_:A1) | ... | Cn : (_:An)" *)
 
 let test_strict_disjunction n lc =
-  array_for_all_i (fun i c ->
+  Array.for_all_i (fun i c ->
     match (prod_assum (snd (decompose_prod_n_assum n c))) with
     | [_,None,c] -> isRel c && destRel c = (n - i)
     | _ -> false) 0 lc
@@ -155,7 +155,7 @@ let match_with_disjunction ?(strict=false) ?(onlybinary=false) t =
   | Ind ind  ->
       let car = mis_constr_nargs ind in
       let (mib,mip) = Global.lookup_inductive ind in
-      if array_for_all (fun ar -> ar = 1) car
+      if Array.for_all (fun ar -> ar = 1) car
 	&& not (mis_is_recursive (ind,mib,mip))
         && (mip.mind_nrealargs = 0)
       then
@@ -316,7 +316,7 @@ let match_with_nodep_ind t =
           let (mib,mip) = Global.lookup_inductive ind in
 	    if Array.length (mib.mind_packets)>1 then None else
 	      let nodep_constr = has_nodep_prod_after mib.mind_nparams in
-		if array_for_all nodep_constr mip.mind_nf_lc then
+		if Array.for_all nodep_constr mip.mind_nf_lc then
 		  let params=
 		    if mip.mind_nrealargs=0 then args else
 		      fst (List.chop mib.mind_nparams args) in

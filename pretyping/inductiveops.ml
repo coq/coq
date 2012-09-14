@@ -79,7 +79,7 @@ let mis_is_recursive_subset listind rarg =
 	  | Mrec (_,i) -> List.mem i listind
           | _ -> false) rvec
   in
-  array_exists one_is_rec (dest_subterms rarg)
+  Array.exists one_is_rec (dest_subterms rarg)
 
 let mis_is_recursive (ind,mib,mip) =
   mis_is_recursive_subset (interval 0 (mib.mind_ntypes-1))
@@ -400,7 +400,7 @@ let set_pattern_names env ind brv =
         rel_context_length ((prod_assum c)) -
         mib.mind_nparams)
       mip.mind_nf_lc in
-  array_map2 (set_names env) arities brv
+  Array.map2 (set_names env) arities brv
 
 let type_case_branches_with_names env indspec p c =
   let (ind,args) = indspec in

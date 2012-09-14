@@ -316,12 +316,12 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 	      type_bl (push_rel dcl env) (add_rel_decl dcl ctxt) bl in
       let ctxtv = Array.map (type_bl env empty_rel_context) bl in
       let larj =
-        array_map2
+        Array.map2
           (fun e ar ->
              pretype_type empty_valcon (push_rel_context e env) evdref lvar ar)
           ctxtv lar in
       let lara = Array.map (fun a -> a.utj_val) larj in
-      let ftys = array_map2 (fun e a -> it_mkProd_or_LetIn a e) ctxtv lara in
+      let ftys = Array.map2 (fun e a -> it_mkProd_or_LetIn a e) ctxtv lara in
       let nbfix = Array.length lar in
       let names = Array.map (fun id -> Name id) names in
       let _ = 
@@ -336,7 +336,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 	(* Note: bodies are not used by push_rec_types, so [||] is safe *)
       let newenv = push_rec_types (names,ftys,[||]) env in
       let vdefj =
-	array_map2_i
+	Array.map2_i
 	  (fun i ctxt def ->
              (* we lift nbfix times the type in tycon, because of
 	      * the nbfix variables pushed to newenv *)

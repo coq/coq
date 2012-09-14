@@ -207,7 +207,7 @@ let push_rels_assum assums =
 
 let push_named_rec_types (lna,typarray,_) env =
   let ctxt =
-    array_map2_i
+    Array.map2_i
       (fun i na t ->
 	 match na with
 	   | Name id -> (id, None, lift i t)
@@ -266,14 +266,14 @@ let rec strip_head_cast c = match kind_of_term c with
 let rec drop_extra_implicit_args c = match kind_of_term c with
   (* Removed trailing extra implicit arguments, what improves compatibility
      for constants with recently added maximal implicit arguments *)
-  | App (f,args) when isEvar (array_last args) ->
+  | App (f,args) when isEvar (Array.last args) ->
       drop_extra_implicit_args
-	(mkApp (f,fst (array_chop (Array.length args - 1) args)))
+	(mkApp (f,fst (Array.chop (Array.length args - 1) args)))
   | _ -> c
 
 (* Get the last arg of an application *)
 let last_arg c = match kind_of_term c with
-  | App (f,cl) -> array_last cl
+  | App (f,cl) -> Array.last cl
   | _ -> anomaly "last_arg"
 
 (* Get the last arg of an application *)
@@ -296,10 +296,10 @@ let adjust_app_array_size f1 l1 f2 l2 =
   let len1 = Array.length l1 and len2 = Array.length l2 in
   if len1 = len2 then (f1,l1,f2,l2)
   else if len1 < len2 then
-    let extras,restl2 = array_chop (len2-len1) l2 in
+    let extras,restl2 = Array.chop (len2-len1) l2 in
     (f1, l1, appvect (f2,extras), restl2)
   else
-    let extras,restl1 = array_chop (len1-len2) l1 in
+    let extras,restl1 = Array.chop (len1-len2) l1 in
     (appvect (f1,extras), restl1, f2, l2)
 
 (* [map_constr_with_named_binders g f l c] maps [f l] on the immediate
@@ -336,7 +336,7 @@ let map_constr_with_named_binders g f l c = match kind_of_term c with
    (co-)fixpoint) *)
 
 let fold_rec_types g (lna,typarray,_) e =
-  let ctxt = array_map2_i (fun i na t -> (na, None, lift i t)) lna typarray in
+  let ctxt = Array.map2_i (fun i na t -> (na, None, lift i t)) lna typarray in
   Array.fold_left (fun e assum -> g assum e) e ctxt
 
 
@@ -361,19 +361,19 @@ let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
       let a = al.(Array.length al - 1) in
       let hd = f l (mkApp (c, Array.sub al 0 (Array.length al - 1))) in
       mkApp (hd, [| f l a |])
-  | Evar (e,al) -> mkEvar (e, array_map_left (f l) al)
+  | Evar (e,al) -> mkEvar (e, Array.map_left (f l) al)
   | Case (ci,p,c,bl) ->
       (* In v8 concrete syntax, predicate is after the term to match! *)
       let c' = f l c in
       let p' = f l p in
-      mkCase (ci, p', c', array_map_left (f l) bl)
+      mkCase (ci, p', c', Array.map_left (f l) bl)
   | Fix (ln,(lna,tl,bl as fx)) ->
       let l' = fold_rec_types g fx l in
-      let (tl',bl') = array_map_left_pair (f l) tl (f l') bl in
+      let (tl',bl') = Array.map_left_pair (f l) tl (f l') bl in
       mkFix (ln,(lna,tl',bl'))
   | CoFix(ln,(lna,tl,bl as fx)) ->
       let l' = fold_rec_types g fx l in
-      let (tl',bl') = array_map_left_pair (f l) tl (f l') bl in
+      let (tl',bl') = Array.map_left_pair (f l) tl (f l') bl in
       mkCoFix (ln,(lna,tl',bl'))
 
 (* strong *)
@@ -400,30 +400,30 @@ let map_constr_with_full_binders g f l cstr = match kind_of_term cstr with
   | App (c,al) ->
       let c' = f l c in
       let al' = Array.map (f l) al in
-      if c==c' && array_for_all2 (==) al al' then cstr else mkApp (c', al')
+      if c==c' && Array.for_all2 (==) al al' then cstr else mkApp (c', al')
   | Evar (e,al) ->
       let al' = Array.map (f l) al in
-      if array_for_all2 (==) al al' then cstr else mkEvar (e, al')
+      if Array.for_all2 (==) al al' then cstr else mkEvar (e, al')
   | Case (ci,p,c,bl) ->
       let p' = f l p in
       let c' = f l c in
       let bl' = Array.map (f l) bl in
-      if p==p' && c==c' && array_for_all2 (==) bl bl' then cstr else
+      if p==p' && c==c' && Array.for_all2 (==) bl bl' then cstr else
         mkCase (ci, p', c', bl')
   | Fix (ln,(lna,tl,bl)) ->
       let tl' = Array.map (f l) tl in
       let l' =
-        array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
+        Array.fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
       let bl' = Array.map (f l') bl in
-      if array_for_all2 (==) tl tl' && array_for_all2 (==) bl bl'
+      if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
       then cstr
       else mkFix (ln,(lna,tl',bl'))
   | CoFix(ln,(lna,tl,bl)) ->
       let tl' = Array.map (f l) tl in
       let l' =
-        array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
+        Array.fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
       let bl' = Array.map (f l') bl in
-      if array_for_all2 (==) tl tl' && array_for_all2 (==) bl bl'
+      if Array.for_all2 (==) tl tl' && Array.for_all2 (==) bl bl'
       then cstr
       else mkCoFix (ln,(lna,tl',bl'))
 
@@ -446,11 +446,11 @@ let fold_constr_with_binders g f n acc c = match kind_of_term c with
   | Case (_,p,c,bl) -> Array.fold_left (f n) (f n (f n acc p) c) bl
   | Fix (_,(lna,tl,bl)) ->
       let n' = iterate g (Array.length tl) n in
-      let fd = array_map2 (fun t b -> (t,b)) tl bl in
+      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
   | CoFix (_,(lna,tl,bl)) ->
       let n' = iterate g (Array.length tl) n in
-      let fd = array_map2 (fun t b -> (t,b)) tl bl in
+      let fd = Array.map2 (fun t b -> (t,b)) tl bl in
       Array.fold_left (fun acc (t,b) -> f n' (f n acc t) b) acc fd
 
 (* [iter_constr_with_full_binders g f acc c] iters [f acc] on the immediate
@@ -469,11 +469,11 @@ let iter_constr_with_full_binders g f l c = match kind_of_term c with
   | Evar (_,args) -> Array.iter (f l) args
   | Case (_,p,c,bl) -> f l p; f l c; Array.iter (f l) bl
   | Fix (_,(lna,tl,bl)) ->
-      let l' = array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
+      let l' = Array.fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
       Array.iter (f l) tl;
       Array.iter (f l') bl
   | CoFix (_,(lna,tl,bl)) ->
-      let l' = array_fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
+      let l' = Array.fold_left2 (fun l na t -> g (na,None,t) l) l lna tl in
       Array.iter (f l) tl;
       Array.iter (f l') bl
 

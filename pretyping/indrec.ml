@@ -321,7 +321,7 @@ let mis_make_indrec env sigma listdepkind mib =
 		(fun f -> appvect (f, Termops.extended_rel_vect ndepar lnonparrec))
 		fi
 	      in
-		array_map3
+		Array.map3
 		  (make_rec_branch_arg env sigma
 		      (nparrec,depPvec,larsign))
                   vecfi constrs (dest_subterms recargsvec.(tyi))

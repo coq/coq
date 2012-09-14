@@ -371,7 +371,7 @@ let is_property ptes_info t_x full_type_of_hyp =
   if isApp t_x
   then
     let pte,args = destApp t_x in
-    if isVar pte && array_for_all closed0 args
+    if isVar pte && Array.for_all closed0 args
     then
       try
 	let info = Idmap.find (destVar pte) ptes_info in
@@ -1415,11 +1415,11 @@ let backtrack_eqs_until_hrec hrec eqs : tactic =
       tclFIRST (List.map Equality.rewriteRL eqs )
     in
     let _,hrec_concl  = decompose_prod (pf_type_of gls (mkVar hrec)) in
-    let f_app = array_last (snd (destApp hrec_concl)) in
+    let f_app = Array.last (snd (destApp hrec_concl)) in
     let f =  (fst (destApp f_app)) in
     let rec backtrack : tactic =
       fun g ->
-	let f_app = array_last (snd (destApp (pf_concl g))) in
+	let f_app = Array.last (snd (destApp (pf_concl g))) in
 	match kind_of_term f_app with
 	  | App(f',_) when eq_constr f' f -> tclIDTAC g
 	  | _ -> tclTHEN rewrite backtrack g
@@ -1658,7 +1658,7 @@ let prove_principle_for_gen
       (* observe_tac "finish" *) (fun gl' ->
 	 let body =
 	   let _,args = destApp (pf_concl gl') in
-	   array_last args
+	   Array.last args
 	 in
 	 let body_info rec_hyps =
 	   {

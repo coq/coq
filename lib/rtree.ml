@@ -103,13 +103,13 @@ let rec map f t = match t with
 let smartmap f t = match t with
     Param _ -> t
   | Node (a,sons) ->
-      let a'=f a and sons' = Util.array_smartmap (map f) sons in
+      let a'=f a and sons' = Util.Array.smartmap (map f) sons in
 	if a'==a && sons'==sons then
 	  t
 	else
 	  Node (a',sons')
   | Rec(j,defs) ->
-      let defs' = Util.array_smartmap (map f) defs in
+      let defs' = Util.Array.smartmap (map f) defs in
 	if defs'==defs then
 	  t
 	else
@@ -134,7 +134,7 @@ let is_infinite t = fold
   (fun seen t is_inf ->
     seen ||
     (match t with
-        Node(_,v) -> array_exists is_inf v
+        Node(_,v) -> Array.exists is_inf v
       | Param _ -> false
       | _ -> assert false))
   t
@@ -154,7 +154,7 @@ let compare_rtree f = fold2
     else if b > 0 then true
     else match expand t1, expand t2 with
         Node(_,v1), Node(_,v2) when Array.length v1 = Array.length v2 ->
-          array_for_all2 cmp v1 v2
+          Array.for_all2 cmp v1 v2
       | _ -> false)
 
 let eq_rtree cmp t1 t2 =

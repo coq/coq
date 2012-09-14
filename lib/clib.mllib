@@ -5,6 +5,7 @@ Segmenttree
 Unicodetable
 Deque
 CList
+CArray
 Util
 Serialize
 Xml_utils

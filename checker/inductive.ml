@@ -817,7 +817,7 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
         | _ -> raise_err env i NotEnoughAbstractionInFixBody in
     check_occur fixenv 1 def in
   (* Do it on every fixpoint *)
-  let rv = array_map2_i find_ind nvect bodies in
+  let rv = Array.map2_i find_ind nvect bodies in
   (Array.map fst rv, Array.map snd rv)
 
 
@@ -899,7 +899,7 @@ let check_one_cofix env nbfix def deftype =
             if (List.for_all (noccur_with_meta n nbfix) args)
             then
               let nbfix = Array.length vdefs in
-	      if (array_for_all (noccur_with_meta n nbfix) varit) then
+	      if (Array.for_all (noccur_with_meta n nbfix) varit) then
 		let env' = push_rec_types recdef env in
 		(Array.iter (check_rec_call env' alreadygrd (n+1) vlra) vdefs;
 		 List.iter (check_rec_call env alreadygrd n vlra) args)

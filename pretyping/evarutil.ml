@@ -381,7 +381,7 @@ let restrict_applied_evar evd (evk,argsv) filter candidates =
   | Some filter ->
       let evi = Evd.find evd evk in
       let subfilter = extract_subfilter (evar_filter evi) filter in
-      array_filter_with subfilter argsv in
+      Array.filter_with subfilter argsv in
   evd,(newevk,newargsv)
 
 (* Restrict an evar in the current evar_map *)
@@ -392,7 +392,7 @@ let restrict_evar evd evk filter candidates =
 let restrict_instance evd evk filter argsv =
   match filter with None -> argsv | Some filter ->
   let evi = Evd.find evd evk in
-  array_filter_with (extract_subfilter (evar_filter evi) filter) argsv
+  Array.filter_with (extract_subfilter (evar_filter evi) filter) argsv
 
 (* This assumes an evar with identity instance and generalizes it over only
    the De Bruijn part of the context *)
@@ -827,7 +827,7 @@ let make_projectable_subst aliases sigma evi args =
 	    | _ ->
 		(rest,Idmap.add id [a,normalize_alias_opt aliases a,id] all,cstrs))
 	| _ -> anomaly "Instance does not match its signature")
-      sign (array_rev_to_list args,Idmap.empty,Constrmap.empty) in
+      sign (Array.rev_to_list args,Idmap.empty,Constrmap.empty) in
   (full_subst,cstr_subst)
 
 let make_pure_subst evi args =
@@ -836,7 +836,7 @@ let make_pure_subst evi args =
       match args with
 	| a::rest -> (rest, (id,a)::l)
 	| _ -> anomaly "Instance does not match its signature")
-    (evar_filtered_context evi) (array_rev_to_list args,[]))
+    (evar_filtered_context evi) (Array.rev_to_list args,[]))
 
 (*------------------------------------*
  * operations on the evar constraints *
@@ -927,7 +927,7 @@ let find_projectable_constructor env evd cstr k args cstr_subst =
       List.filter (fun (args',id) ->
 	(* is_conv is maybe too strong (and source of useless computation) *)
 	(* (at least expansion of aliases is needed) *)
-	array_for_all2 (is_conv env evd) args args') l in
+	Array.for_all2 (is_conv env evd) args args') l in
     List.map snd l
   with Not_found ->
     []
@@ -1155,7 +1155,7 @@ let filter_of_projection = function Invertible _ -> true | _ -> false
 let invert_invertible_arg evd aliases k (evk,argsv) args' =
   let evi = Evd.find_undefined evd evk in
   let subst,_ = make_projectable_subst aliases evd evi argsv in
-  let projs = array_map_to_list (invert_arg evd aliases k evk subst) args' in
+  let projs = Array.map_to_list (invert_arg evd aliases k evk subst) args' in
   Array.of_list (extract_unique_projections projs)
 
 (* Redefines an evar with a smaller context (i.e. it may depend on less
@@ -1343,9 +1343,9 @@ let rec is_constrainable_in k (ev,(fv_rels,fv_ids) as g) t =
   let f,args = decompose_app_vect t in
   match kind_of_term f with
   | Construct (ind,_) ->
-      let params,_ = array_chop (Inductiveops.inductive_nparams ind) args in
-      array_for_all (is_constrainable_in k g) params
-  | Ind _ -> array_for_all (is_constrainable_in k g) args
+      let params,_ = Array.chop (Inductiveops.inductive_nparams ind) args in
+      Array.for_all (is_constrainable_in k g) params
+  | Ind _ -> Array.for_all (is_constrainable_in k g) args
   | Prod (_,t1,t2) -> is_constrainable_in k g t1 && is_constrainable_in k g t2
   | Evar (ev',_) -> ev' <> ev (*If ev' needed, one may also try to restrict it*)
   | Var id -> Idset.mem id fv_ids
@@ -1443,7 +1443,7 @@ let check_evar_instance evd evk1 body conv_algo =
  * depend on these args). *)
 
 let solve_refl ?(can_drop=false) conv_algo env evd evk argsv1 argsv2 =
-  if array_equal eq_constr argsv1 argsv2 then evd else
+  if Array.equal eq_constr argsv1 argsv2 then evd else
   (* Filter and restrict if needed *)
   let untypedfilter =
     restrict_upon_filter evd evk
@@ -1549,7 +1549,7 @@ let rec invert_definition conv_algo choose env evd (evk,argsv as ev) rhs =
             materialize_evar (evar_define conv_algo) env !evdref 0 ev ty' in
 	  let ts = expansions_of_var aliases t in
 	  let test c = isEvar c or List.mem c ts in
-	  let filter = array_map_to_list test argsv' in
+	  let filter = Array.map_to_list test argsv' in
           let filter = apply_subfilter (evar_filter (Evd.find_undefined evd evk)) filter in
 
           let filter = closure_of_filter evd evk' filter in
@@ -1952,7 +1952,7 @@ let define_evar_as_product evd (evk,args) =
   (* Quick way to compute the instantiation of evk with args *)
   let na,dom,rng = destProd prod in
   let evdom = mkEvar (fst (destEvar dom), args) in
-  let evrngargs = array_cons (mkRel 1) (Array.map (lift 1) args) in
+  let evrngargs = Array.cons (mkRel 1) (Array.map (lift 1) args) in
   let evrng =  mkEvar (fst (destEvar rng), evrngargs) in
   evd,mkProd (na, evdom, evrng)
 
@@ -1987,7 +1987,7 @@ let define_evar_as_lambda env evd (evk,args) =
   let evd,lam = define_pure_evar_as_lambda env evd evk in
   (* Quick way to compute the instantiation of evk with args *)
   let na,dom,body = destLambda lam in
-  let evbodyargs = array_cons (mkRel 1) (Array.map (lift 1) args) in
+  let evbodyargs = Array.cons (mkRel 1) (Array.map (lift 1) args) in
   let evbody = mkEvar (fst (destEvar body), evbodyargs) in
   evd,mkLambda (na, dom, evbody)
 
@@ -1998,7 +1998,7 @@ let rec evar_absorb_arguments env evd (evk,args as ev) = function
       let evd,lam = define_pure_evar_as_lambda env evd evk in
       let _,_,body = destLambda lam in
       let evk = fst (destEvar body) in
-      evar_absorb_arguments env evd (evk, array_cons a args) l
+      evar_absorb_arguments env evd (evk, Array.cons a args) l
 
 (* Refining an evar to a sort *)
 

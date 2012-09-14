@@ -524,7 +524,7 @@ let has_deep_pattern br =
     | Pcons (_,l) | Ptuple l -> not (List.for_all is_basic_pattern l)
     | Pusual _ | Prel _ | Pwild -> false
   in
-  array_exists (function (_,pat,_) -> deep pat) br
+  Array.exists (function (_,pat,_) -> deep pat) br
 
 let is_regular_match br =
   if Array.length br = 0 then false (* empty match becomes MLexn *)
@@ -543,7 +543,7 @@ let is_regular_match br =
 	| ConstructRef (ind,_) -> ind
 	| _ -> raise Impossible
       in
-      array_for_all_i (fun i tr -> get_r tr = ConstructRef (ind,i+1)) 0 br
+      Array.for_all_i (fun i tr -> get_r tr = ConstructRef (ind,i+1)) 0 br
     with Impossible -> false
 
 (*S Operations concerning lambdas. *)
@@ -770,7 +770,7 @@ let is_opt_pat (_,p,_) = match p with
   | _ -> false
 
 let factor_branches o typ br =
-  if array_exists is_opt_pat br then None (* already optimized *)
+  if Array.exists is_opt_pat br then None (* already optimized *)
   else begin
     census_clean ();
     for i = 0 to Array.length br - 1 do

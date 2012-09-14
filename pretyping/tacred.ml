@@ -176,8 +176,8 @@ let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
       (function d -> match kind_of_term d with
          | Rel k ->
              if
-	       array_for_all (noccurn k) tys
-	       && array_for_all (noccurn (k+nbfix)) bds
+	       Array.for_all (noccurn k) tys
+	       && Array.for_all (noccurn (k+nbfix)) bds
 	     then
 	       (k, List.nth labs (k-1))
 	     else
@@ -902,7 +902,7 @@ let contextually byhead (occs,c) f env sigma t =
       else if byhead then
 	(* find other occurrences of c in t; TODO: ensure left-to-right *)
         let (f,l) = destApp t in
-	mkApp (f, array_map_left (traverse envc) l)
+	mkApp (f, Array.map_left (traverse envc) l)
       else
 	t
     with PatternMatchingFailure ->

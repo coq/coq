@@ -168,8 +168,8 @@ let push_lift d (e,n) = (push_rel d e,n+1)
 
 let is_reversible_pattern bound depth f l =
   isRel f & let n = destRel f in (n < bound+depth) & (n >= depth) &
-  array_for_all (fun c -> isRel c & destRel c < depth) l &
-  array_distinct l
+  Array.for_all (fun c -> isRel c & destRel c < depth) l &
+  Array.distinct l
 
 (* Precondition: rels in env are for inductive types only *)
 let add_free_rels_until strict strongly_strict revpat bound env m pos acc =
@@ -413,7 +413,7 @@ let compute_mib_implicits flags manual kn =
 let compute_all_mib_implicits flags manual kn =
   let imps = compute_mib_implicits flags manual kn in
   List.flatten
-    (array_map_to_list (fun (ind,cstrs) -> ind::Array.to_list cstrs) imps)
+    (Array.map_to_list (fun (ind,cstrs) -> ind::Array.to_list cstrs) imps)
 
 (*s Variables. *)
 
@@ -606,7 +606,7 @@ let declare_constant_implicits con =
 
 let declare_mib_implicits kn =
   let flags = !implicit_args in
-  let imps = array_map_to_list
+  let imps = Array.map_to_list
     (fun (ind,cstrs) -> ind::(Array.to_list cstrs))
     (compute_mib_implicits flags [] kn) in
     add_anonymous_leaf

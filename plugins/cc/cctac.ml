@@ -101,7 +101,7 @@ let rec pattern_of_constr env sigma c =
       App (f,args)->
 	let pf = decompose_term env sigma f in
 	let pargs,lrels = List.split
-	  (array_map_to_list (pattern_of_constr env sigma) args) in
+	  (Array.map_to_list (pattern_of_constr env sigma) args) in
 	  PApp (pf,List.rev pargs),
 	List.fold_left Intset.union Intset.empty lrels
     | Prod (_,a,_b) when not (Termops.dependent (mkRel 1) _b) ->

@@ -473,23 +473,23 @@ let compare_constr f t1 t2 =
   | LetIn (_,b1,t1,c1), LetIn (_,b2,t2,c2) -> f b1 b2 & f t1 t2 & f c1 c2
   | App (c1,l1), App (c2,l2) ->
       if Array.length l1 = Array.length l2 then
-        f c1 c2 & array_for_all2 f l1 l2
+        f c1 c2 & Array.for_all2 f l1 l2
       else
         let (h1,l1) = decompose_app t1 in
         let (h2,l2) = decompose_app t2 in
         if List.length l1 = List.length l2 then
           f h1 h2 & List.for_all2 f l1 l2
         else false
-  | Evar (e1,l1), Evar (e2,l2) -> e1 = e2 & array_for_all2 f l1 l2
+  | Evar (e1,l1), Evar (e2,l2) -> e1 = e2 & Array.for_all2 f l1 l2
   | Const c1, Const c2 -> eq_con_chk c1 c2
   | Ind c1, Ind c2 -> eq_ind_chk c1 c2
   | Construct (c1,i1), Construct (c2,i2) -> i1=i2 && eq_ind_chk c1 c2
   | Case (_,p1,c1,bl1), Case (_,p2,c2,bl2) ->
-      f p1 p2 & f c1 c2 & array_for_all2 f bl1 bl2
+      f p1 p2 & f c1 c2 & Array.for_all2 f bl1 bl2
   | Fix (ln1,(_,tl1,bl1)), Fix (ln2,(_,tl2,bl2)) ->
-      ln1 = ln2 & array_for_all2 f tl1 tl2 & array_for_all2 f bl1 bl2
+      ln1 = ln2 & Array.for_all2 f tl1 tl2 & Array.for_all2 f bl1 bl2
   | CoFix(ln1,(_,tl1,bl1)), CoFix(ln2,(_,tl2,bl2)) ->
-      ln1 = ln2 & array_for_all2 f tl1 tl2 & array_for_all2 f bl1 bl2
+      ln1 = ln2 & Array.for_all2 f tl1 tl2 & Array.for_all2 f bl1 bl2
   | _ -> false
 
 let rec eq_constr m n =

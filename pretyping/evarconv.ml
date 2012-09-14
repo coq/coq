@@ -692,7 +692,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
 let second_order_matching_with_args ts env evd ev l t =
 (*
   let evd,ev = evar_absorb_arguments env evd ev l in
-  let argoccs = array_map_to_list (fun _ -> None) (snd ev) in
+  let argoccs = Array.map_to_list (fun _ -> None) (snd ev) in
   second_order_matching ts env evd ev argoccs t
 *)
   (evd,false)
@@ -704,12 +704,12 @@ let apply_conversion_problem_heuristic ts env evd pbty t1 t2 =
   let (term2,l2 as appr2) = decompose_app t2 in
   match kind_of_term term1, kind_of_term term2 with
   | Evar (evk1,args1), (Rel _|Var _) when l1 = [] & l2 = []
-      & array_for_all (fun a -> eq_constr a term2 or isEvar a) args1 ->
+      & Array.for_all (fun a -> eq_constr a term2 or isEvar a) args1 ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
       choose_less_dependent_instance evk1 evd term2 args1
   | (Rel _|Var _), Evar (evk2,args2) when l1 = [] & l2 = []
-      & array_for_all (fun a -> eq_constr a term1 or isEvar a) args2 ->
+      & Array.for_all (fun a -> eq_constr a term1 or isEvar a) args2 ->
       (* The typical kind of constraint coming from pattern-matching return
          type inference *)
       choose_less_dependent_instance evk2 evd term1 args2

@@ -115,7 +115,7 @@ let replace_by_meta env sigma = function
 exception NoMeta
 
 let replace_in_array keep_length env sigma a =
-  if array_for_all (function (TH (_,_,[])) -> true | _ -> false) a then
+  if Array.for_all (function (TH (_,_,[])) -> true | _ -> false) a then
     raise NoMeta;
   let a' = Array.map (function
 			| (TH (c,mm,[])) when not keep_length -> c,mm,[]
@@ -347,7 +347,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 	  | Name id -> id
           | _ -> error "Recursive functions must have names."
 	in
-	let fixes = array_map3 (fun f n c -> (out_name f,succ n,c)) fi ni ai in
+	let fixes = Array.map3 (fun f n c -> (out_name f,succ n,c)) fi ni ai in
 	let firsts,lasts = List.chop j (Array.to_list fixes) in
 	tclTHENS
 	  (tclTHEN
@@ -364,7 +364,7 @@ let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
 	  | Name id -> id
           | _ -> error "Recursive functions must have names."
 	in
-	let cofixes = array_map2 (fun f c -> (out_name f,c)) fi ai in
+	let cofixes = Array.map2 (fun f c -> (out_name f,c)) fi ai in
 	let firsts,lasts = List.chop j (Array.to_list cofixes) in
 	tclTHENS
 	  (mutual_cofix (out_name fi.(j)) (firsts@List.tl lasts) j)

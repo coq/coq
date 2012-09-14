@@ -350,8 +350,8 @@ let detype_case computable detype detype_eqns testdep avoid data p c bl =
   | IfStyle when aliastyp = None ->
       let bl' = Array.map detype bl in
       let nondepbrs =
-	array_map3 (extract_nondep_branches testdep) bl bl' consnargsl in
-      if array_for_all ((<>) None) nondepbrs then
+	Array.map3 (extract_nondep_branches testdep) bl bl' consnargsl in
+      if Array.for_all ((<>) None) nondepbrs then
 	GIf (dl,tomatch,(alias,pred),
              Option.get nondepbrs.(0),Option.get nondepbrs.(1))
       else
@@ -405,7 +405,7 @@ let rec detype (isgoal:bool) avoid env t =
     | LetIn (na,b,_,c) -> detype_binder isgoal BLetIn avoid env na b c
     | App (f,args) ->
 	GApp (dl,detype isgoal avoid env f,
-              array_map_to_list (detype isgoal avoid env) args)
+              Array.map_to_list (detype isgoal avoid env) args)
     | Const sp -> GRef (dl, ConstRef sp)
     | Evar (ev,cl) ->
         GEvar (dl, ev,
@@ -433,7 +433,7 @@ and detype_fix isgoal avoid env (vn,_ as nvn) (names,tys,bodies) =
 	 (id::avoid, add_name (Name id) env, id::l))
       (avoid, env, []) names in
   let n = Array.length tys in
-  let v = array_map3
+  let v = Array.map3
     (fun c t i -> share_names isgoal (i+1) [] def_avoid def_env c (lift n t))
     bodies tys vn in
   GRec(dl,GFix (Array.map (fun i -> Some i, GStructRec) (fst nvn), snd nvn),Array.of_list (List.rev lfi),
@@ -449,7 +449,7 @@ and detype_cofix isgoal avoid env n (names,tys,bodies) =
 	 (id::avoid, add_name (Name id) env, id::l))
       (avoid, env, []) names in
   let ntys = Array.length tys in
-  let v = array_map2
+  let v = Array.map2
     (fun c t -> share_names isgoal 0 [] def_avoid def_env c (lift ntys t))
     bodies tys in
   GRec(dl,GCoFix n,Array.of_list (List.rev lfi),
@@ -501,7 +501,7 @@ and detype_eqns isgoal avoid env ci computable constructs consnargsl bl =
       mat
   with _ ->
     Array.to_list
-      (array_map3 (detype_eqn isgoal avoid env) constructs consnargsl bl)
+      (Array.map3 (detype_eqn isgoal avoid env) constructs consnargsl bl)
 
 and detype_eqn isgoal avoid env constr construct_nargs branch =
   let make_pat x avoid env b ids =
@@ -653,9 +653,9 @@ let rec subst_glob_constr subst raw =
           GIf (loc,c',(na,po'),b1',b2')
 
   | GRec (loc,fix,ida,bl,ra1,ra2) ->
-      let ra1' = array_smartmap (subst_glob_constr subst) ra1
-      and ra2' = array_smartmap (subst_glob_constr subst) ra2 in
-      let bl' = array_smartmap
+      let ra1' = Array.smartmap (subst_glob_constr subst) ra1
+      and ra2' = Array.smartmap (subst_glob_constr subst) ra2 in
+      let bl' = Array.smartmap
         (List.smartmap (fun (na,k,obd,ty as dcl) ->
           let ty' = subst_glob_constr subst ty in
           let obd' = Option.smartmap (subst_glob_constr subst) obd in

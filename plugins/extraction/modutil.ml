@@ -270,7 +270,7 @@ let rec optim_se top to_appear s = function
 	else all := false
       done;
       if !all && top && not (library ())
-	&& (array_for_all (fun r -> not (List.mem r to_appear)) rv)
+	&& (Array.for_all (fun r -> not (List.mem r to_appear)) rv)
       then optim_se top to_appear s lse
       else (l,SEdecl (Dfix (rv, av, tv))) :: (optim_se top to_appear s lse)
   | (l,SEmodule m) :: lse ->

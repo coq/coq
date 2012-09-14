@@ -367,7 +367,7 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals sigma goal goalacc p c in
 	check_conv_leq_goal env sigma trm conclty' conclty;
 	let (acc'',sigma, rbranches) =
-	  array_fold_left2
+	  Array.fold_left2
             (fun (lacc,sigma,bacc) ty fi ->
 	       let (r,_,s,b') = mk_refgoals sigma goal lacc ty fi in r,s,(b'::bacc))
             (acc',sigma,[]) lbrty lf
@@ -403,7 +403,7 @@ and mk_hdgoals sigma goal goalacc trm =
     | App (f,l) ->
 	let (acc',hdty,sigma,applicand) =
 	  if isInd f or isConst f
-	     & not (array_exists occur_meta l) (* we could be finer *)
+	     & not (Array.exists occur_meta l) (* we could be finer *)
 	  then
 	   (goalacc,type_of_global_reference_knowing_parameters env sigma f l,sigma,f)
 	  else mk_hdgoals sigma goal goalacc f
@@ -415,7 +415,7 @@ and mk_hdgoals sigma goal goalacc trm =
     | Case (ci,p,c,lf) ->
 	let (acc',lbrty,conclty',sigma,p',c') = mk_casegoals sigma goal goalacc p c in
 	let (acc'',sigma,rbranches) =
-	  array_fold_left2
+	  Array.fold_left2
             (fun (lacc,sigma,bacc) ty fi ->
 	       let (r,_,s,b') = mk_refgoals sigma goal lacc ty fi in r,s,(b'::bacc))
             (acc',sigma,[]) lbrty lf

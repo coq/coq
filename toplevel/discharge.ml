@@ -77,7 +77,7 @@ let refresh_polymorphic_type_of_inductive (_,mip) =
 let process_inductive sechyps modlist mib =
   let nparams = mib.mind_nparams in
   let inds =
-    array_map_to_list
+    Array.map_to_list
       (fun mip ->
 	 let arity = expmod_constr modlist (refresh_polymorphic_type_of_inductive (mib,mip)) in
 	 let lc = Array.map (expmod_constr modlist) mip.mind_user_lc in

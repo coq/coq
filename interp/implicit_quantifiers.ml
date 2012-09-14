@@ -176,7 +176,7 @@ let generalizable_vars_of_glob_constr ?(bound=Idset.empty) ?(allowed=Idset.empty
 	  let vs2 = vars bound1 vs1 tyl.(i) in
 	  vars bound1 vs2 bv.(i)
 	in
-	array_fold_left_i vars_fix vs idl
+	Array.fold_left_i vars_fix vs idl
     | GCast (loc,c,k) -> let v = vars bound vs c in
 	(match k with CastConv t | CastVM t -> vars bound v t | _ -> v)
     | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> vs

@@ -21,7 +21,7 @@ open Type_errors
 let conv_leq l2r = default_conv CUMUL ~l2r
 
 let conv_leq_vecti env v1 v2 =
-  array_fold_left2_i
+  Array.fold_left2_i
     (fun i c t1 t2 ->
       let c' =
         try default_conv CUMUL env t1 t2
@@ -476,7 +476,7 @@ and execute_recdef env (names,lar,vdef) i cu =
   univ_combinator cu2
     ((lara.(i),(names,lara,vdefv)),cst)
 
-and execute_array env = array_fold_map' (execute env)
+and execute_array env = Array.fold_map' (execute env)
 
 (* Derived functions *)
 let infer env constr =

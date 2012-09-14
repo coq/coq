@@ -396,7 +396,7 @@ let rec canonize_name c =
       | LetIn (na,b,t,ct) ->
 	  mkLetIn (na, func b,func t,func ct)
       | App (ct,l) ->
-	  mkApp (func ct,array_smartmap func l)
+	  mkApp (func ct,Array.smartmap func l)
       | _ -> c
 
 (* rebuild a term from a pattern and a substitution *)
@@ -502,7 +502,7 @@ let is_redundant state id args =
     let prev_args = Identhash.find_all state.q_history id in
     List.exists
       (fun old_args ->
-	 Util.array_for_all2 (fun i j -> i = find state.uf j)
+	 Util.Array.for_all2 (fun i j -> i = find state.uf j)
          norm_args old_args)
       prev_args
     with Not_found -> false
@@ -518,7 +518,7 @@ let add_inst state (inst,int_subst) =
       let subst = build_subst (forest state) int_subst in
       let prfhead= mkVar inst.qe_hyp_id in
       let args = Array.map constr_of_term subst in
-      let _ = array_rev args in (* highest deBruijn index first *)
+      let _ = Array.rev args in (* highest deBruijn index first *)
       let prf= mkApp(prfhead,args) in
 	  let s = inst_pattern subst inst.qe_lhs
 	  and t = inst_pattern subst inst.qe_rhs in

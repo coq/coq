@@ -121,7 +121,7 @@ let is_applied_rewrite_relation env sigma rels t =
 	if eq_constr (Lazy.force coq_eq) head then None
 	else
 	  (try
-	      let params, args = array_chop (Array.length args - 2) args in
+	      let params, args = Array.chop (Array.length args - 2) args in
 	      let env' = Environ.push_rel_context rels env in
 	      let evd, evar = Evarutil.new_evar sigma env' (new_Type ()) in
 	      let inst = mkApp (Lazy.force rewrite_relation_class, [| evar; mkApp (c, params) |]) in
@@ -209,12 +209,6 @@ let get_transitive_proof env = find_class_proof transitive_type transitive_proof
 
 exception FoundInt of int
 
-let array_find (arr: 'a array) (pred: int -> 'a -> bool): int =
-  try
-    for i=0 to Array.length arr - 1 do if pred i (arr.(i)) then raise (FoundInt i) done;
-    raise Not_found
-  with FoundInt i -> i
-
 type hypinfo = {
   cl : clausenv;
   prf : constr;
@@ -239,7 +233,7 @@ let rec decompose_app_rel env evd t =
   match kind_of_term t with
   | App (f, args) -> 
       if Array.length args > 1 then 
-	let fargs, args = array_chop (Array.length args - 2) args in
+	let fargs, args = Array.chop (Array.length args - 2) args in
 	  mkApp (f, fargs), args
       else 
 	let (f', args) = decompose_app_rel env evd args.(0) in
@@ -587,10 +581,11 @@ let resolve_subrelation env avoid car rel prf rel' res =
 
 let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' cstr evars =
   let evars, morph_instance, proj, sigargs, m', args, args' =
-    let first = try (array_find args' (fun i b -> b <> None)) 
-      with Not_found -> raise (Invalid_argument "resolve_morphism") in
-    let morphargs, morphobjs = array_chop first args in
-    let morphargs', morphobjs' = array_chop first args' in
+    let first = match (Array.find_i (fun _ b -> b <> None) args') with
+    | Some i -> i
+    | None -> raise (Invalid_argument "resolve_morphism") in
+    let morphargs, morphobjs = Array.chop first args in
+    let morphargs', morphobjs' = Array.chop first args' in
     let appm = mkApp(m, morphargs) in
     let appmtype = Typing.type_of env (goalevars evars) appm in
     let cstrs = List.map (Option.map (fun r -> r.rew_car, get_opt_rew_rel r.rew_prf)) (Array.to_list morphobjs') in
@@ -609,7 +604,7 @@ let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' cstr evars 
       evars, morph, morph, sigargs, appm, morphobjs, morphobjs'
   in
   let projargs, subst, evars, respars, typeargs =
-    array_fold_left2
+    Array.fold_left2
       (fun (acc, subst, evars, sigargs, typeargs') x y ->
 	let (carrier, relation), sigargs = split_head sigargs in
 	  match relation with
@@ -767,7 +762,7 @@ let subterm all flags (s : strategy) : strategy =
 	      | Some false -> Some None
 	      | Some true ->
 		  let args' = Array.of_list (List.rev args') in
-		    if array_exists
+		    if Array.exists
 		      (function 
 			 | None -> false 
 			 | Some r -> not (is_rew_cast r.rew_prf)) args'
@@ -778,7 +773,7 @@ let subterm all flags (s : strategy) : strategy =
 				  rew_evars = evars' } 
 		      in Some (Some res)
 		    else 
-		      let args' = array_map2
+		      let args' = Array.map2
 			(fun aorig anew ->
 			   match anew with None -> aorig
 			   | Some r -> r.rew_to) args args' 
@@ -887,7 +882,7 @@ let subterm all flags (s : strategy) : strategy =
 		let res = make_leibniz_proof (mkCase (ci, lift 1 p, mkRel 1, Array.map (lift 1) brs)) ty r in
 		  Some (Some (coerce env avoid cstr res))
 	    | x ->
-	      if array_for_all ((=) 0) ci.ci_cstr_ndecls then
+	      if Array.for_all ((=) 0) ci.ci_cstr_ndecls then
 		let cstr = Some (mkApp (Lazy.force coq_eq, [| ty |])) in
 		let found, brs' = Array.fold_left 
 		  (fun (found, acc) br ->
@@ -1765,7 +1760,7 @@ let declare_projection n instance_id r =
       let init =
 	match kind_of_term typ with
 	    App (f, args) when eq_constr f (Lazy.force respectful) ->
-	      mkApp (f, fst (array_chop (Array.length args - 2) args))
+	      mkApp (f, fst (Array.chop (Array.length args - 2) args))
 	  | _ -> typ
       in aux init
     in

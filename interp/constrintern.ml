@@ -1307,7 +1307,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 		   intern_ro_arg (fun f -> GMeasureRec (f m, Option.map f r))
 	     in
 	       ((n, ro), List.rev rbl, intern_type env' ty, env')) dl in
-        let idl = array_map2 (fun (_,_,_,_,bd) (a,b,c,env') ->
+        let idl = Array.map2 (fun (_,_,_,_,bd) (a,b,c,env') ->
 	     let env'' = List.fold_left_i (fun i en name -> 
 					     let (_,bli,tyi,_) = idl_temp.(i) in
 					     let fix_args = (List.map (fun (_,(na, bk, _, _)) -> (build_impls bk na)) bli) in
@@ -1334,7 +1334,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
               List.fold_left intern_local_binder (env,[]) bl in
             (List.rev rbl,
              intern_type env' ty,env')) dl in
-	let idl = array_map2 (fun (_,_,_,bd) (b,c,env') ->
+	let idl = Array.map2 (fun (_,_,_,bd) (b,c,env') ->
 	     let env'' = List.fold_left_i (fun i en name ->
 					     let (bli,tyi,_) = idl_tmp.(i) in
 					     let cofix_args =  List.map (fun (_, (na, bk, _, _)) -> (build_impls bk na)) bli in

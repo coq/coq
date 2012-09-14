@@ -171,7 +171,7 @@ let make_cases s =
 	let {Declarations.mind_nparams = np}
 	    , {Declarations.mind_consnames = carr ; Declarations.mind_nf_lc = tarr }
 	      = Global.lookup_inductive i in
-	Util.array_fold_right2
+	Util.Array.fold_right2
 	  (fun consname typ l ->
 	     let al = List.rev (fst (Term.decompose_prod typ)) in
 	     let al = Util.List.skipn np al in

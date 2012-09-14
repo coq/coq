@@ -754,9 +754,9 @@ let rec has_evar x =
     | Fix ((_, tr)) | CoFix ((_, tr)) ->
       has_evar_prec tr
 and has_evar_array x =
-  array_exists has_evar x
+  Array.exists has_evar x
 and has_evar_prec (_, ts1, ts2) =
-  array_exists has_evar ts1 || array_exists has_evar ts2
+  Array.exists has_evar ts1 || Array.exists has_evar ts2
 
 TACTIC EXTEND has_evar
 | [ "has_evar" constr(x) ] ->

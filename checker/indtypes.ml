@@ -127,7 +127,7 @@ let is_unit constrsinfos =
    | _ -> false
 
 let small_unit constrsinfos =
-  let issmall = array_for_all is_small_constr constrsinfos
+  let issmall = Array.for_all is_small_constr constrsinfos
   and isunit = is_unit constrsinfos in
   issmall, isunit
 
@@ -243,13 +243,13 @@ let typecheck_one_inductive env params mib mip =
   let _ = Array.map (infer_type env) mip.mind_user_lc in
   (* mind_nf_lc *)
   let _ = Array.map (infer_type env) mip.mind_nf_lc in
-  array_iter2 (conv env) mip.mind_nf_lc mip.mind_user_lc;
+  Array.iter2 (conv env) mip.mind_nf_lc mip.mind_user_lc;
   (* mind_consnrealdecls *)
   let check_cons_args c n =
     let ctx,_ = decompose_prod_assum c in
     if n <> rel_context_length ctx - rel_context_length params then
       failwith "bad number of real constructor arguments" in
-  array_iter2 check_cons_args mip.mind_nf_lc mip.mind_consnrealdecls;
+  Array.iter2 check_cons_args mip.mind_nf_lc mip.mind_consnrealdecls;
   (* mind_kelim: checked by positivity criterion ? *)
   let sorts =
     compute_elim_sorts env params mib mip.mind_arity mip.mind_nf_lc in
@@ -312,7 +312,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
   let largs = Array.of_list largs in
   if Array.length largs < nparams then
     raise (IllFormedInd (LocalNotEnoughArgs l));
-  let (lpar,largs') = array_chop nparams largs in
+  let (lpar,largs') = Array.chop nparams largs in
   let nhyps = List.length hyps in
   let rec check k index = function
     | [] -> ()
@@ -322,7 +322,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
 	  | Rel w when w = index -> check (k-1) (index+1) hyps
 	  | _ -> raise (IllFormedInd (LocalNonPar (k+1,l)))
   in check (nparams-1) (n-nhyps) hyps;
-  if not (array_for_all (noccur_between n ntypes) largs') then
+  if not (Array.for_all (noccur_between n ntypes) largs') then
     failwith_non_pos_vect n ntypes largs'
 
 (* Arguments of constructor: check the number of recursive parameters nrecp.
@@ -520,7 +520,7 @@ let check_positivity env_ar mind params nrecp inds =
   in
   let irecargs = Array.mapi check_one inds in
   let wfp = Rtree.mk_rec irecargs in
-  array_iter2 (fun ind wfpi -> check_subtree ind.mind_recargs wfpi) inds wfp
+  Array.iter2 (fun ind wfpi -> check_subtree ind.mind_recargs wfpi) inds wfp
 
 (************************************************************************)
 (************************************************************************)

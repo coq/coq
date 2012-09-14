@@ -95,7 +95,7 @@ let kind_of_formula gl term =
 			let is_trivial=
 			  let is_constant c =
 			    nb_prod c = mib.mind_nparams in
-			    array_exists is_constant mip.mind_nf_lc in
+			    Array.exists is_constant mip.mind_nf_lc in
 			  if Inductiveops.mis_is_recursive (ind,mib,mip) ||
 			    (has_realargs && not is_trivial)
 			  then
@@ -144,7 +144,7 @@ let build_atoms gl metagen side cciterm =
 	  let f l =
 	    List.fold_left_i g (1-(List.length l)) () l in
 	    if polarity && (* we have a constant constructor *)
-	      array_exists (function []->true|_->false) v
+	      Array.exists (function []->true|_->false) v
 	    then trivial:=true;
 	    Array.iter f v
       | Exists(i,l)->

@@ -122,14 +122,14 @@ let compare_stacks f fmind lft1 stk1 lft2 stk2 =
       | (z1::s1, z2::s2) ->
           cmp_rec s1 s2;
           (match (z1,z2) with
-            | (Zlapp a1,Zlapp a2) -> array_iter2 f a1 a2
+            | (Zlapp a1,Zlapp a2) -> Array.iter2 f a1 a2
             | (Zlfix(fx1,a1),Zlfix(fx2,a2)) ->
                 f fx1 fx2; cmp_rec a1 a2
             | (Zlcase(ci1,l1,p1,br1),Zlcase(ci2,l2,p2,br2)) ->
                 if not (fmind ci1.ci_ind ci2.ci_ind) then
 		  raise NotConvertible;
 		f (l1,p1) (l2,p2);
-                array_iter2 (fun c1 c2 -> f (l1,c1) (l2,c2)) br1 br2
+                Array.iter2 (fun c1 c2 -> f (l1,c1) (l2,c2)) br1 br2
             | _ -> assert false)
       | _ -> () in
   if compare_stack_shape stk1 stk2 then
@@ -368,7 +368,7 @@ and convert_stacks univ infos lft1 lft2 stk1 stk2 =
     lft1 stk1 lft2 stk2
 
 and convert_vect univ infos lft1 lft2 v1 v2 =
-  array_iter2 (fun t1 t2 -> ccnv univ CONV infos lft1 lft2 t1 t2) v1 v2
+  Array.iter2 (fun t1 t2 -> ccnv univ CONV infos lft1 lft2 t1 t2) v1 v2
 
 let clos_fconv cv_pb env t1 t2 =
   let infos = create_clos_infos betaiotazeta env in

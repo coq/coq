@@ -358,7 +358,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 			       | App(eq,args), App(graph',_)
 				   when
 				     (eq_constr eq eq_ind) &&
-				       array_exists  (eq_constr graph') graphs_constr ->
+				       Array.exists  (eq_constr graph') graphs_constr ->
 				   (args.(2)::(mkApp(mkVar hid,[|args.(2);(mkApp(eq_construct,[|args.(0);args.(2)|]))|]))
 				    ::acc)
 			       | _ -> mkVar hid ::  acc
@@ -599,7 +599,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 			       | App(eq,args), App(graph',_)
 				   when
 				     (eq_constr eq eq_ind) &&
-				       array_exists  (eq_constr graph') graphs_constr ->
+				       Array.exists  (eq_constr graph') graphs_constr ->
 				   ((mkApp(mkVar hid,[|args.(2);(mkApp(eq_construct,[|args.(0);args.(2)|]))|]))
 				    ::args.(2)::acc)
 			       | _ -> mkVar hid ::  acc
@@ -1029,7 +1029,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
   try
     let graphs_constr = Array.map mkInd graphs in
     let lemmas_types_infos =
-      Util.array_map2_i
+      Util.Array.map2_i
 	(fun i f_constr graph ->
 	   let const_of_f = destConst f_constr in
 	   let (type_of_lemma_ctxt,type_of_lemma_concl) as type_info =
@@ -1056,7 +1056,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
 	       (fun entry ->
 		  (entry.Entries.const_entry_body, Option.get entry.Entries.const_entry_type )
 	       )
-	       (make_scheme (array_map_to_list (fun const -> const,GType None) funs))
+	       (make_scheme (Array.map_to_list (fun const -> const,GType None) funs))
 	    )
     in
     let proving_tac =
@@ -1083,7 +1083,7 @@ let derive_correctness make_scheme functional_induction (funs: constant list) (g
       )
       funs;
     let lemmas_types_infos =
-      Util.array_map2_i
+      Util.Array.map2_i
 	(fun i f_constr graph ->
 	   let const_of_f = destConst f_constr in
 	   let (type_of_lemma_ctxt,type_of_lemma_concl) as type_info =
@@ -1169,7 +1169,7 @@ let revert_graph kn post_tac hid g =
 	    match info.completeness_lemma with
 	      | None -> tclIDTAC g
 	      | Some f_complete ->
-		  let f_args,res = array_chop (Array.length args - 1) args in
+		  let f_args,res = Array.chop (Array.length args - 1) args in
 		  tclTHENSEQ
 		    [
 		      h_generalize [applist(mkConst f_complete,(Array.to_list f_args)@[res.(0);mkVar hid])];

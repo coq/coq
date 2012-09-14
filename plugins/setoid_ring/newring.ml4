@@ -65,7 +65,7 @@ let rec mk_clos_but f_map subs t =
 and mk_clos_app_but f_map subs f args n =
   if n >= Array.length args then mk_atom(mkApp(f, args))
   else
-    let fargs, args' = array_chop n args in
+    let fargs, args' = Array.chop n args in
     let f' = mkApp(f,fargs) in
     match f_map f' with
         Some map ->

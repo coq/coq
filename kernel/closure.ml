@@ -499,7 +499,7 @@ and compact_vect s v k = compact_v [] s v k (Array.length v - 1)
 and compact_v acc s v k i =
   if i < 0 then
     let v' = Array.of_list acc in
-    if array_for_all2 (==) v v' then v,s else v',s
+    if Array.for_all2 (==) v v' then v,s else v',s
   else
     let (a',s') = compact_constr s v.(i) k in
     compact_v (a'::acc) s' v k (i-1)

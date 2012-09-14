@@ -640,7 +640,7 @@ let print_constructors envpar names types =
   let pc =
     prlist_with_sep (fun () -> brk(1,0) ++ str "| ")
       (fun (id,c) -> pr_id id ++ str " : " ++ pr_lconstr_env envpar c)
-      (Array.to_list (array_map2 (fun n t -> (n,t)) names types))
+      (Array.to_list (Array.map2 (fun n t -> (n,t)) names types))
   in
   hv 0 (str "  " ++ pc)
 

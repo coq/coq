@@ -1240,7 +1240,7 @@ let compute_params_name relnames (args : (Names.name * Glob_term.glob_constr * b
     try
       List.iter_i
 	(fun i ((n,nt,is_defined) as param) ->
-	   if array_for_all
+	   if Array.for_all
 	     (fun l ->
 		let (n',nt',is_defined') = List.nth l i in
 		n = n' && Notation_ops.eq_glob_constr nt nt' && is_defined = is_defined')
@@ -1319,7 +1319,7 @@ let do_build_inductive
        Then save the graphs and reset Printing options to their primitive values
     *)
     let rel_arities = Array.mapi rel_arity funsargs in
-    Util.array_fold_left2 (fun env rel_name rel_ar ->
+    Util.Array.fold_left2 (fun env rel_name rel_ar ->
 			     Environ.push_named (rel_name,None, Constrintern.interp_constr Evd.empty env rel_ar) env) env relnames rel_arities
   in
   (* and of the real constructors*)

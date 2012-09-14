@@ -125,7 +125,7 @@ let occur_glob_constr id =
     | GIf (loc,c,rtntyp,b1,b2) ->
 	occur_return_type rtntyp id or (occur c) or (occur b1) or (occur b2)
     | GRec (loc,fk,idl,bl,tyl,bv) ->
-        not (array_for_all4 (fun fid bl ty bd ->
+        not (Array.for_all4 (fun fid bl ty bd ->
           let rec occur_fix = function
               [] -> not (occur ty) && (fid=id or not(occur bd))
             | (na,k,bbd,bty)::bl ->
@@ -192,7 +192,7 @@ let free_glob_vars  =
 	  let vs2 = vars bounded1 vs1 tyl.(i) in
 	  vars bounded1 vs2 bv.(i)
 	in
-	array_fold_left_i vars_fix vs idl
+	Array.fold_left_i vars_fix vs idl
     | GCast (loc,c,k) -> let v = vars bounded vs c in
 	(match k with CastConv t | CastVM t -> vars bounded v t | _ -> v)
     | (GSort _ | GHole _ | GRef _ | GEvar _ | GPatVar _) -> vs

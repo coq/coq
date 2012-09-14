@@ -43,7 +43,7 @@ let add_mib_nameobjects mp l mib map =
   let add_mip_nameobjects j oib map =
     let ip = (ind,j) in
     let map =
-      array_fold_right_i
+      Array.fold_right_i
       (fun i id map ->
         Labmap.add (label_of_id id) (IndConstr((ip,i+1), mib)) map)
       oib.mind_consnames
@@ -51,7 +51,7 @@ let add_mib_nameobjects mp l mib map =
     in
       Labmap.add (label_of_id oib.mind_typename) (IndType (ip, mib)) map
   in
-  array_fold_right_i add_mip_nameobjects mib.mind_packets map
+  Array.fold_right_i add_mip_nameobjects mib.mind_packets map
 
 
 (* creates (namedobject/namedmodule) map for the whole signature *)
@@ -154,7 +154,7 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
 	cst
   in
   let check_cons_types i cst p1 p2 =
-    array_fold_left3
+    Array.fold_left3
       (fun cst id t1 t2 -> check_conv (NotConvertibleConstructorField id) cst conv env t1 t2)
       cst
       p2.mind_consnames
@@ -203,11 +203,11 @@ let check_inductive cst env mp1 l info1 mp2 mib2 spec2 subst1 subst2 reso1 reso2
   end;
   (* we first check simple things *)
   let cst =
-    array_fold_left2 check_packet cst mib1.mind_packets mib2.mind_packets
+    Array.fold_left2 check_packet cst mib1.mind_packets mib2.mind_packets
   in
   (* and constructor types in the end *)
   let cst =
-    array_fold_left2_i check_cons_types cst mib1.mind_packets mib2.mind_packets
+    Array.fold_left2_i check_cons_types cst mib1.mind_packets mib2.mind_packets
   in
     cst
 

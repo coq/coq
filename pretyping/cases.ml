@@ -1016,7 +1016,7 @@ let rec ungeneralize n ng body =
         let sign2,p = decompose_prod_n_assum ng p in
         let p = prod_applist p [mkRel (n+List.length sign+ng)] in
         it_mkLambda_or_LetIn (it_mkProd_or_LetIn p sign2) sign in
-      mkCase (ci,p,c,array_map2 (fun q c ->
+      mkCase (ci,p,c,Array.map2 (fun q c ->
         let sign,b = decompose_lam_n_assum q c in
         it_mkLambda_or_LetIn (ungeneralize (n+q) ng b) sign)
         ci.ci_cstr_ndecls brs)
@@ -1046,7 +1046,7 @@ let postprocess_dependencies evd tocheck brs tomatch pred deps cs =
         let pred = lift_predicate (-1) pred tomatch in
         let tomatch = relocate_index_tomatch 1 (n+1) tomatch in
         let tomatch = lift_tomatch_stack (-1) tomatch in
-        let brs = array_map2 (ungeneralize_branch n k) brs cs in
+        let brs = Array.map2 (ungeneralize_branch n k) brs cs in
         aux k brs tomatch pred tocheck deps
   | _ -> assert false
   in aux 0 brs tomatch pred tocheck deps
@@ -1255,7 +1255,7 @@ and match_current pb tomatch =
 	  let pb,deps = generalize_problem (names,dep) pb deps in
 
 	  (* We compile branches *)
-	  let brvals = array_map2 (compile_branch current realargs (names,dep) deps pb arsign) eqns cstrs in
+	  let brvals = Array.map2 (compile_branch current realargs (names,dep) deps pb arsign) eqns cstrs in
 	  (* We build the (elementary) case analysis *)
           let depstocheck = current::binding_vars_of_inductive typ in
           let brvals,tomatch,pred,inst =

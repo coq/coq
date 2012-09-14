@@ -489,7 +489,7 @@ let unfold_head env (ids, csts) c =
 	| true, f' -> true, Reductionops.whd_betaiota Evd.empty (mkApp (f', args))
 	| false, _ -> 
 	    let done_, args' = 
-	      array_fold_left_i (fun i (done_, acc) arg -> 
+	      Array.fold_left_i (fun i (done_, acc) arg -> 
 		if done_ then done_, arg :: acc 
 		else match aux arg with
 		| true, arg' -> true, arg' :: acc

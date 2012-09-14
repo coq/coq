@@ -163,7 +163,7 @@ and pp_fix env j (ids,bl) args =
 	       (prvect_with_sep fnl
 		  (fun (fi,ti) ->
 		     paren ((pr_id fi) ++ spc () ++ (pp_expr env [] ti)))
-		  (array_map2 (fun id b -> (id,b)) ids bl)) ++
+		  (Array.map2 (fun id b -> (id,b)) ids bl)) ++
 	     fnl () ++
       	     hov 2 (pp_apply (pr_id (ids.(j))) true args))))
 

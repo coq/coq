@@ -42,7 +42,7 @@ let add_mib_nameobjects mp l mib map =
   let add_mip_nameobjects j oib map =
     let ip = (ind,j) in
     let map =
-      array_fold_right_i
+      Array.fold_right_i
       (fun i id map ->
         Labmap.add (label_of_id id) (IndConstr((ip,i+1), mib)) map)
       oib.mind_consnames
@@ -50,7 +50,7 @@ let add_mib_nameobjects mp l mib map =
     in
       Labmap.add (label_of_id oib.mind_typename) (IndType (ip, mib)) map
   in
-    array_fold_right_i add_mip_nameobjects mib.mind_packets map
+    Array.fold_right_i add_mip_nameobjects mib.mind_packets map
 
 
 (* creates (namedobject/namedmodule) map for the whole signature *)
@@ -149,7 +149,7 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
         (type_of_inductive env (mib1,p1)) (type_of_inductive env (mib2,p2))
   in
   let check_cons_types i p1 p2 =
-    array_iter2 (check_conv conv env)
+    Array.iter2 (check_conv conv env)
       (arities_of_specif kn (mib1,p1))
       (arities_of_specif kn (mib2,p2))
   in
@@ -194,9 +194,9 @@ let check_inductive  env mp1 l info1 mib2 spec2 subst1 subst2=
     check (fun mib -> names_prod_letin mib.mind_packets.(0).mind_user_lc.(0));
   end;
   (* we first check simple things *)
-  array_iter2 check_packet mib1.mind_packets mib2.mind_packets;
+  Array.iter2 check_packet mib1.mind_packets mib2.mind_packets;
   (* and constructor types in the end *)
-  let _ = array_map2_i check_cons_types mib1.mind_packets mib2.mind_packets
+  let _ = Array.map2_i check_cons_types mib1.mind_packets mib2.mind_packets
   in ()
 
 let check_constant env mp1 l info1 cb2 spec2 subst1 subst2 =

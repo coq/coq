@@ -23,7 +23,7 @@ open Evd
 
 let rec occur_meta_pattern = function
   | PApp (f,args) ->
-      (occur_meta_pattern f) or (array_exists occur_meta_pattern args)
+      (occur_meta_pattern f) or (Array.exists occur_meta_pattern args)
   | PLambda (na,t,c)  -> (occur_meta_pattern t) or (occur_meta_pattern c)
   | PProd (na,t,c)  -> (occur_meta_pattern t) or (occur_meta_pattern c)
   | PLetIn (na,t,c)  -> (occur_meta_pattern t) or (occur_meta_pattern c)
@@ -179,7 +179,7 @@ let rec subst_pattern subst pat =
   | PRel _ -> pat
   | PApp (f,args) ->
       let f' = subst_pattern subst f in
-      let args' = array_smartmap (subst_pattern subst) args in
+      let args' = Array.smartmap (subst_pattern subst) args in
 	if f' == f && args' == args then pat else
 	  PApp (f',args')
   | PSoApp (i,args) ->

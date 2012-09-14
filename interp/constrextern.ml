@@ -1015,7 +1015,7 @@ let any_any_branch =
 let rec glob_of_pat env = function
   | PRef ref -> GRef (loc,ref)
   | PVar id -> GVar (loc,id)
-  | PEvar (n,l) -> GEvar (loc,n,Some (array_map_to_list (glob_of_pat env) l))
+  | PEvar (n,l) -> GEvar (loc,n,Some (Array.map_to_list (glob_of_pat env) l))
   | PRel n ->
       let id = try match lookup_name_of_rel n env with
 	| Name id   -> id
@@ -1026,7 +1026,7 @@ let rec glob_of_pat env = function
   | PMeta None -> GHole (loc,Evar_kinds.InternalHole)
   | PMeta (Some n) -> GPatVar (loc,(false,n))
   | PApp (f,args) ->
-      GApp (loc,glob_of_pat env f,array_map_to_list (glob_of_pat env) args)
+      GApp (loc,glob_of_pat env f,Array.map_to_list (glob_of_pat env) args)
   | PSoApp (n,args) ->
       GApp (loc,GPatVar (loc,(true,n)),
         List.map (glob_of_pat env) args)

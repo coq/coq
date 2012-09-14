@@ -183,14 +183,14 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
       | PApp (PMeta (Some n),args1), App (c2,args2) when allow_partial_app ->
           let p = Array.length args2 - Array.length args1 in
           if p>=0 then
-            let args21, args22 = array_chop p args2 in
+            let args21, args22 = Array.chop p args2 in
 	    let c = mkApp(c2,args21) in
             let subst = merge_binding allow_bound_rels stk n c subst in
-            array_fold_left2 (sorec stk) subst args1 args22
+            Array.fold_left2 (sorec stk) subst args1 args22
           else raise PatternMatchingFailure
 
       | PApp (c1,arg1), App (c2,arg2) ->
-        (try array_fold_left2 (sorec stk) (sorec stk subst c1 c2) arg1 arg2
+        (try Array.fold_left2 (sorec stk) (sorec stk subst c1 c2) arg1 arg2
          with Invalid_argument _ -> raise PatternMatchingFailure)
 
       | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
@@ -292,7 +292,7 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
             let mk_ctx = function
               | [app';c] -> mk_ctx (mkApp (app',[|c|]))
               | _ -> assert false in
-	    try_aux [app;array_last lc] mk_ctx next
+	    try_aux [app;Array.last lc] mk_ctx next
           else
             let rec aux2 app args next =
               match args with
