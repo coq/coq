@@ -370,7 +370,7 @@ let rec compact_constr (lg, subs as s) c k =
   match c with
       Rel i ->
         if i < k then c,s else
-          (try Rel (k + lg - list_index (i-k+1) subs), (lg,subs)
+          (try Rel (k + lg - List.index (i-k+1) subs), (lg,subs)
           with Not_found -> Rel (k+lg), (lg+1, (i-k+1)::subs))
     | (Sort _|Var _|Meta _|Ind _|Const _|Construct _) -> c,s
     | Evar(ev,v) ->
@@ -648,7 +648,7 @@ let rec get_args n tys f e stk =
           let eargs = Array.sub l n (na-n) in
           (Inl (subs_cons(args,e)), Zapp eargs :: s)
         else (* more lambdas *)
-          let etys = list_skipn na tys in
+          let etys = List.skipn na tys in
           get_args (n-na) etys f (subs_cons(l,e)) s
     | _ -> (Inr {norm=Cstr;term=FLambda(n,tys,f,e)}, stk)
 

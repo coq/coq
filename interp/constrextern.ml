@@ -257,7 +257,7 @@ let is_same_type c d =
 (* mapping patterns to cases_pattern_expr                                *)
 
 let add_patt_for_params ind l =
-    Util.list_addn (fst (Inductiveops.inductive_nargs ind)) (CPatAtom (Loc.ghost,None)) l
+    Util.List.addn (fst (Inductiveops.inductive_nargs ind)) (CPatAtom (Loc.ghost,None)) l
 
 let drop_implicits_in_patt cst nb_expl args =
   let impl_st = (implicits_of_global cst) in
@@ -276,7 +276,7 @@ let drop_implicits_in_patt cst nb_expl args =
      in
      if nb_expl = 0 then aux impl_data
      else
-       let imps = list_skipn_at_least nb_expl (select_stronger_impargs impl_st) in
+       let imps = List.skipn_at_least nb_expl (select_stronger_impargs impl_st) in
        impls_fit [] (imps,args)
 
 let has_curly_brackets ntn =
@@ -355,7 +355,7 @@ let pattern_printable_in_both_syntax (ind,_ as c) =
   let nb_params = Inductiveops.inductive_nparams ind in
   List.exists (fun (_,impls) ->
     (List.length impls >= nb_params) &&
-      let params,args = Util.list_chop nb_params impls in
+      let params,args = Util.List.chop nb_params impls in
       (List.for_all is_status_implicit params)&&(List.for_all (fun x -> not (is_status_implicit x)) args)
   ) impl_st
 
@@ -570,8 +570,8 @@ let explicitize loc inctx impl (cf,f) args =
 	  let f' = match f with CRef f -> f | _ -> assert false in
 	  CAppExpl (loc,(ip,f'),args)
 	else
-	  let (args1,args2) = list_chop i args in
-	  let (impl1,impl2) = if impl=[] then [],[] else list_chop i impl in
+	  let (args1,args2) = List.chop i args in
+	  let (impl1,impl2) = if impl=[] then [],[] else List.chop i impl in
 	  let args1 = exprec 1 (args1,impl1) in
 	  let args2 = exprec (i+1) (args2,impl2) in
 	  CApp (loc,(Some (List.length args1),f),args1@args2)
@@ -617,7 +617,7 @@ let rec remove_coercions inctx = function
       (try match Classops.hide_coercion r with
 	  | Some n when n < nargs && (inctx or n+1 < nargs) ->
 	      (* We skip a coercion *)
-	      let l = list_skipn n args in
+	      let l = List.skipn n args in
 	      let (a,l) = match l with a::l -> (a,l) | [] -> assert false in
               (* Recursively remove the head coercions *)
 	      let a' = remove_coercions true a in
@@ -893,17 +893,17 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 	let (t,args,argsscopes,argsimpls) = match t,n with
 	  | GApp (_,f,args), Some n
 	      when List.length args >= n ->
-	      let args1, args2 = list_chop n args in
+	      let args1, args2 = List.chop n args in
               let subscopes, impls =
                 match f with
                 | GRef (_,ref) ->
 	          let subscopes =
-		    try list_skipn n (find_arguments_scope ref) with _ -> [] in
+		    try List.skipn n (find_arguments_scope ref) with _ -> [] in
 	          let impls =
 		    let impls =
 		      select_impargs_size
 		        (List.length args) (implicits_of_global ref) in
-		    try list_skipn n impls with _ -> [] in
+		    try List.skipn n impls with _ -> [] in
                   subscopes,impls
                 | _ ->
                   [], [] in

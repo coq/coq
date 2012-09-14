@@ -97,7 +97,7 @@ let make_constr_action
 	failwith "Unexpected entry of type cases pattern")
   | GramConstrListMark (n,b) :: tl ->
       (* Rebuild expansions of ConstrList *)
-      let heads,constrs = list_chop n constrs in
+      let heads,constrs = List.chop n constrs in
       let constrlists =
 	if b then (heads@List.hd constrlists)::List.tl constrlists
 	else heads::constrlists
@@ -145,7 +145,7 @@ let make_cases_pattern_action
         anomaly "Unexpected entry of type cases pattern or other")
   | GramConstrListMark (n,b) :: tl ->
       (* Rebuild expansions of ConstrList *)
-      let heads,env = list_chop n env in
+      let heads,env = List.chop n env in
       if b then
         make (env,(heads@List.hd envlist)::List.tl envlist,hasbinders) tl
       else
@@ -278,7 +278,7 @@ let freeze () = (!grammar_state, Lexer.freeze ())
 (* We compare the current state of the grammar and the state to unfreeze,
    by computing the longest common suffixes *)
 let factorize_grams l1 l2 =
-  if l1 == l2 then ([], [], l1) else list_share_tails l1 l2
+  if l1 == l2 then ([], [], l1) else List.share_tails l1 l2
 
 let number_of_entries gcl =
   List.fold_left (fun n (p,_) -> n + p) 0 gcl

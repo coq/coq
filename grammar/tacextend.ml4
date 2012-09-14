@@ -53,7 +53,7 @@ let rec extract_signature = function
 
 let check_unicity s l =
   let l' = List.map (fun (l,_) -> extract_signature l) l in
-  if not (Util.list_distinct l') then
+  if not (Util.List.distinct l') then
     Pp.msg_warning
       (strbrk ("Two distinct rules of tactic entry "^s^" have the same "^
       "non-terminals in the same order: put them in distinct tactic entries"))
@@ -152,10 +152,10 @@ let rec possibly_empty_subentries loc = function
     else possibly_empty_subentries loc l
 
 let possibly_atomic loc prods =
-  let l = list_map_filter (function
+  let l = List.map_filter (function
     | GramTerminal s :: l, _ -> Some (s,l)
     | _ -> None) prods in
-  possibly_empty_subentries loc (list_factorize_left l)
+  possibly_empty_subentries loc (List.factorize_left l)
 
 let declare_tactic loc s cl =
   let se = mlexpr_of_string s in

@@ -77,7 +77,7 @@ let lookup_qualid (modtype:bool) qid =
   in
   let rec find_module_prefix dir n =
     if n<0 then raise Not_found;
-    let dir',dir'' = list_chop n dir in
+    let dir',dir'' = List.chop n dir in
     let id',dir''' =
       match dir'' with
 	| hd::tl -> hd,tl

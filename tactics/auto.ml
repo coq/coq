@@ -280,7 +280,7 @@ let subst_path_atom subst p =
   | PathAny -> p
   | PathHints grs ->
     let gr' gr = fst (subst_global subst gr) in
-    let grs' = list_smartmap gr' grs in
+    let grs' = List.smartmap gr' grs in
       if grs' == grs then p else PathHints grs'
 
 let rec subst_hints_path subst hp =
@@ -393,7 +393,7 @@ module Hint_db = struct
 
   let add_list l db = List.fold_left (fun db k -> add_one k db) db l
 
-  let remove_sdl p sdl = list_smartfilter p sdl 
+  let remove_sdl p sdl = List.smartfilter p sdl 
   let remove_he st p (sl1, sl2, dn as he) =
     let sl1' = remove_sdl p sl1 and sl2' = remove_sdl p sl2 in
       if sl1' == sl1 && sl2' == sl2 then he
@@ -402,7 +402,7 @@ module Hint_db = struct
   let remove_list grs db =
     let filter (_, h) = match h.name with PathHints [gr] -> not (List.mem gr grs) | _ -> true in
     let hintmap = Constr_map.map (remove_he db.hintdb_state filter) db.hintdb_map in
-    let hintnopat = list_smartfilter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
+    let hintnopat = List.smartfilter (fun (ge, sd) -> filter sd) db.hintdb_nopat in
       { db with hintdb_map = hintmap; hintdb_nopat = hintnopat }
 
   let remove_one gr db = remove_list [gr] db
@@ -691,14 +691,14 @@ let subst_autohint (subst,(local,name,hintlist as obj)) =
     match hintlist with
     | CreateDB _ -> obj
     | AddTransparency (grs, b) ->
-	let grs' = list_smartmap (subst_evaluable_reference subst) grs in
+	let grs' = List.smartmap (subst_evaluable_reference subst) grs in
 	  if grs==grs' then obj else (local, name, AddTransparency (grs', b))
     | AddHints hintlist ->
-	let hintlist' = list_smartmap subst_hint hintlist in
+	let hintlist' = List.smartmap subst_hint hintlist in
 	  if hintlist' == hintlist then obj else
 	    (local,name,AddHints hintlist')
     | RemoveHints grs ->
-	let grs' = list_smartmap (fun x -> fst (subst_global subst x)) grs in
+	let grs' = List.smartmap (fun x -> fst (subst_global subst x)) grs in
 	  if grs==grs' then obj else (local, name, RemoveHints grs')
     | AddCut path ->
       let path' = subst_hints_path subst path in
@@ -761,7 +761,7 @@ let add_extern pri pat tacast local dbname =
   let tacmetas = [] in
     match pat with
     | Some (patmetas,pat) ->
-	(match (list_subtract tacmetas patmetas) with
+	(match (List.subtract tacmetas patmetas) with
 	| i::_ ->
 	    errorlabstrm "add_extern"
 	      (str "The meta-variable ?" ++ Ppconstr.pr_patvar i ++ str" is not bound.")
@@ -859,7 +859,7 @@ let interp_hints h =
       let constr_hints_of_ind qid =
         let ind = global_inductive_with_alias qid in
 	Dumpglob.dump_reference (fst (qualid_of_reference qid)) "<>" (string_of_reference qid) "ind";
-        list_tabulate (fun i -> let c = (ind,i+1) in
+        List.tabulate (fun i -> let c = (ind,i+1) in
 			 None, true, PathHints [ConstructRef c], mkConstruct c)
 	  (nconstructors ind) in
 	HintsResolveEntry (List.flatten (List.map constr_hints_of_ind lqid))
@@ -1054,10 +1054,10 @@ let unify_resolve_gen = function
 (* Util *)
 
 let expand_constructor_hints env lems =
-  list_map_append (fun (sigma,lem) ->
+  List.map_append (fun (sigma,lem) ->
     match kind_of_term lem with
     | Ind ind ->
-	list_tabulate (fun i -> mkConstruct (ind,i+1)) (nconstructors ind)
+	List.tabulate (fun i -> mkConstruct (ind,i+1)) (nconstructors ind)
     | _ ->
 	[prepare_hint env (sigma,lem)]) lems
 
@@ -1067,7 +1067,7 @@ let expand_constructor_hints env lems =
 let add_hint_lemmas eapply lems hint_db gl =
   let lems = expand_constructor_hints (pf_env gl) lems in
   let hintlist' =
-    list_map_append (pf_apply make_resolves gl (eapply,true,false) None) lems in
+    List.map_append (pf_apply make_resolves gl (eapply,true,false) None) lems in
   Hint_db.add_list hintlist' hint_db
 
 let make_local_hint_db ?ts eapply lems gl =
@@ -1076,7 +1076,7 @@ let make_local_hint_db ?ts eapply lems gl =
     | None -> Hint_db.transparent_state (searchtable_map "core") 
     | Some ts -> ts
   in
-  let hintlist = list_map_append (pf_apply make_resolve_hyp gl) sign in
+  let hintlist = List.map_append (pf_apply make_resolve_hyp gl) sign in
   add_hint_lemmas eapply lems
     (Hint_db.add_list hintlist (Hint_db.empty ts false)) gl
 
@@ -1271,7 +1271,7 @@ let rec trivial_fail_db dbg mod_delta db_list local_db gl =
 
 and my_find_search_nodelta db_list local_db hdc concl =
   List.map (fun hint -> (None,hint))
-    (list_map_append (hintmap_of hdc concl) (local_db::db_list))
+    (List.map_append (hintmap_of hdc concl) (local_db::db_list))
 
 and my_find_search mod_delta =
   if mod_delta then my_find_search_delta
@@ -1281,7 +1281,7 @@ and my_find_search_delta db_list local_db hdc concl =
   let flags = {auto_unif_flags with use_metas_eagerly_in_conv_on_closed_terms = true} in
   let f = hintmap_of hdc concl in
     if occur_existential concl then
-      list_map_append
+      List.map_append
 	(fun db ->
 	  if Hint_db.use_dn db then
 	    let flags = flags_of_state (Hint_db.transparent_state db) in
@@ -1291,7 +1291,7 @@ and my_find_search_delta db_list local_db hdc concl =
 	      List.map (fun x -> (Some flags,x)) (f db))
 	(local_db::db_list)
     else
-      list_map_append (fun db ->
+      List.map_append (fun db ->
 	if Hint_db.use_dn db then
 	  let flags = flags_of_state (Hint_db.transparent_state db) in
 	    List.map (fun x -> (Some flags, x)) (f db)
@@ -1346,7 +1346,7 @@ and trivial_resolve dbg mod_delta db_list local_db cl =
 
 let make_db_list dbnames =
   let use_core = not (List.mem "nocore" dbnames) in
-  let dbnames = list_remove "nocore" dbnames in
+  let dbnames = List.remove "nocore" dbnames in
   let dbnames = if use_core then "core"::dbnames else dbnames in
   let lookup db =
     try searchtable_map db with Not_found -> error_no_such_hint_database db
@@ -1361,7 +1361,7 @@ let trivial ?(debug=Off) lems dbnames gl =
 
 let full_trivial ?(debug=Off) lems gl =
   let dbnames = Hintdbmap.dom !searchtable in
-  let dbnames = list_remove "v62" dbnames in
+  let dbnames = List.remove "v62" dbnames in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   let d = mk_trivial_dbg debug in
   tclTRY_dbg d
@@ -1454,7 +1454,7 @@ let default_auto = auto !default_search_depth [] []
 
 let delta_full_auto ?(debug=Off) mod_delta n lems gl =
   let dbnames = Hintdbmap.dom !searchtable in
-  let dbnames = list_remove "v62" dbnames in
+  let dbnames = List.remove "v62" dbnames in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   let d = mk_auto_dbg debug in
   tclTRY_dbg d

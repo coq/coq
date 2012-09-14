@@ -158,7 +158,7 @@ let vars_to_put_by_root var_x_files_l (inc_i,inc_r) =
       if inc_r = [] then
 	[".","$(INSTALLDEFAULTROOT)",[]]
       else
-	Util.list_fold_left_i (fun i out (pdir,ldir,abspdir) ->
+	Util.List.fold_left_i (fun i out (pdir,ldir,abspdir) ->
 	  let vars_r = var_filter (List.exists (is_prefix abspdir)) (fun x -> x^string_of_int i) in
 	  let pdir' = physical_dir_of_logical_dir ldir in
 	  (pdir,pdir',vars_r)::out) 1 [] inc_r

@@ -592,7 +592,7 @@ let pr_fix_tac (id,n,c) =
   let rec set_nth_name avoid n = function
       (nal,ty)::bll ->
         if n <= List.length nal then
-          match list_chop (n-1) nal with
+          match List.chop (n-1) nal with
               _, (_,Name id) :: _ -> id, (nal,ty)::bll
             | bef, (loc,Anonymous) :: aft ->
                 let id = next_ident_away (id_of_string"y") avoid in

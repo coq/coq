@@ -369,7 +369,7 @@ module Hdir = Hashcons.Make(
   struct
     type t = dir_path
     type u = identifier -> identifier
-    let hash_sub hident d = list_smartmap hident d
+    let hash_sub hident d = List.smartmap hident d
     let rec equal d1 d2 =
       (d1==d2) ||
       match (d1,d2) with

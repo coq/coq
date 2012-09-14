@@ -56,7 +56,7 @@ let evar_body evi = evi.evar_body
 let evar_filter evi = evi.evar_filter
 let evar_unfiltered_env evi = Global.env_of_context evi.evar_hyps
 let evar_filtered_context evi =
-  snd (list_filter2 (fun b c -> b) (evar_filter evi,evar_context evi))
+  snd (List.filter2 (fun b c -> b) (evar_filter evi,evar_context evi))
 let evar_env evi =
   List.fold_right push_named (evar_filtered_context evi)
     (reset_context (Global.env()))
@@ -676,7 +676,7 @@ let rec list_assoc_in_triple x = function
 
 let subst_defined_metas bl c =
   let rec substrec c = match kind_of_term c with
-    | Meta i -> substrec (list_assoc_snd_in_triple i bl)
+    | Meta i -> substrec (List.assoc_snd_in_triple i bl)
     | _ -> map_constr substrec c
   in try Some (substrec c) with Not_found -> None
 
@@ -797,9 +797,9 @@ let evar_dependency_closure n sigma =
     if n=0 then l
     else
       let l' =
-        list_map_append (fun (evk,_) ->
+        List.map_append (fun (evk,_) ->
           try ExistentialMap.find evk graph with Not_found -> []) l in
-      aux (n-1) (list_uniquize (Sort.list order (l@l'))) in
+      aux (n-1) (List.uniquize (Sort.list order (l@l'))) in
   aux n (undefined_list sigma)
 
 let pr_evar_map_t depth sigma =

@@ -88,7 +88,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
     Nameops.out_name x,None,compose_prod real_args (mkSort new_sort)
   in
   let new_predicates =
-    list_map_i
+    List.map_i
       change_predicate_sort
       0
       princ_type_info.predicates
@@ -252,7 +252,7 @@ let compute_new_princ_type_from_rel rel_to_fun sorts princ_type =
   in
   let pre_res =
     replace_vars
-      (list_map_i (fun i id -> (id, mkRel i)) 1 ptes_vars)
+      (List.map_i (fun i id -> (id, mkRel i)) 1 ptes_vars)
       (lift (List.length ptes_vars) pre_res)
   in
   it_mkProd_or_LetIn
@@ -460,7 +460,7 @@ let get_funs_constant mp dp =
       let first_params = List.hd l_params  in
       List.iter
 	(fun params ->
-	   if not (list_equal (fun (n1, c1) (n2, c2) -> n1 = n2 && eq_constr c1 c2) first_params params)
+	   if not (List.equal (fun (n1, c1) (n2, c2) -> n1 = n2 && eq_constr c1 c2) first_params params)
 	   then error "Not a mutal recursive block"
 	)
 	l_params

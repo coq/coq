@@ -26,7 +26,7 @@ let omega_tactic l =
        | "N" -> Tacinterp.interp <:tactic<zify_N>>
        | "Z" -> Tacinterp.interp <:tactic<zify_op>>
        | s -> Errors.error ("No Omega knowledge base for type "^s))
-    (Util.list_uniquize (List.sort compare l))
+    (Util.List.uniquize (List.sort compare l))
   in
   tclTHEN
     (tclREPEAT (tclPROGRESS (tclTHENLIST tacs)))

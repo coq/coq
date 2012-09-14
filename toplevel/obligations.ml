@@ -31,7 +31,7 @@ let trace s =
 let succfix (depth, fixrels) =
   (succ depth, List.map succ fixrels)
 
-let mkMetas n = list_tabulate (fun _ -> Evarutil.mk_new_meta ()) n
+let mkMetas n = List.tabulate (fun _ -> Evarutil.mk_new_meta ()) n
 
 let check_evars env evm =
   List.iter
@@ -80,7 +80,7 @@ let subst_evar_constr evs n idf t =
 	  *)
 	let args =
 	  let n = match chop with None -> 0 | Some c -> c in
-	  let (l, r) = list_chop n (List.rev (Array.to_list args)) in
+	  let (l, r) = List.chop n (List.rev (Array.to_list args)) in
 	    List.rev r
 	in
 	let args =
@@ -108,7 +108,7 @@ let subst_evar_constr evs n idf t =
 (** Substitute variable references in t using De Bruijn indices,
   where n binders were passed through. *)
 let subst_vars acc n t =
-  let var_index id = Util.list_index id acc in
+  let var_index id = Util.List.index id acc in
   let rec substrec depth c = match kind_of_term c with
     | Var v -> (try mkRel (depth + (var_index v)) with Not_found -> c)
     | _ -> map_constr_with_binders succ substrec depth c
@@ -146,7 +146,7 @@ open Tacticals
 
 let trunc_named_context n ctx =
   let len = List.length ctx in
-    list_firstn (len - n) ctx
+    List.firstn (len - n) ctx
 
 let rec chop_product n t =
   if n = 0 then Some t
@@ -547,13 +547,13 @@ let compute_possible_guardness_evidences (n,_) fixbody fixtype =
 	 fixpoints ?) *)
       let m = Term.nb_prod fixtype in
       let ctx = fst (decompose_prod_n_assum m fixtype) in
-	list_map_i (fun i _ -> i) 0 ctx
+	List.map_i (fun i _ -> i) 0 ctx
 
 let declare_mutual_definition l =
   let len = List.length l in
   let first = List.hd l in
   let fixdefs, fixtypes, fiximps =
-    list_split3
+    List.split3
       (List.map (fun x -> 
 	let subs, typ = (subst_body true x) in
 	let term = snd (Reductionops.splay_lam_n (Global.env ()) Evd.empty len subs) in
@@ -571,14 +571,14 @@ let declare_mutual_definition l =
     match fixkind with
       | IsFixpoint wfl ->
 	  let possible_indexes =
-	    list_map3 compute_possible_guardness_evidences wfl fixdefs fixtypes in
+	    List.map3 compute_possible_guardness_evidences wfl fixdefs fixtypes in
 	  let indexes = Pretyping.search_guard Loc.ghost (Global.env ()) possible_indexes fixdecls in
-	    Some indexes, list_map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 l
+	    Some indexes, List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 l
       | IsCoFixpoint ->
-	  None, list_map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 l
+	  None, List.map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 l
   in
   (* Declare the recursive definitions *)
-  let kns = list_map4 (!declare_fix_ref kind) fixnames fixdecls fixtypes fiximps in
+  let kns = List.map4 (!declare_fix_ref kind) fixnames fixdecls fixtypes fiximps in
     (* Declare notations *)
     List.iter Metasyntax.add_notation_interpretation first.prg_notations;
     Declare.recursive_message (fixkind<>IsCoFixpoint) indexes fixnames;

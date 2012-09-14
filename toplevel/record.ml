@@ -158,7 +158,7 @@ let subst_projection fid l c =
   c''
 
 let instantiate_possibly_recursive_type indsp paramdecls fields =
-  let subst = list_map_i (fun i _ -> mkRel i) 1 paramdecls in
+  let subst = List.map_i (fun i _ -> mkRel i) 1 paramdecls in
   Termops.substl_rel_context (subst@[mkInd indsp]) fields
 
 (* We build projections *)
@@ -173,7 +173,7 @@ let declare_projections indsp ?(kind=StructureComponent) ?name coers fieldimpls 
   let fields = instantiate_possibly_recursive_type indsp paramdecls fields in
   let lifted_fields = Termops.lift_rel_context 1 fields in
   let (_,kinds,sp_projs,_) =
-    list_fold_left3
+    List.fold_left3
       (fun (nfi,kinds,sp_projs,subst) coe (fi,optci,ti) impls ->
 	let (sp_projs,subst) =
 	  match fi with
@@ -234,7 +234,7 @@ let structure_signature ctx =
       | (_,_,typ)::tl ->
 	  let ev = Evarutil.new_untyped_evar() in
 	  let evm = Evd.add evm ev (Evd.make_evar Environ.empty_named_context_val typ) in
-	  let new_tl = Util.list_map_i
+	  let new_tl = Util.List.map_i
 	    (fun pos (n,c,t) -> n,c,
 	       Termops.replace_term (mkRel pos) (mkEvar(ev,[||])) t) 1 tl in
 	  deps_to_evar evm new_tl in
@@ -280,7 +280,7 @@ let declare_structure finite infer id idbuild paramimpls params arity fieldimpls
   rsp
 
 let implicits_of_context ctx =
-  list_map_i (fun i name ->
+  List.map_i (fun i name ->
     let explname =
       match name with
       | Name n -> Some n
@@ -346,7 +346,7 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
 			       Option.map (fun b -> if b then Backward, pri else Forward, pri) coe) 
 	  coers priorities 
 	in
-	  IndRef ind, (list_map3 (fun (id, _, _) b y -> (id, b, y))
+	  IndRef ind, (List.map3 (fun (id, _, _) b y -> (id, b, y))
 			 (List.rev fields) coers (Recordops.lookup_projections ind))
   in
   let ctx_context =
@@ -362,7 +362,7 @@ let declare_class finite def infer id idbuild paramimpls params arity fieldimpls
       cl_props = fields;
       cl_projs = projs }
   in
-(*     list_iter3 (fun p sub pri -> *)
+(*     List.iter3 (fun p sub pri -> *)
 (*       if sub then match p with (_, _, Some p) -> declare_instance_cst true p pri | _ -> ()) *)
 (*       k.cl_projs coers priorities; *)
   add_class k; impl
@@ -389,7 +389,7 @@ let definition_structure (kind,finite,infer,(is_coe,(loc,idstruc)),ps,cfs,idbuil
     | Vernacexpr.DefExpr ((_,Name id),_,_) -> id::acc
     | _ -> acc in
   let allnames =  idstruc::(List.fold_left extract_name [] fs) in
-  if not (list_distinct allnames) then error "Two objects have the same name";
+  if not (List.distinct allnames) then error "Two objects have the same name";
   if not (kind = Class false) && List.exists ((<>) None) priorities then
     error "Priorities only allowed for type class substructures";
   (* Now, younger decl in params and fields is on top *)

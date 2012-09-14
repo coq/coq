@@ -154,13 +154,13 @@ let subst_class (subst,cl) =
   let do_subst_con c = fst (Mod_subst.subst_con subst c)
   and do_subst c = Mod_subst.subst_mps subst c
   and do_subst_gr gr = fst (subst_global subst gr) in
-  let do_subst_ctx ctx = list_smartmap
+  let do_subst_ctx ctx = List.smartmap
     (fun (na, b, t) -> (na, Option.smartmap do_subst b, do_subst t))
     ctx in
   let do_subst_context (grs,ctx) =
-    list_smartmap (Option.smartmap (fun (gr,b) -> do_subst_gr gr, b)) grs,
+    List.smartmap (Option.smartmap (fun (gr,b) -> do_subst_gr gr, b)) grs,
     do_subst_ctx ctx in
-  let do_subst_projs projs = list_smartmap (fun (x, y, z) -> (x, y, Option.smartmap do_subst_con z)) projs in
+  let do_subst_projs projs = List.smartmap (fun (x, y, z) -> (x, y, Option.smartmap do_subst_con z)) projs in
   { cl_impl = do_subst_gr cl.cl_impl;
     cl_context = do_subst_context cl.cl_context;
     cl_props = do_subst_ctx cl.cl_props;
@@ -195,7 +195,7 @@ let discharge_class (_,cl) =
 	| Some (_, (tc, _)) -> Some (tc.cl_impl, true))
 	ctx' 
       in
-	list_smartmap (Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b)) grs
+	List.smartmap (Option.smartmap (fun (gr, b) -> Lib.discharge_global gr, b)) grs
 	  @ newgrs
     in grs', discharge_rel_context subst 1 ctx @ ctx' in
   let cl_impl' = Lib.discharge_global cl.cl_impl in
@@ -207,7 +207,7 @@ let discharge_class (_,cl) =
     { cl_impl = cl_impl';
       cl_context = context;
       cl_props = props;
-      cl_projs = list_smartmap (fun (x, y, z) -> x, y, Option.smartmap Lib.discharge_con z) cl.cl_projs }
+      cl_projs = List.smartmap (fun (x, y, z) -> x, y, Option.smartmap Lib.discharge_con z) cl.cl_projs }
 
 let rebuild_class cl = 
   try 
@@ -246,7 +246,7 @@ let build_subclasses ~check env sigma glob pri =
       | Some (rels, (tc, args)) ->
 	let instapp = Reductionops.whd_beta sigma (appvectc c (Termops.extended_rel_vect 0 rels)) in
 	let projargs = Array.of_list (args @ [instapp]) in
-	let projs = list_map_filter 
+	let projs = List.map_filter 
 	  (fun (n, b, proj) ->
 	   match b with 
 	   | None -> None
@@ -408,12 +408,12 @@ let add_inductive_class ind =
 
 let instance_constructor cl args =
   let lenpars = List.length (List.filter (fun (na, b, t) -> b = None) (snd cl.cl_context)) in
-  let pars = fst (list_chop lenpars args) in
+  let pars = fst (List.chop lenpars args) in
     match cl.cl_impl with
       | IndRef ind -> Some (applistc (mkConstruct (ind, 1)) args),
 	  applistc (mkInd ind) pars
       | ConstRef cst -> 
-	let term = if args = [] then None else Some (list_last args) in
+	let term = if args = [] then None else Some (List.last args) in
 	  term, applistc (mkConst cst) pars
       | _ -> assert false
 

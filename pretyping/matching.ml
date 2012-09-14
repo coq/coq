@@ -110,7 +110,7 @@ let dummy_constr = mkProp
 let rec make_renaming ids = function
   | (Name id,Name _,_)::stk ->
       let renaming = make_renaming ids stk in
-      (try mkRel (list_index id ids) :: renaming
+      (try mkRel (List.index id ids) :: renaming
        with Not_found -> dummy_constr :: renaming)
   | (_,_,_)::stk ->
       dummy_constr :: make_renaming ids stk
@@ -152,7 +152,7 @@ let matches_core convert allow_partial_app allow_bound_rels pat c =
 		 | _ -> error "Only bound indices allowed in second order pattern matching.")
 	      args in
 	  let frels = Intset.elements (free_rels cT) in
-	  if list_subset frels relargs then
+	  if List.subset frels relargs then
 	    constrain (n,([],build_lambda relargs stk cT)) subst
 	  else
 	    raise PatternMatchingFailure

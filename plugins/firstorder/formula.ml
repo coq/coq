@@ -142,7 +142,7 @@ let build_atoms gl metagen side cciterm =
 	  let g i _ (_,_,t) =
 	    build_rec env polarity (lift i t) in
 	  let f l =
-	    list_fold_left_i g (1-(List.length l)) () l in
+	    List.fold_left_i g (1-(List.length l)) () l in
 	    if polarity && (* we have a constant constructor *)
 	      array_exists (function []->true|_->false) v
 	    then trivial:=true;
@@ -152,7 +152,7 @@ let build_atoms gl metagen side cciterm =
 	  let v =(ind_hyps 1 i l gl).(0) in
 	  let g i _ (_,_,t) =
 	    build_rec (var::env) polarity (lift i t) in
-	    list_fold_left_i g (2-(List.length l)) () v
+	    List.fold_left_i g (2-(List.length l)) () v
       | Forall(_,b)->
 	  let var=mkMeta (metagen true) in
 	    build_rec (var::env) polarity b
@@ -224,7 +224,7 @@ let build_formula side nam typ gl metagen=
 		  | And(_,_,_)        -> Rand
 		  | Or(_,_,_)         -> Ror
 		  | Exists (i,l) ->
-		      let (_,_,d)=list_last (ind_hyps 0 i l gl).(0) in
+		      let (_,_,d)=List.last (ind_hyps 0 i l gl).(0) in
 			Rexists(m,d,trivial)
 		  | Forall (_,a) -> Rforall
 		  | Arrow (a,b) -> Rarrow in

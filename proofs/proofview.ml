@@ -112,7 +112,7 @@ let focus_sublist i j l =
   let (left,sub_right) = list_goto (i-1) l in
   let (sub, right) = 
     try 
-      Util.list_chop (j-i+1) sub_right 
+      Util.List.chop (j-i+1) sub_right 
     with Failure "list_chop" -> 
       Errors.errorlabstrm "nth_unproven" (Pp.str"No such unproven subgoal")
   in

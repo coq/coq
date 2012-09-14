@@ -174,7 +174,7 @@ let dump_constraint ((loc, n), _, _) sec ty =
 let dump_modref loc mp ty =
   if dump () then
     let (dp, l) = Lib.split_modpath mp in
-    let l = if l = [] then l else Util.list_drop_last l in
+    let l = if l = [] then l else Util.List.drop_last l in
     let fp = Names.string_of_dirpath dp in
     let mp = Names.string_of_dirpath (Names.make_dirpath l) in
     let bl,el = interval loc in

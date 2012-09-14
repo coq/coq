@@ -92,7 +92,7 @@ let catch_error call_trace tac g =
   | LtacLocated _ as e -> raise e
   | Loc.Exc_located (_,LtacLocated _) as e -> raise e
   | e ->
-    let (nrep,loc',c),tail = list_sep_last call_trace in
+    let (nrep,loc',c),tail = List.sep_last call_trace in
     let loc,e' = match e with Loc.Exc_located(loc,e) -> loc,e | _ ->dloc,e in
     if tail = [] then
       let loc = if loc = dloc then loc' else loc in
@@ -928,7 +928,7 @@ and intern_match_rule onlytac ist = function
       let {ltacvars=(lfun,l2); gsigma=sigma; genv=env} = ist in
       let lfun',metas1,hyps = intern_match_goal_hyps ist lfun rl in
       let ido,metas2,pat = intern_pattern ist lfun mp in
-      let metas = list_uniquize (metas1@metas2) in
+      let metas = List.uniquize (metas1@metas2) in
       let ist' = { ist with ltacvars = (metas@(Option.List.cons ido lfun'),l2) } in
       Pat (hyps,pat,intern_tactic onlytac ist' tc) :: (intern_match_rule onlytac ist tl)
   | [] -> []
@@ -1329,7 +1329,7 @@ let interp_constr_in_compound_list inj_fun dest_fun interp_fun ist env sigma l =
       (*all of dest_fun, List.assoc, constr_list_of_VList may raise Not_found*)
       let sigma, c = interp_fun ist env sigma x in
       sigma, [c] in
-  let sigma, l = list_fold_map try_expand_ltac_var sigma l in
+  let sigma, l = List.fold_map try_expand_ltac_var sigma l in
   sigma, List.flatten l
 
 let interp_constr_list ist env sigma c =
@@ -1541,7 +1541,7 @@ let interp_bindings ist env sigma = function
     let sigma, l = interp_open_constr_list ist env sigma l in   
     sigma, ImplicitBindings l
 | ExplicitBindings l ->
-    let sigma, l = list_fold_map (interp_binding ist env) sigma l in
+    let sigma, l = List.fold_map (interp_binding ist env) sigma l in
     sigma, ExplicitBindings l
 
 let interp_constr_with_bindings ist env sigma (c,bl) =
@@ -1556,8 +1556,8 @@ let interp_open_constr_with_bindings ist env sigma (c,bl) =
 
 let loc_of_bindings = function
 | NoBindings -> Loc.ghost
-| ImplicitBindings l -> loc_of_glob_constr (fst (list_last l))
-| ExplicitBindings l -> pi1 (list_last l)
+| ImplicitBindings l -> loc_of_glob_constr (fst (List.last l))
+| ExplicitBindings l -> pi1 (List.last l)
 
 let interp_open_constr_with_bindings_loc ist env sigma ((c,_),bl as cb) =
   let loc1 = loc_of_glob_constr c in
@@ -1982,7 +1982,7 @@ and eval_with_fail ist is_lazy goal tac =
 (* Interprets the clauses of a recursive LetIn *)
 and interp_letrec ist gl llc u =
   let lref = ref ist.lfun in
-  let lve = list_map_left (fun ((_,id),b) -> (id,VRec (lref,TacArg (dloc,b)))) llc in
+  let lve = List.map_left (fun ((_,id),b) -> (id,VRec (lref,TacArg (dloc,b)))) llc in
   lref := lve@ist.lfun;
   let ist = { ist with lfun = lve@ist.lfun } in
   val_interp ist gl u
@@ -2069,7 +2069,7 @@ and apply_hyps_context ist env lz goal mt lctxt lgmatch mhyps hyps =
           db_matched_hyp ist.debug (pf_env goal) hyp_match hypname;
 	  try
             let id_match = pi1 hyp_match in
-            let nextlhyps = list_remove_assoc_in_triple id_match lhyps_rest in
+            let nextlhyps = List.remove_assoc_in_triple id_match lhyps_rest in
             apply_hyps_context_rec (lfun@lids) lm nextlhyps tl
           with e when is_match_catchable e ->
 	    match_next_pattern find_next' in
@@ -2335,7 +2335,7 @@ and interp_atomic ist gl tac =
 	(h_vm_cast_no_check c_interp)
   | TacApply (a,ev,cb,cl) ->
       let sigma, l =
-        list_fold_map (interp_open_constr_with_bindings_loc ist env) sigma cb
+        List.fold_map (interp_open_constr_with_bindings_loc ist env) sigma cb
       in
       let tac = match cl with
         | None -> h_apply a ev
@@ -2435,7 +2435,7 @@ and interp_atomic ist gl tac =
       h_simple_induction_destruct isrec (interp_quantified_hypothesis ist h)
   | TacInductionDestruct (isrec,ev,(l,el,cls)) ->
       let sigma, l =
-        list_fold_map (fun sigma (c,(ipato,ipats)) ->
+        List.fold_map (fun sigma (c,(ipato,ipats)) ->
           let c = interp_induction_arg ist gl c in
           (sigma,(c,
             (Option.map (interp_intro_pattern ist gl) ipato,
@@ -2492,7 +2492,7 @@ and interp_atomic ist gl tac =
       let sigma, bl = interp_bindings ist env sigma bl in
       tclWITHHOLES ev (h_right ev) sigma bl
   | TacSplit (ev,_,bll) ->
-      let sigma, bll = list_fold_map (interp_bindings ist env) sigma bll in
+      let sigma, bll = List.fold_map (interp_bindings ist env) sigma bll in
       tclWITHHOLES ev (h_split ev) sigma bll
   | TacAnyConstructor (ev,t) ->
       abstract_tactic (TacAnyConstructor (ev,t))
@@ -3142,7 +3142,7 @@ let add_tacdef local isrec tacl =
   let rfun = List.map (fun (ident, b, _) -> make_absolute_name ident b) tacl in
   let ist =
     {(make_empty_glob_sign()) with ltacrecvars =
-	if isrec then list_map_filter
+	if isrec then List.map_filter
 	  (function (Some id, qid) -> Some (id, qid) | (None, _) -> None) rfun
 	else []} in
   let gtacl =

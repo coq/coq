@@ -38,7 +38,7 @@ let abstract_inductive hyps nparams inds =
   let ntyp = List.length inds in
   let nhyp = named_context_length hyps in
   let args = instance_from_named_context (List.rev hyps) in
-  let subs = list_tabulate (fun k -> lift nhyp (mkApp(mkRel (k+1),args))) ntyp in
+  let subs = List.tabulate (fun k -> lift nhyp (mkApp(mkRel (k+1),args))) ntyp in
   let inds' =
     List.map
       (function (tname,arity,cnames,lc) ->

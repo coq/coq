@@ -45,7 +45,7 @@ let gen_constant_in_modules locstr dirs s =
   let dirs = List.map make_dir dirs in
   let qualid = qualid_of_string s in
   let all = Nametab.locate_extended_all qualid in
-  let all = list_uniquize (list_map_filter global_of_extended all) in
+  let all = List.uniquize (List.map_filter global_of_extended all) in
   let these = List.filter (has_suffix_in_dirs dirs) all in
   match these with
     | [x] -> constr_of_global x
@@ -73,7 +73,7 @@ let check_required_library d =
   if not (Library.library_is_loaded dir) then
     if not current_dir then
 (* Loading silently ...
-    let m, prefix = list_sep_last d' in
+    let m, prefix = List.sep_last d' in
     read_library
      (Loc.ghost,make_qualid (make_dirpath (List.rev prefix)) m)
 *)

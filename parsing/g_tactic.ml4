@@ -77,18 +77,18 @@ let check_for_coloneq =
   Gram.Entry.of_parser "lpar_id_colon"
     (fun strm ->
       let rec skip_to_rpar p n =
-	match get_tok (list_last (Stream.npeek n strm)) with
+	match get_tok (List.last (Stream.npeek n strm)) with
         | KEYWORD "(" -> skip_to_rpar (p+1) (n+1)
         | KEYWORD ")" -> if p=0 then n+1 else skip_to_rpar (p-1) (n+1)
 	| KEYWORD "." -> err ()
 	| _ -> skip_to_rpar p (n+1) in
       let rec skip_names n =
-	match get_tok (list_last (Stream.npeek n strm)) with
+	match get_tok (List.last (Stream.npeek n strm)) with
         | IDENT _ | KEYWORD "_" -> skip_names (n+1)
 	| KEYWORD ":" -> skip_to_rpar 0 (n+1) (* skip a constr *)
 	| _ -> err () in
       let rec skip_binders n =
-	match get_tok (list_last (Stream.npeek n strm)) with
+	match get_tok (List.last (Stream.npeek n strm)) with
         | KEYWORD "(" -> skip_binders (skip_names (n+1))
         | IDENT _ | KEYWORD "_" -> skip_binders (n+1)
 	| KEYWORD ":=" -> ()
@@ -114,7 +114,7 @@ let mk_fix_tac (loc,id,bl,ann,ty) =
         [([_],_,_)], None -> 1
       | _, Some x ->
           let ids = List.map snd (List.flatten (List.map pi1 bl)) in
-          (try list_index (snd x) ids
+          (try List.index (snd x) ids
           with Not_found -> error "No such fix variable.")
       | _ -> error "Cannot guess decreasing argument of fix." in
   (id,n,CProdN(loc,bl,ty))
@@ -164,7 +164,7 @@ let mkCLambdaN_simple bl c =
     let loc = Loc.merge (fst (List.hd (pi1 (List.hd bl)))) (Constrexpr_ops.constr_loc c) in
     mkCLambdaN_simple_loc loc bl c
 
-let loc_of_ne_list l = Loc.merge (fst (List.hd l)) (fst (list_last l))
+let loc_of_ne_list l = Loc.merge (fst (List.hd l)) (fst (List.last l))
 
 let map_int_or_var f = function
   | ArgArg x -> ArgArg (f x)

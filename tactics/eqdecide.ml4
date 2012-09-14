@@ -129,7 +129,7 @@ let solveEqBranch rectype g =
     let (eqonleft,op,lhs,rhs,_) = match_eqdec (pf_concl g) in
     let (mib,mip) = Global.lookup_inductive rectype in
     let nparams   = mib.mind_nparams in
-    let getargs l = list_skipn nparams (snd (decompose_app l)) in
+    let getargs l = List.skipn nparams (snd (decompose_app l)) in
     let rargs   = getargs rhs
     and largs   = getargs lhs in
     List.fold_right2

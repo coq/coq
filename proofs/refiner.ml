@@ -109,7 +109,7 @@ let thens3parts_tac tacfi tac tacli (sigr,gs) =
   let ng = List.length gs in
   if ng<nf+nl then errorlabstrm "Refiner.thensn_tac" (str "Not enough subgoals.");
   let gll =
-      (list_map_i (fun i ->
+      (List.map_i (fun i ->
         apply_sig_tac sigr (if i<nf then tacfi.(i) else if i>=ng-nl then tacli.(nl-ng+i) else tac))
 	0 gs) in
     (sigr,List.flatten gll)
@@ -123,7 +123,7 @@ let thensl_tac tac taci = thens3parts_tac [||] tac taci
 (* Apply [tac i] on the ith subgoal (no subgoals number check) *)
 let thensi_tac tac (sigr,gs) =
   let gll =
-    list_map_i (fun i -> apply_sig_tac sigr (tac i)) 1 gs in
+    List.map_i (fun i -> apply_sig_tac sigr (tac i)) 1 gs in
   (sigr, List.flatten gll)
 
 let then_tac tac = thensf_tac [||] tac

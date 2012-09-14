@@ -331,7 +331,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
     recursive parameters *)
 
 let check_rec_par (env,n,_,_) hyps nrecp largs =
-  let (lpar,_) = list_chop nrecp largs in
+  let (lpar,_) = List.chop nrecp largs in
   let rec find index =
     function
       | ([],_) -> ()
@@ -355,7 +355,7 @@ let abstract_mind_lc env ntyps npars lc =
     lc
   else
     let make_abs =
-      list_tabulate
+      List.tabulate
 	(function i -> lambda_implicit_lift npars (Rel (i+1))) ntyps
     in
     Array.map (substl make_abs) lc
@@ -432,7 +432,7 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps nrecp (_,i as ind) indlc
     let auxnpar = mib.mind_nparams_rec in
     let nonrecpar = mib.mind_nparams - auxnpar in
     let (lpar,auxlargs) =
-      try list_chop auxnpar largs
+      try List.chop auxnpar largs
       with Failure _ -> raise (IllFormedInd (LocalNonPos n)) in
       (* If the inductive appears in the args (non params) then the
 	 definition is not positive. *)
@@ -514,7 +514,7 @@ let check_positivity env_ar mind params nrecp inds =
   let lparams = rel_context_length params in
   let check_one i mip =
     let ra_env =
-      list_tabulate (fun _ -> (Norec,mk_norec)) lparams @ lra_ind in
+      List.tabulate (fun _ -> (Norec,mk_norec)) lparams @ lra_ind in
     let ienv = (env_ar, 1+lparams, ntypes, ra_env) in
       check_positivity_one ienv params nrecp (mind,i) mip.mind_nf_lc
   in

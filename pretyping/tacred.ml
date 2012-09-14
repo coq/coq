@@ -186,12 +186,12 @@ let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
 	     raise Elimconst) args
   in
   let reversible_rels = List.map fst li in
-  if not (list_distinct reversible_rels) then
+  if not (List.distinct reversible_rels) then
     raise Elimconst;
-  list_iter_i (fun i t_i ->
+  List.iter_i (fun i t_i ->
     if not (List.mem_assoc (i+1) li) then
       let fvs = List.map ((+) (i+1)) (Intset.elements (free_rels t_i)) in
-      if list_intersect fvs reversible_rels <> [] then raise Elimconst)
+      if List.intersect fvs reversible_rels <> [] then raise Elimconst)
     labs;
   let k = lv.(i) in
   if k < nargs then
@@ -322,13 +322,13 @@ let reference_eval sigma env = function
 let x = Name (id_of_string "x")
 
 let make_elim_fun (names,(nbfix,lv,n)) largs =
-  let lu = list_firstn n largs in
+  let lu = List.firstn n largs in
   let p = List.length lv in
   let lyi = List.map fst lv in
   let la =
-    list_map_i (fun q aq ->
+    List.map_i (fun q aq ->
       (* k from the comment is q+1 *)
-      try mkRel (p+1-(list_index (n-q) lyi))
+      try mkRel (p+1-(List.index (n-q) lyi))
       with Not_found -> aq)
       0 (List.map (lift p) lu)
   in
@@ -338,8 +338,8 @@ let make_elim_fun (names,(nbfix,lv,n)) largs =
       | Some (minargs,ref) ->
           let body = applistc (mkEvalRef ref) la in
           let g =
-            list_fold_left_i (fun q (* j = n+1-q *) c (ij,tij) ->
-              let subst = List.map (lift (-q)) (list_firstn (n-ij) la) in
+            List.fold_left_i (fun q (* j = n+1-q *) c (ij,tij) ->
+              let subst = List.map (lift (-q)) (List.firstn (n-ij) la) in
               let tij' = substl (List.rev subst) tij in
 	      mkLambda (x,tij',c)) 1 body (List.rev lv)
           in Some (minargs,g)
@@ -433,7 +433,7 @@ let reduce_fix whdfun sigma fix stack =
     | None -> NotReducible
     | Some (recargnum,recarg) ->
         let (recarg'hd,_ as recarg') = whdfun sigma recarg in
-        let stack' = list_assign stack recargnum (applist recarg') in
+        let stack' = List.assign stack recargnum (applist recarg') in
 	(match kind_of_term recarg'hd with
            | Construct _ -> Reduced (contract_fix fix, stack')
 	   | _ -> NotReducible)
@@ -442,7 +442,7 @@ let contract_fix_use_function env sigma f
   ((recindices,bodynum),(_names,_types,bodies as typedbodies)) =
   let nbodies = Array.length recindices in
   let make_Fi j = (mkFix((recindices,j),typedbodies), f j) in
-  let lbodies = list_tabulate make_Fi nbodies in
+  let lbodies = List.tabulate make_Fi nbodies in
   substl_checking_arity env (List.rev lbodies) (nf_beta sigma bodies.(bodynum))
 
 let reduce_fix_use_function env sigma f whfun fix stack =
@@ -455,7 +455,7 @@ let reduce_fix_use_function env sigma f whfun fix stack =
 	    (recarg, [])
 	  else
 	    whfun recarg in
-        let stack' = list_assign stack recargnum (applist recarg') in
+        let stack' = List.assign stack recargnum (applist recarg') in
 	(match kind_of_term recarg'hd with
            | Construct _ ->
 	       Reduced (contract_fix_use_function env sigma f fix,stack')
@@ -465,14 +465,14 @@ let contract_cofix_use_function env sigma f
   (bodynum,(_names,_,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
   let make_Fi j = (mkCoFix(j,typedbodies), f j) in
-  let subbodies = list_tabulate make_Fi nbodies in
+  let subbodies = List.tabulate make_Fi nbodies in
   substl_checking_arity env (List.rev subbodies)
     (nf_beta sigma bodies.(bodynum))
 
 let reduce_mind_case_use_function func env sigma mia =
   match kind_of_term mia.mconstr with
     | Construct(ind_sp,i) ->
-	let real_cargs = list_skipn mia.mci.ci_npar mia.mcargs in
+	let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
 	applist (mia.mlf.(i-1), real_cargs)
     | CoFix (bodynum,(names,_,_) as cofix) ->
 	let build_cofix_name =
@@ -661,7 +661,7 @@ let rec red_elim_const env sigma ref largs =
           let arg = List.nth stack i in
           let rarg = whd_construct_stack env sigma arg in
           match kind_of_term (fst rarg) with
-          | Construct _ -> list_assign stack i (applist rarg)
+          | Construct _ -> List.assign stack i (applist rarg)
           | _ -> raise Redelimination)
         largs l, n >= 0 && l =  [] && nargs >= n,
                  n >= 0 && l <> [] && nargs >= n in

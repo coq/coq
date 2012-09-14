@@ -289,7 +289,7 @@ let pr_concl n sigma g =
 (* display evar type: a context and a type *)
 let pr_evgl_sign gl =
   let ps = pr_named_context_of (evar_unfiltered_env gl) in
-  let _,l = list_filter2 (fun b c -> not b) (evar_filter gl,evar_context gl) in
+  let _,l = List.filter2 (fun b c -> not b) (evar_filter gl,evar_context gl) in
   let ids = List.rev (List.map pi1 l) in
   let warn =
     if ids = [] then mt () else
@@ -664,7 +664,7 @@ let print_one_inductive env mib ((_,i) as ind) =
   brk(0,2) ++ print_constructors envpar mip.mind_consnames cstrtypes
 
 let print_mutual_inductive env mind mib =
-  let inds = list_tabulate (fun x -> (mind,x)) (Array.length mib.mind_packets)
+  let inds = List.tabulate (fun x -> (mind,x)) (Array.length mib.mind_packets)
   in
   hov 0 (
     str (if mib.mind_finite then "Inductive " else "CoInductive ") ++

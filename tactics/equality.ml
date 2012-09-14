@@ -397,7 +397,7 @@ let general_multi_rewrite l2r with_evars ?tac c cl =
 	  (* If the term to rewrite uses an hypothesis H, don't rewrite in H *)
 	  let ids =
 	    let ids_in_c = Environ.global_vars_set (Global.env()) (fst c) in
-	      Idset.fold (fun id l -> list_remove id l) ids_in_c (pf_ids_of_hyps gl)
+	      Idset.fold (fun id l -> List.remove id l) ids_in_c (pf_ids_of_hyps gl)
 	  in do_hyps_atleastonce ids gl
 	in
 	if cl.concl_occs = NoOccurrences then do_hyps else
@@ -532,15 +532,15 @@ let find_positions env sigma t1 t2 =
       | Construct sp1, Construct sp2
           when List.length args1 = mis_constructor_nargs_env env sp1
             ->
-	  let sorts = list_intersect sorts (allowed_sorts env (fst sp1)) in
+	  let sorts = List.intersect sorts (allowed_sorts env (fst sp1)) in
           (* both sides are fully applied constructors, so either we descend,
              or we can discriminate here. *)
 	  if is_conv env sigma hd1 hd2 then
 	    let nrealargs = constructor_nrealargs env sp1 in
-	    let rargs1 = list_lastn nrealargs args1 in
-	    let rargs2 = list_lastn nrealargs args2 in
+	    let rargs1 = List.lastn nrealargs args1 in
+	    let rargs2 = List.lastn nrealargs args2 in
             List.flatten
-	      (list_map2_i (fun i -> findrec sorts ((sp1,i)::posn))
+	      (List.map2_i (fun i -> findrec sorts ((sp1,i)::posn))
 		0 rargs1 rargs2)
 	  else if List.mem InType sorts then (* see build_discriminator *)
 	    raise (DiscrFound (List.rev posn,sp1,sp2))
@@ -1495,7 +1495,7 @@ let subst_all ?(flags=default_subst_tactic_flags ()) gl =
     with PatternMatchingFailure -> failwith "caught"
   in
   let ids = map_succeed test (pf_hyps_types gl) in
-  let ids = list_uniquize ids in
+  let ids = List.uniquize ids in
   subst_gen flags.rewrite_dependent_proof ids gl
 
 (* Rewrite the first assumption for which the condition faildir does not fail

@@ -93,7 +93,7 @@ let observe_tac s = observe_tac_stream (str s)
 
 let list_chop ?(msg="") n l =
   try
-    list_chop n l
+    List.chop n l
   with Failure (msg') ->
     failwith (msg ^ msg')
 
@@ -319,7 +319,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
 	      )
     in
     let new_type_of_hyp,ctxt_size,witness_fun =
-      list_fold_left_i
+      List.fold_left_i
 	(fun i (end_of_type,ctxt_size,witness_fun) ((x',b',t') as decl) ->
 	   try
 	     let witness = Intmap.find i sub in
@@ -1168,7 +1168,7 @@ let prove_princ_for_struct interactive_proof fun_num fnames all_funs _nparams : 
 		typess
 	    in
 	    let pte_to_fix,rev_info =
-	      list_fold_left_i
+	      List.fold_left_i
 		(fun i (acc_map,acc_info) (pte,_,_) ->
 		   let infos = info_array.(i) in
 		   let type_args,_ = decompose_prod infos.types in
@@ -1557,7 +1557,7 @@ let prove_principle_for_gen
 (* 	     str "real_rec_arg_num := " ++ int real_rec_arg_num ++ fnl () ++ *)
 (* 	     str "npost_rec_arg := " ++ int npost_rec_arg ); *)
   let (post_rec_arg,pre_rec_arg) =
-    Util.list_chop npost_rec_arg princ_info.args
+    Util.List.chop npost_rec_arg princ_info.args
   in
   let rec_arg_id =
     match List.rev post_rec_arg with
@@ -1624,7 +1624,7 @@ let prove_principle_for_gen
 	  Elim.h_decompose_and (mkVar hid);
 	  (fun g ->
 	     let new_hyps = pf_ids_of_hyps g in
-	     tcc_list := List.rev (list_subtract new_hyps (hid::hyps));
+	     tcc_list := List.rev (List.subtract new_hyps (hid::hyps));
 	     if !tcc_list = []
 	     then
 	       begin

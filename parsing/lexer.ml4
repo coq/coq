@@ -402,7 +402,7 @@ and progress_utf8 last nj n c tt cs =
     if n=1 then
       update_longest_valid_token last (nj+n) tt cs
     else
-      match Util.list_skipn (nj+1) (Stream.npeek (nj+n) cs) with
+      match Util.List.skipn (nj+1) (Stream.npeek (nj+n) cs) with
       | l when List.length l = n-1 ->
 	 List.iter (check_utf8_trailing_byte cs) l;
 	 let tt = List.fold_left (fun tt c -> CharMap.find c tt.branch) tt l in

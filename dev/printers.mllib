@@ -8,6 +8,7 @@ Loc
 Segmenttree
 Unicodetable
 Errors
+CList
 Util
 Bigint
 Hashcons

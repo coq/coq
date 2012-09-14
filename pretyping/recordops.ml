@@ -65,7 +65,7 @@ let subst_structure (subst,((kn,i),id,kl,projs as obj)) =
   let projs' =
    (* invariant: struc.s_PROJ is an evaluable reference. Thus we can take *)
    (* the first component of subst_con.                                   *)
-   list_smartmap
+   List.smartmap
      (Option.smartmap (fun kn -> fst (subst_con subst kn)))
     projs
   in
@@ -227,7 +227,7 @@ let compute_canonical_projections (con,ind) =
   let args = snd (decompose_app t) in
   let { s_EXPECTEDPARAM = p; s_PROJ = lpj; s_PROJKIND = kl } =
     lookup_structure ind in
-  let params, projs = list_chop p args in
+  let params, projs = List.chop p args in
   let lpj = keep_true_projections lpj kl in
   let lps = List.combine lpj projs in
   let comp =

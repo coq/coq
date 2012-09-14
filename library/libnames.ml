@@ -19,21 +19,21 @@ let pr_dirpath sl = (str (string_of_dirpath sl))
 
 (* Pop the last n module idents *)
 let pop_dirpath_n n dir =
-  make_dirpath (list_skipn n (repr_dirpath dir))
+  make_dirpath (List.skipn n (repr_dirpath dir))
 
 let pop_dirpath p = match repr_dirpath p with
   | [] -> anomaly "dirpath_prefix: empty dirpath"
   | _::l -> make_dirpath l
 
 let is_dirpath_prefix_of d1 d2 =
-  list_prefix_of (List.rev (repr_dirpath d1)) (List.rev (repr_dirpath d2))
+  List.prefix_of (List.rev (repr_dirpath d1)) (List.rev (repr_dirpath d2))
 
 let chop_dirpath n d =
-  let d1,d2 = list_chop n (List.rev (repr_dirpath d)) in
+  let d1,d2 = List.chop n (List.rev (repr_dirpath d)) in
     make_dirpath (List.rev d1), make_dirpath (List.rev d2)
 
 let drop_dirpath_prefix d1 d2 =
-  let d = Util.list_drop_prefix (List.rev (repr_dirpath d1)) (List.rev (repr_dirpath d2)) in
+  let d = Util.List.drop_prefix (List.rev (repr_dirpath d1)) (List.rev (repr_dirpath d2)) in
     make_dirpath (List.rev d)
 
 let append_dirpath d1 d2 = make_dirpath (repr_dirpath d2 @ repr_dirpath d1)
@@ -116,7 +116,7 @@ let pr_path sp = str (string_of_path sp)
 
 let restrict_path n sp =
   let dir, s = repr_path sp in
-  let dir' = list_firstn n (repr_dirpath dir) in
+  let dir' = List.firstn n (repr_dirpath dir) in
   make_path (make_dirpath dir') s
 
 (*s qualified names *)

@@ -220,7 +220,7 @@ let unintern_omega env id =
    calcul des variables utiles. *)
 
 let add_reified_atom t env =
-  try list_index0_f Term.eq_constr t env.terms
+  try List.index0_f Term.eq_constr t env.terms
   with Not_found ->
     let i = List.length env.terms in
     env.terms <- env.terms @ [t]; i
@@ -231,7 +231,7 @@ let get_reified_atom env =
 (* \subsection{Gestion de l'environnement de proposition pour Omega} *)
 (* ajout d'une proposition *)
 let add_prop env t =
-  try list_index0_f Term.eq_constr t env.props
+  try List.index0_f Term.eq_constr t env.props
   with Not_found ->
     let i = List.length env.props in  env.props <- env.props @ [t]; i
 
@@ -412,7 +412,7 @@ pour faire des opérations de normalisation sur les équations.  *)
 (* Extraction des variables d'une équation. *)
 (* Chaque fonction retourne une liste triée sans redondance *)
 
-let (@@) = list_merge_uniq compare
+let (@@) = List.merge_uniq compare
 
 let rec vars_of_formula = function
   | Oint _ -> []
@@ -812,7 +812,7 @@ let destructurate_hyps syst =
       (i,t) :: l ->
 	let l_syst1 = destructurate_pos_hyp i []  [] t in
 	let l_syst2 = loop l in
-	list_cartesian (@) l_syst1 l_syst2
+	List.cartesian (@) l_syst1 l_syst2
     | [] -> [[]] in
   loop syst
 
@@ -912,13 +912,13 @@ let add_stated_equations env tree =
 
 (* PL: experimentally, the result order of the following function seems
    _very_ crucial for efficiency. No idea why. Do not remove the List.rev
-   or modify the current semantics of Util.list_union (some elements of first
+   or modify the current semantics of Util.List.union (some elements of first
    arg, then second arg), unless you know what you're doing. *)
 
 let rec get_eclatement env = function
     i :: r ->
       let l = try (get_equation env i).e_depends with Not_found -> [] in
-      list_union (List.rev l) (get_eclatement env r)
+      List.union (List.rev l) (get_eclatement env r)
   | [] -> []
 
 let select_smaller l =
@@ -1031,7 +1031,7 @@ let mk_direction_list l =
 (* \section{Rejouer l'historique} *)
 
 let get_hyp env_hyp i =
-  try list_index0 (CCEqua i) env_hyp
+  try List.index0 (CCEqua i) env_hyp
   with Not_found -> failwith (Printf.sprintf "get_hyp %d" i)
 
 let replay_history env env_hyp =
@@ -1198,8 +1198,8 @@ let resolution env full_reified_goal systems_list =
   let useful_equa_id = equas_of_solution_tree solution_tree in
   (* recupere explicitement ces equations *)
   let equations = List.map (get_equation env) useful_equa_id in
-  let l_hyps' = list_uniquize (List.map (fun e -> e.e_origin.o_hyp) equations) in
-  let l_hyps = id_concl :: list_remove id_concl l_hyps' in
+  let l_hyps' = List.uniquize (List.map (fun e -> e.e_origin.o_hyp) equations) in
+  let l_hyps = id_concl :: List.remove id_concl l_hyps' in
   let useful_hyps =
     List.map (fun id -> List.assoc id full_reified_goal) l_hyps in
   let useful_vars =
@@ -1253,7 +1253,7 @@ let resolution env full_reified_goal systems_list =
       |	((O_left | O_mono) :: l) -> app coq_p_left [| loop l |]
       |	(O_right :: l) -> app coq_p_right [| loop l |] in
     let correct_index =
-      let i = list_index0 e.e_origin.o_hyp l_hyps in
+      let i = List.index0 e.e_origin.o_hyp l_hyps in
       (* PL: it seems that additionnally introduced hyps are in the way during
              normalization, hence this index shifting... *)
       if i=0 then 0 else Pervasives.(+) i (List.length to_introduce)

@@ -319,7 +319,7 @@ let match_with_nodep_ind t =
 		if array_for_all nodep_constr mip.mind_nf_lc then
 		  let params=
 		    if mip.mind_nrealargs=0 then args else
-		      fst (list_chop mib.mind_nparams args) in
+		      fst (List.chop mib.mind_nparams args) in
 		    Some (hdapp,params,mip.mind_nrealargs)
 		else
 		  None

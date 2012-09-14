@@ -857,7 +857,7 @@ let clenv_fchain_in id ?(flags=elim_flags) mv elimclause hypclause =
 let elimination_in_clause_scheme with_evars ?(flags=elim_flags) id i elimclause indclause gl =
   let indmv = destMeta (nth_arg i elimclause.templval.rebus) in
   let hypmv =
-    try match list_remove indmv (clenv_independent elimclause) with
+    try match List.remove indmv (clenv_independent elimclause) with
       | [a] -> a
       | _ -> failwith ""
     with Failure _ -> errorlabstrm "elimination_clause"
@@ -929,7 +929,7 @@ let descend_in_conjunctions tac exit c gl =
 	    let elim = pf_apply build_case_analysis_scheme gl ind false sort in
 	    NotADefinedRecordUseScheme elim in
 	tclFIRST
-	  (list_tabulate (fun i gl ->
+	  (List.tabulate (fun i gl ->
 	    match make_projection (project gl) params cstr sign elim i n c with
 	    | None -> tclFAIL 0 (mt()) gl
 	    | Some (p,pt) ->
@@ -1025,7 +1025,7 @@ let progress_with_clause flags innerclause clause =
   if ordered_metas = [] then error "Statement without assumptions.";
   let f mv =
     find_matching_clause (clenv_fchain mv ~flags clause) innerclause in
-  try list_try_find f ordered_metas
+  try List.try_find f ordered_metas
   with Failure _ -> error "Unable to unify."
 
 let apply_in_once_main flags innerclause (d,lbind) gl =
@@ -1164,7 +1164,7 @@ let specialize mopt (c,lbind) g =
       let nargs = List.length tstack in
       let tstack = match mopt with
 	| Some m ->
-	    if m < nargs then list_firstn m tstack else tstack
+	    if m < nargs then List.firstn m tstack else tstack
 	| None ->
 	    let rec chk = function
 	      | [] -> []
@@ -1565,8 +1565,8 @@ let generalize_dep ?(with_let=false) c gl =
 
 let generalize_gen_let lconstr gl =
   let newcl =
-    list_fold_right_i (generalize_goal gl) 0 lconstr (pf_concl gl) in
-  apply_type newcl (list_map_filter (fun ((_,c,b),_) -> 
+    List.fold_right_i (generalize_goal gl) 0 lconstr (pf_concl gl) in
+  apply_type newcl (List.map_filter (fun ((_,c,b),_) -> 
     if b = None then Some c else None) lconstr) gl
 
 let generalize_gen lconstr =
@@ -1753,7 +1753,7 @@ let letin_abstract id c (test,out) (occs,check_occs) gl =
     | Some occ ->
         subst1 (mkVar id) (subst_closed_term_occ_modulo occ test None (pf_concl gl)) in
   let lastlhyp =
-    if depdecls = [] then MoveLast else MoveAfter(pi1(list_last depdecls)) in
+    if depdecls = [] then MoveLast else MoveAfter(pi1(List.last depdecls)) in
   (depdecls,lastlhyp,ccl,out test)
 
 let letin_tac_gen with_eq name (sigmac,c) test ty occs gl =
@@ -1998,7 +1998,7 @@ let atomize_param_of_ind (indref,nparams,_) hyp0 gl =
   let typ0 = pf_apply reduce_to_quantified_ref gl indref tmptyp0 in
   let prods, indtyp = decompose_prod typ0 in
   let argl = snd (decompose_app indtyp) in
-  let params = list_firstn nparams argl in
+  let params = List.firstn nparams argl in
   (* le gl est important pour ne pas préévaluer *)
   let rec atomize_one i avoid gl =
     if i<>nparams then
@@ -2031,7 +2031,7 @@ let atomize_param_of_ind (indref,nparams,_) hyp0 gl =
 let find_atomic_param_of_ind nparams indtyp =
   let argl = snd (decompose_app indtyp) in
   let argv = Array.of_list argl in
-  let params = list_firstn nparams argl in
+  let params = List.firstn nparams argl in
   let indvars = ref Idset.empty in
   for i = nparams to (Array.length argv)-1 do
     match kind_of_term argv.(i) with
@@ -2749,8 +2749,8 @@ let compute_scheme_signature scheme names_info ind_type_guess =
 	    (* Check again conclusion *)
 	    let ccl_arg_ok = is_pred (p + scheme.nargs + 1) f = IndArg in
 	    let ind_is_ok =
-	      list_equal eq_constr
-		(list_lastn scheme.nargs indargs)
+	      List.equal eq_constr
+		(List.lastn scheme.nargs indargs)
 		(extended_rel_list 0 scheme.args) in
 	    if not (ccl_arg_ok & ind_is_ok) then
 	      error_ind_scheme "the conclusion of"
@@ -2895,11 +2895,11 @@ let recolle_clenv nparams lid elimclause gl =
   let nidargs = List.length lidargs in
   (* parameters correspond to first elts of lid. *)
   let clauses_params =
-    list_map_i (fun i id -> mkVar id , pf_get_hyp_typ gl id , lindmv.(i))
+    List.map_i (fun i id -> mkVar id , pf_get_hyp_typ gl id , lindmv.(i))
       0 lidparams in
   (* arguments correspond to last elts of lid. *)
   let clauses_args =
-    list_map_i
+    List.map_i
       (fun i id -> mkVar id , pf_get_hyp_typ gl id , lindmv.(nmv-nidargs+i))
       0 lidargs in
   let clauses = clauses_params@clauses_args in
@@ -3087,7 +3087,7 @@ let clear_unselected_context id inhyps cls gl =
 	      (* erase if not selected and dependent on id or selected hyps *)
 	      let test id = occur_var_in_decl (pf_env gl) id d in
 	      if List.exists test (id::inhyps) then Some id' else None in
-	  let ids = list_map_filter to_erase (pf_hyps gl) in
+	  let ids = List.map_filter to_erase (pf_hyps gl) in
 	  thin ids gl
       | None -> tclIDTAC gl
 

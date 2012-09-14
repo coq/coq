@@ -193,7 +193,7 @@ let empty_internalization_env = Idmap.empty
 let compute_explicitable_implicit imps = function
   | Inductive params ->
       (* In inductive types, the parameters are fixed implicit arguments *)
-      let sub_impl,_ = list_chop (List.length params) imps in
+      let sub_impl,_ = List.chop (List.length params) imps in
       let sub_impl' = List.filter is_status_implicit sub_impl in
       List.map name_of_implicit sub_impl'
   | Recursive | Method | Variable ->
@@ -206,7 +206,7 @@ let compute_internalization_data env ty typ impl =
   (ty, expls_impl, impl, compute_arguments_scope typ)
 
 let compute_internalization_env env ty =
-  list_fold_left3
+  List.fold_left3
     (fun map id typ impl -> Idmap.add id (compute_internalization_data env ty typ impl) map)
     empty_internalization_env
 
@@ -674,7 +674,7 @@ let find_appl_head_data = function
       when l <> [] & Flags.version_strictly_greater Flags.V8_2 ->
       let n = List.length l in
       x,List.map (drop_first_implicits n) (implicits_of_global ref),
-      list_skipn_at_least n (find_arguments_scope ref),[]
+      List.skipn_at_least n (find_arguments_scope ref),[]
   | x -> x,[],[],[]
 
 let error_not_enough_arguments loc =
@@ -708,7 +708,7 @@ let intern_qualid loc qid intern env lvar args =
       let (ids,c) = Syntax_def.search_syntactic_definition sp in
       let nids = List.length ids in
       if List.length args < nids then error_not_enough_arguments loc;
-      let args1,args2 = list_chop nids args in
+      let args1,args2 = List.chop nids args in
       check_no_explicitation args1;
       let subst = make_subst ids (List.map fst args1) in
       subst_aconstr_in_glob_constr loc intern lvar (subst,[],[]) ([],env) c, args2
@@ -766,15 +766,15 @@ let find_remaining_scopes pl1 pl2 ref =
   let len_pl2 = List.length pl2 in
   let impl_list = if len_pl1 = 0
     then select_impargs_size len_pl2 impls_st
-    else list_skipn_at_least len_pl1 (select_stronger_impargs impls_st) in
+    else List.skipn_at_least len_pl1 (select_stronger_impargs impls_st) in
   let allscs = find_arguments_scope ref in
-  let scope_list = list_skipn_at_least len_pl1 allscs in
+  let scope_list = List.skipn_at_least len_pl1 allscs in
   let rec aux = function
     |[],l -> l
     |_,[] -> []
     |h::t,_::tt when is_status_implicit h -> aux (t,tt)
     |_::t,h::tt -> h :: aux (t,tt)
-  in ((try list_firstn len_pl1 allscs with Failure _ -> simple_adjust_scopes len_pl1 allscs),
+  in ((try List.firstn len_pl1 allscs with Failure _ -> simple_adjust_scopes len_pl1 allscs),
       simple_adjust_scopes len_pl2 (aux (impl_list,scope_list)))
 
 let product_of_cases_patterns ids idspl =
@@ -800,7 +800,7 @@ let rec has_duplicate = function
   | x::l -> if List.mem x l then (Some x) else has_duplicate l
 
 let loc_of_lhs lhs =
- Loc.merge (fst (List.hd lhs)) (fst (list_last lhs))
+ Loc.merge (fst (List.hd lhs)) (fst (List.last lhs))
 
 let check_linearity lhs ids =
   match has_duplicate ids with
@@ -815,7 +815,7 @@ let check_number_of_pattern loc n l =
   if n<>p then raise (InternalizationError (loc,BadPatternsNumber (n,p)))
 
 let check_or_pat_variables loc ids idsl =
-  if List.exists (fun ids' -> not (list_eq_set ids ids')) idsl then
+  if List.exists (fun ids' -> not (List.eq_set ids ids')) idsl then
     user_err_loc (loc, "", str
     "The components of this disjunctive pattern must bind the same variables.")
 
@@ -832,7 +832,7 @@ let check_constructor_length env loc cstr len_pl pl0 =
 let add_implicits_check_length fail nargs nargs_with_letin impls_st len_pl1 pl2 =
   let impl_list = if len_pl1 = 0
     then select_impargs_size (List.length pl2) impls_st
-    else list_skipn_at_least len_pl1 (select_stronger_impargs impls_st) in
+    else List.skipn_at_least len_pl1 (select_stronger_impargs impls_st) in
   let remaining_args = List.fold_left (fun i x -> if is_status_implicit x then i else succ i) in
   let rec aux i = function
     |[],l -> let args_len = List.length l + List.length impl_list + len_pl1 in
@@ -870,7 +870,7 @@ let chop_params_pattern loc ind args with_letin =
     then fst (Inductiveops.inductive_nargs ind)
     else Inductiveops.inductive_nparams ind in
   assert (nparams <= List.length args);
-  let params,args = list_chop nparams args in
+  let params,args = List.chop nparams args in
   List.iter (function PatVar(_,Anonymous) -> ()
     | PatVar (loc',_) | PatCstr(loc',_,_,_) -> error_parameter_not_implicit loc') params;
   args
@@ -883,7 +883,7 @@ let find_constructor loc add_params ref =
     |Some nb_args -> let nb = if nb_args = Inductiveops.constructor_nrealhyps c
       then fst (Inductiveops.inductive_nargs ind)
       else Inductiveops.inductive_nparams ind in
-		     Util.list_make nb ([],[([],PatVar(Loc.ghost,Anonymous))])
+		     Util.List.make nb ([],[([],PatVar(Loc.ghost,Anonymous))])
     |None -> []) cstr
 
 let find_pattern_variable = function
@@ -1033,7 +1033,7 @@ let drop_notations_pattern looked_for =
 	      looked_for g;
 	      let nvars = List.length vars in
 	      if List.length pats < nvars then error_not_enough_arguments loc;
-	      let pats1,pats2 = list_chop nvars pats in
+	      let pats1,pats2 = List.chop nvars pats in
 	      let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) vars pats1 in
 	      let idspl1 = List.map (in_not loc env (subst,[]) []) args in
 	      let (_,argscs) = find_remaining_scopes pats1 pats2 g in
@@ -1283,7 +1283,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
         let lf = List.map (fun ((_, id),_,_,_,_) -> id) dl in
         let dl = Array.of_list dl in
 	let n =
-	  try list_index0 iddef lf
+	  try List.index0 iddef lf
           with Not_found ->
 	    raise (InternalizationError (locid,UnboundFixName (false,iddef)))
 	in
@@ -1308,7 +1308,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	     in
 	       ((n, ro), List.rev rbl, intern_type env' ty, env')) dl in
         let idl = array_map2 (fun (_,_,_,_,bd) (a,b,c,env') ->
-	     let env'' = list_fold_left_i (fun i en name -> 
+	     let env'' = List.fold_left_i (fun i en name -> 
 					     let (_,bli,tyi,_) = idl_temp.(i) in
 					     let fix_args = (List.map (fun (_,(na, bk, _, _)) -> (build_impls bk na)) bli) in
 					       push_name_env lvar (impls_type_list ~args:fix_args tyi)
@@ -1324,7 +1324,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
         let lf = List.map (fun ((_, id),_,_,_) -> id) dl in
         let dl = Array.of_list dl in
 	let n =
-          try list_index0 iddef lf
+          try List.index0 iddef lf
           with Not_found ->
 	    raise (InternalizationError (locid,UnboundFixName (true,iddef)))
 	in
@@ -1335,7 +1335,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
             (List.rev rbl,
              intern_type env' ty,env')) dl in
 	let idl = array_map2 (fun (_,_,_,bd) (b,c,env') ->
-	     let env'' = list_fold_left_i (fun i en name ->
+	     let env'' = List.fold_left_i (fun i en name ->
 					     let (bli,tyi,_) = idl_tmp.(i) in
 					     let cofix_args =  List.map (fun (_, (na, bk, _, _)) -> (build_impls bk na)) bli in
 	       push_name_env lvar (impls_type_list ~args:cofix_args tyi)
@@ -1407,7 +1407,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 	  match cargs with
 	    | None -> user_err_loc (loc, "intern", str"No constructor inference.")
 	    | Some (n, constrname, args) ->
-		let pars = list_make n (CHole (loc, None)) in
+		let pars = List.make n (CHole (loc, None)) in
 		let app = CAppExpl (loc, (None, constrname), List.rev_append pars args) in
 	  intern env app
 	end
@@ -1440,7 +1440,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 			  List.map (fun id -> GVar (Loc.ghost,id),(Name id,None)) thevars, (* "match v1,..,vn" *)
 			  [Loc.ghost,[],thepats, (* "|p1,..,pn" *)
 			   Option.cata (intern_type env') (GHole(Loc.ghost,Evar_kinds.CasesType)) rtnpo; (* "=> P" is there were a P "=> _" else *)
-			   Loc.ghost,[],list_make (List.length thepats) (PatVar(Loc.ghost,Anonymous)), (* "|_,..,_" *)
+			   Loc.ghost,[],List.make (List.length thepats) (PatVar(Loc.ghost,Anonymous)), (* "|_,..,_" *)
 			   GHole(Loc.ghost,Evar_kinds.ImpossibleCase) (* "=> _" *)]))
 	in
         let eqns' = List.map (intern_eqn (List.length tms) env) eqns in
@@ -1553,7 +1553,7 @@ let internalize sigma globalenv env allow_patvar lvar c =
 		  ((fresh,c)::match_acc) ((cases_pattern_loc c,Name fresh)::var_acc)
 	      |_ -> assert false in
 	  let _,args_rel =
-	    list_chop nparams (List.rev mip.Declarations.mind_arity_ctxt) in
+	    List.chop nparams (List.rev mip.Declarations.mind_arity_ctxt) in
 	  canonize_args args_rel l (Idset.elements forbidden_names_for_gen) [] [] in
 	match_to_do, Some (cases_pattern_expr_loc t,ind,List.rev_map snd nal)
     | None ->

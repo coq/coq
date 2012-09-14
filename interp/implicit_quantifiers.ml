@@ -316,6 +316,6 @@ let implicits_of_glob_constr ?(with_products=true) l =
       | GLetIn (loc, na, t, b) -> aux i b
       | GRec (_, fix_kind, nas, args, tys, bds) ->
        let nb = match fix_kind with |GFix (_, n) -> n | GCoFix n -> n in
-       list_fold_left_i (fun i l (na,bk,_,_) -> add_impl i na bk l) i (aux (List.length args.(nb) + i) bds.(nb)) args.(nb)
+       List.fold_left_i (fun i l (na,bk,_,_) -> add_impl i na bk l) i (aux (List.length args.(nb) + i) bds.(nb)) args.(nb)
       | _ -> []
   in aux 1 l

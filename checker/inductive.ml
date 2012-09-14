@@ -58,7 +58,7 @@ let inductive_params (mib,_) = mib.mind_nparams
 let ind_subst mind mib =
   let ntypes = mib.mind_ntypes in
   let make_Ik k = Ind (mind,ntypes-k-1) in
-  list_tabulate make_Ik ntypes
+  List.tabulate make_Ik ntypes
 
 (* Instantiate inductives in constructor type *)
 let constructor_instantiate mind mib c =
@@ -255,7 +255,7 @@ let extended_rel_list n hyps =
   reln [] 1 hyps
 
 let build_dependent_inductive ind (_,mip) params =
-  let realargs,_ = list_chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
+  let realargs,_ = List.chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
   applist
     (Ind ind,
        List.map (lift mip.mind_nrealargs_ctxt) params
@@ -309,7 +309,7 @@ let build_branches_type ind (_,mip as specif) params dep p =
     let (args,ccl) = decompose_prod_assum typi in
     let nargs = rel_context_length args in
     let (_,allargs) = decompose_app ccl in
-    let (lparams,vargs) = list_chop (inductive_params specif) allargs in
+    let (lparams,vargs) = List.chop (inductive_params specif) allargs in
     let cargs =
       if dep then
         let cstr = ith_constructor_of_inductive ind (i+1) in
@@ -331,7 +331,7 @@ let build_case_type dep p c realargs =
 let type_case_branches env (ind,largs) (p,pj) c =
   let specif = lookup_mind_specif env ind in
   let nparams = inductive_params specif in
-  let (params,realargs) = list_chop nparams largs in
+  let (params,realargs) = List.chop nparams largs in
   let dep = is_correct_arity env c (p,pj) ind specif params in
   let lc = build_branches_type ind specif params dep p in
   let ty = build_case_type dep p c realargs in
@@ -444,7 +444,7 @@ let push_var renv (x,ty,spec) =
     genv = spec:: renv.genv }
 
 let assign_var_spec renv (i,spec) =
-  { renv with genv = list_assign renv.genv (i-1) spec }
+  { renv with genv = List.assign renv.genv (i-1) spec }
 
 let push_var_renv renv (x,ty) =
   push_var renv (x,ty,Lazy.lazy_from_val Not_subterm)
@@ -527,7 +527,7 @@ let branches_specif renv c_spec ci =
 		    vra
 	      | Dead_code -> Array.create nca Dead_code
 	      | _ -> Array.create nca Not_subterm) in
-	 list_tabulate (fun j -> lazy (Lazy.force lvra).(j)) nca)
+	 List.tabulate (fun j -> lazy (Lazy.force lvra).(j)) nca)
       car 
 
 (* [subterm_specif renv t] computes the recursive structure of [t] and
@@ -871,7 +871,7 @@ let check_one_cofix env nbfix def deftype =
             let lra = vlra.(i-1) in
             let mI = inductive_of_constructor cstr_kn in
 	    let (mib,mip) = lookup_mind_specif env mI in
-            let realargs = list_skipn mib.mind_nparams args in
+            let realargs = List.skipn mib.mind_nparams args in
             let rec process_args_of_constr = function
               | (t::lr), (rar::lrar) ->
                   if rar = mk_norec then

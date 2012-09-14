@@ -352,11 +352,11 @@ let banerjee_step (new_eq_id,new_var_id,print_var) original l1 l2 =
   let new_eq = List.hd (normalize new_eq) in
   let eliminated_var, def = chop_var var new_eq.body in
   let other_equations =
-    Util.list_map_append
+    Util.List.map_append
       (fun e ->
         normalize (eliminate_with_in new_eq_id eliminated_var new_eq e)) l1 in
   let inequations =
-    Util.list_map_append
+    Util.List.map_append
       (fun e ->
         normalize (eliminate_with_in new_eq_id eliminated_var new_eq e)) l2 in
   let original' = eliminate_with_in new_eq_id eliminated_var new_eq original in
@@ -368,9 +368,9 @@ let rec eliminate_one_equation ((new_eq_id,new_var_id,print_var) as new_ids) (e,
   if !debug then display_system print_var (e::other);
   try
     let v,def = chop_factor_1 e.body in
-    (Util.list_map_append
+    (Util.List.map_append
       (fun e' -> normalize (eliminate_with_in new_eq_id v e e')) other,
-     Util.list_map_append
+     Util.List.map_append
        (fun e' -> normalize (eliminate_with_in new_eq_id v e e')) ineqs)
   with FACTOR1 ->
     eliminate_one_equation new_ids (banerjee_step new_ids e other ineqs)
@@ -523,7 +523,7 @@ let simplify ((new_eq_id,new_var_id,print_var) as new_ids) dark_shadow system =
     failwith "disequation in simplify";
   clear_history ();
   List.iter (fun e -> add_event (HYP e)) system;
-  let system = Util.list_map_append normalize system in
+  let system = Util.List.map_append normalize system in
   let eqs,ineqs = List.partition (fun e -> e.kind=EQUA) system in
   let simp_eq,simp_ineq = redundancy_elimination new_eq_id ineqs in
   let system = (eqs @ simp_eq,simp_ineq) in
@@ -658,7 +658,7 @@ let simplify_strong ((new_eq_id,new_var_id,print_var) as new_ids) system =
     | ([],ineqs,expl_map) -> ineqs,expl_map
   in
   try
-    let system = Util.list_map_append normalize system in
+    let system = Util.List.map_append normalize system in
     let eqs,ineqs = List.partition (fun e -> e.kind=EQUA) system in
     let dise,ine = List.partition (fun e -> e.kind = DISE) ineqs in
     let simp_eq,simp_ineq = redundancy_elimination new_eq_id ine in
@@ -700,13 +700,13 @@ let simplify_strong ((new_eq_id,new_var_id,print_var) as new_ids) system =
         let s1,s2 =
           List.partition (fun (_,_,decomp,_) -> sign decomp) systems in
         let s1' =
-	  List.map (fun (dep,ro,dc,pa) -> (Util.list_except id dep,ro,dc,pa)) s1 in
+	  List.map (fun (dep,ro,dc,pa) -> (Util.List.except id dep,ro,dc,pa)) s1 in
         let s2' =
-	  List.map (fun (dep,ro,dc,pa) -> (Util.list_except id dep,ro,dc,pa)) s2 in
+	  List.map (fun (dep,ro,dc,pa) -> (Util.List.except id dep,ro,dc,pa)) s2 in
         let (r1,relie1) = solve s1'
 	and (r2,relie2) = solve s2' in
 	let (eq,id1,id2) = List.assoc id explode_map in
-	[SPLIT_INEQ(eq,(id1,r1),(id2, r2))], eq.id :: Util.list_union relie1 relie2
+	[SPLIT_INEQ(eq,(id1,r1),(id2, r2))], eq.id :: Util.List.union relie1 relie2
       with FULL_SOLUTION (x0,x1) -> (x0,x1)
     in
     let act,relie_on = solve all_solutions in

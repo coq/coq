@@ -110,7 +110,7 @@ let subst_rel_declaration sub (id,copt,t as x) =
   let t' = subst_mps sub t in
   if copt == copt' & t == t' then x else (id,copt',t')
 
-let subst_rel_context sub = list_smartmap (subst_rel_declaration sub)
+let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
 (* TODO: these substitution functions could avoid duplicating things
    when the substitution have preserved all the fields *)
@@ -141,11 +141,11 @@ let hcons_rel_decl ((n,oc,t) as d) =
   and t' = hcons_types t
   in if n' == n && oc' == oc && t' == t then d else (n',oc',t')
 
-let hcons_rel_context l = list_smartmap hcons_rel_decl l
+let hcons_rel_context l = List.smartmap hcons_rel_decl l
 
 let hcons_polyarity ar =
   { poly_param_levels =
-      list_smartmap (Option.smartmap hcons_univ) ar.poly_param_levels;
+      List.smartmap (Option.smartmap hcons_univ) ar.poly_param_levels;
     poly_level = hcons_univ ar.poly_level }
 
 let hcons_const_type = function

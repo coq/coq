@@ -77,7 +77,7 @@ let revert_reserved_type t =
   try
     let l = Gmapl.find (constr_key t) !reserve_revtable in
     let t = Detyping.detype false [] [] t in
-    list_try_find
+    List.try_find
       (fun (pat,id) ->
 	try let _ = Notation_ops.match_notation_constr false t ([],pat) in Name id
 	with Notation_ops.No_match -> failwith "") l

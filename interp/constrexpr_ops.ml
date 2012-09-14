@@ -75,7 +75,7 @@ let local_binder_loc = function
 
 let local_binders_loc bll =
   if bll = [] then Loc.ghost else
-  Loc.merge (local_binder_loc (List.hd bll)) (local_binder_loc (list_last bll))
+  Loc.merge (local_binder_loc (List.hd bll)) (local_binder_loc (List.last bll))
 
 (** Pseudo-constructors *)
 

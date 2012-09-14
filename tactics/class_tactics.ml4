@@ -159,7 +159,7 @@ and e_my_find_search db_list local_db hdc complete concl =
   let prods, concl = decompose_prod_assum concl in
   let nprods = List.length prods in
   let hintl =
-    list_map_append
+    List.map_append
       (fun db ->
 	if Hint_db.use_dn db then
 	  let flags = flags_of_state (Hint_db.transparent_state db) in
@@ -251,7 +251,7 @@ let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
       let hints =
 	if is_class then
 	  let hints = build_subclasses ~check:false env sigma (VarRef id) None in
-	    (list_map_append
+	    (List.map_append
 	       (fun (pri, c) -> make_resolves env sigma 
 		  (true,false,Flags.is_verbose()) pri c) 
 	       hints)
@@ -376,7 +376,7 @@ let hints_tac hints =
 			 (* Reorder with dependent subgoals. *)
 			 (gls' @ List.map (fun (ev, x) -> Some ev, x) evgls, s')
 		   in
-		   let gls' = list_map_i
+		   let gls' = List.map_i
 		     (fun j (evar, g) ->
 			let info =
 			  { info with auto_depth = j :: i :: info.auto_depth; auto_last_tac = pp;
@@ -472,7 +472,7 @@ let cut_of_hints h =
 
 let make_autogoals ?(only_classes=true) ?(st=full_transparent_state) hints gs evm' =
   let cut = cut_of_hints hints in
-  { it = list_map_i (fun i g -> 
+  { it = List.map_i (fun i g -> 
     let (gl, auto) = make_autogoal ~only_classes ~st cut (Some (fst g)) {it = snd g; sigma = evm'} in
       (gl, { auto with auto_depth = [i]})) 1 gs; sigma = evm' }
 
@@ -779,7 +779,7 @@ END
 
 let typeclasses_eauto ?(only_classes=false) ?(st=full_transparent_state) dbs gl =
   try 
-    let dbs = list_map_filter (fun db -> try Some (Auto.searchtable_map db) with _ -> None) dbs in
+    let dbs = List.map_filter (fun db -> try Some (Auto.searchtable_map db) with _ -> None) dbs in
     let st = match dbs with x :: _ -> Hint_db.transparent_state x | _ -> st in
       eauto ?limit:!typeclasses_depth ~only_classes ~st dbs gl
    with Not_found -> tclFAIL 0 (str" typeclasses eauto failed on: " ++ Printer.pr_goal gl) gl

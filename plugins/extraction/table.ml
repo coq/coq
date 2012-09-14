@@ -671,7 +671,7 @@ let add_implicits r l =
 	else err (int i ++ str " is not a valid argument number for " ++
 		  safe_pr_global r)
     | ArgId id ->
-	(try list_index (Name id) names
+	(try List.index (Name id) names
 	 with Not_found ->
 	   err (str "No argument " ++ pr_id id ++ str " for " ++
 		safe_pr_global r))
@@ -877,7 +877,7 @@ let extract_inductive r s l optstr =
 	Lib.add_anonymous_leaf (in_customs (g,[],s));
 	Option.iter (fun s -> Lib.add_anonymous_leaf (in_custom_matchs (g,s)))
 	  optstr;
-	list_iter_i
+	List.iter_i
 	  (fun j s ->
 	     let g = ConstructRef (ip,succ j) in
 	     Lib.add_anonymous_leaf (inline_extraction (true,[g]));

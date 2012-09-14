@@ -125,7 +125,7 @@ let open_scope i (_,(local,op,sc)) =
       | _ -> sc
     in
     scope_stack :=
-      if op then sc :: !scope_stack else list_except sc !scope_stack
+      if op then sc :: !scope_stack else List.except sc !scope_stack
 
 let cache_scope o =
   open_scope 1 o
@@ -285,7 +285,7 @@ let check_required_module loc sc (sp,d) =
   with Not_found ->
     user_err_loc (loc,"prim_token_interpreter",
     str ("Cannot interpret in "^sc^" without requiring first module "
-    ^(list_last d)^"."))
+    ^(List.last d)^"."))
 
 (* Look if some notation or numeral printer in [scope] can be used in
    the scope stack [scopes], and if yes, using delimiters or not *)
@@ -402,7 +402,7 @@ let interp_notation loc ntn local_scopes =
 let isGApp = function GApp _ -> true | _ -> false
 
 let uninterp_notations c =
-  list_map_append (fun key -> Gmapl.find key !notations_key_table)
+  List.map_append (fun key -> Gmapl.find key !notations_key_table)
     (glob_constr_keys c)
 
 let uninterp_cases_pattern_notations c =
@@ -554,7 +554,7 @@ let subst_arguments_scope (subst,(req,r,scl,cls)) =
         match subst_scope_class subst cl with
         | Some cl'  as ocl' when cl' != cl -> ocl'
         | _ -> ocl in
-  let cls' = list_smartmap subst_cl cls in
+  let cls' = List.smartmap subst_cl cls in
   let scl' = merge_scope (List.map find_scope_class_opt cls') scl in
   let scl'' = List.map (Option.map Declaremods.subst_scope) scl' in
   (ArgsScopeNoDischarge,r',scl'',cls')
@@ -576,7 +576,7 @@ let rebuild_arguments_scope (req,r,l,_) =
 	(* Add to the manually given scopes the one found automatically
            for the extra parameters of the section *)
 	let l',cls = compute_arguments_scope_full (Global.type_of_global r) in
-	let l1,_ = list_chop (List.length l' - List.length l) l' in
+	let l1,_ = List.chop (List.length l' - List.length l) l' in
 	(req,r,l1@l,cls)
 
 type arguments_scope_obj =

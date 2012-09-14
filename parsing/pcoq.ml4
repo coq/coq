@@ -538,7 +538,7 @@ let find_position_gen forpat ensure assoc lev =
 	    Some (Level (constr_level n)), None, None, None
 
 let remove_levels n =
-  level_stack := list_skipn n !level_stack
+  level_stack := List.skipn n !level_stack
 
 let rec list_mem_assoc_triple x = function
   | [] -> false

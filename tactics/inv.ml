@@ -111,7 +111,7 @@ let make_inv_predicate env sigma indf realargs id status concl =
   let nhyps = rel_context_length hyps in
   let env' = push_rel_context hyps env in
   let realargs' = List.map (lift nhyps) realargs in
-  let pairs = list_map_i (compute_eqn env' sigma nhyps) 0 realargs' in
+  let pairs = List.map_i (compute_eqn env' sigma nhyps) 0 realargs' in
   (* Now the arity is pushed, and we need to construct the pairs
    * ai,mkRel(n-i+1) *)
   (* Now, we can recurse down this list, for each ai,(mkRel k) whether to
@@ -469,7 +469,7 @@ let raw_inversion inv_kind id status names gl =
         (fun id ->
            (tclTHEN
               (apply_term (mkVar id)
-                 (list_tabulate (fun _ -> Evarutil.mk_new_meta()) neqns))
+                 (List.tabulate (fun _ -> Evarutil.mk_new_meta()) neqns))
               reflexivity))])
   gl
 

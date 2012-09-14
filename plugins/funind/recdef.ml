@@ -705,7 +705,7 @@ let terminate_case next_step (ci,a,t,l) expr_info continuation_tac infos g =
     (try
       (tclTHENS
 	 destruct_tac
-	 (list_map_i (fun i e -> observe_tac (str "do treat case") (treat_case b to_thin_intro (next_step continuation_tac) ci.ci_cstr_ndecls.(i) e new_info)) 0 (Array.to_list l)
+	 (List.map_i (fun i e -> observe_tac (str "do treat case") (treat_case b to_thin_intro (next_step continuation_tac) ci.ci_cstr_ndecls.(i) e new_info)) 0 (Array.to_list l)
 	 ))
     with 
       | UserError("Refiner.thensn_tac3",_) 
@@ -1014,7 +1014,7 @@ let compute_terminate_type nb_args func =
 	  Array.of_list
 	    (lift 5 a_arrow_b:: mkRel 3::
 	       constr_of_global func::mkRel 1::
-	       List.rev (list_map_i (fun i _ -> mkRel (6+i)) 0 rev_args)
+	       List.rev (List.map_i (fun i _ -> mkRel (6+i)) 0 rev_args)
 	    )
 	 )
   in
@@ -1044,7 +1044,7 @@ let termination_proof_header is_mes input_type ids args_id relation
       let nargs = List.length args_id in
       let pre_rec_args =
 	List.rev_map
-	  mkVar (fst (list_chop (rec_arg_num - 1) args_id))
+	  mkVar (fst (List.chop (rec_arg_num - 1) args_id))
       in
       let relation = substl pre_rec_args relation in
       let input_type = substl pre_rec_args input_type in
@@ -1297,7 +1297,7 @@ let open_new_goal (build_proof:tactic -> tactic -> unit) using_lemmas ref_ goal_
 		    (Elim.h_decompose_and (mkVar hid))
 		    (fun g ->
 		       let ids' = pf_ids_of_hyps g in
-		       lid := List.rev (list_subtract ids' ids);
+		       lid := List.rev (List.subtract ids' ids);
 		       if !lid = [] then lid := [hid];
 		       tclIDTAC g
 		    )

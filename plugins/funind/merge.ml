@@ -165,11 +165,11 @@ let array_fold_lefti (f: int -> 'a -> 'b -> 'a) (acc:'a) (arr:'b array): 'a =
       let res = f !i acc x in i := !i + 1; res)
     acc arr
 
-(* Like list_chop but except that [i] is the size of the suffix of [l]. *)
+(* Like List.chop but except that [i] is the size of the suffix of [l]. *)
 let list_chop_end i l =
   let size_prefix = List.length l -i in
   if size_prefix < 0 then failwith "list_chop_end"
-  else list_chop size_prefix l
+  else List.chop size_prefix l
 
 let list_fold_lefti (f: int -> 'a -> 'b -> 'a) (acc:'a) (arr:'b list): 'a =
   let i = ref 0 in

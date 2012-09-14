@@ -57,7 +57,7 @@ let intern_hyp iconstr globs = function
       Hprop (intern_statement iconstr globs st)
 
 let intern_hyps iconstr globs hyps =
-  snd (list_fold_map (intern_hyp iconstr) globs hyps)
+  snd (List.fold_map (intern_hyp iconstr) globs hyps)
 
 let intern_cut intern_it globs cut=
   let nglobs,nstat=intern_it globs cut.cut_stat in
@@ -74,10 +74,10 @@ let intern_hyp_list args globs =
   let intern_one globs (loc,(id,opttyp)) =
     (add_var id globs),
     (loc,(id,Option.map (intern_constr globs) opttyp)) in
-  list_fold_map intern_one globs args
+  List.fold_map intern_one globs args
 
 let intern_suffices_clause globs (hyps,c) =
-  let nglobs,nhyps = list_fold_map (intern_hyp intern_constr) globs hyps in
+  let nglobs,nhyps = List.fold_map (intern_hyp intern_constr) globs hyps in
     nglobs,(nhyps,intern_constr_or_thesis nglobs c)
 
 let intern_fundecl args body globs=
@@ -340,7 +340,7 @@ let interp_cases info sigma env params (pat:cases_pattern_expr) hyps =
 	(fun (loc,(id,_)) ->
 	   GVar (loc,id)) params in
     let dum_args=
-      list_tabulate
+      List.tabulate
 	(fun _ -> GHole (Loc.ghost,Evar_kinds.QuestionMark (Evar_kinds.Define false)))
 	oib.Declarations.mind_nrealargs in
       glob_app(Loc.ghost,rind,rparams@rparams_rec@dum_args) in

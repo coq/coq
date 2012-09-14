@@ -148,17 +148,17 @@ let rec interp_xml_constr = function
   | XmlTag (loc,"VAR",al,[]) ->
       error "XML parser: unable to interp free variables"
   | XmlTag (loc,"LAMBDA",al,(_::_ as xl)) ->
-      let body,decls = list_sep_last xl in
+      let body,decls = List.sep_last xl in
       let ctx = List.map interp_xml_decl decls in
       List.fold_right (fun (na,t) b -> GLambda (loc, na, Explicit, t, b))
 	ctx (interp_xml_target body)
   | XmlTag (loc,"PROD",al,(_::_ as xl)) ->
-      let body,decls = list_sep_last xl in
+      let body,decls = List.sep_last xl in
       let ctx = List.map interp_xml_decl decls in
       List.fold_right (fun (na,t) b -> GProd (loc, na, Explicit, t, b))
 	ctx (interp_xml_target body)
   | XmlTag (loc,"LETIN",al,(_::_ as xl)) ->
-      let body,defs = list_sep_last xl in
+      let body,defs = List.sep_last xl in
       let ctx = List.map interp_xml_def defs in
       List.fold_right (fun (na,t) b -> GLetIn (loc, na, t, b))
         ctx (interp_xml_target body)
@@ -176,7 +176,7 @@ let rec interp_xml_constr = function
       let p = interp_xml_patternsType x in
       let tm = interp_xml_inductiveTerm y in
       let vars = compute_branches_lengths ind in
-      let brs = list_map_i (fun i c -> (i,vars.(i),interp_xml_pattern c)) 0 yl
+      let brs = List.map_i (fun i c -> (i,vars.(i),interp_xml_pattern c)) 0 yl
       in
       let mat = simple_cases_matrix_of_branches ind brs in
       let nparams,n = compute_inductive_nargs ind in
@@ -188,11 +188,11 @@ let rec interp_xml_constr = function
       GRef (loc, ConstructRef (get_xml_constructor al))
   | XmlTag (loc,"FIX",al,xl) ->
       let li,lnct = List.split (List.map interp_xml_FixFunction xl) in
-      let ln,lc,lt = list_split3 lnct in
+      let ln,lc,lt = List.split3 lnct in
       let lctx = List.map (fun _ -> []) ln in
       GRec (loc, GFix (Array.of_list li, get_xml_noFun al), Array.of_list ln, Array.of_list lctx, Array.of_list lc, Array.of_list lt)
   | XmlTag (loc,"COFIX",al,xl) ->
-      let ln,lc,lt = list_split3 (List.map interp_xml_CoFixFunction xl) in
+      let ln,lc,lt = List.split3 (List.map interp_xml_CoFixFunction xl) in
       GRec (loc, GCoFix (get_xml_noFun al), Array.of_list ln, [||], Array.of_list lc, Array.of_list lt)
   | XmlTag (loc,"CAST",al,[x1;x2]) ->
       GCast (loc, interp_xml_term x1, CastConv (interp_xml_type x2))

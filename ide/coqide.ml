@@ -1292,7 +1292,7 @@ let load_file handler f =
   try
     Minilib.log "Loading file starts";
     let is_f = CUnix.same_file f in
-      if not (Util.list_fold_left_i
+      if not (Util.List.fold_left_i
 		(fun i found x -> if found then found else
                    let {analyzed_view=av} = x in
                      (match av#filename with

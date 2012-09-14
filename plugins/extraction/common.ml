@@ -349,7 +349,7 @@ let rec mp_renaming_fun mp = match mp with
   | MPfile _ ->
       assert (modular ()); (* see [at_toplevel] above *)
       assert (get_phase () = Pre);
-      let current_mpfile = (list_last (get_visible ())).mp in
+      let current_mpfile = (List.last (get_visible ())).mp in
       if mp <> current_mpfile then mpfiles_add mp;
       [string_of_modfile mp]
 
@@ -496,7 +496,7 @@ let fstlev_ks k = function
 let pp_ocaml_local k prefix mp rls olab =
   (* what is the largest prefix of [mp] that belongs to [visible]? *)
   assert (k <> Mod || mp <> prefix); (* mp as whole module isn't in itself *)
-  let rls' = list_skipn (mp_length prefix) rls in
+  let rls' = List.skipn (mp_length prefix) rls in
   let k's = fstlev_ks k rls' in
   (* Reference r / module path mp is of the form [<prefix>.s.<...>]. *)
   if not (visible_clash prefix k's) then dottify rls'

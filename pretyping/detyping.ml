@@ -217,7 +217,7 @@ let lookup_index_as_renamed env t n =
 
 let update_name na ((_,e),c) =
   match na with
-  | Name _ when force_wildcard () & noccurn (list_index na e) c ->
+  | Name _ when force_wildcard () & noccurn (List.index na e) c ->
       Anonymous
   | _ ->
       na
@@ -240,14 +240,14 @@ let rec build_tree na isgoal e ci cl =
   let mkpat n rhs pl = PatCstr(dl,(ci.ci_ind,n+1),pl,update_name na rhs) in
   let cnl = ci.ci_cstr_ndecls in
   List.flatten
-    (list_tabulate (fun i -> contract_branch isgoal e (cnl.(i),mkpat i,cl.(i)))
+    (List.tabulate (fun i -> contract_branch isgoal e (cnl.(i),mkpat i,cl.(i)))
        (Array.length cl))
 
 and align_tree nal isgoal (e,c as rhs) = match nal with
   | [] -> [[],rhs]
   | na::nal ->
     match kind_of_term c with
-    | Case (ci,p,c,cl) when c = mkRel (list_index na (snd e))
+    | Case (ci,p,c,cl) when c = mkRel (List.index na (snd e))
 	& (* don't contract if p dependent *)
 	computable p (ci.ci_pp_info.ind_nargs) ->
 	let clauses = build_tree na isgoal e ci cl in
@@ -579,7 +579,7 @@ let rec subst_cases_pattern subst pat =
   | PatVar _ -> pat
   | PatCstr (loc,((kn,i),j),cpl,n) ->
       let kn' = subst_ind subst kn
-      and cpl' = list_smartmap (subst_cases_pattern subst) cpl in
+      and cpl' = List.smartmap (subst_cases_pattern subst) cpl in
 	if kn' == kn && cpl' == cpl then pat else
 	  PatCstr (loc,((kn',i),j),cpl',n)
 
@@ -596,7 +596,7 @@ let rec subst_glob_constr subst raw =
 
   | GApp (loc,r,rl) ->
       let r' = subst_glob_constr subst r
-      and rl' = list_smartmap (subst_glob_constr subst) rl in
+      and rl' = List.smartmap (subst_glob_constr subst) rl in
 	if r' == r && rl' == rl then raw else
 	  GApp(loc,r',rl')
 
@@ -617,7 +617,7 @@ let rec subst_glob_constr subst raw =
 
   | GCases (loc,sty,rtno,rl,branches) ->
       let rtno' = Option.smartmap (subst_glob_constr subst) rtno
-      and rl' = list_smartmap (fun (a,x as y) ->
+      and rl' = List.smartmap (fun (a,x as y) ->
         let a' = subst_glob_constr subst a in
         let (n,topt) = x in
         let topt' = Option.smartmap
@@ -625,10 +625,10 @@ let rec subst_glob_constr subst raw =
             let sp' = subst_ind subst sp in
             if sp == sp' then t else (loc,(sp',i),y)) topt in
         if a == a' && topt == topt' then y else (a',(n,topt'))) rl
-      and branches' = list_smartmap
+      and branches' = List.smartmap
 			(fun (loc,idl,cpl,r as branch) ->
 			   let cpl' =
-			     list_smartmap (subst_cases_pattern subst) cpl
+			     List.smartmap (subst_cases_pattern subst) cpl
 			   and r' = subst_glob_constr subst r in
 			     if cpl' == cpl && r' == r then branch else
 			       (loc,idl,cpl',r'))
@@ -656,7 +656,7 @@ let rec subst_glob_constr subst raw =
       let ra1' = array_smartmap (subst_glob_constr subst) ra1
       and ra2' = array_smartmap (subst_glob_constr subst) ra2 in
       let bl' = array_smartmap
-        (list_smartmap (fun (na,k,obd,ty as dcl) ->
+        (List.smartmap (fun (na,k,obd,ty as dcl) ->
           let ty' = subst_glob_constr subst ty in
           let obd' = Option.smartmap (subst_glob_constr subst) obd in
           if ty'==ty & obd'==obd then dcl else (na,k,obd',ty')))

@@ -460,8 +460,8 @@ let pr pr sep inherited a =
         pr spc ltop b),
       lletin
   | CAppExpl (_,(Some i,f),l) ->
-      let l1,l2 = list_chop i l in
-      let c,l1 = list_sep_last l1 in
+      let l1,l2 = List.chop i l in
+      let c,l1 = List.sep_last l1 in
       let p = pr_proj (pr mt) pr_appexpl c f l1 in
       if l2<>[] then
 	p ++ prlist (pr spc (lapp,L)) l2, lapp
@@ -473,8 +473,8 @@ let pr pr sep inherited a =
       hov 0 (str ".." ++ pr spc (latom,E) t ++ spc () ++ str ".."), larg
   | CAppExpl (_,(None,f),l) -> pr_appexpl (pr mt) f l, lapp
   | CApp (_,(Some i,f),l) ->
-      let l1,l2 = list_chop i l in
-      let c,l1 = list_sep_last l1 in
+      let l1,l2 = List.chop i l in
+      let c,l1 = List.sep_last l1 in
       assert (snd c = None);
       let p = pr_proj (pr mt) pr_app (fst c) f l1 in
       if l2<>[] then

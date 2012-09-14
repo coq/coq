@@ -4,6 +4,7 @@ Coq_config
 Segmenttree
 Unicodetable
 Deque
+CList
 Util
 Serialize
 Xml_utils

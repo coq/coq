@@ -58,7 +58,7 @@ let rec strip_app = function
 let strip_n_app n s =
   let apps,s' = strip_app s in
   try
-    let bef,aft = list_chop n apps in
+    let bef,aft = List.chop n apps in
     match aft with
       |h::[] -> Some (bef,h,s')
       |h::t -> Some (bef,h,append_stack_app_list t s')
@@ -66,7 +66,7 @@ let strip_n_app n s =
   with
     |Failure _ -> None
 let nfirsts_app_of_stack n s =
-  let (args, _) = strip_app s in list_firstn n args
+  let (args, _) = strip_app s in List.firstn n args
 let list_of_app_stack s =
   let (out,s') = strip_app s in
   Option.init (s' = []) out
@@ -88,7 +88,7 @@ let rec stack_assign s p c = match s with
       if p >= q then
 	Zapp args :: stack_assign s (p-q) c
       else
-        (match list_chop p args with
+        (match List.chop p args with
             (bef, _::aft) -> Zapp (bef@c::aft) :: s
           | _ -> assert false)
   | _ -> s
@@ -98,7 +98,7 @@ let rec stack_tail p s =
       | Zapp args :: s ->
 	  let q = List.length args in
 	  if p >= q then stack_tail (p-q) s
-	  else Zapp (list_skipn p args) :: s
+	  else Zapp (List.skipn p args) :: s
       | _ -> failwith "stack_tail"
 let rec stack_nth s p = match s with
   | Zapp args :: s ->
@@ -241,13 +241,13 @@ let reducible_mind_case c = match kind_of_term c with
 let contract_cofix (bodynum,(types,names,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
   let make_Fi j = mkCoFix (nbodies-j-1,typedbodies) in
-  substl (list_tabulate make_Fi nbodies) bodies.(bodynum)
+  substl (List.tabulate make_Fi nbodies) bodies.(bodynum)
 
 let reduce_mind_case mia =
   match kind_of_term mia.mconstr with
     | Construct (ind_sp,i) ->
 (*	let ncargs = (fst mia.mci).(i-1) in*)
-	let real_cargs = list_skipn mia.mci.ci_npar mia.mcargs in
+	let real_cargs = List.skipn mia.mci.ci_npar mia.mcargs in
         applist (mia.mlf.(i-1),real_cargs)
     | CoFix cofix ->
 	let cofix_def = contract_cofix cofix in
@@ -260,7 +260,7 @@ let reduce_mind_case mia =
 let contract_fix ((recindices,bodynum),(types,names,bodies as typedbodies)) =
   let nbodies = Array.length recindices in
   let make_Fi j = mkFix ((recindices,nbodies-j-1),typedbodies) in
-  substl (list_tabulate make_Fi nbodies) bodies.(bodynum)
+  substl (List.tabulate make_Fi nbodies) bodies.(bodynum)
 
 let fix_recarg ((recindices,bodynum),_) stack =
   assert (0 <= bodynum & bodynum < Array.length recindices);
@@ -338,7 +338,7 @@ let rec whd_state_gen flags ts env sigma =
 	if red_iota flags then
 	  match strip_app stack with
 	  |args, (Zcase(ci, _, lf)::s') ->
-	    whrec (lf.(c-1), append_stack_app_list (list_skipn ci.ci_npar args) s')
+	    whrec (lf.(c-1), append_stack_app_list (List.skipn ci.ci_npar args) s')
 	  |args, (Zfix (f,s')::s'') ->
 	    let x' = applist(x,args) in
 	    whrec (contract_fix f,append_stack_app_list s' (append_stack_app_list [x'] s''))
@@ -404,7 +404,7 @@ let local_whd_state_gen flags sigma =
 	if red_iota flags then
 	  match strip_app stack with
 	  |args, (Zcase(ci, _, lf)::s') ->
-	    whrec (lf.(c-1), append_stack_app_list (list_skipn ci.ci_npar args) s')
+	    whrec (lf.(c-1), append_stack_app_list (List.skipn ci.ci_npar args) s')
 	  |args, (Zfix (f,s')::s'') ->
 	    let x' = applist(x,args) in
 	    whrec (contract_fix f,append_stack_app_list s' (append_stack_app_list [x'] s''))
@@ -590,7 +590,7 @@ let whd_betaiota_preserving_vm_cast env sigma t =
        | Construct (ind,c) -> begin
 	 match strip_app stack with
 	   |args, (Zcase(ci, _, lf)::s') ->
-	     whrec (lf.(c-1), append_stack_app_list (list_skipn ci.ci_npar args) s')
+	     whrec (lf.(c-1), append_stack_app_list (List.skipn ci.ci_npar args) s')
 	   |args, (Zfix (f,s')::s'') ->
 	     let x' = applist(x,args) in
 	     whrec (contract_fix f,append_stack_app_list s' (append_stack_app_list [x'] s''))
@@ -888,7 +888,7 @@ let whd_programs_stack env sigma =
       | Construct (ind,c) -> begin
 	match strip_app stack with
 	  |args, (Zcase(ci, _, lf)::s') ->
-	    whrec (lf.(c-1), append_stack_app_list (list_skipn ci.ci_npar args) s')
+	    whrec (lf.(c-1), append_stack_app_list (List.skipn ci.ci_npar args) s')
 	  |args, (Zfix (f,s')::s'') ->
 	    let x' = applist(x,args) in
 	    whrec (contract_fix f,append_stack_app_list s' (append_stack_app_list [x'] s''))

@@ -146,13 +146,13 @@ let instantiate_pattern sigma lvar c =
 	let ctx,c = List.assoc id lvar in
 	try
 	  let inst =
-	    List.map (fun id -> mkRel (list_index (Name id) vars)) ctx in
+	    List.map (fun id -> mkRel (List.index (Name id) vars)) ctx in
 	  let c = substl inst c in
 	  snd (pattern_of_constr sigma c)
-	with Not_found (* list_index failed *) ->
+	with Not_found (* List.index failed *) ->
 	  let vars =
-	    list_map_filter (function Name id -> Some id | _ -> None) vars in
-	  error_instantiate_pattern id (list_subtract ctx vars)
+	    List.map_filter (function Name id -> Some id | _ -> None) vars in
+	  error_instantiate_pattern id (List.subtract ctx vars)
        with Not_found (* List.assoc failed *) ->
 	 x)
   | (PFix _ | PCoFix _) -> error ("Non instantiable pattern.")
@@ -183,7 +183,7 @@ let rec subst_pattern subst pat =
 	if f' == f && args' == args then pat else
 	  PApp (f',args')
   | PSoApp (i,args) ->
-      let args' = list_smartmap (subst_pattern subst) args in
+      let args' = List.smartmap (subst_pattern subst) args in
 	if args' == args then pat else
 	  PSoApp (i,args')
   | PLambda (name,c1,c2) ->
@@ -219,7 +219,7 @@ let rec subst_pattern subst pat =
 	let c' = subst_pattern subst c in
 	if c' == c then br else (i,n,c')
       in
-      let branches' = list_smartmap subst_branch branches in
+      let branches' = List.smartmap subst_branch branches in
       if cip' == cip && typ' == typ && c' == c && branches' == branches
       then pat
       else PCase(cip', typ', c', branches')
@@ -241,7 +241,7 @@ let err loc pp = user_err_loc (loc,"pattern_of_glob_constr", pp)
 
 let rec pat_of_raw metas vars = function
   | GVar (_,id) ->
-      (try PRel (list_index (Name id) vars)
+      (try PRel (List.index (Name id) vars)
        with Not_found -> PVar id)
   | GPatVar (_,(false,n)) ->
       metas := n::!metas; PMeta (Some n)

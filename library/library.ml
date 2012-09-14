@@ -598,7 +598,7 @@ let import_module export (loc,qid) =
 
 let check_coq_overwriting p id =
   let l = repr_dirpath p in
-  if not !Flags.boot && l <> [] && string_of_id (list_last l) = "Coq" then
+  if not !Flags.boot && l <> [] && string_of_id (List.last l) = "Coq" then
     errorlabstrm ""
       (strbrk ("Cannot build module "^string_of_dirpath p^"."^string_of_id id^
       ": it starts with prefix \"Coq\" which is reserved for the Coq library."))

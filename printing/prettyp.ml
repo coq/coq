@@ -93,7 +93,7 @@ let print_impargs_by_name max = function
 let print_one_impargs_list l =
   let imps = List.filter is_status_implicit l in
   let maximps = List.filter Impargs.maximal_insertion_of imps in
-  let nonmaximps = list_subtract imps maximps in
+  let nonmaximps = List.subtract imps maximps in
   print_impargs_by_name false nonmaximps @
   print_impargs_by_name true maximps
 
@@ -127,7 +127,7 @@ let need_expansion impl ref =
   let ctx = (prod_assum typ) in
   let nprods = List.length (List.filter (fun (_,b,_) -> b=None) ctx) in
   impl <> [] & List.length impl >= nprods &
-    let _,lastimpl = list_chop nprods impl in
+    let _,lastimpl = List.chop nprods impl in
       List.filter is_status_implicit lastimpl <> []
 
 let print_impargs ref =

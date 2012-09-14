@@ -89,7 +89,7 @@ let combine_results
   in (* and then we flatten the map *)
   {
     result = List.concat pre_result;
-    to_avoid = list_union res1.to_avoid res2.to_avoid
+    to_avoid = List.union res1.to_avoid res2.to_avoid
   }
 
 
@@ -269,7 +269,7 @@ let make_discr_match_el  =
   end
 *)
 let make_discr_match_brl i =
-  list_map_i
+  List.map_i
     (fun j (_,idl,patl,_) ->
        if j=i
        then (Loc.ghost,idl,patl, mkGRef (Lazy.force coq_True_ref))
@@ -659,7 +659,7 @@ let rec build_entry_lc env funnames avoid rt  : glob_constr build_entry_return =
 	let case_pats = build_constructors_of_type ind [] in
 	assert (Array.length case_pats = 2);
 	let brl =
-	  list_map_i
+	  List.map_i
 	    (fun i x -> (Loc.ghost,[],[case_pats.(i)],x))
 	    0
 	    [lhs;rhs]
@@ -748,7 +748,7 @@ and build_entry_lc_from_case env funname make_discr
 	{
 	  result = List.concat (List.map (fun r -> r.result) results);
 	  to_avoid =
-	    List.fold_left (fun acc r -> list_union acc r.to_avoid) [] results
+	    List.fold_left (fun acc r -> List.union acc r.to_avoid) [] results
 	}
 
 and build_entry_lc_from_case_term env types funname make_discr patterns_to_prevent brl avoid
@@ -818,7 +818,7 @@ and build_entry_lc_from_case_term env types funname make_discr patterns_to_preve
       	let those_pattern_preconds =
 	  (List.flatten
 	    (
-	      list_map3
+	      List.map3
 	      (fun pat e typ_as_constr ->
 		 let this_pat_ids = ids_of_pat pat in
 		 let typ = Detyping.detype false [] (Termops.names_of_rel_context new_env) typ_as_constr in
@@ -977,7 +977,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		    let mib,_ = Global.lookup_inductive ind in
 		    let nparam = mib.Declarations.mind_nparams in
 		    let params,arg' =
-		      ((Util.list_chop nparam args'))
+		      ((Util.List.chop nparam args'))
 		    in
 		    let rt_typ =
 		       GApp(Loc.ghost,
@@ -1000,7 +1000,7 @@ let rec rebuild_cons env nb_args relname args crossed_types depth rt =
 		      match kind_of_term eq'_as_constr with
 			| App(_,[|_;_;ty;_|]) ->
 			    let ty = Array.to_list (snd (destApp ty)) in
-			    let ty' = snd (Util.list_chop nparam ty) in
+			    let ty' = snd (Util.List.chop nparam ty) in
 			    List.fold_left2
 			      (fun acc var_as_constr arg ->
 				 if isRel var_as_constr
@@ -1238,7 +1238,7 @@ let compute_params_name relnames (args : (Names.name * Glob_term.glob_constr * b
   let l = ref [] in
   let _ =
     try
-      list_iter_i
+      List.iter_i
 	(fun i ((n,nt,is_defined) as param) ->
 	   if array_for_all
 	     (fun l ->
@@ -1362,7 +1362,7 @@ let do_build_inductive
   in
   let rel_arity i funargs =  (* Reduilding arities (with parameters) *)
     let rel_first_args :(Names.name * Glob_term.glob_constr * bool ) list  =
-      (snd (list_chop nrel_params funargs))
+      (snd (List.chop nrel_params funargs))
     in
     List.fold_right
       (fun (n,t,is_defined) acc ->

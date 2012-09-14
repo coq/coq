@@ -98,7 +98,7 @@ let msg_may_need_inversion () =
 
 (* Utils *)
 let make_anonymous_patvars n =
-  list_make n (PatVar (Loc.ghost,Anonymous))
+  List.make n (PatVar (Loc.ghost,Anonymous))
 
 (* We have x1:t1...xn:tn,xi':ti,y1..yk |- c and re-generalize
    over xi:ti to get x1:t1...xn:tn,xi':ti,y1..yk |- c[xi:=xi'] *)
@@ -295,7 +295,7 @@ let try_find_ind env sigma typ realnames =
   let names =
     match realnames with
       | Some names -> names
-      | None -> list_make (List.length realargs) Anonymous in
+      | None -> List.make (List.length realargs) Anonymous in
   IsInd (typ,ind,names)
 
 let inh_coerce_to_ind evdref env ty tyi =
@@ -515,7 +515,7 @@ let mk_dep_patt_row (pats,_,eqn) =
 
 let dependencies_in_pure_rhs nargs eqns =
   if eqns = [] && not (Flags.is_program_mode ()) then
-    list_make nargs false (* Only "_" patts *) else
+    List.make nargs false (* Only "_" patts *) else
   let deps_rows = List.map mk_dep_patt_row eqns in
   let deps_columns = matrix_transpose deps_rows in
   List.map (List.exists ((=) true)) deps_columns
@@ -531,7 +531,7 @@ let rec dep_in_tomatch n = function
 
 let dependencies_in_rhs nargs current tms eqns =
   match kind_of_term current with
-  | Rel n when dep_in_tomatch n tms -> list_make nargs true
+  | Rel n when dep_in_tomatch n tms -> List.make nargs true
   | _ -> dependencies_in_pure_rhs nargs eqns
 
 (* Computing the matrix of dependencies *)
@@ -551,7 +551,7 @@ let rec find_dependency_list tmblock = function
   | (used,tdeps,d)::rest ->
       let deps = find_dependency_list tmblock rest in
       if used && List.exists (fun x -> dependent_decl x d) tmblock
-      then list_add_set (List.length rest + 1) (list_union deps tdeps)
+      then List.add_set (List.length rest + 1) (List.union deps tdeps)
       else deps
 
 let find_dependencies is_dep_or_cstr_in_rhs (tm,(_,tmtypleaves),d) nextlist =
@@ -680,7 +680,7 @@ let merge_name get_name obj = function
 let merge_names get_name = List.map2 (merge_name get_name)
 
 let get_names env sign eqns =
-  let names1 = list_make (List.length sign) Anonymous in
+  let names1 = List.make (List.length sign) Anonymous in
   (* If any, we prefer names used in pats, from top to bottom *)
   let names2,aliasname =
     List.fold_right
@@ -691,7 +691,7 @@ let get_names env sign eqns =
   (* Otherwise, we take names from the parameters of the constructor but
      avoiding conflicts with user ids *)
   let allvars =
-    List.fold_left (fun l (_,_,eqn) -> list_union l eqn.rhs.avoid_ids)
+    List.fold_left (fun l (_,_,eqn) -> List.union l eqn.rhs.avoid_ids)
       [] eqns in
   let names3,_ =
     List.fold_left2
@@ -723,7 +723,7 @@ let push_rels_eqn sign eqn =
      rhs = {eqn.rhs with rhs_env = push_rel_context sign eqn.rhs.rhs_env} }
 
 let push_rels_eqn_with_names sign eqn =
-  let subpats = List.rev (list_firstn (List.length sign) eqn.patterns) in
+  let subpats = List.rev (List.firstn (List.length sign) eqn.patterns) in
   let subpatnames = List.map alias_of_pat subpats in
   let sign = recover_initial_subpattern_names subpatnames sign in
   push_rels_eqn sign eqn
@@ -1134,7 +1134,7 @@ let build_branch current realargs deps (realnames,curname) pb arsign eqns const_
   (* We adjust the terms to match in the context they will be once the *)
   (* context [x1:T1,..,xn:Tn] will have been pushed on the current env *)
   let typs' =
-    list_map_i (fun i d -> (mkRel i,map_rel_declaration (lift i) d)) 1 typs in
+    List.map_i (fun i d -> (mkRel i,map_rel_declaration (lift i) d)) 1 typs in
 
   let extenv = push_rel_context typs pb.env in
 
@@ -1462,7 +1462,7 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
     | Evar ev ->
         let ty = get_type_of env sigma t in
         let inst =
-	  list_map_i
+	  List.map_i
 	    (fun i _ ->
               try list_assoc_in_triple i subst0 with Not_found -> mkRel i)
               1 (rel_context env) in
@@ -1477,7 +1477,7 @@ let abstract_tycon loc env evdref subst _tycon extenv t =
       let ty = lift (-k) (aux x (get_type_of env !evdref t)) in
       let depvl = free_rels ty in
       let inst =
-	list_map_i
+	List.map_i
 	  (fun i _ -> if List.mem i vl then u else mkRel i) 1
 	  (rel_context extenv) in
       let rel_filter =
@@ -1534,15 +1534,15 @@ let build_inversion_problem loc env sigma tms t =
     | App (f,v) when isConstruct f ->
 	let cstr = destConstruct f in
 	let n = constructor_nrealargs env cstr in
-	let l = list_lastn n (Array.to_list v) in
-	let l,acc = list_fold_map' reveal_pattern l acc in
+	let l = List.lastn n (Array.to_list v) in
+	let l,acc = List.fold_map' reveal_pattern l acc in
 	PatCstr (Loc.ghost,cstr,l,Anonymous), acc
     | _ -> make_patvar t acc in
   let rec aux n env acc_sign tms acc =
     match tms with
     | [] -> [], acc_sign, acc
     | (t, IsInd (_,IndType(indf,realargs),_)) :: tms ->
-	let patl,acc = list_fold_map' reveal_pattern realargs acc in
+	let patl,acc = List.fold_map' reveal_pattern realargs acc in
 	let pat,acc = make_patvar t acc in
 	let indf' = lift_inductive_family n indf in
 	let sign = make_arity_signature env true indf' in
@@ -1570,14 +1570,14 @@ let build_inversion_problem loc env sigma tms t =
   let n = List.length sign in
 
   let decls =
-    list_map_i (fun i d -> (mkRel i,map_rel_declaration (lift i) d)) 1 sign in
+    List.map_i (fun i d -> (mkRel i,map_rel_declaration (lift i) d)) 1 sign in
 
   let pb_env = push_rel_context sign env in
   let decls =
     List.map (fun (c,d) -> (c,extract_inductive_data pb_env sigma d,d)) decls in
 
   let decls = List.rev decls in
-  let dep_sign = find_dependencies_signature (list_make n true) decls in
+  let dep_sign = find_dependencies_signature (List.make n true) decls in
 
   let sub_tms =
     List.map2 (fun deps (tm,(tmtyp,_),(na,b,t)) ->
@@ -1664,7 +1664,7 @@ let extract_arity_signature ?(dolift=true) env0 tomatchl tmsign =
 		  if nrealargs_ctxt <> List.length realnal then
 		      anomaly "Ill-formed 'in' clause in cases";
 		  List.rev realnal
-	      | None -> list_make nrealargs_ctxt Anonymous in
+	      | None -> List.make nrealargs_ctxt Anonymous in
 	  (na,None,build_dependent_inductive env0 indf')
 	  ::(List.map2 (fun x (_,c,t) ->(x,c,t)) realnal arsign) in
   let rec buildrec n = function
@@ -2273,11 +2273,11 @@ let compile_program_cases loc style (typing_function, evdref) tycon env
     
   let dep_sign =
     find_dependencies_signature
-      (list_make (List.length typs) true)
+      (List.make (List.length typs) true)
       typs in
     
   let typs' =
-    list_map3
+    List.map3
       (fun (tm,tmt) deps na ->
          let deps = if not (isRel tm) then [] else deps in
            ((tm,tmt),deps,na))
@@ -2346,11 +2346,11 @@ let compile_cases loc style (typing_fun, evdref) tycon env (predopt, tomatchl, e
 
     let dep_sign =
       find_dependencies_signature
-        (list_make (List.length typs) true)
+        (List.make (List.length typs) true)
         typs in
 
     let typs' =
-      list_map3
+      List.map3
         (fun (tm,tmt) deps na ->
           let deps = if not (isRel tm) then [] else deps in
           ((tm,tmt),deps,na))

@@ -87,7 +87,7 @@ let interp_map l c =
   with Not_found -> None
 
 let interp_map l t =
-  try Some(list_assoc_f eq_constr t l) with Not_found -> None
+  try Some(List.assoc_f eq_constr t l) with Not_found -> None
 
 let protect_maps = ref Stringmap.empty
 let add_map s m = protect_maps := Stringmap.add s m !protect_maps
@@ -194,7 +194,7 @@ let dummy_goal env =
    Evd.sigma = sigma}
 
 let exec_tactic env n f args =
-  let lid = list_tabulate(fun i -> id_of_string("x"^string_of_int i)) n in
+  let lid = List.tabulate(fun i -> id_of_string("x"^string_of_int i)) n in
   let res = ref [||] in
   let get_res ist =
     let l = List.map (fun id ->  List.assoc id ist.lfun) lid in
@@ -834,7 +834,7 @@ let ring_lookup (f:glob_tactic_expr) lH rl t gl =
 
 TACTIC EXTEND ring_lookup
 | [ "ring_lookup" tactic0(f) "[" constr_list(lH) "]" ne_constr_list(lrt) ] ->
-    [ let (t,lr) = list_sep_last lrt in ring_lookup f lH lr t]
+    [ let (t,lr) = List.sep_last lrt in ring_lookup f lH lr t]
 END
 
 
@@ -1162,5 +1162,5 @@ let field_lookup (f:glob_tactic_expr) lH rl t gl =
 
 TACTIC EXTEND field_lookup
 | [ "field_lookup" tactic(f) "[" constr_list(lH) "]" ne_constr_list(lt) ] ->
-      [ let (t,l) = list_sep_last lt in field_lookup f lH l t ]
+      [ let (t,l) = List.sep_last lt in field_lookup f lH l t ]
 END

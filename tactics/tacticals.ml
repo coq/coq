@@ -87,7 +87,7 @@ let lastHypId gl  = nthHypId 1 gl
 let lastHyp gl    = nthHyp 1 gl
 
 let nLastDecls n gl =
-  try list_firstn n (pf_hyps gl)
+  try List.firstn n (pf_hyps gl)
   with Failure _ -> error "Not enough hypotheses in the goal."
 
 let nLastHypsId n gl = List.map pi1 (nLastDecls n gl)
@@ -108,7 +108,7 @@ let onNLastHypsId n tac = onHyps (nLastHypsId n) tac
 let onNLastHyps n tac   = onHyps (nLastHyps n) tac
 
 let afterHyp id gl =
-  fst (list_split_when (fun (hyp,_,_) -> hyp = id) (pf_hyps gl))
+  fst (List.split_when (fun (hyp,_,_) -> hyp = id) (pf_hyps gl))
 
 (***************************************)
 (*           Clause Tacticals          *)
@@ -174,7 +174,7 @@ let fix_empty_or_and_pattern nv l =
      names and "[ ]" for no clause at all *)
   (* 2- More generally, we admit "[ ]" for any disjunctive pattern of
      arbitrary length *)
-  if l = [[]] then list_make nv [] else l
+  if l = [[]] then List.make nv [] else l
 
 let check_or_and_pattern_size loc names n =
   if List.length names <> n then
@@ -335,7 +335,7 @@ let make_elim_branch_assumptions ba gl =
       | (_, _) -> anomaly "make_elim_branch_assumptions"
   in
   makerec ([],[],[],[],[]) ba.branchsign
-    (try list_firstn ba.nassums (pf_hyps gl)
+    (try List.firstn ba.nassums (pf_hyps gl)
      with Failure _ -> anomaly "make_elim_branch_assumptions")
 
 let elim_on_ba tac ba gl = tac (make_elim_branch_assumptions ba gl) gl
@@ -359,7 +359,7 @@ let make_case_branch_assumptions ba gl =
       | (_, _) -> anomaly "make_case_branch_assumptions"
   in
   makerec ([],[],[],[]) ba.branchsign
-    (try list_firstn ba.nassums (pf_hyps gl)
+    (try List.firstn ba.nassums (pf_hyps gl)
      with Failure _ -> anomaly "make_case_branch_assumptions")
 
 let case_on_ba tac ba gl = tac (make_case_branch_assumptions ba gl) gl

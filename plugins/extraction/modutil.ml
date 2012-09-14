@@ -30,7 +30,7 @@ let se_iter do_decl do_spec =
     | MTfunsig (_,mt,mt') -> mt_iter mt; mt_iter mt'
     | MTwith (mt,ML_With_type(idl,l,t))->
 	let mp_mt = msid_of_mt mt in
-	let l',idl' = list_sep_last idl in
+	let l',idl' = List.sep_last idl in
 	let mp_w =
 	  List.fold_left (fun mp l -> MPdot(mp,label_of_id l)) mp_mt idl'
 	in

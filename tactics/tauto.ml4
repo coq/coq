@@ -173,7 +173,7 @@ let flatten_contravariant_disj flags ist =
           typ with
   | Some (_,args) ->
       let hyp = valueIn (VConstr ([],hyp)) in
-      iter_tac (list_map_i (fun i arg ->
+      iter_tac (List.map_i (fun i arg ->
 	let typ = valueIn (VConstr ([],mkArrow arg c)) in
 	let i = Tacexpr.Integer i in
 	<:tactic<

@@ -63,7 +63,7 @@ let default_id_of_sort = function InProp | InSet -> hid | InType -> xid
 let fresh env id = next_global_ident_away id []
 
 let build_dependent_inductive ind (mib,mip) =
-  let realargs,_ = list_chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
+  let realargs,_ = List.chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
   applist
     (mkInd ind,
        extended_rel_list mip.mind_nrealargs_ctxt mib.mind_params_ctxt
@@ -96,20 +96,20 @@ let get_sym_eq_data env ind =
   let (mib,mip as specif) = lookup_mind_specif env ind in
   if Array.length mib.mind_packets <> 1 or Array.length mip.mind_nf_lc <> 1 then
     error "Not an inductive type with a single constructor.";
-  let realsign,_ = list_chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
+  let realsign,_ = List.chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
   if List.exists (fun (_,b,_) -> b <> None) realsign then
     error "Inductive equalities with local definitions in arity not supported.";
   let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
   if rel_context_length constrsign<>rel_context_length mib.mind_params_ctxt then
     error "Constructor must have no arguments"; (* This can be relaxed... *)
-  let params,constrargs = list_chop mib.mind_nparams constrargs in
+  let params,constrargs = List.chop mib.mind_nparams constrargs in
   if mip.mind_nrealargs > mib.mind_nparams then
     error "Constructors arguments must repeat the parameters.";
-  let _,params2 = list_chop (mib.mind_nparams-mip.mind_nrealargs) params in
+  let _,params2 = List.chop (mib.mind_nparams-mip.mind_nrealargs) params in
   let paramsctxt1,_ =
-    list_chop (mib.mind_nparams-mip.mind_nrealargs) mib.mind_params_ctxt in
-  if not (list_equal eq_constr params2 constrargs) then
+    List.chop (mib.mind_nparams-mip.mind_nrealargs) mib.mind_params_ctxt in
+  if not (List.equal eq_constr params2 constrargs) then
     error "Constructors arguments must repeat the parameters.";
   (* nrealargs_ctxt and nrealargs are the same here *)
   (specif,mip.mind_nrealargs,realsign,mib.mind_params_ctxt,paramsctxt1)
@@ -128,14 +128,14 @@ let get_non_sym_eq_data env ind =
   let (mib,mip as specif) = lookup_mind_specif env ind in
   if Array.length mib.mind_packets <> 1 or Array.length mip.mind_nf_lc <> 1 then
     error "Not an inductive type with a single constructor.";
-  let realsign,_ = list_chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
+  let realsign,_ = List.chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
   if List.exists (fun (_,b,_) -> b <> None) realsign then
     error "Inductive equalities with local definitions in arity not supported";
   let constrsign,ccl = decompose_prod_assum mip.mind_nf_lc.(0) in
   let _,constrargs = decompose_app ccl in
   if rel_context_length constrsign<>rel_context_length mib.mind_params_ctxt then
     error "Constructor must have no arguments";
-  let _,constrargs = list_chop mib.mind_nparams constrargs in
+  let _,constrargs = List.chop mib.mind_nparams constrargs in
   (specif,constrargs,realsign,mip.mind_nrealargs)
 
 (**********************************************************************)
@@ -679,7 +679,7 @@ let build_congr env (eq,refl) ind =
   if mip.mind_nrealargs <> 1 then
     error "Expect an inductive type with one predicate parameter.";
   let i = 1 in
-  let realsign,_ = list_chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
+  let realsign,_ = List.chop mip.mind_nrealargs_ctxt mip.mind_arity_ctxt in
   if List.exists (fun (_,b,_) -> b <> None) realsign then
     error "Inductive equalities with local definitions in arity not supported.";
   let env_with_arity = push_rel_context mip.mind_arity_ctxt env in

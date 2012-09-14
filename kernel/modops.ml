@@ -562,7 +562,7 @@ and clean_expr l = function
        if  str_clean == str && sig_clean = sigt.typ_expr then
 	 s else SEBfunctor (mbid,{sigt with typ_expr=sig_clean},str_clean)
   | SEBstruct str as s->
-      let str_clean = Util.list_smartmap (clean_struct l) str in 
+      let str_clean = Util.List.smartmap (clean_struct l) str in 
 	if  str_clean == str then s else SEBstruct(str_clean)
   |  str -> str 
 
@@ -572,7 +572,7 @@ let rec collect_mbid l = function
 	if  str_clean == str then s else 
       SEBfunctor (mbid,sigt,str_clean)
   | SEBstruct str as s->
-      let str_clean = Util.list_smartmap (clean_struct l) str in 
+      let str_clean = Util.List.smartmap (clean_struct l) str in 
 	if  str_clean == str then s else SEBstruct(str_clean)
   |  _ -> anomaly "Modops:the evaluation of the structure failed "
        

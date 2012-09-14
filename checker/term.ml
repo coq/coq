@@ -346,7 +346,7 @@ let map_context f l =
       if body_o' == body_o && typ' == typ then decl else
 	(n, body_o', typ')
   in
-    list_smartmap map_decl l
+    List.smartmap map_decl l
 
 let map_rel_context = map_context
 

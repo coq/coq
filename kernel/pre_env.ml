@@ -93,8 +93,8 @@ let lookup_rel_val n env =
 
 let env_of_rel n env =
   { env with
-    env_rel_context = Util.list_skipn n env.env_rel_context;
-    env_rel_val = Util.list_skipn n env.env_rel_val;
+    env_rel_context = Util.List.skipn n env.env_rel_context;
+    env_rel_val = Util.List.skipn n env.env_rel_val;
     env_nb_rel = env.env_nb_rel - n
   }
 

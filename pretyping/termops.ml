@@ -286,10 +286,10 @@ let adjust_app_list_size f1 l1 f2 l2 =
   let len1 = List.length l1 and len2 = List.length l2 in
   if len1 = len2 then (f1,l1,f2,l2)
   else if len1 < len2 then
-   let extras,restl2 = list_chop (len2-len1) l2 in
+   let extras,restl2 = List.chop (len2-len1) l2 in
     (f1, l1, applist (f2,extras), restl2)
   else
-    let extras,restl1 = list_chop (len1-len2) l1 in
+    let extras,restl1 = List.chop (len1-len2) l1 in
     (applist (f1,extras), restl1, f2, l2)
 
 let adjust_app_array_size f1 l1 f2 l2 =
@@ -550,7 +550,7 @@ let free_rels m =
 let collect_metas c =
   let rec collrec acc c =
     match kind_of_term c with
-      | Meta mv -> list_add_set mv acc
+      | Meta mv -> List.add_set mv acc
       | _       -> fold_constr collrec acc c
   in
   List.rev (collrec [] c)
@@ -691,7 +691,7 @@ let replace_term = replace_term_gen eq_constr
    except the ones in l *)
 
 let error_invalid_occurrence l =
-  let l = list_uniquize (List.sort Pervasives.compare l) in
+  let l = List.uniquize (List.sort Pervasives.compare l) in
   errorlabstrm ""
     (str ("Invalid occurrence " ^ plural (List.length l) "number" ^": ") ++
      prlist_with_sep spc int l ++ str ".")
@@ -951,7 +951,7 @@ let align_prod_letin c a : rel_context * constr =
   let (lc,_,_) = decompose_prod_letin c in
   let (la,l,a) = decompose_prod_letin a in
   if not (la >= lc) then invalid_arg "align_prod_letin";
-  let (l1,l2) = Util.list_chop lc l in
+  let (l1,l2) = Util.List.chop lc l in
   l2,it_mkProd_or_LetIn a l1
 
 (* On reduit une serie d'eta-redex de tete ou rien du tout  *)
@@ -1045,7 +1045,7 @@ let adjust_subst_to_rel_context sign l =
     | _ -> anomaly "Instance and signature do not match"
   in aux [] (List.rev sign) l
 
-let fold_named_context_both_sides f l ~init = list_fold_right_and_left f l init
+let fold_named_context_both_sides f l ~init = List.fold_right_and_left f l init
 
 let rec mem_named_context id = function
   | (id',_,_) :: _ when id=id' -> true
@@ -1098,7 +1098,7 @@ let context_chop k ctx =
 (* Do not skip let-in's *)
 let env_rel_context_chop k env =
   let rels = rel_context env in
-  let ctx1,ctx2 = list_chop k rels in
+  let ctx1,ctx2 = List.chop k rels in
   push_rel_context ctx2 (reset_with_named_context (named_context_val env) env),
   ctx1
 

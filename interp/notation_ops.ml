@@ -33,7 +33,7 @@ let rec cases_pattern_fold_map loc g e = function
       let e',na' = g e na in e', PatVar (loc,na')
   | PatCstr (_,cstr,patl,na) ->
       let e',na' = g e na in
-      let e',patl' = list_fold_map (cases_pattern_fold_map loc g) e patl in
+      let e',patl' = List.fold_map (cases_pattern_fold_map loc g) e patl in
       e', PatCstr (loc,cstr,patl',na')
 
 let rec subst_glob_vars l = function
@@ -86,18 +86,18 @@ let glob_constr_of_notation_constr_with_binders loc g f e = function
       let fold (idl,e) na = let (e,na) = g e na in ((name_cons na idl,e),na) in
       let eqnl' = List.map (fun (patl,rhs) ->
 	let ((idl,e),patl) =
-	  list_fold_map (cases_pattern_fold_map loc fold) ([],e) patl in
+	  List.fold_map (cases_pattern_fold_map loc fold) ([],e) patl in
 	(loc,idl,patl,f e rhs)) eqnl in
       GCases (loc,sty,Option.map (f e') rtntypopt,tml',eqnl')
   | NLetTuple (nal,(na,po),b,c) ->
-      let e',nal = list_fold_map g e nal in
+      let e',nal = List.fold_map g e nal in
       let e'',na = g e na in
       GLetTuple (loc,nal,(na,Option.map (f e'') po),f e b,f e' c)
   | NIf (c,(na,po),b1,b2) ->
       let e',na = g e na in
       GIf (loc,f e c,(na,Option.map (f e') po),f e b1,f e b2)
   | NRec (fk,idl,dll,tl,bl) ->
-      let e,dll = array_fold_map (list_fold_map (fun e (na,oc,b) ->
+      let e,dll = array_fold_map (List.fold_map (fun e (na,oc,b) ->
 	  let e,na = g e na in
 	  (e,(na,Explicit,Option.map (f e) oc,f e b)))) e dll in
       let e',idl = array_fold_map (to_id g) e idl in
@@ -144,7 +144,7 @@ let on_true_do b f c = if b then (f c; b) else b
 let compare_glob_constr f add t1 t2 = match t1,t2 with
   | GRef (_,r1), GRef (_,r2) -> eq_gr r1 r2
   | GVar (_,v1), GVar (_,v2) -> on_true_do (v1 = v2) add (Name v1)
-  | GApp (_,f1,l1), GApp (_,f2,l2) -> f f1 f2 & list_for_all2eq f l1 l2
+  | GApp (_,f1,l1), GApp (_,f2,l2) -> f f1 f2 & List.for_all2eq f l1 l2
   | GLambda (_,na1,bk1,ty1,c1), GLambda (_,na2,bk2,ty2,c2) when na1 = na2 && bk1 = bk2 -> on_true_do (f ty1 ty2 & f c1 c2) add na1
   | GProd (_,na1,bk1,ty1,c1), GProd (_,na2,bk2,ty2,c2) when na1 = na2 && bk1 = bk2 ->
       on_true_do (f ty1 ty2 & f c1 c2) add na1
@@ -182,7 +182,7 @@ let compare_recursive_parts found f (iterator,subc) =
       (* We found the pattern, but there are extra arguments *)
       (* (this allows e.g. alternative (recursive) notation of application) *)
       assert (!terminator = None); terminator := Some term;
-      list_for_all2eq aux l1 l2
+      List.for_all2eq aux l1 l2
   | GVar (_,x), GVar (_,y) when x<>y ->
       (* We found the position where it differs *)
       let lassoc = (!terminator <> None) in
@@ -335,7 +335,7 @@ let rec subst_pat subst pat =
   | PatVar _ -> pat
   | PatCstr (loc,((kn,i),j),cpl,n) ->
       let kn' = subst_ind subst kn
-      and cpl' = list_smartmap (subst_pat subst) cpl in
+      and cpl' = List.smartmap (subst_pat subst) cpl in
         if kn' == kn && cpl' == cpl then pat else
           PatCstr (loc,((kn',i),j),cpl',n)
 
@@ -350,7 +350,7 @@ let rec subst_notation_constr subst bound raw =
 
   | NApp (r,rl) ->
       let r' = subst_notation_constr subst bound r
-      and rl' = list_smartmap (subst_notation_constr subst bound) rl in
+      and rl' = List.smartmap (subst_notation_constr subst bound) rl in
 	if r' == r && rl' == rl then raw else
 	  NApp(r',rl')
 
@@ -386,7 +386,7 @@ let rec subst_notation_constr subst bound raw =
 
   | NCases (sty,rtntypopt,rl,branches) ->
       let rtntypopt' = Option.smartmap (subst_notation_constr subst bound) rtntypopt
-      and rl' = list_smartmap
+      and rl' = List.smartmap
         (fun (a,(n,signopt) as x) ->
 	  let a' = subst_notation_constr subst bound a in
 	  let signopt' = Option.map (fun ((indkn,i),nal as z) ->
@@ -394,9 +394,9 @@ let rec subst_notation_constr subst bound raw =
 	    if indkn == indkn' then z else ((indkn',i),nal)) signopt in
 	  if a' == a && signopt' == signopt then x else (a',(n,signopt')))
         rl
-      and branches' = list_smartmap
+      and branches' = List.smartmap
                         (fun (cpl,r as branch) ->
-                           let cpl' = list_smartmap (subst_pat subst) cpl
+                           let cpl' = List.smartmap (subst_pat subst) cpl
                            and r' = subst_notation_constr subst bound r in
                              if cpl' == cpl && r' == r then branch else
                                (cpl',r'))
@@ -423,7 +423,7 @@ let rec subst_notation_constr subst bound raw =
 
   | NRec (fk,idl,dll,tl,bl) ->
       let dll' =
-	array_smartmap (list_smartmap (fun (na,oc,b as x) ->
+	array_smartmap (List.smartmap (fun (na,oc,b as x) ->
 	  let oc' =  Option.smartmap (subst_notation_constr subst bound) oc in
 	  let b' =  subst_notation_constr subst bound b in
 	  if oc' == oc && b' == b then x else (na,oc',b'))) dll in
@@ -619,9 +619,9 @@ let rec match_ inner u alp (tmetas,blmetas as metas) sigma a1 a2 =
       let n1 = List.length l1 and n2 = List.length l2 in
       let f1,l1,f2,l2 =
 	if n1 < n2 then
-	  let l21,l22 = list_chop (n2-n1) l2 in f1,l1, NApp (f2,l21), l22
+	  let l21,l22 = List.chop (n2-n1) l2 in f1,l1, NApp (f2,l21), l22
 	else if n1 > n2 then
-	  let l11,l12 = list_chop (n1-n2) l1 in GApp (loc,f1,l11),l12, f2,l2
+	  let l11,l12 = List.chop (n1-n2) l1 in GApp (loc,f1,l11),l12, f2,l2
 	else f1,l1, f2, l2 in
       let may_use_eta = does_not_come_from_already_eta_expanded_var f1 in
       List.fold_left2 (match_ may_use_eta u alp metas)
@@ -710,7 +710,7 @@ and match_equations u alp metas sigma (_,_,patl1,rhs1) (patl2,rhs2) =
   match_in u alp metas sigma rhs1 rhs2
 
 let match_notation_constr u c (metas,pat) =
-  let vars = list_split_by (fun (_,(_,x)) -> x <> NtnTypeBinderList) metas in
+  let vars = List.split_by (fun (_,(_,x)) -> x <> NtnTypeBinderList) metas in
   let vars = (List.map fst (fst vars), List.map fst (snd vars)) in
   let terms,termlists,binders = match_ false u [] vars ([],[],[]) c pat in
   (* Reorder canonically the substitution *)
@@ -734,7 +734,7 @@ let match_notation_constr u c (metas,pat) =
 let add_patterns_for_params ind l =
   let mib,_ = Global.lookup_inductive ind in
   let nparams = mib.Declarations.mind_nparams in
-    Util.list_addn nparams (PatVar (Loc.ghost,Anonymous)) l
+    Util.List.addn nparams (PatVar (Loc.ghost,Anonymous)) l
 
 let bind_env_cases_pattern (sigma,sigmalist,x as fullsigma) var v =
   try
@@ -758,7 +758,7 @@ let rec match_cases_pattern metas sigma a1 a2 =
       then
 	raise No_match
       else
-	let l1',more_args = Util.list_chop le2 l1 in
+	let l1',more_args = Util.List.chop le2 l1 in
 	(List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),(le2,more_args)
   | r1, NList (x,_,iter,termin,lassoc) ->
       (match_alist (fun (metas,_) -> match_cases_pattern_no_more_args metas)
@@ -781,7 +781,7 @@ let match_ind_pattern metas sigma ind pats a2 =
       then
 	raise No_match
       else
-	let l1',more_args = Util.list_chop le2 pats in
+	let l1',more_args = Util.List.chop le2 pats in
 	(List.fold_left2 (match_cases_pattern_no_more_args metas) sigma l1' l2),(le2,more_args)
   |_ -> raise No_match
 

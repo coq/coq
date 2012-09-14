@@ -114,7 +114,7 @@ let pp_one_field r i = function
 
 let pp_field r fields i = pp_one_field r i (List.nth fields i)
 
-let pp_fields r fields = list_map_i (pp_one_field r) 0 fields
+let pp_fields r fields = List.map_i (pp_one_field r) 0 fields
 
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
@@ -189,7 +189,7 @@ let rec pp_expr par env args =
 	hv 0 (apply2 (pp_letin pp_id pp_a1 pp_a2))
     | MLglob r ->
 	(try
-	   let args = list_skipn (projection_arity r) args in
+	   let args = List.skipn (projection_arity r) args in
 	   let record = List.hd args in
 	   pp_apply (record ++ str "." ++ pp_global Term r) par (List.tl args)
 	 with _ -> apply (pp_global Term r))
@@ -642,7 +642,7 @@ and pp_module_type params = function
   | MTwith(mt,ML_With_type(idl,vl,typ)) ->
       let ids = pp_parameters (rename_tvars keywords vl) in
       let mp_mt = msid_of_mt mt in
-      let l,idl' = list_sep_last idl in
+      let l,idl' = List.sep_last idl in
       let mp_w =
 	List.fold_left (fun mp l -> MPdot(mp,label_of_id l)) mp_mt idl'
       in

@@ -313,7 +313,7 @@ let add_coercion_in_graph (ic,source,target) =
              try_add_new_path1 (s,target) (p@[ic]);
              Gmap.iter
 	       (fun (u,v) q ->
-                  if u<>v & u = target &&  not (list_equal coe_info_typ_equal p q) then
+                  if u<>v & u = target &&  not (List.equal coe_info_typ_equal p q) then
 		    try_add_new_path1 (s,v) (p@[ic]@q))
                old_inheritance_graph
            end;

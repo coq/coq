@@ -153,9 +153,9 @@ let show_intro all =
     msg_notice (hov 0 (prlist_with_sep  spc pr_id lid))
   else
     try
-      let n = list_last l in
+      let n = List.last l in
       msg_notice (pr_id (List.hd (Tactics.find_intro_names [n] gl)))
-    with Failure "list_last" -> ()
+    with Failure "List.last" -> ()
 
 (** Prepare a "match" template for a given inductive type.
     For each branch of the match, we list the constructor name
@@ -174,7 +174,7 @@ let make_cases s =
 	Util.array_fold_right2
 	  (fun consname typ l ->
 	     let al = List.rev (fst (Term.decompose_prod typ)) in
-	     let al = Util.list_skipn np al in
+	     let al = Util.List.skipn np al in
 	     let rec rename avoid = function
 	       | [] -> []
 	       | (n,_)::l ->
@@ -217,8 +217,8 @@ let print_modules () =
   and loaded = Library.loaded_libraries () in
   (* we intersect over opened to preserve the order of opened since *)
   (* non-commutative operations (e.g. visibility) are done at import time *)
-  let loaded_opened = list_intersect opened loaded
-  and only_loaded = list_subtract loaded opened in
+  let loaded_opened = List.intersect opened loaded
+  and only_loaded = List.subtract loaded opened in
   str"Loaded and imported library files: " ++
   pr_vertical_list pr_dirpath loaded_opened ++ fnl () ++
   str"Loaded and not imported library files: " ++
@@ -289,7 +289,7 @@ let print_namespace ns =
       | MPfile dir -> Names.repr_dirpath dir
       | MPdot (mp,lbl) -> (Names.id_of_label lbl)::(list_of_modulepath mp)
     in
-    snd (Util.list_chop n (List.rev (list_of_modulepath mp)))
+    snd (Util.List.chop n (List.rev (list_of_modulepath mp)))
   in
   let print_list pr l = prlist_with_sep (fun () -> str".") pr l in
   let print_kn kn =
@@ -817,7 +817,7 @@ let vernac_set_end_tac tac =
 
 let vernac_set_used_variables l =
   let l = List.map snd l in
-  if not (list_distinct l) then error "Used variables list contains duplicates";
+  if not (List.distinct l) then error "Used variables list contains duplicates";
   let vars = Environ.named_context (Global.env ()) in
   List.iter (fun id -> 
     if not (List.exists (fun (id',_,_) -> id = id') vars) then
@@ -905,7 +905,7 @@ let vernac_declare_arguments local r l nargs flags =
   let scopes = List.map (List.map (fun (_,_, s, _,_) -> s)) l in
   if List.exists ((<>) names) rest then
     error "All arguments lists must declare the same names.";
-  if not (Util.list_distinct (List.filter ((<>) Anonymous) names)) then
+  if not (Util.List.distinct (List.filter ((<>) Anonymous) names)) then
     error "Arguments names must be distinct.";
   let sr = smart_global r in
   let inf_names =
@@ -929,7 +929,7 @@ let vernac_declare_arguments local r l nargs flags =
     if List.exists (List.exists ((<>) None)) rest then
       error "Notation scopes can be given only once";
     if not extra_scope_flag then l, scopes else
-    let l, _ = List.split (List.map (list_chop (List.length inf_names)) l) in
+    let l, _ = List.split (List.map (List.chop (List.length inf_names)) l) in
     l, scopes in
   (* we interpret _ as the inferred names *)
   let l = if l = [[]] then l else
@@ -943,8 +943,8 @@ let vernac_declare_arguments local r l nargs flags =
     with Not_found -> false in
   let some_renaming_specified, implicits =
     if l = [[]] then false, [[]] else
-    Util.list_fold_map (fun sr il ->
-      let sr', impl = Util.list_fold_map (fun b -> function
+    Util.List.fold_map (fun sr il ->
+      let sr', impl = Util.List.fold_map (fun b -> function
         | (Anonymous, _,_, true, max), Name id -> assert false
         | (Name x, _,_, true, _), Anonymous ->
             error ("Argument "^string_of_id x^" cannot be declared implicit.")
@@ -953,7 +953,7 @@ let vernac_declare_arguments local r l nargs flags =
         | (Name iid, _,_, _, _), Name id -> b || iid <> id, None
         | _ -> b, None)
         sr (List.combine il inf_names) in
-      sr || sr', Util.list_map_filter (fun x -> x) impl)
+      sr || sr', Util.List.map_filter (fun x -> x) impl)
       some_renaming_specified l in
   if some_renaming_specified then
     if not (List.mem `Rename flags) then
@@ -969,8 +969,8 @@ let vernac_declare_arguments local r l nargs flags =
         with _ -> Some (Notation.find_delimiters_scope o k)) scopes in
   let some_scopes_specified = List.exists ((<>) None) scopes in
   let rargs =
-    Util.list_map_filter (function (n, true) -> Some n | _ -> None)
-      (Util.list_map_i (fun i (_, b, _,_,_) -> i, b) 0 l) in
+    Util.List.map_filter (function (n, true) -> Some n | _ -> None)
+      (Util.List.map_i (fun i (_, b, _,_,_) -> i, b) 0 l) in
   if some_scopes_specified || List.mem `ClearScopes flags then
     vernac_arguments_scope local r scopes;
   if not some_implicits_specified && List.mem `DefaultImplicits flags then

@@ -370,7 +370,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       in
       (* in fact we must also add the parameters to the constructor args *)
       let constructor_args g =
-	let params_id = fst (list_chop princ_infos.nparams args_names) in
+	let params_id = fst (List.chop princ_infos.nparams args_names) in
 	(List.map mkVar params_id)@((constructor_args g))
       in
       (* We then get the constructor corresponding to this branch and
@@ -446,7 +446,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	)
 	lemmas_types_infos
     in
-    let param_names = fst (list_chop princ_infos.nparams args_names) in
+    let param_names = fst (List.chop princ_infos.nparams args_names) in
     let params = List.map mkVar param_names in
     let lemmas = Array.to_list (Array.map (fun c -> applist(c,params)) lemmas) in
     (* The bindings of the principle
@@ -611,7 +611,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
       in
       (* in fact we must also add the parameters to the constructor args *)
       let constructor_args =
-	let params_id = fst (list_chop princ_infos.nparams args_names) in
+	let params_id = fst (List.chop princ_infos.nparams args_names) in
 	(List.map mkVar params_id)@(List.rev constructor_args)
       in
       (* We then get the constructor corresponding to this branch and
@@ -669,7 +669,7 @@ let prove_fun_correct functional_induction funs_constr graphs_constr schemes lem
 	g
     in
     (* end of branche proof *)
-    let param_names = fst (list_chop princ_infos.nparams args_names) in
+    let param_names = fst (List.chop princ_infos.nparams args_names) in
     let params = List.map mkVar param_names in
     let lemmas = Array.to_list (Array.map (fun c -> applist(c,params)) lemmas) in
     (* The bindings of the principle
@@ -996,7 +996,7 @@ let prove_fun_complete funcs graphs schemes lemmas_types_infos i : tactic =
       ]
 	g
     in
-    let params_names = fst (list_chop princ_infos.nparams args_names) in
+    let params_names = fst (List.chop princ_infos.nparams args_names) in
     let params = List.map mkVar params_names in
     tclTHENSEQ
       [ tclMAP h_intro (args_names@[res;hres]);

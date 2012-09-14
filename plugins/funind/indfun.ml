@@ -21,7 +21,7 @@ let is_rec_info scheme_info =
       Util.Intset.exists (fun i -> i >= min && i< max) free_rels_in_br
     )
   in
-  Util.list_fold_left_i test_branche 1 false (List.rev scheme_info.Tactics.branches)
+  Util.List.fold_left_i test_branche 1 false (List.rev scheme_info.Tactics.branches)
 
 let choose_dest_or_ind scheme_info =
     if is_rec_info scheme_info
@@ -337,7 +337,7 @@ let generate_principle  on_error
 	in
 	let funs_kn = Array.of_list (List.map fname_kn fix_rec_l) in
 	let _ =
-	  list_map_i
+	  List.map_i
 	    (fun i x ->
 	       let princ = destConst (Indrec.lookup_eliminator (ind_kn,i) (InProp)) in
 	       let princ_type = Typeops.type_of_constant (Global.env()) princ
@@ -392,7 +392,7 @@ let register_wf ?(is_mes=false) fname rec_impls wf_rel_expr wf_arg using_lemmas 
 	if List.length names = 1 then 1
 	else error "Recursive argument must be specified"
       | Some wf_arg ->
-	  list_index (Name wf_arg) names
+	  List.index (Name wf_arg) names
   in
   let unbounded_eq =
     let f_app_args =
@@ -516,7 +516,7 @@ let decompose_lambda_n_assum_constr_expr =
 	    (n - nal_length) 
 	    (Constrexpr.CLambdaN(lambda_loc,bl,e'))
   	else
-	  let nal_keep,nal_expr = list_chop n nal in 
+	  let nal_keep,nal_expr = List.chop n nal in 
 	  (List.rev (Constrexpr.LocalRawAssum(nal_keep,bk,nal_type)::acc),
 	   Constrexpr.CLambdaN(lambda_loc,(nal_expr,bk,nal_type)::bl,e')
 	  )
@@ -548,7 +548,7 @@ let decompose_prod_n_assum_constr_expr =
 	    (if bl = [] then e' else (Constrexpr.CLambdaN(lambda_loc,bl,e')))
   	else
 	  (* let _ = Pp.msgnl (str "second case") in  *)
-	  let nal_keep,nal_expr = list_chop n nal in 
+	  let nal_keep,nal_expr = List.chop n nal in 
 	  (List.rev (Constrexpr.LocalRawAssum(nal_keep,bk,nal_type)::acc),
 	   Constrexpr.CLambdaN(lambda_loc,(nal_expr,bk,nal_type)::bl,e')
 	  )
@@ -585,7 +585,7 @@ let rec rebuild_bl (aux,assoc) bl typ =
 	    let lnal' = List.length nal' in 
 	    if lnal' >= lnal 
 	    then 
-	      let old_nal',new_nal' = list_chop lnal nal' in 
+	      let old_nal',new_nal' = List.chop lnal nal' in 
 	      rebuild_bl ((LocalRawAssum(nal,bk,replace_vars_constr_expr assoc nal't)::aux),(make_assoc assoc old_nal' nal)) bl' 
 		(if new_nal' = [] && rest = []
 		 then  typ' 
@@ -593,7 +593,7 @@ let rec rebuild_bl (aux,assoc) bl typ =
 		 then CProdN(Loc.ghost,rest,typ')
 		 else CProdN(Loc.ghost,((new_nal',bk',nal't)::rest),typ'))
 	    else 
-	      let captured_nal,non_captured_nal = list_chop lnal' nal in 
+	      let captured_nal,non_captured_nal = List.chop lnal' nal in 
 	      rebuild_nal ((LocalRawAssum(captured_nal,bk,replace_vars_constr_expr assoc nal't)::aux), (make_assoc assoc nal' captured_nal))
 		bk bl' non_captured_nal (lnal - lnal') (CProdN(Loc.ghost,rest,typ'))
 	  | _ -> assert false
@@ -789,7 +789,7 @@ let rec chop_n_arrow n t =
 		    else
 		      let new_t' =
 			Constrexpr.CProdN(Loc.ghost,
-					((snd (list_chop n nal)),k,t'')::nal_ta',t')
+					((snd (List.chop n nal)),k,t'')::nal_ta',t')
 		      in
 		      raise (Stop new_t')
 		in

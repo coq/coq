@@ -214,7 +214,7 @@ let ppcm_mon m m' =
 let repr p = p
 
 let equal =
-  Util.list_for_all2eq
+  Util.List.for_all2eq
     (fun (c1,m1) (c2,m2) -> P.equal c1 c2 && m1=m2)
 
 let hash p =

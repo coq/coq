@@ -396,7 +396,7 @@ let clenv_independent clenv =
   List.filter (fun mv -> not (Metaset.mem mv deps)) mvs
 
 let check_bindings bl =
-  match list_duplicates (List.map pi2 bl) with
+  match List.duplicates (List.map pi2 bl) with
     | NamedHyp s :: _ ->
 	errorlabstrm ""
 	  (str "The variable " ++ pr_id s ++
@@ -464,7 +464,7 @@ exception NoSuchBinding
 
 let clenv_constrain_last_binding c clenv =
   let all_mvs = collect_metas clenv.templval.rebus in
-  let k = try list_last all_mvs with Failure _ -> raise NoSuchBinding in
+  let k = try List.last all_mvs with Failure _ -> raise NoSuchBinding in
   clenv_assign_binding clenv k c
 
 let error_not_right_number_missing_arguments n =

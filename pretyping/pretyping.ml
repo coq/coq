@@ -79,7 +79,7 @@ let search_guard loc env possible_indexes fixdefs =
 	    let fix = ((indexes, 0),fixdefs) in
 	    try check_fix env fix; raise (Found indexes)
 	    with TypeError _ -> ())
-	 (list_combinations possible_indexes);
+	 (List.combinations possible_indexes);
        let errmsg = "Cannot guess decreasing argument of fix." in
        if loc = Loc.ghost then error errmsg else
 	 user_err_loc (loc,"search_guard", Pp.str errmsg)
@@ -363,7 +363,7 @@ let rec pretype (tycon : type_constraint) env evdref lvar = function
 		Array.to_list (Array.mapi
 				 (fun i (n,_) -> match n with
 				  | Some n -> [n]
-				  | None -> list_map_i (fun i _ -> i) 0 ctxtv.(i))
+				  | None -> List.map_i (fun i _ -> i) 0 ctxtv.(i))
 				 vn)
 	      in
 	      let fixdecls = (names,ftys,fdefs) in

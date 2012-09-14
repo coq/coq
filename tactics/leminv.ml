@@ -187,7 +187,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     compute_first_inversion_scheme env sigma ind sort dep_option
   in
   assert
-    (list_subset
+    (List.subset
        (global_vars env invGoal)
        (ids_of_named_context (named_context invEnv)));
   (*

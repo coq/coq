@@ -308,7 +308,7 @@ let collect_meta_variables c =
   List.rev (collrec false [] c)
 
 let check_meta_variables c =
-  if not (list_distinct (collect_meta_variables c)) then
+  if not (List.distinct (collect_meta_variables c)) then
     raise (RefinerError (NonLinearProof c))
 
 let check_conv_leq_goal env sigma arg ty conclty =
@@ -536,7 +536,7 @@ let prim_refiner r sigma goal =
             | _ -> error "Not enough products."
 	in
 	let (sp,_) = check_ind env n cl in
-	let firsts,lasts = list_chop j rest in
+	let firsts,lasts = List.chop j rest in
 	let all = firsts@(f,n,cl)::lasts in
      	let rec mk_sign sign = function
 	  | (f,n,ar)::oth ->
@@ -580,7 +580,7 @@ let prim_refiner r sigma goal =
 		  error ("All methods must construct elements " ^
 			  "in coinductive types.")
 	in
-	let firsts,lasts = list_chop j others in
+	let firsts,lasts = List.chop j others in
 	let all = firsts@(f,cl)::lasts in
      	List.iter (fun (_,c) -> check_is_coind env c) all;
         let rec mk_sign sign = function

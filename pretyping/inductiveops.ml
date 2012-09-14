@@ -91,7 +91,7 @@ let mis_nf_constructor_type (ind,mib,mip) j =
   and nconstr = Array.length mip.mind_consnames in
   let make_Ik k = mkInd ((fst ind),ntypes-k-1) in
   if j > nconstr then error "Not enough constructors in the type.";
-  substl (list_tabulate make_Ik ntypes) specif.(j-1)
+  substl (List.tabulate make_Ik ntypes) specif.(j-1)
 
 (* Arity of constructors excluding parameters and local defs *)
 
@@ -219,7 +219,7 @@ let get_constructor (ind,mib,mip,params) j =
   let typi = instantiate_params typi params mib.mind_params_ctxt in
   let (args,ccl) = decompose_prod_assum typi in
   let (_,allargs) = decompose_app ccl in
-  let vargs = list_skipn (List.length params) allargs in
+  let vargs = List.skipn (List.length params) allargs in
   { cs_cstr = ith_constructor_of_inductive ind j;
     cs_params = params;
     cs_nargs = rel_context_length args;
@@ -258,11 +258,11 @@ let get_arity env (ind,params) =
     let parsign = mib.mind_params_ctxt in
     let nnonrecparams = mib.mind_nparams - mib.mind_nparams_rec in
     if List.length params = rel_context_nhyps parsign - nnonrecparams then
-      snd (list_chop nnonrecparams mib.mind_params_ctxt)
+      snd (List.chop nnonrecparams mib.mind_params_ctxt)
     else
       parsign in
   let arproperlength = List.length mip.mind_arity_ctxt - List.length parsign in
-  let arsign,_ = list_chop arproperlength mip.mind_arity_ctxt in
+  let arsign,_ = List.chop arproperlength mip.mind_arity_ctxt in
   let subst = instantiate_context parsign params in
   (substl_rel_context subst arsign, Inductive.inductive_sort_family mip)
 
@@ -324,7 +324,7 @@ let find_rectype env sigma c =
   match kind_of_term t with
     | Ind ind ->
         let (mib,mip) = Inductive.lookup_mind_specif env ind in
-        let (par,rargs) = list_chop mib.mind_nparams l in
+        let (par,rargs) = List.chop mib.mind_nparams l in
         IndType((ind, par),rargs)
     | _ -> raise Not_found
 
@@ -406,7 +406,7 @@ let type_case_branches_with_names env indspec p c =
   let (ind,args) = indspec in
   let (mib,mip as specif) = Inductive.lookup_mind_specif env ind in
   let nparams = mib.mind_nparams in
-  let (params,realargs) = list_chop nparams args in
+  let (params,realargs) = List.chop nparams args in
   let lbrty = Inductive.build_branches_type ind specif params p in
   (* Build case type *)
   let conclty = Reduction.beta_appvect p (Array.of_list (realargs@[c])) in

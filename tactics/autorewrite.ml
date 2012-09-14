@@ -207,7 +207,7 @@ let auto_multi_rewrite_with ?(conds=Naive) tac_main lbas cl gl =
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (_,(rbase,lrl)) =
   let base = try find_base rbase with _ -> HintDN.empty in
-  let max = try fst (Util.list_last (HintDN.find_all base)) with _ -> 0 in
+  let max = try fst (Util.List.last (HintDN.find_all base)) with _ -> 0 in
   let lrl = HintDN.map (fun (i,h) -> (i + max, h)) lrl in
     rewtab:=Stringmap.add rbase (HintDN.union lrl base) !rewtab
 

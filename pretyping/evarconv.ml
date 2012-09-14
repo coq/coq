@@ -117,7 +117,7 @@ let check_conv_record (t1,sk1) (t2,sk2) =
 	| _ -> raise Not_found in
     let us2,extra_args2 =
       let l',s' = strip_app sk2_effective in
-      let bef,aft = list_chop (List.length us) l' in
+      let bef,aft = List.chop (List.length us) l' in
       (bef, append_stack_app_list aft s') in
     c,bs,(params,params1),(us,us2),(extra_args1,extra_args2),c1,
     (n,zip(t2,sk2))
@@ -537,7 +537,7 @@ let evar_eqappr_x ts env evd pbty appr1 appr2 =
 (* We assume here |l1| <= |l2| *)
 
 let first_order_unification ts env evd (ev1,l1) (term2,l2) =
-  let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
+  let (deb2,rest2) = List.chop (List.length l2-List.length l1) l2 in
   ise_and evd
     (* First compare extra args for better failure message *)
     [(fun i -> ise_list2 i (fun i -> evar_conv_x ts env i CONV) rest2 l1);
@@ -639,7 +639,7 @@ let second_order_matching ts env_rhs evd (evk,args) argoccs rhs =
         | Some _ -> error "Selection of specific occurrences not supported"
         | None ->
         let evty = set_holes evdref cty subst in
-        let instance = snd (list_filter2 (fun b c -> b) (filter,instance)) in
+        let instance = snd (List.filter2 (fun b c -> b) (filter,instance)) in
         let evd,ev = new_evar_instance sign !evdref evty ~filter instance in
         evdref := evd;
         evsref := (fst (destEvar ev),evty)::!evsref;
@@ -761,7 +761,7 @@ let max_undefined_with_candidates evd =
         | Some l -> (evk,ev_info,l)::evars) evd [] in
   match l with
   | [] -> None
-  | a::l -> Some (list_last (a::l))
+  | a::l -> Some (List.last (a::l))
 
 let rec solve_unconstrained_evars_with_canditates evd =
   (* max_undefined is supposed to return the most recent, hence

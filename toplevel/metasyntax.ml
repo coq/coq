@@ -372,7 +372,7 @@ let analyze_notation_tokens l =
   let l = raw_analyze_notation_tokens l in
   let vars = get_notation_vars l in
   let recvars,l = interp_list_parser [] l in
-  recvars, list_subtract vars (List.map snd recvars), l
+  recvars, List.subtract vars (List.map snd recvars), l
 
 let error_not_same_scope x y =
   error ("Variables "^string_of_id x^" and "^string_of_id y^
@@ -448,7 +448,7 @@ let make_hunks etyps symbols from =
   let vars,typs = List.split etyps in
   let rec make ws = function
     | NonTerminal m :: prods ->
-	let i = list_index m vars in
+	let i = List.index m vars in
 	let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
 	let u = UnpMetaVar (i,prec) in
 	if prods <> [] && is_non_terminal (List.hd prods) then
@@ -494,14 +494,14 @@ let make_hunks etyps symbols from =
 	add_break n (make NoBreak prods)
 
     | SProdList (m,sl) :: prods ->
-	let i = list_index m vars in
+	let i = List.index m vars in
 	let typ = List.nth typs (i-1) in
 	let _,prec = precedence_of_entry_type from typ in
         let sl' =
           (* If no separator: add a break *)
 	  if sl = [] then add_break 1 []
           (* We add NonTerminal for simulation but remove it afterwards *)
-	  else snd (list_sep_last (make NoBreak (sl@[NonTerminal m]))) in
+	  else snd (List.sep_last (make NoBreak (sl@[NonTerminal m]))) in
 	let hunk = match typ with
 	  | ETConstr _ -> UnpListMetaVar (i,prec,sl')
 	  | ETBinder isopen ->
@@ -560,7 +560,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
       when s = drop_simple_quotes s' ->
       let symbs, l = aux (symbs,fmt) in symbs, UnpTerminal s :: l
   | NonTerminal s :: symbs, UnpTerminal s' :: fmt when s = id_of_string s' ->
-      let i = list_index s vars in
+      let i = List.index s vars in
       let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
       let symbs, l = aux (symbs,fmt) in symbs, UnpMetaVar (i,prec) :: l
   | symbs, UnpBox (a,b) :: fmt ->
@@ -570,7 +570,7 @@ let hunks_of_format (from,(vars,typs)) symfmt =
   | symbs, (UnpCut _ as u) :: fmt ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
   | SProdList (m,sl) :: symbs, fmt ->
-      let i = list_index m vars in
+      let i = List.index m vars in
       let typ = List.nth typs (i-1) in
       let _,prec = precedence_of_entry_type from typ in
       let slfmt,fmt = read_recursive_format sl fmt in
@@ -889,7 +889,7 @@ let find_precedence lev etyps symbols =
 	  error "A left-recursive notation must have an explicit level."
 	else [],Option.get lev)
   | Terminal _ ::l when
-      (match list_last symbols with Terminal _ -> true |_ -> false)
+      (match List.last symbols with Terminal _ -> true |_ -> false)
       ->
       if lev = None then
 	([msg_info,strbrk "Setting notation at level 0."], 0)
@@ -1181,7 +1181,7 @@ let cache_scope_command o =
 
 let subst_scope_command (subst,(scope,o as x)) = match o with
   | ScopeClasses cl ->
-      let cl' = list_map_filter (subst_scope_class subst) cl in
+      let cl' = List.map_filter (subst_scope_class subst) cl in
       let cl' =
         if List.length cl = List.length cl' && List.for_all2 (==) cl cl' then cl
         else cl' in

@@ -1014,7 +1014,7 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
        | Proof_type.LtacConstrInterp (c,(vars,unboundvars)) ->
 	   let filter =
 	     function (id,None) -> None | (id,Some id') -> Some(id,([],mkVar id')) in
-	   let unboundvars = list_map_filter filter unboundvars in
+	   let unboundvars = List.map_filter filter unboundvars in
 	   quote (pr_glob_constr_env (Global.env()) c) ++
 	     (if unboundvars <> [] or vars <> [] then
 		strbrk " (with " ++
@@ -1027,7 +1027,7 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
        else if n>2 then str " (repeated "++int n++str" times)"
        else mt()) in
     if calls <> [] then
-      let kind_of_last_call = match list_last calls with
+      let kind_of_last_call = match List.last calls with
     | (_,Proof_type.LtacConstrInterp _) -> ", last term evaluation failed."
     | _ -> ", last call failed." in
     hov 0 (str "In nested Ltac calls to " ++

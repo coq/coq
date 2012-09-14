@@ -229,12 +229,12 @@ let minductive_message = function
 
 let check_all_names_different indl =
   let ind_names = List.map (fun ind -> ind.ind_name) indl in
-  let cstr_names = list_map_append (fun ind -> List.map fst ind.ind_lc) indl in
-  let l = list_duplicates ind_names in
+  let cstr_names = List.map_append (fun ind -> List.map fst ind.ind_lc) indl in
+  let l = List.duplicates ind_names in
   if l <> [] then raise (InductiveError (SameNamesTypes (List.hd l)));
-  let l = list_duplicates cstr_names in
+  let l = List.duplicates cstr_names in
   if l <> [] then raise (InductiveError (SameNamesConstructors (List.hd l)));
-  let l = list_intersect ind_names cstr_names in
+  let l = List.intersect ind_names cstr_names in
   if l <> [] then raise (InductiveError (SameNamesOverlap l))
 
 let mk_mltype_data evdref env assums arity indname =
@@ -286,7 +286,7 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
      (* Temporary declaration of notations and scopes *)
      List.iter (Metasyntax.set_notation_for_interpretation impls) notations;
      (* Interpret the constructor types *)
-     list_map3 (interp_cstrs evdref env_ar_params impls) mldatas arities indl)
+     List.map3 (interp_cstrs evdref env_ar_params impls) mldatas arities indl)
      () in
 
   (* Instantiate evars and check all are resolved *)
@@ -303,7 +303,7 @@ let interp_mutual_inductive (paramsl,indl) notations finite =
     constructors;
 
   (* Build the inductive entries *)
-  let entries = list_map3 (fun ind arity (cnames,ctypes,cimpls) -> {
+  let entries = List.map3 (fun ind arity (cnames,ctypes,cimpls) -> {
     mind_entry_typename = ind.ind_name;
     mind_entry_arity = arity;
     mind_entry_consnames = cnames;
@@ -368,11 +368,11 @@ let declare_mutual_inductive_with_eliminations isrecord mie impls =
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let (_,kn) = declare_mind isrecord mie in
   let mind = Global.mind_of_delta_kn kn in
-  list_iter_i (fun i (indimpls, constrimpls) ->
+  List.iter_i (fun i (indimpls, constrimpls) ->
 		   let ind = (mind,i) in
 		     Autoinstance.search_declaration (IndRef ind);
 		     maybe_declare_manual_implicits false (IndRef ind) indimpls;
-		     list_iter_i
+		     List.iter_i
 		       (fun j impls ->
 (*	    Autoinstance.search_declaration (ConstructRef (ind,j));*)
 			  maybe_declare_manual_implicits false (ConstructRef (ind, succ j)) impls)
@@ -423,7 +423,7 @@ let rec partial_order = function
     let rec browse res xge' = function
     | [] ->
 	let res = List.map (function
-	  | (z, Inr zge) when List.mem x zge -> (z, Inr (list_union zge xge'))
+	  | (z, Inr zge) when List.mem x zge -> (z, Inr (List.union zge xge'))
 	  | r -> r) res in
 	(x,Inr xge')::res
     | y::xge ->
@@ -438,13 +438,13 @@ let rec partial_order = function
 		  if t = y then (z, Inl x) else (z, Inl t)
 	      | (z, Inr zge) ->
 		  if List.mem y zge then
-		    (z, Inr (list_add_set x (list_remove y zge)))
+		    (z, Inr (List.add_set x (List.remove y zge)))
 		  else
 		    (z, Inr zge)) res in
-	    browse ((y,Inl x)::res) xge' (list_union xge (list_remove x yge))
+	    browse ((y,Inl x)::res) xge' (List.union xge (List.remove x yge))
 	  else
-	    browse res (list_add_set y (list_union xge' yge)) xge
-	with Not_found -> browse res (list_add_set y xge') xge
+	    browse res (List.add_set y (List.union xge' yge)) xge
+	with Not_found -> browse res (List.add_set y xge') xge
       in link y
     in browse (partial_order rest) [] xge
 
@@ -734,12 +734,12 @@ let interp_recursive isfix fixl notations =
   (* Interp arities allowing for unresolved types *)
   let evdref = ref Evd.empty in
   let fixctxs, fiximppairs, fixannots =
-    list_split3 (List.map (interp_fix_context evdref env isfix) fixl) in
+    List.split3 (List.map (interp_fix_context evdref env isfix) fixl) in
   let fixctximpenvs, fixctximps = List.split fiximppairs in
-  let fixccls,fixcclimps = List.split (list_map3 (interp_fix_ccl evdref) fixctximpenvs fixctxs fixl) in
+  let fixccls,fixcclimps = List.split (List.map3 (interp_fix_ccl evdref) fixctximpenvs fixctxs fixl) in
   let fixtypes = List.map2 build_fix_type fixctxs fixccls in
   let fixtypes = List.map (nf_evar !evdref) fixtypes in
-  let fiximps = list_map3
+  let fiximps = List.map3
     (fun ctximps cclimps (_,ctx) -> ctximps@(Impargs.lift_implicits (List.length ctx) cclimps))
     fixctximps fixcclimps fixctxs in
   let rec_sign =
@@ -764,7 +764,7 @@ let interp_recursive isfix fixl notations =
   let fixdefs =
     Metasyntax.with_syntax_protection (fun () ->
       List.iter (Metasyntax.set_notation_for_interpretation impls) notations;
-      list_map4
+      List.map4
 	(fun fixctximpenv -> interp_fix_body evdref env_rec (Idmap.fold Idmap.add fixctximpenv impls))
 	fixctximpenvs fixctxs fixl fixccls)
       () in
@@ -776,7 +776,7 @@ let interp_recursive isfix fixl notations =
   let fixctxnames = List.map (fun (_,ctx) -> List.map pi1 ctx) fixctxs in
 
   (* Build the fix declaration block *)
-  (env,rec_sign,evd), (fixnames,fixdefs,fixtypes), list_combine3 fixctxnames fiximps fixannots
+  (env,rec_sign,evd), (fixnames,fixdefs,fixtypes), List.combine3 fixctxnames fiximps fixannots
 
 let check_recursive isfix ((env,rec_sign,evd),(fixnames,fixdefs,fixtypes),info) =
   let evd = Typeclasses.resolve_typeclasses ~filter:Typeclasses.no_goals ~fail:true env evd in
@@ -795,7 +795,7 @@ let declare_fixpoint ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
   if List.mem None fixdefs then
     (* Some bodies to define by proof *)
     let thms =
-      list_map3 (fun id t (len,imps,_) -> (id,(t,(len,imps)))) fixnames fixtypes fiximps in
+      List.map3 (fun id t (len,imps,_) -> (id,(t,(len,imps)))) fixnames fixtypes fiximps in
     let init_tac =
       Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
         fixdefs) in
@@ -808,8 +808,8 @@ let declare_fixpoint ((fixnames,fixdefs,fixtypes),fiximps) indexes ntns =
     let indexes = search_guard Loc.ghost (Global.env()) indexes fixdecls in
     let fiximps = List.map (fun (n,r,p) -> r) fiximps in
     let fixdecls =
-      list_map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
-    ignore (list_map4 (declare_fix Fixpoint) fixnames fixdecls fixtypes fiximps);
+      List.map_i (fun i _ -> mkFix ((indexes,i),fixdecls)) 0 fixnames in
+    ignore (List.map4 (declare_fix Fixpoint) fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     fixpoint_message (Some indexes) fixnames;
   end;
@@ -820,7 +820,7 @@ let declare_cofixpoint ((fixnames,fixdefs,fixtypes),fiximps) ntns =
   if List.mem None fixdefs then
     (* Some bodies to define by proof *)
     let thms =
-      list_map3 (fun id t (len,imps,_) -> (id,(t,(len,imps)))) fixnames fixtypes fiximps in
+      List.map3 (fun id t (len,imps,_) -> (id,(t,(len,imps)))) fixnames fixtypes fiximps in
     let init_tac =
       Some (List.map (Option.cata Tacmach.refine_no_check Tacticals.tclIDTAC)
         fixdefs) in
@@ -830,9 +830,9 @@ let declare_cofixpoint ((fixnames,fixdefs,fixtypes),fiximps) ntns =
     (* We shortcut the proof process *)
     let fixdefs = List.map Option.get fixdefs in
     let fixdecls = prepare_recursive_declaration fixnames fixtypes fixdefs in
-    let fixdecls = list_map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 fixnames in
+    let fixdecls = List.map_i (fun i _ -> mkCoFix (i,fixdecls)) 0 fixnames in
     let fiximps = List.map (fun (len,imps,idx) -> imps) fiximps in
-    ignore (list_map4 (declare_fix CoFixpoint) fixnames fixdecls fixtypes fiximps);
+    ignore (List.map4 (declare_fix CoFixpoint) fixnames fixdecls fixtypes fiximps);
     (* Declare the recursive definitions *)
     cofixpoint_message fixnames
   end;
@@ -911,7 +911,7 @@ let do_program_recursive fixkind fixl ntns =
   let (fixnames,fixdefs,fixtypes) = fix in
   let fiximps = List.map pi2 info in
   let fixdefs = List.map Option.get fixdefs in
-  let defs = list_map4 collect_evars fixnames fixdefs fixtypes fiximps in
+  let defs = List.map4 collect_evars fixnames fixdefs fixtypes fiximps in
     if isfix then begin
       let possible_indexes = List.map compute_possible_guardness_evidences info in
       let fixdecls = Array.of_list (List.map (fun x -> Name x) fixnames),
@@ -920,7 +920,7 @@ let do_program_recursive fixkind fixl ntns =
       in
       let indexes = 
 	Pretyping.search_guard Loc.ghost (Global.env ()) possible_indexes fixdecls in
-	list_iter_i (fun i _ -> Inductive.check_fix env ((indexes,i),fixdecls)) fixl
+	List.iter_i (fun i _ -> Inductive.check_fix env ((indexes,i),fixdecls)) fixl
     end;
     Obligations.add_mutual_definitions defs ntns fixkind
 

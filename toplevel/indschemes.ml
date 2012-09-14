@@ -176,7 +176,7 @@ let beq_scheme_msg mind =
   (* TODO: mutual inductive case *)
   str "Boolean equality on " ++
     pr_enum (fun ind -> quote (Printer.pr_inductive (Global.env()) ind))
-    (list_tabulate (fun i -> (mind,i)) (Array.length mib.mind_packets))
+    (List.tabulate (fun i -> (mind,i)) (Array.length mib.mind_packets))
 
 let declare_beq_scheme_with l kn =
   try_declare_scheme (beq_scheme_msg kn) declare_beq_scheme_gen UserVerbose l kn
@@ -219,7 +219,7 @@ let declare_one_induction_scheme ind =
   let from_prop = kind = InProp in
   let kelim = elim_sorts (mib,mip) in
   let elims =
-    list_map_filter (fun (sort,kind) ->
+    List.map_filter (fun (sort,kind) ->
       if List.mem sort kelim then Some kind else None)
       (if from_prop then kinds_from_prop else kinds_from_type) in
   List.iter (fun kind -> ignore (define_individual_scheme kind KernelVerbose None ind))
@@ -365,10 +365,10 @@ let get_common_underlying_mutual_inductive = function
       | (_,ind')::_ ->
 	  raise (RecursionSchemeError (NotMutualInScheme (ind,ind')))
       | [] ->
-	  if not (list_distinct (List.map snd (List.map snd all))) then
+	  if not (List.distinct (List.map snd (List.map snd all))) then
 	    error "A type occurs twice";
 	  mind,
-	  list_map_filter
+	  List.map_filter
 	    (function (Some id,(_,i)) -> Some (i,snd id) | (None,_) -> None) all
 
 let do_scheme l =
@@ -394,7 +394,7 @@ let list_split_rev_at index l =
   let rec aux i acc = function
       hd :: tl when i = index -> acc, tl
     | hd :: tl -> aux (succ i) (hd :: acc) tl
-    | [] -> failwith "list_split_when: Invalid argument"
+    | [] -> failwith "List.split_when: Invalid argument"
   in aux 0 [] l
 
 let fold_left' f = function

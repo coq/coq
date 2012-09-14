@@ -150,9 +150,9 @@ let factor_fix env l cb msb =
   if n = 1 then [|l|], recd, msb
   else begin
     if List.length msb < n-1 then raise Impossible;
-    let msb', msb'' = list_chop (n-1) msb in
+    let msb', msb'' = List.chop (n-1) msb in
     let labels = Array.make n l in
-    list_iter_i
+    List.iter_i
       (fun j ->
 	 function
 	   | (l,SFBconst cb') ->
@@ -207,7 +207,7 @@ let env_for_mtb_with_def env mp seb idl =
   in
   let l = label_of_id (List.hd idl) in
   let spot = function (l',SFBconst _) -> l = l' | _ -> false in
-  let before = fst (list_split_when spot sig_b) in
+  let before = fst (List.split_when spot sig_b) in
   Modops.add_signature mp before empty_delta_resolver env
 
 (* From a [structure_body] (i.e. a list of [structure_field_body])

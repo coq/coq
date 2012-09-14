@@ -351,7 +351,7 @@ let check_correct_par (env,n,ntypes,_) hyps l largs =
 let compute_rec_par (env,n,_,_) hyps nmr largs =
 if nmr = 0 then 0 else
 (* start from 0, hyps will be in reverse order *)
-  let (lpar,_) = list_chop nmr largs in
+  let (lpar,_) = List.chop nmr largs in
   let rec find k index =
       function
 	  ([],_) -> nmr
@@ -375,7 +375,7 @@ let abstract_mind_lc env ntyps npars lc =
     lc
   else
     let make_abs =
-      list_tabulate
+      List.tabulate
 	(function i -> lambda_implicit_lift npars (mkRel (i+1))) ntyps
     in
     Array.map (substl make_abs) lc
@@ -457,7 +457,7 @@ let check_positivity_one (env,_,ntypes,_ as ienv) hyps (_,i as ind) nargs lcname
     let auxnpar = mib.mind_nparams_rec in
     let nonrecpar = mib.mind_nparams - auxnpar in
     let (lpar,auxlargs) =
-      try list_chop auxnpar largs
+      try List.chop auxnpar largs
       with Failure _ -> raise (IllFormedInd (LocalNonPos n)) in
       (* If the inductive appears in the args (non params) then the
 	 definition is not positive. *)
@@ -539,7 +539,7 @@ let check_positivity kn env_ar params inds =
   let nmr = rel_context_nhyps params in
   let check_one i (_,lcnames,lc,(sign,_)) =
     let ra_env =
-      list_tabulate (fun _ -> (Norec,mk_norec)) lparams @ lra_ind in
+      List.tabulate (fun _ -> (Norec,mk_norec)) lparams @ lra_ind in
     let ienv = (env_ar, 1+lparams, ntypes, ra_env) in
     let nargs = rel_context_nhyps sign - nmr in
     check_positivity_one ienv params (kn,i) nargs lcnames lc

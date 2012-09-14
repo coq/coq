@@ -367,7 +367,7 @@ let discriminate_tac cstr p gls =
 let build_term_to_complete uf meta pac =
   let cinfo = get_constructor_info uf pac.cnode in
   let real_args = List.map (fun i -> constr_of_term (term uf i)) pac.args in
-  let dummy_args = List.rev (list_tabulate meta pac.arity) in
+  let dummy_args = List.rev (List.tabulate meta pac.arity) in
   let all_args = List.rev_append real_args dummy_args in
     applistc (mkConstruct cinfo.ci_constr) all_args
 

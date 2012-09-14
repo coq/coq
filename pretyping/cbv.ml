@@ -262,7 +262,7 @@ and cbv_stack_term info stack env t =
           let eargs = Array.sub args nlams (nargs-nlams) in
           cbv_stack_term info (APP(eargs,stk)) env' b
         else
-          let ctxt' = list_skipn nargs ctxt in
+          let ctxt' = List.skipn nargs ctxt in
           LAM(nlams-nargs,ctxt', b, subs_cons(args,env))
 
     (* a Fix applied enough -> IOTA *)
@@ -328,7 +328,7 @@ and cbv_norm_value info = function (* reduction under binders *)
       map_constr_with_binders subs_lift (cbv_norm_term info) env t
   | LAM (n,ctxt,b,env) ->
       let nctxt =
-        list_map_i (fun i (x,ty) ->
+        List.map_i (fun i (x,ty) ->
           (x,cbv_norm_term info (subs_liftn i env) ty)) 0 ctxt in
       compose_lam (List.rev nctxt) (cbv_norm_term info (subs_liftn n env) b)
   | FIXP ((lij,(names,lty,bds)),env,args) ->

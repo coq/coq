@@ -534,7 +534,7 @@ let is_regular_match br =
 	match pat with
 	  | Pusual r -> r
 	  | Pcons (r,l) ->
-	    if not (list_for_all_i (fun i -> (=) (Prel i)) 1 (List.rev l))
+	    if not (List.for_all_i (fun i -> (=) (Prel i)) 1 (List.rev l))
 	    then raise Impossible;
 	    r
 	  | _ -> raise Impossible
@@ -636,9 +636,9 @@ let eta_red e =
 	  if m = n then
 	    [], f, a
 	  else if m < n then
-	    list_skipn m ids, f, a
+	    List.skipn m ids, f, a
 	  else (* m > n *)
-	    let a1,a2 = list_chop (m-n) a in
+	    let a1,a2 = List.chop (m-n) a in
 	    [], MLapp (f,a1), a2
 	in
 	let p = List.length args in
@@ -969,7 +969,7 @@ and simpl_case o typ br e =
 	    else ([], Pwild, ast_pop f)
 	  in
 	  let brl = Array.to_list br in
-	  let brl_opt = list_filter_i (fun i _ -> not (Intset.mem i ints)) brl in
+	  let brl_opt = List.filter_i (fun i _ -> not (Intset.mem i ints)) brl in
 	  let brl_opt = brl_opt @ [last_br] in
 	  MLcase (typ, e, Array.of_list brl_opt)
 	| None -> MLcase (typ, e, br)
@@ -1022,8 +1022,8 @@ let kill_dummy_lams c =
     | Keep :: bl -> fst_kill (n+1) bl
   in
   let skip = max 0 ((fst_kill 0 bl) - 1) in
-  let ids_skip, ids = list_chop skip ids in
-  let _, bl = list_chop skip bl in
+  let ids_skip, ids = List.chop skip ids in
+  let _, bl = List.chop skip bl in
   let c = named_lams ids_skip c in
   let ids',c = kill_some_lams bl (ids,c) in
   ids, named_lams ids' c
@@ -1051,7 +1051,7 @@ let case_expunge s e =
   let m = List.length s in
   let n = nb_lams e in
   let p = if m <= n then collect_n_lams m e
-  else eta_expansion_sign (list_skipn n s) (collect_lams e) in
+  else eta_expansion_sign (List.skipn n s) (collect_lams e) in
   kill_some_lams (List.rev s) p
 
 (*s [term_expunge] takes a function [fun idn ... id1 -> c]
@@ -1085,7 +1085,7 @@ let kill_dummy_args ids r t =
 	let a = List.map (killrec n) a in
 	let a = List.map (ast_lift k) a in
 	let a = select_via_bl bl (a @ (eta_args k)) in
-	named_lams (list_firstn k ids) (MLapp (ast_lift k e, a))
+	named_lams (List.firstn k ids) (MLapp (ast_lift k e, a))
     | e when found n e ->
 	let a = select_via_bl bl (eta_args m) in
 	named_lams ids (MLapp (ast_lift m e, a))
@@ -1164,7 +1164,7 @@ let general_optimize_fix f ids n args m c =
     | MLrel j when v.(j-1)>=0 ->
 	if ast_occurs (j+1) c then raise Impossible else v.(j-1)<-(-i-1)
     | _ -> raise Impossible
-  in list_iter_i aux args;
+  in List.iter_i aux args;
   let args_f = List.rev_map (fun i -> MLrel (i+m+1)) (Array.to_list v) in
   let new_f = anonym_tmp_lams (MLapp (MLrel (n+m+1),args_f)) m in
   let new_c = named_lams ids (normalize (MLapp ((ast_subst new_f c),args))) in

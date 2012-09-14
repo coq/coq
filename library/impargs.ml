@@ -338,7 +338,7 @@ let set_manual_implicits env flags enriching autoimps l =
 	else l, None
     with Not_found -> l, None
   in
-  if not (list_distinct l) then
+  if not (List.distinct l) then
     error ("Some parameters are referred more than once.");
   (* Compare with automatic implicits to recover printing data and names *)
   let rec merge k l = function
@@ -435,7 +435,7 @@ let compute_global_implicits flags manual = function
 (* Merge a manual explicitation with an implicit_status list *)
 
 let merge_impls (cond,oldimpls) (_,newimpls) =
-  let oldimpls,usersuffiximpls = list_chop (List.length newimpls) oldimpls in
+  let oldimpls,usersuffiximpls = List.chop (List.length newimpls) oldimpls in
   cond, (List.map2 (fun orig ni ->
     match orig with
     | Some (_, Manual, _) -> orig
@@ -482,7 +482,7 @@ let subst_implicits_decl subst (r,imps as o) =
   let r' = fst (subst_global subst r) in if r==r' then o else (r',imps)
 
 let subst_implicits (subst,(req,l)) =
-  (ImplLocal,list_smartmap (subst_implicits_decl subst) l)
+  (ImplLocal,List.smartmap (subst_implicits_decl subst) l)
 
 let impls_of_context ctx =
   List.rev_map
@@ -563,7 +563,7 @@ let rebuild_implicits (req,l) =
 	  if flags.auto then
 	    let newimpls = List.hd (compute_global_implicits flags [] ref) in
 	    let p = List.length (snd newimpls) - userimplsize in
-	    let newimpls = on_snd (list_firstn p) newimpls in
+	    let newimpls = on_snd (List.firstn p) newimpls in
 	    [ref,List.map (fun o -> merge_impls o newimpls) oldimpls]
 	  else
 	    [ref,oldimpls]

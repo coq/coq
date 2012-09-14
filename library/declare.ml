@@ -183,7 +183,7 @@ let declare_constant ?(internal = UserVerbose) id (cd,kind) =
 (** Declaration of inductive blocks *)
 
 let declare_inductive_argument_scopes kn mie =
-  list_iter_i (fun i {mind_entry_consnames=lc} ->
+  List.iter_i (fun i {mind_entry_consnames=lc} ->
     Notation.declare_ref_arguments_scope (IndRef (kn,i));
     for j=1 to List.length lc do
       Notation.declare_ref_arguments_scope (ConstructRef ((kn,i),j));

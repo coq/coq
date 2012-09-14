@@ -725,7 +725,7 @@ let fold_match ?(force=false) env sigma c =
   in
   let app =
     let ind, args = Inductive.find_rectype env cty in
-    let pars, args = list_chop ci.ci_npar args in
+    let pars, args = List.chop ci.ci_npar args in
     let meths = List.map (fun br -> br) (Array.to_list brs) in
       applist (mkConst sk, pars @ [pred] @ meths @ args @ [c])
   in 

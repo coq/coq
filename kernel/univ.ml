@@ -130,12 +130,12 @@ let sup u v =
 	if UniverseLevel.equal u v then Atom u else Max ([u;v],[])
     | u, Max ([],[]) -> u
     | Max ([],[]), v -> v
-    | Atom u, Max (gel,gtl) -> Max (list_add_set u gel,gtl)
-    | Max (gel,gtl), Atom v -> Max (list_add_set v gel,gtl)
+    | Atom u, Max (gel,gtl) -> Max (List.add_set u gel,gtl)
+    | Max (gel,gtl), Atom v -> Max (List.add_set v gel,gtl)
     | Max (gel,gtl), Max (gel',gtl') ->
-	let gel'' = list_union gel gel' in
-	let gtl'' = list_union gtl gtl' in
-	Max (list_subtract gel'' gtl'',gtl'')
+	let gel'' = List.union gel gel' in
+	let gtl'' = List.union gtl gtl' in
+	Max (List.subtract gel'' gtl'',gtl'')
 
 (* Comparison on this type is pointer equality *)
 type canonical_arc =
@@ -423,7 +423,7 @@ let merge g arcu arcv =
                  (* redirected to it *)
 	let redirect (g,w,w') arcv =
  	  let g' = enter_equiv_arc arcv.univ arcu.univ g in
- 	  (g',list_unionq arcv.lt w,arcv.le@w')
+ 	  (g',List.unionq arcv.lt w,arcv.le@w')
 	in
 	let (g',w,w') = List.fold_left redirect (g,[],[]) v in
 	let g_arcu = (g',arcu) in
@@ -759,7 +759,7 @@ let make_max = function
 
 let remove_large_constraint u = function
   | Atom u' as x -> if u = u' then Max ([],[]) else x
-  | Max (le,lt) -> make_max (list_remove u le,lt)
+  | Max (le,lt) -> make_max (List.remove u le,lt)
 
 let is_direct_constraint u = function
   | Atom u' -> u = u'
@@ -900,8 +900,8 @@ module Huniv =
 	match u, v with
 	  | Atom u, Atom v -> u == v
 	  | Max (gel,gtl), Max (gel',gtl') ->
-	      (list_for_all2eq (==) gel gel') &&
-              (list_for_all2eq (==) gtl gtl')
+	      (List.for_all2eq (==) gel gel') &&
+              (List.for_all2eq (==) gtl gtl')
 	  | _ -> false
       let hash = Hashtbl.hash
     end)
@@ -928,7 +928,7 @@ module Hconstraints =
       let hash_sub huc s =
 	Constraint.fold (fun x -> Constraint.add (huc x)) s Constraint.empty
       let equal s s' =
-	list_for_all2eq (==)
+	List.for_all2eq (==)
 	  (Constraint.elements s)
 	  (Constraint.elements s')
       let hash = Hashtbl.hash

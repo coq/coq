@@ -172,7 +172,7 @@ let collect_evars emap c =
 	  else (* No recursion on the evar instantiation *) acc
       | _         ->
 	  fold_constr collrec acc c in
-  list_uniquize (collrec [] c)
+  List.uniquize (collrec [] c)
 
 let push_dependent_evars sigma emap =
   Evd.fold_undefined (fun ev {evar_concl = ccl} (sigma',emap') ->
@@ -242,7 +242,7 @@ let apply_subfilter filter subfilter =
          filter ([], List.rev subfilter))
 
 let extract_subfilter initial_filter refined_filter =
-  snd (list_filter2 (fun b1 b2 -> b1) (initial_filter,refined_filter))
+  snd (List.filter2 (fun b1 b2 -> b1) (initial_filter,refined_filter))
 
 (**********************)
 (* Creating new evars *)
@@ -320,7 +320,7 @@ let new_pure_evar evd sign ?(src=default_source) ?filter ?candidates typ =
 
 let new_evar_instance sign evd typ ?src ?filter ?candidates instance =
   assert (not !Flags.debug ||
-            list_distinct (ids_of_named_context (named_context_of_val sign)));
+            List.distinct (ids_of_named_context (named_context_of_val sign)));
   let evd,newevk = new_pure_evar evd sign ?src ?filter ?candidates typ in
   (evd,mkEvar (newevk,Array.of_list instance))
 
@@ -333,7 +333,7 @@ let new_evar evd env ?src ?filter ?candidates typ =
   let instance =
     match filter with
     | None -> instance
-    | Some filter -> list_filter_with filter instance in
+    | Some filter -> List.filter_with filter instance in
   new_evar_instance sign evd typ' ?src ?filter ?candidates instance
 
 let new_type_evar ?src ?filter evd env =
@@ -369,7 +369,7 @@ let restrict_evar_key evd evk filter candidates =
     let sign = evar_hyps evi in
     let src = evi.evar_source in
     let evd,newevk = new_pure_evar evd sign ccl ~src ~filter ?candidates in
-    let ctxt = snd (list_filter2 (fun b c -> b) (filter,evar_context evi)) in
+    let ctxt = snd (List.filter2 (fun b c -> b) (filter,evar_context evi)) in
     let id_inst = Array.of_list (List.map (fun (id,_,_) -> mkVar id) ctxt) in
     Evd.define evk (mkEvar(newevk,id_inst)) evd,newevk
 
@@ -501,7 +501,7 @@ let extend_alias (_,b,_) (var_aliases,rel_aliases) =
 let expand_alias_once aliases x =
   match get_alias_chain_of aliases x with
   | []  -> None
-  | l -> Some (list_last l)
+  | l -> Some (List.last l)
 
 let expansions_of_var aliases x =
   match get_alias_chain_of aliases x with
@@ -744,7 +744,7 @@ let is_unification_pattern_evar env evd (evk,args) l t =
     let args = remove_instance_local_defs evd evk (Array.to_list args) in
     let n = List.length args in
     match find_unification_pattern_args env (args @ l) t with
-    | Some l -> Some (list_skipn n l)
+    | Some l -> Some (List.skipn n l)
     | _ -> None
   else
     None
@@ -854,7 +854,7 @@ let define_evar_from_virtual_equation define_fun env evd t_in_env sign filter in
   let t_in_env = whd_evar evd t_in_env in
   let evd = define_fun env evd (destEvar evar_in_env) t_in_env in
   let ids = List.map pi1 (named_context_of_val sign) in
-  let inst_in_sign = List.map mkVar (list_filter_with filter ids) in
+  let inst_in_sign = List.map mkVar (List.filter_with filter ids) in
   let evar_in_sign = mkEvar (fst (destEvar evar_in_env), Array.of_list inst_in_sign) in
   (evd,whd_evar evd evar_in_sign)
 
@@ -881,7 +881,7 @@ let materialize_evar define_fun env evd k (evk1,args1) ty_in_env =
   let sign1 = evar_hyps evi1 in
   let filter1 = evar_filter evi1 in
   let ids1 = List.map pi1 (named_context_of_val sign1) in
-  let inst_in_sign = List.map mkVar (list_filter_with filter1 ids1) in
+  let inst_in_sign = List.map mkVar (List.filter_with filter1 ids1) in
   let (sign2,filter2,inst2_in_env,inst2_in_sign,_,evd,_) =
     List.fold_right (fun (na,b,t_in_env as d) (sign,filter,inst_in_env,inst_in_sign,env,evd,avoid) ->
       let id = next_name_away na avoid in
@@ -1179,9 +1179,9 @@ let filter_candidates evd evk filter candidates =
   match candidates,filter with
   | None,_ | _, None -> candidates
   | Some l, Some filter ->
-      let ids = List.map pi1 (list_filter_with filter (evar_context evi)) in
+      let ids = List.map pi1 (List.filter_with filter (evar_context evi)) in
       Some (List.filter (fun a ->
-        list_subset (Idset.elements (collect_vars a)) ids) l)
+        List.subset (Idset.elements (collect_vars a)) ids) l)
 
 let closure_of_filter evd evk filter =
   let evi = Evd.find_undefined evd evk in
@@ -1407,7 +1407,7 @@ let solve_evar_evar ?(force=false) f g env evd (evk1,args1 as ev1) (evk2,args2 a
   if are_canonical_instances args1 args2 env then
     (* If instances are canonical, we solve the problem in linear time *)
     let sign = evar_filtered_context (Evd.find evd evk2) in
-    let id_inst = list_map_to_array (fun (id,_,_) -> mkVar id) sign in
+    let id_inst = List.map_to_array (fun (id,_,_) -> mkVar id) sign in
     Evd.define evk2 (mkEvar(evk1,id_inst)) evd
   else
     let evd,ev1,ev2 =
@@ -1476,7 +1476,7 @@ let solve_candidates conv_algo env evd (evk,argsv as ev) rhs =
   | None -> raise NoCandidates
   | Some l ->
       let l' =
-        list_map_filter
+        List.map_filter
           (filter_compatible_candidates conv_algo env evd evi args rhs) l in
       match l' with
       | [] -> error_cannot_unify env evd (mkEvar ev, rhs)

@@ -546,7 +546,7 @@ let subst_rel_declaration sub (id,copt,t as x) =
   let t' = subst_mps sub t in
   if copt == copt' & t == t' then x else (id,copt',t')
 
-let subst_rel_context sub = list_smartmap (subst_rel_declaration sub)
+let subst_rel_context sub = List.smartmap (subst_rel_declaration sub)
 
 type recarg =
   | Norec

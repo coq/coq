@@ -191,9 +191,9 @@ let empty_seq depth=
    depth=depth}
 
 let expand_constructor_hints =
-  list_map_append (function
+  List.map_append (function
     | IndRef ind ->
-	list_tabulate (fun i -> ConstructRef (ind,i+1))
+	List.tabulate (fun i -> ConstructRef (ind,i+1))
 	  (Inductiveops.nconstructors ind)
     | gr ->
 	[gr])

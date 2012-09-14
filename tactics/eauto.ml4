@@ -119,11 +119,11 @@ and e_my_find_search db_list local_db hdc concl =
   let hdc = head_of_constr_reference hdc in
   let hintl =
     if occur_existential concl then
-      list_map_append (fun db ->
+      List.map_append (fun db ->
 	let flags = {auto_unif_flags with modulo_delta = Hint_db.transparent_state db} in
 	  List.map (fun x -> flags, x) (Hint_db.map_all hdc db)) (local_db::db_list)
     else
-      list_map_append (fun db ->
+      List.map_append (fun db ->
 	let flags = {auto_unif_flags with modulo_delta = Hint_db.transparent_state db} in
 	  List.map (fun x -> flags, x) (Hint_db.map_auto (hdc,concl) db)) (local_db::db_list)
   in
@@ -261,7 +261,7 @@ module SearchProblem = struct
 	       { depth = pred s.depth; tacres = res;
 		 dblist = s.dblist; last_tactic = pp; prev = ps;
 		 localdb =
-		   list_addn (nbgl'-nbgl) (List.hd s.localdb) s.localdb })
+		   List.addn (nbgl'-nbgl) (List.hd s.localdb) s.localdb })
 	  l
       in
       List.sort compare (assumption_tacs @ intro_tac @ rec_tacs)
@@ -364,7 +364,7 @@ let eauto ?(debug=Off) np lems dbnames =
 
 let full_eauto ?(debug=Off) n lems gl =
   let dbnames = current_db_names () in
-  let dbnames =  list_remove "v62" dbnames in
+  let dbnames =  List.remove "v62" dbnames in
   let db_list = List.map searchtable_map dbnames in
   tclTRY (e_search_auto debug n lems db_list) gl
 

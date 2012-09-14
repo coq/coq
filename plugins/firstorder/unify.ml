@@ -124,7 +124,7 @@ let unif_atoms i dom t1 t2=
     | Not_found ->Some (Phantom dom)
 
 let renum_metas_from k n t= (* requires n = max (free_rels t) *)
-  let l=list_tabulate (fun i->mkMeta (k+i)) n in
+  let l=List.tabulate (fun i->mkMeta (k+i)) n in
     substl l t
 
 let more_general (m1,t1) (m2,t2)=

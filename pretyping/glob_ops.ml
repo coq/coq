@@ -36,7 +36,7 @@ let map_glob_decl_left_to_right f (na,k,obd,ty) =
 let map_glob_constr_left_to_right f = function
   | GApp (loc,g,args) ->
       let comp1 = f g in
-      let comp2 = Util.list_map_left f args in
+      let comp2 = Util.List.map_left f args in
       GApp (loc,comp1,comp2)
   | GLambda (loc,na,bk,ty,c) ->
       let comp1 = f ty in
@@ -52,8 +52,8 @@ let map_glob_constr_left_to_right f = function
       GLetIn (loc,na,comp1,comp2)
   | GCases (loc,sty,rtntypopt,tml,pl) ->
       let comp1 = Option.map f rtntypopt in
-      let comp2 = Util.list_map_left (fun (tm,x) -> (f tm,x)) tml in
-      let comp3 = Util.list_map_left (fun (loc,idl,p,c) -> (loc,idl,p,f c)) pl in
+      let comp2 = Util.List.map_left (fun (tm,x) -> (f tm,x)) tml in
+      let comp3 = Util.List.map_left (fun (loc,idl,p,c) -> (loc,idl,p,f c)) pl in
       GCases (loc,sty,comp1,comp2,comp3)
   | GLetTuple (loc,nal,(na,po),b,c) ->
       let comp1 = Option.map f po in
@@ -66,7 +66,7 @@ let map_glob_constr_left_to_right f = function
       let comp3 = f b2 in
       GIf (loc,f c,(na,comp1),comp2,comp3)
   | GRec (loc,fk,idl,bl,tyl,bv) ->
-      let comp1 = Array.map (Util.list_map_left (map_glob_decl_left_to_right f)) bl in
+      let comp1 = Array.map (Util.List.map_left (map_glob_decl_left_to_right f)) bl in
       let comp2 = Array.map f tyl in
       let comp3 = Array.map f bv in
       GRec (loc,fk,idl,comp1,comp2,comp3)

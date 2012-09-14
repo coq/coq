@@ -30,7 +30,7 @@ let rec make_let e = function
 
 let check_unicity s l =
   let l' = List.map (fun (_,l,_) -> extract_signature l) l in
-  if not (Util.list_distinct l') then
+  if not (Util.List.distinct l') then
     Pp.msg_warning
       (strbrk ("Two distinct rules of entry "^s^" have the same "^
       "non-terminals in the same order: put them in distinct vernac entries"))

@@ -158,7 +158,7 @@ let split_at_annot bl na =
   | Some (loc, id) ->
       let rec aux acc = function
 	| LocalRawAssum (bls, k, t) as x :: rest ->
-	    let l, r = list_split_when (fun (loc, na) -> na = Name id) bls in
+	    let l, r = List.split_when (fun (loc, na) -> na = Name id) bls in
 	      if r = [] then aux (x :: acc) rest
 	      else
 		(List.rev (if l = [] then acc else LocalRawAssum (l, k, t) :: acc),
