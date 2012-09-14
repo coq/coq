@@ -14,6 +14,7 @@
    declarations over global constants and inductive types *)
 
 open Errors
+open Util
 open Names
 open Term
 open Sign

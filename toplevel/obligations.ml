@@ -3,6 +3,7 @@ open Globnames
 open Libobject
 open Entries
 open Decl_kinds
+open Util
 open Declare
 
 (**

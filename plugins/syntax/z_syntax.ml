@@ -8,6 +8,7 @@
 
 open Pp
 open Errors
+open Util
 open Names
 open Bigint
 

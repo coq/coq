@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Errors
+open Util
 
 (* Dynamics, programmed with DANGER !!! *)
 

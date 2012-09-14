@@ -14,6 +14,7 @@
 (* *)
 open Pp
 open Errors
+open Util
 open Libnames
 open Globnames
 open Misctypes

@@ -15,6 +15,7 @@
    Module-traversing code: Pierre Letouzey *)
 
 open Errors
+open Util
 open Names
 open Term
 open Declarations

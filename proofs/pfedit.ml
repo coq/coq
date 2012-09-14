@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Pp
+open Util
 open Names
 open Entries
 open Environ

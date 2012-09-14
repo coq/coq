@@ -16,6 +16,7 @@
 (* This file provides with various operations on modules and module types *)
 
 open Errors
+open Util
 open Names
 open Term
 open Declarations

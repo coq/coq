@@ -11,6 +11,7 @@
 
 open Tacmach
 open Errors
+open Util
 open Pp
 open Termops
 open Declarations

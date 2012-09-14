@@ -10,6 +10,7 @@
 
 open Pp
 open Errors
+open Util
 open Libobject
 open Libnames
 open Mod_subst

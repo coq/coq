@@ -7,6 +7,7 @@
 (************************************************************************)
 
 open Errors
+open Util
 open Term
 open Inductive
 open Inductiveops

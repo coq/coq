@@ -8,6 +8,7 @@
 
 open Vernacexpr
 open Errors
+open Util
 open Pp
 open Printer
 

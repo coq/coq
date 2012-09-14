@@ -13,6 +13,7 @@
 
 (* This file defines the type of kernel environments *)
 
+open Util
 open Names
 open Sign
 open Univ

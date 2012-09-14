@@ -58,6 +58,7 @@
 *)
 
 open Errors
+open Util
 open Names
 open Univ
 open Declarations

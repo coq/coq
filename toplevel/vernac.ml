@@ -10,6 +10,7 @@
 
 open Pp
 open Errors
+open Util
 open Flags
 open System
 open Vernacexpr
