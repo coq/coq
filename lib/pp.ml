@@ -71,6 +71,8 @@ type ppcmd = (int*string) ppcmd_token
 
 type std_ppcmds = ppcmd Stream.t
 
+type 'a ppdirs = 'a ppdir_token Stream.t
+
 let is_empty s =
   try Stream.empty s; true with Stream.Failure -> false
 
@@ -282,7 +284,7 @@ let pp_dirs ft =
         com_brk ft; Format.pp_print_newline ft ()
     | Ppdir_print_flush      -> Format.pp_print_flush ft ()
   in
-  fun dirstream ->
+  fun (dirstream : _ ppdirs) ->
     try
       Stream.iter pp_dir dirstream; com_brk ft
     with
