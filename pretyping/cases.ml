@@ -912,7 +912,7 @@ let adjust_impossible_cases pb pred tomatch submat =
       (* we add an "assert false" case *)
       let pats = List.map (fun _ -> PatVar (Loc.ghost,Anonymous)) tomatch in
       let aliasnames =
-	map_succeed (function Alias _ | NonDepAlias -> Anonymous | _ -> failwith"") tomatch
+	List.map_filter (function Alias _ | NonDepAlias -> Some Anonymous | _ -> None) tomatch
       in
       [ { patterns = pats;
           rhs = { rhs_env = pb.env;

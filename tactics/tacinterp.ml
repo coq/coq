@@ -1242,7 +1242,7 @@ let rec extract_ids ids = function
 let default_fresh_id = id_of_string "H"
 
 let interp_fresh_id ist env l =
-  let ids = map_succeed (function ArgVar(_,id) -> id | _ -> failwith "") l in
+  let ids = List.map_filter (function ArgVar (_, id) -> Some id | _ -> None) l in
   let avoid = (extract_ids ids ist.lfun) @ ist.avoid_ids in
   let id =
     if l = [] then default_fresh_id

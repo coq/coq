@@ -122,10 +122,11 @@ let generate_type g_to_f f graph i =
       | _ -> let j = !i in incr i;mkRel (nb_args - j  + 1)
   in
   (*i We need to name the vars [res] and [fv] i*)
+  let filter = function (Name id,_,_) -> Some id | (Anonymous,_,_) -> None in
   let res_id =
     Namegen.next_ident_away_in_goal
       (id_of_string "res")
-      (map_succeed (function (Name id,_,_) -> id | (Anonymous,_,_) -> failwith "") fun_ctxt)
+      (List.map_filter filter fun_ctxt)
   in
   let fv_id =
     Namegen.next_ident_away_in_goal

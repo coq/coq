@@ -969,7 +969,7 @@ and simpl_case o typ br e =
 	    else ([], Pwild, ast_pop f)
 	  in
 	  let brl = Array.to_list br in
-	  let brl_opt = List.filter_i (fun i _ -> not (Intset.mem i ints)) brl in
+	  let brl_opt = List.filteri (fun i _ -> not (Intset.mem i ints)) brl in
 	  let brl_opt = brl_opt @ [last_br] in
 	  MLcase (typ, e, Array.of_list brl_opt)
 	| None -> MLcase (typ, e, br)
@@ -1164,7 +1164,7 @@ let general_optimize_fix f ids n args m c =
     | MLrel j when v.(j-1)>=0 ->
 	if ast_occurs (j+1) c then raise Impossible else v.(j-1)<-(-i-1)
     | _ -> raise Impossible
-  in List.iter_i aux args;
+  in List.iteri aux args;
   let args_f = List.rev_map (fun i -> MLrel (i+m+1)) (Array.to_list v) in
   let new_f = anonym_tmp_lams (MLapp (MLrel (n+m+1),args_f)) m in
   let new_c = named_lams ids (normalize (MLapp ((ast_subst new_f c),args))) in

@@ -442,12 +442,9 @@ let interval n m =
   interval_n ([],m)
 
 
-let map_succeed f =
-  let rec map_f = function
-    | [] -> []
-    |  h::t -> try (let x = f h in x :: map_f t) with Failure _ -> map_f t
-  in
-  map_f
+let map_succeed f l =
+  let filter x = try Some (f x) with Failure _ -> None in
+  List.map_filter filter l 
 
 (*s Memoization *)
 

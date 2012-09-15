@@ -1120,7 +1120,7 @@ let invert_arg evd aliases k evk subst_in_env_extended_with_k_binders c_in_env_e
       res
 
 let effective_projections =
-  map_succeed (function Invertible c -> c | _ -> failwith"")
+  List.map_filter (function Invertible c -> Some c | _ -> None)
 
 let instance_of_projection f env t evd projs =
   let ty = lazy (nf_evar evd (Retyping.get_type_of env evd t)) in
@@ -1407,7 +1407,7 @@ let solve_evar_evar ?(force=false) f g env evd (evk1,args1 as ev1) (evk2,args2 a
   if are_canonical_instances args1 args2 env then
     (* If instances are canonical, we solve the problem in linear time *)
     let sign = evar_filtered_context (Evd.find evd evk2) in
-    let id_inst = List.map_to_array (fun (id,_,_) -> mkVar id) sign in
+    let id_inst = Array.map (fun (id,_,_) -> mkVar id) (Array.of_list sign) in
     Evd.define evk2 (mkEvar(evk1,id_inst)) evd
   else
     let evd,ev1,ev2 =

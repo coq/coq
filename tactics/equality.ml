@@ -1410,17 +1410,16 @@ let subst_one dep_proof_ok x (hyp,rhs,dir) gl =
   (* The set of hypotheses using x *)
   let depdecls =
     let test (id,_,c as dcl) =
-      if id <> hyp && occur_var_in_decl (pf_env gl) x dcl then dcl
-      else failwith "caught" in
-    List.rev (map_succeed test (pf_hyps gl)) in
+      if id <> hyp && occur_var_in_decl (pf_env gl) x dcl then Some dcl
+      else None in
+    List.rev (List.map_filter test (pf_hyps gl)) in
   let dephyps = List.map (fun (id,_,_) -> id) depdecls in
   (* Decides if x appears in conclusion *)
   let depconcl = occur_var (pf_env gl) x (pf_concl gl) in
   (* The set of non-defined hypothesis: they must be abstracted,
      rewritten and reintroduced *)
   let abshyps =
-    map_succeed
-      (fun (id,v,_) -> if v=None then mkVar id else failwith "caught")
+    List.map_filter (function (id, None, _) -> Some (mkVar id) | _ -> None)
       depdecls in
   (* a tactic that either introduce an abstracted and rewritten hyp,
      or introduce a definition where x was replaced *)

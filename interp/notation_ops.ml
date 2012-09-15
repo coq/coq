@@ -710,7 +710,7 @@ and match_equations u alp metas sigma (_,_,patl1,rhs1) (patl2,rhs2) =
   match_in u alp metas sigma rhs1 rhs2
 
 let match_notation_constr u c (metas,pat) =
-  let vars = List.split_by (fun (_,(_,x)) -> x <> NtnTypeBinderList) metas in
+  let vars = List.partition (fun (_,(_,x)) -> x <> NtnTypeBinderList) metas in
   let vars = (List.map fst (fst vars), List.map fst (snd vars)) in
   let terms,termlists,binders = match_ false u [] vars ([],[],[]) c pat in
   (* Reorder canonically the substitution *)

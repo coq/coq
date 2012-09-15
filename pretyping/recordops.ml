@@ -199,8 +199,8 @@ let canonical_projections () =
     !object_table []
 
 let keep_true_projections projs kinds =
-  map_succeed (function (p,(_,true)) -> p | _ -> failwith "")
-    (List.combine projs kinds)
+  let filter (p, (_, b)) = if b then Some p else None in
+  List.map_filter filter (List.combine projs kinds)
 
 let cs_pattern_of_constr t =
   match kind_of_term t with

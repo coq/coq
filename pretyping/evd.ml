@@ -563,10 +563,12 @@ let meta_list evd = metamap_to_list evd.metas
 let find_meta evd mv = Metamap.find mv evd.metas
 
 let undefined_metas evd =
-  List.sort Pervasives.compare (map_succeed (function
-    | (n,Clval(_,_,typ)) -> failwith ""
-    | (n,Cltyp (_,typ))  -> n)
-    (meta_list evd))
+  let filter = function
+    | (n,Clval(_,_,typ)) -> None
+    | (n,Cltyp (_,typ))  -> Some n
+  in
+  let m = List.map_filter filter (meta_list evd) in
+  List.sort Pervasives.compare m
 
 let metas_of evd =
   List.map (function

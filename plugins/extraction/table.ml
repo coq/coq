@@ -877,7 +877,7 @@ let extract_inductive r s l optstr =
 	Lib.add_anonymous_leaf (in_customs (g,[],s));
 	Option.iter (fun s -> Lib.add_anonymous_leaf (in_custom_matchs (g,s)))
 	  optstr;
-	List.iter_i
+	List.iteri
 	  (fun j s ->
 	     let g = ConstructRef (ip,succ j) in
 	     Lib.add_anonymous_leaf (inline_extraction (true,[g]));

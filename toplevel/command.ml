@@ -368,11 +368,11 @@ let declare_mutual_inductive_with_eliminations isrecord mie impls =
   let names = List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let (_,kn) = declare_mind isrecord mie in
   let mind = Global.mind_of_delta_kn kn in
-  List.iter_i (fun i (indimpls, constrimpls) ->
+  List.iteri (fun i (indimpls, constrimpls) ->
 		   let ind = (mind,i) in
 		     Autoinstance.search_declaration (IndRef ind);
 		     maybe_declare_manual_implicits false (IndRef ind) indimpls;
-		     List.iter_i
+		     List.iteri
 		       (fun j impls ->
 (*	    Autoinstance.search_declaration (ConstructRef (ind,j));*)
 			  maybe_declare_manual_implicits false (ConstructRef (ind, succ j)) impls)
@@ -920,7 +920,7 @@ let do_program_recursive fixkind fixl ntns =
       in
       let indexes = 
 	Pretyping.search_guard Loc.ghost (Global.env ()) possible_indexes fixdecls in
-	List.iter_i (fun i _ -> Inductive.check_fix env ((indexes,i),fixdecls)) fixl
+	List.iteri (fun i _ -> Inductive.check_fix env ((indexes,i),fixdecls)) fixl
     end;
     Obligations.add_mutual_definitions defs ntns fixkind
 

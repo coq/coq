@@ -79,7 +79,7 @@ let revert_reserved_type t =
     let t = Detyping.detype false [] [] t in
     List.try_find
       (fun (pat,id) ->
-	try let _ = Notation_ops.match_notation_constr false t ([],pat) in Name id
+	try let _ = Notation_ops.match_notation_constr false t ([], pat) in Name id
 	with Notation_ops.No_match -> failwith "") l
   with Not_found | Failure _ -> Anonymous
 

@@ -1238,7 +1238,7 @@ let compute_params_name relnames (args : (Names.name * Glob_term.glob_constr * b
   let l = ref [] in
   let _ =
     try
-      List.iter_i
+      List.iteri
 	(fun i ((n,nt,is_defined) as param) ->
 	   if Array.for_all
 	     (fun l ->

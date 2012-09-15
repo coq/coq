@@ -87,8 +87,7 @@ sig
     ('a -> 'b -> 'c -> 'd) -> 'a list -> 'b list -> 'c list -> 'd list
   val map4 :
     ('a -> 'b -> 'c -> 'd -> 'e) -> 'a list -> 'b list -> 'c list -> 'd list -> 'e list
-  val map_to_array : ('a -> 'b) -> 'a list -> 'b array
-  val filter_i :
+  val filteri :
     (int -> 'a -> bool) -> 'a list -> 'a list
 
   (** [smartfilter f [a1...an] = List.filter f [a1...an]] but if for all i
@@ -105,8 +104,7 @@ sig
   (** [index0] behaves as [index] except that it starts counting at 0 *)
   val index0 : 'a -> 'a list -> int
   val index0_f : ('a -> 'a -> bool) -> 'a -> 'a list -> int
-  val iter3 : ('a -> 'b -> 'c -> unit) -> 'a list -> 'b list -> 'c list -> unit
-  val iter_i :  (int -> 'a -> unit) -> 'a list -> unit
+  val iteri :  (int -> 'a -> unit) -> 'a list -> unit
   val fold_right_i :  (int -> 'a -> 'b -> 'b) -> int -> 'a list -> 'b -> 'b
   val fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
   val fold_right_and_left :
@@ -130,9 +128,7 @@ sig
   val chop : int -> 'a list -> 'a list * 'a list
   (* former [split_at] was a duplicate of [chop] *)
   val split_when : ('a -> bool) -> 'a list -> 'a list * 'a list
-  val split_by : ('a -> bool) -> 'a list -> 'a list * 'a list
   val split3 : ('a * 'b * 'c) list -> 'a list * 'b list * 'c list
-  val partition_by : ('a -> 'a -> bool) -> 'a list -> 'a list list
   val firstn : int -> 'a list -> 'a list
   val last : 'a list -> 'a
   val lastn : int -> 'a list -> 'a list
@@ -366,28 +362,34 @@ let subtractq l1 l2 =
   if l2 = [] then l1 else List.filter (fun x -> not (List.memq x l2)) l1
 
 let tabulate f len =
-  let rec tabrec n =
-    if n = len then [] else (f n)::(tabrec (n+1))
+  let rec loop p i =
+    if len <= i then ()
+    else
+      let c = { head = f i; tail = [] } in
+      let () = p.tail <- cast c in
+      loop c (succ i)
   in
-  tabrec 0
+  let dummy = { head = Obj.magic 0; tail = [] } in
+  loop dummy 0;
+  dummy.tail
 
 let addn n v =
   let rec aux n l =
     if n = 0 then l
-    else aux (pred n) (v::l)
+    else aux (pred n) (v :: l)
   in
-    if n < 0 then invalid_arg "List.addn"
-    else aux n
+  if n < 0 then invalid_arg "List.addn"
+  else aux n
 
 let make n v = addn n v []
 
 let assign l n e =
-  let rec assrec stk = function
-    | ((h::t), 0) -> List.rev_append stk (e::t)
-    | ((h::t), n) -> assrec (h::stk) (t, n-1)
+  let rec assrec stk l i = match l, i with
+    | ((h::t), 0) -> List.rev_append stk (e :: t)
+    | ((h::t), n) -> assrec (h :: stk) t (pred n)
     | ([], _) -> failwith "List.assign"
   in
-  assrec [] (l,n)
+  assrec [] l n
 
 let rec smartmap f l = match l with
     [] -> l
@@ -396,12 +398,7 @@ let rec smartmap f l = match l with
         if h'==h && tl'==tl then l
         else h'::tl'
 
-let map_left f = (* ensures the order in case of side-effects *)
-  let rec map_rec = function
-    | [] -> []
-    | x::l -> let v = f x in v :: map_rec l
-  in
-  map_rec
+let map_left = map
 
 let map2_i f i l1 l2 =
   let rec map_i i = function
@@ -426,9 +423,6 @@ let map4 f l1 l2 l3 l4 =
     | (_, _, _, _) -> invalid_arg "map4"
   in
   map (l1,l2,l3,l4)
-
-let map_to_array f l =
-  Array.of_list (List.map f l)
 
 let rec smartfilter f l = match l with
     [] -> l
@@ -505,15 +499,7 @@ let fold_right_and_left f l hd =
     | a::l -> let hd = aux (a::tl) l in f hd a tl
    in aux [] l
 
-let iter3 f l1 l2 l3 =
-  let rec iter = function
-    | ([], [], []) -> ()
-    | ((h1::t1), (h2::t2), (h3::t3)) -> f h1 h2 h3; iter (t1,t2,t3)
-    | (_, _, _) -> invalid_arg "map3"
-  in
-  iter (l1,l2,l3)
-
-let iter_i f l = fold_left_i (fun i _ x -> f i x) 0 () l
+let iteri f l = fold_left_i (fun i _ x -> f i x) 0 () l
 
 let for_all_i p =
   let rec for_all_p i = function
@@ -539,7 +525,7 @@ let rec assoc_snd_in_triple x = function
     [] -> raise Not_found
   | (a,b,_)::l -> if Pervasives.compare a x = 0 then b else assoc_snd_in_triple x l
 
-let add_set x l = if List.mem x l then l else x::l
+let add_set x l = if List.mem x l then l else x :: l
 
 let eq_set l1 l2 =
   let rec aux l1 = function
@@ -550,7 +536,7 @@ let eq_set l1 l2 =
 let for_all2eq f l1 l2 =
   try List.for_all2 f l1 l2 with Invalid_argument _ -> false
 
-let filter_i p =
+let filteri p =
   let rec filter_i_rec i = function
     | [] -> []
     | x::l -> let l' = filter_i_rec (succ i) l in if p i x then x::l' else l'
@@ -677,16 +663,6 @@ let split_when p =
   in
   split_when_loop []
 
-(* [split_by p l] splits [l] into two lists [(l1,l2)] such that elements of
-   [l1] satisfy [p] and elements of [l2] do not; order is preserved *)
-let split_by p =
-  let rec split_by_loop = function
-  | []   -> ([],[])
-  | a::l ->
-      let (l1,l2) = split_by_loop l in if p a then (a::l1,l2) else (l1,a::l2)
-  in
-  split_by_loop
-
 let rec split3 = function
   | [] -> ([], [], [])
   | (x,y,z)::l ->
@@ -696,9 +672,6 @@ let rec insert_in_class f a = function
   | [] -> [[a]]
   | (b::_ as l)::classes when f a b -> (a::l)::classes
   | l::classes -> l :: insert_in_class f a classes
-
-let partition_by f l =
-  List.fold_right (insert_in_class f) l []
 
 let firstn n l =
   let rec aux acc = function
@@ -840,7 +813,7 @@ let rec drop_last = function [] -> assert false | hd :: [] -> [] | hd :: tl -> h
 (* Factorize lists of pairs according to the left argument *)
 let rec factorize_left = function
   | (a,b)::l ->
-      let al,l' = split_by (fun (a',b) -> a=a') l in
+      let al,l' = partition (fun (a',b) -> a=a') l in
       (a,(b::List.map snd al)) :: factorize_left l'
   | [] ->
       []

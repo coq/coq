@@ -188,7 +188,7 @@ let check_fix_reversibility labs args ((lv,i),(_,tys,bds)) =
   let reversible_rels = List.map fst li in
   if not (List.distinct reversible_rels) then
     raise Elimconst;
-  List.iter_i (fun i t_i ->
+  List.iteri (fun i t_i ->
     if not (List.mem_assoc (i+1) li) then
       let fvs = List.map ((+) (i+1)) (Intset.elements (free_rels t_i)) in
       if List.intersect fvs reversible_rels <> [] then raise Elimconst)

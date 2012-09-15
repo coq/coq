@@ -51,7 +51,7 @@ object(self)
   method pages = term_list
 
   method remove_page index =
-    term_list <- Util.List.filter_i (fun i x -> if i = index then kill_page x; i <> index) term_list;
+    term_list <- Util.List.filteri (fun i x -> if i = index then kill_page x; i <> index) term_list;
     super#remove_page index
 
   method current_term =

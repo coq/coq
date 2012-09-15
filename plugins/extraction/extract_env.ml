@@ -152,7 +152,7 @@ let factor_fix env l cb msb =
     if List.length msb < n-1 then raise Impossible;
     let msb', msb'' = List.chop (n-1) msb in
     let labels = Array.make n l in
-    List.iter_i
+    List.iteri
       (fun j ->
 	 function
 	   | (l,SFBconst cb') ->
