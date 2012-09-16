@@ -287,7 +287,7 @@ Section~\ref{pattern} to transform the goal so that it gets the form
   \tacindex{apply \dots\ with}
 
   Provides {\tt apply} with explicit instantiations for all dependent
-  premises of the type of {\term} which do not occur in the conclusion
+  premises of the type of {\term} that do not occur in the conclusion
   and consequently cannot be found by unification. Notice that
   {\term$_1$} \mbox{\dots} {\term$_n$} must be given according to the order
   of these dependent premises of the type of {\term}.
@@ -452,7 +452,7 @@ apply Rtrans with (2 := Rmp).
 Undo.
 \end{coq_eval}
 
-On the opposite, one can use {\tt eapply} which postpone the problem
+On the opposite, one can use {\tt eapply} which postpones the problem
 of finding {\tt m}. Then one can apply the hypotheses {\tt Rnm} and {\tt
 Rmp}. This instantiates the existential variable and completes the proof.
 
@@ -942,8 +942,8 @@ dependencies. This tactic is the inverse of {\tt intro}.
 \begin{Variants}
 \item {\tt revert dependent \ident \tacindex{revert dependent}}
 
- This moves to the goal the hypothesis \ident\ and all hypotheses
- which depend on it.
+ This moves to the goal the hypothesis {\ident} and all the hypotheses
+ that depend on it.
 
 \end{Variants}
 
@@ -1049,7 +1049,7 @@ Section~\ref{Occurrences clauses}.
 \item {\tt set ( {\ident$_0$} \nelistnosep{\binder} := {\term} ) in {\occgoalset}}\\
       {\tt set {\term} in {\occgoalset}}
 
-  These are the general forms which combine the previous possibilities.
+  These are the general forms that combine the previous possibilities.
 
 \item {\tt remember {\term} as {\ident}}\tacindex{remember}
 
@@ -1738,7 +1738,7 @@ induction n.
      {\tt elim {\term$_1$} using {\term$_2$} with {\bindinglist}\tacindex{elim \dots\ using}}
 
 Allows the user to give explicitly an elimination predicate
-{\term$_2$} which is not the standard one for the underlying inductive
+{\term$_2$} that is not the standard one for the underlying inductive
 type of {\term$_1$}. The {\bindinglist} clause allows to
 instantiate premises of the type of {\term$_2$}.
 
@@ -1755,8 +1755,8 @@ instantiate premises of the type of {\term$_2$}.
   is equivalent to {\tt cut I. intro H{\rm\sl n}; elim H{\rm\sl n};
     clear H{\rm\sl n}}. Therefore the hypothesis {\tt H{\rm\sl n}} will
   not appear in the context(s) of the subgoal(s).  Conversely, if {\tt
-    t} is a term of (inductive) type {\tt I} and which does not occur
-  in the goal then {\tt elim t} is equivalent to {\tt elimtype I; 2:
+    t} is a term of (inductive) type {\tt I} that does not occur
+  in the goal, then {\tt elim t} is equivalent to {\tt elimtype I; 2:
     exact t.}
 
 \item {\tt simple induction \ident}\tacindex{simple induction}
@@ -2174,8 +2174,8 @@ several times. See Section~\ref{Derive-Inversion}.
 
   This behaves as \texttt{inversion} but using names in
   {\intropattern} for naming hypotheses. The {\intropattern} must have
-  the form {\tt [} $p_{11}$ \ldots $p_{1n_1}$ {\tt |} {\ldots} {\tt |}
-  $p_{m1}$ \ldots $p_{mn_m}$ {\tt ]} with $m$ being the number of
+  the form {\tt [} $p_{11} \ldots p_{1n_1}$ {\tt |} {\ldots} {\tt |}
+  $p_{m1} \ldots p_{mn_m}$ {\tt ]} with $m$ being the number of
   constructors of the type of {\ident}. Be careful that the list must
   be of length $m$ even if {\tt inversion} discards some cases (which
   is precisely one of its roles): for the discarded cases, just use an
@@ -2190,8 +2190,8 @@ several times. See Section~\ref{Derive-Inversion}.
   several equations (because {\tt inversion} applies {\tt injection}
   on the equalities it generates), the corresponding name $p_{ij}$ in
   the list must be replaced by a sublist of the form {\tt [$p_{ij1}$
-  \ldots $p_{ijq}$]} (or, equivalently, {\tt ($p_{ij1}$,
-  \ldots, $p_{ijq}$)}) where $q$ is the number of subequalities
+  \mbox{\dots} $p_{ijq}$]} (or, equivalently, {\tt ($p_{ij1}$,
+  \dots, $p_{ijq}$)}) where $q$ is the number of subequalities
   obtained from splitting the original equation. Here is an example.
 
 \begin{coq_eval}
@@ -2675,7 +2675,7 @@ n}| assumption || symmetry; try assumption]}.
 \label{reflexivity}
 \tacindex{reflexivity}
 
-This tactic applies to a goal which has the form {\tt t=u}. It checks
+This tactic applies to a goal that has the form {\tt t=u}. It checks
 that {\tt t} and {\tt u} are convertible and then solves the goal.
 It is equivalent to {\tt apply refl\_equal}.
 
@@ -2686,26 +2686,28 @@ It is equivalent to {\tt apply refl\_equal}.
 
 \subsection{\tt symmetry}
 \tacindex{symmetry}
-\tacindex{symmetry in}
 
-This tactic applies to a goal which has the form {\tt t=u} and changes it
+This tactic applies to a goal that has the form {\tt t=u} and changes it
 into {\tt u=t}.
 
-\variant {\tt symmetry in {\ident}}
+\begin{Variants}
+\item {\tt symmetry in \ident} \tacindex{symmetry in}
 
 If the statement of the hypothesis {\ident} has the form {\tt t=u},
 the tactic changes it to {\tt u=t}.
+\end{Variants}
 
 \subsection{\tt transitivity \term}
 \tacindex{transitivity}
-This tactic applies to a goal which has the form {\tt t=u}
+
+This tactic applies to a goal that has the form {\tt t=u}
 and transforms it into the two subgoals
 {\tt t={\term}} and {\tt {\term}=u}.
 
 \subsection{\tt subst \ident}
 \tacindex{subst}
 
-This tactic applies to a goal which has \ident\ in its context and
+This tactic applies to a goal that has \ident\ in its context and
 (at least) one hypothesis, say {\tt H}, of type {\tt
   \ident=t} or {\tt t=\ident}. Then it replaces
 \ident\ by {\tt t} everywhere in the goal (in the hypotheses
@@ -2746,21 +2748,20 @@ The tactic is especially useful for parametric setoids which are not
 accepted as regular setoids for {\tt rewrite} and {\tt
   setoid\_replace} (see Chapter~\ref{setoid_replace}).
 
-\tacindex{stepr}
-\comindex{Declare Right Step}
 \begin{Variants}
 \item{\tt stepl {\term} by {\tac}}
 
 This applies {\tt stepl {\term}} then applies {\tac} to the second goal.
 
 \item{\tt stepr {\term}}\\
-     {\tt stepr {\term} by {\tac}}
+     {\tt stepr {\term} by {\tac}}\tacindex{stepr}
 
 This behaves as {\tt stepl} but on the right-hand-side of the binary relation.
 Lemmas are expected to be of the form
 ``{\tt forall} $x$ $y$
 $z$, $R$ $x$ $y$ {\tt ->} $eq$ $y$ $z$ {\tt ->} $R$ $x$ $z$''
 and are registered using the command
+\comindex{Declare Right Step}
 \begin{quote}
 {\tt Declare Right Step {\term}.}
 \end{quote}
@@ -2947,7 +2948,7 @@ computational expressions (i.e. with few dead code).
 \subsection{\tt red}
 \tacindex{red}
 
-This tactic applies to a goal which has the form {\tt
+This tactic applies to a goal that has the form {\tt
   forall (x:T1)\dots(xk:Tk), c t1 \dots\ tn} where {\tt c} is a constant.  If
 {\tt c} is transparent then it replaces {\tt c} with its definition
 (say {\tt t}) and then reduces {\tt (t t1 \dots\ tn)} according to
@@ -3255,7 +3256,7 @@ hints of the database named {\tt core}.
 \item {\tt trivial}\tacindex{trivial}
 
   This tactic is a restriction of {\tt auto} that is not recursive and
-  tries only hints which cost 0. Typically it solves trivial
+  tries only hints that cost 0. Typically it solves trivial
   equalities like $X=X$.
 
 \item \texttt{trivial with \ident$_1$ \dots\ \ident$_n$}
@@ -3433,7 +3434,7 @@ command to add a hint to some databases \ident$_1$, \dots, \ident$_n$ is
 
 \end{Variants}
 
-The \hintdef is one of the following expressions:
+The {\hintdef} is one of the following expressions:
 
 \begin{itemize}
 \item {\tt Resolve \term}
@@ -3463,7 +3464,7 @@ The \hintdef is one of the following expressions:
 
   \item \term\ \errindex{cannot be used as a hint}
 
-    The type of \term\ contains products over variables which do not
+    The type of {\term} contains products over variables that do not
     appear in the conclusion. A typical example is a transitivity axiom.
     In that case the {\tt apply} tactic fails, and thus is useless.
 
@@ -3801,10 +3802,14 @@ e.g. \texttt{Require Import A.}).
 \SeeAlso {\tt Proof.} in Section~\ref{BeginProof}.
 
 \begin{Variants}
+
 \item {\tt Proof with {\tac} using \ident$_1$ \mbox{\dots} \ident$_n$}
+
   Combines in a single line {\tt Proof with} and {\tt Proof using},
   see~\ref{ProofUsing}
+
 \item {\tt Proof using \ident$_1$ \mbox{\dots} \ident$_n$ with {\tac}}
+
   Combines in a single line {\tt Proof with} and {\tt Proof using},
   see~\ref{ProofUsing}
 
@@ -4020,9 +4025,6 @@ congruence.
 
   Tries to add at most {\tt \sl n} instances of hypotheses stating quantified equalities to the problem in order to solve it. A bigger value of {\tt \sl n} does not make success slower, only failure. You might consider adding some lemmas as hypotheses using {\tt assert} in order for congruence to use them.
 
-\end{Variants}
-
-\begin{Variants}
 \item {\tt congruence with \term$_1$ \dots\ \term$_n$}
 
   Adds {\tt \term$_1$ \dots\ \term$_n$} to the pool of terms used by
@@ -4034,12 +4036,8 @@ congruence.
   \item \errindex{I don't know how to handle dependent equality}
 
     The decision procedure managed to find a proof of the goal or of
-    a discriminable equality but this proof couldn't be built in {\Coq}
+    a discriminable equality but this proof could not be built in {\Coq}
     because of dependently-typed functions.
-
-  \item \errindex{I couldn't solve goal}
-
-    The decision procedure didn't find any way to solve the goal.
 
   \item \errindex{Goal is solvable by congruence but some arguments are missing. Try "congruence with \dots", replacing metavariables by arbitrary terms.}
 
@@ -4255,14 +4253,16 @@ right to left.
 \label{sec:functional-inversion}
 
 \texttt{functional inversion} is a \emph{highly} experimental tactic
-which performs inversion on hypothesis \ident\ of the form
+that performs inversion on hypothesis {\ident} of the form
 \texttt{\qualid\ \term$_1$\dots\term$_n$\ = \term} or \texttt{\term\ =
   \qualid\ \term$_1$\dots\term$_n$} where \qualid\ must have been
 defined using \texttt{Function} (see Section~\ref{Function}).
 
 \begin{ErrMsgs}
 \item \errindex{Hypothesis {\ident} must contain at least one Function}
+
 \item \errindex{Cannot find inversion information for hypothesis \ident}
+
   This error may be raised when  some inversion lemma failed to be
   generated by Function.
 \end{ErrMsgs}
