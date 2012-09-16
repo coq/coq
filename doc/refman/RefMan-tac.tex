@@ -2671,39 +2671,6 @@ n}| assumption || symmetry; try assumption]}.
 
 \end{Variants}
 
-\subsection{\tt reflexivity}
-\label{reflexivity}
-\tacindex{reflexivity}
-
-This tactic applies to a goal that has the form {\tt t=u}. It checks
-that {\tt t} and {\tt u} are convertible and then solves the goal.
-It is equivalent to {\tt apply refl\_equal}.
-
-\begin{ErrMsgs}
-\item \errindex{The conclusion is not a substitutive equation}
-\item \errindex{Impossible to unify \dots\ with \dots}
-\end{ErrMsgs}
-
-\subsection{\tt symmetry}
-\tacindex{symmetry}
-
-This tactic applies to a goal that has the form {\tt t=u} and changes it
-into {\tt u=t}.
-
-\begin{Variants}
-\item {\tt symmetry in \ident} \tacindex{symmetry in}
-
-If the statement of the hypothesis {\ident} has the form {\tt t=u},
-the tactic changes it to {\tt u=t}.
-\end{Variants}
-
-\subsection{\tt transitivity \term}
-\tacindex{transitivity}
-
-This tactic applies to a goal that has the form {\tt t=u}
-and transforms it into the two subgoals
-{\tt t={\term}} and {\tt {\term}=u}.
-
 \subsection{\tt subst \ident}
 \tacindex{subst}
 
@@ -4156,6 +4123,38 @@ subgoals $f=f'$ and $a_1=a'_1$ and so on up to $a_n=a'_n$. Amongst
 these subgoals, the simple ones (e.g. provable by
 reflexivity or congruence) are automatically solved by {\tt f\_equal}.
 
+\subsection{\tt reflexivity}
+\label{reflexivity}
+\tacindex{reflexivity}
+
+This tactic applies to a goal that has the form {\tt t=u}. It checks
+that {\tt t} and {\tt u} are convertible and then solves the goal.
+It is equivalent to {\tt apply refl\_equal}.
+
+\begin{ErrMsgs}
+\item \errindex{The conclusion is not a substitutive equation}
+\item \errindex{Impossible to unify \dots\ with \dots}
+\end{ErrMsgs}
+
+\subsection{\tt symmetry}
+\tacindex{symmetry}
+
+This tactic applies to a goal that has the form {\tt t=u} and changes it
+into {\tt u=t}.
+
+\begin{Variants}
+\item {\tt symmetry in \ident} \tacindex{symmetry in}
+
+If the statement of the hypothesis {\ident} has the form {\tt t=u},
+the tactic changes it to {\tt u=t}.
+\end{Variants}
+
+\subsection{\tt transitivity \term}
+\tacindex{transitivity}
+
+This tactic applies to a goal that has the form {\tt t=u}
+and transforms it into the two subgoals
+{\tt t={\term}} and {\tt {\term}=u}.
 
 \section{Equality and inductive sets}
 
