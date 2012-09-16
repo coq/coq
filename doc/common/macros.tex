@@ -75,10 +75,11 @@
 \newcommand{\zeroone}[1]{\mbox{\sl [}#1\mbox{\sl ]}}
 %\newcommand{\zeroonemany}[1]{$\{$#1$\}$*}
 %\newcommand{\onemany}[1]{$\{$#1$\}$+}
-\newcommand{\nelist}[2]{{#1} {\tt #2} {\ldots} {\tt #2} {#1}}
-\newcommand{\sequence}[2]{{\sl [}{#1} {\tt #2} {\ldots} {\tt #2} {#1}{\sl ]}}
-\newcommand{\nelistwithoutblank}[2]{#1{\tt #2}\ldots{\tt #2}#1}
-\newcommand{\sequencewithoutblank}[2]{$[$#1{\tt #2}\ldots{\tt #2}#1$]$}
+\newcommand{\nelistnosep}[1]{{#1} \mbox{\dots} {#1}}
+\newcommand{\nelist}[2]{{#1} {\tt #2} \mbox{\dots} {\tt #2} {#1}}
+\newcommand{\sequence}[2]{{\sl [}{#1} {\tt #2} \mbox{\dots} {\tt #2} {#1}{\sl ]}}
+\newcommand{\nelistwithoutblank}[2]{#1{\tt #2}\mbox{\dots}{\tt #2}#1}
+\newcommand{\sequencewithoutblank}[2]{$[$#1{\tt #2}\mbox{\dots}{\tt #2}#1$]$}
 
 % Used for RefMan-gal
 %\newcommand{\ml}[1]{\hbox{\tt{#1}}}
