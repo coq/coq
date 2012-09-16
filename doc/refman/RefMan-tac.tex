@@ -759,7 +759,7 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
 
 \end{Variants}
 
-\subsection{\tt intros {\intropattern} {\ldots} {\intropattern}}
+\subsection{\tt intros {\intropattern} \mbox{\dots} \intropattern}
 \label{intros-pattern}
 \tacindex{intros \intropattern}
 \index{Introduction patterns}
@@ -2500,9 +2500,9 @@ defined in file {\tt Logic.v} (see Section~\ref{Equality}). The
 notation for {\tt eq}~$T~t~u$ is simply {\tt $t$=$u$} dropping the
 implicit type of $t$ and $u$.
 
-\subsection{\tt rewrite \term
+\subsection{\tt rewrite \term}
 \label{rewrite}
-\tacindex{rewrite}}
+\tacindex{rewrite}
 
 This tactic applies to any goal. The type of {\term}
 must have the form
@@ -2607,16 +2607,16 @@ the same variants as {\tt rewrite} has.
 \end{Variants}
 
 
-\subsection{\tt cutrewrite -> \term$_1$ = \term$_2$
+\subsection{\tt cutrewrite -> \term$_1$ = \term$_2$}
 \label{cutrewrite}
-\tacindex{cutrewrite}}
+\tacindex{cutrewrite}
 
 This tactic acts like {\tt replace {\term$_1$} with {\term$_2$}}
 (see below).
 
-\subsection{\tt replace {\term$_1$} with {\term$_2$}
+\subsection{\tt replace \term$_1$ with \term$_2$}
 \label{tactic:replace}
-\tacindex{replace \dots\ with}}
+\tacindex{replace \dots\ with}
 
 This tactic applies to any goal. It replaces all free occurrences of
 {\term$_1$} in the current goal with {\term$_2$} and generates the
@@ -2652,9 +2652,9 @@ n}| assumption || symmetry; try assumption]}.
     The  \textit{clause} argument must  not contain  any \texttt{type  of} nor  \texttt{value  of}.
 \end{Variants}
 
-\subsection{\tt reflexivity
+\subsection{\tt reflexivity}
 \label{reflexivity}
-\tacindex{reflexivity}}
+\tacindex{reflexivity}
 
 This tactic applies to a goal which has the form {\tt t=u}. It checks
 that {\tt t} and {\tt u} are convertible and then solves the goal.
@@ -2665,9 +2665,9 @@ It is equivalent to {\tt apply refl\_equal}.
 \item \errindex{Impossible to unify \dots\ with \dots}
 \end{ErrMsgs}
 
-\subsection{\tt symmetry
+\subsection{\tt symmetry}
 \tacindex{symmetry}
-\tacindex{symmetry in}}
+\tacindex{symmetry in}
 This tactic applies to a goal which has the form {\tt t=u} and changes it
 into {\tt u=t}.
 
@@ -2675,14 +2675,14 @@ into {\tt u=t}.
 If the statement of the hypothesis {\ident} has the form {\tt t=u},
 the tactic changes it to {\tt u=t}.
 
-\subsection{\tt transitivity \term
-\tacindex{transitivity}}
+\subsection{\tt transitivity \term}
+\tacindex{transitivity}
 This tactic applies to a goal which has the form {\tt t=u}
 and transforms it into the two subgoals
 {\tt t={\term}} and {\tt {\term}=u}.
 
-\subsection{\tt subst {\ident}
-\tacindex{subst}}
+\subsection{\tt subst \ident}
+\tacindex{subst}
 
 This tactic applies to a goal which has \ident\ in its context and
 (at least) one hypothesis, say {\tt H}, of type {\tt
@@ -2702,7 +2702,8 @@ When several hypotheses have the form {\tt \ident=t} or {\tt
     for which an equality exists.
 \end{Variants}
 
-\subsection[{\tt stepl {\term}}]{{\tt stepl {\term}}\tacindex{stepl}}
+\subsection{\tt stepl \term}
+\tacindex{stepl}
 
 This tactic is for chaining rewriting steps. It assumes a goal of the
 form ``$R$ {\term}$_1$ {\term}$_2$'' where $R$ is a binary relation
@@ -2740,9 +2741,9 @@ and are registered using the command
 \end{quote}
 \end{Variants}
 
-\subsection{\tt change \term
+\subsection{\tt change \term}
 \tacindex{change}
-\label{change}}
+\label{change}
 
 This tactic applies to any goal. It implements the rule
 ``Conv''\index{Typing rules!Conv} given in Section~\ref{Conv}.  {\tt
@@ -2827,14 +2828,12 @@ performs the conversion in hypotheses {\ident}$_1$\ldots {\ident}$_n$.
 %voir reduction__conv_x : histoires d'univers.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection[{\tt cbv \flag$_1$ \dots\ \flag$_n$}, {\tt lazy \flag$_1$
-\dots\ \flag$_n$} and {\tt compute}]
-{{\tt cbv \flag$_1$ \dots\ \flag$_n$}, {\tt lazy \flag$_1$
-\dots\ \flag$_n$} and {\tt compute}
+\subsection{{\tt cbv \flag$_1$ \mbox{\dots} \flag$_n$}, {\tt lazy \flag$_1$
+\mbox{\dots} \flag$_n$}, and \tt compute}
 \tacindex{cbv}
 \tacindex{lazy}
 \tacindex{compute}
-\tacindex{vm\_compute}\label{vmcompute}}
+\tacindex{vm\_compute}\label{vmcompute}
 
 These parameterized reduction tactics apply to any goal and perform
 the normalization of the goal according to the specified flags. In
@@ -2920,8 +2919,8 @@ computational expressions (i.e. with few dead code).
 %\end{ErrMsgs}
 
 
-\subsection{{\tt red}
-\tacindex{red}}
+\subsection{\tt red}
+\tacindex{red}
 
 This tactic applies to a goal which has the form {\tt
   forall (x:T1)\dots(xk:Tk), c t1 \dots\ tn} where {\tt c} is a constant.  If
@@ -2933,8 +2932,8 @@ $\beta\iota\zeta$-reduction rules.
 \item \errindex{Not reducible}
 \end{ErrMsgs}
 
-\subsection{{\tt hnf}
-\tacindex{hnf}}
+\subsection{\tt hnf}
+\tacindex{hnf}
 
 This tactic applies to any goal. It replaces the current goal with its
 head normal form according to the $\beta\delta\iota\zeta$-reduction
@@ -2947,8 +2946,8 @@ The term \verb+forall n:nat, (plus (S n) (S n))+ is not reduced by {\tt hnf}.
 \Rem The $\delta$ rule only applies to transparent constants
 (see Section~\ref{Opaque} on transparency and opacity).
 
-\subsection{\tt simpl
-\tacindex{simpl}}
+\subsection{\tt simpl}
+\tacindex{simpl}
 
 This tactic applies to any goal. The tactic {\tt simpl} first applies
 $\beta\iota$-reduction rule.  Then it expands transparent constants
@@ -3038,9 +3037,9 @@ applicative subterms whose head occurrence is {\ident}.
 
 \end{Variants}
 
-\subsection{\tt unfold \qualid
+\subsection{\tt unfold \qualid}
 \tacindex{unfold}
-\label{unfold}}
+\label{unfold}
 
 This tactic applies to any goal. The argument {\qualid} must denote a
 defined transparent constant or local definition (see Sections~\ref{Basic-definitions} and~\ref{Transparent}).  The tactic {\tt
@@ -3095,8 +3094,8 @@ with its $\beta\iota$-normal form.
 
 \end{Variants}
 
-\subsection{{\tt fold} \term
-\tacindex{fold}}
+\subsection{\tt fold \term}
+\tacindex{fold}
 
 This tactic applies to any goal. The term \term\ is reduced using the {\tt red}
 tactic. Every occurrence of the resulting term in the goal is then
@@ -3108,9 +3107,9 @@ replaced by \term.
   Equivalent to {\tt fold} \term$_1${\tt;}\ldots{\tt; fold} \term$_n$.
 \end{Variants}
 
-\subsection{{\tt pattern {\term}}
+\subsection{\tt pattern \term}
 \tacindex{pattern}
-\label{pattern}}
+\label{pattern}
 
 This command applies to any goal. The argument {\term} must be a free
 subterm of the current goal.  The command {\tt pattern} performs
@@ -3182,9 +3181,9 @@ local definition. Example: {\tt unfold not in (Type of H1) (Type of H3).}
 
 
 \section{Automation}
-\subsection{\tt auto
+\subsection{\tt auto}
 \label{auto}
-\tacindex{auto}}
+\tacindex{auto}
 
 This tactic implements a Prolog-like resolution procedure to solve the
 current goal. It first tries to solve the goal using the {\tt
@@ -3245,9 +3244,9 @@ intact. \texttt{auto} and \texttt{trivial} never fail.
 
 \SeeAlso Section~\ref{Hints-databases}
 
-\subsection{\tt eauto
+\subsection{\tt eauto}
 \tacindex{eauto}
-\label{eauto}}
+\label{eauto}
 
 This tactic generalizes {\tt auto}. In contrast with
 the latter, {\tt eauto} uses unification of the goal
@@ -3270,9 +3269,9 @@ hint.
 
 \SeeAlso Section~\ref{Hints-databases}
 
-\subsection{\tt autounfold with  \ident$_1$ \dots\ \ident$_n$
+\subsection{\tt autounfold with \ident$_1$ \mbox{\dots} \ident$_n$}
 \tacindex{autounfold}
-\label{autounfold}}
+\label{autounfold}
 
 This tactic unfolds constants that were declared through a {\tt Hint
   Unfold} in the given databases.
@@ -3288,9 +3287,9 @@ This tactic unfolds constants that were declared through a {\tt Hint
 \end{Variants}
 
 
-\subsection{\tt autorewrite with \ident$_1$ \dots \ident$_n$.
+\subsection{\tt autorewrite with \ident$_1$ \mbox{\dots} \ident$_n$}
 \label{tactic:autorewrite}
-\tacindex{autorewrite}}
+\tacindex{autorewrite}
 
 This tactic \footnote{The behavior of this tactic has much changed compared to
 the versions available in the previous distributions (V6). This may cause
@@ -3340,10 +3339,10 @@ this tactic.
 
 \section{Controlling automation}
 
-\subsection{The hints databases for {\tt auto} and {\tt eauto}
+\subsection{The hints databases for {\tt auto} and {\tt eauto}}
 \index{Hints databases}
 \label{Hints-databases}
-\comindex{Hint}}
+\comindex{Hint}
 
 The hints for \texttt{auto} and \texttt{eauto} are stored in
 databases.  Each database maps head symbols to a list of hints. One can
@@ -3680,9 +3679,9 @@ Furthermore, you are advised not to put your own hints in the
 {\tt core} database, but use one or several databases specific to your
 development.
 
-\subsection{\tt Print Hint
+\subsection{\tt Print Hint}
 \label{PrintHint}
-\comindex{Print Hint}}
+\comindex{Print Hint}
 
 This command displays all hints that apply to the current goal. It
 fails if no proof is being edited, while the two variants can be used at
@@ -3708,9 +3707,9 @@ every moment.
 
 \end{Variants}
 
-\subsection{\tt Hint Rewrite \term$_1$ \dots \term$_n$ : \ident
+\subsection{\tt Hint Rewrite \term$_1$ \mbox{\dots} \term$_n$ : \ident}
 \label{HintRewrite}
-\comindex{Hint Rewrite}}
+\comindex{Hint Rewrite}
 
 This vernacular command adds the terms {\tt \term$_1$ \dots \term$_n$}
 (their types must be equalities) in the rewriting base {\tt \ident}
@@ -3805,9 +3804,9 @@ The tactic {\tt exists (n // m)} did not fail. The hole was solved by
 
 \section{Decision procedures}
 
-\subsection{\tt tauto
+\subsection{\tt tauto}
 \tacindex{tauto}
-\label{tauto}}
+\label{tauto}
 
 This tactic implements a decision procedure for intuitionistic propositional
 calculus based on the contraction-free sequent calculi LJT* of Roy Dyckhoff
@@ -3855,9 +3854,9 @@ Abort.
 because \verb=(forall x:nat, ~ A -> P x)= cannot be treated as atomic and an
 instantiation of \verb=x= is necessary.
 
-\subsection{\tt intuition {\tac}
+\subsection{\tt intuition \tac}
 \tacindex{intuition}
-\label{intuition}}
+\label{intuition}
 
 The tactic \texttt{intuition} takes advantage of the search-tree built
 by the decision procedure involved in the tactic {\tt tauto}. It uses
@@ -3894,17 +3893,17 @@ incompatibilities.
 %\SeeAlso file \texttt{contrib/Rocq/DEMOS/Demo\_tauto.v}
 
 
-\subsection{\tt rtauto
+\subsection{\tt rtauto}
 \tacindex{rtauto}
-\label{rtauto}}
+\label{rtauto}
 
 The {\tt rtauto} tactic solves propositional tautologies similarly to what {\tt tauto} does. The main difference is that the proof term is built using a reflection scheme applied to a sequent calculus proof of the goal. The search procedure is also implemented using a different technique.
 
 Users should be aware that this difference may result in faster proof-search but  slower proof-checking, and {\tt rtauto} might not solve goals that {\tt tauto} would be able to solve (e.g. goals involving universal quantifiers).
 
-\subsection{{\tt firstorder}
+\subsection{\tt firstorder}
 \tacindex{firstorder}
-\label{firstorder}}
+\label{firstorder}
 
 The tactic \texttt{firstorder} is an {\it experimental} extension of
 \texttt{tauto} to
@@ -3942,9 +3941,9 @@ Proof-search is bounded by a depth parameter which can be set by typing the
 vernacular command.
 
 
-\subsection{\tt congruence
+\subsection{\tt congruence}
 \tacindex{congruence}
-\label{congruence}}
+\label{congruence}
 
 The tactic {\tt congruence}, by Pierre Corbineau, implements the standard Nelson and Oppen
 congruence closure algorithm, which is a decision procedure for ground
@@ -4014,8 +4013,6 @@ congruence.
     described above.
 \end{ErrMsgs}
 
-\section{Things that do not fit other sections}
-
 
 
 
@@ -4055,18 +4052,18 @@ congruence.
 \section{Everything after this point has yet to be sorted}
 
 
-\subsection{\tt constr\_eq \term$_1$ \term$_2$
+\subsection{\tt constr\_eq \term$_1$ \term$_2$}
 \tacindex{constr\_eq}
-\label{constreq}}
+\label{constreq}
 
 This tactic applies to any goal. It checks whether its arguments are
 equal modulo alpha conversion and casts.
 
 \ErrMsg \errindex{Not equal}
 
-\subsection{\tt unify \term$_1$ \term$_2$
+\subsection{\tt unify \term$_1$ \term$_2$}
 \tacindex{unify}
-\label{unify}}
+\label{unify}
 
 This tactic applies to any goal. It checks whether its arguments are
 unifiable, potentially instantiating existential variables.
@@ -4080,9 +4077,9 @@ unifiable, potentially instantiating existential variables.
   hint database {\tt \ident} into account (see Section~\ref{HintTransparency}).
 \end{Variants}
 
-\subsection{\tt is\_evar \term
+\subsection{\tt is\_evar \term}
 \tacindex{is\_evar}
-\label{isevar}}
+\label{isevar}
 
 This tactic applies to any goal. It checks whether its argument is an
 existential variable. Existential variables are uninstantiated
@@ -4090,9 +4087,9 @@ variables generated by e.g. {\tt eapply} (see Section~\ref{apply}).
 
 \ErrMsg \errindex{Not an evar}
 
-\subsection{\tt has\_evar \term
+\subsection{\tt has\_evar \term}
 \tacindex{has\_evar}
-\label{hasevar}}
+\label{hasevar}
 
 This tactic applies to any goal. It checks whether its argument has an
 existential variable as a subterm. Unlike {\tt context} patterns
@@ -4101,9 +4098,9 @@ including those under binders.
 
 \ErrMsg \errindex{No evars}
 
-\subsection{\tt is\_var \term
+\subsection{\tt is\_var \term}
 \tacindex{is\_var}
-\label{isvar}}
+\label{isvar}
 
 This tactic applies to any goal. It checks whether its argument is a
 variable or hypothesis in the current goal context or in the opened sections.
@@ -4112,9 +4109,9 @@ variable or hypothesis in the current goal context or in the opened sections.
 
 \section{Equality}
 
-\subsection{\tt f\_equal
+\subsection{\tt f\_equal}
 \label{f-equal}
-\tacindex{f\_equal}}
+\tacindex{f\_equal}
 
 This tactic applies to a goal of the form $f\ a_1\ \ldots\ a_n = f'\
 a'_1\ \ldots\ a'_n$. Using {\tt f\_equal} on such a goal leads to
@@ -4130,9 +4127,9 @@ equality and inductive sets or types. These tactics use the equality
 {\tt eq:forall (A:Type), A->A->Prop}, simply written with the
 infix symbol {\tt =}.
 
-\subsection{\tt decide equality
+\subsection{\tt decide equality}
 \label{decideequality}
-\tacindex{decide equality}}
+\tacindex{decide equality}
 
 This tactic solves a goal of the form
 {\tt forall $x$ $y$:$R$, \{$x$=$y$\}+\{\verb|~|$x$=$y$\}}, where $R$
@@ -4140,8 +4137,8 @@ is an inductive type such that its constructors do not take proofs or
 functions as arguments, nor objects in dependent types.
 It solves goals of the form {\tt \{$x$=$y$\}+\{\verb|~|$x$=$y$\}} as well.
 
-\subsection{\tt compare \term$_1$ \term$_2$
-\tacindex{compare}}
+\subsection{\tt compare \term$_1$ \term$_2$}
+\tacindex{compare}
 
 This tactic compares two given objects \term$_1$ and \term$_2$
 of an inductive datatype. If $G$ is the current goal, it leaves the sub-goals
@@ -4150,10 +4147,10 @@ of an inductive datatype. If $G$ is the current goal, it leaves the sub-goals
 of \term$_1$ and \term$_2$ must satisfy the same restrictions as in the tactic
 \texttt{decide equality}.
 
-\subsection{\tt simplify\_eq {\term}
+\subsection{\tt simplify\_eq \term}
 \tacindex{simplify\_eq}
 \tacindex{esimplify\_eq}
-\label{simplify-eq}}
+\label{simplify-eq}
 
 Let {\term} be the proof of a statement of conclusion {\tt
   {\term$_1$}={\term$_2$}}. If {\term$_1$} and
@@ -4191,9 +4188,9 @@ If the current goal has form $t_1\verb=<>=t_2$, it behaves as
 \texttt{intro {\ident}; simplify\_eq {\ident}}.
 \end{Variants}
 
-\subsection{\tt dependent rewrite -> {\ident}
+\subsection{\tt dependent rewrite -> \ident}
 \tacindex{dependent rewrite ->}
-\label{dependent-rewrite}}
+\label{dependent-rewrite}
 
 This tactic applies to any goal.  If \ident\ has type
 \verb+(existT B a b)=(existT B a' b')+
@@ -4214,7 +4211,8 @@ right to left.
 \section{Inversion
 \label{inversion}}
 
-\subsection[\tt functional inversion \ident]{\tt functional inversion \ident\label{sec:functional-inversion}}
+\subsection{\tt functional inversion \ident}
+\label{sec:functional-inversion}
 
 \texttt{functional inversion} is a \emph{highly} experimental tactic
 which performs inversion on hypothesis \ident\ of the form
@@ -4247,9 +4245,9 @@ defined using \texttt{Function} (see Section~\ref{Function}).
 
 
 
-\subsection{\tt quote \ident
+\subsection{\tt quote \ident}
 \tacindex{quote}
-\index{2-level approach}}
+\index{2-level approach}
 
 This kind of inversion has nothing to do with the tactic
 \texttt{inversion} above. This tactic does \texttt{change (\ident\
@@ -4272,11 +4270,14 @@ datatype: see~\ref{quote-examples} for the full details.
 % En attente d'un moyen de valoriser les fichiers de demos
 % \SeeAlso file \texttt{theories/DEMOS/DemoQuote.v} in the distribution
 
-\section[Classical tactics]{Classical tactics\label{ClassicalTactics}}
+\section{Classical tactics}
+\label{ClassicalTactics}
 
 In order to ease the proving process, when the {\tt Classical} module is loaded. A few more tactics are available. Make sure to load the module using the \texttt{Require Import} command.
 
-\subsection{{\tt classical\_left, classical\_right} \tacindex{classical\_left} \tacindex{classical\_right}}
+\subsection{{\tt classical\_left} and \tt classical\_right}
+\tacindex{classical\_left}
+\tacindex{classical\_right}
 
 The tactics \texttt{classical\_left} and \texttt{classical\_right} are the analog of the \texttt{left} and \texttt{right} but using classical logic. They can only be used for disjunctions.
 Use  \texttt{classical\_left} to prove the left part of the disjunction with the assumption that the negation of right part holds.
@@ -4416,9 +4417,9 @@ Use \texttt{classical\_right} to prove the right part of the disjunction with th
 % \end{ErrMsgs}
 
 
-\subsection{\tt btauto
+\subsection{\tt btauto}
 \tacindex{btauto}
-\label{btauto}}
+\label{btauto}
 
 The tactic \texttt{btauto} implements a reflexive solver for boolean tautologies. It
 solves goals of the form {\tt t = u} where {\tt t} and {\tt u} are constructed
@@ -4433,9 +4434,9 @@ Whenever the formula supplied is not a tautology, it also provides a counter-exa
 
 Internally, it uses a system very similar to the one of the {\tt ring} tactic.
 
-\subsection{\tt omega
+\subsection{\tt omega}
 \tacindex{omega}
-\label{omega}}
+\label{omega}
 
 The tactic \texttt{omega}, due to Pierre Cr{\'e}gut,
 is an automatic decision procedure for Presburger
@@ -4447,10 +4448,10 @@ integers. This tactic must be loaded by the command \texttt{Require Import
   Omega}. See the additional documentation about \texttt{omega}
 (see Chapter~\ref{OmegaChapter}).
 
-\subsection{{\tt ring} and {\tt ring\_simplify \term$_1$ \dots\ \term$_n$}
+\subsection{{\tt ring} and \tt ring\_simplify \term$_1$ \mbox{\dots} \term$_n$}
 \tacindex{ring}
 \tacindex{ring\_simplify}
-\comindex{Add Ring}}
+\comindex{Add Ring}
 
 The {\tt ring} tactic solves equations upon polynomial expressions of
 a ring (or semi-ring) structure. It proceeds by normalizing both hand
@@ -4467,12 +4468,12 @@ and both hand sides are normalized.
 See Chapter~\ref{ring} for more information on the tactic and how to
 declare new ring structures.
 
-\subsection{{\tt field}, {\tt field\_simplify \term$_1$\dots\ \term$_n$}
-            and {\tt field\_simplify\_eq}
+\subsection{{\tt field}, {\tt field\_simplify \term$_1$ \mbox{\dots}
+  \term$_n$}, and \tt field\_simplify\_eq}
 \tacindex{field}
 \tacindex{field\_simplify}
 \tacindex{field\_simplify\_eq}
-\comindex{Add Field}}
+\comindex{Add Field}
 
 The {\tt field} tactic is built on the same ideas as {\tt ring}: this
 is a reflexive tactic that solves or simplifies equations in a field
@@ -4514,8 +4515,8 @@ Reset Initial.
 \phantom{\SeeAlso}theory {\tt theories/Reals} for many examples of use of {\tt
 field}.
 
-\subsection{\tt fourier
-\tacindex{fourier}}
+\subsection{\tt fourier}
+\tacindex{fourier}
 
 This tactic written by Lo{\"\i}c Pottier solves linear inequalities on
 real numbers using Fourier's method~\cite{Fourier}. This tactic must
@@ -4537,10 +4538,10 @@ Reset Initial.
 \end{coq_eval}
 
 
-\section{Simple tactic macros
+\section{Simple tactic macros}
 \index{Tactic macros}
 \comindex{Tactic Definition}
-\label{TacticDefinition}}
+\label{TacticDefinition}
 
 A simple example has more value than a long explanation:
 
