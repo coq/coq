@@ -77,10 +77,14 @@ let revert_reserved_type t =
   try
     let l = Gmapl.find (constr_key t) !reserve_revtable in
     let t = Detyping.detype false [] [] t in
-    List.try_find
-      (fun (pat,id) ->
-	try let _ = Notation_ops.match_notation_constr false t ([], pat) in Name id
-	with Notation_ops.No_match -> failwith "") l
+    (* pedrot: if [Notation_ops.match_notation_constr] may raise [Failure _]
+        then I've introduced a bug... *)
+    let find (pat, id) =
+      try let _ = Notation_ops.match_notation_constr false t ([], pat) in true
+      with Notation_ops.No_match -> false
+    in
+    let (_, id) = List.find find l in
+    Name id
   with Not_found | Failure _ -> Anonymous
 
 let _ = Namegen.set_reserved_typed_name revert_reserved_type

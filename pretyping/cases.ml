@@ -1409,20 +1409,23 @@ let adjust_to_extended_env_and_remove_deps env extenv subst t =
      - [subst0] is made of items [(p,u,(u,ty))] where [ty] is the type of [u]
        and both are adjusted to [extenv] while [p] is the index of [id] in
        [extenv] (after expansion of the aliases) *)
-  let subst0 = map_succeed (fun (x,u) ->
+  let map (x, u) =
     (* d1 ... dn dn+1 ... dn'-p+1 ... dn' *)
     (* \--env-/          (= x:ty)         *)
     (* \--------------extenv------------/ *)
-    let (p,_,_) = lookup_rel_id x (rel_context extenv) in
+    let (p, _, _) = lookup_rel_id x (rel_context extenv) in
     let rec traverse_local_defs p =
       match pi2 (lookup_rel p extenv) with
       | Some c -> assert (isRel c); traverse_local_defs (p + destRel c)
       | None -> p in
     let p = traverse_local_defs p in
-    let u = lift (n'-n) u in
-    (p,u,expand_vars_in_term extenv u)) subst in
-  let t0 = lift (n'-n) t in
-  (subst0,t0)
+    let u = lift (n' - n) u in
+    try Some (p, u, expand_vars_in_term extenv u)
+      (* pedrot: does this really happen to raise [Failure _]? *)
+    with Failure _ -> None in
+  let subst0 = List.map_filter map subst in
+  let t0 = lift (n' - n) t in
+  (subst0, t0)
 
 let push_binder d (k,env,subst) =
   (k+1,push_rel d env,List.map (fun (na,u,d) -> (na,lift 1 u,d)) subst)

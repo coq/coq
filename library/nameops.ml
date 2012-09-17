@@ -114,7 +114,7 @@ let atompart_of_id id = fst (repr_ident id)
 
 let out_name = function
   | Name id -> id
-  | Anonymous -> failwith "out_name: expects a defined name"
+  | Anonymous -> failwith "Nameops.out_name"
 
 let name_fold f na a =
   match na with

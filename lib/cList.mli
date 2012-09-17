@@ -150,8 +150,10 @@ sig
   val assoc_snd_in_triple : 'a -> ('a * 'b * 'c) list -> 'b
   val for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   val sep_last : 'a list -> 'a * 'a list
-  val try_find_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b
-  val try_find : ('a -> 'b) -> 'a list -> 'b
+
+  val find_map : ('a -> 'b option) -> 'a list -> 'b
+  (** Returns the first element that is mapped to [Some _]. Raise [Not_found] if
+      there is none. *)
 
   val uniquize : 'a list -> 'a list
   (** Return the list of elements without duplicates. *)
@@ -184,9 +186,6 @@ sig
   val map_append : ('a -> 'b list) -> 'a list -> 'b list
   (** [map_append f [x1; ...; xn]] returns [(f x1)@(f x2)@...@(f xn)]. *)
 
-  val join_map : ('a -> 'b list) -> 'a list -> 'b list
-  (** Alias of [map_append]. *)
-
   val map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
   (** As [map_append]. Raises [Invalid_argument _] if the two lists don't have 
       the same length. *)
@@ -215,14 +214,10 @@ sig
 
   val combine3 : 'a list -> 'b list -> 'c list -> ('a * 'b * 'c) list
 
-  val cartesian_filter :
-    ('a -> 'b -> 'c option) -> 'a list -> 'b list -> 'c list
-  (** Keep only those products that do not return None *)
-
   val cartesians_filter :
     ('a -> 'b -> 'b option) -> 'b -> 'a list list -> 'b list
+  (** Keep only those products that do not return None *)
 
-  val union_map : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
   val factorize_left : ('a * 'b) list -> ('a * 'b list) list
 end
 

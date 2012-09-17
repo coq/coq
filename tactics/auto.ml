@@ -538,9 +538,9 @@ let make_apply_entry env sigma (eapply,hnf,verbose) pri ?(name=PathAny) (c,cty) 
 
 let make_resolves env sigma flags pri ?name c =
   let cty = Retyping.get_type_of env sigma c in
-  let ents =
-    map_succeed
-      (fun f -> f (c,cty))
+  let try_apply f =
+    try Some (f (c, cty)) with Failure _ -> None in
+  let ents = List.map_filter try_apply
       [make_exact_entry sigma pri ?name; make_apply_entry env sigma flags pri ?name]
   in
   if ents = [] then
@@ -912,11 +912,11 @@ let pr_hints_db (name,db,hintlist) =
 (* Print all hints associated to head c in any database *)
 let pr_hint_list_for_head c =
   let dbs = Hintdbmap.to_list !searchtable in
-  let valid_dbs =
-    map_succeed
-      (fun (name,db) -> (name,db, List.map (fun v -> 0, v) (Hint_db.map_all c db)))
-      dbs
+  let validate (name, db) =
+    let hints = List.map (fun v -> 0, v) (Hint_db.map_all c db) in
+    (name, db, hints)
   in
+  let valid_dbs = List.map validate dbs in
   if valid_dbs = [] then
     (str "No hint declared for :" ++ pr_global c)
   else
@@ -941,7 +941,7 @@ let pr_hint_term cl =
 	with Bound -> Hint_db.map_none
       in
       let fn db = List.map (fun x -> 0, x) (fn db) in
-	map_succeed (fun (name, db) -> (name, db, fn db)) dbs
+      List.map (fun (name, db) -> (name, db, fn db)) dbs
     in
       if valid_dbs = [] then
 	(str "No hint applicable for current goal")

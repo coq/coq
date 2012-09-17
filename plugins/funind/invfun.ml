@@ -116,10 +116,13 @@ let generate_type g_to_f f graph i =
       | (_,_,res_type)::fun_ctxt -> fun_ctxt,res_type
   in
   let nb_args = List.length fun_ctxt in
-  let args_from_decl i decl =
-    match decl with
-      | (_,Some _,_) -> incr i; failwith "args_from_decl"
-      | _ -> let j = !i in incr i;mkRel (nb_args - j  + 1)
+  let rec args_from_decl i accu = function
+  | [] -> accu
+  | (_, Some _, _) :: l ->
+    args_from_decl (succ i) accu l
+  | _ :: l ->
+    let t = mkRel (nb_args - i + 1) in
+    args_from_decl (succ i) (t :: accu) l
   in
   (*i We need to name the vars [res] and [fv] i*)
   let filter = function (Name id,_,_) -> Some id | (Anonymous,_,_) -> None in
@@ -131,12 +134,11 @@ let generate_type g_to_f f graph i =
   let fv_id =
     Namegen.next_ident_away_in_goal
       (id_of_string "fv")
-      (res_id::(map_succeed (function (Name id,_,_) -> id | (Anonymous,_,_) -> failwith "Anonymous!") fun_ctxt))
+      (res_id::(List.map_filter (function (Name id,_,_) -> Some id | (Anonymous,_,_) -> None) fun_ctxt))
   in
   (*i we can then type the argument to be applied to the function [f] i*)
   let args_as_rels =
-    let i = ref 0 in
-    Array.of_list ((map_succeed (args_from_decl i) (List.rev fun_ctxt)))
+    Array.of_list (args_from_decl 0 [] fun_ctxt)
   in
   let args_as_rels = Array.map Termops.pop args_as_rels in
   (*i
@@ -152,8 +154,7 @@ let generate_type g_to_f f graph i =
     i*)
   let graph_applied =
     let args_and_res_as_rels =
-      let i = ref 0 in
-      Array.of_list ((map_succeed (args_from_decl i) (List.rev ((Name res_id,None,res_type)::fun_ctxt))) )
+      Array.of_list (args_from_decl 0 [] ((Name res_id,None,res_type) :: fun_ctxt))
     in
     let args_and_res_as_rels =
       Array.mapi (fun i c -> if i <> Array.length args_and_res_as_rels - 1 then lift 1 c else c) args_and_res_as_rels

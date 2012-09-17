@@ -257,8 +257,8 @@ let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
 	       hints)
 	else []
       in
-        (hints @ map_succeed 
-	 (fun f -> try f (c,cty) with UserError _ -> failwith "") 
+        (hints @ List.map_filter
+	 (fun f -> try Some (f (c, cty)) with Failure _ | UserError _ -> None) 
 	 [make_exact_entry ~name sigma pri; make_apply_entry ~name env sigma flags pri])
     else []
 

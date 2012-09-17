@@ -441,11 +441,6 @@ let interval n m =
   in
   interval_n ([],m)
 
-
-let map_succeed f l =
-  let filter x = try Some (f x) with Failure _ -> None in
-  List.map_filter filter l 
-
 (*s Memoization *)
 
 let memo1_eq eq f =

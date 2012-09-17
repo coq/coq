@@ -118,8 +118,7 @@ sig
   val assoc_snd_in_triple : 'a -> ('a * 'b * 'c) list -> 'b
   val for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool
   val sep_last : 'a list -> 'a * 'a list
-  val try_find_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b
-  val try_find : ('a -> 'b) -> 'a list -> 'b
+  val find_map : ('a -> 'b option) -> 'a list -> 'b
   val uniquize : 'a list -> 'a list
 
   (** merges two sorted lists and preserves the uniqueness property: *)
@@ -143,7 +142,6 @@ sig
 
   (** [map_append f [x1; ...; xn]] returns [(f x1)@(f x2)@...@(f xn)] *)
   val map_append : ('a -> 'b list) -> 'a list -> 'b list
-  val join_map : ('a -> 'b list) -> 'a list -> 'b list
 
   (** raises [Invalid_argument] if the two lists don't have the same length *)
   val map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
@@ -169,14 +167,12 @@ sig
   val combinations : 'a list list -> 'a list list
   val combine3 : 'a list -> 'b list -> 'c list -> ('a * 'b * 'c) list
 
-  (** Keep only those products that do not return None *)
-  val cartesian_filter :
-    ('a -> 'b -> 'c option) -> 'a list -> 'b list -> 'c list
   val cartesians_filter :
     ('a -> 'b -> 'b option) -> 'b -> 'a list list -> 'b list
+  (** Keep only those products that do not return None *)
 
-  val union_map : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
   val factorize_left : ('a * 'b) list -> ('a * 'b list) list
+
 end
 
 include List
@@ -555,12 +551,12 @@ let try_find_i f =
   in
   try_find_f
 
-let try_find f =
-  let rec try_find_f = function
-    | [] -> failwith "try_find"
-    | h::t -> try f h with Failure _ -> try_find_f t
-  in
-  try_find_f
+let rec find_map f = function
+| [] -> raise Not_found
+| x :: l ->
+  match f x with
+  | None -> find_map f l
+  | Some y -> y
 
 let uniquize l =
   let visited = Hashtbl.create 23 in
@@ -722,7 +718,6 @@ let drop_prefix p l =
       | None -> l
 
 let map_append f l = List.flatten (List.map f l)
-let join_map = map_append   (* Alias *)
 
 let map_append2 f l1 l2 = List.flatten (List.map2 f l1 l2)
 
@@ -759,18 +754,6 @@ let map_assoc f = List.map (fun (x,a) -> (x,f a))
 let rec assoc_f f a = function
   | (x, e) :: xs -> if f a x then e else assoc_f f a xs
   | [] -> raise Not_found
-
-(* Specification:
-   - =p= is set equality (double inclusion)
-   - f such that \forall l acc, (f l acc) =p= append (f l []) acc
-   - let g = fun x -> f x [] in
-   - union_map f l acc =p= append (flatten (map g l)) acc
- *)
-let union_map f l acc =
-  List.fold_left
-    (fun x y -> f y x)
-    acc
-    l
 
 (* A generic cartesian product: for any operator (**),
    [cartesian (**) [x1;x2] [y1;y2] = [x1**y1; x1**y2; x2**y1; x2**y1]],
@@ -817,4 +800,3 @@ let rec factorize_left = function
       (a,(b::List.map snd al)) :: factorize_left l'
   | [] ->
       []
-

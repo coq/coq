@@ -26,6 +26,8 @@ val lift_subscript   : identifier -> identifier
 val forget_subscript : identifier -> identifier
 
 val out_name : name -> identifier
+(** [out_name] associates [id] to [Name id]. Raises [Failure "Nameops.out_name"]
+    otherwise. *)
 
 val name_fold : (identifier -> 'a -> 'a) -> name -> 'a -> 'a
 val name_iter : (identifier -> unit) -> name -> unit

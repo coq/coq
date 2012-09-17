@@ -1024,9 +1024,11 @@ let progress_with_clause flags innerclause clause =
   let ordered_metas = List.rev (clenv_independent clause) in
   if ordered_metas = [] then error "Statement without assumptions.";
   let f mv =
-    find_matching_clause (clenv_fchain mv ~flags clause) innerclause in
-  try List.try_find f ordered_metas
-  with Failure _ -> error "Unable to unify."
+    try Some (find_matching_clause (clenv_fchain mv ~flags clause) innerclause)
+    with Failure _ -> None
+  in
+  try List.find_map f ordered_metas
+  with Not_found -> error "Unable to unify."
 
 let apply_in_once_main flags innerclause (d,lbind) gl =
   let thm = nf_betaiota gl.sigma (pf_type_of gl d) in

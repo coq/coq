@@ -667,11 +667,10 @@ let mkDestructEq :
   fun not_on_hyp expr g ->
   let hyps = pf_hyps g in
   let to_revert =
-    Util.map_succeed
-      (fun (id,_,t) ->
+    Util.List.map_filter
+      (fun (id, _, t) ->
         if List.mem id not_on_hyp || not (Termops.occur_term expr t)
-        then failwith "is_expr_context";
-        id) hyps in
+        then None else Some id) hyps in
   let to_revert_constr = List.rev_map mkVar to_revert in
   let type_of_expr = pf_type_of g expr in
   let new_hyps = mkApp(Lazy.force refl_equal, [|type_of_expr; expr|])::

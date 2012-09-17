@@ -171,12 +171,13 @@ let prepare_empty_levels forpat (pos,p4assoc,name,reinit) =
   grammar_extend entry reinit (pos,[(name, p4assoc, [])])
 
 let pure_sublevels level symbs =
-  map_succeed
-    (function s ->
-       let i = level_of_snterml s in
-       if level = Some i then failwith "";
-       i)
-    symbs
+  let filter s =
+    try
+      let i = level_of_snterml s in
+      if level = Some i then None else Some i
+    with Failure _ -> None
+  in
+  List.map_filter filter symbs
 
 let extend_constr (entry,level) (n,assoc) mkact forpat rules =
   List.fold_left (fun nb pt ->
@@ -260,11 +261,11 @@ let extend_grammar gram =
   grammar_state := (nb,gram) :: !grammar_state
 
 let recover_notation_grammar ntn prec =
-  let l = map_succeed (function
-    | _, Notation (prec',vars,(_,_,ntn',_ as x)) when prec = prec' & ntn = ntn' ->
-	 vars, x
-    | _ ->
-	 failwith "") !grammar_state in
+  let filter = function
+  | _, Notation (prec', vars, (_,_,ntn',_ as x)) when prec = prec' & ntn = ntn' ->
+    Some (vars, x)
+  | _ -> None in
+  let l = List.map_filter filter !grammar_state in
   assert (List.length l = 1);
   List.hd l
 

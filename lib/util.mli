@@ -118,12 +118,6 @@ val intmap_inv : 'a Intmap.t -> 'a -> int list
 
 val interval : int -> int -> int list
 
-
-(** In [map_succeed f l] an element [a] is removed if [f a] raises 
-   [Failure _] otherwise behaves as [List.map f l] *)
-
-val map_succeed : ('a -> 'b) -> 'a list -> 'b list
-
 (** {6 Memoization. } *)
 
 (** General comments on memoization:

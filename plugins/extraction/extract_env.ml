@@ -30,17 +30,24 @@ let toplevel_env () =
   let get_reference = function
     | (_,kn), Lib.Leaf o ->
 	let mp,_,l = repr_kn kn in
-	let seb = match Libobject.object_tag o with
-	  | "CONSTANT" -> SFBconst (Global.lookup_constant (constant_of_kn kn))
-	  | "INDUCTIVE" -> SFBmind (Global.lookup_mind (mind_of_kn kn))
-	  | "MODULE" -> SFBmodule (Global.lookup_module (MPdot (mp,l)))
+	begin match Libobject.object_tag o with
+	  | "CONSTANT" ->
+            let constant = Global.lookup_constant (constant_of_kn kn) in
+            Some (l, SFBconst constant)
+	  | "INDUCTIVE" ->
+            let inductive = Global.lookup_mind (mind_of_kn kn) in
+            Some (l, SFBmind inductive)
+	  | "MODULE" ->
+            let modl = Global.lookup_module (MPdot (mp, l)) in
+            Some (l, SFBmodule modl)
 	  | "MODULE TYPE" ->
-	      SFBmodtype (Global.lookup_modtype (MPdot (mp,l)))
-	  | _ -> failwith "caught"
-	in l,seb
-    | _ -> failwith "caught"
+            let modtype = Global.lookup_modtype (MPdot (mp, l)) in
+            Some (l, SFBmodtype modtype)
+	  | _ -> None
+        end
+    | _ -> None
   in
-  SEBstruct (List.rev (map_succeed get_reference seg))
+  SEBstruct (List.rev (List.map_filter get_reference seg))
 
 
 let environment_until dir_opt =

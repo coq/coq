@@ -72,18 +72,20 @@ let add_path ~unix_path:dir ~coq_root:coq_dirpath =
 let convert_string d =
   try id_of_string d
   with _ ->
-    if_verbose msg_warning
-      (str ("Directory "^d^" cannot be used as a Coq identifier (skipped)"));
-    flush_all ();
-    failwith "caught"
+    if_verbose msg_warning (str ("Directory "^d^" cannot be used as a Coq identifier (skipped)"));
+    raise Exit
 
 let add_rec_path ~unix_path ~coq_root =
   if exists_dir unix_path then
     let dirs = all_subdirs ~unix_path in
     let prefix = repr_dirpath coq_root in
-    let convert_dirs (lp,cp) =
-      (lp,make_dirpath (List.map convert_string (List.rev cp)@prefix)) in
-    let dirs = map_succeed convert_dirs dirs in
+    let convert_dirs (lp, cp) =
+      try
+        let path = List.map convert_string (List.rev cp) @ prefix in
+        Some (lp, Names.make_dirpath path)
+      with Exit -> None
+    in
+    let dirs = List.map_filter convert_dirs dirs in
     List.iter Check.add_load_path dirs;
     Check.add_load_path (unix_path, coq_root)
   else

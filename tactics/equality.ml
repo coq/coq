@@ -1075,20 +1075,21 @@ let simplify_args env sigma t =
 
 let inject_at_positions env sigma (eq,_,(t,t1,t2)) eq_clause posns tac =
   let e = next_ident_away eq_baseid (ids_of_context env) in
-  let e_env = push_named (e,None,t) env in
-  let injectors =
-    map_succeed
-      (fun (cpath,t1',t2') ->
-        (* arbitrarily take t1' as the injector default value *)
-	let (injbody,resty) = build_injector sigma e_env t1' (mkVar e) cpath in
-	let injfun = mkNamedLambda e t injbody in
-	let pf = applist(eq.congr,[t;resty;injfun;t1;t2]) in
-	let pf_typ = get_type_of env sigma pf in
-	let inj_clause = apply_on_clause (pf,pf_typ) eq_clause in
-        let pf = clenv_value_cast_meta inj_clause in
-	let ty = simplify_args env sigma (clenv_type inj_clause) in
-	(pf,ty))
-      posns in
+  let e_env = push_named (e, None,t) env in
+  let filter (cpath, t1', t2') =
+    try
+      (* arbitrarily take t1' as the injector default value *)
+      let (injbody,resty) = build_injector sigma e_env t1' (mkVar e) cpath in
+      let injfun = mkNamedLambda e t injbody in
+      let pf = applist(eq.congr,[t;resty;injfun;t1;t2]) in
+      let pf_typ = get_type_of env sigma pf in
+      let inj_clause = apply_on_clause (pf,pf_typ) eq_clause in
+      let pf = clenv_value_cast_meta inj_clause in
+      let ty = simplify_args env sigma (clenv_type inj_clause) in
+      Some (pf, ty)
+    with Failure _ -> None
+  in
+  let injectors = List.map_filter filter posns in
   if injectors = [] then
     errorlabstrm "Equality.inj" (str "Failed to decompose the equality.");
   tclTHEN
@@ -1493,7 +1494,8 @@ let subst_all ?(flags=default_subst_tactic_flags ()) gl =
       match kind_of_term y with Var y -> y | _ -> failwith "caught"
     with PatternMatchingFailure -> failwith "caught"
   in
-  let ids = map_succeed test (pf_hyps_types gl) in
+  let test p = try Some (test p) with Failure _ -> None in
+  let ids = List.map_filter test (pf_hyps_types gl) in
   let ids = List.uniquize ids in
   subst_gen flags.rewrite_dependent_proof ids gl
 

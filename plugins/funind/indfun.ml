@@ -97,11 +97,7 @@ let functional_induction with_clean c princl pat =
       if with_clean
       then
 	let idl =
-	  map_succeed
-	    (fun id ->
-	       if Idset.mem id old_idl then failwith "subst_and_reduce";
-	       id
-	    )
+	  List.filter (fun id -> not (Idset.mem id old_idl))
 	    (Tacmach.pf_ids_of_hyps g)
 	in
 	let flag =

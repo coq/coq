@@ -929,10 +929,10 @@ let filter_compatible_systems required systems =
   let rec select = function
       (x::l) ->
 	if List.mem x required then select l
-	else if List.mem (barre x) required then failwith "Exit"
+	else if List.mem (barre x) required then raise Exit
 	else x :: select l
     | [] -> [] in
-  map_succeed (function (sol,splits) -> (sol,select splits)) systems
+  List.map_filter (function (sol, splits) -> try Some (sol, select splits) with Exit -> None) systems
 
 let rec equas_of_solution_tree = function
     Tree(_,t1,t2) -> (equas_of_solution_tree t1)@@(equas_of_solution_tree t2)

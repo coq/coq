@@ -217,12 +217,13 @@ let push_named_rec_types (lna,typarray,_) env =
     (fun e assum -> push_named assum e) env ctxt
 
 let lookup_rel_id id sign =
-  let rec lookrec = function
-    | (n, (Anonymous,_,_)::l) -> lookrec (n+1,l)
-    | (n, (Name id',b,t)::l)  -> if id' = id then (n,b,t) else lookrec (n+1,l)
-    | (_, [])                 -> raise Not_found
+  let rec lookrec n = function
+    | []                     -> raise Not_found
+    | (Anonymous, _, _) :: l -> lookrec (n + 1) l
+    | (Name id', b, t) :: l  ->
+      if Names.id_ord id' id = 0 then (n, b, t) else lookrec (n + 1) l
   in
-  lookrec (1,sign)
+  lookrec 1 sign
 
 (* Constructs either [forall x:t, c] or [let x:=b:t in c] *)
 let mkProd_or_LetIn (na,body,t) c =

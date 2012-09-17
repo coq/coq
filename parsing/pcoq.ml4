@@ -545,12 +545,15 @@ let rec list_mem_assoc_triple x = function
   | (a,b,c) :: l -> a = x or list_mem_assoc_triple x l
 
 let register_empty_levels forpat levels =
-  map_succeed (fun n ->
-    let levels = (if forpat then snd else fst) (List.hd !level_stack) in
-    if not (list_mem_assoc_triple n levels) then
-      find_position_gen forpat true None (Some n)
-    else
-      failwith "") levels
+  let filter n =
+    try
+      let levels = (if forpat then snd else fst) (List.hd !level_stack) in
+      if not (list_mem_assoc_triple n levels) then
+        Some (find_position_gen forpat true None (Some n))
+      else None
+    with Failure _ -> None
+  in
+  List.map_filter filter levels
 
 let find_position forpat assoc level =
   find_position_gen forpat false assoc level
