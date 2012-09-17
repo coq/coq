@@ -6,19 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-IFDEF QUARTZ THEN
-external gtk_mac_init : (string -> unit) -> (unit -> bool) -> unit
-  = "caml_gtk_mac_init"
-
-external gtk_mac_ready :  ([> Gtk.widget ] as 'a) Gtk.obj -> ([> Gtk.widget ] as 'a) Gtk.obj ->
-                          ([> Gtk.widget ] as 'a) Gtk.obj -> unit
-  = "caml_gtk_mac_ready"
-END
-
-let initmac () = IFDEF QUARTZ THEN gtk_mac_init Coqide.do_load Coqide.forbid_quit_to_save ELSE () END
-
-let macready x y z = IFDEF QUARTZ THEN gtk_mac_ready x#as_widget y#as_widget z#as_widget ELSE ()  END
-
 (* On win32, we add the directory of coqide to the PATH at launch-time
    (this used to be done in a .bat script). *)
 
@@ -66,8 +53,19 @@ END
 
 let () =
   Coqide.ignore_break ();
-  ignore (GtkMain.Main.init ());
-  initmac ();
+  ignore (GtkMain.Main.init ())
+
+IFDEF QUARTZ THEN
+  let osx = GOSXApplication.osxapplication ()
+
+  let _ =
+    osx#connect#ns_application_open_file ~callback:(fun x -> Coqide.do_load x; true) in
+  let _ =
+    osx#connect#ns_application_block_termination ~callback:Coqide.forbid_quit_to_save in
+  ()
+END
+
+let () =
   (* Statup preferences *)
   begin
     try Preferences.load_pref ()
@@ -90,9 +88,18 @@ let () =
   Coq.check_connection args;
   Coqide.sup_args := args;
   Coqide.main files;
-    if !Coq_config.with_geoproof then ignore (Thread.create Coqide.check_for_geoproof_input ());
-    macready (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar") (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar/Edit/Prefs")
-             (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar/Help/Abt");
+    if !Coq_config.with_geoproof then ignore (Thread.create Coqide.check_for_geoproof_input ())
+
+IFDEF QUARTZ THEN
+  let () =
+    GtkOSXApplication.OSXApplication.set_menu_bar osx#as_osxapplication (GtkMenu.MenuShell.cast (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar")#as_widget) in
+  let () =
+    GtkOSXApplication.OSXApplication.insert_app_menu_item osx#as_osxapplication (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar/Edit/Prefs")#as_widget 1 in
+  let () =
+    GtkOSXApplication.OSXApplication.set_help_menu osx#as_osxapplication (Some (GtkMenu.MenuItem.cast (Coqide_ui.ui_m#get_widget "/CoqIde MenuBar/Help")#as_widget)) in
+  osx#ready ()
+END
+
     while true do
       try
 	GtkThread.main ()

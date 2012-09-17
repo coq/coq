@@ -647,11 +647,9 @@ else
     else
         echo "LablGtk2 found, native threads: native CoqIde will be available."
 	COQIDE=opt
-        if [ "$nomacintegration_spec" = "no" ] && pkg-config --exists gtk-mac-integration;
+        if [ "$nomacintegration_spec" = "no" ] && lablgtkosxdir=$(ocamlfind query lablgtkosx 2> /dev/null);
         then
-            cflags=$cflags" `pkg-config --cflags gtk-mac-integration`"
-	    IDEARCHFLAGS='-ccopt "`pkg-config --libs gtk-mac-integration`"'
-	    IDEARCHFILE=ide/ide_mac_stubs.o
+            IDEARCHFLAGS=lablgtkosx.cmxa
 	    IDEARCHDEF=QUARTZ
 	elif [ "$ARCH" = "win32" ];
         then
@@ -672,6 +670,8 @@ case $COQIDE in
         esac;;
     no) LABLGTKINCLUDES="";;
 esac
+
+[ x$lablgtkosxdir = x ] || LABLGTKINCLUDES="$LABLGTKINCLUDES -I $lablgtkosxdir"
 
 # strip command
 

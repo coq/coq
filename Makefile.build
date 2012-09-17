@@ -315,8 +315,9 @@ coqide-files: $(IDEFILES)
 ifeq ($(HASCOQIDE),opt)
 $(COQIDE): $(LINKIDEOPT) | $(COQTOPEXE)
 	$(SHOW)'OCAMLOPT -o $@'
-	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) $(IDEOPTFLAGS) -o $@ unix.cmxa threads.cmxa\
-	         lablgtk.cmxa lablgtksourceview2.cmxa gtkThread.cmx str.cmxa $(LINKIDEOPT)
+	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -o $@ unix.cmxa threads.cmxa \
+		lablgtk.cmxa lablgtksourceview2.cmxa $(IDEOPTFLAGS) gtkThread.cmx \
+		str.cmxa $(LINKIDEOPT)
 	$(STRIP) $@
 else
 $(COQIDE): $(COQIDEBYTE)
