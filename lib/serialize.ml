@@ -37,6 +37,8 @@ type 'a call =
   | Quit
   | About
 
+type unknown
+
 (** The structure that coqtop should implement *)
 
 type handler = {
@@ -476,7 +478,7 @@ let of_answer (q : 'a call) (r : 'a value) =
   in
   of_value convert r
 
-let to_answer xml =
+let to_answer xml _ =
   let rec convert elt = match elt with
   | Element (tpe, attrs, l) ->
     begin match tpe with

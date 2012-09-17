@@ -351,7 +351,7 @@ let try_grab coqtop f g =
 
 (** Cf [Ide_intf] for more details *)
 
-let eval_call coqtop logger (c:'a Serialize.call) =
+let eval_call coqtop logger c =
   (** Retrieve the messages sent by coqtop until an answer has been received *)
   let rec loop () =
     let xml = Xml_parser.parse coqtop.xml_parser in
@@ -361,7 +361,7 @@ let eval_call coqtop logger (c:'a Serialize.call) =
       let content = message.Interface.message_content in
       let () = logger level content  in
       loop ()
-    else (Serialize.to_answer xml : 'a Interface.value)
+    else (Serialize.to_answer xml c)
   in
   try
     Xml_utils.print_xml coqtop.cin (Serialize.of_call c);

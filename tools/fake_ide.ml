@@ -18,7 +18,7 @@ type coqtop = {
 
 let logger level content = ()
 
-let eval_call (call:'a Serialize.call) coqtop =
+let eval_call call coqtop =
   prerr_endline (Serialize.pr_call call);
   let xml_query = Serialize.of_call call in
   Xml_utils.print_xml coqtop.out_chan xml_query;
@@ -31,7 +31,7 @@ let eval_call (call:'a Serialize.call) coqtop =
       let content = message.Interface.message_content in
       let () = logger level content in
       loop ()
-    else (Serialize.to_answer xml : 'a Interface.value)
+    else (Serialize.to_answer xml call)
   in
   let res = loop () in
   prerr_endline (Serialize.pr_full_value call res);

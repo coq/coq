@@ -16,6 +16,8 @@ type xml =
 
 type 'a call
 
+type unknown
+
 (** Running a command (given as a string).
     - The 1st flag indicates whether to use "raw" mode
       (less sanity checks, no impact on the undo stack).
@@ -107,14 +109,14 @@ val of_value : ('a -> xml) -> 'a value -> xml
 val to_value : (xml -> 'a) -> xml -> 'a value
 
 val of_call : 'a call -> xml
-val to_call : xml -> 'a call
+val to_call : xml -> unknown call
 
 val of_message : message -> xml
 val to_message : xml -> message
 val is_message : xml -> bool
 
 val of_answer : 'a call -> 'a value -> xml
-val to_answer : xml -> 'a value
+val to_answer : xml -> 'a call -> 'a value
 
 (** * Debug printing *)
 
