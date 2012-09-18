@@ -2461,7 +2461,7 @@ let abstract_args gl generalize_vars dep id defined f args =
     let parvars = ids_of_constr ~all:true Idset.empty f' in
       if not (linear parvars args') then true, f, args
       else
-	match Array.find_i (fun i x -> not (isVar x) || is_defined_variable env (destVar x)) args' with
+	match Array.findi (fun i x -> not (isVar x) || is_defined_variable env (destVar x)) args' with
 	| None -> false, f', args'
 	| Some nonvar ->
 	    let before, after = Array.chop nonvar args' in

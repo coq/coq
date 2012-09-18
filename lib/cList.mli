@@ -100,8 +100,10 @@ sig
   val filter2 : ('a -> 'b -> bool) -> 'a list * 'b list -> 'a list * 'b list
   val map_filter : ('a -> 'b option) -> 'a list -> 'b list
   val map_filter_i : (int -> 'a -> 'b option) -> 'a list -> 'b list
+
   val filter_with : bool list -> 'a list -> 'a list
-  val filter_along : ('a -> bool) -> 'a list -> 'b list -> 'b list
+  (** [filter_with b a] selects elements of [a] whose corresponding element in
+      [b] is [true]. Raise [Invalid_argument _] when sizes differ. *)
 
   val smartmap : ('a -> 'a) -> 'a list -> 'a list
   (** [smartmap f [a1...an] = List.map f [a1...an]] but if for all i

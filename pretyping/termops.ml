@@ -340,6 +340,17 @@ let fold_rec_types g (lna,typarray,_) e =
   let ctxt = Array.map2_i (fun i na t -> (na, None, lift i t)) lna typarray in
   Array.fold_left (fun e assum -> g assum e) e ctxt
 
+let map_left2 f a g b =
+  let l = Array.length a in
+  if l = 0 then [||], [||] else begin
+    let r = Array.create l (f a.(0)) in
+    let s = Array.create l (g b.(0)) in
+    for i = 1 to l - 1 do
+      r.(i) <- f a.(i);
+      s.(i) <- g b.(i)
+    done;
+    r, s
+  end
 
 let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
   | (Rel _ | Meta _ | Var _   | Sort _ | Const _ | Ind _
@@ -370,11 +381,11 @@ let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
       mkCase (ci, p', c', Array.map_left (f l) bl)
   | Fix (ln,(lna,tl,bl as fx)) ->
       let l' = fold_rec_types g fx l in
-      let (tl',bl') = Array.map_left_pair (f l) tl (f l') bl in
+      let (tl', bl') = map_left2 (f l) tl (f l') bl in
       mkFix (ln,(lna,tl',bl'))
   | CoFix(ln,(lna,tl,bl as fx)) ->
       let l' = fold_rec_types g fx l in
-      let (tl',bl') = Array.map_left_pair (f l) tl (f l') bl in
+      let (tl', bl') = map_left2 (f l) tl (f l') bl in
       mkCoFix (ln,(lna,tl',bl'))
 
 (* strong *)

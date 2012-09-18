@@ -581,7 +581,7 @@ let resolve_subrelation env avoid car rel prf rel' res =
 
 let resolve_morphism env avoid oldt m ?(fnewt=fun x -> x) args args' cstr evars =
   let evars, morph_instance, proj, sigargs, m', args, args' =
-    let first = match (Array.find_i (fun _ b -> b <> None) args') with
+    let first = match (Array.findi (fun _ b -> b <> None) args') with
     | Some i -> i
     | None -> raise (Invalid_argument "resolve_morphism") in
     let morphargs, morphobjs = Array.chop first args in

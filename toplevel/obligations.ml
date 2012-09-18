@@ -992,7 +992,7 @@ let next_obligation n tac =
   in
   let obls, rem = prg.prg_obligations in
   let is_open _ x = x.obl_body = None && deps_remaining obls x.obl_deps = [] in
-  let i = match Array.find_i is_open obls with
+  let i = match Array.findi is_open obls with
   | Some i -> i
   | None -> anomaly "Could not find a solvable obligation."
   in

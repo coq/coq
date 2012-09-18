@@ -75,7 +75,6 @@ sig
   val map_filter : ('a -> 'b option) -> 'a list -> 'b list
   val map_filter_i : (int -> 'a -> 'b option) -> 'a list -> 'b list
   val filter_with : bool list -> 'a list -> 'a list
-  val filter_along : ('a -> bool) -> 'a list -> 'b list -> 'b list
 
   (** [smartmap f [a1...an] = List.map f [a1...an]] but if for all i
     [ f ai == ai], then [smartmap f l==l] *)

@@ -153,7 +153,7 @@ exception Found of int
 (* Array scanning *)
 
 let array_prfx (arr: 'a array) (pred: int -> 'a -> bool): int =
-match Array.find_i pred arr with
+match Array.findi pred arr with
 | None -> Array.length arr (* all elt are positive *)
 | Some i -> i
 
@@ -931,7 +931,7 @@ let merge (id1:identifier) (id2:identifier) (args1:identifier array)
                  as above: vars may be linked inside args2?? *)
     Array.mapi
       (fun i c ->
-        match Array.find_i (fun i x -> x=c) args1 with
+        match Array.findi (fun i x -> x=c) args1 with
           | Some j -> Linked j
           | None -> Unlinked)
       args2 in

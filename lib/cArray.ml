@@ -50,7 +50,7 @@ sig
   val for_all4 : ('a -> 'b -> 'c -> 'd -> bool) ->
     'a array -> 'b array -> 'c array -> 'd array -> bool
   val for_all_i : (int -> 'a -> bool) -> int -> 'a array -> bool
-  val find_i : (int -> 'a -> bool) -> 'a array -> int option
+  val findi : (int -> 'a -> bool) -> 'a array -> int option
   val hd : 'a array -> 'a
   val tl : 'a array -> 'a array
   val last : 'a array -> 'a
@@ -68,9 +68,6 @@ sig
   val fold_left2_i :
     (int -> 'a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
   val fold_left_from : int -> ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
-  val fold_right_from : int -> ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
-  val app_tl : 'a array -> 'a list -> 'a list
-  val list_of_tl : 'a array -> 'a list
   val map_to_list : ('a -> 'b) -> 'a array -> 'b list
   val chop : int -> 'a array -> 'a array * 'a array
   val smartmap : ('a -> 'a) -> 'a array -> 'a array
@@ -79,17 +76,13 @@ sig
   val map3 :
     ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
   val map_left : ('a -> 'b) -> 'a array -> 'b array
-  val map_left_pair : ('a -> 'b) -> 'a array -> ('c -> 'd) -> 'c array ->
-    'b array * 'd array
   val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
   val fold_map' : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
   val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
   val fold_map2' :
     ('a -> 'b -> 'c -> 'd * 'c) -> 'a array -> 'b array -> 'c -> 'd array * 'c
   val distinct : 'a array -> bool
-  val union_map : ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
   val rev_to_list : 'a array -> 'a list
-  val filter_along : ('a -> bool) -> 'a list -> 'b array -> 'b array
   val filter_with : bool list -> 'a array -> 'a array
 end
 
@@ -161,7 +154,7 @@ let for_all_i f i v =
 
 exception Found of int
 
-let find_i (pred: int -> 'a -> bool) (arr: 'a array) : int option =
+let findi (pred: int -> 'a -> bool) (arr: 'a array) : int option =
   try
     for i=0 to Array.length arr - 1 do if pred i (arr.(i)) then raise (Found i) done;
     None
@@ -249,20 +242,6 @@ let fold_left_from n f a v =
   in
   fold a n
 
-let fold_right_from n f v a =
-  let rec fold n =
-    if n >= Array.length v then a else f v.(n) (fold (succ n))
-  in
-  fold n
-
-let app_tl v l =
-  if Array.length v = 0 then invalid_arg "Array.app_tl";
-  fold_right_from 1 (fun e l -> e::l) v l
-
-let list_of_tl v =
-  if Array.length v = 0 then invalid_arg "Array.list_of_tl";
-  fold_right_from 1 (fun e l -> e::l) v []
-
 let map_to_list f v =
   List.map f (Array.to_list v)
 
@@ -347,18 +326,6 @@ let map_left f a = (* Ocaml does not guarantee Array.map is LR *)
     r
   end
 
-let map_left_pair f a g b =
-  let l = Array.length a in
-  if l = 0 then [||],[||] else begin
-    let r = Array.create l (f a.(0)) in
-    let s = Array.create l (g b.(0)) in
-    for i = 1 to l - 1 do
-      r.(i) <- f a.(i);
-      s.(i) <- g b.(i)
-    done;
-    r, s
-  end
-
 let iter2 f v1 v2 =
   let n = Array.length v1 in
   if Array.length v2 <> n then invalid_arg "Array.iter2"
@@ -390,6 +357,7 @@ let fold_map2' f v1 v2 e =
   in
   (v',!e')
 
+
 let distinct v =
   let visited = Hashtbl.create 23 in
   try
@@ -401,19 +369,10 @@ let distinct v =
     true
   with Exit -> false
 
-let union_map f a acc =
-  Array.fold_left
-    (fun x y -> f y x)
-    acc
-    a
-
 let rev_to_list a =
   let rec tolist i res =
     if i >= Array.length a then res else tolist (i+1) (a.(i) :: res) in
   tolist 0 []
-
-let filter_along f filter v =
-  Array.of_list (CList.filter_along f filter (Array.to_list v))
 
 let filter_with filter v =
   Array.of_list (CList.filter_with filter (Array.to_list v))
