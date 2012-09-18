@@ -656,7 +656,7 @@ let descend_then sigma env head dirn =
 	it_mkLambda_or_LetIn_name env result cstr.(i-1).cs_args in
       let brl =
         List.map build_branch
-          (interval 1 (Array.length mip.mind_consnames)) in
+          (List.interval 1 (Array.length mip.mind_consnames)) in
       let ci = make_case_info env ind RegularStyle in
       mkCase (ci, p, head, Array.of_list brl)))
 
@@ -699,7 +699,7 @@ let construct_discriminator sigma env dirn c sort =
     let endpt = if i = dirn then true_0 else false_0 in
     it_mkLambda_or_LetIn endpt cstrs.(i-1).cs_args in
   let brl =
-    List.map build_branch(interval 1 (Array.length mip.mind_consnames)) in
+    List.map build_branch(List.interval 1 (Array.length mip.mind_consnames)) in
   let ci = make_case_info env ind RegularStyle in
   mkCase (ci, p, c, Array.of_list brl)
 

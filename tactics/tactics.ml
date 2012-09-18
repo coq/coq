@@ -1247,7 +1247,7 @@ let any_constructor with_evars tacopt gl =
   tclFIRST
     (List.map
       (fun i -> tclTHEN (constructor_tac with_evars None i NoBindings) t)
-      (interval 1 nconstr)) gl
+      (List.interval 1 nconstr)) gl
 
 let left_with_bindings  with_evars = constructor_tac with_evars (Some 2) 1
 let right_with_bindings with_evars = constructor_tac with_evars (Some 2) 2

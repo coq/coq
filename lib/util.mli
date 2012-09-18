@@ -15,11 +15,6 @@ val on_fst : ('a -> 'b) -> 'a * 'c -> 'b * 'c
 val on_snd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
 val map_pair : ('a -> 'b) -> 'a * 'a -> 'b * 'b
 
-(** Going down pairs *)
-
-val down_fst : ('a -> 'b) -> 'a * 'c -> 'b
-val down_snd : ('a -> 'b) -> 'c * 'a -> 'b
-
 (** Mapping under triple *)
 
 val on_pi1 : ('a -> 'b) -> 'a * 'c * 'd -> 'b * 'c * 'd
@@ -106,45 +101,11 @@ val delayed_force : 'a delayed -> 'a
 
 (** {6 Misc. } *)
 
-type ('a,'b) union = Inl of 'a | Inr of 'b
+type ('a, 'b) union = Inl of 'a | Inr of 'b
 
 module Intset : Set.S with type elt = int
 
 module Intmap : Map.S with type key = int
-
-val intmap_in_dom : int -> 'a Intmap.t -> bool
-val intmap_to_list : 'a Intmap.t -> (int * 'a) list
-val intmap_inv : 'a Intmap.t -> 'a -> int list
-
-val interval : int -> int -> int list
-
-(** {6 Memoization. } *)
-
-(** General comments on memoization:
-   - cache is created whenever the function is supplied (because of
-      ML's polymorphic value restriction).
-   - cache is never flushed (unless the memoized fun is GC'd)
- 
-   One cell memory: memorizes only the last call *)
-val memo1_1 : ('a -> 'b) -> ('a -> 'b)
-val memo1_2 : ('a -> 'b -> 'c) -> ('a -> 'b -> 'c)
-
-(** with custom equality (used to deal with various arities) *)
-val memo1_eq : ('a -> 'a -> bool) -> ('a -> 'b) -> ('a -> 'b)
-
-(** Memorizes the last [n] distinct calls. Efficient only for small [n]. *)
-val memon_eq : ('a -> 'a -> bool) -> int -> ('a -> 'b) -> ('a -> 'b)
-
-(** {6 Size of an ocaml value (in words, bytes and kilobytes). } *)
-
-val size_w : 'a -> int
-val size_b : 'a -> int
-val size_kb : 'a -> int
-
-(** {6 Total size of the allocated ocaml heap. } *)
-
-val heap_size : unit -> int
-val heap_size_kb : unit -> int
 
 (** {6 ... } *)
 (** Coq interruption: set the following boolean reference to interrupt Coq

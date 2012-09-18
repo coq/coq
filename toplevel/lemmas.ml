@@ -51,7 +51,7 @@ let adjust_guardness_conditions const = function
   | Fix ((nv,0),(_,_,fixdefs as fixdecls)) ->
 (*      let possible_indexes =
 	List.map2 (fun i c -> match i with Some i -> i | None ->
-	  interval 0 (List.length ((lam_assum c))))
+	  List.interval 0 (List.length ((lam_assum c))))
 	  lemma_guard (Array.to_list fixdefs) in
 *)
       let indexes =

@@ -370,4 +370,4 @@ open Printf
 
 let mem s =
   let m = try_find_library s in
-  h 0 (str (sprintf "%dk" (size_kb m)))
+  h 0 (str (sprintf "%dk" (CObj.size_kb m)))

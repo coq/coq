@@ -100,9 +100,16 @@ let is_ground_env evd env =
     | _ -> true in
   List.for_all is_ground_decl (rel_context env) &&
   List.for_all is_ground_decl (named_context env)
+
 (* Memoization is safe since evar_map and environ are applicative
    structures *)
-let is_ground_env = memo1_2 is_ground_env
+let memo f =
+  let m = ref None in
+  fun x y -> match !m with
+  | Some (x', y', r) when x == x' && y == y' -> r
+  | _ -> let r = f x y in m := Some (x, y, r); r
+
+let is_ground_env = memo is_ground_env
 
 (* Return the head evar if any *)
 

@@ -333,7 +333,7 @@ and extract_type_scheme env db c p =
       | _ ->
           let rels = fst (splay_prod env none (type_of env c)) in
           let env = push_rels_assum rels env in
-          let eta_args = List.rev_map mkRel (interval 1 p) in
+          let eta_args = List.rev_map mkRel (List.interval 1 p) in
           extract_type env db 0 (lift p c) eta_args
 
 
@@ -719,7 +719,7 @@ and extract_cons_app env mle mlt (((kn,i) as ip,j) as cp) args =
   let oi = mi.ind_packets.(i) in
   let nb_tvars = List.length oi.ip_vars
   and types = List.map (expand env) oi.ip_types.(j-1) in
-  let list_tvar = List.map (fun i -> Tvar i) (interval 1 nb_tvars) in
+  let list_tvar = List.map (fun i -> Tvar i) (List.interval 1 nb_tvars) in
   let type_cons = type_recomp (types, Tglob (IndRef ip, list_tvar)) in
   let type_cons = instantiation (nb_tvars, type_cons) in
   (* Then, the usual variables [s], [ls], [la], ... *)
@@ -848,7 +848,7 @@ let decomp_lams_eta_n n m env c t =
   let d = n - m in
   (* we'd better keep rels' as long as possible. *)
   let rels = (List.firstn d rels) @ rels' in
-  let eta_args = List.rev_map mkRel (interval 1 d) in
+  let eta_args = List.rev_map mkRel (List.interval 1 d) in
   rels, applist (lift d c,eta_args)
 
 (* Let's try to identify some situation where extracted code

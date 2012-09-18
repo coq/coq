@@ -79,6 +79,10 @@ sig
   val tabulate : (int -> 'a) -> int -> 'a list
   (** [tabulate f n] builds [[f 0; ...; f (n-1)]] *)
 
+  val interval : int -> int -> int list
+  (** [interval i j] creates the list [[i; i + 1; ...; j]], or [[]] when 
+      [j <= i]. *)
+
   val make : int -> 'a -> 'a list
   (** [make n x] returns a list made of [n] times [x]. Raise
       [Invalid_argument "List.make"] if [n] is negative. *)

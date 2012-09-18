@@ -66,6 +66,7 @@ sig
 
   (** [tabulate f n] builds [[f 0; ...; f (n-1)]] *)
   val tabulate : (int -> 'a) -> int -> 'a list
+  val interval : int -> int -> int list
   val make : int -> 'a -> 'a list
   val assign : 'a list -> int -> 'a -> 'a list
   val distinct : 'a list -> bool
@@ -368,6 +369,12 @@ let tabulate f len =
   let dummy = { head = Obj.magic 0; tail = [] } in
   loop dummy 0;
   dummy.tail
+
+let interval n m =
+  let rec interval_n (l,m) =
+    if n > m then l else interval_n (m::l, pred m)
+  in
+  interval_n ([], m)
 
 let addn n v =
   let rec aux n l =

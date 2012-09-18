@@ -831,7 +831,7 @@ let internalization_type_of_entry_type = function
   | ETBinderList _ | ETConstrList _ -> assert false
 
 let set_internalization_type typs =
-  List.map (down_snd internalization_type_of_entry_type) typs
+  List.map (fun (_, e) -> internalization_type_of_entry_type e) typs
 
 let make_internalization_vars recvars mainvars typs =
   let maintyps = List.combine mainvars typs in

@@ -665,5 +665,5 @@ open Printf
 let mem s =
   let m = try_find_library s in
   h 0 (str (sprintf "%dk (cenv = %dk / seg = %dk)"
-		 (size_kb m) (size_kb m.library_compiled)
-		 (size_kb m.library_objects)))
+		 (CObj.size_kb m) (CObj.size_kb m.library_compiled)
+		 (CObj.size_kb m.library_objects)))

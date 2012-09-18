@@ -41,7 +41,7 @@ let memory_stat = ref false
 
 let print_memory_stat () =
   if !memory_stat then
-    pp (str "total heap size = " ++ int (heap_size_kb ()) ++ str " kbytes" ++ fnl ())
+    pp (str "total heap size = " ++ int (CObj.heap_size_kb ()) ++ str " kbytes" ++ fnl ())
 
 let _ = at_exit print_memory_stat
 

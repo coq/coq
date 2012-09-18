@@ -82,7 +82,7 @@ let mis_is_recursive_subset listind rarg =
   Array.exists one_is_rec (dest_subterms rarg)
 
 let mis_is_recursive (ind,mib,mip) =
-  mis_is_recursive_subset (interval 0 (mib.mind_ntypes-1))
+  mis_is_recursive_subset (List.interval 0 (mib.mind_ntypes - 1))
     mip.mind_recargs
 
 let mis_nf_constructor_type (ind,mib,mip) j =

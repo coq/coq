@@ -534,7 +534,7 @@ let compute_possible_guardness_evidences (ids,_,na) =
 	 but doing it properly involves delta-reduction, and it finally
          doesn't seem to worth the effort (except for huge mutual
 	 fixpoints ?) *)
-      interval 0 (List.length ids - 1)
+      List.interval 0 (List.length ids - 1)
 
 type recursive_preentry =
   identifier list * constr option list * types list
