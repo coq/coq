@@ -47,6 +47,10 @@ let int_of_modifier = function
   | `BUTTON3 -> 1024
   | `BUTTON4 -> 2048
   | `BUTTON5 -> 4096
+  | `HYPER -> 1 lsl 22
+  | `META -> 1 lsl 20
+  | `RELEASE -> 1 lsl 30
+  | `SUPER -> 1 lsl 21
 
 let print_modifier l =
   List.iter
@@ -65,7 +69,11 @@ let print_modifier l =
 	  | `BUTTON2 -> "B2"
 	  | `BUTTON3 -> "B3"
 	  | `BUTTON4 -> "B4"
-	  | `BUTTON5 -> "B5")
+	  | `BUTTON5 -> "B5"
+          | `HYPER -> "HYPER"                                                                                                     
+          | `META -> "META"                                                                                                       
+          | `RELEASE -> ""                                                                                                        
+          | `SUPER -> "SUPER")
 	    m)^" ")
     )
     l;
