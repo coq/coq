@@ -107,7 +107,7 @@ let bad_token str = raise (Error.E (Bad_token str))
 (* Lexer conventions on tokens *)
 
 type token_kind =
-  | Utf8Token of (utf8_status * int)
+  | Utf8Token of (Unicode.status * int)
   | AsciiChar
   | EmptyStream
 
@@ -161,8 +161,8 @@ let lookup_utf8_tail c cs =
 	  (Char.code c3 land 0x3F) lsl 6 + (Char.code c4 land 0x3F)
       | _ -> error_utf8 cs
     in
-    try classify_unicode unicode, n
-    with UnsupportedUtf8 ->
+    try Unicode.classify unicode, n
+    with Unicode.Unsupported ->
       njunk n cs; error_unsupported_unicode_character n unicode cs
 
 let lookup_utf8 cs =
@@ -199,8 +199,8 @@ let check_ident str =
         loop_id true s
     | [< s >] ->
 	match unlocated lookup_utf8 s with
-	| Utf8Token (UnicodeLetter, n) -> njunk n s; loop_id true s
-	| Utf8Token (UnicodeIdentPart, n) when intail -> njunk n s; loop_id true s
+	| Utf8Token (Unicode.Letter, n) -> njunk n s; loop_id true s
+	| Utf8Token (Unicode.IdentPart, n) when intail -> njunk n s; loop_id true s
 	| EmptyStream -> ()
 	| Utf8Token _ | AsciiChar -> bad_token str
   in
@@ -261,7 +261,7 @@ let rec ident_tail len = parser
       ident_tail (store len c) s
   | [< s >] ->
       match lookup_utf8 s with
-      | Utf8Token ((UnicodeIdentPart | UnicodeLetter), n) ->
+      | Utf8Token ((Unicode.IdentPart | Unicode.Letter), n) ->
 	  ident_tail (nstore n len s) s
       | _ -> len
 
@@ -445,7 +445,7 @@ let parse_after_special c bp =
       token_of_special c (get_buff len)
   | [< s >] ->
       match lookup_utf8 s with
-      | Utf8Token (UnicodeLetter, n) ->
+      | Utf8Token (Unicode.Letter, n) ->
 	  token_of_special c (get_buff (ident_tail (nstore n 0 s) s))
       | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars bp c s)
 
@@ -457,7 +457,7 @@ let parse_after_qmark bp s =
     | None -> KEYWORD "?"
     | _ ->
 	match lookup_utf8 s with
-	  | Utf8Token (UnicodeLetter, _) -> LEFTQMARK
+	  | Utf8Token (Unicode.Letter, _) -> LEFTQMARK
 	  | AsciiChar | Utf8Token _ | EmptyStream -> fst (process_chars bp '?' s)
 
 let blank_or_eof cs =
@@ -506,13 +506,13 @@ let rec next_token = parser bp
       t
   | [< s >] ->
       match lookup_utf8 s with
-	| Utf8Token (UnicodeLetter, n) ->
+	| Utf8Token (Unicode.Letter, n) ->
 	    let len = ident_tail (nstore n 0 s) s in
 	    let id = get_buff len in
 	    let ep = Stream.count s in
 	    comment_stop bp;
 	    (try find_keyword id s with Not_found -> IDENT id), (bp, ep)
-	| AsciiChar | Utf8Token ((UnicodeSymbol | UnicodeIdentPart), _) ->
+	| AsciiChar | Utf8Token ((Unicode.Symbol | Unicode.IdentPart), _) ->
 	    let t = process_chars bp (Stream.next s) s in
 	    comment_stop bp; t
 	| EmptyStream ->

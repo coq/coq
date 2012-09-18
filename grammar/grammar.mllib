@@ -5,8 +5,6 @@ Compat
 Flags
 Pp
 Loc
-Segmenttree
-Unicodetable
 Errors
 CList
 CArray
@@ -15,6 +13,9 @@ Bigint
 Hashcons
 Predicate
 Option
+Segmenttree
+Unicodetable
+Unicode
 
 Names
 Libnames

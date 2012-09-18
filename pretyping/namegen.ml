@@ -63,7 +63,7 @@ let is_constructor id =
 (* Generating "intuitive" names from its type *)
 
 let lowercase_first_char id = (* First character of a constr *)
-  lowercase_first_char_utf8 (string_of_id id)
+  Unicode.lowercase_first_char (string_of_id id)
 
 let sort_hdchar = function
   | Prop(_) -> "P"

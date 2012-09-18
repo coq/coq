@@ -6,6 +6,9 @@ Errors
 Bigint
 Hashcons
 Dyn
+Segmenttree
+Unicodetable
+Unicode
 System
 Gmap
 Fset

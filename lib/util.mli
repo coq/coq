@@ -33,7 +33,6 @@ val is_letter : char -> bool
 val is_digit : char -> bool
 val is_ident_tail : char -> bool
 val is_blank : char -> bool
-val next_utf8 : string -> int -> int * int
 
 (** {6 Strings. } *)
 
@@ -54,15 +53,6 @@ val parse_loadpath : string -> string list
 
 module Stringset : Set.S with type elt = string
 module Stringmap : Map.S with type key = string
-
-type utf8_status = UnicodeLetter | UnicodeIdentPart | UnicodeSymbol
-
-exception UnsupportedUtf8
-
-val ident_refutation : string -> (bool * string) option
-val classify_unicode : int -> utf8_status
-val lowercase_first_char_utf8 : string -> string
-val ascii_of_ident : string -> string
 
 (** {6 Lists. } *)
 

@@ -24,7 +24,7 @@ let exclude_search_in_dirname f = skipped_dirnames := f :: !skipped_dirnames
 
 let ok_dirname f =
   f <> "" && f.[0] <> '.' && not (List.mem f !skipped_dirnames) &&
-  match ident_refutation f with |None -> true |_ -> false
+  (Unicode.ident_refutation f = None)
 
 let all_subdirs ~unix_path:root =
   let l = ref [] in

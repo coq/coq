@@ -22,7 +22,7 @@ let string_of_id id =
   for i = 0 to String.length s - 2 do
     if s.[i] = '_' && s.[i+1] = '_' then warning_id s
   done;
-  ascii_of_ident s
+  Unicode.ascii_of_ident s
 
 let is_mp_bound = function MPbound _ -> true | _ -> false
 
