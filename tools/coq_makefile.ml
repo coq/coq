@@ -338,11 +338,11 @@ let implicit () =
     print "%.ml.d: %.ml\n";
     print "\t$(OCAMLDEP) -slash $(OCAMLLIBS) \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let cmxs_rules () =
+    print "%.cmxs: %.cmxa\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -linkall -shared -o $@ $<\n\n";
     print "%.cmxs: %.cmx\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -shared -o $@ $<\n\n" in
   let mllib_rules () =
     print "%.cma: | %.mllib\n\t$(CAMLLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
     print "%.cmxa: | %.mllib\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -a -o $@ $^\n\n";
-    print "%.cmxs: %.cmxa\n\t$(CAMLOPTLINK) $(ZDEBUG) $(ZFLAGS) -linkall -shared -o $@ $<\n\n";
     print "%.mllib.d: %.mllib\n";
     print "\t$(COQDEP) -slash $(COQLIBS) -c \"$<\" > \"$@\" || ( RV=$$?; rm -f \"$@\"; exit $${RV} )\n\n" in
   let mlpack_rules () =
@@ -455,7 +455,7 @@ let parameters () =
   print "# DSTROOT to specify a prefix to install path.\n\n";
   print "# Here is a hack to make $(eval $(shell works:\n";
   print "define donewline\n\n\nendef\n";
-  print "includecmdwithout@ = $(eval $(subst @,$(donewline),$(shell { $(1) | tr '\\n' '@'; })))\n";
+  print "includecmdwithout@ = $(eval $(subst @,$(donewline),$(shell { $(1) | tr -d '\\r' | tr '\\n' '@'; })))\n";
   print "$(call includecmdwithout@,$(COQBIN)coqtop -config)\n\n"
 
 let include_dirs (inc_i,inc_r) =
