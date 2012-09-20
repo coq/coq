@@ -743,11 +743,11 @@ toplevel/mltop.optml: toplevel/mltop.ml4 config/Makefile # no camlp4deps here
 
 ide/coqide_main.ml: ide/coqide_main.ml4
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) $(CAMLP4USE) -impl $< -o $@
+	$(HIDE)$(CAMLP4O) $(PR_O) $(CAMLP4USE) -impl $< -o $@
 
 ide/coqide_main_opt.ml: ide/coqide_main.ml4 config/Makefile # no camlp4deps here
 	$(SHOW)'CAMLP4O   $<'
-	$(HIDE)$(CAMLP4O) $(CAMLP4USE) -D$(IDEOPTINT) -impl $< -o $@
+	$(HIDE)$(CAMLP4O) $(PR_O) $(CAMLP4USE) -D$(IDEOPTINT) -impl $< -o $@
 
 
 # pretty printing of the revision number when compiling a checked out
