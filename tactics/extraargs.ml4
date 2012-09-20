@@ -204,7 +204,7 @@ let pr_in_hyp  pr_id (lo,concl) :  Pp.std_ppcmds =
     | None,false -> str "in" ++ spc () ++ str "*" ++ spc () ++ str "|-"
     | Some l,_ ->
 	str "in" ++
-	  pr_sequence pr_id l ++
+         spc () ++ prlist_with_sep pr_comma pr_id l ++
 	  match concl with
 	    | true -> spc () ++ str "|-" ++ spc () ++ str "*"
 	    | _ -> mt ()
