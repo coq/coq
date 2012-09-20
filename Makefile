@@ -26,7 +26,6 @@
 #
 # make VERBOSE=1           # restore the raw echoing of commands
 # make NO_RECALC_DEPS=1    # avoid recomputing dependencies
-# make NO_RECOMPILE_LIB=1  # a coqtop rebuild does not trigger a stdlib rebuild
 #
 # Nota: the 1 above can be replaced by any non-empty value
 #

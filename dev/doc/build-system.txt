@@ -108,9 +108,6 @@ save precious time:
    like that. This will avoid entering the stage 3, and cut build
    system overhead by 50% (1.2s instead of 2.4 on writer's machine).
 
- - You can turn off rebuilding of the standard library each time
-   bin/coqtop is rebuilt with NO_RECOMPILE_LIB=1.
-
  - If you want to avoid all .ml4 files being recompiled only because
    grammar.cma was rebuilt, do "make ml4depclean" once and then use
    NO_RECOMPILE_ML4=1.

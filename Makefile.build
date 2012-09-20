@@ -67,7 +67,6 @@ ALLDEPS:=$(addsuffix .d, \
 
 VERBOSE=
 NO_RECOMPILE_ML4=
-NO_RECOMPILE_LIB=
 NO_RECALC_DEPS=
 READABLE_ML4=	# non-empty means .ml of .ml4 will be ascii instead of binary
 VALIDATE=
@@ -150,13 +149,6 @@ ifdef COQ_XML
 endif
 ifdef VALIDATE
  VO_TOOLS_DEP += $(CHICKEN)
-endif
-ifdef NO_RECOMPILE_LIB
- VO_TOOLS_ORDER_ONLY:=$(VO_TOOLS_DEP)
- VO_TOOLS_STRICT:=
-else
- VO_TOOLS_ORDER_ONLY:=
- VO_TOOLS_STRICT:=$(VO_TOOLS_DEP)
 endif
 
 ifdef NO_RECALC_DEPS
@@ -471,7 +463,7 @@ pluginsopt: $(PLUGINSOPT)
 # rules to make theories and plugins
 ###########################################################################
 
-theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_STRICT) | theories/Init/%.v.d $(VO_TOOLS_ORDER_ONLY)
+theories/Init/%.vo theories/Init/%.glob: theories/Init/%.v $(VO_TOOLS_DEP) | theories/Init/%.v.d
 	$(SHOW)'COQC -noinit $<'
 	$(HIDE)rm -f theories/Init/$*.glob
 	$(HIDE)$(BOOTCOQC) theories/Init/$* -noinit
@@ -894,7 +886,7 @@ plugins/%_mod.ml: plugins/%.mllib
 	$(CAMLP4O) $(PR_O) -I $(CAMLLIB) tools/compat5.cmo $${DEPS} $(CAMLP4USE) $(CAMLP4COMPAT) -impl $< -o $@; \
 	else echo $< : Dependency $${DEPS} not ready yet; false; fi
 
-%.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_STRICT) | %.v.d  $(VO_TOOLS_ORDER_ONLY)
+%.vo %.glob: %.v theories/Init/Prelude.vo $(VO_TOOLS_DEP) | %.v.d
 	$(SHOW)'COQC      $<'
 	$(HIDE)rm -f $*.glob 
 	$(HIDE)$(BOOTCOQC) $*
