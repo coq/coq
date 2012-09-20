@@ -194,7 +194,7 @@ let pr_in_hyp  pr_id (lo,concl) :  Pp.std_ppcmds =
     | None,false -> str "in" ++ spc () ++ str "*" ++ spc () ++ str "|-"
     | Some l,_ ->
 	str "in" ++
-	  Util.prlist (fun id -> spc () ++ pr_id id) l ++
+         spc () ++ Util.prlist_with_sep Util.pr_comma pr_id l ++
 	  match concl with
 	    | true -> spc () ++ str "|-" ++ spc () ++ str "*"
 	    | _ -> mt ()

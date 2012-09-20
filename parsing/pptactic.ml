@@ -260,7 +260,14 @@ let rec pr_generic prc prlc prtac prpat x =
 
 let rec tacarg_using_rule_token pr_gen = function
   | Some s :: l, al -> str s :: tacarg_using_rule_token pr_gen (l,al)
-  | None :: l, a :: al -> pr_gen a :: tacarg_using_rule_token pr_gen (l,al)
+  | None :: l, a :: al ->
+      let print_it =
+        match genarg_tag a with
+        | OptArgType _ -> fold_opt (fun _ -> true) false a
+        | _ -> true
+      in
+      let r = tacarg_using_rule_token pr_gen (l,al) in
+      if print_it then pr_gen a :: r else r
   | [], [] -> []
   | _ -> failwith "Inconsistent arguments of extended tactic"
 
@@ -423,7 +430,7 @@ let pr_clauses default_is_concl pr_id = function
 	 (if occs = no_occurrences_expr then mt ()
 	  else pr_with_occurrences (fun () -> str" |- *") (occs,())))
 
-let pr_orient b = if b then mt () else str " <-"
+let pr_orient b = if b then mt () else str "<- "
 
 let pr_multi = function
   | Precisely 1 -> mt ()
@@ -806,17 +813,17 @@ and pr_atom1 = function
 
   (* Equivalence relations *)
   | TacReflexivity as x -> pr_atom0 x
-  | TacSymmetry cls -> str "symmetry " ++ pr_clauses (Some true) pr_ident cls
+  | TacSymmetry cls -> str "symmetry" ++ pr_clauses (Some true) pr_ident cls
   | TacTransitivity (Some c) -> str "transitivity" ++ pr_constrarg c
   | TacTransitivity None -> str "etransitivity"
 
   (* Equality and inversion *)
   | TacRewrite (ev,l,cl,by) ->
-      hov 1 (str (with_evars ev "rewrite") ++
+      hov 1 (str (with_evars ev "rewrite") ++ spc () ++
 	     prlist_with_sep
 	     (fun () -> str ","++spc())
 	     (fun (b,m,c) ->
-		pr_orient b ++ spc() ++ pr_multi m ++ pr_with_bindings c)
+		pr_orient b ++ pr_multi m ++ pr_with_bindings c)
 	     l
 	     ++ pr_clauses (Some true) pr_ident cl
 	     ++	(match by with Some by -> pr_by_tactic (pr_tac_level ltop) by | None -> mt()))
