@@ -222,7 +222,7 @@ let install (vfiles,(mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles),_,sds) in
       print "\n";
     end;
     print "install:";
-    if (not_empty cmxsfiles) then print "$(if ifeq '$(HASNATDYNLINK)' 'true',install-natdynlink)";
+    if (not_empty cmxsfiles) then print "$(if $(HASNATDYNLINK_OR_EMPTY),install-natdynlink)";
     print "\n";
     if not_empty vfiles then install_include_by_root "VOFILES" vfiles inc;
     if (not_empty cmofiles) then
@@ -543,14 +543,18 @@ let main_targets vfiles (mlifiles,ml4files,mlfiles,mllibfiles,mlpackfiles) other
       print "CMXSFILES=$(CMXFILES:.cmx=.cmxs) $(CMXAFILES:.cmxa=.cmxs)\n";
       classify_files_by_root "CMXSFILES" (l1@l2) inc;
   end;
-  print "\n";
+  print "ifeq '$(HASNATDYNLINK)' 'true'\n";
+  print "HASNATDYNLINK_OR_EMPTY := yes\n";
+  print "else\n";
+  print "HASNATDYNLINK_OR_EMPTY :=\n";
+  print "endif\n\n";
   section "Definition of the toplevel targets.";
   print "all: ";
   if !some_vfile then print "$(VOFILES) ";
   if !some_mlfile || !some_ml4file || !some_mlpackfile then print "$(CMOFILES) ";
   if !some_mllibfile then print "$(CMAFILES) ";
   if !some_mlfile || !some_ml4file || !some_mllibfile || !some_mlpackfile
-  then print "$(if ifeq '$(HASNATDYNLINK)' 'true',$(CMXSFILES)) ";
+  then print "$(if $(HASNATDYNLINK_OR_EMPTY),$(CMXSFILES)) ";
   print_list "\\\n  " other_targets; print "\n\n";
   if !some_mlifile then
     begin
