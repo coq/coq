@@ -115,32 +115,21 @@ let generate_type g_to_f f graph i =
       | [] | [_] -> anomaly "Not a valid context"
       | (_,_,res_type)::fun_ctxt -> fun_ctxt,res_type
   in
-  let nb_args = List.length fun_ctxt in
   let rec args_from_decl i accu = function
   | [] -> accu
   | (_, Some _, _) :: l ->
     args_from_decl (succ i) accu l
   | _ :: l ->
-    let t = mkRel (nb_args - i + 1) in
+    let t = mkRel i in
     args_from_decl (succ i) (t :: accu) l
   in
   (*i We need to name the vars [res] and [fv] i*)
   let filter = function (Name id,_,_) -> Some id | (Anonymous,_,_) -> None in
-  let res_id =
-    Namegen.next_ident_away_in_goal
-      (id_of_string "res")
-      (List.map_filter filter fun_ctxt)
-  in
-  let fv_id =
-    Namegen.next_ident_away_in_goal
-      (id_of_string "fv")
-      (res_id::(List.map_filter (function (Name id,_,_) -> Some id | (Anonymous,_,_) -> None) fun_ctxt))
-  in
+  let named_ctxt = List.map_filter filter fun_ctxt in
+  let res_id = Namegen.next_ident_away_in_goal (id_of_string "res") named_ctxt in
+  let fv_id = Namegen.next_ident_away_in_goal (id_of_string "fv") (res_id :: named_ctxt) in
   (*i we can then type the argument to be applied to the function [f] i*)
-  let args_as_rels =
-    Array.of_list (args_from_decl 0 [] fun_ctxt)
-  in
-  let args_as_rels = Array.map Termops.pop args_as_rels in
+  let args_as_rels = Array.of_list (args_from_decl 1 [] fun_ctxt) in
   (*i
     the hypothesis [res = fv] can then be computed
     We will need to lift it by one in order to use it as a conclusion
@@ -152,15 +141,9 @@ let generate_type g_to_f f graph i =
     The hypothesis [graph\ x_1\ldots x_n\ res] can then be computed
     We will need to lift it by one in order to use it as a conclusion
     i*)
-  let graph_applied =
-    let args_and_res_as_rels =
-      Array.of_list (args_from_decl 0 [] ((Name res_id,None,res_type) :: fun_ctxt))
-    in
-    let args_and_res_as_rels =
-      Array.mapi (fun i c -> if i <> Array.length args_and_res_as_rels - 1 then lift 1 c else c) args_and_res_as_rels
-    in
-    mkApp(graph,args_and_res_as_rels)
-  in
+  let args_and_res_as_rels = Array.of_list (args_from_decl 3 [] fun_ctxt) in
+  let args_and_res_as_rels = Array.append args_and_res_as_rels [|mkRel 1|] in
+  let graph_applied = mkApp(graph, args_and_res_as_rels) in
   (*i The [pre_context]  is the defined to be the context corresponding to
     \[\forall (x_1:t_1)\ldots(x_n:t_n), let fv := f x_1\ldots x_n in, forall res,  \]
     i*)
