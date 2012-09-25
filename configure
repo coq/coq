@@ -6,7 +6,7 @@
 # 
 ##################################
 
-VERSION=8.3pl4
+VERSION=8.3pl5
 VOMAGIC=08300
 STATEMAGIC=58300
 DATE=`LC_ALL=C LANG=C date +"%B %Y"`
