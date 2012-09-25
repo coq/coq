@@ -196,7 +196,7 @@ let show_match id =
     str "| " ++ hov 1 (prlist_with_sep spc str l) ++ str " =>"
   in
   msg_notice (v 1 (str "match # with" ++ fnl () ++
-	    prlist_with_sep fnl pr_branch patterns ++ fnl ()))
+	    prlist_with_sep fnl pr_branch patterns ++ fnl () ++ str "end" ++ fnl ()))
 
 (* "Print" commands *)
 
