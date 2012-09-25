@@ -673,6 +673,10 @@ mli-doc:: $(DOCMLIS:.mli=.cmi)
 	-t "Coq mlis documentation" -intro $(OCAMLDOCDIR)/docintro \
 	-css-style style.css
 
+ml-dot:: $(MLEXTRAFILES)
+	$(OCAMLDOC) -dot -dot-reduce -rectypes -I $(CAMLLIB) -I $(MYCAMLP4LIB) $(MLINCLUDES)\
+	$(filter $(addsuffix /%.ml,$(CORESRCDIRS)),$(MLFILES)) -o $(OCAMLDOCDIR)/coq.dot
+
 %_dep.png: %.dot
 	$(DOT) -Tpng $< -o $@
 
