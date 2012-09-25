@@ -19,7 +19,7 @@ val size_b : 'a -> int
 val size_kb : 'a -> int
 (** Same as [size] in kilobytes. *)
 
-(** {6 Logical size of an OCaml value *)
+(** {6 Logical size of an OCaml value.} *)
 
 val obj_stats : 'a -> int * int * int
 (** Return the (logical) value size, the string size, and the maximum depth of

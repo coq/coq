@@ -109,7 +109,7 @@ sig
   (** As [map] but guaranteed to be left-to-right. *)
 
   val iter2 : ('a -> 'b -> unit) -> 'a array -> 'b array -> unit
-  (** Iter on two arrays. Raise [Invalid_argument "Array.iter2" if sizes differ. *)
+  (** Iter on two arrays. Raise [Invalid_argument "Array.iter2"] if sizes differ. *)
 
   val fold_map' : ('a -> 'c -> 'b * 'c) -> 'a array -> 'c -> 'b array * 'c
   val fold_map : ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array

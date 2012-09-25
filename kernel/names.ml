@@ -218,7 +218,7 @@ module KNset = Set.Make(KNord)
    (i.e. what the user see)
    and kn2 corresponds to the canonical kernel name
    i.e. in the environment we have
-   kn1 \rhd_{\delta}^* kn2 \rhd_{\delta} t *)
+   {% kn1 \rhd_{\delta}^* kn2 \rhd_{\delta} t %} *)
 type constant = kernel_name*kernel_name
 
 let constant_of_kn kn = (kn,kn)
