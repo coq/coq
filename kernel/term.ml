@@ -1236,7 +1236,10 @@ let equals_constr t1 t2 =
 (** Note that the following Make has the side effect of creating
     once and for all the table we'll use for hash-consing all constr *)
 
-module H = Hashset.Make(struct type t = constr let equal = equals_constr end)
+module HashsetTerm = Hashset.Make(struct type t = constr let equal = equals_constr end)
+
+let term_table = HashsetTerm.create 19991
+(* The associative table to hashcons terms. *)
 
 open Hashset.Combine
 
@@ -1320,7 +1323,7 @@ let hcons_term (sh_sort,sh_ci,sh_construct,sh_ind,sh_con,sh_na,sh_id) =
     let (y, h) = hash_term t in
     (* [h] must be positive. *)
     let h = h land 0x3FFFFFFF in
-    (H.may_add_and_get h y, h)
+    (HashsetTerm.repr h y term_table, h)
 
   in
   (* Make sure our statically allocated Rels (1 to 16) are considered

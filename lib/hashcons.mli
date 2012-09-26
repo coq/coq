@@ -8,6 +8,8 @@
 
 (** Generic hash-consing. *)
 
+(** {6 Hashconsing functorial interface} *)
+
 module type HashconsedType =
   sig
     (** {6 Generic hashconsing signature}
@@ -30,12 +32,15 @@ module type HashconsedType =
         Usually a tuple of functions. *)
     val hashcons :  u -> t -> t
     (** The actual hashconsing function, using its fist argument to recursively
-        hashcons substructures. *)
+        hashcons substructures. It should be compatible with [equal], that is
+        [equal x (hashcons f x) = true]. *)
     val equal : t -> t -> bool
     (** A comparison function. It is allowed to use physical equality
         on the sub-terms hashconsed by the [hashcons] function. *)
     val hash : t -> int
-    (** A hash function passed to the underlying hashtable structure. *)
+    (** A hash function passed to the underlying hashtable structure. [hash]
+        should be compatible with [equal], i.e. if [equal x y = true] then
+        [hash x = hash y]. *)
   end
 
 module type S =
@@ -59,8 +64,8 @@ module Make (X : HashconsedType) : (S with type t = X.t and type u = X.u)
 
 (** {6 Wrappers} *)
 
-(** * These are intended to be used together with instances of the [Make]
-      functor. *)
+(** These are intended to be used together with instances of the [Make]
+    functor. *)
 
 val simple_hcons : (unit -> 'u -> 't -> 't) -> ('u -> 't -> 't)
 (** [simple_hcons f sub obj] creates a new table each time it is applied to any

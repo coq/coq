@@ -23,12 +23,9 @@ end
 
 module type S = sig
   type elt
-  (* [may_add_and_get key constr] uses [key] to look for [constr]
-     in the hash table [H]. If [constr] is in [H], returns the
-     specific representation that is stored in [H]. Otherwise,
-     [constr] is stored in [H] and will be used as the canonical
-     representation of this value in the future. *)
-  val may_add_and_get : int -> elt -> elt
+  type t
+  val create : int -> t
+  val repr : int -> elt -> t -> elt
 end
 
 module Make (E : EqType) =
@@ -38,59 +35,66 @@ module Make (E : EqType) =
 
     type bucketlist = Empty | Cons of elt * int * bucketlist
 
-    let initial_size = 19991
-    let table_data = ref (Array.make initial_size Empty)
-    let table_size = ref 0
+    type t = {
+      mutable size : int;
+      mutable data : bucketlist array; }
 
-    let resize () =
-      let odata = !table_data in
+    let create s =
+      let s = min (max 1 s) Sys.max_array_length in
+      { size = 0; data = Array.make s Empty }
+
+    let resize table =
+      let odata = table.data in
       let osize = Array.length odata in
-    let nsize = min (2 * osize + 1) Sys.max_array_length in
-    if nsize <> osize then begin
-      let ndata = Array.create nsize Empty in
-      let rec insert_bucket = function
-	| Empty -> ()
-	| Cons (key, hash, rest) ->
-          let nidx = hash mod nsize in
-          ndata.(nidx) <- Cons (key, hash, ndata.(nidx));
-          insert_bucket rest
-      in
-      for i = 0 to osize - 1 do insert_bucket odata.(i) done;
-      table_data := ndata
-    end
+      let nsize = min (2 * osize + 1) Sys.max_array_length in
+      if nsize <> osize then begin
+        let ndata = Array.create nsize Empty in
+        let rec insert_bucket = function
+        | Empty -> ()
+        | Cons (key, hash, rest) ->
+            let nidx = hash mod nsize in
+            let obucket = ndata.(nidx) in
+            ndata.(nidx) <- Cons (key, hash, obucket);
+            insert_bucket rest
+        in
+        for i = 0 to osize - 1 do insert_bucket odata.(i) done;
+        table.data <- ndata
+      end
 
-  let add hash key =
-    let odata = !table_data in
+  let add hash key table =
+    let odata = table.data in
     let osize = Array.length odata in
     let i = hash mod osize in
     odata.(i) <- Cons (key, hash, odata.(i));
-    incr table_size;
-    if !table_size > osize lsl 1 then resize ()
+    table.size <- table.size + 1;
+    if table.size > osize lsl 1 then resize table
 
-  let find_rec hash key bucket =
+  let find_rec hash key table bucket =
     let rec aux = function
       | Empty ->
-	add hash key; key
+	add hash key table; key
       | Cons (k, h, rest) ->
 	if hash == h && E.equal key k then k else aux rest
     in
     aux bucket
 
-  let may_add_and_get hash key =
-    let odata = !table_data in
-    match odata.(hash mod (Array.length odata)) with
-      |	Empty -> add hash key; key
+  let repr hash key table =
+    let odata = table.data in
+    let osize = Array.length odata in
+    let i = hash mod osize in
+    match odata.(i) with
+      |	Empty -> add hash key table; key
       | Cons (k1, h1, rest1) ->
 	if hash == h1 && E.equal key k1 then k1 else
 	  match rest1 with
-            | Empty -> add hash key; key
+            | Empty -> add hash key table; key
 	    | Cons (k2, h2, rest2) ->
               if hash == h2 && E.equal key k2 then k2 else
 		match rest2 with
-		  | Empty -> add hash key; key
+		  | Empty -> add hash key table; key
 		  | Cons (k3, h3, rest3) ->
 		    if hash == h2 && E.equal key k3 then k3
-		    else find_rec hash key rest3
+		    else find_rec hash key table rest3
 
 end
 

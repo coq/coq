@@ -10,6 +10,7 @@ CList
 CArray
 Util
 Bigint
+Hashset
 Hashcons
 Predicate
 Option

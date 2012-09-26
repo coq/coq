@@ -58,11 +58,7 @@ module Make (X : HashconsedType) =
      * w.r.t (=), although the equality on keys is X.equal. This is
      * granted since we hcons the subterms before looking up in the table.
      *)
-    module Htbl = Hashtbl.Make(
-      struct type t=X.t
-             let hash=X.hash
-             let equal x1 x2 = (*incr comparaison;*) X.equal x1 x2
-      end)
+    module Htbl = Hashset.Make(X)
 
     (* The table is created when () is applied.
      * Hashconsing is then very simple:
@@ -73,9 +69,8 @@ module Make (X : HashconsedType) =
       let tab = Htbl.create 97 in
         (fun u x ->
            let y = X.hashcons u x in
-            (* incr acces;*)
-             try let r = Htbl.find tab y in(* incr succes;*) r
-             with Not_found -> Htbl.add tab y y; y)
+            Htbl.repr (X.hash y) y tab)
+
   end
 
 (* A few usefull wrappers:
