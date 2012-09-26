@@ -353,7 +353,7 @@ module Hname = Hashcons.Make(
   struct
     type t = name
     type u = identifier -> identifier
-    let hash_sub hident = function
+    let hashcons hident = function
       | Name id -> Name (hident id)
       | n -> n
     let equal n1 n2 =
@@ -369,7 +369,7 @@ module Hdir = Hashcons.Make(
   struct
     type t = dir_path
     type u = identifier -> identifier
-    let hash_sub hident d = List.smartmap hident d
+    let hashcons hident d = List.smartmap hident d
     let rec equal d1 d2 =
       (d1==d2) ||
       match (d1,d2) with
@@ -383,7 +383,7 @@ module Huniqid = Hashcons.Make(
   struct
     type t = uniq_ident
     type u = (identifier -> identifier) * (dir_path -> dir_path)
-    let hash_sub (hid,hdir) (n,s,dir) = (n,hid s,hdir dir)
+    let hashcons (hid,hdir) (n,s,dir) = (n,hid s,hdir dir)
     let equal ((n1,s1,dir1) as x) ((n2,s2,dir2) as y) =
       (x == y) ||
       (n1 = n2 && s1 == s2 && dir1 == dir2)
@@ -395,10 +395,10 @@ module Hmod = Hashcons.Make(
     type t = module_path
     type u = (dir_path -> dir_path) * (uniq_ident -> uniq_ident) *
 	(string -> string)
-    let rec hash_sub (hdir,huniqid,hstr as hfuns) = function
+    let rec hashcons (hdir,huniqid,hstr as hfuns) = function
       | MPfile dir -> MPfile (hdir dir)
       | MPbound m -> MPbound (huniqid m)
-      | MPdot (md,l) -> MPdot (hash_sub hfuns md, hstr l)
+      | MPdot (md,l) -> MPdot (hashcons hfuns md, hstr l)
     let rec equal d1 d2 =
       d1 == d2 ||
       match (d1,d2) with
@@ -414,7 +414,7 @@ module Hkn = Hashcons.Make(
     type t = kernel_name
     type u = (module_path -> module_path)
 	* (dir_path -> dir_path) * (string -> string)
-    let hash_sub (hmod,hdir,hstr) (md,dir,l) =
+    let hashcons (hmod,hdir,hstr) (md,dir,l) =
       (hmod md, hdir dir, hstr l)
     let equal (mod1,dir1,l1) (mod2,dir2,l2) =
       mod1 == mod2 && dir1 == dir2 && l1 == l2
@@ -429,7 +429,7 @@ module Hcn = Hashcons.Make(
   struct
     type t = kernel_name*kernel_name
     type u = kernel_name -> kernel_name
-    let hash_sub hkn (user,can) = (hkn user, hkn can)
+    let hashcons hkn (user,can) = (hkn user, hkn can)
     let equal (user1,_) (user2,_) = user1 == user2
     let hash (user,_) = Hashtbl.hash user
   end)
@@ -438,7 +438,7 @@ module Hind = Hashcons.Make(
   struct
     type t = inductive
     type u = mutual_inductive -> mutual_inductive
-    let hash_sub hmind (mind, i) = (hmind mind, i)
+    let hashcons hmind (mind, i) = (hmind mind, i)
     let equal (mind1,i1) (mind2,i2) = mind1 == mind2 && i1 = i2
     let hash = Hashtbl.hash
   end)
@@ -447,23 +447,23 @@ module Hconstruct = Hashcons.Make(
   struct
     type t = constructor
     type u = inductive -> inductive
-    let hash_sub hind (ind, j) = (hind ind, j)
+    let hashcons hind (ind, j) = (hind ind, j)
     let equal (ind1,j1) (ind2,j2) = ind1 == ind2 && j1 = j2
     let hash = Hashtbl.hash
   end)
 
-let hcons_string = Hashcons.simple_hcons Hashcons.Hstring.f ()
+let hcons_string = Hashcons.simple_hcons Hashcons.Hstring.generate ()
 let hcons_ident = hcons_string
-let hcons_name = Hashcons.simple_hcons Hname.f hcons_ident
-let hcons_dirpath = Hashcons.simple_hcons Hdir.f hcons_ident
-let hcons_uid = Hashcons.simple_hcons Huniqid.f (hcons_ident,hcons_dirpath)
+let hcons_name = Hashcons.simple_hcons Hname.generate hcons_ident
+let hcons_dirpath = Hashcons.simple_hcons Hdir.generate hcons_ident
+let hcons_uid = Hashcons.simple_hcons Huniqid.generate (hcons_ident,hcons_dirpath)
 let hcons_mp =
-  Hashcons.simple_hcons Hmod.f (hcons_dirpath,hcons_uid,hcons_string)
-let hcons_kn = Hashcons.simple_hcons Hkn.f (hcons_mp,hcons_dirpath,hcons_string)
-let hcons_con = Hashcons.simple_hcons Hcn.f hcons_kn
-let hcons_mind = Hashcons.simple_hcons Hcn.f hcons_kn
-let hcons_ind = Hashcons.simple_hcons Hind.f hcons_mind
-let hcons_construct = Hashcons.simple_hcons Hconstruct.f hcons_ind
+  Hashcons.simple_hcons Hmod.generate (hcons_dirpath,hcons_uid,hcons_string)
+let hcons_kn = Hashcons.simple_hcons Hkn.generate (hcons_mp,hcons_dirpath,hcons_string)
+let hcons_con = Hashcons.simple_hcons Hcn.generate hcons_kn
+let hcons_mind = Hashcons.simple_hcons Hcn.generate hcons_kn
+let hcons_ind = Hashcons.simple_hcons Hind.generate hcons_mind
+let hcons_construct = Hashcons.simple_hcons Hconstruct.generate hcons_ind
 
 
 (*******)

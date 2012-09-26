@@ -16,9 +16,9 @@
    given to the caller, which makes possible the interleaving of the
    hash key computation and the hash-consing. *)
 
-module type Hashtype = sig
+module type EqType = sig
   type t
-  val equals : t -> t -> bool
+  val equal : t -> t -> bool
 end
 
 module type S = sig
@@ -31,7 +31,7 @@ module type S = sig
   val may_add_and_get : int -> elt -> elt
 end
 
-module Make (E : Hashtype) =
+module Make (E : EqType) =
   struct
 
     type elt = E.t
@@ -72,7 +72,7 @@ module Make (E : Hashtype) =
       | Empty ->
 	add hash key; key
       | Cons (k, h, rest) ->
-	if hash == h && E.equals key k then k else aux rest
+	if hash == h && E.equal key k then k else aux rest
     in
     aux bucket
 
@@ -81,15 +81,15 @@ module Make (E : Hashtype) =
     match odata.(hash mod (Array.length odata)) with
       |	Empty -> add hash key; key
       | Cons (k1, h1, rest1) ->
-	if hash == h1 && E.equals key k1 then k1 else
+	if hash == h1 && E.equal key k1 then k1 else
 	  match rest1 with
             | Empty -> add hash key; key
 	    | Cons (k2, h2, rest2) ->
-              if hash == h2 && E.equals key k2 then k2 else
+              if hash == h2 && E.equal key k2 then k2 else
 		match rest2 with
 		  | Empty -> add hash key; key
 		  | Cons (k3, h3, rest3) ->
-		    if hash == h2 && E.equals key k3 then k3
+		    if hash == h2 && E.equal key k3 then k3
 		    else find_rec hash key rest3
 
 end

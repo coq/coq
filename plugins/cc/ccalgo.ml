@@ -115,7 +115,7 @@ let rec term_equal t1 t2 =
       i1 = i2 && j1 = j2 && eq_constructor c1 c2
     | _ -> t1 = t2
 
-open Hashtbl_alt.Combine
+open Hashset.Combine
 
 let rec hash_term = function
   | Symb c -> combine 1 (hash_constr c)

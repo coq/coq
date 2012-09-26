@@ -16,9 +16,9 @@
    given to the caller, which makes possible the interleaving of the
    hash key computation and the hash-consing. *)
 
-module type Hashtype = sig
+module type EqType = sig
   type t
-  val equals : t -> t -> bool
+  val equal : t -> t -> bool
 end
 
 module type S = sig
@@ -31,7 +31,7 @@ module type S = sig
   val may_add_and_get : int -> elt -> elt
 end
 
-module Make (E : Hashtype) : S with type elt = E.t
+module Make (E : EqType) : S with type elt = E.t
 
 module Combine : sig
   val combine : int -> int -> int

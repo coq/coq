@@ -874,7 +874,7 @@ module Hunivlevel =
     struct
       type t = universe_level
       type u = Names.dir_path -> Names.dir_path
-      let hash_sub hdir = function
+      let hashcons hdir = function
 	| UniverseLevel.Set -> UniverseLevel.Set
 	| UniverseLevel.Level (n,d) -> UniverseLevel.Level (n,hdir d)
       let equal l1 l2 =
@@ -892,7 +892,7 @@ module Huniv =
     struct
       type t = universe
       type u = universe_level -> universe_level
-      let hash_sub hdir = function
+      let hashcons hdir = function
 	| Atom u -> Atom (hdir u)
 	| Max (gel,gtl) -> Max (List.map hdir gel, List.map hdir gtl)
       let equal u v =
@@ -906,15 +906,15 @@ module Huniv =
       let hash = Hashtbl.hash
     end)
 
-let hcons_univlevel = Hashcons.simple_hcons Hunivlevel.f Names.hcons_dirpath
-let hcons_univ = Hashcons.simple_hcons Huniv.f hcons_univlevel
+let hcons_univlevel = Hashcons.simple_hcons Hunivlevel.generate Names.hcons_dirpath
+let hcons_univ = Hashcons.simple_hcons Huniv.generate hcons_univlevel
 
 module Hconstraint =
   Hashcons.Make(
     struct
       type t = univ_constraint
       type u = universe_level -> universe_level
-      let hash_sub hul (l1,k,l2) = (hul l1, k, hul l2)
+      let hashcons hul (l1,k,l2) = (hul l1, k, hul l2)
       let equal (l1,k,l2) (l1',k',l2') =
 	l1 == l1' && k = k' && l2 == l2'
       let hash = Hashtbl.hash
@@ -925,7 +925,7 @@ module Hconstraints =
     struct
       type t = constraints
       type u = univ_constraint -> univ_constraint
-      let hash_sub huc s =
+      let hashcons huc s =
 	Constraint.fold (fun x -> Constraint.add (huc x)) s Constraint.empty
       let equal s s' =
 	List.for_all2eq (==)
@@ -934,5 +934,5 @@ module Hconstraints =
       let hash = Hashtbl.hash
     end)
 
-let hcons_constraint = Hashcons.simple_hcons Hconstraint.f hcons_univlevel
-let hcons_constraints = Hashcons.simple_hcons Hconstraints.f hcons_constraint
+let hcons_constraint = Hashcons.simple_hcons Hconstraint.generate hcons_univlevel
+let hcons_constraints = Hashcons.simple_hcons Hconstraints.generate hcons_constraint

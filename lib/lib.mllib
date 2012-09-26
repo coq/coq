@@ -4,6 +4,7 @@ Compat
 Loc
 Errors
 Bigint
+Hashset
 Hashcons
 Dyn
 Segmenttree
@@ -23,4 +24,3 @@ Heap
 Dnet
 Store
 Unionfind
-Hashtbl_alt

@@ -14,6 +14,7 @@ CList
 CArray
 Util
 Bigint
+Hashset
 Hashcons
 Dyn
 CUnix
@@ -31,7 +32,6 @@ Rtree
 Heap
 Option
 Dnet
-Hashtbl_alt
 
 Names
 Univ

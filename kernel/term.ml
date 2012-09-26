@@ -1236,9 +1236,9 @@ let equals_constr t1 t2 =
 (** Note that the following Make has the side effect of creating
     once and for all the table we'll use for hash-consing all constr *)
 
-module H = Hashtbl_alt.Make(struct type t = constr let equals = equals_constr end)
+module H = Hashset.Make(struct type t = constr let equal = equals_constr end)
 
-open Hashtbl_alt.Combine
+open Hashset.Combine
 
 (* [hcons_term hash_consing_functions constr] computes an hash-consed
    representation for [constr] using [hash_consing_functions] on
@@ -1369,7 +1369,7 @@ module Hsorts =
     struct
       type t = sorts
       type u = universe -> universe
-      let hash_sub huniv = function
+      let hashcons huniv = function
           Prop c -> Prop c
         | Type u -> Type (huniv u)
       let equal s1 s2 =
@@ -1385,7 +1385,7 @@ module Hcaseinfo =
     struct
       type t = case_info
       type u = inductive -> inductive
-      let hash_sub hind ci = { ci with ci_ind = hind ci.ci_ind }
+      let hashcons hind ci = { ci with ci_ind = hind ci.ci_ind }
       let equal ci ci' =
 	ci.ci_ind == ci'.ci_ind &&
 	ci.ci_npar = ci'.ci_npar &&
@@ -1394,8 +1394,8 @@ module Hcaseinfo =
       let hash = Hashtbl.hash
     end)
 
-let hcons_sorts = Hashcons.simple_hcons Hsorts.f hcons_univ
-let hcons_caseinfo = Hashcons.simple_hcons Hcaseinfo.f hcons_ind
+let hcons_sorts = Hashcons.simple_hcons Hsorts.generate hcons_univ
+let hcons_caseinfo = Hashcons.simple_hcons Hcaseinfo.generate hcons_ind
 
 let hcons_constr =
   hcons_term
