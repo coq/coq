@@ -22,6 +22,8 @@ open Pp
 open Errors
 open Util
 
+let hcons_string = Hashcons.simple_hcons Hashcons.Hstring.generate ()
+
 (** {6 Identifiers } *)
 
 type identifier = string
@@ -33,7 +35,11 @@ let check_ident_soft x =
 let check_ident x =
   Option.iter (fun (_,x) -> Errors.error x) (Unicode.ident_refutation x)
 
-let id_of_string s = check_ident_soft s; String.copy s
+let id_of_string s =
+  let () = check_ident_soft s in
+  let s = String.copy s in
+  hcons_string s
+
 let string_of_id id = String.copy id
 
 let id_ord (x:string) (y:string) =
@@ -452,7 +458,6 @@ module Hconstruct = Hashcons.Make(
     let hash = Hashtbl.hash
   end)
 
-let hcons_string = Hashcons.simple_hcons Hashcons.Hstring.generate ()
 let hcons_ident = hcons_string
 let hcons_name = Hashcons.simple_hcons Hname.generate hcons_ident
 let hcons_dirpath = Hashcons.simple_hcons Hdir.generate hcons_ident
