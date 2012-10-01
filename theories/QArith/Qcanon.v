@@ -434,14 +434,14 @@ Qed.
 Lemma Qcmult_lt_0_le_reg_r : forall x y z, 0 <  z  -> x*z <= y*z -> x <= y.
 Proof.
   unfold Qcmult, Qcle, Qclt; intros; simpl in *.
-  repeat progress rewrite Qred_correct in * |-.
+  rewrite !Qred_correct in * |-.
   eapply Qmult_lt_0_le_reg_r; eauto.
 Qed.
 
 Lemma Qcmult_lt_compat_r : forall x y z, 0 < z  -> x < y -> x*z < y*z.
 Proof.
   unfold Qcmult, Qclt; intros; simpl in *.
-  repeat progress rewrite Qred_correct in *.
+  rewrite !Qred_correct in *.
   eapply Qmult_lt_compat_r; eauto.
 Qed.
 

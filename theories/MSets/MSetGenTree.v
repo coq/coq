@@ -378,7 +378,7 @@ Ltac invtree f :=
 
 Ltac inv := inv_ok; invtree InT.
 
-Ltac intuition_in := repeat progress (intuition; inv).
+Ltac intuition_in := repeat (intuition; inv).
 
 (** Helper tactic concerning order of elements. *)
 

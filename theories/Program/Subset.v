@@ -61,7 +61,7 @@ Ltac pi_subset_proofs := repeat pi_subset_proof.
 Ltac clear_subset_proofs :=
   abstract_subset_proofs ; simpl in * |- ; pi_subset_proofs ; clear_dups.
 
-Ltac pi := repeat progress f_equal ; apply proof_irrelevance.
+Ltac pi := repeat f_equal ; apply proof_irrelevance.
 
 Lemma subset_eq : forall A (P : A -> Prop) (n m : sig P), n = m <-> `n = `m.
 Proof.

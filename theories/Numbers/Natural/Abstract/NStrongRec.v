@@ -13,7 +13,7 @@ and proves its properties *)
 
 Require Export NSub.
 
-Ltac f_equiv' := repeat progress (f_equiv; try intros ? ? ?; auto).
+Ltac f_equiv' := repeat (f_equiv; try intros ? ? ?; auto).
 
 Module NStrongRecProp (Import N : NAxiomsRecSig').
 Include NSubProp N.

@@ -533,7 +533,7 @@ Ltac order := match goal with
  | _ => MX.order
 end.
 
-Ltac intuition_in := repeat progress (intuition; inv In; inv MapsTo).
+Ltac intuition_in := repeat (intuition; inv In; inv MapsTo).
 
 (* Function/Functional Scheme can't deal with internal fix.
    Let's do its job by hand: *)
