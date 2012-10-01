@@ -61,6 +61,7 @@ GEXTEND Gram
       | IDENT "timeout"; n = int_or_var; ta = tactic_expr -> TacTimeout (n,ta)
       | IDENT "repeat"; ta = tactic_expr -> TacRepeat ta
       | IDENT "progress"; ta = tactic_expr -> TacProgress ta
+      | IDENT "infoH"; ta = tactic_expr -> TacShowHyps ta
 (*To do: put Abstract in Refiner*)
       | IDENT "abstract"; tc = NEXT -> TacAbstract (tc,None)
       | IDENT "abstract"; tc = NEXT; "using";  s = ident ->

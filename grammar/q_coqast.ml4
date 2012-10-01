@@ -449,6 +449,8 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
       <:expr< Tacexpr.TacRepeat $mlexpr_of_tactic t$ >>
   | Tacexpr.TacProgress t ->
       <:expr< Tacexpr.TacProgress $mlexpr_of_tactic t$ >>
+  | Tacexpr.TacShowHyps t ->
+      <:expr< Tacexpr.TacShowHyps $mlexpr_of_tactic t$ >>
   | Tacexpr.TacId l ->
       <:expr< Tacexpr.TacId $mlexpr_of_list mlexpr_of_message_token l$ >>
   | Tacexpr.TacFail (n,l) ->

@@ -136,6 +136,7 @@ val tclDO            : int -> tactic -> tactic
 val tclTIMEOUT       : int -> tactic -> tactic
 val tclWEAK_PROGRESS : tactic -> tactic
 val tclPROGRESS      : tactic -> tactic
+val tclSHOWHYPS      : tactic -> tactic
 val tclNOTSAMEGOAL   : tactic -> tactic
 
 (** [tclIFTHENELSE tac1 tac2 tac3 gls] first applies [tac1] to [gls] then,

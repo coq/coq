@@ -839,7 +839,7 @@ and intern_tactic_seq onlytac ist = function
   | TacId l -> ist.ltacvars, TacId (intern_message ist l)
   | TacFail (n,l) ->
       ist.ltacvars, TacFail (intern_or_var ist n,intern_message ist l)
-  | TacProgress tac -> ist.ltacvars, TacProgress (intern_pure_tactic ist tac)
+  | TacProgress tac -> ist.ltacvars, TacProgress (intern_pure_tactic ist tac)  | TacShowHyps tac -> ist.ltacvars, TacShowHyps (intern_pure_tactic ist tac)
   | TacAbstract (tac,s) ->
       ist.ltacvars, TacAbstract (intern_pure_tactic ist tac,s)
   | TacThen (t1,[||],t2,[||]) ->
@@ -1809,6 +1809,7 @@ and eval_tactic ist = function
       db_breakpoint ist.debug s; res
   | TacFail (n,s) -> fun gl -> tclFAIL (interp_int_or_var ist n) (interp_message ist gl s) gl
   | TacProgress tac -> tclPROGRESS (interp_tactic ist tac)
+  | TacShowHyps tac -> tclSHOWHYPS (interp_tactic ist tac)
   | TacAbstract (tac,ido) ->
       fun gl -> Tactics.tclABSTRACT
         (Option.map (pf_interp_ident ist gl) ido) (interp_tactic ist tac) gl
@@ -2940,6 +2941,7 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
       TacMatch (lz,subst_tactic subst c,subst_match_rule subst lmr)
   | TacId _ | TacFail _ as x -> x
   | TacProgress tac -> TacProgress (subst_tactic subst tac:glob_tactic_expr)
+  | TacShowHyps tac -> TacShowHyps (subst_tactic subst tac:glob_tactic_expr)
   | TacAbstract (tac,s) -> TacAbstract (subst_tactic subst tac,s)
   | TacThen (t1,tf,t2,tl) ->
       TacThen (subst_tactic subst t1,Array.map (subst_tactic subst) tf,

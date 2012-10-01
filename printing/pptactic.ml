@@ -906,6 +906,9 @@ let rec pr_tac inherited tac =
   | TacProgress t ->
       hov 1 (str "progress" ++ spc () ++ pr_tac (ltactical,E) t),
       ltactical
+  | TacShowHyps t ->
+      hov 1 (str "infoH" ++ spc () ++ spc () ++ pr_tac (ltactical,E) t),
+      ltactical
   | TacInfo t ->
       hov 1 (str "info" ++ spc () ++ pr_tac (ltactical,E) t),
       linfo

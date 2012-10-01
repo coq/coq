@@ -183,6 +183,7 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr =
   | TacTimeout of int or_var * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
   | TacRepeat of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
   | TacProgress of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
+  | TacShowHyps of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
   | TacAbstract of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr * identifier option
   | TacId of 'id message_token list
   | TacFail of int or_var * 'id message_token list
