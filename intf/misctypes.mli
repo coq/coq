@@ -40,6 +40,19 @@ type 'id move_location =
 type sort_info = string option
 type glob_sort = GProp | GSet | GType of sort_info
 
+(** A synonym of [int], also defined in Term *)
+
+type existential_key = int
+
+(** Case style, shared with Term *)
+
+type case_style = Term.case_style =
+  | LetStyle
+  | IfStyle
+  | LetPatternStyle
+  | MatchStyle
+  | RegularStyle (** infer printing form from number of constructor *)
+
 (** Casts *)
 
 type 'a cast_type =

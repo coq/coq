@@ -7,10 +7,8 @@
 (************************************************************************)
 
 open Loc
-open Pp
 open Names
 open Libnames
-open Term
 open Misctypes
 open Decl_kinds
 

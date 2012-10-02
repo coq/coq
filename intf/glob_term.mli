@@ -14,11 +14,7 @@
    and notations are done, but coercions, inference of implicit
    arguments and pattern-matching compilation are not. *)
 
-open Pp
 open Names
-open Sign
-open Term
-open Libnames
 open Globnames
 open Decl_kinds
 open Misctypes
