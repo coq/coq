@@ -230,15 +230,6 @@ let tclNOTSAMEGOAL (tac : tactic) goal =
       (str"Tactic generated a subgoal identical to the original goal.")
   else rslt
 
-let rec subtrac l1 l2 =
-  match l1,l2 with
-    | [],l -> l
-    | _,[] -> []
-    | _,(e2::l2') -> 
-      if List.mem e2 l1 then subtrac l1 l2'
-      else e2:: subtrac l1 l2'
-      
-
 (* Execute tac and show the names of hypothesis create by tac in
    the "as" format. The resulting goals are printed *after* the
    as-expression, which forces pg to some gymnastic. TODO: Have
@@ -248,10 +239,10 @@ let tclSHOWHYPS (tac : tactic) (goal: Goal.goal Evd.sigma)
   let oldhyps:Sign.named_context = pf_hyps goal in
   let rslt:Proof_type.goal list Evd.sigma = tac goal in
   let {it=gls;sigma=sigma} = rslt in
-  let hyps:Sign.named_context list = List.map (fun gl -> pf_hyps { it = gl; sigma=sigma}) gls in
+  let hyps:Sign.named_context list =
+    List.map (fun gl -> pf_hyps { it = gl; sigma=sigma}) gls in
   let newhyps =
-    List.map (fun hypl -> subtrac oldhyps hypl)
-      hyps in
+    List.map (fun hypl -> List.subtract hypl oldhyps) hyps in
   let emacs_str s =
     if !Flags.print_emacs then s else "" in
   let s = 
