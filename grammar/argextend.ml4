@@ -17,6 +17,16 @@ open Compat
 let loc = Loc.ghost
 let default_loc = <:expr< Loc.ghost >>
 
+let mk_extraarg prefix s =
+  if Extrawit.tactic_genarg_level s = None then
+    <:expr< $lid:prefix^s$ >>
+  else
+    <:expr<
+      let module WIT = struct
+        open Extrawit;
+        value wit = $lid:prefix^s$;
+      end in WIT.wit >>
+
 let rec make_rawwit loc = function
   | BoolArgType -> <:expr< Genarg.rawwit_bool >>
   | IntArgType -> <:expr< Genarg.rawwit_int >>
@@ -40,12 +50,7 @@ let rec make_rawwit loc = function
   | OptArgType t -> <:expr< Genarg.wit_opt $make_rawwit loc t$ >>
   | PairArgType (t1,t2) ->
       <:expr< Genarg.wit_pair $make_rawwit loc t1$ $make_rawwit loc t2$ >>
-  | ExtraArgType s ->
-    <:expr<
-      let module WIT = struct
-        open Extrawit;
-        value wit = $lid:"rawwit_"^s$;
-      end in WIT.wit >>
+  | ExtraArgType s -> mk_extraarg "rawwit_" s
 
 let rec make_globwit loc = function
   | BoolArgType -> <:expr< Genarg.globwit_bool >>
@@ -70,12 +75,7 @@ let rec make_globwit loc = function
   | OptArgType t -> <:expr< Genarg.wit_opt $make_globwit loc t$ >>
   | PairArgType (t1,t2) ->
       <:expr< Genarg.wit_pair $make_globwit loc t1$ $make_globwit loc t2$ >>
-  | ExtraArgType s ->
-    <:expr<
-      let module WIT = struct
-        open Extrawit;
-        value wit = $lid:"globwit_"^s$;
-      end in WIT.wit >>
+  | ExtraArgType s ->  mk_extraarg "globwit_" s
 
 let rec make_wit loc = function
   | BoolArgType -> <:expr< Genarg.wit_bool >>
@@ -100,12 +100,7 @@ let rec make_wit loc = function
   | OptArgType t -> <:expr< Genarg.wit_opt $make_wit loc t$ >>
   | PairArgType (t1,t2) ->
       <:expr< Genarg.wit_pair $make_wit loc t1$ $make_wit loc t2$ >>
-  | ExtraArgType s ->
-    <:expr<
-      let module WIT = struct
-        open Extrawit;
-        value wit = $lid:"wit_"^s$;
-      end in WIT.wit >>
+  | ExtraArgType s -> mk_extraarg "wit_" s
 
 let has_extraarg =
   List.exists (function GramNonTerminal(_,ExtraArgType _,_,_) -> true | _ -> false)
