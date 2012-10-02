@@ -3,7 +3,6 @@ open Globnames
 open Libobject
 open Entries
 open Decl_kinds
-open Util
 open Declare
 
 (**
@@ -201,18 +200,8 @@ let sort_dependencies evl =
     | [] -> List.rev list
   in aux evl Intset.empty []
 
-let map_evar_body f = function
-  | Evar_empty -> Evar_empty
-  | Evar_defined c -> Evar_defined (f c)
-
 open Environ
-      
-let map_evar_info f evi =
-  { evi with evar_hyps = 
-      val_of_named_context (map_named_context f (named_context_of_val evi.evar_hyps));
-    evar_concl = f evi.evar_concl;
-    evar_body = map_evar_body f evi.evar_body }
-    
+
 let eterm_obligations env name evm fs ?status t ty = 
   (* 'Serialize' the evars *)
   let nc = Environ.named_context env in
@@ -287,7 +276,6 @@ let tactics_module = ["Program";"Tactics"]
 let safe_init_constant md name () =
   Coqlib.check_required_library ("Coq"::md);
   Coqlib.gen_constant "Obligations" md name
-let fix_proto = safe_init_constant tactics_module "fix_proto"
 let hide_obligation = safe_init_constant tactics_module "obligation"
 
 let pperror cmd = Errors.errorlabstrm "Program" cmd
@@ -476,8 +464,6 @@ let _ =
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init }
-
-let progmap_union = ProgMap.fold ProgMap.add
 
 let close sec =
   if not (ProgMap.is_empty !from_prg) then
@@ -714,14 +700,9 @@ let dependencies obls n =
       obls;
     !res
 
-let global_kind = Decl_kinds.IsDefinition Decl_kinds.Definition
 let goal_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Definition
 
-let global_proof_kind = Decl_kinds.IsProof Decl_kinds.Lemma
 let goal_proof_kind = Decl_kinds.Global, Decl_kinds.Proof Decl_kinds.Lemma
-
-let global_fix_kind = Decl_kinds.IsDefinition Decl_kinds.Fixpoint
-let goal_fix_kind = Decl_kinds.Global, Decl_kinds.DefinitionBody Decl_kinds.Fixpoint
 
 let kind_of_opacity o =
   match o with
@@ -982,8 +963,6 @@ let admit_obligations n =
   | Some _ ->
     let prg = get_prog_err n in
     admit_prog prg
-
-exception Found of int
 
 let next_obligation n tac =
   let prg = match n with

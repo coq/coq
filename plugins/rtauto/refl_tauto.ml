@@ -11,8 +11,6 @@ module Search = Explore.Make(Proof_search)
 open Errors
 open Util
 open Term
-open Names
-open Evd
 open Tacmach
 open Proof_search
 
@@ -28,13 +26,6 @@ let logic_constant =
 let li_False = lazy (destInd (logic_constant "False"))
 let li_and = lazy (destInd (logic_constant "and"))
 let li_or =  lazy (destInd (logic_constant "or"))
-
-let data_constant =
-  Coqlib.gen_constant "refl_tauto" ["Init";"Datatypes"]
-
-let l_true_equals_true =
-  lazy (mkApp(logic_constant "eq_refl",
-        [|data_constant "bool";data_constant "true"|]))
 
 let pos_constant =
   Coqlib.gen_constant "refl_tauto" ["Numbers";"BinNums"]

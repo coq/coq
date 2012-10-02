@@ -12,11 +12,8 @@ open Formula
 open Sequent
 open Ground
 open Goptions
-open Tactics
 open Tacticals
 open Tacinterp
-open Term
-open Names
 open Libnames
 
 (* declaring search depth as a global option *)

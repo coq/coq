@@ -22,7 +22,6 @@ open Pfedit
 open Constrextern
 open Ppconstr
 
-
 let emacs_str s =
   if !Flags.print_emacs then s else ""
 let delayed_emacs_cmd s =

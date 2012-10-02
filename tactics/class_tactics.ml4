@@ -12,29 +12,16 @@ open Pp
 open Errors
 open Util
 open Names
-open Nameops
 open Term
 open Termops
-open Sign
 open Reduction
 open Proof_type
-open Declarations
 open Tacticals
 open Tacmach
-open Evar_refiner
 open Tactics
-open Pattern
 open Patternops
 open Clenv
-open Auto
-open Glob_term
-open Hiddentac
 open Typeclasses
-open Typeclasses_errors
-open Classes
-open Topconstr
-open Pfedit
-open Command
 open Globnames
 open Evd
 open Locus
@@ -750,7 +737,6 @@ VERNAC COMMAND EXTEND Typeclasses_Rigid_Settings
 END
 
 open Genarg
-open Extraargs
 
 let pr_debug _prc _prlc _prt b =
   if b then Pp.str "debug" else Pp.mt()

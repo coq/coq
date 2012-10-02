@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Constrintern
-open Closure
 open Libobject
 open Pattern
 open Patternops
@@ -147,14 +146,6 @@ let ((value_in : value -> Dyn.t),
      (value_out : Dyn.t -> value)) = Dyn.create "value"
 
 let valueIn t = TacDynamic (Loc.ghost,value_in t)
-let valueOut = function
-  | TacDynamic (_,d) ->
-    if (Dyn.tag d) = "value" then
-      value_out d
-    else
-      anomalylabstrm "valueOut" (str "Dynamic tag should be value")
-  | ast ->
-    anomalylabstrm "valueOut" (str "Not a Dynamic ast: ")
 
 (* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
 let atomic_mactab = ref Idmap.empty
@@ -1291,9 +1282,6 @@ let interp_constr = interp_constr_gen (OfType None)
 let interp_type = interp_constr_gen IsType
 
 (* Interprets an open constr *)
-let interp_open_constr_gen kind ist =
-  interp_gen kind ist false true false false
-
 let interp_open_constr ccl ist =
   interp_gen (OfType ccl) ist false true false (ccl<>None)
 
@@ -3191,16 +3179,6 @@ let tacticIn t =
     with e -> anomalylabstrm "tacticIn"
       (str "Incorrect tactic expression. Received exception is:" ++
        Errors.print e))
-
-let tacticOut = function
-  | TacArg (_,TacDynamic (_,d)) ->
-    if (Dyn.tag d) = "tactic" then
-      tactic_out d
-    else
-      anomalylabstrm "tacticOut" (str "Dynamic tag should be tactic")
-  | ast ->
-    anomalylabstrm "tacticOut"
-      (str "Not a Dynamic ast: " (* ++ print_ast ast*) )
 
 (***************************************************************************)
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)

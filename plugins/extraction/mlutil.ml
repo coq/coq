@@ -224,21 +224,6 @@ let type_maxvar t =
     | _ -> n
   in parse 0 t
 
-(*s What are the type variables occurring in [t]. *)
-
-let intset_union_map_list f l =
-  List.fold_left (fun s t -> Intset.union s (f t)) Intset.empty l
-
-let intset_union_map_array f a =
-  Array.fold_left (fun s t -> Intset.union s (f t)) Intset.empty a
-
-let rec type_listvar = function
-  | Tmeta {contents = Some t} -> type_listvar t
-  | Tvar i | Tvar' i -> Intset.singleton i
-  | Tarr (a,b) -> Intset.union (type_listvar a) (type_listvar b)
-  | Tglob (_,l) -> intset_union_map_list type_listvar l
-  | _ -> Intset.empty
-
 (*s From [a -> b -> c] to [[a;b],c]. *)
 
 let rec type_decomp = function

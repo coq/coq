@@ -13,13 +13,11 @@ open Hipattern
 open Names
 open Globnames
 open Pp
-open Proof_type
 open Tacticals
 open Tacinterp
 open Tactics
 open Errors
 open Util
-open Genarg
 
 let assoc_var s ist =
   match List.assoc (Names.id_of_string s) ist.lfun with

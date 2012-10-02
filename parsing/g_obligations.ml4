@@ -13,12 +13,6 @@
   Elaborated from correctness/psyntax.ml4 by Jean-Christophe Filliâtre *)
 
 
-open Flags
-open Util
-open Names
-open Nameops
-open Reduction
-open Term
 open Libnames
 open Constrexpr
 open Constrexpr_ops
@@ -38,13 +32,8 @@ struct
   let withtac : Tacexpr.raw_tactic_expr option Gram.entry = gec "withtac"
 end
 
-open Glob_term
 open ObligationsGram
-open Util
-open Tok
 open Pcoq
-open Prim
-open Constr
 
 let sigref = mkRefC (Qualid (Loc.ghost, Libnames.qualid_of_string "Coq.Init.Specif.sig"))
 

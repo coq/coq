@@ -683,21 +683,3 @@ let prim_refiner r sigma goal =
 	(* Normalises evars in goals. Used by instantiate. *)
         let (goal,sigma) = Goal.V82.nf_evar sigma goal in
 	([goal],sigma)
-
-(************************************************************************)
-(************************************************************************)
-(* Extracting a proof term from the proof tree *)
-
-(* Util *)
-
-type variable_proof_status = ProofVar | SectionVar of identifier
-
-type proof_variable = name * variable_proof_status
-
-let proof_variable_index x =
-  let rec aux n = function
-    | (Name id,ProofVar)::l when x = id -> n
-    | _::l ->  aux (n+1) l
-    | [] -> raise Not_found
-  in
-  aux 1

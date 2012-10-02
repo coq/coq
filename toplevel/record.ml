@@ -288,13 +288,6 @@ let implicits_of_context ctx =
     in ExplByPos (i, explname), (true, true, true))
     1 (List.rev (Anonymous :: (List.map pi1 ctx)))
 
-let declare_instance_cst glob con pri =
-  let instance = Typeops.type_of_constant (Global.env ()) con in
-  let _, r = decompose_prod_assum instance in
-    match class_of_constr r with
-      | Some (_, (tc, _)) -> add_instance (new_instance tc pri glob (ConstRef con))
-      | None -> errorlabstrm "" (Pp.strbrk "Constant does not build instances of a declared type class.")
-
 let declare_class finite def infer id idbuild paramimpls params arity fieldimpls fields
     ?(kind=StructureComponent) ?name is_coe coers priorities sign =
   let fieldimpls =

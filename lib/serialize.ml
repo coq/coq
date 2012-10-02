@@ -67,7 +67,6 @@ let goals : goals option call = Goal
 let evars : evar list option call = Evars
 let hints : (hint list * hint) option call = Hints
 let status : status call = Status
-let search flags : string coq_object list call = Search flags
 let get_options : (option_name * option_state) list call = GetOptions
 let set_options l : unit call = SetOptions l
 let inloadpath s : bool call = InLoadPath s
@@ -123,10 +122,6 @@ let do_match constr t mf = match constr with
     let c = massoc "val" attrs in
     mf c args
   else raise Marshal_error
-| _ -> raise Marshal_error
-
-let pcdata = function
-| PCData s -> s
 | _ -> raise Marshal_error
 
 let singleton = function

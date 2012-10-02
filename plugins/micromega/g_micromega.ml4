@@ -16,9 +16,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open Quote
-open Mutils
-open Glob_term
 open Errors
 open Misctypes
 

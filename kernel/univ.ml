@@ -29,8 +29,6 @@ open Util
    union-find algorithm. The assertions $<$ and $\le$ are represented by
    adjacency lists *)
 
-let compare_ints (x:int) (y:int) = Pervasives.compare x y
-
 module UniverseLevel = struct
 
   type t =

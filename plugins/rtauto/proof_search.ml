@@ -6,7 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Term
 open Errors
 open Util
 open Goptions
@@ -62,15 +61,6 @@ type form=
   | Bot
   | Conjunct of form * form
   | Disjunct of form * form
-
-type tag=int
-
-let decomp_form=function
-    Atom i -> Some (i,[])
-  | Arrow (f1,f2) -> Some (-1,[f1;f2])
-  | Bot -> Some (-2,[])
-  | Conjunct (f1,f2) -> Some (-3,[f1;f2])
-  | Disjunct (f1,f2) -> Some (-4,[f1;f2])
 
 module Fmap=Map.Make(struct type t=form let compare=compare end)
 

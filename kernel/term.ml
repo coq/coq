@@ -828,7 +828,6 @@ let subst1 lam = substl [lam]
 let substnl_decl laml k = map_rel_declaration (substnl laml k)
 let substl_decl laml = substnl_decl laml 0
 let subst1_decl lam = substl_decl [lam]
-let substnl_named laml k = map_named_declaration (substnl laml k)
 let substl_named_decl = substl_decl
 let subst1_named_decl = subst1_decl
 

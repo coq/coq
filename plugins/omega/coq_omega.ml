@@ -15,21 +15,12 @@
 
 open Errors
 open Util
-open Pp
-open Reduction
-open Proof_type
 open Names
 open Nameops
 open Term
-open Declarations
-open Environ
-open Sign
-open Inductive
 open Tacticals
 open Tacmach
-open Evar_refiner
 open Tactics
-open Clenv
 open Logic
 open Libnames
 open Globnames
@@ -193,8 +184,6 @@ let coq_Zopp = lazy (zbase_constant "Z.opp")
 let coq_Zminus = lazy (zbase_constant "Z.sub")
 let coq_Zsucc = lazy (zbase_constant "Z.succ")
 let coq_Zpred = lazy (zbase_constant "Z.pred")
-let coq_Zgt = lazy (zbase_constant "Z.gt")
-let coq_Zle = lazy (zbase_constant "Z.le")
 let coq_Z_of_nat = lazy (zbase_constant "Z.of_nat")
 let coq_inj_plus = lazy (z_constant "Nat2Z.inj_add")
 let coq_inj_mult = lazy (z_constant "Nat2Z.inj_mul")
@@ -326,7 +315,6 @@ let coq_iff = lazy (constant "iff")
 (* uses build_coq_and, build_coq_not, build_coq_or, build_coq_ex *)
 
 (* For unfold *)
-open Closure
 let evaluable_ref_of_constr s c = match kind_of_term (Lazy.force c) with
   | Const kn when Tacred.is_evaluable (Global.env()) (EvalConstRef kn) ->
       EvalConstRef kn

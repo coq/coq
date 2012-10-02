@@ -11,7 +11,6 @@ open Util
 open Pp
 open Evd
 
-open Proof_type
 open Tacmach
 open Tacinterp
 open Decl_expr
@@ -128,22 +127,6 @@ let go_to_proof_mode () =
 let daimon_tac gls =
   set_daimon_flag ();
   {it=[];sigma=sig_sig gls}
-
-
-(* marking closed blocks *)
-
-let rec is_focussing_instr = function
-    Pthus i | Pthen i | Phence i -> is_focussing_instr i
-  | Pescape | Pper _ | Pclaim _ | Pfocus _
-  | Psuppose _ | Pcase (_,_,_)  -> true
-  | _ -> false
-
-let mark_rule_as_done = function
-    Decl_proof true -> Decl_proof false
-  | Decl_proof false ->
-      anomaly "already marked as done"
-  | _ -> anomaly "mark_rule_as_done"
-
 
 (* post-instruction focus management *)
 

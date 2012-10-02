@@ -8,16 +8,10 @@
 
 (*i camlp4deps: "tools/compat5b.cmo" i*)
 
-open Glob_term
-open Term
-open Names
-open Pattern
 open Q_util
-open Pp
 open Compat
 open Pcaml
 open PcamlSig
-open Misctypes
 
 let loc = Loc.ghost
 let dloc = <:expr< Loc.ghost >>
@@ -34,9 +28,9 @@ EXTEND
       <:expr< snd (Patternops.pattern_of_glob_constr $c$) >> ] ]
   ;
   sort:
-    [ [ "Set"  -> GSet
-      | "Prop" -> GProp
-      | "Type" -> GType None ] ]
+    [ [ "Set"  -> Misctypes.GSet
+      | "Prop" -> Misctypes.GProp
+      | "Type" -> Misctypes.GType None ] ]
   ;
   ident:
     [ [ s = string -> <:expr< Names.id_of_string $str:s$ >> ] ]

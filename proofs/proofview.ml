@@ -372,7 +372,7 @@ let list_of_sensitive s k env =
   with e when catchable_exception e ->
     tclZERO e env
 
-let tclGOALBIND s k = 
+let tclGOALBIND s k =
   (* spiwack: the first line ensures that the value returned by the tactic [k] will
       not "escape its scope". *)
   let k a = tclBIND (k a) here_s in
@@ -380,7 +380,7 @@ let tclGOALBIND s k =
     tclDISPATCHGEN Goal.null Goal.plus tacs
   end
 
-let tclGOALBINDU s k = 
+let tclGOALBINDU s k =
   tclBIND (list_of_sensitive s k) begin fun tacs ->
     tclDISPATCHGEN () unitK tacs
   end

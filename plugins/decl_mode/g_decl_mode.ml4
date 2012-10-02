@@ -14,13 +14,10 @@ open Pp
 open Tok
 open Decl_expr
 open Names
-open Term
-open Genarg
 open Pcoq
 
 open Pcoq.Constr
 open Pcoq.Tactic
-open Pcoq.Vernac_
 
 let pr_goal gs =
   let (g,sigma) = Goal.V82.nf_evar (Tacmach.project gs) (Evd.sig_it gs) in

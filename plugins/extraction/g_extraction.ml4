@@ -10,8 +10,6 @@
 
 (* ML names *)
 
-open Vernacexpr
-open Pcoq
 open Genarg
 open Pp
 open Names

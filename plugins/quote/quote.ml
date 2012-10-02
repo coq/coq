@@ -101,7 +101,6 @@
 
 
 (*i*)
-open Pp
 open Errors
 open Util
 open Names
@@ -110,8 +109,6 @@ open Pattern
 open Patternops
 open Matching
 open Tacmach
-open Tactics
-open Tacexpr
 (*i*)
 
 (*s First, we need to access some Coq constants

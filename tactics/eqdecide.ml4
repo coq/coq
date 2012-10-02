@@ -23,12 +23,9 @@ open Declarations
 open Tactics
 open Tacticals
 open Hiddentac
-open Equality
 open Auto
-open Pattern
 open Matching
 open Hipattern
-open Proof_type
 open Tacmach
 open Coqlib
 

@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Errors
-open Util
 open Pp
 open Decl_expr
 open Names

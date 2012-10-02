@@ -44,7 +44,6 @@ let solve_instanciation_problem = ref (fun _ _ _ -> assert false)
 let resolve_one_typeclass env evm t =
   !solve_instanciation_problem env evm t
 
-type rels = constr list
 type direction = Forward | Backward
 
 (* This module defines type-classes *)
@@ -326,11 +325,6 @@ let rebuild_instance (action, inst) =
 let classify_instance (action, inst) =
   if is_local inst then Dispose
   else Substitute (action, inst)
-
-let load_instance (_, (action, inst) as ai) =
-  cache_instance ai;
-  if action = AddInstance then
-    add_instance_hint (constr_of_global inst.is_impl) (is_local inst) inst.is_pri
 
 let instance_input : instance_action * instance -> obj =
   declare_object

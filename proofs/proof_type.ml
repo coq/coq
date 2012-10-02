@@ -11,7 +11,6 @@ open Evd
 open Names
 open Term
 open Tacexpr
-(* open Decl_expr *)
 open Glob_term
 open Genarg
 open Nametab

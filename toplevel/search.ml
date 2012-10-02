@@ -96,8 +96,6 @@ let crible ref = gen_crible (Some ref)
 
 (* Fine Search. By Yves Bertot. *)
 
-exception No_full_path
-
 let rec head c =
   let c = strip_outer_cast c in
   match kind_of_term c with
@@ -116,7 +114,6 @@ let format_display l = prlist_with_sep fnl (fun x -> x) (List.rev l)
 
 let filter_by_module (module_list:dir_path list) (accept:bool)
   (ref:global_reference) _ _ =
-  try
     let sp = path_of_global ref in
     let sl = dirpath sp in
     let rec filter_aux = function
@@ -124,8 +121,6 @@ let filter_by_module (module_list:dir_path list) (accept:bool)
       | [] -> true
     in
     xor accept (filter_aux module_list)
-  with No_full_path ->
-    false
 
 let ref_eq = Globnames.encode_mind Coqlib.logic_module (id_of_string "eq"), 0
 let c_eq = mkInd ref_eq

@@ -8,7 +8,6 @@
 
 open Pp
 open Errors
-open Util
 
 let disable_drop e =
   if e <> Drop then e

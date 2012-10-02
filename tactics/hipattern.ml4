@@ -12,16 +12,9 @@ open Pp
 open Errors
 open Util
 open Names
-open Nameops
 open Term
-open Sign
 open Termops
-open Reductionops
 open Inductiveops
-open Evd
-open Environ
-open Clenv
-open Pattern
 open Matching
 open Coqlib
 open Declarations
@@ -359,7 +352,6 @@ let coq_eq_pattern_gen eq = lazy PATTERN [ %eq ?X1 ?X2 ?X3 ]
 let coq_eq_pattern = coq_eq_pattern_gen coq_eq_ref
 let coq_identity_pattern = coq_eq_pattern_gen coq_identity_ref
 let coq_jmeq_pattern = lazy PATTERN [ %coq_jmeq_ref ?X1 ?X2 ?X3 ?X4 ]
-let coq_eq_true_pattern = lazy PATTERN [ %coq_eq_true_ref ?X1 ]
 
 let match_eq eqn eq_pat =
   let pat = try Lazy.force eq_pat with _ -> raise PatternMatchingFailure in
@@ -392,12 +384,6 @@ let find_eq_data_decompose gl eqn =
   let (lbeq,eq_args) = find_eq_data eqn in
   (lbeq,extract_eq_args gl eq_args)
 
-let inversible_equalities =
-  [coq_eq_pattern, build_coq_inversion_eq_data;
-   coq_jmeq_pattern, build_coq_inversion_jmeq_data;
-   coq_identity_pattern, build_coq_inversion_identity_data;
-   coq_eq_true_pattern, build_coq_inversion_eq_true_data]
-
 let find_this_eq_data_decompose gl eqn =
   let (lbeq,eq_args) =
     try (*first_match (match_eq eqn) inversible_equalities*)
@@ -411,7 +397,6 @@ let find_this_eq_data_decompose gl eqn =
   (lbeq,eq_args)
 
 open Tacmach
-open Tacticals
 
 let match_eq_nf gls eqn eq_pat =
   match pf_matches gls (Lazy.force eq_pat) eqn with

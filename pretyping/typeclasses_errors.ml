@@ -12,7 +12,6 @@ open Term
 open Evd
 open Environ
 open Constrexpr
-open Util
 open Globnames
 (*i*)
 

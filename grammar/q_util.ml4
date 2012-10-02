@@ -8,9 +8,7 @@
 
 (* This file defines standard combinators to build ml expressions *)
 
-open Extrawit
 open Compat
-open Pp
 
 let mlexpr_of_list f l =
   List.fold_right
@@ -50,9 +48,6 @@ let mlexpr_of_string s = <:expr< $str:s$ >>
 let mlexpr_of_option f = function
   | None -> <:expr< None >>
   | Some e -> <:expr< Some $f e$ >>
-
-open Vernacexpr
-open Genarg
 
 let rec mlexpr_of_prod_entry_key = function
   | Pcoq.Alist1 s -> <:expr< Pcoq.Alist1 $mlexpr_of_prod_entry_key s$ >>

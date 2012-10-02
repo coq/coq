@@ -7,7 +7,6 @@
 (************************************************************************)
 
 open Names
-open Libnames
 
 (** Basic types used both in [constr_expr] and in [glob_constr] *)
 
@@ -59,7 +58,6 @@ type 'a cast_type =
   | CastConv of 'a
   | CastVM of 'a
   | CastCoerce (** Cast to a base type (eg, an underlying inductive type) *)
-
 
 (** Bindings *)
 

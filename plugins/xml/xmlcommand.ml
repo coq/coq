@@ -35,49 +35,7 @@ let print_proof_tree, set_print_proof_tree =
 
 let print_if_verbose s = if !verbose then print_string s;;
 
-(* Next exception is used only inside print_coq_object and tag_of_string_tag *)
-exception Uninteresting;;
-
-(* NOT USED anymore, we back to the V6 point of view with global parameters
-
-(* Internally, for Coq V7, params of inductive types are associated     *)
-(* not to the whole block of mutual inductive (as it was in V6) but to  *)
-(* each member of the block; but externally, all params are required    *)
-(* to be the same; the following function checks that the parameters    *)
-(* of each inductive of a same block are all the same, then returns     *)
-(* this number; it fails otherwise                                      *)
-let extract_nparams pack =
- let module D = Declarations in
- let module U = Util in
- let module S = Sign in
-
-  let {D.mind_nparams=nparams0} = pack.(0) in
-  let arity0 = pack.(0).D.mind_user_arity in
-  let params0, _ = S.decompose_prod_n_assum nparams0 arity0 in
-  for i = 1 to Array.length pack - 1 do
-    let {D.mind_nparams=nparamsi} = pack.(i) in
-    let arityi = pack.(i).D.mind_user_arity in
-    let paramsi, _ = S.decompose_prod_n_assum nparamsi arityi in
-    if params0 <> paramsi then U.error "Cannot convert a block of inductive definitions with parameters specific to each inductive to a block of mutual inductive definitions with parameters global to the whole block"
-  done;
-  nparams0
-
-*)
-
 open Decl_kinds
-
-(* could_have_namesakes sp = true iff o is an object that could be cooked and *)
-(* than that could exists in cooked form with the same name in a super        *)
-(* section of the actual section                                              *)
-let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
-  let tag = Libobject.object_tag o in
-   print_if_verbose ("Object tag: " ^ tag ^ "\n") ;
-   match tag with
-      "CONSTANT"        -> true   (* constants/parameters are non global *)
-    | "INDUCTIVE"       -> true   (* mutual inductive types are never local   *)
-    | "VARIABLE"        -> false  (* variables are local, so no namesakes     *)
-    | _                 -> false  (* uninteresting thing that won't be printed*)
-;;
 
 (* filter_params pvars hyps *)
 (* filters out from pvars (which is a list of lists) all the variables *)
@@ -295,54 +253,6 @@ let mk_variable_obj id body typ =
     (Names.string_of_id id, unsharedbody, Unshare.unshare typ, params)
 ;;
 
-(* Unsharing is not performed on the body, that must be already unshared. *)
-(* The evar map and the type, instead, are unshared by this function.     *)
-let mk_current_proof_obj is_a_variable id bo ty evar_map env =
- let unshared_ty = Unshare.unshare ty in
- let metasenv =
-  List.map
-   (function
-     (n, {Evd.evar_concl = evar_concl ;
-          Evd.evar_hyps = evar_hyps}
-      ) ->
-       (* We map the named context to a rel context and every Var to a Rel *)
-       let final_var_ids,context =
-        let rec aux var_ids =
-         function
-            [] -> var_ids,[]
-          | (n,None,t)::tl ->
-              let final_var_ids,tl' = aux (n::var_ids) tl in
-              let t' = Term.subst_vars var_ids t in
-               final_var_ids,(n, Acic.Decl (Unshare.unshare t'))::tl'
-          | (n,Some b,t)::tl ->
-              let final_var_ids,tl' = aux (n::var_ids) tl in
-              let b' = Term.subst_vars var_ids b in
-               (* t will not be exported to XML. Thus no unsharing performed *)
-               final_var_ids,(n, Acic.Def  (Unshare.unshare b',t))::tl'
-        in
-         aux [] (List.rev (Environ.named_context_of_val evar_hyps))
-       in
-        (* We map the named context to a rel context and every Var to a Rel *)
-        (n,context,Unshare.unshare (Term.subst_vars final_var_ids evar_concl))
-   ) (Evarutil.non_instantiated evar_map)
- in
-  let id' = Names.string_of_id id in
-   if metasenv = [] then
-    let ids =
-     Names.Idset.union
-      (Environ.global_vars_set env bo) (Environ.global_vars_set env ty) in
-    let hyps0 = Environ.keep_hyps env ids in
-    let hyps = string_list_of_named_context_list hyps0 in
-    (* Variables are the identifiers of the variables in scope *)
-    let variables = search_variables () in
-    let params = filter_params variables hyps in
-     if is_a_variable then
-      Acic.Variable (id',Some bo,unshared_ty,params)
-     else
-      Acic.Constant (id',Some bo,unshared_ty,params)
-   else
-    Acic.CurrentProof (id',metasenv,bo,unshared_ty)
-;;
 
 let mk_constant_obj id bo ty variables hyps =
  let hyps = string_list_of_named_context_list hyps in
@@ -394,11 +304,6 @@ let theory_output_string ?(do_not_quote = false) s =
   print_if_verbose s;
    Buffer.add_string theory_buffer s
 ;;
-
-let kind_of_global_goal = function
-  | Global, DefinitionBody _ -> "DEFINITION","InteractiveDefinition"
-  | Global, (Proof k) -> "THEOREM",Kindops.string_of_theorem_kind k
-  | Local, _ -> assert false
 
 let kind_of_inductive isrecord kn =
  "DEFINITION",

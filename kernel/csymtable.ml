@@ -94,7 +94,6 @@ let annot_tbl = Hashtbl.create 31
 
 exception NotEvaluated
 
-open Pp
 let key rk =
   match !rk with
   | Some k -> (*Pp.msgnl (str"found at: "++int k);*)  k

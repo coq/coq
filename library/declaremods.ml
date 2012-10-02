@@ -15,7 +15,6 @@ open Entries
 open Libnames
 open Libobject
 open Lib
-open Nametab
 open Mod_subst
 
 (** Rigid / flexible signature *)

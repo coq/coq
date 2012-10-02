@@ -14,9 +14,7 @@ open Constrexpr
 open Indfun_common
 open Indfun
 open Genarg
-open Pcoq
 open Tacticals
-open Constr
 open Misctypes
 open Miscops
 

@@ -198,7 +198,6 @@ let split_dep_and_nodep hyps gl =
        if var_occurs_in_pf gl id then (d::l1,l2) else (l1,d::l2))
     hyps ([],[])
 
-
 (* Computation of dids is late; must have been done in rewrite_equations*)
 (* Will keep generalizing and introducing back and forth... *)
 (* Moreover, others hyps depending of dids should have been *)

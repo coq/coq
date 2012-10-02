@@ -32,10 +32,6 @@ val with_check    : tactic -> tactic
 
 val prim_refiner : prim_rule -> evar_map -> goal -> goal list * evar_map
 
-type proof_variable
-
-
-val proof_variable_index : identifier -> proof_variable list -> int
 
 (** {6 Refiner errors. } *)
 

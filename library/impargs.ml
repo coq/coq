@@ -377,8 +377,6 @@ let compute_semi_auto_implicits env f manual t =
       let _,autoimpls = compute_auto_implicits env f f.auto t in
       [DefaultImpArgs, set_manual_implicits env f f.auto autoimpls manual]
 
-let compute_implicits env t = compute_semi_auto_implicits env !implicit_args [] t
-
 (*s Constants. *)
 
 let compute_constant_implicits flags manual cst =

@@ -17,7 +17,6 @@ open Ppextend
 open Constrexpr
 open Constrexpr_ops
 open Topconstr
-open Term
 open Decl_kinds
 open Misctypes
 open Locus
@@ -34,7 +33,6 @@ let lif = 200
 let lletin = 200
 let lletpattern = 200
 let lfix = 200
-let larrow = 90
 let lcast = 100
 let larg = 9
 let lapp = 10
@@ -611,7 +609,6 @@ let pr_red_flag pr r =
    else
      pr_arg str "delta " ++ (if r.rDelta then str "-" else mt ()) ++
      hov 0 (str "[" ++ prlist_with_sep spc pr r.rConst ++ str "]"))
-
 
 let pr_metaid id = str"?" ++ pr_id id
 

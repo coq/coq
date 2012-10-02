@@ -17,14 +17,9 @@ open Closure
 open Environ
 open Libnames
 open Globnames
-open Tactics
 open Glob_term
 open Tacticals
 open Tacexpr
-open Pcoq
-open Tactic
-open Constr
-open Proof_type
 open Coqlib
 open Tacmach
 open Mod_subst
@@ -74,17 +69,6 @@ and mk_clos_app_but f_map subs f args n =
             subs
             (mkApp (mark_arg (-1) f', Array.mapi mark_arg args'))
       | None -> mk_clos_app_but f_map subs f args (n+1)
-
-
-let interp_map l c =
-  try
-    let (im,am) = List.assoc c l in
-    Some(fun i ->
-      if List.mem i im then Eval
-      else if List.mem i am then Prot
-      else if i = -1 then Eval
-      else Rec)
-  with Not_found -> None
 
 let interp_map l t =
   try Some(List.assoc_f eq_constr t l) with Not_found -> None

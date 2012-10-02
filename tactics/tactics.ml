@@ -1910,8 +1910,6 @@ let re_intro_dependent_hypotheses (lstatus,rstatus) (_,tophyp) =
     (intros_move rstatus)
     (intros_move newlstatus)
 
-let update destopt tophyp = if destopt = MoveLast then tophyp else destopt
-
 let safe_dest_intros_patterns avoid thin dest pat tac gl =
   try intros_patterns true avoid [] thin dest tac pat gl
   with UserError ("move_hyp",_) ->
@@ -2649,9 +2647,6 @@ let rebuild_elimtype_from_scheme (scheme:elim_scheme): types =
   let paramconcl = it_mkProd_or_LetIn predconcl scheme.params in
   paramconcl
 
-
-exception NoLastArg
-exception NoLastArgCcl
 
 (* Builds an elim_scheme from its type and calling form (const+binding). We
    first separate branches.  We obtain branches, hyps before (params + preds),

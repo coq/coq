@@ -313,9 +313,6 @@ let elim_no_delta_flags = {
   allow_K_in_toplevel_higher_order_unification = true
 }
 
-let set_no_head_reduction flags =
-  { flags with restrict_conv_on_strict_subterms = true }
-
 let use_evars_pattern_unification flags =
   !global_evars_pattern_unification_flag && flags.use_pattern_unification
   && Flags.version_strictly_greater Flags.V8_2

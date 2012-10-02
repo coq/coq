@@ -158,13 +158,6 @@ let evd_comb2 f evdref x y =
     evdref := evd';
     z
 
-let evd_comb3 f evdref x y z =
-  let (evd',t) = f !evdref x y z in
-    evdref := evd';
-    t
-
-let mt_evd = Evd.empty
-
 (* Utilisé pour inférer le prédicat des Cases *)
 (* Semble exagérement fort *)
 (* Faudra préférer une unification entre les types de toutes les clauses *)
@@ -255,8 +248,6 @@ let pretype_sort evdref = function
   | GProp -> judge_of_prop
   | GSet -> judge_of_set
   | GType _ -> evd_comb0 judge_of_new_Type evdref
-
-exception Found of fixpoint
 
 let new_type_evar evdref env loc =
   evd_comb0 (fun evd -> Evarutil.new_type_evar evd env ~src:(loc,Evar_kinds.InternalHole)) evdref

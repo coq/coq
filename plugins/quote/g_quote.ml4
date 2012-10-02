@@ -8,7 +8,6 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open Pp
 open Tacexpr
 open Quote
 

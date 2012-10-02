@@ -289,8 +289,6 @@ and optim_me to_appear s = function
    For non-library extraction, we recompute a minimal set of dependencies
    for first-level objects *)
 
-exception NoDepCheck
-
 let base_r = function
   | ConstRef c as r -> r
   | IndRef (kn,_) -> IndRef (kn,0)

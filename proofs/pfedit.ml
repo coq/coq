@@ -30,7 +30,7 @@ let undo n =
   let p = Proof_global.give_me_the_proof () in
   let d = Proof.V82.depth p in
   if n >= d then raise Proof.EmptyUndoStack;
-  for i = 1 to n do
+  for _i = 1 to n do
     Proof.undo p
   done
 
@@ -46,10 +46,6 @@ let undo_todepth n =
   try
     undo ((current_proof_depth ()) - n )
   with Proof_global.NoCurrentProof  when n=0 -> ()
-
-let set_undo _ = ()
-let get_undo _ = None
-
 
 let start_proof id str hyps c ?init_tac ?compute_guard hook = 
   let goals = [ (Global.env_of_context hyps , c) ] in

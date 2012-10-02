@@ -131,12 +131,6 @@ let coq_constant s =
   Coqlib.gen_constant_in_modules "RecursiveDefinition"
     Coqlib.init_modules s;;
 
-let constant sl s =
-  constr_of_global
-    (Nametab.locate (make_qualid(Names.make_dirpath
-			   (List.map id_of_string (List.rev sl)))
-	       (id_of_string s)));;
-
 let find_reference sl s =
     (Nametab.locate (make_qualid(Names.make_dirpath
 			   (List.map id_of_string (List.rev sl)))
@@ -277,7 +271,6 @@ let cache_Function (_,finfos) =
 
 
 let load_Function _  = cache_Function
-let open_Function _ = cache_Function
 let subst_Function (subst,finfos) =
   let do_subst_con c = fst (Mod_subst.subst_con subst c)
   and do_subst_ind (kn,i) = (Mod_subst.subst_ind subst kn,i)
@@ -506,12 +499,6 @@ let jmeq () =
   try
     (Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
      init_constant ["Logic";"JMeq"] "JMeq")
-  with e -> raise (ToShow e)
-
-let jmeq_rec () =
-  try
-    Coqlib.check_required_library ["Coq";"Logic";"JMeq"];
-	  init_constant ["Logic";"JMeq"] "JMeq_rec"
   with e -> raise (ToShow e)
 
 let jmeq_refl () =

@@ -98,7 +98,6 @@ let make source =
   }
 
 let check_eof p v = p.check_eof <- v
-let concat_pcdata p v = p.concat_pcdata <- v
 
 let pop s =
 	try

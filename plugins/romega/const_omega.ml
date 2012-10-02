@@ -71,7 +71,6 @@ let z_constant = Coqlib.gen_constant_in_modules "Omega" z_module
 let bin_constant = Coqlib.gen_constant_in_modules "Omega" bin_module
 
 (* Logic *)
-let coq_eq = lazy(init_constant  "eq")
 let coq_refl_equal = lazy(init_constant  "eq_refl")
 let coq_and = lazy(init_constant "and")
 let coq_not = lazy(init_constant "not")

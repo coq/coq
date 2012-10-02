@@ -15,8 +15,6 @@
 (*CSC: tutto da rifare!!! Basarsi su Retyping che e' meno costoso! *)
 type types = {synthesized : Term.types ; expected : Term.types option};;
 
-let prerr_endline _ = ();;
-
 let cprop =
  let module N = Names in
   N.make_con

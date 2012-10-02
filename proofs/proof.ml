@@ -29,8 +29,6 @@
      Therefore the undo stack stores action to be ran to undo.
 *)
 
-open Term
-
 type _focus_kind = int
 type 'a focus_kind = _focus_kind
 type focus_info = Obj.t

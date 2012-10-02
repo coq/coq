@@ -199,8 +199,6 @@ type 'a option_sig = {
   optread  : unit -> 'a;
   optwrite : 'a -> unit }
 
-type option_type = bool * (unit -> option_value) -> (option_value -> unit)
-
 module OptionMap =
   Map.Make (struct  type t = option_name let compare = compare end)
 

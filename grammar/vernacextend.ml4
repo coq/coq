@@ -10,9 +10,7 @@
 
 open Pp
 open Util
-open Genarg
 open Q_util
-open Q_coqast
 open Argextend
 open Tacextend
 open Pcoq

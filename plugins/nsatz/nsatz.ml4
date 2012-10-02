@@ -8,34 +8,13 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open Pp
 open Errors
 open Util
-open Names
 open Term
-open Closure
-open Environ
-open Libnames
 open Tactics
-open Glob_term
-open Tacticals
-open Tacexpr
-open Pcoq
-open Tactic
-open Constr
-open Proof_type
 open Coqlib
-open Tacmach
-open Mod_subst
-open Tacinterp
-open Libobject
-open Printer
-open Declare
-open Decl_kinds
-open Entries
 
 open Num
-open Unix
 open Utile
 
 (***********************************************************************

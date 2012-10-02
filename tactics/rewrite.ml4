@@ -16,26 +16,17 @@ open Nameops
 open Namegen
 open Term
 open Termops
-open Sign
 open Reduction
-open Proof_type
-open Declarations
 open Tacticals
 open Tacmach
-open Evar_refiner
 open Tactics
-open Pattern
 open Patternops
 open Clenv
-open Auto
 open Glob_term
-open Hiddentac
 open Typeclasses
 open Typeclasses_errors
 open Classes
 open Constrexpr
-open Pfedit
-open Command
 open Libnames
 open Globnames
 open Evd
@@ -1345,9 +1336,7 @@ let cl_rewrite_clause l left2right occs clause gl =
   cl_rewrite_clause_strat (rewrite_with (general_rewrite_unif_flags ()) l left2right occs) clause gl
 
 open Pp
-open Pcoq
 open Names
-open Tacexpr
 open Tacinterp
 open Termops
 open Genarg
@@ -1379,8 +1368,6 @@ let interp_glob_constr_list env sigma =
   List.map (fun c -> 
 	      let evd, c = Pretyping.understand_tcc sigma env c in
 		(evd, (c, NoBindings)), true)
-
-open Pcoq
 
 (* Syntax for rewriting with strategies *)
 

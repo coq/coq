@@ -98,9 +98,6 @@ let error_no_module_to_end _ =
 let error_no_modtype_to_end _ =
   raise (ModuleTypingError NoModuleTypeToEnd)
 
-let error_not_a_modtype s =
-  raise (ModuleTypingError (NotAModuleType s))
-
 let error_not_a_module s =
   raise (ModuleTypingError (NotAModule s))
 

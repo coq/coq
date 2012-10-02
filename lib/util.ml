@@ -24,11 +24,6 @@ let pi1 (a,_,_) = a
 let pi2 (_,a,_) = a
 let pi3 (_,_,a) = a
 
-(* Projection operator *)
-
-let down_fst f x = f (fst x)
-let down_snd f x = f (snd x)
-
 (* Characters *)
 
 let is_letter c = (c >= 'a' && c <= 'z') or (c >= 'A' && c <= 'Z')

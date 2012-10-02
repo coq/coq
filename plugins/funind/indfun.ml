@@ -21,7 +21,7 @@ let is_rec_info scheme_info =
       Util.Intset.exists (fun i -> i >= min && i< max) free_rels_in_br
     )
   in
-  Util.List.fold_left_i test_branche 1 false (List.rev scheme_info.Tactics.branches)
+  List.fold_left_i test_branche 1 false (List.rev scheme_info.Tactics.branches)
 
 let choose_dest_or_ind scheme_info =
     if is_rec_info scheme_info
@@ -496,64 +496,6 @@ let register_mes fname rec_impls wf_mes_expr wf_rel_expr_opt wf_arg using_lemmas
 let map_option f = function 
   | None -> None 
   | Some v -> Some (f v)
-    
-let decompose_lambda_n_assum_constr_expr = 
-  let rec decompose_lambda_n_assum_constr_expr acc n e = 
-  if n = 0 then (List.rev acc,e)
-  else
-    match e with 
-      | Constrexpr.CLambdaN(_, [],e') -> decompose_lambda_n_assum_constr_expr acc n e'
-      | Constrexpr.CLambdaN(lambda_loc,(nal,bk,nal_type)::bl,e') ->
-	let nal_length = List.length nal in 
-	if nal_length <= n 
-	then
-	  decompose_lambda_n_assum_constr_expr 
-	    (Constrexpr.LocalRawAssum(nal,bk,nal_type)::acc)
-	    (n - nal_length) 
-	    (Constrexpr.CLambdaN(lambda_loc,bl,e'))
-  	else
-	  let nal_keep,nal_expr = List.chop n nal in 
-	  (List.rev (Constrexpr.LocalRawAssum(nal_keep,bk,nal_type)::acc),
-	   Constrexpr.CLambdaN(lambda_loc,(nal_expr,bk,nal_type)::bl,e')
-	  )
-      | Constrexpr.CLetIn(_, na,nav,e') ->
-	decompose_lambda_n_assum_constr_expr 
-	  (Constrexpr.LocalRawDef(na,nav)::acc) (pred n) e'
-      | _ -> error "Not enough product or assumption"
-  in
-  decompose_lambda_n_assum_constr_expr []
-
-let decompose_prod_n_assum_constr_expr = 
-  let rec decompose_prod_n_assum_constr_expr acc n e = 
-    (* Pp.msgnl (str "n := " ++ int n ++ fnl ()++ *)
-    (* 		str "e := " ++ Ppconstr.pr_lconstr_expr e); *)
-  if n = 0 then 
-    (* let _ = Pp.msgnl (str "return_type := " ++ Ppconstr.pr_lconstr_expr e) in  *)
-      (List.rev acc,e)
-  else
-    match e with 
-      | Constrexpr.CProdN(_, [],e') -> decompose_prod_n_assum_constr_expr acc n e'
-      | Constrexpr.CProdN(lambda_loc,(nal,bk,nal_type)::bl,e') ->
-	let nal_length = List.length nal in 
-	if nal_length <= n 
-	then
-	  (* let _ = Pp.msgnl (str "first case") in  *)
-	  decompose_prod_n_assum_constr_expr 
-	    (Constrexpr.LocalRawAssum(nal,bk,nal_type)::acc)
-	    (n - nal_length) 
-	    (if bl = [] then e' else (Constrexpr.CLambdaN(lambda_loc,bl,e')))
-  	else
-	  (* let _ = Pp.msgnl (str "second case") in  *)
-	  let nal_keep,nal_expr = List.chop n nal in 
-	  (List.rev (Constrexpr.LocalRawAssum(nal_keep,bk,nal_type)::acc),
-	   Constrexpr.CLambdaN(lambda_loc,(nal_expr,bk,nal_type)::bl,e')
-	  )
-      | Constrexpr.CLetIn(_, na,nav,e') ->
-	decompose_prod_n_assum_constr_expr 
-	  (Constrexpr.LocalRawDef(na,nav)::acc) (pred n) e'
-      | _ -> error "Not enough product or assumption"
-  in
-  decompose_prod_n_assum_constr_expr []
 
 open Constrexpr
 open Topconstr

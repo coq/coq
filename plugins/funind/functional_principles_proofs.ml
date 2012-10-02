@@ -134,19 +134,6 @@ let refine c =
 let thin l =
   Tacmach.thin_no_check l
 
-
-let cut_replacing id t tac :tactic=
-  tclTHENS (cut t)
-    [ tclTHEN (thin_no_check [id]) (introduction_no_check id);
-      tac
-    ]
-
-let intro_erasing id = tclTHEN (thin [id]) (introduction id)
-
-
-
-let rec_hyp_id = id_of_string "rec_hyp"
-
 let is_trivial_eq t =
   let res =   try
     begin
@@ -367,7 +354,7 @@ let change_eq env sigma hyp_id (context:rel_context) x t end_of_type  =
     new_ctxt,new_end_of_type,simpl_eq_tac
 
 
-let is_property ptes_info t_x full_type_of_hyp =
+let is_property (ptes_info:ptes_info) t_x full_type_of_hyp =
   if isApp t_x
   then
     let pte,args = destApp t_x in
@@ -563,7 +550,7 @@ let clean_hyp_with_heq ptes_infos eq_hyps hyp_id env sigma =
     thin [hyp_id],[]
 
 
-let clean_goal_with_heq ptes_infos continue_tac dyn_infos  =
+let clean_goal_with_heq ptes_infos continue_tac (dyn_infos:body_info) =
   fun g ->
     let env = pf_env g
     and sigma = project g
@@ -894,13 +881,6 @@ let build_proof
 
 
 (* Proof of principles from structural functions *)
-let is_pte_type t =
-  isSort ((strip_prod t))
-
-let is_pte (_,_,t) = is_pte_type t
-
-
-
 
 type static_fix_info =
     {
@@ -931,9 +911,6 @@ let prove_rec_hyp fix_info  =
   ;
     is_valid = fun _ -> true
   }
-
-
-exception Not_Rec
 
 let generalize_non_dep hyp g =
 (*   observe (str "rec id := " ++ Ppconstr.pr_id hyp); *)
@@ -1426,17 +1403,6 @@ let backtrack_eqs_until_hrec hrec eqs : tactic =
     in
     backtrack gls
 
-
-
-let build_clause eqs =
-  {
-    Locus.onhyps =
-      Some (List.map
-	      (fun id -> (Locus.AllOccurrences, id), Locus.InHyp)
-	      eqs
-	   );
-    Locus.concl_occs = Locus.NoOccurrences
-  }
 
 let rec rewrite_eqs_in_eqs eqs =
   match eqs with

@@ -51,8 +51,6 @@ let pr_rule_dot_fnl = function
    | Prim Change_evars -> mt ()
    | r -> pr_rule_dot r ++ fnl ()
 
-exception Different
-
 let rec print_proof sigma osign pf =
   (* spiwack: [osign] is currently ignored, not sure if this function is even used. *)
   let hyps = Environ.named_context_of_val (Goal.V82.hyps sigma pf.goal) in

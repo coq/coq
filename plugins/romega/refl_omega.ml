@@ -7,7 +7,6 @@
  *************************************************************************)
 
 open Pp
-open Errors
 open Util
 open Const_omega
 module OmegaSolver = Omega.MakeOmegaSolver (Bigint)

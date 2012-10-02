@@ -12,7 +12,6 @@ open Evd
 open Errors
 open Util
 
-
 let daimon_flag = ref false
 
 let set_daimon_flag () = daimon_flag:=true

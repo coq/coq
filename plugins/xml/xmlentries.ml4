@@ -14,13 +14,7 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
-open Util;;
-open Vernacinterp;;
-
-open Extend;;
-open Genarg;;
-open Pp;;
-open Pcoq;;
+open Pp
 
 (* File name *)
 

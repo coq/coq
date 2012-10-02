@@ -70,16 +70,12 @@ module type VISIT = sig
   (* Reset the dependencies by emptying the visit lists *)
   val reset : unit -> unit
 
-  (* Add the module_path and all its prefixes to the mp visit list *)
-  val add_mp : module_path -> unit
-
-  (* Same, but we'll keep all fields of these modules *)
+  (* Add the module_path and all its prefixes to the mp visit list.
+     We'll keep all fields of these modules. *)
   val add_mp_all : module_path -> unit
 
-  (* Add kernel_name / constant / reference / ... in the visit lists.
+  (* Add reference / ... in the visit lists.
      These functions silently add the mp of their arg in the mp list *)
-  val add_ind : mutual_inductive -> unit
-  val add_con : constant -> unit
   val add_ref : global_reference -> unit
   val add_decl_deps : ml_decl -> unit
   val add_spec_deps : ml_spec -> unit

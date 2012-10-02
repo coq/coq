@@ -15,15 +15,10 @@ open Names
 open Nameops
 open Term
 open Termops
-open Sign
-open Reduction
 open Proof_type
-open Declarations
 open Tacticals
 open Tacmach
-open Evar_refiner
 open Tactics
-open Pattern
 open Patternops
 open Clenv
 open Auto
@@ -352,8 +347,6 @@ let e_search_auto debug (in_depth,p) lems db_list gl =
   with Not_found ->
     pr_info_nop d;
     error "eauto: search failed"
-
-open Evd
 
 let eauto_with_bases ?(debug=Off) np lems db_list =
   tclTRY (e_search_auto debug np lems db_list)

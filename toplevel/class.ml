@@ -33,7 +33,6 @@ type coercion_error_kind =
   | NoTarget
   | WrongTarget of cl_typ * cl_typ
   | NotAClass of global_reference
-  | NotEnoughClassArgs of cl_typ
 
 exception CoercionError of coercion_error_kind
 
@@ -60,8 +59,6 @@ let explain_coercion_error g = function
   | NotAClass ref ->
       (str "Type of " ++ Printer.pr_global ref ++
          str " does not end with a sort")
-  | NotEnoughClassArgs cl ->
-      (str"Wrong number of parameters for " ++ pr_class cl)
 
 (* Verifications pour l'ajout d'une classe *)
 

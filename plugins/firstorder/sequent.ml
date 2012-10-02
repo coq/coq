@@ -48,8 +48,6 @@ let priority = (* pure heuristics, <=0 for non reversible *)
 		| LLexists (_,_)   ->  50
 		| LLarrow  (_,_,_) -> -10
 
-let left_reversible lpat=(priority lpat)>0
-
 module OrderedFormula=
 struct
   type t=Formula.t
@@ -163,8 +161,6 @@ let find_left t seq=List.hd (CM.find t seq.context)
       left_reversible lpat
   with Heap.EmptyHeap -> false
 *)
-let no_formula seq=
-  seq.redexes=HP.empty
 
 let rec take_formula seq=
   let hd=HP.maximum seq.redexes

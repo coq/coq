@@ -288,10 +288,6 @@ let make_discr_match brl =
 	   make_discr_match_el el,
 	   make_discr_match_brl i brl)
 
-let pr_name = function
-  | Name id -> Ppconstr.pr_id id
-  | Anonymous -> str "_"
-
 (**********************************************************************)
 (*  functions used to build case expression from lettuple and if ones *)
 (**********************************************************************)
@@ -325,40 +321,6 @@ let build_constructors_of_type ind' argl =
 		cases_pattern_of_glob_constr Anonymous pat_as_term
 	     )
     ind.Declarations.mind_consnames
-
-(* [find_type_of] very naive attempts to discover the type of an if or a letin *)
-let rec find_type_of nb b =
-  let f,_ = glob_decompose_app b in
-  match f with
-    | GRef(_,ref) ->
-	begin
-	  let ind_type  =
-	    match ref with
-	      | VarRef _ | ConstRef _ ->
-		  let constr_of_ref = constr_of_global ref in
-		  let type_of_ref = Typing.type_of (Global.env ()) Evd.empty constr_of_ref in
-		  let (_,ret_type) = Reduction.dest_prod (Global.env ()) type_of_ref in
-		  let ret_type,_ = decompose_app ret_type in
-		  if not (isInd ret_type) then
-		    begin
-(* 		      Pp.msgnl (str "not an inductive" ++ pr_lconstr ret_type); *)
-		      raise (Invalid_argument "not an inductive")
-		    end;
-		  destInd ret_type
-	      | IndRef ind -> ind
-	      | ConstructRef c -> fst c
-	  in
-	  let _,ind_type_info = Inductive.lookup_mind_specif (Global.env()) ind_type in
-	  if not (Array.length ind_type_info.Declarations.mind_consnames = nb )
-	  then raise (Invalid_argument "find_type_of : not a valid inductive");
-	  ind_type
-	end
-    | GCast(_,b,_) -> find_type_of nb b
-    | GApp _ -> assert false (* we have decomposed any application via glob_decompose_app *)
-    | _ -> raise (Invalid_argument "not a ref")
-
-
-
 
 (******************)
 (* Main functions *)

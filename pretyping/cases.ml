@@ -62,15 +62,6 @@ let error_wrong_predicate_arity_loc loc env c n1 n2 =
 let error_needs_inversion env x t =
   raise (PatternMatchingError (env, NeedsInversion (x,t)))
 
-module type S = sig
-  val compile_cases :
-    Loc.t -> case_style ->
-    (type_constraint -> env -> evar_map ref -> glob_constr -> unsafe_judgment) * evar_map ref ->
-    type_constraint ->
-    env -> glob_constr option * tomatch_tuples * cases_clauses ->
-    unsafe_judgment
-end
-
 let rec list_try_compile f = function
   | [a] -> f a
   | [] -> anomaly "try_find_f"
@@ -395,10 +386,6 @@ let adjust_tomatch_to_pattern pb ((current,typ),deps,dep) =
 let type_of_tomatch = function
   | IsInd (t,_,_) -> t
   | NotInd (_,t) -> t
-
-let mkDeclTomatch na = function
-  | IsInd (t,_,_) -> (na,None,t)
-  | NotInd (c,t) -> (na,c,t)
 
 let map_tomatch_type f = function
   | IsInd (t,ind,names) -> IsInd (f t,map_inductive_type f ind,names)
@@ -1800,8 +1787,6 @@ let string_of_name name =
     | Anonymous -> "anonymous"
     | Name n -> string_of_id n
 
-let id_of_name n = id_of_string (string_of_name n)
-
 let make_prime_id name =
   let str = string_of_name name in
     id_of_string str, id_of_string (str ^ "'")
@@ -1981,22 +1966,6 @@ let build_ineqs prevpatterns pats liftsign =
   in match diffs with [] -> None
     | _ -> Some (mk_coq_and diffs)
 
-let subst_rel_context k ctx subst =
-  let (_, ctx') =
-    List.fold_right
-      (fun (n, b, t) (k, acc) ->
-	 (succ k, (n, Option.map (substnl subst k) b, substnl subst k t) :: acc))
-      ctx (k, [])
-  in ctx'
-
-let lift_rel_contextn n k sign =
-  let rec liftrec k = function
-    | (na,c,t)::sign ->
-	(na,Option.map (liftn n k) c,liftn n k t)::(liftrec (k-1) sign)
-    | [] -> []
-  in
-  liftrec (rel_context_length sign + k) sign
-
 let constrs_of_pats typing_fun env isevars eqns tomatchs sign neqs arity =
   let i = ref 0 in
   let (x, y, z) =
@@ -2110,10 +2079,6 @@ let abstract_tomatch env tomatchs tycon =
 	       name :: names, tycon)
       ([], [], [], tycon) tomatchs
   in List.rev prev, ctx, tycon
-
-let is_dependent_ind = function
-    IsInd (_, IndType (indf, args), _) when List.length args > 0 -> true
-  | _ -> false
 
 let build_dependent_signature env evars avoid tomatchs arsign =
   let avoid = ref avoid in

@@ -1126,16 +1126,6 @@ let invert_arg evd aliases k evk subst_in_env_extended_with_k_binders c_in_env_e
   | _ ->
       res
 
-let effective_projections =
-  List.map_filter (function Invertible c -> Some c | _ -> None)
-
-let instance_of_projection f env t evd projs =
-  let ty = lazy (nf_evar evd (Retyping.get_type_of env evd t)) in
-  match projs with
-  | NoUniqueProjection -> raise NotUnique
-  | UniqueProjection (c,effects) ->
-      (List.fold_left (do_projection_effects f env ty) evd effects, c)
-
 exception NotEnoughInformationToInvert
 
 let extract_unique_projections projs =
@@ -1156,8 +1146,6 @@ let extract_candidates sols =
       (List.map (function (id,ProjectVar) -> mkVar id | _ -> raise Exit) sols)
   with Exit ->
     None
-
-let filter_of_projection = function Invertible _ -> true | _ -> false
 
 let invert_invertible_arg evd aliases k (evk,argsv) args' =
   let evi = Evd.find_undefined evd evk in
@@ -1898,7 +1886,6 @@ let check_evars env initial_sigma sigma c =
 		    error_unsolvable_implicit loc env sigma evi k None)
       | _ -> iter_constr proc_rec c
   in proc_rec c
-
 
 (****************************************)
 (* Operations on value/type constraints *)

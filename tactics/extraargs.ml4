@@ -9,12 +9,10 @@
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
 open Pp
-open Pcoq
 open Genarg
 open Names
 open Tacexpr
 open Tacinterp
-open Termops
 open Misctypes
 open Locus
 
@@ -38,8 +36,6 @@ let pr_orient = pr_orient () () ()
 
 let pr_int_list = Pp.pr_sequence Pp.int
 let pr_int_list_full _prc _prlc _prt l = pr_int_list l
-
-open Glob_term
 
 let pr_occurrences _prc _prlc _prt l =
   match l with

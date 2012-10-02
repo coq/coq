@@ -67,7 +67,6 @@ type binder_list = (identifier Loc.located * bool * constr_expr) list
 
 (* Declare everything in the parameters as implicit, and the class instance as well *)
 
-
 let type_ctx_instance evars env ctx inst subst =
   let rec aux (subst, instctx) l = function
     (na, b, t) :: ctx ->
@@ -93,8 +92,6 @@ let id_of_class cl =
     | _ -> assert false
 
 open Pp
-
-let ($$) g f = fun x -> g (f x)
 
 let instance_hook k pri global imps ?hook cst =
   Impargs.maybe_declare_manual_implicits false cst ~enriching:false imps;
@@ -312,9 +309,6 @@ let named_of_rel_context l =
       l ([], [])
   in ctx
 
-let string_of_global r =
- string_of_qualid (Nametab.shortest_qualid_of_global Idset.empty r)
-      
 let context l =
   let env = Global.env() in
   let evars = ref Evd.empty in

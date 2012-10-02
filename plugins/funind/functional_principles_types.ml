@@ -289,22 +289,6 @@ let change_property_sort toSort princ princName =
 let pp_dur time time' =
   str (string_of_float (System.time_difference time time'))
 
-(* let qed () = save_named true  *)
-let defined () =
-  try
-    Lemmas.save_named false
-  with
-    | UserError("extract_proof",msg) ->
-	Errors.errorlabstrm
-	  "defined"
-	  ((try
-	      str "On goal : " ++ fnl () ++  pr_open_subgoals () ++ fnl ()
-	    with _ -> mt ()
-	   ) ++msg)
-    | e -> raise e
-
-
-
 let build_functional_principle interactive_proof old_princ_type sorts funs i proof_tac hook =
   (* First we get the type of the old graph principle *)
   let mutr_nparams = (compute_elim_sig old_princ_type).nparams in

@@ -17,8 +17,6 @@
 (*   the number of source of numbering.                                   *)
 (**************************************************************************)
 
-open Names
-
 module type INT = sig
   type bigint
   val less_than : bigint -> bigint -> bool

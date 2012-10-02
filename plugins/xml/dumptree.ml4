@@ -13,13 +13,10 @@
 
 (*i camlp4deps: "grammar/grammar.cma" i*)
 open Tacexpr;;
-open Decl_mode;;
 open Printer;;
 open Pp;;
 open Environ;;
-open Format;;
 open Proof_type;;
-open Evd;;
 open Termops;;
 open Ppconstr;;
 open Names;;

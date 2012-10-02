@@ -6,14 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-open Pp
-open Errors
-open Util
-open Names
-open Pcoq
-open Libnames
 open Globnames
-open Topconstr
 open Ascii_syntax
 open Glob_term
 open Coqlib

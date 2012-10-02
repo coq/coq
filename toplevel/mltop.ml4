@@ -12,9 +12,7 @@ open Pp
 open Flags
 open CUnix
 open Libobject
-open Library
 open System
-open Vernacinterp
 
 (* Code to hook Coq into the ML toplevel -- depends on having the
    objective-caml compiler mostly visible. The functions implemented here are:

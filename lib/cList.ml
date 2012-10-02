@@ -550,13 +550,6 @@ let rec sep_last = function
   | hd::[] -> (hd,[])
   | hd::tl -> let (l,tl) = sep_last tl in (l,hd::tl)
 
-let try_find_i f =
-  let rec try_find_f n = function
-    | [] -> failwith "try_find_i"
-    | h::t -> try f n h with Failure _ -> try_find_f (n+1) t
-  in
-  try_find_f
-
 let rec find_map f = function
 | [] -> raise Not_found
 | x :: l ->
@@ -669,11 +662,6 @@ let rec split3 = function
   | [] -> ([], [], [])
   | (x,y,z)::l ->
       let (rx, ry, rz) = split3 l in (x::rx, y::ry, z::rz)
-
-let rec insert_in_class f a = function
-  | [] -> [[a]]
-  | (b::_ as l)::classes when f a b -> (a::l)::classes
-  | l::classes -> l :: insert_in_class f a classes
 
 let firstn n l =
   let rec aux acc = function

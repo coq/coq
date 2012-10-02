@@ -14,7 +14,6 @@ des inéquations et équations sont entiers. En attendant la tactique Field.
 
 open Term
 open Tactics
-open Clenv
 open Names
 open Libnames
 open Globnames
@@ -76,7 +75,6 @@ let flin_emult a f =
 ;;
 
 (*****************************************************************************)
-open Vernacexpr
 
 type ineq = Rlt | Rle | Rgt | Rge
 

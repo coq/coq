@@ -22,7 +22,6 @@ open Pattern
 open Patternops
 open Matching
 open Tacmach
-open Proof_type
 open Pfedit
 open Genredexpr
 open Tacred
@@ -107,18 +106,6 @@ let insert v l =
 
 type stored_data = int * pri_auto_tactic
     (* First component is the index of insertion in the table, to keep most recent first semantics. *)
-
-let auto_tactic_ord code1 code2 =
-  match code1, code2 with
-  | Res_pf (c1, _), Res_pf (c2, _)
-  | ERes_pf (c1, _), ERes_pf (c2, _)
-  | Give_exact c1, Give_exact c2
-  | Res_pf_THEN_trivial_fail (c1, _), Res_pf_THEN_trivial_fail (c2, _) -> constr_ord c1 c2
-  | Unfold_nth (EvalVarRef i1), Unfold_nth (EvalVarRef i2) -> Pervasives.compare i1 i2
-  | Unfold_nth (EvalConstRef c1), Unfold_nth (EvalConstRef c2) ->
-      kn_ord (canonical_con c1) (canonical_con c2)
-  | Extern t1, Extern t2 -> Pervasives.compare t1 t2
-  | _ -> Pervasives.compare code1 code2
 
 module Bounded_net = Btermdn.Make(struct
 				    type t = stored_data
@@ -436,8 +423,6 @@ module Hintdbmap = Gmap
 
 type hint_db = Hint_db.t
 
-type frozen_hint_db_table = (string,hint_db) Hintdbmap.t
-
 type hint_db_table = (string,hint_db) Hintdbmap.t ref
 
 type hint_db_name = string
@@ -483,8 +468,6 @@ let rec nb_hyp c = match kind_of_term c with
 let try_head_pattern c =
   try head_pattern_bound c
   with BoundPattern -> error "Bound head variable."
-
-let name_of_constr c = try Some (global_of_constr c) with Not_found -> None
 
 let make_exact_entry sigma pri ?(name=PathAny) (c,cty) =
   let cty = strip_outer_cast cty in
@@ -1393,22 +1376,6 @@ let possible_resolve dbg mod_delta db_list local_db cl =
 let dbg_case dbg id =
   tclLOG dbg (fun () -> str "case " ++ pr_id id) (simplest_case (mkVar id))
 
-let decomp_unary_term_then dbg (id,_,typc) kont1 kont2 gl =
-  try
-    let ccl = applist (head_constr typc) in
-    match Hipattern.match_with_conjunction ccl with
-    | Some (_,args) ->
-	tclTHEN (dbg_case dbg id) (kont1 (List.length args)) gl
-    | None ->
-	kont2 gl
-  with UserError _ -> kont2 gl
-
-let decomp_empty_term dbg (id,_,typc) gl =
-  if Hipattern.is_empty_type typc then
-    dbg_case dbg id gl
-  else
-    errorlabstrm "Auto.decomp_empty_term" (str "Not an empty type.")
-
 let extend_local_db gl decl db =
   Hint_db.add_list (make_resolve_hyp (pf_env gl) (project gl) decl) db
 
@@ -1421,8 +1388,6 @@ let intro_register dbg kont db =
 
 (* n is the max depth of search *)
 (* local_db contains the local Hypotheses *)
-
-exception Uplift of tactic list
 
 let search d n mod_delta db_list local_db =
   let rec search d n local_db =

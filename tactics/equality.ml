@@ -753,8 +753,6 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq =
   let eq_elim     = ind_scheme_of_eq lbeq in
   (applist (eq_elim, [t;t1;mkNamedLambda e t discriminator;i;t2]), absurd_term)
 
-exception NotDiscriminable
-
 let eq_baseid = id_of_string "e"
 
 let apply_on_clause (f,t) clause =

@@ -399,8 +399,6 @@ let interp_notation loc ntn local_scopes =
     user_err_loc
     (loc,"",str ("Unknown interpretation for notation \""^ntn^"\"."))
 
-let isGApp = function GApp _ -> true | _ -> false
-
 let uninterp_notations c =
   List.map_append (fun key -> Gmapl.find key !notations_key_table)
     (glob_constr_keys c)

@@ -117,9 +117,6 @@ let thens3parts_tac tacfi tac tacli (sigr,gs) =
 (* Apply [taci.(i)] on the first n subgoals and [tac] on the others *)
 let thensf_tac taci tac = thens3parts_tac taci tac [||]
 
-(* Apply [taci.(i)] on the last n subgoals and [tac] on the others *)
-let thensl_tac tac taci = thens3parts_tac [||] tac taci
-
 (* Apply [tac i] on the ith subgoal (no subgoals number check) *)
 let thensi_tac tac (sigr,gs) =
   let gll =
@@ -127,22 +124,6 @@ let thensi_tac tac (sigr,gs) =
   (sigr, List.flatten gll)
 
 let then_tac tac = thensf_tac [||] tac
-
-let non_existent_goal n =
-  errorlabstrm ("No such goal: "^(string_of_int n))
-    (str"Trying to apply a tactic to a non existent goal")
-
-(* Apply tac on the i-th goal (if i>0). If i<0, then start counting from
-   the last goal (i=-1). *)
-let theni_tac i tac ((_,gl) as subgoals) =
-  let nsg = List.length gl in
-  let k = if i < 0 then nsg + i + 1 else i in
-  if nsg < 1 then errorlabstrm "theni_tac" (str"No more subgoals.")
-  else if k >= 1 & k <= nsg then
-    thensf_tac
-      (Array.init k (fun i -> if i+1 = k then tac else tclIDTAC)) tclIDTAC
-      subgoals
-  else non_existent_goal k
 
 (* [tclTHENS3PARTS tac1 [|t1 ; ... ; tn|] tac2 [|t'1 ; ... ; t'm|] gls]
    applies the tactic [tac1] to [gls] then, applies [t1], ..., [tn] to

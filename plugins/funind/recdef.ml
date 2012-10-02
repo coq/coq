@@ -18,7 +18,6 @@ open Globnames
 open Nameops
 open Errors
 open Util
-open Closure
 open Tacticals
 open Tacmach
 open Tactics
@@ -49,10 +48,6 @@ open Indfun_common
 let coq_base_constant s =
   Coqlib.gen_constant_in_modules "RecursiveDefinition"
     (Coqlib.init_modules @ [["Coq";"Arith";"Le"];["Coq";"Arith";"Lt"]]) s;;
-
-let coq_constant s =
-  Coqlib.gen_constant_in_modules "RecursiveDefinition"
-    (Coqlib.init_modules @ Coqlib.arith_modules) s;;
 
 let find_reference sl s =
     (locate (make_qualid(Names.make_dirpath
@@ -126,7 +121,6 @@ let compute_renamed_type gls c =
   rename_bound_vars_as_displayed (*no avoid*) [] (*no rels*) []
     (pf_type_of gls c)
 let h'_id = id_of_string "h'"
-let heq_id = id_of_string "Heq"
 let teq_id = id_of_string "teq"
 let ano_id = id_of_string "anonymous"
 let x_id = id_of_string "x"
@@ -154,18 +148,12 @@ let le_n = function () -> (coq_base_constant "le_n")
 let coq_sig_ref = function () -> (find_reference ["Coq";"Init";"Specif"] "sig")
 let coq_O = function () -> (coq_base_constant "O")
 let coq_S = function () -> (coq_base_constant "S")
-let gt_antirefl = function () -> (coq_constant "gt_irrefl")
 let lt_n_O = function () -> (coq_base_constant "lt_n_O")
-let lt_n_Sn = function () -> (coq_base_constant "lt_n_Sn")
-let f_equal = function () -> (coq_constant "f_equal")
-let well_founded_induction = function () -> (coq_constant "well_founded_induction")
 let max_ref = function () -> (find_reference ["Recdef"] "max")
 let max_constr = function () -> (constr_of_global (delayed_force max_ref))
 let coq_conj = function () -> find_reference ["Coq";"Init";"Logic"] "conj"
 
 let f_S t = mkApp(delayed_force coq_S, [|t|]);;
-let make_refl_eq constructor type_of_t t  =
-  mkApp(constructor,[|type_of_t;t|])
 
 let rec n_x_id ids n =
   if n = 0 then []
@@ -959,10 +947,6 @@ let equation_others _ expr_info continuation_tac infos =
       (continuation_tac infos) 
       (intros_values_eq expr_info [])
   else continuation_tac infos
-
-let equation_letin (na,b,t,e) expr_info continuation_tac info = 
-  let new_e = subst1 info.info e in 
-  continuation_tac {info with info = new_e;} 
 
 let equation_app f_and_args expr_info continuation_tac infos = 
     if expr_info.is_final && expr_info.is_main_branch 

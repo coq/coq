@@ -11,10 +11,8 @@
 open Flags
 open Pp
 open Errors
-open System
 open Names
 open Term
-open Environ
 open Glob_term
 open Libnames
 open Globnames
@@ -22,11 +20,8 @@ open Nametab
 open Detyping
 open Constrintern
 open Dischargedhypsmap
-open Command
 open Pfedit
-open Refiner
 open Tacmach
-open Syntax_def
 open Misctypes
 
 (* Coq interface to the Whelp query engine developed at

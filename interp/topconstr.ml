@@ -20,7 +20,7 @@ open Constrexpr_ops
 
 
 let oldfashion_patterns = ref (true)
-let write_oldfashion_patterns = Goptions.declare_bool_option {
+let _ = Goptions.declare_bool_option {
   Goptions.optsync = true; Goptions.optdepr = false;
   Goptions.optname =
     "Constructors in patterns require all their arguments but no parameters instead of explicit parameters and arguments";
@@ -243,18 +243,6 @@ let rec replace_vars_constr_expr l = function
       (try CRef (Ident (loc,List.assoc id l)) with Not_found -> x)
   | c -> map_constr_expr_with_binders List.remove_assoc
            replace_vars_constr_expr l c
-
-(**********************************************************************)
-(* Concrete syntax for modules and modules types *)
-
-type with_declaration_ast =
-  | CWith_Module of identifier list Loc.located * qualid Loc.located
-  | CWith_Definition of identifier list Loc.located * constr_expr
-
-type module_ast =
-  | CMident of qualid Loc.located
-  | CMapply of Loc.t * module_ast * module_ast
-  | CMwith of Loc.t * module_ast * with_declaration_ast
 
 (* Returns the ranges of locs of the notation that are not occupied by args  *)
 (* and which are then occupied by proper symbols of the notation (or spaces) *)

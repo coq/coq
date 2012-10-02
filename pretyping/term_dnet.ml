@@ -48,8 +48,6 @@ struct
     | DCons   of ('t * 't option) * 't
     | DNil
 
-  type dconstr = dconstr t
-
   (* debug *)
   let pr_dconstr f : 'a t -> std_ppcmds = function
     | DRel -> str "*"
@@ -203,11 +201,6 @@ struct
 
   type ident = TDnet.ident
 
-  type 'a pattern = 'a TDnet.pattern
-  type term_pattern = term_pattern DTerm.t pattern
-
-  type idset = TDnet.Idset.t
-
   type result = ident * (constr*existential_key) * Termops.subst
 
   open DTerm
@@ -267,10 +260,6 @@ struct
     let c = Opt.reduce c in
     let c = empty_ctx (pat_of_constr c) in
     TDnet.add dn c id
-
-  let new_meta_no =
-    let ctr = ref 0 in
-    fun () -> decr ctr; !ctr
 
   let new_meta_no = Evarutil.new_untyped_evar
 

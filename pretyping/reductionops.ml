@@ -907,8 +907,6 @@ let whd_programs_stack env sigma =
 let whd_programs env sigma x =
   zip (whd_programs_stack env sigma (x, empty_stack))
 
-exception IsType
-
 let find_conclusion env sigma =
   let rec decrec env c =
     let t = whd_betadeltaiota env sigma c in

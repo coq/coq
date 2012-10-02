@@ -13,7 +13,6 @@ open Errors
 open Util
 open Names
 open Nameops
-open Libnames
 open Globnames
 open Table
 open Miniml
@@ -81,10 +80,6 @@ let pp_global k r =
 
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
-
-let kn_sig =
-  let specif = MPfile (dirpath_of_string "Coq.Init.Specif") in
-  make_mind specif empty_dirpath (mk_label "sig")
 
 let rec pp_type par vl t =
   let rec pp_rec par = function

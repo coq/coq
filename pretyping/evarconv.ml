@@ -582,10 +582,6 @@ let filter_possible_projections c ty ctxt args =
     Idset.mem id tyvars)
     ctxt args
 
-let initial_evar_data evi =
-  let ids = List.map pi1 (evar_context evi) in
-  (evar_filter evi, List.map mkVar ids)
-
 let solve_evars = ref (fun _ -> failwith "solve_evars not installed")
 let set_solve_evars f = solve_evars := f
 

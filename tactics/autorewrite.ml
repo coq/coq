@@ -242,12 +242,6 @@ type hypinfo = {
   hyp_right : constr;
 }
 
-let evd_convertible env evd x y =
-  try
-    ignore(Unification.w_unify ~flags:Unification.elim_flags env evd Reduction.CONV x y); true 
-  (* try ignore(Evarconv.the_conv_x env x y evd); true *)
-  with _ -> false
-
 let decompose_applied_relation metas env sigma c ctype left2right =
   let find_rel ty =
     let eqclause = Clenv.mk_clenv_from_env env sigma None (c,ty) in

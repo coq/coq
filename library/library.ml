@@ -496,8 +496,6 @@ let rec_intern_library_from_file idopt f =
     which recursively loads its dependencies)
 *)
 
-type library_reference = dir_path list * bool option
-
 let register_library m =
   Declaremods.register_library
     m.library_name

@@ -11,7 +11,6 @@
 open Genarg
 open Q_util
 open Egramml
-open Pcoq
 open Compat
 
 let loc = Loc.ghost
@@ -264,7 +263,6 @@ let declare_vernac_argument loc s pr cl =
         ($wit$, fun _ _ _ _ -> Errors.anomaly "vernac argument needs not wit printer") }
       >> ]
 
-open Vernacexpr
 open Pcoq
 open Pcaml
 open PcamlSig

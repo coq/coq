@@ -10,10 +10,8 @@ open Pp
 open Errors
 open Util
 open Names
-open Term
 open Pcoq
 open Glob_term
-open Genarg
 open Tacexpr
 open Libnames
 open Globnames

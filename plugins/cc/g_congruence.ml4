@@ -9,8 +9,6 @@
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
 open Cctac
-open Tactics
-open Tacticals
 
 (* Tactic registration *)
 

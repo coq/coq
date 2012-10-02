@@ -92,8 +92,6 @@ let is_in_path lpath filename =
   try ignore (where_in_path ~warn:false lpath filename); true
   with Not_found -> false
 
-let path_separator = if Sys.os_type = "Unix" then ':' else ';'
-
 let is_in_system_path filename =
   let path = try Sys.getenv "PATH"
              with Not_found -> error "system variable PATH not found" in

@@ -9,13 +9,11 @@
 (*i camlp4deps: "grammar/grammar.cma" i*)
 
 open Pp
-open Pcoq
 open Genarg
 open Extraargs
 open Mod_subst
 open Names
 open Tacexpr
-open Glob_term
 open Glob_ops
 open Tactics
 open Errors
@@ -338,7 +336,6 @@ VERNAC COMMAND EXTEND DeriveInversionClear
 END
 
 open Term
-open Glob_term
 
 VERNAC COMMAND EXTEND DeriveInversion
 | [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort(s) ]
@@ -389,7 +386,6 @@ TACTIC EXTEND evar
 | [ "evar" constr(typ) ] -> [ let_evar Anonymous typ ]
 END
 
-open Tacexpr
 open Tacticals
 
 TACTIC EXTEND instantiate
@@ -403,8 +399,6 @@ END
 (** Nijmegen "step" tactic for setoid rewriting                       *)
 
 open Tactics
-open Tactics
-open Libnames
 open Glob_term
 open Summary
 open Libobject
@@ -622,9 +616,6 @@ END
 (**
    hget_evar
 *)
-
-open Evar_refiner
-open Sign
 
 let hget_evar n gl =
   let sigma = project gl in

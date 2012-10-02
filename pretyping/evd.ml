@@ -672,10 +672,6 @@ let retract_coercible_metas evd =
       evd.metas ([],Metamap.empty) in
   mc, { evd with metas = ml }
 
-let rec list_assoc_in_triple x = function
-    [] -> raise Not_found
-  | (a,b,_)::l -> if compare a x = 0 then b else list_assoc_in_triple x l
-
 let subst_defined_metas bl c =
   let rec substrec c = match kind_of_term c with
     | Meta i -> substrec (List.assoc_snd_in_triple i bl)

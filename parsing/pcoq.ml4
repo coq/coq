@@ -11,11 +11,7 @@ open Compat
 open Tok
 open Errors
 open Util
-open Names
 open Extend
-open Libnames
-open Glob_term
-open Topconstr
 open Genarg
 open Tacexpr
 open Extrawit
@@ -111,7 +107,6 @@ let weaken_entry x = Gramobj.weaken_entry x
 
 module type Gramtypes =
 sig
-  open Decl_kinds
   val inGramObj : 'a raw_abstract_argument_type -> 'a G.entry -> typed_entry
   val outGramObj : 'a raw_abstract_argument_type -> typed_entry -> 'a G.entry
 end
@@ -475,7 +470,6 @@ let level_stack =
 (* At a same level, LeftA takes precedence over RightA and NoneA *)
 (* In case, several associativity exists for a level, we make two levels, *)
 (* first LeftA, then RightA and NoneA together *)
-open Ppextend
 
 let admissible_assoc = function
   | LeftA, Some (RightA | NonA) -> false

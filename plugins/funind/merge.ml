@@ -853,17 +853,6 @@ let glob_constr_list_to_inductive_expr prms1 prms2 mib1 mib2 shift
   lident , bindlist , Some cstr_expr , lcstor_expr
 
 
-
-let mkProd_reldecl (rdecl:rel_declaration) (t2:glob_constr) =
-  match rdecl with
-    | (nme,None,t) ->
-        let traw = Detyping.detype false [] [] t in
-        GProd (Loc.ghost,nme,Explicit,traw,t2)
-    | (_,Some _,_) -> assert false
-
-
-
-
 let mkProd_reldecl (rdecl:rel_declaration) (t2:glob_constr) =
   match rdecl with
     | (nme,None,t) ->

@@ -32,7 +32,6 @@ open Decl_kinds
 open Pretyping
 open Evarutil
 open Evarconv
-open Notation
 open Indschemes
 open Misctypes
 
@@ -203,10 +202,6 @@ let declare_assumptions idl is_coe k c imps impl_is_on nl =
 (* 3a| Elimination schemes for mutual inductive definitions *)
 
 (* 3b| Mutual inductive definitions *)
-
-let push_named_types env idl tl =
-  List.fold_left2 (fun env id t -> Environ.push_named (id,None,t) env)
-    env idl tl
 
 let push_types env idl tl =
   List.fold_left2 (fun env id t -> Environ.push_rel (Name id,None,t) env)
@@ -546,7 +541,6 @@ open Coqlib
 let contrib_name = "Program"
 let subtac_dir = [contrib_name]
 let fixsub_module = subtac_dir @ ["Wf"]
-let utils_module = subtac_dir @ ["Utils"]
 let tactics_module = subtac_dir @ ["Tactics"]
 
 let init_reference dir s () = Coqlib.gen_reference "Command" dir s
@@ -857,24 +851,6 @@ let extract_cofixpoint_components l =
   List.map (fun ((_,id),bl,typ,def) ->
     {fix_name = id; fix_annot = None; fix_binders = bl; fix_body = def; fix_type = typ}) fixl,
   List.flatten ntnl
-
-let check_program_evars env initial_sigma evd c =
-  let sigma =  evd in
-  let c = nf_evar sigma c in
-  let rec proc_rec c =
-    match kind_of_term c with
-      | Evar (evk,args) ->
-          assert (Evd.mem sigma evk);
-	  if not (Evd.mem initial_sigma evk) then
-            let (loc,k) = Evd.evar_source evk evd in
-	      (match k with
-	      | Evar_kinds.QuestionMark _
-	      | Evar_kinds.ImplicitArg (_, _, false) -> ()
-	      | _ ->
-		  let evi = nf_evar_info sigma (Evd.find sigma evk) in
-		    Pretype_errors.error_unsolvable_implicit loc env sigma evi k None)
-      | _ -> iter_constr proc_rec c
-  in proc_rec c
 
 let out_def = function
   | Some def -> def

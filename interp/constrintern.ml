@@ -110,23 +110,17 @@ let global_reference_in_absolute_module dir id =
 
 type internalization_error =
   | VariableCapture of identifier * identifier
-  | WrongExplicitImplicit
   | IllegalMetavariable
   | NotAConstructor of reference
   | UnboundFixName of bool * identifier
   | NonLinearPattern of identifier
   | BadPatternsNumber of int * int
-  | BadExplicitationNumber of explicitation * int option
 
 exception InternalizationError of Loc.t * internalization_error
 
 let explain_variable_capture id id' =
   pr_id id ++ str " is dependent in the type of " ++ pr_id id' ++
   strbrk ": cannot interpret both of them with the same type"
-
-let explain_wrong_explicit_implicit =
-  str "Found an explicitly given implicit argument but was expecting" ++
-  fnl () ++ str "a regular one"
 
 let explain_illegal_metavariable =
   str "Metavariables allowed only in patterns"
@@ -146,32 +140,15 @@ let explain_bad_patterns_number n1 n2 =
   str "Expecting " ++ int n1 ++ str (plural n1 " pattern") ++
   str " but found " ++ int n2
 
-let explain_bad_explicitation_number n po =
-  match n with
-  | ExplByPos (n,_id) ->
-      let s = match po with
-	| None -> str "a regular argument"
-	| Some p -> int p in
-      str "Bad explicitation number: found " ++ int n ++
-      str" but was expecting " ++ s
-  | ExplByName id ->
-      let s = match po with
-	| None -> str "a regular argument"
-	| Some p -> (*pr_id (name_of_position p) in*) failwith "" in
-      str "Bad explicitation name: found " ++ pr_id id ++
-      str" but was expecting " ++ s
-
 let explain_internalization_error e =
   let pp = match e with
   | VariableCapture (id,id') -> explain_variable_capture id id'
-  | WrongExplicitImplicit -> explain_wrong_explicit_implicit
   | IllegalMetavariable -> explain_illegal_metavariable
   | NotAConstructor ref -> explain_not_a_constructor ref
   | UnboundFixName (iscofix,id) -> explain_unbound_fix_name iscofix id
   | NonLinearPattern id -> explain_non_linear_pattern id
   | BadPatternsNumber (n1,n2) -> explain_bad_patterns_number n1 n2
-  | BadExplicitationNumber (n,po) -> explain_bad_explicitation_number n po in
-  pp ++ str "."
+  in pp ++ str "."
 
 let error_bad_inductive_type loc =
   user_err_loc (loc,"",str
@@ -282,10 +259,6 @@ let error_inconsistent_scope loc id scopes1 scopes2 =
     pr_id id ++ str " is here used in " ++
     pr_scope_stack scopes2 ++ strbrk " while it was elsewhere used in " ++
     pr_scope_stack scopes1)
-
-let error_expect_constr_notation_type loc id =
-  user_err_loc (loc,"",
-    pr_id id ++ str " is bound in the notation to a term variable.")
 
 let error_expect_binder_notation_type loc id =
   user_err_loc (loc,"",
@@ -785,12 +758,6 @@ let product_of_cases_patterns ids idspl =
        List.map (fun (subst,p) ->
 	 List.map (fun (subst',ptail) -> (subst@subst',p::ptail)) ptaill) pl)))
     idspl (ids,[[],[]])
-
-let simple_product_of_cases_patterns pl =
-  List.fold_right (fun pl ptaill ->
-    List.flatten (List.map (fun (subst,p) ->
-      List.map (fun (subst',ptail) -> (subst@subst',p::ptail)) ptaill) pl))
-    pl [[],[]]
 
 (* @return the first variable that occurs twice in a pattern
 
@@ -1768,8 +1735,6 @@ open Environ
 
 let my_intern_constr sigma env lvar acc c =
   internalize sigma env acc false lvar c
-
-let my_intern_type sigma env lvar acc c = my_intern_constr sigma env lvar (set_type_scope acc) c
 
 let intern_context global_level sigma env impl_env params =
   try

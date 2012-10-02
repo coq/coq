@@ -6,18 +6,16 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
 open Sign
 open Evd
-open Tacexpr
 open Proof_type
 
 (** These are the entry points for tactics, proof trees, ... *)
 
-val print_proof : evar_map -> named_context -> proof_tree -> std_ppcmds
-val pr_rule     : rule -> std_ppcmds
-val pr_tactic   : tactic_expr -> std_ppcmds
+val print_proof : evar_map -> named_context -> proof_tree -> Pp.std_ppcmds
+val pr_rule     : rule -> Pp.std_ppcmds
+val pr_tactic   : tactic_expr -> Pp.std_ppcmds
 val print_script :
-  ?nochange:bool -> evar_map -> proof_tree -> std_ppcmds
+  ?nochange:bool -> evar_map -> proof_tree -> Pp.std_ppcmds
 val print_treescript :
-  ?nochange:bool -> evar_map -> proof_tree -> std_ppcmds
+  ?nochange:bool -> evar_map -> proof_tree -> Pp.std_ppcmds

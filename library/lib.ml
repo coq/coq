@@ -166,13 +166,6 @@ let find_entry_p p =
   in
   find !lib_stk
 
-let find_split_p p =
-  let rec find = function
-    | [] -> raise Not_found
-    | ent::l -> if p ent then ent,l else find l
-  in
-  find !lib_stk
-
 let split_lib_gen test =
   let rec collect after equal = function
     | hd::before when test hd -> collect after (hd::equal) before
@@ -571,11 +564,9 @@ let set_lib_stk new_lib_stk =
   with
     | Not_found -> error "Tried to set environment to an incoherent state."
 
-let reset_to_gen test =
+let reset_to test =
   let (_,_,before) = split_lib_gen test in
   set_lib_stk before
-
-let reset_to sp = reset_to_gen (fun x -> fst x = sp)
 
 let first_command_label = 1
 
@@ -599,7 +590,7 @@ let is_label_n n x =
 let reset_label n =
   if n >= current_command_label () then
     error "Cannot backtrack to the current label or a future one";
-  reset_to_gen (is_label_n n);
+  reset_to (is_label_n n);
   (* forget state numbers after n only if reset succeeded *)
   reset_command_label n
 

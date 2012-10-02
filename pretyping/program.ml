@@ -11,8 +11,6 @@ open Util
 open Names
 open Term
 
-type message = string
-
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 
 let find_reference locstr dir s =
@@ -63,10 +61,3 @@ let mk_coq_and l =
       (fun c conj ->
 	 mkApp (and_typ, [| c ; conj |]))
       l
-
-let with_program f c = 
-  let mode = !Flags.program_mode in
-    Flags.program_mode := true;
-    let res = f c in
-      Flags.program_mode := mode;
-      res

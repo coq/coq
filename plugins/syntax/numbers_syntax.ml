@@ -9,7 +9,6 @@
 (* digit-based syntax for int31, bigN bigZ and bigQ *)
 
 open Bigint
-open Libnames
 open Globnames
 open Glob_term
 

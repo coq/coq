@@ -405,9 +405,7 @@ let pplus x y = Mc.PEadd(x,y)
 let pmult x y = Mc.PEmul(x,y)
 let pconst x = Mc.PEc x
 let popp x = Mc.PEopp x
- 
-let debug = false
- 
+
 (* keep track of enumerated vectors *)
 let rec mem p x  l = 
  match l with  [] -> false | e::l -> if p x e then true else mem p x l

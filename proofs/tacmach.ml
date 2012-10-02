@@ -109,8 +109,6 @@ let pf_matches                  = pf_apply Matching.matches_conv
 (* Tactics handling a list of goals *)
 (************************************)
 
-type transformation_tactic = proof_tree -> goal list 
-
 type validation_list = proof_tree list -> proof_tree list
 
 type tactic_list = Refiner.tactic_list 

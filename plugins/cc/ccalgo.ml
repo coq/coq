@@ -58,8 +58,6 @@ module ST=struct
 
   let query sign st=Hashtbl.find st.toterm sign
 
-  let rev_query term st=Hashtbl.find st.tosign term
-
   let delete st t=
     try let sign=Hashtbl.find st.tosign t in
 	Hashtbl.remove st.toterm sign;

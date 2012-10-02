@@ -314,8 +314,6 @@ let maximal_unfocus k p =
 
 module Bullet = struct
 
-
-
   type t = Vernacexpr.bullet
 
   type behavior = {

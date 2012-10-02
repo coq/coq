@@ -272,9 +272,9 @@ let recover_notation_grammar ntn prec =
 (* Summary functions: the state of the lexer is included in that of the parser.
    Because the grammar affects the set of keywords when adding or removing
    grammar rules. *)
-type frozen_t = all_grammar_command list * Lexer.frozen_t
+type frozen_t = (int * all_grammar_command) list * Lexer.frozen_t
 
-let freeze () = (!grammar_state, Lexer.freeze ())
+let freeze () : frozen_t = (!grammar_state, Lexer.freeze ())
 
 (* We compare the current state of the grammar and the state to unfreeze,
    by computing the longest common suffixes *)

@@ -124,9 +124,9 @@ type constant_evaluation =
 
 (* We use a cache registered as a global table *)
 
-let eval_table = ref Cmap.empty
+type frozen = constant_evaluation Cmap.t
 
-type frozen = (int * constant_evaluation) Cmap.t
+let eval_table = ref (Cmap.empty : frozen)
 
 let init () =
   eval_table := Cmap.empty
