@@ -206,6 +206,9 @@ coqlight: theories-light tools coqbinaries
 
 states: theories/Init/Prelude.vo
 
+miniopt: $(COQTOPEXE) pluginsopt
+minibyte: $(COQTOPBYTE) pluginsbyte
+
 ifeq ($(BEST),opt)
 $(COQTOPEXE): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN)
 	$(SHOW)'COQMKTOP -o $@'	
@@ -442,7 +445,7 @@ noreal: unicode logic arith bool zarith qarith lists sets fsets \
 ###########################################################################
 
 .PHONY: plugins omega micromega setoid_ring nsatz xml extraction
-.PHONY: fourier funind cc rtauto btauto pluginsopt
+.PHONY: fourier funind cc rtauto btauto pluginsopt pluginsbyte
 
 plugins: $(PLUGINSVO)
 omega: $(OMEGAVO) $(OMEGACMA) $(ROMEGAVO) $(ROMEGACMA)
@@ -458,6 +461,7 @@ rtauto: $(RTAUTOVO) $(RTAUTOCMA)
 btauto: $(BTAUTOVO) $(BTAUTOCMA)
 
 pluginsopt: $(PLUGINSOPT)
+pluginsbyte: $(PLUGINS)
 
 ###########################################################################
 # rules to make theories and plugins
