@@ -61,8 +61,6 @@ module Umap = struct
   let add_mp mp x (m1,m2) = (MPmap.add mp x m1, m2)
   let find_mp mp map = MPmap.find mp (fst map)
   let find_mbi mbi map = MBImap.find mbi (snd map)
-  let mem_mp mp map = MPmap.mem mp (fst map)
-  let mem_mbi mbi map = MBImap.mem mbi (snd map)
   let iter_mbi f map = MBImap.iter f (snd map)
   let fold fmp fmbi (m1,m2) i =
     MPmap.fold fmp m1 (MBImap.fold fmbi m2 i)

@@ -35,7 +35,6 @@ extern value * coq_stack_threshold;
 /* global_data */
 
 extern value coq_global_data;
-extern value coq_global_boxed;
 extern int coq_all_transp;
 extern value coq_atom_tbl;
 
@@ -56,8 +55,6 @@ value re_init_coq_vm(value unit); /* ML */
 void  realloc_coq_stack(asize_t required_space); 
 value get_coq_global_data(value unit); /* ML */
 value realloc_coq_global_data(value size); /* ML */
-value get_coq_global_boxed(value unit);
-value realloc_coq_global_boxed(value size); /* ML */
 value get_coq_atom_tbl(value unit); /* ML */
 value realloc_coq_atom_tbl(value size); /* ML */
 value coq_set_transp_value(value transp); /* ML */

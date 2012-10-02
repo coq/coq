@@ -42,7 +42,6 @@ let fun_code v = tcode_of_obj (Obj.field (Obj.repr v) 0)
 
 external mkAccuCode : int -> tcode = "coq_makeaccu"
 external mkPopStopCode : int -> tcode = "coq_pushpop"
-external mkAccuCond : int -> tcode = "coq_accucond"
 
 external offset_tcode : tcode -> int -> tcode = "coq_offset_tcode"
 external int_tcode : tcode -> int -> int = "coq_int_tcode"
@@ -315,17 +314,10 @@ let val_of_idkey key =
     v
 
 let val_of_rel k = val_of_idkey (RelKey k)
-let val_of_rel_def k v = val_of_atom(Aiddef(RelKey k, v))
 
 let val_of_named id = val_of_idkey (VarKey id)
-let val_of_named_def id v = val_of_atom(Aiddef(VarKey id, v))
 
 let val_of_constant c = val_of_idkey (ConstKey c)
-let val_of_constant_def n c v =
-  let res = Obj.new_block accu_tag 2 in
-  Obj.set_field res 0 (Obj.repr (mkAccuCond n));
-  Obj.set_field res 1 (Obj.repr (Aiddef(ConstKey c, v)));
-  val_of_obj res
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
 

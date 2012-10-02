@@ -51,35 +51,6 @@ let set_global v =
   incr num_global;
   n
 
-(* [global_transp],[global_boxed] contiennent les valeurs des
-   definitions gelees. Les deux versions sont maintenues en //.
-   [global_transp] contient la version transparente.
-   [global_boxed] contient la version gelees. *)
-
-external global_boxed : unit -> bool array = "get_coq_global_boxed"
-
-(* [realloc_global_data n] augmente de n la taille de [global_data] *)
-external realloc_global_boxed : int -> unit = "realloc_coq_global_boxed"
-
-let check_global_boxed n =
-  if n >= Array.length (global_boxed()) then realloc_global_boxed n
-
-let num_boxed = ref 0
-
-let boxed_tbl = Hashtbl.create 53
-
-let cst_opaque = ref Cpred.full
-
-let is_opaque kn = Cpred.mem kn !cst_opaque
-
-let set_global_boxed kn v =
-  let n = !num_boxed in
-  check_global_boxed n;
-  (global_boxed()).(n) <- (is_opaque kn);
-  Hashtbl.add boxed_tbl kn n ;
-  incr num_boxed;
-  set_global (val_of_constant_def n kn v)
-
 (* table pour les structured_constant et les annotations des switchs *)
 
 let str_cst_tbl = Hashtbl.create 31
@@ -192,14 +163,7 @@ and val_of_constr env c =
     with e -> print_string "can not compile \n";Format.print_flush();raise e in
   eval_to_patch env (to_memory ccfv)
 
-let set_transparent_const kn =
-  cst_opaque := Cpred.remove kn !cst_opaque;
-  List.iter (fun n -> (global_boxed()).(n) <- false)
-    (Hashtbl.find_all boxed_tbl kn)
-
-let set_opaque_const kn =
-  cst_opaque := Cpred.add kn !cst_opaque;
-  List.iter (fun n -> (global_boxed()).(n) <- true)
-    (Hashtbl.find_all boxed_tbl kn)
+let set_transparent_const kn = () (* !?! *)
+let set_opaque_const kn = () (* !?! *)
 
 

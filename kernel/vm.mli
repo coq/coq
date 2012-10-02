@@ -53,15 +53,9 @@ type whd =
 (** Constructors *)
 
 val val_of_str_const : structured_constant -> values
-
 val val_of_rel : int -> values
-val val_of_rel_def : int -> values -> values
-
 val val_of_named : identifier -> values
-val val_of_named_def : identifier -> values -> values
-
 val val_of_constant : constant -> values
-val val_of_constant_def : int -> constant -> values -> values
 
 external val_of_annot_switch : annot_switch -> values = "%identity"
 

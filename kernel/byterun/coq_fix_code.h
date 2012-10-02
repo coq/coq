@@ -29,7 +29,6 @@ void init_arity();
 value coq_tcode_of_code(value code, value len);
 value coq_makeaccu (value i);
 value coq_pushpop (value i);
-value coq_accucond (value i);
 value coq_is_accumulate_code(value code);
 
 #endif /* _COQ_FIX_CODE_ */
