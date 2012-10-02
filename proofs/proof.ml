@@ -121,8 +121,6 @@ type proof_state = {
      to unfocus the proof and the extra information stored while focusing.
      The list is empty when the proof is fully unfocused. *)
   focus_stack: (_focus_condition*focus_info*Proofview.focus_context) list;
-  (* Extra information which can be freely used to create new behaviours. *)
-  intel: Store.t
 }
 
 type proof_info = {
@@ -379,8 +377,7 @@ let unfocused = is_last_focus end_of_stack_kind
 let start goals =
   let pr =
     { state = { proofview = Proofview.init goals ;
-	        focus_stack = [] ;
-	        intel = Store.empty} ;
+	        focus_stack = [] };
       undo_stack = [] ;
       transactions = [] ;
       info = { endline_tactic = Proofview.tclUNIT ();
@@ -407,16 +404,6 @@ let return p =
   else
     unfocus end_of_stack_kind p;
     Proofview.return p.state.proofview
-
-(*** Function manipulation proof extra informations ***)
-
-let get_proof_info pr =
-  pr.state.intel
-
-let set_proof_info info pr =
-  save pr;
-  pr.state <- { pr.state with intel=info }
-
 
 (*** Tactics ***)
 

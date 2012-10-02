@@ -138,10 +138,6 @@ val is_last_focus : 'a focus_kind -> proof -> bool
 (* returns [true] if there is no goal under focus. *)
 val no_focused_goal : proof -> bool
 
-(*** Function manipulation proof extra informations ***)
-
-val get_proof_info : proof -> Store.t
-
 (* Sets the section variables assumed by the proof *)
 val set_used_variables : Sign.section_context -> proof -> unit
 val get_used_variables : proof -> Sign.section_context option
