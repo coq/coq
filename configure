@@ -1198,5 +1198,5 @@ chmod a-w "$config_file"
 echo "If anything in the above is wrong, please restart './configure'."
 echo
 echo "*Warning* To compile the system for a new architecture"
-echo "          don't forget to do a 'make archclean' before './configure'."
+echo "          don't forget to do a 'make clean' before './configure'."
 
