@@ -60,15 +60,17 @@ let abstract_scheme env c l lname_typ =
     (List.rev l)
     lname_typ
 
+(* Precondition: resulting abstraction is expected to be of type [typ] *)
+
 let abstract_list_all env evd typ c l =
   let ctxt,_ = splay_prod_n env evd (List.length l) typ in
   let l_with_all_occs = List.map (function a -> (AllOccurrences,a)) l in
   let p = abstract_scheme env c l_with_all_occs ctxt in
-  try
-    if is_conv_leq env evd (Typing.type_of env evd p) typ then p
-    else error "abstract_list_all"
-  with UserError _ | Type_errors.TypeError _ ->
-    error_cannot_find_well_typed_abstraction env evd p l
+  let typp =
+    try Typing.type_of env evd p
+    with UserError _ | Type_errors.TypeError _ ->
+      error_cannot_find_well_typed_abstraction env evd p l in
+  (p,typp)
 
 let set_occurrences_of_last_arg args =
   Some AllOccurrences :: List.tl (Array.map_to_list (fun _ -> None) args)
@@ -1176,7 +1178,10 @@ let secondOrderAbstraction env evd flags typ (p, oplist) =
   let flags = { flags with modulo_delta = (fst flags.modulo_delta, Cpred.empty) } in
   let (evd',cllist) = w_unify_to_subterm_list env evd flags p oplist typ in
   let typp = Typing.meta_type evd' p in
-  let pred = abstract_list_all env evd' typp typ cllist in
+  let pred,predtyp = abstract_list_all env evd' typp typ cllist in
+  if not (is_conv_leq env evd predtyp typp) then
+    error_wrong_abstraction_type env evd
+      (Evd.meta_name evd p) pred typp predtyp;
   w_merge env false flags (evd',[p,pred,(Conv,TypeProcessed)],[])
 
 let secondOrderDependentAbstraction env evd flags typ (p, oplist) =

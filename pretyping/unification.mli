@@ -58,7 +58,7 @@ val w_coerce_to_type : env -> evar_map -> constr -> types -> types ->
    abstracts the terms in l over c to get a term of type t 
    (exported for inv.ml) *)
 val abstract_list_all :
-  env -> evar_map -> constr -> constr -> constr list -> constr
+  env -> evar_map -> constr -> constr -> constr list -> constr * types
 
 
 (* For tracing *)
