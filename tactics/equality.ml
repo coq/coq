@@ -232,7 +232,7 @@ let is_applied_rewrite_relation = ref (fun _ _ _ _ -> None)
 let register_is_applied_rewrite_relation = (:=) is_applied_rewrite_relation
 
 (* find_elim determines which elimination principle is necessary to
-   eliminate lbeq on sort_of_gl. *)
+   eliminate some eq on sort_of_gl. *)
 
 let find_elim hdcncl lft2rgt dep cls args gl =
   let inccl = (cls = None) in
@@ -286,11 +286,11 @@ let type_of_clause gl = function
   | None -> pf_concl gl
   | Some id -> pf_get_hyp_typ gl id
 
-let leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c t l with_evars frzevars dep_proof_ok gl hdcncl =
+let leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c t l with_evars frzevars dep_proof_ok gl (hdcncl,args) =
   let isatomic = isProd (whd_zeta hdcncl) in
   let dep_fun = if isatomic then dependent else dependent_no_evar in
   let dep = dep_proof_ok && dep_fun c (type_of_clause gl cls) in
-  let elim = find_elim hdcncl lft2rgt dep cls (snd (decompose_app t)) gl in
+  let elim = find_elim hdcncl lft2rgt dep cls args gl in
   general_elim_clause with_evars frzevars tac cls sigma c t l
     (match lft2rgt with None -> false | Some b -> b)
     {elimindex = None; elimbody = (elim,NoBindings)} gl
@@ -324,7 +324,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
       | Some (hdcncl,args) -> (* Fast path: direct leibniz-like rewrite *)
 	  let lft2rgt = adjust_rewriting_direction args lft2rgt in
           leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c (it_mkProd_or_LetIn t rels)
-	    l with_evars frzevars dep_proof_ok gl hdcncl
+	    l with_evars frzevars dep_proof_ok gl (hdcncl,args)
       | None ->
 	  try
 	    rewrite_side_tac (!general_rewrite_clause cls
@@ -336,7 +336,7 @@ let general_rewrite_ebindings_clause cls lft2rgt occs frzevars dep_proof_ok ?tac
 	      | Some (hdcncl,args) ->
 		  let lft2rgt = adjust_rewriting_direction args lft2rgt in
 		    leibniz_rewrite_ebindings_clause cls lft2rgt tac sigma c
-		      (it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars frzevars dep_proof_ok gl hdcncl
+		      (it_mkProd_or_LetIn t' (rels' @ rels)) l with_evars frzevars dep_proof_ok gl (hdcncl,args)
 	      | None -> raise e
 		  (* error "The provided term does not end with an equality or a declared rewrite relation." *)
 
