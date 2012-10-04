@@ -1031,8 +1031,9 @@ let localwwwrefman = "file:/" ^ docdir ^ "html/refman"
 END_OF_COQ_CONFIG
 
 # Subdirectories of theories/ added in coq_config.ml
+# Note: don't propagate output of cd if any: it's verbose when CDPATH is defined
 subdirs () {
-    (cd $1; find * \( -name .svn -prune \) -o \( -type d -exec printf "\"%s\";\n" {} \; \) ) >> "$mlconfig_file"
+    (cd $1; find * \( -name .svn -prune \) -o \( -type d -exec printf "\"%s\";\n" {} \; \) >> "$mlconfig_file")
 }
 
 echo "let theories_dirs = [" >> "$mlconfig_file"
