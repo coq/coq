@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 (*i camlp4deps: "grammar/grammar.cma" i*)
+open Compat
 open Util
 open Term
 open Names
@@ -145,7 +146,7 @@ GEXTEND Gram
   GLOBAL: function_rec_definition_loc ;
 
   function_rec_definition_loc:
-    [ [ g = Vernac.rec_definition -> loc, g ]]
+    [ [ g = Vernac.rec_definition -> !@loc, g ]]
     ;
 
   END

@@ -12,25 +12,44 @@
 
 IFDEF CAMLP5 THEN
 
-module Loc = struct
+module CompatLoc = struct
   include Ploc
-  exception Exc_located = Exc
   let ghost = dummy
   let merge = encl
 end
 
-let make_loc = Loc.make_unlined
-let unloc loc = (Loc.first_pos loc, Loc.last_pos loc)
+exception Exc_located = Ploc.Exc
+
+let of_coqloc loc =
+  let (fname, lnb, pos, bp, ep) = Loc.represent loc in
+  Ploc.make_loc fname lnb pos (bp, ep) ""
+
+let to_coqloc loc =
+  Loc.create (Ploc.file_name loc) (Ploc.line_nb loc)
+    (Ploc.bol_pos loc) (Ploc.first_pos loc, Ploc.last_pos loc)
+
+let make_loc = Ploc.make_unlined
 
 ELSE
 
-module Loc = Camlp4.PreCast.Loc
+module CompatLoc = Camlp4.PreCast.Loc
 
-let make_loc (start,stop) =
-  Loc.of_tuple ("", 0, 0, start, 0, 0, stop, false)
-let unloc loc = (Loc.start_off loc, Loc.stop_off loc)
+exception Exc_located = CompatLoc.Exc_located
+
+let of_coqloc loc =
+  let (fname, lnb, pos, bp, ep) = Loc.represent loc in
+  CompatLoc.of_tuple (fname, 0, 0, bp, 0, 0, ep, false)
+
+let to_coqloc loc =
+  Loc.create (CompatLoc.file_name loc) (CompatLoc.start_line loc)
+    (CompatLoc.start_bol loc) (CompatLoc.start_off loc, CompatLoc.stop_off loc)
+
+let make_loc (start, stop) =
+  CompatLoc.of_tuple ("", 0, 0, start, 0, 0, stop, false)
 
 END
+
+let (!@) = to_coqloc
 
 (** Misc module emulation *)
 
@@ -53,22 +72,58 @@ END
 (** Grammar auxiliary types *)
 
 IFDEF CAMLP5 THEN
-type gram_assoc = Gramext.g_assoc = NonA | RightA | LeftA
-type gram_position = Gramext.position =
-  | First
-  | Last
-  | Before of string
-  | After of string
-  | Like of string (** dont use it, not in camlp4 *)
-  | Level of string
+
+let to_coq_assoc = function
+| Gramext.RightA -> Extend.RightA
+| Gramext.LeftA -> Extend.LeftA
+| Gramext.NonA -> Extend.NonA
+
+let of_coq_assoc = function
+| Extend.RightA -> Gramext.RightA
+| Extend.LeftA -> Gramext.LeftA
+| Extend.NonA -> Gramext.NonA
+
+let of_coq_position = function
+| Extend.First -> Gramext.First
+| Extend.Last -> Gramext.Last
+| Extend.Before s -> Gramext.Before s
+| Extend.After s -> Gramext.After s
+| Extend.Level s -> Gramext.Level s
+
+let to_coq_position = function
+| Gramext.First -> Extend.First
+| Gramext.Last -> Extend.Last
+| Gramext.Before s -> Extend.Before s
+| Gramext.After s -> Extend.After s
+| Gramext.Level s -> Extend.Level s
+| Gramext.Like _ -> assert false (** dont use it, not in camlp4 *)
+
 ELSE
-type gram_assoc = PcamlSig.Grammar.assoc = NonA | RightA | LeftA
-type gram_position = PcamlSig.Grammar.position =
-  | First
-  | Last
-  | Before of string
-  | After of string
-  | Level of string
+
+let to_coq_assoc = function
+| PcamlSig.Grammar.RightA -> Extend.RightA
+| PcamlSig.Grammar.LeftA -> Extend.LeftA
+| PcamlSig.Grammar.NonA -> Extend.NonA
+
+let of_coq_assoc = function
+| Extend.RightA -> PcamlSig.Grammar.RightA
+| Extend.LeftA -> PcamlSig.Grammar.LeftA
+| Extend.NonA -> PcamlSig.Grammar.NonA
+
+let of_coq_position = function
+| Extend.First -> PcamlSig.Grammar.First
+| Extend.Last -> PcamlSig.Grammar.Last
+| Extend.Before s -> PcamlSig.Grammar.Before s
+| Extend.After s -> PcamlSig.Grammar.After s
+| Extend.Level s -> PcamlSig.Grammar.Level s
+
+let to_coq_position = function
+| PcamlSig.Grammar.First -> Extend.First
+| PcamlSig.Grammar.Last -> Extend.Last
+| PcamlSig.Grammar.Before s -> Extend.Before s
+| PcamlSig.Grammar.After s -> Extend.After s
+| PcamlSig.Grammar.Level s -> Extend.Level s
+
 END
 
 
@@ -88,7 +143,7 @@ end
 ELSE
 
 module type LexerSig =
-  Camlp4.Sig.Lexer with module Loc = Loc and type Token.t = Tok.t
+  Camlp4.Sig.Lexer with module Loc = CompatLoc and type Token.t = Tok.t
 
 END
 
@@ -104,9 +159,9 @@ module type GrammarSig = sig
   type action = Gramext.g_action
   type production_rule = symbol list * action
   type single_extend_statment =
-      string option * gram_assoc option * production_rule list
+      string option * Gramext.g_assoc option * production_rule list
   type extend_statment =
-      gram_position option * single_extend_statment list
+      Gramext.position option * single_extend_statment list
   val action : 'a -> action
   val entry_create : string -> 'a entry
   val entry_parse : 'a entry -> parsable -> 'a
@@ -123,9 +178,9 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
   type action = Gramext.g_action
   type production_rule = symbol list * action
   type single_extend_statment =
-      string option * gram_assoc option * production_rule list
+      string option * Gramext.g_assoc option * production_rule list
   type extend_statment =
-      gram_position option * single_extend_statment list
+      Gramext.position option * single_extend_statment list
   let action = Gramext.action
   let entry_create = Entry.create
   let entry_parse = Entry.parse
@@ -142,7 +197,7 @@ ELSE
 
 module type GrammarSig = sig
   include Camlp4.Sig.Grammar.Static
-    with module Loc = Loc and type Token.t = Tok.t
+    with module Loc = CompatLoc and type Token.t = Tok.t
   type 'a entry = 'a Entry.t
   type action = Action.t
   type parsable
@@ -162,7 +217,7 @@ module GrammarMake (L:LexerSig) : GrammarSig = struct
   let parsable s = s
   let action = Action.mk
   let entry_create = Entry.mk
-  let entry_parse e s = parse e (*FIXME*)Loc.ghost s
+  let entry_parse e s = parse e (*FIXME*)CompatLoc.ghost s
   let entry_print ft x = Entry.print ft x
   let srules' = srules (entry_create "dummy")
 end

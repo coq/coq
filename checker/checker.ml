@@ -274,7 +274,12 @@ let rec explain_exn = function
 (*      let ctx = Check.get_env() in
       hov 0
         (str "Error:" ++ spc () ++ Himsg.explain_inductive_error ctx e)*)
-  | Loc.Exc_located (loc,exc) ->
+  | Loc.Exc_located (loc, exc) ->
+      hov 0 ((if loc = Loc.ghost then (mt ())
+               else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
+               ++ explain_exn exc)
+  | Compat.Exc_located (loc, exc) ->
+      let loc = Compat.to_coqloc loc in
       hov 0 ((if loc = Loc.ghost then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
                ++ explain_exn exc)

@@ -24,7 +24,6 @@ open Vernacexpr
 open Pcoq
 open Libnames
 open Tok
-open Lexer
 open Egramml
 open Egramcoq
 open Notation
@@ -33,7 +32,7 @@ open Nameops
 (**********************************************************************)
 (* Tokens                                                             *)
 
-let cache_token (_,s) = add_keyword s
+let cache_token (_,s) = Lexer.add_keyword s
 
 let inToken : string -> obj =
   declare_object {(default_object "TOKEN") with
@@ -159,7 +158,7 @@ let pr_grammar = function
 (* Parse a format (every terminal starting with a letter or a single
    quote (except a single quote alone) must be quoted) *)
 
-let parse_format (loc,str) =
+let parse_format ((loc, str) : lstring) =
   let str = " "^str in
   let l = String.length str in
   let push_token a = function
@@ -334,7 +333,7 @@ let rec interp_list_parser hd = function
 (* To protect alphabetic tokens and quotes from being seen as variables *)
 let quote_notation_token x =
   let n = String.length x in
-  let norm = is_ident x in
+  let norm = Lexer.is_ident x in
   if (n > 0 & norm) or (n > 2 & x.[0] = '\'') then "'"^x^"'"
   else x
 
@@ -342,7 +341,7 @@ let rec raw_analyze_notation_tokens = function
   | []    -> []
   | String ".." :: sl -> NonTerminal ldots_var :: raw_analyze_notation_tokens sl
   | String "_" :: _ -> error "_ must be quoted."
-  | String x :: sl when is_ident x ->
+  | String x :: sl when Lexer.is_ident x ->
       NonTerminal (Names.id_of_string x) :: raw_analyze_notation_tokens sl
   | String s :: sl ->
       Terminal (drop_simple_quotes s) :: raw_analyze_notation_tokens sl
@@ -643,12 +642,12 @@ let make_production etyps symbols =
 	    let typ = List.assoc m etyps in
 	    distribute [GramConstrNonTerminal (typ, Some m)] ll
         | Terminal s ->
-	    distribute [GramConstrTerminal (terminal s)] ll
+	    distribute [GramConstrTerminal (Lexer.terminal s)] ll
         | Break _ ->
             ll
         | SProdList (x,sl) ->
             let tkl = List.flatten
-              (List.map (function Terminal s -> [terminal s]
+              (List.map (function Terminal s -> [Lexer.terminal s]
                 | Break _ -> []
                 | _ -> anomaly "Found a non terminal token in recursive notation separator") sl) in
 	    match List.assoc x etyps with

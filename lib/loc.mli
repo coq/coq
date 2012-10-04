@@ -8,21 +8,37 @@
 
 (** {5 Basic types} *)
 
-type t = Compat.Loc.t
+type t
 
 exception Exc_located of t * exn
 
 type 'a located = t * 'a
+(** Embed a location in a type *)
 
 (** {5 Location manipulation} *)
 
 (** This is inherited from CAMPL4/5. *)
 
+val create : string -> int -> int -> (int * int) -> t
+(** Create a location from a filename, a line number, a position of the
+    beginning of the line and a pair of start and end position *)
+
 val unloc : t -> int * int
+(** Return the start and end position of a location *)
+
 val make_loc : int * int -> t
+(** Make a location out of its start and end position *)
+
 val ghost : t
+(** Dummy location *)
+
 val merge : t -> t -> t
+
 val raise : t -> exn -> 'a
+(** Raise a located exception *)
+
+val represent : t -> (string * int * int * int * int)
+(** Return the arguments given in [create] *)
 
 (** {5 Location utilities} *)
 
@@ -31,9 +47,6 @@ val located_iter2 : ('a -> 'b -> unit) -> 'a located -> 'b located -> unit
 
 val down_located : ('a -> 'b) -> 'a located -> 'b
 (** Projects out a located object *)
-
-val pr_located : ('a -> Pp.std_ppcmds) -> 'a located -> Pp.std_ppcmds
-(** Prints an object surrounded by its commented location *)
 
 (** {5 Backward compatibility} *)
 

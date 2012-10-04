@@ -12,7 +12,7 @@ val add_keyword : string -> unit
 val remove_keyword : string -> unit
 val is_keyword : string -> bool
 
-val location_function : int -> Loc.t
+(* val location_function : int -> Loc.t *)
 
 (** for coqdoc *)
 type location_table

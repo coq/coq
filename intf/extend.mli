@@ -10,8 +10,17 @@
 
 type side = Left | Right
 
+type gram_assoc = NonA | RightA | LeftA
+
+type gram_position =
+  | First
+  | Last
+  | Before of string
+  | After of string
+  | Level of string
+
 type production_position =
-  | BorderProd of side * Compat.gram_assoc option
+  | BorderProd of side * gram_assoc option
   | InternalProd
 
 type production_level =

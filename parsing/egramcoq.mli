@@ -33,7 +33,7 @@ type grammar_constr_prod_item =
        concat with last parsed list if true *)
 
 type notation_grammar =
-    int * gram_assoc option * notation * grammar_constr_prod_item list list
+    int * Extend.gram_assoc option * notation * grammar_constr_prod_item list list
 
 (** Adding notations *)
 

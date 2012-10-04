@@ -94,8 +94,8 @@ GEXTEND Gram
     [ [ prfcom = default_command_entry -> prfcom ] ]
   ;
   locality:
-    [ [ IDENT "Local" -> locality_flag := Some (loc,true)
-      | IDENT "Global" -> locality_flag := Some (loc,false)
+    [ [ IDENT "Local" -> locality_flag := Some (!@loc,true)
+      | IDENT "Global" -> locality_flag := Some (!@loc,false)
       | -> locality_flag := None ] ]
   ;
   noedit_mode:
@@ -127,7 +127,7 @@ GEXTEND Gram
             VernacSolve(g,tac,use_dft_tac)) ] ]
   ;
   located_vernac:
-    [ [ v = vernac -> loc, v ] ]
+    [ [ v = vernac -> !@loc, v ] ]
   ;
 END
 
@@ -299,7 +299,7 @@ GEXTEND Gram
   ;
   type_cstr:
     [ [ ":"; c=lconstr -> c
-      | -> CHole (loc, None) ] ]
+      | -> CHole (!@loc, None) ] ]
   ;
   (* Inductive schemes *)
   scheme:
@@ -336,19 +336,19 @@ GEXTEND Gram
   ;
   record_binder_body:
     [ [ l = binders; oc = of_type_with_opt_coercion;
-         t = lconstr -> fun id -> (oc,AssumExpr (id,mkCProdN loc l t))
+         t = lconstr -> fun id -> (oc,AssumExpr (id,mkCProdN (!@loc) l t))
       | l = binders; oc = of_type_with_opt_coercion;
          t = lconstr; ":="; b = lconstr -> fun id ->
-	   (oc,DefExpr (id,mkCLambdaN loc l b,Some (mkCProdN loc l t)))
+	   (oc,DefExpr (id,mkCLambdaN (!@loc) l b,Some (mkCProdN (!@loc) l t)))
       | l = binders; ":="; b = lconstr -> fun id ->
          match b with
 	 | CCast(_,b, (CastConv t|CastVM t)) ->
-	     (None,DefExpr(id,mkCLambdaN loc l b,Some (mkCProdN loc l t)))
+	     (None,DefExpr(id,mkCLambdaN (!@loc) l b,Some (mkCProdN (!@loc) l t)))
          | _ ->
-	     (None,DefExpr(id,mkCLambdaN loc l b,None)) ] ]
+	     (None,DefExpr(id,mkCLambdaN (!@loc) l b,None)) ] ]
   ;
   record_binder:
-    [ [ id = name -> (None,AssumExpr(id,CHole (loc, None)))
+    [ [ id = name -> (None,AssumExpr(id,CHole (!@loc, None)))
       | id = name; f = record_binder_body -> f id ] ]
   ;
   assum_list:
@@ -365,9 +365,9 @@ GEXTEND Gram
   constructor_type:
     [[ l = binders;
       t= [ coe = of_type_with_opt_coercion; c = lconstr ->
-	            fun l id -> (coe <> None,(id,mkCProdN loc l c))
+	            fun l id -> (coe <> None,(id,mkCProdN (!@loc) l c))
             |  ->
-		 fun l id -> (false,(id,mkCProdN loc l (CHole (loc, None)))) ]
+		 fun l id -> (false,(id,mkCProdN (!@loc) l (CHole (!@loc, None)))) ]
 	 -> t l
      ]]
 ;
@@ -489,7 +489,7 @@ GEXTEND Gram
   (* Module expressions *)
   module_expr:
     [ [ me = module_expr_atom -> me
-      | me1 = module_expr; me2 = module_expr_atom -> CMapply (loc,me1,me2)
+      | me1 = module_expr; me2 = module_expr_atom -> CMapply (!@loc,me1,me2)
       ] ]
   ;
   module_expr_atom:
@@ -505,9 +505,9 @@ GEXTEND Gram
   module_type:
     [ [ qid = qualid -> CMident qid
       | "("; mt = module_type; ")" -> mt
-      | mty = module_type; me = module_expr_atom -> CMapply (loc,mty,me)
+      | mty = module_type; me = module_expr_atom -> CMapply (!@loc,mty,me)
       | mty = module_type; "with"; decl = with_declaration ->
-          CMwith (loc,mty,decl)
+          CMwith (!@loc,mty,decl)
       ] ]
   ;
 END
@@ -589,17 +589,17 @@ GEXTEND Gram
         | "/" -> [`Slash]
         | "("; items = LIST1 argument_spec; ")"; sc = OPT scope ->
             let f x = match sc, x with
-            | None, x -> x | x, None -> Option.map (fun y -> loc, y) x
+            | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
             | Some _, Some _ -> error "scope declared twice" in
             List.map (fun (id,r,s) -> `Id(id,r,f s,false,false)) items
         | "["; items = LIST1 argument_spec; "]"; sc = OPT scope ->
             let f x = match sc, x with
-            | None, x -> x | x, None -> Option.map (fun y -> loc, y) x
+            | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
             | Some _, Some _ -> error "scope declared twice" in
             List.map (fun (id,r,s) -> `Id(id,r,f s,true,false)) items
         | "{"; items = LIST1 argument_spec; "}"; sc = OPT scope ->
             let f x = match sc, x with
-            | None, x -> x | x, None -> Option.map (fun y -> loc, y) x
+            | None, x -> x | x, None -> Option.map (fun y -> !@loc, y) x
             | Some _, Some _ -> error "scope declared twice" in
             List.map (fun (id,r,s) -> `Id(id,r,f s,true,true)) items
         ] -> l ] SEP ",";
@@ -677,7 +677,7 @@ GEXTEND Gram
   ;
   argument_spec: [
        [ b = OPT "!"; id = name ; s = OPT scope ->
-       snd id, b <> None, Option.map (fun x -> loc, x) s
+       snd id, b <> None, Option.map (fun x -> !@loc, x) s
     ]
   ];
   strategy_level:
@@ -691,7 +691,7 @@ GEXTEND Gram
     [ [ name = identref; sup = OPT binders ->
 	  (let (loc,id) = name in (loc, Name id)),
           (Option.default [] sup)
-      | -> (loc, Anonymous), []  ] ]
+      | -> (!@loc, Anonymous), []  ] ]
   ;
   reserv_list:
     [ [ bl = LIST1 reserv_tuple -> bl | b = simple_reserv -> [b] ] ]
@@ -1039,7 +1039,7 @@ GEXTEND Gram
         SetOnlyParsing Flags.Current
       | IDENT "compat"; s = STRING ->
         SetOnlyParsing (Coqinit.get_compat_version s)
-      | IDENT "format"; s = [s = STRING -> (loc,s)] -> SetFormat s
+      | IDENT "format"; s = [s = STRING -> (!@loc,s)] -> SetFormat s
       | x = IDENT; ","; l = LIST1 [id = IDENT -> id ] SEP ","; "at";
         lev = level -> SetItemLevel (x::l,lev)
       | x = IDENT; "at"; lev = level -> SetItemLevel ([x],lev)
@@ -1057,6 +1057,6 @@ GEXTEND Gram
     [ [ s = ne_string -> TacTerm s
       | nt = IDENT;
         po = OPT [ "("; p = ident; sep = [ -> "" | ","; sep = STRING -> sep ];
-                   ")" -> (p,sep) ] -> TacNonTerm (loc,nt,po) ] ]
+                   ")" -> (p,sep) ] -> TacNonTerm (!@loc,nt,po) ] ]
   ;
 END

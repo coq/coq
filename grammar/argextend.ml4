@@ -13,7 +13,7 @@ open Q_util
 open Egramml
 open Compat
 
-let loc = Loc.ghost
+let loc = CompatLoc.ghost
 let default_loc = <:expr< Loc.ghost >>
 
 let mk_extraarg prefix s =
@@ -314,10 +314,10 @@ EXTEND
   genarg:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let t, g = interp_entry_name false None e "" in
-	GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
+	GramNonTerminal (!@loc, t, g, Some (Names.id_of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let t, g = interp_entry_name false None e sep in
-	GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
+	GramNonTerminal (!@loc, t, g, Some (Names.id_of_string s))
       | s = STRING ->
 	  if String.length s > 0 && Util.is_letter s.[0] then
 	    Lexer.add_keyword s;

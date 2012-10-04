@@ -29,9 +29,10 @@ let rec make_patt = function
 let rec make_when loc = function
   | [] -> <:expr< True >>
   | GramNonTerminal(loc',t,_,Some p)::l ->
+      let loc' = of_coqloc loc' in
       let p = Names.string_of_id p in
       let l = make_when loc l in
-      let loc = Loc.merge loc' loc in
+      let loc = CompatLoc.merge loc' loc in
       let t = mlexpr_of_argtype loc' t in
       <:expr< Genarg.genarg_tag $lid:p$ = $t$ && $l$ >>
   | _::l -> make_when loc l
@@ -39,8 +40,9 @@ let rec make_when loc = function
 let rec make_let e = function
   | [] -> e
   | GramNonTerminal(loc,t,_,Some p)::l ->
+      let loc = of_coqloc loc in
       let p = Names.string_of_id p in
-      let loc = Loc.merge loc (MLast.loc_of_expr e) in
+      let loc = CompatLoc.merge loc (MLast.loc_of_expr e) in
       let e = make_let e l in
       let v = <:expr< Genarg.out_gen $make_wit loc t$ $lid:p$ >> in
       <:expr< let $lid:p$ = $v$ in $e$ >>
@@ -70,6 +72,7 @@ let make_fun_clauses loc s l =
 let rec make_args = function
   | [] -> <:expr< [] >>
   | GramNonTerminal(loc,t,_,Some p)::l ->
+      let loc = of_coqloc loc in
       let p = Names.string_of_id p in
       <:expr< [ Genarg.in_gen $make_wit loc t$ $lid:p$ :: $make_args l$ ] >>
   | _::l -> make_args l
@@ -77,8 +80,9 @@ let rec make_args = function
 let rec make_eval_tactic e = function
   | [] -> e
   | GramNonTerminal(loc,tag,_,Some p)::l when is_tactic_genarg tag ->
+      let loc = of_coqloc loc in
       let p = Names.string_of_id p in
-      let loc = Loc.merge loc (MLast.loc_of_expr e) in
+      let loc = CompatLoc.merge loc (MLast.loc_of_expr e) in
       let e = make_eval_tactic e l in
       <:expr< let $lid:p$ = $lid:p$ in $e$ >>
   | _::l -> make_eval_tactic e l
@@ -86,17 +90,20 @@ let rec make_eval_tactic e = function
 let rec make_fun e = function
   | [] -> e
   | GramNonTerminal(loc,_,_,Some p)::l ->
+      let loc = of_coqloc loc in
       let p = Names.string_of_id p in
       <:expr< fun $lid:p$ -> $make_fun e l$ >>
   | _::l -> make_fun e l
 
 let mlexpr_terminals_of_grammar_tactic_prod_item_expr = function
   | GramTerminal s -> <:expr< Some $mlexpr_of_string s$ >>
-  | GramNonTerminal (loc,nt,_,sopt) -> <:expr< None >>
+  | GramNonTerminal (loc,nt,_,sopt) ->
+    let loc = of_coqloc loc in <:expr< None >>
 
 let make_prod_item = function
   | GramTerminal s -> <:expr< Egramml.GramTerminal $str:s$ >>
   | GramNonTerminal (loc,nt,g,sopt) ->
+      let loc = of_coqloc loc in
       <:expr< Egramml.GramNonTerminal $default_loc$ $mlexpr_of_argtype loc nt$
       $mlexpr_of_prod_entry_key g$ $mlexpr_of_option mlexpr_of_ident sopt$ >>
 
@@ -106,8 +113,9 @@ let mlexpr_of_clause =
 let rec make_tags loc = function
   | [] -> <:expr< [] >>
   | GramNonTerminal(loc',t,_,Some p)::l ->
+      let loc' = of_coqloc loc' in
       let l = make_tags loc l in
-      let loc = Loc.merge loc' loc in
+      let loc = CompatLoc.merge loc' loc in
       let t = mlexpr_of_argtype loc' t in
       <:expr< [ $t$ :: $l$ ] >>
   | _::l -> make_tags loc l
@@ -221,12 +229,12 @@ EXTEND
   tacargs:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let t, g = interp_entry_name false None e "" in
-        GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
+        GramNonTerminal (!@loc, t, g, Some (Names.id_of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let t, g = interp_entry_name false None e sep in
-        GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
+        GramNonTerminal (!@loc, t, g, Some (Names.id_of_string s))
       | s = STRING ->
-	if s = "" then Errors.user_err_loc (loc,"",Pp.str "Empty terminal.");
+	if s = "" then Errors.user_err_loc (!@loc,"",Pp.str "Empty terminal.");
         GramTerminal s
     ] ]
   ;

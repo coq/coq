@@ -290,15 +290,15 @@ val interp_entry_name : bool (** true to fail on unknown entry *) ->
 
 val find_position :
   bool (** true if for creation in pattern entry; false if in constr entry *) ->
-  gram_assoc option -> int option ->
-    gram_position option * gram_assoc option * string option *
-    (** for reinitialization: *) gram_assoc option
+  Extend.gram_assoc option -> int option ->
+    Extend.gram_position option * Extend.gram_assoc option * string option *
+    (** for reinitialization: *) Extend.gram_assoc option
 
 val synchronize_level_positions : unit -> unit
 
 val register_empty_levels : bool -> int list ->
-    (gram_position option * gram_assoc option *
-     string option * gram_assoc option) list
+    (Extend.gram_position option * Extend.gram_assoc option *
+     string option * Extend.gram_assoc option) list
 
 val remove_levels : int -> unit
 

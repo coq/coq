@@ -218,7 +218,7 @@ GEXTEND Gram
     [ [ id = identref -> AI id
 
       (* This is used in quotations *)
-      | id = METAIDENT -> MetaId (loc,id) ] ]
+      | id = METAIDENT -> MetaId (!@loc, id) ] ]
   ;
   open_constr:
     [ [ c = constr -> ((),c) ] ]
@@ -260,37 +260,37 @@ GEXTEND Gram
     [ [ l = LIST0 simple_intropattern -> l ]]
   ;
   disjunctive_intropattern:
-    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> loc,IntroOrAndPattern tc
-      | "()" -> loc,IntroOrAndPattern [[]]
-      | "("; si = simple_intropattern; ")" -> loc,IntroOrAndPattern [[si]]
+    [ [ "["; tc = LIST1 intropatterns SEP "|"; "]" -> !@loc,IntroOrAndPattern tc
+      | "()" -> !@loc,IntroOrAndPattern [[]]
+      | "("; si = simple_intropattern; ")" -> !@loc,IntroOrAndPattern [[si]]
       | "("; si = simple_intropattern; ",";
              tc = LIST1 simple_intropattern SEP "," ; ")" ->
-	       loc,IntroOrAndPattern [si::tc]
+	       !@loc,IntroOrAndPattern [si::tc]
       | "("; si = simple_intropattern; "&";
 	     tc = LIST1 simple_intropattern SEP "&" ; ")" ->
 	  (* (A & B & C) is translated into (A,(B,C)) *)
 	  let rec pairify = function
 	    | ([]|[_]|[_;_]) as l -> IntroOrAndPattern [l]
 	    | t::q -> IntroOrAndPattern [[t;(loc_of_ne_list q,pairify q)]]
-	  in loc,pairify (si::tc) ] ]
+	  in !@loc,pairify (si::tc) ] ]
   ;
   naming_intropattern:
-    [ [ prefix = pattern_ident -> loc, IntroFresh prefix
-      | "?" -> loc, IntroAnonymous
-      | id = ident -> loc, IntroIdentifier id
-      | "*" -> loc, IntroForthcoming true
-      | "**" -> loc, IntroForthcoming false ] ]
+    [ [ prefix = pattern_ident -> !@loc, IntroFresh prefix
+      | "?" -> !@loc, IntroAnonymous
+      | id = ident -> !@loc, IntroIdentifier id
+      | "*" -> !@loc, IntroForthcoming true
+      | "**" -> !@loc, IntroForthcoming false ] ]
   ;
   simple_intropattern:
     [ [ pat = disjunctive_intropattern -> pat
       | pat = naming_intropattern -> pat
-      | "_" -> loc, IntroWildcard
-      | "->" -> loc, IntroRewrite true
-      | "<-" -> loc, IntroRewrite false ] ]
+      | "_" -> !@loc, IntroWildcard
+      | "->" -> !@loc, IntroRewrite true
+      | "<-" -> !@loc, IntroRewrite false ] ]
   ;
   simple_binding:
-    [ [ "("; id = ident; ":="; c = lconstr; ")" -> (loc, NamedHyp id, c)
-      | "("; n = natural; ":="; c = lconstr; ")" -> (loc, AnonHyp n, c) ] ]
+    [ [ "("; id = ident; ":="; c = lconstr; ")" -> (!@loc, NamedHyp id, c)
+      | "("; n = natural; ":="; c = lconstr; ")" -> (!@loc, AnonHyp n, c) ] ]
   ;
   bindings:
     [ [ test_lpar_idnum_coloneq; bl = LIST1 simple_binding ->
@@ -402,13 +402,13 @@ GEXTEND Gram
       | -> true ]]
   ;
   simple_binder:
-    [ [ na=name -> ([na],Default Explicit,CHole (loc, None))
+    [ [ na=name -> ([na],Default Explicit,CHole (!@loc, None))
       | "("; nal=LIST1 name; ":"; c=lconstr; ")" -> (nal,Default Explicit,c)
     ] ]
   ;
   fixdecl:
     [ [ "("; id = ident; bl=LIST0 simple_binder; ann=fixannot;
-        ":"; ty=lconstr; ")" -> (loc,id,bl,ann,ty) ] ]
+        ":"; ty=lconstr; ")" -> (!@loc, id, bl, ann, ty) ] ]
   ;
   fixannot:
     [ [ "{"; IDENT "struct"; id=name; "}" -> Some id
@@ -416,7 +416,7 @@ GEXTEND Gram
   ;
   cofixdecl:
     [ [ "("; id = ident; bl=LIST0 simple_binder; ":"; ty=lconstr; ")" ->
-        (loc,id,bl,None,ty) ] ]
+        (!@loc, id, bl, None, ty) ] ]
   ;
   bindings_with_parameters:
     [ [ check_for_coloneq; "(";  id = ident; bl = LIST0 simple_binder;
@@ -459,7 +459,7 @@ GEXTEND Gram
         msg_warning (strbrk msg); Some id
       | IDENT "_eqn" ->
         let msg = "Obsolete syntax \"_eqn\" could be replaced by \"eqn:?\"" in
-        msg_warning (strbrk msg); Some (loc, IntroAnonymous)
+        msg_warning (strbrk msg); Some (!@loc, IntroAnonymous)
       | -> None ] ]
   ;
   as_name:
@@ -558,10 +558,10 @@ GEXTEND Gram
       (* Begin compatibility *)
       | IDENT "assert"; test_lpar_id_coloneq; "("; (loc,id) = identref; ":=";
 	  c = lconstr; ")" ->
-	  TacAssert (None,Some (loc,IntroIdentifier id),c)
+	  TacAssert (None,Some (!@loc,IntroIdentifier id),c)
       | IDENT "assert"; test_lpar_id_colon; "("; (loc,id) = identref; ":";
 	  c = lconstr; ")"; tac=by_tactic ->
-	  TacAssert (Some tac,Some (loc,IntroIdentifier id),c)
+	  TacAssert (Some tac,Some (!@loc,IntroIdentifier id),c)
       (* End compatibility *)
 
       | IDENT "assert"; c = constr; ipat = as_ipat; tac = by_tactic ->
@@ -674,7 +674,7 @@ GEXTEND Gram
       | r = red_tactic; cl = clause_dft_concl -> TacReduce (r, cl)
       (* Change ne doit pas s'appliquer dans un Definition t := Eval ... *)
       | IDENT "change"; (oc,c) = conversion; cl = clause_dft_concl ->
-	  let p,cl = merge_occurrences loc cl oc in
+	  let p,cl = merge_occurrences (!@loc) cl oc in
 	  TacChange (p,c,cl)
     ] ]
   ;

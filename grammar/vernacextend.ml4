@@ -20,8 +20,9 @@ open Compat
 let rec make_let e = function
   | [] -> e
   | GramNonTerminal(loc,t,_,Some p)::l ->
+      let loc = of_coqloc loc in
       let p = Names.string_of_id p in
-      let loc = Loc.merge loc (MLast.loc_of_expr e) in
+      let loc = CompatLoc.merge loc (MLast.loc_of_expr e) in
       let e = make_let e l in
       <:expr< let $lid:p$ = Genarg.out_gen $make_rawwit loc t$ $lid:p$ in $e$ >>
   | _::l -> make_let e l
@@ -83,7 +84,7 @@ EXTEND
   rule:
     [ [ "["; s = STRING; l = LIST0 args; "]"; "->"; "["; e = Pcaml.expr; "]"
         ->
-      if s = "" then Errors.user_err_loc (loc,"",Pp.str"Command name is empty.");
+      if s = "" then Errors.user_err_loc (!@loc,"",Pp.str"Command name is empty.");
       (Some s,l,<:expr< fun () -> $e$ >>)
       | "[" ; "-" ; l = LIST1 args ; "]" ; "->" ; "[" ; e = Pcaml.expr ; "]" ->
 	  (None,l,<:expr< fun () -> $e$ >>)
@@ -92,10 +93,10 @@ EXTEND
   args:
     [ [ e = LIDENT; "("; s = LIDENT; ")" ->
         let t, g = interp_entry_name false None e "" in
-        GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
+        GramNonTerminal (!@loc, t, g, Some (Names.id_of_string s))
       | e = LIDENT; "("; s = LIDENT; ","; sep = STRING; ")" ->
         let t, g = interp_entry_name false None e sep in
-        GramNonTerminal (loc, t, g, Some (Names.id_of_string s))
+        GramNonTerminal (!@loc, t, g, Some (Names.id_of_string s))
       | s = STRING ->
         GramTerminal s
     ] ]

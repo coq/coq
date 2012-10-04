@@ -1,9 +1,9 @@
 Coq_config
 Pp_control
-Compat
 Flags
 Pp
 Loc
+Compat
 Segmenttree
 Unicodetable
 Unicode

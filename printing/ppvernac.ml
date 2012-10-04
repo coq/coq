@@ -9,13 +9,12 @@
 open Pp
 open Names
 
-let pr_located = Loc.pr_located
-
-open Compat
+(* open Compat *)
 open Errors
 open Util
 open Extend
 open Vernacexpr
+open Pputils
 open Ppconstr
 open Pptactic
 open Libnames
@@ -28,8 +27,8 @@ let pr_spc_lconstr = pr_sep_com spc pr_lconstr_expr
 
 let pr_lident (loc,id) =
   if loc <> Loc.ghost then
-    let (b,_) = unloc loc in
-    pr_located pr_id (make_loc (b,b+String.length(string_of_id id)),id)
+    let (b,_) = Loc.unloc loc in
+    pr_located pr_id (Loc.make_loc (b,b+String.length(string_of_id id)),id)
   else pr_id id
 
 let string_of_fqid fqid =
@@ -39,8 +38,8 @@ let pr_fqid fqid = str (string_of_fqid fqid)
 
 let pr_lfqid (loc,fqid) =
   if loc <> Loc.ghost then
-   let (b,_) = unloc loc in
-    pr_located pr_fqid (make_loc (b,b+String.length(string_of_fqid fqid)),fqid)
+   let (b,_) = Loc.unloc loc in
+    pr_located pr_fqid (Loc.make_loc (b,b+String.length(string_of_fqid fqid)),fqid)
   else
    pr_fqid fqid
 
@@ -319,7 +318,7 @@ let pr_onescheme (idop,schem) =
 
 let begin_of_inductive = function
     [] -> 0
-  | (_,((loc,_),_))::_ -> fst (unloc loc)
+  | (_,((loc,_),_))::_ -> fst (Loc.unloc loc)
 
 let pr_class_rawexpr = function
   | FunClass -> str"Funclass"

@@ -1,10 +1,10 @@
 Coq_config
 
 Pp_control
-Compat
 Flags
 Pp
 Loc
+Compat
 Errors
 CList
 CArray

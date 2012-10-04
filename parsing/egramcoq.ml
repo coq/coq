@@ -184,10 +184,14 @@ let extend_constr (entry,level) (n,assoc) mkact forpat rules =
   let symbs = make_constr_prod_item assoc n forpat pt in
   let pure_sublevels = pure_sublevels level symbs in
   let needed_levels = register_empty_levels forpat pure_sublevels in
+  let map_level (pos, ass1, name, ass2) =
+    (Option.map of_coq_position pos, Option.map of_coq_assoc ass1, name, ass2) in
+  let needed_levels = List.map map_level needed_levels in
   let pos,p4assoc,name,reinit = find_position forpat assoc level in
   let nb_decls = List.length needed_levels + 1 in
   List.iter (prepare_empty_levels forpat) needed_levels;
-  grammar_extend entry reinit (pos,[(name, p4assoc, [symbs, mkact pt])]);
+  grammar_extend entry reinit (Option.map of_coq_position pos,
+    [(name, Option.map of_coq_assoc p4assoc, [symbs, mkact pt])]);
   nb_decls) 0 rules
 
 let extend_constr_notation (n,assoc,ntn,rules) =
@@ -211,7 +215,7 @@ let get_tactic_entry n =
   else if n = 5 then
     weaken_entry Tactic.binder_tactic, None
   else if 1<=n && n<5 then
-    weaken_entry Tactic.tactic_expr, Some (Compat.Level (string_of_int n))
+    weaken_entry Tactic.tactic_expr, Some (Extend.Level (string_of_int n))
   else
     error ("Invalid Tactic Notation level: "^(string_of_int n)^".")
 
@@ -234,7 +238,8 @@ let add_tactic_entry (key,lev,prods,tac) =
 	(TacAtom(loc,TacAlias(loc,s,l,tac)):raw_tactic_expr) in
       make_rule (mkact key tac) prods in
   synchronize_level_positions ();
-  grammar_extend entry None (pos,[(None, None, List.rev [rules])]);
+  grammar_extend entry None (Option.map of_coq_position pos,
+    [(None, None, List.rev [rules])]);
   1
 
 (**********************************************************************)

@@ -6,6 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+open Compat
 open Constrexpr
 open Tacexpr
 open Misctypes
@@ -84,20 +85,20 @@ GEXTEND Gram
       | IDENT "fail"; n = [ n = int_or_var -> n | -> fail_default_value ];
 	  l = LIST0 message_token -> TacFail (n,l)
       | IDENT "external"; com = STRING; req = STRING; la = LIST1 tactic_arg ->
-	  TacArg (loc,TacExternal (loc,com,req,la))
-      | st = simple_tactic -> TacAtom (loc,st)
-      | a = may_eval_arg -> TacArg(loc,a)
+	  TacArg (!@loc,TacExternal (!@loc,com,req,la))
+      | st = simple_tactic -> TacAtom (!@loc,st)
+      | a = may_eval_arg -> TacArg(!@loc,a)
       | IDENT "constr"; ":"; id = METAIDENT ->
-          TacArg(loc,MetaIdArg (loc,false,id))
+          TacArg(!@loc,MetaIdArg (!@loc,false,id))
       | IDENT "constr"; ":"; c = Constr.constr ->
-          TacArg(loc,ConstrMayEval(ConstrTerm c))
+          TacArg(!@loc,ConstrMayEval(ConstrTerm c))
       | IDENT "ipattern"; ":"; ipat = simple_intropattern ->
-	  TacArg(loc,IntroPattern ipat)
+	  TacArg(!@loc,IntroPattern ipat)
       | r = reference; la = LIST0 tactic_arg ->
-          TacArg(loc,TacCall (loc,r,la)) ]
+          TacArg(!@loc,TacCall (!@loc,r,la)) ]
     | "0"
       [ "("; a = tactic_expr; ")" -> a
-      | a = tactic_atom -> TacArg (loc,a) ] ]
+      | a = tactic_atom -> TacArg (!@loc,a) ] ]
   ;
   (* binder_tactic: level 5 of tactic_expr *)
   binder_tactic:
@@ -118,7 +119,7 @@ GEXTEND Gram
       | r = reference -> Reference r
       | c = Constr.constr -> ConstrMayEval (ConstrTerm c)
       (* Unambigous entries: tolerated w/o "ltac:" modifier *)
-      | id = METAIDENT -> MetaIdArg (loc,true,id)
+      | id = METAIDENT -> MetaIdArg (!@loc,true,id)
       | "()" -> TacVoid ] ]
   ;
   may_eval_arg:
@@ -126,7 +127,7 @@ GEXTEND Gram
       | IDENT "fresh"; l = LIST0 fresh_id -> TacFreshId l ] ]
   ;
   fresh_id:
-    [ [ s = STRING -> ArgArg s | id = ident -> ArgVar (loc,id) ] ]
+    [ [ s = STRING -> ArgArg s | id = ident -> ArgVar (!@loc,id) ] ]
   ;
   constr_eval:
     [ [ IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->
@@ -141,9 +142,9 @@ GEXTEND Gram
       | c = Constr.constr -> ConstrTerm c ] ]
   ;
   tactic_atom:
-    [ [ id = METAIDENT -> MetaIdArg (loc,true,id)
+    [ [ id = METAIDENT -> MetaIdArg (!@loc,true,id)
       | n = integer -> Integer n
-      | r = reference -> TacCall (loc,r,[])
+      | r = reference -> TacCall (!@loc,r,[])
       | "()" -> TacVoid ] ]
   ;
   match_key:

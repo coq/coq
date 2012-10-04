@@ -6,24 +6,62 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Pp
-
-include Compat.Loc
-
 (* Locations management *)
 
-let dummy_loc = Compat.Loc.ghost
-let join_loc = Compat.Loc.merge
-let make_loc = Compat.make_loc
-let unloc = Compat.unloc
+
+type t = {
+  fname : string; (** filename *)
+  line_nb : int; (** start line number *)
+  bol_pos : int; (** position of the beginning of start line *)
+  line_nb_last : int; (** end line number *)
+  bol_pos_last : int; (** position of the beginning of end line *)
+  bp : int; (** start position *)
+  ep : int; (** end position *)
+}
+
+exception Exc_located of t * exn
+
+let create fname line_nb bol_pos (bp, ep) = {
+  fname = fname; line_nb = line_nb; bol_pos = bol_pos;
+  line_nb_last = line_nb; bol_pos_last = bol_pos; bp = bp; ep = ep; }
+
+let make_loc (bp, ep) = {
+  fname = ""; line_nb = -1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0;
+  bp = bp; ep = ep; }
+
+let ghost = {
+  fname = ""; line_nb = -1; bol_pos = 0; line_nb_last = -1; bol_pos_last = 0;
+  bp = 0; ep = 0; }
+
+let merge loc1 loc2 =
+  if loc1.bp < loc2.bp then
+    if loc1.ep < loc2.ep then {
+      fname = loc1.fname;
+      line_nb = loc1.line_nb;
+      bol_pos = loc1.bol_pos;
+      line_nb_last = loc2.line_nb_last;
+      bol_pos_last = loc2.bol_pos_last;
+      bp = loc1.bp; ep = loc2.ep; }
+    else loc1
+  else if loc2.ep < loc1.ep then {
+    fname = loc2.fname;
+    line_nb = loc2.line_nb;
+    bol_pos = loc2.bol_pos;
+    line_nb_last = loc1.line_nb_last;
+    bol_pos_last = loc1.bol_pos_last;
+    bp = loc2.bp; ep = loc1.ep; }
+  else loc2
+
+let unloc loc = (loc.bp, loc.ep)
+
+let represent loc = (loc.fname, loc.line_nb, loc.bol_pos, loc.bp, loc.ep)
+
+let raise loc e = raise (Exc_located (loc, e))
+
+let dummy_loc = ghost
+let join_loc = merge
 
 type 'a located = t * 'a
 let located_fold_left f x (_,a) = f x a
 let located_iter2 f (_,a) (_,b) = f a b
 let down_located f (_,a) = f a
-
-let pr_located pr (loc, x) =
-  if Flags.do_beautify () && loc <> dummy_loc then
-    let (b, e) = unloc loc in
-    Pp.comment b ++ pr x ++ Pp.comment e
-  else pr x

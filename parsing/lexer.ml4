@@ -100,7 +100,7 @@ module Error = struct
 end
 open Error
 
-let err loc str = Loc.raise (make_loc loc) (Error.E str)
+let err loc str = Loc.raise (Loc.make_loc loc) (Error.E str)
 
 let bad_token str = raise (Error.E (Bad_token str))
 
@@ -172,7 +172,7 @@ let lookup_utf8 cs =
     | None -> EmptyStream
 
 let unlocated f x =
-  try f x with Loc.Exc_located (_,exc) -> raise exc
+  try f x with Loc.Exc_located (_, exc) -> raise exc
 
 let check_keyword str =
   let rec loop_symb = parser
@@ -538,7 +538,7 @@ let loct_add loct i loc = Hashtbl.add loct i loc
 
 let current_location_table = ref (loct_create ())
 
-type location_table = (int, Loc.t) Hashtbl.t
+type location_table = (int, CompatLoc.t) Hashtbl.t
 let location_table () = !current_location_table
 let restore_location_table t = current_location_table := t
 let location_function n = loct_func !current_location_table n
@@ -596,10 +596,10 @@ ELSE (* official camlp4 for ocaml >= 3.10 *)
 
 module M_ = Camlp4.ErrorHandler.Register (Error)
 
-module Loc = Loc
+module Loc = CompatLoc
 module Token = struct
   include Tok (* Cf. tok.ml *)
-  module Loc = Loc
+  module Loc = CompatLoc
   module Error = Camlp4.Struct.EmptyError
   module Filter = struct
     type token_filter = (Tok.t * Loc.t) Stream.t -> (Tok.t * Loc.t) Stream.t

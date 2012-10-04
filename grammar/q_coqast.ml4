@@ -20,7 +20,7 @@ let anti loc x =
   expl_anti loc <:expr< $lid:purge_str x$ >>
 
 (* We don't give location for tactic quotation! *)
-let loc = Loc.ghost
+let loc = CompatLoc.ghost
 
 let dloc = <:expr< Loc.ghost >>
 
@@ -41,16 +41,21 @@ let mlexpr_of_qualid qid =
   <:expr< Libnames.make_qualid $mlexpr_of_dirpath dir$ $mlexpr_of_ident id$ >>
 
 let mlexpr_of_reference = function
-  | Libnames.Qualid (loc,qid) -> <:expr< Libnames.Qualid $dloc$ $mlexpr_of_qualid qid$ >>
-  | Libnames.Ident (loc,id) -> <:expr< Libnames.Ident $dloc$ $mlexpr_of_ident id$ >>
+  | Libnames.Qualid (loc,qid) ->
+    let loc = of_coqloc loc in <:expr< Libnames.Qualid $dloc$ $mlexpr_of_qualid qid$ >>
+  | Libnames.Ident (loc,id) ->
+    let loc = of_coqloc loc in <:expr< Libnames.Ident $dloc$ $mlexpr_of_ident id$ >>
 
-let mlexpr_of_located f (loc,x) = <:expr< ($dloc$, $f x$) >>
+let mlexpr_of_located f (loc,x) =
+  let loc = of_coqloc loc in
+  <:expr< ($dloc$, $f x$) >>
 
 let mlexpr_of_loc loc = <:expr< $dloc$ >>
 
 let mlexpr_of_by_notation f = function
   | Misctypes.AN x -> <:expr< Misctypes.AN $f x$ >>
   | Misctypes.ByNotation (loc,s,sco) ->
+      let loc = of_coqloc loc in
       <:expr< Misctypes.ByNotation $dloc$ $str:s$ $mlexpr_of_option mlexpr_of_string sco$ >>
 
 let mlexpr_of_intro_pattern = function
@@ -135,24 +140,36 @@ let mlexpr_of_binder_kind = function
 
 let rec mlexpr_of_constr = function
   | Constrexpr.CRef (Libnames.Ident (loc,id)) when is_meta (string_of_id id) ->
+      let loc = of_coqloc loc in
       anti loc (string_of_id id)
   | Constrexpr.CRef r -> <:expr< Constrexpr.CRef $mlexpr_of_reference r$ >>
   | Constrexpr.CFix (loc,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Constrexpr.CCoFix (loc,_,_) -> failwith "mlexpr_of_constr: TODO"
-  | Constrexpr.CProdN (loc,l,a) -> <:expr< Constrexpr.CProdN $dloc$ $mlexpr_of_list
+  | Constrexpr.CProdN (loc,l,a) ->
+      let loc = of_coqloc loc in
+      <:expr< Constrexpr.CProdN $dloc$ $mlexpr_of_list
       (mlexpr_of_triple (mlexpr_of_list (mlexpr_of_pair (fun _ -> dloc) mlexpr_of_name)) mlexpr_of_binder_kind mlexpr_of_constr) l$ $mlexpr_of_constr a$ >>
-  | Constrexpr.CLambdaN (loc,l,a) -> <:expr< Constrexpr.CLambdaN $dloc$ $mlexpr_of_list (mlexpr_of_triple (mlexpr_of_list (mlexpr_of_pair (fun _ -> dloc) mlexpr_of_name)) mlexpr_of_binder_kind mlexpr_of_constr) l$ $mlexpr_of_constr a$ >>
+  | Constrexpr.CLambdaN (loc,l,a) ->
+    let loc = of_coqloc loc in
+    <:expr< Constrexpr.CLambdaN $dloc$ $mlexpr_of_list (mlexpr_of_triple (mlexpr_of_list (mlexpr_of_pair (fun _ -> dloc) mlexpr_of_name)) mlexpr_of_binder_kind mlexpr_of_constr) l$ $mlexpr_of_constr a$ >>
   | Constrexpr.CLetIn (loc,_,_,_) -> failwith "mlexpr_of_constr: TODO"
-  | Constrexpr.CAppExpl (loc,a,l) -> <:expr< Constrexpr.CAppExpl $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_reference a$ $mlexpr_of_list mlexpr_of_constr l$ >>
-  | Constrexpr.CApp (loc,a,l) -> <:expr< Constrexpr.CApp $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_constr a$ $mlexpr_of_list (mlexpr_of_pair mlexpr_of_constr (mlexpr_of_option (mlexpr_of_located mlexpr_of_explicitation))) l$ >>
+  | Constrexpr.CAppExpl (loc,a,l) ->
+    let loc = of_coqloc loc in
+    <:expr< Constrexpr.CAppExpl $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_reference a$ $mlexpr_of_list mlexpr_of_constr l$ >>
+  | Constrexpr.CApp (loc,a,l) ->
+    let loc = of_coqloc loc in
+    <:expr< Constrexpr.CApp $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_constr a$ $mlexpr_of_list (mlexpr_of_pair mlexpr_of_constr (mlexpr_of_option (mlexpr_of_located mlexpr_of_explicitation))) l$ >>
   | Constrexpr.CCases (loc,_,_,_,_) -> failwith "mlexpr_of_constr: TODO"
-  | Constrexpr.CHole (loc, None) -> <:expr< Constrexpr.CHole $dloc$ None >>
+  | Constrexpr.CHole (loc, None) ->
+    let loc = of_coqloc loc in
+    <:expr< Constrexpr.CHole $dloc$ None >>
   | Constrexpr.CHole (loc, Some _) -> failwith "mlexpr_of_constr: TODO CHole (Some _)"
   | Constrexpr.CNotation(_,ntn,(subst,substl,[])) ->
       <:expr< Constrexpr.CNotation $dloc$ $mlexpr_of_string ntn$
               ($mlexpr_of_list mlexpr_of_constr subst$,
                $mlexpr_of_list (mlexpr_of_list mlexpr_of_constr) substl$,[]) >>
   | Constrexpr.CPatVar (loc,n) ->
+      let loc = of_coqloc loc in
       <:expr< Constrexpr.CPatVar $dloc$ $mlexpr_of_pair mlexpr_of_bool mlexpr_of_ident n$ >>
   | _ -> failwith "mlexpr_of_constr: TODO"
 
@@ -211,6 +228,7 @@ let mlexpr_of_may_eval f = function
   | Genredexpr.ConstrEval (r,c) ->
       <:expr< Genredexpr.ConstrEval $mlexpr_of_red_expr r$ $f c$ >>
   | Genredexpr.ConstrContext ((loc,id),c) ->
+      let loc = of_coqloc loc in
       let id = mlexpr_of_ident id in
       <:expr< Genredexpr.ConstrContext (loc,$id$) $f c$ >>
   | Genredexpr.ConstrTypeOf c ->
@@ -427,6 +445,7 @@ let rec mlexpr_of_atomic_tactic = function
 
 and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
   | Tacexpr.TacAtom (loc,t) ->
+      let loc = of_coqloc loc in
       <:expr< Tacexpr.TacAtom $dloc$ $mlexpr_of_atomic_tactic t$ >>
   | Tacexpr.TacThen (t1,[||],t2,[||]) ->
       <:expr< Tacexpr.TacThen $mlexpr_of_tactic t1$ [||] $mlexpr_of_tactic t2$ [||]>>
@@ -489,11 +508,15 @@ and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
   | _ -> failwith "Quotation of tactic expressions: TODO"
 
 and mlexpr_of_tactic_arg = function
-  | Tacexpr.MetaIdArg (loc,true,id) -> anti loc id
+  | Tacexpr.MetaIdArg (loc,true,id) ->
+    let loc = of_coqloc loc in
+    anti loc id
   | Tacexpr.MetaIdArg (loc,false,id) ->
-      <:expr< Tacexpr.ConstrMayEval (Genredexpr.ConstrTerm $anti loc id$) >>
+    let loc = of_coqloc loc in
+    <:expr< Tacexpr.ConstrMayEval (Genredexpr.ConstrTerm $anti loc id$) >>
   | Tacexpr.TacCall (loc,t,tl) ->
-      <:expr< Tacexpr.TacCall $dloc$ $mlexpr_of_reference t$ $mlexpr_of_list mlexpr_of_tactic_arg tl$>>
+    let loc = of_coqloc loc in
+    <:expr< Tacexpr.TacCall $dloc$ $mlexpr_of_reference t$ $mlexpr_of_list mlexpr_of_tactic_arg tl$>>
   | Tacexpr.Tacexp t ->
       <:expr< Tacexpr.Tacexp $mlexpr_of_tactic t$ >>
   | Tacexpr.ConstrMayEval c ->

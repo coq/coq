@@ -19,7 +19,7 @@ let make_generic_action
   (f:Loc.t -> ('b * raw_generic_argument) list -> 'a) pil =
   let rec make env = function
     | [] ->
-	Gram.action (fun loc -> f loc env)
+	Gram.action (fun loc -> f (to_coqloc loc) env)
     | None :: tl -> (* parse a non-binding item *)
         Gram.action (fun _ -> make env tl)
     | Some (p, t) :: tl -> (* non-terminal *)

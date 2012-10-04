@@ -1,10 +1,10 @@
 Coq_config
 
 Pp_control
+Loc
 Compat
 Flags
 Pp
-Loc
 Segmenttree
 Unicodetable
 Unicode
@@ -110,6 +110,7 @@ Declaremods
 Tok
 Lexer
 Ppextend
+Pputils
 Genarg
 Constrexpr_ops
 Notation_ops

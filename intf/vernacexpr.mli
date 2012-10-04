@@ -185,7 +185,7 @@ type grammar_tactic_prod_item_expr =
 type syntax_modifier =
   | SetItemLevel of string list * Extend.production_level
   | SetLevel of int
-  | SetAssoc of Compat.gram_assoc
+  | SetAssoc of Extend.gram_assoc
   | SetEntryType of string * Extend.simple_constr_prod_entry_key
   | SetOnlyParsing of Flags.compat_version
   | SetFormat of string located

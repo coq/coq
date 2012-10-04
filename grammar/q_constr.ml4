@@ -13,7 +13,7 @@ open Compat
 open Pcaml
 open PcamlSig
 
-let loc = Loc.ghost
+let loc = CompatLoc.ghost
 let dloc = <:expr< Loc.ghost >>
 
 let apply_ref f l =
