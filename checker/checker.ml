@@ -231,8 +231,6 @@ let rec explain_exn = function
       hov 0 (anomaly_string () ++ str "uncaught Stream.Failure.")
   | Stream.Error txt ->
       hov 0 (str "Syntax error: " ++ str txt)
-  | Compat.Token.Error txt ->
-      hov 0 (str "Syntax error: " ++ str txt)
   | Sys_error msg ->
       hov 0 (anomaly_string () ++ str "uncaught exception Sys_error " ++ str (guill msg) ++ report() )
   | UserError(s,pps) ->
@@ -275,11 +273,6 @@ let rec explain_exn = function
       hov 0
         (str "Error:" ++ spc () ++ Himsg.explain_inductive_error ctx e)*)
   | Loc.Exc_located (loc, exc) ->
-      hov 0 ((if loc = Loc.ghost then (mt ())
-               else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
-               ++ explain_exn exc)
-  | Compat.Exc_located (loc, exc) ->
-      let loc = Compat.to_coqloc loc in
       hov 0 ((if loc = Loc.ghost then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
                ++ explain_exn exc)
