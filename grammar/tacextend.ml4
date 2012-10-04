@@ -124,7 +124,9 @@ let make_one_printing_rule se (pt,e) =
   let level = mlexpr_of_int 0 in (* only level 0 supported here *)
   let loc = MLast.loc_of_expr e in
   let prods = mlexpr_of_list mlexpr_terminals_of_grammar_tactic_prod_item_expr pt in
-  <:expr< ($se$, $make_tags loc pt$, ($level$, $prods$)) >>
+  <:expr< { Pptactic.pptac_key = $se$;
+            pptac_args = $make_tags loc pt$;
+            pptac_prods = ($level$, $prods$) } >>
 
 let make_printing_rule se = mlexpr_of_list (make_one_printing_rule se)
 

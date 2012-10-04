@@ -62,24 +62,26 @@ let rec make_tags = function
   | GramNonTerminal (loc, etyp, _, po) :: l -> etyp :: make_tags l
   | [] -> []
 
-let cache_tactic_notation (_,(local,pa,pp)) =
-  Egramcoq.extend_grammar (Egramcoq.TacticGrammar pa);
-  Pptactic.declare_extra_tactic_pprule pp
+type tactic_grammar_obj = {
+  tacobj_local : locality_flag;
+  tacobj_tacgram : tactic_grammar;
+  tacobj_tacpp : Pptactic.pp_tactic;
+}
 
-let subst_tactic_parule subst (key,n,p,(d,tac)) =
-  (key,n,p,(d,Tacinterp.subst_tactic subst tac))
+let cache_tactic_notation (_, tobj) =
+  Egramcoq.extend_grammar (Egramcoq.TacticGrammar tobj.tacobj_tacgram);
+  Pptactic.declare_extra_tactic_pprule tobj.tacobj_tacpp
 
-let subst_tactic_notation (subst,(local,pa,pp)) =
-  (local,subst_tactic_parule subst pa,pp)
+let subst_tactic_parule subst tg =
+  let dir, tac = tg.tacgram_tactic in
+  { tg with tacgram_tactic = (dir, Tacinterp.subst_tactic subst tac); }
 
-let classify_tactic_notation (local,_,_ as o) =
-  if local then Dispose else Substitute o
+let subst_tactic_notation (subst, tobj) =
+  { tobj with
+    tacobj_tacgram = subst_tactic_parule subst tobj.tacobj_tacgram; }
 
-type tactic_grammar_obj =
-    locality_flag
-    * (string * int * grammar_prod_item list *
-       (dir_path * Tacexpr.glob_tactic_expr))
-    * (string * Genarg.argument_type list * (int * Pptactic.grammar_terminals))
+let classify_tactic_notation tacobj =
+  if tacobj.tacobj_local then Dispose else Substitute tacobj
 
 let inTacticGrammar : tactic_grammar_obj -> obj =
   declare_object {(default_object "TacticGrammar") with
@@ -105,11 +107,25 @@ let add_tactic_notation (local,n,prods,e) =
   let prods = List.map (interp_prod_item n) prods in
   let tags = make_tags prods in
   let key = next_key_away (tactic_notation_key prods) tags in
-  let pprule = (key,tags,(n,List.map make_terminal_status prods)) in
+  let pprule = {
+    Pptactic.pptac_key = key;
+    pptac_args = tags;
+    pptac_prods = (n, List.map make_terminal_status prods);
+  } in
   let ids = List.fold_left cons_production_parameter [] prods in
   let tac = Tacinterp.glob_tactic_env ids (Global.env()) e in
-  let parule = (key,n,prods,(Lib.cwd(),tac)) in
-  Lib.add_anonymous_leaf (inTacticGrammar (local,parule,pprule))
+  let parule = {
+    tacgram_key = key;
+    tacgram_level = n;
+    tacgram_prods = prods;
+    tacgram_tactic = (Lib.cwd (), tac);
+  } in
+  let tacobj = {
+    tacobj_local = local;
+    tacobj_tacgram = parule;
+    tacobj_tacpp = pprule;
+  } in
+  Lib.add_anonymous_leaf (inTacticGrammar tacobj)
 
 (**********************************************************************)
 (* Printing grammar entries                                           *)
@@ -702,7 +718,19 @@ let error_incompatible_level ntn oldprec prec =
     spc() ++ str "while it is now required to be" ++ spc() ++
     pr_level ntn prec ++ str ".")
 
-let cache_one_syntax_extension (typs,prec,ntn,gr,pp) =
+type syntax_extension = {
+  synext_intern : notation_var_internalization_type list;
+  synext_level : Notation.level;
+  synext_notation : notation;
+  synext_notgram : notation_grammar;
+  synext_unparsing : unparsing list;
+}
+
+type syntax_extension_obj = locality_flag * syntax_extension list
+
+let cache_one_syntax_extension se =
+  let ntn = se.synext_notation in
+  let prec = se.synext_level in
   try
     let oldprec = Notation.level_of_notation ntn in
     if prec <> oldprec then error_incompatible_level ntn oldprec prec
@@ -710,34 +738,30 @@ let cache_one_syntax_extension (typs,prec,ntn,gr,pp) =
     (* Reserve the notation level *)
     Notation.declare_notation_level ntn prec;
     (* Declare the parsing rule *)
-    Egramcoq.extend_grammar (Egramcoq.Notation (prec,typs,gr));
+    Egramcoq.extend_grammar (Egramcoq.Notation (prec, se.synext_intern, se.synext_notgram));
     (* Declare the printing rule *)
-    Notation.declare_notation_printing_rule ntn (pp,fst prec)
+    Notation.declare_notation_printing_rule ntn (se.synext_unparsing, fst prec)
 
-let cache_syntax_extension (_,(_,sy_rules)) =
-  List.iter cache_one_syntax_extension sy_rules
+let cache_syntax_extension (_, (_, sy)) =
+  List.iter cache_one_syntax_extension sy
 
 let subst_parsing_rule subst x = x
 
 let subst_printing_rule subst x = x
 
-let subst_syntax_extension (subst,(local,sy)) =
-  (local, List.map (fun (typs,prec,ntn,gr,pp) ->
-     (typs,prec,ntn,subst_parsing_rule subst gr,subst_printing_rule subst pp))
-    sy)
+let subst_syntax_extension (subst, (local, sy)) =
+  let map sy = { sy with
+    synext_notgram = subst_parsing_rule subst sy.synext_notgram;
+    synext_unparsing = subst_printing_rule subst sy.synext_unparsing;
+  } in
+  (local, List.map map sy)
 
-let classify_syntax_definition (local,_ as o) =
+let classify_syntax_definition (local, _ as o) =
   if local then Dispose else Substitute o
-
-type syntax_extension_obj =
-    locality_flag *
-      (notation_var_internalization_type list * Notation.level *
-         notation * notation_grammar * unparsing list)
-      list
 
 let inSyntaxExtension : syntax_extension_obj -> obj =
   declare_object {(default_object "SYNTAX-EXTENSION") with
-       open_function = (fun i o -> if i=1 then cache_syntax_extension o);
+       open_function = (fun i o -> if i = 1 then cache_syntax_extension o);
        cache_function = cache_syntax_extension;
        subst_function = subst_syntax_extension;
        classify_function = classify_syntax_definition}
@@ -928,7 +952,7 @@ let remove_curly_brackets l =
   | x :: l -> x :: aux false l
   in aux true l
 
-let compute_syntax_data (df,modifiers) =
+let compute_syntax_data df modifiers =
   let (assoc,n,etyps,onlyparse,fmt) = interp_modifiers modifiers in
   let assoc = match assoc with None -> (* default *) Some NonA | a -> a in
   let toks = split_notation_string df in
@@ -958,8 +982,8 @@ let compute_syntax_data (df,modifiers) =
   (* Return relevant data for interpretation and for parsing/printing *)
   (msgs,i_data,i_typs,sy_fulldata)
 
-let compute_pure_syntax_data (df,mods) =
-  let (msgs,(onlyparse,_,_,_),_,sy_data) = compute_syntax_data (df,mods) in
+let compute_pure_syntax_data df mods =
+  let (msgs,(onlyparse,_,_,_),_,sy_data) = compute_syntax_data df mods in
   let msgs =
     if onlyparse then
       (msg_warning,
@@ -970,31 +994,38 @@ let compute_pure_syntax_data (df,mods) =
 (**********************************************************************)
 (* Registration of notations interpretation                            *)
 
-let load_notation _ (_,(_,scope,pat,onlyparse,_)) =
-  Option.iter Notation.declare_scope scope
+type notation_obj = {
+  notobj_local : bool;
+  notobj_scope : scope_name option;
+  notobj_interp : interpretation;
+  notobj_onlyparse : bool;
+  notobj_notation : notation * notation_location;
+}
 
-let open_notation i (_,(_,scope,pat,onlyparse,(ntn,df))) =
-  if i=1 & not (Notation.exists_notation_in_scope scope ntn pat) then begin
+let load_notation _ (_, nobj) =
+  Option.iter Notation.declare_scope nobj.notobj_scope
+
+let open_notation i (_, nobj) =
+  let scope = nobj.notobj_scope in
+  let (ntn, df) = nobj.notobj_notation in
+  let pat = nobj.notobj_interp in
+  if i = 1 & not (Notation.exists_notation_in_scope scope ntn pat) then begin
     (* Declare the interpretation *)
     Notation.declare_notation_interpretation ntn scope pat df;
     (* Declare the uninterpretation *)
-    if not onlyparse then
-      Notation.declare_uninterpretation (NotationRule (scope,ntn)) pat
+    if not nobj.notobj_onlyparse then
+      Notation.declare_uninterpretation (NotationRule (scope, ntn)) pat
   end
 
 let cache_notation o =
   load_notation 1 o;
   open_notation 1 o
 
-let subst_notation (subst,(lc,scope,pat,b,ndf)) =
-  (lc,scope,subst_interpretation subst pat,b,ndf)
+let subst_notation (subst, nobj) =
+  { nobj with notobj_interp = subst_interpretation subst nobj.notobj_interp; }
 
-let classify_notation (local,_,_,_,_ as o) =
-  if local then Dispose else Substitute o
-
-type notation_obj =
-    bool * scope_name option * interpretation * bool *
-      (notation * notation_location)
+let classify_notation nobj =
+  if nobj.notobj_local then Dispose else Substitute nobj
 
 let inNotation : notation_obj -> obj =
   declare_object {(default_object "NOTATION") with
@@ -1038,18 +1069,25 @@ let recover_syntax ntn =
   try
     let prec = Notation.level_of_notation ntn in
     let pp_rule,_ = Notation.find_notation_printing_rule ntn in
-    let typs,pa_rule = Egramcoq.recover_notation_grammar ntn prec in
-    (typs,prec,ntn,pa_rule,pp_rule)
+    let typs, pa_rule = Egramcoq.recover_notation_grammar ntn prec in
+    { synext_intern = typs;
+      synext_level = prec;
+      synext_notation = ntn;
+      synext_notgram = pa_rule;
+      synext_unparsing = pp_rule; }
   with Not_found ->
     raise NoSyntaxRule
 
-let recover_squash_syntax () = recover_syntax "{ _ }"
+let recover_squash_syntax sy =
+  let sq = recover_syntax "{ _ }" in
+  [sy; sq]
 
 let recover_notation_syntax rawntn =
   let ntn = contract_notation rawntn in
-  let (typs,_,_,_,_ as sy_rule) = recover_syntax ntn in
-  let need_squash = ntn<>rawntn in
-  typs,if need_squash then [sy_rule; recover_squash_syntax ()] else [sy_rule]
+  let sy = recover_syntax ntn in
+  let need_squash = ntn <> rawntn in
+  let rules = if need_squash then recover_squash_syntax sy else [sy] in
+  sy.synext_intern, rules
 
 (**********************************************************************)
 (* Main entry point for building parsing and printing rules           *)
@@ -1057,39 +1095,55 @@ let recover_notation_syntax rawntn =
 let make_pa_rule (n,typs,symbols,_) ntn =
   let assoc = recompute_assoc typs in
   let prod = make_production typs symbols in
-  (n,assoc,ntn,prod)
+  { notgram_level = n;
+    notgram_assoc = assoc;
+    notgram_notation = ntn;
+    notgram_prods = prod; }
 
 let make_pp_rule (n,typs,symbols,fmt) =
   match fmt with
   | None -> [UnpBox (PpHOVB 0, make_hunks typs symbols n)]
-  | Some fmt -> hunks_of_format (n,List.split typs) (symbols,parse_format fmt)
+  | Some fmt -> hunks_of_format (n, List.split typs) (symbols, parse_format fmt)
 
 let make_syntax_rules (i_typs,ntn,prec,need_squash,sy_data) =
   let pa_rule = make_pa_rule sy_data ntn in
   let pp_rule = make_pp_rule sy_data in
-  let sy_rule = (i_typs,prec,ntn,pa_rule,pp_rule) in
+  let sy = {
+    synext_intern = i_typs;
+    synext_level = prec;
+    synext_notation = ntn;
+    synext_notgram = pa_rule;
+    synext_unparsing = pp_rule;
+  } in
   (* By construction, the rule for "{ _ }" is declared, but we need to
      redeclare it because the file where it is declared needs not be open
      when the current file opens (especially in presence of -nois) *)
-  if need_squash then [sy_rule; recover_squash_syntax ()] else [sy_rule]
+  if need_squash then recover_squash_syntax sy else [sy]
 
 (**********************************************************************)
 (* Main functions about notations                                     *)
 
 let add_notation_in_scope local df c mods scope =
-  let (msgs,i_data,i_typs,sy_data) = compute_syntax_data (df,mods) in
+  let (msgs,i_data,i_typs,sy_data) = compute_syntax_data df mods in
   (* Prepare the parsing and printing rules *)
   let sy_rules = make_syntax_rules sy_data in
   (* Prepare the interpretation *)
-  let (onlyparse,recvars,mainvars,df') = i_data in
+  let (onlyparse, recvars,mainvars, df') = i_data in
   let i_vars = make_internalization_vars recvars mainvars i_typs in
-  let (acvars,ac) = interp_notation_constr i_vars recvars c in
-  let a = (make_interpretation_vars recvars acvars,ac) in
-  let onlyparse = onlyparse or is_not_printable ac in
+  let (acvars, ac) = interp_notation_constr i_vars recvars c in
+  let interp = make_interpretation_vars recvars acvars in
+  let onlyparse = onlyparse || is_not_printable ac in
+  let notation = {
+    notobj_local = local;
+    notobj_scope = scope;
+    notobj_interp = (interp, ac);
+    notobj_onlyparse = onlyparse;
+    notobj_notation = df';
+  } in
   (* Ready to change the global state *)
   Flags.if_verbose (List.iter (fun (f,x) -> f x)) msgs;
-  Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules));
-  Lib.add_anonymous_leaf (inNotation (local,scope,a,onlyparse,df'));
+  Lib.add_anonymous_leaf (inSyntaxExtension (local, sy_rules));
+  Lib.add_anonymous_leaf (inNotation notation);
   df'
 
 let add_notation_interpretation_core local df ?(impls=empty_internalization_env) c scope onlyparse =
@@ -1105,15 +1159,22 @@ let add_notation_interpretation_core local df ?(impls=empty_internalization_env)
   let df' = (make_notation_key symbs,(path,df)) in
   let i_vars = make_internalization_vars recvars mainvars i_typs in
   let (acvars,ac) = interp_notation_constr ~impls i_vars recvars c in
-  let a = (make_interpretation_vars recvars acvars,ac) in
-  let onlyparse = onlyparse or is_not_printable ac in
-  Lib.add_anonymous_leaf (inNotation (local,scope,a,onlyparse,df'));
+  let interp = make_interpretation_vars recvars acvars in
+  let onlyparse = onlyparse || is_not_printable ac in
+  let notation = {
+    notobj_local = local;
+    notobj_scope = scope;
+    notobj_interp = (interp, ac);
+    notobj_onlyparse = onlyparse;
+    notobj_notation = df';
+  } in
+  Lib.add_anonymous_leaf (inNotation notation);
   df'
 
 (* Notations without interpretation (Reserved Notation) *)
 
 let add_syntax_extension local ((loc,df),mods) =
-  let msgs,sy_data = compute_pure_syntax_data (df,mods) in
+  let msgs, sy_data = compute_pure_syntax_data df mods in
   let sy_rules = make_syntax_rules sy_data in
   Flags.if_verbose (List.iter (fun (f,x) -> f x)) msgs;
   Lib.add_anonymous_leaf (inSyntaxExtension(local,sy_rules))

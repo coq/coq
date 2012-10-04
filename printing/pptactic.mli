@@ -47,9 +47,14 @@ val declare_extra_genarg_pprule :
 
 type grammar_terminals = string option list
 
+type pp_tactic = {
+  pptac_key : string;
+  pptac_args : argument_type list;
+  pptac_prods : int * grammar_terminals;
+}
+
   (** if the boolean is false then the extension applies only to old syntax *)
-val declare_extra_tactic_pprule :
-  string * argument_type list * (int * grammar_terminals) -> unit
+val declare_extra_tactic_pprule : pp_tactic -> unit
 
 val exists_extra_tactic_pprule : string -> argument_type list -> bool
 

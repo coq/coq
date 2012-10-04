@@ -28,11 +28,17 @@ let pr_global x = Nametab.pr_global_env Idset.empty x
 
 type grammar_terminals = string option list
 
+type pp_tactic = {
+  pptac_key : string;
+  pptac_args : argument_type list;
+  pptac_prods : int * grammar_terminals;
+}
+
   (* Extensions *)
 let prtac_tab = Hashtbl.create 17
 
-let declare_extra_tactic_pprule (s,tags,prods) =
-  Hashtbl.add prtac_tab (s,tags) prods
+let declare_extra_tactic_pprule pt =
+  Hashtbl.add prtac_tab (pt.pptac_key, pt.pptac_args) (pt.pptac_prods)
 
 let exists_extra_tactic_pprule s tags = Hashtbl.mem prtac_tab (s,tags)
 

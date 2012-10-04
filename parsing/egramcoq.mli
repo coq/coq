@@ -32,8 +32,19 @@ type grammar_constr_prod_item =
     (* tells action rule to make a list of the n previous parsed items;
        concat with last parsed list if true *)
 
-type notation_grammar =
-    int * Extend.gram_assoc option * notation * grammar_constr_prod_item list list
+type notation_grammar = {
+  notgram_level : int;
+  notgram_assoc : gram_assoc option;
+  notgram_notation : notation;
+  notgram_prods : grammar_constr_prod_item list list
+}
+
+type tactic_grammar = {
+  tacgram_key : string;
+  tacgram_level : int;
+  tacgram_prods : grammar_prod_item list;
+  tacgram_tactic : dir_path * Tacexpr.glob_tactic_expr;
+}
 
 (** Adding notations *)
 
@@ -44,9 +55,7 @@ type all_grammar_command =
 	   (** not needed for defining grammar, hosted by egrammar for
 	       transmission to interp_aconstr (via recover_notation_grammar) *)
 	  * notation_grammar
-  | TacticGrammar of
-      (string * int * grammar_prod_item list *
-         (dir_path * Tacexpr.glob_tactic_expr))
+  | TacticGrammar of tactic_grammar
 
 val extend_grammar : all_grammar_command -> unit
 
