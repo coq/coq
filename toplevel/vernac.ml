@@ -26,6 +26,28 @@ exception DuringCommandInterp of Util.loc * exn
 
 exception HasNotFailed
 
+(* For coqtop -time, we display the position in the file,
+   and a glimpse of the executed command *)
+
+let time = ref false
+
+let display_cmd_header loc com =
+  let shorten s = try (String.sub s 0 30)^"..." with _ -> s in
+  let noblank s =
+    for i = 0 to String.length s - 1 do
+      match s.[i] with
+	| ' ' | '\n' | '\t' | '\r' -> s.[i] <- '~'
+	| _ -> ()
+    done;
+    s
+  in
+  let (start,stop) = (*Comapt.*)unloc loc in
+  let cmd = noblank (shorten (string_of_ppcmds ((*Ppvernac.*)pr_vernac com)))
+  in
+  Pp.pp (str "Chars " ++ int start ++ str " - " ++ int stop ++
+	 str (" ["^cmd^"] "));
+  Pp.flush_all ()
+
 (* When doing Load on a file, two behaviors are possible:
 
    - either the history stack is grown by only one command,
@@ -265,7 +287,8 @@ let rec vernac_com interpfun checknav (loc,com) =
 	  let tstart = System.get_time() in
           interp v;
 	  let tend = System.get_time() in
-          msgnl (str"Finished transaction in " ++
+	  let msg = if !time then "" else "Finished transaction in " in
+          msgnl (str msg ++
                    System.fmt_time_difference tstart tend)
 
     | VernacTimeout(n,v) ->
@@ -284,6 +307,8 @@ let rec vernac_com interpfun checknav (loc,com) =
       checknav loc com;
       current_timeout := !default_timeout;
       if do_beautify () then pr_new_syntax loc (Some com);
+      if !time then display_cmd_header loc com;
+      let com = if !time then VernacTime com else com in
       interp com
     with any ->
       Format.set_formatter_out_channel stdout;

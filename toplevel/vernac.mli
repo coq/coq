@@ -44,3 +44,6 @@ val load_vernac : bool -> string -> unit
 (** Compile a vernac file, verbosely or not (f is assumed without .v suffix) *)
 
 val compile : bool -> string -> unit
+
+(** Should we display timings for each command ? *)
+val time : bool ref
