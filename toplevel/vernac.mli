@@ -48,3 +48,6 @@ val compile : bool -> string -> unit
 
 
 val is_navigation_vernac : Vernacexpr.vernac_expr -> bool
+
+(** Should we display timings for each command ? *)
+val time : bool ref

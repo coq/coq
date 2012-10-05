@@ -246,6 +246,8 @@ let parse_args arglist =
 
     | "-debug" :: rem -> set_debug (); parse rem
 
+    | "-time" :: rem -> Vernac.time := true; parse rem
+
     | "-compat" :: v :: rem ->
         Flags.compat_version := get_compat_version v; parse rem
     | "-compat" :: []       -> usage ()

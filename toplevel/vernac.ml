@@ -15,7 +15,6 @@ open Flags
 open System
 open Vernacexpr
 open Vernacinterp
-open Ppvernac
 
 (* The functions in this module may raise (unexplainable!) exceptions.
    Use the module Coqtoplevel, which catches these exceptions
@@ -46,6 +45,28 @@ and is_deep_navigation_vernac = function
 let is_reset = function
   | VernacResetInitial | VernacResetName _ -> true
   | _ -> false
+
+(* For coqtop -time, we display the position in the file,
+   and a glimpse of the executed command *)
+
+let time = ref false
+
+let display_cmd_header loc com =
+  let shorten s = try (String.sub s 0 30)^"..." with _ -> s in
+  let noblank s =
+    for i = 0 to String.length s - 1 do
+      match s.[i] with
+	| ' ' | '\n' | '\t' | '\r' -> s.[i] <- '~'
+	| _ -> ()
+    done;
+    s
+  in
+  let (start,stop) = Loc.unloc loc in
+  let cmd = noblank (shorten (string_of_ppcmds (Ppvernac.pr_vernac com)))
+  in
+  Pp.pp (str "Chars " ++ int start ++ str " - " ++ int stop ++
+	 str (" ["^cmd^"] "));
+  Pp.flush_all ()
 
 (* When doing Load on a file, two behaviors are possible:
 
@@ -217,7 +238,7 @@ let pr_new_syntax loc ocom =
   let fs = States.freeze () in
   let com = match ocom with
     | Some VernacNop -> mt()
-    | Some com -> pr_vernac com
+    | Some com -> Ppvernac.pr_vernac com
     | None -> mt() in
   if !beautify_file then
     pp (hov 0 (comment (fst loc) ++ com ++ comment (snd loc)))
@@ -290,9 +311,9 @@ let rec vernac_com interpfun checknav (loc,com) =
     | VernacTime v ->
 	  let tstart = System.get_time() in
           let status = interp v in
-	  let tend = get_time() in
-          msg_info (str"Finished transaction in " ++
-                   System.fmt_time_difference tstart tend);
+	  let tend = System.get_time() in
+	  let msg = if !time then "" else "Finished transaction in " in
+          msg_info (str msg ++ System.fmt_time_difference tstart tend);
           status
 
     | VernacTimeout(n,v) ->
@@ -314,6 +335,8 @@ let rec vernac_com interpfun checknav (loc,com) =
       checknav loc com;
       current_timeout := !default_timeout;
       if do_beautify () then pr_new_syntax loc (Some com);
+      if !time then display_cmd_header loc com;
+      let com = if !time then VernacTime com else com in
       interp com
     with e ->
       Format.set_formatter_out_channel stdout;
