@@ -65,7 +65,7 @@ let make_constr_action
   (f : Loc.t -> constr_notation_substitution -> constr_expr) pil =
   let rec make (constrs,constrlists,binders as fullsubst) = function
   | [] ->
-      Gram.action (fun loc -> f loc fullsubst)
+      Gram.action (fun (loc:CompatLoc.t) -> f (!@loc) fullsubst)
   | (GramConstrTerminal _ | GramConstrNonTerminal (_,None)) :: tl ->
       (* parse a non-binding item *)
       Gram.action (fun _ -> make fullsubst tl)
@@ -113,7 +113,10 @@ let make_cases_pattern_action
   (f : Loc.t -> cases_pattern_notation_substitution -> cases_pattern_expr) pil =
   let rec make (env,envlist,hasbinders as fullenv) = function
   | [] ->
-      Gram.action (fun loc -> f loc (check_cases_pattern_env loc fullenv))
+      Gram.action
+	(fun (loc:CompatLoc.t) ->
+	  let loc = !@loc in
+	  f loc (check_cases_pattern_env loc fullenv))
   | (GramConstrTerminal _ | GramConstrNonTerminal (_,None)) :: tl ->
       (* parse a non-binding item *)
       Gram.action (fun _ -> make fullenv tl)
