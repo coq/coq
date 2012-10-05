@@ -198,15 +198,18 @@ let connect writefun readfun com =
 type time = float * float * float
 
 let get_time () =
-  let t = times ()  in
-  (time(), t.tms_utime, t.tms_stime)
+  let t = Unix.times ()  in
+  (Unix.gettimeofday(), t.tms_utime, t.tms_stime)
 
-let time_difference (t1,_,_) (t2,_,_) = t2 -. t1
+(* Keep only 3 significant digits *)
+let round f = (floor (f *. 1e3)) *. 1e-3
+
+let time_difference (t1,_,_) (t2,_,_) = round (t2 -. t1)
 
 let fmt_time_difference (startreal,ustart,sstart) (stopreal,ustop,sstop) =
-  real (stopreal -. startreal) ++ str " secs " ++
+  real (round (stopreal -. startreal)) ++ str " secs " ++
   str "(" ++
-  real ((-.) ustop ustart) ++ str "u" ++
+  real (round (ustop -. ustart)) ++ str "u" ++
   str "," ++
-  real ((-.) sstop sstart) ++ str "s" ++
+  real (round (sstop -. sstart)) ++ str "s" ++
   str ")"
