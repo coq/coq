@@ -49,7 +49,6 @@ val compile_date : string (* compile date *)
 val vo_magic_number : int
 val state_magic_number : int
 
-val theories_dirs : string list
 val plugins_dirs : string list
 
 val exec_extension : string (* "" under Unix, ".exe" under MS-windows *)
