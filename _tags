@@ -28,8 +28,6 @@
 
 ## tags for camlp4 files 
 
-"toplevel/mltop.ml4": is_mltop
-
 "toplevel/whelp.ml4": use_grammar
 
 "parsing/g_constr.ml4": use_compat5

@@ -37,6 +37,14 @@ open System
    (I do not know of a solution to this problem, other than to
    put all the needed names into the ML Module object.) *)
 
+
+(* NB: this module relies on OCaml's Dynlink library. The bytecode version
+   of Dynlink is always available, but there are some architectures
+   with native compilation and no dynlink.cmxa. Instead of nasty IFDEF's
+   here for hiding the calls to Dynlink, we now simply reject this rather
+   rare situation during ./configure, and give instructions there about how
+   to build a dummy dynlink.cmxa, cf. dev/dynlink.ml. *)
+
 (* This path is where we look for .cmo *)
 let coq_mlpath_copy = ref ["."]
 let keep_copy_mlpath path =
@@ -61,7 +69,7 @@ type kind_load =
 let load = ref WithoutTop
 
 (* Are we in a native version of Coq? *)
-let is_native = IFDEF Byte THEN false ELSE true END
+let is_native = Dynlink.is_native
 
 (* Sets and initializes a toplevel (if any) *)
 let set_top toplevel = load := WithTop toplevel
@@ -76,7 +84,7 @@ let is_ocaml_top () =
     |_ -> false
 
 (* Tests if we can load ML files *)
-let has_dynlink = IFDEF HasDynlink THEN true ELSE false END
+let has_dynlink = Coq_config.has_natdynlink || not is_native
 
 (* Runs the toplevel loop of Ocaml *)
 let ocaml_toploop () =
@@ -93,23 +101,13 @@ let dir_ml_load s =
        | (UserError _ | Failure _ | Anomaly _ | Not_found as u) -> raise u
        | _ -> errorlabstrm "Mltop.load_object" (str"Cannot link ml-object " ++
                 str s ++ str" to Coq code."))
-(* TO DO: .cma loading without toplevel *)
     | WithoutTop ->
-      IFDEF HasDynlink THEN
-	(* WARNING
-	 * if this code section starts to use a module not used elsewhere
-	 * in this file, the Makefile dependency logic needs to be updated.
-	 *)
         let warn = Flags.is_verbose() in
         let _,gname = find_file_in_path ~warn !coq_mlpath_copy s in
         try
           Dynlink.loadfile gname;
-	with | Dynlink.Error a ->
+	with Dynlink.Error a ->
           errorlabstrm "Mltop.load_object" (str (Dynlink.error_message a))
-      ELSE
-        errorlabstrm "Mltop.no_load_object"
-            (str"Loading of ML object file forbidden in a native Coq.")
-      END
 
 (* Dynamic interpretation of .ml *)
 let dir_ml_use s =

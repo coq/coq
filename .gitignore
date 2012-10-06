@@ -136,15 +136,12 @@ tactics/eqdecide.ml
 tactics/extratactics.ml
 tactics/extraargs.ml
 tools/coq_tex.ml
-toplevel/mltop.ml
 toplevel/whelp.ml
 ide/coqide_main.ml
 ide/coqide_main_opt.ml
 
 # other auto-generated files
 
-toplevel/mltop.optml
-toplevel/mltop.byteml
 kernel/byterun/coq_jumptbl.h
 kernel/copcodes.ml
 scripts/tolink.ml
