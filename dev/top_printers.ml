@@ -20,7 +20,6 @@ open Sign
 open Univ
 open Environ
 open Printer
-open Tactic_printer
 open Term
 open Termops
 open Cerrors

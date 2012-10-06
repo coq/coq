@@ -4,9 +4,7 @@ Acic
 DoubleTypeInference
 Cic2acic
 Acic2Xml
-Proof2aproof
 Xmlcommand
-ProofTree2Xml
 Xmlentries
 Cic2Xml
 Dumptree

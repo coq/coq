@@ -47,9 +47,6 @@ let pr_proof_instr_xml instr =
 
 let pr_rule_xml pr = function
   | Prim r -> str "<rule text=\"" ++ xmlstream (pr_prim_rule r) ++ str "\"/>"
-  | Daimon -> str "<daimon/>"
-  | Decl_proof _ -> str "<proof/>"
-;;
 
 let pr_var_decl_xml env (id,c,typ) =
   let ptyp = print_constr_env env typ in

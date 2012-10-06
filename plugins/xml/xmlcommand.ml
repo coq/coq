@@ -16,21 +16,6 @@
 
 let verbose = ref false;;
 
-(* HOOKS *)
-let print_proof_tree, set_print_proof_tree =
- let print_proof_tree = ref (fun _ _ _ _ _ _ -> None) in
-  (fun () -> !print_proof_tree),
-   (fun f ->
-     print_proof_tree :=
-     fun
-      curi sigma0 pf proof_tree_to_constr proof_tree_to_flattened_proof_tree
-      constr_to_ids
-     ->
-      Some
-       (f curi sigma0 pf proof_tree_to_constr
-        proof_tree_to_flattened_proof_tree constr_to_ids))
-;;
-
 (* UTILITY FUNCTIONS *)
 
 let print_if_verbose s = if !verbose then print_string s;;
@@ -139,7 +124,7 @@ let theory_filename xml_library_root =
      let alltoks = List.rev toks in
        Some (join_dirs xml_library_root' alltoks ^ ".theory")
 
-let print_object uri obj sigma proof_tree_infos filename =
+let print_object uri obj sigma filename =
  (* function to pretty print and compress an XML file *)
 (*CSC: Unix.system "gzip ..." is an horrible non-portable solution. *)
  let pp xml filename =
@@ -169,20 +154,7 @@ let print_object uri obj sigma proof_tree_infos filename =
       None -> ()
     | Some xml' -> pp xml' (body_filename_of_filename filename)
   end ;
-  pp xmltypes (types_filename_of_filename filename) ;
-  match proof_tree_infos with
-     None -> ()
-   | Some (sigma0,proof_tree,proof_tree_to_constr,
-           proof_tree_to_flattened_proof_tree) ->
-      let xmlprooftree =
-       print_proof_tree ()
-        uri sigma0 proof_tree proof_tree_to_constr
-        proof_tree_to_flattened_proof_tree constr_to_ids
-      in
-       match xmlprooftree with
-          None -> ()
-        | Some xmlprooftree ->
-           pp xmlprooftree (prooftree_filename_of_filename filename)
+  pp xmltypes (types_filename_of_filename filename)
 ;;
 
 let string_list_of_named_context_list =
@@ -445,7 +417,7 @@ let print internal glob_ref kind xml_library_root =
   (match internal with
     | Declare.KernelSilent -> ()
     | _ -> print_object_kind uri kind);
-   print_object uri obj Evd.empty None fn
+   print_object uri obj Evd.empty fn
 ;;
 
 let print_ref qid fn =

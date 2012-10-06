@@ -66,21 +66,7 @@ type prim_rule =
                                               in the type of evar] \} \} \} v}
 *)
 
-(** {6 ... } *)
-(** Proof trees.
-  [ref] = [None] if the goal has still to be proved,
-  and [Some (r,l)] if the rule [r] was applied to the goal
-  and gave [l] as subproofs to be completed.
-  if [ref = (Some(Nested(Tactic t,p),l))] then [p] is the proof
-  that the goal can be proven if the goals in [l] are solved. *)
-type proof_tree = {
-  goal : goal;
-  ref : (rule * proof_tree list) option }
-
-and rule =
-  | Prim of prim_rule
-  | Decl_proof of bool
-  | Daimon
+type rule = Prim of prim_rule
 
 type compound_rule=
   (** the boolean of Tactic tells if the default tactic is used *)

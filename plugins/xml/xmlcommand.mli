@@ -26,14 +26,3 @@ val print_ref : Libnames.reference -> string option -> unit
 (*  where dest is either None (for stdout) or (Some filename) *)
 (* pretty prints via Xml.pp the proof in progress on dest     *)
 val show : string option -> unit
-
-(* set_print_proof_tree f                                      *)
-(*  sets a callback function f to export the proof_tree to XML *)
-val set_print_proof_tree :
-    (string ->
-     Evd.evar_map ->
-     Proof_type.proof_tree ->
-     Term.constr Proof2aproof.ProofTreeHash.t ->
-     Proof_type.proof_tree Proof2aproof.ProofTreeHash.t ->
-     string Acic.CicHash.t -> Xml.token Stream.t) ->
-    unit

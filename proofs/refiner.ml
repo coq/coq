@@ -35,16 +35,6 @@ let refiner = function
 	  {it=sgl; sigma = sigma'})
 
 
-  | Decl_proof _ ->
-      failwith "Refiner: should not occur"
-
-	(* Daimon is a canonical unfinished proof *)
-
-  | Daimon ->
-      fun gls ->
-	{it=[];sigma=gls.sigma}
-
-
 let norm_evar_tac gl = refiner (Prim Change_evars) gl
 
 (*********************)

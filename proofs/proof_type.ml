@@ -40,14 +40,7 @@ type prim_rule =
   | Rename of identifier * identifier
   | Change_evars
 
-type proof_tree = {
-  goal : goal;
-  ref : (rule * proof_tree list) option }
-
-and rule =
-  | Prim of prim_rule
-  | Decl_proof of bool
-  | Daimon
+type rule = Prim of prim_rule
 
 type compound_rule=
   | Tactic of tactic_expr * bool

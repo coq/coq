@@ -118,8 +118,6 @@ val rename_hyp       : (identifier*identifier) list -> tactic
 
 (** {6 Tactics handling a list of goals. } *)
 
-type validation_list = proof_tree list -> proof_tree list
-
 type tactic_list = Refiner.tactic_list
 
 val first_goal         : 'a list sigma -> 'a sigma
