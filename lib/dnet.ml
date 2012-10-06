@@ -27,10 +27,9 @@ sig
   type meta
   type 'a structure
   module Idset : Set.S with type elt=ident
-  type 'a pattern =
-    | Term of 'a
+  type term_pattern =
+    | Term of term_pattern structure
     | Meta of meta
-  type term_pattern = ('a structure) pattern as 'a
   val empty : t
   val add : t -> term_pattern -> ident -> t
   val find_all : t -> Idset.t
@@ -51,18 +50,17 @@ struct
   type ident = Ident.t
   type meta = Meta.t
 
-  type 'a pattern =
-    | Term of 'a
-    | Meta of meta
-
   type 'a structure = 'a T.t
+
+  type term_pattern =
+    | Term of term_pattern structure
+    | Meta of meta
 
   module Idset = Set.Make(Ident)
   module Mmap = Map.Make(Meta)
   module Tmap = Map.Make(struct type t = unit structure
 				let compare = T.compare end)
 
-  type term_pattern = term_pattern structure pattern
   type idset = Idset.t
 
 

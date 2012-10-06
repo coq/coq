@@ -83,11 +83,9 @@ sig
 
   (** a pattern is a term where each node can be a unification
      variable *)
-  type 'a pattern =
-    | Term of 'a
+  type term_pattern =
+    | Term of term_pattern structure
     | Meta of meta
-
-  type term_pattern = 'a structure pattern as 'a
 
   val empty : t
 
