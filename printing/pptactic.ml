@@ -980,15 +980,6 @@ let strip_prod_binders_glob_constr n (ty,_) =
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 
-let strip_prod_binders_constr n ty =
-  let rec strip_ty acc n ty =
-    if n=0 then (List.rev acc, ty) else
-      match Term.kind_of_term ty with
-          Term.Prod(na,a,b) ->
-            strip_ty (([Loc.ghost,na],a)::acc) (n-1) b
-        | _ -> error "Cannot translate fix tactic: not enough products" in
-  strip_ty [] n ty
-
 let drop_env f _env = f
 
 let pr_constr_or_lconstr_pattern_expr b =
@@ -1029,9 +1020,6 @@ let rec glob_printers =
 
 and pr_glob_tactic_level env n (t:glob_tactic_expr) =
   fst (make_pr_tac glob_printers env) n t
-
-let pr_constr_or_lconstr_pattern b =
-  if b then pr_lconstr_pattern else pr_constr_pattern
 
 let pr_raw_tactic env = pr_raw_tactic_level env ltop
 let pr_glob_tactic env = pr_glob_tactic_level env ltop

@@ -1430,6 +1430,4 @@ let gen_auto ?(debug=Off) n lems dbnames =
   | None -> full_auto ~debug n lems
   | Some l -> auto ~debug n lems l
 
-let inj_or_var = Option.map (fun n -> ArgArg n)
-
 let h_auto ?(debug=Off) n lems l = gen_auto ~debug n lems l

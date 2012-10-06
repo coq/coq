@@ -1,4 +1,3 @@
-open Errors
 open Util
 open Names
 open Term
@@ -111,7 +110,7 @@ let map_mp mp1 mp2 = add_mp mp1 mp2 empty_subst
 let mp_in_delta mp =
   Deltamap.mem_mp mp
 
-let rec find_prefix resolve mp =
+let find_prefix resolve mp =
   let rec sub_mp = function
     | MPdot(mp,l) as mp_sup ->
 	(try Deltamap.find_mp mp_sup resolve

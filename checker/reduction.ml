@@ -8,7 +8,6 @@
 
 open Errors
 open Util
-open Names
 open Term
 open Univ
 open Closure

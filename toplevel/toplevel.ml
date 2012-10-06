@@ -182,13 +182,6 @@ let print_location_in_file s inlibrary fname loc =
         (close_in ic;
          hov 1 (errstrm ++ spc() ++ str"(invalid location):") ++ fnl ())
 
-let print_command_location ib dloc =
-  match dloc with
-    | Some (bp,ep) ->
-        (str"Error during interpretation of command:" ++ fnl () ++
-           str(String.sub ib.str (bp-ib.start) (ep-bp)) ++ fnl ())
-    | None -> (mt ())
-
 let valid_loc dloc loc =
   loc <> Loc.ghost
   & match dloc with

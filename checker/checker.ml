@@ -12,7 +12,6 @@ open Util
 open System
 open Flags
 open Names
-open Term
 open Check
 
 let () = at_exit flush_all

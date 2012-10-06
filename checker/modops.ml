@@ -11,10 +11,8 @@ open Errors
 open Util
 open Pp
 open Names
-open Univ
 open Term
 open Declarations
-open Environ
 (*i*)
 
 let error_not_a_constant l =

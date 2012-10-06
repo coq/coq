@@ -4,7 +4,6 @@ open Errors
 open Util
 open Names
 open Term
-open Inductive
 open Reduction
 open Typeops
 open Indtypes

@@ -581,9 +581,6 @@ module Html = struct
     | '&' -> printf "&amp;"
     | c -> output_char c
 
-  let raw_string s =
-    for i = 0 to String.length s - 1 do char s.[i] done
-
   let escaped =
     let buff = Buffer.create 5 in
     fun s ->
@@ -944,8 +941,6 @@ module TeXmacs = struct
   let (preamble : string Queue.t) =
     in_doc := false; Queue.create ()
 
-  let push_in_preamble s = Queue.add s preamble
-
   let header () =
     output_string
       "(*i This file has been automatically generated with the command  \n";
@@ -1065,8 +1060,6 @@ module TeXmacs = struct
     printf "\n<hrule>\n"
 
   let paragraph () = printf "\n\n"
-
-  let line_break_true () = printf "<format|line break>"
 
   let line_break () = printf "\n"
 

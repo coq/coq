@@ -18,9 +18,6 @@ open Reduction
 open Inductive
 open Modops
 (*i*)
-open Pp
-
-
 
 (* This local type is used to subtype a constant with a constructor or
    an inductive type. It can also be useful to allow reorderings in

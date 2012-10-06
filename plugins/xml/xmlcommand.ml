@@ -108,12 +108,6 @@ let types_filename_of_filename =
   | None   -> None
 ;;
 
-let prooftree_filename_of_filename =
- function
-    Some f -> Some (f ^ ".proof_tree")
-  | None   -> None
-;;
-
 let theory_filename xml_library_root =
  let module N = Names in
   match xml_library_root with

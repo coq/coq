@@ -75,7 +75,7 @@ let judge_of_variable env id =
 (* Checks if a context of variable can be instantiated by the
    variables of the current env *)
 (* TODO: check order? *)
-let rec check_hyps_inclusion env sign =
+let check_hyps_inclusion env sign =
   fold_named_context
     (fun (id,_,ty1) () ->
       let ty2 = named_type id env in

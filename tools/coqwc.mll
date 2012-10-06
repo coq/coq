@@ -15,7 +15,6 @@
 (*i*){
 open Printf
 open Lexing
-open Filename
 (*i*)
 
 (*s Command-line options. *)

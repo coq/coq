@@ -6,7 +6,7 @@
 (*   independent bits                                                        *)
 (* - Frédéric Besson (fbesson@irisa.fr) is using it to feed  micromega       *)
 (* ========================================================================= *)
-open Sos_types
+
 open Num
 
 let debugging = ref false;;
@@ -546,7 +546,7 @@ let fix err prs input =
   try prs input
   with Noparse -> failwith (err ^ " expected");;
 
-let rec listof prs sep err =
+let listof prs sep err =
   prs ++ many (sep ++ fix err prs >> snd) >> (fun (h,t) -> h::t);;
 
 let possibly prs input =

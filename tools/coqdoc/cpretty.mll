@@ -75,7 +75,6 @@
   let brackets = ref 0
   let comment_level = ref 0
   let in_proof = ref None
-  let in_emph = ref false
 
   let in_env start stop = 
     let r = ref false in
@@ -102,8 +101,6 @@
             let length_skip = 1 + String.length s1 in
               lexbuf.lex_curr_pos <- lexbuf.lex_start_pos + length_skip
 
-  let is_space = function ' ' | '\t' | '\n' | '\r' -> true | _ -> false
-
   (* saving/restoring the PP state *)
 
   type state = {
@@ -126,8 +123,6 @@
   let without_gallina = without_ref Cdglobals.gallina
 
   let without_light = without_ref Cdglobals.light
-
-  let show_all f = without_gallina (without_light f)
 
   let begin_show () = save_state (); Cdglobals.gallina := false; Cdglobals.light := false
   let end_show () = restore_state ()
@@ -250,14 +245,6 @@
 	Output.remove_printing_token tok
     with _ ->
       ()
-
-  let extract_ident_re = Str.regexp "([ \t]*\\([^ \t]+\\)[ \t]*:="
-  let extract_ident s =
-    assert (String.length s >= 3);
-    if Str.string_match extract_ident_re s 0 then
-      Str.matched_group 1 s
-    else
-      String.sub s 1 (String.length s - 3)
 
   let output_indented_keyword s lexbuf =
     let nbsp,isp = count_spaces s in

@@ -12,7 +12,6 @@ open Names
 open Term
 open Tacexpr
 open Glob_term
-open Genarg
 open Nametab
 open Pattern
 open Misctypes

@@ -541,7 +541,6 @@ let current_location_table = ref (loct_create ())
 type location_table = (int, CompatLoc.t) Hashtbl.t
 let location_table () = !current_location_table
 let restore_location_table t = current_location_table := t
-let location_function n = loct_func !current_location_table n
 
 (** {6 The lexer of Coq} *)
 

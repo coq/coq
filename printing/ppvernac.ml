@@ -175,10 +175,6 @@ let pr_set_option a b =
 
 let pr_topcmd _ = str"(* <Warning> : No printer for toplevel commands *)"
 
-let pr_destruct_location = function
-  | Tacexpr.ConclLocation ()  -> str"Conclusion"
-  | Tacexpr.HypLocation b -> if b then str"Discardable Hypothesis" else str"Hypothesis"
-
 let pr_opt_hintbases l = match l with
   | [] -> mt()
   | _ as z -> str":" ++ spc() ++ prlist_with_sep sep str z

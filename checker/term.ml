@@ -10,7 +10,6 @@
 
 open Errors
 open Util
-open Pp
 open Names
 open Univ
 open Esubst
@@ -134,7 +133,7 @@ let rec strip_outer_cast c = match c with
   | Cast (c,_,_) -> strip_outer_cast c
   | _ -> c
 
-let rec collapse_appl c = match c with
+let collapse_appl c = match c with
   | App (f,cl) ->
       let rec collapse_rec f cl2 =
         match (strip_outer_cast f) with

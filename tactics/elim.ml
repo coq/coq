@@ -16,7 +16,6 @@ open Hipattern
 open Tacmach
 open Tacticals
 open Tactics
-open Tacexpr
 open Misctypes
 
 let introElimAssumsThen tac ba =

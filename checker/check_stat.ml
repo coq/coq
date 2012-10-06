@@ -7,12 +7,7 @@
 (************************************************************************)
 
 open Pp
-open Errors
-open Util
-open System
-open Flags
 open Names
-open Term
 open Declarations
 open Environ
 

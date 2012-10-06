@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-open Filename
-open Lexing
 open Printf
 open Cdglobals
 
@@ -37,7 +35,6 @@ type index_entry =
   | Ref of coq_module * string * entry_type
   | Mod of coq_module * string
 
-let current_type : entry_type ref = ref Library
 let current_library = ref ""
   (** refers to the file being parsed *)
 
@@ -71,10 +68,6 @@ let add_ref m loc m' sp id ty =
     if Hashtbl.mem deftable idx then ()
     else Hashtbl.add deftable idx (Ref (m', full_ident sp id, ty))
 
-let add_mod m loc m' id =
-  Hashtbl.add reftable (m, loc) (Mod (m', id));
-  Hashtbl.add deftable m (Mod (m', id))
-
 let find m l = Hashtbl.find reftable (m, l)
 
 let find_string m s = Hashtbl.find deftable s
@@ -94,9 +87,6 @@ let empty_stack = []
 let module_stack = ref empty_stack
 let section_stack = ref empty_stack
 
-let init_stack () =
-  module_stack := empty_stack; section_stack := empty_stack
-
 let push st p = st := p::!st
 let pop st =
   match !st with
@@ -107,27 +97,6 @@ let head st =
   match st with
     | [] -> ""
     | x::_ -> x
-
-let begin_module m = push module_stack m
-let begin_section s = push section_stack s
-
-let end_block id =
-  (** determines if it ends a module or a section and pops the stack *)
-  if ((String.compare (head !module_stack) id ) == 0) then
-    pop module_stack
-  else if ((String.compare (head !section_stack) id) == 0) then
-    pop section_stack
-  else
-    ()
-
-let make_fullid id =
-  (** prepends the current module path to an id *)
-  let path = string_of_stack !module_stack in
-    if String.length path > 0 then
-      path ^ "." ^ id
-    else
-      id
-
 
 (* Coq modules *)
 
@@ -206,10 +175,6 @@ let sort_entries el =
   List.sort (fun (c1,_) (c2,_) -> Alpha.compare_char c1 c2) !res
 
 let display_letter c = if c = '*' then "other" else String.make 1 c
-
-let index_size = List.fold_left (fun s (_,l) -> s + List.length l) 0
-
-let hashtbl_elements h = Hashtbl.fold (fun x y l -> (x,y)::l) h []
 
 let type_name = function
   | Library ->

@@ -164,7 +164,7 @@ let val_set ?(name="Set.t") f =
 		     vset;ext "bal" val_int|]|])
 
 (* Maps *)
-let rec val_map ?(name="Map.t") fk fv =
+let val_map ?(name="Map.t") fk fv =
   val_rec_sum name 1
     (fun vmap ->
        [|[|vmap; ext "key" fk; ext "value" fv;

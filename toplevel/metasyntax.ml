@@ -8,7 +8,6 @@
 
 open Pp
 open Flags
-open Compat
 open Errors
 open Util
 open Names

@@ -12,7 +12,6 @@
 (*                                                                      *)
 (************************************************************************)
 
-open Big_int
 open Num
 open Sos
 open Sos_types
@@ -60,7 +59,7 @@ open Mutils
 
 
 
-let rec canonical_sum_to_string = function s -> failwith "not implemented"
+let canonical_sum_to_string = function s -> failwith "not implemented"
 
 let print_canonical_sum m = Format.print_string (canonical_sum_to_string m)
 

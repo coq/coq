@@ -8,25 +8,19 @@
 
 (* Printers for the ocaml toplevel. *)
 
-open System
-open Errors
 open Util
 open Pp
 open Names
 open Libnames
 open Globnames
 open Nameops
-open Sign
 open Univ
 open Environ
 open Printer
 open Term
-open Termops
-open Cerrors
 open Evd
 open Goptions
 open Genarg
-open Mod_subst
 open Clenv
 
 let _ = Constrextern.print_evar_arguments := true
@@ -411,7 +405,6 @@ END
 open Pcoq
 open Genarg
 open Egramml
-open Egramcoq
 
 let _ =
   try
@@ -449,7 +442,6 @@ let _ =
 
 (* Setting printer of unbound global reference *)
 open Names
-open Nameops
 open Libnames
 
 let encode_path loc prefix mpdir suffix id =

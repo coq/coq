@@ -9,8 +9,6 @@
 (* Application of printing rules based on a dictionary specific to the
    target language *)
 
-open Cdglobals
-
 (*s Dictionaries: trees annotated with string options, each node being a map
     from chars to dictionaries (the subtrees). A trie, in other words.
 

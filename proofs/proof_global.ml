@@ -125,15 +125,6 @@ let find_top l =
   | np::_ -> np
   | [] -> raise NoCurrentProof
 
-let rotate_top l1 l2 =
-  let np = extract_top l1 in
-  push np l2
-
-let rotate_find id l1 l2 =
-  let np = extract id l1 in
-  push np l2
-
-
 (* combinators for the proof_info map *)
 let add id info m =
   m := Idmap.add id info !m
