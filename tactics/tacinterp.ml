@@ -2380,7 +2380,7 @@ and interp_atomic ist gl tac =
       let (sigma,c) = (if t=None then interp_constr else interp_type) ist env sigma c in
       tclTHEN
 	(tclEVARS sigma)
-	(abstract_tactic (TacAssert (t,ipat,c))
+	(abstract_tactic
            (Tactics.forward (Option.map (interp_tactic ist) t)
 	      (Option.map (interp_intro_pattern ist gl) ipat) c))
   | TacGeneralize cl ->
@@ -2479,7 +2479,7 @@ and interp_atomic ist gl tac =
       let sigma, bll = List.fold_map (interp_bindings ist env) sigma bll in
       tclWITHHOLES ev (h_split ev) sigma bll
   | TacAnyConstructor (ev,t) ->
-      abstract_tactic (TacAnyConstructor (ev,t))
+      abstract_tactic
         (Tactics.any_constructor ev (Option.map (interp_tactic ist) t))
   | TacConstructor (ev,n,bl) ->
       let sigma, bl = interp_bindings ist env sigma bl in
@@ -2569,7 +2569,7 @@ and interp_atomic ist gl tac =
 	  sigma , a_interp::acc
 	end l (project gl,[])
       in
-      abstract_extended_tactic opn args (tac args)
+      abstract_extended_tactic (tac args)
   | TacAlias (loc,s,l,(_,body)) -> fun gl ->
     let evdref = ref gl.sigma in
     let f x = match genarg_tag x with
@@ -2706,16 +2706,15 @@ let eval_ltac_constr gl t =
     { lfun=[]; avoid_ids=[]; debug=get_debug(); trace=[] } gl
     (intern_tactic_or_tacarg (make_empty_glob_sign ()) t )
 
-(* Hides interpretation for pretty-print *)
+(* Used to hide interpretation for pretty-print, now just launch tactics *)
 let hide_interp t ot gl =
   let ist = { ltacvars = ([],[]); ltacrecvars = [];
             gsigma = project gl; genv = pf_env gl } in
   let te = intern_tactic true ist t in
   let t = eval_tactic te in
   match ot with
-  | None -> abstract_tactic_expr (TacArg (dloc,Tacexp te)) t gl
-  | Some t' ->
-      abstract_tactic_expr ~dflt:true (TacArg (dloc,Tacexp te)) (tclTHEN t t') gl
+  | None -> abstract_tactic_expr t gl
+  | Some t' -> abstract_tactic_expr (tclTHEN t t') gl
 
 (***************************************************************************)
 (* Substitution at module closing time *)

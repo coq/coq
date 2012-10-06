@@ -1035,23 +1035,8 @@ and pr_glob_tactic_level env n (t:glob_tactic_expr) =
 let pr_constr_or_lconstr_pattern b =
   if b then pr_lconstr_pattern else pr_constr_pattern
 
-let typed_printers =
-    (pr_glob_tactic_level,
-     pr_constr_env,
-     pr_lconstr_env,
-     pr_constr_or_lconstr_pattern,
-     pr_evaluable_reference_env,
-     pr_inductive,
-     pr_ltac_constant,
-     pr_id,
-     pr_extend,
-     strip_prod_binders_constr)
-
-let pr_tactic_level env = fst (make_pr_tac typed_printers env)
-
 let pr_raw_tactic env = pr_raw_tactic_level env ltop
 let pr_glob_tactic env = pr_glob_tactic_level env ltop
-let pr_tactic env = pr_tactic_level env ltop
 
 let _ = Tactic_debug.set_tactic_printer
   (fun x -> pr_glob_tactic (Global.env()) x)

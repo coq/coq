@@ -73,7 +73,7 @@ let solveNoteqBranch side =
       (onLastHypId (fun id -> Extratactics.h_discrHyp id)))
 
 let h_solveNoteqBranch side =
-  Refiner.abstract_extended_tactic "solveNoteqBranch" []
+  Refiner.abstract_extended_tactic
     (solveNoteqBranch side)
 
 (* Constructs the type {c1=c2}+{~c1=c2} *)

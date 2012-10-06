@@ -1017,7 +1017,7 @@ let auto_unif_flags = {
 (* Try unification with the precompiled clause, then use registered Apply *)
 
 let h_clenv_refine ev c clenv =
-  Refiner.abstract_tactic (TacApply (true,ev,[c,NoBindings],None))
+  Refiner.abstract_tactic
     (Clenvtac.clenv_refine ev clenv)
 
 let unify_resolve_nodelta (c,clenv) gl =
@@ -1355,7 +1355,7 @@ let gen_trivial ?(debug=Off) lems = function
   | Some l -> trivial ~debug lems l
 
 let h_trivial ?(debug=Off) lems l =
-  Refiner.abstract_tactic (TacTrivial (debug,List.map snd lems,l))
+  Refiner.abstract_tactic
     (gen_trivial ~debug lems l)
 
 (**************************************************************************)
@@ -1439,5 +1439,5 @@ let gen_auto ?(debug=Off) n lems dbnames =
 let inj_or_var = Option.map (fun n -> ArgArg n)
 
 let h_auto ?(debug=Off) n lems l =
-  Refiner.abstract_tactic (TacAuto (debug,inj_or_var n,List.map snd lems,l))
+  Refiner.abstract_tactic
     (gen_auto ~debug n lems l)

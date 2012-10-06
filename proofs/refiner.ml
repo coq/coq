@@ -23,9 +23,9 @@ let project x = x.sigma
 let pf_env gls = Global.env_of_context (Goal.V82.hyps (project gls) (sig_it gls))
 let pf_hyps gls = named_context_of_val (Goal.V82.hyps (project gls) (sig_it gls))
 
-let abstract_tactic_expr ?(dflt=false) te tacfun = tacfun
-let abstract_tactic ?(dflt=false) te tacfun = tacfun
-let abstract_extended_tactic ?(dflt=false) s args tacfun = tacfun
+let abstract_tactic_expr tacfun = tacfun
+let abstract_tactic tacfun = tacfun
+let abstract_extended_tactic tacfun = tacfun
 
 let refiner pr goal_sigma =
   let (sgl,sigma') = prim_refiner pr goal_sigma.sigma goal_sigma.it in

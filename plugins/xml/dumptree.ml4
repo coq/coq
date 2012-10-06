@@ -36,15 +36,6 @@ let thin_sign osign sign =
     sign ~init:Environ.empty_named_context_val
 ;;
 
-let pr_tactic_xml = function
-  | TacArg (_,Tacexp t) -> str "<tactic cmd=\"" ++ xmlstream (Pptactic.pr_glob_tactic (Global.env()) t) ++ str "\"/>"
-  | t -> str "<tactic cmd=\"" ++ xmlstream (Pptactic.pr_tactic (Global.env()) t) ++ str "\"/>"
-;;
-
-let pr_proof_instr_xml instr =
-  Ppdecl_proof.pr_proof_instr (Global.env()) instr
-;;
-
 let pr_var_decl_xml env (id,c,typ) =
   let ptyp = print_constr_env env typ in
   match c with

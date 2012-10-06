@@ -70,40 +70,6 @@ type goal = Goal.goal
 
 type tactic = goal sigma -> goal list sigma
 
-
-type tactic_expr =
-  (constr,
-   constr_pattern,
-   evaluable_global_reference,
-   inductive,
-   ltac_constant,
-   identifier,
-   glob_tactic_expr,
-   tlevel)
-     Tacexpr.gen_tactic_expr
-
-and atomic_tactic_expr =
-  (constr,
-   constr_pattern,
-   evaluable_global_reference,
-   inductive,
-   ltac_constant,
-   identifier,
-   glob_tactic_expr,
-   tlevel)
-     Tacexpr.gen_atomic_tactic_expr
-
-and tactic_arg =
-  (constr,
-   constr_pattern,
-   evaluable_global_reference,
-   inductive,
-   ltac_constant,
-   identifier,
-   glob_tactic_expr,
-   tlevel)
-     Tacexpr.gen_tactic_arg
-
 (** Ltac traces *)
 
 type ltac_call_kind =

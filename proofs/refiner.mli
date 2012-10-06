@@ -33,10 +33,9 @@ val apply_sig_tac :
 (* spiwack: currently here for compatibility, the tactic expression
    is discarded and we simply return the tactic. *)
 
-val abstract_tactic : ?dflt:bool -> atomic_tactic_expr -> tactic -> tactic
-val abstract_tactic_expr : ?dflt:bool -> tactic_expr -> tactic -> tactic
-val abstract_extended_tactic :
-  ?dflt:bool -> string -> typed_generic_argument list -> tactic -> tactic
+val abstract_tactic : tactic -> tactic
+val abstract_tactic_expr : tactic -> tactic
+val abstract_extended_tactic : tactic -> tactic
 
 val refiner : rule -> tactic
 

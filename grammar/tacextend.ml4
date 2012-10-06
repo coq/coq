@@ -177,7 +177,7 @@ let declare_tactic loc s cl =
     let e =
       make_fun
         <:expr<
-          Refiner.abstract_extended_tactic $mlexpr_of_string s$ $make_args p$ $make_eval_tactic e p$
+          Refiner.abstract_extended_tactic $make_eval_tactic e p$
         >>
       p in
     <:str_item< value $lid:stac$ = $e$ >>
