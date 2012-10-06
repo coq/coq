@@ -260,7 +260,7 @@ let start_proof id kind c ?init_tac ?(compute_guard=[]) hook =
 let rec_tac_initializer finite guard thms snl =
   if finite then
     match List.map (fun (id,(t,_)) -> (id,t)) thms with
-    | (id,_)::l -> Hiddentac.h_mutual_cofix true id l
+    | (id,_)::l -> Hiddentac.h_mutual_cofix id l
     | _ -> assert false
   else
     (* nl is dummy: it will be recomputed at Qed-time *)
@@ -268,7 +268,7 @@ let rec_tac_initializer finite guard thms snl =
      | None -> List.map succ (List.map List.last guard)
      | Some nl -> nl
     in match List.map2 (fun (id,(t,_)) n -> (id,n,t)) thms nl with
-       | (id,n,_)::l -> Hiddentac.h_mutual_fix true id n l
+       | (id,n,_)::l -> Hiddentac.h_mutual_fix id n l
        | _ -> assert false
 
 let start_proof_with_initialization kind recguard thms snl hook =

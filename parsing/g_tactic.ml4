@@ -537,11 +537,11 @@ GEXTEND Gram
       | "fix"; n = natural -> TacFix (None,n)
       | "fix"; id = ident; n = natural -> TacFix (Some id,n)
       | "fix"; id = ident; n = natural; "with"; fd = LIST1 fixdecl ->
-	  TacMutualFix (false,id,n,List.map mk_fix_tac fd)
+	  TacMutualFix (id,n,List.map mk_fix_tac fd)
       | "cofix" -> TacCofix None
       | "cofix"; id = ident -> TacCofix (Some id)
       | "cofix"; id = ident; "with"; fd = LIST1 cofixdecl ->
-	  TacMutualCofix (false,id,List.map mk_cofix_tac fd)
+	  TacMutualCofix (id,List.map mk_cofix_tac fd)
 
       | IDENT "pose"; (id,b) = bindings_with_parameters ->
 	  TacLetTac (Names.Name id,b,Locusops.nowhere,true,None)

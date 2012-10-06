@@ -28,10 +28,10 @@ let h_elim_type = elim_type
 let h_case = general_case_analysis
 let h_case_type = case_type
 let h_fix = fix
-let h_mutual_fix b id n l = mutual_fix id n l 0
+let h_mutual_fix id n l = mutual_fix id n l 0
 
 let h_cofix = cofix
-let h_mutual_cofix b id l = mutual_cofix id l 0
+let h_mutual_cofix id l = mutual_cofix id l 0
 
 let h_cut = cut
 let h_generalize_gen cl =

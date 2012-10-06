@@ -695,13 +695,13 @@ let rec intern_atomic lf ist x =
   | TacCase (ev,cb) -> TacCase (ev,intern_constr_with_bindings ist cb)
   | TacCaseType c -> TacCaseType (intern_type ist c)
   | TacFix (idopt,n) -> TacFix (Option.map (intern_ident lf ist) idopt,n)
-  | TacMutualFix (b,id,n,l) ->
+  | TacMutualFix (id,n,l) ->
       let f (id,n,c) = (intern_ident lf ist id,n,intern_type ist c) in
-      TacMutualFix (b,intern_ident lf ist id, n, List.map f l)
+      TacMutualFix (intern_ident lf ist id, n, List.map f l)
   | TacCofix idopt -> TacCofix (Option.map (intern_ident lf ist) idopt)
-  | TacMutualCofix (b,id,l) ->
+  | TacMutualCofix (id,l) ->
       let f (id,c) = (intern_ident lf ist id,intern_type ist c) in
-      TacMutualCofix (b,intern_ident lf ist id, List.map f l)
+      TacMutualCofix (intern_ident lf ist id, List.map f l)
   | TacCut c -> TacCut (intern_type ist c)
   | TacAssert (otac,ipat,c) ->
       TacAssert (Option.map (intern_pure_tactic ist) otac,
@@ -2359,7 +2359,7 @@ and interp_atomic ist gl tac =
 	(tclEVARS sigma)
 	(h_case_type c_interp)
   | TacFix (idopt,n) -> h_fix (Option.map (interp_fresh_ident ist env) idopt) n
-  | TacMutualFix (b,id,n,l) ->
+  | TacMutualFix (id,n,l) ->
       let f sigma (id,n,c) =
 	let (sigma,c_interp) = pf_interp_type ist { gl with sigma=sigma } c in
 	sigma , (interp_fresh_ident ist env id,n,c_interp) in
@@ -2371,9 +2371,9 @@ and interp_atomic ist gl tac =
       in
       tclTHEN
 	(tclEVARS sigma)
-	(h_mutual_fix b (interp_fresh_ident ist env id) n l_interp)
+	(h_mutual_fix (interp_fresh_ident ist env id) n l_interp)
   | TacCofix idopt -> h_cofix (Option.map (interp_fresh_ident ist env) idopt)
-  | TacMutualCofix (b,id,l) ->
+  | TacMutualCofix (id,l) ->
       let f sigma (id,c) =
 	let (sigma,c_interp) = pf_interp_type ist { gl with sigma=sigma } c in
 	sigma , (interp_fresh_ident ist env id,c_interp) in
@@ -2385,7 +2385,7 @@ and interp_atomic ist gl tac =
       in
       tclTHEN
 	(tclEVARS sigma)
-	(h_mutual_cofix b (interp_fresh_ident ist env id) l_interp)
+	(h_mutual_cofix (interp_fresh_ident ist env id) l_interp)
   | TacCut c ->
       let (sigma,c_interp) = pf_interp_type ist gl c in
       tclTHEN
@@ -2848,11 +2848,11 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   | TacCase (ev,cb) -> TacCase (ev,subst_glob_with_bindings subst cb)
   | TacCaseType c -> TacCaseType (subst_glob_constr subst c)
   | TacFix (idopt,n) as x -> x
-  | TacMutualFix (b,id,n,l) ->
-      TacMutualFix(b,id,n,List.map (fun (id,n,c) -> (id,n,subst_glob_constr subst c)) l)
+  | TacMutualFix (id,n,l) ->
+      TacMutualFix(id,n,List.map (fun (id,n,c) -> (id,n,subst_glob_constr subst c)) l)
   | TacCofix idopt as x -> x
-  | TacMutualCofix (b,id,l) ->
-      TacMutualCofix (b,id, List.map (fun (id,c) -> (id,subst_glob_constr subst c)) l)
+  | TacMutualCofix (id,l) ->
+      TacMutualCofix (id, List.map (fun (id,c) -> (id,subst_glob_constr subst c)) l)
   | TacCut c -> TacCut (subst_glob_constr subst c)
   | TacAssert (b,na,c) ->
       TacAssert (Option.map (subst_tactic subst) b,na,subst_glob_constr subst c)

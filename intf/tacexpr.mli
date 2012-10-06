@@ -28,7 +28,6 @@ type evars_flag = bool     (* true = pose evars       false = fail on evars *)
 type rec_flag = bool       (* true = recursive        false = not recursive *)
 type advanced_flag = bool  (* true = advanced         false = basic *)
 type split_flag = bool     (* true = exists           false = split *)
-type hidden_flag = bool    (* true = internal use     false = user-level *)
 type letin_flag = bool     (* true = use local def    false = use Leibniz *)
 
 type debug = Debug | Info | Off (* for trivial / auto / eauto ... *)
@@ -106,10 +105,9 @@ type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   | TacCase of evars_flag * 'trm with_bindings
   | TacCaseType of 'trm
   | TacFix of identifier option * int
-  | TacMutualFix of
-      hidden_flag * identifier * int * (identifier * int * 'trm) list
+  | TacMutualFix of identifier * int * (identifier * int * 'trm) list
   | TacCofix of identifier option
-  | TacMutualCofix of hidden_flag * identifier * (identifier * 'trm) list
+  | TacMutualCofix of identifier * (identifier * 'trm) list
   | TacCut of 'trm
   | TacAssert of
       ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr option *
