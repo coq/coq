@@ -128,48 +128,48 @@ let refiner = refiner
 
 (* This does not check that the variable name is not here *)
 let introduction_no_check id =
-  refiner (Prim (Intro id))
+  refiner (Intro id)
 
 let internal_cut_no_check replace id t gl =
-  refiner (Prim (Cut (true,replace,id,t))) gl
+  refiner (Cut (true,replace,id,t)) gl
 
 let internal_cut_rev_no_check replace id t gl =
-  refiner (Prim (Cut (false,replace,id,t))) gl
+  refiner (Cut (false,replace,id,t)) gl
 
 let refine_no_check c gl =
-  refiner (Prim (Refine c)) gl
+  refiner (Refine c) gl
 
 let convert_concl_no_check c sty gl =
-  refiner (Prim (Convert_concl (c,sty))) gl
+  refiner (Convert_concl (c,sty)) gl
 
 let convert_hyp_no_check d gl =
-  refiner (Prim (Convert_hyp d)) gl
+  refiner (Convert_hyp d) gl
 
 (* This does not check dependencies *)
 let thin_no_check ids gl =
-  if ids = [] then tclIDTAC gl else refiner (Prim (Thin ids)) gl
+  if ids = [] then tclIDTAC gl else refiner (Thin ids) gl
 
 (* This does not check dependencies *)
 let thin_body_no_check ids gl =
-  if ids = [] then tclIDTAC gl else refiner (Prim (ThinBody ids)) gl
+  if ids = [] then tclIDTAC gl else refiner (ThinBody ids) gl
 
 let move_hyp_no_check with_dep id1 id2 gl =
-  refiner (Prim (Move (with_dep,id1,id2))) gl
+  refiner (Move (with_dep,id1,id2)) gl
 
 let order_hyps idl gl =
-  refiner (Prim (Order idl)) gl
+  refiner (Order idl) gl
 
 let rec rename_hyp_no_check l gl = match l with
   | [] -> tclIDTAC gl
   | (id1,id2)::l ->
-      tclTHEN (refiner (Prim (Rename (id1,id2))))
+      tclTHEN (refiner (Rename (id1,id2)))
 	(rename_hyp_no_check l) gl
 
 let mutual_fix f n others j gl =
-  with_check (refiner (Prim (FixRule (f,n,others,j)))) gl
+  with_check (refiner (FixRule (f,n,others,j))) gl
 
 let mutual_cofix f others j gl =
-  with_check (refiner (Prim (Cofix (f,others,j)))) gl
+  with_check (refiner (Cofix (f,others,j))) gl
 
 (* Versions with consistency checks *)
 

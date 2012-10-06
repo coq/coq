@@ -45,9 +45,6 @@ let pr_proof_instr_xml instr =
   Ppdecl_proof.pr_proof_instr (Global.env()) instr
 ;;
 
-let pr_rule_xml pr = function
-  | Prim r -> str "<rule text=\"" ++ xmlstream (pr_prim_rule r) ++ str "\"/>"
-
 let pr_var_decl_xml env (id,c,typ) =
   let ptyp = print_constr_env env typ in
   match c with

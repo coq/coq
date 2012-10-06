@@ -27,15 +27,11 @@ let abstract_tactic_expr ?(dflt=false) te tacfun = tacfun
 let abstract_tactic ?(dflt=false) te tacfun = tacfun
 let abstract_extended_tactic ?(dflt=false) s args tacfun = tacfun
 
-let refiner = function
-  | Prim pr ->
-      let prim_fun = prim_refiner pr in
-	(fun goal_sigma ->
-          let (sgl,sigma') = prim_fun goal_sigma.sigma goal_sigma.it in
-	  {it=sgl; sigma = sigma'})
+let refiner pr goal_sigma =
+  let (sgl,sigma') = prim_refiner pr goal_sigma.sigma goal_sigma.it in
+  {it=sgl; sigma = sigma'}
 
-
-let norm_evar_tac gl = refiner (Prim Change_evars) gl
+let norm_evar_tac gl = refiner (Change_evars) gl
 
 (*********************)
 (*   Tacticals       *)

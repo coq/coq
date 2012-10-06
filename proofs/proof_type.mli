@@ -22,10 +22,6 @@ open Misctypes
 (** This module defines the structure of proof tree and the tactic type. So, it
    is used by [Proof_tree] and [Refiner] *)
 
-type goal = Goal.goal
-
-type tactic = goal sigma -> goal list sigma
-
 type prim_rule =
   | Intro of identifier
   | Cut of bool * bool * identifier * types
@@ -40,6 +36,10 @@ type prim_rule =
   | Order of identifier list
   | Rename of identifier * identifier
   | Change_evars
+
+(** Nowadays, the only rules we'll consider are the primitive rules *)
+
+type rule = prim_rule
 
 (** The type [goal sigma] is the type of subgoal. It has the following form
 {v   it    = \{ evar_concl = [the conclusion of the subgoal]
@@ -66,13 +66,12 @@ type prim_rule =
                                               in the type of evar] \} \} \} v}
 *)
 
-type rule = Prim of prim_rule
+type goal = Goal.goal
 
-type compound_rule=
-  (** the boolean of Tactic tells if the default tactic is used *)
-  | Tactic of tactic_expr * bool
+type tactic = goal sigma -> goal list sigma
 
-and tactic_expr =
+
+type tactic_expr =
   (constr,
    constr_pattern,
    evaluable_global_reference,
@@ -104,6 +103,8 @@ and tactic_arg =
    glob_tactic_expr,
    tlevel)
      Tacexpr.gen_tactic_arg
+
+(** Ltac traces *)
 
 type ltac_call_kind =
   | LtacNotationCall of string
