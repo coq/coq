@@ -88,209 +88,198 @@ type ('a,'t) match_rule =
   | Pat of 'a match_context_hyps list * 'a match_pattern * 't
   | All of 't
 
-type ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_atomic_tactic_expr =
+(** Generic expressions for atomic tactics *)
+
+type ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_atomic_tactic_expr =
   (* Basic tactics *)
   | TacIntroPattern of intro_pattern_expr located list
   | TacIntrosUntil of quantified_hypothesis
-  | TacIntroMove of identifier option * 'id move_location
+  | TacIntroMove of identifier option * 'nam move_location
   | TacAssumption
-  | TacExact of 'constr
-  | TacExactNoCheck of 'constr
-  | TacVmCastNoCheck of 'constr
-  | TacApply of advanced_flag * evars_flag * 'constr with_bindings list *
-      ('id * intro_pattern_expr located option) option
-  | TacElim of evars_flag * 'constr with_bindings *
-      'constr with_bindings option
-  | TacElimType of 'constr
-  | TacCase of evars_flag * 'constr with_bindings
-  | TacCaseType of 'constr
+  | TacExact of 'trm
+  | TacExactNoCheck of 'trm
+  | TacVmCastNoCheck of 'trm
+  | TacApply of advanced_flag * evars_flag * 'trm with_bindings list *
+      ('nam * intro_pattern_expr located option) option
+  | TacElim of evars_flag * 'trm with_bindings * 'trm with_bindings option
+  | TacElimType of 'trm
+  | TacCase of evars_flag * 'trm with_bindings
+  | TacCaseType of 'trm
   | TacFix of identifier option * int
-  | TacMutualFix of hidden_flag * identifier * int * (identifier * int *
-      'constr) list
+  | TacMutualFix of
+      hidden_flag * identifier * int * (identifier * int * 'trm) list
   | TacCofix of identifier option
-  | TacMutualCofix of hidden_flag * identifier * (identifier * 'constr) list
-  | TacCut of 'constr
-  | TacAssert of 'tac option * intro_pattern_expr located option * 'constr
-  | TacGeneralize of ('constr with_occurrences * name) list
-  | TacGeneralizeDep of 'constr
-  | TacLetTac of name * 'constr * 'id clause_expr * letin_flag *
+  | TacMutualCofix of hidden_flag * identifier * (identifier * 'trm) list
+  | TacCut of 'trm
+  | TacAssert of
+      ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr option *
+      intro_pattern_expr located option * 'trm
+  | TacGeneralize of ('trm with_occurrences * name) list
+  | TacGeneralizeDep of 'trm
+  | TacLetTac of name * 'trm * 'nam clause_expr * letin_flag *
       intro_pattern_expr located option
 
   (* Derived basic tactics *)
   | TacSimpleInductionDestruct of rec_flag * quantified_hypothesis
-  | TacInductionDestruct of rec_flag * evars_flag * ('constr,'id) induction_clause_list
+  | TacInductionDestruct of
+      rec_flag * evars_flag * ('trm,'nam) induction_clause_list
   | TacDoubleInduction of quantified_hypothesis * quantified_hypothesis
-  | TacDecomposeAnd of 'constr
-  | TacDecomposeOr of 'constr
-  | TacDecompose of 'ind list * 'constr
-  | TacSpecialize of int option * 'constr with_bindings
-  | TacLApply of 'constr
+  | TacDecomposeAnd of 'trm
+  | TacDecomposeOr of 'trm
+  | TacDecompose of 'ind list * 'trm
+  | TacSpecialize of int option * 'trm with_bindings
+  | TacLApply of 'trm
 
   (* Automation tactics *)
-  | TacTrivial of debug * 'constr list * string list option
-  | TacAuto of debug * int or_var option * 'constr list * string list option
+  | TacTrivial of debug * 'trm list * string list option
+  | TacAuto of debug * int or_var option * 'trm list * string list option
 
   (* Context management *)
-  | TacClear of bool * 'id list
-  | TacClearBody of 'id list
-  | TacMove of bool * 'id * 'id move_location
-  | TacRename of ('id *'id) list
-  | TacRevert of 'id list
+  | TacClear of bool * 'nam list
+  | TacClearBody of 'nam list
+  | TacMove of bool * 'nam * 'nam move_location
+  | TacRename of ('nam *'nam) list
+  | TacRevert of 'nam list
 
-  (* Constructors *)
-  | TacLeft of evars_flag * 'constr bindings
-  | TacRight of evars_flag * 'constr bindings
-  | TacSplit of evars_flag * split_flag * 'constr bindings list
-  | TacAnyConstructor of evars_flag * 'tac option
-  | TacConstructor of evars_flag * int or_var * 'constr bindings
+  (* Trmuctors *)
+  | TacLeft of evars_flag * 'trm bindings
+  | TacRight of evars_flag * 'trm bindings
+  | TacSplit of evars_flag * split_flag * 'trm bindings list
+  | TacAnyConstructor of evars_flag *
+      ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr option
+  | TacConstructor of evars_flag * int or_var * 'trm bindings
 
   (* Conversion *)
-  | TacReduce of ('constr,'cst,'pat) red_expr_gen * 'id clause_expr
-  | TacChange of 'pat option * 'constr * 'id clause_expr
+  | TacReduce of ('trm,'cst,'pat) red_expr_gen * 'nam clause_expr
+  | TacChange of 'pat option * 'trm * 'nam clause_expr
 
   (* Equivalence relations *)
   | TacReflexivity
-  | TacSymmetry of 'id clause_expr
-  | TacTransitivity of 'constr option
+  | TacSymmetry of 'nam clause_expr
+  | TacTransitivity of 'trm option
 
   (* Equality and inversion *)
-  | TacRewrite of
-      evars_flag * (bool * multi * 'constr with_bindings) list * 'id clause_expr * 'tac option
-  | TacInversion of ('constr,'id) inversion_strength * quantified_hypothesis
+  | TacRewrite of evars_flag *
+      (bool * multi * 'trm with_bindings) list * 'nam clause_expr *
+      ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr option
+  | TacInversion of ('trm,'nam) inversion_strength * quantified_hypothesis
 
   (* For ML extensions *)
   | TacExtend of Loc.t * string * 'lev generic_argument list
 
   (* For syntax extensions *)
   | TacAlias of Loc.t * string *
-      (identifier * 'lev generic_argument) list
-      * (dir_path * glob_tactic_expr)
+      (identifier * 'lev generic_argument) list * (dir_path * glob_tactic_expr)
 
-and ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr =
-  | TacAtom of Loc.t * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_atomic_tactic_expr
-  | TacThen of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr *
-	('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr array *
-	('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr *
-	('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr array
-  | TacThens of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr *
-	('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr list
-  | TacFirst of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr list
-  | TacComplete of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
-  | TacSolve of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr list
-  | TacTry of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
-  | TacOrelse of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
-  | TacDo of int or_var * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
-  | TacTimeout of int or_var * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
-  | TacRepeat of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
-  | TacProgress of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
-  | TacShowHyps of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
-  | TacAbstract of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr * identifier option
-  | TacId of 'id message_token list
-  | TacFail of int or_var * 'id message_token list
-  | TacInfo of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
-  | TacLetIn of rec_flag * (identifier located * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg) list * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
-  | TacMatch of lazy_flag * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr * ('pat,('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr) match_rule list
-  | TacMatchGoal of lazy_flag * direction_flag * ('pat,('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr) match_rule list
-  | TacFun of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_fun_ast
-  | TacArg of ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg located
+(** Possible arguments of a tactic definition *)
 
-and ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_fun_ast =
-  identifier option list * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_expr
-
-  (* These are the possible arguments of a tactic definition *)
-and ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg =
+and ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_arg =
   | TacDynamic     of Loc.t * Dyn.t
   | TacVoid
   | MetaIdArg      of Loc.t * bool * string
-  | ConstrMayEval  of ('constr,'cst,'pat) may_eval
+  | ConstrMayEval  of ('trm,'cst,'pat) may_eval
   | IntroPattern   of intro_pattern_expr located
   | Reference      of 'ref
   | Integer        of int
-  | TacCall        of Loc.t *
-      'ref * ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg list
+  | TacCall of Loc.t * 'ref *
+      ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_arg list
   | TacExternal of Loc.t * string * string *
-      ('constr,'pat,'cst,'ind,'ref,'id,'tac,'lev) gen_tactic_arg list
-  | TacFreshId     of string or_var list
-  | Tacexp of 'tac
+      ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_arg list
+  | TacFreshId of string or_var list
+  | Tacexp of ('trm,'pat,'cst,'ind,'ref,'nam,'lev) gen_tactic_expr
 
-(* Globalized tactics *)
+(** Generic ltac expressions.
+    't : terms, 'p : patterns, 'c : constants, 'i : inductive,
+    'r : ltac refs, 'n : idents, 'l : levels *)
+
+and ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr =
+  | TacAtom of Loc.t * ('t,'p,'c,'i,'r,'n,'l) gen_atomic_tactic_expr
+  | TacThen of
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr array *
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr array
+  | TacThens of
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr list
+  | TacFirst of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr list
+  | TacComplete of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+  | TacSolve of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr list
+  | TacTry of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+  | TacOrelse of
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+  | TacDo of int or_var * ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+  | TacTimeout of int or_var * ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+  | TacRepeat of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+  | TacProgress of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+  | TacShowHyps of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+  | TacAbstract of
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr * identifier option
+  | TacId of 'n message_token list
+  | TacFail of int or_var * 'n message_token list
+  | TacInfo of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+  | TacLetIn of rec_flag *
+      (identifier located * ('t,'p,'c,'i,'r,'n,'l) gen_tactic_arg) list *
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+  | TacMatch of lazy_flag *
+      ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr *
+      ('p,('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr) match_rule list
+  | TacMatchGoal of lazy_flag * direction_flag *
+      ('p,('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr) match_rule list
+  | TacFun of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_fun_ast
+  | TacArg of ('t,'p,'c,'i,'r,'n,'l) gen_tactic_arg located
+
+and ('t,'p,'c,'i,'r,'n,'l) gen_tactic_fun_ast =
+    identifier option list * ('t,'p,'c,'i,'r,'n,'l) gen_tactic_expr
+
+(** Globalized tactics *)
+
+and g_trm = glob_constr_and_expr
+and g_pat = glob_constr_and_expr * constr_pattern
+and g_cst = evaluable_global_reference and_short_name or_var
+and g_ind = inductive or_var
+and g_ref = ltac_constant located or_var
+and g_nam  = identifier located
+
 and glob_tactic_expr =
-    (glob_constr_and_expr,
-     glob_constr_and_expr * constr_pattern,
-     evaluable_global_reference and_short_name or_var,
-     inductive or_var,
-     ltac_constant located or_var,
-     identifier located,
-     glob_tactic_expr,
-     glevel) gen_tactic_expr
-
-type raw_tactic_expr =
-    (constr_expr,
-     constr_pattern_expr,
-     reference or_by_notation,
-     reference or_by_notation,
-     reference,
-     identifier located or_metaid,
-     raw_tactic_expr,
-     rlevel) gen_tactic_expr
-
-type raw_atomic_tactic_expr =
-    (constr_expr,                  (* constr *)
-     constr_pattern_expr,                 (* pattern *)
-     reference or_by_notation,     (* evaluable reference *)
-     reference or_by_notation,     (* inductive *)
-     reference,                    (* ltac reference *)
-     identifier located or_metaid, (* identifier *)
-     raw_tactic_expr,
-     rlevel) gen_atomic_tactic_expr
-
-type raw_tactic_arg =
-    (constr_expr,
-     constr_pattern_expr,
-     reference or_by_notation,
-     reference or_by_notation,
-     reference,
-     identifier located or_metaid,
-     raw_tactic_expr,
-     rlevel) gen_tactic_arg
-
-type raw_generic_argument = rlevel generic_argument
-
-type raw_red_expr =
-    (constr_expr, reference or_by_notation, constr_expr) red_expr_gen
+    (g_trm, g_pat, g_cst, g_ind, g_ref, g_nam, glevel) gen_tactic_expr
 
 type glob_atomic_tactic_expr =
-    (glob_constr_and_expr,
-     glob_constr_and_expr * constr_pattern,
-     evaluable_global_reference and_short_name or_var,
-     inductive or_var,
-     ltac_constant located or_var,
-     identifier located,
-     glob_tactic_expr,
-     glevel) gen_atomic_tactic_expr
+    (g_trm, g_pat, g_cst, g_ind, g_ref, g_nam, glevel) gen_atomic_tactic_expr
 
 type glob_tactic_arg =
-    (glob_constr_and_expr,
-     glob_constr_and_expr * constr_pattern,
-     evaluable_global_reference and_short_name or_var,
-     inductive or_var,
-     ltac_constant located or_var,
-     identifier located,
-     glob_tactic_expr,
-     glevel) gen_tactic_arg
+    (g_trm, g_pat, g_cst, g_ind, g_ref, g_nam, glevel) gen_tactic_arg
 
+(** Raw tactics *)
+
+type r_trm = constr_expr
+type r_pat = constr_pattern_expr
+type r_cst = reference or_by_notation
+type r_ind = reference or_by_notation
+type r_ref = reference
+type r_nam  = identifier located or_metaid
+type r_lev = rlevel
+
+type raw_atomic_tactic_expr =
+    (r_trm, r_pat, r_cst, r_ind, r_ref, r_nam, rlevel) gen_atomic_tactic_expr
+
+type raw_tactic_expr =
+    (r_trm, r_pat, r_cst, r_ind, r_ref, r_nam, rlevel) gen_tactic_expr
+
+type raw_tactic_arg =
+    (r_trm, r_pat, r_cst, r_ind, r_ref, r_nam, rlevel) gen_tactic_arg
+
+(** Misc *)
+
+type raw_generic_argument = rlevel generic_argument
 type glob_generic_argument = glevel generic_argument
-
-type glob_red_expr =
-    (glob_constr_and_expr, evaluable_global_reference or_var, constr_pattern)
-    red_expr_gen
-
 type typed_generic_argument = tlevel generic_argument
 
+type raw_red_expr = (r_trm, r_cst, r_pat) red_expr_gen
+
 type 'a raw_abstract_argument_type = ('a,rlevel) abstract_argument_type
-
 type 'a glob_abstract_argument_type = ('a,glevel) abstract_argument_type
-
 type 'a typed_abstract_argument_type = ('a,tlevel) abstract_argument_type
 
 type 'a declaration_hook = locality -> global_reference -> 'a
