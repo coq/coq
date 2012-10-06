@@ -23,18 +23,9 @@ let project x = x.sigma
 let pf_env gls = Global.env_of_context (Goal.V82.hyps (project gls) (sig_it gls))
 let pf_hyps gls = named_context_of_val (Goal.V82.hyps (project gls) (sig_it gls))
 
-let abstract_operation syntax semantics =
-  semantics
-
-let abstract_tactic_expr ?(dflt=false) te tacfun gls =
-  abstract_operation (Tactic(te,dflt)) tacfun gls
-
-let abstract_tactic ?(dflt=false) te =
-  !abstract_tactic_box := Some te;
-  abstract_tactic_expr ~dflt (Tacexpr.TacAtom (Loc.ghost,te))
-
-let abstract_extended_tactic ?(dflt=false) s args =
-  abstract_tactic ~dflt (Tacexpr.TacExtend (Loc.ghost, s, args))
+let abstract_tactic_expr ?(dflt=false) te tacfun = tacfun
+let abstract_tactic ?(dflt=false) te tacfun = tacfun
+let abstract_extended_tactic ?(dflt=false) s args tacfun = tacfun
 
 let refiner = function
   | Prim pr ->
@@ -44,7 +35,7 @@ let refiner = function
 	  {it=sgl; sigma = sigma'})
 
 
-  | Nested (_,_) | Decl_proof _ ->
+  | Decl_proof _ ->
       failwith "Refiner: should not occur"
 
 	(* Daimon is a canonical unfinished proof *)

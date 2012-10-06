@@ -30,9 +30,9 @@ val apply_sig_tac :
 
 (** [abstract_tactic tac] hides the (partial) proof produced by [tac] under
    a single proof node. The boolean tells if the default tactic is used. *)
-(* spiwack: currently here for compatibility, abstract_operation 
-    is a second projection *)
-val abstract_operation : compound_rule -> tactic -> tactic
+(* spiwack: currently here for compatibility, the tactic expression
+   is discarded and we simply return the tactic. *)
+
 val abstract_tactic : ?dflt:bool -> atomic_tactic_expr -> tactic -> tactic
 val abstract_tactic_expr : ?dflt:bool -> tactic_expr -> tactic -> tactic
 val abstract_extended_tactic :

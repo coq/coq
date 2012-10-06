@@ -996,11 +996,7 @@ let explain_reduction_tactic_error = function
 
 let explain_ltac_call_trace (nrep,last,trace,loc) =
   let calls =
-    (nrep,last) :: List.rev (List.map(fun(n,_,ck)->(n,ck))trace) in
-  let tacexpr_differ te te' =
-    (* NB: The following comparison may raise an exception
-       since a tacexpr may embed a functional part via a TacExtend *)
-    try te <> te' with Invalid_argument _ -> false
+    (nrep,last) :: List.rev (List.map(fun(n,_,ck)->(n,ck))trace)
   in
   let pr_call (n,ck) =
     (match ck with
@@ -1009,16 +1005,9 @@ let explain_ltac_call_trace (nrep,last,trace,loc) =
        | Proof_type.LtacVarCall (id,t) ->
 	   quote (Nameops.pr_id id) ++ strbrk " (bound to " ++
 	     Pptactic.pr_glob_tactic (Global.env()) t ++ str ")"
-       | Proof_type.LtacAtomCall (te,otac) -> quote
-	   (Pptactic.pr_glob_tactic (Global.env())
-	      (Tacexpr.TacAtom (Loc.ghost,te)))
-	   ++ (match !otac with
-		 | Some te' when tacexpr_differ (Obj.magic te') te ->
-		   strbrk " (expanded to " ++ quote
-		     (Pptactic.pr_tactic (Global.env())
-			(Tacexpr.TacAtom (Loc.ghost,te')))
-		   ++ str ")"
-		 | _ -> mt ())
+       | Proof_type.LtacAtomCall te ->
+	   quote (Pptactic.pr_glob_tactic (Global.env())
+		    (Tacexpr.TacAtom (Loc.ghost,te)))
        | Proof_type.LtacConstrInterp (c,(vars,unboundvars)) ->
 	   let filter =
 	     function (id,None) -> None | (id,Some id') -> Some(id,([],mkVar id')) in

@@ -227,11 +227,7 @@ let lookup_tactic s =
   with Not_found ->
     errorlabstrm "Refiner.lookup_tactic"
       (str"The tactic " ++ str s ++ str" is not installed.")
-(*
-let vernac_tactic (s,args) =
-  let tacfun = lookup_tactic s args in
-  abstract_extended_tactic s args tacfun
-*)
+
 (* Interpretation of extra generic arguments *)
 type glob_sign = {
   ltacvars : identifier list * identifier list;
@@ -1783,8 +1779,7 @@ let rec val_interp ist gl (tac:glob_tactic_expr) =
 and eval_tactic ist = function
   | TacAtom (loc,t) ->
       fun gl ->
-	let box = ref None in abstract_tactic_box := box;
-	let call = LtacAtomCall (t,box) in
+	let call = LtacAtomCall t in
 	let tac = (* catch error in the interpretation *)
 	  catch_error (push_trace(dloc,call)ist.trace)
 	    (interp_atomic ist gl) t	in

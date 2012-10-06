@@ -47,13 +47,6 @@ let pr_proof_instr_xml instr =
 
 let pr_rule_xml pr = function
   | Prim r -> str "<rule text=\"" ++ xmlstream (pr_prim_rule r) ++ str "\"/>"
-  | Nested(cmpd, subtree) ->
-      hov 2 (str "<cmpdrule>" ++ fnl () ++
-        begin match cmpd with
-          Tactic (texp, _) -> pr_tactic_xml texp
-        end ++ fnl ()
-        ++ pr subtree
-      ) ++ fnl () ++ str "</cmpdrule>"
   | Daimon -> str "<daimon/>"
   | Decl_proof _ -> str "<proof/>"
 ;;

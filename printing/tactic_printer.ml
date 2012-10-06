@@ -23,31 +23,16 @@ let pr_tactic = function
 
 let pr_rule = function
   | Prim r -> hov 0 (pr_prim_rule r)
-  | Nested(cmpd,_) ->
-      begin
-	match cmpd with
-	  | Tactic (texp,_) -> hov 0 (pr_tactic texp)
-      end
   | Daimon -> str "<Daimon>"
   | Decl_proof _ -> str "proof"
-
-let uses_default_tac = function
-  | Nested(Tactic(_,dflt),_) -> dflt
-  | _ -> false
 
 (* Does not print change of evars *)
 let pr_rule_dot = function
   | Prim Change_evars ->str "PC: ch_evars" ++  mt ()
       (* PC: this might be redundant *)
-  | r ->
-      pr_rule r ++ if uses_default_tac r then str "..." else str"."
+  | r -> pr_rule r ++ str"."
 
 let pr_rule_dot_fnl = function
-  | Nested (Tactic (TacAtom (_,(TacMutualFix (true,_,_,_)
-                              | TacMutualCofix (true,_,_))),_),_) ->
-      (* Very big hack to not display hidden tactics in "Theorem with" *)
-      (* (would not scale!) *)
-      mt ()
    | Prim Change_evars -> mt ()
    | r -> pr_rule_dot r ++ fnl ()
 

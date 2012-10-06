@@ -46,11 +46,10 @@ type proof_tree = {
 
 and rule =
   | Prim of prim_rule
-  | Nested of compound_rule * proof_tree
   | Decl_proof of bool
   | Daimon
 
-and compound_rule=
+type compound_rule=
   | Tactic of tactic_expr * bool
 
 and tactic_expr =
@@ -89,7 +88,7 @@ and tactic_arg =
 type ltac_call_kind =
   | LtacNotationCall of string
   | LtacNameCall of ltac_constant
-  | LtacAtomCall of glob_atomic_tactic_expr * atomic_tactic_expr option ref
+  | LtacAtomCall of glob_atomic_tactic_expr
   | LtacVarCall of identifier * glob_tactic_expr
   | LtacConstrInterp of glob_constr *
       (extended_patvar_map * (identifier * identifier option) list)
@@ -98,4 +97,3 @@ type ltac_trace = (int * Loc.t * ltac_call_kind) list
 
 exception LtacLocated of (int * ltac_call_kind * ltac_trace * Loc.t) * exn
 
-let abstract_tactic_box = ref (ref None)
