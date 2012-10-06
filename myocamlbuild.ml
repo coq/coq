@@ -299,9 +299,6 @@ let extra_rules () = begin
   mlp_cmo "tools/compat5b";
   end;
 
-  ocaml_lib ~extern:true ~dir:Coq_config.camlp4lib ~tag_name:"use_camlpX"
-    ~byte:true ~native:true (if use_camlp5 then "gramlib" else "camlp4lib");
-
 (** Special case of toplevel/mltop.ml4:
     - mltop.ml will be the old mltop.optml and be used to obtain mltop.cmx
     - we add a special mltop.ml4 --> mltop.cmo rule, before all the others
