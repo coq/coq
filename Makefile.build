@@ -128,14 +128,15 @@ endif
 
 PR_O := $(if $(READABLE_ML4),pr_o.cmo,pr_dump.cmo) # works also with new camlp4
 
-ifeq ($(CAMLP4),camlp5)
-SYSMOD:=str unix gramlib
-else
-SYSMOD:=str unix dynlink camlp4lib
-endif
-
+SYSMOD:=str unix
 SYSCMA:=$(addsuffix .cma,$(SYSMOD))
 SYSCMXA:=$(addsuffix .cmxa,$(SYSMOD))
+
+ifeq ($(CAMLP4),camlp5)
+P4CMA:=gramlib.cma
+else
+P4CMA:=dynlink.cma camlp4lib.cma
+endif
 
 
 ###########################################################################
@@ -728,7 +729,7 @@ $(OCAMLDOCDIR)/%.pdf: $(OCAMLDOCDIR)/%.tex
 
 dev/printers.cma: | dev/printers.mllib.d
 	$(SHOW)'Testing $@'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(SYSCMA) $^ -o test-printer
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $(SYSCMA) $(P4CMA) $^ -o test-printer
 	@rm -f test-printer
 	$(SHOW)'OCAMLC -a $@'   
 	$(HIDE)$(OCAMLC) $(BYTEFLAGS) $^ -linkall -a -o $@
