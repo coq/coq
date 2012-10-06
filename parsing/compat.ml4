@@ -20,12 +20,20 @@ end
 
 exception Exc_located = Ploc.Exc
 
+IFDEF CAMLP5_6_00 THEN
+let ploc_make_loc fname lnb pos bpep = Ploc.make_loc fname lnb pos bpep ""
+let ploc_file_name = Ploc.file_name
+ELSE
+let ploc_make_loc fname lnb pos bpep = Ploc.make lnb pos bpep
+let ploc_file_name _ = ""
+END
+
 let of_coqloc loc =
   let (fname, lnb, pos, bp, ep) = Loc.represent loc in
-  Ploc.make_loc fname lnb pos (bp, ep) ""
+  ploc_make_loc fname lnb pos (bp,ep)
 
 let to_coqloc loc =
-  Loc.create (Ploc.file_name loc) (Ploc.line_nb loc)
+  Loc.create (ploc_file_name loc) (Ploc.line_nb loc)
     (Ploc.bol_pos loc) (Ploc.first_pos loc, Ploc.last_pos loc)
 
 let make_loc = Ploc.make_unlined
