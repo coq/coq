@@ -50,27 +50,29 @@ val is_matching : constr_pattern -> constr -> bool
 val matches_conv :env -> Evd.evar_map -> constr_pattern -> constr -> patvar_map
 
 (** The type of subterm matching results: a substitution + a context
-   (whose hole is denoted with [special_meta]) + a continuation that
+   (whose hole is denoted here with [special_meta]) + a continuation that
    either returns the next matching subterm or raise PatternMatchingFailure *)
-type subterm_matching_result =
-    (bound_ident_map * patvar_map) * constr * (unit -> subterm_matching_result)
+type 'a matching_result =
+    { m_sub : bound_ident_map * patvar_map;
+      m_ctx : 'a;
+      m_nxt : unit -> 'a matching_result }
 
 (** [match_subterm n pat c] returns the substitution and the context
    corresponding to the first **closed** subterm of [c] matching [pat], and
    a continuation that looks for the next matching subterm.
    It raises PatternMatchingFailure if no subterm matches the pattern *)
-val match_subterm : constr_pattern -> constr -> subterm_matching_result
+val match_subterm : constr_pattern -> constr -> constr matching_result
 
 (** [match_appsubterm pat c] returns the substitution and the context
    corresponding to the first **closed** subterm of [c] matching [pat],
    considering application contexts as well. It also returns a
    continuation that looks for the next matching subterm.
    It raises PatternMatchingFailure if no subterm matches the pattern *)
-val match_appsubterm : constr_pattern -> constr -> subterm_matching_result
+val match_appsubterm : constr_pattern -> constr -> constr matching_result
 
 (** [match_subterm_gen] calls either [match_subterm] or [match_appsubterm] *)
 val match_subterm_gen : bool (** true = with app context *) ->
-   constr_pattern -> constr -> subterm_matching_result
+   constr_pattern -> constr -> constr matching_result
 
 (** [is_matching_appsubterm pat c] tells if a subterm of [c] matches
    against [pat] taking partial subterms into consideration *)

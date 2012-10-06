@@ -252,13 +252,20 @@ let matches c p = snd (matches_core_closed None true c p)
 
 let special_meta = (-1)
 
+type 'a matching_result =
+    { m_sub : bound_ident_map * patvar_map;
+      m_ctx : 'a;
+      m_nxt : unit -> 'a matching_result }
+
+let mkresult s c n = { m_sub=s; m_ctx=c; m_nxt=n }
+
 (* Tells if it is an authorized occurrence and if the instance is closed *)
 let authorized_occ partial_app closed pat c mk_ctx next =
   try
     let sigma = matches_core_closed None partial_app pat c in
     if closed && not (List.for_all (fun (_,c) -> closed0 c) (snd sigma))
     then next ()
-    else sigma, mk_ctx (mkMeta special_meta), next
+    else mkresult sigma (mk_ctx (mkMeta special_meta)) next
   with
     PatternMatchingFailure -> next ()
 
@@ -329,9 +336,6 @@ let sub_match ?(partial_app=false) ?(closed=true) pat c =
           aux c mk_ctx next in
     try_sub_match_rec [] lc in
   aux c (fun x -> x) (fun () -> raise PatternMatchingFailure)
-
-type subterm_matching_result =
-    (bound_ident_map * patvar_map) * constr * (unit -> subterm_matching_result)
 
 let match_subterm pat c = sub_match pat c
 

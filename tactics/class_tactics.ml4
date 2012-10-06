@@ -217,6 +217,16 @@ type auto_result = autogoal list sigma
 
 type atac = auto_result tac
 
+(* Some utility types to avoid the need of -rectypes *)
+
+type 'a optionk =
+  | Nonek
+  | Somek of 'a * 'a optionk fk
+
+type ('a,'b) optionk2 =
+  | Nonek2
+  | Somek2 of 'a * 'b * ('a,'b) optionk2 fk
+
 let make_resolve_hyp env sigma st flags only_classes pri (id, _, cty) =
   let cty = Evarutil.nf_evar sigma cty in
   let rec iscl env ty = 
@@ -408,21 +418,23 @@ let then_list (second : atac) (sk : (auto_result, 'a) sk) : (auto_result, 'a) sk
 		        (Goal.V82.env s gl) s' info.is_evar (Goal.V82.concl s gl)
 		    else true
 		  in
-		  let fk'' = 
+		  let fk'' =
 		    if not needs_backtrack then
-		      (if !typeclasses_debug then msg_debug (str"no backtrack on " ++ pr_ev s gl ++ 
-							 str " after " ++ Lazy.force info.auto_last_tac); fk) 
-		    else fk' 
+		      (if !typeclasses_debug then
+			  msg_debug (str"no backtrack on " ++ pr_ev s gl ++
+				     str " after " ++ Lazy.force info.auto_last_tac);
+		       fk)
+		    else fk'
 		  in aux s' (gls'::acc) fk'' gls)
 	       fk {it = (gl,info); sigma = s})
-    | [] -> Some (List.rev acc, s, fk)
+    | [] -> Somek2 (List.rev acc, s, fk)
   in fun {it = gls; sigma = s} fk ->
     let rec aux' = function
-      | None -> fk ()
-      | Some (res, s', fk') ->
+      | Nonek2 -> fk ()
+      | Somek2 (res, s', fk') ->
 	  let goals' = List.concat res in
 	    sk {it = goals'; sigma = s'} (fun () -> aux' (fk' ()))
-    in aux' (aux s [] (fun () -> None) gls)
+    in aux' (aux s [] (fun () -> Nonek2) gls)
 
 let then_tac (first : atac) (second : atac) : atac =
   { skft = fun sk fk -> first.skft (then_list second sk) fk }
@@ -430,12 +442,12 @@ let then_tac (first : atac) (second : atac) : atac =
 let run_tac (t : 'a tac) (gl : autogoal sigma) : auto_result option =
   t.skft (fun x _ -> Some x) (fun _ -> None) gl
 
-type run_list_res = (auto_result * run_list_res fk) option
+type run_list_res = auto_result optionk
 
 let run_list_tac (t : 'a tac) p goals (gl : autogoal list sigma) : run_list_res =
-  (then_list t (fun x fk -> Some (x, fk)))
+  (then_list t (fun x fk -> Somek (x, fk)))
     gl
-    (fun _ -> None)
+    (fun _ -> Nonek)
 
 let fail_tac : atac = 
   { skft = fun sk fk _ -> fk () }
@@ -465,8 +477,8 @@ let make_autogoals ?(only_classes=true) ?(st=full_transparent_state) hints gs ev
 
 let get_result r = 
   match r with
-  | None -> None
-  | Some (gls, fk) -> Some (gls.sigma,fk)
+  | Nonek -> None
+  | Somek (gls, fk) -> Some (gls.sigma,fk)
 	
 let run_on_evars ?(only_classes=true) ?(st=full_transparent_state) p evm hints tac =
   match evars_to_goals p evm with

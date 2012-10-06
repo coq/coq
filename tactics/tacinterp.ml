@@ -1672,6 +1672,11 @@ let verify_metas_coherence gl (ln1,lcm) (ln,lm) =
 
 let adjust (l,lc) = (l,List.map (fun (id,c) -> (id,([],c))) lc)
 
+type 'a extended_matching_result =
+    { e_ctx : 'a;
+      e_sub : bound_ident_map * extended_patvar_map;
+      e_nxt : unit -> 'a extended_matching_result }
+
 (* Tries to match one hypothesis pattern with a list of hypotheses *)
 let apply_one_mhyp_context ist env gl lmatch (hypname,patv,pat) lhyps =
   let get_id_couple id = function
@@ -1683,27 +1688,34 @@ let apply_one_mhyp_context ist env gl lmatch (hypname,patv,pat) lhyps =
         let lmeta = extended_matches t hyp in
         (try
             let lmeta = verify_metas_coherence gl lmatch lmeta in
-            ([],lmeta,(fun () -> raise PatternMatchingFailure))
+            { e_ctx = [];
+	      e_sub = lmeta;
+	      e_nxt = fun () -> raise PatternMatchingFailure }
           with
-            | Not_coherent_metas -> raise PatternMatchingFailure);
+            | Not_coherent_metas -> raise PatternMatchingFailure)
     | Subterm (b,ic,t) ->
         let rec match_next_pattern find_next () =
-          let (lmeta,ctxt,find_next') = find_next () in
+          let s = find_next () in
           try
-            let lmeta = verify_metas_coherence gl lmatch (adjust lmeta) in
-            (give_context ctxt ic,lmeta,match_next_pattern find_next')
+            let lmeta = verify_metas_coherence gl lmatch (adjust s.m_sub) in
+            { e_ctx = give_context s.m_ctx ic;
+	      e_sub = lmeta;
+	      e_nxt = match_next_pattern s.m_nxt }
           with
-            | Not_coherent_metas -> match_next_pattern find_next' () in
-        match_next_pattern (fun () -> match_subterm_gen b t hyp) () in
+            | Not_coherent_metas -> match_next_pattern s.m_nxt ()
+	in
+        match_next_pattern (fun () -> match_subterm_gen b t hyp) ()
+  in
   let rec apply_one_mhyp_context_rec = function
     | (id,b,hyp as hd)::tl ->
 	(match patv with
 	| None ->
             let rec match_next_pattern find_next () =
               try
-                let (ids, lmeta, find_next') = find_next () in
-		(get_id_couple id hypname@ids, lmeta, hd,
-                 match_next_pattern find_next')
+                let s = find_next () in
+		{ e_ctx = (get_id_couple id hypname @ s.e_ctx), hd;
+		  e_sub = s.e_sub;
+                  e_nxt = match_next_pattern s.e_nxt }
               with
                 | PatternMatchingFailure -> apply_one_mhyp_context_rec tl in
             match_next_pattern (fun () ->
@@ -1714,19 +1726,20 @@ let apply_one_mhyp_context ist env gl lmatch (hypname,patv,pat) lhyps =
 	    | Some body ->
                 let rec match_next_pattern_in_body next_in_body () =
                   try
-                    let (ids,lmeta,next_in_body') = next_in_body() in
+                    let s1 = next_in_body() in
                     let rec match_next_pattern_in_typ next_in_typ () =
                       try
-                        let (ids',lmeta',next_in_typ') = next_in_typ() in
-		        (get_id_couple id hypname@ids@ids', lmeta', hd,
-                         match_next_pattern_in_typ next_in_typ')
+			let s2 = next_in_typ() in
+		        { e_ctx = (get_id_couple id hypname@s1.e_ctx@s2.e_ctx), hd;
+			  e_sub = s2.e_sub;
+			  e_nxt = match_next_pattern_in_typ s2.e_nxt }
                       with
                         | PatternMatchingFailure ->
-                            match_next_pattern_in_body next_in_body' () in
+                            match_next_pattern_in_body s1.e_nxt () in
                     match_next_pattern_in_typ
                       (fun () ->
 			let hyp = refresh_universes_strict hyp in
-			match_pat lmeta hyp pat) ()
+			match_pat s1.e_sub hyp pat) ()
                   with PatternMatchingFailure -> apply_one_mhyp_context_rec tl
                 in
                 match_next_pattern_in_body
@@ -1993,7 +2006,7 @@ and interp_match_goal ist goal lz lr lmr =
   let env = pf_env goal in
   let apply_goal_sub app ist (id,c) csr mt mhyps hyps =
     let rec match_next_pattern find_next () =
-      let (lgoal,ctxt,find_next') = find_next () in
+      let { m_sub=lgoal; m_ctx=ctxt; m_nxt=find_next' } = find_next () in
       let lctxt = give_context ctxt id in
       try apply_hyps_context ist env lz goal mt lctxt (adjust lgoal) mhyps hyps
       with e when is_match_catchable e -> match_next_pattern find_next' () in
@@ -2049,14 +2062,15 @@ and apply_hyps_context ist env lz goal mt lctxt lgmatch mhyps hyps =
 	  | Def ((_,hypname),mbod,mhyp) -> hypname, Some mbod, mhyp
 	in
         let rec match_next_pattern find_next =
-          let (lids,lm,hyp_match,find_next') = find_next () in
+          let s = find_next () in
+	  let lids,hyp_match = s.e_ctx in
           db_matched_hyp ist.debug (pf_env goal) hyp_match hypname;
 	  try
             let id_match = pi1 hyp_match in
             let nextlhyps = List.remove_assoc_in_triple id_match lhyps_rest in
-            apply_hyps_context_rec (lfun@lids) lm nextlhyps tl
+            apply_hyps_context_rec (lfun@lids) s.e_sub nextlhyps tl
           with e when is_match_catchable e ->
-	    match_next_pattern find_next' in
+	    match_next_pattern s.e_nxt in
         let init_match_pattern () =
           apply_one_mhyp_context ist env goal lmatch hyp_pat lhyps_rest in
         match_next_pattern init_match_pattern
@@ -2186,7 +2200,7 @@ and interp_genarg_var_list1 ist gl x =
 and interp_match ist g lz constr lmr =
   let apply_match_subterm app ist (id,c) csr mt =
     let rec match_next_pattern find_next () =
-      let (lmatch,ctxt,find_next') = find_next () in
+      let { m_sub=lmatch; m_ctx=ctxt; m_nxt=find_next' } = find_next () in
       let lctxt = give_context ctxt id in
       let lfun = extend_values_with_bindings (adjust lmatch) (lctxt@ist.lfun) in
       try eval_with_fail {ist with lfun=lfun} lz g mt
