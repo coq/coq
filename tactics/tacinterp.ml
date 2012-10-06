@@ -2394,9 +2394,8 @@ and interp_atomic ist gl tac =
       let (sigma,c) = (if t=None then interp_constr else interp_type) ist env sigma c in
       tclTHEN
 	(tclEVARS sigma)
-	(abstract_tactic
-           (Tactics.forward (Option.map (interp_tactic ist) t)
-	      (Option.map (interp_intro_pattern ist gl) ipat) c))
+        (Tactics.forward (Option.map (interp_tactic ist) t)
+	   (Option.map (interp_intro_pattern ist gl) ipat) c)
   | TacGeneralize cl ->
       let sigma, cl = interp_constr_with_occurrences_and_name_as_list ist env sigma cl in
       tclWITHHOLES false (h_generalize_gen) sigma cl
@@ -2493,8 +2492,7 @@ and interp_atomic ist gl tac =
       let sigma, bll = List.fold_map (interp_bindings ist env) sigma bll in
       tclWITHHOLES ev (h_split ev) sigma bll
   | TacAnyConstructor (ev,t) ->
-      abstract_tactic
-        (Tactics.any_constructor ev (Option.map (interp_tactic ist) t))
+      Tactics.any_constructor ev (Option.map (interp_tactic ist) t)
   | TacConstructor (ev,n,bl) ->
       let sigma, bl = interp_bindings ist env sigma bl in
       tclWITHHOLES ev (h_constructor ev (interp_int_or_var ist n)) sigma bl
@@ -2583,7 +2581,7 @@ and interp_atomic ist gl tac =
 	  sigma , a_interp::acc
 	end l (project gl,[])
       in
-      abstract_extended_tactic (tac args)
+      tac args
   | TacAlias (loc,s,l,(_,body)) -> fun gl ->
     let evdref = ref gl.sigma in
     let f x = match genarg_tag x with
@@ -2727,8 +2725,8 @@ let hide_interp t ot gl =
   let te = intern_tactic true ist t in
   let t = eval_tactic te in
   match ot with
-  | None -> abstract_tactic_expr t gl
-  | Some t' -> abstract_tactic_expr (tclTHEN t t') gl
+  | None -> t gl
+  | Some t' -> (tclTHEN t t') gl
 
 (***************************************************************************)
 (* Substitution at module closing time *)

@@ -26,17 +26,6 @@ val repackage : evar_map ref -> 'a -> 'a sigma
 val apply_sig_tac :
   evar_map ref -> (goal sigma -> goal list sigma) -> goal -> goal list
 
-(** {6 Hiding the implementation of tactics. } *)
-
-(** [abstract_tactic tac] hides the (partial) proof produced by [tac] under
-   a single proof node. The boolean tells if the default tactic is used. *)
-(* spiwack: currently here for compatibility, the tactic expression
-   is discarded and we simply return the tactic. *)
-
-val abstract_tactic : tactic -> tactic
-val abstract_tactic_expr : tactic -> tactic
-val abstract_extended_tactic : tactic -> tactic
-
 val refiner : rule -> tactic
 
 (** {6 Tacticals. } *)

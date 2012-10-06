@@ -1016,19 +1016,15 @@ let auto_unif_flags = {
 
 (* Try unification with the precompiled clause, then use registered Apply *)
 
-let h_clenv_refine ev c clenv =
-  Refiner.abstract_tactic
-    (Clenvtac.clenv_refine ev clenv)
-
 let unify_resolve_nodelta (c,clenv) gl =
   let clenv' = connect_clenv gl clenv in
   let clenv'' = clenv_unique_resolver ~flags:auto_unif_flags clenv' gl in
-  h_clenv_refine false c clenv'' gl
+  Clenvtac.clenv_refine false clenv'' gl
 
 let unify_resolve flags (c,clenv) gl =
   let clenv' = connect_clenv gl clenv in
   let clenv'' = clenv_unique_resolver ~flags clenv' gl in
-  h_clenv_refine false c clenv'' gl
+  Clenvtac.clenv_refine false clenv'' gl
 
 let unify_resolve_gen = function
   | None -> unify_resolve_nodelta
@@ -1354,9 +1350,7 @@ let gen_trivial ?(debug=Off) lems = function
   | None -> full_trivial ~debug lems
   | Some l -> trivial ~debug lems l
 
-let h_trivial ?(debug=Off) lems l =
-  Refiner.abstract_tactic
-    (gen_trivial ~debug lems l)
+let h_trivial ?(debug=Off) lems l = gen_trivial ~debug lems l
 
 (**************************************************************************)
 (*                       The classical Auto tactic                        *)
@@ -1438,6 +1432,4 @@ let gen_auto ?(debug=Off) n lems dbnames =
 
 let inj_or_var = Option.map (fun n -> ArgArg n)
 
-let h_auto ?(debug=Off) n lems l =
-  Refiner.abstract_tactic
-    (gen_auto ~debug n lems l)
+let h_auto ?(debug=Off) n lems l = gen_auto ~debug n lems l

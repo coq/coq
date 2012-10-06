@@ -174,12 +174,7 @@ let declare_tactic loc s cl =
   let hide_tac (p,e) =
     (* reste a definir les fonctions cachees avec des noms frais *)
     let stac = "h_"^s in
-    let e =
-      make_fun
-        <:expr<
-          Refiner.abstract_extended_tactic $make_eval_tactic e p$
-        >>
-      p in
+    let e = make_fun (make_eval_tactic e p) p in
     <:str_item< value $lid:stac$ = $e$ >>
   in
   let hidden = if List.length cl = 1 then List.map hide_tac cl else [] in

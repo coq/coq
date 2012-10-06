@@ -122,14 +122,11 @@ let decompose_or c gls =
     (fun (_,t) -> is_disjunction t)
     c gls
 
-let h_decompose l c =
-  Refiner.abstract_tactic (decompose_these c l)
+let h_decompose l c = decompose_these c l
 
-let h_decompose_or c =
-  Refiner.abstract_tactic (decompose_or c)
+let h_decompose_or = decompose_or
 
-let h_decompose_and c =
-  Refiner.abstract_tactic (decompose_and c)
+let h_decompose_and = decompose_and
 
 (* The tactic Double performs a double induction *)
 
@@ -174,7 +171,6 @@ let double_ind h1 h2 gls =
              (introElimAssumsThen (induction_trailer abs_i abs_j))
              ([],[]) (mkVar id)))) gls
 
-let h_double_induction h1 h2 =
-  Refiner.abstract_tactic (double_ind h1 h2)
+let h_double_induction = double_ind
 
 
