@@ -22,6 +22,10 @@
 
 <grammar/grammar.{cma,cmxa}> : use_unix
 
+## tags for ml files
+
+"kernel/term.ml": rectypes
+
 ## tags for camlp4 files 
 
 "toplevel/mltop.ml4": is_mltop

@@ -320,13 +320,14 @@ let extra_rules () = begin
        Cmd (S [!Options.ocamlc; A"-c"; A"-pp";
 	       Quote (S [camlp4o; T(tags_of_pathname ml4 ++ "p4mod");
 			 A"-DByte";A"-DHasDynlink";camlp4compat;A"-impl"]);
-	       A"-rectypes"; camlp4incl; incl ml4; A"-impl"; P ml4]));
+	       camlp4incl; incl ml4; A"-impl"; P ml4]));
 
-(** All caml files are compiled with -rectypes and +camlp4/5
+(** All caml files are compiled with +camlp4/5
     and ide files need +lablgtk2 *)
 
-  flag ["compile"; "ocaml"] (S [A"-rectypes"; camlp4incl]);
-  flag ["link"; "ocaml"] (S [A"-rectypes"; camlp4incl]);
+  flag ["compile"; "ocaml"; "rectypes" ] (A "-rectypes");
+  flag ["compile"; "ocaml"] camlp4incl;
+  flag ["link"; "ocaml"] camlp4incl;
   flag ["ocaml"; "ide"; "compile"] lablgtkincl;
   flag ["ocaml"; "ide"; "link"] lablgtkincl;
   flag ["ocaml"; "ide"; "link"; "byte"]

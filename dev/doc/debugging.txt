@@ -21,15 +21,6 @@ Debugging from Coq toplevel using Caml trace mechanism
   notations, ...), use "Set Printing All". It will affect the #trace
   printers too.
 
-Note for Ocaml 3.10.x: Ocaml 3.10.x requires that modules compiled
-with -rectypes are loaded in an environment with -rectypes set but
-there is no way to tell the toplevel to support -rectypes. To make it
-works, use "patch -p0 < dev/doc/patch.ocaml-3.10.drop.rectypes" to
-hack script/coqmktop.ml, then recompile coqtop.byte. The procedure
-above then works as soon as coqtop.byte is called with at least one
-argument (add neutral option -byte to ensure at least one argument).
-
-
 Debugging from Caml debugger
 ============================
 
