@@ -279,11 +279,13 @@ let main () =
       []
   in
   (* the list of the loaded modules *)
-  let main_file = Filename.quote (create_tmp_main_file modules) in
+  let main_file = create_tmp_main_file modules in
   try
     let args =
-      options @ (includes ()) @ copts @ tolink @ dynlink @ [ main_file ] in
-      (* add topstart.cmo explicitly because we shunted ocamlmktop wrapper *)
+      options @ (includes ()) @ copts @ tolink @ dynlink @
+	[ Filename.quote main_file ]
+    in
+    (* add topstart.cmo explicitly because we shunted ocamlmktop wrapper *)
     let args = if !top then args @ [ "topstart.cmo" ] else args in
       (* Now, with the .cma, we MUST use the -linkall option *)
     let command = String.concat " " (prog::args) in
