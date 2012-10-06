@@ -86,7 +86,12 @@ struct
     | Absolute of user_name * 'a
 
   (* Dictionaries of short names *)
-  type 'a nametree = ('a path_status * 'a nametree ModIdmap.t)
+  type 'a nametree =
+      { path : 'a path_status;
+	map : 'a nametree ModIdmap.t }
+
+  let mktree p m = { path=p; map=m }
+  let empty_tree = mktree Nothing ModIdmap.empty
 
   type 'a t = 'a nametree Idmap.t
 
@@ -95,34 +100,34 @@ struct
   (* [push_until] is used to register [Until vis] visibility and
      [push_exactly] to [Exactly vis] and [push_tree] chooses the right one*)
 
-  let rec push_until uname o level (current,dirmap) = function
+  let rec push_until uname o level tree = function
     | modid :: path ->
 	let mc =
-	  try ModIdmap.find modid dirmap
-	  with Not_found -> (Nothing, ModIdmap.empty)
+	  try ModIdmap.find modid tree.map
+	  with Not_found -> empty_tree
 	in
 	let this =
           if level <= 0 then
-	    match current with
+	    match tree.path with
 	      | Absolute (n,_) ->
 		  (* This is an absolute name, we must keep it
 		     otherwise it may become unaccessible forever *)
 		  Flags.if_warn
 		    msg_warning (str ("Trying to mask the absolute name \""
 			     ^ U.to_string n ^ "\"!"));
-		  current
+		  tree.path
 	      | Nothing
 	      | Relative _ -> Relative (uname,o)
-          else current
+          else tree.path
 	in
 	let ptab' = push_until uname o (level-1) mc path in
-	  (this, ModIdmap.add modid ptab' dirmap)
+	mktree this (ModIdmap.add modid ptab' tree.map)
     | [] ->
-	match current with
+	match tree.path with
 	  | Absolute (uname',o') ->
 	      if o'=o then begin
 		assert (uname=uname');
-		current, dirmap
+		tree
 		  (* we are putting the same thing for the second time :) *)
 	      end
 	      else
@@ -132,32 +137,32 @@ struct
 		error ("Cannot mask the absolute name \""
 		       ^ U.to_string uname' ^ "\"!")
 	  | Nothing
-	  | Relative _ -> Absolute (uname,o), dirmap
+	  | Relative _ -> mktree (Absolute (uname,o)) tree.map
 
 
-let rec push_exactly uname o level (current,dirmap) = function
+let rec push_exactly uname o level tree = function
   | modid :: path ->
       let mc =
-	try ModIdmap.find modid dirmap
-	with Not_found -> (Nothing, ModIdmap.empty)
+	try ModIdmap.find modid tree.map
+	with Not_found -> empty_tree
       in
         if level = 0 then
 	  let this =
-	    match current with
+	    match tree.path with
 	      | Absolute (n,_) ->
 		  (* This is an absolute name, we must keep it
 		     otherwise it may become unaccessible forever *)
 		  Flags.if_warn
 		    msg_warning (str ("Trying to mask the absolute name \""
 			     ^ U.to_string n ^ "\"!"));
-		  current
+		  tree.path
 	      | Nothing
 	      | Relative _ -> Relative (uname,o)
 	  in
-	    (this, dirmap)
+	  mktree this tree.map
 	else (* not right level *)
 	  let ptab' = push_exactly uname o (level-1) mc path in
-	    (current, ModIdmap.add modid ptab' dirmap)
+	  mktree tree.path (ModIdmap.add modid ptab' tree.map)
   | [] ->
       anomaly "Prefix longer than path! Impossible!"
 
@@ -166,7 +171,7 @@ let push visibility uname o tab =
   let id,dir = U.repr uname in
   let ptab =
     try Idmap.find id tab
-    with Not_found -> (Nothing, ModIdmap.empty)
+    with Not_found -> empty_tree
   in
   let ptab' = match visibility with
     | Until i -> push_until uname o (i-1) ptab dir
@@ -175,9 +180,9 @@ let push visibility uname o tab =
     Idmap.add id ptab' tab
 
 
-let rec search (current,modidtab) = function
-  | modid :: path -> search (ModIdmap.find modid modidtab) path
-  | [] -> current
+let rec search tree = function
+  | modid :: path -> search (ModIdmap.find modid tree.map) path
+  | [] -> tree.path
 
 let find_node qid tab =
   let (dir,id) = repr_qualid qid in
@@ -213,13 +218,14 @@ let exists uname tab =
 let shortest_qualid ctx uname tab =
   let id,dir = U.repr uname in
   let hidden = Idset.mem id ctx in
-  let rec find_uname pos dir (path,tab) = match path with
+  let rec find_uname pos dir tree =
+    match tree.path with
     | Absolute (u,_) | Relative (u,_)
           when u=uname && not(pos=[] && hidden) -> List.rev pos
     | _ ->
 	match dir with
 	    [] -> raise Not_found
-	  | id::dir -> find_uname (id::pos) dir (ModIdmap.find id tab)
+	  | id::dir -> find_uname (id::pos) dir (ModIdmap.find id tree.map)
   in
   let ptab = Idmap.find id tab in
   let found_dir = find_uname [] dir ptab in
@@ -231,12 +237,12 @@ let push_node node l =
   | _ -> l
 
 let rec flatten_idmap tab l =
-  ModIdmap.fold (fun _ (current,idtab) l ->
-    flatten_idmap idtab (push_node current l)) tab l
+  let f _ tree l = flatten_idmap tree.map (push_node tree.path l) in
+  ModIdmap.fold f tab l
 
-let rec search_prefixes (current,modidtab) = function
-  | modid :: path -> search_prefixes (ModIdmap.find modid modidtab) path
-  | [] -> List.rev (flatten_idmap  modidtab (push_node current []))
+let rec search_prefixes tree = function
+  | modid :: path -> search_prefixes (ModIdmap.find modid tree.map) path
+  | [] -> List.rev (flatten_idmap tree.map (push_node tree.path []))
 
 let find_prefixes qid tab =
   try
